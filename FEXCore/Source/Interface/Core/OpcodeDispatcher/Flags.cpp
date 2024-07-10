@@ -258,68 +258,7 @@ void OpDispatchBuilder::CalculateAF(Ref Src1, Ref Src2) {
   SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(XorRes);
 }
 
-void OpDispatchBuilder::CalculateDeferredFlags(uint32_t FlagsToCalculateMask) {
-  if (CurrentDeferredFlags.Type == FlagsGenerationType::TYPE_NONE) {
-    // Nothing to do
-    if (NZCVDirty && CachedNZCV) {
-      _StoreNZCV(CachedNZCV);
-    }
-
-    CachedNZCV = nullptr;
-    NZCVDirty = false;
-    return;
-  }
-
-  switch (CurrentDeferredFlags.Type) {
-  case FlagsGenerationType::TYPE_SUB:
-    CalculateFlags_SUB(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Sources.TwoSrcImmediate.Src1,
-                       CurrentDeferredFlags.Sources.TwoSrcImmediate.Src2, CurrentDeferredFlags.Sources.TwoSrcImmediate.UpdateCF);
-    break;
-  case FlagsGenerationType::TYPE_MUL:
-    CalculateFlags_MUL(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res, CurrentDeferredFlags.Sources.OneSource.Src1);
-    break;
-  case FlagsGenerationType::TYPE_UMUL: CalculateFlags_UMUL(CurrentDeferredFlags.Res); break;
-  case FlagsGenerationType::TYPE_LOGICAL:
-    CalculateFlags_Logical(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res, CurrentDeferredFlags.Sources.TwoSource.Src1,
-                           CurrentDeferredFlags.Sources.TwoSource.Src2);
-    break;
-  case FlagsGenerationType::TYPE_LSHLI:
-    CalculateFlags_ShiftLeftImmediate(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res,
-                                      CurrentDeferredFlags.Sources.OneSrcImmediate.Src1, CurrentDeferredFlags.Sources.OneSrcImmediate.Imm);
-    break;
-  case FlagsGenerationType::TYPE_LSHRI:
-    CalculateFlags_ShiftRightImmediate(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res,
-                                       CurrentDeferredFlags.Sources.OneSrcImmediate.Src1, CurrentDeferredFlags.Sources.OneSrcImmediate.Imm);
-    break;
-  case FlagsGenerationType::TYPE_LSHRDI:
-    CalculateFlags_ShiftRightDoubleImmediate(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res,
-                                             CurrentDeferredFlags.Sources.OneSrcImmediate.Src1, CurrentDeferredFlags.Sources.OneSrcImmediate.Imm);
-    break;
-  case FlagsGenerationType::TYPE_ASHRI:
-    CalculateFlags_SignShiftRightImmediate(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res,
-                                           CurrentDeferredFlags.Sources.OneSrcImmediate.Src1, CurrentDeferredFlags.Sources.OneSrcImmediate.Imm);
-    break;
-  case FlagsGenerationType::TYPE_BEXTR: CalculateFlags_BEXTR(CurrentDeferredFlags.Res); break;
-  case FlagsGenerationType::TYPE_BLSI: CalculateFlags_BLSI(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res); break;
-  case FlagsGenerationType::TYPE_BLSMSK:
-    CalculateFlags_BLSMSK(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res, CurrentDeferredFlags.Sources.OneSource.Src1);
-    break;
-  case FlagsGenerationType::TYPE_BLSR:
-    CalculateFlags_BLSR(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res, CurrentDeferredFlags.Sources.OneSource.Src1);
-    break;
-  case FlagsGenerationType::TYPE_POPCOUNT: CalculateFlags_POPCOUNT(CurrentDeferredFlags.Res); break;
-  case FlagsGenerationType::TYPE_BZHI:
-    CalculateFlags_BZHI(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res, CurrentDeferredFlags.Sources.OneSource.Src1);
-    break;
-  case FlagsGenerationType::TYPE_ZCNT: CalculateFlags_ZCNT(CurrentDeferredFlags.SrcSize, CurrentDeferredFlags.Res); break;
-  case FlagsGenerationType::TYPE_RDRAND: CalculateFlags_RDRAND(CurrentDeferredFlags.Res); break;
-  case FlagsGenerationType::TYPE_NONE:
-  default: ERROR_AND_DIE_FMT("Unhandled flags type {}", CurrentDeferredFlags.Type);
-  }
-
-  // Done calculating
-  CurrentDeferredFlags.Type = FlagsGenerationType::TYPE_NONE;
-
+void OpDispatchBuilder::CalculateDeferredFlags() {
   if (NZCVDirty && CachedNZCV) {
     _StoreNZCV(CachedNZCV);
   }

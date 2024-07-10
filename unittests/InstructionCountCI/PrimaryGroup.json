@@ -32,8 +32,8 @@
       "Comment": "GROUP1 0x80 /1",
       "ExpectedArm64ASM": [
         "orr w26, w4, #0x1",
-        "bfxil x4, x26, #0, #8",
-        "cmn wzr, w26, lsl #24"
+        "cmn wzr, w26, lsl #24",
+        "bfxil x4, x26, #0, #8"
       ]
     },
     "adc al, 1": {
@@ -112,8 +112,8 @@
       "Comment": "GROUP1 0x80 /6",
       "ExpectedArm64ASM": [
         "eor w26, w4, #0x1",
-        "bfxil x4, x26, #0, #8",
-        "cmn wzr, w26, lsl #24"
+        "cmn wzr, w26, lsl #24",
+        "bfxil x4, x26, #0, #8"
       ]
     },
     "cmp al, 1": {
@@ -147,8 +147,8 @@
       "Comment": "GROUP1 0x80 /1",
       "ExpectedArm64ASM": [
         "orr w26, w4, #0xff",
-        "bfxil x4, x26, #0, #8",
-        "cmn wzr, w26, lsl #24"
+        "cmn wzr, w26, lsl #24",
+        "bfxil x4, x26, #0, #8"
       ]
     },
     "adc al, -1": {
@@ -227,8 +227,8 @@
       "Comment": "GROUP1 0x80 /6",
       "ExpectedArm64ASM": [
         "eor w26, w4, #0xff",
-        "bfxil x4, x26, #0, #8",
-        "cmn wzr, w26, lsl #24"
+        "cmn wzr, w26, lsl #24",
+        "bfxil x4, x26, #0, #8"
       ]
     },
     "cmp al, -1": {
@@ -279,18 +279,18 @@
       "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x81 /1",
       "ExpectedArm64ASM": [
-        "orr w4, w4, #0x100",
-        "mov x26, x4",
-        "tst w4, w4"
+        "orr w26, w4, #0x100",
+        "tst w26, w26",
+        "mov x4, x26"
       ]
     },
     "or rax, 256": {
       "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x81 /1",
       "ExpectedArm64ASM": [
-        "orr x4, x4, #0x100",
-        "mov x26, x4",
-        "tst x4, x4"
+        "orr x26, x4, #0x100",
+        "tst x26, x26",
+        "mov x4, x26"
       ]
     },
     "adc eax, 256": {
@@ -389,18 +389,18 @@
       "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x81 /6",
       "ExpectedArm64ASM": [
-        "eor w4, w4, #0x100",
-        "mov x26, x4",
-        "tst w4, w4"
+        "eor w26, w4, #0x100",
+        "tst w26, w26",
+        "mov x4, x26"
       ]
     },
     "xor rax, 256": {
       "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x81 /6",
       "ExpectedArm64ASM": [
-        "eor x4, x4, #0x100",
-        "mov x26, x4",
-        "tst x4, x4"
+        "eor x26, x4, #0x100",
+        "tst x26, x26",
+        "mov x4, x26"
       ]
     },
     "cmp eax, 256": {
@@ -460,18 +460,18 @@
       "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x81 /1",
       "ExpectedArm64ASM": [
-        "orr w4, w4, #0xffffff00",
-        "mov x26, x4",
-        "tst w4, w4"
+        "orr w26, w4, #0xffffff00",
+        "tst w26, w26",
+        "mov x4, x26"
       ]
     },
     "or rax, -256": {
       "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x81 /1",
       "ExpectedArm64ASM": [
-        "orr x4, x4, #0xffffffffffffff00",
-        "mov x26, x4",
-        "tst x4, x4"
+        "orr x26, x4, #0xffffffffffffff00",
+        "tst x26, x26",
+        "mov x4, x26"
       ]
     },
     "adc eax, -256": {
@@ -571,18 +571,18 @@
       "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x81 /6",
       "ExpectedArm64ASM": [
-        "eor w4, w4, #0xffffff00",
-        "mov x26, x4",
-        "tst w4, w4"
+        "eor w26, w4, #0xffffff00",
+        "tst w26, w26",
+        "mov x4, x26"
       ]
     },
     "xor rax, -256": {
       "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x81 /6",
       "ExpectedArm64ASM": [
-        "eor x4, x4, #0xffffffffffffff00",
-        "mov x26, x4",
-        "tst x4, x4"
+        "eor x26, x4, #0xffffffffffffff00",
+        "tst x26, x26",
+        "mov x4, x26"
       ]
     },
     "cmp eax, -256": {
@@ -642,18 +642,18 @@
       "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x83 /1",
       "ExpectedArm64ASM": [
-        "orr w4, w4, #0x1",
-        "mov x26, x4",
-        "tst w4, w4"
+        "orr w26, w4, #0x1",
+        "tst w26, w26",
+        "mov x4, x26"
       ]
     },
     "or rax, 1": {
       "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x83 /1",
       "ExpectedArm64ASM": [
-        "orr x4, x4, #0x1",
-        "mov x26, x4",
-        "tst x4, x4"
+        "orr x26, x4, #0x1",
+        "tst x26, x26",
+        "mov x4, x26"
       ]
     },
     "adc eax, 1": {
@@ -752,18 +752,18 @@
       "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x83 /6",
       "ExpectedArm64ASM": [
-        "eor w4, w4, #0x1",
-        "mov x26, x4",
-        "tst w4, w4"
+        "eor w26, w4, #0x1",
+        "tst w26, w26",
+        "mov x4, x26"
       ]
     },
     "xor rax, 1": {
       "ExpectedInstructionCount": 3,
       "Comment": "GROUP1 0x83 /6",
       "ExpectedArm64ASM": [
-        "eor x4, x4, #0x1",
-        "mov x26, x4",
-        "tst x4, x4"
+        "eor x26, x4, #0x1",
+        "tst x26, x26",
+        "mov x4, x26"
       ]
     },
     "cmp eax, 1": {
@@ -824,9 +824,9 @@
       "Comment": "GROUP1 0x83 /-1",
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
-        "orr w4, w4, w20",
-        "mov x26, x4",
-        "tst w4, w4"
+        "orr w26, w4, w20",
+        "tst w26, w26",
+        "mov x4, x26"
       ]
     },
     "or rax, -1": {
@@ -834,9 +834,9 @@
       "Comment": "GROUP1 0x83 /-1",
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "orr x4, x4, x20",
-        "mov x26, x4",
-        "tst x4, x4"
+        "orr x26, x4, x20",
+        "tst x26, x26",
+        "mov x4, x26"
       ]
     },
     "adc eax, -1": {
@@ -939,9 +939,9 @@
       "Comment": "GROUP1 0x83 /6",
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
-        "eor w4, w4, w20",
-        "mov x26, x4",
-        "tst w4, w4"
+        "eor w26, w4, w20",
+        "tst w26, w26",
+        "mov x4, x26"
       ]
     },
     "xor rax, -1": {
@@ -949,9 +949,9 @@
       "Comment": "GROUP1 0x83 /6",
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "eor x4, x4, x20",
-        "mov x26, x4",
-        "tst x4, x4"
+        "eor x26, x4, x20",
+        "tst x26, x26",
+        "mov x4, x26"
       ]
     },
     "cmp eax, -1": {
