@@ -300,8 +300,7 @@ void OpDispatchBuilder::FIST(OpcodeArgs) {
 template void OpDispatchBuilder::FIST<false>(OpcodeArgs);
 template void OpDispatchBuilder::FIST<true>(OpcodeArgs);
 
-template<size_t width, bool Integer, OpDispatchBuilder::OpResult ResInST0>
-void OpDispatchBuilder::FADD(OpcodeArgs) {
+void OpDispatchBuilder::FADD(OpcodeArgs, size_t width, bool Integer, OpDispatchBuilder::OpResult ResInST0) {
   auto top = GetX87Top();
   Ref StackLocation = top;
 
@@ -312,8 +311,8 @@ void OpDispatchBuilder::FADD(OpcodeArgs) {
 
   if (!Op->Src[0].IsNone()) {
     // Memory arg
-    if constexpr (width == 16 || width == 32 || width == 64) {
-      if constexpr (Integer) {
+    if (width == 16 || width == 32 || width == 64) {
+      if (Integer) {
         arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
         b = _F80CVTToInt(arg, width / 8);
       } else {
@@ -325,7 +324,7 @@ void OpDispatchBuilder::FADD(OpcodeArgs) {
     // Implicit arg
     auto offset = _Constant(Op->OP & 7);
     arg = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, top, offset), mask);
-    if constexpr (ResInST0 == OpResult::RES_STI) {
+    if (ResInST0 == OpResult::RES_STI) {
       StackLocation = arg;
     }
     b = _LoadContextIndexed(arg, 16, MMBaseOffset(), 16, FPRClass);
@@ -346,6 +345,11 @@ void OpDispatchBuilder::FADD(OpcodeArgs) {
   _StoreContextIndexed(result, StackLocation, 16, MMBaseOffset(), 16, FPRClass);
 }
 
+template<size_t width, bool Integer, OpDispatchBuilder::OpResult ResInST0>
+void OpDispatchBuilder::FADD(OpcodeArgs) {
+  FADD(Op, width, Integer, ResInST0);
+}
+
 template void OpDispatchBuilder::FADD<32, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
 template void OpDispatchBuilder::FADD<64, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
 template void OpDispatchBuilder::FADD<80, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
@@ -354,8 +358,7 @@ template void OpDispatchBuilder::FADD<80, false, OpDispatchBuilder::OpResult::RE
 template void OpDispatchBuilder::FADD<16, true, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
 template void OpDispatchBuilder::FADD<32, true, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
 
-template<size_t width, bool Integer, OpDispatchBuilder::OpResult ResInST0>
-void OpDispatchBuilder::FMUL(OpcodeArgs) {
+void OpDispatchBuilder::FMUL(OpcodeArgs, size_t width, bool Integer, OpDispatchBuilder::OpResult ResInST0) {
   auto top = GetX87Top();
   Ref StackLocation = top;
   Ref arg {};
@@ -366,8 +369,8 @@ void OpDispatchBuilder::FMUL(OpcodeArgs) {
   if (!Op->Src[0].IsNone()) {
     // Memory arg
 
-    if constexpr (width == 16 || width == 32 || width == 64) {
-      if constexpr (Integer) {
+    if (width == 16 || width == 32 || width == 64) {
+      if (Integer) {
         arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
         b = _F80CVTToInt(arg, width / 8);
       } else {
@@ -379,7 +382,7 @@ void OpDispatchBuilder::FMUL(OpcodeArgs) {
     // Implicit arg
     auto offset = _Constant(Op->OP & 7);
     arg = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, top, offset), mask);
-    if constexpr (ResInST0 == OpResult::RES_STI) {
+    if (ResInST0 == OpResult::RES_STI) {
       StackLocation = arg;
     }
 
@@ -402,6 +405,11 @@ void OpDispatchBuilder::FMUL(OpcodeArgs) {
   _StoreContextIndexed(result, StackLocation, 16, MMBaseOffset(), 16, FPRClass);
 }
 
+template<size_t width, bool Integer, OpDispatchBuilder::OpResult ResInST0>
+void OpDispatchBuilder::FMUL(OpcodeArgs) {
+  FMUL(Op, width, Integer, ResInST0);
+}
+
 template void OpDispatchBuilder::FMUL<32, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
 template void OpDispatchBuilder::FMUL<64, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
 template void OpDispatchBuilder::FMUL<80, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
@@ -410,8 +418,7 @@ template void OpDispatchBuilder::FMUL<80, false, OpDispatchBuilder::OpResult::RE
 template void OpDispatchBuilder::FMUL<16, true, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
 template void OpDispatchBuilder::FMUL<32, true, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
 
-template<size_t width, bool Integer, bool reverse, OpDispatchBuilder::OpResult ResInST0>
-void OpDispatchBuilder::FDIV(OpcodeArgs) {
+void OpDispatchBuilder::FDIV(OpcodeArgs, size_t width, bool Integer, bool reverse, OpDispatchBuilder::OpResult ResInST0) {
   auto top = GetX87Top();
   Ref StackLocation = top;
   Ref arg {};
@@ -422,8 +429,8 @@ void OpDispatchBuilder::FDIV(OpcodeArgs) {
   if (!Op->Src[0].IsNone()) {
     // Memory arg
 
-    if constexpr (width == 16 || width == 32 || width == 64) {
-      if constexpr (Integer) {
+    if (width == 16 || width == 32 || width == 64) {
+      if (Integer) {
         arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
         b = _F80CVTToInt(arg, width / 8);
       } else {
@@ -435,7 +442,7 @@ void OpDispatchBuilder::FDIV(OpcodeArgs) {
     // Implicit arg
     auto offset = _Constant(Op->OP & 7);
     arg = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, top, offset), mask);
-    if constexpr (ResInST0 == OpResult::RES_STI) {
+    if (ResInST0 == OpResult::RES_STI) {
       StackLocation = arg;
     }
 
@@ -445,7 +452,7 @@ void OpDispatchBuilder::FDIV(OpcodeArgs) {
   auto a = _LoadContextIndexed(top, 16, MMBaseOffset(), 16, FPRClass);
 
   Ref result {};
-  if constexpr (reverse) {
+  if (reverse) {
     result = _F80Div(b, a);
   } else {
     result = _F80Div(a, b);
@@ -461,6 +468,11 @@ void OpDispatchBuilder::FDIV(OpcodeArgs) {
 
   // Write to ST[TOP]
   _StoreContextIndexed(result, StackLocation, 16, MMBaseOffset(), 16, FPRClass);
+}
+
+template<size_t width, bool Integer, bool reverse, OpDispatchBuilder::OpResult ResInST0>
+void OpDispatchBuilder::FDIV(OpcodeArgs) {
+  FDIV(Op, width, Integer, reverse, ResInST0);
 }
 
 template void OpDispatchBuilder::FDIV<32, false, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
@@ -481,8 +493,7 @@ template void OpDispatchBuilder::FDIV<16, true, true, OpDispatchBuilder::OpResul
 template void OpDispatchBuilder::FDIV<32, true, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
 template void OpDispatchBuilder::FDIV<32, true, true, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
 
-template<size_t width, bool Integer, bool reverse, OpDispatchBuilder::OpResult ResInST0>
-void OpDispatchBuilder::FSUB(OpcodeArgs) {
+void OpDispatchBuilder::FSUB(OpcodeArgs, size_t width, bool Integer, bool reverse, OpDispatchBuilder::OpResult ResInST0) {
   auto top = GetX87Top();
   Ref StackLocation = top;
   Ref arg {};
@@ -493,8 +504,8 @@ void OpDispatchBuilder::FSUB(OpcodeArgs) {
   if (!Op->Src[0].IsNone()) {
     // Memory arg
 
-    if constexpr (width == 16 || width == 32 || width == 64) {
-      if constexpr (Integer) {
+    if (width == 16 || width == 32 || width == 64) {
+      if (Integer) {
         arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
         b = _F80CVTToInt(arg, width / 8);
       } else {
@@ -506,7 +517,7 @@ void OpDispatchBuilder::FSUB(OpcodeArgs) {
     // Implicit arg
     auto offset = _Constant(Op->OP & 7);
     arg = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, top, offset), mask);
-    if constexpr (ResInST0 == OpResult::RES_STI) {
+    if (ResInST0 == OpResult::RES_STI) {
       StackLocation = arg;
     }
     b = _LoadContextIndexed(arg, 16, MMBaseOffset(), 16, FPRClass);
@@ -515,7 +526,7 @@ void OpDispatchBuilder::FSUB(OpcodeArgs) {
   auto a = _LoadContextIndexed(top, 16, MMBaseOffset(), 16, FPRClass);
 
   Ref result {};
-  if constexpr (reverse) {
+  if (reverse) {
     result = _F80Sub(b, a);
   } else {
     result = _F80Sub(a, b);
@@ -532,6 +543,11 @@ void OpDispatchBuilder::FSUB(OpcodeArgs) {
 
   // Write to ST[TOP]
   _StoreContextIndexed(result, StackLocation, 16, MMBaseOffset(), 16, FPRClass);
+}
+
+template<size_t width, bool Integer, bool reverse, OpDispatchBuilder::OpResult ResInST0>
+void OpDispatchBuilder::FSUB(OpcodeArgs) {
+  FSUB(Op, width, Integer, reverse, ResInST0);
 }
 
 template void OpDispatchBuilder::FSUB<32, false, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
@@ -647,8 +663,7 @@ void OpDispatchBuilder::FNINIT(OpcodeArgs) {
   _StoreContext(1, GPRClass, Zero, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
 }
 
-template<size_t width, bool Integer, OpDispatchBuilder::FCOMIFlags whichflags, bool poptwice>
-void OpDispatchBuilder::FCOMI(OpcodeArgs) {
+void OpDispatchBuilder::FCOMI(OpcodeArgs, size_t width, bool Integer, OpDispatchBuilder::FCOMIFlags whichflags, bool poptwice) {
   auto top = GetX87Top();
   auto mask = _Constant(7);
 
@@ -657,8 +672,8 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs) {
 
   if (!Op->Src[0].IsNone()) {
     // Memory arg
-    if constexpr (width == 16 || width == 32 || width == 64) {
-      if constexpr (Integer) {
+    if (width == 16 || width == 32 || width == 64) {
+      if (Integer) {
         arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
         b = _F80CVTToInt(arg, width / 8);
       } else {
@@ -683,7 +698,7 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs) {
   HostFlag_CF = _Or(OpSize::i32Bit, HostFlag_CF, HostFlag_Unordered);
   HostFlag_ZF = _Or(OpSize::i32Bit, HostFlag_ZF, HostFlag_Unordered);
 
-  if constexpr (whichflags == FCOMIFlags::FLAGS_X87) {
+  if (whichflags == FCOMIFlags::FLAGS_X87) {
     SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(HostFlag_CF);
     SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(_Constant(0));
     SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(HostFlag_Unordered);
@@ -702,7 +717,7 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs) {
     SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(PF);
   }
 
-  if constexpr (poptwice) {
+  if (poptwice) {
     // if we are popping then we must first mark this location as empty
     SetX87ValidTag(top, false);
     top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, top, _Constant(1)), mask);
@@ -717,6 +732,11 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs) {
     top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, top, _Constant(1)), mask);
     SetX87Top(top);
   }
+}
+
+template<size_t width, bool Integer, OpDispatchBuilder::FCOMIFlags whichflags, bool poptwice>
+void OpDispatchBuilder::FCOMI(OpcodeArgs) {
+  FCOMI(Op, width, Integer, whichflags, poptwice);
 }
 
 template void OpDispatchBuilder::FCOMI<32, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>(OpcodeArgs);
