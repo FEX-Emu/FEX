@@ -62,13 +62,16 @@ typedef FEX_ALIGNED(4) int64_t compat_loff_t;
 
 template<typename T>
 class compat_ptr {
-public:
-  compat_ptr() = delete;
-  compat_ptr(uint32_t In)
-    : Ptr {In} {}
-  compat_ptr(T* In)
-    : Ptr {static_cast<uint32_t>(reinterpret_cast<uintptr_t>(In))} {}
+protected:
+  static compat_ptr FromAddress(uint32_t In) {
+    compat_ptr<T> ret;
+    ret.Ptr = In;
+    return ret;
+  }
 
+  compat_ptr() = default;
+
+public:
   template<typename T2 = T, typename = std::enable_if<!std::is_same<T2, void>::value, T2>>
   T2& operator*() const {
     return *Interpret();
@@ -103,14 +106,32 @@ public:
   }
 
   uint32_t Ptr;
+
 private:
   T* Interpret() const {
     return reinterpret_cast<T*>(Ptr);
   }
 };
-
 static_assert(std::is_trivial<compat_ptr<void>>::value, "Needs to be trivial");
 static_assert(sizeof(compat_ptr<void>) == 4, "Incorrect size");
+
+/**
+ * Helper class to import a compat_ptr from a native pointer or raw address.
+ *
+ * Adding these custom constructors to compat_ptr itself would trigger clang's -Wpacked-non-pod warnings.
+ */
+template<typename T>
+class auto_compat_ptr : public compat_ptr<T> {
+
+public:
+  auto_compat_ptr(uint32_t In)
+    : compat_ptr<T> {compat_ptr<T>::FromAddress(In)} {}
+  auto_compat_ptr(T* In)
+    : compat_ptr<T> {compat_ptr<T>::FromAddress(static_cast<uint32_t>(reinterpret_cast<uintptr_t>(In)))} {}
+};
+
+template<typename T>
+auto_compat_ptr(T*) -> auto_compat_ptr<T>;
 
 /**
  * @name timespec32
@@ -280,7 +301,7 @@ struct FEX_ANNOTATE("alias-x86_32-stack_t") FEX_ANNOTATE("fex-match") stack_t32 
   }
 
   stack_t32(stack_t ss)
-    : ss_sp {ss.ss_sp} {
+    : ss_sp {auto_compat_ptr {ss.ss_sp}} {
     ss_flags = ss.ss_flags;
     ss_size = ss.ss_size;
   }
@@ -832,8 +853,8 @@ struct FEX_PACKED FEX_ANNOTATE("fex-match") OldGuestSigAction_32 {
   }
 
   OldGuestSigAction_32(FEX::HLE::GuestSigAction action)
-    : handler_32 {reinterpret_cast<void*>(action.sigaction_handler.handler)}
-    , restorer_32 {reinterpret_cast<void*>(action.restorer)} {
+    : handler_32 {auto_compat_ptr {reinterpret_cast<void*>(action.sigaction_handler.handler)}}
+    , restorer_32 {auto_compat_ptr {reinterpret_cast<void*>(action.restorer)}} {
     sa_flags = action.sa_flags;
     sa_mask = action.sa_mask.Val;
   }
@@ -865,8 +886,8 @@ struct FEX_PACKED FEX_ANNOTATE("fex-match") GuestSigAction_32 {
   }
 
   GuestSigAction_32(FEX::HLE::GuestSigAction action)
-    : handler_32 {reinterpret_cast<void*>(action.sigaction_handler.handler)}
-    , restorer_32 {reinterpret_cast<void*>(action.restorer)} {
+    : handler_32 {auto_compat_ptr {reinterpret_cast<void*>(action.sigaction_handler.handler)}}
+    , restorer_32 {auto_compat_ptr {reinterpret_cast<void*>(action.restorer)}} {
     sa_flags = action.sa_flags;
     sa_mask = action.sa_mask;
   }
@@ -1087,7 +1108,7 @@ union FEX_ANNOTATE("alias-x86_32-sigval") FEX_ANNOTATE("fex-match") sigval32 {
   }
 
   sigval32(sigval val) {
-    sival_ptr = val.sival_ptr;
+    sival_ptr = auto_compat_ptr {val.sival_ptr};
   }
 };
 
@@ -1198,7 +1219,7 @@ struct FEX_PACKED FEX_ANNOTATE("alias-x86_32-epoll_event") FEX_ANNOTATE("fex-mat
   }
 
   epoll_event32(struct epoll_event event)
-    : data {event.data.u64} {
+    : data {auto_compat_ptr<void> {static_cast<uint32_t>(event.data.u64)}} {
     events = event.events;
   }
 };

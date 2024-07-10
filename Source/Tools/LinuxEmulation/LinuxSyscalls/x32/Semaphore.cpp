@@ -103,7 +103,7 @@ uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first
     uint32_t semnum = second;
     // Upper 16bits used for a different flag?
     int32_t cmd = third & 0xFF;
-    compat_ptr<semun_32> semun(ptr);
+    auto_compat_ptr<semun_32> semun(ptr);
     bool IPC64 = third & 0x100;
     switch (cmd) {
     case IPC_SET: {
