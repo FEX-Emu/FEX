@@ -6,13 +6,11 @@
 #include <tiny-json.h>
 
 namespace FEX::JSON {
-struct JsonAllocator {
-  jsonPool_t PoolObject;
+struct JsonAllocator : jsonPool_t {
   fextl::list<json_t> json_objects;
 
   JsonAllocator();
 };
-static_assert(offsetof(JsonAllocator, PoolObject) == 0, "This needs to be at offset zero");
 
 template<typename T>
 const json_t* CreateJSON(T& Container, JsonAllocator& Allocator) {
@@ -20,6 +18,6 @@ const json_t* CreateJSON(T& Container, JsonAllocator& Allocator) {
     return nullptr;
   }
 
-  return json_createWithPool(&Container.at(0), &Allocator.PoolObject);
+  return json_createWithPool(&Container.at(0), &Allocator);
 }
 } // namespace FEX::JSON

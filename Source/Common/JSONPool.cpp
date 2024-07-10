@@ -6,18 +6,18 @@ json_t* PoolInit(jsonPool_t* Pool);
 json_t* PoolAlloc(jsonPool_t* Pool);
 
 JsonAllocator::JsonAllocator()
-  : PoolObject {
+  : jsonPool_t {
       .init = FEX::JSON::PoolInit,
       .alloc = FEX::JSON::PoolAlloc,
     } {}
 
 json_t* PoolInit(jsonPool_t* Pool) {
-  JsonAllocator* alloc = reinterpret_cast<JsonAllocator*>(Pool);
+  JsonAllocator* alloc = static_cast<JsonAllocator*>(Pool);
   return &*alloc->json_objects.emplace(alloc->json_objects.end());
 }
 
 json_t* PoolAlloc(jsonPool_t* Pool) {
-  JsonAllocator* alloc = reinterpret_cast<JsonAllocator*>(Pool);
+  JsonAllocator* alloc = static_cast<JsonAllocator*>(Pool);
   return &*alloc->json_objects.emplace(alloc->json_objects.end());
 }
 } // namespace FEX::JSON
