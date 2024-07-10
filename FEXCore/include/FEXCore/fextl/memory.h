@@ -9,8 +9,10 @@ namespace fextl {
 template<class T>
 struct default_delete : public std::default_delete<T> {
   void operator()(T* ptr) const {
-    std::destroy_at(ptr);
-    FEXCore::Allocator::aligned_free(ptr);
+    if (ptr) {
+      std::destroy_at(ptr);
+      FEXCore::Allocator::aligned_free(ptr);
+    }
   }
 
   template<typename U>
