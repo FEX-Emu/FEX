@@ -5161,7 +5161,7 @@ template void OpDispatchBuilder::VFMSUBADD<2, 1, 3>(OpcodeArgs);
 template void OpDispatchBuilder::VFMSUBADD<2, 3, 1>(OpcodeArgs);
 
 OpDispatchBuilder::RefVSIB OpDispatchBuilder::LoadVSIB(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags) {
-  const bool IsVSIB = (Op->Flags & X86Tables::DecodeFlags::FLAG_VSIB_BYTE) != 0;
+  [[maybe_unused]] const bool IsVSIB = (Op->Flags & X86Tables::DecodeFlags::FLAG_VSIB_BYTE) != 0;
   LOGMAN_THROW_A_FMT(Operand.IsSIB() && IsVSIB, "Trying to load VSIB for something that isn't the correct type!");
 
   // VSIB is a very special case which has a ton of encoded data.
