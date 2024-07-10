@@ -95,8 +95,7 @@ void OpDispatchBuilder::X87FLDCWF64(OpcodeArgs) {
 
 // F64 ops
 
-template<size_t width>
-void OpDispatchBuilder::FLDF64(OpcodeArgs) {
+void OpDispatchBuilder::FLDF64(OpcodeArgs, size_t width) {
   // Update TOP
   auto orig_top = GetX87Top();
   auto mask = _Constant(7);
@@ -110,9 +109,9 @@ void OpDispatchBuilder::FLDF64(OpcodeArgs) {
     // Read from memory
     data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], read_width, Op->Flags);
     // Convert to 64bit float
-    if constexpr (width == 32) {
+    if (width == 32) {
       converted = _Float_FToF(8, 4, data);
-    } else if constexpr (width == 80) {
+    } else if (width == 80) {
       converted = _F80CVT(8, data);
     } else {
       converted = data;
@@ -130,6 +129,11 @@ void OpDispatchBuilder::FLDF64(OpcodeArgs) {
   SetX87Top(top);
   // Write to ST[TOP]
   _StoreContextIndexed(converted, top, 8, MMBaseOffset(), 16, FPRClass);
+}
+
+template<size_t width>
+void OpDispatchBuilder::FLDF64(OpcodeArgs) {
+  FLDF64(Op, width);
 }
 
 template void OpDispatchBuilder::FLDF64<32>(OpcodeArgs);
@@ -166,8 +170,7 @@ void OpDispatchBuilder::FBSTPF64(OpcodeArgs) {
   SetX87Top(top);
 }
 
-template<uint64_t num>
-void OpDispatchBuilder::FLDF64_Const(OpcodeArgs) {
+void OpDispatchBuilder::FLDF64_Const(OpcodeArgs, uint64_t num) {
   // Update TOP
   auto orig_top = GetX87Top();
   auto top = _And(OpSize::i32Bit, _Sub(OpSize::i32Bit, orig_top, _Constant(1)), _Constant(7));
@@ -176,6 +179,11 @@ void OpDispatchBuilder::FLDF64_Const(OpcodeArgs) {
   auto data = _VCastFromGPR(8, 8, _Constant(num));
   // Write to ST[TOP]
   _StoreContextIndexed(data, top, 8, MMBaseOffset(), 16, FPRClass);
+}
+
+template<uint64_t num>
+void OpDispatchBuilder::FLDF64_Const(OpcodeArgs) {
+  FLDF64_Const(Op, num);
 }
 
 template void OpDispatchBuilder::FLDF64_Const<0x3FF0000000000000>(OpcodeArgs); // 1.0
@@ -204,18 +212,17 @@ void OpDispatchBuilder::FILDF64(OpcodeArgs) {
   _StoreContextIndexed(converted, top, 8, MMBaseOffset(), 16, FPRClass);
 }
 
-template<size_t width>
-void OpDispatchBuilder::FSTF64(OpcodeArgs) {
+void OpDispatchBuilder::FSTF64(OpcodeArgs, size_t width) {
   auto orig_top = GetX87Top();
   auto data = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
-  if constexpr (width == 64) {
+  if (width == 64) {
     // Store 64-bit float directly
     StoreResult_WithOpSize(FPRClass, Op, Op->Dest, data, 8, 1);
-  } else if constexpr (width == 32) {
+  } else if (width == 32) {
     // Convert to 32-bit float and store
     auto result = _Float_FToF(4, 8, data);
     StoreResult_WithOpSize(FPRClass, Op, Op->Dest, result, 4, 1);
-  } else if constexpr (width == 80) {
+  } else if (width == 80) {
     // Convert to 80-bit float
     auto result = _F80CVTTo(data, 8);
     StoreResult_WithOpSize(FPRClass, Op, Op->Dest, result, 10, 1);
@@ -230,17 +237,21 @@ void OpDispatchBuilder::FSTF64(OpcodeArgs) {
   }
 }
 
+template<size_t width>
+void OpDispatchBuilder::FSTF64(OpcodeArgs) {
+  FSTF64(Op, width);
+}
+
 template void OpDispatchBuilder::FSTF64<32>(OpcodeArgs);
 template void OpDispatchBuilder::FSTF64<64>(OpcodeArgs);
 template void OpDispatchBuilder::FSTF64<80>(OpcodeArgs);
 
-template<bool Truncate>
-void OpDispatchBuilder::FISTF64(OpcodeArgs) {
+void OpDispatchBuilder::FISTF64(OpcodeArgs, bool Truncate) {
   auto Size = GetSrcSize(Op);
 
   auto orig_top = GetX87Top();
   Ref data = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
-  if constexpr (Truncate) {
+  if (Truncate) {
     data = _Float_ToGPR_ZS(Size == 4 ? 4 : 8, 8, data);
   } else {
     data = _Float_ToGPR_S(Size == 4 ? 4 : 8, 8, data);
@@ -254,6 +265,11 @@ void OpDispatchBuilder::FISTF64(OpcodeArgs) {
     auto top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, orig_top, _Constant(1)), _Constant(7));
     SetX87Top(top);
   }
+}
+
+template<bool Truncate>
+void OpDispatchBuilder::FISTF64(OpcodeArgs) {
+  FISTF64(Op, Truncate);
 }
 
 template void OpDispatchBuilder::FISTF64<false>(OpcodeArgs);
@@ -687,14 +703,13 @@ void OpDispatchBuilder::FSQRTF64(OpcodeArgs) {
 }
 
 
-template<FEXCore::IR::IROps IROp>
-void OpDispatchBuilder::X87UnaryOpF64(OpcodeArgs) {
+void OpDispatchBuilder::X87UnaryOpF64(OpcodeArgs, FEXCore::IR::IROps IROp) {
   auto top = GetX87Top();
   auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
 
   DeriveOp(result, IROp, _F64SIN(a));
 
-  if constexpr (IROp == IR::OP_F64SIN || IROp == IR::OP_F64COS) {
+  if (IROp == IR::OP_F64SIN || IROp == IR::OP_F64COS) {
     // TODO: ACCURACY: should check source is in range –2^63 to +2^63
     SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(_Constant(0));
   }
@@ -703,13 +718,17 @@ void OpDispatchBuilder::X87UnaryOpF64(OpcodeArgs) {
   _StoreContextIndexed(result, top, 8, MMBaseOffset(), 16, FPRClass);
 }
 
+template<FEXCore::IR::IROps IROp>
+void OpDispatchBuilder::X87UnaryOpF64(OpcodeArgs) {
+  X87UnaryOpF64(Op, IROp);
+}
+
 template void OpDispatchBuilder::X87UnaryOpF64<IR::OP_F64F2XM1>(OpcodeArgs);
 template void OpDispatchBuilder::X87UnaryOpF64<IR::OP_F64SIN>(OpcodeArgs);
 template void OpDispatchBuilder::X87UnaryOpF64<IR::OP_F64COS>(OpcodeArgs);
 
 
-template<FEXCore::IR::IROps IROp>
-void OpDispatchBuilder::X87BinaryOpF64(OpcodeArgs) {
+void OpDispatchBuilder::X87BinaryOpF64(OpcodeArgs, FEXCore::IR::IROps IROp) {
   auto top = GetX87Top();
 
   auto mask = _Constant(7);
@@ -720,13 +739,18 @@ void OpDispatchBuilder::X87BinaryOpF64(OpcodeArgs) {
 
   DeriveOp(result, IROp, _F64ATAN(a, st1));
 
-  if constexpr (IROp == IR::OP_F64FPREM || IROp == IR::OP_F64FPREM1) {
+  if (IROp == IR::OP_F64FPREM || IROp == IR::OP_F64FPREM1) {
     // TODO: Set C0 to Q2, C3 to Q1, C1 to Q0
     SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(_Constant(0));
   }
 
   // Write to ST[TOP]
   _StoreContextIndexed(result, top, 8, MMBaseOffset(), 16, FPRClass);
+}
+
+template<FEXCore::IR::IROps IROp>
+void OpDispatchBuilder::X87BinaryOpF64(OpcodeArgs) {
+  X87BinaryOpF64(Op, IROp);
 }
 
 template void OpDispatchBuilder::X87BinaryOpF64<IR::OP_F64FPREM1>(OpcodeArgs);

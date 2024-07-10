@@ -731,8 +731,10 @@ public:
   Ref ReconstructX87StateFromFSW(Ref FSW);
   template<size_t width>
   void FLD(OpcodeArgs);
+  void FLD(OpcodeArgs, size_t width);
   template<NamedVectorConstant constant>
   void FLD_Const(OpcodeArgs);
+  void FLD_Const(OpcodeArgs, NamedVectorConstant constant);
 
   void FBLD(OpcodeArgs);
   void FBSTP(OpcodeArgs);
@@ -741,11 +743,13 @@ public:
 
   template<size_t width>
   void FST(OpcodeArgs);
+  void FST(OpcodeArgs, size_t width);
 
   void FST(OpcodeArgs);
 
   template<bool Truncate>
   void FIST(OpcodeArgs);
+  void FIST(OpcodeArgs, bool Truncate);
 
   enum class OpResult {
     RES_ST0,
@@ -772,10 +776,13 @@ public:
 
   template<FEXCore::IR::IROps IROp>
   void X87UnaryOp(OpcodeArgs);
+  void X87UnaryOp(OpcodeArgs, FEXCore::IR::IROps IROp);
   template<FEXCore::IR::IROps IROp>
   void X87BinaryOp(OpcodeArgs);
+  void X87BinaryOp(OpcodeArgs, FEXCore::IR::IROps IROp);
   template<bool Inc>
   void X87ModifySTP(OpcodeArgs);
+  void X87ModifySTP(OpcodeArgs, bool Inc);
   void X87SinCos(OpcodeArgs);
   void X87FYL2X(OpcodeArgs);
   void X87TAN(OpcodeArgs);
@@ -806,8 +813,10 @@ public:
   // F64 X87 Ops
   template<size_t width>
   void FLDF64(OpcodeArgs);
-  template<uint64_t num>
+  void FLDF64(OpcodeArgs, size_t width);
+  template<size_t width>
   void FLDF64_Const(OpcodeArgs);
+  void FLDF64_Const(OpcodeArgs, uint64_t num);
 
   void FBLDF64(OpcodeArgs);
   void FBSTPF64(OpcodeArgs);
@@ -816,11 +825,13 @@ public:
 
   template<size_t width>
   void FSTF64(OpcodeArgs);
+  void FSTF64(OpcodeArgs, size_t width);
 
   void FSTF64(OpcodeArgs);
 
   template<bool Truncate>
   void FISTF64(OpcodeArgs);
+  void FISTF64(OpcodeArgs, bool Truncate);
 
   template<size_t width, bool Integer, OpResult ResInST0>
   void FADDF64(OpcodeArgs);
@@ -843,8 +854,10 @@ public:
   void FSQRTF64(OpcodeArgs);
   template<FEXCore::IR::IROps IROp>
   void X87UnaryOpF64(OpcodeArgs);
+  void X87UnaryOpF64(OpcodeArgs, FEXCore::IR::IROps IROp);
   template<FEXCore::IR::IROps IROp>
   void X87BinaryOpF64(OpcodeArgs);
+  void X87BinaryOpF64(OpcodeArgs, FEXCore::IR::IROps IROp);
   void X87SinCosF64(OpcodeArgs);
   void X87FLDCWF64(OpcodeArgs);
   void X87FYL2XF64(OpcodeArgs);

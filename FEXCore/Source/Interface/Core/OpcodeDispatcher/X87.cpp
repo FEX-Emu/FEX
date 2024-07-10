@@ -123,8 +123,7 @@ Ref OpDispatchBuilder::ReconstructX87StateFromFSW(Ref FSW) {
   return Top;
 }
 
-template<size_t width>
-void OpDispatchBuilder::FLD(OpcodeArgs) {
+void OpDispatchBuilder::FLD(OpcodeArgs, size_t width) {
   // Update TOP
   auto orig_top = GetX87Top();
   auto mask = _Constant(7);
@@ -145,7 +144,7 @@ void OpDispatchBuilder::FLD(OpcodeArgs) {
   Ref converted = data;
 
   // Convert to 80bit float
-  if constexpr (width == 32 || width == 64) {
+  if (width == 32 || width == 64) {
     converted = _F80CVTTo(data, width / 8);
   }
 
@@ -155,6 +154,11 @@ void OpDispatchBuilder::FLD(OpcodeArgs) {
   // Write to ST[TOP]
   _StoreContextIndexed(converted, top, 16, MMBaseOffset(), 16, FPRClass);
   //_StoreContext(converted, 16, offsetof(FEXCore::Core::CPUState, mm[7][0]));
+}
+
+template<size_t width>
+void OpDispatchBuilder::FLD(OpcodeArgs) {
+  FLD(Op, width);
 }
 
 template void OpDispatchBuilder::FLD<32>(OpcodeArgs);
@@ -189,8 +193,7 @@ void OpDispatchBuilder::FBSTP(OpcodeArgs) {
   SetX87Top(top);
 }
 
-template<NamedVectorConstant constant>
-void OpDispatchBuilder::FLD_Const(OpcodeArgs) {
+void OpDispatchBuilder::FLD_Const(OpcodeArgs, NamedVectorConstant constant) {
   // Update TOP
   auto orig_top = GetX87Top();
   auto top = _And(OpSize::i32Bit, _Sub(OpSize::i32Bit, orig_top, _Constant(1)), _Constant(7));
@@ -201,6 +204,11 @@ void OpDispatchBuilder::FLD_Const(OpcodeArgs) {
 
   // Write to ST[TOP]
   _StoreContextIndexed(data, top, 16, MMBaseOffset(), 16, FPRClass);
+}
+
+template<NamedVectorConstant constant>
+void OpDispatchBuilder::FLD_Const(OpcodeArgs) {
+  FLD_Const(Op, constant);
 }
 
 template void OpDispatchBuilder::FLD_Const<NamedVectorConstant::NAMED_VECTOR_X87_ONE>(OpcodeArgs);     // 1.0
@@ -254,13 +262,12 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
   _StoreContextIndexed(converted, top, 16, MMBaseOffset(), 16, FPRClass);
 }
 
-template<size_t width>
-void OpDispatchBuilder::FST(OpcodeArgs) {
+void OpDispatchBuilder::FST(OpcodeArgs, size_t width) {
   auto orig_top = GetX87Top();
   auto data = _LoadContextIndexed(orig_top, 16, MMBaseOffset(), 16, FPRClass);
-  if constexpr (width == 80) {
+  if (width == 80) {
     StoreResult_WithOpSize(FPRClass, Op, Op->Dest, data, 10, 1);
-  } else if constexpr (width == 32 || width == 64) {
+  } else if (width == 32 || width == 64) {
     auto result = _F80CVT(width / 8, data);
     StoreResult_WithOpSize(FPRClass, Op, Op->Dest, result, width / 8, 1);
   }
@@ -274,12 +281,16 @@ void OpDispatchBuilder::FST(OpcodeArgs) {
   }
 }
 
+template<size_t width>
+void OpDispatchBuilder::FST(OpcodeArgs) {
+  FST(Op, width);
+}
+
 template void OpDispatchBuilder::FST<32>(OpcodeArgs);
 template void OpDispatchBuilder::FST<64>(OpcodeArgs);
 template void OpDispatchBuilder::FST<80>(OpcodeArgs);
 
-template<bool Truncate>
-void OpDispatchBuilder::FIST(OpcodeArgs) {
+void OpDispatchBuilder::FIST(OpcodeArgs, bool Truncate) {
   auto Size = GetSrcSize(Op);
 
   auto orig_top = GetX87Top();
@@ -295,6 +306,11 @@ void OpDispatchBuilder::FIST(OpcodeArgs) {
     auto top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, orig_top, _Constant(1)), _Constant(7));
     SetX87Top(top);
   }
+}
+
+template<bool Truncate>
+void OpDispatchBuilder::FIST(OpcodeArgs) {
+  FIST(Op, Truncate);
 }
 
 template void OpDispatchBuilder::FIST<false>(OpcodeArgs);
@@ -797,14 +813,13 @@ void OpDispatchBuilder::FST(OpcodeArgs) {
   }
 }
 
-template<FEXCore::IR::IROps IROp>
-void OpDispatchBuilder::X87UnaryOp(OpcodeArgs) {
+void OpDispatchBuilder::X87UnaryOp(OpcodeArgs, FEXCore::IR::IROps IROp) {
   auto top = GetX87Top();
   auto a = _LoadContextIndexed(top, 16, MMBaseOffset(), 16, FPRClass);
 
   DeriveOp(result, IROp, _F80Round(a));
 
-  if constexpr (IROp == IR::OP_F80SIN || IROp == IR::OP_F80COS) {
+  if (IROp == IR::OP_F80SIN || IROp == IR::OP_F80COS) {
     // TODO: ACCURACY: should check source is in range –2^63 to +2^63
     SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(_Constant(0));
   }
@@ -813,13 +828,17 @@ void OpDispatchBuilder::X87UnaryOp(OpcodeArgs) {
   _StoreContextIndexed(result, top, 16, MMBaseOffset(), 16, FPRClass);
 }
 
+template<FEXCore::IR::IROps IROp>
+void OpDispatchBuilder::X87UnaryOp(OpcodeArgs) {
+  X87UnaryOp(Op, IROp);
+}
+
 template void OpDispatchBuilder::X87UnaryOp<IR::OP_F80F2XM1>(OpcodeArgs);
 template void OpDispatchBuilder::X87UnaryOp<IR::OP_F80SQRT>(OpcodeArgs);
 template void OpDispatchBuilder::X87UnaryOp<IR::OP_F80SIN>(OpcodeArgs);
 template void OpDispatchBuilder::X87UnaryOp<IR::OP_F80COS>(OpcodeArgs);
 
-template<FEXCore::IR::IROps IROp>
-void OpDispatchBuilder::X87BinaryOp(OpcodeArgs) {
+void OpDispatchBuilder::X87BinaryOp(OpcodeArgs, FEXCore::IR::IROps IROp) {
   auto top = GetX87Top();
 
   auto mask = _Constant(7);
@@ -830,7 +849,7 @@ void OpDispatchBuilder::X87BinaryOp(OpcodeArgs) {
 
   DeriveOp(result, IROp, _F80Add(a, st1));
 
-  if constexpr (IROp == IR::OP_F80FPREM || IROp == IR::OP_F80FPREM1) {
+  if (IROp == IR::OP_F80FPREM || IROp == IR::OP_F80FPREM1) {
     // TODO: Set C0 to Q2, C3 to Q1, C1 to Q0
     SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(_Constant(0));
   }
@@ -839,12 +858,16 @@ void OpDispatchBuilder::X87BinaryOp(OpcodeArgs) {
   _StoreContextIndexed(result, top, 16, MMBaseOffset(), 16, FPRClass);
 }
 
+template<FEXCore::IR::IROps IROp>
+void OpDispatchBuilder::X87BinaryOp(OpcodeArgs) {
+  X87BinaryOp(Op, IROp);
+}
+
 template void OpDispatchBuilder::X87BinaryOp<IR::OP_F80FPREM1>(OpcodeArgs);
 template void OpDispatchBuilder::X87BinaryOp<IR::OP_F80FPREM>(OpcodeArgs);
 template void OpDispatchBuilder::X87BinaryOp<IR::OP_F80SCALE>(OpcodeArgs);
 
-template<bool Inc>
-void OpDispatchBuilder::X87ModifySTP(OpcodeArgs) {
+void OpDispatchBuilder::X87ModifySTP(OpcodeArgs, bool Inc) {
   auto orig_top = GetX87Top();
   if (Inc) {
     auto top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, orig_top, _Constant(1)), _Constant(7));
@@ -853,6 +876,11 @@ void OpDispatchBuilder::X87ModifySTP(OpcodeArgs) {
     auto top = _And(OpSize::i32Bit, _Sub(OpSize::i32Bit, orig_top, _Constant(1)), _Constant(7));
     SetX87Top(top);
   }
+}
+
+template<bool Inc>
+void OpDispatchBuilder::X87ModifySTP(OpcodeArgs) {
+  X87ModifySTP(Op, Inc);
 }
 
 template void OpDispatchBuilder::X87ModifySTP<false>(OpcodeArgs);
