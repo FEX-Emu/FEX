@@ -80,6 +80,45 @@ struct JITSymbolBuffer {
 };
 static_assert(sizeof(JITSymbolBuffer) == 4096, "Ensure this is one page in size");
 
+// Special-purpose replacement for std::unique_ptr to allow InternalThreadState to be standard layout.
+// Since a NonMovableUniquePtr is neither copyable nor movable, its only function is to own and release the contained object.
+template<typename T>
+struct NonMovableUniquePtr {
+  NonMovableUniquePtr() noexcept = default;
+  NonMovableUniquePtr(const NonMovableUniquePtr&) = delete;
+  NonMovableUniquePtr& operator=(const NonMovableUniquePtr& UPtr) = delete;
+
+  NonMovableUniquePtr& operator=(fextl::unique_ptr<T> UPtr) noexcept {
+    Ptr = UPtr.release();
+    return *this;
+  }
+
+  ~NonMovableUniquePtr() {
+    fextl::default_delete<T> {}(Ptr);
+  }
+
+  T* operator->() const noexcept {
+    return Ptr;
+  }
+
+  std::add_lvalue_reference_t<T> operator*() const noexcept {
+    return *Ptr;
+  }
+
+  T* get() const noexcept {
+    return Ptr;
+  }
+
+  operator bool() const noexcept {
+    return Ptr != nullptr;
+  }
+
+private:
+  T* Ptr = nullptr;
+};
+static_assert(!std::is_move_constructible_v<NonMovableUniquePtr<int>>);
+static_assert(!std::is_move_assignable_v<NonMovableUniquePtr<int>>);
+
 struct InternalThreadState : public FEXCore::Allocator::FEXAllocOperators {
   FEXCore::Core::CpuStateFrame* const CurrentFrame = &BaseFrameState;
 
@@ -93,20 +132,20 @@ struct InternalThreadState : public FEXCore::Allocator::FEXAllocOperators {
   FEXCore::Context::Context* CTX;
   std::atomic<SignalEvent> SignalReason {SignalEvent::Nothing};
 
-  fextl::unique_ptr<FEXCore::Threads::Thread> ExecutionThread;
+  NonMovableUniquePtr<FEXCore::Threads::Thread> ExecutionThread;
   bool StartPaused {false};
   InterruptableConditionVariable StartRunning;
   Event ThreadWaiting;
 
-  fextl::unique_ptr<FEXCore::IR::OpDispatchBuilder> OpDispatcher;
+  NonMovableUniquePtr<FEXCore::IR::OpDispatchBuilder> OpDispatcher;
 
-  fextl::unique_ptr<FEXCore::CPU::CPUBackend> CPUBackend;
-  fextl::unique_ptr<FEXCore::LookupCache> LookupCache;
+  NonMovableUniquePtr<FEXCore::CPU::CPUBackend> CPUBackend;
+  NonMovableUniquePtr<FEXCore::LookupCache> LookupCache;
 
-  fextl::unique_ptr<FEXCore::Frontend::Decoder> FrontendDecoder;
-  fextl::unique_ptr<FEXCore::IR::PassManager> PassManager;
+  NonMovableUniquePtr<FEXCore::Frontend::Decoder> FrontendDecoder;
+  NonMovableUniquePtr<FEXCore::IR::PassManager> PassManager;
   FEXCore::HLE::ThreadManagement ThreadManager;
-  fextl::unique_ptr<JITSymbolBuffer> SymbolBuffer;
+  NonMovableUniquePtr<JITSymbolBuffer> SymbolBuffer;
 
   int StatusCode {};
   FEXCore::Context::ExitReason ExitReason {FEXCore::Context::ExitReason::EXIT_WAITING};
@@ -134,8 +173,9 @@ struct InternalThreadState : public FEXCore::Allocator::FEXAllocOperators {
   // Can be reprotected as RO to trigger an interrupt at generated code block entrypoints
   alignas(FEXCore::Utils::FEX_PAGE_SIZE) uint8_t InterruptFaultPage[FEXCore::Utils::FEX_PAGE_SIZE];
 };
+static_assert(std::is_standard_layout_v<FEXCore::Core::InternalThreadState>);
 static_assert(
   (offsetof(FEXCore::Core::InternalThreadState, InterruptFaultPage) - offsetof(FEXCore::Core::InternalThreadState, BaseFrameState)) < 4096,
   "Fault page is outside of immediate range from CPU state");
-// static_assert(std::is_standard_layout<InternalThreadState>::value, "This needs to be standard layout");
+
 } // namespace FEXCore::Core
