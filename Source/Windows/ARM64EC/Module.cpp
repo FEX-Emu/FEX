@@ -111,8 +111,8 @@ bool IsDispatcherAddress(uint64_t Address) {
   return Address >= Config.DispatcherBegin && Address < Config.DispatcherEnd;
 }
 
-// GetProcAddress on ARM64EC returns a pointer to an x64 fast forward sequence to allow for redirecting to the JIT if functions are hotpatched.
-// This looks up the procedure address of the native code even if the fast forward sequence has been patched.
+// GetProcAddress on ARM64EC returns a pointer to an x64 fast forward sequence to allow for redirecting to the JIT if functions are
+// hotpatched. This looks up the procedure address of the native code even if the fast forward sequence has been patched.
 uintptr_t GetRedirectedProcAddress(HMODULE Module, const char* ProcName) {
   const uintptr_t Proc = reinterpret_cast<uintptr_t>(GetProcAddress(Module, ProcName));
   if (!Proc) {
@@ -138,6 +138,7 @@ uintptr_t GetRedirectedProcAddress(HMODULE Module, const char* ProcName) {
 
 namespace Exception {
 static std::optional<FEX::Windows::TSOHandlerConfig> HandlerConfig;
+static uintptr_t KiUserExceptionDispatcher;
 
 static bool HandleUnalignedAccess(ARM64_NT_CONTEXT& Context) {
   if (!CTX->IsAddressInCodeBuffer(GetCPUArea().ThreadState(), Context.Pc)) {
@@ -206,6 +207,101 @@ static void LoadStateFromECContext(FEXCore::Core::InternalThreadState* Thread, C
   State.flags[FEXCore::X86State::X87FLAG_C3_LOC] = (Context.FltSave.StatusWord >> 14) & 1;
   State.flags[FEXCore::X86State::X87FLAG_TOP_LOC] = (Context.FltSave.StatusWord >> 11) & 0b111;
   State.AbridgedFTW = Context.FltSave.TagWord;
+}
+
+static void ReconstructThreadState(ARM64_NT_CONTEXT& Context) {
+  const auto& Config = SignalDelegator->GetConfig();
+  auto* Thread = GetCPUArea().ThreadState();
+  auto& State = Thread->CurrentFrame->State;
+
+  State.rip = CTX->RestoreRIPFromHostPC(Thread, Context.Pc);
+
+  // Spill all SRA GPRs
+  for (size_t i = 0; i < Config.SRAGPRCount; i++) {
+    State.gregs[i] = Context.X[Config.SRAGPRMapping[i]];
+  }
+
+  // Spill all SRA FPRs
+  for (size_t i = 0; i < Config.SRAFPRCount; i++) {
+    memcpy(State.xmm.sse.data[i], &Context.V[Config.SRAFPRMapping[i]], sizeof(__uint128_t));
+  }
+}
+
+// Reconstructs an x64 context from the input context within the JIT, packed into a regular ARM64 context following the ARM64EC register mapping
+static ARM64_NT_CONTEXT ReconstructPackedECContext(ARM64_NT_CONTEXT& Context) {
+  ReconstructThreadState(Context);
+  ARM64_NT_CONTEXT ECContext {};
+
+  ECContext.ContextFlags = CONTEXT_ARM64_CONTROL | CONTEXT_ARM64_INTEGER | CONTEXT_ARM64_FLOATING_POINT;
+
+  auto* Thread = GetCPUArea().ThreadState();
+  auto& State = Thread->CurrentFrame->State;
+
+  ECContext.X8 = State.gregs[FEXCore::X86State::REG_RAX];
+  ECContext.X0 = State.gregs[FEXCore::X86State::REG_RCX];
+  ECContext.X1 = State.gregs[FEXCore::X86State::REG_RDX];
+  ECContext.X27 = State.gregs[FEXCore::X86State::REG_RBX];
+  ECContext.Sp = State.gregs[FEXCore::X86State::REG_RSP];
+  ECContext.Fp = State.gregs[FEXCore::X86State::REG_RBP];
+  ECContext.X25 = State.gregs[FEXCore::X86State::REG_RSI];
+  ECContext.X26 = State.gregs[FEXCore::X86State::REG_RDI];
+  ECContext.X2 = State.gregs[FEXCore::X86State::REG_R8];
+  ECContext.X3 = State.gregs[FEXCore::X86State::REG_R9];
+  ECContext.X4 = State.gregs[FEXCore::X86State::REG_R10];
+  ECContext.X5 = State.gregs[FEXCore::X86State::REG_R11];
+  ECContext.X19 = State.gregs[FEXCore::X86State::REG_R12];
+  ECContext.X20 = State.gregs[FEXCore::X86State::REG_R13];
+  ECContext.X21 = State.gregs[FEXCore::X86State::REG_R14];
+  ECContext.X22 = State.gregs[FEXCore::X86State::REG_R15];
+
+  ECContext.Pc = State.rip;
+
+  CTX->ReconstructXMMRegisters(Thread, reinterpret_cast<__uint128_t*>(&ECContext.V[0]), nullptr);
+
+  ECContext.Lr = State.mm[0][0];
+  ECContext.X6 = State.mm[1][0];
+  ECContext.X7 = State.mm[2][0];
+  ECContext.X9 = State.mm[3][0];
+  ECContext.X16 = (State.mm[3][1] & 0xffff) << 48 | (State.mm[2][1] & 0xffff) << 32 | (State.mm[1][1] & 0xffff) << 16 | (State.mm[0][1] & 0xffff);
+  ECContext.X10 = State.mm[4][0];
+  ECContext.X11 = State.mm[5][0];
+  ECContext.X12 = State.mm[6][0];
+  ECContext.X15 = State.mm[7][0];
+  ECContext.X17 = (State.mm[7][1] & 0xffff) << 48 | (State.mm[6][1] & 0xffff) << 32 | (State.mm[5][1] & 0xffff) << 16 | (State.mm[4][1] & 0xffff);
+
+  // Zero all disallowed registers
+  ECContext.X13 = 0;
+  ECContext.X14 = 0;
+  ECContext.X18 = 0;
+  ECContext.X23 = 0;
+  ECContext.X24 = 0;
+  ECContext.X28 = 0;
+
+  // NZCV will be converted into EFlags by ntdll, the rest are lost during exception handling.
+  // See HandleGuestException
+  ECContext.Cpsr = Context.Cpsr;
+  ECContext.Fpcr = Context.Fpcr;
+  ECContext.Fpsr = Context.Fpsr;
+
+  return ECContext;
+}
+
+static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT& Context) {
+  const auto& Config = SignalDelegator->GetConfig();
+  uint64_t GuestSp = Context.X[Config.SRAGPRMapping[static_cast<size_t>(FEXCore::X86State::REG_RSP)]];
+  struct DispatchArgs {
+    ARM64_NT_CONTEXT Context;
+    EXCEPTION_RECORD Rec;
+    uint64_t Align;
+    uint64_t Redzone[2];
+  }* Args = reinterpret_cast<DispatchArgs*>(FEXCore::AlignDown(GuestSp, 64)) - 1;
+
+  LogMan::Msg::DFmt("Reconstructing context");
+  Args->Context = ReconstructPackedECContext(Context);
+  LogMan::Msg::DFmt("pc: {:X} rip: {:X}", Context.Pc, Args->Context.Pc);
+  Args->Rec = *Ptrs->ExceptionRecord;
+  Context.Sp = reinterpret_cast<uint64_t>(Args);
+  Context.Pc = KiUserExceptionDispatcher;
 }
 } // namespace Exception
 
@@ -283,6 +379,8 @@ void ProcessInit() {
 
   X64ReturnInstr = ::VirtualAlloc(nullptr, FEXCore::Utils::FEX_PAGE_SIZE, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
   *reinterpret_cast<uint8_t*>(X64ReturnInstr) = 0xc3;
+
+  Exception::KiUserExceptionDispatcher = GetRedirectedProcAddress(GetModuleHandle("ntdll.dll"), "KiUserExceptionDispatcher");
 }
 
 void ProcessTerm() {}
@@ -331,9 +429,16 @@ NTSTATUS ResetToConsistentState(EXCEPTION_POINTERS* Ptrs, ARM64_NT_CONTEXT* Cont
     return STATUS_SUCCESS;
   }
 
-  LogMan::Msg::EFmt("Exception rethrow is unimplemented");
 
-  return STATUS_SUCCESS;
+  if (IsEmulatorStackAddress(reinterpret_cast<uint64_t>(__builtin_frame_address(0)))) {
+    Exception::RethrowGuestException(*Exception, *Context);
+    LogMan::Msg::DFmt("Rethrowing onto guest stack: {:X}", Context->Sp);
+    *Continue = true;
+    return STATUS_SUCCESS;
+  } else {
+    LogMan::Msg::EFmt("Unexpected exception in JIT code on guest stack");
+    return STATUS_SUCCESS;
+  }
 }
 
 void NotifyMemoryAlloc(void* Address, SIZE_T Size, ULONG Type, ULONG Prot) {
