@@ -964,7 +964,7 @@
         "Map 2 0b01 0x2a 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x4]"
+        "ldnt1b {z16.b}, p6/z, [x4]"
       ]
     },
     "vmovntdqa ymm0, [rax]": {
@@ -973,7 +973,7 @@
         "Map 2 0b01 0x2a 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ld1b {z16.b}, p7/z, [x4]"
+        "ldnt1b {z16.b}, p7/z, [x4]"
       ]
     },
     "vpackusdw xmm0, xmm1, xmm2": {
