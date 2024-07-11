@@ -15,7 +15,7 @@ EXPORTS
   NotifyUnmapViewOfSection
   ProcessInit
   ProcessTerm
-;  ResetToConsistentState
+  ResetToConsistentState
   ThreadInit
   ThreadTerm
   UpdateProcessorInformation

@@ -26,6 +26,7 @@ $end_info$
 
 #include "Common/Config.h"
 #include "Common/InvalidationTracker.h"
+#include "Common/TSOHandlerConfig.h"
 #include "Common/CPUFeatures.h"
 #include "DummyHandlers.h"
 #include "BTInterface.h"
@@ -100,7 +101,34 @@ ThreadCPUArea GetCPUArea() {
   return ThreadCPUArea(NtCurrentTeb());
 }
 
+bool IsEmulatorStackAddress(uint64_t Address) {
+  return Address <= GetCPUArea().EmulatorStackBase() && Address >= GetCPUArea().EmulatorStackLimit();
+}
+
+bool IsDispatcherAddress(uint64_t Address) {
+  const auto& Config = SignalDelegator->GetConfig();
+  return Address >= Config.DispatcherBegin && Address < Config.DispatcherEnd;
+}
 } // namespace
+
+namespace Exception {
+static std::optional<FEX::Windows::TSOHandlerConfig> HandlerConfig;
+
+static bool HandleUnalignedAccess(ARM64_NT_CONTEXT& Context) {
+  if (!CTX->IsAddressInCodeBuffer(GetCPUArea().ThreadState(), Context.Pc)) {
+    return false;
+  }
+
+  const auto Result = FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(GetCPUArea().ThreadState(),
+                                                                         HandlerConfig->GetUnalignedHandlerType(), Context.Pc, &Context.X0);
+  if (!Result.first) {
+    return false;
+  }
+
+  Context.Pc += Result.second;
+  return true;
+}
+} // namespace Exception
 
 namespace Logging {
 static void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
@@ -160,6 +188,7 @@ void ProcessInit() {
 
   SignalDelegator = fextl::make_unique<FEX::DummyHandlers::DummySignalDelegator>();
   SyscallHandler = fextl::make_unique<ECSyscallHandler>();
+  Exception::HandlerConfig.emplace();
 
   CTX = FEXCore::Context::Context::CreateNewContext();
   CTX->SetSignalDelegator(SignalDelegator.get());
@@ -173,6 +202,39 @@ void ProcessInit() {
 }
 
 void ProcessTerm() {}
+
+class ScopedCallbackDisable {
+private:
+  bool Prev;
+
+public:
+  ScopedCallbackDisable() {
+    Prev = GetCPUArea().Area->InSyscallCallback;
+    GetCPUArea().Area->InSyscallCallback = true;
+  }
+
+  ~ScopedCallbackDisable() {
+    GetCPUArea().Area->InSyscallCallback = Prev;
+  }
+};
+
+NTSTATUS ResetToConsistentState(EXCEPTION_POINTERS* Ptrs, ARM64_NT_CONTEXT* Context, BOOLEAN* Continue) {
+  ScopedCallbackDisable Guard;
+  const auto* Exception = Ptrs->ExceptionRecord;
+  if (Exception->ExceptionCode == EXCEPTION_DATATYPE_MISALIGNMENT && Exception::HandleUnalignedAccess(*Context)) {
+    LogMan::Msg::DFmt("Handled unaligned atomic: new pc: {:X}", Context->Pc);
+    *Continue = true;
+    return STATUS_SUCCESS;
+  }
+
+  if (!CTX->IsAddressInCodeBuffer(GetCPUArea().ThreadState(), Context->Pc) && !IsDispatcherAddress(Context->Pc)) {
+    return STATUS_SUCCESS;
+  }
+
+  LogMan::Msg::EFmt("Exception rethrow is unimplemented");
+
+  return STATUS_SUCCESS;
+}
 
 void NotifyMemoryAlloc(void* Address, SIZE_T Size, ULONG Type, ULONG Prot) {
   if (!InvalidationTracker || !GetCPUArea().ThreadState()) {
