@@ -37,6 +37,15 @@ enter_jit:
   ldr x16, [x17, #0x40] // ChpeV2CpuAreaInfo->EmulatorData[2] - DispatcherLoopTopEnterEC
   br x16 // DispatcherLoopTopEnterEC(RIP:x9, CPUArea:x17)
 
+  // Invoked by KiUserEmulationDispatcher after e.g. an NtContinue to x86 code
+  // Expects a CONTEXT pointer in x0
+.global BeginSimulation
+BeginSimulation:
+  bl "#SyncThreadContext"
+  ldr x17, [x18, #0x1788] // TEB->ChpeV2CpuAreaInfo
+  ldr x16, [x17, #0x48] // ChpeV2CpuAreaInfo->EmulatorData[3] - DispatcherLoopTopEnterECFillSRA
+  br x16 // DispatcherLoopTopEnterECFillSRA(CPUArea:x17)
+
   // Called into by FEXCore
   // Expects the target code address in x9
 .global ExitFunctionEC
