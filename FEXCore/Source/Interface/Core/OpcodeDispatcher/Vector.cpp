@@ -238,7 +238,7 @@ void OpDispatchBuilder::VMOVSSOp(OpcodeArgs) {
   VMOVScalarOpImpl(Op, 4);
 }
 
-void OpDispatchBuilder::VectorALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize) {
+void OpDispatchBuilder::VectorALUOp(OpcodeArgs, IROps IROp, size_t ElementSize) {
   const auto Size = GetSrcSize(Op);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
@@ -246,11 +246,6 @@ void OpDispatchBuilder::VectorALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSi
   DeriveOp(ALUOp, IROp, _VAdd(Size, ElementSize, Dest, Src));
 
   StoreResult(FPRClass, Op, ALUOp, -1);
-}
-
-template<IROps IROp, size_t ElementSize>
-void OpDispatchBuilder::VectorALUOp(OpcodeArgs) {
-  VectorALUOpImpl(Op, IROp, ElementSize);
 }
 
 void OpDispatchBuilder::VectorXOROp(OpcodeArgs) {
@@ -264,74 +259,10 @@ void OpDispatchBuilder::VectorXOROp(OpcodeArgs) {
   }
 
   ///< Regular code path
-  VectorALUOpImpl(Op, OP_VXOR, Size);
+  VectorALUOp(Op, OP_VXOR, Size);
 }
 
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VAND, 8>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VAND, 16>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VOR, 8>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VOR, 16>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 1>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 2>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 4>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 8>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VADDP, 2>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VADDP, 4>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VSUB, 1>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VSUB, 2>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VSUB, 4>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VSUB, 8>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VFADD, 4>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VFADD, 8>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VFADDP, 4>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VFADDP, 8>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VFSUB, 4>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VFSUB, 8>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VFMUL, 4>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VFMUL, 8>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VFDIV, 4>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VFDIV, 8>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VFMIN, 4>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VFMIN, 8>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VFMAX, 4>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VFMAX, 8>(OpcodeArgs);
-
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VCMPGT, 1>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VCMPGT, 2>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VCMPGT, 4>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VCMPGT, 8>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VCMPEQ, 1>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VCMPEQ, 2>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VCMPEQ, 4>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VCMPEQ, 8>(OpcodeArgs);
-
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VMUL, 2>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VMUL, 4>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VSMIN, 1>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VSMIN, 2>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VSMIN, 4>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VSMAX, 1>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VSMAX, 2>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VSMAX, 4>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VSQADD, 1>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VSQADD, 2>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VSQSUB, 1>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VSQSUB, 2>(OpcodeArgs);
-
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VUMIN, 1>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VUMIN, 2>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VUMIN, 4>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VUMAX, 1>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VUMAX, 2>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VUMAX, 4>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VURAVG, 1>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VURAVG, 2>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VUQADD, 1>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VUQADD, 2>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VUQSUB, 1>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUOp<IR::OP_VUQSUB, 2>(OpcodeArgs);
-
-void OpDispatchBuilder::AVXVectorALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize) {
+void OpDispatchBuilder::AVXVectorALUOp(OpcodeArgs, IROps IROp, size_t ElementSize) {
   const auto Size = GetSrcSize(Op);
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
@@ -340,11 +271,6 @@ void OpDispatchBuilder::AVXVectorALUOpImpl(OpcodeArgs, IROps IROp, size_t Elemen
   DeriveOp(ALUOp, IROp, _VAdd(Size, ElementSize, Src1, Src2));
 
   StoreResult(FPRClass, Op, ALUOp, -1);
-}
-
-template<IROps IROp, size_t ElementSize>
-void OpDispatchBuilder::AVXVectorALUOp(OpcodeArgs) {
-  AVXVectorALUOpImpl(Op, IROp, ElementSize);
 }
 
 void OpDispatchBuilder::AVXVectorXOROp(OpcodeArgs) {
@@ -357,72 +283,10 @@ void OpDispatchBuilder::AVXVectorXOROp(OpcodeArgs) {
   }
 
   ///< Regular code path
-  AVXVectorALUOpImpl(Op, OP_VXOR, OpSize::i128Bit);
+  AVXVectorALUOp(Op, OP_VXOR, OpSize::i128Bit);
 }
 
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VADD, 1>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VADD, 2>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VADD, 4>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VADD, 8>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSQADD, 1>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSQADD, 2>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUQADD, 1>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUQADD, 2>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSUB, 1>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSUB, 2>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSUB, 4>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSUB, 8>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSQSUB, 1>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSQSUB, 2>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUQSUB, 1>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUQSUB, 2>(OpcodeArgs);
-
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VCMPEQ, 1>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VCMPEQ, 2>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VCMPEQ, 4>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VCMPEQ, 8>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VCMPGT, 1>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VCMPGT, 2>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VCMPGT, 4>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VCMPGT, 8>(OpcodeArgs);
-
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFADD, 4>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFADD, 8>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFDIV, 4>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFDIV, 8>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFMAX, 4>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFMAX, 8>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFMIN, 4>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFMIN, 8>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFMUL, 4>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFMUL, 8>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFSUB, 4>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFSUB, 8>(OpcodeArgs);
-
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VAND, 16>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VOR, 16>(OpcodeArgs);
-
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VURAVG, 1>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VURAVG, 2>(OpcodeArgs);
-
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMAX, 1>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMAX, 2>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMAX, 4>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUMAX, 1>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUMAX, 2>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUMAX, 4>(OpcodeArgs);
-
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMIN, 1>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMIN, 2>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMIN, 4>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUMIN, 1>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUMIN, 2>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUMIN, 4>(OpcodeArgs);
-
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VMUL, 2>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorALUOp<IR::OP_VMUL, 4>(OpcodeArgs);
-
-void OpDispatchBuilder::VectorALUROpImpl(OpcodeArgs, IROps IROp, size_t ElementSize) {
+void OpDispatchBuilder::VectorALUROp(OpcodeArgs, IROps IROp, size_t ElementSize) {
   const auto Size = GetSrcSize(Op);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
@@ -431,15 +295,6 @@ void OpDispatchBuilder::VectorALUROpImpl(OpcodeArgs, IROps IROp, size_t ElementS
 
   StoreResult(FPRClass, Op, ALUOp, -1);
 }
-
-template<IROps IROp, size_t ElementSize>
-void OpDispatchBuilder::VectorALUROp(OpcodeArgs) {
-  VectorALUROpImpl(Op, IROp, ElementSize);
-}
-
-template void OpDispatchBuilder::VectorALUROp<IR::OP_VANDN, 8>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUROp<IR::OP_VFSUB, 4>(OpcodeArgs);
-template void OpDispatchBuilder::VectorALUROp<IR::OP_VFSUB, 8>(OpcodeArgs);
 
 Ref OpDispatchBuilder::VectorScalarInsertALUOpImpl(OpcodeArgs, IROps IROp, size_t DstSize, size_t ElementSize,
                                                    const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
@@ -766,7 +621,7 @@ void OpDispatchBuilder::AVXInsertScalarFCMPOp(OpcodeArgs) {
 template void OpDispatchBuilder::AVXInsertScalarFCMPOp<4>(OpcodeArgs);
 template void OpDispatchBuilder::AVXInsertScalarFCMPOp<8>(OpcodeArgs);
 
-void OpDispatchBuilder::VectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize) {
+void OpDispatchBuilder::VectorUnaryOp(OpcodeArgs, IROps IROp, size_t ElementSize) {
   // In the event of a scalar operation and a vector source, then
   // we can specify the entire vector length in order to avoid
   // unnecessary sign extension on the element to be operated on.
@@ -781,22 +636,7 @@ void OpDispatchBuilder::VectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t Element
   StoreResult(FPRClass, Op, ALUOp, -1);
 }
 
-template<IROps IROp, size_t ElementSize>
-void OpDispatchBuilder::VectorUnaryOp(OpcodeArgs) {
-  VectorUnaryOpImpl(Op, IROp, ElementSize);
-}
-
-template void OpDispatchBuilder::VectorUnaryOp<IR::OP_VFSQRT, 4>(OpcodeArgs);
-template void OpDispatchBuilder::VectorUnaryOp<IR::OP_VFRSQRT, 4>(OpcodeArgs);
-template void OpDispatchBuilder::VectorUnaryOp<IR::OP_VFRECP, 4>(OpcodeArgs);
-
-template void OpDispatchBuilder::VectorUnaryOp<IR::OP_VFSQRT, 8>(OpcodeArgs);
-
-template void OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 1>(OpcodeArgs);
-template void OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 2>(OpcodeArgs);
-template void OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 4>(OpcodeArgs);
-
-void OpDispatchBuilder::AVXVectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize) {
+void OpDispatchBuilder::AVXVectorUnaryOp(OpcodeArgs, IROps IROp, size_t ElementSize) {
   // In the event of a scalar operation and a vector source, then
   // we can specify the entire vector length in order to avoid
   // unnecessary sign extension on the element to be operated on.
@@ -815,20 +655,6 @@ void OpDispatchBuilder::AVXVectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t Elem
 
   StoreResult(FPRClass, Op, ALUOp, -1);
 }
-
-template<IROps IROp, size_t ElementSize>
-void OpDispatchBuilder::AVXVectorUnaryOp(OpcodeArgs) {
-  AVXVectorUnaryOpImpl(Op, IROp, ElementSize);
-}
-
-template void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VABS, 1>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VABS, 2>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VABS, 4>(OpcodeArgs);
-
-template void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFRECP, 4>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFSQRT, 4>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFSQRT, 8>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFRSQRT, 4>(OpcodeArgs);
 
 void OpDispatchBuilder::VectorUnaryDuplicateOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize) {
   const auto Size = GetSrcSize(Op);
@@ -2359,7 +2185,7 @@ void OpDispatchBuilder::AVXScalar_CVT_Float_To_Float(OpcodeArgs) {
 template void OpDispatchBuilder::AVXScalar_CVT_Float_To_Float<4, 8>(OpcodeArgs);
 template void OpDispatchBuilder::AVXScalar_CVT_Float_To_Float<8, 4>(OpcodeArgs);
 
-void OpDispatchBuilder::Vector_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize, bool IsAVX) {
+void OpDispatchBuilder::Vector_CVT_Float_To_Float(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize, bool IsAVX) {
   const auto SrcSize = GetSrcSize(Op);
 
   const auto IsFloatSrc = SrcElementSize == 4;
@@ -2387,20 +2213,6 @@ void OpDispatchBuilder::Vector_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstElem
   }
   StoreResult(FPRClass, Op, Result, -1);
 }
-
-template<size_t DstElementSize, size_t SrcElementSize>
-void OpDispatchBuilder::Vector_CVT_Float_To_Float(OpcodeArgs) {
-  Vector_CVT_Float_To_FloatImpl(Op, DstElementSize, SrcElementSize, false);
-}
-template void OpDispatchBuilder::Vector_CVT_Float_To_Float<4, 8>(OpcodeArgs);
-template void OpDispatchBuilder::Vector_CVT_Float_To_Float<8, 4>(OpcodeArgs);
-
-template<size_t DstElementSize, size_t SrcElementSize>
-void OpDispatchBuilder::AVXVector_CVT_Float_To_Float(OpcodeArgs) {
-  Vector_CVT_Float_To_FloatImpl(Op, DstElementSize, SrcElementSize, true);
-}
-template void OpDispatchBuilder::AVXVector_CVT_Float_To_Float<4, 8>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVector_CVT_Float_To_Float<8, 4>(OpcodeArgs);
 
 void OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs) {
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
@@ -5093,72 +4905,6 @@ void OpDispatchBuilder::VFMAddSubImpl(OpcodeArgs, bool AddSub, uint8_t Src1Idx, 
   }
   StoreResult(FPRClass, Op, Result, -1);
 }
-
-template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
-void OpDispatchBuilder::VFMADD(OpcodeArgs) {
-  VFMAImpl(Op, OP_VFMLA, Scalar, Src1Idx, Src2Idx, AddendIdx);
-}
-
-template void OpDispatchBuilder::VFMADD<false, 1, 3, 2>(OpcodeArgs);
-template void OpDispatchBuilder::VFMADD<false, 2, 1, 3>(OpcodeArgs);
-template void OpDispatchBuilder::VFMADD<false, 2, 3, 1>(OpcodeArgs);
-template void OpDispatchBuilder::VFMADD<true, 1, 3, 2>(OpcodeArgs);
-template void OpDispatchBuilder::VFMADD<true, 2, 1, 3>(OpcodeArgs);
-template void OpDispatchBuilder::VFMADD<true, 2, 3, 1>(OpcodeArgs);
-
-template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
-void OpDispatchBuilder::VFMSUB(OpcodeArgs) {
-  VFMAImpl(Op, OP_VFMLS, Scalar, Src1Idx, Src2Idx, AddendIdx);
-}
-
-template void OpDispatchBuilder::VFMSUB<false, 1, 3, 2>(OpcodeArgs);
-template void OpDispatchBuilder::VFMSUB<false, 2, 1, 3>(OpcodeArgs);
-template void OpDispatchBuilder::VFMSUB<false, 2, 3, 1>(OpcodeArgs);
-template void OpDispatchBuilder::VFMSUB<true, 1, 3, 2>(OpcodeArgs);
-template void OpDispatchBuilder::VFMSUB<true, 2, 1, 3>(OpcodeArgs);
-template void OpDispatchBuilder::VFMSUB<true, 2, 3, 1>(OpcodeArgs);
-
-template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
-void OpDispatchBuilder::VFNMADD(OpcodeArgs) {
-  VFMAImpl(Op, OP_VFNMLA, Scalar, Src1Idx, Src2Idx, AddendIdx);
-}
-
-template void OpDispatchBuilder::VFNMADD<false, 1, 3, 2>(OpcodeArgs);
-template void OpDispatchBuilder::VFNMADD<false, 2, 1, 3>(OpcodeArgs);
-template void OpDispatchBuilder::VFNMADD<false, 2, 3, 1>(OpcodeArgs);
-template void OpDispatchBuilder::VFNMADD<true, 1, 3, 2>(OpcodeArgs);
-template void OpDispatchBuilder::VFNMADD<true, 2, 1, 3>(OpcodeArgs);
-template void OpDispatchBuilder::VFNMADD<true, 2, 3, 1>(OpcodeArgs);
-
-template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
-void OpDispatchBuilder::VFNMSUB(OpcodeArgs) {
-  VFMAImpl(Op, OP_VFNMLS, Scalar, Src1Idx, Src2Idx, AddendIdx);
-}
-
-template void OpDispatchBuilder::VFNMSUB<false, 1, 3, 2>(OpcodeArgs);
-template void OpDispatchBuilder::VFNMSUB<false, 2, 1, 3>(OpcodeArgs);
-template void OpDispatchBuilder::VFNMSUB<false, 2, 3, 1>(OpcodeArgs);
-template void OpDispatchBuilder::VFNMSUB<true, 1, 3, 2>(OpcodeArgs);
-template void OpDispatchBuilder::VFNMSUB<true, 2, 1, 3>(OpcodeArgs);
-template void OpDispatchBuilder::VFNMSUB<true, 2, 3, 1>(OpcodeArgs);
-
-template<uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
-void OpDispatchBuilder::VFMADDSUB(OpcodeArgs) {
-  VFMAddSubImpl(Op, true, Src1Idx, Src2Idx, AddendIdx);
-}
-
-template void OpDispatchBuilder::VFMADDSUB<1, 3, 2>(OpcodeArgs);
-template void OpDispatchBuilder::VFMADDSUB<2, 1, 3>(OpcodeArgs);
-template void OpDispatchBuilder::VFMADDSUB<2, 3, 1>(OpcodeArgs);
-
-template<uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
-void OpDispatchBuilder::VFMSUBADD(OpcodeArgs) {
-  VFMAddSubImpl(Op, false, Src1Idx, Src2Idx, AddendIdx);
-}
-
-template void OpDispatchBuilder::VFMSUBADD<1, 3, 2>(OpcodeArgs);
-template void OpDispatchBuilder::VFMSUBADD<2, 1, 3>(OpcodeArgs);
-template void OpDispatchBuilder::VFMSUBADD<2, 3, 1>(OpcodeArgs);
 
 OpDispatchBuilder::RefVSIB OpDispatchBuilder::LoadVSIB(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags) {
   [[maybe_unused]] const bool IsVSIB = (Op->Flags & X86Tables::DecodeFlags::FLAG_VSIB_BYTE) != 0;
