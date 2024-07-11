@@ -717,59 +717,74 @@ DEF_OP(PDep) {
 
   const auto Dest = GetReg(Node);
 
-  // PDep implementation follows the ideas from
-  // http://0x80.pl/articles/pdep-soft-emu.html ... Basically, iterate the *set*
-  // bits only, which will be faster than the naive implementation as long as
-  // there are enough holes in the mask.
-  //
-  // The specific arm64 assembly used is based on the sequence that clang
-  // generates for the C code, giving context to the scheduling yielding better
-  // ILP than I would do by hand. The registers are allocated by hand however,
-  // to fit within the tight constraints we have here withot spilling. Also, we
-  // use cbz/cbnz for conditional branching to avoid clobbering NZCV.
-
   // We can't clobber these
   const auto OrigInput = GetReg(Op->Input.ID());
   const auto OrigMask = GetReg(Op->Mask.ID());
 
-  // So we have shadow as temporaries
-  const auto Input = TMP1.R();
-  const auto Mask = TMP2.R();
+  if (CTX->HostFeatures.SupportsSVEBitPerm) {
+    // SVE added support for PDEP but it needs to be done in a vector register.
+    if (EmitSize == ARMEmitter::Size::i32Bit) {
+      fmov(ARMEmitter::Size::i32Bit, VTMP1.S(), OrigInput.W());
+      fmov(ARMEmitter::Size::i32Bit, VTMP2.S(), OrigMask.W());
+      bdep(ARMEmitter::SubRegSize::i32Bit, VTMP1.Z(), VTMP1.Z(), VTMP2.Z());
+      umov<ARMEmitter::SubRegSize::i32Bit>(Dest, VTMP1, 0);
+    } else {
+      fmov(ARMEmitter::Size::i64Bit, VTMP1.D(), OrigInput.X());
+      fmov(ARMEmitter::Size::i64Bit, VTMP2.D(), OrigMask.X());
+      bdep(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), VTMP1.Z(), VTMP2.Z());
+      umov<ARMEmitter::SubRegSize::i64Bit>(Dest, VTMP1, 0);
+    }
+  } else {
+    // PDep implementation follows the ideas from
+    // http://0x80.pl/articles/pdep-soft-emu.html ... Basically, iterate the *set*
+    // bits only, which will be faster than the naive implementation as long as
+    // there are enough holes in the mask.
+    //
+    // The specific arm64 assembly used is based on the sequence that clang
+    // generates for the C code, giving context to the scheduling yielding better
+    // ILP than I would do by hand. The registers are allocated by hand however,
+    // to fit within the tight constraints we have here withot spilling. Also, we
+    // use cbz/cbnz for conditional branching to avoid clobbering NZCV.
 
-  // these get used variously as scratch
-  const auto T0 = TMP3.R();
-  const auto T1 = TMP4.R();
+    // So we have shadow as temporaries
+    const auto Input = TMP1.R();
+    const auto Mask = TMP2.R();
 
-  ARMEmitter::BackwardLabel NextBit;
-  ARMEmitter::SingleUseForwardLabel Done;
+    // these get used variously as scratch
+    const auto T0 = TMP3.R();
+    const auto T1 = TMP4.R();
 
-  // First, copy the input/mask, since we'll be clobbering. Copy as 64-bit to
-  // make this 0-uop on Firestorm.
-  mov(ARMEmitter::Size::i64Bit, Input, OrigInput);
-  mov(ARMEmitter::Size::i64Bit, Mask, OrigMask);
+    ARMEmitter::BackwardLabel NextBit;
+    ARMEmitter::SingleUseForwardLabel Done;
 
-  // Now, they're copied, so we can start setting Dest (even if it overlaps with
-  // one of them).  Handle early exit case
-  mov(EmitSize, Dest, 0);
-  cbz(EmitSize, OrigMask, &Done);
+    // First, copy the input/mask, since we'll be clobbering. Copy as 64-bit to
+    // make this 0-uop on Firestorm.
+    mov(ARMEmitter::Size::i64Bit, Input, OrigInput);
+    mov(ARMEmitter::Size::i64Bit, Mask, OrigMask);
 
-  // Setup for first iteration
-  neg(EmitSize, T0, Mask);
-  and_(EmitSize, T0, T0, Mask);
+    // Now, they're copied, so we can start setting Dest (even if it overlaps with
+    // one of them).  Handle early exit case
+    mov(EmitSize, Dest, 0);
+    cbz(EmitSize, OrigMask, &Done);
 
-  // Main loop
-  Bind(&NextBit);
-  sbfx(EmitSize, T1, Input, 0, 1);
-  eor(EmitSize, Mask, Mask, T0);
-  and_(EmitSize, T0, T1, T0);
-  neg(EmitSize, T1, Mask);
-  orr(EmitSize, Dest, Dest, T0);
-  lsr(EmitSize, Input, Input, 1);
-  and_(EmitSize, T0, Mask, T1);
-  cbnz(EmitSize, T0, &NextBit);
+    // Setup for first iteration
+    neg(EmitSize, T0, Mask);
+    and_(EmitSize, T0, T0, Mask);
 
-  // All done with nothing to do.
-  Bind(&Done);
+    // Main loop
+    Bind(&NextBit);
+    sbfx(EmitSize, T1, Input, 0, 1);
+    eor(EmitSize, Mask, Mask, T0);
+    and_(EmitSize, T0, T1, T0);
+    neg(EmitSize, T1, Mask);
+    orr(EmitSize, Dest, Dest, T0);
+    lsr(EmitSize, Input, Input, 1);
+    and_(EmitSize, T0, Mask, T1);
+    cbnz(EmitSize, T0, &NextBit);
+
+    // All done with nothing to do.
+    Bind(&Done);
+  }
 }
 
 DEF_OP(PExt) {
@@ -782,35 +797,50 @@ DEF_OP(PExt) {
   const auto Mask = GetReg(Op->Mask.ID());
   const auto Dest = GetReg(Node);
 
-  const auto MaskReg = TMP1;
-  const auto BitReg = TMP2;
-  const auto ValueReg = TMP3;
+  if (CTX->HostFeatures.SupportsSVEBitPerm) {
+    // SVE added support for PEXT but it needs to be done in a vector register.
+    if (EmitSize == ARMEmitter::Size::i32Bit) {
+      fmov(ARMEmitter::Size::i32Bit, VTMP1.S(), Input.W());
+      fmov(ARMEmitter::Size::i32Bit, VTMP2.S(), Mask.W());
+      bext(ARMEmitter::SubRegSize::i32Bit, VTMP1.Z(), VTMP1.Z(), VTMP2.Z());
+      umov<ARMEmitter::SubRegSize::i32Bit>(Dest, VTMP1, 0);
+    } else {
+      fmov(ARMEmitter::Size::i64Bit, VTMP1.D(), Input.X());
+      fmov(ARMEmitter::Size::i64Bit, VTMP2.D(), Mask.X());
+      bext(ARMEmitter::SubRegSize::i64Bit, VTMP1.Z(), VTMP1.Z(), VTMP2.Z());
+      umov<ARMEmitter::SubRegSize::i64Bit>(Dest, VTMP1, 0);
+    }
+  } else {
+    const auto MaskReg = TMP1;
+    const auto BitReg = TMP2;
+    const auto ValueReg = TMP3;
 
-  ARMEmitter::SingleUseForwardLabel EarlyExit;
-  ARMEmitter::BackwardLabel NextBit;
-  ARMEmitter::SingleUseForwardLabel Done;
+    ARMEmitter::SingleUseForwardLabel EarlyExit;
+    ARMEmitter::BackwardLabel NextBit;
+    ARMEmitter::SingleUseForwardLabel Done;
 
-  cbz(EmitSize, Mask, &EarlyExit);
-  mov(EmitSize, MaskReg, Mask);
-  mov(EmitSize, ValueReg, Input);
-  mov(EmitSize, Dest, ARMEmitter::Reg::zr);
+    cbz(EmitSize, Mask, &EarlyExit);
+    mov(EmitSize, MaskReg, Mask);
+    mov(EmitSize, ValueReg, Input);
+    mov(EmitSize, Dest, ARMEmitter::Reg::zr);
 
-  // Main loop
-  Bind(&NextBit);
-  cbz(EmitSize, MaskReg, &Done);
-  clz(EmitSize, BitReg, MaskReg);
-  lslv(EmitSize, ValueReg, ValueReg, BitReg);
-  lslv(EmitSize, MaskReg, MaskReg, BitReg);
-  extr(EmitSize, Dest, Dest, ValueReg, OpSizeBitsM1);
-  bfc(EmitSize, MaskReg, OpSizeBitsM1, 1);
-  b(&NextBit);
+    // Main loop
+    Bind(&NextBit);
+    cbz(EmitSize, MaskReg, &Done);
+    clz(EmitSize, BitReg, MaskReg);
+    lslv(EmitSize, ValueReg, ValueReg, BitReg);
+    lslv(EmitSize, MaskReg, MaskReg, BitReg);
+    extr(EmitSize, Dest, Dest, ValueReg, OpSizeBitsM1);
+    bfc(EmitSize, MaskReg, OpSizeBitsM1, 1);
+    b(&NextBit);
 
-  // Early exit
-  Bind(&EarlyExit);
-  mov(EmitSize, Dest, ARMEmitter::Reg::zr);
+    // Early exit
+    Bind(&EarlyExit);
+    mov(EmitSize, Dest, ARMEmitter::Reg::zr);
 
-  // All done with nothing to do.
-  Bind(&Done);
+    // All done with nothing to do.
+    Bind(&Done);
+  }
 }
 
 DEF_OP(LDiv) {
