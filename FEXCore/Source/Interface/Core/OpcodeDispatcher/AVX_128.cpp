@@ -818,9 +818,14 @@ void OpDispatchBuilder::AVX128_MOVVectorNT(OpcodeArgs) {
 
   if (Op->Dest.IsGPR()) {
     ///< MOVNTDQA load non-temporal comes from SSE4.1 and is extended by AVX/AVX2.
-    auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit, MemoryAccessType::STREAM);
+    RefPair Src {};
+    Ref SrcAddr = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.LoadData = false});
+    Src.Low = _VLoadNonTemporal(OpSize::i128Bit, SrcAddr, 0);
+
     if (Is128Bit) {
       Src.High = LoadZeroVector(OpSize::i128Bit);
+    } else {
+      Src.High = _VLoadNonTemporal(OpSize::i128Bit, SrcAddr, 16);
     }
     AVX128_StoreResult_WithOpSize(Op, Op->Dest, Src);
   } else {
