@@ -12,6 +12,28 @@
     ]
   },
   "Instructions": {
+    "vmovntdqa xmm0, [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0b01 0x2a 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldnt1b {z16.b}, p6/z, [x4]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vmovntdqa ymm0, [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0b01 0x2a 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldnt1b {z16.b}, p6/z, [x4]",
+        "ldnt1b {z2.b}, p6/z, [x4, #1, mul vl]",
+        "str q2, [x28, #16]"
+      ]
+    },
     "vmaskmovps xmm0, xmm1, [rax]": {
       "ExpectedInstructionCount": 6,
       "Comment": [

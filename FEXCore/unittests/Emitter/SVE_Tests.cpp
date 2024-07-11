@@ -3982,6 +3982,24 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE load and broadcast element
   TEST_SINGLE(ld1rd(ZReg::z30, PReg::p6.Zeroing(), Reg::r29, 504), "ld1rd {z30.d}, p6/z, [x29, #504]");
 }
 
+TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE contiguous non-temporal load (scalar plus immediate)") {
+  TEST_SINGLE(ldnt1b(ZReg::z31, PReg::p6, Reg::r29, 0), "ldnt1b {z31.b}, p6/z, [x29]");
+  TEST_SINGLE(ldnt1b(ZReg::z31, PReg::p6, Reg::r29, -8), "ldnt1b {z31.b}, p6/z, [x29, #-8, mul vl]");
+  TEST_SINGLE(ldnt1b(ZReg::z31, PReg::p6, Reg::r29, 7), "ldnt1b {z31.b}, p6/z, [x29, #7, mul vl]");
+
+  TEST_SINGLE(ldnt1h(ZReg::z31, PReg::p6, Reg::r29, 0), "ldnt1h {z31.h}, p6/z, [x29]");
+  TEST_SINGLE(ldnt1h(ZReg::z31, PReg::p6, Reg::r29, -8), "ldnt1h {z31.h}, p6/z, [x29, #-8, mul vl]");
+  TEST_SINGLE(ldnt1h(ZReg::z31, PReg::p6, Reg::r29, 7), "ldnt1h {z31.h}, p6/z, [x29, #7, mul vl]");
+
+  TEST_SINGLE(ldnt1w(ZReg::z31, PReg::p6, Reg::r29, 0), "ldnt1w {z31.s}, p6/z, [x29]");
+  TEST_SINGLE(ldnt1w(ZReg::z31, PReg::p6, Reg::r29, -8), "ldnt1w {z31.s}, p6/z, [x29, #-8, mul vl]");
+  TEST_SINGLE(ldnt1w(ZReg::z31, PReg::p6, Reg::r29, 7), "ldnt1w {z31.s}, p6/z, [x29, #7, mul vl]");
+
+  TEST_SINGLE(ldnt1d(ZReg::z31, PReg::p6, Reg::r29, 0), "ldnt1d {z31.d}, p6/z, [x29]");
+  TEST_SINGLE(ldnt1d(ZReg::z31, PReg::p6, Reg::r29, -8), "ldnt1d {z31.d}, p6/z, [x29, #-8, mul vl]");
+  TEST_SINGLE(ldnt1d(ZReg::z31, PReg::p6, Reg::r29, 7), "ldnt1d {z31.d}, p6/z, [x29, #7, mul vl]");
+}
+
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE load multiple structures (scalar plus scalar)") {
   TEST_SINGLE(ld2b(ZReg::z31, ZReg::z0, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld2b {z31.b, z0.b}, p6/z, [x29, x30]");
   TEST_SINGLE(ld2b(ZReg::z26, ZReg::z27, PReg::p6.Zeroing(), Reg::r29, Reg::r30), "ld2b {z26.b, z27.b}, p6/z, [x29, x30]");

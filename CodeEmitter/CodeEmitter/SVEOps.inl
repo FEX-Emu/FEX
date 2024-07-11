@@ -2569,7 +2569,19 @@ public:
   }
 
   // SVE contiguous non-temporal load (scalar plus immediate)
-  // XXX:
+  void ldnt1b(ZRegister zt, PRegister pg, Register rn, int32_t Imm = 0) {
+    SVEContiguousNontemporalLoad(0b00, zt, pg, rn, Imm);
+  }
+  void ldnt1h(ZRegister zt, PRegister pg, Register rn, int32_t Imm = 0) {
+    SVEContiguousNontemporalLoad(0b01, zt, pg, rn, Imm);
+  }
+  void ldnt1w(ZRegister zt, PRegister pg, Register rn, int32_t Imm = 0) {
+    SVEContiguousNontemporalLoad(0b10, zt, pg, rn, Imm);
+  }
+  void ldnt1d(ZRegister zt, PRegister pg, Register rn, int32_t Imm = 0) {
+    SVEContiguousNontemporalLoad(0b11, zt, pg, rn, Imm);
+  }
+
   // SVE contiguous non-temporal load (scalar plus scalar)
   // XXX:
   // SVE load multiple structures (scalar plus immediate)
@@ -4489,6 +4501,22 @@ private:
     if (is_store) {
       Instr |= 0x40100000U;
     }
+    dc32(Instr);
+  }
+
+  // SVE contiguous non-temporal load (scalar plus immediate)
+  void SVEContiguousNontemporalLoad(uint32_t msz, ZRegister zt, PRegister pg, Register rn, int32_t imm) {
+    LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
+    LOGMAN_THROW_AA_FMT(imm >= -8 && imm <= 7,
+                        "Invalid loadstore offset ({}). Must be between [-8, 7]", imm);
+
+    const auto imm4 = static_cast<uint32_t>(imm) & 0xF;
+    uint32_t Instr = 0b1010'0100'0000'0000'1110'0000'0000'0000;
+    Instr |= msz << 23;
+    Instr |= imm4 << 16;
+    Instr |= pg.Idx() << 10;
+    Instr |= Encode_rn(rn);
+    Instr |= zt.Idx();
     dc32(Instr);
   }
 

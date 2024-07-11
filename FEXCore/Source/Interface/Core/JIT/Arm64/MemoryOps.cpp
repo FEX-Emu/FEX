@@ -2318,5 +2318,31 @@ DEF_OP(VStoreNonTemporalPair) {
   stnp(ValueLow.Q(), ValueHigh.Q(), MemReg, Offset);
 }
 
+DEF_OP(VLoadNonTemporal) {
+  const auto Op = IROp->C<IR::IROp_VLoadNonTemporal>();
+  const auto OpSize = IROp->Size;
+
+  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto Is128Bit = OpSize == Core::CPUState::XMM_SSE_REG_SIZE;
+
+  const auto Dst = GetVReg(Node);
+  const auto MemReg = GetReg(Op->Addr.ID());
+  const auto Offset = Op->Offset;
+
+  if (Is256Bit) {
+    LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE256 support in order to use VStoreNonTemporal with 256-bit operation");
+    const auto GoverningPredicate = PRED_TMP_32B.Zeroing();
+    const auto OffsetScaled = Offset / 32;
+    ldnt1b(Dst.Z(), GoverningPredicate, MemReg, OffsetScaled);
+  } else if (Is128Bit && HostSupportsSVE128) {
+    const auto GoverningPredicate = PRED_TMP_16B.Zeroing();
+    const auto OffsetScaled = Offset / 16;
+    ldnt1b(Dst.Z(), GoverningPredicate, MemReg, OffsetScaled);
+  } else {
+    // Treat the non-temporal store as a regular vector store in this case for compatibility
+    ldr(Dst.Q(), MemReg, Offset);
+  }
+}
+
 #undef DEF_OP
 } // namespace FEXCore::CPU

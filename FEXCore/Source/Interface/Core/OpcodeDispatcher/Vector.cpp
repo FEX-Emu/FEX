@@ -45,8 +45,13 @@ void OpDispatchBuilder::MOVVectorUnalignedOp(OpcodeArgs) {
 void OpDispatchBuilder::MOVVectorNTOp(OpcodeArgs) {
   const auto Size = GetDstSize(Op);
 
-  if (Op->Dest.IsGPR()) {
+  if (Op->Dest.IsGPR() && Size >= OpSize::i128Bit) {
     ///< MOVNTDQA load non-temporal comes from SSE4.1 and is extended by AVX/AVX2.
+    Ref SrcAddr = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.LoadData = false});
+    auto Src = _VLoadNonTemporal(Size, SrcAddr, 0);
+
+    StoreResult(FPRClass, Op, Src, 1, MemoryAccessType::STREAM);
+  } else if (Op->Dest.IsGPR()) {
     Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 1, .AccessType = MemoryAccessType::STREAM});
     StoreResult(FPRClass, Op, Src, 1, MemoryAccessType::STREAM);
   } else {
