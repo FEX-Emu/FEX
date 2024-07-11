@@ -1045,10 +1045,11 @@
         "mov rax, gs:0x100",
         "mov rbx, gs:0x14"
       ],
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "ExpectedArm64ASM": [
         "ldr x20, [x28, #960]",
         "ldr x4, [x20, #256]",
+        "ldr x20, [x28, #960]",
         "ldur x7, [x20, #20]"
       ]
     }

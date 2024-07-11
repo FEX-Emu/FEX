@@ -1685,22 +1685,22 @@
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
-        "str q2, [x28, #16]",
-        "str q2, [x28, #32]",
-        "str q2, [x28, #48]",
-        "str q2, [x28, #64]",
-        "str q2, [x28, #80]",
-        "str q2, [x28, #96]",
-        "str q2, [x28, #112]",
-        "str q2, [x28, #128]",
-        "str q2, [x28, #144]",
-        "str q2, [x28, #160]",
-        "str q2, [x28, #176]",
-        "str q2, [x28, #192]",
-        "str q2, [x28, #208]",
-        "str q2, [x28, #224]",
+        "str q2, [x28, #256]",
         "str q2, [x28, #240]",
-        "str q2, [x28, #256]"
+        "str q2, [x28, #224]",
+        "str q2, [x28, #208]",
+        "str q2, [x28, #192]",
+        "str q2, [x28, #176]",
+        "str q2, [x28, #160]",
+        "str q2, [x28, #144]",
+        "str q2, [x28, #128]",
+        "str q2, [x28, #112]",
+        "str q2, [x28, #96]",
+        "str q2, [x28, #80]",
+        "str q2, [x28, #64]",
+        "str q2, [x28, #48]",
+        "str q2, [x28, #32]",
+        "str q2, [x28, #16]"
       ]
     },
     "vzeroall": {
@@ -1726,22 +1726,22 @@
         "movi v29.2d, #0x0",
         "movi v30.2d, #0x0",
         "movi v31.2d, #0x0",
-        "str q31, [x28, #16]",
-        "str q31, [x28, #32]",
-        "str q31, [x28, #48]",
-        "str q31, [x28, #64]",
-        "str q31, [x28, #80]",
-        "str q31, [x28, #96]",
-        "str q31, [x28, #112]",
-        "str q31, [x28, #128]",
-        "str q31, [x28, #144]",
-        "str q31, [x28, #160]",
-        "str q31, [x28, #176]",
-        "str q31, [x28, #192]",
-        "str q31, [x28, #208]",
-        "str q31, [x28, #224]",
+        "str q31, [x28, #256]",
         "str q31, [x28, #240]",
-        "str q31, [x28, #256]"
+        "str q31, [x28, #224]",
+        "str q31, [x28, #208]",
+        "str q31, [x28, #192]",
+        "str q31, [x28, #176]",
+        "str q31, [x28, #160]",
+        "str q31, [x28, #144]",
+        "str q31, [x28, #128]",
+        "str q31, [x28, #112]",
+        "str q31, [x28, #96]",
+        "str q31, [x28, #80]",
+        "str q31, [x28, #64]",
+        "str q31, [x28, #48]",
+        "str q31, [x28, #32]",
+        "str q31, [x28, #16]"
       ]
     },
     "vcmpps xmm0, xmm1, xmm2, 0x00": {
@@ -2692,8 +2692,8 @@
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
-        "mov v16.16b, v17.16b",
-        "str q2, [x28, #16]"
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
       ]
     },
     "vmovaps ymm0, ymm1": {
@@ -2703,8 +2703,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
-        "mov v16.16b, v17.16b",
-        "str q2, [x28, #16]"
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
       ]
     },
     "vmovapd xmm0, [rax]": {
@@ -2736,8 +2736,8 @@
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
-        "mov v16.16b, v17.16b",
-        "str q2, [x28, #16]"
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
       ]
     },
     "vmovapd ymm0, ymm1": {
@@ -2747,8 +2747,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
-        "mov v16.16b, v17.16b",
-        "str q2, [x28, #16]"
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
       ]
     },
     "vmovaps [rax], xmm0": {
@@ -3473,8 +3473,8 @@
         "fcsel s0, s17, s18, mi",
         "mov v16.s[0], v0.s[0]",
         "movi v2.2d, #0x0",
-        "str q2, [x28, #16]",
-        "msr nzcv, x20"
+        "msr nzcv, x20",
+        "str q2, [x28, #16]"
       ]
     },
     "vminsd xmm0, xmm1, xmm2": {
@@ -3489,8 +3489,8 @@
         "fcsel d0, d17, d18, mi",
         "mov v16.d[0], v0.d[0]",
         "movi v2.2d, #0x0",
-        "str q2, [x28, #16]",
-        "msr nzcv, x20"
+        "msr nzcv, x20",
+        "str q2, [x28, #16]"
       ]
     },
     "vdivps xmm0, xmm1, xmm2": {
@@ -3693,8 +3693,8 @@
         "fcsel s0, s18, s17, mi",
         "mov v16.s[0], v0.s[0]",
         "movi v2.2d, #0x0",
-        "str q2, [x28, #16]",
-        "msr nzcv, x20"
+        "msr nzcv, x20",
+        "str q2, [x28, #16]"
       ]
     },
     "vmaxsd xmm0, xmm1, xmm2": {
@@ -3709,8 +3709,8 @@
         "fcsel d0, d18, d17, mi",
         "mov v16.d[0], v0.d[0]",
         "movi v2.2d, #0x0",
-        "str q2, [x28, #16]",
-        "msr nzcv, x20"
+        "msr nzcv, x20",
+        "str q2, [x28, #16]"
       ]
     },
     "vpunpckhbw xmm0, xmm1, xmm2": {
