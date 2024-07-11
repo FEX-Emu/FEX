@@ -7,7 +7,8 @@
       "FLAGM2"
     ],
     "DisabledHostFeatures": [
-      "AFP"
+      "AFP",
+      "SVEBITPERM"
     ]
   },
   "Instructions": {
