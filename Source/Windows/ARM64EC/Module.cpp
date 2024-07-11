@@ -227,6 +227,22 @@ NTSTATUS ResetToConsistentState(EXCEPTION_POINTERS* Ptrs, ARM64_NT_CONTEXT* Cont
     return STATUS_SUCCESS;
   }
 
+  if (Exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
+    const auto FaultAddress = static_cast<uint64_t>(Exception->ExceptionInformation[1]);
+
+    bool HandledRWX = false;
+    if (InvalidationTracker && GetCPUArea().ThreadState()) {
+      std::scoped_lock Lock(ThreadCreationMutex);
+      HandledRWX = InvalidationTracker->HandleRWXAccessViolation(FaultAddress);
+    }
+
+    if (HandledRWX) {
+      LogMan::Msg::DFmt("Handled self-modifying code: pc: {:X} fault: {:X}", Context->Pc, FaultAddress);
+      *Continue = true;
+      return STATUS_SUCCESS;
+    }
+  }
+
   if (!CTX->IsAddressInCodeBuffer(GetCPUArea().ThreadState(), Context->Pc) && !IsDispatcherAddress(Context->Pc)) {
     return STATUS_SUCCESS;
   }
