@@ -131,15 +131,6 @@ void OpDispatchBuilder::FLDF64(OpcodeArgs, size_t width) {
   _StoreContextIndexed(converted, top, 8, MMBaseOffset(), 16, FPRClass);
 }
 
-template<size_t width>
-void OpDispatchBuilder::FLDF64(OpcodeArgs) {
-  FLDF64(Op, width);
-}
-
-template void OpDispatchBuilder::FLDF64<32>(OpcodeArgs);
-template void OpDispatchBuilder::FLDF64<64>(OpcodeArgs);
-template void OpDispatchBuilder::FLDF64<80>(OpcodeArgs);
-
 void OpDispatchBuilder::FBLDF64(OpcodeArgs) {
   // Update TOP
   auto orig_top = GetX87Top();
@@ -181,19 +172,6 @@ void OpDispatchBuilder::FLDF64_Const(OpcodeArgs, uint64_t num) {
   _StoreContextIndexed(data, top, 8, MMBaseOffset(), 16, FPRClass);
 }
 
-template<uint64_t num>
-void OpDispatchBuilder::FLDF64_Const(OpcodeArgs) {
-  FLDF64_Const(Op, num);
-}
-
-template void OpDispatchBuilder::FLDF64_Const<0x3FF0000000000000>(OpcodeArgs); // 1.0
-template void OpDispatchBuilder::FLDF64_Const<0x400A934F0979A372>(OpcodeArgs); // log2l(10)
-template void OpDispatchBuilder::FLDF64_Const<0x3FF71547652B82FE>(OpcodeArgs); // log2l(e)
-template void OpDispatchBuilder::FLDF64_Const<0x400921FB54442D18>(OpcodeArgs); // pi
-template void OpDispatchBuilder::FLDF64_Const<0x3FD34413509F79FF>(OpcodeArgs); // log10l(2)
-template void OpDispatchBuilder::FLDF64_Const<0x3FE62E42FEFA39EF>(OpcodeArgs); // log(2)
-template void OpDispatchBuilder::FLDF64_Const<0>(OpcodeArgs);                  // 0.0
-
 void OpDispatchBuilder::FILDF64(OpcodeArgs) {
   // Update TOP
   auto orig_top = GetX87Top();
@@ -212,7 +190,7 @@ void OpDispatchBuilder::FILDF64(OpcodeArgs) {
   _StoreContextIndexed(converted, top, 8, MMBaseOffset(), 16, FPRClass);
 }
 
-void OpDispatchBuilder::FSTF64(OpcodeArgs, size_t width) {
+void OpDispatchBuilder::FSTF64WithWidth(OpcodeArgs, size_t width) {
   auto orig_top = GetX87Top();
   auto data = _LoadContextIndexed(orig_top, 8, MMBaseOffset(), 16, FPRClass);
   if (width == 64) {
@@ -237,15 +215,6 @@ void OpDispatchBuilder::FSTF64(OpcodeArgs, size_t width) {
   }
 }
 
-template<size_t width>
-void OpDispatchBuilder::FSTF64(OpcodeArgs) {
-  FSTF64(Op, width);
-}
-
-template void OpDispatchBuilder::FSTF64<32>(OpcodeArgs);
-template void OpDispatchBuilder::FSTF64<64>(OpcodeArgs);
-template void OpDispatchBuilder::FSTF64<80>(OpcodeArgs);
-
 void OpDispatchBuilder::FISTF64(OpcodeArgs, bool Truncate) {
   auto Size = GetSrcSize(Op);
 
@@ -266,14 +235,6 @@ void OpDispatchBuilder::FISTF64(OpcodeArgs, bool Truncate) {
     SetX87Top(top);
   }
 }
-
-template<bool Truncate>
-void OpDispatchBuilder::FISTF64(OpcodeArgs) {
-  FISTF64(Op, Truncate);
-}
-
-template void OpDispatchBuilder::FISTF64<false>(OpcodeArgs);
-template void OpDispatchBuilder::FISTF64<true>(OpcodeArgs);
 
 void OpDispatchBuilder::FADDF64(OpcodeArgs, size_t width, bool Integer, OpDispatchBuilder::OpResult ResInST0) {
   auto top = GetX87Top();
@@ -321,19 +282,6 @@ void OpDispatchBuilder::FADDF64(OpcodeArgs, size_t width, bool Integer, OpDispat
   // Write to ST[TOP]
   _StoreContextIndexed(result, StackLocation, 8, MMBaseOffset(), 16, FPRClass);
 }
-
-template<size_t width, bool Integer, OpDispatchBuilder::OpResult ResInST0>
-void OpDispatchBuilder::FADDF64(OpcodeArgs) {
-  FADDF64(Op, width, Integer, ResInST0);
-}
-
-template void OpDispatchBuilder::FADDF64<32, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-template void OpDispatchBuilder::FADDF64<64, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-template void OpDispatchBuilder::FADDF64<80, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-template void OpDispatchBuilder::FADDF64<80, false, OpDispatchBuilder::OpResult::RES_STI>(OpcodeArgs);
-
-template void OpDispatchBuilder::FADDF64<16, true, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-template void OpDispatchBuilder::FADDF64<32, true, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
 
 void OpDispatchBuilder::FMULF64(OpcodeArgs, size_t width, bool Integer, OpDispatchBuilder::OpResult ResInST0) {
   auto top = GetX87Top();
@@ -383,19 +331,6 @@ void OpDispatchBuilder::FMULF64(OpcodeArgs, size_t width, bool Integer, OpDispat
   // Write to ST[TOP]
   _StoreContextIndexed(result, StackLocation, 8, MMBaseOffset(), 16, FPRClass);
 }
-
-template<size_t width, bool Integer, OpDispatchBuilder::OpResult ResInST0>
-void OpDispatchBuilder::FMULF64(OpcodeArgs) {
-  FMULF64(Op, width, Integer, ResInST0);
-}
-
-template void OpDispatchBuilder::FMULF64<32, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-template void OpDispatchBuilder::FMULF64<64, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-template void OpDispatchBuilder::FMULF64<80, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-template void OpDispatchBuilder::FMULF64<80, false, OpDispatchBuilder::OpResult::RES_STI>(OpcodeArgs);
-
-template void OpDispatchBuilder::FMULF64<16, true, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-template void OpDispatchBuilder::FMULF64<32, true, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
 
 void OpDispatchBuilder::FDIVF64(OpcodeArgs, size_t width, bool Integer, bool reverse, OpDispatchBuilder::OpResult ResInST0) {
   auto top = GetX87Top();
@@ -451,29 +386,6 @@ void OpDispatchBuilder::FDIVF64(OpcodeArgs, size_t width, bool Integer, bool rev
   _StoreContextIndexed(result, StackLocation, 8, MMBaseOffset(), 16, FPRClass);
 }
 
-template<size_t width, bool Integer, bool reverse, OpDispatchBuilder::OpResult ResInST0>
-void OpDispatchBuilder::FDIVF64(OpcodeArgs) {
-  FDIVF64(Op, width, Integer, reverse, ResInST0);
-}
-
-template void OpDispatchBuilder::FDIVF64<32, false, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-template void OpDispatchBuilder::FDIVF64<32, false, true, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-
-template void OpDispatchBuilder::FDIVF64<64, false, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-template void OpDispatchBuilder::FDIVF64<64, false, true, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-
-template void OpDispatchBuilder::FDIVF64<80, false, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-template void OpDispatchBuilder::FDIVF64<80, false, true, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-
-template void OpDispatchBuilder::FDIVF64<80, false, false, OpDispatchBuilder::OpResult::RES_STI>(OpcodeArgs);
-template void OpDispatchBuilder::FDIVF64<80, false, true, OpDispatchBuilder::OpResult::RES_STI>(OpcodeArgs);
-
-template void OpDispatchBuilder::FDIVF64<16, true, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-template void OpDispatchBuilder::FDIVF64<16, true, true, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-
-template void OpDispatchBuilder::FDIVF64<32, true, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-template void OpDispatchBuilder::FDIVF64<32, true, true, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-
 void OpDispatchBuilder::FSUBF64(OpcodeArgs, size_t width, bool Integer, bool reverse, OpDispatchBuilder::OpResult ResInST0) {
   auto top = GetX87Top();
   Ref StackLocation = top;
@@ -528,29 +440,6 @@ void OpDispatchBuilder::FSUBF64(OpcodeArgs, size_t width, bool Integer, bool rev
   // Write to ST[TOP]
   _StoreContextIndexed(result, StackLocation, 8, MMBaseOffset(), 16, FPRClass);
 }
-
-template<size_t width, bool Integer, bool reverse, OpDispatchBuilder::OpResult ResInST0>
-void OpDispatchBuilder::FSUBF64(OpcodeArgs) {
-  FSUBF64(Op, width, Integer, reverse, ResInST0);
-}
-
-template void OpDispatchBuilder::FSUBF64<32, false, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-template void OpDispatchBuilder::FSUBF64<32, false, true, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-
-template void OpDispatchBuilder::FSUBF64<64, false, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-template void OpDispatchBuilder::FSUBF64<64, false, true, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-
-template void OpDispatchBuilder::FSUBF64<80, false, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-template void OpDispatchBuilder::FSUBF64<80, false, true, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-
-template void OpDispatchBuilder::FSUBF64<80, false, false, OpDispatchBuilder::OpResult::RES_STI>(OpcodeArgs);
-template void OpDispatchBuilder::FSUBF64<80, false, true, OpDispatchBuilder::OpResult::RES_STI>(OpcodeArgs);
-
-template void OpDispatchBuilder::FSUBF64<16, true, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-template void OpDispatchBuilder::FSUBF64<16, true, true, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-
-template void OpDispatchBuilder::FSUBF64<32, true, false, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
-template void OpDispatchBuilder::FSUBF64<32, true, true, OpDispatchBuilder::OpResult::RES_ST0>(OpcodeArgs);
 
 void OpDispatchBuilder::FCHSF64(OpcodeArgs) {
   auto top = GetX87Top();
@@ -674,24 +563,6 @@ void OpDispatchBuilder::FCOMIF64(OpcodeArgs, size_t width, bool Integer, OpDispa
   }
 }
 
-template<size_t width, bool Integer, OpDispatchBuilder::FCOMIFlags whichflags, bool poptwice>
-void OpDispatchBuilder::FCOMIF64(OpcodeArgs) {
-  FCOMIF64(Op, width, Integer, whichflags, poptwice);
-}
-
-template void OpDispatchBuilder::FCOMIF64<32, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>(OpcodeArgs);
-
-template void OpDispatchBuilder::FCOMIF64<64, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>(OpcodeArgs);
-
-template void OpDispatchBuilder::FCOMIF64<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>(OpcodeArgs);
-template void OpDispatchBuilder::FCOMIF64<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>(OpcodeArgs);
-template void OpDispatchBuilder::FCOMIF64<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>(OpcodeArgs);
-
-template void OpDispatchBuilder::FCOMIF64<16, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>(OpcodeArgs);
-
-template void OpDispatchBuilder::FCOMIF64<32, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>(OpcodeArgs);
-
-
 void OpDispatchBuilder::FSQRTF64(OpcodeArgs) {
   auto top = GetX87Top();
   auto a = _LoadContextIndexed(top, 8, MMBaseOffset(), 16, FPRClass);
@@ -718,16 +589,6 @@ void OpDispatchBuilder::X87UnaryOpF64(OpcodeArgs, FEXCore::IR::IROps IROp) {
   _StoreContextIndexed(result, top, 8, MMBaseOffset(), 16, FPRClass);
 }
 
-template<FEXCore::IR::IROps IROp>
-void OpDispatchBuilder::X87UnaryOpF64(OpcodeArgs) {
-  X87UnaryOpF64(Op, IROp);
-}
-
-template void OpDispatchBuilder::X87UnaryOpF64<IR::OP_F64F2XM1>(OpcodeArgs);
-template void OpDispatchBuilder::X87UnaryOpF64<IR::OP_F64SIN>(OpcodeArgs);
-template void OpDispatchBuilder::X87UnaryOpF64<IR::OP_F64COS>(OpcodeArgs);
-
-
 void OpDispatchBuilder::X87BinaryOpF64(OpcodeArgs, FEXCore::IR::IROps IROp) {
   auto top = GetX87Top();
 
@@ -747,15 +608,6 @@ void OpDispatchBuilder::X87BinaryOpF64(OpcodeArgs, FEXCore::IR::IROps IROp) {
   // Write to ST[TOP]
   _StoreContextIndexed(result, top, 8, MMBaseOffset(), 16, FPRClass);
 }
-
-template<FEXCore::IR::IROps IROp>
-void OpDispatchBuilder::X87BinaryOpF64(OpcodeArgs) {
-  X87BinaryOpF64(Op, IROp);
-}
-
-template void OpDispatchBuilder::X87BinaryOpF64<IR::OP_F64FPREM1>(OpcodeArgs);
-template void OpDispatchBuilder::X87BinaryOpF64<IR::OP_F64FPREM>(OpcodeArgs);
-template void OpDispatchBuilder::X87BinaryOpF64<IR::OP_F64SCALE>(OpcodeArgs);
 
 void OpDispatchBuilder::X87SinCosF64(OpcodeArgs) {
   auto orig_top = GetX87Top();

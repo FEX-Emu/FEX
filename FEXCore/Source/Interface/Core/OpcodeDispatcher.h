@@ -800,11 +800,7 @@ public:
   void FCOMI(OpcodeArgs, size_t width, bool Integer, FCOMIFlags whichflags, bool poptwice);
 
   // F64 X87 Ops
-  template<size_t width>
-  void FLDF64(OpcodeArgs);
   void FLDF64(OpcodeArgs, size_t width);
-  template<size_t width>
-  void FLDF64_Const(OpcodeArgs);
   void FLDF64_Const(OpcodeArgs, uint64_t num);
 
   void FBLDF64(OpcodeArgs);
@@ -812,27 +808,15 @@ public:
 
   void FILDF64(OpcodeArgs);
 
-  template<size_t width>
-  void FSTF64(OpcodeArgs);
-  void FSTF64(OpcodeArgs, size_t width);
+  void FSTF64WithWidth(OpcodeArgs, size_t width);
 
   void FSTF64(OpcodeArgs);
 
-  template<bool Truncate>
-  void FISTF64(OpcodeArgs);
   void FISTF64(OpcodeArgs, bool Truncate);
 
-  template<size_t width, bool Integer, OpResult ResInST0>
-  void FADDF64(OpcodeArgs);
   void FADDF64(OpcodeArgs, size_t width, bool Integer, OpResult ResInST0);
-  template<size_t width, bool Integer, OpResult ResInST0>
-  void FMULF64(OpcodeArgs);
   void FMULF64(OpcodeArgs, size_t width, bool Integer, OpResult ResInST0);
-  template<size_t width, bool Integer, bool reverse, OpResult ResInST0>
-  void FDIVF64(OpcodeArgs);
   void FDIVF64(OpcodeArgs, size_t width, bool Integer, bool reverse, OpResult ResInST0);
-  template<size_t width, bool Integer, bool reverse, OpResult ResInST0>
-  void FSUBF64(OpcodeArgs);
   void FSUBF64(OpcodeArgs, size_t width, bool Integer, bool reverse, OpResult ResInST0);
   void FCHSF64(OpcodeArgs);
   void FABSF64(OpcodeArgs);
@@ -841,11 +825,7 @@ public:
   void FXTRACTF64(OpcodeArgs);
   void FNINITF64(OpcodeArgs);
   void FSQRTF64(OpcodeArgs);
-  template<FEXCore::IR::IROps IROp>
-  void X87UnaryOpF64(OpcodeArgs);
   void X87UnaryOpF64(OpcodeArgs, FEXCore::IR::IROps IROp);
-  template<FEXCore::IR::IROps IROp>
-  void X87BinaryOpF64(OpcodeArgs);
   void X87BinaryOpF64(OpcodeArgs, FEXCore::IR::IROps IROp);
   void X87SinCosF64(OpcodeArgs);
   void X87FLDCWF64(OpcodeArgs);
@@ -857,8 +837,6 @@ public:
   void X87FXAMF64(OpcodeArgs);
   void X87LDENVF64(OpcodeArgs);
 
-  template<size_t width, bool Integer, FCOMIFlags whichflags, bool poptwice>
-  void FCOMIF64(OpcodeArgs);
   void FCOMIF64(OpcodeArgs, size_t width, bool Integer, FCOMIFlags whichflags, bool poptwice);
 
   void FXSaveOp(OpcodeArgs);
