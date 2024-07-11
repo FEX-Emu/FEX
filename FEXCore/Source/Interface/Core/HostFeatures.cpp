@@ -95,6 +95,7 @@ static void OverrideFeatures(HostFeatures* Features, uint64_t ForceSVEWidth) {
   ENABLE_DISABLE_OPTION(SupportsFlagM, FlagM, FLAGM);
   ENABLE_DISABLE_OPTION(SupportsFlagM2, FlagM2, FLAGM2);
   ENABLE_DISABLE_OPTION(SupportsRPRES, RPRES, RPRES);
+  ENABLE_DISABLE_OPTION(SupportsSVEBitPerm, SVEBITPERM, SVEBITPERM);
   ENABLE_DISABLE_OPTION(SupportsPreserveAllABI, PRESERVEALLABI, PRESERVEALLABI);
   GET_SINGLE_OPTION(Crypto, CRYPTO);
 
@@ -152,6 +153,7 @@ HostFeatures::HostFeatures() {
   SupportsFlagM = Features.Has(vixl::CPUFeatures::Feature::kFlagM);
   SupportsFlagM2 = Features.Has(vixl::CPUFeatures::Feature::kAXFlag);
   SupportsRPRES = Features.Has(vixl::CPUFeatures::Feature::kRPRES);
+  SupportsSVEBitPerm = Features.Has(vixl::CPUFeatures::Feature::kSVEBitPerm);
 
   Supports3DNow = true;
   SupportsSSE4A = true;

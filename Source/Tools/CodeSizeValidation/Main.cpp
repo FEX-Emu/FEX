@@ -505,6 +505,8 @@ int main(int argc, char** argv, char** const envp) {
     FEATURE_FLAGM = (1U << 8),
     FEATURE_FLAGM2 = (1U << 9),
     FEATURE_CRYPTO = (1U << 10),
+    FEATURE_AES256 = (1U << 11),
+    FEATURE_SVEBITPERM = (1U << 12),
   };
 
   uint64_t SVEWidth = 0;
@@ -543,6 +545,9 @@ int main(int argc, char** argv, char** const envp) {
   if (TestHeaderData->EnabledHostFeatures & FEATURE_CRYPTO) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLECRYPTO);
   }
+  if (TestHeaderData->EnabledHostFeatures & FEATURE_SVEBITPERM) {
+    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLESVEBITPERM);
+  }
 
   // Always enable ARMv8.1 LSE atomics.
   HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLEATOMICS);
@@ -576,6 +581,9 @@ int main(int argc, char** argv, char** const envp) {
   }
   if (TestHeaderData->DisabledHostFeatures & FEATURE_CRYPTO) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLECRYPTO);
+  }
+  if (TestHeaderData->DisabledHostFeatures & FEATURE_SVEBITPERM) {
+    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLESVEBITPERM);
   }
 
   // Always enable preserve_all abi.

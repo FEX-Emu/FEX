@@ -1,0 +1,65 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "SVE256",
+      "SVE128",
+      "SVEBITPERM"
+    ],
+    "DisabledHostFeatures": [
+      "AFP",
+      "FLAGM",
+      "FLAGM2"
+    ]
+  },
+  "Instructions": {
+    "pext eax, ebx, ecx": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0b10 0xf5 32-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fmov s0, w7",
+        "fmov s1, w5",
+        "bext z0.s, z0.s, z1.s",
+        "mov w4, v0.s[0]"
+      ]
+    },
+    "pext rax, rbx, rcx": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0b10 0xf5 64-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fmov d0, x7",
+        "fmov d1, x5",
+        "bext z0.d, z0.d, z1.d",
+        "mov x4, v0.d[0]"
+      ]
+    },
+    "pdep eax, ebx, ecx": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0b11 0xf5 32-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fmov s0, w7",
+        "fmov s1, w5",
+        "bdep z0.s, z0.s, z1.s",
+        "mov w4, v0.s[0]"
+      ]
+    },
+    "pdep rax, rbx, rcx": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0b11 0xf5 64-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fmov d0, x7",
+        "fmov d1, x5",
+        "bdep z0.d, z0.d, z1.d",
+        "mov x4, v0.d[0]"
+      ]
+    }
+  }
+}
