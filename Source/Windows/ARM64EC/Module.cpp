@@ -140,6 +140,75 @@ namespace Exception {
 static std::optional<FEX::Windows::TSOHandlerConfig> HandlerConfig;
 static uintptr_t KiUserExceptionDispatcher;
 
+static EXCEPTION_RECORD HandleGuestException(const EXCEPTION_RECORD& Src, ARM64_NT_CONTEXT& Context) {
+  auto* Thread = GetCPUArea().ThreadState();
+  auto& Fault = Thread->CurrentFrame->SynchronousFaultData;
+  EXCEPTION_RECORD Dst = Src;
+  Dst.ExceptionAddress = reinterpret_cast<void*>(Context.Pc);
+
+  // Windows always clears TF, DF and AF when handling an exception, restoring after.
+  // TODO: Check windows behaviour for the restoring after, quite awkward to achieve with the BT API. Would need to fixup flags after a
+  // rethrow and keep track of context pointers on the stack so if a SEH handler changes flags they can be restored in BeginContext after
+  // the NtContinue syscall (which will convert to an ARM64 context and back, losing these flags).
+  uint32_t EFlags = CTX->ReconstructCompactedEFLAGS(Thread, true, Context.X, Context.Cpsr);
+  EFlags &= ~((1 << FEXCore::X86State::RFLAG_DF_RAW_LOC) | (1 << FEXCore::X86State::RFLAG_TF_LOC) | (1 << FEXCore::X86State::RFLAG_AF_RAW_LOC));
+  CTX->SetFlagsFromCompactedEFLAGS(Thread, EFlags);
+
+  if (!Fault.FaultToTopAndGeneratedException) {
+    return Dst;
+  }
+  Fault.FaultToTopAndGeneratedException = false;
+
+  Dst.ExceptionFlags = 0;
+  Dst.NumberParameters = 0;
+
+  switch (Fault.Signal) {
+  case FEXCore::Core::FAULT_SIGILL: Dst.ExceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION; return Dst;
+  case FEXCore::Core::FAULT_SIGTRAP:
+    switch (Fault.TrapNo) {
+    case FEXCore::X86State::X86_TRAPNO_DB: Dst.ExceptionCode = EXCEPTION_SINGLE_STEP; return Dst;
+    case FEXCore::X86State::X86_TRAPNO_BP:
+      Context.Pc -= 1;
+      Dst.ExceptionAddress = reinterpret_cast<void*>(Context.Pc);
+      Dst.ExceptionCode = EXCEPTION_BREAKPOINT;
+      Dst.NumberParameters = 1;
+      Dst.ExceptionInformation[0] = 0;
+      return Dst;
+    default: LogMan::Msg::EFmt("Unknown SIGTRAP trap: {}", Fault.TrapNo); break;
+    }
+    break;
+  case FEXCore::Core::FAULT_SIGSEGV:
+    switch (Fault.TrapNo) {
+    case FEXCore::X86State::X86_TRAPNO_GP:
+      if ((Fault.err_code & 0b111) == 0b010) {
+        switch (Fault.err_code >> 3) {
+        case 0x2d:
+          Context.Pc += 2;
+          Dst.ExceptionCode = EXCEPTION_BREAKPOINT;
+          Dst.ExceptionAddress = reinterpret_cast<void*>(Context.Pc + 1);
+          Dst.NumberParameters = 1;
+          Dst.ExceptionInformation[0] = Context.X8; // RAX
+          // Note that ExceptionAddress doesn't equal the reported context RIP here, this discrepancy expected and not having it can trigger anti-debug logic.
+          return Dst;
+        default: LogMan::Msg::EFmt("Unknown interrupt: 0x{:X}", Fault.err_code >> 3); break;
+        }
+      } else {
+        Dst.ExceptionCode = EXCEPTION_PRIV_INSTRUCTION;
+        return Dst;
+      }
+      break;
+    case FEXCore::X86State::X86_TRAPNO_OF: Dst.ExceptionCode = EXCEPTION_INT_OVERFLOW; return Dst;
+    default: LogMan::Msg::EFmt("Unknown SIGSEGV trap: {}", Fault.TrapNo); break;
+    }
+    break;
+  default: LogMan::Msg::EFmt("Unknown signal type: {}", Fault.Signal); break;
+  }
+
+  // Default to SIGILL
+  Dst.ExceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION;
+  return Dst;
+}
+
 static bool HandleUnalignedAccess(ARM64_NT_CONTEXT& Context) {
   if (!CTX->IsAddressInCodeBuffer(GetCPUArea().ThreadState(), Context.Pc)) {
     return false;
@@ -299,7 +368,7 @@ static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT&
   LogMan::Msg::DFmt("Reconstructing context");
   Args->Context = ReconstructPackedECContext(Context);
   LogMan::Msg::DFmt("pc: {:X} rip: {:X}", Context.Pc, Args->Context.Pc);
-  Args->Rec = *Ptrs->ExceptionRecord;
+  Args->Rec = HandleGuestException(Rec, Args->Context);
   Context.Sp = reinterpret_cast<uint64_t>(Args);
   Context.Pc = KiUserExceptionDispatcher;
 }
