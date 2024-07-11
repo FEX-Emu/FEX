@@ -281,6 +281,16 @@ public:
 
   // Dispatch builder functions
 #define OpcodeArgs [[maybe_unused]] FEXCore::X86Tables::DecodedOp Op
+
+  /**
+   * Binds a sequence of compile-time constants as arguments to another member function.
+   * This allows to construct OpDispatchPtrs that are specialized for the given set of arguments.
+   */
+  template<auto Fn, auto... Args>
+  void Bind(OpcodeArgs) {
+    (this->*Fn)(Op, Args...);
+  };
+
   void UnhandledOp(OpcodeArgs);
   template<uint32_t SrcIndex>
   void MOVGPROp(OpcodeArgs);
@@ -732,11 +742,7 @@ public:
   Ref ReconstructFSW();
   // Returns new x87 stack top from FSW.
   Ref ReconstructX87StateFromFSW(Ref FSW);
-  template<size_t width>
-  void FLD(OpcodeArgs);
   void FLD(OpcodeArgs, size_t width);
-  template<NamedVectorConstant constant>
-  void FLD_Const(OpcodeArgs);
   void FLD_Const(OpcodeArgs, NamedVectorConstant constant);
 
   void FBLD(OpcodeArgs);
@@ -744,31 +750,19 @@ public:
 
   void FILD(OpcodeArgs);
 
-  template<size_t width>
-  void FST(OpcodeArgs);
-  void FST(OpcodeArgs, size_t width);
+  void FSTWithWidth(OpcodeArgs, size_t width);
 
   void FST(OpcodeArgs);
 
-  template<bool Truncate>
-  void FIST(OpcodeArgs);
   void FIST(OpcodeArgs, bool Truncate);
 
   enum class OpResult {
     RES_ST0,
     RES_STI,
   };
-  template<size_t width, bool Integer, OpResult ResInST0>
-  void FADD(OpcodeArgs);
   void FADD(OpcodeArgs, size_t width, bool Integer, OpResult ResInST0);
-  template<size_t width, bool Integer, OpResult ResInST0>
-  void FMUL(OpcodeArgs);
   void FMUL(OpcodeArgs, size_t width, bool Integer, OpResult ResInST0);
-  template<size_t width, bool Integer, bool reverse, OpResult ResInST0>
-  void FDIV(OpcodeArgs);
   void FDIV(OpcodeArgs, size_t width, bool Integer, bool reverse, OpResult ResInST0);
-  template<size_t width, bool Integer, bool reverse, OpResult ResInST0>
-  void FSUB(OpcodeArgs);
   void FSUB(OpcodeArgs, size_t width, bool Integer, bool reverse, OpResult ResInST0);
   void FCHS(OpcodeArgs);
   void FABS(OpcodeArgs);
@@ -777,14 +771,8 @@ public:
   void FXTRACT(OpcodeArgs);
   void FNINIT(OpcodeArgs);
 
-  template<FEXCore::IR::IROps IROp>
-  void X87UnaryOp(OpcodeArgs);
   void X87UnaryOp(OpcodeArgs, FEXCore::IR::IROps IROp);
-  template<FEXCore::IR::IROps IROp>
-  void X87BinaryOp(OpcodeArgs);
   void X87BinaryOp(OpcodeArgs, FEXCore::IR::IROps IROp);
-  template<bool Inc>
-  void X87ModifySTP(OpcodeArgs);
   void X87ModifySTP(OpcodeArgs, bool Inc);
   void X87SinCos(OpcodeArgs);
   void X87FYL2X(OpcodeArgs);
@@ -809,8 +797,6 @@ public:
     FLAGS_X87,
     FLAGS_RFLAGS,
   };
-  template<size_t width, bool Integer, FCOMIFlags whichflags, bool poptwice>
-  void FCOMI(OpcodeArgs);
   void FCOMI(OpcodeArgs, size_t width, bool Integer, FCOMIFlags whichflags, bool poptwice);
 
   // F64 X87 Ops
