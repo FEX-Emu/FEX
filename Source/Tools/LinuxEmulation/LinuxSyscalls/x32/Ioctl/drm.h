@@ -60,18 +60,15 @@ namespace DRM {
     }
 
     fex_drm_version(struct drm_version val)
-      : name {val.name}
-      , date {val.date}
-      , desc {val.desc} {
+      : name {auto_compat_ptr {val.name}}
+      , date {auto_compat_ptr {val.date}}
+      , desc {auto_compat_ptr {val.desc}} {
       version_major = val.version_major;
       version_minor = val.version_minor;
       version_patchlevel = val.version_patchlevel;
       name_len = val.name_len;
-      name = val.name;
       date_len = val.date_len;
-      date = val.date;
       desc_len = val.desc_len;
-      desc = val.desc;
     }
   };
 
@@ -89,7 +86,7 @@ namespace DRM {
     }
 
     fex_drm_unique(struct drm_unique val)
-      : unique {val.unique} {
+      : unique {auto_compat_ptr {val.unique}} {
       unique_len = val.unique_len;
     }
   };
@@ -116,7 +113,7 @@ namespace DRM {
     }
 
     fex_drm_map(struct drm_map val)
-      : handle {val.handle} {
+      : handle {auto_compat_ptr {val.handle}} {
       CPYT(offset);
       CPYT(size);
       CPYT(type);
@@ -227,7 +224,7 @@ namespace DRM {
     }
 
     fex_drm_buf_info(struct drm_buf_info val)
-      : list {val.list} {
+      : list {auto_compat_ptr {val.list}} {
       CPYF(count);
     }
   };
@@ -250,7 +247,7 @@ namespace DRM {
     }
 
     fex_drm_buf_pub(struct drm_buf_pub val)
-      : address {val.address} {
+      : address {auto_compat_ptr {val.address}} {
       CPYF(idx);
       CPYF(total);
       CPYF(used);
@@ -282,11 +279,11 @@ namespace DRM {
 
     fex_drm_buf_map(struct drm_buf_map val)
 #ifdef __cplusplus
-      : virt {val.virt}
+      : virt {auto_compat_ptr {val.virt}}
 #else
-      : virtual {val.virtual}
+      : virtual {auto_compat_ptr {val.virtual}}
 #endif
-      , list {val.list} {
+      , list {auto_compat_ptr {val.list}} {
       CPYF(count);
     }
   };
@@ -305,7 +302,7 @@ namespace DRM {
     }
 
     fex_drm_buf_free(struct drm_buf_free val)
-      : list {val.list} {
+      : list {auto_compat_ptr {val.list}} {
       CPYF(count);
     }
   };
@@ -324,7 +321,7 @@ namespace DRM {
     }
 
     fex_drm_ctx_priv_map(struct drm_ctx_priv_map val)
-      : handle {val.handle} {
+      : handle {auto_compat_ptr {val.handle}} {
       CPYF(ctx_id);
     }
   };
@@ -342,7 +339,7 @@ namespace DRM {
     }
 
     fex_drm_ctx_res(struct drm_ctx_res val)
-      : contexts {val.contexts} {
+      : contexts {auto_compat_ptr {val.contexts}} {
       CPYF(count);
     }
   };
@@ -377,10 +374,10 @@ namespace DRM {
     }
 
     fex_drm_dma(struct drm_dma val)
-      : send_indices {val.send_indices}
-      , send_sizes {val.send_sizes}
-      , request_indices {val.request_indices}
-      , request_sizes {val.request_sizes} {
+      : send_indices {auto_compat_ptr {val.send_indices}}
+      , send_sizes {auto_compat_ptr {val.send_sizes}}
+      , request_indices {auto_compat_ptr {val.request_indices}}
+      , request_sizes {auto_compat_ptr {val.request_sizes}} {
       CPYF(context);
       CPYF(send_count);
       CPYF(flags);
@@ -763,7 +760,7 @@ namespace RADEON {
     }
 
     fex_drm_radeon_clear_t(drm_radeon_clear_t val)
-      : depth_boxes {val.depth_boxes} {
+      : depth_boxes {auto_compat_ptr {val.depth_boxes}} {
       flags = val.flags;
       clear_color = val.clear_color;
       clear_depth = val.clear_depth;
@@ -784,7 +781,7 @@ namespace RADEON {
     }
 
     fex_drm_radeon_stipple_t(drm_radeon_stipple_t val)
-      : mask {val.mask} {}
+      : mask {auto_compat_ptr {val.mask}} {}
   };
 
   struct FEX_ANNOTATE("alias-x86_32-drm_radeon_texture") FEX_ANNOTATE("fex-match") fex_drm_radeon_texture_t {
@@ -809,7 +806,7 @@ namespace RADEON {
     }
 
     fex_drm_radeon_texture_t(drm_radeon_texture_t val)
-      : image {val.image} {
+      : image {auto_compat_ptr {val.image}} {
       offset = val.offset;
       pitch = val.pitch;
       format = val.format;
@@ -840,8 +837,8 @@ namespace RADEON {
     }
 
     fex_drm_radeon_vertex2_t(drm_radeon_vertex2_t val)
-      : state {val.state}
-      , prim {val.prim} {
+      : state {auto_compat_ptr {val.state}}
+      , prim {auto_compat_ptr {val.prim}} {
       idx = val.idx;
       discard = val.discard;
       nr_states = val.nr_states;
@@ -867,8 +864,8 @@ namespace RADEON {
     }
 
     fex_drm_radeon_cmd_buffer_t(drm_radeon_cmd_buffer_t val)
-      : buf {val.buf}
-      , boxes {val.boxes} {
+      : buf {auto_compat_ptr {val.buf}}
+      , boxes {auto_compat_ptr {val.boxes}} {
       val.bufsz = bufsz;
       val.nbox = nbox;
     }
@@ -888,7 +885,7 @@ namespace RADEON {
     }
 
     fex_drm_radeon_getparam_t(drm_radeon_getparam_t val)
-      : value {val.value} {
+      : value {auto_compat_ptr {val.value}} {
       val.param = param;
     }
   };
@@ -911,7 +908,7 @@ namespace RADEON {
     }
 
     fex_drm_radeon_mem_alloc_t(drm_radeon_mem_alloc_t val)
-      : region_offset {val.region_offset} {
+      : region_offset {auto_compat_ptr {val.region_offset}} {
       val.region = region;
       val.alignment = alignment;
       val.size = size;
@@ -930,7 +927,7 @@ namespace RADEON {
     }
 
     fex_drm_radeon_irq_emit_t(drm_radeon_irq_emit_t val)
-      : irq_seq {val.irq_seq} {}
+      : irq_seq {auto_compat_ptr {val.irq_seq}} {}
   };
 
   struct FEX_ANNOTATE("alias-x86_32-drm_radeon_setparam") FEX_ANNOTATE("fex-match") FEX_PACKED fex_drm_radeon_setparam_t {
@@ -959,7 +956,6 @@ namespace MSM {
     compat_int64_t tv_sec;
     compat_int64_t tv_nsec;
 
-    fex_drm_msm_timespec() = delete;
     operator drm_msm_timespec() const {
       drm_msm_timespec val {};
       val.tv_sec = tv_sec;
@@ -967,10 +963,15 @@ namespace MSM {
       return val;
     }
 
-    fex_drm_msm_timespec(struct drm_msm_timespec val) {
-      tv_sec = val.tv_sec;
-      tv_nsec = val.tv_nsec;
+    static fex_drm_msm_timespec FromHost(struct drm_msm_timespec val) {
+      fex_drm_msm_timespec ret;
+      ret.tv_sec = val.tv_sec;
+      ret.tv_nsec = val.tv_nsec;
+      return ret;
     }
+
+  private:
+    fex_drm_msm_timespec() = default;
   };
 
   struct FEX_ANNOTATE("alias-x86_32-drm_msm_wait_fence") FEX_ANNOTATE("fex-match") FEX_PACKED fex_drm_msm_wait_fence {
@@ -991,7 +992,7 @@ namespace MSM {
     }
 
     fex_drm_msm_wait_fence(struct drm_msm_wait_fence val)
-      : timeout {val.timeout} {
+      : timeout {fex_drm_msm_timespec::FromHost(val.timeout)} {
       fence = val.fence;
       flags = val.flags;
       queueid = val.queueid;
@@ -1024,7 +1025,7 @@ namespace I915 {
     }
 
     fex_drm_i915_batchbuffer_t(drm_i915_batchbuffer_t val)
-      : cliprects {val.cliprects} {
+      : cliprects {auto_compat_ptr {val.cliprects}} {
       CPYF(start);
       CPYF(used);
       CPYF(DR1);
@@ -1045,7 +1046,7 @@ namespace I915 {
     }
 
     fex_drm_i915_irq_emit_t(drm_i915_irq_emit_t val)
-      : irq_seq {val.irq_seq} {}
+      : irq_seq {auto_compat_ptr {val.irq_seq}} {}
   };
 
   struct FEX_ANNOTATE("alias-x86_32-drm_i915_getparam") FEX_ANNOTATE("fex-match") fex_drm_i915_getparam_t {
@@ -1061,7 +1062,7 @@ namespace I915 {
     }
 
     fex_drm_i915_getparam_t(drm_i915_getparam_t val)
-      : value {val.value} {
+      : value {auto_compat_ptr {val.value}} {
       CPYF(param);
     }
   };
@@ -1083,7 +1084,7 @@ namespace I915 {
     }
 
     fex_drm_i915_mem_alloc_t(drm_i915_mem_alloc_t val)
-      : region_offset {val.region_offset} {
+      : region_offset {auto_compat_ptr {val.region_offset}} {
       CPYT(region);
       CPYT(alignment);
       CPYT(size);
@@ -1112,8 +1113,8 @@ namespace I915 {
     }
 
     fex_drm_i915_cmdbuffer_t(drm_i915_cmdbuffer_t val)
-      : buf {val.buf}
-      , cliprects {val.cliprects} {
+      : buf {auto_compat_ptr {val.buf}}
+      , cliprects {auto_compat_ptr {val.cliprects}} {
       CPYT(sz);
       CPYT(DR1);
       CPYT(DR4);

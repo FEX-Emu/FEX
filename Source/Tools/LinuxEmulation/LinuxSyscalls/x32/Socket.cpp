@@ -304,7 +304,7 @@ void ConvertHeaderToGuest(struct msghdr32* Guest, struct msghdr* Host) {
   }
 }
 
-static uint64_t RecvMMsg(int sockfd, compat_ptr<mmsghdr_32> msgvec, uint32_t vlen, int flags, struct timespec* timeout_ts) {
+static uint64_t RecvMMsg(int sockfd, auto_compat_ptr<mmsghdr_32> msgvec, uint32_t vlen, int flags, struct timespec* timeout_ts) {
   fextl::vector<iovec> Host_iovec;
   fextl::vector<struct mmsghdr> HostMHeader(vlen);
   for (size_t i = 0; i < vlen; ++i) {
@@ -321,7 +321,7 @@ static uint64_t RecvMMsg(int sockfd, compat_ptr<mmsghdr_32> msgvec, uint32_t vle
   SYSCALL_ERRNO();
 }
 
-static uint64_t SendMMsg(int sockfd, compat_ptr<mmsghdr_32> msgvec, uint32_t vlen, int flags) {
+static uint64_t SendMMsg(int sockfd, auto_compat_ptr<mmsghdr_32> msgvec, uint32_t vlen, int flags) {
   fextl::vector<iovec> Host_iovec;
   fextl::vector<struct mmsghdr> HostMmsg(vlen);
 
@@ -407,7 +407,7 @@ static uint64_t SendMMsg(int sockfd, compat_ptr<mmsghdr_32> msgvec, uint32_t vle
   SYSCALL_ERRNO();
 }
 
-static uint64_t SetSockOpt(int sockfd, int level, int optname, compat_ptr<void> optval, int optlen) {
+static uint64_t SetSockOpt(int sockfd, int level, int optname, auto_compat_ptr<void> optval, int optlen) {
   uint64_t Result {};
 
   if (level == SOL_SOCKET) {
@@ -534,7 +534,7 @@ static uint64_t SetSockOpt(int sockfd, int level, int optname, compat_ptr<void> 
   SYSCALL_ERRNO();
 }
 
-static uint64_t GetSockOpt(int sockfd, int level, int optname, compat_ptr<void> optval, compat_ptr<socklen_t> optlen) {
+static uint64_t GetSockOpt(int sockfd, int level, int optname, auto_compat_ptr<void> optval, auto_compat_ptr<socklen_t> optlen) {
   uint64_t Result {};
   if (level == SOL_SOCKET) {
     switch (optname) {
@@ -748,12 +748,12 @@ void RegisterSocket(FEX::HLE::SyscallHandler* Handler) {
   });
 
   REGISTER_SYSCALL_IMPL_X32(sendmmsg,
-                            [](FEXCore::Core::CpuStateFrame* Frame, int sockfd, compat_ptr<mmsghdr_32> msgvec, uint32_t vlen,
+                            [](FEXCore::Core::CpuStateFrame* Frame, int sockfd, auto_compat_ptr<mmsghdr_32> msgvec, uint32_t vlen,
                                int flags) -> uint64_t { return SendMMsg(sockfd, msgvec, vlen, flags); });
 
   REGISTER_SYSCALL_IMPL_X32(recvmmsg,
-                            [](FEXCore::Core::CpuStateFrame* Frame, int sockfd, compat_ptr<mmsghdr_32> msgvec, uint32_t vlen, int flags,
-                               timespec32* timeout_ts) -> uint64_t {
+                            [](FEXCore::Core::CpuStateFrame* Frame, int sockfd, auto_compat_ptr<mmsghdr_32> msgvec, uint32_t vlen,
+                               int flags, timespec32* timeout_ts) -> uint64_t {
                               struct timespec tp64 {};
                               struct timespec* timed_ptr {};
                               if (timeout_ts) {
@@ -771,7 +771,7 @@ void RegisterSocket(FEX::HLE::SyscallHandler* Handler) {
                             });
 
   REGISTER_SYSCALL_IMPL_X32(recvmmsg_time64,
-                            [](FEXCore::Core::CpuStateFrame* Frame, int sockfd, compat_ptr<mmsghdr_32> msgvec, uint32_t vlen, int flags,
+                            [](FEXCore::Core::CpuStateFrame* Frame, int sockfd, auto_compat_ptr<mmsghdr_32> msgvec, uint32_t vlen, int flags,
                                struct timespec* timeout_ts) -> uint64_t { return RecvMMsg(sockfd, msgvec, vlen, flags, timeout_ts); });
 
   REGISTER_SYSCALL_IMPL_X32(recvmsg, [](FEXCore::Core::CpuStateFrame* Frame, int sockfd, struct msghdr32* msg, int flags) -> uint64_t {
@@ -779,11 +779,11 @@ void RegisterSocket(FEX::HLE::SyscallHandler* Handler) {
   });
 
   REGISTER_SYSCALL_IMPL_X32(setsockopt,
-                            [](FEXCore::Core::CpuStateFrame* Frame, int sockfd, int level, int optname, compat_ptr<void> optval,
+                            [](FEXCore::Core::CpuStateFrame* Frame, int sockfd, int level, int optname, auto_compat_ptr<void> optval,
                                socklen_t optlen) -> uint64_t { return SetSockOpt(sockfd, level, optname, optval, optlen); });
 
   REGISTER_SYSCALL_IMPL_X32(getsockopt,
-                            [](FEXCore::Core::CpuStateFrame* Frame, int sockfd, int level, int optname, compat_ptr<void> optval,
-                               compat_ptr<socklen_t> optlen) -> uint64_t { return GetSockOpt(sockfd, level, optname, optval, optlen); });
+                            [](FEXCore::Core::CpuStateFrame* Frame, int sockfd, int level, int optname, auto_compat_ptr<void> optval,
+                               auto_compat_ptr<socklen_t> optlen) -> uint64_t { return GetSockOpt(sockfd, level, optname, optval, optlen); });
 }
 } // namespace FEX::HLE::x32

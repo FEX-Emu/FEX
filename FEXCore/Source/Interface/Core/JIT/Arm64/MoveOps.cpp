@@ -53,7 +53,7 @@ DEF_OP(Copy) {
 DEF_OP(Swap1) {
   auto Op = IROp->C<IR::IROp_Swap1>();
   auto A = GetReg(Op->A.ID()), B = GetReg(Op->B.ID());
-  LOGMAN_THROW_AA_FMT(B == GetReg(Node), "Invariant");
+  LOGMAN_THROW_A_FMT(B == GetReg(Node), "Invariant");
 
   mov(ARMEmitter::Size::i64Bit, TMP1, A);
   mov(ARMEmitter::Size::i64Bit, A, B);

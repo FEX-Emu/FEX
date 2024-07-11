@@ -99,7 +99,7 @@ DEF_OP(LoadRegister) {
       }
     }
   } else if (Op->Class == IR::FPRClass) {
-    const auto regSize = HostSupportsAVX256 ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE;
+    [[maybe_unused]] const auto regSize = HostSupportsAVX256 ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE;
     LOGMAN_THROW_A_FMT(Op->Reg < StaticFPRegisters.size(), "out of range reg");
     LOGMAN_THROW_A_FMT(OpSize == regSize, "expected sized");
 
@@ -120,8 +120,6 @@ DEF_OP(LoadRegister) {
 
 DEF_OP(StoreRegister) {
   const auto Op = IROp->C<IR::IROp_StoreRegister>();
-  const auto OpSize = IROp->Size;
-
 
   if (Op->Class == IR::GPRClass) {
     unsigned Reg = Op->Reg == Core::CPUState::PF_AS_GREG ? (StaticRegisters.size() - 2) :
@@ -137,9 +135,9 @@ DEF_OP(StoreRegister) {
       mov(ARMEmitter::Size::i64Bit, reg, Src);
     }
   } else if (Op->Class == IR::FPRClass) {
-    const auto regSize = HostSupportsAVX256 ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE;
+    [[maybe_unused]] const auto regSize = HostSupportsAVX256 ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE;
     LOGMAN_THROW_A_FMT(Op->Reg < StaticFPRegisters.size(), "reg out of range");
-    LOGMAN_THROW_A_FMT(OpSize == regSize, "expected sized");
+    LOGMAN_THROW_A_FMT(IROp->Size == regSize, "expected sized");
 
     const auto guest = StaticFPRegisters[Op->Reg];
     const auto host = GetVReg(Op->Value.ID());
@@ -2308,7 +2306,7 @@ DEF_OP(VStoreNonTemporalPair) {
   const auto Op = IROp->C<IR::IROp_VStoreNonTemporalPair>();
   const auto OpSize = IROp->Size;
 
-  const auto Is128Bit = OpSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  [[maybe_unused]] const auto Is128Bit = OpSize == Core::CPUState::XMM_SSE_REG_SIZE;
   LOGMAN_THROW_A_FMT(Is128Bit, "This IR operation only operates at 128-bit wide");
 
   const auto ValueLow = GetVReg(Op->ValueLow.ID());
