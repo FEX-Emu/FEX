@@ -108,6 +108,7 @@ void WINAPI Wow64ProcessPendingCrossProcessItems(void);
 NTSTATUS WINAPI RtlWow64SetThreadContext(HANDLE, const WOW64_CONTEXT*);
 NTSTATUS WINAPI RtlWow64GetThreadContext(HANDLE, WOW64_CONTEXT*);
 NTSTATUS WINAPI RtlWow64GetCurrentCpuArea(USHORT*, void**, void**);
+NTSYSAPI PVOID WINAPI RtlImageDirectoryEntryToData(HMODULE, BOOL, WORD, ULONG*);
 
 NTSTATUS WINAPI NtSuspendThread(HANDLE, PULONG);
 NTSTATUS WINAPI NtGetContextThread(HANDLE, CONTEXT*);
