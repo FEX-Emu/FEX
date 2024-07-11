@@ -41,6 +41,7 @@ $end_info$
 #include <ntstatus.h>
 #include <windef.h>
 #include <winternl.h>
+#include <winnt.h>
 #include <wine/debug.h>
 
 class ECSyscallHandler;
@@ -108,6 +109,30 @@ bool IsEmulatorStackAddress(uint64_t Address) {
 bool IsDispatcherAddress(uint64_t Address) {
   const auto& Config = SignalDelegator->GetConfig();
   return Address >= Config.DispatcherBegin && Address < Config.DispatcherEnd;
+}
+
+// GetProcAddress on ARM64EC returns a pointer to an x64 fast forward sequence to allow for redirecting to the JIT if functions are hotpatched.
+// This looks up the procedure address of the native code even if the fast forward sequence has been patched.
+uintptr_t GetRedirectedProcAddress(HMODULE Module, const char* ProcName) {
+  const uintptr_t Proc = reinterpret_cast<uintptr_t>(GetProcAddress(Module, ProcName));
+  if (!Proc) {
+    return 0;
+  }
+
+  ULONG Size;
+  const auto* LoadConfig =
+    reinterpret_cast<_IMAGE_LOAD_CONFIG_DIRECTORY64*>(RtlImageDirectoryEntryToData(Module, true, IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG, &Size));
+  const auto* CHPEMetadata = reinterpret_cast<IMAGE_ARM64EC_METADATA*>(LoadConfig->CHPEMetadataPointer);
+  const uintptr_t ModuleBase = reinterpret_cast<uintptr_t>(Module);
+  const uintptr_t ProcRVA = Proc - ModuleBase;
+  const auto* RedirectionTableBegin = reinterpret_cast<IMAGE_ARM64EC_REDIRECTION_ENTRY*>(ModuleBase + CHPEMetadata->RedirectionMetadata);
+  const auto* RedirectionTableEnd = RedirectionTableBegin + CHPEMetadata->RedirectionMetadataCount;
+  const auto* It =
+    std::lower_bound(RedirectionTableBegin, RedirectionTableEnd, ProcRVA, [](const auto& Entry, uintptr_t RVA) { return Entry.Source < RVA; });
+  if (It->Source != ProcRVA) {
+    return 0;
+  }
+  return ModuleBase + It->Destination;
 }
 } // namespace
 
