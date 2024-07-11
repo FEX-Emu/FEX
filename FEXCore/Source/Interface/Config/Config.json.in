@@ -76,6 +76,8 @@
           "DISABLECRYPTO": "disablecrypto",
           "ENABLERPRES": "enablerpres",
           "DISABLERPRES": "disablerpres",
+          "ENABLESVEBITPERM": "enablesvebitperm",
+          "DISABLESVEBITPERM": "disablesvebitperm",
           "ENABLEPRESERVEALLABI": "enablepreserveallabi",
           "DISABLEPRESERVEALLABI": "disablepreserveallabi"
         },
@@ -97,6 +99,7 @@
           "\t{enable,disable}flagm2: Will force enable or disable flagm2 even if the host doesn't support it",
           "\t{enable,disable}crypto: Will force enable or disable crypto extensions even if the host doesn't support it",
           "\t{enable,disable}rpres: Will force enable or disable rpres even if the host doesn't support it",
+          "\t{enable,disable}svebitperm: Will force enable or disable svebitperm even if the host doesn't support it",
           "\t{enable,disable}preserveallabi: Will force enable or disable preserve_all abi even if the host doesn't support it"
         ]
       },

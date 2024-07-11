@@ -39,6 +39,7 @@ public:
   bool SupportsRPRES {};
   bool SupportsPreserveAllABI {};
   bool SupportsAES256 {};
+  bool SupportsSVEBitPerm {};
 
   // Float exception behaviour
   bool SupportsAFP {};
