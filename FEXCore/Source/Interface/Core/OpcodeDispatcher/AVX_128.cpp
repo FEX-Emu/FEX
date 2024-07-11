@@ -1116,8 +1116,7 @@ void OpDispatchBuilder::AVX128_UCOMISx(OpcodeArgs) {
   Comiss(ElementSize, Src1.Low, Src2.Low);
 }
 
-template<IROps IROp, size_t ElementSize>
-void OpDispatchBuilder::AVX128_VectorScalarInsertALU(OpcodeArgs) {
+void OpDispatchBuilder::AVX128_VectorScalarInsertALU(OpcodeArgs, FEXCore::IR::IROps IROp, size_t ElementSize) {
   // We load the full vector width when dealing with a source vector,
   // so that we don't do any unnecessary zero extension to the scalar
   // element that we're going to operate on.
@@ -1135,6 +1134,11 @@ void OpDispatchBuilder::AVX128_VectorScalarInsertALU(OpcodeArgs) {
   DeriveOp(Result_Low, IROp, _VFAddScalarInsert(OpSize::i128Bit, ElementSize, Src1.Low, Src2.Low, false));
   auto High = LoadZeroVector(OpSize::i128Bit);
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, RefPair {.Low = Result_Low, .High = High});
+}
+
+template<IROps IROp, size_t ElementSize>
+void OpDispatchBuilder::AVX128_VectorScalarInsertALU(OpcodeArgs) {
+  AVX128_VectorScalarInsertALU(Op, IROp, ElementSize);
 }
 
 template<size_t ElementSize>
@@ -1245,8 +1249,7 @@ void OpDispatchBuilder::AVX128_PExtr(OpcodeArgs) {
   _VStoreVectorElement(OpSize::i128Bit, OverridenElementSize, Src.Low, Index, Dest);
 }
 
-template<size_t ElementSize, size_t DstElementSize, bool Signed>
-void OpDispatchBuilder::AVX128_ExtendVectorElements(OpcodeArgs) {
+void OpDispatchBuilder::AVX128_ExtendVectorElements(OpcodeArgs, size_t ElementSize, size_t DstElementSize, bool Signed) {
   const auto DstSize = GetDstSize(Op);
 
   const auto GetSrc = [&] {
@@ -1262,7 +1265,7 @@ void OpDispatchBuilder::AVX128_ExtendVectorElements(OpcodeArgs) {
     }
   };
 
-  auto Transform = [this](Ref Src) {
+  auto Transform = [=, this](Ref Src) {
     for (size_t CurrentElementSize = ElementSize; CurrentElementSize != DstElementSize; CurrentElementSize <<= 1) {
       if (Signed) {
         Src = _VSXTL(OpSize::i128Bit, CurrentElementSize, Src);
@@ -1296,6 +1299,11 @@ void OpDispatchBuilder::AVX128_ExtendVectorElements(OpcodeArgs) {
   }
 
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+template<size_t ElementSize, size_t DstElementSize, bool Signed>
+void OpDispatchBuilder::AVX128_ExtendVectorElements(OpcodeArgs) {
+  AVX128_ExtendVectorElements(Op, ElementSize, DstElementSize, Signed);
 }
 
 template<size_t ElementSize>

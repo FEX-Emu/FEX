@@ -293,6 +293,7 @@ public:
   void INTOp(OpcodeArgs);
   template<bool IsSyscallInst>
   void SyscallOp(OpcodeArgs);
+  void SyscallOp(OpcodeArgs, bool IsSyscallInst);
   void ThunkOp(OpcodeArgs);
   void LEAOp(OpcodeArgs);
   void NOPOp(OpcodeArgs);
@@ -357,6 +358,7 @@ public:
   void ASHROp(OpcodeArgs);
   template<bool Left, bool IsImmediate, bool Is1Bit>
   void RotateOp(OpcodeArgs);
+  void RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool Is1Bit);
   void RCROp1Bit(OpcodeArgs);
   void RCROp8x1Bit(OpcodeArgs);
   void RCROp(OpcodeArgs);
@@ -367,6 +369,7 @@ public:
 
   template<uint32_t SrcIndex, enum BTAction Action>
   void BTOp(OpcodeArgs);
+  void BTOp(OpcodeArgs, uint32_t SrcIndex, enum BTAction Action);
 
   void IMUL1SrcOp(OpcodeArgs);
   void IMUL2SrcOp(OpcodeArgs);
@@ -731,8 +734,10 @@ public:
   Ref ReconstructX87StateFromFSW(Ref FSW);
   template<size_t width>
   void FLD(OpcodeArgs);
+  void FLD(OpcodeArgs, size_t width);
   template<NamedVectorConstant constant>
   void FLD_Const(OpcodeArgs);
+  void FLD_Const(OpcodeArgs, NamedVectorConstant constant);
 
   void FBLD(OpcodeArgs);
   void FBSTP(OpcodeArgs);
@@ -741,11 +746,13 @@ public:
 
   template<size_t width>
   void FST(OpcodeArgs);
+  void FST(OpcodeArgs, size_t width);
 
   void FST(OpcodeArgs);
 
   template<bool Truncate>
   void FIST(OpcodeArgs);
+  void FIST(OpcodeArgs, bool Truncate);
 
   enum class OpResult {
     RES_ST0,
@@ -753,12 +760,16 @@ public:
   };
   template<size_t width, bool Integer, OpResult ResInST0>
   void FADD(OpcodeArgs);
+  void FADD(OpcodeArgs, size_t width, bool Integer, OpResult ResInST0);
   template<size_t width, bool Integer, OpResult ResInST0>
   void FMUL(OpcodeArgs);
+  void FMUL(OpcodeArgs, size_t width, bool Integer, OpResult ResInST0);
   template<size_t width, bool Integer, bool reverse, OpResult ResInST0>
   void FDIV(OpcodeArgs);
+  void FDIV(OpcodeArgs, size_t width, bool Integer, bool reverse, OpResult ResInST0);
   template<size_t width, bool Integer, bool reverse, OpResult ResInST0>
   void FSUB(OpcodeArgs);
+  void FSUB(OpcodeArgs, size_t width, bool Integer, bool reverse, OpResult ResInST0);
   void FCHS(OpcodeArgs);
   void FABS(OpcodeArgs);
   void FTST(OpcodeArgs);
@@ -768,10 +779,13 @@ public:
 
   template<FEXCore::IR::IROps IROp>
   void X87UnaryOp(OpcodeArgs);
+  void X87UnaryOp(OpcodeArgs, FEXCore::IR::IROps IROp);
   template<FEXCore::IR::IROps IROp>
   void X87BinaryOp(OpcodeArgs);
+  void X87BinaryOp(OpcodeArgs, FEXCore::IR::IROps IROp);
   template<bool Inc>
   void X87ModifySTP(OpcodeArgs);
+  void X87ModifySTP(OpcodeArgs, bool Inc);
   void X87SinCos(OpcodeArgs);
   void X87FYL2X(OpcodeArgs);
   void X87TAN(OpcodeArgs);
@@ -797,12 +811,15 @@ public:
   };
   template<size_t width, bool Integer, FCOMIFlags whichflags, bool poptwice>
   void FCOMI(OpcodeArgs);
+  void FCOMI(OpcodeArgs, size_t width, bool Integer, FCOMIFlags whichflags, bool poptwice);
 
   // F64 X87 Ops
   template<size_t width>
   void FLDF64(OpcodeArgs);
-  template<uint64_t num>
+  void FLDF64(OpcodeArgs, size_t width);
+  template<size_t width>
   void FLDF64_Const(OpcodeArgs);
+  void FLDF64_Const(OpcodeArgs, uint64_t num);
 
   void FBLDF64(OpcodeArgs);
   void FBSTPF64(OpcodeArgs);
@@ -811,20 +828,26 @@ public:
 
   template<size_t width>
   void FSTF64(OpcodeArgs);
+  void FSTF64(OpcodeArgs, size_t width);
 
   void FSTF64(OpcodeArgs);
 
   template<bool Truncate>
   void FISTF64(OpcodeArgs);
+  void FISTF64(OpcodeArgs, bool Truncate);
 
   template<size_t width, bool Integer, OpResult ResInST0>
   void FADDF64(OpcodeArgs);
+  void FADDF64(OpcodeArgs, size_t width, bool Integer, OpResult ResInST0);
   template<size_t width, bool Integer, OpResult ResInST0>
   void FMULF64(OpcodeArgs);
+  void FMULF64(OpcodeArgs, size_t width, bool Integer, OpResult ResInST0);
   template<size_t width, bool Integer, bool reverse, OpResult ResInST0>
   void FDIVF64(OpcodeArgs);
+  void FDIVF64(OpcodeArgs, size_t width, bool Integer, bool reverse, OpResult ResInST0);
   template<size_t width, bool Integer, bool reverse, OpResult ResInST0>
   void FSUBF64(OpcodeArgs);
+  void FSUBF64(OpcodeArgs, size_t width, bool Integer, bool reverse, OpResult ResInST0);
   void FCHSF64(OpcodeArgs);
   void FABSF64(OpcodeArgs);
   void FTSTF64(OpcodeArgs);
@@ -834,8 +857,10 @@ public:
   void FSQRTF64(OpcodeArgs);
   template<FEXCore::IR::IROps IROp>
   void X87UnaryOpF64(OpcodeArgs);
+  void X87UnaryOpF64(OpcodeArgs, FEXCore::IR::IROps IROp);
   template<FEXCore::IR::IROps IROp>
   void X87BinaryOpF64(OpcodeArgs);
+  void X87BinaryOpF64(OpcodeArgs, FEXCore::IR::IROps IROp);
   void X87SinCosF64(OpcodeArgs);
   void X87FLDCWF64(OpcodeArgs);
   void X87FYL2XF64(OpcodeArgs);
@@ -848,6 +873,7 @@ public:
 
   template<size_t width, bool Integer, FCOMIFlags whichflags, bool poptwice>
   void FCOMIF64(OpcodeArgs);
+  void FCOMIF64(OpcodeArgs, size_t width, bool Integer, FCOMIFlags whichflags, bool poptwice);
 
   void FXSaveOp(OpcodeArgs);
   void FXRStoreOp(OpcodeArgs);
@@ -1066,6 +1092,7 @@ public:
   void AVX128_UCOMISx(OpcodeArgs);
   template<FEXCore::IR::IROps IROp, size_t ElementSize>
   void AVX128_VectorScalarInsertALU(OpcodeArgs);
+  void AVX128_VectorScalarInsertALU(OpcodeArgs, FEXCore::IR::IROps IROp, size_t ElementSize);
   Ref AVX128_VFCMPImpl(size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType);
   template<size_t ElementSize>
   void AVX128_VFCMP(OpcodeArgs);
@@ -1076,6 +1103,7 @@ public:
   void AVX128_PExtr(OpcodeArgs);
   template<size_t ElementSize, size_t DstElementSize, bool Signed>
   void AVX128_ExtendVectorElements(OpcodeArgs);
+  void AVX128_ExtendVectorElements(OpcodeArgs, size_t ElementSize, size_t DstElementSize, bool Signed);
   template<size_t ElementSize>
   void AVX128_MOVMSK(OpcodeArgs);
   void AVX128_MOVMSKB(OpcodeArgs);
