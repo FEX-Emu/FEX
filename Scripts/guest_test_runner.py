@@ -120,7 +120,7 @@ if (mode == "guest"):
 for i in range(len(sys.argv) - StartingFEXArgsOffset):
     RunnerArgs.append(sys.argv[StartingFEXArgsOffset + i])
 
-#print(RunnerArgs)
+# print(RunnerArgs)
 
 ResultCode = 0
 
@@ -130,7 +130,8 @@ if (flake_tests.get(test_name)):
     TryCount = 5
 
 if (disabled_tests.get(test_name)):
-    ResultCode = -73
+    print(f"Test {test_name} is disabled")
+    sys.exit(0)
 
 # expect zero by default
 if (not test_name in expected_output):
@@ -170,4 +171,3 @@ else:
     else:
         # passed and expected to pass -- pass the test
         sys.exit(0)
-
