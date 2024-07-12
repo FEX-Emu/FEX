@@ -288,7 +288,7 @@ public:
    */
   template<auto Fn, auto... Args>
   void Bind(OpcodeArgs) {
-    (this->*Fn)(Op, Args...);
+    [[clang::noinline]] (this->*Fn)(Op, Args...);
   };
 
   void UnhandledOp(OpcodeArgs);
