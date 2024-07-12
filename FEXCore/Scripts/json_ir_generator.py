@@ -53,6 +53,7 @@ class OpDefinition:
     SSAArgNum: int
     NonSSAArgNum: int
     DynamicDispatch: bool
+    X87: bool
     JITDispatch: bool
     JITDispatchOverride: str
     TiedSource: int
@@ -76,6 +77,7 @@ class OpDefinition:
         self.SSAArgNum = 0
         self.NonSSAArgNum = 0
         self.DynamicDispatch = False
+        self.X87 = False
         self.JITDispatch = True
         self.JITDispatchOverride = None
         self.TiedSource = -1
@@ -249,6 +251,13 @@ def parse_ops(ops):
 
             if "JITDispatchOverride" in op_val:
                 OpDef.JITDispatchOverride = op_val["JITDispatchOverride"]
+
+            if "X87" in op_val:
+                OpDef.X87 = op_val["X87"]
+
+                # X87 implies !JITDispatch
+                assert("JITDispatch" not in op_val)
+                OpDef.JITDispatch = False
 
             if "TiedSource" in op_val:
                 OpDef.TiedSource = op_val["TiedSource"]
