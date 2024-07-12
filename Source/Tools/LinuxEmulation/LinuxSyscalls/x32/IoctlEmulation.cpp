@@ -20,7 +20,6 @@
 #include <FEXCore/fextl/vector.h>
 
 #include <cstdint>
-#include <functional>
 #include <sys/ioctl.h>
 #include <sys/syscall.h>
 #include <unistd.h>
@@ -37,7 +36,7 @@ static void UnhandledIoctl(const char* Type, int fd, uint32_t cmd, uint32_t args
 }
 
 namespace BasicHandler {
-  uint64_t BasicHandler(int fd, uint32_t cmd, uint32_t args) {
+  uint32_t BasicHandler(int fd, uint32_t cmd, uint32_t args) {
     uint64_t Result = ::ioctl(fd, cmd, args);
     SYSCALL_ERRNO();
   }
@@ -702,47 +701,22 @@ namespace DRM {
   }
 } // namespace DRM
 
-struct IoctlHandler {
-  uint32_t Command;
-  std::function<uint32_t(int fd, uint32_t cmd, uint32_t args)> Handler;
-};
+using HandlerType = uint32_t (*)(int fd, uint32_t cmd, uint32_t args);
 
-static fextl::vector<std::function<uint32_t(int fd, uint32_t cmd, uint32_t args)>> Handlers;
-
-void InitializeStaticIoctlHandlers() {
+std::array<HandlerType, 1U << _IOC_TYPEBITS> Handlers = []() consteval {
   using namespace DRM;
   using namespace sockios;
+  std::array<HandlerType, 1U << _IOC_TYPEBITS> Handlers {};
 
-  const fextl::vector<IoctlHandler> LocalHandlers = {{
-#define _BASIC_META(x) IoctlHandler {_IOC_TYPE(x), FEX::HLE::x32::BasicHandler::BasicHandler},
-#define _BASIC_META_VAR(x, args...) IoctlHandler {_IOC_TYPE(x(args)), FEX::HLE::x32::BasicHandler::BasicHandler},
-#define _CUSTOM_META(name, ioctl_num) IoctlHandler {_IOC_TYPE(FEX_##name), FEX::HLE::x32::BasicHandler::BasicHandler},
-#define _CUSTOM_META_OFFSET(name, ioctl_num, offset) IoctlHandler {_IOC_TYPE(FEX_##name), FEX::HLE::x32::BasicHandler::BasicHandler},
+  ///< Default fill handlers with BasicHandler.
+  for (auto& Handler : Handlers) {
+    Handler = FEX::HLE::x32::BasicHandler::BasicHandler;
+  }
 
-  // Asound
-#include "LinuxSyscalls/x32/Ioctl/asound.inl"
-  // Streams
-#include "LinuxSyscalls/x32/Ioctl/streams.inl"
-  // USB Dev
-#include "LinuxSyscalls/x32/Ioctl/usbdev.inl"
-  // Input
-#include "LinuxSyscalls/x32/Ioctl/input.inl"
-  // SOCKIOS
-#include "LinuxSyscalls/x32/Ioctl/sockios.inl"
-  // Joystick
-#include "LinuxSyscalls/x32/Ioctl/joystick.inl"
-  // Wireless
-#include "LinuxSyscalls/x32/Ioctl/wireless.inl"
-
-#undef _BASIC_META
-#undef _BASIC_META_VAR
-#undef _CUSTOM_META
-#undef _CUSTOM_META_OFFSET
-
-#define _BASIC_META(x) IoctlHandler {_IOC_TYPE(x), FEX::HLE::x32::DRM::Handler},
-#define _BASIC_META_VAR(x, args...) IoctlHandler {_IOC_TYPE(x(args)), FEX::HLE::x32::DRM::Handler},
-#define _CUSTOM_META(name, ioctl_num) IoctlHandler {_IOC_TYPE(FEX_##name), FEX::HLE::x32::DRM::Handler},
-#define _CUSTOM_META_OFFSET(name, ioctl_num, offset) IoctlHandler {_IOC_TYPE(FEX_##name), FEX::HLE::x32::DRM::Handler},
+#define _BASIC_META(x) Handlers[_IOC_TYPE(x)] = FEX::HLE::x32::DRM::Handler;
+#define _BASIC_META_VAR(x, args...) Handlers[_IOC_TYPE(x(args))] = FEX::HLE::x32::DRM::Handler;
+#define _CUSTOM_META(name, ioctl_num) Handlers[_IOC_TYPE(FEX_##name)] = FEX::HLE::x32::DRM::Handler;
+#define _CUSTOM_META_OFFSET(name, ioctl_num, offset) Handlers[_IOC_TYPE(FEX_##name)] = FEX::HLE::x32::DRM::Handler;
   // DRM
 #include "LinuxSyscalls/x32/Ioctl/drm.inl"
 
@@ -763,14 +737,9 @@ void InitializeStaticIoctlHandlers() {
 #undef _BASIC_META_VAR
 #undef _CUSTOM_META
 #undef _CUSTOM_META_OFFSET
-  }};
 
-  Handlers.assign(1U << _IOC_TYPEBITS, FEX::HLE::x32::BasicHandler::BasicHandler);
-
-  for (auto& Arg : LocalHandlers) {
-    Handlers[Arg.Command] = Arg.Handler;
-  }
-}
+  return Handlers;
+}();
 
 uint32_t ioctl32(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t request, uint32_t args) {
   return Handlers[_IOC_TYPE(request)](fd, request, args);
