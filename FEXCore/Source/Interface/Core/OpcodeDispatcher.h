@@ -281,6 +281,16 @@ public:
 
   // Dispatch builder functions
 #define OpcodeArgs [[maybe_unused]] FEXCore::X86Tables::DecodedOp Op
+
+  /**
+   * Binds a sequence of compile-time constants as arguments to another member function.
+   * This allows to construct OpDispatchPtrs that are specialized for the given set of arguments.
+   */
+  template<auto Fn, auto... Args>
+  void Bind(OpcodeArgs) {
+    (this->*Fn)(Op, Args...);
+  };
+
   void UnhandledOp(OpcodeArgs);
   template<uint32_t SrcIndex>
   void MOVGPROp(OpcodeArgs);
@@ -288,11 +298,8 @@ public:
   void MOVVectorAlignedOp(OpcodeArgs);
   void MOVVectorUnalignedOp(OpcodeArgs);
   void MOVVectorNTOp(OpcodeArgs);
-  template<FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp>
-  void ALUOp(OpcodeArgs);
+  void ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, unsigned SrcIdx);
   void INTOp(OpcodeArgs);
-  template<bool IsSyscallInst>
-  void SyscallOp(OpcodeArgs);
   void SyscallOp(OpcodeArgs, bool IsSyscallInst);
   void ThunkOp(OpcodeArgs);
   void LEAOp(OpcodeArgs);
@@ -430,14 +437,11 @@ public:
   void MOVHPDOp(OpcodeArgs);
   void MOVSDOp(OpcodeArgs);
   void MOVSSOp(OpcodeArgs);
-  template<FEXCore::IR::IROps IROp, size_t ElementSize>
-  void VectorALUOp(OpcodeArgs);
+  void VectorALUOp(OpcodeArgs, IROps IROp, size_t ElementSize);
   void VectorXOROp(OpcodeArgs);
 
-  template<FEXCore::IR::IROps IROp, size_t ElementSize>
-  void VectorALUROp(OpcodeArgs);
-  template<FEXCore::IR::IROps IROp, size_t ElementSize>
-  void VectorUnaryOp(OpcodeArgs);
+  void VectorALUROp(OpcodeArgs, IROps IROp, size_t ElementSize);
+  void VectorUnaryOp(OpcodeArgs, IROps IROp, size_t ElementSize);
   template<FEXCore::IR::IROps IROp, size_t ElementSize>
   void VectorUnaryDuplicateOp(OpcodeArgs);
 
@@ -478,8 +482,7 @@ public:
   void Vector_CVT_Int_To_Float(OpcodeArgs);
   template<size_t DstElementSize, size_t SrcElementSize>
   void Scalar_CVT_Float_To_Float(OpcodeArgs);
-  template<size_t DstElementSize, size_t SrcElementSize>
-  void Vector_CVT_Float_To_Float(OpcodeArgs);
+  void Vector_CVT_Float_To_Float(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize, bool IsAVX);
   template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
   void Vector_CVT_Float_To_Int(OpcodeArgs);
   void MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs);
@@ -523,11 +526,7 @@ public:
   void ADXOp(OpcodeArgs);
 
   // AVX Ops
-  template<IROps IROp, size_t ElementSize>
-  void AVXVectorALUOp(OpcodeArgs);
   void AVXVectorXOROp(OpcodeArgs);
-  template<IROps IROp, size_t ElementSize>
-  void AVXVectorUnaryOp(OpcodeArgs);
 
   template<size_t ElementSize>
   void AVXVectorRound(OpcodeArgs);
@@ -550,9 +549,6 @@ public:
   void VectorScalarUnaryInsertALUOp(OpcodeArgs);
   template<FEXCore::IR::IROps IROp, size_t ElementSize>
   void AVXVectorScalarUnaryInsertALUOp(OpcodeArgs);
-
-  template<size_t DstElementSize, size_t SrcElementSize>
-  void AVXVector_CVT_Float_To_Float(OpcodeArgs);
 
   void InsertMMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs);
   template<size_t DstElementSize>
@@ -732,11 +728,7 @@ public:
   Ref ReconstructFSW();
   // Returns new x87 stack top from FSW.
   Ref ReconstructX87StateFromFSW(Ref FSW);
-  template<size_t width>
-  void FLD(OpcodeArgs);
   void FLD(OpcodeArgs, size_t width);
-  template<NamedVectorConstant constant>
-  void FLD_Const(OpcodeArgs);
   void FLD_Const(OpcodeArgs, NamedVectorConstant constant);
 
   void FBLD(OpcodeArgs);
@@ -744,31 +736,19 @@ public:
 
   void FILD(OpcodeArgs);
 
-  template<size_t width>
-  void FST(OpcodeArgs);
-  void FST(OpcodeArgs, size_t width);
+  void FSTWithWidth(OpcodeArgs, size_t width);
 
   void FST(OpcodeArgs);
 
-  template<bool Truncate>
-  void FIST(OpcodeArgs);
   void FIST(OpcodeArgs, bool Truncate);
 
   enum class OpResult {
     RES_ST0,
     RES_STI,
   };
-  template<size_t width, bool Integer, OpResult ResInST0>
-  void FADD(OpcodeArgs);
   void FADD(OpcodeArgs, size_t width, bool Integer, OpResult ResInST0);
-  template<size_t width, bool Integer, OpResult ResInST0>
-  void FMUL(OpcodeArgs);
   void FMUL(OpcodeArgs, size_t width, bool Integer, OpResult ResInST0);
-  template<size_t width, bool Integer, bool reverse, OpResult ResInST0>
-  void FDIV(OpcodeArgs);
   void FDIV(OpcodeArgs, size_t width, bool Integer, bool reverse, OpResult ResInST0);
-  template<size_t width, bool Integer, bool reverse, OpResult ResInST0>
-  void FSUB(OpcodeArgs);
   void FSUB(OpcodeArgs, size_t width, bool Integer, bool reverse, OpResult ResInST0);
   void FCHS(OpcodeArgs);
   void FABS(OpcodeArgs);
@@ -777,14 +757,8 @@ public:
   void FXTRACT(OpcodeArgs);
   void FNINIT(OpcodeArgs);
 
-  template<FEXCore::IR::IROps IROp>
-  void X87UnaryOp(OpcodeArgs);
   void X87UnaryOp(OpcodeArgs, FEXCore::IR::IROps IROp);
-  template<FEXCore::IR::IROps IROp>
-  void X87BinaryOp(OpcodeArgs);
   void X87BinaryOp(OpcodeArgs, FEXCore::IR::IROps IROp);
-  template<bool Inc>
-  void X87ModifySTP(OpcodeArgs);
   void X87ModifySTP(OpcodeArgs, bool Inc);
   void X87SinCos(OpcodeArgs);
   void X87FYL2X(OpcodeArgs);
@@ -809,16 +783,10 @@ public:
     FLAGS_X87,
     FLAGS_RFLAGS,
   };
-  template<size_t width, bool Integer, FCOMIFlags whichflags, bool poptwice>
-  void FCOMI(OpcodeArgs);
   void FCOMI(OpcodeArgs, size_t width, bool Integer, FCOMIFlags whichflags, bool poptwice);
 
   // F64 X87 Ops
-  template<size_t width>
-  void FLDF64(OpcodeArgs);
   void FLDF64(OpcodeArgs, size_t width);
-  template<size_t width>
-  void FLDF64_Const(OpcodeArgs);
   void FLDF64_Const(OpcodeArgs, uint64_t num);
 
   void FBLDF64(OpcodeArgs);
@@ -826,27 +794,15 @@ public:
 
   void FILDF64(OpcodeArgs);
 
-  template<size_t width>
-  void FSTF64(OpcodeArgs);
-  void FSTF64(OpcodeArgs, size_t width);
+  void FSTF64WithWidth(OpcodeArgs, size_t width);
 
   void FSTF64(OpcodeArgs);
 
-  template<bool Truncate>
-  void FISTF64(OpcodeArgs);
   void FISTF64(OpcodeArgs, bool Truncate);
 
-  template<size_t width, bool Integer, OpResult ResInST0>
-  void FADDF64(OpcodeArgs);
   void FADDF64(OpcodeArgs, size_t width, bool Integer, OpResult ResInST0);
-  template<size_t width, bool Integer, OpResult ResInST0>
-  void FMULF64(OpcodeArgs);
   void FMULF64(OpcodeArgs, size_t width, bool Integer, OpResult ResInST0);
-  template<size_t width, bool Integer, bool reverse, OpResult ResInST0>
-  void FDIVF64(OpcodeArgs);
   void FDIVF64(OpcodeArgs, size_t width, bool Integer, bool reverse, OpResult ResInST0);
-  template<size_t width, bool Integer, bool reverse, OpResult ResInST0>
-  void FSUBF64(OpcodeArgs);
   void FSUBF64(OpcodeArgs, size_t width, bool Integer, bool reverse, OpResult ResInST0);
   void FCHSF64(OpcodeArgs);
   void FABSF64(OpcodeArgs);
@@ -855,11 +811,7 @@ public:
   void FXTRACTF64(OpcodeArgs);
   void FNINITF64(OpcodeArgs);
   void FSQRTF64(OpcodeArgs);
-  template<FEXCore::IR::IROps IROp>
-  void X87UnaryOpF64(OpcodeArgs);
   void X87UnaryOpF64(OpcodeArgs, FEXCore::IR::IROps IROp);
-  template<FEXCore::IR::IROps IROp>
-  void X87BinaryOpF64(OpcodeArgs);
   void X87BinaryOpF64(OpcodeArgs, FEXCore::IR::IROps IROp);
   void X87SinCosF64(OpcodeArgs);
   void X87FLDCWF64(OpcodeArgs);
@@ -871,8 +823,6 @@ public:
   void X87FXAMF64(OpcodeArgs);
   void X87LDENVF64(OpcodeArgs);
 
-  template<size_t width, bool Integer, FCOMIFlags whichflags, bool poptwice>
-  void FCOMIF64(OpcodeArgs);
   void FCOMIF64(OpcodeArgs, size_t width, bool Integer, FCOMIFlags whichflags, bool poptwice);
 
   void FXSaveOp(OpcodeArgs);
@@ -965,20 +915,6 @@ public:
   void VFMAImpl(OpcodeArgs, IROps IROp, bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx);
   void VFMAddSubImpl(OpcodeArgs, bool AddSub, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx);
 
-  template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
-  void VFMADD(OpcodeArgs);
-  template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
-  void VFMSUB(OpcodeArgs);
-  template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
-  void VFNMADD(OpcodeArgs);
-  template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
-  void VFNMSUB(OpcodeArgs);
-
-  template<uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
-  void VFMADDSUB(OpcodeArgs);
-  template<uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
-  void VFMSUBADD(OpcodeArgs);
-
   struct RefVSIB {
     Ref Low, High;
     Ref BaseAddr;
@@ -1039,8 +975,8 @@ public:
                                      MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
   void InstallAVX128Handlers();
   void AVX128_VMOVScalarImpl(OpcodeArgs, size_t ElementSize);
-  void AVX128_VectorALUImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
-  void AVX128_VectorUnaryImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
+  void AVX128_VectorALU(OpcodeArgs, IROps IROp, size_t ElementSize);
+  void AVX128_VectorUnary(OpcodeArgs, IROps IROp, size_t ElementSize);
   void AVX128_VectorUnaryImpl(OpcodeArgs, size_t SrcSize, size_t ElementSize, std::function<Ref(size_t ElementSize, Ref Src)> Helper);
   void AVX128_VectorBinaryImpl(OpcodeArgs, size_t SrcSize, size_t ElementSize, std::function<Ref(size_t ElementSize, Ref Src1, Ref Src2)> Helper);
   void AVX128_VectorShiftWideImpl(OpcodeArgs, size_t ElementSize, IROps IROp);
@@ -1055,11 +991,7 @@ public:
   void AVX128_VMOVSD(OpcodeArgs);
   void AVX128_VMOVSS(OpcodeArgs);
 
-  template<IROps IROp, size_t ElementSize>
-  void AVX128_VectorALU(OpcodeArgs);
   void AVX128_VectorXOR(OpcodeArgs);
-  template<IROps IROp, size_t ElementSize>
-  void AVX128_VectorUnary(OpcodeArgs);
 
   void AVX128_VZERO(OpcodeArgs);
   void AVX128_MOVVectorNT(OpcodeArgs);
@@ -1090,8 +1022,6 @@ public:
   void AVX128_VPSIGN(OpcodeArgs);
   template<size_t ElementSize>
   void AVX128_UCOMISx(OpcodeArgs);
-  template<FEXCore::IR::IROps IROp, size_t ElementSize>
-  void AVX128_VectorScalarInsertALU(OpcodeArgs);
   void AVX128_VectorScalarInsertALU(OpcodeArgs, FEXCore::IR::IROps IROp, size_t ElementSize);
   Ref AVX128_VFCMPImpl(size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType);
   template<size_t ElementSize>
@@ -1101,8 +1031,6 @@ public:
   void AVX128_MOVBetweenGPR_FPR(OpcodeArgs);
   template<size_t ElementSize>
   void AVX128_PExtr(OpcodeArgs);
-  template<size_t ElementSize, size_t DstElementSize, bool Signed>
-  void AVX128_ExtendVectorElements(OpcodeArgs);
   void AVX128_ExtendVectorElements(OpcodeArgs, size_t ElementSize, size_t DstElementSize, bool Signed);
   template<size_t ElementSize>
   void AVX128_MOVMSK(OpcodeArgs);
@@ -1112,27 +1040,8 @@ public:
   void AVX128_VPINSRB(OpcodeArgs);
   void AVX128_VPINSRW(OpcodeArgs);
   void AVX128_VPINSRDQ(OpcodeArgs);
-  template<size_t ElementSize>
-  void AVX128_VPSRA(OpcodeArgs);
-  template<size_t ElementSize>
-  void AVX128_VPSLL(OpcodeArgs);
-  template<size_t ElementSize>
-  void AVX128_VPSRL(OpcodeArgs);
 
   void AVX128_VariableShiftImpl(OpcodeArgs, IROps IROp);
-  void AVX128_VPSLLV(OpcodeArgs);
-  void AVX128_VPSRAVD(OpcodeArgs);
-  void AVX128_VPSRLV(OpcodeArgs);
-
-  template<size_t ElementSize>
-  void AVX128_VPSRLI(OpcodeArgs);
-  template<size_t ElementSize>
-  void AVX128_VPSLLI(OpcodeArgs);
-  template<size_t ElementSize>
-  void AVX128_VPSRAI(OpcodeArgs);
-
-  void AVX128_VPSRLDQ(OpcodeArgs);
-  void AVX128_VPSLLDQ(OpcodeArgs);
 
   void AVX128_VINSERT(OpcodeArgs);
   void AVX128_VINSERTPS(OpcodeArgs);
@@ -1252,20 +1161,6 @@ public:
   void AVX128_VFMAImpl(OpcodeArgs, IROps IROp, bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx);
   void AVX128_VFMAddSubImpl(OpcodeArgs, bool AddSub, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx);
 
-  template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
-  void AVX128_VFMADD(OpcodeArgs);
-  template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
-  void AVX128_VFMSUB(OpcodeArgs);
-  template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
-  void AVX128_VFNMADD(OpcodeArgs);
-  template<bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
-  void AVX128_VFNMSUB(OpcodeArgs);
-
-  template<uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
-  void AVX128_VFMADDSUB(OpcodeArgs);
-  template<uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx>
-  void AVX128_VFMSUBADD(OpcodeArgs);
-
   RefPair AVX128_VPGatherQPSImpl(Ref Dest, Ref Mask, RefVSIB VSIB);
   RefPair AVX128_VPGatherImpl(OpSize Size, OpSize ElementLoadSize, OpSize AddrElementSize, RefPair Dest, RefPair Mask, RefVSIB VSIB);
 
@@ -1374,14 +1269,12 @@ private:
   SaveStoreAVXStatePtr RestoreAVXStateFunc {&OpDispatchBuilder::RestoreAVXState};
   DefaultAVXStatePtr DefaultAVXStateFunc {&OpDispatchBuilder::DefaultAVXState};
 
-  void ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, unsigned SrcIdx);
-
   // Opcode helpers for generalizing behavior across VEX and non-VEX variants.
 
   Ref ADDSUBPOpImpl(OpSize Size, size_t ElementSize, Ref Src1, Ref Src2);
 
-  void AVXVectorALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
-  void AVXVectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
+  void AVXVectorALUOp(OpcodeArgs, IROps IROp, size_t ElementSize);
+  void AVXVectorUnaryOp(OpcodeArgs, IROps IROp, size_t ElementSize);
 
   template<size_t ElementSize>
   void AVXVectorVariableBlend(OpcodeArgs);
@@ -1458,9 +1351,6 @@ private:
 
   void VTESTOpImpl(OpSize SrcSize, size_t ElementSize, Ref Src1, Ref Src2);
 
-  void VectorALUOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
-  void VectorALUROpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
-  void VectorUnaryOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
   void VectorUnaryDuplicateOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
 
   // x86 ALU scalar operations operate in three different ways
@@ -1493,8 +1383,6 @@ private:
 
   Ref Scalar_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize, const X86Tables::DecodedOperand& Src1Op,
                                     const X86Tables::DecodedOperand& Src2Op);
-
-  void Vector_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize, bool IsAVX);
 
   Ref Vector_CVT_Float_To_IntImpl(OpcodeArgs, size_t SrcElementSize, bool Narrow, bool HostRoundingMode);
 

@@ -129,11 +129,6 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs, bool IsSyscallInst) {
   }
 }
 
-template<bool IsSyscallInst>
-void OpDispatchBuilder::SyscallOp(OpcodeArgs) {
-  SyscallOp(Op, IsSyscallInst);
-}
-
 void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
   const uint8_t GPRSize = CTX->GetGPRSize();
   uint8_t* sha256 = (uint8_t*)(Op->PC + 2);
@@ -321,7 +316,7 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
   };
 #undef OPD
 
-  ALUOpImpl(Op, IROp, AtomicIROp, 1);
+  ALUOp(Op, IROp, AtomicIROp, 1);
 }
 
 template<uint32_t SrcIndex>
@@ -4592,7 +4587,7 @@ void OpDispatchBuilder::MOVGPRNTOp(OpcodeArgs) {
   StoreResult(GPRClass, Op, Src, 1, MemoryAccessType::STREAM);
 }
 
-void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, unsigned SrcIdx) {
+void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, unsigned SrcIdx) {
   /* On x86, the canonical way to zero a register is XOR with itself...  because
    * modern x86 detects this pattern in hardware. arm64 does not detect this
    * pattern, we should do it like the x86 hardware would. On arm64, "mov x0,
@@ -4658,11 +4653,6 @@ void OpDispatchBuilder::ALUOpImpl(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCor
   }
 }
 
-template<FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp>
-void OpDispatchBuilder::ALUOp(OpcodeArgs) {
-  ALUOpImpl(Op, ALUIROp, AtomicFetchOp, 0);
-}
-
 void OpDispatchBuilder::INTOp(OpcodeArgs) {
   IR::BreakDefinition Reason;
   bool SetRIPToNext = false;
@@ -4681,7 +4671,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
         ERROR_AND_DIE_FMT("[Unsupported] Trying to execute 32-bit syscall from a 64-bit process.");
       }
       // Syscall on linux
-      SyscallOp<false>(Op);
+      SyscallOp(Op, false);
       return;
     }
 
@@ -5079,41 +5069,41 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b00, 0x50), 1, &OpDispatchBuilder::MOVMSKOp<4>},
     {OPD(1, 0b01, 0x50), 1, &OpDispatchBuilder::MOVMSKOp<8>},
 
-    {OPD(1, 0b00, 0x51), 1, &OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFSQRT, 4>},
-    {OPD(1, 0b01, 0x51), 1, &OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFSQRT, 8>},
+    {OPD(1, 0b00, 0x51), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorUnaryOp, IR::OP_VFSQRT, 4>},
+    {OPD(1, 0b01, 0x51), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorUnaryOp, IR::OP_VFSQRT, 8>},
     {OPD(1, 0b10, 0x51), 1, &OpDispatchBuilder::AVXVectorScalarUnaryInsertALUOp<IR::OP_VFSQRTSCALARINSERT, 4>},
     {OPD(1, 0b11, 0x51), 1, &OpDispatchBuilder::AVXVectorScalarUnaryInsertALUOp<IR::OP_VFSQRTSCALARINSERT, 8>},
 
-    {OPD(1, 0b00, 0x52), 1, &OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFRSQRT, 4>},
+    {OPD(1, 0b00, 0x52), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorUnaryOp, IR::OP_VFRSQRT, 4>},
     {OPD(1, 0b10, 0x52), 1, &OpDispatchBuilder::AVXVectorScalarUnaryInsertALUOp<IR::OP_VFRSQRTSCALARINSERT, 4>},
 
-    {OPD(1, 0b00, 0x53), 1, &OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VFRECP, 4>},
+    {OPD(1, 0b00, 0x53), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorUnaryOp, IR::OP_VFRECP, 4>},
     {OPD(1, 0b10, 0x53), 1, &OpDispatchBuilder::AVXVectorScalarUnaryInsertALUOp<IR::OP_VFRECPSCALARINSERT, 4>},
 
-    {OPD(1, 0b00, 0x54), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VAND, 16>},
-    {OPD(1, 0b01, 0x54), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VAND, 16>},
+    {OPD(1, 0b00, 0x54), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VAND, 16>},
+    {OPD(1, 0b01, 0x54), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VAND, 16>},
 
     {OPD(1, 0b00, 0x55), 1, &OpDispatchBuilder::VANDNOp},
     {OPD(1, 0b01, 0x55), 1, &OpDispatchBuilder::VANDNOp},
 
-    {OPD(1, 0b00, 0x56), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VOR, 16>},
-    {OPD(1, 0b01, 0x56), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VOR, 16>},
+    {OPD(1, 0b00, 0x56), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VOR, 16>},
+    {OPD(1, 0b01, 0x56), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VOR, 16>},
 
     {OPD(1, 0b00, 0x57), 1, &OpDispatchBuilder::AVXVectorXOROp},
     {OPD(1, 0b01, 0x57), 1, &OpDispatchBuilder::AVXVectorXOROp},
 
-    {OPD(1, 0b00, 0x58), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFADD, 4>},
-    {OPD(1, 0b01, 0x58), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFADD, 8>},
+    {OPD(1, 0b00, 0x58), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VFADD, 4>},
+    {OPD(1, 0b01, 0x58), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VFADD, 8>},
     {OPD(1, 0b10, 0x58), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFADDSCALARINSERT, 4>},
     {OPD(1, 0b11, 0x58), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFADDSCALARINSERT, 8>},
 
-    {OPD(1, 0b00, 0x59), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFMUL, 4>},
-    {OPD(1, 0b01, 0x59), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFMUL, 8>},
+    {OPD(1, 0b00, 0x59), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VFMUL, 4>},
+    {OPD(1, 0b01, 0x59), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VFMUL, 8>},
     {OPD(1, 0b10, 0x59), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMULSCALARINSERT, 4>},
     {OPD(1, 0b11, 0x59), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMULSCALARINSERT, 8>},
 
-    {OPD(1, 0b00, 0x5A), 1, &OpDispatchBuilder::AVXVector_CVT_Float_To_Float<8, 4>},
-    {OPD(1, 0b01, 0x5A), 1, &OpDispatchBuilder::AVXVector_CVT_Float_To_Float<4, 8>},
+    {OPD(1, 0b00, 0x5A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Float_To_Float, 8, 4, true>},
+    {OPD(1, 0b01, 0x5A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Float_To_Float, 4, 8, true>},
     {OPD(1, 0b10, 0x5A), 1, &OpDispatchBuilder::AVXInsertScalar_CVT_Float_To_Float<8, 4>},
     {OPD(1, 0b11, 0x5A), 1, &OpDispatchBuilder::AVXInsertScalar_CVT_Float_To_Float<4, 8>},
 
@@ -5121,23 +5111,23 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0x5B), 1, &OpDispatchBuilder::AVXVector_CVT_Float_To_Int<4, false, true>},
     {OPD(1, 0b10, 0x5B), 1, &OpDispatchBuilder::AVXVector_CVT_Float_To_Int<4, false, false>},
 
-    {OPD(1, 0b00, 0x5C), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFSUB, 4>},
-    {OPD(1, 0b01, 0x5C), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFSUB, 8>},
+    {OPD(1, 0b00, 0x5C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VFSUB, 4>},
+    {OPD(1, 0b01, 0x5C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VFSUB, 8>},
     {OPD(1, 0b10, 0x5C), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFSUBSCALARINSERT, 4>},
     {OPD(1, 0b11, 0x5C), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFSUBSCALARINSERT, 8>},
 
-    {OPD(1, 0b00, 0x5D), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFMIN, 4>},
-    {OPD(1, 0b01, 0x5D), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFMIN, 8>},
+    {OPD(1, 0b00, 0x5D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VFMIN, 4>},
+    {OPD(1, 0b01, 0x5D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VFMIN, 8>},
     {OPD(1, 0b10, 0x5D), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMINSCALARINSERT, 4>},
     {OPD(1, 0b11, 0x5D), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMINSCALARINSERT, 8>},
 
-    {OPD(1, 0b00, 0x5E), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFDIV, 4>},
-    {OPD(1, 0b01, 0x5E), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFDIV, 8>},
+    {OPD(1, 0b00, 0x5E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VFDIV, 4>},
+    {OPD(1, 0b01, 0x5E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VFDIV, 8>},
     {OPD(1, 0b10, 0x5E), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFDIVSCALARINSERT, 4>},
     {OPD(1, 0b11, 0x5E), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFDIVSCALARINSERT, 8>},
 
-    {OPD(1, 0b00, 0x5F), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFMAX, 4>},
-    {OPD(1, 0b01, 0x5F), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VFMAX, 8>},
+    {OPD(1, 0b00, 0x5F), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VFMAX, 4>},
+    {OPD(1, 0b01, 0x5F), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VFMAX, 8>},
     {OPD(1, 0b10, 0x5F), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMAXSCALARINSERT, 4>},
     {OPD(1, 0b11, 0x5F), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMAXSCALARINSERT, 8>},
 
@@ -5145,9 +5135,9 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0x61), 1, &OpDispatchBuilder::VPUNPCKLOp<2>},
     {OPD(1, 0b01, 0x62), 1, &OpDispatchBuilder::VPUNPCKLOp<4>},
     {OPD(1, 0b01, 0x63), 1, &OpDispatchBuilder::VPACKSSOp<2>},
-    {OPD(1, 0b01, 0x64), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VCMPGT, 1>},
-    {OPD(1, 0b01, 0x65), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VCMPGT, 2>},
-    {OPD(1, 0b01, 0x66), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VCMPGT, 4>},
+    {OPD(1, 0b01, 0x64), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VCMPGT, 1>},
+    {OPD(1, 0b01, 0x65), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VCMPGT, 2>},
+    {OPD(1, 0b01, 0x66), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VCMPGT, 4>},
     {OPD(1, 0b01, 0x67), 1, &OpDispatchBuilder::VPACKUSOp<2>},
     {OPD(1, 0b01, 0x68), 1, &OpDispatchBuilder::VPUNPCKHOp<1>},
     {OPD(1, 0b01, 0x69), 1, &OpDispatchBuilder::VPUNPCKHOp<2>},
@@ -5164,9 +5154,9 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b10, 0x70), 1, &OpDispatchBuilder::VPSHUFWOp<2, false>},
     {OPD(1, 0b11, 0x70), 1, &OpDispatchBuilder::VPSHUFWOp<2, true>},
 
-    {OPD(1, 0b01, 0x74), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VCMPEQ, 1>},
-    {OPD(1, 0b01, 0x75), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VCMPEQ, 2>},
-    {OPD(1, 0b01, 0x76), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VCMPEQ, 4>},
+    {OPD(1, 0b01, 0x74), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VCMPEQ, 1>},
+    {OPD(1, 0b01, 0x75), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VCMPEQ, 2>},
+    {OPD(1, 0b01, 0x76), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VCMPEQ, 4>},
 
     {OPD(1, 0b00, 0x77), 1, &OpDispatchBuilder::VZEROOp},
 
@@ -5198,24 +5188,24 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0xD1), 1, &OpDispatchBuilder::VPSRLDOp<2>},
     {OPD(1, 0b01, 0xD2), 1, &OpDispatchBuilder::VPSRLDOp<4>},
     {OPD(1, 0b01, 0xD3), 1, &OpDispatchBuilder::VPSRLDOp<8>},
-    {OPD(1, 0b01, 0xD4), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VADD, 8>},
-    {OPD(1, 0b01, 0xD5), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VMUL, 2>},
+    {OPD(1, 0b01, 0xD4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VADD, 8>},
+    {OPD(1, 0b01, 0xD5), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VMUL, 2>},
     {OPD(1, 0b01, 0xD6), 1, &OpDispatchBuilder::MOVQOp},
     {OPD(1, 0b01, 0xD7), 1, &OpDispatchBuilder::MOVMSKOpOne},
 
-    {OPD(1, 0b01, 0xD8), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUQSUB, 1>},
-    {OPD(1, 0b01, 0xD9), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUQSUB, 2>},
-    {OPD(1, 0b01, 0xDA), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUMIN, 1>},
-    {OPD(1, 0b01, 0xDB), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VAND, 16>},
-    {OPD(1, 0b01, 0xDC), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUQADD, 1>},
-    {OPD(1, 0b01, 0xDD), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUQADD, 2>},
-    {OPD(1, 0b01, 0xDE), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUMAX, 1>},
+    {OPD(1, 0b01, 0xD8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VUQSUB, 1>},
+    {OPD(1, 0b01, 0xD9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VUQSUB, 2>},
+    {OPD(1, 0b01, 0xDA), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VUMIN, 1>},
+    {OPD(1, 0b01, 0xDB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VAND, 16>},
+    {OPD(1, 0b01, 0xDC), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VUQADD, 1>},
+    {OPD(1, 0b01, 0xDD), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VUQADD, 2>},
+    {OPD(1, 0b01, 0xDE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VUMAX, 1>},
     {OPD(1, 0b01, 0xDF), 1, &OpDispatchBuilder::VANDNOp},
 
-    {OPD(1, 0b01, 0xE0), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VURAVG, 1>},
+    {OPD(1, 0b01, 0xE0), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VURAVG, 1>},
     {OPD(1, 0b01, 0xE1), 1, &OpDispatchBuilder::VPSRAOp<2>},
     {OPD(1, 0b01, 0xE2), 1, &OpDispatchBuilder::VPSRAOp<4>},
-    {OPD(1, 0b01, 0xE3), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VURAVG, 2>},
+    {OPD(1, 0b01, 0xE3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VURAVG, 2>},
     {OPD(1, 0b01, 0xE4), 1, &OpDispatchBuilder::VPMULHWOp<false>},
     {OPD(1, 0b01, 0xE5), 1, &OpDispatchBuilder::VPMULHWOp<true>},
 
@@ -5225,13 +5215,13 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 
     {OPD(1, 0b01, 0xE7), 1, &OpDispatchBuilder::MOVVectorNTOp},
 
-    {OPD(1, 0b01, 0xE8), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSQSUB, 1>},
-    {OPD(1, 0b01, 0xE9), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSQSUB, 2>},
-    {OPD(1, 0b01, 0xEA), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMIN, 2>},
-    {OPD(1, 0b01, 0xEB), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VOR, 16>},
-    {OPD(1, 0b01, 0xEC), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSQADD, 1>},
-    {OPD(1, 0b01, 0xED), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSQADD, 2>},
-    {OPD(1, 0b01, 0xEE), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMAX, 2>},
+    {OPD(1, 0b01, 0xE8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSQSUB, 1>},
+    {OPD(1, 0b01, 0xE9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSQSUB, 2>},
+    {OPD(1, 0b01, 0xEA), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSMIN, 2>},
+    {OPD(1, 0b01, 0xEB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VOR, 16>},
+    {OPD(1, 0b01, 0xEC), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSQADD, 1>},
+    {OPD(1, 0b01, 0xED), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSQADD, 2>},
+    {OPD(1, 0b01, 0xEE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSMAX, 2>},
     {OPD(1, 0b01, 0xEF), 1, &OpDispatchBuilder::AVXVectorXOROp},
 
     {OPD(1, 0b11, 0xF0), 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
@@ -5243,13 +5233,13 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0xF6), 1, &OpDispatchBuilder::VPSADBWOp},
     {OPD(1, 0b01, 0xF7), 1, &OpDispatchBuilder::MASKMOVOp},
 
-    {OPD(1, 0b01, 0xF8), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSUB, 1>},
-    {OPD(1, 0b01, 0xF9), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSUB, 2>},
-    {OPD(1, 0b01, 0xFA), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSUB, 4>},
-    {OPD(1, 0b01, 0xFB), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSUB, 8>},
-    {OPD(1, 0b01, 0xFC), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VADD, 1>},
-    {OPD(1, 0b01, 0xFD), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VADD, 2>},
-    {OPD(1, 0b01, 0xFE), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VADD, 4>},
+    {OPD(1, 0b01, 0xF8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSUB, 1>},
+    {OPD(1, 0b01, 0xF9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSUB, 2>},
+    {OPD(1, 0b01, 0xFA), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSUB, 4>},
+    {OPD(1, 0b01, 0xFB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSUB, 8>},
+    {OPD(1, 0b01, 0xFC), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VADD, 1>},
+    {OPD(1, 0b01, 0xFD), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VADD, 2>},
+    {OPD(1, 0b01, 0xFE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VADD, 4>},
 
     {OPD(2, 0b01, 0x00), 1, &OpDispatchBuilder::VPSHUFBOp},
     {OPD(2, 0b01, 0x01), 1, &OpDispatchBuilder::VHADDPOp<IR::OP_VADDP, 2>},
@@ -5276,9 +5266,9 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(2, 0b01, 0x18), 1, &OpDispatchBuilder::VBROADCASTOp<4>},
     {OPD(2, 0b01, 0x19), 1, &OpDispatchBuilder::VBROADCASTOp<8>},
     {OPD(2, 0b01, 0x1A), 1, &OpDispatchBuilder::VBROADCASTOp<16>},
-    {OPD(2, 0b01, 0x1C), 1, &OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VABS, 1>},
-    {OPD(2, 0b01, 0x1D), 1, &OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VABS, 2>},
-    {OPD(2, 0b01, 0x1E), 1, &OpDispatchBuilder::AVXVectorUnaryOp<IR::OP_VABS, 4>},
+    {OPD(2, 0b01, 0x1C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorUnaryOp, IR::OP_VABS, 1>},
+    {OPD(2, 0b01, 0x1D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorUnaryOp, IR::OP_VABS, 2>},
+    {OPD(2, 0b01, 0x1E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorUnaryOp, IR::OP_VABS, 4>},
 
     {OPD(2, 0b01, 0x20), 1, &OpDispatchBuilder::ExtendVectorElements<1, 2, true>},
     {OPD(2, 0b01, 0x21), 1, &OpDispatchBuilder::ExtendVectorElements<1, 4, true>},
@@ -5288,7 +5278,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(2, 0b01, 0x25), 1, &OpDispatchBuilder::ExtendVectorElements<4, 8, true>},
 
     {OPD(2, 0b01, 0x28), 1, &OpDispatchBuilder::VPMULLOp<4, true>},
-    {OPD(2, 0b01, 0x29), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VCMPEQ, 8>},
+    {OPD(2, 0b01, 0x29), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VCMPEQ, 8>},
     {OPD(2, 0b01, 0x2A), 1, &OpDispatchBuilder::MOVVectorNTOp},
     {OPD(2, 0b01, 0x2B), 1, &OpDispatchBuilder::VPACKUSOp<4>},
     {OPD(2, 0b01, 0x2C), 1, &OpDispatchBuilder::VMASKMOVOp<4, false>},
@@ -5304,17 +5294,17 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(2, 0b01, 0x35), 1, &OpDispatchBuilder::ExtendVectorElements<4, 8, false>},
     {OPD(2, 0b01, 0x36), 1, &OpDispatchBuilder::VPERMDOp},
 
-    {OPD(2, 0b01, 0x37), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VCMPGT, 8>},
-    {OPD(2, 0b01, 0x38), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMIN, 1>},
-    {OPD(2, 0b01, 0x39), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMIN, 4>},
-    {OPD(2, 0b01, 0x3A), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUMIN, 2>},
-    {OPD(2, 0b01, 0x3B), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUMIN, 4>},
-    {OPD(2, 0b01, 0x3C), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMAX, 1>},
-    {OPD(2, 0b01, 0x3D), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VSMAX, 4>},
-    {OPD(2, 0b01, 0x3E), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUMAX, 2>},
-    {OPD(2, 0b01, 0x3F), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VUMAX, 4>},
+    {OPD(2, 0b01, 0x37), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VCMPGT, 8>},
+    {OPD(2, 0b01, 0x38), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSMIN, 1>},
+    {OPD(2, 0b01, 0x39), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSMIN, 4>},
+    {OPD(2, 0b01, 0x3A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VUMIN, 2>},
+    {OPD(2, 0b01, 0x3B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VUMIN, 4>},
+    {OPD(2, 0b01, 0x3C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSMAX, 1>},
+    {OPD(2, 0b01, 0x3D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSMAX, 4>},
+    {OPD(2, 0b01, 0x3E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VUMAX, 2>},
+    {OPD(2, 0b01, 0x3F), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VUMAX, 4>},
 
-    {OPD(2, 0b01, 0x40), 1, &OpDispatchBuilder::AVXVectorALUOp<IR::OP_VMUL, 4>},
+    {OPD(2, 0b01, 0x40), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VMUL, 4>},
     {OPD(2, 0b01, 0x41), 1, &OpDispatchBuilder::PHMINPOSUWOp},
     {OPD(2, 0b01, 0x45), 1, &OpDispatchBuilder::VPSRLVOp},
     {OPD(2, 0b01, 0x46), 1, &OpDispatchBuilder::VPSRAVDOp},
@@ -5335,41 +5325,41 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(2, 0b01, 0x92), 1, &OpDispatchBuilder::VPGATHER<OpSize::i32Bit>},
     {OPD(2, 0b01, 0x93), 1, &OpDispatchBuilder::VPGATHER<OpSize::i64Bit>},
 
-    {OPD(2, 0b01, 0x96), 1, &OpDispatchBuilder::VFMADDSUB<1, 3, 2>},
-    {OPD(2, 0b01, 0x97), 1, &OpDispatchBuilder::VFMSUBADD<1, 3, 2>},
+    {OPD(2, 0b01, 0x96), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAddSubImpl, true, 1, 3, 2>},  // VFMADDSUB
+    {OPD(2, 0b01, 0x97), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAddSubImpl, false, 1, 3, 2>}, // VFMSUBADD
 
-    {OPD(2, 0b01, 0x98), 1, &OpDispatchBuilder::VFMADD<false, 1, 3, 2>},
-    {OPD(2, 0b01, 0x99), 1, &OpDispatchBuilder::VFMADD<true, 1, 3, 2>},
-    {OPD(2, 0b01, 0x9A), 1, &OpDispatchBuilder::VFMSUB<false, 1, 3, 2>},
-    {OPD(2, 0b01, 0x9B), 1, &OpDispatchBuilder::VFMSUB<true, 1, 3, 2>},
-    {OPD(2, 0b01, 0x9C), 1, &OpDispatchBuilder::VFNMADD<false, 1, 3, 2>},
-    {OPD(2, 0b01, 0x9D), 1, &OpDispatchBuilder::VFNMADD<true, 1, 3, 2>},
-    {OPD(2, 0b01, 0x9E), 1, &OpDispatchBuilder::VFNMSUB<false, 1, 3, 2>},
-    {OPD(2, 0b01, 0x9F), 1, &OpDispatchBuilder::VFNMSUB<true, 1, 3, 2>},
+    {OPD(2, 0b01, 0x98), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFMLA, false, 1, 3, 2>},  // VFMADD
+    {OPD(2, 0b01, 0x99), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFMLA, true, 1, 3, 2>},   // VFMADD
+    {OPD(2, 0b01, 0x9A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFMLS, false, 1, 3, 2>},  // VFMSUB
+    {OPD(2, 0b01, 0x9B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFMLS, true, 1, 3, 2>},   // VFMSUB
+    {OPD(2, 0b01, 0x9C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFNMLA, false, 1, 3, 2>}, // VFNMADD
+    {OPD(2, 0b01, 0x9D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFNMLA, true, 1, 3, 2>},  // VFNMADD
+    {OPD(2, 0b01, 0x9E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFNMLS, false, 1, 3, 2>}, // VFNMSUB
+    {OPD(2, 0b01, 0x9F), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFNMLS, true, 1, 3, 2>},  // VFNMSUB
 
-    {OPD(2, 0b01, 0xA8), 1, &OpDispatchBuilder::VFMADD<false, 2, 1, 3>},
-    {OPD(2, 0b01, 0xA9), 1, &OpDispatchBuilder::VFMADD<true, 2, 1, 3>},
-    {OPD(2, 0b01, 0xAA), 1, &OpDispatchBuilder::VFMSUB<false, 2, 1, 3>},
-    {OPD(2, 0b01, 0xAB), 1, &OpDispatchBuilder::VFMSUB<true, 2, 1, 3>},
-    {OPD(2, 0b01, 0xAC), 1, &OpDispatchBuilder::VFNMADD<false, 2, 1, 3>},
-    {OPD(2, 0b01, 0xAD), 1, &OpDispatchBuilder::VFNMADD<true, 2, 1, 3>},
-    {OPD(2, 0b01, 0xAE), 1, &OpDispatchBuilder::VFNMSUB<false, 2, 1, 3>},
-    {OPD(2, 0b01, 0xAF), 1, &OpDispatchBuilder::VFNMSUB<true, 2, 1, 3>},
+    {OPD(2, 0b01, 0xA8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFMLA, false, 2, 1, 3>},  // VFMADD
+    {OPD(2, 0b01, 0xA9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFMLA, true, 2, 1, 3>},   // VFMADD
+    {OPD(2, 0b01, 0xAA), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFMLS, false, 2, 1, 3>},  // VFMSUB
+    {OPD(2, 0b01, 0xAB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFMLS, true, 2, 1, 3>},   // VFMSUB
+    {OPD(2, 0b01, 0xAC), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFNMLA, false, 2, 1, 3>}, // VFNMADD
+    {OPD(2, 0b01, 0xAD), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFNMLA, true, 2, 1, 3>},  // VFNMADD
+    {OPD(2, 0b01, 0xAE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFNMLS, false, 2, 1, 3>}, // VFNMSUB
+    {OPD(2, 0b01, 0xAF), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFNMLS, true, 2, 1, 3>},  // VFNMSUB
 
-    {OPD(2, 0b01, 0xB8), 1, &OpDispatchBuilder::VFMADD<false, 2, 3, 1>},
-    {OPD(2, 0b01, 0xB9), 1, &OpDispatchBuilder::VFMADD<true, 2, 3, 1>},
-    {OPD(2, 0b01, 0xBA), 1, &OpDispatchBuilder::VFMSUB<false, 2, 3, 1>},
-    {OPD(2, 0b01, 0xBB), 1, &OpDispatchBuilder::VFMSUB<true, 2, 3, 1>},
-    {OPD(2, 0b01, 0xBC), 1, &OpDispatchBuilder::VFNMADD<false, 2, 3, 1>},
-    {OPD(2, 0b01, 0xBD), 1, &OpDispatchBuilder::VFNMADD<true, 2, 3, 1>},
-    {OPD(2, 0b01, 0xBE), 1, &OpDispatchBuilder::VFNMSUB<false, 2, 3, 1>},
-    {OPD(2, 0b01, 0xBF), 1, &OpDispatchBuilder::VFNMSUB<true, 2, 3, 1>},
+    {OPD(2, 0b01, 0xB8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFMLA, false, 2, 3, 1>},  // VFMADD
+    {OPD(2, 0b01, 0xB9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFMLA, true, 2, 3, 1>},   // VFMADD
+    {OPD(2, 0b01, 0xBA), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFMLS, false, 2, 3, 1>},  // VFMSUB
+    {OPD(2, 0b01, 0xBB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFMLS, true, 2, 3, 1>},   // VFMSUB
+    {OPD(2, 0b01, 0xBC), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFNMLA, false, 2, 3, 1>}, // VFNMADD
+    {OPD(2, 0b01, 0xBD), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFNMLA, true, 2, 3, 1>},  // VFNMADD
+    {OPD(2, 0b01, 0xBE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFNMLS, false, 2, 3, 1>}, // VFNMSUB
+    {OPD(2, 0b01, 0xBF), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFNMLS, true, 2, 3, 1>},  // VFNMSUB
 
-    {OPD(2, 0b01, 0xA6), 1, &OpDispatchBuilder::VFMADDSUB<2, 1, 3>},
-    {OPD(2, 0b01, 0xA7), 1, &OpDispatchBuilder::VFMSUBADD<2, 1, 3>},
+    {OPD(2, 0b01, 0xA6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAddSubImpl, true, 2, 1, 3>},  // VFMADDSUB
+    {OPD(2, 0b01, 0xA7), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAddSubImpl, false, 2, 1, 3>}, // VFMSUBADD
 
-    {OPD(2, 0b01, 0xB6), 1, &OpDispatchBuilder::VFMADDSUB<2, 3, 1>},
-    {OPD(2, 0b01, 0xB7), 1, &OpDispatchBuilder::VFMSUBADD<2, 3, 1>},
+    {OPD(2, 0b01, 0xB6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAddSubImpl, true, 2, 3, 1>},  // VFMADDSUB
+    {OPD(2, 0b01, 0xB7), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAddSubImpl, false, 2, 3, 1>}, // VFMSUBADD
 
     {OPD(2, 0b01, 0xDB), 1, &OpDispatchBuilder::AESImcOp},
     {OPD(2, 0b01, 0xDC), 1, &OpDispatchBuilder::VAESEncOp},
@@ -5495,19 +5485,19 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 void InstallOpcodeHandlers(Context::OperatingMode Mode) {
   constexpr std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> BaseOpTable[] = {
     // Instructions
-    {0x00, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_ADD, FEXCore::IR::IROps::OP_ATOMICFETCHADD>},
+    {0x00, 6, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_ADD, FEXCore::IR::IROps::OP_ATOMICFETCHADD, 0>},
 
-    {0x08, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_OR, FEXCore::IR::IROps::OP_ATOMICFETCHOR>},
+    {0x08, 6, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_OR, FEXCore::IR::IROps::OP_ATOMICFETCHOR, 0>},
 
     {0x10, 6, &OpDispatchBuilder::ADCOp<0>},
 
     {0x18, 6, &OpDispatchBuilder::SBBOp<0>},
 
-    {0x20, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_ANDWITHFLAGS, FEXCore::IR::IROps::OP_ATOMICFETCHAND>},
+    {0x20, 6, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_ANDWITHFLAGS, FEXCore::IR::IROps::OP_ATOMICFETCHAND, 0>},
 
-    {0x28, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_SUB, FEXCore::IR::IROps::OP_ATOMICFETCHSUB>},
+    {0x28, 6, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_SUB, FEXCore::IR::IROps::OP_ATOMICFETCHSUB, 0>},
 
-    {0x30, 6, &OpDispatchBuilder::ALUOp<FEXCore::IR::IROps::OP_XOR, FEXCore::IR::IROps::OP_ATOMICFETCHXOR>},
+    {0x30, 6, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_XOR, FEXCore::IR::IROps::OP_ATOMICFETCHXOR, 0>},
 
     {0x38, 6, &OpDispatchBuilder::CMPOp<0>},
     {0x50, 8, &OpDispatchBuilder::PUSHREGOp},
@@ -5656,28 +5646,28 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x2D, 1, &OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<4, false, true>},
     {0x2E, 2, &OpDispatchBuilder::UCOMISxOp<4>},
     {0x50, 1, &OpDispatchBuilder::MOVMSKOp<4>},
-    {0x51, 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VFSQRT, 4>},
-    {0x52, 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VFRSQRT, 4>},
-    {0x53, 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VFRECP, 4>},
-    {0x54, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VAND, 16>},
-    {0x55, 1, &OpDispatchBuilder::VectorALUROp<IR::OP_VANDN, 8>},
-    {0x56, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VOR, 16>},
+    {0x51, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VFSQRT, 4>},
+    {0x52, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VFRSQRT, 4>},
+    {0x53, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VFRECP, 4>},
+    {0x54, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VAND, 16>},
+    {0x55, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUROp, IR::OP_VANDN, 8>},
+    {0x56, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VOR, 16>},
     {0x57, 1, &OpDispatchBuilder::VectorXOROp},
-    {0x58, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFADD, 4>},
-    {0x59, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMUL, 4>},
-    {0x5A, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Float<8, 4>},
+    {0x58, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADD, 4>},
+    {0x59, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMUL, 4>},
+    {0x5A, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Float_To_Float, 8, 4, false>},
     {0x5B, 1, &OpDispatchBuilder::Vector_CVT_Int_To_Float<4, false>},
-    {0x5C, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFSUB, 4>},
-    {0x5D, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMIN, 4>},
-    {0x5E, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFDIV, 4>},
-    {0x5F, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMAX, 4>},
+    {0x5C, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFSUB, 4>},
+    {0x5D, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMIN, 4>},
+    {0x5E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFDIV, 4>},
+    {0x5F, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMAX, 4>},
     {0x60, 1, &OpDispatchBuilder::PUNPCKLOp<1>},
     {0x61, 1, &OpDispatchBuilder::PUNPCKLOp<2>},
     {0x62, 1, &OpDispatchBuilder::PUNPCKLOp<4>},
     {0x63, 1, &OpDispatchBuilder::PACKSSOp<2>},
-    {0x64, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPGT, 1>},
-    {0x65, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPGT, 2>},
-    {0x66, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPGT, 4>},
+    {0x64, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPGT, 1>},
+    {0x65, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPGT, 2>},
+    {0x66, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPGT, 4>},
     {0x67, 1, &OpDispatchBuilder::PACKUSOp<2>},
     {0x68, 1, &OpDispatchBuilder::PUNPCKHOp<1>},
     {0x69, 1, &OpDispatchBuilder::PUNPCKHOp<2>},
@@ -5685,9 +5675,9 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x6B, 1, &OpDispatchBuilder::PACKSSOp<4>},
     {0x70, 1, &OpDispatchBuilder::PSHUFW8ByteOp},
 
-    {0x74, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPEQ, 1>},
-    {0x75, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPEQ, 2>},
-    {0x76, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPEQ, 4>},
+    {0x74, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPEQ, 1>},
+    {0x75, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPEQ, 2>},
+    {0x76, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPEQ, 4>},
     {0x77, 1, &OpDispatchBuilder::X87EMMS},
 
     {0xC2, 1, &OpDispatchBuilder::VFCMPOp<4>},
@@ -5696,31 +5686,31 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xD1, 1, &OpDispatchBuilder::PSRLDOp<2>},
     {0xD2, 1, &OpDispatchBuilder::PSRLDOp<4>},
     {0xD3, 1, &OpDispatchBuilder::PSRLDOp<8>},
-    {0xD4, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 8>},
-    {0xD5, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VMUL, 2>},
+    {0xD4, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADD, 8>},
+    {0xD5, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VMUL, 2>},
     {0xD7, 1, &OpDispatchBuilder::MOVMSKOpOne}, // PMOVMSKB
-    {0xD8, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUQSUB, 1>},
-    {0xD9, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUQSUB, 2>},
-    {0xDA, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUMIN, 1>},
-    {0xDB, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VAND, 8>},
-    {0xDC, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUQADD, 1>},
-    {0xDD, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUQADD, 2>},
-    {0xDE, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUMAX, 1>},
-    {0xDF, 1, &OpDispatchBuilder::VectorALUROp<IR::OP_VANDN, 8>},
-    {0xE0, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VURAVG, 1>},
+    {0xD8, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUQSUB, 1>},
+    {0xD9, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUQSUB, 2>},
+    {0xDA, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUMIN, 1>},
+    {0xDB, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VAND, 8>},
+    {0xDC, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUQADD, 1>},
+    {0xDD, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUQADD, 2>},
+    {0xDE, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUMAX, 1>},
+    {0xDF, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUROp, IR::OP_VANDN, 8>},
+    {0xE0, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VURAVG, 1>},
     {0xE1, 1, &OpDispatchBuilder::PSRAOp<2>},
     {0xE2, 1, &OpDispatchBuilder::PSRAOp<4>},
-    {0xE3, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VURAVG, 2>},
+    {0xE3, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VURAVG, 2>},
     {0xE4, 1, &OpDispatchBuilder::PMULHW<false>},
     {0xE5, 1, &OpDispatchBuilder::PMULHW<true>},
     {0xE7, 1, &OpDispatchBuilder::MOVVectorNTOp},
-    {0xE8, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSQSUB, 1>},
-    {0xE9, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSQSUB, 2>},
-    {0xEA, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMIN, 2>},
-    {0xEB, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VOR, 8>},
-    {0xEC, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSQADD, 1>},
-    {0xED, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSQADD, 2>},
-    {0xEE, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMAX, 2>},
+    {0xE8, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSQSUB, 1>},
+    {0xE9, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSQSUB, 2>},
+    {0xEA, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSMIN, 2>},
+    {0xEB, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VOR, 8>},
+    {0xEC, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSQADD, 1>},
+    {0xED, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSQADD, 2>},
+    {0xEE, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSMAX, 2>},
     {0xEF, 1, &OpDispatchBuilder::VectorXOROp},
 
     {0xF1, 1, &OpDispatchBuilder::PSLL<2>},
@@ -5730,13 +5720,13 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xF5, 1, &OpDispatchBuilder::PMADDWD},
     {0xF6, 1, &OpDispatchBuilder::PSADBW},
     {0xF7, 1, &OpDispatchBuilder::MASKMOVOp},
-    {0xF8, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSUB, 1>},
-    {0xF9, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSUB, 2>},
-    {0xFA, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSUB, 4>},
-    {0xFB, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSUB, 8>},
-    {0xFC, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 1>},
-    {0xFD, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 2>},
-    {0xFE, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 4>},
+    {0xF8, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSUB, 1>},
+    {0xF9, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSUB, 2>},
+    {0xFA, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSUB, 4>},
+    {0xFB, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSUB, 8>},
+    {0xFC, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADD, 1>},
+    {0xFD, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADD, 2>},
+    {0xFE, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADD, 4>},
 
     // FEX reserved instructions
     {0x37, 1, &OpDispatchBuilder::CallbackReturnOp},
@@ -5747,7 +5737,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
   };
 
   constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> TwoByteOpTable_64[] = {
-    {0x05, 1, &OpDispatchBuilder::SyscallOp<true>},
+    {0x05, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SyscallOp, true>},
   };
 
 #define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_1) << 6) | (prefix) << 3 | (Reg))
@@ -5922,7 +5912,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x5E, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFDIVSCALARINSERT, 8>},
     {0x5F, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMAXSCALARINSERT, 8>},
     {0x70, 1, &OpDispatchBuilder::PSHUFWOp<true>},
-    {0x7C, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFADDP, 4>},
+    {0x7C, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADDP, 4>},
     {0x7D, 1, &OpDispatchBuilder::HSUBP<4>},
     {0xD0, 1, &OpDispatchBuilder::ADDSUBPOp<4>},
     {0xD6, 1, &OpDispatchBuilder::MOVQ2DQ<false>},
@@ -5947,26 +5937,26 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 
     {0x40, 16, &OpDispatchBuilder::CMOVOp},
     {0x50, 1, &OpDispatchBuilder::MOVMSKOp<8>},
-    {0x51, 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VFSQRT, 8>},
-    {0x54, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VAND, 16>},
-    {0x55, 1, &OpDispatchBuilder::VectorALUROp<IR::OP_VANDN, 8>},
-    {0x56, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VOR, 16>},
+    {0x51, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VFSQRT, 8>},
+    {0x54, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VAND, 16>},
+    {0x55, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUROp, IR::OP_VANDN, 8>},
+    {0x56, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VOR, 16>},
     {0x57, 1, &OpDispatchBuilder::VectorXOROp},
-    {0x58, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFADD, 8>},
-    {0x59, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMUL, 8>},
-    {0x5A, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Float<4, 8>},
+    {0x58, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADD, 8>},
+    {0x59, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMUL, 8>},
+    {0x5A, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Float_To_Float, 4, 8, false>},
     {0x5B, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<4, false, true>},
-    {0x5C, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFSUB, 8>},
-    {0x5D, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMIN, 8>},
-    {0x5E, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFDIV, 8>},
-    {0x5F, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMAX, 8>},
+    {0x5C, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFSUB, 8>},
+    {0x5D, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMIN, 8>},
+    {0x5E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFDIV, 8>},
+    {0x5F, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMAX, 8>},
     {0x60, 1, &OpDispatchBuilder::PUNPCKLOp<1>},
     {0x61, 1, &OpDispatchBuilder::PUNPCKLOp<2>},
     {0x62, 1, &OpDispatchBuilder::PUNPCKLOp<4>},
     {0x63, 1, &OpDispatchBuilder::PACKSSOp<2>},
-    {0x64, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPGT, 1>},
-    {0x65, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPGT, 2>},
-    {0x66, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPGT, 4>},
+    {0x64, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPGT, 1>},
+    {0x65, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPGT, 2>},
+    {0x66, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPGT, 4>},
     {0x67, 1, &OpDispatchBuilder::PACKUSOp<2>},
     {0x68, 1, &OpDispatchBuilder::PUNPCKHOp<1>},
     {0x69, 1, &OpDispatchBuilder::PUNPCKHOp<2>},
@@ -5978,11 +5968,11 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x6F, 1, &OpDispatchBuilder::MOVVectorAlignedOp},
     {0x70, 1, &OpDispatchBuilder::PSHUFDOp},
 
-    {0x74, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPEQ, 1>},
-    {0x75, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPEQ, 2>},
-    {0x76, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPEQ, 4>},
+    {0x74, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPEQ, 1>},
+    {0x75, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPEQ, 2>},
+    {0x76, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPEQ, 4>},
     {0x78, 1, nullptr}, // GROUP 17
-    {0x7C, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFADDP, 8>},
+    {0x7C, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADDP, 8>},
     {0x7D, 1, &OpDispatchBuilder::HSUBP<8>},
     {0x7E, 1, &OpDispatchBuilder::MOVBetweenGPR_FPR},
     {0x7F, 1, &OpDispatchBuilder::MOVVectorAlignedOp},
@@ -5995,33 +5985,33 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xD1, 1, &OpDispatchBuilder::PSRLDOp<2>},
     {0xD2, 1, &OpDispatchBuilder::PSRLDOp<4>},
     {0xD3, 1, &OpDispatchBuilder::PSRLDOp<8>},
-    {0xD4, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 8>},
-    {0xD5, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VMUL, 2>},
+    {0xD4, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADD, 8>},
+    {0xD5, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VMUL, 2>},
     {0xD6, 1, &OpDispatchBuilder::MOVQOp},
     {0xD7, 1, &OpDispatchBuilder::MOVMSKOpOne}, // PMOVMSKB
-    {0xD8, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUQSUB, 1>},
-    {0xD9, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUQSUB, 2>},
-    {0xDA, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUMIN, 1>},
-    {0xDB, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VAND, 16>},
-    {0xDC, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUQADD, 1>},
-    {0xDD, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUQADD, 2>},
-    {0xDE, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUMAX, 1>},
-    {0xDF, 1, &OpDispatchBuilder::VectorALUROp<IR::OP_VANDN, 8>},
-    {0xE0, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VURAVG, 1>},
+    {0xD8, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUQSUB, 1>},
+    {0xD9, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUQSUB, 2>},
+    {0xDA, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUMIN, 1>},
+    {0xDB, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VAND, 16>},
+    {0xDC, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUQADD, 1>},
+    {0xDD, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUQADD, 2>},
+    {0xDE, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUMAX, 1>},
+    {0xDF, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUROp, IR::OP_VANDN, 8>},
+    {0xE0, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VURAVG, 1>},
     {0xE1, 1, &OpDispatchBuilder::PSRAOp<2>},
     {0xE2, 1, &OpDispatchBuilder::PSRAOp<4>},
-    {0xE3, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VURAVG, 2>},
+    {0xE3, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VURAVG, 2>},
     {0xE4, 1, &OpDispatchBuilder::PMULHW<false>},
     {0xE5, 1, &OpDispatchBuilder::PMULHW<true>},
     {0xE6, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<8, true, false>},
     {0xE7, 1, &OpDispatchBuilder::MOVVectorNTOp},
-    {0xE8, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSQSUB, 1>},
-    {0xE9, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSQSUB, 2>},
-    {0xEA, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMIN, 2>},
-    {0xEB, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VOR, 16>},
-    {0xEC, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSQADD, 1>},
-    {0xED, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSQADD, 2>},
-    {0xEE, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMAX, 2>},
+    {0xE8, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSQSUB, 1>},
+    {0xE9, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSQSUB, 2>},
+    {0xEA, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSMIN, 2>},
+    {0xEB, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VOR, 16>},
+    {0xEC, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSQADD, 1>},
+    {0xED, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSQADD, 2>},
+    {0xEE, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSMAX, 2>},
     {0xEF, 1, &OpDispatchBuilder::VectorXOROp},
 
     {0xF1, 1, &OpDispatchBuilder::PSLL<2>},
@@ -6031,13 +6021,13 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xF5, 1, &OpDispatchBuilder::PMADDWD},
     {0xF6, 1, &OpDispatchBuilder::PSADBW},
     {0xF7, 1, &OpDispatchBuilder::MASKMOVOp},
-    {0xF8, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSUB, 1>},
-    {0xF9, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSUB, 2>},
-    {0xFA, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSUB, 4>},
-    {0xFB, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSUB, 8>},
-    {0xFC, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 1>},
-    {0xFD, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 2>},
-    {0xFE, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADD, 4>},
+    {0xF8, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSUB, 1>},
+    {0xF9, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSUB, 2>},
+    {0xFA, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSUB, 4>},
+    {0xFB, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSUB, 8>},
+    {0xFC, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADD, 1>},
+    {0xFD, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADD, 2>},
+    {0xFE, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADD, 4>},
   };
 
   constexpr uint16_t PF_NONE = 0;
@@ -6212,38 +6202,38 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 #define OPDReg(op, reg) ((1 << 15) | ((op - 0xD8) << 8) | (reg << 3))
 #define OPD(op, modrmop) (((op - 0xD8) << 8) | modrmop)
   constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> X87F64OpTable[] = {
-    {OPDReg(0xD8, 0) | 0x00, 8, &OpDispatchBuilder::FADDF64<32, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xD8, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADDF64, 32, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xD8, 1) | 0x00, 8, &OpDispatchBuilder::FMULF64<32, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xD8, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMULF64, 32, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xD8, 2) | 0x00, 8, &OpDispatchBuilder::FCOMIF64<32, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPDReg(0xD8, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, 32, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
 
-    {OPDReg(0xD8, 3) | 0x00, 8, &OpDispatchBuilder::FCOMIF64<32, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPDReg(0xD8, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, 32, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
 
-    {OPDReg(0xD8, 4) | 0x00, 8, &OpDispatchBuilder::FSUBF64<32, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xD8, 4) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, 32, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xD8, 5) | 0x00, 8, &OpDispatchBuilder::FSUBF64<32, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xD8, 5) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, 32, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xD8, 6) | 0x00, 8, &OpDispatchBuilder::FDIVF64<32, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xD8, 6) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, 32, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xD8, 7) | 0x00, 8, &OpDispatchBuilder::FDIVF64<32, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xD8, 7) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, 32, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPD(0xD8, 0xC0), 8, &OpDispatchBuilder::FADDF64<80, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPD(0xD8, 0xC8), 8, &OpDispatchBuilder::FMULF64<80, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPD(0xD8, 0xD0), 8, &OpDispatchBuilder::FCOMIF64<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
-    {OPD(0xD8, 0xD8), 8, &OpDispatchBuilder::FCOMIF64<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
-    {OPD(0xD8, 0xE0), 8, &OpDispatchBuilder::FSUBF64<80, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPD(0xD8, 0xE8), 8, &OpDispatchBuilder::FSUBF64<80, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPD(0xD8, 0xF0), 8, &OpDispatchBuilder::FDIVF64<80, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPD(0xD8, 0xF8), 8, &OpDispatchBuilder::FDIVF64<80, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPD(0xD8, 0xC0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADDF64, 80, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPD(0xD8, 0xC8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMULF64, 80, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPD(0xD8, 0xD0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, 80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPD(0xD8, 0xD8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, 80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPD(0xD8, 0xE0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, 80, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPD(0xD8, 0xE8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, 80, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPD(0xD8, 0xF0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, 80, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPD(0xD8, 0xF8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, 80, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xD9, 0) | 0x00, 8, &OpDispatchBuilder::FLDF64<32>},
+    {OPDReg(0xD9, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLDF64, 32>},
 
     // 1 = Invalid
 
-    {OPDReg(0xD9, 2) | 0x00, 8, &OpDispatchBuilder::FSTF64<32>},
+    {OPDReg(0xD9, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTF64WithWidth, 32>},
 
-    {OPDReg(0xD9, 3) | 0x00, 8, &OpDispatchBuilder::FSTF64<32>},
+    {OPDReg(0xD9, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTF64WithWidth, 32>},
 
     {OPDReg(0xD9, 4) | 0x00, 8, &OpDispatchBuilder::X87LDENVF64},
 
@@ -6253,7 +6243,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 
     {OPDReg(0xD9, 7) | 0x00, 8, &OpDispatchBuilder::X87FSTCW},
 
-    {OPD(0xD9, 0xC0), 8, &OpDispatchBuilder::FLDF64<80>},
+    {OPD(0xD9, 0xC0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLDF64, 80>},
     {OPD(0xD9, 0xC8), 8, &OpDispatchBuilder::FXCH},
     {OPD(0xD9, 0xD0), 1, &OpDispatchBuilder::NOPOp}, // FNOP
     // D1 = Invalid
@@ -6264,47 +6254,47 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(0xD9, 0xE4), 1, &OpDispatchBuilder::FTSTF64},
     {OPD(0xD9, 0xE5), 1, &OpDispatchBuilder::X87FXAMF64},
     // E6 = Invalid
-    {OPD(0xD9, 0xE8), 1, &OpDispatchBuilder::FLDF64_Const<0x3FF0000000000000>}, // 1.0
-    {OPD(0xD9, 0xE9), 1, &OpDispatchBuilder::FLDF64_Const<0x400A934F0979A372>}, // log2l(10)
-    {OPD(0xD9, 0xEA), 1, &OpDispatchBuilder::FLDF64_Const<0x3FF71547652B82FE>}, // log2l(e)
-    {OPD(0xD9, 0xEB), 1, &OpDispatchBuilder::FLDF64_Const<0x400921FB54442D18>}, // pi
-    {OPD(0xD9, 0xEC), 1, &OpDispatchBuilder::FLDF64_Const<0x3FD34413509F79FF>}, // log10l(2)
-    {OPD(0xD9, 0xED), 1, &OpDispatchBuilder::FLDF64_Const<0x3FE62E42FEFA39EF>}, // log(2)
-    {OPD(0xD9, 0xEE), 1, &OpDispatchBuilder::FLDF64_Const<0>},                  // 0.0
+    {OPD(0xD9, 0xE8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLDF64_Const, 0x3FF0000000000000>}, // 1.0
+    {OPD(0xD9, 0xE9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLDF64_Const, 0x400A934F0979A372>}, // log2l(10)
+    {OPD(0xD9, 0xEA), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLDF64_Const, 0x3FF71547652B82FE>}, // log2l(e)
+    {OPD(0xD9, 0xEB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLDF64_Const, 0x400921FB54442D18>}, // pi
+    {OPD(0xD9, 0xEC), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLDF64_Const, 0x3FD34413509F79FF>}, // log10l(2)
+    {OPD(0xD9, 0xED), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLDF64_Const, 0x3FE62E42FEFA39EF>}, // log(2)
+    {OPD(0xD9, 0xEE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLDF64_Const, 0>},                  // 0.0
 
     // EF = Invalid
-    {OPD(0xD9, 0xF0), 1, &OpDispatchBuilder::X87UnaryOpF64<IR::OP_F64F2XM1>},
+    {OPD(0xD9, 0xF0), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87UnaryOpF64, IR::OP_F64F2XM1>},
     {OPD(0xD9, 0xF1), 1, &OpDispatchBuilder::X87FYL2XF64},
     {OPD(0xD9, 0xF2), 1, &OpDispatchBuilder::X87TANF64},
     {OPD(0xD9, 0xF3), 1, &OpDispatchBuilder::X87ATANF64},
     {OPD(0xD9, 0xF4), 1, &OpDispatchBuilder::FXTRACTF64},
-    {OPD(0xD9, 0xF5), 1, &OpDispatchBuilder::X87BinaryOpF64<IR::OP_F64FPREM1>},
-    {OPD(0xD9, 0xF6), 1, &OpDispatchBuilder::X87ModifySTP<false>},
-    {OPD(0xD9, 0xF7), 1, &OpDispatchBuilder::X87ModifySTP<true>},
-    {OPD(0xD9, 0xF8), 1, &OpDispatchBuilder::X87BinaryOpF64<IR::OP_F64FPREM>},
+    {OPD(0xD9, 0xF5), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87BinaryOpF64, IR::OP_F64FPREM1>},
+    {OPD(0xD9, 0xF6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87ModifySTP, false>},
+    {OPD(0xD9, 0xF7), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87ModifySTP, true>},
+    {OPD(0xD9, 0xF8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87BinaryOpF64, IR::OP_F64FPREM>},
     {OPD(0xD9, 0xF9), 1, &OpDispatchBuilder::X87FYL2XF64},
     {OPD(0xD9, 0xFA), 1, &OpDispatchBuilder::FSQRTF64},
     {OPD(0xD9, 0xFB), 1, &OpDispatchBuilder::X87SinCosF64},
     {OPD(0xD9, 0xFC), 1, &OpDispatchBuilder::FRNDINTF64},
-    {OPD(0xD9, 0xFD), 1, &OpDispatchBuilder::X87BinaryOpF64<IR::OP_F64SCALE>},
-    {OPD(0xD9, 0xFE), 1, &OpDispatchBuilder::X87UnaryOpF64<IR::OP_F64SIN>},
-    {OPD(0xD9, 0xFF), 1, &OpDispatchBuilder::X87UnaryOpF64<IR::OP_F64COS>},
+    {OPD(0xD9, 0xFD), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87BinaryOpF64, IR::OP_F64SCALE>},
+    {OPD(0xD9, 0xFE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87UnaryOpF64, IR::OP_F64SIN>},
+    {OPD(0xD9, 0xFF), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87UnaryOpF64, IR::OP_F64COS>},
 
-    {OPDReg(0xDA, 0) | 0x00, 8, &OpDispatchBuilder::FADDF64<32, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDA, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADDF64, 32, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDA, 1) | 0x00, 8, &OpDispatchBuilder::FMULF64<32, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDA, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMULF64, 32, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDA, 2) | 0x00, 8, &OpDispatchBuilder::FCOMIF64<32, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPDReg(0xDA, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, 32, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
 
-    {OPDReg(0xDA, 3) | 0x00, 8, &OpDispatchBuilder::FCOMIF64<32, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPDReg(0xDA, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, 32, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
 
-    {OPDReg(0xDA, 4) | 0x00, 8, &OpDispatchBuilder::FSUBF64<32, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDA, 4) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, 32, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDA, 5) | 0x00, 8, &OpDispatchBuilder::FSUBF64<32, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDA, 5) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, 32, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDA, 6) | 0x00, 8, &OpDispatchBuilder::FDIVF64<32, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDA, 6) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, 32, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDA, 7) | 0x00, 8, &OpDispatchBuilder::FDIVF64<32, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDA, 7) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, 32, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPD(0xDA, 0xC0), 8, &OpDispatchBuilder::X87FCMOV},
     {OPD(0xDA, 0xC8), 8, &OpDispatchBuilder::X87FCMOV},
@@ -6312,26 +6302,26 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(0xDA, 0xD8), 8, &OpDispatchBuilder::X87FCMOV},
     // E0 = Invalid
     // E8 = Invalid
-    {OPD(0xDA, 0xE9), 1, &OpDispatchBuilder::FCOMIF64<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
+    {OPD(0xDA, 0xE9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, 80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
     // EA = Invalid
     // F0 = Invalid
     // F8 = Invalid
 
     {OPDReg(0xDB, 0) | 0x00, 8, &OpDispatchBuilder::FILDF64},
 
-    {OPDReg(0xDB, 1) | 0x00, 8, &OpDispatchBuilder::FISTF64<true>},
+    {OPDReg(0xDB, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FISTF64, true>},
 
-    {OPDReg(0xDB, 2) | 0x00, 8, &OpDispatchBuilder::FISTF64<false>},
+    {OPDReg(0xDB, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FISTF64, false>},
 
-    {OPDReg(0xDB, 3) | 0x00, 8, &OpDispatchBuilder::FISTF64<false>},
+    {OPDReg(0xDB, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FISTF64, false>},
 
     // 4 = Invalid
 
-    {OPDReg(0xDB, 5) | 0x00, 8, &OpDispatchBuilder::FLDF64<80>},
+    {OPDReg(0xDB, 5) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLDF64, 80>},
 
     // 6 = Invalid
 
-    {OPDReg(0xDB, 7) | 0x00, 8, &OpDispatchBuilder::FSTF64<80>},
+    {OPDReg(0xDB, 7) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTF64WithWidth, 80>},
 
 
     {OPD(0xDB, 0xC0), 8, &OpDispatchBuilder::X87FCMOV},
@@ -6342,41 +6332,41 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(0xDB, 0xE2), 1, &OpDispatchBuilder::NOPOp}, // FNCLEX
     {OPD(0xDB, 0xE3), 1, &OpDispatchBuilder::FNINITF64},
     // E4 = Invalid
-    {OPD(0xDB, 0xE8), 8, &OpDispatchBuilder::FCOMIF64<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
-    {OPD(0xDB, 0xF0), 8, &OpDispatchBuilder::FCOMIF64<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
+    {OPD(0xDB, 0xE8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, 80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
+    {OPD(0xDB, 0xF0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, 80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
 
     // F8 = Invalid
 
-    {OPDReg(0xDC, 0) | 0x00, 8, &OpDispatchBuilder::FADDF64<64, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDC, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADDF64, 64, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDC, 1) | 0x00, 8, &OpDispatchBuilder::FMULF64<64, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDC, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMULF64, 64, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDC, 2) | 0x00, 8, &OpDispatchBuilder::FCOMIF64<64, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPDReg(0xDC, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, 64, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
 
-    {OPDReg(0xDC, 3) | 0x00, 8, &OpDispatchBuilder::FCOMIF64<64, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPDReg(0xDC, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, 64, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
 
-    {OPDReg(0xDC, 4) | 0x00, 8, &OpDispatchBuilder::FSUBF64<64, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDC, 4) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, 64, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDC, 5) | 0x00, 8, &OpDispatchBuilder::FSUBF64<64, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDC, 5) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, 64, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDC, 6) | 0x00, 8, &OpDispatchBuilder::FDIVF64<64, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDC, 6) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, 64, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDC, 7) | 0x00, 8, &OpDispatchBuilder::FDIVF64<64, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDC, 7) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, 64, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPD(0xDC, 0xC0), 8, &OpDispatchBuilder::FADDF64<80, false, OpDispatchBuilder::OpResult::RES_STI>},
-    {OPD(0xDC, 0xC8), 8, &OpDispatchBuilder::FMULF64<80, false, OpDispatchBuilder::OpResult::RES_STI>},
-    {OPD(0xDC, 0xE0), 8, &OpDispatchBuilder::FSUBF64<80, false, false, OpDispatchBuilder::OpResult::RES_STI>},
-    {OPD(0xDC, 0xE8), 8, &OpDispatchBuilder::FSUBF64<80, false, true, OpDispatchBuilder::OpResult::RES_STI>},
-    {OPD(0xDC, 0xF0), 8, &OpDispatchBuilder::FDIVF64<80, false, false, OpDispatchBuilder::OpResult::RES_STI>},
-    {OPD(0xDC, 0xF8), 8, &OpDispatchBuilder::FDIVF64<80, false, true, OpDispatchBuilder::OpResult::RES_STI>},
+    {OPD(0xDC, 0xC0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADDF64, 80, false, OpDispatchBuilder::OpResult::RES_STI>},
+    {OPD(0xDC, 0xC8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMULF64, 80, false, OpDispatchBuilder::OpResult::RES_STI>},
+    {OPD(0xDC, 0xE0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, 80, false, false, OpDispatchBuilder::OpResult::RES_STI>},
+    {OPD(0xDC, 0xE8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, 80, false, true, OpDispatchBuilder::OpResult::RES_STI>},
+    {OPD(0xDC, 0xF0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, 80, false, false, OpDispatchBuilder::OpResult::RES_STI>},
+    {OPD(0xDC, 0xF8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, 80, false, true, OpDispatchBuilder::OpResult::RES_STI>},
 
-    {OPDReg(0xDD, 0) | 0x00, 8, &OpDispatchBuilder::FLDF64<64>},
+    {OPDReg(0xDD, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLDF64, 64>},
 
-    {OPDReg(0xDD, 1) | 0x00, 8, &OpDispatchBuilder::FISTF64<true>},
+    {OPDReg(0xDD, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FISTF64, true>},
 
-    {OPDReg(0xDD, 2) | 0x00, 8, &OpDispatchBuilder::FSTF64<64>},
+    {OPDReg(0xDD, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTF64WithWidth, 64>},
 
-    {OPDReg(0xDD, 3) | 0x00, 8, &OpDispatchBuilder::FSTF64<64>},
+    {OPDReg(0xDD, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTF64WithWidth, 64>},
 
     {OPDReg(0xDD, 4) | 0x00, 8, &OpDispatchBuilder::X87FRSTORF64},
 
@@ -6389,40 +6379,40 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(0xDD, 0xD0), 8, &OpDispatchBuilder::FST}, // register-register from regular X87
     {OPD(0xDD, 0xD8), 8, &OpDispatchBuilder::FST}, //^
 
-    {OPD(0xDD, 0xE0), 8, &OpDispatchBuilder::FCOMIF64<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
-    {OPD(0xDD, 0xE8), 8, &OpDispatchBuilder::FCOMIF64<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPD(0xDD, 0xE0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, 80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPD(0xDD, 0xE8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, 80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
 
-    {OPDReg(0xDE, 0) | 0x00, 8, &OpDispatchBuilder::FADDF64<16, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDE, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADDF64, 16, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDE, 1) | 0x00, 8, &OpDispatchBuilder::FMULF64<16, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDE, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMULF64, 16, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDE, 2) | 0x00, 8, &OpDispatchBuilder::FCOMIF64<16, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPDReg(0xDE, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, 16, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
 
-    {OPDReg(0xDE, 3) | 0x00, 8, &OpDispatchBuilder::FCOMIF64<16, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPDReg(0xDE, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, 16, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
 
-    {OPDReg(0xDE, 4) | 0x00, 8, &OpDispatchBuilder::FSUBF64<16, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDE, 4) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, 16, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDE, 5) | 0x00, 8, &OpDispatchBuilder::FSUBF64<16, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDE, 5) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, 16, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDE, 6) | 0x00, 8, &OpDispatchBuilder::FDIVF64<16, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDE, 6) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, 16, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDE, 7) | 0x00, 8, &OpDispatchBuilder::FDIVF64<16, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDE, 7) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, 16, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPD(0xDE, 0xC0), 8, &OpDispatchBuilder::FADDF64<80, false, OpDispatchBuilder::OpResult::RES_STI>},
-    {OPD(0xDE, 0xC8), 8, &OpDispatchBuilder::FMULF64<80, false, OpDispatchBuilder::OpResult::RES_STI>},
-    {OPD(0xDE, 0xD9), 1, &OpDispatchBuilder::FCOMIF64<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
-    {OPD(0xDE, 0xE0), 8, &OpDispatchBuilder::FSUBF64<80, false, false, OpDispatchBuilder::OpResult::RES_STI>},
-    {OPD(0xDE, 0xE8), 8, &OpDispatchBuilder::FSUBF64<80, false, true, OpDispatchBuilder::OpResult::RES_STI>},
-    {OPD(0xDE, 0xF0), 8, &OpDispatchBuilder::FDIVF64<80, false, false, OpDispatchBuilder::OpResult::RES_STI>},
-    {OPD(0xDE, 0xF8), 8, &OpDispatchBuilder::FDIVF64<80, false, true, OpDispatchBuilder::OpResult::RES_STI>},
+    {OPD(0xDE, 0xC0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADDF64, 80, false, OpDispatchBuilder::OpResult::RES_STI>},
+    {OPD(0xDE, 0xC8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMULF64, 80, false, OpDispatchBuilder::OpResult::RES_STI>},
+    {OPD(0xDE, 0xD9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, 80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
+    {OPD(0xDE, 0xE0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, 80, false, false, OpDispatchBuilder::OpResult::RES_STI>},
+    {OPD(0xDE, 0xE8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, 80, false, true, OpDispatchBuilder::OpResult::RES_STI>},
+    {OPD(0xDE, 0xF0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, 80, false, false, OpDispatchBuilder::OpResult::RES_STI>},
+    {OPD(0xDE, 0xF8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, 80, false, true, OpDispatchBuilder::OpResult::RES_STI>},
 
     {OPDReg(0xDF, 0) | 0x00, 8, &OpDispatchBuilder::FILDF64},
 
-    {OPDReg(0xDF, 1) | 0x00, 8, &OpDispatchBuilder::FISTF64<true>},
+    {OPDReg(0xDF, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FISTF64, true>},
 
-    {OPDReg(0xDF, 2) | 0x00, 8, &OpDispatchBuilder::FISTF64<false>},
+    {OPDReg(0xDF, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FISTF64, false>},
 
-    {OPDReg(0xDF, 3) | 0x00, 8, &OpDispatchBuilder::FISTF64<false>},
+    {OPDReg(0xDF, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FISTF64, false>},
 
     {OPDReg(0xDF, 4) | 0x00, 8, &OpDispatchBuilder::FBLDF64},
 
@@ -6430,50 +6420,50 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 
     {OPDReg(0xDF, 6) | 0x00, 8, &OpDispatchBuilder::FBSTPF64},
 
-    {OPDReg(0xDF, 7) | 0x00, 8, &OpDispatchBuilder::FISTF64<false>},
+    {OPDReg(0xDF, 7) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FISTF64, false>},
 
     // XXX: This should also set the x87 tag bits to empty
     // We don't support this currently, so just pop the stack
-    {OPD(0xDF, 0xC0), 8, &OpDispatchBuilder::X87ModifySTP<true>},
+    {OPD(0xDF, 0xC0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87ModifySTP, true>},
 
     {OPD(0xDF, 0xE0), 8, &OpDispatchBuilder::X87FNSTSW},
-    {OPD(0xDF, 0xE8), 8, &OpDispatchBuilder::FCOMIF64<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
-    {OPD(0xDF, 0xF0), 8, &OpDispatchBuilder::FCOMIF64<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
+    {OPD(0xDF, 0xE8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, 80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
+    {OPD(0xDF, 0xF0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, 80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
   };
 
   constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> X87OpTable[] = {
-    {OPDReg(0xD8, 0) | 0x00, 8, &OpDispatchBuilder::FADD<32, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xD8, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADD, 32, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xD8, 1) | 0x00, 8, &OpDispatchBuilder::FMUL<32, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xD8, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMUL, 32, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xD8, 2) | 0x00, 8, &OpDispatchBuilder::FCOMI<32, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPDReg(0xD8, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, 32, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
 
-    {OPDReg(0xD8, 3) | 0x00, 8, &OpDispatchBuilder::FCOMI<32, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPDReg(0xD8, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, 32, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
 
-    {OPDReg(0xD8, 4) | 0x00, 8, &OpDispatchBuilder::FSUB<32, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xD8, 4) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, 32, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xD8, 5) | 0x00, 8, &OpDispatchBuilder::FSUB<32, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xD8, 5) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, 32, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xD8, 6) | 0x00, 8, &OpDispatchBuilder::FDIV<32, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xD8, 6) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, 32, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xD8, 7) | 0x00, 8, &OpDispatchBuilder::FDIV<32, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xD8, 7) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, 32, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPD(0xD8, 0xC0), 8, &OpDispatchBuilder::FADD<80, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPD(0xD8, 0xC8), 8, &OpDispatchBuilder::FMUL<80, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPD(0xD8, 0xD0), 8, &OpDispatchBuilder::FCOMI<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
-    {OPD(0xD8, 0xD8), 8, &OpDispatchBuilder::FCOMI<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
-    {OPD(0xD8, 0xE0), 8, &OpDispatchBuilder::FSUB<80, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPD(0xD8, 0xE8), 8, &OpDispatchBuilder::FSUB<80, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPD(0xD8, 0xF0), 8, &OpDispatchBuilder::FDIV<80, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
-    {OPD(0xD8, 0xF8), 8, &OpDispatchBuilder::FDIV<80, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPD(0xD8, 0xC0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADD, 80, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPD(0xD8, 0xC8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMUL, 80, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPD(0xD8, 0xD0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, 80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPD(0xD8, 0xD8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, 80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPD(0xD8, 0xE0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, 80, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPD(0xD8, 0xE8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, 80, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPD(0xD8, 0xF0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, 80, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPD(0xD8, 0xF8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, 80, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xD9, 0) | 0x00, 8, &OpDispatchBuilder::FLD<32>},
+    {OPDReg(0xD9, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLD, 32>},
 
     // 1 = Invalid
 
-    {OPDReg(0xD9, 2) | 0x00, 8, &OpDispatchBuilder::FST<32>},
+    {OPDReg(0xD9, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTWithWidth, 32>},
 
-    {OPDReg(0xD9, 3) | 0x00, 8, &OpDispatchBuilder::FST<32>},
+    {OPDReg(0xD9, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTWithWidth, 32>},
 
     {OPDReg(0xD9, 4) | 0x00, 8, &OpDispatchBuilder::X87LDENV},
 
@@ -6483,7 +6473,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 
     {OPDReg(0xD9, 7) | 0x00, 8, &OpDispatchBuilder::X87FSTCW},
 
-    {OPD(0xD9, 0xC0), 8, &OpDispatchBuilder::FLD<80>},
+    {OPD(0xD9, 0xC0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLD, 80>},
     {OPD(0xD9, 0xC8), 8, &OpDispatchBuilder::FXCH},
     {OPD(0xD9, 0xD0), 1, &OpDispatchBuilder::NOPOp}, // FNOP
     // D1 = Invalid
@@ -6494,47 +6484,47 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(0xD9, 0xE4), 1, &OpDispatchBuilder::FTST},
     {OPD(0xD9, 0xE5), 1, &OpDispatchBuilder::X87FXAM},
     // E6 = Invalid
-    {OPD(0xD9, 0xE8), 1, &OpDispatchBuilder::FLD_Const<NamedVectorConstant::NAMED_VECTOR_X87_ONE>},     // 1.0
-    {OPD(0xD9, 0xE9), 1, &OpDispatchBuilder::FLD_Const<NamedVectorConstant::NAMED_VECTOR_X87_LOG2_10>}, // log2l(10)
-    {OPD(0xD9, 0xEA), 1, &OpDispatchBuilder::FLD_Const<NamedVectorConstant::NAMED_VECTOR_X87_LOG2_E>},  // log2l(e)
-    {OPD(0xD9, 0xEB), 1, &OpDispatchBuilder::FLD_Const<NamedVectorConstant::NAMED_VECTOR_X87_PI>},      // pi
-    {OPD(0xD9, 0xEC), 1, &OpDispatchBuilder::FLD_Const<NamedVectorConstant::NAMED_VECTOR_X87_LOG10_2>}, // log10l(2)
-    {OPD(0xD9, 0xED), 1, &OpDispatchBuilder::FLD_Const<NamedVectorConstant::NAMED_VECTOR_X87_LOG_2>},   // log(2)
-    {OPD(0xD9, 0xEE), 1, &OpDispatchBuilder::FLD_Const<NamedVectorConstant::NAMED_VECTOR_ZERO>},        // 0.0
+    {OPD(0xD9, 0xE8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLD_Const, NamedVectorConstant::NAMED_VECTOR_X87_ONE>},     // 1.0
+    {OPD(0xD9, 0xE9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLD_Const, NamedVectorConstant::NAMED_VECTOR_X87_LOG2_10>}, // log2l(10)
+    {OPD(0xD9, 0xEA), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLD_Const, NamedVectorConstant::NAMED_VECTOR_X87_LOG2_E>}, // log2l(e)
+    {OPD(0xD9, 0xEB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLD_Const, NamedVectorConstant::NAMED_VECTOR_X87_PI>},     // pi
+    {OPD(0xD9, 0xEC), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLD_Const, NamedVectorConstant::NAMED_VECTOR_X87_LOG10_2>}, // log10l(2)
+    {OPD(0xD9, 0xED), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLD_Const, NamedVectorConstant::NAMED_VECTOR_X87_LOG_2>},   // log(2)
+    {OPD(0xD9, 0xEE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLD_Const, NamedVectorConstant::NAMED_VECTOR_ZERO>},        // 0.0
 
     // EF = Invalid
-    {OPD(0xD9, 0xF0), 1, &OpDispatchBuilder::X87UnaryOp<IR::OP_F80F2XM1>},
+    {OPD(0xD9, 0xF0), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87UnaryOp, IR::OP_F80F2XM1>},
     {OPD(0xD9, 0xF1), 1, &OpDispatchBuilder::X87FYL2X},
     {OPD(0xD9, 0xF2), 1, &OpDispatchBuilder::X87TAN},
     {OPD(0xD9, 0xF3), 1, &OpDispatchBuilder::X87ATAN},
     {OPD(0xD9, 0xF4), 1, &OpDispatchBuilder::FXTRACT},
-    {OPD(0xD9, 0xF5), 1, &OpDispatchBuilder::X87BinaryOp<IR::OP_F80FPREM1>},
-    {OPD(0xD9, 0xF6), 1, &OpDispatchBuilder::X87ModifySTP<false>},
-    {OPD(0xD9, 0xF7), 1, &OpDispatchBuilder::X87ModifySTP<true>},
-    {OPD(0xD9, 0xF8), 1, &OpDispatchBuilder::X87BinaryOp<IR::OP_F80FPREM>},
+    {OPD(0xD9, 0xF5), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87BinaryOp, IR::OP_F80FPREM1>},
+    {OPD(0xD9, 0xF6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87ModifySTP, false>},
+    {OPD(0xD9, 0xF7), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87ModifySTP, true>},
+    {OPD(0xD9, 0xF8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87BinaryOp, IR::OP_F80FPREM>},
     {OPD(0xD9, 0xF9), 1, &OpDispatchBuilder::X87FYL2X},
-    {OPD(0xD9, 0xFA), 1, &OpDispatchBuilder::X87UnaryOp<IR::OP_F80SQRT>},
+    {OPD(0xD9, 0xFA), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87UnaryOp, IR::OP_F80SQRT>},
     {OPD(0xD9, 0xFB), 1, &OpDispatchBuilder::X87SinCos},
     {OPD(0xD9, 0xFC), 1, &OpDispatchBuilder::FRNDINT},
-    {OPD(0xD9, 0xFD), 1, &OpDispatchBuilder::X87BinaryOp<IR::OP_F80SCALE>},
-    {OPD(0xD9, 0xFE), 1, &OpDispatchBuilder::X87UnaryOp<IR::OP_F80SIN>},
-    {OPD(0xD9, 0xFF), 1, &OpDispatchBuilder::X87UnaryOp<IR::OP_F80COS>},
+    {OPD(0xD9, 0xFD), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87BinaryOp, IR::OP_F80SCALE>},
+    {OPD(0xD9, 0xFE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87UnaryOp, IR::OP_F80SIN>},
+    {OPD(0xD9, 0xFF), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87UnaryOp, IR::OP_F80COS>},
 
-    {OPDReg(0xDA, 0) | 0x00, 8, &OpDispatchBuilder::FADD<32, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDA, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADD, 32, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDA, 1) | 0x00, 8, &OpDispatchBuilder::FMUL<32, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDA, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMUL, 32, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDA, 2) | 0x00, 8, &OpDispatchBuilder::FCOMI<32, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPDReg(0xDA, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, 32, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
 
-    {OPDReg(0xDA, 3) | 0x00, 8, &OpDispatchBuilder::FCOMI<32, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPDReg(0xDA, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, 32, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
 
-    {OPDReg(0xDA, 4) | 0x00, 8, &OpDispatchBuilder::FSUB<32, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDA, 4) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, 32, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDA, 5) | 0x00, 8, &OpDispatchBuilder::FSUB<32, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDA, 5) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, 32, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDA, 6) | 0x00, 8, &OpDispatchBuilder::FDIV<32, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDA, 6) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, 32, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDA, 7) | 0x00, 8, &OpDispatchBuilder::FDIV<32, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDA, 7) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, 32, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPD(0xDA, 0xC0), 8, &OpDispatchBuilder::X87FCMOV},
     {OPD(0xDA, 0xC8), 8, &OpDispatchBuilder::X87FCMOV},
@@ -6542,26 +6532,26 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(0xDA, 0xD8), 8, &OpDispatchBuilder::X87FCMOV},
     // E0 = Invalid
     // E8 = Invalid
-    {OPD(0xDA, 0xE9), 1, &OpDispatchBuilder::FCOMI<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
+    {OPD(0xDA, 0xE9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, 80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
     // EA = Invalid
     // F0 = Invalid
     // F8 = Invalid
 
     {OPDReg(0xDB, 0) | 0x00, 8, &OpDispatchBuilder::FILD},
 
-    {OPDReg(0xDB, 1) | 0x00, 8, &OpDispatchBuilder::FIST<true>},
+    {OPDReg(0xDB, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FIST, true>},
 
-    {OPDReg(0xDB, 2) | 0x00, 8, &OpDispatchBuilder::FIST<false>},
+    {OPDReg(0xDB, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FIST, false>},
 
-    {OPDReg(0xDB, 3) | 0x00, 8, &OpDispatchBuilder::FIST<false>},
+    {OPDReg(0xDB, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FIST, false>},
 
     // 4 = Invalid
 
-    {OPDReg(0xDB, 5) | 0x00, 8, &OpDispatchBuilder::FLD<80>},
+    {OPDReg(0xDB, 5) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLD, 80>},
 
     // 6 = Invalid
 
-    {OPDReg(0xDB, 7) | 0x00, 8, &OpDispatchBuilder::FST<80>},
+    {OPDReg(0xDB, 7) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTWithWidth, 80>},
 
 
     {OPD(0xDB, 0xC0), 8, &OpDispatchBuilder::X87FCMOV},
@@ -6572,41 +6562,41 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(0xDB, 0xE2), 1, &OpDispatchBuilder::NOPOp}, // FNCLEX
     {OPD(0xDB, 0xE3), 1, &OpDispatchBuilder::FNINIT},
     // E4 = Invalid
-    {OPD(0xDB, 0xE8), 8, &OpDispatchBuilder::FCOMI<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
-    {OPD(0xDB, 0xF0), 8, &OpDispatchBuilder::FCOMI<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
+    {OPD(0xDB, 0xE8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, 80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
+    {OPD(0xDB, 0xF0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, 80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
 
     // F8 = Invalid
 
-    {OPDReg(0xDC, 0) | 0x00, 8, &OpDispatchBuilder::FADD<64, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDC, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADD, 64, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDC, 1) | 0x00, 8, &OpDispatchBuilder::FMUL<64, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDC, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMUL, 64, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDC, 2) | 0x00, 8, &OpDispatchBuilder::FCOMI<64, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPDReg(0xDC, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, 64, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
 
-    {OPDReg(0xDC, 3) | 0x00, 8, &OpDispatchBuilder::FCOMI<64, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPDReg(0xDC, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, 64, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
 
-    {OPDReg(0xDC, 4) | 0x00, 8, &OpDispatchBuilder::FSUB<64, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDC, 4) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, 64, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDC, 5) | 0x00, 8, &OpDispatchBuilder::FSUB<64, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDC, 5) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, 64, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDC, 6) | 0x00, 8, &OpDispatchBuilder::FDIV<64, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDC, 6) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, 64, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDC, 7) | 0x00, 8, &OpDispatchBuilder::FDIV<64, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDC, 7) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, 64, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPD(0xDC, 0xC0), 8, &OpDispatchBuilder::FADD<80, false, OpDispatchBuilder::OpResult::RES_STI>},
-    {OPD(0xDC, 0xC8), 8, &OpDispatchBuilder::FMUL<80, false, OpDispatchBuilder::OpResult::RES_STI>},
-    {OPD(0xDC, 0xE0), 8, &OpDispatchBuilder::FSUB<80, false, false, OpDispatchBuilder::OpResult::RES_STI>},
-    {OPD(0xDC, 0xE8), 8, &OpDispatchBuilder::FSUB<80, false, true, OpDispatchBuilder::OpResult::RES_STI>},
-    {OPD(0xDC, 0xF0), 8, &OpDispatchBuilder::FDIV<80, false, false, OpDispatchBuilder::OpResult::RES_STI>},
-    {OPD(0xDC, 0xF8), 8, &OpDispatchBuilder::FDIV<80, false, true, OpDispatchBuilder::OpResult::RES_STI>},
+    {OPD(0xDC, 0xC0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADD, 80, false, OpDispatchBuilder::OpResult::RES_STI>},
+    {OPD(0xDC, 0xC8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMUL, 80, false, OpDispatchBuilder::OpResult::RES_STI>},
+    {OPD(0xDC, 0xE0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, 80, false, false, OpDispatchBuilder::OpResult::RES_STI>},
+    {OPD(0xDC, 0xE8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, 80, false, true, OpDispatchBuilder::OpResult::RES_STI>},
+    {OPD(0xDC, 0xF0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, 80, false, false, OpDispatchBuilder::OpResult::RES_STI>},
+    {OPD(0xDC, 0xF8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, 80, false, true, OpDispatchBuilder::OpResult::RES_STI>},
 
-    {OPDReg(0xDD, 0) | 0x00, 8, &OpDispatchBuilder::FLD<64>},
+    {OPDReg(0xDD, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLD, 64>},
 
-    {OPDReg(0xDD, 1) | 0x00, 8, &OpDispatchBuilder::FIST<true>},
+    {OPDReg(0xDD, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FIST, true>},
 
-    {OPDReg(0xDD, 2) | 0x00, 8, &OpDispatchBuilder::FST<64>},
+    {OPDReg(0xDD, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTWithWidth, 64>},
 
-    {OPDReg(0xDD, 3) | 0x00, 8, &OpDispatchBuilder::FST<64>},
+    {OPDReg(0xDD, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTWithWidth, 64>},
 
     {OPDReg(0xDD, 4) | 0x00, 8, &OpDispatchBuilder::X87FRSTOR},
 
@@ -6619,40 +6609,40 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(0xDD, 0xD0), 8, &OpDispatchBuilder::FST},
     {OPD(0xDD, 0xD8), 8, &OpDispatchBuilder::FST},
 
-    {OPD(0xDD, 0xE0), 8, &OpDispatchBuilder::FCOMI<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
-    {OPD(0xDD, 0xE8), 8, &OpDispatchBuilder::FCOMI<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPD(0xDD, 0xE0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, 80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPD(0xDD, 0xE8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, 80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
 
-    {OPDReg(0xDE, 0) | 0x00, 8, &OpDispatchBuilder::FADD<16, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDE, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADD, 16, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDE, 1) | 0x00, 8, &OpDispatchBuilder::FMUL<16, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDE, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMUL, 16, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDE, 2) | 0x00, 8, &OpDispatchBuilder::FCOMI<16, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPDReg(0xDE, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, 16, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
 
-    {OPDReg(0xDE, 3) | 0x00, 8, &OpDispatchBuilder::FCOMI<16, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+    {OPDReg(0xDE, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, 16, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
 
-    {OPDReg(0xDE, 4) | 0x00, 8, &OpDispatchBuilder::FSUB<16, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDE, 4) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, 16, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDE, 5) | 0x00, 8, &OpDispatchBuilder::FSUB<16, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDE, 5) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, 16, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDE, 6) | 0x00, 8, &OpDispatchBuilder::FDIV<16, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDE, 6) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, 16, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPDReg(0xDE, 7) | 0x00, 8, &OpDispatchBuilder::FDIV<16, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+    {OPDReg(0xDE, 7) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, 16, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
 
-    {OPD(0xDE, 0xC0), 8, &OpDispatchBuilder::FADD<80, false, OpDispatchBuilder::OpResult::RES_STI>},
-    {OPD(0xDE, 0xC8), 8, &OpDispatchBuilder::FMUL<80, false, OpDispatchBuilder::OpResult::RES_STI>},
-    {OPD(0xDE, 0xD9), 1, &OpDispatchBuilder::FCOMI<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
-    {OPD(0xDE, 0xE0), 8, &OpDispatchBuilder::FSUB<80, false, false, OpDispatchBuilder::OpResult::RES_STI>},
-    {OPD(0xDE, 0xE8), 8, &OpDispatchBuilder::FSUB<80, false, true, OpDispatchBuilder::OpResult::RES_STI>},
-    {OPD(0xDE, 0xF0), 8, &OpDispatchBuilder::FDIV<80, false, false, OpDispatchBuilder::OpResult::RES_STI>},
-    {OPD(0xDE, 0xF8), 8, &OpDispatchBuilder::FDIV<80, false, true, OpDispatchBuilder::OpResult::RES_STI>},
+    {OPD(0xDE, 0xC0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADD, 80, false, OpDispatchBuilder::OpResult::RES_STI>},
+    {OPD(0xDE, 0xC8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMUL, 80, false, OpDispatchBuilder::OpResult::RES_STI>},
+    {OPD(0xDE, 0xD9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, 80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
+    {OPD(0xDE, 0xE0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, 80, false, false, OpDispatchBuilder::OpResult::RES_STI>},
+    {OPD(0xDE, 0xE8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, 80, false, true, OpDispatchBuilder::OpResult::RES_STI>},
+    {OPD(0xDE, 0xF0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, 80, false, false, OpDispatchBuilder::OpResult::RES_STI>},
+    {OPD(0xDE, 0xF8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, 80, false, true, OpDispatchBuilder::OpResult::RES_STI>},
 
     {OPDReg(0xDF, 0) | 0x00, 8, &OpDispatchBuilder::FILD},
 
-    {OPDReg(0xDF, 1) | 0x00, 8, &OpDispatchBuilder::FIST<true>},
+    {OPDReg(0xDF, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FIST, true>},
 
-    {OPDReg(0xDF, 2) | 0x00, 8, &OpDispatchBuilder::FIST<false>},
+    {OPDReg(0xDF, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FIST, false>},
 
-    {OPDReg(0xDF, 3) | 0x00, 8, &OpDispatchBuilder::FIST<false>},
+    {OPDReg(0xDF, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FIST, false>},
 
     {OPDReg(0xDF, 4) | 0x00, 8, &OpDispatchBuilder::FBLD},
 
@@ -6660,15 +6650,15 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 
     {OPDReg(0xDF, 6) | 0x00, 8, &OpDispatchBuilder::FBSTP},
 
-    {OPDReg(0xDF, 7) | 0x00, 8, &OpDispatchBuilder::FIST<false>},
+    {OPDReg(0xDF, 7) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FIST, false>},
 
     // XXX: This should also set the x87 tag bits to empty
     // We don't support this currently, so just pop the stack
-    {OPD(0xDF, 0xC0), 8, &OpDispatchBuilder::X87ModifySTP<true>},
+    {OPD(0xDF, 0xC0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87ModifySTP, true>},
 
     {OPD(0xDF, 0xE0), 8, &OpDispatchBuilder::X87FNSTSW},
-    {OPD(0xDF, 0xE8), 8, &OpDispatchBuilder::FCOMI<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
-    {OPD(0xDF, 0xF0), 8, &OpDispatchBuilder::FCOMI<80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
+    {OPD(0xDF, 0xE8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, 80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
+    {OPD(0xDF, 0xF0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, 80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
   };
 #undef OPD
 #undef OPDReg
@@ -6681,10 +6671,10 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
   constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F38Table[] = {
     {OPD(PF_38_NONE, 0x00), 1, &OpDispatchBuilder::PSHUFBOp},
     {OPD(PF_38_66, 0x00), 1, &OpDispatchBuilder::PSHUFBOp},
-    {OPD(PF_38_NONE, 0x01), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADDP, 2>},
-    {OPD(PF_38_66, 0x01), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADDP, 2>},
-    {OPD(PF_38_NONE, 0x02), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADDP, 4>},
-    {OPD(PF_38_66, 0x02), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VADDP, 4>},
+    {OPD(PF_38_NONE, 0x01), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADDP, 2>},
+    {OPD(PF_38_66, 0x01), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADDP, 2>},
+    {OPD(PF_38_NONE, 0x02), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADDP, 4>},
+    {OPD(PF_38_66, 0x02), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADDP, 4>},
     {OPD(PF_38_NONE, 0x03), 1, &OpDispatchBuilder::PHADDS},
     {OPD(PF_38_66, 0x03), 1, &OpDispatchBuilder::PHADDS},
     {OPD(PF_38_NONE, 0x04), 1, &OpDispatchBuilder::PMADDUBSW},
@@ -6707,12 +6697,12 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(PF_38_66, 0x14), 1, &OpDispatchBuilder::VectorVariableBlend<4>},
     {OPD(PF_38_66, 0x15), 1, &OpDispatchBuilder::VectorVariableBlend<8>},
     {OPD(PF_38_66, 0x17), 1, &OpDispatchBuilder::PTestOp},
-    {OPD(PF_38_NONE, 0x1C), 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 1>},
-    {OPD(PF_38_66, 0x1C), 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 1>},
-    {OPD(PF_38_NONE, 0x1D), 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 2>},
-    {OPD(PF_38_66, 0x1D), 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 2>},
-    {OPD(PF_38_NONE, 0x1E), 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 4>},
-    {OPD(PF_38_66, 0x1E), 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VABS, 4>},
+    {OPD(PF_38_NONE, 0x1C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VABS, 1>},
+    {OPD(PF_38_66, 0x1C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VABS, 1>},
+    {OPD(PF_38_NONE, 0x1D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VABS, 2>},
+    {OPD(PF_38_66, 0x1D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VABS, 2>},
+    {OPD(PF_38_NONE, 0x1E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VABS, 4>},
+    {OPD(PF_38_66, 0x1E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VABS, 4>},
     {OPD(PF_38_66, 0x20), 1, &OpDispatchBuilder::ExtendVectorElements<1, 2, true>},
     {OPD(PF_38_66, 0x21), 1, &OpDispatchBuilder::ExtendVectorElements<1, 4, true>},
     {OPD(PF_38_66, 0x22), 1, &OpDispatchBuilder::ExtendVectorElements<1, 8, true>},
@@ -6720,7 +6710,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(PF_38_66, 0x24), 1, &OpDispatchBuilder::ExtendVectorElements<2, 8, true>},
     {OPD(PF_38_66, 0x25), 1, &OpDispatchBuilder::ExtendVectorElements<4, 8, true>},
     {OPD(PF_38_66, 0x28), 1, &OpDispatchBuilder::PMULLOp<4, true>},
-    {OPD(PF_38_66, 0x29), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPEQ, 8>},
+    {OPD(PF_38_66, 0x29), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPEQ, 8>},
     {OPD(PF_38_66, 0x2A), 1, &OpDispatchBuilder::MOVVectorNTOp},
     {OPD(PF_38_66, 0x2B), 1, &OpDispatchBuilder::PACKUSOp<4>},
     {OPD(PF_38_66, 0x30), 1, &OpDispatchBuilder::ExtendVectorElements<1, 2, false>},
@@ -6729,16 +6719,16 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(PF_38_66, 0x33), 1, &OpDispatchBuilder::ExtendVectorElements<2, 4, false>},
     {OPD(PF_38_66, 0x34), 1, &OpDispatchBuilder::ExtendVectorElements<2, 8, false>},
     {OPD(PF_38_66, 0x35), 1, &OpDispatchBuilder::ExtendVectorElements<4, 8, false>},
-    {OPD(PF_38_66, 0x37), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VCMPGT, 8>},
-    {OPD(PF_38_66, 0x38), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMIN, 1>},
-    {OPD(PF_38_66, 0x39), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMIN, 4>},
-    {OPD(PF_38_66, 0x3A), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUMIN, 2>},
-    {OPD(PF_38_66, 0x3B), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUMIN, 4>},
-    {OPD(PF_38_66, 0x3C), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMAX, 1>},
-    {OPD(PF_38_66, 0x3D), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VSMAX, 4>},
-    {OPD(PF_38_66, 0x3E), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUMAX, 2>},
-    {OPD(PF_38_66, 0x3F), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VUMAX, 4>},
-    {OPD(PF_38_66, 0x40), 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VMUL, 4>},
+    {OPD(PF_38_66, 0x37), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPGT, 8>},
+    {OPD(PF_38_66, 0x38), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSMIN, 1>},
+    {OPD(PF_38_66, 0x39), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSMIN, 4>},
+    {OPD(PF_38_66, 0x3A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUMIN, 2>},
+    {OPD(PF_38_66, 0x3B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUMIN, 4>},
+    {OPD(PF_38_66, 0x3C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSMAX, 1>},
+    {OPD(PF_38_66, 0x3D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSMAX, 4>},
+    {OPD(PF_38_66, 0x3E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUMAX, 2>},
+    {OPD(PF_38_66, 0x3F), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUMAX, 4>},
+    {OPD(PF_38_66, 0x40), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VMUL, 4>},
     {OPD(PF_38_66, 0x41), 1, &OpDispatchBuilder::PHMINPOSUWOp},
 
     {OPD(PF_38_NONE, 0xF0), 2, &OpDispatchBuilder::MOVBEOp},
@@ -6798,37 +6788,37 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x1C, 1, &OpDispatchBuilder::PF2IWOp},
     {0x1D, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<4, false, false>},
 
-    {0x86, 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VFRECP, 4>},
-    {0x87, 1, &OpDispatchBuilder::VectorUnaryOp<IR::OP_VFRSQRT, 4>},
+    {0x86, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VFRECP, 4>},
+    {0x87, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VFRSQRT, 4>},
 
     {0x8A, 1, &OpDispatchBuilder::PFNACCOp},
     {0x8E, 1, &OpDispatchBuilder::PFPNACCOp},
 
     {0x90, 1, &OpDispatchBuilder::VPFCMPOp<1>},
-    {0x94, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMIN, 4>},
+    {0x94, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMIN, 4>},
     {0x96, 1, &OpDispatchBuilder::VectorUnaryDuplicateOp<IR::OP_VFRECP, 4>},
     {0x97, 1, &OpDispatchBuilder::VectorUnaryDuplicateOp<IR::OP_VFRSQRT, 4>},
 
-    {0x9A, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFSUB, 4>},
-    {0x9E, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFADD, 4>},
+    {0x9A, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFSUB, 4>},
+    {0x9E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADD, 4>},
 
     {0xA0, 1, &OpDispatchBuilder::VPFCMPOp<2>},
-    {0xA4, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMAX, 4>},
+    {0xA4, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMAX, 4>},
     // Can be treated as a move
     {0xA6, 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
     {0xA7, 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
 
-    {0xAA, 1, &OpDispatchBuilder::VectorALUROp<IR::OP_VFSUB, 4>},
-    {0xAE, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFADDP, 4>},
+    {0xAA, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUROp, IR::OP_VFSUB, 4>},
+    {0xAE, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADDP, 4>},
 
     {0xB0, 1, &OpDispatchBuilder::VPFCMPOp<0>},
-    {0xB4, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VFMUL, 4>},
+    {0xB4, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMUL, 4>},
     // Can be treated as a move
     {0xB6, 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
     {0xB7, 1, &OpDispatchBuilder::PMULHRWOp},
 
     {0xBB, 1, &OpDispatchBuilder::PSWAPDOp},
-    {0xBF, 1, &OpDispatchBuilder::VectorALUOp<IR::OP_VURAVG, 1>},
+    {0xBF, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VURAVG, 1>},
   };
 
 #define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
