@@ -2570,103 +2570,103 @@
     "F80": {
       "FPR = F80Add FPR:$X80Src1, FPR:$X80Src2": {
         "DestSize": "16",
-        "JITDispatch": false
+        "X87": true
       },
       "FPR = F80Sub FPR:$X80Src1, FPR:$X80Src2": {
         "DestSize": "16",
-        "JITDispatch": false
+        "X87": true
       },
       "FPR = F80Mul FPR:$X80Src1, FPR:$X80Src2": {
         "DestSize": "16",
-        "JITDispatch": false
+        "X87": true
       },
       "FPR = F80Div FPR:$X80Src1, FPR:$X80Src2": {
         "DestSize": "16",
-        "JITDispatch": false
+        "X87": true
       },
       "FPR = F80ATAN FPR:$X80Src1, FPR:$X80Src2": {
         "DestSize": "16",
-        "JITDispatch": false
+        "X87": true
       },
       "FPR = F80FPREM FPR:$X80Src1, FPR:$X80Src2": {
         "DestSize": "16",
-        "JITDispatch": false
+        "X87": true
       },
       "FPR = F80FPREM1 FPR:$X80Src1, FPR:$X80Src2": {
         "DestSize": "16",
-        "JITDispatch": false
+        "X87": true
       },
       "FPR = F80SCALE FPR:$X80Src1, FPR:$X80Src2": {
         "DestSize": "16",
-        "JITDispatch": false
+        "X87": true
       },
       "FPR = F80CVT u8:#Size, FPR:$X80Src": {
         "DestSize": "Size",
-        "JITDispatch": false
+        "X87": true
       },
       "GPR = F80CVTInt u8:#Size, FPR:$X80Src, i1:$Truncate": {
         "DestSize": "Size",
-        "JITDispatch": false
+        "X87": true
       },
       "FPR = F80CVTTo FPR:$X80Src, u8:$SrcSize": {
         "DestSize": "16",
-        "JITDispatch": false
+        "X87": true
       },
       "FPR = F80CVTToInt GPR:$Src, u8:$SrcSize": {
         "DestSize": "16",
-        "JITDispatch": false
+        "X87": true
       },
       "FPR = F80Round FPR:$X80Src": {
         "DestSize": "16",
-        "JITDispatch": false
+        "X87": true
       },
       "FPR = F80F2XM1 FPR:$X80Src": {
         "DestSize": "16",
-        "JITDispatch": false
+        "X87": true
       },
       "FPR = F80TAN FPR:$X80Src": {
         "DestSize": "16",
-        "JITDispatch": false
+        "X87": true
       },
       "FPR = F80SIN FPR:$X80Src": {
         "DestSize": "16",
-        "JITDispatch": false
+        "X87": true
       },
       "FPR = F80COS FPR:$X80Src": {
         "DestSize": "16",
-        "JITDispatch": false
+        "X87": true
       },
       "FPR = F80SQRT FPR:$X80Src": {
         "DestSize": "16",
-        "JITDispatch": false
+        "X87": true
       },
       "FPR = F80XTRACT_EXP FPR:$X80Src": {
         "DestSize": "16",
-        "JITDispatch": false
+        "X87": true
       },
       "FPR = F80XTRACT_SIG FPR:$X80Src": {
         "DestSize": "16",
-        "JITDispatch": false
+        "X87": true
       },
       "GPR = F80Cmp FPR:$X80Src1, FPR:$X80Src2, u32:$Flags": {
         "Desc": ["Does a scalar unordered compare and stores the asked for flags in to a GPR",
                  "Ordering flag result is true if either float input is NaN"
                 ],
         "DestSize": "4",
-        "JITDispatch": false
+        "X87": true
       },
       "FPR = F80BCDLoad FPR:$X80Src": {
         "DestSize": "16",
-        "JITDispatch": false
+        "X87": true
       },
       "FPR = F80BCDStore FPR:$X80Src": {
         "DestSize": "16",
-        "JITDispatch": false
+        "X87": true
       },
 
       "FPR = F80FYL2X FPR:$X80Src1, FPR:$X80Src2": {
         "DestSize": "16",
-        "JITDispatch": false
+        "X87": true
       }
     },
     "Backend": {
