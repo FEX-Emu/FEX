@@ -35,6 +35,6 @@ public:
 
   static fextl::unique_ptr<ThunkHandler> Create();
 
-  virtual void AppendThunkDefinitions(const fextl::vector<FEXCore::IR::ThunkDefinition>& Definitions) = 0;
+  virtual void AppendThunkDefinitions(std::span<const FEXCore::IR::ThunkDefinition> Definitions) = 0;
 };
 }; // namespace FEXCore

@@ -10,6 +10,7 @@
 #include <FEXCore/fextl/fmt.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
+#include <array>
 #include <dlfcn.h>
 #include <elf.h>
 #include <fcntl.h>
@@ -433,7 +434,7 @@ void LoadHostVDSO() {
   dlclose(vdso);
 }
 
-static fextl::vector<FEXCore::IR::ThunkDefinition> VDSODefinitions = {
+static std::array<FEXCore::IR::ThunkDefinition, 6> VDSODefinitions = {{
   {
     // sha256(libVDSO:time)
     {0x37, 0x63, 0x46, 0xb0, 0x79, 0x06, 0x5f, 0x9d, 0x00, 0xb6, 0x8d, 0xfd, 0x9e, 0x4a, 0x62, 0xcd,
@@ -472,7 +473,7 @@ static fextl::vector<FEXCore::IR::ThunkDefinition> VDSODefinitions = {
      0xbb, 0x50, 0x49, 0x55, 0x6b, 0x0c, 0x9f, 0x50, 0x37, 0xf5, 0x9d, 0xb0, 0x38, 0x58, 0x57, 0x12},
     nullptr,
   },
-};
+}};
 
 void LoadGuestVDSOSymbols(bool Is64Bit, char* VDSOBase) {
   // We need to load symbols we care about.
@@ -594,7 +595,7 @@ uint64_t GetVSyscallEntry(const void* VDSOBase) {
   return 0;
 }
 
-const fextl::vector<FEXCore::IR::ThunkDefinition>& GetVDSOThunkDefinitions() {
+const std::span<FEXCore::IR::ThunkDefinition> GetVDSOThunkDefinitions() {
   return VDSODefinitions;
 }
 
