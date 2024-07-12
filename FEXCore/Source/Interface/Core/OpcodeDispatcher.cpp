@@ -4010,6 +4010,7 @@ void OpDispatchBuilder::BeginFunction(uint64_t RIP, const fextl::vector<FEXCore:
   auto Block = GetNewJumpBlock(RIP);
   SetCurrentCodeBlock(Block);
   IRHeader.first->Blocks = Block->Wrapped(DualListData.ListBegin());
+  CurrentHeader = IRHeader.first;
 }
 
 void OpDispatchBuilder::Finalize() {
