@@ -274,15 +274,17 @@ int main(int argc, char** argv, char** const envp) {
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
 
-  auto Program = FEX::Config::LoadConfig(IsInterpreter, true, argc, argv, envp, ExecutedWithFD, FEXFD);
+  auto ArgsLoader = fextl::make_unique<FEX::ArgLoader::ArgLoader>(
+    IsInterpreter ? FEX::ArgLoader::ArgLoader::LoadType::WITHOUT_FEXLOADER_PARSER : FEX::ArgLoader::ArgLoader::LoadType::WITH_FEXLOADER_PARSER,
+    argc, argv);
+  auto Args = ArgsLoader->Get();
+  auto ParsedArgs = ArgsLoader->GetParsedArgs();
+  auto Program = FEX::Config::LoadConfig(std::move(ArgsLoader), true, envp, ExecutedWithFD, FEXFD);
 
   if (Program.ProgramPath.empty() && FEXFD == -1) {
     // Early exit if we weren't passed an argument
     return 0;
   }
-
-  auto Args = FEX::ArgLoader::Get();
-  auto ParsedArgs = FEX::ArgLoader::GetParsedArgs();
 
   // Reload the meta layer
   FEXCore::Config::ReloadMetaLayer();

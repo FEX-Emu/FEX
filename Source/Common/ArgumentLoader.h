@@ -8,19 +8,39 @@
 namespace FEX::ArgLoader {
 class ArgLoader final : public FEXCore::Config::Layer {
 public:
-  explicit ArgLoader(int _argc, char** _argv)
-    : FEXCore::Config::Layer(FEXCore::Config::LayerType::LAYER_ARGUMENTS)
-    , argc {_argc}
-    , argv {_argv} {}
+  enum class LoadType {
+    WITH_FEXLOADER_PARSER,
+    WITHOUT_FEXLOADER_PARSER,
+  };
 
-  void Load();
+  explicit ArgLoader(LoadType Type, int argc, char** argv)
+    : FEXCore::Config::Layer(FEXCore::Config::LayerType::LAYER_ARGUMENTS)
+    , Type {Type}
+    , argc {argc}
+    , argv {argv} {
+    Load();
+  }
+
+  void Load() override;
+  void LoadWithoutArguments();
+  fextl::vector<fextl::string> Get() {
+    return RemainingArgs;
+  }
+  fextl::vector<fextl::string> GetParsedArgs() {
+    return ProgramArguments;
+  }
+
+  LoadType GetLoadType() const {
+    return Type;
+  }
 
 private:
+  LoadType Type;
   int argc {};
-  char** argv;
+  char** argv {};
+
+  fextl::vector<fextl::string> RemainingArgs {};
+  fextl::vector<fextl::string> ProgramArguments {};
 };
 
-void LoadWithoutArguments(int _argc, char** _argv);
-fextl::vector<fextl::string> Get();
-fextl::vector<fextl::string> GetParsedArgs();
 } // namespace FEX::ArgLoader

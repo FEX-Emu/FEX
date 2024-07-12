@@ -1069,7 +1069,9 @@ bool ExtractEroFS(const fextl::string& Path, const fextl::string& RootFS, const 
 
 int main(int argc, char** argv, char** const envp) {
   CheckTTY();
-  FEX::Config::LoadConfig(true, false, argc, argv, envp, false, {});
+
+  auto ArgsLoader = fextl::make_unique<FEX::ArgLoader::ArgLoader>(FEX::ArgLoader::ArgLoader::LoadType::WITHOUT_FEXLOADER_PARSER, argc, argv);
+  FEX::Config::LoadConfig(std::move(ArgsLoader), false, envp, false, {});
 
   // Reload the meta layer
   FEXCore::Config::ReloadMetaLayer();
