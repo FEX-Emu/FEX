@@ -15,6 +15,6 @@ void* LoadVDSOThunks(bool Is64Bit, FEX::HLE::SyscallHandler* const Handler);
 
 uint64_t GetVSyscallEntry(const void* VDSOBase);
 
-const fextl::vector<FEXCore::IR::ThunkDefinition>& GetVDSOThunkDefinitions();
+const std::span<FEXCore::IR::ThunkDefinition> GetVDSOThunkDefinitions();
 const FEXCore::Context::VDSOSigReturn& GetVDSOSymbols();
 } // namespace FEX::VDSO

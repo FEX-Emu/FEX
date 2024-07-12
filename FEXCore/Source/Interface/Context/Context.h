@@ -195,7 +195,7 @@ public:
   // returns false if a handler was already registered
   CustomIRResult AddCustomIREntrypoint(uintptr_t Entrypoint, CustomIREntrypointHandler Handler, void* Creator = nullptr, void* Data = nullptr);
 
-  void AppendThunkDefinitions(const fextl::vector<FEXCore::IR::ThunkDefinition>& Definitions) override;
+  void AppendThunkDefinitions(std::span<const FEXCore::IR::ThunkDefinition> Definitions) override;
 
 public:
   friend class FEXCore::HLE::SyscallHandler;

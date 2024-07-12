@@ -373,7 +373,7 @@ struct ThunkHandler_impl final : public ThunkHandler {
     Thread = _Thread;
   }
 
-  void AppendThunkDefinitions(const fextl::vector<FEXCore::IR::ThunkDefinition>& Definitions) override {
+  void AppendThunkDefinitions(std::span<const FEXCore::IR::ThunkDefinition> Definitions) override {
     for (auto& Definition : Definitions) {
       Thunks.emplace(Definition.Sum, Definition.ThunkFunction);
     }

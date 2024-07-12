@@ -1021,7 +1021,7 @@ void ContextImpl::UnloadAOTIRCacheEntry(IR::AOTIRCacheEntry* Entry) {
   IRCaptureCache.UnloadAOTIRCacheEntry(Entry);
 }
 
-void ContextImpl::AppendThunkDefinitions(const fextl::vector<FEXCore::IR::ThunkDefinition>& Definitions) {
+void ContextImpl::AppendThunkDefinitions(std::span<const FEXCore::IR::ThunkDefinition> Definitions) {
   if (ThunkHandler) {
     ThunkHandler->AppendThunkDefinitions(Definitions);
   }

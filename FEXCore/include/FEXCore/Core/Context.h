@@ -16,6 +16,7 @@
 #include <ostream>
 #include <mutex>
 #include <shared_mutex>
+#include <span>
 
 namespace FEXCore {
 class CodeLoader;
@@ -264,7 +265,7 @@ public:
    * @param CTX A valid non-null context instance.
    * @param Definitions A vector of thunk definitions that the frontend controls
    */
-  FEX_DEFAULT_VISIBILITY virtual void AppendThunkDefinitions(const fextl::vector<FEXCore::IR::ThunkDefinition>& Definitions) = 0;
+  FEX_DEFAULT_VISIBILITY virtual void AppendThunkDefinitions(std::span<const FEXCore::IR::ThunkDefinition> Definitions) = 0;
 
   FEX_DEFAULT_VISIBILITY virtual void GetVDSOSigReturn(VDSOSigReturn* VDSOPointers) = 0;
 
