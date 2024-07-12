@@ -2,14 +2,12 @@
 #pragma once
 #include <FEXCore/fextl/memory.h>
 
-#include <functional>
-
 namespace FEXCore::Threads {
 using ThreadFunc = void* (*)(void* user_ptr);
 
 class Thread;
-using CreateThreadFunc = std::function<fextl::unique_ptr<Thread>(ThreadFunc Func, void* Arg)>;
-using CleanupAfterForkFunc = std::function<void()>;
+using CreateThreadFunc = fextl::unique_ptr<Thread> (*)(ThreadFunc Func, void* Arg);
+using CleanupAfterForkFunc = void (*)();
 
 struct Pointers {
   CreateThreadFunc CreateThread;

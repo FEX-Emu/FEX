@@ -415,7 +415,7 @@ int main(int argc, char** argv, char** const envp) {
   }
 
   // Setup Thread handlers, so FEXCore can create threads.
-  FEX::LinuxEmulation::Threads::SetupThreadHandlers();
+  auto StackTracker = FEX::LinuxEmulation::Threads::SetupThreadHandlers();
 
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
@@ -588,7 +588,7 @@ int main(int argc, char** argv, char** const envp) {
   SyscallHandler.reset();
   SignalDelegation.reset();
 
-  FEX::LinuxEmulation::Threads::Shutdown();
+  FEX::LinuxEmulation::Threads::Shutdown(std::move(StackTracker));
 
   Loader.FreeSections();
 
