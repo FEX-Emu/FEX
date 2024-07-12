@@ -63,6 +63,10 @@ struct ThreadCPUArea {
     return Area->EmulatorStackBase;
   }
 
+  ARM64EC_NT_CONTEXT& ContextAmd64() const {
+    return *Area->ContextAmd64;
+  }
+
   FEXCore::Core::CpuStateFrame*& StateFrame() const {
     return reinterpret_cast<FEXCore::Core::CpuStateFrame*&>(Area->EmulatorData[0]);
   }
@@ -571,6 +575,19 @@ NTSTATUS ThreadInit() {
 
   uint64_t EnterECFillSRA = Thread->CurrentFrame->Pointers.Common.DispatcherLoopTopEnterECFillSRA;
   CPUArea.DispatcherLoopTopEnterECFillSRA() = EnterECFillSRA;
+
+  CPUArea.ContextAmd64() = {.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT,
+                            .AMD64_SegCs = 0x33,
+                            .AMD64_SegDs = 0x2b,
+                            .AMD64_SegEs = 0x2b,
+                            .AMD64_SegFs = 0x53,
+                            .AMD64_SegGs = 0x2b,
+                            .AMD64_SegSs = 0x2b,
+                            .AMD64_EFlags = 0x202,
+                            .AMD64_MxCsr = 0x1f80,
+                            .AMD64_MxCsr_copy = 0x1f80,
+                            .AMD64_ControlWord = 0x27f};
+  Exception::LoadStateFromECContext(Thread, CPUArea.ContextAmd64().AMD64_Context);
 
   {
     std::scoped_lock Lock(ThreadCreationMutex);
