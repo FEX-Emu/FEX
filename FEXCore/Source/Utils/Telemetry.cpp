@@ -16,7 +16,7 @@
 
 namespace FEXCore::Telemetry {
 #ifndef FEX_DISABLE_TELEMETRY
-static std::array<Value, FEXCore::Telemetry::TelemetryType::TYPE_LAST> TelemetryValues = {{}};
+std::array<Value, FEXCore::Telemetry::TelemetryType::TYPE_LAST> TelemetryValues = {{}};
 const std::array<std::string_view, FEXCore::Telemetry::TelemetryType::TYPE_LAST> TelemetryNames {
   "64byte Split Locks",
   "16byte Split atomics",
@@ -80,8 +80,5 @@ void Shutdown(const fextl::string& ApplicationName) {
   }
 }
 
-Value& GetTelemetryValue(TelemetryType Type) {
-  return TelemetryValues.at(Type);
-}
 #endif
 } // namespace FEXCore::Telemetry
