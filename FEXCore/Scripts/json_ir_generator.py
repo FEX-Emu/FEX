@@ -698,6 +698,11 @@ def print_ir_allocator_helpers():
             if op.ImplicitFlagClobber:
                 output_file.write("\t\tSaveNZCV(IROps::OP_{});".format(op.Name.upper()))
 
+            # We gather the "has x87?" flag as we go. This saves the user from
+            # having to keep track of whether they emitted any x87.
+            if op.X87:
+                output_file.write("\t\tRecordX87Use();\n")
+
             output_file.write("\t\tauto Op = AllocateOp<IROp_{}, IROps::OP_{}>();\n".format(op.Name, op.Name.upper()))
 
             if op.SSAArgNum != 0:
