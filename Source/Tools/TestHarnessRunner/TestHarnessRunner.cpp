@@ -361,8 +361,8 @@ int main(int argc, char** argv, char** const envp) {
 
   FEXCore::Config::Shutdown();
 
-  LogMan::Throw::UnInstallHandlers();
-  LogMan::Msg::UnInstallHandlers();
+  LogMan::Throw::UnInstallHandler();
+  LogMan::Msg::UnInstallHandler();
 
 #ifndef _WIN32
   FEXCore::Allocator::ClearHooks();

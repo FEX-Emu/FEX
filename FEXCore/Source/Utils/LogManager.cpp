@@ -8,27 +8,21 @@ $end_info$
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/fmt.h>
-#include <FEXCore/fextl/vector.h>
-
-#include <cstdarg>
-#include <cstdio>
-#include <malloc.h>
 
 namespace LogMan {
 
 namespace Throw {
-  fextl::vector<ThrowHandler> Handlers;
-  void InstallHandler(ThrowHandler Handler) {
-    Handlers.emplace_back(Handler);
+  ThrowHandler Handler {};
+  void InstallHandler(ThrowHandler _Handler) {
+    Handler = _Handler;
   }
-  void UnInstallHandlers() {
-    Handlers.clear();
+  void UnInstallHandler() {
+    Handler = nullptr;
   }
 
   void MFmt(const char* fmt, const fmt::format_args& args) {
-    auto msg = fextl::fmt::vformat(fmt, args);
-
-    for (auto& Handler : Handlers) {
+    if (Handler) {
+      auto msg = fextl::fmt::vformat(fmt, args);
       Handler(msg.c_str());
     }
 
@@ -37,18 +31,17 @@ namespace Throw {
 } // namespace Throw
 
 namespace Msg {
-  fextl::vector<MsgHandler> Handlers;
-  void InstallHandler(MsgHandler Handler) {
-    Handlers.emplace_back(Handler);
+  MsgHandler Handler {};
+  void InstallHandler(MsgHandler _Handler) {
+    Handler = _Handler;
   }
-  void UnInstallHandlers() {
-    Handlers.clear();
+  void UnInstallHandler() {
+    Handler = nullptr;
   }
 
   void MFmtImpl(DebugLevels level, const char* fmt, const fmt::format_args& args) {
-    const auto msg = fextl::fmt::vformat(fmt, args);
-
-    for (auto& Handler : Handlers) {
+    if (Handler) {
+      const auto msg = fextl::fmt::vformat(fmt, args);
       Handler(level, msg.c_str());
     }
   }

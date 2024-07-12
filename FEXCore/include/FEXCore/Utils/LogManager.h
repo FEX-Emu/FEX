@@ -39,7 +39,7 @@ constexpr DebugLevels MSG_LEVEL = INFO;
 namespace Throw {
   using ThrowHandler = void (*)(const char* Message);
   FEX_DEFAULT_VISIBILITY void InstallHandler(ThrowHandler Handler);
-  FEX_DEFAULT_VISIBILITY void UnInstallHandlers();
+  FEX_DEFAULT_VISIBILITY void UnInstallHandler();
 
   [[noreturn]]
   void MFmt(const char* fmt, const fmt::format_args& args);
@@ -90,7 +90,7 @@ namespace Throw {
 namespace Msg {
   using MsgHandler = void (*)(DebugLevels Level, const char* Message);
   FEX_DEFAULT_VISIBILITY void InstallHandler(MsgHandler Handler);
-  FEX_DEFAULT_VISIBILITY void UnInstallHandlers();
+  FEX_DEFAULT_VISIBILITY void UnInstallHandler();
 
   // Fmt-capable interface.
 
