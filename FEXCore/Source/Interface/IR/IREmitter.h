@@ -343,9 +343,9 @@ protected:
     return Ptr;
   }
 
-  virtual void SaveNZCV(IROps Op) {
-    // Overriden by dispatcher, stubbed for IR tests
-  }
+  // Overriden by dispatcher, stubbed for IR tests
+  virtual void RecordX87Use() {}
+  virtual void SaveNZCV(IROps Op) {}
 
   Ref CurrentWriteCursor = nullptr;
 
