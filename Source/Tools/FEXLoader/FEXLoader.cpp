@@ -321,8 +321,8 @@ int main(int argc, char** argv, char** const envp) {
   ::SilentLog = SilentLog();
 
   if (::SilentLog) {
-    LogMan::Throw::UnInstallHandlers();
-    LogMan::Msg::UnInstallHandlers();
+    LogMan::Throw::UnInstallHandler();
+    LogMan::Msg::UnInstallHandler();
   } else {
     auto LogFile = OutputLog();
     // If stderr or stdout then we need to dup the FD
@@ -337,9 +337,6 @@ int main(int argc, char** argv, char** const envp) {
     } else if (LogFile == "stdout") {
       OutputFD = dup(STDOUT_FILENO);
     } else if (LogFile == "server") {
-      LogMan::Throw::UnInstallHandlers();
-      LogMan::Msg::UnInstallHandlers();
-
       FEXServerLogging::FEXServerFD = FEXServerClient::RequestLogFD(FEXServerClient::GetServerFD());
       if (FEXServerLogging::FEXServerFD != -1) {
         LogMan::Throw::InstallHandler(FEXServerLogging::AssertHandler);
@@ -597,8 +594,8 @@ int main(int argc, char** argv, char** const envp) {
 
   FEXCore::Config::Shutdown();
 
-  LogMan::Throw::UnInstallHandlers();
-  LogMan::Msg::UnInstallHandlers();
+  LogMan::Throw::UnInstallHandler();
+  LogMan::Msg::UnInstallHandler();
 
   FEXCore::Allocator::ClearHooks();
   FEXCore::Allocator::ReclaimMemoryRegion(Base48Bit);
