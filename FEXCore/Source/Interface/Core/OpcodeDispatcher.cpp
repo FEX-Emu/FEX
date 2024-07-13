@@ -4475,7 +4475,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
       _StoreContext(OpSize, Class, Src, offsetof(FEXCore::Core::CPUState, mm[gpr - FEXCore::X86State::REG_MM_0]));
     } else if (gpr >= FEXCore::X86State::REG_XMM_0) {
       const auto gprIndex = gpr - X86State::REG_XMM_0;
-      const auto VectorSize = (CTX->HostFeatures.SupportsSVE256 && CTX->HostFeatures.SupportsAVX) ? 32 : 16;
+      const auto VectorSize = GetGuestVectorLength();
 
       auto Result = Src;
       if (OpSize != VectorSize) {
@@ -5145,7 +5145,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0x6B), 1, &OpDispatchBuilder::VPACKSSOp<4>},
     {OPD(1, 0b01, 0x6C), 1, &OpDispatchBuilder::VPUNPCKLOp<8>},
     {OPD(1, 0b01, 0x6D), 1, &OpDispatchBuilder::VPUNPCKHOp<8>},
-    {OPD(1, 0b01, 0x6E), 1, &OpDispatchBuilder::MOVBetweenGPR_FPR},
+    {OPD(1, 0b01, 0x6E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVBetweenGPR_FPR, OpDispatchBuilder::VectorOpType::AVX>},
 
     {OPD(1, 0b01, 0x6F), 1, &OpDispatchBuilder::VMOVAPS_VMOVAPDOp},
     {OPD(1, 0b10, 0x6F), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPDOp},
@@ -5165,8 +5165,8 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0x7D), 1, &OpDispatchBuilder::VHSUBPOp<8>},
     {OPD(1, 0b11, 0x7D), 1, &OpDispatchBuilder::VHSUBPOp<4>},
 
-    {OPD(1, 0b01, 0x7E), 1, &OpDispatchBuilder::MOVBetweenGPR_FPR},
-    {OPD(1, 0b10, 0x7E), 1, &OpDispatchBuilder::MOVQOp},
+    {OPD(1, 0b01, 0x7E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVBetweenGPR_FPR, OpDispatchBuilder::VectorOpType::AVX>},
+    {OPD(1, 0b10, 0x7E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVQOp, OpDispatchBuilder::VectorOpType::AVX>},
 
     {OPD(1, 0b01, 0x7F), 1, &OpDispatchBuilder::VMOVAPS_VMOVAPDOp},
     {OPD(1, 0b10, 0x7F), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPDOp},
@@ -5190,7 +5190,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0xD3), 1, &OpDispatchBuilder::VPSRLDOp<8>},
     {OPD(1, 0b01, 0xD4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VADD, 8>},
     {OPD(1, 0b01, 0xD5), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VMUL, 2>},
-    {OPD(1, 0b01, 0xD6), 1, &OpDispatchBuilder::MOVQOp},
+    {OPD(1, 0b01, 0xD6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVQOp, OpDispatchBuilder::VectorOpType::AVX>},
     {OPD(1, 0b01, 0xD7), 1, &OpDispatchBuilder::MOVMSKOpOne},
 
     {OPD(1, 0b01, 0xD8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VUQSUB, 1>},
@@ -5602,9 +5602,9 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 
     {0x3F, 1, &OpDispatchBuilder::ThunkOp},
     {0x40, 16, &OpDispatchBuilder::CMOVOp},
-    {0x6E, 1, &OpDispatchBuilder::MOVBetweenGPR_FPR},
+    {0x6E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVBetweenGPR_FPR, OpDispatchBuilder::VectorOpType::MMX>},
     {0x6F, 1, &OpDispatchBuilder::MOVQMMXOp},
-    {0x7E, 1, &OpDispatchBuilder::MOVBetweenGPR_FPR},
+    {0x7E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVBetweenGPR_FPR, OpDispatchBuilder::VectorOpType::MMX>},
     {0x7F, 1, &OpDispatchBuilder::MOVQMMXOp},
     {0x80, 16, &OpDispatchBuilder::CondJUMPOp},
     {0x90, 16, &OpDispatchBuilder::SETccOp},
@@ -5884,7 +5884,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x5F, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMAXSCALARINSERT, 4>},
     {0x6F, 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
     {0x70, 1, &OpDispatchBuilder::PSHUFWOp<false>},
-    {0x7E, 1, &OpDispatchBuilder::MOVQOp},
+    {0x7E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVQOp, OpDispatchBuilder::VectorOpType::SSE>},
     {0x7F, 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
     {0xB8, 1, &OpDispatchBuilder::PopcountOp},
     {0xBC, 1, &OpDispatchBuilder::TZCNT},
@@ -5964,7 +5964,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x6B, 1, &OpDispatchBuilder::PACKSSOp<4>},
     {0x6C, 1, &OpDispatchBuilder::PUNPCKLOp<8>},
     {0x6D, 1, &OpDispatchBuilder::PUNPCKHOp<8>},
-    {0x6E, 1, &OpDispatchBuilder::MOVBetweenGPR_FPR},
+    {0x6E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVBetweenGPR_FPR, OpDispatchBuilder::VectorOpType::SSE>},
     {0x6F, 1, &OpDispatchBuilder::MOVVectorAlignedOp},
     {0x70, 1, &OpDispatchBuilder::PSHUFDOp},
 
@@ -5974,7 +5974,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x78, 1, nullptr}, // GROUP 17
     {0x7C, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADDP, 8>},
     {0x7D, 1, &OpDispatchBuilder::HSUBP<8>},
-    {0x7E, 1, &OpDispatchBuilder::MOVBetweenGPR_FPR},
+    {0x7E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVBetweenGPR_FPR, OpDispatchBuilder::VectorOpType::SSE>},
     {0x7F, 1, &OpDispatchBuilder::MOVVectorAlignedOp},
     {0xC2, 1, &OpDispatchBuilder::VFCMPOp<8>},
     {0xC4, 1, &OpDispatchBuilder::PINSROp<2>},
@@ -5987,7 +5987,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xD3, 1, &OpDispatchBuilder::PSRLDOp<8>},
     {0xD4, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADD, 8>},
     {0xD5, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VMUL, 2>},
-    {0xD6, 1, &OpDispatchBuilder::MOVQOp},
+    {0xD6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVQOp, OpDispatchBuilder::VectorOpType::SSE>},
     {0xD7, 1, &OpDispatchBuilder::MOVMSKOpOne}, // PMOVMSKB
     {0xD8, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUQSUB, 1>},
     {0xD9, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUQSUB, 2>},
