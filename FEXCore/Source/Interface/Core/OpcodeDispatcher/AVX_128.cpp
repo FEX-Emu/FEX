@@ -158,7 +158,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0x6F), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
     {OPD(1, 0b10, 0x6F), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
 
-    {OPD(1, 0b01, 0x70), 1, &OpDispatchBuilder::AVX128_VPSHUF<4, true>},
+    {OPD(1, 0b01, 0x70), 1, &OpDispatchBuilder::AVX128_VPERMILImm<4>},
     {OPD(1, 0b10, 0x70), 1, &OpDispatchBuilder::AVX128_VPSHUF<2, false>},
     {OPD(1, 0b11, 0x70), 1, &OpDispatchBuilder::AVX128_VPSHUF<2, true>},
 
@@ -1937,26 +1937,28 @@ void OpDispatchBuilder::AVX128_VPERMILImm(OpcodeArgs) {
 
   RefPair Result = AVX128_Zext(LoadZeroVector(OpSize::i128Bit));
 
-  ///< TODO: This could be optimized.
   if constexpr (ElementSize == OpSize::i64Bit) {
-    Result.Low = _VInsElement(OpSize::i128Bit, ElementSize, 0, Selector & 0b0001, Result.Low, Src.Low);
-    Result.Low = _VInsElement(OpSize::i128Bit, ElementSize, 1, (Selector & 0b0010) >> 1, Result.Low, Src.Low);
+    auto DoSwizzle64 = [this](Ref Src, uint8_t Selector) -> Ref {
+      switch (Selector) {
+      case 0b00:
+      case 0b11: return _VDupElement(OpSize::i128Bit, OpSize::i64Bit, Src, Selector & 1);
+      case 0b01: return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src, Src, 8);
+      case 0b10:
+        // No swizzle
+        return Src;
+      default: FEX_UNREACHABLE;
+      }
+    };
+    Result.Low = DoSwizzle64(Src.Low, Selector & 0b11);
 
     if (!Is128Bit) {
-      Result.High = _VInsElement(OpSize::i128Bit, ElementSize, 0, ((Selector & 0b0100) >> 2), Result.High, Src.High);
-      Result.High = _VInsElement(OpSize::i128Bit, ElementSize, 1, ((Selector & 0b1000) >> 3), Result.High, Src.High);
+      Result.High = DoSwizzle64(Src.High, (Selector >> 2) & 0b11);
     }
   } else {
-    Result.Low = _VInsElement(OpSize::i128Bit, ElementSize, 0, Selector & 0b00000011, Result.Low, Src.Low);
-    Result.Low = _VInsElement(OpSize::i128Bit, ElementSize, 1, (Selector & 0b00001100) >> 2, Result.Low, Src.Low);
-    Result.Low = _VInsElement(OpSize::i128Bit, ElementSize, 2, (Selector & 0b00110000) >> 4, Result.Low, Src.Low);
-    Result.Low = _VInsElement(OpSize::i128Bit, ElementSize, 3, (Selector & 0b11000000) >> 6, Result.Low, Src.Low);
+    Result.Low = Single128Bit4ByteVectorShuffle(Src.Low, Selector);
 
     if (!Is128Bit) {
-      Result.High = _VInsElement(OpSize::i128Bit, ElementSize, 0, (Selector & 0b00000011), Result.High, Src.High);
-      Result.High = _VInsElement(OpSize::i128Bit, ElementSize, 1, ((Selector & 0b00001100) >> 2), Result.High, Src.High);
-      Result.High = _VInsElement(OpSize::i128Bit, ElementSize, 2, ((Selector & 0b00110000) >> 4), Result.High, Src.High);
-      Result.High = _VInsElement(OpSize::i128Bit, ElementSize, 3, ((Selector & 0b11000000) >> 6), Result.High, Src.High);
+      Result.High = Single128Bit4ByteVectorShuffle(Src.High, Selector);
     }
   }
 

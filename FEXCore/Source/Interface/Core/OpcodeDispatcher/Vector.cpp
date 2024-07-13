@@ -1003,20 +1003,14 @@ void OpDispatchBuilder::PSHUFWOp(OpcodeArgs) {
 template void OpDispatchBuilder::PSHUFWOp<false>(OpcodeArgs);
 template void OpDispatchBuilder::PSHUFWOp<true>(OpcodeArgs);
 
-void OpDispatchBuilder::PSHUFDOp(OpcodeArgs) {
+Ref OpDispatchBuilder::Single128Bit4ByteVectorShuffle(Ref Src, uint8_t Shuffle) {
   constexpr auto IdentityCopy = 0b11'10'01'00;
-
-  uint16_t Shuffle = Op->Src[1].Data.Literal.Value;
-  const auto Size = GetSrcSize(Op);
-  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  Ref Dest {};
 
   // TODO: There can be more optimized copies here.
   switch (Shuffle) {
   case IdentityCopy: {
     // Special case identity copy.
-    Dest = Src;
-    break;
+    return Src;
   }
   case 0b01'01'00'00: {
     // Zip with self.
@@ -1024,27 +1018,28 @@ void OpDispatchBuilder::PSHUFDOp(OpcodeArgs) {
     // Dest[1] = Src[0]
     // Dest[2] = Src[1]
     // Dest[3] = Src[1]
-    Dest = _VZip(Size, 4, Src, Src);
-    break;
+    return _VZip(OpSize::i128Bit, OpSize::i32Bit, Src, Src);
   }
   case 0b00'00'00'00:
   case 0b01'01'01'01:
   case 0b10'10'10'10:
   case 0b11'11'11'11: {
     // Special case element duplicate and broadcast to low or high 64-bits.
-    Dest = _VDupElement(Size, 4, Src, Shuffle & 0b11);
-    break;
+    return _VDupElement(OpSize::i128Bit, OpSize::i32Bit, Src, Shuffle & 0b11);
   }
   default: {
     // PSHUFD needs to scale index by 16.
     auto LookupIndexes =
-      LoadAndCacheIndexedNamedVectorConstant(Size, FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFD, Shuffle * 16);
-    Dest = _VTBL1(Size, Src, LookupIndexes);
-    break;
+      LoadAndCacheIndexedNamedVectorConstant(OpSize::i128Bit, FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFD, Shuffle * 16);
+    return _VTBL1(OpSize::i128Bit, Src, LookupIndexes);
   }
   }
+}
 
-  StoreResult(FPRClass, Op, Dest, -1);
+void OpDispatchBuilder::PSHUFDOp(OpcodeArgs) {
+  uint16_t Shuffle = Op->Src[1].Data.Literal.Value;
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  StoreResult(FPRClass, Op, Single128Bit4ByteVectorShuffle(Src, Shuffle), -1);
 }
 
 template<size_t ElementSize, bool Low>
