@@ -72,23 +72,22 @@ jobs:
       # Execute the build.  You can specify a specific target with "--target <NAME>"
       run: cmake --build . --config $BUILD_TYPE
 
-    - name: ASM Tests
+    - name: ASM Tests - SVE256
       working-directory: ${{runner.workspace}}/build
       shell: bash
       # Execute the unit tests
       run: cmake --build . --config $BUILD_TYPE --target asm_tests
 
-    - name: ASM Test Results move
+    - name: ASM Test SVE256 Results move
       if: ${{ always() }}
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ASM.log || true
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ASM_SVE256Bit.log || true
 
-    - name: ASM Tests 128-bit
+    - name: ASM Tests - SVE128
       working-directory: ${{runner.workspace}}/build
       shell: bash
       env:
-        FEX_HOSTFEATURES: "disableavx"
         FEX_FORCESVEWIDTH: "128"
       # Execute the unit tests
       run: cmake --build . --config $BUILD_TYPE --target asm_tests
@@ -97,7 +96,21 @@ jobs:
       if: ${{ always() }}
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ASM128bit.log || true
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ASM_SVE128Bit.log || true
+
+    - name: ASM Tests - ASIMD
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      env:
+        FEX_HOSTFEATURES: "disablesve"
+      # Execute the unit tests
+      run: cmake --build . --config $BUILD_TYPE --target asm_tests
+
+    - name: ASM Test ASIMD Results move
+      if: ${{ always() }}
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ASM_ASIMD.log || true
 
     - name: Truncate test results
       if: ${{ always() }}
