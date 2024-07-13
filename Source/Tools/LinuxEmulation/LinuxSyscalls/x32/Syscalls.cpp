@@ -96,8 +96,6 @@ void x32SyscallHandler::RegisterSyscallHandlers() {
   FEX::HLE::x32::RegisterTimer(this);
   FEX::HLE::x32::RegisterPassthrough(this);
 
-  FEX::HLE::x32::InitializeStaticIoctlHandlers();
-
 #if PRINT_MISSING_SYSCALLS
   for (auto& Syscall : SyscallNames) {
     if (Definitions[Syscall.first].Ptr == cvt(&UnimplementedSyscall)) {
