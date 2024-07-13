@@ -112,7 +112,7 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs, bool IsSyscallInst) {
     StoreGPRRegister(X86State::REG_RCX, RIPAfterInst, 8);
   }
 
-  CalculateDeferredFlags();
+  FlushRegisterCache();
   auto SyscallOp = _Syscall(Arguments[0], Arguments[1], Arguments[2], Arguments[3], Arguments[4], Arguments[5], Arguments[6], DefaultSyscallFlags);
 
   if (OSABI != FEXCore::HLE::SyscallOSABI::OS_HANGOVER &&
@@ -394,7 +394,7 @@ void OpDispatchBuilder::PUSHOp(OpcodeArgs) {
 
   // Store the new stack pointer
   StoreGPRRegister(X86State::REG_RSP, NewSP);
-  CalculateDeferredFlags();
+  FlushRegisterCache();
 }
 
 void OpDispatchBuilder::PUSHREGOp(OpcodeArgs) {
@@ -407,7 +407,7 @@ void OpDispatchBuilder::PUSHREGOp(OpcodeArgs) {
   auto NewSP = _Push(GPRSize, Size, Src, OldSP);
   // Store the new stack pointer
   StoreGPRRegister(X86State::REG_RSP, NewSP);
-  CalculateDeferredFlags();
+  FlushRegisterCache();
 }
 
 void OpDispatchBuilder::PUSHAOp(OpcodeArgs) {
@@ -457,7 +457,7 @@ void OpDispatchBuilder::PUSHAOp(OpcodeArgs) {
 
   // Store the new stack pointer
   StoreGPRRegister(X86State::REG_RSP, NewSP, 4);
-  CalculateDeferredFlags();
+  FlushRegisterCache();
 }
 
 template<uint32_t SegmentReg>
@@ -842,7 +842,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
     Target &= 0xFFFFFFFFU;
   }
 
-  CalculateDeferredFlags();
+  FlushRegisterCache();
   auto TrueBlock = JumpTargets.find(Target);
   auto FalseBlock = JumpTargets.find(Op->PC + Op->InstSize);
 
@@ -3386,8 +3386,8 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
         auto Src2 = _LoadMem(GPRClass, Size, Dest_RSI, Size);
 
         // We'll calculate PF/AF after the loop, so use them as temporaries here.
-        _StoreRegister(Src1, Core::CPUState::PF_AS_GREG, GPRClass, CTX->GetGPRSize());
-        _StoreRegister(Src2, Core::CPUState::AF_AS_GREG, GPRClass, CTX->GetGPRSize());
+        StoreRegister(Core::CPUState::PF_AS_GREG, false, Src1);
+        StoreRegister(Core::CPUState::AF_AS_GREG, false, Src2);
 
         Ref TailCounter = LoadGPRRegister(X86State::REG_RCX);
 
@@ -3426,8 +3426,8 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
     // Make sure to start a new block after ending this one
     {
       // Grab the sources from the last iteration so we can set flags.
-      auto Src1 = _LoadRegister(Core::CPUState::PF_AS_GREG, GPRClass, CTX->GetGPRSize());
-      auto Src2 = _LoadRegister(Core::CPUState::AF_AS_GREG, GPRClass, CTX->GetGPRSize());
+      auto Src1 = LoadGPR(Core::CPUState::PF_AS_GREG);
+      auto Src2 = LoadGPR(Core::CPUState::AF_AS_GREG);
       CalculateFlags_SUB(GetSrcSize(Op), Src2, Src1);
     }
     auto Jump_ = Jump();
@@ -4014,7 +4014,7 @@ void OpDispatchBuilder::BeginFunction(uint64_t RIP, const fextl::vector<FEXCore:
 
 void OpDispatchBuilder::Finalize() {
   // This usually doesn't emit any IR but in the case of hitting the block instruction limit it will
-  CalculateDeferredFlags();
+  FlushRegisterCache();
   const uint8_t GPRSize = CTX->GetGPRSize();
 
   // Node 0 is invalid node
@@ -4381,7 +4381,9 @@ Ref OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, const X86T
     const auto highIndex = Operand.Data.GPR.HighBits ? 1 : 0;
 
     if (gpr >= FEXCore::X86State::REG_MM_0) {
-      A.Base = _LoadContext(OpSize, FPRClass, offsetof(FEXCore::Core::CPUState, mm[gpr - FEXCore::X86State::REG_MM_0]));
+      LOGMAN_THROW_A_FMT(OpSize == 8, "full");
+
+      A.Base = LoadContext(8, MM0Index + gpr - FEXCore::X86State::REG_MM_0);
     } else if (gpr >= FEXCore::X86State::REG_XMM_0) {
       const auto gprIndex = gpr - X86State::REG_XMM_0;
 
@@ -4418,7 +4420,7 @@ Ref OpDispatchBuilder::LoadGPRRegister(uint32_t GPR, int8_t Size, uint8_t Offset
   if (Size == -1) {
     Size = GPRSize;
   }
-  Ref Reg = _LoadRegister(GPR, GPRClass, GPRSize);
+  Ref Reg = LoadGPR(GPR);
 
   if ((!AllowUpperGarbage && (Size != GPRSize)) || Offset != 0) {
     // Extract the subregister if requested.
@@ -4432,10 +4434,6 @@ Ref OpDispatchBuilder::LoadGPRRegister(uint32_t GPR, int8_t Size, uint8_t Offset
   return Reg;
 }
 
-Ref OpDispatchBuilder::LoadXMMRegister(uint32_t XMM) {
-  return _LoadRegister(XMM, FPRClass, GetGuestVectorLength());
-}
-
 void OpDispatchBuilder::StoreGPRRegister(uint32_t GPR, const Ref Src, int8_t Size, uint8_t Offset) {
   const uint8_t GPRSize = CTX->GetGPRSize();
   if (Size == -1) {
@@ -4445,15 +4443,14 @@ void OpDispatchBuilder::StoreGPRRegister(uint32_t GPR, const Ref Src, int8_t Siz
   Ref Reg = Src;
   if (Size != GPRSize || Offset != 0) {
     // Need to do an insert if not automatic size or zero offset.
-    Reg = LoadGPRRegister(GPR);
-    Reg = _Bfi(IR::SizeToOpSize(GPRSize), Size * 8, Offset, Reg, Src);
+    Reg = _Bfi(IR::SizeToOpSize(GPRSize), Size * 8, Offset, LoadGPRRegister(GPR), Src);
   }
 
-  _StoreRegister(Reg, GPR, GPRClass, GPRSize);
+  StoreRegister(GPR, false, Reg);
 }
 
 void OpDispatchBuilder::StoreXMMRegister(uint32_t XMM, const Ref Src) {
-  _StoreRegister(Src, XMM, FPRClass, GetGuestVectorLength());
+  StoreRegister(XMM, true, Src);
 }
 
 Ref OpDispatchBuilder::LoadSource(RegisterClassType Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand,
@@ -4472,7 +4469,12 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
 
     const auto gpr = Operand.Data.GPR.GPR;
     if (gpr >= FEXCore::X86State::REG_MM_0) {
-      _StoreContext(OpSize, Class, Src, offsetof(FEXCore::Core::CPUState, mm[gpr - FEXCore::X86State::REG_MM_0]));
+      LOGMAN_THROW_A_FMT(OpSize == 8, "full");
+      LOGMAN_THROW_A_FMT(Class == FPRClass, "MMX is floaty");
+
+      // Partial store into bottom 64-bits, leave the upper bits unaffected.
+      // XXX: We actually should set the upper bits to all-1s?
+      StoreContextPartial(MM0Index + gpr - FEXCore::X86State::REG_MM_0, Src);
     } else if (gpr >= FEXCore::X86State::REG_XMM_0) {
       const auto gprIndex = gpr - X86State::REG_XMM_0;
       const auto VectorSize = GetGuestVectorLength();
@@ -4570,6 +4572,8 @@ void OpDispatchBuilder::ResetWorkingList() {
   DecodeFailure = false;
   ShouldDump = false;
   CurrentCodeBlock = nullptr;
+  RegCache.Written = 0;
+  RegCache.Cached = 0;
 }
 
 void OpDispatchBuilder::UnhandledOp(OpcodeArgs) {
@@ -4718,7 +4722,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
   }
 
   // Calculate flags early.
-  CalculateDeferredFlags();
+  FlushRegisterCache();
 
   const uint8_t GPRSize = CTX->GetGPRSize();
 

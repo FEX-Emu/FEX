@@ -2517,8 +2517,7 @@ void OpDispatchBuilder::SaveX87State(OpcodeArgs, Ref MemBase) {
 
   {
     // Abridged FTW
-    auto AbridgedFTW = _LoadContext(1, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
-    _StoreMem(GPRClass, 1, AbridgedFTW, MemBase, _Constant(4), 2, MEM_OFFSET_SXTX, 1);
+    _StoreMem(GPRClass, 1, LoadContext(AbridgedFTWIndex), MemBase, _Constant(4), 2, MEM_OFFSET_SXTX, 1);
   }
 
   // BYTE | 0 1 | 2 3 | 4   | 5     | 6 7 | 8 9 | a b | c d | e f |
@@ -2566,7 +2565,7 @@ void OpDispatchBuilder::SaveX87State(OpcodeArgs, Ref MemBase) {
   // If OSFXSR bit in CR4 is not set than FXSAVE /may/ not save the XMM registers
   // This is implementation dependent
   for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
-    Ref MMReg = _LoadContext(16, FPRClass, offsetof(FEXCore::Core::CPUState, mm[i]));
+    Ref MMReg = LoadContext(MM0Index + i);
 
     _StoreMem(FPRClass, 16, MMReg, MemBase, _Constant(i * 16 + 32), 16, MEM_OFFSET_SXTX, 1);
   }
@@ -2693,13 +2692,12 @@ void OpDispatchBuilder::RestoreX87State(Ref MemBase) {
 
   {
     // Abridged FTW
-    auto NewAbridgedFTW = _LoadMem(GPRClass, 1, MemBase, _Constant(4), 2, MEM_OFFSET_SXTX, 1);
-    _StoreContext(1, GPRClass, NewAbridgedFTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+    StoreContext(AbridgedFTWIndex, _LoadMem(GPRClass, 1, MemBase, _Constant(4), 2, MEM_OFFSET_SXTX, 1));
   }
 
   for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
     auto MMReg = _LoadMem(FPRClass, 16, MemBase, _Constant(i * 16 + 32), 16, MEM_OFFSET_SXTX, 1);
-    _StoreContext(16, FPRClass, MMReg, offsetof(FEXCore::Core::CPUState, mm[i]));
+    StoreContext(MM0Index + i, MMReg);
   }
 }
 
@@ -2738,7 +2736,7 @@ void OpDispatchBuilder::DefaultX87State(OpcodeArgs) {
   // all of the ST0-7/MM0-7 registers to zero.
   Ref ZeroVector = LoadZeroVector(Core::CPUState::MM_REG_SIZE);
   for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
-    _StoreContext(16, FPRClass, ZeroVector, offsetof(FEXCore::Core::CPUState, mm[i]));
+    StoreContext(MM0Index + i, ZeroVector);
   }
 }
 

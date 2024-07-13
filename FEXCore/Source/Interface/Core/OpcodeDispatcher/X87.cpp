@@ -31,14 +31,14 @@ Ref OpDispatchBuilder::GetX87Top() {
 
 void OpDispatchBuilder::SetX87ValidTag(Ref Value, bool Valid) {
   // if we are popping then we must first mark this location as empty
-  Ref AbridgedFTW = _LoadContext(1, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+  Ref AbridgedFTW = LoadContext(AbridgedFTWIndex);
   Ref RegMask = _Lshl(OpSize::i32Bit, _Constant(1), Value);
   Ref NewAbridgedFTW = Valid ? _Or(OpSize::i32Bit, AbridgedFTW, RegMask) : _Andn(OpSize::i32Bit, AbridgedFTW, RegMask);
-  _StoreContext(1, GPRClass, NewAbridgedFTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+  StoreContext(AbridgedFTWIndex, NewAbridgedFTW);
 }
 
 Ref OpDispatchBuilder::GetX87ValidTag(Ref Value) {
-  Ref AbridgedFTW = _LoadContext(1, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+  Ref AbridgedFTW = LoadContext(AbridgedFTWIndex);
   return _And(OpSize::i32Bit, _Lshr(OpSize::i32Bit, AbridgedFTW, Value), _Constant(1));
 }
 
@@ -51,8 +51,7 @@ Ref OpDispatchBuilder::GetX87Tag(Ref Value, Ref AbridgedFTW) {
 }
 
 Ref OpDispatchBuilder::GetX87Tag(Ref Value) {
-  Ref AbridgedFTW = _LoadContext(1, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
-  return GetX87Tag(Value, AbridgedFTW);
+  return GetX87Tag(Value, LoadContext(AbridgedFTWIndex));
 }
 
 void OpDispatchBuilder::SetX87FTW(Ref FTW) {
@@ -70,11 +69,11 @@ void OpDispatchBuilder::SetX87FTW(Ref FTW) {
     }
   }
 
-  _StoreContext(1, GPRClass, NewAbridgedFTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+  StoreContext(AbridgedFTWIndex, NewAbridgedFTW);
 }
 
 Ref OpDispatchBuilder::GetX87FTW() {
-  Ref AbridgedFTW = _LoadContext(1, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+  Ref AbridgedFTW = LoadContext(AbridgedFTWIndex);
   Ref FTW = _Constant(0);
 
   for (int i = 0; i < 8; i++) {
@@ -153,7 +152,6 @@ void OpDispatchBuilder::FLD(OpcodeArgs, size_t width) {
   SetX87Top(top);
   // Write to ST[TOP]
   _StoreContextIndexed(converted, top, 16, MMBaseOffset(), 16, FPRClass);
-  //_StoreContext(converted, 16, offsetof(FEXCore::Core::CPUState, mm[7][0]));
 }
 
 void OpDispatchBuilder::FBLD(OpcodeArgs) {
@@ -565,7 +563,7 @@ void OpDispatchBuilder::FNINIT(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(Zero);
 
   // Tags all get marked as invalid
-  _StoreContext(1, GPRClass, Zero, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+  StoreContext(AbridgedFTWIndex, Zero);
 }
 
 void OpDispatchBuilder::FCOMI(OpcodeArgs, size_t width, bool Integer, OpDispatchBuilder::FCOMIFlags whichflags, bool poptwice) {
@@ -1107,7 +1105,7 @@ void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {
 
 void OpDispatchBuilder::X87EMMS(OpcodeArgs) {
   // Tags all get set to 0b11
-  _StoreContext(1, GPRClass, _Constant(0), offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+  StoreContext(AbridgedFTWIndex, _Constant(0));
 }
 
 void OpDispatchBuilder::X87FFREE(OpcodeArgs) {

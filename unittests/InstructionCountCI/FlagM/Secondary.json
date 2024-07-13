@@ -1057,13 +1057,15 @@
       ]
     },
     "cmpxchg rcx, rbx": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 7,
       "ExpectedArm64ASM": [
         "eor w27, w4, w5",
         "subs x26, x4, x5",
         "cfinv",
-        "mov x4, x5",
-        "csel x5, x7, x5, eq"
+        "csel x20, x7, x5, eq",
+        "mov x21, x5",
+        "mov x5, x20",
+        "mov x4, x21"
       ]
     },
     "cmpxchg [rax], rbx": {

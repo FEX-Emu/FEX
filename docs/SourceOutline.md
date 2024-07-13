@@ -110,7 +110,6 @@ IR to IR Optimization
 - [PassManager.cpp](../FEXCore/Source/Interface/IR/PassManager.cpp): Defines which passes are run, and runs them
 - [PassManager.h](../FEXCore/Source/Interface/IR/PassManager.h)
 - [ConstProp.cpp](../FEXCore/Source/Interface/IR/Passes/ConstProp.cpp): ConstProp, ZExt elim, const pooling, fcmp reduction, const inlining
-- [DeadContextStoreElimination.cpp](../FEXCore/Source/Interface/IR/Passes/DeadContextStoreElimination.cpp): Transforms ContextLoad/Store to temporaries, similar to mem2reg
 - [DeadStoreElimination.cpp](../FEXCore/Source/Interface/IR/Passes/DeadStoreElimination.cpp): Cross block store-after-store elimination
 - [IRValidation.cpp](../FEXCore/Source/Interface/IR/Passes/IRValidation.cpp): Sanity checking pass
 - [RedundantFlagCalculationElimination.cpp](../FEXCore/Source/Interface/IR/Passes/RedundantFlagCalculationElimination.cpp): This is not used right now, possibly broken
