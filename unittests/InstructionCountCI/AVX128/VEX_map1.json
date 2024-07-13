@@ -1179,7 +1179,7 @@
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
-        "ldr x0, [x28, #2048]",
+        "ldr x0, [x28, #1992]",
         "ldr q3, [x0, #16]",
         "tbl v16.16b, {v17.16b}, v3.16b",
         "str q2, [x28, #16]"
@@ -1192,7 +1192,7 @@
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
-        "ldr x0, [x28, #2048]",
+        "ldr x0, [x28, #1992]",
         "ldr q3, [x0, #32]",
         "tbl v16.16b, {v17.16b}, v3.16b",
         "str q2, [x28, #16]"
@@ -1205,7 +1205,7 @@
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
-        "ldr x0, [x28, #2048]",
+        "ldr x0, [x28, #1992]",
         "ldr q3, [x0, #48]",
         "tbl v16.16b, {v17.16b}, v3.16b",
         "str q2, [x28, #16]"
@@ -1230,7 +1230,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
-        "ldr x0, [x28, #2048]",
+        "ldr x0, [x28, #1992]",
         "ldr q3, [x0, #16]",
         "tbl v16.16b, {v17.16b}, v3.16b",
         "tbl v2.16b, {v2.16b}, v3.16b",
@@ -1244,7 +1244,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
-        "ldr x0, [x28, #2048]",
+        "ldr x0, [x28, #1992]",
         "ldr q3, [x0, #32]",
         "tbl v16.16b, {v17.16b}, v3.16b",
         "tbl v2.16b, {v2.16b}, v3.16b",
@@ -1258,7 +1258,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
-        "ldr x0, [x28, #2048]",
+        "ldr x0, [x28, #1992]",
         "ldr q3, [x0, #48]",
         "tbl v16.16b, {v17.16b}, v3.16b",
         "tbl v2.16b, {v2.16b}, v3.16b",
