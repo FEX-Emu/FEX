@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(FEX)
+project(FEX C CXX ASM)
 
 INCLUDE (CheckIncludeFiles)
 CHECK_INCLUDE_FILES ("gdb/jit-reader.h" HAVE_GDB_JIT_READER_H)
