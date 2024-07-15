@@ -13,11 +13,6 @@ asm-5.c.gcc-target-test-64
 # This causes its comparison to fail
 sse2-mmx-pextrw.c.gcc-target-test-64
 
-# Uses AVX
-# Test is compiled with -march=native, which means the build machine had avx
-# Needs to be recompiled to care about it
-pr57275.c.gcc-target-test-64
-
 # Fails even on host device
 # Stores a large 64bit value in to a union of double and 'unsigned long long'
 # 'test' loads this value in to a x87 register, then stores that value on to the stack
@@ -26,10 +21,6 @@ pr57275.c.gcc-target-test-64
 # 0xFFF279535D540FE4 was the original value
 # 0xFFFA79535D540FE4 was the value it turned in to
 pr88240.c.gcc-target-test-64
-
-# This relies on SIGPROF which means we need real signal support to handle this
-# Crashes or hangs depending on which runner is running it
-mcount_pic.c.gcc-target-test-64
 
 # These tests fail because of things unrelated to the sse4.1 instructions
 sse4_1-ceil-sfix-vec.c.gcc-target-test-64
@@ -40,6 +31,3 @@ sse4_1-rint-sfix-vec.c.gcc-target-test-64
 sse4_1-rintf-sfix-vec.c.gcc-target-test-64
 sse4_1-round-sfix-vec.c.gcc-target-test-64
 sse4_1-roundf-sfix-vec.c.gcc-target-test-64
-
-# This has a race with SIGPROF
-mcount_pic.c.gcc-target-test-64
