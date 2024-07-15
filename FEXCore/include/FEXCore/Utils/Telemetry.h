@@ -4,10 +4,9 @@
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/fextl/string.h>
 
+#include <array>
 #include <atomic>
 #include <stdint.h>
-#include <type_traits>
-#include <filesystem>
 
 namespace FEXCore::Telemetry {
 enum TelemetryType {
@@ -64,7 +63,10 @@ private:
   std::atomic<uint64_t> Data;
 };
 
-FEX_DEFAULT_VISIBILITY Value& GetTelemetryValue(TelemetryType Type);
+FEX_DEFAULT_VISIBILITY extern std::array<Value, FEXCore::Telemetry::TelemetryType::TYPE_LAST> TelemetryValues;
+inline Value& GetTelemetryValue(TelemetryType Type) {
+  return FEXCore::Telemetry::TelemetryValues[Type];
+}
 
 FEX_DEFAULT_VISIBILITY void Initialize();
 FEX_DEFAULT_VISIBILITY void Shutdown(const fextl::string& ApplicationName);
