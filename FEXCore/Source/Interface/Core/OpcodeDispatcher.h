@@ -1274,6 +1274,10 @@ public:
   }
 
 protected:
+  void RecordX87Use() override {
+    CurrentHeader->HasX87 = true;
+  }
+
   void SaveNZCV(IROps Op = OP_DUMMY) override {
     /* Some opcodes are conservatively marked as clobbering flags, but in fact
      * do not clobber flags in certain conditions. Check for that here as an
@@ -2277,6 +2281,7 @@ private:
 
   bool Multiblock {};
   uint64_t Entry;
+  IROp_IRHeader* CurrentHeader {};
 
   Ref _StoreMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, Ref Addr, Ref Value, uint8_t Align = 1) {
     if (CTX->IsAtomicTSOEnabled()) {

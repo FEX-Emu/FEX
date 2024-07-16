@@ -168,7 +168,7 @@
         "SwitchGen": false,
         "JITDispatchOverride": "NoOp"
       },
-      "IRHeader SSA:$Blocks, u64:$OriginalRIP, u32:$BlockCount, u32:$NumHostInstructions": {
+      "IRHeader SSA:$Blocks, u64:$OriginalRIP, u32:$BlockCount, u32:$NumHostInstructions, i1:$HasX87{false}": {
         "SwitchGen": false,
         "JITDispatchOverride": "NoOp"
       },
@@ -2568,33 +2568,282 @@
       }
     },
     "F80": {
+      "GPR = SyncStackToSlow": {
+        "Desc": [
+          "Synchronizes the virtual stack environment to the physical registers.",
+          "Returns the current stack top."
+        ],
+        "X87": true,
+        "HasSideEffects": true,
+        "DestSize": 8
+      },
+      "StackForceSlow": {
+        "Desc": [
+          "Forces the slow path."
+        ],
+        "X87": true,
+        "HasSideEffects": true
+      },
+      "InitStack": {
+        "Desc": [
+          "Initializes the stack by marking all tags as invalid and setting top to zero."
+        ],
+        "X87": true,
+        "HasSideEffects": true
+      },
+      "IncStackTop": {
+        "Desc": [
+          "Increase stack top-pointer."
+        ],
+        "X87": true,
+        "HasSideEffects": true
+      },
+      "DecStackTop": {
+        "Desc": [
+          "Decrease stack top-pointer."
+        ],
+        "X87": true,
+        "HasSideEffects": true
+      },
+      "InvalidateStack u8:$StackLocation": {
+        "Desc": [
+          "Marks the value in TOP+$StackLocation as empty / invalid 0b11.",
+          "If the StackLocation is 0xff, we invalidate all locations."
+        ],
+        "X87": true,
+        "HasSideEffects": true
+      },
+      "PushStack FPR:$X80Src, SSA:$OriginalValue, u8:$LoadSize, i1:$Float": {
+        "Desc": [
+          "Pushes the provided X80Src source on to the x87 stack.",
+          "Tracks OriginalValue as the original value of X80Src.",
+          "Opsize is 128bit for F80 values, 64-bit for low precision.",
+          "LoadSize the original load size, i.e. of size of OriginalValue.",
+          "Float: 80-bit, 64-bit, 32-bit",
+          "Int: 64-bit, 32-bit, 16-bit"
+        ],
+        "EmitValidation": [
+          "WalkFindRegClass($OriginalValue) == FPRClass || WalkFindRegClass($OriginalValue) == GPRClass"
+        ],
+        "HasSideEffects": true,
+        "X87": true
+      },
+      "CopyPushStack u8:$StackLocation": {
+        "Desc": [
+          "Pushes an element already on the stack onto the top."
+        ],
+        "HasSideEffects": true,
+        "X87": true
+      },
+      "StoreStackMemory GPR:$Addr, OpSize:$SourceSize, i1:$Float, u8:$StoreSize": {
+        "Desc": [
+          "Takes the top value off the x87 stack and stores it to memory.",
+          "SourceSize is 128bit for F80 values, 64-bit for low precision.",
+          "StoreSize is the store size for conversion:",
+          "Float: 80-bit, 64-bit, or 32-bit",
+          "Int: 64-bit, 32-bit, 16-bit"
+        ],
+        "HasSideEffects": true,
+        "X87": true
+      },
+      "StoreStackToStack u8:$StackLocation": {
+        "Desc": [
+          "Takes the top value off the x87 stack and stores it to stack location TOP+StackLocation",
+          "Float: 80-bit, 64-bit, or 32-bit",
+          "Int: 64-bit, 32-bit, 16-bit"
+        ],
+        "HasSideEffects": true,
+        "X87": true
+      },
+      "PopStackDestroy": {
+        "Desc": [
+          "Pops the top value off the stack but doesn't save it anywhere."
+        ],
+        "HasSideEffects": true,
+        "X87": true
+      },
+      "FPR = ReadStackValue u8:$StackLocation": {
+        "Desc": [
+          "Reads a value off the stack at the offset"
+        ],
+        "DestSize": "16",
+        "X87": true
+      },
+      "GPR = StackValidTag u8:$StackLocation": {
+        "Desc": [
+          "Returns 1 if the value in location TOP+$StackLocation is valid, 0 otherwise."
+        ],
+        "DestSize": 4,
+        "X87": true
+      },
+      "F80AddStack u8:$SrcStack1, u8:$SrcStack2": {
+        "Desc": [
+          "Adds two stack locations together, storing the result in to the first stack location"
+        ],
+        "HasSideEffects": true,
+        "X87": true
+      },
+      "F80AddValue u8:$SrcStack, FPR:$X80Src": {
+        "Desc": [
+          "Adds a operand value to a stack location. The result stored in to the stack location provided."
+        ],
+        "HasSideEffects": true,
+        "X87": true
+      },
       "FPR = F80Add FPR:$X80Src1, FPR:$X80Src2": {
         "DestSize": "16",
         "JITDispatch": false
       },
+      "F80SubStack u8:$DstStack, u8:$SrcStack1, u8:$SrcStack2": {
+        "Desc": [
+          "Subtracts the value in stack location TOP+$SrcStack2 from the value in stack location TOP+$SrcStack1.",
+          "The result is stored in stack location TOP+$DstStack."
+        ],
+        "HasSideEffects": true,
+        "X87": true
+      },
+      "F80SubValue u8:$SrcStack, FPR:$X80Src": {
+        "Desc": [
+          "Subtracts the value $X80Src from the value in stack location TOP+$SrcStack.",
+          "The result is stored in stack location TOP."
+        ],
+        "HasSideEffects": true,
+        "X87": true
+      },
+      "F80SubRValue FPR:$X80Src, u8:$SrcStack": {
+        "Desc": [
+          "Subtracts the value in stack location TOP+$SrcStack from the value $X80Src.",
+          "The result is stored in stack location TOP."
+        ],
+        "HasSideEffects": true,
+        "X87": true
+      },
       "FPR = F80Sub FPR:$X80Src1, FPR:$X80Src2": {
+        "Desc": [
+          "Subtracts the value in $X80Src1 from the value in $X80Src2.",
+          "The result is returned.",
+          "`FPR = X80Src2 - X80Src1`"
+        ],
         "DestSize": "16",
         "JITDispatch": false
+      },
+      "F80MulStack u8:$SrcStack1, u8:$SrcStack2": {
+        "Desc": [
+          "Multiplies two stack locations together, storing the result in to the first stack location"
+        ],
+        "HasSideEffects": true,
+        "X87": true
+      },
+      "F80MulValue u8:$SrcStack, FPR:$X80Src": {
+        "Desc": [
+          "Multiplies a operand value to a stack location. The result stored in to the stack location provided."
+        ],
+        "HasSideEffects": true,
+        "X87": true
       },
       "FPR = F80Mul FPR:$X80Src1, FPR:$X80Src2": {
         "DestSize": "16",
         "JITDispatch": false
       },
+      "F80DivStack u8:$DstStack, u8:$SrcStack1, u8:$SrcStack2": {
+        "Desc": [
+          "Divides the value in stack location TOP+$SrcStack1 by the value in stack location TOP+$SrcStack2.",
+          "The result is stored in stack location TOP+$DstStack.",
+          "`FPR|Stack[TOP+DstStack] = Stack[TOP+SrcStack1] / Stack[TOP+SrcStack2]`"
+        ],
+        "HasSideEffects": true,
+        "X87": true
+      },
+      "F80DivValue u8:$SrcStack, FPR:$X80Src": {
+        "Desc": [
+          "Divides the value in stack location TOP+$SrcStack by the value $X80Src.",
+          "The result is stored in stack location TOP and returned.",
+          "`FPR|Stack[TOP] = Stack[TOP+SrcStack] / X80Src`"
+        ],
+        "HasSideEffects": true,
+        "X87": true
+      },
+      "F80DivRValue FPR:$X80Src, u8:$SrcStack": {
+        "Desc": [
+          "Divides the value X80Src by the value in stack location TOP+$SrcStack.",
+          "The result is stored in stack location TOP.",
+          "`FPR|Stack[TOP] = X80Src / Stack[TOP+SrcStack]`"
+        ],
+        "HasSideEffects": true,
+        "X87": true
+      },
       "FPR = F80Div FPR:$X80Src1, FPR:$X80Src2": {
+        "Desc": [
+          "Divides the value in $X80Src1 by the value in $X80Src2.",
+          "The result is returned.",
+          "`FPR = X80Src1 / X80Src2`"
+        ],
         "DestSize": "16",
         "JITDispatch": false
+      },
+      "F80StackXchange u8:$SrcStack": {
+        "Desc": [
+          "Exchanges the value at the top of the stack with the value at TOP+$SrcStack."
+        ],
+        "X87": true,
+        "HasSideEffects": true
+      },
+      "FPR = F80StackChangeSign": {
+        "Desc": [
+          "Complements the sign bit of the value at the top of the stack.",
+          "Returns the new value at the top of the stack."
+        ],
+        "HasSideEffects": true,
+        "DestSize": "16",
+        "X87": true
+      },
+      "FPR = F80StackAbs": {
+        "Desc": [
+          "Clears the sign bit of the value at the top of the stack.",
+          "Returns the new value at the top of the stack."
+        ],
+        "HasSideEffects": true,
+        "DestSize": "16",
+        "X87": true
+      },
+      "F80PTANStack": {
+        "Desc": [
+          "Computes the approximate tangent of the source operand in register ST(0), stores the result in ST(0), and pushes a 1.0 onto the FPU register stack."
+        ],
+        "X87": true,
+        "HasSideEffects": true
+      },
+      "FPR = F80ATANStack": {
+        "Desc": [
+          "Computes arctan(st1/st0) and stores it in st0. Then pops the stack."
+        ],
+        "DestSize": "16",
+        "X87": true,
+        "HasSideEffects": true
       },
       "FPR = F80ATAN FPR:$X80Src1, FPR:$X80Src2": {
         "DestSize": "16",
         "JITDispatch": false
       },
+      "F80FPREMStack": {
+        "X87": true,
+        "HasSideEffects": true
+      },
       "FPR = F80FPREM FPR:$X80Src1, FPR:$X80Src2": {
         "DestSize": "16",
         "JITDispatch": false
       },
+      "F80FPREM1Stack": {
+        "X87": true,
+        "HasSideEffects": true
+      },
       "FPR = F80FPREM1 FPR:$X80Src1, FPR:$X80Src2": {
         "DestSize": "16",
         "JITDispatch": false
+      },
+      "F80SCALEStack": {
+        "X87": true,
+        "HasSideEffects": true
       },
       "FPR = F80SCALE FPR:$X80Src1, FPR:$X80Src2": {
         "DestSize": "16",
@@ -2616,9 +2865,20 @@
         "DestSize": "16",
         "JITDispatch": false
       },
+      "F80RoundStack": {
+        "Desc": [
+          "Replaces the value at the top of the stack with its nearest integral value."
+        ],
+        "X87": true,
+        "HasSideEffects": true
+      },
       "FPR = F80Round FPR:$X80Src": {
         "DestSize": "16",
         "JITDispatch": false
+      },
+      "F80F2XM1Stack": {
+        "X87": true,
+        "HasSideEffects": true
       },
       "FPR = F80F2XM1 FPR:$X80Src": {
         "DestSize": "16",
@@ -2628,17 +2888,37 @@
         "DestSize": "16",
         "JITDispatch": false
       },
+      "F80SINStack": {
+        "X87": true,
+        "HasSideEffects": true
+      },
       "FPR = F80SIN FPR:$X80Src": {
         "DestSize": "16",
         "JITDispatch": false
+      },
+      "F80COSStack": {
+        "X87": true,
+        "HasSideEffects": true
       },
       "FPR = F80COS FPR:$X80Src": {
         "DestSize": "16",
         "JITDispatch": false
       },
+      "F80SINCOSStack": {
+        "X87": true,
+        "HasSideEffects": true
+      },
+      "F80SQRTStack": {
+        "X87": true,
+        "HasSideEffects": true
+      },
       "FPR = F80SQRT FPR:$X80Src": {
         "DestSize": "16",
         "JITDispatch": false
+      },
+      "F80XTRACTStack": {
+        "X87": true,
+        "HasSideEffects": true
       },
       "FPR = F80XTRACT_EXP FPR:$X80Src": {
         "DestSize": "16",
@@ -2647,6 +2927,30 @@
       "FPR = F80XTRACT_SIG FPR:$X80Src": {
         "DestSize": "16",
         "JITDispatch": false
+      },
+      "GPR = F80StackTest u8:$SrcStack, u32:$Flags": {
+        "Desc": [
+          "Does comparison between value in stack at TOP + SrcStack"
+        ],
+        "DestSize": "4",
+        "X87": true
+      },
+      "GPR = F80CmpStack u8:$SrcStack, u32:$Flags": {
+        "Desc": [
+          "Does a scalar unordered compare between the value at the top of the stack and the value in stack position TOP+$SrcStack and stores the asked for flags in to a GPR",
+          "Ordering flag result is true if either float input is NaN"
+        ],
+        "DestSize": "4",
+        "X87": true
+      },
+      "GPR = F80CmpValue FPR:$X80Src, u32:$Flags": {
+        "Desc": [
+          "Does a scalar unordered compare between the value at the top of the stack and $X80Src and stores the asked for flags in to a GPR",
+          "Ordering flag result is true if either float input is NaN"
+        ],
+        "DestSize": "4",
+        "HasSideEffects": true,
+        "X87": true
       },
       "GPR = F80Cmp FPR:$X80Src1, FPR:$X80Src2, u32:$Flags": {
         "Desc": ["Does a scalar unordered compare and stores the asked for flags in to a GPR",
@@ -2663,10 +2967,29 @@
         "DestSize": "16",
         "JITDispatch": false
       },
-
+      "FPR = F80FYL2XStack": {
+        "Desc": [
+          "Computes ST1 * log2(ST0)",
+          "Stores the result in ST1, and pops the top of the stack.",
+          "Returns the new value at the top of the stack, i.e. the result of the operation."
+        ],
+        "HasSideEffects": true,
+        "DestSize": "16",
+        "X87": true
+      },
       "FPR = F80FYL2X FPR:$X80Src1, FPR:$X80Src2": {
         "DestSize": "16",
         "JITDispatch": false
+      },
+      "F80VBSLStack u8:#RegisterSize, FPR:$VectorMask, u8:$SrcStack1, u8:$SrcStack2": {
+        "Desc": [
+          "Does a vector bitwise select.",
+          "If the bit in the field is 1 then the corresponding bit is pulled from VectorTrue",
+          "If the bit in the field is 0 then the corresponding bit is pulled from VectorFalse",
+          "Writes the result to the top of the stack."
+        ],
+        "X87": true,
+        "HasSideEffects": true
       }
     },
     "Backend": {
