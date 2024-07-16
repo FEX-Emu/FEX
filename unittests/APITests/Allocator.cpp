@@ -5,14 +5,6 @@ namespace {
 
 using FEXCore::Allocator::MemoryRegion;
 
-static std::optional<MemoryRegion> LastStackMapping;
-void* MmapOverride(void* Ptr, size_t Size, int Flags, int, int, __off_t) {
-  if (Flags != PROT_NONE) {
-    LastStackMapping = MemoryRegion {Ptr, Size};
-  }
-  return Ptr;
-}
-
 struct Fixture {
   Fixture() {
     fd = mkstemp(filename);
