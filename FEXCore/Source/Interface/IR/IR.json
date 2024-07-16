@@ -504,9 +504,6 @@
         "DestSize": "1"
       },
 
-      "GPR = GetHostFlag GPR:$Value, u8:$Flag": {
-      },
-
       "SSA = LoadMem RegisterClass:$Class, u8:#Size, GPR:$Addr, GPR:$Offset, u8:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale": {
         "DestSize": "Size"
       },
