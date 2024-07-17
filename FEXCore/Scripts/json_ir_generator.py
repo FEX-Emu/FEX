@@ -394,6 +394,7 @@ def print_ir_sizes():
     [[nodiscard, gnu::const, gnu::visibility("default")]] bool HasSideEffects(IROps Op);
     [[nodiscard, gnu::const, gnu::visibility("default")]] bool ImplicitFlagClobber(IROps Op);
     [[nodiscard, gnu::const, gnu::visibility("default")]] bool GetHasDest(IROps Op);
+    [[nodiscard, gnu::const, gnu::visibility("default")]] bool LoweredX87(IROps Op);
     [[nodiscard, gnu::const, gnu::visibility("default")]] int8_t TiedSource(IROps Op);
 
     #undef IROP_SIZES
@@ -491,6 +492,7 @@ def print_ir_hassideeffects():
     for array, prop, T in [
         ("SideEffects", "HasSideEffects", "bool"),
         ("ImplicitFlagClobbers", "ImplicitFlagClobber", "bool"),
+        ("IsLoweredX87", "LoweredX87", "bool"),
         ("TiedSources", "TiedSource", "int8_t"),
     ]:
         output_file.write(
