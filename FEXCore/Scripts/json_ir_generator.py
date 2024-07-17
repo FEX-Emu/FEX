@@ -2,6 +2,7 @@
 import json
 import sys
 from dataclasses import dataclass, field
+import textwrap
 
 def ExitError(msg):
     print(msg)
@@ -377,42 +378,27 @@ def print_ir_sizes():
         if op.Name == "Last":
             output_file.write("\t-1ULL,\n")
         else:
-            output_file.write("\tsizeof(IROp_{}),\n".format(op.Name))
+            output_file.write(f"\tsizeof(IROp_{op.Name}),\n")
 
-    output_file.write("};\n\n")
+    output_file.write(textwrap.dedent("""
+    };
 
-    output_file.write("// Make sure our array maps directly to the IROps enum\n")
-    output_file.write("static_assert(IRSizes[IROps::OP_LAST] == -1ULL);\n\n")
+    // Make sure our array maps directly to the IROps enum
+    static_assert(IRSizes[IROps::OP_LAST] == -1ULL);
 
-    output_file.write("[[maybe_unused, nodiscard]] static size_t GetSize(IROps Op) { return IRSizes[Op]; }\n\n")
+    [[maybe_unused, nodiscard]] static size_t GetSize(IROps Op) { return IRSizes[Op]; }
+    [[nodiscard, gnu::const, gnu::visibility("default")]] std::string_view const& GetName(IROps Op);
+    [[nodiscard, gnu::const, gnu::visibility("default")]] uint8_t GetArgs(IROps Op);
+    [[nodiscard, gnu::const, gnu::visibility("default")]] uint8_t GetRAArgs(IROps Op);
+    [[nodiscard, gnu::const, gnu::visibility("default")]] FEXCore::IR::RegisterClassType GetRegClass(IROps Op);
+    [[nodiscard, gnu::const, gnu::visibility("default")]] bool HasSideEffects(IROps Op);
+    [[nodiscard, gnu::const, gnu::visibility("default")]] bool ImplicitFlagClobber(IROps Op);
+    [[nodiscard, gnu::const, gnu::visibility("default")]] bool GetHasDest(IROps Op);
+    [[nodiscard, gnu::const, gnu::visibility("default")]] int8_t TiedSource(IROps Op);
 
-    output_file.write(
-        '[[nodiscard, gnu::const, gnu::visibility("default")]] std::string_view const& GetName(IROps Op);\n'
-    )
-    output_file.write(
-        '[[nodiscard, gnu::const, gnu::visibility("default")]] uint8_t GetArgs(IROps Op);\n'
-    )
-    output_file.write(
-        '[[nodiscard, gnu::const, gnu::visibility("default")]] uint8_t GetRAArgs(IROps Op);\n'
-    )
-    output_file.write(
-        '[[nodiscard, gnu::const, gnu::visibility("default")]] FEXCore::IR::RegisterClassType GetRegClass(IROps Op);\n\n'
-    )
-    output_file.write(
-        '[[nodiscard, gnu::const, gnu::visibility("default")]] bool HasSideEffects(IROps Op);\n'
-    )
-    output_file.write(
-        '[[nodiscard, gnu::const, gnu::visibility("default")]] bool ImplicitFlagClobber(IROps Op);\n'
-    )
-    output_file.write(
-        '[[nodiscard, gnu::const, gnu::visibility("default")]] bool GetHasDest(IROps Op);\n'
-    )
-    output_file.write(
-        '[[nodiscard, gnu::const, gnu::visibility("default")]] int8_t TiedSource(IROps Op);\n'
-    )
-
-    output_file.write("#undef IROP_SIZES\n")
-    output_file.write("#endif\n\n")
+    #undef IROP_SIZES
+    #endif
+    """))
 
 def print_ir_reg_classes():
     output_file.write("#ifdef IROP_REG_CLASSES_IMPL\n")
