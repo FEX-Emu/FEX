@@ -504,9 +504,6 @@
         "DestSize": "1"
       },
 
-      "GPR = GetHostFlag GPR:$Value, u8:$Flag": {
-      },
-
       "SSA = LoadMem RegisterClass:$Class, u8:#Size, GPR:$Addr, GPR:$Offset, u8:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale": {
         "DestSize": "Size"
       },
@@ -2928,22 +2925,22 @@
         "DestSize": "16",
         "JITDispatch": false
       },
-      "GPR = F80StackTest u8:$SrcStack, u32:$Flags": {
+      "GPR = F80StackTest u8:$SrcStack": {
         "Desc": [
           "Does comparison between value in stack at TOP + SrcStack"
         ],
         "DestSize": "4",
         "X87": true
       },
-      "GPR = F80CmpStack u8:$SrcStack, u32:$Flags": {
+      "GPR = F80CmpStack u8:$SrcStack": {
         "Desc": [
-          "Does a scalar unordered compare between the value at the top of the stack and the value in stack position TOP+$SrcStack and stores the asked for flags in to a GPR",
+          "Does a scalar unordered compare between the value at the top of the stack and the value in stack position TOP+$SrcStack and stores the flags in to a GPR",
           "Ordering flag result is true if either float input is NaN"
         ],
         "DestSize": "4",
         "X87": true
       },
-      "GPR = F80CmpValue FPR:$X80Src, u32:$Flags": {
+      "GPR = F80CmpValue FPR:$X80Src": {
         "Desc": [
           "Does a scalar unordered compare between the value at the top of the stack and $X80Src and stores the asked for flags in to a GPR",
           "Ordering flag result is true if either float input is NaN"
@@ -2952,8 +2949,8 @@
         "HasSideEffects": true,
         "X87": true
       },
-      "GPR = F80Cmp FPR:$X80Src1, FPR:$X80Src2, u32:$Flags": {
-        "Desc": ["Does a scalar unordered compare and stores the asked for flags in to a GPR",
+      "GPR = F80Cmp FPR:$X80Src1, FPR:$X80Src2": {
+        "Desc": ["Does a scalar unordered compare and stores the flags in to a GPR",
                  "Ordering flag result is true if either float input is NaN"
                 ],
         "DestSize": "4",

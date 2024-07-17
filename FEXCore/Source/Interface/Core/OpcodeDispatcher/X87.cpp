@@ -506,12 +506,11 @@ void OpDispatchBuilder::FTST(OpcodeArgs) {
 
   auto low = _Constant(0);
   Ref data = _VCastFromGPR(16, 8, low);
+  Ref Res = _F80Cmp(a, data);
 
-  Ref Res = _F80Cmp(a, data, (1 << FCMP_FLAG_EQ) | (1 << FCMP_FLAG_LT) | (1 << FCMP_FLAG_UNORDERED));
-
-  Ref HostFlag_CF = _GetHostFlag(Res, FCMP_FLAG_LT);
-  Ref HostFlag_ZF = _GetHostFlag(Res, FCMP_FLAG_EQ);
-  Ref HostFlag_Unordered = _GetHostFlag(Res, FCMP_FLAG_UNORDERED);
+  Ref HostFlag_CF = _Bfe(OpSize::i64Bit, 1, FCMP_FLAG_LT, Res);
+  Ref HostFlag_ZF = _Bfe(OpSize::i64Bit, 1, FCMP_FLAG_EQ, Res);
+  Ref HostFlag_Unordered = _Bfe(OpSize::i64Bit, 1, FCMP_FLAG_UNORDERED, Res);
   HostFlag_CF = _Or(OpSize::i32Bit, HostFlag_CF, HostFlag_Unordered);
   HostFlag_ZF = _Or(OpSize::i32Bit, HostFlag_ZF, HostFlag_Unordered);
 
@@ -591,12 +590,11 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs, size_t width, bool Integer, OpDispatch
   }
 
   auto a = _LoadContextIndexed(top, 16, MMBaseOffset(), 16, FPRClass);
+  Ref Res = _F80Cmp(a, b);
 
-  Ref Res = _F80Cmp(a, b, (1 << FCMP_FLAG_EQ) | (1 << FCMP_FLAG_LT) | (1 << FCMP_FLAG_UNORDERED));
-
-  Ref HostFlag_CF = _GetHostFlag(Res, FCMP_FLAG_LT);
-  Ref HostFlag_ZF = _GetHostFlag(Res, FCMP_FLAG_EQ);
-  Ref HostFlag_Unordered = _GetHostFlag(Res, FCMP_FLAG_UNORDERED);
+  Ref HostFlag_CF = _Bfe(OpSize::i64Bit, 1, FCMP_FLAG_LT, Res);
+  Ref HostFlag_ZF = _Bfe(OpSize::i64Bit, 1, FCMP_FLAG_EQ, Res);
+  Ref HostFlag_Unordered = _Bfe(OpSize::i64Bit, 1, FCMP_FLAG_UNORDERED, Res);
   HostFlag_CF = _Or(OpSize::i32Bit, HostFlag_CF, HostFlag_Unordered);
   HostFlag_ZF = _Or(OpSize::i32Bit, HostFlag_ZF, HostFlag_Unordered);
 

@@ -39,7 +39,6 @@ struct OpHandlers<IR::OP_F80CVTTO> {
 
 template<>
 struct OpHandlers<IR::OP_F80CMP> {
-  template<uint32_t Flags>
   FEXCORE_PRESERVE_ALL_ATTR static uint64_t handle(uint16_t NewFCW, X80SoftFloat Src1, X80SoftFloat Src2) {
     LoadDeferredFCW(NewFCW);
 
@@ -47,13 +46,13 @@ struct OpHandlers<IR::OP_F80CMP> {
     uint64_t ResultFlags = 0;
 
     X80SoftFloat::FCMP(Src1, Src2, &eq, &lt, &nan);
-    if (Flags & (1 << IR::FCMP_FLAG_LT) && lt) {
+    if (lt) {
       ResultFlags |= (1 << IR::FCMP_FLAG_LT);
     }
-    if (Flags & (1 << IR::FCMP_FLAG_UNORDERED) && nan) {
+    if (nan) {
       ResultFlags |= (1 << IR::FCMP_FLAG_UNORDERED);
     }
-    if (Flags & (1 << IR::FCMP_FLAG_EQ) && eq) {
+    if (eq) {
       ResultFlags |= (1 << IR::FCMP_FLAG_EQ);
     }
     return ResultFlags;

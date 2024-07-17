@@ -35,14 +35,7 @@ void InterpreterOps::FillFallbackIndexPointers(uint64_t* Info) {
   Info[Core::OPINDEX_F80CVTINT_TRUNC2] = reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle2t);
   Info[Core::OPINDEX_F80CVTINT_TRUNC4] = reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle4t);
   Info[Core::OPINDEX_F80CVTINT_TRUNC8] = reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle8t);
-  Info[Core::OPINDEX_F80CMP_0] = reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<0>);
-  Info[Core::OPINDEX_F80CMP_1] = reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<1>);
-  Info[Core::OPINDEX_F80CMP_2] = reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<2>);
-  Info[Core::OPINDEX_F80CMP_3] = reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<3>);
-  Info[Core::OPINDEX_F80CMP_4] = reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<4>);
-  Info[Core::OPINDEX_F80CMP_5] = reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<5>);
-  Info[Core::OPINDEX_F80CMP_6] = reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<6>);
-  Info[Core::OPINDEX_F80CMP_7] = reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<7>);
+  Info[Core::OPINDEX_F80CMP] = reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle);
   Info[Core::OPINDEX_F80CVTTOINT_2] = reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80CVTTOINT>::handle2);
   Info[Core::OPINDEX_F80CVTTOINT_4] = reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80CVTTOINT>::handle4);
 
@@ -154,17 +147,8 @@ bool InterpreterOps::GetFallbackHandler(bool SupportsPreserveAllABI, const IR::I
     break;
   }
   case IR::OP_F80CMP: {
-    auto Op = IROp->C<IR::IROp_F80Cmp>();
-
-    static constexpr std::array handlers {
-      &FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<0>, &FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<1>,
-      &FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<2>, &FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<3>,
-      &FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<4>, &FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<5>,
-      &FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<6>, &FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle<7>,
-    };
-
-    *Info = {FABI_I64_I16_F80_F80, (void*)handlers[Op->Flags], (Core::FallbackHandlerIndex)(Core::OPINDEX_F80CMP_0 + Op->Flags),
-             SupportsPreserveAllABI};
+    *Info = {FABI_I64_I16_F80_F80, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle,
+             (Core::FallbackHandlerIndex)(Core::OPINDEX_F80CMP), SupportsPreserveAllABI};
     return true;
   }
 
