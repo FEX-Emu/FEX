@@ -489,14 +489,14 @@ def print_ir_getraargs():
 def print_ir_hassideeffects():
     output_file.write("#ifdef IROP_HASSIDEEFFECTS_IMPL\n")
 
-    for array, prop, T in [
-        ("SideEffects", "HasSideEffects", "bool"),
-        ("ImplicitFlagClobbers", "ImplicitFlagClobber", "bool"),
-        ("IsLoweredX87", "LoweredX87", "bool"),
-        ("TiedSources", "TiedSource", "int8_t"),
+    for prop, T in [
+        ("HasSideEffects", "bool"),
+        ("ImplicitFlagClobber", "bool"),
+        ("LoweredX87", "bool"),
+        ("TiedSource", "int8_t"),
     ]:
         output_file.write(
-            f"constexpr std::array<{'uint8_t' if T == 'bool' else T}, OP_LAST + 1> {array} = {{\n"
+            f"constexpr std::array<{'uint8_t' if T == 'bool' else T}, OP_LAST + 1> {prop}_ = {{\n"
         )
         for op in IROps:
             if T == "bool":
@@ -509,7 +509,7 @@ def print_ir_hassideeffects():
         output_file.write("};\n\n")
 
         output_file.write(f"{T} {prop}(IROps Op) {{\n")
-        output_file.write(f"  return {array}[Op];\n")
+        output_file.write(f"  return {prop}_[Op];\n")
         output_file.write("}\n")
 
     output_file.write("#undef IROP_HASSIDEEFFECTS_IMPL\n")
