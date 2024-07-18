@@ -3,6 +3,9 @@
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/fextl/string.h>
 
+namespace FEX::ArgLoader {
+class ArgLoader;
+}
 /**
  * @brief This is a singleton for storing global configuration state
  */
@@ -28,18 +31,16 @@ struct ApplicationNames {
 /**
  * @brief Loads the FEX and application configurations for the application that is getting ready to run.
  *
- * @param NoFEXArguments Do we want to parse FEXLoader arguments, Or is this FEXInterpreter?
+ * @param ArgLoader Argument loader for argument based config options
  * @param LoadProgramConfig Do we want to load application specific configurations?
- * @param argc The `argc` passed to main(...)
- * @param argv The `argv` passed to main(...)
  * @param envp The `envp` passed to main(...)
  * @param ExecFDInterp If FEX was executed with binfmt_misc FD argument
  * @param ProgramFDFromEnv The execveat FD argument passed through FEX
  *
  * @return The application name and path structure
  */
-ApplicationNames
-LoadConfig(bool NoFEXArguments, bool LoadProgramConfig, int argc, char** argv, char** const envp, bool ExecFDInterp, int ProgramFDFromEnv);
+ApplicationNames LoadConfig(fextl::unique_ptr<FEX::ArgLoader::ArgLoader> ArgLoader, bool LoadProgramConfig, char** const envp,
+                            bool ExecFDInterp, int ProgramFDFromEnv);
 
 const char* GetHomeDirectory();
 

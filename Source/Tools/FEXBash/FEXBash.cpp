@@ -27,14 +27,14 @@ int main(int argc, char** argv, char** const envp) {
   FEXCore::Config::Initialize();
   FEXCore::Config::AddLayer(FEX::Config::CreateGlobalMainLayer());
   FEXCore::Config::AddLayer(FEX::Config::CreateMainLayer());
-  FEX::ArgLoader::LoadWithoutArguments(argc, argv);
+  FEX::ArgLoader::ArgLoader ArgsLoader(FEX::ArgLoader::ArgLoader::LoadType::WITHOUT_FEXLOADER_PARSER, argc, argv);
   FEXCore::Config::AddLayer(FEX::Config::CreateEnvironmentLayer(envp));
   FEXCore::Config::Load();
 
   // Reload the meta layer
   FEXCore::Config::ReloadMetaLayer();
 
-  auto Args = FEX::ArgLoader::Get();
+  auto Args = ArgsLoader.Get();
 
   // Ensure FEXServer is setup before config options try to pull CONFIG_ROOTFS
   if (!FEXServerClient::SetupClient(argv[0])) {

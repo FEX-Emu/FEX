@@ -326,29 +326,17 @@ fextl::string RecoverGuestProgramFilename(fextl::string Program, bool ExecFDInte
   return Program;
 }
 
-ApplicationNames
-LoadConfig(bool NoFEXArguments, bool LoadProgramConfig, int argc, char** argv, char** const envp, bool ExecFDInterp, int ProgramFDFromEnv) {
+ApplicationNames LoadConfig(fextl::unique_ptr<FEX::ArgLoader::ArgLoader> ArgsLoader, bool LoadProgramConfig, char** const envp,
+                            bool ExecFDInterp, int ProgramFDFromEnv) {
   FEX::Config::InitializeConfigs();
   FEXCore::Config::Initialize();
   FEXCore::Config::AddLayer(CreateGlobalMainLayer());
   FEXCore::Config::AddLayer(CreateMainLayer());
 
-  if (NoFEXArguments) {
-    FEX::ArgLoader::LoadWithoutArguments(argc, argv);
-  } else {
-    FEXCore::Config::AddLayer(fextl::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv));
-  }
+  auto Args = ArgsLoader->Get();
 
-  const char* AppConfig = getenv("FEX_APP_CONFIG");
-  if (AppConfig && FHU::Filesystem::Exists(AppConfig)) {
-    FEXCore::Config::AddLayer(CreateUserOverrideLayer(AppConfig));
-  }
-
-  FEXCore::Config::AddLayer(CreateEnvironmentLayer(envp));
-  FEXCore::Config::Load();
-
-  auto Args = FEX::ArgLoader::Get();
-
+  fextl::string Program {};
+  fextl::string ProgramName {};
   if (LoadProgramConfig) {
     if (Args.empty()) {
       // Early exit if we weren't passed an argument
@@ -356,10 +344,9 @@ LoadConfig(bool NoFEXArguments, bool LoadProgramConfig, int argc, char** argv, c
     }
 
     Args[0] = RecoverGuestProgramFilename(std::move(Args[0]), ExecFDInterp, ProgramFDFromEnv);
-    fextl::string& Program = Args[0];
+    Program = Args[0];
 
     bool Wine = false;
-    fextl::string ProgramName;
     for (size_t CurrentProgramNameIndex = 0; CurrentProgramNameIndex < Args.size(); ++CurrentProgramNameIndex) {
       auto CurrentProgramName = FHU::Filesystem::GetFilename(Args[CurrentProgramNameIndex]);
 
@@ -404,10 +391,26 @@ LoadConfig(bool NoFEXArguments, bool LoadProgramConfig, int argc, char** argv, c
       FEXCore::Config::AddLayer(CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_GLOBAL_STEAM_APP));
       FEXCore::Config::AddLayer(CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_LOCAL_STEAM_APP));
     }
-
-    return ApplicationNames {std::move(Program), std::move(ProgramName)};
   }
-  return {};
+
+  if (ArgsLoader->GetLoadType() == FEX::ArgLoader::ArgLoader::LoadType::WITH_FEXLOADER_PARSER) {
+    FEXCore::Config::AddLayer(std::move(ArgsLoader));
+  }
+
+  const char* AppConfig = getenv("FEX_APP_CONFIG");
+  if (AppConfig && FHU::Filesystem::Exists(AppConfig)) {
+    FEXCore::Config::AddLayer(CreateUserOverrideLayer(AppConfig));
+  }
+
+  FEXCore::Config::AddLayer(CreateEnvironmentLayer(envp));
+  FEXCore::Config::Load();
+
+
+  if (LoadProgramConfig) {
+    return ApplicationNames {std::move(Program), std::move(ProgramName)};
+  } else {
+    return {};
+  }
 }
 
 #ifndef _WIN32

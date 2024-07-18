@@ -11,13 +11,16 @@
 #include <stdint.h>
 
 namespace FEX::ArgLoader {
-fextl::vector<fextl::string> RemainingArgs;
-fextl::vector<fextl::string> ProgramArguments;
-
-static fextl::string Version = "FEX-Emu (" GIT_DESCRIBE_STRING ") ";
 void FEX::ArgLoader::ArgLoader::Load() {
+  RemainingArgs.clear();
+  ProgramArguments.clear();
+  if (Type == LoadType::WITHOUT_FEXLOADER_PARSER) {
+    LoadWithoutArguments();
+    return;
+  }
+
   optparse::OptionParser Parser {};
-  Parser.version(Version);
+  Parser.version("FEX-Emu (" GIT_DESCRIBE_STRING ") ");
   optparse::OptionGroup CPUGroup(Parser, "CPU Core options");
   optparse::OptionGroup EmulationGroup(Parser, "Emulation options");
   optparse::OptionGroup DebugGroup(Parser, "Debug options");
@@ -45,21 +48,14 @@ void FEX::ArgLoader::ArgLoader::Load() {
   ProgramArguments = Parser.parsed_args();
 }
 
-void LoadWithoutArguments(int _argc, char** _argv) {
+void FEX::ArgLoader::ArgLoader::LoadWithoutArguments() {
   // Skip argument 0, which will be the interpreter
-  for (int i = 1; i < _argc; ++i) {
-    RemainingArgs.emplace_back(_argv[i]);
+  for (int i = 1; i < argc; ++i) {
+    RemainingArgs.emplace_back(argv[i]);
   }
 
   // Put the interpreter in ProgramArguments
-  ProgramArguments.emplace_back(_argv[0]);
-}
-
-fextl::vector<fextl::string> Get() {
-  return RemainingArgs;
-}
-fextl::vector<fextl::string> GetParsedArgs() {
-  return ProgramArguments;
+  ProgramArguments.emplace_back(argv[0]);
 }
 
 } // namespace FEX::ArgLoader

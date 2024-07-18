@@ -193,11 +193,12 @@ int main(int argc, char** argv, char** const envp) {
 
   FEX::Config::InitializeConfigs();
   FEXCore::Config::Initialize();
-  FEXCore::Config::AddLayer(fextl::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv));
+  auto ArgsLoader = fextl::make_unique<FEX::ArgLoader::ArgLoader>(FEX::ArgLoader::ArgLoader::LoadType::WITH_FEXLOADER_PARSER, argc, argv);
+  auto Args = ArgsLoader->Get();
+  FEXCore::Config::AddLayer(std::move(ArgsLoader));
   FEXCore::Config::AddLayer(FEX::Config::CreateEnvironmentLayer(envp));
   FEXCore::Config::Load();
 
-  auto Args = FEX::ArgLoader::Get();
 
   if (Args.size() < 2) {
     LogMan::Msg::EFmt("Not enough arguments");
