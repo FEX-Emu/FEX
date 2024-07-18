@@ -69,6 +69,8 @@ fextl::string GenerateCPUInfo(FEXCore::Context::Context* ctx, uint32_t CPUCores)
   auto res_1 = ctx->RunCPUIDFunction(1, 0);
   auto res_6 = ctx->RunCPUIDFunction(6, 0);
   auto res_7 = ctx->RunCPUIDFunction(7, 0);
+  auto res_7_1 = ctx->RunCPUIDFunction(7, 1);
+  auto res_d_1 = ctx->RunCPUIDFunction(0xD, 1);
   auto res_10 = ctx->RunCPUIDFunction(0x10, 0);
 
   auto res_8000_0001 = ctx->RunCPUIDFunction(0x8000'0001, 0);
@@ -276,7 +278,6 @@ fextl::string GenerateCPUInfo(FEXCore::Context::Context* ctx, uint32_t CPUCores)
     add_flag_if(res_6.ecx & (1 << 3), "epb");
     add_flag_if(res_10.ebx & (1 << 1), "cat_l3");
     add_flag_if(res_10.ebx & (1 << 2), "cat_l2");
-    add_flag_if(false, "cdp_l3"); // Needs leaf support
     add_flag_if(false, "invpcid_single");
     add_flag_if(res_8000_0007.edx & (1 << 7), "hw_pstate");
     add_flag_if(res_8000_001f.eax & (1 << 0), "sme");
@@ -286,7 +287,6 @@ fextl::string GenerateCPUInfo(FEXCore::Context::Context* ctx, uint32_t CPUCores)
 
     // We don't support Intel's Protected Processor Inventory Number
     add_flag_if(false, "intel_ppin");
-    add_flag_if(false, "cdp_l2"); // Needs leaf support
 
     add_flag_if(res_8000_0008.ebx & (1 << 6), "mba");
     add_flag_if(res_8000_001f.eax & (1 << 1), "sev");
@@ -327,9 +327,10 @@ fextl::string GenerateCPUInfo(FEXCore::Context::Context* ctx, uint32_t CPUCores)
     add_flag_if(res_7.ebx & (1 << 9), "erms");
     add_flag_if(res_7.ebx & (1 << 10), "invpcid");
     add_flag_if(res_7.ebx & (1 << 11), "rtm");
-    add_flag_if(false, "cqm"); // Needs leaf support
+    add_flag_if(res_7.ebx & (1 << 12), "rdt_m");
+    add_flag_if(res_7.ebx & (1 << 13), "depc_fpu_cs_ds");
     add_flag_if(res_7.ebx & (1 << 14), "mpx");
-    add_flag_if(false, "rdt_a"); // Needs leaf support
+    add_flag_if(res_7.ebx & (1 << 15), "rdt_a");
     add_flag_if(res_7.ebx & (1 << 16), "avx512f");
     add_flag_if(res_7.ebx & (1 << 17), "avx512dq");
     add_flag_if(res_7.ebx & (1 << 18), "rdseed");
@@ -345,16 +346,12 @@ fextl::string GenerateCPUInfo(FEXCore::Context::Context* ctx, uint32_t CPUCores)
     add_flag_if(res_7.ebx & (1 << 29), "sha_ni");
     add_flag_if(res_7.ebx & (1 << 30), "avx512bw");
     add_flag_if(res_7.ebx & (1 << 31), "avx512vl");
-    add_flag_if(false, // Needs leaf support // res_d.eax & (1 << 0) // Leaf 1h
-                "xsaveopt");
-    add_flag_if(false, // Needs leaf support // res_d.eax & (1 << 1) // Leaf 1h
-                "xsavec");
-    add_flag_if(false, // Needs leaf support // res_d.eax & (1 << 2) // Leaf 1h
-                "xgetbv1");
-    add_flag_if(false, // Needs leaf support // res_d.eax & (1 << 3) // Leaf 1h
-                "xsaves");
+    add_flag_if(res_d_1.eax & (1 << 0), "xsaveopt");
+    add_flag_if(res_d_1.eax & (1 << 1), "xsavec");
+    add_flag_if(res_d_1.eax & (1 << 2), "xgetbv1");
+    add_flag_if(res_d_1.eax & (1 << 3), "xsaves");
 
-    add_flag_if(false, "avx512_bf16"); // Needs leaf support
+    add_flag_if(res_7_1.eax & (1 << 5), "avx512_bf16");
     add_flag_if(res_8000_0008.ebx & (1 << 0), "clzero");
     add_flag_if(res_8000_0008.ebx & (1 << 1), "irperf");
     add_flag_if(res_8000_0008.ebx & (1 << 2), "xsaveerptr");
