@@ -2,6 +2,7 @@
 import json
 import sys
 from dataclasses import dataclass, field
+import textwrap
 
 def ExitError(msg):
     print(msg)
@@ -53,7 +54,7 @@ class OpDefinition:
     SSAArgNum: int
     NonSSAArgNum: int
     DynamicDispatch: bool
-    X87: bool
+    LoweredX87: bool
     JITDispatch: bool
     JITDispatchOverride: str
     TiedSource: int
@@ -77,7 +78,7 @@ class OpDefinition:
         self.SSAArgNum = 0
         self.NonSSAArgNum = 0
         self.DynamicDispatch = False
-        self.X87 = False
+        self.LoweredX87 = False
         self.JITDispatch = True
         self.JITDispatchOverride = None
         self.TiedSource = -1
@@ -253,7 +254,7 @@ def parse_ops(ops):
                 OpDef.JITDispatchOverride = op_val["JITDispatchOverride"]
 
             if "X87" in op_val:
-                OpDef.X87 = op_val["X87"]
+                OpDef.LoweredX87 = op_val["X87"]
 
                 # X87 implies !JITDispatch
                 assert("JITDispatch" not in op_val)
@@ -377,42 +378,28 @@ def print_ir_sizes():
         if op.Name == "Last":
             output_file.write("\t-1ULL,\n")
         else:
-            output_file.write("\tsizeof(IROp_{}),\n".format(op.Name))
+            output_file.write(f"\tsizeof(IROp_{op.Name}),\n")
 
-    output_file.write("};\n\n")
+    output_file.write(textwrap.dedent("""
+    };
 
-    output_file.write("// Make sure our array maps directly to the IROps enum\n")
-    output_file.write("static_assert(IRSizes[IROps::OP_LAST] == -1ULL);\n\n")
+    // Make sure our array maps directly to the IROps enum
+    static_assert(IRSizes[IROps::OP_LAST] == -1ULL);
 
-    output_file.write("[[maybe_unused, nodiscard]] static size_t GetSize(IROps Op) { return IRSizes[Op]; }\n\n")
+    [[maybe_unused, nodiscard]] static size_t GetSize(IROps Op) { return IRSizes[Op]; }
+    [[nodiscard, gnu::const, gnu::visibility("default")]] std::string_view const& GetName(IROps Op);
+    [[nodiscard, gnu::const, gnu::visibility("default")]] uint8_t GetArgs(IROps Op);
+    [[nodiscard, gnu::const, gnu::visibility("default")]] uint8_t GetRAArgs(IROps Op);
+    [[nodiscard, gnu::const, gnu::visibility("default")]] FEXCore::IR::RegisterClassType GetRegClass(IROps Op);
+    [[nodiscard, gnu::const, gnu::visibility("default")]] bool HasSideEffects(IROps Op);
+    [[nodiscard, gnu::const, gnu::visibility("default")]] bool ImplicitFlagClobber(IROps Op);
+    [[nodiscard, gnu::const, gnu::visibility("default")]] bool GetHasDest(IROps Op);
+    [[nodiscard, gnu::const, gnu::visibility("default")]] bool LoweredX87(IROps Op);
+    [[nodiscard, gnu::const, gnu::visibility("default")]] int8_t TiedSource(IROps Op);
 
-    output_file.write(
-        '[[nodiscard, gnu::const, gnu::visibility("default")]] std::string_view const& GetName(IROps Op);\n'
-    )
-    output_file.write(
-        '[[nodiscard, gnu::const, gnu::visibility("default")]] uint8_t GetArgs(IROps Op);\n'
-    )
-    output_file.write(
-        '[[nodiscard, gnu::const, gnu::visibility("default")]] uint8_t GetRAArgs(IROps Op);\n'
-    )
-    output_file.write(
-        '[[nodiscard, gnu::const, gnu::visibility("default")]] FEXCore::IR::RegisterClassType GetRegClass(IROps Op);\n\n'
-    )
-    output_file.write(
-        '[[nodiscard, gnu::const, gnu::visibility("default")]] bool HasSideEffects(IROps Op);\n'
-    )
-    output_file.write(
-        '[[nodiscard, gnu::const, gnu::visibility("default")]] bool ImplicitFlagClobber(IROps Op);\n'
-    )
-    output_file.write(
-        '[[nodiscard, gnu::const, gnu::visibility("default")]] bool GetHasDest(IROps Op);\n'
-    )
-    output_file.write(
-        '[[nodiscard, gnu::const, gnu::visibility("default")]] int8_t TiedSource(IROps Op);\n'
-    )
-
-    output_file.write("#undef IROP_SIZES\n")
-    output_file.write("#endif\n\n")
+    #undef IROP_SIZES
+    #endif
+    """))
 
 def print_ir_reg_classes():
     output_file.write("#ifdef IROP_REG_CLASSES_IMPL\n")
@@ -502,13 +489,14 @@ def print_ir_getraargs():
 def print_ir_hassideeffects():
     output_file.write("#ifdef IROP_HASSIDEEFFECTS_IMPL\n")
 
-    for array, prop, T in [
-        ("SideEffects", "HasSideEffects", "bool"),
-        ("ImplicitFlagClobbers", "ImplicitFlagClobber", "bool"),
-        ("TiedSources", "TiedSource", "int8_t"),
+    for prop, T in [
+        ("HasSideEffects", "bool"),
+        ("ImplicitFlagClobber", "bool"),
+        ("LoweredX87", "bool"),
+        ("TiedSource", "int8_t"),
     ]:
         output_file.write(
-            f"constexpr std::array<{'uint8_t' if T == 'bool' else T}, OP_LAST + 1> {array} = {{\n"
+            f"constexpr std::array<{'uint8_t' if T == 'bool' else T}, OP_LAST + 1> {prop}_ = {{\n"
         )
         for op in IROps:
             if T == "bool":
@@ -521,7 +509,7 @@ def print_ir_hassideeffects():
         output_file.write("};\n\n")
 
         output_file.write(f"{T} {prop}(IROps Op) {{\n")
-        output_file.write(f"  return {array}[Op];\n")
+        output_file.write(f"  return {prop}_[Op];\n")
         output_file.write("}\n")
 
     output_file.write("#undef IROP_HASSIDEEFFECTS_IMPL\n")
@@ -700,7 +688,7 @@ def print_ir_allocator_helpers():
 
             # We gather the "has x87?" flag as we go. This saves the user from
             # having to keep track of whether they emitted any x87.
-            if op.X87:
+            if op.LoweredX87:
                 output_file.write("\t\tRecordX87Use();\n")
 
             output_file.write("\t\tauto Op = AllocateOp<IROp_{}, IROps::OP_{}>();\n".format(op.Name, op.Name.upper()))
