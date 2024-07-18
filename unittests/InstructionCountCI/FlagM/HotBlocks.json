@@ -243,7 +243,7 @@
         "mov x2, v17.d[0]",
         "mov x3, v17.d[1]",
         "mov w4, #0xd",
-        "ldr x5, [x28, #1760]",
+        "ldr x5, [x28, #1768]",
         "blr x5",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",

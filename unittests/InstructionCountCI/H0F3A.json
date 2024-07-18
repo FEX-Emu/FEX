@@ -462,7 +462,7 @@
         "0x66 0x0f 0x3a 0x0e"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2024]",
+        "ldr x0, [x28, #2032]",
         "ldr q2, [x0, #3440]",
         "tbx v16.16b, {v17.16b}, v2.16b"
       ]
