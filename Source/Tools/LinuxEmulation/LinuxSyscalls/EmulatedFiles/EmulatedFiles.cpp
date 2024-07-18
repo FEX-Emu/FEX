@@ -124,255 +124,305 @@ fextl::string GenerateCPUInfo(FEXCore::Context::Context* ctx, uint32_t CPUCores)
   // Generate the flags data up front
   // This is the same per core
   {
-#define FLAG(flag, name)       \
-  if (flag) {                  \
-    flags_data << name << " "; \
-  }
-    FLAG(res_1.edx & (1 << 0), "fpu")
-    FLAG(res_1.edx & (1 << 1), "vme")
-    FLAG(res_1.edx & (1 << 2), "de")
-    FLAG(res_1.edx & (1 << 3), "pse")
-    FLAG(res_1.edx & (1 << 4), "tsc")
-    FLAG(res_1.edx & (1 << 5), "msr")
-    FLAG(res_1.edx & (1 << 6), "pae")
-    FLAG(res_1.edx & (1 << 7), "mce")
-    FLAG(res_1.edx & (1 << 8), "cx8")
-    FLAG(res_1.edx & (1 << 9), "apic")
-    FLAG(res_1.edx & (1 << 11), "sep")
-    FLAG(res_1.edx & (1 << 12), "mtrr")
-    FLAG(res_1.edx & (1 << 13), "pge")
-    FLAG(res_1.edx & (1 << 14), "mca")
-    FLAG(res_1.edx & (1 << 15), "cmov")
-    FLAG(res_1.edx & (1 << 16), "pat")
-    FLAG(res_1.edx & (1 << 17), "pse36")
-    FLAG(res_1.edx & (1 << 18), "pn")
-    FLAG(res_1.edx & (1 << 19), "clflush")
-    FLAG(res_1.edx & (1 << 21), "ds")   // XXX
-    FLAG(res_1.edx & (1 << 22), "acpi") // XXX
-    FLAG(res_1.edx & (1 << 23), "mmx")
-    FLAG(res_1.edx & (1 << 24), "fxsr")
-    FLAG(res_1.edx & (1 << 25), "sse")
-    FLAG(res_1.edx & (1 << 26), "sse2")
-    FLAG(res_1.edx & (1 << 27), "ss")
-    FLAG(res_1.edx & (1 << 28), "ht")
-    FLAG(res_1.edx & (1 << 29), "tm")
-    FLAG(res_1.edx & (1 << 30), "ia64")
-    FLAG(res_1.edx & (1 << 31), "pbe")
+    auto add_flag_if = [&flags_data](bool flag, const char* name) {
+      if (flag) {
+        flags_data << name << " ";
+      }
+    };
 
-    FLAG(res_8000_0001.edx & (1 << 11), "syscall")
-    FLAG(res_8000_0001.edx & (1 << 19), "mp")
-    FLAG(res_8000_0001.edx & (1 << 20), "nx")
-    FLAG(res_8000_0001.edx & (1 << 22), "mmxext")
-    FLAG(res_8000_0001.edx & (1 << 25), "fxsr_opt")
-    FLAG(res_8000_0001.edx & (1 << 26), "pdpe1gb")
-    FLAG(res_8000_0001.edx & (1 << 27), "rdtscp")
-    FLAG(res_8000_0001.edx & (1 << 29), "lm")
-    FLAG(res_8000_0001.edx & (1 << 31), "3dnow")
-    FLAG(res_8000_0001.edx & (1 << 30), "3dnowext")
+    add_flag_if(res_1.edx & (1 << 0), "fpu");
+    add_flag_if(res_1.edx & (1 << 1), "vme");
+    add_flag_if(res_1.edx & (1 << 2), "de");
+    add_flag_if(res_1.edx & (1 << 3), "pse");
+    add_flag_if(res_1.edx & (1 << 4), "tsc");
+    add_flag_if(res_1.edx & (1 << 5), "msr");
+    add_flag_if(res_1.edx & (1 << 6), "pae");
+    add_flag_if(res_1.edx & (1 << 7), "mce");
+    add_flag_if(res_1.edx & (1 << 8), "cx8");
+    add_flag_if(res_1.edx & (1 << 9), "apic");
+    add_flag_if(res_1.edx & (1 << 11), "sep");
+    add_flag_if(res_1.edx & (1 << 12), "mtrr");
+    add_flag_if(res_1.edx & (1 << 13), "pge");
+    add_flag_if(res_1.edx & (1 << 14), "mca");
+    add_flag_if(res_1.edx & (1 << 15), "cmov");
+    add_flag_if(res_1.edx & (1 << 16), "pat");
+    add_flag_if(res_1.edx & (1 << 17), "pse36");
+    add_flag_if(res_1.edx & (1 << 18), "pn");
+    add_flag_if(res_1.edx & (1 << 19), "clflush");
+    add_flag_if(res_1.edx & (1 << 21), "ds");   // XXX
+    add_flag_if(res_1.edx & (1 << 22), "acpi"); // XXX
+    add_flag_if(res_1.edx & (1 << 23), "mmx");
+    add_flag_if(res_1.edx & (1 << 24), "fxsr");
+    add_flag_if(res_1.edx & (1 << 25), "sse");
+    add_flag_if(res_1.edx & (1 << 26), "sse2");
+    add_flag_if(res_1.edx & (1 << 27), "ss");
+    add_flag_if(res_1.edx & (1 << 28), "ht");
+    add_flag_if(res_1.edx & (1 << 29), "tm");
+    add_flag_if(res_1.edx & (1 << 30), "ia64");
+    add_flag_if(res_1.edx & (1 << 31), "pbe");
 
-    FLAG(res_8000_0007.edx & (1 << 8), "constant_tsc")
+    add_flag_if(res_8000_0001.edx & (1 << 11), "syscall");
+    add_flag_if(res_8000_0001.edx & (1 << 19), "mp");
+    add_flag_if(res_8000_0001.edx & (1 << 20), "nx");
+    add_flag_if(res_8000_0001.edx & (1 << 22), "mmxext");
+    add_flag_if(res_8000_0001.edx & (1 << 25), "fxsr_opt");
+    add_flag_if(res_8000_0001.edx & (1 << 26), "pdpe1gb");
+    add_flag_if(res_8000_0001.edx & (1 << 27), "rdtscp");
+    add_flag_if(res_8000_0001.edx & (1 << 29), "lm");
+    add_flag_if(res_8000_0001.edx & (1 << 31), "3dnow");
+    add_flag_if(res_8000_0001.edx & (1 << 30), "3dnowext");
+
+    add_flag_if(res_8000_0007.edx & (1 << 8), "constant_tsc");
 
     // We are not a uniprocessor running in SMP mode
-    FLAG(false, "up")
+    add_flag_if(false, "up");
     // Timer is always running
-    FLAG(true, "art")
+    add_flag_if(true, "art");
     // No Intel perfmon
-    FLAG(false, "arch_perfmon")
+    add_flag_if(false, "arch_perfmon");
     // No precise event based sampling
-    FLAG(false, "pebs")
+    add_flag_if(false, "pebs");
     // No branch trace store
-    FLAG(false, "bts")
+    add_flag_if(false, "bts");
 
-    FLAG(true, "rep_good")
-    FLAG(res_8000_0007.edx & (1 << 12), "tm")
+    add_flag_if(true, "rep_good");
+    add_flag_if(res_8000_0007.edx & (1 << 12), "tm");
 
     // Always support long nop
-    FLAG(true, "nopl")
+    add_flag_if(true, "nopl");
 
     // Always expose topology information
-    FLAG(true, "xtoplogy")
+    add_flag_if(true, "xtoplogy");
 
     // Atom/geode only?
-    FLAG(false, "tsc_reliable")
-    FLAG(res_8000_0007.edx & (1 << 8), "nonstop_tsc")
+    add_flag_if(false, "tsc_reliable");
+    add_flag_if(res_8000_0007.edx & (1 << 8), "nonstop_tsc");
 
     // We always support CPUID
-    FLAG(true, "cpuid")
-    FLAG(Family > 0x16, "extd_apicid")
-    FLAG(false, "amd_dcm") // Never claim to be a multi node processor
-    FLAG(res_8000_0007.edx & (1 << 11), "aperfmperf")
+    add_flag_if(true, "cpuid");
+    add_flag_if(Family > 0x16, "extd_apicid");
+    add_flag_if(false, "amd_dcm"); // Never claim to be a multi node processor
+    add_flag_if(res_8000_0007.edx & (1 << 11), "aperfmperf");
 
     // Need to check ARM documentation if we can support this?
-    FLAG(false, "nonstop_tsc_s3")
+    add_flag_if(false, "nonstop_tsc_s3");
 
     // We can calculate this flag on AArch64
-    FLAG(true, "tsc_known_freq")
+    add_flag_if(true, "tsc_known_freq");
 
-    FLAG(res_1.ecx & (1 << 0), "pni")
-    FLAG(res_1.ecx & (1 << 1), "pclmulqdq")
-    FLAG(res_1.ecx & (1 << 2), "dtes64")
-    FLAG(res_1.ecx & (1 << 3), "monitor")
-    FLAG(res_1.ecx & (1 << 4), "ds_cpl")
-    FLAG(res_1.ecx & (1 << 5), "vmx")
-    FLAG(res_1.ecx & (1 << 6), "smx")
-    FLAG(res_1.ecx & (1 << 7), "est")
-    FLAG(res_1.ecx & (1 << 8), "tm2")
-    FLAG(res_1.ecx & (1 << 9), "ssse3")
-    FLAG(res_1.ecx & (1 << 11), "sdbg")
-    FLAG(res_1.ecx & (1 << 12), "fma")
-    FLAG(res_1.ecx & (1 << 13), "cx16")
-    FLAG(res_1.ecx & (1 << 14), "xptr")
-    FLAG(res_1.ecx & (1 << 15), "pdcm")
-    FLAG(res_1.ecx & (1 << 17), "pcid")
-    FLAG(res_1.ecx & (1 << 18), "dca")
-    FLAG(res_1.ecx & (1 << 19), "sse4_1")
-    FLAG(res_1.ecx & (1 << 20), "sse4_2")
-    FLAG(res_1.ecx & (1 << 21), "x2apic")
-    FLAG(res_1.ecx & (1 << 22), "movbe")
-    FLAG(res_1.ecx & (1 << 23), "popcnt")
-    FLAG(res_1.ecx & (1 << 24), "tsc_deadline_timer")
-    FLAG(res_1.ecx & (1 << 25), "aes")
-    FLAG(res_1.ecx & (1 << 26), "xsave")
-    FLAG(res_1.ecx & (1 << 28), "avx")
-    FLAG(res_1.ecx & (1 << 29), "f16c")
-    FLAG(res_1.ecx & (1 << 30), "rdrand")
-    FLAG(res_1.ecx & (1 << 31), "hypervisor")
+    add_flag_if(res_1.ecx & (1 << 0), "pni");
+    add_flag_if(res_1.ecx & (1 << 1), "pclmulqdq");
+    add_flag_if(res_1.ecx & (1 << 2), "dtes64");
+    add_flag_if(res_1.ecx & (1 << 3), "monitor");
+    add_flag_if(res_1.ecx & (1 << 4), "ds_cpl");
+    add_flag_if(res_1.ecx & (1 << 5), "vmx");
+    add_flag_if(res_1.ecx & (1 << 6), "smx");
+    add_flag_if(res_1.ecx & (1 << 7), "est");
+    add_flag_if(res_1.ecx & (1 << 8), "tm2");
+    add_flag_if(res_1.ecx & (1 << 9), "ssse3");
+    add_flag_if(res_1.ecx & (1 << 11), "sdbg");
+    add_flag_if(res_1.ecx & (1 << 12), "fma");
+    add_flag_if(res_1.ecx & (1 << 13), "cx16");
+    add_flag_if(res_1.ecx & (1 << 14), "xptr");
+    add_flag_if(res_1.ecx & (1 << 15), "pdcm");
+    add_flag_if(res_1.ecx & (1 << 17), "pcid");
+    add_flag_if(res_1.ecx & (1 << 18), "dca");
+    add_flag_if(res_1.ecx & (1 << 19), "sse4_1");
+    add_flag_if(res_1.ecx & (1 << 20), "sse4_2");
+    add_flag_if(res_1.ecx & (1 << 21), "x2apic");
+    add_flag_if(res_1.ecx & (1 << 22), "movbe");
+    add_flag_if(res_1.ecx & (1 << 23), "popcnt");
+    add_flag_if(res_1.ecx & (1 << 24), "tsc_deadline_timer");
+    add_flag_if(res_1.ecx & (1 << 25), "aes");
+    add_flag_if(res_1.ecx & (1 << 26), "xsave");
+    add_flag_if(res_1.ecx & (1 << 28), "avx");
+    add_flag_if(res_1.ecx & (1 << 29), "f16c");
+    add_flag_if(res_1.ecx & (1 << 30), "rdrand");
+    add_flag_if(res_1.ecx & (1 << 31), "hypervisor");
 
-    FLAG(res_8000_0001.ecx & (1 << 0), "lahf_lm")
-    FLAG(res_8000_0001.ecx & (1 << 1), "cmp_legacy")
-    FLAG(res_8000_0001.ecx & (1 << 2), "svm")
-    FLAG(res_8000_0001.ecx & (1 << 3), "extapic")
-    FLAG(res_8000_0001.ecx & (1 << 4), "cr8_legacy")
-    FLAG(res_8000_0001.ecx & (1 << 5), "abm")
-    FLAG(res_8000_0001.ecx & (1 << 6), "sse4a")
-    FLAG(res_8000_0001.ecx & (1 << 7), "misalignsse")
-    FLAG(res_8000_0001.ecx & (1 << 8), "3dnowprefetch")
-    FLAG(res_8000_0001.ecx & (1 << 9), "osvw")
-    FLAG(res_8000_0001.ecx & (1 << 10), "ibs")
-    FLAG(res_8000_0001.ecx & (1 << 11), "xop")
-    FLAG(res_8000_0001.ecx & (1 << 12), "skinit")
-    FLAG(res_8000_0001.ecx & (1 << 13), "wdt")
-    FLAG(res_8000_0001.ecx & (1 << 15), "lwp")
-    FLAG(res_8000_0001.ecx & (1 << 16), "fma4")
-    FLAG(res_8000_0001.ecx & (1 << 17), "tce")
-    FLAG(res_8000_0001.ecx & (1 << 19), "nodeid_msr")
-    FLAG(res_8000_0001.ecx & (1 << 21), "tbm")
-    FLAG(res_8000_0001.ecx & (1 << 22), "topoext")
-    FLAG(res_8000_0001.ecx & (1 << 23), "perfctr_core")
-    FLAG(res_8000_0001.ecx & (1 << 24), "perfctr_nb")
-    FLAG(res_8000_0001.ecx & (1 << 26), "bpext")
-    FLAG(res_8000_0001.ecx & (1 << 27), "ptsc")
+    add_flag_if(res_8000_0001.ecx & (1 << 0), "lahf_lm");
+    add_flag_if(res_8000_0001.ecx & (1 << 1), "cmp_legacy");
+    add_flag_if(res_8000_0001.ecx & (1 << 2), "svm");
+    add_flag_if(res_8000_0001.ecx & (1 << 3), "extapic");
+    add_flag_if(res_8000_0001.ecx & (1 << 4), "cr8_legacy");
+    add_flag_if(res_8000_0001.ecx & (1 << 5), "abm");
+    add_flag_if(res_8000_0001.ecx & (1 << 6), "sse4a");
+    add_flag_if(res_8000_0001.ecx & (1 << 7), "misalignsse");
+    add_flag_if(res_8000_0001.ecx & (1 << 8), "3dnowprefetch");
+    add_flag_if(res_8000_0001.ecx & (1 << 9), "osvw");
+    add_flag_if(res_8000_0001.ecx & (1 << 10), "ibs");
+    add_flag_if(res_8000_0001.ecx & (1 << 11), "xop");
+    add_flag_if(res_8000_0001.ecx & (1 << 12), "skinit");
+    add_flag_if(res_8000_0001.ecx & (1 << 13), "wdt");
+    add_flag_if(res_8000_0001.ecx & (1 << 15), "lwp");
+    add_flag_if(res_8000_0001.ecx & (1 << 16), "fma4");
+    add_flag_if(res_8000_0001.ecx & (1 << 17), "tce");
+    add_flag_if(res_8000_0001.ecx & (1 << 19), "nodeid_msr");
+    add_flag_if(res_8000_0001.ecx & (1 << 21), "tbm");
+    add_flag_if(res_8000_0001.ecx & (1 << 22), "topoext");
+    add_flag_if(res_8000_0001.ecx & (1 << 23), "perfctr_core");
+    add_flag_if(res_8000_0001.ecx & (1 << 24), "perfctr_nb");
+    add_flag_if(res_8000_0001.ecx & (1 << 26), "bpext");
+    add_flag_if(res_8000_0001.ecx & (1 << 27), "ptsc");
 
-    FLAG(res_8000_0001.ecx & (1 << 28), "perfctr_llc")
-    FLAG(res_8000_0001.ecx & (1 << 29), "mwaitx")
+    add_flag_if(res_8000_0001.ecx & (1 << 28), "perfctr_llc");
+    add_flag_if(res_8000_0001.ecx & (1 << 29), "mwaitx");
 
     // We don't support ring 3 supporting mwait
-    FLAG(false, "ring3mwait")
+    add_flag_if(false, "ring3mwait");
     // We don't support Intel CPUID fault support
-    FLAG(false, "cpuid_fault")
-    FLAG(res_8000_0007.edx & (1 << 9), "cpb")
-    FLAG(res_6.ecx & (1 << 3), "epb")
-    FLAG(res_10.ebx & (1 << 1), "cat_l3")
-    FLAG(res_10.ebx & (1 << 2), "cat_l2")
-    FLAG(false, // Needs leaf support
-         "cdp_l3")
-    FLAG(false, "invpcid_single")
-    FLAG(res_8000_0007.edx & (1 << 7), "hw_pstate")
-    FLAG(res_8000_001f.eax & (1 << 0), "sme")
+    add_flag_if(false, "cpuid_fault");
+    add_flag_if(res_8000_0007.edx & (1 << 9), "cpb");
+    add_flag_if(res_6.ecx & (1 << 3), "epb");
+    add_flag_if(res_10.ebx & (1 << 1), "cat_l3");
+    add_flag_if(res_10.ebx & (1 << 2), "cat_l2");
+    add_flag_if(false, "cdp_l3"); // Needs leaf support
+    add_flag_if(false, "invpcid_single");
+    add_flag_if(res_8000_0007.edx & (1 << 7), "hw_pstate");
+    add_flag_if(res_8000_001f.eax & (1 << 0), "sme");
 
     // Kernel page table isolation.
-    FLAG(false, "pti")
+    add_flag_if(false, "pti");
 
     // We don't support Intel's Protected Processor Inventory Number
-    FLAG(false, "intel_ppin")
-    FLAG(false, // Needs leaf support
-         "cdp_l2")
+    add_flag_if(false, "intel_ppin");
+    add_flag_if(false, "cdp_l2"); // Needs leaf support
 
-    FLAG(res_8000_0008.ebx & (1 << 6), "mba")
-    FLAG(res_8000_001f.eax & (1 << 1), "sev")
+    add_flag_if(res_8000_0008.ebx & (1 << 6), "mba");
+    add_flag_if(res_8000_001f.eax & (1 << 1), "sev");
 
-      {// Speculative bug workarounds
-       // We don't claim to have these bugs, so we don't need to claim these flags
-       FLAG(res_7.edx & (1 << 31), "ssbd") FLAG(false, "ibrs") FLAG(false, "ibpb")
+    { // Speculative bug workarounds
+      // We don't claim to have these bugs, so we don't need to claim these flags
+      add_flag_if(res_7.edx & (1 << 31), "ssbd");
+      add_flag_if(false, "ibrs");
+      add_flag_if(false, "ibpb");
 
-         FLAG(res_7.edx & (1 << 27), "stibp")
+      add_flag_if(res_7.edx & (1 << 27), "stibp");
 
-           FLAG(false, "ibrs_enhanced")}
+      add_flag_if(false, "ibrs_enhanced");
+    }
 
     // We don't support Intel's TPR Shadow feature
-    FLAG(false, "tpr_shadow")
-      // Intel virtual NMI
-      FLAG(false, "vnmi")
-      // Intel FlexPriority
-      FLAG(false, "flexpriority")
-      // Intel Extended page table
-      FLAG(false, "ept")
-      // Intel virtual processor ID
-      FLAG(false, "vpid")
+    add_flag_if(false, "tpr_shadow");
+    // Intel virtual NMI
+    add_flag_if(false, "vnmi");
+    // Intel FlexPriority
+    add_flag_if(false, "flexpriority");
+    // Intel Extended page table
+    add_flag_if(false, "ept");
+    // Intel virtual processor ID
+    add_flag_if(false, "vpid");
 
-      // Prefer VMMCall to VMCall
-      FLAG(false, "vmmcall")
-      // Intel extended page table access dirty bit
-      FLAG(false, "ept_ad") FLAG(res_7.ebx & (1 << 0), "fsgsbase") FLAG(res_7.ebx & (1 << 1), "tsc_adjust")
-        FLAG(res_7.ebx & (1 << 3), "bmi1") FLAG(res_7.ebx & (1 << 4), "hle") FLAG(res_7.ebx & (1 << 5), "avx2")
-          FLAG(res_7.ebx & (1 << 7), "smep") FLAG(res_7.ebx & (1 << 8), "bmi2") FLAG(res_7.ebx & (1 << 9), "erms")
-            FLAG(res_7.ebx & (1 << 10), "invpcid") FLAG(res_7.ebx & (1 << 11),
-                                                        "rtm") FLAG(false, // Needs leaf support
-                                                                    "cqm") FLAG(res_7.ebx & (1 << 14),
-                                                                                "mpx") FLAG(false, // Needs leaf support
-                                                                                            "rdt_a") FLAG(res_7.ebx & (1 << 16), "avx512f")
-              FLAG(res_7.ebx & (1 << 17), "avx512dq") FLAG(res_7.ebx & (1 << 18), "rdseed") FLAG(res_7.ebx & (1 << 19), "adx")
-                FLAG(res_7.ebx & (1 << 20), "smap") FLAG(res_7.ebx & (1 << 21), "avx512ifma") FLAG(res_7.ebx & (1 << 23), "clflushopt")
-                  FLAG(res_7.ebx & (1 << 24), "clwb") FLAG(res_7.ebx & (1 << 25), "intel_pt") FLAG(res_7.ebx & (1 << 26), "avx512pf")
-                    FLAG(res_7.ebx & (1 << 27), "avx512er") FLAG(res_7.ebx & (1 << 28), "avx512cd") FLAG(res_7.ebx & (1 << 29), "sha_ni")
-                      FLAG(res_7.ebx & (1 << 30), "avx512bw") FLAG(res_7.ebx & (1 << 31),
-                                                                   "avx512vl")
-                        FLAG(false,                                                 // Needs leaf support // res_d.eax & (1 << 0) // Leaf 1h
-                             "xsaveopt") FLAG(false,                                // Needs leaf support // res_d.eax & (1 << 1) // Leaf 1h
-                                              "xsavec") FLAG(false,                 // Needs leaf support // res_d.eax & (1 << 2) // Leaf 1h
-                                                             "xgetbv1") FLAG(false, // Needs leaf support // res_d.eax & (1 << 3) // Leaf 1h
-                                                                             "xsaves")
+    // Prefer VMMCall to VMCall
+    add_flag_if(false, "vmmcall");
+    // Intel extended page table access dirty bit
+    add_flag_if(false, "ept_ad");
+    add_flag_if(res_7.ebx & (1 << 0), "fsgsbase");
+    add_flag_if(res_7.ebx & (1 << 1), "tsc_adjust");
+    add_flag_if(res_7.ebx & (1 << 3), "bmi1");
+    add_flag_if(res_7.ebx & (1 << 4), "hle");
+    add_flag_if(res_7.ebx & (1 << 5), "avx2");
+    add_flag_if(res_7.ebx & (1 << 7), "smep");
+    add_flag_if(res_7.ebx & (1 << 8), "bmi2");
+    add_flag_if(res_7.ebx & (1 << 9), "erms");
+    add_flag_if(res_7.ebx & (1 << 10), "invpcid");
+    add_flag_if(res_7.ebx & (1 << 11), "rtm");
+    add_flag_if(false, "cqm"); // Needs leaf support
+    add_flag_if(res_7.ebx & (1 << 14), "mpx");
+    add_flag_if(false, "rdt_a"); // Needs leaf support
+    add_flag_if(res_7.ebx & (1 << 16), "avx512f");
+    add_flag_if(res_7.ebx & (1 << 17), "avx512dq");
+    add_flag_if(res_7.ebx & (1 << 18), "rdseed");
+    add_flag_if(res_7.ebx & (1 << 19), "adx");
+    add_flag_if(res_7.ebx & (1 << 20), "smap");
+    add_flag_if(res_7.ebx & (1 << 21), "avx512ifma");
+    add_flag_if(res_7.ebx & (1 << 23), "clflushopt");
+    add_flag_if(res_7.ebx & (1 << 24), "clwb");
+    add_flag_if(res_7.ebx & (1 << 25), "intel_pt");
+    add_flag_if(res_7.ebx & (1 << 26), "avx512pf");
+    add_flag_if(res_7.ebx & (1 << 27), "avx512er");
+    add_flag_if(res_7.ebx & (1 << 28), "avx512cd");
+    add_flag_if(res_7.ebx & (1 << 29), "sha_ni");
+    add_flag_if(res_7.ebx & (1 << 30), "avx512bw");
+    add_flag_if(res_7.ebx & (1 << 31), "avx512vl");
+    add_flag_if(false, // Needs leaf support // res_d.eax & (1 << 0) // Leaf 1h
+                "xsaveopt");
+    add_flag_if(false, // Needs leaf support // res_d.eax & (1 << 1) // Leaf 1h
+                "xsavec");
+    add_flag_if(false, // Needs leaf support // res_d.eax & (1 << 2) // Leaf 1h
+                "xgetbv1");
+    add_flag_if(false, // Needs leaf support // res_d.eax & (1 << 3) // Leaf 1h
+                "xsaves");
 
-                          FLAG(false, // Needs leaf support
-                               "avx512_bf16") FLAG(res_8000_0008.ebx & (1 << 0), "clzero") FLAG(res_8000_0008.ebx & (1 << 1), "irperf")
-                            FLAG(res_8000_0008.ebx & (1 << 2), "xsaveerptr")
+    add_flag_if(false, "avx512_bf16"); // Needs leaf support
+    add_flag_if(res_8000_0008.ebx & (1 << 0), "clzero");
+    add_flag_if(res_8000_0008.ebx & (1 << 1), "irperf");
+    add_flag_if(res_8000_0008.ebx & (1 << 2), "xsaveerptr");
 
-      // Intel digital thermal sensor
-      FLAG(false, "dtherm")
-      // Intel turbo boost
-      FLAG(false, "ida") FLAG(res_6.eax & (1 << 2), "arat")
-      // Power limit notification controls
-      FLAG(false, "pln")
-      // Intel package thermal status
-      FLAG(false, "pts")
+    // Intel digital thermal sensor
+    add_flag_if(false, "dtherm");
+    // Intel turbo boost
+    add_flag_if(false, "ida");
+    add_flag_if(res_6.eax & (1 << 2), "arat");
+    // Power limit notification controls
+    add_flag_if(false, "pln");
+    // Intel package thermal status
+    add_flag_if(false, "pts");
 
-      // Intel Hardware P-state features
-      FLAG(false, "hwp") FLAG(false, "hwp_notify") FLAG(false, "hwp_act_window") FLAG(false, "hwp_epp") FLAG(false, "hwp_pkg_req")
+    // Intel Hardware P-state features
+    add_flag_if(false, "hwp");
+    add_flag_if(false, "hwp_notify");
+    add_flag_if(false, "hwp_act_window");
+    add_flag_if(false, "hwp_epp");
+    add_flag_if(false, "hwp_pkg_req");
 
-        FLAG(res_8000_000a.ebx & (1 << 0), "npt") FLAG(res_8000_000a.ebx & (1 << 1), "lbrv") FLAG(res_8000_000a.ebx & (1 << 2), "svm_lock")
-          FLAG(res_8000_000a.ebx & (1 << 3), "nrip_save") FLAG(res_8000_000a.ebx & (1 << 4), "tsc_scale")
-            FLAG(res_8000_000a.ebx & (1 << 5), "vmcb_clean") FLAG(res_8000_000a.ebx & (1 << 6), "flushbyasid")
-              FLAG(res_8000_000a.ebx & (1 << 7), "decodeassists") FLAG(res_8000_000a.ebx & (1 << 10), "pausefilter")
-                FLAG(res_8000_000a.ebx & (1 << 12), "pfthreshold") FLAG(res_8000_000a.ebx & (1 << 13), "avic")
-                  FLAG(res_8000_000a.ebx & (1 << 15), "v_vmsave_vmload") FLAG(res_8000_000a.ebx & (1 << 16), "vgif")
+    add_flag_if(res_8000_000a.ebx & (1 << 0), "npt");
+    add_flag_if(res_8000_000a.ebx & (1 << 1), "lbrv");
+    add_flag_if(res_8000_000a.ebx & (1 << 2), "svm_lock");
+    add_flag_if(res_8000_000a.ebx & (1 << 3), "nrip_save");
+    add_flag_if(res_8000_000a.ebx & (1 << 4), "tsc_scale");
+    add_flag_if(res_8000_000a.ebx & (1 << 5), "vmcb_clean");
+    add_flag_if(res_8000_000a.ebx & (1 << 6), "flushbyasid");
+    add_flag_if(res_8000_000a.ebx & (1 << 7), "decodeassists");
+    add_flag_if(res_8000_000a.ebx & (1 << 10), "pausefilter");
+    add_flag_if(res_8000_000a.ebx & (1 << 12), "pfthreshold");
+    add_flag_if(res_8000_000a.ebx & (1 << 13), "avic");
+    add_flag_if(res_8000_000a.ebx & (1 << 15), "v_vmsave_vmload");
+    add_flag_if(res_8000_000a.ebx & (1 << 16), "vgif");
 
-                    FLAG(res_7.ecx & (1 << 1), "avx512vbmi") FLAG(res_7.ecx & (1 << 2), "umip") FLAG(res_7.ecx & (1 << 3), "pku")
-                      FLAG(res_7.ecx & (1 << 4), "ospke") FLAG(res_7.ecx & (1 << 5), "waitpkg") FLAG(res_7.ecx & (1 << 6), "avx512_vbmi2")
-                        FLAG(res_7.ecx & (1 << 8), "gfni") FLAG(res_7.ecx & (1 << 9), "vaes") FLAG(res_7.ecx & (1 << 10), "vpclmulqdq")
-                          FLAG(res_7.ecx & (1 << 11), "avx512_vnni") FLAG(res_7.ecx & (1 << 12), "avx512_bitalg")
-                            FLAG(res_7.ecx & (1 << 13), "tme") FLAG(res_7.ecx & (1 << 14), "avx512_vpopcntdq")
-                              FLAG(res_7.ecx & (1 << 16), "la57") FLAG(res_7.ecx & (1 << 22), "rdpid") FLAG(res_7.ecx & (1 << 25), "cldemot"
-                                                                                                                                   "e")
-                                FLAG(res_7.ecx & (1 << 27), "movdiri") FLAG(res_7.ecx & (1 << 28), "movdir64b")
+    add_flag_if(res_7.ecx & (1 << 1), "avx512vbmi");
+    add_flag_if(res_7.ecx & (1 << 2), "umip");
+    add_flag_if(res_7.ecx & (1 << 3), "pku");
+    add_flag_if(res_7.ecx & (1 << 4), "ospke");
+    add_flag_if(res_7.ecx & (1 << 5), "waitpkg");
+    add_flag_if(res_7.ecx & (1 << 6), "avx512_vbmi2");
+    add_flag_if(res_7.ecx & (1 << 8), "gfni");
+    add_flag_if(res_7.ecx & (1 << 9), "vaes");
+    add_flag_if(res_7.ecx & (1 << 10), "vpclmulqdq");
+    add_flag_if(res_7.ecx & (1 << 11), "avx512_vnni");
+    add_flag_if(res_7.ecx & (1 << 12), "avx512_bitalg");
+    add_flag_if(res_7.ecx & (1 << 13), "tme");
+    add_flag_if(res_7.ecx & (1 << 14), "avx512_vpopcntdq");
+    add_flag_if(res_7.ecx & (1 << 16), "la57");
+    add_flag_if(res_7.ecx & (1 << 22), "rdpid");
+    add_flag_if(res_7.ecx & (1 << 25), "cldemote");
+    add_flag_if(res_7.ecx & (1 << 27), "movdiri");
+    add_flag_if(res_7.ecx & (1 << 28), "movdir64b");
 
-                                  FLAG(res_8000_0007.ebx & (1 << 0), "overflow_recov") FLAG(res_8000_0007.ebx & (1 << 1), "succor")
-                                    FLAG(res_8000_0007.ebx & (1 << 3), "smca")
+    add_flag_if(res_8000_0007.ebx & (1 << 0), "overflow_recov");
+    add_flag_if(res_8000_0007.ebx & (1 << 1), "succor");
+    add_flag_if(res_8000_0007.ebx & (1 << 3), "smca");
 
-                                      FLAG(res_7.edx & (1 << 2), "avx512_4vnniw") FLAG(res_7.edx & (1 << 3), "avx512_4fmaps")
-                                        FLAG(res_7.edx & (1 << 4), "fsrm") FLAG(res_7.edx & (1 << 8), "avx512_vp2intersect")
-                                          FLAG(res_7.edx & (1 << 10), "md_clear") FLAG(res_7.edx & (1 << 14), "serialize")
-                                            FLAG(res_7.edx & (1 << 18), "pconfig") FLAG(res_7.edx & (1 << 19), "arch_lbr")
-                                              FLAG(res_7.edx & (1 << 28), "flush_l1d") FLAG(res_7.edx & (1 << 29), "arch_capabilities")
+    add_flag_if(res_7.edx & (1 << 2), "avx512_4vnniw");
+    add_flag_if(res_7.edx & (1 << 3), "avx512_4fmaps");
+    add_flag_if(res_7.edx & (1 << 4), "fsrm");
+    add_flag_if(res_7.edx & (1 << 8), "avx512_vp2intersect");
+    add_flag_if(res_7.edx & (1 << 10), "md_clear");
+    add_flag_if(res_7.edx & (1 << 14), "serialize");
+    add_flag_if(res_7.edx & (1 << 18), "pconfig");
+    add_flag_if(res_7.edx & (1 << 19), "arch_lbr");
+    add_flag_if(res_7.edx & (1 << 28), "flush_l1d");
+    add_flag_if(res_7.edx & (1 << 29), "arch_capabilities");
   }
 
   // Get the cycle counter frequency from CPUID function 15h.
