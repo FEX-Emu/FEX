@@ -958,6 +958,8 @@ public:
   void UnimplementedOp(OpcodeArgs);
   void PermissionRestrictedOp(OpcodeArgs);
 
+  ///< Helper for PSHUD and VPERMILPS(imm) since they are the same instruction
+  Ref Single128Bit4ByteVectorShuffle(Ref Src, uint8_t Shuffle);
   // AVX 128-bit operations
   Ref AVX128_LoadXMMRegister(uint32_t XMM, bool High);
   void AVX128_StoreXMMRegister(uint32_t XMM, const Ref Src, bool High);

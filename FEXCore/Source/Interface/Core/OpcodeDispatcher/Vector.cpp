@@ -1003,48 +1003,223 @@ void OpDispatchBuilder::PSHUFWOp(OpcodeArgs) {
 template void OpDispatchBuilder::PSHUFWOp<false>(OpcodeArgs);
 template void OpDispatchBuilder::PSHUFWOp<true>(OpcodeArgs);
 
-void OpDispatchBuilder::PSHUFDOp(OpcodeArgs) {
+Ref OpDispatchBuilder::Single128Bit4ByteVectorShuffle(Ref Src, uint8_t Shuffle) {
   constexpr auto IdentityCopy = 0b11'10'01'00;
-
-  uint16_t Shuffle = Op->Src[1].Data.Literal.Value;
-  const auto Size = GetSrcSize(Op);
-  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  Ref Dest {};
 
   // TODO: There can be more optimized copies here.
   switch (Shuffle) {
   case IdentityCopy: {
     // Special case identity copy.
-    Dest = Src;
-    break;
-  }
-  case 0b01'01'00'00: {
-    // Zip with self.
-    // Dest[0] = Src[0]
-    // Dest[1] = Src[0]
-    // Dest[2] = Src[1]
-    // Dest[3] = Src[1]
-    Dest = _VZip(Size, 4, Src, Src);
-    break;
+    return Src;
   }
   case 0b00'00'00'00:
   case 0b01'01'01'01:
   case 0b10'10'10'10:
   case 0b11'11'11'11: {
     // Special case element duplicate and broadcast to low or high 64-bits.
-    Dest = _VDupElement(Size, 4, Src, Shuffle & 0b11);
-    break;
+    return _VDupElement(OpSize::i128Bit, OpSize::i32Bit, Src, Shuffle & 0b11);
   }
+
+  case 0b00'00'10'10: {
+    // Weird reverse low elements and broadcast to each half of the register
+    Ref Tmp = _VUnZip(OpSize::i128Bit, OpSize::i32Bit, Src, Src);
+    Tmp = _VRev64(OpSize::i128Bit, OpSize::i32Bit, Tmp);
+    return _VZip(OpSize::i128Bit, OpSize::i32Bit, Tmp, Tmp);
+  }
+  case 0b00'01'00'01: {
+    ///< Weird reversed low elements and broadcast
+    Ref Tmp = _VRev64(OpSize::i128Bit, OpSize::i32Bit, Src);
+    return _VZip(OpSize::i128Bit, OpSize::i64Bit, Tmp, Tmp);
+  }
+  case 0b00'01'01'00: {
+    ///< Weird reverse low two elements in to high half
+    Ref Tmp = _VZip(OpSize::i128Bit, OpSize::i32Bit, Src, Src);
+    return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 4);
+  }
+  case 0b00'10'00'10: {
+    ///< Weird reversed even elements and broadcast
+    Ref Tmp = _VUnZip(OpSize::i128Bit, OpSize::i32Bit, Src, Src);
+    return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 4);
+  }
+  case 0b00'10'10'00: {
+    // Weird reversed low elements in upper half of the register
+    Ref Tmp = _VUnZip(OpSize::i128Bit, OpSize::i32Bit, Src, Src);
+    Tmp = _VZip(OpSize::i128Bit, OpSize::i32Bit, Tmp, Tmp);
+    return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 4);
+  }
+  case 0b00'11'00'11: {
+    ///< Weird Low plus high element reversed and broadcast
+    Ref Tmp = _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src, Src, 4);
+    return _VZip2(OpSize::i128Bit, OpSize::i64Bit, Tmp, Tmp);
+  }
+  case 0b00'11'10'01:
+    ///< Vector rotate - One element
+    return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src, Src, 4);
+  case 0b00'11'11'00: {
+    // Weird reversed low and high elements in upper half of the register
+    Ref Tmp = _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src, Src, 4);
+    Tmp = _VZip2(OpSize::i128Bit, OpSize::i32Bit, Tmp, Tmp);
+    return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 12);
+  }
+  case 0b01'00'00'01: {
+    ///< Weird duplicate bottom two elements, then rotate in the low half
+    Ref Tmp = _VZip(OpSize::i128Bit, OpSize::i32Bit, Src, Src);
+    return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 12);
+  }
+  case 0b01'00'01'00:
+    ///< Duplicate bottom 64-bits
+    return _VDupElement(OpSize::i128Bit, OpSize::i64Bit, Src, 0);
+  case 0b01'00'11'10:
+    ///< Vector rotate - Two elements
+    return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src, Src, 8);
+  case 0b01'01'00'00: {
+    // Zip with self.
+    // Dest[0] = Src[0]
+    // Dest[1] = Src[0]
+    // Dest[2] = Src[1]
+    // Dest[3] = Src[1]
+    return _VZip(OpSize::i128Bit, OpSize::i32Bit, Src, Src);
+  }
+  case 0b01'01'10'10: {
+    ///< Weird reverse middle elements and broadcast to each half of the register
+    Ref Tmp = _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src, Src, 4);
+    Tmp = _VRev64(OpSize::i128Bit, OpSize::i32Bit, Tmp);
+    return _VZip(OpSize::i128Bit, OpSize::i32Bit, Tmp, Tmp);
+  }
+  case 0b01'01'11'11: {
+    ///< Weird reverse odd elements and broadcast to each half of the register
+    Ref Tmp = _VUnZip2(OpSize::i128Bit, OpSize::i32Bit, Src, Src);
+    Tmp = _VRev64(OpSize::i128Bit, OpSize::i32Bit, Tmp);
+    return _VZip(OpSize::i128Bit, OpSize::i32Bit, Tmp, Tmp);
+  }
+  case 0b01'10'01'10: {
+    ///< Weird middle elements swizzle plus broadcast
+    Ref Tmp = _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src, Src, 4);
+    Tmp = _VRev64(OpSize::i128Bit, OpSize::i32Bit, Tmp);
+    return _VZip(OpSize::i128Bit, OpSize::i64Bit, Tmp, Tmp);
+  }
+  case 0b01'10'10'01: {
+    ///< Weird middle elements swizzle plus broadcast and reverse
+    Ref Tmp = _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src, Src, 4);
+    Tmp = _VZip(OpSize::i128Bit, OpSize::i32Bit, Tmp, Tmp);
+    return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 4);
+  }
+  case 0b01'11'01'11: {
+    ///< Weird reversed odd elements and broadcast
+    Ref Tmp = _VUnZip2(OpSize::i128Bit, OpSize::i32Bit, Src, Src);
+    return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 4);
+  }
+  case 0b01'11'11'01: {
+    ///< Weird odd elements swizzle plus broadcast and reverse
+    Ref Tmp = _VUnZip2(OpSize::i128Bit, OpSize::i32Bit, Src, Src);
+    Tmp = _VZip(OpSize::i128Bit, OpSize::i32Bit, Tmp, Tmp);
+    return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 4);
+  }
+  case 0b10'00'00'10: {
+    ///< Weird even elements swizzle plus broadcast and reverse
+    Ref Tmp = _VUnZip(OpSize::i128Bit, OpSize::i32Bit, Src, Src);
+    Tmp = _VZip(OpSize::i128Bit, OpSize::i32Bit, Tmp, Tmp);
+    return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 12);
+  }
+  case 0b10'00'10'00:
+    ///< Even elements broadcast
+    return _VUnZip(OpSize::i128Bit, OpSize::i32Bit, Src, Src);
+  case 0b10'01'00'11:
+    ///< Vector rotate - Three elements
+    return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src, Src, 12);
+
+  case 0b10'01'01'10: {
+    ///< Weird odd elements swizzle plus broadcast and reverse
+    Ref Tmp = _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src, Src, 4);
+    Tmp = _VZip(OpSize::i128Bit, OpSize::i32Bit, Tmp, Tmp);
+    return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 12);
+  }
+  case 0b10'01'10'01: {
+    ///< Middle two elements broadcast
+    Ref Tmp = _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src, Src, 4);
+    return _VZip(OpSize::i128Bit, OpSize::i64Bit, Tmp, Tmp);
+  }
+  case 0b10'10'00'00: {
+    ///< Broadcast even elements to each half of the register
+    Ref Tmp = _VUnZip(OpSize::i128Bit, OpSize::i32Bit, Src, Src);
+    return _VZip(OpSize::i128Bit, OpSize::i32Bit, Tmp, Tmp);
+  }
+  case 0b10'10'01'01: {
+    ///< Broadcast middle elements to each half of the register
+    Ref Tmp = _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src, Src, 4);
+    return _VZip(OpSize::i128Bit, OpSize::i32Bit, Tmp, Tmp);
+  }
+  case 0b10'10'11'11: {
+    ///< Reverse top two elements and broadcast to each half of the register
+    Ref Tmp = _VZip2(OpSize::i128Bit, OpSize::i32Bit, Src, Src);
+    return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 8);
+  }
+  case 0b10'11'10'11: {
+    ///< Weird top two elements reverse and broadcast
+    Ref Tmp = _VZip2(OpSize::i128Bit, OpSize::i64Bit, Src, Src);
+    return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 4);
+  }
+  case 0b10'11'11'10: {
+    ///< Weird move top two elements to bottom and reverse in the top half
+    Ref Tmp = _VZip2(OpSize::i128Bit, OpSize::i32Bit, Src, Src);
+    return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 4);
+  }
+  case 0b11'00'00'11: {
+    ///< Weird low plus high elements swizzle plus broadcast and reverse
+    Ref Tmp = _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src, Src, 4);
+    Tmp = _VZip2(OpSize::i128Bit, OpSize::i32Bit, Tmp, Tmp);
+    return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 4);
+  }
+  case 0b11'00'11'00: {
+    ///< Weird low plus high element broadcast
+    Ref Tmp = _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src, Src, 4);
+    Tmp = _VZip2(OpSize::i128Bit, OpSize::i64Bit, Tmp, Tmp);
+    return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 4);
+  }
+  case 0b11'01'01'11: {
+    ///< Weird odd elements swizzle plus broadcast and reverse
+    Ref Tmp = _VUnZip2(OpSize::i128Bit, OpSize::i32Bit, Src, Src);
+    Tmp = _VZip(OpSize::i128Bit, OpSize::i32Bit, Tmp, Tmp);
+    return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 12);
+  }
+  case 0b11'01'11'01:
+    ///< Odd elements broadcast
+    return _VUnZip2(OpSize::i128Bit, OpSize::i32Bit, Src, Src);
+  case 0b11'10'10'11: {
+    ///< Rotate top two elements in to bottom half of the register
+    Ref Tmp = _VZip2(OpSize::i128Bit, OpSize::i32Bit, Src, Src);
+    return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 12);
+  }
+  case 0b11'10'11'10:
+    ///< Duplicate Top 64-bits
+    return _VDupElement(OpSize::i128Bit, OpSize::i64Bit, Src, 1);
+  case 0b11'11'00'00: {
+    ///< Weird Broadcast bottom and top element to each half of the register
+    Ref Tmp = _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src, Src, 12);
+    Tmp = _VRev64(OpSize::i128Bit, OpSize::i32Bit, Tmp);
+    return _VZip(OpSize::i128Bit, OpSize::i32Bit, Tmp, Tmp);
+  }
+  case 0b11'11'01'01: {
+    ///< Broadcast odd elements to each half of the register
+    Ref Tmp = _VUnZip2(OpSize::i128Bit, OpSize::i32Bit, Src, Src);
+    return _VZip(OpSize::i128Bit, OpSize::i32Bit, Tmp, Tmp);
+  }
+  case 0b11'11'10'10:
+    ///< Broadcast top two elements to each half of the register
+    return _VZip2(OpSize::i128Bit, OpSize::i32Bit, Src, Src);
   default: {
     // PSHUFD needs to scale index by 16.
     auto LookupIndexes =
-      LoadAndCacheIndexedNamedVectorConstant(Size, FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFD, Shuffle * 16);
-    Dest = _VTBL1(Size, Src, LookupIndexes);
-    break;
+      LoadAndCacheIndexedNamedVectorConstant(OpSize::i128Bit, FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFD, Shuffle * 16);
+    return _VTBL1(OpSize::i128Bit, Src, LookupIndexes);
   }
   }
+}
 
-  StoreResult(FPRClass, Op, Dest, -1);
+void OpDispatchBuilder::PSHUFDOp(OpcodeArgs) {
+  uint16_t Shuffle = Op->Src[1].Data.Literal.Value;
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  StoreResult(FPRClass, Op, Single128Bit4ByteVectorShuffle(Src, Shuffle), -1);
 }
 
 template<size_t ElementSize, bool Low>
