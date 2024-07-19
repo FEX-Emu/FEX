@@ -120,16 +120,16 @@ public:
   }
 
   /**
-   * @brief Immediately release the buffer back to the allocator
+   * @brief Immediately release the buffer back to the allocator, given it has not been reclaimed
    *
    * @param Buffer - The iterator that was previously given with ClaimBuffer
-   *
-   * Once this is called on a buffer then the pool allocator has full ownership of the buffer
    */
-  void UnclaimBuffer(ContainerType::iterator Buffer) {
-    std::unique_lock lk {AllocationMutex};
-    (*Buffer)->CurrentClientOwnedFlag->store(ClientFlags::FLAG_FREE);
-    UnclaimBufferImpl(Buffer);
+  void UnclaimBuffer(ContainerType::iterator Buffer, BufferOwnedFlag* ClientFlag) {
+    // Transition the buffer to free, unclaiming if it wasn't free prior.
+    if (ClientFlag->exchange(ClientFlags::FLAG_FREE) != ClientFlags::FLAG_FREE) {
+      std::unique_lock lk {AllocationMutex};
+      UnclaimBufferImpl(Buffer);
+    }
   }
 
   /**
@@ -485,9 +485,7 @@ public:
    * Only use in that edge case! Otherwise use `DelayedDisownBuffer`
    */
   void UnclaimBuffer() {
-    if (!FEXCore::Utils::IntrusivePooledAllocator::IsClientBufferFree(ClientOwnedFlag)) {
-      ThreadAllocator.UnclaimBuffer(Info);
-    }
+    ThreadAllocator.UnclaimBuffer(Info, &ClientOwnedFlag);
   }
 
 private:
