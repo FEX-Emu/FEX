@@ -226,7 +226,7 @@
         "DestSize": "4"
       },
 
-      "SetRoundingMode GPR:$RoundMode": {
+      "SetRoundingMode GPR:$RoundMode, i1:$SetDAZ, GPR:$MXCSR": {
         "Desc": ["Sets the current rounding mode options for the thread"
                 ],
         "HasSideEffects": true

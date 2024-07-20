@@ -2,7 +2,7 @@
 {
   "HostFeatures": ["AVX"],
   "RegData": {
-    "RAX": "0xFF80"
+    "RAX": "0xFFC0"
   },
   "MemoryRegions": {
     "0x100000000": "4096"

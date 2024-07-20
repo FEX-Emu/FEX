@@ -104,7 +104,7 @@ struct CPUState {
   // Raw segment register indexes
   uint16_t es_idx {}, cs_idx {}, ss_idx {}, ds_idx {};
   uint16_t gs_idx {}, fs_idx {};
-  uint16_t _pad2[2];
+  uint32_t mxcsr {};
 
   // Segment registers holding base addresses
   uint32_t es_cached {}, cs_cached {}, ss_cached {}, ds_cached {};
@@ -162,6 +162,10 @@ struct CPUState {
     // we encode DF as 1/-1 within the JIT, so we have to write 0x1 here to
     // zero DF.
     flags[X86State::RFLAG_DF_RAW_LOC] = 0x1;
+
+    // Default mxcsr value
+    // All exception masks enabled.
+    mxcsr = 0x1F80;
   }
 };
 static_assert(std::is_trivially_copyable_v<CPUState>, "Needs to be trivial");
