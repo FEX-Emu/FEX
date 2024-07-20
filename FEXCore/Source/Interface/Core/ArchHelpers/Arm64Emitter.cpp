@@ -664,7 +664,8 @@ void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs, uint3
   }
 }
 
-void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRFillMask) {
+void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRFillMask, std::optional<ARMEmitter::Register> OptionalReg,
+                                  std::optional<ARMEmitter::Register> OptionalReg2) {
   auto FindTempReg = [this](uint32_t* GPRFillMask) -> std::optional<ARMEmitter::Register> {
     for (auto Reg : StaticRegisters) {
       if (((1U << Reg.Idx()) & *GPRFillMask)) {
@@ -677,12 +678,18 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
 
   LOGMAN_THROW_A_FMT(GPRFillMask != 0, "Must fill at least 2 GPRs for a temp");
   uint32_t TempGPRFillMask = GPRFillMask;
-  auto Reg = FindTempReg(&TempGPRFillMask);
-  auto Reg2 = FindTempReg(&TempGPRFillMask);
-  LOGMAN_THROW_A_FMT(Reg.has_value() && Reg2.has_value(), "Didn't have an SRA register to use as a temporary while spilling!");
+  if (!OptionalReg.has_value()) {
+    OptionalReg = FindTempReg(&TempGPRFillMask);
+  }
 
-  auto TmpReg = *Reg;
-  [[maybe_unused]] auto TmpReg2 = *Reg2;
+  if (!OptionalReg2.has_value()) {
+    OptionalReg2 = FindTempReg(&TempGPRFillMask);
+  }
+  LOGMAN_THROW_A_FMT(OptionalReg.has_value() && OptionalReg2.has_value(), "Didn't have an SRA register to use as a temporary while "
+                                                                          "spilling!");
+
+  auto TmpReg = *OptionalReg;
+  [[maybe_unused]] auto TmpReg2 = *OptionalReg2;
 
 #ifndef VIXL_SIMULATOR
   if (EmitterCTX->HostFeatures.SupportsAFP) {

@@ -233,7 +233,7 @@ DEF_OP(ProcessorID) {
 
   // Now that we are done in the syscall we need to carefully peel back the state
   // First unspill the registers from before
-  FillStaticRegs(false, SpillMask);
+  FillStaticRegs(false, SpillMask, ~0U, ARMEmitter::Reg::r8, ARMEmitter::Reg::r2);
 
   // Now the registers we've spilled are back in their original host registers
   // We can safely claim we are no longer in a syscall
