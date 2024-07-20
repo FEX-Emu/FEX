@@ -73,8 +73,8 @@ class HostFeatures(Flag) :
     FEATURE_BMI2   = (1 << 7)
     FEATURE_CLWB   = (1 << 8)
     FEATURE_LINUX  = (1 << 9)
-    FEATURE_AVX2   = (1 << 10)
-    FEATURE_AES256 = (1 << 11)
+    FEATURE_AES256 = (1 << 10)
+    FEATURE_AFP    = (1 << 11)
 
 RegStringLookup = {
     "NONE":  Regs.REG_NONE,
@@ -147,8 +147,8 @@ HostFeaturesLookup = {
     "BMI2"   : HostFeatures.FEATURE_BMI2,
     "CLWB"   : HostFeatures.FEATURE_CLWB,
     "LINUX"  : HostFeatures.FEATURE_LINUX,
-    "AVX2"   : HostFeatures.FEATURE_AVX2,
     "AES256" : HostFeatures.FEATURE_AES256,
+    "AFP"    : HostFeatures.FEATURE_AFP,
 }
 
 def parse_hexstring(s):

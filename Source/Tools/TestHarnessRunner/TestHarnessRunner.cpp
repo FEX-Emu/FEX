@@ -266,7 +266,8 @@ int main(int argc, char** argv, char** const envp) {
                          (!SupportsAVX && Loader.RequiresAVX()) || (!HostFeatures.SupportsRAND && Loader.RequiresRAND()) ||
                          (!HostFeatures.SupportsSHA && Loader.RequiresSHA()) || (!HostFeatures.SupportsCLZERO && Loader.RequiresCLZERO()) ||
                          (!HostFeatures.SupportsBMI1 && Loader.RequiresBMI1()) || (!HostFeatures.SupportsBMI2 && Loader.RequiresBMI2()) ||
-                         (!HostFeatures.SupportsCLWB && Loader.RequiresCLWB()) || (!HostFeatures.SupportsAES256 && Loader.RequiresAES256());
+                         (!HostFeatures.SupportsCLWB && Loader.RequiresCLWB()) ||
+                         (!HostFeatures.SupportsAES256 && Loader.RequiresAES256()) || (!HostFeatures.SupportsAFP && Loader.RequiresAFP());
 
 #ifdef _WIN32
   TestUnsupported |= Loader.RequiresLinux();
