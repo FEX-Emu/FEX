@@ -1716,6 +1716,42 @@
                 ],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
+      },
+      "FPR = VFMLAScalarInsert u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
+        "Desc": [
+          "Dest = (Vector1 * Vector2) + Addend",
+          "This explicitly matches x86 FMA semantics because ARM semantics are mind-bending."
+        ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize",
+        "TiedSource": 2
+      },
+      "FPR = VFMLSScalarInsert u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
+        "Desc": [
+          "Dest = (Vector1 * Vector2) - Addend",
+          "This explicitly matches x86 FMA semantics because ARM semantics are mind-bending."
+        ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize",
+        "TiedSource": 2
+      },
+      "FPR = VFNMLAScalarInsert u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
+        "Desc": [
+          "Dest = (-Vector1 * Vector2) + Addend",
+          "This explicitly matches x86 FMA semantics because ARM semantics are mind-bending."
+        ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize",
+        "TiedSource": 2
+      },
+      "FPR = VFNMLSScalarInsert u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
+        "Desc": [
+          "Dest = (-Vector1 * Vector2) - Addend",
+          "This explicitly matches x86 FMA semantics because ARM semantics are mind-bending."
+        ],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize",
+        "TiedSource": 2
       }
     },
     "Vector": {

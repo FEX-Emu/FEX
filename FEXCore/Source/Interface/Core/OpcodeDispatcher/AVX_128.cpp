@@ -337,32 +337,32 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(2, 0b01, 0x96), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAddSubImpl, true, 1, 3, 2>},  // VFMADDSUB
     {OPD(2, 0b01, 0x97), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAddSubImpl, false, 1, 3, 2>}, // VFMSUBADD
 
-    {OPD(2, 0b01, 0x98), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFMLA, false, 1, 3, 2>},  // VFMADD
-    {OPD(2, 0b01, 0x99), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFMLA, true, 1, 3, 2>},   // VFMADD
-    {OPD(2, 0b01, 0x9A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFMLS, false, 1, 3, 2>},  // VFMSUB
-    {OPD(2, 0b01, 0x9B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFMLS, true, 1, 3, 2>},   // VFMSUB
-    {OPD(2, 0b01, 0x9C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFNMLA, false, 1, 3, 2>}, // VFNMADD
-    {OPD(2, 0b01, 0x9D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFNMLA, true, 1, 3, 2>},  // VFNMADD
-    {OPD(2, 0b01, 0x9E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFNMLS, false, 1, 3, 2>}, // VFNMSUB
-    {OPD(2, 0b01, 0x9F), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFNMLS, true, 1, 3, 2>},  // VFNMSUB
+    {OPD(2, 0b01, 0x98), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFMLA, 1, 3, 2>}, // VFMADD
+    {OPD(2, 0b01, 0x99), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAScalarImpl, IR::OP_VFMLASCALARINSERT, 1, 3, 2>}, // VFMADD
+    {OPD(2, 0b01, 0x9A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFMLS, 1, 3, 2>}, // VFMSUB
+    {OPD(2, 0b01, 0x9B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAScalarImpl, IR::OP_VFMLSSCALARINSERT, 1, 3, 2>}, // VFMSUB
+    {OPD(2, 0b01, 0x9C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFNMLA, 1, 3, 2>}, // VFNMADD
+    {OPD(2, 0b01, 0x9D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAScalarImpl, IR::OP_VFNMLASCALARINSERT, 1, 3, 2>}, // VFNMADD
+    {OPD(2, 0b01, 0x9E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFNMLS, 1, 3, 2>}, // VFNMSUB
+    {OPD(2, 0b01, 0x9F), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAScalarImpl, IR::OP_VFNMLSSCALARINSERT, 1, 3, 2>}, // VFNMSUB
 
-    {OPD(2, 0b01, 0xA8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFMLA, false, 2, 1, 3>},  // VFMADD
-    {OPD(2, 0b01, 0xA9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFMLA, true, 2, 1, 3>},   // VFMADD
-    {OPD(2, 0b01, 0xAA), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFMLS, false, 2, 1, 3>},  // VFMSUB
-    {OPD(2, 0b01, 0xAB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFMLS, true, 2, 1, 3>},   // VFMSUB
-    {OPD(2, 0b01, 0xAC), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFNMLA, false, 2, 1, 3>}, // VFNMADD
-    {OPD(2, 0b01, 0xAD), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFNMLA, true, 2, 1, 3>},  // VFNMADD
-    {OPD(2, 0b01, 0xAE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFNMLS, false, 2, 1, 3>}, // VFNMSUB
-    {OPD(2, 0b01, 0xAF), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFNMLS, true, 2, 1, 3>},  // VFNMSUB
+    {OPD(2, 0b01, 0xA8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFMLA, 2, 1, 3>}, // VFMADD
+    {OPD(2, 0b01, 0xA9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAScalarImpl, IR::OP_VFMLASCALARINSERT, 2, 1, 3>}, // VFMADD
+    {OPD(2, 0b01, 0xAA), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFMLS, 2, 1, 3>}, // VFMSUB
+    {OPD(2, 0b01, 0xAB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAScalarImpl, IR::OP_VFMLSSCALARINSERT, 2, 1, 3>}, // VFMSUB
+    {OPD(2, 0b01, 0xAC), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFNMLA, 2, 1, 3>}, // VFNMADD
+    {OPD(2, 0b01, 0xAD), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAScalarImpl, IR::OP_VFNMLASCALARINSERT, 2, 1, 3>}, // VFNMADD
+    {OPD(2, 0b01, 0xAE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFNMLS, 2, 1, 3>}, // VFNMSUB
+    {OPD(2, 0b01, 0xAF), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAScalarImpl, IR::OP_VFNMLSSCALARINSERT, 2, 1, 3>}, // VFNMSUB
 
-    {OPD(2, 0b01, 0xB8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFMLA, false, 2, 3, 1>},  // VFMADD
-    {OPD(2, 0b01, 0xB9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFMLA, true, 2, 3, 1>},   // VFMADD
-    {OPD(2, 0b01, 0xBA), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFMLS, false, 2, 3, 1>},  // VFMSUB
-    {OPD(2, 0b01, 0xBB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFMLS, true, 2, 3, 1>},   // VFMSUB
-    {OPD(2, 0b01, 0xBC), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFNMLA, false, 2, 3, 1>}, // VFNMADD
-    {OPD(2, 0b01, 0xBD), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFNMLA, true, 2, 3, 1>},  // VFNMADD
-    {OPD(2, 0b01, 0xBE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFNMLS, false, 2, 3, 1>}, // VFNMSUB
-    {OPD(2, 0b01, 0xBF), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFNMLS, true, 2, 3, 1>},  // VFNMSUB
+    {OPD(2, 0b01, 0xB8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFMLA, 2, 3, 1>}, // VFMADD
+    {OPD(2, 0b01, 0xB9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAScalarImpl, IR::OP_VFMLASCALARINSERT, 2, 3, 1>}, // VFMADD
+    {OPD(2, 0b01, 0xBA), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFMLS, 2, 3, 1>}, // VFMSUB
+    {OPD(2, 0b01, 0xBB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAScalarImpl, IR::OP_VFMLSSCALARINSERT, 2, 3, 1>}, // VFMSUB
+    {OPD(2, 0b01, 0xBC), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFNMLA, 2, 3, 1>}, // VFNMADD
+    {OPD(2, 0b01, 0xBD), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAScalarImpl, IR::OP_VFNMLASCALARINSERT, 2, 3, 1>}, // VFNMADD
+    {OPD(2, 0b01, 0xBE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFNMLS, 2, 3, 1>}, // VFNMSUB
+    {OPD(2, 0b01, 0xBF), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAScalarImpl, IR::OP_VFNMLSSCALARINSERT, 2, 3, 1>}, // VFNMSUB
 
     {OPD(2, 0b01, 0xA6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAddSubImpl, true, 2, 1, 3>},  // VFMADDSUB
     {OPD(2, 0b01, 0xA7), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAddSubImpl, false, 2, 1, 3>}, // VFMSUBADD
@@ -2460,40 +2460,48 @@ void OpDispatchBuilder::AVX128_VPCLMULQDQ(OpcodeArgs) {
 // As shown only the 231 suffixed instructions matches AArch64 behaviour.
 // FEX will insert moves to transpose the vectors to match AArch64 behaviour for 132 and 213 variants.
 
-void OpDispatchBuilder::AVX128_VFMAImpl(OpcodeArgs, IROps IROp, bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx) {
+void OpDispatchBuilder::AVX128_VFMAImpl(OpcodeArgs, IROps IROp, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx) {
   const auto Size = GetDstSize(Op);
   const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
 
   const OpSize ElementSize = Op->Flags & X86Tables::DecodeFlags::FLAG_OPTION_AVX_W ? OpSize::i64Bit : OpSize::i32Bit;
 
-  const auto RegisterSize = Scalar ? ElementSize : OpSize::i128Bit;
 
   auto Dest = AVX128_LoadSource_WithOpSize(Op, Op->Dest, Op->Flags, !Is128Bit);
   auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
   auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
 
-  RefPair Sources[3] = {
-    Dest,
-    Src1,
-    Src2,
-  };
+  RefPair Sources[3] = {Dest, Src1, Src2};
 
   RefPair Result {};
-  DeriveOp(Result_Low, IROp, _VFMLA(RegisterSize, ElementSize, Sources[Src1Idx - 1].Low, Sources[Src2Idx - 1].Low, Sources[AddendIdx - 1].Low));
+  DeriveOp(Result_Low, IROp, _VFMLA(OpSize::i128Bit, ElementSize, Sources[Src1Idx - 1].Low, Sources[Src2Idx - 1].Low, Sources[AddendIdx - 1].Low));
   Result.Low = Result_Low;
   if (Is128Bit) {
     Result.High = LoadZeroVector(OpSize::i128Bit);
-    if (Scalar) {
-      // Special case, scalar inserts in to the low bits of the destination.
-      ///< TODO: This can be optimized with AFP.NEP.
-      Result.Low = _VInsElement(OpSize::i128Bit, ElementSize, 0, 0, Dest.Low, Result.Low);
-    }
   } else {
     DeriveOp(Result_High, IROp,
-             _VFMLA(RegisterSize, ElementSize, Sources[Src1Idx - 1].High, Sources[Src2Idx - 1].High, Sources[AddendIdx - 1].High));
+             _VFMLA(OpSize::i128Bit, ElementSize, Sources[Src1Idx - 1].High, Sources[Src2Idx - 1].High, Sources[AddendIdx - 1].High));
     Result.High = Result_High;
   }
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
+}
+
+void OpDispatchBuilder::AVX128_VFMAScalarImpl(OpcodeArgs, IROps IROp, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx) {
+  const auto Size = GetDstSize(Op);
+  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
+  LOGMAN_THROW_A_FMT(Is128Bit, "This can't be 256-bit");
+
+  const OpSize ElementSize = Op->Flags & X86Tables::DecodeFlags::FLAG_OPTION_AVX_W ? OpSize::i64Bit : OpSize::i32Bit;
+
+  auto Dest = AVX128_LoadSource_WithOpSize(Op, Op->Dest, Op->Flags, !Is128Bit);
+  auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
+  auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
+
+  RefPair Sources[3] = {Dest, Src1, Src2};
+
+  DeriveOp(Result_Low, IROp,
+           _VFMLAScalarInsert(OpSize::i128Bit, ElementSize, Sources[Src1Idx - 1].Low, Sources[Src2Idx - 1].Low, Sources[AddendIdx - 1].Low));
+  AVX128_StoreResult_WithOpSize(Op, Op->Dest, AVX128_Zext(Result_Low));
 }
 
 void OpDispatchBuilder::AVX128_VFMAddSubImpl(OpcodeArgs, bool AddSub, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx) {
