@@ -19,11 +19,10 @@
   ],
   "Instructions": {
     "femms": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": "0x0f 0x0b",
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "strb w20, [x28, #1298]"
+        "strb wzr, [x28, #1298]"
       ]
     },
     "movups xmm0, xmm0": {
@@ -1114,11 +1113,10 @@
       ]
     },
     "emms": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": "0x0f 0x77",
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "strb w20, [x28, #1298]"
+        "strb wzr, [x28, #1298]"
       ]
     },
     "movd eax, mm0": {
