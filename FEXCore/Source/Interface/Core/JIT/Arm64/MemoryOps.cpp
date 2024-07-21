@@ -529,25 +529,6 @@ DEF_OP(LoadDF) {
   ldrsb(Dst.X(), STATE, offsetof(FEXCore::Core::CPUState, flags[Flag]));
 }
 
-DEF_OP(LoadFlag) {
-  auto Op = IROp->C<IR::IROp_LoadFlag>();
-  auto Dst = GetReg(Node);
-
-  LOGMAN_THROW_A_FMT(Op->Flag != X86State::RFLAG_PF_RAW_LOC && Op->Flag != X86State::RFLAG_AF_RAW_LOC, "PF/AF must be accessed as "
-                                                                                                       "registers");
-
-  ldrb(Dst, STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag);
-}
-
-DEF_OP(StoreFlag) {
-  auto Op = IROp->C<IR::IROp_StoreFlag>();
-
-  LOGMAN_THROW_A_FMT(Op->Flag != X86State::RFLAG_PF_RAW_LOC && Op->Flag != X86State::RFLAG_AF_RAW_LOC, "PF/AF must be accessed as "
-                                                                                                       "registers");
-
-  strb(GetReg(Op->Value.ID()), STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag);
-}
-
 ARMEmitter::ExtendedMemOperand Arm64JITCore::GenerateMemOperand(
   uint8_t AccessSize, ARMEmitter::Register Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale) {
   if (Offset.IsInvalid()) {

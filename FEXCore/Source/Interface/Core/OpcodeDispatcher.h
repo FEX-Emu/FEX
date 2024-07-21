@@ -1260,7 +1260,7 @@ public:
       } else if (Index >= FPR0Index && Index <= FPR15Index) {
         _StoreRegister(Value, Index - FPR0Index, FPRClass, VectorSize);
       } else if (Index == DFIndex) {
-        _StoreFlag(Value, X86State::RFLAG_DF_RAW_LOC);
+        _StoreContext(1, GPRClass, Value, offsetof(Core::CPUState, flags[X86State::RFLAG_DF_RAW_LOC]));
       } else {
         bool Partial = RegCache.Partial & (1ull << Index);
         unsigned Size = Partial ? 8 : CacheIndexToSize(Index);
@@ -1729,7 +1729,7 @@ private:
       if (BitOffset == FEXCore::X86State::RFLAG_DF_RAW_LOC) {
         StoreDF(_SubShift(OpSize::i64Bit, _Constant(1), Value, ShiftType::LSL, 1));
       } else {
-        _StoreFlag(Value, BitOffset);
+        _StoreContext(1, GPRClass, Value, offsetof(FEXCore::Core::CPUState, flags[BitOffset]));
       }
     }
   }
@@ -1934,7 +1934,7 @@ private:
       // Recover the sign bit, it is the logical DF value
       return _Lshr(OpSize::i64Bit, LoadDF(), _Constant(63));
     } else {
-      return _LoadFlag(BitOffset);
+      return _LoadContext(1, GPRClass, offsetof(Core::CPUState, flags[BitOffset]));
     }
   }
 
