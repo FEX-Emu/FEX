@@ -632,7 +632,6 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
     uint16_t X87Op = ((Op - 0xD8) << 8) | ModRMByte;
     return NormalOp(&X87Ops[X87Op], X87Op);
   } else if (Info->Type == FEXCore::X86Tables::TYPE_VEX_TABLE_PREFIX) {
-    FEXCORE_TELEMETRY_SET(VEXOpTelem, 1);
     uint16_t map_select = 1;
     uint16_t pp = 0;
     const uint8_t Byte1 = ReadByte();
@@ -678,7 +677,6 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
     FEXCore::X86Tables::X86InstInfo* LocalInfo = &VEXTableOps[Op];
 
     if (LocalInfo->Type >= FEXCore::X86Tables::TYPE_VEX_GROUP_12 && LocalInfo->Type <= FEXCore::X86Tables::TYPE_VEX_GROUP_17) {
-      FEXCORE_TELEMETRY_SET(VEXOpTelem, 1);
       // We have ModRM
       uint8_t ModRMByte = ReadByte();
       DecodeInst->ModRM = ModRMByte;
