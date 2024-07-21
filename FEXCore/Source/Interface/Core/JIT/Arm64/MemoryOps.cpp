@@ -52,7 +52,7 @@ DEF_OP(StoreContext) {
   const auto OpSize = IROp->Size;
 
   if (Op->Class == FEXCore::IR::GPRClass) {
-    auto Src = GetReg(Op->Value.ID());
+    auto Src = GetZeroableReg(Op->Value);
 
     switch (OpSize) {
     case 1: strb(Src, STATE, Op->Offset); break;
