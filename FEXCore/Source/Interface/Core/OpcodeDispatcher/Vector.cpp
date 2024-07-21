@@ -2774,10 +2774,11 @@ void OpDispatchBuilder::SaveAVXState(Ref MemBase) {
 }
 
 Ref OpDispatchBuilder::GetMXCSR() {
-  // Default MXCSR Value
-  Ref MXCSR = _Constant(0x1F80);
-  Ref RoundingMode = _GetRoundingMode();
-  return _Bfi(OpSize::i32Bit, 3, 13, MXCSR, RoundingMode);
+  Ref MXCSR = _LoadContext(OpSize::i32Bit, GPRClass, offsetof(FEXCore::Core::CPUState, mxcsr));
+  // Mask out unsupported bits
+  // Keeps FZ, RC, exception masks, and DAZ
+  MXCSR = _And(OpSize::i32Bit, MXCSR, _Constant(0xFFC0));
+  return MXCSR;
 }
 
 void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
@@ -2886,9 +2887,13 @@ void OpDispatchBuilder::RestoreSSEState(Ref MemBase) {
 }
 
 void OpDispatchBuilder::RestoreMXCSRState(Ref MXCSR) {
+  // Mask out unsupported bits
+  MXCSR = _And(OpSize::i32Bit, MXCSR, _Constant(0xFFC0));
+
+  _StoreContext(OpSize::i32Bit, GPRClass, MXCSR, offsetof(FEXCore::Core::CPUState, mxcsr));
   // We only support the rounding mode and FTZ bit being set
   Ref RoundingMode = _Bfe(OpSize::i32Bit, 3, 13, MXCSR);
-  _SetRoundingMode(RoundingMode);
+  _SetRoundingMode(RoundingMode, true, MXCSR);
 }
 
 void OpDispatchBuilder::RestoreAVXState(Ref MemBase) {

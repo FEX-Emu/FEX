@@ -98,6 +98,7 @@ DEF_OP(GetRoundingMode) {
 DEF_OP(SetRoundingMode) {
   auto Op = IROp->C<IR::IROp_SetRoundingMode>();
   auto Src = GetReg(Op->RoundMode.ID());
+  auto MXCSR = GetReg(Op->MXCSR.ID());
 
   // As above, setup the rounding flags in [31:30]
   rbit(ARMEmitter::Size::i32Bit, TMP2, Src);
@@ -115,6 +116,11 @@ DEF_OP(SetRoundingMode) {
   // Insert the FTZ flag
   lsr(ARMEmitter::Size::i64Bit, TMP2, Src, 2);
   bfi(ARMEmitter::Size::i64Bit, TMP1, TMP2, 24, 1);
+
+  if (Op->SetDAZ && HostSupportsAFP) {
+    // Extract DAZ from MXCSR and insert to in FPCR.FIZ
+    bfxil(ARMEmitter::Size::i64Bit, TMP1, MXCSR, 6, 1);
+  }
 
   // Now save the new FPCR
   msr(ARMEmitter::SystemRegister::FPCR, TMP1);
@@ -227,7 +233,7 @@ DEF_OP(ProcessorID) {
 
   // Now that we are done in the syscall we need to carefully peel back the state
   // First unspill the registers from before
-  FillStaticRegs(false, SpillMask);
+  FillStaticRegs(false, SpillMask, ~0U, ARMEmitter::Reg::r8, ARMEmitter::Reg::r2);
 
   // Now the registers we've spilled are back in their original host registers
   // We can safely claim we are no longer in a syscall

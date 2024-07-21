@@ -184,7 +184,7 @@ DEF_OP(Syscall) {
   if ((Flags & FEXCore::IR::SyscallFlags::NORETURN) != FEXCore::IR::SyscallFlags::NORETURN) {
     // Result is now in x0
     // Fix the stack and any values that were stepped on
-    FillStaticRegs(true, GPRSpillMask, FPRSpillMask);
+    FillStaticRegs(true, GPRSpillMask, FPRSpillMask, ARMEmitter::Reg::r1, ARMEmitter::Reg::r2);
 
     // Now the registers we've spilled are back in their original host registers
     // We can safely claim we are no longer in a syscall
@@ -285,7 +285,7 @@ DEF_OP(InlineSyscall) {
   if ((Op->Flags & FEXCore::IR::SyscallFlags::NORETURN) != FEXCore::IR::SyscallFlags::NORETURN) {
     // Now that we are done in the syscall we need to carefully peel back the state
     // First unspill the registers from before
-    FillStaticRegs(false, SpillMask);
+    FillStaticRegs(false, SpillMask, ~0U, ARMEmitter::Reg::r8, ARMEmitter::Reg::r1);
 
     // Now the registers we've spilled are back in their original host registers
     // We can safely claim we are no longer in a syscall

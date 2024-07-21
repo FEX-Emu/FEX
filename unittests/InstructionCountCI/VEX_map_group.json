@@ -578,34 +578,32 @@
       ]
     },
     "vldmxcsr [rax]": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "Map group 15 0b010"
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x4]",
-        "ubfx w20, w20, #13, #3",
-        "rbit w1, w20",
+        "and w20, w20, #0xffc0",
+        "str w20, [x28, #940]",
+        "ubfx w21, w20, #13, #3",
+        "rbit w1, w21",
         "lsr w1, w1, #30",
         "mrs x0, fpcr",
         "bfi x0, x1, #22, #2",
-        "lsr x1, x20, #2",
+        "lsr x1, x21, #2",
         "bfi x0, x1, #24, #1",
         "msr fpcr, x0"
       ]
     },
     "vstmxcsr [rax]": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map group 15 0b011"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x1f80",
-        "mrs x21, fpcr",
-        "ubfx x21, x21, #22, #3",
-        "rbit w0, w21",
-        "bfi x21, x0, #30, #2",
-        "bfi w20, w21, #13, #3",
+        "ldr w20, [x28, #940]",
+        "and w20, w20, #0xffc0",
         "str w20, [x4]"
       ]
     },

@@ -575,7 +575,7 @@ void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs, uint3
   if (EmitterCTX->HostFeatures.SupportsAFP) {
     // Disable AFP features when spilling registers.
     //
-    // Disable FPCR.NEP and FPCR.AH
+    // Disable FPCR.NEP and FPCR.AH and FPCR.FIZ
     // NEP(2): Changes ASIMD scalar instructions to insert in to the lower bits of the destination.
     // AH(1):  Changes NaN behaviour in some instructions. Specifically fmin, fmax.
     //         Also interacts with RPRES to change reciprocal/rsqrt precision from 8-bit mantissa to 12-bit.
@@ -585,7 +585,8 @@ void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs, uint3
     mrs(TmpReg, ARMEmitter::SystemRegister::FPCR);
     bic(ARMEmitter::Size::i64Bit, TmpReg, TmpReg,
         (1U << 2) |   // NEP
-          (1U << 1)); // AH
+          (1U << 1) | // AH
+          (1U << 0)); // FIZ
     msr(ARMEmitter::SystemRegister::FPCR, TmpReg);
   }
 #endif
@@ -663,19 +664,32 @@ void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs, uint3
   }
 }
 
-void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRFillMask) {
-  ARMEmitter::Register TmpReg = ARMEmitter::Reg::r0;
-  LOGMAN_THROW_A_FMT(GPRFillMask != 0, "Must fill at least 1 GPR for a temp");
-  [[maybe_unused]] bool FoundRegister {};
-  for (auto Reg : StaticRegisters) {
-    if (((1U << Reg.Idx()) & GPRFillMask)) {
-      TmpReg = Reg;
-      FoundRegister = true;
-      break;
+void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRFillMask, std::optional<ARMEmitter::Register> OptionalReg,
+                                  std::optional<ARMEmitter::Register> OptionalReg2) {
+  auto FindTempReg = [this](uint32_t* GPRFillMask) -> std::optional<ARMEmitter::Register> {
+    for (auto Reg : StaticRegisters) {
+      if (((1U << Reg.Idx()) & *GPRFillMask)) {
+        *GPRFillMask &= ~(1U << Reg.Idx());
+        return std::make_optional(Reg);
+      }
     }
+    return std::nullopt;
+  };
+
+  LOGMAN_THROW_A_FMT(GPRFillMask != 0, "Must fill at least 2 GPRs for a temp");
+  uint32_t TempGPRFillMask = GPRFillMask;
+  if (!OptionalReg.has_value()) {
+    OptionalReg = FindTempReg(&TempGPRFillMask);
   }
 
-  LOGMAN_THROW_A_FMT(FoundRegister, "Didn't have an SRA register to use as a temporary while spilling!");
+  if (!OptionalReg2.has_value()) {
+    OptionalReg2 = FindTempReg(&TempGPRFillMask);
+  }
+  LOGMAN_THROW_A_FMT(OptionalReg.has_value() && OptionalReg2.has_value(), "Didn't have an SRA register to use as a temporary while "
+                                                                          "spilling!");
+
+  auto TmpReg = *OptionalReg;
+  [[maybe_unused]] auto TmpReg2 = *OptionalReg2;
 
 #ifndef VIXL_SIMULATOR
   if (EmitterCTX->HostFeatures.SupportsAFP) {
@@ -692,6 +706,11 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
     orr(ARMEmitter::Size::i64Bit, TmpReg, TmpReg,
         (1U << 2) |   // NEP
           (1U << 1)); // AH
+
+    // Insert MXCSR.DAZ in to FIZ
+    ldr(TmpReg2.W(), STATE.R(), offsetof(FEXCore::Core::CPUState, mxcsr));
+    bfxil(ARMEmitter::Size::i64Bit, TmpReg, TmpReg2, 6, 1);
+
     msr(ARMEmitter::SystemRegister::FPCR, TmpReg);
   }
 #endif
