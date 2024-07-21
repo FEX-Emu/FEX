@@ -52,7 +52,7 @@ DEF_OP(StoreContext) {
   const auto OpSize = IROp->Size;
 
   if (Op->Class == FEXCore::IR::GPRClass) {
-    auto Src = GetReg(Op->Value.ID());
+    auto Src = GetZeroableReg(Op->Value);
 
     switch (OpSize) {
     case 1: strb(Src, STATE, Op->Offset); break;
@@ -527,25 +527,6 @@ DEF_OP(LoadDF) {
 
   // DF needs sign extension to turn 0x1/0xFF into 1/-1
   ldrsb(Dst.X(), STATE, offsetof(FEXCore::Core::CPUState, flags[Flag]));
-}
-
-DEF_OP(LoadFlag) {
-  auto Op = IROp->C<IR::IROp_LoadFlag>();
-  auto Dst = GetReg(Node);
-
-  LOGMAN_THROW_A_FMT(Op->Flag != X86State::RFLAG_PF_RAW_LOC && Op->Flag != X86State::RFLAG_AF_RAW_LOC, "PF/AF must be accessed as "
-                                                                                                       "registers");
-
-  ldrb(Dst, STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag);
-}
-
-DEF_OP(StoreFlag) {
-  auto Op = IROp->C<IR::IROp_StoreFlag>();
-
-  LOGMAN_THROW_A_FMT(Op->Flag != X86State::RFLAG_PF_RAW_LOC && Op->Flag != X86State::RFLAG_AF_RAW_LOC, "PF/AF must be accessed as "
-                                                                                                       "registers");
-
-  strb(GetReg(Op->Value.ID()), STATE, offsetof(FEXCore::Core::CPUState, flags[0]) + Op->Flag);
 }
 
 ARMEmitter::ExtendedMemOperand Arm64JITCore::GenerateMemOperand(

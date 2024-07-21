@@ -629,7 +629,8 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
       break;
     }
     case OP_ADC:
-    case OP_ADCWITHFLAGS: {
+    case OP_ADCWITHFLAGS:
+    case OP_STORECONTEXT: {
       uint64_t Constant1 {};
       if (IREmit->IsValueConstant(IROp->Args[0], &Constant1)) {
         if (Constant1 == 0) {

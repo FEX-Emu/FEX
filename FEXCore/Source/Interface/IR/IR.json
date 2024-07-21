@@ -489,21 +489,6 @@
         "DestSize": "8"
       },
 
-      "GPR = LoadFlag u32:$Flag": {
-        "Desc": ["Loads an x86-64 flag from the context object",
-                 "Specialized to allow flexible implementation of flag handling"
-                ],
-        "DestSize": "1"
-      },
-
-      "StoreFlag GPR:$Value, u32:$Flag": {
-        "HasSideEffects": true,
-        "Desc": ["Stores 1-bit of the flag in to the specified x86-64 flag",
-                 "Specialized to allow flexible implementation of flag handling"
-                ],
-        "DestSize": "1"
-      },
-
       "SSA = LoadMem RegisterClass:$Class, u8:#Size, GPR:$Addr, GPR:$Offset, u8:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale": {
         "DestSize": "Size"
       },
