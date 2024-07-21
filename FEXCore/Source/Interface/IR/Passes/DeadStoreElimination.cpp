@@ -42,17 +42,16 @@ struct ReadWriteKill {
 };
 
 struct Info {
-  ReadWriteKill flag;
   ReadWriteKill reg;
 };
 
 /**
- * @brief This is a temporary pass to detect simple multiblock dead flag/reg stores
+ * @brief This is a temporary pass to detect simple multiblock dead reg stores
  *
- * First pass computes which flags/regs are read and written per block
+ * First pass computes which regs are read and written per block
  *
- * Second pass computes which flags/regs are stored, but overwritten by the next block(s).
- * It also propagates this information a few times to catch dead flags/regs across multiple blocks.
+ * Second pass computes which regs are stored, but overwritten by the next block(s).
+ * It also propagates this information a few times to catch dead regs across multiple blocks.
  *
  * Third pass removes the dead stores.
  *
@@ -64,28 +63,14 @@ void DeadStoreElimination::Run(IREmitter* IREmit) {
   fextl::vector<Info> InfoMap(CurrentIR.GetSSACount());
 
   // Pass 1
-  // Compute flags/regs read/writes per block
+  // Compute regs read/writes per block
   // This is conservative and doesn't try to be smart about loads after writes
   {
     for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
       auto& BlockInfo = InfoMap[CurrentIR.GetID(BlockNode).Value];
 
       for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
-        if (IROp->Op == OP_STOREFLAG) {
-          auto Op = IROp->C<IR::IROp_StoreFlag>();
-
-          BlockInfo.flag.writes |= 1UL << Op->Flag;
-        } else if (IROp->Op == OP_INVALIDATEFLAGS) {
-          auto Op = IROp->C<IR::IROp_InvalidateFlags>();
-
-          BlockInfo.flag.writes |= Op->Flags;
-        } else if (IROp->Op == OP_LOADFLAG) {
-          auto Op = IROp->C<IR::IROp_LoadFlag>();
-
-          BlockInfo.flag.reads |= 1UL << Op->Flag;
-        } else if (IROp->Op == OP_LOADDF) {
-          BlockInfo.flag.reads |= 1UL << X86State::RFLAG_DF_RAW_LOC;
-        } else if (IROp->Op == OP_STOREREGISTER) {
+        if (IROp->Op == OP_STOREREGISTER) {
           auto Op = IROp->C<IR::IROp_StoreRegister>();
           BlockInfo.reg.writes |= RegBit(Op->Class, Op->Reg);
         } else if (IROp->Op == OP_LOADREGISTER) {
@@ -111,11 +96,9 @@ void DeadStoreElimination::Run(IREmitter* IREmit) {
         auto& TargetInfo = InfoMap[Op->Header.Args[0].ID().Value];
 
         // stores to remove are written by the next block but not read
-        BlockInfo.flag.kill = TargetInfo.flag.writes & ~(TargetInfo.flag.reads) & ~BlockInfo.flag.reads;
         BlockInfo.reg.kill = TargetInfo.reg.writes & ~(TargetInfo.reg.reads) & ~BlockInfo.reg.reads;
 
-        // Flags that are written by the next block can be considered as written by this block, if not read
-        BlockInfo.flag.writes |= BlockInfo.flag.kill & ~BlockInfo.flag.reads;
+        // If written by the next block can be considered as written by this block, if not read
         BlockInfo.reg.writes |= BlockInfo.reg.kill & ~BlockInfo.reg.reads;
       } else if (IROp->Op == OP_CONDJUMP) {
         auto Op = IROp->C<IR::IROp_CondJump>();
@@ -125,14 +108,10 @@ void DeadStoreElimination::Run(IREmitter* IREmit) {
         auto& FalseTargetInfo = InfoMap[Op->FalseBlock.ID().Value];
 
         // stores to remove are written by the next blocks but not read
-        BlockInfo.flag.kill = TrueTargetInfo.flag.writes & ~(TrueTargetInfo.flag.reads) & ~BlockInfo.flag.reads;
         BlockInfo.reg.kill = TrueTargetInfo.reg.writes & ~(TrueTargetInfo.reg.reads) & ~BlockInfo.reg.reads;
-
-        BlockInfo.flag.kill &= FalseTargetInfo.flag.writes & ~(FalseTargetInfo.flag.reads) & ~BlockInfo.flag.reads;
         BlockInfo.reg.kill &= FalseTargetInfo.reg.writes & ~(FalseTargetInfo.reg.reads) & ~BlockInfo.reg.reads;
 
-        // Flags that are written by the next blocks can be considered as written by this block, if not read
-        BlockInfo.flag.writes |= BlockInfo.flag.kill & ~BlockInfo.flag.reads;
+        // if written by the next blocks can be considered as written by this block, if not read
         BlockInfo.reg.writes |= BlockInfo.reg.kill & ~BlockInfo.reg.reads;
       }
     }
@@ -145,14 +124,7 @@ void DeadStoreElimination::Run(IREmitter* IREmit) {
       auto& BlockInfo = InfoMap[CurrentIR.GetID(BlockNode).Value];
 
       for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
-        if (IROp->Op == OP_STOREFLAG) {
-          auto Op = IROp->C<IR::IROp_StoreFlag>();
-
-          // If this StoreFlag is never read, remove it
-          if (BlockInfo.flag.kill & (1UL << Op->Flag)) {
-            IREmit->Remove(CodeNode);
-          }
-        } else if (IROp->Op == OP_STOREREGISTER) {
+        if (IROp->Op == OP_STOREREGISTER) {
           auto Op = IROp->C<IR::IROp_StoreRegister>();
 
           // If this OP_STOREREGISTER is never read, remove it
