@@ -453,7 +453,7 @@
       "ExpectedInstructionCount": 3,
       "Comment": "0xf2 0x0f 0xd0",
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2336]",
+        "ldr q2, [x28, #2320]",
         "eor v2.16b, v17.16b, v2.16b",
         "fadd v16.4s, v16.4s, v2.4s"
       ]
