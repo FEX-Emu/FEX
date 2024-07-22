@@ -207,7 +207,7 @@ def parse_ops(ops):
                         (OpArg.Type == "GPR" or
                         OpArg.Type == "GPRPair" or
                         OpArg.Type == "FPR")):
-                        OpDef.EmitValidation.append("GetOpRegClass({}) == InvalidClass || WalkFindRegClass({}) == {}Class".format(NameWithPrefix, NameWithPrefix, OpArg.Type))
+                        OpDef.EmitValidation.append(f"GetOpRegClass({ArgName}) == InvalidClass || WalkFindRegClass({ArgName}) == {OpArg.Type}Class")
 
                     OpArg.Name = ArgName
                     OpArg.NameWithPrefix = NameWithPrefix
@@ -268,12 +268,8 @@ def parse_ops(ops):
                 for i in range(len(OpDef.EmitValidation)):
                     # Patch up all the argument names
                     for Arg in OpDef.Arguments:
-                        if Arg.Temporary:
-                            # Temporary ops just replace all instances no prefix variant
-                            OpDef.EmitValidation[i] = OpDef.EmitValidation[i].replace(Arg.NameWithPrefix, Arg.Name)
-                        else:
-                            # All other ops replace $ with _ variant for argument passed in
-                            OpDef.EmitValidation[i] = OpDef.EmitValidation[i].replace(Arg.NameWithPrefix, "_{}".format(Arg.Name))
+                        # Temporary ops just replace all instances no prefix variant
+                        OpDef.EmitValidation[i] = OpDef.EmitValidation[i].replace(Arg.NameWithPrefix, Arg.Name)
 
             #OpDef.print()
 
@@ -668,11 +664,11 @@ def print_ir_allocator_helpers():
                     output_file.write("{} {}".format(CType, arg.Name));
                 elif arg.IsSSA:
                     # SSA value
-                    output_file.write("OrderedNode *_{}".format(arg.Name))
+                    output_file.write("OrderedNode *{}".format(arg.Name))
                 else:
                     # User defined op that is stored
                     CType = IRTypesToCXX[arg.Type].CXXName
-                    output_file.write("{} _{}".format(CType, arg.Name));
+                    output_file.write("{} {}".format(CType, arg.Name));
 
                 if arg.DefaultInitializer != None:
                     output_file.write(" = {}".format(arg.DefaultInitializer))
@@ -691,23 +687,23 @@ def print_ir_allocator_helpers():
             if op.LoweredX87:
                 output_file.write("\t\tRecordX87Use();\n")
 
-            output_file.write("\t\tauto Op = AllocateOp<IROp_{}, IROps::OP_{}>();\n".format(op.Name, op.Name.upper()))
+            output_file.write("\t\tauto _Op = AllocateOp<IROp_{}, IROps::OP_{}>();\n".format(op.Name, op.Name.upper()))
 
             if op.SSAArgNum != 0:
                 output_file.write("\t\tauto ListDataBegin = DualListData.ListBegin();\n")
                 for arg in op.Arguments:
                     if arg.IsSSA:
-                        output_file.write("\t\tOp.first->{} = _{}->Wrapped(ListDataBegin);\n".format(arg.Name, arg.Name))
+                        output_file.write("\t\t_Op.first->{} = {}->Wrapped(ListDataBegin);\n".format(arg.Name, arg.Name))
 
             if op.SSAArgNum != 0:
                 for arg in op.Arguments:
                     if arg.IsSSA:
-                        output_file.write("\t\t_{}->AddUse();\n".format(arg.Name))
+                        output_file.write("\t\t{}->AddUse();\n".format(arg.Name))
 
             if len(op.Arguments) != 0:
                 for arg in op.Arguments:
                     if not arg.Temporary and not arg.IsSSA:
-                        output_file.write("\t\tOp.first->{} = _{};\n".format(arg.Name, arg.Name))
+                        output_file.write("\t\t_Op.first->{} = {};\n".format(arg.Name, arg.Name))
 
             if (op.HasDest):
                 # We can only infer a size if we have arguments
@@ -717,22 +713,22 @@ def print_ir_allocator_helpers():
                     if len(op.Arguments) != 0:
                         for arg in op.Arguments:
                             if arg.IsSSA:
-                                output_file.write("\t\tuint8_t Size{} = GetOpSize(_{});\n".format(arg.Name, arg.Name))
+                                output_file.write("\t\tuint8_t Size{} = GetOpSize({});\n".format(arg.Name, arg.Name))
                         for arg in op.Arguments:
                             if arg.IsSSA:
                                 output_file.write("\t\tInferSize = std::max(InferSize, Size{});\n".format(arg.Name))
 
-                    output_file.write("\t\tOp.first->Header.Size = InferSize;\n")
+                    output_file.write("\t\t_Op.first->Header.Size = InferSize;\n")
 
             # Some ops without a destination still need an operating size
             # Effectively reusing the destination size value for operation size
             if op.DestSize != None:
-                output_file.write("\t\tOp.first->Header.Size = {};\n".format(op.DestSize))
+                output_file.write("\t\t_Op.first->Header.Size = {};\n".format(op.DestSize))
 
             if op.NumElements == None:
-                output_file.write("\t\tOp.first->Header.ElementSize = Op.first->Header.Size / ({});\n".format(1))
+                output_file.write("\t\t_Op.first->Header.ElementSize = _Op.first->Header.Size / ({});\n".format(1))
             else:
-                output_file.write("\t\tOp.first->Header.ElementSize = Op.first->Header.Size / ({});\n".format(op.NumElements))
+                output_file.write("\t\t_Op.first->Header.ElementSize = _Op.first->Header.Size / ({});\n".format(op.NumElements))
 
             # Insert validation here
             if op.EmitValidation != None:
@@ -743,7 +739,7 @@ def print_ir_allocator_helpers():
                     output_file.write("\tLOGMAN_THROW_A_FMT({}, \"{}\");\n".format(Validation, Sanitized))
                 output_file.write("\t\t#endif\n")
 
-            output_file.write("\t\treturn Op;\n")
+            output_file.write("\t\treturn _Op;\n")
             output_file.write("\t}\n\n")
 
     output_file.write("#undef IROP_ALLOCATE_HELPERS\n")
