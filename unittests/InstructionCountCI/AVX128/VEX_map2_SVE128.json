@@ -3044,10 +3044,10 @@
         "Map 2 0b01 0x99 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fmadd s2, s16, s18, s17",
-        "movi v3.2d, #0x0",
-        "mov v16.s[0], v2.s[0]",
-        "str q3, [x28, #16]"
+        "fmadd s0, s16, s18, s17",
+        "mov v16.s[0], v0.s[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vfmadd132sd xmm0, xmm1, xmm2": {
@@ -3056,10 +3056,10 @@
         "Map 2 0b01 0x99 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fmadd d2, d16, d18, d17",
-        "movi v3.2d, #0x0",
-        "mov v16.d[0], v2.d[0]",
-        "str q3, [x28, #16]"
+        "fmadd d0, d16, d18, d17",
+        "mov v16.d[0], v0.d[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vfmsub132ps xmm0, xmm1, xmm2": {
@@ -3126,10 +3126,10 @@
         "Map 2 0b01 0x9b 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fnmsub s2, s16, s18, s17",
-        "movi v3.2d, #0x0",
-        "mov v16.s[0], v2.s[0]",
-        "str q3, [x28, #16]"
+        "fnmsub s0, s16, s18, s17",
+        "mov v16.s[0], v0.s[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vfmsub132sd xmm0, xmm1, xmm2": {
@@ -3138,10 +3138,10 @@
         "Map 2 0b01 0x9b 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fnmsub d2, d16, d18, d17",
-        "movi v3.2d, #0x0",
-        "mov v16.d[0], v2.d[0]",
-        "str q3, [x28, #16]"
+        "fnmsub d0, d16, d18, d17",
+        "mov v16.d[0], v0.d[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vfnmadd132ps xmm0, xmm1, xmm2": {
@@ -3208,10 +3208,10 @@
         "Map 2 0b01 0x9d 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fmsub s2, s16, s18, s17",
-        "movi v3.2d, #0x0",
-        "mov v16.s[0], v2.s[0]",
-        "str q3, [x28, #16]"
+        "fmsub s0, s16, s18, s17",
+        "mov v16.s[0], v0.s[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vfnmadd132sd xmm0, xmm1, xmm2": {
@@ -3220,10 +3220,10 @@
         "Map 2 0b01 0x9d 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fmsub d2, d16, d18, d17",
-        "movi v3.2d, #0x0",
-        "mov v16.d[0], v2.d[0]",
-        "str q3, [x28, #16]"
+        "fmsub d0, d16, d18, d17",
+        "mov v16.d[0], v0.d[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vfnmsub132ps xmm0, xmm1, xmm2": {
@@ -3290,10 +3290,10 @@
         "Map 2 0b01 0x9f 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fnmadd s2, s16, s18, s17",
-        "movi v3.2d, #0x0",
-        "mov v16.s[0], v2.s[0]",
-        "str q3, [x28, #16]"
+        "fnmadd s0, s16, s18, s17",
+        "mov v16.s[0], v0.s[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vfnmsub132sd xmm0, xmm1, xmm2": {
@@ -3302,10 +3302,10 @@
         "Map 2 0b01 0x9f 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fnmadd d2, d16, d18, d17",
-        "movi v3.2d, #0x0",
-        "mov v16.d[0], v2.d[0]",
-        "str q3, [x28, #16]"
+        "fnmadd d0, d16, d18, d17",
+        "mov v16.d[0], v0.d[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vfmadd213ps xmm0, xmm1, xmm2": {
@@ -3372,10 +3372,10 @@
         "Map 2 0b01 0xa9 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fmadd s2, s17, s16, s18",
-        "movi v3.2d, #0x0",
-        "mov v16.s[0], v2.s[0]",
-        "str q3, [x28, #16]"
+        "fmadd s0, s17, s16, s18",
+        "mov v16.s[0], v0.s[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vfmadd213sd xmm0, xmm1, xmm2": {
@@ -3384,10 +3384,10 @@
         "Map 2 0b01 0xa9 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fmadd d2, d17, d16, d18",
-        "movi v3.2d, #0x0",
-        "mov v16.d[0], v2.d[0]",
-        "str q3, [x28, #16]"
+        "fmadd d0, d17, d16, d18",
+        "mov v16.d[0], v0.d[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vfmsub213ps xmm0, xmm1, xmm2": {
@@ -3454,10 +3454,10 @@
         "Map 2 0b01 0xab 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fnmsub s2, s17, s16, s18",
-        "movi v3.2d, #0x0",
-        "mov v16.s[0], v2.s[0]",
-        "str q3, [x28, #16]"
+        "fnmsub s0, s17, s16, s18",
+        "mov v16.s[0], v0.s[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vfmsub213sd xmm0, xmm1, xmm2": {
@@ -3466,10 +3466,10 @@
         "Map 2 0b01 0xab 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fnmsub d2, d17, d16, d18",
-        "movi v3.2d, #0x0",
-        "mov v16.d[0], v2.d[0]",
-        "str q3, [x28, #16]"
+        "fnmsub d0, d17, d16, d18",
+        "mov v16.d[0], v0.d[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vfnmadd213ps xmm0, xmm1, xmm2": {
@@ -3536,10 +3536,10 @@
         "Map 2 0b01 0xad 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fmsub s2, s17, s16, s18",
-        "movi v3.2d, #0x0",
-        "mov v16.s[0], v2.s[0]",
-        "str q3, [x28, #16]"
+        "fmsub s0, s17, s16, s18",
+        "mov v16.s[0], v0.s[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vfnmadd213sd xmm0, xmm1, xmm2": {
@@ -3548,10 +3548,10 @@
         "Map 2 0b01 0xad 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fmsub d2, d17, d16, d18",
-        "movi v3.2d, #0x0",
-        "mov v16.d[0], v2.d[0]",
-        "str q3, [x28, #16]"
+        "fmsub d0, d17, d16, d18",
+        "mov v16.d[0], v0.d[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vfnmsub213ps xmm0, xmm1, xmm2": {
@@ -3618,10 +3618,10 @@
         "Map 2 0b01 0xaf 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fnmadd s2, s17, s16, s18",
-        "movi v3.2d, #0x0",
-        "mov v16.s[0], v2.s[0]",
-        "str q3, [x28, #16]"
+        "fnmadd s0, s17, s16, s18",
+        "mov v16.s[0], v0.s[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vfnmsub213sd xmm0, xmm1, xmm2": {
@@ -3630,10 +3630,10 @@
         "Map 2 0b01 0xaf 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fnmadd d2, d17, d16, d18",
-        "movi v3.2d, #0x0",
-        "mov v16.d[0], v2.d[0]",
-        "str q3, [x28, #16]"
+        "fnmadd d0, d17, d16, d18",
+        "mov v16.d[0], v0.d[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vfmadd231ps xmm0, xmm1, xmm2": {
@@ -3692,10 +3692,10 @@
         "Map 2 0b01 0xb9 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fmadd s2, s17, s18, s16",
-        "movi v3.2d, #0x0",
-        "mov v16.s[0], v2.s[0]",
-        "str q3, [x28, #16]"
+        "fmadd s0, s17, s18, s16",
+        "mov v16.s[0], v0.s[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vfmadd231sd xmm0, xmm1, xmm2": {
@@ -3704,10 +3704,10 @@
         "Map 2 0b01 0xb9 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fmadd d2, d17, d18, d16",
-        "movi v3.2d, #0x0",
-        "mov v16.d[0], v2.d[0]",
-        "str q3, [x28, #16]"
+        "fmadd d0, d17, d18, d16",
+        "mov v16.d[0], v0.d[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vfmsub231ps xmm0, xmm1, xmm2": {
@@ -3766,10 +3766,10 @@
         "Map 2 0b01 0xbb 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fnmsub s2, s17, s18, s16",
-        "movi v3.2d, #0x0",
-        "mov v16.s[0], v2.s[0]",
-        "str q3, [x28, #16]"
+        "fnmsub s0, s17, s18, s16",
+        "mov v16.s[0], v0.s[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vfmsub231sd xmm0, xmm1, xmm2": {
@@ -3778,10 +3778,10 @@
         "Map 2 0b01 0xbb 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fnmsub d2, d17, d18, d16",
-        "movi v3.2d, #0x0",
-        "mov v16.d[0], v2.d[0]",
-        "str q3, [x28, #16]"
+        "fnmsub d0, d17, d18, d16",
+        "mov v16.d[0], v0.d[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vfnmadd231ps xmm0, xmm1, xmm2": {
@@ -3840,10 +3840,10 @@
         "Map 2 0b01 0xbd 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fmsub s2, s17, s18, s16",
-        "movi v3.2d, #0x0",
-        "mov v16.s[0], v2.s[0]",
-        "str q3, [x28, #16]"
+        "fmsub s0, s17, s18, s16",
+        "mov v16.s[0], v0.s[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vfnmadd231sd xmm0, xmm1, xmm2": {
@@ -3852,10 +3852,10 @@
         "Map 2 0b01 0xbd 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fmsub d2, d17, d18, d16",
-        "movi v3.2d, #0x0",
-        "mov v16.d[0], v2.d[0]",
-        "str q3, [x28, #16]"
+        "fmsub d0, d17, d18, d16",
+        "mov v16.d[0], v0.d[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vfnmsub231ps xmm0, xmm1, xmm2": {
@@ -3914,10 +3914,10 @@
         "Map 2 0b01 0xbf 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fnmadd s2, s17, s18, s16",
-        "movi v3.2d, #0x0",
-        "mov v16.s[0], v2.s[0]",
-        "str q3, [x28, #16]"
+        "fnmadd s0, s17, s18, s16",
+        "mov v16.s[0], v0.s[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vfnmsub231sd xmm0, xmm1, xmm2": {
@@ -3926,10 +3926,10 @@
         "Map 2 0b01 0xbf 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fnmadd d2, d17, d18, d16",
-        "movi v3.2d, #0x0",
-        "mov v16.d[0], v2.d[0]",
-        "str q3, [x28, #16]"
+        "fnmadd d0, d17, d18, d16",
+        "mov v16.d[0], v0.d[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vfmaddsub213ps xmm0, xmm1, xmm2": {

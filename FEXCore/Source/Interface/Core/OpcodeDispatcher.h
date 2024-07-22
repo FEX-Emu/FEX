@@ -1160,7 +1160,8 @@ public:
 
   void AVX128_VPCLMULQDQ(OpcodeArgs);
 
-  void AVX128_VFMAImpl(OpcodeArgs, IROps IROp, bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx);
+  void AVX128_VFMAImpl(OpcodeArgs, IROps IROp, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx);
+  void AVX128_VFMAScalarImpl(OpcodeArgs, IROps IROp, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx);
   void AVX128_VFMAddSubImpl(OpcodeArgs, bool AddSub, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx);
 
   RefPair AVX128_VPGatherQPSImpl(Ref Dest, Ref Mask, RefVSIB VSIB);

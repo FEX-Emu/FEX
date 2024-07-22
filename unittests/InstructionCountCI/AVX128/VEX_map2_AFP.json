@@ -1,0 +1,294 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "AFP"
+    ],
+    "DisabledHostFeatures": [
+      "SVE256",
+      "SVE128"
+    ]
+  },
+  "Instructions": {
+    "vfmadd132ss xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0b01 0x99 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fmadd s0, s16, s18, s17",
+        "mov v16.s[0], v0.s[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vfmadd132sd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0b01 0x99 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fmadd d0, d16, d18, d17",
+        "mov v16.d[0], v0.d[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vfmsub132ss xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0b01 0x9b 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fnmsub s0, s16, s18, s17",
+        "mov v16.s[0], v0.s[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vfmsub132sd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0b01 0x9b 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fnmsub d0, d16, d18, d17",
+        "mov v16.d[0], v0.d[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vfnmadd132ss xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0b01 0x9d 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fmsub s0, s16, s18, s17",
+        "mov v16.s[0], v0.s[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vfnmadd132sd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0b01 0x9d 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fmsub d0, d16, d18, d17",
+        "mov v16.d[0], v0.d[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vfnmsub132ss xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0b01 0x9f 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fnmadd s0, s16, s18, s17",
+        "mov v16.s[0], v0.s[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vfnmsub132sd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0b01 0x9f 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fnmadd d0, d16, d18, d17",
+        "mov v16.d[0], v0.d[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vfmadd213ss xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0b01 0xa9 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fmadd s0, s17, s16, s18",
+        "mov v16.s[0], v0.s[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vfmadd213sd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0b01 0xa9 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fmadd d0, d17, d16, d18",
+        "mov v16.d[0], v0.d[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vfmsub213ss xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0b01 0xab 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fnmsub s0, s17, s16, s18",
+        "mov v16.s[0], v0.s[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vfmsub213sd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0b01 0xab 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fnmsub d0, d17, d16, d18",
+        "mov v16.d[0], v0.d[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vfnmadd213ss xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0b01 0xad 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fmsub s0, s17, s16, s18",
+        "mov v16.s[0], v0.s[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vfnmadd213sd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0b01 0xad 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fmsub d0, d17, d16, d18",
+        "mov v16.d[0], v0.d[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vfnmsub213ss xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0b01 0xaf 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fnmadd s0, s17, s16, s18",
+        "mov v16.s[0], v0.s[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vfnmsub213sd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 2 0b01 0xaf 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fnmadd d0, d17, d16, d18",
+        "mov v16.d[0], v0.d[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vfmadd231ss xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0b01 0xb9 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fmadd s16, s17, s18, s16",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vfmadd231sd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0b01 0xb9 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fmadd d16, d17, d18, d16",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vfmsub231ss xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0b01 0xbb 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fnmsub s16, s17, s18, s16",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vfmsub231sd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0b01 0xbb 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fnmsub d16, d17, d18, d16",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vfnmadd231ss xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0b01 0xbd 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fmsub s16, s17, s18, s16",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vfnmadd231sd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0b01 0xbd 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fmsub d16, d17, d18, d16",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vfnmsub231ss xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0b01 0xbf 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fnmadd s16, s17, s18, s16",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    },
+    "vfnmsub231sd xmm0, xmm1, xmm2": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 2 0b01 0xbf 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "fnmadd d16, d17, d18, d16",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
+      ]
+    }
+  }
+}
