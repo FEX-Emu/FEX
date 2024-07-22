@@ -1,5 +1,4 @@
 pr72867.c.gcc-target-test-32
-pr88240.c.gcc-target-test-32
 sse2-mmx-pextrw.c.gcc-target-test-32
 
 # Consistently crashes on Solidrun only in CI

@@ -1,7 +1,7 @@
 %ifdef CONFIG
 {
   "RegData": {
-    "RCX": "0"
+    "RAX": "8"
   }
 }
 %endif
@@ -14,7 +14,15 @@ mov rdx, 0xe0000000
 ; Empty in this case is that C0 and C3 is set while C2 is not
 
 fninit
-; Empty stack to make sure we don't push anything
+; Fill the x87 stack
+fldz
+fldz
+fldz
+fldz
+fldz
+fldz
+fldz
+fldz
 
 mov eax, 0
 mov ecx, 0
@@ -38,5 +46,6 @@ inc ecx
 jmp .ExamineStack
 
 .Done:
-
+; Save how many we stored
+mov eax, ecx
 hlt
