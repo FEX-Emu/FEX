@@ -286,7 +286,7 @@
         "Desc": ["Exits the current JIT function with a target RIP"
                 ],
         "HasSideEffects": true,
-        "DestSize": "GetOpSize(_NewRIP)"
+        "DestSize": "GetOpSize(NewRIP)"
       },
       "Break BreakDefinition:$Reason": {
         "HasSideEffects": true
@@ -648,7 +648,7 @@
         "Desc": ["Does a cacheline prefetch operation"
                 ],
         "EmitValidation": [
-          "_CacheLevel > 0 && _CacheLevel < 4"
+          "CacheLevel > 0 && CacheLevel < 4"
         ],
         "HasSideEffects": true,
         "DestSize": "8"
@@ -661,7 +661,7 @@
         "HasSideEffects": true,
         "DestSize": "RegisterSize",
         "EmitValidation": [
-          "_Offset % RegisterSize == 0",
+          "Offset % RegisterSize == 0",
           "RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i256Bit"
         ]
       },
@@ -673,7 +673,7 @@
         "HasSideEffects": true,
         "DestSize": "RegisterSize",
         "EmitValidation": [
-          "_Offset % RegisterSize == 0",
+          "Offset % RegisterSize == 0",
           "RegisterSize == FEXCore::IR::OpSize::i128Bit"
         ]
       },
@@ -685,7 +685,7 @@
         "HasSideEffects": true,
         "DestSize": "RegisterSize",
         "EmitValidation": [
-          "_Offset % RegisterSize == 0",
+          "Offset % RegisterSize == 0",
           "RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i256Bit"
         ]
       }
@@ -1068,7 +1068,7 @@
         "DestSize": "Size",
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit",
-          "_Shift != ShiftType::ROR"
+          "Shift != ShiftType::ROR"
         ]
       },
       "GPR = AddWithFlags OpSize:#Size, GPR:$Src1, GPR:$Src2": {
@@ -1168,7 +1168,7 @@
         "DestSize": "Size",
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit",
-          "_Shift != ShiftType::ROR"
+          "Shift != ShiftType::ROR"
         ]
       },
       "GPR = SubWithFlags OpSize:#Size, GPR:$Src1, GPR:$Src2": {
@@ -1453,7 +1453,7 @@
         "DestSize": "ResultSize",
         "ImplicitFlagClobber": true,
         "EmitValidation": [
-          "_CompareSize == FEXCore::IR::OpSize::i32Bit || _CompareSize == FEXCore::IR::OpSize::i64Bit || _CompareSize == FEXCore::IR::OpSize::i128Bit",
+          "CompareSize == FEXCore::IR::OpSize::i32Bit || CompareSize == FEXCore::IR::OpSize::i64Bit || CompareSize == FEXCore::IR::OpSize::i128Bit",
           "ResultSize == FEXCore::IR::OpSize::i32Bit || ResultSize == FEXCore::IR::OpSize::i64Bit",
           "WalkFindRegClass($Cmp1) == WalkFindRegClass($Cmp2)"
         ]
