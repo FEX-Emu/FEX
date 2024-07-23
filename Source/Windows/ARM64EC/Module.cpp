@@ -385,6 +385,7 @@ static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT&
   uint64_t GuestSp = Context.X[Config.SRAGPRMapping[static_cast<size_t>(FEXCore::X86State::REG_RSP)]];
   struct DispatchArgs {
     ARM64_NT_CONTEXT Context;
+    uint64_t Pad[4]; // Only present on newer Windows versions, likely for SVE.
     EXCEPTION_RECORD Rec;
     uint64_t Align;
     uint64_t Redzone[2];
