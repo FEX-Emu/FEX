@@ -374,9 +374,14 @@ static ARM64_NT_CONTEXT ReconstructPackedECContext(ARM64_NT_CONTEXT& Context) {
   ECContext.X24 = 0;
   ECContext.X28 = 0;
 
-  // NZCV will be converted into EFlags by ntdll, the rest are lost during exception handling.
+  // NZCV+SS will be converted into EFlags by ntdll, the rest are lost during exception handling.
   // See HandleGuestException
   ECContext.Cpsr = Context.Cpsr;
+  uint32_t EFlags = CTX->ReconstructCompactedEFLAGS(Thread, false, nullptr, 0);
+  if (EFlags & (1U << FEXCore::X86State::RFLAG_TF_LOC)) {
+    ECContext.Cpsr |= 1 << 21; // PSTATE.SS
+  }
+
   ECContext.Fpcr = Context.Fpcr;
   ECContext.Fpsr = Context.Fpsr;
 
