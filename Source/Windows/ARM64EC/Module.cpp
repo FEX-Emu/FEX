@@ -558,6 +558,8 @@ NTSTATUS ResetToConsistentState(EXCEPTION_RECORD* Exception, CONTEXT* GuestConte
     NtContinueNative(NativeContext, false);
   }
 
+  GetCPUArea().Area->InSimulation = false;
+  GetCPUArea().Area->InSyscallCallback = false;
   return STATUS_SUCCESS;
 }
 
