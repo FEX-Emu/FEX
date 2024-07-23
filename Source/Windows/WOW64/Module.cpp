@@ -363,7 +363,7 @@ __attribute__((naked)) extern "C" uint64_t SEHFrameTrampoline2Args(void* Arg0, v
 class WowSyscallHandler : public FEXCore::HLE::SyscallHandler, public FEXCore::Allocator::FEXAllocOperators {
 public:
   WowSyscallHandler() {
-    OSABI = FEXCore::HLE::SyscallOSABI::OS_WIN32;
+    OSABI = FEXCore::HLE::SyscallOSABI::OS_GENERIC;
   }
 
   static uint64_t HandleSyscallImpl(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) {

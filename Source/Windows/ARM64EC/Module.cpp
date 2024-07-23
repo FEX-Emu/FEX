@@ -398,7 +398,7 @@ static void Init() {
 class ECSyscallHandler : public FEXCore::HLE::SyscallHandler, public FEXCore::Allocator::FEXAllocOperators {
 public:
   ECSyscallHandler() {
-    OSABI = FEXCore::HLE::SyscallOSABI::OS_WIN32;
+    OSABI = FEXCore::HLE::SyscallOSABI::OS_GENERIC;
   }
 
   uint64_t HandleSyscall(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) override {

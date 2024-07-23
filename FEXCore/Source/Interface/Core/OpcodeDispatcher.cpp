@@ -51,15 +51,6 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs, bool IsSyscallInst) {
     FEXCore::X86State::REG_RSI, FEXCore::X86State::REG_RDI, FEXCore::X86State::REG_RBP,
   };
 
-  static constexpr SyscallArray GPRIndexes_Hangover = {
-    FEXCore::X86State::REG_RCX,
-  };
-
-  static constexpr SyscallArray GPRIndexes_Win64 = {
-    FEXCore::X86State::REG_RAX, FEXCore::X86State::REG_R10, FEXCore::X86State::REG_RDX,
-    FEXCore::X86State::REG_R8,  FEXCore::X86State::REG_R9,  FEXCore::X86State::REG_RSP,
-  };
-
   SyscallFlags DefaultSyscallFlags = FEXCore::IR::SyscallFlags::DEFAULT;
 
   const auto OSABI = CTX->SyscallHandler->GetOSABI();
@@ -69,18 +60,11 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs, bool IsSyscallInst) {
   } else if (OSABI == FEXCore::HLE::SyscallOSABI::OS_LINUX32) {
     NumArguments = GPRIndexes_32.size();
     GPRIndexes = &GPRIndexes_32;
-  } else if (OSABI == FEXCore::HLE::SyscallOSABI::OS_WIN64) {
-    NumArguments = 6;
-    GPRIndexes = &GPRIndexes_Win64;
-    DefaultSyscallFlags = FEXCore::IR::SyscallFlags::NORETURNEDRESULT;
-  } else if (OSABI == FEXCore::HLE::SyscallOSABI::OS_WIN32) {
-    // Since the whole context is going to be saved at entry anyway, theres no need to do additional work to pass in args
+  } else if (OSABI == FEXCore::HLE::SyscallOSABI::OS_GENERIC) {
+    // All registers will be spilled before the syscall and filled afterwards so no JIT-side argument handling is necessary.
     NumArguments = 0;
     GPRIndexes = nullptr;
     DefaultSyscallFlags = FEXCore::IR::SyscallFlags::NORETURNEDRESULT;
-  } else if (OSABI == FEXCore::HLE::SyscallOSABI::OS_HANGOVER) {
-    NumArguments = 1;
-    GPRIndexes = &GPRIndexes_Hangover;
   } else {
     LogMan::Msg::DFmt("Unhandled OSABI syscall");
   }
@@ -116,10 +100,7 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs, bool IsSyscallInst) {
   FlushRegisterCache();
   auto SyscallOp = _Syscall(Arguments[0], Arguments[1], Arguments[2], Arguments[3], Arguments[4], Arguments[5], Arguments[6], DefaultSyscallFlags);
 
-  if (OSABI != FEXCore::HLE::SyscallOSABI::OS_HANGOVER &&
-      (DefaultSyscallFlags & FEXCore::IR::SyscallFlags::NORETURNEDRESULT) != FEXCore::IR::SyscallFlags::NORETURNEDRESULT) {
-    // Hangover doesn't want us returning a result here
-    // syscall is being abused as a thunk for now.
+  if ((DefaultSyscallFlags & FEXCore::IR::SyscallFlags::NORETURNEDRESULT) != FEXCore::IR::SyscallFlags::NORETURNEDRESULT) {
     StoreGPRRegister(X86State::REG_RAX, SyscallOp);
   }
 

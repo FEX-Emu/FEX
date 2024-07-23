@@ -39,9 +39,7 @@ enum class SyscallOSABI {
   OS_UNKNOWN,
   OS_LINUX64,
   OS_LINUX32,
-  OS_WIN64,
-  OS_WIN32,
-  OS_HANGOVER,
+  OS_GENERIC, // No JIT-side argument handling, spill/fill all regs.
 };
 
 class SyscallHandler;
