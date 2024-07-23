@@ -56,11 +56,11 @@ struct ThreadCPUArea {
   explicit ThreadCPUArea(_TEB* TEB)
     : Area(*reinterpret_cast<CHPE_V2_CPU_AREA_INFO**>(reinterpret_cast<uintptr_t>(TEB) + TEBCPUAreaOffset)) {}
 
-  uint64_t EmulatorStackLimit() const {
+  uint64_t& EmulatorStackLimit() const {
     return Area->EmulatorStackLimit;
   }
 
-  uint64_t EmulatorStackBase() const {
+  uint64_t& EmulatorStackBase() const {
     return Area->EmulatorStackBase;
   }
 
@@ -548,6 +548,11 @@ void BTCpu64FlushInstructionCache(const void* Address, SIZE_T Size) {
 }
 
 NTSTATUS ThreadInit() {
+  static constexpr size_t EmulatorStackSize = 0x40000;
+  const uint64_t EmulatorStack = reinterpret_cast<uint64_t>(::VirtualAlloc(nullptr, EmulatorStackSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
+  GetCPUArea().EmulatorStackLimit() = EmulatorStack;
+  GetCPUArea().EmulatorStackBase() = EmulatorStack + EmulatorStackSize;
+
   const auto CPUArea = GetCPUArea();
 
   auto* Thread = CTX->CreateThread(0, 0);
@@ -602,6 +607,7 @@ NTSTATUS ThreadTerm(HANDLE Thread) {
   }
 
   CTX->DestroyThread(OldThreadState);
+  ::VirtualFree(reinterpret_cast<void*>(GetCPUArea().EmulatorStackLimit()), 0, MEM_RELEASE);
   return STATUS_SUCCESS;
 }
 
