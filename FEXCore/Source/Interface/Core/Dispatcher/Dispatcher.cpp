@@ -62,14 +62,6 @@ void Dispatcher::EmitDispatcher() {
 
   ARMEmitter::ForwardLabel l_CTX;
   ARMEmitter::SingleUseForwardLabel l_Sleep;
-#ifdef _M_ARM_64EC
-  // These structures are not included in the standard Windows headers, define them here
-  static constexpr size_t TEBCPUAreaOffset = 0x1788;
-  static constexpr size_t CPUAreaInSyscallCallbackOffset = 0x1;
-  static constexpr size_t CPUAreaEmulatorStackLimitOffset = 0x8;
-  static constexpr size_t CPUAreaEmulatorDataOffset = 0x30;
-  ARMEmitter::SingleUseForwardLabel ExitEC;
-#endif
   ARMEmitter::SingleUseForwardLabel l_CompileBlock;
 
   // Push all the register we need to save
@@ -94,7 +86,7 @@ void Dispatcher::EmitDispatcher() {
   b(&LoopTop);
 
   AbsoluteLoopTopAddressEnterECFillSRA = GetCursorAddress<uint64_t>();
-  ldr(STATE, EC_ENTRY_CPUAREA_REG, CPUAreaEmulatorDataOffset);
+  ldr(STATE, EC_ENTRY_CPUAREA_REG, CPU_AREA_EMULATOR_DATA_OFFSET);
   FillStaticRegs();
 
   // Enter JIT
@@ -102,11 +94,11 @@ void Dispatcher::EmitDispatcher() {
 
   AbsoluteLoopTopAddressEnterEC = GetCursorAddress<uint64_t>();
   // Load ThreadState and write the target PC there
-  ldr(STATE, EC_ENTRY_CPUAREA_REG, CPUAreaEmulatorDataOffset);
+  ldr(STATE, EC_ENTRY_CPUAREA_REG, CPU_AREA_EMULATOR_DATA_OFFSET);
   str(EC_CALL_CHECKER_PC_REG, STATE_PTR(CpuStateFrame, State.rip));
 
   // Swap stacks to the emulator stack
-  ldr(TMP1, EC_ENTRY_CPUAREA_REG, CPUAreaEmulatorStackLimitOffset);
+  ldr(TMP1, EC_ENTRY_CPUAREA_REG, CPU_AREA_EMULATOR_STACK_BASE_OFFSET);
   add(ARMEmitter::Size::i64Bit, StaticRegisters[X86State::REG_RSP], ARMEmitter::Reg::rsp, 0);
   add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, TMP1, 0);
 
@@ -237,9 +229,9 @@ void Dispatcher::EmitDispatcher() {
     str(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
 
 #ifdef _M_ARM_64EC
-    ldr(ARMEmitter::XReg::x0, ARMEmitter::XReg::x18, TEBCPUAreaOffset);
+    ldr(ARMEmitter::XReg::x0, ARMEmitter::XReg::x18, TEB_CPU_AREA_OFFSET);
     LoadConstant(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r1, 1);
-    strb(ARMEmitter::WReg::w1, ARMEmitter::XReg::x0, CPUAreaInSyscallCallbackOffset);
+    strb(ARMEmitter::WReg::w1, ARMEmitter::XReg::x0, CPU_AREA_IN_SYSCALL_CALLBACK_OFFSET);
 #endif
 
     mov(ARMEmitter::XReg::x0, STATE);
@@ -259,8 +251,8 @@ void Dispatcher::EmitDispatcher() {
     FillStaticRegs();
 
 #ifdef _M_ARM_64EC
-    ldr(TMP2, ARMEmitter::XReg::x18, TEBCPUAreaOffset);
-    strb(ARMEmitter::WReg::zr, TMP2, CPUAreaInSyscallCallbackOffset);
+    ldr(TMP2, ARMEmitter::XReg::x18, TEB_CPU_AREA_OFFSET);
+    strb(ARMEmitter::WReg::zr, TMP2, CPU_AREA_IN_SYSCALL_CALLBACK_OFFSET);
 #endif
 
     ldr(TMP2, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
@@ -289,9 +281,9 @@ void Dispatcher::EmitDispatcher() {
     str(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
 
 #ifdef _M_ARM_64EC
-    ldr(ARMEmitter::XReg::x0, ARMEmitter::XReg::x18, TEBCPUAreaOffset);
+    ldr(ARMEmitter::XReg::x0, ARMEmitter::XReg::x18, TEB_CPU_AREA_OFFSET);
     LoadConstant(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r1, 1);
-    strb(ARMEmitter::WReg::w1, ARMEmitter::XReg::x0, CPUAreaInSyscallCallbackOffset);
+    strb(ARMEmitter::WReg::w1, ARMEmitter::XReg::x0, CPU_AREA_IN_SYSCALL_CALLBACK_OFFSET);
 #endif
 
     ldr(ARMEmitter::XReg::x0, &l_CTX);
@@ -309,8 +301,8 @@ void Dispatcher::EmitDispatcher() {
     FillStaticRegs();
 
 #ifdef _M_ARM_64EC
-    ldr(TMP1, ARMEmitter::XReg::x18, TEBCPUAreaOffset);
-    strb(ARMEmitter::WReg::zr, TMP1, CPUAreaInSyscallCallbackOffset);
+    ldr(TMP1, ARMEmitter::XReg::x18, TEB_CPU_AREA_OFFSET);
+    strb(ARMEmitter::WReg::zr, TMP1, CPU_AREA_IN_SYSCALL_CALLBACK_OFFSET);
 #endif
 
     ldr(TMP1, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));

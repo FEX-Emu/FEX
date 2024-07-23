@@ -70,6 +70,14 @@ constexpr auto VTMP2 = ARMEmitter::VReg::v17;
 // Entry/Exit ABI
 constexpr auto EC_CALL_CHECKER_PC_REG = ARMEmitter::XReg::x9;
 constexpr auto EC_ENTRY_CPUAREA_REG = ARMEmitter::XReg::x17;
+
+// These structures are not included in the standard Windows headers, define the offsets of members we care about for EC here.
+constexpr size_t TEB_CPU_AREA_OFFSET = 0x1788;
+constexpr size_t TEB_PEB_OFFSET = 0x60;
+constexpr size_t PEB_EC_CODE_BITMAP_OFFSET = 0x368;
+constexpr size_t CPU_AREA_IN_SYSCALL_CALLBACK_OFFSET = 0x1;
+constexpr size_t CPU_AREA_EMULATOR_STACK_BASE_OFFSET = 0x8;
+constexpr size_t CPU_AREA_EMULATOR_DATA_OFFSET = 0x30;
 #endif
 
 // Predicate register temporaries (used when AVX support is enabled)
