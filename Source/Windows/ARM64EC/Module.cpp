@@ -162,12 +162,11 @@ static EXCEPTION_RECORD HandleGuestException(const EXCEPTION_RECORD& Src, ARM64_
   EXCEPTION_RECORD Dst = Src;
   Dst.ExceptionAddress = reinterpret_cast<void*>(Context.Pc);
 
-  // Windows always clears TF, DF and AF when handling an exception, restoring after.
-  // TODO: Check windows behaviour for the restoring after, quite awkward to achieve with the BT API. Would need to fixup flags after a
-  // rethrow and keep track of context pointers on the stack so if a SEH handler changes flags they can be restored in BeginContext after
-  // the NtContinue syscall (which will convert to an ARM64 context and back, losing these flags).
+  // X64 Windows always clears TF, DF and AF when handling an exception, restoring after.
+  // Current ARM64EC windows can only restore NZCV+SS when returning from an exception and other flags are left untouched from the handler context.
+  // TODO: Can extend wine to support this by mapping the remaining EFlags into reserved cpsr members.
   uint32_t EFlags = CTX->ReconstructCompactedEFLAGS(Thread, true, Context.X, Context.Cpsr);
-  EFlags &= ~((1 << FEXCore::X86State::RFLAG_DF_RAW_LOC) | (1 << FEXCore::X86State::RFLAG_TF_LOC) | (1 << FEXCore::X86State::RFLAG_AF_RAW_LOC));
+  EFlags &= (1 << FEXCore::X86State::RFLAG_TF_LOC);
   CTX->SetFlagsFromCompactedEFLAGS(Thread, EFlags);
 
   if (!Fault.FaultToTopAndGeneratedException) {
