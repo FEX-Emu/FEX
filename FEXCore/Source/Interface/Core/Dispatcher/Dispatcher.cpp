@@ -160,10 +160,6 @@ void Dispatcher::EmitDispatcher() {
 
     // If page pointer is zero then we have no block
     cbz(ARMEmitter::Size::i64Bit, TMP1, &NoBlock);
-#ifdef _M_ARM_64EC
-    // The LSB of an L2 page entry indicates if this page contains EC code
-    tbnz(TMP1, 0, &ExitEC);
-#endif
 
     // Steal the page offset
     and_(ARMEmitter::Size::i64Bit, TMP2, TMP4, 0x0FFF);
@@ -190,22 +186,12 @@ void Dispatcher::EmitDispatcher() {
 
       and_(ARMEmitter::Size::i64Bit, TMP2, RipReg.R(), LookupCache::L1_ENTRIES_MASK);
       add(TMP1, TMP1, TMP2, ARMEmitter::ShiftType::LSL, 4);
-      stp<ARMEmitter::IndexType::OFFSET>(TMP4, TMP3, TMP1);
+      stp<ARMEmitter::IndexType::OFFSET>(TMP4, RipReg, TMP1);
 
       // Jump to the block
       br(TMP4);
     }
   }
-
-#ifdef _M_ARM_64EC
-  {
-    Bind(&ExitEC);
-    add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, StaticRegisters[X86State::REG_RSP], 0);
-    mov(EC_CALL_CHECKER_PC_REG, RipReg);
-    ldr(TMP2, STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionEC));
-    br(TMP2);
-  }
-#endif
 
   {
     ThreadStopHandlerAddressSpillSRA = GetCursorAddress<uint64_t>();
@@ -270,10 +256,31 @@ void Dispatcher::EmitDispatcher() {
   {
     Bind(&NoBlock);
 
+#ifdef _M_ARM_64EC
+    // Check the EC code bitmap incase we need to exit the JIT to call into native code.
+    ARMEmitter::SingleUseForwardLabel l_NotECCode;
+    ldr(TMP1, ARMEmitter::XReg::x18, TEB_PEB_OFFSET);
+    ldr(TMP1, TMP1, PEB_EC_CODE_BITMAP_OFFSET);
+
+    lsr(ARMEmitter::Size::i64Bit, TMP2, RipReg, 15);
+    and_(ARMEmitter::Size::i64Bit, TMP2, TMP2, 0x1fffffffffff8);
+    ldr(TMP1, TMP1, TMP2, ARMEmitter::ExtendedType::LSL_64, 0);
+    lsr(ARMEmitter::Size::i64Bit, TMP2, RipReg, 12);
+    lsrv(ARMEmitter::Size::i64Bit, TMP1, TMP1, TMP2);
+    tbz(TMP1, 0, &l_NotECCode);
+
+    add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, StaticRegisters[X86State::REG_RSP], 0);
+    mov(EC_CALL_CHECKER_PC_REG, RipReg);
+    ldr(TMP2, STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionEC));
+    br(TMP2);
+
+    Bind(&l_NotECCode);
+#endif
+
     SpillStaticRegs(TMP1);
 
     if (!TMP_ABIARGS) {
-      mov(ARMEmitter::XReg::x2, TMP3);
+      mov(ARMEmitter::XReg::x2, RipReg);
     }
 
     ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
