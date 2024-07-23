@@ -588,6 +588,10 @@ void NotifyMemoryProtect(void* Address, SIZE_T Size, ULONG NewProt, BOOL After, 
   InvalidationTracker->HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), NewProt);
 }
 
+NTSTATUS NotifyMapViewOfSection(void* Unk1, void* Address, void* Unk2, SIZE_T Size, ULONG AllocType, ULONG Prot) {
+  return STATUS_SUCCESS;
+}
+
 void NotifyUnmapViewOfSection(void* Address, BOOL After, NTSTATUS Status) {
   if (!InvalidationTracker || !GetCPUArea().ThreadState()) {
     return;
@@ -601,6 +605,15 @@ void NotifyUnmapViewOfSection(void* Address, BOOL After, NTSTATUS Status) {
   InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
 }
 
+void FlushInstructionCacheHeavy(const void* Address, SIZE_T Size) {
+  if (!InvalidationTracker || !GetCPUArea().ThreadState()) {
+    return;
+  }
+
+  std::scoped_lock Lock(ThreadCreationMutex);
+  InvalidationTracker->InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), false);
+}
+
 void BTCpu64FlushInstructionCache(const void* Address, SIZE_T Size) {
   if (!InvalidationTracker || !GetCPUArea().ThreadState()) {
     return;
@@ -609,6 +622,17 @@ void BTCpu64FlushInstructionCache(const void* Address, SIZE_T Size) {
   std::scoped_lock Lock(ThreadCreationMutex);
   InvalidationTracker->InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), false);
 }
+
+void BTCpu64NotifyMemoryDirty(void* Address, SIZE_T Size) {
+  if (!InvalidationTracker || !GetCPUArea().ThreadState()) {
+    return;
+  }
+
+  std::scoped_lock Lock(ThreadCreationMutex);
+  InvalidationTracker->InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), false);
+}
+
+void BTCpu64NotifyReadFile(HANDLE Handle, void* Address, SIZE_T Size, BOOL After, NTSTATUS Status) {}
 
 NTSTATUS ThreadInit() {
   static constexpr size_t EmulatorStackSize = 0x40000;
