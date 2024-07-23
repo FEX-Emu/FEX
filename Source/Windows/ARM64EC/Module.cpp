@@ -433,6 +433,14 @@ public:
 
 extern "C" void SyncThreadContext(CONTEXT* Context) {
   auto* Thread = GetCPUArea().ThreadState();
+  // All other EFlags bits are lost when converting to/from an ARM64EC context, so merge them in from the current JIT state.
+  // This is advisable over dropping their values as thread suspend/resume uses this function, and that can happen at any point in guest code.
+  static constexpr uint32_t ECValidEFlagsMask {(1U << FEXCore::X86State::RFLAG_OF_RAW_LOC) | (1U << FEXCore::X86State::RFLAG_CF_RAW_LOC) |
+                                               (1U << FEXCore::X86State::RFLAG_ZF_RAW_LOC) | (1U << FEXCore::X86State::RFLAG_SF_RAW_LOC) |
+                                               (1U << FEXCore::X86State::RFLAG_TF_LOC)};
+
+  uint32_t StateEFlags = CTX->ReconstructCompactedEFLAGS(Thread, false, nullptr, 0);
+  Context->EFlags = (Context->EFlags & ECValidEFlagsMask) | (StateEFlags & ~ECValidEFlagsMask);
   Exception::LoadStateFromECContext(Thread, *Context);
 }
 
