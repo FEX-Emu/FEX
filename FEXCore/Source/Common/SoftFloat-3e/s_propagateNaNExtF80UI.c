@@ -53,6 +53,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 FEXCORE_PRESERVE_ALL_ATTR
 struct uint128
  softfloat_propagateNaNExtF80UI(
+     struct softfloat_state *state,
      uint_fast16_t uiA64,
      uint_fast64_t uiA0,
      uint_fast16_t uiB64,
@@ -76,7 +77,7 @@ struct uint128
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
     if ( isSigNaNA | isSigNaNB ) {
-        softfloat_raiseFlags( softfloat_flag_invalid );
+        softfloat_raiseFlags( state, softfloat_flag_invalid );
         if ( isSigNaNA ) {
             if ( isSigNaNB ) goto returnLargerMag;
             if ( isNaNExtF80UI( uiB64, uiB0 ) ) goto returnB;

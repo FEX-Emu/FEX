@@ -42,7 +42,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 FEXCORE_PRESERVE_ALL_ATTR
 float64_t
- softfloat_roundPackToF64( bool sign, int_fast16_t exp, uint_fast64_t sig )
+ softfloat_roundPackToF64( struct softfloat_state *state, bool sign, int_fast16_t exp, uint_fast64_t sig )
 {
     uint_fast8_t roundingMode;
     bool roundNearEven;
@@ -53,7 +53,7 @@ float64_t
 
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
-    roundingMode = softfloat_roundingMode;
+    roundingMode = state->roundingMode;
     roundNearEven = (roundingMode == softfloat_round_near_even);
     roundIncrement = 0x200;
     if ( ! roundNearEven && (roundingMode != softfloat_round_near_maxMag) ) {
@@ -71,14 +71,14 @@ float64_t
             /*----------------------------------------------------------------
             *----------------------------------------------------------------*/
             isTiny =
-                (softfloat_detectTininess == softfloat_tininess_beforeRounding)
+                (state->detectTininess == softfloat_tininess_beforeRounding)
                     || (exp < -1)
                     || (sig + roundIncrement < UINT64_C( 0x8000000000000000 ));
             sig = softfloat_shiftRightJam64( sig, -exp );
             exp = 0;
             roundBits = sig & 0x3FF;
             if ( isTiny && roundBits ) {
-                softfloat_raiseFlags( softfloat_flag_underflow );
+                softfloat_raiseFlags( state, softfloat_flag_underflow );
             }
         } else if (
             (0x7FD < exp)
@@ -87,7 +87,7 @@ float64_t
             /*----------------------------------------------------------------
             *----------------------------------------------------------------*/
             softfloat_raiseFlags(
-                softfloat_flag_overflow | softfloat_flag_inexact );
+                state, softfloat_flag_overflow | softfloat_flag_inexact );
             uiZ = packToF64UI( sign, 0x7FF, 0 ) - ! roundIncrement;
             goto uiZ;
         }
@@ -96,7 +96,7 @@ float64_t
     *------------------------------------------------------------------------*/
     sig = (sig + roundIncrement)>>10;
     if ( roundBits ) {
-        softfloat_exceptionFlags |= softfloat_flag_inexact;
+        state->exceptionFlags |= softfloat_flag_inexact;
 #ifdef SOFTFLOAT_ROUND_ODD
         if ( roundingMode == softfloat_round_odd ) {
             sig |= 1;

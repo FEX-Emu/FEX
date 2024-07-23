@@ -42,6 +42,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 FEXCORE_PRESERVE_ALL_ATTR
 extFloat80_t
  softfloat_normRoundPackToExtF80(
+     struct softfloat_state *state,
      bool sign,
      int_fast32_t exp,
      uint_fast64_t sig,
@@ -66,7 +67,7 @@ extFloat80_t
     }
     return
         softfloat_roundPackToExtF80(
-            sign, exp, sig, sigExtra, roundingPrecision );
+            state, sign, exp, sig, sigExtra, roundingPrecision );
 
 }
 

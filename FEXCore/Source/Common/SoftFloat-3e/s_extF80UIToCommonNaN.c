@@ -49,11 +49,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 FEXCORE_PRESERVE_ALL_ATTR
 void
  softfloat_extF80UIToCommonNaN(
-     uint_fast16_t uiA64, uint_fast64_t uiA0, struct commonNaN *zPtr )
+     struct softfloat_state *state, uint_fast16_t uiA64, uint_fast64_t uiA0, struct commonNaN *zPtr )
 {
 
     if ( softfloat_isSigNaNExtF80UI( uiA64, uiA0 ) ) {
-        softfloat_raiseFlags( softfloat_flag_invalid );
+        softfloat_raiseFlags( state, softfloat_flag_invalid );
     }
     zPtr->sign = uiA64>>15;
     zPtr->v64  = uiA0<<1;

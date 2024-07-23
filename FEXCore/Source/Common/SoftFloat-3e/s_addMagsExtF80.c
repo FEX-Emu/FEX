@@ -43,6 +43,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 extFloat80_t
  softfloat_addMagsExtF80(
+     struct softfloat_state *state,
      uint_fast16_t uiA64,
      uint_fast64_t uiA0,
      uint_fast16_t uiB64,
@@ -140,11 +141,11 @@ extFloat80_t
  roundAndPack:
     return
         softfloat_roundPackToExtF80(
-            signZ, expZ, sigZ, sigZExtra, extF80_roundingPrecision );
+            state, signZ, expZ, sigZ, sigZExtra, state->roundingPrecision );
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
  propagateNaN:
-    uiZ = softfloat_propagateNaNExtF80UI( uiA64, uiA0, uiB64, uiB0 );
+    uiZ = softfloat_propagateNaNExtF80UI( state, uiA64, uiA0, uiB64, uiB0 );
     uiZ64 = uiZ.v64;
     uiZ0  = uiZ.v0;
  uiZ:

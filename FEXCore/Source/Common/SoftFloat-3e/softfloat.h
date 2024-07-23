@@ -50,50 +50,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdint.h>
 #include "softfloat_types.h"
 
-#ifndef THREAD_LOCAL
-#define THREAD_LOCAL
-#endif
-
-/*----------------------------------------------------------------------------
-| Software floating-point underflow tininess-detection mode.
-*----------------------------------------------------------------------------*/
-extern THREAD_LOCAL uint_fast8_t softfloat_detectTininess;
-enum {
-    softfloat_tininess_beforeRounding = 0,
-    softfloat_tininess_afterRounding  = 1
-};
-
-/*----------------------------------------------------------------------------
-| Software floating-point rounding mode.  (Mode "odd" is supported only if
-| SoftFloat is compiled with macro 'SOFTFLOAT_ROUND_ODD' defined.)
-*----------------------------------------------------------------------------*/
-extern THREAD_LOCAL uint_fast8_t softfloat_roundingMode;
-enum {
-    softfloat_round_near_even   = 0,
-    softfloat_round_minMag      = 1,
-    softfloat_round_min         = 2,
-    softfloat_round_max         = 3,
-    softfloat_round_near_maxMag = 4,
-    softfloat_round_odd         = 6
-};
-
-/*----------------------------------------------------------------------------
-| Software floating-point exception flags.
-*----------------------------------------------------------------------------*/
-extern THREAD_LOCAL uint_fast8_t softfloat_exceptionFlags;
-enum {
-    softfloat_flag_inexact   =  1,
-    softfloat_flag_underflow =  2,
-    softfloat_flag_overflow  =  4,
-    softfloat_flag_infinite  =  8,
-    softfloat_flag_invalid   = 16
-};
-
 /*----------------------------------------------------------------------------
 | Routine to raise any or all of the software floating-point exception flags.
 *----------------------------------------------------------------------------*/
 FEXCORE_PRESERVE_ALL_ATTR
-void softfloat_raiseFlags( uint_fast8_t );
+void softfloat_raiseFlags( struct softfloat_state *, uint_fast8_t );
 
 /*----------------------------------------------------------------------------
 | Integer-to-floating-point conversion routines.
@@ -187,7 +148,7 @@ float16_t f32_to_f16( float32_t );
 float64_t f32_to_f64( float32_t );
 #ifdef SOFTFLOAT_FAST_INT64
 FEXCORE_PRESERVE_ALL_ATTR
-extFloat80_t f32_to_extF80( float32_t );
+extFloat80_t f32_to_extF80( struct softfloat_state *, float32_t );
 float128_t f32_to_f128( float32_t );
 #endif
 void f32_to_extF80M( float32_t, extFloat80_t * );
@@ -223,7 +184,7 @@ float16_t f64_to_f16( float64_t );
 float32_t f64_to_f32( float64_t );
 #ifdef SOFTFLOAT_FAST_INT64
 FEXCORE_PRESERVE_ALL_ATTR
-extFloat80_t f64_to_extF80( float64_t );
+extFloat80_t f64_to_extF80( struct softfloat_state *, float64_t );
 float128_t f64_to_f128( float64_t );
 #endif
 void f64_to_extF80M( float64_t, extFloat80_t * );
@@ -245,52 +206,46 @@ bool f64_lt_quiet( float64_t, float64_t );
 bool f64_isSignalingNaN( float64_t );
 
 /*----------------------------------------------------------------------------
-| Rounding precision for 80-bit extended double-precision floating-point.
-| Valid values are 32, 64, and 80.
-*----------------------------------------------------------------------------*/
-extern THREAD_LOCAL uint_fast8_t extF80_roundingPrecision;
-
-/*----------------------------------------------------------------------------
 | 80-bit extended double-precision floating-point operations.
 *----------------------------------------------------------------------------*/
 #ifdef SOFTFLOAT_FAST_INT64
 uint_fast32_t extF80_to_ui32( extFloat80_t, uint_fast8_t, bool );
 FEXCORE_PRESERVE_ALL_ATTR
-uint_fast64_t extF80_to_ui64( extFloat80_t, uint_fast8_t, bool );
+uint_fast64_t extF80_to_ui64( struct softfloat_state *, extFloat80_t, uint_fast8_t, bool );
 FEXCORE_PRESERVE_ALL_ATTR
-int_fast32_t extF80_to_i32( extFloat80_t, uint_fast8_t, bool );
+int_fast32_t extF80_to_i32( struct softfloat_state *, extFloat80_t, uint_fast8_t, bool );
 FEXCORE_PRESERVE_ALL_ATTR
-int_fast64_t extF80_to_i64( extFloat80_t, uint_fast8_t, bool );
+int_fast64_t extF80_to_i64( struct softfloat_state *, extFloat80_t, uint_fast8_t, bool );
 uint_fast32_t extF80_to_ui32_r_minMag( extFloat80_t, bool );
 uint_fast64_t extF80_to_ui64_r_minMag( extFloat80_t, bool );
 int_fast32_t extF80_to_i32_r_minMag( extFloat80_t, bool );
 int_fast64_t extF80_to_i64_r_minMag( extFloat80_t, bool );
 float16_t extF80_to_f16( extFloat80_t );
 FEXCORE_PRESERVE_ALL_ATTR
-float32_t extF80_to_f32( extFloat80_t );
+float32_t extF80_to_f32( struct softfloat_state *, extFloat80_t );
 FEXCORE_PRESERVE_ALL_ATTR
-float64_t extF80_to_f64( extFloat80_t );
+float64_t extF80_to_f64( struct softfloat_state *, extFloat80_t );
 FEXCORE_PRESERVE_ALL_ATTR
-float128_t extF80_to_f128( extFloat80_t );
+float128_t extF80_to_f128( struct softfloat_state *, extFloat80_t );
 FEXCORE_PRESERVE_ALL_ATTR
-extFloat80_t extF80_roundToInt( extFloat80_t, uint_fast8_t, bool );
+extFloat80_t extF80_roundToInt( struct softfloat_state *, extFloat80_t, uint_fast8_t, bool );
 FEXCORE_PRESERVE_ALL_ATTR
-extFloat80_t extF80_add( extFloat80_t, extFloat80_t );
+extFloat80_t extF80_add( struct softfloat_state *, extFloat80_t, extFloat80_t );
 FEXCORE_PRESERVE_ALL_ATTR
-extFloat80_t extF80_sub( extFloat80_t, extFloat80_t );
+extFloat80_t extF80_sub( struct softfloat_state *, extFloat80_t, extFloat80_t );
 FEXCORE_PRESERVE_ALL_ATTR
-extFloat80_t extF80_mul( extFloat80_t, extFloat80_t );
+extFloat80_t extF80_mul( struct softfloat_state *, extFloat80_t, extFloat80_t );
 FEXCORE_PRESERVE_ALL_ATTR
-extFloat80_t extF80_div( extFloat80_t, extFloat80_t );
+extFloat80_t extF80_div( struct softfloat_state *, extFloat80_t, extFloat80_t );
 FEXCORE_PRESERVE_ALL_ATTR
-extFloat80_t extF80_rem( extFloat80_t, extFloat80_t );
+extFloat80_t extF80_rem( struct softfloat_state *, extFloat80_t, extFloat80_t );
 FEXCORE_PRESERVE_ALL_ATTR
-extFloat80_t extF80_sqrt( extFloat80_t );
+extFloat80_t extF80_sqrt( struct softfloat_state *, extFloat80_t );
 FEXCORE_PRESERVE_ALL_ATTR
-bool extF80_eq( extFloat80_t, extFloat80_t );
+bool extF80_eq( struct softfloat_state *, extFloat80_t, extFloat80_t );
 bool extF80_le( extFloat80_t, extFloat80_t );
 FEXCORE_PRESERVE_ALL_ATTR
-bool extF80_lt( extFloat80_t, extFloat80_t );
+bool extF80_lt( struct softfloat_state *, extFloat80_t, extFloat80_t );
 bool extF80_eq_signaling( extFloat80_t, extFloat80_t );
 bool extF80_le_quiet( extFloat80_t, extFloat80_t );
 bool extF80_lt_quiet( extFloat80_t, extFloat80_t );
@@ -341,7 +296,7 @@ float16_t f128_to_f16( float128_t );
 float32_t f128_to_f32( float128_t );
 float64_t f128_to_f64( float128_t );
 FEXCORE_PRESERVE_ALL_ATTR
-extFloat80_t f128_to_extF80( float128_t );
+extFloat80_t f128_to_extF80( struct softfloat_state *, float128_t );
 float128_t f128_roundToInt( float128_t, uint_fast8_t, bool );
 float128_t f128_add( float128_t, float128_t );
 float128_t f128_sub( float128_t, float128_t );

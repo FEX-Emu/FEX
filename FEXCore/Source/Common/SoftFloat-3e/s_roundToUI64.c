@@ -43,6 +43,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 uint_fast64_t
  softfloat_roundToUI64(
+     struct softfloat_state *state,
      bool sign,
      uint_fast64_t sig,
      uint_fast64_t sigExtra,
@@ -84,13 +85,13 @@ uint_fast64_t
 #ifdef SOFTFLOAT_ROUND_ODD
         if ( roundingMode == softfloat_round_odd ) sig |= 1;
 #endif
-        if ( exact ) softfloat_exceptionFlags |= softfloat_flag_inexact;
+        if ( exact ) state->exceptionFlags |= softfloat_flag_inexact;
     }
     return sig;
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
  invalid:
-    softfloat_raiseFlags( softfloat_flag_invalid );
+    softfloat_raiseFlags( state, softfloat_flag_invalid );
     return sign ? ui64_fromNegOverflow : ui64_fromPosOverflow;
 
 }

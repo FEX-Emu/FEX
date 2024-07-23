@@ -42,7 +42,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "softfloat.h"
 
 FEXCORE_PRESERVE_ALL_ATTR
-bool extF80_lt( extFloat80_t a, extFloat80_t b )
+bool extF80_lt( struct softfloat_state *state, extFloat80_t a, extFloat80_t b )
 {
     union { struct extFloat80M s; extFloat80_t f; } uA;
     uint_fast16_t uiA64;
@@ -59,7 +59,7 @@ bool extF80_lt( extFloat80_t a, extFloat80_t b )
     uiB64 = uB.s.signExp;
     uiB0  = uB.s.signif;
     if ( isNaNExtF80UI( uiA64, uiA0 ) || isNaNExtF80UI( uiB64, uiB0 ) ) {
-        softfloat_raiseFlags( softfloat_flag_invalid );
+        softfloat_raiseFlags( state, softfloat_flag_invalid );
         return false;
     }
     signA = signExtF80UI64( uiA64 );

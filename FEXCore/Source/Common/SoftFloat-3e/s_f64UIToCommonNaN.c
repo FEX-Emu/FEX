@@ -46,11 +46,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 | exception is raised.
 *----------------------------------------------------------------------------*/
 FEXCORE_PRESERVE_ALL_ATTR
-void softfloat_f64UIToCommonNaN( uint_fast64_t uiA, struct commonNaN *zPtr )
+void softfloat_f64UIToCommonNaN( struct softfloat_state *state, uint_fast64_t uiA, struct commonNaN *zPtr )
 {
 
     if ( softfloat_isSigNaNF64UI( uiA ) ) {
-        softfloat_raiseFlags( softfloat_flag_invalid );
+        softfloat_raiseFlags( state, softfloat_flag_invalid );
     }
     zPtr->sign = uiA>>63;
     zPtr->v64  = uiA<<12;
