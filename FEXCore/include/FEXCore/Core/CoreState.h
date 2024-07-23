@@ -341,6 +341,11 @@ struct CpuStateFrame {
 
   InternalThreadState* Thread;
 
+#ifdef _M_ARM_64EC
+  // Set by the kernel on ARM64EC whenever the JIT should cooperatively suspend running guest code.
+  uint32_t SuspendDoorbell {};
+#endif
+
   // Pointers that the JIT needs to load to remove relocations
   JITPointers Pointers;
 };
