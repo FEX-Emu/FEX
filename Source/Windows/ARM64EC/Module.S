@@ -81,3 +81,20 @@ ret_sp_misaligned:
   adrp lr, X64ReturnInstr
   ldr lr, [lr, #:lo12:X64ReturnInstr]
   br x17
+
+  // Calls NtContinue directly to allow continuing from a full native context, as the NTDLL NtContinue export takes in
+  // an x64 context with EC and the conversion to that loses the ARM64EC ABI-disallowed registers that FEX uses.
+.global "#NtContinueNative"
+"#NtContinueNative":
+  adrp x16, WineSyscallDispatcher
+  ldr x16, [x16, #:lo12:WineSyscallDispatcher]
+  cbz x16, direct_syscall
+wine_syscall:
+  mov x9, x30
+  adrp x8, WineNtContinueSyscallId
+  ldr x8, [x8, #:lo12:WineNtContinueSyscallId]
+  blr x16
+  ret
+direct_syscall:
+  svc #0x43
+  ret

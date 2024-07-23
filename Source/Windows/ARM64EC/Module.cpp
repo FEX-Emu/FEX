@@ -46,8 +46,16 @@ $end_info$
 #include <wine/debug.h>
 
 class ECSyscallHandler;
+
+extern "C" {
 void* X64ReturnInstr; // See Module.S
 extern void* ExitFunctionEC;
+
+// Wine doesn't support issuing direct system calls with SVC, and unlike Windows it doesn't have a 'stable' syscall number for NtContinue
+void* WineSyscallDispatcher;
+// TODO: this really shouldn't be hardcoded, once wine gains proper syscall thunks this can be dropped.
+uint64_t WineNtContinueSyscallId = 0x1a;
+}
 
 struct ThreadCPUArea {
   static constexpr size_t TEBCPUAreaOffset = 0x1788;
@@ -84,6 +92,9 @@ struct ThreadCPUArea {
     return reinterpret_cast<uint64_t&>(Area->EmulatorData[3]);
   }
 };
+
+
+extern "C" NTSTATUS NtContinueNative(ARM64_NT_CONTEXT* NativeContext, BOOLEAN Alert);
 
 namespace {
 fextl::unique_ptr<FEXCore::Context::Context> CTX;
@@ -437,7 +448,12 @@ void ProcessInit() {
   X64ReturnInstr = ::VirtualAlloc(nullptr, FEXCore::Utils::FEX_PAGE_SIZE, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
   *reinterpret_cast<uint8_t*>(X64ReturnInstr) = 0xc3;
 
-  Exception::KiUserExceptionDispatcher = GetRedirectedProcAddress(GetModuleHandle("ntdll.dll"), "KiUserExceptionDispatcher");
+  const auto NtDll = GetModuleHandle("ntdll.dll");
+  Exception::KiUserExceptionDispatcher = GetRedirectedProcAddress(NtDll, "KiUserExceptionDispatcher");
+  const auto WineSyscallDispatcherPtr = reinterpret_cast<void**>(GetProcAddress(NtDll, "__wine_syscall_dispatcher"));
+  if (WineSyscallDispatcherPtr) {
+    WineSyscallDispatcher = *WineSyscallDispatcherPtr;
+  }
 }
 
 void ProcessTerm() {}
