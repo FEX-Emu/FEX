@@ -467,6 +467,8 @@ public:
   }
 
   uint64_t HandleSyscall(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) override {
+    ProcessPendingCrossProcessEmulatorWork();
+
     // Manually raise an exeption with the current JIT state packed into a native context, ntdll handles this and
     // reenters the JIT (see dlls/ntdll/signal_arm64ec.c in wine).
     uint64_t FPCR, FPSR;
@@ -505,6 +507,7 @@ public:
 } // namespace Exception
 
 extern "C" void SyncThreadContext(CONTEXT* Context) {
+  ProcessPendingCrossProcessEmulatorWork();
   auto* Thread = GetCPUArea().ThreadState();
   // All other EFlags bits are lost when converting to/from an ARM64EC context, so merge them in from the current JIT state.
   // This is advisable over dropping their values as thread suspend/resume uses this function, and that can happen at any point in guest code.
