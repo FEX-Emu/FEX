@@ -427,7 +427,7 @@ extern "C" void SyncThreadContext(CONTEXT* Context) {
   Exception::LoadStateFromECContext(Thread, *Context);
 }
 
-void ProcessInit() {
+NTSTATUS ProcessInit() {
   FEX::Config::InitializeConfigs();
   FEXCore::Config::Initialize();
   FEXCore::Config::AddLayer(FEX::Config::CreateGlobalMainLayer());
@@ -463,9 +463,11 @@ void ProcessInit() {
   if (WineSyscallDispatcherPtr) {
     WineSyscallDispatcher = *WineSyscallDispatcherPtr;
   }
+
+  return STATUS_SUCCESS;
 }
 
-void ProcessTerm() {}
+void ProcessTerm(HANDLE Handle, BOOL After, NTSTATUS Status) {}
 
 class ScopedCallbackDisable {
 private:
@@ -482,49 +484,72 @@ public:
   }
 };
 
-NTSTATUS ResetToConsistentState(EXCEPTION_POINTERS* Ptrs, ARM64_NT_CONTEXT* Context, BOOLEAN* Continue) {
-  ScopedCallbackDisable Guard;
-  const auto* Exception = Ptrs->ExceptionRecord;
-  if (Exception->ExceptionCode == EXCEPTION_DATATYPE_MISALIGNMENT && Exception::HandleUnalignedAccess(*Context)) {
-    LogMan::Msg::DFmt("Handled unaligned atomic: new pc: {:X}", Context->Pc);
-    *Continue = true;
-    return STATUS_SUCCESS;
-  }
+bool ResetToConsistentStateImpl(EXCEPTION_RECORD* Exception, CONTEXT* GuestContext, ARM64_NT_CONTEXT* NativeContext) {
+  LogMan::Msg::DFmt("Exception: Code: {:X} Address: {:X}", Exception->ExceptionCode, reinterpret_cast<uintptr_t>(Exception->ExceptionAddress));
+
+  const auto CPUArea = GetCPUArea();
 
   if (Exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
     const auto FaultAddress = static_cast<uint64_t>(Exception->ExceptionInformation[1]);
 
     bool HandledRWX = false;
-    if (InvalidationTracker && GetCPUArea().ThreadState()) {
+    if (InvalidationTracker && CPUArea.ThreadState()) {
       std::scoped_lock Lock(ThreadCreationMutex);
       HandledRWX = InvalidationTracker->HandleRWXAccessViolation(FaultAddress);
     }
 
     if (HandledRWX) {
-      LogMan::Msg::DFmt("Handled self-modifying code: pc: {:X} fault: {:X}", Context->Pc, FaultAddress);
-      *Continue = true;
-      return STATUS_SUCCESS;
+      LogMan::Msg::DFmt("Handled self-modifying code: pc: {:X} fault: {:X}", NativeContext->Pc, FaultAddress);
+      return true;
     }
   }
 
-  if (!CTX->IsAddressInCodeBuffer(GetCPUArea().ThreadState(), Context->Pc) && !IsDispatcherAddress(Context->Pc)) {
-    return STATUS_SUCCESS;
+  if (!CTX->IsAddressInCodeBuffer(CPUArea.ThreadState(), NativeContext->Pc) && !IsDispatcherAddress(NativeContext->Pc)) {
+    LogMan::Msg::DFmt("Passing through exception");
+    return false;
+  }
+
+  if (Exception->ExceptionCode == EXCEPTION_DATATYPE_MISALIGNMENT && Exception::HandleUnalignedAccess(*NativeContext)) {
+    LogMan::Msg::DFmt("Handled unaligned atomic: new pc: {:X}", NativeContext->Pc);
+    return true;
   }
 
 
   if (IsEmulatorStackAddress(reinterpret_cast<uint64_t>(__builtin_frame_address(0)))) {
-    Exception::RethrowGuestException(*Exception, *Context);
-    LogMan::Msg::DFmt("Rethrowing onto guest stack: {:X}", Context->Sp);
-    *Continue = true;
-    return STATUS_SUCCESS;
+    Exception::RethrowGuestException(*Exception, *NativeContext);
+    LogMan::Msg::DFmt("Rethrowing onto guest stack: {:X}", NativeContext->Sp);
+    return true;
   } else {
     LogMan::Msg::EFmt("Unexpected exception in JIT code on guest stack");
-    return STATUS_SUCCESS;
+    return false;
   }
 }
 
-void NotifyMemoryAlloc(void* Address, SIZE_T Size, ULONG Type, ULONG Prot) {
+NTSTATUS ResetToConsistentState(EXCEPTION_RECORD* Exception, CONTEXT* GuestContext, ARM64_NT_CONTEXT* NativeContext) {
+  if (!GetCPUArea().ThreadState()) {
+    return STATUS_SUCCESS;
+  }
+
+  bool Cont {};
+  {
+
+    ScopedCallbackDisable guard;
+    Cont = ResetToConsistentStateImpl(Exception, GuestContext, NativeContext);
+  }
+
+  if (Cont) {
+    NtContinueNative(NativeContext, false);
+  }
+
+  return STATUS_SUCCESS;
+}
+
+void NotifyMemoryAlloc(void* Address, SIZE_T Size, ULONG Type, ULONG Prot, BOOL After, NTSTATUS Status) {
   if (!InvalidationTracker || !GetCPUArea().ThreadState()) {
+    return;
+  }
+
+  if (!After || Status) {
     return;
   }
 
@@ -532,21 +557,29 @@ void NotifyMemoryAlloc(void* Address, SIZE_T Size, ULONG Type, ULONG Prot) {
   InvalidationTracker->HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), Prot);
 }
 
-void NotifyMemoryFree(void* Address, SIZE_T Size, ULONG FreeType) {
+void NotifyMemoryFree(void* Address, SIZE_T Size, ULONG FreeType, BOOL After, NTSTATUS Status) {
   if (!InvalidationTracker || !GetCPUArea().ThreadState()) {
     return;
   }
 
+  if (After) {
+    return;
+  }
+
   std::scoped_lock Lock(ThreadCreationMutex);
-  if (!Size) {
-    InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
-  } else if (FreeType & MEM_DECOMMIT) {
+  if (FreeType & MEM_DECOMMIT) {
     InvalidationTracker->InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), true);
+  } else if (FreeType & MEM_RELEASE) {
+    InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
   }
 }
 
-void NotifyMemoryProtect(void* Address, SIZE_T Size, ULONG NewProt) {
+void NotifyMemoryProtect(void* Address, SIZE_T Size, ULONG NewProt, BOOL After, NTSTATUS Status) {
   if (!InvalidationTracker || !GetCPUArea().ThreadState()) {
+    return;
+  }
+
+  if (!After || Status) {
     return;
   }
 
@@ -554,8 +587,12 @@ void NotifyMemoryProtect(void* Address, SIZE_T Size, ULONG NewProt) {
   InvalidationTracker->HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), NewProt);
 }
 
-void NotifyUnmapViewOfSection(void* Address) {
+void NotifyUnmapViewOfSection(void* Address, BOOL After, NTSTATUS Status) {
   if (!InvalidationTracker || !GetCPUArea().ThreadState()) {
+    return;
+  }
+
+  if (After) {
     return;
   }
 
@@ -612,7 +649,7 @@ NTSTATUS ThreadInit() {
   return STATUS_SUCCESS;
 }
 
-NTSTATUS ThreadTerm(HANDLE Thread) {
+NTSTATUS ThreadTerm(HANDLE Thread, LONG ExitCode) {
   const auto [Err, CPUArea] = GetThreadCPUArea(Thread);
   if (Err) {
     return Err;
