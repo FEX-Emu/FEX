@@ -243,55 +243,64 @@ static bool HandleUnalignedAccess(ARM64_NT_CONTEXT& Context) {
 static void LoadStateFromECContext(FEXCore::Core::InternalThreadState* Thread, CONTEXT& Context) {
   auto& State = Thread->CurrentFrame->State;
 
-  // General register state
-  State.gregs[FEXCore::X86State::REG_RAX] = Context.Rax;
-  State.gregs[FEXCore::X86State::REG_RCX] = Context.Rcx;
-  State.gregs[FEXCore::X86State::REG_RDX] = Context.Rdx;
-  State.gregs[FEXCore::X86State::REG_RBX] = Context.Rbx;
-  State.gregs[FEXCore::X86State::REG_RSP] = Context.Rsp;
-  State.gregs[FEXCore::X86State::REG_RBP] = Context.Rbp;
-  State.gregs[FEXCore::X86State::REG_RSI] = Context.Rsi;
-  State.gregs[FEXCore::X86State::REG_RDI] = Context.Rdi;
-  State.gregs[FEXCore::X86State::REG_R8] = Context.R8;
-  State.gregs[FEXCore::X86State::REG_R9] = Context.R9;
-  State.gregs[FEXCore::X86State::REG_R10] = Context.R10;
-  State.gregs[FEXCore::X86State::REG_R11] = Context.R11;
-  State.gregs[FEXCore::X86State::REG_R12] = Context.R12;
-  State.gregs[FEXCore::X86State::REG_R13] = Context.R13;
-  State.gregs[FEXCore::X86State::REG_R14] = Context.R14;
-  State.gregs[FEXCore::X86State::REG_R15] = Context.R15;
+  if (Context.ContextFlags & CONTEXT_INTEGER) {
+    // General register state
+    State.gregs[FEXCore::X86State::REG_RAX] = Context.Rax;
+    State.gregs[FEXCore::X86State::REG_RCX] = Context.Rcx;
+    State.gregs[FEXCore::X86State::REG_RDX] = Context.Rdx;
+    State.gregs[FEXCore::X86State::REG_RBX] = Context.Rbx;
 
-  State.rip = Context.Rip;
-  CTX->SetFlagsFromCompactedEFLAGS(Thread, Context.EFlags);
+    State.gregs[FEXCore::X86State::REG_RSI] = Context.Rsi;
+    State.gregs[FEXCore::X86State::REG_RDI] = Context.Rdi;
+    State.gregs[FEXCore::X86State::REG_R8] = Context.R8;
+    State.gregs[FEXCore::X86State::REG_R9] = Context.R9;
+    State.gregs[FEXCore::X86State::REG_R10] = Context.R10;
+    State.gregs[FEXCore::X86State::REG_R11] = Context.R11;
+    State.gregs[FEXCore::X86State::REG_R12] = Context.R12;
+    State.gregs[FEXCore::X86State::REG_R13] = Context.R13;
+    State.gregs[FEXCore::X86State::REG_R14] = Context.R14;
+    State.gregs[FEXCore::X86State::REG_R15] = Context.R15;
+  }
 
-  State.es_idx = Context.SegEs & 0xffff;
-  State.cs_idx = Context.SegCs & 0xffff;
-  State.ss_idx = Context.SegSs & 0xffff;
-  State.ds_idx = Context.SegDs & 0xffff;
-  State.fs_idx = Context.SegFs & 0xffff;
-  State.gs_idx = Context.SegGs & 0xffff;
+  if (Context.ContextFlags & CONTEXT_CONTROL) {
+    State.rip = Context.Rip;
+    State.gregs[FEXCore::X86State::REG_RSP] = Context.Rsp;
+    State.gregs[FEXCore::X86State::REG_RBP] = Context.Rbp;
+    CTX->SetFlagsFromCompactedEFLAGS(Thread, Context.EFlags);
+  }
 
-  // The TEB is the only populated GDT entry by default
-  const auto TEB = reinterpret_cast<uint64_t>(NtCurrentTeb());
-  State.gdt[(Context.SegGs & 0xffff) >> 3].base = TEB;
-  State.gs_cached = TEB;
-  State.fs_cached = 0;
-  State.es_cached = 0;
-  State.cs_cached = 0;
-  State.ss_cached = 0;
-  State.ds_cached = 0;
+  if (Context.ContextFlags & CONTEXT_SEGMENTS) {
+    State.es_idx = Context.SegEs & 0xffff;
+    State.cs_idx = Context.SegCs & 0xffff;
+    State.ss_idx = Context.SegSs & 0xffff;
+    State.ds_idx = Context.SegDs & 0xffff;
+    State.fs_idx = Context.SegFs & 0xffff;
+    State.gs_idx = Context.SegGs & 0xffff;
 
-  // Floating-point register state
-  CTX->SetXMMRegistersFromState(Thread, reinterpret_cast<const __uint128_t*>(Context.FltSave.XmmRegisters), nullptr);
-  memcpy(State.mm, Context.FltSave.FloatRegisters, sizeof(State.mm));
+    // The TEB is the only populated GDT entry by default
+    const auto TEB = reinterpret_cast<uint64_t>(NtCurrentTeb());
+    State.gdt[(Context.SegGs & 0xffff) >> 3].base = TEB;
+    State.gs_cached = TEB;
+    State.fs_cached = 0;
+    State.es_cached = 0;
+    State.cs_cached = 0;
+    State.ss_cached = 0;
+    State.ds_cached = 0;
+  }
 
-  State.FCW = Context.FltSave.ControlWord;
-  State.flags[FEXCore::X86State::X87FLAG_C0_LOC] = (Context.FltSave.StatusWord >> 8) & 1;
-  State.flags[FEXCore::X86State::X87FLAG_C1_LOC] = (Context.FltSave.StatusWord >> 9) & 1;
-  State.flags[FEXCore::X86State::X87FLAG_C2_LOC] = (Context.FltSave.StatusWord >> 10) & 1;
-  State.flags[FEXCore::X86State::X87FLAG_C3_LOC] = (Context.FltSave.StatusWord >> 14) & 1;
-  State.flags[FEXCore::X86State::X87FLAG_TOP_LOC] = (Context.FltSave.StatusWord >> 11) & 0b111;
-  State.AbridgedFTW = Context.FltSave.TagWord;
+  if (Context.ContextFlags & CONTEXT_FLOATING_POINT) {
+    // Floating-point register state
+    CTX->SetXMMRegistersFromState(Thread, reinterpret_cast<const __uint128_t*>(Context.FltSave.XmmRegisters), nullptr);
+    memcpy(State.mm, Context.FltSave.FloatRegisters, sizeof(State.mm));
+
+    State.FCW = Context.FltSave.ControlWord;
+    State.flags[FEXCore::X86State::X87FLAG_C0_LOC] = (Context.FltSave.StatusWord >> 8) & 1;
+    State.flags[FEXCore::X86State::X87FLAG_C1_LOC] = (Context.FltSave.StatusWord >> 9) & 1;
+    State.flags[FEXCore::X86State::X87FLAG_C2_LOC] = (Context.FltSave.StatusWord >> 10) & 1;
+    State.flags[FEXCore::X86State::X87FLAG_C3_LOC] = (Context.FltSave.StatusWord >> 14) & 1;
+    State.flags[FEXCore::X86State::X87FLAG_TOP_LOC] = (Context.FltSave.StatusWord >> 11) & 0b111;
+    State.AbridgedFTW = Context.FltSave.TagWord;
+  }
 }
 
 static void ReconstructThreadState(ARM64_NT_CONTEXT& Context) {
@@ -317,7 +326,7 @@ static ARM64_NT_CONTEXT ReconstructPackedECContext(ARM64_NT_CONTEXT& Context) {
   ReconstructThreadState(Context);
   ARM64_NT_CONTEXT ECContext {};
 
-  ECContext.ContextFlags = CONTEXT_ARM64_CONTROL | CONTEXT_ARM64_INTEGER | CONTEXT_ARM64_FLOATING_POINT;
+  ECContext.ContextFlags = CONTEXT_ARM64_FULL;
 
   auto* Thread = GetCPUArea().ThreadState();
   auto& State = Thread->CurrentFrame->State;
@@ -581,7 +590,7 @@ NTSTATUS ThreadInit() {
   uint64_t EnterECFillSRA = Thread->CurrentFrame->Pointers.Common.DispatcherLoopTopEnterECFillSRA;
   CPUArea.DispatcherLoopTopEnterECFillSRA() = EnterECFillSRA;
 
-  CPUArea.ContextAmd64() = {.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT,
+  CPUArea.ContextAmd64() = {.ContextFlags = CONTEXT_CONTROL | CONTEXT_SEGMENTS | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT,
                             .AMD64_SegCs = 0x33,
                             .AMD64_SegDs = 0x2b,
                             .AMD64_SegEs = 0x2b,
