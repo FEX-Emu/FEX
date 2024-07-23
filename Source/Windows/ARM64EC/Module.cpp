@@ -51,6 +51,12 @@ extern "C" {
 void* X64ReturnInstr; // See Module.S
 extern void* ExitFunctionEC;
 
+uintptr_t NtDllBase;
+
+// Exports on ARM64EC point to x64 fast forward sequences to allow for redirecting to the JIT if functions are hotpatched. This LUT is from their addresses to the relative addresses of the native code exports.
+uint32_t* NtDllRedirectionLUT;
+uint32_t NtDllRedirectionLUTSize;
+
 // Wine doesn't support issuing direct system calls with SVC, and unlike Windows it doesn't have a 'stable' syscall number for NtContinue
 void* WineSyscallDispatcher;
 // TODO: this really shouldn't be hardcoded, once wine gains proper syscall thunks this can be dropped.
@@ -127,29 +133,24 @@ bool IsDispatcherAddress(uint64_t Address) {
   return Address >= Config.DispatcherBegin && Address < Config.DispatcherEnd;
 }
 
-// GetProcAddress on ARM64EC returns a pointer to an x64 fast forward sequence to allow for redirecting to the JIT if functions are
-// hotpatched. This looks up the procedure address of the native code even if the fast forward sequence has been patched.
-uintptr_t GetRedirectedProcAddress(HMODULE Module, const char* ProcName) {
-  const uintptr_t Proc = reinterpret_cast<uintptr_t>(GetProcAddress(Module, ProcName));
-  if (!Proc) {
-    return 0;
-  }
 
+void FillNtDllLUTs() {
+  const HMODULE NtDll = GetModuleHandle("ntdll.dll");
+  NtDllBase = reinterpret_cast<uintptr_t>(NtDll);
   ULONG Size;
   const auto* LoadConfig =
-    reinterpret_cast<_IMAGE_LOAD_CONFIG_DIRECTORY64*>(RtlImageDirectoryEntryToData(Module, true, IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG, &Size));
+    reinterpret_cast<_IMAGE_LOAD_CONFIG_DIRECTORY64*>(RtlImageDirectoryEntryToData(NtDll, true, IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG, &Size));
   const auto* CHPEMetadata = reinterpret_cast<IMAGE_ARM64EC_METADATA*>(LoadConfig->CHPEMetadataPointer);
-  const uintptr_t ModuleBase = reinterpret_cast<uintptr_t>(Module);
-  const uintptr_t ProcRVA = Proc - ModuleBase;
-  const auto* RedirectionTableBegin = reinterpret_cast<IMAGE_ARM64EC_REDIRECTION_ENTRY*>(ModuleBase + CHPEMetadata->RedirectionMetadata);
+  const auto* RedirectionTableBegin = reinterpret_cast<IMAGE_ARM64EC_REDIRECTION_ENTRY*>(NtDllBase + CHPEMetadata->RedirectionMetadata);
   const auto* RedirectionTableEnd = RedirectionTableBegin + CHPEMetadata->RedirectionMetadataCount;
-  const auto* It =
-    std::lower_bound(RedirectionTableBegin, RedirectionTableEnd, ProcRVA, [](const auto& Entry, uintptr_t RVA) { return Entry.Source < RVA; });
-  if (It->Source != ProcRVA) {
-    return 0;
+
+  NtDllRedirectionLUTSize = std::prev(RedirectionTableEnd)->Source + 1;
+  NtDllRedirectionLUT = new uint32_t[NtDllRedirectionLUTSize];
+  for (auto It = RedirectionTableBegin; It != RedirectionTableEnd; It++) {
+    NtDllRedirectionLUT[It->Source] = It->Destination;
   }
-  return ModuleBase + It->Destination;
 }
+
 } // namespace
 
 namespace Exception {
@@ -458,8 +459,10 @@ NTSTATUS ProcessInit() {
   X64ReturnInstr = ::VirtualAlloc(nullptr, FEXCore::Utils::FEX_PAGE_SIZE, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
   *reinterpret_cast<uint8_t*>(X64ReturnInstr) = 0xc3;
 
+  FillNtDllLUTs();
   const auto NtDll = GetModuleHandle("ntdll.dll");
-  Exception::KiUserExceptionDispatcher = GetRedirectedProcAddress(NtDll, "KiUserExceptionDispatcher");
+  const uintptr_t KiUserExceptionDispatcherFFS = reinterpret_cast<uintptr_t>(GetProcAddress(NtDll, "KiUserExceptionDispatcher"));
+  Exception::KiUserExceptionDispatcher = NtDllRedirectionLUT[KiUserExceptionDispatcherFFS - NtDllBase] + NtDllBase;
   const auto WineSyscallDispatcherPtr = reinterpret_cast<void**>(GetProcAddress(NtDll, "__wine_syscall_dispatcher"));
   if (WineSyscallDispatcherPtr) {
     WineSyscallDispatcher = *WineSyscallDispatcherPtr;
