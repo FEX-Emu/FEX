@@ -34,6 +34,8 @@ ExitToX64:
 
 enter_jit:
   ldr x17, [x18, #0x1788] // TEB->ChpeV2CpuAreaInfo
+  mov w16, #1
+  strb w16, [x17, #0x0] // ChpeV2CpuAreaInfo->InSimulation
   ldr x16, [x17, #0x40] // ChpeV2CpuAreaInfo->EmulatorData[2] - DispatcherLoopTopEnterEC
   br x16 // DispatcherLoopTopEnterEC(RIP:x9, CPUArea:x17)
 
@@ -57,6 +59,8 @@ ExitFunctionEC:
   mrs x17, fpcr
   and x17, x17, #~6 // NEP + AH
   msr fpcr, x17
+  ldr x17, [x18, #0x1788] // TEB->ChpeV2CpuAreaInfo
+  strb wzr, [x17, #0x0] // ChpeV2CpuAreaInfo->InSimulation
 
   // Either return to an exit thunk (return to ARM64EC function) or call an entry thunk (call to ARM64EC function).
   // It is assumed that a 'blr x16' instruction is only ever used to call into x86 code from an exit thunk, and that all
