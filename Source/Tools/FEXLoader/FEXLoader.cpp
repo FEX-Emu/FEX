@@ -515,7 +515,7 @@ int main(int argc, char** argv, char** const envp) {
 
   // There might already be an exit handler, leave it installed
   if (!CTX->GetExitHandler()) {
-    CTX->SetExitHandler([&](uint64_t thread, FEXCore::Context::ExitReason reason) {
+    CTX->SetExitHandler([&](FEXCore::Core::InternalThreadState* Thread, FEXCore::Context::ExitReason reason) {
       if (reason != FEXCore::Context::ExitReason::EXIT_DEBUG) {
         ShutdownReason = reason;
         SyscallHandler->TM.Stop();

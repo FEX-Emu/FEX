@@ -121,7 +121,7 @@ GdbServer::GdbServer(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* 
   // Pass all signals by default
   std::fill(PassSignals.begin(), PassSignals.end(), true);
 
-  ctx->SetExitHandler([this](uint64_t ThreadId, FEXCore::Context::ExitReason ExitReason) {
+  ctx->SetExitHandler([this](FEXCore::Core::InternalThreadState* Thread, FEXCore::Context::ExitReason ExitReason) {
     if (ExitReason == FEXCore::Context::ExitReason::EXIT_DEBUG) {
       this->Break(SIGTRAP);
     }
