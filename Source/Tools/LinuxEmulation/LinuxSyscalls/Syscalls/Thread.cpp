@@ -52,6 +52,10 @@ static void* ThreadHandler(void* Data) {
   auto CTX = Handler->CTX;
   auto Thread = Handler->Thread;
   FEXCore::Allocator::free(Handler);
+
+  Thread->ThreadInfo.PID = ::getpid();
+  Thread->ThreadInfo.TID = FHU::Syscalls::gettid();
+
   FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterTLSState(Thread);
   CTX->ExecutionThread(Thread->Thread);
   FEX::HLE::_SyscallHandler->GetSignalDelegator()->UninstallTLSState(Thread);
@@ -111,7 +115,7 @@ FEX::HLE::ThreadStateObject* CreateNewThread(FEXCore::Context::Context* CTX, FEX
   }
 
   // Return the new threads TID
-  uint64_t Result = NewThread->Thread->ThreadManager.GetTID();
+  uint64_t Result = NewThread->ThreadInfo.TID;
 
   // Sets the child TID to pointer in ParentTID
   if (flags & CLONE_PARENT_SETTID) {
@@ -120,7 +124,7 @@ FEX::HLE::ThreadStateObject* CreateNewThread(FEXCore::Context::Context* CTX, FEX
 
   // Sets the child TID to the pointer in ChildTID
   if (flags & CLONE_CHILD_SETTID) {
-    NewThread->Thread->ThreadManager.set_child_tid = reinterpret_cast<int32_t*>(args->args.child_tid);
+    NewThread->ThreadInfo.set_child_tid = reinterpret_cast<int32_t*>(args->args.child_tid);
     *reinterpret_cast<pid_t*>(args->args.child_tid) = Result;
   }
 
@@ -128,7 +132,7 @@ FEX::HLE::ThreadStateObject* CreateNewThread(FEXCore::Context::Context* CTX, FEX
   // Additionally wakeup a futex at that address
   // Address /may/ be changed with SET_TID_ADDRESS syscall
   if (flags & CLONE_CHILD_CLEARTID) {
-    NewThread->Thread->ThreadManager.clear_child_tid = reinterpret_cast<int32_t*>(args->args.child_tid);
+    NewThread->ThreadInfo.clear_child_tid = reinterpret_cast<int32_t*>(args->args.child_tid);
   }
 
   // clone3 flag
@@ -209,9 +213,9 @@ uint64_t HandleNewClone(FEX::HLE::ThreadStateObject* Thread, FEXCore::Context::C
   }
 
   // Depending on clone settings, our TID and PID could have changed
-  Thread->Thread->ThreadManager.TID = FHU::Syscalls::gettid();
-  Thread->Thread->ThreadManager.PID = ::getpid();
-  FEX::HLE::_SyscallHandler->FM.UpdatePID(Thread->Thread->ThreadManager.PID);
+  Thread->ThreadInfo.TID = FHU::Syscalls::gettid();
+  Thread->ThreadInfo.PID = ::getpid();
+  FEX::HLE::_SyscallHandler->FM.UpdatePID(Thread->ThreadInfo.PID);
 
   if (CreatedNewThreadObject) {
     FEX::HLE::_SyscallHandler->TM.TrackThread(Thread);
@@ -265,6 +269,7 @@ uint64_t ForkGuest(FEXCore::Core::InternalThreadState* Thread, FEXCore::Core::Cp
   const bool IsChild = Result == 0;
 
   if (IsChild) {
+    auto ThreadObject = static_cast<FEX::HLE::ThreadStateObject*>(Thread->FrontendPtr);
     // Unlock the mutexes on both sides of the fork
     FEX::HLE::_SyscallHandler->UnlockAfterFork(Frame->Thread, IsChild);
 
@@ -272,10 +277,10 @@ uint64_t ForkGuest(FEXCore::Core::InternalThreadState* Thread, FEXCore::Core::Cp
 
     // Child
     // update the internal TID
-    Thread->ThreadManager.TID = FHU::Syscalls::gettid();
-    Thread->ThreadManager.PID = ::getpid();
-    FEX::HLE::_SyscallHandler->FM.UpdatePID(Thread->ThreadManager.PID);
-    Thread->ThreadManager.clear_child_tid = nullptr;
+    ThreadObject->ThreadInfo.TID = FHU::Syscalls::gettid();
+    ThreadObject->ThreadInfo.PID = ::getpid();
+    FEX::HLE::_SyscallHandler->FM.UpdatePID(ThreadObject->ThreadInfo.PID);
+    ThreadObject->ThreadInfo.clear_child_tid = nullptr;
 
     // only a  single thread running so no need to remove anything from the thread array
 
@@ -301,15 +306,15 @@ uint64_t ForkGuest(FEXCore::Core::InternalThreadState* Thread, FEXCore::Core::Cp
 
     // Sets the child TID to the pointer in ChildTID
     if (flags & CLONE_CHILD_SETTID) {
-      Thread->ThreadManager.set_child_tid = child_tid;
-      *child_tid = Thread->ThreadManager.TID;
+      ThreadObject->ThreadInfo.set_child_tid = child_tid;
+      *child_tid = ThreadObject->ThreadInfo.TID;
     }
 
     // When the thread exits, clear the child thread ID at ChildTID
     // Additionally wakeup a futex at that address
     // Address /may/ be changed with SET_TID_ADDRESS syscall
     if (flags & CLONE_CHILD_CLEARTID) {
-      Thread->ThreadManager.clear_child_tid = child_tid;
+      ThreadObject->ThreadInfo.clear_child_tid = child_tid;
     }
 
     // the rest of the context remains as is, this thread will keep executing
@@ -387,10 +392,10 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
                                 FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator::HardDisable();
                                 auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
 
-                                if (Thread->ThreadManager.clear_child_tid) {
-                                  std::atomic<uint32_t>* Addr = reinterpret_cast<std::atomic<uint32_t>*>(Thread->ThreadManager.clear_child_tid);
+                                if (ThreadObject->ThreadInfo.clear_child_tid) {
+                                  std::atomic<uint32_t>* Addr = reinterpret_cast<std::atomic<uint32_t>*>(ThreadObject->ThreadInfo.clear_child_tid);
                                   Addr->store(0);
-                                  syscall(SYSCALL_DEF(futex), Thread->ThreadManager.clear_child_tid, FUTEX_WAKE, ~0ULL, 0, 0, 0);
+                                  syscall(SYSCALL_DEF(futex), ThreadObject->ThreadInfo.clear_child_tid, FUTEX_WAKE, ~0ULL, 0, 0, 0);
                                 }
 
                                 Thread->StatusCode = status;
@@ -481,9 +486,9 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
 
   REGISTER_SYSCALL_IMPL_FLAGS(set_tid_address, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
                               [](FEXCore::Core::CpuStateFrame* Frame, int* tidptr) -> uint64_t {
-                                auto Thread = Frame->Thread;
-                                Thread->ThreadManager.clear_child_tid = tidptr;
-                                return Thread->ThreadManager.GetTID();
+                                auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
+                                ThreadObject->ThreadInfo.clear_child_tid = tidptr;
+                                return ThreadObject->ThreadInfo.TID;
                               });
 
   REGISTER_SYSCALL_IMPL_FLAGS(exit_group, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY | SyscallFlags::NORETURN,

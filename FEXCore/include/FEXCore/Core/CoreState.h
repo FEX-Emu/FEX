@@ -3,7 +3,6 @@
 
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/IR/IR.h>
-#include <FEXCore/HLE/Linux/ThreadManagement.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/Telemetry.h>
 

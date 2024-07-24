@@ -23,7 +23,6 @@ $end_info$
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/InternalThreadState.h>
-#include <FEXCore/HLE/Linux/ThreadManagement.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/FileLoading.h>
@@ -324,7 +323,7 @@ fextl::string GdbServer::readRegs() {
   bool Found = false;
 
   for (auto& Thread : *Threads) {
-    if (Thread->Thread->ThreadManager.GetTID() != CurrentDebuggingThread) {
+    if (Thread->ThreadInfo.TID != CurrentDebuggingThread) {
       continue;
     }
     memcpy(&state, Thread->Thread->CurrentFrame, sizeof(state));
@@ -375,7 +374,7 @@ GdbServer::HandledPacketType GdbServer::readReg(const fextl::string& packet) {
   bool Found = false;
 
   for (auto& Thread : *Threads) {
-    if (Thread->Thread->ThreadManager.GetTID() != CurrentDebuggingThread) {
+    if (Thread->ThreadInfo.TID != CurrentDebuggingThread) {
       continue;
     }
     memcpy(&state, Thread->Thread->CurrentFrame, sizeof(state));
@@ -722,8 +721,8 @@ GdbServer::HandledPacketType GdbServer::handleXfer(const fextl::string& packet) 
       ss << "<threads>\n";
       for (auto& Thread : *Threads) {
         // Thread id is in hex without 0x prefix
-        const auto ThreadName = getThreadName(Thread->Thread->ThreadManager.GetTID());
-        ss << "<thread id=\"" << std::hex << Thread->Thread->ThreadManager.GetTID() << "\"";
+        const auto ThreadName = getThreadName(Thread->ThreadInfo.TID);
+        ss << "<thread id=\"" << std::hex << Thread->ThreadInfo.TID << "\"";
         if (!ThreadName.empty()) {
           ss << " name=\"" << ThreadName << "\"";
         }
@@ -962,7 +961,7 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string& packet)
     ss << "m";
     for (size_t i = 0; i < Threads->size(); ++i) {
       auto Thread = Threads->at(i);
-      ss << std::hex << Thread->Thread->ThreadManager.TID;
+      ss << std::hex << Thread->ThreadInfo.TID;
       if (i != (Threads->size() - 1)) {
         ss << ",";
       }
@@ -985,7 +984,7 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string& packet)
     // Returns the current Thread ID
     auto Threads = SyscallHandler->TM.GetThreads();
     fextl::ostringstream ss;
-    ss << "m" << std::hex << Threads->at(0)->Thread->ThreadManager.TID;
+    ss << "m" << std::hex << Threads->at(0)->ThreadInfo.TID;
     return {ss.str(), HandledPacketType::TYPE_ACK};
   }
   if (match("QStartNoAckMode")) {

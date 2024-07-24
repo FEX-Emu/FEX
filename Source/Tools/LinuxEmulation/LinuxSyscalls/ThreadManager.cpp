@@ -9,6 +9,14 @@ namespace FEX::HLE {
 FEX::HLE::ThreadStateObject*
 ThreadManager::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState* NewThreadState, uint64_t ParentTID) {
   auto ThreadStateObject = new FEX::HLE::ThreadStateObject;
+
+  ThreadStateObject->ThreadInfo.parent_tid = ParentTID;
+  ThreadStateObject->ThreadInfo.PID = ::getpid();
+
+  if (ParentTID == 0) {
+    ThreadStateObject->ThreadInfo.TID = FHU::Syscalls::gettid();
+  }
+
   ThreadStateObject->Thread = CTX->CreateThread(InitialRIP, StackPointer, NewThreadState, ParentTID);
   ThreadStateObject->Thread->FrontendPtr = ThreadStateObject;
 
@@ -135,10 +143,10 @@ void ThreadManager::Stop(bool IgnoreCurrentThread) {
   {
     std::lock_guard lk(ThreadCreationMutex);
     for (auto& Thread : Threads) {
-      if (IgnoreCurrentThread && Thread->Thread->ThreadManager.TID == tid) {
+      if (IgnoreCurrentThread && Thread->ThreadInfo.TID == tid) {
         // If we are callign stop from the current thread then we can ignore sending signals to this thread
         // This means that this thread is already gone
-      } else if (Thread->Thread->ThreadManager.TID == tid) {
+      } else if (Thread->ThreadInfo.TID == tid) {
         // We need to save the current thread for last to ensure all threads receive their stop signals
         CurrentThread = Thread;
         continue;
