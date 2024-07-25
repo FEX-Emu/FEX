@@ -34,11 +34,6 @@ namespace CodeSerialize {
 }
 
 namespace CPU {
-  struct CPUBackendFeatures {
-    bool SupportsFlags = false;
-    bool SupportsVTBL2 = false;
-  };
-
   class CPUBackend {
   public:
     struct CodeBuffer {

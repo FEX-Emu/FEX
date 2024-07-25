@@ -885,11 +885,4 @@ fextl::unique_ptr<CPUBackend> CreateArm64JITCore(FEXCore::Context::ContextImpl* 
   return fextl::make_unique<Arm64JITCore>(ctx, Thread);
 }
 
-CPUBackendFeatures GetArm64JITBackendFeatures() {
-  return CPUBackendFeatures {
-    .SupportsFlags = true,
-    .SupportsVTBL2 = true,
-  };
-}
-
 } // namespace FEXCore::CPU

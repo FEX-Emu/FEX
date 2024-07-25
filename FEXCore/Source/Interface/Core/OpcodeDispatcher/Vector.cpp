@@ -1432,13 +1432,10 @@ Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, size_t DstSize, size_t ElementSize
         return _VZip(DstSize, 8, DupSrc1, DupSrc2);
       }
       default:
-        // Use a TBL2 operation to handle this implementation. If the backend supports it.
-        if (CTX->BackendFeatures.SupportsVTBL2) {
-          auto LookupIndexes =
-            LoadAndCacheIndexedNamedVectorConstant(DstSize, FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_SHUFPS, Shuffle * 16);
-          return _VTBL2(DstSize, Src1, Src2, LookupIndexes);
-        }
-        break;
+        // Use a TBL2 operation to handle this implementation.
+        auto LookupIndexes =
+          LoadAndCacheIndexedNamedVectorConstant(DstSize, FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_SHUFPS, Shuffle * 16);
+        return _VTBL2(DstSize, Src1, Src2, LookupIndexes);
       }
     } else {
       switch (Shuffle & 0b11) {

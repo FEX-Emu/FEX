@@ -309,14 +309,6 @@ void ContextImpl::SetFlagsFromCompactedEFLAGS(FEXCore::Core::InternalThreadState
 
 bool ContextImpl::InitCore() {
   // Initialize the CPU core signal handlers & DispatcherConfig
-  switch (Config.Core) {
-  case FEXCore::Config::CONFIG_IRJIT: BackendFeatures = FEXCore::CPU::GetArm64JITBackendFeatures(); break;
-  case FEXCore::Config::CONFIG_CUSTOM:
-    // Do nothing
-    break;
-  default: LogMan::Msg::EFmt("Unknown core configuration"); return false;
-  }
-
   Dispatcher = FEXCore::CPU::Dispatcher::Create(this);
 
   // Set up the SignalDelegator config since core is initialized.
