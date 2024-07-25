@@ -929,7 +929,7 @@ void ContextImpl::ExecutionThread(FEXCore::Core::InternalThreadState* Thread) {
     Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
 
     if (CustomExitHandler) {
-      CustomExitHandler(Thread->ThreadManager.TID, Thread->ExitReason);
+      CustomExitHandler(Thread, Thread->ExitReason);
     }
   }
 

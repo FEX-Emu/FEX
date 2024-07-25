@@ -102,7 +102,7 @@ using CodeRangeInvalidationFn = std::function<void(uint64_t start, uint64_t Leng
 using CustomCPUFactoryType = std::function<fextl::unique_ptr<CPU::CPUBackend>(Context*, Core::InternalThreadState* Thread)>;
 using CustomIREntrypointHandler = std::function<void(uintptr_t Entrypoint, IR::IREmitter*)>;
 
-using ExitHandler = std::function<void(uint64_t ThreadId, ExitReason)>;
+using ExitHandler = std::function<void(Core::InternalThreadState* Thread, ExitReason)>;
 
 using AOTIRCodeFileWriterFn = std::function<void(const fextl::string& fileid, const fextl::string& filename)>;
 using AOTIRLoaderCBFn = std::function<int(const fextl::string&)>;
