@@ -378,8 +378,6 @@ public:
     return ExitOnHLT;
   }
 
-  FEXCore::CPU::CPUBackendFeatures BackendFeatures;
-
 protected:
   void UpdateAtomicTSOEmulationConfig() {
     if (SupportsHardwareTSO) {
