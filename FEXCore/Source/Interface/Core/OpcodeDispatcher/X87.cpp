@@ -99,7 +99,7 @@ void OpDispatchBuilder::FLD_Const(OpcodeArgs, NamedVectorConstant Constant) {
 void OpDispatchBuilder::FILD(OpcodeArgs) {
   size_t ReadWidth = GetSrcSize(Op);
   // Read from memory
-  auto* Data = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], ReadWidth, Op->Flags);
+  Ref Data = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], ReadWidth, Op->Flags);
 
   // Sign extend to 64bits
   if (ReadWidth != 8) {
@@ -316,7 +316,7 @@ Ref OpDispatchBuilder::GetX87FTW_Helper() {
   Ref FTW = _Constant(0);
 
   for (int i = 0; i < 8; i++) {
-    auto* const RegTag = GetX87Tag(_Constant(i), LoadContext(AbridgedFTWIndex));
+    Ref RegTag = GetX87Tag(_Constant(i), LoadContext(AbridgedFTWIndex));
     FTW = _Orlshl(OpSize::i32Bit, FTW, RegTag, i * 2);
   }
 
@@ -540,8 +540,8 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
   // ST7 broken in to two parts
   // Lower 64bits [63:0]
   // upper 16 bits [79:64]
-  OrderedNode* Reg = _LoadMem(FPRClass, 8, Mem, _Constant((Size * 7) + (10 * 7)), 1, MEM_OFFSET_SXTX, 1);
-  OrderedNode* RegHigh = _LoadMem(FPRClass, 2, Mem, _Constant((Size * 7) + (10 * 7) + 8), 1, MEM_OFFSET_SXTX, 1);
+  Ref Reg = _LoadMem(FPRClass, 8, Mem, _Constant((Size * 7) + (10 * 7)), 1, MEM_OFFSET_SXTX, 1);
+  Ref RegHigh = _LoadMem(FPRClass, 2, Mem, _Constant((Size * 7) + (10 * 7) + 8), 1, MEM_OFFSET_SXTX, 1);
   Reg = _VInsElement(16, 2, 4, 0, Reg, RegHigh);
   _StoreContextIndexed(Reg, Top, 16, MMBaseOffset(), 16, FPRClass);
 }
@@ -587,7 +587,7 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs, size_t Width, bool Integer, OpDispatch
   Ref arg {};
   Ref b {};
 
-  Ref Res = nullptr;
+  Ref Res {};
   if (Op->Src[0].IsNone()) {
     // Implicit arg
     uint8_t Offset = Op->OP & 7;
