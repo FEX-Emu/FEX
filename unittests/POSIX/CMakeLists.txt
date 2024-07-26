@@ -20,7 +20,7 @@ foreach(POSIX_TEST ${POSIX_TESTS})
     "${CMAKE_BINARY_DIR}/Bin/FEXLoader"
     "-o" "stderr" "--no-silent" "-c" "irjit" "-n" "500" "--"
     "${POSIX_TEST}")
-
+  set_property(TEST "${TEST_NAME}.jit.posix" APPEND PROPERTY SKIP_RETURN_CODE 125)
 endforeach()
 
 add_custom_target(

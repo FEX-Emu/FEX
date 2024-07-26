@@ -130,8 +130,8 @@ if (flake_tests.get(test_name)):
     TryCount = 5
 
 if (disabled_tests.get(test_name)):
-    print(f"Test {test_name} is disabled")
-    sys.exit(0)
+    # This error code tells ctest that the test was skipped
+    sys.exit(125)
 
 # expect zero by default
 if (not test_name in expected_output):

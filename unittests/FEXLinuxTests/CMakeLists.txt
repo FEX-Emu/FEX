@@ -79,7 +79,9 @@ function(AddTests Tests BinDirectory Bitness)
         "${TEST_CASE}"
         "host"
         "${BIN_PATH}")
+      set_property(TEST "${TEST_CASE}.host.flt" APPEND PROPERTY SKIP_RETURN_CODE 125)
     endif()
+    set_property(TEST "${TEST_CASE}.jit.flt" APPEND PROPERTY SKIP_RETURN_CODE 125)
   endforeach()
 endfunction()
 
