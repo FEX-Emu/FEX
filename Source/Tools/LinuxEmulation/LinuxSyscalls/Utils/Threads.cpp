@@ -5,28 +5,8 @@
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Utils/Threads.h>
 
-#include <FEXCore/fextl/deque.h>
-
 namespace FEX::LinuxEmulation::Threads {
-// Stack pool handling
-struct StackPoolItem {
-  void* Ptr;
-  size_t Size;
-};
-
-struct DeadStackPoolItem {
-  void* Ptr;
-  size_t Size;
-  bool ReadyToBeReaped;
-};
-
-std::mutex DeadStackPoolMutex {};
-std::mutex LiveStackPoolMutex {};
-
-static fextl::deque<DeadStackPoolItem> DeadStackPool {};
-static fextl::deque<StackPoolItem> LiveStackPool {};
-
-void* AllocateStackObject() {
+void* StackTracker::AllocateStackObject() {
   std::lock_guard lk {DeadStackPoolMutex};
   // Keep the first item in the stack pool
   void* Ptr {};
@@ -56,18 +36,18 @@ void* AllocateStackObject() {
   return Ptr;
 }
 
-bool* AddStackToDeadPool(void* Ptr) {
+bool* StackTracker::AddStackToDeadPool(void* Ptr) {
   std::lock_guard lk {DeadStackPoolMutex};
   auto& it = DeadStackPool.emplace_back(DeadStackPoolItem {Ptr, FEX::LinuxEmulation::Threads::STACK_SIZE, false});
   return &it.ReadyToBeReaped;
 }
 
-void AddStackToLivePool(void* Ptr) {
+void StackTracker::AddStackToLivePool(void* Ptr) {
   std::lock_guard lk {LiveStackPoolMutex};
   LiveStackPool.emplace_back(StackPoolItem {Ptr, FEX::LinuxEmulation::Threads::STACK_SIZE});
 }
 
-void RemoveStackFromLivePool(void* Ptr) {
+void StackTracker::RemoveStackFromLivePool(void* Ptr) {
   std::lock_guard lk {LiveStackPoolMutex};
   for (auto it = LiveStackPool.begin(); it != LiveStackPool.end(); ++it) {
     if (it->Ptr == Ptr) {
@@ -77,8 +57,54 @@ void RemoveStackFromLivePool(void* Ptr) {
   }
 }
 
+void StackTracker::CleanupAfterFork_PThread() {
+  // We don't need to pull the mutex here
+  // After a fork we are the only thread running
+  // Just need to make sure not to delete our own stack
+  uintptr_t StackLocation = reinterpret_cast<uintptr_t>(alloca(0));
+
+  auto ClearStackPool = [StackLocation](auto& StackPool) {
+    for (auto it = StackPool.begin(); it != StackPool.end();) {
+      auto& Item = *it;
+      uintptr_t ItemStack = reinterpret_cast<uintptr_t>(Item.Ptr);
+      if (ItemStack <= StackLocation && (ItemStack + Item.Size) > StackLocation) {
+        // This is our stack item, skip it
+        ++it;
+      } else {
+        // Untracked stack. Clean it up
+        FEXCore::Allocator::munmap(Item.Ptr, Item.Size);
+        it = StackPool.erase(it);
+      }
+    }
+  };
+
+  // Clear both dead stacks and live stacks
+  ClearStackPool(DeadStackPool);
+  ClearStackPool(LiveStackPool);
+
+  LogMan::Throw::AFmt((DeadStackPool.size() + LiveStackPool.size()) <= 1, "After fork we should only have zero or one tracked stacks!");
+}
+
+void StackTracker::Shutdown() {
+  std::lock_guard lk {DeadStackPoolMutex};
+  std::lock_guard lk2 {LiveStackPoolMutex};
+  // Erase all the dead stack pools
+  for (auto& Item : DeadStackPool) {
+    FEXCore::Allocator::munmap(Item.Ptr, Item.Size);
+  }
+
+  // Now clean up any that are considered to still be live
+  // We are in shutdown phase, everything in the process is dead
+  for (auto& Item : LiveStackPool) {
+    FEXCore::Allocator::munmap(Item.Ptr, Item.Size);
+  }
+
+  DeadStackPool.clear();
+  LiveStackPool.clear();
+}
+
 [[noreturn]]
-void DeallocateStackObjectAndExit(void* Ptr, int Status) {
+void StackTracker::DeallocateStackObjectAndExit(void* Ptr, int Status) {
   RemoveStackFromLivePool(Ptr);
   auto ReadyToBeReaped = AddStackToDeadPool(Ptr);
   *ReadyToBeReaped = true;
@@ -157,14 +183,15 @@ namespace PThreads {
 
   class PThread final : public FEXCore::Threads::Thread {
   public:
-    PThread(FEXCore::Threads::ThreadFunc Func, void* Arg)
-      : UserFunc {Func}
+    PThread(StackTracker* STracker, FEXCore::Threads::ThreadFunc Func, void* Arg)
+      : STracker {STracker}
+      , UserFunc {Func}
       , UserArg {Arg} {
       pthread_attr_t Attr {};
-      Stack = AllocateStackObject();
+      Stack = STracker->AllocateStackObject();
       // pthreads allocates its dtv region behind our back and there is nothing we can do about it.
       FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
-      AddStackToLivePool(Stack);
+      STracker->AddStackToLivePool(Stack);
       pthread_attr_init(&Attr);
       // Allocate a minimum size stack through pthreads, then stack pivot to FEX's allocated stack.
       // This is required due to a race condition with pthread's DTV/TLS regions when a stack is reused before pthreads deletes that thread's
@@ -216,8 +243,13 @@ namespace PThreads {
       return Stack;
     }
 
+    StackTracker* GetStackTracker() const {
+      return STracker;
+    }
+
   private:
     pthread_t Thread;
+    StackTracker* STracker;
     FEXCore::Threads::ThreadFunc UserFunc;
     void* UserArg;
     void* Stack {};
@@ -226,9 +258,11 @@ namespace PThreads {
   [[noreturn]]
   void* InitializeThread(void* Ptr) {
     void* StackBase {};
+    StackTracker* STracker {};
     {
       PThread* Thread {reinterpret_cast<PThread*>(Ptr)};
       StackBase = Thread->GetPivotStack();
+      STracker = Thread->GetStackTracker();
 
       // Run the user function.
       // `Thread` object is dead after this function returns.
@@ -239,68 +273,48 @@ namespace PThreads {
     // TLS/DTV teardown is something FEX can't control. Disable glibc checking when we leave a pthread.
     FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator::HardDisable();
 
-    DeallocateStackObjectAndExit(StackBase, 0);
+    STracker->DeallocateStackObjectAndExit(StackBase, 0);
 
     FEX_UNREACHABLE;
   }
 
+  StackTracker* STracker {};
+
   fextl::unique_ptr<FEXCore::Threads::Thread> CreateThread_PThread(FEXCore::Threads::ThreadFunc Func, void* Arg) {
-    return fextl::make_unique<PThread>(Func, Arg);
+    return fextl::make_unique<PThread>(STracker, Func, Arg);
   }
 
   void CleanupAfterFork_PThread() {
-    // We don't need to pull the mutex here
-    // After a fork we are the only thread running
-    // Just need to make sure not to delete our own stack
-    uintptr_t StackLocation = reinterpret_cast<uintptr_t>(alloca(0));
-
-    auto ClearStackPool = [&](auto& StackPool) {
-      for (auto it = StackPool.begin(); it != StackPool.end();) {
-        auto& Item = *it;
-        uintptr_t ItemStack = reinterpret_cast<uintptr_t>(Item.Ptr);
-        if (ItemStack <= StackLocation && (ItemStack + Item.Size) > StackLocation) {
-          // This is our stack item, skip it
-          ++it;
-        } else {
-          // Untracked stack. Clean it up
-          FEXCore::Allocator::munmap(Item.Ptr, Item.Size);
-          it = StackPool.erase(it);
-        }
-      }
-    };
-
-    // Clear both dead stacks and live stacks
-    ClearStackPool(DeadStackPool);
-    ClearStackPool(LiveStackPool);
-
-    LogMan::Throw::AFmt((DeadStackPool.size() + LiveStackPool.size()) <= 1, "After fork we should only have zero or one tracked stacks!");
+    STracker->CleanupAfterFork_PThread();
   }
+
 }; // namespace PThreads
 
-void SetupThreadHandlers() {
+fextl::unique_ptr<StackTracker> SetupThreadHandlers() {
   FEXCore::Threads::Pointers Ptrs = {
     .CreateThread = PThreads::CreateThread_PThread,
     .CleanupAfterFork = PThreads::CleanupAfterFork_PThread,
   };
 
   FEXCore::Threads::Thread::SetInternalPointers(Ptrs);
+
+  auto STracker = fextl::make_unique<StackTracker>();
+  PThreads::STracker = STracker.get();
+  return STracker;
 }
 
-void Shutdown() {
-  std::lock_guard lk {DeadStackPoolMutex};
-  std::lock_guard lk2 {LiveStackPoolMutex};
-  // Erase all the dead stack pools
-  for (auto& Item : DeadStackPool) {
-    FEXCore::Allocator::munmap(Item.Ptr, Item.Size);
-  }
+void* AllocateStackObject() {
+  return PThreads::STracker->AllocateStackObject();
+}
 
-  // Now clean up any that are considered to still be live
-  // We are in shutdown phase, everything in the process is dead
-  for (auto& Item : LiveStackPool) {
-    FEXCore::Allocator::munmap(Item.Ptr, Item.Size);
-  }
+[[noreturn]]
+void DeallocateStackObjectAndExit(void* Ptr, int Status) {
+  PThreads::STracker->DeallocateStackObjectAndExit(Ptr, Status);
+}
 
-  DeadStackPool.clear();
-  LiveStackPool.clear();
+void Shutdown(fextl::unique_ptr<StackTracker> STracker) {
+  STracker->Shutdown();
+  STracker.reset();
+  PThreads::STracker = nullptr;
 }
 } // namespace FEX::LinuxEmulation::Threads

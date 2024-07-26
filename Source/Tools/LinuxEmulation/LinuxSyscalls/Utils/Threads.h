@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include <FEXCore/fextl/deque.h>
+#include <FEXCore/fextl/memory.h>
+
 #include <cstddef>
 
 namespace FEX::LinuxEmulation::Threads {
@@ -8,6 +11,39 @@ namespace FEX::LinuxEmulation::Threads {
  * @brief Size of the stack that this interface creates.
  */
 constexpr size_t STACK_SIZE = 8 * 1024 * 1024;
+// Stack pool handling
+struct StackPoolItem {
+  void* Ptr;
+  size_t Size;
+};
+
+struct DeadStackPoolItem {
+  void* Ptr;
+  size_t Size;
+  bool ReadyToBeReaped;
+};
+
+class StackTracker final {
+public:
+  void* AllocateStackObject();
+  bool* AddStackToDeadPool(void* Ptr);
+  void AddStackToLivePool(void* Ptr);
+  void RemoveStackFromLivePool(void* Ptr);
+
+  [[noreturn]]
+  void DeallocateStackObjectAndExit(void* Ptr, int Status);
+
+  void CleanupAfterFork_PThread();
+
+  void Shutdown();
+
+private:
+  std::mutex DeadStackPoolMutex {};
+  std::mutex LiveStackPoolMutex {};
+
+  fextl::deque<DeadStackPoolItem> DeadStackPool {};
+  fextl::deque<StackPoolItem> LiveStackPool {};
+};
 
 /**
  * @brief Allocates a stack object from the internally managed stack pool.
@@ -28,10 +64,10 @@ void DeallocateStackObjectAndExit(void* Ptr, int Status);
 /**
  * @brief Registers thread creation handlers with FEXCore.
  */
-void SetupThreadHandlers();
+fextl::unique_ptr<StackTracker> SetupThreadHandlers();
 
 /**
  * @brief Cleans up any remaining stack objects in the pools.
  */
-void Shutdown();
+void Shutdown(fextl::unique_ptr<StackTracker> STracker);
 } // namespace FEX::LinuxEmulation::Threads
