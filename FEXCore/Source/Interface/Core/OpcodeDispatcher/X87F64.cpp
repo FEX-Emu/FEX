@@ -42,29 +42,13 @@ class OrderedNode;
 // FST(register to register)
 // FCHS
 
-// State loading duplicated from X87.cpp, setting host rounding mode
-// See issue
 void OpDispatchBuilder::FNINITF64(OpcodeArgs) {
-  // FIXME: almost a duplicate of x87 version.
-
-  // Init FCW to 0x037F
-  auto NewFCW = _Constant(16, 0x037F);
   // Init host rounding mode to zero
   auto Zero = _Constant(0);
   _SetRoundingMode(Zero, false, Zero);
-  _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
-  // Init FSW to 0
-  SetX87Top(Zero);
-  // Tags all get marked as invalid
-  StoreContext(AbridgedFTWIndex, Zero);
-
-  _InitStack();
-
-  SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(Zero);
-  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(Zero);
-  SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(Zero);
-  SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(Zero);
+  // Call generic version
+  FNINIT(Op);
 }
 
 void OpDispatchBuilder::X87LDENVF64(OpcodeArgs) {
@@ -494,7 +478,7 @@ void OpDispatchBuilder::X87FNSAVEF64(OpcodeArgs) {
   _StoreMem(FPRClass, 2, topBytes, Mem, _Constant((Size * 7) + (7 * 10) + 8), 1, MEM_OFFSET_SXTX, 1);
 
   // reset to default
-  FNINIT(Op);
+  FNINITF64(Op);
 }
 
 // This function converts from F80 on load for compatibility
