@@ -55,8 +55,8 @@ for i in range(len(sys.argv) - args_start_index):
     RunnerArgs.append(sys.argv[args_start_index + i])
 
 if (disabled_tests.get(current_test)):
-    print("Skipping", current_test)
-    sys.exit(0)
+    # This error code tells ctest that the test was skipped
+    sys.exit(125)
 
 # Run the test and wait for it to end to get the result
 Process = subprocess.Popen(RunnerArgs)
@@ -74,4 +74,3 @@ if (known_failures.get(current_test)):
 else:
     # Just return the result code if we don't have this test as a known failure
     sys.exit(ResultCode);
-
