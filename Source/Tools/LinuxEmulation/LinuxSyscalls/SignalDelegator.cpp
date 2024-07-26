@@ -14,7 +14,6 @@ $end_info$
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/InternalThreadState.h>
-#include <FEXCore/HLE/Linux/ThreadManagement.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
@@ -1299,12 +1298,13 @@ bool SignalDelegator::HandleSignalPause(FEXCore::Core::InternalThreadState* Thre
 }
 
 void SignalDelegator::SignalThread(FEXCore::Core::InternalThreadState* Thread, FEXCore::Core::SignalEvent Event) {
+  auto ThreadObject = static_cast<const FEX::HLE::ThreadStateObject*>(Thread->FrontendPtr);
   if (Event == FEXCore::Core::SignalEvent::Pause && Thread->RunningEvents.Running.load() == false) {
     // Skip signaling a thread if it is already paused.
     return;
   }
   Thread->SignalReason.store(Event);
-  FHU::Syscalls::tgkill(Thread->ThreadManager.PID, Thread->ThreadManager.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
+  FHU::Syscalls::tgkill(ThreadObject->ThreadInfo.PID, ThreadObject->ThreadInfo.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
 }
 
 /**  @} */
@@ -1897,12 +1897,14 @@ uint64_t SignalDelegator::RegisterGuestSigAltStack(const stack_t* ss, stack_t* o
 }
 
 static void CheckForPendingSignals(FEXCore::Core::InternalThreadState* Thread) {
+  auto ThreadObject = static_cast<const FEX::HLE::ThreadStateObject*>(Thread->FrontendPtr);
+
   // Do we have any pending signals that became unmasked?
   uint64_t PendingSignals = ~ThreadData.CurrentSignalMask.Val & ThreadData.PendingSignals;
   if (PendingSignals != 0) {
     for (int i = 0; i < 64; ++i) {
       if (PendingSignals & (1ULL << i)) {
-        FHU::Syscalls::tgkill(Thread->ThreadManager.PID, Thread->ThreadManager.TID, i + 1);
+        FHU::Syscalls::tgkill(ThreadObject->ThreadInfo.PID, ThreadObject->ThreadInfo.TID, i + 1);
         // We might not even return here which is spooky
       }
     }

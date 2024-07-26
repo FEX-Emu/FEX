@@ -26,7 +26,6 @@ $end_info$
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Debug/InternalThreadState.h>
-#include <FEXCore/HLE/Linux/ThreadManagement.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/CompilerDefs.h>
@@ -629,7 +628,7 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame* Frame, FEX::HLE::clone3_args
     auto NewThread = FEX::HLE::CreateNewThread(Thread->CTX, Frame, args);
 
     // Return the new threads TID
-    uint64_t Result = NewThread->Thread->ThreadManager.GetTID();
+    uint64_t Result = NewThread->ThreadInfo.TID;
 
     // Actually start the thread
     FEX::HLE::_SyscallHandler->TM.RunThread(NewThread);

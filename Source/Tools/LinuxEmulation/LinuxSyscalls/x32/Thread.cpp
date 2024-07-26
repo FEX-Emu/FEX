@@ -16,7 +16,6 @@ $end_info$
 
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Debug/InternalThreadState.h>
-#include <FEXCore/HLE/Linux/ThreadManagement.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <errno.h>
@@ -170,19 +169,19 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
       return -EINVAL;
     }
 
-    auto Thread = Frame->Thread;
+    auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
     // Retain the robust list head but don't give it to the kernel
     // The kernel would break if it tried parsing a 32bit robust list from a 64bit process
-    Thread->ThreadManager.robust_list_head = reinterpret_cast<uint64_t>(head);
+    ThreadObject->ThreadInfo.robust_list_head = reinterpret_cast<uint64_t>(head);
     return 0;
   });
 
   REGISTER_SYSCALL_IMPL_X32(
     get_robust_list, [](FEXCore::Core::CpuStateFrame* Frame, int pid, struct robust_list_head** head, uint32_t* len_ptr) -> uint64_t {
-      auto Thread = Frame->Thread;
+      auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
       // Give the robust list back to the application
       // Steam specifically checks to make sure the robust list is set
-      *(uint32_t*)head = (uint32_t)Thread->ThreadManager.robust_list_head;
+      *(uint32_t*)head = (uint32_t)ThreadObject->ThreadInfo.robust_list_head;
       *len_ptr = 12;
       return 0;
     });

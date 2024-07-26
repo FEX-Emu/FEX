@@ -38,7 +38,6 @@ $end_info$
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/HLE/SourcecodeResolver.h>
-#include <FEXCore/HLE/Linux/ThreadManagement.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/Event.h>
 #include <FEXCore/Utils/File.h>
@@ -365,14 +364,15 @@ void ContextImpl::HandleCallback(FEXCore::Core::InternalThreadState* Thread, uin
 
 FEXCore::Context::ExitReason ContextImpl::RunUntilExit(FEXCore::Core::InternalThreadState* Thread) {
   ExecutionThread(Thread);
-  while (true) {
-    auto reason = Thread->ExitReason;
 
-    // Don't return if a custom exit handling the exit
-    if (!CustomExitHandler || reason == ExitReason::EXIT_SHUTDOWN) {
-      return reason;
-    }
+  CoreShuttingDown.store(true);
+
+  if (CustomExitHandler) {
+    CustomExitHandler(Thread, FEXCore::Context::ExitReason::EXIT_SHUTDOWN);
+    return Thread->ExitReason;
   }
+
+  return FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
 }
 
 void ContextImpl::ExecuteThread(FEXCore::Core::InternalThreadState* Thread) {
@@ -382,9 +382,6 @@ void ContextImpl::ExecuteThread(FEXCore::Core::InternalThreadState* Thread) {
 
 void ContextImpl::InitializeThreadTLSData(FEXCore::Core::InternalThreadState* Thread) {
   // Let's do some initial bookkeeping here
-  Thread->ThreadManager.TID = FHU::Syscalls::gettid();
-  Thread->ThreadManager.PID = ::getpid();
-
   if (ThunkHandler) {
     ThunkHandler->RegisterTLSState(Thread);
   }
@@ -438,7 +435,6 @@ ContextImpl::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::C
   }
 
   // Set up the thread manager state
-  Thread->ThreadManager.parent_tid = ParentTID;
   Thread->CurrentFrame->Thread = Thread;
 
   InitializeCompiler(Thread);
@@ -923,15 +919,6 @@ void ContextImpl::ExecutionThread(FEXCore::Core::InternalThreadState* Thread) {
 
   // If it is the parent thread that died then just leave
   FEX_TODO("This doesn't make sense when the parent thread doesn't outlive its children");
-
-  if (Thread->ThreadManager.parent_tid == 0) {
-    CoreShuttingDown.store(true);
-    Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
-
-    if (CustomExitHandler) {
-      CustomExitHandler(Thread, Thread->ExitReason);
-    }
-  }
 
 #ifndef _WIN32
   Alloc::OSAllocator::UninstallTLSData(Thread);

@@ -12,7 +12,6 @@ $end_info$
 
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Debug/InternalThreadState.h>
-#include <FEXCore/HLE/Linux/ThreadManagement.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/fextl/vector.h>
 

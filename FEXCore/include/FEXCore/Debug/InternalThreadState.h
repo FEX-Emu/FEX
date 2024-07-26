@@ -144,7 +144,6 @@ struct InternalThreadState : public FEXCore::Allocator::FEXAllocOperators {
 
   NonMovableUniquePtr<FEXCore::Frontend::Decoder> FrontendDecoder;
   NonMovableUniquePtr<FEXCore::IR::PassManager> PassManager;
-  FEXCore::HLE::ThreadManagement ThreadManager;
   NonMovableUniquePtr<JITSymbolBuffer> SymbolBuffer;
 
   int StatusCode {};

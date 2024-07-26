@@ -20,6 +20,15 @@ class SignalDelegator;
 
 struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
   FEXCore::Core::InternalThreadState* Thread;
+
+  struct {
+    uint32_t parent_tid;
+    uint32_t PID;
+    std::atomic<uint32_t> TID;
+    int32_t* set_child_tid {0};
+    int32_t* clear_child_tid {0};
+    uint64_t robust_list_head {0};
+  } ThreadInfo {};
 };
 
 class ThreadManager final {
