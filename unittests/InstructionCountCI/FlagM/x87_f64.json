@@ -4919,15 +4919,15 @@
         "0xdb 11b 0xe3 /4"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x37f",
-        "mov w21, #0x0",
-        "rbit w1, w21",
+        "mov w20, #0x0",
+        "rbit w1, w20",
         "lsr w1, w1, #30",
         "mrs x0, fpcr",
         "bfi x0, x1, #22, #2",
-        "lsr x1, x21, #2",
+        "lsr x1, x20, #2",
         "bfi x0, x1, #24, #1",
         "msr fpcr, x0",
+        "mov w20, #0x37f",
         "strh w20, [x28, #1296]",
         "strb wzr, [x28, #1019]",
         "strb wzr, [x28, #1016]",
@@ -6640,7 +6640,7 @@
       ]
     },
     "fnsave [rax]": {
-      "ExpectedInstructionCount": 327,
+      "ExpectedInstructionCount": 334,
       "Comment": [
         "0xdd !11b /6"
       ],
@@ -6963,6 +6963,13 @@
         "stur d2, [x4, #98]",
         "dup v2.8h, v2.h[4]",
         "str h2, [x4, #106]",
+        "rbit w1, w21",
+        "lsr w1, w1, #30",
+        "mrs x0, fpcr",
+        "bfi x0, x1, #22, #2",
+        "lsr x1, x21, #2",
+        "bfi x0, x1, #24, #1",
+        "msr fpcr, x0",
         "mov w20, #0x37f",
         "strh w20, [x28, #1296]",
         "strb wzr, [x28, #1019]",
