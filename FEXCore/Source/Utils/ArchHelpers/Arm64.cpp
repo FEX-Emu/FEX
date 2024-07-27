@@ -1891,6 +1891,50 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
   auto InlineHeader = reinterpret_cast<const CPU::CPUBackend::JITCodeHeader*>(BlockBegin);
   auto InlineTail = reinterpret_cast<CPU::CPUBackend::JITCodeTail*>(Frame->State.InlineJITBlockHeader + InlineHeader->OffsetToBlockTail);
 
+  ///< Check some instructions first that don't do any backpatching.
+  if ((Instr & ArchHelpers::Arm64::CASPAL_MASK) == ArchHelpers::Arm64::CASPAL_INST) { // CASPAL
+    if (ArchHelpers::Arm64::HandleCASPAL(Instr, GPRs)) {
+      // Skip this instruction now
+      return std::make_pair(true, 4);
+    } else {
+      LogMan::Msg::EFmt("Unhandled JIT SIGBUS CASPAL: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
+      return NotHandled;
+    }
+  } else if ((Instr & ArchHelpers::Arm64::CASAL_MASK) == ArchHelpers::Arm64::CASAL_INST) { // CASAL
+    if (ArchHelpers::Arm64::HandleCASAL(GPRs, Instr)) {
+      // Skip this instruction now
+      return std::make_pair(true, 4);
+    } else {
+      LogMan::Msg::EFmt("Unhandled JIT SIGBUS CASAL: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
+      return NotHandled;
+    }
+  } else if ((Instr & ArchHelpers::Arm64::ATOMIC_MEM_MASK) == ArchHelpers::Arm64::ATOMIC_MEM_INST) { // Atomic memory op
+    if (ArchHelpers::Arm64::HandleAtomicMemOp(Instr, GPRs)) {
+      // Skip this instruction now
+      return std::make_pair(true, 4);
+    } else {
+      uint8_t Op = (PC[0] >> 12) & 0xF;
+      LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}: PC: 0x{:x} Instruction: 0x{:08x}\n", Op, ProgramCounter, PC[0]);
+      return NotHandled;
+    }
+  } else if ((Instr & ArchHelpers::Arm64::LDAXR_MASK) == ArchHelpers::Arm64::LDAXR_INST) { // LDAXR*
+    uint64_t BytesToSkip = ArchHelpers::Arm64::HandleAtomicLoadstoreExclusive(ProgramCounter, GPRs);
+    if (BytesToSkip) {
+      // Skip this instruction now
+      return std::make_pair(true, BytesToSkip);
+    } else {
+      LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAXR: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
+      return NotHandled;
+    }
+  } else if ((Instr & ArchHelpers::Arm64::LDAXP_MASK) == ArchHelpers::Arm64::LDAXP_INST) { // LDAXP
+    // Should be compare and swap pair only. LDAXP not used elsewhere
+    uint64_t BytesToSkip = ArchHelpers::Arm64::HandleCASPAL_ARMv8(Instr, ProgramCounter, GPRs);
+    if (BytesToSkip) {
+      // Skip this instruction now
+      return std::make_pair(true, BytesToSkip);
+    }
+  }
+
   // Lock code mutex during any SIGBUS handling that potentially changes code.
   // Need to be careful to not read any code part-way through modification.
   FEXCore::Utils::SpinWaitLock::UniqueSpinMutex lk(&InlineTail->SpinLockFutex);
@@ -1948,57 +1992,19 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
     // Back up one instruction and have another go
     return std::make_pair(true, -4);
   } else if ((Instr & ArchHelpers::Arm64::LDAXP_MASK) == ArchHelpers::Arm64::LDAXP_INST) { // LDAXP
-    // Should be compare and swap pair only. LDAXP not used elsewhere
-    uint64_t BytesToSkip = ArchHelpers::Arm64::HandleCASPAL_ARMv8(Instr, ProgramCounter, GPRs);
-    if (BytesToSkip) {
-      // Skip this instruction now
-      return std::make_pair(true, BytesToSkip);
+    /// A little bit quirky this implementation.
+    /// This is handling the case of paranoid ARMv8.0-a atomic stores.
+    /// This backpatches the ldaxp+stlxp+cbnz if the previous `HandleCASPAL_ARMv8` didn't handle the case.
+    if (ArchHelpers::Arm64::HandleAtomicVectorStore(Instr, ProgramCounter)) {
+      return std::make_pair(true, 0);
     } else {
-      if (ArchHelpers::Arm64::HandleAtomicVectorStore(Instr, ProgramCounter)) {
-        return std::make_pair(true, 0);
-      } else {
-        LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAXP: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
-        return NotHandled;
-      }
+      LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAXP: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
+      return NotHandled;
     }
   } else if ((Instr & ArchHelpers::Arm64::STLXP_MASK) == ArchHelpers::Arm64::STLXP_INST) { // STLXP
     // Should not trigger - middle of an LDAXP/STAXP pair.
     LogMan::Msg::EFmt("Unhandled JIT SIGBUS STLXP: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
     return NotHandled;
-  } else if ((Instr & ArchHelpers::Arm64::CASPAL_MASK) == ArchHelpers::Arm64::CASPAL_INST) { // CASPAL
-    if (ArchHelpers::Arm64::HandleCASPAL(Instr, GPRs)) {
-      // Skip this instruction now
-      return std::make_pair(true, 4);
-    } else {
-      LogMan::Msg::EFmt("Unhandled JIT SIGBUS CASPAL: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
-      return NotHandled;
-    }
-  } else if ((Instr & ArchHelpers::Arm64::CASAL_MASK) == ArchHelpers::Arm64::CASAL_INST) { // CASAL
-    if (ArchHelpers::Arm64::HandleCASAL(GPRs, Instr)) {
-      // Skip this instruction now
-      return std::make_pair(true, 4);
-    } else {
-      LogMan::Msg::EFmt("Unhandled JIT SIGBUS CASAL: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
-      return NotHandled;
-    }
-  } else if ((Instr & ArchHelpers::Arm64::ATOMIC_MEM_MASK) == ArchHelpers::Arm64::ATOMIC_MEM_INST) { // Atomic memory op
-    if (ArchHelpers::Arm64::HandleAtomicMemOp(Instr, GPRs)) {
-      // Skip this instruction now
-      return std::make_pair(true, 4);
-    } else {
-      uint8_t Op = (PC[0] >> 12) & 0xF;
-      LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}: PC: 0x{:x} Instruction: 0x{:08x}\n", Op, ProgramCounter, PC[0]);
-      return NotHandled;
-    }
-  } else if ((Instr & ArchHelpers::Arm64::LDAXR_MASK) == ArchHelpers::Arm64::LDAXR_INST) { // LDAXR*
-    uint64_t BytesToSkip = ArchHelpers::Arm64::HandleAtomicLoadstoreExclusive(ProgramCounter, GPRs);
-    if (BytesToSkip) {
-      // Skip this instruction now
-      return std::make_pair(true, BytesToSkip);
-    } else {
-      LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAXR: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
-      return NotHandled;
-    }
   } else {
     LogMan::Msg::EFmt("Unhandled JIT SIGBUS: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
     return NotHandled;
