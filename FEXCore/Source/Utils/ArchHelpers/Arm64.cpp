@@ -1936,12 +1936,24 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
   }
 
   // Lock code mutex during any SIGBUS handling that potentially changes code.
-  // Need to be careful to not read any code part-way through modification.
+  // Due to code buffer sharing between threads, code must be carefully backpatched from last to first.
+  // Multiple threads can be attempting to handle the SIGBUS or even be executing the code being backpatched.
   FEXCore::Utils::SpinWaitLock::UniqueSpinMutex lk(&InlineTail->SpinLockFutex);
+
+  constexpr uint32_t LDRBase = 0b0011'1000'0111'1111'0110'1000'0000'0000;
+  constexpr uint32_t STRBase = 0b0011'1000'0011'1111'0110'1000'0000'0000;
+  constexpr uint32_t LDSTRegisterMask = 0b0011'1011'0010'0000'0000'1100'0000'0000;
+
+  constexpr uint32_t LDURBase = 0b0011'1000'0100'0000'0000'0000'0000'0000;
+  constexpr uint32_t STURBase = 0b0011'1000'0000'0000'0000'0000'0000'0000;
+  constexpr uint32_t LDSTUnscaledMask = 0b0011'1011'0010'0000'0000'1100'0000'0000;
+
+  constexpr uint32_t STPBase = 0b0010'1001'0000'0000'0000'0000'0000'0000;
+  constexpr uint32_t LDSTPMask = 0b0011'1011'1000'0000'0000'0000'0000'0000;
 
   if ((Instr & LDAXR_MASK) == LDAR_INST ||  // LDAR*
       (Instr & LDAXR_MASK) == LDAPR_INST) { // LDAPR*
-    uint32_t LDR = 0b0011'1000'0111'1111'0110'1000'0000'0000;
+    uint32_t LDR = LDRBase;
     LDR |= Size << 30;
     LDR |= AddrReg << 5;
     LDR |= DataReg;
@@ -1953,7 +1965,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
     // With the instruction modified, now execute again.
     return std::make_pair(true, 0);
   } else if ((Instr & LDAXR_MASK) == STLR_INST) { // STLR*
-    uint32_t STR = 0b0011'1000'0011'1111'0110'1000'0000'0000;
+    uint32_t STR = STRBase;
     STR |= Size << 30;
     STR |= AddrReg << 5;
     STR |= DataReg;
@@ -1966,7 +1978,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
     return std::make_pair(true, -4);
   } else if ((Instr & RCPC2_MASK) == LDAPUR_INST) { // LDAPUR*
     // Extract the 9-bit offset from the instruction
-    uint32_t LDUR = 0b0011'1000'0100'0000'0000'0000'0000'0000;
+    uint32_t LDUR = LDURBase;
     LDUR |= Size << 30;
     LDUR |= AddrReg << 5;
     LDUR |= DataReg;
@@ -1979,7 +1991,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
     // With the instruction modified, now execute again.
     return std::make_pair(true, 0);
   } else if ((Instr & RCPC2_MASK) == STLUR_INST) { // STLUR*
-    uint32_t STUR = 0b0011'1000'0000'0000'0000'0000'0000'0000;
+    uint32_t STUR = STURBase;
     STUR |= Size << 30;
     STUR |= AddrReg << 5;
     STUR |= DataReg;
@@ -1992,7 +2004,6 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
     // Back up one instruction and have another go
     return std::make_pair(true, -4);
   } else if ((Instr & ArchHelpers::Arm64::LDAXP_MASK) == ArchHelpers::Arm64::LDAXP_INST) { // LDAXP
-    /// A little bit quirky this implementation.
     /// This is handling the case of paranoid ARMv8.0-a atomic stores.
     /// This backpatches the ldaxp+stlxp+cbnz if the previous `HandleCASPAL_ARMv8` didn't handle the case.
     if (ArchHelpers::Arm64::HandleAtomicVectorStore(Instr, ProgramCounter)) {
@@ -2005,10 +2016,51 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
     // Should not trigger - middle of an LDAXP/STAXP pair.
     LogMan::Msg::EFmt("Unhandled JIT SIGBUS STLXP: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
     return NotHandled;
-  } else {
-    LogMan::Msg::EFmt("Unhandled JIT SIGBUS: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
-    return NotHandled;
   }
+
+  // Check if another thread backpatched this instruction before this thread got here.
+  // Since we got here, this can happen in a couple situations:
+  // - Unhandled instruction (Shouldn't occur, programmer error)
+  // - Another thread backpatched an atomic access to be a non-atomic access
+  auto AtomicInst = std::atomic_ref<uint32_t>(PC[0]).load(std::memory_order_acquire);
+  if ((AtomicInst & LDSTRegisterMask) == LDRBase || (AtomicInst & LDSTUnscaledMask) == LDURBase) {
+    ///< This atomic instruction likely was backpatched to a load.
+    if (HandleType != UnalignedHandlerType::NonAtomic) {
+      ///< Check the next instruction to see if it is a DMB.
+      auto DMBInst = std::atomic_ref<uint32_t>(PC[1]).load(std::memory_order_acquire);
+      if (DMBInst == DMB_LD) {
+        return std::make_pair(true, 0);
+      }
+    } else {
+      ///< No DMB instruction with this HandleType.
+      return std::make_pair(true, 0);
+    }
+  } else if ((AtomicInst & LDSTRegisterMask) == STRBase || (AtomicInst & LDSTUnscaledMask) == STURBase) {
+    if (HandleType != UnalignedHandlerType::NonAtomic) {
+      ///< Check the previous instruction to see if it is a DMB.
+      auto DMBInst = std::atomic_ref<uint32_t>(PC[-1]).load(std::memory_order_acquire);
+      if (DMBInst == DMB) {
+        ///< Return handled, make sure to adjust PC so we run the DMB.
+        return std::make_pair(true, -4);
+      }
+    } else {
+      ///< No DMB instruction with this HandleType.
+      return std::make_pair(true, 0);
+    }
+  } else if (AtomicInst == DMB) {
+    // ARMv8.0-a LDAXP backpatch handling. Will have turned in to the following:
+    // - PC[0] = DMB
+    // - PC[1] = STP
+    // - PC[2] = DMB
+    auto STPInst = std::atomic_ref<uint32_t>(PC[1]).load(std::memory_order_acquire);
+    auto DMBInst = std::atomic_ref<uint32_t>(PC[2]).load(std::memory_order_acquire);
+    if ((STPInst & LDSTPMask) == STPBase && DMBInst == DMB) {
+      ///< Code that was backpatched is what was expected for ARMv8.0-a LDAXP.
+      return std::make_pair(true, 0);
+    }
+  }
+
+  LogMan::Msg::EFmt("Unhandled JIT SIGBUS: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
   return NotHandled;
 }
 
