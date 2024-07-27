@@ -1957,10 +1957,11 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
     LDR |= Size << 30;
     LDR |= AddrReg << 5;
     LDR |= DataReg;
-    PC[0] = LDR;
     if (HandleType != UnalignedHandlerType::NonAtomic) {
-      PC[1] = DMB_LD; // Back-patch the half-barrier.
+      ///< Ordering matters with cross-thread visibility!
+      std::atomic_ref<uint32_t>(PC[1]).store(DMB_LD, std::memory_order_release); // Back-patch the half-barrier.
     }
+    std::atomic_ref<uint32_t>(PC[0]).store(LDR, std::memory_order_release);
     ClearICache(&PC[0], 16);
     // With the instruction modified, now execute again.
     return std::make_pair(true, 0);
@@ -1970,9 +1971,9 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
     STR |= AddrReg << 5;
     STR |= DataReg;
     if (HandleType != UnalignedHandlerType::NonAtomic) {
-      PC[-1] = DMB; // Back-patch the half-barrier.
+      std::atomic_ref<uint32_t>(PC[-1]).store(DMB, std::memory_order_release); // Back-patch the half-barrier.
     }
-    PC[0] = STR;
+    std::atomic_ref<uint32_t>(PC[0]).store(STR, std::memory_order_release);
     ClearICache(&PC[-1], 16);
     // Back up one instruction and have another go
     return std::make_pair(true, -4);
@@ -1983,10 +1984,11 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
     LDUR |= AddrReg << 5;
     LDUR |= DataReg;
     LDUR |= Instr & (0b1'1111'1111 << 9);
-    PC[0] = LDUR;
     if (HandleType != UnalignedHandlerType::NonAtomic) {
-      PC[1] = DMB_LD; // Back-patch the half-barrier.
+      ///< Ordering matters with cross-thread visibility!
+      std::atomic_ref<uint32_t>(PC[1]).store(DMB_LD, std::memory_order_release); // Back-patch the half-barrier.
     }
+    std::atomic_ref<uint32_t>(PC[0]).store(LDUR, std::memory_order_release);
     ClearICache(&PC[0], 16);
     // With the instruction modified, now execute again.
     return std::make_pair(true, 0);
@@ -1997,9 +1999,10 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
     STUR |= DataReg;
     STUR |= Instr & (0b1'1111'1111 << 9);
     if (HandleType != UnalignedHandlerType::NonAtomic) {
-      PC[-1] = DMB; // Back-patch the half-barrier.
+      std::atomic_ref<uint32_t>(PC[-1]).store(DMB, std::memory_order_release); // Back-patch the half-barrier.
     }
-    PC[0] = STUR;
+    std::atomic_ref<uint32_t>(PC[0]).store(STUR, std::memory_order_release);
+
     ClearICache(&PC[-1], 16);
     // Back up one instruction and have another go
     return std::make_pair(true, -4);
@@ -2018,7 +2021,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
     return NotHandled;
   }
 
-  // Check if another thread backpatched this instruction before this thread got here.
+  ///< Check if another thread backpatched this instruction before this thread got here
   // Since we got here, this can happen in a couple situations:
   // - Unhandled instruction (Shouldn't occur, programmer error)
   // - Another thread backpatched an atomic access to be a non-atomic access
