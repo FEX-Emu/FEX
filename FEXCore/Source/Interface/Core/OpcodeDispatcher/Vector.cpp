@@ -3923,13 +3923,15 @@ Ref OpDispatchBuilder::VectorBlend(OpSize Size, size_t ElementSize, Ref Src1, Re
       return Src2;
     }
   } else {
-    // TODO: There are some of these swizzles that can be more optimal.
-    // NamedConstant + VTBX1 is quite quick already.
-    // Implement more if it becomes relevant.
+    ///< Zero instruction copies
     switch (Selector) {
-    case 0b0000'0000:
-      // No-op
-      return Src1;
+    case 0b0000'0000: return Src1;
+    case 0b1111'1111: return Src2;
+    default: break;
+    }
+
+    ///< Single instruction implementation
+    switch (Selector) {
     case 0b0000'0001:
     case 0b0000'0010:
     case 0b0000'0100:
@@ -3942,6 +3944,19 @@ Ref OpDispatchBuilder::VectorBlend(OpSize Size, size_t ElementSize, Ref Src1, Re
       const auto Element = FEXCore::ilog2(Selector);
       return _VInsElement(Size, ElementSize, Element, Element, Src1, Src2);
     }
+    case 0b1111'1110:
+    case 0b1111'1101:
+    case 0b1111'1011:
+    case 0b1111'0111:
+    case 0b1110'1111:
+    case 0b1101'1111:
+    case 0b1011'1111:
+    case 0b0111'1111: {
+      // Single 16-bit element insert, inverted
+      uint8_t SelectorInvert = ~Selector;
+      const auto Element = FEXCore::ilog2(SelectorInvert);
+      return _VInsElement(Size, ElementSize, Element, Element, Src2, Src1);
+    }
     case 0b0000'0011:
     case 0b0000'1100:
     case 0b0011'0000:
@@ -3950,21 +3965,52 @@ Ref OpDispatchBuilder::VectorBlend(OpSize Size, size_t ElementSize, Ref Src1, Re
       const auto Element = std::countr_zero(Selector) / 2;
       return _VInsElement(Size, OpSize::i32Bit, Element, Element, Src1, Src2);
     }
+    case 0b1111'1100:
+    case 0b1111'0011:
+    case 0b1100'1111:
+    case 0b0011'1111: {
+      // Single 32-bit element insert, inverted
+      uint8_t SelectorInvert = ~Selector;
+      const auto Element = std::countr_zero(SelectorInvert) / 2;
+      return _VInsElement(Size, OpSize::i32Bit, Element, Element, Src2, Src1);
+    }
     case 0b0000'1111:
     case 0b1111'0000: {
       // Single 64-bit element insert.
       const auto Element = std::countr_zero(Selector) / 4;
       return _VInsElement(Size, OpSize::i64Bit, Element, Element, Src1, Src2);
     }
-    case 0b1111'1111:
-      // Copy
-      return Src2;
-    default: {
-      auto ConstantSwizzle =
-        LoadAndCacheIndexedNamedVectorConstant(Size, FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PBLENDW, Selector * 16);
-      return _VTBX1(Size, Src1, Src2, ConstantSwizzle);
+    default: break;
     }
+
+    ///< Two instruction implementation
+    switch (Selector) {
+    ///< Fancy double VExtr
+    case 0b0'0'0'0'0'1'1'1: {
+      auto Tmp = _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src2, Src1, 6);
+      return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 10);
     }
+    case 0b0'0'0'1'1'1'1'1: {
+      auto Tmp = _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src2, Src1, 10);
+      return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 6);
+    }
+    case 0b1'1'1'0'0'0'0'0: {
+      auto Tmp = _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src1, Src2, 10);
+      return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 6);
+    }
+    case 0b1'1'1'1'1'0'0'0: {
+      auto Tmp = _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src1, Src2, 6);
+      return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 10);
+    }
+    default: break;
+    }
+
+    // TODO: There are some of these swizzles that can be more optimal.
+    // NamedConstant + VTBX1 is quite quick already.
+    // Implement more if it becomes relevant.
+    auto ConstantSwizzle =
+      LoadAndCacheIndexedNamedVectorConstant(Size, FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PBLENDW, Selector * 16);
+    return _VTBX1(Size, Src1, Src2, ConstantSwizzle);
   }
 
   FEX_UNREACHABLE;
