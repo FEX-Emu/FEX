@@ -103,6 +103,8 @@ std::mutex ThreadCreationMutex;
 // Map of TIDs to their FEX thread state, `ThreadCreationMutex` must be locked when accessing
 std::unordered_map<DWORD, FEXCore::Core::InternalThreadState*> Threads;
 
+decltype(__wine_unix_call_dispatcher) WineUnixCall;
+
 std::pair<NTSTATUS, TLS> GetThreadTLS(HANDLE Thread) {
   THREAD_BASIC_INFORMATION Info;
   const NTSTATUS Err = NtQueryInformationThread(Thread, ThreadBasicInformation, &Info, sizeof(Info), nullptr);
@@ -365,7 +367,7 @@ public:
       ReturnRSP += sizeof(StackLayout);
 
       Context::UnlockJITContext();
-      ReturnRAX = static_cast<uint64_t>(__wine_unix_call(StackArgs->Handle, StackArgs->ID, ULongToPtr(StackArgs->Args)));
+      ReturnRAX = static_cast<uint64_t>(WineUnixCall(StackArgs->Handle, StackArgs->ID, ULongToPtr(StackArgs->Args)));
       Context::LockJITContext();
     } else if (Frame->State.rip == (uint64_t)BridgeInstrs::Syscall) {
       const uint64_t EntryRAX = Frame->State.gregs[FEXCore::X86State::REG_RAX];
@@ -445,6 +447,11 @@ void BTCpuProcessInit() {
   *reinterpret_cast<uint32_t*>(Addr) = 0x2ecd2ecd;
   BridgeInstrs::Syscall = Addr;
   BridgeInstrs::UnixCall = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(Addr) + 2);
+
+  const auto Sym = GetProcAddress(GetModuleHandle("ntdll.dll"), "__wine_unix_call_dispatcher");
+  if (Sym) {
+    WineUnixCall = *reinterpret_cast<decltype(WineUnixCall)*>(Sym);
+  }
 }
 
 NTSTATUS BTCpuThreadInit() {
