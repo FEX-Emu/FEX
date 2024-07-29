@@ -468,6 +468,7 @@ void BTCpuThreadInit() {
   FEX::Windows::InitCRTThread();
   auto* Thread = CTX->CreateThread(0, 0);
   GetTLS().ThreadState() = Thread;
+  GetTLS().ControlWord().fetch_or(ControlBits::WOW_CPU_AREA_DIRTY, std::memory_order::relaxed);
 
   std::scoped_lock Lock(ThreadCreationMutex);
   Threads.emplace(GetCurrentThreadId(), Thread);
