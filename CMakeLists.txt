@@ -42,7 +42,7 @@ string(FIND ${CMAKE_BASE_NAME} mingw CONTAINS_MINGW)
 if (NOT CONTAINS_MINGW EQUAL -1)
   message (STATUS "Mingw build")
   set (MINGW_BUILD TRUE)
-  set (ENABLE_JEMALLOC FALSE)
+  set (ENABLE_JEMALLOC TRUE)
   set (ENABLE_JEMALLOC_GLIBC_ALLOC FALSE)
 endif()
 
@@ -140,9 +140,6 @@ endif()
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "^arm64ec")
   set(_M_ARM_64EC 1)
   add_definitions(-D_M_ARM_64EC=1)
-
-  # Required as FEX is not allowed to lock the CRT heap lock during compilation or callbacks
-  set(ENABLE_JEMALLOC TRUE)
 endif()
 
 include(CheckCXXSourceCompiles)
