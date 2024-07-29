@@ -195,19 +195,17 @@ private:
   struct StackMemberInfo {
     StackMemberInfo() {}
     StackMemberInfo(Ref Data)
-      : StackDataNode(Data)
-      , Source(std::nullopt)
-      , InterpretAsFloat(false) {}
+      : StackDataNode(Data) {}
     StackMemberInfo(Ref Data, Ref Source, OpSize Size, bool Float)
       : StackDataNode(Data)
       , Source({Size, Source})
       , InterpretAsFloat(Float) {}
-    Ref StackDataNode; // Reference to the data in the Stack.
-                       // This is the source data node in the stack format, possibly converted to 64/80 bits.
+    Ref StackDataNode {}; // Reference to the data in the Stack.
+                          // This is the source data node in the stack format, possibly converted to 64/80 bits.
     // Tuple is only valid if we have information about the Source of the Stack Data Node.
     // In it's valid then OpSize is the original source size and Ref is the original source node.
-    std::optional<std::pair<OpSize, Ref>> Source;
-    bool InterpretAsFloat; // True if this is a floating point value, false if integer
+    std::optional<std::pair<OpSize, Ref>> Source {};
+    bool InterpretAsFloat {false}; // True if this is a floating point value, false if integer
   };
 
   // StackData, TopCache need to be always properly set to ensure
