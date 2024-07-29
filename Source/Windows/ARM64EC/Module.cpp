@@ -181,7 +181,10 @@ static EXCEPTION_RECORD HandleGuestException(const EXCEPTION_RECORD& Src, ARM64_
   case FEXCore::Core::FAULT_SIGILL: Dst.ExceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION; return Dst;
   case FEXCore::Core::FAULT_SIGTRAP:
     switch (Fault.TrapNo) {
-    case FEXCore::X86State::X86_TRAPNO_DB: Dst.ExceptionCode = EXCEPTION_SINGLE_STEP; return Dst;
+    case FEXCore::X86State::X86_TRAPNO_DB:
+      Context.Cpsr &= ~(1 << 21); // PSTATE.SS
+      Dst.ExceptionCode = EXCEPTION_SINGLE_STEP;
+      return Dst;
     case FEXCore::X86State::X86_TRAPNO_BP:
       Context.Pc -= 1;
       Dst.ExceptionAddress = reinterpret_cast<void*>(Context.Pc);
