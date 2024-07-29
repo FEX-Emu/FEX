@@ -462,26 +462,27 @@ void BTCpuProcessInit() {
   }
 }
 
-NTSTATUS BTCpuThreadInit() {
+void BTCpuProcessTerm(HANDLE Handle, BOOL After, ULONG Status) {}
+
+void BTCpuThreadInit() {
   FEX::Windows::InitCRTThread();
   auto* Thread = CTX->CreateThread(0, 0);
   GetTLS().ThreadState() = Thread;
 
   std::scoped_lock Lock(ThreadCreationMutex);
   Threads.emplace(GetCurrentThreadId(), Thread);
-  return STATUS_SUCCESS;
 }
 
-NTSTATUS BTCpuThreadTerm(HANDLE Thread) {
+void BTCpuThreadTerm(HANDLE Thread, LONG ExitCode) {
   const auto [Err, TLS] = GetThreadTLS(Thread);
   if (Err) {
-    return Err;
+    return;
   }
 
   {
     THREAD_BASIC_INFORMATION Info;
     if (NTSTATUS Err = NtQueryInformationThread(Thread, ThreadBasicInformation, &Info, sizeof(Info), nullptr); Err) {
-      return Err;
+      return;
     }
 
     const auto ThreadTID = reinterpret_cast<uint64_t>(Info.ClientId.UniqueThread);
@@ -491,7 +492,6 @@ NTSTATUS BTCpuThreadTerm(HANDLE Thread) {
 
   CTX->DestroyThread(TLS.ThreadState());
   FEX::Windows::DeinitCRTThread();
-  return STATUS_SUCCESS;
 }
 
 void* BTCpuGetBopCode() {
@@ -691,17 +691,36 @@ void BTCpuFlushInstructionCache2(const void* Address, SIZE_T Size) {
   InvalidationTracker->InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), false);
 }
 
-void BTCpuNotifyMemoryAlloc(void* Address, SIZE_T Size, ULONG Type, ULONG Prot) {
+void BTCpuFlushInstructionCacheHeavy(const void* Address, SIZE_T Size) {
+  std::scoped_lock Lock(ThreadCreationMutex);
+  InvalidationTracker->InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), false);
+}
+
+void BTCpuNotifyMemoryDirty(void* Address, SIZE_T Size) {
+  std::scoped_lock Lock(ThreadCreationMutex);
+  InvalidationTracker->InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), false);
+}
+
+void BTCpuNotifyMemoryAlloc(void* Address, SIZE_T Size, ULONG Type, ULONG Prot, BOOL After, ULONG Status) {
+  if (!After || Status) {
+    return;
+  }
   std::scoped_lock Lock(ThreadCreationMutex);
   InvalidationTracker->HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), Prot);
 }
 
-void BTCpuNotifyMemoryProtect(void* Address, SIZE_T Size, ULONG NewProt) {
+void BTCpuNotifyMemoryProtect(void* Address, SIZE_T Size, ULONG NewProt, BOOL After, ULONG Status) {
+  if (!After || Status) {
+    return;
+  }
   std::scoped_lock Lock(ThreadCreationMutex);
   InvalidationTracker->HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), NewProt);
 }
 
-void BTCpuNotifyMemoryFree(void* Address, SIZE_T Size, ULONG FreeType) {
+void BTCpuNotifyMemoryFree(void* Address, SIZE_T Size, ULONG FreeType, BOOL After, ULONG Status) {
+  if (After) {
+    return;
+  }
   std::scoped_lock Lock(ThreadCreationMutex);
   if (!Size) {
     InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
@@ -710,16 +729,25 @@ void BTCpuNotifyMemoryFree(void* Address, SIZE_T Size, ULONG FreeType) {
   }
 }
 
-void BTCpuNotifyUnmapViewOfSection(void* Address, ULONG Flags) {
+NTSTATUS BTCpuNotifyMapViewOfSection(void* Unk1, void* Address, void* Unk2, SIZE_T Size, ULONG AllocType, ULONG Prot) {
+  return STATUS_SUCCESS;
+}
+
+void BTCpuNotifyUnmapViewOfSection(void* Address, BOOL After, ULONG Status) {
+  if (After) {
+    return;
+  }
+
   std::scoped_lock Lock(ThreadCreationMutex);
   InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
 }
+
+void BTCpuNotifyReadFile(HANDLE Handle, void* Address, SIZE_T Size, BOOL After, NTSTATUS Status) {}
 
 BOOLEAN WINAPI BTCpuIsProcessorFeaturePresent(UINT Feature) {
   return CPUFeatures->IsFeaturePresent(Feature) ? TRUE : FALSE;
 }
 
-BOOLEAN BTCpuUpdateProcessorInformation(SYSTEM_CPU_INFORMATION* Info) {
+void BTCpuUpdateProcessorInformation(SYSTEM_CPU_INFORMATION* Info) {
   CPUFeatures->UpdateInformation(Info);
-  return TRUE;
 }
