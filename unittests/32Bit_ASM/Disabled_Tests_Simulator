@@ -1,0 +1,3 @@
+# Simulator can't handle all rounding modes
+Test_X87/RoundingPos.asm
+Test_X87/RoundingNeg.asm

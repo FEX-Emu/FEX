@@ -96,6 +96,8 @@ Test_VEX/vcvtps2ph_rtne_mxcsr.asm
 Test_VEX/vcvtps2ph_rd_mxcsr.asm
 Test_VEX/vcvtps2ph_ru_mxcsr.asm
 Test_VEX/vcvtps2ph_trunc_mxcsr.asm
+Test_X87/Rounding.asm
+Test_X87_F64/Rounding_F64.asm
 
 # Simulator doesn't support cycle counter reading
 Test_TwoByte/0F_31.asm
