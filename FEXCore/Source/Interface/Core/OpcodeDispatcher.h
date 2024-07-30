@@ -72,6 +72,7 @@ struct LoadSourceOptions {
 };
 
 struct AddressMode {
+  Ref Segment {nullptr};
   Ref Base {nullptr};
   Ref Index {nullptr};
   MemOffsetType IndexType = MEM_OFFSET_SXTX;
@@ -1504,8 +1505,7 @@ private:
 
   Ref GetRelocatedPC(const FEXCore::X86Tables::DecodedOp& Op, int64_t Offset = 0);
 
-  AddressMode AddSegmentToAddress(AddressMode A, uint32_t Flags);
-  Ref LoadEffectiveAddress(AddressMode A, bool AllowUpperGarbage = false);
+  Ref LoadEffectiveAddress(AddressMode A, bool AddSegmentBase, bool AllowUpperGarbage = false);
   AddressMode SelectAddressMode(AddressMode A, bool AtomicTSO, bool Vector, unsigned AccessSize);
 
   bool IsOperandMem(const X86Tables::DecodedOperand& Operand, bool Load) {

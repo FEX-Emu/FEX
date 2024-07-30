@@ -499,7 +499,6 @@ OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_LoadSource_WithOpSize(
     LOGMAN_THROW_A_FMT(IsOperandMem(Operand, true), "only memory sources");
 
     AddressMode A = DecodeAddress(Op, Operand, AccessType, true /* IsLoad */);
-    A = AddSegmentToAddress(A, Flags);
 
     AddressMode HighA = A;
     HighA.Offset += 16;
@@ -557,7 +556,6 @@ void OpDispatchBuilder::AVX128_StoreResult_WithOpSize(FEXCore::X86Tables::Decode
     }
   } else {
     AddressMode A = DecodeAddress(Op, Operand, AccessType, false /* IsLoad */);
-    A = AddSegmentToAddress(A, Op->Flags);
 
     _StoreMemAutoTSO(FPRClass, 16, A, Src.Low, 1);
 
