@@ -681,24 +681,28 @@ void OpDispatchBuilder::X87ModifySTP(OpcodeArgs, bool Inc) {
 // Optionally we can pass a pre calculated value for Top, otherwise we calculate it
 // during the function runtime.
 Ref OpDispatchBuilder::ReconstructFSW_Helper(Ref T) {
+
+  // Start with the top value
+  auto Top = T ? T : GetX87Top();
+  Ref FSW = _Lshl(OpSize::i64Bit, Top, _Constant(11));
+
   // We must construct the FSW from our various bits
   auto C0 = GetRFLAG(FEXCore::X86State::X87FLAG_C0_LOC);
   auto C1 = GetRFLAG(FEXCore::X86State::X87FLAG_C1_LOC);
   auto C2 = GetRFLAG(FEXCore::X86State::X87FLAG_C2_LOC);
   auto C3 = GetRFLAG(FEXCore::X86State::X87FLAG_C3_LOC);
 
-  Ref FSW = _Lshl(OpSize::i64Bit, C0, _Constant(8));
+  FSW = _Orlshl(OpSize::i64Bit, FSW, C0, 8);
   FSW = _Orlshl(OpSize::i64Bit, FSW, C1, 9);
   FSW = _Orlshl(OpSize::i64Bit, FSW, C2, 10);
   FSW = _Orlshl(OpSize::i64Bit, FSW, C3, 14);
 
-  auto Top = GetX87Top();
-  FSW = _Bfi(OpSize::i64Bit, 3, 11, FSW, Top);
   return FSW;
 }
 
 // Store Status Word
-// There's no load Status Word instruction
+// There's no load Status Word instruction but you can load it through frstor
+// or fldenv.
 void OpDispatchBuilder::X87FNSTSW(OpcodeArgs) {
 
   Ref TopValue = _SyncStackToSlow();
