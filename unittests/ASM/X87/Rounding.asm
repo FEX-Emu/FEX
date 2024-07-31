@@ -12,6 +12,26 @@
 }
 %endif
 
+section .data
+align 8
+midpoint:
+  dq 1.5
+samidpoint:
+  dq 1.50001
+sbmidpoint:
+  dq 1.49999
+nmidpoint:
+  dq -1.5
+nsamidpoint:
+  dq -1.49999
+nsbmidpoint:
+  dq -1.50001
+
+section .bss
+align 8
+tmp resq 1
+
+section .text
 ; Rounding tests to ensure rounding modes are actually working
 
 ;; Mid-point
@@ -293,22 +313,3 @@ mov ax, word [rel tmp]
 or rsi, rax
 
 hlt
-
-section .data
-align 8
-midpoint:
-  dq 1.5
-samidpoint:
-  dq 1.50001
-sbmidpoint:
-  dq 1.49999
-nmidpoint:
-  dq -1.5
-nsamidpoint:
-  dq -1.49999
-nsbmidpoint:
-  dq -1.50001
-
-section .bss
-align 8
-tmp resq 1
