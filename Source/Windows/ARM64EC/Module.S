@@ -41,6 +41,9 @@ enter_jit:
   // Expects a CONTEXT pointer in x0
 .global BeginSimulation
 BeginSimulation:
+  ldr x17, [x18, #0x1788] // TEB->ChpeV2CpuAreaInfo
+  ldr x16, [x17, #0x8] // ChpeV2CpuAreaInfo->EmulatorStackBase
+  mov sp, x16
   bl "#SyncThreadContext"
   ldr x17, [x18, #0x1788] // TEB->ChpeV2CpuAreaInfo
   ldr x16, [x17, #0x48] // ChpeV2CpuAreaInfo->EmulatorData[3] - DispatcherLoopTopEnterECFillSRA
