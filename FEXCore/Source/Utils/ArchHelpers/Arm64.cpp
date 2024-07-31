@@ -638,7 +638,7 @@ static bool HandleAtomicVectorStore(uint32_t Instr, uintptr_t ProgramCounter) {
       PC[1] = STP;
       PC[2] = DMB;
       // Back up one instruction and have another go
-      ClearICache(&PC[0], 16);
+      ClearICache(&PC[0], 12);
       return true;
     }
   }
@@ -2053,7 +2053,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
       std::atomic_ref<uint32_t>(PC[1]).store(DMB_LD, std::memory_order_release); // Back-patch the half-barrier.
     }
     std::atomic_ref<uint32_t>(PC[0]).store(LDR, std::memory_order_release);
-    ClearICache(&PC[0], 16);
+    ClearICache(&PC[0], 8);
     // With the instruction modified, now execute again.
     return std::make_pair(true, 0);
   } else if ((Instr & LDAXR_MASK) == STLR_INST) { // STLR*
@@ -2065,7 +2065,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
       std::atomic_ref<uint32_t>(PC[-1]).store(DMB, std::memory_order_release); // Back-patch the half-barrier.
     }
     std::atomic_ref<uint32_t>(PC[0]).store(STR, std::memory_order_release);
-    ClearICache(&PC[-1], 16);
+    ClearICache(&PC[-1], 8);
     // Back up one instruction and have another go
     return std::make_pair(true, -4);
   } else if ((Instr & RCPC2_MASK) == LDAPUR_INST) { // LDAPUR*
@@ -2080,7 +2080,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
       std::atomic_ref<uint32_t>(PC[1]).store(DMB_LD, std::memory_order_release); // Back-patch the half-barrier.
     }
     std::atomic_ref<uint32_t>(PC[0]).store(LDUR, std::memory_order_release);
-    ClearICache(&PC[0], 16);
+    ClearICache(&PC[0], 8);
     // With the instruction modified, now execute again.
     return std::make_pair(true, 0);
   } else if ((Instr & RCPC2_MASK) == STLUR_INST) { // STLUR*
@@ -2094,7 +2094,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
     }
     std::atomic_ref<uint32_t>(PC[0]).store(STUR, std::memory_order_release);
 
-    ClearICache(&PC[-1], 16);
+    ClearICache(&PC[-1], 8);
     // Back up one instruction and have another go
     return std::make_pair(true, -4);
   } else if ((Instr & ArchHelpers::Arm64::LDAXP_MASK) == ArchHelpers::Arm64::LDAXP_INST) { // LDAXP
