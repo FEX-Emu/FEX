@@ -478,5 +478,6 @@ enum Syscalls_x86 {
   SYSCALL_x86_lsm_get_self_attr = 459,
   SYSCALL_x86_lsm_set_self_attr = 460,
   SYSCALL_x86_lsm_list_modules = 461,
+  SYSCALL_x86_mseal = 462,
   SYSCALL_x86_MAX = 512,
 };
