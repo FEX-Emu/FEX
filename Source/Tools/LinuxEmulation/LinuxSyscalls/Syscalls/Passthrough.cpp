@@ -618,6 +618,12 @@ void RegisterCommon(FEX::HLE::SyscallHandler* Handler) {
     REGISTER_SYSCALL_IMPL(lsm_set_self_attr, UnimplementedSyscallSafe);
     REGISTER_SYSCALL_IMPL(lsm_list_modules, UnimplementedSyscallSafe);
   }
+  if (Handler->IsHostKernelVersionAtLeast(6, 10, 0)) {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(mseal, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                     SyscallPassthrough3<SYSCALL_DEF(mseal)>);
+  } else {
+    REGISTER_SYSCALL_IMPL(mseal, UnimplementedSyscallSafe);
+  }
 }
 
 namespace x64 {
