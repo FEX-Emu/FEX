@@ -255,6 +255,10 @@ void ReconstructThreadState(CONTEXT* Context) {
   for (size_t i = 0; i < Config.SRAFPRCount; i++) {
     memcpy(State.xmm.sse.data[i], &Context->V[Config.SRAFPRMapping[i]], sizeof(__uint128_t));
   }
+
+  // Spill EFlags
+  uint32_t EFlags = CTX->ReconstructCompactedEFLAGS(Thread, true, Context->X, Context->Cpsr);
+  CTX->SetFlagsFromCompactedEFLAGS(Thread, EFlags);
 }
 
 WOW64_CONTEXT ReconstructWowContext(CONTEXT* Context) {
