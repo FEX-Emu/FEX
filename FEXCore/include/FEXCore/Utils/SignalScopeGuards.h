@@ -93,22 +93,6 @@ public:
 private:
   pthread_rwlock_t Mutex;
 };
-#else
-// Windows doesn't support forking, so these can be standard mutexes.
-class ForkableUniqueMutex final : public std::mutex {
-public:
-  void StealAndDropActiveLocks() {
-    LogMan::Msg::AFmt("{} is unsupported on WIN32 builds!", __func__);
-  }
-};
-
-class ForkableSharedMutex final : public std::shared_mutex {
-public:
-  void StealAndDropActiveLocks() {
-    LogMan::Msg::AFmt("{} is unsupported on WIN32 builds!", __func__);
-  }
-};
-#endif
 
 // Helper class to manage deferred signal refcounting within a block scope
 class DeferredSignalRefCountGuard final {
@@ -151,7 +135,6 @@ private:
   FEXCore::Core::InternalThreadState* Thread;
 };
 
-#ifndef _WIN32
 // Helper class to mask POSIX signals within a block scope
 class ScopedSignalMasker final {
 public:
@@ -177,7 +160,6 @@ public:
 private:
   std::optional<uint64_t> OriginalMask {};
 };
-#endif
 
 /**
  * @brief Produces a wrapper object around a scoped lock of the given mutex
@@ -194,17 +176,12 @@ private:
 template<template<typename> class LockType = std::unique_lock, typename MutexType>
 [[nodiscard]]
 static auto MaskSignalsAndLockMutex(MutexType& mutex, uint64_t Mask = ~0ULL) {
-#ifndef _WIN32
   // Signals are masked first, and then the lock is acquired
   struct {
     ScopedSignalMasker mask;
     LockType<MutexType> lock;
   } scope_guard {ScopedSignalMasker {Mask}, LockType<MutexType> {mutex}};
   return scope_guard;
-#else
-  // TODO: Doesn't block signals which may or may not cause issues.
-  return LockType<MutexType> {mutex};
-#endif
 }
 
 /**
@@ -227,25 +204,50 @@ static auto GuardSignalDeferringSection(MutexType& mutex, FEXCore::Core::Interna
 template<template<typename> class LockType = std::unique_lock, typename MutexType>
 [[nodiscard]]
 static auto GuardSignalDeferringSectionWithFallback(MutexType& mutex, FEXCore::Core::InternalThreadState* Thread, uint64_t Mask = ~0ULL) {
-#ifndef _WIN32
   using ExtraGuard = std::variant<ScopedSignalMasker, DeferredSignalRefCountGuard>;
-#else
-  using ExtraGuard = std::variant<std::monostate, DeferredSignalRefCountGuard>;
-#endif
 
   struct {
     ExtraGuard refcount_or_mask;
     LockType<MutexType> lock;
-  } scope_guard {Thread ? ExtraGuard {DeferredSignalRefCountGuard {Thread}}
-#ifndef _WIN32
-                          :
-                          ExtraGuard {ScopedSignalMasker {Mask}}
-#else
-                          :
-                          ExtraGuard {}
-#endif
-  };
+  } scope_guard {Thread ? ExtraGuard {DeferredSignalRefCountGuard {Thread}} : ExtraGuard {ScopedSignalMasker {Mask}}};
   scope_guard.lock = LockType<MutexType> {mutex};
   return scope_guard;
 }
+
+#else
+
+// Dummy implementations as Windows doesn't support forking or async signals.
+class ForkableUniqueMutex final : public std::mutex {
+public:
+  void StealAndDropActiveLocks() {
+    LogMan::Msg::AFmt("{} is unsupported on WIN32 builds!", __func__);
+  }
+};
+
+class ForkableSharedMutex final : public std::shared_mutex {
+public:
+  void StealAndDropActiveLocks() {
+    LogMan::Msg::AFmt("{} is unsupported on WIN32 builds!", __func__);
+  }
+};
+
+template<template<typename> class LockType = std::unique_lock, typename MutexType>
+[[nodiscard]]
+static auto MaskSignalsAndLockMutex(MutexType& mutex, uint64_t Mask = ~0ULL) {
+  return LockType<MutexType> {mutex};
+}
+
+template<template<typename> class LockType = std::unique_lock, typename MutexType>
+[[nodiscard]]
+static auto GuardSignalDeferringSection(MutexType& mutex, FEXCore::Core::InternalThreadState* Thread, uint64_t Mask = ~0ULL) {
+  return LockType<MutexType> {mutex};
+}
+
+template<template<typename> class LockType = std::unique_lock, typename MutexType>
+[[nodiscard]]
+static auto GuardSignalDeferringSectionWithFallback(MutexType& mutex, FEXCore::Core::InternalThreadState* Thread, uint64_t Mask = ~0ULL) {
+  return LockType<MutexType> {mutex};
+}
+
+#endif
 } // namespace FEXCore
