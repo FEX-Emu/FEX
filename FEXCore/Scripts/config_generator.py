@@ -148,9 +148,8 @@ def print_man_options(options):
             if (value_type == "strenum"):
                 Enums = op_vals["Enums"]
                 output_man.write("\\fBAvailable Options:\\fR\n")
-                for enum_op_key, enum_op_vals in Enums.items():
-                    output_man.write("{}, ".format(enum_op_vals))
-                output_man.write("\n")
+                output_man.write(", ".join(f"{enum_op_val}" for [_, enum_op_val] in Enums.items()))
+                output_man.write("\n.sp\n")
 
     output_man.write(".El\n")
 
@@ -179,9 +178,8 @@ def print_man_environment(options):
             if (value_type == "strenum"):
                 Enums = op_vals["Enums"]
                 output_man.write("\\fBAvailable Options:\\fR\n")
-                for enum_op_key, enum_op_vals in Enums.items():
-                    output_man.write("{}, ".format(enum_op_vals))
-                output_man.write("\n")
+                output_man.write(", ".join(f"{enum_op_val}" for [_, enum_op_val] in Enums.items()))
+                output_man.write("\n.sp\n")
 
     print_man_environment_tail()
     output_man.write(".El\n")
