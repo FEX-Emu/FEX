@@ -398,6 +398,7 @@ enum Syscalls_x64 {
   SYSCALL_x64_lsm_get_self_attr = 459,
   SYSCALL_x64_lsm_set_self_attr = 460,
   SYSCALL_x64_lsm_list_modules = 461,
+  SYSCALL_x64_mseal = 462,
   SYSCALL_x64_MAX = 512,
 
   // Unsupported syscalls on this host
