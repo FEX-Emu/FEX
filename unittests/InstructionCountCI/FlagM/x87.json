@@ -11724,6 +11724,17 @@
         "strh w20, [x4]"
       ]
     },
+    "fld and fnstsw": {
+      "ExpectedInstructionCount": 19,
+      "x86Insts": [
+        "fld dword [rax]",
+        "fld dword [rax + 4]",
+        "fld dword [rax + 8]",
+        "fld dword [rax + 12]",
+        "fnstsw [rbx]"
+      ],
+      "ExpectedArm64ASM": []
+    },
     "ffree st0": {
       "ExpectedInstructionCount": 6,
       "Comment": [
