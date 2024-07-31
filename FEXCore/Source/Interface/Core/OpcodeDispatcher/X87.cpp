@@ -688,13 +688,15 @@ Ref OpDispatchBuilder::ReconstructFSW_Helper(Ref T) {
 
   // We must construct the FSW from our various bits
   auto C0 = GetRFLAG(FEXCore::X86State::X87FLAG_C0_LOC);
-  auto C1 = GetRFLAG(FEXCore::X86State::X87FLAG_C1_LOC);
-  auto C2 = GetRFLAG(FEXCore::X86State::X87FLAG_C2_LOC);
-  auto C3 = GetRFLAG(FEXCore::X86State::X87FLAG_C3_LOC);
-
   FSW = _Orlshl(OpSize::i64Bit, FSW, C0, 8);
+
+  auto C1 = GetRFLAG(FEXCore::X86State::X87FLAG_C1_LOC);
   FSW = _Orlshl(OpSize::i64Bit, FSW, C1, 9);
+
+  auto C2 = GetRFLAG(FEXCore::X86State::X87FLAG_C2_LOC);
   FSW = _Orlshl(OpSize::i64Bit, FSW, C2, 10);
+
+  auto C3 = GetRFLAG(FEXCore::X86State::X87FLAG_C3_LOC);
   FSW = _Orlshl(OpSize::i64Bit, FSW, C3, 14);
 
   return FSW;
