@@ -444,13 +444,21 @@ const char* GetHomeDirectory() {
 }
 #else
 const char* GetHomeDirectory() {
-  const char* HomeObjectPath = getenv("WINEHOMEDIR");
-  if (!HomeObjectPath) {
-    return nullptr;
+  const char* HomeDir = getenv("WINEHOMEDIR");
+  if (HomeDir) {
+    // Skip over the \??\ prefix in the NT path since we want a DOS path
+    HomeDir += 4;
+  };
+
+  if (!HomeDir) {
+    HomeDir = getenv("LOCALAPPDATA");
   }
 
-  // Skip over the \??\ prefix in the NT path since we want a DOS path
-  return HomeObjectPath + 4;
+  if (!HomeDir) {
+    HomeDir = ".";
+  }
+
+  return HomeDir;
 }
 #endif
 
