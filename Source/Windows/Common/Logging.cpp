@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include <FEXCore/fextl/fmt.h>
+#include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #include <cstdio>
@@ -33,6 +34,11 @@ static void AssertHandler(const char* Message) {
 
 namespace FEX::Windows::Logging {
 void Init() {
+  FEX_CONFIG_OPT(SilentLog, SILENTLOG);
+  if (SilentLog()) {
+    return;
+  }
+
   WineDbgOut = reinterpret_cast<decltype(WineDbgOut)>(GetProcAddress(GetModuleHandleA("ntdll.dll"), "__wine_dbg_output"));
   if (!WineDbgOut) {
     const auto Path = fextl::fmt::format("{}\\fex-{}.log", getenv("LOCALAPPDATA"), GetCurrentProcessId());

@@ -408,13 +408,13 @@ extern "C" void SyncThreadContext(CONTEXT* Context) {
 }
 
 void ProcessInit() {
-  FEX::Windows::Logging::Init();
   FEX::Config::InitializeConfigs();
   FEXCore::Config::Initialize();
   FEXCore::Config::AddLayer(FEX::Config::CreateGlobalMainLayer());
   FEXCore::Config::AddLayer(FEX::Config::CreateMainLayer());
   FEXCore::Config::Load();
   FEXCore::Config::ReloadMetaLayer();
+  FEX::Windows::Logging::Init();
 
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_IS64BIT_MODE, "1");
 
