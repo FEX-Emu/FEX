@@ -57,10 +57,10 @@ inline void* VirtualAlloc(void* Base, size_t Size, bool Execute = false) {
     Parameter.Type = MemExtendedParameterAttributeFlags;
     Parameter.ULong64 = MEM_EXTENDED_PARAMETER_EC_CODE;
   };
-  return ::VirtualAlloc2(nullptr, Base, Size, MEM_COMMIT | (Base ? MEM_RESERVE : 0) | MEM_TOP_DOWN,
-                         Execute ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE, &Parameter, Execute ? 1 : 0);
+  return ::VirtualAlloc2(nullptr, Base, Size, MEM_COMMIT | MEM_RESERVE | MEM_TOP_DOWN, Execute ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE,
+                         Execute ? &Parameter : nullptr, Execute ? 1 : 0);
 #else
-  return ::VirtualAlloc(Base, Size, MEM_COMMIT | (Base ? MEM_RESERVE : 0) | MEM_TOP_DOWN, Execute ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
+  return ::VirtualAlloc(Base, Size, MEM_COMMIT | MEM_RESERVE | MEM_TOP_DOWN, Execute ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
 #endif
 }
 
@@ -69,12 +69,15 @@ inline void* VirtualAlloc(size_t Size, bool Execute = false) {
 }
 
 inline void VirtualFree(void* Ptr, size_t Size) {
-  ::VirtualFree(Ptr, Size, MEM_RELEASE);
+  ::VirtualFree(Ptr, 0, MEM_RELEASE);
 }
+
 inline void VirtualDontNeed(void* Ptr, size_t Size) {
-  // Match madvise behaviour as best as we can here.
-  // Protections are ignored but still required to be valid.
-  ::VirtualAlloc(Ptr, Size, MEM_RESET, PAGE_NOACCESS);
+  // Zero the page-aligned region, preserving permissions.
+  MEMORY_BASIC_INFORMATION Info;
+  ::VirtualQuery(Ptr, &Info, sizeof(Info));
+  ::VirtualFree(Ptr, Size, MEM_DECOMMIT);
+  ::VirtualAlloc(Ptr, Size, MEM_COMMIT, Info.AllocationProtect);
 }
 
 inline bool VirtualProtect(void* Ptr, size_t Size, ProtectOptions options) {
