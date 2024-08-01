@@ -53,6 +53,11 @@ BeginSimulation:
   // Expects the target code address in x9
 .global ExitFunctionEC
 ExitFunctionEC:
+  // Clear any the AFP NEP and AH bits in FPCR as native code won't expect their behaviour.
+  mrs x17, fpcr
+  and x17, x17, #~6 // NEP + AH
+  msr fpcr, x17
+
   // Either return to an exit thunk (return to ARM64EC function) or call an entry thunk (call to ARM64EC function).
   // It is assumed that a 'blr x16' instruction is only ever used to call into x86 code from an exit thunk, and that all
   // exported ARM64EC functions have a 4-byte offset to their entry thunk immediately before their first instruction.
