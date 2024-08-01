@@ -29,6 +29,7 @@ $end_info$
 #include "Common/TSOHandlerConfig.h"
 #include "Common/InvalidationTracker.h"
 #include "Common/CPUFeatures.h"
+#include "Common/Logging.h"
 #include "DummyHandlers.h"
 #include "BTInterface.h"
 
@@ -329,23 +330,6 @@ bool HandleSuspendInterrupt(CONTEXT* Context, uint64_t FaultAddress) {
 }
 } // namespace Context
 
-namespace Logging {
-void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
-  const auto Output = fextl::fmt::format("[{}][{:X}] {}\n", LogMan::DebugLevelStr(Level), GetCurrentThreadId(), Message);
-  __wine_dbg_output(Output.c_str());
-}
-
-void AssertHandler(const char* Message) {
-  const auto Output = fextl::fmt::format("[ASSERT] {}\n", Message);
-  __wine_dbg_output(Output.c_str());
-}
-
-void Init() {
-  LogMan::Throw::InstallHandler(AssertHandler);
-  LogMan::Msg::InstallHandler(MsgHandler);
-}
-} // namespace Logging
-
 // Calls a 2-argument function `Func` setting the parent unwind frame information to the given SP and PC
 __attribute__((naked)) extern "C" uint64_t SEHFrameTrampoline2Args(void* Arg0, void* Arg1, void* Func, uint64_t Sp, uint64_t Pc) {
   asm(".seh_proc SEHFrameTrampoline2Args;"
@@ -426,13 +410,13 @@ public:
 };
 
 void BTCpuProcessInit() {
-  Logging::Init();
   FEX::Config::InitializeConfigs();
   FEXCore::Config::Initialize();
   FEXCore::Config::AddLayer(FEX::Config::CreateGlobalMainLayer());
   FEXCore::Config::AddLayer(FEX::Config::CreateMainLayer());
   FEXCore::Config::Load();
   FEXCore::Config::ReloadMetaLayer();
+  FEX::Windows::Logging::Init();
 
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_IS_INTERPRETER, "0");
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_INTERPRETER_INSTALLED, "0");

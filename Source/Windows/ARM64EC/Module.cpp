@@ -28,6 +28,7 @@ $end_info$
 #include "Common/InvalidationTracker.h"
 #include "Common/TSOHandlerConfig.h"
 #include "Common/CPUFeatures.h"
+#include "Common/Logging.h"
 #include "DummyHandlers.h"
 #include "BTInterface.h"
 
@@ -378,23 +379,6 @@ static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT&
 }
 } // namespace Exception
 
-namespace Logging {
-static void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
-  const auto Output = fextl::fmt::format("[{}][{:X}] {}\n", LogMan::DebugLevelStr(Level), GetCurrentThreadId(), Message);
-  __wine_dbg_output(Output.c_str());
-}
-
-static void AssertHandler(const char* Message) {
-  const auto Output = fextl::fmt::format("[ASSERT] {}\n", Message);
-  __wine_dbg_output(Output.c_str());
-}
-
-static void Init() {
-  LogMan::Throw::InstallHandler(AssertHandler);
-  LogMan::Msg::InstallHandler(MsgHandler);
-}
-} // namespace Logging
-
 class ECSyscallHandler : public FEXCore::HLE::SyscallHandler, public FEXCore::Allocator::FEXAllocOperators {
 public:
   ECSyscallHandler() {
@@ -424,13 +408,13 @@ extern "C" void SyncThreadContext(CONTEXT* Context) {
 }
 
 void ProcessInit() {
-  Logging::Init();
   FEX::Config::InitializeConfigs();
   FEXCore::Config::Initialize();
   FEXCore::Config::AddLayer(FEX::Config::CreateGlobalMainLayer());
   FEXCore::Config::AddLayer(FEX::Config::CreateMainLayer());
   FEXCore::Config::Load();
   FEXCore::Config::ReloadMetaLayer();
+  FEX::Windows::Logging::Init();
 
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_IS64BIT_MODE, "1");
 
