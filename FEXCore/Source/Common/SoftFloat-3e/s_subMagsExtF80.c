@@ -43,6 +43,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 extFloat80_t
  softfloat_subMagsExtF80(
+     struct softfloat_state *state,
      uint_fast16_t uiA64,
      uint_fast64_t uiA0,
      uint_fast16_t uiB64,
@@ -77,7 +78,7 @@ extFloat80_t
         if ( (sigA | sigB) & UINT64_C( 0x7FFFFFFFFFFFFFFF ) ) {
             goto propagateNaN;
         }
-        softfloat_raiseFlags( softfloat_flag_invalid );
+        softfloat_raiseFlags( state, softfloat_flag_invalid );
         uiZ64 = defaultNaNExtF80UI64;
         uiZ0  = defaultNaNExtF80UI0;
         goto uiZ;
@@ -90,7 +91,7 @@ extFloat80_t
     if ( sigB < sigA ) goto aBigger;
     if ( sigA < sigB ) goto bBigger;
     uiZ64 =
-        packToExtF80UI64( (softfloat_roundingMode == softfloat_round_min), 0 );
+        packToExtF80UI64( (state->roundingMode == softfloat_round_min), 0 );
     uiZ0 = 0;
     goto uiZ;
     /*------------------------------------------------------------------------
@@ -142,11 +143,11 @@ extFloat80_t
  normRoundPack:
     return
         softfloat_normRoundPackToExtF80(
-            signZ, expZ, sig128.v64, sig128.v0, extF80_roundingPrecision );
+            state, signZ, expZ, sig128.v64, sig128.v0, state->roundingPrecision );
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
  propagateNaN:
-    uiZ = softfloat_propagateNaNExtF80UI( uiA64, uiA0, uiB64, uiB0 );
+    uiZ = softfloat_propagateNaNExtF80UI( state, uiA64, uiA0, uiB64, uiB0 );
     uiZ64 = uiZ.v64;
     uiZ0  = uiZ.v0;
  uiZ:

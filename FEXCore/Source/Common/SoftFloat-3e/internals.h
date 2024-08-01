@@ -63,19 +63,19 @@ uint_fast32_t softfloat_roundToUI32( bool, uint_fast64_t, uint_fast8_t, bool );
 #ifdef SOFTFLOAT_FAST_INT64
 uint_fast64_t
  softfloat_roundToUI64(
-     bool, uint_fast64_t, uint_fast64_t, uint_fast8_t, bool );
+     struct softfloat_state *, bool, uint_fast64_t, uint_fast64_t, uint_fast8_t, bool );
 #else
 uint_fast64_t softfloat_roundMToUI64( bool, uint32_t *, uint_fast8_t, bool );
 #endif
 
 FEXCORE_PRESERVE_ALL_ATTR
-int_fast32_t softfloat_roundToI32( bool, uint_fast64_t, uint_fast8_t, bool );
+int_fast32_t softfloat_roundToI32( struct softfloat_state *, bool, uint_fast64_t, uint_fast8_t, bool );
 
 #ifdef SOFTFLOAT_FAST_INT64
 FEXCORE_PRESERVE_ALL_ATTR
 int_fast64_t
  softfloat_roundToI64(
-     bool, uint_fast64_t, uint_fast64_t, uint_fast8_t, bool );
+     struct softfloat_state *, bool, uint_fast64_t, uint_fast64_t, uint_fast8_t, bool );
 #else
 int_fast64_t softfloat_roundMToI64( bool, uint32_t *, uint_fast8_t, bool );
 #endif
@@ -115,7 +115,7 @@ FEXCORE_PRESERVE_ALL_ATTR
 struct exp16_sig32 softfloat_normSubnormalF32Sig( uint_fast32_t );
 
 FEXCORE_PRESERVE_ALL_ATTR
-float32_t softfloat_roundPackToF32( bool, int_fast16_t, uint_fast32_t );
+float32_t softfloat_roundPackToF32( struct softfloat_state *, bool, int_fast16_t, uint_fast32_t );
 float32_t softfloat_normRoundPackToF32( bool, int_fast16_t, uint_fast32_t );
 
 float32_t softfloat_addMagsF32( uint_fast32_t, uint_fast32_t );
@@ -138,7 +138,7 @@ FEXCORE_PRESERVE_ALL_ATTR
 struct exp16_sig64 softfloat_normSubnormalF64Sig( uint_fast64_t );
 
 FEXCORE_PRESERVE_ALL_ATTR
-float64_t softfloat_roundPackToF64( bool, int_fast16_t, uint_fast64_t );
+float64_t softfloat_roundPackToF64( struct softfloat_state *, bool, int_fast16_t, uint_fast64_t );
 float64_t softfloat_normRoundPackToF64( bool, int_fast16_t, uint_fast64_t );
 
 float64_t softfloat_addMagsF64( uint_fast64_t, uint_fast64_t, bool );
@@ -167,18 +167,18 @@ struct exp32_sig64 softfloat_normSubnormalExtF80Sig( uint_fast64_t );
 FEXCORE_PRESERVE_ALL_ATTR
 extFloat80_t
  softfloat_roundPackToExtF80(
-     bool, int_fast32_t, uint_fast64_t, uint_fast64_t, uint_fast8_t );
+     struct softfloat_state *, bool, int_fast32_t, uint_fast64_t, uint_fast64_t, uint_fast8_t );
 FEXCORE_PRESERVE_ALL_ATTR
 extFloat80_t
  softfloat_normRoundPackToExtF80(
-     bool, int_fast32_t, uint_fast64_t, uint_fast64_t, uint_fast8_t );
+     struct softfloat_state *, bool, int_fast32_t, uint_fast64_t, uint_fast64_t, uint_fast8_t );
 
 extFloat80_t
  softfloat_addMagsExtF80(
-     uint_fast16_t, uint_fast64_t, uint_fast16_t, uint_fast64_t, bool );
+     struct softfloat_state *, uint_fast16_t, uint_fast64_t, uint_fast16_t, uint_fast64_t, bool );
 extFloat80_t
  softfloat_subMagsExtF80(
-     uint_fast16_t, uint_fast64_t, uint_fast16_t, uint_fast64_t, bool );
+     struct softfloat_state *, uint_fast16_t, uint_fast64_t, uint_fast16_t, uint_fast64_t, bool );
 
 /*----------------------------------------------------------------------------
 *----------------------------------------------------------------------------*/

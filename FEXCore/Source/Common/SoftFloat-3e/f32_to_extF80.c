@@ -42,7 +42,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "softfloat.h"
 
 FEXCORE_PRESERVE_ALL_ATTR
-extFloat80_t f32_to_extF80( float32_t a )
+extFloat80_t f32_to_extF80( struct softfloat_state *state, float32_t a )
 {
     union ui32_f32 uA;
     uint_fast32_t uiA;
@@ -67,7 +67,7 @@ extFloat80_t f32_to_extF80( float32_t a )
     *------------------------------------------------------------------------*/
     if ( exp == 0xFF ) {
         if ( frac ) {
-            softfloat_f32UIToCommonNaN( uiA, &commonNaN );
+            softfloat_f32UIToCommonNaN( state, uiA, &commonNaN );
             uiZ = softfloat_commonNaNToExtF80UI( &commonNaN );
             uiZ64 = uiZ.v64;
             uiZ0  = uiZ.v0;

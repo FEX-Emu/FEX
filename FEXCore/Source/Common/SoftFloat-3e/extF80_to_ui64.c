@@ -43,7 +43,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 FEXCORE_PRESERVE_ALL_ATTR
 uint_fast64_t
- extF80_to_ui64( extFloat80_t a, uint_fast8_t roundingMode, bool exact )
+ extF80_to_ui64( struct softfloat_state *state, extFloat80_t a, uint_fast8_t roundingMode, bool exact )
 {
     union { struct extFloat80M s; extFloat80_t f; } uA;
     uint_fast16_t uiA64;
@@ -65,7 +65,7 @@ uint_fast64_t
     *------------------------------------------------------------------------*/
     shiftDist = 0x403E - exp;
     if ( shiftDist < 0 ) {
-        softfloat_raiseFlags( softfloat_flag_invalid );
+        softfloat_raiseFlags( state, softfloat_flag_invalid );
         return
             (exp == 0x7FFF) && (sig & UINT64_C( 0x7FFFFFFFFFFFFFFF ))
                 ? ui64_fromNaN
@@ -79,7 +79,7 @@ uint_fast64_t
         sig = sig64Extra.v;
         sigExtra = sig64Extra.extra;
     }
-    return softfloat_roundToUI64( sign, sig, sigExtra, roundingMode, exact );
+    return softfloat_roundToUI64( state, sign, sig, sigExtra, roundingMode, exact );
 
 }
 

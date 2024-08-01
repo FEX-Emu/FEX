@@ -63,7 +63,7 @@ struct FEX_PACKED X80SoftFloat {
   }
 
   // Ops
-  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FADD(const X80SoftFloat& lhs, const X80SoftFloat& rhs) {
+  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FADD(softfloat_state* state, const X80SoftFloat& lhs, const X80SoftFloat& rhs) {
 #ifdef DEBUG_X86_FLOAT
     BIGFLOAT Result;
     asm(R"(
@@ -79,11 +79,11 @@ struct FEX_PACKED X80SoftFloat {
 
     return Result;
 #else
-    return extF80_add(lhs, rhs);
+    return extF80_add(state, lhs, rhs);
 #endif
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FSUB(const X80SoftFloat& lhs, const X80SoftFloat& rhs) {
+  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FSUB(softfloat_state* state, const X80SoftFloat& lhs, const X80SoftFloat& rhs) {
 #ifdef DEBUG_X86_FLOAT
     BIGFLOAT Result;
     asm(R"(
@@ -99,11 +99,11 @@ struct FEX_PACKED X80SoftFloat {
 
     return Result;
 #else
-    return extF80_sub(lhs, rhs);
+    return extF80_sub(state, lhs, rhs);
 #endif
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FMUL(const X80SoftFloat& lhs, const X80SoftFloat& rhs) {
+  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FMUL(softfloat_state* state, const X80SoftFloat& lhs, const X80SoftFloat& rhs) {
 #ifdef DEBUG_X86_FLOAT
     BIGFLOAT Result;
     asm(R"(
@@ -119,11 +119,11 @@ struct FEX_PACKED X80SoftFloat {
 
     return Result;
 #else
-    return extF80_mul(lhs, rhs);
+    return extF80_mul(state, lhs, rhs);
 #endif
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FDIV(const X80SoftFloat& lhs, const X80SoftFloat& rhs) {
+  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FDIV(softfloat_state* state, const X80SoftFloat& lhs, const X80SoftFloat& rhs) {
 #ifdef DEBUG_X86_FLOAT
     BIGFLOAT Result;
     asm(R"(
@@ -139,11 +139,11 @@ struct FEX_PACKED X80SoftFloat {
 
     return Result;
 #else
-    return extF80_div(lhs, rhs);
+    return extF80_div(state, lhs, rhs);
 #endif
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FREM(const X80SoftFloat& lhs, const X80SoftFloat& rhs) {
+  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FREM(softfloat_state* state, const X80SoftFloat& lhs, const X80SoftFloat& rhs) {
 #if defined(DEBUG_X86_FLOAT)
     BIGFLOAT Result;
     asm(R"(
@@ -160,11 +160,11 @@ struct FEX_PACKED X80SoftFloat {
 
     return Result;
 #else
-    return extF80_rem(lhs, rhs);
+    return extF80_rem(state, lhs, rhs);
 #endif
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FREM1(const X80SoftFloat& lhs, const X80SoftFloat& rhs) {
+  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FREM1(softfloat_state* state, const X80SoftFloat& lhs, const X80SoftFloat& rhs) {
 #if defined(DEBUG_X86_FLOAT)
     BIGFLOAT Result;
     asm(R"(
@@ -181,16 +181,16 @@ struct FEX_PACKED X80SoftFloat {
 
     return Result;
 #else
-    return extF80_rem(lhs, rhs);
+    return extF80_rem(state, lhs, rhs);
 #endif
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FRNDINT(const X80SoftFloat& lhs) {
-    return extF80_roundToInt(lhs, softfloat_roundingMode, false);
+  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FRNDINT(softfloat_state* state, const X80SoftFloat& lhs) {
+    return extF80_roundToInt(state, lhs, state->roundingMode, false);
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FRNDINT(const X80SoftFloat& lhs, uint_fast8_t RoundMode) {
-    return extF80_roundToInt(lhs, RoundMode, false);
+  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FRNDINT(softfloat_state* state, const X80SoftFloat& lhs, uint_fast8_t RoundMode) {
+    return extF80_roundToInt(state, lhs, RoundMode, false);
   }
 
   FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FXTRACT_SIG(const X80SoftFloat& lhs) {
@@ -237,13 +237,14 @@ struct FEX_PACKED X80SoftFloat {
 #endif
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR static void FCMP(const X80SoftFloat& lhs, const X80SoftFloat& rhs, bool* eq, bool* lt, bool* nan) {
-    *eq = extF80_eq(lhs, rhs);
-    *lt = extF80_lt(lhs, rhs);
+  FEXCORE_PRESERVE_ALL_ATTR static void
+  FCMP(softfloat_state* state, const X80SoftFloat& lhs, const X80SoftFloat& rhs, bool* eq, bool* lt, bool* nan) {
+    *eq = extF80_eq(state, lhs, rhs);
+    *lt = extF80_lt(state, lhs, rhs);
     *nan = IsNan(lhs) || IsNan(rhs);
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FSCALE(const X80SoftFloat& lhs, const X80SoftFloat& rhs) {
+  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FSCALE(softfloat_state* state, const X80SoftFloat& lhs, const X80SoftFloat& rhs) {
     WARN_ONCE_FMT("x87: Application used FSCALE which may have accuracy problems");
 #ifdef DEBUG_X86_FLOAT
     BIGFLOAT Result;
@@ -261,16 +262,16 @@ struct FEX_PACKED X80SoftFloat {
 
     return Result;
 #else
-    X80SoftFloat Int = FRNDINT(rhs, softfloat_round_minMag);
-    LIBRARY_PRECISION Src2_d = Int;
+    X80SoftFloat Int = FRNDINT(state, rhs, softfloat_round_minMag);
+    LIBRARY_PRECISION Src2_d = Int.ToFMax(state);
     Src2_d = exp2l(Src2_d);
-    X80SoftFloat Src2_X80 = Src2_d;
-    X80SoftFloat Result = extF80_mul(lhs, Src2_X80);
+    X80SoftFloat Src2_X80(state, Src2_d);
+    X80SoftFloat Result = extF80_mul(state, lhs, Src2_X80);
     return Result;
 #endif
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat F2XM1(const X80SoftFloat& lhs) {
+  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat F2XM1(softfloat_state* state, const X80SoftFloat& lhs) {
     WARN_ONCE_FMT("x87: Application used F2XM1 which may have accuracy problems");
 #ifdef DEBUG_X86_FLOAT
     BIGFLOAT Result;
@@ -286,14 +287,14 @@ struct FEX_PACKED X80SoftFloat {
 
     return Result;
 #else
-    LIBRARY_PRECISION Src1_d = lhs;
+    LIBRARY_PRECISION Src1_d = lhs.ToFMax(state);
     LIBRARY_PRECISION Result = exp2l(Src1_d);
     Result -= 1.0;
-    return Result;
+    return X80SoftFloat(state, Result);
 #endif
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FYL2X(const X80SoftFloat& lhs, const X80SoftFloat& rhs) {
+  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FYL2X(softfloat_state* state, const X80SoftFloat& lhs, const X80SoftFloat& rhs) {
     WARN_ONCE_FMT("x87: Application used FYL2X which may have accuracy problems");
 #ifdef DEBUG_X86_FLOAT
     BIGFLOAT Result;
@@ -310,14 +311,14 @@ struct FEX_PACKED X80SoftFloat {
 
     return Result;
 #else
-    LIBRARY_PRECISION Src1_d = lhs;
-    LIBRARY_PRECISION Src2_d = rhs;
+    LIBRARY_PRECISION Src1_d = lhs.ToFMax(state);
+    LIBRARY_PRECISION Src2_d = rhs.ToFMax(state);
     LIBRARY_PRECISION Tmp = Src2_d * log2l(Src1_d);
-    return Tmp;
+    return X80SoftFloat(state, Tmp);
 #endif
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FATAN(const X80SoftFloat& lhs, const X80SoftFloat& rhs) {
+  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FATAN(softfloat_state* state, const X80SoftFloat& lhs, const X80SoftFloat& rhs) {
     WARN_ONCE_FMT("x87: Application used FATAN which may have accuracy problems");
 #ifdef DEBUG_X86_FLOAT
     BIGFLOAT Result;
@@ -334,14 +335,14 @@ struct FEX_PACKED X80SoftFloat {
 
     return Result;
 #else
-    LIBRARY_PRECISION Src1_d = lhs;
-    LIBRARY_PRECISION Src2_d = rhs;
+    LIBRARY_PRECISION Src1_d = lhs.ToFMax(state);
+    LIBRARY_PRECISION Src2_d = rhs.ToFMax(state);
     LIBRARY_PRECISION Tmp = atan2l(Src1_d, Src2_d);
-    return Tmp;
+    return X80SoftFloat(state, Tmp);
 #endif
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FTAN(const X80SoftFloat& lhs) {
+  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FTAN(softfloat_state* state, const X80SoftFloat& lhs) {
     WARN_ONCE_FMT("x87: Application used FTAN which may have accuracy problems");
 #ifdef DEBUG_X86_FLOAT
     BIGFLOAT Result;
@@ -358,13 +359,13 @@ struct FEX_PACKED X80SoftFloat {
 
     return Result;
 #else
-    LIBRARY_PRECISION Src_d = lhs;
+    LIBRARY_PRECISION Src_d = lhs.ToFMax(state);
     Src_d = tanl(Src_d);
-    return Src_d;
+    return X80SoftFloat(state, Src_d);
 #endif
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FSIN(const X80SoftFloat& lhs) {
+  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FSIN(softfloat_state* state, const X80SoftFloat& lhs) {
     WARN_ONCE_FMT("x87: Application used FSIN which may have accuracy problems");
 #ifdef DEBUG_X86_FLOAT
     BIGFLOAT Result;
@@ -380,13 +381,13 @@ struct FEX_PACKED X80SoftFloat {
 
     return Result;
 #else
-    LIBRARY_PRECISION Src_d = lhs;
+    LIBRARY_PRECISION Src_d = lhs.ToFMax(state);
     Src_d = sinl(Src_d);
-    return Src_d;
+    return X80SoftFloat(state, Src_d);
 #endif
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FCOS(const X80SoftFloat& lhs) {
+  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FCOS(softfloat_state* state, const X80SoftFloat& lhs) {
     WARN_ONCE_FMT("x87: Application used FCOS which may have accuracy problems");
 #ifdef DEBUG_X86_FLOAT
     BIGFLOAT Result;
@@ -402,13 +403,13 @@ struct FEX_PACKED X80SoftFloat {
 
     return Result;
 #else
-    LIBRARY_PRECISION Src_d = lhs;
+    LIBRARY_PRECISION Src_d = lhs.ToFMax(state);
     Src_d = cosl(Src_d);
-    return Src_d;
+    return X80SoftFloat(state, Src_d);
 #endif
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FSQRT(const X80SoftFloat& lhs) {
+  FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FSQRT(softfloat_state* state, const X80SoftFloat& lhs) {
 #ifdef DEBUG_X86_FLOAT
     BIGFLOAT Result;
     asm(R"(
@@ -423,35 +424,37 @@ struct FEX_PACKED X80SoftFloat {
 
     return Result;
 #else
-    return extF80_sqrt(lhs);
+    return extF80_sqrt(state, lhs);
 #endif
   }
 
-  operator float() const {
-    const float32_t Result = extF80_to_f32(*this);
+  float ToF32(softfloat_state* state) const {
+    const float32_t Result = extF80_to_f32(state, *this);
     return FEXCore::BitCast<float>(Result);
   }
 
-  operator double() const {
-    const float64_t Result = extF80_to_f64(*this);
+  double ToF64(softfloat_state* state) const {
+    const float64_t Result = extF80_to_f64(state, *this);
     return FEXCore::BitCast<double>(Result);
   }
 
-#ifndef _WIN32
-  operator BIGFLOAT() const {
+  LIBRARY_PRECISION ToFMax(softfloat_state* state) const {
+#ifdef _WIN32
+    return ToF64(state);
+#else
 #if BIGFLOATSIZE == 16
-    const float128_t Result = extF80_to_f128(*this);
+    const float128_t Result = extF80_to_f128(state, *this);
     return FEXCore::BitCast<BIGFLOAT>(Result);
 #else
     BIGFLOAT result {};
     memcpy(&result, this, sizeof(result));
     return result;
 #endif
-  }
 #endif
+  }
 
-  operator int16_t() const {
-    auto rv = extF80_to_i32(*this, softfloat_roundingMode, false);
+  int16_t ToI16(softfloat_state* state) const {
+    auto rv = extF80_to_i32(state, *this, state->roundingMode, false);
     if (rv > INT16_MAX || rv < INT16_MIN) {
       ///< Indefinite value for 16-bit conversions.
       return INT16_MIN;
@@ -460,24 +463,16 @@ struct FEX_PACKED X80SoftFloat {
     }
   }
 
-  operator int32_t() const {
-    return extF80_to_i32(*this, softfloat_roundingMode, false);
+  int32_t ToI32(softfloat_state* state) const {
+    return extF80_to_i32(state, *this, state->roundingMode, false);
   }
 
-  operator int64_t() const {
-    return extF80_to_i64(*this, softfloat_roundingMode, false);
+  int64_t ToI64(softfloat_state* state) const {
+    return extF80_to_i64(state, *this, state->roundingMode, false);
   }
 
-  operator uint64_t() const {
-    return extF80_to_ui64(*this, softfloat_roundingMode, false);
-  }
-
-  void operator=(const float rhs) {
-    *this = f32_to_extF80(FEXCore::BitCast<float32_t>(rhs));
-  }
-
-  void operator=(const double rhs) {
-    *this = f64_to_extF80(FEXCore::BitCast<float64_t>(rhs));
+  uint64_t ToUI64(softfloat_state* state) const {
+    return extF80_to_ui64(state, *this, state->roundingMode, false);
   }
 
   void operator=(const int16_t rhs) {
@@ -508,18 +503,18 @@ struct FEX_PACKED X80SoftFloat {
     Sign = rhs.signExp >> 15;
   }
 
-  X80SoftFloat(const float rhs) {
-    *this = f32_to_extF80(FEXCore::BitCast<float32_t>(rhs));
+  X80SoftFloat(softfloat_state* state, const float rhs) {
+    *this = f32_to_extF80(state, FEXCore::BitCast<float32_t>(rhs));
   }
 
-  X80SoftFloat(const double rhs) {
-    *this = f64_to_extF80(FEXCore::BitCast<float64_t>(rhs));
+  X80SoftFloat(softfloat_state* state, const double rhs) {
+    *this = f64_to_extF80(state, FEXCore::BitCast<float64_t>(rhs));
   }
 
 #ifndef _WIN32
-  X80SoftFloat(BIGFLOAT rhs) {
+  X80SoftFloat(softfloat_state* state, BIGFLOAT rhs) {
 #if BIGFLOATSIZE == 16
-    *this = f128_to_extF80(FEXCore::BitCast<float128_t>(rhs));
+    *this = f128_to_extF80(state, FEXCore::BitCast<float128_t>(rhs));
 #else
     *this = FEXCore::BitCast<long double>(rhs);
 #endif

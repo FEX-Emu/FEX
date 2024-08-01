@@ -44,7 +44,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 FEXCORE_PRESERVE_ALL_ATTR
 int_fast32_t
  softfloat_roundToI32(
-     bool sign, uint_fast64_t sig, uint_fast8_t roundingMode, bool exact )
+     struct softfloat_state *state, bool sign, uint_fast64_t sig, uint_fast8_t roundingMode, bool exact )
 {
     uint_fast16_t roundIncrement, roundBits;
     uint_fast32_t sig32;
@@ -86,13 +86,13 @@ int_fast32_t
 #ifdef SOFTFLOAT_ROUND_ODD
         if ( roundingMode == softfloat_round_odd ) z |= 1;
 #endif
-        if ( exact ) softfloat_exceptionFlags |= softfloat_flag_inexact;
+        if ( exact ) state->exceptionFlags |= softfloat_flag_inexact;
     }
     return z;
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
  invalid:
-    softfloat_raiseFlags( softfloat_flag_invalid );
+    softfloat_raiseFlags( state, softfloat_flag_invalid );
     return sign ? i32_fromNegOverflow : i32_fromPosOverflow;
 
 }

@@ -43,6 +43,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 FEXCORE_PRESERVE_ALL_ATTR
 extFloat80_t
  softfloat_roundPackToExtF80(
+     struct softfloat_state *state,
      bool sign,
      int_fast32_t exp,
      uint_fast64_t sig,
@@ -59,7 +60,7 @@ extFloat80_t
 
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
-    roundingMode = softfloat_roundingMode;
+    roundingMode = state->roundingMode;
     roundNearEven = (roundingMode == softfloat_round_near_even);
     if ( roundingPrecision == 80 ) goto precision80;
     if ( roundingPrecision == 64 ) {
@@ -87,15 +88,15 @@ extFloat80_t
             /*----------------------------------------------------------------
             *----------------------------------------------------------------*/
             isTiny =
-                   (softfloat_detectTininess
+                   (state->detectTininess
                         == softfloat_tininess_beforeRounding)
                 || (exp < 0)
                 || (sig <= (uint64_t) (sig + roundIncrement));
             sig = softfloat_shiftRightJam64( sig, 1 - exp );
             roundBits = sig & roundMask;
             if ( roundBits ) {
-                if ( isTiny ) softfloat_raiseFlags( softfloat_flag_underflow );
-                softfloat_exceptionFlags |= softfloat_flag_inexact;
+                if ( isTiny ) softfloat_raiseFlags( state, softfloat_flag_underflow );
+                state->exceptionFlags |= softfloat_flag_inexact;
 #ifdef SOFTFLOAT_ROUND_ODD
                 if ( roundingMode == softfloat_round_odd ) {
                     sig |= roundMask + 1;
@@ -121,7 +122,7 @@ extFloat80_t
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
     if ( roundBits ) {
-        softfloat_exceptionFlags |= softfloat_flag_inexact;
+        state->exceptionFlags |= softfloat_flag_inexact;
 #ifdef SOFTFLOAT_ROUND_ODD
         if ( roundingMode == softfloat_round_odd ) {
             sig = (sig & ~roundMask) | (roundMask + 1);
@@ -157,7 +158,7 @@ extFloat80_t
             /*----------------------------------------------------------------
             *----------------------------------------------------------------*/
             isTiny =
-                   (softfloat_detectTininess
+                   (state->detectTininess
                         == softfloat_tininess_beforeRounding)
                 || (exp < 0)
                 || ! doIncrement
@@ -168,8 +169,8 @@ extFloat80_t
             sig = sig64Extra.v;
             sigExtra = sig64Extra.extra;
             if ( sigExtra ) {
-                if ( isTiny ) softfloat_raiseFlags( softfloat_flag_underflow );
-                softfloat_exceptionFlags |= softfloat_flag_inexact;
+                if ( isTiny ) softfloat_raiseFlags( state, softfloat_flag_underflow );
+                state->exceptionFlags |= softfloat_flag_inexact;
 #ifdef SOFTFLOAT_ROUND_ODD
                 if ( roundingMode == softfloat_round_odd ) {
                     sig |= 1;
@@ -207,7 +208,7 @@ extFloat80_t
             roundMask = 0;
  overflow:
             softfloat_raiseFlags(
-                softfloat_flag_overflow | softfloat_flag_inexact );
+                state, softfloat_flag_overflow | softfloat_flag_inexact );
             if (
                    roundNearEven
                 || (roundingMode == softfloat_round_near_maxMag)
@@ -226,7 +227,7 @@ extFloat80_t
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
     if ( sigExtra ) {
-        softfloat_exceptionFlags |= softfloat_flag_inexact;
+        state->exceptionFlags |= softfloat_flag_inexact;
 #ifdef SOFTFLOAT_ROUND_ODD
         if ( roundingMode == softfloat_round_odd ) {
             sig |= 1;

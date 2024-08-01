@@ -67,7 +67,6 @@ set (SRCS
   Common/SoftFloat-3e/s_approxRecipSqrt32_1.c
   Common/SoftFloat-3e/s_approxRecipSqrt_1Ks.c
   Common/SoftFloat-3e/softfloat_raiseFlags.c
-  Common/SoftFloat-3e/softfloat_state.c
   Common/SoftFloat-3e/f64_to_extF80.c
   Common/SoftFloat-3e/s_commonNaNToExtF80UI.c
   Common/SoftFloat-3e/s_normSubnormalF64Sig.c
@@ -160,7 +159,7 @@ if (ENABLE_GLIBC_ALLOCATOR_HOOK_FAULT)
     Utils/AllocatorOverride.cpp)
 endif()
 
-set(DEFINES -DTHREAD_LOCAL=_Thread_local -DJIT_ARM64)
+set(DEFINES -DJIT_ARM64)
 
 if (_M_X86_64)
   list(APPEND DEFINES -D_M_X86_64=1)

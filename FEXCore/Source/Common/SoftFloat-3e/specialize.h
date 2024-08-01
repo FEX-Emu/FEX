@@ -136,7 +136,7 @@ uint_fast16_t
 | exception is raised.
 *----------------------------------------------------------------------------*/
 FEXCORE_PRESERVE_ALL_ATTR
-void softfloat_f32UIToCommonNaN( uint_fast32_t uiA, struct commonNaN *zPtr );
+void softfloat_f32UIToCommonNaN( struct softfloat_state *, uint_fast32_t uiA, struct commonNaN *zPtr );
 
 /*----------------------------------------------------------------------------
 | Converts the common NaN pointed to by 'aPtr' into a 32-bit floating-point
@@ -173,7 +173,7 @@ uint_fast32_t
 | exception is raised.
 *----------------------------------------------------------------------------*/
 FEXCORE_PRESERVE_ALL_ATTR
-void softfloat_f64UIToCommonNaN( uint_fast64_t uiA, struct commonNaN *zPtr );
+void softfloat_f64UIToCommonNaN( struct softfloat_state *, uint_fast64_t uiA, struct commonNaN *zPtr );
 
 /*----------------------------------------------------------------------------
 | Converts the common NaN pointed to by 'aPtr' into a 64-bit floating-point
@@ -222,7 +222,7 @@ uint_fast64_t
 FEXCORE_PRESERVE_ALL_ATTR
 void
  softfloat_extF80UIToCommonNaN(
-     uint_fast16_t uiA64, uint_fast64_t uiA0, struct commonNaN *zPtr );
+     struct softfloat_state *, uint_fast16_t uiA64, uint_fast64_t uiA0, struct commonNaN *zPtr );
 
 /*----------------------------------------------------------------------------
 | Converts the common NaN pointed to by 'aPtr' into an 80-bit extended
@@ -244,6 +244,7 @@ struct uint128 softfloat_commonNaNToExtF80UI( const struct commonNaN *aPtr );
 FEXCORE_PRESERVE_ALL_ATTR
 struct uint128
  softfloat_propagateNaNExtF80UI(
+     struct softfloat_state *,
      uint_fast16_t uiA64,
      uint_fast64_t uiA0,
      uint_fast16_t uiB64,
@@ -274,7 +275,7 @@ struct uint128
 FEXCORE_PRESERVE_ALL_ATTR
 void
  softfloat_f128UIToCommonNaN(
-     uint_fast64_t uiA64, uint_fast64_t uiA0, struct commonNaN *zPtr );
+     struct softfloat_state *, uint_fast64_t uiA64, uint_fast64_t uiA0, struct commonNaN *zPtr );
 
 /*----------------------------------------------------------------------------
 | Converts the common NaN pointed to by 'aPtr' into a 128-bit floating-point

@@ -44,10 +44,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 | should be simply `softfloat_exceptionFlags |= flags;'.
 *----------------------------------------------------------------------------*/
 FEXCORE_PRESERVE_ALL_ATTR
-void softfloat_raiseFlags( uint_fast8_t flags )
+void softfloat_raiseFlags( struct softfloat_state *state, uint_fast8_t flags )
 {
 
-    softfloat_exceptionFlags |= flags;
+    state->exceptionFlags |= flags;
 
 }
 
