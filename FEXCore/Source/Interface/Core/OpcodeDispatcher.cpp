@@ -2508,7 +2508,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
 
       if (DestIsLockedMem(Op)) {
         HandledLock = true;
-        Value = _AtomicFetchCLR(OpSize::i8Bit, BitMask, LoadEffectiveAddress(Address));
+        Value = _AtomicFetchCLR(OpSize::i8Bit, BitMask, LoadEffectiveAddress(Address, true));
       } else {
         Value = _LoadMemAutoTSO(GPRClass, 1, Address, 1);
 
@@ -2523,7 +2523,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
 
       if (DestIsLockedMem(Op)) {
         HandledLock = true;
-        Value = _AtomicFetchOr(OpSize::i8Bit, BitMask, LoadEffectiveAddress(Address));
+        Value = _AtomicFetchOr(OpSize::i8Bit, BitMask, LoadEffectiveAddress(Address, true));
       } else {
         Value = _LoadMemAutoTSO(GPRClass, 1, Address, 1);
 
@@ -2538,7 +2538,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
 
       if (DestIsLockedMem(Op)) {
         HandledLock = true;
-        Value = _AtomicFetchXor(OpSize::i8Bit, BitMask, LoadEffectiveAddress(Address));
+        Value = _AtomicFetchXor(OpSize::i8Bit, BitMask, LoadEffectiveAddress(Address, true));
       } else {
         Value = _LoadMemAutoTSO(GPRClass, 1, Address, 1);
 
@@ -4206,22 +4206,7 @@ void OpDispatchBuilder::UpdatePrefixFromSegment(Ref Segment, uint32_t SegmentReg
   }
 }
 
-AddressMode OpDispatchBuilder::AddSegmentToAddress(AddressMode A, uint32_t Flags) {
-  auto Segment = GetSegment(Flags);
-  if (Segment) {
-    if (!A.Base) {
-      A.Base = Segment;
-    } else if (!A.Index) {
-      A.Index = Segment;
-    } else {
-      A.Base = _Add(IR::SizeToOpSize(CTX->GetGPRSize()), A.Base, Segment);
-    }
-  }
-
-  return A;
-}
-
-Ref OpDispatchBuilder::LoadEffectiveAddress(AddressMode A, bool AllowUpperGarbage) {
+Ref OpDispatchBuilder::LoadEffectiveAddress(AddressMode A, bool AddSegmentBase, bool AllowUpperGarbage) {
   const uint8_t GPRSize = CTX->GetGPRSize();
   Ref Tmp = A.Base;
 
@@ -4253,10 +4238,16 @@ Ref OpDispatchBuilder::LoadEffectiveAddress(AddressMode A, bool AllowUpperGarbag
     Tmp = _Bfe(IR::SizeToOpSize(GPRSize), A.AddrSize * 8, 0, Tmp);
   }
 
+  if (A.Segment && AddSegmentBase) {
+    Tmp = Tmp ? _Add(IR::SizeToOpSize(GPRSize), Tmp, A.Segment) : A.Segment;
+  }
+
   return Tmp ?: _Constant(0);
 }
 
 AddressMode OpDispatchBuilder::SelectAddressMode(AddressMode A, bool AtomicTSO, bool Vector, unsigned AccessSize) {
+  const uint8_t GPRSize = CTX->GetGPRSize();
+
   // In the future this also needs to account for LRCPC3.
   bool SupportsRegIndex = Vector || !AtomicTSO;
 
@@ -4265,27 +4256,41 @@ AddressMode OpDispatchBuilder::SelectAddressMode(AddressMode A, bool AtomicTSO, 
   // addresses are reserved and therefore wrap around is invalid.
   //
   // TODO: Also handle GPR TSO if we can guarantee the constant inlines.
-  if (A.Base && A.Offset && !A.Index && SupportsRegIndex) {
-    const bool Const_16K = A.Offset > -16384 && A.Offset < 16384 && CTX->GetGPRSize() == 4;
+  if (SupportsRegIndex) {
+    if ((A.Base || A.Segment) && A.Offset && !A.Index) {
+      const bool Const_16K = A.Offset > -16384 && A.Offset < 16384 && A.AddrSize == 4 && GPRSize == 4;
 
-    if ((A.AddrSize == 8) || Const_16K) {
-      return {
-        .Base = A.Base,
-        .Index = _Constant(A.Offset),
-        .IndexType = (Const_16K && A.Offset < 0) ? MEM_OFFSET_SXTW : MEM_OFFSET_SXTX,
-        .IndexScale = 1,
-      };
+      if ((A.AddrSize == 8) || Const_16K) {
+        if (A.Base && A.Segment) {
+          A.Base = _Add(IR::SizeToOpSize(GPRSize), A.Base, A.Segment);
+        } else if (A.Segment) {
+          A.Base = A.Segment;
+        }
+
+        return {
+          .Base = A.Base,
+          .Index = _Constant(A.Offset),
+          .IndexType = (Const_16K && A.Offset < 0) ? MEM_OFFSET_SXTW : MEM_OFFSET_SXTX,
+          .IndexScale = 1,
+        };
+      }
     }
-  }
 
-  // Try a (possibly scaled) register index.
-  if (A.AddrSize == 8 && A.Base && A.Index && !A.Offset && (A.IndexScale == 1 || A.IndexScale == AccessSize) && SupportsRegIndex) {
-    return A;
+    // Try a (possibly scaled) register index.
+    if (A.AddrSize == 8 && A.Base && (A.Index || A.Segment) && !A.Offset && (A.IndexScale == 1 || A.IndexScale == AccessSize)) {
+      if (A.Index && A.Segment) {
+        A.Base = _Add(IR::SizeToOpSize(GPRSize), A.Base, A.Segment);
+      } else if (A.Segment) {
+        A.Index = A.Segment;
+        A.IndexScale = 1;
+      }
+      return A;
+    }
   }
 
   // Fallback on software address calculation
   return {
-    .Base = LoadEffectiveAddress(A),
+    .Base = LoadEffectiveAddress(A, true),
     .Index = InvalidNode,
   };
 }
@@ -4295,6 +4300,7 @@ AddressMode OpDispatchBuilder::DecodeAddress(const X86Tables::DecodedOp& Op, con
   const uint8_t GPRSize = CTX->GetGPRSize();
 
   AddressMode A {};
+  A.Segment = GetSegment(Op->Flags);
   A.AddrSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) != 0 ? (GPRSize >> 1) : GPRSize;
   A.NonTSO = AccessType == MemoryAccessType::NONTSO || AccessType == MemoryAccessType::STREAM;
 
@@ -4385,11 +4391,9 @@ Ref OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, const X86T
   }
 
   if ((IsOperandMem(Operand, true) && LoadData) || ForceLoad) {
-    A = AddSegmentToAddress(A, Flags);
-
     return _LoadMemAutoTSO(Class, OpSize, A, Align == -1 ? OpSize : Align);
   } else {
-    return LoadEffectiveAddress(A, AllowUpperGarbage);
+    return LoadEffectiveAddress(A, false, AllowUpperGarbage);
   }
 }
 
@@ -4504,10 +4508,9 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
   }
 
   AddressMode A = DecodeAddress(Op, Operand, AccessType, false /* IsLoad */);
-  A = AddSegmentToAddress(A, Op->Flags);
 
   if (OpSize == 10) {
-    Ref MemStoreDst = LoadEffectiveAddress(A);
+    Ref MemStoreDst = LoadEffectiveAddress(A, true);
 
     // For X87 extended doubles, split before storing
     _StoreMem(FPRClass, 8, MemStoreDst, Src, Align);
