@@ -68,7 +68,7 @@ bool CPUFeatures::IsFeaturePresent(uint32_t Feature) {
   case PF_SSE4_2_INSTRUCTIONS_AVAILABLE: return !!(CpuInfo.ProcessorFeatureBits & CPU_FEATURE_SSE42);
   case PF_AVX_INSTRUCTIONS_AVAILABLE: return !!(CpuInfo.ProcessorFeatureBits & CPU_FEATURE_AVX);
   case PF_AVX2_INSTRUCTIONS_AVAILABLE: return !!(CpuInfo.ProcessorFeatureBits & CPU_FEATURE_AVX2);
-  default: LogMan::Msg::DFmt("Unknown CPU feature: {:X}", Feature); return false;
+  default: return false;
   }
 }
 

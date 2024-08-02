@@ -46,8 +46,16 @@ $end_info$
 #include <wine/debug.h>
 
 class ECSyscallHandler;
+
+extern "C" {
 void* X64ReturnInstr; // See Module.S
 extern void* ExitFunctionEC;
+
+// Wine doesn't support issuing direct system calls with SVC, and unlike Windows it doesn't have a 'stable' syscall number for NtContinue
+void* WineSyscallDispatcher;
+// TODO: this really shouldn't be hardcoded, once wine gains proper syscall thunks this can be dropped.
+uint64_t WineNtContinueSyscallId = 0x1a;
+}
 
 struct ThreadCPUArea {
   static constexpr size_t TEBCPUAreaOffset = 0x1788;
@@ -56,11 +64,11 @@ struct ThreadCPUArea {
   explicit ThreadCPUArea(_TEB* TEB)
     : Area(*reinterpret_cast<CHPE_V2_CPU_AREA_INFO**>(reinterpret_cast<uintptr_t>(TEB) + TEBCPUAreaOffset)) {}
 
-  uint64_t EmulatorStackLimit() const {
+  uint64_t& EmulatorStackLimit() const {
     return Area->EmulatorStackLimit;
   }
 
-  uint64_t EmulatorStackBase() const {
+  uint64_t& EmulatorStackBase() const {
     return Area->EmulatorStackBase;
   }
 
@@ -84,6 +92,9 @@ struct ThreadCPUArea {
     return reinterpret_cast<uint64_t&>(Area->EmulatorData[3]);
   }
 };
+
+
+extern "C" NTSTATUS NtContinueNative(ARM64_NT_CONTEXT* NativeContext, BOOLEAN Alert);
 
 namespace {
 fextl::unique_ptr<FEXCore::Context::Context> CTX;
@@ -232,55 +243,64 @@ static bool HandleUnalignedAccess(ARM64_NT_CONTEXT& Context) {
 static void LoadStateFromECContext(FEXCore::Core::InternalThreadState* Thread, CONTEXT& Context) {
   auto& State = Thread->CurrentFrame->State;
 
-  // General register state
-  State.gregs[FEXCore::X86State::REG_RAX] = Context.Rax;
-  State.gregs[FEXCore::X86State::REG_RCX] = Context.Rcx;
-  State.gregs[FEXCore::X86State::REG_RDX] = Context.Rdx;
-  State.gregs[FEXCore::X86State::REG_RBX] = Context.Rbx;
-  State.gregs[FEXCore::X86State::REG_RSP] = Context.Rsp;
-  State.gregs[FEXCore::X86State::REG_RBP] = Context.Rbp;
-  State.gregs[FEXCore::X86State::REG_RSI] = Context.Rsi;
-  State.gregs[FEXCore::X86State::REG_RDI] = Context.Rdi;
-  State.gregs[FEXCore::X86State::REG_R8] = Context.R8;
-  State.gregs[FEXCore::X86State::REG_R9] = Context.R9;
-  State.gregs[FEXCore::X86State::REG_R10] = Context.R10;
-  State.gregs[FEXCore::X86State::REG_R11] = Context.R11;
-  State.gregs[FEXCore::X86State::REG_R12] = Context.R12;
-  State.gregs[FEXCore::X86State::REG_R13] = Context.R13;
-  State.gregs[FEXCore::X86State::REG_R14] = Context.R14;
-  State.gregs[FEXCore::X86State::REG_R15] = Context.R15;
+  if (Context.ContextFlags & CONTEXT_INTEGER) {
+    // General register state
+    State.gregs[FEXCore::X86State::REG_RAX] = Context.Rax;
+    State.gregs[FEXCore::X86State::REG_RCX] = Context.Rcx;
+    State.gregs[FEXCore::X86State::REG_RDX] = Context.Rdx;
+    State.gregs[FEXCore::X86State::REG_RBX] = Context.Rbx;
 
-  State.rip = Context.Rip;
-  CTX->SetFlagsFromCompactedEFLAGS(Thread, Context.EFlags);
+    State.gregs[FEXCore::X86State::REG_RSI] = Context.Rsi;
+    State.gregs[FEXCore::X86State::REG_RDI] = Context.Rdi;
+    State.gregs[FEXCore::X86State::REG_R8] = Context.R8;
+    State.gregs[FEXCore::X86State::REG_R9] = Context.R9;
+    State.gregs[FEXCore::X86State::REG_R10] = Context.R10;
+    State.gregs[FEXCore::X86State::REG_R11] = Context.R11;
+    State.gregs[FEXCore::X86State::REG_R12] = Context.R12;
+    State.gregs[FEXCore::X86State::REG_R13] = Context.R13;
+    State.gregs[FEXCore::X86State::REG_R14] = Context.R14;
+    State.gregs[FEXCore::X86State::REG_R15] = Context.R15;
+  }
 
-  State.es_idx = Context.SegEs & 0xffff;
-  State.cs_idx = Context.SegCs & 0xffff;
-  State.ss_idx = Context.SegSs & 0xffff;
-  State.ds_idx = Context.SegDs & 0xffff;
-  State.fs_idx = Context.SegFs & 0xffff;
-  State.gs_idx = Context.SegGs & 0xffff;
+  if (Context.ContextFlags & CONTEXT_CONTROL) {
+    State.rip = Context.Rip;
+    State.gregs[FEXCore::X86State::REG_RSP] = Context.Rsp;
+    State.gregs[FEXCore::X86State::REG_RBP] = Context.Rbp;
+    CTX->SetFlagsFromCompactedEFLAGS(Thread, Context.EFlags);
+  }
 
-  // The TEB is the only populated GDT entry by default
-  const auto TEB = reinterpret_cast<uint64_t>(NtCurrentTeb());
-  State.gdt[(Context.SegGs & 0xffff) >> 3].base = TEB;
-  State.gs_cached = TEB;
-  State.fs_cached = 0;
-  State.es_cached = 0;
-  State.cs_cached = 0;
-  State.ss_cached = 0;
-  State.ds_cached = 0;
+  if (Context.ContextFlags & CONTEXT_SEGMENTS) {
+    State.es_idx = Context.SegEs & 0xffff;
+    State.cs_idx = Context.SegCs & 0xffff;
+    State.ss_idx = Context.SegSs & 0xffff;
+    State.ds_idx = Context.SegDs & 0xffff;
+    State.fs_idx = Context.SegFs & 0xffff;
+    State.gs_idx = Context.SegGs & 0xffff;
 
-  // Floating-point register state
-  CTX->SetXMMRegistersFromState(Thread, reinterpret_cast<const __uint128_t*>(Context.FltSave.XmmRegisters), nullptr);
-  memcpy(State.mm, Context.FltSave.FloatRegisters, sizeof(State.mm));
+    // The TEB is the only populated GDT entry by default
+    const auto TEB = reinterpret_cast<uint64_t>(NtCurrentTeb());
+    State.gdt[(Context.SegGs & 0xffff) >> 3].base = TEB;
+    State.gs_cached = TEB;
+    State.fs_cached = 0;
+    State.es_cached = 0;
+    State.cs_cached = 0;
+    State.ss_cached = 0;
+    State.ds_cached = 0;
+  }
 
-  State.FCW = Context.FltSave.ControlWord;
-  State.flags[FEXCore::X86State::X87FLAG_C0_LOC] = (Context.FltSave.StatusWord >> 8) & 1;
-  State.flags[FEXCore::X86State::X87FLAG_C1_LOC] = (Context.FltSave.StatusWord >> 9) & 1;
-  State.flags[FEXCore::X86State::X87FLAG_C2_LOC] = (Context.FltSave.StatusWord >> 10) & 1;
-  State.flags[FEXCore::X86State::X87FLAG_C3_LOC] = (Context.FltSave.StatusWord >> 14) & 1;
-  State.flags[FEXCore::X86State::X87FLAG_TOP_LOC] = (Context.FltSave.StatusWord >> 11) & 0b111;
-  State.AbridgedFTW = Context.FltSave.TagWord;
+  if (Context.ContextFlags & CONTEXT_FLOATING_POINT) {
+    // Floating-point register state
+    CTX->SetXMMRegistersFromState(Thread, reinterpret_cast<const __uint128_t*>(Context.FltSave.XmmRegisters), nullptr);
+    memcpy(State.mm, Context.FltSave.FloatRegisters, sizeof(State.mm));
+
+    State.FCW = Context.FltSave.ControlWord;
+    State.flags[FEXCore::X86State::X87FLAG_C0_LOC] = (Context.FltSave.StatusWord >> 8) & 1;
+    State.flags[FEXCore::X86State::X87FLAG_C1_LOC] = (Context.FltSave.StatusWord >> 9) & 1;
+    State.flags[FEXCore::X86State::X87FLAG_C2_LOC] = (Context.FltSave.StatusWord >> 10) & 1;
+    State.flags[FEXCore::X86State::X87FLAG_C3_LOC] = (Context.FltSave.StatusWord >> 14) & 1;
+    State.flags[FEXCore::X86State::X87FLAG_TOP_LOC] = (Context.FltSave.StatusWord >> 11) & 0b111;
+    State.AbridgedFTW = Context.FltSave.TagWord;
+  }
 }
 
 static void ReconstructThreadState(ARM64_NT_CONTEXT& Context) {
@@ -306,7 +326,7 @@ static ARM64_NT_CONTEXT ReconstructPackedECContext(ARM64_NT_CONTEXT& Context) {
   ReconstructThreadState(Context);
   ARM64_NT_CONTEXT ECContext {};
 
-  ECContext.ContextFlags = CONTEXT_ARM64_CONTROL | CONTEXT_ARM64_INTEGER | CONTEXT_ARM64_FLOATING_POINT;
+  ECContext.ContextFlags = CONTEXT_ARM64_FULL;
 
   auto* Thread = GetCPUArea().ThreadState();
   auto& State = Thread->CurrentFrame->State;
@@ -365,6 +385,7 @@ static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT&
   uint64_t GuestSp = Context.X[Config.SRAGPRMapping[static_cast<size_t>(FEXCore::X86State::REG_RSP)]];
   struct DispatchArgs {
     ARM64_NT_CONTEXT Context;
+    uint64_t Pad[4]; // Only present on newer Windows versions, likely for SVE.
     EXCEPTION_RECORD Rec;
     uint64_t Align;
     uint64_t Redzone[2];
@@ -407,7 +428,7 @@ extern "C" void SyncThreadContext(CONTEXT* Context) {
   Exception::LoadStateFromECContext(Thread, *Context);
 }
 
-void ProcessInit() {
+NTSTATUS ProcessInit() {
   FEX::Config::InitializeConfigs();
   FEXCore::Config::Initialize();
   FEXCore::Config::AddLayer(FEX::Config::CreateGlobalMainLayer());
@@ -437,10 +458,17 @@ void ProcessInit() {
   X64ReturnInstr = ::VirtualAlloc(nullptr, FEXCore::Utils::FEX_PAGE_SIZE, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
   *reinterpret_cast<uint8_t*>(X64ReturnInstr) = 0xc3;
 
-  Exception::KiUserExceptionDispatcher = GetRedirectedProcAddress(GetModuleHandle("ntdll.dll"), "KiUserExceptionDispatcher");
+  const auto NtDll = GetModuleHandle("ntdll.dll");
+  Exception::KiUserExceptionDispatcher = GetRedirectedProcAddress(NtDll, "KiUserExceptionDispatcher");
+  const auto WineSyscallDispatcherPtr = reinterpret_cast<void**>(GetProcAddress(NtDll, "__wine_syscall_dispatcher"));
+  if (WineSyscallDispatcherPtr) {
+    WineSyscallDispatcher = *WineSyscallDispatcherPtr;
+  }
+
+  return STATUS_SUCCESS;
 }
 
-void ProcessTerm() {}
+void ProcessTerm(HANDLE Handle, BOOL After, NTSTATUS Status) {}
 
 class ScopedCallbackDisable {
 private:
@@ -457,49 +485,72 @@ public:
   }
 };
 
-NTSTATUS ResetToConsistentState(EXCEPTION_POINTERS* Ptrs, ARM64_NT_CONTEXT* Context, BOOLEAN* Continue) {
-  ScopedCallbackDisable Guard;
-  const auto* Exception = Ptrs->ExceptionRecord;
-  if (Exception->ExceptionCode == EXCEPTION_DATATYPE_MISALIGNMENT && Exception::HandleUnalignedAccess(*Context)) {
-    LogMan::Msg::DFmt("Handled unaligned atomic: new pc: {:X}", Context->Pc);
-    *Continue = true;
-    return STATUS_SUCCESS;
-  }
+bool ResetToConsistentStateImpl(EXCEPTION_RECORD* Exception, CONTEXT* GuestContext, ARM64_NT_CONTEXT* NativeContext) {
+  LogMan::Msg::DFmt("Exception: Code: {:X} Address: {:X}", Exception->ExceptionCode, reinterpret_cast<uintptr_t>(Exception->ExceptionAddress));
+
+  const auto CPUArea = GetCPUArea();
 
   if (Exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
     const auto FaultAddress = static_cast<uint64_t>(Exception->ExceptionInformation[1]);
 
     bool HandledRWX = false;
-    if (InvalidationTracker && GetCPUArea().ThreadState()) {
+    if (InvalidationTracker && CPUArea.ThreadState()) {
       std::scoped_lock Lock(ThreadCreationMutex);
       HandledRWX = InvalidationTracker->HandleRWXAccessViolation(FaultAddress);
     }
 
     if (HandledRWX) {
-      LogMan::Msg::DFmt("Handled self-modifying code: pc: {:X} fault: {:X}", Context->Pc, FaultAddress);
-      *Continue = true;
-      return STATUS_SUCCESS;
+      LogMan::Msg::DFmt("Handled self-modifying code: pc: {:X} fault: {:X}", NativeContext->Pc, FaultAddress);
+      return true;
     }
   }
 
-  if (!CTX->IsAddressInCodeBuffer(GetCPUArea().ThreadState(), Context->Pc) && !IsDispatcherAddress(Context->Pc)) {
-    return STATUS_SUCCESS;
+  if (!CTX->IsAddressInCodeBuffer(CPUArea.ThreadState(), NativeContext->Pc) && !IsDispatcherAddress(NativeContext->Pc)) {
+    LogMan::Msg::DFmt("Passing through exception");
+    return false;
+  }
+
+  if (Exception->ExceptionCode == EXCEPTION_DATATYPE_MISALIGNMENT && Exception::HandleUnalignedAccess(*NativeContext)) {
+    LogMan::Msg::DFmt("Handled unaligned atomic: new pc: {:X}", NativeContext->Pc);
+    return true;
   }
 
 
   if (IsEmulatorStackAddress(reinterpret_cast<uint64_t>(__builtin_frame_address(0)))) {
-    Exception::RethrowGuestException(*Exception, *Context);
-    LogMan::Msg::DFmt("Rethrowing onto guest stack: {:X}", Context->Sp);
-    *Continue = true;
-    return STATUS_SUCCESS;
+    Exception::RethrowGuestException(*Exception, *NativeContext);
+    LogMan::Msg::DFmt("Rethrowing onto guest stack: {:X}", NativeContext->Sp);
+    return true;
   } else {
     LogMan::Msg::EFmt("Unexpected exception in JIT code on guest stack");
-    return STATUS_SUCCESS;
+    return false;
   }
 }
 
-void NotifyMemoryAlloc(void* Address, SIZE_T Size, ULONG Type, ULONG Prot) {
+NTSTATUS ResetToConsistentState(EXCEPTION_RECORD* Exception, CONTEXT* GuestContext, ARM64_NT_CONTEXT* NativeContext) {
+  if (!GetCPUArea().ThreadState()) {
+    return STATUS_SUCCESS;
+  }
+
+  bool Cont {};
+  {
+
+    ScopedCallbackDisable guard;
+    Cont = ResetToConsistentStateImpl(Exception, GuestContext, NativeContext);
+  }
+
+  if (Cont) {
+    NtContinueNative(NativeContext, false);
+  }
+
+  return STATUS_SUCCESS;
+}
+
+void NotifyMemoryAlloc(void* Address, SIZE_T Size, ULONG Type, ULONG Prot, BOOL After, NTSTATUS Status) {
   if (!InvalidationTracker || !GetCPUArea().ThreadState()) {
+    return;
+  }
+
+  if (!After || Status) {
     return;
   }
 
@@ -507,21 +558,29 @@ void NotifyMemoryAlloc(void* Address, SIZE_T Size, ULONG Type, ULONG Prot) {
   InvalidationTracker->HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), Prot);
 }
 
-void NotifyMemoryFree(void* Address, SIZE_T Size, ULONG FreeType) {
+void NotifyMemoryFree(void* Address, SIZE_T Size, ULONG FreeType, BOOL After, NTSTATUS Status) {
   if (!InvalidationTracker || !GetCPUArea().ThreadState()) {
     return;
   }
 
+  if (After) {
+    return;
+  }
+
   std::scoped_lock Lock(ThreadCreationMutex);
-  if (!Size) {
-    InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
-  } else if (FreeType & MEM_DECOMMIT) {
+  if (FreeType & MEM_DECOMMIT) {
     InvalidationTracker->InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), true);
+  } else if (FreeType & MEM_RELEASE) {
+    InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
   }
 }
 
-void NotifyMemoryProtect(void* Address, SIZE_T Size, ULONG NewProt) {
+void NotifyMemoryProtect(void* Address, SIZE_T Size, ULONG NewProt, BOOL After, NTSTATUS Status) {
   if (!InvalidationTracker || !GetCPUArea().ThreadState()) {
+    return;
+  }
+
+  if (!After || Status) {
     return;
   }
 
@@ -529,13 +588,30 @@ void NotifyMemoryProtect(void* Address, SIZE_T Size, ULONG NewProt) {
   InvalidationTracker->HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), NewProt);
 }
 
-void NotifyUnmapViewOfSection(void* Address) {
+NTSTATUS NotifyMapViewOfSection(void* Unk1, void* Address, void* Unk2, SIZE_T Size, ULONG AllocType, ULONG Prot) {
+  return STATUS_SUCCESS;
+}
+
+void NotifyUnmapViewOfSection(void* Address, BOOL After, NTSTATUS Status) {
   if (!InvalidationTracker || !GetCPUArea().ThreadState()) {
+    return;
+  }
+
+  if (After) {
     return;
   }
 
   std::scoped_lock Lock(ThreadCreationMutex);
   InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
+}
+
+void FlushInstructionCacheHeavy(const void* Address, SIZE_T Size) {
+  if (!InvalidationTracker || !GetCPUArea().ThreadState()) {
+    return;
+  }
+
+  std::scoped_lock Lock(ThreadCreationMutex);
+  InvalidationTracker->InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), false);
 }
 
 void BTCpu64FlushInstructionCache(const void* Address, SIZE_T Size) {
@@ -547,7 +623,23 @@ void BTCpu64FlushInstructionCache(const void* Address, SIZE_T Size) {
   InvalidationTracker->InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), false);
 }
 
+void BTCpu64NotifyMemoryDirty(void* Address, SIZE_T Size) {
+  if (!InvalidationTracker || !GetCPUArea().ThreadState()) {
+    return;
+  }
+
+  std::scoped_lock Lock(ThreadCreationMutex);
+  InvalidationTracker->InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), false);
+}
+
+void BTCpu64NotifyReadFile(HANDLE Handle, void* Address, SIZE_T Size, BOOL After, NTSTATUS Status) {}
+
 NTSTATUS ThreadInit() {
+  static constexpr size_t EmulatorStackSize = 0x40000;
+  const uint64_t EmulatorStack = reinterpret_cast<uint64_t>(::VirtualAlloc(nullptr, EmulatorStackSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
+  GetCPUArea().EmulatorStackLimit() = EmulatorStack;
+  GetCPUArea().EmulatorStackBase() = EmulatorStack + EmulatorStackSize;
+
   const auto CPUArea = GetCPUArea();
 
   auto* Thread = CTX->CreateThread(0, 0);
@@ -560,7 +652,7 @@ NTSTATUS ThreadInit() {
   uint64_t EnterECFillSRA = Thread->CurrentFrame->Pointers.Common.DispatcherLoopTopEnterECFillSRA;
   CPUArea.DispatcherLoopTopEnterECFillSRA() = EnterECFillSRA;
 
-  CPUArea.ContextAmd64() = {.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT,
+  CPUArea.ContextAmd64() = {.ContextFlags = CONTEXT_CONTROL | CONTEXT_SEGMENTS | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT,
                             .AMD64_SegCs = 0x33,
                             .AMD64_SegDs = 0x2b,
                             .AMD64_SegEs = 0x2b,
@@ -582,7 +674,7 @@ NTSTATUS ThreadInit() {
   return STATUS_SUCCESS;
 }
 
-NTSTATUS ThreadTerm(HANDLE Thread) {
+NTSTATUS ThreadTerm(HANDLE Thread, LONG ExitCode) {
   const auto [Err, CPUArea] = GetThreadCPUArea(Thread);
   if (Err) {
     return Err;
@@ -602,6 +694,7 @@ NTSTATUS ThreadTerm(HANDLE Thread) {
   }
 
   CTX->DestroyThread(OldThreadState);
+  ::VirtualFree(reinterpret_cast<void*>(GetCPUArea().EmulatorStackLimit()), 0, MEM_RELEASE);
   return STATUS_SUCCESS;
 }
 

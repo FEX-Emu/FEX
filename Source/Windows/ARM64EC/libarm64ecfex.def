@@ -3,12 +3,14 @@ LIBRARY libarm64ecfex.dll
 EXPORTS
   BTCpu64FlushInstructionCache
   BTCpu64IsProcessorFeaturePresent
+  BTCpu64NotifyMemoryDirty
+  BTCpu64NotifyReadFile
   DispatchJump DATA
   RetToEntryThunk DATA
   ExitToX64 DATA
   BeginSimulation DATA
-;  FlushInstructionCacheHeavy
-;  NotifyMapViewOfSection
+  FlushInstructionCacheHeavy
+  NotifyMapViewOfSection
   NotifyMemoryAlloc
   NotifyMemoryFree
   NotifyMemoryProtect
