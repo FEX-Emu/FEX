@@ -806,14 +806,6 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
   FEXCORE_PROFILE_SCOPED("CompileBlock");
   auto Thread = Frame->Thread;
 
-#ifdef _M_ARM_64EC
-  // If the target PC is EC code, mark it in the L2 and return straight to the dispatcher
-  // so it can handle the call/return.
-  if (Thread->LookupCache->CheckPageEC(GuestRIP)) {
-    return GuestRIP;
-  }
-#endif
-
   // Invalidate might take a unique lock on this, to guarantee that during invalidation no code gets compiled
   auto lk = GuardSignalDeferringSection<std::shared_lock>(CodeInvalidationMutex, Thread);
 
