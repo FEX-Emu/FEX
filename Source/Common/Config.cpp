@@ -16,7 +16,6 @@
 #include <linux/limits.h>
 #include <pwd.h>
 #endif
-#include <list>
 #include <utility>
 #include <json-maker.h>
 #include <tiny-json.h>
@@ -63,10 +62,10 @@ namespace JSON {
   }
 } // namespace JSON
 
-static const fextl::map<FEXCore::Config::ConfigOption, fextl::string> ConfigToNameLookup = {{
-#define OPT_BASE(type, group, enum, json, default) {FEXCore::Config::ConfigOption::CONFIG_##enum, #json},
+static constexpr std::pair<std::string_view, FEXCore::Config::ConfigOption> ConfigLookup[] {
+#define OPT_BASE(type, group, enum, json, default) {#json, FEXCore::Config::ConfigOption::CONFIG_##enum},
 #include <FEXCore/Config/ConfigValues.inl>
-}};
+};
 
 void SaveLayerToJSON(const fextl::string& Filename, FEXCore::Config::Layer* const Layer) {
   char Buffer[4096];
@@ -74,9 +73,15 @@ void SaveLayerToJSON(const fextl::string& Filename, FEXCore::Config::Layer* cons
   Dest = json_objOpen(Buffer, nullptr);
   Dest = json_objOpen(Dest, "Config");
   for (auto& it : Layer->GetOptionMap()) {
-    auto& Name = ConfigToNameLookup.find(it.first)->second;
+    std::string_view Name {};
+    for (auto& name_it : ConfigLookup) {
+      if (name_it.second == it.first) {
+        Name = name_it.first;
+        break;
+      }
+    }
     for (auto& var : it.second) {
-      Dest = json_str(Dest, Name.c_str(), var.c_str());
+      Dest = json_str(Dest, Name.data(), var.c_str());
     }
   }
   Dest = json_objClose(Dest);
@@ -130,23 +135,29 @@ private:
   char* const* envp;
 };
 
-static const fextl::map<fextl::string, FEXCore::Config::ConfigOption, std::less<>> ConfigLookup = {{
-#define OPT_BASE(type, group, enum, json, default) {#json, FEXCore::Config::ConfigOption::CONFIG_##enum},
-#include <FEXCore/Config/ConfigValues.inl>
-}};
-
 OptionMapper::OptionMapper(FEXCore::Config::LayerType Layer)
   : FEXCore::Config::Layer(Layer) {}
 
 void OptionMapper::MapNameToOption(const char* ConfigName, const char* ConfigString) {
-  auto it = ConfigLookup.find(ConfigName);
-  if (it != ConfigLookup.end()) {
-    const auto KeyOption = it->second;
-    const auto KeyName = std::string_view(ConfigName);
-    const auto Value_View = std::string_view(ConfigString);
+  std::optional<FEXCore::Config::ConfigOption> KeyOptionValue;
+  for (auto& it : ConfigLookup) {
+    if (it.first != ConfigName) {
+      continue;
+    }
+
+    KeyOptionValue = it.second;
+    break;
+  }
+
+  if (!KeyOptionValue.has_value()) {
+    return;
+  }
+
+  const auto KeyOption = *KeyOptionValue;
+  const auto KeyName = std::string_view(ConfigName);
+  const auto Value_View = std::string_view(ConfigString);
 #define JSONLOADER
 #include <FEXCore/Config/ConfigOptions.inl>
-  }
 }
 
 MainLoader::MainLoader(FEXCore::Config::LayerType Type)
@@ -189,6 +200,12 @@ void EnvLoader::Load() {
 
   for (const char* const* pvar = envp; pvar && *pvar; pvar++) {
     std::string_view Var(*pvar);
+
+    ///< All FEX environment variables start with `FEX_`
+    if (!Var.starts_with("FEX_")) {
+      continue;
+    }
+
     size_t pos = Var.rfind('=');
     if (fextl::string::npos == pos) {
       continue;
