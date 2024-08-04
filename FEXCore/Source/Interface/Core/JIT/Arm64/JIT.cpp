@@ -496,7 +496,7 @@ static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame* Fram
   uintptr_t branch = (uintptr_t)(Record)-8;
 
   auto offset = HostCode / 4 - branch / 4;
-  if (vixl::IsInt26(offset)) {
+  if (ARMEmitter::Emitter::IsInt26(offset)) {
     // optimal case - can branch directly
     // patch the code
     ARMEmitter::Emitter emit((uint8_t*)(branch), 4);
