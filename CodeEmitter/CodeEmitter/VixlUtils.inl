@@ -36,9 +36,9 @@
 // to by n, imm_s and imm_r are undefined.
 static bool IsImmLogical(uint64_t value,
                              unsigned width,
-                             unsigned* n,
-                             unsigned* imm_s,
-                             unsigned* imm_r) {
+                             unsigned* n = nullptr,
+                             unsigned* imm_s = nullptr,
+                             unsigned* imm_r = nullptr) {
   [[maybe_unused]] constexpr auto kBRegSize = 8;
   [[maybe_unused]] constexpr auto kHRegSize = 16;
   [[maybe_unused]] constexpr auto kSRegSize = 32;

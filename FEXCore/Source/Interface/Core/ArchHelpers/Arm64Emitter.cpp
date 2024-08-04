@@ -14,10 +14,12 @@
 #include <CodeEmitter/Emitter.h>
 #include <CodeEmitter/Registers.h>
 
+#ifdef VIXL_DISASSEMBLER
 #include <aarch64/cpu-aarch64.h>
 #include <aarch64/instructions-aarch64.h>
 #include <cpu-features.h>
 #include <utils-vixl.h>
+#endif
 
 #include <array>
 #include <tuple>
@@ -421,7 +423,7 @@ void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, ui
   if (RequiredMoveSegments > 1) {
     // Only try to use this path if the number of segments is > 1.
     // `movz` is better than `orr` since hardware will rename or merge if possible when `movz` is used.
-    const auto IsImm = vixl::aarch64::Assembler::IsImmLogical(Constant, RegSizeInBits(s));
+    const auto IsImm = ARMEmitter::Emitter::IsImmLogical(Constant, RegSizeInBits(s));
     if (IsImm) {
       orr(s, Reg, ARMEmitter::Reg::zr, Constant);
       if (NOPPad) {
