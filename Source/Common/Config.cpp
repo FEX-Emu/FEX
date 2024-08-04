@@ -149,11 +149,6 @@ void OptionMapper::MapNameToOption(const char* ConfigName, const char* ConfigStr
   }
 }
 
-static const fextl::vector<std::pair<const char*, FEXCore::Config::ConfigOption>> EnvConfigLookup = {{
-#define OPT_BASE(type, group, enum, json, default) {"FEX_" #enum, FEXCore::Config::ConfigOption::CONFIG_##enum},
-#include <FEXCore/Config/ConfigValues.inl>
-}};
-
 MainLoader::MainLoader(FEXCore::Config::LayerType Type)
   : OptionMapper(Type)
   , Config {FEXCore::Config::GetConfigFileLocation(Type == FEXCore::Config::LayerType::LAYER_GLOBAL_MAIN)} {}
@@ -229,11 +224,11 @@ void EnvLoader::Load() {
 
   std::optional<std::string_view> Value;
 
-  for (auto& it : EnvConfigLookup) {
-    if ((Value = GetVar(EnvMap, it.first)).has_value()) {
-      Set(it.second, fextl::string(*Value));
-    }
-  }
+  // Walk all the environment options and corresponding config option.
+#define OPT_BASE(type, group, enum, json, default) \
+  Value = GetVar(EnvMap, "FEX_" #enum);            \
+  if (Value.has_value()) Set(FEXCore::Config::ConfigOption::CONFIG_##enum, fextl::string(*Value));
+#include <FEXCore/Config/ConfigValues.inl>
 }
 
 fextl::unique_ptr<FEXCore::Config::Layer> CreateGlobalMainLayer() {
