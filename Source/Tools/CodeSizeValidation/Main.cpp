@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "DummyHandlers.h"
+#include "Common/HostFeatures.h"
 #include "FEXCore/Core/Context.h"
 #include "FEXCore/Debug/InternalThreadState.h"
 #include <FEXCore/Config/Config.h>
@@ -597,6 +598,11 @@ int main(int argc, char** argv, char** const envp) {
 
   // Create FEXCore context.
   auto CTX = FEXCore::Context::Context::CreateNewContext();
+
+  {
+    auto HostFeatures = FEX::FetchHostFeatures();
+    CTX->SetHostFeatures(HostFeatures);
+  }
 
   auto SignalDelegation = FEX::DummyHandlers::CreateSignalDelegator();
   auto SyscallHandler = FEX::DummyHandlers::CreateSyscallHandler();

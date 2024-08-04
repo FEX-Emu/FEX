@@ -90,7 +90,6 @@ set (SRCS
   Interface/Core/CPUBackend.cpp
   Interface/Core/CPUID.cpp
   Interface/Core/Frontend.cpp
-  Interface/Core/HostFeatures.cpp
   Interface/Core/ObjectCache/JobHandling.cpp
   Interface/Core/ObjectCache/NamedRegionObjectHandler.cpp
   Interface/Core/ObjectCache/ObjectCacheService.cpp
@@ -167,11 +166,6 @@ endif()
 
 if (_M_ARM_64)
   list(APPEND DEFINES -D_M_ARM_64=1)
-endif()
-
-if (ENABLE_VIXL_SIMULATOR)
-  # We can run the simulator on both x86-64 or AArch64 hosts
-  list(APPEND DEFINES -DVIXL_SIMULATOR=1 -DVIXL_INCLUDE_SIMULATOR_AARCH64=1)
 endif()
 
 if (ENABLE_VIXL_DISASSEMBLER)

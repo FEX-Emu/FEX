@@ -6,6 +6,7 @@
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CPUID.h>
+#include <FEXCore/Core/HostFeatures.h>
 #include <FEXCore/Core/SignalDelegator.h>
 #include "FEXCore/Debug/InternalThreadState.h"
 
@@ -42,8 +43,8 @@ void FEXCore::Context::ContextImpl::SetCustomCPUBackendFactory(CustomCPUFactoryT
   CustomCPUFactory = std::move(Factory);
 }
 
-HostFeatures FEXCore::Context::ContextImpl::GetHostFeatures() const {
-  return HostFeatures;
+void FEXCore::Context::ContextImpl::SetHostFeatures(const FEXCore::HostFeatures& Features) {
+  HostFeatures = Features;
 }
 
 void FEXCore::Context::ContextImpl::SetSignalDelegator(FEXCore::SignalDelegator* _SignalDelegation) {

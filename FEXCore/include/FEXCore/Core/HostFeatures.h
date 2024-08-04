@@ -3,10 +3,7 @@
 #include <cstdint>
 
 namespace FEXCore {
-class HostFeatures final {
-public:
-  HostFeatures();
-
+struct HostFeatures {
   /**
    * @brief Backend features that change how codegen is generated from IR
    *
