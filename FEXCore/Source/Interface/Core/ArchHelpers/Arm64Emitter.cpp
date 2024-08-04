@@ -351,8 +351,6 @@ Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl* ctx, void* EmissionPtr
   }
 #endif
 
-  CPU.SetUp();
-
   // Number of register available is dependent on what operating mode the proccess is in.
   if (EmitterCTX->Config.Is64BitMode()) {
     StaticRegisters = x64::SRA;

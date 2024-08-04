@@ -94,7 +94,6 @@ protected:
   Arm64Emitter(FEXCore::Context::ContextImpl* ctx, void* EmissionPtr = nullptr, size_t size = 0);
 
   FEXCore::Context::ContextImpl* EmitterCTX;
-  vixl::aarch64::CPU CPU;
 
   std::span<const ARMEmitter::Register> ConfiguredDynamicRegisterBase {};
   std::span<const ARMEmitter::Register> StaticRegisters {};
