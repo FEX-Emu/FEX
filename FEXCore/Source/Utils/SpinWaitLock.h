@@ -24,12 +24,12 @@ namespace FEXCore::Utils::SpinWaitLock {
 
 #define LOADEXCLUSIVE(LoadExclusiveOp, RegSize)                 \
   /* Prime the exclusive monitor with the passed in address. */ \
-  #LoadExclusiveOp " %" #RegSize "[Result], [%[Futex]];"
+  #LoadExclusiveOp " %" #RegSize "[Result], [%[Futex]];\n"
 
 #define SPINLOOP_BODY(LoadAtomicOp, RegSize)                               \
   /* WFE will wait for either the memory to change or spurious wake-up. */ \
-  "wfe;" /* Load with acquire to get the result of memory. */              \
-    #LoadAtomicOp " %" #RegSize "[Result], [%[Futex]]; "
+  "wfe;\n" /* Load with acquire to get the result of memory. */            \
+    #LoadAtomicOp " %" #RegSize "[Result], [%[Futex]];\n"
 
 #define SPINLOOP_WFE_LDX_8BIT LOADEXCLUSIVE(ldaxrb, w)
 #define SPINLOOP_WFE_LDX_16BIT LOADEXCLUSIVE(ldaxrh, w)
