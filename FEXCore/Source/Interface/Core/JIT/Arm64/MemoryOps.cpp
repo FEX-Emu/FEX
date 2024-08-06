@@ -2157,6 +2157,11 @@ DEF_OP(ParanoidStoreMemTSO) {
 }
 
 DEF_OP(CacheLineClear) {
+  if (!CTX->HostFeatures.SupportsCacheMaintenanceOps) {
+    dmb(ARMEmitter::BarrierScope::SY);
+    return;
+  }
+
   auto Op = IROp->C<IR::IROp_CacheLineClear>();
 
   auto MemReg = GetReg(Op->Addr.ID());
@@ -2181,6 +2186,11 @@ DEF_OP(CacheLineClear) {
 }
 
 DEF_OP(CacheLineClean) {
+  if (!CTX->HostFeatures.SupportsCacheMaintenanceOps) {
+    dmb(ARMEmitter::BarrierScope::ST);
+    return;
+  }
+
   auto Op = IROp->C<IR::IROp_CacheLineClean>();
 
   auto MemReg = GetReg(Op->Addr.ID());
