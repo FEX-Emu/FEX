@@ -125,11 +125,13 @@ static void OverrideFeatures(FEXCore::HostFeatures* Features, uint64_t ForceSVEW
   Features->SupportsSVE256 = ForceSVEWidth && ForceSVEWidth >= 256;
 }
 
-FEXCore::HostFeatures FetchHostFeatures(vixl::CPUFeatures Features, uint64_t CTR, uint64_t MIDR) {
+FEXCore::HostFeatures FetchHostFeatures(vixl::CPUFeatures Features, bool SupportsCacheMaintenanceOps, uint64_t CTR, uint64_t MIDR) {
   FEXCore::HostFeatures HostFeatures;
 
   FEX_CONFIG_OPT(ForceSVEWidth, FORCESVEWIDTH);
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
+
+  HostFeatures.SupportsCacheMaintenanceOps = SupportsCacheMaintenanceOps;
 
   HostFeatures.SupportsAES = Features.Has(vixl::CPUFeatures::Feature::kAES);
   HostFeatures.SupportsCRC = Features.Has(vixl::CPUFeatures::Feature::kCRC32);
@@ -289,6 +291,6 @@ FEXCore::HostFeatures FetchHostFeatures() {
   __asm volatile("mrs %[midr], midr_el1" : [midr] "=r"(MIDR));
 #endif
 
-  return FetchHostFeatures(Features, CTR, MIDR);
+  return FetchHostFeatures(Features, true, CTR, MIDR);
 }
 } // namespace FEX
