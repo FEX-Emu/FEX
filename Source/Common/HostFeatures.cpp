@@ -42,12 +42,6 @@ static void SetFPCR(uint64_t Value) {
   __asm("msr FPCR, %[Value]" ::[Value] "r"(Value));
 }
 
-static uint32_t GetMIDR() {
-  uint64_t Result {};
-  __asm("mrs %[Res], MIDR_EL1" : [Res] "=r"(Result));
-  return Result;
-}
-
 __attribute__((naked)) static uint64_t ReadSVEVectorLengthInBits() {
   ///< Can't use rdvl instruction directly because compilers will complain that sve/sme is required.
   __asm(R"(
@@ -131,20 +125,8 @@ static void OverrideFeatures(FEXCore::HostFeatures* Features, uint64_t ForceSVEW
   Features->SupportsSVE256 = ForceSVEWidth && ForceSVEWidth >= 256;
 }
 
-FEXCore::HostFeatures FetchHostFeatures() {
+FEXCore::HostFeatures FetchHostFeatures(vixl::CPUFeatures Features, uint64_t CTR, uint64_t MIDR) {
   FEXCore::HostFeatures HostFeatures;
-#ifdef VIXL_SIMULATOR
-  auto Features = vixl::CPUFeatures::All();
-  // Vixl simulator doesn't support AFP.
-  Features.Remove(vixl::CPUFeatures::Feature::kAFP);
-  // Vixl simulator doesn't support RPRES.
-  Features.Remove(vixl::CPUFeatures::Feature::kRPRES);
-#elif !defined(_WIN32)
-  auto Features = vixl::CPUFeatures::InferFromOS();
-#else
-  // Need to use ID registers in WINE.
-  auto Features = vixl::CPUFeatures::InferFromIDRegisters();
-#endif
 
   FEX_CONFIG_OPT(ForceSVEWidth, FORCESVEWIDTH);
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
@@ -184,14 +166,6 @@ FEXCore::HostFeatures FetchHostFeatures() {
   }
 
 #ifdef _M_ARM_64
-  // We need to get the CPU's cache line size
-  // We expect sane targets that have correct cacheline sizes across clusters
-  uint64_t CTR;
-  __asm volatile("mrs %[ctr], ctr_el0" : [ctr] "=r"(CTR));
-
-  HostFeatures.DCacheLineSize = 4 << ((CTR >> 16) & 0xF);
-  HostFeatures.ICacheLineSize = 4 << (CTR & 0xF);
-
   // Test if this CPU supports float exception trapping by attempting to enable
   // On unsupported these bits are architecturally defined as RAZ/WI
   constexpr uint32_t ExceptionEnableTraps = (1U << 8) |  // Invalid Operation float exception trap enable
@@ -211,7 +185,6 @@ FEXCore::HostFeatures FetchHostFeatures() {
   SetFPCR(OriginalFPCR);
 
   if (HostFeatures.SupportsRAND) {
-    const auto MIDR = GetMIDR();
     constexpr uint32_t Implementer_QCOM = 0x51;
     constexpr uint32_t PartNum_Oryon1 = 0x001;
     const uint32_t MIDR_Implementer = (MIDR >> 24) & 0xFF;
@@ -247,12 +220,14 @@ FEXCore::HostFeatures FetchHostFeatures() {
   }
 #endif
 
-#if defined(_M_X86_64)
-  // Hardcoded cacheline size.
-  HostFeatures.DCacheLineSize = 64U;
-  HostFeatures.ICacheLineSize = 64U;
+  if (CTR) {
+    HostFeatures.DCacheLineSize = 4 << ((CTR >> 16) & 0xF);
+    HostFeatures.ICacheLineSize = 4 << (CTR & 0xF);
+  } else {
+    HostFeatures.DCacheLineSize = HostFeatures.ICacheLineSize = 64;
+  }
 
-#if !defined(VIXL_SIMULATOR)
+#if defined(_M_X86_64) && !defined(VIXL_SIMULATOR)
   Xbyak::util::Cpu X86Features {};
   HostFeatures.SupportsAES = X86Features.has(Xbyak::util::Cpu::tAESNI);
   HostFeatures.SupportsCRC = X86Features.has(Xbyak::util::Cpu::tSSE42);
@@ -278,7 +253,6 @@ FEXCore::HostFeatures FetchHostFeatures() {
   HostFeatures.SupportsAFP = true;
   HostFeatures.SupportsFloatExceptions = true;
 #endif
-#endif
   HostFeatures.SupportsPreserveAllABI = FEX_HAS_PRESERVE_ALL_ATTR;
 
   if (!Is64BitMode()) {
@@ -293,5 +267,28 @@ FEXCore::HostFeatures FetchHostFeatures() {
 
   OverrideFeatures(&HostFeatures, ForceSVEWidth());
   return HostFeatures;
+}
+
+FEXCore::HostFeatures FetchHostFeatures() {
+#ifdef VIXL_SIMULATOR
+  auto Features = vixl::CPUFeatures::All();
+  // Vixl simulator doesn't support AFP.
+  Features.Remove(vixl::CPUFeatures::Feature::kAFP);
+  // Vixl simulator doesn't support RPRES.
+  Features.Remove(vixl::CPUFeatures::Feature::kRPRES);
+#else
+  auto Features = vixl::CPUFeatures::InferFromOS();
+#endif
+
+  uint64_t CTR = 0;
+  uint64_t MIDR = 0;
+#ifdef _M_ARM_64
+  // We need to get the CPU's cache line size
+  // We expect sane targets that have correct cacheline sizes across clusters
+  __asm volatile("mrs %[ctr], ctr_el0" : [ctr] "=r"(CTR));
+  __asm volatile("mrs %[midr], midr_el1" : [midr] "=r"(MIDR));
+#endif
+
+  return FetchHostFeatures(Features, CTR, MIDR);
 }
 } // namespace FEX
