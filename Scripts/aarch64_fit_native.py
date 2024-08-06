@@ -2,7 +2,10 @@
 import re
 import sys
 import subprocess
-from pkg_resources import parse_version
+try:
+    from packaging import version as version_check
+except:
+    from pkg_resources import parse_version as version_check
 
 # Order this list from oldest to newest
 # try not to list something newer than our minimum compiler supported version
@@ -89,7 +92,7 @@ for core in cpuinfo:
         IDList = BigCoreIDs.get(core)
         if type(IDList) is list:
             for ID in IDList:
-                if parse_version(clang_version) >= parse_version(ID[1]):
+                if version_check(clang_version) >= version_check(ID[1]):
                     largest_big = ID[0]
         else:
             largest_big = BigCoreIDs.get(core)
