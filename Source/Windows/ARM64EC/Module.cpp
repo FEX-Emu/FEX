@@ -162,12 +162,11 @@ static EXCEPTION_RECORD HandleGuestException(const EXCEPTION_RECORD& Src, ARM64_
   EXCEPTION_RECORD Dst = Src;
   Dst.ExceptionAddress = reinterpret_cast<void*>(Context.Pc);
 
-  // Windows always clears TF, DF and AF when handling an exception, restoring after.
-  // TODO: Check windows behaviour for the restoring after, quite awkward to achieve with the BT API. Would need to fixup flags after a
-  // rethrow and keep track of context pointers on the stack so if a SEH handler changes flags they can be restored in BeginContext after
-  // the NtContinue syscall (which will convert to an ARM64 context and back, losing these flags).
+  // X64 Windows always clears TF, DF and AF when handling an exception, restoring after.
+  // Current ARM64EC windows can only restore NZCV+SS when returning from an exception and other flags are left untouched from the handler context.
+  // TODO: Can extend wine to support this by mapping the remaining EFlags into reserved cpsr members.
   uint32_t EFlags = CTX->ReconstructCompactedEFLAGS(Thread, true, Context.X, Context.Cpsr);
-  EFlags &= ~((1 << FEXCore::X86State::RFLAG_DF_RAW_LOC) | (1 << FEXCore::X86State::RFLAG_TF_LOC) | (1 << FEXCore::X86State::RFLAG_AF_RAW_LOC));
+  EFlags &= (1 << FEXCore::X86State::RFLAG_TF_LOC);
   CTX->SetFlagsFromCompactedEFLAGS(Thread, EFlags);
 
   if (!Fault.FaultToTopAndGeneratedException) {
@@ -182,7 +181,10 @@ static EXCEPTION_RECORD HandleGuestException(const EXCEPTION_RECORD& Src, ARM64_
   case FEXCore::Core::FAULT_SIGILL: Dst.ExceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION; return Dst;
   case FEXCore::Core::FAULT_SIGTRAP:
     switch (Fault.TrapNo) {
-    case FEXCore::X86State::X86_TRAPNO_DB: Dst.ExceptionCode = EXCEPTION_SINGLE_STEP; return Dst;
+    case FEXCore::X86State::X86_TRAPNO_DB:
+      Context.Cpsr &= ~(1 << 21); // PSTATE.SS
+      Dst.ExceptionCode = EXCEPTION_SINGLE_STEP;
+      return Dst;
     case FEXCore::X86State::X86_TRAPNO_BP:
       Context.Pc -= 1;
       Dst.ExceptionAddress = reinterpret_cast<void*>(Context.Pc);
@@ -319,6 +321,10 @@ static void ReconstructThreadState(ARM64_NT_CONTEXT& Context) {
   for (size_t i = 0; i < Config.SRAFPRCount; i++) {
     memcpy(State.xmm.sse.data[i], &Context.V[Config.SRAFPRMapping[i]], sizeof(__uint128_t));
   }
+
+  // Spill EFlags
+  uint32_t EFlags = CTX->ReconstructCompactedEFLAGS(Thread, true, Context.X, Context.Cpsr);
+  CTX->SetFlagsFromCompactedEFLAGS(Thread, EFlags);
 }
 
 // Reconstructs an x64 context from the input context within the JIT, packed into a regular ARM64 context following the ARM64EC register mapping
@@ -371,9 +377,14 @@ static ARM64_NT_CONTEXT ReconstructPackedECContext(ARM64_NT_CONTEXT& Context) {
   ECContext.X24 = 0;
   ECContext.X28 = 0;
 
-  // NZCV will be converted into EFlags by ntdll, the rest are lost during exception handling.
+  // NZCV+SS will be converted into EFlags by ntdll, the rest are lost during exception handling.
   // See HandleGuestException
   ECContext.Cpsr = Context.Cpsr;
+  uint32_t EFlags = CTX->ReconstructCompactedEFLAGS(Thread, false, nullptr, 0);
+  if (EFlags & (1U << FEXCore::X86State::RFLAG_TF_LOC)) {
+    ECContext.Cpsr |= 1 << 21; // PSTATE.SS
+  }
+
   ECContext.Fpcr = Context.Fpcr;
   ECContext.Fpsr = Context.Fpsr;
 
@@ -425,6 +436,14 @@ public:
 
 extern "C" void SyncThreadContext(CONTEXT* Context) {
   auto* Thread = GetCPUArea().ThreadState();
+  // All other EFlags bits are lost when converting to/from an ARM64EC context, so merge them in from the current JIT state.
+  // This is advisable over dropping their values as thread suspend/resume uses this function, and that can happen at any point in guest code.
+  static constexpr uint32_t ECValidEFlagsMask {(1U << FEXCore::X86State::RFLAG_OF_RAW_LOC) | (1U << FEXCore::X86State::RFLAG_CF_RAW_LOC) |
+                                               (1U << FEXCore::X86State::RFLAG_ZF_RAW_LOC) | (1U << FEXCore::X86State::RFLAG_SF_RAW_LOC) |
+                                               (1U << FEXCore::X86State::RFLAG_TF_LOC)};
+
+  uint32_t StateEFlags = CTX->ReconstructCompactedEFLAGS(Thread, false, nullptr, 0);
+  Context->EFlags = (Context->EFlags & ECValidEFlagsMask) | (StateEFlags & ~ECValidEFlagsMask);
   Exception::LoadStateFromECContext(Thread, *Context);
 }
 
@@ -542,6 +561,8 @@ NTSTATUS ResetToConsistentState(EXCEPTION_RECORD* Exception, CONTEXT* GuestConte
     NtContinueNative(NativeContext, false);
   }
 
+  GetCPUArea().Area->InSimulation = false;
+  GetCPUArea().Area->InSyscallCallback = false;
   return STATUS_SUCCESS;
 }
 
