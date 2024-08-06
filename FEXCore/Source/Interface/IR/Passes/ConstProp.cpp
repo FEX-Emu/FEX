@@ -5,13 +5,7 @@ tags: ir|opts
 desc: ConstProp, ZExt elim, const pooling, fcmp reduction, const inlining
 $end_info$
 */
-
-
-// aarch64 heuristics
-#include "aarch64/assembler-aarch64.h"
-#include "aarch64/cpu-aarch64.h"
-#include "aarch64/disasm-aarch64.h"
-#include "aarch64/assembler-aarch64.h"
+#include <CodeEmitter/Emitter.h>
 
 #include "Interface/IR/IREmitter.h"
 #include "Interface/IR/PassManager.h"
@@ -56,10 +50,7 @@ static bool IsImmLogical(uint64_t imm, unsigned width) {
   if (width < 32) {
     width = 32;
   }
-  return vixl::aarch64::Assembler::IsImmLogical(imm, width);
-}
-static bool IsImmAddSub(uint64_t imm) {
-  return vixl::aarch64::Assembler::IsImmAddSub(imm);
+  return ARMEmitter::Emitter::IsImmLogical(imm, width);
 }
 
 static bool IsBfeAlreadyDone(IREmitter* IREmit, OrderedNodeWrapper src, uint64_t Width) {
@@ -166,7 +157,7 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     } else if (IsConstant1 && IsConstant2 && IROp->Op == OP_SUB) {
       uint64_t NewConstant = (Constant1 - Constant2) & getMask(IROp);
       IREmit->ReplaceWithConstant(CodeNode, NewConstant);
-    } else if (IsConstant2 && !IsImmAddSub(Constant2) && IsImmAddSub(-Constant2)) {
+    } else if (IsConstant2 && !ARMEmitter::IsImmAddSub(Constant2) && ARMEmitter::IsImmAddSub(-Constant2)) {
       // If the second argument is constant, the immediate is not ImmAddSub, but when negated is.
       // So, negate the operation to negate (and inline) the constant.
       if (IROp->Op == OP_ADD) {
@@ -611,7 +602,7 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
       if (IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
         // We don't allow 8/16-bit operations to have constants, since no
         // constant would be in bounds after the JIT's 24/16 shift.
-        if (IsImmAddSub(Constant2) && IROp->Size >= 4) {
+        if (ARMEmitter::IsImmAddSub(Constant2) && IROp->Size >= 4) {
           IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[1]));
           IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant2));
         }
@@ -656,7 +647,7 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
     case OP_CONDSUBNZCV: {
       uint64_t Constant2 {};
       if (IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
-        if (IsImmAddSub(Constant2)) {
+        if (ARMEmitter::IsImmAddSub(Constant2)) {
           IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[1]));
           IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant2));
         }
@@ -684,7 +675,7 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
     case OP_SELECT: {
       uint64_t Constant1 {};
       if (IREmit->IsValueConstant(IROp->Args[1], &Constant1)) {
-        if (IsImmAddSub(Constant1)) {
+        if (ARMEmitter::IsImmAddSub(Constant1)) {
           IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[1]));
           IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant1));
         }
@@ -726,7 +717,7 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
     case OP_CONDJUMP: {
       uint64_t Constant2 {};
       if (IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
-        if (IsImmAddSub(Constant2)) {
+        if (ARMEmitter::IsImmAddSub(Constant2)) {
           IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[1]));
           IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant2));
         }

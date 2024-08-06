@@ -14,10 +14,12 @@
 #include <CodeEmitter/Emitter.h>
 #include <CodeEmitter/Registers.h>
 
+#ifdef VIXL_DISASSEMBLER
 #include <aarch64/cpu-aarch64.h>
 #include <aarch64/instructions-aarch64.h>
 #include <cpu-features.h>
 #include <utils-vixl.h>
+#endif
 
 #include <array>
 #include <tuple>
@@ -349,8 +351,6 @@ Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl* ctx, void* EmissionPtr
   }
 #endif
 
-  CPU.SetUp();
-
   // Number of register available is dependent on what operating mode the proccess is in.
   if (EmitterCTX->Config.Is64BitMode()) {
     StaticRegisters = x64::SRA;
@@ -421,7 +421,7 @@ void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, ui
   if (RequiredMoveSegments > 1) {
     // Only try to use this path if the number of segments is > 1.
     // `movz` is better than `orr` since hardware will rename or merge if possible when `movz` is used.
-    const auto IsImm = vixl::aarch64::Assembler::IsImmLogical(Constant, RegSizeInBits(s));
+    const auto IsImm = ARMEmitter::Emitter::IsImmLogical(Constant, RegSizeInBits(s));
     if (IsImm) {
       orr(s, Reg, ARMEmitter::Reg::zr, Constant);
       if (NOPPad) {
@@ -458,7 +458,7 @@ void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, ui
 
   // If the aligned offset is within the 4GB window then we can use ADRP+ADD
   // and the number of move segments more than 1
-  if (RequiredMoveSegments > 1 && vixl::IsInt32(AlignedOffset)) {
+  if (RequiredMoveSegments > 1 && ARMEmitter::Emitter::IsInt32(AlignedOffset)) {
     // If this is 4k page aligned then we only need ADRP
     if ((AlignedOffset & 0xFFF) == 0) {
       adrp(Reg, AlignedOffset >> 12);
@@ -466,7 +466,7 @@ void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, ui
       // If the constant is within 1MB of PC then we can still use ADR to load in a single instruction
       // 21-bit signed integer here
       int64_t SmallOffset = static_cast<int64_t>(Constant) - static_cast<int64_t>(PC);
-      if (vixl::IsInt21(SmallOffset)) {
+      if (ARMEmitter::Emitter::IsInt21(SmallOffset)) {
         adr(Reg, SmallOffset);
       } else {
         // Need to use ADRP + ADD

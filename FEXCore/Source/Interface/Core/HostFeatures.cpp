@@ -51,10 +51,22 @@ static uint32_t GetMIDR() {
   return Result;
 }
 
+__attribute__((naked)) static uint64_t ReadSVEVectorLengthInBits() {
+  ///< Can't use rdvl instruction directly because compilers will complain that sve/sme is required.
+  __asm(R"(
+  .word 0x04bf5100 // rdvl x0, #8
+  ret;
+  )");
+}
 #else
 static uint32_t GetDCZID() {
   // Return unsupported
   return DCZID_DZP_MASK;
+}
+
+static int ReadSVEVectorLengthInBits() {
+  // Return unsupported
+  return 0;
 }
 #endif
 
@@ -164,7 +176,7 @@ HostFeatures::HostFeatures() {
   SupportsSVE256 = ForceSVEWidth() ? ForceSVEWidth() >= 256 : true;
 #else
   SupportsSVE128 = Features.Has(vixl::CPUFeatures::Feature::kSVE2);
-  SupportsSVE256 = Features.Has(vixl::CPUFeatures::Feature::kSVE2) && vixl::aarch64::CPU::ReadSVEVectorLengthInBits() >= 256;
+  SupportsSVE256 = Features.Has(vixl::CPUFeatures::Feature::kSVE2) && ReadSVEVectorLengthInBits() >= 256;
 #endif
   SupportsAVX = true;
 

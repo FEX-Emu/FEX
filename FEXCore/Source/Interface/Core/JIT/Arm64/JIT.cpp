@@ -496,7 +496,7 @@ static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame* Fram
   uintptr_t branch = (uintptr_t)(Record)-8;
 
   auto offset = HostCode / 4 - branch / 4;
-  if (vixl::IsInt26(offset)) {
+  if (ARMEmitter::Emitter::IsInt26(offset)) {
     // optimal case - can branch directly
     // patch the code
     ARMEmitter::Emitter emit((uint8_t*)(branch), 4);
@@ -729,7 +729,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, const FEXCore
   if (SpillSlots) {
     const auto TotalSpillSlotsSize = SpillSlots * MaxSpillSlotSize;
 
-    if (vixl::aarch64::Assembler::IsImmAddSub(TotalSpillSlotsSize)) {
+    if (ARMEmitter::IsImmAddSub(TotalSpillSlotsSize)) {
       sub(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, TotalSpillSlotsSize);
     } else {
       LoadConstant(ARMEmitter::Size::i64Bit, TMP1, TotalSpillSlotsSize);
@@ -872,7 +872,7 @@ void Arm64JITCore::ResetStack() {
 
   const auto TotalSpillSlotsSize = SpillSlots * MaxSpillSlotSize;
 
-  if (vixl::aarch64::Assembler::IsImmAddSub(TotalSpillSlotsSize)) {
+  if (ARMEmitter::IsImmAddSub(TotalSpillSlotsSize)) {
     add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, TotalSpillSlotsSize);
   } else {
     // Too big to fit in a 12bit immediate

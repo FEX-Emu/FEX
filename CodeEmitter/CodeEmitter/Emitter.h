@@ -602,6 +602,18 @@ constexpr bool AreVectorsSequential(T first, const Args&... args) {
   return (fn(first, args) && ...);
 }
 
+// Returns if the immediate can fit in to add/sub immediate instruction encodings.
+constexpr bool IsImmAddSub(uint64_t imm) {
+  constexpr uint64_t U12Mask = 0xFFF;
+  auto FitsWithin12Bits = [](uint64_t imm) {
+    return (imm & ~U12Mask) == 0;
+  };
+  // Can fit in to the instruction encoding:
+  // - if only bits [11:0] are set.
+  // - if only bits [23:12] are set.
+  return FitsWithin12Bits(imm) || (FitsWithin12Bits(imm >> 12) && (imm & U12Mask) == 0);
+}
+
 // This is an emitter that is designed around the smallest code bloat as possible.
 // Eschewing most developer convenience in order to keep code as small as possible.
 
