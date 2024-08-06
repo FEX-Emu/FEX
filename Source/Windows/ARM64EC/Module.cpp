@@ -25,7 +25,6 @@ $end_info$
 #include <FEXCore/Utils/TypeDefines.h>
 
 #include "Common/Config.h"
-#include "Common/HostFeatures.h"
 #include "Common/InvalidationTracker.h"
 #include "Common/TSOHandlerConfig.h"
 #include "Common/CPUFeatures.h"
@@ -503,9 +502,11 @@ NTSTATUS ProcessInit() {
   SyscallHandler = fextl::make_unique<ECSyscallHandler>();
   Exception::HandlerConfig.emplace();
 
+  const auto NtDll = GetModuleHandle("ntdll.dll");
+
   CTX = FEXCore::Context::Context::CreateNewContext();
   {
-    auto HostFeatures = FEX::FetchHostFeatures();
+    auto HostFeatures = FEX::Windows::CPUFeatures::FetchHostFeatures(!!GetProcAddress(NtDll, "__wine_get_version"));
     CTX->SetHostFeatures(HostFeatures);
   }
 
@@ -519,7 +520,6 @@ NTSTATUS ProcessInit() {
   *reinterpret_cast<uint8_t*>(X64ReturnInstr) = 0xc3;
 
   FillNtDllLUTs();
-  const auto NtDll = GetModuleHandle("ntdll.dll");
   const uintptr_t KiUserExceptionDispatcherFFS = reinterpret_cast<uintptr_t>(GetProcAddress(NtDll, "KiUserExceptionDispatcher"));
   Exception::KiUserExceptionDispatcher = NtDllRedirectionLUT[KiUserExceptionDispatcherFFS - NtDllBase] + NtDllBase;
   const auto WineSyscallDispatcherPtr = reinterpret_cast<void**>(GetProcAddress(NtDll, "__wine_syscall_dispatcher"));

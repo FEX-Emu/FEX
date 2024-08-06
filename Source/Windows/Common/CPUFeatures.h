@@ -4,6 +4,8 @@
 #include <windef.h>
 #include <winternl.h>
 
+#include <Common/HostFeatures.h>
+
 namespace FEXCore::Context {
 class Context;
 }
@@ -14,6 +16,8 @@ class Context;
 namespace FEX::Windows {
 class CPUFeatures {
 public:
+  static FEXCore::HostFeatures FetchHostFeatures(bool IsWine);
+
   CPUFeatures(FEXCore::Context::Context& CTX);
 
   /**
