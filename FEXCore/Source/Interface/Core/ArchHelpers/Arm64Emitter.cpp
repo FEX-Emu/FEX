@@ -691,6 +691,12 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
   auto TmpReg = *OptionalReg;
   [[maybe_unused]] auto TmpReg2 = *OptionalReg2;
 
+#ifdef _M_ARM_64EC
+  // Load STATE in from the CPU area as x28 is not callee saved in the ARM64EC ABI.
+  ldr(TmpReg.X(), ARMEmitter::Reg::r18, TEB_CPU_AREA_OFFSET);
+  ldr(STATE, TmpReg, CPU_AREA_EMULATOR_DATA_OFFSET);
+#endif
+
 #ifndef VIXL_SIMULATOR
   if (EmitterCTX->HostFeatures.SupportsAFP) {
     // Enable AFP features when filling JIT state.
