@@ -64,7 +64,6 @@ $end_info$
 namespace {
 static bool SilentLog;
 static int OutputFD {-1};
-static bool ExecutedWithFD {false};
 
 void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
   if (SilentLog) {
@@ -194,14 +193,55 @@ void RootFSRedirect(fextl::string* Filename, const fextl::string& RootFS) {
   }
 }
 
-bool RanAsInterpreter(const char* Program) {
+FEX::Config::PortableInformation ReadPortabilityInformation() {
+  const FEX::Config::PortableInformation BadResult {false, {}};
+  const char* PortableConfig = getenv("FEX_PORTABLE");
+  if (!PortableConfig) {
+    return BadResult;
+  }
+
+  uint32_t Value {};
+  std::string_view PortableView {PortableConfig};
+
+  if (std::from_chars(PortableView.data(), PortableView.data() + PortableView.size(), Value).ec != std::errc {} || Value == 0) {
+    return BadResult;
+  }
+
+  // Read the FEXInterpreter path from `/proc/self/exe` which is always a symlink to the absolute path of the executable running.
+  // This way we can get the parent path that the application is executing from.
+  char SelfPath[PATH_MAX];
+  auto Result = readlink("/proc/self/exe", SelfPath, PATH_MAX);
+  if (Result == -1) {
+    return BadResult;
+  }
+
+  std::string_view SelfPathView {SelfPath, std::min<size_t>(PATH_MAX, Result)};
+
+  // Extract the absolute path from the FEXInterpreter path
+  return {true, fextl::string {SelfPathView.substr(0, SelfPathView.find_last_of('/') + 1)}};
+}
+
+bool RanAsInterpreter(bool ExecutedWithFD) {
   return ExecutedWithFD || FEXLOADER_AS_INTERPRETER;
 }
 
-bool IsInterpreterInstalled() {
-  // The interpreter is installed if both the binfmt_misc handlers are available
-  // Or if we were originally executed with FD. Which means the interpreter is installed
+/**
+ * @brief Queries if FEX is installed as a binfmt_misc interpreter
+ *
+ * @param ExecutedWithFD If FEXInterpreter was executed using a binfmt_misc FD handle from the kernel
+ * @param Portable Portability information about FEX being run in portable mode
+ *
+ * @return true if the binfmt_misc handlers are installed and being used
+ */
+bool QueryInterpreterInstalled(bool ExecutedWithFD, const FEX::Config::PortableInformation& Portable) {
+  if (Portable.IsPortable) {
+    // Don't use binfmt interpreter even if it's installed
+    return false;
+  }
 
+  // Check if FEX's binfmt_misc handlers are both installed.
+  // The explicit check can be omitted if FEX was executed from an FD,
+  // since this only happens if the kernel launched FEX through binfmt_misc
   return ExecutedWithFD || (access("/proc/sys/fs/binfmt_misc/FEX-x86", F_OK) == 0 && access("/proc/sys/fs/binfmt_misc/FEX-x86_64", F_OK) == 0);
 }
 
@@ -267,9 +307,12 @@ static int StealFEXFDFromEnv(const char* Env) {
 int main(int argc, char** argv, char** const envp) {
   auto SBRKPointer = FEXCore::Allocator::DisableSBRKAllocations();
   FEXCore::Allocator::GLIBCScopedFault GLIBFaultScope;
-  const bool IsInterpreter = RanAsInterpreter(argv[0]);
 
-  ExecutedWithFD = getauxval(AT_EXECFD) != 0;
+  const bool ExecutedWithFD = getauxval(AT_EXECFD) != 0;
+  const bool IsInterpreter = RanAsInterpreter(ExecutedWithFD);
+  const auto PortableInfo = ReadPortabilityInformation();
+  const bool InterpreterInstalled = QueryInterpreterInstalled(ExecutedWithFD, PortableInfo);
+
   int FEXFD {StealFEXFDFromEnv("FEX_EXECVEFD")};
 
   LogMan::Throw::InstallHandler(AssertHandler);
@@ -280,7 +323,7 @@ int main(int argc, char** argv, char** const envp) {
     argc, argv);
   auto Args = ArgsLoader->Get();
   auto ParsedArgs = ArgsLoader->GetParsedArgs();
-  auto Program = FEX::Config::LoadConfig(std::move(ArgsLoader), true, envp, ExecutedWithFD, FEXFD);
+  auto Program = FEX::Config::LoadConfig(std::move(ArgsLoader), true, envp, ExecutedWithFD, FEXFD, PortableInfo);
 
   if (Program.ProgramPath.empty() && FEXFD == -1) {
     // Early exit if we weren't passed an argument
@@ -290,7 +333,7 @@ int main(int argc, char** argv, char** const envp) {
   // Reload the meta layer
   FEXCore::Config::ReloadMetaLayer();
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS_INTERPRETER, IsInterpreter ? "1" : "0");
-  FEXCore::Config::Set(FEXCore::Config::CONFIG_INTERPRETER_INSTALLED, IsInterpreterInstalled() ? "1" : "0");
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_INTERPRETER_INSTALLED, InterpreterInstalled ? "1" : "0");
 #ifdef VIXL_SIMULATOR
   // If running under the vixl simulator, ensure that indirect runtime calls are enabled.
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_DISABLE_VIXL_INDIRECT_RUNTIME_CALLS, "0");

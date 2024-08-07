@@ -338,10 +338,13 @@ fextl::string RecoverGuestProgramFilename(fextl::string Program, bool ExecFDInte
 }
 
 ApplicationNames LoadConfig(fextl::unique_ptr<FEX::ArgLoader::ArgLoader> ArgsLoader, bool LoadProgramConfig, char** const envp,
-                            bool ExecFDInterp, int ProgramFDFromEnv) {
-  FEX::Config::InitializeConfigs();
+                            bool ExecFDInterp, int ProgramFDFromEnv, const PortableInformation& PortableInfo) {
+  const bool IsPortable = PortableInfo.IsPortable;
+  FEX::Config::InitializeConfigs(PortableInfo);
   FEXCore::Config::Initialize();
-  FEXCore::Config::AddLayer(CreateGlobalMainLayer());
+  if (!IsPortable) {
+    FEXCore::Config::AddLayer(CreateGlobalMainLayer());
+  }
   FEXCore::Config::AddLayer(CreateMainLayer());
 
   auto Args = ArgsLoader->Get();
@@ -391,7 +394,9 @@ ApplicationNames LoadConfig(fextl::unique_ptr<FEX::ArgLoader::ArgLoader> ArgsLoa
       }
     }
 
-    FEXCore::Config::AddLayer(CreateAppLayer(ProgramName, FEXCore::Config::LayerType::LAYER_GLOBAL_APP));
+    if (!IsPortable) {
+      FEXCore::Config::AddLayer(CreateAppLayer(ProgramName, FEXCore::Config::LayerType::LAYER_GLOBAL_APP));
+    }
     FEXCore::Config::AddLayer(CreateAppLayer(ProgramName, FEXCore::Config::LayerType::LAYER_LOCAL_APP));
 
     auto SteamID = getenv("SteamAppId");
@@ -399,7 +404,9 @@ ApplicationNames LoadConfig(fextl::unique_ptr<FEX::ArgLoader::ArgLoader> ArgsLoa
       // If a SteamID exists then let's search for Steam application configs as well.
       // We want to key off both the SteamAppId number /and/ the executable since we may not want to thunk all binaries.
       fextl::string SteamAppName = fextl::fmt::format("Steam_{}_{}", SteamID, ProgramName);
-      FEXCore::Config::AddLayer(CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_GLOBAL_STEAM_APP));
+      if (!IsPortable) {
+        FEXCore::Config::AddLayer(CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_GLOBAL_STEAM_APP));
+      }
       FEXCore::Config::AddLayer(CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_LOCAL_STEAM_APP));
     }
   }
@@ -473,12 +480,16 @@ const char* GetHomeDirectory() {
 }
 #endif
 
-fextl::string GetDataDirectory() {
-  fextl::string DataDir {};
+fextl::string GetDataDirectory(const PortableInformation& PortableInfo) {
+  const char* DataOverride = getenv("FEX_APP_DATA_LOCATION");
 
+  if (PortableInfo.IsPortable && !DataOverride) {
+    return fextl::fmt::format("{}fex-emu/", PortableInfo.InterpreterPath);
+  }
+
+  fextl::string DataDir {};
   const char* HomeDir = GetHomeDirectory();
   const char* DataXDG = getenv("XDG_DATA_HOME");
-  const char* DataOverride = getenv("FEX_APP_DATA_LOCATION");
   if (DataOverride) {
     // Data override will override the complete directory
     DataDir = DataOverride;
@@ -489,14 +500,18 @@ fextl::string GetDataDirectory() {
   return DataDir;
 }
 
-fextl::string GetConfigDirectory(bool Global) {
+fextl::string GetConfigDirectory(bool Global, const PortableInformation& PortableInfo) {
+  const char* ConfigOverride = getenv("FEX_APP_CONFIG_LOCATION");
+  if (PortableInfo.IsPortable && (Global || !ConfigOverride)) {
+    return fextl::fmt::format("{}fex-emu/", PortableInfo.InterpreterPath);
+  }
+
   fextl::string ConfigDir;
   if (Global) {
     ConfigDir = GLOBAL_DATA_DIRECTORY;
   } else {
     const char* HomeDir = GetHomeDirectory();
     const char* ConfigXDG = getenv("XDG_CONFIG_HOME");
-    const char* ConfigOverride = getenv("FEX_APP_CONFIG_LOCATION");
     if (ConfigOverride) {
       // Config override completely overrides the config directory
       ConfigDir = ConfigOverride;
@@ -515,15 +530,15 @@ fextl::string GetConfigDirectory(bool Global) {
   return ConfigDir;
 }
 
-fextl::string GetConfigFileLocation(bool Global) {
-  return GetConfigDirectory(Global) + "Config.json";
+fextl::string GetConfigFileLocation(bool Global, const PortableInformation& PortableInfo) {
+  return GetConfigDirectory(Global, PortableInfo) + "Config.json";
 }
 
-void InitializeConfigs() {
-  FEXCore::Config::SetDataDirectory(GetDataDirectory());
-  FEXCore::Config::SetConfigDirectory(GetConfigDirectory(false), false);
-  FEXCore::Config::SetConfigDirectory(GetConfigDirectory(true), true);
-  FEXCore::Config::SetConfigFileLocation(GetConfigFileLocation(false), false);
-  FEXCore::Config::SetConfigFileLocation(GetConfigFileLocation(true), true);
+void InitializeConfigs(const PortableInformation& PortableInfo) {
+  FEXCore::Config::SetDataDirectory(GetDataDirectory(PortableInfo));
+  FEXCore::Config::SetConfigDirectory(GetConfigDirectory(false, PortableInfo), false);
+  FEXCore::Config::SetConfigDirectory(GetConfigDirectory(true, PortableInfo), true);
+  FEXCore::Config::SetConfigFileLocation(GetConfigFileLocation(false, PortableInfo), false);
+  FEXCore::Config::SetConfigFileLocation(GetConfigFileLocation(true, PortableInfo), true);
 }
 } // namespace FEX::Config

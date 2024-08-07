@@ -424,7 +424,7 @@ public:
 
 void BTCpuProcessInit() {
   FEX::Windows::InitCRTProcess();
-  FEX::Config::InitializeConfigs();
+  FEX::Config::InitializeConfigs(FEX::Config::PortableInformation {});
   FEXCore::Config::Initialize();
   FEXCore::Config::AddLayer(FEX::Config::CreateGlobalMainLayer());
   FEXCore::Config::AddLayer(FEX::Config::CreateMainLayer());
