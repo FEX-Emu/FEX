@@ -96,7 +96,7 @@ public:
 
   void SetCustomCPUBackendFactory(CustomCPUFactoryType Factory) override;
 
-  HostFeatures GetHostFeatures() const override;
+  void SetHostFeatures(const FEXCore::HostFeatures& Features) override;
 
   void HandleCallback(FEXCore::Core::InternalThreadState* Thread, uint64_t RIP) override;
 

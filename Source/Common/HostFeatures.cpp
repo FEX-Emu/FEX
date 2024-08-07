@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: MIT
-#include "Interface/Core/CPUID.h"
+#include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/HostFeatures.h>
 
-#include "aarch64/assembler-aarch64.h"
 #include "aarch64/cpu-aarch64.h"
-#include "aarch64/disasm-aarch64.h"
-#include "aarch64/assembler-aarch64.h"
 
 #ifdef _M_X86_64
 #define XBYAK64
@@ -18,7 +15,7 @@
 #include <xbyak/xbyak_util.h>
 #endif
 
-namespace FEXCore {
+namespace FEX {
 
 // Data Zero Prohibited flag
 // 0b0 = ZVA/GVA/GZVA permitted
@@ -59,6 +56,7 @@ __attribute__((naked)) static uint64_t ReadSVEVectorLengthInBits() {
   )");
 }
 #else
+[[maybe_unused]]
 static uint32_t GetDCZID() {
   // Return unsupported
   return DCZID_DZP_MASK;
@@ -70,7 +68,7 @@ static int ReadSVEVectorLengthInBits() {
 }
 #endif
 
-static void OverrideFeatures(HostFeatures* Features, uint64_t ForceSVEWidth) {
+static void OverrideFeatures(FEXCore::HostFeatures* Features, uint64_t ForceSVEWidth) {
   // Override features if the user has specifically called for it.
   FEX_CONFIG_OPT(HostFeatures, HOSTFEATURES);
   if (!HostFeatures()) {
@@ -132,7 +130,8 @@ static void OverrideFeatures(HostFeatures* Features, uint64_t ForceSVEWidth) {
   Features->SupportsSVE256 = ForceSVEWidth && ForceSVEWidth >= 256;
 }
 
-HostFeatures::HostFeatures() {
+FEXCore::HostFeatures FetchHostFeatures() {
+  FEXCore::HostFeatures HostFeatures;
 #ifdef VIXL_SIMULATOR
   auto Features = vixl::CPUFeatures::All();
   // Vixl simulator doesn't support AFP.
@@ -149,44 +148,44 @@ HostFeatures::HostFeatures() {
   FEX_CONFIG_OPT(ForceSVEWidth, FORCESVEWIDTH);
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
 
-  SupportsAES = Features.Has(vixl::CPUFeatures::Feature::kAES);
-  SupportsCRC = Features.Has(vixl::CPUFeatures::Feature::kCRC32);
-  SupportsSHA = Features.Has(vixl::CPUFeatures::Feature::kSHA1) && Features.Has(vixl::CPUFeatures::Feature::kSHA2);
-  SupportsAtomics = Features.Has(vixl::CPUFeatures::Feature::kAtomics);
-  SupportsRAND = Features.Has(vixl::CPUFeatures::Feature::kRNG);
+  HostFeatures.SupportsAES = Features.Has(vixl::CPUFeatures::Feature::kAES);
+  HostFeatures.SupportsCRC = Features.Has(vixl::CPUFeatures::Feature::kCRC32);
+  HostFeatures.SupportsSHA = Features.Has(vixl::CPUFeatures::Feature::kSHA1) && Features.Has(vixl::CPUFeatures::Feature::kSHA2);
+  HostFeatures.SupportsAtomics = Features.Has(vixl::CPUFeatures::Feature::kAtomics);
+  HostFeatures.SupportsRAND = Features.Has(vixl::CPUFeatures::Feature::kRNG);
 
   // Only supported when FEAT_AFP is supported
-  SupportsAFP = Features.Has(vixl::CPUFeatures::Feature::kAFP);
-  SupportsRCPC = Features.Has(vixl::CPUFeatures::Feature::kRCpc);
-  SupportsTSOImm9 = Features.Has(vixl::CPUFeatures::Feature::kRCpcImm);
-  SupportsPMULL_128Bit = Features.Has(vixl::CPUFeatures::Feature::kPmull1Q);
-  SupportsCSSC = Features.Has(vixl::CPUFeatures::Feature::kCSSC);
-  SupportsFCMA = Features.Has(vixl::CPUFeatures::Feature::kFcma);
-  SupportsFlagM = Features.Has(vixl::CPUFeatures::Feature::kFlagM);
-  SupportsFlagM2 = Features.Has(vixl::CPUFeatures::Feature::kAXFlag);
-  SupportsRPRES = Features.Has(vixl::CPUFeatures::Feature::kRPRES);
-  SupportsSVEBitPerm = Features.Has(vixl::CPUFeatures::Feature::kSVEBitPerm);
+  HostFeatures.SupportsAFP = Features.Has(vixl::CPUFeatures::Feature::kAFP);
+  HostFeatures.SupportsRCPC = Features.Has(vixl::CPUFeatures::Feature::kRCpc);
+  HostFeatures.SupportsTSOImm9 = Features.Has(vixl::CPUFeatures::Feature::kRCpcImm);
+  HostFeatures.SupportsPMULL_128Bit = Features.Has(vixl::CPUFeatures::Feature::kPmull1Q);
+  HostFeatures.SupportsCSSC = Features.Has(vixl::CPUFeatures::Feature::kCSSC);
+  HostFeatures.SupportsFCMA = Features.Has(vixl::CPUFeatures::Feature::kFcma);
+  HostFeatures.SupportsFlagM = Features.Has(vixl::CPUFeatures::Feature::kFlagM);
+  HostFeatures.SupportsFlagM2 = Features.Has(vixl::CPUFeatures::Feature::kAXFlag);
+  HostFeatures.SupportsRPRES = Features.Has(vixl::CPUFeatures::Feature::kRPRES);
+  HostFeatures.SupportsSVEBitPerm = Features.Has(vixl::CPUFeatures::Feature::kSVEBitPerm);
 
-  Supports3DNow = true;
-  SupportsSSE4A = true;
+  HostFeatures.Supports3DNow = true;
+  HostFeatures.SupportsSSE4A = true;
 
 #ifdef VIXL_SIMULATOR
   // Hardcode enable SVE with 256-bit wide registers.
-  SupportsSVE128 = ForceSVEWidth() ? ForceSVEWidth() >= 128 : true;
-  SupportsSVE256 = ForceSVEWidth() ? ForceSVEWidth() >= 256 : true;
+  HostFeatures.SupportsSVE128 = ForceSVEWidth() ? ForceSVEWidth() >= 128 : true;
+  HostFeatures.SupportsSVE256 = ForceSVEWidth() ? ForceSVEWidth() >= 256 : true;
 #else
-  SupportsSVE128 = Features.Has(vixl::CPUFeatures::Feature::kSVE2);
-  SupportsSVE256 = Features.Has(vixl::CPUFeatures::Feature::kSVE2) && ReadSVEVectorLengthInBits() >= 256;
+  HostFeatures.SupportsSVE128 = Features.Has(vixl::CPUFeatures::Feature::kSVE2);
+  HostFeatures.SupportsSVE256 = Features.Has(vixl::CPUFeatures::Feature::kSVE2) && ReadSVEVectorLengthInBits() >= 256;
 #endif
-  SupportsAVX = true;
+  HostFeatures.SupportsAVX = true;
 
-  SupportsAES256 = SupportsAVX && SupportsAES;
+  HostFeatures.SupportsAES256 = HostFeatures.SupportsAVX && HostFeatures.SupportsAES;
 
-  SupportsBMI1 = true;
-  SupportsBMI2 = true;
-  SupportsCLWB = true;
+  HostFeatures.SupportsBMI1 = true;
+  HostFeatures.SupportsBMI2 = true;
+  HostFeatures.SupportsCLWB = true;
 
-  if (!SupportsAtomics) {
+  if (!HostFeatures.SupportsAtomics) {
     WARN_ONCE_FMT("Host CPU doesn't support atomics. Expect bad performance");
   }
 
@@ -196,8 +195,8 @@ HostFeatures::HostFeatures() {
   uint64_t CTR;
   __asm volatile("mrs %[ctr], ctr_el0" : [ctr] "=r"(CTR));
 
-  DCacheLineSize = 4 << ((CTR >> 16) & 0xF);
-  ICacheLineSize = 4 << (CTR & 0xF);
+  HostFeatures.DCacheLineSize = 4 << ((CTR >> 16) & 0xF);
+  HostFeatures.ICacheLineSize = 4 << (CTR & 0xF);
 
   // Test if this CPU supports float exception trapping by attempting to enable
   // On unsupported these bits are architecturally defined as RAZ/WI
@@ -212,12 +211,12 @@ HostFeatures::HostFeatures() {
   uint32_t FPCR = OriginalFPCR | ExceptionEnableTraps;
   SetFPCR(FPCR);
   FPCR = GetFPCR();
-  SupportsFloatExceptions = (FPCR & ExceptionEnableTraps) == ExceptionEnableTraps;
+  HostFeatures.SupportsFloatExceptions = (FPCR & ExceptionEnableTraps) == ExceptionEnableTraps;
 
   // Set FPCR back to original just in case anything changed
   SetFPCR(OriginalFPCR);
 
-  if (SupportsRAND) {
+  if (HostFeatures.SupportsRAND) {
     const auto MIDR = GetMIDR();
     constexpr uint32_t Implementer_QCOM = 0x51;
     constexpr uint32_t PartNum_Oryon1 = 0x001;
@@ -231,16 +230,16 @@ HostFeatures::HostFeatures() {
       // This is contrary to x86 RNG behaviour where it allows spurious failure with RDSEED, but guarantees eventual success.
       // This manifested itself on Linux when an x86 processor failed to guarantee forward progress and boot of services would infinite
       // loop. Just disable this extension if this CPU is detected.
-      SupportsRAND = false;
+      HostFeatures.SupportsRAND = false;
     }
   }
 #endif
 
 #ifdef VIXL_SIMULATOR
   // simulator doesn't support dc(ZVA)
-  SupportsCLZERO = false;
+  HostFeatures.SupportsCLZERO = false;
   // Simulator doesn't support SHA
-  SupportsSHA = false;
+  HostFeatures.SupportsSHA = false;
 #else
   // Check if we can support cacheline clears
   uint32_t DCZID = GetDCZID();
@@ -249,31 +248,32 @@ HostFeatures::HostFeatures() {
     uint32_t DCZID_Bytes = (1 << DCZID_Log2) * sizeof(uint32_t);
     // If the DC ZVA size matches the emulated cache line size
     // This means we can use the instruction
-    SupportsCLZERO = DCZID_Bytes == CPUIDEmu::CACHELINE_SIZE;
+    constexpr static uint64_t CACHELINE_SIZE = 64;
+    HostFeatures.SupportsCLZERO = DCZID_Bytes == CACHELINE_SIZE;
   }
 #endif
 
 #if defined(_M_X86_64)
   // Hardcoded cacheline size.
-  DCacheLineSize = 64U;
-  ICacheLineSize = 64U;
+  HostFeatures.DCacheLineSize = 64U;
+  HostFeatures.ICacheLineSize = 64U;
 
 #if !defined(VIXL_SIMULATOR)
   Xbyak::util::Cpu X86Features {};
-  SupportsAES = X86Features.has(Xbyak::util::Cpu::tAESNI);
-  SupportsCRC = X86Features.has(Xbyak::util::Cpu::tSSE42);
-  SupportsRAND = X86Features.has(Xbyak::util::Cpu::tRDRAND) && X86Features.has(Xbyak::util::Cpu::tRDSEED);
-  SupportsRCPC = true;
-  SupportsTSOImm9 = true;
-  Supports3DNow = X86Features.has(Xbyak::util::Cpu::t3DN) && X86Features.has(Xbyak::util::Cpu::tE3DN);
-  SupportsSSE4A = X86Features.has(Xbyak::util::Cpu::tSSE4a);
-  SupportsAVX = true;
-  SupportsSHA = X86Features.has(Xbyak::util::Cpu::tSHA);
-  SupportsBMI1 = X86Features.has(Xbyak::util::Cpu::tBMI1);
-  SupportsBMI2 = X86Features.has(Xbyak::util::Cpu::tBMI2);
-  SupportsCLWB = X86Features.has(Xbyak::util::Cpu::tCLWB);
-  SupportsPMULL_128Bit = X86Features.has(Xbyak::util::Cpu::tPCLMULQDQ);
-  SupportsAES256 = SupportsAES && X86Features.has(Xbyak::util::Cpu::tVAES);
+  HostFeatures.SupportsAES = X86Features.has(Xbyak::util::Cpu::tAESNI);
+  HostFeatures.SupportsCRC = X86Features.has(Xbyak::util::Cpu::tSSE42);
+  HostFeatures.SupportsRAND = X86Features.has(Xbyak::util::Cpu::tRDRAND) && X86Features.has(Xbyak::util::Cpu::tRDSEED);
+  HostFeatures.SupportsRCPC = true;
+  HostFeatures.SupportsTSOImm9 = true;
+  HostFeatures.Supports3DNow = X86Features.has(Xbyak::util::Cpu::t3DN) && X86Features.has(Xbyak::util::Cpu::tE3DN);
+  HostFeatures.SupportsSSE4A = X86Features.has(Xbyak::util::Cpu::tSSE4a);
+  HostFeatures.SupportsAVX = true;
+  HostFeatures.SupportsSHA = X86Features.has(Xbyak::util::Cpu::tSHA);
+  HostFeatures.SupportsBMI1 = X86Features.has(Xbyak::util::Cpu::tBMI1);
+  HostFeatures.SupportsBMI2 = X86Features.has(Xbyak::util::Cpu::tBMI2);
+  HostFeatures.SupportsCLWB = X86Features.has(Xbyak::util::Cpu::tCLWB);
+  HostFeatures.SupportsPMULL_128Bit = X86Features.has(Xbyak::util::Cpu::tPCLMULQDQ);
+  HostFeatures.SupportsAES256 = HostFeatures.SupportsAES && X86Features.has(Xbyak::util::Cpu::tVAES);
 
   // xbyak doesn't know how to check for CLZero
   // First ensure we support a new enough extended CPUID function range
@@ -283,14 +283,14 @@ HostFeatures::HostFeatures() {
   if (data[0] >= 0x8000'0008U) {
     // CLZero defined in 8000_00008_EBX[bit 0]
     Xbyak::util::Cpu::getCpuid(0x8000'0008, data);
-    SupportsCLZERO = data[1] & 1;
+    HostFeatures.SupportsCLZERO = data[1] & 1;
   }
 
-  SupportsAFP = true;
-  SupportsFloatExceptions = true;
+  HostFeatures.SupportsAFP = true;
+  HostFeatures.SupportsFloatExceptions = true;
 #endif
 #endif
-  SupportsPreserveAllABI = FEXCORE_HAS_PRESERVE_ALL_ATTR;
+  HostFeatures.SupportsPreserveAllABI = FEX_HAS_PRESERVE_ALL_ATTR;
 
   if (!Is64BitMode()) {
     ///< Always disable AVX and AVX2 in 32-bit mode.
@@ -299,9 +299,10 @@ HostFeatures::HostFeatures() {
     //   - 32bytes * 16 registers = 512 bytes for YMM registers.
     // There are known game failures on real x86 hardware where a 32-bit game is running up against the wall on stack space on non-AVX
     // hardware and then explodes when run on AVX hardware. This is to guard against that.
-    SupportsAVX = false;
+    HostFeatures.SupportsAVX = false;
   }
 
-  OverrideFeatures(this, ForceSVEWidth());
+  OverrideFeatures(&HostFeatures, ForceSVEWidth());
+  return HostFeatures;
 }
-} // namespace FEXCore
+} // namespace FEX

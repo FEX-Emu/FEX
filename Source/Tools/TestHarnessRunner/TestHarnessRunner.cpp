@@ -18,6 +18,7 @@ $end_info$
 #endif
 
 #include "Common/ArgumentLoader.h"
+#include "Common/HostFeatures.h"
 #include "HarnessHelpers.h"
 #include "TestHarnessRunner/HostRunner.h"
 
@@ -247,7 +248,9 @@ int main(int argc, char** argv, char** const envp) {
 
   FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
 
+  auto HostFeatures = FEX::FetchHostFeatures();
   auto CTX = FEXCore::Context::Context::CreateNewContext();
+  CTX->SetHostFeatures(HostFeatures);
 
 #ifndef _WIN32
   auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get(), {});
@@ -260,7 +263,6 @@ int main(int argc, char** argv, char** const envp) {
 #endif
 
   // Skip any tests that the host doesn't support features for
-  auto HostFeatures = CTX->GetHostFeatures();
   SupportsAVX = HostFeatures.SupportsAVX;
 
   bool TestUnsupported = (!HostFeatures.Supports3DNow && Loader.Requires3DNow()) || (!HostFeatures.SupportsSSE4A && Loader.RequiresSSE4A()) ||

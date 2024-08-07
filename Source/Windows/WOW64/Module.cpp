@@ -26,6 +26,7 @@ $end_info$
 #include <FEXCore/Utils/TypeDefines.h>
 
 #include "Common/Config.h"
+#include "Common/HostFeatures.h"
 #include "Common/TSOHandlerConfig.h"
 #include "Common/InvalidationTracker.h"
 #include "Common/CPUFeatures.h"
@@ -434,6 +435,11 @@ void BTCpuProcessInit() {
   Context::HandlerConfig.emplace();
 
   CTX = FEXCore::Context::Context::CreateNewContext();
+  {
+    auto HostFeatures = FEX::FetchHostFeatures();
+    CTX->SetHostFeatures(HostFeatures);
+  }
+
   CTX->SetSignalDelegator(SignalDelegator.get());
   CTX->SetSyscallHandler(SyscallHandler.get());
   CTX->InitCore();

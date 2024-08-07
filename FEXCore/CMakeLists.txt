@@ -24,27 +24,6 @@ include(CheckCXXCompilerFlag)
 include(CheckIncludeFileCXX)
 include(CheckCXXSourceCompiles)
 
-set(CMAKE_REQUIRED_FLAGS "-std=c++11 -Wattributes -Werror=attributes")
-check_cxx_source_compiles(
-  "
-  __attribute__((preserve_all))
-  int Testy(int a, int b, int c, int d, int e, int f) {
-  return a + b + c + d + e + f;
-  }
-  int main() {
-  return Testy(0, 1, 2, 3, 4, 5);
-  }"
-  HAS_CLANG_PRESERVE_ALL)
-unset(CMAKE_REQUIRED_FLAGS)
-if (HAS_CLANG_PRESERVE_ALL)
-  if (MINGW_BUILD)
-    message(STATUS "Ignoring broken clang::preserve_all support")
-    set(HAS_CLANG_PRESERVE_ALL FALSE)
-  else()
-    message(STATUS "Has clang::preserve_all")
-  endif()
-endif ()
-
 if (EXISTS ${CMAKE_CURRENT_DIR}/External/vixl/)
     # Useful to have for freestanding libFEXCore
     add_subdirectory(External/vixl/)

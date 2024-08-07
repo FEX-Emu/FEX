@@ -145,6 +145,39 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "^arm64ec")
   set(ENABLE_JEMALLOC TRUE)
 endif()
 
+include(CheckCXXSourceCompiles)
+set(CMAKE_REQUIRED_FLAGS "-std=c++11 -Wattributes -Werror=attributes")
+check_cxx_source_compiles(
+  "
+  __attribute__((preserve_all))
+  int Testy(int a, int b, int c, int d, int e, int f) {
+  return a + b + c + d + e + f;
+  }
+  int main() {
+  return Testy(0, 1, 2, 3, 4, 5);
+  }"
+  HAS_CLANG_PRESERVE_ALL)
+unset(CMAKE_REQUIRED_FLAGS)
+if (HAS_CLANG_PRESERVE_ALL)
+  if (MINGW_BUILD)
+    message(STATUS "Ignoring broken clang::preserve_all support")
+    set(HAS_CLANG_PRESERVE_ALL FALSE)
+  else()
+    message(STATUS "Has clang::preserve_all")
+  endif()
+endif ()
+
+if (_M_ARM_64 AND HAS_CLANG_PRESERVE_ALL)
+  add_definitions("-DFEX_PRESERVE_ALL_ATTR=__attribute__((preserve_all))" "-DFEX_HAS_PRESERVE_ALL_ATTR=1")
+else()
+  add_definitions("-DFEX_PRESERVE_ALL_ATTR=" "-DFEX_HAS_PRESERVE_ALL_ATTR=0")
+endif()
+
+if (ENABLE_VIXL_SIMULATOR)
+  # We can run the simulator on both x86-64 or AArch64 hosts
+  add_definitions(-DVIXL_SIMULATOR=1 -DVIXL_INCLUDE_SIMULATOR_AARCH64=1)
+endif()
+
 if (ENABLE_CCACHE)
   find_program(CCACHE_PROGRAM ccache)
   if(CCACHE_PROGRAM)
@@ -281,8 +314,6 @@ include_directories(External/json-maker/)
 
 add_subdirectory(External/tiny-json/)
 include_directories(External/tiny-json/)
-
-include_directories(External/xbyak/)
 
 include_directories(Source/)
 include_directories("${CMAKE_BINARY_DIR}/Source/")

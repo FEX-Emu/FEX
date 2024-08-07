@@ -20,7 +20,7 @@
 
 namespace FEXCore {
 class CodeLoader;
-class HostFeatures;
+struct HostFeatures;
 class ForkableSharedMutex;
 } // namespace FEXCore
 
@@ -165,12 +165,11 @@ public:
   FEX_DEFAULT_VISIBILITY virtual void SetCustomCPUBackendFactory(CustomCPUFactoryType Factory) = 0;
 
   /**
-   * @brief Retrieves a feature struct indicating certain supported aspects from
-   *        the hose.
+   * @brief Informs the context what features the host supports.
    *
-   * @param CTX A valid non-null context instance.
+   * @param Features Filled out HostFeatures structure to copy
    */
-  FEX_DEFAULT_VISIBILITY virtual HostFeatures GetHostFeatures() const = 0;
+  FEX_DEFAULT_VISIBILITY virtual void SetHostFeatures(const FEXCore::HostFeatures& Features) = 0;
 
   FEX_DEFAULT_VISIBILITY virtual void HandleCallback(FEXCore::Core::InternalThreadState* Thread, uint64_t RIP) = 0;
 
