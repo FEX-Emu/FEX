@@ -194,15 +194,49 @@ void RootFSRedirect(fextl::string* Filename, const fextl::string& RootFS) {
   }
 }
 
+FEX::Config::PortableInformation GetIsPortable() {
+  constexpr FEX::Config::PortableInformation BadResult {false, {}};
+  const char* PortableConfig = getenv("FEX_PORTABLE");
+  if (!PortableConfig) {
+    return BadResult;
+  }
+
+  uint32_t Value {};
+  std::string_view PortableView {PortableConfig};
+
+  if (std::from_chars(PortableView.data(), PortableView.data() + PortableView.size(), Value).ec != std::errc {} || Value == 0) {
+    return BadResult;
+  }
+
+  char SelfPath[PATH_MAX];
+  auto Result = readlink("/proc/self/exe", SelfPath, PATH_MAX);
+  if (Result == -1) {
+    return BadResult;
+  }
+
+  std::string_view SelfPathView {SelfPath, std::min<size_t>(PATH_MAX, Result)};
+
+  ///< Extract the absolute path from the FEXInterpret path
+  return {true, SelfPathView.substr(0, SelfPathView.find_last_of("/") + 1)};
+}
+
 bool RanAsInterpreter(const char* Program) {
   return ExecutedWithFD || FEXLOADER_AS_INTERPRETER;
 }
 
-bool IsInterpreterInstalled() {
-  // The interpreter is installed if both the binfmt_misc handlers are available
-  // Or if we were originally executed with FD. Which means the interpreter is installed
+static bool InterpreterInstalled {};
 
-  return ExecutedWithFD || (access("/proc/sys/fs/binfmt_misc/FEX-x86", F_OK) == 0 && access("/proc/sys/fs/binfmt_misc/FEX-x86_64", F_OK) == 0);
+bool IsInterpreterInstalled() {
+  return InterpreterInstalled;
+}
+
+void SetInterpreterInstalled(bool Portable) {
+  // The interpreter is installed if both the binfmt_misc handlers are available.
+  // Or if we were originally executed with FD. Which means the interpreter is installed.
+  // If portable is set then FEX ignores anything installed through binfmt_misc.
+  InterpreterInstalled =
+    !Portable &&
+    (ExecutedWithFD || (access("/proc/sys/fs/binfmt_misc/FEX-x86", F_OK) == 0 && access("/proc/sys/fs/binfmt_misc/FEX-x86_64", F_OK) == 0));
 }
 
 namespace FEX::TSO {
@@ -267,6 +301,10 @@ static int StealFEXFDFromEnv(const char* Env) {
 int main(int argc, char** argv, char** const envp) {
   auto SBRKPointer = FEXCore::Allocator::DisableSBRKAllocations();
   FEXCore::Allocator::GLIBCScopedFault GLIBFaultScope;
+
+  const auto PortableInfo = GetIsPortable();
+  SetInterpreterInstalled(PortableInfo.IsPortable);
+
   const bool IsInterpreter = RanAsInterpreter(argv[0]);
 
   ExecutedWithFD = getauxval(AT_EXECFD) != 0;
@@ -280,7 +318,7 @@ int main(int argc, char** argv, char** const envp) {
     argc, argv);
   auto Args = ArgsLoader->Get();
   auto ParsedArgs = ArgsLoader->GetParsedArgs();
-  auto Program = FEX::Config::LoadConfig(std::move(ArgsLoader), true, envp, ExecutedWithFD, FEXFD);
+  auto Program = FEX::Config::LoadConfig(std::move(ArgsLoader), true, envp, ExecutedWithFD, FEXFD, &PortableInfo);
 
   if (Program.ProgramPath.empty() && FEXFD == -1) {
     // Early exit if we weren't passed an argument

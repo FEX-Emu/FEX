@@ -217,6 +217,20 @@ def print_man_environment_tail():
     ],
     "''", True)
 
+    print_man_env_option(
+    "FEX_PORTABLE",
+    [
+    "Forces FEX in to a more portable installation",
+    "This does a couple of things:",
+    "- Skips executing binfmt_misc handlers through execve",
+    "- global config (typically installed in /usr/share/fex-emu/) disabled",
+    "- FEX_APP_CONFIG_LOCATION defaults to FEXInterpreter relative paths instead of {$HOME, $XDG_DATA_HOME}/.fex-emu/",
+    "  - <FEXInterpreterPath>/fex-emu/"
+    "- FEX_APP_DATA_LOCATION defaults to FEXInterpreter relative path instead of {$HOME, $XDG_DATA_HOME}/.fex-emu/",
+    "  - <FEXInterpreterPath>/fex-emu/"
+    ],
+    "''", True)
+
 def print_man_header():
     header ='''.Dd {0}
 .Dt FEX
