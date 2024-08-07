@@ -122,3 +122,65 @@ DLLEXPORT_FUNC(DWORD, GetLastError, ()) {
 DLLEXPORT_FUNC(void, SetLastError, (DWORD dwErrCode)) {
   GetCurrentTEB()->LastErrorValue = dwErrCode;
 }
+
+DLLEXPORT_FUNC(LONG, RegOpenKeyExA, (HKEY hKey, LPCSTR lpSubKey, DWORD ulOptions, REGSAM samDesired, PHKEY phkResult)) {
+  if (hKey != HKEY_LOCAL_MACHINE) {
+    UNIMPLEMENTED();
+  }
+
+  ScopedUnicodeString RootKey {"\\Registry\\Machine"};
+  OBJECT_ATTRIBUTES ObjAttributes;
+  InitializeObjectAttributes(&ObjAttributes, &*RootKey, OBJ_CASE_INSENSITIVE, nullptr, nullptr);
+  HKEY HKLM;
+  NTSTATUS Status = NtOpenKeyEx(reinterpret_cast<HANDLE*>(&HKLM), MAXIMUM_ALLOWED, &ObjAttributes, 0);
+  if (Status) {
+    return RtlNtStatusToDosError(Status);
+  }
+
+  ScopedUnicodeString SubKey {lpSubKey};
+  InitializeObjectAttributes(&ObjAttributes, &*SubKey, OBJ_CASE_INSENSITIVE, reinterpret_cast<HANDLE>(HKLM), nullptr);
+  Status = NtOpenKeyEx(reinterpret_cast<HANDLE*>(phkResult), samDesired, &ObjAttributes, ulOptions);
+  NtClose(HKLM);
+  return RtlNtStatusToDosError(Status);
+}
+
+DLLEXPORT_FUNC(LONG, RegGetValueA, (HKEY hKey, LPCSTR lpSubKey, LPCSTR lpValue, DWORD dwFlags, LPDWORD pdwType, PVOID pvData, LPDWORD pcbData)) {
+  if (lpSubKey || dwFlags) {
+    UNIMPLEMENTED();
+  }
+
+  ScopedUnicodeString ValueName {lpValue};
+
+  union {
+    KEY_VALUE_PARTIAL_INFORMATION Info;
+    uint8_t Buf[512];
+  } Data;
+  ULONG OutSize;
+  NTSTATUS Status = NtQueryValueKey(hKey, &*ValueName, KeyValuePartialInformation, &Data.Info, sizeof(Data), &OutSize);
+  if (Status) {
+    return RtlNtStatusToDosError(Status);
+  }
+
+  if (pdwType) {
+    *pdwType = Data.Info.Type;
+  }
+
+  if (pvData) {
+    if (*pcbData < Data.Info.DataLength) {
+      *pcbData = Data.Info.DataLength;
+      return ERROR_MORE_DATA;
+    }
+
+    memcpy(pvData, &Data.Info.Data, Data.Info.DataLength);
+  }
+
+  if (pcbData) {
+    *pcbData = Data.Info.DataLength;
+  }
+
+  return ERROR_SUCCESS;
+}
+
+DLLEXPORT_FUNC(LONG, RegCloseKey, (HKEY hKey)) {
+  return RtlNtStatusToDosError(NtClose(hKey));
+}
