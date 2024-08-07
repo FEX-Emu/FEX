@@ -932,6 +932,8 @@ public:
   template<size_t ElementSize>
   void VectorRound(OpcodeArgs);
 
+  Ref VectorBlend(OpSize Size, size_t ElementSize, Ref Src1, Ref Src2, uint8_t Selector);
+
   template<size_t ElementSize>
   void VectorBlend(OpcodeArgs);
 

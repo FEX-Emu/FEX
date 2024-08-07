@@ -3777,147 +3777,158 @@ void OpDispatchBuilder::AVXVectorRound(OpcodeArgs) {
 template void OpDispatchBuilder::AVXVectorRound<4>(OpcodeArgs);
 template void OpDispatchBuilder::AVXVectorRound<8>(OpcodeArgs);
 
-template<size_t ElementSize>
-void OpDispatchBuilder::VectorBlend(OpcodeArgs) {
-  const auto DstSize = GetDstSize(Op);
-  uint8_t Select = Op->Src[1].Literal();
-
-  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-
-  if constexpr (ElementSize == 4) {
-    Select &= 0b1111;
-    switch (Select) {
+Ref OpDispatchBuilder::VectorBlend(OpSize Size, size_t ElementSize, Ref Src1, Ref Src2, uint8_t Selector) {
+  if (ElementSize == OpSize::i32Bit) {
+    Selector &= 0b1111;
+    switch (Selector) {
     case 0b0000:
-      // No-op
-      return;
+      // Dest[31:0]   = Src1[31:0]
+      // Dest[63:32]  = Src1[63:32]
+      // Dest[95:64]  = Src1[95:64]
+      // Dest[127:96] = Src1[127:96]
+      // Copy
+      return Src1;
     case 0b0001:
-      // Dest[31:0] = Src[31:0]
-      Dest = _VInsElement(DstSize, ElementSize, 0, 0, Dest, Src);
-      break;
+      // Dest[31:0]   = Src2[31:0]
+      // Dest[63:32]  = Src1[63:32]
+      // Dest[95:64]  = Src1[95:64]
+      // Dest[127:96] = Src1[127:96]
+      return _VInsElement(Size, ElementSize, 0, 0, Src1, Src2);
     case 0b0010:
-      // Dest[63:32] = Src[63:32]
-      Dest = _VInsElement(DstSize, ElementSize, 1, 1, Dest, Src);
-      break;
+      // Dest[31:0]   = Src1[31:0]
+      // Dest[63:32]  = Src2[63:32]
+      // Dest[95:64]  = Src1[95:64]
+      // Dest[127:96] = Src1[127:96]
+      return _VInsElement(Size, ElementSize, 1, 1, Src1, Src2);
     case 0b0011:
-      // Dest[31:0] = Src[31:0]
-      // Dest[63:32] = Src[63:32]
-      Dest = _VInsElement(DstSize, 8, 0, 0, Dest, Src);
-      break;
+      // Dest[31:0]   = Src2[31:0]
+      // Dest[63:32]  = Src2[63:32]
+      // Dest[95:64]  = Src1[95:64]
+      // Dest[127:96] = Src1[127:96]
+      return _VInsElement(Size, 8, 0, 0, Src1, Src2);
     case 0b0100:
-      // Dest[95:64] = Src[95:64]
-      Dest = _VInsElement(DstSize, ElementSize, 2, 2, Dest, Src);
-      break;
+      // Dest[31:0]   = Src1[31:0]
+      // Dest[63:32]  = Src1[63:32]
+      // Dest[95:64]  = Src2[95:64]
+      // Dest[127:96] = Src1[127:96]
+      return _VInsElement(Size, ElementSize, 2, 2, Src1, Src2);
     case 0b0101: {
-      // Dest[31:0]   = Src[31:0]
-      // Dest[63:32]  = Dest[63:32]
-      // Dest[95:64]  = Src[95:64]
-      // Dest[127:96] = Dest[127:96]
+      // Dest[31:0]   = Src2[31:0]
+      // Dest[63:32]  = Src1[63:32]
+      // Dest[95:64]  = Src2[95:64]
+      // Dest[127:96] = Src1[127:96]
       // Rotate the elements of the incoming source so they end up in the correct location.
       // Then trn2 keeps the destination results in the expected location.
-      auto Temp = _VRev64(DstSize, 4, Src);
-      Dest = _VTrn2(DstSize, ElementSize, Temp, Dest);
-      break;
+      auto Temp = _VRev64(Size, OpSize::i32Bit, Src2);
+      return _VTrn2(Size, ElementSize, Temp, Src1);
     }
     case 0b0110: {
-      // Dest[63:32] = Src[63:32]
-      // Dest[95:64] = Src[95:64]
-      auto ConstantSwizzle = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_BLENDPS_0110B);
-      Dest = _VTBX1(DstSize, Dest, Src, ConstantSwizzle);
-      break;
+      // Dest[31:0]   = Src1[31:0]
+      // Dest[63:32]  = Src2[63:32]
+      // Dest[95:64]  = Src2[95:64]
+      // Dest[127:96] = Src1[127:96]
+      auto ConstantSwizzle = LoadAndCacheNamedVectorConstant(Size, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_BLENDPS_0110B);
+      return _VTBX1(Size, Src1, Src2, ConstantSwizzle);
     }
     case 0b0111: {
-      // Dest[31:0]  = Src[31:0]
-      // Dest[63:32] = Src[63:32]
-      // Dest[95:64] = Src[95:64]
-      auto ConstantSwizzle = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_BLENDPS_0111B);
-      Dest = _VTBX1(DstSize, Dest, Src, ConstantSwizzle);
-      break;
+      // Dest[31:0]   = Src2[31:0]
+      // Dest[63:32]  = Src2[63:32]
+      // Dest[95:64]  = Src2[95:64]
+      // Dest[127:96] = Src1[127:96]
+      auto ConstantSwizzle = LoadAndCacheNamedVectorConstant(Size, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_BLENDPS_0111B);
+      return _VTBX1(Size, Src1, Src2, ConstantSwizzle);
     }
     case 0b1000:
-      // Dest[127:96] = Src[127:96]
-      Dest = _VInsElement(DstSize, ElementSize, 3, 3, Dest, Src);
-      break;
+      // Dest[31:0]   = Src1[31:0]
+      // Dest[63:32]  = Src1[63:32]
+      // Dest[95:64]  = Src1[95:64]
+      // Dest[127:96] = Src2[127:96]
+      return _VInsElement(Size, ElementSize, 3, 3, Src1, Src2);
     case 0b1001: {
-      // Dest[31:0]   = Src[31:0]
-      // Dest[127:96] = Src[127:96]
-      auto ConstantSwizzle = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_BLENDPS_1001B);
-      Dest = _VTBX1(DstSize, Dest, Src, ConstantSwizzle);
-      break;
+      // Dest[31:0]   = Src2[31:0]
+      // Dest[63:32]  = Src1[63:32]
+      // Dest[95:64]  = Src1[95:64]
+      // Dest[127:96] = Src2[127:96]
+      auto ConstantSwizzle = LoadAndCacheNamedVectorConstant(Size, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_BLENDPS_1001B);
+      return _VTBX1(Size, Src1, Src2, ConstantSwizzle);
     }
     case 0b1010: {
-      // Dest[31:0]   = Dest[31:0]
-      // Dest[63:32]  = Src[63:32]
-      // Dest[95:64]  = Dest[95:64]
-      // Dest[127:96] = Src[127:96]
+      // Dest[31:0]   = Src1[31:0]
+      // Dest[63:32]  = Src2[63:32]
+      // Dest[95:64]  = Src1[95:64]
+      // Dest[127:96] = Src2[127:96]
       // Rotate the elements of the incoming destination so they end up in the correct location.
       // Then trn2 keeps the source results in the expected location.
-      auto Temp = _VRev64(DstSize, 4, Dest);
-      Dest = _VTrn2(DstSize, ElementSize, Temp, Src);
-      break;
+      auto Temp = _VRev64(Size, OpSize::i32Bit, Src1);
+      return _VTrn2(Size, ElementSize, Temp, Src2);
     }
     case 0b1011: {
-      // Dest[31:0]  = Src[31:0]
-      // Dest[63:32] = Src[63:32]
-      // Dest[95:64] = Src[95:64]
-      auto ConstantSwizzle = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_BLENDPS_1011B);
-      Dest = _VTBX1(DstSize, Dest, Src, ConstantSwizzle);
-      break;
+      // Dest[31:0]   = Src2[31:0]
+      // Dest[63:32]  = Src2[63:32]
+      // Dest[95:64]  = Src1[95:64]
+      // Dest[127:96] = Src2[127:96]
+      auto ConstantSwizzle = LoadAndCacheNamedVectorConstant(Size, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_BLENDPS_1011B);
+      return _VTBX1(Size, Src1, Src2, ConstantSwizzle);
     }
     case 0b1100:
-      // Dest[95:64] = Src[95:64]
-      // Dest[127:96] = Src[127:96]
-      Dest = _VInsElement(DstSize, 8, 1, 1, Dest, Src);
-      break;
+      // Dest[31:0]   = Src1[31:0]
+      // Dest[63:32]  = Src1[63:32]
+      // Dest[95:64]  = Src2[95:64]
+      // Dest[127:96] = Src2[127:96]
+      return _VInsElement(Size, OpSize::i64Bit, 1, 1, Src1, Src2);
     case 0b1101: {
-      // Dest[31:0]  = Src[31:0]
-      // Dest[95:64] = Src[95:64]
-      // Dest[127:96] = Src[127:96]
-      auto ConstantSwizzle = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_BLENDPS_1101B);
-      Dest = _VTBX1(DstSize, Dest, Src, ConstantSwizzle);
-      break;
+      // Dest[31:0]   = Src2[31:0]
+      // Dest[63:32]  = Src1[63:32]
+      // Dest[95:64]  = Src2[95:64]
+      // Dest[127:96] = Src2[127:96]
+      auto ConstantSwizzle = LoadAndCacheNamedVectorConstant(Size, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_BLENDPS_1101B);
+      return _VTBX1(Size, Src1, Src2, ConstantSwizzle);
     }
     case 0b1110: {
-      // Dest[63:32] = Src[63:32]
-      // Dest[95:64] = Src[95:64]
-      // Dest[127:96] = Src[127:96]
-      auto ConstantSwizzle = LoadAndCacheNamedVectorConstant(DstSize, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_BLENDPS_1110B);
-      Dest = _VTBX1(DstSize, Dest, Src, ConstantSwizzle);
-      break;
+      // Dest[31:0]   = Src1[31:0]
+      // Dest[63:32]  = Src2[63:32]
+      // Dest[95:64]  = Src2[95:64]
+      // Dest[127:96] = Src2[127:96]
+      auto ConstantSwizzle = LoadAndCacheNamedVectorConstant(Size, FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_BLENDPS_1110B);
+      return _VTBX1(Size, Src1, Src2, ConstantSwizzle);
     }
     case 0b1111:
+      // Dest[31:0]   = Src2[31:0]
+      // Dest[63:32]  = Src2[63:32]
+      // Dest[95:64]  = Src2[95:64]
+      // Dest[127:96] = Src2[127:96]
       // Copy
-      Dest = Src;
-      break;
+      return Src2;
     default: break;
     }
-  } else if constexpr (ElementSize == 8) {
-    Select &= 0b11;
-    switch (Select) {
+  } else if (ElementSize == OpSize::i64Bit) {
+    Selector &= 0b11;
+    switch (Selector) {
     case 0b00:
       // No-op
-      return;
+      return Src1;
     case 0b01:
-      // Dest[63:0] = Src[63:0]
-      Dest = _VInsElement(DstSize, ElementSize, 0, 0, Dest, Src);
-      break;
+      // Dest[63:0]   = Src2[63:0]
+      // Dest[127:64] = Src1[127:64]
+      return _VInsElement(Size, ElementSize, 0, 0, Src1, Src2);
     case 0b10:
-      // Dest[127:64] = Src[127:64]
-      Dest = _VInsElement(DstSize, ElementSize, 1, 1, Dest, Src);
-      break;
+      // Dest[63:0]   = Src1[63:0]
+      // Dest[127:64] = Src2[127:64]
+      return _VInsElement(Size, ElementSize, 1, 1, Src1, Src2);
     case 0b11:
       // Copy
-      Dest = Src;
-      break;
+      return Src2;
     }
   } else {
-    // TODO: There are some of these swizzles that can be more optimal.
-    // NamedConstant + VTBX1 is quite quick already.
-    // Implement more if it becomes relevant.
-    switch (Select) {
-    case 0b0000'0000:
-      // No-op
-      return;
+    ///< Zero instruction copies
+    switch (Selector) {
+    case 0b0000'0000: return Src1;
+    case 0b1111'1111: return Src2;
+    default: break;
+    }
+
+    ///< Single instruction implementation
+    switch (Selector) {
     case 0b0000'0001:
     case 0b0000'0010:
     case 0b0000'0100:
@@ -3927,38 +3938,88 @@ void OpDispatchBuilder::VectorBlend(OpcodeArgs) {
     case 0b0100'0000:
     case 0b1000'0000: {
       // Single 16-bit element insert.
-      const auto Element = FEXCore::ilog2(Select);
-      Dest = _VInsElement(DstSize, ElementSize, Element, Element, Dest, Src);
-      break;
+      const auto Element = FEXCore::ilog2(Selector);
+      return _VInsElement(Size, ElementSize, Element, Element, Src1, Src2);
+    }
+    case 0b1111'1110:
+    case 0b1111'1101:
+    case 0b1111'1011:
+    case 0b1111'0111:
+    case 0b1110'1111:
+    case 0b1101'1111:
+    case 0b1011'1111:
+    case 0b0111'1111: {
+      // Single 16-bit element insert, inverted
+      uint8_t SelectorInvert = ~Selector;
+      const auto Element = FEXCore::ilog2(SelectorInvert);
+      return _VInsElement(Size, ElementSize, Element, Element, Src2, Src1);
     }
     case 0b0000'0011:
     case 0b0000'1100:
     case 0b0011'0000:
     case 0b1100'0000: {
       // Single 32-bit element insert.
-      const auto Element = std::countr_zero(Select) / 2;
-      Dest = _VInsElement(DstSize, 4, Element, Element, Dest, Src);
-      break;
+      const auto Element = std::countr_zero(Selector) / 2;
+      return _VInsElement(Size, OpSize::i32Bit, Element, Element, Src1, Src2);
+    }
+    case 0b1111'1100:
+    case 0b1111'0011:
+    case 0b1100'1111:
+    case 0b0011'1111: {
+      // Single 32-bit element insert, inverted
+      uint8_t SelectorInvert = ~Selector;
+      const auto Element = std::countr_zero(SelectorInvert) / 2;
+      return _VInsElement(Size, OpSize::i32Bit, Element, Element, Src2, Src1);
     }
     case 0b0000'1111:
     case 0b1111'0000: {
       // Single 64-bit element insert.
-      const auto Element = std::countr_zero(Select) / 4;
-      Dest = _VInsElement(DstSize, 8, Element, Element, Dest, Src);
-      break;
+      const auto Element = std::countr_zero(Selector) / 4;
+      return _VInsElement(Size, OpSize::i64Bit, Element, Element, Src1, Src2);
     }
-    case 0b1111'1111:
-      // Copy
-      Dest = Src;
-      break;
-    default: {
-      auto ConstantSwizzle =
-        LoadAndCacheIndexedNamedVectorConstant(DstSize, FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PBLENDW, Select * 16);
-      Dest = _VTBX1(DstSize, Dest, Src, ConstantSwizzle);
-      break;
+    default: break;
     }
+
+    ///< Two instruction implementation
+    switch (Selector) {
+    ///< Fancy double VExtr
+    case 0b0'0'0'0'0'1'1'1: {
+      auto Tmp = _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src2, Src1, 6);
+      return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 10);
     }
+    case 0b0'0'0'1'1'1'1'1: {
+      auto Tmp = _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src2, Src1, 10);
+      return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 6);
+    }
+    case 0b1'1'1'0'0'0'0'0: {
+      auto Tmp = _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src1, Src2, 10);
+      return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 6);
+    }
+    case 0b1'1'1'1'1'0'0'0: {
+      auto Tmp = _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src1, Src2, 6);
+      return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 10);
+    }
+    default: break;
+    }
+
+    // TODO: There are some of these swizzles that can be more optimal.
+    // NamedConstant + VTBX1 is quite quick already.
+    // Implement more if it becomes relevant.
+    auto ConstantSwizzle =
+      LoadAndCacheIndexedNamedVectorConstant(Size, FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PBLENDW, Selector * 16);
+    return _VTBX1(Size, Src1, Src2, ConstantSwizzle);
   }
+
+  FEX_UNREACHABLE;
+}
+
+template<size_t ElementSize>
+void OpDispatchBuilder::VectorBlend(OpcodeArgs) {
+  uint8_t Select = Op->Src[1].Literal();
+
+  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Dest = VectorBlend(OpSize::i128Bit, ElementSize, Dest, Src, Select);
   StoreResult(FPRClass, Op, Dest, -1);
 }
 
