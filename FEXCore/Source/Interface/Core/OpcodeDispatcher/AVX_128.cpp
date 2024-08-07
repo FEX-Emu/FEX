@@ -1851,38 +1851,35 @@ void OpDispatchBuilder::AVX128_VPERMQ(OpcodeArgs) {
 
   RefPair Result {};
 
-  if (Selector == 0x00 || Selector == 0x55) {
-    // If we're just broadcasting one element in particular across the vector
-    // then this can be done fairly simply without any individual inserts.
-    // Low 128-bit version.
-    const auto Index = Selector & 0b11;
-    Result.Low = _VDupElement(OpSize::i128Bit, OpSize::i64Bit, Src.Low, Index);
-    Result.High = Result.Low;
-  } else if (Selector == 0xAA || Selector == 0xFF) {
-    // High 128-bit version.
-    const auto Index = (Selector & 0b11) - 2;
-    Result.Low = _VDupElement(OpSize::i128Bit, OpSize::i64Bit, Src.High, Index);
-    Result.High = Result.Low;
-  } else {
-    ///< TODO: This can be more optimized.
-    auto ZeroRegister = LoadZeroVector(OpSize::i128Bit);
-    Ref Selections[4] = {
-      Src.Low,
-      Src.Low,
-      Src.High,
-      Src.High,
-    };
-    uint8_t SrcIndex {};
-    SrcIndex = (Selector >> (0 * 2)) & 0b11;
-    Result.Low = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 0, SrcIndex & 1, ZeroRegister, Selections[SrcIndex]);
-    SrcIndex = (Selector >> (1 * 2)) & 0b11;
-    Result.Low = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 1, SrcIndex & 1, Result.Low, Selections[SrcIndex]);
+  // Crack the operation in to two halves and implement per half
+  uint8_t SelectorLow = Selector & 0b1111;
+  uint8_t SelectorHigh = (Selector >> 4) & 0b1111;
+  auto SelectLane = [this](uint8_t Selector, RefPair Src) -> Ref {
+    LOGMAN_THROW_AA_FMT(Selector < 16, "Selector too large!");
 
-    SrcIndex = (Selector >> (2 * 2)) & 0b11;
-    Result.High = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 0, SrcIndex & 1, ZeroRegister, Selections[SrcIndex]);
-    SrcIndex = (Selector >> (3 * 2)) & 0b11;
-    Result.High = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 1, SrcIndex & 1, Result.High, Selections[SrcIndex]);
-  }
+    switch (Selector) {
+    case 0b00'00: return _VDupElement(OpSize::i128Bit, OpSize::i64Bit, Src.Low, 0);
+    case 0b00'01: return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src.Low, Src.Low, 8);
+    case 0b00'10: return _VZip(OpSize::i128Bit, OpSize::i64Bit, Src.High, Src.Low);
+    case 0b00'11: return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src.Low, Src.High, 8);
+    case 0b01'00: return Src.Low;
+    case 0b01'01: return _VDupElement(OpSize::i128Bit, OpSize::i64Bit, Src.Low, 1);
+    case 0b01'10: return _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 1, 1, Src.High, Src.Low);
+    case 0b01'11: return _VTrn2(OpSize::i128Bit, OpSize::i64Bit, Src.High, Src.Low);
+    case 0b10'00: return _VZip(OpSize::i128Bit, OpSize::i64Bit, Src.Low, Src.High);
+    case 0b10'01: return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src.High, Src.Low, 8);
+    case 0b10'10: return _VDupElement(OpSize::i128Bit, OpSize::i64Bit, Src.High, 0);
+    case 0b10'11: return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src.High, Src.High, 8);
+    case 0b11'00: return _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 1, 1, Src.Low, Src.High);
+    case 0b11'01: return _VTrn2(OpSize::i128Bit, OpSize::i64Bit, Src.Low, Src.High);
+    case 0b11'10: return Src.High;
+    case 0b11'11: return _VDupElement(OpSize::i128Bit, OpSize::i64Bit, Src.High, 1);
+    default: FEX_UNREACHABLE;
+    }
+  };
+
+  Result.Low = SelectLane(SelectorLow, Src);
+  Result.High = SelectorLow == SelectorHigh ? Result.Low : SelectLane(SelectorHigh, Src);
 
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
