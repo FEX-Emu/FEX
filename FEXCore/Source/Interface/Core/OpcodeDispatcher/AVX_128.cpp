@@ -2283,8 +2283,7 @@ void OpDispatchBuilder::AVX128_VTESTP(OpcodeArgs) {
 
   // As in PTest, this sets Z appropriately while zeroing the rest of NZCV.
   SetNZ_ZeroCV(32, ZF);
-  SetRFLAG(CF, FEXCore::X86State::RFLAG_CF_RAW_LOC);
-
+  SetCFDirect(CF);
   ZeroPF_AF();
 }
 
@@ -2331,8 +2330,7 @@ void OpDispatchBuilder::AVX128_PTest(OpcodeArgs) {
   // the results of a 16-bit value from the UMaxV, so the 32-bit sign bit is
   // cleared even if the 16-bit scalars were negative.
   SetNZ_ZeroCV(32, Test1);
-  SetRFLAG(Test2, FEXCore::X86State::RFLAG_CF_RAW_LOC);
-
+  SetCFDirect(Test2);
   ZeroPF_AF();
 }
 

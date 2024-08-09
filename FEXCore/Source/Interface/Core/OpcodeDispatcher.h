@@ -117,6 +117,7 @@ public:
     // Changes get stored out by CalculateDeferredFlags.
     CachedNZCV = nullptr;
     PossiblySetNZCVBits = ~0U;
+    CFInverted = CFInvertedABI;
     FlushRegisterCache();
 
     // New block needs to reset segment telemetry.
@@ -1227,6 +1228,11 @@ public:
   }
 
   void FlushRegisterCache(bool SRAOnly = false) {
+    // At block boundaries, fix up the carry flag.
+    if (!SRAOnly) {
+      RectifyCarryInvert(CFInvertedABI);
+    }
+
     CalculateDeferredFlags();
 
     const uint8_t GPRSize = CTX->GetGPRSize();
@@ -1344,6 +1350,18 @@ private:
   Ref CachedNZCV {};
   bool NZCVDirty {};
   uint32_t PossiblySetNZCVBits {};
+
+  // Set if the host carry is inverted from the guest carry. This is set after
+  // subtraction, because arm64 and x86 have inverted borrow flags, but clear
+  // after addition.
+  //
+  // All CF access needs to maintain this flag. cfinv may be inserted at the end
+  // of a block to rectify to the FEX convention (current convention: NOT
+  // INVERTED).
+  bool CFInverted {};
+
+  // FEX convention for CF at the end of blocks: NOT INVERTED.
+  const bool CFInvertedABI {false};
 
   fextl::map<uint64_t, JumpTargetInfo> JumpTargets;
   bool HandledLock {false};
@@ -1607,6 +1625,10 @@ private:
   // Special case of the above where we are known to zero C/V
   void HandleNZ00Write() {
     HandleNZCVWrite((1u << 31) | (1u << 30));
+
+    // Host carry will be implicitly zeroed, and we want guest carry zeroed as
+    // well. So do not invert.
+    CFInverted = false;
   }
 
   Ref GetNZCV() {
@@ -1675,24 +1697,45 @@ private:
     PossiblySetNZCVBits |= (1u << Bit);
   }
 
-  void CarryInvert() {
-    unsigned Bit = IndexNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC);
+  // Ensure the carry invert flag matches the desired form. Used before an
+  // operation reading carry or at the end of a block.
+  void RectifyCarryInvert(bool RequiredInvert) {
+    if (CFInverted != RequiredInvert) {
+      if (CTX->HostFeatures.SupportsFlagM && !NZCVDirty) {
+        // Invert as NZCV.
+        _CarryInvert();
+        CachedNZCV = nullptr;
+      } else {
+        // Invert as a GPR
+        unsigned Bit = IndexNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC);
+        SetNZCV(_Xor(OpSize::i32Bit, GetNZCV(), _Constant(1u << Bit)));
+        CalculateDeferredFlags();
+      }
 
-    if (CTX->HostFeatures.SupportsFlagM && !NZCVDirty) {
-      // Invert as NZCV.
-      _CarryInvert();
-      CachedNZCV = nullptr;
-    } else {
-      // Invert as a GPR
-      SetNZCV(_Xor(OpSize::i32Bit, GetNZCV(), _Constant(1u << Bit)));
+      CFInverted ^= true;
     }
 
-    PossiblySetNZCVBits |= 1u << Bit;
+    LOGMAN_THROW_AA_FMT(CFInverted == RequiredInvert, "post condition");
+  }
+
+  void CarryInvert() {
+    CFInverted ^= true;
+    PossiblySetNZCVBits |= 1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC);
   }
 
   template<unsigned BitOffset>
   void SetRFLAG(Ref Value, unsigned ValueOffset = 0, bool MustMask = false) {
     SetRFLAG(Value, BitOffset, ValueOffset, MustMask);
+  }
+
+  void SetCFDirect(Ref Value, unsigned ValueOffset = 0, bool MustMask = false) {
+    SetRFLAG(Value, X86State::RFLAG_CF_RAW_LOC, ValueOffset, MustMask);
+    CFInverted = false;
+  }
+
+  void SetCFInverted(Ref Value, unsigned ValueOffset = 0, bool MustMask = false) {
+    SetRFLAG(Value, X86State::RFLAG_CF_RAW_LOC, ValueOffset, MustMask);
+    CFInverted = true;
   }
 
   void SetRFLAG(Ref Value, unsigned BitOffset, unsigned ValueOffset = 0, bool MustMask = false) {
@@ -1891,6 +1934,12 @@ private:
 
   Ref GetRFLAG(unsigned BitOffset, bool Invert = false) {
     if (IsNZCV(BitOffset)) {
+      // Handle the CFInverted state internally so GetRFLAG is safe regardless
+      // of the invert state. This simplifies the call sites.
+      if (BitOffset == X86State::RFLAG_CF_RAW_LOC) {
+        Invert ^= CFInverted;
+      }
+
       if (!(PossiblySetNZCVBits & (1u << IndexNZCV(BitOffset)))) {
         return _Constant(Invert ? 1 : 0);
       } else if (NZCVDirty) {
@@ -1902,6 +1951,8 @@ private:
           return Value;
         }
       } else {
+        // Because we explicitly inverted for CF above, we use the unsafe
+        // _NZCVSelect rather than the safe CF-aware version.
         return _NZCVSelect(OpSize::i32Bit, CondForNZCVBit(BitOffset, Invert), _Constant(1), _Constant(0));
       }
     } else if (BitOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC) {
@@ -1935,11 +1986,37 @@ private:
     return _AddShift(OpSize::i64Bit, X, LoadDF(), ShiftType::LSL, Shift);
   }
 
+  // Safe version of NZCVSelect that handles inverted carries automatically.
+  Ref NZCVSelect(OpSize OpSize, CondClassType Cond, Ref TrueV, Ref FalseV, bool CarryIsInverted = false) {
+    switch (Cond) {
+    case IR::COND_UGE: /* cs */
+    case IR::COND_ULT: /* cc */
+      // Invert the condition to match our expectations.
+      if (CarryIsInverted != CFInverted) {
+        Cond = {Cond == COND_UGE ? COND_ULT : COND_UGE};
+      }
+      break;
+
+    case IR::COND_UGT: /* hi */
+    case IR::COND_ULE: /* ls */
+      // No clever optimization we can do here, rectify carry itself.
+      RectifyCarryInvert(CarryIsInverted);
+      break;
+
+    default:
+      // No other condition codes read carry so no need to rectify.
+      break;
+    }
+
+    return _NZCVSelect(OpSize, Cond, TrueV, FalseV);
+  }
+
   // Compares two floats and sets flags for a COMISS instruction
   void Comiss(size_t ElementSize, Ref Src1, Ref Src2, bool InvalidateAF = false) {
     // First, set flags according to Arm FCMP.
     HandleNZCVWrite();
     _FCmp(ElementSize, Src1, Src2);
+    CFInverted = false;
     ComissFlags(InvalidateAF);
   }
 
@@ -1959,18 +2036,15 @@ private:
       //
       // We set PF to unordered (V), but our PF representation is inverted so we
       // actually set to !V. This is one instruction with the VC cond code.
-      Ref PFInvert = _NZCVSelect(OpSize::i32Bit, CondClassType {COND_FNU}, _Constant(1), _Constant(0));
+      Ref PFInvert = NZCVSelect(OpSize::i32Bit, {COND_FNU}, _Constant(1), _Constant(0));
 
       SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(PFInvert);
 
       // For the rest, this one weird a64 instruction maps exactly to what x86
-      // needs. What a coincidence!
+      // needs, with inverted carry. What a coincidence!
       _AXFlag();
       PossiblySetNZCVBits = ~0;
-
-      // It does assume we invert CF internally, which is still TODO for us. For
-      // now, add a cfinv to deal. Hopefully we delete this later.
-      CarryInvert();
+      CFInverted = true;
     } else {
       Ref Z = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
       Ref C_inv = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC, true);
@@ -1980,7 +2054,7 @@ private:
       // this all with shifted-or's on non-flagm platforms.
       ZeroNZCV();
 
-      SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(_Or(OpSize::i32Bit, C_inv, V));
+      SetCFDirect(_Or(OpSize::i32Bit, C_inv, V));
       SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(_Or(OpSize::i32Bit, Z, V));
 
       // Note that we store PF inverted.
@@ -2006,9 +2080,10 @@ private:
       // Convert to x86 flags, saves us from or'ing after.
       _AXFlag();
       PossiblySetNZCVBits = ~0;
+      CFInverted = true;
 
-      // Copy the values. CF is inverted from the axflag result, ZF is as-is.
-      SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC, true));
+      // Copy the values.
+      SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC));
       SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC));
     } else {
       Ref Z = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
@@ -2029,7 +2104,12 @@ private:
     auto OldPF = GetRFLAG(X86State::RFLAG_PF_RAW_LOC);
 
     HandleNZCV_RMW();
+
+    // TODO: Find a smarter way to handle CF invert for ShiftFlags.
+    RectifyCarryInvert(false);
     CalculatePF(_ShiftFlags(OpSizeFromSrc(Op), Result, Dest, Shift, Src, OldPF));
+    CFInverted = false;
+
     StoreResult(GPRClass, Op, Result, -1);
   }
 
