@@ -44,6 +44,13 @@ $end_info$
 #include <sys/types.h>
 #include <utility>
 
+#ifdef _M_X86_64
+#define XBYAK64
+#define XBYAK_NO_EXCEPTION
+#include <xbyak/xbyak.h>
+#include <xbyak/xbyak_util.h>
+#endif
+
 void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
   fextl::fmt::print("[{}] {}\n", LogMan::DebugLevelStr(Level), Message);
 }
@@ -265,12 +272,27 @@ int main(int argc, char** argv, char** const envp) {
   // Skip any tests that the host doesn't support features for
   SupportsAVX = HostFeatures.SupportsAVX;
 
-  bool TestUnsupported = (!HostFeatures.Supports3DNow && Loader.Requires3DNow()) || (!HostFeatures.SupportsSSE4A && Loader.RequiresSSE4A()) ||
-                         (!SupportsAVX && Loader.RequiresAVX()) || (!HostFeatures.SupportsRAND && Loader.RequiresRAND()) ||
+  bool TestUnsupported = (!SupportsAVX && Loader.RequiresAVX()) || (!HostFeatures.SupportsRAND && Loader.RequiresRAND()) ||
                          (!HostFeatures.SupportsSHA && Loader.RequiresSHA()) || (!HostFeatures.SupportsCLZERO && Loader.RequiresCLZERO()) ||
-                         (!HostFeatures.SupportsBMI1 && Loader.RequiresBMI1()) || (!HostFeatures.SupportsBMI2 && Loader.RequiresBMI2()) ||
-                         (!HostFeatures.SupportsCLWB && Loader.RequiresCLWB()) ||
                          (!HostFeatures.SupportsAES256 && Loader.RequiresAES256()) || (!HostFeatures.SupportsAFP && Loader.RequiresAFP());
+
+
+#if !defined(VIXL_SIMULATOR) && defined(_M_X86_64)
+  const bool IsHostRunner = Core == FEXCore::Config::CONFIG_CUSTOM;
+  if (IsHostRunner) {
+    ///< Features that are only unsupported when running using the HostRunner and the CI machine doesn't support the feature getting tested.
+    Xbyak::util::Cpu X86Features {};
+    const bool Supports3DNow = X86Features.has(Xbyak::util::Cpu::t3DN) && X86Features.has(Xbyak::util::Cpu::tE3DN);
+    const bool SupportsSSE4A = X86Features.has(Xbyak::util::Cpu::tSSE4a);
+    const bool SupportsBMI1 = X86Features.has(Xbyak::util::Cpu::tBMI1);
+    const bool SupportsBMI2 = X86Features.has(Xbyak::util::Cpu::tBMI2);
+    const bool SupportsCLWB = X86Features.has(Xbyak::util::Cpu::tCLWB);
+
+    TestUnsupported |= (!Supports3DNow && Loader.Requires3DNow()) || (!SupportsSSE4A && Loader.RequiresSSE4A()) ||
+                       (!SupportsBMI1 && Loader.RequiresBMI1()) || (!SupportsBMI2 && Loader.RequiresBMI2()) ||
+                       (!SupportsCLWB && Loader.RequiresCLWB());
+  }
+#endif
 
 #ifdef _WIN32
   TestUnsupported |= Loader.RequiresLinux();
