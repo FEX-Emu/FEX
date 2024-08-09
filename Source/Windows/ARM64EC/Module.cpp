@@ -50,9 +50,12 @@ $end_info$
 class ECSyscallHandler;
 
 extern "C" {
-void* X64ReturnInstr; // See Module.S
-extern void* ExitFunctionEC;
+extern IMAGE_DOS_HEADER __ImageBase; // Provided by the linker
 
+extern void* ExitFunctionEC;
+extern void* CheckCall;
+
+void* X64ReturnInstr; // See Module.S
 uintptr_t NtDllBase;
 
 // Exports on ARM64EC point to x64 fast forward sequences to allow for redirecting to the JIT if functions are hotpatched. This LUT is from their addresses to the relative addresses of the native code exports.
@@ -183,6 +186,32 @@ void FillNtDllLUTs() {
   }
 }
 
+template<typename T>
+void WriteModuleRVA(HMODULE Module, LONG RVA, T Data) {
+  if (!RVA) {
+    return;
+  }
+
+  void* Address = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(Module) + RVA);
+  void* ProtAddress = Address;
+  SIZE_T ProtSize = sizeof(T);
+  ULONG Prot;
+  NtProtectVirtualMemory(NtCurrentProcess(), &ProtAddress, &ProtSize, PAGE_READWRITE, &Prot);
+  *reinterpret_cast<T*>(Address) = Data;
+  NtProtectVirtualMemory(NtCurrentProcess(), &ProtAddress, &ProtSize, Prot, nullptr);
+}
+
+void PatchCallChecker() {
+  // See the comment for CheckCall in Module.S for why this is necessary
+  const auto Module = reinterpret_cast<HMODULE>(&__ImageBase);
+  ULONG Size;
+  const auto* LoadConfig =
+    reinterpret_cast<_IMAGE_LOAD_CONFIG_DIRECTORY64*>(RtlImageDirectoryEntryToData(Module, true, IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG, &Size));
+  const auto* CHPEMetadata = reinterpret_cast<IMAGE_ARM64EC_METADATA*>(LoadConfig->CHPEMetadataPointer);
+  WriteModuleRVA(Module, CHPEMetadata->__os_arm64x_dispatch_call, &CheckCall);
+  WriteModuleRVA(Module, CHPEMetadata->__os_arm64x_dispatch_icall, &CheckCall);
+  WriteModuleRVA(Module, CHPEMetadata->__os_arm64x_dispatch_icall_cfg, &CheckCall);
+}
 } // namespace
 
 namespace Exception {
@@ -519,6 +548,7 @@ NTSTATUS ProcessInit() {
   *reinterpret_cast<uint8_t*>(X64ReturnInstr) = 0xc3;
 
   FillNtDllLUTs();
+  PatchCallChecker();
   const auto NtDll = GetModuleHandle("ntdll.dll");
   const uintptr_t KiUserExceptionDispatcherFFS = reinterpret_cast<uintptr_t>(GetProcAddress(NtDll, "KiUserExceptionDispatcher"));
   Exception::KiUserExceptionDispatcher = NtDllRedirectionLUT[KiUserExceptionDispatcherFFS - NtDllBase] + NtDllBase;
