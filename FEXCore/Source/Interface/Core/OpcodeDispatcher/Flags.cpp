@@ -603,12 +603,6 @@ void OpDispatchBuilder::CalculateFlags_POPCOUNT(Ref Result) {
   ZeroPF_AF();
 }
 
-void OpDispatchBuilder::CalculateFlags_BZHI(uint8_t SrcSize, Ref Result, Ref Src) {
-  InvalidatePF_AF();
-  SetNZ_ZeroCV(SrcSize, Result);
-  SetCFDirect(Src);
-}
-
 void OpDispatchBuilder::CalculateFlags_ZCNT(uint8_t SrcSize, Ref Result) {
   // OF, SF, AF, PF all undefined
   // Test ZF of result, SF is undefined so this is ok.

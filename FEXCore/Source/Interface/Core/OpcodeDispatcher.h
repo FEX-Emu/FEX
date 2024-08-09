@@ -2306,7 +2306,6 @@ private:
   void CalculateFlags_BLSMSK(uint8_t SrcSize, Ref Res, Ref Src);
   void CalculateFlags_BLSR(uint8_t SrcSize, Ref Res, Ref Src);
   void CalculateFlags_POPCOUNT(Ref Src);
-  void CalculateFlags_BZHI(uint8_t SrcSize, Ref Result, Ref Src);
   void CalculateFlags_ZCNT(uint8_t SrcSize, Ref Result);
   void CalculateFlags_RDRAND(Ref Src);
   /**  @} */

@@ -1877,8 +1877,11 @@ void OpDispatchBuilder::BZHI(OpcodeArgs) {
 
   auto Zero = _Constant(0);
   auto One = _Constant(1);
-  auto CF = _NZCVSelect(OpSize::i32Bit, {COND_NEQ}, One, Zero);
-  CalculateFlags_BZHI(Size, Result, CF);
+  auto CFInv = _NZCVSelect(OpSize::i32Bit, {COND_EQ}, One, Zero);
+
+  InvalidatePF_AF();
+  SetNZ_ZeroCV(Size, Result);
+  SetCFInverted(CFInv);
 }
 
 void OpDispatchBuilder::RORX(OpcodeArgs) {
