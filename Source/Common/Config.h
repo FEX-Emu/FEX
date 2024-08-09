@@ -28,6 +28,11 @@ struct ApplicationNames {
   fextl::string ProgramName;
 };
 
+struct PortableInformation {
+  bool IsPortable;
+  std::string_view InterpreterPath;
+};
+
 /**
  * @brief Loads the FEX and application configurations for the application that is getting ready to run.
  *
@@ -40,15 +45,15 @@ struct ApplicationNames {
  * @return The application name and path structure
  */
 ApplicationNames LoadConfig(fextl::unique_ptr<FEX::ArgLoader::ArgLoader> ArgLoader, bool LoadProgramConfig, char** const envp,
-                            bool ExecFDInterp, int ProgramFDFromEnv);
+                            bool ExecFDInterp, int ProgramFDFromEnv, const PortableInformation* PortableInfo = nullptr);
 
 const char* GetHomeDirectory();
 
-fextl::string GetDataDirectory();
-fextl::string GetConfigDirectory(bool Global);
-fextl::string GetConfigFileLocation(bool Global);
+fextl::string GetDataDirectory(const PortableInformation* PortableInfo = nullptr);
+fextl::string GetConfigDirectory(bool Global, const PortableInformation* PortableInfo = nullptr);
+fextl::string GetConfigFileLocation(bool Global, const PortableInformation* PortableInfo = nullptr);
 
-void InitializeConfigs();
+void InitializeConfigs(const PortableInformation* PortableInfo = nullptr);
 
 /**
  * @brief Loads the global FEX config
