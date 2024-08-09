@@ -400,7 +400,11 @@ int main(int argc, char** argv, char** const envp) {
 
   if (ExecutedWithFD) {
     // Don't need to canonicalize Program.ProgramPath, Config loader will have resolved this already.
-    FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_FILENAME, Program.ProgramPath);
+    if (Program.ProgramPath.starts_with(LDPath())) {
+      FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_FILENAME, Program.ProgramPath.substr(LDPath().size()));
+    } else {
+      FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_FILENAME, Program.ProgramPath);
+    }
     FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_CONFIG_NAME, Program.ProgramName);
   } else if (FEXFD != -1) {
     // Anonymous program.
