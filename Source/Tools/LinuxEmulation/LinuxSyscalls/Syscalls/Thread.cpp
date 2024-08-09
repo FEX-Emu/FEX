@@ -25,6 +25,7 @@ $end_info$
 #include <grp.h>
 #include <limits.h>
 #include <linux/futex.h>
+#include <linux/seccomp.h>
 #include <stdint.h>
 #include <sched.h>
 #include <sys/personality.h>
@@ -78,7 +79,8 @@ FEX::HLE::ThreadStateObject* CreateNewThread(FEXCore::Context::Context* CTX, FEX
     NewThreadState.gregs[FEXCore::X86State::REG_RSP] = args->args.stack;
   }
 
-  auto NewThread = FEX::HLE::_SyscallHandler->TM.CreateThread(0, 0, &NewThreadState, args->args.parent_tid);
+  auto NewThread = FEX::HLE::_SyscallHandler->TM.CreateThread(0, 0, &NewThreadState, args->args.parent_tid,
+                                                              FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame));
 
   if (FEX::HLE::_SyscallHandler->Is64BitMode()) {
     if (flags & CLONE_SETTLS) {
@@ -171,7 +173,8 @@ uint64_t HandleNewClone(FEX::HLE::ThreadStateObject* Thread, FEXCore::Context::C
     }
 
     // Overwrite thread
-    NewThread = FEX::HLE::_SyscallHandler->TM.CreateThread(0, 0, &NewThreadState, GuestArgs->parent_tid);
+    NewThread = FEX::HLE::_SyscallHandler->TM.CreateThread(0, 0, &NewThreadState, GuestArgs->parent_tid,
+                                                           FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame));
 
     // CLONE_PARENT_SETTID, CLONE_CHILD_SETTID, CLONE_CHILD_CLEARTID, CLONE_PIDFD will be handled by kernel
     // Call execution thread directly since we already are on the new thread
@@ -412,11 +415,14 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
 #define PR_GET_AUXV 0x41555856
 #endif
                                 switch (option) {
-                                case PR_SET_SECCOMP:
-                                case PR_GET_SECCOMP:
-                                  // FEX doesn't support seccomp
-                                  return -EINVAL;
-                                  break;
+                                case PR_SET_SECCOMP: {
+                                  uint32_t Operation {};
+                                  if (arg2 == SECCOMP_MODE_STRICT) Operation = SECCOMP_SET_MODE_STRICT;
+                                  if (arg2 == SECCOMP_MODE_FILTER) Operation = SECCOMP_SET_MODE_FILTER;
+
+                                  return FEX::HLE::_SyscallHandler->SeccompEmulator.Handle(Frame, Operation, 0, reinterpret_cast<void*>(arg3));
+                                }
+                                case PR_GET_SECCOMP: return FEX::HLE::_SyscallHandler->SeccompEmulator.GetSeccomp(Frame);
                                 case PR_GET_AUXV: {
                                   if (arg4 || arg5) {
                                     return -EINVAL;

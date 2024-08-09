@@ -8,6 +8,9 @@ set (SRCS
   LinuxSyscalls/FileManagement.cpp
   LinuxSyscalls/LinuxAllocator.cpp
   LinuxSyscalls/NetStream.cpp
+  LinuxSyscalls/Seccomp/SeccompEmulator.cpp
+  LinuxSyscalls/Seccomp/BPFEmitter.cpp
+  LinuxSyscalls/Seccomp/Dumper.cpp
   LinuxSyscalls/SignalDelegator.cpp
   LinuxSyscalls/Syscalls.cpp
   LinuxSyscalls/SyscallsSMCTracking.cpp
