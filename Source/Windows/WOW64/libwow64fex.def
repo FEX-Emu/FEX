@@ -2,19 +2,24 @@ LIBRARY libwow64fex.dll
 
 EXPORTS
   BTCpuFlushInstructionCache2
+  BTCpuFlushInstructionCacheHeavy
   BTCpuGetBopCode
   BTCpuGetContext
   BTCpuIsProcessorFeaturePresent
   BTCpuNotifyMemoryAlloc
   BTCpuNotifyMemoryProtect
+  BTCpuNotifyMemoryDirty
   BTCpuNotifyMemoryFree
+  BTCpuNotifyMapViewOfSection
   BTCpuNotifyUnmapViewOfSection
+  BTCpuNotifyReadFile
   BTCpuProcessInit
   BTCpuResetToConsistentState
   BTCpuSetContext
   BTCpuSimulate
   BTCpuSuspendLocalThread
   BTCpuThreadInit
+  BTCpuProcessTerm
   BTCpuThreadTerm
   BTCpuUpdateProcessorInformation
   __wine_get_unix_opcode
