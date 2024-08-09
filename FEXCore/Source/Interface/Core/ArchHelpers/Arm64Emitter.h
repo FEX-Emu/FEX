@@ -104,6 +104,7 @@ protected:
 
   void LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, uint64_t Constant, bool NOPPad = false);
 
+  void FillSpecialRegs(ARMEmitter::Register TmpReg, ARMEmitter::Register TmpReg2, bool SetFIZ, bool SetPredRegs);
 
   // NOTE: These functions WILL clobber the register TMP4 if AVX support is enabled
   //       and FPRs are being spilled or filled. If only GPRs are spilled/filled, then

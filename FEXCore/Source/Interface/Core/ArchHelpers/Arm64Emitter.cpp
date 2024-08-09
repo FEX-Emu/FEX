@@ -570,6 +570,47 @@ void Arm64Emitter::PopCalleeSavedRegisters() {
   }
 }
 
+void Arm64Emitter::FillSpecialRegs(ARMEmitter::Register TmpReg, ARMEmitter::Register TmpReg2, bool SetFIZ, bool SetPredRegs) {
+#ifndef VIXL_SIMULATOR
+  if (EmitterCTX->HostFeatures.SupportsAFP) {
+    // Enable AFP features when filling JIT state.
+    mrs(TmpReg, ARMEmitter::SystemRegister::FPCR);
+
+    // Enable FPCR.NEP and FPCR.AH
+    // NEP(2): Changes ASIMD scalar instructions to insert in to the lower bits of the destination.
+    // AH(1):  Changes NaN behaviour in some instructions. Specifically fmin, fmax.
+    //
+    // Additional interesting AFP bits:
+    // FIZ(0): Flush Inputs to Zero
+    orr(ARMEmitter::Size::i64Bit, TmpReg, TmpReg,
+        (1U << 2) |   // NEP
+          (1U << 1)); // AH
+
+    if (SetFIZ) {
+      // Insert MXCSR.DAZ in to FIZ
+      ldr(TmpReg2.W(), STATE.R(), offsetof(FEXCore::Core::CPUState, mxcsr));
+      bfxil(ARMEmitter::Size::i64Bit, TmpReg, TmpReg2, 6, 1);
+    }
+
+    msr(ARMEmitter::SystemRegister::FPCR, TmpReg);
+  }
+#endif
+
+  if (SetPredRegs) {
+    // Set up predicate registers.
+    // We don't bother spilling these in SpillStaticRegs,
+    // since all that matters is we restore them on a fill.
+    // It's not a concern if they get trounced by something else.
+    if (EmitterCTX->HostFeatures.SupportsSVE256) {
+      ptrue(ARMEmitter::SubRegSize::i8Bit, PRED_TMP_32B, ARMEmitter::PredicatePattern::SVE_VL32);
+    }
+
+    if (EmitterCTX->HostFeatures.SupportsSVE128) {
+      ptrue(ARMEmitter::SubRegSize::i8Bit, PRED_TMP_16B, ARMEmitter::PredicatePattern::SVE_VL16);
+    }
+  }
+}
+
 void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs, uint32_t GPRSpillMask, uint32_t FPRSpillMask) {
 #ifndef VIXL_SIMULATOR
   if (EmitterCTX->HostFeatures.SupportsAFP) {
@@ -689,36 +730,12 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
                                                                           "spilling!");
 
   auto TmpReg = *OptionalReg;
-  [[maybe_unused]] auto TmpReg2 = *OptionalReg2;
+  auto TmpReg2 = *OptionalReg2;
 
 #ifdef _M_ARM_64EC
   // Load STATE in from the CPU area as x28 is not callee saved in the ARM64EC ABI.
   ldr(TmpReg.X(), ARMEmitter::Reg::r18, TEB_CPU_AREA_OFFSET);
   ldr(STATE, TmpReg, CPU_AREA_EMULATOR_DATA_OFFSET);
-#endif
-
-#ifndef VIXL_SIMULATOR
-  if (EmitterCTX->HostFeatures.SupportsAFP) {
-    // Enable AFP features when filling JIT state.
-    LOGMAN_THROW_A_FMT(GPRFillMask != 0, "Must fill at least 1 GPR for a temp");
-    mrs(TmpReg, ARMEmitter::SystemRegister::FPCR);
-
-    // Enable FPCR.NEP and FPCR.AH
-    // NEP(2): Changes ASIMD scalar instructions to insert in to the lower bits of the destination.
-    // AH(1):  Changes NaN behaviour in some instructions. Specifically fmin, fmax.
-    //
-    // Additional interesting AFP bits:
-    // FIZ(0): Flush Inputs to Zero
-    orr(ARMEmitter::Size::i64Bit, TmpReg, TmpReg,
-        (1U << 2) |   // NEP
-          (1U << 1)); // AH
-
-    // Insert MXCSR.DAZ in to FIZ
-    ldr(TmpReg2.W(), STATE.R(), offsetof(FEXCore::Core::CPUState, mxcsr));
-    bfxil(ARMEmitter::Size::i64Bit, TmpReg, TmpReg2, 6, 1);
-
-    msr(ARMEmitter::SystemRegister::FPCR, TmpReg);
-  }
 #endif
 
   // Regardless of what GPRs/FPRs we're filling, we need to fill NZCV since it
@@ -729,19 +746,9 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
   ldr(TmpReg.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.flags[24]));
   msr(ARMEmitter::SystemRegister::NZCV, TmpReg);
 
+  FillSpecialRegs(TmpReg, TmpReg2, true, FPRs);
+
   if (FPRs) {
-    // Set up predicate registers.
-    // We don't bother spilling these in SpillStaticRegs,
-    // since all that matters is we restore them on a fill.
-    // It's not a concern if they get trounced by something else.
-    if (EmitterCTX->HostFeatures.SupportsSVE128) {
-      ptrue(ARMEmitter::SubRegSize::i8Bit, PRED_TMP_16B, ARMEmitter::PredicatePattern::SVE_VL16);
-    }
-
-    if (EmitterCTX->HostFeatures.SupportsSVE256) {
-      ptrue(ARMEmitter::SubRegSize::i8Bit, PRED_TMP_32B, ARMEmitter::PredicatePattern::SVE_VL32);
-    }
-
     if (EmitterCTX->HostFeatures.SupportsAVX && EmitterCTX->HostFeatures.SupportsSVE256) {
       for (size_t i = 0; i < StaticFPRegisters.size(); i++) {
         const auto Reg = StaticFPRegisters[i];
