@@ -1360,8 +1360,8 @@ private:
   // INVERTED).
   bool CFInverted {};
 
-  // FEX convention for CF at the end of blocks: NOT INVERTED.
-  const bool CFInvertedABI {false};
+  // FEX convention for CF at the end of blocks: INVERTED.
+  const bool CFInvertedABI {true};
 
   fextl::map<uint64_t, JumpTargetInfo> JumpTargets;
   bool HandledLock {false};
