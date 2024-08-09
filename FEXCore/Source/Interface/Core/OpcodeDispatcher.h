@@ -1582,23 +1582,6 @@ private:
     return IR::SizeToOpSize(GetSrcSize(Op));
   }
 
-  static inline constexpr unsigned NZCVIndexMask(unsigned BitMask) {
-    unsigned NZCVMask {};
-    if (BitMask & (1U << FEXCore::X86State::RFLAG_OF_RAW_LOC)) {
-      NZCVMask |= 1U << IndexNZCV(FEXCore::X86State::RFLAG_OF_RAW_LOC);
-    }
-    if (BitMask & (1U << FEXCore::X86State::RFLAG_CF_RAW_LOC)) {
-      NZCVMask |= 1U << IndexNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC);
-    }
-    if (BitMask & (1U << FEXCore::X86State::RFLAG_ZF_RAW_LOC)) {
-      NZCVMask |= 1U << IndexNZCV(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
-    }
-    if (BitMask & (1U << FEXCore::X86State::RFLAG_SF_RAW_LOC)) {
-      NZCVMask |= 1U << IndexNZCV(FEXCore::X86State::RFLAG_SF_RAW_LOC);
-    }
-    return NZCVMask;
-  }
-
   // Set flag tracking to prepare for an operation that directly writes NZCV. If
   // some bits are known to be zeroed, the PossiblySetNZCVBits mask can be
   // passed. Otherwise, it defaults to assuming all bits may be set after
