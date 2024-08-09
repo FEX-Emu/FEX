@@ -1756,14 +1756,10 @@ private:
 
   CondClassType CondForNZCVBit(unsigned BitOffset, bool Invert) {
     switch (BitOffset) {
-    case FEXCore::X86State::RFLAG_SF_RAW_LOC: return Invert ? CondClassType {COND_PL} : CondClassType {COND_MI};
-
-    case FEXCore::X86State::RFLAG_ZF_RAW_LOC: return Invert ? CondClassType {COND_NEQ} : CondClassType {COND_EQ};
-
-    case FEXCore::X86State::RFLAG_CF_RAW_LOC: return Invert ? CondClassType {COND_ULT} : CondClassType {COND_UGE};
-
-    case FEXCore::X86State::RFLAG_OF_RAW_LOC: return Invert ? CondClassType {COND_FNU} : CondClassType {COND_FU};
-
+    case X86State::RFLAG_SF_RAW_LOC: return {Invert ? COND_PL : COND_MI};
+    case X86State::RFLAG_ZF_RAW_LOC: return {Invert ? COND_NEQ : COND_EQ};
+    case X86State::RFLAG_CF_RAW_LOC: return {Invert ? COND_ULT : COND_UGE};
+    case X86State::RFLAG_OF_RAW_LOC: return {Invert ? COND_FNU : COND_FU};
     default: FEX_UNREACHABLE;
     }
   }
