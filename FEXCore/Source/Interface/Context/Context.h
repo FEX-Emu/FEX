@@ -96,8 +96,6 @@ public:
 
   void SetCustomCPUBackendFactory(CustomCPUFactoryType Factory) override;
 
-  void SetHostFeatures(const FEXCore::HostFeatures& Features) override;
-
   void HandleCallback(FEXCore::Core::InternalThreadState* Thread, uint64_t RIP) override;
 
   uint64_t RestoreRIPFromHostPC(FEXCore::Core::InternalThreadState* Thread, uint64_t HostPC) override;
@@ -264,7 +262,7 @@ public:
   SignalDelegator* SignalDelegation {};
   X86GeneratedCode X86CodeGen;
 
-  ContextImpl();
+  ContextImpl(const FEXCore::HostFeatures& Features);
   ~ContextImpl();
 
   static void ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP);

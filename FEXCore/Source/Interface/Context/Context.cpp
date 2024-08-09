@@ -19,8 +19,8 @@ void InitializeStaticTables(OperatingMode Mode) {
   IR::InstallOpcodeHandlers(Mode);
 }
 
-fextl::unique_ptr<FEXCore::Context::Context> FEXCore::Context::Context::CreateNewContext() {
-  return fextl::make_unique<FEXCore::Context::ContextImpl>();
+fextl::unique_ptr<FEXCore::Context::Context> FEXCore::Context::Context::CreateNewContext(const FEXCore::HostFeatures& Features) {
+  return fextl::make_unique<FEXCore::Context::ContextImpl>(Features);
 }
 
 void FEXCore::Context::ContextImpl::SetExitHandler(ExitHandler handler) {
@@ -41,10 +41,6 @@ void FEXCore::Context::ContextImpl::CompileRIPCount(FEXCore::Core::InternalThrea
 
 void FEXCore::Context::ContextImpl::SetCustomCPUBackendFactory(CustomCPUFactoryType Factory) {
   CustomCPUFactory = std::move(Factory);
-}
-
-void FEXCore::Context::ContextImpl::SetHostFeatures(const FEXCore::HostFeatures& Features) {
-  HostFeatures = Features;
 }
 
 void FEXCore::Context::ContextImpl::SetSignalDelegator(FEXCore::SignalDelegator* _SignalDelegation) {
