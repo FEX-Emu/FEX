@@ -62,6 +62,7 @@ static uint32_t GetDCZID() {
   return DCZID_DZP_MASK;
 }
 
+[[maybe_unused]]
 static int ReadSVEVectorLengthInBits() {
   // Return unsupported
   return 0;
@@ -166,9 +167,6 @@ FEXCore::HostFeatures FetchHostFeatures() {
   HostFeatures.SupportsRPRES = Features.Has(vixl::CPUFeatures::Feature::kRPRES);
   HostFeatures.SupportsSVEBitPerm = Features.Has(vixl::CPUFeatures::Feature::kSVEBitPerm);
 
-  HostFeatures.Supports3DNow = true;
-  HostFeatures.SupportsSSE4A = true;
-
 #ifdef VIXL_SIMULATOR
   // Hardcode enable SVE with 256-bit wide registers.
   HostFeatures.SupportsSVE128 = ForceSVEWidth() ? ForceSVEWidth() >= 128 : true;
@@ -180,10 +178,6 @@ FEXCore::HostFeatures FetchHostFeatures() {
   HostFeatures.SupportsAVX = true;
 
   HostFeatures.SupportsAES256 = HostFeatures.SupportsAVX && HostFeatures.SupportsAES;
-
-  HostFeatures.SupportsBMI1 = true;
-  HostFeatures.SupportsBMI2 = true;
-  HostFeatures.SupportsCLWB = true;
 
   if (!HostFeatures.SupportsAtomics) {
     WARN_ONCE_FMT("Host CPU doesn't support atomics. Expect bad performance");
@@ -265,13 +259,8 @@ FEXCore::HostFeatures FetchHostFeatures() {
   HostFeatures.SupportsRAND = X86Features.has(Xbyak::util::Cpu::tRDRAND) && X86Features.has(Xbyak::util::Cpu::tRDSEED);
   HostFeatures.SupportsRCPC = true;
   HostFeatures.SupportsTSOImm9 = true;
-  HostFeatures.Supports3DNow = X86Features.has(Xbyak::util::Cpu::t3DN) && X86Features.has(Xbyak::util::Cpu::tE3DN);
-  HostFeatures.SupportsSSE4A = X86Features.has(Xbyak::util::Cpu::tSSE4a);
   HostFeatures.SupportsAVX = true;
   HostFeatures.SupportsSHA = X86Features.has(Xbyak::util::Cpu::tSHA);
-  HostFeatures.SupportsBMI1 = X86Features.has(Xbyak::util::Cpu::tBMI1);
-  HostFeatures.SupportsBMI2 = X86Features.has(Xbyak::util::Cpu::tBMI2);
-  HostFeatures.SupportsCLWB = X86Features.has(Xbyak::util::Cpu::tCLWB);
   HostFeatures.SupportsPMULL_128Bit = X86Features.has(Xbyak::util::Cpu::tPCLMULQDQ);
   HostFeatures.SupportsAES256 = HostFeatures.SupportsAES && X86Features.has(Xbyak::util::Cpu::tVAES);
 

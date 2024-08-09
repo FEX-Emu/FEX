@@ -19,15 +19,10 @@ struct HostFeatures {
   bool SupportsRCPC {};
   bool SupportsTSOImm9 {};
   bool SupportsRAND {};
-  bool Supports3DNow {};
-  bool SupportsSSE4A {};
   bool SupportsAVX {};
   bool SupportsSVE128 {};
   bool SupportsSVE256 {};
   bool SupportsSHA {};
-  bool SupportsBMI1 {};
-  bool SupportsBMI2 {};
-  bool SupportsCLWB {};
   bool SupportsPMULL_128Bit {};
   bool SupportsCSSC {};
   bool SupportsFCMA {};

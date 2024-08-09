@@ -638,7 +638,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) const {
               (0 << 21) |                              // Reserved
               (0 << 22) |                              // Reserved
               (1 << 23) |                              // CLFLUSHOPT instruction
-              (CTX->HostFeatures.SupportsCLWB << 24) | // CLWB instruction
+              (1 << 24) |                              // CLWB instruction
               (0 << 25) |                              // Intel processor trace
               (0 << 26) |                              // Reserved
               (0 << 27) |                              // Reserved
