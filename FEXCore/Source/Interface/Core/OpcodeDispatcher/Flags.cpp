@@ -298,10 +298,10 @@ Ref OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, Ref Src1, Ref Src2) {
     Res = _Bfe(OpSize, SrcSize * 8, 0, Res);
 
     // TODO: We can fold that second Bfe in (cmp uxth).
-    auto SelectCF = _Select(FEXCore::IR::COND_ULT, Res, Src2PlusCF, One, Zero);
+    auto SelectCFInv = _Select(FEXCore::IR::COND_UGE, Res, Src2PlusCF, One, Zero);
 
     SetNZ_ZeroCV(SrcSize, Res);
-    SetCFDirect(SelectCF);
+    SetCFInverted(SelectCFInv);
     CalculateOF(SrcSize, Res, Src1, Src2, false);
   }
 
@@ -336,10 +336,10 @@ Ref OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, Ref Src1, Ref Src2) {
     Res = _Sub(OpSize, Src1, Src2PlusCF);
     Res = _Bfe(OpSize, SrcSize * 8, 0, Res);
 
-    auto SelectCF = _Select(FEXCore::IR::COND_ULT, Src1, Src2PlusCF, One, Zero);
+    auto SelectCFInv = _Select(FEXCore::IR::COND_UGE, Src1, Src2PlusCF, One, Zero);
 
     SetNZ_ZeroCV(SrcSize, Res);
-    SetCFDirect(SelectCF);
+    SetCFInverted(SelectCFInv);
     CalculateOF(SrcSize, Res, Src1, Src2, true);
   }
 
@@ -349,7 +349,7 @@ Ref OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, Ref Src1, Ref Src2) {
 
 Ref OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, Ref Src1, Ref Src2, bool UpdateCF) {
   // Stash CF before stomping over it
-  auto OldCF = UpdateCF ? nullptr : GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
+  auto OldCFInv = UpdateCF ? nullptr : GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC, true);
 
   HandleNZCVWrite();
 
@@ -371,7 +371,7 @@ Ref OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, Ref Src1, Ref Src2, b
   if (UpdateCF) {
     CFInverted = true;
   } else {
-    SetCFDirect(OldCF);
+    SetCFInverted(OldCFInv);
   }
 
   return Res;
@@ -379,7 +379,7 @@ Ref OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, Ref Src1, Ref Src2, b
 
 Ref OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, Ref Src1, Ref Src2, bool UpdateCF) {
   // Stash CF before stomping over it
-  auto OldCF = UpdateCF ? nullptr : GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
+  auto OldCFInv = UpdateCF ? nullptr : GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC, true);
 
   HandleNZCVWrite();
 
@@ -400,7 +400,7 @@ Ref OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, Ref Src1, Ref Src2, b
     // Adds match between x86 and arm64.
     CFInverted = false;
   } else {
-    SetCFDirect(OldCF);
+    SetCFInverted(OldCFInv);
   }
 
   return Res;
