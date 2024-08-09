@@ -568,7 +568,7 @@ void OpDispatchBuilder::CalculateFlags_BLSI(uint8_t SrcSize, Ref Result) {
   // ZF/SF/OF set as usual.
   SetNZ_ZeroCV(SrcSize, Result);
   InvalidatePF_AF();
-  SetCFDirect(GetRFLAG(X86State::RFLAG_ZF_RAW_LOC, true /* Invert */));
+  SetCFInverted(GetRFLAG(X86State::RFLAG_ZF_RAW_LOC));
 }
 
 void OpDispatchBuilder::CalculateFlags_BLSMSK(uint8_t SrcSize, Ref Result, Ref Src) {
@@ -577,21 +577,21 @@ void OpDispatchBuilder::CalculateFlags_BLSMSK(uint8_t SrcSize, Ref Result, Ref S
   // CF set according to the Src
   auto Zero = _Constant(0);
   auto One = _Constant(1);
-  auto CFOp = _Select(IR::COND_EQ, Src, Zero, One, Zero);
+  auto CFInv = _Select(IR::COND_NEQ, Src, Zero, One, Zero);
 
   // The output of BLSMSK is always nonzero, so TST will clear Z (along with C
   // and O) while setting S.
   SetNZ_ZeroCV(SrcSize, Result);
-  SetCFDirect(CFOp);
+  SetCFInverted(CFInv);
 }
 
 void OpDispatchBuilder::CalculateFlags_BLSR(uint8_t SrcSize, Ref Result, Ref Src) {
   auto Zero = _Constant(0);
   auto One = _Constant(1);
-  auto CFOp = _Select(IR::COND_EQ, Src, Zero, One, Zero);
+  auto CFInv = _Select(IR::COND_NEQ, Src, Zero, One, Zero);
 
   SetNZ_ZeroCV(SrcSize, Result);
-  SetCFDirect(CFOp);
+  SetCFInverted(CFInv);
   InvalidatePF_AF();
 }
 
