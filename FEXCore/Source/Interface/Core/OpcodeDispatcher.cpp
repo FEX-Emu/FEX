@@ -1255,10 +1255,10 @@ void OpDispatchBuilder::FLAGControlOp(OpcodeArgs) {
     CarryInvert();
     break;
   case 0xF8: // CLC
-    SetCFDirect(_Constant(0));
+    SetCFInverted(_Constant(1));
     break;
   case 0xF9: // STC
-    SetCFDirect(_Constant(1));
+    SetCFInverted(_Constant(0));
     break;
   case 0xFC: // CLD
     SetRFLAG(_Constant(0), FEXCore::X86State::RFLAG_DF_RAW_LOC);
