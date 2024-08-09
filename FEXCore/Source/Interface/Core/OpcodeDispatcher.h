@@ -2047,18 +2047,19 @@ private:
       CFInverted = true;
     } else {
       Ref Z = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
-      Ref C_inv = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC, true);
+      Ref C = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
       Ref V = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
+      Ref V_inv = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC, true);
 
       // We want to zero SF/OF, and then set CF/ZF. Zeroing up front lets us do
       // this all with shifted-or's on non-flagm platforms.
       ZeroNZCV();
 
-      SetCFDirect(_Or(OpSize::i32Bit, C_inv, V));
+      SetCFInverted(_And(OpSize::i32Bit, C, V_inv));
       SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(_Or(OpSize::i32Bit, Z, V));
 
       // Note that we store PF inverted.
-      SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(_Xor(OpSize::i32Bit, V, _Constant(1)));
+      SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(V_inv);
     }
 
     if (!InvalidateAF) {
