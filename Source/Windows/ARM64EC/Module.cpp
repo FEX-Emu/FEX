@@ -577,6 +577,15 @@ bool ResetToConsistentStateImpl(EXCEPTION_RECORD* Exception, CONTEXT* GuestConte
     return true;
   }
 
+  // The JIT (in CompileBlock) emits code to check the suspend doorbell at the start of every block, and run the following instruction if it is set:
+  static constexpr uint32_t SuspendTrapMagic {0xD4395FC0}; // brk #0xCAFE
+  if (Exception->ExceptionCode == EXCEPTION_ILLEGAL_INSTRUCTION && *reinterpret_cast<uint32_t*>(NativeContext->Pc) == SuspendTrapMagic) {
+    *NativeContext = Exception::ReconstructPackedECContext(*NativeContext);
+    LogMan::Msg::DFmt("Suspending: RIP: {:X} SP: {:X}", NativeContext->Pc, NativeContext->Sp);
+    CPUArea.Area->InSimulation = 0;
+    *CPUArea.Area->SuspendDoorbell = 0;
+    return true;
+  }
 
   if (IsEmulatorStackAddress(reinterpret_cast<uint64_t>(__builtin_frame_address(0)))) {
     Exception::RethrowGuestException(*Exception, *NativeContext);
@@ -736,6 +745,7 @@ NTSTATUS ThreadInit() {
   }
 
   CPUArea.ThreadState() = Thread;
+  CPUArea.Area->SuspendDoorbell = reinterpret_cast<ULONG*>(&Thread->CurrentFrame->SuspendDoorbell);
   return STATUS_SUCCESS;
 }
 
