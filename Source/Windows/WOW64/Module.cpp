@@ -31,6 +31,7 @@ $end_info$
 #include "Common/InvalidationTracker.h"
 #include "Common/CPUFeatures.h"
 #include "Common/Logging.h"
+#include "Common/CRT/CRT.h"
 #include "DummyHandlers.h"
 #include "BTInterface.h"
 
@@ -413,6 +414,7 @@ public:
 };
 
 void BTCpuProcessInit() {
+  FEX::Windows::InitCRTProcess();
   FEX::Config::InitializeConfigs();
   FEXCore::Config::Initialize();
   FEXCore::Config::AddLayer(FEX::Config::CreateGlobalMainLayer());
@@ -461,6 +463,7 @@ void BTCpuProcessInit() {
 }
 
 NTSTATUS BTCpuThreadInit() {
+  FEX::Windows::InitCRTThread();
   auto* Thread = CTX->CreateThread(0, 0);
   GetTLS().ThreadState() = Thread;
 
@@ -487,6 +490,7 @@ NTSTATUS BTCpuThreadTerm(HANDLE Thread) {
   }
 
   CTX->DestroyThread(TLS.ThreadState());
+  FEX::Windows::DeinitCRTThread();
   return STATUS_SUCCESS;
 }
 

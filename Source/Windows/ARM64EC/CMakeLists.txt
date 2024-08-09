@@ -1,7 +1,9 @@
 add_library(arm64ecfex SHARED
   Module.cpp
   Module.S
+  ARM64ECSymbols.S
   libarm64ecfex.def
+  $<TARGET_OBJECTS:FEXCore_object>
 )
 patch_library_wine(arm64ecfex)
 
@@ -13,15 +15,14 @@ target_include_directories(arm64ecfex PRIVATE
 
 target_link_libraries(arm64ecfex
   PRIVATE
-  FEXCore
   FEXCore_Base
   Common
   CommonTools
   CommonWindows
   ntdll_ex
-  ntdll
 )
 
+target_link_options(arm64ecfex PRIVATE -static -nostdlib -nostartfiles -nodefaultlibs -lc++ -lc++abi -lunwind -lclang_rt.builtins-arm64ec)
 install(TARGETS arm64ecfex
   RUNTIME
   DESTINATION lib

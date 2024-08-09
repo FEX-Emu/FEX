@@ -1,0 +1,1 @@
+target_sources(CommonWindows PRIVATE exp2.c log2_data.c remainder.c strtoimax.c strtoull.c exp_data.c fmod.c log2.c isnan.c remquo.c strtoll.c strtoumax.c __math_uflow.c __math_oflow.c __math_xflow.c __math_invalid.c __math_divzero.c)
