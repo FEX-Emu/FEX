@@ -52,6 +52,12 @@ extern "C" {
 void* X64ReturnInstr; // See Module.S
 extern void* ExitFunctionEC;
 
+uintptr_t NtDllBase;
+
+// Exports on ARM64EC point to x64 fast forward sequences to allow for redirecting to the JIT if functions are hotpatched. This LUT is from their addresses to the relative addresses of the native code exports.
+uint32_t* NtDllRedirectionLUT;
+uint32_t NtDllRedirectionLUTSize;
+
 // Wine doesn't support issuing direct system calls with SVC, and unlike Windows it doesn't have a 'stable' syscall number for NtContinue
 void* WineSyscallDispatcher;
 // TODO: this really shouldn't be hardcoded, once wine gains proper syscall thunks this can be dropped.
@@ -108,6 +114,8 @@ std::recursive_mutex ThreadCreationMutex;
 // Map of TIDs to their FEX thread state, `ThreadCreationMutex` must be locked when accessing
 std::unordered_map<DWORD, FEXCore::Core::InternalThreadState*> Threads;
 
+// Map from system call numbers to the relative addresses of their native implementations in ntdll
+std::vector<uint32_t> NtDllSyscallLUT;
 
 std::pair<NTSTATUS, ThreadCPUArea> GetThreadCPUArea(HANDLE Thread) {
   THREAD_BASIC_INFORMATION Info;
@@ -128,29 +136,52 @@ bool IsDispatcherAddress(uint64_t Address) {
   return Address >= Config.DispatcherBegin && Address < Config.DispatcherEnd;
 }
 
-// GetProcAddress on ARM64EC returns a pointer to an x64 fast forward sequence to allow for redirecting to the JIT if functions are
-// hotpatched. This looks up the procedure address of the native code even if the fast forward sequence has been patched.
-uintptr_t GetRedirectedProcAddress(HMODULE Module, const char* ProcName) {
-  const uintptr_t Proc = reinterpret_cast<uintptr_t>(GetProcAddress(Module, ProcName));
-  if (!Proc) {
-    return 0;
-  }
 
+void FillNtDllLUTs() {
+  const HMODULE NtDll = GetModuleHandle("ntdll.dll");
+  NtDllBase = reinterpret_cast<uintptr_t>(NtDll);
   ULONG Size;
   const auto* LoadConfig =
-    reinterpret_cast<_IMAGE_LOAD_CONFIG_DIRECTORY64*>(RtlImageDirectoryEntryToData(Module, true, IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG, &Size));
+    reinterpret_cast<_IMAGE_LOAD_CONFIG_DIRECTORY64*>(RtlImageDirectoryEntryToData(NtDll, true, IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG, &Size));
   const auto* CHPEMetadata = reinterpret_cast<IMAGE_ARM64EC_METADATA*>(LoadConfig->CHPEMetadataPointer);
-  const uintptr_t ModuleBase = reinterpret_cast<uintptr_t>(Module);
-  const uintptr_t ProcRVA = Proc - ModuleBase;
-  const auto* RedirectionTableBegin = reinterpret_cast<IMAGE_ARM64EC_REDIRECTION_ENTRY*>(ModuleBase + CHPEMetadata->RedirectionMetadata);
+  const auto* RedirectionTableBegin = reinterpret_cast<IMAGE_ARM64EC_REDIRECTION_ENTRY*>(NtDllBase + CHPEMetadata->RedirectionMetadata);
   const auto* RedirectionTableEnd = RedirectionTableBegin + CHPEMetadata->RedirectionMetadataCount;
-  const auto* It =
-    std::lower_bound(RedirectionTableBegin, RedirectionTableEnd, ProcRVA, [](const auto& Entry, uintptr_t RVA) { return Entry.Source < RVA; });
-  if (It->Source != ProcRVA) {
-    return 0;
+
+  NtDllRedirectionLUTSize = std::prev(RedirectionTableEnd)->Source + 1;
+  NtDllRedirectionLUT = new uint32_t[NtDllRedirectionLUTSize];
+  for (auto It = RedirectionTableBegin; It != RedirectionTableEnd; It++) {
+    NtDllRedirectionLUT[It->Source] = It->Destination;
   }
-  return ModuleBase + It->Destination;
+
+  const auto* Exports = reinterpret_cast<IMAGE_EXPORT_DIRECTORY*>(RtlImageDirectoryEntryToData(NtDll, true, IMAGE_DIRECTORY_ENTRY_EXPORT, &Size));
+  const auto* FunctionTableBegin = reinterpret_cast<uint32_t*>(NtDllBase + Exports->AddressOfFunctions);
+  const auto* FunctionTableEnd = FunctionTableBegin + Exports->NumberOfFunctions;
+
+  NtDllSyscallLUT.reserve(0x200);
+  for (auto It = FunctionTableBegin; It != FunctionTableEnd; It++) {
+    const uint8_t* FunctionAddr = reinterpret_cast<uint8_t*>(NtDllBase + *It);
+    // Windows syscall thunks are as follows:
+    // 00: mov r10, rcx
+    // 03: mov eax, <NUM>
+    // <cont into MatchSeq>
+    static constexpr std::array<uint8_t, 16> MatchSeq {{
+      0xf6, 0x04, 0x25, 0x08, 0x03, 0xfe, 0x7f, 0x01, // 08: test byte ptr ds:7FFE0308h, 1
+      0x75, 0x03,                                     // 10: jnz short lbl
+      0x0f, 0x05,                                     // 12: syscall
+      0xc3,                                           // 14: retn
+      0xcd, 0x2e,                                     // 15: lbl: int 2Eh
+      0xc3                                            // 17: retn
+    }};
+
+    const uint8_t* MatchAddr = FunctionAddr + 8;
+    if (!memcmp(MatchSeq.data(), MatchAddr, MatchSeq.size())) {
+      const uint32_t SyscallNum = *reinterpret_cast<const uint32_t*>(FunctionAddr + 4);
+      NtDllSyscallLUT.resize(std::max<size_t>(NtDllSyscallLUT.size(), SyscallNum));
+      NtDllSyscallLUT[SyscallNum] = NtDllRedirectionLUT[*It];
+    }
+  }
 }
+
 } // namespace
 
 namespace Exception {
@@ -419,6 +450,8 @@ public:
   }
 
   uint64_t HandleSyscall(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) override {
+    Frame->State.rip = NtDllBase + NtDllSyscallLUT[Frame->State.gregs[FEXCore::X86State::REG_RAX]];
+    Frame->State.gregs[FEXCore::X86State::REG_RCX] = Frame->State.gregs[FEXCore::X86State::REG_R10];
     return 0;
   }
 
@@ -483,8 +516,10 @@ NTSTATUS ProcessInit() {
   X64ReturnInstr = ::VirtualAlloc(nullptr, FEXCore::Utils::FEX_PAGE_SIZE, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
   *reinterpret_cast<uint8_t*>(X64ReturnInstr) = 0xc3;
 
+  FillNtDllLUTs();
   const auto NtDll = GetModuleHandle("ntdll.dll");
-  Exception::KiUserExceptionDispatcher = GetRedirectedProcAddress(NtDll, "KiUserExceptionDispatcher");
+  const uintptr_t KiUserExceptionDispatcherFFS = reinterpret_cast<uintptr_t>(GetProcAddress(NtDll, "KiUserExceptionDispatcher"));
+  Exception::KiUserExceptionDispatcher = NtDllRedirectionLUT[KiUserExceptionDispatcherFFS - NtDllBase] + NtDllBase;
   const auto WineSyscallDispatcherPtr = reinterpret_cast<void**>(GetProcAddress(NtDll, "__wine_syscall_dispatcher"));
   if (WineSyscallDispatcherPtr) {
     WineSyscallDispatcher = *WineSyscallDispatcherPtr;
