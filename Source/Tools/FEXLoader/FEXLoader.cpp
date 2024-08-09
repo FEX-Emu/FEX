@@ -453,11 +453,10 @@ int main(int argc, char** argv, char** const envp) {
   // System allocator is now system allocator or FEX
   FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
 
-  auto CTX = FEXCore::Context::Context::CreateNewContext();
-
+  fextl::unique_ptr<FEXCore::Context::Context> CTX;
   {
     auto HostFeatures = FEX::FetchHostFeatures();
-    CTX->SetHostFeatures(HostFeatures);
+    CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);
   }
 
   // Setup TSO hardware emulation immediately after initializing the context.

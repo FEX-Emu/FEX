@@ -597,11 +597,10 @@ int main(int argc, char** argv, char** const envp) {
   FEXCore::Context::InitializeStaticTables(TestHeaderData->Bitness == 64 ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
 
   // Create FEXCore context.
-  auto CTX = FEXCore::Context::Context::CreateNewContext();
-
+  fextl::unique_ptr<FEXCore::Context::Context> CTX;
   {
     auto HostFeatures = FEX::FetchHostFeatures();
-    CTX->SetHostFeatures(HostFeatures);
+    CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);
   }
 
   auto SignalDelegation = FEX::DummyHandlers::CreateSignalDelegator();

@@ -436,10 +436,9 @@ void BTCpuProcessInit() {
   SyscallHandler = fextl::make_unique<WowSyscallHandler>();
   Context::HandlerConfig.emplace();
 
-  CTX = FEXCore::Context::Context::CreateNewContext();
   {
     auto HostFeatures = FEX::FetchHostFeatures();
-    CTX->SetHostFeatures(HostFeatures);
+    CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);
   }
 
   CTX->SetSignalDelegator(SignalDelegator.get());
