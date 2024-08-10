@@ -1296,7 +1296,7 @@
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "GPR = ShiftFlags OpSize:$Size, GPR:$Result, GPR:$Src1, ShiftType:$Shift, GPR:$Src2, GPR:$PFInput": {
+      "GPR = ShiftFlags OpSize:$Size, GPR:$Result, GPR:$Src1, ShiftType:$Shift, GPR:$Src2, GPR:$PFInput, i1:$InvertCF": {
         "Desc": ["Set NZCV flags for specified variable integer shift with given result.",
                  "Returns updated raw PF."],
         "HasSideEffects": true,

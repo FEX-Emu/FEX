@@ -663,6 +663,11 @@ DEF_OP(ShiftFlags) {
       lsrv(EmitSize, CFWord, Src1, CFWord);
     }
 
+    if (Op->InvertCF) {
+      mvn(ARMEmitter::Size::i64Bit, TMP1, CFWord);
+      CFWord = TMP1;
+    }
+
     bool SetOF = Op->Shift != IR::ShiftType::ASR;
     if (SetOF) {
       // Only defined when Shift is 1 else undefined

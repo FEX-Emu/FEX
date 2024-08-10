@@ -2119,12 +2119,7 @@ private:
     auto OldPF = GetRFLAG(X86State::RFLAG_PF_RAW_LOC);
 
     HandleNZCV_RMW();
-
-    // TODO: Find a smarter way to handle CF invert for ShiftFlags.
-    RectifyCarryInvert(false);
-    CalculatePF(_ShiftFlags(OpSizeFromSrc(Op), Result, Dest, Shift, Src, OldPF));
-    CFInverted = false;
-
+    CalculatePF(_ShiftFlags(OpSizeFromSrc(Op), Result, Dest, Shift, Src, OldPF, CFInverted));
     StoreResult(GPRClass, Op, Result, -1);
   }
 
