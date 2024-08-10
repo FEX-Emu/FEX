@@ -119,7 +119,7 @@ public:
    *
    * @return a new context object
    */
-  FEX_DEFAULT_VISIBILITY static fextl::unique_ptr<FEXCore::Context::Context> CreateNewContext();
+  FEX_DEFAULT_VISIBILITY static fextl::unique_ptr<FEXCore::Context::Context> CreateNewContext(const FEXCore::HostFeatures& Features);
 
   /**
    * @brief Allows setting up in memory code and other things prior to launchign code execution
@@ -163,13 +163,6 @@ public:
    * @param Factory The factory that the context will call if the DefaultCore config ise set to CUSTOM
    */
   FEX_DEFAULT_VISIBILITY virtual void SetCustomCPUBackendFactory(CustomCPUFactoryType Factory) = 0;
-
-  /**
-   * @brief Informs the context what features the host supports.
-   *
-   * @param Features Filled out HostFeatures structure to copy
-   */
-  FEX_DEFAULT_VISIBILITY virtual void SetHostFeatures(const FEXCore::HostFeatures& Features) = 0;
 
   FEX_DEFAULT_VISIBILITY virtual void HandleCallback(FEXCore::Core::InternalThreadState* Thread, uint64_t RIP) = 0;
 

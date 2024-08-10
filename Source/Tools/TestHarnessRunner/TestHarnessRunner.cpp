@@ -256,8 +256,7 @@ int main(int argc, char** argv, char** const envp) {
   FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
 
   auto HostFeatures = FEX::FetchHostFeatures();
-  auto CTX = FEXCore::Context::Context::CreateNewContext();
-  CTX->SetHostFeatures(HostFeatures);
+  auto CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);
 
 #ifndef _WIN32
   auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get(), {});

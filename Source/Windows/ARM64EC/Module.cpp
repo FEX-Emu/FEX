@@ -503,10 +503,9 @@ NTSTATUS ProcessInit() {
   SyscallHandler = fextl::make_unique<ECSyscallHandler>();
   Exception::HandlerConfig.emplace();
 
-  CTX = FEXCore::Context::Context::CreateNewContext();
   {
     auto HostFeatures = FEX::FetchHostFeatures();
-    CTX->SetHostFeatures(HostFeatures);
+    CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);
   }
 
   CTX->SetSignalDelegator(SignalDelegator.get());

@@ -74,8 +74,9 @@ $end_info$
 #include <xxhash.h>
 
 namespace FEXCore::Context {
-ContextImpl::ContextImpl()
-  : CPUID {this}
+ContextImpl::ContextImpl(const FEXCore::HostFeatures& Features)
+  : HostFeatures {Features}
+  , CPUID {this}
   , IRCaptureCache {this} {
 #ifdef BLOCKSTATS
   BlockData = std::make_unique<FEXCore::BlockSamplingData>();
