@@ -103,3 +103,23 @@ wine_syscall:
 direct_syscall:
   svc #0x43
   ret
+
+  // A replacement for the standard ARM64EC call checker that ignores any FFS patches and always redirects to a function's
+  // native implementation. As the only library FEX calls into is NTDLL, this is done using a LUT generated at init time.
+  // Expects the FFS address in x11, exit thunk address in x10 (unused) and it's own address in x9. Return address is in x11.
+.global "CheckCall"
+"CheckCall":
+  adrp x9, NtDllBase
+  ldr x9, [x9, #:lo12:NtDllBase]
+  subs x16, x11, x9
+  b.lo end
+  adrp x17, NtDllRedirectionLUTSize
+  ldr x17, [x17, #:lo12:NtDllRedirectionLUTSize]
+  cmp x16, x17
+  b.hi end
+  adrp x17, NtDllRedirectionLUT
+  ldr x17, [x17, #:lo12:NtDllRedirectionLUT]
+  ldr w11, [x17, x16, lsl #2]
+  add x11, x11, x9
+end:
+  ret
