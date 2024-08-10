@@ -2206,7 +2206,7 @@ private:
     CachedIndexedNamedVectorConstants.clear();
   }
 
-  std::pair<bool, CondClassType> DecodeNZCVCondition(uint8_t OP) const;
+  std::pair<bool, CondClassType> DecodeNZCVCondition(uint8_t OP);
   Ref SelectBit(Ref Cmp, IR::OpSize ResultSize, Ref TrueValue, Ref FalseValue);
   Ref SelectCC(uint8_t OP, IR::OpSize ResultSize, Ref TrueValue, Ref FalseValue);
 

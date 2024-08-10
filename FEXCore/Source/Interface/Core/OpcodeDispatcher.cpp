@@ -702,7 +702,7 @@ Ref OpDispatchBuilder::SelectBit(Ref Cmp, IR::OpSize ResultSize, Ref TrueValue, 
   return _NZCVSelect(ResultSize, {COND_NEQ}, TrueValue, FalseValue);
 }
 
-std::pair<bool, CondClassType> OpDispatchBuilder::DecodeNZCVCondition(uint8_t OP) const {
+std::pair<bool, CondClassType> OpDispatchBuilder::DecodeNZCVCondition(uint8_t OP) {
   switch (OP) {
   case 0x0: { // JO - Jump if OF == 1
     return {false, CondClassType {COND_FU}};
@@ -721,6 +721,17 @@ std::pair<bool, CondClassType> OpDispatchBuilder::DecodeNZCVCondition(uint8_t OP
   }
   case 0x5: { // JNE - Jump if ZF == 0
     return {false, CondClassType {COND_NEQ}};
+  }
+  case 0x6: { // JNA - Jump if CF == 1 || ZF == 1
+    // With CF, we want (C == 0 || Z == 1). By De Morgan's, that's
+    // equivalent to !(C == 1 && Z == 0). That's .ls
+    RectifyCarryInvert(true);
+    return {false, CondClassType {COND_ULE}};
+  }
+  case 0x7: { // JA - Jump if CF == 0 && ZF == 0
+    // With CF inverted, we want (C == 1 && Z == 0). That's .hi
+    RectifyCarryInvert(true);
+    return {false, CondClassType {COND_UGT}};
   }
   case 0x8: { // JS - Jump if SF == 1
     return {false, CondClassType {COND_MI}};
@@ -754,18 +765,6 @@ Ref OpDispatchBuilder::SelectCC(uint8_t OP, IR::OpSize ResultSize, Ref TrueValue
   }
 
   switch (OP) {
-  case 0x6: { // JNA - Jump if CF == 1 || ZC == 1
-    // (A || B) ? C : D is equivalent to B ? C : (A ? C : D)
-    // TODO: Optimize
-    auto TMP = NZCVSelect(ResultSize, {COND_UGE}, TrueValue, FalseValue, false);
-    return NZCVSelect(ResultSize, {COND_EQ}, TrueValue, TMP, false);
-  }
-  case 0x7: { // JA - Jump if CF == 0 && ZF == 0
-    // (A && B) ? C : D is equivalent to B ? (A ? C : D) : D
-    // TODO: Optimize
-    auto TMP = NZCVSelect(ResultSize, CondClassType {COND_ULT}, TrueValue, FalseValue, false);
-    return NZCVSelect(ResultSize, CondClassType {COND_NEQ}, TMP, FalseValue, false);
-  }
   case 0xA: { // JP - Jump if PF == 1
     // Raw value contains inverted PF in bottom bit
     return SelectBit(LoadPFRaw(true), ResultSize, TrueValue, FalseValue);
