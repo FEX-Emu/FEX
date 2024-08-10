@@ -32,12 +32,21 @@ DEF_OP(CASPair) {
       Desired1 = TMP2;
     }
 
-    mov(EmitSize, TMP3, Expected0);
-    mov(EmitSize, TMP4, Expected1);
+    auto CaspalDst0 = Dst0;
+    auto CaspalDst1 = Dst1;
+    if (CaspalDst1.Idx() != (CaspalDst0.Idx() + 1) || CaspalDst0.Idx() & 1) {
+      CaspalDst0 = TMP3;
+      CaspalDst1 = TMP4;
+    }
 
-    caspal(EmitSize, TMP3, TMP4, Desired0, Desired1, MemSrc);
-    mov(EmitSize, Dst0, TMP3.R());
-    mov(EmitSize, Dst1, TMP4.R());
+    mov(EmitSize, CaspalDst0, Expected0);
+    mov(EmitSize, CaspalDst1, Expected1);
+    caspal(EmitSize, CaspalDst0, CaspalDst1, Desired0, Desired1, MemSrc);
+
+    if (CaspalDst0 != Dst0) {
+      mov(EmitSize, Dst0, CaspalDst0);
+      mov(EmitSize, Dst1, CaspalDst1);
+    }
   } else {
     // Save NZCV so we don't have to mark this op as clobbering NZCV (the
     // SupportsAtomics does not clobber atomics and this !SupportsAtomics path
