@@ -312,9 +312,7 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs) {
 
   Ref Before {};
   if (DestIsLockedMem(Op)) {
-    RectifyCarryInvert(false);
-    auto ALUOp = _Adc(OpSize, _Constant(0), Src);
-
+    auto ALUOp = IncrementByCarry(OpSize, Src);
     HandledLock = true;
 
     Ref DestMem = MakeSegmentAddress(Op, Op->Dest);
@@ -344,8 +342,7 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
     HandledLock = true;
 
     Ref DestMem = MakeSegmentAddress(Op, Op->Dest);
-    RectifyCarryInvert(false);
-    auto SrcPlusCF = _Adc(OpSize, _Constant(0), Src);
+    auto SrcPlusCF = IncrementByCarry(OpSize, Src);
     Before = _AtomicFetchSub(IR::SizeToOpSize(Size), SrcPlusCF, DestMem);
   } else {
     Before = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
