@@ -334,9 +334,7 @@ Ref OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, Ref Src1, Ref Src2) {
     Src1 = _Bfe(OpSize, SrcSize * 8, 0, Src1);
     Src2 = _Bfe(OpSize, SrcSize * 8, 0, Src2);
 
-    // ADC expects direct carry, so rectify the input to the Adc
-    RectifyCarryInvert(false);
-    auto Src2PlusCF = _Adc(OpSize, _Constant(0), Src2);
+    auto Src2PlusCF = IncrementByCarry(OpSize, Src2);
 
     Res = _Sub(OpSize, Src1, Src2PlusCF);
     Res = _Bfe(OpSize, SrcSize * 8, 0, Res);
