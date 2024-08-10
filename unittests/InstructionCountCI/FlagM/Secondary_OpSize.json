@@ -14,25 +14,23 @@
   },
   "Instructions": {
     "ucomisd xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": "0x66 0x0f 0x2e",
       "ExpectedArm64ASM": [
         "fcmp d16, d17",
         "mov w27, #0x0",
         "cset w26, vc",
-        "axflag",
-        "cfinv"
+        "axflag"
       ]
     },
     "comisd xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": "0x66 0x0f 0x2f",
       "ExpectedArm64ASM": [
         "fcmp d16, d17",
         "mov w27, #0x0",
         "cset w26, vc",
-        "axflag",
-        "cfinv"
+        "axflag"
       ]
     },
     "pmovmskb eax, xmm0": {

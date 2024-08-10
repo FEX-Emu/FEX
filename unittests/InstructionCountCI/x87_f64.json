@@ -3336,7 +3336,7 @@
         "0xda 11b 0xc0 /0"
       ],
       "ExpectedArm64ASM": [
-        "csetm x20, hs",
+        "csetm x20, lo",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add x0, x28, x20, lsl #4",
@@ -3354,7 +3354,7 @@
         "0xda 11b 0xc1 /0"
       ],
       "ExpectedArm64ASM": [
-        "csetm x20, hs",
+        "csetm x20, lo",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x1 (1)",
@@ -3374,7 +3374,7 @@
         "0xda 11b 0xc2 /0"
       ],
       "ExpectedArm64ASM": [
-        "csetm x20, hs",
+        "csetm x20, lo",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x2 (2)",
@@ -3394,7 +3394,7 @@
         "0xda 11b 0xc3 /0"
       ],
       "ExpectedArm64ASM": [
-        "csetm x20, hs",
+        "csetm x20, lo",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x3 (3)",
@@ -3414,7 +3414,7 @@
         "0xda 11b 0xc4 /0"
       ],
       "ExpectedArm64ASM": [
-        "csetm x20, hs",
+        "csetm x20, lo",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x4 (4)",
@@ -3434,7 +3434,7 @@
         "0xda 11b 0xc5 /0"
       ],
       "ExpectedArm64ASM": [
-        "csetm x20, hs",
+        "csetm x20, lo",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x5 (5)",
@@ -3454,7 +3454,7 @@
         "0xda 11b 0xc6 /0"
       ],
       "ExpectedArm64ASM": [
-        "csetm x20, hs",
+        "csetm x20, lo",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x6 (6)",
@@ -3474,7 +3474,7 @@
         "0xda 11b 0xc7 /0"
       ],
       "ExpectedArm64ASM": [
-        "csetm x20, hs",
+        "csetm x20, lo",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x7 (7)",
@@ -3647,14 +3647,12 @@
       ]
     },
     "fcmovbe st0, st0": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 10,
       "Comment": [
         "0xda 11b 0xd0 /0"
       ],
       "ExpectedArm64ASM": [
-        "mov x20, #0xffffffffffffffff",
-        "csetm x21, hs",
-        "csel x20, x20, x21, eq",
+        "csetm x20, ls",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add x0, x28, x20, lsl #4",
@@ -3667,14 +3665,12 @@
       ]
     },
     "fcmovbe st0, st1": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xda 11b 0xd1 /0"
       ],
       "ExpectedArm64ASM": [
-        "mov x20, #0xffffffffffffffff",
-        "csetm x21, hs",
-        "csel x20, x20, x21, eq",
+        "csetm x20, ls",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x1 (1)",
@@ -3689,14 +3685,12 @@
       ]
     },
     "fcmovbe st0, st2": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xda 11b 0xd2 /0"
       ],
       "ExpectedArm64ASM": [
-        "mov x20, #0xffffffffffffffff",
-        "csetm x21, hs",
-        "csel x20, x20, x21, eq",
+        "csetm x20, ls",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x2 (2)",
@@ -3711,14 +3705,12 @@
       ]
     },
     "fcmovbe st0, st3": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xda 11b 0xd3 /0"
       ],
       "ExpectedArm64ASM": [
-        "mov x20, #0xffffffffffffffff",
-        "csetm x21, hs",
-        "csel x20, x20, x21, eq",
+        "csetm x20, ls",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x3 (3)",
@@ -3733,14 +3725,12 @@
       ]
     },
     "fcmovbe st0, st4": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xda 11b 0xd4 /0"
       ],
       "ExpectedArm64ASM": [
-        "mov x20, #0xffffffffffffffff",
-        "csetm x21, hs",
-        "csel x20, x20, x21, eq",
+        "csetm x20, ls",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x4 (4)",
@@ -3755,14 +3745,12 @@
       ]
     },
     "fcmovbe st0, st5": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xda 11b 0xd5 /0"
       ],
       "ExpectedArm64ASM": [
-        "mov x20, #0xffffffffffffffff",
-        "csetm x21, hs",
-        "csel x20, x20, x21, eq",
+        "csetm x20, ls",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x5 (5)",
@@ -3777,14 +3765,12 @@
       ]
     },
     "fcmovbe st0, st6": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xda 11b 0xd6 /0"
       ],
       "ExpectedArm64ASM": [
-        "mov x20, #0xffffffffffffffff",
-        "csetm x21, hs",
-        "csel x20, x20, x21, eq",
+        "csetm x20, ls",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x6 (6)",
@@ -3799,14 +3785,12 @@
       ]
     },
     "fcmovbe st0, st7": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xda 11b 0xd7 /0"
       ],
       "ExpectedArm64ASM": [
-        "mov x20, #0xffffffffffffffff",
-        "csetm x21, hs",
-        "csel x20, x20, x21, eq",
+        "csetm x20, ls",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x7 (7)",
@@ -4245,7 +4229,7 @@
         "0xdb 11b 0xc0 /0"
       ],
       "ExpectedArm64ASM": [
-        "csetm x20, lo",
+        "csetm x20, hs",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add x0, x28, x20, lsl #4",
@@ -4263,7 +4247,7 @@
         "0xdb 11b 0xc1 /0"
       ],
       "ExpectedArm64ASM": [
-        "csetm x20, lo",
+        "csetm x20, hs",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x1 (1)",
@@ -4283,7 +4267,7 @@
         "0xdb 11b 0xc2 /0"
       ],
       "ExpectedArm64ASM": [
-        "csetm x20, lo",
+        "csetm x20, hs",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x2 (2)",
@@ -4303,7 +4287,7 @@
         "0xdb 11b 0xc3 /0"
       ],
       "ExpectedArm64ASM": [
-        "csetm x20, lo",
+        "csetm x20, hs",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x3 (3)",
@@ -4323,7 +4307,7 @@
         "0xdb 11b 0xc4 /0"
       ],
       "ExpectedArm64ASM": [
-        "csetm x20, lo",
+        "csetm x20, hs",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x4 (4)",
@@ -4343,7 +4327,7 @@
         "0xdb 11b 0xc5 /0"
       ],
       "ExpectedArm64ASM": [
-        "csetm x20, lo",
+        "csetm x20, hs",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x5 (5)",
@@ -4363,7 +4347,7 @@
         "0xdb 11b 0xc6 /0"
       ],
       "ExpectedArm64ASM": [
-        "csetm x20, lo",
+        "csetm x20, hs",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x6 (6)",
@@ -4383,7 +4367,7 @@
         "0xdb 11b 0xc7 /0"
       ],
       "ExpectedArm64ASM": [
-        "csetm x20, lo",
+        "csetm x20, hs",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x7 (7)",
@@ -4556,13 +4540,12 @@
       ]
     },
     "fcmovnbe st0, st0": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Comment": [
         "0xdb 11b 0xd0 /2"
       ],
       "ExpectedArm64ASM": [
-        "csetm x20, lo",
-        "csel x20, x20, xzr, ne",
+        "csetm x20, hi",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add x0, x28, x20, lsl #4",
@@ -4575,13 +4558,12 @@
       ]
     },
     "fcmovnbe st0, st1": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdb 11b 0xd1 /2"
       ],
       "ExpectedArm64ASM": [
-        "csetm x20, lo",
-        "csel x20, x20, xzr, ne",
+        "csetm x20, hi",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x1 (1)",
@@ -4596,13 +4578,12 @@
       ]
     },
     "fcmovnbe st0, st2": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdb 11b 0xd2 /2"
       ],
       "ExpectedArm64ASM": [
-        "csetm x20, lo",
-        "csel x20, x20, xzr, ne",
+        "csetm x20, hi",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x2 (2)",
@@ -4617,13 +4598,12 @@
       ]
     },
     "fcmovnbe st0, st3": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdb 11b 0xd3 /2"
       ],
       "ExpectedArm64ASM": [
-        "csetm x20, lo",
-        "csel x20, x20, xzr, ne",
+        "csetm x20, hi",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x3 (3)",
@@ -4638,13 +4618,12 @@
       ]
     },
     "fcmovnbe st0, st4": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdb 11b 0xd4 /2"
       ],
       "ExpectedArm64ASM": [
-        "csetm x20, lo",
-        "csel x20, x20, xzr, ne",
+        "csetm x20, hi",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x4 (4)",
@@ -4659,13 +4638,12 @@
       ]
     },
     "fcmovnbe st0, st5": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdb 11b 0xd5 /2"
       ],
       "ExpectedArm64ASM": [
-        "csetm x20, lo",
-        "csel x20, x20, xzr, ne",
+        "csetm x20, hi",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x5 (5)",
@@ -4680,13 +4658,12 @@
       ]
     },
     "fcmovnbe st0, st6": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdb 11b 0xd6 /2"
       ],
       "ExpectedArm64ASM": [
-        "csetm x20, lo",
-        "csel x20, x20, xzr, ne",
+        "csetm x20, hi",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x6 (6)",
@@ -4701,13 +4678,12 @@
       ]
     },
     "fcmovnbe st0, st7": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdb 11b 0xd7 /2"
       ],
       "ExpectedArm64ASM": [
-        "csetm x20, lo",
-        "csel x20, x20, xzr, ne",
+        "csetm x20, hi",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
         "add w21, w20, #0x7 (7)",
@@ -4973,11 +4949,11 @@
         "cset w20, eq",
         "cset w21, lo",
         "cset w22, vs",
-        "orr w21, w21, w22",
+        "cset w26, vc",
+        "and w21, w21, w26",
         "lsl x21, x21, #29",
         "orr w20, w20, w22",
         "orr w20, w21, w20, lsl #30",
-        "eor w26, w22, #0x1",
         "msr nzcv, x20"
       ]
     },
@@ -4998,11 +4974,11 @@
         "cset w20, eq",
         "cset w21, lo",
         "cset w22, vs",
-        "orr w21, w21, w22",
+        "cset w26, vc",
+        "and w21, w21, w26",
         "lsl x21, x21, #29",
         "orr w20, w20, w22",
         "orr w20, w21, w20, lsl #30",
-        "eor w26, w22, #0x1",
         "msr nzcv, x20"
       ]
     },
@@ -5023,11 +4999,11 @@
         "cset w20, eq",
         "cset w21, lo",
         "cset w22, vs",
-        "orr w21, w21, w22",
+        "cset w26, vc",
+        "and w21, w21, w26",
         "lsl x21, x21, #29",
         "orr w20, w20, w22",
         "orr w20, w21, w20, lsl #30",
-        "eor w26, w22, #0x1",
         "msr nzcv, x20"
       ]
     },
@@ -5048,11 +5024,11 @@
         "cset w20, eq",
         "cset w21, lo",
         "cset w22, vs",
-        "orr w21, w21, w22",
+        "cset w26, vc",
+        "and w21, w21, w26",
         "lsl x21, x21, #29",
         "orr w20, w20, w22",
         "orr w20, w21, w20, lsl #30",
-        "eor w26, w22, #0x1",
         "msr nzcv, x20"
       ]
     },
@@ -5073,11 +5049,11 @@
         "cset w20, eq",
         "cset w21, lo",
         "cset w22, vs",
-        "orr w21, w21, w22",
+        "cset w26, vc",
+        "and w21, w21, w26",
         "lsl x21, x21, #29",
         "orr w20, w20, w22",
         "orr w20, w21, w20, lsl #30",
-        "eor w26, w22, #0x1",
         "msr nzcv, x20"
       ]
     },
@@ -5098,11 +5074,11 @@
         "cset w20, eq",
         "cset w21, lo",
         "cset w22, vs",
-        "orr w21, w21, w22",
+        "cset w26, vc",
+        "and w21, w21, w26",
         "lsl x21, x21, #29",
         "orr w20, w20, w22",
         "orr w20, w21, w20, lsl #30",
-        "eor w26, w22, #0x1",
         "msr nzcv, x20"
       ]
     },
@@ -5123,11 +5099,11 @@
         "cset w20, eq",
         "cset w21, lo",
         "cset w22, vs",
-        "orr w21, w21, w22",
+        "cset w26, vc",
+        "and w21, w21, w26",
         "lsl x21, x21, #29",
         "orr w20, w20, w22",
         "orr w20, w21, w20, lsl #30",
-        "eor w26, w22, #0x1",
         "msr nzcv, x20"
       ]
     },
@@ -5148,11 +5124,11 @@
         "cset w20, eq",
         "cset w21, lo",
         "cset w22, vs",
-        "orr w21, w21, w22",
+        "cset w26, vc",
+        "and w21, w21, w26",
         "lsl x21, x21, #29",
         "orr w20, w20, w22",
         "orr w20, w21, w20, lsl #30",
-        "eor w26, w22, #0x1",
         "msr nzcv, x20"
       ]
     },
@@ -5171,11 +5147,11 @@
         "cset w20, eq",
         "cset w21, lo",
         "cset w22, vs",
-        "orr w21, w21, w22",
+        "cset w26, vc",
+        "and w21, w21, w26",
         "lsl x21, x21, #29",
         "orr w20, w20, w22",
         "orr w20, w21, w20, lsl #30",
-        "eor w26, w22, #0x1",
         "msr nzcv, x20"
       ]
     },
@@ -5196,11 +5172,11 @@
         "cset w20, eq",
         "cset w21, lo",
         "cset w22, vs",
-        "orr w21, w21, w22",
+        "cset w26, vc",
+        "and w21, w21, w26",
         "lsl x21, x21, #29",
         "orr w20, w20, w22",
         "orr w20, w21, w20, lsl #30",
-        "eor w26, w22, #0x1",
         "msr nzcv, x20"
       ]
     },
@@ -5221,11 +5197,11 @@
         "cset w20, eq",
         "cset w21, lo",
         "cset w22, vs",
-        "orr w21, w21, w22",
+        "cset w26, vc",
+        "and w21, w21, w26",
         "lsl x21, x21, #29",
         "orr w20, w20, w22",
         "orr w20, w21, w20, lsl #30",
-        "eor w26, w22, #0x1",
         "msr nzcv, x20"
       ]
     },
@@ -5246,11 +5222,11 @@
         "cset w20, eq",
         "cset w21, lo",
         "cset w22, vs",
-        "orr w21, w21, w22",
+        "cset w26, vc",
+        "and w21, w21, w26",
         "lsl x21, x21, #29",
         "orr w20, w20, w22",
         "orr w20, w21, w20, lsl #30",
-        "eor w26, w22, #0x1",
         "msr nzcv, x20"
       ]
     },
@@ -5271,11 +5247,11 @@
         "cset w20, eq",
         "cset w21, lo",
         "cset w22, vs",
-        "orr w21, w21, w22",
+        "cset w26, vc",
+        "and w21, w21, w26",
         "lsl x21, x21, #29",
         "orr w20, w20, w22",
         "orr w20, w21, w20, lsl #30",
-        "eor w26, w22, #0x1",
         "msr nzcv, x20"
       ]
     },
@@ -5296,11 +5272,11 @@
         "cset w20, eq",
         "cset w21, lo",
         "cset w22, vs",
-        "orr w21, w21, w22",
+        "cset w26, vc",
+        "and w21, w21, w26",
         "lsl x21, x21, #29",
         "orr w20, w20, w22",
         "orr w20, w21, w20, lsl #30",
-        "eor w26, w22, #0x1",
         "msr nzcv, x20"
       ]
     },
@@ -5321,11 +5297,11 @@
         "cset w20, eq",
         "cset w21, lo",
         "cset w22, vs",
-        "orr w21, w21, w22",
+        "cset w26, vc",
+        "and w21, w21, w26",
         "lsl x21, x21, #29",
         "orr w20, w20, w22",
         "orr w20, w21, w20, lsl #30",
-        "eor w26, w22, #0x1",
         "msr nzcv, x20"
       ]
     },
@@ -5346,11 +5322,11 @@
         "cset w20, eq",
         "cset w21, lo",
         "cset w22, vs",
-        "orr w21, w21, w22",
+        "cset w26, vc",
+        "and w21, w21, w26",
         "lsl x21, x21, #29",
         "orr w20, w20, w22",
         "orr w20, w21, w20, lsl #30",
-        "eor w26, w22, #0x1",
         "msr nzcv, x20"
       ]
     },
@@ -9863,11 +9839,11 @@
         "cset w22, eq",
         "cset w23, lo",
         "cset w24, vs",
-        "orr w23, w23, w24",
+        "cset w26, vc",
+        "and w23, w23, w26",
         "lsl x23, x23, #29",
         "orr w22, w22, w24",
         "orr w22, w23, w22, lsl #30",
-        "eor w26, w24, #0x1",
         "ldrb w23, [x28, #1298]",
         "lsl w21, w21, w20",
         "bic w21, w23, w21",
@@ -9896,11 +9872,11 @@
         "cset w22, eq",
         "cset w23, lo",
         "cset w24, vs",
-        "orr w23, w23, w24",
+        "cset w26, vc",
+        "and w23, w23, w26",
         "lsl x23, x23, #29",
         "orr w22, w22, w24",
         "orr w22, w23, w22, lsl #30",
-        "eor w26, w24, #0x1",
         "ldrb w23, [x28, #1298]",
         "lsl w21, w21, w20",
         "bic w21, w23, w21",
@@ -9929,11 +9905,11 @@
         "cset w22, eq",
         "cset w23, lo",
         "cset w24, vs",
-        "orr w23, w23, w24",
+        "cset w26, vc",
+        "and w23, w23, w26",
         "lsl x23, x23, #29",
         "orr w22, w22, w24",
         "orr w22, w23, w22, lsl #30",
-        "eor w26, w24, #0x1",
         "ldrb w23, [x28, #1298]",
         "lsl w21, w21, w20",
         "bic w21, w23, w21",
@@ -9962,11 +9938,11 @@
         "cset w22, eq",
         "cset w23, lo",
         "cset w24, vs",
-        "orr w23, w23, w24",
+        "cset w26, vc",
+        "and w23, w23, w26",
         "lsl x23, x23, #29",
         "orr w22, w22, w24",
         "orr w22, w23, w22, lsl #30",
-        "eor w26, w24, #0x1",
         "ldrb w23, [x28, #1298]",
         "lsl w21, w21, w20",
         "bic w21, w23, w21",
@@ -9995,11 +9971,11 @@
         "cset w22, eq",
         "cset w23, lo",
         "cset w24, vs",
-        "orr w23, w23, w24",
+        "cset w26, vc",
+        "and w23, w23, w26",
         "lsl x23, x23, #29",
         "orr w22, w22, w24",
         "orr w22, w23, w22, lsl #30",
-        "eor w26, w24, #0x1",
         "ldrb w23, [x28, #1298]",
         "lsl w21, w21, w20",
         "bic w21, w23, w21",
@@ -10028,11 +10004,11 @@
         "cset w22, eq",
         "cset w23, lo",
         "cset w24, vs",
-        "orr w23, w23, w24",
+        "cset w26, vc",
+        "and w23, w23, w26",
         "lsl x23, x23, #29",
         "orr w22, w22, w24",
         "orr w22, w23, w22, lsl #30",
-        "eor w26, w24, #0x1",
         "ldrb w23, [x28, #1298]",
         "lsl w21, w21, w20",
         "bic w21, w23, w21",
@@ -10061,11 +10037,11 @@
         "cset w22, eq",
         "cset w23, lo",
         "cset w24, vs",
-        "orr w23, w23, w24",
+        "cset w26, vc",
+        "and w23, w23, w26",
         "lsl x23, x23, #29",
         "orr w22, w22, w24",
         "orr w22, w23, w22, lsl #30",
-        "eor w26, w24, #0x1",
         "ldrb w23, [x28, #1298]",
         "lsl w21, w21, w20",
         "bic w21, w23, w21",
@@ -10094,11 +10070,11 @@
         "cset w22, eq",
         "cset w23, lo",
         "cset w24, vs",
-        "orr w23, w23, w24",
+        "cset w26, vc",
+        "and w23, w23, w26",
         "lsl x23, x23, #29",
         "orr w22, w22, w24",
         "orr w22, w23, w22, lsl #30",
-        "eor w26, w24, #0x1",
         "ldrb w23, [x28, #1298]",
         "lsl w21, w21, w20",
         "bic w21, w23, w21",
@@ -10125,11 +10101,11 @@
         "cset w22, eq",
         "cset w23, lo",
         "cset w24, vs",
-        "orr w23, w23, w24",
+        "cset w26, vc",
+        "and w23, w23, w26",
         "lsl x23, x23, #29",
         "orr w22, w22, w24",
         "orr w22, w23, w22, lsl #30",
-        "eor w26, w24, #0x1",
         "ldrb w23, [x28, #1298]",
         "lsl w21, w21, w20",
         "bic w21, w23, w21",
@@ -10158,11 +10134,11 @@
         "cset w22, eq",
         "cset w23, lo",
         "cset w24, vs",
-        "orr w23, w23, w24",
+        "cset w26, vc",
+        "and w23, w23, w26",
         "lsl x23, x23, #29",
         "orr w22, w22, w24",
         "orr w22, w23, w22, lsl #30",
-        "eor w26, w24, #0x1",
         "ldrb w23, [x28, #1298]",
         "lsl w21, w21, w20",
         "bic w21, w23, w21",
@@ -10191,11 +10167,11 @@
         "cset w22, eq",
         "cset w23, lo",
         "cset w24, vs",
-        "orr w23, w23, w24",
+        "cset w26, vc",
+        "and w23, w23, w26",
         "lsl x23, x23, #29",
         "orr w22, w22, w24",
         "orr w22, w23, w22, lsl #30",
-        "eor w26, w24, #0x1",
         "ldrb w23, [x28, #1298]",
         "lsl w21, w21, w20",
         "bic w21, w23, w21",
@@ -10224,11 +10200,11 @@
         "cset w22, eq",
         "cset w23, lo",
         "cset w24, vs",
-        "orr w23, w23, w24",
+        "cset w26, vc",
+        "and w23, w23, w26",
         "lsl x23, x23, #29",
         "orr w22, w22, w24",
         "orr w22, w23, w22, lsl #30",
-        "eor w26, w24, #0x1",
         "ldrb w23, [x28, #1298]",
         "lsl w21, w21, w20",
         "bic w21, w23, w21",
@@ -10257,11 +10233,11 @@
         "cset w22, eq",
         "cset w23, lo",
         "cset w24, vs",
-        "orr w23, w23, w24",
+        "cset w26, vc",
+        "and w23, w23, w26",
         "lsl x23, x23, #29",
         "orr w22, w22, w24",
         "orr w22, w23, w22, lsl #30",
-        "eor w26, w24, #0x1",
         "ldrb w23, [x28, #1298]",
         "lsl w21, w21, w20",
         "bic w21, w23, w21",
@@ -10290,11 +10266,11 @@
         "cset w22, eq",
         "cset w23, lo",
         "cset w24, vs",
-        "orr w23, w23, w24",
+        "cset w26, vc",
+        "and w23, w23, w26",
         "lsl x23, x23, #29",
         "orr w22, w22, w24",
         "orr w22, w23, w22, lsl #30",
-        "eor w26, w24, #0x1",
         "ldrb w23, [x28, #1298]",
         "lsl w21, w21, w20",
         "bic w21, w23, w21",
@@ -10323,11 +10299,11 @@
         "cset w22, eq",
         "cset w23, lo",
         "cset w24, vs",
-        "orr w23, w23, w24",
+        "cset w26, vc",
+        "and w23, w23, w26",
         "lsl x23, x23, #29",
         "orr w22, w22, w24",
         "orr w22, w23, w22, lsl #30",
-        "eor w26, w24, #0x1",
         "ldrb w23, [x28, #1298]",
         "lsl w21, w21, w20",
         "bic w21, w23, w21",
@@ -10356,11 +10332,11 @@
         "cset w22, eq",
         "cset w23, lo",
         "cset w24, vs",
-        "orr w23, w23, w24",
+        "cset w26, vc",
+        "and w23, w23, w26",
         "lsl x23, x23, #29",
         "orr w22, w22, w24",
         "orr w22, w23, w22, lsl #30",
-        "eor w26, w24, #0x1",
         "ldrb w23, [x28, #1298]",
         "lsl w21, w21, w20",
         "bic w21, w23, w21",

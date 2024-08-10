@@ -13,7 +13,7 @@
   },
   "Instructions": {
     "The Witcher 3": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 10,
       "x86Insts": [
         "mov eax, 0x1",
         "lock xadd qword [rcx], rax",
@@ -32,11 +32,12 @@
         "lsl x6, x6, #6",
         "eor w27, w6, w5",
         "adds x26, x6, x5",
+        "cfinv",
         "mov x6, x26"
       ]
     },
     "FMOD scalar loop": {
-      "ExpectedInstructionCount": 65,
+      "ExpectedInstructionCount": 64,
       "x86Insts": [
         "mov     esi, ecx",
         "mov     rdx, rbp",
@@ -140,13 +141,12 @@
         "mov v18.s[0], v0.s[0]",
         "stur s18, [x4, #-4]",
         "subs w26, w10, #0x1 (1)",
-        "cfinv",
         "mov x27, x10",
         "mov x10, x26"
       ]
     },
     "Scalar vector add loop": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "Saw this in bytemark"
       ],
@@ -163,12 +163,11 @@
         "str q16, [x16, x4, sxtx]",
         "add x4, x4, #0x10 (16)",
         "eor w27, w10, w4",
-        "subs x26, x10, x4",
-        "cfinv"
+        "subs x26, x10, x4"
       ]
     },
     "bytemark data xor loop": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "Saw this in bytemark"
       ],
@@ -195,12 +194,11 @@
         "eor x20, x20, x19",
         "str x20, [x7, x6, sxtx #3]",
         "eor w27, w11, w4",
-        "subs x26, x11, x4",
-        "cfinv"
+        "subs x26, x11, x4"
       ]
     },
     "bytemark num sort": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "Saw this in bytemark"
       ],
@@ -216,12 +214,11 @@
         "orr x15, x15, #0x1",
         "ldr x20, [x10, x15, sxtx #3]",
         "eor w27, w17, w20",
-        "subs x26, x17, x20",
-        "cfinv"
+        "subs x26, x17, x20"
       ]
     },
     "pcmpistri xmm0, xmm1, 0_0_00_11_01b": {
-      "ExpectedInstructionCount": 40,
+      "ExpectedInstructionCount": 41,
       "Comment": [
         "A Hat In Time spends at least 5% CPU time in this instruction",
         "Comes from vcruntime140.dll wcsstr"
@@ -266,6 +263,7 @@
         "cmp x21, #0x0 (0)",
         "csel x5, x22, x23, eq",
         "mov w26, #0x1",
+        "eor w20, w20, #0x20000000",
         "msr nzcv, x20"
       ]
     }

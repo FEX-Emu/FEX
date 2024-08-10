@@ -96,14 +96,14 @@
         "ubfx w23, w23, #4, #1",
         "orr x22, x23, x22",
         "cmp x20, #0x99 (153)",
-        "cset x23, hi",
-        "orr x21, x21, x23",
+        "cset x23, ls",
+        "and x21, x21, x23",
         "add x23, x20, #0x6 (6)",
         "cmp x22, #0x0 (0)",
         "csel x20, x23, x20, ne",
         "add x23, x20, #0x60 (96)",
         "cmp x21, #0x0 (0)",
-        "csel x26, x23, x20, ne",
+        "csel x26, x23, x20, eq",
         "bfxil w4, w26, #0, #8",
         "cmn wzr, w26, lsl #24",
         "rmif x21, #63, #nzCv",
@@ -111,11 +111,11 @@
       ]
     },
     "das": {
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 25,
       "Comment": "0x2f",
       "ExpectedArm64ASM": [
         "uxtb w20, w4",
-        "cset w21, hs",
+        "cset w21, lo",
         "and x22, x20, #0xf",
         "cmp x22, #0x9 (9)",
         "cset x22, hi",
@@ -136,12 +136,13 @@
         "csel x26, x24, x20, ne",
         "bfxil w4, w26, #0, #8",
         "cmn wzr, w26, lsl #24",
-        "rmif x23, #63, #nzCv",
+        "eor x20, x23, #0x1",
+        "rmif x20, #63, #nzCv",
         "eor w27, w26, w22, lsl #4"
       ]
     },
     "aaa": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Comment": "0x37",
       "ExpectedArm64ASM": [
         "and x20, x4, #0xf",
@@ -150,18 +151,19 @@
         "eor w21, w27, w26",
         "ubfx w21, w21, #4, #1",
         "orr x20, x21, x20",
-        "lsl x21, x20, #29",
+        "eor x21, x20, #0x1",
+        "lsl x21, x21, #29",
         "eor w27, w26, w20, lsl #4",
         "msr nzcv, x21",
         "add w20, w4, #0x106 (262)",
-        "csel w20, w20, w4, hs",
+        "csel w20, w20, w4, lo",
         "mov w21, #0xff0f",
         "and w20, w20, w21",
         "bfxil w4, w20, #0, #16"
       ]
     },
     "aas": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Comment": "0x3f",
       "ExpectedArm64ASM": [
         "and x20, x4, #0xf",
@@ -170,11 +172,12 @@
         "eor w21, w27, w26",
         "ubfx w21, w21, #4, #1",
         "orr x20, x21, x20",
-        "lsl x21, x20, #29",
+        "eor x21, x20, #0x1",
+        "lsl x21, x21, #29",
         "eor w27, w26, w20, lsl #4",
         "msr nzcv, x21",
         "sub w20, w4, #0x106 (262)",
-        "csel w20, w20, w4, hs",
+        "csel w20, w20, w4, lo",
         "mov w21, #0xff0f",
         "and w20, w20, w21",
         "bfxil w4, w20, #0, #16"
@@ -313,7 +316,7 @@
       ]
     },
     "aam": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": "0xd4",
       "ExpectedArm64ASM": [
         "uxtb w20, w4",
@@ -323,11 +326,12 @@
         "msub x20, x2, x21, x20",
         "add x26, x20, x22, lsl #8",
         "bfxil w4, w26, #0, #16",
-        "cmn wzr, w26, lsl #24"
+        "cmn wzr, w26, lsl #24",
+        "cfinv"
       ]
     },
     "aad": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": "0xd5",
       "ExpectedArm64ASM": [
         "lsr w20, w4, #8",
@@ -336,11 +340,12 @@
         "add x20, x4, x20",
         "and x26, x20, #0xff",
         "bfxil w4, w26, #0, #16",
-        "cmn wzr, w26, lsl #24"
+        "cmn wzr, w26, lsl #24",
+        "cfinv"
       ]
     },
     "db 0xd4, 0x40": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": [
         "aam with a different immediate byte base",
         "0xd4"
@@ -353,11 +358,12 @@
         "msub x20, x2, x21, x20",
         "add x26, x20, x22, lsl #8",
         "bfxil w4, w26, #0, #16",
-        "cmn wzr, w26, lsl #24"
+        "cmn wzr, w26, lsl #24",
+        "cfinv"
       ]
     },
     "db 0xd5, 0x40": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "aad with a different immediate byte base",
         "0xd5"
@@ -368,14 +374,15 @@
         "add x20, x4, x20",
         "and x26, x20, #0xff",
         "bfxil w4, w26, #0, #16",
-        "cmn wzr, w26, lsl #24"
+        "cmn wzr, w26, lsl #24",
+        "cfinv"
       ]
     },
     "salc": {
       "ExpectedInstructionCount": 2,
       "Comment": "0xd6",
       "ExpectedArm64ASM": [
-        "csetm w20, hs",
+        "csetm w20, lo",
         "bfxil w4, w20, #0, #8"
       ]
     }
