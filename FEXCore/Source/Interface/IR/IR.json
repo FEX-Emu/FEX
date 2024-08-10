@@ -711,19 +711,17 @@
           "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "GPRPair = CASPair OpSize:#Size, GPR:$ExpectedLo, GPR:$ExpectedHi, GPR:$DesiredLo, GPR:$DesiredHi, GPR:$Addr": {
-        "HasSideEffects": true,
+      "GPR:$Lo, GPR:$Hi = CASPair OpSize:#Size, GPR:$ExpectedLo, GPR:$ExpectedHi, GPR:$DesiredLo, GPR:$DesiredHi, GPR:$Addr": {
         "Desc": ["Does a compare and exchange with two pairs of values",
                  "ssa0 is the comparison value",
                  "ssa1 is the new value",
                  "ssa2 is the memory location",
-                 "Returns a pair containing the value in memory"
+                 "Returns the lower & upper halves of the value in memory."
                 ],
-        "HasDest": true,
+        "HasSideEffects": true,
         "DestSize": "Size",
-        "NumElements": "2",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i64Bit || Size == FEXCore::IR::OpSize::i128Bit"
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
       "AtomicAdd OpSize:#Size, GPR:$Value, GPR:$Addr": {
