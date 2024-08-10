@@ -411,6 +411,25 @@ private:
       }
     }
 
+    // Try to coalesce reserved pairs. Just a heuristic to remove some moves.
+    if (IROp->Op == OP_ALLOCATEGPR) {
+      if (IROp->C<IROp_AllocateGPR>()->ForPair) {
+        uint32_t Available = AvailableMask(&Classes[GPRClass], true);
+        if (Available) {
+          unsigned Reg = std::countr_zero(Available);
+          SetReg(CodeNode, PhysicalRegister(GPRClass, Reg));
+          return;
+        }
+      }
+    } else if (IROp->Op == OP_ALLOCATEGPRAFTER) {
+      uint32_t Available = AvailableMask(&Classes[GPRClass], false);
+      auto After = SSAToReg[IR->GetID(IR->GetNode(IROp->Args[0])).Value];
+      if ((After.Reg & 1) == 0 && Available & (1ull << (After.Reg + 1))) {
+        SetReg(CodeNode, PhysicalRegister(GPRClass, After.Reg + 1));
+        return;
+      }
+    }
+
     RegisterClassType OrigClassType = GetRegClassFromNode(IR, IROp);
     bool Pair = OrigClassType == GPRPairClass;
     RegisterClassType ClassType = Pair ? GPRClass : OrigClassType;
