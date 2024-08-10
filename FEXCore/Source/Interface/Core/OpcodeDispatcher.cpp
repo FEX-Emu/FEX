@@ -1441,11 +1441,12 @@ uint32_t OpDispatchBuilder::LoadConstantShift(X86Tables::DecodedOp Op, bool Is1B
 void OpDispatchBuilder::XGetBVOp(OpcodeArgs) {
   Ref Function = LoadGPRRegister(X86State::REG_RCX);
 
-  auto Res = _XGetBV(Function);
-  auto [Result_Lower, Result_Upper] = ExtractPair(OpSize::i32Bit, Res);
+  auto RAX = _AllocateGPR(false);
+  auto RDX = _AllocateGPR(false);
+  _XGetBV(Function, RAX, RDX);
 
-  StoreGPRRegister(X86State::REG_RAX, Result_Lower);
-  StoreGPRRegister(X86State::REG_RDX, Result_Upper);
+  StoreGPRRegister(X86State::REG_RAX, RAX);
+  StoreGPRRegister(X86State::REG_RDX, RDX);
 }
 
 void OpDispatchBuilder::SHLOp(OpcodeArgs) {
