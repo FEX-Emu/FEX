@@ -1182,7 +1182,7 @@
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "CmpPairZ OpSize:#Size, GPRPair:$Src1, GPRPair:$Src2": {
+      "CmpPairZ OpSize:#Size, GPR:$Src1Lo, GPR:$Src1Hi, GPR:$Src2Lo, GPR:$Src2Hi": {
         "Desc": ["Compares register pairs and sets Z accordingly, preserving N/Z/V.",
                  "This accelerates cmpxchg."],
         "HasSideEffects": true,

@@ -232,10 +232,8 @@ DEF_OP(CmpPairZ) {
   mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
 
   // Compare, setting Z and clobbering NzCV
-  const auto Src1 = GetRegPair(Op->Src1.ID());
-  const auto Src2 = GetRegPair(Op->Src2.ID());
-  cmp(EmitSize, Src1.first, Src2.first);
-  ccmp(EmitSize, Src1.second, Src2.second, ARMEmitter::StatusFlags::None, ARMEmitter::Condition::CC_EQ);
+  cmp(EmitSize, GetReg(Op->Src1Lo.ID()), GetReg(Op->Src2Lo.ID()));
+  ccmp(EmitSize, GetReg(Op->Src1Hi.ID()), GetReg(Op->Src2Hi.ID()), ARMEmitter::StatusFlags::None, ARMEmitter::Condition::CC_EQ);
 
   // Restore NzCV
   if (CTX->HostFeatures.SupportsFlagM) {
