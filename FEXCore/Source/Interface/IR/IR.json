@@ -331,12 +331,12 @@
         "HasSideEffects": true
       },
 
-      "GPRPair = CPUID GPR:$Function, GPR:$Leaf": {
+      "CPUID GPR:$Function, GPR:$Leaf, GPR:$OutEAX, GPR:$OutEBX, GPR:$OutECX, GPR:$OutEDX": {
         "Desc": ["Calls in to the CPUID handler function to return emulated CPUID",
-                 "Returns a 128bit GPR pair that fits emulated EAX, EBX, EDX, ECX respectively"
+                 "Returns GPRs for emulated EAX, EBX, EDX, ECX respectively"
                 ],
-        "DestSize": "16",
-        "NumElements": "2"
+        "DestSize": "4",
+        "HasSideEffects": true
       },
       "XGetBV GPR:$Function, GPR:$OutEAX, GPR:$OutEDX": {
         "Desc": ["Calls in to the XCR handler function to return emulated XCR",
