@@ -1741,8 +1741,9 @@ private:
   }
 
   void SetCFDirect(Ref Value, unsigned ValueOffset = 0, bool MustMask = false) {
+    Value = _Xor(OpSize::i64Bit, Value, _InlineConstant(1ull << ValueOffset));
     SetRFLAG(Value, X86State::RFLAG_CF_RAW_LOC, ValueOffset, MustMask);
-    CFInverted = false;
+    CFInverted = true;
   }
 
   void SetCFInverted(Ref Value, unsigned ValueOffset = 0, bool MustMask = false) {
