@@ -2,7 +2,7 @@
 {
   "HostFeatures": ["AVX"],
   "RegData": {
-    "RAX": "0x0000000038b65227"
+    "RAX": "0x00000000f7e7c074"
   }
 }
 %endif
@@ -15,7 +15,7 @@ mov rax, 0
 ; vpblendw all the immediate encodings
 vmovaps ymm0, [rel .random_data + ((i * 32) % 4096)]
 vmovaps ymm1, [rel .random_data2 + ((i * 32) % 4096)]
-vmovaps ymm3, [rel .random_data3 + ((i * 32) % 4096)]
+vmovaps ymm2, [rel .random_data3 + ((i * 32) % 4096)]
 
 vpblendw ymm0, ymm1, ymm2, i
 vmovaps [rel .data_result + (i * 32)], ymm0
