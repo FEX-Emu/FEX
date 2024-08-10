@@ -338,12 +338,10 @@
         "DestSize": "16",
         "NumElements": "2"
       },
-      "GPRPair = XGetBV GPR:$Function": {
-        "Desc": ["Calls in to the XCR handler function to return emulated XCR",
-                 "Returns a 64bit GPR pair that fits emulated EAX, EDX respectively"
-                ],
-        "DestSize": "8",
-        "NumElements": "2"
+      "GPR:$EAX, GPR:$EDX = XGetBV GPR:$Function": {
+        "Desc": ["Calls in to the XCR handler function to return emulated XCR"],
+        "DestSize": "4",
+        "HasSideEffects": true
       }
     },
     "Moves": {

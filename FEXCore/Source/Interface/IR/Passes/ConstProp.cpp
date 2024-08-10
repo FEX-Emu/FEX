@@ -502,12 +502,11 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
 
     uint64_t ConstantFunction {};
     if (IREmit->IsValueConstant(Op->Function, &ConstantFunction) && CPUID->DoesXCRFunctionReportConstantData(ConstantFunction)) {
-      const auto ConstantXCRResult = CPUID->RunXCRFunction(ConstantFunction);
+      const auto Result = CPUID->RunXCRFunction(ConstantFunction);
       IREmit->SetWriteCursor(CodeNode);
-      auto ElementPair =
-        IREmit->_CreateElementPair(IR::OpSize::i64Bit, IREmit->_Constant(ConstantXCRResult.eax), IREmit->_Constant(ConstantXCRResult.edx));
-      // Replace all xgetbv uses with this inline one
-      IREmit->ReplaceAllUsesWith(CodeNode, ElementPair);
+      IREmit->ReplaceAllUsesWith(CurrentIR.GetNode(Op->OutEAX), IREmit->_Constant(Result.eax));
+      IREmit->ReplaceAllUsesWith(CurrentIR.GetNode(Op->OutEDX), IREmit->_Constant(Result.edx));
+      IREmit->Remove(CodeNode);
     }
     break;
   }
