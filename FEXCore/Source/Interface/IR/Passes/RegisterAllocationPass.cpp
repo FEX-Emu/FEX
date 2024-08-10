@@ -360,22 +360,6 @@ private:
     SSAToReg[Index] = Reg;
   };
 
-  // Get the mask of available registers for a given register class
-  uint32_t AvailableMask(RegisterClass* Class, bool Pair) {
-    uint32_t Available = Class->Available;
-
-    if (Pair) {
-      // Only choose base register R if R and R + 1 are both free
-      Available &= (Available >> 1);
-
-      // Only consider aligned registers in the pair region
-      constexpr uint32_t EVEN_BITS = 0x55555555;
-      Available &= (EVEN_BITS & ((1u << PairRegs) - 1));
-    }
-
-    return Available;
-  };
-
   // Assign a register for a given Node, spilling if necessary.
   void AssignReg(IROp_Header* IROp, Ref CodeNode, IROp_Header* Pivot) {
     const uint32_t Node = IR->GetID(CodeNode).Value;
@@ -408,7 +392,15 @@ private:
     // Try to coalesce reserved pairs. Just a heuristic to remove some moves.
     if (IROp->Op == OP_ALLOCATEGPR) {
       if (IROp->C<IROp_AllocateGPR>()->ForPair) {
-        uint32_t Available = AvailableMask(&Classes[GPRClass], true);
+        uint32_t Available = Classes[GPRClass].Available;
+
+        // Only choose base register R if R and R + 1 are both free
+        Available &= (Available >> 1);
+
+        // Only consider aligned registers in the pair region
+        constexpr uint32_t EVEN_BITS = 0x55555555;
+        Available &= (EVEN_BITS & ((1u << PairRegs) - 1));
+
         if (Available) {
           unsigned Reg = std::countr_zero(Available);
           SetReg(CodeNode, PhysicalRegister(GPRClass, Reg));
@@ -416,7 +408,7 @@ private:
         }
       }
     } else if (IROp->Op == OP_ALLOCATEGPRAFTER) {
-      uint32_t Available = AvailableMask(&Classes[GPRClass], false);
+      uint32_t Available = Classes[GPRClass].Available;
       auto After = SSAToReg[IR->GetID(IR->GetNode(IROp->Args[0])).Value];
       if ((After.Reg & 1) == 0 && Available & (1ull << (After.Reg + 1))) {
         SetReg(CodeNode, PhysicalRegister(GPRClass, After.Reg + 1));
@@ -424,8 +416,7 @@ private:
       }
     }
 
-    RegisterClassType OrigClassType = GetRegClassFromNode(IR, IROp);
-    RegisterClassType ClassType = OrigClassType;
+    RegisterClassType ClassType = GetRegClassFromNode(IR, IROp);
     RegisterClass* Class = &Classes[ClassType];
 
     // Spill to make room in the register file. Free registers need not be
@@ -436,11 +427,9 @@ private:
     }
 
     // Assign a free register in the appropriate class.
-    uint32_t Available = AvailableMask(Class, false);
-    LOGMAN_THROW_AA_FMT(Available != 0, "Post-condition of spilling");
-
-    unsigned Reg = std::countr_zero(Available);
-    SetReg(CodeNode, PhysicalRegister(OrigClassType, Reg));
+    LOGMAN_THROW_AA_FMT(Class->Available != 0, "Post-condition of spilling");
+    unsigned Reg = std::countr_zero(Class->Available);
+    SetReg(CodeNode, PhysicalRegister(ClassType, Reg));
   };
 
   bool IsRAOp(IROps Op) {
