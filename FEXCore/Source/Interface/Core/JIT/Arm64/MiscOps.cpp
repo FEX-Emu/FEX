@@ -254,18 +254,7 @@ DEF_OP(ProcessorID) {
 DEF_OP(RDRAND) {
   auto Op = IROp->C<IR::IROp_RDRAND>();
 
-  // Results are in x0, x1
-  // Results want to be in a i64v2 vector
-  auto Dst = GetRegPair(Node);
-
-  if (Op->GetReseeded) {
-    mrs(Dst.first, ARMEmitter::SystemRegister::RNDRRS);
-  } else {
-    mrs(Dst.first, ARMEmitter::SystemRegister::RNDR);
-  }
-
-  // If the rng number is valid then NZCV is 0b0000, otherwise NZCV is 0b0100
-  cset(ARMEmitter::Size::i64Bit, Dst.second, ARMEmitter::Condition::CC_NE);
+  mrs(GetReg(Node), Op->GetReseeded ? ARMEmitter::SystemRegister::RNDRRS : ARMEmitter::SystemRegister::RNDR);
 }
 
 DEF_OP(Yield) {

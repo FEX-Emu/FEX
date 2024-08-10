@@ -4922,19 +4922,16 @@ void OpDispatchBuilder::CRC32(OpcodeArgs) {
 
 template<bool Reseed>
 void OpDispatchBuilder::RDRANDOp(OpcodeArgs) {
-  auto Res = _RDRAND(Reseed);
-  auto [Result_Lower, Result_Upper] = ExtractPair(OpSize::i64Bit, Res);
+  StoreResult(GPRClass, Op, _RDRAND(Reseed), -1);
 
-  StoreResult(GPRClass, Op, Result_Lower, -1);
+  // If the rng number is valid then NZCV is 0b0000, otherwise NZCV is 0b0100
+  auto Invalid = GetRFLAG(X86State::RFLAG_ZF_RAW_LOC);
 
-  // OF, SF, ZF, AF, PF all zero
+  // OF, SF, ZF, AF, PF all zero. CF indicates if valid.
   ZeroNZCV();
   ZeroPF_AF();
-
-  // CF is set to the incoming source
-  SetCFDirect(Result_Upper);
+  SetCFInverted(Invalid);
 }
-
 
 void OpDispatchBuilder::BreakOp(OpcodeArgs, FEXCore::IR::BreakDefinition BreakDefinition) {
   const uint8_t GPRSize = CTX->GetGPRSize();

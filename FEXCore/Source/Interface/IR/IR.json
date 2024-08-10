@@ -252,17 +252,16 @@
           "WalkFindRegClass($Value) != GPRPairClass"
         ]
       },
-      "GPRPair = RDRAND i1:$GetReseeded": {
+      "GPR = RDRAND i1:$GetReseeded": {
         "Desc": ["Uses the hardware random number generator to generate a 64bit number",
                  "The boolean argument asks if we should be reading the reseeded number or not",
                  "Reseeded RNG calculation is more expensive and will be heavier to use",
-                 "The first GPR pair element is the 64-bit number",
-                 "The second GPR pair element is a bool if the number is valid",
+                 "Returns the 64-bit number",
+                 "Sets the Z flag if the number is valid.",
                  "RNG hardware is allowed to fail early and return. Software must always check this"
                 ],
-        "ImplicitFlagClobber": true,
-        "DestSize": "16",
-        "NumElements": "2"
+        "HasSideEffects": true,
+        "DestSize": "8"
       },
       "Yield": {
         "HasSideEffects": true,
