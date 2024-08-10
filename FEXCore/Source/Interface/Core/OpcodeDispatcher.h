@@ -2300,6 +2300,8 @@ private:
   void CalculatePF(Ref Res);
   void CalculateAF(Ref Src1, Ref Src2);
 
+  Ref IncrementByCarry(OpSize OpSize, Ref Src);
+
   void CalculateOF(uint8_t SrcSize, Ref Res, Ref Src1, Ref Src2, bool Sub);
   Ref CalculateFlags_ADC(uint8_t SrcSize, Ref Src1, Ref Src2);
   Ref CalculateFlags_SBB(uint8_t SrcSize, Ref Src1, Ref Src2);

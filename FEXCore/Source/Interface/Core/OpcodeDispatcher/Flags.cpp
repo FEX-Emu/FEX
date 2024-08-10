@@ -270,6 +270,11 @@ void OpDispatchBuilder::CalculateDeferredFlags() {
   NZCVDirty = false;
 }
 
+Ref OpDispatchBuilder::IncrementByCarry(OpSize OpSize, Ref Src) {
+  RectifyCarryInvert(false);
+  return _Adc(OpSize, _Constant(0), Src);
+}
+
 Ref OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, Ref Src1, Ref Src2) {
   auto Zero = _Constant(0);
   auto One = _Constant(1);
