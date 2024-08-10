@@ -4925,12 +4925,20 @@ void OpDispatchBuilder::RDRANDOp(OpcodeArgs) {
   StoreResult(GPRClass, Op, _RDRAND(Reseed), -1);
 
   // If the rng number is valid then NZCV is 0b0000, otherwise NZCV is 0b0100
-  auto Invalid = GetRFLAG(X86State::RFLAG_ZF_RAW_LOC);
+  auto CF_inv = GetRFLAG(X86State::RFLAG_ZF_RAW_LOC);
 
   // OF, SF, ZF, AF, PF all zero. CF indicates if valid.
-  ZeroNZCV();
   ZeroPF_AF();
-  SetCFInverted(Invalid);
+
+  if (!CTX->HostFeatures.SupportsFlagM) {
+    ZeroNZCV();
+    SetCFInverted(CF_inv);
+  } else {
+    // Accelerated path. Invalid is 0 or 1, so set NZCV with a single rmif.
+    HandleNZCVWrite(1u << 29 /* C */);
+    _RmifNZCV(CF_inv, (64 - 1) /* rotate bit 0 into bit 1 = C */, 0xf);
+    CFInverted = true;
+  }
 }
 
 void OpDispatchBuilder::BreakOp(OpcodeArgs, FEXCore::IR::BreakDefinition BreakDefinition) {
