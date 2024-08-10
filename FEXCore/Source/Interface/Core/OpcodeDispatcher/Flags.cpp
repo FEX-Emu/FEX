@@ -283,10 +283,8 @@ Ref OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, Ref Src1, Ref Src2) {
 
   CalculateAF(Src1, Src2);
 
-  // Adds are the same across x86, so rectify to uninverted carry.
-  RectifyCarryInvert(false);
-
   if (SrcSize >= 4) {
+    RectifyCarryInvert(false);
     HandleNZCV_RMW();
     Res = _AdcWithFlags(OpSize, Src1, Src2);
     CFInverted = false;
@@ -296,7 +294,7 @@ Ref OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, Ref Src1, Ref Src2) {
 
     // Note that we do not extend Src2PlusCF, since we depend on proper
     // 32-bit arithmetic to correctly handle the Src2 = 0xffff case.
-    Ref Src2PlusCF = _Adc(OpSize, _Constant(0), Src2);
+    Ref Src2PlusCF = IncrementByCarry(OpSize, Src2);
 
     // Need to zero-extend for the comparison.
     Res = _Add(OpSize, Src1, Src2PlusCF);
