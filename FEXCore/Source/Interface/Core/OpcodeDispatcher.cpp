@@ -3992,8 +3992,9 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   // This will write to memory! Careful!
   // Third operand must be a calculated guest memory address
 
-  Ref CASResult = _CASPair(IR::SizeToOpSize(Size * 2), Expected_Lower, Expected_Upper, Desired_Lower, Desired_Upper, Src1);
-  auto [Result_Lower, Result_Upper] = ExtractPair(IR::SizeToOpSize(Size), CASResult);
+  Ref Result_Lower = _AllocateGPR();
+  Ref Result_Upper = _AllocateGPR();
+  _CASPair(IR::SizeToOpSize(Size), Expected_Lower, Expected_Upper, Desired_Lower, Desired_Upper, Src1, Result_Lower, Result_Upper);
 
   HandleNZCV_RMW();
   _CmpPairZ(IR::SizeToOpSize(Size), Result_Lower, Result_Upper, Expected_Lower, Expected_Upper);

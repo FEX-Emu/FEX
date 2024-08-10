@@ -15,7 +15,8 @@ DEF_OP(CASPair) {
   auto Op = IROp->C<IR::IROp_CASPair>();
   LOGMAN_THROW_AA_FMT(IROp->ElementSize == 4 || IROp->ElementSize == 8, "Wrong element size");
   // Size is the size of each pair element
-  auto Dst = GetRegPair(Node);
+  auto Dst0 = GetReg(Op->OutLo.ID());
+  auto Dst1 = GetReg(Op->OutHi.ID());
   auto Expected0 = GetReg(Op->ExpectedLo.ID());
   auto Expected1 = GetReg(Op->ExpectedHi.ID());
   auto Desired0 = GetReg(Op->DesiredLo.ID());
@@ -35,8 +36,8 @@ DEF_OP(CASPair) {
     mov(EmitSize, TMP4, Expected1);
 
     caspal(EmitSize, TMP3, TMP4, Desired0, Desired1, MemSrc);
-    mov(EmitSize, Dst.first, TMP3.R());
-    mov(EmitSize, Dst.second, TMP4.R());
+    mov(EmitSize, Dst0, TMP3.R());
+    mov(EmitSize, Dst1, TMP4.R());
   } else {
     // Save NZCV so we don't have to mark this op as clobbering NZCV (the
     // SupportsAtomics does not clobber atomics and this !SupportsAtomics path
@@ -57,14 +58,14 @@ DEF_OP(CASPair) {
     b(ARMEmitter::Condition::CC_NE, &LoopNotExpected);
     stlxp(EmitSize, TMP2, Desired0, Desired1, MemSrc);
     cbnz(EmitSize, TMP2, &LoopTop);
-    mov(EmitSize, Dst.first, Expected0);
-    mov(EmitSize, Dst.second, Expected1);
+    mov(EmitSize, Dst0, Expected0);
+    mov(EmitSize, Dst1, Expected1);
 
     b(&LoopExpected);
 
     Bind(&LoopNotExpected);
-    mov(EmitSize, Dst.first, TMP2.R());
-    mov(EmitSize, Dst.second, TMP3.R());
+    mov(EmitSize, Dst0, TMP2.R());
+    mov(EmitSize, Dst1, TMP3.R());
     // exclusive monitor needs to be cleared here
     // Might have hit the case where ldaxr was hit but stlxr wasn't
     clrex();
