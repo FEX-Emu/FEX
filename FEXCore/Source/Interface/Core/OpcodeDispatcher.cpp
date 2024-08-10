@@ -3309,8 +3309,9 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
       SrcAddr = _Add(OpSize::i64Bit, SrcAddr, SrcSegment);
     }
 
-    auto Result = _MemCpy(CTX->IsAtomicTSOEnabled(), Size, DstAddr, SrcAddr, Counter, LoadDir(1));
-    auto [Result_Dst, Result_Src] = ExtractPair(OpSize::i64Bit, Result);
+    Ref Result_Src = _AllocateGPR();
+    Ref Result_Dst = _AllocateGPR();
+    _MemCpy(CTX->IsAtomicTSOEnabled(), Size, DstAddr, SrcAddr, Counter, LoadDir(1), Result_Dst, Result_Src);
 
     if (DstSegment) {
       Result_Dst = _Sub(OpSize::i64Bit, Result_Dst, DstSegment);
