@@ -415,11 +415,11 @@ void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, Ref Res, Ref High) {
   auto SignBit = _Sbfe(OpSize::i64Bit, 1, SrcSize * 8 - 1, Res);
   _SubNZCV(OpSize::i64Bit, High, SignBit);
 
-  // If High = SignBit, then sets to nZcv. Else sets to nzCV. Since SF/ZF
-  // undefined, this does what we need.
+  // If High = SignBit, then sets to nZCv. Else sets to nzcV. Since SF/ZF
+  // undefined, this does what we need after inverting carry.
   auto Zero = _Constant(0);
-  _CondAddNZCV(OpSize::i64Bit, Zero, Zero, CondClassType {COND_EQ}, 0x3 /* nzCV */);
-  CFInverted = false; // TODO
+  _CondSubNZCV(OpSize::i64Bit, Zero, Zero, CondClassType {COND_EQ}, 0x1 /* nzcV */);
+  CFInverted = true;
 }
 
 void OpDispatchBuilder::CalculateFlags_UMUL(Ref High) {
@@ -433,10 +433,10 @@ void OpDispatchBuilder::CalculateFlags_UMUL(Ref High) {
   // The result register will be all zero if it can't fit due to how multiplication behaves
   _SubNZCV(Size, High, Zero);
 
-  // If High = 0, then sets to nZcv. Else sets to nzCV. Since SF/ZF undefined,
+  // If High = 0, then sets to nZCv. Else sets to nzcV. Since SF/ZF undefined,
   // this does what we need.
-  _CondAddNZCV(Size, Zero, Zero, CondClassType {COND_EQ}, 0x3 /* nzCV */);
-  CFInverted = false; // TODO
+  _CondSubNZCV(Size, Zero, Zero, CondClassType {COND_EQ}, 0x1 /* nzcV */);
+  CFInverted = true;
 }
 
 void OpDispatchBuilder::CalculateFlags_Logical(uint8_t SrcSize, Ref Res, Ref Src1, Ref Src2) {
