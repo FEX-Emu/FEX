@@ -63,8 +63,13 @@ void InvalidationTracker::InvalidateContainingSection(uint64_t Address, bool Fre
 }
 
 void InvalidationTracker::InvalidateAlignedInterval(uint64_t Address, uint64_t Size, bool Free) {
+  if (!Address) {
+    // Match the Windows behaviour when passed a NULL base address.
+    Size = std::numeric_limits<uint64_t>::max();
+  }
+
   const auto AlignedBase = Address & FEXCore::Utils::FEX_PAGE_MASK;
-  const auto AlignedSize = (Address - AlignedBase + Size + FEXCore::Utils::FEX_PAGE_SIZE - 1) & FEXCore::Utils::FEX_PAGE_MASK;
+  const auto AlignedSize = std::max(Size, (Address - AlignedBase + Size + FEXCore::Utils::FEX_PAGE_SIZE - 1) & FEXCore::Utils::FEX_PAGE_MASK);
 
   {
     std::scoped_lock Lock(CTX.GetCodeInvalidationMutex());
