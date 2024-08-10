@@ -3983,7 +3983,6 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
 
   Ref Desired_Lower = LoadGPRRegister(X86State::REG_RBX, Size);
   Ref Desired_Upper = LoadGPRRegister(X86State::REG_RCX, Size);
-  Ref Desired = _CreateElementPair(IR::SizeToOpSize(Size * 2), Desired_Lower, Desired_Upper);
 
   // ssa0 = Expected
   // ssa1 = Desired
@@ -3994,7 +3993,7 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   // This will write to memory! Careful!
   // Third operand must be a calculated guest memory address
 
-  Ref CASResult = _CASPair(IR::SizeToOpSize(Size * 2), Expected, Desired, Src1);
+  Ref CASResult = _CASPair(IR::SizeToOpSize(Size * 2), Expected_Lower, Expected_Upper, Desired_Lower, Desired_Upper, Src1);
 
   HandleNZCV_RMW();
   _CmpPairZ(IR::SizeToOpSize(Size), CASResult, Expected);

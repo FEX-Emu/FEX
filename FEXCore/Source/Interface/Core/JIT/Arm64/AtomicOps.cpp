@@ -16,16 +16,25 @@ DEF_OP(CASPair) {
   LOGMAN_THROW_AA_FMT(IROp->ElementSize == 4 || IROp->ElementSize == 8, "Wrong element size");
   // Size is the size of each pair element
   auto Dst = GetRegPair(Node);
-  auto Expected = GetRegPair(Op->Expected.ID());
-  auto Desired = GetRegPair(Op->Desired.ID());
+  auto Expected0 = GetReg(Op->ExpectedLo.ID());
+  auto Expected1 = GetReg(Op->ExpectedHi.ID());
+  auto Desired0 = GetReg(Op->DesiredLo.ID());
+  auto Desired1 = GetReg(Op->DesiredHi.ID());
   auto MemSrc = GetReg(Op->Addr.ID());
 
   const auto EmitSize = IROp->ElementSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
   if (CTX->HostFeatures.SupportsAtomics) {
-    mov(EmitSize, TMP3, Expected.first);
-    mov(EmitSize, TMP4, Expected.second);
+    if (Desired1.Idx() != (Desired0.Idx() + 1) || Desired0.Idx() & 1) {
+      mov(EmitSize, TMP1, Desired0);
+      mov(EmitSize, TMP2, Desired1);
+      Desired0 = TMP1;
+      Desired1 = TMP2;
+    }
 
-    caspal(EmitSize, TMP3, TMP4, Desired.first, Desired.second, MemSrc);
+    mov(EmitSize, TMP3, Expected0);
+    mov(EmitSize, TMP4, Expected1);
+
+    caspal(EmitSize, TMP3, TMP4, Desired0, Desired1, MemSrc);
     mov(EmitSize, Dst.first, TMP3.R());
     mov(EmitSize, Dst.second, TMP4.R());
   } else {
@@ -43,13 +52,13 @@ DEF_OP(CASPair) {
 
     // This instruction sequence must be synced with HandleCASPAL_Armv8.
     ldaxp(EmitSize, TMP2, TMP3, MemSrc);
-    cmp(EmitSize, TMP2, Expected.first);
-    ccmp(EmitSize, TMP3, Expected.second, ARMEmitter::StatusFlags::None, ARMEmitter::Condition::CC_EQ);
+    cmp(EmitSize, TMP2, Expected0);
+    ccmp(EmitSize, TMP3, Expected1, ARMEmitter::StatusFlags::None, ARMEmitter::Condition::CC_EQ);
     b(ARMEmitter::Condition::CC_NE, &LoopNotExpected);
-    stlxp(EmitSize, TMP2, Desired.first, Desired.second, MemSrc);
+    stlxp(EmitSize, TMP2, Desired0, Desired1, MemSrc);
     cbnz(EmitSize, TMP2, &LoopTop);
-    mov(EmitSize, Dst.first, Expected.first);
-    mov(EmitSize, Dst.second, Expected.second);
+    mov(EmitSize, Dst.first, Expected0);
+    mov(EmitSize, Dst.second, Expected1);
 
     b(&LoopExpected);
 
