@@ -1433,6 +1433,12 @@ DEF_OP(NZCVSelect) {
   }
 }
 
+DEF_OP(NZCVSelectIncrement) {
+  auto Op = IROp->C<IR::IROp_NZCVSelectIncrement>();
+
+  csinc(ConvertSize(IROp), GetReg(Node), GetReg(Op->TrueVal.ID()), GetZeroableReg(Op->FalseVal), MapCC(Op->Cond));
+}
+
 DEF_OP(VExtractToGPR) {
   const auto Op = IROp->C<IR::IROp_VExtractToGPR>();
   const auto OpSize = IROp->Size;
