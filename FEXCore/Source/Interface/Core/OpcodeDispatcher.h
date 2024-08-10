@@ -1652,7 +1652,19 @@ private:
 
   void SetNZ_ZeroCV(unsigned SrcSize, Ref Res) {
     HandleNZ00Write();
-    _TestNZ(IR::SizeToOpSize(SrcSize), Res, Res);
+
+    // x - 0 = x. NZ set according to Res. C always set. V always unset. This
+    // matches what we want since we want carry inverted.
+    //
+    // This is currently worse for 8/16-bit, but that should be optimized. TODO
+    if (SrcSize >= 4) {
+      _SubNZCV(IR::SizeToOpSize(SrcSize), Res, _Constant(0));
+      PossiblySetNZCVBits |= 1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC);
+      CFInverted = true;
+    } else {
+      _TestNZ(IR::SizeToOpSize(SrcSize), Res, Res);
+      CFInverted = false;
+    }
   }
 
   void InsertNZCV(unsigned BitOffset, Ref Value, signed FlagOffset, bool MustMask) {
