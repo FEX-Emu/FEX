@@ -2123,14 +2123,6 @@ private:
     StoreResult(GPRClass, Op, Result, -1);
   }
 
-  std::pair<Ref, Ref> ExtractPair(OpSize Size, Ref Pair) {
-    // Extract high first. This is a hack to improve coalescing.
-    Ref Hi = _ExtractElementPair(Size, Pair, 1);
-    Ref Lo = _ExtractElementPair(Size, Pair, 0);
-
-    return std::make_pair(Lo, Hi);
-  }
-
   // Helper to derive Dest by a given builder-using Expression with the opcode
   // replaced with NewOp. Useful for generic building code. Not safe in general.
   // but does the right handling of ImplicitFlagClobber at least and must be
