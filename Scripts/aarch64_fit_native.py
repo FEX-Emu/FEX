@@ -3,7 +3,7 @@ import re
 import sys
 import subprocess
 try:
-    from packaging import version as version_check
+    from packaging.version import Version as version_check
 except:
     from pkg_resources import parse_version as version_check
 
