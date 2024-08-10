@@ -44,7 +44,7 @@
     "  * Textual class to group IR ops by type",
     "* DestClass",
     "  * SSA class of the return when the return type is `SSA`",
-    "  * Not used if the destination type is one of {GPR, GPRPair, FPR}",
+    "  * Not used if the destination type is one of {GPR, FPR}",
     "* DestSize",
     "  * The size of the destination type",
     "* EmitValidation",
@@ -81,7 +81,6 @@
     "constexpr FEXCore::IR::RegisterClassType GPRFixedClass {1}",
     "constexpr FEXCore::IR::RegisterClassType FPRClass {2}",
     "constexpr FEXCore::IR::RegisterClassType FPRFixedClass {3}",
-    "constexpr FEXCore::IR::RegisterClassType GPRPairClass {4}",
     "constexpr FEXCore::IR::RegisterClassType ComplexClass {5}",
     "constexpr FEXCore::IR::RegisterClassType InvalidClass {7}",
     "",
@@ -146,7 +145,6 @@
     "OpSize": "FEXCore::IR::OpSize",
     "SSA": "OrderedNode*",
     "GPR": "OrderedNode*",
-    "GPRPair": "OrderedNode*",
     "FPR": "OrderedNode*",
     "FenceType": "FenceType",
     "RegisterClass": "RegisterClassType",
@@ -245,12 +243,7 @@
       "Print SSA:$Value": {
         "HasSideEffects": true,
         "Desc": ["Debug operation that prints an SSA value to the console",
-                 "May only print 64bits of the value",
-                 "Depending on backend, may only support GPR printing"
-                ],
-        "EmitValidation": [
-          "WalkFindRegClass($Value) != GPRPairClass"
-        ]
+                 "May only print 64bits of the value"]
       },
       "GPR = AllocateGPR i1:$ForPair": {
         "Desc": ["Silly pseudo-instruction to allocate a register for a future destination",
@@ -920,14 +913,6 @@
         "DestSize": "8"
       },
 
-      "GPRPair = TruncElementPair GPRPair:$Pair, u8:#ByteSize": {
-        "Desc": [
-          "Truncates each element of a pair to the destination size",
-          "TODO: This IR op should get removed"
-        ],
-        "DestSize": "ByteSize * 2",
-        "NumElements": "2"
-      },
       "GPR = CycleCounter": {
         "Desc": ["Returns the host 64bit cycle counter",
                  "Useful when emulating rdtsc",
