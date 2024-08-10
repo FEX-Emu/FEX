@@ -1743,7 +1743,8 @@ DEF_OP(MemCpy) {
     DirectionReg = GetReg(Op->Direction.ID());
   }
 
-  auto Dst = GetRegPair(Node);
+  auto Dst0 = GetReg(Op->OutDstAddress.ID());
+  auto Dst1 = GetReg(Op->OutSrcAddress.ID());
   // If Direction > 0 then:
   //   MemRegDest is incremented (by size)
   //   MemRegSrc is incremented (by size)
@@ -1940,40 +1941,40 @@ DEF_OP(MemCpy) {
     if (SizeDirection >= 0) {
       switch (OpSize) {
       case 1:
-        add(Dst.first.X(), TMP1, TMP3);
-        add(Dst.second.X(), TMP2, TMP3);
+        add(Dst0.X(), TMP1, TMP3);
+        add(Dst1.X(), TMP2, TMP3);
         break;
       case 2:
-        add(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 1);
-        add(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 1);
+        add(Dst0.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 1);
+        add(Dst1.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 1);
         break;
       case 4:
-        add(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 2);
-        add(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 2);
+        add(Dst0.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 2);
+        add(Dst1.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 2);
         break;
       case 8:
-        add(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 3);
-        add(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 3);
+        add(Dst0.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 3);
+        add(Dst1.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 3);
         break;
       default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize); break;
       }
     } else {
       switch (OpSize) {
       case 1:
-        sub(Dst.first.X(), TMP1, TMP3);
-        sub(Dst.second.X(), TMP2, TMP3);
+        sub(Dst0.X(), TMP1, TMP3);
+        sub(Dst1.X(), TMP2, TMP3);
         break;
       case 2:
-        sub(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 1);
-        sub(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 1);
+        sub(Dst0.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 1);
+        sub(Dst1.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 1);
         break;
       case 4:
-        sub(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 2);
-        sub(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 2);
+        sub(Dst0.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 2);
+        sub(Dst1.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 2);
         break;
       case 8:
-        sub(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 3);
-        sub(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 3);
+        sub(Dst0.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 3);
+        sub(Dst1.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 3);
         break;
       default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize); break;
       }

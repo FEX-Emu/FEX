@@ -609,13 +609,12 @@
         "HasSideEffects": true,
         "DestSize": "8"
       },
-      "GPRPair = MemCpy i1:$IsAtomic, u8:$Size, GPR:$Dest, GPR:$Src, GPR:$Length, GPR:$Direction": {
+      "MemCpy i1:$IsAtomic, u8:$Size, GPR:$Dest, GPR:$Src, GPR:$Length, GPR:$Direction, GPR:$OutDstAddress, GPR:$OutSrcAddress": {
         "Desc": ["Duplicates behaviour of x86 MOVS repeat",
                  "Returns the final addresses of destination and src addresses after they have been incremented or decremented"
                 ],
         "HasSideEffects": true,
-        "DestSize": "16",
-        "NumElements": "2"
+        "DestSize": "8"
       },
       "CacheLineClear GPR:$Addr, i1:$Serialize": {
         "Desc": ["Does a 64 byte cacheline clear at the address specified",
