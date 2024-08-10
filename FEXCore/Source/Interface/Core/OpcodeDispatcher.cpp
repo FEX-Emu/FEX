@@ -4311,7 +4311,7 @@ AddressMode OpDispatchBuilder::SelectAddressMode(AddressMode A, bool AtomicTSO, 
         return {
           .Base = A.Base,
           .Index = _Constant(A.Offset),
-          .IndexType = (Const_16K && A.Offset < 0) ? MEM_OFFSET_SXTW : MEM_OFFSET_SXTX,
+          .IndexType = MEM_OFFSET_SXTX,
           .IndexScale = 1,
         };
       }
