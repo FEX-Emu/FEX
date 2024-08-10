@@ -3977,11 +3977,12 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   // If this is a memory location then we want the pointer to it
   Ref Src1 = MakeSegmentAddress(Op, Op->Dest);
 
-  Ref Expected_Lower = LoadGPRRegister(X86State::REG_RAX, Size);
-  Ref Expected_Upper = LoadGPRRegister(X86State::REG_RDX, Size);
-
-  Ref Desired_Lower = LoadGPRRegister(X86State::REG_RBX, Size);
-  Ref Desired_Upper = LoadGPRRegister(X86State::REG_RCX, Size);
+  // Load the full 64-bit registers, all the users ignore the upper 32-bits for
+  // 32-bit only cmpxchg. This saves some zero extension.
+  Ref Expected_Lower = LoadGPRRegister(X86State::REG_RAX);
+  Ref Expected_Upper = LoadGPRRegister(X86State::REG_RDX);
+  Ref Desired_Lower = LoadGPRRegister(X86State::REG_RBX);
+  Ref Desired_Upper = LoadGPRRegister(X86State::REG_RCX);
 
   // ssa0 = Expected
   // ssa1 = Desired
