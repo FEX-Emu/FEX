@@ -13,7 +13,7 @@
   },
   "Instructions": {
     "Block1": {
-      "ExpectedInstructionCount": 25782,
+      "ExpectedInstructionCount": 25781,
       "x86Insts": [
         "sub esp,0x118",
         "fld dword [ecx + 0x1084]",
@@ -26707,13 +26707,12 @@
         "ldr w20, [x5, #4096]",
         "eor w27, w20, w5",
         "subs w26, w20, w5",
-        "cfinv",
         "add w4, w5, #0x800 (2048)",
         "strb wzr, [x28, #1298]"
       ]
     },
     "Block2": {
-      "ExpectedInstructionCount": 16635,
+      "ExpectedInstructionCount": 16636,
       "x86Insts": [
         "mov eax,dword [ebp + 0x8]",
         "fld dword [eax + 0x40]",
@@ -43981,6 +43980,7 @@
         "mov x8, x9",
         "ldr w9, [x8]",
         "add x8, x8, #0x4 (4)",
+        "cfinv",
         "strb wzr, [x28, #1298]"
       ]
     },
@@ -58298,7 +58298,7 @@
       ]
     },
     "Block5": {
-      "ExpectedInstructionCount": 284,
+      "ExpectedInstructionCount": 283,
       "x86Insts": [
         "mov ebx,dword [eax + 0x68]",
         "fld dword [esi + 0x2c]",
@@ -58675,7 +58675,6 @@
         "ldr w4, [x9, #104]",
         "mvn w27, w8",
         "subs w26, w8, #0x14 (20)",
-        "cfinv",
         "mov x8, x26",
         "add w20, w8, #0x10 (16)",
         "str s2, [x20]",
@@ -59337,7 +59336,7 @@
       ]
     },
     "Block7": {
-      "ExpectedInstructionCount": 7397,
+      "ExpectedInstructionCount": 7396,
       "x86Insts": [
         "fld dword [ecx + 0xc]",
         "fld dword [ecx + 0x18]",
@@ -64925,7 +64924,6 @@
         "add w4, w4, #0x18 (24)",
         "add w5, w5, #0x4 (4)",
         "subs w26, w6, #0x1 (1)",
-        "cfinv",
         "mov x27, x6",
         "mov x6, x26",
         "add w12, w8, #0x44 (68)",
@@ -66955,7 +66953,7 @@
       ]
     },
     "Block8": {
-      "ExpectedInstructionCount": 6590,
+      "ExpectedInstructionCount": 6589,
       "x86Insts": [
         "movzx eax,word [esi + edx*0x8]",
         "fld dword [esi + edx*0x8 + 0x4]",
@@ -71719,7 +71717,6 @@
         "ldr w21, [x8, #28]",
         "eor w27, w6, w21",
         "subs w26, w6, w21",
-        "cfinv",
         "ldr s2, [x8, #196]",
         "mrs x0, nzcv",
         "str w0, [x28, #1000]",

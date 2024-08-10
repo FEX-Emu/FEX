@@ -528,10 +528,10 @@
         "mov w27, #0x0",
         "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
-        "cset x21, eq",
-        "tst w20, w20",
+        "cset x21, ne",
+        "cmp w20, #0x0 (0)",
         "mrs x20, nzcv",
-        "orr w20, w20, w21, lsl #29",
+        "bfi w20, w21, #29, #1",
         "msr nzcv, x20"
       ]
     },
@@ -560,10 +560,10 @@
         "addv s2, v2.4s",
         "mov w21, v2.s[0]",
         "cmp x21, #0x0 (0)",
-        "cset x21, eq",
-        "tst w20, w20",
+        "cset x21, ne",
+        "cmp w20, #0x0 (0)",
         "mrs x20, nzcv",
-        "orr w20, w20, w21, lsl #29",
+        "bfi w20, w21, #29, #1",
         "msr nzcv, x20"
       ]
     },
@@ -586,10 +586,10 @@
         "mov w27, #0x0",
         "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
-        "cset x21, eq",
-        "tst w20, w20",
+        "cset x21, ne",
+        "cmp w20, #0x0 (0)",
         "mrs x20, nzcv",
-        "orr w20, w20, w21, lsl #29",
+        "bfi w20, w21, #29, #1",
         "msr nzcv, x20"
       ]
     },
@@ -618,10 +618,10 @@
         "addp v2.2d, v2.2d, v2.2d",
         "mov x21, v2.d[0]",
         "cmp x21, #0x0 (0)",
-        "cset x21, eq",
-        "tst w20, w20",
+        "cset x21, ne",
+        "cmp w20, #0x0 (0)",
         "mrs x20, nzcv",
-        "orr w20, w20, w21, lsl #29",
+        "bfi w20, w21, #29, #1",
         "msr nzcv, x20"
       ]
     },
@@ -693,10 +693,10 @@
         "mov w27, #0x0",
         "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
-        "cset x21, eq",
-        "tst w20, w20",
+        "cset x21, ne",
+        "cmp w20, #0x0 (0)",
         "mrs x20, nzcv",
-        "orr w20, w20, w21, lsl #29",
+        "bfi w20, w21, #29, #1",
         "msr nzcv, x20"
       ]
     },
@@ -721,10 +721,10 @@
         "mov w27, #0x0",
         "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
-        "cset x21, eq",
-        "tst w20, w20",
+        "cset x21, ne",
+        "cmp w20, #0x0 (0)",
         "mrs x20, nzcv",
-        "orr w20, w20, w21, lsl #29",
+        "bfi w20, w21, #29, #1",
         "msr nzcv, x20"
       ]
     },

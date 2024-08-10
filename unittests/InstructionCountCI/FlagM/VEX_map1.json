@@ -15,7 +15,7 @@
   },
   "Instructions": {
     "vucomiss xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map 1 0b00 0x2e 128-bit"
       ],
@@ -23,12 +23,11 @@
         "fcmp s16, s17",
         "mov w27, #0x0",
         "cset w26, vc",
-        "axflag",
-        "cfinv"
+        "axflag"
       ]
     },
     "vucomisd xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map 1 0b01 0x2e 128-bit"
       ],
@@ -36,12 +35,11 @@
         "fcmp d16, d17",
         "mov w27, #0x0",
         "cset w26, vc",
-        "axflag",
-        "cfinv"
+        "axflag"
       ]
     },
     "vcomiss xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map 1 0b00 0x2f 128-bit"
       ],
@@ -49,12 +47,11 @@
         "fcmp s16, s17",
         "mov w27, #0x0",
         "cset w26, vc",
-        "axflag",
-        "cfinv"
+        "axflag"
       ]
     },
     "vcomisd xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map 1 0b01 0x2f 128-bit"
       ],
@@ -62,8 +59,7 @@
         "fcmp d16, d17",
         "mov w27, #0x0",
         "cset w26, vc",
-        "axflag",
-        "cfinv"
+        "axflag"
       ]
     },
     "vpmovmskb rax, xmm0": {

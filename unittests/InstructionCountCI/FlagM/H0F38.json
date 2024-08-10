@@ -27,18 +27,18 @@
         "mov w27, #0x0",
         "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
-        "cset x21, eq",
-        "tst w20, w20",
+        "cset x21, ne",
+        "cmp w20, #0x0 (0)",
         "rmif x21, #63, #nzCv"
       ]
     },
     "adcx eax, ebx": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0x66 0x0f 0x38 0xf6"
       ],
       "ExpectedArm64ASM": [
-        "cset w20, hs",
+        "cset w20, lo",
         "mov w21, w7",
         "mov w22, w4",
         "add w23, w21, w20",
@@ -50,17 +50,18 @@
         "cset x21, ls",
         "cmp x20, #0x1 (1)",
         "csel x20, x21, x23, eq",
+        "eor x20, x20, #0x1",
         "msr nzcv, x22",
         "rmif x20, #63, #nzCv"
       ]
     },
     "adcx rax, rbx": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0x66 REX.W 0x0f 0x38 0xf6"
       ],
       "ExpectedArm64ASM": [
-        "cset w20, hs",
+        "cset w20, lo",
         "add x21, x7, x20",
         "add x4, x4, x21",
         "mrs x21, nzcv",
@@ -70,6 +71,7 @@
         "cset x23, ls",
         "cmp x20, #0x1 (1)",
         "csel x20, x23, x22, eq",
+        "eor x20, x20, #0x1",
         "msr nzcv, x21",
         "rmif x20, #63, #nzCv"
       ]

@@ -1024,7 +1024,7 @@
       ]
     },
     "Sekiro spill block": {
-      "ExpectedInstructionCount": 147,
+      "ExpectedInstructionCount": 148,
       "Comment": [
         "This block of code came from the settings screen when it loaded",
         "It was originally at RIP: 0x14232cca0 and has been deobfuscated"
@@ -1297,7 +1297,8 @@
         "ldr x9, [x8]",
         "add x8, x8, #0x8 (8)",
         "ldr x7, [x8]",
-        "add x8, x8, #0x8 (8)"
+        "add x8, x8, #0x8 (8)",
+        "cfinv"
       ]
     }
   }

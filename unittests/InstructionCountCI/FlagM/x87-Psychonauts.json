@@ -13,7 +13,7 @@
   },
   "Instructions": {
     "Block1": {
-      "ExpectedInstructionCount": 16357,
+      "ExpectedInstructionCount": 16358,
       "x86Insts": [
         "sub esp,0x88",
         "fld dword [ecx + 0x4]",
@@ -16891,13 +16891,14 @@
         "fmov s2, s0",
         "str s2, [x20]",
         "adds w26, w8, #0x88 (136)",
+        "cfinv",
         "mov x27, x8",
         "mov x8, x26",
         "strb wzr, [x28, #1298]"
       ]
     },
     "Block2": {
-      "ExpectedInstructionCount": 14021,
+      "ExpectedInstructionCount": 14022,
       "x86Insts": [
         "sub esp,0x90",
         "fld dword [ecx + 0x4]",
@@ -31347,6 +31348,7 @@
         "str s2, [x20]",
         "mvn w27, w8",
         "adds w26, w8, #0x90 (144)",
+        "cfinv",
         "mov x8, x26",
         "ldrb w20, [x28, #1019]",
         "mov w21, #0x1",
@@ -31359,7 +31361,7 @@
       ]
     },
     "Block3": {
-      "ExpectedInstructionCount": 118,
+      "ExpectedInstructionCount": 119,
       "x86Insts": [
         "mov eax,dword [ebp + 0xffffff44]",
         "mov ecx,dword [eax + 0x4]",
@@ -32179,6 +32181,7 @@
         "movk w21, #0x819, lsl #16",
         "add w21, w20, w21",
         "str w20, [x8, #-4]!",
+        "cfinv",
         "ldr x0, [x28, #2272]",
         "and x3, x21, #0xfffff",
         "add x0, x0, x3, lsl #4",
@@ -32186,7 +32189,7 @@
       ]
     },
     "Block4": {
-      "ExpectedInstructionCount": 12313,
+      "ExpectedInstructionCount": 12312,
       "x86Insts": [
         "mov ebp,dword [esp + 0x64]",
         "fadd dword [ebp + 0x8]",
@@ -43530,7 +43533,6 @@
         "orr w21, w21, w23",
         "strb w21, [x28, #1298]",
         "subs w9, w9, #0x10 (16)",
-        "cfinv",
         "ldr s2, [x8, #24]",
         "mrs x0, nzcv",
         "str w0, [x28, #1000]",
@@ -44857,7 +44859,7 @@
       ]
     },
     "Block5": {
-      "ExpectedInstructionCount": 12248,
+      "ExpectedInstructionCount": 12247,
       "x86Insts": [
         "mov ebp,dword [esp + 0x64]",
         "fadd dword [ebp + 0x8]",
@@ -56331,7 +56333,6 @@
         "orr w21, w21, w23",
         "strb w21, [x28, #1298]",
         "subs w7, w7, #0x10 (16)",
-        "cfinv",
         "cset w21, hs",
         "subs w26, w9, #0x1 (1)",
         "rmif x21, #63, #nzCv",
@@ -65449,7 +65450,7 @@
       ]
     },
     "Block7": {
-      "ExpectedInstructionCount": 7583,
+      "ExpectedInstructionCount": 7582,
       "x86Insts": [
         "push ebp",
         "mov ebp,esp",
@@ -65875,7 +65876,6 @@
         "mov x9, x8",
         "str w7, [x8, #-4]!",
         "subs w26, w8, #0x84 (132)",
-        "cfinv",
         "mov x27, x8",
         "mov x8, x26",
         "ldr w7, [x9, #8]",
@@ -73457,7 +73457,7 @@
       ]
     },
     "Block8": {
-      "ExpectedInstructionCount": 8522,
+      "ExpectedInstructionCount": 8523,
       "x86Insts": [
         "fadd dword [esp + 0x40]",
         "lea edx,[ecx + ecx*0x2]",
@@ -82213,11 +82213,12 @@
         "add x8, x8, #0x4 (4)",
         "mvn w27, w8",
         "adds w26, w8, #0x74 (116)",
+        "cfinv",
         "mov x8, x26"
       ]
     },
     "Block9": {
-      "ExpectedInstructionCount": 8441,
+      "ExpectedInstructionCount": 8442,
       "x86Insts": [
         "fadd dword [esp + 0x40]",
         "lea edx,[ecx + ecx*0x2]",
@@ -90883,11 +90884,12 @@
         "add x8, x8, #0x4 (4)",
         "mvn w27, w8",
         "adds w26, w8, #0x74 (116)",
+        "cfinv",
         "mov x8, x26"
       ]
     },
     "Block10": {
-      "ExpectedInstructionCount": 6382,
+      "ExpectedInstructionCount": 6383,
       "x86Insts": [
         "push ebp",
         "mov ebp,esp",
@@ -97681,6 +97683,7 @@
         "movk w21, #0x816, lsl #16",
         "add w21, w20, w21",
         "str w20, [x8, #-4]!",
+        "cfinv",
         "ldrb w20, [x28, #1019]",
         "add w20, w20, #0x5 (5)",
         "and w20, w20, #0x7",

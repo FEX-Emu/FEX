@@ -13,7 +13,7 @@
   },
   "Instructions": {
     "Sonic Mania movie player": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 15,
       "Comment": "Used to be hottest block in Sonic Mania",
       "x86Insts": [
         "movzx   edx, byte [esi+ecx]",
@@ -42,12 +42,11 @@
         "str w20, [x4]",
         "add w4, w4, #0x4 (4)",
         "eor w27, w10, w7",
-        "subs w26, w10, w7",
-        "cfinv"
+        "subs w26, w10, w7"
       ]
     },
     "wine mscrt.dll memmove": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 13,
       "Comment": "Hot in Sonic Mania",
       "x86Insts": [
         "movdqu  xmm0, [esi]",
@@ -76,12 +75,11 @@
         "add w11, w11, #0x40 (64)",
         "sub w5, w5, #0x40 (64)",
         "subs w26, w5, #0x40 (64)",
-        "cfinv",
         "mov x27, x5"
       ]
     },
     "dxvk hotblock from MGRR": {
-      "ExpectedInstructionCount": 38,
+      "ExpectedInstructionCount": 39,
       "Comment": [
         "Hottest block in Metal Gear Rising: Revengeance render thread"
       ],
@@ -139,11 +137,12 @@
         "rmif x0, #0, #NzCV",
         "mov w22, w21",
         "csel x4, x20, x4, ne",
-        "csel x6, x22, x6, ne"
+        "csel x6, x22, x6, ne",
+        "cfinv"
       ]
     },
     "Psychonauts matrix swizzle": {
-      "ExpectedInstructionCount": 165,
+      "ExpectedInstructionCount": 164,
       "Comment": [
         "Hottest block in Windows Psychonauts",
         "Doing a 4x4 32-bit float matrix swizzle",
@@ -258,7 +257,6 @@
         "str w9, [x8, #-4]!",
         "mov x9, x8",
         "subs w26, w8, #0x44 (68)",
-        "cfinv",
         "mov x27, x8",
         "mov x8, x26",
         "mov x20, #0xffffffffffffffbc",
