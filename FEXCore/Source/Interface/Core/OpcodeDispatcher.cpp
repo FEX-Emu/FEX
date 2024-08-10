@@ -1417,13 +1417,17 @@ void OpDispatchBuilder::CPUIDOp(OpcodeArgs) {
   Ref Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], GPRSize, Op->Flags);
   Ref Leaf = LoadGPRRegister(X86State::REG_RCX);
 
-  auto Res = _CPUID(Src, Leaf);
-  auto [Result_Lower, Result_Upper] = ExtractPair(OpSize::i64Bit, Res);
+  Ref RAX = _AllocateGPR(false);
+  Ref RBX = _AllocateGPR(false);
+  Ref RCX = _AllocateGPR(false);
+  Ref RDX = _AllocateGPR(false);
 
-  StoreGPRRegister(X86State::REG_RAX, _Bfe(OpSize::i64Bit, 32, 0, Result_Lower));
-  StoreGPRRegister(X86State::REG_RBX, _Bfe(OpSize::i64Bit, 32, 32, Result_Lower));
-  StoreGPRRegister(X86State::REG_RDX, _Bfe(OpSize::i64Bit, 32, 32, Result_Upper));
-  StoreGPRRegister(X86State::REG_RCX, _Bfe(OpSize::i64Bit, 32, 0, Result_Upper));
+  _CPUID(Src, Leaf, RAX, RBX, RCX, RDX);
+
+  StoreGPRRegister(X86State::REG_RAX, RAX);
+  StoreGPRRegister(X86State::REG_RBX, RBX);
+  StoreGPRRegister(X86State::REG_RCX, RCX);
+  StoreGPRRegister(X86State::REG_RDX, RDX);
 }
 
 uint32_t OpDispatchBuilder::LoadConstantShift(X86Tables::DecodedOp Op, bool Is1Bit) {

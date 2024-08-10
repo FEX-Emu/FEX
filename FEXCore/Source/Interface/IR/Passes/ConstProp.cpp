@@ -483,14 +483,14 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
         // If the CPUID needs a constant leaf to be optimized then this can't work if we didn't const-prop the leaf register.
         if (!(SupportsConstant.NeedsLeaf == CPUIDEmu::NeedsLeafConstant::NEEDSLEAFCONSTANT && !IsConstantLeaf)) {
           // Calculate the constant data and replace all uses.
-          // DCE will remove the CPUID IR operation.
-          const auto ConstantCPUIDResult = CPUID->RunFunction(ConstantFunction, ConstantLeaf);
-          uint64_t ResultsLower = (static_cast<uint64_t>(ConstantCPUIDResult.ebx) << 32) | ConstantCPUIDResult.eax;
-          uint64_t ResultsUpper = (static_cast<uint64_t>(ConstantCPUIDResult.edx) << 32) | ConstantCPUIDResult.ecx;
+          const auto Result = CPUID->RunFunction(ConstantFunction, ConstantLeaf);
+
           IREmit->SetWriteCursor(CodeNode);
-          auto ElementPair = IREmit->_CreateElementPair(IR::OpSize::i128Bit, IREmit->_Constant(ResultsLower), IREmit->_Constant(ResultsUpper));
-          // Replace all CPUID uses with this inline one
-          IREmit->ReplaceAllUsesWith(CodeNode, ElementPair);
+          IREmit->ReplaceAllUsesWith(CurrentIR.GetNode(Op->OutEAX), IREmit->_Constant(Result.eax));
+          IREmit->ReplaceAllUsesWith(CurrentIR.GetNode(Op->OutEBX), IREmit->_Constant(Result.ebx));
+          IREmit->ReplaceAllUsesWith(CurrentIR.GetNode(Op->OutECX), IREmit->_Constant(Result.ecx));
+          IREmit->ReplaceAllUsesWith(CurrentIR.GetNode(Op->OutEDX), IREmit->_Constant(Result.edx));
+          IREmit->Remove(CodeNode);
         }
       }
     }

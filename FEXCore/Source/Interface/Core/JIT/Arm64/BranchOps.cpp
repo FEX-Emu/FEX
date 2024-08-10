@@ -427,10 +427,11 @@ DEF_OP(CPUID) {
   PopDynamicRegsAndLR();
 
   // Results are in x0, x1
-  // Results want to be in a i64v2 vector
-  auto Dst = GetRegPair(Node);
-  mov(ARMEmitter::Size::i64Bit, Dst.first, TMP1);
-  mov(ARMEmitter::Size::i64Bit, Dst.second, TMP2);
+  // Results want to be 4xi32 scalars
+  mov(ARMEmitter::Size::i32Bit, GetReg(Op->OutEAX.ID()), TMP1);
+  mov(ARMEmitter::Size::i32Bit, GetReg(Op->OutECX.ID()), TMP2);
+  ubfx(ARMEmitter::Size::i64Bit, GetReg(Op->OutEBX.ID()), TMP1, 32, 32);
+  ubfx(ARMEmitter::Size::i64Bit, GetReg(Op->OutEDX.ID()), TMP2, 32, 32);
 }
 
 DEF_OP(XGetBV) {
