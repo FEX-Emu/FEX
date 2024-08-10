@@ -271,8 +271,9 @@ void OpDispatchBuilder::CalculateDeferredFlags() {
 }
 
 Ref OpDispatchBuilder::IncrementByCarry(OpSize OpSize, Ref Src) {
-  RectifyCarryInvert(false);
-  return _Adc(OpSize, _Constant(0), Src);
+  // If CF not inverted, we use .cc since the increment happens when the
+  // condition is false. If CF inverted, invert to use .cs. A bit mindbendy.
+  return _NZCVSelectIncrement(OpSize, {CFInverted ? COND_UGE : COND_ULT}, Src, Src);
 }
 
 Ref OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, Ref Src1, Ref Src2) {
