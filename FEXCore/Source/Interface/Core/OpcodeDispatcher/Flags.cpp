@@ -553,56 +553,6 @@ void OpDispatchBuilder::CalculateFlags_ShiftRightDoubleImmediate(uint8_t SrcSize
   }
 }
 
-void OpDispatchBuilder::CalculateFlags_BEXTR(Ref Src) {
-  // ZF is set properly. CF and OF are defined as being set to zero. SF, PF, and
-  // AF are undefined.
-  SetNZ_ZeroCV(GetOpSize(Src), Src);
-  InvalidatePF_AF();
-}
-
-void OpDispatchBuilder::CalculateFlags_BLSI(uint8_t SrcSize, Ref Result) {
-  // CF is cleared if Src is zero, otherwise it's set. However, Src is zero iff
-  // Result is zero, so we can test the result instead. So, CF is just the
-  // inverted ZF.
-  //
-  // ZF/SF/OF set as usual.
-  SetNZ_ZeroCV(SrcSize, Result);
-  InvalidatePF_AF();
-  SetCFInverted(GetRFLAG(X86State::RFLAG_ZF_RAW_LOC));
-}
-
-void OpDispatchBuilder::CalculateFlags_BLSMSK(uint8_t SrcSize, Ref Result, Ref Src) {
-  InvalidatePF_AF();
-
-  // CF set according to the Src
-  auto Zero = _Constant(0);
-  auto One = _Constant(1);
-  auto CFInv = _Select(IR::COND_NEQ, Src, Zero, One, Zero);
-
-  // The output of BLSMSK is always nonzero, so TST will clear Z (along with C
-  // and O) while setting S.
-  SetNZ_ZeroCV(SrcSize, Result);
-  SetCFInverted(CFInv);
-}
-
-void OpDispatchBuilder::CalculateFlags_BLSR(uint8_t SrcSize, Ref Result, Ref Src) {
-  auto Zero = _Constant(0);
-  auto One = _Constant(1);
-  auto CFInv = _Select(IR::COND_NEQ, Src, Zero, One, Zero);
-
-  SetNZ_ZeroCV(SrcSize, Result);
-  SetCFInverted(CFInv);
-  InvalidatePF_AF();
-}
-
-void OpDispatchBuilder::CalculateFlags_POPCOUNT(Ref Result) {
-  // We need to set ZF while clearing the rest of NZCV. The result of a popcount
-  // is in the range [0, 63]. In particular, it is always positive. So a
-  // combined NZ test will correctly zero SF/CF/OF while setting ZF.
-  SetNZ_ZeroCV(OpSize::i32Bit, Result);
-  ZeroPF_AF();
-}
-
 void OpDispatchBuilder::CalculateFlags_ZCNT(uint8_t SrcSize, Ref Result) {
   // OF, SF, AF, PF all undefined
   // Test ZF of result, SF is undefined so this is ok.
@@ -613,15 +563,6 @@ void OpDispatchBuilder::CalculateFlags_ZCNT(uint8_t SrcSize, Ref Result) {
   // bit is set. No masking is needed because no higher bits could be set.
   unsigned CarryBit = FEXCore::ilog2(SrcSize * 8u);
   SetCFDirect(Result, CarryBit);
-}
-
-void OpDispatchBuilder::CalculateFlags_RDRAND(Ref Src) {
-  // OF, SF, ZF, AF, PF all zero
-  ZeroNZCV();
-  ZeroPF_AF();
-
-  // CF is set to the incoming source
-  SetCFDirect(Src);
 }
 
 } // namespace FEXCore::IR

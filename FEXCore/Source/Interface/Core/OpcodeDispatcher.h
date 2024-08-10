@@ -2301,13 +2301,7 @@ private:
   void CalculateFlags_ShiftRightDoubleImmediate(uint8_t SrcSize, Ref Res, Ref Src1, uint64_t Shift);
   void CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize, Ref Res, Ref Src1, uint64_t Shift);
   void CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, Ref Res, Ref Src1, uint64_t Shift);
-  void CalculateFlags_BEXTR(Ref Src);
-  void CalculateFlags_BLSI(uint8_t SrcSize, Ref Src);
-  void CalculateFlags_BLSMSK(uint8_t SrcSize, Ref Res, Ref Src);
-  void CalculateFlags_BLSR(uint8_t SrcSize, Ref Res, Ref Src);
-  void CalculateFlags_POPCOUNT(Ref Src);
   void CalculateFlags_ZCNT(uint8_t SrcSize, Ref Result);
-  void CalculateFlags_RDRAND(Ref Src);
   /**  @} */
 
   Ref AndConst(FEXCore::IR::OpSize Size, Ref Node, uint64_t Const) {

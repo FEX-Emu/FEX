@@ -1780,7 +1780,10 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
   // Finally store the result.
   StoreResult(GPRClass, Op, Dest, -1);
 
-  CalculateFlags_BEXTR(Dest);
+  // ZF is set properly. CF and OF are defined as being set to zero. SF, PF, and
+  // AF are undefined.
+  SetNZ_ZeroCV(GetOpSize(Dest), Dest);
+  InvalidatePF_AF();
 }
 
 void OpDispatchBuilder::BLSIBMIOp(OpcodeArgs) {
@@ -1792,10 +1795,16 @@ void OpDispatchBuilder::BLSIBMIOp(OpcodeArgs) {
   auto NegatedSrc = _Neg(Size, Src);
   auto Result = _And(Size, Src, NegatedSrc);
 
-  // ...and we're done. Painless!
   StoreResult(GPRClass, Op, Result, -1);
 
-  CalculateFlags_BLSI(GetSrcSize(Op), Result);
+  // CF is cleared if Src is zero, otherwise it's set. However, Src is zero iff
+  // Result is zero, so we can test the result instead. So, CF is just the
+  // inverted ZF.
+  //
+  // ZF/SF/OF set as usual.
+  SetNZ_ZeroCV(GetSrcSize(Op), Result);
+  InvalidatePF_AF();
+  SetCFInverted(GetRFLAG(X86State::RFLAG_ZF_RAW_LOC));
 }
 
 void OpDispatchBuilder::BLSMSKBMIOp(OpcodeArgs) {
@@ -1807,7 +1816,17 @@ void OpDispatchBuilder::BLSMSKBMIOp(OpcodeArgs) {
   auto Result = _Xor(Size, _Sub(Size, Src, _Constant(1)), Src);
 
   StoreResult(GPRClass, Op, Result, -1);
-  CalculateFlags_BLSMSK(GetSrcSize(Op), Result, Src);
+  InvalidatePF_AF();
+
+  // CF set according to the Src
+  auto Zero = _Constant(0);
+  auto One = _Constant(1);
+  auto CFInv = _Select(IR::COND_NEQ, Src, Zero, One, Zero);
+
+  // The output of BLSMSK is always nonzero, so TST will clear Z (along with C
+  // and O) while setting S.
+  SetNZ_ZeroCV(GetSrcSize(Op), Result);
+  SetCFInverted(CFInv);
 }
 
 void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
@@ -1819,7 +1838,13 @@ void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
   auto Result = _And(Size, _Sub(Size, Src, _Constant(1)), Src);
   StoreResult(GPRClass, Op, Result, -1);
 
-  CalculateFlags_BLSR(GetSrcSize(Op), Result, Src);
+  auto Zero = _Constant(0);
+  auto One = _Constant(1);
+  auto CFInv = _Select(IR::COND_NEQ, Src, Zero, One, Zero);
+
+  SetNZ_ZeroCV(GetSrcSize(Op), Result);
+  SetCFInverted(CFInv);
+  InvalidatePF_AF();
 }
 
 // Handles SARX, SHLX, and SHRX
@@ -2827,7 +2852,11 @@ void OpDispatchBuilder::PopcountOp(OpcodeArgs) {
   Src = _Popcount(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Src, -1);
 
-  CalculateFlags_POPCOUNT(Src);
+  // We need to set ZF while clearing the rest of NZCV. The result of a popcount
+  // is in the range [0, 63]. In particular, it is always positive. So a
+  // combined NZ test will correctly zero SF/CF/OF while setting ZF.
+  SetNZ_ZeroCV(OpSize::i32Bit, Src);
+  ZeroPF_AF();
 }
 
 Ref OpDispatchBuilder::CalculateAFForDecimal(Ref A) {
@@ -4901,7 +4930,13 @@ void OpDispatchBuilder::RDRANDOp(OpcodeArgs) {
   auto [Result_Lower, Result_Upper] = ExtractPair(OpSize::i64Bit, Res);
 
   StoreResult(GPRClass, Op, Result_Lower, -1);
-  CalculateFlags_RDRAND(Result_Upper);
+
+  // OF, SF, ZF, AF, PF all zero
+  ZeroNZCV();
+  ZeroPF_AF();
+
+  // CF is set to the incoming source
+  SetCFDirect(Result_Upper);
 }
 
 
