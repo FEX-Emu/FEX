@@ -3309,8 +3309,8 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
       SrcAddr = _Add(OpSize::i64Bit, SrcAddr, SrcSegment);
     }
 
-    Ref Result_Src = _AllocateGPR();
-    Ref Result_Dst = _AllocateGPR();
+    Ref Result_Src = _AllocateGPR(false);
+    Ref Result_Dst = _AllocateGPR(false);
     _MemCpy(CTX->IsAtomicTSOEnabled(), Size, DstAddr, SrcAddr, Counter, LoadDir(1), Result_Dst, Result_Src);
 
     if (DstSegment) {
@@ -3993,8 +3993,8 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   // This will write to memory! Careful!
   // Third operand must be a calculated guest memory address
 
-  Ref Result_Lower = _AllocateGPR();
-  Ref Result_Upper = _AllocateGPR();
+  Ref Result_Lower = _AllocateGPR(true);
+  Ref Result_Upper = _AllocateGPRAfter(Result_Lower);
   _CASPair(IR::SizeToOpSize(Size), Expected_Lower, Expected_Upper, Desired_Lower, Desired_Upper, Src1, Result_Lower, Result_Upper);
 
   HandleNZCV_RMW();
