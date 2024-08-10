@@ -22,13 +22,11 @@ namespace FEXCore::IR::Validation {
 struct RegState {
   static constexpr IR::NodeID UninitializedValue {0};
   static constexpr IR::NodeID InvalidReg {0xffff'ffff};
-  static constexpr IR::NodeID CorruptedPair {0xffff'fffe};
 
   // This class makes some assumptions about how the host registers are arranged and mapped to virtual registers:
   // 1. There will be less than 32 GPRs and 32 FPRs
   // 2. If the GPRFixed class is used, there will be 16 GPRs and 16 FixedGPRs max
   // 3. Same with FPRFixed
-  // 4. If the GPRPairClass is used, it is assumed each GPRPair N will map onto GPRs N and N + 1
 
   // These assumptions were all true for the state of the arm64 and x86 jits at the time this was written
 
@@ -49,11 +47,6 @@ struct RegState {
       // On arm64, there are 16 Fixed and 12 normal
       FPRsFixed[Reg.Reg] = ssa;
       return true;
-    case GPRPairClass:
-      // Alias paired registers onto both
-      GPRs[Reg.Reg] = ssa;
-      GPRs[Reg.Reg + 1] = ssa;
-      return true;
     }
     return false;
   }
@@ -66,12 +59,6 @@ struct RegState {
     case GPRFixedClass: return GPRsFixed[Reg.Reg];
     case FPRClass: return FPRs[Reg.Reg];
     case FPRFixedClass: return FPRsFixed[Reg.Reg];
-    case GPRPairClass:
-      // Make sure both halves of the Pair contain the same SSA
-      if (GPRs[Reg.Reg] == GPRs[Reg.Reg + 1]) {
-        return GPRs[Reg.Reg];
-      }
-      return CorruptedPair;
     }
     return InvalidReg;
   }
@@ -139,14 +126,6 @@ void RAValidation::Run(IREmitter* IREmit) {
         if (CurrentSSAAtReg == RegState::InvalidReg) {
           HadError |= true;
           Errors << fextl::fmt::format("%{}: Arg[{}] unknown Reg: {}, class: {}\n", ID, i, PhyReg.Reg, PhyReg.Class);
-        } else if (CurrentSSAAtReg == RegState::CorruptedPair) {
-          HadError |= true;
-
-          auto Lower = BlockRegState.Get(PhysicalRegister(GPRClass, uint8_t(PhyReg.Reg * 2) + 1));
-          auto Upper = BlockRegState.Get(PhysicalRegister(GPRClass, PhyReg.Reg * 2 + 1));
-
-          Errors << fextl::fmt::format("%{}: Arg[{}] expects paired reg{} to contain %{}, but it actually contains {{%{}, %{}}}\n", ID, i,
-                                       PhyReg.Reg, ArgID, Lower, Upper);
         } else if (CurrentSSAAtReg == RegState::UninitializedValue) {
           HadError |= true;
 

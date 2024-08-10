@@ -77,8 +77,6 @@ static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView
     *out << "FPR";
   } else if (Arg == FPRFixedClass.Val) {
     *out << "FPRFixed";
-  } else if (Arg == GPRPairClass.Val) {
-    *out << "GPRPair";
   } else {
     *out << "Unknown Registerclass " << Arg;
   }
@@ -100,7 +98,6 @@ static void PrintArg(fextl::stringstream* out, const IRListView* IR, OrderedNode
       case FEXCore::IR::GPRFixedClass.Val: *out << "(GPRFixed"; break;
       case FEXCore::IR::FPRClass.Val: *out << "(FPR"; break;
       case FEXCore::IR::FPRFixedClass.Val: *out << "(FPRFixed"; break;
-      case FEXCore::IR::GPRPairClass.Val: *out << "(GPRPair"; break;
       case FEXCore::IR::ComplexClass.Val: *out << "(Complex"; break;
       case FEXCore::IR::InvalidClass.Val: *out << "(Invalid"; break;
       default: *out << "(Unknown"; break;
@@ -316,7 +313,6 @@ void Dump(fextl::stringstream* out, const IRListView* IR, IR::RegisterAllocation
             case FEXCore::IR::GPRFixedClass.Val: *out << "(GPRFixed"; break;
             case FEXCore::IR::FPRClass.Val: *out << "(FPR"; break;
             case FEXCore::IR::FPRFixedClass.Val: *out << "(FPRFixed"; break;
-            case FEXCore::IR::GPRPairClass.Val: *out << "(GPRPair"; break;
             case FEXCore::IR::ComplexClass.Val: *out << "(Complex"; break;
             case FEXCore::IR::InvalidClass.Val: *out << "(Invalid"; break;
             default: *out << "(Unknown"; break;

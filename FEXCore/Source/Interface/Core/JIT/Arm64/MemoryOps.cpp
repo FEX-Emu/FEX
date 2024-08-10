@@ -367,30 +367,6 @@ DEF_OP(SpillRegister) {
     }
     default: LOGMAN_MSG_A_FMT("Unhandled SpillRegister size: {}", OpSize); break;
     }
-  } else if (Op->Class == FEXCore::IR::GPRPairClass) {
-    const auto Src = GetRegPair(Op->Value.ID());
-    switch (OpSize) {
-    case 8: {
-      if (SlotOffset <= 252 && (SlotOffset & 0b11) == 0) {
-        stp<ARMEmitter::IndexType::OFFSET>(Src.first.W(), Src.second.W(), ARMEmitter::Reg::rsp, SlotOffset);
-      } else {
-        add(ARMEmitter::Size::i64Bit, TMP1, ARMEmitter::Reg::rsp, SlotOffset);
-        stp<ARMEmitter::IndexType::OFFSET>(Src.first.W(), Src.second.W(), TMP1, 0);
-      }
-      break;
-    }
-
-    case 16: {
-      if (SlotOffset <= 504 && (SlotOffset & 0b111) == 0) {
-        stp<ARMEmitter::IndexType::OFFSET>(Src.first.X(), Src.second.X(), ARMEmitter::Reg::rsp, SlotOffset);
-      } else {
-        add(ARMEmitter::Size::i64Bit, TMP1, ARMEmitter::Reg::rsp, SlotOffset);
-        stp<ARMEmitter::IndexType::OFFSET>(Src.first.X(), Src.second.X(), TMP1, 0);
-      }
-      break;
-    }
-    default: LOGMAN_MSG_A_FMT("Unhandled SpillRegister(GPRPair) size: {}", OpSize); break;
-    }
   } else {
     LOGMAN_MSG_A_FMT("Unhandled SpillRegister class: {}", Op->Class.Val);
   }
@@ -479,30 +455,6 @@ DEF_OP(FillRegister) {
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unhandled FillRegister size: {}", OpSize); break;
-    }
-  } else if (Op->Class == FEXCore::IR::GPRPairClass) {
-    const auto Src = GetRegPair(Node);
-    switch (OpSize) {
-    case 8: {
-      if (SlotOffset <= 252 && (SlotOffset & 0b11) == 0) {
-        ldp<ARMEmitter::IndexType::OFFSET>(Src.first.W(), Src.second.W(), ARMEmitter::Reg::rsp, SlotOffset);
-      } else {
-        add(ARMEmitter::Size::i64Bit, TMP1, ARMEmitter::Reg::rsp, SlotOffset);
-        ldp<ARMEmitter::IndexType::OFFSET>(Src.first.W(), Src.second.W(), TMP1, 0);
-      }
-      break;
-    }
-
-    case 16: {
-      if (SlotOffset <= 504 && (SlotOffset & 0b111) == 0) {
-        ldp<ARMEmitter::IndexType::OFFSET>(Src.first.X(), Src.second.X(), ARMEmitter::Reg::rsp, SlotOffset);
-      } else {
-        add(ARMEmitter::Size::i64Bit, TMP1, ARMEmitter::Reg::rsp, SlotOffset);
-        ldp<ARMEmitter::IndexType::OFFSET>(Src.first.X(), Src.second.X(), TMP1, 0);
-      }
-      break;
-    }
-    default: LOGMAN_MSG_A_FMT("Unhandled FillRegister(GPRPair) size: {}", OpSize); break;
     }
   } else {
     LOGMAN_MSG_A_FMT("Unhandled FillRegister class: {}", Op->Class.Val);

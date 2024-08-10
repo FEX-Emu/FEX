@@ -115,15 +115,6 @@ private:
   }
 
   [[nodiscard]]
-  std::pair<ARMEmitter::Register, ARMEmitter::Register> GetRegPair(IR::NodeID Node) const {
-    const auto Reg = GetPhys(Node);
-
-    LOGMAN_THROW_AA_FMT(Reg.Class == IR::GPRPairClass.Val, "Unexpected Class: {}", Reg.Class);
-
-    return std::make_pair(GeneralRegisters[Reg.Reg], GeneralRegisters[Reg.Reg + 1]);
-  }
-
-  [[nodiscard]]
   FEXCore::IR::RegisterClassType GetRegClass(IR::NodeID Node) const;
 
   [[nodiscard]]
@@ -253,8 +244,6 @@ private:
   bool IsFPR(IR::NodeID Node) const;
   [[nodiscard]]
   bool IsGPR(IR::NodeID Node) const;
-  [[nodiscard]]
-  bool IsGPRPair(IR::NodeID Node) const;
 
   [[nodiscard]]
   ARMEmitter::ExtendedMemOperand GenerateMemOperand(uint8_t AccessSize, ARMEmitter::Register Base, IR::OrderedNodeWrapper Offset,

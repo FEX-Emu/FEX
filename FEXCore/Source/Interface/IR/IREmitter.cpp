@@ -38,7 +38,6 @@ FEXCore::IR::RegisterClassType IREmitter::WalkFindRegClass(Ref Node) {
   auto Class = GetOpRegClass(Node);
   switch (Class) {
   case GPRClass:
-  case GPRPairClass:
   case FPRClass:
   case GPRFixedClass:
   case FPRFixedClass:
