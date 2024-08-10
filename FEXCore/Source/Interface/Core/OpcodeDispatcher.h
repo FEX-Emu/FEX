@@ -1741,21 +1741,22 @@ private:
   void SetRFLAG(Ref Value, unsigned BitOffset, unsigned ValueOffset = 0, bool MustMask = false) {
     if (IsNZCV(BitOffset)) {
       InsertNZCV(BitOffset, Value, ValueOffset, MustMask);
-    } else if (BitOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC) {
+      return;
+    }
+
+    if (ValueOffset || MustMask) {
+      Value = _Bfe(OpSize::i32Bit, 1, ValueOffset, Value);
+    }
+
+    if (BitOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC) {
       StoreRegister(Core::CPUState::PF_AS_GREG, false, Value);
     } else if (BitOffset == FEXCore::X86State::RFLAG_AF_RAW_LOC) {
       StoreRegister(Core::CPUState::AF_AS_GREG, false, Value);
-    } else {
-      if (ValueOffset || MustMask) {
-        Value = _Bfe(OpSize::i32Bit, 1, ValueOffset, Value);
-      }
-
+    } else if (BitOffset == FEXCore::X86State::RFLAG_DF_RAW_LOC) {
       // For DF, we need to transform 0/1 into 1/-1
-      if (BitOffset == FEXCore::X86State::RFLAG_DF_RAW_LOC) {
-        StoreDF(_SubShift(OpSize::i64Bit, _Constant(1), Value, ShiftType::LSL, 1));
-      } else {
-        _StoreContext(1, GPRClass, Value, offsetof(FEXCore::Core::CPUState, flags[BitOffset]));
-      }
+      StoreDF(_SubShift(OpSize::i64Bit, _Constant(1), Value, ShiftType::LSL, 1));
+    } else {
+      _StoreContext(1, GPRClass, Value, offsetof(FEXCore::Core::CPUState, flags[BitOffset]));
     }
   }
 
