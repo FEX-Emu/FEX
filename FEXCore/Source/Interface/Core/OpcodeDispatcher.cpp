@@ -2869,22 +2869,22 @@ Ref OpDispatchBuilder::CalculateAFForDecimal(Ref A) {
 void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   CalculateDeferredFlags();
   auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
+  auto CFInv = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC, true);
   auto AF = CalculateAFForDecimal(AL);
 
   // CF |= (AL > 0x99);
-  CF = _Or(OpSize::i64Bit, CF, _Select(FEXCore::IR::COND_UGT, AL, _Constant(0x99), _Constant(1), _Constant(0)));
+  CFInv = _And(OpSize::i64Bit, CFInv, _Select(FEXCore::IR::COND_ULE, AL, _Constant(0x99), _Constant(1), _Constant(0)));
 
   // AL = AF ? (AL + 0x6) : AL;
   AL = _Select(FEXCore::IR::COND_NEQ, AF, _Constant(0), _Add(OpSize::i64Bit, AL, _Constant(0x6)), AL);
 
   // AL = CF ? (AL + 0x60) : AL;
-  AL = _Select(FEXCore::IR::COND_NEQ, CF, _Constant(0), _Add(OpSize::i64Bit, AL, _Constant(0x60)), AL);
+  AL = _Select(FEXCore::IR::COND_EQ, CFInv, _Constant(0), _Add(OpSize::i64Bit, AL, _Constant(0x60)), AL);
 
   // SF, ZF, PF set according to result. CF set per above. OF undefined.
   StoreGPRRegister(X86State::REG_RAX, AL, 1);
   SetNZ_ZeroCV(1, AL);
-  SetCFDirect(CF);
+  SetCFInverted(CFInv);
   CalculatePF(AL);
   SetAFAndFixup(AF);
 }
