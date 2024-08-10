@@ -3979,7 +3979,6 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
 
   Ref Expected_Lower = LoadGPRRegister(X86State::REG_RAX, Size);
   Ref Expected_Upper = LoadGPRRegister(X86State::REG_RDX, Size);
-  Ref Expected = _CreateElementPair(IR::SizeToOpSize(Size * 2), Expected_Lower, Expected_Upper);
 
   Ref Desired_Lower = LoadGPRRegister(X86State::REG_RBX, Size);
   Ref Desired_Upper = LoadGPRRegister(X86State::REG_RCX, Size);
@@ -3994,9 +3993,10 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   // Third operand must be a calculated guest memory address
 
   Ref CASResult = _CASPair(IR::SizeToOpSize(Size * 2), Expected_Lower, Expected_Upper, Desired_Lower, Desired_Upper, Src1);
+  auto [Result_Lower, Result_Upper] = ExtractPair(IR::SizeToOpSize(Size), CASResult);
 
   HandleNZCV_RMW();
-  _CmpPairZ(IR::SizeToOpSize(Size), CASResult, Expected);
+  _CmpPairZ(IR::SizeToOpSize(Size), Result_Lower, Result_Upper, Expected_Lower, Expected_Upper);
   CalculateDeferredFlags();
 
   auto UpdateIfNotZF = [this](auto Reg, auto Value) {
@@ -4005,7 +4005,6 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
     StoreGPRRegister(Reg, NZCVSelect(OpSize::i64Bit, {COND_NEQ}, Value, LoadGPRRegister(Reg)));
   };
 
-  auto [Result_Lower, Result_Upper] = ExtractPair(IR::SizeToOpSize(Size), CASResult);
   UpdateIfNotZF(X86State::REG_RAX, Result_Lower);
   UpdateIfNotZF(X86State::REG_RDX, Result_Upper);
 }
