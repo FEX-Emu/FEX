@@ -46,6 +46,9 @@ void OpDispatchBuilder::SetPackedRFLAG(bool Lower8, Ref Src) {
     InvalidateDeferredFlags();
   }
 
+  // PF and CF are both stored inverted, so hoist the invert.
+  auto SrcInverted = _Not(OpSize::i32Bit, Src);
+
   for (size_t i = 0; i < NumFlags; ++i) {
     const auto FlagOffset = FlagOffsets[i];
 
@@ -59,18 +62,15 @@ void OpDispatchBuilder::SetPackedRFLAG(bool Lower8, Ref Src) {
       // So we write out the whole flags byte to AF without an extract.
       static_assert(FEXCore::X86State::RFLAG_AF_RAW_LOC == 4);
       SetRFLAG(Src, FEXCore::X86State::RFLAG_AF_RAW_LOC);
-    } else if (FlagOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC) {
-      // PF is stored parity flipped
-      Ref Tmp = _Bfe(OpSize::i32Bit, 1, FlagOffset, Src);
-      Tmp = _Xor(OpSize::i32Bit, Tmp, _Constant(1));
-      SetRFLAG(Tmp, FlagOffset);
+    } else if (FlagOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC || FlagOffset == FEXCore::X86State::RFLAG_CF_RAW_LOC) {
+      // PF and CF are both stored parity flipped.
+      SetRFLAG(SrcInverted, FlagOffset, FlagOffset, true);
     } else {
       SetRFLAG(Src, FlagOffset, FlagOffset, true);
     }
   }
 
-  // TODO: Could be optimized.
-  CFInverted = false;
+  CFInverted = true;
 }
 
 Ref OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
