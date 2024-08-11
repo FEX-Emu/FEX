@@ -1403,7 +1403,7 @@ void OpDispatchBuilder::MOVOffsetOp(OpcodeArgs) {
   case 0xA3:
     // Source is GPR
     // Dest is memory(literal)
-    Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+    Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
     // This one is a bit special since the destination is a literal
     // So the destination gets stored in Src[1]
     StoreResult(GPRClass, Op, Op->Src[1], Src, -1);
