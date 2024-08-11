@@ -506,18 +506,12 @@ void OpDispatchBuilder::PUSHSegmentOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::POPOp(OpcodeArgs) {
-  const uint8_t Size = GetSrcSize(Op);
+  auto SP = _RMWHandle(LoadGPRRegister(X86State::REG_RSP));
+  auto Value = _Pop(GetSrcSize(Op), SP);
 
-  auto Constant = _Constant(Size);
-  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-  auto NewGPR = _LoadMem(GPRClass, Size, OldSP, Size);
-  auto NewSP = _Add(OpSize::i64Bit, OldSP, Constant);
-
-  // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP);
-
-  // Store what we loaded from the stack
-  StoreResult(GPRClass, Op, NewGPR, -1);
+  // Store the new stack pointer and what we loaded from the stack
+  StoreGPRRegister(X86State::REG_RSP, SP);
+  StoreResult(GPRClass, Op, Value, -1);
 }
 
 void OpDispatchBuilder::POPAOp(OpcodeArgs) {
