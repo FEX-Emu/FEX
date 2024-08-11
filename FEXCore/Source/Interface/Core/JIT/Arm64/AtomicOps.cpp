@@ -25,9 +25,12 @@ DEF_OP(CASPair) {
 
   const auto EmitSize = IROp->ElementSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
   if (CTX->HostFeatures.SupportsAtomics) {
+    // RA has heuristics to try to pair sources, but we need to handle the cases
+    // where they fail. We do so by moving to temporaries. Note we use 64-bit
+    // moves here even for 32-bit cmpxchg, for the Firestorm register renamer.
     if (Desired1.Idx() != (Desired0.Idx() + 1) || Desired0.Idx() & 1) {
-      mov(EmitSize, TMP1, Desired0);
-      mov(EmitSize, TMP2, Desired1);
+      mov(ARMEmitter::Size::i64Bit, TMP1, Desired0);
+      mov(ARMEmitter::Size::i64Bit, TMP2, Desired1);
       Desired0 = TMP1;
       Desired1 = TMP2;
     }
@@ -39,13 +42,15 @@ DEF_OP(CASPair) {
       CaspalDst1 = TMP4;
     }
 
-    mov(EmitSize, CaspalDst0, Expected0);
-    mov(EmitSize, CaspalDst1, Expected1);
+    // We can't clobber the source, these moves are inherently required due to
+    // ISA limitations. But by making them 64-bit, Firestorm can rename.
+    mov(ARMEmitter::Size::i64Bit, CaspalDst0, Expected0);
+    mov(ARMEmitter::Size::i64Bit, CaspalDst1, Expected1);
     caspal(EmitSize, CaspalDst0, CaspalDst1, Desired0, Desired1, MemSrc);
 
     if (CaspalDst0 != Dst0) {
-      mov(EmitSize, Dst0, CaspalDst0);
-      mov(EmitSize, Dst1, CaspalDst1);
+      mov(ARMEmitter::Size::i64Bit, Dst0, CaspalDst0);
+      mov(ARMEmitter::Size::i64Bit, Dst1, CaspalDst1);
     }
   } else {
     // Save NZCV so we don't have to mark this op as clobbering NZCV (the
