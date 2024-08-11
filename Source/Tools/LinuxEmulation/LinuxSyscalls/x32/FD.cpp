@@ -250,7 +250,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                               struct timespec* timed_ptr {};
                               if (timeout_ts) {
                                 struct timespec32 timeout {};
-                                if (FaultSafeMemcpy::CopyFromUser(&timeout, timeout_ts, sizeof(timeout)) == EFAULT) {
+                                if (FaultSafeUserMemAccess::CopyFromUser(&timeout, timeout_ts, sizeof(timeout)) == EFAULT) {
                                   return -EFAULT;
                                 }
 
@@ -264,7 +264,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                                 struct timespec32 timeout {};
                                 timeout = tp64;
 
-                                if (FaultSafeMemcpy::CopyToUser(timeout_ts, &timeout, sizeof(timeout)) == EFAULT) {
+                                if (FaultSafeUserMemAccess::CopyToUser(timeout_ts, &timeout, sizeof(timeout)) == EFAULT) {
                                   // Write to user memory failed, this can occur if the timeout is defined in read-only memory.
                                   // This is okay to happen, kernel continues happily.
                                 }
