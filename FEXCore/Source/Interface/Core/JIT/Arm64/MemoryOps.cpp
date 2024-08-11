@@ -6,6 +6,7 @@ $end_info$
 */
 
 #include "FEXCore/Core/X86Enums.h"
+#include "FEXCore/Utils/LogManager.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
@@ -1358,6 +1359,37 @@ DEF_OP(Push) {
       break;
     }
     }
+  }
+}
+
+DEF_OP(Pop) {
+  const auto Op = IROp->C<IR::IROp_Pop>();
+  const auto Addr = GetReg(Op->InoutAddr.ID());
+  const auto Dst = GetReg(Op->OutValue.ID());
+
+  LOGMAN_THROW_A_FMT(Dst != Addr, "Invalid");
+
+  switch (Op->Size) {
+  case 1: {
+    ldrb<ARMEmitter::IndexType::POST>(Dst.W(), Addr, Op->Size);
+    break;
+  }
+  case 2: {
+    ldrh<ARMEmitter::IndexType::POST>(Dst.W(), Addr, Op->Size);
+    break;
+  }
+  case 4: {
+    ldr<ARMEmitter::IndexType::POST>(Dst.W(), Addr, Op->Size);
+    break;
+  }
+  case 8: {
+    ldr<ARMEmitter::IndexType::POST>(Dst.X(), Addr, Op->Size);
+    break;
+  }
+  default: {
+    LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Op->Size);
+    break;
+  }
   }
 }
 

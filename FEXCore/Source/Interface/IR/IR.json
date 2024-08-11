@@ -581,6 +581,22 @@
         "HasSideEffects": true,
         "DestSize": "Size"
       },
+      "GPR = RMWHandle GPR:$Value": {
+        "Desc": [
+          "This is a special move that indicates the result will be poisoned by a non-SSA instruction writing to its result.",
+          "In effect, it serves to prevent invalid optimizations with non-SSA instructions."
+        ],
+        "HasSideEffects": true,
+        "TiedSource": 0
+      },
+      "GPR:$Addr, GPR:$Value = Pop u8:$Size, GPR:$Addr": {
+        "Desc": [
+          "Pops a value from the address, updating the new pointer after incrementing.",
+          "The address is incremented by the size via an RMW source/destintaion."
+        ],
+        "HasSideEffects": true,
+        "DestSize": "Size"
+      },
       "GPR = MemSet i1:$IsAtomic, u8:$Size, GPR:$Prefix, GPR:$Addr, GPR:$Value, GPR:$Length, GPR:$Direction": {
         "Desc": ["Duplicates behaviour of x86 STOS repeat",
                  "Returns the final address that gets generated without the prefix appended."
