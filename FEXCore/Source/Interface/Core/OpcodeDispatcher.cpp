@@ -518,52 +518,22 @@ void OpDispatchBuilder::POPAOp(OpcodeArgs) {
   // 32bit only
   const uint8_t Size = GetSrcSize(Op);
 
-  auto Constant = _Constant(Size);
-  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
+  Ref SP = _RMWHandle(LoadGPRRegister(X86State::REG_RSP));
 
-  // POPA order:
-  // pop EDI
-  // pop ESI
-  // pop EBP
-  // ESP += 4; // Skip RSP because it'll be correct at the end
-  // pop EBX
-  // pop EDX
-  // pop ECX
-  // pop EAX
+  StoreGPRRegister(X86State::REG_RDI, _Pop(Size, SP), Size);
+  StoreGPRRegister(X86State::REG_RSI, _Pop(Size, SP), Size);
+  StoreGPRRegister(X86State::REG_RBP, _Pop(Size, SP), Size);
 
-  Ref Src {};
-  Ref NewSP = OldSP;
-  Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  StoreGPRRegister(X86State::REG_RDI, Src, Size);
-  NewSP = _Add(OpSize::i64Bit, NewSP, Constant);
+  // Skip loading RSP because it'll be correct at the end
+  SP = _RMWHandle(_Add(OpSize::i64Bit, SP, _Constant(Size)));
 
-  Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  StoreGPRRegister(X86State::REG_RSI, Src, Size);
-  NewSP = _Add(OpSize::i64Bit, NewSP, Constant);
-
-  Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  StoreGPRRegister(X86State::REG_RBP, Src, Size);
-  NewSP = _Add(OpSize::i64Bit, NewSP, _Constant(Size * 2));
-
-  // Skip SP loading
-  Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  StoreGPRRegister(X86State::REG_RBX, Src, Size);
-  NewSP = _Add(OpSize::i64Bit, NewSP, Constant);
-
-  Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  StoreGPRRegister(X86State::REG_RDX, Src, Size);
-  NewSP = _Add(OpSize::i64Bit, NewSP, Constant);
-
-  Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  StoreGPRRegister(X86State::REG_RCX, Src, Size);
-  NewSP = _Add(OpSize::i64Bit, NewSP, Constant);
-
-  Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  StoreGPRRegister(X86State::REG_RAX, Src, Size);
-  NewSP = _Add(OpSize::i64Bit, NewSP, Constant);
+  StoreGPRRegister(X86State::REG_RBX, _Pop(Size, SP), Size);
+  StoreGPRRegister(X86State::REG_RDX, _Pop(Size, SP), Size);
+  StoreGPRRegister(X86State::REG_RCX, _Pop(Size, SP), Size);
+  StoreGPRRegister(X86State::REG_RAX, _Pop(Size, SP), Size);
 
   // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP);
+  StoreGPRRegister(X86State::REG_RSP, SP);
 }
 
 template<uint32_t SegmentReg>
