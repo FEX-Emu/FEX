@@ -23,6 +23,6 @@ void UnloadVDSOMapping(const VDSOMapping& Mapping);
 
 uint64_t GetVSyscallEntry(const void* VDSOBase);
 
-const std::span<FEXCore::IR::ThunkDefinition> GetVDSOThunkDefinitions();
+const std::span<FEXCore::IR::ThunkDefinition> GetVDSOThunkDefinitions(bool Is64Bit);
 const VDSOSigReturn& GetVDSOSymbols();
 } // namespace FEX::VDSO
