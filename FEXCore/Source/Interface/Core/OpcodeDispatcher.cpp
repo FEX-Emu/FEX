@@ -541,13 +541,11 @@ void OpDispatchBuilder::POPSegmentOp(OpcodeArgs) {
   const uint8_t SrcSize = GetSrcSize(Op);
   const uint8_t DstSize = GetDstSize(Op);
 
-  auto Constant = _Constant(SrcSize);
-  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-  auto NewSegment = _LoadMem(GPRClass, SrcSize, OldSP, SrcSize);
-  auto NewSP = _Add(OpSize::i64Bit, OldSP, Constant);
+  Ref SP = _RMWHandle(LoadGPRRegister(X86State::REG_RSP));
+  auto NewSegment = _Pop(SrcSize, SP);
 
   // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP);
+  StoreGPRRegister(X86State::REG_RSP, SP);
 
   switch (SegmentReg) {
   case FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX:
