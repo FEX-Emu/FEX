@@ -4609,7 +4609,9 @@ void OpDispatchBuilder::UnhandledOp(OpcodeArgs) {
 
 template<uint32_t SrcIndex>
 void OpDispatchBuilder::MOVGPROp(OpcodeArgs) {
-  Ref Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.Align = 1});
+  // StoreResult will store with the same size as the input, so we allow upper
+  // garbage on the input. The zero extension would be pointless.
+  Ref Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.Align = 1, .AllowUpperGarbage = true});
   StoreResult(GPRClass, Op, Src, 1);
 }
 
