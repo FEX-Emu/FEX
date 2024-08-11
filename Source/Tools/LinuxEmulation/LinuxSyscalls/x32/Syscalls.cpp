@@ -51,20 +51,6 @@ x32SyscallHandler::x32SyscallHandler(FEXCore::Context::Context* ctx, FEX::HLE::S
 }
 
 void x32SyscallHandler::RegisterSyscallHandlers() {
-  auto cvt = [](auto in) {
-    union {
-      decltype(in) val;
-      void* raw;
-    } raw;
-    raw.val = in;
-    return raw.raw;
-  };
-
-  Definitions.resize(FEX::HLE::x32::SYSCALL_x86_MAX, SyscallFunctionDefinition {
-                                                       .NumArgs = 255,
-                                                       .Ptr = cvt(&UnimplementedSyscall),
-                                                     });
-
   FEX::HLE::RegisterEpoll(this);
   FEX::HLE::RegisterFD(this);
   FEX::HLE::RegisterFS(this);
@@ -98,7 +84,7 @@ void x32SyscallHandler::RegisterSyscallHandlers() {
 
 #if PRINT_MISSING_SYSCALLS
   for (auto& Syscall : SyscallNames) {
-    if (Definitions[Syscall.first].Ptr == cvt(&UnimplementedSyscall)) {
+    if (Definitions[Syscall.first].Ptr == reinterpret_cast<void*>(&UnimplementedSyscall)) {
       LogMan::Msg::DFmt("Unimplemented syscall: {}: {}", Syscall.first, Syscall.second);
     }
   }

@@ -6,6 +6,7 @@ $end_info$
 */
 #pragma once
 
+namespace FEX::HLE::x32 {
 ///< Enum containing all 32bit x86 linux syscalls for the guest kernel version
 enum Syscalls_x86 {
   SYSCALL_x86_restart_syscall = 0,
@@ -481,3 +482,4 @@ enum Syscalls_x86 {
   SYSCALL_x86_mseal = 462,
   SYSCALL_x86_MAX = 512,
 };
+} // namespace FEX::HLE::x32

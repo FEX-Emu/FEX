@@ -45,15 +45,7 @@ public:
                           void* SyscallHandler, int ArgumentCount) override {
     auto& Def = Definitions.at(SyscallNumber);
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-    auto cvt = [](auto in) {
-      union {
-        decltype(in) val;
-        void* raw;
-      } raw;
-      raw.val = in;
-      return raw.raw;
-    };
-    LOGMAN_THROW_A_FMT(Def.Ptr == cvt(&UnimplementedSyscall), "Oops overwriting sysall problem, {}", SyscallNumber);
+    LOGMAN_THROW_A_FMT(Def.Ptr == reinterpret_cast<void*>(&UnimplementedSyscall), "Oops overwriting sysall problem, {}", SyscallNumber);
 #endif
     Def.Ptr = SyscallHandler;
     Def.NumArgs = ArgumentCount;
