@@ -187,6 +187,7 @@ public:
   }
 
   void Set(ConfigOption Option, const char* Data) {
+    LOGMAN_THROW_AA_FMT(Data != nullptr, "Data can't be null");
     OptionMap[Option].emplace_back(fextl::string(Data));
   }
 
