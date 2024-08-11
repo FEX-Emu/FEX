@@ -4298,18 +4298,16 @@ AddressMode OpDispatchBuilder::SelectAddressMode(AddressMode A, bool AtomicTSO, 
   //
   // TODO: Also handle GPR TSO if we can guarantee the constant inlines.
   if (SupportsRegIndex) {
-    if ((A.Base || A.Segment) && A.Offset && !A.Index) {
+    if ((A.Base || A.Segment) && A.Offset) {
       const bool Const_16K = A.Offset > -16384 && A.Offset < 16384 && A.AddrSize == 4 && GPRSize == 4;
 
       if ((A.AddrSize == 8) || Const_16K) {
-        if (A.Base && A.Segment) {
-          A.Base = _Add(IR::SizeToOpSize(GPRSize), A.Base, A.Segment);
-        } else if (A.Segment) {
-          A.Base = A.Segment;
-        }
+        // Peel off the offset
+        AddressMode B = A;
+        B.Offset = 0;
 
         return {
-          .Base = A.Base,
+          .Base = LoadEffectiveAddress(B, true /* AddSegmentBase */, false),
           .Index = _Constant(A.Offset),
           .IndexType = MEM_OFFSET_SXTX,
           .IndexScale = 1,
