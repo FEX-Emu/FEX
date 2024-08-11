@@ -574,16 +574,11 @@ void OpDispatchBuilder::POPSegmentOp(OpcodeArgs) {
 
 void OpDispatchBuilder::LEAVEOp(OpcodeArgs) {
   // First we move RBP in to RSP and then behave effectively like a pop
-  const uint8_t Size = GetSrcSize(Op);
-
-  auto Constant = _Constant(Size);
-  auto OldBP = LoadGPRRegister(X86State::REG_RBP);
-
-  auto NewGPR = _LoadMem(GPRClass, Size, OldBP, Size);
-  auto NewSP = _Add(IR::SizeToOpSize(Size), OldBP, Constant);
+  auto SP = _RMWHandle(LoadGPRRegister(X86State::REG_RBP));
+  auto NewGPR = _Pop(GetSrcSize(Op), SP);
 
   // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP);
+  StoreGPRRegister(X86State::REG_RSP, SP);
 
   // Store what we loaded to RBP
   StoreGPRRegister(X86State::REG_RBP, NewGPR);
