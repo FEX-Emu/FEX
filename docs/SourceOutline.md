@@ -1,11 +1,11 @@
-# FEX-2407
+# FEX-2408
 
 ## FEXCore
 See [FEXCore/Readme.md](../FEXCore/Readme.md) for more details
 
 ### Glossary
 
-- Splatter: a code generator backend that concatenates configurable macros instead of doing isel
+- Splatter: a code generator backend that concaternates configurable macros instead of doing isel
 - IR: Intermediate Representation, our high-level opcode representation, loosely modeling arm64
 - SSA: Single Static Assignment, a form of representing IR in memory
 - Basic Block: A block of instructions with no control flow, terminated by control flow
@@ -22,7 +22,6 @@ IR to host code generation
 - [BranchOps.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/BranchOps.cpp)
 - [ConversionOps.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/ConversionOps.cpp)
 - [EncryptionOps.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/EncryptionOps.cpp)
-- [FlagOps.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/FlagOps.cpp)
 - [JIT.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/JIT.cpp): Main glue logic of the arm64 splatter backend
 - [JITClass.h](../FEXCore/Source/Interface/Core/JIT/Arm64/JITClass.h)
 - [MemoryOps.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/MemoryOps.cpp)
@@ -115,7 +114,6 @@ IR to IR Optimization
 - [RedundantFlagCalculationElimination.cpp](../FEXCore/Source/Interface/IR/Passes/RedundantFlagCalculationElimination.cpp): This is not used right now, possibly broken
 - [RegisterAllocationPass.cpp](../FEXCore/Source/Interface/IR/Passes/RegisterAllocationPass.cpp)
 - [RegisterAllocationPass.h](../FEXCore/Source/Interface/IR/Passes/RegisterAllocationPass.h)
-- [x87StackOptimizationPass.cpp](../FEXCore/Source/Interface/IR/Passes/x87StackOptimizationPass.cpp): x87 stack optimization pass
 
 
 
