@@ -151,6 +151,8 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
       .CanEliminate = true,
     };
 
+  case OP_RDRAND: return {.Write = FLAG_NZCV};
+
   case OP_ADDNZCV:
   case OP_SUBNZCV:
   case OP_TESTNZ:
@@ -201,7 +203,8 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
       .CanEliminate = true,
     };
 
-  case OP_NZCVSELECT: {
+  case OP_NZCVSELECT:
+  case OP_NZCVSELECTINCREMENT: {
     auto Op = IROp->CW<IR::IROp_NZCVSelect>();
     return {.Read = FlagsForCondClassType(Op->Cond)};
   }

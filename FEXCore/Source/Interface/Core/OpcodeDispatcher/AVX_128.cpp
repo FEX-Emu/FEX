@@ -2234,7 +2234,7 @@ void OpDispatchBuilder::AVX128_VTESTP(OpcodeArgs) {
 
   // For 256-bit, we need to split up the operation. This is nontrivial.
   // Let's go the simple route here.
-  Ref ZF, CF;
+  Ref ZF, CFInv;
   Ref ZeroConst = _Constant(0);
   Ref OneConst = _Constant(1);
 
@@ -2278,13 +2278,12 @@ void OpDispatchBuilder::AVX128_VTESTP(OpcodeArgs) {
 
     // ExtGPR will either be [0, 8] or [0, 16] If 0 then set Flag.
     auto ExtGPR = _VExtractToGPR(OpSize::i128Bit, ElementSize, AddWide, 0);
-    CF = _Select(IR::COND_EQ, ExtGPR, ZeroConst, OneConst, ZeroConst);
+    CFInv = _Select(IR::COND_NEQ, ExtGPR, ZeroConst, OneConst, ZeroConst);
   }
 
   // As in PTest, this sets Z appropriately while zeroing the rest of NZCV.
   SetNZ_ZeroCV(32, ZF);
-  SetRFLAG(CF, FEXCore::X86State::RFLAG_CF_RAW_LOC);
-
+  SetCFInverted(CFInv);
   ZeroPF_AF();
 }
 
@@ -2324,15 +2323,14 @@ void OpDispatchBuilder::AVX128_PTest(OpcodeArgs) {
   auto ZeroConst = _Constant(0);
   auto OneConst = _Constant(1);
 
-  Test2 = _Select(FEXCore::IR::COND_EQ, Test2, ZeroConst, OneConst, ZeroConst);
+  Test2 = _Select(FEXCore::IR::COND_NEQ, Test2, ZeroConst, OneConst, ZeroConst);
 
   // Careful, these flags are different between {V,}PTEST and VTESTP{S,D}
   // Set ZF according to Test1. SF will be zeroed since we do a 32-bit test on
   // the results of a 16-bit value from the UMaxV, so the 32-bit sign bit is
   // cleared even if the 16-bit scalars were negative.
   SetNZ_ZeroCV(32, Test1);
-  SetRFLAG(Test2, FEXCore::X86State::RFLAG_CF_RAW_LOC);
-
+  SetCFInverted(Test2);
   ZeroPF_AF();
 }
 

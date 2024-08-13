@@ -31,8 +31,8 @@
         "mov w27, #0x0",
         "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
-        "cset x21, eq",
-        "tst w20, w20",
+        "cset x21, ne",
+        "cmp w20, #0x0 (0)",
         "rmif x21, #63, #nzCv"
       ]
     },
@@ -55,8 +55,8 @@
         "mov w27, #0x0",
         "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
-        "cset x21, eq",
-        "tst w20, w20",
+        "cset x21, ne",
+        "cmp w20, #0x0 (0)",
         "rmif x21, #63, #nzCv"
       ]
     },
@@ -79,8 +79,8 @@
         "mov w27, #0x0",
         "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
-        "cset x21, eq",
-        "tst w20, w20",
+        "cset x21, ne",
+        "cmp w20, #0x0 (0)",
         "rmif x21, #63, #nzCv"
       ]
     },
@@ -103,8 +103,8 @@
         "mov w27, #0x0",
         "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
-        "cset x21, eq",
-        "tst w20, w20",
+        "cset x21, ne",
+        "cmp w20, #0x0 (0)",
         "rmif x21, #63, #nzCv"
       ]
     },
@@ -123,8 +123,8 @@
         "mov w27, #0x0",
         "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
-        "cset x21, eq",
-        "tst w20, w20",
+        "cset x21, ne",
+        "cmp w20, #0x0 (0)",
         "rmif x21, #63, #nzCv"
       ]
     },
@@ -143,8 +143,8 @@
         "mov w27, #0x0",
         "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
-        "cset x21, eq",
-        "tst w20, w20",
+        "cset x21, ne",
+        "cmp w20, #0x0 (0)",
         "rmif x21, #63, #nzCv"
       ]
     },
@@ -351,7 +351,7 @@
       ],
       "ExpectedArm64ASM": [
         "bic w26, w5, w7",
-        "tst w26, w26",
+        "cmp w26, #0x0 (0)",
         "mov x4, x26"
       ]
     },
@@ -362,7 +362,7 @@
       ],
       "ExpectedArm64ASM": [
         "bic x26, x5, x7",
-        "tst x26, x26",
+        "cmp x26, #0x0 (0)",
         "mov x4, x26"
       ]
     },
@@ -377,8 +377,8 @@
         "bic w20, w7, w20",
         "tst x5, #0xe0",
         "csel w4, w7, w20, ne",
-        "cset w20, ne",
-        "tst w4, w4",
+        "cset w20, eq",
+        "cmp w4, #0x0 (0)",
         "rmif x20, #63, #nzCv"
       ]
     },
@@ -393,8 +393,8 @@
         "bic x20, x7, x20",
         "tst x5, #0xc0",
         "csel x4, x7, x20, ne",
-        "cset w20, ne",
-        "tst x4, x4",
+        "cset w20, eq",
+        "cmp x4, #0x0 (0)",
         "rmif x20, #63, #nzCv"
       ]
     },
@@ -459,7 +459,7 @@
         "bic w22, w20, w22",
         "cmp w21, #0x1f (31)",
         "csel w4, w22, w20, ls",
-        "tst w4, w4"
+        "cmp w4, #0x0 (0)"
       ]
     },
     "bextr rax, rbx, rcx": {
@@ -479,7 +479,7 @@
         "bic x22, x20, x22",
         "cmp x21, #0x3f (63)",
         "csel x4, x22, x20, ls",
-        "tst x4, x4"
+        "cmp x4, #0x0 (0)"
       ]
     }
   }

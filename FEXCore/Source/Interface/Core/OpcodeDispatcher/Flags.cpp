@@ -46,6 +46,9 @@ void OpDispatchBuilder::SetPackedRFLAG(bool Lower8, Ref Src) {
     InvalidateDeferredFlags();
   }
 
+  // PF and CF are both stored inverted, so hoist the invert.
+  auto SrcInverted = _Not(OpSize::i32Bit, Src);
+
   for (size_t i = 0; i < NumFlags; ++i) {
     const auto FlagOffset = FlagOffsets[i];
 
@@ -59,15 +62,15 @@ void OpDispatchBuilder::SetPackedRFLAG(bool Lower8, Ref Src) {
       // So we write out the whole flags byte to AF without an extract.
       static_assert(FEXCore::X86State::RFLAG_AF_RAW_LOC == 4);
       SetRFLAG(Src, FEXCore::X86State::RFLAG_AF_RAW_LOC);
-    } else if (FlagOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC) {
-      // PF is stored parity flipped
-      Ref Tmp = _Bfe(OpSize::i32Bit, 1, FlagOffset, Src);
-      Tmp = _Xor(OpSize::i32Bit, Tmp, _Constant(1));
-      SetRFLAG(Tmp, FlagOffset);
+    } else if (FlagOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC || FlagOffset == FEXCore::X86State::RFLAG_CF_RAW_LOC) {
+      // PF and CF are both stored parity flipped.
+      SetRFLAG(SrcInverted, FlagOffset, FlagOffset, true);
     } else {
       SetRFLAG(Src, FlagOffset, FlagOffset, true);
     }
   }
+
+  CFInverted = true;
 }
 
 Ref OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
@@ -267,6 +270,12 @@ void OpDispatchBuilder::CalculateDeferredFlags() {
   NZCVDirty = false;
 }
 
+Ref OpDispatchBuilder::IncrementByCarry(OpSize OpSize, Ref Src) {
+  // If CF not inverted, we use .cc since the increment happens when the
+  // condition is false. If CF inverted, invert to use .cs. A bit mindbendy.
+  return _NZCVSelectIncrement(OpSize, {CFInverted ? COND_UGE : COND_ULT}, Src, Src);
+}
+
 Ref OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, Ref Src1, Ref Src2) {
   auto Zero = _Constant(0);
   auto One = _Constant(1);
@@ -276,25 +285,27 @@ Ref OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, Ref Src1, Ref Src2) {
   CalculateAF(Src1, Src2);
 
   if (SrcSize >= 4) {
+    RectifyCarryInvert(false);
     HandleNZCV_RMW();
     Res = _AdcWithFlags(OpSize, Src1, Src2);
+    CFInverted = false;
   } else {
     // Need to zero-extend for correct comparisons below
     Src2 = _Bfe(OpSize, SrcSize * 8, 0, Src2);
 
     // Note that we do not extend Src2PlusCF, since we depend on proper
     // 32-bit arithmetic to correctly handle the Src2 = 0xffff case.
-    Ref Src2PlusCF = _Adc(OpSize, _Constant(0), Src2);
+    Ref Src2PlusCF = IncrementByCarry(OpSize, Src2);
 
     // Need to zero-extend for the comparison.
     Res = _Add(OpSize, Src1, Src2PlusCF);
     Res = _Bfe(OpSize, SrcSize * 8, 0, Res);
 
     // TODO: We can fold that second Bfe in (cmp uxth).
-    auto SelectCF = _Select(FEXCore::IR::COND_ULT, Res, Src2PlusCF, One, Zero);
+    auto SelectCFInv = _Select(FEXCore::IR::COND_UGE, Res, Src2PlusCF, One, Zero);
 
     SetNZ_ZeroCV(SrcSize, Res);
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(SelectCF);
+    SetCFInverted(SelectCFInv);
     CalculateOF(SrcSize, Res, Src1, Src2, false);
   }
 
@@ -311,28 +322,26 @@ Ref OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, Ref Src1, Ref Src2) {
 
   Ref Res;
   if (SrcSize >= 4) {
-    // Rectify input carry
-    CarryInvert();
-
+    // Arm's subtraction has inverted CF from x86, so rectify the input and
+    // invert the output.
+    RectifyCarryInvert(true);
     HandleNZCV_RMW();
     Res = _SbbWithFlags(OpSize, Src1, Src2);
-
-    // Rectify output carry
-    CarryInvert();
+    CFInverted = true;
   } else {
     // Zero extend for correct comparison behaviour with Src1 = 0xffff.
     Src1 = _Bfe(OpSize, SrcSize * 8, 0, Src1);
     Src2 = _Bfe(OpSize, SrcSize * 8, 0, Src2);
 
-    auto Src2PlusCF = _Adc(OpSize, _Constant(0), Src2);
+    auto Src2PlusCF = IncrementByCarry(OpSize, Src2);
 
     Res = _Sub(OpSize, Src1, Src2PlusCF);
     Res = _Bfe(OpSize, SrcSize * 8, 0, Res);
 
-    auto SelectCF = _Select(FEXCore::IR::COND_ULT, Src1, Src2PlusCF, One, Zero);
+    auto SelectCFInv = _Select(FEXCore::IR::COND_UGE, Src1, Src2PlusCF, One, Zero);
 
     SetNZ_ZeroCV(SrcSize, Res);
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(SelectCF);
+    SetCFInverted(SelectCFInv);
     CalculateOF(SrcSize, Res, Src1, Src2, true);
   }
 
@@ -342,7 +351,7 @@ Ref OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, Ref Src1, Ref Src2) {
 
 Ref OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, Ref Src1, Ref Src2, bool UpdateCF) {
   // Stash CF before stomping over it
-  auto OldCF = UpdateCF ? nullptr : GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
+  auto OldCFInv = UpdateCF ? nullptr : GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC, true);
 
   HandleNZCVWrite();
 
@@ -358,12 +367,13 @@ Ref OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, Ref Src1, Ref Src2, b
 
   CalculatePF(Res);
 
-  // If we're updating CF, we need to invert it for correctness. If we're not
-  // updating CF, we need to restore the CF since we stomped over it.
+  // If we're updating CF, we need it to be inverted because SubNZCV is inverted
+  // from x86. If we're not updating CF, we need to restore the CF since we
+  // stomped over it.
   if (UpdateCF) {
-    CarryInvert();
+    CFInverted = true;
   } else {
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(OldCF);
+    SetCFInverted(OldCFInv);
   }
 
   return Res;
@@ -371,7 +381,7 @@ Ref OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, Ref Src1, Ref Src2, b
 
 Ref OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, Ref Src1, Ref Src2, bool UpdateCF) {
   // Stash CF before stomping over it
-  auto OldCF = UpdateCF ? nullptr : GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
+  auto OldCFInv = UpdateCF ? nullptr : GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC, true);
 
   HandleNZCVWrite();
 
@@ -388,8 +398,11 @@ Ref OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, Ref Src1, Ref Src2, b
   CalculatePF(Res);
 
   // We stomped over CF while calculation flags, restore it.
-  if (!UpdateCF) {
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(OldCF);
+  if (UpdateCF) {
+    // Adds match between x86 and arm64.
+    CFInverted = false;
+  } else {
+    SetCFInverted(OldCFInv);
   }
 
   return Res;
@@ -404,10 +417,11 @@ void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, Ref Res, Ref High) {
   auto SignBit = _Sbfe(OpSize::i64Bit, 1, SrcSize * 8 - 1, Res);
   _SubNZCV(OpSize::i64Bit, High, SignBit);
 
-  // If High = SignBit, then sets to nZcv. Else sets to nzCV. Since SF/ZF
-  // undefined, this does what we need.
+  // If High = SignBit, then sets to nZCv. Else sets to nzcV. Since SF/ZF
+  // undefined, this does what we need after inverting carry.
   auto Zero = _Constant(0);
-  _CondAddNZCV(OpSize::i64Bit, Zero, Zero, CondClassType {COND_EQ}, 0x3 /* nzCV */);
+  _CondSubNZCV(OpSize::i64Bit, Zero, Zero, CondClassType {COND_EQ}, 0x1 /* nzcV */);
+  CFInverted = true;
 }
 
 void OpDispatchBuilder::CalculateFlags_UMUL(Ref High) {
@@ -421,9 +435,10 @@ void OpDispatchBuilder::CalculateFlags_UMUL(Ref High) {
   // The result register will be all zero if it can't fit due to how multiplication behaves
   _SubNZCV(Size, High, Zero);
 
-  // If High = 0, then sets to nZcv. Else sets to nzCV. Since SF/ZF undefined,
+  // If High = 0, then sets to nZCv. Else sets to nzcV. Since SF/ZF undefined,
   // this does what we need.
-  _CondAddNZCV(Size, Zero, Zero, CondClassType {COND_EQ}, 0x3 /* nzCV */);
+  _CondSubNZCV(Size, Zero, Zero, CondClassType {COND_EQ}, 0x1 /* nzcV */);
+  CFInverted = true;
 }
 
 void OpDispatchBuilder::CalculateFlags_Logical(uint8_t SrcSize, Ref Res, Ref Src1, Ref Src2) {
@@ -452,7 +467,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, Ref U
     // nothing to do in that case since we already cleared CF above.
     auto SrcSizeBits = SrcSize * 8;
     if (Shift < SrcSizeBits) {
-      SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Src1, SrcSizeBits - Shift, true);
+      SetCFDirect(Src1, SrcSizeBits - Shift, true);
     }
   }
 
@@ -477,11 +492,8 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, 
 
   SetNZ_ZeroCV(SrcSize, Res);
 
-  // CF
-  {
-    // Extract the last bit shifted in to CF
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Src1, Shift - 1, true);
-  }
+  // Extract the last bit shifted in to CF
+  SetCFDirect(Src1, Shift - 1, true);
 
   CalculatePF(Res);
   InvalidateAF();
@@ -497,11 +509,8 @@ void OpDispatchBuilder::CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize
   // set below.
   SetNZ_ZeroCV(SrcSize, Res);
 
-  // CF
-  {
-    // Extract the last bit shifted in to CF
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Src1, Shift - 1, true);
-  }
+  // Extract the last bit shifted in to CF
+  SetCFDirect(Src1, Shift - 1, true);
 
   CalculatePF(Res);
   InvalidateAF();
@@ -546,64 +555,6 @@ void OpDispatchBuilder::CalculateFlags_ShiftRightDoubleImmediate(uint8_t SrcSize
   }
 }
 
-void OpDispatchBuilder::CalculateFlags_BEXTR(Ref Src) {
-  // ZF is set properly. CF and OF are defined as being set to zero. SF, PF, and
-  // AF are undefined.
-  SetNZ_ZeroCV(GetOpSize(Src), Src);
-  InvalidatePF_AF();
-}
-
-void OpDispatchBuilder::CalculateFlags_BLSI(uint8_t SrcSize, Ref Result) {
-  // CF is cleared if Src is zero, otherwise it's set. However, Src is zero iff
-  // Result is zero, so we can test the result instead. So, CF is just the
-  // inverted ZF.
-  //
-  // ZF/SF/OF set as usual.
-  SetNZ_ZeroCV(SrcSize, Result);
-  InvalidatePF_AF();
-
-  auto CFOp = GetRFLAG(X86State::RFLAG_ZF_RAW_LOC, true /* Invert */);
-  SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFOp);
-}
-
-void OpDispatchBuilder::CalculateFlags_BLSMSK(uint8_t SrcSize, Ref Result, Ref Src) {
-  InvalidatePF_AF();
-
-  // CF set according to the Src
-  auto Zero = _Constant(0);
-  auto One = _Constant(1);
-  auto CFOp = _Select(IR::COND_EQ, Src, Zero, One, Zero);
-
-  // The output of BLSMSK is always nonzero, so TST will clear Z (along with C
-  // and O) while setting S.
-  SetNZ_ZeroCV(SrcSize, Result);
-  SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFOp);
-}
-
-void OpDispatchBuilder::CalculateFlags_BLSR(uint8_t SrcSize, Ref Result, Ref Src) {
-  auto Zero = _Constant(0);
-  auto One = _Constant(1);
-  auto CFOp = _Select(IR::COND_EQ, Src, Zero, One, Zero);
-
-  SetNZ_ZeroCV(SrcSize, Result);
-  SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFOp);
-  InvalidatePF_AF();
-}
-
-void OpDispatchBuilder::CalculateFlags_POPCOUNT(Ref Result) {
-  // We need to set ZF while clearing the rest of NZCV. The result of a popcount
-  // is in the range [0, 63]. In particular, it is always positive. So a
-  // combined NZ test will correctly zero SF/CF/OF while setting ZF.
-  SetNZ_ZeroCV(OpSize::i32Bit, Result);
-  ZeroPF_AF();
-}
-
-void OpDispatchBuilder::CalculateFlags_BZHI(uint8_t SrcSize, Ref Result, Ref Src) {
-  InvalidatePF_AF();
-  SetNZ_ZeroCV(SrcSize, Result);
-  SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(Src);
-}
-
 void OpDispatchBuilder::CalculateFlags_ZCNT(uint8_t SrcSize, Ref Result) {
   // OF, SF, AF, PF all undefined
   // Test ZF of result, SF is undefined so this is ok.
@@ -613,16 +564,7 @@ void OpDispatchBuilder::CalculateFlags_ZCNT(uint8_t SrcSize, Ref Result) {
   // Result is <= SrcSize * 8, we equivalently check if the log2(SrcSize * 8)
   // bit is set. No masking is needed because no higher bits could be set.
   unsigned CarryBit = FEXCore::ilog2(SrcSize * 8u);
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Result, CarryBit);
-}
-
-void OpDispatchBuilder::CalculateFlags_RDRAND(Ref Src) {
-  // OF, SF, ZF, AF, PF all zero
-  ZeroNZCV();
-  ZeroPF_AF();
-
-  // CF is set to the incoming source
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Src);
+  SetCFDirect(Result, CarryBit);
 }
 
 } // namespace FEXCore::IR

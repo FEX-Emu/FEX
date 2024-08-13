@@ -162,6 +162,10 @@ struct CPUState {
     // zero DF.
     flags[X86State::RFLAG_DF_RAW_LOC] = 0x1;
 
+    // Likewise, SF/ZF/CF/OF must be cleared. This would be simply zeroing
+    // NZCV... but we invert CF inside the JIT. So set just bit 29 (carry).
+    flags[X86State::RFLAG_NZCV_3_LOC] = (1 << (29 - 24));
+
     // Default mxcsr value
     // All exception masks enabled.
     mxcsr = 0x1F80;

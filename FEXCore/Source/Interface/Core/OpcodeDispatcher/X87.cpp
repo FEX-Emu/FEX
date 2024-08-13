@@ -622,7 +622,7 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs, size_t Width, bool Integer, OpDispatch
     // OF, SF, AF, PF all undefined
     InvalidateDeferredFlags();
 
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(HostFlag_CF);
+    SetCFDirect(HostFlag_CF);
     SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(HostFlag_ZF);
 
     // PF is stored inverted, so invert from the host flag.

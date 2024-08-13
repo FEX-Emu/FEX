@@ -4088,15 +4088,14 @@ void OpDispatchBuilder::PTestOpImpl(OpSize Size, Ref Dest, Ref Src) {
   auto ZeroConst = _Constant(0);
   auto OneConst = _Constant(1);
 
-  Test2 = _Select(FEXCore::IR::COND_EQ, Test2, ZeroConst, OneConst, ZeroConst);
+  Test2 = _Select(FEXCore::IR::COND_NEQ, Test2, ZeroConst, OneConst, ZeroConst);
 
   // Careful, these flags are different between {V,}PTEST and VTESTP{S,D}
   // Set ZF according to Test1. SF will be zeroed since we do a 32-bit test on
   // the results of a 16-bit value from the UMaxV, so the 32-bit sign bit is
   // cleared even if the 16-bit scalars were negative.
   SetNZ_ZeroCV(32, Test1);
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Test2);
-
+  SetCFInverted(Test2);
   ZeroPF_AF();
 }
 
@@ -4130,12 +4129,11 @@ void OpDispatchBuilder::VTESTOpImpl(OpSize SrcSize, size_t ElementSize, Ref Src1
   Ref ZeroConst = _Constant(0);
   Ref OneConst = _Constant(1);
 
-  Ref CFResult = _Select(IR::COND_EQ, AndNotGPR, ZeroConst, OneConst, ZeroConst);
+  Ref CFInv = _Select(IR::COND_NEQ, AndNotGPR, ZeroConst, OneConst, ZeroConst);
 
   // As in PTest, this sets Z appropriately while zeroing the rest of NZCV.
   SetNZ_ZeroCV(32, AndGPR);
-  SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(CFResult);
-
+  SetCFInverted(CFInv);
   ZeroPF_AF();
 }
 
@@ -5068,6 +5066,7 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
 
   // Set all of the necessary flags. NZCV stored in bits 28...31 like the hw op.
   SetNZCV(IntermediateResult);
+  CFInverted = false;
   PossiblySetNZCVBits = ~0;
   ZeroPF_AF();
 }

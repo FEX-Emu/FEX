@@ -252,17 +252,16 @@
           "WalkFindRegClass($Value) != GPRPairClass"
         ]
       },
-      "GPRPair = RDRAND i1:$GetReseeded": {
+      "GPR = RDRAND i1:$GetReseeded": {
         "Desc": ["Uses the hardware random number generator to generate a 64bit number",
                  "The boolean argument asks if we should be reading the reseeded number or not",
                  "Reseeded RNG calculation is more expensive and will be heavier to use",
-                 "The first GPR pair element is the 64-bit number",
-                 "The second GPR pair element is a bool if the number is valid",
+                 "Returns the 64-bit number",
+                 "Sets the Z flag if the number is valid.",
                  "RNG hardware is allowed to fail early and return. Software must always check this"
                 ],
-        "ImplicitFlagClobber": true,
-        "DestSize": "16",
-        "NumElements": "2"
+        "HasSideEffects": true,
+        "DestSize": "8"
       },
       "Yield": {
         "HasSideEffects": true,
@@ -1296,7 +1295,7 @@
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "GPR = ShiftFlags OpSize:$Size, GPR:$Result, GPR:$Src1, ShiftType:$Shift, GPR:$Src2, GPR:$PFInput": {
+      "GPR = ShiftFlags OpSize:$Size, GPR:$Result, GPR:$Src1, ShiftType:$Shift, GPR:$Src2, GPR:$PFInput, i1:$InvertCF": {
         "Desc": ["Set NZCV flags for specified variable integer shift with given result.",
                  "Returns updated raw PF."],
         "HasSideEffects": true,
@@ -1439,6 +1438,16 @@
         "Desc": ["Select based on value in NZCV flags",
                  "op:",
                  "Dest = Cond ? TrueVal : FalseVal"
+                ],
+        "DestSize": "ResultSize",
+        "EmitValidation": [
+          "ResultSize == FEXCore::IR::OpSize::i32Bit || ResultSize == FEXCore::IR::OpSize::i64Bit"
+        ]
+      },
+      "GPR = NZCVSelectIncrement OpSize:#ResultSize, CondClass:$Cond, GPR:$TrueVal, GPR:$FalseVal": {
+        "Desc": ["Select and increment based on value in NZCV flags",
+                 "op:",
+                 "Dest = Cond ? TrueVal : (FalseVal + 1)"
                 ],
         "DestSize": "ResultSize",
         "EmitValidation": [

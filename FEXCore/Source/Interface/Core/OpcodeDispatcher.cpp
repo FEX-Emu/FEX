@@ -312,8 +312,7 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs) {
 
   Ref Before {};
   if (DestIsLockedMem(Op)) {
-    auto ALUOp = _Adc(OpSize, _Constant(0), Src);
-
+    auto ALUOp = IncrementByCarry(OpSize, Src);
     HandledLock = true;
 
     Ref DestMem = MakeSegmentAddress(Op, Op->Dest);
@@ -343,7 +342,7 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
     HandledLock = true;
 
     Ref DestMem = MakeSegmentAddress(Op, Op->Dest);
-    auto SrcPlusCF = _Adc(OpSize, _Constant(0), Src);
+    auto SrcPlusCF = IncrementByCarry(OpSize, Src);
     Before = _AtomicFetchSub(IR::SizeToOpSize(Size), SrcPlusCF, DestMem);
   } else {
     Before = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
@@ -359,7 +358,7 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
 void OpDispatchBuilder::SALCOp(OpcodeArgs) {
   CalculateDeferredFlags();
 
-  auto Result = _NZCVSelect(OpSize::i32Bit, CondClassType {COND_UGE} /* CF = 1 */, _Constant(0xffffffff), _Constant(0));
+  auto Result = NZCVSelect(OpSize::i32Bit, {COND_UGE} /* CF = 1 */, _Constant(0xffffffff), _Constant(0));
 
   StoreResult(GPRClass, Op, Result, -1);
 }
@@ -693,11 +692,14 @@ Ref OpDispatchBuilder::SelectBit(Ref Cmp, IR::OpSize ResultSize, Ref TrueValue, 
   }
 
   SaveNZCV();
+
+  // Because we're only clobbering NZCV internally, we ignore all carry flag
+  // shenanigans and just use the raw test and raw select.
   _TestNZ(OpSize::i32Bit, Cmp, _Constant(1));
-  return _NZCVSelect(ResultSize, CondClassType {COND_NEQ}, TrueValue, FalseValue);
+  return _NZCVSelect(ResultSize, {COND_NEQ}, TrueValue, FalseValue);
 }
 
-std::pair<bool, CondClassType> OpDispatchBuilder::DecodeNZCVCondition(uint8_t OP) const {
+std::pair<bool, CondClassType> OpDispatchBuilder::DecodeNZCVCondition(uint8_t OP) {
   switch (OP) {
   case 0x0: { // JO - Jump if OF == 1
     return {false, CondClassType {COND_FU}};
@@ -706,16 +708,27 @@ std::pair<bool, CondClassType> OpDispatchBuilder::DecodeNZCVCondition(uint8_t OP
     return {false, CondClassType {COND_FNU}};
   }
   case 0x2: { // JC - Jump if CF == 1
-    return {false, CondClassType {COND_UGE}};
+    return {false, CondClassType {CFInverted ? COND_ULT : COND_UGE}};
   }
   case 0x3: { // JNC - Jump if CF == 0
-    return {false, CondClassType {COND_ULT}};
+    return {false, CondClassType {CFInverted ? COND_UGE : COND_ULT}};
   }
   case 0x4: { // JE - Jump if ZF == 1
     return {false, CondClassType {COND_EQ}};
   }
   case 0x5: { // JNE - Jump if ZF == 0
     return {false, CondClassType {COND_NEQ}};
+  }
+  case 0x6: { // JNA - Jump if CF == 1 || ZF == 1
+    // With CF, we want (C == 0 || Z == 1). By De Morgan's, that's
+    // equivalent to !(C == 1 && Z == 0). That's .ls
+    RectifyCarryInvert(true);
+    return {false, CondClassType {COND_ULE}};
+  }
+  case 0x7: { // JA - Jump if CF == 0 && ZF == 0
+    // With CF inverted, we want (C == 1 && Z == 0). That's .hi
+    RectifyCarryInvert(true);
+    return {false, CondClassType {COND_UGT}};
   }
   case 0x8: { // JS - Jump if SF == 1
     return {false, CondClassType {COND_MI}};
@@ -744,20 +757,11 @@ std::pair<bool, CondClassType> OpDispatchBuilder::DecodeNZCVCondition(uint8_t OP
 Ref OpDispatchBuilder::SelectCC(uint8_t OP, IR::OpSize ResultSize, Ref TrueValue, Ref FalseValue) {
   auto [Complex, Cond] = DecodeNZCVCondition(OP);
   if (!Complex) {
+    // Use raw select since DecodeNZCVCondition handles the carry invert
     return _NZCVSelect(ResultSize, Cond, TrueValue, FalseValue);
   }
 
   switch (OP) {
-  case 0x6: { // JNA - Jump if CF == 1 || ZC == 1
-    // (A || B) ? C : D is equivalent to B ? C : (A ? C : D)
-    auto TMP = _NZCVSelect(ResultSize, CondClassType {COND_UGE}, TrueValue, FalseValue);
-    return _NZCVSelect(ResultSize, CondClassType {COND_EQ}, TrueValue, TMP);
-  }
-  case 0x7: { // JA - Jump if CF == 0 && ZF == 0
-    // (A && B) ? C : D is equivalent to B ? (A ? C : D) : D
-    auto TMP = _NZCVSelect(ResultSize, CondClassType {COND_ULT}, TrueValue, FalseValue);
-    return _NZCVSelect(ResultSize, CondClassType {COND_NEQ}, TMP, FalseValue);
-  }
   case 0xA: { // JP - Jump if PF == 1
     // Raw value contains inverted PF in bottom bit
     return SelectBit(LoadPFRaw(true), ResultSize, TrueValue, FalseValue);
@@ -968,7 +972,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
   //
   // To handle efficiently, smash RCX to zero if ZF is wrong (1 csel).
   if (CheckZF) {
-    CondReg = _NZCVSelect(OpSize, {ZFTrue ? COND_EQ : COND_NEQ}, CondReg, _Constant(0));
+    CondReg = NZCVSelect(OpSize, {ZFTrue ? COND_EQ : COND_NEQ}, CondReg, _Constant(0));
   }
 
   CalculateDeferredFlags();
@@ -1247,10 +1251,10 @@ void OpDispatchBuilder::FLAGControlOp(OpcodeArgs) {
     CarryInvert();
     break;
   case 0xF8: // CLC
-    SetRFLAG(_Constant(0), FEXCore::X86State::RFLAG_CF_RAW_LOC);
+    SetCFInverted(_Constant(1));
     break;
   case 0xF9: // STC
-    SetRFLAG(_Constant(1), FEXCore::X86State::RFLAG_CF_RAW_LOC);
+    SetCFInverted(_Constant(0));
     break;
   case 0xFC: // CLD
     SetRFLAG(_Constant(0), FEXCore::X86State::RFLAG_DF_RAW_LOC);
@@ -1707,7 +1711,7 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool I
     StoreResult(GPRClass, Op, Res, -1);
 
     // Extract the last bit shifted in to CF
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Res, Left ? 0 : Size - 1, true);
+    SetCFDirect(Res, Left ? 0 : Size - 1, true);
 
     // For ROR, OF is the XOR of the new CF bit and the most significant bit of the result.
     // For ROL, OF is the LSB and MSB XOR'd together.
@@ -1772,7 +1776,10 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
   // Finally store the result.
   StoreResult(GPRClass, Op, Dest, -1);
 
-  CalculateFlags_BEXTR(Dest);
+  // ZF is set properly. CF and OF are defined as being set to zero. SF, PF, and
+  // AF are undefined.
+  SetNZ_ZeroCV(GetOpSize(Dest), Dest);
+  InvalidatePF_AF();
 }
 
 void OpDispatchBuilder::BLSIBMIOp(OpcodeArgs) {
@@ -1784,10 +1791,16 @@ void OpDispatchBuilder::BLSIBMIOp(OpcodeArgs) {
   auto NegatedSrc = _Neg(Size, Src);
   auto Result = _And(Size, Src, NegatedSrc);
 
-  // ...and we're done. Painless!
   StoreResult(GPRClass, Op, Result, -1);
 
-  CalculateFlags_BLSI(GetSrcSize(Op), Result);
+  // CF is cleared if Src is zero, otherwise it's set. However, Src is zero iff
+  // Result is zero, so we can test the result instead. So, CF is just the
+  // inverted ZF.
+  //
+  // ZF/SF/OF set as usual.
+  SetNZ_ZeroCV(GetSrcSize(Op), Result);
+  InvalidatePF_AF();
+  SetCFInverted(GetRFLAG(X86State::RFLAG_ZF_RAW_LOC));
 }
 
 void OpDispatchBuilder::BLSMSKBMIOp(OpcodeArgs) {
@@ -1799,7 +1812,17 @@ void OpDispatchBuilder::BLSMSKBMIOp(OpcodeArgs) {
   auto Result = _Xor(Size, _Sub(Size, Src, _Constant(1)), Src);
 
   StoreResult(GPRClass, Op, Result, -1);
-  CalculateFlags_BLSMSK(GetSrcSize(Op), Result, Src);
+  InvalidatePF_AF();
+
+  // CF set according to the Src
+  auto Zero = _Constant(0);
+  auto One = _Constant(1);
+  auto CFInv = _Select(IR::COND_NEQ, Src, Zero, One, Zero);
+
+  // The output of BLSMSK is always nonzero, so TST will clear Z (along with C
+  // and O) while setting S.
+  SetNZ_ZeroCV(GetSrcSize(Op), Result);
+  SetCFInverted(CFInv);
 }
 
 void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
@@ -1811,7 +1834,13 @@ void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
   auto Result = _And(Size, _Sub(Size, Src, _Constant(1)), Src);
   StoreResult(GPRClass, Op, Result, -1);
 
-  CalculateFlags_BLSR(GetSrcSize(Op), Result, Src);
+  auto Zero = _Constant(0);
+  auto One = _Constant(1);
+  auto CFInv = _Select(IR::COND_NEQ, Src, Zero, One, Zero);
+
+  SetNZ_ZeroCV(GetSrcSize(Op), Result);
+  SetCFInverted(CFInv);
+  InvalidatePF_AF();
 }
 
 // Handles SARX, SHLX, and SHRX
@@ -1860,14 +1889,20 @@ void OpDispatchBuilder::BZHI(OpcodeArgs) {
   // If the index is above OperandSize, we don't clear anything. BZHI only
   // considers the bottom 8-bits, so we really want to know if the bottom 8-bits
   // have their top bits set. Test exactly that.
+  //
+  // Because we're clobbering flags internally we ignore all carry invert
+  // shenanigans and use the raw versions here.
   _TestNZ(OpSize::i64Bit, Index, _Constant(0xFF & ~(OperandSize - 1)));
-  auto Result = _NZCVSelect(IR::SizeToOpSize(Size), CondClassType {COND_NEQ}, Src, MaskResult);
+  auto Result = _NZCVSelect(IR::SizeToOpSize(Size), {COND_NEQ}, Src, MaskResult);
   StoreResult(GPRClass, Op, Result, -1);
 
   auto Zero = _Constant(0);
   auto One = _Constant(1);
-  auto CF = _NZCVSelect(OpSize::i32Bit, CondClassType {COND_NEQ}, One, Zero);
-  CalculateFlags_BZHI(Size, Result, CF);
+  auto CFInv = _NZCVSelect(OpSize::i32Bit, {COND_EQ}, One, Zero);
+
+  InvalidatePF_AF();
+  SetNZ_ZeroCV(Size, Result);
+  SetCFInverted(CFInv);
 }
 
 void OpDispatchBuilder::RORX(OpcodeArgs) {
@@ -1978,7 +2013,7 @@ void OpDispatchBuilder::ADXOp(OpcodeArgs) {
   auto SelectFlag = _Select(IR::COND_EQ, Flag, One, SelectOpLE, SelectOpLT);
 
   if (IsADCX) {
-    SetRFLAG<X86State::RFLAG_CF_RAW_LOC>(SelectFlag);
+    SetCFDirect(SelectFlag);
   } else {
     SetRFLAG<X86State::RFLAG_OF_RAW_LOC>(SelectFlag);
   }
@@ -1995,7 +2030,7 @@ void OpDispatchBuilder::RCROp1Bit(OpcodeArgs) {
   Ref Res;
 
   // Our new CF will be bit 0 of the source. Set upfront to avoid a move.
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Dest, 0, true);
+  SetCFDirect(Dest, 0, true);
 
   uint32_t Shift = 1;
 
@@ -2026,7 +2061,7 @@ void OpDispatchBuilder::RCROp8x1Bit(OpcodeArgs) {
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
   // Our new CF will be bit (Shift - 1) of the source
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Dest, 0, true);
+  SetCFDirect(Dest, 0, true);
 
   // Rotate and insert CF in the upper bit
   Ref Res = _Bfe(OpSize::i32Bit, 7, 1, Dest);
@@ -2075,7 +2110,7 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
     }
 
     // Our new CF will be bit (Shift - 1) of the source.
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Dest, Const - 1, true);
+    SetCFDirect(Dest, Const - 1, true);
 
     // Since shift != 0 we can inject the CF
     Res = _Orlshl(OpSize, Res, CF, Size - Const);
@@ -2119,7 +2154,7 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
     // Our new CF will be bit (Shift - 1) of the source. this is hoisted up to
     // avoid the need to copy the source. Again, the Lshr absorbs the masking.
     auto NewCF = _Lshr(OpSize, Dest, _Sub(OpSize, Src, One));
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF, 0, true);
+    SetCFDirect(NewCF, 0, true);
 
     // Since shift != 0 we can inject the CF
     Res = _Or(OpSize, Res, _Lshl(OpSize, CF, NegSrc));
@@ -2224,11 +2259,11 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
     // Our new CF will be bit (Shift - 1) of the source. 32-bit Lshr masks the
     // same as x86, but if we constant fold we must mask ourselves.
     if (IsSrcConst) {
-      SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Tmp, SrcConst - 1, true);
+      SetCFDirect(Tmp, SrcConst - 1, true);
     } else {
       auto One = _Constant(Size, 1);
       auto NewCF = _Lshr(OpSize::i32Bit, Tmp, _Sub(OpSize::i32Bit, Src, One));
-      SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF, 0, true);
+      SetCFDirect(NewCF, 0, true);
     }
 
     // OF is the top two MSBs XOR'd together
@@ -2254,7 +2289,7 @@ void OpDispatchBuilder::RCLOp1Bit(OpcodeArgs) {
   Ref Res = _Orlshl(OpSize, CF, Dest, 1);
 
   // Our new CF will be the top bit of the source
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Dest, Size - 1, true);
+  SetCFDirect(Dest, Size - 1, true);
 
   // OF is the top two MSBs XOR'd together
   // Top two MSBs is CF and top bit of result
@@ -2300,7 +2335,7 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
     }
 
     // Our new CF will be bit (Shift - 1) of the source
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Dest, Size - Const, true);
+    SetCFDirect(Dest, Size - Const, true);
 
     // Since Shift != 0 we can inject the CF
     Res = _Orlshl(OpSize, Res, CF, Const - 1);
@@ -2336,7 +2371,7 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
 
     // Our new CF will be bit (Shift - 1) of the source
     auto NewCF = _Lshr(OpSize, Dest, NegSrc);
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF, 0, true);
+    SetCFDirect(NewCF, 0, true);
 
     // Since Shift != 0 we can inject the CF. Shift absorbs the masking.
     Ref CFShl = _Sub(OpSize, Src, _Constant(Size, 1));
@@ -2401,7 +2436,7 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
     // Either 0 if CF hasn't changed (CF is living in bit 0)
     // or higher
     auto NewCF = _Ror(OpSize::i64Bit, Tmp, _Sub(OpSize::i64Bit, _Constant(63), Src));
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF, 0, true);
+    SetCFDirect(NewCF, 0, true);
 
     // OF is the XOR of the NewCF and the MSB of the result
     // Only defined for 1-bit rotates.
@@ -2452,7 +2487,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
 
     // OF/SF/ZF/AF/PF undefined.
     // Set CF before the action to save a move.
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Value, ConstantShift, true);
+    SetCFDirect(Value, ConstantShift, true);
 
     switch (Action) {
     case BTAction::BTNone: {
@@ -2553,7 +2588,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
     Value = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4u, GetOpSize(Value))), Value, BitSelect);
 
     // OF/SF/ZF/AF/PF undefined.
-    SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(Value, ConstantShift, true);
+    SetCFDirect(Value, ConstantShift, true);
   }
 }
 
@@ -2813,7 +2848,11 @@ void OpDispatchBuilder::PopcountOp(OpcodeArgs) {
   Src = _Popcount(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Src, -1);
 
-  CalculateFlags_POPCOUNT(Src);
+  // We need to set ZF while clearing the rest of NZCV. The result of a popcount
+  // is in the range [0, 63]. In particular, it is always positive. So a
+  // combined NZ test will correctly zero SF/CF/OF while setting ZF.
+  SetNZ_ZeroCV(OpSize::i32Bit, Src);
+  ZeroPF_AF();
 }
 
 Ref OpDispatchBuilder::CalculateAFForDecimal(Ref A) {
@@ -2826,22 +2865,22 @@ Ref OpDispatchBuilder::CalculateAFForDecimal(Ref A) {
 void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   CalculateDeferredFlags();
   auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
-  auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
+  auto CFInv = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC, true);
   auto AF = CalculateAFForDecimal(AL);
 
   // CF |= (AL > 0x99);
-  CF = _Or(OpSize::i64Bit, CF, _Select(FEXCore::IR::COND_UGT, AL, _Constant(0x99), _Constant(1), _Constant(0)));
+  CFInv = _And(OpSize::i64Bit, CFInv, _Select(FEXCore::IR::COND_ULE, AL, _Constant(0x99), _Constant(1), _Constant(0)));
 
   // AL = AF ? (AL + 0x6) : AL;
   AL = _Select(FEXCore::IR::COND_NEQ, AF, _Constant(0), _Add(OpSize::i64Bit, AL, _Constant(0x6)), AL);
 
   // AL = CF ? (AL + 0x60) : AL;
-  AL = _Select(FEXCore::IR::COND_NEQ, CF, _Constant(0), _Add(OpSize::i64Bit, AL, _Constant(0x60)), AL);
+  AL = _Select(FEXCore::IR::COND_EQ, CFInv, _Constant(0), _Add(OpSize::i64Bit, AL, _Constant(0x60)), AL);
 
   // SF, ZF, PF set according to result. CF set per above. OF undefined.
   StoreGPRRegister(X86State::REG_RAX, AL, 1);
   SetNZ_ZeroCV(1, AL);
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(CF);
+  SetCFInverted(CFInv);
   CalculatePF(AL);
   SetAFAndFixup(AF);
 }
@@ -2867,7 +2906,7 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
   // SF, ZF, PF set according to result. CF set per above. OF undefined.
   StoreGPRRegister(X86State::REG_RAX, AL, 1);
   SetNZ_ZeroCV(1, AL);
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(NewCF);
+  SetCFDirect(NewCF);
   CalculatePF(AL);
   SetAFAndFixup(AF);
 }
@@ -2880,12 +2919,12 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
 
   // CF = AF, OF/SF/ZF/PF undefined
   ZeroNZCV();
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(AF);
+  SetCFDirect(AF);
   SetAFAndFixup(AF);
   CalculateDeferredFlags();
 
   // AX = CF ? (AX + 0x106) : 0
-  A = _NZCVSelect(OpSize::i32Bit, CondClassType {COND_UGE} /* CF = 1 */, _Add(OpSize::i32Bit, A, _Constant(0x106)), A);
+  A = NZCVSelect(OpSize::i32Bit, {COND_UGE} /* CF = 1 */, _Add(OpSize::i32Bit, A, _Constant(0x106)), A);
 
   // AL = AL & 0x0F
   A = _And(OpSize::i32Bit, A, _Constant(0xFF0F));
@@ -2900,12 +2939,12 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
 
   // CF = AF, OF/SF/ZF/PF undefined
   ZeroNZCV();
-  SetRFLAG<FEXCore::X86State::RFLAG_CF_RAW_LOC>(AF);
+  SetCFDirect(AF);
   SetAFAndFixup(AF);
   CalculateDeferredFlags();
 
   // AX = CF ? (AX - 0x106) : 0
-  A = _NZCVSelect(OpSize::i32Bit, CondClassType {COND_UGE} /* CF = 1 */, _Sub(OpSize::i32Bit, A, _Constant(0x106)), A);
+  A = NZCVSelect(OpSize::i32Bit, {COND_UGE} /* CF = 1 */, _Sub(OpSize::i32Bit, A, _Constant(0x106)), A);
 
   // AL = AL & 0x0F
   A = _And(OpSize::i32Bit, A, _Constant(0xFF0F));
@@ -3780,9 +3819,10 @@ void OpDispatchBuilder::BSFOp(OpcodeArgs) {
   // OF, SF, AF, PF, CF all undefined
   // ZF is set to 1 if the source was zero
   SetNZ_ZeroCV(GetSrcSize(Op), Src);
+  // TODO: Optimize carry zero
 
   // If Src was zero then the destination doesn't get modified
-  auto SelectOp = _NZCVSelect(IR::SizeToOpSize(GPRSize), CondClassType {COND_EQ}, Dest, Result);
+  auto SelectOp = NZCVSelect(IR::SizeToOpSize(GPRSize), {COND_EQ}, Dest, Result);
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, SelectOp, DstSize, -1);
 }
 
@@ -3801,9 +3841,10 @@ void OpDispatchBuilder::BSROp(OpcodeArgs) {
   // OF, SF, AF, PF, CF all undefined
   // ZF is set to 1 if the source was zero
   SetNZ_ZeroCV(GetSrcSize(Op), Src);
+  // TODO: Optimize carry zero
 
   // If Src was zero then the destination doesn't get modified
-  auto SelectOp = _NZCVSelect(IR::SizeToOpSize(GPRSize), CondClassType {COND_EQ}, Dest, Result);
+  auto SelectOp = NZCVSelect(IR::SizeToOpSize(GPRSize), {COND_EQ}, Dest, Result);
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, SelectOp, DstSize, -1);
 }
 
@@ -3866,7 +3907,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     if (!Trivial) {
       if (GPRSize == 8 && Size == 4) {
         // This allows us to only hit the ZEXT case on failure
-        Ref RAXResult = _NZCVSelect(IR::i64Bit, CondClassType {COND_EQ}, Src3, Src1Lower);
+        Ref RAXResult = NZCVSelect(IR::i64Bit, {COND_EQ}, Src3, Src1Lower);
 
         // When the size is 4 we need to make sure not zext the GPR when the comparison fails
         StoreGPRRegister(X86State::REG_RAX, RAXResult);
@@ -3878,7 +3919,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     // Op1 = RAX == Op1 ? Op2 : Op1
     // If they match then set the rm operand to the input
     // else don't set the rm operand
-    Ref DestResult = Trivial ? Src2 : _NZCVSelect(IR::i64Bit, CondClassType {COND_EQ}, Src2, Src1);
+    Ref DestResult = Trivial ? Src2 : NZCVSelect(IR::i64Bit, CondClassType {COND_EQ}, Src2, Src1);
 
     // Store in to GPR Dest
     if (GPRSize == 8 && Size == 4) {
@@ -3961,7 +4002,7 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   auto UpdateIfNotZF = [this](auto Reg, auto Value) {
     // Always use 64-bit csel to preserve existing upper bits. If we have a
     // 32-bit cmpxchg in a 64-bit context, Value will be zeroed in upper bits.
-    StoreGPRRegister(Reg, _NZCVSelect(OpSize::i64Bit, CondClassType {COND_NEQ}, Value, LoadGPRRegister(Reg)));
+    StoreGPRRegister(Reg, NZCVSelect(OpSize::i64Bit, {COND_NEQ}, Value, LoadGPRRegister(Reg)));
   };
 
   auto [Result_Lower, Result_Upper] = ExtractPair(IR::SizeToOpSize(Size), CASResult);
@@ -4881,13 +4922,24 @@ void OpDispatchBuilder::CRC32(OpcodeArgs) {
 
 template<bool Reseed>
 void OpDispatchBuilder::RDRANDOp(OpcodeArgs) {
-  auto Res = _RDRAND(Reseed);
-  auto [Result_Lower, Result_Upper] = ExtractPair(OpSize::i64Bit, Res);
+  StoreResult(GPRClass, Op, _RDRAND(Reseed), -1);
 
-  StoreResult(GPRClass, Op, Result_Lower, -1);
-  CalculateFlags_RDRAND(Result_Upper);
+  // If the rng number is valid then NZCV is 0b0000, otherwise NZCV is 0b0100
+  auto CF_inv = GetRFLAG(X86State::RFLAG_ZF_RAW_LOC);
+
+  // OF, SF, ZF, AF, PF all zero. CF indicates if valid.
+  ZeroPF_AF();
+
+  if (!CTX->HostFeatures.SupportsFlagM) {
+    ZeroNZCV();
+    SetCFInverted(CF_inv);
+  } else {
+    // Accelerated path. Invalid is 0 or 1, so set NZCV with a single rmif.
+    HandleNZCVWrite(1u << 29 /* C */);
+    _RmifNZCV(CF_inv, (64 - 1) /* rotate bit 0 into bit 1 = C */, 0xf);
+    CFInverted = true;
+  }
 }
-
 
 void OpDispatchBuilder::BreakOp(OpcodeArgs, FEXCore::IR::BreakDefinition BreakDefinition) {
   const uint8_t GPRSize = CTX->GetGPRSize();

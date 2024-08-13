@@ -12,7 +12,7 @@
   },
   "Instructions": {
     "Chained add": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 5,
       "x86Insts": [
         "add rax, rbx",
         "adc rcx, rcx"
@@ -21,27 +21,25 @@
         "adds x4, x4, x7",
         "mov w27, #0x0",
         "adcs x26, x5, x5",
+        "cfinv",
         "mov x5, x26"
       ]
     },
     "Chained sub": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 4,
       "x86Insts": [
         "sub rax, rbx",
         "sbb rcx, rdx"
       ],
       "ExpectedArm64ASM": [
         "subs x4, x4, x7",
-        "cfinv",
         "eor w27, w5, w6",
-        "cfinv",
         "sbcs x26, x5, x6",
-        "cfinv",
         "mov x5, x26"
       ]
     },
     "Inverted add": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "x86Insts": [
         "add rax, rbx",
         "adc rcx, rdx",
@@ -51,12 +49,11 @@
         "adds x4, x4, x7",
         "eor w27, w5, w6",
         "adcs x26, x5, x6",
-        "mov x5, x26",
-        "cfinv"
+        "mov x5, x26"
       ]
     },
     "Inverted sub": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 5,
       "x86Insts": [
         "sub rax, rbx",
         "sbb rcx, rcx",
@@ -64,17 +61,14 @@
       ],
       "ExpectedArm64ASM": [
         "subs x4, x4, x7",
-        "cfinv",
         "mov w27, #0x0",
-        "cfinv",
         "sbcs x26, x5, x5",
-        "cfinv",
         "mov x5, x26",
         "cfinv"
       ]
     },
     "ADC dead": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "x86Insts": [
         "add rax, rbx",
         "adc rcx, rcx",
@@ -83,7 +77,8 @@
       "ExpectedArm64ASM": [
         "adds x4, x4, x7",
         "adc x5, x5, x5",
-        "ands x26, x5, x5"
+        "ands x26, x5, x5",
+        "cfinv"
       ]
     },
     "INC consumed": {
@@ -94,7 +89,7 @@
       ],
       "ExpectedArm64ASM": [
         "adds x4, x4, x7",
-        "cset w20, hs",
+        "cset w20, lo",
         "adds x26, x4, #0x1 (1)",
         "rmif x20, #63, #nzCv",
         "mov x27, x4",
@@ -102,7 +97,7 @@
       ]
     },
     "INC dead": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "x86Insts": [
         "add rax, rbx",
         "inc rax",
@@ -111,18 +106,18 @@
       "ExpectedArm64ASM": [
         "add x4, x4, x7",
         "add x4, x4, #0x1 (1)",
-        "ands x26, x4, x6"
+        "ands x26, x4, x6",
+        "cfinv"
       ]
     },
     "DEC consumed": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "x86Insts": [
         "sub rax, rbx",
         "dec rax"
       ],
       "ExpectedArm64ASM": [
         "subs x4, x4, x7",
-        "cfinv",
         "cset w20, hs",
         "subs x26, x4, #0x1 (1)",
         "rmif x20, #63, #nzCv",
@@ -131,7 +126,7 @@
       ]
     },
     "DEC dead": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "x86Insts": [
         "sub rax, rbx",
         "dec rax",
@@ -140,11 +135,12 @@
       "ExpectedArm64ASM": [
         "sub x4, x4, x7",
         "sub x4, x4, #0x1 (1)",
-        "ands x26, x4, x5"
+        "ands x26, x4, x5",
+        "cfinv"
       ]
     },
     "8-bit DEC consumed": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 11,
       "x86Insts": [
         "sub al, ah",
         "dec al"
@@ -154,7 +150,6 @@
         "lsl w0, w4, #24",
         "cmp w0, w20, lsl #24",
         "sub w20, w4, w20",
-        "cfinv",
         "bfxil x4, x20, #0, #8",
         "uxtb w27, w4",
         "sub w26, w27, #0x1 (1)",
@@ -165,7 +160,7 @@
       ]
     },
     "8-bit DEC dead": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "x86Insts": [
         "sub al, ah",
         "dec al",
@@ -179,46 +174,50 @@
         "sub w20, w20, #0x1 (1)",
         "bfxil x4, x20, #0, #8",
         "mov x26, x4",
-        "cmn wzr, w26, lsl #24"
+        "cmn wzr, w26, lsl #24",
+        "cfinv"
       ]
     },
     "Variable shift dead": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 3,
       "x86Insts": [
         "sar rax, cl",
         "test rax, rdx"
       ],
       "ExpectedArm64ASM": [
         "asr x4, x4, x5",
-        "ands x26, x4, x6"
+        "ands x26, x4, x6",
+        "cfinv"
       ]
     },
     "Variable rotate-through-carry dead": {
-      "ExpectedInstructionCount": 15,
+      "ExpectedInstructionCount": 17,
       "x86Insts": [
         "rcr rax, cl",
         "test rax, rdx"
       ],
       "ExpectedArm64ASM": [
         "and x20, x5, #0x3f",
-        "cbz x20, #+0x34",
+        "cbz x20, #+0x38",
         "lsr x20, x4, x5",
-        "cset w21, hs",
+        "cset w21, lo",
         "neg x22, x5",
         "lsl x23, x4, x22",
         "orr x20, x20, x23, lsl #1",
         "sub x23, x5, #0x1 (1)",
         "lsr x23, x4, x23",
+        "eor x23, x23, #0x1",
         "rmif x23, #63, #nzCv",
         "lsl x21, x21, x22",
         "orr x4, x20, x21",
         "eor x20, x4, x4, lsr #1",
         "rmif x20, #62, #nzcV",
-        "ands x26, x4, x6"
+        "ands x26, x4, x6",
+        "cfinv"
       ]
     },
     "Partial NZCV select (cmp)": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 6,
       "x86Insts": [
         "cmp rax, rbx",
         "setz cl",
@@ -229,11 +228,12 @@
         "cset x21, eq",
         "bfxil x5, x21, #0, #8",
         "mov x26, x5",
-        "cmn wzr, w26, lsl #24"
+        "cmn wzr, w26, lsl #24",
+        "cfinv"
       ]
     },
     "Partial NZCV select (add)": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 6,
       "x86Insts": [
         "add rax, rbx",
         "setz cl",
@@ -244,11 +244,12 @@
         "cset x20, eq",
         "bfxil x5, x20, #0, #8",
         "mov x26, x5",
-        "cmn wzr, w26, lsl #24"
+        "cmn wzr, w26, lsl #24",
+        "cfinv"
       ]
     },
     "AND use only ZF": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 6,
       "x86Insts": [
         "and eax, ebx",
         "setz cl",
@@ -259,11 +260,12 @@
         "cset x20, eq",
         "bfxil x5, x20, #0, #8",
         "mov x26, x5",
-        "cmn wzr, w26, lsl #24"
+        "cmn wzr, w26, lsl #24",
+        "cfinv"
       ]
     },
     "AND use only PF": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 10,
       "x86Insts": [
         "and eax, ebx",
         "setp cl",
@@ -278,11 +280,12 @@
         "and x20, x20, #0x1",
         "bfxil x5, x20, #0, #8",
         "mov x26, x5",
-        "cmn wzr, w26, lsl #24"
+        "cmn wzr, w26, lsl #24",
+        "cfinv"
       ]
     },
     "Dead cmpxchg flags": {
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 23,
       "x86Insts": [
         "cmpxchg8b [rbp]",
         "test rax, rax"
@@ -309,7 +312,8 @@
         "mov w21, w22",
         "csel x4, x21, x4, ne",
         "csel x6, x20, x6, ne",
-        "ands x26, x4, x4"
+        "ands x26, x4, x4",
+        "cfinv"
       ]
     }
   }

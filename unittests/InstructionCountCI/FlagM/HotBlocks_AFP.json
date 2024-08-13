@@ -13,7 +13,7 @@
   },
   "Instructions": {
     "FMOD scalar loop": {
-      "ExpectedInstructionCount": 49,
+      "ExpectedInstructionCount": 48,
       "x86Insts": [
         "mov     esi, ecx",
         "mov     rdx, rbp",
@@ -101,7 +101,6 @@
         "fadd s18, s18, s2",
         "stur s18, [x4, #-4]",
         "subs w26, w10, #0x1 (1)",
-        "cfinv",
         "mov x27, x10",
         "mov x10, x26"
       ]

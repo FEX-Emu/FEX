@@ -663,6 +663,11 @@ DEF_OP(ShiftFlags) {
       lsrv(EmitSize, CFWord, Src1, CFWord);
     }
 
+    if (Op->InvertCF) {
+      mvn(ARMEmitter::Size::i64Bit, TMP1, CFWord);
+      CFWord = TMP1;
+    }
+
     bool SetOF = Op->Shift != IR::ShiftType::ASR;
     if (SetOF) {
       // Only defined when Shift is 1 else undefined
@@ -1431,6 +1436,12 @@ DEF_OP(NZCVSelect) {
   } else {
     csel(EmitSize, Dst, GetReg(Op->TrueVal.ID()), GetZeroableReg(Op->FalseVal), cc);
   }
+}
+
+DEF_OP(NZCVSelectIncrement) {
+  auto Op = IROp->C<IR::IROp_NZCVSelectIncrement>();
+
+  csinc(ConvertSize(IROp), GetReg(Node), GetReg(Op->TrueVal.ID()), GetZeroableReg(Op->FalseVal), MapCC(Op->Cond));
 }
 
 DEF_OP(VExtractToGPR) {

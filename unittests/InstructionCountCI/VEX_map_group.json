@@ -616,11 +616,11 @@
         "sub w20, w7, #0x1 (1)",
         "and w4, w20, w7",
         "cmp x7, #0x0 (0)",
-        "cset x20, eq",
-        "tst w4, w4",
+        "cset x20, ne",
+        "cmp w4, #0x0 (0)",
         "mrs x21, nzcv",
-        "orr w20, w21, w20, lsl #29",
-        "msr nzcv, x20"
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "blsr rax, rbx": {
@@ -632,11 +632,11 @@
         "sub x20, x7, #0x1 (1)",
         "and x4, x20, x7",
         "cmp x7, #0x0 (0)",
-        "cset x20, eq",
-        "tst x4, x4",
+        "cset x20, ne",
+        "cmp x4, #0x0 (0)",
         "mrs x21, nzcv",
-        "orr w20, w21, w20, lsl #29",
-        "msr nzcv, x20"
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "blsmsk eax, ebx": {
@@ -648,11 +648,11 @@
         "sub w20, w7, #0x1 (1)",
         "eor w4, w20, w7",
         "cmp x7, #0x0 (0)",
-        "cset x20, eq",
-        "tst w4, w4",
+        "cset x20, ne",
+        "cmp w4, #0x0 (0)",
         "mrs x21, nzcv",
-        "orr w20, w21, w20, lsl #29",
-        "msr nzcv, x20"
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "blsmsk rax, rbx": {
@@ -664,11 +664,11 @@
         "sub x20, x7, #0x1 (1)",
         "eor x4, x20, x7",
         "cmp x7, #0x0 (0)",
-        "cset x20, eq",
-        "tst x4, x4",
+        "cset x20, ne",
+        "cmp x4, #0x0 (0)",
         "mrs x21, nzcv",
-        "orr w20, w21, w20, lsl #29",
-        "msr nzcv, x20"
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "blsi eax, ebx": {
@@ -679,11 +679,11 @@
       "ExpectedArm64ASM": [
         "neg w20, w7",
         "and w4, w7, w20",
-        "tst w4, w4",
-        "cset w20, ne",
+        "cmp w4, #0x0 (0)",
+        "cset w20, eq",
         "mrs x21, nzcv",
-        "orr w20, w21, w20, lsl #29",
-        "msr nzcv, x20"
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "blsi rax, rbx": {
@@ -694,11 +694,11 @@
       "ExpectedArm64ASM": [
         "neg x20, x7",
         "and x4, x7, x20",
-        "tst x4, x4",
-        "cset w20, ne",
+        "cmp x4, #0x0 (0)",
+        "cset w20, eq",
         "mrs x21, nzcv",
-        "orr w20, w21, w20, lsl #29",
-        "msr nzcv, x20"
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     }
   }
