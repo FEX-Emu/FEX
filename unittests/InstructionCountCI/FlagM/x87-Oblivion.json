@@ -26712,7 +26712,7 @@
       ]
     },
     "Block2": {
-      "ExpectedInstructionCount": 16636,
+      "ExpectedInstructionCount": 16635,
       "x86Insts": [
         "mov eax,dword [ebp + 0x8]",
         "fld dword [eax + 0x40]",
@@ -43978,8 +43978,7 @@
         "fmov s2, s0",
         "str s2, [x20]",
         "mov x8, x9",
-        "ldr w9, [x8]",
-        "add x8, x8, #0x4 (4)",
+        "ldr w9, [x8], #4",
         "cfinv",
         "strb wzr, [x28, #1298]"
       ]

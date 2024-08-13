@@ -1292,11 +1292,10 @@
       ]
     },
     "pop fs": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Comment": "0x0f 0xa1",
       "ExpectedArm64ASM": [
-        "ldr x20, [x8]",
-        "add x8, x8, #0x8 (8)",
+        "ldr x20, [x8], #8",
         "strh w20, [x28, #938]",
         "ubfx w20, w20, #3, #13",
         "add x0, x28, x20, lsl #2",
@@ -1683,11 +1682,10 @@
       ]
     },
     "pop gs": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Comment": "0x0f 0xa9",
       "ExpectedArm64ASM": [
-        "ldr x20, [x8]",
-        "add x8, x8, #0x8 (8)",
+        "ldr x20, [x8], #8",
         "strh w20, [x28, #936]",
         "ubfx w20, w20, #3, #13",
         "add x0, x28, x20, lsl #2",

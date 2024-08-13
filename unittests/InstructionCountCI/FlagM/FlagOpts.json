@@ -285,33 +285,23 @@
       ]
     },
     "Dead cmpxchg flags": {
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 13,
       "x86Insts": [
         "cmpxchg8b [rbp]",
         "test rax, rax"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, w4",
-        "mov w21, w6",
-        "mov w20, w20",
-        "mov w21, w21",
-        "mov w22, w7",
-        "mov w23, w5",
-        "mov w22, w22",
-        "mov w23, w23",
-        "mov w2, w20",
-        "mov w3, w21",
-        "caspal w2, w3, w22, w23, [x9]",
-        "mov w22, w2",
-        "mov w23, w3",
+        "mov x0, x7",
+        "mov x1, x5",
+        "mov x20, x4",
+        "mov x21, x6",
+        "caspal w20, w21, w0, w1, [x9]",
         "mrs x0, nzcv",
-        "cmp w22, w20",
-        "ccmp w23, w21, #nzcv, eq",
+        "cmp w20, w4",
+        "ccmp w21, w6, #nzcv, eq",
         "rmif x0, #0, #NzCV",
-        "mov w20, w23",
-        "mov w21, w22",
-        "csel x4, x21, x4, ne",
-        "csel x6, x20, x6, ne",
+        "csel x4, x20, x4, ne",
+        "csel x6, x21, x6, ne",
         "ands x26, x4, x4",
         "cfinv"
       ]
