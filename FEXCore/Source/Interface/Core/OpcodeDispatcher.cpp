@@ -1403,7 +1403,7 @@ void OpDispatchBuilder::MOVOffsetOp(OpcodeArgs) {
   case 0xA3:
     // Source is GPR
     // Dest is memory(literal)
-    Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+    Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
     // This one is a bit special since the destination is a literal
     // So the destination gets stored in Src[1]
     StoreResult(GPRClass, Op, Op->Src[1], Src, -1);
@@ -4298,20 +4298,18 @@ AddressMode OpDispatchBuilder::SelectAddressMode(AddressMode A, bool AtomicTSO, 
   //
   // TODO: Also handle GPR TSO if we can guarantee the constant inlines.
   if (SupportsRegIndex) {
-    if ((A.Base || A.Segment) && A.Offset && !A.Index) {
+    if ((A.Base || A.Segment) && A.Offset) {
       const bool Const_16K = A.Offset > -16384 && A.Offset < 16384 && A.AddrSize == 4 && GPRSize == 4;
 
       if ((A.AddrSize == 8) || Const_16K) {
-        if (A.Base && A.Segment) {
-          A.Base = _Add(IR::SizeToOpSize(GPRSize), A.Base, A.Segment);
-        } else if (A.Segment) {
-          A.Base = A.Segment;
-        }
+        // Peel off the offset
+        AddressMode B = A;
+        B.Offset = 0;
 
         return {
-          .Base = A.Base,
+          .Base = LoadEffectiveAddress(B, true /* AddSegmentBase */, false),
           .Index = _Constant(A.Offset),
-          .IndexType = (Const_16K && A.Offset < 0) ? MEM_OFFSET_SXTW : MEM_OFFSET_SXTX,
+          .IndexType = MEM_OFFSET_SXTX,
           .IndexScale = 1,
         };
       }
@@ -4609,7 +4607,9 @@ void OpDispatchBuilder::UnhandledOp(OpcodeArgs) {
 
 template<uint32_t SrcIndex>
 void OpDispatchBuilder::MOVGPROp(OpcodeArgs) {
-  Ref Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.Align = 1});
+  // StoreResult will store with the same size as the input, so we allow upper
+  // garbage on the input. The zero extension would be pointless.
+  Ref Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.Align = 1, .AllowUpperGarbage = true});
   StoreResult(GPRClass, Op, Src, 1);
 }
 

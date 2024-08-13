@@ -217,6 +217,72 @@
         "subs x26, x17, x20"
       ]
     },
+    "bytemark fpemu": {
+      "ExpectedInstructionCount": 10,
+      "Comment": [
+        "Saw this in bytemark"
+      ],
+      "x86Insts": [
+        "movzx  r10d,word [rdx+0x4]",
+        "movzx  edi,word [rdx+0x6]",
+        "mov    dword [rsp+0xc],edi",
+        "movzx  ebx,word [rdx+0x8]",
+        "movzx  edi,word [rdx+0xa]",
+        "mov    dword [rsp+0x10],edi",
+        "lea    r8,[r11+r11*2]",
+        "cmp    qword [r13+r8*4+0x4],0x0"
+      ],
+      "ExpectedArm64ASM": [
+        "ldrh w14, [x6, #4]",
+        "ldrh w11, [x6, #6]",
+        "str w11, [x8, #12]",
+        "ldrh w7, [x6, #8]",
+        "ldrh w11, [x6, #10]",
+        "str w11, [x8, #16]",
+        "add x12, x15, x15, lsl #1",
+        "add x20, x17, x12, lsl #2",
+        "ldur x27, [x20, #4]",
+        "subs x26, x27, #0x0 (0)"
+      ]
+    },
+    "bytemark DivideInternalFPF": {
+      "ExpectedInstructionCount": 15,
+      "Comment": [
+        "Saw this in bytemark"
+      ],
+      "x86Insts": [
+        "push   rbp",
+        "push   r15",
+        "push   r14",
+        "push   r13",
+        "push   r12",
+        "push   rbx",
+        "sub    rsp,0x18",
+        "mov    qword [rsp],rdx",
+        "movzx  r10d,byte [rdi]",
+        "lea    ecx,[r10+r10*4]",
+        "movzx  eax,byte [rsi]",
+        "add    eax,ecx",
+        "cmp    eax,0x18"
+      ],
+      "ExpectedArm64ASM": [
+        "str x9, [x8, #-8]!",
+        "str x29, [x8, #-8]!",
+        "str x19, [x8, #-8]!",
+        "str x17, [x8, #-8]!",
+        "str x16, [x8, #-8]!",
+        "str x7, [x8, #-8]!",
+        "sub x8, x8, #0x18 (24)",
+        "str x6, [x8]",
+        "ldrb w14, [x11]",
+        "add x20, x14, x14, lsl #2",
+        "mov w5, w20",
+        "ldrb w4, [x10]",
+        "add w4, w4, w5",
+        "mvn w27, w4",
+        "subs w26, w4, #0x18 (24)"
+      ]
+    },
     "pcmpistri xmm0, xmm1, 0_0_00_11_01b": {
       "ExpectedInstructionCount": 41,
       "Comment": [

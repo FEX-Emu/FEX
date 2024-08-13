@@ -2074,27 +2074,24 @@
       ]
     },
     "mov [rax], bl": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": "0x88",
       "ExpectedArm64ASM": [
-        "uxtb w20, w7",
-        "strb w20, [x4]"
+        "strb w7, [x4]"
       ]
     },
     "mov [rax], bx": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": "0x89",
       "ExpectedArm64ASM": [
-        "uxth w20, w7",
-        "strh w20, [x4]"
+        "strh w7, [x4]"
       ]
     },
     "mov [rax], ebx": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": "0x89",
       "ExpectedArm64ASM": [
-        "mov w20, w7",
-        "str w20, [x4]"
+        "str w7, [x4]"
       ]
     },
     "mov [rax], rbx": {
@@ -2826,16 +2823,15 @@
       ]
     },
     "db 0x67, 0xa3; dd 0xe0000000": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "mov [0xe0000000], eax",
         "0xa3"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, w4",
-        "mov w21, #0x6f6d",
-        "movk w21, #0x7376, lsl #16",
-        "str w20, [x21]"
+        "mov w20, #0x6f6d",
+        "movk w20, #0x7376, lsl #16",
+        "str w4, [x20]"
       ]
     },
     "movsb": {
