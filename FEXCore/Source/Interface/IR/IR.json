@@ -254,6 +254,8 @@
       },
       "GPR = AllocateGPR i1:$ForPair": {
         "Desc": ["Silly pseudo-instruction to allocate a register for a future destination",
+                 "Note: if an instruction uses allocated destinations-as-sources,",
+                 "it cannot use a regular destination too. This ensures RA correctness.",
                  "This is a kludge to deal with the IR's lack of multiple destinations",
                  "If ForPair is set, RA will try to allocate the base of a register pair"],
         "DestSize": "8"
