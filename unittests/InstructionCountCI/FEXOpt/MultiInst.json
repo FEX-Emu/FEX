@@ -1,7 +1,10 @@
 {
   "Features": {
     "Bitness": 64,
-    "EnabledHostFeatures": [],
+    "EnabledHostFeatures": [
+      "FLAGM",
+      "FLAGM2"
+    ],
     "DisabledHostFeatures": [
       "SVE128",
       "SVE256",
