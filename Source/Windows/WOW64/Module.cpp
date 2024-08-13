@@ -26,7 +26,6 @@ $end_info$
 #include <FEXCore/Utils/TypeDefines.h>
 
 #include "Common/Config.h"
-#include "Common/HostFeatures.h"
 #include "Common/TSOHandlerConfig.h"
 #include "Common/InvalidationTracker.h"
 #include "Common/CPUFeatures.h"
@@ -435,9 +434,10 @@ void BTCpuProcessInit() {
   SignalDelegator = fextl::make_unique<FEX::DummyHandlers::DummySignalDelegator>();
   SyscallHandler = fextl::make_unique<WowSyscallHandler>();
   Context::HandlerConfig.emplace();
+  const auto NtDll = GetModuleHandle("ntdll.dll");
 
   {
-    auto HostFeatures = FEX::FetchHostFeatures();
+    auto HostFeatures = FEX::Windows::CPUFeatures::FetchHostFeatures(!!GetProcAddress(NtDll, "__wine_get_version"));
     CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);
   }
 
@@ -455,7 +455,7 @@ void BTCpuProcessInit() {
   BridgeInstrs::Syscall = Addr;
   BridgeInstrs::UnixCall = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(Addr) + 2);
 
-  const auto Sym = GetProcAddress(GetModuleHandle("ntdll.dll"), "__wine_unix_call_dispatcher");
+  const auto Sym = GetProcAddress(NtDll, "__wine_unix_call_dispatcher");
   if (Sym) {
     WineUnixCall = *reinterpret_cast<decltype(WineUnixCall)*>(Sym);
   }

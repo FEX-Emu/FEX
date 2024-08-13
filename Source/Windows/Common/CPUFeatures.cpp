@@ -1,9 +1,64 @@
 // SPDX-License-Identifier: MIT
 
 #include <FEXCore/Core/Context.h>
+#include <FEXCore/Core/HostFeatures.h>
+#include <FEXCore/fextl/fmt.h>
+
+#include <windows.h>
+#include "aarch64/cpu-aarch64.h"
+
 #include "CPUFeatures.h"
 
+namespace {
+HKEY OpenProcessorKey(uint32_t Idx) {
+  HKEY Out;
+  auto Path = fextl::fmt::format("Hardware\\Description\\System\\CentralProcessor\\{}", Idx);
+  if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, Path.c_str(), 0, KEY_READ, &Out)) {
+    return nullptr;
+  }
+  return Out;
+}
+
+uint64_t ReadRegU64(HKEY Key, const char* Name) {
+  uint64_t Value = 0;
+  DWORD Size = sizeof(Value);
+  RegGetValueA(Key, nullptr, Name, 0, nullptr, &Value, &Size);
+  return Value;
+}
+
+template<typename RegType>
+void AddRegFeatures(vixl::CPUFeatures& Features, HKEY Key, const char* Name) {
+  return Features.Combine(RegType(ReadRegU64(Key, Name)).GetCPUFeatures());
+}
+} // namespace
+
 namespace FEX::Windows {
+FEXCore::HostFeatures CPUFeatures::FetchHostFeatures(bool IsWine) {
+  vixl::CPUFeatures Features {};
+  HKEY Key = OpenProcessorKey(0);
+  if (!Key) {
+    ERROR_AND_DIE_FMT("Couldn't detect CPU features");
+  }
+
+  AddRegFeatures<vixl::aarch64::AA64PFR0>(Features, Key, "CP 4020");
+  AddRegFeatures<vixl::aarch64::AA64PFR1>(Features, Key, "CP 4021");
+  AddRegFeatures<vixl::aarch64::AA64ZFR0>(Features, Key, "CP 4024");
+  AddRegFeatures<vixl::aarch64::AA64SMFR0>(Features, Key, "CP 4025");
+  AddRegFeatures<vixl::aarch64::AA64ISAR0>(Features, Key, "CP 4030");
+  AddRegFeatures<vixl::aarch64::AA64ISAR1>(Features, Key, "CP 4031");
+  AddRegFeatures<vixl::aarch64::AA64ISAR2>(Features, Key, "CP 4032");
+  AddRegFeatures<vixl::aarch64::AA64MMFR0>(Features, Key, "CP 4038");
+  AddRegFeatures<vixl::aarch64::AA64MMFR1>(Features, Key, "CP 4039");
+  AddRegFeatures<vixl::aarch64::AA64MMFR2>(Features, Key, "CP 403A");
+
+  uint64_t CTR = ReadRegU64(Key, "CP 5801");
+  uint64_t MIDR = ReadRegU64(Key, "CP 4000");
+
+  RegCloseKey(Key);
+
+  return FEX::FetchHostFeatures(Features, !IsWine, CTR, MIDR);
+}
+
 CPUFeatures::CPUFeatures(FEXCore::Context::Context& CTX) {
 #ifdef _M_ARM_64EC
   // Report as a 64-bit host for ARM64EC.

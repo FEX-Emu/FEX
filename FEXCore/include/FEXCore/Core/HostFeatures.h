@@ -12,6 +12,7 @@ struct HostFeatures {
    */
   uint32_t DCacheLineSize {};
   uint32_t ICacheLineSize {};
+  bool SupportsCacheMaintenanceOps {};
   bool SupportsAES {};
   bool SupportsCRC {};
   bool SupportsCLZERO {};
