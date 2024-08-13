@@ -218,7 +218,7 @@
       ]
     },
     "bytemark fpemu": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 10,
       "Comment": [
         "Saw this in bytemark"
       ],
@@ -235,16 +235,13 @@
       "ExpectedArm64ASM": [
         "ldrh w14, [x6, #4]",
         "ldrh w11, [x6, #6]",
-        "mov w20, w11",
-        "str w20, [x8, #12]",
+        "str w11, [x8, #12]",
         "ldrh w7, [x6, #8]",
         "ldrh w11, [x6, #10]",
-        "mov w20, w11",
-        "str w20, [x8, #16]",
+        "str w11, [x8, #16]",
         "add x12, x15, x15, lsl #1",
-        "add x20, x17, #0x4 (4)",
-        "add x20, x20, x12, lsl #2",
-        "ldr x27, [x20]",
+        "add x20, x17, x12, lsl #2",
+        "ldur x27, [x20, #4]",
         "subs x26, x27, #0x0 (0)"
       ]
     },

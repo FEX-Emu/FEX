@@ -3167,7 +3167,7 @@
       ]
     },
     "Block5": {
-      "ExpectedInstructionCount": 971,
+      "ExpectedInstructionCount": 970,
       "x86Insts": [
         "fld dword [esp + 0x80]",
         "fsub dword [esp + 0x7c]",
@@ -4167,9 +4167,8 @@
         "cset x20, hi",
         "strb w20, [x8, #48]",
         "ldrb w4, [x8, #48]",
-        "add w20, w10, #0x4 (4)",
-        "add w20, w20, w4, lsl #1",
-        "ldrh w20, [x20]",
+        "add w20, w10, w4, lsl #1",
+        "ldrh w20, [x20, #4]",
         "sxth w4, w20",
         "str w4, [x8, #8]",
         "str w7, [x8, #4]",
