@@ -162,20 +162,16 @@ void OpDispatchBuilder::RETOp(OpcodeArgs) {
     InvalidateDeferredFlags();
   }
 
-  auto Constant = _Constant(GPRSize);
-  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-  auto NewRIP = _LoadMem(GPRClass, GPRSize, OldSP, GPRSize);
+  Ref SP = _RMWHandle(LoadGPRRegister(X86State::REG_RSP));
+  Ref NewRIP = Pop(GPRSize, SP);
 
-  Ref NewSP;
   if (Op->OP == 0xC2) {
     auto Offset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-    NewSP = _Add(IR::SizeToOpSize(GPRSize), _Add(IR::SizeToOpSize(GPRSize), OldSP, Constant), Offset);
-  } else {
-    NewSP = _Add(IR::SizeToOpSize(GPRSize), OldSP, Constant);
+    SP = _Add(IR::SizeToOpSize(GPRSize), SP, Offset);
   }
 
   // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP);
+  StoreGPRRegister(X86State::REG_RSP, SP);
 
   // Store the new RIP
   ExitFunction(NewRIP);
