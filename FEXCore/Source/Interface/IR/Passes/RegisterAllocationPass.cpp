@@ -185,11 +185,11 @@ private:
   };
 
   RegisterClass* GetClass(PhysicalRegister Reg) {
-    return &Classes[(Reg.Class == GPRPairClass) ? GPRClass : Reg.Class];
+    return &Classes[Reg.Class];
   };
 
   uint32_t GetRegBits(PhysicalRegister Reg) {
-    return ((Reg.Class == GPRPairClass) ? 0b11 : 0b1) << Reg.Reg;
+    return 1 << Reg.Reg;
   };
 
   bool IsInRegisterFile(Ref Old) {
@@ -273,7 +273,7 @@ private:
   // the next set bit and then clearing on each iteration.
 #define foreach_bit(b, x) for (uint32_t __x = (x), b; ((b) = __builtin_ffs(__x) - 1, __x); __x &= ~(1 << (b)))
 
-  void SpillReg(RegisterClass* Class, IROp_Header* Exclude, bool Pair) {
+  void SpillReg(RegisterClass* Class, IROp_Header* Exclude) {
     // Find the best node to spill according to the "furthest-first" heuristic.
     // Since we defined IPs relative to the end of the block, the furthest
     // next-use has the /smallest/ unsigned IP.
@@ -282,12 +282,6 @@ private:
     uint8_t BestReg = ~0;
 
     foreach_bit(i, Class->Allocated) {
-      // We have to prioritize the pair region if we're allocating for a Pair.
-      // See the comment at the call site in AssignReg.
-      if (Pair && Candidate != nullptr && i >= PairRegs) {
-        break;
-      }
-
       Ref Old = Class->RegToSSA[i];
 
       LOGMAN_THROW_AA_FMT(Old != nullptr, "Invariant3");
@@ -366,22 +360,6 @@ private:
     SSAToReg[Index] = Reg;
   };
 
-  // Get the mask of available registers for a given register class
-  uint32_t AvailableMask(RegisterClass* Class, bool Pair) {
-    uint32_t Available = Class->Available;
-
-    if (Pair) {
-      // Only choose base register R if R and R + 1 are both free
-      Available &= (Available >> 1);
-
-      // Only consider aligned registers in the pair region
-      constexpr uint32_t EVEN_BITS = 0x55555555;
-      Available &= (EVEN_BITS & ((1u << PairRegs) - 1));
-    }
-
-    return Available;
-  };
-
   // Assign a register for a given Node, spilling if necessary.
   void AssignReg(IROp_Header* IROp, Ref CodeNode, IROp_Header* Pivot) {
     const uint32_t Node = IR->GetID(CodeNode).Value;
@@ -411,97 +389,47 @@ private:
       }
     }
 
-    RegisterClassType OrigClassType = GetRegClassFromNode(IR, IROp);
-    bool Pair = OrigClassType == GPRPairClass;
-    RegisterClassType ClassType = Pair ? GPRClass : OrigClassType;
+    // Try to coalesce reserved pairs. Just a heuristic to remove some moves.
+    if (IROp->Op == OP_ALLOCATEGPR) {
+      if (IROp->C<IROp_AllocateGPR>()->ForPair) {
+        uint32_t Available = Classes[GPRClass].Available;
+
+        // Only choose base register R if R and R + 1 are both free
+        Available &= (Available >> 1);
+
+        // Only consider aligned registers in the pair region
+        constexpr uint32_t EVEN_BITS = 0x55555555;
+        Available &= (EVEN_BITS & ((1u << PairRegs) - 1));
+
+        if (Available) {
+          unsigned Reg = std::countr_zero(Available);
+          SetReg(CodeNode, PhysicalRegister(GPRClass, Reg));
+          return;
+        }
+      }
+    } else if (IROp->Op == OP_ALLOCATEGPRAFTER) {
+      uint32_t Available = Classes[GPRClass].Available;
+      auto After = SSAToReg[IR->GetID(IR->GetNode(IROp->Args[0])).Value];
+      if ((After.Reg & 1) == 0 && Available & (1ull << (After.Reg + 1))) {
+        SetReg(CodeNode, PhysicalRegister(GPRClass, After.Reg + 1));
+        return;
+      }
+    }
+
+    RegisterClassType ClassType = GetRegClassFromNode(IR, IROp);
     RegisterClass* Class = &Classes[ClassType];
 
     // Spill to make room in the register file. Free registers need not be
     // contiguous, we'll shuffle later.
-    //
-    // There is one subtlety: when allocating a pair, we need at least 1 free
-    // register in the pair region. Else, we could end up trying to allocate a
-    // pair when the only free 2 regs are outside the pair region, and the pair
-    // region is made of all pairs (so nothing to shuffle). With 1 free
-    // register in the pair region, we'll be able to shuffle.
-    //
-    // When spilling for pairs, SpillReg prioritizes spilling the pair region
-    // which ensures this loop is well-behaved.
-    while (std::popcount(Class->Available) < (Pair ? 2 : 1) || (Pair && !(Class->Available & ((1u << PairRegs) - 1)))) {
+    if (!Class->Available) {
       IREmit->SetWriteCursorBefore(CodeNode);
-      SpillReg(Class, Pivot, Pair);
+      SpillReg(Class, Pivot);
     }
-
-    // There are now enough free registers, but they may be fragmented.
-    // Pick a scalar blocking a pair and shuffle to make room.
-    uint32_t Available = AvailableMask(Class, Pair);
-    if (!Available) {
-      LOGMAN_THROW_A_FMT(OrigClassType == GPRPairClass, "Already spilled");
-
-      // Find the first free scalar. There are at least 2.
-      unsigned Hole = std::countr_zero(Class->Available);
-      LOGMAN_THROW_AA_FMT(Class->Available & (1u << Hole), "Definition");
-
-      // Its neighbour is blocking the pair.
-      unsigned Blocked = Hole ^ 1;
-      LOGMAN_THROW_AA_FMT(!(Class->Available & (1u << Blocked)), "Invariant7");
-      LOGMAN_THROW_AA_FMT(Hole < PairRegs, "Pairable register");
-
-      // Find another free scalar to evict the neighbour
-      unsigned NewReg = std::countr_zero(Class->Available & ~(1u << Hole));
-      LOGMAN_THROW_AA_FMT(Class->Available & (1u << NewReg), "Ensured space");
-
-      IREmit->SetWriteCursorBefore(CodeNode);
-      Ref Old = Class->RegToSSA[Blocked];
-      LOGMAN_THROW_A_FMT(GetRegClassFromNode(IR, IR->GetOp<IROp_Header>(Old)) == GPRClass, "Only scalars have free neighbours");
-      FreeReg(PhysicalRegister(GPRClass, Blocked));
-
-      Ref Clobber = nullptr;
-
-      // If that scalar is free because it is killed by this instruction, it
-      // needs to be shuffled too, since the copy would clobber it.
-      for (auto s = 0; s < IR::GetRAArgs(Pivot->Op); ++s) {
-        // It is possible that the argument is to be remapped, but the actual
-        // remapping in the IR only happens later in the pass so we need to
-        // Map() explicitly. This can be hit with SRA shuffles.
-        Ref New = Map(IR->GetNode(Pivot->Args[s]));
-        const PhysicalRegister ClobberReg = SSAToReg[IR->GetID(New).Value];
-
-        if (ClobberReg.Class == GPRClass && ClobberReg.Reg == NewReg) {
-          Clobber = IR->GetNode(Pivot->Args[s]);
-          break;
-        }
-      }
-
-      if (Clobber) {
-        // Swap the registers.
-        LOGMAN_THROW_A_FMT(IsOld(Clobber), "Not yet mapped");
-
-        auto ClobberNew = IREmit->_Swap1(Map(Clobber), Map(Old));
-        Remap(Clobber, ClobberNew);
-
-        auto New = IREmit->_Swap2();
-        Remap(Old, New);
-
-        SetReg(New, PhysicalRegister(GPRClass, NewReg));
-        SetReg(ClobberNew, PhysicalRegister(GPRClass, Blocked));
-        FreeReg(PhysicalRegister(GPRClass, Blocked));
-      } else {
-        // Otherwise, simply copy.
-        auto Copy = IREmit->_Copy(Map(Old));
-
-        Remap(Old, Copy);
-        SetReg(Copy, PhysicalRegister(GPRClass, NewReg));
-      }
-
-      Available = AvailableMask(Class, Pair);
-    }
-
-    LOGMAN_THROW_AA_FMT(Available != 0, "Post-condition of spill and shuffle");
 
     // Assign a free register in the appropriate class.
-    unsigned Reg = std::countr_zero(Available);
-    SetReg(CodeNode, PhysicalRegister(OrigClassType, Reg));
+    LOGMAN_THROW_AA_FMT(Class->Available != 0, "Post-condition of spilling");
+    unsigned Reg = std::countr_zero(Class->Available);
+    SetReg(CodeNode, PhysicalRegister(ClassType, Reg));
   };
 
   bool IsRAOp(IROps Op) {

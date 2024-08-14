@@ -2123,14 +2123,6 @@ private:
     StoreResult(GPRClass, Op, Result, -1);
   }
 
-  std::pair<Ref, Ref> ExtractPair(OpSize Size, Ref Pair) {
-    // Extract high first. This is a hack to improve coalescing.
-    Ref Hi = _ExtractElementPair(Size, Pair, 1);
-    Ref Lo = _ExtractElementPair(Size, Pair, 0);
-
-    return std::make_pair(Lo, Hi);
-  }
-
   // Helper to derive Dest by a given builder-using Expression with the opcode
   // replaced with NewOp. Useful for generic building code. Not safe in general.
   // but does the right handling of ImplicitFlagClobber at least and must be
@@ -2389,6 +2381,29 @@ private:
 
   Ref Prefetch(bool ForStore, bool Stream, uint8_t CacheLevel, Ref ssa0) {
     return _Prefetch(ForStore, Stream, CacheLevel, ssa0, Invalid(), MEM_OFFSET_SXTX, 1);
+  }
+
+  Ref Pop(uint8_t Size, Ref SP_RMW) {
+    Ref Value = _AllocateGPR(false);
+    _Pop(Size, SP_RMW, Value);
+    return Value;
+  }
+
+  Ref Pop(uint8_t Size) {
+    Ref SP = _RMWHandle(LoadGPRRegister(X86State::REG_RSP));
+    Ref Value = _AllocateGPR(false);
+
+    _Pop(Size, SP, Value);
+
+    // Store the new stack pointer
+    StoreGPRRegister(X86State::REG_RSP, SP);
+    return Value;
+  }
+
+  void Push(uint8_t Size, Ref Value) {
+    auto OldSP = LoadGPRRegister(X86State::REG_RSP);
+    auto NewSP = _Push(CTX->GetGPRSize(), Size, Value, OldSP);
+    StoreGPRRegister(X86State::REG_RSP, NewSP);
   }
 
   void InstallHostSpecificOpcodeHandlers();

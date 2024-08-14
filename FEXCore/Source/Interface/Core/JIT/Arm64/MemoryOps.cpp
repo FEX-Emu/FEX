@@ -6,6 +6,7 @@ $end_info$
 */
 
 #include "FEXCore/Core/X86Enums.h"
+#include "FEXCore/Utils/LogManager.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
@@ -367,30 +368,6 @@ DEF_OP(SpillRegister) {
     }
     default: LOGMAN_MSG_A_FMT("Unhandled SpillRegister size: {}", OpSize); break;
     }
-  } else if (Op->Class == FEXCore::IR::GPRPairClass) {
-    const auto Src = GetRegPair(Op->Value.ID());
-    switch (OpSize) {
-    case 8: {
-      if (SlotOffset <= 252 && (SlotOffset & 0b11) == 0) {
-        stp<ARMEmitter::IndexType::OFFSET>(Src.first.W(), Src.second.W(), ARMEmitter::Reg::rsp, SlotOffset);
-      } else {
-        add(ARMEmitter::Size::i64Bit, TMP1, ARMEmitter::Reg::rsp, SlotOffset);
-        stp<ARMEmitter::IndexType::OFFSET>(Src.first.W(), Src.second.W(), TMP1, 0);
-      }
-      break;
-    }
-
-    case 16: {
-      if (SlotOffset <= 504 && (SlotOffset & 0b111) == 0) {
-        stp<ARMEmitter::IndexType::OFFSET>(Src.first.X(), Src.second.X(), ARMEmitter::Reg::rsp, SlotOffset);
-      } else {
-        add(ARMEmitter::Size::i64Bit, TMP1, ARMEmitter::Reg::rsp, SlotOffset);
-        stp<ARMEmitter::IndexType::OFFSET>(Src.first.X(), Src.second.X(), TMP1, 0);
-      }
-      break;
-    }
-    default: LOGMAN_MSG_A_FMT("Unhandled SpillRegister(GPRPair) size: {}", OpSize); break;
-    }
   } else {
     LOGMAN_MSG_A_FMT("Unhandled SpillRegister class: {}", Op->Class.Val);
   }
@@ -479,30 +456,6 @@ DEF_OP(FillRegister) {
       break;
     }
     default: LOGMAN_MSG_A_FMT("Unhandled FillRegister size: {}", OpSize); break;
-    }
-  } else if (Op->Class == FEXCore::IR::GPRPairClass) {
-    const auto Src = GetRegPair(Node);
-    switch (OpSize) {
-    case 8: {
-      if (SlotOffset <= 252 && (SlotOffset & 0b11) == 0) {
-        ldp<ARMEmitter::IndexType::OFFSET>(Src.first.W(), Src.second.W(), ARMEmitter::Reg::rsp, SlotOffset);
-      } else {
-        add(ARMEmitter::Size::i64Bit, TMP1, ARMEmitter::Reg::rsp, SlotOffset);
-        ldp<ARMEmitter::IndexType::OFFSET>(Src.first.W(), Src.second.W(), TMP1, 0);
-      }
-      break;
-    }
-
-    case 16: {
-      if (SlotOffset <= 504 && (SlotOffset & 0b111) == 0) {
-        ldp<ARMEmitter::IndexType::OFFSET>(Src.first.X(), Src.second.X(), ARMEmitter::Reg::rsp, SlotOffset);
-      } else {
-        add(ARMEmitter::Size::i64Bit, TMP1, ARMEmitter::Reg::rsp, SlotOffset);
-        ldp<ARMEmitter::IndexType::OFFSET>(Src.first.X(), Src.second.X(), TMP1, 0);
-      }
-      break;
-    }
-    default: LOGMAN_MSG_A_FMT("Unhandled FillRegister(GPRPair) size: {}", OpSize); break;
     }
   } else {
     LOGMAN_MSG_A_FMT("Unhandled FillRegister class: {}", Op->Class.Val);
@@ -1409,6 +1362,37 @@ DEF_OP(Push) {
   }
 }
 
+DEF_OP(Pop) {
+  const auto Op = IROp->C<IR::IROp_Pop>();
+  const auto Addr = GetReg(Op->InoutAddr.ID());
+  const auto Dst = GetReg(Op->OutValue.ID());
+
+  LOGMAN_THROW_A_FMT(Dst != Addr, "Invalid");
+
+  switch (Op->Size) {
+  case 1: {
+    ldrb<ARMEmitter::IndexType::POST>(Dst.W(), Addr, Op->Size);
+    break;
+  }
+  case 2: {
+    ldrh<ARMEmitter::IndexType::POST>(Dst.W(), Addr, Op->Size);
+    break;
+  }
+  case 4: {
+    ldr<ARMEmitter::IndexType::POST>(Dst.W(), Addr, Op->Size);
+    break;
+  }
+  case 8: {
+    ldr<ARMEmitter::IndexType::POST>(Dst.X(), Addr, Op->Size);
+    break;
+  }
+  default: {
+    LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Op->Size);
+    break;
+  }
+  }
+}
+
 DEF_OP(StoreMem) {
   const auto Op = IROp->C<IR::IROp_StoreMem>();
   const auto OpSize = IROp->Size;
@@ -1743,7 +1727,8 @@ DEF_OP(MemCpy) {
     DirectionReg = GetReg(Op->Direction.ID());
   }
 
-  auto Dst = GetRegPair(Node);
+  auto Dst0 = GetReg(Op->OutDstAddress.ID());
+  auto Dst1 = GetReg(Op->OutSrcAddress.ID());
   // If Direction > 0 then:
   //   MemRegDest is incremented (by size)
   //   MemRegSrc is incremented (by size)
@@ -1940,40 +1925,40 @@ DEF_OP(MemCpy) {
     if (SizeDirection >= 0) {
       switch (OpSize) {
       case 1:
-        add(Dst.first.X(), TMP1, TMP3);
-        add(Dst.second.X(), TMP2, TMP3);
+        add(Dst0.X(), TMP1, TMP3);
+        add(Dst1.X(), TMP2, TMP3);
         break;
       case 2:
-        add(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 1);
-        add(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 1);
+        add(Dst0.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 1);
+        add(Dst1.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 1);
         break;
       case 4:
-        add(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 2);
-        add(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 2);
+        add(Dst0.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 2);
+        add(Dst1.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 2);
         break;
       case 8:
-        add(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 3);
-        add(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 3);
+        add(Dst0.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 3);
+        add(Dst1.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 3);
         break;
       default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize); break;
       }
     } else {
       switch (OpSize) {
       case 1:
-        sub(Dst.first.X(), TMP1, TMP3);
-        sub(Dst.second.X(), TMP2, TMP3);
+        sub(Dst0.X(), TMP1, TMP3);
+        sub(Dst1.X(), TMP2, TMP3);
         break;
       case 2:
-        sub(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 1);
-        sub(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 1);
+        sub(Dst0.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 1);
+        sub(Dst1.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 1);
         break;
       case 4:
-        sub(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 2);
-        sub(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 2);
+        sub(Dst0.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 2);
+        sub(Dst1.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 2);
         break;
       case 8:
-        sub(Dst.first.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 3);
-        sub(Dst.second.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 3);
+        sub(Dst0.X(), TMP1, TMP3, ARMEmitter::ShiftType::LSL, 3);
+        sub(Dst1.X(), TMP2, TMP3, ARMEmitter::ShiftType::LSL, 3);
         break;
       default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, OpSize); break;
       }

@@ -41,21 +41,6 @@ DEF_BINOP_WITH_CONSTANT(Lshl, lslv, lsl)
 DEF_BINOP_WITH_CONSTANT(Lshr, lsrv, lsr)
 DEF_BINOP_WITH_CONSTANT(Ror, rorv, ror)
 
-DEF_OP(TruncElementPair) {
-  auto Op = IROp->C<IR::IROp_TruncElementPair>();
-
-  switch (IROp->Size) {
-  case 4: {
-    auto Dst = GetRegPair(Node);
-    auto Src = GetRegPair(Op->Pair.ID());
-    mov(ARMEmitter::Size::i32Bit, Dst.first, Src.first);
-    mov(ARMEmitter::Size::i32Bit, Dst.second, Src.second);
-    break;
-  }
-  default: LOGMAN_MSG_A_FMT("Unhandled Truncation size: {}", IROp->Size); break;
-  }
-}
-
 DEF_OP(Constant) {
   auto Op = IROp->C<IR::IROp_Constant>();
   auto Dst = GetReg(Node);
@@ -232,10 +217,8 @@ DEF_OP(CmpPairZ) {
   mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
 
   // Compare, setting Z and clobbering NzCV
-  const auto Src1 = GetRegPair(Op->Src1.ID());
-  const auto Src2 = GetRegPair(Op->Src2.ID());
-  cmp(EmitSize, Src1.first, Src2.first);
-  ccmp(EmitSize, Src1.second, Src2.second, ARMEmitter::StatusFlags::None, ARMEmitter::Condition::CC_EQ);
+  cmp(EmitSize, GetReg(Op->Src1Lo.ID()), GetReg(Op->Src2Lo.ID()));
+  ccmp(EmitSize, GetReg(Op->Src1Hi.ID()), GetReg(Op->Src2Hi.ID()), ARMEmitter::StatusFlags::None, ARMEmitter::Condition::CC_EQ);
 
   // Restore NzCV
   if (CTX->HostFeatures.SupportsFlagM) {
@@ -1373,11 +1356,6 @@ DEF_OP(Select) {
       const auto Src2 = GetReg(Op->Cmp2.ID());
       cmp(CompareEmitSize, Src1, Src2);
     }
-  } else if (IsGPRPair(Op->Cmp1.ID())) {
-    const auto Src1 = GetRegPair(Op->Cmp1.ID());
-    const auto Src2 = GetRegPair(Op->Cmp2.ID());
-    cmp(EmitSize, Src1.first, Src2.first);
-    ccmp(EmitSize, Src1.second, Src2.second, ARMEmitter::StatusFlags::None, cc);
   } else if (IsFPR(Op->Cmp1.ID())) {
     const auto Src1 = GetVReg(Op->Cmp1.ID());
     const auto Src2 = GetVReg(Op->Cmp2.ID());

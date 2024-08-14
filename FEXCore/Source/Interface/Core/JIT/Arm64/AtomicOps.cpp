@@ -15,19 +15,43 @@ DEF_OP(CASPair) {
   auto Op = IROp->C<IR::IROp_CASPair>();
   LOGMAN_THROW_AA_FMT(IROp->ElementSize == 4 || IROp->ElementSize == 8, "Wrong element size");
   // Size is the size of each pair element
-  auto Dst = GetRegPair(Node);
-  auto Expected = GetRegPair(Op->Expected.ID());
-  auto Desired = GetRegPair(Op->Desired.ID());
+  auto Dst0 = GetReg(Op->OutLo.ID());
+  auto Dst1 = GetReg(Op->OutHi.ID());
+  auto Expected0 = GetReg(Op->ExpectedLo.ID());
+  auto Expected1 = GetReg(Op->ExpectedHi.ID());
+  auto Desired0 = GetReg(Op->DesiredLo.ID());
+  auto Desired1 = GetReg(Op->DesiredHi.ID());
   auto MemSrc = GetReg(Op->Addr.ID());
 
   const auto EmitSize = IROp->ElementSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
   if (CTX->HostFeatures.SupportsAtomics) {
-    mov(EmitSize, TMP3, Expected.first);
-    mov(EmitSize, TMP4, Expected.second);
+    // RA has heuristics to try to pair sources, but we need to handle the cases
+    // where they fail. We do so by moving to temporaries. Note we use 64-bit
+    // moves here even for 32-bit cmpxchg, for the Firestorm register renamer.
+    if (Desired1.Idx() != (Desired0.Idx() + 1) || Desired0.Idx() & 1) {
+      mov(ARMEmitter::Size::i64Bit, TMP1, Desired0);
+      mov(ARMEmitter::Size::i64Bit, TMP2, Desired1);
+      Desired0 = TMP1;
+      Desired1 = TMP2;
+    }
 
-    caspal(EmitSize, TMP3, TMP4, Desired.first, Desired.second, MemSrc);
-    mov(EmitSize, Dst.first, TMP3.R());
-    mov(EmitSize, Dst.second, TMP4.R());
+    auto CaspalDst0 = Dst0;
+    auto CaspalDst1 = Dst1;
+    if (CaspalDst1.Idx() != (CaspalDst0.Idx() + 1) || CaspalDst0.Idx() & 1) {
+      CaspalDst0 = TMP3;
+      CaspalDst1 = TMP4;
+    }
+
+    // We can't clobber the source, these moves are inherently required due to
+    // ISA limitations. But by making them 64-bit, Firestorm can rename.
+    mov(ARMEmitter::Size::i64Bit, CaspalDst0, Expected0);
+    mov(ARMEmitter::Size::i64Bit, CaspalDst1, Expected1);
+    caspal(EmitSize, CaspalDst0, CaspalDst1, Desired0, Desired1, MemSrc);
+
+    if (CaspalDst0 != Dst0) {
+      mov(ARMEmitter::Size::i64Bit, Dst0, CaspalDst0);
+      mov(ARMEmitter::Size::i64Bit, Dst1, CaspalDst1);
+    }
   } else {
     // Save NZCV so we don't have to mark this op as clobbering NZCV (the
     // SupportsAtomics does not clobber atomics and this !SupportsAtomics path
@@ -43,19 +67,19 @@ DEF_OP(CASPair) {
 
     // This instruction sequence must be synced with HandleCASPAL_Armv8.
     ldaxp(EmitSize, TMP2, TMP3, MemSrc);
-    cmp(EmitSize, TMP2, Expected.first);
-    ccmp(EmitSize, TMP3, Expected.second, ARMEmitter::StatusFlags::None, ARMEmitter::Condition::CC_EQ);
+    cmp(EmitSize, TMP2, Expected0);
+    ccmp(EmitSize, TMP3, Expected1, ARMEmitter::StatusFlags::None, ARMEmitter::Condition::CC_EQ);
     b(ARMEmitter::Condition::CC_NE, &LoopNotExpected);
-    stlxp(EmitSize, TMP2, Desired.first, Desired.second, MemSrc);
+    stlxp(EmitSize, TMP2, Desired0, Desired1, MemSrc);
     cbnz(EmitSize, TMP2, &LoopTop);
-    mov(EmitSize, Dst.first, Expected.first);
-    mov(EmitSize, Dst.second, Expected.second);
+    mov(EmitSize, Dst0, Expected0);
+    mov(EmitSize, Dst1, Expected1);
 
     b(&LoopExpected);
 
     Bind(&LoopNotExpected);
-    mov(EmitSize, Dst.first, TMP2.R());
-    mov(EmitSize, Dst.second, TMP3.R());
+    mov(EmitSize, Dst0, TMP2.R());
+    mov(EmitSize, Dst1, TMP3.R());
     // exclusive monitor needs to be cleared here
     // Might have hit the case where ldaxr was hit but stlxr wasn't
     clrex();

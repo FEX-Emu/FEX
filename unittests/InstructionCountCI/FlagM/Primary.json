@@ -1791,11 +1791,10 @@
       ]
     },
     "popf": {
-      "ExpectedInstructionCount": 34,
+      "ExpectedInstructionCount": 33,
       "Comment": "0x9d",
       "ExpectedArm64ASM": [
-        "ldr x20, [x8]",
-        "add x8, x8, #0x8 (8)",
+        "ldr x20, [x8], #8",
         "mov w21, #0x202",
         "orr x27, x20, x21",
         "mvn w20, w27",

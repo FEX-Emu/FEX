@@ -123,13 +123,7 @@ void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
     Thunk(LoadGPRRegister(X86State::REG_RCX), *reinterpret_cast<SHA256Sum*>(sha256));
   }
 
-  auto Constant = _Constant(GPRSize);
-  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-  auto NewRIP = _LoadMem(GPRClass, GPRSize, OldSP, GPRSize);
-  Ref NewSP = _Add(IR::SizeToOpSize(GPRSize), OldSP, Constant);
-
-  // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP);
+  auto NewRIP = Pop(GPRSize);
 
   // Store the new RIP
   ExitFunction(NewRIP);
@@ -367,14 +361,7 @@ void OpDispatchBuilder::PUSHOp(OpcodeArgs) {
   const uint8_t Size = GetSrcSize(Op);
 
   Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-
-  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-
-  const uint8_t GPRSize = CTX->GetGPRSize();
-  auto NewSP = _Push(GPRSize, Size, Src, OldSP);
-
-  // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP);
+  Push(Size, Src);
   FlushRegisterCache();
 }
 
@@ -383,11 +370,7 @@ void OpDispatchBuilder::PUSHREGOp(OpcodeArgs) {
 
   Ref Src = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
 
-  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-  const uint8_t GPRSize = CTX->GetGPRSize();
-  auto NewSP = _Push(GPRSize, Size, Src, OldSP);
-  // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP);
+  Push(Size, Src);
   FlushRegisterCache();
 }
 
@@ -446,8 +429,6 @@ void OpDispatchBuilder::PUSHSegmentOp(OpcodeArgs) {
   const uint8_t SrcSize = GetSrcSize(Op);
   const uint8_t DstSize = GetDstSize(Op);
 
-  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-
   Ref Src {};
   if (!CTX->Config.Is64BitMode()) {
     switch (SegmentReg) {
@@ -495,81 +476,37 @@ void OpDispatchBuilder::PUSHSegmentOp(OpcodeArgs) {
     }
   }
 
-  const uint8_t GPRSize = CTX->GetGPRSize();
   // Store our value to the new stack location
   // AMD hardware zexts segment selector to 32bit
   // Intel hardware inserts segment selector
-  auto NewSP = _Push(GPRSize, DstSize, Src, OldSP);
-
-  // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP);
+  Push(DstSize, Src);
 }
 
 void OpDispatchBuilder::POPOp(OpcodeArgs) {
-  const uint8_t Size = GetSrcSize(Op);
-
-  auto Constant = _Constant(Size);
-  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-  auto NewGPR = _LoadMem(GPRClass, Size, OldSP, Size);
-  auto NewSP = _Add(OpSize::i64Bit, OldSP, Constant);
-
-  // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP);
-
-  // Store what we loaded from the stack
-  StoreResult(GPRClass, Op, NewGPR, -1);
+  Ref Value = Pop(GetSrcSize(Op));
+  StoreResult(GPRClass, Op, Value, -1);
 }
 
 void OpDispatchBuilder::POPAOp(OpcodeArgs) {
   // 32bit only
   const uint8_t Size = GetSrcSize(Op);
 
-  auto Constant = _Constant(Size);
-  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
+  Ref SP = _RMWHandle(LoadGPRRegister(X86State::REG_RSP));
 
-  // POPA order:
-  // pop EDI
-  // pop ESI
-  // pop EBP
-  // ESP += 4; // Skip RSP because it'll be correct at the end
-  // pop EBX
-  // pop EDX
-  // pop ECX
-  // pop EAX
+  StoreGPRRegister(X86State::REG_RDI, Pop(Size, SP), Size);
+  StoreGPRRegister(X86State::REG_RSI, Pop(Size, SP), Size);
+  StoreGPRRegister(X86State::REG_RBP, Pop(Size, SP), Size);
 
-  Ref Src {};
-  Ref NewSP = OldSP;
-  Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  StoreGPRRegister(X86State::REG_RDI, Src, Size);
-  NewSP = _Add(OpSize::i64Bit, NewSP, Constant);
+  // Skip loading RSP because it'll be correct at the end
+  SP = _RMWHandle(_Add(OpSize::i64Bit, SP, _Constant(Size)));
 
-  Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  StoreGPRRegister(X86State::REG_RSI, Src, Size);
-  NewSP = _Add(OpSize::i64Bit, NewSP, Constant);
-
-  Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  StoreGPRRegister(X86State::REG_RBP, Src, Size);
-  NewSP = _Add(OpSize::i64Bit, NewSP, _Constant(Size * 2));
-
-  // Skip SP loading
-  Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  StoreGPRRegister(X86State::REG_RBX, Src, Size);
-  NewSP = _Add(OpSize::i64Bit, NewSP, Constant);
-
-  Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  StoreGPRRegister(X86State::REG_RDX, Src, Size);
-  NewSP = _Add(OpSize::i64Bit, NewSP, Constant);
-
-  Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  StoreGPRRegister(X86State::REG_RCX, Src, Size);
-  NewSP = _Add(OpSize::i64Bit, NewSP, Constant);
-
-  Src = _LoadMem(GPRClass, Size, NewSP, Size);
-  StoreGPRRegister(X86State::REG_RAX, Src, Size);
-  NewSP = _Add(OpSize::i64Bit, NewSP, Constant);
+  StoreGPRRegister(X86State::REG_RBX, Pop(Size, SP), Size);
+  StoreGPRRegister(X86State::REG_RDX, Pop(Size, SP), Size);
+  StoreGPRRegister(X86State::REG_RCX, Pop(Size, SP), Size);
+  StoreGPRRegister(X86State::REG_RAX, Pop(Size, SP), Size);
 
   // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP);
+  StoreGPRRegister(X86State::REG_RSP, SP);
 }
 
 template<uint32_t SegmentReg>
@@ -577,13 +514,7 @@ void OpDispatchBuilder::POPSegmentOp(OpcodeArgs) {
   const uint8_t SrcSize = GetSrcSize(Op);
   const uint8_t DstSize = GetDstSize(Op);
 
-  auto Constant = _Constant(SrcSize);
-  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-  auto NewSegment = _LoadMem(GPRClass, SrcSize, OldSP, SrcSize);
-  auto NewSP = _Add(OpSize::i64Bit, OldSP, Constant);
-
-  // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP);
+  auto NewSegment = Pop(SrcSize);
 
   switch (SegmentReg) {
   case FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX:
@@ -612,16 +543,11 @@ void OpDispatchBuilder::POPSegmentOp(OpcodeArgs) {
 
 void OpDispatchBuilder::LEAVEOp(OpcodeArgs) {
   // First we move RBP in to RSP and then behave effectively like a pop
-  const uint8_t Size = GetSrcSize(Op);
-
-  auto Constant = _Constant(Size);
-  auto OldBP = LoadGPRRegister(X86State::REG_RBP);
-
-  auto NewGPR = _LoadMem(GPRClass, Size, OldBP, Size);
-  auto NewSP = _Add(IR::SizeToOpSize(Size), OldBP, Constant);
+  auto SP = _RMWHandle(LoadGPRRegister(X86State::REG_RBP));
+  auto NewGPR = Pop(GetSrcSize(Op), SP);
 
   // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP);
+  StoreGPRRegister(X86State::REG_RSP, SP);
 
   // Store what we loaded to RBP
   StoreGPRRegister(X86State::REG_RBP, NewGPR);
@@ -649,11 +575,7 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
   Ref NewRIP = _Add(IR::SizeToOpSize(GPRSize), ConstantPC, _Constant(TargetOffset));
 
   // Push the return address.
-  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-  auto NewSP = _Push(GPRSize, GPRSize, ConstantPC, OldSP);
-
-  // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP);
+  Push(GPRSize, ConstantPC);
 
   const uint64_t NextRIP = Op->PC + Op->InstSize;
 
@@ -671,14 +593,8 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   const uint8_t Size = GetSrcSize(Op);
   Ref JMPPCOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
 
-  auto ConstantPCReturn = GetRelocatedPC(Op);
-
   // Push the return address.
-  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-  auto NewSP = _Push(Size, Size, ConstantPCReturn, OldSP);
-
-  // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP);
+  Push(Size, GetRelocatedPC(Op));
 
   // Store the RIP
   ExitFunction(JMPPCOffset); // If we get here then leave the function now
@@ -1417,13 +1333,17 @@ void OpDispatchBuilder::CPUIDOp(OpcodeArgs) {
   Ref Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], GPRSize, Op->Flags);
   Ref Leaf = LoadGPRRegister(X86State::REG_RCX);
 
-  auto Res = _CPUID(Src, Leaf);
-  auto [Result_Lower, Result_Upper] = ExtractPair(OpSize::i64Bit, Res);
+  Ref RAX = _AllocateGPR(false);
+  Ref RBX = _AllocateGPR(false);
+  Ref RCX = _AllocateGPR(false);
+  Ref RDX = _AllocateGPR(false);
 
-  StoreGPRRegister(X86State::REG_RAX, _Bfe(OpSize::i64Bit, 32, 0, Result_Lower));
-  StoreGPRRegister(X86State::REG_RBX, _Bfe(OpSize::i64Bit, 32, 32, Result_Lower));
-  StoreGPRRegister(X86State::REG_RDX, _Bfe(OpSize::i64Bit, 32, 32, Result_Upper));
-  StoreGPRRegister(X86State::REG_RCX, _Bfe(OpSize::i64Bit, 32, 0, Result_Upper));
+  _CPUID(Src, Leaf, RAX, RBX, RCX, RDX);
+
+  StoreGPRRegister(X86State::REG_RAX, RAX);
+  StoreGPRRegister(X86State::REG_RBX, RBX);
+  StoreGPRRegister(X86State::REG_RCX, RCX);
+  StoreGPRRegister(X86State::REG_RDX, RDX);
 }
 
 uint32_t OpDispatchBuilder::LoadConstantShift(X86Tables::DecodedOp Op, bool Is1Bit) {
@@ -1441,11 +1361,12 @@ uint32_t OpDispatchBuilder::LoadConstantShift(X86Tables::DecodedOp Op, bool Is1B
 void OpDispatchBuilder::XGetBVOp(OpcodeArgs) {
   Ref Function = LoadGPRRegister(X86State::REG_RCX);
 
-  auto Res = _XGetBV(Function);
-  auto [Result_Lower, Result_Upper] = ExtractPair(OpSize::i32Bit, Res);
+  auto RAX = _AllocateGPR(false);
+  auto RDX = _AllocateGPR(false);
+  _XGetBV(Function, RAX, RDX);
 
-  StoreGPRRegister(X86State::REG_RAX, Result_Lower);
-  StoreGPRRegister(X86State::REG_RDX, Result_Upper);
+  StoreGPRRegister(X86State::REG_RAX, RAX);
+  StoreGPRRegister(X86State::REG_RDX, RDX);
 }
 
 void OpDispatchBuilder::SHLOp(OpcodeArgs) {
@@ -3309,8 +3230,9 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
       SrcAddr = _Add(OpSize::i64Bit, SrcAddr, SrcSegment);
     }
 
-    auto Result = _MemCpy(CTX->IsAtomicTSOEnabled(), Size, DstAddr, SrcAddr, Counter, LoadDir(1));
-    auto [Result_Dst, Result_Src] = ExtractPair(OpSize::i64Bit, Result);
+    Ref Result_Src = _AllocateGPR(false);
+    Ref Result_Dst = _AllocateGPR(false);
+    _MemCpy(CTX->IsAtomicTSOEnabled(), Size, DstAddr, SrcAddr, Counter, LoadDir(1), Result_Dst, Result_Src);
 
     if (DstSegment) {
       Result_Dst = _Sub(OpSize::i64Bit, Result_Dst, DstSegment);
@@ -3655,25 +3577,12 @@ void OpDispatchBuilder::PUSHFOp(OpcodeArgs) {
     Src = _Bfe(OpSize::i32Bit, Size * 8, 0, Src);
   }
 
-  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-
-  const uint8_t GPRSize = CTX->GetGPRSize();
-  auto NewSP = _Push(GPRSize, Size, Src, OldSP);
-
-  // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP);
+  Push(Size, Src);
 }
 
 void OpDispatchBuilder::POPFOp(OpcodeArgs) {
   const uint8_t Size = GetSrcSize(Op);
-
-  auto Constant = _Constant(Size);
-  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-  Ref Src = _LoadMem(GPRClass, Size, OldSP, Size);
-  auto NewSP = _Add(OpSize::i64Bit, OldSP, Constant);
-
-  // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP);
+  Ref Src = Pop(Size);
 
   // Add back our flag constants
   // Bit 1 is always 1
@@ -3976,13 +3885,12 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   // If this is a memory location then we want the pointer to it
   Ref Src1 = MakeSegmentAddress(Op, Op->Dest);
 
-  Ref Expected_Lower = LoadGPRRegister(X86State::REG_RAX, Size);
-  Ref Expected_Upper = LoadGPRRegister(X86State::REG_RDX, Size);
-  Ref Expected = _CreateElementPair(IR::SizeToOpSize(Size * 2), Expected_Lower, Expected_Upper);
-
-  Ref Desired_Lower = LoadGPRRegister(X86State::REG_RBX, Size);
-  Ref Desired_Upper = LoadGPRRegister(X86State::REG_RCX, Size);
-  Ref Desired = _CreateElementPair(IR::SizeToOpSize(Size * 2), Desired_Lower, Desired_Upper);
+  // Load the full 64-bit registers, all the users ignore the upper 32-bits for
+  // 32-bit only cmpxchg. This saves some zero extension.
+  Ref Expected_Lower = LoadGPRRegister(X86State::REG_RAX);
+  Ref Expected_Upper = LoadGPRRegister(X86State::REG_RDX);
+  Ref Desired_Lower = LoadGPRRegister(X86State::REG_RBX);
+  Ref Desired_Upper = LoadGPRRegister(X86State::REG_RCX);
 
   // ssa0 = Expected
   // ssa1 = Desired
@@ -3993,10 +3901,12 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   // This will write to memory! Careful!
   // Third operand must be a calculated guest memory address
 
-  Ref CASResult = _CASPair(IR::SizeToOpSize(Size * 2), Expected, Desired, Src1);
+  Ref Result_Lower = _AllocateGPR(true);
+  Ref Result_Upper = _AllocateGPRAfter(Result_Lower);
+  _CASPair(IR::SizeToOpSize(Size), Expected_Lower, Expected_Upper, Desired_Lower, Desired_Upper, Src1, Result_Lower, Result_Upper);
 
   HandleNZCV_RMW();
-  _CmpPairZ(IR::SizeToOpSize(Size), CASResult, Expected);
+  _CmpPairZ(IR::SizeToOpSize(Size), Result_Lower, Result_Upper, Expected_Lower, Expected_Upper);
   CalculateDeferredFlags();
 
   auto UpdateIfNotZF = [this](auto Reg, auto Value) {
@@ -4005,7 +3915,6 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
     StoreGPRRegister(Reg, NZCVSelect(OpSize::i64Bit, {COND_NEQ}, Value, LoadGPRRegister(Reg)));
   };
 
-  auto [Result_Lower, Result_Upper] = ExtractPair(IR::SizeToOpSize(Size), CASResult);
   UpdateIfNotZF(X86State::REG_RAX, Result_Lower);
   UpdateIfNotZF(X86State::REG_RDX, Result_Upper);
 }
