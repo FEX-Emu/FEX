@@ -123,13 +123,7 @@ void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
     Thunk(LoadGPRRegister(X86State::REG_RCX), *reinterpret_cast<SHA256Sum*>(sha256));
   }
 
-  auto Constant = _Constant(GPRSize);
-  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-  auto NewRIP = _LoadMem(GPRClass, GPRSize, OldSP, GPRSize);
-  Ref NewSP = _Add(IR::SizeToOpSize(GPRSize), OldSP, Constant);
-
-  // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP);
+  auto NewRIP = Pop(GPRSize);
 
   // Store the new RIP
   ExitFunction(NewRIP);
