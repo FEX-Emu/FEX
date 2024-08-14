@@ -361,14 +361,7 @@ void OpDispatchBuilder::PUSHOp(OpcodeArgs) {
   const uint8_t Size = GetSrcSize(Op);
 
   Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-
-  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-
-  const uint8_t GPRSize = CTX->GetGPRSize();
-  auto NewSP = _Push(GPRSize, Size, Src, OldSP);
-
-  // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP);
+  Push(Size, Src);
   FlushRegisterCache();
 }
 
@@ -377,11 +370,7 @@ void OpDispatchBuilder::PUSHREGOp(OpcodeArgs) {
 
   Ref Src = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
 
-  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-  const uint8_t GPRSize = CTX->GetGPRSize();
-  auto NewSP = _Push(GPRSize, Size, Src, OldSP);
-  // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP);
+  Push(Size, Src);
   FlushRegisterCache();
 }
 
@@ -440,8 +429,6 @@ void OpDispatchBuilder::PUSHSegmentOp(OpcodeArgs) {
   const uint8_t SrcSize = GetSrcSize(Op);
   const uint8_t DstSize = GetDstSize(Op);
 
-  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-
   Ref Src {};
   if (!CTX->Config.Is64BitMode()) {
     switch (SegmentReg) {
@@ -489,14 +476,10 @@ void OpDispatchBuilder::PUSHSegmentOp(OpcodeArgs) {
     }
   }
 
-  const uint8_t GPRSize = CTX->GetGPRSize();
   // Store our value to the new stack location
   // AMD hardware zexts segment selector to 32bit
   // Intel hardware inserts segment selector
-  auto NewSP = _Push(GPRSize, DstSize, Src, OldSP);
-
-  // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP);
+  Push(DstSize, Src);
 }
 
 void OpDispatchBuilder::POPOp(OpcodeArgs) {
@@ -592,11 +575,7 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
   Ref NewRIP = _Add(IR::SizeToOpSize(GPRSize), ConstantPC, _Constant(TargetOffset));
 
   // Push the return address.
-  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-  auto NewSP = _Push(GPRSize, GPRSize, ConstantPC, OldSP);
-
-  // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP);
+  Push(GPRSize, ConstantPC);
 
   const uint64_t NextRIP = Op->PC + Op->InstSize;
 
@@ -614,14 +593,8 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   const uint8_t Size = GetSrcSize(Op);
   Ref JMPPCOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
 
-  auto ConstantPCReturn = GetRelocatedPC(Op);
-
   // Push the return address.
-  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-  auto NewSP = _Push(Size, Size, ConstantPCReturn, OldSP);
-
-  // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP);
+  Push(Size, GetRelocatedPC(Op));
 
   // Store the RIP
   ExitFunction(JMPPCOffset); // If we get here then leave the function now
@@ -3604,13 +3577,7 @@ void OpDispatchBuilder::PUSHFOp(OpcodeArgs) {
     Src = _Bfe(OpSize::i32Bit, Size * 8, 0, Src);
   }
 
-  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-
-  const uint8_t GPRSize = CTX->GetGPRSize();
-  auto NewSP = _Push(GPRSize, Size, Src, OldSP);
-
-  // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP);
+  Push(Size, Src);
 }
 
 void OpDispatchBuilder::POPFOp(OpcodeArgs) {
