@@ -125,21 +125,36 @@ def parse_ops(ops):
 
             RHS = EqualSplit[0].strip()
             if len(EqualSplit) > 1:
-                OpDef.HasDest = True
+                LHS = EqualSplit[0].strip()
                 RHS = EqualSplit[1].strip()
 
-                # Parse the destination, must be one type of SSA, GPR, or FPR
-                ResultType = EqualSplit[0].strip()
-                if ResultType == "SSA":
-                    OpDef.DestType = "SSA" # We don't know this type right now
-                elif ResultType == "GPR":
-                    OpDef.DestType = "GPR"
-                elif ResultType == "GPRPair":
-                    OpDef.DestType = "GPRPair"
-                elif ResultType == "FPR":
-                    OpDef.DestType = "FPR"
+                if ":" in LHS:
+                    # Named destinations. This is a hack, but so is the entire
+                    # multi-destination support bolten onto the old IR...
+                    #
+                    # Named destinations require side effects because they break
+                    # SSA hard. Validate that.
+                    assert("HasSideEffects" in op_val and op_val["HasSideEffects"])
+
+                    for Dest in LHS.split(","):
+                        Dest = Dest.strip()
+                        DType, Name = Dest.split(":$")
+
+                        # If the destination appears also as a source, it is
+                        # read-modify-write.
+                        if Dest in RHS:
+                            # Turn RMW into an in/out source
+                            RHS = RHS.replace(Dest.strip(), f"{DType}:$Inout{Name}")
+                        else:
+                            # Turn named destinations into an out source.
+                            RHS += f", {DType}:$Out{Name}"
                 else:
-                    ExitError("Unknown destination class type {}. Needs to be one of {SSA, GPR, GPRPair, FPR}".format(ResultType))
+                    # Single anonymous destination
+                    if LHS not in ["SSA", "GPR", "GPRPair", "FPR"]:
+                        ExitError(f"Unknown destination class type {LHS}. Needs to be one of SSA, GPR, GPRPair, FPR")
+
+                    OpDef.HasDest = True
+                    OpDef.DestType = LHS
 
             # IR Op needs to start with a name
             RHS = RHS.split(" ", 1)
