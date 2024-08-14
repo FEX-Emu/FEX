@@ -197,36 +197,27 @@ void OpDispatchBuilder::IRETOp(OpcodeArgs) {
 
   const uint8_t GPRSize = CTX->GetGPRSize();
 
-  auto Constant = _Constant(GPRSize);
-
-  auto SP = LoadGPRRegister(X86State::REG_RSP);
+  Ref SP = _RMWHandle(LoadGPRRegister(X86State::REG_RSP));
 
   // RIP (64/32/16 bits)
-  auto NewRIP = _LoadMem(GPRClass, GPRSize, SP, GPRSize);
-  SP = _Add(IR::SizeToOpSize(GPRSize), SP, Constant);
+  auto NewRIP = Pop(GPRSize, SP);
   // CS (lower 16 used)
-  auto NewSegmentCS = _LoadMem(GPRClass, GPRSize, SP, GPRSize);
+  auto NewSegmentCS = Pop(GPRSize, SP);
   _StoreContext(2, GPRClass, NewSegmentCS, offsetof(FEXCore::Core::CPUState, cs_idx));
   UpdatePrefixFromSegment(NewSegmentCS, FEXCore::X86Tables::DecodeFlags::FLAG_CS_PREFIX);
 
-  SP = _Add(IR::SizeToOpSize(GPRSize), SP, Constant);
   // eflags (lower 16 used)
-  auto eflags = _LoadMem(GPRClass, GPRSize, SP, GPRSize);
-  SetPackedRFLAG(false, eflags);
-  SP = _Add(IR::SizeToOpSize(GPRSize), SP, Constant);
+  SetPackedRFLAG(false, Pop(GPRSize, SP));
 
   if (CTX->Config.Is64BitMode) {
     // RSP and SS only happen in 64-bit mode or if this is a CPL mode jump!
     // FEX doesn't support a CPL mode switch, so don't need to worry about this on 32-bit
-    StoreGPRRegister(X86State::REG_RSP, _LoadMem(GPRClass, GPRSize, SP, GPRSize));
+    StoreGPRRegister(X86State::REG_RSP, Pop(GPRSize, SP));
 
-    SP = _Add(IR::SizeToOpSize(GPRSize), SP, Constant);
     // ss
-    auto NewSegmentSS = _LoadMem(GPRClass, GPRSize, SP, GPRSize);
+    auto NewSegmentSS = Pop(GPRSize, SP);
     _StoreContext(2, GPRClass, NewSegmentSS, offsetof(FEXCore::Core::CPUState, ss_idx));
     UpdatePrefixFromSegment(NewSegmentSS, FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX);
-
-    _Add(IR::SizeToOpSize(GPRSize), SP, Constant);
   } else {
     // Store the stack in 32-bit mode
     StoreGPRRegister(X86State::REG_RSP, SP);
