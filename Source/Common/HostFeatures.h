@@ -6,4 +6,4 @@
 namespace FEX {
 FEXCore::HostFeatures FetchHostFeatures(vixl::CPUFeatures Features, bool SupportsCacheMaintenanceOps, uint64_t CTR, uint64_t MIDR);
 FEXCore::HostFeatures FetchHostFeatures();
-}
+} // namespace FEX
