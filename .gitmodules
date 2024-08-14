@@ -56,3 +56,7 @@
 [submodule "External/jemalloc_glibc"]
 	path = External/jemalloc_glibc
 	url = https://github.com/FEX-Emu/jemalloc.git
+[submodule "External/libunwind"]
+  shallow = true
+	path = External/libunwind
+	url = https://github.com/FEX-Emu/libunwind.git

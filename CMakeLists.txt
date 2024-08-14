@@ -419,6 +419,27 @@ if (BUILD_TESTS)
   set(TEST_JOB_FLAG "-j${TEST_JOB_COUNT}")
 endif()
 
+include(ExternalProject)
+ExternalProject_Add(unwind_x86_64
+  PREFIX unwind_x86_64
+  SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/External/libunwind"
+  BINARY_DIR "unwind_x86_64"
+  CMAKE_ARGS
+    "-DTARGET=x86_64-linux-gnu"
+    "-DUNW_CMAKE_TARGET_LINUX=1"
+  INSTALL_COMMAND ""
+  BUILD_ALWAYS ON)
+
+ExternalProject_Add(unwind_x86
+  PREFIX unwind_x86
+  SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/External/libunwind"
+  BINARY_DIR "unwind_x86"
+  CMAKE_ARGS
+    "-DTARGET=i686-linux-gnu"
+    "-DUNW_CMAKE_TARGET_LINUX=1"
+  INSTALL_COMMAND ""
+  BUILD_ALWAYS ON)
+
 add_subdirectory(FEXHeaderUtils/)
 add_subdirectory(CodeEmitter/)
 add_subdirectory(FEXCore/)
@@ -453,7 +474,6 @@ if (BUILD_THUNKS)
   add_subdirectory(ThunkLibs/GuestLibs)
 
   # Thunk targets for guest libraries
-  include(ExternalProject)
   ExternalProject_Add(guest-libs
     PREFIX guest-libs
     SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ThunkLibs/GuestLibs"
