@@ -2383,6 +2383,23 @@ private:
     return _Prefetch(ForStore, Stream, CacheLevel, ssa0, Invalid(), MEM_OFFSET_SXTX, 1);
   }
 
+  Ref Pop(uint8_t Size, Ref SP_RMW) {
+    Ref Value = _AllocateGPR(false);
+    _Pop(Size, SP_RMW, Value);
+    return Value;
+  }
+
+  Ref Pop(uint8_t Size) {
+    Ref SP = _RMWHandle(LoadGPRRegister(X86State::REG_RSP));
+    Ref Value = _AllocateGPR(false);
+
+    _Pop(Size, SP, Value);
+
+    // Store the new stack pointer
+    StoreGPRRegister(X86State::REG_RSP, SP);
+    return Value;
+  }
+
   void InstallHostSpecificOpcodeHandlers();
 
   ///< Segment telemetry tracking
