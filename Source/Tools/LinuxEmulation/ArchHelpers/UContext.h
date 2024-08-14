@@ -283,7 +283,7 @@ namespace x86 {
     };
     static_assert(sizeof(HostSigInfo_t) == 128, "This needs to be the right size");
 
-    siginfo_t() = delete;
+    siginfo_t() = default;
 
     operator ::siginfo_t() const {
       // The definition of siginfo_t changes depending on the host environment
