@@ -3621,14 +3621,7 @@ void OpDispatchBuilder::PUSHFOp(OpcodeArgs) {
 
 void OpDispatchBuilder::POPFOp(OpcodeArgs) {
   const uint8_t Size = GetSrcSize(Op);
-
-  auto Constant = _Constant(Size);
-  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-  Ref Src = _LoadMem(GPRClass, Size, OldSP, Size);
-  auto NewSP = _Add(OpSize::i64Bit, OldSP, Constant);
-
-  // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP);
+  Ref Src = Pop(Size);
 
   // Add back our flag constants
   // Bit 1 is always 1
