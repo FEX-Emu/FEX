@@ -509,6 +509,13 @@
         "Desc": [
           "Override for a FEXServer socket path. Only useful for chroots."
         ]
+      },
+      "Coredump": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "Gives backtraces on unhandled signals that will coredump"
+        ]
       }
     }
   },
