@@ -258,11 +258,11 @@
         "mov x0, x11",
         "mov x1, x10",
         "mov x2, x5",
-        "add x22, x0, x2",
-        "add x23, x1, x2",
-        "mov x10, x23",
-        "mov x11, x22",
+        "add x23, x0, x2",
+        "add x22, x1, x2",
         "strb w21, [x28, #986]",
+        "mov x11, x23",
+        "mov x10, x22",
         "mov x5, x20"
       ]
     },
@@ -315,11 +315,11 @@
         "mov x0, x11",
         "mov x1, x10",
         "mov x2, x5",
-        "add x22, x0, x2, lsl #1",
-        "add x23, x1, x2, lsl #1",
-        "mov x10, x23",
-        "mov x11, x22",
+        "add x23, x0, x2, lsl #1",
+        "add x22, x1, x2, lsl #1",
         "strb w21, [x28, #986]",
+        "mov x11, x23",
+        "mov x10, x22",
         "mov x5, x20"
       ]
     },
@@ -372,11 +372,11 @@
         "mov x0, x11",
         "mov x1, x10",
         "mov x2, x5",
-        "add x22, x0, x2, lsl #2",
-        "add x23, x1, x2, lsl #2",
-        "mov x10, x23",
-        "mov x11, x22",
+        "add x23, x0, x2, lsl #2",
+        "add x22, x1, x2, lsl #2",
         "strb w21, [x28, #986]",
+        "mov x11, x23",
+        "mov x10, x22",
         "mov x5, x20"
       ]
     },
@@ -429,11 +429,11 @@
         "mov x0, x11",
         "mov x1, x10",
         "mov x2, x5",
-        "add x22, x0, x2, lsl #3",
-        "add x23, x1, x2, lsl #3",
-        "mov x10, x23",
-        "mov x11, x22",
+        "add x23, x0, x2, lsl #3",
+        "add x22, x1, x2, lsl #3",
         "strb w21, [x28, #986]",
+        "mov x11, x23",
+        "mov x10, x22",
         "mov x5, x20"
       ]
     },
@@ -490,11 +490,11 @@
         "mov x1, x10",
         "mov x2, x5",
         "sub x22, x0, x2",
-        "sub x23, x1, x2",
-        "mov x10, x23",
-        "mov x11, x22",
+        "sub x21, x1, x2",
         "mov w5, #0x0",
-        "strb w20, [x28, #986]"
+        "strb w20, [x28, #986]",
+        "mov x11, x22",
+        "mov x10, x21"
       ]
     },
     "negative rep movsw": {
@@ -550,11 +550,11 @@
         "mov x1, x10",
         "mov x2, x5",
         "sub x22, x0, x2, lsl #1",
-        "sub x23, x1, x2, lsl #1",
-        "mov x10, x23",
-        "mov x11, x22",
+        "sub x21, x1, x2, lsl #1",
         "mov w5, #0x0",
-        "strb w20, [x28, #986]"
+        "strb w20, [x28, #986]",
+        "mov x11, x22",
+        "mov x10, x21"
       ]
     },
     "negative rep movsd": {
@@ -610,11 +610,11 @@
         "mov x1, x10",
         "mov x2, x5",
         "sub x22, x0, x2, lsl #2",
-        "sub x23, x1, x2, lsl #2",
-        "mov x10, x23",
-        "mov x11, x22",
+        "sub x21, x1, x2, lsl #2",
         "mov w5, #0x0",
-        "strb w20, [x28, #986]"
+        "strb w20, [x28, #986]",
+        "mov x11, x22",
+        "mov x10, x21"
       ]
     },
     "negative rep movsq": {
@@ -670,11 +670,11 @@
         "mov x1, x10",
         "mov x2, x5",
         "sub x22, x0, x2, lsl #3",
-        "sub x23, x1, x2, lsl #3",
-        "mov x10, x23",
-        "mov x11, x22",
+        "sub x21, x1, x2, lsl #3",
         "mov w5, #0x0",
-        "strb w20, [x28, #986]"
+        "strb w20, [x28, #986]",
+        "mov x11, x22",
+        "mov x10, x21"
       ]
     },
     "positive rep stosb": {
@@ -1024,7 +1024,7 @@
       ]
     },
     "Sekiro spill block": {
-      "ExpectedInstructionCount": 134,
+      "ExpectedInstructionCount": 126,
       "Comment": [
         "This block of code came from the settings screen when it loaded",
         "It was originally at RIP: 0x14232cca0 and has been deobfuscated"
@@ -1268,22 +1268,14 @@
         "mvn w27, w8",
         "adds x26, x8, #0x18 (24)",
         "mov x8, x26",
-        "ldr x29, [x8]",
-        "add x8, x8, #0x8 (8)",
-        "ldr x19, [x8]",
-        "add x8, x8, #0x8 (8)",
-        "ldr x17, [x8]",
-        "add x8, x8, #0x8 (8)",
-        "ldr x16, [x8]",
-        "add x8, x8, #0x8 (8)",
-        "ldr x11, [x8]",
-        "add x8, x8, #0x8 (8)",
-        "ldr x10, [x8]",
-        "add x8, x8, #0x8 (8)",
-        "ldr x9, [x8]",
-        "add x8, x8, #0x8 (8)",
-        "ldr x7, [x8]",
-        "add x8, x8, #0x8 (8)",
+        "ldr x29, [x8], #8",
+        "ldr x19, [x8], #8",
+        "ldr x17, [x8], #8",
+        "ldr x16, [x8], #8",
+        "ldr x11, [x8], #8",
+        "ldr x10, [x8], #8",
+        "ldr x9, [x8], #8",
+        "ldr x7, [x8], #8",
         "cfinv"
       ]
     }

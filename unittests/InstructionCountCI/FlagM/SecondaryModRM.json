@@ -14,7 +14,7 @@
   },
   "Instructions": {
     "xgetbv": {
-      "ExpectedInstructionCount": 54,
+      "ExpectedInstructionCount": 52,
       "Comment": "0xF 0x01 /2 RM-0",
       "ExpectedArm64ASM": [
         "sub sp, sp, #0xf0 (240)",
@@ -67,10 +67,8 @@
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
         "ld1 {v12.2d, v13.2d, v14.2d, v15.2d}, [sp], #64",
         "ldr x30, [sp], #16",
-        "mov w20, w0",
-        "lsr x21, x0, #32",
-        "mov w6, w21",
-        "mov w4, w20"
+        "mov w4, w0",
+        "lsr x6, x0, #32"
       ]
     },
     "rdtscp": {
