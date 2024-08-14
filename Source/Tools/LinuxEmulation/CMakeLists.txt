@@ -1,5 +1,41 @@
 add_compile_options(-fno-operator-names)
 
+set (FEX_UNWIND_X86_64_SRCS
+  Unwind/Unwind.cpp)
+
+add_library(fex_unwind_x86_64 STATIC ${FEX_UNWIND_X86_64_SRCS})
+target_compile_definitions(fex_unwind_x86_64 PRIVATE -DHAVE_LINK_H -DUNWIND_X86_64)
+target_include_directories(fex_unwind_x86_64 PRIVATE
+  ${CMAKE_SOURCE_DIR}/External/libunwind/include/
+  ${CMAKE_SOURCE_DIR}/External/libunwind/include/tdep-x86_64/
+  ${CMAKE_BINARY_DIR}/unwind_x86_64/include/
+  )
+
+target_link_libraries(fex_unwind_x86_64
+  PRIVATE
+  FEXCore_Base
+  ${CMAKE_BINARY_DIR}/unwind_x86_64/src/libunwind-x86_64.a)
+
+add_dependencies(fex_unwind_x86_64 unwind_x86_64)
+
+set (FEX_UNWIND_X86_SRCS
+  Unwind/Unwind.cpp)
+
+add_library(fex_unwind_x86 STATIC ${FEX_UNWIND_X86_SRCS})
+target_compile_definitions(fex_unwind_x86 PRIVATE -DHAVE_LINK_H -DUNWIND_X86)
+target_include_directories(fex_unwind_x86 PRIVATE
+  ${CMAKE_SOURCE_DIR}/External/libunwind/include/
+  ${CMAKE_SOURCE_DIR}/External/libunwind/include/tdep-x86/
+  ${CMAKE_BINARY_DIR}/unwind_x86/include/
+  )
+
+target_link_libraries(fex_unwind_x86
+  PRIVATE
+  FEXCore_Base
+  ${CMAKE_BINARY_DIR}/unwind_x86/src/libunwind-x86.a)
+
+add_dependencies(fex_unwind_x86 unwind_x86)
+
 set (SRCS
   VDSO_Emulation.cpp
   LinuxSyscalls/GdbServer.cpp
@@ -84,6 +120,8 @@ target_link_libraries(LinuxEmulation
   PRIVATE
   Common
   CommonTools
+  fex_unwind_x86
+  fex_unwind_x86_64
 )
 
 target_link_libraries(LinuxEmulation

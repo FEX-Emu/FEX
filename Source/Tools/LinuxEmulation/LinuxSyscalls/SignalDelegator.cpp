@@ -8,6 +8,7 @@ $end_info$
 
 #include "LinuxSyscalls/SignalDelegator.h"
 #include "LinuxSyscalls/Syscalls.h"
+#include "Unwind/Unwind.h"
 
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
@@ -1560,6 +1561,62 @@ void SignalDelegator::HandleGuestSignal(FEXCore::Core::InternalThreadState* Thre
     }
     SaveTelemetry();
 #endif
+
+    if (Coredump() && vfork() == 0) {
+      uint64_t OldPC = ArchHelpers::Context::GetPc(UContext);
+      const bool WasInJIT = CTX->IsAddressInCodeBuffer(Thread, OldPC);
+      uint32_t eflags = CTX->ReconstructCompactedEFLAGS(Thread, WasInJIT, ArchHelpers::Context::GetArmGPRs(UContext),
+                                                        ArchHelpers::Context::GetArmPState(UContext));
+
+      if (Is64BitMode) {
+        auto Unwinder = Unwind::x86_64::Unwind();
+
+        FEXCore::x86_64::ucontext_t guest_uctx;
+        siginfo_t guest_siginfo;
+        FEXCore::x86_64::xstate xstate;
+
+        ContextData Data {.OriginalRIP = CTX->RestoreRIPFromHostPC(Thread, OldPC),
+                          .CTX = CTX,
+                          .Thread = Thread,
+                          .Frame = Thread->CurrentFrame,
+                          .fp_state = &xstate,
+                          .SynchronousFaultData = &Thread->CurrentFrame->SynchronousFaultData,
+                          .GuestStack = &ThreadData.GuestAltStack,
+                          .HostUContext = UContext,
+                          .HostSigInfo = static_cast<siginfo_t*>(Info),
+                          .eflags = eflags,
+                          .WasFaultToTop = Thread->CurrentFrame->SynchronousFaultData.FaultToTopAndGeneratedException,
+                          .IsAVXEnabled = Config.SupportsAVX};
+        SetupUContext_x64(&guest_uctx, Data);
+        SetupSigInfo_x64(&guest_siginfo, static_cast<siginfo_t*>(Info), Data.WasFaultToTop, &Thread->CurrentFrame->SynchronousFaultData);
+        Unwinder->Backtrace(FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Thread->CurrentFrame), &guest_siginfo, &guest_uctx);
+      } else {
+        FEXCore::x86::ucontext_t guest_uctx;
+        FEXCore::x86::siginfo_t guest_siginfo;
+        FEXCore::x86::xstate xstate;
+
+        ContextData_ia32 Data {.OriginalRIP = CTX->RestoreRIPFromHostPC(Thread, OldPC),
+                               .CTX = CTX,
+                               .Thread = Thread,
+                               .Frame = Thread->CurrentFrame,
+                               .fp_state = &xstate,
+                               .SynchronousFaultData = &Thread->CurrentFrame->SynchronousFaultData,
+                               .GuestStack = &ThreadData.GuestAltStack,
+                               .HostUContext = UContext,
+                               .HostSigInfo = static_cast<siginfo_t*>(Info),
+                               .eflags = eflags,
+                               .WasFaultToTop = Thread->CurrentFrame->SynchronousFaultData.FaultToTopAndGeneratedException,
+                               .IsAVXEnabled = Config.SupportsAVX};
+
+        SetupRTUContext_ia32(&guest_uctx, Data);
+        SetupRTSigInfo_ia32(&guest_siginfo, Data);
+
+        auto Unwinder = Unwind::x86::Unwind();
+        Unwinder->Backtrace(FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Thread->CurrentFrame), &guest_siginfo, &guest_uctx);
+      }
+      ///< vfork, Leave now.
+      _exit(0);
+    }
 
     // Reassign back to DFL and crash
     signal(Signal, SIG_DFL);

@@ -428,6 +428,7 @@ ExternalProject_Add(unwind_x86_64
     "-DTARGET=x86_64-linux-gnu"
     "-DUNW_CMAKE_TARGET_LINUX=1"
   INSTALL_COMMAND ""
+  BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/unwind_x86_64/src/libunwind-x86_64.a
   BUILD_ALWAYS ON)
 
 ExternalProject_Add(unwind_x86
@@ -438,6 +439,7 @@ ExternalProject_Add(unwind_x86
     "-DTARGET=i686-linux-gnu"
     "-DUNW_CMAKE_TARGET_LINUX=1"
   INSTALL_COMMAND ""
+  BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/unwind_x86/src/libunwind-x86.a
   BUILD_ALWAYS ON)
 
 add_subdirectory(FEXHeaderUtils/)
