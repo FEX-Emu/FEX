@@ -1379,7 +1379,8 @@ void SignalDelegator::HandleGuestSignal(FEXCore::Core::InternalThreadState* Thre
         ERROR_AND_DIE_FMT("X86 shouldn't hit this InterruptFaultPage");
 #endif
       }
-    } else if (Signal == SIGSEGV && SigInfo.si_code == SEGV_ACCERR && FaultSafeMemcpy::IsFaultLocation(ArchHelpers::Context::GetPc(UContext))) {
+    } else if (Signal == SIGSEGV && (SigInfo.si_code == SEGV_MAPERR || SigInfo.si_code == SEGV_ACCERR) &&
+               FaultSafeUserMemAccess::IsFaultLocation(ArchHelpers::Context::GetPc(UContext))) {
       // If you want to emulate EFAULT behaviour then enable this if-statement.
       // Do this once we find an application that depends on this.
       if constexpr (false) {

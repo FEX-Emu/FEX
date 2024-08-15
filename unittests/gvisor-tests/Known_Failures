@@ -225,3 +225,6 @@ pselect_test
 # On older kernels it would return -ESPIPE, on new kernels it returns 0.
 # This test expects -ESPIPE behaviour.
 timerfd_test
+
+# Tests that poll correctly returns EFAULT
+poll_test

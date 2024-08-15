@@ -599,7 +599,7 @@ static bool HasSyscallError(const void* Result) {
 template<bool IncrementOffset, typename T>
 uint64_t GetDentsEmulation(int fd, T* dirp, uint32_t count);
 
-namespace FaultSafeMemcpy {
+namespace FaultSafeUserMemAccess {
   // These are little helper functions for cases when FEX needs to copy data to or from the application in a robust fashion.
   // CopyFromUser and CopyToUser are memcpy routines that expect to safely SIGSEGV when reading or writing application memory respectively.
   // Returns zero if the memcpy completed, or crashes with SIGABRT and a log message if it faults.
@@ -607,8 +607,45 @@ namespace FaultSafeMemcpy {
   size_t CopyFromUser(void* Dest, const void* Src, size_t Size);
   [[nodiscard]]
   size_t CopyToUser(void* Dest, const void* Src, size_t Size);
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED && defined(_M_ARM_64)
+  // These helpers just check if the user pointer is readable and writable.
+  // This is useful in an assert build that can be safely sprinkled through the syscall handler without overhead in release builds.
+  void VerifyIsReadable(const void* Src, size_t Size);
+  void VerifyIsReadableOrNull(const void* Src, size_t Size);
+  void VerifyIsWritable(void* Src, size_t Size);
+  void VerifyIsWritableOrNull(void* Src, size_t Size);
+
+  // Iterates a null-terminated string and checks if all bytes are readable
+  void VerifyIsStringReadable(const char* Src);
+
+  // Iterates a null-terminated string and checks if all bytes are readable. Up to MaxSize bytes are checked.
+  void VerifyIsStringReadableMaxSize(const char* Src, size_t MaxSize);
+#else
+  inline void VerifyIsReadable(const void* Src, size_t Size) {
+    if (Src == nullptr) {
+      ERROR_AND_DIE_FMT("Unexpected nullptr syscall argument");
+    }
+  }
+  inline void VerifyIsReadableOrNull(const void* Src, size_t Size) {}
+  inline void VerifyIsWritable(void* Src, size_t Size) {
+    if (Src == nullptr) {
+      ERROR_AND_DIE_FMT("Unexpected nullptr syscall argument");
+    }
+  }
+  inline void VerifyIsWritableOrNull(void* Src, size_t Size) {}
+  inline void VerifyIsStringReadable(const char* Src) {
+    if (Src == nullptr) {
+      ERROR_AND_DIE_FMT("Unexpected nullptr syscall argument");
+    }
+  }
+  inline void VerifyIsStringReadableMaxSize(const char* Src, size_t MaxSize) {
+    if (Src == nullptr) {
+      ERROR_AND_DIE_FMT("Unexpected nullptr syscall argument");
+    }
+  }
+#endif
   bool IsFaultLocation(uint64_t PC);
-} // namespace FaultSafeMemcpy
+} // namespace FaultSafeUserMemAccess
 
 } // namespace FEX::HLE
 
