@@ -2,7 +2,7 @@
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/HostFeatures.h>
 
-#include "aarch64/cpu-aarch64.h"
+#include <aarch64/cpu-aarch64.h>
 
 #ifdef _M_X86_64
 #define XBYAK64
