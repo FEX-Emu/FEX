@@ -1995,7 +1995,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
   auto InlineHeader = reinterpret_cast<const CPU::CPUBackend::JITCodeHeader*>(BlockBegin);
   auto InlineTail = reinterpret_cast<CPU::CPUBackend::JITCodeTail*>(Frame->State.InlineJITBlockHeader + InlineHeader->OffsetToBlockTail);
 
-  ///< Check some instructions first that don't do any backpatching.
+  // Check some instructions first that don't do any backpatching.
   if ((Instr & ArchHelpers::Arm64::CASPAL_MASK) == ArchHelpers::Arm64::CASPAL_INST) { // CASPAL
     if (ArchHelpers::Arm64::HandleCASPAL(Instr, GPRs)) {
       // Skip this instruction now
@@ -2027,7 +2027,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
       // Skip this instruction now
       return std::make_pair(true, BytesToSkip);
     }
-    ///< Explicit fallthrough to the backpatch handler below!
+    // Explicit fallthrough to the backpatch handler below!
   } else if ((Instr & ArchHelpers::Arm64::LDAXP_MASK) == ArchHelpers::Arm64::LDAXP_INST) { // LDAXP
     // Should be compare and swap pair only. LDAXP not used elsewhere
     uint64_t BytesToSkip = ArchHelpers::Arm64::HandleCASPAL_ARMv8(Instr, ProgramCounter, GPRs);
@@ -2049,7 +2049,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
     LDR |= AddrReg << 5;
     LDR |= DataReg;
     if (HandleType != UnalignedHandlerType::NonAtomic) {
-      ///< Ordering matters with cross-thread visibility!
+      // Ordering matters with cross-thread visibility!
       std::atomic_ref<uint32_t>(PC[1]).store(DMB_LD, std::memory_order_release); // Back-patch the half-barrier.
     }
     std::atomic_ref<uint32_t>(PC[0]).store(LDR, std::memory_order_release);
@@ -2076,7 +2076,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
     LDUR |= DataReg;
     LDUR |= Instr & (0b1'1111'1111 << 9);
     if (HandleType != UnalignedHandlerType::NonAtomic) {
-      ///< Ordering matters with cross-thread visibility!
+      // Ordering matters with cross-thread visibility!
       std::atomic_ref<uint32_t>(PC[1]).store(DMB_LD, std::memory_order_release); // Back-patch the half-barrier.
     }
     std::atomic_ref<uint32_t>(PC[0]).store(LDUR, std::memory_order_release);
@@ -2112,33 +2112,33 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
     return NotHandled;
   }
 
-  ///< Check if another thread backpatched this instruction before this thread got here
+  // Check if another thread backpatched this instruction before this thread got here
   // Since we got here, this can happen in a couple situations:
-  // - Unhandled instruction (Shouldn't occur, programmer error)
+  // - Unhandled instruction (Shouldn't occur, FEX programmer error added a new unhandled atomic)
   // - Another thread backpatched an atomic access to be a non-atomic access
   auto AtomicInst = std::atomic_ref<uint32_t>(PC[0]).load(std::memory_order_acquire);
   if ((AtomicInst & LDSTREGISTER_MASK) == LDR_INST || (AtomicInst & LDSTUNSCALED_MASK) == LDUR_INST) {
-    ///< This atomic instruction likely was backpatched to a load.
+    // This atomic instruction was backpatched to a load.
     if (HandleType != UnalignedHandlerType::NonAtomic) {
-      ///< Check the next instruction to see if it is a DMB.
+      // Check if the next instruction is a DMB.
       auto DMBInst = std::atomic_ref<uint32_t>(PC[1]).load(std::memory_order_acquire);
       if (DMBInst == DMB_LD) {
         return std::make_pair(true, 0);
       }
     } else {
-      ///< No DMB instruction with this HandleType.
+      // No DMB instruction with this HandleType.
       return std::make_pair(true, 0);
     }
   } else if ((AtomicInst & LDSTREGISTER_MASK) == STR_INST || (AtomicInst & LDSTUNSCALED_MASK) == STUR_INST) {
     if (HandleType != UnalignedHandlerType::NonAtomic) {
-      ///< Check the previous instruction to see if it is a DMB.
+      // Check if the previous instruction is a DMB.
       auto DMBInst = std::atomic_ref<uint32_t>(PC[-1]).load(std::memory_order_acquire);
       if (DMBInst == DMB) {
-        ///< Return handled, make sure to adjust PC so we run the DMB.
+        // Return handled, make sure to adjust PC so we run the DMB.
         return std::make_pair(true, -4);
       }
     } else {
-      ///< No DMB instruction with this HandleType.
+      // No DMB instruction with this HandleType.
       return std::make_pair(true, 0);
     }
   } else if (AtomicInst == DMB) {
@@ -2149,7 +2149,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
     auto STPInst = std::atomic_ref<uint32_t>(PC[1]).load(std::memory_order_acquire);
     auto DMBInst = std::atomic_ref<uint32_t>(PC[2]).load(std::memory_order_acquire);
     if ((STPInst & LDSTP_MASK) == STP_INST && DMBInst == DMB) {
-      ///< Code that was backpatched is what was expected for ARMv8.0-a LDAXP.
+      // Code that was backpatched is what was expected for ARMv8.0-a LDAXP.
       return std::make_pair(true, 0);
     }
   }
