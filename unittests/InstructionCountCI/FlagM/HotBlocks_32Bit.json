@@ -107,7 +107,7 @@
         "mov x7, x6",
         "ldur w10, [x9, #-36]",
         "mov w20, #0xffffffff",
-        "adds w5, w5, w20",
+        "subs w5, w5, #0x1 (1)",
         "mvn w27, w7",
         "adcs w26, w7, w20",
         "mov x7, x26",

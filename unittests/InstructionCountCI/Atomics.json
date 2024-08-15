@@ -491,9 +491,9 @@
       "Comment": "GROUP1 0x81 /0",
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
-        "ldaddal w20, w21, [x4]",
-        "mvn w27, w21",
-        "adds w26, w21, w20",
+        "ldaddal w20, w20, [x4]",
+        "mvn w27, w20",
+        "subs w26, w20, #0x1 (1)",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
         "msr nzcv, x20"
@@ -1318,9 +1318,9 @@
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
         "neg w1, w20",
-        "ldaddal w1, w21, [x4]",
-        "mvn w27, w21",
-        "subs w26, w21, w20"
+        "ldaddal w1, w20, [x4]",
+        "mvn w27, w20",
+        "adds w26, w20, #0x1 (1)"
       ]
     },
     "lock sub qword [rax], 0x100": {
