@@ -718,6 +718,16 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, const FEXCore
          offsetof(FEXCore::Core::InternalThreadState, InterruptFaultPage) - offsetof(FEXCore::Core::InternalThreadState, BaseFrameState));
   }
 
+#ifdef _M_ARM_64EC
+  static constexpr uint16_t SuspendMagic {0xCAFE};
+
+  ldr(TMP2.W(), STATE_PTR(CpuStateFrame, SuspendDoorbell));
+  ARMEmitter::SingleUseForwardLabel l_NoSuspend;
+  cbz(ARMEmitter::Size::i32Bit, TMP2, &l_NoSuspend);
+  brk(SuspendMagic);
+  Bind(&l_NoSuspend);
+#endif
+
   SpillSlots = RAData->SpillSlots();
 
   if (SpillSlots) {

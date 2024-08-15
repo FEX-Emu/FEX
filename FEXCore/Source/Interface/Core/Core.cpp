@@ -347,8 +347,8 @@ bool ContextImpl::InitCore() {
 
 #ifndef _WIN32
   ThunkHandler = FEXCore::ThunkHandler::Create();
-#else
-  // WIN32 always needs the interrupt fault check to be enabled.
+#elif !defined(_M_ARM64EC)
+  // WOW64 always needs the interrupt fault check to be enabled.
   Config.NeedsPendingInterruptFaultCheck = true;
 #endif
 
