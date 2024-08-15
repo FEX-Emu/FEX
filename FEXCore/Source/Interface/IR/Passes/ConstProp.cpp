@@ -151,6 +151,14 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     bool IsConstant1 = IREmit->IsValueConstant(IROp->Args[0], &Constant1);
     bool IsConstant2 = IREmit->IsValueConstant(IROp->Args[1], &Constant2);
 
+    /* IsImmAddSub assumes the constants are sign-extended, take care of that
+     * here so we get the optimization for 32-bit adds too.
+     */
+    if (Op->Header.Size == 4) {
+      Constant1 = (int64_t)(int32_t)Constant1;
+      Constant2 = (int64_t)(int32_t)Constant2;
+    }
+
     if (IsConstant1 && IsConstant2 && IROp->Op == OP_ADD) {
       uint64_t NewConstant = (Constant1 + Constant2) & getMask(IROp);
       IREmit->ReplaceWithConstant(CodeNode, NewConstant);
