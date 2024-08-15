@@ -3055,12 +3055,6 @@ void OpDispatchBuilder::RDTSCOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::INCOp(OpcodeArgs) {
-  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX) {
-    LogMan::Msg::EFmt("Can't handle REP on this");
-    DecodeFailure = true;
-    return;
-  }
-
   Ref Dest;
   Ref Result;
   const auto Size = GetSrcBitSize(Op);
@@ -3102,12 +3096,6 @@ void OpDispatchBuilder::INCOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::DECOp(OpcodeArgs) {
-  if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX) {
-    LogMan::Msg::EFmt("Can't handle REP on this");
-    DecodeFailure = true;
-    return;
-  }
-
   Ref Dest;
   Ref Result;
   const auto Size = GetSrcBitSize(Op);
