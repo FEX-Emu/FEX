@@ -40,6 +40,7 @@ $end_info$
 #endif
 
 #include "LinuxSyscalls/x64/SyscallsEnum.h"
+#include "LinuxSyscalls/x32/SyscallsEnum.h"
 
 #define CONCAT_(a, b) a##b
 #define CONCAT(a, b) CONCAT_(a, b)
@@ -255,7 +256,11 @@ public:
 protected:
   SyscallHandler(FEXCore::Context::Context* _CTX, FEX::HLE::SignalDelegator* _SignalDelegation);
 
-  fextl::vector<SyscallFunctionDefinition> Definitions {};
+  fextl::vector<SyscallFunctionDefinition> Definitions {std::max<std::size_t>(FEX::HLE::x64::SYSCALL_x64_MAX, FEX::HLE::x32::SYSCALL_x86_MAX),
+                                                        {
+                                                          .NumArgs = 255,
+                                                          .Ptr = reinterpret_cast<void*>(&UnimplementedSyscall),
+                                                        }};
   std::mutex MMapMutex;
 
   // BRK management

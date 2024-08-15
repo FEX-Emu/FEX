@@ -31,20 +31,6 @@ x64SyscallHandler::x64SyscallHandler(FEXCore::Context::Context* ctx, FEX::HLE::S
 }
 
 void x64SyscallHandler::RegisterSyscallHandlers() {
-  auto cvt = [](auto in) {
-    union {
-      decltype(in) val;
-      void* raw;
-    } raw;
-    raw.val = in;
-    return raw.raw;
-  };
-
-  Definitions.resize(FEX::HLE::x64::SYSCALL_x64_MAX, SyscallFunctionDefinition {
-                                                       .NumArgs = 255,
-                                                       .Ptr = cvt(&UnimplementedSyscall),
-                                                     });
-
   FEX::HLE::RegisterEpoll(this);
   FEX::HLE::RegisterFD(this);
   FEX::HLE::RegisterFS(this);
@@ -75,22 +61,19 @@ void x64SyscallHandler::RegisterSyscallHandlers() {
   // Fill the gap to ensure that FEX doesn't assert
   constexpr int SYSCALL_GAP_BEGIN = 335;
   constexpr int SYSCALL_GAP_END = 424;
-  for (int SyscallNumber = SYSCALL_GAP_BEGIN; SyscallNumber < SYSCALL_GAP_END; ++SyscallNumber) {
-    auto& Def = Definitions.at(SyscallNumber);
-    Def.Ptr = cvt(&UnimplementedSyscallSafe);
-    Def.NumArgs = 0;
-    Def.Flags = FEXCore::IR::SyscallFlags::DEFAULT;
-    // This will allow our syscall optimization code to make this code more optimal
-    // Unlikely to hit a hot path though
-    Def.HostSyscallNumber = SYSCALL_DEF(MAX);
+
+  const SyscallFunctionDefinition InvalidSyscall {
+    .NumArgs = 0, .Flags = FEXCore::IR::SyscallFlags::DEFAULT, .Ptr = reinterpret_cast<void*>(&UnimplementedSyscall),
+    .HostSyscallNumber = SYSCALL_DEF(MAX),
 #ifdef DEBUG_STRACE
-    Def.StraceFmt = "Invalid";
+    .StraceFmt = "Invalid";
 #endif
-  }
+  };
+  std::fill(Definitions.begin() + SYSCALL_GAP_BEGIN, Definitions.begin() + SYSCALL_GAP_END, InvalidSyscall);
 
 #if PRINT_MISSING_SYSCALLS
   for (auto& Syscall : SyscallNames) {
-    if (Definitions[Syscall.first].Ptr == cvt(&UnimplementedSyscall)) {
+    if (Definitions[Syscall.first].Ptr == reinterpret_cast<void*>(&UnimplementedSyscall)) {
       LogMan::Msg::DFmt("Unimplemented syscall: {}", Syscall.second);
     }
   }
