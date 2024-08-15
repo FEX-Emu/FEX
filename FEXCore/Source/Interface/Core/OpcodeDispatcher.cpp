@@ -4519,16 +4519,39 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
   }
 
   auto Size = GetDstSize(Op);
+  uint8_t ResultSize = Size;
 
   auto RoundedSize = Size;
   if (ALUIROp != FEXCore::IR::IROps::OP_ANDWITHFLAGS) {
     RoundedSize = std::max<uint8_t>(4u, RoundedSize);
   }
 
-  const auto OpSize = IR::SizeToOpSize(RoundedSize);
-
   // X86 basic ALU ops just do the operation between the destination and a single source
   Ref Src = LoadSource(GPRClass, Op, Op->Src[SrcIdx], Op->Flags, {.AllowUpperGarbage = true});
+
+  // Try to eliminate the masking after 8/16-bit operations with constants, by
+  // promoting to a full size operation that preserves the upper bits.
+  uint64_t Const;
+  if (Size < 4 && !DestIsLockedMem(Op) && Op->Dest.IsGPR() && !Op->Dest.Data.GPR.HighBits && IsValueConstant(WrapNode(Src), &Const) &&
+      (ALUIROp == IR::IROps::OP_XOR || ALUIROp == IR::IROps::OP_OR || ALUIROp == IR::IROps::OP_ANDWITHFLAGS)) {
+
+    RoundedSize = ResultSize = CTX->GetGPRSize();
+    LOGMAN_THROW_A_FMT(Const < (1ull << (Size * 8)), "does not clobber");
+
+    // For AND, we can play the same trick but we instead need the upper bits of
+    // the constant to be all-1s instead of all-0s to preserve. We also can't
+    // use andwithflags in this case, since we've promoted to 64-bit so the
+    // negate flag would be wrong, but using the regular logical operation path
+    // instead still ends up a net win for uops.
+    //
+    // In the common case where the constant is of the form (1 << x) - 1, the
+    // adjusted constant here will inline into the arm64 and instruction, so if
+    // flags are not needed, we save an instruction overall.
+    if (ALUIROp == IR::IROps::OP_ANDWITHFLAGS) {
+      Src = _Constant(Const | ~((1ull << (Size * 8)) - 1));
+      ALUIROp = IR::IROps::OP_AND;
+    }
+  }
 
   Ref Result {};
   Ref Dest {};
@@ -4542,6 +4565,7 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
     Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
   }
 
+  const auto OpSize = IR::SizeToOpSize(RoundedSize);
   DeriveOp(ALUOp, ALUIROp, _AndWithFlags(OpSize, Dest, Src));
   Result = ALUOp;
 
@@ -4550,6 +4574,7 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
   case FEXCore::IR::IROps::OP_ADD: Result = CalculateFlags_ADD(Size, Dest, Src); break;
   case FEXCore::IR::IROps::OP_SUB: Result = CalculateFlags_SUB(Size, Dest, Src); break;
   case FEXCore::IR::IROps::OP_XOR:
+  case FEXCore::IR::IROps::OP_AND:
   case FEXCore::IR::IROps::OP_OR: {
     CalculateFlags_Logical(Size, Result, Dest, Src);
     break;
@@ -4564,7 +4589,7 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
   }
 
   if (!DestIsLockedMem(Op)) {
-    StoreResult(GPRClass, Op, Result, -1);
+    StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, ResultSize, -1, MemoryAccessType::DEFAULT);
   }
 }
 
