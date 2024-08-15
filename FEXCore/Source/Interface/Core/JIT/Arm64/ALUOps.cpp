@@ -690,6 +690,50 @@ DEF_OP(ShiftFlags) {
   }
 }
 
+DEF_OP(RotateFlags) {
+  auto Op = IROp->C<IR::IROp_RotateFlags>();
+  const auto Result = GetReg(Op->Result.ID());
+  const auto Shift = GetReg(Op->Shift.ID());
+  const bool Left = Op->Left;
+  const auto EmitSize = Op->Size == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+
+  // If shift=0, flags are unaffected. Wrap the whole implementation in a cbz.
+  ARMEmitter::SingleUseForwardLabel Done;
+  cbz(EmitSize, Shift, &Done);
+  {
+    // Extract the last bit shifted in to CF
+    const auto BitSize = Op->Size * 8;
+    unsigned CFBit = Left ? 0 : BitSize - 1;
+
+    // For ROR, OF is the XOR of the new CF bit and the most significant bit of the result.
+    // For ROL, OF is the LSB and MSB XOR'd together.
+    // OF is architecturally only defined for 1-bit rotate.
+    eor(ARMEmitter::Size::i64Bit, TMP1, Result, Result, ARMEmitter::ShiftType::LSR, Left ? BitSize - 1 : 1);
+    unsigned OFBit = Left ? 0 : BitSize - 2;
+
+    // Invert result so we get inverted carry.
+    mvn(ARMEmitter::Size::i64Bit, TMP2, Result);
+
+    if (CTX->HostFeatures.SupportsFlagM) {
+      rmif(TMP2, (CFBit - 1) % 64, 1 << 1 /* nzCv */);
+      rmif(TMP1, OFBit, 1 << 0 /* nzcV */);
+    } else {
+      if (OFBit != 0) {
+        lsr(EmitSize, TMP1, TMP1, OFBit);
+      }
+      if (CFBit != 0) {
+        lsr(EmitSize, TMP2, TMP2, CFBit);
+      }
+
+      mrs(TMP3, ARMEmitter::SystemRegister::NZCV);
+      bfi(ARMEmitter::Size::i32Bit, TMP3, TMP1, 28 /* V */, 1);
+      bfi(ARMEmitter::Size::i32Bit, TMP3, TMP2, 29 /* C */, 1);
+      msr(ARMEmitter::SystemRegister::NZCV, TMP3);
+    }
+  }
+  Bind(&Done);
+}
+
 DEF_OP(Extr) {
   auto Op = IROp->C<IR::IROp_Extr>();
   const auto Dst = GetReg(Node);

@@ -165,6 +165,14 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
       .CanEliminate = true,
     };
 
+  case OP_ROTATEFLAGS:
+    // _RotateFlags conditionally sets CV, again modeled as RMW.
+    return {
+      .Read = FLAG_C | FLAG_V,
+      .Write = FLAG_C | FLAG_V,
+      .CanEliminate = true,
+    };
+
   case OP_RDRAND: return {.Write = FLAG_NZCV};
 
   case OP_ADDNZCV:
