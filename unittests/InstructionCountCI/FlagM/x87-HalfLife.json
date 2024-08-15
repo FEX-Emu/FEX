@@ -3161,8 +3161,8 @@
         "bic w20, w22, w20",
         "strb w20, [x28, #1298]",
         "ldr x0, [x28, #2272]",
-        "and x3, x21, #0xfffff",
-        "add x0, x0, x3, lsl #4",
+        "ubfiz x3, x21, #4, #20",
+        "add x0, x0, x3",
         "ldp x1, x0, [x0]"
       ]
     },
@@ -4187,8 +4187,8 @@
         "bic w20, w23, w20",
         "strb w20, [x28, #1298]",
         "ldr x0, [x28, #2272]",
-        "and x3, x22, #0xfffff",
-        "add x0, x0, x3, lsl #4",
+        "ubfiz x3, x22, #4, #20",
+        "add x0, x0, x3",
         "ldp x1, x0, [x0]"
       ]
     },
@@ -6327,8 +6327,8 @@
         "add w21, w20, w21",
         "str w20, [x8, #-4]!",
         "ldr x0, [x28, #2272]",
-        "and x3, x21, #0xfffff",
-        "add x0, x0, x3, lsl #4",
+        "ubfiz x3, x21, #4, #20",
+        "add x0, x0, x3",
         "ldp x1, x0, [x0]"
       ]
     },
@@ -6613,8 +6613,8 @@
         "add w21, w20, w21",
         "str w20, [x8, #-4]!",
         "ldr x0, [x28, #2272]",
-        "and x3, x21, #0xfffff",
-        "add x0, x0, x3, lsl #4",
+        "ubfiz x3, x21, #4, #20",
+        "add x0, x0, x3",
         "ldp x1, x0, [x0]"
       ]
     },
@@ -6771,8 +6771,8 @@
         "add w21, w20, w21",
         "str w20, [x8, #-4]!",
         "ldr x0, [x28, #2272]",
-        "and x3, x21, #0xfffff",
-        "add x0, x0, x3, lsl #4",
+        "ubfiz x3, x21, #4, #20",
+        "add x0, x0, x3",
         "ldp x1, x0, [x0]"
       ]
     }
