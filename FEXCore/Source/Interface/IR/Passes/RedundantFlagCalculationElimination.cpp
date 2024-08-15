@@ -7,6 +7,7 @@ $end_info$
 */
 
 #include "FEXCore/Core/X86Enums.h"
+#include "Interface/IR/IR.h"
 #include "Interface/IR/IREmitter.h"
 
 #include <FEXCore/IR/IR.h>
@@ -49,6 +50,11 @@ struct FlagInfo {
   // all be eliminated.
   bool CanReplace;
   IROps Replacement;
+
+  // If true, the opcode can be replaced with ReplacementNoWrite if its register
+  // write is unused but its flags are still needed.
+  bool CanReplaceWrite;
+  IROps ReplacementNoWrite;
 };
 
 class DeadFlagCalculationEliminination final : public FEXCore::IR::Pass {
@@ -115,6 +121,8 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
       .Write = FLAG_NZCV,
       .CanReplace = true,
       .Replacement = OP_ADD,
+      .CanReplaceWrite = true,
+      .ReplacementNoWrite = OP_ADDNZCV,
     };
 
   case OP_SUBWITHFLAGS:
@@ -122,6 +130,8 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
       .Write = FLAG_NZCV,
       .CanReplace = true,
       .Replacement = OP_SUB,
+      .CanReplaceWrite = true,
+      .ReplacementNoWrite = OP_SUBNZCV,
     };
 
   case OP_ADCWITHFLAGS:
@@ -130,6 +140,8 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
       .Write = FLAG_NZCV,
       .CanReplace = true,
       .Replacement = OP_ADC,
+      .CanReplaceWrite = true,
+      .ReplacementNoWrite = OP_ADCNZCV,
     };
 
   case OP_SBBWITHFLAGS:
@@ -138,6 +150,8 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
       .Write = FLAG_NZCV,
       .CanReplace = true,
       .Replacement = OP_SBB,
+      .CanReplaceWrite = true,
+      .ReplacementNoWrite = OP_SBBNZCV,
     };
 
   case OP_SHIFTFLAGS:
@@ -410,6 +424,10 @@ void DeadFlagCalculationEliminination::Run(IREmitter* IREmit) {
             }
           } else {
             FlagsRead &= ~Info.Write;
+
+            if (Info.CanReplaceWrite && CodeNode->GetUses() == 0) {
+              IROp->Op = Info.ReplacementNoWrite;
+            }
           }
 
           // If we eliminated the instruction, we eliminate its read too. This
