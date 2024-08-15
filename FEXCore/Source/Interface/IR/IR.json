@@ -1291,6 +1291,10 @@
         "HasSideEffects": true,
         "DestSize": "8"
       },
+      "RotateFlags OpSize:$Size, GPR:$Result, GPR:$Shift, i1:$Left": {
+        "Desc": ["Set NZCV flags for specified variable integer rotate with given result."],
+        "HasSideEffects": true
+      },
       "GPR = Ror OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer rotate right"
                 ],

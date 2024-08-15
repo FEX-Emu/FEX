@@ -1574,62 +1574,61 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs) {
 void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool Is1Bit) {
   CalculateDeferredFlags();
 
-  auto LoadShift = [=, this](bool MustMask) -> Ref {
-    if (Is1Bit || IsImmediate) {
-      return _Constant(LoadConstantShift(Op, Is1Bit));
-    } else {
-      // x86 masks the shift by 0x3F or 0x1F depending on size of op
-      const uint32_t Size = GetSrcBitSize(Op);
-      uint64_t Mask = Size == 64 ? 0x3F : 0x1F;
+  const uint32_t Size = GetSrcBitSize(Op);
+  const auto OpSize = Size == 64 ? OpSize::i64Bit : OpSize::i32Bit;
 
-      auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
-      return MustMask ? _And(OpSize::i64Bit, Src, _Constant(Mask)) : Src;
-    }
-  };
-
-  Calculate_ShiftVariable(
-    Op, LoadShift(true),
-    [this, LoadShift, Op, Left]() {
+  Ref Src;
+  if (Is1Bit || IsImmediate) {
+    Src = _Constant(LoadConstantShift(Op, Is1Bit));
+  } else {
+    // x86 masks the shift by 0x3F or 0x1F depending on size of op
     const uint32_t Size = GetSrcBitSize(Op);
-    const auto OpSize = Size == 64 ? OpSize::i64Bit : OpSize::i32Bit;
+    uint64_t Mask = Size == 64 ? 0x3F : 0x1F;
 
-    // We don't need to mask when we rematerialize since the Ror aborbs.
-    auto Src = LoadShift(false);
+    Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+    Src = _And(OpSize::i64Bit, Src, _Constant(Mask));
+  }
 
-    uint64_t Const;
-    bool IsConst = IsValueConstant(WrapNode(Src), &Const);
+  uint64_t Const;
+  bool IsConst = IsValueConstant(WrapNode(Src), &Const);
 
-    // We fill the upper bits so we allow garbage on load.
-    auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
+  // We fill the upper bits so we allow garbage on load.
+  auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
 
-    if (Size < 32) {
-      // ARM doesn't support 8/16bit rotates. Emulate with an insert
-      // StoreResult truncates back to a 8/16 bit value
-      Dest = _Bfi(OpSize, Size, Size, Dest, Dest);
+  if (Size < 32) {
+    // ARM doesn't support 8/16bit rotates. Emulate with an insert
+    // StoreResult truncates back to a 8/16 bit value
+    Dest = _Bfi(OpSize, Size, Size, Dest, Dest);
 
-      if (Size == 8 && !(IsConst && Const < 8 && !Left)) {
-        // And because the shift size isn't masked to 8 bits, we need to fill the
-        // the full 32bits to get the correct result.
-        Dest = _Bfi(OpSize, 16, 16, Dest, Dest);
+    if (Size == 8 && !(IsConst && Const < 8 && !Left)) {
+      // And because the shift size isn't masked to 8 bits, we need to fill the
+      // the full 32bits to get the correct result.
+      Dest = _Bfi(OpSize, 16, 16, Dest, Dest);
+    }
+  }
+
+  // To rotate 64-bits left, right-rotate by (64 - Shift) = -Shift mod 64.
+  auto Res = _Ror(OpSize, Dest, Left ? _Neg(OpSize, Src) : Src);
+  StoreResult(GPRClass, Op, Res, -1);
+
+  if (IsConst) {
+    if (Const) {
+      // Extract the last bit shifted in to CF
+      SetCFDirect(Res, Left ? 0 : Size - 1, true);
+
+      // For ROR, OF is the XOR of the new CF bit and the most significant bit of the result.
+      // For ROL, OF is the LSB and MSB XOR'd together.
+      // OF is architecturally only defined for 1-bit rotate.
+      if (Const == 1) {
+        auto NewOF = _XorShift(OpSize, Res, Res, ShiftType::LSR, Left ? Size - 1 : 1);
+        SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, Left ? 0 : Size - 2, true);
       }
     }
-
-    // To rotate 64-bits left, right-rotate by (64 - Shift) = -Shift mod 64.
-    auto Res = _Ror(OpSize, Dest, Left ? _Neg(OpSize, Src) : Src);
-    StoreResult(GPRClass, Op, Res, -1);
-
-    // Extract the last bit shifted in to CF
-    SetCFDirect(Res, Left ? 0 : Size - 1, true);
-
-    // For ROR, OF is the XOR of the new CF bit and the most significant bit of the result.
-    // For ROL, OF is the LSB and MSB XOR'd together.
-    // OF is architecturally only defined for 1-bit rotate.
-    if (!IsConst || Const == 1) {
-      auto NewOF = _XorShift(OpSize, Res, Res, ShiftType::LSR, Left ? Size - 1 : 1);
-      SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, Left ? 0 : Size - 2, true);
-    }
-    },
-    GetSrcSize(Op) == OpSize::i32Bit ? std::make_optional(&OpDispatchBuilder::ZeroShiftResult) : std::nullopt);
+  } else {
+    HandleNZCVWrite();
+    RectifyCarryInvert(true);
+    _RotateFlags(OpSizeFromSrc(Op), Res, Src, Left);
+  }
 }
 
 template<bool Left, bool IsImmediate, bool Is1Bit>
