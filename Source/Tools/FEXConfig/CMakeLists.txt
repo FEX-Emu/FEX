@@ -22,7 +22,7 @@ else()
   target_link_libraries(${NAME} PRIVATE ${SDL2_LIBRARIES})
 endif()
 
-target_link_libraries(${NAME} PRIVATE Common pthread epoxy X11 EGL imgui json-maker)
+target_link_libraries(${NAME} PRIVATE Common pthread epoxy X11 EGL imgui)
 
 if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
   target_link_options(${NAME}
