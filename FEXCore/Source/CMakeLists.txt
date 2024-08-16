@@ -1,3 +1,4 @@
+include(GNUInstallDirs)
 set (MAN_DIR share/man CACHE PATH "MAN_DIR")
 
 set (FEXCORE_BASE_SRCS
@@ -371,9 +372,9 @@ AddLibrary(${PROJECT_NAME}_shared SHARED)
 if (NOT MINGW_BUILD)
   install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_shared
     LIBRARY
-      DESTINATION lib
+      DESTINATION ${CMAKE_INSTALL_LIBDIR}
       COMPONENT Libraries
     ARCHIVE
-      DESTINATION lib
+      DESTINATION ${CMAKE_INSTALL_LIBDIR}
       COMPONENT Libraries)
 endif()
