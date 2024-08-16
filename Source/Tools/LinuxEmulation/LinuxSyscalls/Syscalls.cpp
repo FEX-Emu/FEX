@@ -62,6 +62,10 @@ $end_info$
 #include <unistd.h>
 
 namespace FEX::HLE {
+int set_robust_list2(struct robust_list_head* head, int index, uint32_t flags) {
+  return ::syscall(SYSCALL_DEF(set_robust_list2), head, index, flags);
+}
+
 class SignalDelegator;
 SyscallHandler* _SyscallHandler {};
 

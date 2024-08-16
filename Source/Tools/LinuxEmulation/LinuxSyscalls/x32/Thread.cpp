@@ -179,18 +179,38 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
     return 0;
   });
 
-  REGISTER_SYSCALL_IMPL_X32(set_robust_list, [](FEXCore::Core::CpuStateFrame* Frame, struct robust_list_head* head, size_t len) -> uint64_t {
-    if (len != 12) {
-      // Return invalid if the passed in length doesn't match what's expected.
-      return -EINVAL;
-    }
+  if (ENABLE_ROBUST_LIST2) {
+    REGISTER_SYSCALL_IMPL_X32(set_robust_list, [](FEXCore::Core::CpuStateFrame* Frame, struct robust_list_head* head, size_t len) -> uint64_t {
+      if (len != 12) {
+        // Return invalid if the passed in length doesn't match what's expected.
+        return -EINVAL;
+      }
 
-    auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
-    // Retain the robust list head but don't give it to the kernel
-    // The kernel would break if it tried parsing a 32bit robust list from a 64bit process
-    ThreadObject->ThreadInfo.robust_list_head = reinterpret_cast<uint64_t>(head);
-    return 0;
-  });
+      auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
+      int Result = FEX::HLE::set_robust_list2(head, ThreadObject->ThreadInfo.robust_list_index_x32, FEX::HLE::ROBUST_LIST_32BIT);
+      if (Result != -1) {
+        // Index is returned back to us.
+        ThreadObject->ThreadInfo.robust_list_index_x32 = Result;
+        ThreadObject->ThreadInfo.robust_list_head_x32 = reinterpret_cast<uint64_t>(head);
+        Result = 0;
+      }
+
+      SYSCALL_ERRNO();
+    });
+  } else {
+    REGISTER_SYSCALL_IMPL_X32(set_robust_list, [](FEXCore::Core::CpuStateFrame* Frame, struct robust_list_head* head, size_t len) -> uint64_t {
+      if (len != 12) {
+        // Return invalid if the passed in length doesn't match what's expected.
+        return -EINVAL;
+      }
+
+      auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
+      // Retain the robust list head but don't give it to the kernel
+      // The kernel would break if it tried parsing a 32bit robust list from a 64bit process
+      ThreadObject->ThreadInfo.robust_list_head_x32 = static_cast<uint32_t>(reinterpret_cast<uint64_t>(head));
+      return 0;
+    });
+  }
 
   REGISTER_SYSCALL_IMPL_X32(
     get_robust_list, [](FEXCore::Core::CpuStateFrame* Frame, int pid, struct robust_list_head** head, uint32_t* len_ptr) -> uint64_t {
@@ -198,11 +218,18 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
       FaultSafeUserMemAccess::VerifyIsWritable(len_ptr, sizeof(*len_ptr));
 
       auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
-      // Give the robust list back to the application
-      // Steam specifically checks to make sure the robust list is set
-      *(uint32_t*)head = (uint32_t)ThreadObject->ThreadInfo.robust_list_head;
-      *len_ptr = 12;
-      return 0;
+
+      if (pid == 0 || pid == ThreadObject->ThreadInfo.PID) {
+        FaultSafeUserMemAccess::VerifyIsWritable(head, sizeof(uint32_t));
+
+        // Give the robust list back to the application
+        // Steam specifically checks to make sure the robust list is set
+        *(uint32_t*)head = (uint32_t)ThreadObject->ThreadInfo.robust_list_head_x32;
+        *len_ptr = 12;
+        return 0;
+      }
+
+      return -EPERM;
     });
 
   REGISTER_SYSCALL_IMPL_X32(

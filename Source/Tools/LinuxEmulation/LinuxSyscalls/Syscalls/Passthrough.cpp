@@ -624,6 +624,14 @@ void RegisterCommon(FEX::HLE::SyscallHandler* Handler) {
   } else {
     REGISTER_SYSCALL_IMPL(mseal, UnimplementedSyscallSafe);
   }
+
+  // Kernel version subject to change
+  if (Handler->IsHostKernelVersionAtLeast(6, 11, 0)) {
+    REGISTER_SYSCALL_IMPL_PASS_FLAGS(set_robust_list2, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                     SyscallPassthrough3<SYSCALL_DEF(set_robust_list2)>);
+  } else {
+    REGISTER_SYSCALL_IMPL(set_robust_list2, UnimplementedSyscallSafe);
+  }
 }
 
 namespace x64 {
@@ -730,10 +738,13 @@ namespace x64 {
                                          SyscallPassthrough6<SYSCALL_DEF(pselect6)>);
     REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(ppoll, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
                                          SyscallPassthrough5<SYSCALL_DEF(ppoll)>);
-    REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(set_robust_list, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                         SyscallPassthrough2<SYSCALL_DEF(set_robust_list)>);
-    REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(get_robust_list, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                         SyscallPassthrough3<SYSCALL_DEF(get_robust_list)>);
+    if (!ENABLE_ROBUST_LIST2) {
+      // Gets handled in x64/Thread.cpp
+      REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(set_robust_list, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                           SyscallPassthrough2<SYSCALL_DEF(set_robust_list)>);
+      REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(get_robust_list, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                           SyscallPassthrough3<SYSCALL_DEF(get_robust_list)>);
+    }
     REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(sync_file_range, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
                                          SyscallPassthrough4<SYSCALL_DEF(sync_file_range)>);
     REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(vmsplice, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
