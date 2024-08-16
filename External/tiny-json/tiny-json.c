@@ -27,6 +27,7 @@
     
 */
 
+#include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include <stddef.h> // For NULL
@@ -623,8 +624,6 @@ char* json_end( char* dest ) {
     }
     return dest;
 }
-
-#include <stdio.h>
 
 #define ALL_TYPES \
     X( json_int,      int,           "%d"   ) \
