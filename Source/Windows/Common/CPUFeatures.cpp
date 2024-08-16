@@ -5,7 +5,7 @@
 #include <FEXCore/fextl/fmt.h>
 
 #include <windows.h>
-#include "aarch64/cpu-aarch64.h"
+#include <aarch64/cpu-aarch64.h>
 
 #include "CPUFeatures.h"
 

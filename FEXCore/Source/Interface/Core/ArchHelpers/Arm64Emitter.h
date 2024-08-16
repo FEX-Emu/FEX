@@ -4,11 +4,6 @@
 #include "FEXCore/Utils/EnumUtils.h"
 #include "Interface/Core/ObjectCache/Relocations.h"
 
-#include <aarch64/assembler-aarch64.h>
-#include <aarch64/constants-aarch64.h>
-#include <aarch64/cpu-aarch64.h>
-#include <aarch64/operands-aarch64.h>
-#include <platform-vixl.h>
 #ifdef VIXL_DISASSEMBLER
 #include <aarch64/disasm-aarch64.h>
 #endif

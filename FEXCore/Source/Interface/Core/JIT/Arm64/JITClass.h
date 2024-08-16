@@ -14,9 +14,6 @@ $end_info$
 #include "Interface/IR/IntrusiveIRList.h"
 #include "Interface/IR/RegisterAllocationData.h"
 
-#include <aarch64/assembler-aarch64.h>
-#include <aarch64/disasm-aarch64.h>
-
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/fextl/map.h>
