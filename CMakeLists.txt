@@ -306,9 +306,6 @@ add_subdirectory(External/fmt/)
 add_subdirectory(External/imgui/)
 include_directories(External/imgui/)
 
-add_subdirectory(External/json-maker/)
-include_directories(External/json-maker/)
-
 add_subdirectory(External/tiny-json/)
 include_directories(External/tiny-json/)
 
