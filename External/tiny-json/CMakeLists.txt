@@ -1,3 +1,3 @@
 set(NAME tiny-json)
-set(SRCS tiny-json.c json-maker.c)
+set(SRCS tiny-json.c)
 add_library(${NAME} ${SRCS})
