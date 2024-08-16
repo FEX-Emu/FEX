@@ -8,12 +8,6 @@
 [submodule "External/imgui"]
 	path = External/imgui
 	url = https://github.com/Sonicadvance1/imgui.git
-[submodule "External/json-maker"]
-	path = External/json-maker
-	url = https://github.com/Sonicadvance1/json-maker.git
-[submodule "External/tiny-json"]
-	path = External/tiny-json
-	url = https://github.com/Sonicadvance1/tiny-json.git
 [submodule "External/xbyak"]
   shallow = true
 	path = External/xbyak
