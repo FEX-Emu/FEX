@@ -1,3 +1,5 @@
+include(GNUInstallDirs)
+
 add_library(wow64fex SHARED
   Module.cpp
   libwow64fex.def
@@ -24,5 +26,5 @@ target_link_libraries(wow64fex
 target_link_options(wow64fex PRIVATE -static -nostdlib -nostartfiles -nodefaultlibs -lc++ -lc++abi -lunwind -lclang_rt.builtins-aarch64)
 install(TARGETS wow64fex
   RUNTIME
-  DESTINATION lib
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}
   COMPONENT runtime)
