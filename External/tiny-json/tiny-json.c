@@ -30,7 +30,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <stddef.h> // For NULL
-#include "json-maker.h"
 #include "tiny-json.h"
 
 /** Structure to handle a heap of JSON properties. */

@@ -17,7 +17,6 @@
 #include <pwd.h>
 #endif
 #include <utility>
-#include <json-maker.h>
 #include <tiny-json.h>
 
 namespace FEX::Config {
