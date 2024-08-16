@@ -5,7 +5,6 @@
 #include <FEXCore/fextl/fmt.h>
 
 #include <windows.h>
-#include <aarch64/cpu-aarch64.h>
 
 #include "CPUFeatures.h"
 
@@ -26,30 +25,32 @@ uint64_t ReadRegU64(HKEY Key, const char* Name) {
   return Value;
 }
 
-template<typename RegType>
-void AddRegFeatures(vixl::CPUFeatures& Features, HKEY Key, const char* Name) {
-  return Features.Combine(RegType(ReadRegU64(Key, Name)).GetCPUFeatures());
-}
 } // namespace
 
 namespace FEX::Windows {
+class CPUFeaturesFromRegistry final : public FEX::CPUFeatures {
+public:
+  explicit CPUFeaturesFromRegistry(HKEY Key) {
+    ISAR0.SetReg(ReadRegU64(Key, "CP 4030"));
+    PFR0.SetReg(ReadRegU64(Key, "CP 4020"));
+    PFR1.SetReg(ReadRegU64(Key, "CP 4021"));
+    ISAR1.SetReg(ReadRegU64(Key, "CP 4031"));
+    MMFR0.SetReg(ReadRegU64(Key, "CP 4038"));
+    MMFR2.SetReg(ReadRegU64(Key, "CP 403A"));
+    ZFR0.SetReg(ReadRegU64(Key, "CP 4024"));
+    MMFR1.SetReg(ReadRegU64(Key, "CP 4039"));
+    ISAR2.SetReg(ReadRegU64(Key, "CP 4032"));
+    FillFeatureFlags();
+  }
+};
+
 FEXCore::HostFeatures CPUFeatures::FetchHostFeatures(bool IsWine) {
-  vixl::CPUFeatures Features {};
   HKEY Key = OpenProcessorKey(0);
   if (!Key) {
     ERROR_AND_DIE_FMT("Couldn't detect CPU features");
   }
 
-  AddRegFeatures<vixl::aarch64::AA64PFR0>(Features, Key, "CP 4020");
-  AddRegFeatures<vixl::aarch64::AA64PFR1>(Features, Key, "CP 4021");
-  AddRegFeatures<vixl::aarch64::AA64ZFR0>(Features, Key, "CP 4024");
-  AddRegFeatures<vixl::aarch64::AA64SMFR0>(Features, Key, "CP 4025");
-  AddRegFeatures<vixl::aarch64::AA64ISAR0>(Features, Key, "CP 4030");
-  AddRegFeatures<vixl::aarch64::AA64ISAR1>(Features, Key, "CP 4031");
-  AddRegFeatures<vixl::aarch64::AA64ISAR2>(Features, Key, "CP 4032");
-  AddRegFeatures<vixl::aarch64::AA64MMFR0>(Features, Key, "CP 4038");
-  AddRegFeatures<vixl::aarch64::AA64MMFR1>(Features, Key, "CP 4039");
-  AddRegFeatures<vixl::aarch64::AA64MMFR2>(Features, Key, "CP 403A");
+  CPUFeaturesFromRegistry Features(Key);
 
   uint64_t CTR = ReadRegU64(Key, "CP 5801");
   uint64_t MIDR = ReadRegU64(Key, "CP 4000");

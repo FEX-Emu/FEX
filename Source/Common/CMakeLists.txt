@@ -16,7 +16,7 @@ if (NOT MINGW_BUILD)
 endif()
 
 add_library(${NAME} STATIC ${SRCS})
-target_link_libraries(${NAME} FEXCore_Base cpp-optparse tiny-json FEXHeaderUtils vixl)
+target_link_libraries(${NAME} FEXCore_Base cpp-optparse tiny-json FEXHeaderUtils)
 target_include_directories(${NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/External/cpp-optparse/)
 target_include_directories(${NAME} PRIVATE ${CMAKE_BINARY_DIR}/generated)
 target_include_directories(${NAME} PRIVATE ${CMAKE_SOURCE_DIR}/External/xbyak/)
