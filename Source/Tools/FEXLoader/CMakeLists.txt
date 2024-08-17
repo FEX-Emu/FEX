@@ -50,8 +50,6 @@ endfunction()
 GenerateInterpreter(FEXLoader 0)
 GenerateInterpreter(FEXInterpreter 1)
 
-install(PROGRAMS "${PROJECT_SOURCE_DIR}/Scripts/FEXUpdateAOTIRCache.sh" DESTINATION bin RENAME FEXUpdateAOTIRCache)
-
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
   # Check for conflicting binfmt before installing
   set (CONFLICTING_BINFMTS_32
