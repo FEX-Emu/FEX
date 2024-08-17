@@ -374,11 +374,8 @@ AddLibrary(${PROJECT_NAME} STATIC)
 AddLibrary(${PROJECT_NAME}_shared SHARED)
 
 if (NOT MINGW_BUILD)
-  install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_shared
+  install(TARGETS ${PROJECT_NAME}_shared
     LIBRARY
-      DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      COMPONENT Libraries
-    ARCHIVE
       DESTINATION ${CMAKE_INSTALL_LIBDIR}
       COMPONENT Libraries)
 endif()
