@@ -297,16 +297,6 @@
           "Has some file writing overhead per JIT block"
         ]
       },
-      "GDBSymbols": {
-        "Type": "bool",
-        "Default": "false",
-        "Desc": [
-          "Integrates with GDB using the JIT interface.",
-          "Needs the fex jit loader in GDB, which can be loaded via `jit-reader-load libFEXGDBReader.so.`",
-          "Also needs x86_64-linux-gnu-objdump in PATH.",
-          "Can be very slow."
-        ]
-      },
       "InjectLibSegFault": {
         "Type": "bool",
         "Default": "false",

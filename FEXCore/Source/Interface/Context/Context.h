@@ -230,7 +230,6 @@ public:
     FEX_CONFIG_OPT(GlobalJITNaming, GLOBALJITNAMING);
     FEX_CONFIG_OPT(LibraryJITNaming, LIBRARYJITNAMING);
     FEX_CONFIG_OPT(BlockJITNaming, BLOCKJITNAMING);
-    FEX_CONFIG_OPT(GDBSymbols, GDBSYMBOLS);
     FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
     FEX_CONFIG_OPT(CacheObjectCodeCompilation, CACHEOBJECTCODECOMPILATION);
     FEX_CONFIG_OPT(x87ReducedPrecision, X87REDUCEDPRECISION);
@@ -296,7 +295,7 @@ public:
     uint64_t Length;
   };
   [[nodiscard]]
-  GenerateIRResult GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, bool ExtendedDebugInfo, uint64_t MaxInst);
+  GenerateIRResult GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, uint64_t MaxInst);
 
   struct CompileCodeResult {
     void* CompiledCode;

@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 project(FEX C CXX ASM)
 
-INCLUDE (CheckIncludeFiles)
-CHECK_INCLUDE_FILES ("gdb/jit-reader.h" HAVE_GDB_JIT_READER_H)
-
 option(BUILD_TESTS "Build unit tests to ensure sanity" TRUE)
 option(BUILD_FEX_LINUX_TESTS "Build FEXLinuxTests, requires x86 compiler" FALSE)
 option(BUILD_THUNKS "Build thunks" FALSE)
@@ -17,7 +14,6 @@ option(ENABLE_ASAN "Enables Clang ASAN" FALSE)
 option(ENABLE_TSAN "Enables Clang TSAN" FALSE)
 option(ENABLE_COVERAGE "Enables Coverage" FALSE)
 option(ENABLE_ASSERTIONS "Enables assertions in build" FALSE)
-option(ENABLE_GDB_SYMBOLS "Enables GDBSymbols integration support" ${HAVE_GDB_JIT_READER_H})
 option(ENABLE_STRICT_WERROR "Enables stricter -Werror for CI" FALSE)
 option(ENABLE_WERROR "Enables -Werror" FALSE)
 option(ENABLE_JEMALLOC "Enables jemalloc allocator" TRUE)
@@ -98,12 +94,6 @@ if (ENABLE_ASSERTIONS)
   message(STATUS "Assertions enabled")
   add_definitions(-DASSERTIONS_ENABLED=1)
 endif()
-
-if (ENABLE_GDB_SYMBOLS)
-  message(STATUS "GDBSymbols support enabled")
-  add_definitions(-DGDB_SYMBOLS_ENABLED=1)
-endif()
-
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

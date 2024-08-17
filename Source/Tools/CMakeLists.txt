@@ -5,11 +5,6 @@ if (NOT MINGW_BUILD)
     add_subdirectory(FEXConfig/)
   endif()
 
-
-  if (ENABLE_GDB_SYMBOLS)
-    add_subdirectory(FEXGDBReader/)
-  endif()
-
   add_subdirectory(FEXRootFSFetcher/)
   add_subdirectory(FEXGetConfig/)
   add_subdirectory(FEXServer/)

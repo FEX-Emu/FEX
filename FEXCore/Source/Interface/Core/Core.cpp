@@ -543,8 +543,7 @@ struct IRListCopy : public IR::IRStorageBase {
 };
 
 
-ContextImpl::GenerateIRResult
-ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, bool ExtendedDebugInfo, uint64_t MaxInst) {
+ContextImpl::GenerateIRResult ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, uint64_t MaxInst) {
   FEXCORE_PROFILE_SCOPED("GenerateIR");
 
   Thread->OpDispatcher->ReownOrClaimBuffer();
@@ -620,7 +619,7 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
         // that more explicitly later.
         Thread->OpDispatcher->FlushRegisterCache(true);
 
-        if (ExtendedDebugInfo || Thread->OpDispatcher->CanHaveSideEffects(TableInfo, DecodedInfo)) {
+        if (Thread->OpDispatcher->CanHaveSideEffects(TableInfo, DecodedInfo)) {
           Thread->OpDispatcher->_GuestOpcode(Block.Entry + BlockInstructionsLength - GuestRIP);
         }
 
@@ -753,13 +752,6 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
     }
   }
 
-  if (SourcecodeResolver && Config.GDBSymbols()) {
-    auto AOTIRCacheEntry = SyscallHandler->LookupAOTIRCacheEntry(Thread, GuestRIP);
-    if (AOTIRCacheEntry.Entry && !AOTIRCacheEntry.Entry->ContainsCode) {
-      AOTIRCacheEntry.Entry->SourcecodeMap = SourcecodeResolver->GenerateMap(AOTIRCacheEntry.Entry->Filename, AOTIRCacheEntry.Entry->FileId);
-    }
-  }
-
   fextl::unique_ptr<FEXCore::IR::IRStorageBase> IR;
   FEXCore::Core::DebugData* DebugData {};
   uint64_t StartAddr {};
@@ -779,7 +771,7 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
 
   if (!IR) {
     // Generate IR + Meta Info
-    auto [IRCopy, TotalInstructions, TotalInstructionsLength, _StartAddr, _Length] = GenerateIR(Thread, GuestRIP, Config.GDBSymbols(), MaxInst);
+    auto [IRCopy, TotalInstructions, TotalInstructionsLength, _StartAddr, _Length] = GenerateIR(Thread, GuestRIP, MaxInst);
 
     // Setup pointers to internal structures
     IR = std::move(IRCopy);

@@ -11,7 +11,6 @@
 #include <FEXCore/fextl/string.h>
 
 #include <Interface/Core/LookupCache.h>
-#include <Interface/GDBJIT/GDBJIT.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -318,17 +317,13 @@ bool AOTIRCaptureCache::PostCompileCode(FEXCore::Core::InternalThreadState* Thre
                                         FEXCore::Core::DebugData* DebugData, bool GeneratedIR) {
 
   // Both generated ir and LibraryJITName need a named region lookup
-  if (GeneratedIR || CTX->Config.LibraryJITNaming() || CTX->Config.GDBSymbols()) {
+  if (GeneratedIR || CTX->Config.LibraryJITNaming()) {
 
     auto AOTIRCacheEntry = CTX->SyscallHandler->LookupAOTIRCacheEntry(Thread, GuestRIP);
 
     if (AOTIRCacheEntry.Entry) {
       if (DebugData && CTX->Config.LibraryJITNaming()) {
         CTX->Symbols.RegisterNamedRegion(Thread->SymbolBuffer.get(), CodePtr, DebugData->HostCodeSize, AOTIRCacheEntry.Entry->Filename);
-      }
-
-      if (CTX->Config.GDBSymbols()) {
-        GDBJITRegister(AOTIRCacheEntry.Entry, AOTIRCacheEntry.VAFileStart, GuestRIP, (uintptr_t)CodePtr, DebugData);
       }
 
       // Add to AOT cache if aot generation is enabled
