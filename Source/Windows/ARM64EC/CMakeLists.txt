@@ -1,3 +1,5 @@
+include(GNUInstallDirs)
+
 add_library(arm64ecfex SHARED
   Module.cpp
   Module.S
@@ -25,5 +27,5 @@ target_link_libraries(arm64ecfex
 target_link_options(arm64ecfex PRIVATE -static -nostdlib -nostartfiles -nodefaultlibs -lc++ -lc++abi -lunwind -lclang_rt.builtins-arm64ec)
 install(TARGETS arm64ecfex
   RUNTIME
-  DESTINATION lib
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}
   COMPONENT runtime)
