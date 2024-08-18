@@ -239,12 +239,14 @@ public:
     FEX_CONFIG_OPT(DisableTelemetry, DISABLETELEMETRY);
     FEX_CONFIG_OPT(DisableVixlIndirectCalls, DISABLE_VIXL_INDIRECT_RUNTIME_CALLS);
     FEX_CONFIG_OPT(SmallTSCScale, SMALLTSCSCALE);
+    FEX_CONFIG_OPT(StrictInProcessSplitLocks, STRICTINPROCESSSPLITLOCKS);
   } Config;
-
 
   std::atomic_bool CoreShuttingDown {false};
 
   FEXCore::ForkableSharedMutex CodeInvalidationMutex;
+
+  uint32_t StrictSplitLockMutex {};
 
   FEXCore::HostFeatures HostFeatures;
   // CPUID depends on HostFeatures so needs to be initialized after that.

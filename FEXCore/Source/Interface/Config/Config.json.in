@@ -422,6 +422,14 @@
           "Can be dangerous due to aligned loadstores through the same code now become non-atomic."
         ]
       },
+      "StrictInProcessSplitLocks": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "Strict global lock when handling an unaligned atomic that crosses a 16-byte or cacheline granularity",
+          "This is required to ensure a split-lock doesn't tear inside the process"
+        ]
+      },
       "TSOAutoMigration": {
         "Type": "bool",
         "Default": "true",

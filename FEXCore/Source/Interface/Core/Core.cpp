@@ -29,6 +29,7 @@ $end_info$
 #include "Interface/IR/RegisterAllocationData.h"
 #include "Utils/Allocator.h"
 #include "Utils/Allocator/HostAllocator.h"
+#include "Utils/SpinWaitLock.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
@@ -471,8 +472,14 @@ void ContextImpl::UnlockAfterFork(FEXCore::Core::InternalThreadState* LiveThread
 
   if (Child) {
     CodeInvalidationMutex.StealAndDropActiveLocks();
+    if (Config.StrictInProcessSplitLocks) {
+      StrictSplitLockMutex = 0;
+    }
   } else {
     CodeInvalidationMutex.unlock();
+    if (Config.StrictInProcessSplitLocks) {
+      FEXCore::Utils::SpinWaitLock::unlock(&StrictSplitLockMutex);
+    }
     return;
   }
 }
@@ -480,6 +487,9 @@ void ContextImpl::UnlockAfterFork(FEXCore::Core::InternalThreadState* LiveThread
 void ContextImpl::LockBeforeFork(FEXCore::Core::InternalThreadState* Thread) {
   CodeInvalidationMutex.lock();
   Allocator::LockBeforeFork(Thread);
+  if (Config.StrictInProcessSplitLocks) {
+    FEXCore::Utils::SpinWaitLock::lock(&StrictSplitLockMutex);
+  }
 }
 #endif
 
