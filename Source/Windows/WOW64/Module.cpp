@@ -125,7 +125,9 @@ uint64_t GetWowTEB(void* TEB) {
 
 bool IsAddressInJit(uint64_t Address) {
   const auto& Config = SignalDelegator->GetConfig();
-  if (Address >= Config.DispatcherBegin && Address < Config.DispatcherEnd) return true;
+  if (Address >= Config.DispatcherBegin && Address < Config.DispatcherEnd) {
+    return true;
+  }
 
   auto Thread = GetTLS().ThreadState();
   return Thread->CTX->IsAddressInCodeBuffer(Thread, Address);
@@ -650,14 +652,10 @@ NTSTATUS BTCpuSuspendLocalThread(HANDLE Thread, ULONG* Count) {
 NTSTATUS BTCpuResetToConsistentState(EXCEPTION_POINTERS* Ptrs) {
   auto* Context = Ptrs->ContextRecord;
   auto* Exception = Ptrs->ExceptionRecord;
-  if (Exception->ExceptionCode == EXCEPTION_DATATYPE_MISALIGNMENT && Context::HandleUnalignedAccess(Context)) {
-    LogMan::Msg::DFmt("Handled unaligned atomic: new pc: {:X}", Context->Pc);
-    NtContinue(Context, FALSE);
-  }
+  auto Thread = GetTLS().ThreadState();
 
   if (Exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
     const auto FaultAddress = static_cast<uint64_t>(Exception->ExceptionInformation[1]);
-
 
     if (Context::HandleSuspendInterrupt(Context, FaultAddress)) {
       LogMan::Msg::DFmt("Resumed from suspend");
@@ -665,7 +663,7 @@ NTSTATUS BTCpuResetToConsistentState(EXCEPTION_POINTERS* Ptrs) {
     }
 
     bool HandledRWX = false;
-    if (GetTLS().ThreadState()) {
+    if (Thread) {
       std::scoped_lock Lock(ThreadCreationMutex);
       HandledRWX = InvalidationTracker->HandleRWXAccessViolation(FaultAddress);
     }
@@ -676,8 +674,13 @@ NTSTATUS BTCpuResetToConsistentState(EXCEPTION_POINTERS* Ptrs) {
     }
   }
 
-  if (!IsAddressInJit(Context->Pc)) {
+  if (!Thread || !IsAddressInJit(Context->Pc)) {
     return STATUS_SUCCESS;
+  }
+
+  if (Exception->ExceptionCode == EXCEPTION_DATATYPE_MISALIGNMENT && Context::HandleUnalignedAccess(Context)) {
+    LogMan::Msg::DFmt("Handled unaligned atomic: new pc: {:X}", Context->Pc);
+    NtContinue(Context, FALSE);
   }
 
   LogMan::Msg::DFmt("Reconstructing context");
