@@ -272,6 +272,12 @@ static inline void unlock(T* Futex) {
 template<typename T>
 class UniqueSpinMutex final {
 public:
+  // Move-only type
+  UniqueSpinMutex(const UniqueSpinMutex&) = delete;
+  UniqueSpinMutex& operator=(const UniqueSpinMutex&) = delete;
+  UniqueSpinMutex(UniqueSpinMutex&& rhs) = default;
+  UniqueSpinMutex& operator=(UniqueSpinMutex&&) = default;
+
   UniqueSpinMutex(T* Futex)
     : Futex {Futex} {
     FEXCore::Utils::SpinWaitLock::lock(Futex);
