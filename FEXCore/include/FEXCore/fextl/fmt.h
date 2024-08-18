@@ -5,6 +5,7 @@
 #include <FEXCore/Utils/File.h>
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 #include <unistd.h>
 
 namespace fextl::fmt {
