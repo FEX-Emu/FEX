@@ -2384,6 +2384,51 @@ private:
     }
   }
 
+  AddressMode SelectPairAddressMode(AddressMode A, uint8_t Size) {
+    AddressMode Out {};
+
+    signed OffsetEl = A.Offset / Size;
+    if ((A.Offset % Size) == 0 && OffsetEl >= -64 && OffsetEl < 64) {
+      Out.Offset = A.Offset;
+      A.Offset = 0;
+    }
+
+    Out.Base = LoadEffectiveAddress(A, true, false);
+    return Out;
+  }
+
+  RefPair LoadMemPair(FEXCore::IR::RegisterClassType Class, uint8_t Size, Ref Base, unsigned Offset) {
+    RefPair Values {};
+    if (Class == FPRClass) {
+      Values.Low = _AllocateFPR(Size, Size);
+      Values.High = _AllocateFPR(Size, Size);
+    } else {
+      Values.Low = _AllocateGPR(false);
+      Values.High = _AllocateGPR(false);
+    }
+
+    _LoadMemPair(Class, Size, Base, Offset, Values.Low, Values.High);
+    return Values;
+  }
+
+  RefPair _LoadMemPairAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, AddressMode A, uint8_t Align = 1) {
+    bool AtomicTSO = CTX->IsAtomicTSOEnabled() && !A.NonTSO;
+
+    // Use ldp if possible, otherwise fallback on two loads.
+    if (!AtomicTSO && !A.Segment && Size >= 4 & Size <= 16) {
+      A = SelectPairAddressMode(A, Size);
+      return LoadMemPair(Class, Size, A.Base, A.Offset);
+    } else {
+      AddressMode HighA = A;
+      HighA.Offset += 16;
+
+      return {
+        .Low = _LoadMemAutoTSO(Class, Size, A, Align),
+        .High = _LoadMemAutoTSO(Class, Size, HighA, Align),
+      };
+    }
+  }
+
   Ref _StoreMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, AddressMode A, Ref Value, uint8_t Align = 1) {
     bool AtomicTSO = CTX->IsAtomicTSOEnabled() && !A.NonTSO;
     A = SelectAddressMode(A, AtomicTSO, Class != GPRClass, Size);
@@ -2392,6 +2437,20 @@ private:
       return _StoreMemTSO(Class, Size, Value, A.Base, A.Index, Align, A.IndexType, A.IndexScale);
     } else {
       return _StoreMem(Class, Size, Value, A.Base, A.Index, Align, A.IndexType, A.IndexScale);
+    }
+  }
+
+  void _StoreMemPairAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, AddressMode A, Ref Value1, Ref Value2, uint8_t Align = 1) {
+    bool AtomicTSO = CTX->IsAtomicTSOEnabled() && !A.NonTSO;
+
+    // Use stp if possible, otherwise fallback on two stores.
+    if (!AtomicTSO && !A.Segment && Size >= 4 & Size <= 16) {
+      A = SelectPairAddressMode(A, Size);
+      _StoreMemPair(Class, Size, Value1, Value2, A.Base, A.Offset);
+    } else {
+      _StoreMemAutoTSO(Class, Size, A, Value1, 1);
+      A.Offset += Size;
+      _StoreMemAutoTSO(Class, Size, A, Value2, 1);
     }
   }
 
