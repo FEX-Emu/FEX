@@ -494,6 +494,12 @@
         "DestSize": "Size"
       },
 
+      "SSA:$Value1, SSA:$Value2 = LoadMemPair RegisterClass:$Class, u8:#Size, GPR:$Addr, u32:$Offset": {
+        "Desc": ["Load a pair of values from memory."],
+        "DestSize": "Size",
+        "HasSideEffects": true
+      },
+
       "StoreMem RegisterClass:$Class, u8:#Size, SSA:$Value, GPR:$Addr, GPR:$Offset, u8:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale": {
         "Desc": [ "Stores a value to memory.",
                   "Zero Extends if value's type is too small",
