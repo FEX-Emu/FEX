@@ -1574,62 +1574,62 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs) {
 void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool Is1Bit) {
   CalculateDeferredFlags();
 
-  auto LoadShift = [=, this](bool MustMask) -> Ref {
-    if (Is1Bit || IsImmediate) {
-      return _Constant(LoadConstantShift(Op, Is1Bit));
-    } else {
-      // x86 masks the shift by 0x3F or 0x1F depending on size of op
-      const uint32_t Size = GetSrcBitSize(Op);
-      uint64_t Mask = Size == 64 ? 0x3F : 0x1F;
+  const uint32_t Size = GetSrcBitSize(Op);
+  const auto OpSize = Size == 64 ? OpSize::i64Bit : OpSize::i32Bit;
+  uint64_t UnmaskedConst;
 
-      auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
-      return MustMask ? _And(OpSize::i64Bit, Src, _Constant(Mask)) : Src;
-    }
-  };
+  // x86 masks the shift by 0x3F or 0x1F depending on size of op. But it's
+  // equivalent to mask to the actual size of the op, that way we can bound
+  // things tighter for 8-bit later in the function.
+  uint64_t Mask = Size == 8 ? 7 : (Size == 64 ? 0x3F : 0x1F);
 
-  Calculate_ShiftVariable(
-    Op, LoadShift(true),
-    [this, LoadShift, Op, Left]() {
-    const uint32_t Size = GetSrcBitSize(Op);
-    const auto OpSize = Size == 64 ? OpSize::i64Bit : OpSize::i32Bit;
+  Ref Src, UnmaskedSrc;
+  if (Is1Bit || IsImmediate) {
+    UnmaskedConst = LoadConstantShift(Op, Is1Bit);
+    UnmaskedSrc = _Constant(UnmaskedConst);
+    Src = _Constant(UnmaskedConst & Mask);
+  } else {
+    UnmaskedSrc = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+    Src = _And(OpSize::i64Bit, UnmaskedSrc, _Constant(Mask));
+  }
 
-    // We don't need to mask when we rematerialize since the Ror aborbs.
-    auto Src = LoadShift(false);
+  // We fill the upper bits so we allow garbage on load.
+  auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
 
-    uint64_t Const;
-    bool IsConst = IsValueConstant(WrapNode(Src), &Const);
+  if (Size < 32) {
+    // ARM doesn't support 8/16bit rotates. Emulate with an insert
+    // StoreResult truncates back to a 8/16 bit value
+    Dest = _Bfi(OpSize, Size, Left ? (32 - Size) : Size, Dest, Dest);
+  }
 
-    // We fill the upper bits so we allow garbage on load.
-    auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
+  // To rotate 64-bits left, right-rotate by (64 - Shift) = -Shift mod 64.
+  auto Res = _Ror(OpSize, Dest, Left ? _Neg(OpSize, Src) : Src);
+  StoreResult(GPRClass, Op, Res, -1);
 
-    if (Size < 32) {
-      // ARM doesn't support 8/16bit rotates. Emulate with an insert
-      // StoreResult truncates back to a 8/16 bit value
-      Dest = _Bfi(OpSize, Size, Size, Dest, Dest);
+  if (Is1Bit || IsImmediate) {
+    if (UnmaskedConst) {
+      // Extract the last bit shifted in to CF
+      SetCFDirect(Res, Left ? 0 : Size - 1, true);
 
-      if (Size == 8 && !(IsConst && Const < 8 && !Left)) {
-        // And because the shift size isn't masked to 8 bits, we need to fill the
-        // the full 32bits to get the correct result.
-        Dest = _Bfi(OpSize, 16, 16, Dest, Dest);
+      // For ROR, OF is the XOR of the new CF bit and the most significant bit of the result.
+      // For ROL, OF is the LSB and MSB XOR'd together.
+      // OF is architecturally only defined for 1-bit rotate.
+      if (UnmaskedConst == 1) {
+        auto NewOF = _XorShift(OpSize, Res, Res, ShiftType::LSR, Left ? Size - 1 : 1);
+        SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, Left ? 0 : Size - 2, true);
       }
     }
+  } else {
+    HandleNZCVWrite();
+    RectifyCarryInvert(true);
 
-    // To rotate 64-bits left, right-rotate by (64 - Shift) = -Shift mod 64.
-    auto Res = _Ror(OpSize, Dest, Left ? _Neg(OpSize, Src) : Src);
-    StoreResult(GPRClass, Op, Res, -1);
-
-    // Extract the last bit shifted in to CF
-    SetCFDirect(Res, Left ? 0 : Size - 1, true);
-
-    // For ROR, OF is the XOR of the new CF bit and the most significant bit of the result.
-    // For ROL, OF is the LSB and MSB XOR'd together.
-    // OF is architecturally only defined for 1-bit rotate.
-    if (!IsConst || Const == 1) {
-      auto NewOF = _XorShift(OpSize, Res, Res, ShiftType::LSR, Left ? Size - 1 : 1);
-      SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, Left ? 0 : Size - 2, true);
+    // We deferred the masking for 8-bit to the flag section, do it here.
+    if (Size == 8) {
+      Src = _And(OpSize::i64Bit, UnmaskedSrc, _Constant(0x1F));
     }
-    },
-    GetSrcSize(Op) == OpSize::i32Bit ? std::make_optional(&OpDispatchBuilder::ZeroShiftResult) : std::nullopt);
+
+    _RotateFlags(OpSizeFromSrc(Op), Res, Src, Left);
+  }
 }
 
 template<bool Left, bool IsImmediate, bool Is1Bit>
@@ -4519,16 +4519,39 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
   }
 
   auto Size = GetDstSize(Op);
+  uint8_t ResultSize = Size;
 
   auto RoundedSize = Size;
   if (ALUIROp != FEXCore::IR::IROps::OP_ANDWITHFLAGS) {
     RoundedSize = std::max<uint8_t>(4u, RoundedSize);
   }
 
-  const auto OpSize = IR::SizeToOpSize(RoundedSize);
-
   // X86 basic ALU ops just do the operation between the destination and a single source
   Ref Src = LoadSource(GPRClass, Op, Op->Src[SrcIdx], Op->Flags, {.AllowUpperGarbage = true});
+
+  // Try to eliminate the masking after 8/16-bit operations with constants, by
+  // promoting to a full size operation that preserves the upper bits.
+  uint64_t Const;
+  if (Size < 4 && !DestIsLockedMem(Op) && Op->Dest.IsGPR() && !Op->Dest.Data.GPR.HighBits && IsValueConstant(WrapNode(Src), &Const) &&
+      (ALUIROp == IR::IROps::OP_XOR || ALUIROp == IR::IROps::OP_OR || ALUIROp == IR::IROps::OP_ANDWITHFLAGS)) {
+
+    RoundedSize = ResultSize = CTX->GetGPRSize();
+    LOGMAN_THROW_A_FMT(Const < (1ull << (Size * 8)), "does not clobber");
+
+    // For AND, we can play the same trick but we instead need the upper bits of
+    // the constant to be all-1s instead of all-0s to preserve. We also can't
+    // use andwithflags in this case, since we've promoted to 64-bit so the
+    // negate flag would be wrong, but using the regular logical operation path
+    // instead still ends up a net win for uops.
+    //
+    // In the common case where the constant is of the form (1 << x) - 1, the
+    // adjusted constant here will inline into the arm64 and instruction, so if
+    // flags are not needed, we save an instruction overall.
+    if (ALUIROp == IR::IROps::OP_ANDWITHFLAGS) {
+      Src = _Constant(Const | ~((1ull << (Size * 8)) - 1));
+      ALUIROp = IR::IROps::OP_AND;
+    }
+  }
 
   Ref Result {};
   Ref Dest {};
@@ -4542,6 +4565,7 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
     Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
   }
 
+  const auto OpSize = IR::SizeToOpSize(RoundedSize);
   DeriveOp(ALUOp, ALUIROp, _AndWithFlags(OpSize, Dest, Src));
   Result = ALUOp;
 
@@ -4550,6 +4574,7 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
   case FEXCore::IR::IROps::OP_ADD: Result = CalculateFlags_ADD(Size, Dest, Src); break;
   case FEXCore::IR::IROps::OP_SUB: Result = CalculateFlags_SUB(Size, Dest, Src); break;
   case FEXCore::IR::IROps::OP_XOR:
+  case FEXCore::IR::IROps::OP_AND:
   case FEXCore::IR::IROps::OP_OR: {
     CalculateFlags_Logical(Size, Result, Dest, Src);
     break;
@@ -4564,7 +4589,7 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
   }
 
   if (!DestIsLockedMem(Op)) {
-    StoreResult(GPRClass, Op, Result, -1);
+    StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, ResultSize, -1, MemoryAccessType::DEFAULT);
   }
 }
 

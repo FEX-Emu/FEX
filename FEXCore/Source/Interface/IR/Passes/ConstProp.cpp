@@ -151,6 +151,14 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     bool IsConstant1 = IREmit->IsValueConstant(IROp->Args[0], &Constant1);
     bool IsConstant2 = IREmit->IsValueConstant(IROp->Args[1], &Constant2);
 
+    /* IsImmAddSub assumes the constants are sign-extended, take care of that
+     * here so we get the optimization for 32-bit adds too.
+     */
+    if (Op->Header.Size == 4) {
+      Constant1 = (int64_t)(int32_t)Constant1;
+      Constant2 = (int64_t)(int32_t)Constant2;
+    }
+
     if (IsConstant1 && IsConstant2 && IROp->Op == OP_ADD) {
       uint64_t NewConstant = (Constant1 + Constant2) & getMask(IROp);
       IREmit->ReplaceWithConstant(CodeNode, NewConstant);
@@ -197,7 +205,8 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     uint64_t Constant1 {};
     uint64_t Constant2 {};
 
-    if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) && IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
+    // Order matter for short circuit evaluation, subsequent ifs read constant2.
+    if (IREmit->IsValueConstant(IROp->Args[1], &Constant2) && IREmit->IsValueConstant(IROp->Args[0], &Constant1)) {
       uint64_t NewConstant = (Constant1 & Constant2) & getMask(IROp);
       IREmit->ReplaceWithConstant(CodeNode, NewConstant);
     } else if (Constant2 == 1) {
@@ -209,7 +218,7 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
           Constant2 == 1 && Constant3 == 0) {
         IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(IROp->Args[0]));
       }
-    } else if (IROp->Args[0].ID() == IROp->Args[1].ID()) {
+    } else if (IROp->Args[0].ID() == IROp->Args[1].ID() || (Constant2 & getMask(IROp)) == getMask(IROp)) {
       // AND with same value results in original value
       IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(IROp->Args[0]));
     }
