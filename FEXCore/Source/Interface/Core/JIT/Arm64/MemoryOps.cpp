@@ -80,6 +80,32 @@ DEF_OP(StoreContext) {
   }
 }
 
+DEF_OP(StoreContextPair) {
+  const auto Op = IROp->C<IR::IROp_StoreContextPair>();
+  const auto OpSize = IROp->Size;
+
+  if (Op->Class == FEXCore::IR::GPRClass) {
+    auto Src1 = GetZeroableReg(Op->Value1);
+    auto Src2 = GetZeroableReg(Op->Value2);
+
+    switch (OpSize) {
+    case 4: stp<ARMEmitter::IndexType::OFFSET>(Src1.W(), Src2.W(), STATE, Op->Offset); break;
+    case 8: stp<ARMEmitter::IndexType::OFFSET>(Src1.X(), Src2.X(), STATE, Op->Offset); break;
+    default: LOGMAN_MSG_A_FMT("Unhandled StoreContext size: {}", OpSize); break;
+    }
+  } else {
+    const auto Src1 = GetVReg(Op->Value1.ID());
+    const auto Src2 = GetVReg(Op->Value2.ID());
+
+    switch (OpSize) {
+    case 4: stp<ARMEmitter::IndexType::OFFSET>(Src1.S(), Src2.S(), STATE, Op->Offset); break;
+    case 8: stp<ARMEmitter::IndexType::OFFSET>(Src1.D(), Src2.D(), STATE, Op->Offset); break;
+    case 16: stp<ARMEmitter::IndexType::OFFSET>(Src1.Q(), Src2.Q(), STATE, Op->Offset); break;
+    default: LOGMAN_MSG_A_FMT("Unhandled StoreContextPair size: {}", OpSize); break;
+    }
+  }
+}
+
 DEF_OP(LoadRegister) {
   const auto Op = IROp->C<IR::IROp_LoadRegister>();
   const auto OpSize = IROp->Size;

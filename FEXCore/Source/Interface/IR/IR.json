@@ -403,6 +403,24 @@
         ]
       },
 
+      "StoreContextPair u8:#ByteSize, RegisterClass:$Class, SSA:$Value1, SSA:$Value2, u32:$Offset": {
+        "Desc": ["Stores a pair of values to the context with offset",
+                 "Ctx[Offset] = Value1, Ctx[Offset + ByteSize] = Value2",
+                 "Zero Extends if value's type is too small",
+                 "Truncates if value's type is too large"
+                ],
+        "HasSideEffects": true,
+        "DestSize": "ByteSize",
+        "EmitValidation": [
+          "WalkFindRegClass($Value1) == $Class",
+          "WalkFindRegClass($Value2) == $Class",
+          "($Class == GPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8)) || $Class == FPRClass",
+          "($Class == FPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8 || #ByteSize == 16 || #ByteSize == 32)) || $Class == GPRClass",
+          "!($Offset >= offsetof(Core::CPUState, gregs[0]) && $Offset < offsetof(Core::CPUState, gregs[16])) && \"Can't StoreContext to GPR\"",
+          "!($Offset >= offsetof(Core::CPUState, xmm.avx.data[0]) && $Offset < offsetof(Core::CPUState, xmm.avx.data[16])) && \"Can't StoreContext to XMM\""
+        ]
+      },
+
       "SSA = LoadContextIndexed GPR:$Index, u8:#ByteSize, u32:$BaseOffset, u32:$Stride, RegisterClass:$Class": {
         "Desc": ["Loads a value from the context with offset and indexed by SSA value",
                  "Dest = Ctx[BaseOffset + Index * Stride]"
