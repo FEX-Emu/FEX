@@ -1580,8 +1580,8 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool I
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op. But it's
   // equivalent to mask to the actual size of the op, that way we can bound
-  // things tighter later in the function.
-  uint64_t Mask = Size - 1;
+  // things tighter for 8-bit later in the function.
+  uint64_t Mask = Size == 8 ? 7 : (Size == 64 ? 0x3F : 0x1F);
 
   Ref Src, UnmaskedSrc;
   if (Is1Bit || IsImmediate) {
@@ -1599,12 +1599,7 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool I
   if (Size < 32) {
     // ARM doesn't support 8/16bit rotates. Emulate with an insert
     // StoreResult truncates back to a 8/16 bit value
-    Dest = _Bfi(OpSize, Size, Size, Dest, Dest);
-
-    if (Size == 8 && Left) {
-      // For now, fill the the full 32bits to get the correct result.
-      Dest = _Bfi(OpSize, 16, 16, Dest, Dest);
-    }
+    Dest = _Bfi(OpSize, Size, Left ? (32 - Size) : Size, Dest, Dest);
   }
 
   // To rotate 64-bits left, right-rotate by (64 - Shift) = -Shift mod 64.
@@ -1628,9 +1623,11 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool I
     HandleNZCVWrite();
     RectifyCarryInvert(true);
 
-    // For flag calculation use the x86 style masking. Done implicitly for the
-    // immediate case as part of LoadConstantShift.
-    Src = _And(OpSize::i64Bit, UnmaskedSrc, _Constant(Size == 64 ? 0x3F : 0x1F));
+    // We deferred the masking for 8-bit to the flag section, do it here.
+    if (Size == 8) {
+      Src = _And(OpSize::i64Bit, UnmaskedSrc, _Constant(0x1F));
+    }
+
     _RotateFlags(OpSizeFromSrc(Op), Res, Src, Left);
   }
 }
