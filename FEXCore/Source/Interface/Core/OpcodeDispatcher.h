@@ -2389,7 +2389,7 @@ private:
     // Use ldp if possible, otherwise fallback on two loads. TODO: could use ldp in
     // more cases, see _StoreMemAutoTSO comment.
     signed OffsetEl = A.Offset / Size;
-    if (!AtomicTSO && !A.Index && !A.Segment && Size >= 4 & Size <= 16 && (A.Offset % Size) == 0 && OffsetEl >= -64 && OffsetEl < 64) {
+    if (!AtomicTSO && !A.Segment && Size >= 4 & Size <= 16) {
       RefPair Values {};
       if (Class == FPRClass) {
         Values.Low = _AllocateFPR(Size, Size);
@@ -2399,7 +2399,13 @@ private:
         Values.High = _AllocateGPR(false);
       }
 
-      _LoadMemPair(Class, Size, A.Base, A.Offset, Values.Low, Values.High);
+      bool Native = !A.Index && !A.Segment && Size >= 4 & Size <= 16 && (A.Offset % Size) == 0 && OffsetEl >= -64 && OffsetEl < 64;
+      if (Native) {
+        _LoadMemPair(Class, Size, A.Base, A.Offset, Values.Low, Values.High);
+      } else {
+        Ref Address = LoadEffectiveAddress(A, true, false);
+        _LoadMemPair(Class, Size, Address, 0, Values.Low, Values.High);
+      }
       return Values;
     } else {
       AddressMode HighA = A;
