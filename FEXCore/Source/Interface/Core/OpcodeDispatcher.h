@@ -2386,8 +2386,7 @@ private:
   RefPair _LoadMemPairAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, AddressMode A, uint8_t Align = 1) {
     bool AtomicTSO = CTX->IsAtomicTSOEnabled() && !A.NonTSO;
 
-    // Use ldp if possible, otherwise fallback on two loads. TODO: could use ldp in
-    // more cases, see _StoreMemAutoTSO comment.
+    // Use ldp if possible, otherwise fallback on two loads.
     if (!AtomicTSO && !A.Segment && Size >= 4 & Size <= 16) {
       RefPair Values {};
       if (Class == FPRClass) {
