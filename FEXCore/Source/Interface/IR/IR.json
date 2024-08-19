@@ -253,6 +253,11 @@
                  "If ForPair is set, RA will try to allocate the base of a register pair"],
         "DestSize": "8"
       },
+      "FPR = AllocateFPR u8:#RegisterSize, u8:#ElementSize": {
+        "Desc": ["Like AllocateGPR, but for FPR"],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
       "GPR = AllocateGPRAfter GPR:$After": {
         "Desc": ["Silly pseudo-instruction to allocate a register for a future destination",
                  "This is a kludge to deal with the IR's lack of multiple destinations",
