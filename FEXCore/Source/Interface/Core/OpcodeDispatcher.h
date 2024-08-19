@@ -2383,6 +2383,19 @@ private:
     }
   }
 
+  AddressMode SelectPairAddressMode(AddressMode A, uint8_t Size) {
+    AddressMode Out {};
+
+    signed OffsetEl = A.Offset / Size;
+    if ((A.Offset % Size) == 0 && OffsetEl >= -64 && OffsetEl < 64) {
+      Out.Offset = A.Offset;
+      A.Offset = 0;
+    }
+
+    Out.Base = LoadEffectiveAddress(A, true, false);
+    return Out;
+  }
+
   RefPair _LoadMemPairAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, AddressMode A, uint8_t Align = 1) {
     bool AtomicTSO = CTX->IsAtomicTSOEnabled() && !A.NonTSO;
 
@@ -2397,17 +2410,8 @@ private:
         Values.High = _AllocateGPR(false);
       }
 
-      signed OffsetEl = A.Offset / Size;
-      bool OffsetFits = (A.Offset % Size) == 0 && OffsetEl >= -64 && OffsetEl < 64;
-
-      signed Offset = 0;
-      if (OffsetFits) {
-        Offset = A.Offset;
-        A.Offset = 0;
-      }
-
-      Ref Address = LoadEffectiveAddress(A, true, false);
-      _LoadMemPair(Class, Size, Address, Offset, Values.Low, Values.High);
+      A = SelectPairAddressMode(A, Size);
+      _LoadMemPair(Class, Size, A.Base, A.Offset, Values.Low, Values.High);
       return Values;
     } else {
       AddressMode HighA = A;
@@ -2435,11 +2439,8 @@ private:
     bool AtomicTSO = CTX->IsAtomicTSOEnabled() && !A.NonTSO;
 
     // Use stp if possible, otherwise fallback on two stores.
-    //
-    // TODO: we could use stp in more cases if we eat an add before the
-    // instruction. We could also wire up stp for GPR TSO. Punting as we don't
-    // have use cases for either yet.
-    if (!AtomicTSO && !A.Index && !A.Segment && Size >= 4 & Size <= 16 && A.Offset <= 0x100) {
+    if (!AtomicTSO && !A.Segment && Size >= 4 & Size <= 16) {
+      A = SelectPairAddressMode(A, Size);
       _StoreMemPair(Class, Size, Value1, Value2, A.Base, A.Offset);
     } else {
       _StoreMemAutoTSO(Class, Size, A, Value1, 1);
