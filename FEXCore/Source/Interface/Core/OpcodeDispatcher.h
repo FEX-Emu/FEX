@@ -2394,6 +2394,23 @@ private:
     }
   }
 
+  void _StoreMemPairAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, AddressMode A, Ref Value1, Ref Value2, uint8_t Align = 1) {
+    bool AtomicTSO = CTX->IsAtomicTSOEnabled() && !A.NonTSO;
+
+    // Use stp if possible, otherwise fallback on two stores.
+    //
+    // TODO: we could use stp in more cases if we eat an add before the
+    // instruction. We could also wire up stp for GPR TSO. Punting as we don't
+    // have use cases for either yet.
+    if (!AtomicTSO && !A.Index && !A.Segment && Size >= 4 & Size <= 16 && A.Offset <= 0x100) {
+      _StoreMemPair(Class, Size, Value1, Value2, A.Base, A.Offset);
+    } else {
+      _StoreMemAutoTSO(Class, Size, A, Value1, 1);
+      A.Offset += Size;
+      _StoreMemAutoTSO(Class, Size, A, Value2, 1);
+    }
+  }
+
   Ref Prefetch(bool ForStore, bool Stream, uint8_t CacheLevel, Ref ssa0) {
     return _Prefetch(ForStore, Stream, CacheLevel, ssa0, Invalid(), MEM_OFFSET_SXTX, 1);
   }
