@@ -623,6 +623,32 @@ DEF_OP(LoadMem) {
   }
 }
 
+DEF_OP(LoadMemPair) {
+  const auto Op = IROp->C<IR::IROp_LoadMemPair>();
+  const auto Addr = GetReg(Op->Addr.ID());
+
+  if (Op->Class == FEXCore::IR::GPRClass) {
+    const auto Dst1 = GetReg(Op->OutValue1.ID());
+    const auto Dst2 = GetReg(Op->OutValue2.ID());
+
+    switch (IROp->Size) {
+    case 4: ldp<ARMEmitter::IndexType::OFFSET>(Dst1.W(), Dst2.W(), Addr, Op->Offset); break;
+    case 8: ldp<ARMEmitter::IndexType::OFFSET>(Dst1.X(), Dst2.X(), Addr, Op->Offset); break;
+    default: LOGMAN_MSG_A_FMT("Unhandled LoadMemPair size: {}", IROp->Size); break;
+    }
+  } else {
+    const auto Dst1 = GetVReg(Op->OutValue1.ID());
+    const auto Dst2 = GetVReg(Op->OutValue2.ID());
+
+    switch (IROp->Size) {
+    case 4: ldp<ARMEmitter::IndexType::OFFSET>(Dst1.S(), Dst2.S(), Addr, Op->Offset); break;
+    case 8: ldp<ARMEmitter::IndexType::OFFSET>(Dst1.D(), Dst2.D(), Addr, Op->Offset); break;
+    case 16: ldp<ARMEmitter::IndexType::OFFSET>(Dst1.Q(), Dst2.Q(), Addr, Op->Offset); break;
+    default: LOGMAN_MSG_A_FMT("Unhandled LoadMemPair size: {}", IROp->Size); break;
+    }
+  }
+}
+
 DEF_OP(LoadMemTSO) {
   const auto Op = IROp->C<IR::IROp_LoadMemTSO>();
   const auto OpSize = IROp->Size;
