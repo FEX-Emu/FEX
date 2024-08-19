@@ -906,12 +906,11 @@
       ]
     },
     "rol al, 2": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Comment": "GROUP2 0xC0 /0",
       "ExpectedArm64ASM": [
         "mov w20, w4",
-        "bfi w20, w4, #8, #8",
-        "bfi w20, w20, #16, #16",
+        "bfi w20, w4, #24, #8",
         "ror w20, w20, #30",
         "bfxil x4, x20, #0, #8",
         "eor x20, x20, #0x1",
@@ -1252,12 +1251,11 @@
       ]
     },
     "rol al, 1": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP2 0xd0 /0",
       "ExpectedArm64ASM": [
         "mov w20, w4",
-        "bfi w20, w4, #8, #8",
-        "bfi w20, w20, #16, #16",
+        "bfi w20, w4, #24, #8",
         "ror w20, w20, #31",
         "bfxil x4, x20, #0, #8",
         "eor x21, x20, #0x1",
@@ -1611,16 +1609,16 @@
       "ExpectedInstructionCount": 12,
       "Comment": "GROUP2 0xd2 /0",
       "ExpectedArm64ASM": [
-        "and x20, x5, #0x1f",
+        "and x20, x5, #0x7",
         "mov w21, w4",
-        "bfi w21, w4, #8, #8",
-        "bfi w21, w21, #16, #16",
-        "neg w22, w20",
-        "ror w21, w21, w22",
-        "bfxil x4, x21, #0, #8",
-        "cbz w20, #+0x14",
-        "eor x0, x21, x21, lsr #7",
-        "mvn x1, x21",
+        "bfi w21, w4, #24, #8",
+        "neg w20, w20",
+        "ror w20, w21, w20",
+        "bfxil x4, x20, #0, #8",
+        "and x21, x5, #0x1f",
+        "cbz w21, #+0x14",
+        "eor x0, x20, x20, lsr #7",
+        "mvn x1, x20",
         "rmif x1, #63, #nzCv",
         "rmif x0, #0, #nzcV"
       ]
@@ -1629,15 +1627,15 @@
       "ExpectedInstructionCount": 11,
       "Comment": "GROUP2 0xd2 /1",
       "ExpectedArm64ASM": [
-        "and x20, x5, #0x1f",
+        "and x20, x5, #0x7",
         "mov w21, w4",
         "bfi w21, w4, #8, #8",
-        "bfi w21, w21, #16, #16",
-        "ror w21, w21, w20",
-        "bfxil x4, x21, #0, #8",
-        "cbz w20, #+0x14",
-        "eor x0, x21, x21, lsr #1",
-        "mvn x1, x21",
+        "ror w20, w21, w20",
+        "bfxil x4, x20, #0, #8",
+        "and x21, x5, #0x1f",
+        "cbz w21, #+0x14",
+        "eor x0, x20, x20, lsr #1",
+        "mvn x1, x20",
         "rmif x1, #6, #nzCv",
         "rmif x0, #6, #nzcV"
       ]

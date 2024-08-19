@@ -367,7 +367,7 @@
       ]
     },
     "bytemark huffman 3": {
-      "ExpectedInstructionCount": 37,
+      "ExpectedInstructionCount": 36,
       "x86Insts": [
         "mov    ecx,eax",
         "and    cl,0x7",
@@ -402,10 +402,9 @@
         "mov w20, #0xfe",
         "bfxil x15, x20, #0, #8",
         "mov w5, w4",
-        "and x20, x5, #0x1f",
+        "and x20, x5, #0x7",
         "mov w21, w15",
-        "bfi w21, w15, #8, #8",
-        "bfi w21, w21, #16, #16",
+        "bfi w21, w15, #24, #8",
         "neg w20, w20",
         "ror w20, w21, w20",
         "bfxil x15, x20, #0, #8",
