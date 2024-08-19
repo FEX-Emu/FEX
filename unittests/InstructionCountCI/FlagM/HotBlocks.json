@@ -429,7 +429,7 @@
       ]
     },
     "0000000000169175 <__memcpy_avx_unaligned_erms+0x1f5>:": {
-      "ExpectedInstructionCount": 27,
+      "ExpectedInstructionCount": 26,
       "x86Insts": [
         "vmovdqu ymm5,yword [rsi+0x20]",
         "vmovdqu ymm6,yword [rsi+0x40]",
@@ -458,9 +458,8 @@
         "sub x20, x11, #0x81 (129)",
         "add x5, x20, x6",
         "ldp q23, q4, [x10, #96]",
-        "sub x20, x10, #0x20 (32)",
-        "add x20, x20, x6",
-        "ldp q24, q5, [x20]",
+        "add x20, x10, x6",
+        "ldp q24, q5, [x20, #-32]",
         "sub x10, x10, x11",
         "and x5, x5, #0xffffffffffffffe0",
         "add x10, x10, x5",
@@ -483,7 +482,7 @@
       ]
     },
     "00000000001690eb <__memcpy_avx_unaligned_erms+0x16b>:": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 31,
       "x86Insts": [
         "vmovdqu ymm5,yword [rsi+rdx*1-0x20]",
         "vmovdqu ymm6,yword [rsi+rdx*1-0x40]",
@@ -509,20 +508,16 @@
         "cmp    rdx,rdi"
       ],
       "ExpectedArm64ASM": [
-        "sub x20, x10, #0x20 (32)",
-        "add x20, x20, x6",
-        "ldp q21, q2, [x20]",
-        "sub x20, x10, #0x40 (64)",
-        "add x20, x20, x6",
-        "ldp q22, q3, [x20]",
+        "add x20, x10, x6",
+        "ldp q21, q2, [x20, #-32]",
+        "add x20, x10, x6",
+        "ldp q22, q3, [x20, #-64]",
         "mov x5, x11",
         "orr x11, x11, #0x1f",
-        "sub x20, x10, #0x60 (96)",
-        "add x20, x20, x6",
-        "ldp q23, q4, [x20]",
-        "sub x20, x10, #0x80 (128)",
-        "add x20, x20, x6",
-        "ldp q24, q5, [x20]",
+        "add x20, x10, x6",
+        "ldp q23, q4, [x20, #-96]",
+        "add x20, x10, x6",
+        "ldp q24, q5, [x20, #-128]",
         "sub x10, x10, x5",
         "add x11, x11, #0x1 (1)",
         "add x10, x10, x11",
