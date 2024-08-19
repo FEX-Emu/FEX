@@ -49,14 +49,14 @@ DLLEXPORT_FUNC(HANDLE, CreateFileW,
   UNICODE_STRING PathW;
   RtlInitUnicodeString(&PathW, lpFileName);
 
-  UNICODE_STRING NTPath;
-  if (!RtlDosPathNameToNtPathName_U(PathW.Buffer, &NTPath, nullptr, nullptr)) {
+  ScopedUnicodeString NTPath;
+  if (!RtlDosPathNameToNtPathName_U(PathW.Buffer, &*NTPath, nullptr, nullptr)) {
     SetLastError(ERROR_PATH_NOT_FOUND);
     return INVALID_HANDLE_VALUE;
   }
 
   OBJECT_ATTRIBUTES ObjAttributes;
-  InitializeObjectAttributes(&ObjAttributes, &NTPath, OBJ_CASE_INSENSITIVE, nullptr, nullptr);
+  InitializeObjectAttributes(&ObjAttributes, &*NTPath, OBJ_CASE_INSENSITIVE, nullptr, nullptr);
 
   HANDLE Handle;
   IO_STATUS_BLOCK IOSB;
@@ -156,7 +156,23 @@ DLLEXPORT_FUNC(WINBOOL, CreateDirectoryA, (LPCSTR lpPathName, LPSECURITY_ATTRIBU
 }
 
 DLLEXPORT_FUNC(WINBOOL, CreateDirectoryW, (LPCWSTR lpPathName, LPSECURITY_ATTRIBUTES lpSecurityAttributes)) {
-  UNIMPLEMENTED();
+  UNICODE_STRING PathW;
+  RtlInitUnicodeString(&PathW, lpPathName);
+
+  ScopedUnicodeString NTPath;
+  if (!RtlDosPathNameToNtPathName_U(PathW.Buffer, &*NTPath, nullptr, nullptr)) {
+    SetLastError(ERROR_PATH_NOT_FOUND);
+    return false;
+  }
+
+  OBJECT_ATTRIBUTES ObjAttributes;
+  InitializeObjectAttributes(&ObjAttributes, &*NTPath, OBJ_CASE_INSENSITIVE, nullptr, nullptr);
+
+  HANDLE Handle;
+  IO_STATUS_BLOCK IOSB;
+  NTSTATUS Status = NtCreateFile(&Handle, GENERIC_READ | SYNCHRONIZE, &ObjAttributes, &IOSB, nullptr, FILE_ATTRIBUTE_NORMAL,
+                                 FILE_SHARE_READ, FILE_CREATE, FILE_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT, nullptr, 0);
+  return WinAPIReturn(Status);
 }
 
 DLLEXPORT_FUNC(WINBOOL, GetFileInformationByHandle, (HANDLE hFile, LPBY_HANDLE_FILE_INFORMATION lpFileInformation)) {
