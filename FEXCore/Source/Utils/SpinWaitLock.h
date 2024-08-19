@@ -9,9 +9,12 @@ namespace FEXCore::Utils::SpinWaitLock {
  *
  * Spin-loops on mobile devices with a battery can be a bad idea as they burn a bunch of power. This attempts to mitigate some of the impact
  * by putting the CPU in to a lower-power state using WFE.
- * On platforms tested, WFE will put the CPU in to a lower power state for upwards of 52ns per WFE. Which isn't a significant amount of time
- * but should still have power savings. Ideally WFE would be able to keep the CPU in a lower power state for longer. This also has the added
- * benefit that atomics aren't abusing the caches when spinning on a cacheline, which has knock-on powersaving benefits.
+ * On platforms tested, WFE will put the CPU in to a lower power state for upwards of 0.11ms(!) per WFE. Which isn't a significant amount of
+ * time but should still have power savings. Ideally WFE would be able to keep the CPU in a lower power state for longer. This also has the
+ * added benefit that atomics aren't abusing the caches when spinning on a cacheline, which has knock-on powersaving benefits.
+ *
+ * This short timeout is because the Linux kernel has a 100 microsecond architecture timer which wakes up WFE and WFI. Nothing can be
+ * improved beyond that period.
  *
  * FEAT_WFxT adds a new instruction with a timeout, but since the spurious wake-up is so aggressive it isn't worth using.
  *
