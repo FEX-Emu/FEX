@@ -1268,7 +1268,23 @@ public:
       } else {
         bool Partial = RegCache.Partial & (1ull << Index);
         unsigned Size = Partial ? 8 : CacheIndexToSize(Index);
-        _StoreContext(Size, CacheIndexClass(Index), Value, CacheIndexToContextOffset(Index));
+        uint64_t NextBit = (1ull << (Index - 1));
+        uint32_t Offset = CacheIndexToContextOffset(Index);
+        auto Class = CacheIndexClass(Index);
+
+        // Use stp where possible to store multiple values at a time. This accelerates AVX.
+        // TODO: this is all really confusing because of backwards iteration,
+        // can we peel back that hack?
+        if ((Bits & NextBit) && !Partial && Size >= 4 && CacheIndexToContextOffset(Index - 1) == Offset - Size && (Offset - Size) / Size < 64) {
+          LOGMAN_THROW_A_FMT(CacheIndexClass(Index - 1) == Class, "construction");
+          LOGMAN_THROW_A_FMT((Offset % Size) == 0, "construction");
+          Ref ValueNext = RegCache.Value[Index - 1];
+
+          _StoreContextPair(Size, Class, ValueNext, Value, Offset - Size);
+          Bits &= ~NextBit;
+        } else {
+          _StoreContext(Size, Class, Value, Offset);
+        }
       }
 
       Bits &= ~(1ull << Index);
