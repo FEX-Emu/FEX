@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.14)
 project(host-thunks)
 include(${FEX_PROJECT_SOURCE_DIR}/CMakeFiles/version_to_variables.cmake)
+include(GNUInstallDirs)
 
 set(CMAKE_CXX_STANDARD 20)
-set (HOSTLIBS_DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/lib/fex-emu" CACHE PATH "global data directory")
+set (HOSTLIBS_DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/fex-emu" CACHE PATH "global data directory")
 option(ENABLE_CLANG_THUNKS "Enable building thunks with clang" FALSE)
 
 if (ENABLE_CLANG_THUNKS)

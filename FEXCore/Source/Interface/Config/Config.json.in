@@ -142,7 +142,7 @@
       },
       "ThunkHostLibs": {
         "Type": "str",
-        "Default": "@CMAKE_INSTALL_PREFIX@/lib/fex-emu/HostThunks/",
+        "Default": "@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@/fex-emu/HostThunks/",
         "ShortArg": "t",
         "Desc": [
           "Folder to find the host-side thunking libraries."
@@ -158,7 +158,7 @@
       },
       "ThunkHostLibs32": {
         "Type": "str",
-        "Default": "@CMAKE_INSTALL_PREFIX@/lib/fex-emu/HostThunks_32/",
+        "Default": "@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@/fex-emu/HostThunks_32/",
         "Desc": [
           "Folder to find the 32-bit host-side thunking libraries."
         ]
