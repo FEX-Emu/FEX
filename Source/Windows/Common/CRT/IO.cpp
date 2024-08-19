@@ -352,7 +352,15 @@ int getc(FILE* _File) {
   UNIMPLEMENTED();
 }
 
+void _lock_file(FILE* _File) {
+  UNIMPLEMENTED();
+}
+
 wint_t ungetwc(wint_t _Ch, FILE* _File) {
+  UNIMPLEMENTED();
+}
+
+void _unlock_file(FILE* _File) {
   UNIMPLEMENTED();
 }
 
