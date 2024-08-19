@@ -508,10 +508,11 @@ OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_LoadSource_WithOpSize(
       LOGMAN_THROW_AA_FMT(!IsVSIB, "VSIB uses LoadVSIB instead");
     }
 
-    return {
-      .Low = _LoadMemAutoTSO(FPRClass, 16, A, 1),
-      .High = NeedsHigh ? _LoadMemAutoTSO(FPRClass, 16, HighA, 1) : nullptr,
-    };
+    if (NeedsHigh) {
+      return _LoadMemPairAutoTSO(FPRClass, 16, A, 1);
+    } else {
+      return {.Low = _LoadMemAutoTSO(FPRClass, 16, A, 1)};
+    }
   }
 }
 
