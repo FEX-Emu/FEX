@@ -1576,21 +1576,22 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool I
 
   const uint32_t Size = GetSrcBitSize(Op);
   const auto OpSize = Size == 64 ? OpSize::i64Bit : OpSize::i32Bit;
+  uint64_t UnmaskedConst;
 
-  Ref Src;
+  // x86 masks the shift by 0x3F or 0x1F depending on size of op. But it's
+  // equivalent to mask to the actual size of the op, that way we can bound
+  // things tighter later in the function.
+  uint64_t Mask = Size - 1;
+
+  Ref Src, UnmaskedSrc;
   if (Is1Bit || IsImmediate) {
-    Src = _Constant(LoadConstantShift(Op, Is1Bit));
+    UnmaskedConst = LoadConstantShift(Op, Is1Bit);
+    UnmaskedSrc = _Constant(UnmaskedConst);
+    Src = _Constant(UnmaskedConst & Mask);
   } else {
-    // x86 masks the shift by 0x3F or 0x1F depending on size of op
-    const uint32_t Size = GetSrcBitSize(Op);
-    uint64_t Mask = Size == 64 ? 0x3F : 0x1F;
-
-    Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
-    Src = _And(OpSize::i64Bit, Src, _Constant(Mask));
+    UnmaskedSrc = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+    Src = _And(OpSize::i64Bit, UnmaskedSrc, _Constant(Mask));
   }
-
-  uint64_t Const;
-  bool IsConst = IsValueConstant(WrapNode(Src), &Const);
 
   // We fill the upper bits so we allow garbage on load.
   auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
@@ -1600,9 +1601,8 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool I
     // StoreResult truncates back to a 8/16 bit value
     Dest = _Bfi(OpSize, Size, Size, Dest, Dest);
 
-    if (Size == 8 && !(IsConst && Const < 8 && !Left)) {
-      // And because the shift size isn't masked to 8 bits, we need to fill the
-      // the full 32bits to get the correct result.
+    if (Size == 8 && Left) {
+      // For now, fill the the full 32bits to get the correct result.
       Dest = _Bfi(OpSize, 16, 16, Dest, Dest);
     }
   }
@@ -1611,15 +1611,15 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool I
   auto Res = _Ror(OpSize, Dest, Left ? _Neg(OpSize, Src) : Src);
   StoreResult(GPRClass, Op, Res, -1);
 
-  if (IsConst) {
-    if (Const) {
+  if (Is1Bit || IsImmediate) {
+    if (UnmaskedConst) {
       // Extract the last bit shifted in to CF
       SetCFDirect(Res, Left ? 0 : Size - 1, true);
 
       // For ROR, OF is the XOR of the new CF bit and the most significant bit of the result.
       // For ROL, OF is the LSB and MSB XOR'd together.
       // OF is architecturally only defined for 1-bit rotate.
-      if (Const == 1) {
+      if (UnmaskedConst == 1) {
         auto NewOF = _XorShift(OpSize, Res, Res, ShiftType::LSR, Left ? Size - 1 : 1);
         SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, Left ? 0 : Size - 2, true);
       }
@@ -1627,6 +1627,10 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool I
   } else {
     HandleNZCVWrite();
     RectifyCarryInvert(true);
+
+    // For flag calculation use the x86 style masking. Done implicitly for the
+    // immediate case as part of LoadConstantShift.
+    Src = _And(OpSize::i64Bit, UnmaskedSrc, _Constant(Size == 64 ? 0x3F : 0x1F));
     _RotateFlags(OpSizeFromSrc(Op), Res, Src, Left);
   }
 }
