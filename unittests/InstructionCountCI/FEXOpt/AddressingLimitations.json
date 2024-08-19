@@ -1052,6 +1052,59 @@
         "ldr x20, [x28, #960]",
         "ldur x7, [x20, #20]"
       ]
+    },
+    "vmovdqu ymm7,yword [rsi+0x60]": {
+      "ExpectedInstructionCount": 2,
+      "ExpectedArm64ASM": [
+        "ldp q23, q2, [x10, #96]",
+        "str q2, [x28, #128]"
+      ]
+    },
+    "vmovdqu ymm7,yword [rsi+0x120]": {
+      "ExpectedInstructionCount": 2,
+      "ExpectedArm64ASM": [
+        "ldp q23, q2, [x10, #288]",
+        "str q2, [x28, #128]"
+      ]
+    },
+    "vmovdqu ymm7,yword [rsi-0x60]": {
+      "ExpectedInstructionCount": 2,
+      "ExpectedArm64ASM": [
+        "ldp q23, q2, [x10, #-96]",
+        "str q2, [x28, #128]"
+      ]
+    },
+    "vmovdqu ymm7,yword [rsi-0x400]": {
+      "ExpectedInstructionCount": 2,
+      "ExpectedArm64ASM": [
+        "ldp q23, q2, [x10, #-1024]",
+        "str q2, [x28, #128]"
+      ]
+    },
+    "vmovdqu ymm7,yword [rsi-0x420]": {
+      "ExpectedInstructionCount": 5,
+      "ExpectedArm64ASM": [
+        "mov x20, #0xfffffffffffffbe0",
+        "ldr q23, [x10, x20, sxtx]",
+        "mov x20, #0xfffffffffffffbf0",
+        "ldr q2, [x10, x20, sxtx]",
+        "str q2, [x28, #128]"
+      ]
+    },
+    "vmovdqu ymm7,yword [rsi+0x3d0]": {
+      "ExpectedInstructionCount": 2,
+      "ExpectedArm64ASM": [
+        "ldp q23, q2, [x10, #976]",
+        "str q2, [x28, #128]"
+      ]
+    },
+    "vmovdqu ymm7,yword [rsi+0x400]": {
+      "ExpectedInstructionCount": 3,
+      "ExpectedArm64ASM": [
+        "ldr q23, [x10, #1024]",
+        "ldr q2, [x10, #1040]",
+        "str q2, [x28, #128]"
+      ]
     }
   }
 }
