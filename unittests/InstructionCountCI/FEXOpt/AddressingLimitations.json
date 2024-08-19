@@ -1104,9 +1104,12 @@
         "str q2, [x28, #128]"
       ]
     },
-            "vmovdqa yword [rcx+0x60],ymm1": {
-      "ExpectedInstructionCount": 3,
-      "ExpectedArm64ASM": []}
-
+    "vmovdqa yword [rcx+0x60],ymm1": {
+      "ExpectedInstructionCount": 2,
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
+        "stp q17, q2, [x5, #96]"
+      ]
+    }
   }
 }
