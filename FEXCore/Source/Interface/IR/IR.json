@@ -506,6 +506,19 @@
         ]
       },
 
+      "StoreMemPair RegisterClass:$Class, u8:#Size, SSA:$Value1, SSA:$Value2, GPR:$Addr, u32:$Offset": {
+        "Desc": [ "Stores a pair of values to memory.",
+                  "Zero Extends if value's type is too small",
+                  "Truncates if value's type is too large"
+                ],
+        "HasSideEffects": true,
+        "DestSize": "Size",
+        "EmitValidation": [
+          "WalkFindRegClass($Value1) == $Class",
+          "WalkFindRegClass($Value2) == $Class"
+        ]
+      },
+
       "SSA = LoadMemTSO RegisterClass:$Class, u8:#Size, GPR:$Addr, GPR:$Offset, u8:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale": {
         "Desc": ["Does a x86 TSO compatible load from memory. Offset must be Invalid()."
                 ],

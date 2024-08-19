@@ -1469,6 +1469,32 @@ DEF_OP(StoreMem) {
   }
 }
 
+DEF_OP(StoreMemPair) {
+  const auto Op = IROp->C<IR::IROp_StoreMemPair>();
+  const auto OpSize = IROp->Size;
+  const auto Addr = GetReg(Op->Addr.ID());
+
+  if (Op->Class == FEXCore::IR::GPRClass) {
+    const auto Src1 = GetReg(Op->Value1.ID());
+    const auto Src2 = GetReg(Op->Value2.ID());
+    switch (OpSize) {
+    case 4: stp<ARMEmitter::IndexType::OFFSET>(Src1.W(), Src2.W(), Addr, Op->Offset); break;
+    case 8: stp<ARMEmitter::IndexType::OFFSET>(Src1.X(), Src2.X(), Addr, Op->Offset); break;
+    default: LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", OpSize); break;
+    }
+  } else {
+    const auto Src1 = GetVReg(Op->Value1.ID());
+    const auto Src2 = GetVReg(Op->Value2.ID());
+
+    switch (OpSize) {
+    case 4: stp<ARMEmitter::IndexType::OFFSET>(Src1.S(), Src2.S(), Addr, Op->Offset); break;
+    case 8: stp<ARMEmitter::IndexType::OFFSET>(Src1.D(), Src2.D(), Addr, Op->Offset); break;
+    case 16: stp<ARMEmitter::IndexType::OFFSET>(Src1.Q(), Src2.Q(), Addr, Op->Offset); break;
+    default: LOGMAN_MSG_A_FMT("Unhandled StoreMemPair size: {}", OpSize); break;
+    }
+  }
+}
+
 DEF_OP(StoreMemTSO) {
   const auto Op = IROp->C<IR::IROp_StoreMemTSO>();
   const auto OpSize = IROp->Size;
