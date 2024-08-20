@@ -119,7 +119,6 @@ private:
   uint32_t Cores {};
   FEX_CONFIG_OPT(HideHypervisorBit, HIDEHYPERVISORBIT);
   FEX_CONFIG_OPT(SmallTSCScale, SMALLTSCSCALE);
-  FEX_CONFIG_OPT(MemcpySetTSOEnabled, MEMCPYSETTSOENABLED);
 
   // XFEATURE_ENABLED_MASK
   // Mask that configures what features are enabled on the CPU.
