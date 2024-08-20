@@ -2736,37 +2736,33 @@ void OpDispatchBuilder::SaveX87State(OpcodeArgs, Ref MemBase) {
   // MXCSR_MASK: Mask for writes to the MXCSR register
   // If OSFXSR bit in CR4 is not set than FXSAVE /may/ not save the XMM registers
   // This is implementation dependent
-  for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
-    Ref MMReg = LoadContext(MM0Index + i);
-
-    _StoreMem(FPRClass, 16, MMReg, MemBase, _Constant(i * 16 + 32), 16, MEM_OFFSET_SXTX, 1);
+  for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; i += 2) {
+    RefPair MMRegs = LoadContextPair(16, MM0Index + i);
+    _StoreMemPair(FPRClass, 16, MMRegs.Low, MMRegs.High, MemBase, i * 16 + 32);
   }
 }
 
 void OpDispatchBuilder::SaveSSEState(Ref MemBase) {
   const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
-  for (uint32_t i = 0; i < NumRegs; ++i) {
-    Ref XMMReg = LoadXMMRegister(i);
-
-    _StoreMem(FPRClass, 16, XMMReg, MemBase, _Constant(i * 16 + 160), 16, MEM_OFFSET_SXTX, 1);
+  for (uint32_t i = 0; i < NumRegs; i += 2) {
+    _StoreMemPair(FPRClass, 16, LoadXMMRegister(i), LoadXMMRegister(i + 1), MemBase, i * 16 + 160);
   }
 }
 
 void OpDispatchBuilder::SaveMXCSRState(Ref MemBase) {
-  _StoreMem(GPRClass, 4, GetMXCSR(), MemBase, _Constant(24), 4, MEM_OFFSET_SXTX, 1);
-
-  // Store the mask for all bits.
-  _StoreMem(GPRClass, 4, _Constant(0xFFFF), MemBase, _Constant(28), 4, MEM_OFFSET_SXTX, 1);
+  // Store MXCSR and the mask for all bits.
+  _StoreMemPair(GPRClass, 4, GetMXCSR(), _Constant(0xFFFF), MemBase, 24);
 }
 
 void OpDispatchBuilder::SaveAVXState(Ref MemBase) {
   const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
-  for (uint32_t i = 0; i < NumRegs; ++i) {
-    Ref Upper = _VDupElement(32, 16, LoadXMMRegister(i), 1);
+  for (uint32_t i = 0; i < NumRegs; i += 2) {
+    Ref Upper0 = _VDupElement(32, 16, LoadXMMRegister(i + 0), 1);
+    Ref Upper1 = _VDupElement(32, 16, LoadXMMRegister(i + 1), 1);
 
-    _StoreMem(FPRClass, 16, Upper, MemBase, _Constant(i * 16 + 576), 16, MEM_OFFSET_SXTX, 1);
+    _StoreMemPair(FPRClass, 16, Upper0, Upper1, MemBase, i * 16 + 576);
   }
 }
 
@@ -2868,18 +2864,22 @@ void OpDispatchBuilder::RestoreX87State(Ref MemBase) {
     StoreContext(AbridgedFTWIndex, _LoadMem(GPRClass, 1, MemBase, _Constant(4), 2, MEM_OFFSET_SXTX, 1));
   }
 
-  for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
-    auto MMReg = _LoadMem(FPRClass, 16, MemBase, _Constant(i * 16 + 32), 16, MEM_OFFSET_SXTX, 1);
-    StoreContext(MM0Index + i, MMReg);
+  for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; i += 2) {
+    auto MMRegs = LoadMemPair(FPRClass, 16, MemBase, i * 16 + 32);
+
+    StoreContext(MM0Index + i, MMRegs.Low);
+    StoreContext(MM0Index + i + 1, MMRegs.High);
   }
 }
 
 void OpDispatchBuilder::RestoreSSEState(Ref MemBase) {
   const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
-  for (uint32_t i = 0; i < NumRegs; ++i) {
-    Ref XMMReg = _LoadMem(FPRClass, 16, MemBase, _Constant(i * 16 + 160), 16, MEM_OFFSET_SXTX, 1);
-    StoreXMMRegister(i, XMMReg);
+  for (uint32_t i = 0; i < NumRegs; i += 2) {
+    auto XMMRegs = LoadMemPair(FPRClass, 16, MemBase, i * 16 + 160);
+
+    StoreXMMRegister(i, XMMRegs.Low);
+    StoreXMMRegister(i + 1, XMMRegs.High);
   }
 }
 
@@ -2896,11 +2896,12 @@ void OpDispatchBuilder::RestoreMXCSRState(Ref MXCSR) {
 void OpDispatchBuilder::RestoreAVXState(Ref MemBase) {
   const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
-  for (uint32_t i = 0; i < NumRegs; ++i) {
-    Ref XMMReg = LoadXMMRegister(i);
-    Ref YMMHReg = _LoadMem(FPRClass, 16, MemBase, _Constant(i * 16 + 576), 16, MEM_OFFSET_SXTX, 1);
-    Ref YMM = _VInsElement(32, 16, 1, 0, XMMReg, YMMHReg);
-    StoreXMMRegister(i, YMM);
+  for (uint32_t i = 0; i < NumRegs; i += 2) {
+    Ref XMMReg0 = LoadXMMRegister(i + 0);
+    Ref XMMReg1 = LoadXMMRegister(i + 1);
+    auto YMMHRegs = LoadMemPair(FPRClass, 16, MemBase, i * 16 + 576);
+    StoreXMMRegister(i + 0, _VInsElement(32, 16, 1, 0, XMMReg0, YMMHRegs.Low));
+    StoreXMMRegister(i + 1, _VInsElement(32, 16, 1, 0, XMMReg1, YMMHRegs.High));
   }
 }
 

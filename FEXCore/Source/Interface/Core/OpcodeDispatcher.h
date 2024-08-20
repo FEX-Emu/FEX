@@ -1268,7 +1268,23 @@ public:
       } else {
         bool Partial = RegCache.Partial & (1ull << Index);
         unsigned Size = Partial ? 8 : CacheIndexToSize(Index);
-        _StoreContext(Size, CacheIndexClass(Index), Value, CacheIndexToContextOffset(Index));
+        uint64_t NextBit = (1ull << (Index - 1));
+        uint32_t Offset = CacheIndexToContextOffset(Index);
+        auto Class = CacheIndexClass(Index);
+
+        // Use stp where possible to store multiple values at a time. This accelerates AVX.
+        // TODO: this is all really confusing because of backwards iteration,
+        // can we peel back that hack?
+        if ((Bits & NextBit) && !Partial && Size >= 4 && CacheIndexToContextOffset(Index - 1) == Offset - Size && (Offset - Size) / Size < 64) {
+          LOGMAN_THROW_A_FMT(CacheIndexClass(Index - 1) == Class, "construction");
+          LOGMAN_THROW_A_FMT((Offset % Size) == 0, "construction");
+          Ref ValueNext = RegCache.Value[Index - 1];
+
+          _StoreContextPair(Size, Class, ValueNext, Value, Offset - Size);
+          Bits &= ~NextBit;
+        } else {
+          _StoreContext(Size, Class, Value, Offset);
+        }
       }
 
       Bits &= ~(1ull << Index);
@@ -1901,12 +1917,53 @@ private:
     return RegCache.Value[Index];
   }
 
+  RefPair AllocatePair(FEXCore::IR::RegisterClassType Class, uint8_t Size) {
+    if (Class == FPRClass) {
+      return {_AllocateFPR(Size, Size), _AllocateFPR(Size, Size)};
+    } else {
+      return {_AllocateGPR(false), _AllocateGPR(false)};
+    }
+  }
+
+  RefPair LoadContextPair_Uncached(FEXCore::IR::RegisterClassType Class, uint8_t Size, unsigned Offset) {
+    RefPair Values = AllocatePair(Class, Size);
+    _LoadContextPair(Size, Class, Offset, Values.Low, Values.High);
+    return Values;
+  }
+
+  RefPair LoadRegCachePair(uint64_t Offset, uint8_t Index, RegisterClassType RegClass, uint8_t Size) {
+    LOGMAN_THROW_AA_FMT(Index != DFIndex, "must be pairable");
+
+    // Try to load a pair into the cache
+    uint64_t Bits = (3ull << (uint64_t)Index);
+    if (((RegCache.Partial | RegCache.Cached) & Bits) == 0 && ((Offset / Size) < 64)) {
+      auto Values = LoadContextPair_Uncached(RegClass, Size, Offset);
+      RegCache.Value[Index] = Values.Low;
+      RegCache.Value[Index + 1] = Values.High;
+      RegCache.Cached |= Bits;
+      if (Size == 8) {
+        RegCache.Partial |= Bits;
+      }
+      return Values;
+    }
+
+    // Fallback on a pair of loads
+    return {
+      .Low = LoadRegCache(Offset, Index, RegClass, Size),
+      .High = LoadRegCache(Offset + Size, Index + 1, RegClass, Size),
+    };
+  }
+
   Ref LoadGPR(uint8_t Reg) {
     return LoadRegCache(Reg, GPR0Index + Reg, GPRClass, CTX->GetGPRSize());
   }
 
   Ref LoadContext(uint8_t Size, uint8_t Index) {
     return LoadRegCache(CacheIndexToContextOffset(Index), Index, CacheIndexClass(Index), Size);
+  }
+
+  RefPair LoadContextPair(uint8_t Size, uint8_t Index) {
+    return LoadRegCachePair(CacheIndexToContextOffset(Index), Index, CacheIndexClass(Index), Size);
   }
 
   Ref LoadContext(uint8_t Index) {
@@ -2342,7 +2399,7 @@ private:
   IROp_IRHeader* CurrentHeader {};
 
   Ref _StoreMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, Ref Addr, Ref Value, uint8_t Align = 1) {
-    if (CTX->IsAtomicTSOEnabled()) {
+    if (Class == FPRClass ? CTX->IsVectorAtomicTSOEnabled() : CTX->IsAtomicTSOEnabled()) {
       return _StoreMemTSO(Class, Size, Value, Addr, Invalid(), Align, MEM_OFFSET_SXTX, 1);
     } else {
       return _StoreMem(Class, Size, Value, Addr, Invalid(), Align, MEM_OFFSET_SXTX, 1);
@@ -2350,7 +2407,7 @@ private:
   }
 
   Ref _LoadMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, Ref ssa0, uint8_t Align = 1) {
-    if (CTX->IsAtomicTSOEnabled()) {
+    if (Class == FPRClass ? CTX->IsVectorAtomicTSOEnabled() : CTX->IsAtomicTSOEnabled()) {
       return _LoadMemTSO(Class, Size, ssa0, Invalid(), Align, MEM_OFFSET_SXTX, 1);
     } else {
       return _LoadMem(Class, Size, ssa0, Invalid(), Align, MEM_OFFSET_SXTX, 1);
@@ -2368,6 +2425,44 @@ private:
     }
   }
 
+  AddressMode SelectPairAddressMode(AddressMode A, uint8_t Size) {
+    AddressMode Out {};
+
+    signed OffsetEl = A.Offset / Size;
+    if ((A.Offset % Size) == 0 && OffsetEl >= -64 && OffsetEl < 64) {
+      Out.Offset = A.Offset;
+      A.Offset = 0;
+    }
+
+    Out.Base = LoadEffectiveAddress(A, true, false);
+    return Out;
+  }
+
+
+  RefPair LoadMemPair(FEXCore::IR::RegisterClassType Class, uint8_t Size, Ref Base, unsigned Offset) {
+    RefPair Values = AllocatePair(Class, Size);
+    _LoadMemPair(Class, Size, Base, Offset, Values.Low, Values.High);
+    return Values;
+  }
+
+  RefPair _LoadMemPairAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, AddressMode A, uint8_t Align = 1) {
+    bool AtomicTSO = CTX->IsAtomicTSOEnabled() && !A.NonTSO;
+
+    // Use ldp if possible, otherwise fallback on two loads.
+    if (!AtomicTSO && !A.Segment && Size >= 4 & Size <= 16) {
+      A = SelectPairAddressMode(A, Size);
+      return LoadMemPair(Class, Size, A.Base, A.Offset);
+    } else {
+      AddressMode HighA = A;
+      HighA.Offset += 16;
+
+      return {
+        .Low = _LoadMemAutoTSO(Class, Size, A, Align),
+        .High = _LoadMemAutoTSO(Class, Size, HighA, Align),
+      };
+    }
+  }
+
   Ref _StoreMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, AddressMode A, Ref Value, uint8_t Align = 1) {
     bool AtomicTSO = CTX->IsAtomicTSOEnabled() && !A.NonTSO;
     A = SelectAddressMode(A, AtomicTSO, Class != GPRClass, Size);
@@ -2376,6 +2471,20 @@ private:
       return _StoreMemTSO(Class, Size, Value, A.Base, A.Index, Align, A.IndexType, A.IndexScale);
     } else {
       return _StoreMem(Class, Size, Value, A.Base, A.Index, Align, A.IndexType, A.IndexScale);
+    }
+  }
+
+  void _StoreMemPairAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, AddressMode A, Ref Value1, Ref Value2, uint8_t Align = 1) {
+    bool AtomicTSO = CTX->IsAtomicTSOEnabled() && !A.NonTSO;
+
+    // Use stp if possible, otherwise fallback on two stores.
+    if (!AtomicTSO && !A.Segment && Size >= 4 & Size <= 16) {
+      A = SelectPairAddressMode(A, Size);
+      _StoreMemPair(Class, Size, Value1, Value2, A.Base, A.Offset);
+    } else {
+      _StoreMemAutoTSO(Class, Size, A, Value1, 1);
+      A.Offset += Size;
+      _StoreMemAutoTSO(Class, Size, A, Value2, 1);
     }
   }
 

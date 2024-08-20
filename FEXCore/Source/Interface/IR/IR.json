@@ -253,6 +253,11 @@
                  "If ForPair is set, RA will try to allocate the base of a register pair"],
         "DestSize": "8"
       },
+      "FPR = AllocateFPR u8:#RegisterSize, u8:#ElementSize": {
+        "Desc": ["Like AllocateGPR, but for FPR"],
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
       "GPR = AllocateGPRAfter GPR:$After": {
         "Desc": ["Silly pseudo-instruction to allocate a register for a future destination",
                  "This is a kludge to deal with the IR's lack of multiple destinations",
@@ -386,6 +391,20 @@
         ]
       },
 
+      "SSA:$Value1, SSA:$Value2 = LoadContextPair u8:#ByteSize, RegisterClass:$Class, u32:$Offset": {
+        "Desc": ["Loads a pair of values from the context with offset",
+                 "Value0 = Ctx[Offset], Value1 = Ctx[Offset + ByteSize]"
+                ],
+        "HasSideEffects": true,
+        "DestSize": "ByteSize",
+        "EmitValidation": [
+          "($Class == GPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8)) || $Class == FPRClass",
+          "($Class == FPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8 || #ByteSize == 16 || #ByteSize == 32)) || $Class == GPRClass",
+          "!($Offset >= offsetof(Core::CPUState, gregs[0]) && $Offset < offsetof(Core::CPUState, gregs[16])) && \"Can't LoadContext to GPR\"",
+          "!($Offset >= offsetof(Core::CPUState, xmm.avx.data[0]) && $Offset < offsetof(Core::CPUState, xmm.avx.data[16])) && \"Can't LoadContext to XMM\""
+        ]
+      },
+
       "StoreContext u8:#ByteSize, RegisterClass:$Class, SSA:$Value, u32:$Offset": {
         "Desc": ["Stores a value to the context with offset",
                  "Ctx[Offset] = Value",
@@ -396,6 +415,24 @@
         "DestSize": "ByteSize",
         "EmitValidation": [
           "WalkFindRegClass($Value) == $Class",
+          "($Class == GPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8)) || $Class == FPRClass",
+          "($Class == FPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8 || #ByteSize == 16 || #ByteSize == 32)) || $Class == GPRClass",
+          "!($Offset >= offsetof(Core::CPUState, gregs[0]) && $Offset < offsetof(Core::CPUState, gregs[16])) && \"Can't StoreContext to GPR\"",
+          "!($Offset >= offsetof(Core::CPUState, xmm.avx.data[0]) && $Offset < offsetof(Core::CPUState, xmm.avx.data[16])) && \"Can't StoreContext to XMM\""
+        ]
+      },
+
+      "StoreContextPair u8:#ByteSize, RegisterClass:$Class, SSA:$Value1, SSA:$Value2, u32:$Offset": {
+        "Desc": ["Stores a pair of values to the context with offset",
+                 "Ctx[Offset] = Value1, Ctx[Offset + ByteSize] = Value2",
+                 "Zero Extends if value's type is too small",
+                 "Truncates if value's type is too large"
+                ],
+        "HasSideEffects": true,
+        "DestSize": "ByteSize",
+        "EmitValidation": [
+          "WalkFindRegClass($Value1) == $Class",
+          "WalkFindRegClass($Value2) == $Class",
           "($Class == GPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8)) || $Class == FPRClass",
           "($Class == FPRClass && (#ByteSize == 1 || #ByteSize == 2 || #ByteSize == 4 || #ByteSize == 8 || #ByteSize == 16 || #ByteSize == 32)) || $Class == GPRClass",
           "!($Offset >= offsetof(Core::CPUState, gregs[0]) && $Offset < offsetof(Core::CPUState, gregs[16])) && \"Can't StoreContext to GPR\"",
@@ -476,6 +513,12 @@
         "DestSize": "Size"
       },
 
+      "SSA:$Value1, SSA:$Value2 = LoadMemPair RegisterClass:$Class, u8:#Size, GPR:$Addr, u32:$Offset": {
+        "Desc": ["Load a pair of values from memory."],
+        "DestSize": "Size",
+        "HasSideEffects": true
+      },
+
       "StoreMem RegisterClass:$Class, u8:#Size, SSA:$Value, GPR:$Addr, GPR:$Offset, u8:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale": {
         "Desc": [ "Stores a value to memory.",
                   "Zero Extends if value's type is too small",
@@ -485,6 +528,19 @@
         "DestSize": "Size",
         "EmitValidation": [
           "WalkFindRegClass($Value) == $Class"
+        ]
+      },
+
+      "StoreMemPair RegisterClass:$Class, u8:#Size, SSA:$Value1, SSA:$Value2, GPR:$Addr, u32:$Offset": {
+        "Desc": [ "Stores a pair of values to memory.",
+                  "Zero Extends if value's type is too small",
+                  "Truncates if value's type is too large"
+                ],
+        "HasSideEffects": true,
+        "DestSize": "Size",
+        "EmitValidation": [
+          "WalkFindRegClass($Value1) == $Class",
+          "WalkFindRegClass($Value2) == $Class"
         ]
       },
 

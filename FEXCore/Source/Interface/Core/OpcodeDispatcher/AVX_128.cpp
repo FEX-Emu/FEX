@@ -508,10 +508,11 @@ OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_LoadSource_WithOpSize(
       LOGMAN_THROW_AA_FMT(!IsVSIB, "VSIB uses LoadVSIB instead");
     }
 
-    return {
-      .Low = _LoadMemAutoTSO(FPRClass, 16, A, 1),
-      .High = NeedsHigh ? _LoadMemAutoTSO(FPRClass, 16, HighA, 1) : nullptr,
-    };
+    if (NeedsHigh) {
+      return _LoadMemPairAutoTSO(FPRClass, 16, A, 1);
+    } else {
+      return {.Low = _LoadMemAutoTSO(FPRClass, 16, A, 1)};
+    }
   }
 }
 
@@ -557,13 +558,10 @@ void OpDispatchBuilder::AVX128_StoreResult_WithOpSize(FEXCore::X86Tables::Decode
   } else {
     AddressMode A = DecodeAddress(Op, Operand, AccessType, false /* IsLoad */);
 
-    _StoreMemAutoTSO(FPRClass, 16, A, Src.Low, 1);
-
     if (Src.High) {
-      AddressMode HighA = A;
-      HighA.Offset += 16;
-
-      _StoreMemAutoTSO(FPRClass, 16, HighA, Src.High, 1);
+      _StoreMemPairAutoTSO(FPRClass, 16, A, Src.Low, Src.High, 1);
+    } else {
+      _StoreMemAutoTSO(FPRClass, 16, A, Src.Low, 1);
     }
   }
 }
@@ -2173,18 +2171,20 @@ void OpDispatchBuilder::AVX128_VectorVariableBlend(OpcodeArgs) {
 void OpDispatchBuilder::AVX128_SaveAVXState(Ref MemBase) {
   const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
-  for (uint32_t i = 0; i < NumRegs; ++i) {
-    Ref Upper = AVX128_LoadXMMRegister(i, true);
-    _StoreMem(FPRClass, 16, Upper, MemBase, _Constant(i * 16 + 576), 16, MEM_OFFSET_SXTX, 1);
+  for (uint32_t i = 0; i < NumRegs; i += 2) {
+    RefPair Pair = LoadContextPair(16, AVXHigh0Index + i);
+    _StoreMemPair(FPRClass, 16, Pair.Low, Pair.High, MemBase, i * 16 + 576);
   }
 }
 
 void OpDispatchBuilder::AVX128_RestoreAVXState(Ref MemBase) {
   const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
-  for (uint32_t i = 0; i < NumRegs; ++i) {
-    Ref YMMHReg = _LoadMem(FPRClass, 16, MemBase, _Constant(i * 16 + 576), 16, MEM_OFFSET_SXTX, 1);
-    AVX128_StoreXMMRegister(i, YMMHReg, true);
+  for (uint32_t i = 0; i < NumRegs; i += 2) {
+    auto YMMHRegs = LoadMemPair(FPRClass, 16, MemBase, i * 16 + 576);
+
+    AVX128_StoreXMMRegister(i, YMMHRegs.Low, true);
+    AVX128_StoreXMMRegister(i + 1, YMMHRegs.High, true);
   }
 }
 
