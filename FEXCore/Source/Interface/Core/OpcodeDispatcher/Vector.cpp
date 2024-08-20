@@ -2867,9 +2867,11 @@ void OpDispatchBuilder::RestoreX87State(Ref MemBase) {
     StoreContext(AbridgedFTWIndex, _LoadMem(GPRClass, 1, MemBase, _Constant(4), 2, MEM_OFFSET_SXTX, 1));
   }
 
-  for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
-    auto MMReg = _LoadMem(FPRClass, 16, MemBase, _Constant(i * 16 + 32), 16, MEM_OFFSET_SXTX, 1);
-    StoreContext(MM0Index + i, MMReg);
+  for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; i += 2) {
+    auto MMRegs = LoadMemPair(FPRClass, 16, MemBase, i * 16 + 32);
+
+    StoreContext(MM0Index + i, MMRegs.Low);
+    StoreContext(MM0Index + i + 1, MMRegs.High);
   }
 }
 
