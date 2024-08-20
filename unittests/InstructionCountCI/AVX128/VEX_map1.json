@@ -46,13 +46,12 @@
       ]
     },
     "vmovups ymm0, [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "Map 1 0b00 0x10 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x4]",
-        "ldr q2, [x4, #16]",
+        "ldp q16, q2, [x4]",
         "str q2, [x28, #16]"
       ]
     },
@@ -89,13 +88,12 @@
       ]
     },
     "vmovupd ymm0, [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "Map 1 0b01 0x10 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x4]",
-        "ldr q2, [x4, #16]",
+        "ldp q16, q2, [x4]",
         "str q2, [x28, #16]"
       ]
     },
@@ -156,14 +154,13 @@
       ]
     },
     "vmovups [rax], ymm0": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "Map 1 0b00 0x11 256-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #16]",
-        "str q16, [x4]",
-        "str q2, [x4, #16]"
+        "stp q16, q2, [x4]"
       ]
     },
     "vmovupd [rax], xmm0": {
@@ -176,14 +173,13 @@
       ]
     },
     "vmovupd [rax], ymm0": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "Map 1 0b01 0x11 256-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #16]",
-        "str q16, [x4]",
-        "str q2, [x4, #16]"
+        "stp q16, q2, [x4]"
       ]
     },
     "vmovss [rax], xmm0": {
@@ -272,13 +268,12 @@
       ]
     },
     "vmovsldup ymm0, [rax]": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map 1 0b10 0x12 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x4]",
-        "ldr q3, [x4, #16]",
+        "ldp q2, q3, [x4]",
         "trn1 v16.4s, v2.4s, v2.4s",
         "trn1 v2.4s, v3.4s, v3.4s",
         "str q2, [x28, #16]"
@@ -297,13 +292,12 @@
       ]
     },
     "vmovddup ymm0, [rax]": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map 1 0b11 0x12 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x4]",
-        "ldr q3, [x4, #16]",
+        "ldp q2, q3, [x4]",
         "dup v16.2d, v2.d[0]",
         "dup v2.2d, v3.d[0]",
         "str q2, [x28, #16]"
@@ -340,14 +334,13 @@
       ]
     },
     "vunpcklps ymm0, ymm1, [rax]": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "Map 1 0b00 0x14 256-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
-        "ldr q3, [x4]",
-        "ldr q4, [x4, #16]",
+        "ldp q3, q4, [x4]",
         "zip1 v16.4s, v17.4s, v3.4s",
         "zip1 v2.4s, v2.4s, v4.4s",
         "str q2, [x28, #16]"
@@ -366,14 +359,13 @@
       ]
     },
     "vunpcklpd ymm0, ymm1, [rax]": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "Map 1 0b01 0x14 256-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
-        "ldr q3, [x4]",
-        "ldr q4, [x4, #16]",
+        "ldp q3, q4, [x4]",
         "zip1 v16.2d, v17.2d, v3.2d",
         "zip1 v2.2d, v2.2d, v4.2d",
         "str q2, [x28, #16]"
@@ -392,14 +384,13 @@
       ]
     },
     "vunpckhps ymm0, ymm1, [rax]": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "Map 1 0b00 0x15 256-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
-        "ldr q3, [x4]",
-        "ldr q4, [x4, #16]",
+        "ldp q3, q4, [x4]",
         "zip2 v16.4s, v17.4s, v3.4s",
         "zip2 v2.4s, v2.4s, v4.4s",
         "str q2, [x28, #16]"
@@ -418,14 +409,13 @@
       ]
     },
     "vunpckhpd ymm0, ymm1, [rax]": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "Map 1 0b01 0x15 256-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
-        "ldr q3, [x4]",
-        "ldr q4, [x4, #16]",
+        "ldp q3, q4, [x4]",
         "zip2 v16.2d, v17.2d, v3.2d",
         "zip2 v2.2d, v2.2d, v4.2d",
         "str q2, [x28, #16]"
@@ -479,13 +469,12 @@
       ]
     },
     "vmovshdup ymm0, [rax]": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map 1 0b10 0x16 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x4]",
-        "ldr q3, [x4, #16]",
+        "ldp q2, q3, [x4]",
         "trn2 v16.4s, v2.4s, v2.4s",
         "trn2 v2.4s, v3.4s, v3.4s",
         "str q2, [x28, #16]"
@@ -1634,33 +1623,25 @@
       ]
     },
     "vzeroupper": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 9,
       "Comment": [
         "Might be able to use DZ ZVA",
         "Map 1 0b01 0x77 L=0"
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
-        "str q2, [x28, #256]",
-        "str q2, [x28, #240]",
-        "str q2, [x28, #224]",
-        "str q2, [x28, #208]",
-        "str q2, [x28, #192]",
-        "str q2, [x28, #176]",
-        "str q2, [x28, #160]",
-        "str q2, [x28, #144]",
-        "str q2, [x28, #128]",
-        "str q2, [x28, #112]",
-        "str q2, [x28, #96]",
-        "str q2, [x28, #80]",
-        "str q2, [x28, #64]",
-        "str q2, [x28, #48]",
-        "str q2, [x28, #32]",
-        "str q2, [x28, #16]"
+        "stp q2, q2, [x28, #240]",
+        "stp q2, q2, [x28, #208]",
+        "stp q2, q2, [x28, #176]",
+        "stp q2, q2, [x28, #144]",
+        "stp q2, q2, [x28, #112]",
+        "stp q2, q2, [x28, #80]",
+        "stp q2, q2, [x28, #48]",
+        "stp q2, q2, [x28, #16]"
       ]
     },
     "vzeroall": {
-      "ExpectedInstructionCount": 32,
+      "ExpectedInstructionCount": 24,
       "Comment": [
         "Might be able to use DZ ZVA",
         "Map 1 0b01 0x77 L=1"
@@ -1682,22 +1663,14 @@
         "movi v29.2d, #0x0",
         "movi v30.2d, #0x0",
         "movi v31.2d, #0x0",
-        "str q31, [x28, #256]",
-        "str q31, [x28, #240]",
-        "str q31, [x28, #224]",
-        "str q31, [x28, #208]",
-        "str q31, [x28, #192]",
-        "str q31, [x28, #176]",
-        "str q31, [x28, #160]",
-        "str q31, [x28, #144]",
-        "str q31, [x28, #128]",
-        "str q31, [x28, #112]",
-        "str q31, [x28, #96]",
-        "str q31, [x28, #80]",
-        "str q31, [x28, #64]",
-        "str q31, [x28, #48]",
-        "str q31, [x28, #32]",
-        "str q31, [x28, #16]"
+        "stp q31, q31, [x28, #240]",
+        "stp q31, q31, [x28, #208]",
+        "stp q31, q31, [x28, #176]",
+        "stp q31, q31, [x28, #144]",
+        "stp q31, q31, [x28, #112]",
+        "stp q31, q31, [x28, #80]",
+        "stp q31, q31, [x28, #48]",
+        "stp q31, q31, [x28, #16]"
       ]
     },
     "vcmpps xmm0, xmm1, xmm2, 0x00": {
@@ -2631,13 +2604,12 @@
       ]
     },
     "vmovaps ymm0, [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "Map 1 0b00 0x28 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x4]",
-        "ldr q2, [x4, #16]",
+        "ldp q16, q2, [x4]",
         "str q2, [x28, #16]"
       ]
     },
@@ -2675,13 +2647,12 @@
       ]
     },
     "vmovapd ymm0, [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "Map 1 0b01 0x28 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x4]",
-        "ldr q2, [x4, #16]",
+        "ldp q16, q2, [x4]",
         "str q2, [x28, #16]"
       ]
     },
@@ -2717,14 +2688,13 @@
       ]
     },
     "vmovaps [rax], ymm0": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "Map 1 0b00 0x29 256-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #16]",
-        "str q16, [x4]",
-        "str q2, [x4, #16]"
+        "stp q16, q2, [x4]"
       ]
     },
     "vmovapd [rax], xmm0": {
@@ -2737,14 +2707,13 @@
       ]
     },
     "vmovapd [rax], ymm0": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "Map 1 0b01 0x29 256-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #16]",
-        "str q16, [x4]",
-        "str q2, [x4, #16]"
+        "stp q16, q2, [x4]"
       ]
     },
     "vcvtsi2ss xmm0, xmm1, eax": {
@@ -3161,13 +3130,12 @@
       ]
     },
     "vcvtpd2ps xmm0, yword [rax]": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "Map 1 0b01 0x5a 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x4]",
-        "ldr q3, [x4, #16]",
+        "ldp q2, q3, [x4]",
         "fcvtn v2.2s, v2.2d",
         "fcvtn v3.2s, v3.2d",
         "mov v16.16b, v2.16b",
@@ -4005,47 +3973,43 @@
       ]
     },
     "vmovdqa ymm0, [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "Map 1 0b01 0x7f 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x4]",
-        "ldr q2, [x4, #16]",
+        "ldp q16, q2, [x4]",
         "str q2, [x28, #16]"
       ]
     },
     "vmovdqa [rax], ymm0": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "Map 1 0b01 0x7f 128-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #16]",
-        "str q16, [x4]",
-        "str q2, [x4, #16]"
+        "stp q16, q2, [x4]"
       ]
     },
     "vmovdqu ymm0, [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "Map 1 0b10 0x7f 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x4]",
-        "ldr q2, [x4, #16]",
+        "ldp q16, q2, [x4]",
         "str q2, [x28, #16]"
       ]
     },
     "vmovdqu [rax], ymm0": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "Map 1 0b10 0x7f 128-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #16]",
-        "str q16, [x4]",
-        "str q2, [x4, #16]"
+        "stp q16, q2, [x4]"
       ]
     },
     "vaddsubpd xmm0, xmm1, xmm2": {
@@ -5178,13 +5142,12 @@
       ]
     },
     "vlddqu ymm0, [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "Map 1 0b11 0xf0 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q16, [x4]",
-        "ldr q2, [x4, #16]",
+        "ldp q16, q2, [x4]",
         "str q2, [x28, #16]"
       ]
     },
