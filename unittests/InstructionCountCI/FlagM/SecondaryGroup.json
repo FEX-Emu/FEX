@@ -517,59 +517,53 @@
       ]
     },
     "btc ax, 0": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP8 0x0F 0xBA /7",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x1",
-        "rmif x20, #63, #nzCv",
         "eor w20, w4, #0x1",
+        "rmif x20, #63, #nzCv",
         "bfxil x4, x20, #0, #16"
       ]
     },
     "btc eax, 0": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": "GROUP8 0x0F 0xBA /7",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x1",
-        "rmif x20, #63, #nzCv",
-        "eor w4, w4, #0x1"
+        "eor w4, w4, #0x1",
+        "rmif x4, #63, #nzCv"
       ]
     },
     "btc rax, 0": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": "GROUP8 0x0F 0xBA /7",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x1",
-        "rmif x20, #63, #nzCv",
-        "eor x4, x4, #0x1"
+        "eor x4, x4, #0x1",
+        "rmif x4, #63, #nzCv"
       ]
     },
     "btc ax, 15": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP8 0x0F 0xBA /7",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x8000",
-        "rmif x20, #14, #nzCv",
         "eor w20, w4, #0x8000",
+        "rmif x20, #14, #nzCv",
         "bfxil x4, x20, #0, #16"
       ]
     },
     "btc eax, 31": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": "GROUP8 0x0F 0xBA /7",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x80000000",
-        "rmif x20, #30, #nzCv",
-        "eor w4, w4, #0x80000000"
+        "eor w4, w4, #0x80000000",
+        "rmif x4, #30, #nzCv"
       ]
     },
     "btc rax, 63": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": "GROUP8 0x0F 0xBA /7",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x8000000000000000",
-        "rmif x20, #62, #nzCv",
-        "eor x4, x4, #0x8000000000000000"
+        "eor x4, x4, #0x8000000000000000",
+        "rmif x4, #62, #nzCv"
       ]
     },
     "btc word [rax], 0": {

@@ -613,70 +613,64 @@
       ]
     },
     "btc ax, 0": {
-      "ExpectedInstructionCount": 6,
-      "Comment": "GROUP8 0x0F 0xBA /7",
-      "ExpectedArm64ASM": [
-        "eor x20, x4, #0x1",
-        "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "eor w21, w4, #0x1",
-        "bfxil x4, x21, #0, #16",
-        "msr nzcv, x20"
-      ]
-    },
-    "btc eax, 0": {
       "ExpectedInstructionCount": 5,
       "Comment": "GROUP8 0x0F 0xBA /7",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x1",
-        "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
+        "eor w20, w4, #0x1",
+        "ubfx x21, x20, #0, #1",
+        "lsl x21, x21, #29",
+        "bfxil x4, x20, #0, #16",
+        "msr nzcv, x21"
+      ]
+    },
+    "btc eax, 0": {
+      "ExpectedInstructionCount": 4,
+      "Comment": "GROUP8 0x0F 0xBA /7",
+      "ExpectedArm64ASM": [
         "eor w4, w4, #0x1",
+        "ubfx x20, x4, #0, #1",
+        "lsl x20, x20, #29",
         "msr nzcv, x20"
       ]
     },
     "btc rax, 0": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": "GROUP8 0x0F 0xBA /7",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x1",
-        "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
         "eor x4, x4, #0x1",
+        "ubfx x20, x4, #0, #1",
+        "lsl x20, x20, #29",
         "msr nzcv, x20"
       ]
     },
     "btc ax, 15": {
-      "ExpectedInstructionCount": 6,
-      "Comment": "GROUP8 0x0F 0xBA /7",
-      "ExpectedArm64ASM": [
-        "eor x20, x4, #0x8000",
-        "ubfx x20, x20, #15, #1",
-        "lsl x20, x20, #29",
-        "eor w21, w4, #0x8000",
-        "bfxil x4, x21, #0, #16",
-        "msr nzcv, x20"
-      ]
-    },
-    "btc eax, 31": {
       "ExpectedInstructionCount": 5,
       "Comment": "GROUP8 0x0F 0xBA /7",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x80000000",
-        "ubfx x20, x20, #31, #1",
-        "lsl x20, x20, #29",
+        "eor w20, w4, #0x8000",
+        "ubfx x21, x20, #15, #1",
+        "lsl x21, x21, #29",
+        "bfxil x4, x20, #0, #16",
+        "msr nzcv, x21"
+      ]
+    },
+    "btc eax, 31": {
+      "ExpectedInstructionCount": 4,
+      "Comment": "GROUP8 0x0F 0xBA /7",
+      "ExpectedArm64ASM": [
         "eor w4, w4, #0x80000000",
+        "ubfx x20, x4, #31, #1",
+        "lsl x20, x20, #29",
         "msr nzcv, x20"
       ]
     },
     "btc rax, 63": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": "GROUP8 0x0F 0xBA /7",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x8000000000000000",
-        "lsr x20, x20, #63",
-        "lsl x20, x20, #29",
         "eor x4, x4, #0x8000000000000000",
+        "lsr x20, x4, #63",
+        "lsl x20, x20, #29",
         "msr nzcv, x20"
       ]
     },
