@@ -2746,10 +2746,8 @@ void OpDispatchBuilder::SaveX87State(OpcodeArgs, Ref MemBase) {
 void OpDispatchBuilder::SaveSSEState(Ref MemBase) {
   const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
-  for (uint32_t i = 0; i < NumRegs; ++i) {
-    Ref XMMReg = LoadXMMRegister(i);
-
-    _StoreMem(FPRClass, 16, XMMReg, MemBase, _Constant(i * 16 + 160), 16, MEM_OFFSET_SXTX, 1);
+  for (uint32_t i = 0; i < NumRegs; i += 2) {
+    _StoreMemPair(FPRClass, 16, LoadXMMRegister(i), LoadXMMRegister(i + 1), MemBase, i * 16 + 160);
   }
 }
 
