@@ -35,6 +35,8 @@ class ScopedUnicodeString {
 private:
   UNICODE_STRING Str {};
 public:
+  ScopedUnicodeString() = default;
+
   ScopedUnicodeString(const char* AStr) {
     RtlCreateUnicodeStringFromAsciiz(&Str, AStr);
   }
@@ -42,6 +44,7 @@ public:
   ~ScopedUnicodeString() {
     RtlFreeUnicodeString(&Str);
   }
+
   UNICODE_STRING* operator->() {
     return &Str;
   }
