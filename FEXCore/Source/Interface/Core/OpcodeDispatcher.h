@@ -1917,12 +1917,53 @@ private:
     return RegCache.Value[Index];
   }
 
+  RefPair AllocatePair(FEXCore::IR::RegisterClassType Class, uint8_t Size) {
+    if (Class == FPRClass) {
+      return {_AllocateFPR(Size, Size), _AllocateFPR(Size, Size)};
+    } else {
+      return {_AllocateGPR(false), _AllocateGPR(false)};
+    }
+  }
+
+  RefPair LoadContextPair_Uncached(FEXCore::IR::RegisterClassType Class, uint8_t Size, unsigned Offset) {
+    RefPair Values = AllocatePair(Class, Size);
+    _LoadContextPair(Size, Class, Offset, Values.Low, Values.High);
+    return Values;
+  }
+
+  RefPair LoadRegCachePair(uint64_t Offset, uint8_t Index, RegisterClassType RegClass, uint8_t Size) {
+    LOGMAN_THROW_AA_FMT(Index != DFIndex, "must be pairable");
+
+    // Try to load a pair into the cache
+    uint64_t Bits = (3ull << (uint64_t)Index);
+    if (((RegCache.Partial | RegCache.Cached) & Bits) == 0 && ((Offset / Size) < 64)) {
+      auto Values = LoadContextPair_Uncached(RegClass, Size, Offset);
+      RegCache.Value[Index] = Values.Low;
+      RegCache.Value[Index + 1] = Values.High;
+      RegCache.Cached |= Bits;
+      if (Size == 8) {
+        RegCache.Partial |= Bits;
+      }
+      return Values;
+    }
+
+    // Fallback on a pair of loads
+    return {
+      .Low = LoadRegCache(Offset, Index, RegClass, Size),
+      .High = LoadRegCache(Offset + Size, Index + 1, RegClass, Size),
+    };
+  }
+
   Ref LoadGPR(uint8_t Reg) {
     return LoadRegCache(Reg, GPR0Index + Reg, GPRClass, CTX->GetGPRSize());
   }
 
   Ref LoadContext(uint8_t Size, uint8_t Index) {
     return LoadRegCache(CacheIndexToContextOffset(Index), Index, CacheIndexClass(Index), Size);
+  }
+
+  RefPair LoadContextPair(uint8_t Size, uint8_t Index) {
+    return LoadRegCachePair(CacheIndexToContextOffset(Index), Index, CacheIndexClass(Index), Size);
   }
 
   Ref LoadContext(uint8_t Index) {
@@ -2397,16 +2438,9 @@ private:
     return Out;
   }
 
-  RefPair LoadMemPair(FEXCore::IR::RegisterClassType Class, uint8_t Size, Ref Base, unsigned Offset) {
-    RefPair Values {};
-    if (Class == FPRClass) {
-      Values.Low = _AllocateFPR(Size, Size);
-      Values.High = _AllocateFPR(Size, Size);
-    } else {
-      Values.Low = _AllocateGPR(false);
-      Values.High = _AllocateGPR(false);
-    }
 
+  RefPair LoadMemPair(FEXCore::IR::RegisterClassType Class, uint8_t Size, Ref Base, unsigned Offset) {
+    RefPair Values = AllocatePair(Class, Size);
     _LoadMemPair(Class, Size, Base, Offset, Values.Low, Values.High);
     return Values;
   }

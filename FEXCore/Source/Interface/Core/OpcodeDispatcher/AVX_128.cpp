@@ -2172,10 +2172,8 @@ void OpDispatchBuilder::AVX128_SaveAVXState(Ref MemBase) {
   const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
   for (uint32_t i = 0; i < NumRegs; i += 2) {
-    // TODO: pair
-    Ref Upper0 = AVX128_LoadXMMRegister(i, true);
-    Ref Upper1 = AVX128_LoadXMMRegister(i + 1, true);
-    _StoreMemPair(FPRClass, 16, Upper0, Upper1, MemBase, i * 16 + 576);
+    RefPair Pair = LoadContextPair(16, AVXHigh0Index + i);
+    _StoreMemPair(FPRClass, 16, Pair.Low, Pair.High, MemBase, i * 16 + 576);
   }
 }
 
