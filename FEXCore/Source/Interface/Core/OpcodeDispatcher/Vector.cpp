@@ -2752,10 +2752,8 @@ void OpDispatchBuilder::SaveSSEState(Ref MemBase) {
 }
 
 void OpDispatchBuilder::SaveMXCSRState(Ref MemBase) {
-  _StoreMem(GPRClass, 4, GetMXCSR(), MemBase, _Constant(24), 4, MEM_OFFSET_SXTX, 1);
-
-  // Store the mask for all bits.
-  _StoreMem(GPRClass, 4, _Constant(0xFFFF), MemBase, _Constant(28), 4, MEM_OFFSET_SXTX, 1);
+  // Store MXCSR and the mask for all bits.
+  _StoreMemPair(GPRClass, 4, GetMXCSR(), _Constant(0xFFFF), MemBase, 24);
 }
 
 void OpDispatchBuilder::SaveAVXState(Ref MemBase) {
