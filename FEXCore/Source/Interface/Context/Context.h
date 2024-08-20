@@ -216,6 +216,8 @@ public:
     FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
     FEX_CONFIG_OPT(TSOEnabled, TSOENABLED);
     FEX_CONFIG_OPT(TSOAutoMigration, TSOAUTOMIGRATION);
+    FEX_CONFIG_OPT(VectorTSOEnabled, VECTORTSOENABLED);
+    FEX_CONFIG_OPT(MemcpySetTSOEnabled, MEMCPYSETTSOENABLED);
     FEX_CONFIG_OPT(ABILocalFlags, ABILOCALFLAGS);
     FEX_CONFIG_OPT(AOTIRCapture, AOTIRCAPTURE);
     FEX_CONFIG_OPT(AOTIRGenerate, AOTIRGENERATE);
@@ -344,25 +346,19 @@ public:
     return AtomicTSOEmulationEnabled;
   }
 
+  // If atomic-based TSO emulation is enabled for vector operations.
+  bool IsVectorAtomicTSOEnabled() const {
+    return VectorAtomicTSOEmulationEnabled;
+  }
+
+  // If atomic-based TSO emulation is enabled for memcpy operations.
+  bool IsMemcpyAtomicTSOEnabled() const {
+    return MemcpyAtomicTSOEmulationEnabled;
+  }
+
   void SetHardwareTSOSupport(bool HardwareTSOSupported) override {
     SupportsHardwareTSO = HardwareTSOSupported;
     UpdateAtomicTSOEmulationConfig();
-  }
-
-  // Returns if Software TSO emulation is required.
-  // NOTE: This doesn't necessary return if Atomic-based TSO is currently enabled.
-  // This will still return true if on a single thread and TSO is currently disabled.
-  //
-  // This is to ensure that if early initialization checks CPU features and TSO /could/ be enabled, that
-  // we return consistent results.
-  //
-  // To check if Atomic TSO is currently enabled in the JIT, use `IsAtomicTSOEnabled` instead.
-  bool SoftwareTSORequired() const {
-    if (SupportsHardwareTSO) {
-      return false;
-    }
-
-    return Config.TSOEnabled;
   }
 
   void EnableExitOnHLT() override {
@@ -378,9 +374,15 @@ protected:
     if (SupportsHardwareTSO) {
       // If the hardware supports TSO then we don't need to emulate it through atomics.
       AtomicTSOEmulationEnabled = false;
+      VectorAtomicTSOEmulationEnabled = false;
+      MemcpyAtomicTSOEmulationEnabled = false;
     } else {
       // Atomic TSO emulation only enabled if the config option is enabled.
       AtomicTSOEmulationEnabled = (IsMemoryShared || !Config.TSOAutoMigration) && Config.TSOEnabled;
+      // Atomic vector TSO emulation only enabled if TSO emulation is enabled and also vector TSO is enabled.
+      VectorAtomicTSOEmulationEnabled = (IsMemoryShared || !Config.TSOAutoMigration) && Config.TSOEnabled && Config.VectorTSOEnabled;
+      // Atomic memcpy TSO emulation only enabled if TSO emulation is enabled and also memcpy TSO is enabled.
+      MemcpyAtomicTSOEmulationEnabled = (IsMemoryShared || !Config.TSOAutoMigration) && Config.TSOEnabled && Config.MemcpySetTSOEnabled;
     }
   }
 
@@ -403,6 +405,9 @@ private:
   bool IsMemoryShared = false;
   bool SupportsHardwareTSO = false;
   bool AtomicTSOEmulationEnabled = true;
+  bool VectorAtomicTSOEmulationEnabled = false;
+  bool MemcpyAtomicTSOEmulationEnabled = false;
+
   bool ExitOnHLT = false;
   FEX_CONFIG_OPT(AppFilename, APP_FILENAME);
 

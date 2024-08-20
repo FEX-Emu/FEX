@@ -676,7 +676,7 @@ DEF_OP(LoadMemTSO) {
     }
     default: LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", OpSize); break;
     }
-    if (VectorTSOEnabled()) {
+    if (CTX->IsVectorAtomicTSOEnabled()) {
       // Half-barrier.
       dmb(ARMEmitter::BarrierScope::ISHLD);
     }
@@ -1191,7 +1191,7 @@ DEF_OP(VLoadVectorElement) {
   }
 
   // Emit a half-barrier if TSO is enabled.
-  if (CTX->IsAtomicTSOEnabled() && VectorTSOEnabled()) {
+  if (CTX->IsVectorAtomicTSOEnabled()) {
     dmb(ARMEmitter::BarrierScope::ISHLD);
   }
 }
@@ -1210,7 +1210,7 @@ DEF_OP(VStoreVectorElement) {
                                                                                                                          "size");
 
   // Emit a half-barrier if TSO is enabled.
-  if (CTX->IsAtomicTSOEnabled() && VectorTSOEnabled()) {
+  if (CTX->IsVectorAtomicTSOEnabled()) {
     dmb(ARMEmitter::BarrierScope::ISH);
   }
 
@@ -1272,7 +1272,7 @@ DEF_OP(VBroadcastFromMem) {
   }
 
   // Emit a half-barrier if TSO is enabled.
-  if (CTX->IsAtomicTSOEnabled() && VectorTSOEnabled()) {
+  if (CTX->IsVectorAtomicTSOEnabled()) {
     dmb(ARMEmitter::BarrierScope::ISHLD);
   }
 }
@@ -1492,7 +1492,7 @@ DEF_OP(StoreMemTSO) {
       }
     }
   } else {
-    if (VectorTSOEnabled()) {
+    if (CTX->IsVectorAtomicTSOEnabled()) {
       // Half-Barrier.
       dmb(ARMEmitter::BarrierScope::ISH);
     }
@@ -1524,7 +1524,7 @@ DEF_OP(MemSet) {
   // that the value is zero, we can optimize any operation larger than 8-bit down to 8-bit to use the MOPS implementation.
   const auto Op = IROp->C<IR::IROp_MemSet>();
 
-  const bool IsAtomic = Op->IsAtomic && MemcpySetTSOEnabled();
+  const bool IsAtomic = CTX->IsMemcpyAtomicTSOEnabled();
   const int32_t Size = Op->Size;
   const auto MemReg = GetReg(Op->Addr.ID());
   const auto Value = GetReg(Op->Value.ID());
@@ -1714,7 +1714,7 @@ DEF_OP(MemCpy) {
   // Assuming non-atomicity and non-faulting behaviour, this can accelerate this implementation.
   const auto Op = IROp->C<IR::IROp_MemCpy>();
 
-  const bool IsAtomic = Op->IsAtomic && MemcpySetTSOEnabled();
+  const bool IsAtomic = CTX->IsMemcpyAtomicTSOEnabled();
   const int32_t Size = Op->Size;
   const auto MemRegDest = GetReg(Op->Dest.ID());
   const auto MemRegSrc = GetReg(Op->Src.ID());

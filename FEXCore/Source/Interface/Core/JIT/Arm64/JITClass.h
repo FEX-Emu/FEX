@@ -64,8 +64,6 @@ public:
 
 private:
   FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
-  FEX_CONFIG_OPT(VectorTSOEnabled, VECTORTSOENABLED);
-  FEX_CONFIG_OPT(MemcpySetTSOEnabled, MEMCPYSETTSOENABLED);
 
   const bool HostSupportsSVE128 {};
   const bool HostSupportsSVE256 {};
