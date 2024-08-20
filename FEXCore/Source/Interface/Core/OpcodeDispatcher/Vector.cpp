@@ -2899,11 +2899,12 @@ void OpDispatchBuilder::RestoreMXCSRState(Ref MXCSR) {
 void OpDispatchBuilder::RestoreAVXState(Ref MemBase) {
   const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
-  for (uint32_t i = 0; i < NumRegs; ++i) {
-    Ref XMMReg = LoadXMMRegister(i);
-    Ref YMMHReg = _LoadMem(FPRClass, 16, MemBase, _Constant(i * 16 + 576), 16, MEM_OFFSET_SXTX, 1);
-    Ref YMM = _VInsElement(32, 16, 1, 0, XMMReg, YMMHReg);
-    StoreXMMRegister(i, YMM);
+  for (uint32_t i = 0; i < NumRegs; i += 2) {
+    Ref XMMReg0 = LoadXMMRegister(i + 0);
+    Ref XMMReg1 = LoadXMMRegister(i + 1);
+    auto YMMHRegs = LoadMemPair(FPRClass, 16, MemBase, i * 16 + 576);
+    StoreXMMRegister(i + 0, _VInsElement(32, 16, 1, 0, XMMReg0, YMMHRegs.Low));
+    StoreXMMRegister(i + 1, _VInsElement(32, 16, 1, 0, XMMReg1, YMMHRegs.High));
   }
 }
 
