@@ -26,6 +26,7 @@ $end_info$
 #include <FEXCore/Utils/TypeDefines.h>
 
 #include "Common/Config.h"
+#include "Common/Exception.h"
 #include "Common/TSOHandlerConfig.h"
 #include "Common/InvalidationTracker.h"
 #include "Common/CPUFeatures.h"
@@ -123,6 +124,11 @@ uint64_t GetWowTEB(void* TEB) {
 }
 
 bool IsAddressInJit(uint64_t Address) {
+  const auto& Config = SignalDelegator->GetConfig();
+  if (Address >= Config.DispatcherBegin && Address < Config.DispatcherEnd) {
+    return true;
+  }
+
   auto Thread = GetTLS().ThreadState();
   return Thread->CTX->IsAddressInCodeBuffer(Thread, Address);
 }
@@ -251,6 +257,10 @@ void ReconstructThreadState(CONTEXT* Context) {
   for (size_t i = 0; i < Config.SRAFPRCount; i++) {
     memcpy(State.xmm.sse.data[i], &Context->V[Config.SRAFPRMapping[i]], sizeof(__uint128_t));
   }
+
+  // Spill EFlags
+  uint32_t EFlags = CTX->ReconstructCompactedEFLAGS(Thread, true, Context->X, Context->Cpsr);
+  CTX->SetFlagsFromCompactedEFLAGS(Thread, EFlags);
 }
 
 WOW64_CONTEXT ReconstructWowContext(CONTEXT* Context) {
@@ -641,15 +651,11 @@ NTSTATUS BTCpuSuspendLocalThread(HANDLE Thread, ULONG* Count) {
 
 NTSTATUS BTCpuResetToConsistentState(EXCEPTION_POINTERS* Ptrs) {
   auto* Context = Ptrs->ContextRecord;
-  const auto* Exception = Ptrs->ExceptionRecord;
-  if (Exception->ExceptionCode == EXCEPTION_DATATYPE_MISALIGNMENT && Context::HandleUnalignedAccess(Context)) {
-    LogMan::Msg::DFmt("Handled unaligned atomic: new pc: {:X}", Context->Pc);
-    NtContinue(Context, FALSE);
-  }
+  auto* Exception = Ptrs->ExceptionRecord;
+  auto Thread = GetTLS().ThreadState();
 
   if (Exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
     const auto FaultAddress = static_cast<uint64_t>(Exception->ExceptionInformation[1]);
-
 
     if (Context::HandleSuspendInterrupt(Context, FaultAddress)) {
       LogMan::Msg::DFmt("Resumed from suspend");
@@ -657,7 +663,7 @@ NTSTATUS BTCpuResetToConsistentState(EXCEPTION_POINTERS* Ptrs) {
     }
 
     bool HandledRWX = false;
-    if (GetTLS().ThreadState()) {
+    if (Thread) {
       std::scoped_lock Lock(ThreadCreationMutex);
       HandledRWX = InvalidationTracker->HandleRWXAccessViolation(FaultAddress);
     }
@@ -668,14 +674,25 @@ NTSTATUS BTCpuResetToConsistentState(EXCEPTION_POINTERS* Ptrs) {
     }
   }
 
-  if (!IsAddressInJit(Context->Pc)) {
+  if (!Thread || !IsAddressInJit(Context->Pc)) {
     return STATUS_SUCCESS;
+  }
+
+  if (Exception->ExceptionCode == EXCEPTION_DATATYPE_MISALIGNMENT && Context::HandleUnalignedAccess(Context)) {
+    LogMan::Msg::DFmt("Handled unaligned atomic: new pc: {:X}", Context->Pc);
+    NtContinue(Context, FALSE);
   }
 
   LogMan::Msg::DFmt("Reconstructing context");
 
   WOW64_CONTEXT WowContext = Context::ReconstructWowContext(Context);
   LogMan::Msg::DFmt("pc: {:X} eip: {:X}", Context->Pc, WowContext.Eip);
+
+  auto& Fault = Thread->CurrentFrame->SynchronousFaultData;
+  *Exception = FEX::Windows::HandleGuestException(Fault, *Exception, WowContext.Eip, WowContext.Eax);
+  if (Exception->ExceptionCode == EXCEPTION_SINGLE_STEP) {
+    WowContext.EFlags &= ~(1 << FEXCore::X86State::RFLAG_TF_LOC);
+  }
 
   BTCpuSetContext(GetCurrentThread(), GetCurrentProcess(), nullptr, &WowContext);
   Context::UnlockJITContext();

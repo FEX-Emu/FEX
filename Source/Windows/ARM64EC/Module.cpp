@@ -25,6 +25,7 @@ $end_info$
 #include <FEXCore/Utils/TypeDefines.h>
 
 #include "Common/Config.h"
+#include "Common/Exception.h"
 #include "Common/InvalidationTracker.h"
 #include "Common/TSOHandlerConfig.h"
 #include "Common/CPUFeatures.h"
@@ -217,77 +218,6 @@ namespace Exception {
 static std::optional<FEX::Windows::TSOHandlerConfig> HandlerConfig;
 static uintptr_t KiUserExceptionDispatcher;
 
-static EXCEPTION_RECORD HandleGuestException(const EXCEPTION_RECORD& Src, ARM64_NT_CONTEXT& Context) {
-  auto* Thread = GetCPUArea().ThreadState();
-  auto& Fault = Thread->CurrentFrame->SynchronousFaultData;
-  EXCEPTION_RECORD Dst = Src;
-  Dst.ExceptionAddress = reinterpret_cast<void*>(Context.Pc);
-
-  // X64 Windows always clears TF, DF and AF when handling an exception, restoring after.
-  // Current ARM64EC windows can only restore NZCV+SS when returning from an exception and other flags are left untouched from the handler context.
-  // TODO: Can extend wine to support this by mapping the remaining EFlags into reserved cpsr members.
-  uint32_t EFlags = CTX->ReconstructCompactedEFLAGS(Thread, true, Context.X, Context.Cpsr);
-  EFlags &= (1 << FEXCore::X86State::RFLAG_TF_LOC);
-  CTX->SetFlagsFromCompactedEFLAGS(Thread, EFlags);
-
-  if (!Fault.FaultToTopAndGeneratedException) {
-    return Dst;
-  }
-  Fault.FaultToTopAndGeneratedException = false;
-
-  Dst.ExceptionFlags = 0;
-  Dst.NumberParameters = 0;
-
-  switch (Fault.Signal) {
-  case FEXCore::Core::FAULT_SIGILL: Dst.ExceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION; return Dst;
-  case FEXCore::Core::FAULT_SIGTRAP:
-    switch (Fault.TrapNo) {
-    case FEXCore::X86State::X86_TRAPNO_DB:
-      Context.Cpsr &= ~(1 << 21); // PSTATE.SS
-      Dst.ExceptionCode = EXCEPTION_SINGLE_STEP;
-      return Dst;
-    case FEXCore::X86State::X86_TRAPNO_BP:
-      Context.Pc -= 1;
-      Dst.ExceptionAddress = reinterpret_cast<void*>(Context.Pc);
-      Dst.ExceptionCode = EXCEPTION_BREAKPOINT;
-      Dst.NumberParameters = 1;
-      Dst.ExceptionInformation[0] = 0;
-      return Dst;
-    default: LogMan::Msg::EFmt("Unknown SIGTRAP trap: {}", Fault.TrapNo); break;
-    }
-    break;
-  case FEXCore::Core::FAULT_SIGSEGV:
-    switch (Fault.TrapNo) {
-    case FEXCore::X86State::X86_TRAPNO_GP:
-      if ((Fault.err_code & 0b111) == 0b010) {
-        switch (Fault.err_code >> 3) {
-        case 0x2d:
-          Context.Pc += 2;
-          Dst.ExceptionCode = EXCEPTION_BREAKPOINT;
-          Dst.ExceptionAddress = reinterpret_cast<void*>(Context.Pc + 1);
-          Dst.NumberParameters = 1;
-          Dst.ExceptionInformation[0] = Context.X8; // RAX
-          // Note that ExceptionAddress doesn't equal the reported context RIP here, this discrepancy expected and not having it can trigger anti-debug logic.
-          return Dst;
-        default: LogMan::Msg::EFmt("Unknown interrupt: 0x{:X}", Fault.err_code >> 3); break;
-        }
-      } else {
-        Dst.ExceptionCode = EXCEPTION_PRIV_INSTRUCTION;
-        return Dst;
-      }
-      break;
-    case FEXCore::X86State::X86_TRAPNO_OF: Dst.ExceptionCode = EXCEPTION_INT_OVERFLOW; return Dst;
-    default: LogMan::Msg::EFmt("Unknown SIGSEGV trap: {}", Fault.TrapNo); break;
-    }
-    break;
-  default: LogMan::Msg::EFmt("Unknown signal type: {}", Fault.Signal); break;
-  }
-
-  // Default to SIGILL
-  Dst.ExceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION;
-  return Dst;
-}
-
 static bool HandleUnalignedAccess(ARM64_NT_CONTEXT& Context) {
   if (!CTX->IsAddressInCodeBuffer(GetCPUArea().ThreadState(), Context.Pc)) {
     return false;
@@ -454,6 +384,8 @@ static ARM64_NT_CONTEXT ReconstructPackedECContext(ARM64_NT_CONTEXT& Context) {
 
 static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT& Context) {
   const auto& Config = SignalDelegator->GetConfig();
+  auto* Thread = GetCPUArea().ThreadState();
+  auto& Fault = Thread->CurrentFrame->SynchronousFaultData;
   uint64_t GuestSp = Context.X[Config.SRAGPRMapping[static_cast<size_t>(FEXCore::X86State::REG_RSP)]];
   struct DispatchArgs {
     ARM64_NT_CONTEXT Context;
@@ -466,7 +398,19 @@ static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT&
   LogMan::Msg::DFmt("Reconstructing context");
   Args->Context = ReconstructPackedECContext(Context);
   LogMan::Msg::DFmt("pc: {:X} rip: {:X}", Context.Pc, Args->Context.Pc);
-  Args->Rec = HandleGuestException(Rec, Args->Context);
+
+  // X64 Windows always clears TF, DF and AF when handling an exception, restoring after.
+  // Current ARM64EC windows can only restore NZCV+SS when returning from an exception and other flags are left untouched from the handler context.
+  // TODO: Can extend wine to support this by mapping the remaining EFlags into reserved cpsr members.
+  uint32_t EFlags = CTX->ReconstructCompactedEFLAGS(Thread, false, nullptr, 0);
+  EFlags &= (1 << FEXCore::X86State::RFLAG_TF_LOC);
+  CTX->SetFlagsFromCompactedEFLAGS(Thread, EFlags);
+
+  Args->Rec = FEX::Windows::HandleGuestException(Fault, Rec, Args->Context.Pc, Args->Context.X8);
+  if (Args->Rec.ExceptionCode == EXCEPTION_SINGLE_STEP) {
+    Args->Context.Cpsr &= ~(1 << 21); // PSTATE.SS
+  }
+
   Context.Sp = reinterpret_cast<uint64_t>(Args);
   Context.Pc = KiUserExceptionDispatcher;
 }
