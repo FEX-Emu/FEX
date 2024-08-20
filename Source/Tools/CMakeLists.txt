@@ -3,6 +3,11 @@ add_subdirectory(CommonTools)
 if (NOT MINGW_BUILD)
   if (BUILD_FEXCONFIG)
     add_subdirectory(FEXConfig/)
+
+    find_package(Qt5 COMPONENTS Qml Quick Widgets)
+    if (Qt5_FOUND)
+      add_subdirectory(FEXQonfig/)
+    endif()
   endif()
 
 
