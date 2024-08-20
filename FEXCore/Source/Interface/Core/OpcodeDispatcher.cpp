@@ -2389,13 +2389,16 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
     unsigned LshrSize = std::max<uint8_t>(4u, Size / 8);
     auto BitSelect = (Size == (LshrSize * 8)) ? Src : _And(OpSize::i64Bit, Src, _Constant(Mask));
 
-    if (IsNonconstant) {
-      Value = _Lshr(IR::SizeToOpSize(LshrSize), Value, BitSelect);
-    }
-
     // OF/SF/ZF/AF/PF undefined.
-    // Set CF before the action to save a move.
-    SetCFDirect(Value, ConstantShift, true);
+    // Set CF before the action to save a move, except for complements where we
+    // can reuse the invert.
+    if (Action != BTAction::BTComplement) {
+      if (IsNonconstant) {
+        Value = _Lshr(IR::SizeToOpSize(LshrSize), Value, BitSelect);
+      }
+
+      SetCFDirect(Value, ConstantShift, true);
+    }
 
     switch (Action) {
     case BTAction::BTNone: {
@@ -2420,6 +2423,14 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
     case BTAction::BTComplement: {
       Ref BitMask = _Lshl(IR::SizeToOpSize(LshrSize), _Constant(1), BitSelect);
       Dest = _Xor(IR::SizeToOpSize(LshrSize), Dest, BitMask);
+
+      if (IsNonconstant) {
+        Value = _Lshr(IR::SizeToOpSize(LshrSize), Dest, BitSelect);
+      } else {
+        Value = Dest;
+      }
+
+      SetCFInverted(Value, ConstantShift, true);
       StoreResult(GPRClass, Op, Dest, -1);
       break;
     }
