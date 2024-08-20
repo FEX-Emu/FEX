@@ -259,15 +259,13 @@ DEF_OP(InlineSyscall) {
       }
 
       auto Reg = GetReg(Op->Header.Args[i].ID());
-      // In the case of intersection with x4, x5, or x8 then these are currently SRA
-      // for registers RAX, RBX, and RSI. Which have just been spilled
-      // Just load back from the context. Could be slightly smarter but this is fairly uncommon
-      if (Reg == ARMEmitter::Reg::r8) {
-        ldr(EmitSubSize, RegArgs[i].R(), STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RSP]));
-      } else if (Reg == ARMEmitter::Reg::r4) {
-        ldr(EmitSubSize, RegArgs[i].R(), STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RAX]));
-      } else if (Reg == ARMEmitter::Reg::r5) {
-        ldr(EmitSubSize, RegArgs[i].R(), STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[X86State::REG_RCX]));
+      if (SpillMask & (1U << Reg.Idx())) {
+        // In the case of intersection with x4, x5, or x8 then these are currently SRA
+        // for registers RAX, RDX, and RSP. Which have just been spilled
+        // Just load back from the context.
+        auto Correlation = GetX86RegRelationToARMReg(Reg);
+        LOGMAN_THROW_A_FMT(Correlation != X86State::REG_INVALID, "Invalid register mapping");
+        ldr(EmitSubSize, RegArgs[i].R(), STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[Correlation]));
       } else {
         mov(EmitSize, RegArgs[i].R(), Reg);
       }
