@@ -2759,10 +2759,11 @@ void OpDispatchBuilder::SaveMXCSRState(Ref MemBase) {
 void OpDispatchBuilder::SaveAVXState(Ref MemBase) {
   const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
-  for (uint32_t i = 0; i < NumRegs; ++i) {
-    Ref Upper = _VDupElement(32, 16, LoadXMMRegister(i), 1);
+  for (uint32_t i = 0; i < NumRegs; i += 2) {
+    Ref Upper0 = _VDupElement(32, 16, LoadXMMRegister(i + 0), 1);
+    Ref Upper1 = _VDupElement(32, 16, LoadXMMRegister(i + 1), 1);
 
-    _StoreMem(FPRClass, 16, Upper, MemBase, _Constant(i * 16 + 576), 16, MEM_OFFSET_SXTX, 1);
+    _StoreMemPair(FPRClass, 16, Upper0, Upper1, MemBase, i * 16 + 576);
   }
 }
 
