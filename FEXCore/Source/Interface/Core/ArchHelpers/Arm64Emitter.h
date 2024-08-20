@@ -12,6 +12,7 @@
 #include <aarch64/simulator-constants-aarch64.h>
 #endif
 
+#include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/fextl/vector.h>
 #include <CodeEmitter/Emitter.h>
@@ -100,6 +101,10 @@ protected:
   void LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, uint64_t Constant, bool NOPPad = false);
 
   void FillSpecialRegs(ARMEmitter::Register TmpReg, ARMEmitter::Register TmpReg2, bool SetFIZ, bool SetPredRegs);
+
+  // Correlate an ARM register back to an x86 register index.
+  // Returning REG_INVALID if there was no mapping.
+  FEXCore::X86State::X86Reg GetX86RegRelationToARMReg(ARMEmitter::Register Reg);
 
   // NOTE: These functions WILL clobber the register TMP4 if AVX support is enabled
   //       and FPRs are being spilled or filled. If only GPRs are spilled/filled, then

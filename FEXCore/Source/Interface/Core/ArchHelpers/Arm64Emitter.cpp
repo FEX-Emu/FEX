@@ -373,6 +373,20 @@ Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl* ctx, void* EmissionPtr
   }
 }
 
+FEXCore::X86State::X86Reg Arm64Emitter::GetX86RegRelationToARMReg(ARMEmitter::Register Reg) {
+  for (size_t i = 0; i < StaticRegisters.size(); ++i) {
+    const auto& RegI = StaticRegisters[i];
+    if (RegI == Reg) {
+      // X86 Registers are mapped linerally from the StaticRegisters span.
+      // Directly correlating Enum index to span index.
+      return static_cast<FEXCore::X86State::X86Reg>(FEXCore::ToUnderlying(FEXCore::X86State::X86Reg::REG_RAX) + i);
+    }
+  }
+
+  // Unmapped register.
+  return FEXCore::X86State::X86Reg::REG_INVALID;
+}
+
 void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, uint64_t Constant, bool NOPPad) {
   bool Is64Bit = s == ARMEmitter::Size::i64Bit;
   int Segments = Is64Bit ? 4 : 2;
