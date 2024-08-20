@@ -2736,10 +2736,12 @@ void OpDispatchBuilder::SaveX87State(OpcodeArgs, Ref MemBase) {
   // MXCSR_MASK: Mask for writes to the MXCSR register
   // If OSFXSR bit in CR4 is not set than FXSAVE /may/ not save the XMM registers
   // This is implementation dependent
-  for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
-    Ref MMReg = LoadContext(MM0Index + i);
+  for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; i += 2) {
+    // TODO: Pair
+    Ref MMReg0 = LoadContext(MM0Index + i);
+    Ref MMReg1 = LoadContext(MM0Index + i + 1);
 
-    _StoreMem(FPRClass, 16, MMReg, MemBase, _Constant(i * 16 + 32), 16, MEM_OFFSET_SXTX, 1);
+    _StoreMemPair(FPRClass, 16, MMReg0, MMReg1, MemBase, i * 16 + 32);
   }
 }
 
