@@ -589,9 +589,14 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
 
 Ref OpDispatchBuilder::SelectBit(Ref Cmp, IR::OpSize ResultSize, Ref TrueValue, Ref FalseValue) {
   uint64_t TrueConst, FalseConst;
-  if (IsValueConstant(WrapNode(TrueValue), &TrueConst) && IsValueConstant(WrapNode(FalseValue), &FalseConst) && TrueConst == 1 && FalseConst == 0) {
-
-    return _And(ResultSize, Cmp, _Constant(1));
+  if (IsValueConstant(WrapNode(TrueValue), &TrueConst) && IsValueConstant(WrapNode(FalseValue), &FalseConst) && FalseConst == 0) {
+    if (TrueConst == 1) {
+      return _And(ResultSize, Cmp, _Constant(1));
+    } else if (TrueConst == 0xffffffff) {
+      return _Sbfe(OpSize::i32Bit, 1, 0, Cmp);
+    } else if (TrueConst == 0xffffffffffffffffull) {
+      return _Sbfe(OpSize::i64Bit, 1, 0, Cmp);
+    }
   }
 
   SaveNZCV();
