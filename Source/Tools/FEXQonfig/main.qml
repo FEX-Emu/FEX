@@ -47,10 +47,25 @@ ApplicationWindow {
         title: qsTr("Open FEX configuration")
         nameFilters: [ "Config files(*.json)", "All files(*)" ]
 
+        property var onNextAccept: null
+
+        function openAndThen(callback) {
+            console.assert(!onNextAccept, "Tried to open dialog multiple times")
+            onNextAccept = callback
+            open()
+        }
+
         onAccepted: {
             root.selectedConfigFile(selectedFile)
             configFilename = selectedFile
+            if (onNextAccept) {
+                onNextAccept()
+                console.log("Clearing due to accept");
+                onNextAccept = null
+            }
         }
+
+        onRejected: onNextAccept = null
     }
 
     MessageDialog {
@@ -62,6 +77,14 @@ ApplicationWindow {
         onButtonClicked: (button) => {
             switch (button) {
             case buttonSave:
+                if (configFilename.toString() === "") {
+                    // Filename not yet set => trigger "Save As" dialog
+                    openFileDialog.openAndThen(() => {
+                        save(configFilename)
+                        root.close()
+                    });
+                    return
+                }
                 save(configFilename)
                 root.close()
                 break
@@ -88,14 +111,10 @@ ApplicationWindow {
 
         if (filename.toString() === "") {
             // Filename not yet set => trigger "Save As" dialog
-
-            // TODO: Wait for dialog to complete...
-            openFileDialog.open();
-            if (openFileDialog.result === Dialog.Rejected) {
-                return
-            }
-
-            filename = configFilename
+            openFileDialog.openAndThen(() => {
+                save(configFilename)
+            });
+            return
         }
 
         triggeredSave(filename)
@@ -109,7 +128,7 @@ ApplicationWindow {
                 text: qsTr("&Open...")
                 shortcut: StandardKey.Open
                 // TODO: Ask to discard pending changes first
-                onTriggered: openFileDialog.open()
+                onTriggered: openFileDialog.openAndThen(() => {})
             }
             Action {
                 text: qsTr("&Save")
