@@ -2506,14 +2506,11 @@
       ]
     },
     "test bl, 1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 2,
       "Comment": "GROUP2 0xf6 /0",
       "ExpectedArm64ASM": [
         "and w26, w6, #0x1",
-        "cmn wzr, w26, lsl #24",
-        "mrs x20, nzcv",
-        "eor w20, w20, #0x20000000",
-        "msr nzcv, x20"
+        "cmp w26, #0x0 (0)"
       ]
     },
     "not bl": {
@@ -2602,14 +2599,11 @@
       ]
     },
     "test bx, 1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 2,
       "Comment": "GROUP2 0xf7 /0",
       "ExpectedArm64ASM": [
         "and w26, w6, #0x1",
-        "cmn wzr, w26, lsl #16",
-        "mrs x20, nzcv",
-        "eor w20, w20, #0x20000000",
-        "msr nzcv, x20"
+        "cmp w26, #0x0 (0)"
       ]
     },
     "test ebx, 1": {

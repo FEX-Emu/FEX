@@ -33,89 +33,55 @@
       ]
     },
     "adcx eax, ebx": {
-      "ExpectedInstructionCount": 15,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "0x66 0x0f 0x38 0xf6"
       ],
       "ExpectedArm64ASM": [
-        "cset w20, lo",
-        "mov w21, w6",
-        "mov w22, w4",
-        "add w23, w21, w20",
-        "add w4, w22, w23",
-        "mrs x22, nzcv",
-        "cmp w4, w21",
-        "cset x23, lo",
-        "cmp w4, w21",
-        "cset x21, ls",
-        "cmp x20, #0x1 (1)",
-        "csel x20, x21, x23, eq",
-        "eor x20, x20, #0x1",
-        "msr nzcv, x22",
-        "rmif x20, #63, #nzCv"
+        "mrs x20, nzcv",
+        "cfinv",
+        "adcs w4, w6, w4",
+        "rmif x20, #28, #NZcV",
+        "cfinv"
       ]
     },
     "adcx rax, rbx": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "0x66 REX.W 0x0f 0x38 0xf6"
       ],
       "ExpectedArm64ASM": [
-        "cset w20, lo",
-        "add x21, x6, x20",
-        "add x4, x4, x21",
-        "mrs x21, nzcv",
-        "cmp x4, x6",
-        "cset x22, lo",
-        "cmp x4, x6",
-        "cset x23, ls",
-        "cmp x20, #0x1 (1)",
-        "csel x20, x23, x22, eq",
-        "eor x20, x20, #0x1",
-        "msr nzcv, x21",
-        "rmif x20, #63, #nzCv"
+        "mrs x20, nzcv",
+        "cfinv",
+        "adcs x4, x6, x4",
+        "rmif x20, #28, #NZcV",
+        "cfinv"
       ]
     },
     "adox eax, ebx": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "0xf3 0x0f 0x38 0xf6"
       ],
       "ExpectedArm64ASM": [
-        "cset w20, vs",
-        "mov w21, w6",
-        "mov w22, w4",
-        "add w23, w21, w20",
-        "add w4, w22, w23",
-        "mrs x22, nzcv",
-        "cmp w4, w21",
-        "cset x23, lo",
-        "cmp w4, w21",
-        "cset x21, ls",
-        "cmp x20, #0x1 (1)",
-        "csel x20, x21, x23, eq",
-        "msr nzcv, x22",
-        "rmif x20, #0, #nzcV"
+        "mrs x20, nzcv",
+        "ccmp wzr, #0, #nzcv, vs",
+        "adcs w4, w6, w4",
+        "ccmp wzr, #0, #nzcV, lo",
+        "rmif x20, #28, #NZCv"
       ]
     },
     "adox rax, rbx": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "0xf3 REX.W 0x0f 0x38 0xf6"
       ],
       "ExpectedArm64ASM": [
-        "cset w20, vs",
-        "add x21, x6, x20",
-        "add x4, x4, x21",
-        "mrs x21, nzcv",
-        "cmp x4, x6",
-        "cset x22, lo",
-        "cmp x4, x6",
-        "cset x23, ls",
-        "cmp x20, #0x1 (1)",
-        "csel x20, x23, x22, eq",
-        "msr nzcv, x21",
-        "rmif x20, #0, #nzcV"
+        "mrs x20, nzcv",
+        "ccmp wzr, #0, #nzcv, vs",
+        "adcs x4, x6, x4",
+        "ccmp wzr, #0, #nzcV, lo",
+        "rmif x20, #28, #NZCv"
       ]
     }
   }
