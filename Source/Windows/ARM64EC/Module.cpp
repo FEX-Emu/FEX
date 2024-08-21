@@ -291,7 +291,13 @@ static void LoadStateFromECContext(FEXCore::Core::InternalThreadState* Thread, C
 
   if ((Context.ContextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT) {
     // Floating-point register state
-    CTX->SetXMMRegistersFromState(Thread, reinterpret_cast<const __uint128_t*>(Context.FltSave.XmmRegisters), nullptr);
+    if ((Context.ContextFlags & CONTEXT_XSTATE) == CONTEXT_XSTATE) {
+      const auto* Ymm = RtlLocateExtendedFeature(reinterpret_cast<CONTEXT_EX*>(&Context + 1), XSTATE_AVX, nullptr);
+      CTX->SetXMMRegistersFromState(Thread, reinterpret_cast<const __uint128_t*>(Context.FltSave.XmmRegisters),
+                                    reinterpret_cast<const __uint128_t*>(Ymm));
+    } else {
+      CTX->SetXMMRegistersFromState(Thread, reinterpret_cast<const __uint128_t*>(Context.FltSave.XmmRegisters), nullptr);
+    }
     memcpy(State.mm, Context.FltSave.FloatRegisters, sizeof(State.mm));
 
     State.FCW = Context.FltSave.ControlWord;
@@ -330,6 +336,11 @@ static ARM64_NT_CONTEXT StoreStateToPackedECContext(FEXCore::Core::InternalThrea
   ARM64_NT_CONTEXT ECContext {};
 
   ECContext.ContextFlags = CONTEXT_ARM64_FULL;
+  if (CPUFeatures->IsFeaturePresent(PF_AVX2_INSTRUCTIONS_AVAILABLE)) {
+    // This is a FEX extension and requires corresponding wine-side patches to be of use, however it is harmless to set
+    // even if those patches are not used.
+    ECContext.ContextFlags |= CONTEXT_ARM64_FEX_YMMSTATE;
+  }
 
   auto& State = Thread->CurrentFrame->State;
 
@@ -352,7 +363,7 @@ static ARM64_NT_CONTEXT StoreStateToPackedECContext(FEXCore::Core::InternalThrea
 
   ECContext.Pc = State.rip;
 
-  CTX->ReconstructXMMRegisters(Thread, reinterpret_cast<__uint128_t*>(&ECContext.V[0]), nullptr);
+  CTX->ReconstructXMMRegisters(Thread, reinterpret_cast<__uint128_t*>(&ECContext.V[0]), reinterpret_cast<__uint128_t*>(&ECContext.V[16]));
 
   ECContext.Lr = State.mm[0][0];
   ECContext.X6 = State.mm[1][0];
