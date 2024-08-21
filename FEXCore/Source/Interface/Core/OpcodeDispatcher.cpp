@@ -1909,39 +1909,49 @@ void OpDispatchBuilder::PEXT(OpcodeArgs) {
 void OpDispatchBuilder::ADXOp(OpcodeArgs) {
   const auto OpSize = OpSizeFromSrc(Op);
 
-  // Calculate flags early.
-  CalculateDeferredFlags();
+  // Only 32/64-bit anyway so allow garbage, we use 32-bit ops.
+  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  auto* Before = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
 
   // Handles ADCX and ADOX
-
   const bool IsADCX = Op->OP == 0x1F6;
+  auto Zero = _Constant(0);
 
-  auto* Flag = [&]() -> Ref {
-    if (IsADCX) {
-      return GetRFLAG(X86State::RFLAG_CF_RAW_LOC);
-    } else {
-      return GetRFLAG(X86State::RFLAG_OF_RAW_LOC);
-    }
-  }();
+  // Before we go trashing NZCV, save the current NZCV state.
+  Ref OldNZCV = GetNZCV();
 
-  auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  auto* Before = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+  // We want to use arm64 adc. For ADOX, copy the overflow flag into CF.  For
+  // ADCX, we just rectify the carry.
+  if (IsADCX) {
+    RectifyCarryInvert(false);
+  } else {
+    // If overflow, 0 - 0 sets carry. Else, forces carry to 0.
+    _CondSubNZCV(OpSize::i32Bit, Zero, Zero, {COND_FU}, 0x0 /* nzcv */);
+  }
 
-  auto ALUOp = _Add(OpSize, Src, Flag);
-  auto Result = _Add(OpSize, Before, ALUOp);
-
+  // Do the actual add.
+  HandleNZCV_RMW();
+  auto Result = _AdcWithFlags(OpSize, Src, Before);
   StoreResult(GPRClass, Op, Result, -1);
 
-  auto Zero = _Constant(0);
-  auto One = _Constant(1);
-  auto SelectOpLT = _Select(IR::COND_ULT, Result, Src, One, Zero);
-  auto SelectOpLE = _Select(IR::COND_ULE, Result, Src, One, Zero);
-  auto SelectFlag = _Select(IR::COND_EQ, Flag, One, SelectOpLE, SelectOpLT);
+  // Now restore all flags except the one we're updating.
+  if (CTX->HostFeatures.SupportsFlagM) {
+    // For ADOX, we need to copy the new carry into the overflow flag. If carry is clear (ULT with uninverted
+    // carry), 0 - 0 clears overflow. Else, force overflow on.
+    if (!IsADCX) {
+      _CondSubNZCV(OpSize::i32Bit, Zero, Zero, {COND_ULT}, 0x1 /* nzcV */);
+    }
 
-  if (IsADCX) {
-    SetCFDirect(SelectFlag);
+    _RmifNZCV(OldNZCV, 28, IsADCX ? 0xd /* NzcV */ : 0xe /* NZCv */);
   } else {
-    SetRFLAG<X86State::RFLAG_OF_RAW_LOC>(SelectFlag);
+    // For either operation, insert the new flag into the old NZCV.
+    bool SavedCFInvert = CFInverted;
+    CFInverted = false;
+    Ref OutputCF = GetRFLAG(X86State::RFLAG_CF_RAW_LOC, IsADCX);
+    CFInverted = IsADCX ? true : SavedCFInvert;
+
+    Ref NewNZCV = _Bfi(OpSize::i32Bit, 1, IsADCX ? 29 : 28, OldNZCV, OutputCF);
+    SetNZCV(NewNZCV);
   }
 }
 
