@@ -431,7 +431,7 @@ ApplicationWindow {
                                 pendingItemChange = -1;
                             }
 
-                            onCheckedButtonChanged: {
+                            onClicked: {
                                 if (pendingItemChange !== -1) {
                                     return;
                                 }
@@ -581,6 +581,16 @@ ApplicationWindow {
                                 checkedButton: ConfigModel.has("CacheObjectCodeCompilation", refreshCache)
                                                 ? cacheObjCodeRadios.children[ConfigModel.getInt("CacheObjectCodeCompilation", refreshCache)]
                                                 : null
+
+                                onClicked: (button) => {
+                                    configDirty = true
+                                    for (var idx in buttons) {
+                                        if (button === buttons[idx]) {
+                                            ConfigModel.setInt("CacheObjectCodeCompilation", idx)
+                                            return
+                                        }
+                                    }
+                                }
                             }
 
                             RowLayout {
