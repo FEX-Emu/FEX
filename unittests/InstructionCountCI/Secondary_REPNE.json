@@ -106,7 +106,7 @@
       "ExpectedInstructionCount": 2,
       "Comment": "0xf2 0x0f 0x2c",
       "ExpectedArm64ASM": [
-        "ldr d2, [x7]",
+        "ldr d2, [x6]",
         "fcvtzs w4, d2"
       ]
     },
@@ -121,7 +121,7 @@
       "ExpectedInstructionCount": 2,
       "Comment": "0xf2 0x0f 0x2c",
       "ExpectedArm64ASM": [
-        "ldr d2, [x7]",
+        "ldr d2, [x6]",
         "fcvtzs x4, d2"
       ]
     },
@@ -137,7 +137,7 @@
       "ExpectedInstructionCount": 3,
       "Comment": "0xf2 0x0f 0x2d",
       "ExpectedArm64ASM": [
-        "ldr d2, [x7]",
+        "ldr d2, [x6]",
         "frinti d0, d2",
         "fcvtzs x4, d0"
       ]
@@ -154,7 +154,7 @@
       "ExpectedInstructionCount": 3,
       "Comment": "0xf2 0x0f 0x2d",
       "ExpectedArm64ASM": [
-        "ldr d2, [x7]",
+        "ldr d2, [x6]",
         "frinti d0, d2",
         "fcvtzs x4, d0"
       ]

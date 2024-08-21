@@ -18,11 +18,11 @@
         "adc rcx, rcx"
       ],
       "ExpectedArm64ASM": [
-        "adds x4, x4, x7",
+        "adds x4, x4, x6",
         "mov w27, #0x0",
-        "adcs x26, x5, x5",
+        "adcs x26, x7, x7",
         "cfinv",
-        "mov x5, x26"
+        "mov x7, x26"
       ]
     },
     "Chained sub": {
@@ -32,10 +32,10 @@
         "sbb rcx, rdx"
       ],
       "ExpectedArm64ASM": [
-        "subs x4, x4, x7",
-        "eor w27, w5, w6",
-        "sbcs x26, x5, x6",
-        "mov x5, x26"
+        "subs x4, x4, x6",
+        "eor w27, w7, w5",
+        "sbcs x26, x7, x5",
+        "mov x7, x26"
       ]
     },
     "Inverted add": {
@@ -46,10 +46,10 @@
         "cmc"
       ],
       "ExpectedArm64ASM": [
-        "adds x4, x4, x7",
-        "eor w27, w5, w6",
-        "adcs x26, x5, x6",
-        "mov x5, x26"
+        "adds x4, x4, x6",
+        "eor w27, w7, w5",
+        "adcs x26, x7, x5",
+        "mov x7, x26"
       ]
     },
     "Inverted sub": {
@@ -60,10 +60,10 @@
         "cmc"
       ],
       "ExpectedArm64ASM": [
-        "subs x4, x4, x7",
+        "subs x4, x4, x6",
         "mov w27, #0x0",
-        "sbcs x26, x5, x5",
-        "mov x5, x26",
+        "sbcs x26, x7, x7",
+        "mov x7, x26",
         "cfinv"
       ]
     },
@@ -75,9 +75,9 @@
         "test rcx, rcx"
       ],
       "ExpectedArm64ASM": [
-        "adds x4, x4, x7",
-        "adc x5, x5, x5",
-        "ands x26, x5, x5",
+        "adds x4, x4, x6",
+        "adc x7, x7, x7",
+        "ands x26, x7, x7",
         "cfinv"
       ]
     },
@@ -88,7 +88,7 @@
         "inc rax"
       ],
       "ExpectedArm64ASM": [
-        "adds x4, x4, x7",
+        "adds x4, x4, x6",
         "cset w20, lo",
         "adds x26, x4, #0x1 (1)",
         "rmif x20, #63, #nzCv",
@@ -104,9 +104,9 @@
         "test rax, rdx"
       ],
       "ExpectedArm64ASM": [
-        "add x4, x4, x7",
+        "add x4, x4, x6",
         "add x4, x4, #0x1 (1)",
-        "ands x26, x4, x6",
+        "ands x26, x4, x5",
         "cfinv"
       ]
     },
@@ -117,7 +117,7 @@
         "dec rax"
       ],
       "ExpectedArm64ASM": [
-        "subs x4, x4, x7",
+        "subs x4, x4, x6",
         "cset w20, hs",
         "subs x26, x4, #0x1 (1)",
         "rmif x20, #63, #nzCv",
@@ -133,9 +133,9 @@
         "test rax, rcx"
       ],
       "ExpectedArm64ASM": [
-        "sub x4, x4, x7",
+        "sub x4, x4, x6",
         "sub x4, x4, #0x1 (1)",
-        "ands x26, x4, x5",
+        "ands x26, x4, x7",
         "cfinv"
       ]
     },
@@ -185,8 +185,8 @@
         "test rax, rdx"
       ],
       "ExpectedArm64ASM": [
-        "asr x4, x4, x5",
-        "ands x26, x4, x6",
+        "asr x4, x4, x7",
+        "ands x26, x4, x5",
         "cfinv"
       ]
     },
@@ -197,14 +197,14 @@
         "test rax, rdx"
       ],
       "ExpectedArm64ASM": [
-        "and x20, x5, #0x3f",
+        "and x20, x7, #0x3f",
         "cbz x20, #+0x38",
-        "lsr x20, x4, x5",
+        "lsr x20, x4, x7",
         "cset w21, lo",
-        "neg x22, x5",
+        "neg x22, x7",
         "lsl x23, x4, x22",
         "orr x20, x20, x23, lsl #1",
-        "sub x23, x5, #0x1 (1)",
+        "sub x23, x7, #0x1 (1)",
         "lsr x23, x4, x23",
         "eor x23, x23, #0x1",
         "rmif x23, #63, #nzCv",
@@ -212,7 +212,7 @@
         "orr x4, x20, x21",
         "eor x20, x4, x4, lsr #1",
         "rmif x20, #62, #nzcV",
-        "ands x26, x4, x6",
+        "ands x26, x4, x5",
         "cfinv"
       ]
     },
@@ -224,10 +224,10 @@
         "test cl, cl"
       ],
       "ExpectedArm64ASM": [
-        "cmp x4, x7",
+        "cmp x4, x6",
         "cset x20, eq",
-        "bfxil x5, x20, #0, #8",
-        "mov x26, x5",
+        "bfxil x7, x20, #0, #8",
+        "mov x26, x7",
         "cmn wzr, w26, lsl #24",
         "cfinv"
       ]
@@ -240,10 +240,10 @@
         "test cl, cl"
       ],
       "ExpectedArm64ASM": [
-        "adds x4, x4, x7",
+        "adds x4, x4, x6",
         "cset x20, eq",
-        "bfxil x5, x20, #0, #8",
-        "mov x26, x5",
+        "bfxil x7, x20, #0, #8",
+        "mov x26, x7",
         "cmn wzr, w26, lsl #24",
         "cfinv"
       ]
@@ -256,10 +256,10 @@
         "test cl, cl"
       ],
       "ExpectedArm64ASM": [
-        "ands w4, w4, w7",
+        "ands w4, w4, w6",
         "cset x20, eq",
-        "bfxil x5, x20, #0, #8",
-        "mov x26, x5",
+        "bfxil x7, x20, #0, #8",
+        "mov x26, x7",
         "cmn wzr, w26, lsl #24",
         "cfinv"
       ]
@@ -272,36 +272,34 @@
         "test cl, cl"
       ],
       "ExpectedArm64ASM": [
-        "and w26, w4, w7",
+        "and w26, w4, w6",
         "mov x4, x26",
         "eor w20, w26, w26, lsr #4",
         "eor w20, w20, w20, lsr #2",
         "eon w20, w20, w20, lsr #1",
         "and x20, x20, #0x1",
-        "bfxil x5, x20, #0, #8",
-        "mov x26, x5",
+        "bfxil x7, x20, #0, #8",
+        "mov x26, x7",
         "cmn wzr, w26, lsl #24",
         "cfinv"
       ]
     },
     "Dead cmpxchg flags": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 11,
       "x86Insts": [
         "cmpxchg8b [rbp]",
         "test rax, rax"
       ],
       "ExpectedArm64ASM": [
-        "mov x0, x7",
-        "mov x1, x5",
         "mov x20, x4",
-        "mov x21, x6",
-        "caspal w20, w21, w0, w1, [x9]",
+        "mov x21, x5",
+        "caspal w20, w21, w6, w7, [x9]",
         "mrs x0, nzcv",
         "cmp w20, w4",
-        "ccmp w21, w6, #nzcv, eq",
+        "ccmp w21, w5, #nzcv, eq",
         "rmif x0, #0, #NzCV",
         "csel x4, x20, x4, ne",
-        "csel x6, x21, x6, ne",
+        "csel x5, x21, x5, ne",
         "ands x26, x4, x4",
         "cfinv"
       ]

@@ -832,7 +832,7 @@
         "0x66 0x0f 0x38 0xf0"
       ],
       "ExpectedArm64ASM": [
-        "ldrh w20, [x7]",
+        "ldrh w20, [x6]",
         "rev w20, w20",
         "bfxil x4, x20, #16, #16"
       ]
@@ -843,7 +843,7 @@
         "0x66 0x0f 0x38 0xf0"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x7]",
+        "ldr w20, [x6]",
         "rev w4, w20"
       ]
     },
@@ -853,7 +853,7 @@
         "REX.W 0x66 0x0f 0x38 0xf0"
       ],
       "ExpectedArm64ASM": [
-        "ldr x20, [x7]",
+        "ldr x20, [x6]",
         "rev x4, x20"
       ]
     },
@@ -864,7 +864,7 @@
       ],
       "ExpectedArm64ASM": [
         "cset w20, lo",
-        "mov w21, w7",
+        "mov w21, w6",
         "mov w22, w4",
         "add w23, w21, w20",
         "add w4, w22, w23",
@@ -887,12 +887,12 @@
       ],
       "ExpectedArm64ASM": [
         "cset w20, lo",
-        "add x21, x7, x20",
+        "add x21, x6, x20",
         "add x4, x4, x21",
         "mrs x21, nzcv",
-        "cmp x4, x7",
+        "cmp x4, x6",
         "cset x22, lo",
-        "cmp x4, x7",
+        "cmp x4, x6",
         "cset x23, ls",
         "cmp x20, #0x1 (1)",
         "csel x20, x23, x22, eq",
@@ -908,7 +908,7 @@
       ],
       "ExpectedArm64ASM": [
         "cset w20, vs",
-        "mov w21, w7",
+        "mov w21, w6",
         "mov w22, w4",
         "add w23, w21, w20",
         "add w4, w22, w23",
@@ -930,12 +930,12 @@
       ],
       "ExpectedArm64ASM": [
         "cset w20, vs",
-        "add x21, x7, x20",
+        "add x21, x6, x20",
         "add x4, x4, x21",
         "mrs x21, nzcv",
-        "cmp x4, x7",
+        "cmp x4, x6",
         "cset x22, lo",
-        "cmp x4, x7",
+        "cmp x4, x6",
         "cset x23, ls",
         "cmp x20, #0x1 (1)",
         "csel x20, x23, x22, eq",

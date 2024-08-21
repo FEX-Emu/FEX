@@ -17,7 +17,7 @@
       "ExpectedInstructionCount": 9,
       "Comment": "0xf3 0x0f 0xb8",
       "ExpectedArm64ASM": [
-        "uxth w20, w7",
+        "uxth w20, w6",
         "fmov s0, w20",
         "cnt v0.8b, v0.8b",
         "addp v0.8b, v0.8b, v0.8b",
@@ -32,7 +32,7 @@
       "ExpectedInstructionCount": 7,
       "Comment": "0xf3 0x0f 0xb8",
       "ExpectedArm64ASM": [
-        "fmov s0, w7",
+        "fmov s0, w6",
         "cnt v0.8b, v0.8b",
         "addv b0, v0.8b",
         "umov w4, v0.b[0]",
@@ -45,7 +45,7 @@
       "ExpectedInstructionCount": 7,
       "Comment": "0xf3 0x0f 0xb8",
       "ExpectedArm64ASM": [
-        "fmov d0, x7",
+        "fmov d0, x6",
         "cnt v0.8b, v0.8b",
         "addv b0, v0.8b",
         "umov w4, v0.b[0]",
@@ -58,7 +58,7 @@
       "ExpectedInstructionCount": 7,
       "Comment": "0xf3 0x0f 0xbc",
       "ExpectedArm64ASM": [
-        "rbit w20, w7",
+        "rbit w20, w6",
         "orr w20, w20, #0x8000",
         "clz w20, w20",
         "bfxil x4, x20, #0, #16",
@@ -71,7 +71,7 @@
       "ExpectedInstructionCount": 5,
       "Comment": "0xf3 0x0f 0xbc",
       "ExpectedArm64ASM": [
-        "rbit w4, w7",
+        "rbit w4, w6",
         "clz w4, w4",
         "cmp w4, #0x0 (0)",
         "eor x20, x4, #0x20",
@@ -82,7 +82,7 @@
       "ExpectedInstructionCount": 5,
       "Comment": "0xf3 0x0f 0xbc",
       "ExpectedArm64ASM": [
-        "rbit x4, x7",
+        "rbit x4, x6",
         "clz x4, x4",
         "cmp x4, #0x0 (0)",
         "eor x20, x4, #0x40",
@@ -93,7 +93,7 @@
       "ExpectedInstructionCount": 7,
       "Comment": "0xf3 0x0f 0xbd",
       "ExpectedArm64ASM": [
-        "lsl w20, w7, #16",
+        "lsl w20, w6, #16",
         "orr w20, w20, #0x8000",
         "clz w20, w20",
         "bfxil x4, x20, #0, #16",
@@ -106,7 +106,7 @@
       "ExpectedInstructionCount": 4,
       "Comment": "0xf3 0x0f 0xbd",
       "ExpectedArm64ASM": [
-        "clz w4, w7",
+        "clz w4, w6",
         "cmp w4, #0x0 (0)",
         "eor x20, x4, #0x20",
         "rmif x20, #4, #nzCv"
@@ -116,7 +116,7 @@
       "ExpectedInstructionCount": 4,
       "Comment": "0xf3 0x0f 0xbd",
       "ExpectedArm64ASM": [
-        "clz x4, x7",
+        "clz x4, x6",
         "cmp x4, #0x0 (0)",
         "eor x20, x4, #0x40",
         "rmif x20, #5, #nzCv"

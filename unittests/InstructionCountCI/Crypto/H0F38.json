@@ -95,7 +95,7 @@
         "0xf2 0x0f 0x38 0xf0"
       ],
       "ExpectedArm64ASM": [
-        "crc32cb w4, w4, w7"
+        "crc32cb w4, w4, w6"
       ]
     },
     "crc32 eax, bx": {
@@ -104,7 +104,7 @@
         "0xf2 0x0f 0x38 0xf1"
       ],
       "ExpectedArm64ASM": [
-        "crc32ch w4, w4, w7"
+        "crc32ch w4, w4, w6"
       ]
     },
     "crc32 eax, ebx": {
@@ -113,7 +113,7 @@
         "0xf2 0x0f 0x38 0xf1"
       ],
       "ExpectedArm64ASM": [
-        "crc32cw w4, w4, w7"
+        "crc32cw w4, w4, w6"
       ]
     },
     "crc32 rax, bl": {
@@ -122,7 +122,7 @@
         "0xf2 0x0f 0x38 0xf0"
       ],
       "ExpectedArm64ASM": [
-        "crc32cb w4, w4, w7"
+        "crc32cb w4, w4, w6"
       ]
     },
     "crc32 rax, rbx": {
@@ -131,7 +131,7 @@
         "0xf2 0x0f 0x38 0xf1"
       ],
       "ExpectedArm64ASM": [
-        "crc32cx w4, w4, x7"
+        "crc32cx w4, w4, x6"
       ]
     }
   }

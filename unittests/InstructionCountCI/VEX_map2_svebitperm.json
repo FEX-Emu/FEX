@@ -19,8 +19,8 @@
         "Map 2 0b10 0xf5 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "fmov s0, w7",
-        "fmov s1, w5",
+        "fmov s0, w6",
+        "fmov s1, w7",
         "bext z0.s, z0.s, z1.s",
         "mov w4, v0.s[0]"
       ]
@@ -31,8 +31,8 @@
         "Map 2 0b10 0xf5 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "fmov d0, x7",
-        "fmov d1, x5",
+        "fmov d0, x6",
+        "fmov d1, x7",
         "bext z0.d, z0.d, z1.d",
         "mov x4, v0.d[0]"
       ]
@@ -43,8 +43,8 @@
         "Map 2 0b11 0xf5 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "fmov s0, w7",
-        "fmov s1, w5",
+        "fmov s0, w6",
+        "fmov s1, w7",
         "bdep z0.s, z0.s, z1.s",
         "mov w4, v0.s[0]"
       ]
@@ -55,8 +55,8 @@
         "Map 2 0b11 0xf5 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "fmov d0, x7",
-        "fmov d1, x5",
+        "fmov d0, x6",
+        "fmov d1, x7",
         "bdep z0.d, z0.d, z1.d",
         "mov x4, v0.d[0]"
       ]

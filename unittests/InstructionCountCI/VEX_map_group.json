@@ -613,9 +613,9 @@
         "Map group 17 0b001 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "sub w20, w7, #0x1 (1)",
-        "and w4, w20, w7",
-        "cmp x7, #0x0 (0)",
+        "sub w20, w6, #0x1 (1)",
+        "and w4, w20, w6",
+        "cmp x6, #0x0 (0)",
         "cset x20, ne",
         "cmp w4, #0x0 (0)",
         "mrs x21, nzcv",
@@ -629,9 +629,9 @@
         "Map group 17 0b001 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "sub x20, x7, #0x1 (1)",
-        "and x4, x20, x7",
-        "cmp x7, #0x0 (0)",
+        "sub x20, x6, #0x1 (1)",
+        "and x4, x20, x6",
+        "cmp x6, #0x0 (0)",
         "cset x20, ne",
         "cmp x4, #0x0 (0)",
         "mrs x21, nzcv",
@@ -645,9 +645,9 @@
         "Map group 17 0b010 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "sub w20, w7, #0x1 (1)",
-        "eor w4, w20, w7",
-        "cmp x7, #0x0 (0)",
+        "sub w20, w6, #0x1 (1)",
+        "eor w4, w20, w6",
+        "cmp x6, #0x0 (0)",
         "cset x20, ne",
         "cmp w4, #0x0 (0)",
         "mrs x21, nzcv",
@@ -661,9 +661,9 @@
         "Map group 17 0b010 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "sub x20, x7, #0x1 (1)",
-        "eor x4, x20, x7",
-        "cmp x7, #0x0 (0)",
+        "sub x20, x6, #0x1 (1)",
+        "eor x4, x20, x6",
+        "cmp x6, #0x0 (0)",
         "cset x20, ne",
         "cmp x4, #0x0 (0)",
         "mrs x21, nzcv",
@@ -677,8 +677,8 @@
         "Map group 17 0b011 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "neg w20, w7",
-        "and w4, w7, w20",
+        "neg w20, w6",
+        "and w4, w6, w20",
         "cmp w4, #0x0 (0)",
         "cset w20, eq",
         "mrs x21, nzcv",
@@ -692,8 +692,8 @@
         "Map group 17 0b011 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "neg x20, x7",
-        "and x4, x7, x20",
+        "neg x20, x6",
+        "and x4, x6, x20",
         "cmp x4, #0x0 (0)",
         "cset w20, eq",
         "mrs x21, nzcv",

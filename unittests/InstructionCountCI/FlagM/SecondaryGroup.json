@@ -705,37 +705,33 @@
       ]
     },
     "cmpxchg8b [rbp]": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP9 0x0F 0xC7 /1",
       "ExpectedArm64ASM": [
-        "mov x0, x7",
-        "mov x1, x5",
         "mov x20, x4",
-        "mov x21, x6",
-        "caspal w20, w21, w0, w1, [x9]",
+        "mov x21, x5",
+        "caspal w20, w21, w6, w7, [x9]",
         "mrs x0, nzcv",
         "cmp w20, w4",
-        "ccmp w21, w6, #nzcv, eq",
+        "ccmp w21, w5, #nzcv, eq",
         "rmif x0, #0, #NzCV",
         "csel x4, x20, x4, ne",
-        "csel x6, x21, x6, ne"
+        "csel x5, x21, x5, ne"
       ]
     },
     "cmpxchg16b [rbp]": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP9 0x0F 0xC7 /1",
       "ExpectedArm64ASM": [
-        "mov x0, x7",
-        "mov x1, x5",
         "mov x20, x4",
-        "mov x21, x6",
-        "caspal x20, x21, x0, x1, [x9]",
+        "mov x21, x5",
+        "caspal x20, x21, x6, x7, [x9]",
         "mrs x0, nzcv",
         "cmp x20, x4",
-        "ccmp x21, x6, #nzcv, eq",
+        "ccmp x21, x5, #nzcv, eq",
         "rmif x0, #0, #NzCV",
         "csel x4, x20, x4, ne",
-        "csel x6, x21, x6, ne"
+        "csel x5, x21, x5, ne"
       ]
     },
     "rdrand ax": {
