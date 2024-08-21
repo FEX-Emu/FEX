@@ -25,6 +25,17 @@ ULONG CreateDispositionToNT(DWORD Disposition) {
   }
 }
 
+ULONG OpenFlagsToNT(DWORD Flags) {
+  ULONG NTFlags = 0;
+  NTFlags |= (Flags & FILE_FLAG_BACKUP_SEMANTICS) ? FILE_OPEN_FOR_BACKUP_INTENT : 0;
+  NTFlags |= (Flags & FILE_FLAG_DELETE_ON_CLOSE) ? FILE_DELETE_ON_CLOSE : 0;
+  NTFlags |= (Flags & FILE_FLAG_NO_BUFFERING) ? FILE_NO_INTERMEDIATE_BUFFERING : 0;
+  NTFlags |= (Flags & FILE_FLAG_RANDOM_ACCESS) ? FILE_RANDOM_ACCESS : 0;
+  NTFlags |= (Flags & FILE_FLAG_SEQUENTIAL_SCAN) ? FILE_SEQUENTIAL_ONLY : 0;
+  NTFlags |= (Flags & FILE_FLAG_WRITE_THROUGH) ? FILE_WRITE_THROUGH : 0;
+  return NTFlags;
+}
+
 FILE_INFORMATION_CLASS FileInfoClassToNT(FILE_INFO_BY_HANDLE_CLASS InformationClass) {
   switch (InformationClass) {
   case FileBasicInfo: return FileBasicInformation;
@@ -60,8 +71,9 @@ DLLEXPORT_FUNC(HANDLE, CreateFileW,
 
   HANDLE Handle;
   IO_STATUS_BLOCK IOSB;
-  NTSTATUS Status = NtCreateFile(&Handle, dwDesiredAccess | GENERIC_READ | SYNCHRONIZE, &ObjAttributes, &IOSB, nullptr, dwFlagsAndAttributes,
-                                 dwShareMode, CreateDispositionToNT(dwCreationDisposition), FILE_SYNCHRONOUS_IO_NONALERT, nullptr, 0);
+  NTSTATUS Status =
+    NtCreateFile(&Handle, dwDesiredAccess | GENERIC_READ | SYNCHRONIZE, &ObjAttributes, &IOSB, nullptr, OpenFlagsToNT(dwFlagsAndAttributes),
+                 dwShareMode, CreateDispositionToNT(dwCreationDisposition), FILE_SYNCHRONOUS_IO_NONALERT, nullptr, 0);
   return WinAPIReturn(Status) ? Handle : INVALID_HANDLE_VALUE;
 }
 
