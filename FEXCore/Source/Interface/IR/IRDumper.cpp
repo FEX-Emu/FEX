@@ -52,7 +52,7 @@ static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView
   }
 
   static constexpr std::array<std::string_view, 22> CondNames = {"EQ",  "NEQ", "UGE",  "ULT", "MI",  "PL",  "VS",   "VC",
-                                                                 "UGT", "ULE", "SGE",  "SLT", "SGT", "SLE", "ANDZ", "ANDNZ",
+                                                                 "UGT", "ULE", "SGE",  "SLT", "SGT", "SLE", "TSTZ", "TSTNZ",
                                                                  "FLU", "FGE", "FLEU", "FGT", "FU",  "FNU"};
 
   *out << CondNames[Arg];
