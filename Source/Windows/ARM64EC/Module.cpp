@@ -236,7 +236,7 @@ static bool HandleUnalignedAccess(ARM64_NT_CONTEXT& Context) {
 static void LoadStateFromECContext(FEXCore::Core::InternalThreadState* Thread, CONTEXT& Context) {
   auto& State = Thread->CurrentFrame->State;
 
-  if (Context.ContextFlags & CONTEXT_INTEGER) {
+  if ((Context.ContextFlags & CONTEXT_INTEGER) == CONTEXT_INTEGER) {
     // General register state
     State.gregs[FEXCore::X86State::REG_RAX] = Context.Rax;
     State.gregs[FEXCore::X86State::REG_RCX] = Context.Rcx;
@@ -255,14 +255,14 @@ static void LoadStateFromECContext(FEXCore::Core::InternalThreadState* Thread, C
     State.gregs[FEXCore::X86State::REG_R15] = Context.R15;
   }
 
-  if (Context.ContextFlags & CONTEXT_CONTROL) {
+  if ((Context.ContextFlags & CONTEXT_CONTROL) == CONTEXT_CONTROL) {
     State.rip = Context.Rip;
     State.gregs[FEXCore::X86State::REG_RSP] = Context.Rsp;
     State.gregs[FEXCore::X86State::REG_RBP] = Context.Rbp;
     CTX->SetFlagsFromCompactedEFLAGS(Thread, Context.EFlags);
   }
 
-  if (Context.ContextFlags & CONTEXT_SEGMENTS) {
+  if ((Context.ContextFlags & CONTEXT_SEGMENTS) == CONTEXT_SEGMENTS) {
     State.es_idx = Context.SegEs & 0xffff;
     State.cs_idx = Context.SegCs & 0xffff;
     State.ss_idx = Context.SegSs & 0xffff;
@@ -281,7 +281,7 @@ static void LoadStateFromECContext(FEXCore::Core::InternalThreadState* Thread, C
     State.ds_cached = 0;
   }
 
-  if (Context.ContextFlags & CONTEXT_FLOATING_POINT) {
+  if ((Context.ContextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT) {
     // Floating-point register state
     CTX->SetXMMRegistersFromState(Thread, reinterpret_cast<const __uint128_t*>(Context.FltSave.XmmRegisters), nullptr);
     memcpy(State.mm, Context.FltSave.FloatRegisters, sizeof(State.mm));
