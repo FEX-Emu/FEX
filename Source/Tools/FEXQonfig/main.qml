@@ -670,4 +670,36 @@ ApplicationWindow {
             }
         }}
     }
+
+    footer: Pane {
+        anchors.left: parent.left
+        anchors.right: parent.right
+
+        padding: 0
+
+        ColumnLayout{
+            anchors.left: parent.left
+            anchors.right: parent.right
+            spacing: 0
+
+            ToolSeparator {
+                Layout.fillWidth: true
+                orientation: Qt.Horizontal
+
+                // Override padding from theme.
+                // Some themes use verticalPadding, others topPadding/bottomPadding, so we set them all.
+                verticalPadding: 0
+                bottomPadding: 0
+                topPadding: 0
+            }
+
+            Label {
+                Layout.alignment: Qt.AlignHCenter
+                enabled: false
+                text: configFilename.toString() === ""
+                        ? qsTr("Config.json not found — loaded defaults")
+                        : qsTr("Editing %1").arg(urlToLocalFile(configFilename))
+            }
+        }
+    }
 }
