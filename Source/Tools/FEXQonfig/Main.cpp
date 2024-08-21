@@ -137,8 +137,6 @@ static void ConfigInit() {
   NameToConfigLookup[#json] = FEXCore::Config::ConfigOption::CONFIG_##enum;
 #include <FEXCore/Config/ConfigValues.inl>
 #undef OPT_BASE
-
-  LoadDefaultSettings();
 }
 
 QQuickWindow* Window = nullptr; // TODO: Drop global
@@ -184,24 +182,13 @@ void RootFSModel::Reload() {
   }
 }
 
-bool OpenFile(fextl::string Filename, bool LoadDefault = false) {
+// Returns true on success
+static bool OpenFile(fextl::string Filename) {
   std::error_code ec {};
   if (!std::filesystem::exists(Filename, ec)) {
-    // TODO: Actually make this explicit
-    // if (LoadDefault) {
-    //   LoadDefaultSettings();
-    //   // TODO: Info message
-    //   ConfigFilename = Filename;
-    //   OpenMsgMessagePopup("Opened with default options: " + Filename);
-    //   return true;
-    // }
-    // TODO: Error message
-    // OpenMsgMessagePopup("Couldn't open: " + Filename);
-    std::abort();
     return false;
   }
-  // ConfigOpen = true;
-  // ConfigFilename = Filename;
+
   LoadedConfig = FEX::Config::CreateMainLayer(&Filename);
   LoadedConfig->Load();
 
@@ -275,11 +262,19 @@ int main(int Argc, char** Argv) {
   QApplication App(Argc, Argv);
 
   FEX::Config::InitializeConfigs();
+  ConfigInit();
+
+  fextl::string ConfigFilename = Argc > 1 ? Argv[1] : FEXCore::Config::GetConfigFileLocation();
+  qInfo() << "Opening" << ConfigFilename.c_str();
+  if (OpenFile(ConfigFilename)) {
+  } else {
+    // Load defaults if not found
+    ConfigFilename.clear();
+    LoadDefaultSettings();
+  }
 
   ConfigRuntime Runtime;
 
-  ConfigInit();
-  // TODO: Open config from default location
   ConfigModelInst = fextl::make_unique<ConfigModel>();
   EnvVarModelInst = fextl::make_unique<EnvVarModel>();
   RootFSList = fextl::make_unique<RootFSModel>();
@@ -290,6 +285,11 @@ int main(int Argc, char** Argv) {
   qmlRegisterSingletonInstance<RootFSModel>("FEX.RootFSModel", 1, 0, "RootFSModel", RootFSList.get());
   Engine.load(QUrl("qrc:/main.qml"));
   /*auto**/ Window = qobject_cast<QQuickWindow*>(Engine.rootObjects().first());
+  if (!ConfigFilename.empty()) {
+    Window->setProperty("configFilename", "file://" + QString {ConfigFilename.c_str()});
+  } else {
+    Window->setProperty("configDirty", true);
+  }
   ConfigRuntime::connect(Window, SIGNAL(selectedConfigFile(const QUrl&)), &Runtime, SLOT(onLoad(const QUrl&)));
   ConfigRuntime::connect(Window, SIGNAL(triggeredSave(const QUrl&)), &Runtime, SLOT(onSave(const QUrl&)));
   ConfigRuntime::connect(ConfigModelInst.get(), SIGNAL(modelReset()), Window, SLOT(refreshUI()));
