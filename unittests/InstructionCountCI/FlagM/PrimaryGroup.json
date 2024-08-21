@@ -2240,25 +2240,23 @@
       "ExpectedInstructionCount": 3,
       "Comment": "GROUP2 0xf7 /0",
       "ExpectedArm64ASM": [
-        "mov x26, x6",
-        "cmn wzr, w26, lsl #16",
-        "cfinv"
+        "cmn wzr, w6, lsl #16",
+        "cfinv",
+        "mov x26, x6"
       ]
     },
     "test ebx, -1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": "GROUP2 0xf7 /0",
       "ExpectedArm64ASM": [
-        "ands w26, w6, w6",
-        "cfinv"
+        "subs w26, w6, #0x0 (0)"
       ]
     },
     "test rbx, -1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": "GROUP2 0xf7 /0",
       "ExpectedArm64ASM": [
-        "ands x26, x6, x6",
-        "cfinv"
+        "subs x26, x6, #0x0 (0)"
       ]
     },
     "neg bx": {
