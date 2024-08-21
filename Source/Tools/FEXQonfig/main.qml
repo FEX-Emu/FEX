@@ -57,7 +57,7 @@ ApplicationWindow {
         id: confirmCloseDialog
         title: qsTr("Save changes")
         text: configFilename.toString() === "" ? qsTr("Save changes before quitting?") : qsTr("Save changes to %1 before quitting?").arg(urlToLocalFile(configFilename))
-        enabledButtons: buttonSave | buttonDiscard | buttonCancel
+        buttons: buttonSave | buttonDiscard | buttonCancel
 
         onButtonClicked: (button) => {
             switch (button) {
