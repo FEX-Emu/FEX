@@ -302,7 +302,18 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs) {
     Before = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
   }
 
-  Ref Result = CalculateFlags_ADC(Size, Before, Src);
+  Ref Result;
+  if (!DestIsLockedMem(Op) && Op->Src[SrcIndex].IsLiteral() && Op->Src[SrcIndex].Literal() == 0 && Size >= 4) {
+    HandleNZCV_RMW();
+    RectifyCarryInvert(true);
+    Result = _AdcZeroWithFlags(OpSize, Before);
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(Before);
+    CalculatePF(Result);
+    CFInverted = false;
+  } else {
+    Result = CalculateFlags_ADC(Size, Before, Src);
+  }
+
   if (!DestIsLockedMem(Op)) {
     StoreResult(GPRClass, Op, Result, -1);
   }

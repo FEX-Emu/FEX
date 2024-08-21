@@ -1171,6 +1171,21 @@
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
+      "GPR = AdcZero OpSize:#Size, GPR:$Src1": {
+        "Desc": ["Adds GPR with inverted carry-in"],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
+      },
+      "GPR = AdcZeroWithFlags OpSize:#Size, GPR:$Src1": {
+        "Desc": ["Adds and set NZCV for the sum of GPR and inverted carry-in given as NZCV"],
+        "HasSideEffects": true,
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
+      },
       "GPR = SbbWithFlags OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Subtracts and set NZCV for the difference of two GPRs and carry-in given as NZCV"],
         "HasSideEffects": true,

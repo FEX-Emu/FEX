@@ -144,6 +144,14 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
       .ReplacementNoWrite = OP_ADCNZCV,
     };
 
+  case OP_ADCZEROWITHFLAGS:
+    return {
+      .Read = FLAG_C,
+      .Write = FLAG_NZCV,
+      .CanReplace = true,
+      .Replacement = OP_ADCZERO,
+    };
+
   case OP_SBBWITHFLAGS:
     return {
       .Read = FLAG_C,
