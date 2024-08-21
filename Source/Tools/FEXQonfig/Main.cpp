@@ -222,8 +222,8 @@ fextl::unique_ptr<ConfigModel> ConfigModelInst;
 fextl::unique_ptr<EnvVarModel> EnvVarModelInst;
 
 void ConfigRuntime::onSave(const QUrl& Filename) {
+  qInfo() << "Saving to" << Filename.toLocalFile().toStdString().c_str();
   FEX::Config::SaveLayerToJSON(Filename.toLocalFile().toStdString().c_str(), LoadedConfig.get());
-  printf("Config Saved to: '%s'\n", Filename.toLocalFile().toStdString().c_str());
 }
 
 void ConfigRuntime::onLoad(const QUrl& Filename) {

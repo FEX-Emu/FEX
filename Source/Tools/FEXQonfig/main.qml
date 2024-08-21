@@ -30,6 +30,15 @@ ApplicationWindow {
         refreshCache = !refreshCache
     }
 
+    function urlToLocalFile(theurl: url) {
+        var str = theurl.toString()
+        if (str.startsWith("file://")) {
+            return decodeURIComponent(str.substring(7))
+        }
+
+        return str;
+    }
+
     FileDialog {
         id: openFileDialog
         title: qsTr("Open FEX configuration")
@@ -39,7 +48,6 @@ ApplicationWindow {
 
         onAccepted: {
             root.selectedConfigFile(fileUrl)
-            // TODO: Strip uri prefix
             configFilename = fileUrl
         }
     }
@@ -47,8 +55,7 @@ ApplicationWindow {
     MessageDialog {
         id: confirmCloseDialog
         title: qsTr("Save changes")
-        // TODO: Print filename to save
-        text: configFilename === "" ? qsTr("Save changes before quitting?") : qsTr("Save changes to %1 before quitting?").arg(configFilename)
+        text: configFilename.toString() === "" ? qsTr("Save changes before quitting?") : qsTr("Save changes to %1 before quitting?").arg(urlToLocalFile(configFilename))
         standardButtons: StandardButton.Save | StandardButton.Discard | StandardButton.Cancel
 
         onAccepted: {
@@ -73,7 +80,7 @@ ApplicationWindow {
         if (filename === "") {
             filename = configFilename
         }
-        // console.log("Saving to " + filename + (filename.toString() === ""))
+
         if (filename.toString() === "") {
             // Filename not yet set => trigger "Save As" dialog
 
@@ -197,12 +204,9 @@ ApplicationWindow {
 
         FileDialog {
             id: fileSelectorDialog
-            title: qsTr("TODO")
-            nameFilters: [ "TODO" ]
-
             onAccepted: {
-                // TODO: Strip file prefix
-                ConfigModel.setString(config, fileUrl.toString())
+                configDirty = true
+                ConfigModel.setString(config, urlToLocalFile(fileUrl))
             }
         }
 
