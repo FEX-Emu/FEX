@@ -15,6 +15,7 @@
   ],
   "Instructions": {
     "adds xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 2,
       "Comment": [
         "Redundant scalar operations should get eliminated with AFP"

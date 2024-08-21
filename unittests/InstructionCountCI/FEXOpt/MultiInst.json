@@ -17,6 +17,7 @@
   ],
   "Instructions": {
     "push ax, bx": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 2,
       "Comment": [
         "Mergable 16-bit pushes. May or may not be an optimization."
@@ -31,6 +32,7 @@
       ]
     },
     "push rax, rbx": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 2,
       "Comment": [
         "Mergable 64-bit pushes"
@@ -45,6 +47,7 @@
       ]
     },
     "adds xmm0, xmm1, xmm2": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 4,
       "Comment": [
         "Redundant scalar adds that can get eliminated without AFP."
@@ -61,6 +64,7 @@
       ]
     },
     "positive movsb": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 6,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -80,6 +84,7 @@
       ]
     },
     "positive movsw": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 6,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -99,6 +104,7 @@
       ]
     },
     "positive movsd": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 6,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -118,6 +124,7 @@
       ]
     },
     "positive movsq": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 6,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -137,6 +144,7 @@
       ]
     },
     "negative movsb": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 6,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -156,6 +164,7 @@
       ]
     },
     "negative movsw": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 6,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -175,6 +184,7 @@
       ]
     },
     "negative movsd": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 6,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -194,6 +204,7 @@
       ]
     },
     "negative movsq": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 6,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -213,6 +224,7 @@
       ]
     },
     "positive rep movsb": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 44,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -270,6 +282,7 @@
       ]
     },
     "positive rep movsw": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 44,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -327,6 +340,7 @@
       ]
     },
     "positive rep movsd": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 44,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -384,6 +398,7 @@
       ]
     },
     "positive rep movsq": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 44,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -441,6 +456,7 @@
       ]
     },
     "negative rep movsb": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 47,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -501,6 +517,7 @@
       ]
     },
     "negative rep movsw": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 47,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -561,6 +578,7 @@
       ]
     },
     "negative rep movsd": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 47,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -621,6 +639,7 @@
       ]
     },
     "negative rep movsq": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 47,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -681,6 +700,7 @@
       ]
     },
     "positive rep stosb": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 30,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -724,6 +744,7 @@
       ]
     },
     "positive rep stosw": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 30,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -767,6 +788,7 @@
       ]
     },
     "positive rep stosd": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 30,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -810,6 +832,7 @@
       ]
     },
     "positive rep stosq": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 29,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -852,6 +875,7 @@
       ]
     },
     "negative rep stosb": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 31,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -896,6 +920,7 @@
       ]
     },
     "negative rep stosw": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 31,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -940,6 +965,7 @@
       ]
     },
     "negative rep stosd": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 31,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -984,6 +1010,7 @@
       ]
     },
     "negative rep stosq": {
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 30,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
@@ -1027,6 +1054,7 @@
       ]
     },
     "Sekiro spill block": {
+      "x86InstructionCount": 119,
       "ExpectedInstructionCount": 126,
       "Comment": [
         "This block of code came from the settings screen when it loaded",

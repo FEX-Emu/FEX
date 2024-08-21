@@ -13,6 +13,7 @@
   },
   "Instructions": {
     "Block1": {
+      "x86InstructionCount": 520,
       "ExpectedInstructionCount": 16358,
       "x86Insts": [
         "sub esp,0x88",
@@ -16898,6 +16899,7 @@
       ]
     },
     "Block2": {
+      "x86InstructionCount": 434,
       "ExpectedInstructionCount": 14022,
       "x86Insts": [
         "sub esp,0x90",
@@ -31361,6 +31363,7 @@
       ]
     },
     "Block3": {
+      "x86InstructionCount": 702,
       "ExpectedInstructionCount": 108,
       "x86Insts": [
         "mov eax,dword [ebp + 0xffffff44]",
@@ -32178,6 +32181,7 @@
       ]
     },
     "Block4": {
+      "x86InstructionCount": 351,
       "ExpectedInstructionCount": 12310,
       "x86Insts": [
         "mov ebp,dword [esp + 0x64]",
@@ -44846,6 +44850,7 @@
       ]
     },
     "Block5": {
+      "x86InstructionCount": 346,
       "ExpectedInstructionCount": 12245,
       "x86Insts": [
         "mov ebp,dword [esp + 0x64]",
@@ -57444,6 +57449,7 @@
       ]
     },
     "Block6": {
+      "x86InstructionCount": 409,
       "ExpectedInstructionCount": 7565,
       "x86Insts": [
         "mov eax,dword [ebp + 0x10]",
@@ -65425,6 +65431,7 @@
       ]
     },
     "Block7": {
+      "x86InstructionCount": 418,
       "ExpectedInstructionCount": 7572,
       "x86Insts": [
         "push ebp",
@@ -73422,6 +73429,7 @@
       ]
     },
     "Block8": {
+      "x86InstructionCount": 231,
       "ExpectedInstructionCount": 8481,
       "x86Insts": [
         "fadd dword [esp + 0x40]",
@@ -82141,6 +82149,7 @@
       ]
     },
     "Block9": {
+      "x86InstructionCount": 222,
       "ExpectedInstructionCount": 8400,
       "x86Insts": [
         "fadd dword [esp + 0x40]",
@@ -90770,6 +90779,7 @@
       ]
     },
     "Block10": {
+      "x86InstructionCount": 420,
       "ExpectedInstructionCount": 6381,
       "x86Insts": [
         "push ebp",

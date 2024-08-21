@@ -13,6 +13,7 @@
   },
   "Instructions": {
     "FMOD scalar loop": {
+      "x86InstructionCount": 38,
       "ExpectedInstructionCount": 48,
       "x86Insts": [
         "mov     esi, ecx",

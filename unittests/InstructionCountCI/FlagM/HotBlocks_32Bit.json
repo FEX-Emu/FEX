@@ -13,6 +13,7 @@
   },
   "Instructions": {
     "Sonic Mania movie player": {
+      "x86InstructionCount": 10,
       "ExpectedInstructionCount": 15,
       "Comment": "Used to be hottest block in Sonic Mania",
       "x86Insts": [
@@ -46,6 +47,7 @@
       ]
     },
     "wine mscrt.dll memmove": {
+      "x86InstructionCount": 12,
       "ExpectedInstructionCount": 13,
       "Comment": "Hot in Sonic Mania",
       "x86Insts": [
@@ -79,6 +81,7 @@
       ]
     },
     "dxvk hotblock from MGRR": {
+      "x86InstructionCount": 14,
       "ExpectedInstructionCount": 27,
       "Comment": [
         "Hottest block in Metal Gear Rising: Revengeance render thread"
@@ -130,6 +133,7 @@
       ]
     },
     "Psychonauts matrix swizzle": {
+      "x86InstructionCount": 103,
       "ExpectedInstructionCount": 144,
       "Comment": [
         "Hottest block in Windows Psychonauts",
