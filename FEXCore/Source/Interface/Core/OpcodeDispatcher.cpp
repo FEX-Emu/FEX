@@ -998,17 +998,26 @@ void OpDispatchBuilder::TESTOp(OpcodeArgs) {
 
   auto Size = GetDstSize(Op);
 
-  // Optimize out masking constants
   uint64_t Const;
+  bool AlwaysNonnegative = false;
   if (IsValueConstant(WrapNode(Src), &Const)) {
+    // Optimize out masking constants
     if (Const == (Size == 8 ? ~0ULL : ((1ull << Size * 8) - 1))) {
       Src = Dest;
     }
+
+    // Optimize test with non-sign bits
+    AlwaysNonnegative = (Const & (1ull << ((Size * 8) - 1))) == 0;
   }
 
-  // Try to optimize out the AND.
   if (Dest == Src) {
+    // Optimize out the AND.
     SetNZP_ZeroCV(Size, Src);
+  } else if (Size < 4 && AlwaysNonnegative) {
+    // If we know the result is always nonnegative, we can use a 32-bit test.
+    auto Res = _And(OpSize::i32Bit, Dest, Src);
+    CalculatePF(Res);
+    SetNZ_ZeroCV(OpSize::i32Bit, Res);
   } else {
     HandleNZ00Write();
     CalculatePF(_AndWithFlags(IR::SizeToOpSize(Size), Dest, Src));
