@@ -396,7 +396,11 @@ int access(const char* Path, int AccessMode) {
     return ErrnoReturn(ENOENT);
   }
 
-  return !((AccessMode & W_OK) && (Info.FileAttributes & FILE_ATTRIBUTE_READONLY));
+  if ((AccessMode & W_OK) && (Info.FileAttributes & FILE_ATTRIBUTE_READONLY)) {
+    return ErrnoReturn(EACCES);
+  }
+
+  return 0;
 }
 
 int rename(const char* _OldFilename, const char* _NewFilename) {
