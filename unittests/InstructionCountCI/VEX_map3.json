@@ -5401,7 +5401,7 @@
         "Map 3 0b11 0xf0 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov w4, w7"
+        "mov w4, w6"
       ]
     },
     "rorx eax, eax, 0": {
@@ -5419,7 +5419,7 @@
         "Map 3 0b11 0xf0 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "ror w4, w7, #31"
+        "ror w4, w6, #31"
       ]
     },
     "rorx eax, ebx, 32": {
@@ -5428,7 +5428,7 @@
         "Map 3 0b11 0xf0 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov w4, w7"
+        "mov w4, w6"
       ]
     },
     "rorx eax, eax, 32": {
@@ -5446,7 +5446,7 @@
         "Map 3 0b11 0xf0 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov x4, x7"
+        "mov x4, x6"
       ]
     },
     "rorx rax, rax, 0": {
@@ -5462,7 +5462,7 @@
         "Map 3 0b11 0xf0 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "ror x4, x7, #63"
+        "ror x4, x6, #63"
       ]
     },
     "rorx rax, rbx, 64": {
@@ -5471,7 +5471,7 @@
         "Map 3 0b11 0xf0 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov x4, x7"
+        "mov x4, x6"
       ]
     },
     "rorx rax, rax, 64": {

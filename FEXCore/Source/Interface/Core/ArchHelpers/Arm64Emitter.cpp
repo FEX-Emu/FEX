@@ -29,11 +29,12 @@ namespace FEXCore::CPU {
 namespace x64 {
 #ifndef _M_ARM_64EC
   // All but x19 and x29 are caller saved
+  // Note that rax/rdx are rearranged here so we can coalesce cmpxchg.
   constexpr std::array<ARMEmitter::Register, 18> SRA = {
     ARMEmitter::Reg::r4,
+    ARMEmitter::Reg::r7,
     ARMEmitter::Reg::r5,
     ARMEmitter::Reg::r6,
-    ARMEmitter::Reg::r7,
     ARMEmitter::Reg::r8,
     ARMEmitter::Reg::r9,
     ARMEmitter::Reg::r10,
@@ -194,12 +195,12 @@ namespace x64 {
 } // namespace x64
 
 namespace x32 {
-  // All but x19 and x29 are caller saved
+  // All but x19 and x29 are caller saved. eax/edx rearranged for cmpxchg.
   constexpr std::array<ARMEmitter::Register, 10> SRA = {
     ARMEmitter::Reg::r4,
+    ARMEmitter::Reg::r7,
     ARMEmitter::Reg::r5,
     ARMEmitter::Reg::r6,
-    ARMEmitter::Reg::r7,
     ARMEmitter::Reg::r8,
     ARMEmitter::Reg::r9,
     ARMEmitter::Reg::r10,

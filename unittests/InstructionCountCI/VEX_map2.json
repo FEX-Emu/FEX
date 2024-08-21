@@ -4900,7 +4900,7 @@
         "Map 2 0b00 0xf2 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "bic w26, w5, w7",
+        "bic w26, w7, w6",
         "cmp w26, #0x0 (0)",
         "mov x4, x26"
       ]
@@ -4911,7 +4911,7 @@
         "Map 2 0b00 0xf2 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "bic x26, x5, x7",
+        "bic x26, x7, x6",
         "cmp x26, #0x0 (0)",
         "mov x4, x26"
       ]
@@ -4923,10 +4923,10 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
-        "lsl w20, w20, w5",
-        "bic w20, w7, w20",
-        "tst x5, #0xe0",
-        "csel w4, w7, w20, ne",
+        "lsl w20, w20, w7",
+        "bic w20, w6, w20",
+        "tst x7, #0xe0",
+        "csel w4, w6, w20, ne",
         "cset w20, eq",
         "cmp w4, #0x0 (0)",
         "mrs x21, nzcv",
@@ -4941,10 +4941,10 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "lsl x20, x20, x5",
-        "bic x20, x7, x20",
-        "tst x5, #0xc0",
-        "csel x4, x7, x20, ne",
+        "lsl x20, x20, x7",
+        "bic x20, x6, x20",
+        "tst x7, #0xc0",
+        "csel x4, x6, x20, ne",
         "cset w20, eq",
         "cmp x4, #0x0 (0)",
         "mrs x21, nzcv",
@@ -4958,9 +4958,9 @@
         "Map 2 0b10 0xf5 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "cbz w5, #+0x2c",
-        "mov w0, w5",
-        "mov w2, w7",
+        "cbz w7, #+0x2c",
+        "mov w0, w7",
+        "mov w2, w6",
         "mov w4, wzr",
         "cbz w0, #+0x20",
         "clz w1, w0",
@@ -4978,9 +4978,9 @@
         "Map 2 0b10 0xf5 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "cbz x5, #+0x2c",
-        "mov x0, x5",
-        "mov x2, x7",
+        "cbz x7, #+0x2c",
+        "mov x0, x7",
+        "mov x2, x6",
         "mov x4, xzr",
         "cbz x0, #+0x20",
         "clz x1, x0",
@@ -4998,10 +4998,10 @@
         "Map 2 0b11 0xf5 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov x0, x7",
-        "mov x1, x5",
+        "mov x0, x6",
+        "mov x1, x7",
         "mov w4, #0x0",
-        "cbz w5, #+0x2c",
+        "cbz w7, #+0x2c",
         "neg w2, w1",
         "and w2, w2, w1",
         "sbfx w3, w0, #0, #1",
@@ -5020,10 +5020,10 @@
         "Map 2 0b11 0xf5 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov x0, x7",
-        "mov x1, x5",
+        "mov x0, x6",
+        "mov x1, x7",
         "mov x4, #0x0",
-        "cbz x5, #+0x2c",
+        "cbz x7, #+0x2c",
         "neg x2, x1",
         "and x2, x2, x1",
         "sbfx x3, x0, #0, #1",
@@ -5042,9 +5042,9 @@
         "Map 2 0b11 0xf6 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "mul w7, w5, w6",
-        "ubfx x0, x5, #0, #32",
-        "ubfx x1, x6, #0, #32",
+        "mul w6, w7, w5",
+        "ubfx x0, x7, #0, #32",
+        "ubfx x1, x5, #0, #32",
         "mul x4, x0, x1",
         "lsr x4, x4, #32"
       ]
@@ -5056,8 +5056,8 @@
         "Map 2 0b11 0xf6 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "ubfx x0, x7, #0, #32",
-        "ubfx x1, x6, #0, #32",
+        "ubfx x0, x6, #0, #32",
+        "ubfx x1, x5, #0, #32",
         "mul x4, x0, x1",
         "lsr x4, x4, #32"
       ]
@@ -5068,11 +5068,11 @@
         "Map 2 0b11 0xf6 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, w5",
+        "mov w20, w7",
         "ldr w20, [x20]",
-        "mul w7, w20, w6",
+        "mul w6, w20, w5",
         "ubfx x0, x20, #0, #32",
-        "ubfx x1, x6, #0, #32",
+        "ubfx x1, x5, #0, #32",
         "mul x4, x0, x1",
         "lsr x4, x4, #32"
       ]
@@ -5083,8 +5083,8 @@
         "Map 2 0b11 0xf6 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "mul x7, x5, x6",
-        "umulh x4, x5, x6"
+        "mul x6, x7, x5",
+        "umulh x4, x7, x5"
       ]
     },
     "mulx rax, rax, rbx": {
@@ -5094,7 +5094,7 @@
         "Map 2 0b11 0xf6 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "umulh x4, x7, x6"
+        "umulh x4, x6, x5"
       ]
     },
     "mulx rax, rbx, [rcx]": {
@@ -5103,9 +5103,9 @@
         "Map 2 0b11 0xf6 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x20, [x5]",
-        "mul x7, x20, x6",
-        "umulh x4, x20, x6"
+        "ldr x20, [x7]",
+        "mul x6, x20, x5",
+        "umulh x4, x20, x5"
       ]
     },
     "bextr eax, ebx, ecx": {
@@ -5114,12 +5114,12 @@
         "Map 2 0b00 0xf7 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "uxtb w20, w5",
-        "lsr w21, w7, w20",
+        "uxtb w20, w7",
+        "lsr w21, w6, w20",
         "mov w22, #0x0",
         "cmp w20, #0x1f (31)",
         "csel w20, w21, w22, ls",
-        "ubfx w21, w5, #8, #8",
+        "ubfx w21, w7, #8, #8",
         "mov x22, #0xffffffffffffffff",
         "lsl w22, w22, w21",
         "bic w22, w20, w22",
@@ -5134,12 +5134,12 @@
         "Map 2 0b00 0xf7 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "uxtb x20, w5",
-        "lsr x21, x7, x20",
+        "uxtb x20, w7",
+        "lsr x21, x6, x20",
         "mov w22, #0x0",
         "cmp x20, #0x3f (63)",
         "csel x20, x21, x22, ls",
-        "ubfx x21, x5, #8, #8",
+        "ubfx x21, x7, #8, #8",
         "mov x22, #0xffffffffffffffff",
         "lsl x22, x22, x21",
         "bic x22, x20, x22",
@@ -5154,7 +5154,7 @@
         "Map 2 0b01 0xf7 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "lsl w4, w7, w5"
+        "lsl w4, w6, w7"
       ]
     },
     "shlx eax, [ebx], ecx": {
@@ -5163,9 +5163,9 @@
         "Map 2 0b01 0xf7 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, w7",
+        "mov w20, w6",
         "ldr w20, [x20]",
-        "lsl w4, w20, w5"
+        "lsl w4, w20, w7"
       ]
     },
     "shlx rax, rbx, rcx": {
@@ -5174,7 +5174,7 @@
         "Map 2 0b01 0xf7 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "lsl x4, x7, x5"
+        "lsl x4, x6, x7"
       ]
     },
     "shlx rax, [rbx], rcx": {
@@ -5183,8 +5183,8 @@
         "Map 2 0b01 0xf7 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x20, [x7]",
-        "lsl x4, x20, x5"
+        "ldr x20, [x6]",
+        "lsl x4, x20, x7"
       ]
     },
     "sarx eax, ebx, ecx": {
@@ -5193,7 +5193,7 @@
         "Map 2 0b10 0xf7 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "asr w4, w7, w5"
+        "asr w4, w6, w7"
       ]
     },
     "sarx eax, [ebx], ecx": {
@@ -5202,9 +5202,9 @@
         "Map 2 0b10 0xf7 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, w7",
+        "mov w20, w6",
         "ldr w20, [x20]",
-        "asr w4, w20, w5"
+        "asr w4, w20, w7"
       ]
     },
     "sarx rax, rbx, rcx": {
@@ -5213,7 +5213,7 @@
         "Map 2 0b10 0xf7 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "asr x4, x7, x5"
+        "asr x4, x6, x7"
       ]
     },
     "sarx rax, [rbx], rcx": {
@@ -5222,8 +5222,8 @@
         "Map 2 0b10 0xf7 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x20, [x7]",
-        "asr x4, x20, x5"
+        "ldr x20, [x6]",
+        "asr x4, x20, x7"
       ]
     },
     "shrx eax, ebx, ecx": {
@@ -5232,7 +5232,7 @@
         "Map 2 0b11 0xf7 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "lsr w4, w7, w5"
+        "lsr w4, w6, w7"
       ]
     },
     "shrx eax, [ebx], ecx": {
@@ -5241,9 +5241,9 @@
         "Map 2 0b11 0xf7 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, w7",
+        "mov w20, w6",
         "ldr w20, [x20]",
-        "lsr w4, w20, w5"
+        "lsr w4, w20, w7"
       ]
     },
     "shrx rax, rbx, rcx": {
@@ -5252,7 +5252,7 @@
         "Map 2 0b11 0xf7 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "lsr x4, x7, x5"
+        "lsr x4, x6, x7"
       ]
     },
     "shrx rax, [rbx], rcx": {
@@ -5261,8 +5261,8 @@
         "Map 2 0b11 0xf7 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x20, [x7]",
-        "lsr x4, x20, x5"
+        "ldr x20, [x6]",
+        "lsr x4, x20, x7"
       ]
     }
   }
