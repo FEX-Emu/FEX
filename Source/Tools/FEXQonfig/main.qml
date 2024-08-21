@@ -1,11 +1,14 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
-import QtQuick.Dialogs 1.3
 import QtQuick.Layouts 1.15
 
 import FEX.ConfigModel 1.0
 import FEX.EnvVarModel 1.0
 import FEX.RootFSModel 1.0
+
+// Qt 6 changed the API of the Dialogs module slightly.
+// The differences are abstracted away in this import:
+import "qrc:/dialogs"
 
 ApplicationWindow {
     id: root
@@ -43,12 +46,10 @@ ApplicationWindow {
         id: openFileDialog
         title: qsTr("Open FEX configuration")
         nameFilters: [ "Config files(*.json)", "All files(*)" ]
-        // TODO: Set default folder to ~/.fex-emu?
-        folder: "file:///home/tony/.fex-emu/"
 
         onAccepted: {
-            root.selectedConfigFile(fileUrl)
-            configFilename = fileUrl
+            root.selectedConfigFile(selectedFile)
+            configFilename = selectedFile
         }
     }
 
@@ -56,20 +57,24 @@ ApplicationWindow {
         id: confirmCloseDialog
         title: qsTr("Save changes")
         text: configFilename.toString() === "" ? qsTr("Save changes before quitting?") : qsTr("Save changes to %1 before quitting?").arg(urlToLocalFile(configFilename))
-        standardButtons: StandardButton.Save | StandardButton.Discard | StandardButton.Cancel
+        enabledButtons: buttonSave | buttonDiscard | buttonCancel
 
-        onAccepted: {
-            save(configFilename)
-            root.close()
-        }
+        onButtonClicked: (button) => {
+            switch (button) {
+            case buttonSave:
+                save(configFilename)
+                root.close()
+                break
 
-        onDiscard: {
-            closeConfirmed = true
-            root.close()
+            case buttonDiscard:
+                closeConfirmed = true
+                root.close()
+                break
+            }
         }
     }
 
-    onClosing: {
+    onClosing: (close) => {
         if (configDirty) {
             close.accepted = closeConfirmed
             onTriggered: confirmCloseDialog.open()
@@ -200,13 +205,13 @@ ApplicationWindow {
     component ConfigTextFieldForPath: RowLayout {
         property string text
         property string config
-        property bool isFolder: false
+        property bool isFolder: false // TODO: Implement
 
         FileDialog {
             id: fileSelectorDialog
             onAccepted: {
                 configDirty = true
-                ConfigModel.setString(config, urlToLocalFile(fileUrl))
+                ConfigModel.setString(config, urlToLocalFile(selectedFile))
             }
         }
 

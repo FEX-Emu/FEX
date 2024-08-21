@@ -1,0 +1,9 @@
+<RCC>
+  <qresource prefix="/">
+    <file>main.qml</file>
+  </qresource>
+  <qresource prefix="/dialogs">
+    <file alias="FileDialog.qml">qt6/FileDialog.qml</file>
+    <file alias="MessageDialog.qml">qt6/MessageDialog.qml</file>
+  </qresource>
+</RCC>
