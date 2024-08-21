@@ -4,6 +4,7 @@
 #include "Interface/Core/Frontend.h"
 #include "Interface/Core/X86Tables/X86Tables.h"
 #include "Interface/Context/Context.h"
+#include "Interface/IR/IR.h"
 #include "Interface/IR/IREmitter.h"
 
 #include <FEXCore/Config/Config.h>
@@ -155,6 +156,11 @@ public:
     // Put an inline constant so RA+codegen will ignore altogether.
     auto Placeholder = _InlineConstant(0);
     return _CondJump(Placeholder, Placeholder, InvalidNode, InvalidNode, Cond, 0, true);
+  }
+  IRPair<IROp_CondJump> CondJumpBit(Ref Src, unsigned Bit, bool Set) {
+    FlushRegisterCache();
+    auto InlineConst = _InlineConstant(Bit);
+    return _CondJump(Src, InlineConst, InvalidNode, InvalidNode, {Set ? COND_TSTNZ : COND_TSTZ}, 0, false);
   }
   IRPair<IROp_ExitFunction> ExitFunction(Ref NewRIP) {
     FlushRegisterCache();

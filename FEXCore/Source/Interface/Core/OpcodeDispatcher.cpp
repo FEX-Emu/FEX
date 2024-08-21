@@ -742,15 +742,13 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
 
   auto CurrentBlock = GetCurrentBlock();
 
-  // Fallback
   {
     IRPair<IR::IROp_CondJump> CondJump_;
-    auto [Complex, SimpleCond] = DecodeNZCVCondition(Op->OP & 0xF);
+    auto OP = Op->OP & 0xF;
+    auto [Complex, SimpleCond] = DecodeNZCVCondition(OP);
     if (Complex) {
-      auto TakeBranch = _Constant(1);
-      auto DoNotTakeBranch = _Constant(0);
-      auto SrcCond = SelectCC(Op->OP & 0xF, OpSize::i64Bit, TakeBranch, DoNotTakeBranch);
-      CondJump_ = CondJump(SrcCond);
+      LOGMAN_THROW_AA_FMT(OP == 0xA || OP == 0xB, "only PF left");
+      CondJump_ = CondJumpBit(LoadPFRaw(false), 0, OP == 0xB);
     } else {
       CondJump_ = CondJumpNZCV(SimpleCond);
     }
