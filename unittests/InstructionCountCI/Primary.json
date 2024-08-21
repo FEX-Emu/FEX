@@ -1960,42 +1960,36 @@
       "ExpectedInstructionCount": 5,
       "Comment": "0x84",
       "ExpectedArm64ASM": [
-        "mov x26, x4",
-        "cmn wzr, w26, lsl #24",
+        "cmn wzr, w4, lsl #24",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "msr nzcv, x20"
+        "msr nzcv, x20",
+        "mov x26, x4"
       ]
     },
     "test ax, ax": {
       "ExpectedInstructionCount": 5,
       "Comment": "0x84",
       "ExpectedArm64ASM": [
-        "mov x26, x4",
-        "cmn wzr, w26, lsl #16",
+        "cmn wzr, w4, lsl #16",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "msr nzcv, x20"
+        "msr nzcv, x20",
+        "mov x26, x4"
       ]
     },
     "test eax, eax": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 1,
       "Comment": "0x84",
       "ExpectedArm64ASM": [
-        "ands w26, w4, w4",
-        "mrs x20, nzcv",
-        "eor w20, w20, #0x20000000",
-        "msr nzcv, x20"
+        "subs w26, w4, #0x0 (0)"
       ]
     },
     "test rax, rax": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 1,
       "Comment": "0x84",
       "ExpectedArm64ASM": [
-        "ands x26, x4, x4",
-        "mrs x20, nzcv",
-        "eor w20, w20, #0x20000000",
-        "msr nzcv, x20"
+        "subs x26, x4, #0x0 (0)"
       ]
     },
     "xchg bl, cl": {
@@ -3588,42 +3582,36 @@
       "ExpectedInstructionCount": 5,
       "Comment": "0xa8",
       "ExpectedArm64ASM": [
-        "mov x26, x4",
-        "cmn wzr, w26, lsl #24",
+        "cmn wzr, w4, lsl #24",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "msr nzcv, x20"
+        "msr nzcv, x20",
+        "mov x26, x4"
       ]
     },
     "test ax, -1": {
       "ExpectedInstructionCount": 5,
       "Comment": "0xa9",
       "ExpectedArm64ASM": [
-        "mov x26, x4",
-        "cmn wzr, w26, lsl #16",
+        "cmn wzr, w4, lsl #16",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "msr nzcv, x20"
+        "msr nzcv, x20",
+        "mov x26, x4"
       ]
     },
     "test eax, -1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 1,
       "Comment": "0xa9",
       "ExpectedArm64ASM": [
-        "ands w26, w4, w4",
-        "mrs x20, nzcv",
-        "eor w20, w20, #0x20000000",
-        "msr nzcv, x20"
+        "subs w26, w4, #0x0 (0)"
       ]
     },
     "test rax, -1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 1,
       "Comment": "0xa9",
       "ExpectedArm64ASM": [
-        "ands x26, x4, x4",
-        "mrs x20, nzcv",
-        "eor w20, w20, #0x20000000",
-        "msr nzcv, x20"
+        "subs x26, x4, #0x0 (0)"
       ]
     },
     "stosb": {

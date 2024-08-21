@@ -2636,31 +2636,25 @@
       "ExpectedInstructionCount": 5,
       "Comment": "GROUP2 0xf7 /0",
       "ExpectedArm64ASM": [
-        "mov x26, x6",
-        "cmn wzr, w26, lsl #16",
+        "cmn wzr, w6, lsl #16",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
-        "msr nzcv, x20"
+        "msr nzcv, x20",
+        "mov x26, x6"
       ]
     },
     "test ebx, -1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 1,
       "Comment": "GROUP2 0xf7 /0",
       "ExpectedArm64ASM": [
-        "ands w26, w6, w6",
-        "mrs x20, nzcv",
-        "eor w20, w20, #0x20000000",
-        "msr nzcv, x20"
+        "subs w26, w6, #0x0 (0)"
       ]
     },
     "test rbx, -1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 1,
       "Comment": "GROUP2 0xf7 /0",
       "ExpectedArm64ASM": [
-        "ands x26, x6, x6",
-        "mrs x20, nzcv",
-        "eor w20, w20, #0x20000000",
-        "msr nzcv, x20"
+        "subs x26, x6, #0x0 (0)"
       ]
     },
     "not bx": {

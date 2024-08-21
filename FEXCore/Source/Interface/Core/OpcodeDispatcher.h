@@ -1666,7 +1666,7 @@ private:
     NZCVDirty = true;
   }
 
-  void SetNZ_ZeroCV(unsigned SrcSize, Ref Res) {
+  void SetNZ_ZeroCV(unsigned SrcSize, Ref Res, bool SetPF = false) {
     HandleNZ00Write();
 
     // x - 0 = x. NZ set according to Res. C always set. V always unset. This
@@ -1674,13 +1674,26 @@ private:
     //
     // This is currently worse for 8/16-bit, but that should be optimized. TODO
     if (SrcSize >= 4) {
-      _SubNZCV(IR::SizeToOpSize(SrcSize), Res, _Constant(0));
+      if (SetPF) {
+        CalculatePF(_SubWithFlags(IR::SizeToOpSize(SrcSize), Res, _Constant(0)));
+      } else {
+        _SubNZCV(IR::SizeToOpSize(SrcSize), Res, _Constant(0));
+      }
+
       PossiblySetNZCVBits |= 1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC);
       CFInverted = true;
     } else {
       _TestNZ(IR::SizeToOpSize(SrcSize), Res, Res);
       CFInverted = false;
+
+      if (SetPF) {
+        CalculatePF(Res);
+      }
     }
+  }
+
+  void SetNZP_ZeroCV(unsigned SrcSize, Ref Res) {
+    SetNZ_ZeroCV(SrcSize, Res, true);
   }
 
   void InsertNZCV(unsigned BitOffset, Ref Value, signed FlagOffset, bool MustMask) {

@@ -1006,8 +1006,14 @@ void OpDispatchBuilder::TESTOp(OpcodeArgs) {
     }
   }
 
-  HandleNZ00Write();
-  CalculatePF(_AndWithFlags(IR::SizeToOpSize(Size), Dest, Src));
+  // Try to optimize out the AND.
+  if (Dest == Src) {
+    SetNZP_ZeroCV(Size, Src);
+  } else {
+    HandleNZ00Write();
+    CalculatePF(_AndWithFlags(IR::SizeToOpSize(Size), Dest, Src));
+  }
+
   InvalidateAF();
 }
 
