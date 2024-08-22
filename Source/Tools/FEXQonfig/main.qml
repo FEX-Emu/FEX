@@ -137,9 +137,13 @@ ApplicationWindow {
                 onTriggered: root.save("")
             }
             Action {
-                // TODO
                 text: qsTr("Save &as...")
                 shortcut: StandardKey.SaveAs
+                onTriggered: {
+                    openFileDialog.openAndThen(() => {
+                        root.save(configFilename)
+                    });
+                }
             }
             MenuSeparator {}
             Action {
