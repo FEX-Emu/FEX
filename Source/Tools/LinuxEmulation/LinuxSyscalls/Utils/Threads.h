@@ -5,6 +5,7 @@
 #include <FEXCore/fextl/memory.h>
 
 #include <cstddef>
+#include <mutex>
 
 namespace FEX::LinuxEmulation::Threads {
 /**
