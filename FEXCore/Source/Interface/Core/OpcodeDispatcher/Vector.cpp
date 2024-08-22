@@ -3901,8 +3901,7 @@ template void OpDispatchBuilder::VectorBlend<2>(OpcodeArgs);
 template void OpDispatchBuilder::VectorBlend<4>(OpcodeArgs);
 template void OpDispatchBuilder::VectorBlend<8>(OpcodeArgs);
 
-template<size_t ElementSize>
-void OpDispatchBuilder::VectorVariableBlend(OpcodeArgs) {
+void OpDispatchBuilder::VectorVariableBlend(OpcodeArgs, size_t ElementSize) {
   auto Size = GetSrcSize(Op);
 
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
@@ -3921,9 +3920,6 @@ void OpDispatchBuilder::VectorVariableBlend(OpcodeArgs) {
 
   StoreResult(FPRClass, Op, Result, -1);
 }
-template void OpDispatchBuilder::VectorVariableBlend<1>(OpcodeArgs);
-template void OpDispatchBuilder::VectorVariableBlend<4>(OpcodeArgs);
-template void OpDispatchBuilder::VectorVariableBlend<8>(OpcodeArgs);
 
 void OpDispatchBuilder::AVXVectorVariableBlend(OpcodeArgs, size_t ElementSize) {
   const auto SrcSize = GetSrcSize(Op);
