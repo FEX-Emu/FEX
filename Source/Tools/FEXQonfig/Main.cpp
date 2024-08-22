@@ -152,6 +152,8 @@ RootFSModel::RootFSModel() {
 // TODO: Watch via inotify
 void RootFSModel::Reload() {
   std::unique_lock<std::mutex> lk {NamedRootFSUpdater};
+
+  beginResetModel();
   clear();
 
   fextl::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
@@ -180,6 +182,17 @@ void RootFSModel::Reload() {
   for (auto& Entry : NamedRootFS) {
     appendRow(new QStandardItem(Entry.c_str()));
   }
+
+  endResetModel();
+}
+
+bool RootFSModel::hasItem(const QString& Name) const {
+  std::unique_lock<std::mutex> lk {NamedRootFSUpdater};
+  return !findItems(Name, Qt::MatchExactly).empty();
+}
+
+QUrl RootFSModel::getBaseUrl() const {
+  return QUrl::fromLocalFile(QString::fromStdString(FEXCore::Config::GetDataDirectory().c_str()) + "RootFS/");
 }
 
 // Returns true on success

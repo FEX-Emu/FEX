@@ -4,6 +4,7 @@
   </qresource>
   <qresource prefix="/dialogs">
     <file alias="FileDialog.qml">qt6/FileDialog.qml</file>
+    <file alias="FolderDialog.qml">qt6/FolderDialog.qml</file>
     <file alias="MessageDialog.qml">qt6/MessageDialog.qml</file>
   </qresource>
 </RCC>

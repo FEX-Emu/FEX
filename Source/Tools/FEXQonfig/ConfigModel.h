@@ -44,6 +44,11 @@ public:
   RootFSModel();
 
   void Reload();
+
+public slots:
+  bool hasItem(const QString&) const;
+
+  QUrl getBaseUrl() const;
 };
 
 #include <QApplication>

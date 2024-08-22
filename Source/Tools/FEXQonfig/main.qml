@@ -298,52 +298,89 @@ ApplicationWindow {
                 width: parent.width - parent.padding * 2
 
                 ColumnLayout {
-                    anchors.left: parent ? parent.left : undefined
-                    anchors.right: parent ? parent.right : undefined
+                    id: rootfsList
 
-                    ListView {
-                        model: RootFSModel
-                        id: rootfsList
+                    property string selectedItem
+                    property string explicitEntry
 
-                        clip: true
-                        Layout.fillWidth: true
-                        height: count * dummyDelegate.height
+                    Component.onCompleted: {
+                        var initState = (ref) => {
+                            selectedItem = ConfigModel.has("RootFS", ref) ? ConfigModel.getString("RootFS", ref) : ""
 
-                        RadioDelegate {
-                            // Enable measuring line height with this invisible dummy element
-                            id: dummyDelegate
-                            visible: false
+                            // RootFSModel only lists entries in the $FEX_HOME/RootFS/ folder.
+                            // If a custom path is selected, add it as a dedicated entry
+                            if (selectedItem !== "" && !RootFSModel.hasItem(selectedItem)) {
+                                explicitEntry = selectedItem
+
+                                // Make visible once needed.
+                                // Conversely, if the user selects something else after, keep the old option visible to allow easy undoing
+                                fallbackRootfsEntry.visible = true
+                            }
                         }
 
-                        property string selectedItem: ConfigModel.has("RootFS", refreshCache) ? ConfigModel.getString("RootFS", refreshCache) : null
+                        initState(false)
+                        root.refreshCacheChanged.connect(initState)
+                    }
 
-                        // TODO: Handle empty RootFS, or external RootFS not in .fex-emu
+                    function updateRootFS(fileOrFolder: url) {
+                        configDirty = true
+                        var base = urlToLocalFile(RootFSModel.getBaseUrl())
+                        var file = urlToLocalFile(fileOrFolder)
+                        if (file.startsWith(base)) {
+                            file = file.substring(base.length)
+                        }
 
-                        delegate: RadioDelegate {
-                            anchors.left: parent ? parent.left : undefined
-                            anchors.right: parent ? parent.right : undefined
+                        ConfigModel.setString("RootFS", file)
+                        refreshUI()
+                    }
 
-                            text: edit
-                            checked: rootfsList.selectedItem == edit
+                    component RootFSRadioDelegate: RadioButton {
+                        property var name
 
-                            onToggled: {
-                                configDirty = true;
-                                ConfigModel.setString("RootFS", edit)
-                            }
+                        text: name
+                        checked: rootfsList.selectedItem === name
+
+                        onToggled: {
+                            configDirty = true;
+                            ConfigModel.setString("RootFS", name)
                         }
                     }
 
+                    Repeater {
+                        model: RootFSModel
+                        delegate: RootFSRadioDelegate { name: model.display }
+                    }
+                    RootFSRadioDelegate {
+                        id: fallbackRootfsEntry
+                        visible: false
+                        name: rootfsList.explicitEntry
+                    }
+
                     RowLayout {
-                        Button {
-                            text: qsTr("Select...")
-                            icon.name: "search"
-                            // TODO: Implement
+                        FileDialog {
+                            id: addRootfsFileDialog
+                            title: qsTr("Select RootFS file")
+                            nameFilters: [ qsTr("SquashFS and EroFS (*.sqsh *.ero)"), "All files(*)" ]
+                            folder: RootFSModel.getBaseUrl()
+                            onAccepted: rootfsList.updateRootFS(fileUrl)
+                        }
+
+                        FolderDialog {
+                            id: addRootfsFolderDialog
+                            title: qsTr("Select RootFS folder")
+                            folder: RootFSModel.getBaseUrl()
+                            onAccepted: rootfsList.updateRootFS(selectedFolder)
                         }
 
                         Button {
-                            text: qsTr("Download...")
-                            icon.name: "download"
-                            // TODO: Implement
+                            text: qsTr("Add folder")
+                            icon.name: "folder"
+                            onClicked: addRootfsFolderDialog.open()
+                        }
+                        Button {
+                            text: qsTr("Add file")
+                            icon.name: "document"
+                            onClicked: addRootfsFileDialog.open()
                         }
                     }
                 }
