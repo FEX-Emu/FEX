@@ -3450,8 +3450,7 @@ void OpDispatchBuilder::HSUBP(OpcodeArgs) {
 template void OpDispatchBuilder::HSUBP<4>(OpcodeArgs);
 template void OpDispatchBuilder::HSUBP<8>(OpcodeArgs);
 
-template<size_t ElementSize>
-void OpDispatchBuilder::VHSUBPOp(OpcodeArgs) {
+void OpDispatchBuilder::VHSUBPOp(OpcodeArgs, size_t ElementSize) {
   const auto DstSize = GetDstSize(Op);
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
@@ -3467,9 +3466,6 @@ void OpDispatchBuilder::VHSUBPOp(OpcodeArgs) {
 
   StoreResult(FPRClass, Op, Dest, -1);
 }
-
-template void OpDispatchBuilder::VHSUBPOp<4>(OpcodeArgs);
-template void OpDispatchBuilder::VHSUBPOp<8>(OpcodeArgs);
 
 Ref OpDispatchBuilder::PHSUBOpImpl(OpSize Size, Ref Src1, Ref Src2, size_t ElementSize) {
   auto Even = _VUnZip(Size, ElementSize, Src1, Src2);
@@ -3488,8 +3484,7 @@ void OpDispatchBuilder::PHSUB(OpcodeArgs) {
 template void OpDispatchBuilder::PHSUB<2>(OpcodeArgs);
 template void OpDispatchBuilder::PHSUB<4>(OpcodeArgs);
 
-template<size_t ElementSize>
-void OpDispatchBuilder::VPHSUBOp(OpcodeArgs) {
+void OpDispatchBuilder::VPHSUBOp(OpcodeArgs, size_t ElementSize) {
   const auto DstSize = GetDstSize(Op);
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
@@ -3502,9 +3497,6 @@ void OpDispatchBuilder::VPHSUBOp(OpcodeArgs) {
   }
   StoreResult(FPRClass, Op, Result, -1);
 }
-
-template void OpDispatchBuilder::VPHSUBOp<2>(OpcodeArgs);
-template void OpDispatchBuilder::VPHSUBOp<4>(OpcodeArgs);
 
 Ref OpDispatchBuilder::PHADDSOpImpl(OpSize Size, Ref Src1, Ref Src2) {
   const uint8_t ElementSize = 2;

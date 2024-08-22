@@ -612,8 +612,7 @@ public:
 
   template<IROps IROp, size_t ElementSize>
   void VHADDPOp(OpcodeArgs);
-  template<size_t ElementSize>
-  void VHSUBPOp(OpcodeArgs);
+  void VHSUBPOp(OpcodeArgs, size_t ElementSize);
 
   void VINSERTOp(OpcodeArgs);
   void VINSERTPSOp(OpcodeArgs);
@@ -663,8 +662,7 @@ public:
 
   void VPHADDSWOp(OpcodeArgs);
 
-  template<size_t ElementSize>
-  void VPHSUBOp(OpcodeArgs);
+  void VPHSUBOp(OpcodeArgs, size_t ElementSize);
   void VPHSUBSWOp(OpcodeArgs);
 
   void VPINSRBOp(OpcodeArgs);
