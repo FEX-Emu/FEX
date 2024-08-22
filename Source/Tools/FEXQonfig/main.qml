@@ -247,9 +247,6 @@ ApplicationWindow {
     }
 
     StackLayout {
-        // TODO: Make items scrollable
-
-        // width: parent.width
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: tabBar.bottom
@@ -257,15 +254,32 @@ ApplicationWindow {
 
         currentIndex: tabBar.currentIndex
 
-        // Environment settings
-        Pane {
-            ColumnLayout {
-                anchors.left: parent.left
-                anchors.right: parent.right
+        component ScrollablePage: ScrollView {
+            id: outer
 
+            readonly property var visibleScrollbarWidth: ScrollBar.vertical.visible ? ScrollBar.vertical.width : 0
+
+            // Children given by the user will be moved into the inner Column
+            default property alias content: inner.children
+
+            property alias itemSpacing: inner.spacing
+
+            Column {
+                id: inner
+
+                spacing: 8
+                padding: 8
+
+                // This must be explicitly set via the id, since parent doesn't seem to be recognized within Column
+                width: outer.width - outer.visibleScrollbarWidth
+            }
+        }
+
+        // Environment settings
+        ScrollablePage {
                 GroupBox {
                     title: qsTr("RootFS:")
-                    Layout.fillWidth: true
+                    width: parent.width - parent.padding * 2
 
                     ColumnLayout {
                         anchors.left: parent ? parent.left : undefined
@@ -321,7 +335,7 @@ ApplicationWindow {
 
                 GroupBox {
                     title: qsTr("Library Forwarding:")
-                    Layout.fillWidth: true
+                    width: parent.width - parent.padding * 2
 
                     ColumnLayout {
                         anchors.left: parent ? parent.left : undefined
@@ -344,7 +358,7 @@ ApplicationWindow {
 
                 GroupBox {
                     title: qsTr("Logging:")
-                    Layout.fillWidth: true
+                    width: parent.width - parent.padding * 2
 
                     label: ConfigCheckBox {
                         id: loggingEnabledCheckBox
@@ -393,15 +407,10 @@ ApplicationWindow {
                         }
                     }
                 }
-            }
         }
 
         // Emulation settings
-        Pane {
-            ColumnLayout {
-                anchors.left: parent.left
-                anchors.right: parent.right
-
+        ScrollablePage {
                 RowLayout {
                     Label { text: qsTr("SMC detection:") }
                     ComboBox {
@@ -422,7 +431,7 @@ ApplicationWindow {
 
                 GroupBox {
                     title: qsTr("Memory Model")
-                    Layout.fillWidth: true
+                    width: parent.width - parent.padding * 2
 
                     ColumnLayout {
                         anchors.left: parent ? parent.left : undefined
@@ -522,7 +531,7 @@ ApplicationWindow {
                 }
 
                 component EnvVarList: GroupBox {
-                    Layout.fillWidth: true
+                    width: parent.width - parent.padding * 2
 
                     ColumnLayout {
                         anchors.left: parent ? parent.left : undefined
@@ -549,15 +558,10 @@ ApplicationWindow {
                 EnvVarList {
                     title: qsTr("Host environment variables:")
                 }
-            }
         }
 
         // CPU settings
-        Pane {
-            ColumnLayout {
-                anchors.left: parent.left
-                anchors.right: parent.right
-
+        ScrollablePage {
                 ConfigCheckBox {
                     text: qsTr("Multiblock")
                     config: "Multiblock"
@@ -576,7 +580,7 @@ ApplicationWindow {
 
                 GroupBox {
                     title: qsTr("JIT caches:")
-                    Layout.fillWidth: true
+                    width: parent.width - parent.padding * 2
 
                     ColumnLayout {
                         anchors.left: parent ? parent.left : undefined
@@ -646,24 +650,21 @@ ApplicationWindow {
                     text: qsTr("Disable JIT optimization passes")
                     config: "O0"
                 }
-            }
         }
 
         // Advanced settings
         // TODO: Options contained multiple times in JSON aren't listed (neither are they in old FEXConfig though)
-        Pane { Frame {
-            anchors.fill: parent
-            ListView {
-                anchors.fill: parent
-                clip: true
+        ScrollablePage {
+            itemSpacing: 0
+
+            Frame {
+                width: parent.width - parent.padding * 2
+                id: frame
+                Column {
+                    Repeater {
                 model: ConfigModel
-
                 delegate: RowLayout {
-                    anchors.left: parent ? parent.left : undefined
-                    anchors.right: parent ? parent.right : undefined
-
-                    anchors.leftMargin: 4
-                    anchors.rightMargin: 4
+                    width: frame.width - frame.padding * 2
 
                     Label {
                         id: label
@@ -700,8 +701,10 @@ ApplicationWindow {
                         }
                     }
                 }
+                    }
+                }
             }
-        }}
+        }
     }
 
     footer: Pane {
