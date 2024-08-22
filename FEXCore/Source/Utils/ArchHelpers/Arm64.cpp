@@ -2012,6 +2012,11 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
       LogMan::Msg::EFmt("Unhandled JIT SIGBUS CASAL: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
       return NotHandled;
     }
+  } else if ((Instr & LDAXR_MASK) == LDAR_INST ||  // LDAR*
+             (Instr & LDAXR_MASK) == LDAPR_INST || // LDAPR*
+             (Instr & LDAXR_MASK) == STLR_INST) {  // STLR*
+    // This must fall through to the spin-lock implementation below.
+    // This mask has a partial overlap with ATOMIC_MEM_INST so we need to check this here.
   } else if ((Instr & ArchHelpers::Arm64::ATOMIC_MEM_MASK) == ArchHelpers::Arm64::ATOMIC_MEM_INST) { // Atomic memory op
     if (ArchHelpers::Arm64::HandleAtomicMemOp(Instr, GPRs)) {
       // Skip this instruction now
