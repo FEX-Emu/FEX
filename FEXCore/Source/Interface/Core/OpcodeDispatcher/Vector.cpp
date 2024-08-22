@@ -2974,8 +2974,7 @@ void OpDispatchBuilder::PACKUSOp(OpcodeArgs) {
 template void OpDispatchBuilder::PACKUSOp<2>(OpcodeArgs);
 template void OpDispatchBuilder::PACKUSOp<4>(OpcodeArgs);
 
-template<size_t ElementSize>
-void OpDispatchBuilder::VPACKUSOp(OpcodeArgs) {
+void OpDispatchBuilder::VPACKUSOp(OpcodeArgs, size_t ElementSize) {
   const auto DstSize = GetDstSize(Op);
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
@@ -2991,9 +2990,6 @@ void OpDispatchBuilder::VPACKUSOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-template void OpDispatchBuilder::VPACKUSOp<2>(OpcodeArgs);
-template void OpDispatchBuilder::VPACKUSOp<4>(OpcodeArgs);
-
 template<size_t ElementSize>
 void OpDispatchBuilder::PACKSSOp(OpcodeArgs) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
@@ -3006,8 +3002,7 @@ void OpDispatchBuilder::PACKSSOp(OpcodeArgs) {
 template void OpDispatchBuilder::PACKSSOp<2>(OpcodeArgs);
 template void OpDispatchBuilder::PACKSSOp<4>(OpcodeArgs);
 
-template<size_t ElementSize>
-void OpDispatchBuilder::VPACKSSOp(OpcodeArgs) {
+void OpDispatchBuilder::VPACKSSOp(OpcodeArgs, size_t ElementSize) {
   const auto DstSize = GetDstSize(Op);
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
@@ -3022,9 +3017,6 @@ void OpDispatchBuilder::VPACKSSOp(OpcodeArgs) {
   }
   StoreResult(FPRClass, Op, Result, -1);
 }
-
-template void OpDispatchBuilder::VPACKSSOp<2>(OpcodeArgs);
-template void OpDispatchBuilder::VPACKSSOp<4>(OpcodeArgs);
 
 Ref OpDispatchBuilder::PMULLOpImpl(OpSize Size, size_t ElementSize, bool Signed, Ref Src1, Ref Src2) {
   if (Size == OpSize::i64Bit) {

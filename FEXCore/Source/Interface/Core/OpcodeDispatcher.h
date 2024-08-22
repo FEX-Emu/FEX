@@ -637,11 +637,9 @@ public:
 
   void VMPSADBWOp(OpcodeArgs);
 
-  template<size_t ElementSize>
-  void VPACKSSOp(OpcodeArgs);
+  void VPACKSSOp(OpcodeArgs, size_t ElementSize);
 
-  template<size_t ElementSize>
-  void VPACKUSOp(OpcodeArgs);
+  void VPACKUSOp(OpcodeArgs, size_t ElementSize);
 
   void VPALIGNROp(OpcodeArgs);
 
