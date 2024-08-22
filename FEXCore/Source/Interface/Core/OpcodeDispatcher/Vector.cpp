@@ -1618,8 +1618,7 @@ void OpDispatchBuilder::VINSERTPSOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-template<size_t ElementSize>
-void OpDispatchBuilder::PExtrOp(OpcodeArgs) {
+void OpDispatchBuilder::PExtrOp(OpcodeArgs, size_t ElementSize) {
   const auto DstSize = GetDstSize(Op);
 
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
@@ -1630,7 +1629,7 @@ void OpDispatchBuilder::PExtrOp(OpcodeArgs) {
   // is the same except that REX.W or VEX.W is set to 1. Incredibly frustrating.
   // Use the destination size as the element size in this case.
   size_t OverridenElementSize = ElementSize;
-  if constexpr (ElementSize == 4) {
+  if (ElementSize == 4) {
     OverridenElementSize = DstSize;
   }
 
@@ -1650,11 +1649,6 @@ void OpDispatchBuilder::PExtrOp(OpcodeArgs) {
   Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
   _VStoreVectorElement(16, OverridenElementSize, Src, Index, Dest);
 }
-
-template void OpDispatchBuilder::PExtrOp<1>(OpcodeArgs);
-template void OpDispatchBuilder::PExtrOp<2>(OpcodeArgs);
-template void OpDispatchBuilder::PExtrOp<4>(OpcodeArgs);
-template void OpDispatchBuilder::PExtrOp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::VEXTRACT128Op(OpcodeArgs) {
   const auto DstIsXMM = Op->Dest.IsGPR();

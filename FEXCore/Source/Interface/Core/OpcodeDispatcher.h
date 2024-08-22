@@ -508,8 +508,7 @@ public:
   template<size_t ElementSize>
   void PINSROp(OpcodeArgs);
   void InsertPSOp(OpcodeArgs);
-  template<size_t ElementSize>
-  void PExtrOp(OpcodeArgs);
+  void PExtrOp(OpcodeArgs, size_t ElementSize);
 
   template<size_t ElementSize>
   void PSIGN(OpcodeArgs);

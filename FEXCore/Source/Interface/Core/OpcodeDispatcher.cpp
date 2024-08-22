@@ -5178,7 +5178,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b11, 0xC2), 1, &OpDispatchBuilder::AVXInsertScalarFCMPOp<8>},
 
     {OPD(1, 0b01, 0xC4), 1, &OpDispatchBuilder::VPINSRWOp},
-    {OPD(1, 0b01, 0xC5), 1, &OpDispatchBuilder::PExtrOp<2>},
+    {OPD(1, 0b01, 0xC5), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 2>},
 
     {OPD(1, 0b00, 0xC6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VSHUFOp, 4>},
     {OPD(1, 0b01, 0xC6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VSHUFOp, 8>},
@@ -5383,10 +5383,10 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(3, 0b01, 0x0E), 1, &OpDispatchBuilder::VPBLENDWOp},
     {OPD(3, 0b01, 0x0F), 1, &OpDispatchBuilder::VPALIGNROp},
 
-    {OPD(3, 0b01, 0x14), 1, &OpDispatchBuilder::PExtrOp<1>},
-    {OPD(3, 0b01, 0x15), 1, &OpDispatchBuilder::PExtrOp<2>},
-    {OPD(3, 0b01, 0x16), 1, &OpDispatchBuilder::PExtrOp<4>},
-    {OPD(3, 0b01, 0x17), 1, &OpDispatchBuilder::PExtrOp<4>},
+    {OPD(3, 0b01, 0x14), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 1>},
+    {OPD(3, 0b01, 0x15), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 2>},
+    {OPD(3, 0b01, 0x16), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 4>},
+    {OPD(3, 0b01, 0x17), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 4>},
 
     {OPD(3, 0b01, 0x18), 1, &OpDispatchBuilder::VINSERTOp},
     {OPD(3, 0b01, 0x19), 1, &OpDispatchBuilder::VEXTRACT128Op},
@@ -5631,7 +5631,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xC0, 2, &OpDispatchBuilder::XADDOp},
     {0xC3, 1, &OpDispatchBuilder::MOVGPRNTOp},
     {0xC4, 1, &OpDispatchBuilder::PINSROp<2>},
-    {0xC5, 1, &OpDispatchBuilder::PExtrOp<2>},
+    {0xC5, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 2>},
     {0xC8, 8, &OpDispatchBuilder::BSWAPOp},
 
     // SSE
@@ -5979,7 +5979,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x7F, 1, &OpDispatchBuilder::MOVVectorAlignedOp},
     {0xC2, 1, &OpDispatchBuilder::VFCMPOp<8>},
     {0xC4, 1, &OpDispatchBuilder::PINSROp<2>},
-    {0xC5, 1, &OpDispatchBuilder::PExtrOp<2>},
+    {0xC5, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 2>},
     {0xC6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SHUFOp, 8>},
 
     {0xD0, 1, &OpDispatchBuilder::ADDSUBPOp<8>},
@@ -6757,11 +6757,11 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(0, PF_3A_66, 0x0F), 1, &OpDispatchBuilder::PAlignrOp},
     {OPD(1, PF_3A_66, 0x0F), 1, &OpDispatchBuilder::PAlignrOp},
 
-    {OPD(0, PF_3A_66, 0x14), 1, &OpDispatchBuilder::PExtrOp<1>},
-    {OPD(0, PF_3A_66, 0x15), 1, &OpDispatchBuilder::PExtrOp<2>},
-    {OPD(0, PF_3A_66, 0x16), 1, &OpDispatchBuilder::PExtrOp<4>},
-    {OPD(1, PF_3A_66, 0x16), 1, &OpDispatchBuilder::PExtrOp<8>},
-    {OPD(0, PF_3A_66, 0x17), 1, &OpDispatchBuilder::PExtrOp<4>},
+    {OPD(0, PF_3A_66, 0x14), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 1>},
+    {OPD(0, PF_3A_66, 0x15), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 2>},
+    {OPD(0, PF_3A_66, 0x16), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 4>},
+    {OPD(1, PF_3A_66, 0x16), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 8>},
+    {OPD(0, PF_3A_66, 0x17), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 4>},
 
     {OPD(0, PF_3A_66, 0x20), 1, &OpDispatchBuilder::PINSROp<1>},
     {OPD(0, PF_3A_66, 0x21), 1, &OpDispatchBuilder::InsertPSOp},
