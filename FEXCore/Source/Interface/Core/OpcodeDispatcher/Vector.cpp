@@ -4847,8 +4847,7 @@ void OpDispatchBuilder::VZEROOp(OpcodeArgs) {
   }
 }
 
-template<size_t ElementSize>
-void OpDispatchBuilder::VPERMILImmOp(OpcodeArgs) {
+void OpDispatchBuilder::VPERMILImmOp(OpcodeArgs, size_t ElementSize) {
   const auto DstSize = GetDstSize(Op);
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto Selector = Op->Src[1].Literal() & 0xFF;
@@ -4856,7 +4855,7 @@ void OpDispatchBuilder::VPERMILImmOp(OpcodeArgs) {
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Result = LoadZeroVector(DstSize);
 
-  if constexpr (ElementSize == 8) {
+  if (ElementSize == 8) {
     Result = _VInsElement(DstSize, ElementSize, 0, Selector & 0b0001, Result, Src);
     Result = _VInsElement(DstSize, ElementSize, 1, (Selector & 0b0010) >> 1, Result, Src);
 
@@ -4880,9 +4879,6 @@ void OpDispatchBuilder::VPERMILImmOp(OpcodeArgs) {
 
   StoreResult(FPRClass, Op, Result, -1);
 }
-
-template void OpDispatchBuilder::VPERMILImmOp<4>(OpcodeArgs);
-template void OpDispatchBuilder::VPERMILImmOp<8>(OpcodeArgs);
 
 Ref OpDispatchBuilder::VPERMILRegOpImpl(OpSize DstSize, size_t ElementSize, Ref Src, Ref Indices) {
   // NOTE: See implementation of VPERMD for the gist of what we do to make this work.
