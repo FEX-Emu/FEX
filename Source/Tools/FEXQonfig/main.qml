@@ -51,7 +51,17 @@ ApplicationWindow {
 
         property var onNextAccept: null
 
+        // Prompts the user for an existing file and calls the callback on completion
         function openAndThen(callback) {
+            this.selectExisting = true
+            console.assert(!onNextAccept, "Tried to open dialog multiple times")
+            onNextAccept = callback
+            open()
+        }
+
+        // Prompts the user for a new or existing file and calls the callback on completion
+        function openNewAndThen(callback) {
+            this.selectExisting = false
             console.assert(!onNextAccept, "Tried to open dialog multiple times")
             onNextAccept = callback
             open()
@@ -80,7 +90,7 @@ ApplicationWindow {
             case buttonSave:
                 if (configFilename.toString() === "") {
                     // Filename not yet set => trigger "Save As" dialog
-                    openFileDialog.openAndThen(() => {
+                    openFileDialog.openNewAndThen(() => {
                         save(configFilename)
                         root.close()
                     });
@@ -112,7 +122,7 @@ ApplicationWindow {
 
         if (filename.toString() === "") {
             // Filename not yet set => trigger "Save As" dialog
-            openFileDialog.openAndThen(() => {
+            openFileDialog.openNewAndThen(() => {
                 save(configFilename)
             });
             return
@@ -140,7 +150,7 @@ ApplicationWindow {
                 text: qsTr("Save &as...")
                 shortcut: StandardKey.SaveAs
                 onTriggered: {
-                    openFileDialog.openAndThen(() => {
+                    openFileDialog.openNewAndThen(() => {
                         root.save(configFilename)
                     });
                 }
