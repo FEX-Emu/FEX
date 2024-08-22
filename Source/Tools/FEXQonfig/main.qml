@@ -22,7 +22,7 @@ ApplicationWindow {
 
     property url configFilename
 
-    property bool configDirty: false // TODO: Consistently set to true on modifications
+    property bool configDirty: false
     property bool closeConfirmed: false
 
     signal selectedConfigFile(name: url)
@@ -706,51 +706,56 @@ ApplicationWindow {
         }
 
         // Advanced settings
+        // NOTE: This is wrapped in a Loader that dynamically instantiates/destroys the page contents whenever the tab is selected.
+        //       This avoids costly UI updates for its UI elements.
         // TODO: Options contained multiple times in JSON aren't listed (neither are they in old FEXConfig though)
-        ScrollablePage {
-            itemSpacing: 0
+        Loader { sourceComponent: tabBar.currentIndex === 3 ? advancedSettingsPage : null }
+        Component {
+            id: advancedSettingsPage
+            ScrollablePage {
+                itemSpacing: 0
+                Frame {
+                    width: parent.width - parent.padding * 2
+                    id: frame
+                    Column {
+                        Repeater {
+                            model: ConfigModel
+                            delegate: RowLayout {
+                                width: frame.width - frame.padding * 2
 
-            Frame {
-                width: parent.width - parent.padding * 2
-                id: frame
-                Column {
-                    Repeater {
-                        model: ConfigModel
-                        delegate: RowLayout {
-                            width: frame.width - frame.padding * 2
+                                Label {
+                                    id: label
+                                    text: display
+                                }
 
-                            Label {
-                                id: label
-                                text: display
-                            }
+                                ConfigCheckBox {
+                                    visible: optionType == "bool"
+                                    config: visible ? label.text : ""
+                                }
 
-                            ConfigCheckBox {
-                                visible: optionType == "bool"
-                                config: visible ? label.text : ""
-                            }
+                                ConfigTextField {
+                                    Layout.fillWidth: true
+                                    visible: optionType == "fextl::string"
+                                    config: visible ? label.text : ""
+                                }
 
-                            ConfigTextField {
-                                Layout.fillWidth: true
-                                visible: optionType == "fextl::string"
-                                config: visible ? label.text : ""
-                            }
+                                ConfigSpinBox {
+                                    visible: optionType.startsWith("int") || optionType.startsWith("uint")
+                                    config: visible ? label.text : ""
+                                    from: 0
+                                    to: 1 << 30
+                                }
 
-                            ConfigSpinBox {
-                                visible: optionType.startsWith("int") || optionType.startsWith("uint")
-                                config: visible ? label.text : ""
-                                from: 0
-                                to: 1 << 30
-                            }
+                                // Spacing
+                                Item {
+                                    Layout.fillWidth: true
+                                }
 
-                            // Spacing
-                            Item {
-                                Layout.fillWidth: true
-                            }
-
-                            Button {
-                                icon.name: "list-remove"
-                                onClicked: {
-                                    ConfigModel.erase(label.text)
+                                Button {
+                                    icon.name: "list-remove"
+                                    onClicked: {
+                                        ConfigModel.erase(label.text)
+                                    }
                                 }
                             }
                         }
