@@ -1482,8 +1482,7 @@ template void OpDispatchBuilder::VHADDPOp<IR::OP_VADDP, 4>(OpcodeArgs);
 template void OpDispatchBuilder::VHADDPOp<IR::OP_VFADDP, 4>(OpcodeArgs);
 template void OpDispatchBuilder::VHADDPOp<IR::OP_VFADDP, 8>(OpcodeArgs);
 
-template<size_t ElementSize>
-void OpDispatchBuilder::VBROADCASTOp(OpcodeArgs) {
+void OpDispatchBuilder::VBROADCASTOp(OpcodeArgs, size_t ElementSize) {
   const auto DstSize = GetDstSize(Op);
   Ref Result {};
 
@@ -1501,12 +1500,6 @@ void OpDispatchBuilder::VBROADCASTOp(OpcodeArgs) {
 
   StoreResult(FPRClass, Op, Result, -1);
 }
-
-template void OpDispatchBuilder::VBROADCASTOp<1>(OpcodeArgs);
-template void OpDispatchBuilder::VBROADCASTOp<2>(OpcodeArgs);
-template void OpDispatchBuilder::VBROADCASTOp<4>(OpcodeArgs);
-template void OpDispatchBuilder::VBROADCASTOp<8>(OpcodeArgs);
-template void OpDispatchBuilder::VBROADCASTOp<16>(OpcodeArgs);
 
 Ref OpDispatchBuilder::PINSROpImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
                                    const X86Tables::DecodedOperand& Src2Op, const X86Tables::DecodedOperand& Imm) {

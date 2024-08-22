@@ -602,8 +602,7 @@ public:
   void VPBLENDDOp(OpcodeArgs);
   void VPBLENDWOp(OpcodeArgs);
 
-  template<size_t ElementSize>
-  void VBROADCASTOp(OpcodeArgs);
+  void VBROADCASTOp(OpcodeArgs, size_t ElementSize);
 
   template<size_t ElementSize>
   void VDPPOp(OpcodeArgs);
