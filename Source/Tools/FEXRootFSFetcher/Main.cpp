@@ -44,6 +44,14 @@ fextl::vector<fextl::string> RemainingArgs;
 std::string DistroName {};
 std::string DistroVersion {};
 
+enum class UIOverrideOption {
+  Default,
+  TTY,
+  Zenity,
+};
+
+UIOverrideOption UIOption {UIOverrideOption::Default};
+
 void ParseArguments(int argc, char** argv) {
   optparse::OptionParser Parser = optparse::OptionParser().description("Tool for fetching RootFS from FEXServers").add_help_option(true);
 
@@ -58,6 +66,8 @@ void ParseArguments(int argc, char** argv) {
   Parser.add_option("--distro-version").help("Which distro version to select");
 
   Parser.add_option("--distro-list-first").action("store_true").help("When presented the distro-list option, automatically select the first distro if there isn't an exact match.");
+
+  Parser.add_option("--force-ui").choices({"default", "tty", "zenity"}).set_default("default").help("Override which UI to use for selection");
 
   optparse::Values Options = Parser.parse_args(argc, argv);
 
@@ -83,6 +93,15 @@ void ParseArguments(int argc, char** argv) {
 
   if (Options.is_set_by_user("distro_version")) {
     DistroVersion = Options["distro_version"];
+  }
+
+  if (Options.is_set_by_user("force_ui")) {
+    auto Option = Options["force_ui"];
+    if (Option == "tty") {
+      UIOption = UIOverrideOption::TTY;
+    } else if (Option == "zenity") {
+      UIOption = UIOverrideOption::Zenity;
+    }
   }
 
   RemainingArgs = Parser.args();
@@ -933,8 +952,6 @@ bool ValidateDownloadSelection(const WebFileFetcher::FileTargets& Target) {
 } // namespace TTY
 
 namespace {
-bool IsTTY {};
-
 std::function<bool(const fextl::string& Question)> _AskForConfirmation;
 std::function<void(const fextl::string& Text)> _ExecWithInfo;
 std::function<int32_t(const fextl::string& Text, const std::vector<fextl::string>& List)> _AskForConfirmationList;
@@ -943,7 +960,12 @@ std::function<bool(const WebFileFetcher::FileTargets& Target)> _ValidateCheckExi
 std::function<bool(const WebFileFetcher::FileTargets& Target)> _ValidateDownloadSelection;
 
 void CheckTTY() {
-  IsTTY = isatty(STDOUT_FILENO);
+  bool IsTTY {};
+  if (ArgOptions::UIOption == ArgOptions::UIOverrideOption::Default) {
+    IsTTY = isatty(STDOUT_FILENO);
+  } else {
+    IsTTY = ArgOptions::UIOption == ArgOptions::UIOverrideOption::TTY;
+  }
 
   if (IsTTY) {
     _AskForConfirmation = TTY::AskForConfirmation;
@@ -1068,8 +1090,6 @@ bool ExtractEroFS(const fextl::string& Path, const fextl::string& RootFS, const 
 } // namespace UnSquash
 
 int main(int argc, char** argv, char** const envp) {
-  CheckTTY();
-
   auto ArgsLoader = fextl::make_unique<FEX::ArgLoader::ArgLoader>(FEX::ArgLoader::ArgLoader::LoadType::WITHOUT_FEXLOADER_PARSER, argc, argv);
   FEX::Config::LoadConfig(std::move(ArgsLoader), false, envp, false, {});
 
@@ -1077,6 +1097,8 @@ int main(int argc, char** argv, char** const envp) {
   FEXCore::Config::ReloadMetaLayer();
 
   ArgOptions::ParseArguments(argc, argv);
+
+  CheckTTY();
 
   if (ArgOptions::RemainingArgs.size()) {
     auto Res = XXFileHash::HashFile(ArgOptions::RemainingArgs[0]);
