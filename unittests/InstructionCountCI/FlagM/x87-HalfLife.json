@@ -13,6 +13,7 @@
   },
   "Instructions": {
     "Block1": {
+      "x86InstructionCount": 70,
       "ExpectedInstructionCount": 1369,
       "x86Insts": [
         "sub esp,0x2c",
@@ -1459,6 +1460,7 @@
       ]
     },
     "Block2": {
+      "x86InstructionCount": 37,
       "ExpectedInstructionCount": 552,
       "x86Insts": [
         "sub esp,0x1c",
@@ -2055,6 +2057,7 @@
       ]
     },
     "Block3": {
+      "x86InstructionCount": 32,
       "ExpectedInstructionCount": 807,
       "x86Insts": [
         "fld dword [ecx]",
@@ -2901,6 +2904,7 @@
       ]
     },
     "Block4": {
+      "x86InstructionCount": 54,
       "ExpectedInstructionCount": 205,
       "x86Insts": [
         "push ebp",
@@ -3167,6 +3171,7 @@
       ]
     },
     "Block5": {
+      "x86InstructionCount": 49,
       "ExpectedInstructionCount": 970,
       "x86Insts": [
         "fld dword [esp + 0x80]",
@@ -4193,6 +4198,7 @@
       ]
     },
     "Block6": {
+      "x86InstructionCount": 39,
       "ExpectedInstructionCount": 925,
       "x86Insts": [
         "push ebp",
@@ -5164,6 +5170,7 @@
       ]
     },
     "Block7": {
+      "x86InstructionCount": 25,
       "ExpectedInstructionCount": 851,
       "x86Insts": [
         "fld dword [ebx + 0x4]",
@@ -6047,6 +6054,7 @@
       ]
     },
     "Block8": {
+      "x86InstructionCount": 25,
       "ExpectedInstructionCount": 254,
       "x86Insts": [
         "fstp st0",
@@ -6333,6 +6341,7 @@
       ]
     },
     "Block9": {
+      "x86InstructionCount": 25,
       "ExpectedInstructionCount": 254,
       "x86Insts": [
         "fstp st0",
@@ -6619,6 +6628,7 @@
       ]
     },
     "Block10": {
+      "x86InstructionCount": 125,
       "ExpectedInstructionCount": 26,
       "x86Insts": [
         "push esi",

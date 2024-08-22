@@ -1045,6 +1045,7 @@
         "mov rax, gs:0x100",
         "mov rbx, gs:0x14"
       ],
+      "x86InstructionCount": 2,
       "ExpectedInstructionCount": 4,
       "ExpectedArm64ASM": [
         "ldr x20, [x28, #960]",

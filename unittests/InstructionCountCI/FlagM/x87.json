@@ -11717,6 +11717,7 @@
       ]
     },
     "fld and fnstsw": {
+      "x86InstructionCount": 5,
       "ExpectedInstructionCount": 160,
       "x86Insts": [
         "fld dword [rax]",
@@ -17892,6 +17893,7 @@
       ]
     },
     "memcpy4_32": {
+      "x86InstructionCount": 8,
       "ExpectedInstructionCount": 19,
       "x86Insts": [
         "fld dword [rax]",
@@ -17926,6 +17928,7 @@
       ]
     },
     "memcpy4_64": {
+      "x86InstructionCount": 8,
       "ExpectedInstructionCount": 19,
       "x86Insts": [
         "fld qword [rax]",

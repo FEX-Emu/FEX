@@ -5,6 +5,11 @@ import sys
 logger = logging.getLogger()
 logger.setLevel(logging.ERROR)
 
+def insert_before(d, key, item):
+    items = list(d.items())
+    items.insert(list(d.keys()).index(key), item)
+    return dict(items)
+
 def update_performance_numbers(performance_json_path, performance_json, new_json_numbers):
     for key, items in new_json_numbers.items():
         if len(key) == 0:
@@ -18,6 +23,12 @@ def update_performance_numbers(performance_json_path, performance_json, new_json
             performance_json["Instructions"][key]["ExpectedInstructionCount"] = items["ExpectedInstructionCount"]
         if "ExpectedArm64ASM" in items:
             performance_json["Instructions"][key]["ExpectedArm64ASM"] = items["ExpectedArm64ASM"]
+        if "x86Insts" in performance_json["Instructions"][key]:
+            d = performance_json["Instructions"][key]
+            d.pop('x86InstructionCount', None)
+            d = insert_before(d, "ExpectedInstructionCount",
+                              ("x86InstructionCount", len(d["x86Insts"])))
+            performance_json["Instructions"][key] = d
 
     # Output to the original file.
     with open(performance_json_path, "w") as json_file:

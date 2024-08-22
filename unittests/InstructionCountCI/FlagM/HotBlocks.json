@@ -13,6 +13,7 @@
   },
   "Instructions": {
     "The Witcher 3": {
+      "x86InstructionCount": 7,
       "ExpectedInstructionCount": 10,
       "x86Insts": [
         "mov eax, 0x1",
@@ -37,6 +38,7 @@
       ]
     },
     "FMOD scalar loop": {
+      "x86InstructionCount": 38,
       "ExpectedInstructionCount": 64,
       "x86Insts": [
         "mov     esi, ecx",
@@ -146,6 +148,7 @@
       ]
     },
     "Scalar vector add loop": {
+      "x86InstructionCount": 5,
       "ExpectedInstructionCount": 6,
       "Comment": [
         "Saw this in bytemark"
@@ -167,6 +170,7 @@
       ]
     },
     "bytemark data xor loop": {
+      "x86InstructionCount": 9,
       "ExpectedInstructionCount": 12,
       "Comment": [
         "Saw this in bytemark"
@@ -198,6 +202,7 @@
       ]
     },
     "bytemark num sort": {
+      "x86InstructionCount": 4,
       "ExpectedInstructionCount": 6,
       "Comment": [
         "Saw this in bytemark"
@@ -218,6 +223,7 @@
       ]
     },
     "bytemark fpemu": {
+      "x86InstructionCount": 8,
       "ExpectedInstructionCount": 10,
       "Comment": [
         "Saw this in bytemark"
@@ -246,6 +252,7 @@
       ]
     },
     "bytemark DivideInternalFPF": {
+      "x86InstructionCount": 13,
       "ExpectedInstructionCount": 15,
       "Comment": [
         "Saw this in bytemark"
@@ -284,6 +291,7 @@
       ]
     },
     "bytemark huffman 1": {
+      "x86InstructionCount": 18,
       "ExpectedInstructionCount": 24,
       "x86Insts": [
         "mov    r9,rdx",
@@ -333,6 +341,7 @@
       ]
     },
     "bytemark huffman 2": {
+      "x86InstructionCount": 10,
       "ExpectedInstructionCount": 17,
       "x86Insts": [
         "movsxd r9,r8d",
@@ -367,6 +376,7 @@
       ]
     },
     "bytemark huffman 3": {
+      "x86InstructionCount": 19,
       "ExpectedInstructionCount": 36,
       "x86Insts": [
         "mov    ecx,eax",
@@ -429,6 +439,7 @@
       ]
     },
     "glibc AVX memcpy block 1": {
+      "x86InstructionCount": 20,
       "ExpectedInstructionCount": 26,
       "x86Insts": [
         "vmovdqu ymm5,yword [rsi+0x20]",
@@ -482,6 +493,7 @@
       ]
     },
     "glibc AVX memcpy block 2": {
+      "x86InstructionCount": 22,
       "ExpectedInstructionCount": 31,
       "x86Insts": [
         "vmovdqu ymm5,yword [rsi+rdx*1-0x20]",
@@ -542,6 +554,7 @@
       ]
     },
     "bytemark strsift": {
+      "x86InstructionCount": 15,
       "ExpectedInstructionCount": 20,
       "x86Insts": [
         "mov    rsi,rdx",

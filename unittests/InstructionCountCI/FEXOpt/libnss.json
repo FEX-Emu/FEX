@@ -16,6 +16,7 @@
   "Comment": [],
   "Instructions": {
     "libnss3 sha": {
+      "x86InstructionCount": 168,
       "ExpectedInstructionCount": 2366,
       "Comment": [
         "This block of code comes from libnss3 which causes panic spilling in FEX's RA.",
