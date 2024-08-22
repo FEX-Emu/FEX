@@ -277,379 +277,379 @@ ApplicationWindow {
 
         // Environment settings
         ScrollablePage {
-                GroupBox {
-                    title: qsTr("RootFS:")
-                    width: parent.width - parent.padding * 2
+            GroupBox {
+                title: qsTr("RootFS:")
+                width: parent.width - parent.padding * 2
 
-                    ColumnLayout {
-                        anchors.left: parent ? parent.left : undefined
-                        anchors.right: parent ? parent.right : undefined
+                ColumnLayout {
+                    anchors.left: parent ? parent.left : undefined
+                    anchors.right: parent ? parent.right : undefined
 
-                        ListView {
-                            model: RootFSModel
-                            id: rootfsList
+                    ListView {
+                        model: RootFSModel
+                        id: rootfsList
 
-                            clip: true
-                            Layout.fillWidth: true
-                            height: count * dummyDelegate.height
+                        clip: true
+                        Layout.fillWidth: true
+                        height: count * dummyDelegate.height
 
-                            RadioDelegate {
-                                // Enable measuring line height with this invisible dummy element
-                                id: dummyDelegate
-                                visible: false
-                            }
-
-                            property string selectedItem: ConfigModel.has("RootFS", refreshCache) ? ConfigModel.getString("RootFS", refreshCache) : null
-
-                            // TODO: Handle empty RootFS, or external RootFS not in .fex-emu
-
-                            delegate: RadioDelegate {
-                                anchors.left: parent ? parent.left : undefined
-                                anchors.right: parent ? parent.right : undefined
-
-                                text: edit
-                                checked: rootfsList.selectedItem == edit
-
-                                onToggled: {
-                                    configDirty = true;
-                                    ConfigModel.setString("RootFS", edit)
-                                }
-                            }
+                        RadioDelegate {
+                            // Enable measuring line height with this invisible dummy element
+                            id: dummyDelegate
+                            visible: false
                         }
 
-                        RowLayout {
-                            Button {
-                                text: qsTr("Select...")
-                                icon.name: "search"
-                                // TODO: Implement
-                            }
+                        property string selectedItem: ConfigModel.has("RootFS", refreshCache) ? ConfigModel.getString("RootFS", refreshCache) : null
 
-                            Button {
-                                text: qsTr("Download...")
-                                icon.name: "download"
-                                // TODO: Implement
+                        // TODO: Handle empty RootFS, or external RootFS not in .fex-emu
+
+                        delegate: RadioDelegate {
+                            anchors.left: parent ? parent.left : undefined
+                            anchors.right: parent ? parent.right : undefined
+
+                            text: edit
+                            checked: rootfsList.selectedItem == edit
+
+                            onToggled: {
+                                configDirty = true;
+                                ConfigModel.setString("RootFS", edit)
                             }
+                        }
+                    }
+
+                    RowLayout {
+                        Button {
+                            text: qsTr("Select...")
+                            icon.name: "search"
+                            // TODO: Implement
+                        }
+
+                        Button {
+                            text: qsTr("Download...")
+                            icon.name: "download"
+                            // TODO: Implement
                         }
                     }
                 }
+            }
 
-                GroupBox {
-                    title: qsTr("Library Forwarding:")
-                    width: parent.width - parent.padding * 2
+            GroupBox {
+                title: qsTr("Library Forwarding:")
+                width: parent.width - parent.padding * 2
 
-                    ColumnLayout {
-                        anchors.left: parent ? parent.left : undefined
-                        anchors.right: parent ? parent.right : undefined
+                ColumnLayout {
+                    anchors.left: parent ? parent.left : undefined
+                    anchors.right: parent ? parent.right : undefined
 
-                        ConfigTextFieldForPath {
-                            text: qsTr("Configuration:")
-                            config: "ThunkConfig"
-                        }
-                        ConfigTextFieldForPath {
-                            text: qsTr("Host library folder:")
-                            config: "ThunkHostLibs"
-                        }
-                        ConfigTextFieldForPath {
-                            text: qsTr("Guest library folder:")
-                            config: "ThunkGuestLibs"
-                        }
+                    ConfigTextFieldForPath {
+                        text: qsTr("Configuration:")
+                        config: "ThunkConfig"
+                    }
+                    ConfigTextFieldForPath {
+                        text: qsTr("Host library folder:")
+                        config: "ThunkHostLibs"
+                    }
+                    ConfigTextFieldForPath {
+                        text: qsTr("Guest library folder:")
+                        config: "ThunkGuestLibs"
                     }
                 }
+            }
 
-                GroupBox {
-                    title: qsTr("Logging:")
-                    width: parent.width - parent.padding * 2
+            GroupBox {
+                title: qsTr("Logging:")
+                width: parent.width - parent.padding * 2
 
-                    label: ConfigCheckBox {
-                        id: loggingEnabledCheckBox
-                        config: "SilentLog"
-                        text: qsTr("Logging")
-                        invert: true
-                    }
+                label: ConfigCheckBox {
+                    id: loggingEnabledCheckBox
+                    config: "SilentLog"
+                    text: qsTr("Logging")
+                    invert: true
+                }
 
-                    ColumnLayout {
-                        enabled: loggingEnabledCheckBox.checked
+                ColumnLayout {
+                    enabled: loggingEnabledCheckBox.checked
 
-                        anchors.left: parent ? parent.left : undefined
-                        anchors.right: parent ? parent.right : undefined
+                    anchors.left: parent ? parent.left : undefined
+                    anchors.right: parent ? parent.right : undefined
 
-                        RowLayout {
-                            Label { text: qsTr("Log to:") }
+                    RowLayout {
+                        Label { text: qsTr("Log to:") }
 
-                            ComboBox {
-                                id: loggingComboBox
-                                property string configValue: ConfigModel.has("OutputLog", refreshCache) ? ConfigModel.getString("OutputLog", refreshCache) : ""
+                        ComboBox {
+                            id: loggingComboBox
+                            property string configValue: ConfigModel.has("OutputLog", refreshCache) ? ConfigModel.getString("OutputLog", refreshCache) : ""
 
-                                currentIndex: configValue === "" ? -1 : configValue == "server" ? 0 : configValue == "stderr" ? 1 : configValue == "stdout" ? 2 : 3
+                            currentIndex: configValue === "" ? -1 : configValue == "server" ? 0 : configValue == "stderr" ? 1 : configValue == "stdout" ? 2 : 3
 
-                                onActivated: {
-                                    configDirty = true
-                                    var configNames = [ "server", "stderr", "stdout" ]
-                                    if (currentIndex != -1 && currentIndex < 3) {
-                                        ConfigModel.setString("OutputLog", configNames[currentIndex])
-                                    } else {
-                                        // Set by text field below
-                                    }
-                                }
-
-                                model: ListModel {
-                                    ListElement { text: "FEXServer" }
-                                    ListElement { text: "stderr" }
-                                    ListElement { text: "stdout" }
-                                    ListElement { text: qsTr("File...") }
+                            onActivated: {
+                                configDirty = true
+                                var configNames = [ "server", "stderr", "stdout" ]
+                                if (currentIndex != -1 && currentIndex < 3) {
+                                    ConfigModel.setString("OutputLog", configNames[currentIndex])
+                                } else {
+                                    // Set by text field below
                                 }
                             }
 
-                            ConfigTextFieldForPath {
-                                visible: loggingComboBox.currentIndex === 3
-                                config: "OutputLog"
+                            model: ListModel {
+                                ListElement { text: "FEXServer" }
+                                ListElement { text: "stderr" }
+                                ListElement { text: "stdout" }
+                                ListElement { text: qsTr("File...") }
                             }
+                        }
+
+                        ConfigTextFieldForPath {
+                            visible: loggingComboBox.currentIndex === 3
+                            config: "OutputLog"
                         }
                     }
                 }
+            }
         }
 
         // Emulation settings
         ScrollablePage {
-                RowLayout {
-                    Label { text: qsTr("SMC detection:") }
-                    ComboBox {
-                        currentIndex: ConfigModel.has("SMCChecks", refreshCache) ? ConfigModel.getInt("SMCChecks", refreshCache) : -1
+            RowLayout {
+                Label { text: qsTr("SMC detection:") }
+                ComboBox {
+                    currentIndex: ConfigModel.has("SMCChecks", refreshCache) ? ConfigModel.getInt("SMCChecks", refreshCache) : -1
 
-                        onActivated: {
-                            configDirty = true
-                            ConfigModel.setInt("SMCChecks", currentIndex)
-                        }
+                    onActivated: {
+                        configDirty = true
+                        ConfigModel.setInt("SMCChecks", currentIndex)
+                    }
 
-                        model: ListModel {
-                            ListElement { text: qsTr("None") }
-                            ListElement { text: qsTr("MTrack") }
-                            ListElement { text: qsTr("Full") }
-                        }
+                    model: ListModel {
+                        ListElement { text: qsTr("None") }
+                        ListElement { text: qsTr("MTrack") }
+                        ListElement { text: qsTr("Full") }
                     }
                 }
+            }
 
-                GroupBox {
-                    title: qsTr("Memory Model")
-                    width: parent.width - parent.padding * 2
+            GroupBox {
+                title: qsTr("Memory Model")
+                width: parent.width - parent.padding * 2
+
+                ColumnLayout {
+                    anchors.left: parent ? parent.left : undefined
+                    anchors.right: parent ? parent.right : undefined
+
+                    ButtonGroup {
+                        id: tsoButtonGroup
+                        buttons: [tso1, tso2, tso3]
+                        // Trying to be too clever here will trigger property binding loops,
+                        // so require both TSOEnabled and ParanoidTSO to be listed in the config.
+                        // If they are not, the state will be displayed as undetermined.
+                        checkedButton: !(ConfigModel.has("TSOEnabled", refreshCache) && (ConfigModel.has("ParanoidTSO", refreshCache))) ? null
+                                        : ConfigModel.getBool("ParanoidTSO", refreshCache) ? tso3
+                                        : ConfigModel.getBool("TSOEnabled", refreshCache) ? tso2 : tso1
+
+                        property int pendingItemChange: -1
+
+                        function onClickedButton(index: int) {
+                            pendingItemChange = index;
+
+                            configDirty = true;
+
+                            var newIndex = pendingItemChange
+                            var TSOEnabled = newIndex === 1
+                            var ParanoidTSO = newIndex === 2
+                            ConfigModel.setBool("ParanoidTSO", ParanoidTSO)
+                            ConfigModel.setBool("TSOEnabled", TSOEnabled)
+
+                            pendingItemChange = -1;
+                        }
+
+                        onClicked: {
+                            if (pendingItemChange !== -1) {
+                                return;
+                            }
+                            pendingItemChange = tso1.checked ? 0 : tso2.checked ? 1 : tso3.checked ? 2 : -1;
+                            if (pendingItemChange) {
+                                // Undetermined state, leave as is
+                                return;
+                            }
+
+                            var newIndex = pendingItemChange
+                            var TSOEnabled = newIndex === 1
+                            var ParanoidTSO = newIndex === 2
+                            ConfigModel.setBool("ParanoidTSO", ParanoidTSO)
+                            ConfigModel.setBool("TSOEnabled", TSOEnabled)
+
+                            pendingItemChange = -1;
+                        }
+                    }
 
                     ColumnLayout {
-                        anchors.left: parent ? parent.left : undefined
-                        anchors.right: parent ? parent.right : undefined
-
-                        ButtonGroup {
-                            id: tsoButtonGroup
-                            buttons: [tso1, tso2, tso3]
-                            // Trying to be too clever here will trigger property binding loops,
-                            // so require both TSOEnabled and ParanoidTSO to be listed in the config.
-                            // If they are not, the state will be displayed as undetermined.
-                            checkedButton: !(ConfigModel.has("TSOEnabled", refreshCache) && (ConfigModel.has("ParanoidTSO", refreshCache))) ? null
-                                            : ConfigModel.getBool("ParanoidTSO", refreshCache) ? tso3
-                                            : ConfigModel.getBool("TSOEnabled", refreshCache) ? tso2 : tso1
-
-                            property int pendingItemChange: -1
-
-                            function onClickedButton(index: int) {
-                                pendingItemChange = index;
-
-                                configDirty = true;
-
-                                var newIndex = pendingItemChange
-                                var TSOEnabled = newIndex === 1
-                                var ParanoidTSO = newIndex === 2
-                                ConfigModel.setBool("ParanoidTSO", ParanoidTSO)
-                                ConfigModel.setBool("TSOEnabled", TSOEnabled)
-
-                                pendingItemChange = -1;
-                            }
-
-                            onClicked: {
-                                if (pendingItemChange !== -1) {
-                                    return;
-                                }
-                                pendingItemChange = tso1.checked ? 0 : tso2.checked ? 1 : tso3.checked ? 2 : -1;
-                                if (pendingItemChange) {
-                                    // Undetermined state, leave as is
-                                    return;
-                                }
-
-                                var newIndex = pendingItemChange
-                                var TSOEnabled = newIndex === 1
-                                var ParanoidTSO = newIndex === 2
-                                ConfigModel.setBool("ParanoidTSO", ParanoidTSO)
-                                ConfigModel.setBool("TSOEnabled", TSOEnabled)
-
-                                pendingItemChange = -1;
-                            }
+                        RadioButton {
+                            id: tso1
+                            text: qsTr("Inaccurate")
+                            onToggled: tsoButtonGroup.onClickedButton(0)
                         }
 
                         ColumnLayout {
                             RadioButton {
-                                id: tso1
-                                text: qsTr("Inaccurate")
-                                onToggled: tsoButtonGroup.onClickedButton(0)
+                                id: tso2
+                                text: qsTr("Accurate (TSO)")
+                                onToggled: tsoButtonGroup.onClickedButton(1)
                             }
 
                             ColumnLayout {
-                                RadioButton {
-                                    id: tso2
-                                    text: qsTr("Accurate (TSO)")
-                                    onToggled: tsoButtonGroup.onClickedButton(1)
+                                visible: tso2.checked
+
+                                ConfigCheckBox {
+                                    leftPadding: 24
+                                    text: qsTr("... for vector instructions")
+                                    tooltip: qsTr("Controls TSO emulation on vector load/store instructions")
+                                    config: "VectorTSOEnabled"
                                 }
-
-                                ColumnLayout {
-                                    visible: tso2.checked
-
-                                    ConfigCheckBox {
-                                        leftPadding: 24
-                                        text: qsTr("... for vector instructions")
-                                        tooltip: qsTr("Controls TSO emulation on vector load/store instructions")
-                                        config: "VectorTSOEnabled"
-                                    }
-                                    ConfigCheckBox {
-                                        leftPadding: 24
-                                        text: qsTr("... for memcpy instructions")
-                                        tooltip: qsTr("Controls TSO emulation on memcpy/memset instructions")
-                                        config: "MemcpySetTSOEnabled"
-                                    }
-                                    ConfigCheckBox {
-                                        leftPadding: 24
-                                        text: qsTr("... for unaligned half-barriers")
-                                        tooltip: qsTr("Controls half-barrier TSO emulation on unaligned load/store instructions")
-                                        config: "HalfBarrierTSOEnabled"
-                                    }
+                                ConfigCheckBox {
+                                    leftPadding: 24
+                                    text: qsTr("... for memcpy instructions")
+                                    tooltip: qsTr("Controls TSO emulation on memcpy/memset instructions")
+                                    config: "MemcpySetTSOEnabled"
+                                }
+                                ConfigCheckBox {
+                                    leftPadding: 24
+                                    text: qsTr("... for unaligned half-barriers")
+                                    tooltip: qsTr("Controls half-barrier TSO emulation on unaligned load/store instructions")
+                                    config: "HalfBarrierTSOEnabled"
                                 }
                             }
+                        }
 
-                            RadioButton {
-                                id: tso3
-                                text: qsTr("Overly accurate (paranoid TSO)")
-                                onToggled: tsoButtonGroup.onClickedButton(2)
-                            }
+                        RadioButton {
+                            id: tso3
+                            text: qsTr("Overly accurate (paranoid TSO)")
+                            onToggled: tsoButtonGroup.onClickedButton(2)
                         }
                     }
                 }
+            }
 
-                component EnvVarList: GroupBox {
-                    width: parent.width - parent.padding * 2
+            component EnvVarList: GroupBox {
+                width: parent.width - parent.padding * 2
 
-                    ColumnLayout {
-                        anchors.left: parent ? parent.left : undefined
-                        anchors.right: parent ? parent.right : undefined
+                ColumnLayout {
+                    anchors.left: parent ? parent.left : undefined
+                    anchors.right: parent ? parent.right : undefined
 
-                        Repeater {
-                            model: EnvVarModel
-                            Layout.fillWidth: true
-                            ItemDelegate { text: edit }
-                        }
+                    Repeater {
+                        model: EnvVarModel
+                        Layout.fillWidth: true
+                        ItemDelegate { text: edit }
+                    }
 
-                        RowLayout {
-                            // TODO: Save to config
-                            TextField { Layout.fillWidth: true }
-                            Button { icon.name : "list-add" }
-                        }
+                    RowLayout {
+                        // TODO: Save to config
+                        TextField { Layout.fillWidth: true }
+                        Button { icon.name : "list-add" }
                     }
                 }
+            }
 
-                EnvVarList {
-                    title: qsTr("Guest environment variables:")
-                }
+            EnvVarList {
+                title: qsTr("Guest environment variables:")
+            }
 
-                EnvVarList {
-                    title: qsTr("Host environment variables:")
-                }
+            EnvVarList {
+                title: qsTr("Host environment variables:")
+            }
         }
 
         // CPU settings
         ScrollablePage {
-                ConfigCheckBox {
-                    text: qsTr("Multiblock")
-                    config: "Multiblock"
+            ConfigCheckBox {
+                text: qsTr("Multiblock")
+                config: "Multiblock"
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+
+                Label { text: qsTr("Block size:") }
+                ConfigSpinBox {
+                    config: "MaxInst"
+                    from: 0
+                    to: 1 << 30
                 }
+            }
 
-                RowLayout {
-                    Layout.fillWidth: true
+            GroupBox {
+                title: qsTr("JIT caches:")
+                width: parent.width - parent.padding * 2
 
-                    Label { text: qsTr("Block size:") }
-                    ConfigSpinBox {
-                        config: "MaxInst"
-                        from: 0
-                        to: 1 << 30
+                ColumnLayout {
+                    anchors.left: parent ? parent.left : undefined
+                    anchors.right: parent ? parent.right : undefined
+
+                    ConfigCheckBox {
+                        text: qsTr("Generate AOT")
+                        config: "AOTIRGenerate"
                     }
-                }
+                    ConfigCheckBox {
+                        text: qsTr("Capture AOT")
+                        config: "AOTIRCapture"
+                    }
+                    ConfigCheckBox {
+                        text: qsTr("Load AOT")
+                        config: "AOTIRLoad"
+                    }
 
-                GroupBox {
-                    title: qsTr("JIT caches:")
-                    width: parent.width - parent.padding * 2
+                    RowLayout {
+                        Label { text: qsTr("Cache object code:") }
 
-                    ColumnLayout {
-                        anchors.left: parent ? parent.left : undefined
-                        anchors.right: parent ? parent.right : undefined
+                        ButtonGroup {
+                            buttons: cacheObjCodeRadios.children
 
-                        ConfigCheckBox {
-                            text: qsTr("Generate AOT")
-                            config: "AOTIRGenerate"
-                        }
-                        ConfigCheckBox {
-                            text: qsTr("Capture AOT")
-                            config: "AOTIRCapture"
-                        }
-                        ConfigCheckBox {
-                            text: qsTr("Load AOT")
-                            config: "AOTIRLoad"
-                        }
+                            checkedButton: ConfigModel.has("CacheObjectCodeCompilation", refreshCache)
+                                            ? cacheObjCodeRadios.children[ConfigModel.getInt("CacheObjectCodeCompilation", refreshCache)]
+                                            : null
 
-                        RowLayout {
-                            Label { text: qsTr("Cache object code:") }
-
-                            ButtonGroup {
-                                buttons: cacheObjCodeRadios.children
-
-                                checkedButton: ConfigModel.has("CacheObjectCodeCompilation", refreshCache)
-                                                ? cacheObjCodeRadios.children[ConfigModel.getInt("CacheObjectCodeCompilation", refreshCache)]
-                                                : null
-
-                                onClicked: (button) => {
-                                    configDirty = true
-                                    for (var idx in buttons) {
-                                        if (button === buttons[idx]) {
-                                            ConfigModel.setInt("CacheObjectCodeCompilation", idx)
-                                            return
-                                        }
+                            onClicked: (button) => {
+                                configDirty = true
+                                for (var idx in buttons) {
+                                    if (button === buttons[idx]) {
+                                        ConfigModel.setInt("CacheObjectCodeCompilation", idx)
+                                        return
                                     }
                                 }
                             }
+                        }
 
-                            RowLayout {
-                                id: cacheObjCodeRadios
-                                RadioButton {
-                                    text: qsTr("Off")
-                                }
-                                RadioButton {
-                                    text: qsTr("Read-only")
-                                }
-                                RadioButton {
-                                    text: qsTr("Read & write")
-                                }
+                        RowLayout {
+                            id: cacheObjCodeRadios
+                            RadioButton {
+                                text: qsTr("Off")
+                            }
+                            RadioButton {
+                                text: qsTr("Read-only")
+                            }
+                            RadioButton {
+                                text: qsTr("Read & write")
                             }
                         }
                     }
                 }
+            }
 
-                ConfigCheckBox {
-                    text: qsTr("Reduced x87 precision")
-                    config: "X87ReducedPrecision"
-                }
+            ConfigCheckBox {
+                text: qsTr("Reduced x87 precision")
+                config: "X87ReducedPrecision"
+            }
 
-                ConfigCheckBox {
-                    text: qsTr("Unsafe local flags optimization")
-                    config: "ABILocalFlags"
-                }
+            ConfigCheckBox {
+                text: qsTr("Unsafe local flags optimization")
+                config: "ABILocalFlags"
+            }
 
-                ConfigCheckBox {
-                    text: qsTr("Disable JIT optimization passes")
-                    config: "O0"
-                }
+            ConfigCheckBox {
+                text: qsTr("Disable JIT optimization passes")
+                config: "O0"
+            }
         }
 
         // Advanced settings
@@ -662,45 +662,45 @@ ApplicationWindow {
                 id: frame
                 Column {
                     Repeater {
-                model: ConfigModel
-                delegate: RowLayout {
-                    width: frame.width - frame.padding * 2
+                        model: ConfigModel
+                        delegate: RowLayout {
+                            width: frame.width - frame.padding * 2
 
-                    Label {
-                        id: label
-                        text: display
-                    }
+                            Label {
+                                id: label
+                                text: display
+                            }
 
-                    ConfigCheckBox {
-                        visible: optionType == "bool"
-                        config: visible ? label.text : ""
-                    }
+                            ConfigCheckBox {
+                                visible: optionType == "bool"
+                                config: visible ? label.text : ""
+                            }
 
-                    ConfigTextField {
-                        Layout.fillWidth: true
-                        visible: optionType == "fextl::string"
-                        config: visible ? label.text : ""
-                    }
+                            ConfigTextField {
+                                Layout.fillWidth: true
+                                visible: optionType == "fextl::string"
+                                config: visible ? label.text : ""
+                            }
 
-                    ConfigSpinBox {
-                        visible: optionType.startsWith("int") || optionType.startsWith("uint")
-                        config: visible ? label.text : ""
-                        from: 0
-                        to: 1 << 30
-                    }
+                            ConfigSpinBox {
+                                visible: optionType.startsWith("int") || optionType.startsWith("uint")
+                                config: visible ? label.text : ""
+                                from: 0
+                                to: 1 << 30
+                            }
 
-                    // Spacing
-                    Item {
-                        Layout.fillWidth: true
-                    }
+                            // Spacing
+                            Item {
+                                Layout.fillWidth: true
+                            }
 
-                    Button {
-                        icon.name: "list-remove"
-                        onClicked: {
-                            ConfigModel.erase(label.text)
+                            Button {
+                                icon.name: "list-remove"
+                                onClicked: {
+                                    ConfigModel.erase(label.text)
+                                }
+                            }
                         }
-                    }
-                }
                     }
                 }
             }
