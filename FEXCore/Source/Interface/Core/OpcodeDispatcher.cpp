@@ -5067,8 +5067,8 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b00, 0x2F), 1, &OpDispatchBuilder::UCOMISxOp<4>},
     {OPD(1, 0b01, 0x2F), 1, &OpDispatchBuilder::UCOMISxOp<8>},
 
-    {OPD(1, 0b00, 0x50), 1, &OpDispatchBuilder::MOVMSKOp<4>},
-    {OPD(1, 0b01, 0x50), 1, &OpDispatchBuilder::MOVMSKOp<8>},
+    {OPD(1, 0b00, 0x50), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVMSKOp, 4>},
+    {OPD(1, 0b01, 0x50), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVMSKOp, 8>},
 
     {OPD(1, 0b00, 0x51), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorUnaryOp, IR::OP_VFSQRT, 4>},
     {OPD(1, 0b01, 0x51), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorUnaryOp, IR::OP_VFSQRT, 8>},
@@ -5646,7 +5646,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x2C, 1, &OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<4, false, false>},
     {0x2D, 1, &OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<4, false, true>},
     {0x2E, 2, &OpDispatchBuilder::UCOMISxOp<4>},
-    {0x50, 1, &OpDispatchBuilder::MOVMSKOp<4>},
+    {0x50, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVMSKOp, 4>},
     {0x51, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VFSQRT, 4>},
     {0x52, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VFRSQRT, 4>},
     {0x53, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VFRECP, 4>},
@@ -5937,7 +5937,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x2E, 2, &OpDispatchBuilder::UCOMISxOp<8>},
 
     {0x40, 16, &OpDispatchBuilder::CMOVOp},
-    {0x50, 1, &OpDispatchBuilder::MOVMSKOp<8>},
+    {0x50, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVMSKOp, 8>},
     {0x51, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VFSQRT, 8>},
     {0x54, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VAND, 16>},
     {0x55, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUROp, IR::OP_VANDN, 8>},

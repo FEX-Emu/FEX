@@ -461,8 +461,7 @@ public:
 
   void MOVQOp(OpcodeArgs, VectorOpType VectorType);
   void MOVQMMXOp(OpcodeArgs);
-  template<size_t ElementSize>
-  void MOVMSKOp(OpcodeArgs);
+  void MOVMSKOp(OpcodeArgs, size_t ElementSize);
   void MOVMSKOpOne(OpcodeArgs);
   void PUNPCKLOp(OpcodeArgs, size_t ElementSize);
   void PUNPCKHOp(OpcodeArgs, size_t ElementSize);

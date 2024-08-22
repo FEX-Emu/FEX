@@ -702,8 +702,7 @@ void OpDispatchBuilder::MOVQMMXOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Src, 1);
 }
 
-template<size_t ElementSize>
-void OpDispatchBuilder::MOVMSKOp(OpcodeArgs) {
+void OpDispatchBuilder::MOVMSKOp(OpcodeArgs, size_t ElementSize) {
   auto Size = GetSrcSize(Op);
   uint8_t NumElements = Size / ElementSize;
 
@@ -751,9 +750,6 @@ void OpDispatchBuilder::MOVMSKOp(OpcodeArgs) {
     StoreResult(GPRClass, Op, CurrentVal, -1);
   }
 }
-
-template void OpDispatchBuilder::MOVMSKOp<4>(OpcodeArgs);
-template void OpDispatchBuilder::MOVMSKOp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::MOVMSKOpOne(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
