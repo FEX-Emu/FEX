@@ -1,4 +1,5 @@
 #include <QApplication>
+#include <QMessageBox>
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
 
@@ -243,8 +244,15 @@ void ConfigRuntime::onLoad(const QUrl& Filename) {
   // TODO: Distinguish between "load" and "overlay".
   //       Currently, the new configuration is overlaid on top of the previous one.
 
-  // TODO: Handle failure
-  OpenFile(Filename.toLocalFile().toStdString().c_str());
+  if (!OpenFile(Filename.toLocalFile().toStdString().c_str())) {
+    // This basically never happens because OpenFile performs no actual syntax checks.
+    // Treat as fatal since the UI state wouldn't be consistent after ignoring the error.
+    QMessageBox err(QMessageBox::Critical, tr("Could not load config file"), tr("Failed to load \"%1\"").arg(Filename.toLocalFile()),
+                    QMessageBox::Ok);
+    err.exec();
+    QApplication::exit();
+    return;
+  }
 
   ConfigModelInst->Reload();
   EnvVarModelInst->Reload();
