@@ -3996,10 +3996,9 @@ template void OpDispatchBuilder::VectorVariableBlend<1>(OpcodeArgs);
 template void OpDispatchBuilder::VectorVariableBlend<4>(OpcodeArgs);
 template void OpDispatchBuilder::VectorVariableBlend<8>(OpcodeArgs);
 
-template<size_t ElementSize>
-void OpDispatchBuilder::AVXVectorVariableBlend(OpcodeArgs) {
+void OpDispatchBuilder::AVXVectorVariableBlend(OpcodeArgs, size_t ElementSize) {
   const auto SrcSize = GetSrcSize(Op);
-  constexpr auto ElementSizeBits = ElementSize * 8;
+  const auto ElementSizeBits = ElementSize * 8;
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
@@ -4012,9 +4011,6 @@ void OpDispatchBuilder::AVXVectorVariableBlend(OpcodeArgs) {
   Ref Result = _VBSL(SrcSize, Shifted, Src2, Src1);
   StoreResult(FPRClass, Op, Result, -1);
 }
-template void OpDispatchBuilder::AVXVectorVariableBlend<1>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorVariableBlend<4>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVectorVariableBlend<8>(OpcodeArgs);
 
 void OpDispatchBuilder::PTestOpImpl(OpSize Size, Ref Dest, Ref Src) {
   // Invalidate deferred flags early

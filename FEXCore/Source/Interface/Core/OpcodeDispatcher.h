@@ -1392,8 +1392,7 @@ private:
   void AVXVectorALUOp(OpcodeArgs, IROps IROp, size_t ElementSize);
   void AVXVectorUnaryOp(OpcodeArgs, IROps IROp, size_t ElementSize);
 
-  template<size_t ElementSize>
-  void AVXVectorVariableBlend(OpcodeArgs);
+  void AVXVectorVariableBlend(OpcodeArgs, size_t ElementSize);
 
   void AVXVariableShiftImpl(OpcodeArgs, IROps IROp);
 
