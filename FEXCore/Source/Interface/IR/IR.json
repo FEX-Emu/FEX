@@ -67,6 +67,8 @@
     "constexpr uint8_t COND_SLT  = 11",
     "constexpr uint8_t COND_SGT  = 12",
     "constexpr uint8_t COND_SLE  = 13",
+    "constexpr uint8_t COND_TSTZ = 14 /* bit test zero */",
+    "constexpr uint8_t COND_TSTNZ = 15 /* bit test nonzero */",
 
     "constexpr uint8_t COND_FLU  = 16 /* float less or unordred */",
     "constexpr uint8_t COND_FGE  = 17 /* float greater or equal */",
@@ -289,10 +291,7 @@
       },
       "CondJump SSA:$Cmp1, SSA:$Cmp2, SSA:$TrueBlock, SSA:$FalseBlock, CondClass:$Cond{{COND_NEQ}}, u8:$CompareSize{0}, i1:$FromNZCV{false}": {
         "HasSideEffects": true,
-        "RAOverride": "2",
-        "EmitValidation": [
-          "WalkFindRegClass($Cmp1) == WalkFindRegClass($Cmp2)"
-        ]
+        "RAOverride": "2"
       },
       "ExitFunction GPR:$NewRIP": {
         "Desc": ["Exits the current JIT function with a target RIP"

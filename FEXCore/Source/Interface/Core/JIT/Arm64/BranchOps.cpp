@@ -116,20 +116,27 @@ DEF_OP(CondJump) {
     [[maybe_unused]] uint64_t Const;
     [[maybe_unused]] const bool isConst = IsInlineConstant(Op->Cmp2, &Const);
 
+    auto Reg = GetReg(Op->Cmp1.ID());
     const auto Size = Op->CompareSize == 4 ? ARMEmitter::Size::i32Bit : ARMEmitter::Size::i64Bit;
 
     LOGMAN_THROW_A_FMT(IsGPR(Op->Cmp1.ID()), "CondJump: Expected GPR");
-    LOGMAN_THROW_A_FMT(isConst && Const == 0, "CondJump: Expected 0 source");
-    LOGMAN_THROW_A_FMT(Op->Cond.Val == FEXCore::IR::COND_EQ || Op->Cond.Val == FEXCore::IR::COND_NEQ, "CondJump: Expected simple "
-                                                                                                      "condition");
+    LOGMAN_THROW_A_FMT(isConst, "CondJump: Expected constant source");
 
     if (Op->Cond.Val == FEXCore::IR::COND_EQ) {
-      cbz(Size, GetReg(Op->Cmp1.ID()), TrueTargetLabel);
+      LOGMAN_THROW_A_FMT(Const == 0, "CondJump: Expected 0 source");
+      cbz(Size, Reg, TrueTargetLabel);
+    } else if (Op->Cond.Val == FEXCore::IR::COND_NEQ) {
+      LOGMAN_THROW_A_FMT(Const == 0, "CondJump: Expected 0 source");
+      cbnz(Size, Reg, TrueTargetLabel);
+    } else if (Op->Cond.Val == FEXCore::IR::COND_TSTZ) {
+      LOGMAN_THROW_A_FMT(Const < 64, "CondJump: Expected valid bit source");
+      tbz(Reg, Const, TrueTargetLabel);
+    } else if (Op->Cond.Val == FEXCore::IR::COND_TSTNZ) {
+      LOGMAN_THROW_A_FMT(Const < 64, "CondJump: Expected valid bit source");
+      tbnz(Reg, Const, TrueTargetLabel);
     } else {
-      cbnz(Size, GetReg(Op->Cmp1.ID()), TrueTargetLabel);
+      LOGMAN_THROW_A_FMT(false, "CondJump expected simple condition");
     }
-
-    // TODO: Wire up tbz/tbnz
   }
 
   PendingTargetLabel = &JumpTargets.try_emplace(Op->FalseBlock.ID()).first->second;

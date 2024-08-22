@@ -3537,25 +3537,19 @@
       ]
     },
     "test al, 1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 2,
       "Comment": "0xa8",
       "ExpectedArm64ASM": [
         "and w26, w4, #0x1",
-        "cmn wzr, w26, lsl #24",
-        "mrs x20, nzcv",
-        "eor w20, w20, #0x20000000",
-        "msr nzcv, x20"
+        "cmp w26, #0x0 (0)"
       ]
     },
     "test ax, 1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 2,
       "Comment": "0xa9",
       "ExpectedArm64ASM": [
         "and w26, w4, #0x1",
-        "cmn wzr, w26, lsl #16",
-        "mrs x20, nzcv",
-        "eor w20, w20, #0x20000000",
-        "msr nzcv, x20"
+        "cmp w26, #0x0 (0)"
       ]
     },
     "test eax, 1": {
