@@ -810,8 +810,7 @@ void OpDispatchBuilder::VPUNPCKLOp(OpcodeArgs, size_t ElementSize) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-template<size_t ElementSize>
-void OpDispatchBuilder::PUNPCKHOp(OpcodeArgs) {
+void OpDispatchBuilder::PUNPCKHOp(OpcodeArgs, size_t ElementSize) {
   auto Size = GetSrcSize(Op);
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
@@ -820,13 +819,7 @@ void OpDispatchBuilder::PUNPCKHOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, ALUOp, -1);
 }
 
-template void OpDispatchBuilder::PUNPCKHOp<1>(OpcodeArgs);
-template void OpDispatchBuilder::PUNPCKHOp<2>(OpcodeArgs);
-template void OpDispatchBuilder::PUNPCKHOp<4>(OpcodeArgs);
-template void OpDispatchBuilder::PUNPCKHOp<8>(OpcodeArgs);
-
-template<size_t ElementSize>
-void OpDispatchBuilder::VPUNPCKHOp(OpcodeArgs) {
+void OpDispatchBuilder::VPUNPCKHOp(OpcodeArgs, size_t ElementSize) {
   const auto SrcSize = GetSrcSize(Op);
   const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
@@ -845,11 +838,6 @@ void OpDispatchBuilder::VPUNPCKHOp(OpcodeArgs) {
 
   StoreResult(FPRClass, Op, Result, -1);
 }
-
-template void OpDispatchBuilder::VPUNPCKHOp<1>(OpcodeArgs);
-template void OpDispatchBuilder::VPUNPCKHOp<2>(OpcodeArgs);
-template void OpDispatchBuilder::VPUNPCKHOp<4>(OpcodeArgs);
-template void OpDispatchBuilder::VPUNPCKHOp<8>(OpcodeArgs);
 
 Ref OpDispatchBuilder::GeneratePSHUFBMask(uint8_t SrcSize) {
   // PSHUFB doesn't 100% match VTBL behaviour
