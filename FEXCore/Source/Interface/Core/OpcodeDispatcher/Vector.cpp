@@ -925,8 +925,7 @@ void OpDispatchBuilder::PSHUFW8ByteOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Dest, -1);
 }
 
-template<bool Low>
-void OpDispatchBuilder::PSHUFWOp(OpcodeArgs) {
+void OpDispatchBuilder::PSHUFWOp(OpcodeArgs, bool Low) {
   constexpr auto IdentityCopy = 0b11'10'01'00;
 
   uint16_t Shuffle = Op->Src[1].Data.Literal.Value;
@@ -975,9 +974,6 @@ void OpDispatchBuilder::PSHUFWOp(OpcodeArgs) {
 
   StoreResult(FPRClass, Op, Dest, -1);
 }
-
-template void OpDispatchBuilder::PSHUFWOp<false>(OpcodeArgs);
-template void OpDispatchBuilder::PSHUFWOp<true>(OpcodeArgs);
 
 Ref OpDispatchBuilder::Single128Bit4ByteVectorShuffle(Ref Src, uint8_t Shuffle) {
   constexpr auto IdentityCopy = 0b11'10'01'00;
@@ -1198,8 +1194,7 @@ void OpDispatchBuilder::PSHUFDOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Single128Bit4ByteVectorShuffle(Src, Shuffle), -1);
 }
 
-template<size_t ElementSize, bool Low>
-void OpDispatchBuilder::VPSHUFWOp(OpcodeArgs) {
+void OpDispatchBuilder::VPSHUFWOp(OpcodeArgs, size_t ElementSize, bool Low) {
   const auto SrcSize = GetSrcSize(Op);
   const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
   auto Shuffle = Op->Src[1].Literal();
@@ -1247,9 +1242,6 @@ void OpDispatchBuilder::VPSHUFWOp(OpcodeArgs) {
 
   StoreResult(FPRClass, Op, Result, -1);
 }
-template void OpDispatchBuilder::VPSHUFWOp<2, false>(OpcodeArgs);
-template void OpDispatchBuilder::VPSHUFWOp<2, true>(OpcodeArgs);
-template void OpDispatchBuilder::VPSHUFWOp<4, true>(OpcodeArgs);
 
 Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, size_t DstSize, size_t ElementSize, Ref Src1, Ref Src2, uint8_t Shuffle) {
   // Since 256-bit variants and up don't lane cross, we can construct

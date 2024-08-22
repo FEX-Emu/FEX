@@ -467,8 +467,7 @@ public:
   void PUNPCKLOp(OpcodeArgs, size_t ElementSize);
   void PUNPCKHOp(OpcodeArgs, size_t ElementSize);
   void PSHUFBOp(OpcodeArgs);
-  template<bool Low>
-  void PSHUFWOp(OpcodeArgs);
+  void PSHUFWOp(OpcodeArgs, bool Low);
   void PSHUFW8ByteOp(OpcodeArgs);
   void PSHUFDOp(OpcodeArgs);
   template<size_t ElementSize>
@@ -696,8 +695,7 @@ public:
 
   void VPSHUFBOp(OpcodeArgs);
 
-  template<size_t ElementSize, bool Low>
-  void VPSHUFWOp(OpcodeArgs);
+  void VPSHUFWOp(OpcodeArgs, size_t ElementSize, bool Low);
 
   template<size_t ElementSize>
   void VPSLLOp(OpcodeArgs);
