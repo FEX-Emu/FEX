@@ -713,7 +713,7 @@ ApplicationWindow {
 
         padding: 0
 
-        ColumnLayout{
+        ColumnLayout {
             anchors.left: parent.left
             anchors.right: parent.right
             spacing: 0
