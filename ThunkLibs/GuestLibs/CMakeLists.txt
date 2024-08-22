@@ -9,6 +9,10 @@ if (ENABLE_CLANG_THUNKS)
   add_link_options(${LD_OVERRIDE})
 endif()
 
+if (NOT X86_DEV_ROOTFS)
+  message(FATAL_ERROR "X86_DEV_ROOTFS must be set (use \"/\" to ignore)")
+endif()
+
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
   message(STATUS "CCache enabled for guest thunks")
@@ -77,7 +81,7 @@ function(generate NAME SOURCE_FILE)
     OUTPUT "${OUTFILE}"
     DEPENDS "${GENERATOR_EXE}"
     DEPENDS "${SOURCE_FILE}"
-    COMMAND "${GENERATOR_EXE}" "${SOURCE_FILE}" "${NAME}" "-guest" "${OUTFILE}" ${BITNESS_FLAGS} -- -std=c++20 ${BITNESS_FLAGS2}
+    COMMAND "${GENERATOR_EXE}" "${SOURCE_FILE}" "${NAME}" "-guest" "${OUTFILE}" "${X86_DEV_ROOTFS}" ${BITNESS_FLAGS} -- -std=c++20 ${BITNESS_FLAGS2}
       # Expand compile definitions to space-separated list of -D parameters
       "$<$<BOOL:${compile_prop}>:;-D$<JOIN:${compile_prop},;-D>>"
       # Expand include directories to space-separated list of -isystem parameters
