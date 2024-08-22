@@ -60,7 +60,6 @@ ApplicationWindow {
             configFilename = selectedFile
             if (onNextAccept) {
                 onNextAccept()
-                console.log("Clearing due to accept");
                 onNextAccept = null
             }
         }
