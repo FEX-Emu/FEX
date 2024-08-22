@@ -505,8 +505,7 @@ public:
   void LZCNT(OpcodeArgs);
   template<size_t ElementSize>
   void VFCMPOp(OpcodeArgs);
-  template<size_t ElementSize>
-  void SHUFOp(OpcodeArgs);
+  void SHUFOp(OpcodeArgs, size_t ElementSize);
   template<size_t ElementSize>
   void PINSROp(OpcodeArgs);
   void InsertPSOp(OpcodeArgs);
@@ -724,8 +723,7 @@ public:
   template<size_t ElementSize>
   void VPSRLIOp(OpcodeArgs);
 
-  template<size_t ElementSize>
-  void VSHUFOp(OpcodeArgs);
+  void VSHUFOp(OpcodeArgs, size_t ElementSize);
 
   template<size_t ElementSize>
   void VTESTPOp(OpcodeArgs);

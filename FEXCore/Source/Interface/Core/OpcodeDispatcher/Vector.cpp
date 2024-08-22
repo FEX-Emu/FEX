@@ -1434,8 +1434,7 @@ Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, size_t DstSize, size_t ElementSize
   return Dest;
 }
 
-template<size_t ElementSize>
-void OpDispatchBuilder::SHUFOp(OpcodeArgs) {
+void OpDispatchBuilder::SHUFOp(OpcodeArgs, size_t ElementSize) {
   Ref Src1Node = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src2Node = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   uint8_t Shuffle = Op->Src[1].Literal();
@@ -1443,11 +1442,8 @@ void OpDispatchBuilder::SHUFOp(OpcodeArgs) {
   Ref Result = SHUFOpImpl(Op, GetDstSize(Op), ElementSize, Src1Node, Src2Node, Shuffle);
   StoreResult(FPRClass, Op, Result, -1);
 }
-template void OpDispatchBuilder::SHUFOp<4>(OpcodeArgs);
-template void OpDispatchBuilder::SHUFOp<8>(OpcodeArgs);
 
-template<size_t ElementSize>
-void OpDispatchBuilder::VSHUFOp(OpcodeArgs) {
+void OpDispatchBuilder::VSHUFOp(OpcodeArgs, size_t ElementSize) {
   Ref Src1Node = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2Node = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
   uint8_t Shuffle = Op->Src[2].Literal();
@@ -1455,8 +1451,6 @@ void OpDispatchBuilder::VSHUFOp(OpcodeArgs) {
   Ref Result = SHUFOpImpl(Op, GetDstSize(Op), ElementSize, Src1Node, Src2Node, Shuffle);
   StoreResult(FPRClass, Op, Result, -1);
 }
-template void OpDispatchBuilder::VSHUFOp<4>(OpcodeArgs);
-template void OpDispatchBuilder::VSHUFOp<8>(OpcodeArgs);
 
 void OpDispatchBuilder::VANDNOp(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);

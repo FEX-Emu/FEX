@@ -5180,8 +5180,8 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0xC4), 1, &OpDispatchBuilder::VPINSRWOp},
     {OPD(1, 0b01, 0xC5), 1, &OpDispatchBuilder::PExtrOp<2>},
 
-    {OPD(1, 0b00, 0xC6), 1, &OpDispatchBuilder::VSHUFOp<4>},
-    {OPD(1, 0b01, 0xC6), 1, &OpDispatchBuilder::VSHUFOp<8>},
+    {OPD(1, 0b00, 0xC6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VSHUFOp, 4>},
+    {OPD(1, 0b01, 0xC6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VSHUFOp, 8>},
 
     {OPD(1, 0b01, 0xD0), 1, &OpDispatchBuilder::VADDSUBPOp<8>},
     {OPD(1, 0b11, 0xD0), 1, &OpDispatchBuilder::VADDSUBPOp<4>},
@@ -5682,7 +5682,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0x77, 1, &OpDispatchBuilder::X87EMMS},
 
     {0xC2, 1, &OpDispatchBuilder::VFCMPOp<4>},
-    {0xC6, 1, &OpDispatchBuilder::SHUFOp<4>},
+    {0xC6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SHUFOp, 4>},
 
     {0xD1, 1, &OpDispatchBuilder::PSRLDOp<2>},
     {0xD2, 1, &OpDispatchBuilder::PSRLDOp<4>},
@@ -5980,7 +5980,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xC2, 1, &OpDispatchBuilder::VFCMPOp<8>},
     {0xC4, 1, &OpDispatchBuilder::PINSROp<2>},
     {0xC5, 1, &OpDispatchBuilder::PExtrOp<2>},
-    {0xC6, 1, &OpDispatchBuilder::SHUFOp<8>},
+    {0xC6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SHUFOp, 8>},
 
     {0xD0, 1, &OpDispatchBuilder::ADDSUBPOp<8>},
     {0xD1, 1, &OpDispatchBuilder::PSRLDOp<2>},
