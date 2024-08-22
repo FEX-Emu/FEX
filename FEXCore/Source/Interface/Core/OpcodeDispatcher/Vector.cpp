@@ -780,8 +780,7 @@ void OpDispatchBuilder::MOVMSKOpOne(OpcodeArgs) {
   StoreResult(GPRClass, Op, Result, -1);
 }
 
-template<size_t ElementSize>
-void OpDispatchBuilder::PUNPCKLOp(OpcodeArgs) {
+void OpDispatchBuilder::PUNPCKLOp(OpcodeArgs, size_t ElementSize) {
   auto Size = GetSrcSize(Op);
 
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
@@ -791,13 +790,7 @@ void OpDispatchBuilder::PUNPCKLOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, ALUOp, -1);
 }
 
-template void OpDispatchBuilder::PUNPCKLOp<1>(OpcodeArgs);
-template void OpDispatchBuilder::PUNPCKLOp<2>(OpcodeArgs);
-template void OpDispatchBuilder::PUNPCKLOp<4>(OpcodeArgs);
-template void OpDispatchBuilder::PUNPCKLOp<8>(OpcodeArgs);
-
-template<size_t ElementSize>
-void OpDispatchBuilder::VPUNPCKLOp(OpcodeArgs) {
+void OpDispatchBuilder::VPUNPCKLOp(OpcodeArgs, size_t ElementSize) {
   const auto SrcSize = GetSrcSize(Op);
   const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
@@ -816,11 +809,6 @@ void OpDispatchBuilder::VPUNPCKLOp(OpcodeArgs) {
 
   StoreResult(FPRClass, Op, Result, -1);
 }
-
-template void OpDispatchBuilder::VPUNPCKLOp<1>(OpcodeArgs);
-template void OpDispatchBuilder::VPUNPCKLOp<2>(OpcodeArgs);
-template void OpDispatchBuilder::VPUNPCKLOp<4>(OpcodeArgs);
-template void OpDispatchBuilder::VPUNPCKLOp<8>(OpcodeArgs);
 
 template<size_t ElementSize>
 void OpDispatchBuilder::PUNPCKHOp(OpcodeArgs) {

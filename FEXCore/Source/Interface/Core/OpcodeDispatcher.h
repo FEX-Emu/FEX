@@ -464,8 +464,7 @@ public:
   template<size_t ElementSize>
   void MOVMSKOp(OpcodeArgs);
   void MOVMSKOpOne(OpcodeArgs);
-  template<size_t ElementSize>
-  void PUNPCKLOp(OpcodeArgs);
+  void PUNPCKLOp(OpcodeArgs, size_t ElementSize);
   template<size_t ElementSize>
   void PUNPCKHOp(OpcodeArgs);
   void PSHUFBOp(OpcodeArgs);
@@ -724,8 +723,7 @@ public:
   template<size_t ElementSize>
   void VPUNPCKHOp(OpcodeArgs);
 
-  template<size_t ElementSize>
-  void VPUNPCKLOp(OpcodeArgs);
+  void VPUNPCKLOp(OpcodeArgs, size_t ElementSize);
 
   template<size_t ElementSize>
   void VPSRLIOp(OpcodeArgs);
