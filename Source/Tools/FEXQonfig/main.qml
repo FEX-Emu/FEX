@@ -14,8 +14,10 @@ ApplicationWindow {
     id: root
 
     visible: true
-    width: 640
-    height: 600
+    width: 540
+    height: 585
+    minimumWidth: 500
+    minimumHeight: 450
     title: configDirty ? qsTr("FEX configuration *") : qsTr("FEX configuration")
 
     property url configFilename
