@@ -25,15 +25,18 @@ struct GuestSigAction;
 namespace FEX::HLE {
 void RegisterSignals(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_IMPL(rt_sigprocmask, [](FEXCore::Core::CpuStateFrame* Frame, int how, const uint64_t* set, uint64_t* oldset) -> uint64_t {
-    return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigProcMask(how, set, oldset);
+    return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigProcMask(FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame),
+                                                                             how, set, oldset);
   });
 
   REGISTER_SYSCALL_IMPL(rt_sigpending, [](FEXCore::Core::CpuStateFrame* Frame, uint64_t* set, size_t sigsetsize) -> uint64_t {
-    return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigPending(set, sigsetsize);
+    return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigPending(FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame), set,
+                                                                            sigsetsize);
   });
 
   REGISTER_SYSCALL_IMPL(rt_sigsuspend, [](FEXCore::Core::CpuStateFrame* Frame, uint64_t* unewset, size_t sigsetsize) -> uint64_t {
-    return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigSuspend(unewset, sigsetsize);
+    return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigSuspend(FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame),
+                                                                            unewset, sigsetsize);
   });
 
   REGISTER_SYSCALL_IMPL(userfaultfd, [](FEXCore::Core::CpuStateFrame* Frame, int flags) -> uint64_t {

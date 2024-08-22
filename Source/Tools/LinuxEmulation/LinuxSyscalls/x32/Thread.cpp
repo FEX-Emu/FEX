@@ -241,7 +241,8 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
         old64 = *old_ss;
         old64_ptr = &old64;
       }
-      uint64_t Result = FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSigAltStack(ss64_ptr, old64_ptr);
+      uint64_t Result = FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSigAltStack(
+        FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame), ss64_ptr, old64_ptr);
 
       if (Result == 0 && old_ss) {
         FaultSafeUserMemAccess::VerifyIsWritable(old_ss, sizeof(*old_ss));

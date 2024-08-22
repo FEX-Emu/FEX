@@ -40,7 +40,8 @@ void RegisterFS(FEX::HLE::SyscallHandler* Handler) {
 
   REGISTER_SYSCALL_IMPL_X32(
     sigprocmask, [](FEXCore::Core::CpuStateFrame* Frame, int how, const uint64_t* set, uint64_t* oldset, size_t sigsetsize) -> uint64_t {
-      return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigProcMask(how, set, oldset);
+      return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigProcMask(FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame),
+                                                                               how, set, oldset);
     });
 }
 } // namespace FEX::HLE::x32

@@ -49,30 +49,17 @@ __attribute__((naked)) static void sigrestore() {
 
 constexpr static uint32_t X86_MINSIGSTKSZ = 0x2000U;
 
-// We can only have one delegator per process
-static SignalDelegator* GlobalDelegator {};
-
-struct ThreadState {
-  FEX::HLE::ThreadStateObject* Thread {};
-
-  void* AltStackPtr {};
-  stack_t GuestAltStack {
-    .ss_sp = nullptr,
-    .ss_flags = SS_DISABLE, // By default the guest alt stack is disabled
-    .ss_size = 0,
-  };
-  // This is the thread's current signal mask
-  GuestSAMask CurrentSignalMask {};
-  // The mask prior to a suspend
-  GuestSAMask PreviousSuspendMask {};
-
-  uint64_t PendingSignals {};
-};
-
-thread_local ThreadState ThreadData {};
+static FEX::HLE::ThreadStateObject* GetThreadFromAltStack(const stack_t& alt_stack) {
+  // The thread object lives just before the alt-stack begin.
+  FEX::HLE::ThreadStateObject* ThreadObject {};
+  memcpy(&ThreadObject, reinterpret_cast<void*>(reinterpret_cast<uint64_t>(alt_stack.ss_sp) - 8), sizeof(void*));
+  return ThreadObject;
+}
 
 static void SignalHandlerThunk(int Signal, siginfo_t* Info, void* UContext) {
-  GlobalDelegator->HandleSignal(Signal, Info, UContext);
+  ucontext_t* _context = (ucontext_t*)UContext;
+  auto ThreadObject = GetThreadFromAltStack(_context->uc_stack);
+  ThreadObject->SignalInfo.Delegator->HandleSignal(ThreadObject, Signal, Info, UContext);
 }
 
 uint64_t SigIsMember(GuestSAMask* Set, int Signal) {
@@ -91,10 +78,8 @@ uint64_t SetSignal(GuestSAMask* Set, int Signal) {
  * @name Signal frame setup
  * @{ */
 
-void SignalDelegator::HandleSignal(int Signal, void* Info, void* UContext) {
+void SignalDelegator::HandleSignal(FEX::HLE::ThreadStateObject* Thread, int Signal, void* Info, void* UContext) {
   // Let the host take first stab at handling the signal
-  auto Thread = GetTLSThread();
-
   if (!Thread) {
     LogMan::Msg::AFmt("[{}] Thread has received a signal and hasn't registered itself with the delegate! Programming error!",
                       FHU::Syscalls::gettid());
@@ -113,7 +98,7 @@ void SignalDelegator::HandleSignal(int Signal, void* Info, void* UContext) {
 
     // Now let the frontend handle the signal
     // It's clearly a guest signal and this ends up being an OS specific issue
-    HandleGuestSignal(Thread->Thread, Signal, Info, UContext);
+    HandleGuestSignal(Thread, Signal, Info, UContext);
   }
 }
 
@@ -549,7 +534,8 @@ static bool IsAsyncSignal(const siginfo_t* Info, int Signal) {
   return true;
 }
 
-void SignalDelegator::HandleGuestSignal(FEXCore::Core::InternalThreadState* Thread, int Signal, void* Info, void* UContext) {
+void SignalDelegator::HandleGuestSignal(FEX::HLE::ThreadStateObject* ThreadObject, int Signal, void* Info, void* UContext) {
+  auto Thread = ThreadObject->Thread;
   ucontext_t* _context = (ucontext_t*)UContext;
   auto SigInfo = *static_cast<siginfo_t*>(Info);
 
@@ -630,10 +616,10 @@ void SignalDelegator::HandleGuestSignal(FEXCore::Core::InternalThreadState* Thre
   }
 
   // Check for masked signals
-  if (ThreadData.CurrentSignalMask.Val & (1ULL << (Signal - 1)) && IsAsyncSignal(&SigInfo, Signal)) {
+  if (ThreadObject->SignalInfo.CurrentSignalMask.Val & (1ULL << (Signal - 1)) && IsAsyncSignal(&SigInfo, Signal)) {
     // This signal is masked, must defer until the guest updates the signal mask.
     // Add it to the pending signal list
-    ThreadData.PendingSignals |= 1ULL << (Signal - 1);
+    ThreadObject->SignalInfo.PendingSignals |= 1ULL << (Signal - 1);
     return;
   }
 
@@ -641,7 +627,7 @@ void SignalDelegator::HandleGuestSignal(FEXCore::Core::InternalThreadState* Thre
   SignalHandler& Handler = HostHandlers[Signal];
 
   // Remove the pending signal
-  ThreadData.PendingSignals &= ~(1ULL << (Signal - 1));
+  ThreadObject->SignalInfo.PendingSignals &= ~(1ULL << (Signal - 1));
 
   // We have an emulation thread pointer, we can now modify its state
   if (Handler.GuestAction.sigaction_handler.handler == SIG_DFL) {
@@ -652,7 +638,8 @@ void SignalDelegator::HandleGuestSignal(FEXCore::Core::InternalThreadState* Thre
   } else if (Handler.GuestAction.sigaction_handler.handler == SIG_IGN) {
     return;
   } else {
-    if (Handler.GuestHandler && Handler.GuestHandler(Thread, Signal, &SigInfo, UContext, &Handler.GuestAction, &ThreadData.GuestAltStack)) {
+    if (Handler.GuestHandler &&
+        Handler.GuestHandler(Thread, Signal, &SigInfo, UContext, &Handler.GuestAction, &ThreadObject->SignalInfo.GuestAltStack)) {
       // Set up a new mask based on this signals signal mask
       uint64_t NewMask = Handler.GuestAction.sa_mask.Val;
 
@@ -815,9 +802,6 @@ void SignalDelegator::UninstallHostHandler(int Signal) {
 SignalDelegator::SignalDelegator(FEXCore::Context::Context* _CTX, const std::string_view ApplicationName)
   : CTX {_CTX}
   , ApplicationName {ApplicationName} {
-  // Register this delegate
-  LOGMAN_THROW_AA_FMT(!GlobalDelegator, "Can't register global delegator multiple times!");
-  GlobalDelegator = this;
   // Signal zero isn't real
   HostHandlers[0].Installed = true;
 
@@ -871,7 +855,7 @@ SignalDelegator::SignalDelegator(FEXCore::Context::Context* _CTX, const std::str
       if (PC == reinterpret_cast<uint64_t>(&FEXCore::Assert::ForcedAssert)) {
         // This is a host side assert. Don't deliver this to the guest
         // We want to actually break here
-        GlobalDelegator->UninstallHostHandler(Signal);
+        FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread)->SignalInfo.Delegator->UninstallHostHandler(Signal);
         return true;
       }
       return false;
@@ -879,16 +863,17 @@ SignalDelegator::SignalDelegator(FEXCore::Context::Context* _CTX, const std::str
     true);
 
   const auto PauseHandler = [](FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext) -> bool {
-    return GlobalDelegator->HandleSignalPause(Thread, Signal, info, ucontext);
+    return FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread)->SignalInfo.Delegator->HandleSignalPause(Thread, Signal, info, ucontext);
   };
 
   const auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext,
                                      GuestSigAction* GuestAction, stack_t* GuestStack) -> bool {
-    return GlobalDelegator->HandleDispatcherGuestSignal(Thread, Signal, info, ucontext, GuestAction, GuestStack);
+    return FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread)->SignalInfo.Delegator->HandleDispatcherGuestSignal(
+      Thread, Signal, info, ucontext, GuestAction, GuestStack);
   };
 
   const auto SigillHandler = [](FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext) -> bool {
-    return GlobalDelegator->HandleSIGILL(Thread, Signal, info, ucontext);
+    return FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread)->SignalInfo.Delegator->HandleSIGILL(Thread, Signal, info, ucontext);
   };
 
   // Register SIGILL signal handler.
@@ -909,7 +894,8 @@ SignalDelegator::SignalDelegator(FEXCore::Context::Context* _CTX, const std::str
       return false;
     }
 
-    const auto Result = FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(Thread, GlobalDelegator->GetUnalignedHandlerType(), PC,
+    const auto Delegator = FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread)->SignalInfo.Delegator;
+    const auto Result = FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(Thread, Delegator->GetUnalignedHandlerType(), PC,
                                                                            ArchHelpers::Context::GetArmGPRs(ucontext));
     ArchHelpers::Context::SetPc(ucontext, PC + Result.second);
     return Result.first;
@@ -934,24 +920,22 @@ SignalDelegator::~SignalDelegator() {
     ::syscall(SYS_rt_sigaction, i, &HostHandlers[i].OldAction, nullptr, 8);
     HostHandlers[i].Installed = false;
   }
-  GlobalDelegator = nullptr;
-}
-
-FEX::HLE::ThreadStateObject* SignalDelegator::GetTLSThread() {
-  return ThreadData.Thread;
 }
 
 void SignalDelegator::RegisterTLSState(FEX::HLE::ThreadStateObject* Thread) {
-  ThreadData.Thread = Thread;
+  Thread->SignalInfo.Delegator = this;
 
   // Set up our signal alternative stack
   // This is per thread rather than per signal
-  ThreadData.AltStackPtr = FEXCore::Allocator::mmap(nullptr, SIGSTKSZ * 16, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  Thread->SignalInfo.AltStackPtr = FEXCore::Allocator::mmap(nullptr, SIGSTKSZ * 16, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
   stack_t altstack {};
-  altstack.ss_sp = ThreadData.AltStackPtr;
-  altstack.ss_size = SIGSTKSZ * 16;
+  altstack.ss_sp = reinterpret_cast<void*>(reinterpret_cast<uint64_t>(Thread->SignalInfo.AltStackPtr) + 8);
+  altstack.ss_size = SIGSTKSZ * 16 - 8;
   altstack.ss_flags = 0;
   LOGMAN_THROW_AA_FMT(!!altstack.ss_sp, "Couldn't allocate stack pointer");
+
+  // Copy the thread object to the start of the alt-stack
+  memcpy(Thread->SignalInfo.AltStackPtr, &Thread, sizeof(void*));
 
   // Register the alt stack
   const int Result = sigaltstack(&altstack, nullptr);
@@ -960,7 +944,7 @@ void SignalDelegator::RegisterTLSState(FEX::HLE::ThreadStateObject* Thread) {
   }
 
   // Get the current host signal mask
-  ::syscall(SYS_rt_sigprocmask, 0, nullptr, &ThreadData.CurrentSignalMask.Val, 8);
+  ::syscall(SYS_rt_sigprocmask, 0, nullptr, &Thread->SignalInfo.CurrentSignalMask.Val, 8);
 
   if (Thread->Thread) {
     // Reserve a small amount of deferred signal frames. Usually the stack won't be utilized beyond
@@ -970,9 +954,9 @@ void SignalDelegator::RegisterTLSState(FEX::HLE::ThreadStateObject* Thread) {
 }
 
 void SignalDelegator::UninstallTLSState(FEX::HLE::ThreadStateObject* Thread) {
-  FEXCore::Allocator::munmap(ThreadData.AltStackPtr, SIGSTKSZ * 16);
+  FEXCore::Allocator::munmap(Thread->SignalInfo.AltStackPtr, SIGSTKSZ * 16);
 
-  ThreadData.AltStackPtr = nullptr;
+  Thread->SignalInfo.AltStackPtr = nullptr;
 
   stack_t altstack {};
   altstack.ss_flags = SS_DISABLE;
@@ -982,8 +966,6 @@ void SignalDelegator::UninstallTLSState(FEX::HLE::ThreadStateObject* Thread) {
   if (Result == -1) {
     LogMan::Msg::EFmt("Failed to uninstall alternative signal stack {}", strerror(errno));
   }
-
-  ThreadData.Thread = nullptr;
 }
 
 void SignalDelegator::FrontendRegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
@@ -1067,20 +1049,19 @@ void SignalDelegator::CheckXIDHandler() {
   }
 }
 
-uint64_t SignalDelegator::RegisterGuestSigAltStack(const stack_t* ss, stack_t* old_ss) {
-  auto Thread = GetTLSThread();
+uint64_t SignalDelegator::RegisterGuestSigAltStack(FEX::HLE::ThreadStateObject* Thread, const stack_t* ss, stack_t* old_ss) {
   bool UsingAltStack {};
-  uint64_t AltStackBase = reinterpret_cast<uint64_t>(ThreadData.GuestAltStack.ss_sp);
-  uint64_t AltStackEnd = AltStackBase + ThreadData.GuestAltStack.ss_size;
+  uint64_t AltStackBase = reinterpret_cast<uint64_t>(Thread->SignalInfo.GuestAltStack.ss_sp);
+  uint64_t AltStackEnd = AltStackBase + Thread->SignalInfo.GuestAltStack.ss_size;
   uint64_t GuestSP = Thread->Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP];
 
-  if (!(ThreadData.GuestAltStack.ss_flags & SS_DISABLE) && GuestSP >= AltStackBase && GuestSP <= AltStackEnd) {
+  if (!(Thread->SignalInfo.GuestAltStack.ss_flags & SS_DISABLE) && GuestSP >= AltStackBase && GuestSP <= AltStackEnd) {
     UsingAltStack = true;
   }
 
   // If we have an old signal set then give it back
   if (old_ss) {
-    *old_ss = ThreadData.GuestAltStack;
+    *old_ss = Thread->SignalInfo.GuestAltStack;
 
     if (UsingAltStack) {
       // We are currently operating on the alt stack
@@ -1108,7 +1089,7 @@ uint64_t SignalDelegator::RegisterGuestSigAltStack(const stack_t* ss, stack_t* o
 
     if (ss->ss_flags & SS_DISABLE) {
       // If SS_DISABLE Is specified then the rest of the details are ignored
-      ThreadData.GuestAltStack = *ss;
+      Thread->SignalInfo.GuestAltStack = *ss;
       return 0;
     }
 
@@ -1117,28 +1098,26 @@ uint64_t SignalDelegator::RegisterGuestSigAltStack(const stack_t* ss, stack_t* o
       return -ENOMEM;
     }
 
-    ThreadData.GuestAltStack = *ss;
+    Thread->SignalInfo.GuestAltStack = *ss;
   }
 
   return 0;
 }
 
-static void CheckForPendingSignals(FEXCore::Core::InternalThreadState* Thread) {
-  auto ThreadObject = static_cast<const FEX::HLE::ThreadStateObject*>(Thread->FrontendPtr);
-
+static void CheckForPendingSignals(const FEX::HLE::ThreadStateObject* Thread) {
   // Do we have any pending signals that became unmasked?
-  uint64_t PendingSignals = ~ThreadData.CurrentSignalMask.Val & ThreadData.PendingSignals;
+  uint64_t PendingSignals = ~Thread->SignalInfo.CurrentSignalMask.Val & Thread->SignalInfo.PendingSignals;
   if (PendingSignals != 0) {
     for (int i = 0; i < 64; ++i) {
       if (PendingSignals & (1ULL << i)) {
-        FHU::Syscalls::tgkill(ThreadObject->ThreadInfo.PID, ThreadObject->ThreadInfo.TID, i + 1);
+        FHU::Syscalls::tgkill(Thread->ThreadInfo.PID, Thread->ThreadInfo.TID, i + 1);
         // We might not even return here which is spooky
       }
     }
   }
 }
 
-uint64_t SignalDelegator::GuestSigProcMask(int how, const uint64_t* set, uint64_t* oldset) {
+uint64_t SignalDelegator::GuestSigProcMask(FEX::HLE::ThreadStateObject* Thread, int how, const uint64_t* set, uint64_t* oldset) {
   // The order in which we handle signal mask setting is important here
   // old and new can point to the same location in memory.
   // Even if the pointers are to same memory location, we must store the original signal mask
@@ -1146,21 +1125,21 @@ uint64_t SignalDelegator::GuestSigProcMask(int how, const uint64_t* set, uint64_
   // 1) Store old mask
   // 2) Set mask to new mask if exists
   // 3) Give old mask back
-  auto OldSet = ThreadData.CurrentSignalMask.Val;
+  auto OldSet = Thread->SignalInfo.CurrentSignalMask.Val;
 
   if (!!set) {
     uint64_t IgnoredSignalsMask = ~((1ULL << (SIGKILL - 1)) | (1ULL << (SIGSTOP - 1)));
     if (how == SIG_BLOCK) {
-      ThreadData.CurrentSignalMask.Val |= *set & IgnoredSignalsMask;
+      Thread->SignalInfo.CurrentSignalMask.Val |= *set & IgnoredSignalsMask;
     } else if (how == SIG_UNBLOCK) {
-      ThreadData.CurrentSignalMask.Val &= ~(*set & IgnoredSignalsMask);
+      Thread->SignalInfo.CurrentSignalMask.Val &= ~(*set & IgnoredSignalsMask);
     } else if (how == SIG_SETMASK) {
-      ThreadData.CurrentSignalMask.Val = *set & IgnoredSignalsMask;
+      Thread->SignalInfo.CurrentSignalMask.Val = *set & IgnoredSignalsMask;
     } else {
       return -EINVAL;
     }
 
-    uint64_t HostMask = ThreadData.CurrentSignalMask.Val;
+    uint64_t HostMask = Thread->SignalInfo.CurrentSignalMask.Val;
     // Now actually set the host mask
     // This will hide from the guest that we are not actually setting all of the masks it wants
     for (size_t i = 0; i < MAX_SIGNALS; ++i) {
@@ -1177,17 +1156,17 @@ uint64_t SignalDelegator::GuestSigProcMask(int how, const uint64_t* set, uint64_
     *oldset = OldSet;
   }
 
-  CheckForPendingSignals(GetTLSThread()->Thread);
+  CheckForPendingSignals(Thread);
 
   return 0;
 }
 
-uint64_t SignalDelegator::GuestSigPending(uint64_t* set, size_t sigsetsize) {
+uint64_t SignalDelegator::GuestSigPending(FEX::HLE::ThreadStateObject* Thread, uint64_t* set, size_t sigsetsize) {
   if (sigsetsize > sizeof(uint64_t)) {
     return -EINVAL;
   }
 
-  *set = ThreadData.PendingSignals;
+  *set = Thread->SignalInfo.PendingSignals;
 
   sigset_t HostSet {};
   if (sigpending(&HostSet) == 0) {
@@ -1204,7 +1183,7 @@ uint64_t SignalDelegator::GuestSigPending(uint64_t* set, size_t sigsetsize) {
   return 0;
 }
 
-uint64_t SignalDelegator::GuestSigSuspend(uint64_t* set, size_t sigsetsize) {
+uint64_t SignalDelegator::GuestSigSuspend(FEX::HLE::ThreadStateObject* Thread, uint64_t* set, size_t sigsetsize) {
   if (sigsetsize > sizeof(uint64_t)) {
     return -EINVAL;
   }
@@ -1212,9 +1191,9 @@ uint64_t SignalDelegator::GuestSigSuspend(uint64_t* set, size_t sigsetsize) {
   uint64_t IgnoredSignalsMask = ~((1ULL << (SIGKILL - 1)) | (1ULL << (SIGSTOP - 1)));
 
   // Backup the mask
-  ThreadData.PreviousSuspendMask = ThreadData.CurrentSignalMask;
+  Thread->SignalInfo.PreviousSuspendMask = Thread->SignalInfo.CurrentSignalMask;
   // Set the new mask
-  ThreadData.CurrentSignalMask.Val = *set & IgnoredSignalsMask;
+  Thread->SignalInfo.CurrentSignalMask.Val = *set & IgnoredSignalsMask;
   sigset_t HostSet {};
 
   sigemptyset(&HostSet);
@@ -1238,9 +1217,9 @@ uint64_t SignalDelegator::GuestSigSuspend(uint64_t* set, size_t sigsetsize) {
   // XXX: Might be unsafe if the signal handler adjusted the thread's signal mask
   // But since we don't support the guest adjusting the mask through the context object
   // then this is safe-ish
-  ThreadData.CurrentSignalMask = ThreadData.PreviousSuspendMask;
+  Thread->SignalInfo.CurrentSignalMask = Thread->SignalInfo.PreviousSuspendMask;
 
-  CheckForPendingSignals(GetTLSThread()->Thread);
+  CheckForPendingSignals(Thread);
 
   return Result == -1 ? -errno : Result;
 }

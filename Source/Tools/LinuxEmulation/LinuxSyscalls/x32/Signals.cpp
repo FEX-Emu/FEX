@@ -77,7 +77,7 @@ void RegisterSignals(FEX::HLE::SyscallHandler* Handler) {
   // Only gets the lower 32-bits of the signal mask
   REGISTER_SYSCALL_IMPL_X32(sgetmask, [](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t {
     uint64_t Set {};
-    FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigProcMask(0, nullptr, &Set);
+    FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigProcMask(FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame), 0, nullptr, &Set);
     return Set & ~0U;
   });
 
@@ -86,7 +86,8 @@ void RegisterSignals(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_IMPL_X32(ssetmask, [](FEXCore::Core::CpuStateFrame* Frame, uint32_t New) -> uint64_t {
     uint64_t Set {};
     uint64_t NewSet = (~0ULL << 32) | New;
-    FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigProcMask(SIG_SETMASK, &NewSet, &Set);
+    FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigProcMask(FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame),
+                                                                      SIG_SETMASK, &NewSet, &Set);
     return Set & ~0U;
   });
 
@@ -94,12 +95,13 @@ void RegisterSignals(FEX::HLE::SyscallHandler* Handler) {
   // The upper 32-bits are still active (unmasked) and can signal the program
   REGISTER_SYSCALL_IMPL_X32(sigsuspend, [](FEXCore::Core::CpuStateFrame* Frame, uint32_t Mask) -> uint64_t {
     uint64_t Mask64 = Mask;
-    return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigSuspend(&Mask64, 8);
+    return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigSuspend(FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame), &Mask64, 8);
   });
 
   REGISTER_SYSCALL_IMPL_X32(sigpending, [](FEXCore::Core::CpuStateFrame* Frame, compat_old_sigset_t* set) -> uint64_t {
     uint64_t HostSet {};
-    uint64_t Result = FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigPending(&HostSet, 8);
+    uint64_t Result =
+      FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigPending(FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame), &HostSet, 8);
     if (Result == 0) {
       // This old interface only returns the lower signals
       FaultSafeUserMemAccess::VerifyIsWritable(set, sizeof(*set));

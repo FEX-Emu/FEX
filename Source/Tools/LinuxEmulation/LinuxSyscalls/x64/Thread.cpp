@@ -71,7 +71,8 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_IMPL_X64(sigaltstack, [](FEXCore::Core::CpuStateFrame* Frame, const stack_t* ss, stack_t* old_ss) -> uint64_t {
     FaultSafeUserMemAccess::VerifyIsReadableOrNull(ss, sizeof(*ss));
     FaultSafeUserMemAccess::VerifyIsWritableOrNull(old_ss, sizeof(*old_ss));
-    return FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSigAltStack(ss, old_ss);
+    return FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSigAltStack(
+      FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame), ss, old_ss);
   });
 
   // launch a new process under fex

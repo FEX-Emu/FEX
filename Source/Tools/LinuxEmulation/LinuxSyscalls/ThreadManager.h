@@ -8,6 +8,8 @@ $end_info$
 
 #pragma once
 
+#include "LinuxSyscalls/Types.h"
+
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/fextl/vector.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
@@ -29,6 +31,24 @@ struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
     int32_t* clear_child_tid {0};
     uint64_t robust_list_head {0};
   } ThreadInfo {};
+
+  struct {
+    SignalDelegator* Delegator {};
+
+    void* AltStackPtr {};
+    stack_t GuestAltStack {
+      .ss_sp = nullptr,
+      .ss_flags = SS_DISABLE, // By default the guest alt stack is disabled
+      .ss_size = 0,
+    };
+    // This is the thread's current signal mask
+    FEX::HLE::GuestSAMask CurrentSignalMask {};
+    // The mask prior to a suspend
+    FEX::HLE::GuestSAMask PreviousSuspendMask {};
+
+    uint64_t PendingSignals {};
+
+  } SignalInfo {};
 };
 
 class ThreadManager final {
@@ -42,6 +62,10 @@ public:
   ///< Returns the ThreadStateObject from a CpuStateFrame object.
   static inline FEX::HLE::ThreadStateObject* GetStateObjectFromCPUState(FEXCore::Core::CpuStateFrame* Frame) {
     return static_cast<FEX::HLE::ThreadStateObject*>(Frame->Thread->FrontendPtr);
+  }
+
+  static inline FEX::HLE::ThreadStateObject* GetStateObjectFromFEXCoreThread(FEXCore::Core::InternalThreadState* Thread) {
+    return static_cast<FEX::HLE::ThreadStateObject*>(Thread->FrontendPtr);
   }
 
   FEX::HLE::ThreadStateObject*
