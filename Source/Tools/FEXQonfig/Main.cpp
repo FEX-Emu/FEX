@@ -31,7 +31,7 @@ void ConfigModel::Reload() {
   auto Options = LoadedConfig->GetOptionMap();
 
   beginResetModel();
-  clear();
+  removeRows(0, rowCount());
   for (auto& Option : Options) {
     if (!LoadedConfig->OptionExists(Option.first)) {
       continue;
@@ -154,7 +154,7 @@ void RootFSModel::Reload() {
   std::unique_lock<std::mutex> lk {NamedRootFSUpdater};
 
   beginResetModel();
-  clear();
+  removeRows(0, rowCount());
 
   fextl::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
   std::error_code ec {};
@@ -263,7 +263,7 @@ void EnvVarModel::Reload() {
 
   beginResetModel();
 
-  clear();
+  removeRows(0, rowCount());
   for (auto& Var : *Vars) {
     appendRow(new QStandardItem(Var.c_str()));
   }
