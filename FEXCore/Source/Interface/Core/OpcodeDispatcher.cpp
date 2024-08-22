@@ -5186,9 +5186,9 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0xD0), 1, &OpDispatchBuilder::VADDSUBPOp<8>},
     {OPD(1, 0b11, 0xD0), 1, &OpDispatchBuilder::VADDSUBPOp<4>},
 
-    {OPD(1, 0b01, 0xD1), 1, &OpDispatchBuilder::VPSRLDOp<2>},
-    {OPD(1, 0b01, 0xD2), 1, &OpDispatchBuilder::VPSRLDOp<4>},
-    {OPD(1, 0b01, 0xD3), 1, &OpDispatchBuilder::VPSRLDOp<8>},
+    {OPD(1, 0b01, 0xD1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRLDOp, 2>},
+    {OPD(1, 0b01, 0xD2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRLDOp, 4>},
+    {OPD(1, 0b01, 0xD3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRLDOp, 8>},
     {OPD(1, 0b01, 0xD4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VADD, 8>},
     {OPD(1, 0b01, 0xD5), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VMUL, 2>},
     {OPD(1, 0b01, 0xD6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVQOp, OpDispatchBuilder::VectorOpType::AVX>},
@@ -5204,8 +5204,8 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0xDF), 1, &OpDispatchBuilder::VANDNOp},
 
     {OPD(1, 0b01, 0xE0), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VURAVG, 1>},
-    {OPD(1, 0b01, 0xE1), 1, &OpDispatchBuilder::VPSRAOp<2>},
-    {OPD(1, 0b01, 0xE2), 1, &OpDispatchBuilder::VPSRAOp<4>},
+    {OPD(1, 0b01, 0xE1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRAOp, 2>},
+    {OPD(1, 0b01, 0xE2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRAOp, 4>},
     {OPD(1, 0b01, 0xE3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VURAVG, 2>},
     {OPD(1, 0b01, 0xE4), 1, &OpDispatchBuilder::VPMULHWOp<false>},
     {OPD(1, 0b01, 0xE5), 1, &OpDispatchBuilder::VPMULHWOp<true>},
@@ -5226,9 +5226,9 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0xEF), 1, &OpDispatchBuilder::AVXVectorXOROp},
 
     {OPD(1, 0b11, 0xF0), 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
-    {OPD(1, 0b01, 0xF1), 1, &OpDispatchBuilder::VPSLLOp<2>},
-    {OPD(1, 0b01, 0xF2), 1, &OpDispatchBuilder::VPSLLOp<4>},
-    {OPD(1, 0b01, 0xF3), 1, &OpDispatchBuilder::VPSLLOp<8>},
+    {OPD(1, 0b01, 0xF1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLOp, 2>},
+    {OPD(1, 0b01, 0xF2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLOp, 4>},
+    {OPD(1, 0b01, 0xF3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLOp, 8>},
     {OPD(1, 0b01, 0xF4), 1, &OpDispatchBuilder::VPMULLOp<4, false>},
     {OPD(1, 0b01, 0xF5), 1, &OpDispatchBuilder::VPMADDWDOp},
     {OPD(1, 0b01, 0xF6), 1, &OpDispatchBuilder::VPSADBWOp},
@@ -5419,17 +5419,17 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 
 #define OPD(group, pp, opcode) (((group - X86Tables::TYPE_VEX_GROUP_12) << 4) | (pp << 3) | (opcode))
   static constexpr std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> VEXTableGroupOps[] {
-    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b010), 1, &OpDispatchBuilder::VPSRLIOp<2>},
-    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b110), 1, &OpDispatchBuilder::VPSLLIOp<2>},
-    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b100), 1, &OpDispatchBuilder::VPSRAIOp<2>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b010), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRLIOp, 2>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b110), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLIOp, 2>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b100), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRAIOp, 2>},
 
-    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b010), 1, &OpDispatchBuilder::VPSRLIOp<4>},
-    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b110), 1, &OpDispatchBuilder::VPSLLIOp<4>},
-    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b100), 1, &OpDispatchBuilder::VPSRAIOp<4>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b010), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRLIOp, 4>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b110), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLIOp, 4>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b100), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRAIOp, 4>},
 
-    {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b010), 1, &OpDispatchBuilder::VPSRLIOp<8>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b010), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRLIOp, 8>},
     {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b011), 1, &OpDispatchBuilder::VPSRLDQOp},
-    {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b110), 1, &OpDispatchBuilder::VPSLLIOp<8>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b110), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLIOp, 8>},
     {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b111), 1, &OpDispatchBuilder::VPSLLDQOp},
 
     {OPD(X86Tables::TYPE_VEX_GROUP_15, 0, 0b010), 1, &OpDispatchBuilder::LDMXCSR},
@@ -5684,9 +5684,9 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xC2, 1, &OpDispatchBuilder::VFCMPOp<4>},
     {0xC6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SHUFOp, 4>},
 
-    {0xD1, 1, &OpDispatchBuilder::PSRLDOp<2>},
-    {0xD2, 1, &OpDispatchBuilder::PSRLDOp<4>},
-    {0xD3, 1, &OpDispatchBuilder::PSRLDOp<8>},
+    {0xD1, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, 2>},
+    {0xD2, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, 4>},
+    {0xD3, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, 8>},
     {0xD4, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADD, 8>},
     {0xD5, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VMUL, 2>},
     {0xD7, 1, &OpDispatchBuilder::MOVMSKOpOne}, // PMOVMSKB
@@ -5699,8 +5699,8 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xDE, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUMAX, 1>},
     {0xDF, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUROp, IR::OP_VANDN, 8>},
     {0xE0, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VURAVG, 1>},
-    {0xE1, 1, &OpDispatchBuilder::PSRAOp<2>},
-    {0xE2, 1, &OpDispatchBuilder::PSRAOp<4>},
+    {0xE1, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRAOp, 2>},
+    {0xE2, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRAOp, 4>},
     {0xE3, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VURAVG, 2>},
     {0xE4, 1, &OpDispatchBuilder::PMULHW<false>},
     {0xE5, 1, &OpDispatchBuilder::PMULHW<true>},
@@ -5714,9 +5714,9 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xEE, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSMAX, 2>},
     {0xEF, 1, &OpDispatchBuilder::VectorXOROp},
 
-    {0xF1, 1, &OpDispatchBuilder::PSLL<2>},
-    {0xF2, 1, &OpDispatchBuilder::PSLL<4>},
-    {0xF3, 1, &OpDispatchBuilder::PSLL<8>},
+    {0xF1, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLL, 2>},
+    {0xF2, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLL, 4>},
+    {0xF3, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLL, 8>},
     {0xF4, 1, &OpDispatchBuilder::PMULLOp<4, false>},
     {0xF5, 1, &OpDispatchBuilder::PMADDWD},
     {0xF6, 1, &OpDispatchBuilder::PSADBW},
@@ -5983,9 +5983,9 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xC6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SHUFOp, 8>},
 
     {0xD0, 1, &OpDispatchBuilder::ADDSUBPOp<8>},
-    {0xD1, 1, &OpDispatchBuilder::PSRLDOp<2>},
-    {0xD2, 1, &OpDispatchBuilder::PSRLDOp<4>},
-    {0xD3, 1, &OpDispatchBuilder::PSRLDOp<8>},
+    {0xD1, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, 2>},
+    {0xD2, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, 4>},
+    {0xD3, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, 8>},
     {0xD4, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADD, 8>},
     {0xD5, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VMUL, 2>},
     {0xD6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVQOp, OpDispatchBuilder::VectorOpType::SSE>},
@@ -5999,8 +5999,8 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xDE, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUMAX, 1>},
     {0xDF, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUROp, IR::OP_VANDN, 8>},
     {0xE0, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VURAVG, 1>},
-    {0xE1, 1, &OpDispatchBuilder::PSRAOp<2>},
-    {0xE2, 1, &OpDispatchBuilder::PSRAOp<4>},
+    {0xE1, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRAOp, 2>},
+    {0xE2, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRAOp, 4>},
     {0xE3, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VURAVG, 2>},
     {0xE4, 1, &OpDispatchBuilder::PMULHW<false>},
     {0xE5, 1, &OpDispatchBuilder::PMULHW<true>},
@@ -6015,9 +6015,9 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {0xEE, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSMAX, 2>},
     {0xEF, 1, &OpDispatchBuilder::VectorXOROp},
 
-    {0xF1, 1, &OpDispatchBuilder::PSLL<2>},
-    {0xF2, 1, &OpDispatchBuilder::PSLL<4>},
-    {0xF3, 1, &OpDispatchBuilder::PSLL<8>},
+    {0xF1, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLL, 2>},
+    {0xF2, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLL, 4>},
+    {0xF3, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLL, 8>},
     {0xF4, 1, &OpDispatchBuilder::PMULLOp<4, false>},
     {0xF5, 1, &OpDispatchBuilder::PMADDWD},
     {0xF6, 1, &OpDispatchBuilder::PSADBW},
@@ -6094,30 +6094,30 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_F3, 7), 1, &OpDispatchBuilder::RDPIDOp},
 
     // GROUP 12
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_NONE, 2), 1, &OpDispatchBuilder::PSRLI<2>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_NONE, 4), 1, &OpDispatchBuilder::PSRAIOp<2>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_NONE, 6), 1, &OpDispatchBuilder::PSLLI<2>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_NONE, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLI, 2>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_NONE, 4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRAIOp, 2>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_NONE, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLLI, 2>},
 
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_66, 2), 1, &OpDispatchBuilder::PSRLI<2>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_66, 4), 1, &OpDispatchBuilder::PSRAIOp<2>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_66, 6), 1, &OpDispatchBuilder::PSLLI<2>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_66, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLI, 2>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_66, 4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRAIOp, 2>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_66, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLLI, 2>},
 
     // GROUP 13
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_NONE, 2), 1, &OpDispatchBuilder::PSRLI<4>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_NONE, 4), 1, &OpDispatchBuilder::PSRAIOp<4>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_NONE, 6), 1, &OpDispatchBuilder::PSLLI<4>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_NONE, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLI, 4>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_NONE, 4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRAIOp, 4>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_NONE, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLLI, 4>},
 
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_66, 2), 1, &OpDispatchBuilder::PSRLI<4>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_66, 4), 1, &OpDispatchBuilder::PSRAIOp<4>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_66, 6), 1, &OpDispatchBuilder::PSLLI<4>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_66, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLI, 4>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_66, 4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRAIOp, 4>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_66, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLLI, 4>},
 
     // GROUP 14
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_NONE, 2), 1, &OpDispatchBuilder::PSRLI<8>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_NONE, 6), 1, &OpDispatchBuilder::PSLLI<8>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_NONE, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLI, 8>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_NONE, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLLI, 8>},
 
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 2), 1, &OpDispatchBuilder::PSRLI<8>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLI, 8>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 3), 1, &OpDispatchBuilder::PSRLDQ},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 6), 1, &OpDispatchBuilder::PSLLI<8>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLLI, 8>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 7), 1, &OpDispatchBuilder::PSLLDQ},
 
     // GROUP 15

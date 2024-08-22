@@ -1706,8 +1706,7 @@ Ref OpDispatchBuilder::PSRLDOpImpl(OpcodeArgs, size_t ElementSize, Ref Src, Ref 
   return _VUShrSWide(Size, ElementSize, Src, ShiftVec);
 }
 
-template<size_t ElementSize>
-void OpDispatchBuilder::PSRLDOp(OpcodeArgs) {
+void OpDispatchBuilder::PSRLDOp(OpcodeArgs, size_t ElementSize) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Result = PSRLDOpImpl(Op, ElementSize, Dest, Src);
@@ -1715,12 +1714,7 @@ void OpDispatchBuilder::PSRLDOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-template void OpDispatchBuilder::PSRLDOp<2>(OpcodeArgs);
-template void OpDispatchBuilder::PSRLDOp<4>(OpcodeArgs);
-template void OpDispatchBuilder::PSRLDOp<8>(OpcodeArgs);
-
-template<size_t ElementSize>
-void OpDispatchBuilder::VPSRLDOp(OpcodeArgs) {
+void OpDispatchBuilder::VPSRLDOp(OpcodeArgs, size_t ElementSize) {
   const auto DstSize = GetDstSize(Op);
   const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
@@ -1734,12 +1728,7 @@ void OpDispatchBuilder::VPSRLDOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-template void OpDispatchBuilder::VPSRLDOp<2>(OpcodeArgs);
-template void OpDispatchBuilder::VPSRLDOp<4>(OpcodeArgs);
-template void OpDispatchBuilder::VPSRLDOp<8>(OpcodeArgs);
-
-template<size_t ElementSize>
-void OpDispatchBuilder::PSRLI(OpcodeArgs) {
+void OpDispatchBuilder::PSRLI(OpcodeArgs, size_t ElementSize) {
   const uint64_t ShiftConstant = Op->Src[1].Literal();
   if (ShiftConstant == 0) [[unlikely]] {
     // Nothing to do, value is already in Dest.
@@ -1753,12 +1742,7 @@ void OpDispatchBuilder::PSRLI(OpcodeArgs) {
   StoreResult(FPRClass, Op, Shift, -1);
 }
 
-template void OpDispatchBuilder::PSRLI<2>(OpcodeArgs);
-template void OpDispatchBuilder::PSRLI<4>(OpcodeArgs);
-template void OpDispatchBuilder::PSRLI<8>(OpcodeArgs);
-
-template<size_t ElementSize>
-void OpDispatchBuilder::VPSRLIOp(OpcodeArgs) {
+void OpDispatchBuilder::VPSRLIOp(OpcodeArgs, size_t ElementSize) {
   const auto Size = GetSrcSize(Op);
   const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
   const uint64_t ShiftConstant = Op->Src[1].Literal();
@@ -1777,10 +1761,6 @@ void OpDispatchBuilder::VPSRLIOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-template void OpDispatchBuilder::VPSRLIOp<2>(OpcodeArgs);
-template void OpDispatchBuilder::VPSRLIOp<4>(OpcodeArgs);
-template void OpDispatchBuilder::VPSRLIOp<8>(OpcodeArgs);
-
 Ref OpDispatchBuilder::PSLLIImpl(OpcodeArgs, size_t ElementSize, Ref Src, uint64_t Shift) {
   if (Shift == 0) [[unlikely]] {
     // If zero-shift then just return the source.
@@ -1790,8 +1770,7 @@ Ref OpDispatchBuilder::PSLLIImpl(OpcodeArgs, size_t ElementSize, Ref Src, uint64
   return _VShlI(Size, ElementSize, Src, Shift);
 }
 
-template<size_t ElementSize>
-void OpDispatchBuilder::PSLLI(OpcodeArgs) {
+void OpDispatchBuilder::PSLLI(OpcodeArgs, size_t ElementSize) {
   const uint64_t ShiftConstant = Op->Src[1].Literal();
   if (ShiftConstant == 0) [[unlikely]] {
     // Nothing to do, value is already in Dest.
@@ -1804,12 +1783,7 @@ void OpDispatchBuilder::PSLLI(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-template void OpDispatchBuilder::PSLLI<2>(OpcodeArgs);
-template void OpDispatchBuilder::PSLLI<4>(OpcodeArgs);
-template void OpDispatchBuilder::PSLLI<8>(OpcodeArgs);
-
-template<size_t ElementSize>
-void OpDispatchBuilder::VPSLLIOp(OpcodeArgs) {
+void OpDispatchBuilder::VPSLLIOp(OpcodeArgs, size_t ElementSize) {
   const uint64_t ShiftConstant = Op->Src[1].Literal();
   const auto DstSize = GetDstSize(Op);
   const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
@@ -1823,10 +1797,6 @@ void OpDispatchBuilder::VPSLLIOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-template void OpDispatchBuilder::VPSLLIOp<2>(OpcodeArgs);
-template void OpDispatchBuilder::VPSLLIOp<4>(OpcodeArgs);
-template void OpDispatchBuilder::VPSLLIOp<8>(OpcodeArgs);
-
 Ref OpDispatchBuilder::PSLLImpl(OpcodeArgs, size_t ElementSize, Ref Src, Ref ShiftVec) {
   const auto Size = GetDstSize(Op);
 
@@ -1834,8 +1804,7 @@ Ref OpDispatchBuilder::PSLLImpl(OpcodeArgs, size_t ElementSize, Ref Src, Ref Shi
   return _VUShlSWide(Size, ElementSize, Src, ShiftVec);
 }
 
-template<size_t ElementSize>
-void OpDispatchBuilder::PSLL(OpcodeArgs) {
+void OpDispatchBuilder::PSLL(OpcodeArgs, size_t ElementSize) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Result = PSLLImpl(Op, ElementSize, Dest, Src);
@@ -1843,12 +1812,7 @@ void OpDispatchBuilder::PSLL(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-template void OpDispatchBuilder::PSLL<2>(OpcodeArgs);
-template void OpDispatchBuilder::PSLL<4>(OpcodeArgs);
-template void OpDispatchBuilder::PSLL<8>(OpcodeArgs);
-
-template<size_t ElementSize>
-void OpDispatchBuilder::VPSLLOp(OpcodeArgs) {
+void OpDispatchBuilder::VPSLLOp(OpcodeArgs, size_t ElementSize) {
   const auto DstSize = GetDstSize(Op);
   const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
@@ -1862,10 +1826,6 @@ void OpDispatchBuilder::VPSLLOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-template void OpDispatchBuilder::VPSLLOp<2>(OpcodeArgs);
-template void OpDispatchBuilder::VPSLLOp<4>(OpcodeArgs);
-template void OpDispatchBuilder::VPSLLOp<8>(OpcodeArgs);
-
 Ref OpDispatchBuilder::PSRAOpImpl(OpcodeArgs, size_t ElementSize, Ref Src, Ref ShiftVec) {
   const auto Size = GetDstSize(Op);
 
@@ -1873,8 +1833,7 @@ Ref OpDispatchBuilder::PSRAOpImpl(OpcodeArgs, size_t ElementSize, Ref Src, Ref S
   return _VSShrSWide(Size, ElementSize, Src, ShiftVec);
 }
 
-template<size_t ElementSize>
-void OpDispatchBuilder::PSRAOp(OpcodeArgs) {
+void OpDispatchBuilder::PSRAOp(OpcodeArgs, size_t ElementSize) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Result = PSRAOpImpl(Op, ElementSize, Dest, Src);
@@ -1882,11 +1841,7 @@ void OpDispatchBuilder::PSRAOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-template void OpDispatchBuilder::PSRAOp<2>(OpcodeArgs);
-template void OpDispatchBuilder::PSRAOp<4>(OpcodeArgs);
-
-template<size_t ElementSize>
-void OpDispatchBuilder::VPSRAOp(OpcodeArgs) {
+void OpDispatchBuilder::VPSRAOp(OpcodeArgs, size_t ElementSize) {
   const auto DstSize = GetDstSize(Op);
   const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
@@ -1899,9 +1854,6 @@ void OpDispatchBuilder::VPSRAOp(OpcodeArgs) {
   }
   StoreResult(FPRClass, Op, Result, -1);
 }
-
-template void OpDispatchBuilder::VPSRAOp<2>(OpcodeArgs);
-template void OpDispatchBuilder::VPSRAOp<4>(OpcodeArgs);
 
 void OpDispatchBuilder::PSRLDQ(OpcodeArgs) {
   const uint64_t Shift = Op->Src[1].Literal();
@@ -2004,8 +1956,7 @@ void OpDispatchBuilder::VPSLLDQOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-template<size_t ElementSize>
-void OpDispatchBuilder::PSRAIOp(OpcodeArgs) {
+void OpDispatchBuilder::PSRAIOp(OpcodeArgs, size_t ElementSize) {
   const uint64_t Shift = Op->Src[1].Literal();
   if (Shift == 0) [[unlikely]] {
     // Nothing to do, value is already in Dest.
@@ -2019,11 +1970,7 @@ void OpDispatchBuilder::PSRAIOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-template void OpDispatchBuilder::PSRAIOp<2>(OpcodeArgs);
-template void OpDispatchBuilder::PSRAIOp<4>(OpcodeArgs);
-
-template<size_t ElementSize>
-void OpDispatchBuilder::VPSRAIOp(OpcodeArgs) {
+void OpDispatchBuilder::VPSRAIOp(OpcodeArgs, size_t ElementSize) {
   const uint64_t Shift = Op->Src[1].Literal();
   const auto Size = GetDstSize(Op);
   const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
@@ -2041,9 +1988,6 @@ void OpDispatchBuilder::VPSRAIOp(OpcodeArgs) {
 
   StoreResult(FPRClass, Op, Result, -1);
 }
-
-template void OpDispatchBuilder::VPSRAIOp<2>(OpcodeArgs);
-template void OpDispatchBuilder::VPSRAIOp<4>(OpcodeArgs);
 
 void OpDispatchBuilder::AVXVariableShiftImpl(OpcodeArgs, IROps IROp) {
   const auto DstSize = GetDstSize(Op);

@@ -469,20 +469,14 @@ public:
   void PSHUFWOp(OpcodeArgs, bool Low);
   void PSHUFW8ByteOp(OpcodeArgs);
   void PSHUFDOp(OpcodeArgs);
-  template<size_t ElementSize>
-  void PSRLDOp(OpcodeArgs);
-  template<size_t ElementSize>
-  void PSRLI(OpcodeArgs);
-  template<size_t ElementSize>
-  void PSLLI(OpcodeArgs);
-  template<size_t ElementSize>
-  void PSLL(OpcodeArgs);
-  template<size_t ElementSize>
-  void PSRAOp(OpcodeArgs);
+  void PSRLDOp(OpcodeArgs, size_t ElementSize);
+  void PSRLI(OpcodeArgs, size_t ElementSize);
+  void PSLLI(OpcodeArgs, size_t ElementSize);
+  void PSLL(OpcodeArgs, size_t ElementSize);
+  void PSRAOp(OpcodeArgs, size_t ElementSize);
   void PSRLDQ(OpcodeArgs);
   void PSLLDQ(OpcodeArgs);
-  template<size_t ElementSize>
-  void PSRAIOp(OpcodeArgs);
+  void PSRAIOp(OpcodeArgs, size_t ElementSize);
   void MOVDDUPOp(OpcodeArgs);
   template<size_t DstElementSize>
   void CVTGPR_To_FPR(OpcodeArgs);
@@ -688,32 +682,26 @@ public:
 
   void VPSHUFWOp(OpcodeArgs, size_t ElementSize, bool Low);
 
-  template<size_t ElementSize>
-  void VPSLLOp(OpcodeArgs);
+  void VPSLLOp(OpcodeArgs, size_t ElementSize);
   void VPSLLDQOp(OpcodeArgs);
-  template<size_t ElementSize>
-  void VPSLLIOp(OpcodeArgs);
+  void VPSLLIOp(OpcodeArgs, size_t ElementSize);
   void VPSLLVOp(OpcodeArgs);
 
-  template<size_t ElementSize>
-  void VPSRAOp(OpcodeArgs);
+  void VPSRAOp(OpcodeArgs, size_t ElementSize);
 
-  template<size_t ElementSize>
-  void VPSRAIOp(OpcodeArgs);
+  void VPSRAIOp(OpcodeArgs, size_t ElementSize);
 
   void VPSRAVDOp(OpcodeArgs);
   void VPSRLVOp(OpcodeArgs);
 
-  template<size_t ElementSize>
-  void VPSRLDOp(OpcodeArgs);
+  void VPSRLDOp(OpcodeArgs, size_t ElementSize);
   void VPSRLDQOp(OpcodeArgs);
 
   void VPUNPCKHOp(OpcodeArgs, size_t ElementSize);
 
   void VPUNPCKLOp(OpcodeArgs, size_t ElementSize);
 
-  template<size_t ElementSize>
-  void VPSRLIOp(OpcodeArgs);
+  void VPSRLIOp(OpcodeArgs, size_t ElementSize);
 
   void VSHUFOp(OpcodeArgs, size_t ElementSize);
 
