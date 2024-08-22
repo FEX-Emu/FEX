@@ -115,6 +115,21 @@ DEF_OP(AdcWithFlags) {
   adcs(ConvertSize48(IROp), GetReg(Node), GetZeroableReg(Op->Src1), GetReg(Op->Src2.ID()));
 }
 
+DEF_OP(AdcZeroWithFlags) {
+  auto Op = IROp->C<IR::IROp_AdcZeroWithFlags>();
+  auto Size = ConvertSize48(IROp);
+
+  cset(Size, TMP1, ARMEmitter::Condition::CC_CC);
+  adds(Size, GetReg(Node), GetReg(Op->Src1.ID()), TMP1);
+}
+
+DEF_OP(AdcZero) {
+  auto Op = IROp->C<IR::IROp_AdcZero>();
+  auto Size = ConvertSize48(IROp);
+
+  cinc(Size, GetReg(Node), GetReg(Op->Src1.ID()), ARMEmitter::Condition::CC_CC);
+}
+
 DEF_OP(Adc) {
   auto Op = IROp->C<IR::IROp_Adc>();
 

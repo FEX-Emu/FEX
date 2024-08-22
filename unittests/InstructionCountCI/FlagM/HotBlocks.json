@@ -596,6 +596,103 @@
         "subs x26, x10, x12"
       ]
     },
+    "bytemark idea 1": {
+      "x86InstructionCount": 8,
+      "ExpectedInstructionCount": 12,
+      "x86Insts": [
+        "movzx  eax,ax",
+        "imul   r8d,eax",
+        "mov    eax,r8d",
+        "shr    eax,0x10",
+        "movzx  r9d,r8w",
+        "sub    r8d,eax",
+        "cmp    r9d,eax",
+        "adc    r8d,0x0"
+      ],
+      "ExpectedArm64ASM": [
+        "uxth w4, w4",
+        "mul w12, w12, w4",
+        "mov w4, w12",
+        "lsr w4, w4, #16",
+        "uxth w13, w12",
+        "sub w12, w12, w4",
+        "cmp w13, w4",
+        "cset w0, lo",
+        "adds w26, w12, w0",
+        "cfinv",
+        "mov x27, x12",
+        "mov x12, x26"
+      ]
+    },
+    "bytemark idea 2": {
+      "x86InstructionCount": 12,
+      "ExpectedInstructionCount": 16,
+      "x86Insts": [
+        "movzx  eax,ax",
+        "imul   r10d,eax",
+        "mov    eax,r10d",
+        "shr    eax,0x10",
+        "movzx  esi,r10w",
+        "sub    r10d,eax",
+        "cmp    esi,eax",
+        "adc    r10d,0x0",
+        "mov    eax,r10d",
+        "mov    esi,r9d",
+        "xor    si,di",
+        "movzx  r10d,word [rsp+r8*1+0x158]"
+      ],
+      "ExpectedArm64ASM": [
+        "uxth w4, w4",
+        "mul w14, w14, w4",
+        "mov w4, w14",
+        "lsr w4, w4, #16",
+        "uxth w10, w14",
+        "sub w14, w14, w4",
+        "cmp w10, w4",
+        "cinc w14, w14, lo",
+        "mov w4, w14",
+        "mov w10, w13",
+        "eor w26, w10, w11",
+        "cmn wzr, w26, lsl #16",
+        "bfxil x10, x26, #0, #16",
+        "add x20, x8, x12",
+        "ldrh w14, [x20, #344]",
+        "cfinv"
+      ]
+    },
+    "bytemark idea 3": {
+      "x86InstructionCount": 11,
+      "ExpectedInstructionCount": 14,
+      "x86Insts": [
+        "movzx  eax,si",
+        "imul   r8d,eax",
+        "mov    eax,r8d",
+        "shr    eax,0x10",
+        "movzx  esi,r8w",
+        "sub    r8d,eax",
+        "cmp    esi,eax",
+        "adc    r8d,0x0",
+        "mov    esi,r8d",
+        "movzx  r8d,word [rsp+rdi*1+0x66]",
+        "test   dx,dx"
+      ],
+      "ExpectedArm64ASM": [
+        "uxth w4, w10",
+        "mul w12, w12, w4",
+        "mov w4, w12",
+        "lsr w4, w4, #16",
+        "uxth w10, w12",
+        "sub w12, w12, w4",
+        "cmp w10, w4",
+        "cinc w12, w12, lo",
+        "mov w10, w12",
+        "add x20, x8, x11",
+        "ldrh w12, [x20, #102]",
+        "cmn wzr, w5, lsl #16",
+        "cfinv",
+        "mov x26, x5"
+      ]
+    },
     "pcmpistri xmm0, xmm1, 0_0_00_11_01b": {
       "ExpectedInstructionCount": 41,
       "Comment": [
