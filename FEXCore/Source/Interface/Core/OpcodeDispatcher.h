@@ -461,32 +461,22 @@ public:
 
   void MOVQOp(OpcodeArgs, VectorOpType VectorType);
   void MOVQMMXOp(OpcodeArgs);
-  template<size_t ElementSize>
-  void MOVMSKOp(OpcodeArgs);
+  void MOVMSKOp(OpcodeArgs, size_t ElementSize);
   void MOVMSKOpOne(OpcodeArgs);
-  template<size_t ElementSize>
-  void PUNPCKLOp(OpcodeArgs);
-  template<size_t ElementSize>
-  void PUNPCKHOp(OpcodeArgs);
+  void PUNPCKLOp(OpcodeArgs, size_t ElementSize);
+  void PUNPCKHOp(OpcodeArgs, size_t ElementSize);
   void PSHUFBOp(OpcodeArgs);
-  template<bool Low>
-  void PSHUFWOp(OpcodeArgs);
+  void PSHUFWOp(OpcodeArgs, bool Low);
   void PSHUFW8ByteOp(OpcodeArgs);
   void PSHUFDOp(OpcodeArgs);
-  template<size_t ElementSize>
-  void PSRLDOp(OpcodeArgs);
-  template<size_t ElementSize>
-  void PSRLI(OpcodeArgs);
-  template<size_t ElementSize>
-  void PSLLI(OpcodeArgs);
-  template<size_t ElementSize>
-  void PSLL(OpcodeArgs);
-  template<size_t ElementSize>
-  void PSRAOp(OpcodeArgs);
+  void PSRLDOp(OpcodeArgs, size_t ElementSize);
+  void PSRLI(OpcodeArgs, size_t ElementSize);
+  void PSLLI(OpcodeArgs, size_t ElementSize);
+  void PSLL(OpcodeArgs, size_t ElementSize);
+  void PSRAOp(OpcodeArgs, size_t ElementSize);
   void PSRLDQ(OpcodeArgs);
   void PSLLDQ(OpcodeArgs);
-  template<size_t ElementSize>
-  void PSRAIOp(OpcodeArgs);
+  void PSRAIOp(OpcodeArgs, size_t ElementSize);
   void MOVDDUPOp(OpcodeArgs);
   template<size_t DstElementSize>
   void CVTGPR_To_FPR(OpcodeArgs);
@@ -508,13 +498,11 @@ public:
   void LZCNT(OpcodeArgs);
   template<size_t ElementSize>
   void VFCMPOp(OpcodeArgs);
-  template<size_t ElementSize>
-  void SHUFOp(OpcodeArgs);
+  void SHUFOp(OpcodeArgs, size_t ElementSize);
   template<size_t ElementSize>
   void PINSROp(OpcodeArgs);
   void InsertPSOp(OpcodeArgs);
-  template<size_t ElementSize>
-  void PExtrOp(OpcodeArgs);
+  void PExtrOp(OpcodeArgs, size_t ElementSize);
 
   template<size_t ElementSize>
   void PSIGN(OpcodeArgs);
@@ -608,8 +596,7 @@ public:
   void VPBLENDDOp(OpcodeArgs);
   void VPBLENDWOp(OpcodeArgs);
 
-  template<size_t ElementSize>
-  void VBROADCASTOp(OpcodeArgs);
+  void VBROADCASTOp(OpcodeArgs, size_t ElementSize);
 
   template<size_t ElementSize>
   void VDPPOp(OpcodeArgs);
@@ -618,8 +605,7 @@ public:
 
   template<IROps IROp, size_t ElementSize>
   void VHADDPOp(OpcodeArgs);
-  template<size_t ElementSize>
-  void VHSUBPOp(OpcodeArgs);
+  void VHSUBPOp(OpcodeArgs, size_t ElementSize);
 
   void VINSERTOp(OpcodeArgs);
   void VINSERTPSOp(OpcodeArgs);
@@ -642,11 +628,9 @@ public:
 
   void VMPSADBWOp(OpcodeArgs);
 
-  template<size_t ElementSize>
-  void VPACKSSOp(OpcodeArgs);
+  void VPACKSSOp(OpcodeArgs, size_t ElementSize);
 
-  template<size_t ElementSize>
-  void VPACKUSOp(OpcodeArgs);
+  void VPACKUSOp(OpcodeArgs, size_t ElementSize);
 
   void VPALIGNROp(OpcodeArgs);
 
@@ -663,8 +647,7 @@ public:
   void VPERMDOp(OpcodeArgs);
   void VPERMQOp(OpcodeArgs);
 
-  template<size_t ElementSize>
-  void VPERMILImmOp(OpcodeArgs);
+  void VPERMILImmOp(OpcodeArgs, size_t ElementSize);
 
   Ref VPERMILRegOpImpl(OpSize DstSize, size_t ElementSize, Ref Src, Ref Indices);
   template<size_t ElementSize>
@@ -672,8 +655,7 @@ public:
 
   void VPHADDSWOp(OpcodeArgs);
 
-  template<size_t ElementSize>
-  void VPHSUBOp(OpcodeArgs);
+  void VPHSUBOp(OpcodeArgs, size_t ElementSize);
   void VPHSUBSWOp(OpcodeArgs);
 
   void VPINSRBOp(OpcodeArgs);
@@ -698,40 +680,30 @@ public:
 
   void VPSHUFBOp(OpcodeArgs);
 
-  template<size_t ElementSize, bool Low>
-  void VPSHUFWOp(OpcodeArgs);
+  void VPSHUFWOp(OpcodeArgs, size_t ElementSize, bool Low);
 
-  template<size_t ElementSize>
-  void VPSLLOp(OpcodeArgs);
+  void VPSLLOp(OpcodeArgs, size_t ElementSize);
   void VPSLLDQOp(OpcodeArgs);
-  template<size_t ElementSize>
-  void VPSLLIOp(OpcodeArgs);
+  void VPSLLIOp(OpcodeArgs, size_t ElementSize);
   void VPSLLVOp(OpcodeArgs);
 
-  template<size_t ElementSize>
-  void VPSRAOp(OpcodeArgs);
+  void VPSRAOp(OpcodeArgs, size_t ElementSize);
 
-  template<size_t ElementSize>
-  void VPSRAIOp(OpcodeArgs);
+  void VPSRAIOp(OpcodeArgs, size_t ElementSize);
 
   void VPSRAVDOp(OpcodeArgs);
   void VPSRLVOp(OpcodeArgs);
 
-  template<size_t ElementSize>
-  void VPSRLDOp(OpcodeArgs);
+  void VPSRLDOp(OpcodeArgs, size_t ElementSize);
   void VPSRLDQOp(OpcodeArgs);
 
-  template<size_t ElementSize>
-  void VPUNPCKHOp(OpcodeArgs);
+  void VPUNPCKHOp(OpcodeArgs, size_t ElementSize);
 
-  template<size_t ElementSize>
-  void VPUNPCKLOp(OpcodeArgs);
+  void VPUNPCKLOp(OpcodeArgs, size_t ElementSize);
 
-  template<size_t ElementSize>
-  void VPSRLIOp(OpcodeArgs);
+  void VPSRLIOp(OpcodeArgs, size_t ElementSize);
 
-  template<size_t ElementSize>
-  void VSHUFOp(OpcodeArgs);
+  void VSHUFOp(OpcodeArgs, size_t ElementSize);
 
   template<size_t ElementSize>
   void VTESTPOp(OpcodeArgs);
@@ -944,8 +916,7 @@ public:
   template<size_t ElementSize>
   void VectorBlend(OpcodeArgs);
 
-  template<size_t ElementSize>
-  void VectorVariableBlend(OpcodeArgs);
+  void VectorVariableBlend(OpcodeArgs, size_t ElementSize);
   void PTestOpImpl(OpSize Size, Ref Dest, Ref Src);
   void PTestOp(OpcodeArgs);
   void PHMINPOSUWOp(OpcodeArgs);
@@ -1405,8 +1376,7 @@ private:
   void AVXVectorALUOp(OpcodeArgs, IROps IROp, size_t ElementSize);
   void AVXVectorUnaryOp(OpcodeArgs, IROps IROp, size_t ElementSize);
 
-  template<size_t ElementSize>
-  void AVXVectorVariableBlend(OpcodeArgs);
+  void AVXVectorVariableBlend(OpcodeArgs, size_t ElementSize);
 
   void AVXVariableShiftImpl(OpcodeArgs, IROps IROp);
 
