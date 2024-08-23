@@ -623,6 +623,8 @@ protected:
   }
 };
 
+void FillMIDRInformationViaLinux(FEXCore::HostFeatures* Features);
+
 FEXCore::HostFeatures FetchHostFeatures(FEX::CPUFeatures& Features, bool SupportsCacheMaintenanceOps, uint64_t CTR, uint64_t MIDR);
 FEXCore::HostFeatures FetchHostFeatures();
 } // namespace FEX
