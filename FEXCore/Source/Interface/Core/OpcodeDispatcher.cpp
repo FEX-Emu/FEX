@@ -4665,6 +4665,15 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
       return;
     }
 
+#ifdef _M_ARM_64EC
+    // This is used when QueryPerformanceCounter is called on recent Windows versions, it causes CNTVCT to be written into RAX.
+    constexpr uint8_t GET_CNTVCT_LITERAL = 0x81;
+    if (Literal == GET_CNTVCT_LITERAL) {
+      StoreGPRRegister(X86State::REG_RAX, _CycleCounter());
+      return;
+    }
+#endif
+
     Reason.ErrorRegister = Literal << 3 | (0b010);
     Reason.Signal = Core::FAULT_SIGSEGV;
     // GP is raised when task-gate isn't setup to be valid
