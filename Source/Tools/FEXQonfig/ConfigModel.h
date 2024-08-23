@@ -1,6 +1,9 @@
 #include <QStandardItemModel>
 #include <QQmlEngine>
 
+#include <latch>
+#include <thread>
+
 class ConfigModel : public QStandardItemModel {
   Q_OBJECT
   QML_ELEMENT
@@ -40,12 +43,21 @@ class RootFSModel : public QStandardItemModel {
   QML_ELEMENT
   QML_SINGLETON
 
+  std::thread Thread;
+  std::latch ExitRequest {1};
+
+  int INotifyFD;
+  int FolderFD;
+
+  void INotifyThreadFunc();
+
 public:
   RootFSModel();
-
-  void Reload();
+  ~RootFSModel();
 
 public slots:
+  void Reload();
+
   bool hasItem(const QString&) const;
 
   QUrl getBaseUrl() const;

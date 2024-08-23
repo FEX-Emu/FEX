@@ -12,6 +12,8 @@
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
 
+#include <sys/inotify.h>
+
 namespace fextl {
 // Helper to convert a std::filesystem::path to a fextl::string.
 inline fextl::string string_from_path(const std::filesystem::path& Path) {
@@ -159,18 +161,32 @@ static void ConfigInit(fextl::string ConfigFilename) {
 
 QQuickWindow* Window = nullptr; // TODO: Drop global
 
-static std::mutex NamedRootFSUpdater {};
-
 fextl::unique_ptr<RootFSModel> RootFSList;
 
 RootFSModel::RootFSModel() {
+  INotifyFD = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
+
+  fextl::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
+  FolderFD = inotify_add_watch(INotifyFD, RootFS.c_str(), IN_CREATE | IN_DELETE);
+  if (FolderFD != -1) {
+    Thread = std::thread {&RootFSModel::INotifyThreadFunc, this};
+  } else {
+    qWarning() << "Could not set up inotify. RootFS folder won't be monitored for changes.";
+  }
+
+  // Load initial data
   Reload();
 }
 
-// TODO: Watch via inotify
-void RootFSModel::Reload() {
-  std::unique_lock<std::mutex> lk {NamedRootFSUpdater};
+RootFSModel::~RootFSModel() {
+  close(INotifyFD);
+  INotifyFD = -1;
 
+  ExitRequest.count_down();
+  Thread.join();
+}
+
+void RootFSModel::Reload() {
   beginResetModel();
   removeRows(0, rowCount());
 
@@ -197,7 +213,6 @@ void RootFSModel::Reload() {
 }
 
 bool RootFSModel::hasItem(const QString& Name) const {
-  std::unique_lock<std::mutex> lk {NamedRootFSUpdater};
   return !findItems(Name, Qt::MatchExactly).empty();
 }
 
@@ -249,6 +264,35 @@ void ConfigRuntime::onSave(const QUrl& Filename) {
   FEX::Config::SaveLayerToJSON(Filename.toLocalFile().toStdString().c_str(), LoadedConfig.get());
 }
 
+void RootFSModel::INotifyThreadFunc() {
+  while (!ExitRequest.try_wait()) {
+    constexpr size_t DATA_SIZE = (16 * (sizeof(struct inotify_event) + NAME_MAX + 1));
+    char buf[DATA_SIZE];
+    int Ret {};
+    do {
+      fd_set Set {};
+      FD_ZERO(&Set);
+      FD_SET(INotifyFD, &Set);
+      struct timeval tv {};
+      // 50 ms
+      tv.tv_usec = 50000;
+      Ret = select(INotifyFD + 1, &Set, nullptr, nullptr, &tv);
+    } while (Ret == 0 && INotifyFD != -1);
+
+    if (Ret == -1 || INotifyFD == -1) {
+      // Just return on error
+      return;
+    }
+
+    // Spin through the events, we don't actually care what they are
+    while (read(INotifyFD, buf, DATA_SIZE) > 0)
+      ;
+
+    // Queue update to the data model
+    QMetaObject::invokeMethod(RootFSList.get(), "Reload");
+  }
+}
+
 void ConfigRuntime::onLoad(const QUrl& Filename) {
   // TODO: Distinguish between "load" and "overlay".
   //       Currently, the new configuration is overlaid on top of the previous one.
@@ -296,8 +340,7 @@ int main(int Argc, char** Argv) {
   ConfigInit(ConfigFilename);
 
   qInfo() << "Opening" << ConfigFilename.c_str();
-  if (OpenFile(ConfigFilename)) {
-  } else {
+  if (!OpenFile(ConfigFilename)) {
     // Load defaults if not found
     ConfigFilename.clear();
     LoadDefaultSettings();
