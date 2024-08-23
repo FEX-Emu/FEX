@@ -46,7 +46,7 @@ ApplicationWindow {
     FileDialog {
         id: openFileDialog
         title: qsTr("Open FEX configuration")
-        nameFilters: [ "Config files(*.json)", "All files(*)" ]
+        nameFilters: [ qsTr("Config files(*.json)"), qsTr("All files(*)") ]
 
         property var onNextAccept: null
 
@@ -238,15 +238,10 @@ ApplicationWindow {
     component ConfigTextFieldForPath: RowLayout {
         property string text
         property string config
-        property bool isFolder: false // TODO: Implement
 
-        FileDialog {
-            id: fileSelectorDialog
-            onAccepted: {
-                configDirty = true
-                ConfigModel.setString(config, urlToLocalFile(selectedFile))
-            }
-        }
+        property var dialog: FileDialog {}
+
+        FileDialog { id: fileSelectorDialog }
 
         Label { text: parent.text }
         ConfigTextField {
@@ -257,7 +252,16 @@ ApplicationWindow {
 
         Button {
             icon.name: "search"
-            onClicked: fileSelectorDialog.open()
+            onClicked: dialog.open()
+        }
+
+        Component.onCompleted: {
+            dialog.accepted.connect(() => {
+                var selectedPath = (dialog instanceof FileDialog ? dialog.selectedFile : dialog.selectedFolder)
+
+                configDirty = true
+                ConfigModel.setString(config, urlToLocalFile(selectedPath))
+            })
         }
     }
 
@@ -359,7 +363,7 @@ ApplicationWindow {
                         FileDialog {
                             id: addRootfsFileDialog
                             title: qsTr("Select RootFS file")
-                            nameFilters: [ qsTr("SquashFS and EroFS (*.sqsh *.ero)"), "All files(*)" ]
+                            nameFilters: [ qsTr("SquashFS and EroFS (*.sqsh *.ero)"), qsTr("All files(*)") ]
                             folder: RootFSModel.getBaseUrl()
                             onAccepted: rootfsList.updateRootFS(fileUrl)
                         }
@@ -393,17 +397,41 @@ ApplicationWindow {
                     anchors.left: parent ? parent.left : undefined
                     anchors.right: parent ? parent.right : undefined
 
+                    id: libfwdConfig
+
+                    property var configDir: (() => {
+                        var configPath = urlToLocalFile(configFilename)
+                        var slashIndex = configPath.lastIndexOf('/')
+                        if (slashIndex === -1) {
+                            return ""
+                        }
+                        return "file://" + configPath.substr(0, slashIndex)
+                    })()
+
                     ConfigTextFieldForPath {
                         text: qsTr("Configuration:")
                         config: "ThunkConfig"
+                        dialog: FileDialog {
+                            title: qsTr("Select library forwarding configuration")
+                            nameFilters: [ qsTr("JSON files (*.json)"), qsTr("All files(*)") ]
+                            currentFolder: libfwdConfig.configDir
+                        }
                     }
                     ConfigTextFieldForPath {
                         text: qsTr("Host library folder:")
                         config: "ThunkHostLibs"
+                        dialog: FolderDialog {
+                            title: qsTr("Select path for host libraries")
+                            currentFolder: libfwdConfig.configDir
+                        }
                     }
                     ConfigTextFieldForPath {
                         text: qsTr("Guest library folder:")
                         config: "ThunkGuestLibs"
+                        dialog: FolderDialog {
+                            title: qsTr("Select path for guest libraries")
+                            currentFolder: libfwdConfig.configDir
+                        }
                     }
                 }
             }

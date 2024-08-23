@@ -1,9 +1,12 @@
 import QtQuick.Dialogs 1.3 as FromQt
 
 FromQt.FileDialog {
+    property url currentFolder
     property url selectedFolder
 
-    onAccepted: selectedFolder = fileUrl
+    folder: currentFolder
 
     selectFolder: true
+
+    onAccepted: selectedFolder = fileUrl
 }
