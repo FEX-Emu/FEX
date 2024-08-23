@@ -421,8 +421,10 @@ add_subdirectory(FEXHeaderUtils/)
 add_subdirectory(CodeEmitter/)
 add_subdirectory(FEXCore/)
 
-# Binfmt_misc files must be installed prior to Source/ installs
-add_subdirectory(Data/binfmts/)
+if (NOT MINGW_BUILD)
+  # Binfmt_misc files must be installed prior to Source/ installs
+  add_subdirectory(Data/binfmts/)
+endif()
 
 add_subdirectory(Source/)
 add_subdirectory(Data/AppConfig/)
