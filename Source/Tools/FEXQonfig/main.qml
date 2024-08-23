@@ -376,14 +376,14 @@ ApplicationWindow {
                         }
 
                         Button {
+                            text: qsTr("Add archive")
+                            icon.name: "document-open"
+                            onClicked: addRootfsFileDialog.open()
+                        }
+                        Button {
                             text: qsTr("Add folder")
                             icon.name: "folder"
                             onClicked: addRootfsFolderDialog.open()
-                        }
-                        Button {
-                            text: qsTr("Add file")
-                            icon.name: "document"
-                            onClicked: addRootfsFileDialog.open()
                         }
                     }
                 }
