@@ -1411,6 +1411,15 @@ void SignalDelegator::HandleGuestSignal(FEXCore::Core::InternalThreadState* Thre
       }
     }
   }
+
+  // Check for masked signals
+  if (ThreadData.CurrentSignalMask.Val & (1ULL << (Signal - 1)) && IsAsyncSignal(&SigInfo, Signal)) {
+    // This signal is masked, must defer until the guest updates the signal mask.
+    // Add it to the pending signal list
+    ThreadData.PendingSignals |= 1ULL << (Signal - 1);
+    return;
+  }
+
   // Let the host take first stab at handling the signal
   SignalHandler& Handler = HostHandlers[Signal];
 
