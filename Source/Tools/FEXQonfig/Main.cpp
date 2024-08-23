@@ -1,4 +1,4 @@
-#include "ConfigModel.h"
+#include "Main.h"
 
 #include <Common/Config.h>
 #include <Common/FileFormatCheck.h>
