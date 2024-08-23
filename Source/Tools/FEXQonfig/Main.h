@@ -1,8 +1,10 @@
 #include <QStandardItemModel>
-#include <QQmlEngine>
+#include <QQmlApplicationEngine>
 
 #include <latch>
 #include <thread>
+
+class QQuickWindow;
 
 class ConfigModel : public QStandardItemModel {
   Q_OBJECT
@@ -59,8 +61,13 @@ public slots:
 class ConfigRuntime : public QObject {
   Q_OBJECT
 
+  QQmlApplicationEngine Engine;
+  QQuickWindow* Window = nullptr;
+  RootFSModel RootFSList;
+  ConfigModel ConfigModelInst;
+
 public:
-  ConfigRuntime() {}
+  ConfigRuntime(const QString& ConfigFilename);
 
 public slots:
   void onSave(const QUrl&);

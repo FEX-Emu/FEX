@@ -184,10 +184,6 @@ static void ConfigInit(fextl::string ConfigFilename) {
   }
 }
 
-QQuickWindow* Window = nullptr; // TODO: Drop global
-
-fextl::unique_ptr<RootFSModel> RootFSList;
-
 RootFSModel::RootFSModel() {
   INotifyFD = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
 
@@ -245,6 +241,35 @@ QUrl RootFSModel::getBaseUrl() const {
   return QUrl::fromLocalFile(QString::fromStdString(FEXCore::Config::GetDataDirectory().c_str()) + "RootFS/");
 }
 
+void RootFSModel::INotifyThreadFunc() {
+  while (!ExitRequest.try_wait()) {
+    constexpr size_t DATA_SIZE = (16 * (sizeof(struct inotify_event) + NAME_MAX + 1));
+    char buf[DATA_SIZE];
+    int Ret {};
+    do {
+      fd_set Set {};
+      FD_ZERO(&Set);
+      FD_SET(INotifyFD, &Set);
+      struct timeval tv {};
+      // 50 ms
+      tv.tv_usec = 50000;
+      Ret = select(INotifyFD + 1, &Set, nullptr, nullptr, &tv);
+    } while (Ret == 0 && INotifyFD != -1);
+
+    if (Ret == -1 || INotifyFD == -1) {
+      // Just return on error
+      return;
+    }
+
+    // Spin through the events, we don't actually care what they are
+    while (read(INotifyFD, buf, DATA_SIZE) > 0)
+      ;
+
+    // Queue update to the data model
+    QMetaObject::invokeMethod(this, "Reload");
+  }
+}
+
 // Returns true on success
 static bool OpenFile(fextl::string Filename) {
   std::error_code ec {};
@@ -281,40 +306,26 @@ static bool OpenFile(fextl::string Filename) {
   return true;
 }
 
-fextl::unique_ptr<ConfigModel> ConfigModelInst;
+ConfigRuntime::ConfigRuntime(const QString& ConfigFilename) {
+  qmlRegisterSingletonInstance<ConfigModel>("FEX.ConfigModel", 1, 0, "ConfigModel", &ConfigModelInst);
+  qmlRegisterSingletonInstance<RootFSModel>("FEX.RootFSModel", 1, 0, "RootFSModel", &RootFSList);
+  Engine.load(QUrl("qrc:/main.qml"));
+
+  Window = qobject_cast<QQuickWindow*>(Engine.rootObjects().first());
+  if (!ConfigFilename.isEmpty()) {
+    Window->setProperty("configFilename", QUrl::fromLocalFile(ConfigFilename));
+  } else {
+    Window->setProperty("configDirty", true);
+  }
+
+  ConfigRuntime::connect(Window, SIGNAL(selectedConfigFile(const QUrl&)), this, SLOT(onLoad(const QUrl&)));
+  ConfigRuntime::connect(Window, SIGNAL(triggeredSave(const QUrl&)), this, SLOT(onSave(const QUrl&)));
+  ConfigRuntime::connect(&ConfigModelInst, SIGNAL(modelReset()), Window, SLOT(refreshUI()));
+}
 
 void ConfigRuntime::onSave(const QUrl& Filename) {
   qInfo() << "Saving to" << Filename.toLocalFile().toStdString().c_str();
   FEX::Config::SaveLayerToJSON(Filename.toLocalFile().toStdString().c_str(), LoadedConfig.get());
-}
-
-void RootFSModel::INotifyThreadFunc() {
-  while (!ExitRequest.try_wait()) {
-    constexpr size_t DATA_SIZE = (16 * (sizeof(struct inotify_event) + NAME_MAX + 1));
-    char buf[DATA_SIZE];
-    int Ret {};
-    do {
-      fd_set Set {};
-      FD_ZERO(&Set);
-      FD_SET(INotifyFD, &Set);
-      struct timeval tv {};
-      // 50 ms
-      tv.tv_usec = 50000;
-      Ret = select(INotifyFD + 1, &Set, nullptr, nullptr, &tv);
-    } while (Ret == 0 && INotifyFD != -1);
-
-    if (Ret == -1 || INotifyFD == -1) {
-      // Just return on error
-      return;
-    }
-
-    // Spin through the events, we don't actually care what they are
-    while (read(INotifyFD, buf, DATA_SIZE) > 0)
-      ;
-
-    // Queue update to the data model
-    QMetaObject::invokeMethod(RootFSList.get(), "Reload");
-  }
 }
 
 void ConfigRuntime::onLoad(const QUrl& Filename) {
@@ -331,8 +342,8 @@ void ConfigRuntime::onLoad(const QUrl& Filename) {
     return;
   }
 
-  ConfigModelInst->Reload();
-  RootFSList->Reload();
+  ConfigModelInst.Reload();
+  RootFSList.Reload();
 
   QMetaObject::invokeMethod(Window, "refreshUI");
 }
@@ -351,24 +362,7 @@ int main(int Argc, char** Argv) {
     LoadDefaultSettings();
   }
 
-  ConfigRuntime Runtime;
-
-  ConfigModelInst = fextl::make_unique<ConfigModel>();
-  RootFSList = fextl::make_unique<RootFSModel>();
-
-  QQmlApplicationEngine Engine;
-  qmlRegisterSingletonInstance<ConfigModel>("FEX.ConfigModel", 1, 0, "ConfigModel", ConfigModelInst.get());
-  qmlRegisterSingletonInstance<RootFSModel>("FEX.RootFSModel", 1, 0, "RootFSModel", RootFSList.get());
-  Engine.load(QUrl("qrc:/main.qml"));
-  /*auto**/ Window = qobject_cast<QQuickWindow*>(Engine.rootObjects().first());
-  if (!ConfigFilename.empty()) {
-    Window->setProperty("configFilename", "file://" + QString {ConfigFilename.c_str()});
-  } else {
-    Window->setProperty("configDirty", true);
-  }
-  ConfigRuntime::connect(Window, SIGNAL(selectedConfigFile(const QUrl&)), &Runtime, SLOT(onLoad(const QUrl&)));
-  ConfigRuntime::connect(Window, SIGNAL(triggeredSave(const QUrl&)), &Runtime, SLOT(onSave(const QUrl&)));
-  ConfigRuntime::connect(ConfigModelInst.get(), SIGNAL(modelReset()), Window, SLOT(refreshUI()));
+  ConfigRuntime Runtime(ConfigFilename.c_str());
 
   return App.exec();
 }
