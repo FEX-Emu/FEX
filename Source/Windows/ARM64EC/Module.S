@@ -40,12 +40,12 @@ enter_jit:
   br x16 // DispatcherLoopTopEnterEC(RIP:x9, CPUArea:x17)
 
   // Invoked by KiUserEmulationDispatcher after e.g. an NtContinue to x86 code
-  // Expects a CONTEXT pointer in x0
 .global BeginSimulation
 BeginSimulation:
   ldr x17, [x18, #0x1788] // TEB->ChpeV2CpuAreaInfo
   ldr x16, [x17, #0x8] // ChpeV2CpuAreaInfo->EmulatorStackBase
   mov sp, x16
+  ldr x0, [x17, #0x18] // ChpeV2CpuAreaInfo->ContextAmd64
   bl "#SyncThreadContext"
   ldr x17, [x18, #0x1788] // TEB->ChpeV2CpuAreaInfo
   ldr x16, [x17, #0x48] // ChpeV2CpuAreaInfo->EmulatorData[3] - DispatcherLoopTopEnterECFillSRA
