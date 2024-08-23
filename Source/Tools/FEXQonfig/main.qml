@@ -3,7 +3,6 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 
 import FEX.ConfigModel 1.0
-import FEX.EnvVarModel 1.0
 import FEX.RootFSModel 1.0
 
 // Qt 6 changed the API of the Dialogs module slightly.
@@ -586,20 +585,85 @@ ApplicationWindow {
             component EnvVarList: GroupBox {
                 width: parent.width - parent.padding * 2
 
+                property bool ofHost: false
+
                 ColumnLayout {
                     anchors.left: parent ? parent.left : undefined
                     anchors.right: parent ? parent.right : undefined
 
+                    spacing: 0
+
+                    id: envGroup
+                    property var values: ConfigModel.getStringList(ofHost ? "HostEnv" : "Env", refreshCache)
+
+                    property int editedIndex: -1
                     Repeater {
-                        model: EnvVarModel
+                        model: parent.values
                         Layout.fillWidth: true
-                        ItemDelegate { text: edit }
+
+                        RowLayout {
+                            property bool isEditing: envGroup.editedIndex === index
+
+                            ItemDelegate {
+                                text: modelData;
+                                visible: !parent.isEditing
+                                onClicked: envGroup.editedIndex = index
+
+                            }
+                            TextField {
+                                id: envVarEditTextField
+                                visible: parent.isEditing;
+                                text: modelData
+
+                                onEditingFinished: {
+                                    envGroup.editedIndex = -1
+                                    if (text === modelData) {
+                                        return
+                                    }
+
+                                    var newValues = envGroup.values
+                                    newValues[model.index] = text
+                                    configDirty = true
+                                    ConfigModel.setStringList(ofHost ? "HostEnv" : "Env", newValues)
+                                }
+                            }
+                            Button {
+                                visible: parent.isEditing
+                                icon.name: "list-remove"
+                                onClicked: {
+                                    envGroup.editedIndex = -1
+                                    var newValues = []
+                                    for (var i = 0; i < envGroup.values.length; ++i) {
+                                        if (i != index) {
+                                            newValues.push(envGroup.values[i])
+                                        }
+                                    }
+
+                                    configDirty = true
+                                    ConfigModel.setStringList(ofHost ? "HostEnv" : "Env", newValues)
+                                }
+                            }
+                        }
                     }
 
                     RowLayout {
-                        // TODO: Save to config
-                        TextField { Layout.fillWidth: true }
-                        Button { icon.name : "list-add" }
+                        TextField {
+                            id: envVarTextField
+                            Layout.fillWidth: true
+
+                            onAccepted: {
+                                var newValues = envGroup.values
+                                newValues.push(envVarTextField.text)
+                                configDirty = true
+                                ConfigModel.setStringList(ofHost ? "HostEnv" : "Env", newValues)
+                                text = ""
+                            }
+                        }
+                        Button {
+                            icon.name : "list-add"
+                            enabled: envVarTextField.text !== ""
+                            onClicked: envVarTextField.onAccepted()
+                        }
                     }
                 }
             }
@@ -610,6 +674,7 @@ ApplicationWindow {
 
             EnvVarList {
                 title: qsTr("Host environment variables:")
+                ofHost: true
             }
         }
 

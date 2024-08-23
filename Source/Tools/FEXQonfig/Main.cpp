@@ -85,6 +85,17 @@ void ConfigModel::setString(const QString& Name, const QString& Value) {
   Reload();
 }
 
+void ConfigModel::setStringList(const QString& Name, const QStringList& Values) {
+  auto Options = LoadedConfig->GetOptionMap();
+
+  const auto& Option = NameToConfigLookup.at(Name.toStdString());
+  LoadedConfig->Erase(Option);
+  for (auto& Value : Values) {
+    LoadedConfig->Set(Option, Value.toStdString().c_str());
+  }
+  Reload();
+}
+
 void ConfigModel::setInt(const QString& Name, int Value) {
   auto Options = LoadedConfig->GetOptionMap();
   LoadedConfig->EraseSet(NameToConfigLookup.at(Name.toStdString()), std::to_string(Value));
@@ -99,6 +110,20 @@ QString ConfigModel::getString(const QString& Name, bool) const {
     throw std::runtime_error("Could not find setting");
   }
   return QString::fromUtf8((*ret)->c_str());
+}
+
+QStringList ConfigModel::getStringList(const QString& Name, bool) const {
+  auto Options = LoadedConfig->GetOptionMap();
+
+  auto Values = LoadedConfig->All(NameToConfigLookup.at(Name.toStdString()));
+  if (!Values || !*Values) {
+    return {};
+  }
+  QStringList Ret;
+  for (auto& Value : **Values) {
+    Ret.append(Value.c_str());
+  }
+  return Ret;
 }
 
 int ConfigModel::getInt(const QString& Name, bool) const {
@@ -257,7 +282,6 @@ static bool OpenFile(fextl::string Filename) {
 }
 
 fextl::unique_ptr<ConfigModel> ConfigModelInst;
-fextl::unique_ptr<EnvVarModel> EnvVarModelInst;
 
 void ConfigRuntime::onSave(const QUrl& Filename) {
   qInfo() << "Saving to" << Filename.toLocalFile().toStdString().c_str();
@@ -308,28 +332,9 @@ void ConfigRuntime::onLoad(const QUrl& Filename) {
   }
 
   ConfigModelInst->Reload();
-  EnvVarModelInst->Reload();
   RootFSList->Reload();
 
   QMetaObject::invokeMethod(Window, "refreshUI");
-}
-
-EnvVarModel::EnvVarModel() {
-  Reload();
-}
-
-void EnvVarModel::Reload() {
-  FEXCore::Config::LayerValue EmptyVars;
-  auto Vars = LoadedConfig->All(FEXCore::Config::ConfigOption::CONFIG_ENV).value_or(&EmptyVars);
-
-  beginResetModel();
-
-  removeRows(0, rowCount());
-  for (auto& Var : *Vars) {
-    appendRow(new QStandardItem(Var.c_str()));
-  }
-
-  endResetModel();
 }
 
 int main(int Argc, char** Argv) {
@@ -349,12 +354,10 @@ int main(int Argc, char** Argv) {
   ConfigRuntime Runtime;
 
   ConfigModelInst = fextl::make_unique<ConfigModel>();
-  EnvVarModelInst = fextl::make_unique<EnvVarModel>();
   RootFSList = fextl::make_unique<RootFSModel>();
 
   QQmlApplicationEngine Engine;
   qmlRegisterSingletonInstance<ConfigModel>("FEX.ConfigModel", 1, 0, "ConfigModel", ConfigModelInst.get());
-  qmlRegisterSingletonInstance<EnvVarModel>("FEX.EnvVarModel", 1, 0, "EnvVarModel", EnvVarModelInst.get());
   qmlRegisterSingletonInstance<RootFSModel>("FEX.RootFSModel", 1, 0, "RootFSModel", RootFSList.get());
   Engine.load(QUrl("qrc:/main.qml"));
   /*auto**/ Window = qobject_cast<QQuickWindow*>(Engine.rootObjects().first());
