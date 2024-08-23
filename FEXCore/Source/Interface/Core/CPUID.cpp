@@ -114,27 +114,16 @@ void CPUIDEmu::SetupHostHybridFlag() {
 
   uint64_t MIDR {};
   for (size_t i = 0; i < Cores; ++i) {
-    std::error_code ec {};
-    fextl::string MIDRPath = fextl::fmt::format("/sys/devices/system/cpu/cpu{}/regs/identification/midr_el1", i);
-
-    std::array<char, 18> Data;
-    // Needs to be a fixed size since depending on kernel it will try to read a full page of data and fail
-    // Only read 18 bytes for a 64bit value prefixed with 0x
-    if (FEXCore::FileLoading::LoadFileToBuffer(MIDRPath, Data) == sizeof(Data)) {
-      uint64_t NewMIDR {};
-      std::string_view MIDRView(Data.data(), sizeof(Data));
-      if (FEXCore::StrConv::Conv(MIDRView, &NewMIDR)) {
-        if (MIDR != 0 && MIDR != NewMIDR) {
-          // CPU mismatch, claim hybrid
-          Hybrid = true;
-        }
-
-        // Truncate to 32-bits, top 32-bits are all reserved in MIDR
-        PerCPUData[i].ProductName = ProductNames::ARM_UNKNOWN;
-        PerCPUData[i].MIDR = NewMIDR;
-        MIDR = NewMIDR;
-      }
+    auto NewMIDR = CTX->HostFeatures.CPUMIDRs[i];
+    if (MIDR != 0 && MIDR != NewMIDR) {
+      // CPU mismatch, claim hybrid
+      Hybrid = true;
     }
+
+    // Truncate to 32-bits, top 32-bits are all reserved in MIDR
+    PerCPUData[i].ProductName = ProductNames::ARM_UNKNOWN;
+    PerCPUData[i].MIDR = NewMIDR;
+    MIDR = NewMIDR;
   }
 
   struct CPUMIDR {
@@ -1185,7 +1174,7 @@ FEXCore::CPUID::XCRResults CPUIDEmu::XCRFunction_0h() const {
 
 CPUIDEmu::CPUIDEmu(const FEXCore::Context::ContextImpl* ctx)
   : CTX {ctx} {
-  Cores = FEXCore::CPUInfo::CalculateNumberOfCPUs();
+  Cores = CTX->HostFeatures.CPUMIDRs.size();
 
   // Setup some state tracking
   SetupHostHybridFlag();

@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+
+#include <FEXCore/fextl/vector.h>
 #include <cstdint>
 
 namespace FEXCore {
@@ -37,5 +39,9 @@ struct HostFeatures {
   // Float exception behaviour
   bool SupportsAFP {};
   bool SupportsFloatExceptions {};
+
+  // MIDR information
+  // Also used for determining number of CPU cores for CPUID
+  fextl::vector<uint32_t> CPUMIDRs;
 };
 } // namespace FEXCore

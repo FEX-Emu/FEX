@@ -3,6 +3,9 @@
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/HostFeatures.h>
+#include <FEXCore/Utils/CPUInfo.h>
+#include <FEXCore/Utils/FileLoading.h>
+#include <FEXCore/Utils/StringUtils.h>
 
 #ifdef _M_X86_64
 #define XBYAK64
@@ -16,6 +19,28 @@
 #endif
 
 namespace FEX {
+
+void FillMIDRInformationViaLinux(FEXCore::HostFeatures* Features) {
+  auto Cores = FEXCore::CPUInfo::CalculateNumberOfCPUs();
+  Features->CPUMIDRs.resize(Cores);
+#ifdef _M_ARM_64
+  for (size_t i = 0; i < Cores; ++i) {
+    std::error_code ec {};
+    fextl::string MIDRPath = fextl::fmt::format("/sys/devices/system/cpu/cpu{}/regs/identification/midr_el1", i);
+    std::array<char, 18> Data;
+    // Needs to be a fixed size since depending on kernel it will try to read a full page of data and fail
+    // Only read 18 bytes for a 64bit value prefixed with 0x
+    if (FEXCore::FileLoading::LoadFileToBuffer(MIDRPath, Data) == sizeof(Data)) {
+      uint64_t MIDR {};
+      auto Results = std::from_chars(Data.data() + 2, Data.data() + sizeof(Data), MIDR, 16);
+      if (Results.ec == std::errc()) {
+        // Truncate to 32-bits, top 32-bits are all reserved in MIDR
+        Features->CPUMIDRs[i] = static_cast<uint32_t>(MIDR);
+      }
+    }
+  }
+#endif
+}
 
 #ifdef _M_ARM_64
 #define GetSysReg(name, reg)                         \
@@ -603,6 +628,8 @@ FEXCore::HostFeatures FetchHostFeatures() {
   __asm volatile("mrs %[midr], midr_el1" : [midr] "=r"(MIDR));
 #endif
 
-  return FetchHostFeatures(Features, true, CTR, MIDR);
+  auto HostFeatures = FetchHostFeatures(Features, true, CTR, MIDR);
+  FillMIDRInformationViaLinux(&HostFeatures);
+  return HostFeatures;
 }
 } // namespace FEX

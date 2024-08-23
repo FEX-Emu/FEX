@@ -2,6 +2,7 @@
 
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/HostFeatures.h>
+#include <FEXCore/Utils/CPUInfo.h>
 #include <FEXCore/fextl/fmt.h>
 
 #include <windows.h>
@@ -9,6 +10,13 @@
 #include "CPUFeatures.h"
 
 namespace {
+
+static void FillMIDRInformation(FEXCore::HostFeatures* Features, uint64_t MIDR) {
+  auto Cores = FEXCore::CPUInfo::CalculateNumberOfCPUs();
+  // Truncate to 32-bits, top 32-bits are all reserved in MIDR
+  Features->CPUMIDRs.resize(Cores, static_cast<uint32_t>(MIDR));
+}
+
 HKEY OpenProcessorKey(uint32_t Idx) {
   HKEY Out;
   auto Path = fextl::fmt::format("Hardware\\Description\\System\\CentralProcessor\\{}", Idx);
@@ -57,7 +65,9 @@ FEXCore::HostFeatures CPUFeatures::FetchHostFeatures(bool IsWine) {
 
   RegCloseKey(Key);
 
-  return FEX::FetchHostFeatures(Features, !IsWine, CTR, MIDR);
+  auto HostFeatures = FEX::FetchHostFeatures(Features, !IsWine, CTR, MIDR);
+  FillMIDRInformation(&HostFeatures, MIDR);
+  return HostFeatures;
 }
 
 CPUFeatures::CPUFeatures(FEXCore::Context::Context& CTX) {
