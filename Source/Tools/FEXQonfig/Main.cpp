@@ -1,16 +1,16 @@
+#include "ConfigModel.h"
+
+#include <Common/Config.h>
+#include <Common/FileFormatCheck.h>
+#include <FEXCore/fextl/memory.h>
+#include <FEXCore/fextl/map.h>
+#include <FEXCore/Config/Config.h>
+#include <FEXHeaderUtils/Filesystem.h>
+
 #include <QApplication>
 #include <QMessageBox>
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
-
-#include "ConfigModel.h"
-
-#include <FEXCore/Config/Config.h>
-#include <Common/Config.h>
-#include <Common/FileFormatCheck.h>
-
-#include <FEXCore/fextl/memory.h>
-#include <FEXCore/fextl/map.h>
 
 namespace fextl {
 // Helper to convert a std::filesystem::path to a fextl::string.
@@ -131,13 +131,30 @@ static void LoadDefaultSettings() {
   LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_IS64BIT_MODE);
 }
 
-static void ConfigInit() {
+static void ConfigInit(fextl::string ConfigFilename) {
 #define OPT_BASE(type, group, enum, json, default)                                 \
   ConfigToNameLookup[FEXCore::Config::ConfigOption::CONFIG_##enum].first = #json;  \
   ConfigToNameLookup[FEXCore::Config::ConfigOption::CONFIG_##enum].second = #type; \
   NameToConfigLookup[#json] = FEXCore::Config::ConfigOption::CONFIG_##enum;
 #include <FEXCore/Config/ConfigValues.inl>
 #undef OPT_BASE
+
+  // Ensure config and RootFS directories exist
+  std::error_code ec {};
+  fextl::string Dirs[] = {FHU::Filesystem::ParentPath(ConfigFilename), FEXCore::Config::GetDataDirectory() + "RootFS/"};
+  for (auto& Dir : Dirs) {
+    bool created = std::filesystem::create_directories(Dir, ec);
+    if (created) {
+      qInfo() << "Created folder" << Dir.c_str();
+    }
+    if (ec) {
+      QMessageBox err(QMessageBox::Critical, "Failed to create directory", QString("Failed to create \"%1\" folder").arg(Dir.c_str()),
+                      QMessageBox::Ok);
+      err.exec();
+      std::exit(EXIT_FAILURE);
+      return;
+    }
+  }
 }
 
 QQuickWindow* Window = nullptr; // TODO: Drop global
@@ -158,14 +175,6 @@ void RootFSModel::Reload() {
   removeRows(0, rowCount());
 
   fextl::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
-  std::error_code ec {};
-  if (!std::filesystem::exists(RootFS, ec)) {
-    // Doesn't exist, create the the folder as a user convenience
-    if (!std::filesystem::create_directories(RootFS, ec)) {
-      // Well I guess we failed
-      return;
-    }
-  }
   std::vector<std::string> NamedRootFS {};
   for (auto& it : std::filesystem::directory_iterator(RootFS)) {
     if (it.is_directory()) {
@@ -283,9 +292,9 @@ int main(int Argc, char** Argv) {
   QApplication App(Argc, Argv);
 
   FEX::Config::InitializeConfigs();
-  ConfigInit();
-
   fextl::string ConfigFilename = Argc > 1 ? Argv[1] : FEXCore::Config::GetConfigFileLocation();
+  ConfigInit(ConfigFilename);
+
   qInfo() << "Opening" << ConfigFilename.c_str();
   if (OpenFile(ConfigFilename)) {
   } else {
