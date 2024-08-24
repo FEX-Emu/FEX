@@ -1,7 +1,7 @@
 set(CMAKE_AUTOMOC ON)
 
 add_executable(FEXQonfig)
-target_sources(FEXQonfig PRIVATE Main.cpp Main.h ${QT_RESOURCES})
+target_sources(FEXQonfig PRIVATE Main.cpp Main.h)
 target_include_directories(FEXQonfig PRIVATE ${CMAKE_SOURCE_DIR}/Source/)
 target_link_libraries(FEXQonfig PRIVATE Common)
 if (Qt6_FOUND)
