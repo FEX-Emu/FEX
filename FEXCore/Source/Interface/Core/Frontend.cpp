@@ -274,12 +274,10 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
   DecodeInst->TableInfo = Info;
 
   if (Info->Type == FEXCore::X86Tables::TYPE_UNKNOWN) {
-    LogMan::Msg::DFmt("Unknown instruction: {} 0x{:04x} 0x{:x}", Info->Name ?: "UND", Op, DecodeInst->PC);
     return false;
   }
 
   if (Info->Type == FEXCore::X86Tables::TYPE_INVALID) {
-    LogMan::Msg::DFmt("Invalid or Unknown instruction: {} 0x{:04x} 0x{:x}", Info->Name ?: "UND", Op, DecodeInst->PC);
     return false;
   }
 
@@ -557,12 +555,10 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
   DecodeInst->TableInfo = Info;
 
   if (Info->Type == FEXCore::X86Tables::TYPE_UNKNOWN) {
-    LogMan::Msg::DFmt("Unknown instruction: {} 0x{:04x} 0x{:x}", Info->Name ?: "UND", Op, DecodeInst->PC);
     return false;
   }
 
   if (Info->Type == FEXCore::X86Tables::TYPE_INVALID) {
-    LogMan::Msg::DFmt("Invalid or Unknown instruction: {} 0x{:04x} 0x{:x}", Info->Name ?: "UND", Op, DecodeInst->PC);
     return false;
   }
 
@@ -977,12 +973,12 @@ void Decoder::BranchTargetInMultiblockRange() {
       // If we are conditional then a target can be the instruction past the conditional instruction
       uint64_t FallthroughRIP = DecodeInst->PC + DecodeInst->InstSize;
       if (!HasBlocks.contains(FallthroughRIP)) {
-        BlocksToDecode.insert(FallthroughRIP);
+        CurrentBlockTargets.insert(FallthroughRIP);
       }
     }
 
     if (!HasBlocks.contains(TargetRIP)) {
-      BlocksToDecode.insert(TargetRIP);
+      CurrentBlockTargets.insert(TargetRIP);
     }
   } else {
     if (ExternalBranches) {
@@ -1079,6 +1075,8 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
     MaxInst = CTX->Config.MaxInstPerBlock;
   }
 
+  bool EntryBlock {true};
+
   while (!BlocksToDecode.empty()) {
     auto BlockDecodeIt = BlocksToDecode.begin();
     uint64_t RIPToDecode = *BlockDecodeIt;
@@ -1115,12 +1113,19 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
       bool ErrorDuringDecoding = !DecodeInstruction(RIPToDecode + PCOffset);
 
       if (ErrorDuringDecoding) [[unlikely]] {
-        LogMan::Msg::DFmt("Couldn't Decode something at 0x{:x}, Started at 0x{:x}", RIPToDecode + PCOffset, PC);
         // Put an invalid instruction in the stream so the core can raise SIGILL if hit
         CurrentBlockDecoding.HasInvalidInstruction = true;
         // Error while decoding instruction. We don't know the table or instruction size
         DecodeInst->TableInfo = nullptr;
         DecodeInst->InstSize = 0;
+      }
+
+      if (!ErrorDuringDecoding) {
+        // If there wasn't an error during decoding but we have no dispatcher for the instruction then claim invalid instruction.
+        auto TableInfo = DecodedBuffer[BlockStartOffset + BlockNumberOfInstructions].TableInfo;
+        if (!TableInfo || !TableInfo->OpcodeDispatcher) {
+          CurrentBlockDecoding.HasInvalidInstruction = true;
+        }
       }
 
       DecodedMinAddress = std::min(DecodedMinAddress, RIPToDecode + PCOffset);
@@ -1130,7 +1135,17 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
       ++DecodedSize;
 
       // Can not continue this block at all on invalid instruction
-      if (CurrentBlockDecoding.HasInvalidInstruction) {
+      if (CurrentBlockDecoding.HasInvalidInstruction) [[unlikely]] {
+        if (!EntryBlock) {
+          // In multiblock configurations, we can early terminate any non-entrypoint blocks with the expectation that this won't get hit.
+          // Improves compile-times.
+          // Just need to undo additions that this block decoding has caused.
+          TotalInstructions -= CurrentBlockDecoding.NumInstructions;
+          DecodedSize = BlockStartOffset;
+          BlockNumberOfInstructions = 0;
+          InstStream -= PCOffset;
+          CurrentBlockTargets.clear();
+        }
         break;
       }
 
@@ -1160,6 +1175,9 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
       InstStream += DecodeInst->InstSize;
     }
 
+    BlocksToDecode.merge(CurrentBlockTargets);
+    CurrentBlockTargets.clear();
+
     BlocksToDecode.erase(BlockDecodeIt);
     HasBlocks.emplace(RIPToDecode);
 
@@ -1167,6 +1185,8 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
     CurrentBlockDecoding.NumInstructions = BlockNumberOfInstructions;
     CurrentBlockDecoding.DecodedInstructions = &DecodedBuffer[BlockStartOffset];
     BlockInfo.TotalInstructionCount += BlockNumberOfInstructions;
+
+    EntryBlock = false;
   }
 
   for (auto CodePage : CodePages) {

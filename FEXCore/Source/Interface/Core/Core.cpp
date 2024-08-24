@@ -598,6 +598,11 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
 
       uint64_t InstsInBlock = Block.NumInstructions;
 
+      if (InstsInBlock == 0) {
+        // Special case for an empty instruction block.
+        Thread->OpDispatcher->ExitFunction(Thread->OpDispatcher->_EntrypointOffset(IR::SizeToOpSize(GPRSize), Block.Entry - GuestRIP));
+      }
+
       for (size_t i = 0; i < InstsInBlock; ++i) {
         const FEXCore::X86Tables::X86InstInfo* TableInfo {nullptr};
         const FEXCore::X86Tables::DecodedInst* DecodedInfo {nullptr};
