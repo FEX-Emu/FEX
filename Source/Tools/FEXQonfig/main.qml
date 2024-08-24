@@ -364,14 +364,14 @@ ApplicationWindow {
                             id: addRootfsFileDialog
                             title: qsTr("Select RootFS file")
                             nameFilters: [ qsTr("SquashFS and EroFS (*.sqsh *.ero)"), qsTr("All files(*)") ]
-                            folder: RootFSModel.getBaseUrl()
+                            currentFolder: RootFSModel.getBaseUrl()
                             onAccepted: rootfsList.updateRootFS(fileUrl)
                         }
 
                         FolderDialog {
                             id: addRootfsFolderDialog
                             title: qsTr("Select RootFS folder")
-                            folder: RootFSModel.getBaseUrl()
+                            currentFolder: RootFSModel.getBaseUrl()
                             onAccepted: rootfsList.updateRootFS(selectedFolder)
                         }
 
