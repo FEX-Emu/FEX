@@ -50,6 +50,8 @@ void RegisterInfo(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_IMPL_X32(oldolduname, [](FEXCore::Core::CpuStateFrame* Frame, struct oldold_utsname* buf) -> uint64_t {
     struct utsname Local {};
 
+    FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
+
     memset(buf, 0, sizeof(*buf));
     if (::uname(&Local) == 0) {
       memcpy(buf->nodename, Local.nodename, __OLD_UTS_LEN);
@@ -71,6 +73,8 @@ void RegisterInfo(FEX::HLE::SyscallHandler* Handler) {
 
   REGISTER_SYSCALL_IMPL_X32(olduname, [](FEXCore::Core::CpuStateFrame* Frame, struct old_utsname* buf) -> uint64_t {
     struct utsname Local {};
+
+    FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
 
     memset(buf, 0, sizeof(*buf));
     if (::uname(&Local) == 0) {
@@ -95,6 +99,7 @@ void RegisterInfo(FEX::HLE::SyscallHandler* Handler) {
     getrlimit, [](FEXCore::Core::CpuStateFrame* Frame, int resource, compat_ptr<FEX::HLE::x32::rlimit32<true>> rlim) -> uint64_t {
       struct rlimit rlim64 {};
       uint64_t Result = ::getrlimit(resource, &rlim64);
+      FaultSafeUserMemAccess::VerifyIsWritable(rlim, sizeof(*rlim));
       *rlim = rlim64;
       SYSCALL_ERRNO();
     });
@@ -103,6 +108,7 @@ void RegisterInfo(FEX::HLE::SyscallHandler* Handler) {
     ugetrlimit, [](FEXCore::Core::CpuStateFrame* Frame, int resource, compat_ptr<FEX::HLE::x32::rlimit32<false>> rlim) -> uint64_t {
       struct rlimit rlim64 {};
       uint64_t Result = ::getrlimit(resource, &rlim64);
+      FaultSafeUserMemAccess::VerifyIsWritable(rlim, sizeof(*rlim));
       *rlim = rlim64;
       SYSCALL_ERRNO();
     });
@@ -110,6 +116,7 @@ void RegisterInfo(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_IMPL_X32(
     setrlimit, [](FEXCore::Core::CpuStateFrame* Frame, int resource, const compat_ptr<FEX::HLE::x32::rlimit32<false>> rlim) -> uint64_t {
       struct rlimit rlim64 {};
+      FaultSafeUserMemAccess::VerifyIsReadable(rlim, sizeof(*rlim));
       rlim64 = *rlim;
       uint64_t Result = ::setrlimit(resource, &rlim64);
       SYSCALL_ERRNO();
@@ -119,6 +126,7 @@ void RegisterInfo(FEX::HLE::SyscallHandler* Handler) {
     struct sysinfo Host {};
     uint64_t Result = ::sysinfo(&Host);
     if (Result != -1) {
+      FaultSafeUserMemAccess::VerifyIsWritable(info, sizeof(*info));
 #define Copy(x) \
   info->x = static_cast<decltype(info->x)>(std::min(Host.x, static_cast<decltype(Host.x)>(std::numeric_limits<decltype(info->x)>::max())));
       Copy(uptime);
@@ -155,6 +163,7 @@ void RegisterInfo(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_IMPL_X32(getrusage, [](FEXCore::Core::CpuStateFrame* Frame, int who, rusage_32* usage) -> uint64_t {
     struct rusage usage64 = *usage;
     uint64_t Result = ::getrusage(who, &usage64);
+    FaultSafeUserMemAccess::VerifyIsWritable(usage, sizeof(*usage));
     *usage = usage64;
     SYSCALL_ERRNO();
   });
