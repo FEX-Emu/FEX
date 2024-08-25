@@ -204,37 +204,25 @@
       ]
     },
     "ucomiss xmm0, xmm1": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 5,
       "Comment": "0x0f 0x2e",
       "ExpectedArm64ASM": [
         "fcmp s16, s17",
         "mov w27, #0x0",
-        "cset w20, eq",
-        "cset w21, hs",
-        "cset w22, vs",
         "cset w26, vc",
-        "and w21, w21, w26",
-        "lsl x21, x21, #29",
-        "orr w20, w20, w22",
-        "orr w20, w21, w20, lsl #30",
-        "msr nzcv, x20"
+        "csetm x20, eq",
+        "ccmn x26, x20, #nzCv, le"
       ]
     },
     "comiss xmm0, xmm1": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 5,
       "Comment": "0x0f 0x2f",
       "ExpectedArm64ASM": [
         "fcmp s16, s17",
         "mov w27, #0x0",
-        "cset w20, eq",
-        "cset w21, hs",
-        "cset w22, vs",
         "cset w26, vc",
-        "and w21, w21, w26",
-        "lsl x21, x21, #29",
-        "orr w20, w20, w22",
-        "orr w20, w21, w20, lsl #30",
-        "msr nzcv, x20"
+        "csetm x20, eq",
+        "ccmn x26, x20, #nzCv, le"
       ]
     },
     "rdtsc": {
