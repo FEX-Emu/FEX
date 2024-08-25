@@ -109,15 +109,19 @@ uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first
     case IPC_SET: {
       struct semid64_ds buf {};
       if (IPC64) {
+        FaultSafeUserMemAccess::VerifyIsReadable(semun->buf64, sizeof(*semun->buf64));
         buf = *semun->buf64;
       } else {
+        FaultSafeUserMemAccess::VerifyIsReadable(semun->buf32, sizeof(*semun->buf32));
         buf = *semun->buf32;
       }
       Result = ::syscall(SYSCALL_DEF(semctl), semid, semnum, cmd, &buf);
       if (Result != -1) {
         if (IPC64) {
+          FaultSafeUserMemAccess::VerifyIsWritable(semun->buf64, sizeof(*semun->buf64));
           *semun->buf64 = buf;
         } else {
+          FaultSafeUserMemAccess::VerifyIsWritable(semun->buf32, sizeof(*semun->buf32));
           *semun->buf32 = buf;
         }
       }
@@ -130,8 +134,10 @@ uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first
       Result = ::syscall(SYSCALL_DEF(semctl), semid, semnum, cmd, &buf);
       if (Result != -1) {
         if (IPC64) {
+          FaultSafeUserMemAccess::VerifyIsWritable(semun->buf64, sizeof(*semun->buf64));
           *semun->buf64 = buf;
         } else {
+          FaultSafeUserMemAccess::VerifyIsWritable(semun->buf32, sizeof(*semun->buf32));
           *semun->buf32 = buf;
         }
       }
@@ -142,6 +148,7 @@ uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first
       struct fex_seminfo si {};
       Result = ::syscall(SYSCALL_DEF(semctl), semid, semnum, cmd, &si);
       if (Result != -1) {
+        FaultSafeUserMemAccess::VerifyIsWritable(semun->__buf, sizeof(*semun->__buf));
         memcpy(semun->__buf, &si, sizeof(si));
       }
       break;
@@ -171,6 +178,7 @@ uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first
     struct timespec tp64 {};
     struct timespec* timed_ptr {};
     if (timeout) {
+      FaultSafeUserMemAccess::VerifyIsReadable(timeout, sizeof(*timeout));
       tp64 = *timeout;
       timed_ptr = &tp64;
     }
@@ -183,6 +191,8 @@ uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first
     fextl::vector<uint8_t> Tmp(second + sizeof(size_t));
     struct msgbuf* TmpMsg = reinterpret_cast<struct msgbuf*>(&Tmp.at(0));
     msgbuf_32* src = reinterpret_cast<msgbuf_32*>(ptr);
+    FaultSafeUserMemAccess::VerifyIsReadable(src, sizeof(*src));
+    FaultSafeUserMemAccess::VerifyIsReadable(src->mtext, second);
     TmpMsg->mtype = src->mtype;
     memcpy(TmpMsg->mtext, src->mtext, second);
 
@@ -197,6 +207,8 @@ uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first
       Result = ::syscall(SYSCALL_DEF(msgrcv), first, TmpMsg, second, fifth, third);
       if (Result != -1) {
         msgbuf_32* src = reinterpret_cast<msgbuf_32*>(ptr);
+        FaultSafeUserMemAccess::VerifyIsWritable(src, sizeof(*src));
+        FaultSafeUserMemAccess::VerifyIsWritable(src->mtext, Result);
         src->mtype = TmpMsg->mtype;
         memcpy(src->mtext, TmpMsg->mtext, Result);
       }
@@ -210,6 +222,8 @@ uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first
       Result = ::syscall(SYSCALL_DEF(msgrcv), first, TmpMsg, second, ipck->msgtyp, third);
       if (Result != -1) {
         msgbuf_32* src = reinterpret_cast<msgbuf_32*>(ipck->msgp);
+        FaultSafeUserMemAccess::VerifyIsWritable(src, sizeof(*src));
+        FaultSafeUserMemAccess::VerifyIsWritable(src->mtext, Result);
         ipck->msgtyp = TmpMsg->mtype;
         memcpy(src->mtext, TmpMsg->mtext, Result);
       }
@@ -231,8 +245,10 @@ uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first
     case IPC_SET: {
       struct msqid64_ds buf {};
       if (IPC64) {
+        FaultSafeUserMemAccess::VerifyIsReadable(msgun.buf64, sizeof(*msgun.buf64));
         buf = *msgun.buf64;
       } else {
+        FaultSafeUserMemAccess::VerifyIsReadable(msgun.buf32, sizeof(*msgun.buf32));
         buf = *msgun.buf32;
       }
       Result = ::syscall(SYSCALL_DEF(msgctl), msqid, cmd, &buf);
@@ -245,8 +261,10 @@ uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first
       Result = ::syscall(SYSCALL_DEF(msgctl), msqid, cmd, &buf);
       if (Result != -1) {
         if (IPC64) {
+          FaultSafeUserMemAccess::VerifyIsWritable(msgun.buf64, sizeof(*msgun.buf64));
           *msgun.buf64 = buf;
         } else {
+          FaultSafeUserMemAccess::VerifyIsWritable(msgun.buf32, sizeof(*msgun.buf32));
           *msgun.buf32 = buf;
         }
       }
@@ -257,6 +275,7 @@ uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first
       struct msginfo mi {};
       Result = ::syscall(SYSCALL_DEF(msgctl), msqid, cmd, reinterpret_cast<struct msqid_ds*>(&mi));
       if (Result != -1) {
+        FaultSafeUserMemAccess::VerifyIsWritable(msgun.__buf, sizeof(mi));
         memcpy(msgun.__buf, &mi, sizeof(mi));
       }
       break;
@@ -300,8 +319,10 @@ uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first
     case IPC_SET: {
       struct shmid64_ds buf {};
       if (IPC64) {
+        FaultSafeUserMemAccess::VerifyIsReadable(shmun.buf64, sizeof(*shmun.buf64));
         buf = *shmun.buf64;
       } else {
+        FaultSafeUserMemAccess::VerifyIsReadable(shmun.buf32, sizeof(*shmun.buf32));
         buf = *shmun.buf32;
       }
       Result = ::syscall(SYSCALL_DEF(shmctl), shmid, cmd, &buf);
@@ -316,8 +337,10 @@ uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first
       Result = ::syscall(SYSCALL_DEF(shmctl), shmid, cmd, &buf);
       if (Result != -1) {
         if (IPC64) {
+          FaultSafeUserMemAccess::VerifyIsWritable(shmun.buf64, sizeof(*shmun.buf64));
           *shmun.buf64 = buf;
         } else {
+          FaultSafeUserMemAccess::VerifyIsWritable(shmun.buf32, sizeof(*shmun.buf32));
           *shmun.buf32 = buf;
         }
       }
@@ -328,8 +351,10 @@ uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first
       Result = ::syscall(SYSCALL_DEF(shmctl), shmid, cmd, reinterpret_cast<struct shmid_ds*>(&si));
       if (Result != -1) {
         if (IPC64) {
+          FaultSafeUserMemAccess::VerifyIsWritable(shmun.__buf64, sizeof(*shmun.__buf64));
           *shmun.__buf64 = si;
         } else {
+          FaultSafeUserMemAccess::VerifyIsWritable(shmun.__buf32, sizeof(*shmun.__buf32));
           *shmun.__buf32 = si;
         }
       }
@@ -339,6 +364,7 @@ uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first
       struct shm_info si {};
       Result = ::syscall(SYSCALL_DEF(shmctl), shmid, cmd, reinterpret_cast<struct shmid_ds*>(&si));
       if (Result != -1) {
+        FaultSafeUserMemAccess::VerifyIsWritable(shmun.__buf_info_32, sizeof(*shmun.__buf_info_32));
         // SHM_INFO doesn't follow IPC64 behaviour
         *shmun.__buf_info_32 = si;
       }
@@ -368,15 +394,19 @@ void RegisterSemaphore(FEX::HLE::SyscallHandler* Handler) {
     case IPC_SET: {
       struct semid64_ds buf {};
       if (IPC64) {
+        FaultSafeUserMemAccess::VerifyIsReadable(semun->buf64, sizeof(*semun->buf64));
         buf = *semun->buf64;
       } else {
+        FaultSafeUserMemAccess::VerifyIsReadable(semun->buf32, sizeof(*semun->buf32));
         buf = *semun->buf32;
       }
       Result = ::syscall(SYSCALL_DEF(semctl), semid, semnum, cmd, &buf);
       if (Result != -1) {
         if (IPC64) {
+          FaultSafeUserMemAccess::VerifyIsWritable(semun->buf64, sizeof(*semun->buf64));
           *semun->buf64 = buf;
         } else {
+          FaultSafeUserMemAccess::VerifyIsWritable(semun->buf32, sizeof(*semun->buf32));
           *semun->buf32 = buf;
         }
       }
@@ -389,8 +419,10 @@ void RegisterSemaphore(FEX::HLE::SyscallHandler* Handler) {
       Result = ::syscall(SYSCALL_DEF(semctl), semid, semnum, cmd, &buf);
       if (Result != -1) {
         if (IPC64) {
+          FaultSafeUserMemAccess::VerifyIsWritable(semun->buf64, sizeof(*semun->buf64));
           *semun->buf64 = buf;
         } else {
+          FaultSafeUserMemAccess::VerifyIsWritable(semun->buf32, sizeof(*semun->buf32));
           *semun->buf32 = buf;
         }
       }
@@ -401,6 +433,7 @@ void RegisterSemaphore(FEX::HLE::SyscallHandler* Handler) {
       struct fex_seminfo si {};
       Result = ::syscall(SYSCALL_DEF(semctl), semid, semnum, cmd, &si);
       if (Result != -1) {
+        FaultSafeUserMemAccess::VerifyIsWritable(semun->__buf, sizeof(*semun->__buf));
         memcpy(semun->__buf, &si, sizeof(si));
       }
       break;
