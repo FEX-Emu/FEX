@@ -37,6 +37,7 @@ void RegisterEpoll(FEX::HLE::SyscallHandler* Handler) {
       uint64_t Result = ::syscall(SYSCALL_DEF(epoll_pwait), epfd, Events.data(), maxevents, timeout, nullptr, 8);
 
       if (Result != -1) {
+        FaultSafeUserMemAccess::VerifyIsWritable(events, sizeof(FEX::HLE::x32::epoll_event32) * Result);
         for (size_t i = 0; i < Result; ++i) {
           events[i] = Events[i];
         }
@@ -46,8 +47,19 @@ void RegisterEpoll(FEX::HLE::SyscallHandler* Handler) {
 
   REGISTER_SYSCALL_IMPL_X32(
     epoll_ctl, [](FEXCore::Core::CpuStateFrame* Frame, int epfd, int op, int fd, compat_ptr<FEX::HLE::x32::epoll_event32> event) -> uint64_t {
-      struct epoll_event Event = *event;
-      uint64_t Result = ::syscall(SYSCALL_DEF(epoll_ctl), epfd, op, fd, &Event);
+      struct epoll_event Event;
+      struct epoll_event* EventPtr {};
+      if (event) {
+        FaultSafeUserMemAccess::VerifyIsReadable(event, sizeof(FEX::HLE::x32::epoll_event32));
+        Event = *event;
+        EventPtr = &Event;
+      }
+      uint64_t Result = ::syscall(SYSCALL_DEF(epoll_ctl), epfd, op, fd, EventPtr);
+
+      if (Result != -1 && event) {
+        FaultSafeUserMemAccess::VerifyIsWritable(event, sizeof(FEX::HLE::x32::epoll_event32));
+        *event = Event;
+      }
       SYSCALL_ERRNO();
     });
 
@@ -59,6 +71,7 @@ void RegisterEpoll(FEX::HLE::SyscallHandler* Handler) {
                               uint64_t Result = ::syscall(SYSCALL_DEF(epoll_pwait), epfd, Events.data(), maxevent, timeout, sigmask, sigsetsize);
 
                               if (Result != -1) {
+                                FaultSafeUserMemAccess::VerifyIsWritable(events, sizeof(FEX::HLE::x32::epoll_event32) * Result);
                                 for (size_t i = 0; i < Result; ++i) {
                                   events[i] = Events[i];
                                 }
@@ -84,6 +97,7 @@ void RegisterEpoll(FEX::HLE::SyscallHandler* Handler) {
                                   ::syscall(SYSCALL_DEF(epoll_pwait2), epfd, Events.data(), maxevent, timed_ptr, sigmask, sigsetsize);
 
                                 if (Result != -1) {
+                                  FaultSafeUserMemAccess::VerifyIsWritable(events, sizeof(FEX::HLE::x32::epoll_event32) * Result);
                                   for (size_t i = 0; i < Result; ++i) {
                                     events[i] = Events[i];
                                   }
