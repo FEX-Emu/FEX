@@ -25,6 +25,7 @@ void RegisterSched(FEX::HLE::SyscallHandler* Handler) {
     struct timespec tp64 {};
     uint64_t Result = ::sched_rr_get_interval(pid, tp ? &tp64 : nullptr);
     if (tp) {
+      FaultSafeUserMemAccess::VerifyIsWritable(tp, sizeof(*tp));
       *tp = tp64;
     }
     SYSCALL_ERRNO();
