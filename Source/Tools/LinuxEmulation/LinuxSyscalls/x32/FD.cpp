@@ -76,18 +76,21 @@ auto fcntlHandler = [](FEXCore::Core::CpuStateFrame* Frame, int fd, int cmd, uin
   case OP_GETLK64_32: {
     cmd = F_GETLK;
     lock_arg = (void*)&tmp;
+    FaultSafeUserMemAccess::VerifyIsReadable(reinterpret_cast<void*>(arg), sizeof(flock64_32));
     tmp = *reinterpret_cast<flock64_32*>(arg);
     break;
   }
   case OP_SETLK64_32: {
     cmd = F_SETLK;
     lock_arg = (void*)&tmp;
+    FaultSafeUserMemAccess::VerifyIsReadable(reinterpret_cast<void*>(arg), sizeof(flock64_32));
     tmp = *reinterpret_cast<flock64_32*>(arg);
     break;
   }
   case OP_SETLKW64_32: {
     cmd = F_SETLKW;
     lock_arg = (void*)&tmp;
+    FaultSafeUserMemAccess::VerifyIsReadable(reinterpret_cast<void*>(arg), sizeof(flock64_32));
     tmp = *reinterpret_cast<flock64_32*>(arg);
     break;
   }
@@ -95,6 +98,7 @@ auto fcntlHandler = [](FEXCore::Core::CpuStateFrame* Frame, int fd, int cmd, uin
   case F_OFD_GETLK:
   case F_OFD_SETLKW: {
     lock_arg = (void*)&tmp;
+    FaultSafeUserMemAccess::VerifyIsReadable(reinterpret_cast<void*>(arg), sizeof(flock64_32));
     tmp = *reinterpret_cast<flock64_32*>(arg);
     break;
   }
@@ -102,6 +106,7 @@ auto fcntlHandler = [](FEXCore::Core::CpuStateFrame* Frame, int fd, int cmd, uin
   case F_SETLK:
   case F_SETLKW: {
     lock_arg = (void*)&tmp;
+    FaultSafeUserMemAccess::VerifyIsReadable(reinterpret_cast<void*>(arg), sizeof(flock_32));
     tmp = *reinterpret_cast<flock_32*>(arg);
     break;
   }
@@ -122,14 +127,17 @@ auto fcntlHandler = [](FEXCore::Core::CpuStateFrame* Frame, int fd, int cmd, uin
   if (Result != -1) {
     switch (old_cmd) {
     case OP_GETLK64_32: {
+      FaultSafeUserMemAccess::VerifyIsWritable(reinterpret_cast<void*>(arg), sizeof(flock64_32));
       *reinterpret_cast<flock64_32*>(arg) = tmp;
       break;
     }
     case F_OFD_GETLK: {
+      FaultSafeUserMemAccess::VerifyIsWritable(reinterpret_cast<void*>(arg), sizeof(flock64_32));
       *reinterpret_cast<flock64_32*>(arg) = tmp;
       break;
     }
     case F_GETLK: {
+      FaultSafeUserMemAccess::VerifyIsWritable(reinterpret_cast<void*>(arg), sizeof(flock_32));
       *reinterpret_cast<flock_32*>(arg) = tmp;
       break;
     } break;
@@ -149,6 +157,7 @@ auto selectHandler = [](FEXCore::Core::CpuStateFrame* Frame, int nfds, fd_set32*
                         struct timeval32* timeout) -> uint64_t {
   struct timeval tp64 {};
   if (timeout) {
+    FaultSafeUserMemAccess::VerifyIsReadable(timeout, sizeof(*timeout));
     tp64 = *timeout;
   }
 
@@ -163,6 +172,7 @@ auto selectHandler = [](FEXCore::Core::CpuStateFrame* Frame, int nfds, fd_set32*
   uint32_t NumWords = FEXCore::AlignUp(nfds, 32) / 4;
 
   if (readfds) {
+    FaultSafeUserMemAccess::VerifyIsReadable(readfds, sizeof(fd_set32) * NumWords);
     for (int i = 0; i < NumWords; ++i) {
       uint32_t FD = readfds[i];
       int32_t Rem = nfds - (i * 32);
@@ -175,6 +185,7 @@ auto selectHandler = [](FEXCore::Core::CpuStateFrame* Frame, int nfds, fd_set32*
   }
 
   if (writefds) {
+    FaultSafeUserMemAccess::VerifyIsReadable(writefds, sizeof(fd_set32) * NumWords);
     for (int i = 0; i < NumWords; ++i) {
       uint32_t FD = writefds[i];
       int32_t Rem = nfds - (i * 32);
@@ -187,6 +198,7 @@ auto selectHandler = [](FEXCore::Core::CpuStateFrame* Frame, int nfds, fd_set32*
   }
 
   if (exceptfds) {
+    FaultSafeUserMemAccess::VerifyIsReadable(exceptfds, sizeof(fd_set32) * NumWords);
     for (int i = 0; i < NumWords; ++i) {
       uint32_t FD = exceptfds[i];
       int32_t Rem = nfds - (i * 32);
@@ -201,6 +213,7 @@ auto selectHandler = [](FEXCore::Core::CpuStateFrame* Frame, int nfds, fd_set32*
   uint64_t Result = ::select(nfds, readfds ? &Host_readfds : nullptr, writefds ? &Host_writefds : nullptr,
                              exceptfds ? &Host_exceptfds : nullptr, timeout ? &tp64 : nullptr);
   if (readfds) {
+    FaultSafeUserMemAccess::VerifyIsWritable(readfds, sizeof(fd_set32) * NumWords);
     for (int i = 0; i < nfds; ++i) {
       if (FD_ISSET(i, &Host_readfds)) {
         readfds[i / 32] |= 1 << (i & 31);
@@ -211,6 +224,7 @@ auto selectHandler = [](FEXCore::Core::CpuStateFrame* Frame, int nfds, fd_set32*
   }
 
   if (writefds) {
+    FaultSafeUserMemAccess::VerifyIsWritable(writefds, sizeof(fd_set32) * NumWords);
     for (int i = 0; i < nfds; ++i) {
       if (FD_ISSET(i, &Host_writefds)) {
         writefds[i / 32] |= 1 << (i & 31);
@@ -221,6 +235,7 @@ auto selectHandler = [](FEXCore::Core::CpuStateFrame* Frame, int nfds, fd_set32*
   }
 
   if (exceptfds) {
+    FaultSafeUserMemAccess::VerifyIsWritable(exceptfds, sizeof(fd_set32) * NumWords);
     for (int i = 0; i < nfds; ++i) {
       if (FD_ISSET(i, &Host_exceptfds)) {
         exceptfds[i / 32] |= 1 << (i & 31);
@@ -231,6 +246,7 @@ auto selectHandler = [](FEXCore::Core::CpuStateFrame* Frame, int nfds, fd_set32*
   }
 
   if (timeout) {
+    FaultSafeUserMemAccess::VerifyIsWritable(timeout, sizeof(*timeout));
     *timeout = tp64;
   }
   SYSCALL_ERRNO();
@@ -238,6 +254,7 @@ auto selectHandler = [](FEXCore::Core::CpuStateFrame* Frame, int nfds, fd_set32*
 
 void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_IMPL_X32(poll, [](FEXCore::Core::CpuStateFrame* Frame, struct pollfd* fds, nfds_t nfds, int timeout) -> uint64_t {
+    FaultSafeUserMemAccess::VerifyIsReadableOrNull(fds, sizeof(struct pollfd) * nfds);
     uint64_t Result = ::poll(fds, nfds, timeout);
     SYSCALL_ERRNO();
   });
@@ -280,18 +297,21 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
       Offset |= offset_low;
       uint64_t Result = lseek(fd, Offset, whence);
       if (Result != -1) {
+        FaultSafeUserMemAccess::VerifyIsWritable(result, sizeof(*result));
         *result = Result;
       }
       SYSCALL_ERRNO();
     });
 
   REGISTER_SYSCALL_IMPL_X32(readv, [](FEXCore::Core::CpuStateFrame* Frame, int fd, const struct iovec32* iov, int iovcnt) -> uint64_t {
+    FaultSafeUserMemAccess::VerifyIsReadable(iov, sizeof(struct iovec32) * SanitizeIOCount(iovcnt));
     fextl::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
     uint64_t Result = ::readv(fd, Host_iovec.data(), iovcnt);
     SYSCALL_ERRNO();
   });
 
   REGISTER_SYSCALL_IMPL_X32(writev, [](FEXCore::Core::CpuStateFrame* Frame, int fd, const struct iovec32* iov, int iovcnt) -> uint64_t {
+    FaultSafeUserMemAccess::VerifyIsReadable(iov, sizeof(struct iovec32) * SanitizeIOCount(iovcnt));
     fextl::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
     uint64_t Result = ::writev(fd, Host_iovec.data(), iovcnt);
     SYSCALL_ERRNO();
@@ -317,6 +337,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
       if (host_stat.st_nlink > std::numeric_limits<decltype(buf->st_nlink)>::max()) {
         return -EOVERFLOW;
       }
+      FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
 
       *buf = host_stat;
     }
@@ -333,6 +354,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
       if (host_stat.st_nlink > std::numeric_limits<decltype(buf->st_nlink)>::max()) {
         return -EOVERFLOW;
       }
+      FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
 
       *buf = host_stat;
     }
@@ -349,6 +371,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
       if (host_stat.st_nlink > std::numeric_limits<decltype(buf->st_nlink)>::max()) {
         return -EOVERFLOW;
       }
+      FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
 
       *buf = host_stat;
     }
@@ -359,6 +382,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
     struct stat host_stat;
     uint64_t Result = FEX::HLE::_SyscallHandler->FM.Stat(pathname, &host_stat);
     if (Result != -1) {
+      FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
       *buf = host_stat;
     }
     SYSCALL_ERRNO();
@@ -368,6 +392,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
     struct stat host_stat;
     uint64_t Result = ::fstat(fd, &host_stat);
     if (Result != -1) {
+      FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
       *buf = host_stat;
     }
     SYSCALL_ERRNO();
@@ -377,6 +402,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
     struct stat host_stat;
     uint64_t Result = FEX::HLE::_SyscallHandler->FM.Lstat(path, &host_stat);
     if (Result != -1) {
+      FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
       *buf = host_stat;
     }
     SYSCALL_ERRNO();
@@ -386,6 +412,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
     struct stat host_stat;
     uint64_t Result = FEX::HLE::_SyscallHandler->FM.Stat(pathname, &host_stat);
     if (Result != -1) {
+      FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
       *buf = host_stat;
     }
     SYSCALL_ERRNO();
@@ -396,6 +423,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
     uint64_t Result = FEX::HLE::_SyscallHandler->FM.Lstat(path, &host_stat);
 
     if (Result != -1) {
+      FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
       *buf = host_stat;
     }
     SYSCALL_ERRNO();
@@ -405,6 +433,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
     struct stat64 host_stat;
     uint64_t Result = ::fstat64(fd, &host_stat);
     if (Result != -1) {
+      FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
       *buf = host_stat;
     }
     SYSCALL_ERRNO();
@@ -414,6 +443,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
     struct statfs host_stat;
     uint64_t Result = FEX::HLE::_SyscallHandler->FM.Statfs(path, &host_stat);
     if (Result != -1) {
+      FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
       *buf = host_stat;
     }
     SYSCALL_ERRNO();
@@ -423,6 +453,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
     struct statfs host_stat;
     uint64_t Result = ::fstatfs(fd, &host_stat);
     if (Result != -1) {
+      FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
       *buf = host_stat;
     }
     SYSCALL_ERRNO();
@@ -434,6 +465,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
     struct statfs64 host_stat;
     uint64_t Result = ::fstatfs64(fd, &host_stat);
     if (Result != -1) {
+      FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
       *buf = host_stat;
     }
     SYSCALL_ERRNO();
@@ -445,6 +477,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
     struct statfs host_stat;
     uint64_t Result = FEX::HLE::_SyscallHandler->FM.Statfs(path, &host_stat);
     if (Result != -1) {
+      FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
       *buf = host_stat;
     }
 
@@ -485,6 +518,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
 
   REGISTER_SYSCALL_IMPL_X32(
     preadv, [](FEXCore::Core::CpuStateFrame* Frame, int fd, const struct iovec32* iov, uint32_t iovcnt, uint32_t pos_low, uint32_t pos_high) -> uint64_t {
+      FaultSafeUserMemAccess::VerifyIsReadable(iov, sizeof(struct iovec32) * SanitizeIOCount(iovcnt));
       fextl::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
 
       uint64_t Result = ::syscall(SYSCALL_DEF(preadv), fd, Host_iovec.data(), iovcnt, pos_low, pos_high);
@@ -493,6 +527,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
 
   REGISTER_SYSCALL_IMPL_X32(
     pwritev, [](FEXCore::Core::CpuStateFrame* Frame, int fd, const struct iovec32* iov, uint32_t iovcnt, uint32_t pos_low, uint32_t pos_high) -> uint64_t {
+      FaultSafeUserMemAccess::VerifyIsReadable(iov, sizeof(struct iovec32) * SanitizeIOCount(iovcnt));
       fextl::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
 
       uint64_t Result = ::syscall(SYSCALL_DEF(pwritev), fd, Host_iovec.data(), iovcnt, pos_low, pos_high);
@@ -502,6 +537,9 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_IMPL_X32(process_vm_readv,
                             [](FEXCore::Core::CpuStateFrame* Frame, pid_t pid, const struct iovec32* local_iov, unsigned long liovcnt,
                                const struct iovec32* remote_iov, unsigned long riovcnt, unsigned long flags) -> uint64_t {
+                              FaultSafeUserMemAccess::VerifyIsReadable(local_iov, sizeof(struct iovec32) * SanitizeIOCount(liovcnt));
+                              FaultSafeUserMemAccess::VerifyIsReadable(remote_iov, sizeof(struct iovec32) * SanitizeIOCount(riovcnt));
+
                               fextl::vector<iovec> Host_local_iovec(local_iov, local_iov + SanitizeIOCount(liovcnt));
                               fextl::vector<iovec> Host_remote_iovec(remote_iov, remote_iov + SanitizeIOCount(riovcnt));
 
@@ -513,6 +551,9 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_IMPL_X32(process_vm_writev,
                             [](FEXCore::Core::CpuStateFrame* Frame, pid_t pid, const struct iovec32* local_iov, unsigned long liovcnt,
                                const struct iovec32* remote_iov, unsigned long riovcnt, unsigned long flags) -> uint64_t {
+                              FaultSafeUserMemAccess::VerifyIsReadable(local_iov, sizeof(struct iovec32) * SanitizeIOCount(liovcnt));
+                              FaultSafeUserMemAccess::VerifyIsReadable(remote_iov, sizeof(struct iovec32) * SanitizeIOCount(riovcnt));
+
                               fextl::vector<iovec> Host_local_iovec(local_iov, local_iov + SanitizeIOCount(liovcnt));
                               fextl::vector<iovec> Host_remote_iovec(remote_iov, remote_iov + SanitizeIOCount(riovcnt));
 
@@ -524,6 +565,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_IMPL_X32(preadv2,
                             [](FEXCore::Core::CpuStateFrame* Frame, int fd, const struct iovec32* iov, uint32_t iovcnt, uint32_t pos_low,
                                uint32_t pos_high, int flags) -> uint64_t {
+                              FaultSafeUserMemAccess::VerifyIsReadable(iov, sizeof(struct iovec32) * SanitizeIOCount(iovcnt));
                               fextl::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
 
                               uint64_t Result = ::syscall(SYSCALL_DEF(preadv2), fd, Host_iovec.data(), iovcnt, pos_low, pos_high, flags);
@@ -533,6 +575,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_IMPL_X32(pwritev2,
                             [](FEXCore::Core::CpuStateFrame* Frame, int fd, const struct iovec32* iov, uint32_t iovcnt, uint32_t pos_low,
                                uint32_t pos_high, int flags) -> uint64_t {
+                              FaultSafeUserMemAccess::VerifyIsReadable(iov, sizeof(struct iovec32) * SanitizeIOCount(iovcnt));
                               fextl::vector<iovec> Host_iovec(iov, iov + SanitizeIOCount(iovcnt));
 
                               uint64_t Result = ::syscall(SYSCALL_DEF(pwritev2), fd, Host_iovec.data(), iovcnt, pos_low, pos_high, flags);
@@ -543,6 +586,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
     struct stat64 host_stat;
     uint64_t Result = FEX::HLE::_SyscallHandler->FM.NewFSStatAt64(dirfd, pathname, &host_stat, flag);
     if (Result != -1) {
+      FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
       *buf = host_stat;
     }
     SYSCALL_ERRNO();
@@ -579,6 +623,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                                timespec32* timeout, compat_ptr<sigset_argpack32> sigmaskpack) -> uint64_t {
                               struct timespec tp64 {};
                               if (timeout) {
+                                FaultSafeUserMemAccess::VerifyIsReadable(timeout, sizeof(*timeout));
                                 tp64 = *timeout;
                               }
 
@@ -596,6 +641,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                               uint32_t NumWords = FEXCore::AlignUp(nfds, 32) / 4;
 
                               if (readfds) {
+                                FaultSafeUserMemAccess::VerifyIsReadable(readfds, sizeof(fd_set32) * NumWords);
                                 for (int i = 0; i < NumWords; ++i) {
                                   uint32_t FD = readfds[i];
                                   int32_t Rem = nfds - (i * 32);
@@ -608,6 +654,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                               }
 
                               if (writefds) {
+                                FaultSafeUserMemAccess::VerifyIsReadable(writefds, sizeof(fd_set32) * NumWords);
                                 for (int i = 0; i < NumWords; ++i) {
                                   uint32_t FD = writefds[i];
                                   int32_t Rem = nfds - (i * 32);
@@ -620,6 +667,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                               }
 
                               if (exceptfds) {
+                                FaultSafeUserMemAccess::VerifyIsReadable(exceptfds, sizeof(fd_set32) * NumWords);
                                 for (int i = 0; i < NumWords; ++i) {
                                   uint32_t FD = exceptfds[i];
                                   int32_t Rem = nfds - (i * 32);
@@ -631,7 +679,9 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                                 }
                               }
 
+                              FaultSafeUserMemAccess::VerifyIsReadableOrNull(sigmaskpack, sizeof(*sigmaskpack));
                               if (sigmaskpack && sigmaskpack->sigset) {
+                                FaultSafeUserMemAccess::VerifyIsReadable(sigmaskpack->sigset, sizeof(*sigmaskpack->sigset));
                                 uint64_t* sigmask = sigmaskpack->sigset;
                                 size_t sigsetsize = sigmaskpack->size;
                                 for (int32_t i = 0; i < (sigsetsize * 8); ++i) {
@@ -645,6 +695,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                                                           exceptfds ? &Host_exceptfds : nullptr, timeout ? &tp64 : nullptr, &HostSet);
 
                               if (readfds) {
+                                FaultSafeUserMemAccess::VerifyIsWritable(readfds, sizeof(fd_set32) * NumWords);
                                 for (int i = 0; i < nfds; ++i) {
                                   if (FD_ISSET(i, &Host_readfds)) {
                                     readfds[i / 32] |= 1 << (i & 31);
@@ -655,6 +706,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                               }
 
                               if (writefds) {
+                                FaultSafeUserMemAccess::VerifyIsWritable(writefds, sizeof(fd_set32) * NumWords);
                                 for (int i = 0; i < nfds; ++i) {
                                   if (FD_ISSET(i, &Host_writefds)) {
                                     writefds[i / 32] |= 1 << (i & 31);
@@ -665,6 +717,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                               }
 
                               if (exceptfds) {
+                                FaultSafeUserMemAccess::VerifyIsWritable(exceptfds, sizeof(fd_set32) * NumWords);
                                 for (int i = 0; i < nfds; ++i) {
                                   if (FD_ISSET(i, &Host_exceptfds)) {
                                     exceptfds[i / 32] |= 1 << (i & 31);
@@ -675,6 +728,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                               }
 
                               if (timeout) {
+                                FaultSafeUserMemAccess::VerifyIsWritable(timeout, sizeof(*timeout));
                                 *timeout = tp64;
                               }
                               SYSCALL_ERRNO();
@@ -702,6 +756,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
 
                               new_value_host = *new_value;
                               if (old_value) {
+                                FaultSafeUserMemAccess::VerifyIsReadable(old_value, sizeof(*old_value));
                                 old_value_host_p = &old_value_host;
                               }
 
@@ -709,6 +764,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                               uint64_t Result = ::timerfd_settime(fd, flags, &new_value_host, old_value_host_p);
 
                               if (Result != -1 && old_value) {
+                                FaultSafeUserMemAccess::VerifyIsWritable(old_value, sizeof(*old_value));
                                 *old_value = old_value_host;
                               }
                               SYSCALL_ERRNO();
@@ -720,6 +776,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
     uint64_t Result = ::timerfd_gettime(fd, &Host);
 
     if (Result != -1) {
+      FaultSafeUserMemAccess::VerifyIsWritable(curr_value, sizeof(*curr_value));
       *curr_value = Host;
     }
 
@@ -743,6 +800,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                               uint32_t NumWords = FEXCore::AlignUp(nfds, 32) / 4;
 
                               if (readfds) {
+                                FaultSafeUserMemAccess::VerifyIsReadable(readfds, sizeof(fd_set32) * NumWords);
                                 for (int i = 0; i < NumWords; ++i) {
                                   uint32_t FD = readfds[i];
                                   int32_t Rem = nfds - (i * 32);
@@ -755,6 +813,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                               }
 
                               if (writefds) {
+                                FaultSafeUserMemAccess::VerifyIsReadable(writefds, sizeof(fd_set32) * NumWords);
                                 for (int i = 0; i < NumWords; ++i) {
                                   uint32_t FD = writefds[i];
                                   int32_t Rem = nfds - (i * 32);
@@ -767,6 +826,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                               }
 
                               if (exceptfds) {
+                                FaultSafeUserMemAccess::VerifyIsReadable(exceptfds, sizeof(fd_set32) * NumWords);
                                 for (int i = 0; i < NumWords; ++i) {
                                   uint32_t FD = exceptfds[i];
                                   int32_t Rem = nfds - (i * 32);
@@ -778,7 +838,9 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                                 }
                               }
 
+                              FaultSafeUserMemAccess::VerifyIsReadableOrNull(sigmaskpack, sizeof(*sigmaskpack));
                               if (sigmaskpack && sigmaskpack->sigset) {
+                                FaultSafeUserMemAccess::VerifyIsReadable(sigmaskpack->sigset, sizeof(*sigmaskpack->sigset));
                                 uint64_t* sigmask = sigmaskpack->sigset;
                                 size_t sigsetsize = sigmaskpack->size;
                                 for (int32_t i = 0; i < (sigsetsize * 8); ++i) {
@@ -792,6 +854,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                                                           exceptfds ? &Host_exceptfds : nullptr, timeout, &HostSet);
 
                               if (readfds) {
+                                FaultSafeUserMemAccess::VerifyIsWritable(readfds, sizeof(fd_set32) * NumWords);
                                 for (int i = 0; i < nfds; ++i) {
                                   if (FD_ISSET(i, &Host_readfds)) {
                                     readfds[i / 32] |= 1 << (i & 31);
@@ -802,6 +865,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                               }
 
                               if (writefds) {
+                                FaultSafeUserMemAccess::VerifyIsWritable(writefds, sizeof(fd_set32) * NumWords);
                                 for (int i = 0; i < nfds; ++i) {
                                   if (FD_ISSET(i, &Host_writefds)) {
                                     writefds[i / 32] |= 1 << (i & 31);
@@ -812,6 +876,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                               }
 
                               if (exceptfds) {
+                                FaultSafeUserMemAccess::VerifyIsWritable(exceptfds, sizeof(fd_set32) * NumWords);
                                 for (int i = 0; i < nfds; ++i) {
                                   if (FD_ISSET(i, &Host_exceptfds)) {
                                     exceptfds[i / 32] |= 1 << (i & 31);
@@ -898,6 +963,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
 
   REGISTER_SYSCALL_IMPL_X32(
     vmsplice, [](FEXCore::Core::CpuStateFrame* Frame, int fd, const struct iovec32* iov, unsigned long nr_segs, unsigned int flags) -> uint64_t {
+      FaultSafeUserMemAccess::VerifyIsReadable(iov, sizeof(struct iovec32) * SanitizeIOCount(nr_segs));
       fextl::vector<iovec> Host_iovec(iov, iov + nr_segs);
       uint64_t Result = ::vmsplice(fd, Host_iovec.data(), nr_segs, flags);
       SYSCALL_ERRNO();
