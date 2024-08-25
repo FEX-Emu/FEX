@@ -1676,27 +1676,27 @@ void OpDispatchBuilder::AVX128_Vector_CVT_Int_To_Float(OpcodeArgs) {
     }
   }();
 
-  auto Convert = [this](size_t Size, Ref Src, IROps Op) -> Ref {
+  auto Convert = [this](Ref Src, IROps Op) -> Ref {
     size_t ElementSize = SrcElementSize;
     if (Widen) {
-      DeriveOp(Extended, Op, _VSXTL(Size, ElementSize, Src));
+      DeriveOp(Extended, Op, _VSXTL(OpSize::i128Bit, ElementSize, Src));
       Src = Extended;
       ElementSize <<= 1;
     }
 
-    return _Vector_SToF(Size, ElementSize, Src);
+    return _Vector_SToF(OpSize::i128Bit, ElementSize, Src);
   };
 
   RefPair Result {};
-  Result.Low = Convert(Size, Src.Low, IROps::OP_VSXTL);
+  Result.Low = Convert(Src.Low, IROps::OP_VSXTL);
 
   if (Is128Bit) {
     Result = AVX128_Zext(Result.Low);
   } else {
     if (Widen) {
-      Result.High = Convert(Size, Src.Low, IROps::OP_VSXTL2);
+      Result.High = Convert(Src.Low, IROps::OP_VSXTL2);
     } else {
-      Result.High = Convert(Size, Src.High, IROps::OP_VSXTL);
+      Result.High = Convert(Src.High, IROps::OP_VSXTL);
     }
   }
 
