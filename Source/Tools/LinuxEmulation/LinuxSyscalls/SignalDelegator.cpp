@@ -1389,7 +1389,7 @@ void SignalDelegator::HandleGuestSignal(FEXCore::Core::InternalThreadState* Thre
         ArchHelpers::Context::SetPc(UContext, ArchHelpers::Context::GetArmReg(UContext, 30));
         return;
       } else {
-        LogMan::Msg::AFmt("Received invalid data to syscall. Crashing now!");
+        ERROR_AND_DIE_FMT("Received invalid data to syscall. Crashing now!");
       }
     } else {
       if (IsAsyncSignal(&SigInfo, Signal) && MustDeferSignal) {
