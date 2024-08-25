@@ -2112,6 +2112,8 @@ private:
 
   // Sets flags for a COMISS instruction
   void ComissFlags(bool InvalidateAF = false) {
+    LOGMAN_THROW_A_FMT(!NZCVDirty, "only expected after fcmp");
+
     // We need to set PF according to the unordered flag. We'd rather do this
     // after axflag, since some impls fuse fcmp+axflag, so we want to do this
     // after. We can recover "unordered" after axflag as (Z && !C), but
@@ -2124,35 +2126,34 @@ private:
     Ref V_inv = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC, true);
     SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(V_inv);
 
-    // Now set COMISS flags by converts NZCV from the Arm representation to an
-    // eXternal representation that's totally not a euphemism for x86, nuh-uh.
-    if (CTX->HostFeatures.SupportsFlagM2) {
-      LOGMAN_THROW_A_FMT(!NZCVDirty, "only expected after fcmp");
-
-      // For the rest, this one weird a64 instruction maps exactly to what x86
-      // needs, with inverted carry. What a coincidence!
-      _AXFlag();
-      PossiblySetNZCVBits = ~0;
-      CFInverted = true;
-    } else {
-      Ref Z = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
-      Ref C = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
-      Ref V = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
-
-      // We want to zero SF/OF, and then set CF/ZF. Zeroing up front lets us do
-      // this all with shifted-or's on non-flagm platforms.
-      ZeroNZCV();
-
-      SetCFInverted(_And(OpSize::i32Bit, C, V_inv));
-      SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(_Or(OpSize::i32Bit, Z, V));
-    }
-
     if (!InvalidateAF) {
       // Zero AF. Note that the comparison sets the raw PF to 0/1 above, so
       // PF[4] is 0 so the XOR with PF will have no effect, so setting the AF
       // byte to zero will indeed zero AF as intended.
       SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(_Constant(0));
     }
+
+    // Convert NZCV from the Arm representation to an eXternal representation
+    // that's totally not a euphemism for x86, nuh-uh. But maps to exactly we
+    // need, what a coincidence!
+    if (CTX->HostFeatures.SupportsFlagM2) {
+      _AXFlag();
+    } else {
+      // AXFLAG is defined in the Arm spec as
+      //
+      //   gt: nzCv -> nzCv
+      //   lt: Nzcv -> nzcv  <==>  1 + 0
+      //   eq: nZCv -> nZCv  <==>  1 + (~0)
+      //   un: nzCV -> nZcv  <==>  0 + 0
+      //
+      // For the latter 3 cases, we therefore get the right NZCV by adding V_inv
+      // to (eq ? ~0 : 0). The remaining case is forced with ccmn.
+      Ref Eq = NZCVSelect(OpSize::i64Bit, {COND_EQ}, _Constant(~0ull), _Constant(0));
+      _CondAddNZCV(OpSize::i64Bit, V_inv, Eq, {COND_FLEU}, 0x2 /* nzCv */);
+    }
+
+    PossiblySetNZCVBits = ~0;
+    CFInverted = true;
   }
 
   // Set x87 comparison flags based on the result set by Arm FCMP. Clobbers
