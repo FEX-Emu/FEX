@@ -27,6 +27,7 @@ void RegisterMsg(FEX::HLE::SyscallHandler* Handler) {
                               struct timespec tp64 {};
                               struct timespec* timed_ptr {};
                               if (abs_timeout) {
+                                FaultSafeUserMemAccess::VerifyIsReadable(abs_timeout, sizeof(*abs_timeout));
                                 tp64 = *abs_timeout;
                                 timed_ptr = &tp64;
                               }
@@ -41,6 +42,7 @@ void RegisterMsg(FEX::HLE::SyscallHandler* Handler) {
                               struct timespec tp64 {};
                               struct timespec* timed_ptr {};
                               if (abs_timeout) {
+                                FaultSafeUserMemAccess::VerifyIsReadable(abs_timeout, sizeof(*abs_timeout));
                                 tp64 = *abs_timeout;
                                 timed_ptr = &tp64;
                               }
@@ -54,6 +56,7 @@ void RegisterMsg(FEX::HLE::SyscallHandler* Handler) {
       mq_attr HostAttr {};
       mq_attr* HostAttr_p {};
       if ((oflag & O_CREAT) && attr) {
+        FaultSafeUserMemAccess::VerifyIsReadable(attr, sizeof(*attr));
         // attr is optional unless O_CREAT is set
         // Then attr can be valid or nullptr
         HostAttr = *attr;
@@ -65,6 +68,7 @@ void RegisterMsg(FEX::HLE::SyscallHandler* Handler) {
 
   REGISTER_SYSCALL_IMPL_X32(
     mq_notify, [](FEXCore::Core::CpuStateFrame* Frame, FEX::HLE::mqd_t mqdes, const compat_ptr<FEX::HLE::x32::sigevent32> sevp) -> uint64_t {
+      FaultSafeUserMemAccess::VerifyIsReadable(sevp, sizeof(*sevp));
       sigevent Host = *sevp;
       uint64_t Result = ::syscall(SYSCALL_DEF(mq_notify), mqdes, &Host);
       SYSCALL_ERRNO();
@@ -80,6 +84,7 @@ void RegisterMsg(FEX::HLE::SyscallHandler* Handler) {
                               mq_attr* HostOld_p {};
 
                               if (newattr) {
+                                FaultSafeUserMemAccess::VerifyIsReadable(newattr, sizeof(*newattr));
                                 HostNew = *newattr;
                                 HostNew_p = &HostNew;
                               }
@@ -91,6 +96,7 @@ void RegisterMsg(FEX::HLE::SyscallHandler* Handler) {
                               uint64_t Result = ::syscall(SYSCALL_DEF(mq_getsetattr), mqdes, HostNew_p, HostOld_p);
 
                               if (Result != 1 && oldattr) {
+                                FaultSafeUserMemAccess::VerifyIsWritable(oldattr, sizeof(*oldattr));
                                 *oldattr = HostOld;
                               }
 
