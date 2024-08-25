@@ -33,6 +33,7 @@ void RegisterEpoll(FEX::HLE::SyscallHandler* Handler) {
       uint64_t Result = ::syscall(SYSCALL_DEF(epoll_pwait), epfd, Events.data(), maxevents, timeout, nullptr, 8);
 
       if (Result != -1) {
+        FaultSafeUserMemAccess::VerifyIsWritable(events, sizeof(FEX::HLE::epoll_event_x86) * Result);
         for (size_t i = 0; i < Result; ++i) {
           events[i] = Events[i];
         }
@@ -44,11 +45,13 @@ void RegisterEpoll(FEX::HLE::SyscallHandler* Handler) {
     struct epoll_event Event;
     struct epoll_event* EventPtr {};
     if (event) {
+      FaultSafeUserMemAccess::VerifyIsReadable(event, sizeof(FEX::HLE::epoll_event_x86));
       Event = *event;
       EventPtr = &Event;
     }
     uint64_t Result = ::syscall(SYSCALL_DEF(epoll_ctl), epfd, op, fd, EventPtr);
     if (Result != -1 && event) {
+      FaultSafeUserMemAccess::VerifyIsWritable(event, sizeof(FEX::HLE::epoll_event_x86));
       *event = Event;
     }
     SYSCALL_ERRNO();
@@ -62,6 +65,7 @@ void RegisterEpoll(FEX::HLE::SyscallHandler* Handler) {
                               uint64_t Result = ::syscall(SYSCALL_DEF(epoll_pwait), epfd, Events.data(), maxevent, timeout, sigmask, sigsetsize);
 
                               if (Result != -1) {
+                                FaultSafeUserMemAccess::VerifyIsWritable(events, sizeof(FEX::HLE::epoll_event_x86) * Result);
                                 for (size_t i = 0; i < Result; ++i) {
                                   events[i] = Events[i];
                                 }
@@ -80,6 +84,7 @@ void RegisterEpoll(FEX::HLE::SyscallHandler* Handler) {
                                   ::syscall(SYSCALL_DEF(epoll_pwait2), epfd, Events.data(), maxevent, timeout, sigmask, sigsetsize);
 
                                 if (Result != -1) {
+                                  FaultSafeUserMemAccess::VerifyIsWritable(events, sizeof(FEX::HLE::epoll_event_x86) * Result);
                                   for (size_t i = 0; i < Result; ++i) {
                                     events[i] = Events[i];
                                   }
