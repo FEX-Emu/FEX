@@ -639,6 +639,7 @@ DEF_OP(LoadMem) {
     case 8: ldr(Dst.D(), MemSrc); break;
     case 16: ldr(Dst.Q(), MemSrc); break;
     case 32: {
+      LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
       const auto Operand = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
       ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), Operand);
       break;
@@ -747,6 +748,7 @@ DEF_OP(LoadMemTSO) {
     case 8: ldr(Dst.D(), MemSrc); break;
     case 16: ldr(Dst.Q(), MemSrc); break;
     case 32: {
+      LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
       const auto MemSrc = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
       ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), MemSrc);
       break;
@@ -766,9 +768,7 @@ DEF_OP(VLoadVectorMasked) {
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
-  if (Is256Bit) {
-    LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE256 support in order to use VLoadVectorMasked with 256-bit operation");
-  }
+  LOGMAN_THROW_A_FMT(!Is256Bit || (Is256Bit && HostSupportsSVE256), "Need SVE256 support in order to use {} with 256-bit operation", __func__);
   const auto SubRegSize = ConvertSubRegSize8(IROp);
 
   const auto CMPPredicate = ARMEmitter::PReg::p0;
@@ -863,9 +863,7 @@ DEF_OP(VStoreVectorMasked) {
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
-  if (Is256Bit) {
-    LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE256 support in order to use VStoreVectorMasked with 256-bit operation");
-  }
+  LOGMAN_THROW_A_FMT(!Is256Bit || (Is256Bit && HostSupportsSVE256), "Need SVE256 support in order to use {} with 256-bit operation", __func__);
   const auto SubRegSize = ConvertSubRegSize8(IROp);
 
   const auto CMPPredicate = ARMEmitter::PReg::p0;
@@ -1082,9 +1080,7 @@ DEF_OP(VLoadVectorGatherMasked) {
   ///  - AddrBase also doesn't need to exist
   ///     - If the instruction is using 64-bit vector indexing or 32-bit addresses where the top-bit isn't set then this is valid!
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
-  if (Is256Bit) {
-    LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE256 support in order to use VStoreVectorMasked with 256-bit operation");
-  }
+  LOGMAN_THROW_A_FMT(!Is256Bit || (Is256Bit && HostSupportsSVE256), "Need SVE256 support in order to use {} with 256-bit operation", __func__);
 
   const auto Dst = GetVReg(Node);
   const auto IncomingDst = GetVReg(Op->Incoming.ID());
@@ -1310,6 +1306,7 @@ DEF_OP(VBroadcastFromMem) {
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  LOGMAN_THROW_A_FMT(!Is256Bit || (Is256Bit && HostSupportsSVE256), "Need SVE256 support in order to use {} with 256-bit operation", __func__);
   const auto ElementSize = IROp->ElementSize;
 
   const auto Dst = GetVReg(Node);
@@ -1317,11 +1314,6 @@ DEF_OP(VBroadcastFromMem) {
 
   LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid element "
                                                                                                                          "size");
-
-  if (Is256Bit && !HostSupportsSVE256) {
-    LOGMAN_MSG_A_FMT("{}: 256-bit vectors must support SVE256", __func__);
-    return;
-  }
 
   if (Is256Bit && HostSupportsSVE256) {
     const auto GoverningPredicate = PRED_TMP_32B.Zeroing();
@@ -1511,6 +1503,7 @@ DEF_OP(StoreMem) {
       break;
     }
     case 32: {
+      LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
       const auto MemSrc = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
       st1b<ARMEmitter::SubRegSize::i8Bit>(Src.Z(), PRED_TMP_32B, MemSrc);
       break;
@@ -1608,6 +1601,7 @@ DEF_OP(StoreMemTSO) {
     case 8: str(Src.D(), MemSrc); break;
     case 16: str(Src.Q(), MemSrc); break;
     case 32: {
+      LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
       const auto Operand = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
       st1b<ARMEmitter::SubRegSize::i8Bit>(Src.Z(), PRED_TMP_32B, Operand);
       break;
@@ -2158,6 +2152,7 @@ DEF_OP(ParanoidLoadMemTSO) {
       ins(ARMEmitter::SubRegSize::i64Bit, Dst, 1, TMP2);
       break;
     case 32:
+      LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
       dmb(ARMEmitter::BarrierScope::ISH);
       ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), MemReg);
       dmb(ARMEmitter::BarrierScope::ISH);
@@ -2234,6 +2229,7 @@ DEF_OP(ParanoidStoreMemTSO) {
       break;
     }
     case 32: {
+      LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
       dmb(ARMEmitter::BarrierScope::ISH);
       st1b<ARMEmitter::SubRegSize::i8Bit>(Src.Z(), PRED_TMP_32B, MemReg, 0);
       dmb(ARMEmitter::BarrierScope::ISH);
@@ -2360,6 +2356,7 @@ DEF_OP(VStoreNonTemporal) {
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  LOGMAN_THROW_A_FMT(!Is256Bit || (Is256Bit && HostSupportsSVE256), "Need SVE256 support in order to use {} with 256-bit operation", __func__);
   const auto Is128Bit = OpSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
   const auto Value = GetVReg(Op->Value.ID());
@@ -2367,7 +2364,6 @@ DEF_OP(VStoreNonTemporal) {
   const auto Offset = Op->Offset;
 
   if (Is256Bit) {
-    LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE256 support in order to use VStoreNonTemporal with 256-bit operation");
     const auto GoverningPredicate = PRED_TMP_32B.Zeroing();
     const auto OffsetScaled = Offset / 32;
     stnt1b(Value.Z(), GoverningPredicate, MemReg, OffsetScaled);
@@ -2402,6 +2398,7 @@ DEF_OP(VLoadNonTemporal) {
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  LOGMAN_THROW_A_FMT(!Is256Bit || (Is256Bit && HostSupportsSVE256), "Need SVE256 support in order to use {} with 256-bit operation", __func__);
   const auto Is128Bit = OpSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
   const auto Dst = GetVReg(Node);
@@ -2409,7 +2406,6 @@ DEF_OP(VLoadNonTemporal) {
   const auto Offset = Op->Offset;
 
   if (Is256Bit) {
-    LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE256 support in order to use VStoreNonTemporal with 256-bit operation");
     const auto GoverningPredicate = PRED_TMP_32B.Zeroing();
     const auto OffsetScaled = Offset / 32;
     ldnt1b(Dst.Z(), GoverningPredicate, MemReg, OffsetScaled);

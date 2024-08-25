@@ -1491,6 +1491,7 @@ DEF_OP(VExtractToGPR) {
 
   const auto Offset = ElementSizeBits * Op->Index;
   const auto Is256Bit = Offset >= SSERegBitSize;
+  LOGMAN_THROW_A_FMT(!Is256Bit || (Is256Bit && HostSupportsSVE256), "Need SVE256 support in order to use {} with 256-bit operation", __func__);
 
   const auto Dst = GetReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
@@ -1511,7 +1512,6 @@ DEF_OP(VExtractToGPR) {
     // when acting on larger register sizes.
     PerformMove(Vector, Op->Index);
   } else {
-    LOGMAN_THROW_AA_FMT(HostSupportsSVE256, "Host doesn't support SVE. Cannot perform 256-bit operation.");
     LOGMAN_THROW_AA_FMT(Is256Bit, "Can't perform 256-bit extraction with op side: {}", OpSize);
     LOGMAN_THROW_AA_FMT(Offset < AVXRegBitSize, "Trying to extract element outside bounds of register. Offset={}, Index={}", Offset, Op->Index);
 
