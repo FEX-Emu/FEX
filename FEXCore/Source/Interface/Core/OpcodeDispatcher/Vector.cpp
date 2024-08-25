@@ -2418,9 +2418,7 @@ void OpDispatchBuilder::MOVBetweenGPR_FPR(OpcodeArgs, VectorOpType VectorType) {
   }
 }
 
-Ref OpDispatchBuilder::VFCMPOpImpl(OpcodeArgs, size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType) {
-  const auto Size = GetSrcSize(Op);
-
+Ref OpDispatchBuilder::VFCMPOpImpl(OpSize Size, size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType) {
   Ref Result {};
   switch (CompType & 0x7) {
   case 0x0: // EQ
@@ -2456,7 +2454,7 @@ void OpDispatchBuilder::VFCMPOp(OpcodeArgs) {
   Ref Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags);
   const uint8_t CompType = Op->Src[1].Data.Literal.Value;
 
-  Ref Result = VFCMPOpImpl(Op, ElementSize, Dest, Src, CompType);
+  Ref Result = VFCMPOpImpl(OpSizeFromSrc(Op), ElementSize, Dest, Src, CompType);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -2474,7 +2472,7 @@ void OpDispatchBuilder::AVXVFCMPOp(OpcodeArgs) {
 
   Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], DstSize, Op->Flags);
   Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], SrcSize, Op->Flags);
-  Ref Result = VFCMPOpImpl(Op, ElementSize, Src1, Src2, CompType);
+  Ref Result = VFCMPOpImpl(OpSizeFromSrc(Op), ElementSize, Src1, Src2, CompType);
 
   StoreResult(FPRClass, Op, Result, -1);
 }

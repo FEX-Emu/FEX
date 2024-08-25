@@ -1156,7 +1156,7 @@ void OpDispatchBuilder::AVX128_VFCMP(OpcodeArgs) {
   };
 
   AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize, [this, &Capture](size_t _ElementSize, Ref Src1, Ref Src2) {
-    return VFCMPOpImpl(Capture.Op, _ElementSize, Src1, Src2, Capture.CompType);
+    return VFCMPOpImpl(OpSize::i128Bit, _ElementSize, Src1, Src2, Capture.CompType);
   });
 }
 

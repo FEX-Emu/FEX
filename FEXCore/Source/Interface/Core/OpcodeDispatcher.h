@@ -1446,7 +1446,7 @@ private:
   void MOVScalarOpImpl(OpcodeArgs, size_t ElementSize);
   void VMOVScalarOpImpl(OpcodeArgs, size_t ElementSize);
 
-  Ref VFCMPOpImpl(OpcodeArgs, size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType);
+  Ref VFCMPOpImpl(OpSize Size, size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType);
 
   void VTESTOpImpl(OpSize SrcSize, size_t ElementSize, Ref Src1, Ref Src2);
 
