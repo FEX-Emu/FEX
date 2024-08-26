@@ -62,6 +62,7 @@ private:
   unsigned FlagForReg(unsigned Reg);
   unsigned FlagsForCondClassType(CondClassType Cond);
   bool EliminateDeadCode(IREmitter* IREmit, Ref CodeNode, IROp_Header* IROp);
+  void ProcessBlock(IREmitter* IREmit, IRListView& CurrentIR, IROp_Header* BlockHeader);
 };
 
 unsigned DeadFlagCalculationEliminination::FlagsForCondClassType(CondClassType Cond) {
@@ -354,79 +355,83 @@ bool DeadFlagCalculationEliminination::EliminateDeadCode(IREmitter* IREmit, Ref 
 /**
  * @brief This pass removes dead code locally.
  */
+void DeadFlagCalculationEliminination::ProcessBlock(IREmitter* IREmit, IRListView& CurrentIR, IROp_Header* BlockHeader) {
+  // We model all flags as read at the end of the block, since this pass is
+  // presently purely local. Optimizing this requires global anslysis.
+  uint32_t FlagsRead = FLAG_ALL;
+
+  // Reverse iteration is not yet working with the iterators
+  auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
+
+  // We grab these nodes this way so we can iterate easily
+  auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
+  auto CodeLast = CurrentIR.at(BlockIROp->Last);
+
+  // Iterate the block in reverse
+  while (true) {
+    auto [CodeNode, IROp] = CodeLast();
+
+    // Optimizing flags can cause earlier flag reads to become dead but dead
+    // flag reads should not impede optimiation of earlier dead flag writes.
+    // We must DCE as we go to ensure we converge in a single iteration.
+    if (!EliminateDeadCode(IREmit, CodeNode, IROp)) {
+      // Optimiation algorithm: For each flag written...
+      //
+      //  If the flag has a later read (per FlagsRead), remove the flag from
+      //  FlagsRead, since the reader is covered by this write.
+      //
+      //  Else, there is no later read, so remove the flag write (if we can).
+      //  This is the active part of the optimization.
+      //
+      // Then, add each flag read to FlagsRead.
+      //
+      // This order is important: instructions that read-modify-write flags
+      // (like adcs) first read flags, then write flags. Since we're iterating
+      // the block backwards, that means we handle the write first.
+      struct FlagInfo Info = Classify(IROp);
+
+      if (!Info.Trivial) {
+        bool Eliminated = false;
+
+        if ((FlagsRead & Info.Write) == 0) {
+          if ((Info.CanEliminate || Info.Replacement) && CodeNode->GetUses() == 0) {
+            IREmit->Remove(CodeNode);
+            Eliminated = true;
+          } else if (Info.Replacement) {
+            IROp->Op = Info.Replacement;
+          }
+        } else {
+          FlagsRead &= ~Info.Write;
+
+          if (Info.ReplacementNoWrite && CodeNode->GetUses() == 0) {
+            IROp->Op = Info.ReplacementNoWrite;
+          }
+        }
+
+        // If we eliminated the instruction, we eliminate its read too. This
+        // check is required to ensure the pass converges locally in a single
+        // iteration.
+        if (!Eliminated) {
+          FlagsRead |= Info.Read;
+        }
+      }
+    }
+
+    // Iterate in reverse
+    if (CodeLast == CodeBegin) {
+      break;
+    }
+    --CodeLast;
+  }
+}
+
 void DeadFlagCalculationEliminination::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::DFE");
 
   auto CurrentIR = IREmit->ViewIR();
 
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
-    // We model all flags as read at the end of the block, since this pass is
-    // presently purely local. Optimizing this requires global anslysis.
-    uint32_t FlagsRead = FLAG_ALL;
-
-    // Reverse iteration is not yet working with the iterators
-    auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
-
-    // We grab these nodes this way so we can iterate easily
-    auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
-    auto CodeLast = CurrentIR.at(BlockIROp->Last);
-
-    // Iterate the block in reverse
-    while (1) {
-      auto [CodeNode, IROp] = CodeLast();
-
-      // Optimizing flags can cause earlier flag reads to become dead but dead
-      // flag reads should not impede optimiation of earlier dead flag writes.
-      // We must DCE as we go to ensure we converge in a single iteration.
-      if (!EliminateDeadCode(IREmit, CodeNode, IROp)) {
-        // Optimiation algorithm: For each flag written...
-        //
-        //  If the flag has a later read (per FlagsRead), remove the flag from
-        //  FlagsRead, since the reader is covered by this write.
-        //
-        //  Else, there is no later read, so remove the flag write (if we can).
-        //  This is the active part of the optimization.
-        //
-        // Then, add each flag read to FlagsRead.
-        //
-        // This order is important: instructions that read-modify-write flags
-        // (like adcs) first read flags, then write flags. Since we're iterating
-        // the block backwards, that means we handle the write first.
-        struct FlagInfo Info = Classify(IROp);
-
-        if (!Info.Trivial) {
-          bool Eliminated = false;
-
-          if ((FlagsRead & Info.Write) == 0) {
-            if ((Info.CanEliminate || Info.Replacement) && CodeNode->GetUses() == 0) {
-              IREmit->Remove(CodeNode);
-              Eliminated = true;
-            } else if (Info.Replacement) {
-              IROp->Op = Info.Replacement;
-            }
-          } else {
-            FlagsRead &= ~Info.Write;
-
-            if (Info.ReplacementNoWrite && CodeNode->GetUses() == 0) {
-              IROp->Op = Info.ReplacementNoWrite;
-            }
-          }
-
-          // If we eliminated the instruction, we eliminate its read too. This
-          // check is required to ensure the pass converges locally in a single
-          // iteration.
-          if (!Eliminated) {
-            FlagsRead |= Info.Read;
-          }
-        }
-      }
-
-      // Iterate in reverse
-      if (CodeLast == CodeBegin) {
-        break;
-      }
-      --CodeLast;
-    }
+    ProcessBlock(IREmit, CurrentIR, BlockHeader);
   }
 }
 
