@@ -114,6 +114,8 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
       .Write = FLAG_NZCV,
       .CanReplace = true,
       .Replacement = OP_AND,
+      .CanReplaceWrite = true,
+      .ReplacementNoWrite = OP_TESTNZ,
     };
 
   case OP_ADDWITHFLAGS:
