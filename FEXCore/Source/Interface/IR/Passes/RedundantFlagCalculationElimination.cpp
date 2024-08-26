@@ -46,14 +46,10 @@ struct FlagInfo {
   // eliminated.
   bool CanEliminate;
 
-  // If true, the opcode can be replaced with Replacement if its flag writes can
-  // all be eliminated.
-  bool CanReplace;
+  // If set, the opcode can be replaced with Replacement if its flag writes can
+  // all be eliminated, or ReplacementNoWrite if its register write can be
+  // eliminated.
   IROps Replacement;
-
-  // If true, the opcode can be replaced with ReplacementNoWrite if its register
-  // write is unused but its flags are still needed.
-  bool CanReplaceWrite;
   IROps ReplacementNoWrite;
 };
 
@@ -108,27 +104,21 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
   case OP_ANDWITHFLAGS:
     return {
       .Write = FLAG_NZCV,
-      .CanReplace = true,
       .Replacement = OP_AND,
-      .CanReplaceWrite = true,
       .ReplacementNoWrite = OP_TESTNZ,
     };
 
   case OP_ADDWITHFLAGS:
     return {
       .Write = FLAG_NZCV,
-      .CanReplace = true,
       .Replacement = OP_ADD,
-      .CanReplaceWrite = true,
       .ReplacementNoWrite = OP_ADDNZCV,
     };
 
   case OP_SUBWITHFLAGS:
     return {
       .Write = FLAG_NZCV,
-      .CanReplace = true,
       .Replacement = OP_SUB,
-      .CanReplaceWrite = true,
       .ReplacementNoWrite = OP_SUBNZCV,
     };
 
@@ -136,9 +126,7 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
     return {
       .Read = FLAG_C,
       .Write = FLAG_NZCV,
-      .CanReplace = true,
       .Replacement = OP_ADC,
-      .CanReplaceWrite = true,
       .ReplacementNoWrite = OP_ADCNZCV,
     };
 
@@ -146,7 +134,6 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
     return {
       .Read = FLAG_C,
       .Write = FLAG_NZCV,
-      .CanReplace = true,
       .Replacement = OP_ADCZERO,
     };
 
@@ -154,9 +141,7 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
     return {
       .Read = FLAG_C,
       .Write = FLAG_NZCV,
-      .CanReplace = true,
       .Replacement = OP_SBB,
-      .CanReplaceWrite = true,
       .ReplacementNoWrite = OP_SBBNZCV,
     };
 
@@ -413,16 +398,16 @@ void DeadFlagCalculationEliminination::Run(IREmitter* IREmit) {
           bool Eliminated = false;
 
           if ((FlagsRead & Info.Write) == 0) {
-            if ((Info.CanEliminate || Info.CanReplace) && CodeNode->GetUses() == 0) {
+            if ((Info.CanEliminate || Info.Replacement) && CodeNode->GetUses() == 0) {
               IREmit->Remove(CodeNode);
               Eliminated = true;
-            } else if (Info.CanReplace) {
+            } else if (Info.Replacement) {
               IROp->Op = Info.Replacement;
             }
           } else {
             FlagsRead &= ~Info.Write;
 
-            if (Info.CanReplaceWrite && CodeNode->GetUses() == 0) {
+            if (Info.ReplacementNoWrite && CodeNode->GetUses() == 0) {
               IROp->Op = Info.ReplacementNoWrite;
             }
           }
