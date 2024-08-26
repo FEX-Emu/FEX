@@ -221,6 +221,7 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
   case OP_LOADNZCV: return {.Read = FLAG_NZCV};
 
   case OP_ADC:
+  case OP_ADCZERO:
   case OP_SBB: return {.Read = FLAG_C};
 
   case OP_ADCNZCV:
