@@ -151,11 +151,7 @@ public:
   }
   IRPair<IROp_CondJump> CondJumpNZCV(CondClassType Cond) {
     FlushRegisterCache();
-
-    // The jump will ignore the sources, so it doesn't matter what we put here.
-    // Put an inline constant so RA+codegen will ignore altogether.
-    auto Placeholder = _InlineConstant(0);
-    return _CondJump(Placeholder, Placeholder, InvalidNode, InvalidNode, Cond, 0, true);
+    return _CondJump(InvalidNode, InvalidNode, InvalidNode, InvalidNode, Cond, 0, true);
   }
   IRPair<IROp_CondJump> CondJumpBit(Ref Src, unsigned Bit, bool Set) {
     FlushRegisterCache();
