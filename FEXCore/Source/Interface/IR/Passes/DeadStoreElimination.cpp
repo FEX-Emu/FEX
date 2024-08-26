@@ -27,7 +27,7 @@ constexpr int PropagationRounds = 5;
 static inline uint64_t RegBit(RegisterClassType Class, uint32_t Reg) {
   uint32_t AdjustedReg = (Class == FPRClass) ? (32 + Reg) : Reg;
 
-  return 1UL << AdjustedReg;
+  return 1ULL << AdjustedReg;
 }
 
 class DeadStoreElimination final : public FEXCore::IR::Pass {
