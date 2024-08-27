@@ -2730,14 +2730,13 @@
       ]
     },
     "mul rbx": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": "GROUP2 0xf7 /3",
       "ExpectedArm64ASM": [
-        "mul x20, x6, x4",
         "umulh x5, x6, x4",
+        "mul x4, x6, x4",
         "cmp x5, #0x0 (0)",
-        "ccmp xzr, #0, #nzcV, eq",
-        "mov x4, x20"
+        "ccmp xzr, #0, #nzcV, eq"
       ]
     },
     "imul bx": {
