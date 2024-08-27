@@ -76,6 +76,16 @@ void DeadStoreElimination::Run(IREmitter* IREmit) {
         } else if (IROp->Op == OP_LOADREGISTER) {
           auto Op = IROp->C<IR::IROp_LoadRegister>();
           BlockInfo.reg.reads |= RegBit(Op->Class, Op->Reg);
+        } else if (IROp->Op == OP_INVALIDATEFLAGS) {
+          auto Op = IROp->C<IR::IROp_InvalidateFlags>();
+
+          if (Op->Flags & (1u << X86State::RFLAG_PF_RAW_LOC)) {
+            BlockInfo.reg.writes |= RegBit(GPRClass, Core::CPUState::PF_AS_GREG);
+          }
+
+          if (Op->Flags & (1u << X86State::RFLAG_AF_RAW_LOC)) {
+            BlockInfo.reg.writes |= RegBit(GPRClass, Core::CPUState::AF_AS_GREG);
+          }
         }
       }
     }
