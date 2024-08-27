@@ -967,8 +967,14 @@ void Decoder::BranchTargetInMultiblockRange() {
     TargetRIP &= 0xFFFFFFFFU;
   }
 
-  // If the target RIP is within the symbol ranges then we are golden
-  if (TargetRIP >= SymbolMinAddress && TargetRIP < SymbolMaxAddress) {
+  // If the target RIP is x86 code within the symbol ranges then we are golden
+  bool ValidMultiblockMember = TargetRIP >= SymbolMinAddress && TargetRIP < SymbolMaxAddress;
+
+#ifdef _M_ARM_64EC
+  ValidMultiblockMember = ValidMultiblockMember && !RtlIsEcCode(TargetRIP);
+#endif
+
+  if (ValidMultiblockMember) {
     // Update our conditional branch ranges before we return
     if (Conditional) {
       MaxCondBranchForward = std::max(MaxCondBranchForward, TargetRIP);
