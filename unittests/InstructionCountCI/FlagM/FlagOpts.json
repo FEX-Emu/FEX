@@ -300,6 +300,60 @@
         "mov x26, x7"
       ]
     },
+    "Test use only zero - self 16-bit": {
+      "x86InstructionCount": 3,
+      "ExpectedInstructionCount": 6,
+      "x86Insts": [
+        "test ax, ax",
+        "setz al",
+        "test cl, cl"
+      ],
+      "ExpectedArm64ASM": [
+        "cmn wzr, w4, lsl #16",
+        "cset x20, eq",
+        "bfxil x4, x20, #0, #8",
+        "cmn wzr, w7, lsl #24",
+        "cfinv",
+        "mov x26, x7"
+      ]
+    },
+    "Test use only zero - non constant 16-bit": {
+      "x86InstructionCount": 3,
+      "ExpectedInstructionCount": 7,
+      "x86Insts": [
+        "test ax, bx",
+        "setz al",
+        "test cl, cl"
+      ],
+      "ExpectedArm64ASM": [
+        "and w20, w4, w6",
+        "cmn wzr, w20, lsl #16",
+        "cset x21, eq",
+        "bfxil x4, x21, #0, #8",
+        "cmn wzr, w7, lsl #24",
+        "cfinv",
+        "mov x26, x7"
+      ]
+    },
+    "Test use only zero - constant 8-bit": {
+      "x86InstructionCount": 3,
+      "ExpectedInstructionCount": 8,
+      "x86Insts": [
+        "test al, 137",
+        "setnz al",
+        "test cl, cl"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, #0x89",
+        "and w20, w4, w20",
+        "cmn wzr, w20, lsl #24",
+        "cset x21, ne",
+        "bfxil x4, x21, #0, #8",
+        "cmn wzr, w7, lsl #24",
+        "cfinv",
+        "mov x26, x7"
+      ]
+    },
     "Dead cmpxchg flags": {
       "x86InstructionCount": 2,
       "ExpectedInstructionCount": 10,
