@@ -226,6 +226,7 @@ void RegisterSignals(FEX::HLE::SyscallHandler* Handler) {
       siginfo_t* info64_p {};
 
       if (info) {
+        info64 = *info;
         info64_p = &info64;
       }
 
@@ -239,6 +240,7 @@ void RegisterSignals(FEX::HLE::SyscallHandler* Handler) {
       siginfo_t* info64_p {};
 
       if (info) {
+        info64 = *info;
         info64_p = &info64;
       }
 
