@@ -1,18 +1,16 @@
 add_subdirectory(CommonTools)
 
 if (NOT MINGW_BUILD)
-  if (BUILD_FEXCONFIG)
+  if (USE_FEXCONFIG_TOOLKIT STREQUAL "imgui")
     add_subdirectory(FEXConfig/)
-
+  elseif (USE_FEXCONFIG_TOOLKIT STREQUAL "qt")
     find_package(Qt6 COMPONENTS Qml Quick Widgets)
     if (NOT Qt6_FOUND)
-      find_package(Qt5 COMPONENTS Qml Quick Widgets)
+      find_package(Qt5 COMPONENTS Qml Quick Widgets REQUIRED)
     endif()
-    if (Qt6_FOUND OR Qt5_FOUND)
-      add_subdirectory(FEXQonfig/)
-    endif()
-  endif()
 
+    add_subdirectory(FEXQonfig/)
+  endif()
 
   if (ENABLE_GDB_SYMBOLS)
     add_subdirectory(FEXGDBReader/)
