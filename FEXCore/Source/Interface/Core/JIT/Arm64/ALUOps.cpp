@@ -190,6 +190,30 @@ DEF_OP(TestNZ) {
   }
 }
 
+DEF_OP(TestZ) {
+  auto Op = IROp->C<IR::IROp_TestZ>();
+  LOGMAN_THROW_AA_FMT(IROp->Size < 4, "TestNZ used at higher sizes");
+  const auto EmitSize = ARMEmitter::Size::i32Bit;
+
+  uint64_t Const;
+  uint64_t Mask = IROp->Size == 8 ? ~0ULL : ((1ull << (IROp->Size * 8)) - 1);
+  auto Src1 = GetReg(Op->Src1.ID());
+
+  if (IsInlineConstant(Op->Src2, &Const)) {
+    // We can promote 8/16-bit tests to 32-bit since the constant is masked.
+    LOGMAN_THROW_AA_FMT(!(Const & ~Mask), "constant is already masked");
+    tst(EmitSize, Src1, Const);
+  } else {
+    const auto Src2 = GetReg(Op->Src2.ID());
+    if (Src1 == Src2) {
+      tst(EmitSize, Src1 /* Src2 */, Mask);
+    } else {
+      and_(EmitSize, TMP1, Src1, Src2);
+      tst(EmitSize, TMP1, Mask);
+    }
+  }
+}
+
 DEF_OP(SubShift) {
   auto Op = IROp->C<IR::IROp_SubShift>();
 
