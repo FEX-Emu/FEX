@@ -71,7 +71,6 @@ void PassManager::AddDefaultPasses(FEXCore::Context::ContextImpl* ctx) {
 
   if (!DisablePasses()) {
     InsertPass(CreateX87StackOptimizationPass());
-    InsertPass(CreateDeadStoreElimination());
     InsertPass(CreateConstProp(ctx->HostFeatures.SupportsTSOImm9, &ctx->CPUID));
     InsertPass(CreateDeadFlagCalculationEliminination());
   }
