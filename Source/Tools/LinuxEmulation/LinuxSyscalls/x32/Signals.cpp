@@ -102,6 +102,7 @@ void RegisterSignals(FEX::HLE::SyscallHandler* Handler) {
     uint64_t Result = FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigPending(&HostSet, 8);
     if (Result == 0) {
       // This old interface only returns the lower signals
+      FaultSafeUserMemAccess::VerifyIsWritable(set, sizeof(*set));
       *set = HostSet & ~0U;
     }
     return Result;
@@ -122,6 +123,7 @@ void RegisterSignals(FEX::HLE::SyscallHandler* Handler) {
 
       GuestSigAction act64 {};
       if (act) {
+        FaultSafeUserMemAccess::VerifyIsReadable(act, sizeof(*act));
         act64 = *act;
         act64_p = &act64;
       }
@@ -133,6 +135,7 @@ void RegisterSignals(FEX::HLE::SyscallHandler* Handler) {
 
       uint64_t Result = FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSignalHandler(signum, act64_p, old64_p);
       if (Result == 0 && oldact) {
+        FaultSafeUserMemAccess::VerifyIsWritable(oldact, sizeof(*oldact));
         *oldact = old64;
       }
 
@@ -151,6 +154,7 @@ void RegisterSignals(FEX::HLE::SyscallHandler* Handler) {
 
       GuestSigAction act64 {};
       if (act) {
+        FaultSafeUserMemAccess::VerifyIsReadable(act, sizeof(*act));
         act64 = *act;
         act64_p = &act64;
       }
@@ -162,6 +166,7 @@ void RegisterSignals(FEX::HLE::SyscallHandler* Handler) {
 
       uint64_t Result = FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSignalHandler(signum, act64_p, old64_p);
       if (Result == 0 && oldact) {
+        FaultSafeUserMemAccess::VerifyIsWritable(oldact, sizeof(*oldact));
         *oldact = old64;
       }
 
@@ -174,6 +179,7 @@ void RegisterSignals(FEX::HLE::SyscallHandler* Handler) {
                               struct timespec* timeout_ptr {};
                               struct timespec tp64 {};
                               if (timeout) {
+                                FaultSafeUserMemAccess::VerifyIsReadable(timeout, sizeof(*timeout));
                                 tp64 = *timeout;
                                 timeout_ptr = &tp64;
                               }
@@ -182,6 +188,7 @@ void RegisterSignals(FEX::HLE::SyscallHandler* Handler) {
                               uint64_t Result =
                                 FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigTimedWait(set, &HostInfo, timeout_ptr, sigsetsize);
                               if (Result != -1) {
+                                FaultSafeUserMemAccess::VerifyIsWritable(info, sizeof(*info));
                                 // We need to translate the 64-bit siginfo_t to 32-bit siginfo_t
                                 CopySigInfo(info, HostInfo);
                               }
@@ -196,6 +203,7 @@ void RegisterSignals(FEX::HLE::SyscallHandler* Handler) {
                               uint64_t Result =
                                 FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigTimedWait(set, &HostInfo, timeout, sigsetsize);
                               if (Result != -1) {
+                                FaultSafeUserMemAccess::VerifyIsWritable(info, sizeof(*info));
                                 // We need to translate the 64-bit siginfo_t to 32-bit siginfo_t
                                 CopySigInfo(info, HostInfo);
                               }
@@ -209,6 +217,7 @@ void RegisterSignals(FEX::HLE::SyscallHandler* Handler) {
         siginfo_t* InfoHost_ptr {};
         siginfo_t InfoHost {};
         if (info) {
+          FaultSafeUserMemAccess::VerifyIsReadable(info, sizeof(*info));
           InfoHost = *info;
           InfoHost_ptr = &InfoHost;
         }
@@ -226,6 +235,7 @@ void RegisterSignals(FEX::HLE::SyscallHandler* Handler) {
       siginfo_t* info64_p {};
 
       if (info) {
+        FaultSafeUserMemAccess::VerifyIsReadable(info, sizeof(*info));
         info64 = *info;
         info64_p = &info64;
       }
@@ -240,6 +250,7 @@ void RegisterSignals(FEX::HLE::SyscallHandler* Handler) {
       siginfo_t* info64_p {};
 
       if (info) {
+        FaultSafeUserMemAccess::VerifyIsReadable(info, sizeof(*info));
         info64 = *info;
         info64_p = &info64;
       }

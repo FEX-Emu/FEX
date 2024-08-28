@@ -28,9 +28,11 @@ void RegisterSemaphore(FEX::HLE::SyscallHandler* Handler) {
     switch (cmd) {
     case IPC_SET: {
       struct semid64_ds buf {};
+      FaultSafeUserMemAccess::VerifyIsReadable(semun.buf, sizeof(*semun.buf));
       buf = *semun.buf;
       Result = ::syscall(SYSCALL_DEF(semctl), semid, semnum, cmd, &buf);
       if (Result != -1) {
+        FaultSafeUserMemAccess::VerifyIsWritable(semun.buf, sizeof(*semun.buf));
         *semun.buf = buf;
       }
       break;
@@ -41,6 +43,7 @@ void RegisterSemaphore(FEX::HLE::SyscallHandler* Handler) {
       struct semid64_ds buf {};
       Result = ::syscall(SYSCALL_DEF(semctl), semid, semnum, cmd, &buf);
       if (Result != -1) {
+        FaultSafeUserMemAccess::VerifyIsWritable(semun.buf, sizeof(*semun.buf));
         *semun.buf = buf;
       }
       break;
@@ -50,6 +53,7 @@ void RegisterSemaphore(FEX::HLE::SyscallHandler* Handler) {
       struct fex_seminfo si {};
       Result = ::syscall(SYSCALL_DEF(semctl), semid, semnum, cmd, &si);
       if (Result != -1) {
+        FaultSafeUserMemAccess::VerifyIsWritable(semun.__buf, sizeof(si));
         memcpy(semun.__buf, &si, sizeof(si));
       }
       break;

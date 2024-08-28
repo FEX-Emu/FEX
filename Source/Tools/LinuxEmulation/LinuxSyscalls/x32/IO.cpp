@@ -23,6 +23,7 @@ void RegisterIO(FEX::HLE::SyscallHandler* Handler) {
                               struct timespec* timeout_ptr {};
                               struct timespec tp64 {};
                               if (timeout) {
+                                FaultSafeUserMemAccess::VerifyIsReadable(timeout, sizeof(*timeout));
                                 tp64 = *timeout;
                                 timeout_ptr = &tp64;
                               }
@@ -37,6 +38,7 @@ void RegisterIO(FEX::HLE::SyscallHandler* Handler) {
                               struct timespec* timeout_ptr {};
                               struct timespec tp64 {};
                               if (timeout) {
+                                FaultSafeUserMemAccess::VerifyIsReadable(timeout, sizeof(*timeout));
                                 tp64 = *timeout;
                                 timeout_ptr = &tp64;
                               }
