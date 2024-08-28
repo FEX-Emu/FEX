@@ -13,6 +13,7 @@ set (SRCS
   LinuxSyscalls/SyscallsSMCTracking.cpp
   LinuxSyscalls/SyscallsVMATracking.cpp
   LinuxSyscalls/ThreadManager.cpp
+  LinuxSyscalls/SignalDelegator/GuestFramesManagement.cpp
   LinuxSyscalls/Utils/Threads.cpp
   LinuxSyscalls/x32/Syscalls.cpp
   LinuxSyscalls/x32/EPoll.cpp
