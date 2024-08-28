@@ -36,6 +36,7 @@ void RegisterTime(FEX::HLE::SyscallHandler* Handler) {
     uint64_t Result = ::time(&Host);
 
     if (tloc) {
+      FaultSafeUserMemAccess::VerifyIsWritable(tloc, sizeof(*tloc));
       // On 32-bit this truncates
       *tloc = (FEX::HLE::x32::old_time32_t)Host;
     }
@@ -47,6 +48,7 @@ void RegisterTime(FEX::HLE::SyscallHandler* Handler) {
     struct tms Host {};
     uint64_t Result = ::times(&Host);
     if (buf) {
+      FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
       *buf = Host;
     }
     SYSCALL_ERRNO();
@@ -56,6 +58,7 @@ void RegisterTime(FEX::HLE::SyscallHandler* Handler) {
     struct utimbuf Host {};
     struct utimbuf* Host_p {};
     if (times) {
+      FaultSafeUserMemAccess::VerifyIsReadable(times, sizeof(*times));
       Host = *times;
       Host_p = &Host;
     }
@@ -73,6 +76,7 @@ void RegisterTime(FEX::HLE::SyscallHandler* Handler) {
     uint64_t Result = ::gettimeofday(tv_ptr, tz);
 
     if (tv) {
+      FaultSafeUserMemAccess::VerifyIsWritable(tv, sizeof(*tv));
       *tv = tv64;
     }
     SYSCALL_ERRNO();
@@ -82,6 +86,7 @@ void RegisterTime(FEX::HLE::SyscallHandler* Handler) {
     struct timeval tv64 {};
     struct timeval* tv_ptr {};
     if (tv) {
+      FaultSafeUserMemAccess::VerifyIsReadable(tv, sizeof(*tv));
       tv64 = *tv;
       tv_ptr = &tv64;
     }
@@ -95,12 +100,14 @@ void RegisterTime(FEX::HLE::SyscallHandler* Handler) {
     struct timespec* rem64_ptr {};
 
     if (rem) {
+      FaultSafeUserMemAccess::VerifyIsReadable(rem, sizeof(*rem));
       rem64 = *rem;
       rem64_ptr = &rem64;
     }
 
     uint64_t Result = 0;
     if (req) {
+      FaultSafeUserMemAccess::VerifyIsReadable(req, sizeof(*req));
       const struct timespec req64 = *req;
       Result = ::nanosleep(&req64, rem64_ptr);
     } else {
@@ -108,6 +115,7 @@ void RegisterTime(FEX::HLE::SyscallHandler* Handler) {
     }
 
     if (rem) {
+      FaultSafeUserMemAccess::VerifyIsWritable(rem, sizeof(*rem));
       *rem = rem64;
     }
     SYSCALL_ERRNO();
@@ -117,6 +125,7 @@ void RegisterTime(FEX::HLE::SyscallHandler* Handler) {
     struct timespec tp64 {};
     uint64_t Result = ::clock_gettime(clk_id, &tp64);
     if (tp) {
+      FaultSafeUserMemAccess::VerifyIsWritable(tp, sizeof(*tp));
       *tp = tp64;
     }
     SYSCALL_ERRNO();
@@ -126,6 +135,7 @@ void RegisterTime(FEX::HLE::SyscallHandler* Handler) {
     struct timespec tp64 {};
     uint64_t Result = ::clock_getres(clk_id, &tp64);
     if (tp) {
+      FaultSafeUserMemAccess::VerifyIsWritable(tp, sizeof(*tp));
       *tp = tp64;
     }
     SYSCALL_ERRNO();
@@ -140,11 +150,13 @@ void RegisterTime(FEX::HLE::SyscallHandler* Handler) {
       struct timespec* rem64_ptr {};
 
       if (request) {
+        FaultSafeUserMemAccess::VerifyIsReadable(request, sizeof(*request));
         req64 = *request;
         req64_ptr = &req64;
       }
 
       if (remain) {
+        FaultSafeUserMemAccess::VerifyIsReadable(remain, sizeof(*remain));
         rem64 = *remain;
         rem64_ptr = &rem64;
       }
@@ -153,6 +165,7 @@ void RegisterTime(FEX::HLE::SyscallHandler* Handler) {
       uint64_t Result = ::syscall(SYSCALL_DEF(clock_nanosleep), clockid, flags, req64_ptr, rem64_ptr);
 
       if (remain && (flags & TIMER_ABSTIME) == 0) {
+        FaultSafeUserMemAccess::VerifyIsWritable(remain, sizeof(*remain));
         // Remain is completely ignored if TIMER_ABSTIME is set.
         *remain = rem64;
       }
@@ -166,6 +179,7 @@ void RegisterTime(FEX::HLE::SyscallHandler* Handler) {
     }
 
     uint64_t Result = 0;
+    FaultSafeUserMemAccess::VerifyIsReadable(tp, sizeof(*tp));
     const struct timespec tp64 = *tp;
     Result = ::clock_settime(clockid, &tp64);
     SYSCALL_ERRNO();
@@ -174,6 +188,7 @@ void RegisterTime(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_IMPL_X32(futimesat, [](FEXCore::Core::CpuStateFrame* Frame, int dirfd, const char* pathname, const timeval32 times[2]) -> uint64_t {
     uint64_t Result = 0;
     if (times) {
+      FaultSafeUserMemAccess::VerifyIsReadable(times, sizeof(timeval32) * 2);
       struct timeval times64[2] {};
       times64[0] = times[0];
       times64[1] = times[1];
@@ -188,6 +203,7 @@ void RegisterTime(FEX::HLE::SyscallHandler* Handler) {
     utimensat, [](FEXCore::Core::CpuStateFrame* Frame, int dirfd, const char* pathname, const compat_ptr<timespec32> times, int flags) -> uint64_t {
       uint64_t Result = 0;
       if (times) {
+        FaultSafeUserMemAccess::VerifyIsReadable(times, sizeof(timeval32) * 2);
         timespec times64[2] {};
         times64[0] = times[0];
         times64[1] = times[1];
@@ -201,6 +217,7 @@ void RegisterTime(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_IMPL_X32(utimes, [](FEXCore::Core::CpuStateFrame* Frame, const char* filename, const timeval32 times[2]) -> uint64_t {
     uint64_t Result = 0;
     if (times) {
+      FaultSafeUserMemAccess::VerifyIsReadable(times, sizeof(timeval32) * 2);
       struct timeval times64[2] {};
       times64[0] = times[0];
       times64[1] = times[1];
@@ -212,10 +229,12 @@ void RegisterTime(FEX::HLE::SyscallHandler* Handler) {
   });
 
   REGISTER_SYSCALL_IMPL_X32(adjtimex, [](FEXCore::Core::CpuStateFrame* Frame, compat_ptr<FEX::HLE::x32::timex32> buf) -> uint64_t {
+    FaultSafeUserMemAccess::VerifyIsReadable(buf, sizeof(*buf));
     struct timex Host {};
     Host = *buf;
     uint64_t Result = ::adjtimex(&Host);
     if (Result != -1) {
+      FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
       *buf = Host;
     }
     SYSCALL_ERRNO();
@@ -223,10 +242,12 @@ void RegisterTime(FEX::HLE::SyscallHandler* Handler) {
 
   REGISTER_SYSCALL_IMPL_X32(clock_adjtime,
                             [](FEXCore::Core::CpuStateFrame* Frame, clockid_t clk_id, compat_ptr<FEX::HLE::x32::timex32> buf) -> uint64_t {
+                              FaultSafeUserMemAccess::VerifyIsReadable(buf, sizeof(*buf));
                               struct timex Host {};
                               Host = *buf;
                               uint64_t Result = ::clock_adjtime(clk_id, &Host);
                               if (Result != -1) {
+                                FaultSafeUserMemAccess::VerifyIsWritable(buf, sizeof(*buf));
                                 *buf = Host;
                               }
                               SYSCALL_ERRNO();
