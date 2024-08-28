@@ -2687,12 +2687,13 @@ void OpDispatchBuilder::MULOp(OpcodeArgs) {
 
   Ref Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
   Ref Src2 = LoadGPRRegister(X86State::REG_RAX);
+  Ref Result;
 
   if (Size != 8) {
     Src1 = _Bfe(OpSize::i64Bit, Size * 8, 0, Src1);
     Src2 = _Bfe(OpSize::i64Bit, Size * 8, 0, Src2);
+    Result = _UMul(OpSize::i64Bit, Src1, Src2);
   }
-  Ref Result = _UMul(OpSize::i64Bit, Src1, Src2);
   Ref ResultHigh {};
 
   if (Size == 1) {
@@ -2720,7 +2721,10 @@ void OpDispatchBuilder::MULOp(OpcodeArgs) {
     }
     // 64bits stored in RAX
     // 64bits stored in RDX
+    //
+    // Calculate high first to allow better RA.
     ResultHigh = _UMulH(OpSize::i64Bit, Src1, Src2);
+    Result = _UMul(OpSize::i64Bit, Src1, Src2);
     StoreGPRRegister(X86State::REG_RAX, Result);
     StoreGPRRegister(X86State::REG_RDX, ResultHigh);
   }
