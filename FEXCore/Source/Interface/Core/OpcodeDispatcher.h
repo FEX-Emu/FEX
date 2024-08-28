@@ -2308,7 +2308,8 @@ private:
   /**
    * @name These functions are used by the deferred flag handling while it is calculating and storing flags in to RFLAGs.
    * @{ */
-  Ref LoadPFRaw(bool Invert);
+  Ref LoadPFRaw(bool Mask, bool Invert);
+  Ref SelectPF(bool Invert, IR::OpSize ResultSize, Ref TrueValue, Ref FalseValue);
   Ref LoadAF();
   void FixupAF();
   void SetAFAndFixup(Ref AF);
