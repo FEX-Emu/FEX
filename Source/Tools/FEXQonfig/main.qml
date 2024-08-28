@@ -349,14 +349,14 @@ ApplicationWindow {
                         }
                     }
 
-                    Repeater {
-                        model: RootFSModel
-                        delegate: RootFSRadioDelegate { name: model.display }
-                    }
                     RootFSRadioDelegate {
                         id: fallbackRootfsEntry
                         visible: false
                         name: rootfsList.explicitEntry
+                    }
+                    Repeater {
+                        model: RootFSModel
+                        delegate: RootFSRadioDelegate { name: model.display }
                     }
 
                     RowLayout {
