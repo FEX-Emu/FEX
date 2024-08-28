@@ -1139,8 +1139,9 @@
         "Desc": ["Invert carry flag in NZCV"],
         "HasSideEffects": true
       },
-      "AXFlag": {
-        "Desc": ["After an FCmp, converts NZCV flags from the Arm format to a mysterious eXternal format"],
+      "AXFlag GPR:$V_inv": {
+        "Desc": ["After an FCmp, converts NZCV flags from the Arm format to a mysterious eXternal format",
+                 "On FlagM2-less platforms, takes the inverted 1/0 overflow flag"],
         "HasSideEffects": true
       },
       "RmifNZCV GPR:$Src, u8:$Rotate, u8:$Mask": {
