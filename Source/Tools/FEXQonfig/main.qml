@@ -297,68 +297,79 @@ ApplicationWindow {
         // Environment settings
         ScrollablePage {
             GroupBox {
+                id: rootfsGroupBox
                 title: qsTr("RootFS:")
                 width: parent.width - parent.padding * 2
 
                 ColumnLayout {
-                    id: rootfsList
+                    width: rootfsGroupBox.width - rootfsGroupBox.padding * 2
+                    ScrollView {
+                        Layout.fillWidth: true
+                        Layout.maximumHeight: 150
+                        clip: true
 
-                    property string selectedItem
-                    property string explicitEntry
+                        Column {
+                            id: rootfsList
 
-                    Component.onCompleted: {
-                        var initState = (ref) => {
-                            selectedItem = ConfigModel.has("RootFS", ref) ? ConfigModel.getString("RootFS", ref) : ""
+                            property string selectedItem
+                            property string explicitEntry
 
-                            // RootFSModel only lists entries in the $FEX_HOME/RootFS/ folder.
-                            // If a custom path is selected, add it as a dedicated entry
-                            if (selectedItem !== "" && !RootFSModel.hasItem(selectedItem)) {
-                                explicitEntry = selectedItem
+                            spacing: 4
 
-                                // Make visible once needed.
-                                // Conversely, if the user selects something else after, keep the old option visible to allow easy undoing
-                                fallbackRootfsEntry.visible = true
+                            Component.onCompleted: {
+                                var initState = (ref) => {
+                                    selectedItem = ConfigModel.has("RootFS", ref) ? ConfigModel.getString("RootFS", ref) : ""
+
+                                    // RootFSModel only lists entries in the $FEX_HOME/RootFS/ folder.
+                                    // If a custom path is selected, add it as a dedicated entry
+                                    if (selectedItem !== "" && !RootFSModel.hasItem(selectedItem)) {
+                                        explicitEntry = selectedItem
+
+                                        // Make visible once needed.
+                                        // Conversely, if the user selects something else after, keep the old option visible to allow easy undoing
+                                        fallbackRootfsEntry.visible = true
+                                    }
+                                }
+
+                                initState(false)
+                                root.refreshCacheChanged.connect(initState)
+                            }
+
+                            function updateRootFS(fileOrFolder: url) {
+                                configDirty = true
+                                var base = urlToLocalFile(RootFSModel.getBaseUrl())
+                                var file = urlToLocalFile(fileOrFolder)
+                                if (file.startsWith(base)) {
+                                    file = file.substring(base.length)
+                                }
+
+                                ConfigModel.setString("RootFS", file)
+                                refreshUI()
+                            }
+
+                            component RootFSRadioDelegate: RadioButton {
+                                property var name
+
+                                text: name
+                                checked: rootfsList.selectedItem === name
+
+                                onToggled: {
+                                    configDirty = true;
+                                    ConfigModel.setString("RootFS", name)
+                                }
+                            }
+
+                            RootFSRadioDelegate {
+                                id: fallbackRootfsEntry
+                                visible: false
+                                name: rootfsList.explicitEntry
+                            }
+                            Repeater {
+                                model: RootFSModel
+                                delegate: RootFSRadioDelegate { name: model.display }
                             }
                         }
-
-                        initState(false)
-                        root.refreshCacheChanged.connect(initState)
                     }
-
-                    function updateRootFS(fileOrFolder: url) {
-                        configDirty = true
-                        var base = urlToLocalFile(RootFSModel.getBaseUrl())
-                        var file = urlToLocalFile(fileOrFolder)
-                        if (file.startsWith(base)) {
-                            file = file.substring(base.length)
-                        }
-
-                        ConfigModel.setString("RootFS", file)
-                        refreshUI()
-                    }
-
-                    component RootFSRadioDelegate: RadioButton {
-                        property var name
-
-                        text: name
-                        checked: rootfsList.selectedItem === name
-
-                        onToggled: {
-                            configDirty = true;
-                            ConfigModel.setString("RootFS", name)
-                        }
-                    }
-
-                    RootFSRadioDelegate {
-                        id: fallbackRootfsEntry
-                        visible: false
-                        name: rootfsList.explicitEntry
-                    }
-                    Repeater {
-                        model: RootFSModel
-                        delegate: RootFSRadioDelegate { name: model.display }
-                    }
-
                     RowLayout {
                         FileDialog {
                             id: addRootfsFileDialog
