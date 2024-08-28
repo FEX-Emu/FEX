@@ -5,6 +5,7 @@ tags: backend|arm64
 $end_info$
 */
 
+#include "CodeEmitter/Emitter.h"
 #include "FEXCore/IR/IR.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
@@ -296,8 +297,22 @@ DEF_OP(SetSmallNZV) {
 }
 
 DEF_OP(AXFlag) {
-  LOGMAN_THROW_A_FMT(CTX->HostFeatures.SupportsFlagM2, "Unsupported flagm2 op");
-  axflag();
+  if (CTX->HostFeatures.SupportsFlagM2) {
+    axflag();
+  } else {
+    // AXFLAG is defined in the Arm spec as
+    //
+    //   gt: nzCv -> nzCv
+    //   lt: Nzcv -> nzcv  <==>  1 + 0
+    //   eq: nZCv -> nZCv  <==>  1 + (~0)
+    //   un: nzCV -> nZcv  <==>  0 + 0
+    //
+    // For the latter 3 cases, we therefore get the right NZCV by adding V_inv
+    // to (eq ? ~0 : 0). The remaining case is forced with ccmn.
+    auto V_inv = GetReg(IROp->Args[0].ID());
+    csetm(ARMEmitter::Size::i64Bit, TMP1, ARMEmitter::Condition::CC_EQ);
+    ccmn(ARMEmitter::Size::i64Bit, V_inv, TMP1, ARMEmitter::StatusFlags {0x2} /* nzCv */, ARMEmitter::Condition::CC_LE);
+  }
 }
 
 DEF_OP(CondAddNZCV) {

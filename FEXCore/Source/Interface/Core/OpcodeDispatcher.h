@@ -2106,22 +2106,9 @@ private:
     // Convert NZCV from the Arm representation to an eXternal representation
     // that's totally not a euphemism for x86, nuh-uh. But maps to exactly we
     // need, what a coincidence!
-    if (CTX->HostFeatures.SupportsFlagM2) {
-      _AXFlag();
-    } else {
-      // AXFLAG is defined in the Arm spec as
-      //
-      //   gt: nzCv -> nzCv
-      //   lt: Nzcv -> nzcv  <==>  1 + 0
-      //   eq: nZCv -> nZCv  <==>  1 + (~0)
-      //   un: nzCV -> nZcv  <==>  0 + 0
-      //
-      // For the latter 3 cases, we therefore get the right NZCV by adding V_inv
-      // to (eq ? ~0 : 0). The remaining case is forced with ccmn.
-      Ref Eq = NZCVSelect(OpSize::i64Bit, {COND_EQ}, _Constant(~0ull), _Constant(0));
-      _CondAddNZCV(OpSize::i64Bit, V_inv, Eq, {COND_FLEU}, 0x2 /* nzCv */);
-    }
-
+    //
+    // Our AXFlag emulation on FlagM2-less systems needs V_inv passed.
+    _AXFlag(CTX->HostFeatures.SupportsFlagM2 ? Invalid() : V_inv);
     PossiblySetNZCVBits = ~0;
     CFInverted = true;
   }
@@ -2135,7 +2122,7 @@ private:
       LOGMAN_THROW_A_FMT(!NZCVDirty, "only expected after fcmp");
 
       // Convert to x86 flags, saves us from or'ing after.
-      _AXFlag();
+      _AXFlag(Invalid());
       PossiblySetNZCVBits = ~0;
       CFInverted = true;
 
