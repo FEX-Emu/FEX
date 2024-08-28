@@ -598,18 +598,19 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   ExitFunction(JMPPCOffset); // If we get here then leave the function now
 }
 
-Ref OpDispatchBuilder::SelectBit(Ref Cmp, IR::OpSize ResultSize, Ref TrueValue, Ref FalseValue) {
+Ref OpDispatchBuilder::SelectPF(bool Invert, IR::OpSize ResultSize, Ref TrueValue, Ref FalseValue) {
   uint64_t TrueConst, FalseConst;
   if (IsValueConstant(WrapNode(TrueValue), &TrueConst) && IsValueConstant(WrapNode(FalseValue), &FalseConst) && FalseConst == 0) {
     if (TrueConst == 1) {
-      return _And(ResultSize, Cmp, _Constant(1));
+      return LoadPFRaw(true, Invert);
     } else if (TrueConst == 0xffffffff) {
-      return _Sbfe(OpSize::i32Bit, 1, 0, Cmp);
+      return _Sbfe(OpSize::i32Bit, 1, 0, LoadPFRaw(false, Invert));
     } else if (TrueConst == 0xffffffffffffffffull) {
-      return _Sbfe(OpSize::i64Bit, 1, 0, Cmp);
+      return _Sbfe(OpSize::i64Bit, 1, 0, LoadPFRaw(false, Invert));
     }
   }
 
+  Ref Cmp = LoadPFRaw(false, Invert);
   SaveNZCV();
 
   // Because we're only clobbering NZCV internally, we ignore all carry flag
@@ -681,12 +682,10 @@ Ref OpDispatchBuilder::SelectCC(uint8_t OP, IR::OpSize ResultSize, Ref TrueValue
   }
 
   switch (OP) {
-  case 0xA: { // JP - Jump if PF == 1
-    // Raw value contains inverted PF in bottom bit
-    return SelectBit(LoadPFRaw(true), ResultSize, TrueValue, FalseValue);
-  }
+  case 0xA:   // JP - Jump if PF == 1
   case 0xB: { // JNP - Jump if PF == 0
-    return SelectBit(LoadPFRaw(false), ResultSize, TrueValue, FalseValue);
+    // Raw value contains inverted PF in bottom bit
+    return SelectPF(OP == 0xA, ResultSize, TrueValue, FalseValue);
   }
   default: LOGMAN_MSG_A_FMT("Unknown CC Op: 0x{:x}\n", OP); return nullptr;
   }
@@ -759,7 +758,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
     auto [Complex, SimpleCond] = DecodeNZCVCondition(OP);
     if (Complex) {
       LOGMAN_THROW_AA_FMT(OP == 0xA || OP == 0xB, "only PF left");
-      CondJump_ = CondJumpBit(LoadPFRaw(false), 0, OP == 0xB);
+      CondJump_ = CondJumpBit(LoadPFRaw(false, false), 0, OP == 0xB);
     } else {
       CondJump_ = CondJumpNZCV(SimpleCond);
     }

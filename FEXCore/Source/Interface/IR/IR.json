@@ -1144,6 +1144,10 @@
                  "On FlagM2-less platforms, takes the inverted 1/0 overflow flag"],
         "HasSideEffects": true
       },
+      "GPR = Parity GPR:$Raw, i1:$Mask, i1:$Invert": {
+        "Desc": ["Calculates PF"],
+        "DestSize": "4"
+      },
       "RmifNZCV GPR:$Src, u8:$Rotate, u8:$Mask": {
         "Desc": ["Rotate, mask, and insert into NZCV on FlagM platforms"],
         "HasSideEffects": true

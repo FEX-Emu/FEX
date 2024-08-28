@@ -315,6 +315,27 @@ DEF_OP(AXFlag) {
   }
 }
 
+DEF_OP(Parity) {
+  auto Op = IROp->C<IR::IROp_Parity>();
+  auto Raw = GetReg(Op->Raw.ID());
+  auto Dest = GetReg(Node);
+
+  // Cascade to calculate parity of bottom 8-bits to bottom bit.
+  eor(ARMEmitter::Size::i32Bit, TMP1, Raw, Raw, ARMEmitter::ShiftType::LSR, 4);
+  eor(ARMEmitter::Size::i32Bit, TMP1, TMP1, TMP1, ARMEmitter::ShiftType::LSR, 2);
+
+  if (Op->Invert) {
+    eon(ARMEmitter::Size::i32Bit, Dest, TMP1, TMP1, ARMEmitter::ShiftType::LSR, 1);
+  } else {
+    eor(ARMEmitter::Size::i32Bit, Dest, TMP1, TMP1, ARMEmitter::ShiftType::LSR, 1);
+  }
+
+  // The above sequence leaves garbage in the upper bits.
+  if (Op->Mask) {
+    and_(ARMEmitter::Size::i32Bit, Dest, Dest, 1);
+  }
+}
+
 DEF_OP(CondAddNZCV) {
   auto Op = IROp->C<IR::IROp_CondAddNZCV>();
 
