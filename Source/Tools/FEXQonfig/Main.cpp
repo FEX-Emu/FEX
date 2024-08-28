@@ -212,22 +212,22 @@ void RootFSModel::Reload() {
   removeRows(0, rowCount());
 
   fextl::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
-  std::vector<std::string> NamedRootFS {};
+  std::vector<QString> NamedRootFS {};
   for (auto& it : std::filesystem::directory_iterator(RootFS)) {
     if (it.is_directory()) {
-      NamedRootFS.emplace_back(it.path().filename());
+      NamedRootFS.push_back(QString::fromStdString(it.path().filename()));
     } else if (it.is_regular_file()) {
       // If it is a regular file then we need to check if it is a valid archive
       if (it.path().extension() == ".sqsh" && FEX::FormatCheck::IsSquashFS(fextl::string_from_path(it.path()))) {
-        NamedRootFS.emplace_back(it.path().filename());
+        NamedRootFS.push_back(QString::fromStdString(it.path().filename()));
       } else if (it.path().extension() == ".ero" && FEX::FormatCheck::IsEroFS(fextl::string_from_path(it.path()))) {
-        NamedRootFS.emplace_back(it.path().filename());
+        NamedRootFS.push_back(QString::fromStdString(it.path().filename()));
       }
     }
   }
-  std::sort(NamedRootFS.begin(), NamedRootFS.end());
+  std::sort(NamedRootFS.begin(), NamedRootFS.end(), [](const QString& a, const QString& b) { return QString::localeAwareCompare(a, b) < 0; });
   for (auto& Entry : NamedRootFS) {
-    appendRow(new QStandardItem(Entry.c_str()));
+    appendRow(new QStandardItem(Entry));
   }
 
   endResetModel();
