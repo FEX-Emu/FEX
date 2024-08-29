@@ -401,7 +401,7 @@ ApplicationWindow {
             }
 
             GroupBox {
-                title: qsTr("Library Forwarding:")
+                title: qsTr("Library forwarding:")
                 width: parent.width - parent.padding * 2
 
                 ColumnLayout {
@@ -454,7 +454,7 @@ ApplicationWindow {
                 label: ConfigCheckBox {
                     id: loggingEnabledCheckBox
                     config: "SilentLog"
-                    text: qsTr("Logging")
+                    text: qsTr("Logging:")
                     invert: true
                 }
 
@@ -521,7 +521,7 @@ ApplicationWindow {
             }
 
             GroupBox {
-                title: qsTr("Memory Model")
+                title: qsTr("Memory model:")
                 width: parent.width - parent.padding * 2
 
                 ColumnLayout {
