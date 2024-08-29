@@ -304,8 +304,10 @@ endif()
 set(FMT_INSTALL OFF)
 add_subdirectory(External/fmt/)
 
-add_subdirectory(External/imgui/)
-include_directories(External/imgui/)
+if (USE_FEXCONFIG_TOOLKIT STREQUAL "imgui")
+  add_subdirectory(External/imgui/)
+  include_directories(External/imgui/)
+endif()
 
 add_subdirectory(External/tiny-json/)
 include_directories(External/tiny-json/)
