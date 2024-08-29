@@ -115,7 +115,7 @@ ApplicationWindow {
     }
 
     function save(filename: url) {
-        if (filename === "") {
+        if (filename.toString() === "") {
             filename = configFilename
         }
 
