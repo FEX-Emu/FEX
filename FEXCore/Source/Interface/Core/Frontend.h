@@ -104,6 +104,7 @@ private:
   uint64_t SectionMaxAddress {~0ULL};
 
   DecodedBlockInformation BlockInfo;
+  fextl::set<uint64_t> CurrentBlockTargets;
   fextl::set<uint64_t> BlocksToDecode;
   fextl::set<uint64_t> HasBlocks;
   fextl::set<uint64_t>* ExternalBranches {nullptr};
