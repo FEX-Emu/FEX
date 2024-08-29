@@ -34,7 +34,7 @@ ApplicationWindow {
         refreshCache = !refreshCache
     }
 
-    function urlToLocalFile(theurl: url) {
+    function urlToLocalFile(theurl: url): string {
         var str = theurl.toString()
         if (str.startsWith("file://")) {
             return decodeURIComponent(str.substring(7))
@@ -410,7 +410,7 @@ ApplicationWindow {
 
                     id: libfwdConfig
 
-                    property var configDir: (() => {
+                    property url configDir: (() => {
                         var configPath = urlToLocalFile(configFilename)
                         var slashIndex = configPath.lastIndexOf('/')
                         if (slashIndex === -1) {
