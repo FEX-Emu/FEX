@@ -328,16 +328,6 @@ public:
 
   FEXCore::JITSymbols Symbols;
 
-  void GetVDSOSigReturn(VDSOSigReturn* VDSOPointers) override {
-    if (VDSOPointers->VDSO_kernel_sigreturn == nullptr) {
-      VDSOPointers->VDSO_kernel_sigreturn = reinterpret_cast<void*>(X86CodeGen.sigreturn_32);
-    }
-
-    if (VDSOPointers->VDSO_kernel_rt_sigreturn == nullptr) {
-      VDSOPointers->VDSO_kernel_rt_sigreturn = reinterpret_cast<void*>(X86CodeGen.rt_sigreturn_32);
-    }
-  }
-
   FEXCore::Utils::PooledAllocatorVirtual OpDispatcherAllocator;
   FEXCore::Utils::PooledAllocatorVirtual FrontendAllocator;
 

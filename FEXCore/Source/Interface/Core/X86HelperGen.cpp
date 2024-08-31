@@ -31,32 +31,9 @@ X86GeneratedCode::X86GeneratedCode() {
     0x0F, 0x37, // CALLBACKRET FEX Instruction
   };
 
-  // Signal return handlers need to be bit-exact to what the Linux kernel provides in VDSO.
-  // GDB and unwinding libraries key off of these instructions to understand if the stack frame is a signal frame or not.
-  // This two code sections match exactly what libSegFault expects.
-  //
-  // Typically this handlers are provided by the 32-bit VDSO thunk library, but that isn't available in all cases.
-  // Falling back to this generated code segment still allows a backtrace to work, just might not show
-  // the symbol as VDSO since there is no ELF to parse.
-  constexpr std::array<uint8_t, 9> sigreturn_32_code = {
-    0x58,                         // pop eax
-    0xb8, 0x77, 0x00, 0x00, 0x00, // mov eax, 0x77
-    0xcd, 0x80,                   // int 0x80
-    0x90,                         // nop
-  };
-
-  constexpr std::array<uint8_t, 7> rt_sigreturn_32_code = {
-    0xb8, 0xad, 0x00, 0x00, 0x00, // mov eax, 0xad
-    0xcd, 0x80,                   // int 0x80
-  };
-
   CallbackReturn = reinterpret_cast<uint64_t>(CodePtr);
-  sigreturn_32 = CallbackReturn + SignalReturnCode.size();
-  rt_sigreturn_32 = sigreturn_32 + sigreturn_32_code.size();
 
   memcpy(reinterpret_cast<void*>(CallbackReturn), &SignalReturnCode.at(0), SignalReturnCode.size());
-  memcpy(reinterpret_cast<void*>(sigreturn_32), &sigreturn_32_code.at(0), sigreturn_32_code.size());
-  memcpy(reinterpret_cast<void*>(rt_sigreturn_32), &rt_sigreturn_32_code.at(0), rt_sigreturn_32_code.size());
 
   mprotect(CodePtr, CODE_SIZE, PROT_READ);
 #endif

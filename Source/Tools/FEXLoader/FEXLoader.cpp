@@ -467,6 +467,9 @@ int main(int argc, char** argv, char** const envp) {
   auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get()) :
                                                FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), std::move(Allocator));
 
+  // Load VDSO in to memory prior to mapping our ELFs.
+  auto VDSOMapping = FEX::VDSO::LoadVDSOThunks(Loader.Is64BitMode(), SyscallHandler.get());
+
   // Now that we have the syscall handler. Track some FDs that are FEX owned.
   if (OutputFD != -1) {
     SyscallHandler->FM.TrackFEXFD(OutputFD);
@@ -477,9 +480,7 @@ int main(int argc, char** argv, char** const envp) {
   }
 
   {
-    // Load VDSO in to memory prior to mapping our ELFs.
-    void* VDSOBase = FEX::VDSO::LoadVDSOThunks(Loader.Is64BitMode(), SyscallHandler.get());
-    Loader.SetVDSOBase(VDSOBase);
+    Loader.SetVDSOBase(VDSOMapping.VDSOBase);
     Loader.CalculateHWCaps(CTX.get());
 
     if (!Loader.MapMemory(SyscallHandler.get())) {
@@ -590,6 +591,8 @@ int main(int argc, char** argv, char** const envp) {
 
   SignalDelegation->UninstallTLSState(ParentThread);
   SyscallHandler->TM.DestroyThread(ParentThread);
+
+  FEX::VDSO::UnloadVDSOMapping(VDSOMapping);
 
   DebugServer.reset();
   SyscallHandler.reset();
