@@ -97,7 +97,6 @@ struct TrampolineInstanceInfo {
 // Opaque type pointing to an instance of HostToGuestTrampolineTemplate and its
 // embedded TrampolineInstanceInfo
 struct HostToGuestTrampolinePtr;
-const auto HostToGuestTrampolineSize = __stop_HostToGuestTrampolineTemplate - __start_HostToGuestTrampolineTemplate;
 
 static TrampolineInstanceInfo& GetInstanceInfo(HostToGuestTrampolinePtr* Trampoline) {
   const auto Length = __stop_HostToGuestTrampolineTemplate - __start_HostToGuestTrampolineTemplate;
@@ -437,6 +436,8 @@ MakeHostTrampolineForGuestFunction(void* HostPacker, uintptr_t GuestTarget, uint
   }
 
   LogMan::Msg::DFmt("Thunks: Adding host trampoline for guest function {:#x} via unpacker {:#x}", GuestTarget, GuestUnpacker);
+
+  const auto HostToGuestTrampolineSize = __stop_HostToGuestTrampolineTemplate - __start_HostToGuestTrampolineTemplate;
 
   if (ThunkHandler->HostTrampolineInstanceDataAvailable < HostToGuestTrampolineSize) {
     const auto allocation_step = 16 * 1024;
