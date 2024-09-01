@@ -72,8 +72,18 @@ namespace ProductNames {
   static const char ARM_Denver[] = "Nvidia Denver";
   static const char ARM_Carmel[] = "Nvidia Carmel";
 
-  static const char ARM_Firestorm[] = "Apple Firestorm";
-  static const char ARM_Icestorm[] = "Apple Icestorm";
+  static const char ARM_Firestorm_M1[] = "Apple Firestorm (M1)";
+  static const char ARM_Icestorm_M1[] = "Apple Icestorm (M1)";
+  static const char ARM_Firestorm_M1Pro[] = "Apple Firestorm (M1 Pro)";
+  static const char ARM_Icestorm_M1Pro[] = "Apple Icestorm (M1 Pro)";
+  static const char ARM_Firestorm_M1Max[] = "Apple Firestorm (M1 Max)";
+  static const char ARM_Icestorm_M1Max[] = "Apple Icestorm (M1 Max)";
+  static const char ARM_Avalanche_M2[] = "Apple Avalanche (M2)";
+  static const char ARM_Blizzard_M2[] = "Apple Blizzard (M2)";
+  static const char ARM_Avalanche_M2Pro[] = "Apple Avalanche (M2 Pro)";
+  static const char ARM_Blizzard_M2Pro[] = "Apple Blizzard (M2 Pro)";
+  static const char ARM_Avalanche_M2Max[] = "Apple Avalanche (M2 Max)";
+  static const char ARM_Blizzard_M2Max[] = "Apple Blizzard (M2 Max)";
 
   static const char ARM_ORYON_1[] = "Oryon-1";
 #else
@@ -136,11 +146,16 @@ void CPUIDEmu::SetupHostHybridFlag() {
   // CPU priority order
   // This is mostly arbitrary but will sort by some sort of CPU priority by performance
   // Relative list so things they will commonly end up in big.little configurations sort of relate
-  static constexpr std::array<CPUMIDR, 48> CPUMIDRs = {{
+  static constexpr std::array<CPUMIDR, 58> CPUMIDRs = {{
     // Typically big CPU cores
     {0x51, 0x001, 1, ProductNames::ARM_ORYON_1}, // Qualcomm Oryon-1
 
-    {0x61, 0x023, 1, ProductNames::ARM_Firestorm}, // Apple M1 Firestorm
+    {0x61, 0x039, 1, ProductNames::ARM_Avalanche_M2Max}, // Apple Avalanche (M2 Max)
+    {0x61, 0x035, 1, ProductNames::ARM_Avalanche_M2Pro}, // Apple Avalanche (M2 Pro)
+    {0x61, 0x033, 1, ProductNames::ARM_Avalanche_M2},    // Apple Avalanche (M2)
+    {0x61, 0x029, 1, ProductNames::ARM_Firestorm_M1Max}, // Apple Firestorm (M1 Max)
+    {0x61, 0x025, 1, ProductNames::ARM_Firestorm_M1Pro}, // Apple Firestorm (M1 Pro)
+    {0x61, 0x023, 1, ProductNames::ARM_Firestorm_M1},    // Apple Firestorm (M1)
 
     {0x41, 0xd85, 1, ProductNames::ARM_X925},    // X925
     {0x41, 0xd87, 1, ProductNames::ARM_A725},    // A725
@@ -182,7 +197,13 @@ void CPUIDEmu::SetupHostHybridFlag() {
     {0x41, 0xd07, 1, ProductNames::ARM_A57}, // A57
 
     // Typically Little CPU cores
-    {0x61, 0x022, 0, ProductNames::ARM_Icestorm}, // Apple M1 Icestorm
+    {0x61, 0x038, 0, ProductNames::ARM_Blizzard_M2Max}, // Apple Blizzard (M2 Max)
+    {0x61, 0x034, 0, ProductNames::ARM_Blizzard_M2Pro}, // Apple Blizzard (M2 Pro)
+    {0x61, 0x032, 0, ProductNames::ARM_Blizzard_M2},    // Apple Blizzard (M2)
+    {0x61, 0x028, 0, ProductNames::ARM_Icestorm_M1Max}, // Apple Icestorm (M1 Max)
+    {0x61, 0x024, 0, ProductNames::ARM_Icestorm_M1Pro}, // Apple Icestorm (M1 Pro)
+    {0x61, 0x022, 0, ProductNames::ARM_Icestorm_M1},    // Apple Icestorm (M1)
+
     {0x41, 0xd80, 0, ProductNames::ARM_A520},     // A520
     {0x41, 0xd46, 0, ProductNames::ARM_A510},     // A510
     {0x41, 0xd06, 0, ProductNames::ARM_A65},      // A65
