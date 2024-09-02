@@ -618,6 +618,11 @@ ApplicationWindow {
                             onToggled: tsoButtonGroup.onClickedButton(2)
                         }
                     }
+
+                    ConfigCheckBox {
+                        text: qsTr("Enable non-tearing split-lock atomics")
+                        config: "StrictInProcessSplitLocks"
+                    }
                 }
             }
 
