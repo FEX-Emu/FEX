@@ -54,7 +54,7 @@ public:
   ~SignalDelegator() override;
 
   // Called from the signal trampoline function.
-  void HandleSignal(int Signal, void* Info, void* UContext);
+  void HandleSignal(FEX::HLE::ThreadStateObject* Thread, int Signal, void* Info, void* UContext);
 
   void RegisterTLSState(FEX::HLE::ThreadStateObject* Thread);
   void UninstallTLSState(FEX::HLE::ThreadStateObject* Thread);
@@ -82,11 +82,11 @@ public:
    */
   uint64_t RegisterGuestSignalHandler(int Signal, const GuestSigAction* Action, struct GuestSigAction* OldAction);
 
-  uint64_t RegisterGuestSigAltStack(const stack_t* ss, stack_t* old_ss);
+  uint64_t RegisterGuestSigAltStack(FEX::HLE::ThreadStateObject* Thread, const stack_t* ss, stack_t* old_ss);
 
-  uint64_t GuestSigProcMask(int how, const uint64_t* set, uint64_t* oldset);
-  uint64_t GuestSigPending(uint64_t* set, size_t sigsetsize);
-  uint64_t GuestSigSuspend(uint64_t* set, size_t sigsetsize);
+  uint64_t GuestSigProcMask(FEX::HLE::ThreadStateObject* Thread, int how, const uint64_t* set, uint64_t* oldset);
+  uint64_t GuestSigPending(FEX::HLE::ThreadStateObject* Thread, uint64_t* set, size_t sigsetsize);
+  uint64_t GuestSigSuspend(FEX::HLE::ThreadStateObject* Thread, uint64_t* set, size_t sigsetsize);
   uint64_t GuestSigTimedWait(uint64_t* set, siginfo_t* info, const struct timespec* timeout, size_t sigsetsize);
   uint64_t GuestSignalFD(int fd, const uint64_t* set, size_t sigsetsize, int flags);
   /**  @} */
@@ -130,10 +130,8 @@ public:
 
   void SaveTelemetry();
 private:
-  FEX::HLE::ThreadStateObject* GetTLSThread();
-
   // Called from the thunk handler to handle the signal
-  void HandleGuestSignal(FEXCore::Core::InternalThreadState* Thread, int Signal, void* Info, void* UContext);
+  void HandleGuestSignal(FEX::HLE::ThreadStateObject* ThreadObject, int Signal, void* Info, void* UContext);
 
   /**
    * @brief Registers a signal handler for the host to handle a signal
