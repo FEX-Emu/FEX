@@ -217,6 +217,14 @@ def print_man_environment_tail():
     ],
     "''", True)
 
+    print_man_env_option(
+    "FEX_PORTABLE",
+    [
+    "Allows FEX to run without installation. Global locations for configuration and binfmt_misc are ignored. These files are instead read from <FEXInterpreterPath>/fex-emu/ by default.",
+    "For further customization, see FEX_APP_CONFIG_LOCATION and FEX_APP_DATA_LOCATION."
+    ],
+    "''", True)
+
 def print_man_header():
     header ='''.Dd {0}
 .Dt FEX

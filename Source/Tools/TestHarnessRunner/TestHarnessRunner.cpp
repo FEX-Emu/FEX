@@ -199,7 +199,7 @@ int main(int argc, char** argv, char** const envp) {
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
 
-  FEX::Config::InitializeConfigs();
+  FEX::Config::InitializeConfigs(FEX::Config::PortableInformation {});
   FEXCore::Config::Initialize();
   auto ArgsLoader = fextl::make_unique<FEX::ArgLoader::ArgLoader>(FEX::ArgLoader::ArgLoader::LoadType::WITH_FEXLOADER_PARSER, argc, argv);
   auto Args = ArgsLoader->Get();

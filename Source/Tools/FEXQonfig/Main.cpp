@@ -351,7 +351,7 @@ void ConfigRuntime::onLoad(const QUrl& Filename) {
 int main(int Argc, char** Argv) {
   QApplication App(Argc, Argv);
 
-  FEX::Config::InitializeConfigs();
+  FEX::Config::InitializeConfigs(FEX::Config::PortableInformation {});
   fextl::string ConfigFilename = Argc > 1 ? Argv[1] : FEXCore::Config::GetConfigFileLocation();
   ConfigInit(ConfigFilename);
 

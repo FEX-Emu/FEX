@@ -992,7 +992,7 @@ bool DrawUI() {
 } // namespace
 
 int main(int argc, char** argv) {
-  FEX::Config::InitializeConfigs();
+  FEX::Config::InitializeConfigs(FEX::Config::PortableInformation {});
 
   fextl::string ImGUIConfig = FEXCore::Config::GetConfigDirectory(false) + "FEXConfig_imgui.ini";
   auto [window, gl_context] = FEX::GUI::SetupIMGui("#FEXConfig", ImGUIConfig);

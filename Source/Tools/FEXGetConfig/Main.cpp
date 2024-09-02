@@ -107,7 +107,7 @@ TSOEmulationFacts GetTSOEmulationFacts() {
 } // namespace
 
 int main(int argc, char** argv, char** envp) {
-  FEX::Config::InitializeConfigs();
+  FEX::Config::InitializeConfigs(FEX::Config::PortableInformation {});
   FEXCore::Config::Initialize();
   FEXCore::Config::AddLayer(FEX::Config::CreateGlobalMainLayer());
   FEXCore::Config::AddLayer(FEX::Config::CreateMainLayer());
