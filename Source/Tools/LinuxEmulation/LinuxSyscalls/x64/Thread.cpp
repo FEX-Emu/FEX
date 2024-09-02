@@ -38,6 +38,16 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_IMPL_X64_FLAGS(
     clone, SyscallFlags::DEFAULT,
     ([](FEXCore::Core::CpuStateFrame* Frame, uint32_t flags, void* stack, pid_t* parent_tid, pid_t* child_tid, void* tls) -> uint64_t {
+      // This is slightly different EFAULT behaviour, if child_tid or parent_tid is invalid then the kernel just doesn't write to the
+      // pointer. Still need to be EFAULT safe although.
+      if ((flags & (CLONE_CHILD_SETTID | CLONE_CHILD_CLEARTID)) && child_tid) {
+        FaultSafeUserMemAccess::VerifyIsWritable(child_tid, sizeof(*child_tid));
+      }
+
+      if ((flags & CLONE_PARENT_SETTID) && parent_tid) {
+        FaultSafeUserMemAccess::VerifyIsWritable(parent_tid, sizeof(*parent_tid));
+      }
+
       FEX::HLE::clone3_args args {
         .Type = TypeOfClone::TYPE_CLONE2,
         .args =
@@ -59,6 +69,8 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
     }));
 
   REGISTER_SYSCALL_IMPL_X64(sigaltstack, [](FEXCore::Core::CpuStateFrame* Frame, const stack_t* ss, stack_t* old_ss) -> uint64_t {
+    FaultSafeUserMemAccess::VerifyIsReadableOrNull(ss, sizeof(*ss));
+    FaultSafeUserMemAccess::VerifyIsWritableOrNull(old_ss, sizeof(*old_ss));
     return FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSigAltStack(ss, old_ss);
   });
 

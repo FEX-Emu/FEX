@@ -49,6 +49,8 @@ constexpr uint32_t TLS_MaxEntry = TLS_NextEntry + 3;
 
 uint64_t SetThreadArea(FEXCore::Core::CpuStateFrame* Frame, void* tls) {
   struct x32::user_desc* u_info = reinterpret_cast<struct x32::user_desc*>(tls);
+  FaultSafeUserMemAccess::VerifyIsReadable(u_info, sizeof(*u_info));
+
   if (u_info->entry_number == -1) {
     for (uint32_t i = TLS_NextEntry; i < TLS_MaxEntry; ++i) {
       auto GDT = &Frame->State.gdt[i];
@@ -106,6 +108,17 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
 
   REGISTER_SYSCALL_IMPL_X32(
     clone, ([](FEXCore::Core::CpuStateFrame* Frame, uint32_t flags, void* stack, pid_t* parent_tid, void* tls, pid_t* child_tid) -> uint64_t {
+      // This is slightly different EFAULT behaviour, if child_tid or parent_tid is invalid then the kernel just doesn't write to the
+      // pointer. Still need to be EFAULT safe although.
+      if ((flags & (CLONE_CHILD_SETTID | CLONE_CHILD_CLEARTID)) && child_tid) {
+        FaultSafeUserMemAccess::VerifyIsWritable(child_tid, sizeof(*child_tid));
+      }
+
+      if ((flags & CLONE_PARENT_SETTID) && parent_tid) {
+        FaultSafeUserMemAccess::VerifyIsWritable(parent_tid, sizeof(*parent_tid));
+      }
+
+
       FEX::HLE::clone3_args args {.Type = TypeOfClone::TYPE_CLONE2,
                                   .args = {
                                     .flags = flags & ~CSIGNAL,                       // This no longer contains CSIGNAL
@@ -125,6 +138,7 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
 
   REGISTER_SYSCALL_IMPL_X32(waitpid, [](FEXCore::Core::CpuStateFrame* Frame, pid_t pid, int32_t* status, int32_t options) -> uint64_t {
     uint64_t Result = ::waitpid(pid, status, options);
+    FaultSafeUserMemAccess::VerifyIsWritableOrNull(status, sizeof(*status));
     SYSCALL_ERRNO();
   });
 
@@ -142,6 +156,8 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
     if (Entry < TLS_NextEntry || Entry > TLS_MaxEntry) {
       return -EINVAL;
     }
+
+    FaultSafeUserMemAccess::VerifyIsWritable(u_info, sizeof(*u_info));
 
     const auto& GDT = &Frame->State.gdt[Entry];
 
@@ -178,6 +194,9 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
 
   REGISTER_SYSCALL_IMPL_X32(
     get_robust_list, [](FEXCore::Core::CpuStateFrame* Frame, int pid, struct robust_list_head** head, uint32_t* len_ptr) -> uint64_t {
+      FaultSafeUserMemAccess::VerifyIsWritable(head, sizeof(uint32_t));
+      FaultSafeUserMemAccess::VerifyIsWritable(len_ptr, sizeof(*len_ptr));
+
       auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
       // Give the robust list back to the application
       // Steam specifically checks to make sure the robust list is set
@@ -192,6 +211,7 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
       struct timespec tp64 {};
       int cmd = futex_op & FUTEX_CMD_MASK;
       if (timeout && (cmd == FUTEX_WAIT || cmd == FUTEX_LOCK_PI || cmd == FUTEX_WAIT_BITSET || cmd == FUTEX_WAIT_REQUEUE_PI)) {
+        FaultSafeUserMemAccess::VerifyIsReadable(timeout, sizeof(*timeout));
         // timeout argument is only handled as timespec in these cases
         // Otherwise just an integer
         tp64 = *timeout;
@@ -211,17 +231,20 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
       stack_t* old64_ptr {};
 
       if (ss) {
+        FaultSafeUserMemAccess::VerifyIsReadable(ss, sizeof(*ss));
         ss64 = *ss;
         ss64_ptr = &ss64;
       }
 
       if (old_ss) {
+        FaultSafeUserMemAccess::VerifyIsReadable(old_ss, sizeof(*old_ss));
         old64 = *old_ss;
         old64_ptr = &old64;
       }
       uint64_t Result = FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSigAltStack(ss64_ptr, old64_ptr);
 
       if (Result == 0 && old_ss) {
+        FaultSafeUserMemAccess::VerifyIsWritable(old_ss, sizeof(*old_ss));
         *old_ss = old64;
       }
       return Result;
@@ -291,11 +314,13 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
     struct rusage* usage64_p {};
 
     if (rusage) {
+      FaultSafeUserMemAccess::VerifyIsReadable(rusage, sizeof(*rusage));
       usage64 = *rusage;
       usage64_p = &usage64;
     }
     uint64_t Result = ::wait4(pid, wstatus, options, usage64_p);
     if (rusage) {
+      FaultSafeUserMemAccess::VerifyIsWritable(rusage, sizeof(*rusage));
       *rusage = usage64;
     }
     SYSCALL_ERRNO();
@@ -311,6 +336,7 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
                               siginfo_t* info64_p {};
 
                               if (rusage) {
+                                FaultSafeUserMemAccess::VerifyIsReadable(rusage, sizeof(*rusage));
                                 usage64 = *rusage;
                                 usage64_p = &usage64;
                               }
@@ -323,10 +349,12 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
 
                               if (Result != -1) {
                                 if (rusage) {
+                                  FaultSafeUserMemAccess::VerifyIsWritable(rusage, sizeof(*rusage));
                                   *rusage = usage64;
                                 }
 
                                 if (info) {
+                                  FaultSafeUserMemAccess::VerifyIsWritable(info, sizeof(*info));
                                   *info = info64;
                                 }
                               }
