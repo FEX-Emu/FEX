@@ -608,26 +608,9 @@ VDSOMapping LoadVDSOThunks(bool Is64Bit, FEX::HLE::SyscallHandler* const Handler
   fextl::string ThunkGuestPath {};
   if (Is64Bit) {
     ThunkGuestPath = fextl::fmt::format("{}/libVDSO-guest.so", ThunkGuestLibs());
-
-    // Set the Thunk definition pointers for x86-64
-    VDSODefinitions[0].ThunkFunction = FEX::VDSO::x64::Handler_time;
-    VDSODefinitions[1].ThunkFunction = FEX::VDSO::x64::Handler_gettimeofday;
-    VDSODefinitions[2].ThunkFunction = FEX::VDSO::x64::Handler_clock_gettime;
-    VDSODefinitions[3].ThunkFunction = FEX::VDSO::x64::Handler_clock_gettime;
-    VDSODefinitions[4].ThunkFunction = FEX::VDSO::x64::Handler_clock_getres;
-    VDSODefinitions[5].ThunkFunction = FEX::VDSO::x64::Handler_getcpu;
   } else {
     ThunkGuestPath = fextl::fmt::format("{}/libVDSO-guest.so", ThunkGuestLibs32());
-
-    // Set the Thunk definition pointers for x86
-    VDSODefinitions[0].ThunkFunction = FEX::VDSO::x32::Handler_time;
-    VDSODefinitions[1].ThunkFunction = FEX::VDSO::x32::Handler_gettimeofday;
-    VDSODefinitions[2].ThunkFunction = FEX::VDSO::x32::Handler_clock_gettime;
-    VDSODefinitions[3].ThunkFunction = FEX::VDSO::x32::Handler_clock_gettime64;
-    VDSODefinitions[4].ThunkFunction = FEX::VDSO::x32::Handler_clock_getres;
-    VDSODefinitions[5].ThunkFunction = FEX::VDSO::x32::Handler_getcpu;
   }
-
   // Load VDSO if we can
   int VDSOFD = ::open(ThunkGuestPath.c_str(), O_RDONLY);
 
@@ -653,6 +636,24 @@ VDSOMapping LoadVDSOThunks(bool Is64Bit, FEX::HLE::SyscallHandler* const Handler
   if (!Is64Bit && (!VDSOPointers.VDSO_kernel_sigreturn || !VDSOPointers.VDSO_kernel_rt_sigreturn)) {
     // If VDSO couldn't find sigreturn then FEX needs to provide unique implementations.
     LoadUnique32BitSigreturn(&Mapping);
+  }
+
+  if (Is64Bit) {
+    // Set the Thunk definition pointers for x86-64
+    VDSODefinitions[0].ThunkFunction = FEX::VDSO::x64::Handler_time;
+    VDSODefinitions[1].ThunkFunction = FEX::VDSO::x64::Handler_gettimeofday;
+    VDSODefinitions[2].ThunkFunction = FEX::VDSO::x64::Handler_clock_gettime;
+    VDSODefinitions[3].ThunkFunction = FEX::VDSO::x64::Handler_clock_gettime;
+    VDSODefinitions[4].ThunkFunction = FEX::VDSO::x64::Handler_clock_getres;
+    VDSODefinitions[5].ThunkFunction = FEX::VDSO::x64::Handler_getcpu;
+  } else {
+    // Set the Thunk definition pointers for x86
+    VDSODefinitions[0].ThunkFunction = FEX::VDSO::x32::Handler_time;
+    VDSODefinitions[1].ThunkFunction = FEX::VDSO::x32::Handler_gettimeofday;
+    VDSODefinitions[2].ThunkFunction = FEX::VDSO::x32::Handler_clock_gettime;
+    VDSODefinitions[3].ThunkFunction = FEX::VDSO::x32::Handler_clock_gettime64;
+    VDSODefinitions[4].ThunkFunction = FEX::VDSO::x32::Handler_clock_getres;
+    VDSODefinitions[5].ThunkFunction = FEX::VDSO::x32::Handler_getcpu;
   }
 
   return Mapping;
