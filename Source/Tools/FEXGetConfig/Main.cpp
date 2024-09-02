@@ -107,12 +107,12 @@ TSOEmulationFacts GetTSOEmulationFacts() {
 } // namespace
 
 int main(int argc, char** argv, char** envp) {
+  FEX::Config::InitializeConfigs();
   FEXCore::Config::Initialize();
   FEXCore::Config::AddLayer(FEX::Config::CreateGlobalMainLayer());
   FEXCore::Config::AddLayer(FEX::Config::CreateMainLayer());
   // No FEX arguments passed through command line
   FEXCore::Config::AddLayer(FEX::Config::CreateEnvironmentLayer(envp));
-  FEXCore::Config::Load();
 
   // Load the arguments
   optparse::OptionParser Parser = optparse::OptionParser().description("Simple application to get a couple of FEX options");
@@ -144,6 +144,8 @@ int main(int argc, char** argv, char** envp) {
       FEXCore::Config::AddLayer(FEX::Config::CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_LOCAL_STEAM_APP));
     }
   }
+
+  FEXCore::Config::Load();
 
   // Reload the meta layer
   FEXCore::Config::ReloadMetaLayer();
@@ -212,8 +214,9 @@ int main(int argc, char** argv, char** envp) {
     fprintf(stdout, "\tMemory atomics emulation method:      %s\n", TSOFacts.LSE ? "\e[32mLSE\e[0m" : "\e[31mLL/SC\e[0m");
     fprintf(stdout, "\tUnaligned atomic memory granularity:  %s\n", TSOFacts.LSE2 ? "\e[32m16-byte\e[0m" : "\e[31mNatural alignment\e[0m");
     ///< TODO: Once TME is supported by hardware this can change.
-    fprintf(stdout, "\tUnaligned memory atomic emulation:    %s\n", TSOFacts.LSE ? "\e[31mTearing CAS loops\e[0m" : "\e[31mTearing LL/SC loops\e[0m");
     fprintf(stdout, "\tUnaligned memory loadstore emulation: %s\n", UnalignedMemoryLoadStoreTSOEmulation);
+    fprintf(stdout, "\t16-Byte split-lock atomic emulation:  %s\n", TSOFacts.LSE ? "\e[31mTearing CAS loops\e[0m" : "\e[31mTearing LL/SC loops\e[0m");
+    fprintf(stdout, "\t64-Byte split-lock atomic emulation:  %s\n", TSOFacts.LSE ? "\e[31mTearing CAS loops\e[0m" : "\e[31mTearing LL/SC loops\e[0m");
     fprintf(stdout, "\tGPR memory model emulation:           %s\n", GPRMemoryTSOEmulation);
     fprintf(stdout, "\tMemcpy memory model emulation:        %s\n", MemcpyMemoryTSOEmulation);
     fprintf(stdout, "\tVector memory model emulation:        %s\n", VectorMemoryTSOEmulation);
@@ -222,12 +225,16 @@ int main(int argc, char** argv, char** envp) {
     FEX_CONFIG_OPT(MemcpySetTSOEnabled, MEMCPYSETTSOENABLED);
     FEX_CONFIG_OPT(VectorTSOEnabled, VECTORTSOENABLED);
     FEX_CONFIG_OPT(HalfBarrierTSOEnabled, HALFBARRIERTSOENABLED);
+    FEX_CONFIG_OPT(StrictInProcessSplitLocks, STRICTINPROCESSSPLITLOCKS);
+    fprintf(stderr, "Strict: %d\n", StrictInProcessSplitLocks());
 
     fprintf(stdout, "\nConfiguration:\n");
     fprintf(stdout, "\tTSO Emulation:                        %s\n", TSOEnabled() ? "Enabled" : "Disabled");
     fprintf(stdout, "\tMemcpy TSO Emulation:                 %s\n", TSOEnabled() && MemcpySetTSOEnabled() ? "Enabled" : "Disabled");
     fprintf(stdout, "\tVector TSO Emulation:                 %s\n", TSOEnabled() && VectorTSOEnabled() ? "Enabled" : "Disabled");
     fprintf(stdout, "\tHalf-barrier unaligned TSO emulation: %s\n", TSOEnabled() && HalfBarrierTSOEnabled() ? "Enabled" : "Disabled");
+    fprintf(stdout, "\t16-Byte strict split-lock emulation:  %s\n", StrictInProcessSplitLocks() ? "In-process mutex" : "Tearing");
+    fprintf(stdout, "\t64-Byte strict split-lock emulation:  %s\n", StrictInProcessSplitLocks() ? "In-process mutex" : "Tearing");
   }
 
   return 0;

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 #include "Interface/Core/CPUBackend.h"
+#include "Interface/Context/Context.h"
 #include "Utils/SpinWaitLock.h"
 
 #include <FEXCore/Debug/InternalThreadState.h>
@@ -343,7 +344,9 @@ std::pair<uint64_t, uint64_t> DoLoad128(uint64_t Addr) {
 }
 
 static bool RunCASPAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg1, uint32_t DesiredReg2, uint32_t ExpectedReg1,
-                      uint32_t ExpectedReg2, uint32_t AddressReg) {
+                      uint32_t ExpectedReg2, uint32_t AddressReg, uint32_t* StrictSplitLockMutex) {
+
+  std::optional<FEXCore::Utils::SpinWaitLock::UniqueSpinMutex<uint32_t>> Lock {};
   if (Size == 0) {
     // 32bit
     uint64_t Addr = GPRs[AddressReg];
@@ -364,11 +367,17 @@ static bool RunCASPAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg1, uint3
     // Check for Split lock across a cacheline
     if ((Addr & 63) > 56) {
       FEXCORE_TELEMETRY_SET(SplitLock, 1);
+      if (StrictSplitLockMutex && !Lock.has_value()) {
+        Lock.emplace(StrictSplitLockMutex);
+      }
     }
 
     uint64_t AlignmentMask = 0b1111;
     if ((Addr & AlignmentMask) > 8) {
       FEXCORE_TELEMETRY_SET(SplitLock16B, 1);
+      if (StrictSplitLockMutex && !Lock.has_value()) {
+        Lock.emplace(StrictSplitLockMutex);
+      }
 
       uint64_t Alignment = Addr & 0b111;
       Addr &= ~0b111ULL;
@@ -519,7 +528,7 @@ static bool RunCASPAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg1, uint3
   return false;
 }
 
-bool HandleCASPAL(uint32_t Instr, uint64_t* GPRs) {
+bool HandleCASPAL(uint32_t Instr, uint64_t* GPRs, uint32_t* StrictSplitLockMutex) {
   uint32_t Size = (Instr >> 30) & 1;
 
   uint32_t DesiredReg1 = Instr & 0b11111;
@@ -528,10 +537,10 @@ bool HandleCASPAL(uint32_t Instr, uint64_t* GPRs) {
   uint32_t ExpectedReg2 = ExpectedReg1 + 1;
   uint32_t AddressReg = (Instr >> 5) & 0b11111;
 
-  return RunCASPAL(GPRs, Size, DesiredReg1, DesiredReg2, ExpectedReg1, ExpectedReg2, AddressReg);
+  return RunCASPAL(GPRs, Size, DesiredReg1, DesiredReg2, ExpectedReg1, ExpectedReg2, AddressReg, StrictSplitLockMutex);
 }
 
-uint64_t HandleCASPAL_ARMv8(uint32_t Instr, uintptr_t ProgramCounter, uint64_t* GPRs) {
+uint64_t HandleCASPAL_ARMv8(uint32_t Instr, uintptr_t ProgramCounter, uint64_t* GPRs, uint32_t* StrictSplitLockMutex) {
   // caspair
   // [1] ldaxp(TMP2.W(), TMP3.W(), MemOperand(MemSrc)); <-- DataReg & AddrReg
   // [2] cmp(TMP2.W(), Expected.first.W()); <-- ExpectedReg1
@@ -609,7 +618,7 @@ uint64_t HandleCASPAL_ARMv8(uint32_t Instr, uintptr_t ProgramCounter, uint64_t* 
   GPRs[DataReg] = GPRs[ExpectedReg1];
   GPRs[DataReg2] = GPRs[ExpectedReg2];
 
-  if (RunCASPAL(GPRs, Size, DesiredReg1, DesiredReg2, DataReg, DataReg2, AddrReg)) {
+  if (RunCASPAL(GPRs, Size, DesiredReg1, DesiredReg2, DataReg, DataReg2, AddrReg, StrictSplitLockMutex)) {
     return 9 * sizeof(uint32_t); // skip to mov + clrex
   } else {
     return 0;
@@ -653,16 +662,23 @@ using CASDesiredFn = T (*)(T Src, T Desired);
 
 template<bool Retry>
 static uint16_t DoCAS16(uint16_t DesiredSrc, uint16_t ExpectedSrc, uint64_t Addr, CASExpectedFn<uint16_t> ExpectedFunction,
-                        CASDesiredFn<uint16_t> DesiredFunction) {
+                        CASDesiredFn<uint16_t> DesiredFunction, uint32_t* StrictSplitLockMutex) {
+  std::optional<FEXCore::Utils::SpinWaitLock::UniqueSpinMutex<uint32_t>> Lock {};
 
   if ((Addr & 63) == 63) {
     FEXCORE_TELEMETRY_SET(SplitLock, 1);
+    if (StrictSplitLockMutex && !Lock.has_value()) {
+      Lock.emplace(StrictSplitLockMutex);
+    }
   }
 
   // 16 bit
   uint64_t AlignmentMask = 0b1111;
   if ((Addr & AlignmentMask) == 15) {
     FEXCORE_TELEMETRY_SET(SplitLock16B, 1);
+    if (StrictSplitLockMutex && !Lock.has_value()) {
+      Lock.emplace(StrictSplitLockMutex);
+    }
 
     // Address crosses over 16byte or 64byte threshold
     // Need a dual 8bit CAS loop
@@ -922,16 +938,23 @@ static uint16_t DoCAS16(uint16_t DesiredSrc, uint16_t ExpectedSrc, uint64_t Addr
 
 template<bool Retry>
 static uint32_t DoCAS32(uint32_t DesiredSrc, uint32_t ExpectedSrc, uint64_t Addr, CASExpectedFn<uint32_t> ExpectedFunction,
-                        CASDesiredFn<uint32_t> DesiredFunction) {
+                        CASDesiredFn<uint32_t> DesiredFunction, uint32_t* StrictSplitLockMutex) {
+  std::optional<FEXCore::Utils::SpinWaitLock::UniqueSpinMutex<uint32_t>> Lock {};
 
   if ((Addr & 63) > 60) {
     FEXCORE_TELEMETRY_SET(SplitLock, 1);
+    if (StrictSplitLockMutex && !Lock.has_value()) {
+      Lock.emplace(StrictSplitLockMutex);
+    }
   }
 
   // 32 bit
   uint64_t AlignmentMask = 0b1111;
   if ((Addr & AlignmentMask) > 12) {
     FEXCORE_TELEMETRY_SET(SplitLock16B, 1);
+    if (StrictSplitLockMutex && !Lock.has_value()) {
+      Lock.emplace(StrictSplitLockMutex);
+    }
 
     // Address crosses over 16byte threshold
     // Needs dual 4 byte CAS loop
@@ -1147,16 +1170,23 @@ static uint32_t DoCAS32(uint32_t DesiredSrc, uint32_t ExpectedSrc, uint64_t Addr
 
 template<bool Retry>
 static uint64_t DoCAS64(uint64_t DesiredSrc, uint64_t ExpectedSrc, uint64_t Addr, CASExpectedFn<uint64_t> ExpectedFunction,
-                        CASDesiredFn<uint64_t> DesiredFunction) {
+                        CASDesiredFn<uint64_t> DesiredFunction, uint32_t* StrictSplitLockMutex) {
+  std::optional<FEXCore::Utils::SpinWaitLock::UniqueSpinMutex<uint32_t>> Lock {};
 
   if ((Addr & 63) > 56) {
     FEXCORE_TELEMETRY_SET(SplitLock, 1);
+    if (StrictSplitLockMutex && !Lock.has_value()) {
+      Lock.emplace(StrictSplitLockMutex);
+    }
   }
 
   // 64bit
   uint64_t AlignmentMask = 0b1111;
   if ((Addr & AlignmentMask) > 8) {
     FEXCORE_TELEMETRY_SET(SplitLock16B, 1);
+    if (StrictSplitLockMutex && !Lock.has_value()) {
+      Lock.emplace(StrictSplitLockMutex);
+    }
 
     uint64_t Alignment = Addr & 0b111;
     Addr &= ~0b111ULL;
@@ -1305,7 +1335,7 @@ static uint64_t DoCAS64(uint64_t DesiredSrc, uint64_t ExpectedSrc, uint64_t Addr
   }
 }
 
-static bool RunCASAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg, uint32_t ExpectedReg, uint32_t AddressReg) {
+static bool RunCASAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg, uint32_t ExpectedReg, uint32_t AddressReg, uint32_t* StrictSplitLockMutex) {
   uint64_t Addr = GPRs[AddressReg];
 
   // Cross-cacheline CAS doesn't work on ARM
@@ -1328,7 +1358,8 @@ static bool RunCASAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg, uint32_
       [](uint16_t, uint16_t Desired) -> uint16_t {
         // Desired is just Desired
         return Desired;
-      });
+      },
+      StrictSplitLockMutex);
 
     // Regardless of pass or fail
     // We set the result register if it isn't a zero register
@@ -1346,7 +1377,8 @@ static bool RunCASAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg, uint32_
       [](uint32_t, uint32_t Desired) -> uint32_t {
         // Desired is just Desired
         return Desired;
-      });
+      },
+      StrictSplitLockMutex);
 
     // Regardless of pass or fail
     // We set the result register if it isn't a zero register
@@ -1364,7 +1396,8 @@ static bool RunCASAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg, uint32_
       [](uint64_t, uint64_t Desired) -> uint64_t {
         // Desired is just Desired
         return Desired;
-      });
+      },
+      StrictSplitLockMutex);
 
     // Regardless of pass or fail
     // We set the result register if it isn't a zero register
@@ -1377,16 +1410,16 @@ static bool RunCASAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg, uint32_
   return false;
 }
 
-static bool HandleCASAL(uint64_t* GPRs, uint32_t Instr) {
+static bool HandleCASAL(uint64_t* GPRs, uint32_t Instr, uint32_t* StrictSplitLockMutex) {
   uint32_t Size = 1 << (Instr >> 30);
 
   uint32_t DesiredReg = Instr & 0b11111;
   uint32_t ExpectedReg = (Instr >> 16) & 0b11111;
   uint32_t AddressReg = (Instr >> 5) & 0b11111;
-  return RunCASAL(GPRs, Size, DesiredReg, ExpectedReg, AddressReg);
+  return RunCASAL(GPRs, Size, DesiredReg, ExpectedReg, AddressReg, StrictSplitLockMutex);
 }
 
-static bool HandleAtomicMemOp(uint32_t Instr, uint64_t* GPRs) {
+static bool HandleAtomicMemOp(uint32_t Instr, uint64_t* GPRs, uint32_t* StrictSplitLockMutex) {
   uint32_t Size = 1 << (Instr >> 30);
   uint32_t ResultReg = Instr & 0b11111;
   uint32_t SourceReg = (Instr >> 16) & 0b11111;
@@ -1434,7 +1467,7 @@ static bool HandleAtomicMemOp(uint32_t Instr, uint64_t* GPRs) {
 
     auto Res = DoCAS16<true>(GPRs[SourceReg],
                              0, // Unused
-                             Addr, NOPExpected, DesiredFunction);
+                             Addr, NOPExpected, DesiredFunction, StrictSplitLockMutex);
     // If we passed and our destination register is not zero
     // Then we need to update the result register with what was in memory
     if (ResultReg != 31) {
@@ -1479,7 +1512,7 @@ static bool HandleAtomicMemOp(uint32_t Instr, uint64_t* GPRs) {
 
     auto Res = DoCAS32<true>(GPRs[SourceReg],
                              0, // Unused
-                             Addr, NOPExpected, DesiredFunction);
+                             Addr, NOPExpected, DesiredFunction, StrictSplitLockMutex);
     // If we passed and our destination register is not zero
     // Then we need to update the result register with what was in memory
     if (ResultReg != 31) {
@@ -1524,7 +1557,7 @@ static bool HandleAtomicMemOp(uint32_t Instr, uint64_t* GPRs) {
 
     auto Res = DoCAS64<true>(GPRs[SourceReg],
                              0, // Unused
-                             Addr, NOPExpected, DesiredFunction);
+                             Addr, NOPExpected, DesiredFunction, StrictSplitLockMutex);
     // If we passed and our destination register is not zero
     // Then we need to update the result register with what was in memory
     if (ResultReg != 31) {
@@ -1570,7 +1603,7 @@ static bool HandleAtomicLoad(uint32_t Instr, uint64_t* GPRs, int64_t Offset) {
   return false;
 }
 
-static bool HandleAtomicStore(uint32_t Instr, uint64_t* GPRs, int64_t Offset) {
+static bool HandleAtomicStore(uint32_t Instr, uint64_t* GPRs, int64_t Offset, uint32_t* StrictSplitLockMutex) {
   uint32_t Size = 1 << (Instr >> 30);
 
   uint32_t DataReg = Instr & 0x1F;
@@ -1591,7 +1624,8 @@ static bool HandleAtomicStore(uint32_t Instr, uint64_t* GPRs, int64_t Offset) {
       [](uint16_t, uint16_t Desired) -> uint16_t {
         // Desired is just Desired
         return Desired;
-      });
+      },
+      StrictSplitLockMutex);
     return true;
   } else if (Size == 4) {
     DoCAS32<DoRetry>(
@@ -1605,7 +1639,8 @@ static bool HandleAtomicStore(uint32_t Instr, uint64_t* GPRs, int64_t Offset) {
       [](uint32_t, uint32_t Desired) -> uint32_t {
         // Desired is just Desired
         return Desired;
-      });
+      },
+      StrictSplitLockMutex);
     return true;
   } else if (Size == 8) {
     DoCAS64<DoRetry>(
@@ -1619,14 +1654,15 @@ static bool HandleAtomicStore(uint32_t Instr, uint64_t* GPRs, int64_t Offset) {
       [](uint64_t, uint64_t Desired) -> uint64_t {
         // Desired is just Desired
         return Desired;
-      });
+      },
+      StrictSplitLockMutex);
     return true;
   }
 
   return false;
 }
 
-static uint64_t HandleCAS_NoAtomics(uintptr_t ProgramCounter, uint64_t* GPRs) {
+static uint64_t HandleCAS_NoAtomics(uintptr_t ProgramCounter, uint64_t* GPRs, uint32_t* StrictSplitLockMutex) {
   // ARMv8.0 CAS
   // [1] ldaxrb(TMP2.W(), MemOperand(MemSrc))
   // [2] cmp (TMP2.W(), Expected.W())
@@ -1662,14 +1698,14 @@ static uint64_t HandleCAS_NoAtomics(uintptr_t ProgramCounter, uint64_t* GPRs) {
   // set up CASAL by doing mov(TMP2, Expected)
   GPRs[ResultReg] = GPRs[ExpectedReg];
 
-  if (RunCASAL(GPRs, Size, DesiredReg, ResultReg, AddressReg)) {
+  if (RunCASAL(GPRs, Size, DesiredReg, ResultReg, AddressReg, StrictSplitLockMutex)) {
     return 7 * sizeof(uint32_t); // jump to mov to allocated register
   } else {
     return 0;
   }
 }
 
-static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_t* GPRs) {
+static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_t* GPRs, uint32_t* StrictSplitLockMutex) {
   uint32_t* PC = (uint32_t*)ProgramCounter;
   uint32_t Instr = PC[0];
 
@@ -1746,7 +1782,7 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
       DataSourceReg = GetRmReg(NextInstr);
     } else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::CMP_INST ||
                (NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::CMP_SHIFT_INST) {
-      return HandleCAS_NoAtomics(ProgramCounter, GPRs); // ARMv8.0 CAS
+      return HandleCAS_NoAtomics(ProgramCounter, GPRs, StrictSplitLockMutex); // ARMv8.0 CAS
     } else if ((NextInstr & ArchHelpers::Arm64::ALU_OP_MASK) == ArchHelpers::Arm64::AND_INST) {
       AtomicOp = ExclusiveAtomicPairType::TYPE_AND;
       DataSourceReg = GetRmReg(NextInstr);
@@ -1858,7 +1894,7 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
 
     auto Res = DoCAS16<DoRetry>(GPRs[DataSourceReg],
                                 0, // Unused
-                                Addr, NOPExpected, DesiredFunction);
+                                Addr, NOPExpected, DesiredFunction, StrictSplitLockMutex);
 
     if (AtomicFetch && ResultReg != 31) {
       // On atomic fetch then we store the resulting value back in to the loadacquire destination register
@@ -1885,7 +1921,7 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
 
     auto Res = DoCAS32<DoRetry>(GPRs[DataSourceReg],
                                 0, // Unused
-                                Addr, NOPExpected, DesiredFunction);
+                                Addr, NOPExpected, DesiredFunction, StrictSplitLockMutex);
 
     if (AtomicFetch && ResultReg != 31) {
       // On atomic fetch then we store the resulting value back in to the loadacquire destination register
@@ -1912,7 +1948,7 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
 
     auto Res = DoCAS64<DoRetry>(GPRs[DataSourceReg],
                                 0, // Unused
-                                Addr, NOPExpected, DesiredFunction);
+                                Addr, NOPExpected, DesiredFunction, StrictSplitLockMutex);
     if (AtomicFetch && ResultReg != 31) {
       // On atomic fetch then we store the resulting value back in to the loadacquire destination register
       // We want the memory value BEFORE the ALU op
@@ -1948,6 +1984,9 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
   uint32_t AddrReg = (Instr >> 5) & 0x1F;
   uint32_t DataReg = Instr & 0x1F;
 
+  auto CTX = static_cast<Context::ContextImpl*>(Thread->CTX);
+  uint32_t* StrictSplitLockMutex {CTX->Config.StrictInProcessSplitLocks ? &CTX->StrictSplitLockMutex : nullptr};
+
   // ParanoidTSO path doesn't modify any code.
   if (HandleType == UnalignedHandlerType::Paranoid) [[unlikely]] {
     if ((Instr & LDAXR_MASK) == LDAR_INST ||  // LDAR*
@@ -1960,7 +1999,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
         return NotHandled;
       }
     } else if ((Instr & LDAXR_MASK) == STLR_INST) { // STLR*
-      if (ArchHelpers::Arm64::HandleAtomicStore(Instr, GPRs, 0)) {
+      if (ArchHelpers::Arm64::HandleAtomicStore(Instr, GPRs, 0, StrictSplitLockMutex)) {
         // Skip this instruction now
         return std::make_pair(true, 4);
       } else {
@@ -1980,7 +2019,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
     } else if ((Instr & RCPC2_MASK) == STLUR_INST) { // STLUR*
       // Extract the 9-bit offset from the instruction
       int32_t Offset = static_cast<int32_t>(Instr) << 11 >> 23;
-      if (ArchHelpers::Arm64::HandleAtomicStore(Instr, GPRs, Offset)) {
+      if (ArchHelpers::Arm64::HandleAtomicStore(Instr, GPRs, Offset, StrictSplitLockMutex)) {
         // Skip this instruction now
         return std::make_pair(true, 4);
       } else {
@@ -1997,7 +2036,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
 
   // Check some instructions first that don't do any backpatching.
   if ((Instr & ArchHelpers::Arm64::CASPAL_MASK) == ArchHelpers::Arm64::CASPAL_INST) { // CASPAL
-    if (ArchHelpers::Arm64::HandleCASPAL(Instr, GPRs)) {
+    if (ArchHelpers::Arm64::HandleCASPAL(Instr, GPRs, StrictSplitLockMutex)) {
       // Skip this instruction now
       return std::make_pair(true, 4);
     } else {
@@ -2005,7 +2044,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
       return NotHandled;
     }
   } else if ((Instr & ArchHelpers::Arm64::CASAL_MASK) == ArchHelpers::Arm64::CASAL_INST) { // CASAL
-    if (ArchHelpers::Arm64::HandleCASAL(GPRs, Instr)) {
+    if (ArchHelpers::Arm64::HandleCASAL(GPRs, Instr, StrictSplitLockMutex)) {
       // Skip this instruction now
       return std::make_pair(true, 4);
     } else {
@@ -2018,7 +2057,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
     // This must fall through to the spin-lock implementation below.
     // This mask has a partial overlap with ATOMIC_MEM_INST so we need to check this here.
   } else if ((Instr & ArchHelpers::Arm64::ATOMIC_MEM_MASK) == ArchHelpers::Arm64::ATOMIC_MEM_INST) { // Atomic memory op
-    if (ArchHelpers::Arm64::HandleAtomicMemOp(Instr, GPRs)) {
+    if (ArchHelpers::Arm64::HandleAtomicMemOp(Instr, GPRs, StrictSplitLockMutex)) {
       // Skip this instruction now
       return std::make_pair(true, 4);
     } else {
@@ -2027,7 +2066,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
       return NotHandled;
     }
   } else if ((Instr & ArchHelpers::Arm64::LDAXR_MASK) == ArchHelpers::Arm64::LDAXR_INST) { // LDAXR*
-    uint64_t BytesToSkip = ArchHelpers::Arm64::HandleAtomicLoadstoreExclusive(ProgramCounter, GPRs);
+    uint64_t BytesToSkip = ArchHelpers::Arm64::HandleAtomicLoadstoreExclusive(ProgramCounter, GPRs, StrictSplitLockMutex);
     if (BytesToSkip) {
       // Skip this instruction now
       return std::make_pair(true, BytesToSkip);
@@ -2035,7 +2074,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
     // Explicit fallthrough to the backpatch handler below!
   } else if ((Instr & ArchHelpers::Arm64::LDAXP_MASK) == ArchHelpers::Arm64::LDAXP_INST) { // LDAXP
     // Should be compare and swap pair only. LDAXP not used elsewhere
-    uint64_t BytesToSkip = ArchHelpers::Arm64::HandleCASPAL_ARMv8(Instr, ProgramCounter, GPRs);
+    uint64_t BytesToSkip = ArchHelpers::Arm64::HandleCASPAL_ARMv8(Instr, ProgramCounter, GPRs, StrictSplitLockMutex);
     if (BytesToSkip) {
       // Skip this instruction now
       return std::make_pair(true, BytesToSkip);

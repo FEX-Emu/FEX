@@ -556,11 +556,13 @@ void FillHackConfig() {
     auto Value = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_TSOENABLED);
     auto VectorTSO = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_VECTORTSOENABLED);
     auto MemcpyTSO = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_MEMCPYSETTSOENABLED);
+    auto StrictSplitLockAtomics = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_STRICTINPROCESSSPLITLOCKS);
     auto HalfBarrierTSO = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_HALFBARRIERTSOENABLED);
 
     bool TSOEnabled = Value.has_value() && **Value == "1";
     bool VectorTSOEnabled = VectorTSO.has_value() && **VectorTSO == "1";
     bool MemcpyTSOEnabled = MemcpyTSO.has_value() && **MemcpyTSO == "1";
+    bool StrictSplitLockAtomicsEnabled = StrictSplitLockAtomics.has_value() && **StrictSplitLockAtomics == "1";
     bool HalfBarrierTSOEnabled = HalfBarrierTSO.has_value() && **HalfBarrierTSO == "1";
 
     if (ImGui::Checkbox("TSO Emulation Enabled", &TSOEnabled)) {
@@ -587,6 +589,16 @@ void FillHackConfig() {
         if (ImGui::IsItemHovered()) {
           ImGui::BeginTooltip();
           ImGui::Text("Disables TSO emulation on memcpy/memset instructions");
+          ImGui::EndTooltip();
+        }
+
+        if (ImGui::Checkbox("Strict in-process split-lock atomics Enabled", &StrictSplitLockAtomicsEnabled)) {
+          LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_STRICTINPROCESSSPLITLOCKS, StrictSplitLockAtomicsEnabled ? "1" : "0");
+          ConfigChanged = true;
+        }
+        if (ImGui::IsItemHovered()) {
+          ImGui::BeginTooltip();
+          ImGui::Text("Disables strict in-process split-lock atomics using a mutex");
           ImGui::EndTooltip();
         }
 
