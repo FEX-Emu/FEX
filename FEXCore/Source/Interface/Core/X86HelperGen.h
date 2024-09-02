@@ -17,8 +17,6 @@ public:
   ~X86GeneratedCode();
 
   uint64_t CallbackReturn {};
-  uint64_t sigreturn_32 {};
-  uint64_t rt_sigreturn_32 {};
 
 private:
   void* CodePtr {};

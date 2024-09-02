@@ -527,8 +527,81 @@ void LoadGuestVDSOSymbols(bool Is64Bit, char* VDSOBase) {
   }
 }
 
-void* LoadVDSOThunks(bool Is64Bit, FEX::HLE::SyscallHandler* const Handler) {
-  void* VDSOBase {};
+void LoadUnique32BitSigreturn(VDSOMapping* Mapping) {
+  // Hardcoded to one page for now
+  const auto PageSize = sysconf(_SC_PAGESIZE);
+  Mapping->OptionalMappingSize = PageSize;
+
+  // First 64bit page
+  constexpr uintptr_t LOCATION_MAX = 0x1'0000'0000;
+
+  // We need to have the sigret handler in the lower 32bits of memory space
+  // Scan top down and try to allocate a location
+  for (size_t Location = 0xFFFF'E000; Location != 0x0; Location -= PageSize) {
+    void* Ptr =
+      ::mmap(reinterpret_cast<void*>(Location), PageSize, PROT_READ | PROT_WRITE, MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
+    if (Ptr != MAP_FAILED && reinterpret_cast<uintptr_t>(Ptr) >= LOCATION_MAX) {
+      // Failed to map in the lower 32bits
+      // Try again
+      // Can happen in the case that host kernel ignores MAP_FIXED_NOREPLACE
+      ::munmap(Ptr, PageSize);
+      continue;
+    }
+
+    if (Ptr != MAP_FAILED) {
+      Mapping->OptionalSigReturnMapping = Ptr;
+      break;
+    }
+  }
+
+  // Can't do anything about this
+  // Here's hoping the application doesn't use signals
+  if (!Mapping->OptionalSigReturnMapping) {
+    return;
+  }
+
+  // Signal return handlers need to be bit-exact to what the Linux kernel provides in VDSO.
+  // GDB and unwinding libraries key off of these instructions to understand if the stack frame is a signal frame or not.
+  // This two code sections match exactly what libSegFault expects.
+  //
+  // Typically this handlers are provided by the 32-bit VDSO thunk library, but that isn't available in all cases.
+  // Falling back to this generated code segment still allows a backtrace to work, just might not show
+  // the symbol as VDSO since there is no ELF to parse.
+  constexpr std::array<uint8_t, 9> sigreturn_32_code = {
+    0x58,                         // pop eax
+    0xb8, 0x77, 0x00, 0x00, 0x00, // mov eax, 0x77
+    0xcd, 0x80,                   // int 0x80
+    0x90,                         // nop
+  };
+
+  constexpr std::array<uint8_t, 7> rt_sigreturn_32_code = {
+    0xb8, 0xad, 0x00, 0x00, 0x00, // mov eax, 0xad
+    0xcd, 0x80,                   // int 0x80
+  };
+
+  VDSOPointers.VDSO_kernel_sigreturn = Mapping->OptionalSigReturnMapping;
+  VDSOPointers.VDSO_kernel_rt_sigreturn =
+    reinterpret_cast<void*>(reinterpret_cast<uint64_t>(Mapping->OptionalSigReturnMapping) + sigreturn_32_code.size());
+
+  memcpy(reinterpret_cast<void*>(VDSOPointers.VDSO_kernel_sigreturn), &sigreturn_32_code.at(0), sigreturn_32_code.size());
+  memcpy(reinterpret_cast<void*>(VDSOPointers.VDSO_kernel_rt_sigreturn), &rt_sigreturn_32_code.at(0), rt_sigreturn_32_code.size());
+
+  mprotect(Mapping->OptionalSigReturnMapping, Mapping->OptionalMappingSize, PROT_READ);
+}
+
+void UnloadVDSOMapping(const VDSOMapping& Mapping) {
+  if (Mapping.VDSOBase) {
+    munmap(Mapping.VDSOBase, Mapping.VDSOSize);
+  }
+
+  if (Mapping.OptionalSigReturnMapping) {
+    munmap(Mapping.OptionalSigReturnMapping, Mapping.OptionalMappingSize);
+  }
+}
+
+VDSOMapping LoadVDSOThunks(bool Is64Bit, FEX::HLE::SyscallHandler* const Handler) {
+  VDSOMapping Mapping {};
   FEX_CONFIG_OPT(ThunkGuestLibs, THUNKGUESTLIBS);
   FEX_CONFIG_OPT(ThunkGuestLibs32, THUNKGUESTLIBS32);
 
@@ -560,24 +633,29 @@ void* LoadVDSOThunks(bool Is64Bit, FEX::HLE::SyscallHandler* const Handler) {
 
   if (VDSOFD != -1) {
     // Get file size
-    size_t VDSOSize = lseek(VDSOFD, 0, SEEK_END);
+    Mapping.VDSOSize = lseek(VDSOFD, 0, SEEK_END);
 
-    if (VDSOSize >= 4) {
+    if (Mapping.VDSOSize >= 4) {
       // Reset to beginning
       lseek(VDSOFD, 0, SEEK_SET);
-      VDSOSize = FEXCore::AlignUp(VDSOSize, 4096);
+      Mapping.VDSOSize = FEXCore::AlignUp(Mapping.VDSOSize, 4096);
 
       // Map the VDSO file to memory
-      VDSOBase = Handler->GuestMmap(nullptr, nullptr, VDSOSize, PROT_READ, MAP_PRIVATE, VDSOFD, 0);
+      Mapping.VDSOBase = Handler->GuestMmap(nullptr, nullptr, Mapping.VDSOSize, PROT_READ, MAP_PRIVATE, VDSOFD, 0);
 
       // Since we found our VDSO thunk library, find our host VDSO function implementations.
       LoadHostVDSO();
     }
     close(VDSOFD);
-    LoadGuestVDSOSymbols(Is64Bit, reinterpret_cast<char*>(VDSOBase));
+    LoadGuestVDSOSymbols(Is64Bit, reinterpret_cast<char*>(Mapping.VDSOBase));
   }
 
-  return VDSOBase;
+  if (!Is64Bit && (!VDSOPointers.VDSO_kernel_sigreturn || !VDSOPointers.VDSO_kernel_rt_sigreturn)) {
+    // If VDSO couldn't find sigreturn then FEX needs to provide unique implementations.
+    LoadUnique32BitSigreturn(&Mapping);
+  }
+
+  return Mapping;
 }
 
 uint64_t GetVSyscallEntry(const void* VDSOBase) {

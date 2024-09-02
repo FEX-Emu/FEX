@@ -105,10 +105,6 @@ public:
   void SetVDSOSigReturn() {
     // Get symbols from VDSO.
     VDSOPointers = FEX::VDSO::GetVDSOSymbols();
-
-    // Update VDSO to generated code.
-    // TODO: Have the frontend generate the x86 sigreturn pointers.
-    CTX->GetVDSOSigReturn(&VDSOPointers);
   }
 
   [[noreturn]]

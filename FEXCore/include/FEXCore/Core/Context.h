@@ -259,8 +259,6 @@ public:
    */
   FEX_DEFAULT_VISIBILITY virtual void AppendThunkDefinitions(std::span<const FEXCore::IR::ThunkDefinition> Definitions) = 0;
 
-  FEX_DEFAULT_VISIBILITY virtual void GetVDSOSigReturn(VDSOSigReturn* VDSOPointers) = 0;
-
   /**
    * @brief Informs the context if hardware TSO is supported.
    * Once hardware TSO is enabled, then TSO emulation through atomics is disabled and relies on the hardware.
