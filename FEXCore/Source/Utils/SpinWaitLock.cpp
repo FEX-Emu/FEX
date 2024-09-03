@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "Utils/SpinWaitLock.h"
 
 namespace FEXCore::Utils::SpinWaitLock {
