@@ -76,7 +76,6 @@ struct ExitFunctionLinkData {
 };
 
 using BlockDelinkerFunc = void (*)(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record);
-constexpr uint32_t TSC_SCALE = 128;
 constexpr uint32_t TSC_SCALE_MAXIMUM = 1'000'000'000; ///< 1Ghz
 
 class ContextImpl final : public FEXCore::Context::Context {
@@ -206,6 +205,7 @@ public:
   struct {
     CoreRunningMode RunningMode {CoreRunningMode::MODE_RUN};
     uint64_t VirtualMemSize {1ULL << 36};
+    uint64_t TSCScale = 0;
 
     // Used if the JIT needs to have its interrupt fault code emitted.
     bool NeedsPendingInterruptFaultCheck {false};

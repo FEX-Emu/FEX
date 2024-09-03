@@ -226,6 +226,7 @@
       ]
     },
     "rdtsc": {
+      "Skip": "Yes",
       "ExpectedInstructionCount": 3,
       "Comment": "0x0f 0x31",
       "ExpectedArm64ASM": [

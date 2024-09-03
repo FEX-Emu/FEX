@@ -782,7 +782,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_15h(uint32_t Leaf) const {
   uint32_t FrequencyHz = GetCycleCounterFrequency();
   if (FrequencyHz) {
     Res.eax = 1;
-    Res.ebx = CTX->Config.SmallTSCScale() ? FEXCore::Context::TSC_SCALE : 1;
+    Res.ebx = 1U << CTX->Config.TSCScale;
     Res.ecx = FrequencyHz;
   }
   return Res;
