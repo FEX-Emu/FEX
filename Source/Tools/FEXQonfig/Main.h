@@ -57,8 +57,6 @@ public slots:
   QUrl getBaseUrl() const;
 };
 
-#include <QApplication>
-
 class ConfigRuntime : public QObject {
   Q_OBJECT
 
