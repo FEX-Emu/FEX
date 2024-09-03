@@ -300,6 +300,25 @@
         "mov x26, x7"
       ]
     },
+    "UCOMISS use only PF": {
+      "x86InstructionCount": 3,
+      "ExpectedInstructionCount": 8,
+      "x86Insts": [
+        "ucomiss xmm0, xmm1",
+        "setnp cl",
+        "test rax, rax"
+      ],
+      "ExpectedArm64ASM": [
+        "fcmp s16, s17",
+        "cset w26, vc",
+        "eor w20, w26, w26, lsr #4",
+        "eor w20, w20, w20, lsr #2",
+        "eor w20, w20, w20, lsr #1",
+        "and x20, x20, #0x1",
+        "bfxil x7, x20, #0, #8",
+        "subs x26, x4, #0x0 (0)"
+      ]
+    },
     "Test use only zero - self 16-bit": {
       "x86InstructionCount": 3,
       "ExpectedInstructionCount": 6,
