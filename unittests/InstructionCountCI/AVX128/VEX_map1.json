@@ -2891,8 +2891,8 @@
         "fcmp s16, s17",
         "mov w27, #0x0",
         "cset w26, vc",
-        "csetm x20, eq",
-        "ccmn x26, x20, #nzCv, le"
+        "csetm x0, eq",
+        "ccmn x26, x0, #nzCv, le"
       ]
     },
     "vucomisd xmm0, xmm1": {
@@ -2904,8 +2904,8 @@
         "fcmp d16, d17",
         "mov w27, #0x0",
         "cset w26, vc",
-        "csetm x20, eq",
-        "ccmn x26, x20, #nzCv, le"
+        "csetm x0, eq",
+        "ccmn x26, x0, #nzCv, le"
       ]
     },
     "vcomiss xmm0, xmm1": {
@@ -2917,8 +2917,8 @@
         "fcmp s16, s17",
         "mov w27, #0x0",
         "cset w26, vc",
-        "csetm x20, eq",
-        "ccmn x26, x20, #nzCv, le"
+        "csetm x0, eq",
+        "ccmn x26, x0, #nzCv, le"
       ]
     },
     "vcomisd xmm0, xmm1": {
@@ -2930,8 +2930,8 @@
         "fcmp d16, d17",
         "mov w27, #0x0",
         "cset w26, vc",
-        "csetm x20, eq",
-        "ccmn x26, x20, #nzCv, le"
+        "csetm x0, eq",
+        "ccmn x26, x0, #nzCv, le"
       ]
     },
     "vaddps xmm0, xmm1, xmm2": {
