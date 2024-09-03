@@ -25,12 +25,14 @@ $end_info$
 #include <FEXCore/Utils/ArchHelpers/Arm64.h>
 #include <FEXCore/Utils/TypeDefines.h>
 
+#include "Common/ArgumentLoader.h"
 #include "Common/Config.h"
 #include "Common/Exception.h"
 #include "Common/TSOHandlerConfig.h"
 #include "Common/InvalidationTracker.h"
 #include "Common/CPUFeatures.h"
 #include "Common/Logging.h"
+#include "Common/Module.h"
 #include "Common/CRT/CRT.h"
 #include "DummyHandlers.h"
 #include "BTInterface.h"
@@ -424,11 +426,7 @@ public:
 
 void BTCpuProcessInit() {
   FEX::Windows::InitCRTProcess();
-  FEX::Config::InitializeConfigs(FEX::Config::PortableInformation {});
-  FEXCore::Config::Initialize();
-  FEXCore::Config::AddLayer(FEX::Config::CreateGlobalMainLayer());
-  FEXCore::Config::AddLayer(FEX::Config::CreateMainLayer());
-  FEXCore::Config::Load();
+  FEX::Config::LoadConfig(nullptr, FEX::Windows::GetExecutableFilePath());
   FEXCore::Config::ReloadMetaLayer();
   FEX::Windows::Logging::Init();
 
