@@ -337,8 +337,57 @@ fextl::string RecoverGuestProgramFilename(fextl::string Program, bool ExecFDInte
   return Program;
 }
 
-ApplicationNames LoadConfig(fextl::unique_ptr<FEX::ArgLoader::ArgLoader> ArgsLoader, bool LoadProgramConfig, char** const envp,
-                            bool ExecFDInterp, int ProgramFDFromEnv, const PortableInformation& PortableInfo) {
+ApplicationNames GetApplicationNames(fextl::vector<fextl::string> Args, bool ExecFDInterp, int ProgramFDFromEnv) {
+  if (Args.empty()) {
+    // Early exit if we weren't passed an argument
+    return {};
+  }
+
+  fextl::string Program {};
+  fextl::string ProgramName {};
+
+  Args[0] = RecoverGuestProgramFilename(std::move(Args[0]), ExecFDInterp, ProgramFDFromEnv);
+  Program = Args[0];
+
+  bool Wine = false;
+  for (size_t CurrentProgramNameIndex = 0; CurrentProgramNameIndex < Args.size(); ++CurrentProgramNameIndex) {
+    auto CurrentProgramName = FHU::Filesystem::GetFilename(Args[CurrentProgramNameIndex]);
+
+    if (CurrentProgramName == "wine-preloader" || CurrentProgramName == "wine64-preloader") {
+      // Wine preloader is required to be in the format of `wine-preloader <wine executable>`
+      // The preloader doesn't execve the executable, instead maps it directly itself
+      // Skip the next argument since we know it is wine (potentially with custom wine executable name)
+      ++CurrentProgramNameIndex;
+      Wine = true;
+    } else if (CurrentProgramName == "wine" || CurrentProgramName == "wine64") {
+      // Next argument, this isn't the program we want
+      //
+      // If we are running wine or wine64 then we should check the next argument for the application name instead.
+      // wine will change the active program name with `setprogname` or `prctl(PR_SET_NAME`.
+      // Since FEX needs this data far earlier than libraries we need a different check.
+      Wine = true;
+    } else {
+      if (Wine == true) {
+        // If this was path separated with '\' then we need to check that.
+        auto WinSeparator = CurrentProgramName.find_last_of('\\');
+        if (WinSeparator != CurrentProgramName.npos) {
+          // Used windows separators
+          CurrentProgramName = CurrentProgramName.substr(WinSeparator + 1);
+        }
+      }
+
+      ProgramName = CurrentProgramName;
+
+      // Past any wine program names
+      break;
+    }
+  }
+
+  return ApplicationNames {std::move(Program), std::move(ProgramName)};
+}
+
+void LoadConfig(fextl::unique_ptr<FEX::ArgLoader::ArgLoader> ArgsLoader, fextl::string ProgramName, char** const envp,
+                const PortableInformation& PortableInfo) {
   const bool IsPortable = PortableInfo.IsPortable;
   FEX::Config::InitializeConfigs(PortableInfo);
   FEXCore::Config::Initialize();
@@ -347,53 +396,7 @@ ApplicationNames LoadConfig(fextl::unique_ptr<FEX::ArgLoader::ArgLoader> ArgsLoa
   }
   FEXCore::Config::AddLayer(CreateMainLayer());
 
-  auto Args = ArgsLoader->Get();
-
-  fextl::string Program {};
-  fextl::string ProgramName {};
-  if (LoadProgramConfig) {
-    if (Args.empty()) {
-      // Early exit if we weren't passed an argument
-      return {};
-    }
-
-    Args[0] = RecoverGuestProgramFilename(std::move(Args[0]), ExecFDInterp, ProgramFDFromEnv);
-    Program = Args[0];
-
-    bool Wine = false;
-    for (size_t CurrentProgramNameIndex = 0; CurrentProgramNameIndex < Args.size(); ++CurrentProgramNameIndex) {
-      auto CurrentProgramName = FHU::Filesystem::GetFilename(Args[CurrentProgramNameIndex]);
-
-      if (CurrentProgramName == "wine-preloader" || CurrentProgramName == "wine64-preloader") {
-        // Wine preloader is required to be in the format of `wine-preloader <wine executable>`
-        // The preloader doesn't execve the executable, instead maps it directly itself
-        // Skip the next argument since we know it is wine (potentially with custom wine executable name)
-        ++CurrentProgramNameIndex;
-        Wine = true;
-      } else if (CurrentProgramName == "wine" || CurrentProgramName == "wine64") {
-        // Next argument, this isn't the program we want
-        //
-        // If we are running wine or wine64 then we should check the next argument for the application name instead.
-        // wine will change the active program name with `setprogname` or `prctl(PR_SET_NAME`.
-        // Since FEX needs this data far earlier than libraries we need a different check.
-        Wine = true;
-      } else {
-        if (Wine == true) {
-          // If this was path separated with '\' then we need to check that.
-          auto WinSeparator = CurrentProgramName.find_last_of('\\');
-          if (WinSeparator != CurrentProgramName.npos) {
-            // Used windows separators
-            CurrentProgramName = CurrentProgramName.substr(WinSeparator + 1);
-          }
-        }
-
-        ProgramName = CurrentProgramName;
-
-        // Past any wine program names
-        break;
-      }
-    }
-
+  if (!ProgramName.empty()) {
     if (!IsPortable) {
       FEXCore::Config::AddLayer(CreateAppLayer(ProgramName, FEXCore::Config::LayerType::LAYER_GLOBAL_APP));
     }
@@ -411,7 +414,7 @@ ApplicationNames LoadConfig(fextl::unique_ptr<FEX::ArgLoader::ArgLoader> ArgsLoa
     }
   }
 
-  if (ArgsLoader->GetLoadType() == FEX::ArgLoader::ArgLoader::LoadType::WITH_FEXLOADER_PARSER) {
+  if (ArgsLoader && ArgsLoader->GetLoadType() == FEX::ArgLoader::ArgLoader::LoadType::WITH_FEXLOADER_PARSER) {
     FEXCore::Config::AddLayer(std::move(ArgsLoader));
   }
 
@@ -422,13 +425,6 @@ ApplicationNames LoadConfig(fextl::unique_ptr<FEX::ArgLoader::ArgLoader> ArgsLoa
 
   FEXCore::Config::AddLayer(CreateEnvironmentLayer(envp));
   FEXCore::Config::Load();
-
-
-  if (LoadProgramConfig) {
-    return ApplicationNames {std::move(Program), std::move(ProgramName)};
-  } else {
-    return {};
-  }
 }
 
 #ifndef _WIN32

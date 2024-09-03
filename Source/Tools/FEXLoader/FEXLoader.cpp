@@ -324,12 +324,13 @@ int main(int argc, char** argv, char** const envp) {
     argc, argv);
   auto Args = ArgsLoader->Get();
   auto ParsedArgs = ArgsLoader->GetParsedArgs();
-  auto Program = FEX::Config::LoadConfig(std::move(ArgsLoader), true, envp, ExecutedWithFD, FEXFD, PortableInfo);
-
+  auto Program = FEX::Config::GetApplicationNames(Args, ExecutedWithFD, FEXFD);
   if (Program.ProgramPath.empty() && FEXFD == -1) {
     // Early exit if we weren't passed an argument
     return 0;
   }
+
+  FEX::Config::LoadConfig(std::move(ArgsLoader), Program.ProgramName, envp, PortableInfo);
 
   // Reload the meta layer
   FEXCore::Config::ReloadMetaLayer();
