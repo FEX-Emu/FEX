@@ -11,6 +11,7 @@ $end_info$
 #include "LinuxSyscalls/FileManagement.h"
 #include "LinuxSyscalls/LinuxAllocator.h"
 #include "LinuxSyscalls/ThreadManager.h"
+#include "LinuxSyscalls/Seccomp/SeccompEmulator.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/HLE/SyscallHandler.h>
@@ -92,17 +93,25 @@ struct ExecveAtArgs {
   }
 };
 
-uint64_t ExecveHandler(const char* pathname, char* const* argv, char* const* envp, ExecveAtArgs Args);
+uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname, char* const* argv, char* const* envp, ExecveAtArgs Args);
 
 class SyscallHandler : public FEXCore::HLE::SyscallHandler, FEXCore::HLE::SourcecodeResolver, public FEXCore::Allocator::FEXAllocOperators {
 public:
   ThreadManager TM;
+  FEX::HLE::SeccompEmulator SeccompEmulator;
+
   virtual ~SyscallHandler();
 
   // In the case that the syscall doesn't hit the optimized path then we still need to go here
   uint64_t HandleSyscall(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) final override;
 
   void DefaultProgramBreak(uint64_t Base, uint64_t Size);
+  void DeserializeSeccompFD(FEX::HLE::ThreadStateObject* Thread, int FD) {
+    if (FD == -1) {
+      return;
+    }
+    SeccompEmulator.DeserializeFilters(Thread->Thread->CurrentFrame, FD);
+  }
 
   using SyscallPtrArg0 = uint64_t (*)(FEXCore::Core::CpuStateFrame* Frame);
   using SyscallPtrArg1 = uint64_t (*)(FEXCore::Core::CpuStateFrame* Frame, uint64_t);
@@ -136,11 +145,19 @@ public:
   }
 
   FEXCore::HLE::SyscallABI GetSyscallABI(uint64_t Syscall) override {
+    if (NeedsSeccomp) {
+      // Override ABI if seccomp is enabled.
+      return {FEXCore::HLE::SyscallArguments::MAX_ARGS, true, -1};
+    }
     auto& Def = Definitions.at(Syscall);
     return {Def.NumArgs, true, Def.HostSyscallNumber};
   }
 
   FEXCore::IR::SyscallFlags GetSyscallFlags(uint64_t Syscall) const override {
+    if (NeedsSeccomp) {
+      // Override flags if seccomp is enabled.
+      return FEXCore::IR::SyscallFlags::DEFAULT;
+    }
     auto& Def = Definitions.at(Syscall);
     return Def.Flags;
   }
@@ -178,6 +195,7 @@ public:
   FEX_CONFIG_OPT(RootFSPath, ROOTFS);
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
   FEX_CONFIG_OPT(SMCChecks, SMCCHECKS);
+  FEX_CONFIG_OPT(NeedsSeccomp, NEEDSSECCOMP);
 
   uint32_t GetHostKernelVersion() const {
     return HostKernelVersion;

@@ -49,7 +49,7 @@ endif()
 
 if (NOT MINGW_BUILD)
   message (STATUS "Clang version ${CMAKE_CXX_COMPILER_VERSION}")
-  set (CLANG_MINIMUM_VERSION 12.0)
+  set (CLANG_MINIMUM_VERSION 13.0)
   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS ${CLANG_MINIMUM_VERSION})
     message (FATAL_ERROR "Clang version too old for FEX. Need at least ${CLANG_MINIMUM_VERSION} but has ${CMAKE_CXX_COMPILER_VERSION}")
   endif()

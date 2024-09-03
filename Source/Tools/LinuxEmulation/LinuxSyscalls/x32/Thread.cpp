@@ -277,7 +277,7 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
 
     FEX::HLE::ExecveAtArgs AtArgs = FEX::HLE::ExecveAtArgs::Empty();
 
-    return FEX::HLE::ExecveHandler(pathname, ArgsPtr, EnvpPtr, AtArgs);
+    return FEX::HLE::ExecveHandler(Frame, pathname, ArgsPtr, EnvpPtr, AtArgs);
   });
 
   REGISTER_SYSCALL_IMPL_X32(
@@ -307,7 +307,7 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
 
       auto* const* ArgsPtr = argv ? const_cast<char* const*>(Args.data()) : nullptr;
       auto* const* EnvpPtr = envp ? const_cast<char* const*>(Envp.data()) : nullptr;
-      return FEX::HLE::ExecveHandler(pathname, ArgsPtr, EnvpPtr, AtArgs);
+      return FEX::HLE::ExecveHandler(Frame, pathname, ArgsPtr, EnvpPtr, AtArgs);
     }));
 
   REGISTER_SYSCALL_IMPL_X32(wait4, [](FEXCore::Core::CpuStateFrame* Frame, pid_t pid, int* wstatus, int options, struct rusage_32* rusage) -> uint64_t {

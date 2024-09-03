@@ -100,6 +100,8 @@ public:
   void CheckXIDHandler();
 
   void UninstallHostHandler(int Signal);
+  void QueueSignal(pid_t tgid, pid_t tid, int Signal, siginfo_t* info, bool IgnoreMask);
+
   FEXCore::Context::Context* CTX;
 
   void SetVDSOSigReturn() {
