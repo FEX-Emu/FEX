@@ -65,6 +65,9 @@ private:
   unsigned FlagForReg(unsigned Reg);
   unsigned FlagsForCondClassType(CondClassType Cond);
   bool EliminateDeadCode(IREmitter* IREmit, Ref CodeNode, IROp_Header* IROp);
+  void FoldCompareBranch(IREmitter* IREmit, IRListView& CurrentIR, IROp_CondJump* Op, Ref CodeNode);
+  void FoldAXFLAG(IREmitter* IREmit, IRListView& CurrentIR, IROp_CondJump* Op, Ref CodeNode);
+  CondClassType X86ToArmFloatCond(CondClassType X86);
   bool ProcessBlock(IREmitter* IREmit, IRListView& CurrentIR, Ref Block, fextl::vector<uint8_t>& FlagsIn);
 };
 
@@ -377,6 +380,71 @@ bool DeadFlagCalculationEliminination::EliminateDeadCode(IREmitter* IREmit, Ref 
   return true;
 }
 
+void DeadFlagCalculationEliminination::FoldCompareBranch(IREmitter* IREmit, IRListView& CurrentIR, IROp_CondJump* Op, Ref CodeNode) {
+  // Pattern match a branch fed by a compare. We could also handle bit tests
+  // here, but tbz/tbnz has a limited offset range which we don't have a way to
+  // deal with yet. Let's hope that's not a big deal.
+  if (!Op->FromNZCV || !(Op->Cond == COND_NEQ || Op->Cond == COND_EQ)) {
+    return;
+  }
+
+  auto Prev = CurrentIR.GetOp<IR::IROp_Header>(CodeNode->Header.Previous);
+  if (Prev->Op != OP_SUBNZCV || Prev->Size < 4) {
+    return;
+  }
+
+  auto SecondArg = CurrentIR.GetOp<IR::IROp_Header>(Prev->Args[1]);
+  if (SecondArg->Op != OP_INLINECONSTANT || SecondArg->C<IR::IROp_InlineConstant>()->Constant != 0) {
+    return;
+  }
+
+  // We've matched. Fold the compare into branch.
+  IREmit->ReplaceNodeArgument(CodeNode, 0, CurrentIR.GetNode(Prev->Args[0]));
+  IREmit->ReplaceNodeArgument(CodeNode, 1, CurrentIR.GetNode(Prev->Args[1]));
+  Op->FromNZCV = false;
+  Op->CompareSize = Prev->Size;
+
+  // The compare/test sets flags but does not write registers. Flags are dead
+  // after the jump. The jump does not read flags anymore.  There is no
+  // intervening instruction. Therefore the compare is dead.
+  IREmit->Remove(CurrentIR.GetNode(CodeNode->Header.Previous));
+}
+
+CondClassType DeadFlagCalculationEliminination::X86ToArmFloatCond(CondClassType X86) {
+  // Table of x86 condition codes that map to arm64 condition codes, in the
+  // sense that fcmp+axflag+branch(x86) is equivalent to fcmp+branch(arm).
+  //
+  // E would be "equal or unordered", no condition code.
+  // G would be "greater than or less than", no condition code.
+  //
+  // SF/OF conditions are trivial and therefore shouldn't actually be generated
+  switch (X86) {
+  case COND_UGE /* A  */: return {COND_FGE} /* GE */;
+  case COND_UGT /* AE */: return {COND_FGT} /* GT */;
+  case COND_ULT /* B  */: return {COND_SLT} /* LT */;
+  case COND_ULE /* BE */: return {COND_SLE} /* LE */;
+  case COND_SLE /* LE */: return {COND_SLE} /* LE */;
+  default: return {COND_AL};
+  }
+}
+
+void DeadFlagCalculationEliminination::FoldAXFLAG(IREmitter* IREmit, IRListView& CurrentIR, IROp_CondJump* Op, Ref CodeNode) {
+  CondClassType ArmCond = X86ToArmFloatCond(Op->Cond);
+
+  // Pattern match a branch fed by axflag.
+  if (!Op->FromNZCV || ArmCond == COND_AL) {
+    return;
+  }
+
+  auto Prev = CurrentIR.GetOp<IR::IROp_Header>(CodeNode->Header.Previous);
+  if (Prev->Op != OP_AXFLAG) {
+    return;
+  }
+
+  Op->Cond = ArmCond;
+  IREmit->Remove(CurrentIR.GetNode(CodeNode->Header.Previous));
+}
+
 /**
  * @brief This pass removes dead code locally.
  */
@@ -491,6 +559,27 @@ void DeadFlagCalculationEliminination::Run(IREmitter* IREmit) {
       Progress |= ProcessBlock(IREmit, CurrentIR, Block, FlagsIn);
     }
   } while (Progress);
+
+  // Fold compares into branches now that we're otherwise optimized. This needs
+  // to run after eliminating carries etc and it needs the global flag metadata.
+  // But it only needs to run once, we don't do it in the loop.
+  for (auto Block : Worklist) {
+    // Grab the jump
+    auto BlockIROp = CurrentIR.GetOp<IR::IROp_CodeBlock>(Block);
+    auto CodeLast = CurrentIR.at(BlockIROp->Last);
+    --CodeLast;
+
+    auto [ExitNode, ExitOp] = CodeLast();
+    if (ExitOp->Op == IR::OP_CONDJUMP) {
+      auto Op = ExitOp->CW<IR::IROp_CondJump>();
+      uint32_t FlagsOut = FlagsIn[Op->TrueBlock.ID().Value] | FlagsIn[Op->FalseBlock.ID().Value];
+
+      if ((FlagsOut & FLAG_NZCV) == 0) {
+        FoldCompareBranch(IREmit, CurrentIR, Op, ExitNode);
+        FoldAXFLAG(IREmit, CurrentIR, Op, ExitNode);
+      }
+    }
+  }
 }
 
 fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadFlagCalculationEliminination() {
