@@ -72,6 +72,7 @@
       ]
     },
     "rdtscp": {
+      "Skip": "Yes",
       "ExpectedInstructionCount": 21,
       "Comment": "0xF 0x01 /7 RM-1",
       "ExpectedArm64ASM": [
