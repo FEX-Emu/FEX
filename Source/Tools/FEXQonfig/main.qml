@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
@@ -592,19 +593,16 @@ ApplicationWindow {
                                 visible: tso2.checked
 
                                 ConfigCheckBox {
-                                    leftPadding: 24
                                     text: qsTr("... for vector instructions")
                                     tooltip: qsTr("Controls TSO emulation on vector load/store instructions")
                                     config: "VectorTSOEnabled"
                                 }
                                 ConfigCheckBox {
-                                    leftPadding: 24
                                     text: qsTr("... for memcpy instructions")
                                     tooltip: qsTr("Controls TSO emulation on memcpy/memset instructions")
                                     config: "MemcpySetTSOEnabled"
                                 }
                                 ConfigCheckBox {
-                                    leftPadding: 24
                                     text: qsTr("... for unaligned half-barriers")
                                     tooltip: qsTr("Controls half-barrier TSO emulation on unaligned load/store instructions")
                                     config: "HalfBarrierTSOEnabled"
@@ -620,6 +618,7 @@ ApplicationWindow {
                     }
 
                     ConfigCheckBox {
+                        topPadding: 4
                         text: qsTr("Enable non-tearing split-lock atomics")
                         config: "StrictInProcessSplitLocks"
                     }

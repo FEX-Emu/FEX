@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include <QStandardItemModel>
 #include <QQmlApplicationEngine>
 
@@ -55,8 +56,6 @@ public slots:
 
   QUrl getBaseUrl() const;
 };
-
-#include <QApplication>
 
 class ConfigRuntime : public QObject {
   Q_OBJECT
