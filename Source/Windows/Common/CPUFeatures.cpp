@@ -11,12 +11,6 @@
 
 namespace {
 
-static void FillMIDRInformation(FEXCore::HostFeatures* Features, uint64_t MIDR) {
-  auto Cores = FEXCore::CPUInfo::CalculateNumberOfCPUs();
-  // Truncate to 32-bits, top 32-bits are all reserved in MIDR
-  Features->CPUMIDRs.resize(Cores, static_cast<uint32_t>(MIDR));
-}
-
 HKEY OpenProcessorKey(uint32_t Idx) {
   HKEY Out;
   auto Path = fextl::fmt::format("Hardware\\Description\\System\\CentralProcessor\\{}", Idx);
@@ -63,10 +57,14 @@ FEXCore::HostFeatures CPUFeatures::FetchHostFeatures(bool IsWine) {
   uint64_t CTR = ReadRegU64(Key, "CP 5801");
   uint64_t MIDR = ReadRegU64(Key, "CP 4000");
 
-  RegCloseKey(Key);
 
   auto HostFeatures = FEX::FetchHostFeatures(Features, !IsWine, CTR, MIDR);
-  FillMIDRInformation(&HostFeatures, MIDR);
+
+  for (uint32_t Idx = 0; Key; Key = OpenProcessorKey(++Idx)) {
+    // Truncate to 32-bits, top 32-bits are all reserved in MIDR
+    HostFeatures.CPUMIDRs.push_back(static_cast<uint32_t>(ReadRegU64(Key, "CP 4000")));
+    RegCloseKey(Key);
+  }
   return HostFeatures;
 }
 
