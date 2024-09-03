@@ -510,6 +510,11 @@ bool DeadFlagCalculationEliminination::ProcessBlock(IREmitter* IREmit, IRListVie
           if (Info.ReplacementNoWrite && CodeNode->GetUses() == 0) {
             IROp->Op = Info.ReplacementNoWrite;
             Progress = true;
+          } else if (IROp->Op == OP_TESTNZ && IROp->Size < 4 && !(FlagsRead & (FLAG_N | FLAG_C))) {
+            // If we don't care about the sign or carry, we can optimize testnz.
+            // Carry is inverted between testz and testnz so we check that too.
+            IROp->Op = OP_TESTZ;
+            Progress = true;
           }
 
           FlagsRead &= ~Info.Write;
