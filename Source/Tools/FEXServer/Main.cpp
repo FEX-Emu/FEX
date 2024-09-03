@@ -117,7 +117,7 @@ int main(int argc, char** argv, char** const envp) {
   }
 
   auto ArgsLoader = fextl::make_unique<FEX::ArgLoader::ArgLoader>(FEX::ArgLoader::ArgLoader::LoadType::WITHOUT_FEXLOADER_PARSER, argc, argv);
-  FEX::Config::LoadConfig(std::move(ArgsLoader), false, envp, false, false, FEX::Config::PortableInformation {});
+  FEX::Config::LoadConfig(std::move(ArgsLoader), {}, envp);
 
   // Reload the meta layer
   FEXCore::Config::ReloadMetaLayer();

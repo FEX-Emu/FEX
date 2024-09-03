@@ -35,18 +35,22 @@ struct PortableInformation {
 };
 
 /**
- * @brief Loads the FEX and application configurations for the application that is getting ready to run.
- *
- * @param ArgLoader Argument loader for argument based config options
- * @param LoadProgramConfig Do we want to load application specific configurations?
- * @param envp The `envp` passed to main(...)
  * @param ExecFDInterp If FEX was executed with binfmt_misc FD argument
  * @param ProgramFDFromEnv The execveat FD argument passed through FEX
  *
  * @return The application name and path structure
  */
-ApplicationNames LoadConfig(fextl::unique_ptr<FEX::ArgLoader::ArgLoader> ArgLoader, bool LoadProgramConfig, char** const envp,
-                            bool ExecFDInterp, int ProgramFDFromEnv, const PortableInformation& PortableInfo);
+ApplicationNames GetApplicationNames(fextl::vector<fextl::string> Args, bool ExecFDInterp, int ProgramFDFromEnv);
+
+/**
+ * @brief Loads the FEX and application configurations for the application that is getting ready to run.
+ *
+ * @param ArgLoader Optional argument loader for argument based config options
+ * @param ProgramName Optional program name, if non-empty application specific configurations will be loaded
+ * @param envp Optional `envp` passed to main(...)
+ */
+void LoadConfig(fextl::unique_ptr<FEX::ArgLoader::ArgLoader> ArgLoader = {}, fextl::string ProgramName = {}, char** const envp = nullptr,
+                const PortableInformation& PortableInfo = {});
 
 const char* GetHomeDirectory();
 
