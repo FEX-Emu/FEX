@@ -68,7 +68,8 @@ private:
   void FoldCompareBranch(IREmitter* IREmit, IRListView& CurrentIR, IROp_CondJump* Op, Ref CodeNode);
   void FoldAXFLAG(IREmitter* IREmit, IRListView& CurrentIR, IROp_CondJump* Op, Ref CodeNode);
   CondClassType X86ToArmFloatCond(CondClassType X86);
-  bool ProcessBlock(IREmitter* IREmit, IRListView& CurrentIR, Ref Block, fextl::vector<uint8_t>& FlagsIn);
+  bool ProcessBlock(IREmitter* IREmit, IRListView& CurrentIR, Ref Block, fextl::vector<uint8_t>& FlagsIn, bool& ReadsParity);
+  void OptimizeParity(IREmitter* IREmit, IRListView& CurrentIR);
 };
 
 unsigned DeadFlagCalculationEliminination::FlagForReg(unsigned Reg) {
@@ -448,7 +449,8 @@ void DeadFlagCalculationEliminination::FoldAXFLAG(IREmitter* IREmit, IRListView&
 /**
  * @brief This pass removes dead code locally.
  */
-bool DeadFlagCalculationEliminination::ProcessBlock(IREmitter* IREmit, IRListView& CurrentIR, Ref Block, fextl::vector<uint8_t>& FlagsIn) {
+bool DeadFlagCalculationEliminination::ProcessBlock(IREmitter* IREmit, IRListView& CurrentIR, Ref Block, fextl::vector<uint8_t>& FlagsIn,
+                                                    bool& ReadsParity) {
   bool Progress = false;
   uint32_t FlagsRead = FLAG_ALL;
 
@@ -526,6 +528,8 @@ bool DeadFlagCalculationEliminination::ProcessBlock(IREmitter* IREmit, IRListVie
         if (!Eliminated) {
           FlagsRead |= Info.Read;
         }
+      } else if (IROp->Op == OP_PARITY) {
+        ReadsParity = true;
       }
     }
 
@@ -540,12 +544,56 @@ bool DeadFlagCalculationEliminination::ProcessBlock(IREmitter* IREmit, IRListVie
   return Progress;
 }
 
+void DeadFlagCalculationEliminination::OptimizeParity(IREmitter* IREmit, IRListView& CurrentIR) {
+  // Pass to determine if 8-bit parity is required.
+  for (auto [Block, BlockHeader] : CurrentIR.GetBlocks()) {
+    // TODO: This is local for now, but we should propagate this globally.
+    bool Full = true;
+    for (auto [CodeNode, IROp] : CurrentIR.GetCode(Block)) {
+      if (IROp->Op == OP_STOREREGISTER) {
+        auto Op = IROp->CW<IR::IROp_StoreRegister>();
+        if (Op->Class != GPRClass || Op->Reg != Core::CPUState::PF_AS_GREG) {
+          continue;
+        }
+
+        // Determine if we only write 0/1 to the parity flag.
+        Full = true;
+        auto Generator = CurrentIR.GetOp<IR::IROp_Header>(Op->Value);
+        if (Generator->Op == OP_NZCVSELECT) {
+          auto C0 = CurrentIR.GetOp<IR::IROp_Header>(Generator->Args[0]);
+          auto C1 = CurrentIR.GetOp<IR::IROp_Header>(Generator->Args[1]);
+          if (C0->Op == C1->Op && C0->Op == OP_INLINECONSTANT) {
+            auto IC0 = CurrentIR.GetOp<IR::IROp_InlineConstant>(Generator->Args[0]);
+            auto IC1 = CurrentIR.GetOp<IR::IROp_InlineConstant>(Generator->Args[1]);
+
+            // We need the full 8 if the constant has upper bits set.
+            Full = (IC0->Constant | IC1->Constant) & ~1;
+          }
+        }
+      } else if (IROp->Op == OP_PARITY && !Full) {
+        // Eliminate parity calculations if it's only 1-bit.
+        auto Parity = IROp->C<IROp_Parity>();
+        Ref Value = CurrentIR.GetNode(Parity->Raw);
+
+        if (Parity->Invert) {
+          IREmit->SetWriteCursor(CodeNode);
+          Value = IREmit->_Xor(OpSize::i32Bit, Value, IREmit->_InlineConstant(1));
+        }
+
+        IREmit->ReplaceUsesWithAfter(CodeNode, Value, CurrentIR.at(CodeNode));
+        IREmit->Remove(CodeNode);
+      }
+    }
+  }
+}
+
 void DeadFlagCalculationEliminination::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::DFE");
 
   auto CurrentIR = IREmit->ViewIR();
   fextl::vector<uint8_t> FlagsIn(CurrentIR.GetSSACount());
   fextl::deque<Ref> Worklist;
+  bool ReadsParity = false;
 
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
     // Initialize the map conservatiely
@@ -561,7 +609,7 @@ void DeadFlagCalculationEliminination::Run(IREmitter* IREmit) {
     Progress = false;
 
     for (auto Block : Worklist) {
-      Progress |= ProcessBlock(IREmit, CurrentIR, Block, FlagsIn);
+      Progress |= ProcessBlock(IREmit, CurrentIR, Block, FlagsIn, ReadsParity);
     }
   } while (Progress);
 
@@ -584,6 +632,10 @@ void DeadFlagCalculationEliminination::Run(IREmitter* IREmit) {
         FoldAXFLAG(IREmit, CurrentIR, Op, ExitNode);
       }
     }
+  }
+
+  if (ReadsParity) {
+    OptimizeParity(IREmit, CurrentIR);
   }
 }
 
