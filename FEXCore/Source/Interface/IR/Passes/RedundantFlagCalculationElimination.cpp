@@ -7,6 +7,8 @@ $end_info$
 */
 
 #include "FEXCore/Core/X86Enums.h"
+#include "FEXCore/Utils/MathUtils.h"
+#include "FEXCore/fextl/deque.h"
 #include "Interface/IR/IR.h"
 #include "Interface/IR/IREmitter.h"
 
@@ -16,6 +18,7 @@ $end_info$
 #include "Interface/IR/PassManager.h"
 
 #include <array>
+#include <bit>
 #include <memory>
 
 // Flag bit flags
@@ -62,7 +65,7 @@ private:
   unsigned FlagForReg(unsigned Reg);
   unsigned FlagsForCondClassType(CondClassType Cond);
   bool EliminateDeadCode(IREmitter* IREmit, Ref CodeNode, IROp_Header* IROp);
-  bool ProcessBlock(IREmitter* IREmit, IRListView& CurrentIR, IROp_Header* BlockHeader);
+  bool ProcessBlock(IREmitter* IREmit, IRListView& CurrentIR, Ref Block, fextl::vector<uint8_t>& FlagsIn);
 };
 
 unsigned DeadFlagCalculationEliminination::FlagForReg(unsigned Reg) {
@@ -377,19 +380,28 @@ bool DeadFlagCalculationEliminination::EliminateDeadCode(IREmitter* IREmit, Ref 
 /**
  * @brief This pass removes dead code locally.
  */
-bool DeadFlagCalculationEliminination::ProcessBlock(IREmitter* IREmit, IRListView& CurrentIR, IROp_Header* BlockHeader) {
+bool DeadFlagCalculationEliminination::ProcessBlock(IREmitter* IREmit, IRListView& CurrentIR, Ref Block, fextl::vector<uint8_t>& FlagsIn) {
   bool Progress = false;
-
-  // We model all flags as read at the end of the block, since this pass is
-  // presently purely local. Optimizing this requires global anslysis.
   uint32_t FlagsRead = FLAG_ALL;
 
   // Reverse iteration is not yet working with the iterators
-  auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
+  auto BlockIROp = CurrentIR.GetOp<IR::IROp_CodeBlock>(Block);
 
   // We grab these nodes this way so we can iterate easily
   auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
   auto CodeLast = CurrentIR.at(BlockIROp->Last);
+
+  // Advance past EndBlock to get at the exit.
+  --CodeLast;
+
+  // Initialize the FlagsRead mask according to the exit instruction.
+  auto [ExitNode, ExitOp] = CodeLast();
+  if (ExitOp->Op == IR::OP_CONDJUMP) {
+    auto Op = ExitOp->CW<IR::IROp_CondJump>();
+    FlagsRead = FlagsIn[Op->TrueBlock.ID().Value] | FlagsIn[Op->FalseBlock.ID().Value];
+  } else if (ExitOp->Op == IR::OP_JUMP) {
+    FlagsRead = FlagsIn[ExitOp->Args[0].ID().Value];
+  }
 
   // Iterate the block in reverse
   while (true) {
@@ -427,12 +439,12 @@ bool DeadFlagCalculationEliminination::ProcessBlock(IREmitter* IREmit, IRListVie
             Progress = true;
           }
         } else {
-          FlagsRead &= ~Info.Write;
-
           if (Info.ReplacementNoWrite && CodeNode->GetUses() == 0) {
             IROp->Op = Info.ReplacementNoWrite;
             Progress = true;
           }
+
+          FlagsRead &= ~Info.Write;
         }
 
         // If we eliminated the instruction, we eliminate its read too. This
@@ -451,6 +463,7 @@ bool DeadFlagCalculationEliminination::ProcessBlock(IREmitter* IREmit, IRListVie
     --CodeLast;
   }
 
+  FlagsIn[CurrentIR.GetID(Block).Value] = FlagsRead;
   return Progress;
 }
 
@@ -458,10 +471,26 @@ void DeadFlagCalculationEliminination::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::DFE");
 
   auto CurrentIR = IREmit->ViewIR();
+  fextl::vector<uint8_t> FlagsIn(CurrentIR.GetSSACount());
+  fextl::deque<Ref> Worklist;
 
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
-    ProcessBlock(IREmit, CurrentIR, BlockHeader);
+    // Initialize the map conservatiely
+    FlagsIn[CurrentIR.GetID(BlockNode).Value] = FLAG_ALL;
+    Worklist.push_front(BlockNode);
   }
+
+  // Iterate until we hit a fixed point.
+  //
+  // XXX: This is slow. We should use the CFG to accelerate this.
+  bool Progress;
+  do {
+    Progress = false;
+
+    for (auto Block : Worklist) {
+      Progress |= ProcessBlock(IREmit, CurrentIR, Block, FlagsIn);
+    }
+  } while (Progress);
 }
 
 fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadFlagCalculationEliminination() {
