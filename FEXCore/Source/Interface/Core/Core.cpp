@@ -95,8 +95,13 @@ ContextImpl::ContextImpl(const FEXCore::HostFeatures& Features)
     Symbols.InitFile();
   }
 
-  if (FEXCore::GetCycleCounterFrequency() >= FEXCore::Context::TSC_SCALE_MAXIMUM) {
-    Config.SmallTSCScale = false;
+  uint64_t FrequencyCounter = FEXCore::GetCycleCounterFrequency();
+  if (FrequencyCounter && FrequencyCounter < FEXCore::Context::TSC_SCALE_MAXIMUM && Config.SmallTSCScale()) {
+    // Scale TSC until it is at the minimum required.
+    while (FrequencyCounter < FEXCore::Context::TSC_SCALE_MAXIMUM) {
+      FrequencyCounter <<= 1;
+      ++Config.TSCScale;
+    }
   }
 
   // Track atomic TSO emulation configuration.

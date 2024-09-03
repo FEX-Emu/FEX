@@ -3087,10 +3087,9 @@ OpDispatchBuilder::CycleCounterPair OpDispatchBuilder::CycleCounter() {
   Ref CounterLow {};
   Ref CounterHigh {};
   auto Counter = _CycleCounter();
-  if (CTX->Config.SmallTSCScale()) {
-    const auto ShiftAmount = FEXCore::ilog2(FEXCore::Context::TSC_SCALE);
-    CounterLow = _Lshl(OpSize::i32Bit, Counter, _Constant(ShiftAmount));
-    CounterHigh = _Lshr(OpSize::i64Bit, Counter, _Constant(32 - ShiftAmount));
+  if (CTX->Config.TSCScale) {
+    CounterLow = _Lshl(OpSize::i32Bit, Counter, _Constant(CTX->Config.TSCScale));
+    CounterHigh = _Lshr(OpSize::i64Bit, Counter, _Constant(32 - CTX->Config.TSCScale));
   } else {
     CounterLow = _Bfe(OpSize::i64Bit, 32, 0, Counter);
     CounterHigh = _Bfe(OpSize::i64Bit, 32, 32, Counter);
