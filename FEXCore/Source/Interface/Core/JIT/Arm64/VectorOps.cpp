@@ -211,11 +211,12 @@ namespace FEXCore::CPU {
     };                                                                                                                                     \
                                                                                                                                            \
     const auto Dst = GetVReg(Node);                                                                                                        \
+    const auto Upper = GetVReg(Op->Upper.ID());                                                                                            \
     const auto Vector1 = GetVReg(Op->Vector1.ID());                                                                                        \
     const auto Vector2 = GetVReg(Op->Vector2.ID());                                                                                        \
     const auto Addend = GetVReg(Op->Addend.ID());                                                                                          \
                                                                                                                                            \
-    VFScalarFMAOperation(IROp->Size, ElementSize, ScalarEmit, Dst, Vector1, Vector2, Addend);                                              \
+    VFScalarFMAOperation(IROp->Size, ElementSize, ScalarEmit, Dst, Upper, Vector1, Vector2, Addend);                                       \
   }
 
 DEF_UNOP(VAbs, abs, true)
@@ -260,17 +261,17 @@ DEF_FMAOP_SCALAR_INSERT(VFNMLAScalarInsert, fmsub)
 DEF_FMAOP_SCALAR_INSERT(VFNMLSScalarInsert, fnmadd)
 
 void Arm64JITCore::VFScalarFMAOperation(uint8_t OpSize, uint8_t ElementSize, ScalarFMAOpCaller ScalarEmit, ARMEmitter::VRegister Dst,
-                                        ARMEmitter::VRegister Vector1, ARMEmitter::VRegister Vector2, ARMEmitter::VRegister Addend) {
+                                        ARMEmitter::VRegister Upper, ARMEmitter::VRegister Vector1, ARMEmitter::VRegister Vector2,
+                                        ARMEmitter::VRegister Addend) {
   LOGMAN_THROW_A_FMT(OpSize == Core::CPUState::XMM_SSE_REG_SIZE, "256-bit unsupported", __func__);
 
   LOGMAN_THROW_AA_FMT(ElementSize == 2 || ElementSize == 4 || ElementSize == 8, "Invalid size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
                                                        ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
                                                                           ARMEmitter::SubRegSize::i64Bit);
-  if (Dst != Vector1 && Dst != Vector2 && Dst != Addend && HostSupportsAFP) {
-    // If destination doesnt overlap any incoming register then move the adder to the destination first.
-    mov(Dst.Q(), Addend.Q());
-    Dst = Addend;
+  if (Dst != Upper) {
+    // If destination is not tied, move the upper bits to the destination first.
+    mov(Dst.Q(), Upper.Q());
   }
 
   if (HostSupportsAFP && Dst == Addend) {
@@ -278,7 +279,7 @@ void Arm64JITCore::VFScalarFMAOperation(uint8_t OpSize, uint8_t ElementSize, Sca
     // If the host CPU supports AFP then scalar does an insert without modifying upper bits.
     ScalarEmit(Dst, Vector1, Vector2, Addend);
   } else {
-    // No overlap between addr and destination or host doesn't support AFP, need to emit in to a temporary then insert.
+    // Host doesn't support AFP, need to emit in to a temporary then insert.
     ScalarEmit(VTMP1, Vector1, Vector2, Addend);
     ins(SubRegSize.Vector, Dst.Q(), 0, VTMP1.Q(), 0);
   }
