@@ -116,10 +116,6 @@ foreach(GUEST_BITNESS IN LISTS BITNESS_LIST)
   # add_host_lib(SDL2 ${GUEST_BITNESS})
   # target_include_directories(SDL2-host PRIVATE ${SDL2_INCLUDE_DIRS})
 
-  generate(libvulkan ${CMAKE_CURRENT_SOURCE_DIR}/../libvulkan/libvulkan_interface.cpp ${GUEST_BITNESS})
-  target_include_directories(libvulkan-${GUEST_BITNESS}-deps INTERFACE ${FEX_PROJECT_SOURCE_DIR}/External/Vulkan-Headers/include/)
-  add_host_lib(vulkan ${GUEST_BITNESS})
-
   generate(libdrm ${CMAKE_CURRENT_SOURCE_DIR}/../libdrm/libdrm_interface.cpp ${GUEST_BITNESS})
   target_include_directories(libdrm-${GUEST_BITNESS}-deps INTERFACE /usr/include/drm/)
   target_include_directories(libdrm-${GUEST_BITNESS}-deps INTERFACE /usr/include/libdrm/)
@@ -130,6 +126,10 @@ set (BITNESS_LIST "32;64")
 foreach(GUEST_BITNESS IN LISTS BITNESS_LIST)
   generate(libfex_thunk_test ${CMAKE_CURRENT_SOURCE_DIR}/../libfex_thunk_test/libfex_thunk_test_interface.cpp ${GUEST_BITNESS})
   add_host_lib(fex_thunk_test ${GUEST_BITNESS})
+
+  generate(libvulkan ${CMAKE_CURRENT_SOURCE_DIR}/../libvulkan/libvulkan_interface.cpp ${GUEST_BITNESS})
+  target_include_directories(libvulkan-${GUEST_BITNESS}-deps INTERFACE ${FEX_PROJECT_SOURCE_DIR}/External/Vulkan-Headers/include/)
+  add_host_lib(vulkan ${GUEST_BITNESS})
 
   generate(libwayland-client ${CMAKE_CURRENT_SOURCE_DIR}/../libwayland-client/libwayland-client_interface.cpp ${GUEST_BITNESS})
   add_host_lib(wayland-client ${GUEST_BITNESS})
