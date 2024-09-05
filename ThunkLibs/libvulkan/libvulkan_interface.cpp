@@ -2793,8 +2793,17 @@ struct fex_gen_config<vkCmdSetFragmentShadingRateEnumNV> {};
 template<>
 struct fex_gen_config<vkGetDeviceFaultInfoEXT> {};
 #endif
+#ifndef IS_32BIT_THUNK
 template<>
 struct fex_gen_config<vkCmdSetVertexInputEXT> {};
+#else
+template<>
+struct fex_gen_config<vkCmdSetVertexInputEXT> : fexgen::custom_host_impl {};
+template<>
+struct fex_gen_param<vkCmdSetVertexInputEXT, 2, const VkVertexInputBindingDescription2EXT*> : fexgen::ptr_passthrough {};
+template<>
+struct fex_gen_param<vkCmdSetVertexInputEXT, 4, const VkVertexInputAttributeDescription2EXT*> : fexgen::ptr_passthrough {};
+#endif
 #ifndef IS_32BIT_THUNK
 template<>
 struct fex_gen_config<vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI> {};

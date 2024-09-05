@@ -14,6 +14,7 @@ $end_info$
 
 #include "common/Host.h"
 
+#include <cassert>
 #include <cstring>
 #include <mutex>
 #include <span>
@@ -259,6 +260,22 @@ std::span<std::remove_cv_t<T>> RepackStructArray(uint32_t Count, const guest_lay
   return {HostData, Count};
 }
 
+void fexfn_impl_libvulkan_vkCmdSetVertexInputEXT(
+  VkCommandBuffer Buffer, uint32_t BindingDescCount, guest_layout<const VkVertexInputBindingDescription2EXT*> GuestBindingDescs,
+  uint32_t AttributeDescCount, guest_layout<const VkVertexInputAttributeDescription2EXT*> GuestAttributeDescs) {
+
+  assert(GuestBindingDescs.get_pointer() && BindingDescCount > 0);
+  assert(GuestAttributeDescs.get_pointer() && AttributeDescCount > 0);
+
+  auto BindingDescs = RepackStructArray(BindingDescCount, GuestBindingDescs);
+  auto AttributeDescs = RepackStructArray(AttributeDescCount, GuestAttributeDescs);
+
+  fexldr_ptr_libvulkan_vkCmdSetVertexInputEXT(Buffer, BindingDescCount, BindingDescs.data(), AttributeDescCount, AttributeDescs.data());
+
+  delete[] AttributeDescs.data();
+  delete[] BindingDescs.data();
+}
+
 void fexfn_impl_libvulkan_vkUpdateDescriptorSets(VkDevice device, unsigned int descriptorWriteCount,
                                                  guest_layout<const VkWriteDescriptorSet*> pDescriptorWrites, unsigned int descriptorCopyCount,
                                                  guest_layout<const VkCopyDescriptorSet*> pDescriptorCopies) {
@@ -337,6 +354,8 @@ static PFN_vkVoidFunction LookupCustomVulkanFunction(const char* a_1) {
     return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkMapMemory;
   } else if (a_1 == "vkQueueSubmit"sv) {
     return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkQueueSubmit;
+  } else if (a_1 == "vkCmdSetVertexInputEXT"sv) {
+    return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkCmdSetVertexInputEXT;
   } else if (a_1 == "vkUpdateDescriptorSets"sv) {
     return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkUpdateDescriptorSets;
 #endif
