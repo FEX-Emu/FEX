@@ -16,7 +16,6 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/fextl/map.h>
-#include <FEXCore/fextl/robin_map.h>
 #include <FEXCore/fextl/unordered_map.h>
 
 #include <bit>
@@ -79,15 +78,8 @@ private:
 
   fextl::unordered_map<uint64_t, Ref> ConstPool;
 
-  // Pool inline constant generation. These are typically very small and pool efficiently.
-  fextl::robin_map<uint64_t, Ref> InlineConstantGen;
   Ref CreateInlineConstant(IREmitter* IREmit, uint64_t Constant) {
-    const auto it = InlineConstantGen.find(Constant);
-    if (it != InlineConstantGen.end()) {
-      return it->second;
-    }
-    auto Result = InlineConstantGen.insert_or_assign(Constant, IREmit->_InlineConstant(Constant));
-    return Result.first->second;
+    return IREmit->_InlineConstant(Constant);
   }
   bool SupportsTSOImm9 {};
   const FEXCore::CPUIDEmu* CPUID;
@@ -577,8 +569,6 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
 }
 
 void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR) {
-  InlineConstantGen.clear();
-
   for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {
     switch (IROp->Op) {
     case OP_LSHR:
