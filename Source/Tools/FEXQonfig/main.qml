@@ -76,6 +76,7 @@ ApplicationWindow {
                 root.selectedConfigFile(selectedFile)
             }
             configFilename = selectedFile
+            configDirty = false
             if (onNextAccept) {
                 onNextAccept()
                 onNextAccept = null
