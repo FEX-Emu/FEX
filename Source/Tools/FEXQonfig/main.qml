@@ -72,7 +72,9 @@ ApplicationWindow {
         }
 
         onAccepted: {
-            root.selectedConfigFile(selectedFile)
+            if (!isSaving) {
+                root.selectedConfigFile(selectedFile)
+            }
             configFilename = selectedFile
             if (onNextAccept) {
                 onNextAccept()
