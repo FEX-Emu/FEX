@@ -48,6 +48,9 @@ ApplicationWindow {
         if (str.startsWith("file://")) {
             return decodeURIComponent(str.substring(7))
         }
+        if (str.startsWith("file:")) {
+            return decodeURIComponent(str.substring(5))
+        }
 
         return str;
     }
