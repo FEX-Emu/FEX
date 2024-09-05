@@ -46,22 +46,26 @@ ApplicationWindow {
 
     FileDialog {
         id: openFileDialog
-        title: qsTr("Open FEX configuration")
+        property bool isSaving: false
+
+        title: isSaving ? qsTr("Save FEX configuration") : qsTr("Open FEX configuration")
         nameFilters: [ qsTr("Config files(*.json)"), qsTr("All files(*)") ]
+
+        selectExisting: !isSaving
 
         property var onNextAccept: null
 
         // Prompts the user for an existing file and calls the callback on completion
-        function openAndThen(callback) {
-            this.selectExisting = true
+        function loadAndThen(callback) {
+            isSaving = false
             console.assert(!onNextAccept, "Tried to open dialog multiple times")
             onNextAccept = callback
             open()
         }
 
         // Prompts the user for a new or existing file and calls the callback on completion
-        function openNewAndThen(callback) {
-            this.selectExisting = false
+        function saveAndThen(callback) {
+            isSaving = true
             console.assert(!onNextAccept, "Tried to open dialog multiple times")
             onNextAccept = callback
             open()
@@ -90,7 +94,7 @@ ApplicationWindow {
             case buttonSave:
                 if (configFilename.toString() === "") {
                     // Filename not yet set => trigger "Save As" dialog
-                    openFileDialog.openNewAndThen(() => {
+                    openFileDialog.saveAndThen(() => {
                         save(configFilename)
                         root.close()
                     });
@@ -122,7 +126,7 @@ ApplicationWindow {
 
         if (filename.toString() === "") {
             // Filename not yet set => trigger "Save As" dialog
-            openFileDialog.openNewAndThen(() => {
+            openFileDialog.saveAndThen(() => {
                 save(configFilename)
             });
             return
@@ -139,7 +143,7 @@ ApplicationWindow {
                 text: qsTr("&Open...")
                 shortcut: StandardKey.Open
                 // TODO: Ask to discard pending changes first
-                onTriggered: openFileDialog.openAndThen(() => {})
+                onTriggered: openFileDialog.loadAndThen(() => {})
             }
             Action {
                 text: qsTr("&Save")
@@ -150,7 +154,7 @@ ApplicationWindow {
                 text: qsTr("Save &as...")
                 shortcut: StandardKey.SaveAs
                 onTriggered: {
-                    openFileDialog.openNewAndThen(() => {
+                    openFileDialog.saveAndThen(() => {
                         root.save(configFilename)
                     });
                 }
