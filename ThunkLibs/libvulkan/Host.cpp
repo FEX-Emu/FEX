@@ -22,6 +22,14 @@ $end_info$
 #include <unordered_map>
 #include <vector>
 
+#ifdef IS_32BIT_THUNK
+// Union type embedded in VkDescriptorGetInfoEXT
+template<>
+struct guest_layout<VkDescriptorDataEXT> {
+  char union_storage[8];
+};
+#endif
+
 #include "thunkgen_host_libvulkan.inl"
 
 #include <common/X11Manager.h>
@@ -1007,7 +1015,7 @@ VULKAN_DEFAULT_CUSTOM_REPACK(VkDepthBiasRepresentationInfoEXT)
 VULKAN_DEFAULT_CUSTOM_REPACK(VkDescriptorAddressInfoEXT)
 VULKAN_DEFAULT_CUSTOM_REPACK(VkDescriptorBufferBindingInfoEXT)
 VULKAN_DEFAULT_CUSTOM_REPACK(VkDescriptorBufferBindingPushDescriptorBufferHandleEXT)
-// VULKAN_DEFAULT_CUSTOM_REPACK(VkDescriptorGetInfoEXT)
+VULKAN_NONDEFAULT_CUSTOM_REPACK(VkDescriptorGetInfoEXT)
 VULKAN_DEFAULT_CUSTOM_REPACK(VkDescriptorPoolCreateInfo)
 VULKAN_DEFAULT_CUSTOM_REPACK(VkDescriptorPoolInlineUniformBlockCreateInfo)
 VULKAN_DEFAULT_CUSTOM_REPACK(VkDescriptorSetAllocateInfo)
@@ -1747,6 +1755,70 @@ bool fex_custom_repack_exit(guest_layout<VkRenderingInfo>& into, const host_layo
   // TODO: Run custom exit-repacking
   delete from.data.pStencilAttachment;
   // TODO: Run custom exit-repacking
+  return false;
+}
+
+void fex_custom_repack_entry(host_layout<VkDescriptorGetInfoEXT>& into, const guest_layout<VkDescriptorGetInfoEXT>& from) {
+  default_fex_custom_repack_entry(into, from);
+
+  switch (into.data.type) {
+  case VK_DESCRIPTOR_TYPE_SAMPLER:
+  case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+  case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+  case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+  case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT: {
+    // VkSampler* or VkDescriptorImageInfo*. Handle by zero-extending
+    guest_layout<VkSampler*> guest_data;
+    memcpy(&guest_data, from.data.data.union_storage, sizeof(guest_data));
+    into.data.data.pSampler = host_layout<VkSampler*> {guest_data}.data;
+    break;
+  }
+
+  case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+  case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+  case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+  case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER: {
+    // VkDescriptorAddressInfoEXT*. Repacking required
+    guest_layout<VkDescriptorAddressInfoEXT*> guest_ptr;
+    memcpy(&guest_ptr, from.data.data.union_storage, sizeof(guest_ptr));
+    auto child_mem = (char*)aligned_alloc(alignof(host_layout<VkDescriptorAddressInfoEXT>), sizeof(host_layout<VkDescriptorAddressInfoEXT>));
+    auto child = new (child_mem) host_layout<VkDescriptorAddressInfoEXT> {*guest_ptr.get_pointer()};
+
+    default_fex_custom_repack_entry(*child, *guest_ptr.get_pointer());
+    into.data.data.pUniformBuffer = &child->data;
+    break;
+  }
+
+  case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+  case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV: {
+    // Copy unmodified
+    static_assert(sizeof(guest_layout<VkDeviceAddress>) == sizeof(uint64_t));
+    memcpy(&into.data.data.accelerationStructure, &from.data.data, sizeof(uint64_t));
+  }
+
+  case VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM:
+  case VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM:
+  case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:
+  case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+  case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+  case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK:
+  default: fprintf(stderr, "ERROR: Invalid descriptor type used in VkDescriptorGetInfoEXT"); std::abort();
+  }
+}
+
+bool fex_custom_repack_exit(guest_layout<VkDescriptorGetInfoEXT>& into, const host_layout<VkDescriptorGetInfoEXT>& from) {
+  switch (from.data.type) {
+  case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+  case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+  case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+  case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+    // Delete storage allocated on entry
+    free((void*)from.data.data.pUniformBuffer);
+
+  default:
+    // Nothing to do for the rest
+    break;
+  }
   return false;
 }
 
