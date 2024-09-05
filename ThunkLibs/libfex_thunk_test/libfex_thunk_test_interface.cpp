@@ -53,3 +53,13 @@ struct fex_gen_config<RanCustomRepack> {};
 
 template<>
 struct fex_gen_config<FunctionWithDivergentSignature> {};
+
+template<>
+struct fex_gen_config<&TestBaseStruct::Next> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&TestStruct1::Next> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&TestStruct2::Next> : fexgen::custom_repack {};
+
+template<>
+struct fex_gen_config<ReadData1> {};
