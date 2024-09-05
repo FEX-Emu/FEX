@@ -92,11 +92,6 @@ struct VDSOSigReturn {
   void* VDSO_kernel_rt_sigreturn;
 };
 
-struct ThreadsState {
-  FEXCore::Core::InternalThreadState* ParentThread;
-  fextl::vector<FEXCore::Core::InternalThreadState*>* Threads;
-};
-
 using CodeRangeInvalidationFn = std::function<void(uint64_t start, uint64_t Length)>;
 
 using CustomCPUFactoryType = std::function<fextl::unique_ptr<CPU::CPUBackend>(Context*, Core::InternalThreadState* Thread)>;
