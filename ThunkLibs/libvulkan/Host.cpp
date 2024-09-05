@@ -264,7 +264,7 @@ VkResult fexfn_impl_libvulkan_vkMapMemory(VkDevice device, VkDeviceMemory memory
   return ret;
 }
 
-// Allocates storage on the heap that must be de-allocated using delete[]
+// Allocates storage on the heap that must be de-allocated using delete[] or DeleteRepackedStructArray
 template<bool NeedsRepack = true, typename T>
 std::span<std::remove_cv_t<T>> RepackStructArray(uint32_t Count, const guest_layout<T*> GuestData) {
   if (!GuestData.get_pointer() || Count == 0) {
@@ -281,6 +281,14 @@ std::span<std::remove_cv_t<T>> RepackStructArray(uint32_t Count, const guest_lay
     HostData[i] = Element.data;
   }
   return {HostData, Count};
+}
+
+template<typename T>
+void DeleteRepackedStructArray(uint32_t Count, T* HostData, guest_layout<T*>& GuestData) {
+  for (uint32_t i = 0; i < Count; ++i) {
+    fex_apply_custom_repacking_exit(GuestData.get_pointer()[i], to_host_layout(HostData[i]));
+  }
+  delete[] HostData;
 }
 
 void fexfn_impl_libvulkan_vkCmdSetVertexInputEXT(
@@ -1702,12 +1710,9 @@ void fex_custom_repack_entry(host_layout<VkRenderPassCreateInfo2>& into, const g
 }
 
 bool fex_custom_repack_exit(guest_layout<VkRenderPassCreateInfo2>& into, const host_layout<VkRenderPassCreateInfo2>& from) {
-  delete[] from.data.pAttachments;
-  // TODO: Run custom exit-repacking
-  delete[] from.data.pSubpasses;
-  // TODO: Run custom exit-repacking
-  delete[] from.data.pDependencies;
-  // TODO: Run custom exit-repacking
+  DeleteRepackedStructArray(from.data.attachmentCount, from.data.pAttachments, into.data.pAttachments);
+  DeleteRepackedStructArray(from.data.subpassCount, from.data.pSubpasses, into.data.pSubpasses);
+  DeleteRepackedStructArray(from.data.dependencyCount, from.data.pDependencies, into.data.pDependencies);
   return false;
 }
 
@@ -1728,14 +1733,13 @@ void fex_custom_repack_entry(host_layout<VkSubpassDescription2>& into, const gue
 }
 
 bool fex_custom_repack_exit(guest_layout<VkSubpassDescription2>& into, const host_layout<VkSubpassDescription2>& from) {
-  delete[] from.data.pInputAttachments;
-  // TODO: Run custom exit-repacking
-  delete[] from.data.pColorAttachments;
-  // TODO: Run custom exit-repacking
-  delete[] from.data.pResolveAttachments;
-  // TODO: Run custom exit-repacking
-  delete /*[]*/ from.data.pDepthStencilAttachment;
-  // TODO: Run custom exit-repacking
+  DeleteRepackedStructArray(from.data.inputAttachmentCount, from.data.pInputAttachments, into.data.pInputAttachments);
+  DeleteRepackedStructArray(from.data.colorAttachmentCount, from.data.pColorAttachments, into.data.pColorAttachments);
+  DeleteRepackedStructArray(from.data.colorAttachmentCount, from.data.pResolveAttachments, into.data.pResolveAttachments);
+  if (from.data.pDepthStencilAttachment) {
+    fex_apply_custom_repacking_exit(*into.data.pDepthStencilAttachment.get_pointer(), to_host_layout(*from.data.pDepthStencilAttachment));
+    delete from.data.pDepthStencilAttachment;
+  }
   return false;
 }
 
@@ -1764,12 +1768,15 @@ void fex_custom_repack_entry(host_layout<VkRenderingInfo>& into, const guest_lay
 }
 
 bool fex_custom_repack_exit(guest_layout<VkRenderingInfo>& into, const host_layout<VkRenderingInfo>& from) {
-  delete[] from.data.pColorAttachments;
-  // TODO: Run custom exit-repacking
-  delete from.data.pDepthAttachment;
-  // TODO: Run custom exit-repacking
-  delete from.data.pStencilAttachment;
-  // TODO: Run custom exit-repacking
+  DeleteRepackedStructArray(from.data.colorAttachmentCount, from.data.pColorAttachments, into.data.pColorAttachments);
+  if (from.data.pDepthAttachment) {
+    fex_apply_custom_repacking_exit(*into.data.pDepthAttachment.get_pointer(), to_host_layout(*from.data.pDepthAttachment));
+    delete from.data.pDepthAttachment;
+  }
+  if (from.data.pStencilAttachment) {
+    fex_apply_custom_repacking_exit(*into.data.pStencilAttachment.get_pointer(), to_host_layout(*from.data.pStencilAttachment));
+    delete from.data.pStencilAttachment;
+  }
   return false;
 }
 
@@ -1845,12 +1852,9 @@ void fex_custom_repack_entry(host_layout<VkDependencyInfo>& into, const guest_la
 }
 
 bool fex_custom_repack_exit(guest_layout<VkDependencyInfo>& into, const host_layout<VkDependencyInfo>& from) {
-  delete[] from.data.pMemoryBarriers;
-  // TODO: Run custom exit-repacking
-  delete[] from.data.pBufferMemoryBarriers;
-  // TODO: Run custom exit-repacking
-  delete[] from.data.pImageMemoryBarriers;
-  // TODO: Run custom exit-repacking
+  DeleteRepackedStructArray(from.data.memoryBarrierCount, from.data.pMemoryBarriers, into.data.pMemoryBarriers);
+  DeleteRepackedStructArray(from.data.imageMemoryBarrierCount, from.data.pImageMemoryBarriers, into.data.pImageMemoryBarriers);
+  DeleteRepackedStructArray(from.data.bufferMemoryBarrierCount, from.data.pBufferMemoryBarriers, into.data.pBufferMemoryBarriers);
   return false;
 }
 
@@ -1861,8 +1865,7 @@ void fex_custom_repack_entry(host_layout<VkDescriptorUpdateTemplateCreateInfo>& 
 }
 
 bool fex_custom_repack_exit(guest_layout<VkDescriptorUpdateTemplateCreateInfo>& into, const host_layout<VkDescriptorUpdateTemplateCreateInfo>& from) {
-  delete[] from.data.pDescriptorUpdateEntries;
-  // TODO: Run custom exit-repacking
+  DeleteRepackedStructArray(from.data.descriptorUpdateEntryCount, from.data.pDescriptorUpdateEntries, into.data.pDescriptorUpdateEntries);
   return false;
 }
 
