@@ -162,6 +162,21 @@ static VkResult FEXFN_IMPL(vkCreateDevice)(VkPhysicalDevice a_0, const VkDeviceC
   VkDevice out;
   auto ret = LDR_PTR(vkCreateDevice)(a_0, a_1, nullptr, &out);
   *a_3.get_pointer() = to_guest(to_host_layout(out));
+
+  // Reload device-specific function pointers used in custom implementations.
+  // This is only done in advance for functions that don't take a VkDevice
+  // argument. Since this breaks multi-device scenarios, other functions reload
+  // the function pointer on-demand.
+  // NOTE: Running KHR-GLES31.core.compute_shader.simple-compute-shared_context with zink may trigger related issues
+  // TODO: Support multi-device scenarios everywhere
+#ifdef IS_32BIT_THUNK
+  fexldr_ptr_libvulkan_vkCmdSetVertexInputEXT = (PFN_vkCmdSetVertexInputEXT)fexldr_ptr_libvulkan_vkGetDeviceProcAddr(out, "vkCmdSetVertexIn"
+                                                                                                                          "putEXT");
+  fexldr_ptr_libvulkan_vkQueueSubmit = (PFN_vkQueueSubmit)fexldr_ptr_libvulkan_vkGetDeviceProcAddr(out, "vkQueueSubmit");
+#else
+  // No functions affected on 64-bit
+#endif
+
   return ret;
 }
 
