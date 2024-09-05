@@ -169,7 +169,8 @@ static void ConfigInit(fextl::string ConfigFilename) {
 
   // Ensure config and RootFS directories exist
   std::error_code ec {};
-  fextl::string Dirs[] = {FHU::Filesystem::ParentPath(ConfigFilename), FEXCore::Config::GetDataDirectory() + "RootFS/"};
+  std::filesystem::path Dirs[] = {std::filesystem::absolute(ConfigFilename).parent_path(),
+                                  std::filesystem::absolute(FEXCore::Config::GetDataDirectory()) / "RootFS/"};
   for (auto& Dir : Dirs) {
     bool created = std::filesystem::create_directories(Dir, ec);
     if (created) {
