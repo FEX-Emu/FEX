@@ -23,6 +23,7 @@ ApplicationWindow {
     property url configFilename
 
     property bool configDirty: false
+    property bool loadedDefaults: false
     property bool closeConfirmed: false
 
     signal selectedConfigFile(name: url)
@@ -30,6 +31,13 @@ ApplicationWindow {
 
     // Property used to force reloading any elements that read ConfigModel
     property bool refreshCache: false
+
+    onConfigDirtyChanged: {
+        if (!configDirty) {
+            // We either just saved or loaded a file
+            loadedDefaults = false
+        }
+    }
 
     function refreshUI() {
         refreshCache = !refreshCache
@@ -40,36 +48,46 @@ ApplicationWindow {
         if (str.startsWith("file://")) {
             return decodeURIComponent(str.substring(7))
         }
+        if (str.startsWith("file:")) {
+            return decodeURIComponent(str.substring(5))
+        }
 
         return str;
     }
 
     FileDialog {
         id: openFileDialog
-        title: qsTr("Open FEX configuration")
+        property bool isSaving: false
+
+        title: isSaving ? qsTr("Save FEX configuration") : qsTr("Open FEX configuration")
         nameFilters: [ qsTr("Config files(*.json)"), qsTr("All files(*)") ]
+
+        selectExisting: !isSaving
 
         property var onNextAccept: null
 
         // Prompts the user for an existing file and calls the callback on completion
-        function openAndThen(callback) {
-            this.selectExisting = true
+        function loadAndThen(callback) {
+            isSaving = false
             console.assert(!onNextAccept, "Tried to open dialog multiple times")
             onNextAccept = callback
             open()
         }
 
         // Prompts the user for a new or existing file and calls the callback on completion
-        function openNewAndThen(callback) {
-            this.selectExisting = false
+        function saveAndThen(callback) {
+            isSaving = true
             console.assert(!onNextAccept, "Tried to open dialog multiple times")
             onNextAccept = callback
             open()
         }
 
         onAccepted: {
-            root.selectedConfigFile(selectedFile)
+            if (!isSaving) {
+                root.selectedConfigFile(selectedFile)
+            }
             configFilename = selectedFile
+            configDirty = false
             if (onNextAccept) {
                 onNextAccept()
                 onNextAccept = null
@@ -90,7 +108,7 @@ ApplicationWindow {
             case buttonSave:
                 if (configFilename.toString() === "") {
                     // Filename not yet set => trigger "Save As" dialog
-                    openFileDialog.openNewAndThen(() => {
+                    openFileDialog.saveAndThen(() => {
                         save(configFilename)
                         root.close()
                     });
@@ -122,7 +140,7 @@ ApplicationWindow {
 
         if (filename.toString() === "") {
             // Filename not yet set => trigger "Save As" dialog
-            openFileDialog.openNewAndThen(() => {
+            openFileDialog.saveAndThen(() => {
                 save(configFilename)
             });
             return
@@ -139,7 +157,7 @@ ApplicationWindow {
                 text: qsTr("&Open...")
                 shortcut: StandardKey.Open
                 // TODO: Ask to discard pending changes first
-                onTriggered: openFileDialog.openAndThen(() => {})
+                onTriggered: openFileDialog.loadAndThen(() => {})
             }
             Action {
                 text: qsTr("&Save")
@@ -150,7 +168,7 @@ ApplicationWindow {
                 text: qsTr("Save &as...")
                 shortcut: StandardKey.SaveAs
                 onTriggered: {
-                    openFileDialog.openNewAndThen(() => {
+                    openFileDialog.saveAndThen(() => {
                         root.save(configFilename)
                     });
                 }
@@ -898,7 +916,7 @@ ApplicationWindow {
             Label {
                 Layout.alignment: Qt.AlignHCenter
                 enabled: false
-                text: configFilename.toString() === ""
+                text: loadedDefaults
                         ? qsTr("Config.json not found — loaded defaults")
                         : qsTr("Editing %1").arg(urlToLocalFile(configFilename))
             }
