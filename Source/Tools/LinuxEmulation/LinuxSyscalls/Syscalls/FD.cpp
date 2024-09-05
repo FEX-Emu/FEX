@@ -31,6 +31,15 @@ $end_info$
 namespace FEX::HLE {
 void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
   using namespace FEXCore::IR;
+  REGISTER_SYSCALL_IMPL_FLAGS(poll, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                              [](FEXCore::Core::CpuStateFrame* Frame, struct pollfd* fds, nfds_t nfds, int timeout) -> uint64_t {
+                                if (nfds) {
+                                  // fds is allowed to be garbage if nfds is zero.
+                                  FaultSafeUserMemAccess::VerifyIsWritable(fds, sizeof(struct pollfd) * nfds);
+                                }
+                                uint64_t Result = ::poll(fds, nfds, timeout);
+                                SYSCALL_ERRNO();
+                              });
 
   REGISTER_SYSCALL_IMPL_FLAGS(open, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
                               [](FEXCore::Core::CpuStateFrame* Frame, const char* pathname, int flags, uint32_t mode) -> uint64_t {

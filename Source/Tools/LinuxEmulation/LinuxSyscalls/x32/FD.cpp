@@ -253,12 +253,6 @@ auto selectHandler = [](FEXCore::Core::CpuStateFrame* Frame, int nfds, fd_set32*
 };
 
 void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
-  REGISTER_SYSCALL_IMPL_X32(poll, [](FEXCore::Core::CpuStateFrame* Frame, struct pollfd* fds, nfds_t nfds, int timeout) -> uint64_t {
-    FaultSafeUserMemAccess::VerifyIsReadableOrNull(fds, sizeof(struct pollfd) * nfds);
-    uint64_t Result = ::poll(fds, nfds, timeout);
-    SYSCALL_ERRNO();
-  });
-
   REGISTER_SYSCALL_IMPL_X32(ppoll,
                             [](FEXCore::Core::CpuStateFrame* Frame, struct pollfd* fds, nfds_t nfds, timespec32* timeout_ts,
                                const uint64_t* sigmask, size_t sigsetsize) -> uint64_t {
