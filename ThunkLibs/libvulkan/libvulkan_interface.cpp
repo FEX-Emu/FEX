@@ -1427,6 +1427,9 @@ struct fex_gen_config<&VkXlibSurfaceCreateInfoKHR::pNext> : fexgen::custom_repac
 
 
 template<>
+struct fex_gen_config<&VkCommandBufferBeginInfo::pInheritanceInfo> : fexgen::custom_repack {};
+
+template<>
 struct fex_gen_config<&VkDeviceCreateInfo::pQueueCreateInfos> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkDeviceCreateInfo::ppEnabledLayerNames> : fexgen::custom_repack {};
@@ -1434,7 +1437,41 @@ template<>
 struct fex_gen_config<&VkDeviceCreateInfo::ppEnabledExtensionNames> : fexgen::custom_repack {};
 
 template<>
+struct fex_gen_config<&VkDependencyInfo::pMemoryBarriers> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkDependencyInfo::pBufferMemoryBarriers> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkDependencyInfo::pImageMemoryBarriers> : fexgen::custom_repack {};
+
+template<>
+struct fex_gen_config<&VkDescriptorGetInfoEXT::data> : fexgen::custom_repack {};
+
+template<>
 struct fex_gen_config<&VkDescriptorSetLayoutCreateInfo::pBindings> : fexgen::custom_repack {};
+
+template<>
+struct fex_gen_config<&VkDescriptorUpdateTemplateCreateInfo::pDescriptorUpdateEntries> : fexgen::custom_repack {};
+
+template<>
+struct fex_gen_config<&VkGraphicsPipelineCreateInfo::pStages> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkGraphicsPipelineCreateInfo::pVertexInputState> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkGraphicsPipelineCreateInfo::pInputAssemblyState> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkGraphicsPipelineCreateInfo::pTessellationState> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkGraphicsPipelineCreateInfo::pViewportState> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkGraphicsPipelineCreateInfo::pRasterizationState> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkGraphicsPipelineCreateInfo::pMultisampleState> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkGraphicsPipelineCreateInfo::pDepthStencilState> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkGraphicsPipelineCreateInfo::pColorBlendState> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkGraphicsPipelineCreateInfo::pDynamicState> : fexgen::custom_repack {};
 
 template<>
 struct fex_gen_config<&VkInstanceCreateInfo::pApplicationInfo> : fexgen::custom_repack {};
@@ -1458,27 +1495,9 @@ template<>
 struct fex_gen_config<&VkPipelineShaderStageCreateInfo::pSpecializationInfo> : fexgen::custom_repack {};
 // template<> struct fex_gen_config<&VkSpecializationInfo::pMapEntries> : fexgen::custom_repack {};
 
-
+// TODO: Support annotating as assume_compatible_data_layout instead
 template<>
-struct fex_gen_config<&VkGraphicsPipelineCreateInfo::pStages> : fexgen::custom_repack {};
-template<>
-struct fex_gen_config<&VkGraphicsPipelineCreateInfo::pVertexInputState> : fexgen::custom_repack {};
-template<>
-struct fex_gen_config<&VkGraphicsPipelineCreateInfo::pInputAssemblyState> : fexgen::custom_repack {};
-template<>
-struct fex_gen_config<&VkGraphicsPipelineCreateInfo::pTessellationState> : fexgen::custom_repack {};
-template<>
-struct fex_gen_config<&VkGraphicsPipelineCreateInfo::pViewportState> : fexgen::custom_repack {};
-template<>
-struct fex_gen_config<&VkGraphicsPipelineCreateInfo::pRasterizationState> : fexgen::custom_repack {};
-template<>
-struct fex_gen_config<&VkGraphicsPipelineCreateInfo::pMultisampleState> : fexgen::custom_repack {};
-template<>
-struct fex_gen_config<&VkGraphicsPipelineCreateInfo::pDepthStencilState> : fexgen::custom_repack {};
-template<>
-struct fex_gen_config<&VkGraphicsPipelineCreateInfo::pColorBlendState> : fexgen::custom_repack {};
-template<>
-struct fex_gen_config<&VkGraphicsPipelineCreateInfo::pDynamicState> : fexgen::custom_repack {};
+struct fex_gen_config<&VkPipelineCacheCreateInfo::pInitialData> : fexgen::custom_repack {};
 
 // Command buffers are dispatchable handles, so on 32-bit they need to be repacked
 template<>
@@ -1491,6 +1510,10 @@ struct fex_gen_config<&VkRenderingInfo::pDepthAttachment> : fexgen::custom_repac
 template<>
 struct fex_gen_config<&VkRenderingInfo::pStencilAttachment> : fexgen::custom_repack {};
 
+// TODO: Support annotating as assume_compatible_data_layout instead
+template<>
+struct fex_gen_config<&VkRenderPassBeginInfo::pClearValues> : fexgen::custom_repack {};
+
 template<>
 struct fex_gen_config<&VkSubpassDescription2::pInputAttachments> : fexgen::custom_repack {};
 template<>
@@ -1499,20 +1522,6 @@ template<>
 struct fex_gen_config<&VkSubpassDescription2::pResolveAttachments> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkSubpassDescription2::pDepthStencilAttachment> : fexgen::custom_repack {};
-
-template<>
-struct fex_gen_config<&VkDependencyInfo::pMemoryBarriers> : fexgen::custom_repack {};
-template<>
-struct fex_gen_config<&VkDependencyInfo::pBufferMemoryBarriers> : fexgen::custom_repack {};
-template<>
-struct fex_gen_config<&VkDependencyInfo::pImageMemoryBarriers> : fexgen::custom_repack {};
-
-template<>
-struct fex_gen_config<&VkDescriptorUpdateTemplateCreateInfo::pDescriptorUpdateEntries> : fexgen::custom_repack {};
-
-// Union type
-template<>
-struct fex_gen_config<&VkDescriptorGetInfoEXT::data> : fexgen::custom_repack {};
 
 // These types have incompatible data layout but we use their layout wrappers elsewhere
 template<>
@@ -1548,19 +1557,6 @@ struct fex_gen_param {};
 
 template<auto>
 struct fex_gen_config : fexgen::generate_guest_symtable, fexgen::indirect_guest_calls {};
-
-#ifdef IS_32BIT_THUNK
-template<>
-struct fex_gen_config<&VkCommandBufferBeginInfo::pInheritanceInfo> : fexgen::custom_repack {};
-
-// TODO: Should have per-member compatibility annotation
-template<>
-struct fex_gen_config<&VkPipelineCacheCreateInfo::pInitialData> : fexgen::custom_repack {};
-
-// TODO: Should have per-member compatibility annotation
-template<>
-struct fex_gen_config<&VkRenderPassBeginInfo::pClearValues> : fexgen::custom_repack {};
-#endif
 
 template<>
 struct fex_gen_config<vkCreateInstance> : fexgen::custom_host_impl {};
