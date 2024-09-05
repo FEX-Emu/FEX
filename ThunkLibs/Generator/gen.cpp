@@ -308,7 +308,7 @@ void GenerateThunkLibsAction::EmitLayoutWrappers(clang::ASTContext& context, std
     if (type_repack_info.custom_repacked_members.empty()) {
       fmt::print(file, "void fex_apply_custom_repacking_entry(host_layout<{}>& source, const guest_layout<{}>& from) {{\n", struct_name, struct_name);
       fmt::print(file, "}}\n");
-      fmt::print(file, "bool fex_apply_custom_repacking_exit(guest_layout<{}>& into, host_layout<{}>& from) {{\n", struct_name, struct_name);
+      fmt::print(file, "bool fex_apply_custom_repacking_exit(guest_layout<{}>& into, const host_layout<{}>& from) {{\n", struct_name, struct_name);
       fmt::print(file, "  return false;\n");
       fmt::print(file, "}}\n");
     } else {
@@ -319,7 +319,7 @@ void GenerateThunkLibsAction::EmitLayoutWrappers(clang::ASTContext& context, std
       fmt::print(file, "  fex_custom_repack_entry(source, from);\n");
       fmt::print(file, "}}\n");
 
-      fmt::print(file, "bool fex_apply_custom_repacking_exit(guest_layout<{}>& into, host_layout<{}>& from) {{\n", struct_name, struct_name);
+      fmt::print(file, "bool fex_apply_custom_repacking_exit(guest_layout<{}>& into, const host_layout<{}>& from) {{\n", struct_name, struct_name);
       fmt::print(file, "  return fex_custom_repack_exit(into, from);\n");
       fmt::print(file, "}}\n");
     }
