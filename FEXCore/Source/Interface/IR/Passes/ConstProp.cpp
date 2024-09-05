@@ -78,9 +78,6 @@ private:
 
   fextl::unordered_map<uint64_t, Ref> ConstPool;
 
-  Ref CreateInlineConstant(IREmitter* IREmit, uint64_t Constant) {
-    return IREmit->_InlineConstant(Constant);
-  }
   bool SupportsTSOImm9 {};
   const FEXCore::CPUIDEmu* CPUID;
 
@@ -104,7 +101,7 @@ private:
 
     if (IsSIMM9 || IsExtended) {
       IREmit->SetWriteCursor(IR.GetNode(Offset));
-      IREmit->ReplaceNodeArgument(CodeNode, Offset_Index, CreateInlineConstant(IREmit, Imm));
+      IREmit->ReplaceNodeArgument(CodeNode, Offset_Index, IREmit->_InlineConstant(Imm));
       OffsetScale = 1;
     }
   }
@@ -586,7 +583,7 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
           Constant2 &= 63;
         }
 
-        IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant2));
+        IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant2));
       }
       break;
     }
@@ -602,7 +599,7 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
         // constant would be in bounds after the JIT's 24/16 shift.
         if (ARMEmitter::IsImmAddSub(Constant2) && IROp->Size >= 4) {
           IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[1]));
-          IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant2));
+          IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant2));
         }
       } else if (IROp->Op == OP_SUBNZCV || IROp->Op == OP_SUBWITHFLAGS || IROp->Op == OP_SUB) {
         // TODO: Generalize this
@@ -610,7 +607,7 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
         if (IREmit->IsValueConstant(IROp->Args[0], &Constant1)) {
           if (Constant1 == 0) {
             IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[0]));
-            IREmit->ReplaceNodeArgument(CodeNode, 0, CreateInlineConstant(IREmit, 0));
+            IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->_InlineConstant(0));
           }
         }
       }
@@ -624,7 +621,7 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
       if (IREmit->IsValueConstant(IROp->Args[0], &Constant1)) {
         if (Constant1 == 0) {
           IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[0]));
-          IREmit->ReplaceNodeArgument(CodeNode, 0, CreateInlineConstant(IREmit, 0));
+          IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->_InlineConstant(0));
         }
       }
 
@@ -635,7 +632,7 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
       if (IREmit->IsValueConstant(IROp->Args[0], &Constant1)) {
         if (Constant1 == 0) {
           IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[0]));
-          IREmit->ReplaceNodeArgument(CodeNode, 0, CreateInlineConstant(IREmit, 0));
+          IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->_InlineConstant(0));
         }
       }
 
@@ -647,7 +644,7 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
       if (IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
         if (ARMEmitter::IsImmAddSub(Constant2)) {
           IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[1]));
-          IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant2));
+          IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant2));
         }
       }
 
@@ -655,7 +652,7 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
       if (IREmit->IsValueConstant(IROp->Args[0], &Constant1)) {
         if (Constant1 == 0) {
           IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[0]));
-          IREmit->ReplaceNodeArgument(CodeNode, 0, CreateInlineConstant(IREmit, 0));
+          IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->_InlineConstant(0));
         }
       }
       break;
@@ -665,7 +662,7 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
       if (IREmit->IsValueConstant(IROp->Args[1], &Constant1)) {
         if (IsImmLogical(Constant1, IROp->Size * 8)) {
           IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[1]));
-          IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant1));
+          IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant1));
         }
       }
       break;
@@ -675,7 +672,7 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
       if (IREmit->IsValueConstant(IROp->Args[1], &Constant1)) {
         if (ARMEmitter::IsImmAddSub(Constant1)) {
           IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[1]));
-          IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant1));
+          IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant1));
         }
       }
 
@@ -687,8 +684,8 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
           (Constant2 == 1 || Constant2 == AllOnes) && Constant3 == 0) {
         IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[2]));
 
-        IREmit->ReplaceNodeArgument(CodeNode, 2, CreateInlineConstant(IREmit, Constant2));
-        IREmit->ReplaceNodeArgument(CodeNode, 3, CreateInlineConstant(IREmit, Constant3));
+        IREmit->ReplaceNodeArgument(CodeNode, 2, IREmit->_InlineConstant(Constant2));
+        IREmit->ReplaceNodeArgument(CodeNode, 3, IREmit->_InlineConstant(Constant3));
       }
 
       break;
@@ -702,11 +699,11 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
       uint64_t Constant1 {};
       if (IREmit->IsValueConstant(IROp->Args[1], &Constant1) && Constant1 == 0) {
         IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[1]));
-        IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant1));
+        IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant1));
 
         if (IREmit->IsValueConstant(IROp->Args[0], &Constant0) && (Constant0 == 1 || Constant0 == AllOnes)) {
           IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[0]));
-          IREmit->ReplaceNodeArgument(CodeNode, 0, CreateInlineConstant(IREmit, Constant0));
+          IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->_InlineConstant(Constant0));
         }
       }
 
@@ -717,7 +714,7 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
       if (IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
         if (ARMEmitter::IsImmAddSub(Constant2)) {
           IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[1]));
-          IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant2));
+          IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant2));
         }
       }
       break;
@@ -728,7 +725,7 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
       uint64_t Constant {};
       if (IREmit->IsValueConstant(Op->NewRIP, &Constant)) {
         IREmit->SetWriteCursor(CurrentIR.GetNode(Op->NewRIP));
-        IREmit->ReplaceNodeArgument(CodeNode, 0, CreateInlineConstant(IREmit, Constant));
+        IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->_InlineConstant(Constant));
       } else {
         auto NewRIP = IREmit->GetOpHeader(Op->NewRIP);
         if (NewRIP->Op == OP_ENTRYPOINTOFFSET) {
@@ -749,7 +746,7 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
       if (IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
         if (IsImmLogical(Constant2, IROp->Size * 8)) {
           IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[1]));
-          IREmit->ReplaceNodeArgument(CodeNode, 1, CreateInlineConstant(IREmit, Constant2));
+          IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant2));
         }
       }
       break;
@@ -785,7 +782,7 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
       uint64_t Constant {};
       if (IREmit->IsValueConstant(Op->Direction, &Constant)) {
         IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Direction));
-        IREmit->ReplaceNodeArgument(CodeNode, Op->Direction_Index, CreateInlineConstant(IREmit, Constant));
+        IREmit->ReplaceNodeArgument(CodeNode, Op->Direction_Index, IREmit->_InlineConstant(Constant));
       }
       break;
     }
@@ -795,7 +792,7 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
       uint64_t Constant {};
       if (IREmit->IsValueConstant(Op->Direction, &Constant)) {
         IREmit->SetWriteCursor(CurrentIR.GetNode(Op->Direction));
-        IREmit->ReplaceNodeArgument(CodeNode, Op->Direction_Index, CreateInlineConstant(IREmit, Constant));
+        IREmit->ReplaceNodeArgument(CodeNode, Op->Direction_Index, IREmit->_InlineConstant(Constant));
       }
       break;
     }
