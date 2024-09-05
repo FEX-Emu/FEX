@@ -23,6 +23,7 @@ ApplicationWindow {
     property url configFilename
 
     property bool configDirty: false
+    property bool loadedDefaults: false
     property bool closeConfirmed: false
 
     signal selectedConfigFile(name: url)
@@ -30,6 +31,13 @@ ApplicationWindow {
 
     // Property used to force reloading any elements that read ConfigModel
     property bool refreshCache: false
+
+    onConfigDirtyChanged: {
+        if (!configDirty) {
+            // We either just saved or loaded a file
+            loadedDefaults = false
+        }
+    }
 
     function refreshUI() {
         refreshCache = !refreshCache
@@ -905,7 +913,7 @@ ApplicationWindow {
             Label {
                 Layout.alignment: Qt.AlignHCenter
                 enabled: false
-                text: configFilename.toString() === ""
+                text: loadedDefaults
                         ? qsTr("Config.json not found — loaded defaults")
                         : qsTr("Editing %1").arg(urlToLocalFile(configFilename))
             }

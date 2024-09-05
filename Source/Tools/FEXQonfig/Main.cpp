@@ -316,7 +316,9 @@ ConfigRuntime::ConfigRuntime(const QString& ConfigFilename) {
   if (!ConfigFilename.isEmpty()) {
     Window->setProperty("configFilename", QUrl::fromLocalFile(ConfigFilename));
   } else {
+    Window->setProperty("configFilename", QUrl::fromLocalFile(FEXCore::Config::GetConfigFileLocation().c_str()));
     Window->setProperty("configDirty", true);
+    Window->setProperty("loadedDefaults", true);
   }
 
   ConfigRuntime::connect(Window, SIGNAL(selectedConfigFile(const QUrl&)), this, SLOT(onLoad(const QUrl&)));
