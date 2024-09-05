@@ -337,7 +337,12 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
     std::unordered_map<const clang::Type*, TypeCompatibility> ret;
     const auto host_abi = ComputeDataLayout(context, types);
     for (const auto& [type, type_repack_info] : types) {
-      if (!type_repack_info.pointers_only) {
+      if (type_repack_info.emit_layout_wrappers) {
+        // Assume incompatible, since this annotation is set when
+        // compatibility checks would otherwise fail (e.g. due to
+        // circular references)
+        ret.emplace(type, TypeCompatibility::None);
+      } else if (!type_repack_info.pointers_only) {
         GetTypeCompatibility(context, type, host_abi, ret);
       }
     }
