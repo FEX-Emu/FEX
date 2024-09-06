@@ -523,13 +523,20 @@ bool DeadFlagCalculationEliminination::ProcessBlock(IREmitter* IREmit, IRListVie
           } else if (Info.Replacement) {
             IROp->Op = Info.Replacement;
           }
-        } else {
-          FlagsRead &= ~Info.Write;
-
-          if (Info.ReplacementNoWrite && CodeNode->GetUses() == 0) {
-            IROp->Op = Info.ReplacementNoWrite;
-          }
+        } else if (Info.ReplacementNoWrite && CodeNode->GetUses() == 0) {
+          IROp->Op = Info.ReplacementNoWrite;
         }
+
+        // If we don't care about the sign or carry, we can optimize testnz.
+        // Carry is inverted between testz and testnz so we check that too. Note
+        // this flag is outside of the if, since the TestNZ might result from
+        // optimizing AndWithFlags, and we need to converge locally in a single
+        // iteration.
+        if (IROp->Op == OP_TESTNZ && IROp->Size < 4 && !(FlagsRead & (FLAG_N | FLAG_C))) {
+          IROp->Op = OP_TESTZ;
+        }
+
+        FlagsRead &= ~Info.Write;
 
         // If we eliminated the instruction, we eliminate its read too. This
         // check is required to ensure the pass converges locally in a single
