@@ -4656,9 +4656,6 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
 
 #ifndef _WIN32
     constexpr uint8_t SYSCALL_LITERAL = 0x80;
-#else
-    constexpr uint8_t SYSCALL_LITERAL = 0x2E;
-#endif
     if (Literal == SYSCALL_LITERAL) {
       if (CTX->Config.Is64BitMode()) [[unlikely]] {
         ERROR_AND_DIE_FMT("[Unsupported] Trying to execute 32-bit syscall from a 64-bit process.");
@@ -4667,6 +4664,14 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
       SyscallOp(Op, false);
       return;
     }
+#else
+    constexpr uint8_t SYSCALL_LITERAL = 0x2E;
+    if (Literal == SYSCALL_LITERAL) {
+      // Can be used for both 64-bit and 32-bit syscalls on windows
+      SyscallOp(Op, false);
+      return;
+    }
+#endif
 
 #ifdef _M_ARM_64EC
     // This is used when QueryPerformanceCounter is called on recent Windows versions, it causes CNTVCT to be written into RAX.
