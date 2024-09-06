@@ -179,6 +179,9 @@ void OpDispatchBuilder::CalculateOF(uint8_t SrcSize, Ref Res, Ref Src1, Ref Src2
 }
 
 Ref OpDispatchBuilder::LoadPFRaw(bool Mask, bool Invert) {
+  // Most blocks do not read parity, so PF optimization is gated on this flag.
+  CurrentHeader->ReadsParity = true;
+
   // Evaluate parity on the deferred raw value.
   return _Parity(GetRFLAG(FEXCore::X86State::RFLAG_PF_RAW_LOC), Mask, Invert);
 }

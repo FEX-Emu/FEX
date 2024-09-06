@@ -168,7 +168,7 @@
         "SwitchGen": false,
         "JITDispatchOverride": "NoOp"
       },
-      "IRHeader SSA:$Blocks, u64:$OriginalRIP, u32:$BlockCount, u32:$NumHostInstructions, i1:$HasX87{false}": {
+      "IRHeader SSA:$Blocks, u64:$OriginalRIP, u32:$BlockCount, u32:$NumHostInstructions, i1:$HasX87{false}, i1:$ReadsParity{false}": {
         "SwitchGen": false,
         "JITDispatchOverride": "NoOp"
       },
