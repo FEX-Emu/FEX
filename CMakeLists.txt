@@ -287,7 +287,7 @@ find_package(Python 3.0 REQUIRED COMPONENTS Interpreter)
 set(BUILD_SHARED_LIBS OFF)
 
 pkg_search_module(xxhash IMPORTED_TARGET xxhash libxxhash)
-if (TARGET PkgConfig::xxhash)
+if (TARGET PkgConfig::xxhash AND NOT CMAKE_CROSSCOMPILING)
   add_library(xxHash::xxhash ALIAS PkgConfig::xxhash)
 else()
   set(XXHASH_BUNDLED_MODE TRUE)
