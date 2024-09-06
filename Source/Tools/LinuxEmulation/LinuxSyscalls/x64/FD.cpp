@@ -29,12 +29,6 @@ $end_info$
 
 namespace FEX::HLE::x64 {
 void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
-  REGISTER_SYSCALL_IMPL_X64(poll, [](FEXCore::Core::CpuStateFrame* Frame, struct pollfd* fds, nfds_t nfds, int timeout) -> uint64_t {
-    FaultSafeUserMemAccess::VerifyIsWritable(fds, sizeof(struct pollfd) * nfds);
-    uint64_t Result = ::poll(fds, nfds, timeout);
-    SYSCALL_ERRNO();
-  });
-
   REGISTER_SYSCALL_IMPL_X64(
     select, [](FEXCore::Core::CpuStateFrame* Frame, int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, struct timeval* timeout) -> uint64_t {
       ///< All FD arrays need to be writable
