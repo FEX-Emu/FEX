@@ -284,25 +284,38 @@ endif()
 find_package(PkgConfig REQUIRED)
 find_package(Python 3.0 REQUIRED COMPONENTS Interpreter)
 
-set(XXHASH_BUNDLED_MODE TRUE)
-set(XXHASH_BUILD_XXHSUM FALSE)
 set(BUILD_SHARED_LIBS OFF)
-add_subdirectory(External/xxhash/cmake_unofficial/)
+
+pkg_search_module(xxhash IMPORTED_TARGET xxhash libxxhash)
+if (TARGET PkgConfig::xxhash)
+  add_library(xxHash::xxhash ALIAS PkgConfig::xxhash)
+else()
+  set(XXHASH_BUNDLED_MODE TRUE)
+  set(XXHASH_BUILD_XXHSUM FALSE)
+  add_subdirectory(External/xxhash/cmake_unofficial/)
+endif()
 
 add_definitions(-Wno-trigraphs)
 add_definitions(-DGLOBAL_DATA_DIRECTORY="${DATA_DIRECTORY}/")
 
 if (BUILD_TESTS)
-  add_subdirectory(External/Catch2/)
+  find_package(Catch2 QUIET)
+  if (NOT Catch2_FOUND)
+    add_subdirectory(External/Catch2/)
 
-  # Pull in catch_discover_tests definition
-  list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/External/Catch2/contrib/")
+    # Pull in catch_discover_tests definition
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/External/Catch2/contrib/")
+  endif()
+
   include(Catch)
 endif()
 
-# Disable fmt install
-set(FMT_INSTALL OFF)
-add_subdirectory(External/fmt/)
+find_package(fmt QUIET)
+if (NOT fmt_FOUND)
+  # Disable fmt install
+  set(FMT_INSTALL OFF)
+  add_subdirectory(External/fmt/)
+endif()
 
 if (USE_FEXCONFIG_TOOLKIT STREQUAL "imgui")
   add_subdirectory(External/imgui/)
