@@ -15,6 +15,7 @@
 #include <elf.h>
 #include <fcntl.h>
 #include <filesystem>
+#include <sys/auxv.h>
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <unistd.h>
@@ -362,24 +363,80 @@ namespace x32 {
   HandlerPtr Handler_getcpu = FEX::VDSO::x32::glibc::getcpu;
 } // namespace x32
 
-void LoadHostVDSO() {
-  // dlopen does allocations that FEX can't track.
-  // Ensure we don't run afoul of the glibc fault allocator.
-  FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
-  void* vdso = dlopen("linux-vdso.so.1", RTLD_LAZY | RTLD_LOCAL | RTLD_NOLOAD);
-  if (!vdso) {
-    vdso = dlopen("linux-gate.so.1", RTLD_LAZY | RTLD_LOCAL | RTLD_NOLOAD);
+class VDSOParser final {
+public:
+  VDSOParser(const uint8_t* HeaderBase);
+
+  void* FindSymbol(std::string_view Name) const {
+    auto it = Symbols.find(Name);
+    if (it == Symbols.end()) {
+      return nullptr;
+    }
+    return it->second;
+  }
+private:
+  fextl::map<std::string_view, void*> Symbols;
+};
+
+VDSOParser::VDSOParser(const uint8_t* HeaderBase) {
+  // Minimal ELF parser that only knows how to scan for dynamic symbols from VDSO.
+  auto Header = reinterpret_cast<const Elf64_Ehdr*>(HeaderBase);
+  auto SectionHeaderOffset = Header->e_shoff;
+  auto SectionHeaderCount = Header->e_shnum;
+  auto SectionHeaders = reinterpret_cast<const Elf64_Shdr*>(&HeaderBase[SectionHeaderOffset]);
+
+  // Scan for the symbol and string headers.
+  const Elf64_Shdr* DynamicSymbolHeader {};
+  const Elf64_Shdr* DynamicStringHeader {};
+  for (size_t i = 0; i < SectionHeaderCount; ++i) {
+    if (DynamicSymbolHeader && DynamicStringHeader) {
+      // Found both headers.
+      break;
+    }
+
+    if (SectionHeaders[i].sh_type == SHT_DYNSYM) {
+      // Dynamic symbol header found.
+      DynamicSymbolHeader = &SectionHeaders[i];
+    }
+
+    if (SectionHeaders[i].sh_type == SHT_STRTAB && SectionHeaders[i].sh_addr) {
+      // Dynamic string header found.
+      DynamicStringHeader = &SectionHeaders[i];
+    }
   }
 
-  if (!vdso) {
+  auto NumberOfDynamicSymbols = DynamicSymbolHeader->sh_size / DynamicSymbolHeader->sh_entsize;
+  const char* DynamicStringTable = reinterpret_cast<const char*>(&HeaderBase[DynamicStringHeader->sh_offset]);
+
+  // Scan all the symbols and populate the look-up table.
+  for (size_t i = 0; i < NumberOfDynamicSymbols; ++i) {
+    auto Offset = DynamicSymbolHeader->sh_offset + (i * DynamicSymbolHeader->sh_entsize);
+    auto Symbol = reinterpret_cast<const Elf64_Sym*>(&HeaderBase[Offset]);
+
+    if (Symbol->st_info != 0) {
+      // Save the symbol.
+      const char* Name = &DynamicStringTable[Symbol->st_name];
+      auto SymbolPtr = HeaderBase + Symbol->st_value;
+      Symbols[Name] = const_cast<void*>(static_cast<const void*>(SymbolPtr));
+    }
+  }
+}
+
+void LoadHostVDSO() {
+  // Linux gives the VDSO ELF header base in the auxv value AT_SYSINFO_EHDR.
+  auto VDSOHeader = ::getauxval(AT_SYSINFO_EHDR);
+
+  if (!VDSOHeader) {
     // We couldn't load VDSO, fallback to C implementations. Which will still be faster than emulated libc versions.
     LogMan::Msg::IFmt("linux-vdso implementation falling back to libc. Consider enabling VDSO in your kernel.");
     return;
   }
 
-  auto SymbolPtr = dlsym(vdso, "__kernel_time");
+  auto VDSO = VDSOParser(reinterpret_cast<const uint8_t*>(VDSOHeader));
+
+  auto SymbolPtr = VDSO.FindSymbol("__kernel_time");
   if (!SymbolPtr) {
-    SymbolPtr = dlsym(vdso, "__vdso_time");
+    SymbolPtr = VDSO.FindSymbol("__vdso_time");
   }
   if (SymbolPtr) {
     VDSOHandlers::TimePtr = reinterpret_cast<VDSOHandlers::TimeType>(SymbolPtr);
@@ -387,9 +444,9 @@ void LoadHostVDSO() {
     x32::Handler_time = x32::VDSO::time;
   }
 
-  SymbolPtr = dlsym(vdso, "__kernel_gettimeofday");
+  SymbolPtr = VDSO.FindSymbol("__kernel_gettimeofday");
   if (!SymbolPtr) {
-    SymbolPtr = dlsym(vdso, "__vdso_gettimeofday");
+    SymbolPtr = VDSO.FindSymbol("__vdso_gettimeofday");
   }
 
   if (SymbolPtr) {
@@ -398,9 +455,9 @@ void LoadHostVDSO() {
     x32::Handler_gettimeofday = x32::VDSO::gettimeofday;
   }
 
-  SymbolPtr = dlsym(vdso, "__kernel_clock_gettime");
+  SymbolPtr = VDSO.FindSymbol("__kernel_clock_gettime");
   if (!SymbolPtr) {
-    SymbolPtr = dlsym(vdso, "__vdso_clock_gettime");
+    SymbolPtr = VDSO.FindSymbol("__vdso_clock_gettime");
   }
 
   if (SymbolPtr) {
@@ -410,9 +467,9 @@ void LoadHostVDSO() {
     x32::Handler_clock_gettime64 = x32::VDSO::clock_gettime64;
   }
 
-  SymbolPtr = dlsym(vdso, "__kernel_clock_getres");
+  SymbolPtr = VDSO.FindSymbol("__kernel_clock_getres");
   if (!SymbolPtr) {
-    SymbolPtr = dlsym(vdso, "__vdso_clock_getres");
+    SymbolPtr = VDSO.FindSymbol("__vdso_clock_getres");
   }
 
   if (SymbolPtr) {
@@ -421,9 +478,9 @@ void LoadHostVDSO() {
     x32::Handler_clock_getres = x32::VDSO::clock_getres;
   }
 
-  SymbolPtr = dlsym(vdso, "__kernel_getcpu");
+  SymbolPtr = VDSO.FindSymbol("__kernel_getcpu");
   if (!SymbolPtr) {
-    SymbolPtr = dlsym(vdso, "__vdso_getcpu");
+    SymbolPtr = VDSO.FindSymbol("__vdso_getcpu");
   }
 
   if (SymbolPtr) {
@@ -431,7 +488,6 @@ void LoadHostVDSO() {
     x64::Handler_getcpu = x64::VDSO::getcpu;
     x32::Handler_getcpu = x32::VDSO::getcpu;
   }
-  dlclose(vdso);
 }
 
 static std::array<FEXCore::IR::ThunkDefinition, 6> VDSODefinitions = {{
