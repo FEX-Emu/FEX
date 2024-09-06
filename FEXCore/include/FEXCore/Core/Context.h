@@ -14,8 +14,6 @@
 
 #include <istream>
 #include <ostream>
-#include <mutex>
-#include <shared_mutex>
 #include <span>
 
 namespace FEXCore {
@@ -57,23 +55,6 @@ enum ExitReason {
 enum OperatingMode {
   MODE_32BIT,
   MODE_64BIT,
-};
-
-struct CustomIRResult {
-  void* Creator;
-  void* Data;
-
-  explicit operator bool() const noexcept {
-    return !lock;
-  }
-
-  CustomIRResult(std::unique_lock<std::shared_mutex>&& lock, void* Creator, void* Data)
-    : Creator(Creator)
-    , Data(Data)
-    , lock(std::move(lock)) {}
-
-private:
-  std::unique_lock<std::shared_mutex> lock;
 };
 
 /**

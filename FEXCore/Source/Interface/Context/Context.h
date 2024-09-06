@@ -75,6 +75,23 @@ struct ExitFunctionLinkData {
   uint64_t GuestRIP;
 };
 
+struct CustomIRResult {
+  void* Creator;
+  void* Data;
+
+  explicit operator bool() const noexcept {
+    return !lock;
+  }
+
+  CustomIRResult(std::unique_lock<std::shared_mutex>&& lock, void* Creator, void* Data)
+    : Creator(Creator)
+    , Data(Data)
+    , lock(std::move(lock)) {}
+
+private:
+  std::unique_lock<std::shared_mutex> lock;
+};
+
 using BlockDelinkerFunc = void (*)(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record);
 constexpr uint32_t TSC_SCALE_MAXIMUM = 1'000'000'000; ///< 1Ghz
 
