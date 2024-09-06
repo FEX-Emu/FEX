@@ -55,7 +55,7 @@ void JITSymbols::RegisterJITSpace(const void* HostAddr, uint32_t CodeSize) {
 }
 
 // Buffered JIT symbols.
-void JITSymbols::Register(Core::JITSymbolBuffer* Buffer, const void* HostAddr, uint64_t GuestAddr, uint32_t CodeSize) {
+void JITSymbols::Register(FEXCore::JITSymbolBuffer* Buffer, const void* HostAddr, uint64_t GuestAddr, uint32_t CodeSize) {
   if (fd == -1) {
     return;
   }
@@ -79,7 +79,7 @@ void JITSymbols::Register(Core::JITSymbolBuffer* Buffer, const void* HostAddr, u
   WriteBuffer(Buffer);
 }
 
-void JITSymbols::Register(Core::JITSymbolBuffer* Buffer, const void* HostAddr, uint32_t CodeSize, std::string_view Name, uintptr_t Offset) {
+void JITSymbols::Register(FEXCore::JITSymbolBuffer* Buffer, const void* HostAddr, uint32_t CodeSize, std::string_view Name, uintptr_t Offset) {
   if (fd == -1) {
     return;
   }
@@ -104,7 +104,7 @@ void JITSymbols::Register(Core::JITSymbolBuffer* Buffer, const void* HostAddr, u
   WriteBuffer(Buffer);
 }
 
-void JITSymbols::RegisterNamedRegion(Core::JITSymbolBuffer* Buffer, const void* HostAddr, uint32_t CodeSize, std::string_view Name) {
+void JITSymbols::RegisterNamedRegion(FEXCore::JITSymbolBuffer* Buffer, const void* HostAddr, uint32_t CodeSize, std::string_view Name) {
   if (fd == -1) {
     return;
   }
@@ -128,7 +128,7 @@ void JITSymbols::RegisterNamedRegion(Core::JITSymbolBuffer* Buffer, const void* 
   WriteBuffer(Buffer);
 }
 
-void JITSymbols::WriteBuffer(Core::JITSymbolBuffer* Buffer, bool ForceWrite) {
+void JITSymbols::WriteBuffer(FEXCore::JITSymbolBuffer* Buffer, bool ForceWrite) {
   auto Now = std::chrono::steady_clock::now();
   if (!ForceWrite) {
     if (((Buffer->LastWrite - Now) < Buffer->MAXIMUM_THRESHOLD) && Buffer->Offset < Buffer->NEEDS_WRITE_DISTANCE) {
