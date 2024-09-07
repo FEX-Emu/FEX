@@ -49,7 +49,9 @@ $end_info$
 #include <winnt.h>
 #include <wine/debug.h>
 
+namespace Exception {
 class ECSyscallHandler;
+}
 
 extern "C" {
 extern IMAGE_DOS_HEADER __ImageBase; // Provided by the linker
@@ -68,6 +70,11 @@ uint32_t NtDllRedirectionLUTSize;
 void* WineSyscallDispatcher;
 // TODO: this really shouldn't be hardcoded, once wine gains proper syscall thunks this can be dropped.
 uint64_t WineNtContinueSyscallId = 0x1a;
+
+NTSTATUS NtContinueNative(ARM64_NT_CONTEXT* NativeContext, BOOLEAN Alert);
+
+[[noreturn]]
+void JumpSetStack(uintptr_t PC, uintptr_t SP);
 }
 
 struct ThreadCPUArea {
@@ -106,22 +113,16 @@ struct ThreadCPUArea {
   }
 };
 
-
-extern "C" NTSTATUS NtContinueNative(ARM64_NT_CONTEXT* NativeContext, BOOLEAN Alert);
-
 namespace {
 fextl::unique_ptr<FEXCore::Context::Context> CTX;
 fextl::unique_ptr<FEX::DummyHandlers::DummySignalDelegator> SignalDelegator;
-fextl::unique_ptr<ECSyscallHandler> SyscallHandler;
+fextl::unique_ptr<Exception::ECSyscallHandler> SyscallHandler;
 std::optional<FEX::Windows::InvalidationTracker> InvalidationTracker;
 std::optional<FEX::Windows::CPUFeatures> CPUFeatures;
 
 std::recursive_mutex ThreadCreationMutex;
 // Map of TIDs to their FEX thread state, `ThreadCreationMutex` must be locked when accessing
 std::unordered_map<DWORD, FEXCore::Core::InternalThreadState*> Threads;
-
-// Map from system call numbers to the relative addresses of their native implementations in ntdll
-std::vector<uint32_t> NtDllSyscallLUT;
 
 std::pair<NTSTATUS, ThreadCPUArea> GetThreadCPUArea(HANDLE Thread) {
   THREAD_BASIC_INFORMATION Info;
@@ -158,34 +159,6 @@ void FillNtDllLUTs() {
   for (auto It = RedirectionTableBegin; It != RedirectionTableEnd; It++) {
     NtDllRedirectionLUT[It->Source] = It->Destination;
   }
-
-  const auto* Exports = reinterpret_cast<IMAGE_EXPORT_DIRECTORY*>(RtlImageDirectoryEntryToData(NtDll, true, IMAGE_DIRECTORY_ENTRY_EXPORT, &Size));
-  const auto* FunctionTableBegin = reinterpret_cast<uint32_t*>(NtDllBase + Exports->AddressOfFunctions);
-  const auto* FunctionTableEnd = FunctionTableBegin + Exports->NumberOfFunctions;
-
-  NtDllSyscallLUT.reserve(0x200);
-  for (auto It = FunctionTableBegin; It != FunctionTableEnd; It++) {
-    const uint8_t* FunctionAddr = reinterpret_cast<uint8_t*>(NtDllBase + *It);
-    // Windows syscall thunks are as follows:
-    // 00: mov r10, rcx
-    // 03: mov eax, <NUM>
-    // <cont into MatchSeq>
-    static constexpr std::array<uint8_t, 16> MatchSeq {{
-      0xf6, 0x04, 0x25, 0x08, 0x03, 0xfe, 0x7f, 0x01, // 08: test byte ptr ds:7FFE0308h, 1
-      0x75, 0x03,                                     // 10: jnz short lbl
-      0x0f, 0x05,                                     // 12: syscall
-      0xc3,                                           // 14: retn
-      0xcd, 0x2e,                                     // 15: lbl: int 2Eh
-      0xc3                                            // 17: retn
-    }};
-
-    const uint8_t* MatchAddr = FunctionAddr + 8;
-    if (!memcmp(MatchSeq.data(), MatchAddr, MatchSeq.size())) {
-      const uint32_t SyscallNum = *reinterpret_cast<const uint32_t*>(FunctionAddr + 4);
-      NtDllSyscallLUT.resize(std::max<size_t>(NtDllSyscallLUT.size(), SyscallNum));
-      NtDllSyscallLUT[SyscallNum] = NtDllRedirectionLUT[*It];
-    }
-  }
 }
 
 template<typename T>
@@ -219,6 +192,14 @@ void PatchCallChecker() {
 namespace Exception {
 static std::optional<FEX::Windows::TSOHandlerConfig> HandlerConfig;
 static uintptr_t KiUserExceptionDispatcher;
+
+struct alignas(16) KiUserExceptionDispatcherStackLayout {
+  ARM64_NT_CONTEXT Context;
+  uint64_t Pad[4]; // Only present on newer Windows versions, likely for SVE.
+  EXCEPTION_RECORD Rec;
+  uint64_t Align;
+  uint64_t Redzone[2];
+};
 
 static bool HandleUnalignedAccess(ARM64_NT_CONTEXT& Context) {
   if (!CTX->IsAddressInCodeBuffer(GetCPUArea().ThreadState(), Context.Pc)) {
@@ -388,13 +369,7 @@ static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT&
   auto* Thread = GetCPUArea().ThreadState();
   auto& Fault = Thread->CurrentFrame->SynchronousFaultData;
   uint64_t GuestSp = Context.X[Config.SRAGPRMapping[static_cast<size_t>(FEXCore::X86State::REG_RSP)]];
-  struct DispatchArgs {
-    ARM64_NT_CONTEXT Context;
-    uint64_t Pad[4]; // Only present on newer Windows versions, likely for SVE.
-    EXCEPTION_RECORD Rec;
-    uint64_t Align;
-    uint64_t Redzone[2];
-  }* Args = reinterpret_cast<DispatchArgs*>(FEXCore::AlignDown(GuestSp, 64)) - 1;
+  auto* Args = reinterpret_cast<KiUserExceptionDispatcherStackLayout*>(FEXCore::AlignDown(GuestSp, 64)) - 1;
 
   LogMan::Msg::DFmt("Reconstructing context");
   ReconstructThreadState(Thread, Context);
@@ -416,7 +391,6 @@ static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT&
   Context.Sp = reinterpret_cast<uint64_t>(Args);
   Context.Pc = KiUserExceptionDispatcher;
 }
-} // namespace Exception
 
 class ECSyscallHandler : public FEXCore::HLE::SyscallHandler, public FEXCore::Allocator::FEXAllocOperators {
 public:
@@ -425,9 +399,19 @@ public:
   }
 
   uint64_t HandleSyscall(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) override {
-    Frame->State.rip = NtDllBase + NtDllSyscallLUT[Frame->State.gregs[FEXCore::X86State::REG_RAX]];
-    Frame->State.gregs[FEXCore::X86State::REG_RCX] = Frame->State.gregs[FEXCore::X86State::REG_R10];
-    return 0;
+    // Manually raise an exeption with the current JIT state packed into a native context, ntdll handles this and
+    // reenters the JIT (see dlls/ntdll/signal_arm64ec.c in wine).
+    uint64_t FPCR, FPSR;
+    __asm volatile("mrs %[fpcr], fpcr" : [fpcr] "=r"(FPCR));
+    __asm volatile("mrs %[fpsr], fpsr" : [fpsr] "=r"(FPSR));
+
+    auto* Thread = GetCPUArea().ThreadState();
+    KiUserExceptionDispatcherStackLayout DispatchArgs {
+      .Context = StoreStateToPackedECContext(Thread, static_cast<uint32_t>(FPCR), static_cast<uint32_t>(FPSR)),
+      .Rec = {.ExceptionCode = STATUS_EMULATION_SYSCALL}};
+    // PC is expected to hold the return address after the thunk, so skip over the INT 2E/SYSCALL instruction.
+    DispatchArgs.Context.Pc += 2;
+    JumpSetStack(KiUserExceptionDispatcher, reinterpret_cast<uintptr_t>(&DispatchArgs));
   }
 
   FEXCore::HLE::SyscallABI GetSyscallABI(uint64_t Syscall) override {
@@ -442,6 +426,7 @@ public:
     InvalidationTracker->ReprotectRWXIntervals(Start, Length);
   }
 };
+} // namespace Exception
 
 extern "C" void SyncThreadContext(CONTEXT* Context) {
   auto* Thread = GetCPUArea().ThreadState();
@@ -470,7 +455,7 @@ NTSTATUS ProcessInit() {
   FEXCore::Context::InitializeStaticTables(FEXCore::Context::MODE_64BIT);
 
   SignalDelegator = fextl::make_unique<FEX::DummyHandlers::DummySignalDelegator>();
-  SyscallHandler = fextl::make_unique<ECSyscallHandler>();
+  SyscallHandler = fextl::make_unique<Exception::ECSyscallHandler>();
   Exception::HandlerConfig.emplace();
 
   const auto NtDll = GetModuleHandle("ntdll.dll");

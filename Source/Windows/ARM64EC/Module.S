@@ -127,3 +127,9 @@ direct_syscall:
   add x11, x11, x9
 end:
   ret
+
+  // Expects target address in x0, and the SP to set in x1
+.global "#JumpSetStack"
+"#JumpSetStack":
+  mov sp, x1
+  br x0
