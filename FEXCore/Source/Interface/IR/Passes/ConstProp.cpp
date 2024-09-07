@@ -636,17 +636,7 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
     }
     case OP_ADC:
     case OP_ADCWITHFLAGS:
-    case OP_STORECONTEXT: {
-      uint64_t Constant1 {};
-      if (IREmit->IsValueConstant(IROp->Args[0], &Constant1)) {
-        if (Constant1 == 0) {
-          IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[0]));
-          IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->_InlineConstant(0));
-        }
-      }
-
-      break;
-    }
+    case OP_STORECONTEXT:
     case OP_RMIFNZCV: {
       uint64_t Constant1 {};
       if (IREmit->IsValueConstant(IROp->Args[0], &Constant1)) {
@@ -673,16 +663,6 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
         if (Constant1 == 0) {
           IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[0]));
           IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->_InlineConstant(0));
-        }
-      }
-      break;
-    }
-    case OP_TESTNZ: {
-      uint64_t Constant1 {};
-      if (IREmit->IsValueConstant(IROp->Args[1], &Constant1)) {
-        if (IsImmLogical(Constant1, IROp->Size * 8)) {
-          IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[1]));
-          IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant1));
         }
       }
       break;
@@ -761,7 +741,8 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
     case OP_XOR:
     case OP_AND:
     case OP_ANDWITHFLAGS:
-    case OP_ANDN: {
+    case OP_ANDN:
+    case OP_TESTNZ: {
       uint64_t Constant2 {};
       if (IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
         if (IsImmLogical(Constant2, IROp->Size * 8)) {
