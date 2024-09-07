@@ -23,8 +23,8 @@ $end_info$
 #define FLAG_C (1U << 1)
 #define FLAG_Z (1U << 2)
 #define FLAG_N (1U << 3)
-#define FLAG_A (1U << 4)
-#define FLAG_P (1U << 5)
+#define FLAG_P (1U << 4)
+#define FLAG_A (1U << 5)
 
 #define FLAG_ZCV (FLAG_Z | FLAG_C | FLAG_V)
 #define FLAG_NZCV (FLAG_N | FLAG_ZCV)
@@ -66,10 +66,6 @@ private:
   unsigned FlagForReg(unsigned Reg);
   unsigned FlagsForCondClassType(CondClassType Cond);
   bool EliminateDeadCode(IREmitter* IREmit, Ref CodeNode, IROp_Header* IROp);
-};
-
-unsigned DeadFlagCalculationEliminination::FlagForReg(unsigned Reg) {
-  return Reg == Core::CPUState::PF_AS_GREG ? FLAG_P : Reg == Core::CPUState::AF_AS_GREG ? FLAG_A : 0;
 };
 
 unsigned DeadFlagCalculationEliminination::FlagsForCondClassType(CondClassType Cond) {
@@ -233,6 +229,11 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
       .CanEliminate = true,
     };
 
+  case OP_LOADPF: return {.Read = FLAG_P};
+  case OP_LOADAF: return {.Read = FLAG_A};
+  case OP_STOREPF: return {.Write = FLAG_P, .CanEliminate = true};
+  case OP_STOREAF: return {.Write = FLAG_A, .CanEliminate = true};
+
   case OP_NZCVSELECT:
   case OP_NZCVSELECTINCREMENT: {
     auto Op = IROp->CW<IR::IROp_NZCVSelect>();
@@ -312,29 +313,6 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
     return {
       .Write = Flags,
       .CanEliminate = true,
-    };
-  }
-
-  case OP_LOADREGISTER: {
-    auto Op = IROp->CW<IR::IROp_LoadRegister>();
-    if (Op->Class != GPRClass) {
-      break;
-    }
-
-    return {.Read = FlagForReg(Op->Reg)};
-  }
-
-  case OP_STOREREGISTER: {
-    auto Op = IROp->CW<IR::IROp_StoreRegister>();
-    if (Op->Class != GPRClass) {
-      break;
-    }
-
-    unsigned Flag = FlagForReg(Op->Reg);
-
-    return {
-      .Write = Flag,
-      .CanEliminate = Flag != 0,
     };
   }
 

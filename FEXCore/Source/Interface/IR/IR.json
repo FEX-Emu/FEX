@@ -366,14 +366,36 @@
         "DestSize": "Size"
       },
 
+      "GPR = LoadPF u8:#Size": {
+        "Desc": ["Loads raw PF"],
+        "DestSize": "Size"
+      },
+
+      "GPR = LoadAF u8:#Size": {
+        "Desc": ["Loads raw PF"],
+        "DestSize": "Size"
+      },
+
       "StoreRegister SSA:$Value, u32:$Reg, RegisterClass:$Class, u8:#Size": {
-        "HasSideEffects": true,
+         "HasSideEffects": true,
         "Desc": ["Stores a value to a given register.",
                  "Size must match the execution mode."],
         "DestSize": "Size",
         "EmitValidation": [
           "WalkFindRegClass($Value) == $Class"
         ]
+      },
+
+      "StorePF GPR:$Value, u8:#Size": {
+        "HasSideEffects": true,
+        "Desc": ["Stores raw PF"],
+        "DestSize": "Size"
+      },
+
+      "StoreAF GPR:$Value, u8:#Size": {
+        "HasSideEffects": true,
+        "Desc": ["Stores raw AF"],
+        "DestSize": "Size"
       }
     },
     "Memory": {

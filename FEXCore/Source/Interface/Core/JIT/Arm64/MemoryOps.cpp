@@ -136,12 +136,8 @@ DEF_OP(LoadRegister) {
   const auto OpSize = IROp->Size;
 
   if (Op->Class == IR::GPRClass) {
-    unsigned Reg = Op->Reg == Core::CPUState::PF_AS_GREG ? (StaticRegisters.size() - 2) :
-                   Op->Reg == Core::CPUState::AF_AS_GREG ? (StaticRegisters.size() - 1) :
-                                                           Op->Reg;
-
-    LOGMAN_THROW_A_FMT(Reg < StaticRegisters.size(), "out of range reg");
-    const auto reg = StaticRegisters[Reg];
+    LOGMAN_THROW_A_FMT(Op->Reg < StaticRegisters.size(), "out of range reg");
+    const auto reg = StaticRegisters[Op->Reg];
 
     if (GetReg(Node).Idx() != reg.Idx()) {
       if (OpSize == 4) {
@@ -167,6 +163,30 @@ DEF_OP(LoadRegister) {
     }
   } else {
     LOGMAN_THROW_AA_FMT(false, "Unhandled Op->Class {}", Op->Class);
+  }
+}
+
+DEF_OP(LoadPF) {
+  const auto reg = StaticRegisters[StaticRegisters.size() - 2];
+
+  if (GetReg(Node).Idx() != reg.Idx()) {
+    if (IROp->Size == 4) {
+      mov(GetReg(Node).W(), reg.W());
+    } else {
+      mov(GetReg(Node).X(), reg.X());
+    }
+  }
+}
+
+DEF_OP(LoadAF) {
+  const auto reg = StaticRegisters[StaticRegisters.size() - 1];
+
+  if (GetReg(Node).Idx() != reg.Idx()) {
+    if (IROp->Size == 4) {
+      mov(GetReg(Node).W(), reg.W());
+    } else {
+      mov(GetReg(Node).X(), reg.X());
+    }
   }
 }
 
@@ -203,6 +223,28 @@ DEF_OP(StoreRegister) {
     }
   } else {
     LOGMAN_THROW_AA_FMT(false, "Unhandled Op->Class {}", Op->Class);
+  }
+}
+
+DEF_OP(StorePF) {
+  const auto Op = IROp->C<IR::IROp_StorePF>();
+  const auto reg = StaticRegisters[StaticRegisters.size() - 2];
+  const auto Src = GetReg(Op->Value.ID());
+
+  if (Src.Idx() != reg.Idx()) {
+    // Always use 64-bit, it's faster. Upper bits ignored for 32-bit mode.
+    mov(ARMEmitter::Size::i64Bit, reg, Src);
+  }
+}
+
+DEF_OP(StoreAF) {
+  const auto Op = IROp->C<IR::IROp_StoreAF>();
+  const auto reg = StaticRegisters[StaticRegisters.size() - 1];
+  const auto Src = GetReg(Op->Value.ID());
+
+  if (Src.Idx() != reg.Idx()) {
+    // Always use 64-bit, it's faster. Upper bits ignored for 32-bit mode.
+    mov(ARMEmitter::Size::i64Bit, reg, Src);
   }
 }
 

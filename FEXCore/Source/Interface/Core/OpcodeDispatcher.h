@@ -1236,8 +1236,12 @@ public:
       uint32_t Index = 63 - std::countl_zero(Bits);
       Ref Value = RegCache.Value[Index];
 
-      if (Index >= GPR0Index && Index <= AFIndex) {
+      if (Index >= GPR0Index && Index <= GPR15Index) {
         _StoreRegister(Value, Index - GPR0Index, GPRClass, GPRSize);
+      } else if (Index == PFIndex) {
+        _StorePF(Value, GPRSize);
+      } else if (Index == AFIndex) {
+        _StoreAF(Value, GPRSize);
       } else if (Index >= FPR0Index && Index <= FPR15Index) {
         _StoreRegister(Value, Index - FPR0Index, FPRClass, VectorSize);
       } else if (Index == DFIndex) {
@@ -1896,6 +1900,10 @@ private:
         if (Size == 8) {
           RegCache.Partial |= Bit;
         }
+      } else if (Index == PFIndex) {
+        RegCache.Value[Index] = _LoadPF(Size);
+      } else if (Index == AFIndex) {
+        RegCache.Value[Index] = _LoadAF(Size);
       } else {
         RegCache.Value[Index] = _LoadRegister(Offset, RegClass, Size);
       }
