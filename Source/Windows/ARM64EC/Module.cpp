@@ -298,9 +298,8 @@ static void LoadStateFromECContext(FEXCore::Core::InternalThreadState* Thread, C
   }
 }
 
-static void ReconstructThreadState(ARM64_NT_CONTEXT& Context) {
+static void ReconstructThreadState(FEXCore::Core::InternalThreadState* Thread, ARM64_NT_CONTEXT& Context) {
   const auto& Config = SignalDelegator->GetConfig();
-  auto* Thread = GetCPUArea().ThreadState();
   auto& State = Thread->CurrentFrame->State;
 
   State.rip = CTX->RestoreRIPFromHostPC(Thread, Context.Pc);
@@ -320,14 +319,12 @@ static void ReconstructThreadState(ARM64_NT_CONTEXT& Context) {
   CTX->SetFlagsFromCompactedEFLAGS(Thread, EFlags);
 }
 
-// Reconstructs an x64 context from the input context within the JIT, packed into a regular ARM64 context following the ARM64EC register mapping
-static ARM64_NT_CONTEXT ReconstructPackedECContext(ARM64_NT_CONTEXT& Context) {
-  ReconstructThreadState(Context);
+// Reconstructs an x64 context from the input thread's state, packed into a regular ARM64 context following the ARM64EC register mapping
+static ARM64_NT_CONTEXT StoreStateToPackedECContext(FEXCore::Core::InternalThreadState* Thread, uint32_t FPCR, uint32_t FPSR) {
   ARM64_NT_CONTEXT ECContext {};
 
   ECContext.ContextFlags = CONTEXT_ARM64_FULL;
 
-  auto* Thread = GetCPUArea().ThreadState();
   auto& State = Thread->CurrentFrame->State;
 
   ECContext.X8 = State.gregs[FEXCore::X86State::REG_RAX];
@@ -372,14 +369,16 @@ static ARM64_NT_CONTEXT ReconstructPackedECContext(ARM64_NT_CONTEXT& Context) {
 
   // NZCV+SS will be converted into EFlags by ntdll, the rest are lost during exception handling.
   // See HandleGuestException
-  ECContext.Cpsr = Context.Cpsr;
   uint32_t EFlags = CTX->ReconstructCompactedEFLAGS(Thread, false, nullptr, 0);
-  if (EFlags & (1U << FEXCore::X86State::RFLAG_TF_LOC)) {
-    ECContext.Cpsr |= 1 << 21; // PSTATE.SS
-  }
+  ECContext.Cpsr = 0;
+  ECContext.Cpsr |= (EFlags & (1U << FEXCore::X86State::RFLAG_TF_LOC)) ? (1U << 21) : 0;
+  ECContext.Cpsr |= (EFlags & (1U << FEXCore::X86State::RFLAG_OF_RAW_LOC)) ? (1U << 28) : 0;
+  ECContext.Cpsr |= (EFlags & (1U << FEXCore::X86State::RFLAG_CF_RAW_LOC)) ? (1U << 29) : 0;
+  ECContext.Cpsr |= (EFlags & (1U << FEXCore::X86State::RFLAG_ZF_RAW_LOC)) ? (1U << 30) : 0;
+  ECContext.Cpsr |= (EFlags & (1U << FEXCore::X86State::RFLAG_SF_RAW_LOC)) ? (1U << 31) : 0;
 
-  ECContext.Fpcr = Context.Fpcr;
-  ECContext.Fpsr = Context.Fpsr;
+  ECContext.Fpcr = FPCR;
+  ECContext.Fpsr = FPSR;
 
   return ECContext;
 }
@@ -398,7 +397,8 @@ static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT&
   }* Args = reinterpret_cast<DispatchArgs*>(FEXCore::AlignDown(GuestSp, 64)) - 1;
 
   LogMan::Msg::DFmt("Reconstructing context");
-  Args->Context = ReconstructPackedECContext(Context);
+  ReconstructThreadState(Thread, Context);
+  Args->Context = StoreStateToPackedECContext(Thread, Context.Fpcr, Context.Fpsr);
   LogMan::Msg::DFmt("pc: {:X} rip: {:X}", Context.Pc, Args->Context.Pc);
 
   // X64 Windows always clears TF, DF and AF when handling an exception, restoring after.
@@ -550,7 +550,8 @@ bool ResetToConsistentStateImpl(EXCEPTION_RECORD* Exception, CONTEXT* GuestConte
   // The JIT (in CompileBlock) emits code to check the suspend doorbell at the start of every block, and run the following instruction if it is set:
   static constexpr uint32_t SuspendTrapMagic {0xD4395FC0}; // brk #0xCAFE
   if (Exception->ExceptionCode == EXCEPTION_ILLEGAL_INSTRUCTION && *reinterpret_cast<uint32_t*>(NativeContext->Pc) == SuspendTrapMagic) {
-    *NativeContext = Exception::ReconstructPackedECContext(*NativeContext);
+    Exception::ReconstructThreadState(CPUArea.ThreadState(), *NativeContext);
+    *NativeContext = Exception::StoreStateToPackedECContext(CPUArea.ThreadState(), NativeContext->Fpcr, NativeContext->Fpsr);
     LogMan::Msg::DFmt("Suspending: RIP: {:X} SP: {:X}", NativeContext->Pc, NativeContext->Sp);
     CPUArea.Area->InSimulation = 0;
     *CPUArea.Area->SuspendDoorbell = 0;
