@@ -7,6 +7,7 @@ $end_info$
 */
 
 #include "FEXCore/Core/X86Enums.h"
+#include "FEXCore/Utils/CompilerDefs.h"
 #include "FEXCore/Utils/MathUtils.h"
 #include "FEXCore/fextl/deque.h"
 #include "Interface/IR/IR.h"
@@ -31,10 +32,7 @@ $end_info$
 
 namespace FEXCore::IR {
 
-struct FlagInfo {
-  // If set, all following fields are zero, used for a quick exit.
-  bool Trivial;
-
+struct FlagInfoUnpacked {
   // Set of flags read by the instruction.
   unsigned Read;
 
@@ -50,6 +48,52 @@ struct FlagInfo {
   // eliminated.
   IROps Replacement;
   IROps ReplacementNoWrite;
+
+  // Needs speical handling
+  bool Special;
+};
+
+struct FlagInfo {
+  uint64_t Raw;
+
+  static constexpr struct FlagInfo Pack(struct FlagInfoUnpacked F) {
+    uint64_t R = F.Read | (F.Write << 8) | (F.CanEliminate << 16) | (((uint64_t)F.Replacement) << 32) |
+                 ((uint64_t)F.ReplacementNoWrite << 48) | (F.Special ? (1ull << 63) : 0);
+    return {.Raw = R};
+  }
+
+  bool Trivial() {
+    return Raw == 0;
+  }
+
+  unsigned Read() {
+    return Bits(0, 8);
+  }
+
+  unsigned Write() {
+    return Bits(8, 8);
+  }
+
+  bool CanEliminate() {
+    return Bits(16, 1);
+  }
+
+  bool Special() {
+    return Bits(63, 1);
+  }
+
+  IROps Replacement() {
+    return (IROps)Bits(32, 16);
+  }
+
+  IROps ReplacementNoWrite() {
+    return (IROps)Bits(48, 16);
+  }
+
+private:
+  unsigned Bits(unsigned Start, unsigned Count) {
+    return (Raw >> Start) & ((1u << Count) - 1);
+  }
 };
 
 struct BlockInfo {
@@ -150,157 +194,186 @@ unsigned DeadFlagCalculationEliminination::FlagsForCondClassType(CondClassType C
   }
 }
 
-FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
-  switch (IROp->Op) {
+constexpr FlagInfo ClassifyConst(IROps Op) {
+  switch (Op) {
   case OP_ANDWITHFLAGS:
-    return {
+    return FlagInfo::Pack({
       .Write = FLAG_NZCV,
       .Replacement = OP_AND,
       .ReplacementNoWrite = OP_TESTNZ,
-    };
+    });
 
   case OP_ADDWITHFLAGS:
-    return {
+    return FlagInfo::Pack({
       .Write = FLAG_NZCV,
       .Replacement = OP_ADD,
       .ReplacementNoWrite = OP_ADDNZCV,
-    };
+    });
 
   case OP_SUBWITHFLAGS:
-    return {
+    return FlagInfo::Pack({
       .Write = FLAG_NZCV,
       .Replacement = OP_SUB,
       .ReplacementNoWrite = OP_SUBNZCV,
-    };
+    });
 
   case OP_ADCWITHFLAGS:
-    return {
+    return FlagInfo::Pack({
       .Read = FLAG_C,
       .Write = FLAG_NZCV,
       .Replacement = OP_ADC,
       .ReplacementNoWrite = OP_ADCNZCV,
-    };
+    });
 
   case OP_ADCZEROWITHFLAGS:
-    return {
+    return FlagInfo::Pack({
       .Read = FLAG_C,
       .Write = FLAG_NZCV,
       .Replacement = OP_ADCZERO,
-    };
+    });
 
   case OP_SBBWITHFLAGS:
-    return {
+    return FlagInfo::Pack({
       .Read = FLAG_C,
       .Write = FLAG_NZCV,
       .Replacement = OP_SBB,
       .ReplacementNoWrite = OP_SBBNZCV,
-    };
+    });
 
   case OP_SHIFTFLAGS:
     // _ShiftFlags conditionally sets NZCV+PF, which we model here as a
     // read-modify-write. Logically, it also conditionally makes AF undefined,
     // which we model by omitting AF from both Read and Write sets (since
     // "cond ? AF : undef" may be optimized to "AF").
-    return {
+    return FlagInfo::Pack({
       .Read = FLAG_NZCV | FLAG_P,
       .Write = FLAG_NZCV | FLAG_P,
       .CanEliminate = true,
-    };
+    });
 
   case OP_ROTATEFLAGS:
     // _RotateFlags conditionally sets CV, again modeled as RMW.
-    return {
+    return FlagInfo::Pack({
       .Read = FLAG_C | FLAG_V,
       .Write = FLAG_C | FLAG_V,
       .CanEliminate = true,
-    };
+    });
 
-  case OP_RDRAND: return {.Write = FLAG_NZCV};
+  case OP_RDRAND: return FlagInfo::Pack({.Write = FLAG_NZCV});
 
   case OP_ADDNZCV:
   case OP_SUBNZCV:
   case OP_TESTNZ:
   case OP_FCMP:
   case OP_STORENZCV:
-    return {
+    return FlagInfo::Pack({
       .Write = FLAG_NZCV,
       .CanEliminate = true,
-    };
+    });
 
   case OP_AXFLAG:
     // Per the Arm spec, axflag reads Z/V/C but not N. It writes all flags.
-    return {
+    return FlagInfo::Pack({
       .Read = FLAG_ZCV,
       .Write = FLAG_NZCV,
       .CanEliminate = true,
-    };
+    });
 
   case OP_CMPPAIRZ:
-    return {
+    return FlagInfo::Pack({
       .Write = FLAG_Z,
       .CanEliminate = true,
-    };
+    });
 
   case OP_CARRYINVERT:
-    return {
+    return FlagInfo::Pack({
       .Read = FLAG_C,
       .Write = FLAG_C,
       .CanEliminate = true,
-    };
+    });
 
   case OP_SETSMALLNZV:
-    return {
+    return FlagInfo::Pack({
       .Write = FLAG_N | FLAG_Z | FLAG_V,
       .CanEliminate = true,
-    };
+    });
 
-  case OP_LOADNZCV: return {.Read = FLAG_NZCV};
+  case OP_LOADNZCV: return FlagInfo::Pack({.Read = FLAG_NZCV});
 
   case OP_ADC:
   case OP_ADCZERO:
-  case OP_SBB: return {.Read = FLAG_C};
+  case OP_SBB: return FlagInfo::Pack({.Read = FLAG_C});
 
   case OP_ADCNZCV:
   case OP_SBBNZCV:
-    return {
+    return FlagInfo::Pack({
       .Read = FLAG_C,
       .Write = FLAG_NZCV,
       .CanEliminate = true,
-    };
+    });
 
-  case OP_LOADPF: return {.Read = FLAG_P};
-  case OP_LOADAF: return {.Read = FLAG_A};
-  case OP_STOREPF: return {.Write = FLAG_P, .CanEliminate = true};
-  case OP_STOREAF: return {.Write = FLAG_A, .CanEliminate = true};
+  case OP_LOADPF: return FlagInfo::Pack({.Read = FLAG_P});
+  case OP_LOADAF: return FlagInfo::Pack({.Read = FLAG_A});
+  case OP_STOREPF: return FlagInfo::Pack({.Write = FLAG_P, .CanEliminate = true});
+  case OP_STOREAF: return FlagInfo::Pack({.Write = FLAG_A, .CanEliminate = true});
 
+  case OP_NZCVSELECT:
+  case OP_NZCVSELECTINCREMENT:
+  case OP_NEG:
+  case OP_CONDJUMP:
+  case OP_CONDSUBNZCV:
+  case OP_CONDADDNZCV:
+  case OP_RMIFNZCV:
+  case OP_INVALIDATEFLAGS: return FlagInfo::Pack({.Special = true});
+  default: return FlagInfo::Pack({});
+  }
+}
+
+constexpr auto FlagInfos = std::invoke([] {
+  std::array<FlagInfo, OP_LAST> ret = {};
+
+  for (unsigned i = 0; i < OP_LAST; ++i) {
+    ret[i] = ClassifyConst((IROps)i);
+  }
+
+  return ret;
+});
+
+FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
+  FlagInfo Info = FlagInfos[IROp->Op];
+  if (!Info.Special()) {
+    return Info;
+  }
+
+  switch (IROp->Op) {
   case OP_NZCVSELECT:
   case OP_NZCVSELECTINCREMENT: {
     auto Op = IROp->CW<IR::IROp_NZCVSelect>();
-    return {.Read = FlagsForCondClassType(Op->Cond)};
+    return FlagInfo::Pack({.Read = FlagsForCondClassType(Op->Cond)});
   }
 
   case OP_NEG: {
     auto Op = IROp->CW<IR::IROp_Neg>();
-    return {.Read = FlagsForCondClassType(Op->Cond)};
+    return FlagInfo::Pack({.Read = FlagsForCondClassType(Op->Cond)});
   }
 
   case OP_CONDJUMP: {
     auto Op = IROp->CW<IR::IROp_CondJump>();
     if (!Op->FromNZCV) {
-      break;
+      return FlagInfo::Pack({});
     }
 
-    return {.Read = FlagsForCondClassType(Op->Cond)};
+    return FlagInfo::Pack({.Read = FlagsForCondClassType(Op->Cond)});
   }
 
   case OP_CONDSUBNZCV:
   case OP_CONDADDNZCV: {
     auto Op = IROp->CW<IR::IROp_CondAddNZCV>();
-    return {
+    return FlagInfo::Pack({
       .Read = FlagsForCondClassType(Op->Cond),
       .Write = FLAG_NZCV,
       .CanEliminate = true,
-    };
+    });
   }
 
   case OP_RMIFNZCV: {
@@ -311,10 +384,10 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
     static_assert(FLAG_C == (1 << 1), "rmif mask lines up with our bits");
     static_assert(FLAG_V == (1 << 0), "rmif mask lines up with our bits");
 
-    return {
+    return FlagInfo::Pack({
       .Write = Op->Mask,
       .CanEliminate = true,
-    };
+    });
   }
 
   case OP_INVALIDATEFLAGS: {
@@ -349,16 +422,16 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
     // The mental model of InvalidateFlags is writing undefined values to all
     // of the selected flags, allowing the write-after-write optimizations to
     // optimize invalidate-after-write for free.
-    return {
+    return FlagInfo::Pack({
       .Write = Flags,
       .CanEliminate = true,
-    };
+    });
   }
 
-  default: break;
+  default: LOGMAN_THROW_AA_FMT(false, "invalid special op"); FEX_UNREACHABLE;
   }
 
-  return {.Trivial = true};
+  FEX_UNREACHABLE;
 }
 
 // General purpose dead code elimination. Returns whether flag handling should
@@ -513,18 +586,18 @@ bool DeadFlagCalculationEliminination::ProcessBlock(IREmitter* IREmit, IRListVie
       // the block backwards, that means we handle the write first.
       struct FlagInfo Info = Classify(IROp);
 
-      if (!Info.Trivial) {
+      if (!Info.Trivial()) {
         bool Eliminated = false;
 
-        if ((FlagsRead & Info.Write) == 0) {
-          if ((Info.CanEliminate || Info.Replacement) && CodeNode->GetUses() == 0) {
+        if ((FlagsRead & Info.Write()) == 0) {
+          if ((Info.CanEliminate() || Info.Replacement()) && CodeNode->GetUses() == 0) {
             IREmit->Remove(CodeNode);
             Eliminated = true;
-          } else if (Info.Replacement) {
-            IROp->Op = Info.Replacement;
+          } else if (Info.Replacement()) {
+            IROp->Op = Info.Replacement();
           }
-        } else if (Info.ReplacementNoWrite && CodeNode->GetUses() == 0) {
-          IROp->Op = Info.ReplacementNoWrite;
+        } else if (Info.ReplacementNoWrite() && CodeNode->GetUses() == 0) {
+          IROp->Op = Info.ReplacementNoWrite();
         }
 
         // If we don't care about the sign or carry, we can optimize testnz.
@@ -536,13 +609,13 @@ bool DeadFlagCalculationEliminination::ProcessBlock(IREmitter* IREmit, IRListVie
           IROp->Op = OP_TESTZ;
         }
 
-        FlagsRead &= ~Info.Write;
+        FlagsRead &= ~Info.Write();
 
         // If we eliminated the instruction, we eliminate its read too. This
         // check is required to ensure the pass converges locally in a single
         // iteration.
         if (!Eliminated) {
-          FlagsRead |= Info.Read;
+          FlagsRead |= Info.Read();
         }
       }
     }
