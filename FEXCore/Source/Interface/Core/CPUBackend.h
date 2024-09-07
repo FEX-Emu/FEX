@@ -48,11 +48,6 @@ namespace CPU {
     CPUBackend(FEXCore::Core::InternalThreadState* ThreadState, size_t InitialCodeSize, size_t MaxCodeSize);
 
     virtual ~CPUBackend();
-    /**
-     * @return The name of this backend
-     */
-    [[nodiscard]]
-    virtual fextl::string GetName() = 0;
 
     struct CompiledCode {
       // Where this code block begins.
@@ -124,9 +119,6 @@ namespace CPU {
      *
      * This is a thread specific compilation unit since there is one CPUBackend per guest thread
      *
-     * If NeedsOpDispatch is returning false then IR and DebugData may be null and the expectation is that the code will still compile
-     * FEXCore::Core::ThreadState* is valid at the time of compilation.
-     *
      * @param IR -  IR that maps to the IR for this RIP
      * @param DebugData - Debug data that is available for this IR indirectly
      *
@@ -148,26 +140,6 @@ namespace CPU {
     virtual void* RelocateJITObjectCode(uint64_t Entry, const CodeSerialize::CodeObjectFileSection* SerializationData) {
       return nullptr;
     }
-
-    /**
-     * @brief Function for mapping memory in to the CPUBackend's visible space. Allows setting up virtual mappings if required
-     *
-     * @return Currently unused
-     */
-    [[nodiscard]]
-    virtual void* MapRegion(void* HostPtr, uint64_t GuestPtr, uint64_t Size) = 0;
-
-    /**
-     * @brief Lets FEXCore know if this CPUBackend needs IR and DebugData for CompileCode
-     *
-     * This is useful if the FEXCore Frontend hits an x86-64 instruction that isn't understood but can continue regardless
-     *
-     * This is useful for example, a VM based CPUbackend
-     *
-     * @return true if it needs the IR
-     */
-    [[nodiscard]]
-    virtual bool NeedsOpDispatch() = 0;
 
     virtual void ClearCache() {}
 

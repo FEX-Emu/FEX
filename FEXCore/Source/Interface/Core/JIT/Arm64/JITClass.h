@@ -38,23 +38,8 @@ public:
   ~Arm64JITCore() override;
 
   [[nodiscard]]
-  fextl::string GetName() override {
-    return "JIT";
-  }
-
-  [[nodiscard]]
   CPUBackend::CompiledCode CompileCode(uint64_t Entry, const FEXCore::IR::IRListView* IR, FEXCore::Core::DebugData* DebugData,
                                        const FEXCore::IR::RegisterAllocationData* RAData) override;
-
-  [[nodiscard]]
-  void* MapRegion(void* HostPtr, uint64_t, uint64_t) override {
-    return HostPtr;
-  }
-
-  [[nodiscard]]
-  bool NeedsOpDispatch() override {
-    return true;
-  }
 
   void ClearCache() override;
 
