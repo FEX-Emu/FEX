@@ -109,6 +109,9 @@ private:
 
 // Constants are pooled per block.
 void ConstProp::HandleConstantPools(IREmitter* IREmit, const IRListView& CurrentIR) {
+  const uint32_t SSACount = CurrentIR.GetSSACount();
+  fextl::vector<Ref> Remap(SSACount, NULL);
+
   for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       if (IROp->Op == OP_CONSTANT) {
@@ -116,10 +119,27 @@ void ConstProp::HandleConstantPools(IREmitter* IREmit, const IRListView& Current
         auto it = ConstPool.find(Op->Constant);
 
         if (it != ConstPool.end()) {
-          auto CodeIter = CurrentIR.at(CodeNode);
-          IREmit->ReplaceUsesWithAfter(CodeNode, it->second, CodeIter);
+          uint32_t Value = CurrentIR.GetID(CodeNode).Value;
+          LOGMAN_THROW_A_FMT(Value < SSACount, "def not yet remapped");
+
+          Remap[Value] = it->second;
         } else {
           ConstPool[Op->Constant] = CodeNode;
+        }
+      } else {
+        const uint8_t NumArgs = IR::GetArgs(IROp->Op);
+        for (uint8_t i = 0; i < NumArgs; ++i) {
+          if (IROp->Args[i].IsInvalid()) {
+            continue;
+          }
+
+          uint32_t Value = IROp->Args[i].ID().Value;
+          LOGMAN_THROW_A_FMT(Value < SSACount, "src not yet remapped");
+
+          Ref New = Value < SSACount ? Remap[Value] : NULL;
+          if (New) {
+            IREmit->ReplaceNodeArgument(CodeNode, i, New);
+          }
         }
       }
     }
@@ -807,13 +827,12 @@ void ConstProp::Run(IREmitter* IREmit) {
 
   auto CurrentIR = IREmit->ViewIR();
 
-  HandleConstantPools(IREmit, CurrentIR);
-
   for (auto [CodeNode, IROp] : CurrentIR.GetAllCode()) {
     ConstantPropagation(IREmit, CurrentIR, CodeNode, IROp);
   }
 
   ConstantInlining(IREmit, CurrentIR);
+  HandleConstantPools(IREmit, IREmit->ViewIR());
 }
 
 fextl::unique_ptr<FEXCore::IR::Pass> CreateConstProp(bool SupportsTSOImm9, const FEXCore::CPUIDEmu* CPUID) {
