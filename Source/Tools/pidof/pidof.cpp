@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
     }
 
     // Read state
-    char State;
+    char State {};
 
     {
       std::ifstream fs(StatusPath, std::ios_base::in | std::ios_base::binary);
