@@ -1238,7 +1238,7 @@ struct ipc_perm_32 {
   ipc_perm_32() = delete;
 
   operator struct ipc64_perm() const {
-    struct ipc64_perm perm;
+    struct ipc64_perm perm {};
     perm.key = key;
     perm.uid = uid;
     perm.gid = gid;
@@ -1278,7 +1278,7 @@ struct ipc_perm_64 {
   ipc_perm_64() = delete;
 
   operator struct ipc64_perm() const {
-    struct ipc64_perm perm;
+    struct ipc64_perm perm {};
     perm.key = key;
     perm.uid = uid;
     perm.gid = gid;
@@ -1319,7 +1319,7 @@ struct shmid_ds_32 {
   shmid_ds_32() = delete;
 
   operator struct shmid64_ds() const {
-    struct shmid64_ds buf;
+    struct shmid64_ds buf {};
     buf.shm_perm = shm_perm;
 
     buf.shm_segsz = shm_segsz;
@@ -1365,7 +1365,7 @@ struct shmid_ds_64 {
   shmid_ds_64() = delete;
 
   operator struct shmid64_ds() const {
-    struct shmid64_ds buf;
+    struct shmid64_ds buf {};
     buf.shm_perm = shm_perm;
 
     buf.shm_segsz = shm_segsz;
@@ -1615,7 +1615,7 @@ struct FEX_ANNOTATE("fex-match") shminfo_32 {
   shminfo_32() = delete;
 
   operator struct shminfo() const {
-    struct shminfo si;
+    struct shminfo si {};
     si.shmmax = shmmax;
     si.shmmin = shmmin;
     si.shmmni = shmmni;
@@ -1650,7 +1650,7 @@ struct FEX_ANNOTATE("alias-x86_32-shminfo64") FEX_ANNOTATE("fex-match") shminfo_
   shminfo_64() = delete;
 
   operator struct shminfo() const {
-    struct shminfo si;
+    struct shminfo si {};
     si.shmmax = shmmax;
     si.shmmin = shmmin;
     si.shmmni = shmmni;
