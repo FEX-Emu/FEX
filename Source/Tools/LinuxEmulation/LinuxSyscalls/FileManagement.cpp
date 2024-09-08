@@ -179,7 +179,7 @@ void FileManager::LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBO
 
 FileManager::FileManager(FEXCore::Context::Context* ctx)
   : EmuFD {ctx} {
-  auto ThunkConfigFile = ThunkConfig();
+  const auto& ThunkConfigFile = ThunkConfig();
 
   // We try to load ThunksDB from:
   // - FEX global config
@@ -367,7 +367,7 @@ fextl::string FileManager::GetEmulatedPath(const char* pathname, bool FollowSyml
     return thunkOverlay->second;
   }
 
-  auto RootFSPath = LDPath();
+  const auto& RootFSPath = LDPath();
   if (RootFSPath.empty()) { // If RootFS doesn't exist
     return {};
   }
