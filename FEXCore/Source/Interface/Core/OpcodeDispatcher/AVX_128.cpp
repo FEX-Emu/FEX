@@ -1440,7 +1440,7 @@ void OpDispatchBuilder::AVX128_ShiftDoubleImm(OpcodeArgs, ShiftDirection Dir) {
     Result = Src;
   } else if (Shift >= Core::CPUState::XMM_SSE_REG_SIZE) {
     Result.Low = LoadZeroVector(OpSize::i128Bit);
-    Result.High = Result.High;
+    Result.High = Result.Low;
   } else {
     Ref ZeroVector = LoadZeroVector(OpSize::i128Bit);
     RefPair Zero {ZeroVector, ZeroVector};
