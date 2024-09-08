@@ -220,7 +220,7 @@ uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname
     if (pathname[0] == '/') {
       auto Path = SyscallHandler->FM.GetEmulatedPath(pathname, true);
       if (!Path.empty() && FHU::Filesystem::Exists(Path)) {
-        Filename = Path;
+        Filename = std::move(Path);
       } else {
         Filename = pathname;
       }
