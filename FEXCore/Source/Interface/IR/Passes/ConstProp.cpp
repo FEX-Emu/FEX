@@ -595,14 +595,6 @@ void ConstProp::ConstantInlining(IREmitter* IREmit, const IRListView& CurrentIR)
       uint64_t Constant2 {};
       if (IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
         IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[1]));
-
-        // this shouldn't be here, but rather on the emitter themselves or the constprop transformation?
-        if (IROp->Size <= 4) {
-          Constant2 &= 31;
-        } else {
-          Constant2 &= 63;
-        }
-
         IREmit->ReplaceNodeArgument(CodeNode, 1, IREmit->_InlineConstant(Constant2));
       }
       break;
