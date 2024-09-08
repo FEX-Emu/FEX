@@ -301,8 +301,9 @@ public:
     xbfiz_helper(true, s, rd, rn, lsb, width);
   }
   void asr(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, uint32_t shift) {
-    LOGMAN_THROW_A_FMT(shift <= RegSizeInBits(s), "Tried to asr a region larger than the register");
-    sbfm(s, rd, rn, shift, RegSizeInBits(s) - 1);
+    const auto RegSize_m1 = RegSizeInBits(s) - 1;
+    shift &= RegSize_m1;
+    sbfm(s, rd, rn, shift, RegSize_m1);
   }
 
   void uxtb(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn) {
@@ -325,14 +326,14 @@ public:
   }
 
   void lsl(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, uint32_t shift) {
-    const auto RegSize = RegSizeInBits(s);
-    LOGMAN_THROW_A_FMT(shift < RegSize, "Tried to lsl a region larger than the register");
-    ubfm(s, rd, rn, (RegSize - shift) % RegSize, RegSize - shift - 1);
+    const auto RegSize_m1 = RegSizeInBits(s) - 1;
+    shift &= RegSize_m1;
+    ubfm(s, rd, rn, (RegSizeInBits(s) - shift) & RegSize_m1, RegSize_m1 - shift);
   }
   void lsr(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, uint32_t shift) {
-    const auto RegSize = RegSizeInBits(s);
-    LOGMAN_THROW_A_FMT(shift < RegSize, "Tried to lsr a region larger than the register");
-    ubfm(s, rd, rn, shift, RegSize - 1);
+    const auto RegSize_m1 = RegSizeInBits(s) - 1;
+    shift &= RegSize_m1;
+    ubfm(s, rd, rn, shift, RegSize_m1);
   }
   void ubfx(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, uint32_t lsb, uint32_t width) {
     LOGMAN_THROW_A_FMT(width > 0, "ubfx needs width > 0");
@@ -368,6 +369,7 @@ public:
   }
 
   void ror(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, uint32_t Imm) {
+    Imm &= RegSizeInBits(s) - 1;
     extr(s, rd, rn, rn, Imm);
   }
 
