@@ -140,11 +140,7 @@ DEF_OP(LoadRegister) {
     const auto reg = StaticRegisters[Op->Reg];
 
     if (GetReg(Node).Idx() != reg.Idx()) {
-      if (OpSize == 4) {
-        mov(GetReg(Node).W(), reg.W());
-      } else {
-        mov(GetReg(Node).X(), reg.X());
-      }
+      mov(GetReg(Node).X(), reg.X());
     }
   } else if (Op->Class == IR::FPRClass) {
     [[maybe_unused]] const auto regSize = HostSupportsAVX256 ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE;
@@ -170,11 +166,7 @@ DEF_OP(LoadPF) {
   const auto reg = StaticRegisters[StaticRegisters.size() - 2];
 
   if (GetReg(Node).Idx() != reg.Idx()) {
-    if (IROp->Size == 4) {
-      mov(GetReg(Node).W(), reg.W());
-    } else {
-      mov(GetReg(Node).X(), reg.X());
-    }
+    mov(GetReg(Node).X(), reg.X());
   }
 }
 
@@ -182,11 +174,7 @@ DEF_OP(LoadAF) {
   const auto reg = StaticRegisters[StaticRegisters.size() - 1];
 
   if (GetReg(Node).Idx() != reg.Idx()) {
-    if (IROp->Size == 4) {
-      mov(GetReg(Node).W(), reg.W());
-    } else {
-      mov(GetReg(Node).X(), reg.X());
-    }
+    mov(GetReg(Node).X(), reg.X());
   }
 }
 
