@@ -14,6 +14,8 @@ extern "C" {
 
 #define WOW64_TLS_MAX_NUMBER 19
 
+#define STATUS_EMULATION_SYSCALL ((NTSTATUS)0x40000039)
+
 #ifdef _M_ARM_64EC
 typedef struct _CHPE_V2_CPU_AREA_INFO {
   BOOLEAN InSimulation;             /* 000 */
