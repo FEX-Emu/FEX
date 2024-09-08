@@ -6439,9 +6439,9 @@
         "0xda 11b 0xd8 /1"
       ],
       "ExpectedArm64ASM": [
-        "eor w20, w26, w26, lsr #4",
-        "eor w20, w20, w20, lsr #2",
-        "eon w20, w20, w20, lsr #1",
+        "eor w0, w26, w26, lsr #4",
+        "eor w0, w0, w0, lsr #2",
+        "eon w20, w0, w0, lsr #1",
         "sbfx x20, x20, #0, #1",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
@@ -6460,9 +6460,9 @@
         "0xda 11b 0xd9 /1"
       ],
       "ExpectedArm64ASM": [
-        "eor w20, w26, w26, lsr #4",
-        "eor w20, w20, w20, lsr #2",
-        "eon w20, w20, w20, lsr #1",
+        "eor w0, w26, w26, lsr #4",
+        "eor w0, w0, w0, lsr #2",
+        "eon w20, w0, w0, lsr #1",
         "sbfx x20, x20, #0, #1",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
@@ -6483,9 +6483,9 @@
         "0xda 11b 0xda /1"
       ],
       "ExpectedArm64ASM": [
-        "eor w20, w26, w26, lsr #4",
-        "eor w20, w20, w20, lsr #2",
-        "eon w20, w20, w20, lsr #1",
+        "eor w0, w26, w26, lsr #4",
+        "eor w0, w0, w0, lsr #2",
+        "eon w20, w0, w0, lsr #1",
         "sbfx x20, x20, #0, #1",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
@@ -6506,9 +6506,9 @@
         "0xda 11b 0xdb /1"
       ],
       "ExpectedArm64ASM": [
-        "eor w20, w26, w26, lsr #4",
-        "eor w20, w20, w20, lsr #2",
-        "eon w20, w20, w20, lsr #1",
+        "eor w0, w26, w26, lsr #4",
+        "eor w0, w0, w0, lsr #2",
+        "eon w20, w0, w0, lsr #1",
         "sbfx x20, x20, #0, #1",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
@@ -6529,9 +6529,9 @@
         "0xda 11b 0xdc /1"
       ],
       "ExpectedArm64ASM": [
-        "eor w20, w26, w26, lsr #4",
-        "eor w20, w20, w20, lsr #2",
-        "eon w20, w20, w20, lsr #1",
+        "eor w0, w26, w26, lsr #4",
+        "eor w0, w0, w0, lsr #2",
+        "eon w20, w0, w0, lsr #1",
         "sbfx x20, x20, #0, #1",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
@@ -6552,9 +6552,9 @@
         "0xda 11b 0xdd /1"
       ],
       "ExpectedArm64ASM": [
-        "eor w20, w26, w26, lsr #4",
-        "eor w20, w20, w20, lsr #2",
-        "eon w20, w20, w20, lsr #1",
+        "eor w0, w26, w26, lsr #4",
+        "eor w0, w0, w0, lsr #2",
+        "eon w20, w0, w0, lsr #1",
         "sbfx x20, x20, #0, #1",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
@@ -6575,9 +6575,9 @@
         "0xda 11b 0xde /1"
       ],
       "ExpectedArm64ASM": [
-        "eor w20, w26, w26, lsr #4",
-        "eor w20, w20, w20, lsr #2",
-        "eon w20, w20, w20, lsr #1",
+        "eor w0, w26, w26, lsr #4",
+        "eor w0, w0, w0, lsr #2",
+        "eon w20, w0, w0, lsr #1",
         "sbfx x20, x20, #0, #1",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
@@ -6598,9 +6598,9 @@
         "0xda 11b 0xdf /1"
       ],
       "ExpectedArm64ASM": [
-        "eor w20, w26, w26, lsr #4",
-        "eor w20, w20, w20, lsr #2",
-        "eon w20, w20, w20, lsr #1",
+        "eor w0, w26, w26, lsr #4",
+        "eor w0, w0, w0, lsr #2",
+        "eon w20, w0, w0, lsr #1",
         "sbfx x20, x20, #0, #1",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
@@ -7377,9 +7377,9 @@
         "0xdb 11b 0xd8 /3"
       ],
       "ExpectedArm64ASM": [
-        "eor w20, w26, w26, lsr #4",
-        "eor w20, w20, w20, lsr #2",
-        "eor w20, w20, w20, lsr #1",
+        "eor w0, w26, w26, lsr #4",
+        "eor w0, w0, w0, lsr #2",
+        "eor w20, w0, w0, lsr #1",
         "sbfx x20, x20, #0, #1",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
@@ -7398,9 +7398,9 @@
         "0xdb 11b 0xd9 /3"
       ],
       "ExpectedArm64ASM": [
-        "eor w20, w26, w26, lsr #4",
-        "eor w20, w20, w20, lsr #2",
-        "eor w20, w20, w20, lsr #1",
+        "eor w0, w26, w26, lsr #4",
+        "eor w0, w0, w0, lsr #2",
+        "eor w20, w0, w0, lsr #1",
         "sbfx x20, x20, #0, #1",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
@@ -7421,9 +7421,9 @@
         "0xdb 11b 0xda /3"
       ],
       "ExpectedArm64ASM": [
-        "eor w20, w26, w26, lsr #4",
-        "eor w20, w20, w20, lsr #2",
-        "eor w20, w20, w20, lsr #1",
+        "eor w0, w26, w26, lsr #4",
+        "eor w0, w0, w0, lsr #2",
+        "eor w20, w0, w0, lsr #1",
         "sbfx x20, x20, #0, #1",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
@@ -7444,9 +7444,9 @@
         "0xdb 11b 0xdb /3"
       ],
       "ExpectedArm64ASM": [
-        "eor w20, w26, w26, lsr #4",
-        "eor w20, w20, w20, lsr #2",
-        "eor w20, w20, w20, lsr #1",
+        "eor w0, w26, w26, lsr #4",
+        "eor w0, w0, w0, lsr #2",
+        "eor w20, w0, w0, lsr #1",
         "sbfx x20, x20, #0, #1",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
@@ -7467,9 +7467,9 @@
         "0xdb 11b 0xdc /3"
       ],
       "ExpectedArm64ASM": [
-        "eor w20, w26, w26, lsr #4",
-        "eor w20, w20, w20, lsr #2",
-        "eor w20, w20, w20, lsr #1",
+        "eor w0, w26, w26, lsr #4",
+        "eor w0, w0, w0, lsr #2",
+        "eor w20, w0, w0, lsr #1",
         "sbfx x20, x20, #0, #1",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
@@ -7490,9 +7490,9 @@
         "0xdb 11b 0xdd /3"
       ],
       "ExpectedArm64ASM": [
-        "eor w20, w26, w26, lsr #4",
-        "eor w20, w20, w20, lsr #2",
-        "eor w20, w20, w20, lsr #1",
+        "eor w0, w26, w26, lsr #4",
+        "eor w0, w0, w0, lsr #2",
+        "eor w20, w0, w0, lsr #1",
         "sbfx x20, x20, #0, #1",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
@@ -7513,9 +7513,9 @@
         "0xdb 11b 0xde /3"
       ],
       "ExpectedArm64ASM": [
-        "eor w20, w26, w26, lsr #4",
-        "eor w20, w20, w20, lsr #2",
-        "eor w20, w20, w20, lsr #1",
+        "eor w0, w26, w26, lsr #4",
+        "eor w0, w0, w0, lsr #2",
+        "eor w20, w0, w0, lsr #1",
         "sbfx x20, x20, #0, #1",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",
@@ -7536,9 +7536,9 @@
         "0xdb 11b 0xdf /3"
       ],
       "ExpectedArm64ASM": [
-        "eor w20, w26, w26, lsr #4",
-        "eor w20, w20, w20, lsr #2",
-        "eor w20, w20, w20, lsr #1",
+        "eor w0, w26, w26, lsr #4",
+        "eor w0, w0, w0, lsr #2",
+        "eor w20, w0, w0, lsr #1",
         "sbfx x20, x20, #0, #1",
         "dup v2.2d, x20",
         "ldrb w20, [x28, #1019]",

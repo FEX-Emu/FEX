@@ -117,7 +117,7 @@ Ref OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
   // instead.
   if (FlagsMask & (1 << FEXCore::X86State::RFLAG_PF_RAW_LOC)) {
     // Set every bit except the bottommost.
-    auto OnesInvPF = _Or(OpSize::i64Bit, LoadPFRaw(false), _Constant(~1ull));
+    auto OnesInvPF = _Or(OpSize::i64Bit, LoadPFRaw(false, false), _Constant(~1ull));
 
     // Rotate the bottom bit to the appropriate location for PF, so we get
     // something like 111P1111. Then invert that to get 000p0000. Then OR that
@@ -178,22 +178,12 @@ void OpDispatchBuilder::CalculateOF(uint8_t SrcSize, Ref Res, Ref Src1, Ref Src2
   SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(Anded, SrcSize * 8 - 1, true);
 }
 
-Ref OpDispatchBuilder::LoadPFRaw(bool Invert) {
-  // Read the stored byte. This is the original result (up to 64-bits), it needs
-  // parity calculated.
-  auto Result = GetRFLAG(FEXCore::X86State::RFLAG_PF_RAW_LOC);
+Ref OpDispatchBuilder::LoadPFRaw(bool Mask, bool Invert) {
+  // Most blocks do not read parity, so PF optimization is gated on this flag.
+  CurrentHeader->ReadsParity = true;
 
-  // Cascade to calculate parity of bottom 8-bits to bottom bit.
-  Result = _XorShift(OpSize::i32Bit, Result, Result, ShiftType::LSR, 4);
-  Result = _XorShift(OpSize::i32Bit, Result, Result, ShiftType::LSR, 2);
-
-  if (Invert) {
-    Result = _XornShift(OpSize::i32Bit, Result, Result, ShiftType::LSR, 1);
-  } else {
-    Result = _XorShift(OpSize::i32Bit, Result, Result, ShiftType::LSR, 1);
-  }
-
-  return Result;
+  // Evaluate parity on the deferred raw value.
+  return _Parity(GetRFLAG(FEXCore::X86State::RFLAG_PF_RAW_LOC), Mask, Invert);
 }
 
 Ref OpDispatchBuilder::LoadAF() {

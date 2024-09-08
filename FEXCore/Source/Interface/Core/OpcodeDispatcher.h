@@ -151,11 +151,7 @@ public:
   }
   IRPair<IROp_CondJump> CondJumpNZCV(CondClassType Cond) {
     FlushRegisterCache();
-
-    // The jump will ignore the sources, so it doesn't matter what we put here.
-    // Put an inline constant so RA+codegen will ignore altogether.
-    auto Placeholder = _InlineConstant(0);
-    return _CondJump(Placeholder, Placeholder, InvalidNode, InvalidNode, Cond, 0, true);
+    return _CondJump(InvalidNode, InvalidNode, InvalidNode, InvalidNode, Cond, 0, true);
   }
   IRPair<IROp_CondJump> CondJumpBit(Ref Src, unsigned Bit, bool Set) {
     FlushRegisterCache();
@@ -1236,8 +1232,12 @@ public:
       uint32_t Index = 63 - std::countl_zero(Bits);
       Ref Value = RegCache.Value[Index];
 
-      if (Index >= GPR0Index && Index <= AFIndex) {
+      if (Index >= GPR0Index && Index <= GPR15Index) {
         _StoreRegister(Value, Index - GPR0Index, GPRClass, GPRSize);
+      } else if (Index == PFIndex) {
+        _StorePF(Value, GPRSize);
+      } else if (Index == AFIndex) {
+        _StoreAF(Value, GPRSize);
       } else if (Index >= FPR0Index && Index <= FPR15Index) {
         _StoreRegister(Value, Index - FPR0Index, FPRClass, VectorSize);
       } else if (Index == DFIndex) {
@@ -1896,6 +1896,10 @@ private:
         if (Size == 8) {
           RegCache.Partial |= Bit;
         }
+      } else if (Index == PFIndex) {
+        RegCache.Value[Index] = _LoadPF(Size);
+      } else if (Index == AFIndex) {
+        RegCache.Value[Index] = _LoadAF(Size);
       } else {
         RegCache.Value[Index] = _LoadRegister(Offset, RegClass, Size);
       }
@@ -2106,22 +2110,9 @@ private:
     // Convert NZCV from the Arm representation to an eXternal representation
     // that's totally not a euphemism for x86, nuh-uh. But maps to exactly we
     // need, what a coincidence!
-    if (CTX->HostFeatures.SupportsFlagM2) {
-      _AXFlag();
-    } else {
-      // AXFLAG is defined in the Arm spec as
-      //
-      //   gt: nzCv -> nzCv
-      //   lt: Nzcv -> nzcv  <==>  1 + 0
-      //   eq: nZCv -> nZCv  <==>  1 + (~0)
-      //   un: nzCV -> nZcv  <==>  0 + 0
-      //
-      // For the latter 3 cases, we therefore get the right NZCV by adding V_inv
-      // to (eq ? ~0 : 0). The remaining case is forced with ccmn.
-      Ref Eq = NZCVSelect(OpSize::i64Bit, {COND_EQ}, _Constant(~0ull), _Constant(0));
-      _CondAddNZCV(OpSize::i64Bit, V_inv, Eq, {COND_FLEU}, 0x2 /* nzCv */);
-    }
-
+    //
+    // Our AXFlag emulation on FlagM2-less systems needs V_inv passed.
+    _AXFlag(CTX->HostFeatures.SupportsFlagM2 ? Invalid() : V_inv);
     PossiblySetNZCVBits = ~0;
     CFInverted = true;
   }
@@ -2135,7 +2126,7 @@ private:
       LOGMAN_THROW_A_FMT(!NZCVDirty, "only expected after fcmp");
 
       // Convert to x86 flags, saves us from or'ing after.
-      _AXFlag();
+      _AXFlag(Invalid());
       PossiblySetNZCVBits = ~0;
       CFInverted = true;
 
@@ -2321,7 +2312,8 @@ private:
   /**
    * @name These functions are used by the deferred flag handling while it is calculating and storing flags in to RFLAGs.
    * @{ */
-  Ref LoadPFRaw(bool Invert);
+  Ref LoadPFRaw(bool Mask, bool Invert);
+  Ref SelectPF(bool Invert, IR::OpSize ResultSize, Ref TrueValue, Ref FalseValue);
   Ref LoadAF();
   void FixupAF();
   void SetAFAndFixup(Ref AF);

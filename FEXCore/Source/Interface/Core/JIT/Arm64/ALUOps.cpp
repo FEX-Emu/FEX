@@ -5,6 +5,7 @@ tags: backend|arm64
 $end_info$
 */
 
+#include "CodeEmitter/Emitter.h"
 #include "FEXCore/IR/IR.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
@@ -190,6 +191,30 @@ DEF_OP(TestNZ) {
   }
 }
 
+DEF_OP(TestZ) {
+  auto Op = IROp->C<IR::IROp_TestZ>();
+  LOGMAN_THROW_AA_FMT(IROp->Size < 4, "TestNZ used at higher sizes");
+  const auto EmitSize = ARMEmitter::Size::i32Bit;
+
+  uint64_t Const;
+  uint64_t Mask = IROp->Size == 8 ? ~0ULL : ((1ull << (IROp->Size * 8)) - 1);
+  auto Src1 = GetReg(Op->Src1.ID());
+
+  if (IsInlineConstant(Op->Src2, &Const)) {
+    // We can promote 8/16-bit tests to 32-bit since the constant is masked.
+    LOGMAN_THROW_AA_FMT(!(Const & ~Mask), "constant is already masked");
+    tst(EmitSize, Src1, Const);
+  } else {
+    const auto Src2 = GetReg(Op->Src2.ID());
+    if (Src1 == Src2) {
+      tst(EmitSize, Src1 /* Src2 */, Mask);
+    } else {
+      and_(EmitSize, TMP1, Src1, Src2);
+      tst(EmitSize, TMP1, Mask);
+    }
+  }
+}
+
 DEF_OP(SubShift) {
   auto Op = IROp->C<IR::IROp_SubShift>();
 
@@ -272,8 +297,43 @@ DEF_OP(SetSmallNZV) {
 }
 
 DEF_OP(AXFlag) {
-  LOGMAN_THROW_A_FMT(CTX->HostFeatures.SupportsFlagM2, "Unsupported flagm2 op");
-  axflag();
+  if (CTX->HostFeatures.SupportsFlagM2) {
+    axflag();
+  } else {
+    // AXFLAG is defined in the Arm spec as
+    //
+    //   gt: nzCv -> nzCv
+    //   lt: Nzcv -> nzcv  <==>  1 + 0
+    //   eq: nZCv -> nZCv  <==>  1 + (~0)
+    //   un: nzCV -> nZcv  <==>  0 + 0
+    //
+    // For the latter 3 cases, we therefore get the right NZCV by adding V_inv
+    // to (eq ? ~0 : 0). The remaining case is forced with ccmn.
+    auto V_inv = GetReg(IROp->Args[0].ID());
+    csetm(ARMEmitter::Size::i64Bit, TMP1, ARMEmitter::Condition::CC_EQ);
+    ccmn(ARMEmitter::Size::i64Bit, V_inv, TMP1, ARMEmitter::StatusFlags {0x2} /* nzCv */, ARMEmitter::Condition::CC_LE);
+  }
+}
+
+DEF_OP(Parity) {
+  auto Op = IROp->C<IR::IROp_Parity>();
+  auto Raw = GetReg(Op->Raw.ID());
+  auto Dest = GetReg(Node);
+
+  // Cascade to calculate parity of bottom 8-bits to bottom bit.
+  eor(ARMEmitter::Size::i32Bit, TMP1, Raw, Raw, ARMEmitter::ShiftType::LSR, 4);
+  eor(ARMEmitter::Size::i32Bit, TMP1, TMP1, TMP1, ARMEmitter::ShiftType::LSR, 2);
+
+  if (Op->Invert) {
+    eon(ARMEmitter::Size::i32Bit, Dest, TMP1, TMP1, ARMEmitter::ShiftType::LSR, 1);
+  } else {
+    eor(ARMEmitter::Size::i32Bit, Dest, TMP1, TMP1, ARMEmitter::ShiftType::LSR, 1);
+  }
+
+  // The above sequence leaves garbage in the upper bits.
+  if (Op->Mask) {
+    and_(ARMEmitter::Size::i32Bit, Dest, Dest, 1);
+  }
 }
 
 DEF_OP(CondAddNZCV) {

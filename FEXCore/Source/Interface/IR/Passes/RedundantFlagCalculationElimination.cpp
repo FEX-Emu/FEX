@@ -7,6 +7,9 @@ $end_info$
 */
 
 #include "FEXCore/Core/X86Enums.h"
+#include "FEXCore/Utils/CompilerDefs.h"
+#include "FEXCore/Utils/MathUtils.h"
+#include "FEXCore/fextl/deque.h"
 #include "Interface/IR/IR.h"
 #include "Interface/IR/IREmitter.h"
 
@@ -15,16 +18,13 @@ $end_info$
 
 #include "Interface/IR/PassManager.h"
 
-#include <array>
-#include <memory>
-
 // Flag bit flags
 #define FLAG_V (1U << 0)
 #define FLAG_C (1U << 1)
 #define FLAG_Z (1U << 2)
 #define FLAG_N (1U << 3)
-#define FLAG_A (1U << 4)
-#define FLAG_P (1U << 5)
+#define FLAG_P (1U << 4)
+#define FLAG_A (1U << 5)
 
 #define FLAG_ZCV (FLAG_Z | FLAG_C | FLAG_V)
 #define FLAG_NZCV (FLAG_N | FLAG_ZCV)
@@ -32,10 +32,7 @@ $end_info$
 
 namespace FEXCore::IR {
 
-struct FlagInfo {
-  // If set, all following fields are zero, used for a quick exit.
-  bool Trivial;
-
+struct FlagInfoUnpacked {
   // Set of flags read by the instruction.
   unsigned Read;
 
@@ -46,15 +43,106 @@ struct FlagInfo {
   // eliminated.
   bool CanEliminate;
 
-  // If true, the opcode can be replaced with Replacement if its flag writes can
-  // all be eliminated.
-  bool CanReplace;
+  // If set, the opcode can be replaced with Replacement if its flag writes can
+  // all be eliminated, or ReplacementNoWrite if its register write can be
+  // eliminated.
   IROps Replacement;
-
-  // If true, the opcode can be replaced with ReplacementNoWrite if its register
-  // write is unused but its flags are still needed.
-  bool CanReplaceWrite;
   IROps ReplacementNoWrite;
+
+  // Needs speical handling
+  bool Special;
+};
+
+struct FlagInfo {
+  uint64_t Raw;
+
+  static constexpr struct FlagInfo Pack(struct FlagInfoUnpacked F) {
+    uint64_t R = F.Read | (F.Write << 8) | (F.CanEliminate << 16) | (((uint64_t)F.Replacement) << 32) |
+                 ((uint64_t)F.ReplacementNoWrite << 48) | (F.Special ? (1ull << 63) : 0);
+    return {.Raw = R};
+  }
+
+  bool Trivial() {
+    return Raw == 0;
+  }
+
+  unsigned Read() {
+    return Bits(0, 8);
+  }
+
+  unsigned Write() {
+    return Bits(8, 8);
+  }
+
+  bool CanEliminate() {
+    return Bits(16, 1);
+  }
+
+  bool Special() {
+    return Bits(63, 1);
+  }
+
+  IROps Replacement() {
+    return (IROps)Bits(32, 16);
+  }
+
+  IROps ReplacementNoWrite() {
+    return (IROps)Bits(48, 16);
+  }
+
+private:
+  unsigned Bits(unsigned Start, unsigned Count) {
+    return (Raw >> Start) & ((1u << Count) - 1);
+  }
+};
+
+struct BlockInfo {
+  fextl::vector<Ref> Predecessors;
+  uint8_t Flags;
+  bool InWorklist;
+};
+
+struct ControlFlowGraph {
+  fextl::unordered_map<uint32_t, BlockInfo> BlockMap;
+  IRListView& IR;
+
+  void AddBlock(fextl::deque<Ref>& Worklist, Ref Block) {
+    uint32_t ID = IR.GetID(Block).Value;
+
+    // Add the block with conservative flags and already in the worklist.
+    auto Info = &BlockMap.emplace(ID, BlockInfo {{}, FLAG_ALL, true}).first->second;
+
+    // Add some initial capacity
+    Info->Predecessors.reserve(2);
+
+    // Add to worklist
+    Worklist.push_back(Block);
+  }
+
+  BlockInfo* Get(uint32_t Block) {
+    return &BlockMap.try_emplace(Block).first->second;
+  }
+
+  BlockInfo* Get(Ref Block) {
+    return Get(IR.GetID(Block).Value);
+  }
+
+  BlockInfo* Get(OrderedNodeWrapper Block) {
+    return Get(Block.ID().Value);
+  }
+
+  void RecordEdge(Ref From, Ref To) {
+    auto Info = Get(To);
+    Info->Predecessors.push_back(From);
+  }
+
+  void AddWorklist(fextl::deque<Ref>& Worklist, Ref Block) {
+    auto Info = Get(Block);
+    if (!Info->InWorklist) {
+      Info->InWorklist = true;
+      Worklist.push_front(Block);
+    }
+  }
 };
 
 class DeadFlagCalculationEliminination final : public FEXCore::IR::Pass {
@@ -66,10 +154,10 @@ private:
   unsigned FlagForReg(unsigned Reg);
   unsigned FlagsForCondClassType(CondClassType Cond);
   bool EliminateDeadCode(IREmitter* IREmit, Ref CodeNode, IROp_Header* IROp);
-};
-
-unsigned DeadFlagCalculationEliminination::FlagForReg(unsigned Reg) {
-  return Reg == Core::CPUState::PF_AS_GREG ? FLAG_P : Reg == Core::CPUState::AF_AS_GREG ? FLAG_A : 0;
+  void FoldBranch(IREmitter* IREmit, IRListView& CurrentIR, IROp_CondJump* Op, Ref CodeNode);
+  CondClassType X86ToArmFloatCond(CondClassType X86);
+  bool ProcessBlock(IREmitter* IREmit, IRListView& CurrentIR, Ref Block, ControlFlowGraph& CFG);
+  void OptimizeParity(IREmitter* IREmit, IRListView& CurrentIR, ControlFlowGraph& CFG);
 };
 
 unsigned DeadFlagCalculationEliminination::FlagsForCondClassType(CondClassType Cond) {
@@ -107,160 +195,186 @@ unsigned DeadFlagCalculationEliminination::FlagsForCondClassType(CondClassType C
   }
 }
 
-FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
-  switch (IROp->Op) {
+constexpr FlagInfo ClassifyConst(IROps Op) {
+  switch (Op) {
   case OP_ANDWITHFLAGS:
-    return {
+    return FlagInfo::Pack({
       .Write = FLAG_NZCV,
-      .CanReplace = true,
       .Replacement = OP_AND,
-    };
+      .ReplacementNoWrite = OP_TESTNZ,
+    });
 
   case OP_ADDWITHFLAGS:
-    return {
+    return FlagInfo::Pack({
       .Write = FLAG_NZCV,
-      .CanReplace = true,
       .Replacement = OP_ADD,
-      .CanReplaceWrite = true,
       .ReplacementNoWrite = OP_ADDNZCV,
-    };
+    });
 
   case OP_SUBWITHFLAGS:
-    return {
+    return FlagInfo::Pack({
       .Write = FLAG_NZCV,
-      .CanReplace = true,
       .Replacement = OP_SUB,
-      .CanReplaceWrite = true,
       .ReplacementNoWrite = OP_SUBNZCV,
-    };
+    });
 
   case OP_ADCWITHFLAGS:
-    return {
+    return FlagInfo::Pack({
       .Read = FLAG_C,
       .Write = FLAG_NZCV,
-      .CanReplace = true,
       .Replacement = OP_ADC,
-      .CanReplaceWrite = true,
       .ReplacementNoWrite = OP_ADCNZCV,
-    };
+    });
 
   case OP_ADCZEROWITHFLAGS:
-    return {
+    return FlagInfo::Pack({
       .Read = FLAG_C,
       .Write = FLAG_NZCV,
-      .CanReplace = true,
       .Replacement = OP_ADCZERO,
-    };
+    });
 
   case OP_SBBWITHFLAGS:
-    return {
+    return FlagInfo::Pack({
       .Read = FLAG_C,
       .Write = FLAG_NZCV,
-      .CanReplace = true,
       .Replacement = OP_SBB,
-      .CanReplaceWrite = true,
       .ReplacementNoWrite = OP_SBBNZCV,
-    };
+    });
 
   case OP_SHIFTFLAGS:
     // _ShiftFlags conditionally sets NZCV+PF, which we model here as a
     // read-modify-write. Logically, it also conditionally makes AF undefined,
     // which we model by omitting AF from both Read and Write sets (since
     // "cond ? AF : undef" may be optimized to "AF").
-    return {
+    return FlagInfo::Pack({
       .Read = FLAG_NZCV | FLAG_P,
       .Write = FLAG_NZCV | FLAG_P,
       .CanEliminate = true,
-    };
+    });
 
   case OP_ROTATEFLAGS:
     // _RotateFlags conditionally sets CV, again modeled as RMW.
-    return {
+    return FlagInfo::Pack({
       .Read = FLAG_C | FLAG_V,
       .Write = FLAG_C | FLAG_V,
       .CanEliminate = true,
-    };
+    });
 
-  case OP_RDRAND: return {.Write = FLAG_NZCV};
+  case OP_RDRAND: return FlagInfo::Pack({.Write = FLAG_NZCV});
 
   case OP_ADDNZCV:
   case OP_SUBNZCV:
   case OP_TESTNZ:
   case OP_FCMP:
   case OP_STORENZCV:
-    return {
+    return FlagInfo::Pack({
       .Write = FLAG_NZCV,
       .CanEliminate = true,
-    };
+    });
 
   case OP_AXFLAG:
     // Per the Arm spec, axflag reads Z/V/C but not N. It writes all flags.
-    return {
+    return FlagInfo::Pack({
       .Read = FLAG_ZCV,
       .Write = FLAG_NZCV,
       .CanEliminate = true,
-    };
+    });
 
   case OP_CMPPAIRZ:
-    return {
+    return FlagInfo::Pack({
       .Write = FLAG_Z,
       .CanEliminate = true,
-    };
+    });
 
   case OP_CARRYINVERT:
-    return {
+    return FlagInfo::Pack({
       .Read = FLAG_C,
       .Write = FLAG_C,
       .CanEliminate = true,
-    };
+    });
 
   case OP_SETSMALLNZV:
-    return {
+    return FlagInfo::Pack({
       .Write = FLAG_N | FLAG_Z | FLAG_V,
       .CanEliminate = true,
-    };
+    });
 
-  case OP_LOADNZCV: return {.Read = FLAG_NZCV};
+  case OP_LOADNZCV: return FlagInfo::Pack({.Read = FLAG_NZCV});
 
   case OP_ADC:
-  case OP_SBB: return {.Read = FLAG_C};
+  case OP_ADCZERO:
+  case OP_SBB: return FlagInfo::Pack({.Read = FLAG_C});
 
   case OP_ADCNZCV:
   case OP_SBBNZCV:
-    return {
+    return FlagInfo::Pack({
       .Read = FLAG_C,
       .Write = FLAG_NZCV,
       .CanEliminate = true,
-    };
+    });
 
+  case OP_LOADPF: return FlagInfo::Pack({.Read = FLAG_P});
+  case OP_LOADAF: return FlagInfo::Pack({.Read = FLAG_A});
+  case OP_STOREPF: return FlagInfo::Pack({.Write = FLAG_P, .CanEliminate = true});
+  case OP_STOREAF: return FlagInfo::Pack({.Write = FLAG_A, .CanEliminate = true});
+
+  case OP_NZCVSELECT:
+  case OP_NZCVSELECTINCREMENT:
+  case OP_NEG:
+  case OP_CONDJUMP:
+  case OP_CONDSUBNZCV:
+  case OP_CONDADDNZCV:
+  case OP_RMIFNZCV:
+  case OP_INVALIDATEFLAGS: return FlagInfo::Pack({.Special = true});
+  default: return FlagInfo::Pack({});
+  }
+}
+
+constexpr auto FlagInfos = std::invoke([] {
+  std::array<FlagInfo, OP_LAST> ret = {};
+
+  for (unsigned i = 0; i < OP_LAST; ++i) {
+    ret[i] = ClassifyConst((IROps)i);
+  }
+
+  return ret;
+});
+
+FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
+  FlagInfo Info = FlagInfos[IROp->Op];
+  if (!Info.Special()) {
+    return Info;
+  }
+
+  switch (IROp->Op) {
   case OP_NZCVSELECT:
   case OP_NZCVSELECTINCREMENT: {
     auto Op = IROp->CW<IR::IROp_NZCVSelect>();
-    return {.Read = FlagsForCondClassType(Op->Cond)};
+    return FlagInfo::Pack({.Read = FlagsForCondClassType(Op->Cond)});
   }
 
   case OP_NEG: {
     auto Op = IROp->CW<IR::IROp_Neg>();
-    return {.Read = FlagsForCondClassType(Op->Cond)};
+    return FlagInfo::Pack({.Read = FlagsForCondClassType(Op->Cond)});
   }
 
   case OP_CONDJUMP: {
     auto Op = IROp->CW<IR::IROp_CondJump>();
     if (!Op->FromNZCV) {
-      break;
+      return FlagInfo::Pack({});
     }
 
-    return {.Read = FlagsForCondClassType(Op->Cond)};
+    return FlagInfo::Pack({.Read = FlagsForCondClassType(Op->Cond)});
   }
 
   case OP_CONDSUBNZCV:
   case OP_CONDADDNZCV: {
     auto Op = IROp->CW<IR::IROp_CondAddNZCV>();
-    return {
+    return FlagInfo::Pack({
       .Read = FlagsForCondClassType(Op->Cond),
       .Write = FLAG_NZCV,
       .CanEliminate = true,
-    };
+    });
   }
 
   case OP_RMIFNZCV: {
@@ -271,10 +385,10 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
     static_assert(FLAG_C == (1 << 1), "rmif mask lines up with our bits");
     static_assert(FLAG_V == (1 << 0), "rmif mask lines up with our bits");
 
-    return {
+    return FlagInfo::Pack({
       .Write = Op->Mask,
       .CanEliminate = true,
-    };
+    });
   }
 
   case OP_INVALIDATEFLAGS: {
@@ -309,39 +423,16 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
     // The mental model of InvalidateFlags is writing undefined values to all
     // of the selected flags, allowing the write-after-write optimizations to
     // optimize invalidate-after-write for free.
-    return {
+    return FlagInfo::Pack({
       .Write = Flags,
       .CanEliminate = true,
-    };
+    });
   }
 
-  case OP_LOADREGISTER: {
-    auto Op = IROp->CW<IR::IROp_LoadRegister>();
-    if (Op->Class != GPRClass) {
-      break;
-    }
-
-    return {.Read = FlagForReg(Op->Reg)};
+  default: LOGMAN_THROW_AA_FMT(false, "invalid special op"); FEX_UNREACHABLE;
   }
 
-  case OP_STOREREGISTER: {
-    auto Op = IROp->CW<IR::IROp_StoreRegister>();
-    if (Op->Class != GPRClass) {
-      break;
-    }
-
-    unsigned Flag = FlagForReg(Op->Reg);
-
-    return {
-      .Write = Flag,
-      .CanEliminate = Flag != 0,
-    };
-  }
-
-  default: break;
-  }
-
-  return {.Trivial = true};
+  FEX_UNREACHABLE;
 }
 
 // General purpose dead code elimination. Returns whether flag handling should
@@ -385,82 +476,294 @@ bool DeadFlagCalculationEliminination::EliminateDeadCode(IREmitter* IREmit, Ref 
   return true;
 }
 
+CondClassType DeadFlagCalculationEliminination::X86ToArmFloatCond(CondClassType X86) {
+  // Table of x86 condition codes that map to arm64 condition codes, in the
+  // sense that fcmp+axflag+branch(x86) is equivalent to fcmp+branch(arm).
+  //
+  // E would be "equal or unordered", no condition code.
+  // G would be "greater than or less than", no condition code.
+  //
+  // SF/OF conditions are trivial and therefore shouldn't actually be generated
+  switch (X86) {
+  case COND_UGE /* A  */: return {COND_FGE} /* GE */;
+  case COND_UGT /* AE */: return {COND_FGT} /* GT */;
+  case COND_ULT /* B  */: return {COND_SLT} /* LT */;
+  case COND_ULE /* BE */: return {COND_SLE} /* LE */;
+  case COND_SLE /* LE */: return {COND_SLE} /* LE */;
+  default: return {COND_AL};
+  }
+}
+
+void DeadFlagCalculationEliminination::FoldBranch(IREmitter* IREmit, IRListView& CurrentIR, IROp_CondJump* Op, Ref CodeNode) {
+  // Skip past StoreRegisters at the end -- they don't touch flags.
+  auto PrevWrap = CodeNode->Header.Previous;
+  while (CurrentIR.GetOp<IR::IROp_Header>(PrevWrap)->Op == OP_STOREREGISTER ||
+         CurrentIR.GetOp<IR::IROp_Header>(PrevWrap)->Op == OP_STOREPF || CurrentIR.GetOp<IR::IROp_Header>(PrevWrap)->Op == OP_STOREAF) {
+    PrevWrap = CurrentIR.GetNode(PrevWrap)->Header.Previous;
+  }
+
+  auto Prev = CurrentIR.GetOp<IR::IROp_Header>(PrevWrap);
+  if (Prev->Op == OP_AXFLAG) {
+    // Pattern match a branch fed by AXFLAG.
+    CondClassType ArmCond = X86ToArmFloatCond(Op->Cond);
+    if (ArmCond == COND_AL) {
+      return;
+    }
+
+    Op->Cond = ArmCond;
+  } else if (Prev->Op == OP_SUBNZCV) {
+    // Pattern match a branch fed by a compare. We could also handle bit tests
+    // here, but tbz/tbnz has a limited offset range which we don't have a way to
+    // deal with yet. Let's hope that's not a big deal.
+    if (!(Op->Cond == COND_NEQ || Op->Cond == COND_EQ) || (Prev->Size < 4)) {
+      return;
+    }
+
+    auto SecondArg = CurrentIR.GetOp<IR::IROp_Header>(Prev->Args[1]);
+    if (SecondArg->Op != OP_INLINECONSTANT || SecondArg->C<IR::IROp_InlineConstant>()->Constant != 0) {
+      return;
+    }
+
+    // We've matched. Fold the compare into branch.
+    IREmit->ReplaceNodeArgument(CodeNode, 0, CurrentIR.GetNode(Prev->Args[0]));
+    IREmit->ReplaceNodeArgument(CodeNode, 1, CurrentIR.GetNode(Prev->Args[1]));
+    Op->FromNZCV = false;
+    Op->CompareSize = Prev->Size;
+  } else {
+    return;
+  }
+
+  // The compare/test/axflag sets flags but does not write registers. Flags are
+  // dead after the jump. The jump does not read flags anymore.  There is no
+  // intervening instruction. Therefore the compare is dead.
+  IREmit->Remove(CurrentIR.GetNode(PrevWrap));
+}
+
 /**
  * @brief This pass removes dead code locally.
  */
+bool DeadFlagCalculationEliminination::ProcessBlock(IREmitter* IREmit, IRListView& CurrentIR, Ref Block, ControlFlowGraph& CFG) {
+  uint32_t FlagsRead = FLAG_ALL;
+
+  // Reverse iteration is not yet working with the iterators
+  auto BlockIROp = CurrentIR.GetOp<IR::IROp_CodeBlock>(Block);
+
+  // We grab these nodes this way so we can iterate easily
+  auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
+  auto CodeLast = CurrentIR.at(BlockIROp->Last);
+
+  // Advance past EndBlock to get at the exit.
+  --CodeLast;
+
+  // Initialize the FlagsRead mask according to the exit instruction.
+  auto [ExitNode, ExitOp] = CodeLast();
+  if (ExitOp->Op == IR::OP_CONDJUMP) {
+    auto Op = ExitOp->CW<IR::IROp_CondJump>();
+    FlagsRead = CFG.Get(Op->TrueBlock)->Flags | CFG.Get(Op->FalseBlock)->Flags;
+  } else if (ExitOp->Op == IR::OP_JUMP) {
+    FlagsRead = CFG.Get(ExitOp->Args[0])->Flags;
+  }
+
+  // Iterate the block in reverse
+  while (true) {
+    auto [CodeNode, IROp] = CodeLast();
+
+    // Optimizing flags can cause earlier flag reads to become dead but dead
+    // flag reads should not impede optimiation of earlier dead flag writes.
+    // We must DCE as we go to ensure we converge in a single iteration.
+    if (!EliminateDeadCode(IREmit, CodeNode, IROp)) {
+      // Optimiation algorithm: For each flag written...
+      //
+      //  If the flag has a later read (per FlagsRead), remove the flag from
+      //  FlagsRead, since the reader is covered by this write.
+      //
+      //  Else, there is no later read, so remove the flag write (if we can).
+      //  This is the active part of the optimization.
+      //
+      // Then, add each flag read to FlagsRead.
+      //
+      // This order is important: instructions that read-modify-write flags
+      // (like adcs) first read flags, then write flags. Since we're iterating
+      // the block backwards, that means we handle the write first.
+      struct FlagInfo Info = Classify(IROp);
+
+      if (!Info.Trivial()) {
+        bool Eliminated = false;
+
+        if ((FlagsRead & Info.Write()) == 0) {
+          if ((Info.CanEliminate() || Info.Replacement()) && CodeNode->GetUses() == 0) {
+            IREmit->Remove(CodeNode);
+            Eliminated = true;
+          } else if (Info.Replacement()) {
+            IROp->Op = Info.Replacement();
+          }
+        } else if (Info.ReplacementNoWrite() && CodeNode->GetUses() == 0) {
+          IROp->Op = Info.ReplacementNoWrite();
+        }
+
+        // If we don't care about the sign or carry, we can optimize testnz.
+        // Carry is inverted between testz and testnz so we check that too. Note
+        // this flag is outside of the if, since the TestNZ might result from
+        // optimizing AndWithFlags, and we need to converge locally in a single
+        // iteration.
+        if (IROp->Op == OP_TESTNZ && IROp->Size < 4 && !(FlagsRead & (FLAG_N | FLAG_C))) {
+          IROp->Op = OP_TESTZ;
+        }
+
+        FlagsRead &= ~Info.Write();
+
+        // If we eliminated the instruction, we eliminate its read too. This
+        // check is required to ensure the pass converges locally in a single
+        // iteration.
+        if (!Eliminated) {
+          FlagsRead |= Info.Read();
+        }
+      }
+    }
+
+    // Iterate in reverse
+    if (CodeLast == CodeBegin) {
+      break;
+    }
+    --CodeLast;
+  }
+
+  // For the purposes of global propagation, the content of our progress doesn't
+  // matter -- only the difference in our final FlagsRead contributes to changes
+  // in the predecessors.
+  uint32_t OldFlagsRead = CFG.Get(Block)->Flags;
+  CFG.Get(Block)->Flags = FlagsRead;
+  return (OldFlagsRead != FlagsRead);
+}
+
+void DeadFlagCalculationEliminination::OptimizeParity(IREmitter* IREmit, IRListView& CurrentIR, ControlFlowGraph& CFG) {
+  // Mapping for flags inside this pass.
+  const uint8_t PARTIAL = 0;
+  const uint8_t FULL = 1;
+
+  // Initialize conservatively: all blocks need full parity. This initialization
+  // matters for proper handling of backedges.
+  for (auto [Block, BlockHeader] : CurrentIR.GetBlocks()) {
+    CFG.Get(Block)->Flags = FULL;
+  }
+
+  for (auto [Block, BlockHeader] : CurrentIR.GetBlocks()) {
+    bool Full = false;
+    auto Predecessors = CFG.Get(Block)->Predecessors;
+
+    if (Predecessors.empty()) {
+      // Conservatively assume there was full parity before the start block
+      Full = true;
+    } else {
+      // If any predecessor needs full parity at the end, we need full parity.
+      for (auto Pred : Predecessors) {
+        Full |= (CFG.Get(Pred)->Flags == FULL);
+      }
+    }
+
+    for (auto [CodeNode, IROp] : CurrentIR.GetCode(Block)) {
+      if (IROp->Op == OP_STOREPF) {
+        auto Op = IROp->CW<IR::IROp_StorePF>();
+        auto Generator = CurrentIR.GetOp<IR::IROp_Header>(Op->Value);
+
+        // Determine if we only write 0/1 to the parity flag.
+        Full = true;
+        if (Generator->Op == OP_NZCVSELECT) {
+          auto C0 = CurrentIR.GetOp<IR::IROp_Header>(Generator->Args[0]);
+          auto C1 = CurrentIR.GetOp<IR::IROp_Header>(Generator->Args[1]);
+          if (C0->Op == C1->Op && C0->Op == OP_INLINECONSTANT) {
+            auto IC0 = CurrentIR.GetOp<IR::IROp_InlineConstant>(Generator->Args[0]);
+            auto IC1 = CurrentIR.GetOp<IR::IROp_InlineConstant>(Generator->Args[1]);
+
+            // We need the full 8 if the constant has upper bits set.
+            Full = (IC0->Constant | IC1->Constant) & ~1;
+          }
+        }
+      } else if (IROp->Op == OP_PARITY && !Full) {
+        // Eliminate parity calculations if it's only 1-bit.
+        auto Parity = IROp->C<IROp_Parity>();
+        Ref Value = CurrentIR.GetNode(Parity->Raw);
+
+        if (Parity->Invert) {
+          IREmit->SetWriteCursor(CodeNode);
+          Value = IREmit->_Xor(OpSize::i32Bit, Value, IREmit->_InlineConstant(1));
+        }
+
+        IREmit->ReplaceUsesWithAfter(CodeNode, Value, CurrentIR.at(CodeNode));
+        IREmit->Remove(CodeNode);
+      }
+    }
+
+    // Record our final state for our successors to read.
+    CFG.Get(Block)->Flags = Full ? FULL : PARTIAL;
+  }
+}
+
 void DeadFlagCalculationEliminination::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::DFE");
 
   auto CurrentIR = IREmit->ViewIR();
+  fextl::deque<Ref> Worklist;
 
+  ControlFlowGraph CFG {.IR = CurrentIR};
+
+  // Gather blocks
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
-    // We model all flags as read at the end of the block, since this pass is
-    // presently purely local. Optimizing this requires global anslysis.
-    uint32_t FlagsRead = FLAG_ALL;
+    CFG.AddBlock(Worklist, BlockNode);
+  }
 
-    // Reverse iteration is not yet working with the iterators
-    auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
+  // Gather CFG
+  for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
+    auto CodeLast = CurrentIR.at(BlockHeader->C<IROp_CodeBlock>()->Last);
+    --CodeLast;
+    auto [ExitNode, ExitOp] = CodeLast();
+    if (ExitOp->Op == IR::OP_CONDJUMP) {
+      auto Op = ExitOp->CW<IR::IROp_CondJump>();
 
-    // We grab these nodes this way so we can iterate easily
-    auto CodeBegin = CurrentIR.at(BlockIROp->Begin);
-    auto CodeLast = CurrentIR.at(BlockIROp->Last);
-
-    // Iterate the block in reverse
-    while (1) {
-      auto [CodeNode, IROp] = CodeLast();
-
-      // Optimizing flags can cause earlier flag reads to become dead but dead
-      // flag reads should not impede optimiation of earlier dead flag writes.
-      // We must DCE as we go to ensure we converge in a single iteration.
-      if (!EliminateDeadCode(IREmit, CodeNode, IROp)) {
-        // Optimiation algorithm: For each flag written...
-        //
-        //  If the flag has a later read (per FlagsRead), remove the flag from
-        //  FlagsRead, since the reader is covered by this write.
-        //
-        //  Else, there is no later read, so remove the flag write (if we can).
-        //  This is the active part of the optimization.
-        //
-        // Then, add each flag read to FlagsRead.
-        //
-        // This order is important: instructions that read-modify-write flags
-        // (like adcs) first read flags, then write flags. Since we're iterating
-        // the block backwards, that means we handle the write first.
-        struct FlagInfo Info = Classify(IROp);
-
-        if (!Info.Trivial) {
-          bool Eliminated = false;
-
-          if ((FlagsRead & Info.Write) == 0) {
-            if ((Info.CanEliminate || Info.CanReplace) && CodeNode->GetUses() == 0) {
-              IREmit->Remove(CodeNode);
-              Eliminated = true;
-            } else if (Info.CanReplace) {
-              IROp->Op = Info.Replacement;
-            }
-          } else {
-            FlagsRead &= ~Info.Write;
-
-            if (Info.CanReplaceWrite && CodeNode->GetUses() == 0) {
-              IROp->Op = Info.ReplacementNoWrite;
-            }
-          }
-
-          // If we eliminated the instruction, we eliminate its read too. This
-          // check is required to ensure the pass converges locally in a single
-          // iteration.
-          if (!Eliminated) {
-            FlagsRead |= Info.Read;
-          }
-        }
-      }
-
-      // Iterate in reverse
-      if (CodeLast == CodeBegin) {
-        break;
-      }
-      --CodeLast;
+      CFG.RecordEdge(BlockNode, CurrentIR.GetNode(Op->TrueBlock));
+      CFG.RecordEdge(BlockNode, CurrentIR.GetNode(Op->FalseBlock));
+    } else if (ExitOp->Op == IR::OP_JUMP) {
+      CFG.RecordEdge(BlockNode, CurrentIR.GetNode(ExitOp->Args[0]));
     }
+  }
+
+  // After processing a block, if we made progress, we must process its
+  // predecessors to propagate globally. A block will be reprocessed only if
+  // there is a loop backedge.
+  for (; !Worklist.empty(); Worklist.pop_back()) {
+    auto Block = Worklist.back();
+    auto Info = CFG.Get(Block);
+    Info->InWorklist = false;
+
+    if (ProcessBlock(IREmit, CurrentIR, Block, CFG)) {
+      for (auto Pred : Info->Predecessors) {
+        CFG.AddWorklist(Worklist, Pred);
+      }
+    }
+  }
+
+  // Fold compares into branches now that we're otherwise optimized. This needs
+  // to run after eliminating carries etc and it needs the global flag metadata.
+  // But it only needs to run once, we don't do it in the loop.
+  for (auto [Block, _] : CurrentIR.GetBlocks()) {
+    // Grab the jump
+    auto BlockIROp = CurrentIR.GetOp<IR::IROp_CodeBlock>(Block);
+    auto CodeLast = CurrentIR.at(BlockIROp->Last);
+    --CodeLast;
+
+    auto [ExitNode, ExitOp] = CodeLast();
+    if (ExitOp->Op == IR::OP_CONDJUMP) {
+      auto Op = ExitOp->CW<IR::IROp_CondJump>();
+      uint32_t FlagsOut = CFG.Get(Op->TrueBlock)->Flags | CFG.Get(Op->FalseBlock)->Flags;
+
+      if ((FlagsOut & FLAG_NZCV) == 0 && Op->FromNZCV) {
+        FoldBranch(IREmit, CurrentIR, Op, ExitNode);
+      }
+    }
+  }
+
+  if (CurrentIR.GetHeader()->ReadsParity) {
+    OptimizeParity(IREmit, CurrentIR, CFG);
   }
 }
 

@@ -228,10 +228,13 @@ private:
   };
 
   Ref DecodeSRANode(const IROp_Header* IROp, Ref Node) {
-    if (IROp->Op == OP_LOADREGISTER) {
+    if (IROp->Op == OP_LOADREGISTER || IROp->Op == OP_LOADPF || IROp->Op == OP_LOADAF) {
       return Node;
     } else if (IROp->Op == OP_STOREREGISTER) {
       const IROp_StoreRegister* Op = IROp->C<IR::IROp_StoreRegister>();
+      return IR->GetNode(Op->Value);
+    } else if (IROp->Op == OP_STOREPF || IROp->Op == OP_STOREAF) {
+      const IROp_StorePF* Op = IROp->C<IR::IROp_StorePF>();
       return IR->GetNode(Op->Value);
     }
 
@@ -241,6 +244,8 @@ private:
   PhysicalRegister DecodeSRAReg(const IROp_Header* IROp, Ref Node) {
     RegisterClassType Class;
     uint8_t Reg;
+
+    uint8_t FlagOffset = Classes[GPRFixedClass.Val].Count - 2;
 
     if (IROp->Op == OP_LOADREGISTER) {
       const IROp_LoadRegister* Op = IROp->C<IR::IROp_LoadRegister>();
@@ -253,17 +258,15 @@ private:
 
       Class = Op->Class;
       Reg = Op->Reg;
+    } else if (IROp->Op == OP_LOADPF || IROp->Op == OP_STOREPF) {
+      return PhysicalRegister {GPRFixedClass, FlagOffset};
+    } else if (IROp->Op == OP_LOADAF || IROp->Op == OP_STOREAF) {
+      return PhysicalRegister {GPRFixedClass, (uint8_t)(FlagOffset + 1)};
     }
 
     LOGMAN_THROW_A_FMT(Class == GPRClass || Class == FPRClass, "SRA classes");
-    uint8_t FlagOffset = Classes[GPRFixedClass.Val].Count - 2;
-
     if (Class == FPRClass) {
       return PhysicalRegister {FPRFixedClass, Reg};
-    } else if (Reg == Core::CPUState::PF_AS_GREG) {
-      return PhysicalRegister {GPRFixedClass, FlagOffset};
-    } else if (Reg == Core::CPUState::AF_AS_GREG) {
-      return PhysicalRegister {GPRFixedClass, (uint8_t)(FlagOffset + 1)};
     } else {
       return PhysicalRegister {GPRFixedClass, Reg};
     }

@@ -168,7 +168,7 @@
         "SwitchGen": false,
         "JITDispatchOverride": "NoOp"
       },
-      "IRHeader SSA:$Blocks, u64:$OriginalRIP, u32:$BlockCount, u32:$NumHostInstructions, i1:$HasX87{false}": {
+      "IRHeader SSA:$Blocks, u64:$OriginalRIP, u32:$BlockCount, u32:$NumHostInstructions, i1:$HasX87{false}, i1:$ReadsParity{false}": {
         "SwitchGen": false,
         "JITDispatchOverride": "NoOp"
       },
@@ -366,14 +366,36 @@
         "DestSize": "Size"
       },
 
+      "GPR = LoadPF u8:#Size": {
+        "Desc": ["Loads raw PF"],
+        "DestSize": "Size"
+      },
+
+      "GPR = LoadAF u8:#Size": {
+        "Desc": ["Loads raw PF"],
+        "DestSize": "Size"
+      },
+
       "StoreRegister SSA:$Value, u32:$Reg, RegisterClass:$Class, u8:#Size": {
-        "HasSideEffects": true,
+         "HasSideEffects": true,
         "Desc": ["Stores a value to a given register.",
                  "Size must match the execution mode."],
         "DestSize": "Size",
         "EmitValidation": [
           "WalkFindRegClass($Value) == $Class"
         ]
+      },
+
+      "StorePF GPR:$Value, u8:#Size": {
+        "HasSideEffects": true,
+        "Desc": ["Stores raw PF"],
+        "DestSize": "Size"
+      },
+
+      "StoreAF GPR:$Value, u8:#Size": {
+        "HasSideEffects": true,
+        "Desc": ["Stores raw AF"],
+        "DestSize": "Size"
       }
     },
     "Memory": {
@@ -1139,9 +1161,14 @@
         "Desc": ["Invert carry flag in NZCV"],
         "HasSideEffects": true
       },
-      "AXFlag": {
-        "Desc": ["After an FCmp, converts NZCV flags from the Arm format to a mysterious eXternal format"],
+      "AXFlag GPR:$V_inv": {
+        "Desc": ["After an FCmp, converts NZCV flags from the Arm format to a mysterious eXternal format",
+                 "On FlagM2-less platforms, takes the inverted 1/0 overflow flag"],
         "HasSideEffects": true
+      },
+      "GPR = Parity GPR:$Raw, i1:$Mask, i1:$Invert": {
+        "Desc": ["Calculates PF"],
+        "DestSize": "4"
       },
       "RmifNZCV GPR:$Src, u8:$Rotate, u8:$Mask": {
         "Desc": ["Rotate, mask, and insert into NZCV on FlagM platforms"],
@@ -1328,6 +1355,11 @@
       },
       "TestNZ OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Set NZCV for the binary AND of two GPRs, setting N and Z accordingly and zeroing C and V"],
+        "DestSize": "Size",
+        "HasSideEffects": true
+      },
+      "TestZ OpSize:#Size, GPR:$Src1, GPR:$Src2": {
+        "Desc": ["Set NZCV for the binary AND of two GPRs, setting Z accordingly and zeroing C and V. N is undefined."],
         "DestSize": "Size",
         "HasSideEffects": true
       },
