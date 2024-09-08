@@ -4721,6 +4721,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
     Reason.si_code = 0x80;
     SetRIPToNext = true;
     break;
+  default: FEX_UNREACHABLE;
   }
 
   // Calculate flags early.
