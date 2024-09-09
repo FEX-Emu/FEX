@@ -192,7 +192,7 @@ FileManager::FileManager(FEXCore::Context::Context* ctx)
   // - AppConfig override
   // This doesn't support the classic thunks interface.
 
-  auto AppName = AppConfigName();
+  const auto& AppName = AppConfigName();
   fextl::vector<fextl::string> ConfigPaths {
     FEXCore::Config::GetConfigFileLocation(true),
     FEXCore::Config::GetConfigFileLocation(false),
