@@ -572,6 +572,7 @@ namespace DRM {
       CPYF(props_ptr);
       CPYF(prop_values_ptr);
       CPYF(count_props);
+      CPYF(obj_id);
       CPYF(obj_type);
     }
   };
