@@ -7,7 +7,7 @@
 
 namespace FEXCore::CPU {
 FEXCORE_PRESERVE_ALL_ATTR static softfloat_state SoftFloatStateFromFCW(uint16_t FCW) {
-  softfloat_state State;
+  softfloat_state State {};
   State.detectTininess = softfloat_tininess_afterRounding;
   State.exceptionFlags = 0;
 
