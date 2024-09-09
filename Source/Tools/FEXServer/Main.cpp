@@ -174,7 +174,10 @@ int main(int argc, char** argv, char** const envp) {
   ::setsid();
 
   // Set process as a subreaper so subprocesses can't escape
-  ::prctl(PR_SET_CHILD_SUBREAPER, 1);
+  if (::prctl(PR_SET_CHILD_SUBREAPER, 1) == -1) [[unlikely]] {
+    // If subreaper failed then squashfuse/erofsfuse can escape, which isn't fatal.
+    LogMan::Msg::DFmt("[FEXServer] Couldn't set subreaper.");
+  }
 
   if (Options.Foreground) {
     // Only start a log thread if we are in the foreground.
