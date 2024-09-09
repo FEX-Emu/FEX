@@ -1032,60 +1032,53 @@ namespace UnSquash {
 bool UnsquashRootFS(const fextl::string& Path, const fextl::string& RootFS, const fextl::string& FolderName) {
   auto TargetFolder = Path + FolderName;
 
-  bool Extract = true;
   std::error_code ec;
   if (std::filesystem::exists(TargetFolder, ec)) {
     fextl::string Question = "Target folder \"" + FolderName + "\" already exists. Overwrite?";
     if (AskForConfirmation(Question)) {
-      if (std::filesystem::remove_all(TargetFolder, ec) != ~0ULL) {
-        Extract = true;
+      if (std::filesystem::remove_all(TargetFolder, ec) == ~0ULL) {
+        ExecWithInfo("Couldn't remove previous directory. Won't extract.");
+        return false;
       }
+    } else {
+      return false;
     }
   }
 
-  if (Extract) {
-    const std::vector<const char*> ExecveArgs = {
-      "unsquashfs", "-f", "-d", TargetFolder.c_str(), RootFS.c_str(), nullptr,
-    };
+  const std::vector<const char*> ExecveArgs = {
+    "unsquashfs", "-f", "-d", TargetFolder.c_str(), RootFS.c_str(), nullptr,
+  };
 
-    return Exec::ExecAndWaitForResponse(ExecveArgs[0], const_cast<char* const*>(ExecveArgs.data())) == 0;
-  }
-
-  return false;
+  return Exec::ExecAndWaitForResponse(ExecveArgs[0], const_cast<char* const*>(ExecveArgs.data())) == 0;
 }
 
 bool ExtractEroFS(const fextl::string& Path, const fextl::string& RootFS, const fextl::string& FolderName) {
   auto TargetFolder = Path + FolderName;
 
-  bool Extract = true;
   std::error_code ec;
   if (std::filesystem::exists(TargetFolder, ec)) {
     fextl::string Question = "Target folder \"" + FolderName + "\" already exists. Overwrite?";
     if (AskForConfirmation(Question)) {
-      if (std::filesystem::remove_all(TargetFolder, ec) != ~0ULL) {
-        Extract = true;
-      }
-      if (ec) {
+      if (std::filesystem::remove_all(TargetFolder, ec) == ~0ULL) {
         ExecWithInfo("Couldn't remove previous directory. Won't extract.");
+        return false;
       }
+    } else {
+      return false;
     }
   }
 
-  if (Extract) {
-    ExecWithInfo("Extracting Erofs. This might take a few minutes.");
+  ExecWithInfo("Extracting Erofs. This might take a few minutes.");
 
-    const auto ExtractOption = fmt::format("--extract={}", TargetFolder);
-    const std::vector<const char*> ExecveArgs = {
-      "fsck.erofs",
-      ExtractOption.c_str(),
-      RootFS.c_str(),
-      nullptr,
-    };
+  const auto ExtractOption = fmt::format("--extract={}", TargetFolder);
+  const std::vector<const char*> ExecveArgs = {
+    "fsck.erofs",
+    ExtractOption.c_str(),
+    RootFS.c_str(),
+    nullptr,
+  };
 
-    return Exec::ExecAndWaitForResponse(ExecveArgs[0], const_cast<char* const*>(ExecveArgs.data())) == 0;
-  }
-
-  return false;
+  return Exec::ExecAndWaitForResponse(ExecveArgs[0], const_cast<char* const*>(ExecveArgs.data())) == 0;
 }
 } // namespace UnSquash
 
