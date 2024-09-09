@@ -361,6 +361,7 @@ std::array<X86InstInfo, MAX_REP_MOD_TABLE_SIZE> RepModOps = []() consteval {
 
   GenerateTableWithCopy(&Table.at(0), RepModOpTable, std::size(RepModOpTable), &BaseOpsLambda().at(0));
 
+  FEXCore::IR::SecondaryRepModTables_Install(Table);
   return Table;
 }();
 

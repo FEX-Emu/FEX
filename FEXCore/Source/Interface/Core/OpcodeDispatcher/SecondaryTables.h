@@ -10,7 +10,7 @@ constexpr inline void InstallToTable(auto& FinalTable, auto& LocalTable) {
     for (uint8_t i = 0; i < std::get<1>(Op); ++i) {
       auto& TableOp = FinalTable[OpNum + i];
       if (TableOp.OpcodeDispatcher) {
-        LOGMAN_MSG_A_FMT("Duplicate Entry {} 0x{:x}", TableOp.Name, OpNum+i);
+        LOGMAN_MSG_A_FMT("Duplicate Entry {} 0x{:x}", TableOp.Name, OpNum + i);
       }
 
       TableOp.OpcodeDispatcher = Dispatcher;
@@ -167,6 +167,41 @@ consteval inline void SecondaryTables_Install(auto& FinalTable) {
   InstallToTable(FinalTable, TwoByteOpTable);
 }
 
+consteval inline void SecondaryRepModTables_Install(auto& FinalTable) {
+  constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> Table[] = {
+    {0x10, 2, &OpDispatchBuilder::MOVSSOp},
+    {0x12, 1, &OpDispatchBuilder::VMOVSLDUPOp},
+    {0x16, 1, &OpDispatchBuilder::VMOVSHDUPOp},
+    {0x2A, 1, &OpDispatchBuilder::InsertCVTGPR_To_FPR<4>},
+    {0x2B, 1, &OpDispatchBuilder::MOVVectorNTOp},
+    {0x2C, 1, &OpDispatchBuilder::CVTFPR_To_GPR<4, false>},
+    {0x2D, 1, &OpDispatchBuilder::CVTFPR_To_GPR<4, true>},
+    {0x51, 1, &OpDispatchBuilder::VectorScalarUnaryInsertALUOp<IR::OP_VFSQRTSCALARINSERT, 4>},
+    {0x52, 1, &OpDispatchBuilder::VectorScalarUnaryInsertALUOp<IR::OP_VFRSQRTSCALARINSERT, 4>},
+    {0x53, 1, &OpDispatchBuilder::VectorScalarUnaryInsertALUOp<IR::OP_VFRECPSCALARINSERT, 4>},
+    {0x58, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFADDSCALARINSERT, 4>},
+    {0x59, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMULSCALARINSERT, 4>},
+    {0x5A, 1, &OpDispatchBuilder::InsertScalar_CVT_Float_To_Float<8, 4>},
+    {0x5B, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<4, false, false>},
+    {0x5C, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFSUBSCALARINSERT, 4>},
+    {0x5D, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMINSCALARINSERT, 4>},
+    {0x5E, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFDIVSCALARINSERT, 4>},
+    {0x5F, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMAXSCALARINSERT, 4>},
+    {0x6F, 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
+    {0x70, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSHUFWOp, false>},
+    {0x7E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVQOp, OpDispatchBuilder::VectorOpType::SSE>},
+    {0x7F, 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
+    {0xB8, 1, &OpDispatchBuilder::PopcountOp},
+    {0xBC, 1, &OpDispatchBuilder::TZCNT},
+    {0xBD, 1, &OpDispatchBuilder::LZCNT},
+    {0xC2, 1, &OpDispatchBuilder::InsertScalarFCMPOp<4>},
+    {0xD6, 1, &OpDispatchBuilder::MOVQ2DQ<true>},
+    {0xE6, 1, &OpDispatchBuilder::Vector_CVT_Int_To_Float<4, true>},
+  };
+
+  InstallToTable(FinalTable, Table);
+}
+
 inline void SecondaryTables_Install64(auto& FinalTable) {
   constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> TwoByteOpTable[] = {
     {0x05, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SyscallOp, true>},
@@ -191,4 +226,4 @@ inline void SecondaryTables_Install32(auto& FinalTable) {
   InstallToTable(FinalTable, TwoByteOpTable);
 }
 
-}
+} // namespace FEXCore::IR
