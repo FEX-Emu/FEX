@@ -673,7 +673,7 @@ uint64_t FileManager::Readlink(const char* pathname, char* buf, size_t bufsiz) {
     snprintf(PidSelfPath, 50, "/proc/%i/exe", CurrentPID);
 
     if (strcmp(pathname, "/proc/self/exe") == 0 || strcmp(pathname, "/proc/thread-self/exe") == 0 || strcmp(pathname, PidSelfPath) == 0) {
-      auto App = Filename();
+      const auto& App = Filename();
       strncpy(buf, App.c_str(), bufsiz);
       return std::min(bufsiz, App.size());
     }
@@ -750,7 +750,7 @@ uint64_t FileManager::Readlinkat(int dirfd, const char* pathname, char* buf, siz
     snprintf(PidSelfPath, 50, "/proc/%i/exe", CurrentPID);
 
     if (Path == "/proc/self/exe" || Path == "/proc/thread-self/exe" || Path == PidSelfPath) {
-      auto App = Filename();
+      const auto& App = Filename();
       strncpy(buf, App.c_str(), bufsiz);
       return std::min(bufsiz, App.size());
     }
