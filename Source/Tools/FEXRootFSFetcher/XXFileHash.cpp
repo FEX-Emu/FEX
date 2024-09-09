@@ -27,10 +27,14 @@ std::pair<bool, uint64_t> HashFile(const fextl::string& Filepath) {
   };
   // Get file size
   off_t Size = lseek(fd, 0, SEEK_END);
-  double SizeD = Size;
+  if (Size == -1) {
+    return HadError();
+  }
 
   // Reset to beginning
-  lseek(fd, 0, SEEK_SET);
+  if (lseek(fd, 0, SEEK_SET) == -1) {
+    return HadError();
+  }
 
   // Set up XXHash state
   State = XXH3_createState();
@@ -44,6 +48,7 @@ std::pair<bool, uint64_t> HashFile(const fextl::string& Filepath) {
     return HadError();
   }
 
+  const double SizeD = Size;
   std::vector<char> Data(BLOCK_SIZE);
   off_t CurrentOffset = 0;
   auto Now = std::chrono::high_resolution_clock::now();
