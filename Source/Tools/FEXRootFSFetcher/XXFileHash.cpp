@@ -37,6 +37,8 @@ std::pair<bool, uint64_t> HashFile(const fextl::string& Filepath) {
   }
 
   if (XXH3_64bits_reset_withSeed(State, Seed) == XXH_ERROR) {
+    XXH3_freeState(State);
+    close(fd);
     return HadError();
   }
 
@@ -50,10 +52,14 @@ std::pair<bool, uint64_t> HashFile(const fextl::string& Filepath) {
 
     ssize_t Result = pread(fd, Data.data(), BLOCK_SIZE, CurrentOffset);
     if (Result == -1) {
+      XXH3_freeState(State);
+      close(fd);
       return HadError();
     }
 
     if (XXH3_64bits_update(State, Data.data(), Result) == XXH_ERROR) {
+      XXH3_freeState(State);
+      close(fd);
       return HadError();
     }
     auto Cur = std::chrono::high_resolution_clock::now();

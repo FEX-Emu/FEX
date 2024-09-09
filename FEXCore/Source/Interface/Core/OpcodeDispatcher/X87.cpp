@@ -177,16 +177,15 @@ void OpDispatchBuilder::FADD(OpcodeArgs, size_t Width, bool Integer, OpDispatchB
     return;
   }
 
+  LOGMAN_THROW_A_FMT(Width != 80, "No 80-bit floats from memory");
   // We have one memory argument
   Ref Arg {};
-  if (Width == 16 || Width == 32 || Width == 64) {
-    if (Integer) {
-      Arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-      Arg = _F80CVTToInt(Arg, Width / 8);
-    } else {
-      Arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-      Arg = _F80CVTTo(Arg, Width / 8);
-    }
+  if (Integer) {
+    Arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+    Arg = _F80CVTToInt(Arg, Width / 8);
+  } else {
+    Arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+    Arg = _F80CVTTo(Arg, Width / 8);
   }
 
   // top of stack is at offset zero
@@ -208,16 +207,15 @@ void OpDispatchBuilder::FMUL(OpcodeArgs, size_t Width, bool Integer, OpDispatchB
     return;
   }
 
+  LOGMAN_THROW_A_FMT(Width != 80, "No 80-bit floats from memory");
   // We have one memory argument
   Ref arg {};
-  if (Width == 16 || Width == 32 || Width == 64) {
-    if (Integer) {
-      arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-      arg = _F80CVTToInt(arg, Width / 8);
-    } else {
-      arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-      arg = _F80CVTTo(arg, Width / 8);
-    }
+  if (Integer) {
+    arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+    arg = _F80CVTToInt(arg, Width / 8);
+  } else {
+    arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+    arg = _F80CVTTo(arg, Width / 8);
   }
 
   // top of stack is at offset zero
@@ -246,16 +244,15 @@ void OpDispatchBuilder::FDIV(OpcodeArgs, size_t Width, bool Integer, bool Revers
     return;
   }
 
+  LOGMAN_THROW_A_FMT(Width != 80, "No 80-bit floats from memory");
   // We have one memory argument
   Ref arg {};
-  if (Width == 16 || Width == 32 || Width == 64) {
-    if (Integer) {
-      arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-      arg = _F80CVTToInt(arg, Width / 8);
-    } else {
-      arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-      arg = _F80CVTTo(arg, Width / 8);
-    }
+  if (Integer) {
+    arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+    arg = _F80CVTToInt(arg, Width / 8);
+  } else {
+    arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+    arg = _F80CVTTo(arg, Width / 8);
   }
 
   // top of stack is at offset zero
@@ -288,16 +285,15 @@ void OpDispatchBuilder::FSUB(OpcodeArgs, size_t Width, bool Integer, bool Revers
     return;
   }
 
+  LOGMAN_THROW_A_FMT(Width != 80, "No 80-bit floats from memory");
   // We have one memory argument
   Ref Arg {};
-  if (Width == 16 || Width == 32 || Width == 64) {
-    if (Integer) {
-      Arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-      Arg = _F80CVTToInt(Arg, Width / 8);
-    } else {
-      Arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-      Arg = _F80CVTTo(Arg, Width / 8);
-    }
+  if (Integer) {
+    Arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+    Arg = _F80CVTToInt(Arg, Width / 8);
+  } else {
+    Arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+    Arg = _F80CVTTo(Arg, Width / 8);
   }
 
   // top of stack is at offset zero

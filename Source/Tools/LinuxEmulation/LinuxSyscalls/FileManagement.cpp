@@ -179,7 +179,7 @@ void FileManager::LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBO
 
 FileManager::FileManager(FEXCore::Context::Context* ctx)
   : EmuFD {ctx} {
-  auto ThunkConfigFile = ThunkConfig();
+  const auto& ThunkConfigFile = ThunkConfig();
 
   // We try to load ThunksDB from:
   // - FEX global config
@@ -192,7 +192,7 @@ FileManager::FileManager(FEXCore::Context::Context* ctx)
   // - AppConfig override
   // This doesn't support the classic thunks interface.
 
-  auto AppName = AppConfigName();
+  const auto& AppName = AppConfigName();
   fextl::vector<fextl::string> ConfigPaths {
     FEXCore::Config::GetConfigFileLocation(true),
     FEXCore::Config::GetConfigFileLocation(false),
@@ -367,7 +367,7 @@ fextl::string FileManager::GetEmulatedPath(const char* pathname, bool FollowSyml
     return thunkOverlay->second;
   }
 
-  auto RootFSPath = LDPath();
+  const auto& RootFSPath = LDPath();
   if (RootFSPath.empty()) { // If RootFS doesn't exist
     return {};
   }
@@ -673,7 +673,7 @@ uint64_t FileManager::Readlink(const char* pathname, char* buf, size_t bufsiz) {
     snprintf(PidSelfPath, 50, "/proc/%i/exe", CurrentPID);
 
     if (strcmp(pathname, "/proc/self/exe") == 0 || strcmp(pathname, "/proc/thread-self/exe") == 0 || strcmp(pathname, PidSelfPath) == 0) {
-      auto App = Filename();
+      const auto& App = Filename();
       strncpy(buf, App.c_str(), bufsiz);
       return std::min(bufsiz, App.size());
     }
@@ -750,7 +750,7 @@ uint64_t FileManager::Readlinkat(int dirfd, const char* pathname, char* buf, siz
     snprintf(PidSelfPath, 50, "/proc/%i/exe", CurrentPID);
 
     if (Path == "/proc/self/exe" || Path == "/proc/thread-self/exe" || Path == PidSelfPath) {
-      auto App = Filename();
+      const auto& App = Filename();
       strncpy(buf, App.c_str(), bufsiz);
       return std::min(bufsiz, App.size());
     }

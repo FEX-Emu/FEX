@@ -358,7 +358,7 @@ public:
   };
 
   bool MapMemory(FEX::HLE::SyscallHandler* const Handler) {
-    for (auto Header : MainElf.phdrs) {
+    for (const auto& Header : MainElf.phdrs) {
       if (Header.p_type == PT_GNU_STACK) {
         if (Header.p_flags & PF_X) {
           ExecutableStack = true;

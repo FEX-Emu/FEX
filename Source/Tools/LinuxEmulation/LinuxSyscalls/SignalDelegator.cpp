@@ -103,8 +103,8 @@ void SignalDelegator::HandleSignal(FEX::HLE::ThreadStateObject* Thread, int Sign
 }
 
 void SignalDelegator::RegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
-  SetHostSignalHandler(Signal, Func, Required);
-  FrontendRegisterHostSignalHandler(Signal, Func, Required);
+  SetHostSignalHandler(Signal, std::move(Func), Required);
+  FrontendRegisterHostSignalHandler(Signal, Required);
 }
 
 void SignalDelegator::SpillSRA(FEXCore::Core::InternalThreadState* Thread, void* ucontext, uint32_t IgnoreMask) {
@@ -556,7 +556,7 @@ void SignalDelegator::HandleGuestSignal(FEX::HLE::ThreadStateObject* ThreadObjec
           return;
         }
 
-        auto Top = Thread->DeferredSignalFrames.back();
+        const auto& Top = Thread->DeferredSignalFrames.back();
         Signal = Top.Signal;
         SigInfo = Top.Info;
         Thread->DeferredSignalFrames.pop_back();
@@ -1002,7 +1002,7 @@ void SignalDelegator::UninstallTLSState(FEX::HLE::ThreadStateObject* Thread) {
   }
 }
 
-void SignalDelegator::FrontendRegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
+void SignalDelegator::FrontendRegisterHostSignalHandler(int Signal, bool Required) {
   // Linux signal handlers are per-process rather than per thread
   // Multiple threads could be calling in to this
   std::lock_guard lk(HostDelegatorMutex);
@@ -1010,7 +1010,7 @@ void SignalDelegator::FrontendRegisterHostSignalHandler(int Signal, HostSignalDe
   InstallHostThunk(Signal);
 }
 
-void SignalDelegator::FrontendRegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
+void SignalDelegator::FrontendRegisterFrontendHostSignalHandler(int Signal, bool Required) {
   // Linux signal handlers are per-process rather than per thread
   // Multiple threads could be calling in to this
   std::lock_guard lk(HostDelegatorMutex);
@@ -1024,8 +1024,8 @@ void SignalDelegator::RegisterHostSignalHandlerForGuest(int Signal, FEX::HLE::Ho
 }
 
 void SignalDelegator::RegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
-  SetFrontendHostSignalHandler(Signal, Func, Required);
-  FrontendRegisterFrontendHostSignalHandler(Signal, Func, Required);
+  SetFrontendHostSignalHandler(Signal, std::move(Func), Required);
+  FrontendRegisterFrontendHostSignalHandler(Signal, Required);
 }
 
 uint64_t SignalDelegator::RegisterGuestSignalHandler(int Signal, const GuestSigAction* Action, GuestSigAction* OldAction) {

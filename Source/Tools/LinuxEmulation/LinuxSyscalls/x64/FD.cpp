@@ -59,6 +59,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
 
   REGISTER_SYSCALL_IMPL_X64(
     futimesat, [](FEXCore::Core::CpuStateFrame* Frame, int dirfd, const char* pathname, const struct timeval times[2]) -> uint64_t {
+      // TODO: This will always return ENOSYS on Arm64 since `futimesat` doesn't exist on that platform.
       uint64_t Result = ::syscall(SYSCALL_DEF(futimesat), dirfd, pathname, times);
       SYSCALL_ERRNO();
     });

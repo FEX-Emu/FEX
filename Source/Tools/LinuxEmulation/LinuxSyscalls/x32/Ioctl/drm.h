@@ -47,15 +47,15 @@ namespace DRM {
 
     operator drm_version() const {
       drm_version val {};
-      val.version_major = version_major;
-      val.version_minor = version_minor;
-      val.version_patchlevel = version_patchlevel;
-      val.name_len = name_len;
-      val.name = name;
-      val.date_len = date_len;
-      val.date = date;
-      val.desc_len = desc_len;
-      val.desc = desc;
+      CPYT(version_major);
+      CPYT(version_minor);
+      CPYT(version_patchlevel);
+      CPYT(name_len);
+      CPYT(name);
+      CPYT(date_len);
+      CPYT(date);
+      CPYT(desc_len);
+      CPYT(desc);
       return val;
     }
 
@@ -63,12 +63,12 @@ namespace DRM {
       : name {auto_compat_ptr {val.name}}
       , date {auto_compat_ptr {val.date}}
       , desc {auto_compat_ptr {val.desc}} {
-      version_major = val.version_major;
-      version_minor = val.version_minor;
-      version_patchlevel = val.version_patchlevel;
-      name_len = val.name_len;
-      date_len = val.date_len;
-      desc_len = val.desc_len;
+      CPYF(version_major);
+      CPYF(version_minor);
+      CPYF(version_patchlevel);
+      CPYF(name_len);
+      CPYF(date_len);
+      CPYF(desc_len);
     }
   };
 
@@ -80,14 +80,14 @@ namespace DRM {
 
     operator drm_unique() const {
       drm_unique val {};
-      val.unique_len = unique_len;
-      val.unique = unique;
+      CPYT(unique_len);
+      CPYT(unique);
       return val;
     }
 
     fex_drm_unique(struct drm_unique val)
       : unique {auto_compat_ptr {val.unique}} {
-      unique_len = val.unique_len;
+      CPYF(unique_len);
     }
   };
 
@@ -114,11 +114,11 @@ namespace DRM {
 
     fex_drm_map(struct drm_map val)
       : handle {auto_compat_ptr {val.handle}} {
-      CPYT(offset);
-      CPYT(size);
-      CPYT(type);
-      CPYT(flags);
-      CPYT(mtrr);
+      CPYF(offset);
+      CPYF(size);
+      CPYF(type);
+      CPYF(flags);
+      CPYF(mtrr);
     }
   };
 
@@ -197,6 +197,7 @@ namespace DRM {
       CPYT(size);
       CPYT(low_mark);
       CPYT(high_mark);
+      memcpy(&val.flags, &flags, sizeof(val.flags));
       CPYT(agp_start);
       return val;
     }
@@ -206,6 +207,7 @@ namespace DRM {
       CPYF(size);
       CPYF(low_mark);
       CPYF(high_mark);
+      memcpy(&flags, &val.flags, sizeof(val.flags));
       CPYF(agp_start);
     }
   };
@@ -558,19 +560,20 @@ namespace DRM {
 
     operator drm_mode_obj_get_properties() const {
       drm_mode_obj_get_properties val {};
-      val.props_ptr = props_ptr;
-      val.prop_values_ptr = prop_values_ptr;
-      val.count_props = count_props;
-      val.obj_id = obj_id;
-      val.obj_type = obj_type;
+      CPYT(props_ptr);
+      CPYT(prop_values_ptr);
+      CPYT(count_props);
+      CPYT(obj_id);
+      CPYT(obj_type);
       return val;
     }
 
     fex_drm_mode_obj_get_properties(struct drm_mode_obj_get_properties val) {
-      props_ptr = val.props_ptr;
-      prop_values_ptr = val.prop_values_ptr;
-      count_props = val.count_props;
-      obj_type = val.obj_type;
+      CPYF(props_ptr);
+      CPYF(prop_values_ptr);
+      CPYF(count_props);
+      CPYF(obj_id);
+      CPYF(obj_type);
     }
   };
 
@@ -584,18 +587,18 @@ namespace DRM {
 
     operator drm_mode_obj_set_property() const {
       drm_mode_obj_set_property val {};
-      val.value = value;
-      val.prop_id = prop_id;
-      val.obj_id = obj_id;
-      val.obj_type = obj_type;
+      CPYT(value);
+      CPYT(prop_id);
+      CPYT(obj_id);
+      CPYT(obj_type);
       return val;
     }
 
     fex_drm_mode_obj_set_property(struct drm_mode_obj_set_property val) {
-      value = val.value;
-      prop_id = val.prop_id;
-      obj_id = val.obj_id;
-      obj_type = val.obj_type;
+      CPYF(value);
+      CPYF(prop_id);
+      CPYF(obj_id);
+      CPYF(obj_type);
     }
   };
 
@@ -615,21 +618,21 @@ namespace AMDGPU {
     fex_drm_amdgpu_gem_metadata() = delete;
     operator drm_amdgpu_gem_metadata() const {
       drm_amdgpu_gem_metadata val {};
-      val.handle = handle;
-      val.op = op;
-      val.data.flags = data.flags;
-      val.data.tiling_info = data.tiling_info;
-      val.data.data_size_bytes = data.data_size_bytes;
+      CPYT(handle);
+      CPYT(op);
+      CPYT(data.flags);
+      CPYT(data.tiling_info);
+      CPYT(data.data_size_bytes);
       memcpy(val.data.data, data.data, sizeof(data.data));
       return val;
     }
 
     fex_drm_amdgpu_gem_metadata(struct drm_amdgpu_gem_metadata val) {
-      handle = val.handle;
-      op = val.op;
-      data.flags = val.data.flags;
-      data.tiling_info = val.data.tiling_info;
-      data.data_size_bytes = val.data.data_size_bytes;
+      CPYF(handle);
+      CPYF(op);
+      CPYF(data.flags);
+      CPYF(data.tiling_info);
+      CPYF(data.data_size_bytes);
       memcpy(data.data, val.data.data, sizeof(data.data));
     }
   };
@@ -647,25 +650,25 @@ namespace RADEON {
 
     operator drm_radeon_gem_create() const {
       drm_radeon_gem_create val {};
-      val.size = size;
-      val.alignment = alignment;
-      val.handle = handle;
-      val.initial_domain = initial_domain;
-      val.flags = flags;
+      CPYT(size);
+      CPYT(alignment);
+      CPYT(handle);
+      CPYT(initial_domain);
+      CPYT(flags);
       return val;
     }
 
     fex_drm_radeon_gem_create(struct drm_radeon_gem_create val) {
-      size = val.size;
-      alignment = val.alignment;
-      handle = val.handle;
-      initial_domain = val.initial_domain;
-      flags = val.flags;
+      CPYF(size);
+      CPYF(alignment);
+      CPYF(handle);
+      CPYF(initial_domain);
+      CPYF(flags);
     }
   };
 
   struct FEX_PACKED FEX_ANNOTATE("alias-x86_32-drm_radeon_init") FEX_ANNOTATE("fex-match") fex_drm_radeon_init_t {
-    enum {} func;
+    uint32_t func;
 
     compat_ulong_t sarea_priv_offset;
     int32_t is_pci;
@@ -691,50 +694,52 @@ namespace RADEON {
 
     operator drm_radeon_init_t() const {
       drm_radeon_init_t val {};
-      val.sarea_priv_offset = sarea_priv_offset;
-      val.is_pci = is_pci;
-      val.cp_mode = cp_mode;
-      val.gart_size = gart_size;
-      val.ring_size = ring_size;
-      val.usec_timeout = usec_timeout;
-      val.fb_bpp = fb_bpp;
-      val.front_offset = front_offset;
-      val.front_pitch = front_pitch;
-      val.back_offset = back_offset;
-      val.back_pitch = back_pitch;
-      val.depth_bpp = depth_bpp;
-      val.depth_offset = depth_offset;
-      val.depth_pitch = depth_pitch;
-      val.fb_offset = fb_offset;
-      val.mmio_offset = mmio_offset;
-      val.ring_offset = ring_offset;
-      val.ring_rptr_offset = ring_rptr_offset;
-      val.buffers_offset = buffers_offset;
-      val.gart_textures_offset = gart_textures_offset;
+      memcpy(&val.func, &func, sizeof(val.func));
+      CPYT(sarea_priv_offset);
+      CPYT(is_pci);
+      CPYT(cp_mode);
+      CPYT(gart_size);
+      CPYT(ring_size);
+      CPYT(usec_timeout);
+      CPYT(fb_bpp);
+      CPYT(front_offset);
+      CPYT(front_pitch);
+      CPYT(back_offset);
+      CPYT(back_pitch);
+      CPYT(depth_bpp);
+      CPYT(depth_offset);
+      CPYT(depth_pitch);
+      CPYT(fb_offset);
+      CPYT(mmio_offset);
+      CPYT(ring_offset);
+      CPYT(ring_rptr_offset);
+      CPYT(buffers_offset);
+      CPYT(gart_textures_offset);
       return val;
     }
 
     fex_drm_radeon_init_t(drm_radeon_init_t val) {
-      sarea_priv_offset = val.sarea_priv_offset;
-      is_pci = val.is_pci;
-      cp_mode = val.cp_mode;
-      gart_size = val.gart_size;
-      ring_size = val.ring_size;
-      usec_timeout = val.usec_timeout;
-      fb_bpp = val.fb_bpp;
-      front_offset = val.front_offset;
-      front_pitch = val.front_pitch;
-      back_offset = val.back_offset;
-      back_pitch = val.back_pitch;
-      depth_bpp = val.depth_bpp;
-      depth_offset = val.depth_offset;
-      depth_pitch = val.depth_pitch;
-      fb_offset = val.fb_offset;
-      mmio_offset = val.mmio_offset;
-      ring_offset = val.ring_offset;
-      ring_rptr_offset = val.ring_rptr_offset;
-      buffers_offset = val.buffers_offset;
-      gart_textures_offset = val.gart_textures_offset;
+      memcpy(&func, &val.func, sizeof(val.func));
+      CPYF(sarea_priv_offset);
+      CPYF(is_pci);
+      CPYF(cp_mode);
+      CPYF(gart_size);
+      CPYF(ring_size);
+      CPYF(usec_timeout);
+      CPYF(fb_bpp);
+      CPYF(front_offset);
+      CPYF(front_pitch);
+      CPYF(back_offset);
+      CPYF(back_pitch);
+      CPYF(depth_bpp);
+      CPYF(depth_offset);
+      CPYF(depth_pitch);
+      CPYF(fb_offset);
+      CPYF(mmio_offset);
+      CPYF(ring_offset);
+      CPYF(ring_rptr_offset);
+      CPYF(buffers_offset);
+      CPYF(gart_textures_offset);
     }
   };
 
@@ -750,22 +755,22 @@ namespace RADEON {
 
     operator drm_radeon_clear_t() const {
       drm_radeon_clear_t val {};
-      val.flags = flags;
-      val.clear_color = clear_color;
-      val.clear_depth = clear_depth;
-      val.color_mask = color_mask;
-      val.depth_mask = depth_mask;
-      val.depth_boxes = depth_boxes;
+      CPYT(flags);
+      CPYT(clear_color);
+      CPYT(clear_depth);
+      CPYT(color_mask);
+      CPYT(depth_mask);
+      CPYT(depth_boxes);
       return val;
     }
 
     fex_drm_radeon_clear_t(drm_radeon_clear_t val)
       : depth_boxes {auto_compat_ptr {val.depth_boxes}} {
-      flags = val.flags;
-      clear_color = val.clear_color;
-      clear_depth = val.clear_depth;
-      color_mask = val.color_mask;
-      depth_mask = val.depth_mask;
+      CPYF(flags);
+      CPYF(clear_color);
+      CPYF(clear_depth);
+      CPYF(color_mask);
+      CPYF(depth_mask);
     }
   };
 
@@ -776,7 +781,7 @@ namespace RADEON {
 
     operator drm_radeon_stipple_t() const {
       drm_radeon_stipple_t val {};
-      val.mask = mask;
+      CPYT(mask);
       return val;
     }
 
@@ -796,22 +801,22 @@ namespace RADEON {
 
     operator drm_radeon_texture_t() const {
       drm_radeon_texture_t val {};
-      val.offset = offset;
-      val.pitch = pitch;
-      val.format = format;
-      val.width = width;
-      val.height = height;
-      val.image = image;
+      CPYT(offset);
+      CPYT(pitch);
+      CPYT(format);
+      CPYT(width);
+      CPYT(height);
+      CPYT(image);
       return val;
     }
 
     fex_drm_radeon_texture_t(drm_radeon_texture_t val)
       : image {auto_compat_ptr {val.image}} {
-      offset = val.offset;
-      pitch = val.pitch;
-      format = val.format;
-      width = val.width;
-      height = val.height;
+      CPYF(offset);
+      CPYF(pitch);
+      CPYF(format);
+      CPYF(width);
+      CPYF(height);
     }
   };
 
@@ -827,22 +832,22 @@ namespace RADEON {
 
     operator drm_radeon_vertex2_t() const {
       drm_radeon_vertex2_t val;
-      val.idx = idx;
-      val.discard = discard;
-      val.nr_states = nr_states;
-      val.state = state;
-      val.nr_prims = nr_prims;
-      val.prim = prim;
+      CPYT(idx);
+      CPYT(discard);
+      CPYT(nr_states);
+      CPYT(state);
+      CPYT(nr_prims);
+      CPYT(prim);
       return val;
     }
 
     fex_drm_radeon_vertex2_t(drm_radeon_vertex2_t val)
       : state {auto_compat_ptr {val.state}}
       , prim {auto_compat_ptr {val.prim}} {
-      idx = val.idx;
-      discard = val.discard;
-      nr_states = val.nr_states;
-      nr_prims = val.nr_prims;
+      CPYF(idx);
+      CPYF(discard);
+      CPYF(nr_states);
+      CPYF(nr_prims);
     }
   };
 
@@ -856,18 +861,18 @@ namespace RADEON {
 
     operator drm_radeon_cmd_buffer_t() const {
       drm_radeon_cmd_buffer_t val;
-      val.bufsz = bufsz;
-      val.buf = buf;
-      val.nbox = nbox;
-      val.boxes = boxes;
+      CPYT(bufsz);
+      CPYT(buf);
+      CPYT(nbox);
+      CPYT(boxes);
       return val;
     }
 
     fex_drm_radeon_cmd_buffer_t(drm_radeon_cmd_buffer_t val)
       : buf {auto_compat_ptr {val.buf}}
       , boxes {auto_compat_ptr {val.boxes}} {
-      val.bufsz = bufsz;
-      val.nbox = nbox;
+      CPYF(bufsz);
+      CPYF(nbox);
     }
   };
 
@@ -879,14 +884,14 @@ namespace RADEON {
 
     operator drm_radeon_getparam_t() const {
       drm_radeon_getparam_t val;
-      val.param = param;
-      val.value = value;
+      CPYT(param);
+      CPYT(value);
       return val;
     }
 
     fex_drm_radeon_getparam_t(drm_radeon_getparam_t val)
       : value {auto_compat_ptr {val.value}} {
-      val.param = param;
+      CPYF(param);
     }
   };
 
@@ -900,18 +905,18 @@ namespace RADEON {
 
     operator drm_radeon_mem_alloc_t() const {
       drm_radeon_mem_alloc_t val;
-      val.region = region;
-      val.alignment = alignment;
-      val.size = size;
-      val.region_offset = region_offset;
+      CPYT(region);
+      CPYT(alignment);
+      CPYT(size);
+      CPYT(region_offset);
       return val;
     }
 
     fex_drm_radeon_mem_alloc_t(drm_radeon_mem_alloc_t val)
       : region_offset {auto_compat_ptr {val.region_offset}} {
-      val.region = region;
-      val.alignment = alignment;
-      val.size = size;
+      CPYF(region);
+      CPYF(alignment);
+      CPYF(size);
     }
   };
 
@@ -922,7 +927,7 @@ namespace RADEON {
 
     operator drm_radeon_irq_emit_t() const {
       drm_radeon_irq_emit_t val;
-      val.irq_seq = irq_seq;
+      CPYT(irq_seq);
       return val;
     }
 
@@ -938,14 +943,14 @@ namespace RADEON {
 
     operator drm_radeon_setparam_t() const {
       drm_radeon_setparam_t val;
-      val.param = param;
-      val.value = value;
+      CPYT(param);
+      CPYT(value);
       return val;
     }
 
     fex_drm_radeon_setparam_t(drm_radeon_setparam_t val) {
-      param = val.param;
-      value = val.value;
+      CPYF(param);
+      CPYF(value);
     }
   };
 
@@ -958,8 +963,8 @@ namespace MSM {
 
     operator drm_msm_timespec() const {
       drm_msm_timespec val {};
-      val.tv_sec = tv_sec;
-      val.tv_nsec = tv_nsec;
+      CPYT(tv_sec);
+      CPYT(tv_nsec);
       return val;
     }
 
@@ -984,18 +989,18 @@ namespace MSM {
 
     operator drm_msm_wait_fence() const {
       drm_msm_wait_fence val {};
-      val.fence = fence;
-      val.flags = flags;
-      val.timeout = timeout;
-      val.queueid = queueid;
+      CPYT(fence);
+      CPYT(flags);
+      CPYT(timeout);
+      CPYT(queueid);
       return val;
     }
 
     fex_drm_msm_wait_fence(struct drm_msm_wait_fence val)
       : timeout {fex_drm_msm_timespec::FromHost(val.timeout)} {
-      fence = val.fence;
-      flags = val.flags;
-      queueid = val.queueid;
+      CPYF(fence);
+      CPYF(flags);
+      CPYF(queueid);
     }
   };
 
@@ -1085,9 +1090,9 @@ namespace I915 {
 
     fex_drm_i915_mem_alloc_t(drm_i915_mem_alloc_t val)
       : region_offset {auto_compat_ptr {val.region_offset}} {
-      CPYT(region);
-      CPYT(alignment);
-      CPYT(size);
+      CPYF(region);
+      CPYF(alignment);
+      CPYF(size);
     }
   };
 
@@ -1115,10 +1120,10 @@ namespace I915 {
     fex_drm_i915_cmdbuffer_t(drm_i915_cmdbuffer_t val)
       : buf {auto_compat_ptr {val.buf}}
       , cliprects {auto_compat_ptr {val.cliprects}} {
-      CPYT(sz);
-      CPYT(DR1);
-      CPYT(DR4);
-      CPYT(num_cliprects);
+      CPYF(sz);
+      CPYF(DR1);
+      CPYF(DR4);
+      CPYF(num_cliprects);
     }
   };
 
@@ -1146,13 +1151,13 @@ namespace VC4 {
 
     operator drm_vc4_perfmon_get_values() const {
       drm_vc4_perfmon_get_values val {};
-      val.id = id;
-      val.values_ptr = values_ptr;
+      CPYT(id);
+      CPYT(values_ptr);
       return val;
     }
     fex_drm_vc4_perfmon_get_values(drm_vc4_perfmon_get_values val) {
-      id = val.id;
-      values_ptr = val.values_ptr;
+      CPYF(id);
+      CPYF(values_ptr);
     }
   };
 
@@ -1207,14 +1212,14 @@ namespace V3D {
       drm_v3d_submit_csd val {};
       memcpy(val.cfg, cfg, sizeof(cfg));
       memcpy(val.coef, coef, sizeof(coef));
-      val.bo_handles = bo_handles;
-      val.bo_handle_count = bo_handle_count;
-      val.in_sync = in_sync;
-      val.out_sync = out_sync;
-      val.perfmon_id = perfmon_id;
-      val.extensions = extensions;
-      val.flags = flags;
-      val.pad = pad;
+      CPYT(bo_handles);
+      CPYT(bo_handle_count);
+      CPYT(in_sync);
+      CPYT(out_sync);
+      CPYT(perfmon_id);
+      CPYT(extensions);
+      CPYT(flags);
+      CPYT(pad);
       return val;
     }
 
@@ -1250,14 +1255,14 @@ namespace V3D {
     fex_drm_v3d_submit_csd(drm_v3d_submit_csd val) {
       memcpy(cfg, val.cfg, sizeof(cfg));
       memcpy(coef, val.coef, sizeof(coef));
-      bo_handles = val.bo_handles;
-      bo_handle_count = val.bo_handle_count;
-      in_sync = val.in_sync;
-      out_sync = val.out_sync;
-      perfmon_id = val.perfmon_id;
-      extensions = val.extensions;
-      flags = val.flags;
-      pad = val.pad;
+      CPYF(bo_handles);
+      CPYF(bo_handle_count);
+      CPYF(in_sync);
+      CPYF(out_sync);
+      CPYF(perfmon_id);
+      CPYF(extensions);
+      CPYF(flags);
+      CPYF(pad);
     }
   };
 

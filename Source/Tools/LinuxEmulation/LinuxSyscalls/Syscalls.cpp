@@ -220,7 +220,7 @@ uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname
     if (pathname[0] == '/') {
       auto Path = SyscallHandler->FM.GetEmulatedPath(pathname, true);
       if (!Path.empty() && FHU::Filesystem::Exists(Path)) {
-        Filename = Path;
+        Filename = std::move(Path);
       } else {
         Filename = pathname;
       }
@@ -993,15 +993,10 @@ SyscallHandler::GenerateMap(const std::string_view& GuestBinaryFile, const std::
 // objdump output parsing,  index generation, index file serialization
 DoGenerate:
     LogMan::Msg::DFmt("GenerateMap: Generating index for '{}'", GuestSourceFile);
-    int StreamFD = ::open(GuestSourceFile.c_str(), O_RDONLY | O_CLOEXEC);
-
-    if (StreamFD == -1) {
-      LogMan::Msg::DFmt("GenerateMap: Failed to open '{}'", GuestSourceFile);
-      return {};
-    }
 
     fextl::string SourceData;
     if (!FEXCore::FileLoading::LoadFile(SourceData, GuestSourceFile)) {
+      LogMan::Msg::DFmt("GenerateMap: Failed to open '{}'", GuestSourceFile);
       return {};
     }
     fextl::istringstream Stream(SourceData);
@@ -1192,10 +1187,6 @@ DoGenerate:
           ::write(IndexStream, Mapping.Name.c_str(), len);
         }
       }
-    }
-
-    if (StreamFD != -1) {
-      close(StreamFD);
     }
 
     if (IndexStream != -1) {

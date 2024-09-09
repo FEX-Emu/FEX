@@ -344,7 +344,7 @@ fextl::string GdbServer::readRegs() {
   GDB.eflags = CTX->ReconstructCompactedEFLAGS(CurrentThread->Thread, false, nullptr, 0);
 
   for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_MMS; ++i) {
-    memcpy(&GDB.mm[i], &state.mm[i], sizeof(GDB.mm));
+    memcpy(&GDB.mm[i], &state.mm[i], sizeof(GDB.mm[i]));
   }
 
   // Currently unsupported
@@ -356,7 +356,7 @@ fextl::string GdbServer::readRegs() {
   GDB.fstat |= static_cast<uint32_t>(state.flags[FEXCore::X86State::X87FLAG_C2_LOC]) << 10;
   GDB.fstat |= static_cast<uint32_t>(state.flags[FEXCore::X86State::X87FLAG_C3_LOC]) << 14;
 
-  memcpy(&GDB.xmm[0], &state.xmm.avx.data[0], sizeof(GDB.xmm));
+  memcpy(&GDB.xmm, &state.xmm.avx.data, sizeof(GDB.xmm));
 
   return encodeHex((unsigned char*)&GDB, sizeof(GDBContextDefinition));
 }
@@ -773,7 +773,7 @@ GdbServer::HandledPacketType GdbServer::handleXfer(const fextl::string& packet) 
       }
     }
 
-    return {encode(data), HandledPacketType::TYPE_ACK};
+    return {encode(std::move(data)), HandledPacketType::TYPE_ACK};
   }
 
   return {"", HandledPacketType::TYPE_UNKNOWN};
@@ -939,7 +939,7 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string& packet)
       //  no-resumed
       //  memory-tagging
     }
-    return {SupportedFeatures, HandledPacketType::TYPE_ACK};
+    return {std::move(SupportedFeatures), HandledPacketType::TYPE_ACK};
   }
   if (match("qAttached")) {
     return {"tnotrun:0", HandledPacketType::TYPE_ACK}; // We don't currently support launching executables from gdb.

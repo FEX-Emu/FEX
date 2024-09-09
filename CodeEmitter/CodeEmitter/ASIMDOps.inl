@@ -1070,7 +1070,7 @@ public:
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
     const auto ConvertedSize =
       size == ARMEmitter::SubRegSize::i32Bit ? ARMEmitter::SubRegSize::i16Bit :
-      size == ARMEmitter::SubRegSize::i16Bit ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+      ARMEmitter::SubRegSize::i8Bit;
 
     ASIMD2RegMisc(Op, 0, ConvertedSize, 0b10110, rd.D(), rn.D());
   }
@@ -1082,7 +1082,7 @@ public:
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
     const auto ConvertedSize =
       size == ARMEmitter::SubRegSize::i32Bit ? ARMEmitter::SubRegSize::i16Bit :
-      size == ARMEmitter::SubRegSize::i16Bit ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+      ARMEmitter::SubRegSize::i8Bit;
 
     ASIMD2RegMisc(Op, 0, ConvertedSize, 0b10110, rd.Q(), rn.Q());
   }
@@ -1095,7 +1095,7 @@ public:
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
     const auto ConvertedSize =
       size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit :
-      size == ARMEmitter::SubRegSize::i32Bit ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+      ARMEmitter::SubRegSize::i8Bit;
 
     ASIMD2RegMisc(Op, 0, ConvertedSize, 0b10111, rd.D(), rn.D());
   }
@@ -1107,7 +1107,7 @@ public:
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
     const auto ConvertedSize =
       size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit :
-      size == ARMEmitter::SubRegSize::i32Bit ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+      ARMEmitter::SubRegSize::i8Bit;
 
     ASIMD2RegMisc(Op, 0, ConvertedSize, 0b10111, rd.Q(), rn.Q());
   }
@@ -1123,7 +1123,7 @@ public:
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
     const auto ConvertedSize =
       size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit :
-      size == ARMEmitter::SubRegSize::i32Bit ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+      ARMEmitter::SubRegSize::i8Bit;
 
     ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b11000, rd, rn);
   }
@@ -1138,7 +1138,7 @@ public:
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
     const auto ConvertedSize =
       size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit :
-      size == ARMEmitter::SubRegSize::i32Bit ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+      ARMEmitter::SubRegSize::i8Bit;
 
     ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b11001, rd, rn);
   }
@@ -1154,7 +1154,7 @@ public:
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
     const auto ConvertedSize =
       size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit :
-      size == ARMEmitter::SubRegSize::i32Bit ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+      ARMEmitter::SubRegSize::i8Bit;
 
     ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b11010, rd, rn);
   }
@@ -1169,7 +1169,7 @@ public:
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
     const auto ConvertedSize =
       size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit :
-      size == ARMEmitter::SubRegSize::i32Bit ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+      ARMEmitter::SubRegSize::i8Bit;
 
     ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b11011, rd, rn);
   }
@@ -1184,7 +1184,7 @@ public:
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
     const auto ConvertedSize =
       size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit :
-      size == ARMEmitter::SubRegSize::i32Bit ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+      ARMEmitter::SubRegSize::i8Bit;
 
     ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b11100, rd, rn);
   }
@@ -1199,7 +1199,7 @@ public:
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
     const auto ConvertedSize =
       size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit :
-      size == ARMEmitter::SubRegSize::i32Bit ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+      ARMEmitter::SubRegSize::i8Bit;
 
     ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b11101, rd, rn);
   }
@@ -1214,7 +1214,7 @@ public:
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
     const auto ConvertedSize =
       size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit :
-      size == ARMEmitter::SubRegSize::i32Bit ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+      ARMEmitter::SubRegSize::i8Bit;
 
     ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b11110, rd, rn);
   }
@@ -1229,7 +1229,7 @@ public:
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
     const auto ConvertedSize =
       size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit :
-      size == ARMEmitter::SubRegSize::i32Bit ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i8Bit;
+      ARMEmitter::SubRegSize::i8Bit;
 
     ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b11111, rd, rn);
   }

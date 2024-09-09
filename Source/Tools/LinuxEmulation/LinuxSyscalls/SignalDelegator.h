@@ -140,8 +140,8 @@ private:
    *
    * It's a process level signal handler so one must be careful
    */
-  void FrontendRegisterHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required);
-  void FrontendRegisterFrontendHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required);
+  void FrontendRegisterHostSignalHandler(int Signal, bool Required);
+  void FrontendRegisterFrontendHostSignalHandler(int Signal, bool Required);
 
   void SetHostSignalHandler(int Signal, HostSignalDelegatorFunction Func, bool Required) {
     HostHandlers[Signal].Handlers.push_back(std::move(Func));

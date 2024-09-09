@@ -89,6 +89,9 @@ union semun {
 uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first, uint32_t second, uint32_t third, uint32_t ptr, uint32_t fifth) {
   uint64_t Result {};
 
+  const int Version = call >> 16;
+  call &= 0xffff;
+
   switch (static_cast<IPCOp>(call)) {
   case OP_SEMOP: {
     Result = ::syscall(SYSCALL_DEF(semop), first, reinterpret_cast<struct sembuf*>(ptr), second);
@@ -203,7 +206,7 @@ uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first
     fextl::vector<uint8_t> Tmp(second + sizeof(size_t));
     struct msgbuf* TmpMsg = reinterpret_cast<struct msgbuf*>(&Tmp.at(0));
 
-    if (call >> 16) {
+    if (Version != 0) {
       Result = ::syscall(SYSCALL_DEF(msgrcv), first, TmpMsg, second, fifth, third);
       if (Result != -1) {
         msgbuf_32* src = reinterpret_cast<msgbuf_32*>(ptr);
@@ -286,6 +289,10 @@ uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first
     break;
   }
   case OP_SHMAT: {
+    if (Version == 1) {
+      // shmat explicitly doesn't support version 1.
+      return -EINVAL;
+    }
     // also implemented in memory:shmat
     Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)
                ->GetAllocator()

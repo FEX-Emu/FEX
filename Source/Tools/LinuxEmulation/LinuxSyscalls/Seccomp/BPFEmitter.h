@@ -90,8 +90,8 @@ private:
   fextl::unordered_map<uint32_t, ARMEmitter::ForwardLabel> JumpLabels;
   fextl::unordered_map<uint32_t, ARMEmitter::ForwardLabel> ConstPool;
 
-  void* Func;
-  size_t FuncSize;
+  void* Func {};
+  size_t FuncSize {};
 };
 
 

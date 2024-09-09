@@ -307,16 +307,16 @@ uint64_t BPFEmitter::HandleEmission(uint32_t flags, const sock_fprog* prog) {
 
     HadError = PredFunc(Result);
 
-    if constexpr (CalculateSize) {
-      CalculatedSize += Result;
-    }
-
     if (HadError) {
       if constexpr (!CalculateSize) {
         // Had error, early return and free the memory.
         FEXCore::Allocator::munmap(GetBufferBase(), FuncSize);
       }
       return Result;
+    }
+
+    if constexpr (CalculateSize) {
+      CalculatedSize += Result;
     }
   }
 

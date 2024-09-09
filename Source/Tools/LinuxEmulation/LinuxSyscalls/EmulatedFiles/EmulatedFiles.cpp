@@ -60,7 +60,11 @@ static int GenTmpFD(const char* pathname, int flags) {
 // Seal the tmpfd features by sealing them all.
 // Makes the tmpfd read-only.
 static void SealTmpFD(int fd) {
-  fcntl(fd, F_ADD_SEALS, F_SEAL_SEAL | F_SEAL_SHRINK | F_SEAL_GROW | F_SEAL_WRITE | F_SEAL_FUTURE_WRITE);
+  int ret = fcntl(fd, F_ADD_SEALS, F_SEAL_SEAL | F_SEAL_SHRINK | F_SEAL_GROW | F_SEAL_WRITE | F_SEAL_FUTURE_WRITE);
+  if (ret == -1) [[unlikely]] {
+    // This shouldn't ever happen, but also isn't fatal.
+    LogMan::Msg::EFmt("Couldn't seal tmpfd! {}", errno);
+  }
 }
 
 fextl::string GenerateCPUInfo(FEXCore::Context::Context* ctx, uint32_t CPUCores) {

@@ -38,7 +38,7 @@ struct ipc_perm_64 {
   ipc_perm_64() = delete;
 
   operator struct ipc64_perm() const {
-    struct ipc64_perm perm;
+    struct ipc64_perm perm {};
     perm.key = key;
     perm.uid = uid;
     perm.gid = gid;
