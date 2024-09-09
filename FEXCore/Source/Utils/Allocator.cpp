@@ -239,7 +239,7 @@ fextl::vector<MemoryRegion> CollectMemoryGaps(uintptr_t Begin, uintptr_t End, in
 
     // Parse mapped region in the format "fffff7cc3000-fffff7cc4000 r--p ..."
     {
-      uintptr_t RegionBegin;
+      uintptr_t RegionBegin {};
       auto result = std::from_chars(Cursor, line_end, RegionBegin, 16);
       LogMan::Throw::AFmt(result.ec == std::errc {} && *result.ptr == '-', "Unexpected line format");
       Cursor = result.ptr + 1;
