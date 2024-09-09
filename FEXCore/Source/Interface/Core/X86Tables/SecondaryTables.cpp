@@ -599,6 +599,7 @@ std::array<X86InstInfo, MAX_OPSIZE_MOD_TABLE_SIZE> OpSizeModOps = []() consteval
 
   GenerateTableWithCopy(&Table.at(0), OpSizeModOpTable, std::size(OpSizeModOpTable), &BaseOpsLambda().at(0));
 
+  FEXCore::IR::SecondaryOpSizeModTables_Install(Table);
   return Table;
 }();
 
