@@ -556,7 +556,7 @@ void SignalDelegator::HandleGuestSignal(FEX::HLE::ThreadStateObject* ThreadObjec
           return;
         }
 
-        auto Top = Thread->DeferredSignalFrames.back();
+        const auto& Top = Thread->DeferredSignalFrames.back();
         Signal = Top.Signal;
         SigInfo = Top.Info;
         Thread->DeferredSignalFrames.pop_back();
