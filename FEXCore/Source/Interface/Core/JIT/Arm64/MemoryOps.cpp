@@ -133,7 +133,6 @@ DEF_OP(StoreContextPair) {
 
 DEF_OP(LoadRegister) {
   const auto Op = IROp->C<IR::IROp_LoadRegister>();
-  const auto OpSize = IROp->Size;
 
   if (Op->Class == IR::GPRClass) {
     LOGMAN_THROW_A_FMT(Op->Reg < StaticRegisters.size(), "out of range reg");
@@ -145,7 +144,7 @@ DEF_OP(LoadRegister) {
   } else if (Op->Class == IR::FPRClass) {
     [[maybe_unused]] const auto regSize = HostSupportsAVX256 ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE;
     LOGMAN_THROW_A_FMT(Op->Reg < StaticFPRegisters.size(), "out of range reg");
-    LOGMAN_THROW_A_FMT(OpSize == regSize, "expected sized");
+    LOGMAN_THROW_A_FMT(IROp->Size == regSize, "expected sized");
 
     const auto guest = StaticFPRegisters[Op->Reg];
     const auto host = GetVReg(Node);
