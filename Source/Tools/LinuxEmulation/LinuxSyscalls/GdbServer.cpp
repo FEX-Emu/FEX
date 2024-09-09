@@ -344,7 +344,7 @@ fextl::string GdbServer::readRegs() {
   GDB.eflags = CTX->ReconstructCompactedEFLAGS(CurrentThread->Thread, false, nullptr, 0);
 
   for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_MMS; ++i) {
-    memcpy(&GDB.mm[i], &state.mm[i], sizeof(GDB.mm));
+    memcpy(&GDB.mm[i], &state.mm[i], sizeof(GDB.mm[i]));
   }
 
   // Currently unsupported
