@@ -443,6 +443,7 @@ std::array<X86InstInfo, MAX_REPNE_MOD_TABLE_SIZE> RepNEModOps = []() consteval {
 
   GenerateTableWithCopy(&Table.at(0), RepNEModOpTable,   std::size(RepNEModOpTable), &BaseOpsLambda().at(0));
 
+  FEXCore::IR::SecondaryRepNEModTables_Install(Table);
   return Table;
 }();
 

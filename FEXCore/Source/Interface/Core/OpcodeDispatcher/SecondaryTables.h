@@ -202,6 +202,36 @@ consteval inline void SecondaryRepModTables_Install(auto& FinalTable) {
   InstallToTable(FinalTable, Table);
 }
 
+consteval inline void SecondaryRepNEModTables_Install(auto& FinalTable) {
+  constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> Table[] = {
+    {0x10, 2, &OpDispatchBuilder::MOVSDOp},
+    {0x12, 1, &OpDispatchBuilder::MOVDDUPOp},
+    {0x2A, 1, &OpDispatchBuilder::InsertCVTGPR_To_FPR<8>},
+    {0x2B, 1, &OpDispatchBuilder::MOVVectorNTOp},
+    {0x2C, 1, &OpDispatchBuilder::CVTFPR_To_GPR<8, false>},
+    {0x2D, 1, &OpDispatchBuilder::CVTFPR_To_GPR<8, true>},
+    {0x51, 1, &OpDispatchBuilder::VectorScalarUnaryInsertALUOp<IR::OP_VFSQRTSCALARINSERT, 8>},
+    // x52 = Invalid
+    {0x58, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFADDSCALARINSERT, 8>},
+    {0x59, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMULSCALARINSERT, 8>},
+    {0x5A, 1, &OpDispatchBuilder::InsertScalar_CVT_Float_To_Float<4, 8>},
+    {0x5C, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFSUBSCALARINSERT, 8>},
+    {0x5D, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMINSCALARINSERT, 8>},
+    {0x5E, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFDIVSCALARINSERT, 8>},
+    {0x5F, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMAXSCALARINSERT, 8>},
+    {0x70, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSHUFWOp, true>},
+    {0x7C, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADDP, 4>},
+    {0x7D, 1, &OpDispatchBuilder::HSUBP<4>},
+    {0xD0, 1, &OpDispatchBuilder::ADDSUBPOp<4>},
+    {0xD6, 1, &OpDispatchBuilder::MOVQ2DQ<false>},
+    {0xC2, 1, &OpDispatchBuilder::InsertScalarFCMPOp<8>},
+    {0xE6, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<8, true, true>},
+    {0xF0, 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
+  };
+
+  InstallToTable(FinalTable, Table);
+}
+
 inline void SecondaryTables_Install64(auto& FinalTable) {
   constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> TwoByteOpTable[] = {
     {0x05, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SyscallOp, true>},
