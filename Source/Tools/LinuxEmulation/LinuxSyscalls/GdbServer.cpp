@@ -773,7 +773,7 @@ GdbServer::HandledPacketType GdbServer::handleXfer(const fextl::string& packet) 
       }
     }
 
-    return {encode(data), HandledPacketType::TYPE_ACK};
+    return {encode(std::move(data)), HandledPacketType::TYPE_ACK};
   }
 
   return {"", HandledPacketType::TYPE_UNKNOWN};
@@ -939,7 +939,7 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string& packet)
       //  no-resumed
       //  memory-tagging
     }
-    return {SupportedFeatures, HandledPacketType::TYPE_ACK};
+    return {std::move(SupportedFeatures), HandledPacketType::TYPE_ACK};
   }
   if (match("qAttached")) {
     return {"tnotrun:0", HandledPacketType::TYPE_ACK}; // We don't currently support launching executables from gdb.
