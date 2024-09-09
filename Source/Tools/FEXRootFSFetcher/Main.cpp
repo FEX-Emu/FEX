@@ -557,7 +557,7 @@ std::optional<std::vector<FileTargets>> GetRootFSLinks() {
 
   for (const json_t* RootItem = json_getChild(RootList); RootItem != nullptr; RootItem = json_getSibling(RootItem)) {
 
-    FileTargets Target;
+    FileTargets Target {};
     Target.DistroName = json_getName(RootItem);
 
     for (const json_t* DataItem = json_getChild(RootItem); DataItem != nullptr; DataItem = json_getSibling(DataItem)) {
