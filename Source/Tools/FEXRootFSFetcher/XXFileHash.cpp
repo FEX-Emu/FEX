@@ -17,8 +17,12 @@ std::pair<bool, uint64_t> HashFile(const fextl::string& Filepath) {
     return {false, 0};
   }
 
-  auto HadError = [fd]() -> std::pair<bool, uint64_t> {
+  XXH3_state_t* State {};
+  auto HadError = [fd, &State]() -> std::pair<bool, uint64_t> {
     close(fd);
+    if (State) {
+      XXH3_freeState(State);
+    }
     return {false, 0};
   };
   // Get file size
@@ -29,7 +33,7 @@ std::pair<bool, uint64_t> HashFile(const fextl::string& Filepath) {
   lseek(fd, 0, SEEK_SET);
 
   // Set up XXHash state
-  XXH3_state_t* const State = XXH3_createState();
+  State = XXH3_createState();
   const XXH64_hash_t Seed = 0;
 
   if (!State) {
@@ -37,8 +41,6 @@ std::pair<bool, uint64_t> HashFile(const fextl::string& Filepath) {
   }
 
   if (XXH3_64bits_reset_withSeed(State, Seed) == XXH_ERROR) {
-    XXH3_freeState(State);
-    close(fd);
     return HadError();
   }
 
@@ -52,14 +54,10 @@ std::pair<bool, uint64_t> HashFile(const fextl::string& Filepath) {
 
     ssize_t Result = pread(fd, Data.data(), BLOCK_SIZE, CurrentOffset);
     if (Result == -1) {
-      XXH3_freeState(State);
-      close(fd);
       return HadError();
     }
 
     if (XXH3_64bits_update(State, Data.data(), Result) == XXH_ERROR) {
-      XXH3_freeState(State);
-      close(fd);
       return HadError();
     }
     auto Cur = std::chrono::high_resolution_clock::now();
