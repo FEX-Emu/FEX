@@ -665,7 +665,7 @@ namespace RADEON {
   };
 
   struct FEX_PACKED FEX_ANNOTATE("alias-x86_32-drm_radeon_init") FEX_ANNOTATE("fex-match") fex_drm_radeon_init_t {
-    enum {} func;
+    uint32_t func;
 
     compat_ulong_t sarea_priv_offset;
     int32_t is_pci;
@@ -691,6 +691,7 @@ namespace RADEON {
 
     operator drm_radeon_init_t() const {
       drm_radeon_init_t val {};
+      memcpy(&val.func, &func, sizeof(val.func));
       CPYT(sarea_priv_offset);
       CPYT(is_pci);
       CPYT(cp_mode);
@@ -715,6 +716,7 @@ namespace RADEON {
     }
 
     fex_drm_radeon_init_t(drm_radeon_init_t val) {
+      memcpy(&func, &val.func, sizeof(val.func));
       CPYF(sarea_priv_offset);
       CPYF(is_pci);
       CPYF(cp_mode);
