@@ -401,7 +401,7 @@ def print_parse_argloader_options(options):
                 conversion_func = "FEXCore::Config::Handler::{0}(".format(op_vals["ArgumentHandler"])
             if (value_type == "str"):
                 NeedsString = True
-                conversion_func = "("
+                conversion_func = "std::move("
             if (value_type == "bool"):
                 # boolean values need a decimal specifier. Otherwise fmt prints strings.
                 conversion_func = "fextl::fmt::format(\"{:d}\", "
