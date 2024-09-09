@@ -544,12 +544,13 @@
       ]
     },
     "vpsrldq ymm0, ymm1, 16": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "Map group 14 0b011 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "movi v16.2d, #0x0"
+        "movi v16.2d, #0x0",
+        "str q16, [x28, #16]"
       ]
     },
     "vpsllq xmm0, xmm1, 0": {
@@ -677,12 +678,13 @@
       ]
     },
     "vpslldq ymm0, ymm1, 16": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "Map group 14 0b111 256-bit"
       ],
       "ExpectedArm64ASM": [
-        "movi v16.2d, #0x0"
+        "movi v16.2d, #0x0",
+        "str q16, [x28, #16]"
       ]
     }
   }
