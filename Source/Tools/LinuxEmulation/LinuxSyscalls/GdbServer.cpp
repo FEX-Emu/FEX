@@ -356,7 +356,7 @@ fextl::string GdbServer::readRegs() {
   GDB.fstat |= static_cast<uint32_t>(state.flags[FEXCore::X86State::X87FLAG_C2_LOC]) << 10;
   GDB.fstat |= static_cast<uint32_t>(state.flags[FEXCore::X86State::X87FLAG_C3_LOC]) << 14;
 
-  memcpy(&GDB.xmm[0], &state.xmm.avx.data[0], sizeof(GDB.xmm));
+  memcpy(&GDB.xmm, &state.xmm.avx.data, sizeof(GDB.xmm));
 
   return encodeHex((unsigned char*)&GDB, sizeof(GDBContextDefinition));
 }
