@@ -197,6 +197,7 @@ namespace DRM {
       CPYT(size);
       CPYT(low_mark);
       CPYT(high_mark);
+      memcpy(&val.flags, &flags, sizeof(val.flags));
       CPYT(agp_start);
       return val;
     }
@@ -206,6 +207,7 @@ namespace DRM {
       CPYF(size);
       CPYF(low_mark);
       CPYF(high_mark);
+      memcpy(&flags, &val.flags, sizeof(val.flags));
       CPYF(agp_start);
     }
   };
