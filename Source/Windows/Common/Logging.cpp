@@ -17,7 +17,7 @@ static void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
   const auto Output = fextl::fmt::format("[{}][{:X}] {}\n", LogMan::DebugLevelStr(Level), GetCurrentThreadId(), Message);
   if (WineDbgOut) {
     WineDbgOut(Output.c_str());
-  } else {
+  } else if (LogFile) {
     fwrite(Output.c_str(), 1, Output.size(), LogFile);
   }
 }
@@ -26,7 +26,7 @@ static void AssertHandler(const char* Message) {
   const auto Output = fextl::fmt::format("[ASSERT] {}\n", Message);
   if (WineDbgOut) {
     WineDbgOut(Output.c_str());
-  } else {
+  } else if (LogFile) {
     fwrite(Output.c_str(), 1, Output.size(), LogFile);
   }
 }
