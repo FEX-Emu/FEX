@@ -6,6 +6,7 @@ $end_info$
 */
 
 #include "Interface/Core/X86Tables/X86Tables.h"
+#include "Interface/Core/OpcodeDispatcher/VEXTables.h"
 
 #include <iterator>
 
@@ -489,6 +490,8 @@ std::array<X86InstInfo, MAX_VEX_TABLE_SIZE> VEXTableOps = []() consteval {
 #undef OPD
 
   GenerateTable(&Table.at(0), VEXTable, std::size(VEXTable));
+
+  FEXCore::IR::VEXTable_Install(Table);
   return Table;
 }();
 
@@ -521,6 +524,7 @@ std::array<X86InstInfo, MAX_VEX_GROUP_TABLE_SIZE> VEXTableGroupOps = []() conste
 
   GenerateTable(&Table.at(0), VEXGroupTable, std::size(VEXGroupTable));
 
+  FEXCore::IR::VEXGroupTable_Install(Table);
   return Table;
 }();
 }
