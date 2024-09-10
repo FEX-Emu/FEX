@@ -151,7 +151,6 @@ private:
   }
 
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
-  FEX_CONFIG_OPT(Core, CORE);
   fextl::string const ApplicationName;
   FEXCORE_TELEMETRY_INIT(CrashMask, TYPE_CRASH_MASK);
   FEXCORE_TELEMETRY_INIT(UnhandledNonCanonical, TYPE_UNHANDLED_NONCANONICAL_ADDRESS);
@@ -198,7 +197,7 @@ private:
   bool InstallHostThunk(int Signal);
   bool UpdateHostThunk(int Signal);
 
-  FEXCore::Context::VDSOSigReturn VDSOPointers {};
+  FEX::VDSO::VDSOSigReturn VDSOPointers {};
 
   bool IsAddressInDispatcher(uint64_t Address) const {
     return Address >= Config.DispatcherBegin && Address < Config.DispatcherEnd;

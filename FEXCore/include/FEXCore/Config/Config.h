@@ -18,18 +18,6 @@
 
 namespace FEXCore::Config {
 namespace Handler {
-  static inline std::optional<fextl::string> CoreHandler(std::string_view Value) {
-    if (Value == "irjit") {
-      return "0";
-    }
-#ifdef _M_X86_64
-    else if (Value == "host") {
-      return "1";
-    }
-#endif
-    return "0";
-  }
-
   static inline std::optional<fextl::string> SMCCheckHandler(std::string_view Value) {
     if (Value == "none") {
       return "0";
@@ -59,11 +47,6 @@ enum ConfigOption {
 
 #define ENUMDEFINES
 #include <FEXCore/Config/ConfigOptions.inl>
-
-enum ConfigCore {
-  CONFIG_IRJIT,
-  CONFIG_CUSTOM,
-};
 
 enum ConfigSMCChecks {
   CONFIG_SMC_NONE,

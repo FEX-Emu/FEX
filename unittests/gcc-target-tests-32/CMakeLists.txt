@@ -18,7 +18,7 @@ foreach(TEST ${TESTS})
     "${TEST_NAME}"
     "guest"
     "${CMAKE_BINARY_DIR}/Bin/FEXLoader"
-    "-o" "stderr" "--no-silent" "-c" "irjit" "-n" "500" "--"
+    "-o" "stderr" "--no-silent" "-n" "500" "--"
     "${TEST}")
   set_property(TEST "${TEST_NAME}.jit.gcc-target-32" APPEND PROPERTY SKIP_RETURN_CODE 125)
 endforeach()

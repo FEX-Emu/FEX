@@ -26,14 +26,8 @@
 #include <stdint.h>
 
 #include <atomic>
-#include <condition_variable>
-#include <functional>
-#include <istream>
-#include <memory>
 #include <mutex>
 #include <shared_mutex>
-#include <stddef.h>
-#include <queue>
 
 namespace FEXCore {
 class CodeLoader;
@@ -65,11 +59,6 @@ namespace Validation {
 } // namespace FEXCore::IR
 
 namespace FEXCore::Context {
-enum CoreRunningMode {
-  MODE_RUN = 0,
-  MODE_SINGLESTEP = 1,
-};
-
 struct ExitFunctionLinkData {
   uint64_t HostBranch;
   uint64_t GuestRIP;
@@ -109,8 +98,6 @@ public:
 
   void CompileRIP(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP) override;
   void CompileRIPCount(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, uint64_t MaxInst) override;
-
-  void SetCustomCPUBackendFactory(CustomCPUFactoryType Factory) override;
 
   void HandleCallback(FEXCore::Core::InternalThreadState* Thread, uint64_t RIP) override;
 
@@ -220,7 +207,6 @@ public:
   friend class FEXCore::IR::Validation::IRValidation;
 
   struct {
-    CoreRunningMode RunningMode {CoreRunningMode::MODE_RUN};
     uint64_t VirtualMemSize {1ULL << 36};
     uint64_t TSCScale = 0;
 
@@ -240,7 +226,6 @@ public:
     FEX_CONFIG_OPT(AOTIRGenerate, AOTIRGENERATE);
     FEX_CONFIG_OPT(AOTIRLoad, AOTIRLOAD);
     FEX_CONFIG_OPT(SMCChecks, SMCCHECKS);
-    FEX_CONFIG_OPT(Core, CORE);
     FEX_CONFIG_OPT(MaxInstPerBlock, MAXINST);
     FEX_CONFIG_OPT(RootFSPath, ROOTFS);
     FEX_CONFIG_OPT(ThunkHostLibsPath, THUNKHOSTLIBS);
@@ -273,7 +258,6 @@ public:
   fextl::unique_ptr<FEXCore::ThunkHandler> ThunkHandler;
   fextl::unique_ptr<FEXCore::CPU::Dispatcher> Dispatcher;
 
-  CustomCPUFactoryType CustomCPUFactory;
   FEXCore::Context::ExitHandler CustomExitHandler;
 
 #ifdef BLOCKSTATS

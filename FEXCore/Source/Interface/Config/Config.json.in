@@ -1,19 +1,6 @@
 {
   "Options": {
     "CPU": {
-      "Core": {
-        "Type": "uint32",
-        "Default": "FEXCore::Config::ConfigCore::CONFIG_IRJIT",
-        "TextDefault": "irjit",
-        "ShortArg": "c",
-        "Choices": [ "irjit", "host" ],
-        "ArgumentHandler": "CoreHandler",
-        "Desc": [
-          "Which CPU core to use",
-          "host only exists on x86_64",
-          "[irjit, host]"
-        ]
-      },
       "Multiblock": {
         "Type": "bool",
         "Default": "false",

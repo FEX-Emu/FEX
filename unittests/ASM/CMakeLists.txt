@@ -53,9 +53,9 @@ foreach(ASM_SRC ${ASM_SOURCES})
   set(TEST_ARGS)
   if (_M_ARM_64 OR ENABLE_VIXL_SIMULATOR)
     list(APPEND TEST_ARGS
-      "--no-silent -g -c irjit -n 1   --no-multiblock"   "jit_1"     "jit"
-      "--no-silent -g -c irjit -n 500 --no-multiblock"   "jit_500"   "jit"
-      "--no-silent -g -c irjit -n 500 --multiblock"      "jit_500_m" "jit"
+      "--no-silent -g -n 1   --no-multiblock"   "jit_1"     "jit"
+      "--no-silent -g -n 500 --no-multiblock"   "jit_500"   "jit"
+      "--no-silent -g -n 500 --multiblock"      "jit_500_m" "jit"
       )
   endif()
 
@@ -63,7 +63,7 @@ foreach(ASM_SRC ${ASM_SOURCES})
     set(CPU_CLASS Simulator)
   elseif (_M_X86_64)
     list(APPEND TEST_ARGS
-      "--no-silent -g -c host"       "host"      "host"
+      "--no-silent -g"       "host"      "host"
       )
   endif()
 

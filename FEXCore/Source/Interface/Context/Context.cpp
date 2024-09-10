@@ -39,10 +39,6 @@ void FEXCore::Context::ContextImpl::CompileRIPCount(FEXCore::Core::InternalThrea
   CompileBlock(Thread->CurrentFrame, GuestRIP, MaxInst);
 }
 
-void FEXCore::Context::ContextImpl::SetCustomCPUBackendFactory(CustomCPUFactoryType Factory) {
-  CustomCPUFactory = std::move(Factory);
-}
-
 void FEXCore::Context::ContextImpl::SetSignalDelegator(FEXCore::SignalDelegator* _SignalDelegation) {
   SignalDelegation = _SignalDelegation;
 }

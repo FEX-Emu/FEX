@@ -480,8 +480,6 @@ int main(int argc, char** argv, char** const envp) {
   // Setup configurations that this tool needs
   // Maximum one instruction.
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_MAXINST, "1");
-  // IRJIT. Only works on JITs.
-  FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_CORE, fextl::fmt::format("{}", static_cast<uint64_t>(FEXCore::Config::CONFIG_IRJIT)));
   // Enable block disassembly.
   FEXCore::Config::EraseSet(
     FEXCore::Config::CONFIG_DISASSEMBLE,
