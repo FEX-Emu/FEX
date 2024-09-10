@@ -647,7 +647,8 @@ NTSTATUS BTCpuSuspendLocalThread(HANDLE Thread, ULONG* Count) {
   return Err;
 }
 
-NTSTATUS BTCpuResetToConsistentState(EXCEPTION_POINTERS* Ptrs) {
+// Returns true if exception dispatch should be halted and the execution context restored to Ptrs->Context
+bool BTCpuResetToConsistentStateImpl(EXCEPTION_POINTERS* Ptrs) {
   auto* Context = Ptrs->ContextRecord;
   auto* Exception = Ptrs->ExceptionRecord;
   auto Thread = GetTLS().ThreadState();
@@ -657,28 +658,25 @@ NTSTATUS BTCpuResetToConsistentState(EXCEPTION_POINTERS* Ptrs) {
 
     if (Context::HandleSuspendInterrupt(Context, FaultAddress)) {
       LogMan::Msg::DFmt("Resumed from suspend");
-      NtContinue(Context, FALSE);
+      return true;
     }
 
-    bool HandledRWX = false;
     if (Thread) {
       std::scoped_lock Lock(ThreadCreationMutex);
-      HandledRWX = InvalidationTracker->HandleRWXAccessViolation(FaultAddress);
-    }
-
-    if (HandledRWX) {
-      LogMan::Msg::DFmt("Handled self-modifying code: pc: {:X} fault: {:X}", Context->Pc, FaultAddress);
-      NtContinue(Context, FALSE);
+      if (InvalidationTracker->HandleRWXAccessViolation(FaultAddress)) {
+        LogMan::Msg::DFmt("Handled self-modifying code: pc: {:X} fault: {:X}", Context->Pc, FaultAddress);
+        return true;
+      }
     }
   }
 
   if (!Thread || !IsAddressInJit(Context->Pc)) {
-    return STATUS_SUCCESS;
+    return false;
   }
 
   if (Exception->ExceptionCode == EXCEPTION_DATATYPE_MISALIGNMENT && Context::HandleUnalignedAccess(Context)) {
     LogMan::Msg::DFmt("Handled unaligned atomic: new pc: {:X}", Context->Pc);
-    NtContinue(Context, FALSE);
+    return true;
   }
 
   LogMan::Msg::DFmt("Reconstructing context");
@@ -697,6 +695,14 @@ NTSTATUS BTCpuResetToConsistentState(EXCEPTION_POINTERS* Ptrs) {
 
   // Replace the host context with one captured before JIT entry so host code can unwind
   memcpy(Context, GetTLS().EntryContext(), sizeof(*Context));
+
+  return false;
+}
+
+NTSTATUS BTCpuResetToConsistentState(EXCEPTION_POINTERS* Ptrs) {
+  if (BTCpuResetToConsistentStateImpl(Ptrs)) {
+    NtContinue(Ptrs->ContextRecord, FALSE);
+  }
 
   return STATUS_SUCCESS;
 }

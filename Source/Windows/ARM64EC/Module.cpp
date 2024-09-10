@@ -502,21 +502,16 @@ public:
   }
 };
 
+// Returns true if exception dispatch should be halted and the execution context restored to NativeContext
 bool ResetToConsistentStateImpl(EXCEPTION_RECORD* Exception, CONTEXT* GuestContext, ARM64_NT_CONTEXT* NativeContext) {
+  const auto CPUArea = GetCPUArea();
   LogMan::Msg::DFmt("Exception: Code: {:X} Address: {:X}", Exception->ExceptionCode, reinterpret_cast<uintptr_t>(Exception->ExceptionAddress));
 
-  const auto CPUArea = GetCPUArea();
-
-  if (Exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
+  if (Exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION && CPUArea.ThreadState() && InvalidationTracker) {
     const auto FaultAddress = static_cast<uint64_t>(Exception->ExceptionInformation[1]);
 
-    bool HandledRWX = false;
-    if (InvalidationTracker && CPUArea.ThreadState()) {
-      std::scoped_lock Lock(ThreadCreationMutex);
-      HandledRWX = InvalidationTracker->HandleRWXAccessViolation(FaultAddress);
-    }
-
-    if (HandledRWX) {
+    std::scoped_lock Lock(ThreadCreationMutex);
+    if (InvalidationTracker->HandleRWXAccessViolation(FaultAddress)) {
       LogMan::Msg::DFmt("Handled self-modifying code: pc: {:X} fault: {:X}", NativeContext->Pc, FaultAddress);
       return true;
     }
