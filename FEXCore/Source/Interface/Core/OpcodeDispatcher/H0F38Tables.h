@@ -99,4 +99,3 @@ consteval inline void H0F38Table_Install(auto& FinalTable) {
 }
 
 } // namespace FEXCore::IR
-
