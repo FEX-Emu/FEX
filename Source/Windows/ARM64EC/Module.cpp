@@ -28,6 +28,7 @@ $end_info$
 #include "Common/Config.h"
 #include "Common/Exception.h"
 #include "Common/InvalidationTracker.h"
+#include "Common/OvercommitTracker.h"
 #include "Common/TSOHandlerConfig.h"
 #include "Common/CPUFeatures.h"
 #include "Common/Logging.h"
@@ -119,6 +120,7 @@ fextl::unique_ptr<FEX::DummyHandlers::DummySignalDelegator> SignalDelegator;
 fextl::unique_ptr<Exception::ECSyscallHandler> SyscallHandler;
 std::optional<FEX::Windows::InvalidationTracker> InvalidationTracker;
 std::optional<FEX::Windows::CPUFeatures> CPUFeatures;
+std::optional<FEX::Windows::OvercommitTracker> OvercommitTracker;
 
 std::recursive_mutex ThreadCreationMutex;
 // Map of TIDs to their FEX thread state, `ThreadCreationMutex` must be locked when accessing
@@ -425,6 +427,14 @@ public:
   void MarkGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) override {
     InvalidationTracker->ReprotectRWXIntervals(Start, Length);
   }
+
+  void MarkOvercommitRange(uint64_t Start, uint64_t Length) override {
+    OvercommitTracker->MarkRange(Start, Length);
+  }
+
+  void UnmarkOvercommitRange(uint64_t Start, uint64_t Length) override {
+    OvercommitTracker->UnmarkRange(Start, Length);
+  }
 };
 } // namespace Exception
 
@@ -459,8 +469,11 @@ NTSTATUS ProcessInit() {
   Exception::HandlerConfig.emplace();
 
   const auto NtDll = GetModuleHandle("ntdll.dll");
+  const bool IsWine = !!GetProcAddress(NtDll, "__wine_get_version");
+  OvercommitTracker.emplace(IsWine);
+
   {
-    auto HostFeatures = FEX::Windows::CPUFeatures::FetchHostFeatures(!!GetProcAddress(NtDll, "__wine_get_version"));
+    auto HostFeatures = FEX::Windows::CPUFeatures::FetchHostFeatures(IsWine);
     CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);
   }
 
@@ -549,6 +562,14 @@ bool ResetToConsistentStateImpl(EXCEPTION_RECORD* Exception, CONTEXT* GuestConte
 }
 
 NTSTATUS ResetToConsistentState(EXCEPTION_RECORD* Exception, CONTEXT* GuestContext, ARM64_NT_CONTEXT* NativeContext) {
+  if (Exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
+    const auto FaultAddress = static_cast<uint64_t>(Exception->ExceptionInformation[1]);
+
+    if (OvercommitTracker && OvercommitTracker->HandleAccessViolation(FaultAddress)) {
+      NtContinueNative(NativeContext, false);
+    }
+  }
+
   if (!GetCPUArea().ThreadState()) {
     return STATUS_SUCCESS;
   }

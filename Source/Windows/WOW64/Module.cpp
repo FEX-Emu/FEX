@@ -30,6 +30,7 @@ $end_info$
 #include "Common/Exception.h"
 #include "Common/TSOHandlerConfig.h"
 #include "Common/InvalidationTracker.h"
+#include "Common/OvercommitTracker.h"
 #include "Common/CPUFeatures.h"
 #include "Common/Logging.h"
 #include "Common/Module.h"
@@ -102,6 +103,7 @@ fextl::unique_ptr<WowSyscallHandler> SyscallHandler;
 
 std::optional<FEX::Windows::InvalidationTracker> InvalidationTracker;
 std::optional<FEX::Windows::CPUFeatures> CPUFeatures;
+std::optional<FEX::Windows::OvercommitTracker> OvercommitTracker;
 
 std::mutex ThreadCreationMutex;
 // Map of TIDs to their FEX thread state, `ThreadCreationMutex` must be locked when accessing
@@ -422,6 +424,14 @@ public:
   void MarkGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) override {
     InvalidationTracker->ReprotectRWXIntervals(Start, Length);
   }
+
+  void MarkOvercommitRange(uint64_t Start, uint64_t Length) override {
+    OvercommitTracker->MarkRange(Start, Length);
+  }
+
+  void UnmarkOvercommitRange(uint64_t Start, uint64_t Length) override {
+    OvercommitTracker->UnmarkRange(Start, Length);
+  }
 };
 
 void BTCpuProcessInit() {
@@ -443,9 +453,11 @@ void BTCpuProcessInit() {
   SyscallHandler = fextl::make_unique<WowSyscallHandler>();
   Context::HandlerConfig.emplace();
   const auto NtDll = GetModuleHandle("ntdll.dll");
+  const bool IsWine = !!GetProcAddress(NtDll, "__wine_get_version");
+  OvercommitTracker.emplace(IsWine);
 
   {
-    auto HostFeatures = FEX::Windows::CPUFeatures::FetchHostFeatures(!!GetProcAddress(NtDll, "__wine_get_version"));
+    auto HostFeatures = FEX::Windows::CPUFeatures::FetchHostFeatures(IsWine);
     CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);
   }
 
@@ -655,6 +667,10 @@ bool BTCpuResetToConsistentStateImpl(EXCEPTION_POINTERS* Ptrs) {
 
   if (Exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
     const auto FaultAddress = static_cast<uint64_t>(Exception->ExceptionInformation[1]);
+
+    if (OvercommitTracker && OvercommitTracker->HandleAccessViolation(FaultAddress)) {
+      return true;
+    }
 
     if (Context::HandleSuspendInterrupt(Context, FaultAddress)) {
       LogMan::Msg::DFmt("Resumed from suspend");

@@ -72,6 +72,8 @@ public:
     return OSABI;
   }
   virtual void MarkGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) {}
+  virtual void MarkOvercommitRange(uint64_t Start, uint64_t Length) {}
+  virtual void UnmarkOvercommitRange(uint64_t Start, uint64_t Length) {}
   virtual AOTIRCacheEntryLookupResult LookupAOTIRCacheEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestAddr) = 0;
 
   virtual SourcecodeResolver* GetSourcecodeResolver() {
