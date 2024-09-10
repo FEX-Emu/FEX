@@ -6,6 +6,7 @@ $end_info$
 */
 
 #include "Interface/Core/X86Tables/X86Tables.h"
+#include "Interface/Core/OpcodeDispatcher/H0F38Tables.h"
 
 #include <iterator>
 #include <stdint.h>
@@ -119,6 +120,8 @@ std::array<X86InstInfo, MAX_0F_38_TABLE_SIZE> H0F38TableOps = []() consteval {
 #undef OPD
 
   GenerateTable(&Table.at(0), H0F38Table, std::size(H0F38Table));
+
+  FEXCore::IR::H0F38Table_Install(Table);
   return Table;
 }();
 
