@@ -6,6 +6,7 @@ $end_info$
 */
 
 #include "Interface/Core/X86Tables/X86Tables.h"
+#include "Interface/Core/OpcodeDispatcher/SecondaryModRMTables.h"
 
 #include <iterator>
 
@@ -56,6 +57,8 @@ std::array<X86InstInfo, MAX_SECOND_MODRM_TABLE_SIZE> SecondModRMTableOps = []() 
   };
 
   GenerateTable(&Table.at(0), SecondaryModRMExtensionOpTable, std::size(SecondaryModRMExtensionOpTable));
+
+  FEXCore::IR::SecondaryModRMTables_Install(Table);
   return Table;
 }();
 
