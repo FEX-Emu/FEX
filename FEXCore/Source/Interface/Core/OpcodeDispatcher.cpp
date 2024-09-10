@@ -6037,22 +6037,6 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 #undef OPD
 #undef OPDReg
 
-  constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> EVEXTable[] = {
-    {0x10, 2, &OpDispatchBuilder::UnimplementedOp},
-    {0x59, 1, &OpDispatchBuilder::UnimplementedOp},
-    {0x7F, 1, &OpDispatchBuilder::UnimplementedOp},
-  };
-
-  auto InstallToTable = [](auto& FinalTable, auto& LocalTable) {
-    for (auto Op : LocalTable) {
-      auto OpNum = std::get<0>(Op);
-      auto Dispatcher = std::get<2>(Op);
-      for (uint8_t i = 0; i < std::get<1>(Op); ++i) {
-        LOGMAN_THROW_A_FMT(FinalTable[OpNum + i].OpcodeDispatcher == nullptr, "Duplicate Entry");
-        FinalTable[OpNum + i].OpcodeDispatcher = Dispatcher;
-      }
-    }
-  };
   auto InstallToX87Table = [](auto& FinalTable, auto& LocalTable) {
     for (auto Op : LocalTable) {
       auto OpNum = std::get<0>(Op);
@@ -6078,8 +6062,6 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
   } else {
     InstallToX87Table(FEXCore::X86Tables::X87Ops, X87OpTable);
   }
-
-  InstallToTable(FEXCore::X86Tables::EVEXTableOps, EVEXTable);
 }
 
 } // namespace FEXCore::IR
