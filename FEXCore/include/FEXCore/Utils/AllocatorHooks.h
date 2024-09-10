@@ -49,35 +49,38 @@ enum class ProtectOptions : uint32_t {
 FEX_DEF_NUM_OPS(ProtectOptions)
 
 #ifdef _WIN32
-inline void* VirtualAlloc(void* Base, size_t Size, bool Execute = false) {
+inline void* VirtualAlloc(void* Base, size_t Size, bool Execute = false, bool Commit = true) {
   // Allocate top-down to avoid polluting the lower VA space, as even on 64-bit some programs (i.e. LuaJIT) require allocations below 4GB.
+  DWORD Flags = (Commit ? MEM_COMMIT : 0) | MEM_RESERVE | MEM_TOP_DOWN;
 #ifdef _M_ARM_64EC
   MEM_EXTENDED_PARAMETER Parameter {};
   if (Execute) {
     Parameter.Type = MemExtendedParameterAttributeFlags;
     Parameter.ULong64 = MEM_EXTENDED_PARAMETER_EC_CODE;
   };
-  return ::VirtualAlloc2(nullptr, Base, Size, MEM_COMMIT | MEM_RESERVE | MEM_TOP_DOWN, Execute ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE,
-                         Execute ? &Parameter : nullptr, Execute ? 1 : 0);
+  return ::VirtualAlloc2(nullptr, Base, Size, Flags, Execute ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE, Execute ? &Parameter : nullptr,
+                         Execute ? 1 : 0);
 #else
-  return ::VirtualAlloc(Base, Size, MEM_COMMIT | MEM_RESERVE | MEM_TOP_DOWN, Execute ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
+  return ::VirtualAlloc(Base, Size, Flags, Execute ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
 #endif
 }
 
-inline void* VirtualAlloc(size_t Size, bool Execute = false) {
-  return VirtualAlloc(nullptr, Size, Execute);
+inline void* VirtualAlloc(size_t Size, bool Execute = false, bool Commit = true) {
+  return VirtualAlloc(nullptr, Size, Execute, Commit);
 }
 
 inline void VirtualFree(void* Ptr, size_t Size) {
   ::VirtualFree(Ptr, 0, MEM_RELEASE);
 }
 
-inline void VirtualDontNeed(void* Ptr, size_t Size) {
+inline void VirtualDontNeed(void* Ptr, size_t Size, bool Recommit = true) {
   // Zero the page-aligned region, preserving permissions.
   MEMORY_BASIC_INFORMATION Info;
   ::VirtualQuery(Ptr, &Info, sizeof(Info));
   ::VirtualFree(Ptr, Size, MEM_DECOMMIT);
-  ::VirtualAlloc(Ptr, Size, MEM_COMMIT, Info.AllocationProtect);
+  if (Recommit) {
+    ::VirtualAlloc(Ptr, Size, MEM_COMMIT, Info.AllocationProtect);
+  }
 }
 
 inline bool VirtualProtect(void* Ptr, size_t Size, ProtectOptions options) {
@@ -107,18 +110,20 @@ using MUNMAP_Hook = int (*)(void*, size_t);
 FEX_DEFAULT_VISIBILITY extern MMAP_Hook mmap;
 FEX_DEFAULT_VISIBILITY extern MUNMAP_Hook munmap;
 
-inline void* VirtualAlloc(size_t Size, bool Execute = false) {
+// All commit parameters are ignored here, they are unnecessary as Linux supports overcommit
+
+inline void* VirtualAlloc(size_t Size, bool Execute = false, bool Commit = true) {
   return FEXCore::Allocator::mmap(nullptr, Size, PROT_READ | PROT_WRITE | (Execute ? PROT_EXEC : 0), MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 }
 
-inline void* VirtualAlloc(void* Base, size_t Size, bool Execute = false) {
+inline void* VirtualAlloc(void* Base, size_t Size, bool Execute = false, bool Commit = true) {
   return FEXCore::Allocator::mmap(Base, Size, PROT_READ | PROT_WRITE | (Execute ? PROT_EXEC : 0), MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 }
 
 inline void VirtualFree(void* Ptr, size_t Size) {
   FEXCore::Allocator::munmap(Ptr, Size);
 }
-inline void VirtualDontNeed(void* Ptr, size_t Size) {
+inline void VirtualDontNeed(void* Ptr, size_t Size, bool Recommit = true) {
   ::madvise(reinterpret_cast<void*>(Ptr), Size, MADV_DONTNEED);
 }
 inline bool VirtualProtect(void* Ptr, size_t Size, ProtectOptions options) {
