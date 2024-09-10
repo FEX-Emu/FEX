@@ -9,7 +9,6 @@ $end_info$
 */
 
 #include <cstdint>
-#include "Interface/Context/Context.h"
 #include "Interface/Core/ArchHelpers//Arm64Emitter.h"
 #include "Interface/Core/LookupCache.h"
 #include "Interface/Core/CPUBackend.h"
