@@ -273,8 +273,10 @@ if (BUILD_TESTS)
   set(COMPILE_VIXL_DISASSEMBLER TRUE)
 endif()
 
-add_subdirectory(External/vixl/)
-include_directories(SYSTEM External/vixl/src/)
+if (COMPILE_VIXL_DISASSEMBLER OR ENABLE_VIXL_SIMULATOR)
+  add_subdirectory(External/vixl/)
+  include_directories(SYSTEM External/vixl/src/)
+endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   # This means we were attempted to get compiled with GCC
