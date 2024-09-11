@@ -41,8 +41,6 @@ void ScanForPipes() {
 
 void ClosePipes() {
   for (auto pipe : IncomingPipes) {
-    int Null {0};
-    write(pipe, &Null, sizeof(Null));
     close(pipe);
   }
   IncomingPipes.clear();
