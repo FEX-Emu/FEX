@@ -409,8 +409,42 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
     file << "extern \"C\" {\n";
     for (auto& thunk : thunks) {
       const auto& function_name = thunk.function_name;
+      const bool inregister_abi = thunk.inregister_abi;
       auto sha256 = get_sha256(function_name, true);
-      fmt::print(file, "MAKE_THUNK({}, {}, \"{:#02x}\")\n", libname, function_name, fmt::join(sha256, ", "));
+      uint32_t ABI = 0;
+      if (inregister_abi) {
+        ABI |= (1U << 31);
+        bool is_void = thunk.return_type->isVoidType();
+        if (!is_void) {
+          if (thunk.return_type->isIntegerType()) {
+            // ReturnType_GPR
+            ABI |= (0b01U << 12);
+          } else if (thunk.return_type->isRealFloatingType()) {
+            // ReturnType_FPR
+            ABI |= (0b10U << 12);
+          } else {
+            throw report_error(thunk.decl->getLocation(), "Unsupported return type %0").AddTaggedVal(thunk.return_type);
+          }
+        }
+        size_t GPRIdx {};
+        size_t FPRIdx {};
+        for (std::size_t idx = 0; idx < thunk.param_types.size(); ++idx) {
+          auto& type = thunk.param_types[idx];
+          if (type->isIntegerType() || type->isPointerType()) {
+            ABI |= (1U << GPRIdx);
+            ++GPRIdx;
+          } else if (type->isRealFloatingType()) {
+            ABI |= (1U << (6 + FPRIdx));
+            ++FPRIdx;
+          } else {
+            throw report_error(thunk.decl->getLocation(), "Unsupported argument type %0").AddTaggedVal(type);
+          }
+        }
+
+        fmt::print(file, "MAKE_THUNK_ABI({}, {}, \"{:#02x}\", 0x{:x})\n", libname, function_name, fmt::join(sha256, ", "), ABI);
+      } else {
+        fmt::print(file, "MAKE_THUNK({}, {}, \"{:#02x}\")\n", libname, function_name, fmt::join(sha256, ", "));
+      }
     }
     file << "}\n";
 
@@ -438,6 +472,10 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
     // Thunks-internal packing functions
     file << "extern \"C\" {\n";
     for (auto& data : thunks) {
+      if (data.inregister_abi) {
+        continue;
+      }
+
       const auto& function_name = data.function_name;
       bool is_void = data.return_type->isVoidType();
       file << "FEX_PACKFN_LINKAGE auto fexfn_pack_" << function_name << "(";
@@ -488,7 +526,13 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
 
       const auto& function_name = data.function_name;
 
-      file << "__attribute__((alias(\"fexfn_pack_" << function_name << "\"))) auto " << function_name << "(";
+      std::string pack_name;
+      if (data.inregister_abi) {
+        pack_name = fmt::format("fexthunks_{}_{}", libname, function_name);
+      } else {
+        pack_name = fmt::format("fexfn_pack_{}", function_name);
+      }
+      file << "__attribute__((alias(\"" << pack_name << "\"))) auto " << function_name << "(";
       for (std::size_t idx = 0; idx < data.param_types.size(); ++idx) {
         auto& type = data.param_types[idx];
         file << (idx == 0 ? "" : ", ") << format_decl(type, "a_" + std::to_string(idx));

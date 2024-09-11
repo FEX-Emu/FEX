@@ -66,15 +66,9 @@ namespace x64 {
       args->rv = SyscallRet(Result);
     }
 
-    static void clock_gettime(void* ArgsRV) {
-      struct __attribute__((packed)) ArgsRV_t {
-        clockid_t clk_id;
-        struct timespec* tp;
-        int rv;
-      }* args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
-
-      int Result = ::clock_gettime(args->clk_id, args->tp);
-      args->rv = SyscallRet(Result);
+    static int clock_gettime(clockid_t clk_id, struct timespec* tp) {
+      int Result = ::clock_gettime(clk_id, tp);
+      return SyscallRet(Result);
     }
 
     static void clock_getres(void* ArgsRV) {
@@ -121,14 +115,8 @@ namespace x64 {
       args->rv = VDSOHandlers::GetTimeOfDayPtr(args->tv, args->tz);
     }
 
-    static void clock_gettime(void* ArgsRV) {
-      struct __attribute__((packed)) ArgsRV_t {
-        clockid_t clk_id;
-        struct timespec* tp;
-        int rv;
-      }* args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
-
-      args->rv = VDSOHandlers::ClockGetTimePtr(args->clk_id, args->tp);
+    static int clock_gettime(clockid_t clk_id, struct timespec* tp) {
+      return VDSOHandlers::ClockGetTimePtr(clk_id, tp);
     }
 
     static void clock_getres(void* ArgsRV) {
@@ -154,7 +142,7 @@ namespace x64 {
 
   HandlerPtr Handler_time = FEX::VDSO::x64::glibc::time;
   HandlerPtr Handler_gettimeofday = FEX::VDSO::x64::glibc::gettimeofday;
-  HandlerPtr Handler_clock_gettime = FEX::VDSO::x64::glibc::clock_gettime;
+  HandlerPtr Handler_clock_gettime = (HandlerPtr)FEX::VDSO::x64::glibc::clock_gettime;
   HandlerPtr Handler_clock_getres = FEX::VDSO::x64::glibc::clock_getres;
   HandlerPtr Handler_getcpu = FEX::VDSO::x64::glibc::getcpu;
 } // namespace x64
@@ -405,7 +393,7 @@ void LoadHostVDSO() {
 
   if (SymbolPtr) {
     VDSOHandlers::ClockGetTimePtr = reinterpret_cast<VDSOHandlers::ClockGetTimeType>(SymbolPtr);
-    x64::Handler_clock_gettime = x64::VDSO::clock_gettime;
+    x64::Handler_clock_gettime = (HandlerPtr)x64::VDSO::clock_gettime;
     x32::Handler_clock_gettime = x32::VDSO::clock_gettime;
     x32::Handler_clock_gettime64 = x32::VDSO::clock_gettime64;
   }
