@@ -6,7 +6,6 @@ desc: Handles x86/64 flag generation
 $end_info$
 */
 
-#include "Interface/Context/Context.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 #include "Interface/Core/X86Tables/X86Tables.h"
 
