@@ -106,6 +106,69 @@ struct SHA256Sum final {
   }
 };
 
+// FEX thunks support two ABIs for passing arguments
+// - Default: Build the entire argument and return values on the stack
+// - InRegister: Pass all GPR and FPR arguments in registers through AAPCS64 ABI
+//   - x86-64 Linux SystemV ABI:
+//     - GPR order (Max 6): RDI, RSI, RDX, RCX, R8, R9
+//     - FPR order (Max 8): XMM0 - XMM7
+//     - GPR return register: RAX (also RDX for 128-bit return values)
+//     - FPR return register: XMM0 (also XMM1 for 256-bit return values)
+//   - AAPCS64 ABI:
+//     - GPR order (Max 8): R0 - R7
+//     - FPR order (Max 8): V0 - V7
+//     - GPR return register: R0 (also R1 for 128-bit return values)
+//     - FPR return register: V0 (Also V1-V3 for up to 512-bit of return data)
+//   - Smaller than 32-bit considerations:
+//     - SystemV doesn't specify which side of caller-callee does zero/sign extension on arguments.
+//       - AAPCS64: The Callee must zero or sign extension arguments, which effectively matches behaviour.
+//     - SystemV doesn't specify which side of caller-calle does zero/sign extension on RETURNS.
+//       - AAPCS64: Specifies the Caller must zero/sign result, which effectively matches behaviour.
+//     - FPR arguments and garbage data in the upper part of the 128-bit vector register
+//       - Both x86-64 and AArch64 leave garbage in the upper bits, doesn't matter.
+//     - If any of these considerations don't hold then this `InRegister` ABI breaks.
+//   - Return values with <= 128-bit size but returns float and integers
+//     - Common case is a struct with a float and an integer inside of it.
+//     - These get packed in to registers on AArch64 and x86-64 but differently!
+//     - AArch64: Packs the float and GPR result in to GPRs entirely.
+//       - If <= 64-bit, then only uses X0, if > 64-bit then X0 and X1.
+//     - x86-64: Packs the floats and GPR in to RAX and xmm0 if <= 128-bit
+//       - If the return is > 128-bit then indirect result is used instead.
+enum class ThunkABIFlags : uint32_t {
+  // When ABI type is `InRegister`
+  GPR_Arg0 = (1U << 0),
+  GPR_Arg1 = (1U << 1),
+  GPR_Arg2 = (1U << 2),
+  GPR_Arg3 = (1U << 3),
+  GPR_Arg4 = (1U << 4),
+  GPR_Arg5 = (1U << 5),
+
+  FPR_Arg0 = (1U << 6),
+  FPR_Arg1 = (1U << 7),
+  FPR_Arg2 = (1U << 8),
+  FPR_Arg3 = (1U << 9),
+  FPR_Arg4 = (1U << 10),
+  FPR_Arg5 = (1U << 11),
+
+  ReturnType_Void = (0b00U << 12),
+  ReturnType_GPR = (0b01U << 12),
+  ReturnType_FPR = (0b10U << 12),
+
+  // Bits [30:14]: Reserved
+
+  // When ABI type is `DefaultOnStack`
+  // Bits [30:0]: Reserved
+
+  // Register arguments in use
+  // ABI Style
+  ABI_DefaultOnStack = (0U << 31),
+  ABI_InRegister = (1U << 31),
+
+  Default = 0,
+};
+
+FEX_DEF_NUM_OPS(ThunkABIFlags)
+
 typedef void ThunkedFunction(void* ArgsRv);
 
 struct ThunkDefinition final {
