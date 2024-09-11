@@ -238,8 +238,6 @@ int main(int argc, char** argv, char** const envp) {
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_DISABLE_VIXL_INDIRECT_RUNTIME_CALLS, "0");
 #endif
 
-  FEX_CONFIG_OPT(Core, CORE);
-
 #ifndef _WIN32
   fextl::unique_ptr<FEX::HLE::MemAllocator> Allocator;
 
@@ -276,21 +274,20 @@ int main(int argc, char** argv, char** const envp) {
                          (!HostFeatures.SupportsAES256 && Loader.RequiresAES256()) || (!HostFeatures.SupportsAFP && Loader.RequiresAFP());
 
 
+  bool IsHostRunner = false;
 #if !defined(VIXL_SIMULATOR) && defined(_M_X86_64)
-  const bool IsHostRunner = Core == FEXCore::Config::CONFIG_CUSTOM;
-  if (IsHostRunner) {
-    ///< Features that are only unsupported when running using the HostRunner and the CI machine doesn't support the feature getting tested.
-    Xbyak::util::Cpu X86Features {};
-    const bool Supports3DNow = X86Features.has(Xbyak::util::Cpu::t3DN) && X86Features.has(Xbyak::util::Cpu::tE3DN);
-    const bool SupportsSSE4A = X86Features.has(Xbyak::util::Cpu::tSSE4a);
-    const bool SupportsBMI1 = X86Features.has(Xbyak::util::Cpu::tBMI1);
-    const bool SupportsBMI2 = X86Features.has(Xbyak::util::Cpu::tBMI2);
-    const bool SupportsCLWB = X86Features.has(Xbyak::util::Cpu::tCLWB);
+  IsHostRunner = true;
+  ///< Features that are only unsupported when running using the HostRunner and the CI machine doesn't support the feature getting tested.
+  Xbyak::util::Cpu X86Features {};
+  const bool Supports3DNow = X86Features.has(Xbyak::util::Cpu::t3DN) && X86Features.has(Xbyak::util::Cpu::tE3DN);
+  const bool SupportsSSE4A = X86Features.has(Xbyak::util::Cpu::tSSE4a);
+  const bool SupportsBMI1 = X86Features.has(Xbyak::util::Cpu::tBMI1);
+  const bool SupportsBMI2 = X86Features.has(Xbyak::util::Cpu::tBMI2);
+  const bool SupportsCLWB = X86Features.has(Xbyak::util::Cpu::tCLWB);
 
-    TestUnsupported |= (!Supports3DNow && Loader.Requires3DNow()) || (!SupportsSSE4A && Loader.RequiresSSE4A()) ||
-                       (!SupportsBMI1 && Loader.RequiresBMI1()) || (!SupportsBMI2 && Loader.RequiresBMI2()) ||
-                       (!SupportsCLWB && Loader.RequiresCLWB());
-  }
+  TestUnsupported |= (!Supports3DNow && Loader.Requires3DNow()) || (!SupportsSSE4A && Loader.RequiresSSE4A()) ||
+                     (!SupportsBMI1 && Loader.RequiresBMI1()) || (!SupportsBMI2 && Loader.RequiresBMI2()) ||
+                     (!SupportsCLWB && Loader.RequiresCLWB());
 #endif
 
 #ifdef _WIN32
@@ -301,7 +298,7 @@ int main(int argc, char** argv, char** const envp) {
     return 0;
   }
 
-  if (Core != FEXCore::Config::CONFIG_CUSTOM) {
+  if (!IsHostRunner) {
 #ifndef _WIN32
     auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get()) :
                                                  FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), std::move(Allocator));

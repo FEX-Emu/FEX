@@ -20,7 +20,7 @@
 #include <unistd.h>
 
 namespace FEX::VDSO {
-FEXCore::Context::VDSOSigReturn VDSOPointers {};
+VDSOSigReturn VDSOPointers {};
 namespace VDSOHandlers {
   using TimeType = decltype(::time)*;
   using GetTimeOfDayType = decltype(::gettimeofday)*;
@@ -678,7 +678,7 @@ const std::span<FEXCore::IR::ThunkDefinition> GetVDSOThunkDefinitions() {
   return VDSODefinitions;
 }
 
-const FEXCore::Context::VDSOSigReturn& GetVDSOSymbols() {
+const VDSOSigReturn& GetVDSOSymbols() {
   return VDSOPointers;
 }
 } // namespace FEX::VDSO

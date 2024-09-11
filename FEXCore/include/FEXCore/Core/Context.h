@@ -68,14 +68,8 @@ public:
   virtual void Close() = 0;
 };
 
-struct VDSOSigReturn {
-  void* VDSO_kernel_sigreturn;
-  void* VDSO_kernel_rt_sigreturn;
-};
-
 using CodeRangeInvalidationFn = std::function<void(uint64_t start, uint64_t Length)>;
 
-using CustomCPUFactoryType = std::function<fextl::unique_ptr<CPU::CPUBackend>(Context*, Core::InternalThreadState* Thread)>;
 using CustomIREntrypointHandler = std::function<void(uintptr_t Entrypoint, IR::IREmitter*)>;
 
 using ExitHandler = std::function<void(Core::InternalThreadState* Thread, ExitReason)>;
@@ -129,16 +123,6 @@ public:
 
   FEX_DEFAULT_VISIBILITY virtual void CompileRIP(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP) = 0;
   FEX_DEFAULT_VISIBILITY virtual void CompileRIPCount(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, uint64_t MaxInst) = 0;
-
-  /**
-   * @brief Allows the frontend to pass in a custom CPUBackend creation factory
-   *
-   * This allows the frontend to have its own frontend. Typically for debugging
-   *
-   * @param CTX The context that we created
-   * @param Factory The factory that the context will call if the DefaultCore config ise set to CUSTOM
-   */
-  FEX_DEFAULT_VISIBILITY virtual void SetCustomCPUBackendFactory(CustomCPUFactoryType Factory) = 0;
 
   FEX_DEFAULT_VISIBILITY virtual void HandleCallback(FEXCore::Core::InternalThreadState* Thread, uint64_t RIP) = 0;
 

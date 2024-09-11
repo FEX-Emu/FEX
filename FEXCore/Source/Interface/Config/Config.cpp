@@ -318,24 +318,8 @@ fextl::string FindContainerPrefix() {
 void ReloadMetaLayer() {
   Meta->Load();
 
-  // Do configuration option fix ups after everything is reloaded
-  if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_CORE)) {
-    // Sanitize Core option
-    FEX_CONFIG_OPT(Core, CORE);
-#if (_M_X86_64)
-    constexpr uint32_t MaxCoreNumber = 1;
-#else
-    constexpr uint32_t MaxCoreNumber = 0;
-#endif
-    if (Core > MaxCoreNumber) {
-      // Sanitize the core option by setting the core to the JIT if invalid
-      FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_CORE, fextl::fmt::format("{}", static_cast<uint32_t>(FEXCore::Config::CONFIG_IRJIT)));
-    }
-  }
-
   if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_CACHEOBJECTCODECOMPILATION)) {
     FEX_CONFIG_OPT(CacheObjectCodeCompilation, CACHEOBJECTCODECOMPILATION);
-    FEX_CONFIG_OPT(Core, CORE);
   }
 
   fextl::string ContainerPrefix {FindContainerPrefix()};
