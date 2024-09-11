@@ -171,9 +171,16 @@ FEX_DEF_NUM_OPS(ThunkABIFlags)
 
 typedef void ThunkedFunction(void* ArgsRv);
 
+// The definition of the thunk in the binary.
+struct ThunkBinary final {
+  SHA256Sum Sum;
+  ThunkABIFlags Flags;
+};
+
 struct ThunkDefinition final {
   SHA256Sum Sum;
   ThunkedFunction* ThunkFunction;
+  ThunkABIFlags Flags;
 };
 
 } // namespace FEXCore::IR

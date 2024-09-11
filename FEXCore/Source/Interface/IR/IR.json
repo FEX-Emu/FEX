@@ -159,7 +159,8 @@
     "FloatCompareOp": "FloatCompareOp",
     "NamedVectorConstant": "FEXCore::IR::NamedVectorConstant",
     "IndexNamedVectorConstant": "FEXCore::IR::IndexNamedVectorConstant",
-    "ShiftType": "FEXCore::IR::ShiftType"
+    "ShiftType": "FEXCore::IR::ShiftType",
+    "ThunkABI": "FEXCore::IR::ThunkABIFlags"
   },
   "Ops": {
     "Misc": {
@@ -324,7 +325,7 @@
         "DestSize": "8"
       },
 
-      "Thunk GPR:$ArgPtr, SHA256Sum:$ThunkNameHash": {
+      "Thunk SSA:$RetReg, GPR:$Arg1, GPR:$Arg2, GPR:$Arg3, GPR:$Arg4, GPR:$Arg5, GPR:$Arg6, FPR:$FArg1, FPR:$FArg2, FPR:$FArg3, FPR:$FArg4, FPR:$FArg5, FPR:$FArg6, SHA256Sum:$ThunkNameHash, ThunkABI:$Flags": {
         "HasSideEffects": true
       },
 

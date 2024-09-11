@@ -166,9 +166,18 @@ public:
     FlushRegisterCache();
     return _Break(Reason);
   }
-  IRPair<IROp_Thunk> Thunk(Ref ArgPtr, SHA256Sum ThunkNameHash) {
+  IRPair<IROp_Thunk> Thunk(SHA256Sum ThunkNameHash, ThunkABIFlags Flags, Ref RetReg = nullptr, Ref Arg1 = nullptr, Ref Arg2 = nullptr,
+                           Ref Arg3 = nullptr, Ref Arg4 = nullptr, Ref Arg5 = nullptr, Ref Arg6 = nullptr, Ref FArg1 = nullptr,
+                           Ref FArg2 = nullptr, Ref FArg3 = nullptr, Ref FArg4 = nullptr, Ref FArg5 = nullptr, Ref FArg6 = nullptr) {
     FlushRegisterCache();
-    return _Thunk(ArgPtr, ThunkNameHash);
+    auto _ = [this](Ref Arg) -> Ref {
+      if (Arg) {
+        return Arg;
+      }
+      return Invalid();
+    };
+    return _Thunk(_(RetReg), _(Arg1), _(Arg2), _(Arg3), _(Arg4), _(Arg5), _(Arg6), _(FArg1), _(FArg2), _(FArg3), _(FArg4), _(FArg5),
+                  _(FArg6), ThunkNameHash, Flags);
   }
 
   bool FinishOp(uint64_t NextRIP, bool LastOp) {

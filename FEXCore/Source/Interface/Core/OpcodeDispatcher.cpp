@@ -113,14 +113,50 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs, bool IsSyscallInst) {
 
 void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
   const uint8_t GPRSize = CTX->GetGPRSize();
-  uint8_t* sha256 = (uint8_t*)(Op->PC + 2);
+  auto ThunkData = reinterpret_cast<const ThunkBinary*>(Op->PC + 2);
 
-  if (CTX->Config.Is64BitMode) {
-    // x86-64 ABI puts the function argument in RDI
-    Thunk(LoadGPRRegister(X86State::REG_RDI), *reinterpret_cast<SHA256Sum*>(sha256));
+  if ((ThunkData->Flags & ThunkABIFlags::ABI_InRegister) == ThunkABIFlags::ABI_InRegister) {
+    X86State::X86Reg GPR_Regs[6] {
+      X86State::REG_RDI, X86State::REG_RSI, X86State::REG_RDX, X86State::REG_RCX, X86State::REG_R8, X86State::REG_R9,
+    };
+    Ref GPR_Args[6] {};
+    Ref FPR_Args[6] {};
+
+    Ref RetReg {};
+    for (size_t i = 0; i < 6; ++i) {
+      if (FEXCore::ToUnderlying(ThunkData->Flags) & (FEXCore::ToUnderlying(ThunkABIFlags::GPR_Arg0) << i)) {
+        GPR_Args[i] = LoadGPRRegister(GPR_Regs[i]);
+      }
+    }
+
+    for (size_t i = 0; i < 6; ++i) {
+      if (FEXCore::ToUnderlying(ThunkData->Flags) & (FEXCore::ToUnderlying(ThunkABIFlags::FPR_Arg0) << i)) {
+        FPR_Args[i] = LoadXMMRegister(X86State::REG_XMM_0 + i);
+      }
+    }
+
+    if ((ThunkData->Flags & IR::ThunkABIFlags::ReturnType_GPR) == IR::ThunkABIFlags::ReturnType_GPR) {
+      RetReg = LoadGPRRegister(X86State::REG_RAX);
+    } else if ((ThunkData->Flags & IR::ThunkABIFlags::ReturnType_FPR) == IR::ThunkABIFlags::ReturnType_FPR) {
+      RetReg = LoadXMMRegister(0);
+    }
+
+    Thunk(ThunkData->Sum, ThunkData->Flags, RetReg, GPR_Args[0], GPR_Args[1], GPR_Args[2], GPR_Args[3], GPR_Args[4], GPR_Args[5],
+          FPR_Args[0], FPR_Args[1], FPR_Args[2], FPR_Args[3], FPR_Args[4], FPR_Args[5]);
+
+    if ((ThunkData->Flags & IR::ThunkABIFlags::ReturnType_GPR) == IR::ThunkABIFlags::ReturnType_GPR) {
+      StoreGPRRegister(X86State::REG_RAX, RetReg);
+    } else if ((ThunkData->Flags & IR::ThunkABIFlags::ReturnType_FPR) == IR::ThunkABIFlags::ReturnType_FPR) {
+      StoreXMMRegister(0, RetReg);
+    }
   } else {
-    // x86 fastcall ABI puts the function argument in ECX
-    Thunk(LoadGPRRegister(X86State::REG_RCX), *reinterpret_cast<SHA256Sum*>(sha256));
+    if (CTX->Config.Is64BitMode) {
+      // x86-64 ABI puts the function argument in RDI
+      Thunk(ThunkData->Sum, ThunkData->Flags, LoadGPRRegister(X86State::REG_RDI));
+    } else {
+      // x86 fastcall ABI puts the function argument in ECX
+      Thunk(ThunkData->Sum, ThunkData->Flags, LoadGPRRegister(X86State::REG_RCX));
+    }
   }
 
   auto NewRIP = Pop(GPRSize);
