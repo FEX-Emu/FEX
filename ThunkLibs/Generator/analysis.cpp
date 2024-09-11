@@ -75,7 +75,7 @@ struct Annotations {
   CallbackStrategy callback_strategy = CallbackStrategy::Default;
 };
 
-static Annotations GetAnnotations(clang::ASTContext& context, clang::CXXRecordDecl* decl) {
+static Annotations GetAnnotations(clang::ASTContext& context, clang::CXXRecordDecl* decl, bool is_32bit) {
   ErrorReporter report_error {context};
   Annotations ret;
 
@@ -90,7 +90,7 @@ static Annotations GetAnnotations(clang::ASTContext& context, clang::CXXRecordDe
     } else if (annotation == "fexgen::custom_guest_entrypoint") {
       ret.custom_guest_entrypoint = true;
     } else if (annotation == "fexgen::inregister_abi") {
-      ret.inregister_abi = true;
+      ret.inregister_abi = !is_32bit;
     } else {
       throw report_error(base.getSourceRange().getBegin(), "Unknown annotation");
     }
@@ -342,7 +342,7 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
         if (auto emitted_function = llvm::dyn_cast<clang::FunctionDecl>(template_args[0].getAsDecl())) {
           auto return_type = emitted_function->getReturnType();
 
-          const auto annotations = GetAnnotations(context, decl);
+          const auto annotations = GetAnnotations(context, decl, guest_abi.pointer_size == 4);
           if (return_type->isFunctionPointerType() && !annotations.returns_guest_pointer) {
             throw report_error(template_arg_loc, "Function pointer return types require explicit annotation\n");
           }
