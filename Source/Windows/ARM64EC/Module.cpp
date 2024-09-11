@@ -71,8 +71,12 @@ uint32_t NtDllRedirectionLUTSize;
 void* WineSyscallDispatcher;
 // TODO: this really shouldn't be hardcoded, once wine gains proper syscall thunks this can be dropped.
 uint64_t WineNtContinueSyscallId = 0x1a;
+uint64_t WineNtAllocateVirtualMemorySyscallId = 0xb;
+uint64_t WineNtProtectVirtualMemorySyscallId = 0x76;
 
 NTSTATUS NtContinueNative(ARM64_NT_CONTEXT* NativeContext, BOOLEAN Alert);
+NTSTATUS NtAllocateVirtualMemoryNative(HANDLE, PVOID*, ULONG_PTR, SIZE_T*, ULONG, ULONG);
+NTSTATUS NtProtectVirtualMemoryNative(HANDLE, PVOID*, SIZE_T*, ULONG, ULONG*);
 
 [[noreturn]]
 void JumpSetStack(uintptr_t PC, uintptr_t SP);
@@ -146,8 +150,7 @@ bool IsDispatcherAddress(uint64_t Address) {
 }
 
 
-void FillNtDllLUTs() {
-  const HMODULE NtDll = GetModuleHandle("ntdll.dll");
+void FillNtDllLUTs(HMODULE NtDll) {
   NtDllBase = reinterpret_cast<uintptr_t>(NtDll);
   ULONG Size;
   const auto* LoadConfig =
@@ -157,7 +160,10 @@ void FillNtDllLUTs() {
   const auto* RedirectionTableEnd = RedirectionTableBegin + CHPEMetadata->RedirectionMetadataCount;
 
   NtDllRedirectionLUTSize = std::prev(RedirectionTableEnd)->Source + 1;
-  NtDllRedirectionLUT = new uint32_t[NtDllRedirectionLUTSize];
+
+  SIZE_T AllocSize = NtDllRedirectionLUTSize * sizeof(uint32_t);
+  NtAllocateVirtualMemoryNative(NtCurrentProcess(), reinterpret_cast<void**>(&NtDllRedirectionLUT), 0, &AllocSize, MEM_COMMIT | MEM_RESERVE,
+                                PAGE_READWRITE);
   for (auto It = RedirectionTableBegin; It != RedirectionTableEnd; It++) {
     NtDllRedirectionLUT[It->Source] = It->Destination;
   }
@@ -173,9 +179,9 @@ void WriteModuleRVA(HMODULE Module, LONG RVA, T Data) {
   void* ProtAddress = Address;
   SIZE_T ProtSize = sizeof(T);
   ULONG Prot;
-  NtProtectVirtualMemory(NtCurrentProcess(), &ProtAddress, &ProtSize, PAGE_READWRITE, &Prot);
+  NtProtectVirtualMemoryNative(NtCurrentProcess(), &ProtAddress, &ProtSize, PAGE_READWRITE, &Prot);
   *reinterpret_cast<T*>(Address) = Data;
-  NtProtectVirtualMemory(NtCurrentProcess(), &ProtAddress, &ProtSize, Prot, nullptr);
+  NtProtectVirtualMemoryNative(NtCurrentProcess(), &ProtAddress, &ProtSize, Prot, nullptr);
 }
 
 void PatchCallChecker() {
@@ -188,6 +194,23 @@ void PatchCallChecker() {
   WriteModuleRVA(Module, CHPEMetadata->__os_arm64x_dispatch_call, &CheckCall);
   WriteModuleRVA(Module, CHPEMetadata->__os_arm64x_dispatch_icall, &CheckCall);
   WriteModuleRVA(Module, CHPEMetadata->__os_arm64x_dispatch_icall_cfg, &CheckCall);
+}
+
+// Syscall thunks may have been patched before FEX has loaded, the default call checker installed by ntdll into FEX will
+// try to invoke the JIT when calling such patched syscalls but this obviously doesn't work before FEX is initalised.
+// This function parses ntdll and sets up a custom call checker to prevent this, as such it must avoid using any syscall
+// thunks itself.
+void InitSyscalls() {
+  // The ntdll exports called by GetModuleHandle/GetProcAddress aren't known to be patched before JIT init by any current
+  // software so are safe to call, but if that changes the loader structures in the PEB could be parsed manually.
+  const auto NtDll = GetModuleHandle("ntdll.dll");
+  const auto WineSyscallDispatcherPtr = reinterpret_cast<void**>(GetProcAddress(NtDll, "__wine_syscall_dispatcher"));
+  if (WineSyscallDispatcherPtr) {
+    WineSyscallDispatcher = *WineSyscallDispatcherPtr;
+  }
+
+  FillNtDllLUTs(NtDll);
+  PatchCallChecker();
 }
 } // namespace
 
@@ -452,6 +475,8 @@ extern "C" void SyncThreadContext(CONTEXT* Context) {
 }
 
 NTSTATUS ProcessInit() {
+  InitSyscalls();
+
   FEX::Windows::InitCRTProcess();
   FEX::Config::LoadConfig(nullptr, FEX::Windows::GetExecutableFilePath());
   FEXCore::Config::ReloadMetaLayer();
@@ -486,14 +511,8 @@ NTSTATUS ProcessInit() {
   X64ReturnInstr = ::VirtualAlloc(nullptr, FEXCore::Utils::FEX_PAGE_SIZE, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
   *reinterpret_cast<uint8_t*>(X64ReturnInstr) = 0xc3;
 
-  FillNtDllLUTs();
-  PatchCallChecker();
   const uintptr_t KiUserExceptionDispatcherFFS = reinterpret_cast<uintptr_t>(GetProcAddress(NtDll, "KiUserExceptionDispatcher"));
   Exception::KiUserExceptionDispatcher = NtDllRedirectionLUT[KiUserExceptionDispatcherFFS - NtDllBase] + NtDllBase;
-  const auto WineSyscallDispatcherPtr = reinterpret_cast<void**>(GetProcAddress(NtDll, "__wine_syscall_dispatcher"));
-  if (WineSyscallDispatcherPtr) {
-    WineSyscallDispatcher = *WineSyscallDispatcherPtr;
-  }
 
   return STATUS_SUCCESS;
 }
