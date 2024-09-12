@@ -3,21 +3,6 @@
 #include "Interface/Core/OpcodeDispatcher.h"
 
 namespace FEXCore::IR {
-constexpr inline void InstallToTable(auto& FinalTable, auto& LocalTable) {
-  for (auto Op : LocalTable) {
-    auto OpNum = std::get<0>(Op);
-    auto Dispatcher = std::get<2>(Op);
-    for (uint8_t i = 0; i < std::get<1>(Op); ++i) {
-      auto& TableOp = FinalTable[OpNum + i];
-      if (TableOp.OpcodeDispatcher) {
-        LOGMAN_MSG_A_FMT("Duplicate Entry {} 0x{:x}", TableOp.Name, OpNum + i);
-      }
-
-      TableOp.OpcodeDispatcher = Dispatcher;
-    }
-  }
-}
-
 consteval inline void VEXTable_Install(auto& FinalTable) {
 #define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
   constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> Table[] = {

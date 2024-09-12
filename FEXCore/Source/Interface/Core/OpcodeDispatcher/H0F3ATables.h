@@ -3,21 +3,6 @@
 #include "Interface/Core/OpcodeDispatcher.h"
 
 namespace FEXCore::IR {
-constexpr inline void InstallToTable(auto& FinalTable, auto& LocalTable) {
-  for (auto Op : LocalTable) {
-    auto OpNum = std::get<0>(Op);
-    auto Dispatcher = std::get<2>(Op);
-    for (uint8_t i = 0; i < std::get<1>(Op); ++i) {
-      auto& TableOp = FinalTable[OpNum + i];
-      if (TableOp.OpcodeDispatcher) {
-        LOGMAN_MSG_A_FMT("Duplicate Entry {} 0x{:x}", TableOp.Name, OpNum + i);
-      }
-
-      TableOp.OpcodeDispatcher = Dispatcher;
-    }
-  }
-}
-
 #define OPD(REX, prefix, opcode) ((REX << 9) | (prefix << 8) | opcode)
 #define PF_3A_NONE 0
 #define PF_3A_66 1

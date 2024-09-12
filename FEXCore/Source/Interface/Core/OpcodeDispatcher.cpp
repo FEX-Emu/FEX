@@ -5524,17 +5524,6 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
   };
 #undef OPD
 
-  auto InstallToTable = [](auto& FinalTable, auto& LocalTable) {
-    for (auto Op : LocalTable) {
-      auto OpNum = std::get<0>(Op);
-      auto Dispatcher = std::get<2>(Op);
-      for (uint8_t i = 0; i < std::get<1>(Op); ++i) {
-        LOGMAN_THROW_A_FMT(FinalTable[OpNum + i].OpcodeDispatcher == nullptr, "Duplicate Entry");
-        FinalTable[OpNum + i].OpcodeDispatcher = Dispatcher;
-      }
-    }
-  };
-
   if (CTX->HostFeatures.SupportsCRC) {
     InstallToTable(FEXCore::X86Tables::H0F38TableOps, H0F38_CRC);
   }

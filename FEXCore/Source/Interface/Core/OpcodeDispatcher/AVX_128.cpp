@@ -462,17 +462,6 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
   };
 #undef OPD
 
-  auto InstallToTable = [](auto& FinalTable, auto& LocalTable) {
-    for (auto Op : LocalTable) {
-      auto OpNum = std::get<0>(Op);
-      auto Dispatcher = std::get<2>(Op);
-      for (uint8_t i = 0; i < std::get<1>(Op); ++i) {
-        LOGMAN_THROW_A_FMT(FinalTable[OpNum + i].OpcodeDispatcher == nullptr, "Duplicate Entry");
-        FinalTable[OpNum + i].OpcodeDispatcher = Dispatcher;
-      }
-    }
-  };
-
   InstallToTable(FEXCore::X86Tables::VEXTableOps, AVX128Table);
   InstallToTable(FEXCore::X86Tables::VEXTableGroupOps, VEX128TableGroupOps);
   if (CTX->HostFeatures.SupportsPMULL_128Bit) {
