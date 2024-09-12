@@ -690,12 +690,8 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
     }
   } else if (Info->Type == FEXCore::X86Tables::TYPE_GROUP_EVEX) {
     FEXCORE_TELEMETRY_SET(EVEXOpTelem, 1);
-
-    /* uint8_t P1 = */ ReadByte();
-    /* uint8_t P2 = */ ReadByte();
-    /* uint8_t P3 = */ ReadByte();
-    uint8_t EVEXOp = ReadByte();
-    return NormalOp(&EVEXTableOps[EVEXOp], EVEXOp);
+    // EVEX unsupported
+    return false;
   }
 
   LOGMAN_MSG_A_FMT("Invalid instruction decoding type");

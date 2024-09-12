@@ -474,8 +474,6 @@ constexpr size_t MAX_XOP_TABLE_SIZE = (1 << 13);
 // group select (2 bits for now) | modrm opcode (3 bits)
 constexpr size_t MAX_XOP_GROUP_TABLE_SIZE = (1 << 6);
 
-constexpr size_t MAX_EVEX_TABLE_SIZE = 256;
-
 extern std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps;
 extern std::array<X86InstInfo, MAX_SECOND_TABLE_SIZE> SecondBaseOps;
 extern std::array<X86InstInfo, MAX_REP_MOD_TABLE_SIZE> RepModOps;
@@ -497,9 +495,6 @@ extern std::array<X86InstInfo, MAX_VEX_GROUP_TABLE_SIZE> VEXTableGroupOps;
 // XOP
 extern std::array<X86InstInfo, MAX_XOP_TABLE_SIZE> XOPTableOps;
 extern std::array<X86InstInfo, MAX_XOP_GROUP_TABLE_SIZE> XOPTableGroupOps;
-
-// EVEX
-extern std::array<X86InstInfo, MAX_EVEX_TABLE_SIZE> EVEXTableOps;
 
 template <typename OpcodeType>
 struct X86TablesInfoStruct {
