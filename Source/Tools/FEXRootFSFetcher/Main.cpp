@@ -212,6 +212,7 @@ namespace WorkingAppsTester {
 static bool Has_Curl {false};
 static bool Has_Squashfuse {false};
 static bool Has_Unsquashfs {false};
+static bool Has_Zenity {false};
 
 // EroFS specific
 static bool Has_EroFSFuse {false};
@@ -284,6 +285,17 @@ void CheckUnsquashfs() {
   }
   close(fd);
 }
+void CheckZenity() {
+  // Check if zenity exists on the host
+  std::vector<const char*> ExecveArgs = {
+    "zenity",
+    "-h",
+    nullptr,
+  };
+
+  int32_t Result = Exec::ExecAndWaitForResponseRedirect(ExecveArgs[0], const_cast<char* const*>(ExecveArgs.data()), -1, -1);
+  Has_Zenity = Result != -1;
+}
 
 // EroFS specific tests
 void CheckEroFSFuse() {
@@ -312,6 +324,7 @@ void Init() {
   CheckCurl();
   CheckSquashfuse();
   CheckUnsquashfs();
+  CheckZenity();
   CheckEroFSFuse();
   CheckEroFSFsck();
 }
@@ -967,6 +980,14 @@ void CheckTTY() {
     IsTTY = ArgOptions::UIOption == ArgOptions::UIOverrideOption::TTY;
   }
 
+  if (!WorkingAppsTester::Has_Zenity) {
+    // Force TTY if zenity isn't installed.
+    if (ArgOptions::UIOption == ArgOptions::UIOverrideOption::Zenity) {
+      fmt::print("Zenity isn't executable. Falling back to TTY mode\n");
+    }
+    IsTTY = true;
+  }
+
   if (IsTTY) {
     _AskForConfirmation = TTY::AskForConfirmation;
     _ExecWithInfo = TTY::ExecWithInfo;
@@ -1091,6 +1112,8 @@ int main(int argc, char** argv, char** const envp) {
 
   ArgOptions::ParseArguments(argc, argv);
 
+  WorkingAppsTester::Init();
+
   CheckTTY();
 
   if (ArgOptions::RemainingArgs.size()) {
@@ -1103,7 +1126,6 @@ int main(int argc, char** argv, char** const envp) {
     return 0;
   }
 
-  WorkingAppsTester::Init();
   // Check if curl exists on the host
   if (!WorkingAppsTester::Has_Curl) {
     ExecWithInfo("curl is required to use this tool. Please install curl before using.");
