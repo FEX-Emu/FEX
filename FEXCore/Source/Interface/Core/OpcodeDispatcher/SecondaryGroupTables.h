@@ -38,25 +38,25 @@ consteval inline void SecondaryGroupTables_Install(auto& FinalTable) {
     {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F2, 6), 1, &OpDispatchBuilder::PermissionRestrictedOp},
 
     // GROUP 8
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 4), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTNone>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 4), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTNone>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 4), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTNone>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 4), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTNone>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::BTOp, 1, BTAction::BTNone>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::BTOp, 1, BTAction::BTNone>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::BTOp, 1, BTAction::BTNone>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::BTOp, 1, BTAction::BTNone>},
 
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 5), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTSet>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 5), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTSet>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 5), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTSet>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 5), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTSet>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 5), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::BTOp, 1, BTAction::BTSet>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 5), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::BTOp, 1, BTAction::BTSet>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 5), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::BTOp, 1, BTAction::BTSet>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 5), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::BTOp, 1, BTAction::BTSet>},
 
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 6), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTClear>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 6), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTClear>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 6), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTClear>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 6), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTClear>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::BTOp, 1, BTAction::BTClear>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::BTOp, 1, BTAction::BTClear>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::BTOp, 1, BTAction::BTClear>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::BTOp, 1, BTAction::BTClear>},
 
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 7), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTComplement>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 7), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTComplement>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 7), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTComplement>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 7), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTComplement>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 7), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::BTOp, 1, BTAction::BTComplement>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 7), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::BTOp, 1, BTAction::BTComplement>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 7), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::BTOp, 1, BTAction::BTComplement>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 7), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::BTOp, 1, BTAction::BTComplement>},
 
     // GROUP 9
     {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_NONE, 1), 1, &OpDispatchBuilder::CMPXCHGPairOp},
@@ -110,34 +110,34 @@ consteval inline void SecondaryGroupTables_Install(auto& FinalTable) {
     {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_66, 7), 1, &OpDispatchBuilder::CLFLUSHOPT},
 
     // GROUP 16
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_NONE, 0), 1, &OpDispatchBuilder::Prefetch<false, true, 1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_NONE, 1), 1, &OpDispatchBuilder::Prefetch<false, false, 1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_NONE, 2), 1, &OpDispatchBuilder::Prefetch<false, false, 2>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_NONE, 3), 1, &OpDispatchBuilder::Prefetch<false, false, 3>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_NONE, 0), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Prefetch, false, true, 1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_NONE, 1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Prefetch, false, false, 1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_NONE, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Prefetch, false, false, 2>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_NONE, 3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Prefetch, false, false, 3>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_NONE, 4), 4, &OpDispatchBuilder::NOPOp},
 
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F3, 0), 1, &OpDispatchBuilder::Prefetch<false, true, 1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F3, 1), 1, &OpDispatchBuilder::Prefetch<false, false, 1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F3, 2), 1, &OpDispatchBuilder::Prefetch<false, false, 2>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F3, 3), 1, &OpDispatchBuilder::Prefetch<false, false, 3>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F3, 0), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Prefetch, false, true, 1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F3, 1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Prefetch, false, false, 1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F3, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Prefetch, false, false, 2>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F3, 3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Prefetch, false, false, 3>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F3, 4), 4, &OpDispatchBuilder::NOPOp},
 
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_66, 0), 1, &OpDispatchBuilder::Prefetch<false, true, 1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_66, 1), 1, &OpDispatchBuilder::Prefetch<false, false, 1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_66, 2), 1, &OpDispatchBuilder::Prefetch<false, false, 2>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_66, 3), 1, &OpDispatchBuilder::Prefetch<false, false, 3>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_66, 0), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Prefetch, false, true, 1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_66, 1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Prefetch, false, false, 1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_66, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Prefetch, false, false, 2>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_66, 3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Prefetch, false, false, 3>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_66, 4), 4, &OpDispatchBuilder::NOPOp},
 
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F2, 0), 1, &OpDispatchBuilder::Prefetch<false, true, 1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F2, 1), 1, &OpDispatchBuilder::Prefetch<false, false, 1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F2, 2), 1, &OpDispatchBuilder::Prefetch<false, false, 2>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F2, 3), 1, &OpDispatchBuilder::Prefetch<false, false, 3>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F2, 0), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Prefetch, false, true, 1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F2, 1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Prefetch, false, false, 1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F2, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Prefetch, false, false, 2>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F2, 3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Prefetch, false, false, 3>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F2, 4), 4, &OpDispatchBuilder::NOPOp},
 
     // GROUP P
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_P, PF_NONE, 0), 1, &OpDispatchBuilder::Prefetch<false, false, 1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_P, PF_NONE, 1), 1, &OpDispatchBuilder::Prefetch<true, false, 1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_P, PF_NONE, 2), 1, &OpDispatchBuilder::Prefetch<true, false, 1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_P, PF_NONE, 0), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Prefetch, false, false, 1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_P, PF_NONE, 1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Prefetch, true, false, 1>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_P, PF_NONE, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Prefetch, true, false, 1>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_P, PF_NONE, 3), 5, &OpDispatchBuilder::NOPOp},
 
     {OPD(FEXCore::X86Tables::TYPE_GROUP_P, PF_F3, 0), 8, &OpDispatchBuilder::NOPOp},
@@ -153,10 +153,14 @@ inline void SecondaryGroupTables_Install64(auto& FinalTable) {
 
   constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> Table[] = {
     // GROUP 15
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 0), 1, &OpDispatchBuilder::ReadSegmentReg<OpDispatchBuilder::Segment::FS>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 1), 1, &OpDispatchBuilder::ReadSegmentReg<OpDispatchBuilder::Segment::GS>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 2), 1, &OpDispatchBuilder::WriteSegmentReg<OpDispatchBuilder::Segment::FS>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 3), 1, &OpDispatchBuilder::WriteSegmentReg<OpDispatchBuilder::Segment::GS>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 0), 1,
+     &OpDispatchBuilder::Bind<&OpDispatchBuilder::ReadSegmentReg, OpDispatchBuilder::Segment::FS>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 1), 1,
+     &OpDispatchBuilder::Bind<&OpDispatchBuilder::ReadSegmentReg, OpDispatchBuilder::Segment::GS>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 2), 1,
+     &OpDispatchBuilder::Bind<&OpDispatchBuilder::WriteSegmentReg, OpDispatchBuilder::Segment::FS>},
+    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 3), 1,
+     &OpDispatchBuilder::Bind<&OpDispatchBuilder::WriteSegmentReg, OpDispatchBuilder::Segment::GS>},
   };
 
   InstallToTable(FinalTable, Table);

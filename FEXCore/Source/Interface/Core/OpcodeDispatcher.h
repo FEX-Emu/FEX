@@ -297,8 +297,7 @@ public:
   };
 
   void UnhandledOp(OpcodeArgs);
-  template<uint32_t SrcIndex>
-  void MOVGPROp(OpcodeArgs);
+  void MOVGPROp(OpcodeArgs, uint32_t SrcIndex);
   void MOVGPRNTOp(OpcodeArgs);
   void MOVVectorAlignedOp(OpcodeArgs);
   void MOVVectorUnalignedOp(OpcodeArgs);
@@ -313,20 +312,16 @@ public:
   void IRETOp(OpcodeArgs);
   void CallbackReturnOp(OpcodeArgs);
   void SecondaryALUOp(OpcodeArgs);
-  template<uint32_t SrcIndex>
-  void ADCOp(OpcodeArgs);
-  template<uint32_t SrcIndex>
-  void SBBOp(OpcodeArgs);
+  void ADCOp(OpcodeArgs, uint32_t SrcIndex);
+  void SBBOp(OpcodeArgs, uint32_t SrcIndex);
   void SALCOp(OpcodeArgs);
   void PUSHOp(OpcodeArgs);
   void PUSHREGOp(OpcodeArgs);
   void PUSHAOp(OpcodeArgs);
-  template<uint32_t SegmentReg>
-  void PUSHSegmentOp(OpcodeArgs);
+  void PUSHSegmentOp(OpcodeArgs, uint32_t SegmentReg);
   void POPOp(OpcodeArgs);
   void POPAOp(OpcodeArgs);
-  template<uint32_t SegmentReg>
-  void POPSegmentOp(OpcodeArgs);
+  void POPSegmentOp(OpcodeArgs, uint32_t SegmentReg);
   void LEAVEOp(OpcodeArgs);
   void CALLOp(OpcodeArgs);
   void CALLAbsoluteOp(OpcodeArgs);
@@ -335,21 +330,18 @@ public:
   void LoopOp(OpcodeArgs);
   void JUMPOp(OpcodeArgs);
   void JUMPAbsoluteOp(OpcodeArgs);
-  template<uint32_t SrcIndex>
-  void TESTOp(OpcodeArgs);
+  void TESTOp(OpcodeArgs, uint32_t SrcIndex);
   void MOVSXDOp(OpcodeArgs);
   void MOVSXOp(OpcodeArgs);
   void MOVZXOp(OpcodeArgs);
-  template<uint32_t SrcIndex>
-  void CMPOp(OpcodeArgs);
+  void CMPOp(OpcodeArgs, uint32_t SrcIndex);
   void SETccOp(OpcodeArgs);
   void CQOOp(OpcodeArgs);
   void CDQOp(OpcodeArgs);
   void XCHGOp(OpcodeArgs);
   void SAHFOp(OpcodeArgs);
   void LAHFOp(OpcodeArgs);
-  template<bool ToSeg>
-  void MOVSegOp(OpcodeArgs);
+  void MOVSegOp(OpcodeArgs, bool ToSeg);
   void FLAGControlOp(OpcodeArgs);
   void MOVOffsetOp(OpcodeArgs);
   void CMOVOp(OpcodeArgs);
@@ -357,19 +349,14 @@ public:
   void XGetBVOp(OpcodeArgs);
   uint32_t LoadConstantShift(X86Tables::DecodedOp Op, bool Is1Bit);
   void SHLOp(OpcodeArgs);
-  template<bool SHL1Bit>
-  void SHLImmediateOp(OpcodeArgs);
+  void SHLImmediateOp(OpcodeArgs, bool SHL1Bit);
   void SHROp(OpcodeArgs);
-  template<bool SHR1Bit>
-  void SHRImmediateOp(OpcodeArgs);
+  void SHRImmediateOp(OpcodeArgs, bool SHR1Bit);
   void SHLDOp(OpcodeArgs);
   void SHLDImmediateOp(OpcodeArgs);
   void SHRDOp(OpcodeArgs);
   void SHRDImmediateOp(OpcodeArgs);
-  template<bool IsImmediate, bool Is1Bit>
-  void ASHROp(OpcodeArgs);
-  template<bool Left, bool IsImmediate, bool Is1Bit>
-  void RotateOp(OpcodeArgs);
+  void ASHROp(OpcodeArgs, bool IsImmediate, bool Is1Bit);
   void RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool Is1Bit);
   void RCROp1Bit(OpcodeArgs);
   void RCROp8x1Bit(OpcodeArgs);
@@ -379,8 +366,6 @@ public:
   void RCLOp(OpcodeArgs);
   void RCLSmallerOp(OpcodeArgs);
 
-  template<uint32_t SrcIndex, enum BTAction Action>
-  void BTOp(OpcodeArgs);
   void BTOp(OpcodeArgs, uint32_t SrcIndex, enum BTAction Action);
 
   void IMUL1SrcOp(OpcodeArgs);
@@ -428,10 +413,8 @@ public:
     FS,
     GS,
   };
-  template<Segment Seg>
-  void ReadSegmentReg(OpcodeArgs);
-  template<Segment Seg>
-  void WriteSegmentReg(OpcodeArgs);
+  void ReadSegmentReg(OpcodeArgs, Segment Seg);
+  void WriteSegmentReg(OpcodeArgs, Segment Seg);
   void EnterOp(OpcodeArgs);
 
   void SGDTOp(OpcodeArgs);
@@ -865,8 +848,7 @@ public:
   void RDTSCPOp(OpcodeArgs);
   void RDPIDOp(OpcodeArgs);
 
-  template<bool ForStore, bool Stream, uint8_t Level>
-  void Prefetch(OpcodeArgs);
+  void Prefetch(OpcodeArgs, bool ForStore, bool Stream, uint8_t Level);
 
   void PSADBW(OpcodeArgs);
 
@@ -2471,10 +2453,6 @@ private:
       A.Offset += Size;
       _StoreMemAutoTSO(Class, Size, A, Value2, 1);
     }
-  }
-
-  Ref Prefetch(bool ForStore, bool Stream, uint8_t CacheLevel, Ref ssa0) {
-    return _Prefetch(ForStore, Stream, CacheLevel, ssa0, Invalid(), MEM_OFFSET_SXTX, 1);
   }
 
   Ref Pop(uint8_t Size, Ref SP_RMW) {

@@ -282,8 +282,7 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
   ALUOp(Op, IROp, AtomicIROp, 1);
 }
 
-template<uint32_t SrcIndex>
-void OpDispatchBuilder::ADCOp(OpcodeArgs) {
+void OpDispatchBuilder::ADCOp(OpcodeArgs, uint32_t SrcIndex) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
@@ -319,11 +318,7 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs) {
   }
 }
 
-template void OpDispatchBuilder::ADCOp<0>(OpcodeArgs);
-template void OpDispatchBuilder::ADCOp<1>(OpcodeArgs);
-
-template<uint32_t SrcIndex>
-void OpDispatchBuilder::SBBOp(OpcodeArgs) {
+void OpDispatchBuilder::SBBOp(OpcodeArgs, uint32_t SrcIndex) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
@@ -349,9 +344,6 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
     StoreResult(GPRClass, Op, Result, -1);
   }
 }
-
-template void OpDispatchBuilder::SBBOp<0>(OpcodeArgs);
-template void OpDispatchBuilder::SBBOp<1>(OpcodeArgs);
 
 void OpDispatchBuilder::SALCOp(OpcodeArgs) {
   CalculateDeferredFlags();
@@ -428,8 +420,7 @@ void OpDispatchBuilder::PUSHAOp(OpcodeArgs) {
   FlushRegisterCache();
 }
 
-template<uint32_t SegmentReg>
-void OpDispatchBuilder::PUSHSegmentOp(OpcodeArgs) {
+void OpDispatchBuilder::PUSHSegmentOp(OpcodeArgs, uint32_t SegmentReg) {
   const uint8_t SrcSize = GetSrcSize(Op);
   const uint8_t DstSize = GetDstSize(Op);
 
@@ -486,13 +477,6 @@ void OpDispatchBuilder::PUSHSegmentOp(OpcodeArgs) {
   Push(DstSize, Src);
 }
 
-template void OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_CS_PREFIX>(OpcodeArgs);
-template void OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX>(OpcodeArgs);
-template void OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX>(OpcodeArgs);
-template void OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX>(OpcodeArgs);
-template void OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX>(OpcodeArgs);
-template void OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX>(OpcodeArgs);
-
 void OpDispatchBuilder::POPOp(OpcodeArgs) {
   Ref Value = Pop(GetSrcSize(Op));
   StoreResult(GPRClass, Op, Value, -1);
@@ -520,8 +504,7 @@ void OpDispatchBuilder::POPAOp(OpcodeArgs) {
   StoreGPRRegister(X86State::REG_RSP, SP);
 }
 
-template<uint32_t SegmentReg>
-void OpDispatchBuilder::POPSegmentOp(OpcodeArgs) {
+void OpDispatchBuilder::POPSegmentOp(OpcodeArgs, uint32_t SegmentReg) {
   const uint8_t SrcSize = GetSrcSize(Op);
   const uint8_t DstSize = GetDstSize(Op);
 
@@ -551,12 +534,6 @@ void OpDispatchBuilder::POPSegmentOp(OpcodeArgs) {
 
   UpdatePrefixFromSegment(NewSegment, SegmentReg);
 }
-
-template void OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX>(OpcodeArgs);
-template void OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX>(OpcodeArgs);
-template void OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX>(OpcodeArgs);
-template void OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX>(OpcodeArgs);
-template void OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX>(OpcodeArgs);
 
 void OpDispatchBuilder::LEAVEOp(OpcodeArgs) {
   // First we move RBP in to RSP and then behave effectively like a pop
@@ -1021,8 +998,7 @@ void OpDispatchBuilder::JUMPAbsoluteOp(OpcodeArgs) {
   ExitFunction(RIPOffset);
 }
 
-template<uint32_t SrcIndex>
-void OpDispatchBuilder::TESTOp(OpcodeArgs) {
+void OpDispatchBuilder::TESTOp(OpcodeArgs, uint32_t SrcIndex) {
   // TEST is an instruction that does an AND between the sources
   // Result isn't stored in result, only writes to flags
   Ref Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = true});
@@ -1057,9 +1033,6 @@ void OpDispatchBuilder::TESTOp(OpcodeArgs) {
 
   InvalidateAF();
 }
-
-template void OpDispatchBuilder::TESTOp<0>(OpcodeArgs);
-template void OpDispatchBuilder::TESTOp<1>(OpcodeArgs);
 
 void OpDispatchBuilder::MOVSXDOp(OpcodeArgs) {
   // This instruction is a bit special
@@ -1106,17 +1079,13 @@ void OpDispatchBuilder::MOVZXOp(OpcodeArgs) {
   StoreResult(GPRClass, Op, Src, -1);
 }
 
-template<uint32_t SrcIndex>
-void OpDispatchBuilder::CMPOp(OpcodeArgs) {
+void OpDispatchBuilder::CMPOp(OpcodeArgs, uint32_t SrcIndex) {
   // CMP is an instruction that does a SUB between the sources
   // Result isn't stored in result, only writes to flags
   Ref Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = true});
   Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
   CalculateFlags_SUB(GetSrcSize(Op), Dest, Src);
 }
-
-template void OpDispatchBuilder::CMPOp<0>(OpcodeArgs);
-template void OpDispatchBuilder::CMPOp<1>(OpcodeArgs);
 
 void OpDispatchBuilder::CQOOp(OpcodeArgs) {
   Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
@@ -1222,8 +1191,7 @@ void OpDispatchBuilder::FLAGControlOp(OpcodeArgs) {
 }
 
 
-template<bool ToSeg>
-void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
+void OpDispatchBuilder::MOVSegOp(OpcodeArgs, bool ToSeg) {
   // In x86-64 mode the accesses to the segment registers end up being constant zero moves
   // Aside from FS/GS
   // In x86-64 mode the accesses to segment registers can actually still touch the segments
@@ -1239,7 +1207,7 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
   // We don't currently support FS/GS selector modifying, so this needs to be asserted out
   // The loads here also load the selector, NOT the base
 
-  if constexpr (ToSeg) {
+  if (ToSeg) {
     Ref Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], 2, Op->Flags);
 
     switch (Op->Dest.Data.GPR.GPR) {
@@ -1344,9 +1312,6 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
   }
 }
 
-template void OpDispatchBuilder::MOVSegOp<true>(OpcodeArgs);
-template void OpDispatchBuilder::MOVSegOp<false>(OpcodeArgs);
-
 void OpDispatchBuilder::MOVOffsetOp(OpcodeArgs) {
   Ref Src;
 
@@ -1421,8 +1386,7 @@ void OpDispatchBuilder::SHLOp(OpcodeArgs) {
   HandleShift(Op, Result, Dest, ShiftType::LSL, Src);
 }
 
-template<bool SHL1Bit>
-void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs) {
+void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs, bool SHL1Bit) {
   Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
 
   uint64_t Shift = LoadConstantShift(Op, SHL1Bit);
@@ -1436,9 +1400,6 @@ void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs) {
   StoreResult(GPRClass, Op, Result, -1);
 }
 
-template void OpDispatchBuilder::SHLImmediateOp<false>(OpcodeArgs);
-template void OpDispatchBuilder::SHLImmediateOp<true>(OpcodeArgs);
-
 void OpDispatchBuilder::SHROp(OpcodeArgs) {
   auto Size = GetSrcSize(Op);
   auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= 4});
@@ -1448,8 +1409,7 @@ void OpDispatchBuilder::SHROp(OpcodeArgs) {
   HandleShift(Op, ALUOp, Dest, ShiftType::LSR, Src);
 }
 
-template<bool SHR1Bit>
-void OpDispatchBuilder::SHRImmediateOp(OpcodeArgs) {
+void OpDispatchBuilder::SHRImmediateOp(OpcodeArgs, bool SHR1Bit) {
   const auto Size = GetSrcBitSize(Op);
   auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= 32});
 
@@ -1462,9 +1422,6 @@ void OpDispatchBuilder::SHRImmediateOp(OpcodeArgs) {
   CalculateDeferredFlags();
   StoreResult(GPRClass, Op, ALUOp, -1);
 }
-
-template void OpDispatchBuilder::SHRImmediateOp<false>(OpcodeArgs);
-template void OpDispatchBuilder::SHRImmediateOp<true>(OpcodeArgs);
 
 void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
   // Calculate flags early.
@@ -1603,8 +1560,7 @@ void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
   }
 }
 
-template<bool Immediate, bool SHR1Bit>
-void OpDispatchBuilder::ASHROp(OpcodeArgs) {
+void OpDispatchBuilder::ASHROp(OpcodeArgs, bool Immediate, bool SHR1Bit) {
   const auto Size = GetSrcSize(Op);
   const auto OpSize = std::max<uint8_t>(4, GetDstSize(Op));
 
@@ -1632,10 +1588,6 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs) {
     HandleShift(Op, Result, Dest, ShiftType::ASR, Src);
   }
 }
-
-template void OpDispatchBuilder::ASHROp<true, true>(OpcodeArgs);
-template void OpDispatchBuilder::ASHROp<true, false>(OpcodeArgs);
-template void OpDispatchBuilder::ASHROp<false, false>(OpcodeArgs);
 
 void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool Is1Bit) {
   CalculateDeferredFlags();
@@ -1697,18 +1649,6 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool I
     _RotateFlags(OpSizeFromSrc(Op), Res, Src, Left);
   }
 }
-
-template<bool Left, bool IsImmediate, bool Is1Bit>
-void OpDispatchBuilder::RotateOp(OpcodeArgs) {
-  RotateOp(Op, Left, IsImmediate, Is1Bit);
-}
-
-template void OpDispatchBuilder::RotateOp<true, true, true>(OpcodeArgs);
-template void OpDispatchBuilder::RotateOp<true, true, false>(OpcodeArgs);
-template void OpDispatchBuilder::RotateOp<true, false, false>(OpcodeArgs);
-template void OpDispatchBuilder::RotateOp<false, true, true>(OpcodeArgs);
-template void OpDispatchBuilder::RotateOp<false, true, false>(OpcodeArgs);
-template void OpDispatchBuilder::RotateOp<false, false, false>(OpcodeArgs);
 
 void OpDispatchBuilder::ANDNBMIOp(OpcodeArgs) {
   auto* Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
@@ -2594,21 +2534,6 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
   }
 }
 
-template<uint32_t SrcIndex, BTAction Action>
-void OpDispatchBuilder::BTOp(OpcodeArgs) {
-  BTOp(Op, SrcIndex, Action);
-}
-
-template void OpDispatchBuilder::BTOp<0, BTAction::BTNone>(OpcodeArgs);
-template void OpDispatchBuilder::BTOp<0, BTAction::BTClear>(OpcodeArgs);
-template void OpDispatchBuilder::BTOp<0, BTAction::BTSet>(OpcodeArgs);
-template void OpDispatchBuilder::BTOp<0, BTAction::BTComplement>(OpcodeArgs);
-
-template void OpDispatchBuilder::BTOp<1, BTAction::BTNone>(OpcodeArgs);
-template void OpDispatchBuilder::BTOp<1, BTAction::BTClear>(OpcodeArgs);
-template void OpDispatchBuilder::BTOp<1, BTAction::BTSet>(OpcodeArgs);
-template void OpDispatchBuilder::BTOp<1, BTAction::BTComplement>(OpcodeArgs);
-
 void OpDispatchBuilder::IMUL1SrcOp(OpcodeArgs) {
   /* We're just going to sign-extend the non-garbage anyway.. */
   Ref Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
@@ -3007,13 +2932,12 @@ void OpDispatchBuilder::XLATOp(OpcodeArgs) {
   StoreGPRRegister(X86State::REG_RAX, Res, 1);
 }
 
-template<OpDispatchBuilder::Segment Seg>
-void OpDispatchBuilder::ReadSegmentReg(OpcodeArgs) {
+void OpDispatchBuilder::ReadSegmentReg(OpcodeArgs, OpDispatchBuilder::Segment Seg) {
   // 64-bit only
   // Doesn't hit the segment register optimization
   auto Size = GetSrcSize(Op);
   Ref Src {};
-  if constexpr (Seg == Segment::FS) {
+  if (Seg == Segment::FS) {
     Src = _LoadContext(Size, GPRClass, offsetof(FEXCore::Core::CPUState, fs_cached));
   } else {
     Src = _LoadContext(Size, GPRClass, offsetof(FEXCore::Core::CPUState, gs_cached));
@@ -3022,24 +2946,17 @@ void OpDispatchBuilder::ReadSegmentReg(OpcodeArgs) {
   StoreResult(GPRClass, Op, Src, -1);
 }
 
-template void OpDispatchBuilder::ReadSegmentReg<OpDispatchBuilder::Segment::FS>(OpcodeArgs);
-template void OpDispatchBuilder::ReadSegmentReg<OpDispatchBuilder::Segment::GS>(OpcodeArgs);
-
-template<OpDispatchBuilder::Segment Seg>
-void OpDispatchBuilder::WriteSegmentReg(OpcodeArgs) {
+void OpDispatchBuilder::WriteSegmentReg(OpcodeArgs, OpDispatchBuilder::Segment Seg) {
   // Documentation claims that the 32-bit version of this instruction inserts in to the lower 32-bits of the segment
   // This is incorrect and it instead zero extends the 32-bit value to 64-bit
   auto Size = GetDstSize(Op);
   Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  if constexpr (Seg == Segment::FS) {
+  if (Seg == Segment::FS) {
     _StoreContext(Size, GPRClass, Src, offsetof(FEXCore::Core::CPUState, fs_cached));
   } else {
     _StoreContext(Size, GPRClass, Src, offsetof(FEXCore::Core::CPUState, gs_cached));
   }
 }
-
-template void OpDispatchBuilder::WriteSegmentReg<OpDispatchBuilder::Segment::FS>(OpcodeArgs);
-template void OpDispatchBuilder::WriteSegmentReg<OpDispatchBuilder::Segment::GS>(OpcodeArgs);
 
 void OpDispatchBuilder::EnterOp(OpcodeArgs) {
   const uint8_t GPRSize = CTX->GetGPRSize();
@@ -4602,16 +4519,12 @@ void OpDispatchBuilder::UnhandledOp(OpcodeArgs) {
   DecodeFailure = true;
 }
 
-template<uint32_t SrcIndex>
-void OpDispatchBuilder::MOVGPROp(OpcodeArgs) {
+void OpDispatchBuilder::MOVGPROp(OpcodeArgs, uint32_t SrcIndex) {
   // StoreResult will store with the same size as the input, so we allow upper
   // garbage on the input. The zero extension would be pointless.
   Ref Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.Align = 1, .AllowUpperGarbage = true});
   StoreResult(GPRClass, Op, Src, 1);
 }
-
-template void OpDispatchBuilder::MOVGPROp<0>(OpcodeArgs);
-template void OpDispatchBuilder::MOVGPROp<1>(OpcodeArgs);
 
 void OpDispatchBuilder::MOVGPRNTOp(OpcodeArgs) {
   Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.Align = 1});
@@ -4914,17 +4827,10 @@ void OpDispatchBuilder::CLZeroOp(OpcodeArgs) {
   _CacheLineZero(DestMem);
 }
 
-template<bool ForStore, bool Stream, uint8_t Level>
-void OpDispatchBuilder::Prefetch(OpcodeArgs) {
+void OpDispatchBuilder::Prefetch(OpcodeArgs, bool ForStore, bool Stream, uint8_t Level) {
   Ref DestMem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.LoadData = false});
-  Prefetch(ForStore, Stream, Level, DestMem);
+  _Prefetch(ForStore, Stream, Level, DestMem, Invalid(), MEM_OFFSET_SXTX, 1);
 }
-
-template void OpDispatchBuilder::Prefetch<false, true, 1>(OpcodeArgs);
-template void OpDispatchBuilder::Prefetch<true, false, 1>(OpcodeArgs);
-template void OpDispatchBuilder::Prefetch<false, false, 1>(OpcodeArgs);
-template void OpDispatchBuilder::Prefetch<false, false, 2>(OpcodeArgs);
-template void OpDispatchBuilder::Prefetch<false, false, 3>(OpcodeArgs);
 
 void OpDispatchBuilder::RDTSCPOp(OpcodeArgs) {
   // RDTSCP is slightly different than RDTSC

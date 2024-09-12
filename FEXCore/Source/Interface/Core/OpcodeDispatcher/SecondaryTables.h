@@ -29,19 +29,19 @@ consteval inline void SecondaryTables_Install(auto& FinalTable) {
     {0x80, 16, &OpDispatchBuilder::CondJUMPOp},
     {0x90, 16, &OpDispatchBuilder::SETccOp},
     {0xA2, 1, &OpDispatchBuilder::CPUIDOp},
-    {0xA3, 1, &OpDispatchBuilder::BTOp<0, BTAction::BTNone>}, // BT
+    {0xA3, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::BTOp, 0, BTAction::BTNone>}, // BT
     {0xA4, 1, &OpDispatchBuilder::SHLDImmediateOp},
     {0xA5, 1, &OpDispatchBuilder::SHLDOp},
-    {0xAB, 1, &OpDispatchBuilder::BTOp<0, BTAction::BTSet>}, // BTS
+    {0xAB, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::BTOp, 0, BTAction::BTSet>}, // BTS
     {0xAC, 1, &OpDispatchBuilder::SHRDImmediateOp},
     {0xAD, 1, &OpDispatchBuilder::SHRDOp},
     {0xAF, 1, &OpDispatchBuilder::IMUL1SrcOp},
-    {0xB0, 2, &OpDispatchBuilder::CMPXCHGOp},                  // CMPXCHG
-    {0xB3, 1, &OpDispatchBuilder::BTOp<0, BTAction::BTClear>}, // BTR
+    {0xB0, 2, &OpDispatchBuilder::CMPXCHGOp},                                            // CMPXCHG
+    {0xB3, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::BTOp, 0, BTAction::BTClear>}, // BTR
     {0xB6, 2, &OpDispatchBuilder::MOVZXOp},
-    {0xBB, 1, &OpDispatchBuilder::BTOp<0, BTAction::BTComplement>}, // BTC
-    {0xBC, 1, &OpDispatchBuilder::BSFOp},                           // BSF
-    {0xBD, 1, &OpDispatchBuilder::BSROp},                           // BSF
+    {0xBB, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::BTOp, 0, BTAction::BTComplement>}, // BTC
+    {0xBC, 1, &OpDispatchBuilder::BSFOp},                                                     // BSF
+    {0xBD, 1, &OpDispatchBuilder::BSROp},                                                     // BSF
     {0xBE, 2, &OpDispatchBuilder::MOVSXOp},
     {0xC0, 2, &OpDispatchBuilder::XADDOp},
     {0xC3, 1, &OpDispatchBuilder::MOVGPRNTOp},
@@ -330,10 +330,10 @@ consteval inline void SecondaryOpSizeModTables_Install(auto& FinalTable) {
 inline void SecondaryTables_Install64(auto& FinalTable) {
   constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> TwoByteOpTable[] = {
     {0x05, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SyscallOp, true>},
-    {0xA0, 1, &OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX>},
-    {0xA1, 1, &OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX>},
-    {0xA8, 1, &OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX>},
-    {0xA9, 1, &OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX>},
+    {0xA0, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX>},
+    {0xA1, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX>},
+    {0xA8, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX>},
+    {0xA9, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX>},
   };
 
   InstallToTable(FinalTable, TwoByteOpTable);
@@ -342,10 +342,10 @@ inline void SecondaryTables_Install64(auto& FinalTable) {
 inline void SecondaryTables_Install32(auto& FinalTable) {
   constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> TwoByteOpTable[] = {
     {0x05, 1, &OpDispatchBuilder::NOPOp},
-    {0xA0, 1, &OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX>},
-    {0xA1, 1, &OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX>},
-    {0xA8, 1, &OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX>},
-    {0xA9, 1, &OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX>},
+    {0xA0, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX>},
+    {0xA1, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX>},
+    {0xA8, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX>},
+    {0xA9, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX>},
   };
 
   InstallToTable(FinalTable, TwoByteOpTable);
