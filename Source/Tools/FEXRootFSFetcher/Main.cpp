@@ -220,7 +220,7 @@ static bool Has_EroFSFsck {false};
 
 void CheckCurl() {
   // Check if curl exists on the host
-  std::vector<const char*> ExecveArgs = {
+  const std::array<const char*, 3> ExecveArgs = {
     "curl",
     "-V",
     nullptr,
@@ -231,7 +231,7 @@ void CheckCurl() {
 }
 
 void CheckSquashfuse() {
-  std::vector<const char*> ExecveArgs = {
+  const std::array<const char*, 3> ExecveArgs = {
     "squashfuse",
     "--help",
     nullptr,
@@ -242,7 +242,7 @@ void CheckSquashfuse() {
 }
 
 void CheckUnsquashfs() {
-  std::vector<const char*> ExecveArgs = {
+  const std::array<const char*, 3> ExecveArgs = {
     "unsquashfs",
     "--help",
     nullptr,
@@ -287,7 +287,7 @@ void CheckUnsquashfs() {
 }
 void CheckZenity() {
   // Check if zenity exists on the host
-  std::vector<const char*> ExecveArgs = {
+  std::array<const char*, 3> ExecveArgs = {
     "zenity",
     "-h",
     nullptr,
@@ -299,7 +299,7 @@ void CheckZenity() {
 
 // EroFS specific tests
 void CheckEroFSFuse() {
-  std::vector<const char*> ExecveArgs = {
+  std::array<const char*, 3> ExecveArgs = {
     "erofsfuse",
     "--help",
     nullptr,
@@ -310,7 +310,7 @@ void CheckEroFSFuse() {
 }
 
 void CheckEroFSFsck() {
-  std::vector<const char*> ExecveArgs = {
+  std::array<const char*, 3> ExecveArgs = {
     "fsck.erofs",
     "-V",
     nullptr,
@@ -499,7 +499,7 @@ struct FileTargets {
 const static std::string DownloadURL = "https://rootfs.fex-emu.gg/RootFS_links.json";
 
 std::string DownloadToString(const std::string& URL) {
-  std::vector<const char*> ExecveArgs = {
+  std::array<const char*, 3> ExecveArgs = {
     "curl",
     URL.c_str(),
     nullptr,
@@ -512,7 +512,7 @@ bool DownloadToPath(const fextl::string& URL, const fextl::string& Path) {
   auto filename = URL.substr(URL.find_last_of('/') + 1);
   auto PathName = Path + filename;
 
-  std::vector<const char*> ExecveArgs = {
+  std::array<const char*, 5> ExecveArgs = {
     "curl", URL.c_str(), "-o", PathName.c_str(), nullptr,
   };
 
@@ -533,7 +533,7 @@ bool DownloadToPathWithZenityProgress(const fextl::string& URL, const fextl::str
   // Making zenity vanish immediately
   const std::string ZenityBuf = "zenity --time-remaining --progress --no-cancel --title 'Downloading'";
   std::string BigArgs = fmt::format("{} | {} | {} | {}", CurlPipe, StdBuf, SedBuf, ZenityBuf);
-  std::vector<const char*> ExecveArgs = {
+  std::array<const char*, 4> ExecveArgs = {
     "/bin/sh",
     "-c",
     BigArgs.c_str(),
@@ -640,7 +640,7 @@ bool AskForConfirmation(const fextl::string& Question) {
   return ArgOptions::AssumeYes || ExecWithQuestion(Question);
 }
 
-int32_t AskForConfirmationList(const fextl::string& Text, const std::vector<fextl::string>& Arguments) {
+int32_t AskForConfirmationList(const fextl::string& Text, const std::span<const fextl::string> Arguments) {
   fextl::string TextArg = "--text=" + Text;
 
   std::vector<const char*> ExecveArgs = {
@@ -666,7 +666,7 @@ int32_t AskForConfirmationList(const fextl::string& Text, const std::vector<fext
   return std::stoi(Result);
 }
 
-int32_t AskForComplexConfirmationList(const std::string& Text, const std::vector<std::string>& Arguments) {
+int32_t AskForComplexConfirmationList(const std::string& Text, const std::span<const std::string> Arguments) {
   std::string TextArg = "--text=" + Text;
 
   std::vector<const char*> ExecveArgs = {
@@ -687,7 +687,7 @@ int32_t AskForComplexConfirmationList(const std::string& Text, const std::vector
   return std::stoi(Result);
 }
 
-int32_t AskForDistroSelection(DistroQuery::DistroInfo& Info, std::vector<WebFileFetcher::FileTargets>& Targets) {
+int32_t AskForDistroSelection(DistroQuery::DistroInfo& Info, const std::span<const WebFileFetcher::FileTargets> Targets) {
   // Search for an exact match
   int32_t DistroIndex = -1;
   if (!Info.Unknown) {
@@ -737,7 +737,7 @@ bool ValidateCheckExists(const WebFileFetcher::FileTargets& Target) {
 
   std::error_code ec;
   if (std::filesystem::exists(PathName, ec)) {
-    const std::vector<fextl::string> Args {
+    const std::array<const fextl::string, 2> Args {
       "Overwrite",
       "Validate",
     };
@@ -826,7 +826,7 @@ void ExecWithInfo(const fextl::string& Text) {
   std::cout << Text << std::endl;
 }
 
-int32_t AskForConfirmationList(const fextl::string& Text, const std::vector<fextl::string>& List) {
+int32_t AskForConfirmationList(const fextl::string& Text, std::span<const fextl::string> List) {
   fmt::print("{}\n", Text);
   fmt::print("Options:\n");
   fmt::print("\t0: Cancel\n");
@@ -850,7 +850,7 @@ int32_t AskForConfirmationList(const fextl::string& Text, const std::vector<fext
   }
 }
 
-int32_t AskForDistroSelection(DistroQuery::DistroInfo& Info, std::vector<WebFileFetcher::FileTargets>& Targets) {
+int32_t AskForDistroSelection(DistroQuery::DistroInfo& Info, const std::span<const WebFileFetcher::FileTargets> Targets) {
   // Search for an exact match
   int32_t DistroIndex = -1;
   if (!Info.Unknown) {
@@ -895,7 +895,7 @@ bool ValidateCheckExists(const WebFileFetcher::FileTargets& Target) {
 
   std::error_code ec;
   if (std::filesystem::exists(PathName, ec)) {
-    const std::vector<fextl::string> Args {
+    const std::array<fextl::string, 2> Args {
       "Overwrite",
       "Validate",
     };
@@ -967,8 +967,8 @@ bool ValidateDownloadSelection(const WebFileFetcher::FileTargets& Target) {
 namespace {
 std::function<bool(const fextl::string& Question)> _AskForConfirmation;
 std::function<void(const fextl::string& Text)> _ExecWithInfo;
-std::function<int32_t(const fextl::string& Text, const std::vector<fextl::string>& List)> _AskForConfirmationList;
-std::function<int32_t(DistroQuery::DistroInfo& Info, std::vector<WebFileFetcher::FileTargets>& Targets)> _AskForDistroSelection;
+std::function<int32_t(const fextl::string& Text, const std::span<const fextl::string> List)> _AskForConfirmationList;
+std::function<int32_t(DistroQuery::DistroInfo& Info, const std::span<const WebFileFetcher::FileTargets> Targets)> _AskForDistroSelection;
 std::function<bool(const WebFileFetcher::FileTargets& Target)> _ValidateCheckExists;
 std::function<bool(const WebFileFetcher::FileTargets& Target)> _ValidateDownloadSelection;
 
@@ -1013,11 +1013,11 @@ void ExecWithInfo(const fextl::string& Text) {
   _ExecWithInfo(Text);
 }
 
-int32_t AskForConfirmationList(const fextl::string& Text, const std::vector<fextl::string>& Arguments) {
+int32_t AskForConfirmationList(const fextl::string& Text, const std::span<const fextl::string> Arguments) {
   return _AskForConfirmationList(Text, Arguments);
 }
 
-int32_t AskForDistroSelection(std::vector<WebFileFetcher::FileTargets>& Targets) {
+int32_t AskForDistroSelection(const std::span<const WebFileFetcher::FileTargets> Targets) {
   auto Info = DistroQuery::GetDistroInfo();
 
   if (!ArgOptions::DistroName.empty()) {
@@ -1066,7 +1066,7 @@ bool UnsquashRootFS(const fextl::string& Path, const fextl::string& RootFS, cons
     }
   }
 
-  const std::vector<const char*> ExecveArgs = {
+  const std::array<const char*, 6> ExecveArgs = {
     "unsquashfs", "-f", "-d", TargetFolder.c_str(), RootFS.c_str(), nullptr,
   };
 
@@ -1092,7 +1092,7 @@ bool ExtractEroFS(const fextl::string& Path, const fextl::string& RootFS, const 
   ExecWithInfo("Extracting Erofs. This might take a few minutes.");
 
   const auto ExtractOption = fmt::format("--extract={}", TargetFolder);
-  const std::vector<const char*> ExecveArgs = {
+  const std::array<const char*, 4> ExecveArgs = {
     "fsck.erofs",
     ExtractOption.c_str(),
     RootFS.c_str(),
