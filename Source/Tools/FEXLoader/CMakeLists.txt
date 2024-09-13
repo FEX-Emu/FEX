@@ -96,17 +96,6 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
         add_dependencies(uninstall uninstall_binfmt_misc_64)
       endif()
     else()
-      set (SUPPORTED_BINFMT_MISC_FLAGS "POCF")
-      execute_process(COMMAND uname -r OUTPUT_VARIABLE UNAME_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
-      string(REGEX MATCH "[0-9]+.[0-9]+" KERNEL_VERSION ${UNAME_VERSION})
-      message(STATUS "Kernel version: ${KERNEL_VERSION}")
-
-      if (KERNEL_VERSION VERSION_GREATER_EQUAL 9999.0)
-        # New binfmt_misc flag for exposing the interpreter was added in version '9999.0'
-        # Only enable it if the host kernel is at least that.
-        set (SUPPORTED_BINFMT_MISC_FLAGS "POCFI")
-      endif()
-
       # In the case of update-binfmts not being available (Arch for example) then we need to install manually
       add_custom_target(binfmt_misc_32
         COMMAND ${CMAKE_COMMAND} -E
@@ -117,7 +106,7 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
           echo "Attempting to install FEX-x86 misc now."
         COMMAND ${CMAKE_COMMAND} -E
           echo
-          ':FEX-x86:M:0:\\x7fELF\\x01\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x03\\x00:\\xff\\xff\\xff\\xff\\xff\\xfe\\xfe\\x00\\x00\\x00\\x00\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff\\xff:${CMAKE_INSTALL_PREFIX}/bin/FEXInterpreter:${SUPPORTED_BINFMT_MISC_FLAGS}' > /proc/sys/fs/binfmt_misc/register
+          ':FEX-x86:M:0:\\x7fELF\\x01\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x03\\x00:\\xff\\xff\\xff\\xff\\xff\\xfe\\xfe\\x00\\x00\\x00\\x00\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff\\xff:${CMAKE_INSTALL_PREFIX}/bin/FEXInterpreter:POCF' > /proc/sys/fs/binfmt_misc/register
         COMMAND ${CMAKE_COMMAND} -E
           echo "binfmt_misc FEX-x86 installed"
         )
@@ -130,7 +119,7 @@ if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
           echo "Attempting to install FEX-x86_64 misc now."
         COMMAND ${CMAKE_COMMAND} -E
           echo
-          ':FEX-x86_64:M:0:\\x7fELF\\x02\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x3e\\x00:\\xff\\xff\\xff\\xff\\xff\\xfe\\xfe\\x00\\x00\\x00\\x00\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff\\xff:${CMAKE_INSTALL_PREFIX}/bin/FEXInterpreter:${SUPPORTED_BINFMT_MISC_FLAGS}' > /proc/sys/fs/binfmt_misc/register
+          ':FEX-x86_64:M:0:\\x7fELF\\x02\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x3e\\x00:\\xff\\xff\\xff\\xff\\xff\\xfe\\xfe\\x00\\x00\\x00\\x00\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff\\xff:${CMAKE_INSTALL_PREFIX}/bin/FEXInterpreter:POCF' > /proc/sys/fs/binfmt_misc/register
         COMMAND ${CMAKE_COMMAND} -E
           echo "binfmt_misc FEX-x86_64 installed"
         )
