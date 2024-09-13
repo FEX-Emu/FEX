@@ -205,7 +205,6 @@ uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname
 
   // AT_EMPTY_PATH is only used if the pathname is empty.
   const bool IsFDExec = (Args.flags & AT_EMPTY_PATH) && strlen(pathname) == 0;
-  const bool SupportsProcFSInterpreter = SyscallHandler->FM.SupportsProcFSInterpreterPath();
   fextl::string FDExecEnv;
   fextl::string FDSeccompEnv;
 
@@ -233,19 +232,17 @@ uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname
       return -ENOENT;
     }
 
-    if (!SupportsProcFSInterpreter) {
-      int pid = getpid();
+    int pid = getpid();
 
-      char PidSelfPath[50];
-      snprintf(PidSelfPath, 50, "/proc/%i/exe", pid);
+    char PidSelfPath[50];
+    snprintf(PidSelfPath, 50, "/proc/%i/exe", pid);
 
-      if (strcmp(pathname, "/proc/self/exe") == 0 || strcmp(pathname, "/proc/thread-self/exe") == 0 || strcmp(pathname, PidSelfPath) == 0) {
-        // If the application is trying to execve `/proc/self/exe` or its variants,
-        // then we need to redirect this path to the true application path.
-        // This is because this path is a symlink to the executing application, which is always `FEXInterpreter` or `FEXLoader`.
-        // ex: JRE and shapez.io do this self-execution.
-        Filename = SyscallHandler->Filename();
-      }
+    if (strcmp(pathname, "/proc/self/exe") == 0 || strcmp(pathname, "/proc/thread-self/exe") == 0 || strcmp(pathname, PidSelfPath) == 0) {
+      // If the application is trying to execve `/proc/self/exe` or its variants,
+      // then we need to redirect this path to the true application path.
+      // This is because this path is a symlink to the executing application, which is always `FEXInterpreter` or `FEXLoader`.
+      // ex: JRE and shapez.io do this self-execution.
+      Filename = SyscallHandler->Filename();
     }
 
     Type = ELFLoader::ELFContainer::GetELFType(Filename);
@@ -392,8 +389,7 @@ uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname
     ExecveArgs.emplace_back(nullptr);
   }
 
-  const char* InterpreterPath = SupportsProcFSInterpreter ? "/proc/self/interpreter" : "/proc/self/exe";
-  Result = ::syscall(SYS_execveat, Args.dirfd, InterpreterPath, const_cast<char* const*>(ExecveArgs.data()), EnvpPtr, Args.flags);
+  Result = ::syscall(SYS_execveat, Args.dirfd, "/proc/self/exe", const_cast<char* const*>(ExecveArgs.data()), EnvpPtr, Args.flags);
   CloseSeccompFD();
   CloseFDExecFD();
 

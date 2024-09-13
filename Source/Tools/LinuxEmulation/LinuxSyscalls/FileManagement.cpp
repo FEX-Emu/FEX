@@ -322,32 +322,6 @@ FileManager::FileManager(FEXCore::Context::Context* ctx)
     }
   }
 
-  // Check to see if this kernel exposes `/proc/self/interpreter`.
-  // In the case that it does then behaviour is different than without.
-  //
-  // When procfs/interpreter is supported (binfmt_misc flag enabled):
-  // - procfs/exe -> symlink to the correct executable just like when executing natively.
-  // - procfs/interpreter -> symlink to FEXInterpreter.
-  //
-  // FEX no longer needs to track accesses to procfs/exe which improves performance and also improves correctness.
-  //
-  // When procfs/interpreter is supported (binfmt_misc flag not enabled):
-  // When procfs/interpreter is NOT supported:
-  // - procfs/exe -> symlink to FEXInterpreter.
-  // - procfs/interpreter -> symlink doesn't exist.
-  //
-  // In either of these two cases, FEX still needs to track procfs/exe so we can't completely get away from it.
-  // This happens in a few edge cases
-  // - binfmt_misc not installed
-  // - binfmt_misc doesn't support enabling the new flag
-  // - executable called through FEXInterpreter directly
-  //   - Can happen because of directly executing the process through FEXIntepreter or through FEXBash.
-  char FilenameExe[PATH_MAX];
-  char FilenameInterpreter[PATH_MAX];
-  const auto ExeSymlinkPath = FHU::Symlinks::ResolveSymlink("/proc/self/exe", FilenameExe);
-  const auto InterpreterSymlinkPath = FHU::Symlinks::ResolveSymlink("/proc/self/interpreter", FilenameInterpreter);
-  SupportsProcFSInterpreter = !InterpreterSymlinkPath.empty() && ExeSymlinkPath != InterpreterSymlinkPath;
-
   UpdatePID(::getpid());
 }
 
@@ -498,11 +472,6 @@ bool FileManager::IsSelfNoFollow(const char* Pathname, int flags) const {
 }
 
 std::optional<std::string_view> FileManager::GetSelf(const char* Pathname) {
-  if (SupportsProcFSInterpreter) {
-    // FEX doesn't need to track procfs/exe if this is supported.
-    return Pathname;
-  }
-
   if (!Pathname) {
     return std::nullopt;
   }
@@ -666,17 +635,15 @@ uint64_t FileManager::FAccessat2(int dirfd, const char* pathname, int mode, int 
 }
 
 uint64_t FileManager::Readlink(const char* pathname, char* buf, size_t bufsiz) {
-  if (!SupportsProcFSInterpreter) {
-    // calculate the non-self link to exe
-    // Some executables do getpid, stat("/proc/$pid/exe")
-    char PidSelfPath[50];
-    snprintf(PidSelfPath, 50, "/proc/%i/exe", CurrentPID);
+  // calculate the non-self link to exe
+  // Some executables do getpid, stat("/proc/$pid/exe")
+  char PidSelfPath[50];
+  snprintf(PidSelfPath, 50, "/proc/%i/exe", CurrentPID);
 
-    if (strcmp(pathname, "/proc/self/exe") == 0 || strcmp(pathname, "/proc/thread-self/exe") == 0 || strcmp(pathname, PidSelfPath) == 0) {
-      const auto& App = Filename();
-      strncpy(buf, App.c_str(), bufsiz);
-      return std::min(bufsiz, App.size());
-    }
+  if (strcmp(pathname, "/proc/self/exe") == 0 || strcmp(pathname, "/proc/thread-self/exe") == 0 || strcmp(pathname, PidSelfPath) == 0) {
+    const auto& App = Filename();
+    strncpy(buf, App.c_str(), bufsiz);
+    return std::min(bufsiz, App.size());
   }
 
   FDPathTmpData TmpFilename;
@@ -745,15 +712,13 @@ uint64_t FileManager::Readlinkat(int dirfd, const char* pathname, char* buf, siz
     }
   }
 
-  if (!SupportsProcFSInterpreter) {
-    char PidSelfPath[50];
-    snprintf(PidSelfPath, 50, "/proc/%i/exe", CurrentPID);
+  char PidSelfPath[50];
+  snprintf(PidSelfPath, 50, "/proc/%i/exe", CurrentPID);
 
-    if (Path == "/proc/self/exe" || Path == "/proc/thread-self/exe" || Path == PidSelfPath) {
-      const auto& App = Filename();
-      strncpy(buf, App.c_str(), bufsiz);
-      return std::min(bufsiz, App.size());
-    }
+  if (Path == "/proc/self/exe" || Path == "/proc/thread-self/exe" || Path == PidSelfPath) {
+    const auto& App = Filename();
+    strncpy(buf, App.c_str(), bufsiz);
+    return std::min(bufsiz, App.size());
   }
 
   FDPathTmpData TmpFilename;
