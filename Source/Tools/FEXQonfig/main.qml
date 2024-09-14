@@ -369,7 +369,14 @@ ApplicationWindow {
                             component RootFSRadioDelegate: RadioButton {
                                 property var name
 
-                                text: name
+                                text: (() => {
+                                    for (const base of RootFSModel.getStandardPrefixes()) {
+                                        if (name.startsWith(base)) {
+                                            return name.substring(base.length)
+                                        }
+                                    }
+                                    return name
+                                })()
                                 checked: rootfsList.selectedItem === name
 
                                 onToggled: {

@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT
+#include <FEXCore/fextl/string.h>
+
 #include <QStandardItemModel>
 #include <QQmlApplicationEngine>
 
@@ -41,9 +43,11 @@ class RootFSModel : public QStandardItemModel {
   std::latch ExitRequest {1};
 
   int INotifyFD;
-  int FolderFD;
+  int FolderFDUser;
+  int FolderFDSystem;
 
   void INotifyThreadFunc();
+  void ProcessRootfsDir(const fextl::string& Dir, std::vector<QString>& FsList);
 
 public:
   RootFSModel();
@@ -55,6 +59,7 @@ public slots:
   bool hasItem(const QString&) const;
 
   QUrl getBaseUrl() const;
+  QList<QString> getStandardPrefixes() const;
 };
 
 class ConfigRuntime : public QObject {

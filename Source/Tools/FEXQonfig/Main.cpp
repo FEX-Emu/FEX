@@ -189,9 +189,12 @@ static void ConfigInit(fextl::string ConfigFilename) {
 RootFSModel::RootFSModel() {
   INotifyFD = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
 
-  fextl::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
-  FolderFD = inotify_add_watch(INotifyFD, RootFS.c_str(), IN_CREATE | IN_DELETE);
-  if (FolderFD != -1) {
+  fextl::string RootFSUser = FEXCore::Config::GetDataDirectory() + "RootFS/";
+  fextl::string RootFSSystem = "/usr/share/fex-emu/RootFS/";
+
+  FolderFDUser = inotify_add_watch(INotifyFD, RootFSUser.c_str(), IN_CREATE | IN_DELETE);
+  FolderFDSystem = inotify_add_watch(INotifyFD, RootFSSystem.c_str(), IN_CREATE | IN_DELETE);
+  if ((FolderFDSystem != -1) || (FolderFDUser != -1)) {
     Thread = std::thread {&RootFSModel::INotifyThreadFunc, this};
   } else {
     qWarning() << "Could not set up inotify. RootFS folder won't be monitored for changes.";
@@ -209,24 +212,34 @@ RootFSModel::~RootFSModel() {
   Thread.join();
 }
 
+void RootFSModel::ProcessRootfsDir(const fextl::string& Dir, std::vector<QString>& FsList) {
+  std::error_code ec;
+  for (auto& it : std::filesystem::directory_iterator(Dir, ec)) {
+    if (it.is_directory()) {
+      FsList.push_back(QString::fromStdString(it.path()));
+    } else if (it.is_regular_file()) {
+      // If it is a regular file then we need to check if it is a valid archive
+      if (it.path().extension() == ".sqsh" && FEX::FormatCheck::IsSquashFS(fextl::string_from_path(it.path()))) {
+        FsList.push_back(QString::fromStdString(it.path()));
+      } else if (it.path().extension() == ".ero" && FEX::FormatCheck::IsEroFS(fextl::string_from_path(it.path()))) {
+        FsList.push_back(QString::fromStdString(it.path()));
+      }
+    }
+  }
+  if (ec && ec != std::errc::no_such_file_or_directory) {
+    throw std::filesystem::filesystem_error("", Dir, ec);
+  }
+}
+
 void RootFSModel::Reload() {
   beginResetModel();
   removeRows(0, rowCount());
 
-  fextl::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
+  fextl::string RootFSUser = FEXCore::Config::GetDataDirectory() + "RootFS/";
   std::vector<QString> NamedRootFS {};
-  for (auto& it : std::filesystem::directory_iterator(RootFS)) {
-    if (it.is_directory()) {
-      NamedRootFS.push_back(QString::fromStdString(it.path().filename()));
-    } else if (it.is_regular_file()) {
-      // If it is a regular file then we need to check if it is a valid archive
-      if (it.path().extension() == ".sqsh" && FEX::FormatCheck::IsSquashFS(fextl::string_from_path(it.path()))) {
-        NamedRootFS.push_back(QString::fromStdString(it.path().filename()));
-      } else if (it.path().extension() == ".ero" && FEX::FormatCheck::IsEroFS(fextl::string_from_path(it.path()))) {
-        NamedRootFS.push_back(QString::fromStdString(it.path().filename()));
-      }
-    }
-  }
+  ProcessRootfsDir(RootFSUser, NamedRootFS);
+  fextl::string RootFSSystem = "/usr/share/fex-emu/RootFS/";
+  ProcessRootfsDir(RootFSSystem, NamedRootFS);
   std::sort(NamedRootFS.begin(), NamedRootFS.end(), [](const QString& a, const QString& b) { return QString::localeAwareCompare(a, b) < 0; });
   for (auto& Entry : NamedRootFS) {
     appendRow(new QStandardItem(Entry));
@@ -241,6 +254,13 @@ bool RootFSModel::hasItem(const QString& Name) const {
 
 QUrl RootFSModel::getBaseUrl() const {
   return QUrl::fromLocalFile(QString::fromStdString(FEXCore::Config::GetDataDirectory().c_str()) + "RootFS/");
+}
+
+QList<QString> RootFSModel::getStandardPrefixes() const {
+  return QList({
+        QString::fromStdString(FEXCore::Config::GetDataDirectory().c_str()) + "RootFS/",
+        QString::fromStdString("/usr/share/fex-emu/RootFS/")
+      });
 }
 
 void RootFSModel::INotifyThreadFunc() {
