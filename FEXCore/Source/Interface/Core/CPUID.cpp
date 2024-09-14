@@ -96,20 +96,39 @@ static uint32_t GetCPUID() {
   return CPU;
 }
 
+struct CPUFamily {
+  uint32_t Stepping         : 4;
+  uint32_t Model            : 4;
+  uint32_t ExtendedModel    : 4;
+  uint32_t FamilyID         : 4;
+  uint32_t ExtendedFamilyID : 8;
+  uint32_t ProcessorType    : 4;
+};
+
+constexpr static uint32_t GenerateFamily(const CPUFamily Family) {
+  return Family.Stepping | (Family.Model << 4) | (Family.FamilyID << 8) | (Family.ProcessorType << 12) | (Family.ExtendedModel << 16) |
+         (Family.ExtendedFamilyID << 20);
+}
+
 #ifdef CPUID_AMD
-constexpr uint32_t FAMILY_IDENTIFIER = 0 |          // Stepping
-                                       (0xA << 4) | // Model
-                                       (0xF << 8) | // Family ID
-                                       (0 << 12) |  // Processor type
-                                       (0 << 16) |  // Extended model ID
-                                       (1 << 20);   // Extended family ID
+constexpr uint32_t FAMILY_IDENTIFIER = GenerateFamily(CPUFamily {
+  .Stepping = 0,
+  .Model = 0xA,
+  .ExtendedModel = 0,
+  .FamilyID = 0xF,
+  .ExtendedFamilyID = 1,
+  .ProcessorType = 0,
+});
+
 #else
-constexpr uint32_t FAMILY_IDENTIFIER = 0 |          // Stepping
-                                       (0x7 << 4) | // Model
-                                       (0x6 << 8) | // Family ID
-                                       (0 << 12) |  // Processor type
-                                       (1 << 16) |  // Extended model ID
-                                       (0x0 << 20); // Extended family ID
+constexpr uint32_t FAMILY_IDENTIFIER = GenerateFamily(CPUFamily {
+  .Stepping = 1,
+  .Model = 6,
+  .ExtendedModel = 0xA,
+  .FamilyID = 6,
+  .ExtendedFamilyID = 0,
+  .ProcessorType = 0,
+});
 #endif
 
 #ifdef _M_ARM_64
