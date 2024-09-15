@@ -18,7 +18,7 @@ foreach(POSIX_TEST ${POSIX_TESTS})
     "${TEST_NAME}"
     "guest"
     "${CMAKE_BINARY_DIR}/Bin/FEXLoader"
-    "-o" "stderr" "--no-silent" "-n" "500" "--"
+    "-o" "stderr" "--no-silentlog" "-n" "500" "--"
     "${POSIX_TEST}")
   set_property(TEST "${TEST_NAME}.jit.posix" APPEND PROPERTY SKIP_RETURN_CODE 125)
 endforeach()
