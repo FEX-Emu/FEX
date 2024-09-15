@@ -90,6 +90,8 @@ foreach(ASM_SRC ${ASM_SOURCES})
       list(APPEND ARGS_LIST "--smcchecks=full")
     endif()
 
+    list(APPEND ARGS_LIST "--")
+
     add_test(NAME ${TEST_NAME}
       COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/testharness_runner.py"
       "${CMAKE_SOURCE_DIR}/unittests/ASM/Known_Failures"

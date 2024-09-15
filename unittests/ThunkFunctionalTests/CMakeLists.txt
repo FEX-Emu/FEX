@@ -4,7 +4,7 @@ function(AddThunksTest Bin ThunksFile)
   set (ARGS
     "-t" "${CMAKE_INSTALL_PREFIX}/lib/fex-emu/HostThunks"
     "-j" "${CMAKE_INSTALL_PREFIX}/share/fex-emu/GuestThunks"
-    "-o" "stderr" "--no-silentlog" "-n" "500"
+    "-o" "stderr" "--no-silentlog" "-n" "500" "--"
     )
   if (NOT ThunksFile)
     set (TEST_NAME ThunkFunctionalTest-NoThunks-${Bin})
