@@ -65,7 +65,7 @@ function(AddTests Tests BinDirectory Bitness)
       "guest"
       "$<TARGET_FILE:FEXLoader>"
       ${THUNK_ARGS}
-      "-o" "stderr" "--no-silent" "-n" "500" "--"
+      "-o" "stderr" "--no-silentlog" "-n" "500" "--"
       "${BIN_PATH}")
 
     if (_M_X86_64 AND NOT TEST_NAME STREQUAL "thunk_testlib")
