@@ -351,81 +351,72 @@ def print_config_option(type, group_name, json_name, default_value, short, choic
 
     output_argloader.write("\n");
 
-def print_argloader_options(options):
-    output_argloader.write("#ifdef BEFORE_PARSE\n")
-    output_argloader.write("#undef BEFORE_PARSE\n")
+def print_argloader_options_map(options):
+    output_argloader.write("#ifdef ARG_TO_CONFIG\n")
+    output_argloader.write("#undef ARG_TO_CONFIG\n")
     for op_group, group_vals in options.items():
         for op_key, op_vals in group_vals.items():
-            default = op_vals["Default"]
-
-            if (op_vals["Type"] == "str" or op_vals["Type"] == "strarray" or op_vals["Type"] == "strenum"):
-                # Wrap the string argument in quotes
-                default = "\"" + default + "\""
-
-            # Textual default rather than enum based
-            if ("TextDefault" in op_vals):
-                default = "\"" + op_vals["TextDefault"] + "\""
-
-            short = None
-            choices = None
-
-            if ("ShortArg" in op_vals):
-                short = op_vals["ShortArg"]
-            if ("Choices" in op_vals):
-                choices = op_vals["Choices"]
-
-            print_config_option(
-                op_vals["Type"],
-                op_group,
-                op_key,
-                default,
-                short,
-                choices,
-                op_vals["Desc"])
-
-        output_argloader.write("\n")
-    output_argloader.write("#endif\n")
-
-def print_parse_argloader_options(options):
-    output_argloader.write("#ifdef AFTER_PARSE\n")
-    output_argloader.write("#undef AFTER_PARSE\n")
-    for op_group, group_vals in options.items():
-        for op_key, op_vals in group_vals.items():
-            output_argloader.write("if (Options.is_set_by_user(\"{0}\")) {{\n".format(op_key))
 
             value_type = op_vals["Type"]
-            NeedsString = False
-            conversion_func = "fextl::fmt::format(\"{}\", "
-            if ("ArgumentHandler" in op_vals):
-                NeedsString = True
-                conversion_func = "FEXCore::Config::Handler::{0}(".format(op_vals["ArgumentHandler"])
-            if (value_type == "str"):
-                NeedsString = True
-                conversion_func = "std::move("
-            if (value_type == "bool"):
-                # boolean values need a decimal specifier. Otherwise fmt prints strings.
-                conversion_func = "fextl::fmt::format(\"{:d}\", "
 
-            if (value_type == "strenum"):
-                output_argloader.write("\tfextl::string UserValue = Options[\"{0}\"];\n".format(op_key))
-                output_argloader.write("\tSet(FEXCore::Config::ConfigOption::CONFIG_{}, FEXCore::Config::EnumParser<FEXCore::Config::{}ConfigPair>(FEXCore::Config::{}_EnumPairs, UserValue));\n".format(op_key.upper(), op_key, op_key, op_key))
-            elif (value_type == "strarray"):
-                # these need a bit more help
-                output_argloader.write("\tauto Array = Options.all(\"{0}\");\n".format(op_key))
-                output_argloader.write("\tfor (auto iter = Array.begin(); iter != Array.end(); ++iter) {\n")
-                output_argloader.write("\t\tSet(FEXCore::Config::ConfigOption::CONFIG_{0}, *iter);\n".format(op_key.upper()))
-                output_argloader.write("\t}\n")
-            else:
-                if (NeedsString):
-                    output_argloader.write("\tfextl::string UserValue = Options[\"{0}\"];\n".format(op_key))
-                else:
-                    output_argloader.write("\t{0} UserValue = Options.get(\"{1}\");\n".format(value_type, op_key))
+            ParserType = "ParserTypes::String"
 
-                output_argloader.write("\tSet(FEXCore::Config::ConfigOption::CONFIG_{0}, {1}UserValue));\n".format(op_key.upper(), conversion_func))
+            if value_type == "bool":
+                ParserType = "ParserTypes::BoolTrue"
+
+            if value_type == "strenum":
+                ParserType = "ParserTypes::StringEnum"
+
+            if value_type == "strarray":
+                ParserType = "ParserTypes::StringArray"
+
+            short = None
+            if ("ShortArg" in op_vals):
+                short = op_vals["ShortArg"]
+
+            if short != None:
+                output_argloader.write("{{\"-{}\", FEXCore::Config::ConfigOption::CONFIG_{}, {}}},\n".format(short, op_key.upper(), ParserType))
+
+            output_argloader.write("{{\"--{}\", FEXCore::Config::ConfigOption::CONFIG_{}, {}}},\n".format(op_key.lower(), op_key.upper(), ParserType))
+
+            if value_type == "bool":
+                output_argloader.write("{{\"--no-{}\", FEXCore::Config::ConfigOption::CONFIG_{}, ParserTypes::BoolFalse}},\n".format(op_key.lower(), op_key.upper()))
+    output_argloader.write("#endif\n")
+
+def print_parse_argloader_strconversion(options):
+    output_argloader.write("#ifdef STR_CONVERT_PARSE\n")
+    output_argloader.write("#undef STR_CONVERT_PARSE\n")
+    for op_group, group_vals in options.items():
+        for op_key, op_vals in group_vals.items():
+            value_type = op_vals["Type"]
+            if not "ArgumentHandler" in op_vals:
+                continue
+
+            output_argloader.write("case FEXCore::Config::ConfigOption::CONFIG_{}: {{\n".format(op_key.upper()))
+            output_argloader.write("\tauto Converted = FEXCore::Config::Handler::{0}(SecondArg);\n".format(op_vals["ArgumentHandler"]))
+            output_argloader.write("\tLoader->SetArg(FEXCore::Config::ConfigOption::CONFIG_{}, Converted);\n".format(op_key.upper()))
+            output_argloader.write("break;\n".format(op_key.upper()))
             output_argloader.write("}\n")
 
     output_argloader.write("#endif\n")
 
+def print_parse_argloader_enumparser(options):
+    output_argloader.write("#ifdef STR_ENUM_PARSE\n")
+    output_argloader.write("#undef STR_ENUM_PARSE\n")
+    for op_group, group_vals in options.items():
+        for op_key, op_vals in group_vals.items():
+            value_type = op_vals["Type"]
+
+            if (value_type == "strenum"):
+                output_argloader.write("case FEXCore::Config::ConfigOption::CONFIG_{}: {{\n".format(op_key.upper()))
+                output_argloader.write("\tauto Converted = FEXCore::Config::EnumParser<FEXCore::Config::{}ConfigPair>(FEXCore::Config::{}_EnumPairs, SecondArg);\n".format(op_key, op_key, op_key))
+                output_argloader.write("\tif (Converted) { SecondArg = *Converted; }\n")
+                output_argloader.write("\tLoader->SetArg(FEXCore::Config::ConfigOption::CONFIG_{}, SecondArg);\n".format(op_key.upper()))
+                output_argloader.write("break;\n".format(op_key.upper()))
+                output_argloader.write("}\n")
+
+
+    output_argloader.write("#endif\n")
 
 def print_parse_envloader_options(options):
     output_argloader.write("#ifdef ENVLOADER\n")
@@ -574,8 +565,9 @@ output_man.close()
 
 # Generate argument loader code
 output_argloader = open(output_argumentloader_filename, "w")
-print_argloader_options(options);
-print_parse_argloader_options(options);
+print_argloader_options_map(options);
+print_parse_argloader_strconversion(options);
+print_parse_argloader_enumparser(options);
 
 # Generate environment loader code
 print_parse_envloader_options(options);
