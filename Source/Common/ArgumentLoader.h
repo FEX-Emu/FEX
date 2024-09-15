@@ -18,7 +18,12 @@ public:
     , Type {Type}
     , argc {argc}
     , argv {argv} {
-    Load();
+
+    if (Type == LoadType::WITHOUT_FEXLOADER_PARSER) {
+      LoadWithoutArguments();
+    } else {
+      Load();
+    }
   }
 
   void Load() override;
@@ -26,7 +31,8 @@ public:
   fextl::vector<fextl::string> Get() {
     return RemainingArgs;
   }
-  fextl::vector<fextl::string> GetParsedArgs() {
+
+  fextl::vector<const char*> GetParsedArgs() {
     return ProgramArguments;
   }
 
@@ -34,13 +40,15 @@ public:
     return Type;
   }
 
+  void SetArg(FEXCore::Config::ConfigOption Option, std::string_view Arg);
+
 private:
   LoadType Type;
   int argc {};
   char** argv {};
 
   fextl::vector<fextl::string> RemainingArgs {};
-  fextl::vector<fextl::string> ProgramArguments {};
+  fextl::vector<const char*> ProgramArguments {};
 };
 
 } // namespace FEX::ArgLoader

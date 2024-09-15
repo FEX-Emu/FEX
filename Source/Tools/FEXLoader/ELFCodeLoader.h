@@ -232,7 +232,7 @@ public:
   fextl::vector<LoadedSection> Sections;
 
   ELFCodeLoader(const fextl::string& Filename, int ProgramFDFromEnv, const fextl::string& RootFS,
-                [[maybe_unused]] const fextl::vector<fextl::string>& args, const fextl::vector<fextl::string>& ParsedArgs,
+                [[maybe_unused]] const fextl::vector<fextl::string>& args, const fextl::vector<const char*>& ParsedArgs,
                 char** const envp = nullptr, FEXCore::Config::Value<fextl::string>* AdditionalEnvp = nullptr)
     : Args {args} {
 
@@ -328,9 +328,7 @@ public:
       EnvironmentBackingSize += EnvironmentVariables[i].size() + 1;
     }
 
-    for (auto& Arg : ParsedArgs) {
-      LoaderArgs.emplace_back(Arg.c_str());
-    }
+    std::move(ParsedArgs.begin(), ParsedArgs.end(), std::back_inserter(LoaderArgs));
   }
 
   void FreeSections() {

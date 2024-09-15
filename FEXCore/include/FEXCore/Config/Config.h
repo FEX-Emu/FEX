@@ -18,7 +18,7 @@
 
 namespace FEXCore::Config {
 namespace Handler {
-  static inline std::optional<fextl::string> SMCCheckHandler(std::string_view Value) {
+  static inline fextl::string SMCCheckHandler(std::string_view Value) {
     if (Value == "none") {
       return "0";
     } else if (Value == "mtrack") {
@@ -28,7 +28,7 @@ namespace Handler {
     }
     return "0";
   }
-  static inline std::optional<fextl::string> CacheObjectCodeHandler(std::string_view Value) {
+  static inline fextl::string CacheObjectCodeHandler(std::string_view Value) {
     if (Value == "none") {
       return "0";
     } else if (Value == "read") {
