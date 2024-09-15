@@ -92,7 +92,9 @@ foreach(ASM_SRC ${ASM_SOURCES})
       "${CMAKE_SOURCE_DIR}/unittests/32Bit_ASM/Disabled_Tests_${CPU_CLASS}"
       "Test_32Bit_${REL_TEST_ASM}"
       ${LAUNCH_PROGRAM}
-      ${ARGS_LIST} "${OUTPUT_NAME}" "${OUTPUT_CONFIG_NAME}")
+      ${ARGS_LIST}
+      "--"
+      "${OUTPUT_NAME}" "${OUTPUT_CONFIG_NAME}")
     # This will cause the ASM tests to fail if it can't find the TestHarness or ASMN files
     # Prety crap way to work around the fact that tests can't have a build dependency in a different directory
     # Just make sure to independently run `make all` then `make test`
