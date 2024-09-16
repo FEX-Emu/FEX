@@ -2,7 +2,7 @@
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/string.h>
 
-#include "Common/cpp-optparse/OptionParser.h"
+#include "Common/MicroArgParser.h"
 #include "Common/JSONPool.h"
 #include "XXFileHash.h"
 
@@ -53,58 +53,57 @@ enum class UIOverrideOption {
 UIOverrideOption UIOption {UIOverrideOption::Default};
 
 void ParseArguments(int argc, char** argv) {
-  optparse::OptionParser Parser = optparse::OptionParser().description("Tool for fetching RootFS from FEXServers").add_help_option(true);
+  static std::array<FEX::MicroArgParser::ParseMember, 9> Args = {{
+    {FEX::MicroArgParser::ParseMember::Type::Bool, "-y", "--assume-yes", "Assume yes to prompts", "0"},
+    {FEX::MicroArgParser::ParseMember::Type::Bool, "-x", "--extract", "Extract compressed image", "0"},
+    {FEX::MicroArgParser::ParseMember::Type::Bool, "-a", "--as-is", "Use compressed image as-is", "0"},
+    {FEX::MicroArgParser::ParseMember::Type::String, {}, "--distro-name", "Which distro name to select", {}},
+    {FEX::MicroArgParser::ParseMember::Type::String, {}, "--distro-version", "Which distro version to select", {}},
+    {FEX::MicroArgParser::ParseMember::Type::Bool,
+     {},
+     "--distro-list-first",
+     "When presented the distro-list option, automatically select the first distro if there isn't an exact match.",
+     "0"},
 
-  Parser.add_option("-y", "--assume-yes").action("store_true").help("Assume yes to prompts");
+    {FEX::MicroArgParser::ParseMember::Type::Choices, {}, "--force-ui", "Override which UI to use for selection", "default", "default,tty,zenity"},
 
-  Parser.add_option("-x", "--extract").action("store_true").help("Extract compressed image");
+    // Defaults
+    {FEX::MicroArgParser::ParseMember::Type::Bool, "-v", "--version", "show program's verison number and exit", "0"},
+    {FEX::MicroArgParser::ParseMember::Type::Bool, "-h", "--help", "show this help message and exit", "0"},
+  }};
 
-  Parser.add_option("-a", "--as-is").action("store_true").help("Use compressed image as-is");
+  // Load the arguments
+  FEX::MicroArgParser Parser(Args);
+  Parser.Desc("Tool for fetching RootFS from FEXServers");
+  Parser.Parse(argc, argv);
 
-  Parser.add_option("--distro-name").help("Which distro name to select");
+  AssumeYes = Parser.Get<bool>("-y");
 
-  Parser.add_option("--distro-version").help("Which distro version to select");
-
-  Parser.add_option("--distro-list-first").action("store_true").help("When presented the distro-list option, automatically select the first distro if there isn't an exact match.");
-
-  Parser.add_option("--force-ui").choices({"default", "tty", "zenity"}).set_default("default").help("Override which UI to use for selection");
-
-  optparse::Values Options = Parser.parse_args(argc, argv);
-
-  if (Options.is_set_by_user("assume_yes")) {
-    AssumeYes = Options.get("assume_yes");
-  }
-
-  if (Options.is_set_by_user("extract")) {
+  if (Parser.Get<bool>("-x")) {
     CompressedUsageOption = CompressedImageOption::OPTION_EXTRACT;
   }
 
-  if (Options.is_set_by_user("as_is")) {
+  if (Parser.Get<bool>("-a")) {
     CompressedUsageOption = CompressedImageOption::OPTION_ASIS;
   }
 
-  if (Options.is_set_by_user("distro_list_first")) {
+  if (Parser.Get<bool>("--distro-list-first")) {
     DistroListOption = ListQueryOption::OPTION_FIRST;
   }
 
-  if (Options.is_set_by_user("distro_name")) {
-    DistroName = Options["distro_name"];
+  DistroName = Parser.Get<std::string_view>("--distro-name");
+  DistroVersion = Parser.Get<std::string_view>("--distro-version");
+
+  auto Option = Parser.Get<std::string_view>("--force-ui");
+  if (Option == "tty") {
+    UIOption = UIOverrideOption::TTY;
+  } else if (Option == "zenity") {
+    UIOption = UIOverrideOption::Zenity;
   }
 
-  if (Options.is_set_by_user("distro_version")) {
-    DistroVersion = Options["distro_version"];
+  for (size_t i = Parser.GetRemainingArgumentsIndex(); i < argc; ++i) {
+    RemainingArgs.emplace_back(argv[i]);
   }
-
-  if (Options.is_set_by_user("force_ui")) {
-    auto Option = Options["force_ui"];
-    if (Option == "tty") {
-      UIOption = UIOverrideOption::TTY;
-    } else if (Option == "zenity") {
-      UIOption = UIOverrideOption::Zenity;
-    }
-  }
-
-  RemainingArgs = Parser.args();
 }
 } // namespace ArgOptions
 
