@@ -7,7 +7,7 @@ if (NOT MINGW_BUILD)
       find_package(Qt5 COMPONENTS Qml Quick Widgets REQUIRED)
     endif()
 
-    add_subdirectory(FEXQonfig/)
+    add_subdirectory(FEXConfig/)
   endif()
 
   if (ENABLE_GDB_SYMBOLS)
