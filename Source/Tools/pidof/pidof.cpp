@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-#include "OptionParser.h"
+#include <FEXCore/fextl/string.h>
+#include "Common/MicroArgParser.h"
 
 #include <charconv>
 #include <cstring>
@@ -14,35 +15,34 @@ namespace Config {
 bool SingleShot {};
 bool SkipZombie {true};
 bool DoNotDisplay {};
-std::string Separator {" "};
+std::string_view Separator {" "};
 std::unordered_set<int64_t> OmitPids;
 std::unordered_set<std::string> Programs;
 
 void LoadOptions(int argc, char** argv) {
-  optparse::OptionParser Parser {};
+  static std::array<FEX::MicroArgParser::ParseMember, 7> Args = {{
+    {FEX::MicroArgParser::ParseMember::Type::Bool, "-s", {}, "Single shot - Only returns one pid", "0"},
+    {FEX::MicroArgParser::ParseMember::Type::Bool, "-q", {}, "Do not display matched PIDs to stdout. Simply exit with status of true or false if a PID was found", "0"},
+    {FEX::MicroArgParser::ParseMember::Type::BoolInvert, "-z", {}, "Try to detect zombie processes - Usually zombie processes are skipped", "1"},
+    {FEX::MicroArgParser::ParseMember::Type::String, "-d", {}, "Use a different separator if more than one pid is show - Default is space", " "},
+    {FEX::MicroArgParser::ParseMember::Type::StringArray, "-o", {}, "Ignore processes with matched pids", {}},
 
-  Parser.add_option("-s").help("Single shot - Only returns one pid").action("store_true").set_default(SingleShot);
+    // Defaults
+    {FEX::MicroArgParser::ParseMember::Type::Bool, "-v", "--version", "show program's verison number and exit", "0"},
+    {FEX::MicroArgParser::ParseMember::Type::Bool, "-h", "--help", "show this help message and exit", "0"},
+  }};
 
-  Parser.add_option("-q")
-    .help("Do not display matched PIDs to stdout. Simply exit with status of true or false if a PID was found")
-    .action("store_true")
-    .set_default(DoNotDisplay);
+  // Load the arguments
+  FEX::MicroArgParser Parser(Args);
+  Parser.Parse(argc, argv);
 
-  Parser.add_option("-z").help("Try to detect zombie processes - Usually zombie processes are skipped").action("store_false").set_default(SkipZombie);
+  SingleShot = Parser.Get<bool>("-s");
+  DoNotDisplay = Parser.Get<bool>("-q");
+  SkipZombie = Parser.Get<bool>("-z");
+  Separator = Parser.Get<std::string_view>("-d");
 
-  Parser.add_option("-d").help("Use a different separator if more than one pid is show - Default is space").set_default(Separator);
-
-  Parser.add_option("-o").help("Ignore processes with matched pids").action("append");
-
-  optparse::Values Options = Parser.parse_args(argc, argv);
-
-  SingleShot = Options.get("s");
-  DoNotDisplay = Options.get("q");
-  SkipZombie = Options.get("z");
-  Separator = Options["d"];
-
-  for (const auto& Omit : Options.all("o")) {
-    std::istringstream ss {Omit};
+  for (const auto& Omit : Parser.GetVector("-o")) {
+    std::istringstream ss {fextl::string(Omit)};
     std::string sub;
     while (std::getline(ss, sub, ',')) {
       int64_t pid;
@@ -57,8 +57,8 @@ void LoadOptions(int argc, char** argv) {
     }
   }
 
-  for (const auto& Program : Parser.args()) {
-    Programs.emplace(Program);
+  for (size_t i = Parser.GetRemainingArgumentsIndex(); i < argc; ++i) {
+    Programs.emplace(argv[i]);
   }
 }
 } // namespace Config
