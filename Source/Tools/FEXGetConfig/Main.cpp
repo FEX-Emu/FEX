@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 #include "ConfigDefines.h"
-#include "Common/cpp-optparse/OptionParser.h"
 #include "Common/Config.h"
 #include "Common/FEXServerClient.h"
+#include "Common/MicroArgParser.h"
 #include "FEXHeaderUtils/Filesystem.h"
 #include "git_version.h"
 #include <FEXCore/Config/Config.h>
@@ -114,24 +114,26 @@ int main(int argc, char** argv, char** envp) {
   // No FEX arguments passed through command line
   FEXCore::Config::AddLayer(FEX::Config::CreateEnvironmentLayer(envp));
 
+  static std::array<FEX::MicroArgParser::ParseMember, 6> Args = {{
+    {FEX::MicroArgParser::ParseMember::Type::Bool, {}, "--install-prefix", "Print the FEX install prefix", "0"},
+    {FEX::MicroArgParser::ParseMember::Type::String, {}, "--app", "Load an application profile for this application if it exists", {}},
+    {FEX::MicroArgParser::ParseMember::Type::Bool, {}, "--current-rootfs", "Print the directory that contains the FEX rootfs. Mounted in the case of squashfs", "0"},
+    {FEX::MicroArgParser::ParseMember::Type::Bool, {}, "--tso-emulation-info", "Print how FEX is emulating the x86-TSO memory model.", "0"},
+    // Defaults
+    {FEX::MicroArgParser::ParseMember::Type::Bool, "-v", "--version", "show program's verison number and exit", "0"},
+    {FEX::MicroArgParser::ParseMember::Type::Bool, "-h", "--help", "show this help message and exit", "0"},
+  }};
+
   // Load the arguments
-  optparse::OptionParser Parser = optparse::OptionParser().description("Simple application to get a couple of FEX options");
+  FEX::MicroArgParser Parser(Args);
+  Parser.Desc("Simple application to get a couple of FEX options");
+  Parser.Version(GIT_DESCRIBE_STRING);
+  Parser.Parse(argc, argv);
 
-  Parser.add_option("--install-prefix").action("store_true").help("Print the FEX install prefix");
-
-  Parser.add_option("--app").help("Load an application profile for this application if it exists");
-
-  Parser.add_option("--current-rootfs").action("store_true").help("Print the directory that contains the FEX rootfs. Mounted in the case of squashfs");
-
-  Parser.add_option("--tso-emulation-info").action("store_true").help("Print how FEX is emulating the x86-TSO memory model.");
-
-  Parser.add_option("--version").action("store_true").help("Print the installed FEX-Emu version");
-
-  optparse::Values Options = Parser.parse_args(argc, argv);
-
-  if (Options.is_set_by_user("app")) {
+  if (!Parser.Get<std::string_view>("--app").empty()) {
+    auto App = fextl::string(Parser.Get<std::string_view>("--app"));
     // Load the application config if one was provided
-    const auto ProgramName = FHU::Filesystem::GetFilename(Options["app"]);
+    const auto ProgramName = FHU::Filesystem::GetFilename(App);
     FEXCore::Config::AddLayer(FEX::Config::CreateAppLayer(ProgramName, FEXCore::Config::LayerType::LAYER_GLOBAL_APP));
     FEXCore::Config::AddLayer(FEX::Config::CreateAppLayer(ProgramName, FEXCore::Config::LayerType::LAYER_LOCAL_APP));
 
@@ -150,15 +152,11 @@ int main(int argc, char** argv, char** envp) {
   // Reload the meta layer
   FEXCore::Config::ReloadMetaLayer();
 
-  if (Options.is_set_by_user("version")) {
-    fprintf(stdout, GIT_DESCRIBE_STRING "\n");
-  }
-
-  if (Options.is_set_by_user("install_prefix")) {
+  if (Parser.Get<bool>("--install-prefix")) {
     fprintf(stdout, FEX_INSTALL_PREFIX "\n");
   }
 
-  if (Options.is_set_by_user("current_rootfs")) {
+  if (Parser.Get<bool>("--current-rootfs")) {
     int ServerFD = FEXServerClient::ConnectToServer();
     if (ServerFD != -1) {
       auto RootFS = FEXServerClient::RequestRootFSPath(ServerFD);
@@ -168,7 +166,7 @@ int main(int argc, char** argv, char** envp) {
     }
   }
 
-  if (Options.is_set_by_user("tso_emulation_info")) {
+  if (Parser.Get<bool>("--tso-emulation-info")) {
     auto TSOFacts = GetTSOEmulationFacts();
     const char* GPRMemoryTSOEmulation {};
     const char* MemcpyMemoryTSOEmulation {};

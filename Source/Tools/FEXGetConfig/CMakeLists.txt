@@ -3,7 +3,7 @@ set(SRCS Main.cpp)
 
 add_executable(${NAME} ${SRCS})
 
-list(APPEND LIBS Common cpp-optparse)
+list(APPEND LIBS Common)
 
 if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
   target_link_options(${NAME}
