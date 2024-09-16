@@ -518,7 +518,10 @@ constexpr static inline void GenerateTable(X86InstInfo *FinalTable, X86TablesInf
     X86InstInfo const &Info = Op.Info;
     for (uint32_t i = 0; i < Op.second; ++i) {
       if (FinalTable[OpNum + i].Type != TYPE_UNKNOWN) {
-        ERROR_AND_DIE_FMT("Duplicate Entry {}->{}", FinalTable[OpNum + i].Name, Info.Name);
+        LOGMAN_MSG_A_FMT("Duplicate Entry {}->{}", FinalTable[OpNum + i].Name, Info.Name);
+      }
+      if (FinalTable[OpNum + i].OpcodeDispatcher) {
+        LOGMAN_MSG_A_FMT("Already installed an OpcodeDispatcher for 0x{:x}", OpNum + i);
       }
       FinalTable[OpNum + i] = Info;
     }
@@ -533,7 +536,7 @@ constexpr static inline void GenerateTableWithCopy(X86InstInfo *FinalTable, X86T
     X86InstInfo const &Info = Op.Info;
     for (uint32_t i = 0; i < Op.second; ++i) {
       if (FinalTable[OpNum + i].Type != TYPE_UNKNOWN) {
-        ERROR_AND_DIE_FMT("Duplicate Entry {}->{}", FinalTable[OpNum + i].Name, Info.Name);
+        LOGMAN_MSG_A_FMT("Duplicate Entry {}->{}", FinalTable[OpNum + i].Name, Info.Name);
       }
       if (Info.Type == TYPE_COPY_OTHER) {
         FinalTable[OpNum + i] = OtherLocal[OpNum + i];
@@ -568,7 +571,7 @@ constexpr static inline void GenerateX87Table(X86InstInfo *FinalTable, X86Tables
     X86InstInfo const &Info = Op.Info;
     for (uint32_t i = 0; i < Op.second; ++i) {
       if (FinalTable[OpNum + i].Type != TYPE_UNKNOWN) {
-        ERROR_AND_DIE_FMT("Duplicate Entry {}->{}", FinalTable[OpNum + i].Name, Info.Name);
+        LOGMAN_MSG_A_FMT("Duplicate Entry {}->{}", FinalTable[OpNum + i].Name, Info.Name);
       }
       if ((OpNum & 0b11'000'000) == 0b11'000'000) {
         // If the mod field is 0b11 then it is a regular op

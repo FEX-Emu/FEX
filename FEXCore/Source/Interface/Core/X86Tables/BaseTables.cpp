@@ -6,6 +6,7 @@ $end_info$
 */
 
 #include "Interface/Core/X86Tables/X86Tables.h"
+#include "Interface/Core/OpcodeDispatcher/BaseTables.h"
 
 #include <FEXCore/Core/Context.h>
 
@@ -236,6 +237,7 @@ std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps = []() consteval {
   };
 
   GenerateTable(&Table.at(0), BaseOpTable, std::size(BaseOpTable));
+  IR::InstallToTable(Table, IR::OpDispatch_BaseOpTable);
 
   return Table;
 }();
@@ -301,9 +303,11 @@ void InitializeBaseTables(Context::OperatingMode Mode) {
 
   if (Mode == Context::MODE_64BIT) {
     GenerateTable(&BaseOps.at(0), BaseOpTable_64, std::size(BaseOpTable_64));
+    IR::InstallToTable(BaseOps, IR::OpDispatch_BaseOpTable_64);
   }
   else {
     GenerateTable(&BaseOps.at(0), BaseOpTable_32, std::size(BaseOpTable_32));
+    IR::InstallToTable(BaseOps, IR::OpDispatch_BaseOpTable_32);
   }
 }
 }

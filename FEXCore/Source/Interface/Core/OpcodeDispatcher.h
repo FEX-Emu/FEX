@@ -2508,6 +2508,23 @@ private:
   void CheckLegacySegmentRead(Ref NewNode, uint32_t SegmentReg);
 };
 
+constexpr inline void InstallToTable(auto& FinalTable, const auto& LocalTable) {
+  for (const auto& Op : LocalTable) {
+    auto OpNum = std::get<0>(Op);
+    auto Dispatcher = std::get<2>(Op);
+    for (uint8_t i = 0; i < std::get<1>(Op); ++i) {
+      auto& TableOp = FinalTable[OpNum + i];
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+      if (TableOp.OpcodeDispatcher) {
+        ERROR_AND_DIE_FMT("Duplicate Entry {}", TableOp.Name);
+      }
+#endif
+
+      TableOp.OpcodeDispatcher = Dispatcher;
+    }
+  }
+}
+
 void InstallOpcodeHandlers(Context::OperatingMode Mode);
 
 } // namespace FEXCore::IR
