@@ -1,9 +1,7 @@
 add_subdirectory(CommonTools)
 
 if (NOT MINGW_BUILD)
-  if (USE_FEXCONFIG_TOOLKIT STREQUAL "imgui")
-    add_subdirectory(FEXConfig/)
-  elseif (USE_FEXCONFIG_TOOLKIT STREQUAL "qt")
+  if (BUILD_FEXCONFIG)
     find_package(Qt6 COMPONENTS Qml Quick Widgets QUIET)
     if (NOT Qt6_FOUND)
       find_package(Qt5 COMPONENTS Qml Quick Widgets REQUIRED)

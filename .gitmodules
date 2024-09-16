@@ -5,9 +5,6 @@
 [submodule "External/cpp-optparse"]
 	path = Source/Common/cpp-optparse
 	url = https://github.com/Sonicadvance1/cpp-optparse
-[submodule "External/imgui"]
-	path = External/imgui
-	url = https://github.com/Sonicadvance1/imgui.git
 [submodule "External/xbyak"]
   shallow = true
 	path = External/xbyak
