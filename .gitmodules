@@ -2,9 +2,6 @@
 	shallow = true
 	path = External/vixl
 	url = https://github.com/FEX-Emu/vixl.git
-[submodule "External/cpp-optparse"]
-	path = Source/Common/cpp-optparse
-	url = https://github.com/Sonicadvance1/cpp-optparse
 [submodule "External/xbyak"]
   shallow = true
 	path = External/xbyak

@@ -1,5 +1,3 @@
-add_subdirectory(cpp-optparse/)
-
 set(NAME Common)
 set(SRCS
   Config.cpp
