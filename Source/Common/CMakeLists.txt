@@ -7,6 +7,7 @@ set(SRCS
   EnvironmentLoader.cpp
   HostFeatures.cpp
   JSONPool.cpp
+  MicroArgParser.cpp
   StringUtil.cpp)
 
 if (NOT MINGW_BUILD)
