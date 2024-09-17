@@ -57,7 +57,7 @@ std::array<X86InstInfo, MAX_0F_3A_TABLE_SIZE> H0F3ATableOps = []() consteval {
 
   GenerateTable(&Table.at(0), H0F3ATable, std::size(H0F3ATable));
 
-  FEXCore::IR::H0F3ATable_Install(Table);
+  IR::InstallToTable(Table, IR::OpDispatch_H0F3ATable);
   return Table;
 }();
 
@@ -72,7 +72,7 @@ void InitializeH0F3ATables(Context::OperatingMode Mode) {
 
   if (Mode == Context::MODE_64BIT) {
     GenerateTable(&H0F3ATableOps.at(0), H0F3ATable_64, std::size(H0F3ATable_64));
-    FEXCore::IR::H0F3ATable_Install64(H0F3ATableOps);
+    IR::InstallToTable(H0F3ATableOps, IR::OpDispatch_H0F3ATable_64);
   }
 }
 }

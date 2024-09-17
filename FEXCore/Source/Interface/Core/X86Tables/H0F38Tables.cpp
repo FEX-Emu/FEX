@@ -121,7 +121,7 @@ std::array<X86InstInfo, MAX_0F_38_TABLE_SIZE> H0F38TableOps = []() consteval {
 
   GenerateTable(&Table.at(0), H0F38Table, std::size(H0F38Table));
 
-  FEXCore::IR::H0F38Table_Install(Table);
+  IR::InstallToTable(Table, IR::OpDispatch_H0F38Table);
   return Table;
 }();
 
