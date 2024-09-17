@@ -271,7 +271,8 @@ auto BaseOpsLambda = []() consteval {
 
   GenerateTable(&Table.at(0), TwoByteOpTable, std::size(TwoByteOpTable));
 
-  FEXCore::IR::SecondaryTables_Install(Table);
+  IR::InstallToTable(Table, IR::OpDispatch_TwoByteOpTable);
+
   return Table;
 };
 
@@ -361,7 +362,7 @@ std::array<X86InstInfo, MAX_REP_MOD_TABLE_SIZE> RepModOps = []() consteval {
 
   GenerateTableWithCopy(&Table.at(0), RepModOpTable, std::size(RepModOpTable), &BaseOpsLambda().at(0));
 
-  FEXCore::IR::SecondaryRepModTables_Install(Table);
+  IR::InstallToTable(Table, IR::OpDispatch_SecondaryRepModTables);
   return Table;
 }();
 
@@ -443,7 +444,7 @@ std::array<X86InstInfo, MAX_REPNE_MOD_TABLE_SIZE> RepNEModOps = []() consteval {
 
   GenerateTableWithCopy(&Table.at(0), RepNEModOpTable,   std::size(RepNEModOpTable), &BaseOpsLambda().at(0));
 
-  FEXCore::IR::SecondaryRepNEModTables_Install(Table);
+  IR::InstallToTable(Table, IR::OpDispatch_SecondaryRepNEModTables);
   return Table;
 }();
 
@@ -599,7 +600,7 @@ std::array<X86InstInfo, MAX_OPSIZE_MOD_TABLE_SIZE> OpSizeModOps = []() consteval
 
   GenerateTableWithCopy(&Table.at(0), OpSizeModOpTable, std::size(OpSizeModOpTable), &BaseOpsLambda().at(0));
 
-  FEXCore::IR::SecondaryOpSizeModTables_Install(Table);
+  IR::InstallToTable(Table, IR::OpDispatch_SecondaryOpSizeModTables);
   return Table;
 }();
 
@@ -626,14 +627,15 @@ void InitializeSecondaryTables(Context::OperatingMode Mode) {
     LateInitCopyTable(&RepNEModOps.at(0), TwoByteOpTable_64, std::size(TwoByteOpTable_64));
     LateInitCopyTable(&OpSizeModOps.at(0), TwoByteOpTable_64, std::size(TwoByteOpTable_64));
 
-    FEXCore::IR::SecondaryTables_Install64(SecondBaseOps);
+    IR::InstallToTable(SecondBaseOps, IR::OpDispatch_TwoByteOpTable_64);
   }
   else {
     LateInitCopyTable(&SecondBaseOps.at(0), TwoByteOpTable_32, std::size(TwoByteOpTable_32));
     LateInitCopyTable(&RepModOps.at(0), TwoByteOpTable_32, std::size(TwoByteOpTable_32));
     LateInitCopyTable(&RepNEModOps.at(0), TwoByteOpTable_32, std::size(TwoByteOpTable_32));
     LateInitCopyTable(&OpSizeModOps.at(0), TwoByteOpTable_32, std::size(TwoByteOpTable_32));
-    FEXCore::IR::SecondaryTables_Install32(SecondBaseOps);
+
+    IR::InstallToTable(SecondBaseOps, IR::OpDispatch_TwoByteOpTable_32);
   }
 }
 
