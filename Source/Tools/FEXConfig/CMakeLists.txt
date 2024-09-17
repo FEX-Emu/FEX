@@ -1,31 +1,20 @@
-set(NAME FEXConfig)
-set(SRCS Main.cpp
-  ${CMAKE_SOURCE_DIR}/External/imgui/examples/imgui_impl_sdl.cpp
-  ${CMAKE_SOURCE_DIR}/External/imgui/examples/imgui_impl_opengl3.cpp)
+set(CMAKE_AUTOMOC ON)
 
-find_library(EPOXY epoxy REQUIRED)
-find_package(SDL2 REQUIRED)
-
-add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_CUSTOM=<epoxy/gl.h>)
-add_executable(${NAME} ${SRCS})
-
-target_include_directories(${NAME} PRIVATE ${CMAKE_SOURCE_DIR}/Source/)
-target_include_directories(${NAME} PRIVATE ${CMAKE_SOURCE_DIR}/External/imgui/examples/)
-
-# Fix for SDL2 includes under Alpine Linux.
-target_include_directories(${NAME} PRIVATE /usr/include/directfb/)
-
-if (TARGET SDL2::SDL2)
-  target_link_libraries(${NAME} PRIVATE SDL2::SDL2)
+add_executable(FEXConfig)
+target_sources(FEXConfig PRIVATE Main.cpp Main.h)
+target_include_directories(FEXConfig PRIVATE ${CMAKE_SOURCE_DIR}/Source/)
+target_link_libraries(FEXConfig PRIVATE Common)
+if (Qt6_FOUND)
+  qt_add_resources(QT_RESOURCES qml6.qrc)
+  target_link_libraries(FEXConfig PRIVATE Qt6::Qml Qt6::Quick Qt6::Widgets)
 else()
-  target_include_directories(${NAME} PRIVATE ${SDL2_INCLUDE_DIRS})
-  target_link_libraries(${NAME} PRIVATE ${SDL2_LIBRARIES})
+  qt_add_resources(QT_RESOURCES qml5.qrc)
+  target_link_libraries(FEXConfig PRIVATE Qt5::Qml Qt5::Quick Qt5::Widgets)
 endif()
-
-target_link_libraries(${NAME} PRIVATE Common pthread epoxy X11 EGL imgui)
+target_sources(FEXConfig PRIVATE ${QT_RESOURCES})
 
 if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
-  target_link_options(${NAME}
+  target_link_options(FEXConfig
     PRIVATE
       "LINKER:--gc-sections"
       "LINKER:--strip-all"
@@ -33,7 +22,7 @@ if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
   )
 endif()
 
-install(TARGETS ${NAME}
+install(TARGETS FEXConfig
   RUNTIME
   DESTINATION bin
   COMPONENT runtime)
