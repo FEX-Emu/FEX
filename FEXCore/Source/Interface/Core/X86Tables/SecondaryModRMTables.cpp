@@ -58,7 +58,7 @@ std::array<X86InstInfo, MAX_SECOND_MODRM_TABLE_SIZE> SecondModRMTableOps = []() 
 
   GenerateTable(&Table.at(0), SecondaryModRMExtensionOpTable, std::size(SecondaryModRMExtensionOpTable));
 
-  FEXCore::IR::SecondaryModRMTables_Install(Table);
+  IR::InstallToTable(Table, IR::OpDispatch_SecondaryModRMTables);
   return Table;
 }();
 
