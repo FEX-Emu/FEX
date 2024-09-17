@@ -491,7 +491,7 @@ std::array<X86InstInfo, MAX_VEX_TABLE_SIZE> VEXTableOps = []() consteval {
 
   GenerateTable(&Table.at(0), VEXTable, std::size(VEXTable));
 
-  FEXCore::IR::VEXTable_Install(Table);
+  IR::InstallToTable(Table, IR::OpDispatch_VEXTable);
   return Table;
 }();
 
@@ -524,7 +524,7 @@ std::array<X86InstInfo, MAX_VEX_GROUP_TABLE_SIZE> VEXTableGroupOps = []() conste
 
   GenerateTable(&Table.at(0), VEXGroupTable, std::size(VEXGroupTable));
 
-  FEXCore::IR::VEXGroupTable_Install(Table);
+  IR::InstallToTable(Table, IR::OpDispatch_VEXGroupTable);
   return Table;
 }();
 }
