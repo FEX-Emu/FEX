@@ -56,7 +56,7 @@ std::array<X86InstInfo, MAX_3DNOW_TABLE_SIZE> DDDNowOps = []() consteval {
 
   GenerateTable(&Table.at(0), DDDNowOpTable, std::size(DDDNowOpTable));
 
-  FEXCore::IR::DDDTable_Install(Table);
+  IR::InstallToTable(Table, IR::OpDispatch_DDDTable);
   return Table;
 }();
 
