@@ -146,7 +146,7 @@ std::array<X86InstInfo, MAX_INST_GROUP_TABLE_SIZE> PrimaryInstGroupOps = []() co
 
   GenerateTable(&Table.at(0), PrimaryGroupOpTable, std::size(PrimaryGroupOpTable));
 
-  FEXCore::IR::PrimaryGroupTables_Install(Table);
+  IR::InstallToTable(Table, IR::OpDispatch_PrimaryGroupTables);
   return Table;
 }();
 

@@ -490,13 +490,13 @@ std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> SecondInstGroupOps = [
 
   GenerateTable(&Table.at(0), SecondaryExtensionOpTable, std::size(SecondaryExtensionOpTable));
 
-  FEXCore::IR::SecondaryGroupTables_Install(Table);
+  IR::InstallToTable(Table, IR::OpDispatch_SecondaryGroupTables);
   return Table;
 }();
 
 void InitializeSecondaryGroupTables(Context::OperatingMode Mode) {
   if (Mode == Context::MODE_64BIT) {
-    FEXCore::IR::SecondaryGroupTables_Install64(SecondInstGroupOps);
+    IR::InstallToTable(SecondInstGroupOps, IR::OpDispatch_SecondaryGroupTables_64);
   }
 }
 
