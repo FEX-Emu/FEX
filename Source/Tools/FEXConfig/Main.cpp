@@ -14,6 +14,7 @@
 #include <QQuickWindow>
 
 #include <sys/inotify.h>
+#include <poll.h>
 
 namespace fextl {
 // Helper to convert a std::filesystem::path to a fextl::string.
@@ -248,14 +249,20 @@ void RootFSModel::INotifyThreadFunc() {
     constexpr size_t DATA_SIZE = (16 * (sizeof(struct inotify_event) + NAME_MAX + 1));
     char buf[DATA_SIZE];
     int Ret {};
+    struct pollfd watch_fd = {
+      .fd = INotifyFD,
+      .events = POLLIN,
+      .revents = 0,
+    };
     do {
-      fd_set Set {};
-      FD_ZERO(&Set);
-      FD_SET(INotifyFD, &Set);
-      struct timeval tv {};
       // 50 ms
-      tv.tv_usec = 50000;
-      Ret = select(INotifyFD + 1, &Set, nullptr, nullptr, &tv);
+      struct timespec tv {
+        .tv_sec = 0, .tv_nsec = 50'000'000,
+      };
+
+      // Reset revents.
+      watch_fd.revents = 0;
+      Ret = ppoll(&watch_fd, 1, &tv, nullptr);
     } while (Ret == 0 && INotifyFD != -1);
 
     if (Ret == -1 || INotifyFD == -1) {
