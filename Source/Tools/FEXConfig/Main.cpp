@@ -190,9 +190,12 @@ static void ConfigInit(fextl::string ConfigFilename) {
 RootFSModel::RootFSModel() {
   INotifyFD = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
 
-  fextl::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
-  FolderFD = inotify_add_watch(INotifyFD, RootFS.c_str(), IN_CREATE | IN_DELETE);
-  if (FolderFD != -1) {
+  fextl::string RootFS = FEXCore::Config::GetDataDirectory(false) + "RootFS/";
+  int LocalFolderWD = inotify_add_watch(INotifyFD, RootFS.c_str(), IN_CREATE | IN_DELETE);
+
+  RootFS = FEXCore::Config::GetDataDirectory(true) + "RootFS/";
+  int GlobalFolderWD = inotify_add_watch(INotifyFD, RootFS.c_str(), IN_CREATE | IN_DELETE);
+  if (INotifyFD != -1 && (LocalFolderWD != -1 || GlobalFolderWD != -1)) {
     Thread = std::thread {&RootFSModel::INotifyThreadFunc, this};
   } else {
     qWarning() << "Could not set up inotify. RootFS folder won't be monitored for changes.";
@@ -214,20 +217,34 @@ void RootFSModel::Reload() {
   beginResetModel();
   removeRows(0, rowCount());
 
-  fextl::string RootFS = FEXCore::Config::GetDataDirectory() + "RootFS/";
   std::vector<QString> NamedRootFS {};
-  for (auto& it : std::filesystem::directory_iterator(RootFS)) {
-    if (it.is_directory()) {
-      NamedRootFS.push_back(QString::fromStdString(it.path().filename()));
-    } else if (it.is_regular_file()) {
-      // If it is a regular file then we need to check if it is a valid archive
-      if (it.path().extension() == ".sqsh" && FEX::FormatCheck::IsSquashFS(fextl::string_from_path(it.path()))) {
-        NamedRootFS.push_back(QString::fromStdString(it.path().filename()));
-      } else if (it.path().extension() == ".ero" && FEX::FormatCheck::IsEroFS(fextl::string_from_path(it.path()))) {
-        NamedRootFS.push_back(QString::fromStdString(it.path().filename()));
+  for (auto Global : {false, true}) {
+    const fextl::string RootFS = FEXCore::Config::GetDataDirectory(Global) + "RootFS/";
+
+    std::error_code ec;
+    for (auto& it : std::filesystem::directory_iterator(RootFS, ec)) {
+      std::string Path {};
+      if (Global) {
+        // If global then keep the full path.
+        Path = it.path();
+      } else {
+        // If local then only use the filename.
+        Path = it.path().filename();
+      }
+
+      if (it.is_directory()) {
+        NamedRootFS.push_back(QString::fromStdString(Path));
+      } else if (it.is_regular_file()) {
+        // If it is a regular file then we need to check if it is a valid archive
+        if (it.path().extension() == ".sqsh" && FEX::FormatCheck::IsSquashFS(fextl::string_from_path(it.path()))) {
+          NamedRootFS.push_back(QString::fromStdString(Path));
+        } else if (it.path().extension() == ".ero" && FEX::FormatCheck::IsEroFS(fextl::string_from_path(it.path()))) {
+          NamedRootFS.push_back(QString::fromStdString(Path));
+        }
       }
     }
   }
+
   std::sort(NamedRootFS.begin(), NamedRootFS.end(), [](const QString& a, const QString& b) { return QString::localeAwareCompare(a, b) < 0; });
   for (auto& Entry : NamedRootFS) {
     appendRow(new QStandardItem(Entry));

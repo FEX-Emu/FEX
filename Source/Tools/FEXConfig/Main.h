@@ -41,7 +41,6 @@ class RootFSModel : public QStandardItemModel {
   std::latch ExitRequest {1};
 
   int INotifyFD;
-  int FolderFD;
 
   void INotifyThreadFunc();
 
