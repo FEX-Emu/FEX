@@ -30,7 +30,5 @@ class ThunkHandler {
 public:
   virtual ThunkedFunction* LookupThunk(const IR::SHA256Sum& sha256) = 0;
   virtual ~ThunkHandler() {}
-
-  virtual void AppendThunkDefinitions(std::span<const FEXCore::IR::ThunkDefinition> Definitions) = 0;
 };
 }; // namespace FEXCore

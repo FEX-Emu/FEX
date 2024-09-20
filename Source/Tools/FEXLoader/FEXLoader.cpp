@@ -566,7 +566,7 @@ int main(int argc, char** argv, char** const envp) {
   ThunkHandler->RegisterTLSState(CTX.get(), ParentThread);
 
   // Pass in our VDSO thunks
-  CTX->AppendThunkDefinitions(FEX::VDSO::GetVDSOThunkDefinitions());
+  ThunkHandler->AppendThunkDefinitions(FEX::VDSO::GetVDSOThunkDefinitions());
   SignalDelegation->SetVDSOSigReturn();
 
   SyscallHandler->DeserializeSeccompFD(ParentThread, FEXSeccompFD);

@@ -1055,12 +1055,6 @@ void ContextImpl::UnloadAOTIRCacheEntry(IR::AOTIRCacheEntry* Entry) {
   IRCaptureCache.UnloadAOTIRCacheEntry(Entry);
 }
 
-void ContextImpl::AppendThunkDefinitions(std::span<const FEXCore::IR::ThunkDefinition> Definitions) {
-  if (ThunkHandler) {
-    ThunkHandler->AppendThunkDefinitions(Definitions);
-  }
-}
-
 void ContextImpl::ConfigureAOTGen(FEXCore::Core::InternalThreadState* Thread, fextl::set<uint64_t>* ExternalBranches, uint64_t SectionMaxAddress) {
   Thread->FrontendDecoder->SetExternalBranches(ExternalBranches);
   Thread->FrontendDecoder->SetSectionMaxAddress(SectionMaxAddress);

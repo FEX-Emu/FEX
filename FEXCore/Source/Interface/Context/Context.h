@@ -192,8 +192,6 @@ public:
 
   void AddThunkTrampolineIRHandler(uintptr_t Entrypoint, uintptr_t GuestThunkEntrypoint) override;
 
-  void AppendThunkDefinitions(std::span<const FEXCore::IR::ThunkDefinition> Definitions) override;
-
 public:
   friend class FEXCore::HLE::SyscallHandler;
 #ifdef JIT_ARM64

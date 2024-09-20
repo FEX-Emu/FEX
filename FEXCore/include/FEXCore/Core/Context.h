@@ -214,14 +214,6 @@ public:
   FEX_DEFAULT_VISIBILITY virtual bool IsAddressInCodeBuffer(FEXCore::Core::InternalThreadState* Thread, uintptr_t Address) const = 0;
 
   /**
-   * @brief Allows the frontend to register its own thunk handlers independent of what is controlled in the backend.
-   *
-   * @param CTX A valid non-null context instance.
-   * @param Definitions A vector of thunk definitions that the frontend controls
-   */
-  FEX_DEFAULT_VISIBILITY virtual void AppendThunkDefinitions(std::span<const FEXCore::IR::ThunkDefinition> Definitions) = 0;
-
-  /**
    * @brief Informs the context if hardware TSO is supported.
    * Once hardware TSO is enabled, then TSO emulation through atomics is disabled and relies on the hardware.
    *
