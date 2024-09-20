@@ -387,7 +387,7 @@ void ContextImpl::ExecuteThread(FEXCore::Core::InternalThreadState* Thread) {
 void ContextImpl::InitializeThreadTLSData(FEXCore::Core::InternalThreadState* Thread) {
   // Let's do some initial bookkeeping here
   if (ThunkHandler) {
-    ThunkHandler->RegisterTLSState(Thread);
+    ThunkHandler->RegisterTLSState(this, Thread);
   }
 #ifndef _WIN32
   Alloc::OSAllocator::RegisterTLSData(Thread);
