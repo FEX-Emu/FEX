@@ -7,7 +7,7 @@ struct ThreadStateObject;
 
 class ThunkHandler : public FEXCore::ThunkHandler {
 public:
-  virtual void RegisterTLSState(FEXCore::Context::Context* CTX, FEX::HLE::ThreadStateObject* ThreadObject) = 0;
+  virtual void RegisterTLSState(FEX::HLE::ThreadStateObject* ThreadObject) = 0;
   /**
    * @brief Allows the frontend to register its own thunk handlers independent of what is controlled in the backend.
    *

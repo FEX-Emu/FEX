@@ -7,6 +7,7 @@ $end_info$
 */
 
 #include "Thunks.h"
+#include "LinuxSyscalls/Syscalls.h"
 #include "LinuxSyscalls/ThreadManager.h"
 
 #include <FEXCore/Config/Config.h>
@@ -73,15 +74,7 @@ struct LoadlibArgs {
   const char* Name;
 };
 
-struct ThunkHandler_impl;
-
-struct TEMP_TLS_DATA {
-  FEXCore::Core::InternalThreadState* Thread {};
-  ThunkHandler_impl* ThunkHandler {};
-  FEXCore::Context::Context* CTX {};
-};
-
-static thread_local TEMP_TLS_DATA ThreadData {};
+static thread_local FEX::HLE::ThreadStateObject* ThreadObject {};
 
 struct ExportEntry {
   uint8_t* sha256;
@@ -177,22 +170,25 @@ struct ThunkHandler_impl final : public FEX::HLE::ThunkHandler {
       Set arg0/1 to arg regs, use CTX::HandleCallback to handle the callback
   */
   static void CallCallback(void* callback, void* arg0, void* arg1) {
-    if (!ThreadData.Thread) {
+    if (!ThreadObject) {
       ERROR_AND_DIE_FMT("Thunked library attempted to invoke guest callback asynchronously");
     }
 
-    if (ThreadData.ThunkHandler->Is64BitMode()) {
-      ThreadData.Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RDI] = (uintptr_t)arg0;
-      ThreadData.Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSI] = (uintptr_t)arg1;
+    auto CTX = static_cast<FEXCore::Context::Context*>(ThreadObject->Thread->CTX);
+    auto ThunkHandler = reinterpret_cast<ThunkHandler_impl*>(FEX::HLE::_SyscallHandler->GetThunkHandler());
+
+    if (ThunkHandler->Is64BitMode()) {
+      ThreadObject->Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RDI] = (uintptr_t)arg0;
+      ThreadObject->Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSI] = (uintptr_t)arg1;
     } else {
       if ((reinterpret_cast<uintptr_t>(arg1) >> 32) != 0) {
         ERROR_AND_DIE_FMT("Tried to call guest function with arguments packed to a 64-bit address");
       }
-      ThreadData.Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RCX] = (uintptr_t)arg0;
-      ThreadData.Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RDX] = (uintptr_t)arg1;
+      ThreadObject->Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RCX] = (uintptr_t)arg0;
+      ThreadObject->Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RDX] = (uintptr_t)arg1;
     }
 
-    ThreadData.CTX->HandleCallback(ThreadData.Thread, (uintptr_t)callback);
+    CTX->HandleCallback(ThreadObject->Thread, (uintptr_t)callback);
   }
 
   FEXCore::ThunkedFunction* LookupThunk(const FEXCore::IR::SHA256Sum& sha256) override {
@@ -208,10 +204,8 @@ struct ThunkHandler_impl final : public FEX::HLE::ThunkHandler {
     }
   }
 
-  void RegisterTLSState(FEXCore::Context::Context* CTX, FEX::HLE::ThreadStateObject* ThreadObject) override {
-    ThreadData.Thread = ThreadObject->Thread;
-    ThreadData.ThunkHandler = this;
-    ThreadData.CTX = CTX;
+  void RegisterTLSState(FEX::HLE::ThreadStateObject* _ThreadObject) override {
+    ThreadObject = _ThreadObject;
   }
 
   void AppendThunkDefinitions(std::span<const FEXCore::IR::ThunkDefinition> Definitions) override {
@@ -230,10 +224,10 @@ namespace ThunkFunctions {
     auto Args = reinterpret_cast<LoadlibArgs*>(ArgsV);
 
     std::string_view Name = Args->Name;
+    auto ThunkHandler = reinterpret_cast<ThunkHandler_impl*>(FEX::HLE::_SyscallHandler->GetThunkHandler());
 
     auto SOName =
-      (ThreadData.ThunkHandler->Is64BitMode() ? ThreadData.ThunkHandler->ThunkHostLibsPath() : ThreadData.ThunkHandler->ThunkHostLibsPath32()) +
-      "/" + Name.data() + "-host.so";
+      (ThunkHandler->Is64BitMode() ? ThunkHandler->ThunkHostLibsPath() : ThunkHandler->ThunkHostLibsPath32()) + "/" + Name.data() + "-host.so";
 
     LogMan::Msg::DFmt("LoadLib: {} -> {}", Name, SOName);
 
@@ -262,13 +256,13 @@ namespace ThunkFunctions {
     }
 
     {
-      std::lock_guard lk(ThreadData.ThunkHandler->ThunksMutex);
+      std::lock_guard lk(ThunkHandler->ThunksMutex);
 
-      ThreadData.ThunkHandler->Libs.insert(fextl::string {Name});
+      ThunkHandler->Libs.insert(fextl::string {Name});
 
       int i;
       for (i = 0; Exports[i].sha256; i++) {
-        ThreadData.ThunkHandler->Thunks[*reinterpret_cast<FEXCore::IR::SHA256Sum*>(Exports[i].sha256)] = Exports[i].Fn;
+        ThunkHandler->Thunks[*reinterpret_cast<FEXCore::IR::SHA256Sum*>(Exports[i].sha256)] = Exports[i].Fn;
       }
 
       LogMan::Msg::DFmt("Loaded {} syms", i);
@@ -282,10 +276,11 @@ namespace ThunkFunctions {
     };
 
     auto& [Name, rv] = *reinterpret_cast<ArgsRV_t*>(ArgsRV);
+    auto ThunkHandler = reinterpret_cast<ThunkHandler_impl*>(FEX::HLE::_SyscallHandler->GetThunkHandler());
 
     {
-      std::shared_lock lk(ThreadData.ThunkHandler->ThunksMutex);
-      rv = ThreadData.ThunkHandler->Libs.contains(Name);
+      std::shared_lock lk(ThunkHandler->ThunksMutex);
+      rv = ThunkHandler->Libs.contains(Name);
     }
   }
 
@@ -326,7 +321,8 @@ namespace ThunkFunctions {
     };
 
     auto args = reinterpret_cast<args_t*>(argsv);
-    ThreadData.CTX->AddThunkTrampolineIRHandler(args->original_callee, args->target_addr);
+    auto CTX = static_cast<FEXCore::Context::Context*>(ThreadObject->Thread->CTX);
+    CTX->AddThunkTrampolineIRHandler(args->original_callee, args->target_addr);
   }
 
   /**
@@ -378,7 +374,7 @@ FEX_DEFAULT_VISIBILITY HostToGuestTrampolinePtr*
 MakeHostTrampolineForGuestFunction(void* HostPacker, uintptr_t GuestTarget, uintptr_t GuestUnpacker) {
   LOGMAN_THROW_AA_FMT(GuestTarget, "Tried to create host-trampoline to null pointer guest function");
 
-  const auto ThunkHandler = reinterpret_cast<ThunkHandler_impl*>(ThreadData.ThunkHandler);
+  const auto ThunkHandler = reinterpret_cast<ThunkHandler_impl*>(FEX::HLE::_SyscallHandler->GetThunkHandler());
 
   const GuestcallInfo gci = {GuestUnpacker, GuestTarget};
 
@@ -444,15 +440,15 @@ FEX_DEFAULT_VISIBILITY void FinalizeHostTrampolineForGuestFunction(HostToGuestTr
 }
 
 FEX_DEFAULT_VISIBILITY void* GetGuestStack() {
-  if (!ThreadData.Thread) {
+  if (!ThreadObject) {
     ERROR_AND_DIE_FMT("Thunked library attempted to query guest stack pointer asynchronously");
   }
 
-  return (void*)(uintptr_t)((ThreadData.Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP]));
+  return (void*)(uintptr_t)((ThreadObject->Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP]));
 }
 
 FEX_DEFAULT_VISIBILITY void MoveGuestStack(uintptr_t NewAddress) {
-  if (!ThreadData.Thread) {
+  if (!ThreadObject) {
     ERROR_AND_DIE_FMT("Thunked library attempted to query guest stack pointer asynchronously");
   }
 
@@ -460,7 +456,7 @@ FEX_DEFAULT_VISIBILITY void MoveGuestStack(uintptr_t NewAddress) {
     ERROR_AND_DIE_FMT("Tried to set stack pointer for 32-bit guest to a 64-bit address");
   }
 
-  ThreadData.Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP] = NewAddress;
+  ThreadObject->Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP] = NewAddress;
 }
 
 fextl::unique_ptr<ThunkHandler> CreateThunkHandler() {
