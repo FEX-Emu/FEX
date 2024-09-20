@@ -67,7 +67,8 @@ static __attribute__((aligned(16), naked, section("HostToGuestTrampolineTemplate
 extern char __start_HostToGuestTrampolineTemplate[];
 extern char __stop_HostToGuestTrampolineTemplate[];
 
-namespace FEXCore {
+namespace FEX::HLE {
+
 struct LoadlibArgs {
   const char* Name;
 };
@@ -84,7 +85,7 @@ static thread_local TEMP_TLS_DATA ThreadData {};
 
 struct ExportEntry {
   uint8_t* sha256;
-  ThunkedFunction* Fn;
+  FEXCore::ThunkedFunction* Fn;
 };
 
 struct TrampolineInstanceInfo {
@@ -128,30 +129,38 @@ struct TruncatingSHA256Hash {
 
 HostToGuestTrampolinePtr* MakeHostTrampolineForGuestFunction(void* HostPacker, uintptr_t GuestTarget, uintptr_t GuestUnpacker);
 
+namespace ThunkFunctions {
+  void LoadLib(void* ArgsV);
+  void IsLibLoaded(void* ArgsRV);
+  void IsHostHeapAllocation(void* ArgsRV);
+  void LinkAddressToGuestFunction(void* argsv);
+  void AllocateHostTrampolineForGuestFunction(void* ArgsRV);
+} // namespace ThunkFunctions
+
 struct ThunkHandler_impl final : public FEX::HLE::ThunkHandler {
   std::shared_mutex ThunksMutex;
 
-  fextl::unordered_map<IR::SHA256Sum, ThunkedFunction*, TruncatingSHA256Hash> Thunks = {
+  fextl::unordered_map<FEXCore::IR::SHA256Sum, FEXCore::ThunkedFunction*, TruncatingSHA256Hash> Thunks = {
     {// sha256(fex:loadlib)
      {0x27, 0x7e, 0xb7, 0x69, 0x5b, 0xe9, 0xab, 0x12, 0x6e, 0xf7, 0x85, 0x9d, 0x4b, 0xc9, 0xa2, 0x44,
       0x46, 0xcf, 0xbd, 0xb5, 0x87, 0x43, 0xef, 0x28, 0xa2, 0x65, 0xba, 0xfc, 0x89, 0x0f, 0x77, 0x80},
-     &LoadLib},
+     &ThunkFunctions::LoadLib},
     {// sha256(fex:is_lib_loaded)
      {0xee, 0x57, 0xba, 0x0c, 0x5f, 0x6e, 0xef, 0x2a, 0x8c, 0xb5, 0x19, 0x81, 0xc9, 0x23, 0xe6, 0x51,
       0xae, 0x65, 0x02, 0x8f, 0x2b, 0x5d, 0x59, 0x90, 0x6a, 0x7e, 0xe2, 0xe7, 0x1c, 0x33, 0x8a, 0xff},
-     &IsLibLoaded},
+     &ThunkFunctions::IsLibLoaded},
     {// sha256(fex:is_host_heap_allocation)
      {0xf5, 0x77, 0x68, 0x43, 0xbb, 0x6b, 0x28, 0x18, 0x40, 0xb0, 0xdb, 0x8a, 0x66, 0xfb, 0x0e, 0x2d,
       0x98, 0xc2, 0xad, 0xe2, 0x5a, 0x18, 0x5a, 0x37, 0x2e, 0x13, 0xc9, 0xe7, 0xb9, 0x8c, 0xa9, 0x3e},
-     &IsHostHeapAllocation},
+     &ThunkFunctions::IsHostHeapAllocation},
     {// sha256(fex:link_address_to_function)
      {0xe6, 0xa8, 0xec, 0x1c, 0x7b, 0x74, 0x35, 0x27, 0xe9, 0x4f, 0x5b, 0x6e, 0x2d, 0xc9, 0xa0, 0x27,
       0xd6, 0x1f, 0x2b, 0x87, 0x8f, 0x2d, 0x35, 0x50, 0xea, 0x16, 0xb8, 0xc4, 0x5e, 0x42, 0xfd, 0x77},
-     &LinkAddressToGuestFunction},
+     &ThunkFunctions::LinkAddressToGuestFunction},
     {// sha256(fex:allocate_host_trampoline_for_guest_function)
      {0x9b, 0xb2, 0xf4, 0xb4, 0x83, 0x7d, 0x28, 0x93, 0x40, 0xcb, 0xf4, 0x7a, 0x0b, 0x47, 0x85, 0x87,
       0xf9, 0xbc, 0xb5, 0x27, 0xca, 0xa6, 0x93, 0xa5, 0xc0, 0x73, 0x27, 0x24, 0xae, 0xc8, 0xb8, 0x5a},
-     &AllocateHostTrampolineForGuestFunction},
+     &ThunkFunctions::AllocateHostTrampolineForGuestFunction},
   };
 
   // Can't be a string_view. We need to keep a copy of the library name in-case string_view pointer goes away.
@@ -186,68 +195,38 @@ struct ThunkHandler_impl final : public FEX::HLE::ThunkHandler {
     ThreadData.CTX->HandleCallback(ThreadData.Thread, (uintptr_t)callback);
   }
 
-  /**
-   * Instructs the Core to redirect calls to functions at the given
-   * address to another function. The original callee address is passed
-   * to the target function through an implicit argument stored in r11.
-   *
-   * For 32-bit the implicit argument is stored in the lower 32-bits of mm0.
-   *
-   * The primary use case of this is ensuring that host function pointers
-   * returned from thunked APIs can safely be called by the guest.
-   */
-  static void LinkAddressToGuestFunction(void* argsv) {
-    struct args_t {
-      uintptr_t original_callee;
-      uintptr_t target_addr; // Guest function to call when branching to original_callee
-    };
+  FEXCore::ThunkedFunction* LookupThunk(const FEXCore::IR::SHA256Sum& sha256) override {
 
-    auto args = reinterpret_cast<args_t*>(argsv);
-    ThreadData.CTX->AddThunkTrampolineIRHandler(args->original_callee, args->target_addr);
+    std::shared_lock lk(ThunksMutex);
+
+    auto it = Thunks.find(sha256);
+
+    if (it != Thunks.end()) {
+      return it->second;
+    } else {
+      return nullptr;
+    }
   }
 
-  /**
-   * Guest-side helper to initiate creation of a host trampoline for
-   * calling guest functions. This must be followed by a host-side call
-   * to FinalizeHostTrampolineForGuestFunction to make the trampoline
-   * usable.
-   *
-   * This two-step initialization is equivalent to a host-side call to
-   * MakeHostTrampolineForGuestFunction. The split is needed if the
-   * host doesn't have all information needed to create the trampoline
-   * on its own.
-   */
-  static void AllocateHostTrampolineForGuestFunction(void* ArgsRV) {
-    struct ArgsRV_t {
-      uintptr_t GuestUnpacker;
-      uintptr_t GuestTarget;
-      uintptr_t rv; // Pointer to host trampoline + TrampolineInstanceInfo
-    }* args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
-
-    args->rv = (uintptr_t)MakeHostTrampolineForGuestFunction(nullptr, args->GuestTarget, args->GuestUnpacker);
+  void RegisterTLSState(FEXCore::Context::Context* CTX, FEX::HLE::ThreadStateObject* ThreadObject) override {
+    ThreadData.Thread = ThreadObject->Thread;
+    ThreadData.ThunkHandler = this;
+    ThreadData.CTX = CTX;
   }
 
-  /**
-   * Checks if the given pointer is allocated on the host heap.
-   *
-   * This is useful for thunking APIs that need to work with both guest
-   * and host heap pointers.
-   */
-  static void IsHostHeapAllocation(void* ArgsRV) {
-#ifdef ENABLE_JEMALLOC_GLIBC
-    struct ArgsRV_t {
-      void* ptr;
-      bool rv;
-    }* args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
-
-    args->rv = glibc_je_is_known_allocation(args->ptr);
-#else
-    // Thunks usage without jemalloc isn't supported
-    ERROR_AND_DIE_FMT("Unsupported: Thunks querying for host heap allocation information");
-#endif
+  void AppendThunkDefinitions(std::span<const FEXCore::IR::ThunkDefinition> Definitions) override {
+    for (auto& Definition : Definitions) {
+      Thunks.emplace(Definition.Sum, Definition.ThunkFunction);
+    }
   }
 
-  static void LoadLib(void* ArgsV) {
+  FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
+  FEX_CONFIG_OPT(ThunkHostLibsPath, THUNKHOSTLIBS);
+  FEX_CONFIG_OPT(ThunkHostLibsPath32, THUNKHOSTLIBS32);
+};
+
+namespace ThunkFunctions {
+  void LoadLib(void* ArgsV) {
     auto Args = reinterpret_cast<LoadlibArgs*>(ArgsV);
 
     std::string_view Name = Args->Name;
@@ -289,14 +268,14 @@ struct ThunkHandler_impl final : public FEX::HLE::ThunkHandler {
 
       int i;
       for (i = 0; Exports[i].sha256; i++) {
-        ThreadData.ThunkHandler->Thunks[*reinterpret_cast<IR::SHA256Sum*>(Exports[i].sha256)] = Exports[i].Fn;
+        ThreadData.ThunkHandler->Thunks[*reinterpret_cast<FEXCore::IR::SHA256Sum*>(Exports[i].sha256)] = Exports[i].Fn;
       }
 
       LogMan::Msg::DFmt("Loaded {} syms", i);
     }
   }
 
-  static void IsLibLoaded(void* ArgsRV) {
+  void IsLibLoaded(void* ArgsRV) {
     struct ArgsRV_t {
       const char* Name;
       bool rv;
@@ -310,35 +289,67 @@ struct ThunkHandler_impl final : public FEX::HLE::ThunkHandler {
     }
   }
 
-  ThunkedFunction* LookupThunk(const IR::SHA256Sum& sha256) override {
+  /**
+   * Checks if the given pointer is allocated on the host heap.
+   *
+   * This is useful for thunking APIs that need to work with both guest
+   * and host heap pointers.
+   */
+  void IsHostHeapAllocation(void* ArgsRV) {
+#ifdef ENABLE_JEMALLOC_GLIBC
+    struct ArgsRV_t {
+      void* ptr;
+      bool rv;
+    }* args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
 
-    std::shared_lock lk(ThunksMutex);
-
-    auto it = Thunks.find(sha256);
-
-    if (it != Thunks.end()) {
-      return it->second;
-    } else {
-      return nullptr;
-    }
+    args->rv = glibc_je_is_known_allocation(args->ptr);
+#else
+    // Thunks usage without jemalloc isn't supported
+    ERROR_AND_DIE_FMT("Unsupported: Thunks querying for host heap allocation information");
+#endif
   }
 
-  void RegisterTLSState(FEXCore::Context::Context* CTX, FEX::HLE::ThreadStateObject* ThreadObject) override {
-    ThreadData.Thread = ThreadObject->Thread;
-    ThreadData.ThunkHandler = this;
-    ThreadData.CTX = CTX;
+  /**
+   * Instructs the Core to redirect calls to functions at the given
+   * address to another function. The original callee address is passed
+   * to the target function through an implicit argument stored in r11.
+   *
+   * For 32-bit the implicit argument is stored in the lower 32-bits of mm0.
+   *
+   * The primary use case of this is ensuring that host function pointers
+   * returned from thunked APIs can safely be called by the guest.
+   */
+  void LinkAddressToGuestFunction(void* argsv) {
+    struct args_t {
+      uintptr_t original_callee;
+      uintptr_t target_addr; // Guest function to call when branching to original_callee
+    };
+
+    auto args = reinterpret_cast<args_t*>(argsv);
+    ThreadData.CTX->AddThunkTrampolineIRHandler(args->original_callee, args->target_addr);
   }
 
-  void AppendThunkDefinitions(std::span<const FEXCore::IR::ThunkDefinition> Definitions) override {
-    for (auto& Definition : Definitions) {
-      Thunks.emplace(Definition.Sum, Definition.ThunkFunction);
-    }
-  }
+  /**
+   * Guest-side helper to initiate creation of a host trampoline for
+   * calling guest functions. This must be followed by a host-side call
+   * to FinalizeHostTrampolineForGuestFunction to make the trampoline
+   * usable.
+   *
+   * This two-step initialization is equivalent to a host-side call to
+   * MakeHostTrampolineForGuestFunction. The split is needed if the
+   * host doesn't have all information needed to create the trampoline
+   * on its own.
+   */
+  void AllocateHostTrampolineForGuestFunction(void* ArgsRV) {
+    struct ArgsRV_t {
+      uintptr_t GuestUnpacker;
+      uintptr_t GuestTarget;
+      uintptr_t rv; // Pointer to host trampoline + TrampolineInstanceInfo
+    }* args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
 
-  FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
-  FEX_CONFIG_OPT(ThunkHostLibsPath, THUNKHOSTLIBS);
-  FEX_CONFIG_OPT(ThunkHostLibsPath32, THUNKHOSTLIBS32);
-};
+    args->rv = (uintptr_t)MakeHostTrampolineForGuestFunction(nullptr, args->GuestTarget, args->GuestUnpacker);
+  }
+} // namespace ThunkFunctions
 
 /**
  * Generates a host-callable trampoline to call guest functions via the host ABI.
@@ -452,10 +463,7 @@ FEX_DEFAULT_VISIBILITY void MoveGuestStack(uintptr_t NewAddress) {
   ThreadData.Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP] = NewAddress;
 }
 
-} // namespace FEXCore
-
-namespace FEX::HLE {
 fextl::unique_ptr<ThunkHandler> CreateThunkHandler() {
-  return fextl::make_unique<FEXCore::ThunkHandler_impl>();
+  return fextl::make_unique<ThunkHandler_impl>();
 }
 } // namespace FEX::HLE

@@ -15,12 +15,12 @@ $end_info$
 
 #include "PackedArguments.h"
 
-// Import FEXCore functions for use in host thunk libraries.
+// Import FEX::HLE functions for use in host thunk libraries.
 //
 // Note these are statically linked into the FEX executable. The linker hence
 // doesn't know about them when linking thunk libraries. This issue is avoided
 // by declaring the functions as weak symbols.
-namespace FEXCore {
+namespace FEX::HLE {
 struct HostToGuestTrampolinePtr;
 
 __attribute__((weak)) HostToGuestTrampolinePtr* MakeHostTrampolineForGuestFunction(void* HostPacker, uintptr_t GuestTarget, uintptr_t GuestUnpacker);
@@ -30,7 +30,7 @@ __attribute__((weak)) HostToGuestTrampolinePtr* FinalizeHostTrampolineForGuestFu
 __attribute__((weak)) void* GetGuestStack();
 
 __attribute__((weak)) void MoveGuestStack(uintptr_t NewAddress);
-} // namespace FEXCore
+} // namespace FEX::HLE
 
 template<typename Fn>
 struct function_traits;
@@ -504,19 +504,19 @@ auto Projection(guest_layout<T>& data) {
  * restored.
  */
 class GuestStackBumpAllocator final {
-  uintptr_t Top = reinterpret_cast<uintptr_t>(FEXCore::GetGuestStack());
+  uintptr_t Top = reinterpret_cast<uintptr_t>(FEX::HLE::GetGuestStack());
   uintptr_t Next = Top;
 
 public:
   ~GuestStackBumpAllocator() {
-    FEXCore::MoveGuestStack(Top);
+    FEX::HLE::MoveGuestStack(Top);
   }
 
   template<typename T, typename... Args>
   T* New(Args&&... args) {
     Next -= sizeof(T);
     Next &= ~uintptr_t {alignof(T) - 1};
-    FEXCore::MoveGuestStack(Next);
+    FEX::HLE::MoveGuestStack(Next);
     return new (reinterpret_cast<void*>(Next)) T {std::forward<Args>(args)...};
   }
 };
@@ -625,19 +625,19 @@ struct GuestWrapperForHostFunction<Result(Args...), GuestArgs...> {
 
 template<typename FuncType>
 void MakeHostTrampolineForGuestFunctionAt(uintptr_t GuestTarget, uintptr_t GuestUnpacker, FuncType** Func) {
-  *Func = (FuncType*)FEXCore::MakeHostTrampolineForGuestFunction((void*)&CallbackUnpack<FuncType>::CallGuestPtr, GuestTarget, GuestUnpacker);
+  *Func = (FuncType*)FEX::HLE::MakeHostTrampolineForGuestFunction((void*)&CallbackUnpack<FuncType>::CallGuestPtr, GuestTarget, GuestUnpacker);
 }
 
 template<typename F>
 void FinalizeHostTrampolineForGuestFunction(F* PreallocatedTrampolineForGuestFunction) {
-  FEXCore::FinalizeHostTrampolineForGuestFunction((FEXCore::HostToGuestTrampolinePtr*)PreallocatedTrampolineForGuestFunction,
-                                                  (void*)&CallbackUnpack<F>::CallGuestPtr);
+  FEX::HLE::FinalizeHostTrampolineForGuestFunction((FEX::HLE::HostToGuestTrampolinePtr*)PreallocatedTrampolineForGuestFunction,
+                                                   (void*)&CallbackUnpack<F>::CallGuestPtr);
 }
 
 template<typename F>
 void FinalizeHostTrampolineForGuestFunction(guest_layout<F*> PreallocatedTrampolineForGuestFunction) {
-  FEXCore::FinalizeHostTrampolineForGuestFunction((FEXCore::HostToGuestTrampolinePtr*)PreallocatedTrampolineForGuestFunction.data,
-                                                  (void*)&CallbackUnpack<F>::CallGuestPtr);
+  FEX::HLE::FinalizeHostTrampolineForGuestFunction((FEX::HLE::HostToGuestTrampolinePtr*)PreallocatedTrampolineForGuestFunction.data,
+                                                   (void*)&CallbackUnpack<F>::CallGuestPtr);
 }
 
 // In the case of the thunk host_loader being the default, FEX need to use dlsym with RTLD_DEFAULT.

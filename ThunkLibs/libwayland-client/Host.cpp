@@ -335,8 +335,8 @@ fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_proxy* proxy, guest
       WaylandFinalizeHostTrampolineForGuestListener<>(callback);
     } else if (signature == "a") {
       // E.g. xdg_toplevel::wm_capabilities
-      FEXCore::FinalizeHostTrampolineForGuestFunction((FEXCore::HostToGuestTrampolinePtr*)callback,
-                                                      (void*)CallGuestPtrWithWaylandArray<void, void*, wl_proxy*>);
+      FEX::HLE::FinalizeHostTrampolineForGuestFunction((FEX::HLE::HostToGuestTrampolinePtr*)callback,
+                                                       (void*)CallGuestPtrWithWaylandArray<void, void*, wl_proxy*>);
     } else if (signature == "hu") {
       // E.g. zwp_linux_dmabuf_feedback_v1::format_table
       WaylandFinalizeHostTrampolineForGuestListener<'h', 'u'>(callback);
@@ -354,8 +354,8 @@ fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_proxy* proxy, guest
       WaylandFinalizeHostTrampolineForGuestListener<'i', 'i'>(callback);
     } else if (signature == "iia") {
       // E.g. xdg_toplevel::configure
-      FEXCore::FinalizeHostTrampolineForGuestFunction((FEXCore::HostToGuestTrampolinePtr*)callback,
-                                                      (void*)CallGuestPtrWithWaylandArray<void, void*, wl_proxy*, int32_t, int32_t>);
+      FEX::HLE::FinalizeHostTrampolineForGuestFunction((FEX::HLE::HostToGuestTrampolinePtr*)callback,
+                                                       (void*)CallGuestPtrWithWaylandArray<void, void*, wl_proxy*, int32_t, int32_t>);
     } else if (signature == "iiiiissi") {
       // E.g. wl_output_listener::geometry
       WaylandFinalizeHostTrampolineForGuestListener<'i', 'i', 'i', 'i', 'i', 's', 's', 'i'>(callback);
@@ -388,8 +388,8 @@ fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_proxy* proxy, guest
       WaylandFinalizeHostTrampolineForGuestListener<'u', 'o'>(callback);
     } else if (signature == "uoa") {
       // E.g. wl_keyboard_listener::enter
-      FEXCore::FinalizeHostTrampolineForGuestFunction((FEXCore::HostToGuestTrampolinePtr*)callback,
-                                                      (void*)CallGuestPtrWithWaylandArray<void, void*, wl_proxy*, uint32_t, wl_surface*>);
+      FEX::HLE::FinalizeHostTrampolineForGuestFunction((FEX::HLE::HostToGuestTrampolinePtr*)callback,
+                                                       (void*)CallGuestPtrWithWaylandArray<void, void*, wl_proxy*, uint32_t, wl_surface*>);
     } else if (signature == "uoff") {
       // E.g. wl_pointer_listener::enter
       WaylandFinalizeHostTrampolineForGuestListener<'u', 'o', 'f', 'f'>(callback);
