@@ -982,7 +982,8 @@ void ContextImpl::ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState* Thre
   Thread->LookupCache->Erase(Thread->CurrentFrame, GuestRIP);
 }
 
-CustomIRResult ContextImpl::AddCustomIREntrypoint(uintptr_t Entrypoint, CustomIREntrypointHandler Handler, void* Creator, void* Data) {
+std::optional<CustomIRResult>
+ContextImpl::AddCustomIREntrypoint(uintptr_t Entrypoint, CustomIREntrypointHandler Handler, void* Creator, void* Data) {
   LOGMAN_THROW_A_FMT(Config.Is64BitMode || !(Entrypoint >> 32), "64-bit Entrypoint in 32-bit mode {:x}", Entrypoint);
 
   std::unique_lock lk(CustomIRMutex);
@@ -992,11 +993,10 @@ CustomIRResult ContextImpl::AddCustomIREntrypoint(uintptr_t Entrypoint, CustomIR
 
   if (!InsertedIterator.second) {
     const auto& [fn, Creator, Data] = InsertedIterator.first->second;
-    return CustomIRResult(std::move(lk), Creator, Data);
-  } else {
-    lk.unlock();
-    return CustomIRResult(std::move(lk), 0, 0);
+    return CustomIRResult(Creator, Data);
   }
+
+  return std::nullopt;
 }
 
 void ContextImpl::RemoveCustomIREntrypoint(uintptr_t Entrypoint) {

@@ -68,17 +68,9 @@ struct CustomIRResult {
   void* Creator;
   void* Data;
 
-  explicit operator bool() const noexcept {
-    return !lock;
-  }
-
-  CustomIRResult(std::unique_lock<std::shared_mutex>&& lock, void* Creator, void* Data)
+  CustomIRResult(void* Creator, void* Data)
     : Creator(Creator)
-    , Data(Data)
-    , lock(std::move(lock)) {}
-
-private:
-  std::unique_lock<std::shared_mutex> lock;
+    , Data(Data) {}
 };
 
 using BlockDelinkerFunc = void (*)(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record);
@@ -194,7 +186,8 @@ public:
   bool IsAddressInCodeBuffer(FEXCore::Core::InternalThreadState* Thread, uintptr_t Address) const override;
 
   // returns false if a handler was already registered
-  CustomIRResult AddCustomIREntrypoint(uintptr_t Entrypoint, CustomIREntrypointHandler Handler, void* Creator = nullptr, void* Data = nullptr);
+  std::optional<CustomIRResult>
+  AddCustomIREntrypoint(uintptr_t Entrypoint, CustomIREntrypointHandler Handler, void* Creator = nullptr, void* Data = nullptr);
 
   void AppendThunkDefinitions(std::span<const FEXCore::IR::ThunkDefinition> Definitions) override;
 

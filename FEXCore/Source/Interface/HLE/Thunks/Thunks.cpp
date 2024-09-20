@@ -234,11 +234,11 @@ struct ThunkHandler_impl final : public ThunkHandler {
       },
       CTX->ThunkHandler.get(), (void*)args->target_addr);
 
-    if (!Result) {
-      if (Result.Creator != CTX->ThunkHandler.get()) {
+    if (Result.has_value()) {
+      if (Result->Creator != CTX->ThunkHandler.get()) {
         ERROR_AND_DIE_FMT("Input address for LinkAddressToGuestFunction is already linked by another module");
       }
-      if (Result.Data != (void*)args->target_addr) {
+      if (Result->Data != (void*)args->target_addr) {
         // NOTE: This may happen in Vulkan thunks if the Vulkan driver resolves two different symbols
         //       to the same function (e.g. vkGetPhysicalDeviceFeatures2/vkGetPhysicalDeviceFeatures2KHR)
         LogMan::Msg::EFmt("Input address for LinkAddressToGuestFunction is already linked elsewhere");
