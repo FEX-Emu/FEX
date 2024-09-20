@@ -999,6 +999,47 @@ ContextImpl::AddCustomIREntrypoint(uintptr_t Entrypoint, CustomIREntrypointHandl
   return std::nullopt;
 }
 
+void ContextImpl::AddThunkTrampolineIRHandler(uintptr_t Entrypoint, uintptr_t GuestThunkEntrypoint) {
+  LOGMAN_THROW_AA_FMT(Entrypoint, "Tried to link null pointer address to guest function");
+  LOGMAN_THROW_AA_FMT(GuestThunkEntrypoint, "Tried to link address to null pointer guest function");
+  if (!Config.Is64BitMode) {
+    LOGMAN_THROW_AA_FMT((Entrypoint >> 32) == 0, "Tried to link 64-bit address in 32-bit mode");
+    LOGMAN_THROW_AA_FMT((GuestThunkEntrypoint >> 32) == 0, "Tried to link 64-bit address in 32-bit mode");
+  }
+
+  LogMan::Msg::DFmt("Thunks: Adding guest trampoline from address {:#x} to guest function {:#x}", Entrypoint, GuestThunkEntrypoint);
+
+  auto Result = AddCustomIREntrypoint(
+    Entrypoint,
+    [this, GuestThunkEntrypoint](uintptr_t Entrypoint, FEXCore::IR::IREmitter* emit) {
+    auto IRHeader = emit->_IRHeader(emit->Invalid(), Entrypoint, 0, 0);
+    auto Block = emit->CreateCodeNode();
+    IRHeader.first->Blocks = emit->WrapNode(Block);
+    emit->SetCurrentCodeBlock(Block);
+
+    const uint8_t GPRSize = GetGPRSize();
+
+    if (GPRSize == 8) {
+      emit->_StoreRegister(emit->_Constant(Entrypoint), X86State::REG_R11, IR::GPRClass, GPRSize);
+    } else {
+      emit->_StoreContext(GPRSize, IR::FPRClass, emit->_VCastFromGPR(8, 8, emit->_Constant(Entrypoint)), offsetof(Core::CPUState, mm[0][0]));
+    }
+    emit->_ExitFunction(emit->_Constant(GuestThunkEntrypoint));
+    },
+    ThunkHandler.get(), (void*)GuestThunkEntrypoint);
+
+  if (Result.has_value()) {
+    if (Result->Creator != ThunkHandler.get()) {
+      ERROR_AND_DIE_FMT("Input address for AddThunkTrampoline is already linked by another module");
+    }
+    if (Result->Data != (void*)GuestThunkEntrypoint) {
+      // NOTE: This may happen in Vulkan thunks if the Vulkan driver resolves two different symbols
+      //       to the same function (e.g. vkGetPhysicalDeviceFeatures2/vkGetPhysicalDeviceFeatures2KHR)
+      LogMan::Msg::EFmt("Input address for AddThunkTrampoline is already linked elsewhere");
+    }
+  }
+}
+
 void ContextImpl::RemoveCustomIREntrypoint(uintptr_t Entrypoint) {
   LOGMAN_THROW_A_FMT(Config.Is64BitMode || !(Entrypoint >> 32), "64-bit Entrypoint in 32-bit mode {:x}", Entrypoint);
 

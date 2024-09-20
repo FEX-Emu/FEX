@@ -235,6 +235,14 @@ public:
    */
   FEX_DEFAULT_VISIBILITY virtual void EnableExitOnHLT() = 0;
 
+  /**
+   * @brief Adds a new Thunk trampoline handler
+   *
+   * @param Entrypoint The guest PC that the custom thunk trampoline IR handler will be installed at.
+   * @param GuestThunkEntrypoint The thunk entrypoint that the IR handler will redirect to.
+   */
+  FEX_DEFAULT_VISIBILITY virtual void AddThunkTrampolineIRHandler(uintptr_t Entrypoint, uintptr_t GuestThunkEntrypoint) = 0;
+
 private:
 };
 

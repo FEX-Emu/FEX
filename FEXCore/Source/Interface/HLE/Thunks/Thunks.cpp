@@ -6,9 +6,6 @@ tags: glue|thunks
 $end_info$
 */
 
-#include "Interface/IR/IR.h"
-#include "Interface/IR/IREmitter.h"
-
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Debug/InternalThreadState.h>
@@ -204,46 +201,8 @@ struct ThunkHandler_impl final : public ThunkHandler {
     };
 
     auto args = reinterpret_cast<args_t*>(argsv);
-    auto CTX = static_cast<Context::ContextImpl*>(Thread->CTX);
-
-    LOGMAN_THROW_AA_FMT(args->original_callee, "Tried to link null pointer address to guest function");
-    LOGMAN_THROW_AA_FMT(args->target_addr, "Tried to link address to null pointer guest function");
-    if (!CTX->Config.Is64BitMode) {
-      LOGMAN_THROW_AA_FMT((args->original_callee >> 32) == 0, "Tried to link 64-bit address in 32-bit mode");
-      LOGMAN_THROW_AA_FMT((args->target_addr >> 32) == 0, "Tried to link 64-bit address in 32-bit mode");
-    }
-
-    LogMan::Msg::DFmt("Thunks: Adding guest trampoline from address {:#x} to guest function {:#x}", args->original_callee, args->target_addr);
-
-    auto Result = CTX->AddCustomIREntrypoint(
-      args->original_callee,
-      [CTX, GuestThunkEntrypoint = args->target_addr](uintptr_t Entrypoint, FEXCore::IR::IREmitter* emit) {
-      auto IRHeader = emit->_IRHeader(emit->Invalid(), Entrypoint, 0, 0);
-      auto Block = emit->CreateCodeNode();
-      IRHeader.first->Blocks = emit->WrapNode(Block);
-      emit->SetCurrentCodeBlock(Block);
-
-      const uint8_t GPRSize = CTX->GetGPRSize();
-
-      if (GPRSize == 8) {
-        emit->_StoreRegister(emit->_Constant(Entrypoint), X86State::REG_R11, IR::GPRClass, GPRSize);
-      } else {
-        emit->_StoreContext(GPRSize, IR::FPRClass, emit->_VCastFromGPR(8, 8, emit->_Constant(Entrypoint)), offsetof(Core::CPUState, mm[0][0]));
-      }
-      emit->_ExitFunction(emit->_Constant(GuestThunkEntrypoint));
-      },
-      CTX->ThunkHandler.get(), (void*)args->target_addr);
-
-    if (Result.has_value()) {
-      if (Result->Creator != CTX->ThunkHandler.get()) {
-        ERROR_AND_DIE_FMT("Input address for LinkAddressToGuestFunction is already linked by another module");
-      }
-      if (Result->Data != (void*)args->target_addr) {
-        // NOTE: This may happen in Vulkan thunks if the Vulkan driver resolves two different symbols
-        //       to the same function (e.g. vkGetPhysicalDeviceFeatures2/vkGetPhysicalDeviceFeatures2KHR)
-        LogMan::Msg::EFmt("Input address for LinkAddressToGuestFunction is already linked elsewhere");
-      }
-    }
+    auto CTX = static_cast<Context::Context*>(Thread->CTX);
+    CTX->AddThunkTrampolineIRHandler(args->original_callee, args->target_addr);
   }
 
   /**

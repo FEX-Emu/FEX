@@ -189,6 +189,8 @@ public:
   std::optional<CustomIRResult>
   AddCustomIREntrypoint(uintptr_t Entrypoint, CustomIREntrypointHandler Handler, void* Creator = nullptr, void* Data = nullptr);
 
+  void AddThunkTrampolineIRHandler(uintptr_t Entrypoint, uintptr_t GuestThunkEntrypoint) override;
+
   void AppendThunkDefinitions(std::span<const FEXCore::IR::ThunkDefinition> Definitions) override;
 
 public:
