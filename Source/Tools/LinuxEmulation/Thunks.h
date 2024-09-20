@@ -2,6 +2,8 @@
 #include <FEXCore/Core/Thunks.h>
 #include <FEXCore/fextl/memory.h>
 
+#include <span>
+
 namespace FEX::HLE {
 struct ThreadStateObject;
 
