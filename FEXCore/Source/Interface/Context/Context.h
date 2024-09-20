@@ -147,6 +147,7 @@ public:
 #endif
   void SetSignalDelegator(FEXCore::SignalDelegator* SignalDelegation) override;
   void SetSyscallHandler(FEXCore::HLE::SyscallHandler* Handler) override;
+  void SetThunkHandler(FEXCore::ThunkHandler* Handler) override;
 
   FEXCore::CPUID::FunctionResults RunCPUIDFunction(uint32_t Function, uint32_t Leaf) override;
   FEXCore::CPUID::XCRResults RunXCRFunction(uint32_t Function) override;
@@ -247,7 +248,7 @@ public:
   FEXCore::CPUIDEmu CPUID;
   FEXCore::HLE::SyscallHandler* SyscallHandler {};
   FEXCore::HLE::SourcecodeResolver* SourcecodeResolver {};
-  fextl::unique_ptr<FEXCore::ThunkHandler> ThunkHandler;
+  FEXCore::ThunkHandler* ThunkHandler {};
   fextl::unique_ptr<FEXCore::CPU::Dispatcher> Dispatcher;
 
   FEXCore::Context::ExitHandler CustomExitHandler;

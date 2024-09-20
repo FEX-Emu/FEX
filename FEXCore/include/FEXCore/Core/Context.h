@@ -20,6 +20,7 @@ namespace FEXCore {
 class CodeLoader;
 struct HostFeatures;
 class ForkableSharedMutex;
+class ThunkHandler;
 } // namespace FEXCore
 
 namespace FEXCore::Core {
@@ -175,6 +176,7 @@ public:
 #endif
   FEX_DEFAULT_VISIBILITY virtual void SetSignalDelegator(FEXCore::SignalDelegator* SignalDelegation) = 0;
   FEX_DEFAULT_VISIBILITY virtual void SetSyscallHandler(FEXCore::HLE::SyscallHandler* Handler) = 0;
+  FEX_DEFAULT_VISIBILITY virtual void SetThunkHandler(FEXCore::ThunkHandler* Handler) = 0;
 
   FEX_DEFAULT_VISIBILITY virtual FEXCore::CPUID::FunctionResults RunCPUIDFunction(uint32_t Function, uint32_t Leaf) = 0;
   FEX_DEFAULT_VISIBILITY virtual FEXCore::CPUID::XCRResults RunXCRFunction(uint32_t Function) = 0;

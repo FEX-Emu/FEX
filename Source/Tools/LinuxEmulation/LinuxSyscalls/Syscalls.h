@@ -14,6 +14,7 @@ $end_info$
 #include "LinuxSyscalls/Seccomp/SeccompEmulator.h"
 
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/Core/Thunks.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/HLE/SourcecodeResolver.h>
 #include <FEXCore/IR/IR.h>

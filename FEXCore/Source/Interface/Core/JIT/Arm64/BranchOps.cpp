@@ -11,11 +11,11 @@ $end_info$
 
 #include "Interface/Core/JIT/Arm64/JITClass.h"
 
+#include <FEXCore/Core/Thunks.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Utils/MathUtils.h>
-#include <Interface/HLE/Thunks/Thunks.h>
 
 namespace FEXCore::CPU {
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::NodeID Node)

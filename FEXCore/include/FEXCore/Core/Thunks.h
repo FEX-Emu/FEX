@@ -29,10 +29,7 @@ typedef void ThunkedFunction(void* ArgsRv);
 class ThunkHandler {
 public:
   virtual ThunkedFunction* LookupThunk(const IR::SHA256Sum& sha256) = 0;
-  virtual void RegisterTLSState(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState* Thread) = 0;
   virtual ~ThunkHandler() {}
-
-  static fextl::unique_ptr<ThunkHandler> Create();
 
   virtual void AppendThunkDefinitions(std::span<const FEXCore::IR::ThunkDefinition> Definitions) = 0;
 };

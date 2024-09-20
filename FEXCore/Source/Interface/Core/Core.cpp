@@ -19,7 +19,6 @@ $end_info$
 #include "Interface/Core/JIT/JITCore.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/X86Tables/X86Tables.h"
-#include "Interface/HLE/Thunks/Thunks.h"
 #include "Interface/IR/IR.h"
 #include "Interface/IR/IREmitter.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
@@ -34,6 +33,7 @@ $end_info$
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/SignalDelegator.h>
+#include <FEXCore/Core/Thunks.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/HLE/SyscallHandler.h>
@@ -346,7 +346,6 @@ bool ContextImpl::InitCore() {
   SignalDelegation->SetConfig(SignalConfig);
 
 #ifndef _WIN32
-  ThunkHandler = FEXCore::ThunkHandler::Create();
 #elif !defined(_M_ARM64EC)
   // WOW64 always needs the interrupt fault check to be enabled.
   Config.NeedsPendingInterruptFaultCheck = true;
@@ -386,9 +385,6 @@ void ContextImpl::ExecuteThread(FEXCore::Core::InternalThreadState* Thread) {
 
 void ContextImpl::InitializeThreadTLSData(FEXCore::Core::InternalThreadState* Thread) {
   // Let's do some initial bookkeeping here
-  if (ThunkHandler) {
-    ThunkHandler->RegisterTLSState(this, Thread);
-  }
 #ifndef _WIN32
   Alloc::OSAllocator::RegisterTLSData(Thread);
 #endif
@@ -1026,10 +1022,10 @@ void ContextImpl::AddThunkTrampolineIRHandler(uintptr_t Entrypoint, uintptr_t Gu
     }
     emit->_ExitFunction(emit->_Constant(GuestThunkEntrypoint));
     },
-    ThunkHandler.get(), (void*)GuestThunkEntrypoint);
+    ThunkHandler, (void*)GuestThunkEntrypoint);
 
   if (Result.has_value()) {
-    if (Result->Creator != ThunkHandler.get()) {
+    if (Result->Creator != ThunkHandler) {
       ERROR_AND_DIE_FMT("Input address for AddThunkTrampoline is already linked by another module");
     }
     if (Result->Data != (void*)GuestThunkEntrypoint) {

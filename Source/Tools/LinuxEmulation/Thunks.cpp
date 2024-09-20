@@ -6,23 +6,23 @@ tags: glue|thunks
 $end_info$
 */
 
+#include "Thunks.h"
+#include "LinuxSyscalls/ThreadManager.h"
+
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/X86Enums.h>
+#include <FEXCore/Core/Thunks.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/fextl/set.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/unordered_map.h>
-#include "Thunks.h"
 
 #include <cstdint>
-#ifndef _WIN32
 #include <dlfcn.h>
-#endif
 
-#include <Interface/Context/Context.h>
 #include <malloc.h>
 #include <mutex>
 #include <shared_mutex>
@@ -39,7 +39,6 @@ FEX_DEFAULT_VISIBILITY JEMALLOC_NOTHROW extern int glibc_je_is_known_allocation(
 }
 #endif
 
-#ifndef _WIN32
 static __attribute__((aligned(16), naked, section("HostToGuestTrampolineTemplate"))) void HostToGuestTrampolineTemplate() {
 #if defined(_M_X86_64)
   asm("lea 0f(%rip), %r11 \n"
@@ -67,10 +66,8 @@ static __attribute__((aligned(16), naked, section("HostToGuestTrampolineTemplate
 
 extern char __start_HostToGuestTrampolineTemplate[];
 extern char __stop_HostToGuestTrampolineTemplate[];
-#endif
 
 namespace FEXCore {
-#ifndef _WIN32
 struct LoadlibArgs {
   const char* Name;
 };
@@ -131,7 +128,7 @@ struct TruncatingSHA256Hash {
 
 HostToGuestTrampolinePtr* MakeHostTrampolineForGuestFunction(void* HostPacker, uintptr_t GuestTarget, uintptr_t GuestUnpacker);
 
-struct ThunkHandler_impl final : public ThunkHandler {
+struct ThunkHandler_impl final : public FEX::HLE::ThunkHandler {
   std::shared_mutex ThunksMutex;
 
   fextl::unordered_map<IR::SHA256Sum, ThunkedFunction*, TruncatingSHA256Hash> Thunks = {
@@ -326,8 +323,8 @@ struct ThunkHandler_impl final : public ThunkHandler {
     }
   }
 
-  void RegisterTLSState(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState* _Thread) override {
-    ThreadData.Thread = _Thread;
+  void RegisterTLSState(FEXCore::Context::Context* CTX, FEX::HLE::ThreadStateObject* ThreadObject) override {
+    ThreadData.Thread = ThreadObject->Thread;
     ThreadData.ThunkHandler = this;
     ThreadData.CTX = CTX;
   }
@@ -342,10 +339,6 @@ struct ThunkHandler_impl final : public ThunkHandler {
   FEX_CONFIG_OPT(ThunkHostLibsPath, THUNKHOSTLIBS);
   FEX_CONFIG_OPT(ThunkHostLibsPath32, THUNKHOSTLIBS32);
 };
-
-fextl::unique_ptr<ThunkHandler> ThunkHandler::Create() {
-  return fextl::make_unique<ThunkHandler_impl>();
-}
 
 /**
  * Generates a host-callable trampoline to call guest functions via the host ABI.
@@ -459,10 +452,10 @@ FEX_DEFAULT_VISIBILITY void MoveGuestStack(uintptr_t NewAddress) {
   ThreadData.Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP] = NewAddress;
 }
 
-#else
-fextl::unique_ptr<ThunkHandler> ThunkHandler::Create() {
-  ERROR_AND_DIE_FMT("Unsupported");
-}
-#endif
-
 } // namespace FEXCore
+
+namespace FEX::HLE {
+fextl::unique_ptr<ThunkHandler> CreateThunkHandler() {
+  return fextl::make_unique<FEXCore::ThunkHandler_impl>();
+}
+} // namespace FEX::HLE

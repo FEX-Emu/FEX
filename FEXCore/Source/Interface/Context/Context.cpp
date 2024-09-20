@@ -8,6 +8,7 @@
 #include <FEXCore/Core/CPUID.h>
 #include <FEXCore/Core/HostFeatures.h>
 #include <FEXCore/Core/SignalDelegator.h>
+#include <FEXCore/Core/Thunks.h>
 #include "FEXCore/Debug/InternalThreadState.h"
 
 #include <string.h>
@@ -46,6 +47,10 @@ void FEXCore::Context::ContextImpl::SetSignalDelegator(FEXCore::SignalDelegator*
 void FEXCore::Context::ContextImpl::SetSyscallHandler(FEXCore::HLE::SyscallHandler* Handler) {
   SyscallHandler = Handler;
   SourcecodeResolver = Handler->GetSourcecodeResolver();
+}
+
+void FEXCore::Context::ContextImpl::SetThunkHandler(FEXCore::ThunkHandler* Handler) {
+  ThunkHandler = Handler;
 }
 
 FEXCore::CPUID::FunctionResults FEXCore::Context::ContextImpl::RunCPUIDFunction(uint32_t Function, uint32_t Leaf) {

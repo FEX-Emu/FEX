@@ -127,7 +127,6 @@ set (SRCS
   Interface/Core/X86Tables/VEXTables.cpp
   Interface/Core/X86Tables/X87Tables.cpp
   Interface/Core/X86Tables/XOPTables.cpp
-  Interface/HLE/Thunks/Thunks.cpp
   Interface/GDBJIT/GDBJIT.cpp
   Interface/IR/AOTIR.cpp
   Interface/IR/IRDumper.cpp

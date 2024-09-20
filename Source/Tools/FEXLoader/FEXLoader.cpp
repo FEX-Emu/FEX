@@ -21,6 +21,7 @@ $end_info$
 #include "LinuxSyscalls/x64/Syscalls.h"
 #include "LinuxSyscalls/SignalDelegator.h"
 #include "Linux/Utils/ELFContainer.h"
+#include "Thunks.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
@@ -514,6 +515,8 @@ int main(int argc, char** argv, char** const envp) {
   auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get()) :
                                                FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), std::move(Allocator));
 
+  auto ThunkHandler = FEX::HLE::CreateThunkHandler();
+
   // Load VDSO in to memory prior to mapping our ELFs.
   auto VDSOMapping = FEX::VDSO::LoadVDSOThunks(Loader.Is64BitMode(), SyscallHandler.get());
 
@@ -545,6 +548,7 @@ int main(int argc, char** argv, char** const envp) {
 
   CTX->SetSignalDelegator(SignalDelegation.get());
   CTX->SetSyscallHandler(SyscallHandler.get());
+  CTX->SetThunkHandler(ThunkHandler.get());
 
   FEX_CONFIG_OPT(GdbServer, GDBSERVER);
   fextl::unique_ptr<FEX::GdbServer> DebugServer;
@@ -559,6 +563,7 @@ int main(int argc, char** argv, char** const envp) {
   auto ParentThread = SyscallHandler->TM.CreateThread(Loader.DefaultRIP(), Loader.GetStackPointer());
   SyscallHandler->TM.TrackThread(ParentThread);
   SignalDelegation->RegisterTLSState(ParentThread);
+  ThunkHandler->RegisterTLSState(CTX.get(), ParentThread);
 
   // Pass in our VDSO thunks
   CTX->AppendThunkDefinitions(FEX::VDSO::GetVDSOThunkDefinitions());
