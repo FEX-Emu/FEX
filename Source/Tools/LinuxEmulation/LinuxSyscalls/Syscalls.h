@@ -67,6 +67,8 @@ namespace FEX::HLE {
 
 class SyscallHandler;
 class SignalDelegator;
+class ThunkHandler;
+
 void RegisterEpoll(FEX::HLE::SyscallHandler* Handler);
 void RegisterFD(FEX::HLE::SyscallHandler* Handler);
 void RegisterFS(FEX::HLE::SyscallHandler* Handler);
@@ -255,6 +257,9 @@ public:
   void LockBeforeFork(FEXCore::Core::InternalThreadState* Thread);
   void UnlockAfterFork(FEXCore::Core::InternalThreadState* LiveThread, bool Child);
 
+  void RegisterTLSState(FEX::HLE::ThreadStateObject* Thread);
+  void UninstallTLSState(FEX::HLE::ThreadStateObject* Thread);
+
   SourcecodeResolver* GetSourcecodeResolver() override {
     return this;
   }
@@ -273,7 +278,7 @@ public:
   constexpr static uint64_t TASK_MAX_64BIT = (1ULL << 48);
 
 protected:
-  SyscallHandler(FEXCore::Context::Context* _CTX, FEX::HLE::SignalDelegator* _SignalDelegation);
+  SyscallHandler(FEXCore::Context::Context* _CTX, FEX::HLE::SignalDelegator* _SignalDelegation, FEX::HLE::ThunkHandler* ThunkHandler);
 
   fextl::vector<SyscallFunctionDefinition> Definitions {std::max<std::size_t>(FEX::HLE::x64::SYSCALL_x64_MAX, FEX::HLE::x32::SYSCALL_x86_MAX),
                                                         {
@@ -297,6 +302,7 @@ protected:
 private:
 
   FEX::HLE::SignalDelegator* SignalDelegation;
+  FEX::HLE::ThunkHandler* ThunkHandler;
 
   std::mutex FutexMutex;
   std::mutex SyscallMutex;

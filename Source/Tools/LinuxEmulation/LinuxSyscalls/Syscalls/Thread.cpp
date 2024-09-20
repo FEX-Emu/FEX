@@ -57,9 +57,9 @@ static void* ThreadHandler(void* Data) {
   Thread->ThreadInfo.PID = ::getpid();
   Thread->ThreadInfo.TID = FHU::Syscalls::gettid();
 
-  FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterTLSState(Thread);
+  FEX::HLE::_SyscallHandler->RegisterTLSState(Thread);
   CTX->ExecutionThread(Thread->Thread);
-  FEX::HLE::_SyscallHandler->GetSignalDelegator()->UninstallTLSState(Thread);
+  FEX::HLE::_SyscallHandler->UninstallTLSState(Thread);
   FEX::HLE::_SyscallHandler->TM.DestroyThread(Thread);
   return nullptr;
 }
@@ -216,13 +216,13 @@ uint64_t HandleNewClone(FEX::HLE::ThreadStateObject* Thread, FEXCore::Context::C
     FEX::HLE::_SyscallHandler->TM.TrackThread(Thread);
   }
 
-  FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterTLSState(Thread);
+  FEX::HLE::_SyscallHandler->RegisterTLSState(Thread);
 
   // Start exuting the thread directly
   // Our host clone starts in a new stack space, so it can't return back to the JIT space
   CTX->ExecutionThread(Thread->Thread);
 
-  FEX::HLE::_SyscallHandler->GetSignalDelegator()->UninstallTLSState(Thread);
+  FEX::HLE::_SyscallHandler->UninstallTLSState(Thread);
 
   // The rest of the context remains as is and the thread will continue executing
   return Thread->Thread->StatusCode;

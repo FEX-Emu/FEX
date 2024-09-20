@@ -300,8 +300,8 @@ int main(int argc, char** argv, char** const envp) {
 
   if (!IsHostRunner) {
 #ifndef _WIN32
-    auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get()) :
-                                                 FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), std::move(Allocator));
+    auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get(), nullptr) :
+                                                 FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), nullptr, std::move(Allocator));
 
 #else
     auto SyscallHandler = FEX::WindowsHandlers::CreateSyscallHandler();

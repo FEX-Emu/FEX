@@ -21,6 +21,7 @@ $end_info$
 #include "LinuxSyscalls/x64/Syscalls.h"
 #include "LinuxSyscalls/x32/Types.h"
 #include "LinuxSyscalls/x64/Types.h"
+#include "Thunks.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
@@ -740,12 +741,13 @@ void SyscallHandler::DefaultProgramBreak(uint64_t Base, uint64_t Size) {
   DataSpaceStartingSize = Size;
 }
 
-SyscallHandler::SyscallHandler(FEXCore::Context::Context* _CTX, FEX::HLE::SignalDelegator* _SignalDelegation)
+SyscallHandler::SyscallHandler(FEXCore::Context::Context* _CTX, FEX::HLE::SignalDelegator* _SignalDelegation, FEX::HLE::ThunkHandler* ThunkHandler)
   : TM {_CTX, _SignalDelegation}
   , SeccompEmulator {this, _SignalDelegation}
   , FM {_CTX}
   , CTX {_CTX}
-  , SignalDelegation {_SignalDelegation} {
+  , SignalDelegation {_SignalDelegation}
+  , ThunkHandler {ThunkHandler} {
   FEX::HLE::_SyscallHandler = this;
   HostKernelVersion = CalculateHostKernelVersion();
   GuestKernelVersion = CalculateGuestKernelVersion();
@@ -870,6 +872,15 @@ void SyscallHandler::UnlockAfterFork(FEXCore::Core::InternalThreadState* LiveThr
 
   // Clear all the other threads that are being tracked
   TM.UnlockAfterFork(LiveThread, Child);
+}
+
+void SyscallHandler::RegisterTLSState(FEX::HLE::ThreadStateObject* Thread) {
+  SignalDelegation->RegisterTLSState(Thread);
+  ThunkHandler->RegisterTLSState(CTX, Thread);
+}
+
+void SyscallHandler::UninstallTLSState(FEX::HLE::ThreadStateObject* Thread) {
+  SignalDelegation->UninstallTLSState(Thread);
 }
 
 static bool isHEX(char c) {

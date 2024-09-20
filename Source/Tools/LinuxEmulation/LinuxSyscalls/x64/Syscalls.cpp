@@ -23,8 +23,8 @@ void RegisterTime(FEX::HLE::SyscallHandler* Handler);
 void RegisterNotImplemented(FEX::HLE::SyscallHandler* Handler);
 void RegisterPassthrough(FEX::HLE::SyscallHandler* Handler);
 
-x64SyscallHandler::x64SyscallHandler(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* _SignalDelegation)
-  : SyscallHandler {ctx, _SignalDelegation} {
+x64SyscallHandler::x64SyscallHandler(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* _SignalDelegation, FEX::HLE::ThunkHandler* ThunkHandler)
+  : SyscallHandler {ctx, _SignalDelegation, ThunkHandler} {
   OSABI = FEXCore::HLE::SyscallOSABI::OS_LINUX64;
 
   RegisterSyscallHandlers();
@@ -80,7 +80,8 @@ void x64SyscallHandler::RegisterSyscallHandlers() {
 #endif
 }
 
-fextl::unique_ptr<FEX::HLE::SyscallHandler> CreateHandler(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* _SignalDelegation) {
-  return fextl::make_unique<x64SyscallHandler>(ctx, _SignalDelegation);
+fextl::unique_ptr<FEX::HLE::SyscallHandler>
+CreateHandler(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* _SignalDelegation, FEX::HLE::ThunkHandler* ThunkHandler) {
+  return fextl::make_unique<x64SyscallHandler>(ctx, _SignalDelegation, ThunkHandler);
 }
 } // namespace FEX::HLE::x64

@@ -28,13 +28,15 @@ namespace Core {
 
 namespace FEX::HLE {
 class SignalDelegator;
-}
+class ThunkHandler;
+} // namespace FEX::HLE
 
 namespace FEX::HLE::x32 {
 
 class x32SyscallHandler final : public FEX::HLE::SyscallHandler {
 public:
-  x32SyscallHandler(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* _SignalDelegation, fextl::unique_ptr<MemAllocator> Allocator);
+  x32SyscallHandler(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* _SignalDelegation, FEX::HLE::ThunkHandler* ThunkHandler,
+                    fextl::unique_ptr<MemAllocator> Allocator);
 
   FEX::HLE::MemAllocator* GetAllocator() {
     return AllocHandler.get();
@@ -65,8 +67,8 @@ private:
   fextl::unique_ptr<MemAllocator> AllocHandler {};
 };
 
-fextl::unique_ptr<FEX::HLE::SyscallHandler>
-CreateHandler(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* _SignalDelegation, fextl::unique_ptr<MemAllocator> Allocator);
+fextl::unique_ptr<FEX::HLE::SyscallHandler> CreateHandler(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* _SignalDelegation,
+                                                          FEX::HLE::ThunkHandler* ThunkHandler, fextl::unique_ptr<MemAllocator> Allocator);
 //////
 // REGISTER_SYSCALL_IMPL implementation
 // Given a syscall name + a lambda, and it will generate an strace string, extract number of arguments
