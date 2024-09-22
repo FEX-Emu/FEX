@@ -50,7 +50,7 @@ public:
 
   // Returns true if the host handled the signal
   // Arguments are the same as sigaction handler
-  SignalDelegator(FEXCore::Context::Context* _CTX, const std::string_view ApplicationName);
+  SignalDelegator(FEXCore::Context::Context* _CTX, const std::string_view ApplicationName, bool SupportsAVX);
   ~SignalDelegator() override;
 
   // Called from the signal trampoline function.
@@ -274,7 +274,9 @@ private:
 
   std::mutex HostDelegatorMutex;
   std::mutex GuestDelegatorMutex;
+  bool SupportsAVX;
 };
 
-fextl::unique_ptr<FEX::HLE::SignalDelegator> CreateSignalDelegator(FEXCore::Context::Context* CTX, const std::string_view ApplicationName);
+fextl::unique_ptr<FEX::HLE::SignalDelegator>
+CreateSignalDelegator(FEXCore::Context::Context* CTX, const std::string_view ApplicationName, bool SupportsAVX);
 } // namespace FEX::HLE

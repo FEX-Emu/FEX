@@ -321,8 +321,6 @@ bool ContextImpl::InitCore() {
 
   // Set up the SignalDelegator config since core is initialized.
   FEXCore::SignalDelegator::SignalDelegatorConfig SignalConfig {
-    .SupportsAVX = HostFeatures.SupportsAVX,
-
     .DispatcherBegin = Dispatcher->Start,
     .DispatcherEnd = Dispatcher->End,
 

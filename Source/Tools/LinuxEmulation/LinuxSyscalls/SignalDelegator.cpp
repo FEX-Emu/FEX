@@ -118,7 +118,7 @@ void SignalDelegator::SpillSRA(FEXCore::Core::InternalThreadState* Thread, void*
     Thread->CurrentFrame->State.gregs[i] = ArchHelpers::Context::GetArmReg(ucontext, SRAIdxMap);
   }
 
-  if (Config.SupportsAVX) {
+  if (SupportsAVX) {
     // TODO: This doesn't save the upper 128-bits of the 256-bit registers.
     // This needs to be implemented still.
     for (size_t i = 0; i < Config.SRAFPRCount; i++) {
@@ -178,8 +178,6 @@ ArchHelpers::Context::ContextBackup* SignalDelegator::StoreThreadState(FEXCore::
 }
 
 void SignalDelegator::RestoreThreadState(FEXCore::Core::InternalThreadState* Thread, void* ucontext, RestoreType Type) {
-  const bool IsAVXEnabled = Config.SupportsAVX;
-
   uint64_t OldSP {};
   if (Type == RestoreType::TYPE_PAUSE) [[unlikely]] {
     OldSP = ArchHelpers::Context::GetSp(ucontext);
@@ -203,7 +201,7 @@ void SignalDelegator::RestoreThreadState(FEXCore::Core::InternalThreadState* Thr
       GuestSP += sizeof(siginfo_t);
       GuestSP = FEXCore::AlignUp(GuestSP, alignof(siginfo_t));
 
-      if (IsAVXEnabled) {
+      if (SupportsAVX) {
         GuestSP += sizeof(FEXCore::x86_64::xstate);
         GuestSP = FEXCore::AlignUp(GuestSP, alignof(FEXCore::x86_64::xstate));
       } else {
@@ -221,7 +219,7 @@ void SignalDelegator::RestoreThreadState(FEXCore::Core::InternalThreadState* Thr
         GuestSP += sizeof(SigFrame_i32) - 8;
         GuestSP = FEXCore::AlignUp(GuestSP, alignof(SigFrame_i32));
 
-        if (IsAVXEnabled) {
+        if (SupportsAVX) {
           GuestSP += sizeof(FEXCore::x86::xstate);
           GuestSP = FEXCore::AlignUp(GuestSP, alignof(FEXCore::x86::xstate));
         } else {
@@ -238,7 +236,7 @@ void SignalDelegator::RestoreThreadState(FEXCore::Core::InternalThreadState* Thr
         GuestSP += sizeof(RTSigFrame_i32) - 4;
         GuestSP = FEXCore::AlignUp(GuestSP, alignof(RTSigFrame_i32));
 
-        if (IsAVXEnabled) {
+        if (SupportsAVX) {
           GuestSP += sizeof(FEXCore::x86::xstate);
           GuestSP = FEXCore::AlignUp(GuestSP, alignof(FEXCore::x86::xstate));
         } else {
@@ -833,9 +831,10 @@ void SignalDelegator::QueueSignal(pid_t tgid, pid_t tid, int Signal, siginfo_t* 
   }
 }
 
-SignalDelegator::SignalDelegator(FEXCore::Context::Context* _CTX, const std::string_view ApplicationName)
+SignalDelegator::SignalDelegator(FEXCore::Context::Context* _CTX, const std::string_view ApplicationName, bool SupportsAVX)
   : CTX {_CTX}
-  , ApplicationName {ApplicationName} {
+  , ApplicationName {ApplicationName}
+  , SupportsAVX {SupportsAVX} {
   // Signal zero isn't real
   HostHandlers[0].Installed = true;
 
@@ -1295,7 +1294,8 @@ uint64_t SignalDelegator::GuestSignalFD(int fd, const uint64_t* set, size_t sigs
   return Result == -1 ? -errno : Result;
 }
 
-fextl::unique_ptr<FEX::HLE::SignalDelegator> CreateSignalDelegator(FEXCore::Context::Context* CTX, const std::string_view ApplicationName) {
-  return fextl::make_unique<FEX::HLE::SignalDelegator>(CTX, ApplicationName);
+fextl::unique_ptr<FEX::HLE::SignalDelegator>
+CreateSignalDelegator(FEXCore::Context::Context* CTX, const std::string_view ApplicationName, bool SupportsAVX) {
+  return fextl::make_unique<FEX::HLE::SignalDelegator>(CTX, ApplicationName, SupportsAVX);
 }
 } // namespace FEX::HLE

@@ -110,8 +110,6 @@ static void SetXStateInfo(T* xstate, bool is_avx_enabled) {
 
 void SignalDelegator::RestoreFrame_x64(FEXCore::Core::InternalThreadState* Thread, ArchHelpers::Context::ContextBackup* Context,
                                        FEXCore::Core::CpuStateFrame* Frame, void* ucontext) {
-  const bool IsAVXEnabled = Config.SupportsAVX;
-
   auto* guest_uctx = reinterpret_cast<FEXCore::x86_64::ucontext_t*>(Context->UContextLocation);
   [[maybe_unused]] auto* guest_siginfo = reinterpret_cast<siginfo_t*>(Context->SigInfoLocation);
 
@@ -155,7 +153,7 @@ void SignalDelegator::RestoreFrame_x64(FEXCore::Core::InternalThreadState* Threa
     // Copy float registers
     memcpy(Frame->State.mm, fpstate->_st, sizeof(Frame->State.mm));
 
-    if (IsAVXEnabled) {
+    if (SupportsAVX) {
       CTX->SetXMMRegistersFromState(Thread, fpstate->_xmm, xstate->ymmh.ymmh_space);
     } else {
       CTX->SetXMMRegistersFromState(Thread, fpstate->_xmm, nullptr);
@@ -176,8 +174,6 @@ void SignalDelegator::RestoreFrame_x64(FEXCore::Core::InternalThreadState* Threa
 
 void SignalDelegator::RestoreFrame_ia32(FEXCore::Core::InternalThreadState* Thread, ArchHelpers::Context::ContextBackup* Context,
                                         FEXCore::Core::CpuStateFrame* Frame, void* ucontext) {
-  const bool IsAVXEnabled = Config.SupportsAVX;
-
   SigFrame_i32* guest_uctx = reinterpret_cast<SigFrame_i32*>(Context->UContextLocation);
   // If the guest modified the RIP then we need to take special precautions here
   if (Context->OriginalRIP != guest_uctx->sc.ip || Context->FaultToTopAndGeneratedException) {
@@ -228,7 +224,7 @@ void SignalDelegator::RestoreFrame_ia32(FEXCore::Core::InternalThreadState* Thre
     }
 
     // Extended XMM state
-    if (IsAVXEnabled) {
+    if (SupportsAVX) {
       CTX->SetXMMRegistersFromState(Thread, fpstate->_xmm, xstate->ymmh.ymmh_space);
     } else {
       CTX->SetXMMRegistersFromState(Thread, fpstate->_xmm, nullptr);
@@ -249,8 +245,6 @@ void SignalDelegator::RestoreFrame_ia32(FEXCore::Core::InternalThreadState* Thre
 
 void SignalDelegator::RestoreRTFrame_ia32(FEXCore::Core::InternalThreadState* Thread, ArchHelpers::Context::ContextBackup* Context,
                                           FEXCore::Core::CpuStateFrame* Frame, void* ucontext) {
-  const bool IsAVXEnabled = Config.SupportsAVX;
-
   RTSigFrame_i32* guest_uctx = reinterpret_cast<RTSigFrame_i32*>(Context->UContextLocation);
   // If the guest modified the RIP then we need to take special precautions here
   if (Context->OriginalRIP != guest_uctx->uc.uc_mcontext.gregs[FEXCore::x86::FEX_REG_EIP] || Context->FaultToTopAndGeneratedException) {
@@ -302,7 +296,7 @@ void SignalDelegator::RestoreRTFrame_ia32(FEXCore::Core::InternalThreadState* Th
     }
 
     // Extended XMM state
-    if (IsAVXEnabled) {
+    if (SupportsAVX) {
       CTX->SetXMMRegistersFromState(Thread, fpstate->_xmm, xstate->ymmh.ymmh_space);
     } else {
       CTX->SetXMMRegistersFromState(Thread, fpstate->_xmm, nullptr);
@@ -329,8 +323,6 @@ uint64_t SignalDelegator::SetupFrame_x64(FEXCore::Core::InternalThreadState* Thr
   // 32-bit doesn't have a redzone
   NewGuestSP -= 128;
 
-  const bool IsAVXEnabled = Config.SupportsAVX;
-
   // On 64-bit the kernel sets up the siginfo_t and ucontext_t regardless of SA_SIGINFO set.
   // This allows the application to /always/ get the siginfo and ucontext even if it didn't set this flag.
   //
@@ -345,7 +337,7 @@ uint64_t SignalDelegator::SetupFrame_x64(FEXCore::Core::InternalThreadState* Thr
 
   uint64_t HostStackLocation = NewGuestSP;
 
-  if (IsAVXEnabled) {
+  if (SupportsAVX) {
     NewGuestSP -= sizeof(FEXCore::x86_64::xstate);
     NewGuestSP = FEXCore::AlignDown(NewGuestSP, alignof(FEXCore::x86_64::xstate));
   } else {
@@ -378,7 +370,7 @@ uint64_t SignalDelegator::SetupFrame_x64(FEXCore::Core::InternalThreadState* Thr
   // Pointer to where the fpreg memory is
   guest_uctx->uc_mcontext.fpregs = reinterpret_cast<FEXCore::x86_64::_libc_fpstate*>(FPStateLocation);
   auto* xstate = reinterpret_cast<FEXCore::x86_64::xstate*>(FPStateLocation);
-  SetXStateInfo(xstate, IsAVXEnabled);
+  SetXStateInfo(xstate, SupportsAVX);
 
   guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_RIP] = ContextBackup->OriginalRIP;
   guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_EFL] = eflags;
@@ -427,7 +419,7 @@ uint64_t SignalDelegator::SetupFrame_x64(FEXCore::Core::InternalThreadState* Thr
   // Copy float registers
   memcpy(fpstate->_st, Frame->State.mm, sizeof(Frame->State.mm));
 
-  if (IsAVXEnabled) {
+  if (SupportsAVX) {
     CTX->ReconstructXMMRegisters(Thread, fpstate->_xmm, xstate->ymmh.ymmh_space);
   } else {
     CTX->ReconstructXMMRegisters(Thread, fpstate->_xmm, nullptr);
@@ -472,7 +464,6 @@ uint64_t SignalDelegator::SetupFrame_ia32(FEXCore::Core::InternalThreadState* Th
                                           FEXCore::Core::CpuStateFrame* Frame, int Signal, siginfo_t* HostSigInfo, void* ucontext,
                                           GuestSigAction* GuestAction, stack_t* GuestStack, uint64_t NewGuestSP, const uint32_t eflags) {
 
-  const bool IsAVXEnabled = Config.SupportsAVX;
   const uint64_t SignalReturn = reinterpret_cast<uint64_t>(VDSOPointers.VDSO_kernel_sigreturn);
 
   NewGuestSP -= sizeof(uint64_t);
@@ -480,7 +471,7 @@ uint64_t SignalDelegator::SetupFrame_ia32(FEXCore::Core::InternalThreadState* Th
 
   uint64_t HostStackLocation = NewGuestSP;
 
-  if (IsAVXEnabled) {
+  if (SupportsAVX) {
     NewGuestSP -= sizeof(FEXCore::x86::xstate);
     NewGuestSP = FEXCore::AlignDown(NewGuestSP, alignof(FEXCore::x86::xstate));
   } else {
@@ -505,7 +496,7 @@ uint64_t SignalDelegator::SetupFrame_ia32(FEXCore::Core::InternalThreadState* Th
   // Pointer to where the fpreg memory is
   guest_uctx->sc.fpstate = static_cast<uint32_t>(FPStateLocation);
   auto* xstate = reinterpret_cast<FEXCore::x86::xstate*>(FPStateLocation);
-  SetXStateInfo(xstate, IsAVXEnabled);
+  SetXStateInfo(xstate, SupportsAVX);
 
   guest_uctx->sc.cs = Frame->State.cs_idx;
   guest_uctx->sc.ds = Frame->State.ds_idx;
@@ -549,7 +540,7 @@ uint64_t SignalDelegator::SetupFrame_ia32(FEXCore::Core::InternalThreadState* Th
   // Extended XMM state
   fpstate->status = FEXCore::x86::fpstate_magic::MAGIC_XFPSTATE;
 
-  if (IsAVXEnabled) {
+  if (SupportsAVX) {
     CTX->ReconstructXMMRegisters(Thread, fpstate->_xmm, xstate->ymmh.ymmh_space);
   } else {
     CTX->ReconstructXMMRegisters(Thread, fpstate->_xmm, nullptr);
@@ -601,7 +592,6 @@ uint64_t SignalDelegator::SetupRTFrame_ia32(FEXCore::Core::InternalThreadState* 
                                             FEXCore::Core::CpuStateFrame* Frame, int Signal, siginfo_t* HostSigInfo, void* ucontext,
                                             GuestSigAction* GuestAction, stack_t* GuestStack, uint64_t NewGuestSP, const uint32_t eflags) {
 
-  const bool IsAVXEnabled = Config.SupportsAVX;
   const uint64_t SignalReturn = reinterpret_cast<uint64_t>(VDSOPointers.VDSO_kernel_rt_sigreturn);
 
   NewGuestSP -= sizeof(uint64_t);
@@ -609,7 +599,7 @@ uint64_t SignalDelegator::SetupRTFrame_ia32(FEXCore::Core::InternalThreadState* 
 
   uint64_t HostStackLocation = NewGuestSP;
 
-  if (IsAVXEnabled) {
+  if (SupportsAVX) {
     NewGuestSP -= sizeof(FEXCore::x86::xstate);
     NewGuestSP = FEXCore::AlignDown(NewGuestSP, alignof(FEXCore::x86::xstate));
   } else {
@@ -638,7 +628,7 @@ uint64_t SignalDelegator::SetupRTFrame_ia32(FEXCore::Core::InternalThreadState* 
   // Pointer to where the fpreg memory is
   guest_uctx->uc.uc_mcontext.fpregs = static_cast<uint32_t>(FPStateLocation);
   auto* xstate = reinterpret_cast<FEXCore::x86::xstate*>(FPStateLocation);
-  SetXStateInfo(xstate, IsAVXEnabled);
+  SetXStateInfo(xstate, SupportsAVX);
 
   guest_uctx->uc.uc_mcontext.gregs[FEXCore::x86::FEX_REG_CS] = Frame->State.cs_idx;
   guest_uctx->uc.uc_mcontext.gregs[FEXCore::x86::FEX_REG_DS] = Frame->State.ds_idx;
@@ -684,7 +674,7 @@ uint64_t SignalDelegator::SetupRTFrame_ia32(FEXCore::Core::InternalThreadState* 
   // Extended XMM state
   fpstate->status = FEXCore::x86::fpstate_magic::MAGIC_XFPSTATE;
 
-  if (IsAVXEnabled) {
+  if (SupportsAVX) {
     CTX->ReconstructXMMRegisters(Thread, fpstate->_xmm, xstate->ymmh.ymmh_space);
   } else {
     CTX->ReconstructXMMRegisters(Thread, fpstate->_xmm, nullptr);
