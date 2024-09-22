@@ -260,10 +260,6 @@ public:
 
   FEXCore::Context::ExitHandler CustomExitHandler;
 
-#ifdef BLOCKSTATS
-  fextl::unique_ptr<FEXCore::BlockSamplingData> BlockData;
-#endif
-
   SignalDelegator* SignalDelegation {};
   X86GeneratedCode X86CodeGen;
 

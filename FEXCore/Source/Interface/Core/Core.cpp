@@ -78,9 +78,6 @@ ContextImpl::ContextImpl(const FEXCore::HostFeatures& Features)
   : HostFeatures {Features}
   , CPUID {this}
   , IRCaptureCache {this} {
-#ifdef BLOCKSTATS
-  BlockData = std::make_unique<FEXCore::BlockSamplingData>();
-#endif
   if (Config.CacheObjectCodeCompilation() != FEXCore::Config::ConfigObjectCodeHandler::CONFIG_NONE) {
     CodeObjectCacheService = fextl::make_unique<FEXCore::CodeSerialize::CodeObjectSerializeService>(this);
   }
