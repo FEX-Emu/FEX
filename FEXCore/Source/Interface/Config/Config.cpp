@@ -230,27 +230,26 @@ void Load() {
   }
 }
 
-fextl::string ExpandPath(const fextl::string& ContainerPrefix, fextl::string PathName) {
+fextl::string ExpandPath(const fextl::string& ContainerPrefix, const fextl::string& PathName) {
   if (PathName.empty()) {
     return {};
   }
-
 
   // Expand home if it exists
   if (FHU::Filesystem::IsRelative(PathName)) {
     fextl::string Home = getenv("HOME") ?: "";
     // Home expansion only works if it is the first character
     // This matches bash behaviour
-    if (PathName.at(0) == '~') {
-      PathName.replace(0, 1, Home);
-      return PathName;
+    if (PathName.starts_with("~/")) {
+      Home.append(PathName.begin() + 1, PathName.end());
+      return Home;
     }
 
     // Expand relative path to absolute
     char ExistsTempPath[PATH_MAX];
     char* RealPath = FHU::Filesystem::Absolute(PathName.c_str(), ExistsTempPath);
-    if (RealPath) {
-      PathName = RealPath;
+    if (RealPath && FHU::Filesystem::Exists(RealPath)) {
+      return RealPath;
     }
 
     // Only return if it exists
@@ -318,65 +317,61 @@ fextl::string FindContainerPrefix() {
 void ReloadMetaLayer() {
   Meta->Load();
 
-  if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_CACHEOBJECTCODECOMPILATION)) {
-    FEX_CONFIG_OPT(CacheObjectCodeCompilation, CACHEOBJECTCODECOMPILATION);
-  }
-
-  fextl::string ContainerPrefix {FindContainerPrefix()};
-  auto ExpandPathIfExists = [&ContainerPrefix](FEXCore::Config::ConfigOption Config, fextl::string PathName) {
-    auto NewPath = ExpandPath(ContainerPrefix, PathName);
+  const fextl::string ContainerPrefix {FindContainerPrefix()};
+  auto ExpandPathIfExists = [&ContainerPrefix](FEXCore::Config::ConfigOption Config, const fextl::string& PathName) {
+    const auto NewPath = ExpandPath(ContainerPrefix, PathName);
     if (!NewPath.empty()) {
       FEXCore::Config::EraseSet(Config, NewPath);
     }
   };
 
   if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_ROOTFS)) {
-    FEX_CONFIG_OPT(PathName, ROOTFS);
-    auto ExpandedString = ExpandPath(ContainerPrefix, PathName());
+    const auto PathName = *Meta->Get(FEXCore::Config::CONFIG_ROOTFS);
+    const auto ExpandedString = ExpandPath(ContainerPrefix, *PathName);
     if (!ExpandedString.empty()) {
       // Adjust the path if it ended up being relative
       FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, ExpandedString);
-    } else if (!PathName().empty()) {
+    } else if (!PathName->empty()) {
       // If the filesystem doesn't exist then let's see if it exists in the fex-emu folder
-      fextl::string NamedRootFS = GetDataDirectory() + "RootFS/" + PathName();
+      fextl::string NamedRootFS = GetDataDirectory() + "RootFS/" + *PathName;
       if (FHU::Filesystem::Exists(NamedRootFS)) {
         FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, NamedRootFS);
       }
     }
   }
   if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_THUNKHOSTLIBS)) {
-    FEX_CONFIG_OPT(PathName, THUNKHOSTLIBS);
-    ExpandPathIfExists(FEXCore::Config::CONFIG_THUNKHOSTLIBS, PathName());
+    const auto PathName = *Meta->Get(FEXCore::Config::CONFIG_THUNKHOSTLIBS);
+    ExpandPathIfExists(FEXCore::Config::CONFIG_THUNKHOSTLIBS, *PathName);
   }
   if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_THUNKGUESTLIBS)) {
-    FEX_CONFIG_OPT(PathName, THUNKGUESTLIBS);
-    ExpandPathIfExists(FEXCore::Config::CONFIG_THUNKGUESTLIBS, PathName());
+    const auto PathName = *Meta->Get(FEXCore::Config::CONFIG_THUNKGUESTLIBS);
+    ExpandPathIfExists(FEXCore::Config::CONFIG_THUNKGUESTLIBS, *PathName);
   }
   if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_THUNKCONFIG)) {
-    FEX_CONFIG_OPT(PathName, THUNKCONFIG);
-    auto ExpandedString = ExpandPath(ContainerPrefix, PathName());
+    const auto PathName = *Meta->Get(FEXCore::Config::CONFIG_THUNKCONFIG);
+    const auto ExpandedString = ExpandPath(ContainerPrefix, *PathName);
     if (!ExpandedString.empty()) {
       // Adjust the path if it ended up being relative
       FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_THUNKCONFIG, ExpandedString);
-    } else if (!PathName().empty()) {
+    } else if (!PathName->empty()) {
       // If the filesystem doesn't exist then let's see if it exists in the fex-emu folder
-      fextl::string NamedConfig = GetDataDirectory() + "ThunkConfigs/" + PathName();
+      fextl::string NamedConfig = GetDataDirectory() + "ThunkConfigs/" + *PathName;
       if (FHU::Filesystem::Exists(NamedConfig)) {
         FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_THUNKCONFIG, NamedConfig);
       }
     }
   }
   if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_OUTPUTLOG)) {
-    FEX_CONFIG_OPT(PathName, OUTPUTLOG);
-    if (PathName() != "stdout" && PathName() != "stderr" && PathName() != "server") {
-      ExpandPathIfExists(FEXCore::Config::CONFIG_OUTPUTLOG, PathName());
+    const auto PathName = *Meta->Get(FEXCore::Config::CONFIG_OUTPUTLOG);
+    if (*PathName != "stdout" && *PathName != "stderr" && *PathName != "server") {
+      ExpandPathIfExists(FEXCore::Config::CONFIG_OUTPUTLOG, *PathName);
     }
   }
 
   if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_DUMPIR) && !FEXCore::Config::Exists(FEXCore::Config::CONFIG_PASSMANAGERDUMPIR)) {
     // If DumpIR is set but no PassManagerDumpIR configuration is set, then default to `afteropt`
-    FEX_CONFIG_OPT(PathName, DUMPIR);
-    if (PathName() != "no") {
+    const auto PathName = *Meta->Get(FEXCore::Config::CONFIG_DUMPIR);
+    if (*PathName != "no") {
       EraseSet(FEXCore::Config::ConfigOption::CONFIG_PASSMANAGERDUMPIR,
                fextl::fmt::format("{}", static_cast<uint64_t>(FEXCore::Config::PassManagerDumpIR::AFTEROPT)));
     }
