@@ -337,7 +337,7 @@ fextl::string RecoverGuestProgramFilename(fextl::string Program, bool ExecFDInte
   return Program;
 }
 
-ApplicationNames GetApplicationNames(fextl::vector<fextl::string> Args, bool ExecFDInterp, int ProgramFDFromEnv) {
+ApplicationNames GetApplicationNames(const fextl::vector<fextl::string>& Args, bool ExecFDInterp, int ProgramFDFromEnv) {
   if (Args.empty()) {
     // Early exit if we weren't passed an argument
     return {};
@@ -346,8 +346,7 @@ ApplicationNames GetApplicationNames(fextl::vector<fextl::string> Args, bool Exe
   fextl::string Program {};
   fextl::string ProgramName {};
 
-  Args[0] = RecoverGuestProgramFilename(std::move(Args[0]), ExecFDInterp, ProgramFDFromEnv);
-  Program = Args[0];
+  Program = RecoverGuestProgramFilename(Args[0], ExecFDInterp, ProgramFDFromEnv);
 
   bool Wine = false;
   for (size_t CurrentProgramNameIndex = 0; CurrentProgramNameIndex < Args.size(); ++CurrentProgramNameIndex) {

@@ -135,11 +135,17 @@ private:
 };
 } // namespace AOTIR
 
-void InterpreterHandler(fextl::string* Filename, const fextl::string& RootFS, fextl::vector<fextl::string>* args) {
-  // Open the Filename to determine if it is a shebang file.
-  int FD = open(Filename->c_str(), O_RDONLY | O_CLOEXEC);
+bool InterpreterHandler(fextl::string* Filename, const fextl::string& RootFS, fextl::vector<fextl::string>* args) {
+  int FD {-1};
+
+  // Attempt to open the filename from the rootfs first.
+  FD = open(fextl::fmt::format("{}{}", RootFS, *Filename).c_str(), O_RDONLY | O_CLOEXEC);
   if (FD == -1) {
-    return;
+    // Failing that, attempt to open the filename directly.
+    FD = open(Filename->c_str(), O_RDONLY | O_CLOEXEC);
+    if (FD == -1) {
+      return false;
+    }
   }
 
   std::array<char, 257> Header;
@@ -151,47 +157,40 @@ void InterpreterHandler(fextl::string* Filename, const fextl::string& RootFS, fe
   // Is the file large enough for shebang
   if (ReadSize <= 2) {
     close(FD);
-    return;
+    return true;
   }
 
   // Handle shebang files
   if (Data[0] == '#' && Data[1] == '!') {
-    fextl::string InterpreterLine {Data.begin() + 2, // strip off "#!" prefix
-                                   std::find(Data.begin(), Data.end(), '\n')};
-    fextl::vector<fextl::string> ShebangArguments {};
+    std::string_view InterpreterLine {Data.begin() + 2, // strip off "#!" prefix
+                                      std::find(Data.begin(), Data.end(), '\n')};
+    fextl::vector<std::string_view> ShebangArguments {};
 
     // Shebang line can have a single argument
-    fextl::istringstream InterpreterSS(InterpreterLine);
-    fextl::string Argument;
-    while (std::getline(InterpreterSS, Argument, ' ')) {
-      if (Argument.empty()) {
-        continue;
+    using namespace std::literals;
+    auto Begin = InterpreterLine.begin();
+    auto ArgEnd = Begin;
+    auto End = InterpreterLine.end();
+    const auto Delim = " "sv;
+    for (; ArgEnd != End && Begin != End; Begin = ArgEnd + 1) {
+      // Find the end
+      ArgEnd = std::find_first_of(Begin, End, Delim.begin(), Delim.end());
+      if (Begin != ArgEnd) {
+        const auto View = std::string_view(Begin, ArgEnd - Begin);
+        if (!View.empty()) {
+          ShebangArguments.emplace_back(View);
+        }
       }
-      ShebangArguments.push_back(std::move(Argument));
     }
 
     // Executable argument
-    fextl::string& ShebangProgram = ShebangArguments[0];
-
-    // If the filename is absolute then prepend the rootfs
-    // If it is relative then don't append the rootfs
-    if (ShebangProgram[0] == '/') {
-      ShebangProgram = RootFS + ShebangProgram;
-    }
-    *Filename = ShebangProgram;
+    *Filename = ShebangArguments[0];
 
     // Insert all the arguments at the start
     args->insert(args->begin(), ShebangArguments.begin(), ShebangArguments.end());
   }
   close(FD);
-}
-
-void RootFSRedirect(fextl::string* Filename, const fextl::string& RootFS) {
-  auto RootFSLink = ELFCodeLoader::ResolveRootfsFile(*Filename, RootFS);
-
-  if (FHU::Filesystem::Exists(RootFSLink)) {
-    *Filename = RootFSLink;
-  }
+  return true;
 }
 
 FEX::Config::PortableInformation ReadPortabilityInformation() {
@@ -405,10 +404,14 @@ int main(int argc, char** argv, char** const envp) {
   FEXCore::Profiler::Init();
   FEXCore::Telemetry::Initialize();
 
-  RootFSRedirect(&Program.ProgramPath, LDPath());
-  InterpreterHandler(&Program.ProgramPath, LDPath(), &Args);
+  // Program.ProgramPath is highly likely to be prefixed with FEX's rootfs. Get rid of that.
+  if (Program.ProgramPath.starts_with(LDPath())) {
+    Program.ProgramPath = Program.ProgramPath.substr(LDPath().size());
+  }
 
-  if (!ExecutedWithFD && FEXFD == -1 && !FHU::Filesystem::Exists(Program.ProgramPath)) {
+  bool ProgramExists = InterpreterHandler(&Program.ProgramPath, LDPath(), &Args);
+
+  if (!ExecutedWithFD && FEXFD == -1 && !ProgramExists) {
     // Early exit if the program passed in doesn't exist
     // Will prevent a crash later
     fextl::fmt::print(stderr, "{}: command not found\n", Program.ProgramPath);
