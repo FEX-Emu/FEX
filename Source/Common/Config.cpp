@@ -243,7 +243,7 @@ void EnvLoader::Load() {
   // Walk all the environment options and corresponding config option.
 #define OPT_BASE(type, group, enum, json, default) \
   Value = GetVar(EnvMap, "FEX_" #enum);            \
-  if (Value.has_value()) Set(FEXCore::Config::ConfigOption::CONFIG_##enum, fextl::string(*Value));
+  if (Value.has_value()) Set(FEXCore::Config::ConfigOption::CONFIG_##enum, *Value);
 #include <FEXCore/Config/ConfigValues.inl>
 }
 
