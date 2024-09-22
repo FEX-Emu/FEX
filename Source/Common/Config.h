@@ -40,7 +40,7 @@ struct PortableInformation {
  *
  * @return The application name and path structure
  */
-ApplicationNames GetApplicationNames(fextl::vector<fextl::string> Args, bool ExecFDInterp, int ProgramFDFromEnv);
+ApplicationNames GetApplicationNames(const fextl::vector<fextl::string>& Args, bool ExecFDInterp, int ProgramFDFromEnv);
 
 /**
  * @brief Loads the FEX and application configurations for the application that is getting ready to run.
