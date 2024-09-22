@@ -1381,46 +1381,21 @@ DEF_OP(VFMin) {
       mov(Dst.Z(), VTMP1.Z());
     }
   } else {
-    if (IsScalar) {
-      // FIXME: We should rework this op to avoid the NZCV spill/fill dance.
-      mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
+    LOGMAN_THROW_AA_FMT(!IsScalar, "should use VFMinScalarInsert instead");
 
-      switch (ElementSize) {
-      case 2: {
-        fcmp(Vector1.H(), Vector2.H());
-        fcsel(Dst.H(), Vector1.H(), Vector2.H(), ARMEmitter::Condition::CC_MI);
-        break;
-      }
-      case 4: {
-        fcmp(Vector1.S(), Vector2.S());
-        fcsel(Dst.S(), Vector1.S(), Vector2.S(), ARMEmitter::Condition::CC_MI);
-        break;
-      }
-      case 8: {
-        fcmp(Vector1.D(), Vector2.D());
-        fcsel(Dst.D(), Vector1.D(), Vector2.D(), ARMEmitter::Condition::CC_MI);
-        break;
-      }
-      default: break;
-      }
-
-      // Restore NZCV
-      msr(ARMEmitter::SystemRegister::NZCV, TMP1);
+    if (Dst == Vector1) {
+      // Destination is already Vector1, need to insert Vector2 on false.
+      fcmgt(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
+      bif(Dst.Q(), Vector2.Q(), VTMP1.Q());
+    } else if (Dst == Vector2) {
+      // Destination is already Vector2, Invert arguments and insert Vector1 on false.
+      fcmgt(SubRegSize, VTMP1.Q(), Vector1.Q(), Vector2.Q());
+      bif(Dst.Q(), Vector1.Q(), VTMP1.Q());
     } else {
-      if (Dst == Vector1) {
-        // Destination is already Vector1, need to insert Vector2 on false.
-        fcmgt(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
-        bif(Dst.Q(), Vector2.Q(), VTMP1.Q());
-      } else if (Dst == Vector2) {
-        // Destination is already Vector2, Invert arguments and insert Vector1 on false.
-        fcmgt(SubRegSize, VTMP1.Q(), Vector1.Q(), Vector2.Q());
-        bif(Dst.Q(), Vector1.Q(), VTMP1.Q());
-      } else {
-        // Dst is not either source, need a move.
-        fcmgt(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
-        mov(Dst.Q(), Vector1.Q());
-        bif(Dst.Q(), Vector2.Q(), VTMP1.Q());
-      }
+      // Dst is not either source, need a move.
+      fcmgt(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
+      mov(Dst.Q(), Vector1.Q());
+      bif(Dst.Q(), Vector2.Q(), VTMP1.Q());
     }
   }
 }
@@ -1458,46 +1433,21 @@ DEF_OP(VFMax) {
       mov(Dst.Z(), VTMP1.Z());
     }
   } else {
-    if (IsScalar) {
-      // FIXME: We should rework this op to avoid the NZCV spill/fill dance.
-      mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
+    LOGMAN_THROW_AA_FMT(!IsScalar, "should use VFMaxScalarInsert instead");
 
-      switch (ElementSize) {
-      case 2: {
-        fcmp(Vector1.H(), Vector2.H());
-        fcsel(Dst.H(), Vector2.H(), Vector1.H(), ARMEmitter::Condition::CC_MI);
-        break;
-      }
-      case 4: {
-        fcmp(Vector1.S(), Vector2.S());
-        fcsel(Dst.S(), Vector2.S(), Vector1.S(), ARMEmitter::Condition::CC_MI);
-        break;
-      }
-      case 8: {
-        fcmp(Vector1.D(), Vector2.D());
-        fcsel(Dst.D(), Vector2.D(), Vector1.D(), ARMEmitter::Condition::CC_MI);
-        break;
-      }
-      default: break;
-      }
-
-      // Restore NZCV
-      msr(ARMEmitter::SystemRegister::NZCV, TMP1);
+    if (Dst == Vector1) {
+      // Destination is already Vector1, need to insert Vector2 on true.
+      fcmgt(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
+      bit(Dst.Q(), Vector2.Q(), VTMP1.Q());
+    } else if (Dst == Vector2) {
+      // Destination is already Vector2, Invert arguments and insert Vector1 on true.
+      fcmgt(SubRegSize, VTMP1.Q(), Vector1.Q(), Vector2.Q());
+      bit(Dst.Q(), Vector1.Q(), VTMP1.Q());
     } else {
-      if (Dst == Vector1) {
-        // Destination is already Vector1, need to insert Vector2 on true.
-        fcmgt(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
-        bit(Dst.Q(), Vector2.Q(), VTMP1.Q());
-      } else if (Dst == Vector2) {
-        // Destination is already Vector2, Invert arguments and insert Vector1 on true.
-        fcmgt(SubRegSize, VTMP1.Q(), Vector1.Q(), Vector2.Q());
-        bit(Dst.Q(), Vector1.Q(), VTMP1.Q());
-      } else {
-        // Dst is not either source, need a move.
-        fcmgt(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
-        mov(Dst.Q(), Vector1.Q());
-        bit(Dst.Q(), Vector2.Q(), VTMP1.Q());
-      }
+      // Dst is not either source, need a move.
+      fcmgt(SubRegSize, VTMP1.Q(), Vector2.Q(), Vector1.Q());
+      mov(Dst.Q(), Vector1.Q());
+      bit(Dst.Q(), Vector2.Q(), VTMP1.Q());
     }
   }
 }
