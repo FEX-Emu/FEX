@@ -157,20 +157,16 @@ uint64_t HandleNewClone(FEX::HLE::ThreadStateObject* Thread, FEXCore::Context::C
   bool CreatedNewThreadObject {};
 
   if (flags & CLONE_THREAD) {
-    FEXCore::Core::CPUState NewThreadState {};
-    // Clone copies the parent thread's state
-    memcpy(&NewThreadState, Frame, sizeof(FEXCore::Core::CPUState));
+    // Overwrite thread
+    NewThread = FEX::HLE::_SyscallHandler->TM.CreateThread(0, 0, &Frame->State, GuestArgs->parent_tid,
+                                                           FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame));
 
-    NewThreadState.gregs[FEXCore::X86State::REG_RAX] = 0;
+    NewThread->Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RAX] = 0;
     if (GuestArgs->stack == 0) {
       // Copies in the original thread's stack
     } else {
-      NewThreadState.gregs[FEXCore::X86State::REG_RSP] = GuestArgs->stack;
+      NewThread->Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP] = GuestArgs->stack;
     }
-
-    // Overwrite thread
-    NewThread = FEX::HLE::_SyscallHandler->TM.CreateThread(0, 0, &NewThreadState, GuestArgs->parent_tid,
-                                                           FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame));
 
     // CLONE_PARENT_SETTID, CLONE_CHILD_SETTID, CLONE_CHILD_CLEARTID, CLONE_PIDFD will be handled by kernel
     // Call execution thread directly since we already are on the new thread
