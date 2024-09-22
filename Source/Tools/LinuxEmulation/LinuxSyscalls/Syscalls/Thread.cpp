@@ -66,21 +66,17 @@ static void* ThreadHandler(void* Data) {
 
 FEX::HLE::ThreadStateObject* CreateNewThread(FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Frame, FEX::HLE::clone3_args* args) {
   uint64_t flags = args->args.flags;
-  FEXCore::Core::CPUState NewThreadState {};
-  // Clone copies the parent thread's state
-  memcpy(&NewThreadState, Frame, sizeof(FEXCore::Core::CPUState));
+  auto NewThread = FEX::HLE::_SyscallHandler->TM.CreateThread(0, 0, &Frame->State, args->args.parent_tid,
+                                                              FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame));
 
-  NewThreadState.gregs[FEXCore::X86State::REG_RAX] = 0;
+  NewThread->Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RAX] = 0;
   if (args->Type == TYPE_CLONE3) {
     // stack pointer points to the lowest address to the stack
     // set RSP to stack + size
-    NewThreadState.gregs[FEXCore::X86State::REG_RSP] = args->args.stack + args->args.stack_size;
+    NewThread->Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP] = args->args.stack + args->args.stack_size;
   } else {
-    NewThreadState.gregs[FEXCore::X86State::REG_RSP] = args->args.stack;
+    NewThread->Thread->CurrentFrame->State.gregs[FEXCore::X86State::REG_RSP] = args->args.stack;
   }
-
-  auto NewThread = FEX::HLE::_SyscallHandler->TM.CreateThread(0, 0, &NewThreadState, args->args.parent_tid,
-                                                              FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame));
 
   if (FEX::HLE::_SyscallHandler->Is64BitMode()) {
     if (flags & CLONE_SETTLS) {

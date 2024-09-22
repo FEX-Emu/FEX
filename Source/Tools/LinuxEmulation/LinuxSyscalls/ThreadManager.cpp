@@ -6,7 +6,7 @@
 #include <FEXHeaderUtils/Syscalls.h>
 
 namespace FEX::HLE {
-FEX::HLE::ThreadStateObject* ThreadManager::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState* NewThreadState,
+FEX::HLE::ThreadStateObject* ThreadManager::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, const FEXCore::Core::CPUState* NewThreadState,
                                                          uint64_t ParentTID, FEX::HLE::ThreadStateObject* InheritThread) {
   auto ThreadStateObject = new FEX::HLE::ThreadStateObject;
 

@@ -426,7 +426,7 @@ void ContextImpl::InitializeCompiler(FEXCore::Core::InternalThreadState* Thread)
 }
 
 FEXCore::Core::InternalThreadState*
-ContextImpl::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState* NewThreadState, uint64_t ParentTID) {
+ContextImpl::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, const FEXCore::Core::CPUState* NewThreadState, uint64_t ParentTID) {
   FEXCore::Core::InternalThreadState* Thread = new FEXCore::Core::InternalThreadState {};
 
   Thread->CurrentFrame->State.gregs[X86State::REG_RSP] = StackPointer;

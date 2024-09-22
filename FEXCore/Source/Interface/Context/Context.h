@@ -137,7 +137,7 @@ public:
    */
 
   FEXCore::Core::InternalThreadState*
-  CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState* NewThreadState, uint64_t ParentTID) override;
+  CreateThread(uint64_t InitialRIP, uint64_t StackPointer, const FEXCore::Core::CPUState* NewThreadState, uint64_t ParentTID) override;
 
   // Public for threading
   void ExecutionThread(FEXCore::Core::InternalThreadState* Thread) override;

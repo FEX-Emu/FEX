@@ -75,7 +75,7 @@ public:
     return static_cast<FEX::HLE::ThreadStateObject*>(Thread->FrontendPtr);
   }
 
-  FEX::HLE::ThreadStateObject* CreateThread(uint64_t InitialRIP, uint64_t StackPointer, FEXCore::Core::CPUState* NewThreadState = nullptr,
+  FEX::HLE::ThreadStateObject* CreateThread(uint64_t InitialRIP, uint64_t StackPointer, const FEXCore::Core::CPUState* NewThreadState = nullptr,
                                             uint64_t ParentTID = 0, FEX::HLE::ThreadStateObject* InheritThread = nullptr);
   void TrackThread(FEX::HLE::ThreadStateObject* Thread) {
     std::lock_guard lk(ThreadCreationMutex);
