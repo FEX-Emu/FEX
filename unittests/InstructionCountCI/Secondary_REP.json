@@ -290,7 +290,7 @@
       "ExpectedArm64ASM": [
         "mrs x20, nzcv",
         "fcmp s16, s17",
-        "fcsel s0, s17, s16, mi",
+        "fcsel s0, s16, s17, gt",
         "mov v16.s[0], v0.s[0]",
         "msr nzcv, x20"
       ]

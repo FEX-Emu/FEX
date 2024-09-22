@@ -3932,7 +3932,7 @@
         "mrs x20, nzcv",
         "mov v16.16b, v17.16b",
         "fcmp s17, s18",
-        "fcsel s0, s18, s17, mi",
+        "fcsel s0, s17, s18, gt",
         "mov v16.s[0], v0.s[0]",
         "msr nzcv, x20"
       ]
@@ -3946,7 +3946,7 @@
         "mrs x20, nzcv",
         "mov v16.16b, v17.16b",
         "fcmp d17, d18",
-        "fcsel d0, d18, d17, mi",
+        "fcsel d0, d17, d18, gt",
         "mov v16.d[0], v0.d[0]",
         "msr nzcv, x20"
       ]
