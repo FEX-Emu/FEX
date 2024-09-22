@@ -86,7 +86,6 @@ set (SRCS
   Common/SoftFloat-3e/s_f32UIToCommonNaN.c
   Interface/Context/Context.cpp
   Interface/Core/LookupCache.cpp
-  Interface/Core/BlockSamplingData.cpp
   Interface/Core/Core.cpp
   Interface/Core/CPUBackend.cpp
   Interface/Core/CPUID.cpp
