@@ -379,7 +379,7 @@ def print_argloader_options_map(options):
                 short = op_vals["ShortArg"]
 
             if short != None:
-                output_argloader.write("{{\"-{}\", FEXCore::Config::ConfigOption::CONFIG_{}, {}}},\n".format(short, op_key.upper(), ParserType))
+                output_argloader.write("{{\"{}\", FEXCore::Config::ConfigOption::CONFIG_{}, {}}},\n".format(short, op_key.upper(), ParserType))
 
             output_argloader.write("{{\"--{}\", FEXCore::Config::ConfigOption::CONFIG_{}, {}}},\n".format(op_key.lower(), op_key.upper(), ParserType))
 

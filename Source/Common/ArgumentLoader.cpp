@@ -150,16 +150,34 @@ std::pair<fextl::vector<fextl::string>, fextl::vector<const char*>> ArgParser::P
     if (IsShort) {
       ArgFirst = Arg;
 
-      OptionDetails = FindOption(ArgFirst);
+      for (size_t i = 1; i < ArgFirst.size(); ++i) {
+        const auto ArgChar = ArgFirst.substr(i, 1);
+        OptionDetails = FindOption(ArgChar);
 
-      if (OptionDetails == nullptr) [[unlikely]] {
-        ExitWithError(fextl::fmt::format("Unsupported argument: {}\nUse --help for more information.", Arg));
+        if (OptionDetails == nullptr) [[unlikely]] {
+          ExitWithError(fextl::fmt::format("Unsupported argument: {}\nUse --help for more information.", Arg));
+        }
+
+        if (NeedsArg(OptionDetails)) {
+          if (i > 1) {
+            ExitWithError(fextl::fmt::format("Can't combine short arguments that require argument: {}\n", Arg));
+          }
+
+          // Save the FEX argument.
+          ProgramArguments.emplace_back(argv[ArgParsed]);
+
+          ++ArgParsed;
+          ArgSecond = argv[ArgParsed];
+        }
+
+        // Save the FEX argument.
+        ProgramArguments.emplace_back(argv[ArgParsed]);
+
+        // Now parse the argument.
+        ParseArgument(ArgChar, ArgSecond, OptionDetails);
       }
 
-      if (NeedsArg(OptionDetails)) {
-        ++ArgParsed;
-        ArgSecond = argv[ArgParsed];
-      }
+      continue;
     } else if (IsLong) {
       const auto Split = Arg.find_first_of('=');
       bool NeedsSplitArg {};
