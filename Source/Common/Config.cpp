@@ -476,22 +476,26 @@ const char* GetHomeDirectory() {
 }
 #endif
 
-fextl::string GetDataDirectory(const PortableInformation& PortableInfo) {
+fextl::string GetDataDirectory(bool Global, const PortableInformation& PortableInfo) {
   const char* DataOverride = getenv("FEX_APP_DATA_LOCATION");
 
-  if (PortableInfo.IsPortable && !DataOverride) {
+  if (PortableInfo.IsPortable && (Global || !DataOverride)) {
     return fextl::fmt::format("{}fex-emu/", PortableInfo.InterpreterPath);
   }
 
   fextl::string DataDir {};
-  const char* HomeDir = GetHomeDirectory();
-  const char* DataXDG = getenv("XDG_DATA_HOME");
-  if (DataOverride) {
-    // Data override will override the complete directory
-    DataDir = DataOverride;
+  if (Global) {
+    DataDir = GLOBAL_DATA_DIRECTORY;
   } else {
-    DataDir = DataXDG ?: HomeDir;
-    DataDir += "/.fex-emu/";
+    const char* HomeDir = GetHomeDirectory();
+    const char* DataXDG = getenv("XDG_DATA_HOME");
+    if (DataOverride) {
+      // Data override will override the complete directory
+      DataDir = DataOverride;
+    } else {
+      DataDir = DataXDG ?: HomeDir;
+      DataDir += "/.fex-emu/";
+    }
   }
   return DataDir;
 }
@@ -531,7 +535,8 @@ fextl::string GetConfigFileLocation(bool Global, const PortableInformation& Port
 }
 
 void InitializeConfigs(const PortableInformation& PortableInfo) {
-  FEXCore::Config::SetDataDirectory(GetDataDirectory(PortableInfo));
+  FEXCore::Config::SetDataDirectory(GetDataDirectory(false, PortableInfo), false);
+  FEXCore::Config::SetDataDirectory(GetDataDirectory(true, PortableInfo), true);
   FEXCore::Config::SetConfigDirectory(GetConfigDirectory(false, PortableInfo), false);
   FEXCore::Config::SetConfigDirectory(GetConfigDirectory(true, PortableInfo), true);
   FEXCore::Config::SetConfigFileLocation(GetConfigFileLocation(false, PortableInfo), false);

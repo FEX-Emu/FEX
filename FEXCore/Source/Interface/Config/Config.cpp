@@ -43,7 +43,8 @@ namespace DefaultValues {
 } // namespace DefaultValues
 
 enum Paths {
-  PATH_DATA_DIR = 0,
+  PATH_DATA_DIR_LOCAL = 0,
+  PATH_DATA_DIR_GLOBAL,
   PATH_CONFIG_DIR_LOCAL,
   PATH_CONFIG_DIR_GLOBAL,
   PATH_CONFIG_FILE_LOCAL,
@@ -53,8 +54,8 @@ enum Paths {
 };
 static std::array<fextl::string, Paths::PATH_LAST> Paths;
 
-void SetDataDirectory(const std::string_view Path) {
-  Paths[PATH_DATA_DIR] = Path;
+void SetDataDirectory(const std::string_view Path, bool Global) {
+  Paths[PATH_DATA_DIR_LOCAL + Global] = Path;
 }
 
 void SetConfigDirectory(const std::string_view Path, bool Global) {
@@ -73,15 +74,15 @@ const fextl::string& GetTelemetryDirectory() {
       Path = TelemetryDirectory;
       Path += "/";
     } else {
-      Path = Config::GetDataDirectory() + "Telemetry/";
+      Path = Config::GetDataDirectory(false) + "Telemetry/";
     }
   }
 
   return Path;
 }
 
-const fextl::string& GetDataDirectory() {
-  return Paths[PATH_DATA_DIR];
+const fextl::string& GetDataDirectory(bool Global) {
+  return Paths[PATH_DATA_DIR_LOCAL + Global];
 }
 
 const fextl::string& GetConfigDirectory(bool Global) {
@@ -333,7 +334,7 @@ void ReloadMetaLayer() {
       FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, ExpandedString);
     } else if (!PathName->empty()) {
       // If the filesystem doesn't exist then let's see if it exists in the fex-emu folder
-      fextl::string NamedRootFS = GetDataDirectory() + "RootFS/" + *PathName;
+      fextl::string NamedRootFS = GetDataDirectory(false) + "RootFS/" + *PathName;
       if (FHU::Filesystem::Exists(NamedRootFS)) {
         FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, NamedRootFS);
       }
@@ -355,7 +356,7 @@ void ReloadMetaLayer() {
       FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_THUNKCONFIG, ExpandedString);
     } else if (!PathName->empty()) {
       // If the filesystem doesn't exist then let's see if it exists in the fex-emu folder
-      fextl::string NamedConfig = GetDataDirectory() + "ThunkConfigs/" + *PathName;
+      fextl::string NamedConfig = GetDataDirectory(false) + "ThunkConfigs/" + *PathName;
       if (FHU::Filesystem::Exists(NamedConfig)) {
         FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_THUNKCONFIG, NamedConfig);
       }
