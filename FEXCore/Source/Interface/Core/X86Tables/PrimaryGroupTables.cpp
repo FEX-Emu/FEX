@@ -6,6 +6,7 @@ $end_info$
 */
 
 #include "Interface/Core/X86Tables/X86Tables.h"
+#include "Interface/Core/OpcodeDispatcher/PrimaryGroupTables.h"
 
 #include <FEXCore/Core/Context.h>
 
@@ -144,6 +145,8 @@ std::array<X86InstInfo, MAX_INST_GROUP_TABLE_SIZE> PrimaryInstGroupOps = []() co
   };
 
   GenerateTable(&Table.at(0), PrimaryGroupOpTable, std::size(PrimaryGroupOpTable));
+
+  IR::InstallToTable(Table, IR::OpDispatch_PrimaryGroupTables);
   return Table;
 }();
 

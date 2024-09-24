@@ -6,6 +6,7 @@ $end_info$
 */
 
 #include "Interface/Core/X86Tables/X86Tables.h"
+#include "Interface/Core/OpcodeDispatcher/DDDTables.h"
 
 #include <iterator>
 
@@ -54,6 +55,8 @@ std::array<X86InstInfo, MAX_3DNOW_TABLE_SIZE> DDDNowOps = []() consteval {
   };
 
   GenerateTable(&Table.at(0), DDDNowOpTable, std::size(DDDNowOpTable));
+
+  IR::InstallToTable(Table, IR::OpDispatch_DDDTable);
   return Table;
 }();
 

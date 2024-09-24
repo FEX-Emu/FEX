@@ -9,9 +9,9 @@ constexpr inline std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> OpDispat
 
   {0x08, 6, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_OR, FEXCore::IR::IROps::OP_ATOMICFETCHOR, 0>},
 
-  {0x10, 6, &OpDispatchBuilder::ADCOp<0>},
+  {0x10, 6, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ADCOp, 0>},
 
-  {0x18, 6, &OpDispatchBuilder::SBBOp<0>},
+  {0x18, 6, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SBBOp, 0>},
 
   {0x20, 6, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_ANDWITHFLAGS, FEXCore::IR::IROps::OP_ATOMICFETCHAND, 0>},
 
@@ -19,7 +19,7 @@ constexpr inline std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> OpDispat
 
   {0x30, 6, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_XOR, FEXCore::IR::IROps::OP_ATOMICFETCHXOR, 0>},
 
-  {0x38, 6, &OpDispatchBuilder::CMPOp<0>},
+  {0x38, 6, &OpDispatchBuilder::Bind<&OpDispatchBuilder::CMPOp, 0>},
   {0x50, 8, &OpDispatchBuilder::PUSHREGOp},
   {0x58, 8, &OpDispatchBuilder::POPOp},
   {0x68, 1, &OpDispatchBuilder::PUSHOp},
@@ -29,13 +29,13 @@ constexpr inline std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> OpDispat
   {0x6C, 4, &OpDispatchBuilder::PermissionRestrictedOp},
 
   {0x70, 16, &OpDispatchBuilder::CondJUMPOp},
-  {0x84, 2, &OpDispatchBuilder::TESTOp<0>},
+  {0x84, 2, &OpDispatchBuilder::Bind<&OpDispatchBuilder::TESTOp, 0>},
   {0x86, 2, &OpDispatchBuilder::XCHGOp},
-  {0x88, 4, &OpDispatchBuilder::MOVGPROp<0>},
+  {0x88, 4, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVGPROp, 0>},
 
-  {0x8C, 1, &OpDispatchBuilder::MOVSegOp<false>},
+  {0x8C, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVSegOp, false>},
   {0x8D, 1, &OpDispatchBuilder::LEAOp},
-  {0x8E, 1, &OpDispatchBuilder::MOVSegOp<true>},
+  {0x8E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVSegOp, true>},
   {0x8F, 1, &OpDispatchBuilder::POPOp},
   {0x90, 8, &OpDispatchBuilder::XCHGOp},
 
@@ -49,11 +49,11 @@ constexpr inline std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> OpDispat
   {0xA4, 2, &OpDispatchBuilder::MOVSOp},
 
   {0xA6, 2, &OpDispatchBuilder::CMPSOp},
-  {0xA8, 2, &OpDispatchBuilder::TESTOp<0>},
+  {0xA8, 2, &OpDispatchBuilder::Bind<&OpDispatchBuilder::TESTOp, 0>},
   {0xAA, 2, &OpDispatchBuilder::STOSOp},
   {0xAC, 2, &OpDispatchBuilder::LODSOp},
   {0xAE, 2, &OpDispatchBuilder::SCASOp},
-  {0xB0, 16, &OpDispatchBuilder::MOVGPROp<0>},
+  {0xB0, 16, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVGPROp, 0>},
   {0xC2, 2, &OpDispatchBuilder::RETOp},
   {0xC8, 1, &OpDispatchBuilder::EnterOp},
   {0xC9, 1, &OpDispatchBuilder::LEAVEOp},
@@ -82,13 +82,13 @@ constexpr inline std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> OpDispat
 };
 
 constexpr inline std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> OpDispatch_BaseOpTable_32[] = {
-  {0x06, 1, &OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX>},
-  {0x07, 1, &OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX>},
-  {0x0E, 1, &OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_CS_PREFIX>},
-  {0x16, 1, &OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX>},
-  {0x17, 1, &OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX>},
-  {0x1E, 1, &OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX>},
-  {0x1F, 1, &OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX>},
+  {0x06, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX>},
+  {0x07, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX>},
+  {0x0E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_CS_PREFIX>},
+  {0x16, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX>},
+  {0x17, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX>},
+  {0x1E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX>},
+  {0x1F, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX>},
   {0x27, 1, &OpDispatchBuilder::DAAOp},
   {0x2F, 1, &OpDispatchBuilder::DASOp},
   {0x37, 1, &OpDispatchBuilder::AAAOp},

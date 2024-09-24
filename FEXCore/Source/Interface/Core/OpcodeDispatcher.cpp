@@ -282,8 +282,7 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
   ALUOp(Op, IROp, AtomicIROp, 1);
 }
 
-template<uint32_t SrcIndex>
-void OpDispatchBuilder::ADCOp(OpcodeArgs) {
+void OpDispatchBuilder::ADCOp(OpcodeArgs, uint32_t SrcIndex) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
@@ -319,10 +318,7 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs) {
   }
 }
 
-template void OpDispatchBuilder::ADCOp<0>(OpcodeArgs);
-
-template<uint32_t SrcIndex>
-void OpDispatchBuilder::SBBOp(OpcodeArgs) {
+void OpDispatchBuilder::SBBOp(OpcodeArgs, uint32_t SrcIndex) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
@@ -348,8 +344,6 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs) {
     StoreResult(GPRClass, Op, Result, -1);
   }
 }
-
-template void OpDispatchBuilder::SBBOp<0>(OpcodeArgs);
 
 void OpDispatchBuilder::SALCOp(OpcodeArgs) {
   CalculateDeferredFlags();
@@ -426,8 +420,7 @@ void OpDispatchBuilder::PUSHAOp(OpcodeArgs) {
   FlushRegisterCache();
 }
 
-template<uint32_t SegmentReg>
-void OpDispatchBuilder::PUSHSegmentOp(OpcodeArgs) {
+void OpDispatchBuilder::PUSHSegmentOp(OpcodeArgs, uint32_t SegmentReg) {
   const uint8_t SrcSize = GetSrcSize(Op);
   const uint8_t DstSize = GetDstSize(Op);
 
@@ -484,13 +477,6 @@ void OpDispatchBuilder::PUSHSegmentOp(OpcodeArgs) {
   Push(DstSize, Src);
 }
 
-template void OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_CS_PREFIX>(OpcodeArgs);
-template void OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX>(OpcodeArgs);
-template void OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX>(OpcodeArgs);
-template void OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX>(OpcodeArgs);
-template void OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX>(OpcodeArgs);
-template void OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX>(OpcodeArgs);
-
 void OpDispatchBuilder::POPOp(OpcodeArgs) {
   Ref Value = Pop(GetSrcSize(Op));
   StoreResult(GPRClass, Op, Value, -1);
@@ -518,8 +504,7 @@ void OpDispatchBuilder::POPAOp(OpcodeArgs) {
   StoreGPRRegister(X86State::REG_RSP, SP);
 }
 
-template<uint32_t SegmentReg>
-void OpDispatchBuilder::POPSegmentOp(OpcodeArgs) {
+void OpDispatchBuilder::POPSegmentOp(OpcodeArgs, uint32_t SegmentReg) {
   const uint8_t SrcSize = GetSrcSize(Op);
   const uint8_t DstSize = GetDstSize(Op);
 
@@ -549,12 +534,6 @@ void OpDispatchBuilder::POPSegmentOp(OpcodeArgs) {
 
   UpdatePrefixFromSegment(NewSegment, SegmentReg);
 }
-
-template void OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX>(OpcodeArgs);
-template void OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX>(OpcodeArgs);
-template void OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX>(OpcodeArgs);
-template void OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX>(OpcodeArgs);
-template void OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX>(OpcodeArgs);
 
 void OpDispatchBuilder::LEAVEOp(OpcodeArgs) {
   // First we move RBP in to RSP and then behave effectively like a pop
@@ -1019,8 +998,7 @@ void OpDispatchBuilder::JUMPAbsoluteOp(OpcodeArgs) {
   ExitFunction(RIPOffset);
 }
 
-template<uint32_t SrcIndex>
-void OpDispatchBuilder::TESTOp(OpcodeArgs) {
+void OpDispatchBuilder::TESTOp(OpcodeArgs, uint32_t SrcIndex) {
   // TEST is an instruction that does an AND between the sources
   // Result isn't stored in result, only writes to flags
   Ref Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = true});
@@ -1055,8 +1033,6 @@ void OpDispatchBuilder::TESTOp(OpcodeArgs) {
 
   InvalidateAF();
 }
-
-template void OpDispatchBuilder::TESTOp<0>(OpcodeArgs);
 
 void OpDispatchBuilder::MOVSXDOp(OpcodeArgs) {
   // This instruction is a bit special
@@ -1103,16 +1079,13 @@ void OpDispatchBuilder::MOVZXOp(OpcodeArgs) {
   StoreResult(GPRClass, Op, Src, -1);
 }
 
-template<uint32_t SrcIndex>
-void OpDispatchBuilder::CMPOp(OpcodeArgs) {
+void OpDispatchBuilder::CMPOp(OpcodeArgs, uint32_t SrcIndex) {
   // CMP is an instruction that does a SUB between the sources
   // Result isn't stored in result, only writes to flags
   Ref Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = true});
   Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
   CalculateFlags_SUB(GetSrcSize(Op), Dest, Src);
 }
-
-template void OpDispatchBuilder::CMPOp<0>(OpcodeArgs);
 
 void OpDispatchBuilder::CQOOp(OpcodeArgs) {
   Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
@@ -1218,8 +1191,7 @@ void OpDispatchBuilder::FLAGControlOp(OpcodeArgs) {
 }
 
 
-template<bool ToSeg>
-void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
+void OpDispatchBuilder::MOVSegOp(OpcodeArgs, bool ToSeg) {
   // In x86-64 mode the accesses to the segment registers end up being constant zero moves
   // Aside from FS/GS
   // In x86-64 mode the accesses to segment registers can actually still touch the segments
@@ -1235,7 +1207,7 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
   // We don't currently support FS/GS selector modifying, so this needs to be asserted out
   // The loads here also load the selector, NOT the base
 
-  if constexpr (ToSeg) {
+  if (ToSeg) {
     Ref Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], 2, Op->Flags);
 
     switch (Op->Dest.Data.GPR.GPR) {
@@ -1340,9 +1312,6 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs) {
   }
 }
 
-template void OpDispatchBuilder::MOVSegOp<true>(OpcodeArgs);
-template void OpDispatchBuilder::MOVSegOp<false>(OpcodeArgs);
-
 void OpDispatchBuilder::MOVOffsetOp(OpcodeArgs) {
   Ref Src;
 
@@ -1417,8 +1386,7 @@ void OpDispatchBuilder::SHLOp(OpcodeArgs) {
   HandleShift(Op, Result, Dest, ShiftType::LSL, Src);
 }
 
-template<bool SHL1Bit>
-void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs) {
+void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs, bool SHL1Bit) {
   Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
 
   uint64_t Shift = LoadConstantShift(Op, SHL1Bit);
@@ -1441,8 +1409,7 @@ void OpDispatchBuilder::SHROp(OpcodeArgs) {
   HandleShift(Op, ALUOp, Dest, ShiftType::LSR, Src);
 }
 
-template<bool SHR1Bit>
-void OpDispatchBuilder::SHRImmediateOp(OpcodeArgs) {
+void OpDispatchBuilder::SHRImmediateOp(OpcodeArgs, bool SHR1Bit) {
   const auto Size = GetSrcBitSize(Op);
   auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= 32});
 
@@ -1593,8 +1560,7 @@ void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
   }
 }
 
-template<bool Immediate, bool SHR1Bit>
-void OpDispatchBuilder::ASHROp(OpcodeArgs) {
+void OpDispatchBuilder::ASHROp(OpcodeArgs, bool Immediate, bool SHR1Bit) {
   const auto Size = GetSrcSize(Op);
   const auto OpSize = std::max<uint8_t>(4, GetDstSize(Op));
 
@@ -1682,11 +1648,6 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool I
 
     _RotateFlags(OpSizeFromSrc(Op), Res, Src, Left);
   }
-}
-
-template<bool Left, bool IsImmediate, bool Is1Bit>
-void OpDispatchBuilder::RotateOp(OpcodeArgs) {
-  RotateOp(Op, Left, IsImmediate, Is1Bit);
 }
 
 void OpDispatchBuilder::ANDNBMIOp(OpcodeArgs) {
@@ -2573,11 +2534,6 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
   }
 }
 
-template<uint32_t SrcIndex, BTAction Action>
-void OpDispatchBuilder::BTOp(OpcodeArgs) {
-  BTOp(Op, SrcIndex, Action);
-}
-
 void OpDispatchBuilder::IMUL1SrcOp(OpcodeArgs) {
   /* We're just going to sign-extend the non-garbage anyway.. */
   Ref Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
@@ -2976,13 +2932,12 @@ void OpDispatchBuilder::XLATOp(OpcodeArgs) {
   StoreGPRRegister(X86State::REG_RAX, Res, 1);
 }
 
-template<OpDispatchBuilder::Segment Seg>
-void OpDispatchBuilder::ReadSegmentReg(OpcodeArgs) {
+void OpDispatchBuilder::ReadSegmentReg(OpcodeArgs, OpDispatchBuilder::Segment Seg) {
   // 64-bit only
   // Doesn't hit the segment register optimization
   auto Size = GetSrcSize(Op);
   Ref Src {};
-  if constexpr (Seg == Segment::FS) {
+  if (Seg == Segment::FS) {
     Src = _LoadContext(Size, GPRClass, offsetof(FEXCore::Core::CPUState, fs_cached));
   } else {
     Src = _LoadContext(Size, GPRClass, offsetof(FEXCore::Core::CPUState, gs_cached));
@@ -2991,13 +2946,12 @@ void OpDispatchBuilder::ReadSegmentReg(OpcodeArgs) {
   StoreResult(GPRClass, Op, Src, -1);
 }
 
-template<OpDispatchBuilder::Segment Seg>
-void OpDispatchBuilder::WriteSegmentReg(OpcodeArgs) {
+void OpDispatchBuilder::WriteSegmentReg(OpcodeArgs, OpDispatchBuilder::Segment Seg) {
   // Documentation claims that the 32-bit version of this instruction inserts in to the lower 32-bits of the segment
   // This is incorrect and it instead zero extends the 32-bit value to 64-bit
   auto Size = GetDstSize(Op);
   Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  if constexpr (Seg == Segment::FS) {
+  if (Seg == Segment::FS) {
     _StoreContext(Size, GPRClass, Src, offsetof(FEXCore::Core::CPUState, fs_cached));
   } else {
     _StoreContext(Size, GPRClass, Src, offsetof(FEXCore::Core::CPUState, gs_cached));
@@ -4565,15 +4519,12 @@ void OpDispatchBuilder::UnhandledOp(OpcodeArgs) {
   DecodeFailure = true;
 }
 
-template<uint32_t SrcIndex>
-void OpDispatchBuilder::MOVGPROp(OpcodeArgs) {
+void OpDispatchBuilder::MOVGPROp(OpcodeArgs, uint32_t SrcIndex) {
   // StoreResult will store with the same size as the input, so we allow upper
   // garbage on the input. The zero extension would be pointless.
   Ref Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.Align = 1, .AllowUpperGarbage = true});
   StoreResult(GPRClass, Op, Src, 1);
 }
-
-template void OpDispatchBuilder::MOVGPROp<0>(OpcodeArgs);
 
 void OpDispatchBuilder::MOVGPRNTOp(OpcodeArgs) {
   Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.Align = 1});
@@ -4876,10 +4827,9 @@ void OpDispatchBuilder::CLZeroOp(OpcodeArgs) {
   _CacheLineZero(DestMem);
 }
 
-template<bool ForStore, bool Stream, uint8_t Level>
-void OpDispatchBuilder::Prefetch(OpcodeArgs) {
+void OpDispatchBuilder::Prefetch(OpcodeArgs, bool ForStore, bool Stream, uint8_t Level) {
   Ref DestMem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.LoadData = false});
-  Prefetch(ForStore, Stream, Level, DestMem);
+  _Prefetch(ForStore, Stream, Level, DestMem, Invalid(), MEM_OFFSET_SXTX, 1);
 }
 
 void OpDispatchBuilder::RDTSCPOp(OpcodeArgs) {
@@ -5000,18 +4950,18 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
   constexpr uint16_t PF_38_66 = (1U << 0);
   constexpr uint16_t PF_38_F2 = (1U << 1);
 
-  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F38_SHA[] = {
+  constexpr static std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F38_SHA[] = {
     {OPD(PF_38_NONE, 0xC8), 1, &OpDispatchBuilder::SHA1NEXTEOp},  {OPD(PF_38_NONE, 0xC9), 1, &OpDispatchBuilder::SHA1MSG1Op},
     {OPD(PF_38_NONE, 0xCA), 1, &OpDispatchBuilder::SHA1MSG2Op},   {OPD(PF_38_NONE, 0xCB), 1, &OpDispatchBuilder::SHA256RNDS2Op},
     {OPD(PF_38_NONE, 0xCC), 1, &OpDispatchBuilder::SHA256MSG1Op}, {OPD(PF_38_NONE, 0xCD), 1, &OpDispatchBuilder::SHA256MSG2Op},
   };
 
-  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F38_AES[] = {
+  constexpr static std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F38_AES[] = {
     {OPD(PF_38_66, 0xDB), 1, &OpDispatchBuilder::AESImcOp},     {OPD(PF_38_66, 0xDC), 1, &OpDispatchBuilder::AESEncOp},
     {OPD(PF_38_66, 0xDD), 1, &OpDispatchBuilder::AESEncLastOp}, {OPD(PF_38_66, 0xDE), 1, &OpDispatchBuilder::AESDecOp},
     {OPD(PF_38_66, 0xDF), 1, &OpDispatchBuilder::AESDecLastOp},
   };
-  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F38_CRC[] = {
+  constexpr static std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F38_CRC[] = {
     {OPD(PF_38_F2, 0xF0), 1, &OpDispatchBuilder::CRC32},
     {OPD(PF_38_F2, 0xF1), 1, &OpDispatchBuilder::CRC32},
 
@@ -5023,10 +4973,10 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 #define OPD(REX, prefix, opcode) ((REX << 9) | (prefix << 8) | opcode)
 #define PF_3A_NONE 0
 #define PF_3A_66 1
-  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F3A_AES[] = {
+  constexpr static std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F3A_AES[] = {
     {OPD(0, PF_3A_66, 0xDF), 1, &OpDispatchBuilder::AESKeyGenAssist},
   };
-  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F3A_PCLMUL[] = {
+  constexpr static std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F3A_PCLMUL[] = {
     {OPD(0, PF_3A_66, 0x44), 1, &OpDispatchBuilder::PCLMULQDQOp},
   };
 
@@ -5035,7 +4985,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 #undef OPD
 
 #define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
-  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> VEX_PCLMUL[] = {
+  constexpr static std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> VEX_PCLMUL[] = {
     {OPD(3, 0b01, 0x44), 1, &OpDispatchBuilder::VPCLMULQDQOp},
   };
 #undef OPD
@@ -5044,7 +4994,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
   constexpr uint16_t PF_NONE = 0;
   constexpr uint16_t PF_66 = 2;
 
-  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> SecondaryExtensionOp_RDRAND[] = {
+  constexpr static std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> SecondaryExtensionOp_RDRAND[] = {
     // GROUP 9
     {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_NONE, 6), 1, &OpDispatchBuilder::RDRANDOp<false>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_NONE, 7), 1, &OpDispatchBuilder::RDRANDOp<true>},
@@ -5054,7 +5004,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
   };
 #undef OPD
 
-  constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> SecondaryModRMExtensionOp_CLZero[] = {
+  constexpr static std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> SecondaryModRMExtensionOp_CLZero[] = {
     {((3 << 3) | 4), 1, &OpDispatchBuilder::CLZeroOp},
   };
 
@@ -5480,17 +5430,6 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
   };
 #undef OPD
 
-  auto InstallToTable = [](auto& FinalTable, auto& LocalTable) {
-    for (auto Op : LocalTable) {
-      auto OpNum = std::get<0>(Op);
-      auto Dispatcher = std::get<2>(Op);
-      for (uint8_t i = 0; i < std::get<1>(Op); ++i) {
-        LOGMAN_THROW_A_FMT(FinalTable[OpNum + i].OpcodeDispatcher == nullptr, "Duplicate Entry");
-        FinalTable[OpNum + i].OpcodeDispatcher = Dispatcher;
-      }
-    }
-  };
-
   if (CTX->HostFeatures.SupportsCRC) {
     InstallToTable(FEXCore::X86Tables::H0F38TableOps, H0F38_CRC);
   }
@@ -5527,624 +5466,11 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 }
 
 void InstallOpcodeHandlers(Context::OperatingMode Mode) {
-  constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> TwoByteOpTable[] = {
-    // Instructions
-    {0x06, 1, &OpDispatchBuilder::PermissionRestrictedOp},
-    {0x07, 1, &OpDispatchBuilder::PermissionRestrictedOp},
-    {0x0B, 1, &OpDispatchBuilder::INTOp},
-    {0x0E, 1, &OpDispatchBuilder::X87EMMS},
-
-    {0x19, 7, &OpDispatchBuilder::NOPOp}, // NOP with ModRM
-
-    {0x20, 4, &OpDispatchBuilder::PermissionRestrictedOp},
-
-    {0x30, 1, &OpDispatchBuilder::PermissionRestrictedOp},
-    {0x31, 1, &OpDispatchBuilder::RDTSCOp},
-    {0x32, 2, &OpDispatchBuilder::PermissionRestrictedOp},
-    {0x34, 3, &OpDispatchBuilder::UnimplementedOp},
-
-    {0x3F, 1, &OpDispatchBuilder::ThunkOp},
-    {0x40, 16, &OpDispatchBuilder::CMOVOp},
-    {0x6E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVBetweenGPR_FPR, OpDispatchBuilder::VectorOpType::MMX>},
-    {0x6F, 1, &OpDispatchBuilder::MOVQMMXOp},
-    {0x7E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVBetweenGPR_FPR, OpDispatchBuilder::VectorOpType::MMX>},
-    {0x7F, 1, &OpDispatchBuilder::MOVQMMXOp},
-    {0x80, 16, &OpDispatchBuilder::CondJUMPOp},
-    {0x90, 16, &OpDispatchBuilder::SETccOp},
-    {0xA0, 1, &OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX>},
-    {0xA1, 1, &OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX>},
-    {0xA2, 1, &OpDispatchBuilder::CPUIDOp},
-    {0xA3, 1, &OpDispatchBuilder::BTOp<0, BTAction::BTNone>}, // BT
-    {0xA4, 1, &OpDispatchBuilder::SHLDImmediateOp},
-    {0xA5, 1, &OpDispatchBuilder::SHLDOp},
-    {0xA8, 1, &OpDispatchBuilder::PUSHSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX>},
-    {0xA9, 1, &OpDispatchBuilder::POPSegmentOp<FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX>},
-    {0xAB, 1, &OpDispatchBuilder::BTOp<0, BTAction::BTSet>}, // BTS
-    {0xAC, 1, &OpDispatchBuilder::SHRDImmediateOp},
-    {0xAD, 1, &OpDispatchBuilder::SHRDOp},
-    {0xAF, 1, &OpDispatchBuilder::IMUL1SrcOp},
-    {0xB0, 2, &OpDispatchBuilder::CMPXCHGOp},                  // CMPXCHG
-    {0xB3, 1, &OpDispatchBuilder::BTOp<0, BTAction::BTClear>}, // BTR
-    {0xB6, 2, &OpDispatchBuilder::MOVZXOp},
-    {0xBB, 1, &OpDispatchBuilder::BTOp<0, BTAction::BTComplement>}, // BTC
-    {0xBC, 1, &OpDispatchBuilder::BSFOp},                           // BSF
-    {0xBD, 1, &OpDispatchBuilder::BSROp},                           // BSF
-    {0xBE, 2, &OpDispatchBuilder::MOVSXOp},
-    {0xC0, 2, &OpDispatchBuilder::XADDOp},
-    {0xC3, 1, &OpDispatchBuilder::MOVGPRNTOp},
-    {0xC4, 1, &OpDispatchBuilder::PINSROp<2>},
-    {0xC5, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 2>},
-    {0xC8, 8, &OpDispatchBuilder::BSWAPOp},
-
-    // SSE
-    {0x10, 2, &OpDispatchBuilder::MOVVectorUnalignedOp},
-    {0x12, 2, &OpDispatchBuilder::MOVLPOp},
-    {0x14, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUNPCKLOp, 4>},
-    {0x15, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUNPCKHOp, 4>},
-    {0x16, 2, &OpDispatchBuilder::MOVHPDOp},
-    {0x28, 2, &OpDispatchBuilder::MOVVectorAlignedOp},
-    {0x2A, 1, &OpDispatchBuilder::InsertMMX_To_XMM_Vector_CVT_Int_To_Float},
-    {0x2B, 1, &OpDispatchBuilder::MOVVectorNTOp},
-    {0x2C, 1, &OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<4, false, false>},
-    {0x2D, 1, &OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<4, false, true>},
-    {0x2E, 2, &OpDispatchBuilder::UCOMISxOp<4>},
-    {0x50, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVMSKOp, 4>},
-    {0x51, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VFSQRT, 4>},
-    {0x52, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VFRSQRT, 4>},
-    {0x53, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VFRECP, 4>},
-    {0x54, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VAND, 16>},
-    {0x55, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUROp, IR::OP_VANDN, 8>},
-    {0x56, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VOR, 16>},
-    {0x57, 1, &OpDispatchBuilder::VectorXOROp},
-    {0x58, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADD, 4>},
-    {0x59, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMUL, 4>},
-    {0x5A, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Float_To_Float, 8, 4, false>},
-    {0x5B, 1, &OpDispatchBuilder::Vector_CVT_Int_To_Float<4, false>},
-    {0x5C, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFSUB, 4>},
-    {0x5D, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMIN, 4>},
-    {0x5E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFDIV, 4>},
-    {0x5F, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMAX, 4>},
-    {0x60, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUNPCKLOp, 1>},
-    {0x61, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUNPCKLOp, 2>},
-    {0x62, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUNPCKLOp, 4>},
-    {0x63, 1, &OpDispatchBuilder::PACKSSOp<2>},
-    {0x64, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPGT, 1>},
-    {0x65, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPGT, 2>},
-    {0x66, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPGT, 4>},
-    {0x67, 1, &OpDispatchBuilder::PACKUSOp<2>},
-    {0x68, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUNPCKHOp, 1>},
-    {0x69, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUNPCKHOp, 2>},
-    {0x6A, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUNPCKHOp, 4>},
-    {0x6B, 1, &OpDispatchBuilder::PACKSSOp<4>},
-    {0x70, 1, &OpDispatchBuilder::PSHUFW8ByteOp},
-
-    {0x74, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPEQ, 1>},
-    {0x75, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPEQ, 2>},
-    {0x76, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPEQ, 4>},
-    {0x77, 1, &OpDispatchBuilder::X87EMMS},
-
-    {0xC2, 1, &OpDispatchBuilder::VFCMPOp<4>},
-    {0xC6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SHUFOp, 4>},
-
-    {0xD1, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, 2>},
-    {0xD2, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, 4>},
-    {0xD3, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, 8>},
-    {0xD4, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADD, 8>},
-    {0xD5, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VMUL, 2>},
-    {0xD7, 1, &OpDispatchBuilder::MOVMSKOpOne}, // PMOVMSKB
-    {0xD8, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUQSUB, 1>},
-    {0xD9, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUQSUB, 2>},
-    {0xDA, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUMIN, 1>},
-    {0xDB, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VAND, 8>},
-    {0xDC, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUQADD, 1>},
-    {0xDD, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUQADD, 2>},
-    {0xDE, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUMAX, 1>},
-    {0xDF, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUROp, IR::OP_VANDN, 8>},
-    {0xE0, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VURAVG, 1>},
-    {0xE1, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRAOp, 2>},
-    {0xE2, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRAOp, 4>},
-    {0xE3, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VURAVG, 2>},
-    {0xE4, 1, &OpDispatchBuilder::PMULHW<false>},
-    {0xE5, 1, &OpDispatchBuilder::PMULHW<true>},
-    {0xE7, 1, &OpDispatchBuilder::MOVVectorNTOp},
-    {0xE8, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSQSUB, 1>},
-    {0xE9, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSQSUB, 2>},
-    {0xEA, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSMIN, 2>},
-    {0xEB, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VOR, 8>},
-    {0xEC, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSQADD, 1>},
-    {0xED, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSQADD, 2>},
-    {0xEE, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSMAX, 2>},
-    {0xEF, 1, &OpDispatchBuilder::VectorXOROp},
-
-    {0xF1, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLL, 2>},
-    {0xF2, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLL, 4>},
-    {0xF3, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLL, 8>},
-    {0xF4, 1, &OpDispatchBuilder::PMULLOp<4, false>},
-    {0xF5, 1, &OpDispatchBuilder::PMADDWD},
-    {0xF6, 1, &OpDispatchBuilder::PSADBW},
-    {0xF7, 1, &OpDispatchBuilder::MASKMOVOp},
-    {0xF8, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSUB, 1>},
-    {0xF9, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSUB, 2>},
-    {0xFA, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSUB, 4>},
-    {0xFB, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSUB, 8>},
-    {0xFC, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADD, 1>},
-    {0xFD, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADD, 2>},
-    {0xFE, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADD, 4>},
-
-    // FEX reserved instructions
-    {0x37, 1, &OpDispatchBuilder::CallbackReturnOp},
-  };
-
-  constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> TwoByteOpTable_32[] = {
-    {0x05, 1, &OpDispatchBuilder::NOPOp},
-  };
-
-  constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> TwoByteOpTable_64[] = {
-    {0x05, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SyscallOp, true>},
-  };
-
-#define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_1) << 6) | (prefix) << 3 | (Reg))
-  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> PrimaryGroupOpTable[] = {
-    // GROUP 1
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 0), 1, &OpDispatchBuilder::SecondaryALUOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 1), 1, &OpDispatchBuilder::SecondaryALUOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 2), 1, &OpDispatchBuilder::ADCOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 3), 1, &OpDispatchBuilder::SBBOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 4), 1, &OpDispatchBuilder::SecondaryALUOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 5), 1, &OpDispatchBuilder::SecondaryALUOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 6), 1, &OpDispatchBuilder::SecondaryALUOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x80), 7), 1, &OpDispatchBuilder::CMPOp<1>}, // CMP
-
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 0), 1, &OpDispatchBuilder::SecondaryALUOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 1), 1, &OpDispatchBuilder::SecondaryALUOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 2), 1, &OpDispatchBuilder::ADCOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 3), 1, &OpDispatchBuilder::SBBOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 4), 1, &OpDispatchBuilder::SecondaryALUOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 5), 1, &OpDispatchBuilder::SecondaryALUOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 6), 1, &OpDispatchBuilder::SecondaryALUOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x81), 7), 1, &OpDispatchBuilder::CMPOp<1>},
-
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 0), 1, &OpDispatchBuilder::SecondaryALUOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 1), 1, &OpDispatchBuilder::SecondaryALUOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 2), 1, &OpDispatchBuilder::ADCOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 3), 1, &OpDispatchBuilder::SBBOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 4), 1, &OpDispatchBuilder::SecondaryALUOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 5), 1, &OpDispatchBuilder::SecondaryALUOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 6), 1, &OpDispatchBuilder::SecondaryALUOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_1, OpToIndex(0x83), 7), 1, &OpDispatchBuilder::CMPOp<1>},
-
-    // GROUP 2
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 0), 1, &OpDispatchBuilder::RotateOp<true, true, false>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 1), 1, &OpDispatchBuilder::RotateOp<false, true, false>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 2), 1, &OpDispatchBuilder::RCLOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 3), 1, &OpDispatchBuilder::RCROp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 4), 1, &OpDispatchBuilder::SHLImmediateOp<false>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 5), 1, &OpDispatchBuilder::SHRImmediateOp<false>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 6), 1, &OpDispatchBuilder::SHLImmediateOp<false>}, // SAL
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC0), 7), 1, &OpDispatchBuilder::ASHROp<true, false>},   // SAR
-
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 0), 1, &OpDispatchBuilder::RotateOp<true, true, false>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 1), 1, &OpDispatchBuilder::RotateOp<false, true, false>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 2), 1, &OpDispatchBuilder::RCLOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 3), 1, &OpDispatchBuilder::RCROp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 4), 1, &OpDispatchBuilder::SHLImmediateOp<false>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 5), 1, &OpDispatchBuilder::SHRImmediateOp<false>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 6), 1, &OpDispatchBuilder::SHLImmediateOp<false>}, // SAL
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xC1), 7), 1, &OpDispatchBuilder::ASHROp<true, false>},   // SAR
-
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 0), 1, &OpDispatchBuilder::RotateOp<true, true, true>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 1), 1, &OpDispatchBuilder::RotateOp<false, true, true>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 2), 1, &OpDispatchBuilder::RCLOp1Bit},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 3), 1, &OpDispatchBuilder::RCROp8x1Bit},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 4), 1, &OpDispatchBuilder::SHLImmediateOp<true>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 5), 1, &OpDispatchBuilder::SHRImmediateOp<true>}, // 1Bit SHR
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 6), 1, &OpDispatchBuilder::SHLImmediateOp<true>}, // SAL
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD0), 7), 1, &OpDispatchBuilder::ASHROp<true, true>},   // SAR
-
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 0), 1, &OpDispatchBuilder::RotateOp<true, true, true>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 1), 1, &OpDispatchBuilder::RotateOp<false, true, true>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 2), 1, &OpDispatchBuilder::RCLOp1Bit},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 3), 1, &OpDispatchBuilder::RCROp1Bit},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 4), 1, &OpDispatchBuilder::SHLImmediateOp<true>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 5), 1, &OpDispatchBuilder::SHRImmediateOp<true>}, // 1Bit SHR
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 6), 1, &OpDispatchBuilder::SHLImmediateOp<true>}, // SAL
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD1), 7), 1, &OpDispatchBuilder::ASHROp<true, true>},   // SAR
-
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 0), 1, &OpDispatchBuilder::RotateOp<true, false, false>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 1), 1, &OpDispatchBuilder::RotateOp<false, false, false>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 2), 1, &OpDispatchBuilder::RCLSmallerOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 3), 1, &OpDispatchBuilder::RCRSmallerOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 4), 1, &OpDispatchBuilder::SHLOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 5), 1, &OpDispatchBuilder::SHROp},                // SHR by CL
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 6), 1, &OpDispatchBuilder::SHLOp},                // SAL
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD2), 7), 1, &OpDispatchBuilder::ASHROp<false, false>}, // SAR
-
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 0), 1, &OpDispatchBuilder::RotateOp<true, false, false>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 1), 1, &OpDispatchBuilder::RotateOp<false, false, false>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 2), 1, &OpDispatchBuilder::RCLOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 3), 1, &OpDispatchBuilder::RCROp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 4), 1, &OpDispatchBuilder::SHLOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 5), 1, &OpDispatchBuilder::SHROp},                // SHR by CL
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 6), 1, &OpDispatchBuilder::SHLOp},                // SAL
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_2, OpToIndex(0xD3), 7), 1, &OpDispatchBuilder::ASHROp<false, false>}, // SAR
-
-    // GROUP 3
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_3, OpToIndex(0xF6), 0), 1, &OpDispatchBuilder::TESTOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_3, OpToIndex(0xF6), 1), 1, &OpDispatchBuilder::TESTOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_3, OpToIndex(0xF6), 2), 1, &OpDispatchBuilder::NOTOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_3, OpToIndex(0xF6), 3), 1, &OpDispatchBuilder::NEGOp}, // NEG
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_3, OpToIndex(0xF6), 4), 1, &OpDispatchBuilder::MULOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_3, OpToIndex(0xF6), 5), 1, &OpDispatchBuilder::IMULOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_3, OpToIndex(0xF6), 6), 1, &OpDispatchBuilder::DIVOp},  // DIV
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_3, OpToIndex(0xF6), 7), 1, &OpDispatchBuilder::IDIVOp}, // IDIV
-
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_3, OpToIndex(0xF7), 0), 1, &OpDispatchBuilder::TESTOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_3, OpToIndex(0xF7), 1), 1, &OpDispatchBuilder::TESTOp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_3, OpToIndex(0xF7), 2), 1, &OpDispatchBuilder::NOTOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_3, OpToIndex(0xF7), 3), 1, &OpDispatchBuilder::NEGOp}, // NEG
-
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_3, OpToIndex(0xF7), 4), 1, &OpDispatchBuilder::MULOp}, // MUL
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_3, OpToIndex(0xF7), 5), 1, &OpDispatchBuilder::IMULOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_3, OpToIndex(0xF7), 6), 1, &OpDispatchBuilder::DIVOp},  // DIV
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_3, OpToIndex(0xF7), 7), 1, &OpDispatchBuilder::IDIVOp}, // IDIV
-
-    // GROUP 4
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_4, OpToIndex(0xFE), 0), 1, &OpDispatchBuilder::INCOp}, // INC
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_4, OpToIndex(0xFE), 1), 1, &OpDispatchBuilder::DECOp}, // DEC
-
-    // GROUP 5
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_5, OpToIndex(0xFF), 0), 1, &OpDispatchBuilder::INCOp}, // INC
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_5, OpToIndex(0xFF), 1), 1, &OpDispatchBuilder::DECOp}, // DEC
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_5, OpToIndex(0xFF), 2), 1, &OpDispatchBuilder::CALLAbsoluteOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_5, OpToIndex(0xFF), 4), 1, &OpDispatchBuilder::JUMPAbsoluteOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_5, OpToIndex(0xFF), 6), 1, &OpDispatchBuilder::PUSHOp},
-
-    // GROUP 11
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_11, OpToIndex(0xC6), 0), 1, &OpDispatchBuilder::MOVGPROp<1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_11, OpToIndex(0xC7), 0), 1, &OpDispatchBuilder::MOVGPROp<1>},
-  };
-#undef OPD
-
-  constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> RepModOpTable[] = {
-    {0x10, 2, &OpDispatchBuilder::MOVSSOp},
-    {0x12, 1, &OpDispatchBuilder::VMOVSLDUPOp},
-    {0x16, 1, &OpDispatchBuilder::VMOVSHDUPOp},
-    {0x19, 7, &OpDispatchBuilder::NOPOp},
-    {0x2A, 1, &OpDispatchBuilder::InsertCVTGPR_To_FPR<4>},
-    {0x2B, 1, &OpDispatchBuilder::MOVVectorNTOp},
-    {0x2C, 1, &OpDispatchBuilder::CVTFPR_To_GPR<4, false>},
-    {0x2D, 1, &OpDispatchBuilder::CVTFPR_To_GPR<4, true>},
-    {0x51, 1, &OpDispatchBuilder::VectorScalarUnaryInsertALUOp<IR::OP_VFSQRTSCALARINSERT, 4>},
-    {0x52, 1, &OpDispatchBuilder::VectorScalarUnaryInsertALUOp<IR::OP_VFRSQRTSCALARINSERT, 4>},
-    {0x53, 1, &OpDispatchBuilder::VectorScalarUnaryInsertALUOp<IR::OP_VFRECPSCALARINSERT, 4>},
-    {0x58, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFADDSCALARINSERT, 4>},
-    {0x59, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMULSCALARINSERT, 4>},
-    {0x5A, 1, &OpDispatchBuilder::InsertScalar_CVT_Float_To_Float<8, 4>},
-    {0x5B, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<4, false, false>},
-    {0x5C, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFSUBSCALARINSERT, 4>},
-    {0x5D, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMINSCALARINSERT, 4>},
-    {0x5E, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFDIVSCALARINSERT, 4>},
-    {0x5F, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMAXSCALARINSERT, 4>},
-    {0x6F, 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
-    {0x70, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSHUFWOp, false>},
-    {0x7E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVQOp, OpDispatchBuilder::VectorOpType::SSE>},
-    {0x7F, 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
-    {0xB8, 1, &OpDispatchBuilder::PopcountOp},
-    {0xBC, 1, &OpDispatchBuilder::TZCNT},
-    {0xBD, 1, &OpDispatchBuilder::LZCNT},
-    {0xC2, 1, &OpDispatchBuilder::InsertScalarFCMPOp<4>},
-    {0xD6, 1, &OpDispatchBuilder::MOVQ2DQ<true>},
-    {0xE6, 1, &OpDispatchBuilder::Vector_CVT_Int_To_Float<4, true>},
-  };
-
-  constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> RepNEModOpTable[] = {
-    {0x10, 2, &OpDispatchBuilder::MOVSDOp},
-    {0x12, 1, &OpDispatchBuilder::MOVDDUPOp},
-    {0x19, 7, &OpDispatchBuilder::NOPOp},
-    {0x2A, 1, &OpDispatchBuilder::InsertCVTGPR_To_FPR<8>},
-    {0x2B, 1, &OpDispatchBuilder::MOVVectorNTOp},
-    {0x2C, 1, &OpDispatchBuilder::CVTFPR_To_GPR<8, false>},
-    {0x2D, 1, &OpDispatchBuilder::CVTFPR_To_GPR<8, true>},
-    {0x51, 1, &OpDispatchBuilder::VectorScalarUnaryInsertALUOp<IR::OP_VFSQRTSCALARINSERT, 8>},
-    // x52 = Invalid
-    {0x58, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFADDSCALARINSERT, 8>},
-    {0x59, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMULSCALARINSERT, 8>},
-    {0x5A, 1, &OpDispatchBuilder::InsertScalar_CVT_Float_To_Float<4, 8>},
-    {0x5C, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFSUBSCALARINSERT, 8>},
-    {0x5D, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMINSCALARINSERT, 8>},
-    {0x5E, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFDIVSCALARINSERT, 8>},
-    {0x5F, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMAXSCALARINSERT, 8>},
-    {0x70, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSHUFWOp, true>},
-    {0x7C, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADDP, 4>},
-    {0x7D, 1, &OpDispatchBuilder::HSUBP<4>},
-    {0xD0, 1, &OpDispatchBuilder::ADDSUBPOp<4>},
-    {0xD6, 1, &OpDispatchBuilder::MOVQ2DQ<false>},
-    {0xC2, 1, &OpDispatchBuilder::InsertScalarFCMPOp<8>},
-    {0xE6, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<8, true, true>},
-    {0xF0, 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
-  };
-
-  constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpSizeModOpTable[] = {
-    {0x10, 2, &OpDispatchBuilder::MOVVectorUnalignedOp},
-    {0x12, 2, &OpDispatchBuilder::MOVLPOp},
-    {0x14, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUNPCKLOp, 8>},
-    {0x15, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUNPCKHOp, 8>},
-    {0x16, 2, &OpDispatchBuilder::MOVHPDOp},
-    {0x19, 7, &OpDispatchBuilder::NOPOp},
-    {0x28, 2, &OpDispatchBuilder::MOVVectorAlignedOp},
-    {0x2A, 1, &OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float},
-    {0x2B, 1, &OpDispatchBuilder::MOVVectorNTOp},
-    {0x2C, 1, &OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<8, true, false>},
-    {0x2D, 1, &OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<8, true, true>},
-    {0x2E, 2, &OpDispatchBuilder::UCOMISxOp<8>},
-
-    {0x40, 16, &OpDispatchBuilder::CMOVOp},
-    {0x50, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVMSKOp, 8>},
-    {0x51, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VFSQRT, 8>},
-    {0x54, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VAND, 16>},
-    {0x55, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUROp, IR::OP_VANDN, 8>},
-    {0x56, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VOR, 16>},
-    {0x57, 1, &OpDispatchBuilder::VectorXOROp},
-    {0x58, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADD, 8>},
-    {0x59, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMUL, 8>},
-    {0x5A, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Float_To_Float, 4, 8, false>},
-    {0x5B, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<4, false, true>},
-    {0x5C, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFSUB, 8>},
-    {0x5D, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMIN, 8>},
-    {0x5E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFDIV, 8>},
-    {0x5F, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMAX, 8>},
-    {0x60, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUNPCKLOp, 1>},
-    {0x61, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUNPCKLOp, 2>},
-    {0x62, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUNPCKLOp, 4>},
-    {0x63, 1, &OpDispatchBuilder::PACKSSOp<2>},
-    {0x64, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPGT, 1>},
-    {0x65, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPGT, 2>},
-    {0x66, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPGT, 4>},
-    {0x67, 1, &OpDispatchBuilder::PACKUSOp<2>},
-    {0x68, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUNPCKHOp, 1>},
-    {0x69, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUNPCKHOp, 2>},
-    {0x6A, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUNPCKHOp, 4>},
-    {0x6B, 1, &OpDispatchBuilder::PACKSSOp<4>},
-    {0x6C, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUNPCKLOp, 8>},
-    {0x6D, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUNPCKHOp, 8>},
-    {0x6E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVBetweenGPR_FPR, OpDispatchBuilder::VectorOpType::SSE>},
-    {0x6F, 1, &OpDispatchBuilder::MOVVectorAlignedOp},
-    {0x70, 1, &OpDispatchBuilder::PSHUFDOp},
-
-    {0x74, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPEQ, 1>},
-    {0x75, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPEQ, 2>},
-    {0x76, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPEQ, 4>},
-    {0x78, 1, nullptr}, // GROUP 17
-    {0x7C, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADDP, 8>},
-    {0x7D, 1, &OpDispatchBuilder::HSUBP<8>},
-    {0x7E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVBetweenGPR_FPR, OpDispatchBuilder::VectorOpType::SSE>},
-    {0x7F, 1, &OpDispatchBuilder::MOVVectorAlignedOp},
-    {0xC2, 1, &OpDispatchBuilder::VFCMPOp<8>},
-    {0xC4, 1, &OpDispatchBuilder::PINSROp<2>},
-    {0xC5, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 2>},
-    {0xC6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SHUFOp, 8>},
-
-    {0xD0, 1, &OpDispatchBuilder::ADDSUBPOp<8>},
-    {0xD1, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, 2>},
-    {0xD2, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, 4>},
-    {0xD3, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, 8>},
-    {0xD4, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADD, 8>},
-    {0xD5, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VMUL, 2>},
-    {0xD6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVQOp, OpDispatchBuilder::VectorOpType::SSE>},
-    {0xD7, 1, &OpDispatchBuilder::MOVMSKOpOne}, // PMOVMSKB
-    {0xD8, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUQSUB, 1>},
-    {0xD9, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUQSUB, 2>},
-    {0xDA, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUMIN, 1>},
-    {0xDB, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VAND, 16>},
-    {0xDC, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUQADD, 1>},
-    {0xDD, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUQADD, 2>},
-    {0xDE, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUMAX, 1>},
-    {0xDF, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUROp, IR::OP_VANDN, 8>},
-    {0xE0, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VURAVG, 1>},
-    {0xE1, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRAOp, 2>},
-    {0xE2, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRAOp, 4>},
-    {0xE3, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VURAVG, 2>},
-    {0xE4, 1, &OpDispatchBuilder::PMULHW<false>},
-    {0xE5, 1, &OpDispatchBuilder::PMULHW<true>},
-    {0xE6, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<8, true, false>},
-    {0xE7, 1, &OpDispatchBuilder::MOVVectorNTOp},
-    {0xE8, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSQSUB, 1>},
-    {0xE9, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSQSUB, 2>},
-    {0xEA, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSMIN, 2>},
-    {0xEB, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VOR, 16>},
-    {0xEC, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSQADD, 1>},
-    {0xED, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSQADD, 2>},
-    {0xEE, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSMAX, 2>},
-    {0xEF, 1, &OpDispatchBuilder::VectorXOROp},
-
-    {0xF1, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLL, 2>},
-    {0xF2, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLL, 4>},
-    {0xF3, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLL, 8>},
-    {0xF4, 1, &OpDispatchBuilder::PMULLOp<4, false>},
-    {0xF5, 1, &OpDispatchBuilder::PMADDWD},
-    {0xF6, 1, &OpDispatchBuilder::PSADBW},
-    {0xF7, 1, &OpDispatchBuilder::MASKMOVOp},
-    {0xF8, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSUB, 1>},
-    {0xF9, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSUB, 2>},
-    {0xFA, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSUB, 4>},
-    {0xFB, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSUB, 8>},
-    {0xFC, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADD, 1>},
-    {0xFD, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADD, 2>},
-    {0xFE, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADD, 4>},
-  };
-
-  constexpr uint16_t PF_NONE = 0;
-  constexpr uint16_t PF_F3 = 1;
-  constexpr uint16_t PF_66 = 2;
-  constexpr uint16_t PF_F2 = 3;
-#define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_6) << 5) | (prefix) << 3 | (Reg))
-  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> SecondaryExtensionOpTable[] = {
-    // GROUP 6
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_6, PF_NONE, 3), 1, &OpDispatchBuilder::PermissionRestrictedOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_6, PF_F3, 3), 1, &OpDispatchBuilder::PermissionRestrictedOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_6, PF_66, 3), 1, &OpDispatchBuilder::PermissionRestrictedOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_6, PF_F2, 3), 1, &OpDispatchBuilder::PermissionRestrictedOp},
-
-    // GROUP 7
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_NONE, 0), 1, &OpDispatchBuilder::SGDTOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F3, 0), 1, &OpDispatchBuilder::SGDTOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_66, 0), 1, &OpDispatchBuilder::SGDTOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F2, 0), 1, &OpDispatchBuilder::SGDTOp},
-
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_NONE, 3), 1, &OpDispatchBuilder::PermissionRestrictedOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F3, 3), 1, &OpDispatchBuilder::PermissionRestrictedOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_66, 3), 1, &OpDispatchBuilder::PermissionRestrictedOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F2, 3), 1, &OpDispatchBuilder::PermissionRestrictedOp},
-
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_NONE, 4), 1, &OpDispatchBuilder::SMSWOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F3, 4), 1, &OpDispatchBuilder::SMSWOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_66, 4), 1, &OpDispatchBuilder::SMSWOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F2, 4), 1, &OpDispatchBuilder::SMSWOp},
-
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_NONE, 6), 1, &OpDispatchBuilder::PermissionRestrictedOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F3, 6), 1, &OpDispatchBuilder::PermissionRestrictedOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_66, 6), 1, &OpDispatchBuilder::PermissionRestrictedOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F2, 6), 1, &OpDispatchBuilder::PermissionRestrictedOp},
-
-    // GROUP 8
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 4), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTNone>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 4), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTNone>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 4), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTNone>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 4), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTNone>},
-
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 5), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTSet>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 5), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTSet>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 5), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTSet>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 5), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTSet>},
-
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 6), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTClear>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 6), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTClear>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 6), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTClear>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 6), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTClear>},
-
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 7), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTComplement>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F3, 7), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTComplement>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_66, 7), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTComplement>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_F2, 7), 1, &OpDispatchBuilder::BTOp<1, BTAction::BTComplement>},
-
-    // GROUP 9
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_NONE, 1), 1, &OpDispatchBuilder::CMPXCHGPairOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_F3, 1), 1, &OpDispatchBuilder::CMPXCHGPairOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_66, 1), 1, &OpDispatchBuilder::CMPXCHGPairOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_F2, 1), 1, &OpDispatchBuilder::CMPXCHGPairOp},
-
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_F3, 7), 1, &OpDispatchBuilder::RDPIDOp},
-
-    // GROUP 12
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_NONE, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLI, 2>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_NONE, 4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRAIOp, 2>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_NONE, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLLI, 2>},
-
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_66, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLI, 2>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_66, 4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRAIOp, 2>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_66, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLLI, 2>},
-
-    // GROUP 13
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_NONE, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLI, 4>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_NONE, 4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRAIOp, 4>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_NONE, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLLI, 4>},
-
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_66, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLI, 4>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_66, 4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRAIOp, 4>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_66, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLLI, 4>},
-
-    // GROUP 14
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_NONE, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLI, 8>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_NONE, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLLI, 8>},
-
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLI, 8>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 3), 1, &OpDispatchBuilder::PSRLDQ},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLLI, 8>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 7), 1, &OpDispatchBuilder::PSLLDQ},
-
-    // GROUP 15
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 0), 1, &OpDispatchBuilder::FXSaveOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 1), 1, &OpDispatchBuilder::FXRStoreOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 2), 1, &OpDispatchBuilder::LDMXCSR},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 3), 1, &OpDispatchBuilder::STMXCSR},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 4), 1, &OpDispatchBuilder::XSaveOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 5), 1, &OpDispatchBuilder::LoadFenceOrXRSTOR},   // LFENCE (or XRSTOR)
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 6), 1, &OpDispatchBuilder::MemFenceOrXSAVEOPT},  // MFENCE (or XSAVEOPT)
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 7), 1, &OpDispatchBuilder::StoreFenceOrCLFlush}, // SFENCE (or CLFLUSH)
-
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 5), 1, &OpDispatchBuilder::UnimplementedOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 6), 1, &OpDispatchBuilder::UnimplementedOp},
-
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_66, 6), 1, &OpDispatchBuilder::CLWB},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_66, 7), 1, &OpDispatchBuilder::CLFLUSHOPT},
-
-    // GROUP 16
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_NONE, 0), 1, &OpDispatchBuilder::Prefetch<false, true, 1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_NONE, 1), 1, &OpDispatchBuilder::Prefetch<false, false, 1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_NONE, 2), 1, &OpDispatchBuilder::Prefetch<false, false, 2>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_NONE, 3), 1, &OpDispatchBuilder::Prefetch<false, false, 3>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_NONE, 4), 4, &OpDispatchBuilder::NOPOp},
-
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F3, 0), 1, &OpDispatchBuilder::Prefetch<false, true, 1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F3, 1), 1, &OpDispatchBuilder::Prefetch<false, false, 1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F3, 2), 1, &OpDispatchBuilder::Prefetch<false, false, 2>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F3, 3), 1, &OpDispatchBuilder::Prefetch<false, false, 3>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F3, 4), 4, &OpDispatchBuilder::NOPOp},
-
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_66, 0), 1, &OpDispatchBuilder::Prefetch<false, true, 1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_66, 1), 1, &OpDispatchBuilder::Prefetch<false, false, 1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_66, 2), 1, &OpDispatchBuilder::Prefetch<false, false, 2>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_66, 3), 1, &OpDispatchBuilder::Prefetch<false, false, 3>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_66, 4), 4, &OpDispatchBuilder::NOPOp},
-
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F2, 0), 1, &OpDispatchBuilder::Prefetch<false, true, 1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F2, 1), 1, &OpDispatchBuilder::Prefetch<false, false, 1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F2, 2), 1, &OpDispatchBuilder::Prefetch<false, false, 2>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F2, 3), 1, &OpDispatchBuilder::Prefetch<false, false, 3>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F2, 4), 4, &OpDispatchBuilder::NOPOp},
-
-    // GROUP P
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_P, PF_NONE, 0), 1, &OpDispatchBuilder::Prefetch<false, false, 1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_P, PF_NONE, 1), 1, &OpDispatchBuilder::Prefetch<true, false, 1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_P, PF_NONE, 2), 1, &OpDispatchBuilder::Prefetch<true, false, 1>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_P, PF_NONE, 3), 5, &OpDispatchBuilder::NOPOp},
-
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_P, PF_F3, 0), 8, &OpDispatchBuilder::NOPOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_P, PF_66, 0), 8, &OpDispatchBuilder::NOPOp},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_P, PF_F2, 0), 8, &OpDispatchBuilder::NOPOp},
-  };
-
-  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> SecondaryExtensionOpTable_64[] = {
-    // GROUP 15
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 0), 1, &OpDispatchBuilder::ReadSegmentReg<OpDispatchBuilder::Segment::FS>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 1), 1, &OpDispatchBuilder::ReadSegmentReg<OpDispatchBuilder::Segment::GS>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 2), 1, &OpDispatchBuilder::WriteSegmentReg<OpDispatchBuilder::Segment::FS>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 3), 1, &OpDispatchBuilder::WriteSegmentReg<OpDispatchBuilder::Segment::GS>},
-  };
-
-#undef OPD
-
-  constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> SecondaryModRMExtensionOpTable[] = {
-    // REG /1
-    {((0 << 3) | 0), 1, &OpDispatchBuilder::UnimplementedOp},
-    {((0 << 3) | 1), 1, &OpDispatchBuilder::UnimplementedOp},
-
-    // REG /2
-    {((1 << 3) | 0), 1, &OpDispatchBuilder::XGetBVOp},
-
-    // REG /3
-    {((2 << 3) | 7), 1, &OpDispatchBuilder::PermissionRestrictedOp},
-
-    // REG /7
-    {((3 << 3) | 0), 1, &OpDispatchBuilder::PermissionRestrictedOp},
-    {((3 << 3) | 1), 1, &OpDispatchBuilder::RDTSCPOp},
-
-  };
 // Top bit indicating if it needs to be repeated with {0x40, 0x80} or'd in
 // All OPDReg versions need it
 #define OPDReg(op, reg) ((1 << 15) | ((op - 0xD8) << 8) | (reg << 3))
 #define OPD(op, modrmop) (((op - 0xD8) << 8) | modrmop)
-  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> X87F64OpTable[] = {
+  constexpr static std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> X87F64OpTable[] = {
     {OPDReg(0xD8, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADDF64, 32, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPDReg(0xD8, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMULF64, 32, false, OpDispatchBuilder::OpResult::RES_ST0>},
@@ -6374,7 +5700,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(0xDF, 0xF0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, 80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
   };
 
-  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> X87OpTable[] = {
+  constexpr static std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> X87OpTable[] = {
     {OPDReg(0xD8, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADD, 32, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPDReg(0xD8, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMUL, 32, false, OpDispatchBuilder::OpResult::RES_ST0>},
@@ -6606,200 +5932,6 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 #undef OPD
 #undef OPDReg
 
-#define OPD(prefix, opcode) (((prefix) << 8) | opcode)
-  constexpr uint16_t PF_38_NONE = 0;
-  constexpr uint16_t PF_38_66 = (1U << 0);
-  constexpr uint16_t PF_38_F3 = (1U << 2);
-
-  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F38Table[] = {
-    {OPD(PF_38_NONE, 0x00), 1, &OpDispatchBuilder::PSHUFBOp},
-    {OPD(PF_38_66, 0x00), 1, &OpDispatchBuilder::PSHUFBOp},
-    {OPD(PF_38_NONE, 0x01), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADDP, 2>},
-    {OPD(PF_38_66, 0x01), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADDP, 2>},
-    {OPD(PF_38_NONE, 0x02), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADDP, 4>},
-    {OPD(PF_38_66, 0x02), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADDP, 4>},
-    {OPD(PF_38_NONE, 0x03), 1, &OpDispatchBuilder::PHADDS},
-    {OPD(PF_38_66, 0x03), 1, &OpDispatchBuilder::PHADDS},
-    {OPD(PF_38_NONE, 0x04), 1, &OpDispatchBuilder::PMADDUBSW},
-    {OPD(PF_38_66, 0x04), 1, &OpDispatchBuilder::PMADDUBSW},
-    {OPD(PF_38_NONE, 0x05), 1, &OpDispatchBuilder::PHSUB<2>},
-    {OPD(PF_38_66, 0x05), 1, &OpDispatchBuilder::PHSUB<2>},
-    {OPD(PF_38_NONE, 0x06), 1, &OpDispatchBuilder::PHSUB<4>},
-    {OPD(PF_38_66, 0x06), 1, &OpDispatchBuilder::PHSUB<4>},
-    {OPD(PF_38_NONE, 0x07), 1, &OpDispatchBuilder::PHSUBS},
-    {OPD(PF_38_66, 0x07), 1, &OpDispatchBuilder::PHSUBS},
-    {OPD(PF_38_NONE, 0x08), 1, &OpDispatchBuilder::PSIGN<1>},
-    {OPD(PF_38_66, 0x08), 1, &OpDispatchBuilder::PSIGN<1>},
-    {OPD(PF_38_NONE, 0x09), 1, &OpDispatchBuilder::PSIGN<2>},
-    {OPD(PF_38_66, 0x09), 1, &OpDispatchBuilder::PSIGN<2>},
-    {OPD(PF_38_NONE, 0x0A), 1, &OpDispatchBuilder::PSIGN<4>},
-    {OPD(PF_38_66, 0x0A), 1, &OpDispatchBuilder::PSIGN<4>},
-    {OPD(PF_38_NONE, 0x0B), 1, &OpDispatchBuilder::PMULHRSW},
-    {OPD(PF_38_66, 0x0B), 1, &OpDispatchBuilder::PMULHRSW},
-    {OPD(PF_38_66, 0x10), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorVariableBlend, 1>},
-    {OPD(PF_38_66, 0x14), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorVariableBlend, 4>},
-    {OPD(PF_38_66, 0x15), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorVariableBlend, 8>},
-    {OPD(PF_38_66, 0x17), 1, &OpDispatchBuilder::PTestOp},
-    {OPD(PF_38_NONE, 0x1C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VABS, 1>},
-    {OPD(PF_38_66, 0x1C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VABS, 1>},
-    {OPD(PF_38_NONE, 0x1D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VABS, 2>},
-    {OPD(PF_38_66, 0x1D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VABS, 2>},
-    {OPD(PF_38_NONE, 0x1E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VABS, 4>},
-    {OPD(PF_38_66, 0x1E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VABS, 4>},
-    {OPD(PF_38_66, 0x20), 1, &OpDispatchBuilder::ExtendVectorElements<1, 2, true>},
-    {OPD(PF_38_66, 0x21), 1, &OpDispatchBuilder::ExtendVectorElements<1, 4, true>},
-    {OPD(PF_38_66, 0x22), 1, &OpDispatchBuilder::ExtendVectorElements<1, 8, true>},
-    {OPD(PF_38_66, 0x23), 1, &OpDispatchBuilder::ExtendVectorElements<2, 4, true>},
-    {OPD(PF_38_66, 0x24), 1, &OpDispatchBuilder::ExtendVectorElements<2, 8, true>},
-    {OPD(PF_38_66, 0x25), 1, &OpDispatchBuilder::ExtendVectorElements<4, 8, true>},
-    {OPD(PF_38_66, 0x28), 1, &OpDispatchBuilder::PMULLOp<4, true>},
-    {OPD(PF_38_66, 0x29), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPEQ, 8>},
-    {OPD(PF_38_66, 0x2A), 1, &OpDispatchBuilder::MOVVectorNTOp},
-    {OPD(PF_38_66, 0x2B), 1, &OpDispatchBuilder::PACKUSOp<4>},
-    {OPD(PF_38_66, 0x30), 1, &OpDispatchBuilder::ExtendVectorElements<1, 2, false>},
-    {OPD(PF_38_66, 0x31), 1, &OpDispatchBuilder::ExtendVectorElements<1, 4, false>},
-    {OPD(PF_38_66, 0x32), 1, &OpDispatchBuilder::ExtendVectorElements<1, 8, false>},
-    {OPD(PF_38_66, 0x33), 1, &OpDispatchBuilder::ExtendVectorElements<2, 4, false>},
-    {OPD(PF_38_66, 0x34), 1, &OpDispatchBuilder::ExtendVectorElements<2, 8, false>},
-    {OPD(PF_38_66, 0x35), 1, &OpDispatchBuilder::ExtendVectorElements<4, 8, false>},
-    {OPD(PF_38_66, 0x37), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPGT, 8>},
-    {OPD(PF_38_66, 0x38), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSMIN, 1>},
-    {OPD(PF_38_66, 0x39), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSMIN, 4>},
-    {OPD(PF_38_66, 0x3A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUMIN, 2>},
-    {OPD(PF_38_66, 0x3B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUMIN, 4>},
-    {OPD(PF_38_66, 0x3C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSMAX, 1>},
-    {OPD(PF_38_66, 0x3D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VSMAX, 4>},
-    {OPD(PF_38_66, 0x3E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUMAX, 2>},
-    {OPD(PF_38_66, 0x3F), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VUMAX, 4>},
-    {OPD(PF_38_66, 0x40), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VMUL, 4>},
-    {OPD(PF_38_66, 0x41), 1, &OpDispatchBuilder::PHMINPOSUWOp},
-
-    {OPD(PF_38_NONE, 0xF0), 2, &OpDispatchBuilder::MOVBEOp},
-    {OPD(PF_38_66, 0xF0), 2, &OpDispatchBuilder::MOVBEOp},
-
-    {OPD(PF_38_66, 0xF6), 1, &OpDispatchBuilder::ADXOp},
-    {OPD(PF_38_F3, 0xF6), 1, &OpDispatchBuilder::ADXOp},
-  };
-
-#undef OPD
-
-#define OPD(REX, prefix, opcode) ((REX << 9) | (prefix << 8) | opcode)
-#define PF_3A_NONE 0
-#define PF_3A_66 1
-  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F3ATable[] = {
-    {OPD(0, PF_3A_66, 0x08), 1, &OpDispatchBuilder::VectorRound<4>},
-    {OPD(0, PF_3A_66, 0x09), 1, &OpDispatchBuilder::VectorRound<8>},
-    {OPD(0, PF_3A_66, 0x0A), 1, &OpDispatchBuilder::InsertScalarRound<4>},
-    {OPD(0, PF_3A_66, 0x0B), 1, &OpDispatchBuilder::InsertScalarRound<8>},
-    {OPD(0, PF_3A_66, 0x0C), 1, &OpDispatchBuilder::VectorBlend<4>},
-    {OPD(0, PF_3A_66, 0x0D), 1, &OpDispatchBuilder::VectorBlend<8>},
-    {OPD(0, PF_3A_66, 0x0E), 1, &OpDispatchBuilder::VectorBlend<2>},
-
-    {OPD(0, PF_3A_NONE, 0x0F), 1, &OpDispatchBuilder::PAlignrOp},
-    {OPD(0, PF_3A_66, 0x0F), 1, &OpDispatchBuilder::PAlignrOp},
-    {OPD(1, PF_3A_66, 0x0F), 1, &OpDispatchBuilder::PAlignrOp},
-
-    {OPD(0, PF_3A_66, 0x14), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 1>},
-    {OPD(0, PF_3A_66, 0x15), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 2>},
-    {OPD(0, PF_3A_66, 0x16), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 4>},
-    {OPD(1, PF_3A_66, 0x16), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 8>},
-    {OPD(0, PF_3A_66, 0x17), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 4>},
-
-    {OPD(0, PF_3A_66, 0x20), 1, &OpDispatchBuilder::PINSROp<1>},
-    {OPD(0, PF_3A_66, 0x21), 1, &OpDispatchBuilder::InsertPSOp},
-    {OPD(0, PF_3A_66, 0x22), 1, &OpDispatchBuilder::PINSROp<4>},
-    {OPD(1, PF_3A_66, 0x22), 1, &OpDispatchBuilder::PINSROp<8>},
-    {OPD(0, PF_3A_66, 0x40), 1, &OpDispatchBuilder::DPPOp<4>},
-    {OPD(0, PF_3A_66, 0x41), 1, &OpDispatchBuilder::DPPOp<8>},
-    {OPD(0, PF_3A_66, 0x42), 1, &OpDispatchBuilder::MPSADBWOp},
-
-    {OPD(0, PF_3A_66, 0x60), 1, &OpDispatchBuilder::VPCMPESTRMOp},
-    {OPD(0, PF_3A_66, 0x61), 1, &OpDispatchBuilder::VPCMPESTRIOp},
-    {OPD(0, PF_3A_66, 0x62), 1, &OpDispatchBuilder::VPCMPISTRMOp},
-    {OPD(0, PF_3A_66, 0x63), 1, &OpDispatchBuilder::VPCMPISTRIOp},
-
-    {OPD(0, PF_3A_NONE, 0xCC), 1, &OpDispatchBuilder::SHA1RNDS4Op},
-  };
-#undef PF_3A_NONE
-#undef PF_3A_66
-
-#undef OPD
-
-  static constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> DDDNowTable[] = {
-    {0x0C, 1, &OpDispatchBuilder::PI2FWOp},
-    {0x0D, 1, &OpDispatchBuilder::Vector_CVT_Int_To_Float<4, false>},
-    {0x1C, 1, &OpDispatchBuilder::PF2IWOp},
-    {0x1D, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<4, false, false>},
-
-    {0x86, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VFRECP, 4>},
-    {0x87, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VFRSQRT, 4>},
-
-    {0x8A, 1, &OpDispatchBuilder::PFNACCOp},
-    {0x8E, 1, &OpDispatchBuilder::PFPNACCOp},
-
-    {0x90, 1, &OpDispatchBuilder::VPFCMPOp<1>},
-    {0x94, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMIN, 4>},
-    {0x96, 1, &OpDispatchBuilder::VectorUnaryDuplicateOp<IR::OP_VFRECP, 4>},
-    {0x97, 1, &OpDispatchBuilder::VectorUnaryDuplicateOp<IR::OP_VFRSQRT, 4>},
-
-    {0x9A, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFSUB, 4>},
-    {0x9E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADD, 4>},
-
-    {0xA0, 1, &OpDispatchBuilder::VPFCMPOp<2>},
-    {0xA4, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMAX, 4>},
-    // Can be treated as a move
-    {0xA6, 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
-    {0xA7, 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
-
-    {0xAA, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUROp, IR::OP_VFSUB, 4>},
-    {0xAE, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADDP, 4>},
-
-    {0xB0, 1, &OpDispatchBuilder::VPFCMPOp<0>},
-    {0xB4, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMUL, 4>},
-    // Can be treated as a move
-    {0xB6, 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
-    {0xB7, 1, &OpDispatchBuilder::PMULHRWOp},
-
-    {0xBB, 1, &OpDispatchBuilder::PSWAPDOp},
-    {0xBF, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VURAVG, 1>},
-  };
-
-#define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
-  static constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> BMITable[] = {
-    {OPD(2, 0b00, 0xF2), 1, &OpDispatchBuilder::ANDNBMIOp}, {OPD(2, 0b00, 0xF5), 1, &OpDispatchBuilder::BZHI},
-    {OPD(2, 0b10, 0xF5), 1, &OpDispatchBuilder::PEXT},      {OPD(2, 0b11, 0xF5), 1, &OpDispatchBuilder::PDEP},
-    {OPD(2, 0b11, 0xF6), 1, &OpDispatchBuilder::MULX},      {OPD(2, 0b00, 0xF7), 1, &OpDispatchBuilder::BEXTRBMIOp},
-    {OPD(2, 0b01, 0xF7), 1, &OpDispatchBuilder::BMI2Shift}, {OPD(2, 0b10, 0xF7), 1, &OpDispatchBuilder::BMI2Shift},
-    {OPD(2, 0b11, 0xF7), 1, &OpDispatchBuilder::BMI2Shift},
-
-    {OPD(3, 0b11, 0xF0), 1, &OpDispatchBuilder::RORX},
-  };
-#undef OPD
-
-#define OPD(group, pp, opcode) (((group - X86Tables::InstType::TYPE_VEX_GROUP_12) << 4) | (pp << 3) | (opcode))
-  constexpr std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> VEXGroupTable[] = {
-    {OPD(X86Tables::InstType::TYPE_VEX_GROUP_17, 0, 0b001), 1, &OpDispatchBuilder::BLSRBMIOp},
-    {OPD(X86Tables::InstType::TYPE_VEX_GROUP_17, 0, 0b010), 1, &OpDispatchBuilder::BLSMSKBMIOp},
-    {OPD(X86Tables::InstType::TYPE_VEX_GROUP_17, 0, 0b011), 1, &OpDispatchBuilder::BLSIBMIOp},
-  };
-#undef OPD
-
-  constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> EVEXTable[] = {
-    {0x10, 2, &OpDispatchBuilder::UnimplementedOp},
-    {0x59, 1, &OpDispatchBuilder::UnimplementedOp},
-    {0x7F, 1, &OpDispatchBuilder::UnimplementedOp},
-  };
-
-  auto InstallToTable = [](auto& FinalTable, auto& LocalTable) {
-    for (auto Op : LocalTable) {
-      auto OpNum = std::get<0>(Op);
-      auto Dispatcher = std::get<2>(Op);
-      for (uint8_t i = 0; i < std::get<1>(Op); ++i) {
-        LOGMAN_THROW_A_FMT(FinalTable[OpNum + i].OpcodeDispatcher == nullptr, "Duplicate Entry");
-        FinalTable[OpNum + i].OpcodeDispatcher = Dispatcher;
-      }
-    }
-  };
   auto InstallToX87Table = [](auto& FinalTable, auto& LocalTable) {
     for (auto Op : LocalTable) {
       auto OpNum = std::get<0>(Op);
@@ -6819,38 +5951,12 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     }
   };
 
-  if (Mode == Context::MODE_32BIT) {
-    InstallToTable(FEXCore::X86Tables::SecondBaseOps, TwoByteOpTable_32);
-  } else {
-    InstallToTable(FEXCore::X86Tables::SecondBaseOps, TwoByteOpTable_64);
-  }
-
-  InstallToTable(FEXCore::X86Tables::SecondBaseOps, TwoByteOpTable);
-  InstallToTable(FEXCore::X86Tables::PrimaryInstGroupOps, PrimaryGroupOpTable);
-
-  InstallToTable(FEXCore::X86Tables::RepModOps, RepModOpTable);
-  InstallToTable(FEXCore::X86Tables::RepNEModOps, RepNEModOpTable);
-  InstallToTable(FEXCore::X86Tables::OpSizeModOps, OpSizeModOpTable);
-  InstallToTable(FEXCore::X86Tables::SecondInstGroupOps, SecondaryExtensionOpTable);
-  if (Mode == Context::MODE_64BIT) {
-    InstallToTable(FEXCore::X86Tables::SecondInstGroupOps, SecondaryExtensionOpTable_64);
-  }
-
-  InstallToTable(FEXCore::X86Tables::SecondModRMTableOps, SecondaryModRMExtensionOpTable);
-
   FEX_CONFIG_OPT(ReducedPrecision, X87REDUCEDPRECISION);
   if (ReducedPrecision) {
     InstallToX87Table(FEXCore::X86Tables::X87Ops, X87F64OpTable);
   } else {
     InstallToX87Table(FEXCore::X86Tables::X87Ops, X87OpTable);
   }
-
-  InstallToTable(FEXCore::X86Tables::H0F38TableOps, H0F38Table);
-  InstallToTable(FEXCore::X86Tables::H0F3ATableOps, H0F3ATable);
-  InstallToTable(FEXCore::X86Tables::DDDNowOps, DDDNowTable);
-  InstallToTable(FEXCore::X86Tables::VEXTableOps, BMITable);
-  InstallToTable(FEXCore::X86Tables::VEXTableGroupOps, VEXGroupTable);
-  InstallToTable(FEXCore::X86Tables::EVEXTableOps, EVEXTable);
 }
 
 } // namespace FEXCore::IR

@@ -6,6 +6,7 @@ $end_info$
 */
 
 #include "Interface/Core/X86Tables/X86Tables.h"
+#include "Interface/Core/OpcodeDispatcher/SecondaryTables.h"
 
 #include <FEXCore/Core/Context.h>
 
@@ -270,6 +271,8 @@ auto BaseOpsLambda = []() consteval {
 
   GenerateTable(&Table.at(0), TwoByteOpTable, std::size(TwoByteOpTable));
 
+  IR::InstallToTable(Table, IR::OpDispatch_TwoByteOpTable);
+
   return Table;
 };
 
@@ -297,7 +300,7 @@ std::array<X86InstInfo, MAX_REP_MOD_TABLE_SIZE> RepModOps = []() consteval {
     {0x2E, 2, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                        0, nullptr}},
 
     {0x30, 16, X86InstInfo{"",         TYPE_COPY_OTHER, FLAGS_NONE,                                     0, nullptr}},
-    {0x40, 16, X86InstInfo{"",         TYPE_COPY_OTHER, FLAGS_NONE,                                     0, nullptr}},
+    {0x40, 16, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE,                                        0, nullptr}},
 
     {0x50, 1, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                        0, nullptr}},
     {0x51, 1, X86InstInfo{"SQRTSS",    TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_32BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                    0, nullptr}},
@@ -359,6 +362,7 @@ std::array<X86InstInfo, MAX_REP_MOD_TABLE_SIZE> RepModOps = []() consteval {
 
   GenerateTableWithCopy(&Table.at(0), RepModOpTable, std::size(RepModOpTable), &BaseOpsLambda().at(0));
 
+  IR::InstallToTable(Table, IR::OpDispatch_SecondaryRepModTables);
   return Table;
 }();
 
@@ -383,7 +387,7 @@ std::array<X86InstInfo, MAX_REPNE_MOD_TABLE_SIZE> RepNEModOps = []() consteval {
     {0x2E, 2, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                                         0, nullptr}},
 
     {0x30, 16, X86InstInfo{"",         TYPE_COPY_OTHER, FLAGS_NONE,                                                      0, nullptr}},
-    {0x40, 16, X86InstInfo{"",         TYPE_COPY_OTHER, FLAGS_NONE,                                                      0, nullptr}},
+    {0x40, 16, X86InstInfo{"",         TYPE_INVALID, FLAGS_NONE,                                                         0, nullptr}},
 
     {0x50, 1, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                                         0, nullptr}},
     {0x51, 1, X86InstInfo{"SQRTSD",    TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS, 0, nullptr}},
@@ -440,6 +444,7 @@ std::array<X86InstInfo, MAX_REPNE_MOD_TABLE_SIZE> RepNEModOps = []() consteval {
 
   GenerateTableWithCopy(&Table.at(0), RepNEModOpTable,   std::size(RepNEModOpTable), &BaseOpsLambda().at(0));
 
+  IR::InstallToTable(Table, IR::OpDispatch_SecondaryRepNEModTables);
   return Table;
 }();
 
@@ -595,6 +600,7 @@ std::array<X86InstInfo, MAX_OPSIZE_MOD_TABLE_SIZE> OpSizeModOps = []() consteval
 
   GenerateTableWithCopy(&Table.at(0), OpSizeModOpTable, std::size(OpSizeModOpTable), &BaseOpsLambda().at(0));
 
+  IR::InstallToTable(Table, IR::OpDispatch_SecondaryOpSizeModTables);
   return Table;
 }();
 
@@ -620,12 +626,16 @@ void InitializeSecondaryTables(Context::OperatingMode Mode) {
     LateInitCopyTable(&RepModOps.at(0), TwoByteOpTable_64, std::size(TwoByteOpTable_64));
     LateInitCopyTable(&RepNEModOps.at(0), TwoByteOpTable_64, std::size(TwoByteOpTable_64));
     LateInitCopyTable(&OpSizeModOps.at(0), TwoByteOpTable_64, std::size(TwoByteOpTable_64));
+
+    IR::InstallToTable(SecondBaseOps, IR::OpDispatch_TwoByteOpTable_64);
   }
   else {
     LateInitCopyTable(&SecondBaseOps.at(0), TwoByteOpTable_32, std::size(TwoByteOpTable_32));
     LateInitCopyTable(&RepModOps.at(0), TwoByteOpTable_32, std::size(TwoByteOpTable_32));
     LateInitCopyTable(&RepNEModOps.at(0), TwoByteOpTable_32, std::size(TwoByteOpTable_32));
     LateInitCopyTable(&OpSizeModOps.at(0), TwoByteOpTable_32, std::size(TwoByteOpTable_32));
+
+    IR::InstallToTable(SecondBaseOps, IR::OpDispatch_TwoByteOpTable_32);
   }
 }
 

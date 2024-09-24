@@ -6,6 +6,7 @@ $end_info$
 */
 
 #include "Interface/Core/X86Tables/X86Tables.h"
+#include "Interface/Core/OpcodeDispatcher/SecondaryGroupTables.h"
 
 #include <iterator>
 #include <stdint.h>
@@ -488,7 +489,15 @@ std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> SecondInstGroupOps = [
 #undef OPD
 
   GenerateTable(&Table.at(0), SecondaryExtensionOpTable, std::size(SecondaryExtensionOpTable));
+
+  IR::InstallToTable(Table, IR::OpDispatch_SecondaryGroupTables);
   return Table;
 }();
+
+void InitializeSecondaryGroupTables(Context::OperatingMode Mode) {
+  if (Mode == Context::MODE_64BIT) {
+    IR::InstallToTable(SecondInstGroupOps, IR::OpDispatch_SecondaryGroupTables_64);
+  }
+}
 
 }
