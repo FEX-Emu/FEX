@@ -50,7 +50,7 @@ endfunction()
 GenerateInterpreter(FEXLoader 0)
 GenerateInterpreter(FEXInterpreter 1)
 
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+if (_M_ARM_64)
   if (NOT USE_LEGACY_BINFMTMISC)
     # Just restart the systemd service
     add_custom_target(binfmt_misc
