@@ -40,8 +40,6 @@ public:
   virtual ~SignalDelegator() = default;
 
   struct SignalDelegatorConfig {
-    bool SupportsAVX {};
-
     // Dispatcher information
     uint64_t DispatcherBegin;
     uint64_t DispatcherEnd;

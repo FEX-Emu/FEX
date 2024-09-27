@@ -498,16 +498,18 @@ int main(int argc, char** argv, char** const envp) {
   // System allocator is now system allocator or FEX
   FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
 
+  bool SupportsAVX {};
   fextl::unique_ptr<FEXCore::Context::Context> CTX;
   {
     auto HostFeatures = FEX::FetchHostFeatures();
     CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);
+    SupportsAVX = HostFeatures.SupportsAVX;
   }
 
   // Setup TSO hardware emulation immediately after initializing the context.
   FEX::TSO::SetupTSOEmulation(CTX.get());
 
-  auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get(), Program.ProgramName);
+  auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get(), Program.ProgramName, SupportsAVX);
 
   auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get()) :
                                                FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), std::move(Allocator));
