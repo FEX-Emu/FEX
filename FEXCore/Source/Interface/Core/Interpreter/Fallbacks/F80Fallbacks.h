@@ -322,8 +322,11 @@ struct OpHandlers<IR::OP_F64FYL2X> {
 template<>
 struct OpHandlers<IR::OP_F64SCALE> {
   static double handle(uint16_t FCW, double src1, double src2) {
-    double trunc = (double)(int64_t)(src2); // truncate
-    return src1 * exp2(trunc);
+    if (src1 == 0.0) { // src1 might be +/- zero
+      return src1;     // this will return negative or positive zero if when appropriate
+    }
+    double trun = trunc(src2);
+    return src1 * exp2(trun);
   }
 };
 

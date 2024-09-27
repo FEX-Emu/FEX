@@ -262,6 +262,10 @@ struct FEX_PACKED X80SoftFloat {
 
     return Result;
 #else
+    extFloat80_t Zero {0, 0};
+    if (extF80_eq(state, lhs, Zero)) {
+      return lhs;
+    }
     X80SoftFloat Int = FRNDINT(state, rhs, softfloat_round_minMag);
     LIBRARY_PRECISION Src2_d = Int.ToFMax(state);
     Src2_d = exp2l(Src2_d);
