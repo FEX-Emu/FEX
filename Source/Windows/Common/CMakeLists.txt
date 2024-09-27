@@ -1,4 +1,4 @@
-add_library(CommonWindows STATIC CPUFeatures.cpp InvalidationTracker.cpp Logging.cpp)
+add_library(CommonWindows STATIC CPUFeatures.cpp InvalidationTracker.cpp Logging.cpp LoadConfig.S)
 add_subdirectory(CRT)
 add_subdirectory(WinAPI)
 target_link_libraries(CommonWindows FEXCore_Base)

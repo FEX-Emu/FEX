@@ -9,35 +9,41 @@
 #define EXPORT_SYM(x) .globl x; x:
 #define SYM(x) x
 
+.text
+.balign ALIGN
+#ifdef __arm64ec__
 /*
 Calls to this are synthesized by the linker when calling into import libraries,
 this is referred to as an 'Adjustor Thunk' in ARM64EC documentation.
 */
-.text
-.balign ALIGN
 EXPORT_SYM(__icall_helper_arm64ec)
 .seh_proc "__icall_helper_arm64ec"
-  stp    fp,   lr, [sp, #-16]!
+  stp  fp,   lr, [sp, #-16]!
 .seh_save_fplr_x 16
-  mov    fp,   sp
+  mov  fp,   sp
 .seh_set_fp
 .seh_endprologue
-  adrp    x16, __os_arm64x_check_icall
-  ldr       x16, [x16, #:lo12:__os_arm64x_check_icall]
-  blr    x16
+  adrp x16, __os_arm64x_check_icall
+  ldr  x16, [x16, #:lo12:__os_arm64x_check_icall]
+  blr  x16
 .seh_startepilogue
-  ldp    fp,  lr,  [sp], #16
+  ldp  fp,  lr,  [sp], #16
 .seh_save_fplr_x 16
 .seh_endepilogue
-  br    x11
+  br   x11
 .seh_endproc
+#endif
 
+SYM(__guard_check_icall_dummy):
+  ret
+
+.section  .00cfg, "dr"
+.balign ALIGN
+#ifdef __arm64ec__
 /*
 These symbols are updated at runtime by the dynamic linker to point to emulator
 helper routines.
 */
-.section  .00cfg, "dr"
-.balign ALIGN
 EXPORT_SYM(__os_arm64x_dispatch_call_no_redirect)
   PTR 0
 EXPORT_SYM(__os_arm64x_dispatch_ret)
@@ -78,7 +84,11 @@ EXPORT_SYM(__os_arm64x_helper7)
   PTR 0
 EXPORT_SYM(__os_arm64x_helper8)
   PTR 0
+#endif
+EXPORT_SYM(__guard_check_icall_fptr)
+  PTR SYM(__guard_check_icall_dummy)
 
+#ifdef __arm64ec__
 /*
 This structure is read at runtime by the dynamic linker on ARM64EC to configure
 metadata necessary for EC code to interface with x86_64 code.
@@ -116,6 +126,7 @@ EXPORT_SYM(__chpe_metadata)
   .4byte __os_arm64x_helper6@IMGREL
   .4byte __os_arm64x_helper7@IMGREL
   .4byte __os_arm64x_helper8@IMGREL
+#endif
 
 .section  .rdata,"dr"
 .globl  SYM(_load_config_used)
@@ -141,21 +152,23 @@ SYM(_load_config_used):
   PTR  0 /* SecurityCookie */
   PTR  0 /* SEHandlerTable */
   PTR  0 /* SEHandlerCount */
-  PTR  0 /* GuardCFCheckFunction */
+  PTR  SYM(__guard_check_icall_fptr) /* GuardCFCheckFunction */
   PTR  0 /* GuardCFCheckDispatch */
-  PTR  0 /* GuardCFFunctionTable */
-  PTR  0 /* GuardCFFunctionCount */
-  .4byte  0 /* GuardFlags */
+  PTR  SYM(__guard_fids_table) /* GuardCFFunctionTable */
+  PTR  SYM(__guard_fids_count) /* GuardCFFunctionCount */
+  .4byte  SYM(__guard_flags) /* GuardFlags */
   .2byte  0 /* CodeIntegrity_Flags */
   .2byte  0 /* CodeIntegrity_Catalog */
   .4byte  0 /* CodeIntegrity_CatalogOffset */
   .4byte  0 /* CodeIntegrity_Reserved */
-  PTR  0 /* GuardAddressTakenIatEntryTable */
-  PTR  0 /* GuardAddressTakenIatEntryCount */
-  PTR  0 /* GuardLongJumpTargetTable */
-  PTR  0 /* GuardLongJumpTargetCount */
+  PTR  SYM(__guard_iat_table) /* GuardAddressTakenIatEntryTable */
+  PTR  SYM(__guard_iat_count) /* GuardAddressTakenIatEntryCount */
+  PTR  SYM(__guard_longjmp_table) /* GuardLongJumpTargetTable */
+  PTR  SYM(__guard_longjmp_count) /* GuardLongJumpTargetCount */
   PTR  0 /* DynamicValueRelocTable */
+#ifdef __arm64ec__
   PTR  SYM(__chpe_metadata) /* CHPEMetadataPointer */
+#endif
   PTR  0 /* GuardRFFailureRoutine */
   PTR  0 /* GuardRFFailureRoutineFunctionPointer */
   .4byte  0 /* DynamicValueRelocTableOffset */
@@ -166,8 +179,8 @@ SYM(_load_config_used):
   .4byte  0 /* Reserved3 */
   PTR  0 /* EnclaveConfigurationPointer */
   PTR  0 /* VolatileMetadataPointer */
-  PTR  0 /* GuardEHContinuationTable */
-  PTR  0 /* GuardEHContinuationCount */
+  PTR SYM(__guard_eh_cont_table) /* GuardEHContinuationTable */
+  PTR SYM(__guard_eh_cont_count) /* GuardEHContinuationCount */
   PTR  0 /* GuardXFGCheckFunctionPointer */
   PTR  0 /* GuardXFGDispatchFunctionPointer */
   PTR  0 /* GuardXFGTableDispatchFunctionPointer */
