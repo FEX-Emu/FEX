@@ -76,6 +76,10 @@ template<>
 struct fex_gen_type<VkDeviceOrHostAddressConstKHR> : fexgen::assume_compatible_data_layout {};
 template<>
 struct fex_gen_type<VkPerformanceValueDataINTEL> : fexgen::assume_compatible_data_layout {};
+template<>
+struct fex_gen_type<VkIndirectExecutionSetInfoEXT> : fexgen::assume_compatible_data_layout {};
+template<>
+struct fex_gen_type<VkIndirectCommandsTokenDataEXT> : fexgen::assume_compatible_data_layout {};
 #endif
 
 // Explicitly register types that are only ever referenced through nested pointers
@@ -829,6 +833,16 @@ struct fex_gen_config<vkGetDeviceImageSubresourceLayoutKHR> {};
 template<>
 struct fex_gen_config<vkGetImageSubresourceLayout2KHR> {};
 template<>
+struct fex_gen_config<vkCreatePipelineBinariesKHR> {};
+template<>
+struct fex_gen_config<vkDestroyPipelineBinaryKHR> {};
+template<>
+struct fex_gen_config<vkGetPipelineKeyKHR> {};
+template<>
+struct fex_gen_config<vkGetPipelineBinaryDataKHR> {};
+template<>
+struct fex_gen_config<vkReleaseCapturedPipelineDataKHR> {};
+template<>
 struct fex_gen_config<vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR> {};
 template<>
 struct fex_gen_config<vkCmdSetLineStippleKHR> {};
@@ -1329,6 +1343,8 @@ struct fex_gen_config<vkBindOpticalFlowSessionImageNV> {};
 template<>
 struct fex_gen_config<vkCmdOpticalFlowExecuteNV> {};
 template<>
+struct fex_gen_config<vkAntiLagUpdateAMD> {};
+template<>
 struct fex_gen_config<vkCreateShadersEXT> {};
 template<>
 struct fex_gen_config<vkDestroyShaderEXT> {};
@@ -1336,6 +1352,8 @@ template<>
 struct fex_gen_config<vkGetShaderBinaryDataEXT> {};
 template<>
 struct fex_gen_config<vkCmdBindShadersEXT> {};
+template<>
+struct fex_gen_config<vkCmdSetDepthClampRangeEXT> {};
 template<>
 struct fex_gen_config<vkGetFramebufferTilePropertiesQCOM> {};
 template<>
@@ -1352,6 +1370,24 @@ template<>
 struct fex_gen_config<vkQueueNotifyOutOfBandNV> {};
 template<>
 struct fex_gen_config<vkCmdSetAttachmentFeedbackLoopEnableEXT> {};
+template<>
+struct fex_gen_config<vkGetGeneratedCommandsMemoryRequirementsEXT> {};
+template<>
+struct fex_gen_config<vkCmdPreprocessGeneratedCommandsEXT> {};
+template<>
+struct fex_gen_config<vkCmdExecuteGeneratedCommandsEXT> {};
+template<>
+struct fex_gen_config<vkCreateIndirectCommandsLayoutEXT> {};
+template<>
+struct fex_gen_config<vkDestroyIndirectCommandsLayoutEXT> {};
+template<>
+struct fex_gen_config<vkCreateIndirectExecutionSetEXT> {};
+template<>
+struct fex_gen_config<vkDestroyIndirectExecutionSetEXT> {};
+template<>
+struct fex_gen_config<vkUpdateIndirectExecutionSetPipelineEXT> {};
+template<>
+struct fex_gen_config<vkUpdateIndirectExecutionSetShaderEXT> {};
 template<>
 struct fex_gen_config<vkCreateAccelerationStructureKHR> {};
 template<>
