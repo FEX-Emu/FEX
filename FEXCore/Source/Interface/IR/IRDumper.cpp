@@ -254,6 +254,10 @@ static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView
   }
 }
 
+static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView* IR, FEXCore::IR::ThunkABIFlags Arg) {
+  *out << FEXCore::ToUnderlying(Arg);
+}
+
 void Dump(fextl::stringstream* out, const IRListView* IR, IR::RegisterAllocationData* RAData) {
   auto HeaderOp = IR->GetHeader();
 

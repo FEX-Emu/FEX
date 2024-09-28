@@ -66,6 +66,7 @@ enum class CallbackStrategy {
 struct Annotations {
   bool custom_host_impl = false;
   bool custom_guest_entrypoint = false;
+  bool inregister_abi = false;
 
   bool returns_guest_pointer = false;
 
@@ -74,7 +75,7 @@ struct Annotations {
   CallbackStrategy callback_strategy = CallbackStrategy::Default;
 };
 
-static Annotations GetAnnotations(clang::ASTContext& context, clang::CXXRecordDecl* decl) {
+static Annotations GetAnnotations(clang::ASTContext& context, clang::CXXRecordDecl* decl, bool is_32bit) {
   ErrorReporter report_error {context};
   Annotations ret;
 
@@ -88,6 +89,8 @@ static Annotations GetAnnotations(clang::ASTContext& context, clang::CXXRecordDe
       ret.callback_strategy = CallbackStrategy::Stub;
     } else if (annotation == "fexgen::custom_guest_entrypoint") {
       ret.custom_guest_entrypoint = true;
+    } else if (annotation == "fexgen::inregister_abi") {
+      ret.inregister_abi = !is_32bit;
     } else {
       throw report_error(base.getSourceRange().getBegin(), "Unknown annotation");
     }
@@ -339,7 +342,7 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
         if (auto emitted_function = llvm::dyn_cast<clang::FunctionDecl>(template_args[0].getAsDecl())) {
           auto return_type = emitted_function->getReturnType();
 
-          const auto annotations = GetAnnotations(context, decl);
+          const auto annotations = GetAnnotations(context, decl, guest_abi.pointer_size == 4);
           if (return_type->isFunctionPointerType() && !annotations.returns_guest_pointer) {
             throw report_error(template_arg_loc, "Function pointer return types require explicit annotation\n");
           }
@@ -353,6 +356,7 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
           data.decl = emitted_function;
 
           data.custom_host_impl = annotations.custom_host_impl;
+          data.inregister_abi = annotations.inregister_abi;
 
           data.param_annotations = param_annotations[emitted_function];
 
@@ -486,7 +490,8 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
 
           thunked_api.push_back(ThunkedAPIFunction {(const FunctionParams&)data, data.function_name, data.return_type,
                                                     namespace_info.host_loader.empty() ? "dlsym_default" : namespace_info.host_loader,
-                                                    data.is_variadic || annotations.custom_guest_entrypoint, data.is_variadic, std::nullopt});
+                                                    data.is_variadic || annotations.custom_guest_entrypoint, data.inregister_abi,
+                                                    data.is_variadic, std::nullopt});
           if (namespace_info.generate_guest_symtable) {
             thunked_api.back().symtable_namespace = namespace_idx;
           }

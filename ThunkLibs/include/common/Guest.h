@@ -18,15 +18,30 @@ template<typename signature>
 THUNK_ABI const int (*fexthunks_invoke_callback)(void*);
 
 #ifndef _M_ARM_64
-#define MAKE_THUNK(lib, name, hash)                                                                    \
-  extern "C" __attribute__((visibility("hidden"))) THUNK_ABI int fexthunks_##lib##_##name(void* args); \
-  asm(".text\nfexthunks_" #lib "_" #name ":\n.byte 0xF, 0x3F\n.byte " hash);
+#define MAKE_THUNK_ABI_IMPL(lib, name, hash, abi)                                                             \
+  __attribute__((noinline, naked, visibility("hidden"))) THUNK_ABI int fexthunks_##lib##_##name(void* args) { \
+    asm(".byte 0xF, 0x3F;\n" /* Instruction */                                                                \
+        ".byte " hash ";\n"  /* Hash */                                                                       \
+        ".long %c[ABI];\n"   /* FEXCore::IR::ThunkABIFlags */                                                 \
+        ::[ABI] "i"(abi));                                                                                    \
+  }
 
-#define MAKE_CALLBACK_THUNK(name, signature, hash)                                             \
-  extern "C" __attribute__((visibility("hidden"))) THUNK_ABI int fexthunks_##name(void* args); \
-  asm(".text\nfexthunks_" #name ":\n.byte 0xF, 0x3F\n.byte " hash);                            \
-  template<>                                                                                   \
+#define MAKE_THUNK_ABI(lib, name, hash, abi) MAKE_THUNK_ABI_IMPL(lib, name, hash, abi)
+#define MAKE_THUNK(lib, name, hash) MAKE_THUNK_ABI_IMPL(lib, name, hash, 0)
+
+#define MAKE_CALLBACK_THUNK_ABI(name, signature, hash, abi)                                           \
+  extern "C" {                                                                                        \
+  __attribute__((noinline, naked, visibility("hidden"))) THUNK_ABI int fexthunks_##name(void* args) { \
+    asm(".byte 0xF, 0x3F;\n" /* Instruction */                                                        \
+        ".byte " hash ";\n"  /* Hash */                                                               \
+        ".long %c[ABI];\n"   /* FEXCore::IR::ThunkABIFlags */                                         \
+        ::[ABI] "i"(abi));                                                                            \
+  }                                                                                                   \
+  }                                                                                                   \
+  template<>                                                                                          \
   THUNK_ABI inline constexpr int (*fexthunks_invoke_callback<signature>)(void*) = fexthunks_##name;
+
+#define MAKE_CALLBACK_THUNK(lib, name, hash) MAKE_CALLBACK_THUNK_ABI(lib, name, hash, 0)
 
 #else
 // We're compiling for IDE integration, so provide a dummy-implementation that just calls an undefined function.
@@ -37,9 +52,21 @@ extern "C" void BROKEN_INSTALL___TRIED_LOADING_AARCH64_BUILD_OF_GUEST_THUNK();
     BROKEN_INSTALL___TRIED_LOADING_AARCH64_BUILD_OF_GUEST_THUNK(); \
     return 0;                                                      \
   }
+#define MAKE_THUNK_ABI(lib, name, abi, hash)                       \
+  extern "C" int fexthunks_##lib##_##name(void* args) {            \
+    BROKEN_INSTALL___TRIED_LOADING_AARCH64_BUILD_OF_GUEST_THUNK(); \
+    return 0;                                                      \
+  }
+
 #define MAKE_CALLBACK_THUNK(name, signature, hash) \
   extern "C" int fexthunks_##name(void* args);     \
   template<>                                       \
+  inline constexpr int (*fexthunks_invoke_callback<signature>)(void*) = fexthunks_##name;
+
+
+#define MAKE_CALLBACK_THUNK_ABI(name, signature, hash, abi) \
+  extern "C" int fexthunks_##name(void* args);              \
+  template<>                                                \
   inline constexpr int (*fexthunks_invoke_callback<signature>)(void*) = fexthunks_##name;
 #endif
 

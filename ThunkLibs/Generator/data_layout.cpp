@@ -19,7 +19,8 @@ public:
 };
 
 AnalyzeDataLayoutAction::AnalyzeDataLayoutAction(ABI& abi_)
-  : type_abi(abi_) {}
+  : AnalysisAction(abi_)
+  , type_abi(abi_) {}
 
 std::unordered_map<const clang::Type*, TypeInfo>
 ComputeDataLayout(const clang::ASTContext& context, const std::unordered_map<const clang::Type*, AnalysisAction::RepackedType>& types) {

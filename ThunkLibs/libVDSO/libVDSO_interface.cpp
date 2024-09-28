@@ -14,7 +14,7 @@ struct fex_gen_config<time> {};
 template<>
 struct fex_gen_config<gettimeofday> {};
 template<>
-struct fex_gen_config<clock_gettime> {};
+struct fex_gen_config<clock_gettime> : fexgen::inregister_abi {};
 template<>
 struct fex_gen_config<clock_getres> {};
 template<>

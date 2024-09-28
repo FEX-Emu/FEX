@@ -308,27 +308,53 @@ DEF_OP(InlineSyscall) {
 
 DEF_OP(Thunk) {
   auto Op = IROp->C<IR::IROp_Thunk>();
-  // Arguments are passed as follows:
-  // X0: CTX
-  // X1: Args (from guest stack)
-
   SpillStaticRegs(TMP1); // spill to ctx before ra64 spill
 
   PushDynamicRegsAndLR(TMP1);
 
-  mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, GetReg(Op->ArgPtr.ID()));
-
   auto thunkFn = static_cast<Context::ContextImpl*>(ThreadState->CTX)->ThunkHandler->LookupThunk(Op->ThunkNameHash);
-  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, (uintptr_t)thunkFn);
-  if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-    GenerateIndirectRuntimeCall<void, void*, void*>(ARMEmitter::Reg::r2);
+
+  if ((Op->Flags & IR::ThunkABIFlags::ABI_InRegister) == IR::ThunkABIFlags::ABI_InRegister) {
+    for (size_t i = 0; i < 6; ++i) {
+      if (FEXCore::ToUnderlying(Op->Flags) & (FEXCore::ToUnderlying(IR::ThunkABIFlags::GPR_Arg0) << i)) {
+        mov(ARMEmitter::Size::i64Bit, ARMEmitter::XRegister(i), GetReg(IROp->Args[Op->Arg1_Index + i].ID()));
+      }
+    }
+    for (size_t i = 0; i < 6; ++i) {
+      if (FEXCore::ToUnderlying(Op->Flags) & (FEXCore::ToUnderlying(IR::ThunkABIFlags::FPR_Arg0) << i)) {
+        mov(ARMEmitter::QRegister(i), GetVReg(IROp->Args[Op->FArg1_Index + i].ID()).Q());
+      }
+    }
+
+    LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r7, (uintptr_t)thunkFn);
+    if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+      GenerateIndirectRuntimeCall<void, void*, void*>(ARMEmitter::Reg::r7);
+    } else {
+      blr(ARMEmitter::Reg::r7);
+    }
   } else {
-    blr(ARMEmitter::Reg::r2);
+    // Arguments are passed as follows:
+    // X0: Args (from guest stack)
+    mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, GetReg(Op->RetReg.ID()));
+
+    LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, (uintptr_t)thunkFn);
+    if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+      GenerateIndirectRuntimeCall<void, void*, void*>(ARMEmitter::Reg::r1);
+    } else {
+      blr(ARMEmitter::Reg::r1);
+    }
   }
 
   PopDynamicRegsAndLR();
 
   FillStaticRegs(); // load from ctx after ra64 refill
+  if ((Op->Flags & IR::ThunkABIFlags::ABI_InRegister) == IR::ThunkABIFlags::ABI_InRegister) {
+    if ((Op->Flags & IR::ThunkABIFlags::ReturnType_GPR) == IR::ThunkABIFlags::ReturnType_GPR) {
+      mov(ARMEmitter::Size::i64Bit, GetReg(Op->RetReg.ID()), ARMEmitter::Reg::r0);
+    } else if ((Op->Flags & IR::ThunkABIFlags::ReturnType_FPR) == IR::ThunkABIFlags::ReturnType_FPR) {
+      mov(GetVReg(Op->RetReg.ID()).Q(), ARMEmitter::QReg::q0);
+    }
+  }
 }
 
 DEF_OP(ValidateCode) {

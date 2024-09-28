@@ -1,3 +1,6 @@
+#pragma once
+#include <cstdint>
+
 namespace fexgen {
 struct returns_guest_pointer {};
 struct custom_host_impl {};
@@ -50,5 +53,7 @@ struct ptr_passthrough {};
 // even if the generator can't automatically prove this. For pointers, this refers to the pointee type.
 // NOTE: In contrast to opaque_type, this allows for non-pointer members with the annotated type to be repacked automatically.
 struct assume_compatible_data_layout : type_annotation_base {};
+
+struct inregister_abi {};
 
 } // namespace fexgen
