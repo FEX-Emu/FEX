@@ -43,8 +43,8 @@ void RegisterTimer(FEX::HLE::SyscallHandler* Handler);
 void RegisterPassthrough(FEX::HLE::SyscallHandler* Handler);
 
 x32SyscallHandler::x32SyscallHandler(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* _SignalDelegation,
-                                     fextl::unique_ptr<MemAllocator> Allocator)
-  : SyscallHandler {ctx, _SignalDelegation}
+                                     FEX::HLE::ThunkHandler* ThunkHandler, fextl::unique_ptr<MemAllocator> Allocator)
+  : SyscallHandler {ctx, _SignalDelegation, ThunkHandler}
   , AllocHandler {std::move(Allocator)} {
   OSABI = FEXCore::HLE::SyscallOSABI::OS_LINUX32;
   RegisterSyscallHandlers();
@@ -91,9 +91,9 @@ void x32SyscallHandler::RegisterSyscallHandlers() {
 #endif
 }
 
-fextl::unique_ptr<FEX::HLE::SyscallHandler>
-CreateHandler(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* _SignalDelegation, fextl::unique_ptr<MemAllocator> Allocator) {
-  return fextl::make_unique<x32SyscallHandler>(ctx, _SignalDelegation, std::move(Allocator));
+fextl::unique_ptr<FEX::HLE::SyscallHandler> CreateHandler(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* _SignalDelegation,
+                                                          FEX::HLE::ThunkHandler* ThunkHandler, fextl::unique_ptr<MemAllocator> Allocator) {
+  return fextl::make_unique<x32SyscallHandler>(ctx, _SignalDelegation, ThunkHandler, std::move(Allocator));
 }
 
 } // namespace FEX::HLE::x32

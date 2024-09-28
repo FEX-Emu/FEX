@@ -4,7 +4,6 @@
 #include "FEXCore/Utils/AllocatorHooks.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Context/Context.h"
-#include "Interface/HLE/Thunks/Thunks.h"
 
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Utils/LogManager.h>

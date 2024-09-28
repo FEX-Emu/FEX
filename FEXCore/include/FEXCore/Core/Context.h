@@ -20,6 +20,7 @@ namespace FEXCore {
 class CodeLoader;
 struct HostFeatures;
 class ForkableSharedMutex;
+class ThunkHandler;
 } // namespace FEXCore
 
 namespace FEXCore::Core {
@@ -175,6 +176,7 @@ public:
 #endif
   FEX_DEFAULT_VISIBILITY virtual void SetSignalDelegator(FEXCore::SignalDelegator* SignalDelegation) = 0;
   FEX_DEFAULT_VISIBILITY virtual void SetSyscallHandler(FEXCore::HLE::SyscallHandler* Handler) = 0;
+  FEX_DEFAULT_VISIBILITY virtual void SetThunkHandler(FEXCore::ThunkHandler* Handler) = 0;
 
   FEX_DEFAULT_VISIBILITY virtual FEXCore::CPUID::FunctionResults RunCPUIDFunction(uint32_t Function, uint32_t Leaf) = 0;
   FEX_DEFAULT_VISIBILITY virtual FEXCore::CPUID::XCRResults RunXCRFunction(uint32_t Function) = 0;
@@ -212,14 +214,6 @@ public:
   FEX_DEFAULT_VISIBILITY virtual bool IsAddressInCodeBuffer(FEXCore::Core::InternalThreadState* Thread, uintptr_t Address) const = 0;
 
   /**
-   * @brief Allows the frontend to register its own thunk handlers independent of what is controlled in the backend.
-   *
-   * @param CTX A valid non-null context instance.
-   * @param Definitions A vector of thunk definitions that the frontend controls
-   */
-  FEX_DEFAULT_VISIBILITY virtual void AppendThunkDefinitions(std::span<const FEXCore::IR::ThunkDefinition> Definitions) = 0;
-
-  /**
    * @brief Informs the context if hardware TSO is supported.
    * Once hardware TSO is enabled, then TSO emulation through atomics is disabled and relies on the hardware.
    *
@@ -234,6 +228,14 @@ public:
    *
    */
   FEX_DEFAULT_VISIBILITY virtual void EnableExitOnHLT() = 0;
+
+  /**
+   * @brief Adds a new Thunk trampoline handler
+   *
+   * @param Entrypoint The guest PC that the custom thunk trampoline IR handler will be installed at.
+   * @param GuestThunkEntrypoint The thunk entrypoint that the IR handler will redirect to.
+   */
+  FEX_DEFAULT_VISIBILITY virtual void AddThunkTrampolineIRHandler(uintptr_t Entrypoint, uintptr_t GuestThunkEntrypoint) = 0;
 
 private:
 };

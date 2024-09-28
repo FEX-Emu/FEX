@@ -68,17 +68,9 @@ struct CustomIRResult {
   void* Creator;
   void* Data;
 
-  explicit operator bool() const noexcept {
-    return !lock;
-  }
-
-  CustomIRResult(std::unique_lock<std::shared_mutex>&& lock, void* Creator, void* Data)
+  CustomIRResult(void* Creator, void* Data)
     : Creator(Creator)
-    , Data(Data)
-    , lock(std::move(lock)) {}
-
-private:
-  std::unique_lock<std::shared_mutex> lock;
+    , Data(Data) {}
 };
 
 using BlockDelinkerFunc = void (*)(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record);
@@ -155,6 +147,7 @@ public:
 #endif
   void SetSignalDelegator(FEXCore::SignalDelegator* SignalDelegation) override;
   void SetSyscallHandler(FEXCore::HLE::SyscallHandler* Handler) override;
+  void SetThunkHandler(FEXCore::ThunkHandler* Handler) override;
 
   FEXCore::CPUID::FunctionResults RunCPUIDFunction(uint32_t Function, uint32_t Leaf) override;
   FEXCore::CPUID::XCRResults RunXCRFunction(uint32_t Function) override;
@@ -194,9 +187,10 @@ public:
   bool IsAddressInCodeBuffer(FEXCore::Core::InternalThreadState* Thread, uintptr_t Address) const override;
 
   // returns false if a handler was already registered
-  CustomIRResult AddCustomIREntrypoint(uintptr_t Entrypoint, CustomIREntrypointHandler Handler, void* Creator = nullptr, void* Data = nullptr);
+  std::optional<CustomIRResult>
+  AddCustomIREntrypoint(uintptr_t Entrypoint, CustomIREntrypointHandler Handler, void* Creator = nullptr, void* Data = nullptr);
 
-  void AppendThunkDefinitions(std::span<const FEXCore::IR::ThunkDefinition> Definitions) override;
+  void AddThunkTrampolineIRHandler(uintptr_t Entrypoint, uintptr_t GuestThunkEntrypoint) override;
 
 public:
   friend class FEXCore::HLE::SyscallHandler;
@@ -228,9 +222,6 @@ public:
     FEX_CONFIG_OPT(SMCChecks, SMCCHECKS);
     FEX_CONFIG_OPT(MaxInstPerBlock, MAXINST);
     FEX_CONFIG_OPT(RootFSPath, ROOTFS);
-    FEX_CONFIG_OPT(ThunkHostLibsPath, THUNKHOSTLIBS);
-    FEX_CONFIG_OPT(ThunkHostLibsPath32, THUNKHOSTLIBS32);
-    FEX_CONFIG_OPT(ThunkConfigFile, THUNKCONFIG);
     FEX_CONFIG_OPT(GlobalJITNaming, GLOBALJITNAMING);
     FEX_CONFIG_OPT(LibraryJITNaming, LIBRARYJITNAMING);
     FEX_CONFIG_OPT(BlockJITNaming, BLOCKJITNAMING);
@@ -255,7 +246,7 @@ public:
   FEXCore::CPUIDEmu CPUID;
   FEXCore::HLE::SyscallHandler* SyscallHandler {};
   FEXCore::HLE::SourcecodeResolver* SourcecodeResolver {};
-  fextl::unique_ptr<FEXCore::ThunkHandler> ThunkHandler;
+  FEXCore::ThunkHandler* ThunkHandler {};
   fextl::unique_ptr<FEXCore::CPU::Dispatcher> Dispatcher;
 
   FEXCore::Context::ExitHandler CustomExitHandler;

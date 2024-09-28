@@ -7,7 +7,8 @@ $end_info$
 */
 #include "Interface/Context/Context.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
-#include "Interface/HLE/Thunks/Thunks.h"
+
+#include <FEXCore/Core/Thunks.h>
 
 namespace FEXCore::CPU {
 

@@ -19,7 +19,6 @@ $end_info$
 #include "Interface/Core/JIT/JITCore.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/X86Tables/X86Tables.h"
-#include "Interface/HLE/Thunks/Thunks.h"
 #include "Interface/IR/IR.h"
 #include "Interface/IR/IREmitter.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
@@ -34,6 +33,7 @@ $end_info$
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/SignalDelegator.h>
+#include <FEXCore/Core/Thunks.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/HLE/SyscallHandler.h>
@@ -346,7 +346,6 @@ bool ContextImpl::InitCore() {
   SignalDelegation->SetConfig(SignalConfig);
 
 #ifndef _WIN32
-  ThunkHandler = FEXCore::ThunkHandler::Create();
 #elif !defined(_M_ARM64EC)
   // WOW64 always needs the interrupt fault check to be enabled.
   Config.NeedsPendingInterruptFaultCheck = true;
@@ -386,9 +385,6 @@ void ContextImpl::ExecuteThread(FEXCore::Core::InternalThreadState* Thread) {
 
 void ContextImpl::InitializeThreadTLSData(FEXCore::Core::InternalThreadState* Thread) {
   // Let's do some initial bookkeeping here
-  if (ThunkHandler) {
-    ThunkHandler->RegisterTLSState(Thread);
-  }
 #ifndef _WIN32
   Alloc::OSAllocator::RegisterTLSData(Thread);
 #endif
@@ -982,7 +978,8 @@ void ContextImpl::ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState* Thre
   Thread->LookupCache->Erase(Thread->CurrentFrame, GuestRIP);
 }
 
-CustomIRResult ContextImpl::AddCustomIREntrypoint(uintptr_t Entrypoint, CustomIREntrypointHandler Handler, void* Creator, void* Data) {
+std::optional<CustomIRResult>
+ContextImpl::AddCustomIREntrypoint(uintptr_t Entrypoint, CustomIREntrypointHandler Handler, void* Creator, void* Data) {
   LOGMAN_THROW_A_FMT(Config.Is64BitMode || !(Entrypoint >> 32), "64-bit Entrypoint in 32-bit mode {:x}", Entrypoint);
 
   std::unique_lock lk(CustomIRMutex);
@@ -992,10 +989,50 @@ CustomIRResult ContextImpl::AddCustomIREntrypoint(uintptr_t Entrypoint, CustomIR
 
   if (!InsertedIterator.second) {
     const auto& [fn, Creator, Data] = InsertedIterator.first->second;
-    return CustomIRResult(std::move(lk), Creator, Data);
-  } else {
-    lk.unlock();
-    return CustomIRResult(std::move(lk), 0, 0);
+    return CustomIRResult(Creator, Data);
+  }
+
+  return std::nullopt;
+}
+
+void ContextImpl::AddThunkTrampolineIRHandler(uintptr_t Entrypoint, uintptr_t GuestThunkEntrypoint) {
+  LOGMAN_THROW_AA_FMT(Entrypoint, "Tried to link null pointer address to guest function");
+  LOGMAN_THROW_AA_FMT(GuestThunkEntrypoint, "Tried to link address to null pointer guest function");
+  if (!Config.Is64BitMode) {
+    LOGMAN_THROW_AA_FMT((Entrypoint >> 32) == 0, "Tried to link 64-bit address in 32-bit mode");
+    LOGMAN_THROW_AA_FMT((GuestThunkEntrypoint >> 32) == 0, "Tried to link 64-bit address in 32-bit mode");
+  }
+
+  LogMan::Msg::DFmt("Thunks: Adding guest trampoline from address {:#x} to guest function {:#x}", Entrypoint, GuestThunkEntrypoint);
+
+  auto Result = AddCustomIREntrypoint(
+    Entrypoint,
+    [this, GuestThunkEntrypoint](uintptr_t Entrypoint, FEXCore::IR::IREmitter* emit) {
+    auto IRHeader = emit->_IRHeader(emit->Invalid(), Entrypoint, 0, 0);
+    auto Block = emit->CreateCodeNode();
+    IRHeader.first->Blocks = emit->WrapNode(Block);
+    emit->SetCurrentCodeBlock(Block);
+
+    const uint8_t GPRSize = GetGPRSize();
+
+    if (GPRSize == 8) {
+      emit->_StoreRegister(emit->_Constant(Entrypoint), X86State::REG_R11, IR::GPRClass, GPRSize);
+    } else {
+      emit->_StoreContext(GPRSize, IR::FPRClass, emit->_VCastFromGPR(8, 8, emit->_Constant(Entrypoint)), offsetof(Core::CPUState, mm[0][0]));
+    }
+    emit->_ExitFunction(emit->_Constant(GuestThunkEntrypoint));
+    },
+    ThunkHandler, (void*)GuestThunkEntrypoint);
+
+  if (Result.has_value()) {
+    if (Result->Creator != ThunkHandler) {
+      ERROR_AND_DIE_FMT("Input address for AddThunkTrampoline is already linked by another module");
+    }
+    if (Result->Data != (void*)GuestThunkEntrypoint) {
+      // NOTE: This may happen in Vulkan thunks if the Vulkan driver resolves two different symbols
+      //       to the same function (e.g. vkGetPhysicalDeviceFeatures2/vkGetPhysicalDeviceFeatures2KHR)
+      LogMan::Msg::EFmt("Input address for AddThunkTrampoline is already linked elsewhere");
+    }
   }
 }
 
@@ -1016,12 +1053,6 @@ IR::AOTIRCacheEntry* ContextImpl::LoadAOTIRCacheEntry(const fextl::string& filen
 
 void ContextImpl::UnloadAOTIRCacheEntry(IR::AOTIRCacheEntry* Entry) {
   IRCaptureCache.UnloadAOTIRCacheEntry(Entry);
-}
-
-void ContextImpl::AppendThunkDefinitions(std::span<const FEXCore::IR::ThunkDefinition> Definitions) {
-  if (ThunkHandler) {
-    ThunkHandler->AppendThunkDefinitions(Definitions);
-  }
 }
 
 void ContextImpl::ConfigureAOTGen(FEXCore::Core::InternalThreadState* Thread, fextl::set<uint64_t>* ExternalBranches, uint64_t SectionMaxAddress) {

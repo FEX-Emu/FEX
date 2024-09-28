@@ -2,6 +2,7 @@ add_compile_options(-fno-operator-names)
 
 set (SRCS
   VDSO_Emulation.cpp
+  Thunks.cpp
   LinuxSyscalls/GdbServer.cpp
   LinuxSyscalls/EmulatedFiles/EmulatedFiles.cpp
   LinuxSyscalls/FaultSafeUserMemAccess.cpp
