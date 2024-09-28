@@ -47,6 +47,8 @@ VERSION {
     clock_getres;
     __vdso_getcpu;
     getcpu;
+    __vdso_getrandom;
+    getrandom;
   local: *;
   };
 }

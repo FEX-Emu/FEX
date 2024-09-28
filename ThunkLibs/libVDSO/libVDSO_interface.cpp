@@ -2,6 +2,7 @@
 
 #include <sched.h>
 #include <sys/time.h>
+#include <sys/types.h>
 #include <time.h>
 
 #include "Types.h"
@@ -24,4 +25,8 @@ struct fex_gen_config<getcpu> {};
 extern int clock_gettime64(clockid_t __clock_id, struct timespec64* __tp) __THROW;
 template<>
 struct fex_gen_config<clock_gettime64> {};
+#else
+extern ssize_t getrandom(void* buffer, size_t len, uint32_t flags, void* opaque_state, size_t opaque_len);
+template<>
+struct fex_gen_config<getrandom> {};
 #endif

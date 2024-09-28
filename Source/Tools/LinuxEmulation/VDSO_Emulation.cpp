@@ -28,12 +28,14 @@ namespace VDSOHandlers {
   using ClockGetTimeType = decltype(::clock_gettime)*;
   using ClockGetResType = decltype(::clock_getres)*;
   using GetCPUType = decltype(FHU::Syscalls::getcpu)*;
+  using GetRandomType = ssize_t (*)(void*, size_t, uint32_t, void*, size_t);
 
   TimeType TimePtr;
   GetTimeOfDayType GetTimeOfDayPtr;
   ClockGetTimeType ClockGetTimePtr;
   ClockGetResType ClockGetResPtr;
   GetCPUType GetCPUPtr;
+  GetRandomType GetRandomPtr;
 } // namespace VDSOHandlers
 
 using HandlerPtr = void (*)(void*);
@@ -99,6 +101,39 @@ namespace x64 {
       int Result = FHU::Syscalls::getcpu(args->cpu, args->node);
       args->rv = SyscallRet(Result);
     }
+
+    static void getrandom(void* ArgsRV) {
+      struct vgetrandom_opaque_params {
+        uint32_t size_of_opaque_state;
+        uint32_t mmap_prot;
+        uint32_t mmap_flags;
+        uint32_t reserved[13];
+      };
+      static_assert(sizeof(vgetrandom_opaque_params) == sizeof(uint32_t[16]));
+
+      struct __attribute__((packed)) ArgsRV_t {
+        void* buffer;
+        size_t len;
+        uint32_t flags;
+        vgetrandom_opaque_params* opaque_state;
+        size_t opaque_len;
+        ssize_t rv;
+      }* args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
+
+      if (args->buffer == nullptr && args->len == 0 && args->flags == 0 && args->opaque_len == ~0ULL) [[unlikely]] {
+        // Special case querying for flags
+        // Since this is the syscall implementation, we need to return valid but unused data.
+        // This will cause glibc to allocate a page of memory, but it ends up being unused.
+        args->opaque_state->size_of_opaque_state = 4096;
+        args->opaque_state->mmap_prot = PROT_NONE;
+        args->opaque_state->mmap_flags = MAP_NORESERVE | MAP_ANONYMOUS | MAP_PRIVATE;
+        args->rv = 0;
+        return;
+      }
+
+      int Result = ::syscall(SYS_getrandom, args->buffer, args->len, args->flags);
+      args->rv = SyscallRet(Result);
+    }
   } // namespace glibc
 
   namespace VDSO {
@@ -151,6 +186,19 @@ namespace x64 {
 
       args->rv = VDSOHandlers::GetCPUPtr(args->cpu, args->node);
     }
+
+    static void getrandom(void* ArgsRV) {
+      struct __attribute__((packed)) ArgsRV_t {
+        void* buffer;
+        size_t len;
+        uint32_t flags;
+        void* opaque_state;
+        size_t opaque_len;
+        ssize_t rv;
+      }* args = reinterpret_cast<ArgsRV_t*>(ArgsRV);
+
+      args->rv = VDSOHandlers::GetRandomPtr(args->buffer, args->len, args->flags, args->opaque_state, args->opaque_len);
+    }
   } // namespace VDSO
 
   HandlerPtr Handler_time = FEX::VDSO::x64::glibc::time;
@@ -158,6 +206,7 @@ namespace x64 {
   HandlerPtr Handler_clock_gettime = FEX::VDSO::x64::glibc::clock_gettime;
   HandlerPtr Handler_clock_getres = FEX::VDSO::x64::glibc::clock_getres;
   HandlerPtr Handler_getcpu = FEX::VDSO::x64::glibc::getcpu;
+  HandlerPtr Handler_getrandom = FEX::VDSO::x64::glibc::getrandom;
 } // namespace x64
 namespace x32 {
   namespace glibc {
@@ -488,9 +537,20 @@ void LoadHostVDSO() {
     x64::Handler_getcpu = x64::VDSO::getcpu;
     x32::Handler_getcpu = x32::VDSO::getcpu;
   }
+
+  SymbolPtr = VDSO.FindSymbol("__kernel_getrandom");
+  if (!SymbolPtr) {
+    SymbolPtr = VDSO.FindSymbol("__vdso_getrandom");
+  }
+
+  if (SymbolPtr) {
+    VDSOHandlers::GetRandomPtr = reinterpret_cast<VDSOHandlers::GetRandomType>(SymbolPtr);
+    x64::Handler_getrandom = x64::VDSO::getrandom;
+    // 32-bit doesn't have getrandom vdso
+  }
 }
 
-static std::array<FEXCore::IR::ThunkDefinition, 6> VDSODefinitions = {{
+static std::array<FEXCore::IR::ThunkDefinition, 7> VDSODefinitions = {{
   {
     // sha256(libVDSO:time)
     {0x37, 0x63, 0x46, 0xb0, 0x79, 0x06, 0x5f, 0x9d, 0x00, 0xb6, 0x8d, 0xfd, 0x9e, 0x4a, 0x62, 0xcd,
@@ -527,6 +587,12 @@ static std::array<FEXCore::IR::ThunkDefinition, 6> VDSODefinitions = {{
     // sha256(libVDSO:getcpu)
     {0x39, 0x83, 0x39, 0x36, 0x0f, 0x68, 0xd6, 0xfc, 0xc2, 0x3a, 0x97, 0x11, 0x85, 0x09, 0xc7, 0x25,
      0xbb, 0x50, 0x49, 0x55, 0x6b, 0x0c, 0x9f, 0x50, 0x37, 0xf5, 0x9d, 0xb0, 0x38, 0x58, 0x57, 0x12},
+    nullptr,
+  },
+  {
+    // sha256(libVDSO:getrandom)
+    {0xf8, 0x03, 0xe2, 0x70, 0xe3, 0xf1, 0xbb, 0xc1, 0x7d, 0xa7, 0x8b, 0xb3, 0x1f, 0x3e, 0xbd, 0xc6,
+     0x8a, 0x50, 0xd3, 0x4a, 0x1f, 0xb3, 0x4b, 0x7e, 0x32, 0xcb, 0x1e, 0x18, 0x3b, 0x7c, 0xeb, 0x4b},
     nullptr,
   },
 }};
@@ -702,6 +768,7 @@ VDSOMapping LoadVDSOThunks(bool Is64Bit, FEX::HLE::SyscallHandler* const Handler
     VDSODefinitions[3].ThunkFunction = FEX::VDSO::x64::Handler_clock_gettime;
     VDSODefinitions[4].ThunkFunction = FEX::VDSO::x64::Handler_clock_getres;
     VDSODefinitions[5].ThunkFunction = FEX::VDSO::x64::Handler_getcpu;
+    VDSODefinitions[6].ThunkFunction = FEX::VDSO::x64::Handler_getrandom;
   } else {
     // Set the Thunk definition pointers for x86
     VDSODefinitions[0].ThunkFunction = FEX::VDSO::x32::Handler_time;
@@ -710,6 +777,7 @@ VDSOMapping LoadVDSOThunks(bool Is64Bit, FEX::HLE::SyscallHandler* const Handler
     VDSODefinitions[3].ThunkFunction = FEX::VDSO::x32::Handler_clock_gettime64;
     VDSODefinitions[4].ThunkFunction = FEX::VDSO::x32::Handler_clock_getres;
     VDSODefinitions[5].ThunkFunction = FEX::VDSO::x32::Handler_getcpu;
+    // getrandom doesn't exist on 32-bit, so leave VDSODefinitions[6] unfilled
   }
 
   return Mapping;
@@ -730,8 +798,8 @@ uint64_t GetVSyscallEntry(const void* VDSOBase) {
   return 0;
 }
 
-const std::span<FEXCore::IR::ThunkDefinition> GetVDSOThunkDefinitions() {
-  return VDSODefinitions;
+const std::span<FEXCore::IR::ThunkDefinition> GetVDSOThunkDefinitions(bool Is64Bit) {
+  return std::span(VDSODefinitions.begin(), VDSODefinitions.end() - (Is64Bit ? 0 : 1));
 }
 
 const VDSOSigReturn& GetVDSOSymbols() {
