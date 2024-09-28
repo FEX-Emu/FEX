@@ -536,6 +536,11 @@ uint64_t FileManager::Close(int fd) {
   }
 #endif
 
+  if (fd == RootFSFD) {
+    LogMan::Msg::EFmt("Process attempting to close RootFS FD, ignoring.");
+    return 0;
+  }
+
   return ::close(fd);
 }
 
