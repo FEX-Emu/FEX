@@ -319,6 +319,7 @@ constexpr FlagInfo ClassifyConst(IROps Op) {
   case OP_STOREAF: return FlagInfo::Pack({.Write = FLAG_A, .CanEliminate = true});
 
   case OP_NZCVSELECT:
+  case OP_NZCVSELECTV:
   case OP_NZCVSELECTINCREMENT:
   case OP_NEG:
   case OP_CONDJUMP:
@@ -350,6 +351,11 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
   case OP_NZCVSELECT:
   case OP_NZCVSELECTINCREMENT: {
     auto Op = IROp->CW<IR::IROp_NZCVSelect>();
+    return FlagInfo::Pack({.Read = FlagsForCondClassType(Op->Cond)});
+  }
+
+  case OP_NZCVSELECTV: {
+    auto Op = IROp->CW<IR::IROp_NZCVSelectV>();
     return FlagInfo::Pack({.Read = FlagsForCondClassType(Op->Cond)});
   }
 

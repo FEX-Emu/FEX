@@ -1535,6 +1535,14 @@ DEF_OP(NZCVSelect) {
   }
 }
 
+DEF_OP(NZCVSelectV) {
+  auto Op = IROp->C<IR::IROp_NZCVSelectV>();
+
+  auto cc = MapCC(Op->Cond);
+  const auto SubRegSize = ConvertSubRegSizePair248(IROp);
+  fcsel(SubRegSize.Scalar, GetVReg(Node), GetVReg(Op->TrueVal.ID()), GetVReg(Op->FalseVal.ID()), cc);
+}
+
 DEF_OP(NZCVSelectIncrement) {
   auto Op = IROp->C<IR::IROp_NZCVSelectIncrement>();
 
