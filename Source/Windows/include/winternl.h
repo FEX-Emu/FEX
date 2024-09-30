@@ -4,6 +4,7 @@
 #pragma once
 
 #include_next <winternl.h>
+#include <winnt.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -468,6 +469,7 @@ void WINAPI RtlInitializeConditionVariable(RTL_CONDITION_VARIABLE*);
 NTSTATUS WINAPI RtlInitializeCriticalSection(RTL_CRITICAL_SECTION*);
 void WINAPI RtlInitializeSRWLock(RTL_SRWLOCK*);
 NTSTATUS WINAPI RtlLeaveCriticalSection(RTL_CRITICAL_SECTION*);
+void* WINAPI RtlLocateExtendedFeature(CONTEXT_EX*, ULONG, ULONG*);
 NTSTATUS WINAPI RtlMultiByteToUnicodeN(LPWSTR, DWORD, LPDWORD, LPCSTR, DWORD);
 NTSTATUS WINAPI RtlMultiByteToUnicodeSize(DWORD*, LPCSTR, ULONG);
 BOOL WINAPI RtlQueryPerformanceCounter(LARGE_INTEGER*);

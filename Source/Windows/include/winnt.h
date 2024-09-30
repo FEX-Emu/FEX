@@ -122,7 +122,24 @@ typedef struct _IMAGE_ARM64EC_CODE_RANGE_ENTRY_POINT {
   ULONG EntryPoint;
 } IMAGE_ARM64EC_CODE_RANGE_ENTRY_POINT;
 
+typedef struct _CONTEXT_CHUNK {
+  LONG Offset;
+  ULONG Length;
+} CONTEXT_CHUNK, *PCONTEXT_CHUNK;
+
+typedef struct _CONTEXT_EX {
+  CONTEXT_CHUNK All;
+  CONTEXT_CHUNK Legacy;
+  CONTEXT_CHUNK XState;
+#ifdef _WIN64
+  ULONG64 align;
+#endif
+} CONTEXT_EX, *PCONTEXT_EX;
+
 NTSYSAPI DWORD WINAPI RtlRunOnceExecuteOnce(PRTL_RUN_ONCE, PRTL_RUN_ONCE_INIT_FN, PVOID, PVOID*);
+
+// This is a FEX extension, and requires corresponding wine patches
+#define CONTEXT_ARM64_FEX_YMMSTATE (CONTEXT_ARM64 | 0x00000040)
 
 #ifdef __cplusplus
 }
