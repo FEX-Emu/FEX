@@ -804,4 +804,14 @@ void OpDispatchBuilder::X87FXAM(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(C3);
 }
 
+void OpDispatchBuilder::X87FXTRACT(OpcodeArgs) {
+  auto Top = _ReadStackValue(0);
+
+  _PopStackDestroy();
+  auto Exp = _F80XTRACT_EXP(Top);
+  auto Sig = _F80XTRACT_SIG(Top);
+  _PushStack(Exp, Exp, 80, true);
+  _PushStack(Sig, Sig, 80, true);
+}
+
 } // namespace FEXCore::IR
