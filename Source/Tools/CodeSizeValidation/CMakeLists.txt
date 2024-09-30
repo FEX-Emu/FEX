@@ -1,4 +1,4 @@
-list(APPEND LIBS FEXCore Common CommonTools)
+list(APPEND LIBS FEXCore Common CommonTools JemallocLibs)
 
 set (SRCS Main.cpp)
 add_executable(CodeSizeValidation ${SRCS})

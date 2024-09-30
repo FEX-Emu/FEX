@@ -4,7 +4,7 @@ set (TESTS
   Filesystem
   )
 
-list(APPEND LIBS FEXCore)
+list(APPEND LIBS FEXCore JemallocLibs)
 
 foreach(API_TEST ${TESTS})
   add_executable(${API_TEST} ${API_TEST}.cpp)

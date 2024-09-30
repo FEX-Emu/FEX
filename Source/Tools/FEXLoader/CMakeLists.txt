@@ -1,4 +1,4 @@
-list(APPEND LIBS FEXCore Common)
+list(APPEND LIBS FEXCore Common JemallocLibs)
 
 set (DEFINES)
 if (ENABLE_VIXL_SIMULATOR)

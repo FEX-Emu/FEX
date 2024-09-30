@@ -4,40 +4,19 @@
 #include <FEXCore/Utils/EnumOperators.h>
 #include <FEXCore/Utils/LogManager.h>
 
-#ifndef ENABLE_JEMALLOC
+#ifndef _WIN32
 #include <stdlib.h>
 #include <malloc.h>
-#endif
-
-#ifdef _WIN32
+#include <sys/mman.h>
+#else
 #define NTDDI_VERSION 0x0A000005
 #include <memoryapi.h>
-#else
-#include <sys/mman.h>
 #endif
 
 #include <new>
 #include <cstddef>
 #include <cstdint>
 #include <sys/types.h>
-
-extern "C" {
-// jemalloc defines nothrow on its internal C function signatures.
-#ifdef ENABLE_JEMALLOC
-#define JEMALLOC_NOTHROW __attribute__((nothrow))
-// Forward declare jemalloc functions so we don't need to pull in the jemalloc header in to the public API.
-FEX_DEFAULT_VISIBILITY JEMALLOC_NOTHROW extern void* je_malloc(size_t size);
-FEX_DEFAULT_VISIBILITY JEMALLOC_NOTHROW extern void* je_calloc(size_t n, size_t size);
-FEX_DEFAULT_VISIBILITY JEMALLOC_NOTHROW extern void* je_memalign(size_t align, size_t s);
-FEX_DEFAULT_VISIBILITY JEMALLOC_NOTHROW extern void* je_valloc(size_t size);
-FEX_DEFAULT_VISIBILITY JEMALLOC_NOTHROW extern int je_posix_memalign(void** r, size_t a, size_t s);
-FEX_DEFAULT_VISIBILITY JEMALLOC_NOTHROW extern void* je_realloc(void* ptr, size_t size);
-FEX_DEFAULT_VISIBILITY JEMALLOC_NOTHROW extern void je_free(void* ptr);
-FEX_DEFAULT_VISIBILITY JEMALLOC_NOTHROW extern size_t je_malloc_usable_size(void* ptr);
-FEX_DEFAULT_VISIBILITY JEMALLOC_NOTHROW extern void* je_aligned_alloc(size_t a, size_t s);
-#undef JEMALLOC_NOTHROW
-#endif
-}
 
 namespace FEXCore::Allocator {
 enum class ProtectOptions : uint32_t {
@@ -143,108 +122,23 @@ inline bool VirtualProtect(void* Ptr, size_t Size, ProtectOptions options) {
 
 #endif
 
-// Memory allocation routines aliased to jemalloc functions.
-#ifdef ENABLE_JEMALLOC
-inline void* malloc(size_t size) {
-  return ::je_malloc(size);
-}
-inline void* calloc(size_t n, size_t size) {
-  return ::je_calloc(n, size);
-}
-inline void* memalign(size_t align, size_t s) {
-  return ::je_memalign(align, s);
-}
-inline void* valloc(size_t size) {
-  return ::je_valloc(size);
-}
-inline int posix_memalign(void** r, size_t a, size_t s) {
-  return ::je_posix_memalign(r, a, s);
-}
-inline void* realloc(void* ptr, size_t size) {
-  return ::je_realloc(ptr, size);
-}
-inline void free(void* ptr) {
-  return ::je_free(ptr);
-}
-inline size_t malloc_usable_size(void* ptr) {
-  return ::je_malloc_usable_size(ptr);
-}
-inline void* aligned_alloc(size_t a, size_t s) {
-  return ::je_aligned_alloc(a, s);
-}
-inline void aligned_free(void* ptr) {
-  return ::je_free(ptr);
-}
-#elif defined(_WIN32)
-inline void* malloc(size_t size) {
-  return ::malloc(size);
-}
-inline void* calloc(size_t n, size_t size) {
-  return ::calloc(n, size);
-}
-inline void* memalign(size_t align, size_t s) {
-  return ::_aligned_malloc(s, align);
-}
-inline void* valloc(size_t size) {
-  return ::_aligned_malloc(size, 4096);
-}
-inline int posix_memalign(void** r, size_t a, size_t s) {
-  void* ptr = _aligned_malloc(s, a);
-  if (ptr) {
-    *r = ptr;
-  }
-  return errno;
-}
-inline void* realloc(void* ptr, size_t size) {
-  return ::realloc(ptr, size);
-}
-inline void free(void* ptr) {
-  return ::free(ptr);
-}
-inline size_t malloc_usable_size(void* ptr) {
-  return ::_msize(ptr);
-}
-inline void* aligned_alloc(size_t a, size_t s) {
-  return ::_aligned_malloc(s, a);
-}
-inline void aligned_free(void* ptr) {
-  return ::_aligned_free(ptr);
-}
-#else
-inline void* malloc(size_t size) {
-  return ::malloc(size);
-}
-inline void* calloc(size_t n, size_t size) {
-  return ::calloc(n, size);
-}
-inline void* memalign(size_t align, size_t s) {
-  return ::memalign(align, s);
-}
-inline void* valloc(size_t size) {
-#ifdef __ANDROID__
-  return ::aligned_alloc(4096, size);
-#else
-  return ::valloc(size);
-#endif
-}
-inline int posix_memalign(void** r, size_t a, size_t s) {
-  return ::posix_memalign(r, a, s);
-}
-inline void* realloc(void* ptr, size_t size) {
-  return ::realloc(ptr, size);
-}
-inline void free(void* ptr) {
-  return ::free(ptr);
-}
-inline size_t malloc_usable_size(void* ptr) {
-  return ::malloc_usable_size(ptr);
-}
-inline void* aligned_alloc(size_t a, size_t s) {
-  return ::aligned_alloc(a, s);
-}
-inline void aligned_free(void* ptr) {
-  return ::free(ptr);
-}
+// Memory allocation routines to be defined externally.
+// This allows to use jemalloc for emulation while using the normal allocator
+// for host tools without building FEXCore twice.
+void* malloc(size_t size);
+void* calloc(size_t n, size_t size);
+void* memalign(size_t align, size_t s);
+void* valloc(size_t size);
+int posix_memalign(void** r, size_t a, size_t s);
+void* realloc(void* ptr, size_t size);
+void free(void* ptr);
+size_t malloc_usable_size(void* ptr);
+void* aligned_alloc(size_t a, size_t s);
+void aligned_free(void* ptr);
+
+#ifndef _WIN32
+void SetJemallocMmapHook(void* (*)(void* addr, size_t length, int prot, int flags, int fd, off_t offset));
+void SetJemallocMunmapHook(int (*)(void* addr, size_t length));
 #endif
 
 struct FEXAllocOperators {

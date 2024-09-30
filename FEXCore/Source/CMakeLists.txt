@@ -193,14 +193,6 @@ else()
   endif()
 endif()
 
-if (ENABLE_JEMALLOC)
-  list (APPEND LIBS FEX_jemalloc)
-endif()
-
-if (ENABLE_JEMALLOC_GLIBC_ALLOC)
-  list (APPEND LIBS FEX_jemalloc_glibc)
-endif()
-
 # Generate config
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/Interface/Config/Config.json.in
@@ -375,3 +367,25 @@ if (NOT MINGW_BUILD)
       DESTINATION ${CMAKE_INSTALL_LIBDIR}
       COMPONENT Libraries)
 endif()
+
+# Meta-library to link jemalloc libraries enabled in the build configuration.
+# Only needed for targets that run emulation. For others, use JemallocDummy.
+add_library(JemallocLibs STATIC Utils/AllocatorHooks.cpp)
+if (ENABLE_JEMALLOC)
+  target_compile_definitions(JemallocLibs PRIVATE ENABLE_JEMALLOC=1 JEMALLOC_NO_RENAME=1)
+  target_link_libraries(JemallocLibs PUBLIC FEX_jemalloc)
+endif()
+if (ENABLE_JEMALLOC_GLIBC_ALLOC)
+  set_source_files_properties(Interface/HLE/Thunks/Thunks.cpp PROPERTIES COMPILE_DEFINITIONS ENABLE_JEMALLOC_GLIBC=1)
+  target_link_libraries(JemallocLibs INTERFACE FEX_jemalloc_glibc)
+endif()
+
+if (NOT MINGW_BUILD)
+  # Dummy project to use for host tools.
+  # This overrides use of jemalloc in FEXCore with the normal glibc allocator.
+  add_library(JemallocDummy STATIC Utils/AllocatorHooks.cpp)
+  target_include_directories(JemallocDummy PRIVATE "${PROJECT_SOURCE_DIR}/include/")
+endif()
+
+# The shared library should always link enabled jemalloc libraries
+target_link_libraries(${PROJECT_NAME}_shared JemallocLibs)

@@ -6,6 +6,7 @@ target_include_directories(FEXpidof
 target_link_libraries(FEXpidof
   PRIVATE
   cpp-optparse
+  JemallocDummy
   fmt::fmt
 )
 
