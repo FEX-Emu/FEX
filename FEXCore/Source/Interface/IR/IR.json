@@ -1530,14 +1530,16 @@
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "GPR = NZCVSelect OpSize:#ResultSize, CondClass:$Cond, GPR:$TrueVal, GPR:$FalseVal": {
-        "Desc": ["Select based on value in NZCV flags",
-                 "op:",
-                 "Dest = Cond ? TrueVal : FalseVal"
-                ],
+      "GPR = NZCVSelect OpSize:#ResultSize, CondClass:$Cond, SSA:$TrueVal, SSA:$FalseVal": {
+        "Desc": [
+          "Select based on value in NZCV flags, where TrueVal and FalseVal can be either both GPRs or both FPRs.",
+          "op:",
+          "Dest = Cond ? TrueVal : FalseVal"
+        ],
         "DestSize": "ResultSize",
         "EmitValidation": [
-          "ResultSize == FEXCore::IR::OpSize::i32Bit || ResultSize == FEXCore::IR::OpSize::i64Bit"
+          "ResultSize == FEXCore::IR::OpSize::i32Bit || ResultSize == FEXCore::IR::OpSize::i64Bit",
+          "((WalkFindRegClass($TrueVal) == GPRClass && WalkFindRegClass($FalseVal) == GPRClass) || (WalkFindRegClass($TrueVal) == FPRClass && WalkFindRegClass($FalseVal) == FPRClass))"
         ]
       },
       "GPR = NZCVSelectIncrement OpSize:#ResultSize, CondClass:$Cond, GPR:$TrueVal, GPR:$FalseVal": {

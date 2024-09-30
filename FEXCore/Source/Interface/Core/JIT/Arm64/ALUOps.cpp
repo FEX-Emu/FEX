@@ -9,6 +9,7 @@ $end_info$
 #include "FEXCore/IR/IR.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/JIT/Arm64/JITClass.h"
+#include "Interface/IR/IR.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 
 namespace FEXCore::CPU {
@@ -1508,9 +1509,17 @@ DEF_OP(Select) {
 
 DEF_OP(NZCVSelect) {
   auto Op = IROp->C<IR::IROp_NZCVSelect>();
-  const auto EmitSize = ConvertSize(IROp);
+  bool IsFPR = GetRegClass(Op->TrueVal.ID());
 
   auto cc = MapCC(Op->Cond);
+
+  if (IsFPR) {
+    const auto SubRegSize = ConvertSubRegSizePair248(IROp);
+    fcsel(SubRegSize.Scalar, GetVReg(Node), GetVReg(Op->TrueVal.ID()), GetVReg(Op->FalseVal.ID()), cc);
+    return;
+  }
+
+  const auto EmitSize = ConvertSize(IROp);
 
   uint64_t const_true, const_false;
   bool is_const_true = IsInlineConstant(Op->TrueVal, &const_true);
