@@ -1,7 +1,7 @@
 if (COMPILE_VIXL_DISASSEMBLER)
   file(GLOB_RECURSE TESTS CONFIGURE_DEPENDS *.cpp)
 
-  set (LIBS fmt::fmt vixl Catch2::Catch2WithMain FEXCore_Base)
+  set (LIBS fmt::fmt vixl Catch2::Catch2WithMain FEXCore_Base JemallocLibs)
   foreach(TEST ${TESTS})
     get_filename_component(TEST_NAME ${TEST} NAME_WLE)
     add_executable(Emitter_${TEST_NAME} ${TEST})

@@ -232,7 +232,6 @@ if (ENABLE_JEMALLOC_GLIBC_ALLOC)
   # The glibc jemalloc subproject which hooks the glibc allocator.
   # Required for thunks to work.
   # All host native libraries will use this allocator, while *most* other FEX internal allocations will use the other jemalloc allocator.
-  add_definitions(-DENABLE_JEMALLOC_GLIBC=1)
   add_subdirectory(External/jemalloc_glibc/)
 elseif (NOT MINGW_BUILD)
   message (STATUS
@@ -244,9 +243,7 @@ endif()
 
 if (ENABLE_JEMALLOC)
   # The jemalloc subproject that all FEXCore fextl objects allocate through.
-  add_definitions(-DENABLE_JEMALLOC=1)
   add_subdirectory(External/jemalloc/)
-  include_directories(External/jemalloc/pregen/include/)
 elseif (NOT MINGW_BUILD)
   message (STATUS
     " jemalloc disabled!\n"

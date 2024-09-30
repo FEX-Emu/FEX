@@ -19,23 +19,10 @@
 #include <sys/user.h>
 #endif
 
-#ifdef ENABLE_JEMALLOC
-#include <jemalloc/jemalloc.h>
-#endif
 #include <errno.h>
 #include <memory>
 #include <stddef.h>
 #include <stdint.h>
-
-extern "C" {
-typedef void* (*mmap_hook_type)(void* addr, size_t length, int prot, int flags, int fd, off_t offset);
-typedef int (*munmap_hook_type)(void* addr, size_t length);
-
-#ifdef ENABLE_JEMALLOC
-extern mmap_hook_type je___mmap_hook;
-extern munmap_hook_type je___munmap_hook;
-#endif
-}
 
 namespace fextl::pmr {
 static fextl::pmr::default_resource FEXDefaultResource;
@@ -127,19 +114,15 @@ void ReenableSBRKAllocations(void* Ptr) {
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 void SetupHooks() {
   Alloc64 = Alloc::OSAllocator::Create64BitAllocator();
-#ifdef ENABLE_JEMALLOC
-  je___mmap_hook = FEX_mmap;
-  je___munmap_hook = FEX_munmap;
-#endif
+  SetJemallocMmapHook(FEX_mmap);
+  SetJemallocMunmapHook(FEX_munmap);
   FEXCore::Allocator::mmap = FEX_mmap;
   FEXCore::Allocator::munmap = FEX_munmap;
 }
 
 void ClearHooks() {
-#ifdef ENABLE_JEMALLOC
-  je___mmap_hook = ::mmap;
-  je___munmap_hook = ::munmap;
-#endif
+  SetJemallocMmapHook(::mmap);
+  SetJemallocMunmapHook(::munmap);
   FEXCore::Allocator::mmap = ::mmap;
   FEXCore::Allocator::munmap = ::munmap;
 

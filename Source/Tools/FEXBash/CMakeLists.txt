@@ -9,6 +9,7 @@ target_link_libraries(FEXBash
   PRIVATE
     FEXCore
     Common
+    JemallocLibs
     LinuxEmulation
     ${PTHREAD_LIB}
 )

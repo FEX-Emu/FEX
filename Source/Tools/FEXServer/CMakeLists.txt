@@ -12,7 +12,7 @@ target_include_directories(${NAME} PRIVATE
   ${CMAKE_BINARY_DIR}/generated
   ${CMAKE_SOURCE_DIR}/Source/)
 
-target_link_libraries(${NAME} PRIVATE FEXCore Common ${PTHREAD_LIB})
+target_link_libraries(${NAME} PRIVATE FEXCore Common JemallocDummy ${PTHREAD_LIB})
 
 if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
   target_link_options(${NAME}
