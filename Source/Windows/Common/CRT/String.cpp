@@ -32,11 +32,11 @@ char* strdup(const char* Src) {
   return _strdup(Src);
 }
 
-float __mingw_strtof(const char* __restrict__, char** __restrict__) {
+float strtof(const char* __restrict__, char** __restrict__) {
   UNIMPLEMENTED();
 }
 
-double __mingw_strtod(const char* __restrict__, char** __restrict__) {
+double strtod(const char* __restrict__, char** __restrict__) {
   UNIMPLEMENTED();
 }
 
@@ -60,7 +60,7 @@ long double strtold(const char* __restrict__, char** __restrict__) {
   UNIMPLEMENTED();
 }
 
-double __mingw_wcstod(const wchar_t* __restrict__ _Str, wchar_t** __restrict__ _EndPtr) {
+double wcstod(const wchar_t* __restrict__ _Str, wchar_t** __restrict__ _EndPtr) {
   UNIMPLEMENTED();
 }
 
@@ -68,7 +68,7 @@ long double wcstold(const wchar_t* __restrict__, wchar_t** __restrict__) {
   UNIMPLEMENTED();
 }
 
-float __mingw_wcstof(const wchar_t* __restrict__ nptr, wchar_t** __restrict__ endptr) {
+float wcstof(const wchar_t* __restrict__ nptr, wchar_t** __restrict__ endptr) {
   UNIMPLEMENTED();
 }
 
@@ -80,8 +80,12 @@ DLLEXPORT_FUNC(unsigned __int64, _strtoui64_l, (const char* _String, char** _End
   UNIMPLEMENTED();
 }
 
-int __mingw_vsscanf(const char* __restrict__ _Str, const char* __restrict__ Format, va_list argp) {
+int __stdio_common_vsscanf(unsigned __int64 options, const char* input, size_t length, const char* format, _locale_t locale, va_list valist) {
   UNIMPLEMENTED();
+}
+
+int __stdio_common_vswprintf(unsigned __int64 options, wchar_t* str, size_t len, const wchar_t* format, _locale_t locale, va_list valist) {
+  return _vsnwprintf(str, len, format, valist);
 }
 
 int __mingw_vsnwprintf(wchar_t* __restrict__ Dest, size_t Count, const wchar_t* __restrict__ Format, va_list Args) {
@@ -94,16 +98,25 @@ int __mingw_vsprintf(char* __restrict__ Dest, const char* __restrict__ Format, v
   return ret;
 }
 
-size_t strftime(char* __restrict__ _Buf, size_t _SizeInBytes, const char* __restrict__ _Format, const struct tm* __restrict__ _Tm) {
+DLLEXPORT_FUNC(size_t, _strftime_l,
+               (char* __restrict__ Buf, size_t Max_size, const char* __restrict__ Format, const struct tm* __restrict__ Tm, _locale_t Locale)) {
   UNIMPLEMENTED();
 }
 
-int __mingw_vsnprintf(char* __restrict__ Dest, size_t Count, const char* __restrict__ Format, va_list Args) {
+int vsnprintf(char* __restrict__ Dest, size_t Count, const char* __restrict__ Format, va_list Args) {
   int ret = _vsnprintf(Dest, Count, Format, Args);
   if (ret == -1) {
     Dest[Count - 1] = '\0';
     return _vsnprintf(nullptr, 0, Format, Args);
   }
+  return ret;
+}
+
+int snprintf(char* stream, size_t n, const char* format, ...) {
+  __builtin_va_list args;
+  __builtin_va_start(args, format);
+  int ret = vsnprintf(stream, n, format, args);
+  __builtin_va_end(args);
   return ret;
 }
 
@@ -163,10 +176,6 @@ int wctob(wint_t _WCh) {
 }
 
 DLLEXPORT_FUNC(errno_t, strerror_s, (char* _Buf, size_t _SizeInBytes, int _ErrNum)) {
-  UNIMPLEMENTED();
-}
-
-DLLEXPORT_FUNC(int, _sscanf_l, (const char* buffer, const char* format, _locale_t locale, ...)) {
   UNIMPLEMENTED();
 }
 

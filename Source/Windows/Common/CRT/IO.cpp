@@ -278,31 +278,23 @@ int fclose(FILE* File) {
   return 0;
 }
 
-int fseeko64(FILE* File, _off64_t Offset, int Origin) {
+DLLEXPORT_FUNC(int, _fseeki64, (FILE * File, _off64_t Offset, int Origin)) {
   SetFilePointerEx(File->Handle, LARGE_INTEGER {.QuadPart = Offset}, nullptr, OriginToMoveMethod(Origin));
   return 0;
 }
 
-int fseeko(FILE* File, _off_t Offset, int Origin) {
-  return fseeko64(File, Offset, Origin);
-}
-
 int fseek(FILE* File, long Offset, int Origin) {
-  return fseeko64(File, Offset, Origin);
+  return _fseeki64(File, Offset, Origin);
 }
 
-_off64_t ftello64(FILE* File) {
+DLLEXPORT_FUNC(_off64_t, _ftelli64, (FILE * File)) {
   LARGE_INTEGER Res;
   SetFilePointerEx(File->Handle, LARGE_INTEGER {}, &Res, FILE_CURRENT);
   return Res.QuadPart;
 }
 
-_off_t ftello(FILE* File) {
-  return static_cast<_off_t>(ftello64(File));
-}
-
 long ftell(FILE* File) {
-  return static_cast<long>(ftello64(File));
+  return static_cast<long>(_ftelli64(File));
 }
 
 size_t fread(void* __restrict__ DstBuf, size_t ElementSize, size_t Count, FILE* __restrict__ File) {
@@ -328,7 +320,11 @@ int fflush(FILE* _File) {
   UNIMPLEMENTED();
 }
 
-int __mingw_vfprintf(FILE* __restrict__, const char* __restrict__, va_list) {
+int fprintf(FILE* __restrict__, const char* __restrict__, ...) {
+  UNIMPLEMENTED();
+}
+
+int vfprintf(FILE* __restrict__, const char* __restrict__, va_list) {
   UNIMPLEMENTED();
 }
 
@@ -345,6 +341,10 @@ wint_t fputwc(wchar_t _Ch, FILE* _File) {
 }
 
 int fputc(int _Ch, FILE* _File) {
+  UNIMPLEMENTED();
+}
+
+int fputs(const char* __restrict__ _Str, FILE* __restrict__ _File) {
   UNIMPLEMENTED();
 }
 
