@@ -1540,6 +1540,17 @@
           "ResultSize == FEXCore::IR::OpSize::i32Bit || ResultSize == FEXCore::IR::OpSize::i64Bit"
         ]
       },
+      "FPR = NZCVSelectV OpSize:#ResultSize, u8:$ElementSize, CondClass:$Cond, FPR:$TrueVal, FPR:$FalseVal": {
+        "Desc": [
+          "Select based on value in NZCV flags, where TrueVal and FalseVal are both FPRs.",
+          "op:",
+          "Dest = Cond ? TrueVal : FalseVal"
+        ],
+        "DestSize": "ResultSize",
+        "EmitValidation": [
+          "ResultSize == FEXCore::IR::OpSize::i32Bit || ResultSize == FEXCore::IR::OpSize::i64Bit"
+        ]
+      },
       "GPR = NZCVSelectIncrement OpSize:#ResultSize, CondClass:$Cond, GPR:$TrueVal, GPR:$FalseVal": {
         "Desc": ["Select and increment based on value in NZCV flags",
                  "op:",
