@@ -233,6 +233,10 @@ struct FEX_PACKED X80SoftFloat {
 
     return Result;
 #else
+    // Zero is a special case, the significand for +/- 0 is +/- zero.
+    if (lhs.Exponent == 0x0 && lhs.Significand == 0x0) {
+      return lhs;
+    }
     X80SoftFloat Tmp = lhs;
     Tmp.Exponent = 0x3FFF;
     Tmp.Sign = lhs.Sign;
@@ -256,6 +260,12 @@ struct FEX_PACKED X80SoftFloat {
 
     return Result;
 #else
+    // Zero is a special case, the exponent is always -inf
+    if (lhs.Exponent == 0x0 && lhs.Significand == 0x0) {
+      X80SoftFloat Result(1, 0x7FFFUL, 0x8000'0000'0000'0000UL);
+      return Result;
+    }
+
     int32_t TrueExp = lhs.Exponent - ExponentBias;
     return i32_to_extF80(TrueExp);
 #endif

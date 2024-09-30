@@ -3051,10 +3051,6 @@
         "DestSize": "16",
         "JITDispatch": false
       },
-      "F80XTRACTStack": {
-        "X87": true,
-        "HasSideEffects": true
-      },
       "FPR = F80XTRACT_EXP FPR:$X80Src": {
         "DestSize": "16",
         "JITDispatch": false
