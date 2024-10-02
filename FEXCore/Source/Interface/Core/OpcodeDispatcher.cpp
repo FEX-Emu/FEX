@@ -803,11 +803,6 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
   uint8_t JcxGPRSize = CTX->GetGPRSize();
   JcxGPRSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? (JcxGPRSize >> 1) : JcxGPRSize;
 
-  IRPair<IROp_Constant> TakeBranch;
-  IRPair<IROp_Constant> DoNotTakeBranch;
-  TakeBranch = _Constant(1);
-  DoNotTakeBranch = _Constant(0);
-
   uint64_t Target = Op->PC + Op->InstSize + Op->Src[0].Literal();
 
   Ref CondReg = LoadGPRRegister(X86State::REG_RCX, JcxGPRSize);
