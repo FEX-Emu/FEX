@@ -577,28 +577,32 @@ namespace DRM {
 
   void AssignDeviceTypeToFD(int fd, const drm_version& Version) {
     if (Version.name) {
-      if (strncmp(Version.name, "amdgpu", Version.name_len) == 0) {
+      const std::string_view Name(Version.name, Version.name_len);
+      if (Name == "amdgpu") {
         FDToHandler.SetFDHandler(fd, AMDGPU_Handler);
-      } else if (strncmp(Version.name, "radeon", Version.name_len) == 0) {
+      } else if (Name == "radeon") {
         FDToHandler.SetFDHandler(fd, RADEON_Handler);
-      } else if (strncmp(Version.name, "msm", Version.name_len) == 0) {
+      } else if (Name == "msm") {
         FDToHandler.SetFDHandler(fd, MSM_Handler);
-      } else if (strncmp(Version.name, "nouveau", Version.name_len) == 0) {
+      } else if (Name == "nouveau") {
         FDToHandler.SetFDHandler(fd, Nouveau_Handler);
-      } else if (strncmp(Version.name, "i915", Version.name_len) == 0) {
+      } else if (Name == "i915") {
         FDToHandler.SetFDHandler(fd, I915_Handler);
-      } else if (strncmp(Version.name, "panfrost", Version.name_len) == 0) {
+      } else if (Name == "panfrost") {
         FDToHandler.SetFDHandler(fd, Panfrost_Handler);
-      } else if (strncmp(Version.name, "lima", Version.name_len) == 0) {
+      } else if (Name == "lima") {
         FDToHandler.SetFDHandler(fd, Lima_Handler);
-      } else if (strncmp(Version.name, "vc4", Version.name_len) == 0) {
+      } else if (Name == "vc4") {
         FDToHandler.SetFDHandler(fd, VC4_Handler);
-      } else if (strncmp(Version.name, "v3d", Version.name_len) == 0) {
+      } else if (Name == "v3d") {
         FDToHandler.SetFDHandler(fd, V3D_Handler);
-      } else if (strncmp(Version.name, "virtio_gpu", Version.name_len) == 0) {
+      } else if (Name == "virtio_gpu") {
         FDToHandler.SetFDHandler(fd, Virtio_Handler);
       } else {
-        LogMan::Msg::IFmt("Unknown DRM device: '{}'. Using default passthrough", Version.name);
+        // Known safe drm drivers.
+        if (!(Name == "asahi" || Name == "panthor" || Name == "xe")) {
+          LogMan::Msg::IFmt("Unknown DRM device: '{}'. Using default passthrough", Version.name);
+        }
         FDToHandler.SetFDHandler(fd, Default_Handler);
       }
     }
