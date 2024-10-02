@@ -23,8 +23,11 @@ CursorKind.REQUIRESEXPR = CursorKind(154),
 # C++2a std::bit_cast expression.
 CursorKind.BUILTINBITCASTEXPR = CursorKind(280)
 
-# a concept declaration.
-CursorKind.CONCEPTDECL = CursorKind(604),
+try:
+    # a concept declaration.
+    CursorKind.CONCEPTDECL = CursorKind(604),
+except:
+    pass
 
 @dataclass
 class TypeDefinition:
