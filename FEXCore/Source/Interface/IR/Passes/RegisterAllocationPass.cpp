@@ -87,7 +87,7 @@ private:
   //
   // SSAToNewSSA tracks the current remapping. nullptr indicates no remapping.
   //
-  // Since its indexed by Old nodes, SSAToNewSSA does not grow.
+  // Since its indexed by Old nodes, SSAToNewSSA does not grow after allocation.
   fextl::vector<Ref> SSAToNewSSA;
 
   // Inverse of SSAToNewSSA. Since it's indexed by new nodes, it grows.
@@ -100,19 +100,27 @@ private:
   fextl::vector<PhysicalRegister> SSAToReg;
 
   bool IsOld(Ref Node) {
-    return IR->GetID(Node).Value < SSAToNewSSA.size();
+    return IR->GetID(Node).Value < PreferredReg.size();
   };
 
   // Return the New node (if it exists) for an Old node, else the Old node.
   Ref Map(Ref Old) {
     LOGMAN_THROW_A_FMT(IsOld(Old), "Pre-condition");
 
-    return SSAToNewSSA[IR->GetID(Old).Value] ?: Old;
+    if (SSAToNewSSA.empty()) {
+      return Old;
+    } else {
+      return SSAToNewSSA[IR->GetID(Old).Value] ?: Old;
+    }
   };
 
   // Return the Old node for a possibly-remapped node.
   Ref Unmap(Ref Node) {
-    return NewSSAToSSA[IR->GetID(Node).Value] ?: Node;
+    if (NewSSAToSSA.empty()) {
+      return Node;
+    } else {
+      return NewSSAToSSA[IR->GetID(Node).Value] ?: Node;
+    }
   };
 
   // Record a remapping of Old to New.
@@ -124,6 +132,10 @@ private:
 
     LOGMAN_THROW_A_FMT(NewID >= NewSSAToSSA.size(), "Brand new SSA def");
     NewSSAToSSA.resize(NewID + 1, 0);
+
+    if (SSAToNewSSA.empty()) {
+      SSAToNewSSA.resize(PreferredReg.size(), nullptr);
+    }
 
     SSAToNewSSA[OldID] = New;
     NewSSAToSSA[NewID] = Old;
@@ -458,9 +470,8 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
   auto IR_ = IREmit->ViewIR();
   IR = &IR_;
 
+  // SSAToNewSSA, NewSSAToSSA allocated on first-use
   PreferredReg.resize(IR->GetSSACount(), PhysicalRegister::Invalid());
-  SSAToNewSSA.resize(IR->GetSSACount(), nullptr);
-  NewSSAToSSA.resize(IR->GetSSACount(), nullptr);
   SSAToReg.resize(IR->GetSSACount(), PhysicalRegister::Invalid());
   NextUses.resize(IR->GetSSACount(), 0);
   SpillSlotCount = 0;
