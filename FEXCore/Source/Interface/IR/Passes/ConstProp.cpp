@@ -139,7 +139,10 @@ private:
 // Constants are pooled per block.
 void ConstProp::HandleConstantPools(IREmitter* IREmit, const IRListView& CurrentIR) {
   const uint32_t SSACount = CurrentIR.GetSSACount();
-  fextl::vector<Ref> Remap(SSACount, NULL);
+
+  // Allocation/initialization deferred until first use, since many multiblocks
+  // don't have constants leftover after all inlining.
+  fextl::vector<Ref> Remap {};
 
   for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
@@ -151,11 +154,15 @@ void ConstProp::HandleConstantPools(IREmitter* IREmit, const IRListView& Current
           uint32_t Value = CurrentIR.GetID(CodeNode).Value;
           LOGMAN_THROW_A_FMT(Value < SSACount, "def not yet remapped");
 
+          if (Remap.empty()) {
+            Remap.resize(SSACount, NULL);
+          }
+
           Remap[Value] = it->second;
         } else {
           ConstPool[Op->Constant] = CodeNode;
         }
-      } else {
+      } else if (!Remap.empty()) {
         const uint8_t NumArgs = IR::GetArgs(IROp->Op);
         for (uint8_t i = 0; i < NumArgs; ++i) {
           if (IROp->Args[i].IsInvalid()) {
