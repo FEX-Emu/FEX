@@ -22,6 +22,10 @@ namespace FEX::HLE::x64 {
     LogMan::Msg::DFmt("Using deprecated/removed syscall: " #name);                      \
     return -ENOSYS;                                                                     \
   });
+
+#define REGISTER_SYSCALL_NOT_IMPL_SAFE_X64(name) \
+  REGISTER_SYSCALL_IMPL_X64(name, [](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t { return -ENOSYS; });
+
 #define REGISTER_SYSCALL_NO_PERM_X64(name) \
   REGISTER_SYSCALL_IMPL_X64(name, [](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t { return -EPERM; });
 
@@ -34,5 +38,6 @@ void RegisterNotImplemented(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_NOT_IMPL_X64(epoll_ctl_old);
   REGISTER_SYSCALL_NOT_IMPL_X64(epoll_wait_old);
   REGISTER_SYSCALL_NO_PERM_X64(kexec_file_load);
+  REGISTER_SYSCALL_NOT_IMPL_SAFE_X64(uretprobe);
 }
 } // namespace FEX::HLE::x64

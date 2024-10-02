@@ -360,6 +360,7 @@ enum Syscalls_x64 {
   SYSCALL_x64_statx = 332,
   SYSCALL_x64_io_pgetevents = 333,
   SYSCALL_x64_rseq = 334,
+  SYSCALL_x64_uretprobe = 335,
   SYSCALL_x64_pidfd_send_signal = 424,
   SYSCALL_x64_io_uring_setup = 425,
   SYSCALL_x64_io_uring_enter = 426,

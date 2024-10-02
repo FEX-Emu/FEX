@@ -5,7 +5,6 @@ tags: LinuxSyscalls|syscalls-arm64
 $end_info$
 */
 #pragma once
-#include <cstdint>
 
 namespace FEX::HLE::Arm64 {
 ///< Enum containing all Arm64 linux syscalls for the host kernel
@@ -476,5 +475,6 @@ enum Syscalls_Arm64 {
   SYSCALL_Arm64_epoll_ctl_old = ~0,
   SYSCALL_Arm64_epoll_wait_old = ~0,
   SYSCALL_Arm64_newfstatat = ~0,
+  SYSCALL_Arm64_uretprobe = ~0,
 };
 } // namespace FEX::HLE::Arm64
