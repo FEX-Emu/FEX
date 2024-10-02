@@ -93,9 +93,6 @@ private:
   // Inverse of SSAToNewSSA. Since it's indexed by new nodes, it grows.
   fextl::vector<Ref> NewSSAToSSA;
 
-  // Whether we have a non-identity mapping.
-  bool AnyRemapped;
-
   // Map of assigned registers. Grows.
   fextl::vector<PhysicalRegister> SSAToReg;
 
@@ -139,7 +136,6 @@ private:
 
     SSAToNewSSA[OldID] = New;
     NewSSAToSSA[NewID] = Old;
-    AnyRemapped = true;
 
     LOGMAN_THROW_A_FMT(Map(Old) == New && Unmap(New) == Old, "Post-condition");
     LOGMAN_THROW_A_FMT(Unmap(Old) == Old, "Invariant1");
@@ -476,7 +472,6 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
   NextUses.resize(IR->GetSSACount(), 0);
   SpillSlotCount = 0;
   AnySpilled = false;
-  AnyRemapped = false;
 
   // Next-use distance relative to the block end of each source, last first.
   fextl::vector<uint32_t> SourcesNextUses;
@@ -646,7 +641,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
       }
 
       // Remap sources last, since AssignReg can shuffle.
-      if (AnyRemapped) {
+      if (!SSAToNewSSA.empty()) {
         for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
           Ref Remapped = SSAToNewSSA[IROp->Args[s].ID().Value];
 
