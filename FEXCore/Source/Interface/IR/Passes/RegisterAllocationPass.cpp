@@ -625,17 +625,17 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         SourceIndex--;
         LOGMAN_THROW_AA_FMT(SourceIndex >= 0, "Consistent source count");
 
-        Ref Old = IR->GetNode(IROp->Args[s]);
-
         if (!SourcesNextUses[SourceIndex]) {
+          Ref Old = IR->GetNode(IROp->Args[s]);
           auto Reg = SSAToReg[IR->GetID(Map(Old)).Value];
+
           if (!Reg.IsInvalid()) {
             LOGMAN_THROW_A_FMT(IsInRegisterFile(Old), "sources in file");
             FreeReg(Reg);
           }
         }
 
-        NextUses[IR->GetID(Old).Value] = SourcesNextUses[SourceIndex];
+        NextUses[IROp->Args[s].ID().Value] = SourcesNextUses[SourceIndex];
       }
 
       // Assign destinations.
