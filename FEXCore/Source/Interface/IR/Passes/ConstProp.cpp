@@ -75,8 +75,6 @@ private:
   void HandleConstantPools(IREmitter* IREmit, const IRListView& CurrentIR);
   void ConstantPropagation(IREmitter* IREmit, const IRListView& CurrentIR, Ref CodeNode, IROp_Header* IROp);
 
-  fextl::unordered_map<uint64_t, Ref> ConstPool;
-
   bool SupportsTSOImm9 {};
   const FEXCore::CPUIDEmu* CPUID;
 
@@ -144,23 +142,42 @@ void ConstProp::HandleConstantPools(IREmitter* IREmit, const IRListView& Current
   // don't have constants leftover after all inlining.
   fextl::vector<Ref> Remap {};
 
+  struct Entry {
+    int64_t Value;
+    Ref R;
+  };
+
+
+  fextl::vector<Entry> Pool {};
+
   for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
+    Pool.clear();
+
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       if (IROp->Op == OP_CONSTANT) {
         auto Op = IROp->C<IR::IROp_Constant>();
-        auto it = ConstPool.find(Op->Constant);
+        bool Found = false;
 
-        if (it != ConstPool.end()) {
-          uint32_t Value = CurrentIR.GetID(CodeNode).Value;
-          LOGMAN_THROW_A_FMT(Value < SSACount, "def not yet remapped");
+        // Search for the constant. This is O(n^2) but n is small since it's
+        // local and most constants are inlined. In practice, it ends up much
+        // faster than a hash table.
+        for (auto K : Pool) {
+          if (K.Value == Op->Constant) {
+            uint32_t Value = CurrentIR.GetID(CodeNode).Value;
+            LOGMAN_THROW_A_FMT(Value < SSACount, "def not yet remapped");
 
-          if (Remap.empty()) {
-            Remap.resize(SSACount, NULL);
+            if (Remap.empty()) {
+              Remap.resize(SSACount, nullptr);
+            }
+
+            Remap[Value] = K.R;
+            Found = true;
+            break;
           }
+        }
 
-          Remap[Value] = it->second;
-        } else {
-          ConstPool[Op->Constant] = CodeNode;
+        if (!Found) {
+          Pool.push_back({.Value = Op->Constant, .R = CodeNode});
         }
       } else if (!Remap.empty()) {
         const uint8_t NumArgs = IR::GetArgs(IROp->Op);
@@ -179,7 +196,6 @@ void ConstProp::HandleConstantPools(IREmitter* IREmit, const IRListView& Current
         }
       }
     }
-    ConstPool.clear();
   }
 }
 
