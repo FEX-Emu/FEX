@@ -644,7 +644,6 @@ void X87StackOptimization::Run(IREmitter* Emit) {
 
       case OP_F80SINSTACK: {
         HandleUnop(OP_F64SIN, false, OP_F80SIN);
-
         break;
       }
 

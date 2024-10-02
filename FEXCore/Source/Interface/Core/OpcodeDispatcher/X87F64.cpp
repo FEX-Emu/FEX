@@ -22,26 +22,6 @@ class OrderedNode;
 
 #define OpcodeArgs [[maybe_unused]] FEXCore::X86Tables::DecodedOp Op
 
-// Functions in X87.cpp (no change required)
-// GetX87Top
-// SetX87ValidTag
-// GetX87ValidTag
-// GetX87Tag (will need changing once special tag handling is implemented)
-// SetX87FTW
-// GetX87FTW (will need changing once special tag handling is implemented)
-// SetX87Top
-// X87ModifySTP
-// EMMS
-// FFREE
-// FNSTENV
-// FSTCW
-// LDSW
-// FNSTSW
-// FXCH
-// FCMOV
-// FST(register to register)
-// FCHS
-
 void OpDispatchBuilder::FNINITF64(OpcodeArgs) {
   // Init host rounding mode to zero
   auto Zero = _Constant(0);

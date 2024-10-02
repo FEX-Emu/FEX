@@ -150,8 +150,6 @@ void OpDispatchBuilder::FSTToStack(OpcodeArgs) {
 // Store integer to memory (possibly with truncation)
 void OpDispatchBuilder::FIST(OpcodeArgs, bool Truncate) {
   auto Size = GetSrcSize(Op);
-  // FIXME(pmatos): is there any advantage of using STORESTACKMEMORY here?
-  // Do we need STORESTACKMEMORY at all?
   Ref Data = _ReadStackValue(0);
   Data = _F80CVTInt(Size, Data, Truncate);
 
