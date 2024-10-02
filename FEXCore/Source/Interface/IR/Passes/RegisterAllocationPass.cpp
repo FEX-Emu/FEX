@@ -426,8 +426,7 @@ private:
     RegisterClassType ClassType = GetRegClassFromNode(IR, IROp);
     RegisterClass* Class = &Classes[ClassType];
 
-    // Spill to make room in the register file. Free registers need not be
-    // contiguous, we'll shuffle later.
+    // Spill to make room in the register file.
     if (!Class->Available) {
       IREmit->SetWriteCursorBefore(CodeNode);
       SpillReg(Class, Pivot);
