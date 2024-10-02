@@ -189,7 +189,7 @@ void ConstProp::HandleConstantPools(IREmitter* IREmit, const IRListView& Current
           uint32_t Value = IROp->Args[i].ID().Value;
           LOGMAN_THROW_A_FMT(Value < SSACount, "src not yet remapped");
 
-          Ref New = Value < SSACount ? Remap[Value] : NULL;
+          Ref New = Remap[Value];
           if (New) {
             IREmit->ReplaceNodeArgument(CodeNode, i, New);
           }
