@@ -730,6 +730,7 @@ std::array<HandlerType, 1U << _IOC_TYPEBITS> Handlers = []() consteval {
 #include "LinuxSyscalls/x32/Ioctl/vc4_drm.inl"
 #include "LinuxSyscalls/x32/Ioctl/v3d_drm.inl"
 #include "LinuxSyscalls/x32/Ioctl/virtio_drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/panthor_drm.inl"
 #include "LinuxSyscalls/x32/Ioctl/pvr_drm.inl"
 #include "LinuxSyscalls/x32/Ioctl/xe_drm.inl"
 

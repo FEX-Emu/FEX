@@ -21,6 +21,7 @@ extern "C" {
 #include "fex-drm/radeon_drm.h"
 #include "fex-drm/vc4_drm.h"
 #include "fex-drm/v3d_drm.h"
+#include "fex-drm/panthor_drm.h"
 #include "fex-drm/pvr_drm.h"
 #include "fex-drm/virtgpu_drm.h"
 #include "fex-drm/xe_drm.h"
@@ -1278,6 +1279,7 @@ namespace V3D {
 #include "LinuxSyscalls/x32/Ioctl/radeon_drm.inl"
 #include "LinuxSyscalls/x32/Ioctl/vc4_drm.inl"
 #include "LinuxSyscalls/x32/Ioctl/v3d_drm.inl"
+#include "LinuxSyscalls/x32/Ioctl/panthor_drm.inl"
 #include "LinuxSyscalls/x32/Ioctl/pvr_drm.inl"
 #include "LinuxSyscalls/x32/Ioctl/xe_drm.inl"
 } // namespace FEX::HLE::x32
