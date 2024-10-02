@@ -348,7 +348,7 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs, uint32_t SrcIndex) {
 void OpDispatchBuilder::SALCOp(OpcodeArgs) {
   CalculateDeferredFlags();
 
-  auto Result = NZCVSelect(OpSize::i32Bit, {COND_UGE} /* CF = 1 */, _Constant(0xffffffff), _Constant(0));
+  auto Result = NZCVSelect(OpSize::i32Bit, {COND_UGE} /* CF = 1 */, _InlineConstant(0xffffffff), _InlineConstant(0));
 
   StoreResult(GPRClass, Op, Result, -1);
 }
@@ -493,7 +493,7 @@ void OpDispatchBuilder::POPAOp(OpcodeArgs) {
   StoreGPRRegister(X86State::REG_RBP, Pop(Size, SP), Size);
 
   // Skip loading RSP because it'll be correct at the end
-  SP = _RMWHandle(_Add(OpSize::i64Bit, SP, _Constant(Size)));
+  SP = _RMWHandle(_Add(OpSize::i64Bit, SP, _InlineConstant(Size)));
 
   StoreGPRRegister(X86State::REG_RBX, Pop(Size, SP), Size);
   StoreGPRRegister(X86State::REG_RDX, Pop(Size, SP), Size);
@@ -611,7 +611,7 @@ Ref OpDispatchBuilder::SelectPF(bool Invert, IR::OpSize ResultSize, Ref TrueValu
 
   // Because we're only clobbering NZCV internally, we ignore all carry flag
   // shenanigans and just use the raw test and raw select.
-  _TestNZ(OpSize::i32Bit, Cmp, _Constant(1));
+  _TestNZ(OpSize::i32Bit, Cmp, _InlineConstant(1));
   return _NZCVSelect(ResultSize, {COND_NEQ}, TrueValue, FalseValue);
 }
 
@@ -876,7 +876,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
   uint64_t Target = Op->PC + Op->InstSize + Op->Src[1].Literal();
 
   Ref CondReg = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
-  CondReg = _Sub(OpSize, CondReg, _Constant(SrcSize * 8, 1));
+  CondReg = _Sub(OpSize, CondReg, _InlineConstant(1));
   StoreResult(GPRClass, Op, Op->Src[0], CondReg, -1);
 
   // If LOOPE then jumps to target if RCX != 0 && ZF == 1
@@ -884,7 +884,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
   //
   // To handle efficiently, smash RCX to zero if ZF is wrong (1 csel).
   if (CheckZF) {
-    CondReg = NZCVSelect(OpSize, {ZFTrue ? COND_EQ : COND_NEQ}, CondReg, _Constant(0));
+    CondReg = NZCVSelect(OpSize, {ZFTrue ? COND_EQ : COND_NEQ}, CondReg, _InlineConstant(0));
   }
 
   CalculateDeferredFlags();
@@ -1154,7 +1154,7 @@ void OpDispatchBuilder::SAHFOp(OpcodeArgs) {
   Src = _Andn(OpSize::i64Bit, Src, _Constant(0b101000));
 
   // Set the bit that is always set here
-  Src = _Or(OpSize::i64Bit, Src, _Constant(0b10));
+  Src = _Or(OpSize::i64Bit, Src, _InlineConstant(0b10));
 
   // Store the lower 8 bits in to RFLAGS
   SetPackedRFLAG(true, Src);
@@ -1437,9 +1437,9 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op.
   if (Size == 64) {
-    Shift = _And(OpSize::i64Bit, Shift, _Constant(0x3F));
+    Shift = _And(OpSize::i64Bit, Shift, _InlineConstant(0x3F));
   } else {
-    Shift = _And(OpSize::i64Bit, Shift, _Constant(0x1F));
+    Shift = _And(OpSize::i64Bit, Shift, _InlineConstant(0x1F));
   }
 
   // a64 masks the bottom bits, so if we're using a native 32/64-bit shift, we
@@ -1510,9 +1510,9 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
   if (Size == 64) {
-    Shift = _And(OpSize::i64Bit, Shift, _Constant(0x3F));
+    Shift = _And(OpSize::i64Bit, Shift, _InlineConstant(0x3F));
   } else {
-    Shift = _And(OpSize::i64Bit, Shift, _Constant(0x1F));
+    Shift = _And(OpSize::i64Bit, Shift, _InlineConstant(0x1F));
   }
 
   auto ShiftLeft = _Sub(OpSize::i64Bit, _Constant(Size), Shift);
@@ -1608,7 +1608,7 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool I
     Src = _Constant(UnmaskedConst & Mask);
   } else {
     UnmaskedSrc = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
-    Src = _And(OpSize::i64Bit, UnmaskedSrc, _Constant(Mask));
+    Src = _And(OpSize::i64Bit, UnmaskedSrc, _InlineConstant(Mask));
   }
 
   // We fill the upper bits so we allow garbage on load.
@@ -1643,7 +1643,7 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool I
 
     // We deferred the masking for 8-bit to the flag section, do it here.
     if (Size == 8) {
-      Src = _And(OpSize::i64Bit, UnmaskedSrc, _Constant(0x1F));
+      Src = _And(OpSize::i64Bit, UnmaskedSrc, _InlineConstant(0x1F));
     }
 
     _RotateFlags(OpSizeFromSrc(Op), Res, Src, Left);
@@ -1730,7 +1730,7 @@ void OpDispatchBuilder::BLSMSKBMIOp(OpcodeArgs) {
   auto Size = OpSizeFromSrc(Op);
 
   auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
-  auto Result = _Xor(Size, _Sub(Size, Src, _Constant(1)), Src);
+  auto Result = _Xor(Size, _Sub(Size, Src, _InlineConstant(1)), Src);
 
   StoreResult(GPRClass, Op, Result, -1);
   InvalidatePF_AF();
@@ -1752,7 +1752,7 @@ void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
   auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
   auto Size = OpSizeFromSrc(Op);
 
-  auto Result = _And(Size, _Sub(Size, Src, _Constant(1)), Src);
+  auto Result = _And(Size, _Sub(Size, Src, _InlineConstant(1)), Src);
   StoreResult(GPRClass, Op, Result, -1);
 
   auto Zero = _Constant(0);
@@ -1817,8 +1817,8 @@ void OpDispatchBuilder::BZHI(OpcodeArgs) {
   auto Result = _NZCVSelect(IR::SizeToOpSize(Size), {COND_NEQ}, Src, MaskResult);
   StoreResult(GPRClass, Op, Result, -1);
 
-  auto Zero = _Constant(0);
-  auto One = _Constant(1);
+  auto Zero = _InlineConstant(0);
+  auto One = _InlineConstant(1);
   auto CFInv = _NZCVSelect(OpSize::i32Bit, {COND_EQ}, One, Zero);
 
   InvalidatePF_AF();
@@ -1849,7 +1849,7 @@ void OpDispatchBuilder::RORX(OpcodeArgs) {
   auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
   auto* Result = Src;
   if (DoRotation) [[likely]] {
-    Result = _Ror(OpSizeFromSrc(Op), Src, _Constant(Amount));
+    Result = _Ror(OpSizeFromSrc(Op), Src, _InlineConstant(Amount));
   }
 
   StoreResult(GPRClass, Op, Result, -1);
@@ -2057,7 +2057,7 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
     return;
   }
 
-  Ref SrcMasked = _And(OpSize, Src, _Constant(Size, Mask));
+  Ref SrcMasked = _And(OpSize, Src, _InlineConstant(Mask));
   Calculate_ShiftVariable(
     Op, SrcMasked,
     [this, Op, Size, OpSize]() {
@@ -2282,7 +2282,7 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
     return;
   }
 
-  Ref SrcMasked = _And(OpSize, Src, _Constant(Size, Mask));
+  Ref SrcMasked = _And(OpSize, Src, _InlineConstant(Mask));
   Calculate_ShiftVariable(
     Op, SrcMasked,
     [this, Op, Size, OpSize]() {
@@ -2305,7 +2305,7 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
     SetCFDirect(NewCF, 0, true);
 
     // Since Shift != 0 we can inject the CF. Shift absorbs the masking.
-    Ref CFShl = _Sub(OpSize, Src, _Constant(Size, 1));
+    Ref CFShl = _Sub(OpSize, Src, _InlineConstant(1));
     auto TmpCF = _Lshl(OpSize, CF, CFShl);
     Res = _Or(OpSize, Res, TmpCF);
 
