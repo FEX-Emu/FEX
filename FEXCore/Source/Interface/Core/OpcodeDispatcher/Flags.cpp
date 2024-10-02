@@ -116,7 +116,7 @@ Ref OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
   // instead.
   if (FlagsMask & (1 << FEXCore::X86State::RFLAG_PF_RAW_LOC)) {
     // Set every bit except the bottommost.
-    auto OnesInvPF = _Or(OpSize::i64Bit, LoadPFRaw(false, false), _Constant(~1ull));
+    auto OnesInvPF = _Or(OpSize::i64Bit, LoadPFRaw(false, false), _InlineConstant(~1ull));
 
     // Rotate the bottom bit to the appropriate location for PF, so we get
     // something like 111P1111. Then invert that to get 000p0000. Then OR that
@@ -129,13 +129,13 @@ Ref OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
   if (GetNZ) {
     static_assert(FEXCore::X86State::RFLAG_SF_RAW_LOC == (FEXCore::X86State::RFLAG_ZF_RAW_LOC + 1));
     auto NZCV = GetNZCV();
-    auto NZ = _And(OpSize::i64Bit, NZCV, _Constant(0b11u << 30));
+    auto NZ = _And(OpSize::i64Bit, NZCV, _InlineConstant(0b11u << 30));
     Original = _Orlshr(OpSize::i64Bit, Original, NZ, 31 - FEXCore::X86State::RFLAG_SF_RAW_LOC);
   }
 
   // The constant is OR'ed in at the end, to avoid a pointless or xzr, #2.
   if ((1U << X86State::RFLAG_RESERVED_LOC) & FlagsMask) {
-    Original = _Or(OpSize::i64Bit, Original, _Constant(2));
+    Original = _Or(OpSize::i64Bit, Original, _InlineConstant(2));
   }
 
   return Original;
@@ -266,8 +266,8 @@ Ref OpDispatchBuilder::IncrementByCarry(OpSize OpSize, Ref Src) {
 }
 
 Ref OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, Ref Src1, Ref Src2) {
-  auto Zero = _Constant(0);
-  auto One = _Constant(1);
+  auto Zero = _InlineConstant(0);
+  auto One = _InlineConstant(1);
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
   Ref Res;
 
@@ -303,8 +303,8 @@ Ref OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, Ref Src1, Ref Src2) {
 }
 
 Ref OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, Ref Src1, Ref Src2) {
-  auto Zero = _Constant(0);
-  auto One = _Constant(1);
+  auto Zero = _InlineConstant(0);
+  auto One = _InlineConstant(1);
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
 
   CalculateAF(Src1, Src2);
@@ -408,7 +408,7 @@ void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, Ref Res, Ref High) {
 
   // If High = SignBit, then sets to nZCv. Else sets to nzcV. Since SF/ZF
   // undefined, this does what we need after inverting carry.
-  auto Zero = _Constant(0);
+  auto Zero = _InlineConstant(0);
   _CondSubNZCV(OpSize::i64Bit, Zero, Zero, CondClassType {COND_EQ}, 0x1 /* nzcV */);
   CFInverted = true;
 }
@@ -417,7 +417,7 @@ void OpDispatchBuilder::CalculateFlags_UMUL(Ref High) {
   HandleNZCVWrite();
   InvalidatePF_AF();
 
-  auto Zero = _Constant(0);
+  auto Zero = _InlineConstant(0);
   OpSize Size = IR::SizeToOpSize(GetOpSize(High));
 
   // CF and OF are set if the result of the operation can't be fit in to the destination register
