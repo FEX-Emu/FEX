@@ -639,7 +639,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
 
       // Remap sources last, since AssignReg can shuffle.
       for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
-        Ref Remapped = SSAToNewSSA[IR->GetID(IR->GetNode(IROp->Args[s])).Value];
+        Ref Remapped = SSAToNewSSA[IROp->Args[s].ID().Value];
 
         if (Remapped != nullptr) {
           IREmit->ReplaceNodeArgument(CodeNode, s, Remapped);
