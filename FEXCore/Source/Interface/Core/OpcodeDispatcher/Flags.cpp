@@ -76,16 +76,13 @@ Ref OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  Ref Original = _Constant(0);
-
   // SF/ZF and N/Z are together on both arm64 and x86_64, so we special case that.
   bool GetNZ = (FlagsMask & (1 << FEXCore::X86State::RFLAG_SF_RAW_LOC)) && (FlagsMask & (1 << FEXCore::X86State::RFLAG_ZF_RAW_LOC));
 
   // Handle CF first, since it's at bit 0 and hence doesn't need shift or OR.
-  if (FlagsMask & (1 << FEXCore::X86State::RFLAG_CF_RAW_LOC)) {
-    static_assert(FEXCore::X86State::RFLAG_CF_RAW_LOC == 0);
-    Original = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
-  }
+  LOGMAN_THROW_A_FMT(FlagsMask & (1 << FEXCore::X86State::RFLAG_CF_RAW_LOC), "CF always handled");
+  static_assert(FEXCore::X86State::RFLAG_CF_RAW_LOC == 0);
+  Ref Original = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
   for (size_t i = 0; i < FlagOffsets.size(); ++i) {
     const auto FlagOffset = FlagOffsets[i];
