@@ -508,7 +508,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         const uint8_t NumArgs = IR::GetRAArgs(IROp->Op);
         for (int8_t i = NumArgs - 1; i >= 0; --i) {
           const auto& Arg = IROp->Args[i];
-          if (IsValidArg(Arg)) {
+          if (!Arg.IsInvalid()) {
             const uint32_t Index = Arg.ID().Value;
 
             SourcesNextUses.push_back(NextUses[Index]);
@@ -618,7 +618,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
       }
 
       for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
-        if (!IsValidArg(IROp->Args[s])) {
+        if (IROp->Args[s].IsInvalid()) {
           continue;
         }
 
@@ -626,10 +626,13 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         LOGMAN_THROW_AA_FMT(SourceIndex >= 0, "Consistent source count");
 
         Ref Old = IR->GetNode(IROp->Args[s]);
-        LOGMAN_THROW_A_FMT(IsInRegisterFile(Old), "sources in file");
 
         if (!SourcesNextUses[SourceIndex]) {
-          FreeReg(SSAToReg[IR->GetID(Map(Old)).Value]);
+          auto Reg = SSAToReg[IR->GetID(Map(Old)).Value];
+          if (!Reg.IsInvalid()) {
+            LOGMAN_THROW_A_FMT(IsInRegisterFile(Old), "sources in file");
+            FreeReg(Reg);
+          }
         }
 
         NextUses[IR->GetID(Old).Value] = SourcesNextUses[SourceIndex];
