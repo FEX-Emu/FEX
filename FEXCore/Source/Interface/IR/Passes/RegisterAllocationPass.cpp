@@ -506,7 +506,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         // of SourcesNextUses is consistent. The forward pass can then iterate
         // forwards and just flip the order.
         const uint8_t NumArgs = IR::GetRAArgs(IROp->Op);
-        for (int8_t i = NumArgs - 1; i >= 0; --i) {
+        for (int i = NumArgs - 1; i >= 0; --i) {
           const auto& Arg = IROp->Args[i];
           if (!Arg.IsInvalid()) {
             const uint32_t Index = Arg.ID().Value;
