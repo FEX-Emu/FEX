@@ -178,7 +178,13 @@ struct FEX_PACKED X80SoftFloat {
      */
     extFloat80_t quotient = extF80_div(state, lhs, rhs);
     extFloat80_t Q = extF80_roundToInt(state, quotient, softfloat_round_minMag, true);
-    return extF80_sub(state, lhs, extF80_mul(state, Q, rhs));
+    bool Q_zero = Q.signif == 0 && (Q.signExp & ~(1 << 15)) == 0;
+
+    if (Q_zero) {
+      return lhs;
+    } else {
+      return extF80_sub(state, lhs, extF80_mul(state, Q, rhs));
+    }
 #endif
   }
 
