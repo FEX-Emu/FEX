@@ -1242,6 +1242,11 @@ public:
           _StoreContextPair(Size, Class, ValueNext, Value, Offset - Size);
           Bits &= ~NextBit;
         } else {
+          // If Partial and MMX register, then we need to store all 1s in bits 64-80
+          if (Partial && Index >= MM0Index && Index <= MM7Index) {
+            Value = _VInsGPR(i64Bit, 8, 1, Value, _Constant(0xFFFFUL));
+            Size = 16;
+          }
           _StoreContext(Size, Class, Value, Offset);
         }
       }
@@ -1964,12 +1969,6 @@ private:
     RegCache.Written |= Bit;
   }
 
-  void StoreContextPartial(uint8_t Index, Ref Value) {
-    StoreContext(Index, Value);
-
-    RegCache.Partial |= (1ull << (uint64_t)Index);
-  }
-
   void StoreRegister(uint8_t Reg, bool FPR, Ref Value) {
     StoreContext(Reg + (FPR ? FPR0Index : GPR0Index), Value);
   }
@@ -2334,13 +2333,20 @@ private:
   }
 
   /**  @} */
-  /**  @} */
 
   Ref GetX87Top();
   Ref GetX87Tag(Ref Value, Ref AbridgedFTW);
   void SetX87FTW(Ref FTW);
   Ref GetX87FTW_Helper();
   void SetX87Top(Ref Value);
+
+  void ChgStateX87_MMX() override {
+    LOGMAN_THROW_A_FMT(MMXState == MMXState_X87, "Expected state to be x87");
+    _StackForceSlow();
+    SetX87Top(_Constant(0));                             // top reset to zero
+    StoreContext(AbridgedFTWIndex, _Constant(0xFFFFUL)); // all valid
+    MMXState = MMXState_MMX;
+  }
 
   bool DestIsLockedMem(FEXCore::X86Tables::DecodedOp Op) const {
     return DestIsMem(Op) && (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK) != 0;
