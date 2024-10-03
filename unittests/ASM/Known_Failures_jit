@@ -1,5 +1,1 @@
-# FPREM is incorrect
-Test_X87/D9_F5_2.asm
-Test_X87/D9_F5_3.asm
-
 Test_FEX_bugs/32bit_syscall.asm

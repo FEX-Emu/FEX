@@ -160,7 +160,31 @@ struct FEX_PACKED X80SoftFloat {
 
     return Result;
 #else
-    return extF80_rem(state, lhs, rhs);
+    /*
+     * FPREM is not an IEEE-754 remainder.  From the spec:
+     *
+     *    Computes the remainder obtained from dividing the value in the ST(0)
+     *    register (the dividend) by the value in the ST(1) register (the divisor
+     *    or modulus), and stores the result in ST(0). The remainder represents the
+     *    following value:
+     *
+     *    Remainder := ST(0) − (Q * ST(1))
+     *
+     *    Here, Q is an integer value that is obtained by truncating the
+     *    floating-point number quotient of [ST(0) / ST(1)] toward zero.
+     *
+     * We implement this sequence literally. softfloat_round_minMag means
+     * "truncate towards zero".
+     */
+    extFloat80_t quotient = extF80_div(state, lhs, rhs);
+    extFloat80_t Q = extF80_roundToInt(state, quotient, softfloat_round_minMag, true);
+    bool Q_zero = Q.signif == 0 && (Q.signExp & ~(1 << 15)) == 0;
+
+    if (Q_zero) {
+      return lhs;
+    } else {
+      return extF80_sub(state, lhs, extF80_mul(state, Q, rhs));
+    }
 #endif
   }
 
