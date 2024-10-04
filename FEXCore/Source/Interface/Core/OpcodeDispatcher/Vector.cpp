@@ -106,7 +106,7 @@ void OpDispatchBuilder::MOVHPDOp(OpcodeArgs) {
     } else {
       // If the destination is a GPR then the source is memory
       // xmm1[127:64] = src
-      Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.LoadData = false});
+      Ref Src = MakeSegmentAddress(Op, Op->Src[0]);
       Ref Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, 16, Op->Flags);
       auto Result = _VLoadVectorElement(16, 8, Dest, 1, Src);
       StoreResult(FPRClass, Op, Result, -1);
@@ -115,7 +115,7 @@ void OpDispatchBuilder::MOVHPDOp(OpcodeArgs) {
     // In this case memory is the destination and the high bits of the XMM are source
     // Mem64 = xmm1[127:64]
     Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-    Ref Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, 8, Op->Flags, {.LoadData = false});
+    Ref Dest = MakeSegmentAddress(Op, Op->Dest);
     _VStoreVectorElement(16, 8, Src, 1, Dest);
   }
 }
@@ -144,7 +144,7 @@ void OpDispatchBuilder::MOVLPOp(OpcodeArgs) {
       StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, 16, 16);
     } else {
       auto DstSize = GetDstSize(Op);
-      Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.Align = 8, .LoadData = false});
+      Ref Src = MakeSegmentAddress(Op, Op->Src[0]);
       Ref Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, DstSize, Op->Flags);
       auto Result = _VLoadVectorElement(16, 8, Dest, 0, Src);
       StoreResult(FPRClass, Op, Result, -1);
@@ -1515,7 +1515,7 @@ Ref OpDispatchBuilder::PINSROpImpl(OpcodeArgs, size_t ElementSize, const X86Tabl
   }
 
   // If loading from memory then we only load the element size
-  auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, ElementSize, Op->Flags, {.LoadData = false});
+  Ref Src2 = MakeSegmentAddress(Op, Src2Op);
   return _VLoadVectorElement(Size, ElementSize, Src1, Index, Src2);
 }
 
@@ -1639,7 +1639,7 @@ void OpDispatchBuilder::PExtrOp(OpcodeArgs, size_t ElementSize) {
   }
 
   // If we are storing to memory then we store the size of the element extracted
-  Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
+  Ref Dest = MakeSegmentAddress(Op, Op->Dest);
   _VStoreVectorElement(16, OverridenElementSize, Src, Index, Dest);
 }
 

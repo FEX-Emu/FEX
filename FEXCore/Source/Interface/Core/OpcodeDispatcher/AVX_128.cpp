@@ -857,7 +857,7 @@ void OpDispatchBuilder::AVX128_VMOVLP(OpcodeArgs) {
     ///< VMOVLPS/PD xmm1, xmm2, mem64
     // Bits[63:0] come from Src2[63:0]
     // Bits[127:64] come from Src1[127:64]
-    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Op->Src[1], OpSize::i64Bit, Op->Flags, {.LoadData = false});
+    auto Src2 = MakeSegmentAddress(Op, Op->Src[1]);
     Ref Result_Low = _VLoadVectorElement(OpSize::i128Bit, OpSize::i64Bit, Src1.Low, 0, Src2);
     Ref ZeroVector = LoadZeroVector(OpSize::i128Bit);
 
@@ -879,11 +879,11 @@ void OpDispatchBuilder::AVX128_VMOVHP(OpcodeArgs) {
   if (!Op->Dest.IsGPR()) {
     ///< VMOVHPS/PD mem64, xmm1
     // Need to store Bits[127:64]. Use a vector element store.
-    auto Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, OpSize::i64Bit, Op->Flags, {.LoadData = false});
+    auto Dest = MakeSegmentAddress(Op, Op->Dest);
     _VStoreVectorElement(OpSize::i128Bit, OpSize::i64Bit, Src1.Low, 1, Dest);
   } else if (!Op->Src[1].IsGPR()) {
     ///< VMOVHPS/PD xmm2, xmm1, mem64
-    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Op->Src[1], OpSize::i64Bit, Op->Flags, {.LoadData = false});
+    auto Src2 = MakeSegmentAddress(Op, Op->Src[1]);
 
     // Bits[63:0] come from Src1[63:0]
     // Bits[127:64] come from Src2[63:0]
@@ -1236,7 +1236,7 @@ void OpDispatchBuilder::AVX128_PExtr(OpcodeArgs) {
   }
 
   // If we are storing to memory then we store the size of the element extracted
-  Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
+  Ref Dest = MakeSegmentAddress(Op, Op->Dest);
   _VStoreVectorElement(OpSize::i128Bit, OverridenElementSize, Src.Low, Index, Dest);
 }
 
@@ -1386,7 +1386,7 @@ void OpDispatchBuilder::AVX128_PINSRImpl(OpcodeArgs, size_t ElementSize, const X
     Result.Low = _VInsGPR(OpSize::i128Bit, ElementSize, Index, Src1.Low, Src2);
   } else {
     // If loading from memory then we only load the element size
-    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, ElementSize, Op->Flags, {.LoadData = false});
+    auto Src2 = MakeSegmentAddress(Op, Src2Op);
     Result.Low = _VLoadVectorElement(OpSize::i128Bit, ElementSize, Src1.Low, Index, Src2);
   }
 
