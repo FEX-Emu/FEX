@@ -1,5 +1,6 @@
 set (TESTS
   Allocator
+  ArgumentParser
   InterruptableConditionVariable
   Filesystem
   )
