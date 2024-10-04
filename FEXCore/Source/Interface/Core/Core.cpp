@@ -950,6 +950,10 @@ void ContextImpl::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* T
 }
 
 void ContextImpl::MarkMemoryShared(FEXCore::Core::InternalThreadState* Thread) {
+  if (!Thread) {
+    return;
+  }
+
   if (!IsMemoryShared) {
     IsMemoryShared = true;
     UpdateAtomicTSOEmulationConfig();
