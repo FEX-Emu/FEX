@@ -352,14 +352,15 @@
       ]
     },
     "db 0xd5, 0x40": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "aad with a different immediate byte base",
         "0xd5"
       ],
       "ExpectedArm64ASM": [
         "lsr w20, w4, #8",
-        "lsl x20, x20, #6",
+        "mov w21, #0x40",
+        "mul x20, x20, x21",
         "add x20, x4, x20",
         "and x26, x20, #0xff",
         "bfxil w4, w26, #0, #16",

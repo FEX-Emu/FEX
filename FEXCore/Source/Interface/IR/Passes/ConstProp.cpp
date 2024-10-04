@@ -52,17 +52,6 @@ static bool IsImmLogical(uint64_t imm, unsigned width) {
   return ARMEmitter::Emitter::IsImmLogical(imm, width);
 }
 
-static bool IsBfeAlreadyDone(IREmitter* IREmit, OrderedNodeWrapper src, uint64_t Width) {
-  auto IROp = IREmit->GetOpHeader(src);
-  if (IROp->Op == OP_BFE) {
-    auto Op = IROp->C<IR::IROp_Bfe>();
-    if (Width >= Op->Width) {
-      return true;
-    }
-  }
-  return false;
-}
-
 class ConstProp final : public FEXCore::IR::Pass {
 public:
   explicit ConstProp(bool SupportsTSOImm9, const FEXCore::CPUIDEmu* CPUID)
@@ -74,8 +63,6 @@ public:
 private:
   void HandleConstantPools(IREmitter* IREmit, const IRListView& CurrentIR);
   void ConstantPropagation(IREmitter* IREmit, const IRListView& CurrentIR, Ref CodeNode, IROp_Header* IROp);
-
-  fextl::unordered_map<uint64_t, Ref> ConstPool;
 
   bool SupportsTSOImm9 {};
   const FEXCore::CPUIDEmu* CPUID;
@@ -139,23 +126,49 @@ private:
 // Constants are pooled per block.
 void ConstProp::HandleConstantPools(IREmitter* IREmit, const IRListView& CurrentIR) {
   const uint32_t SSACount = CurrentIR.GetSSACount();
-  fextl::vector<Ref> Remap(SSACount, NULL);
+
+  // Allocation/initialization deferred until first use, since many multiblocks
+  // don't have constants leftover after all inlining.
+  fextl::vector<Ref> Remap {};
+
+  struct Entry {
+    int64_t Value;
+    Ref R;
+  };
+
+
+  fextl::vector<Entry> Pool {};
 
   for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
+    Pool.clear();
+
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       if (IROp->Op == OP_CONSTANT) {
         auto Op = IROp->C<IR::IROp_Constant>();
-        auto it = ConstPool.find(Op->Constant);
+        bool Found = false;
 
-        if (it != ConstPool.end()) {
-          uint32_t Value = CurrentIR.GetID(CodeNode).Value;
-          LOGMAN_THROW_A_FMT(Value < SSACount, "def not yet remapped");
+        // Search for the constant. This is O(n^2) but n is small since it's
+        // local and most constants are inlined. In practice, it ends up much
+        // faster than a hash table.
+        for (auto K : Pool) {
+          if (K.Value == Op->Constant) {
+            uint32_t Value = CurrentIR.GetID(CodeNode).Value;
+            LOGMAN_THROW_A_FMT(Value < SSACount, "def not yet remapped");
 
-          Remap[Value] = it->second;
-        } else {
-          ConstPool[Op->Constant] = CodeNode;
+            if (Remap.empty()) {
+              Remap.resize(SSACount, nullptr);
+            }
+
+            Remap[Value] = K.R;
+            Found = true;
+            break;
+          }
         }
-      } else {
+
+        if (!Found) {
+          Pool.push_back({.Value = Op->Constant, .R = CodeNode});
+        }
+      } else if (!Remap.empty()) {
         const uint8_t NumArgs = IR::GetArgs(IROp->Op);
         for (uint8_t i = 0; i < NumArgs; ++i) {
           if (IROp->Args[i].IsInvalid()) {
@@ -165,14 +178,13 @@ void ConstProp::HandleConstantPools(IREmitter* IREmit, const IRListView& Current
           uint32_t Value = IROp->Args[i].ID().Value;
           LOGMAN_THROW_A_FMT(Value < SSACount, "src not yet remapped");
 
-          Ref New = Value < SSACount ? Remap[Value] : NULL;
+          Ref New = Remap[Value];
           if (New) {
             IREmit->ReplaceNodeArgument(CodeNode, i, New);
           }
         }
       }
     }
-    ConstPool.clear();
   }
 }
 
@@ -271,16 +283,6 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
       uint64_t NewConstant = (Constant1 & Constant2) & getMask(IROp);
       IREmit->ReplaceWithConstant(CodeNode, NewConstant);
       Replaced = true;
-    } else if (Constant2 == 1) {
-      // happens from flag calcs
-      auto val = IREmit->GetOpHeader(IROp->Args[0]);
-
-      uint64_t Constant3;
-      if (val->Op == OP_SELECT && IREmit->IsValueConstant(val->Args[2], &Constant2) && IREmit->IsValueConstant(val->Args[3], &Constant3) &&
-          Constant2 == 1 && Constant3 == 0) {
-        IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(IROp->Args[0]));
-        Replaced = true;
-      }
     } else if (IROp->Args[0].ID() == IROp->Args[1].ID() || (Constant2 & getMask(IROp)) == getMask(IROp)) {
       // AND with same value results in original value
       IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(IROp->Args[0]));
@@ -293,28 +295,13 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     break;
   }
   case OP_OR: {
-    uint64_t Constant1 {};
-    uint64_t Constant2 {};
-
-    if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) && IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
-      uint64_t NewConstant = Constant1 | Constant2;
-      IREmit->ReplaceWithConstant(CodeNode, NewConstant);
-    } else if (IROp->Args[0].ID() == IROp->Args[1].ID()) {
-      // OR with same value results in original value
-      IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(IROp->Args[0]));
-    } else {
-      InlineIf(IREmit, CurrentIR, CodeNode, IROp, 1, [&IROp](uint64_t X) { return IsImmLogical(X, IROp->Size * 8); });
-    }
+    InlineIf(IREmit, CurrentIR, CodeNode, IROp, 1, [&IROp](uint64_t X) { return IsImmLogical(X, IROp->Size * 8); });
     break;
   }
   case OP_XOR: {
     uint64_t Constant1 {};
-    uint64_t Constant2 {};
 
-    if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) && IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
-      uint64_t NewConstant = Constant1 ^ Constant2;
-      IREmit->ReplaceWithConstant(CodeNode, NewConstant);
-    } else if (IROp->Args[0].ID() == IROp->Args[1].ID()) {
+    if (IROp->Args[0].ID() == IROp->Args[1].ID()) {
       // XOR with same value results to zero
       IREmit->SetWriteCursor(CodeNode);
       IREmit->ReplaceAllUsesWith(CodeNode, IREmit->_Constant(0));
@@ -382,19 +369,9 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     break;
   }
   case OP_LSHR: {
-    uint64_t Constant1 {};
     uint64_t Constant2 {};
 
-    if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) && IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
-      // Shifts mask the shift amount by 63 or 31 depending on operating size;
-      // The source is masked, which will produce a correctly masked
-      // destination. Masking the destination without the source instead will
-      // right-shift garbage into the upper bits instead of zeroes.
-      Constant1 &= getMask(IROp);
-      Constant2 &= (IROp->Size == 8 ? 63 : 31);
-      uint64_t NewConstant = (Constant1 >> Constant2);
-      IREmit->ReplaceWithConstant(CodeNode, NewConstant);
-    } else if (IREmit->IsValueConstant(IROp->Args[1], &Constant2) && Constant2 == 0) {
+    if (IREmit->IsValueConstant(IROp->Args[1], &Constant2) && Constant2 == 0) {
       IREmit->SetWriteCursor(CodeNode);
       Ref Arg = CurrentIR.GetNode(IROp->Args[0]);
       IREmit->ReplaceAllUsesWith(CodeNode, Arg);
@@ -407,46 +384,12 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     auto Op = IROp->C<IR::IROp_Bfe>();
     uint64_t Constant;
 
-    // Is this value already BFE'd?
-    if (IsBfeAlreadyDone(IREmit, Op->Src, Op->Width)) {
-      IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(Op->Src));
-      break;
-    }
-
-    // Is this value already ZEXT'd?
-    if (Op->lsb == 0) {
-      // LoadMem, LoadMemTSO & LoadContext ZExt
-      auto source = Op->Src;
-      auto sourceHeader = IREmit->GetOpHeader(source);
-
-      if (Op->Width >= (sourceHeader->Size * 8) &&
-          (sourceHeader->Op == OP_LOADMEM || sourceHeader->Op == OP_LOADMEMTSO || sourceHeader->Op == OP_LOADCONTEXT)) {
-        //  Load mem / load ctx zexts, no need to vmem
-        IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(source));
-        break;
-      }
-    }
-
     if (IROp->Size <= 8 && IREmit->IsValueConstant(Op->Src, &Constant)) {
       uint64_t SourceMask = Op->Width == 64 ? ~0ULL : ((1ULL << Op->Width) - 1);
       SourceMask <<= Op->lsb;
 
       uint64_t NewConstant = (Constant & SourceMask) >> Op->lsb;
       IREmit->ReplaceWithConstant(CodeNode, NewConstant);
-    } else if (IROp->Size == CurrentIR.GetOp<IROp_Header>(IROp->Args[0])->Size && Op->Width == (IROp->Size * 8) && Op->lsb == 0) {
-      // A BFE that extracts all bits results in original value
-      // XXX - This is broken for now - see https://github.com/FEX-Emu/FEX/issues/351
-      // IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(IROp->Args[0]));
-    } else if (Op->Width == 1 && Op->lsb == 0) {
-      // common from flag codegen
-      auto val = IREmit->GetOpHeader(IROp->Args[0]);
-
-      uint64_t Constant2 {};
-      uint64_t Constant3 {};
-      if (val->Op == OP_SELECT && IREmit->IsValueConstant(val->Args[2], &Constant2) && IREmit->IsValueConstant(val->Args[3], &Constant3) &&
-          Constant2 == 1 && Constant3 == 0) {
-        IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(IROp->Args[0]));
-      }
     }
 
     break;
@@ -471,18 +414,10 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
   }
   case OP_BFI: {
     auto Op = IROp->C<IR::IROp_Bfi>();
-    uint64_t ConstantDest {};
     uint64_t ConstantSrc {};
-    bool DestIsConstant = IREmit->IsValueConstant(IROp->Args[0], &ConstantDest);
     bool SrcIsConstant = IREmit->IsValueConstant(IROp->Args[1], &ConstantSrc);
 
-    if (DestIsConstant && SrcIsConstant) {
-      uint64_t SourceMask = Op->Width == 64 ? ~0ULL : ((1ULL << Op->Width) - 1);
-      uint64_t NewConstant = ConstantDest & ~(SourceMask << Op->lsb);
-      NewConstant |= (ConstantSrc & SourceMask) << Op->lsb;
-
-      IREmit->ReplaceWithConstant(CodeNode, NewConstant);
-    } else if (SrcIsConstant && HasConsecutiveBits(ConstantSrc, Op->Width)) {
+    if (SrcIsConstant && HasConsecutiveBits(ConstantSrc, Op->Width)) {
       // We are trying to insert constant, if it is a bitfield of only set bits then we can orr or and it.
       IREmit->SetWriteCursor(CodeNode);
       uint64_t SourceMask = Op->Width == 64 ? ~0ULL : ((1ULL << Op->Width) - 1);
@@ -499,24 +434,6 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     }
     break;
   }
-  case OP_MUL: {
-    uint64_t Constant1 {};
-    uint64_t Constant2 {};
-
-    if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) && IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
-      uint64_t NewConstant = (Constant1 * Constant2) & getMask(IROp);
-      IREmit->ReplaceWithConstant(CodeNode, NewConstant);
-    } else if (IREmit->IsValueConstant(IROp->Args[1], &Constant2) && std::popcount(Constant2) == 1) {
-      if (IROp->Size == 4 || IROp->Size == 8) {
-        uint64_t amt = std::countr_zero(Constant2);
-        IREmit->SetWriteCursor(CodeNode);
-        auto shift = IREmit->_Lshl(IR::SizeToOpSize(IROp->Size), CurrentIR.GetNode(IROp->Args[0]), IREmit->_Constant(amt));
-        IREmit->ReplaceAllUsesWith(CodeNode, shift);
-      }
-    }
-    break;
-  }
-
   case OP_VMOV: {
     // elim from load mem
     auto source = IROp->Args[0];

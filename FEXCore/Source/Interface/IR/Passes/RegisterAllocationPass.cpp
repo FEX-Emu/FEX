@@ -28,13 +28,10 @@ namespace {
     uint32_t Available;
     uint32_t Count;
 
-    // If bit R of Allocated is 1, then RegToSSA[R] is the Old node
+    // If bit R of Available is 0, then RegToSSA[R] is the Old node
     // currently allocated to R. Else, RegToSSA[R] is UNDEFINED, no need to
     // clear this when freeing registers.
     Ref RegToSSA[32];
-
-    // Allocated base registers. Similar to ~Available except for pairs.
-    uint32_t Allocated;
   };
 
   IR::RegisterClassType GetRegClassFromNode(IR::IRListView* IR, IR::IROp_Header* IROp) {
@@ -90,7 +87,7 @@ private:
   //
   // SSAToNewSSA tracks the current remapping. nullptr indicates no remapping.
   //
-  // Since its indexed by Old nodes, SSAToNewSSA does not grow.
+  // Since its indexed by Old nodes, SSAToNewSSA does not grow after allocation.
   fextl::vector<Ref> SSAToNewSSA;
 
   // Inverse of SSAToNewSSA. Since it's indexed by new nodes, it grows.
@@ -100,19 +97,27 @@ private:
   fextl::vector<PhysicalRegister> SSAToReg;
 
   bool IsOld(Ref Node) {
-    return IR->GetID(Node).Value < SSAToNewSSA.size();
+    return IR->GetID(Node).Value < PreferredReg.size();
   };
 
   // Return the New node (if it exists) for an Old node, else the Old node.
   Ref Map(Ref Old) {
     LOGMAN_THROW_A_FMT(IsOld(Old), "Pre-condition");
 
-    return SSAToNewSSA[IR->GetID(Old).Value] ?: Old;
+    if (SSAToNewSSA.empty()) {
+      return Old;
+    } else {
+      return SSAToNewSSA[IR->GetID(Old).Value] ?: Old;
+    }
   };
 
   // Return the Old node for a possibly-remapped node.
   Ref Unmap(Ref Node) {
-    return NewSSAToSSA[IR->GetID(Node).Value] ?: Node;
+    if (NewSSAToSSA.empty()) {
+      return Node;
+    } else {
+      return NewSSAToSSA[IR->GetID(Node).Value] ?: Node;
+    }
   };
 
   // Record a remapping of Old to New.
@@ -124,6 +129,10 @@ private:
 
     LOGMAN_THROW_A_FMT(NewID >= NewSSAToSSA.size(), "Brand new SSA def");
     NewSSAToSSA.resize(NewID + 1, 0);
+
+    if (SSAToNewSSA.empty()) {
+      SSAToNewSSA.resize(PreferredReg.size(), nullptr);
+    }
 
     SSAToNewSSA[OldID] = New;
     NewSSAToSSA[NewID] = Old;
@@ -198,7 +207,7 @@ private:
     PhysicalRegister Reg = SSAToReg[IR->GetID(Map(Old)).Value];
     RegisterClass* Class = GetClass(Reg);
 
-    return (Class->Allocated & GetRegBits(Reg)) && Class->RegToSSA[Reg.Reg] == Old;
+    return (Class->Available & GetRegBits(Reg)) == 0 && Class->RegToSSA[Reg.Reg] == Old;
   };
 
   void FreeReg(PhysicalRegister Reg) {
@@ -206,10 +215,8 @@ private:
     uint32_t RegBits = GetRegBits(Reg);
 
     LOGMAN_THROW_AA_FMT(!(Class->Available & RegBits), "Register double-free");
-    LOGMAN_THROW_AA_FMT((Class->Allocated & RegBits), "Register double-free");
 
     Class->Available |= RegBits;
-    Class->Allocated &= ~RegBits;
   };
 
   bool HasSource(IROp_Header* I, Ref Old) {
@@ -283,8 +290,9 @@ private:
     Ref Candidate = nullptr;
     uint32_t BestDistance = UINT32_MAX;
     uint8_t BestReg = ~0;
+    uint32_t Allocated = ((1u << Class->Count) - 1) & ~Class->Available;
 
-    foreach_bit(i, Class->Allocated) {
+    foreach_bit(i, Allocated) {
       Ref Old = Class->RegToSSA[i];
 
       LOGMAN_THROW_AA_FMT(Old != nullptr, "Invariant3");
@@ -350,10 +358,8 @@ private:
     uint32_t RegBits = GetRegBits(Reg);
 
     LOGMAN_THROW_AA_FMT((Class->Available & RegBits) == RegBits, "Precondition");
-    LOGMAN_THROW_AA_FMT(!(Class->Allocated & RegBits), "Precondition");
 
     Class->Available &= ~RegBits;
-    Class->Allocated |= (1u << Reg.Reg);
     Class->RegToSSA[Reg.Reg] = Unmap(Node);
 
     if (Index >= SSAToReg.size()) {
@@ -422,8 +428,7 @@ private:
     RegisterClassType ClassType = GetRegClassFromNode(IR, IROp);
     RegisterClass* Class = &Classes[ClassType];
 
-    // Spill to make room in the register file. Free registers need not be
-    // contiguous, we'll shuffle later.
+    // Spill to make room in the register file.
     if (!Class->Available) {
       IREmit->SetWriteCursorBefore(CodeNode);
       SpillReg(Class, Pivot);
@@ -461,9 +466,8 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
   auto IR_ = IREmit->ViewIR();
   IR = &IR_;
 
+  // SSAToNewSSA, NewSSAToSSA allocated on first-use
   PreferredReg.resize(IR->GetSSACount(), PhysicalRegister::Invalid());
-  SSAToNewSSA.resize(IR->GetSSACount(), nullptr);
-  NewSSAToSSA.resize(IR->GetSSACount(), nullptr);
   SSAToReg.resize(IR->GetSSACount(), PhysicalRegister::Invalid());
   NextUses.resize(IR->GetSSACount(), 0);
   SpillSlotCount = 0;
@@ -476,7 +480,6 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
     // At the start of each block, all registers are available.
     for (auto& Class : Classes) {
       Class.Available = (1u << Class.Count) - 1;
-      Class.Allocated = 0;
     }
 
     SourcesNextUses.clear();
@@ -503,9 +506,9 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         // of SourcesNextUses is consistent. The forward pass can then iterate
         // forwards and just flip the order.
         const uint8_t NumArgs = IR::GetRAArgs(IROp->Op);
-        for (int8_t i = NumArgs - 1; i >= 0; --i) {
+        for (int i = NumArgs - 1; i >= 0; --i) {
           const auto& Arg = IROp->Args[i];
-          if (IsValidArg(Arg)) {
+          if (!Arg.IsInvalid()) {
             const uint32_t Index = Arg.ID().Value;
 
             SourcesNextUses.push_back(NextUses[Index]);
@@ -514,7 +517,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         }
 
         // Record preferred registers for SRA. We also record the Node accessing
-        // each register, used below. Since we initialized Class->Allocated = 0,
+        // each register, used below. Since we initialized Class->Available,
         // RegToSSA is otherwise undefined so we can stash our temps there.
         if (auto Node = DecodeSRANode(IROp, CodeNode); Node != nullptr) {
           auto Reg = DecodeSRAReg(IROp, Node);
@@ -567,7 +570,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         auto Reg = DecodeSRAReg(IROp, Node);
         RegisterClass* Class = &Classes[Reg.Class];
 
-        if (Class->Allocated & (1u << Reg.Reg)) {
+        if (!(Class->Available & (1u << Reg.Reg))) {
           Ref Old = Class->RegToSSA[Reg.Reg];
 
           LOGMAN_THROW_A_FMT(IsOld(Old), "RegToSSA invariant");
@@ -615,21 +618,24 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
       }
 
       for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
-        if (!IsValidArg(IROp->Args[s])) {
+        if (IROp->Args[s].IsInvalid()) {
           continue;
         }
 
         SourceIndex--;
         LOGMAN_THROW_AA_FMT(SourceIndex >= 0, "Consistent source count");
 
-        Ref Old = IR->GetNode(IROp->Args[s]);
-        LOGMAN_THROW_A_FMT(IsInRegisterFile(Old), "sources in file");
-
         if (!SourcesNextUses[SourceIndex]) {
-          FreeReg(SSAToReg[IR->GetID(Map(Old)).Value]);
+          Ref Old = IR->GetNode(IROp->Args[s]);
+          auto Reg = SSAToReg[IR->GetID(Map(Old)).Value];
+
+          if (!Reg.IsInvalid()) {
+            LOGMAN_THROW_A_FMT(IsInRegisterFile(Old), "sources in file");
+            FreeReg(Reg);
+          }
         }
 
-        NextUses[IR->GetID(Old).Value] = SourcesNextUses[SourceIndex];
+        NextUses[IROp->Args[s].ID().Value] = SourcesNextUses[SourceIndex];
       }
 
       // Assign destinations.
@@ -638,11 +644,13 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
       }
 
       // Remap sources last, since AssignReg can shuffle.
-      for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
-        Ref Remapped = SSAToNewSSA[IR->GetID(IR->GetNode(IROp->Args[s])).Value];
+      if (!SSAToNewSSA.empty()) {
+        for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
+          Ref Remapped = SSAToNewSSA[IROp->Args[s].ID().Value];
 
-        if (Remapped != nullptr) {
-          IREmit->ReplaceNodeArgument(CodeNode, s, Remapped);
+          if (Remapped != nullptr) {
+            IREmit->ReplaceNodeArgument(CodeNode, s, Remapped);
+          }
         }
       }
 
