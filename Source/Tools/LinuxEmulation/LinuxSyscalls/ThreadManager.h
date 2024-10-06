@@ -31,7 +31,15 @@ struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
     std::atomic<uint32_t> TID;
     int32_t* set_child_tid {0};
     int32_t* clear_child_tid {0};
-    uint64_t robust_list_head {0};
+
+    uint64_t robust_list_head_x64 {0};
+    uint64_t robust_list_head_x32 {0};
+
+    // Robust list index mappings.
+    // Start off as -1 to allow dynamic slot allocation from the kernel.
+    int robust_list_index_x64 {-1};
+    int robust_list_index_x32 {-1};
+
   } ThreadInfo {};
 
   struct {
