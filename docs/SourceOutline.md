@@ -1,4 +1,4 @@
-# FEX-2409
+# FEX-2410
 
 ## FEXCore
 See [FEXCore/Readme.md](../FEXCore/Readme.md) for more details
@@ -43,7 +43,6 @@ IR to host code generation
 Metadata that drives the frontend x86/64 decoding
 - [BaseTables.cpp](../FEXCore/Source/Interface/Core/X86Tables/BaseTables.cpp)
 - [DDDTables.cpp](../FEXCore/Source/Interface/Core/X86Tables/DDDTables.cpp)
-- [EVEXTables.cpp](../FEXCore/Source/Interface/Core/X86Tables/EVEXTables.cpp)
 - [H0F38Tables.cpp](../FEXCore/Source/Interface/Core/X86Tables/H0F38Tables.cpp)
 - [H0F3ATables.cpp](../FEXCore/Source/Interface/Core/X86Tables/H0F3ATables.cpp)
 - [PrimaryGroupTables.cpp](../FEXCore/Source/Interface/Core/X86Tables/PrimaryGroupTables.cpp)
@@ -81,9 +80,7 @@ Emulation mainloop related glue logic
 - [LogManager.cpp](../FEXCore/Source/Utils/LogManager.cpp)
 
 #### thunks
-FEXCore side of thunks: Registration, Lookup
-- [Thunks.cpp](../FEXCore/Source/Interface/HLE/Thunks/Thunks.cpp)
-- [Thunks.h](../FEXCore/Source/Interface/HLE/Thunks/Thunks.h)
+- [Thunks.h](../FEXCore/include/FEXCore/Core/Thunks.h)
 
 #### x86-guest-code
 - [X86HelperGen.cpp](../FEXCore/Source/Interface/Core/X86HelperGen.cpp): Guest-side assembly helpers used by the backends
@@ -109,7 +106,6 @@ IR to IR Optimization
 - [PassManager.cpp](../FEXCore/Source/Interface/IR/PassManager.cpp): Defines which passes are run, and runs them
 - [PassManager.h](../FEXCore/Source/Interface/IR/PassManager.h)
 - [ConstProp.cpp](../FEXCore/Source/Interface/IR/Passes/ConstProp.cpp): ConstProp, ZExt elim, const pooling, fcmp reduction, const inlining
-- [DeadStoreElimination.cpp](../FEXCore/Source/Interface/IR/Passes/DeadStoreElimination.cpp): Cross block store-after-store elimination
 - [IRValidation.cpp](../FEXCore/Source/Interface/IR/Passes/IRValidation.cpp): Sanity checking pass
 - [RedundantFlagCalculationElimination.cpp](../FEXCore/Source/Interface/IR/Passes/RedundantFlagCalculationElimination.cpp): This is not used right now, possibly broken
 - [RegisterAllocationPass.cpp](../FEXCore/Source/Interface/IR/Passes/RegisterAllocationPass.cpp)
@@ -167,10 +163,6 @@ These are generated + glue logic 1:1 thunks unless noted otherwise
 #### asound
 - [libasound_Guest.cpp](../ThunkLibs/libasound/libasound_Guest.cpp)
 - [libasound_Host.cpp](../ThunkLibs/libasound/libasound_Host.cpp)
-
-#### cef
-- [libcef_Guest.cpp](../ThunkLibs/libcef/libcef_Guest.cpp)
-- [libcef_Host.cpp](../ThunkLibs/libcef/libcef_Host.cpp)
 
 #### drm
 - [Guest.cpp](../ThunkLibs/libdrm/Guest.cpp)
