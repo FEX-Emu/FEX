@@ -478,20 +478,11 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
 
   auto OneConst = _Constant(1);
   auto SevenConst = _Constant(7);
-  for (int i = 0; i < 7; ++i) {
+  for (int i = 0; i < 8; ++i) {
     auto data = _LoadContextIndexed(Top, 16, MMBaseOffset(), 16, FPRClass);
     _StoreMem(FPRClass, 16, data, Mem, _Constant((Size * 7) + (10 * i)), 1, MEM_OFFSET_SXTX, 1);
     Top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, Top, OneConst), SevenConst);
   }
-
-  // The final st(7) needs a bit of special handling here
-  auto data = _LoadContextIndexed(Top, 16, MMBaseOffset(), 16, FPRClass);
-  // ST7 broken in to two parts
-  // Lower 64bits [63:0]
-  // upper 16 bits [79:64]
-  _StoreMem(FPRClass, 8, data, Mem, _Constant((Size * 7) + (7 * 10)), 1, MEM_OFFSET_SXTX, 1);
-  auto topBytes = _VDupElement(16, 2, data, 4);
-  _StoreMem(FPRClass, 2, topBytes, Mem, _Constant((Size * 7) + (7 * 10) + 8), 1, MEM_OFFSET_SXTX, 1);
 
   // reset to default
   FNINIT(Op);
@@ -520,7 +511,7 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
   Ref Mask = _VCastFromGPR(16, 8, low);
   Mask = _VInsGPR(16, 8, 1, Mask, high);
 
-  for (int i = 0; i < 7; ++i) {
+  for (int i = 0; i < 8; ++i) {
     Ref Reg = _LoadMem(FPRClass, 16, Mem, _Constant((Size * 7) + (10 * i)), 1, MEM_OFFSET_SXTX, 1);
     // Mask off the top bits
     Reg = _VAnd(16, 16, Reg, Mask);
@@ -529,15 +520,6 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
 
     Top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, Top, OneConst), SevenConst);
   }
-
-  // The final st(7) needs a bit of special handling here
-  // ST7 broken in to two parts
-  // Lower 64bits [63:0]
-  // upper 16 bits [79:64]
-  Ref Reg = _LoadMem(FPRClass, 8, Mem, _Constant((Size * 7) + (10 * 7)), 1, MEM_OFFSET_SXTX, 1);
-  Ref RegHigh = _LoadMem(FPRClass, 2, Mem, _Constant((Size * 7) + (10 * 7) + 8), 1, MEM_OFFSET_SXTX, 1);
-  Reg = _VInsElement(16, 2, 4, 0, Reg, RegHigh);
-  _StoreContextIndexed(Reg, Top, 16, MMBaseOffset(), 16, FPRClass);
 }
 
 // Load / Store Control Word
