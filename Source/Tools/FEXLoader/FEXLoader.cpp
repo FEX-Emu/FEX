@@ -287,6 +287,36 @@ void SetupTSOEmulation(FEXCore::Context::Context* CTX) {
 }
 } // namespace FEX::TSO
 
+namespace FEX::CompatInput {
+void SetupCompatInput(bool enable) {
+  // We need to check if these are defined or not. This is a very fresh feature.
+#ifndef PR_GET_COMPAT_INPUT
+#define PR_GET_COMPAT_INPUT 0x63494e50
+#endif
+#ifndef PR_SET_COMPAT_INPUT
+#define PR_SET_COMPAT_INPUT 0x43494e50
+#endif
+#ifndef PR_SET_COMPAT_INPUT_DISABLE
+#define PR_SET_COMPAT_INPUT_DISABLE 0
+#endif
+#ifndef PR_SET_COMPAT_INPUT_ENABLE
+#define PR_SET_COMPAT_INPUT_ENABLE 1
+#endif
+  // Check to see if this is supported.
+  auto Result = prctl(PR_GET_COMPAT_INPUT, 0, 0, 0, 0);
+  if (Result == -1) {
+    // Unsupported, early exit.
+    return;
+  }
+
+  if (enable) {
+    prctl(PR_SET_COMPAT_INPUT, PR_SET_COMPAT_INPUT_ENABLE, 0, 0, 0);
+  } else {
+    prctl(PR_SET_COMPAT_INPUT, PR_SET_COMPAT_INPUT_DISABLE, 0, 0, 0);
+  }
+}
+} // namespace FEX::CompatInput
+
 /**
  * @brief Get an FD from an environment variable and then unset the environment variable.
  *
@@ -509,6 +539,16 @@ int main(int argc, char** argv, char** const envp) {
 
   // Setup TSO hardware emulation immediately after initializing the context.
   FEX::TSO::SetupTSOEmulation(CTX.get());
+
+  if (!Loader.Is64BitMode()) {
+    // Tell the kernel we want to use the compat input syscalls even though we're
+    // a 64 bit process.
+    FEX::CompatInput::SetupCompatInput(true);
+  } else {
+    // Our parent could be an instance running a 32 bit application, so we need
+    // to disable compat input if we're running a 64 bit one ourselves.
+    FEX::CompatInput::SetupCompatInput(false);
+  }
 
   auto SignalDelegation = FEX::HLE::CreateSignalDelegator(CTX.get(), Program.ProgramName, SupportsAVX);
   auto ThunkHandler = FEX::HLE::CreateThunkHandler();
