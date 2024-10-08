@@ -10,9 +10,6 @@
     "XMM4": ["0xDEADBEEFBFD0DAD1", "0x4141414142424242"],
     "XMM5": ["0xDEADBEEFBAD0DAD1", "0"],
     "XMM6": ["0xDEADBEEFBFD0DAD1", "0"]
-  },
-  "MemoryRegions": {
-    "0x100000000": "4096"
   }
 }
 %endif

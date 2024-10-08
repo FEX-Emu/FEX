@@ -3,9 +3,6 @@
   "RegData": {
     "MM0": "0xDFE0DFE0DFE0DFE0",
     "MM1": "0xDFE0DFE0DFE0DFE0"
-  },
-  "MemoryRegions": {
-    "0x100000000": "4096"
   }
 }
 %endif

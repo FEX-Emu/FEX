@@ -4,9 +4,6 @@
     "RAX": "1",
     "RBX": "0x4000000000000000"
   },
-  "MemoryRegions": {
-    "0x100000000": "4096"
-  },
   "Env": { "FEX_X87REDUCEDPRECISION" : "1" }
 }
 %endif

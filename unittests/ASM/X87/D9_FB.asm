@@ -3,9 +3,6 @@
   "RegData": {
     "MM6":  ["0x8A51407DA8345C92", "0x3FFE"],
     "MM7":  ["0xD76AA47848677021", "0x3FFE"]
-  },
-  "MemoryRegions": {
-    "0x100000000": "4096"
   }
 }
 %endif

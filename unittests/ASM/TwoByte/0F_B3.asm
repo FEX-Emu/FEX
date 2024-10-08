@@ -2,9 +2,6 @@
 {
   "RegData": {
     "R15": "0xA"
-  },
-  "MemoryRegions": {
-    "0x100000000": "4096"
   }
 }
 %endif

@@ -7,9 +7,6 @@
     "XMM3":  ["0x20f9b0697cd37844", "0x3b8e6eae8c165248"],
     "XMM4":  ["0x1ed685b8691d35ca", "0x5dae74e0ab7b51e2"],
     "XMM5":  ["0x15dc41a91ea818cc", "0x092363bc321300c5"]
-  },
-  "MemoryRegions": {
-    "0x100000000": "4096"
   }
 }
 %endif

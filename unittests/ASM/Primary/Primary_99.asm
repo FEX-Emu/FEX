@@ -3,9 +3,6 @@
   "RegData": {
     "RAX": "0xFFFFFFFFFFFFFFF0",
     "RDX": "0xFFFFFFFFFFFFFFFF"
-  },
-  "MemoryRegions": {
-    "0x100000000": "4096"
   }
 }
 %endif

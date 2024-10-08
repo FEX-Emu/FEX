@@ -4,9 +4,6 @@
     "XMM0": ["0x0", "0xFFFFFFFFFFFFFFFF"],
     "XMM1": ["0x0", "0xFFFFFFFFFFFFFFFF"],
     "XMM2": ["0x1010101010101010", "0xFFFFFFFFFFFFFFFF"]
-  },
-  "MemoryRegions": {
-    "0x100000000": "4096"
   }
 }
 %endif

@@ -2,9 +2,6 @@
 {
   "RegData": {
     "MM7":  ["0xD76AA47848677021", "0x3FFE"]
-  },
-  "MemoryRegions": {
-    "0x100000000": "4096"
   }
 }
 %endif

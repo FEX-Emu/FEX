@@ -9,9 +9,6 @@
     "XMM5":  ["0x3f0000003f000000", "0x3f0000003f000000"],
     "XMM6":  ["0x3eaaaaab3eaaaaab", "0x3eaaaaab3eaaaaab"],
     "XMM7":  ["0x3e8000003e800000", "0x3e8000003e800000"]
-  },
-  "MemoryRegions": {
-    "0x100000000": "4096"
   }
 }
 %endif

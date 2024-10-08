@@ -2,9 +2,6 @@
 {
   "RegData": {
     "XMM0": ["0x32F08FD4383B2524", "0x499DE6944FEA7CE4"]
-  },
-  "MemoryRegions": {
-    "0x100000000": "4096"
   }
 }
 %endif

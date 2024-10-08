@@ -5,9 +5,6 @@
     "RAX": "0xDEADBEEFBAD0DAD1",
     "RCX": "0xDEADBEEFBAD0DAD1",
     "XMM0": ["0", "0xDEADBEEFBAD0DAD1"]
-  },
-  "MemoryRegions": {
-    "0x100000000": "4096"
   }
 }
 %endif

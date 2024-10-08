@@ -3,9 +3,6 @@
   "RegData": {
     "RCX": "5",
     "RDI": "0xE0000003"
-  },
-  "MemoryRegions": {
-    "0x100000000": "4096"
   }
 }
 %endif

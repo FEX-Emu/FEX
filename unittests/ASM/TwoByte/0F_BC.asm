@@ -10,9 +10,6 @@
     "R9":  "0xFFFFFFFFFFFFFFFF",
     "R8":  "0xFFFFFFFFFFFFFFFF",
     "RSI": "0xFFFFFFFFFFFFFFFF"
-  },
-  "MemoryRegions": {
-    "0x100000000": "4096"
   }
 }
 %endif

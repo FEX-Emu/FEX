@@ -4,9 +4,6 @@
     "MM0": "0xFFFF8000FFFF8000",
     "MM1": "0xFFFF8000FFFF8000",
     "MM2": "0xFFFFFFFF80000000"
-  },
-  "MemoryRegions": {
-    "0x100000000": "4096"
   }
 }
 %endif
