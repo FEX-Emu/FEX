@@ -6227,7 +6227,7 @@
       ]
     },
     "frstor [rax]": {
-      "ExpectedInstructionCount": 317,
+      "ExpectedInstructionCount": 316,
       "Comment": [
         "0xdd !11b /4"
       ],
@@ -6485,7 +6485,7 @@
         "add w21, w21, #0x1 (1)",
         "and w21, w21, #0x7",
         "ldur q3, [x4, #88]",
-        "and v2.16b, v3.16b, v2.16b",
+        "and v3.16b, v3.16b, v2.16b",
         "mrs x0, nzcv",
         "str w0, [x28, #1000]",
         "stp x4, x7, [x28, #280]",
@@ -6498,8 +6498,8 @@
         "st1 {v4.2d, v5.2d, v6.2d, v7.2d}, [x0], #64",
         "str x30, [x0], #16",
         "ldrh w0, [x28, #1296]",
-        "mov x1, v2.d[0]",
-        "umov w2, v2.h[4]",
+        "mov x1, v3.d[0]",
+        "umov w2, v3.h[4]",
         "ldr x3, [x28, #1448]",
         "blr x3",
         "ldr w4, [x28, #1000]",
@@ -6511,14 +6511,13 @@
         "ld1 {v2.2d, v3.2d}, [sp], #32",
         "ld1 {v4.2d, v5.2d, v6.2d, v7.2d}, [sp], #64",
         "ldr x30, [sp], #16",
-        "mov v2.8b, v0.8b",
+        "mov v3.8b, v0.8b",
         "add x0, x28, x21, lsl #4",
-        "str d2, [x0, #1040]",
+        "str d3, [x0, #1040]",
         "add w21, w21, #0x1 (1)",
         "and w21, w21, #0x7",
-        "ldur d2, [x4, #98]",
-        "ldr h3, [x4, #106]",
-        "mov v2.h[4], v3.h[0]",
+        "ldur q3, [x4, #98]",
+        "and v2.16b, v3.16b, v2.16b",
         "mrs x0, nzcv",
         "str w0, [x28, #1000]",
         "stp x4, x7, [x28, #280]",
@@ -6552,7 +6551,7 @@
       ]
     },
     "fnsave [rax]": {
-      "ExpectedInstructionCount": 334,
+      "ExpectedInstructionCount": 332,
       "Comment": [
         "0xdd !11b /6"
       ],
@@ -6872,9 +6871,7 @@
         "eor v2.16b, v2.16b, v2.16b",
         "mov v2.d[0], x0",
         "mov v2.h[4], w1",
-        "stur d2, [x4, #98]",
-        "dup v2.8h, v2.h[4]",
-        "str h2, [x4, #106]",
+        "stur q2, [x4, #98]",
         "rbit w1, w21",
         "lsr w1, w1, #30",
         "mrs x0, fpcr",
