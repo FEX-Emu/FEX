@@ -51,6 +51,10 @@ public:
     push(r13);
     push(r14);
     push(r15);
+    rdfsbase(rbx);
+    push(rbx);
+    rdgsbase(rbx);
+    push(rbx);
     sub(rsp, 8);
 
     // Save this stack pointer so we can cleanly shutdown the emulation with a long jump
@@ -105,6 +109,10 @@ public:
 
     add(rsp, 8);
 
+    pop(rbx);
+    wrgsbase(rbx);
+    pop(rbx);
+    wrfsbase(rbx);
     pop(r15);
     pop(r14);
     pop(r13);
