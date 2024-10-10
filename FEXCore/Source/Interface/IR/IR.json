@@ -1540,6 +1540,14 @@
           "ResultSize == FEXCore::IR::OpSize::i32Bit || ResultSize == FEXCore::IR::OpSize::i64Bit"
         ]
       },
+      "FPR = NZCVSelectV u8:#ResultSize, CondClass:$Cond, FPR:$TrueVal, FPR:$FalseVal": {
+        "Desc": [
+          "Select based on value in NZCV flags, where TrueVal and FalseVal are both FPRs.",
+          "op:",
+          "Dest = Cond ? TrueVal : FalseVal"
+        ],
+        "DestSize": "ResultSize"
+      },
       "GPR = NZCVSelectIncrement OpSize:#ResultSize, CondClass:$Cond, GPR:$TrueVal, GPR:$FalseVal": {
         "Desc": ["Select and increment based on value in NZCV flags",
                  "op:",
@@ -3042,10 +3050,6 @@
       "FPR = F80SQRT FPR:$X80Src": {
         "DestSize": "16",
         "JITDispatch": false
-      },
-      "F80XTRACTStack": {
-        "X87": true,
-        "HasSideEffects": true
       },
       "FPR = F80XTRACT_EXP FPR:$X80Src": {
         "DestSize": "16",

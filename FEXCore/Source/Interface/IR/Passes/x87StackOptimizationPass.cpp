@@ -156,7 +156,6 @@ private:
   bool ReducedPrecisionMode;
 
   // Helpers
-  std::tuple<Ref, Ref> SplitF64SigExp(Ref Node);
   Ref RotateRight8(uint32_t V, Ref Amount);
 
   // Handles a Unary operation.
@@ -516,20 +515,6 @@ Ref X87StackOptimization::SynchronizeStackValues() {
     }
   }
   return TopValue;
-}
-
-std::tuple<Ref, Ref> X87StackOptimization::SplitF64SigExp(Ref Node) {
-  Ref Gpr = IREmit->_VExtractToGPR(8, 8, Node, 0);
-
-  Ref Exp = IREmit->_And(OpSize::i64Bit, Gpr, GetConstant(0x7ff0000000000000LL));
-  Exp = IREmit->_Lshr(OpSize::i64Bit, Exp, GetConstant(52));
-  Exp = IREmit->_Sub(OpSize::i64Bit, Exp, GetConstant(1023));
-  Exp = IREmit->_Float_FromGPR_S(8, 8, Exp);
-  Ref Sig = IREmit->_And(OpSize::i64Bit, Gpr, GetConstant(0x800fffffffffffffLL));
-  Sig = IREmit->_Or(OpSize::i64Bit, Sig, GetConstant(0x3ff0000000000000LL));
-  Sig = IREmit->_VCastFromGPR(8, 8, Sig);
-
-  return std::tuple {Exp, Sig};
 }
 
 void X87StackOptimization::Run(IREmitter* Emit) {
@@ -961,30 +946,6 @@ void X87StackOptimization::Run(IREmitter* Emit) {
           CmpNode = IREmit->_F80Cmp(StackNode, Value);
         }
         IREmit->ReplaceUsesWithAfter(CodeNode, CmpNode, CodeNode);
-        break;
-      }
-
-      case OP_F80XTRACTSTACK: {
-        Ref St0 = LoadStackValue();
-
-        Ref Exp {};
-        Ref Sig {};
-        if (ReducedPrecisionMode) {
-          std::tie(Exp, Sig) = SplitF64SigExp(St0);
-        } else {
-          Exp = IREmit->_F80XTRACT_EXP(St0);
-          Sig = IREmit->_F80XTRACT_SIG(St0);
-        }
-
-        if (SlowPath) {
-          // Write exp to top, update top for a push and set sig at new top.
-          StoreStackValueAtOffset_Slow(Exp, 0, false);
-          UpdateTopForPush_Slow();
-          StoreStackValueAtOffset_Slow(Sig);
-        } else {
-          StackData.setTop(StackMemberInfo {Exp});
-          StackData.push(StackMemberInfo {Sig});
-        }
         break;
       }
 
