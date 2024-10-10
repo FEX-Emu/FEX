@@ -6,9 +6,6 @@
     "RBX": "2",
     "RCX": "3",
     "RDX": "4"
-  },
-  "MemoryRegions": {
-    "0x100000000": "4096"
   }
 }
 %endif

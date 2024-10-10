@@ -5,9 +5,6 @@
     "RDX": "0x0",
     "RDI": "0xE000000E",
     "RSI": "0xDFFFFFFE"
-  },
-  "MemoryRegions": {
-    "0x100000000": "4096"
   }
 }
 %endif

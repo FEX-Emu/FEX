@@ -8,9 +8,6 @@
     "RDX": "0x0000000000000004",
     "RBP": "0x00000000FFFFFFFE",
     "RSI": "0xFFFFFFFFFFFFFFFC"
-  },
-  "MemoryRegions": {
-    "0x100000000": "4096"
   }
 }
 %endif

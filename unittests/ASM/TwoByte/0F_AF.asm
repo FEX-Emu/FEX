@@ -4,9 +4,6 @@
     "RAX": "0x5C00",
     "RBX": "0x54D45400",
     "RSI": "0x4ECE4DCD4CCC4C00"
-  },
-  "MemoryRegions": {
-    "0x100000000": "4096"
   }
 }
 %endif

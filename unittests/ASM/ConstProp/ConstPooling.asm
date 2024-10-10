@@ -3,9 +3,6 @@
   "Match": "All",
   "RegData": {
     "RAX": "0xf"
-  },
-  "MemoryRegions": {
-    "0x100000000": "4096"
   }
 }
 %endif

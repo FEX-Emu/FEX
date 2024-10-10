@@ -7,9 +7,6 @@
     "R12": "0x414243444546FFFF",
     "R11": "0x00000000FFFFFFFF",
     "R10": "0xFFFFFFFFFFFFFFFF"
-  },
-  "MemoryRegions": {
-    "0x100000000": "4096"
   }
 }
 %endif

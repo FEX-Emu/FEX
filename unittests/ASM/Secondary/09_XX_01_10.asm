@@ -7,9 +7,6 @@
     "RCX": "0x00000000ffffffff",
     "R13": "0xffffffff80000000",
     "R14": "0x0"
-  },
-  "MemoryRegions": {
-    "0x100000000": "4096"
   }
 }
 %endif

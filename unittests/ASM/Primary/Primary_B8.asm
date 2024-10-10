@@ -17,9 +17,6 @@
     "R13": "0xFFFFFFFFFFFF4241",
     "R14": "0xFFFFFFFFFFFF4241",
     "R15": "0xFFFFFFFFFFFF4241"
-  },
-  "MemoryRegions": {
-    "0x100000000": "4096"
   }
 }
 %endif

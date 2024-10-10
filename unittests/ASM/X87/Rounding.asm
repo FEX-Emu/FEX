@@ -5,9 +5,6 @@
     "RCX": "0xfffefffeffffffff",
     "RDX": "0xfffffffeffffffff",
     "RSI": "0xfffefffeffffffff"
-  },
-  "MemoryRegions": {
-    "0x100000000": "4096"
   }
 }
 %endif

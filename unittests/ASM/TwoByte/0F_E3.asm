@@ -7,9 +7,6 @@
     "MM3": "0x20f9b0697cd37844",
     "MM4": "0x1ed685b8691d35ca",
     "MM5": "0x15dc41a91ea818cc"
-  },
-  "MemoryRegions": {
-    "0x100000000": "4096"
   }
 }
 %endif
