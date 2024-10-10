@@ -38,6 +38,7 @@ $end_info$
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Filesystem.h>
+#include <FEXHeaderUtils/StringArgumentParser.h>
 
 #include <atomic>
 #include <cerrno>
@@ -135,63 +136,44 @@ private:
 };
 } // namespace AOTIR
 
-void InterpreterHandler(fextl::string* Filename, const fextl::string& RootFS, fextl::vector<fextl::string>* args) {
-  // Open the Filename to determine if it is a shebang file.
-  int FD = open(Filename->c_str(), O_RDONLY | O_CLOEXEC);
+bool InterpreterHandler(fextl::string* Filename, const fextl::string& RootFS, fextl::vector<fextl::string>* args) {
+  int FD {-1};
+
+  // Attempt to open the filename from the rootfs first.
+  FD = open(fextl::fmt::format("{}{}", RootFS, *Filename).c_str(), O_RDONLY | O_CLOEXEC);
   if (FD == -1) {
-    return;
+    // Failing that, attempt to open the filename directly.
+    FD = open(Filename->c_str(), O_RDONLY | O_CLOEXEC);
+    if (FD == -1) {
+      return false;
+    }
   }
 
   std::array<char, 257> Header;
   const auto ChunkSize = 257l;
   const auto ReadSize = pread(FD, &Header.at(0), ChunkSize, 0);
+  close(FD);
 
   const auto Data = std::span<char>(Header.data(), ReadSize);
 
   // Is the file large enough for shebang
   if (ReadSize <= 2) {
-    close(FD);
-    return;
+    return false;
   }
 
   // Handle shebang files
   if (Data[0] == '#' && Data[1] == '!') {
-    fextl::string InterpreterLine {Data.begin() + 2, // strip off "#!" prefix
-                                   std::find(Data.begin(), Data.end(), '\n')};
-    fextl::vector<fextl::string> ShebangArguments {};
-
-    // Shebang line can have a single argument
-    fextl::istringstream InterpreterSS(InterpreterLine);
-    fextl::string Argument;
-    while (std::getline(InterpreterSS, Argument, ' ')) {
-      if (Argument.empty()) {
-        continue;
-      }
-      ShebangArguments.push_back(std::move(Argument));
-    }
+    std::string_view InterpreterLine {Data.begin() + 2, // strip off "#!" prefix
+                                      std::find(Data.begin(), Data.end(), '\n')};
+    const auto ShebangArguments = FHU::ParseArgumentsFromString(InterpreterLine);
 
     // Executable argument
-    fextl::string& ShebangProgram = ShebangArguments[0];
-
-    // If the filename is absolute then prepend the rootfs
-    // If it is relative then don't append the rootfs
-    if (ShebangProgram[0] == '/') {
-      ShebangProgram = RootFS + ShebangProgram;
-    }
-    *Filename = ShebangProgram;
+    *Filename = ShebangArguments.at(0);
 
     // Insert all the arguments at the start
     args->insert(args->begin(), ShebangArguments.begin(), ShebangArguments.end());
   }
-  close(FD);
-}
-
-void RootFSRedirect(fextl::string* Filename, const fextl::string& RootFS) {
-  auto RootFSLink = ELFCodeLoader::ResolveRootfsFile(*Filename, RootFS);
-
-  if (FHU::Filesystem::Exists(RootFSLink)) {
-    *Filename = RootFSLink;
-  }
+  return true;
 }
 
 FEX::Config::PortableInformation ReadPortabilityInformation() {
@@ -435,10 +417,21 @@ int main(int argc, char** argv, char** const envp) {
   FEXCore::Profiler::Init();
   FEXCore::Telemetry::Initialize();
 
-  RootFSRedirect(&Program.ProgramPath, LDPath());
-  InterpreterHandler(&Program.ProgramPath, LDPath(), &Args);
+  if (Program.ProgramPath.starts_with(LDPath())) {
+    // From this point on, ProgramPath needs to not have the LDPath prefixed on to it.
+    auto RootFSLength = LDPath().size();
+    if (Program.ProgramPath.at(RootFSLength) != '/') {
+      // Ensure the modified path starts as an absolute path.
+      // This edge case can occur when ROOTFS ends with '/' and passed a path like `<ROOTFS>usr/bin/true`.
+      --RootFSLength;
+    }
 
-  if (!ExecutedWithFD && FEXFD == -1 && !FHU::Filesystem::Exists(Program.ProgramPath)) {
+    Program.ProgramPath.erase(0, RootFSLength);
+  }
+
+  bool ProgramExists = InterpreterHandler(&Program.ProgramPath, LDPath(), &Args);
+
+  if (!ExecutedWithFD && FEXFD == -1 && !ProgramExists) {
     // Early exit if the program passed in doesn't exist
     // Will prevent a crash later
     fextl::fmt::print(stderr, "{}: command not found\n", Program.ProgramPath);
