@@ -38,6 +38,8 @@ void RegisterInfo(FEX::HLE::SyscallHandler* Handler) {
 
   REGISTER_SYSCALL_IMPL_FLAGS(
     uname, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY, [](FEXCore::Core::CpuStateFrame* Frame, struct utsname* buf) -> uint64_t {
+      auto Thread = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
+
       struct utsname Local {};
       if (::uname(&Local) == 0) {
         memcpy(buf->nodename, Local.nodename, sizeof(Local.nodename));
@@ -50,6 +52,10 @@ void RegisterInfo(FEX::HLE::SyscallHandler* Handler) {
       }
       strcpy(buf->sysname, "Linux");
       uint32_t GuestVersion = FEX::HLE::_SyscallHandler->GetGuestKernelVersion();
+      if (Thread->persona & UNAME26) {
+        // Kernel version converts from 6.x.y to 2.6.60+x.
+        GuestVersion = FEX::HLE::SyscallHandler::KernelVersion(2, 6, 60 + FEX::HLE::SyscallHandler::KernelMinor(GuestVersion));
+      }
       snprintf(buf->release, sizeof(buf->release), "%d.%d.%d", FEX::HLE::SyscallHandler::KernelMajor(GuestVersion),
                FEX::HLE::SyscallHandler::KernelMinor(GuestVersion), FEX::HLE::SyscallHandler::KernelPatch(GuestVersion));
 
