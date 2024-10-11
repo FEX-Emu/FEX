@@ -15,17 +15,19 @@
   ],
   "Instructions": {
     "palignr mm0, mm1, 0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "NP 0x0f 0x3a 0x0f"
       ],
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #1056]",
-        "str d2, [x28, #1040]"
+        "str d2, [x28, #1040]",
+        "mov w20, #0xffff",
+        "strh w20, [x28, #1048]"
       ]
     },
     "palignr mm0, mm1, 1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "NP 0x0f 0x3a 0x0f"
       ],
@@ -33,17 +35,21 @@
         "ldr d2, [x28, #1056]",
         "ldr d3, [x28, #1040]",
         "ext v2.8b, v2.8b, v3.8b, #1",
-        "str d2, [x28, #1040]"
+        "str d2, [x28, #1040]",
+        "mov w20, #0xffff",
+        "strh w20, [x28, #1048]"
       ]
     },
     "palignr mm0, mm1, 255": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "NP 0x0f 0x3a 0x0f"
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
-        "str d2, [x28, #1040]"
+        "str d2, [x28, #1040]",
+        "mov w20, #0xffff",
+        "strh w20, [x28, #1048]"
       ]
     },
     "roundps xmm0, xmm1, 00000000b": {
