@@ -330,8 +330,6 @@ void RegisterCommon(FEX::HLE::SyscallHandler* Handler) {
                                    SyscallPassthrough2<SYSCALL_DEF(capget)>);
   REGISTER_SYSCALL_IMPL_PASS_FLAGS(capset, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
                                    SyscallPassthrough2<SYSCALL_DEF(capset)>);
-  REGISTER_SYSCALL_IMPL_PASS_FLAGS(personality, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                   SyscallPassthrough1<SYSCALL_DEF(personality)>);
   REGISTER_SYSCALL_IMPL_PASS_FLAGS(getpriority, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
                                    SyscallPassthrough2<SYSCALL_DEF(getpriority)>);
   REGISTER_SYSCALL_IMPL_PASS_FLAGS(setpriority, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,

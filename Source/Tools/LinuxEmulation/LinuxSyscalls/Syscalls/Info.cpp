@@ -24,6 +24,7 @@ $end_info$
 #include <sys/syscall.h>
 #include <sys/utsname.h>
 #include <sys/klog.h>
+#include <sys/personality.h>
 #include <unistd.h>
 
 #include <git_version.h>
@@ -59,6 +60,28 @@ void RegisterInfo(FEX::HLE::SyscallHandler* Handler) {
       strcpy(buf->machine, "x86_64");
       return 0;
     });
+
+  REGISTER_SYSCALL_IMPL_PASS_FLAGS(personality, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                   [](FEXCore::Core::CpuStateFrame* Frame, uint32_t persona) -> uint64_t {
+                                     auto Thread = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
+
+                                     if (persona == ~0U) {
+                                       // Special case, only queries the persona.
+                                       return Thread->persona;
+                                     }
+
+                                     // Mask off `PER_LINUX32` because AArch64 doesn't support it.
+                                     uint32_t NewPersona = persona & ~PER_LINUX32;
+
+                                     // This syscall can not physically fail with PER_LINUX32 masked off.
+                                     // It also can not fail on a real x86 kernel.
+                                     (void)::syscall(SYSCALL_DEF(personality), NewPersona);
+
+                                     // Return the old persona while setting the new one.
+                                     auto OldPersona = Thread->persona;
+                                     Thread->persona = persona;
+                                     return OldPersona;
+                                   });
 
   REGISTER_SYSCALL_IMPL_FLAGS(seccomp, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
                               [](FEXCore::Core::CpuStateFrame* Frame, unsigned int operation, unsigned int flags, void* args) -> uint64_t {
