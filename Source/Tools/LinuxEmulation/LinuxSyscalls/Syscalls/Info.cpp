@@ -62,8 +62,13 @@ void RegisterInfo(FEX::HLE::SyscallHandler* Handler) {
       const char version[] = "#" GIT_DESCRIBE_STRING " SMP " __DATE__ " " __TIME__;
       strcpy(buf->version, version);
       static_assert(sizeof(version) <= sizeof(buf->version), "uname version define became too large!");
-      // Tell the guest that we are a 64bit kernel
-      strcpy(buf->machine, "x86_64");
+      if (Thread->persona & PER_LINUX32) {
+        // Tell the guest that we are a 32bit kernel
+        strcpy(buf->machine, "i686");
+      } else {
+        // Tell the guest that we are a 64bit kernel
+        strcpy(buf->machine, "x86_64");
+      }
       return 0;
     });
 
