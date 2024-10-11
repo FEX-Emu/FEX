@@ -699,8 +699,12 @@ def print_ir_allocator_helpers():
 
             # We gather the "has x87?" flag as we go. This saves the user from
             # having to keep track of whether they emitted any x87.
+            # Also changes the mmx state to X87.
             if op.LoweredX87:
                 output_file.write("\t\tRecordX87Use();\n")
+                output_file.write(
+                    "\t\tif(MMXState == MMXState_MMX) ChgStateMMX_X87();\n"
+                )
 
             output_file.write("\t\tauto _Op = AllocateOp<IROp_{}, IROps::OP_{}>();\n".format(op.Name, op.Name.upper()))
 
@@ -826,4 +830,3 @@ print_ir_dispatcher_defs()
 print_ir_dispatcher_dispatch()
 
 output_dispatch_file.close()
-

@@ -4407,9 +4407,13 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
       LOGMAN_THROW_A_FMT(OpSize == 8, "full");
       LOGMAN_THROW_A_FMT(Class == FPRClass, "MMX is floaty");
 
-      // Partial store into bottom 64-bits, leave the upper bits unaffected.
-      // XXX: We actually should set the upper bits to all-1s?
-      StoreContextPartial(MM0Index + gpr - FEXCore::X86State::REG_MM_0, Src);
+      if (MMXState != MMXState_MMX) {
+        ChgStateX87_MMX();
+      }
+
+      uint8_t Index = MM0Index + gpr - FEXCore::X86State::REG_MM_0;
+      StoreContext(Index, Src);
+      RegCache.Partial |= (1ull << (uint64_t)Index);
     } else if (gpr >= FEXCore::X86State::REG_XMM_0) {
       const auto gprIndex = gpr - X86State::REG_XMM_0;
       const auto VectorSize = GetGuestVectorLength();

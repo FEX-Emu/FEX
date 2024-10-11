@@ -343,8 +343,13 @@ protected:
     return Ptr;
   }
 
+  // MMX State can be either MMX (for 64bit) or x87 FPU (for 80bit)
+  enum { MMXState_MMX, MMXState_X87 } MMXState = MMXState_MMX;
+
   // Overriden by dispatcher, stubbed for IR tests
   virtual void RecordX87Use() {}
+  virtual void ChgStateX87_MMX() {}
+  virtual void ChgStateMMX_X87() {}
   virtual void SaveNZCV(IROps Op) {}
 
   Ref CurrentWriteCursor = nullptr;
