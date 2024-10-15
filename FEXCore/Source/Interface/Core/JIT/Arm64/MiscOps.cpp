@@ -262,7 +262,7 @@ DEF_OP(RDRAND) {
 }
 
 DEF_OP(Yield) {
-  yield();
+  wfe();
 }
 
 #undef DEF_OP
