@@ -123,22 +123,26 @@
       ]
     },
     "cvttpd2pi mm0, xmm0": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 5,
       "Comment": "0x66 0x0f 0x2c",
       "ExpectedArm64ASM": [
         "fcvtn v2.2s, v16.2d",
         "fcvtzs v2.2s, v2.2s",
-        "str d2, [x28, #1040]"
+        "str d2, [x28, #1040]",
+        "mov w20, #0xffff",
+        "strh w20, [x28, #1048]"
       ]
     },
     "cvtpd2pi mm0, xmm0": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 6,
       "Comment": "0x66 0x0f 0x2d",
       "ExpectedArm64ASM": [
         "fcvtn v2.2s, v16.2d",
         "frinti v2.2s, v2.2s",
         "fcvtzs v2.2s, v2.2s",
-        "str d2, [x28, #1040]"
+        "str d2, [x28, #1040]",
+        "mov w20, #0xffff",
+        "strh w20, [x28, #1048]"
       ]
     },
     "ucomisd xmm0, xmm1": {

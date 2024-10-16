@@ -698,6 +698,10 @@ void OpDispatchBuilder::MOVQOp(OpcodeArgs, VectorOpType VectorType) {
 }
 
 void OpDispatchBuilder::MOVQMMXOp(OpcodeArgs) {
+  // Partial store into bottom 64-bits, leave the upper bits unaffected.
+  if (MMXState == MMXState_X87) {
+    ChgStateX87_MMX();
+  }
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = 1});
   StoreResult(FPRClass, Op, Src, 1);
 }
@@ -2298,6 +2302,11 @@ void OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs) {
 
 template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
 void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int(OpcodeArgs) {
+  // This function causes a change in MMX state from X87 to MMX
+  if (MMXState == MMXState_X87) {
+    ChgStateX87_MMX();
+  }
+
   // If loading a vector, use the full size, so we don't
   // unnecessarily zero extend the vector. Otherwise, if
   // memory, then we want to load the element size exactly.

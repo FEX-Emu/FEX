@@ -459,10 +459,12 @@
       ]
     },
     "movdq2q mm0, xmm0": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 3,
       "Comment": "0xf2 0x0f 0xd6",
       "ExpectedArm64ASM": [
-        "str d16, [x28, #1040]"
+        "str d16, [x28, #1040]",
+        "mov w20, #0xffff",
+        "strh w20, [x28, #1048]"
       ]
     },
     "cvtpd2dq xmm0, xmm1": {

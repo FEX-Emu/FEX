@@ -1,8 +1,8 @@
 %ifdef CONFIG
 {
   "RegData": {
-    "MM0":  ["0x8182838491929394", "0x0"],
-    "MM1":  ["0xA1A2A3A4B1B2B3B4", "0x0"]
+    "MM0":  "0x8182838491929394",
+    "MM1":  "0xA1A2A3A4B1B2B3B4"
   },
   "HostFeatures": ["3DNOW"]
 }
