@@ -55,6 +55,9 @@ struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
   // Seccomp thread specific data.
   uint32_t SeccompMode {SECCOMP_MODE_DISABLED};
   fextl::vector<FEX::HLE::SeccompEmulator::FilterInformation*> Filters {};
+
+  // personality emulation.
+  uint32_t persona {};
 };
 
 class ThreadManager final {

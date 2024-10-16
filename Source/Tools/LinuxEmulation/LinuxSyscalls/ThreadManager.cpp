@@ -22,6 +22,7 @@ FEX::HLE::ThreadStateObject* ThreadManager::CreateThread(uint64_t InitialRIP, ui
 
   if (InheritThread) {
     FEX::HLE::_SyscallHandler->SeccompEmulator.InheritSeccompFilters(InheritThread, ThreadStateObject);
+    ThreadStateObject->persona = InheritThread->persona;
   }
 
   ++IdleWaitRefCount;
