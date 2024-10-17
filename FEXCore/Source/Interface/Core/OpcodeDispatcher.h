@@ -735,6 +735,7 @@ public:
   void X87FNSAVE(OpcodeArgs);
   void X87FRSTOR(OpcodeArgs);
   void X87FXAM(OpcodeArgs);
+  void X87FXTRACT(OpcodeArgs);
   void X87FCMOV(OpcodeArgs);
   void X87EMMS(OpcodeArgs);
   void X87FFREE(OpcodeArgs);
@@ -768,7 +769,6 @@ public:
   void FABSF64(OpcodeArgs);
   void FTSTF64(OpcodeArgs);
   void FRNDINTF64(OpcodeArgs);
-  void FXTRACTF64(OpcodeArgs);
   void FNINITF64(OpcodeArgs);
   void FSQRTF64(OpcodeArgs);
   void X87UnaryOpF64(OpcodeArgs, FEXCore::IR::IROps IROp);
@@ -780,6 +780,7 @@ public:
   void X87FNSAVEF64(OpcodeArgs);
   void X87FRSTORF64(OpcodeArgs);
   void X87FXAMF64(OpcodeArgs);
+  void X87FXTRACTF64(OpcodeArgs);
   void X87LDENVF64(OpcodeArgs);
 
   void FCOMIF64(OpcodeArgs, size_t width, bool Integer, FCOMIFlags whichflags, bool poptwice);

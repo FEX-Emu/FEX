@@ -8,6 +8,7 @@ $end_info$
 
 #include "Interface/Core/OpcodeDispatcher.h"
 #include "Interface/Core/X86Tables/X86Tables.h"
+#include "Interface/IR/IR.h"
 
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/X86Enums.h>
@@ -519,4 +520,37 @@ void OpDispatchBuilder::X87FRSTORF64(OpcodeArgs) {
   _StoreContextIndexed(Reg, Top, 8, MMBaseOffset(), 16, FPRClass);
 }
 
+void OpDispatchBuilder::X87FXTRACTF64(OpcodeArgs) {
+  // Split node into SIG and EXP while handling the special zero case.
+  // i.e. if val == 0.0, then sig = 0.0, exp = -inf
+  // if val == -0.0, then sig = -0.0, exp = -inf
+  // otherwise we just extract the 64-bit sig and exp as normal.
+  Ref Node = _ReadStackValue(0);
+
+  Ref Gpr = _VExtractToGPR(8, 8, Node, 0);
+
+  // zero case
+  Ref ExpZV = _VCastFromGPR(8, 8, _Constant(0xfff0'0000'0000'0000UL));
+  Ref SigZV = Node;
+
+  // non zero case
+  Ref ExpNZ = _Bfe(OpSize::i64Bit, 11, 52, Gpr);
+  ExpNZ = _Sub(OpSize::i64Bit, ExpNZ, _Constant(1023));
+  Ref ExpNZV = _Float_FromGPR_S(8, 8, ExpNZ);
+
+  Ref SigNZ = _And(OpSize::i64Bit, Gpr, _Constant(0x800f'ffff'ffff'ffffLL));
+  SigNZ = _Or(OpSize::i64Bit, SigNZ, _Constant(0x3ff0'0000'0000'0000LL));
+  Ref SigNZV = _VCastFromGPR(8, 8, SigNZ);
+
+  // Comparison and select to push onto stack
+  SaveNZCV();
+  _TestNZ(OpSize::i64Bit, Gpr, _Constant(0x7fff'ffff'ffff'ffffUL));
+
+  Ref Sig = _NZCVSelectV(8, {COND_EQ}, SigZV, SigNZV);
+  Ref Exp = _NZCVSelectV(8, {COND_EQ}, ExpZV, ExpNZV);
+
+  _PopStackDestroy();
+  _PushStack(Exp, Exp, 64, true);
+  _PushStack(Sig, Sig, 64, true);
+}
 } // namespace FEXCore::IR
