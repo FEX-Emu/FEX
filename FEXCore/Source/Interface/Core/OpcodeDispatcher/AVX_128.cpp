@@ -400,7 +400,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(3, 0b01, 0x19), 1, &OpDispatchBuilder::AVX128_VEXTRACT128},
     {OPD(3, 0b01, 0x1D), 1, &OpDispatchBuilder::AVX128_VCVTPS2PH},
     {OPD(3, 0b01, 0x20), 1, &OpDispatchBuilder::AVX128_VPINSRB},
-    {OPD(3, 0b01, 0x21), 1, &OpDispatchBuilder::VINSERTPSOp},
+    {OPD(3, 0b01, 0x21), 1, &OpDispatchBuilder::AVX128_VINSERTPS},
     {OPD(3, 0b01, 0x22), 1, &OpDispatchBuilder::AVX128_VPINSRDQ},
 
     {OPD(3, 0b01, 0x38), 1, &OpDispatchBuilder::AVX128_VINSERT},
@@ -2152,6 +2152,8 @@ void OpDispatchBuilder::AVX128_VectorVariableBlend(OpcodeArgs) {
   Result.Low = Convert(Src1.Low, Src2.Low, Mask.Low);
   if (!Is128Bit) {
     Result.High = Convert(Src1.High, Src2.High, Mask.High);
+  } else {
+    Result = AVX128_Zext(Result.Low);
   }
 
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
