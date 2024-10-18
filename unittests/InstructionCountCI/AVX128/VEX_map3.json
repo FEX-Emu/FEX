@@ -2325,32 +2325,37 @@
       ]
     },
     "vinsertps xmm0, xmm1, xmm2, ((0b00 << 6) | (0b00 << 4) | (0b0000))": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map 3 0b01 0x21 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v17.16b",
-        "mov v16.s[0], v18.s[0]"
+        "mov v16.s[0], v18.s[0]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vinsertps xmm0, xmm1, xmm2, ((0b00 << 6) | (0b00 << 4) | (0b1111))": {
-      "ExpectedInstructionCount": 1,
-      "Comment": [
-        "Map 3 0b01 0x21 128-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "movi v16.2d, #0x0"
-      ]
-    },
-    "vinsertps xmm0, xmm1, xmm2, ((0b11 << 6) | (0b11 << 4) | (0b0000))": {
       "ExpectedInstructionCount": 2,
       "Comment": [
         "Map 3 0b01 0x21 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "movi v16.2d, #0x0",
+        "str q16, [x28, #16]"
+      ]
+    },
+    "vinsertps xmm0, xmm1, xmm2, ((0b11 << 6) | (0b11 << 4) | (0b0000))": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "Map 3 0b01 0x21 128-bit"
+      ],
+      "ExpectedArm64ASM": [
         "mov v16.16b, v17.16b",
-        "mov v16.s[3], v18.s[3]"
+        "mov v16.s[3], v18.s[3]",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vpinsrd xmm0, xmm0, eax, 0": {
@@ -3471,14 +3476,16 @@
       ]
     },
     "vblendvps xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "Map 3 0b01 0x4a 128-bit"
       ],
       "ExpectedArm64ASM": [
         "sshr v2.4s, v19.4s, #31",
         "mov v16.16b, v2.16b",
-        "bsl v16.16b, v18.16b, v17.16b"
+        "bsl v16.16b, v18.16b, v17.16b",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vblendvps ymm0, ymm1, ymm2, ymm3": {
@@ -3499,14 +3506,16 @@
       ]
     },
     "vblendvpd xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "Map 3 0b01 0x4b 128-bit"
       ],
       "ExpectedArm64ASM": [
         "sshr v2.2d, v19.2d, #63",
         "mov v16.16b, v2.16b",
-        "bsl v16.16b, v18.16b, v17.16b"
+        "bsl v16.16b, v18.16b, v17.16b",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vblendvpd ymm0, ymm1, ymm2, ymm3": {
@@ -3527,14 +3536,16 @@
       ]
     },
     "vpblendvb xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "Map 3 0b01 0x4c 128-bit"
       ],
       "ExpectedArm64ASM": [
         "sshr v2.16b, v19.16b, #7",
         "mov v16.16b, v2.16b",
-        "bsl v16.16b, v18.16b, v17.16b"
+        "bsl v16.16b, v18.16b, v17.16b",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vpblendvb ymm0, ymm1, ymm2, ymm3": {

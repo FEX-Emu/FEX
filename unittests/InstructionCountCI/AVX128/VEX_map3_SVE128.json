@@ -11,14 +11,16 @@
   },
   "Instructions": {
     "vblendvps xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "Map 3 0b01 0x4a 128-bit"
       ],
       "ExpectedArm64ASM": [
         "sshr v2.4s, v19.4s, #31",
         "movprfx z16, z18",
-        "bsl z16.d, z16.d, z17.d, z2.d"
+        "bsl z16.d, z16.d, z17.d, z2.d",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vblendvps ymm0, ymm1, ymm2, ymm3": {
@@ -39,14 +41,16 @@
       ]
     },
     "vblendvpd xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "Map 3 0b01 0x4b 128-bit"
       ],
       "ExpectedArm64ASM": [
         "sshr v2.2d, v19.2d, #63",
         "movprfx z16, z18",
-        "bsl z16.d, z16.d, z17.d, z2.d"
+        "bsl z16.d, z16.d, z17.d, z2.d",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vblendvpd ymm0, ymm1, ymm2, ymm3": {
@@ -67,14 +71,16 @@
       ]
     },
     "vpblendvb xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "Map 3 0b01 0x4c 128-bit"
       ],
       "ExpectedArm64ASM": [
         "sshr v2.16b, v19.16b, #7",
         "movprfx z16, z18",
-        "bsl z16.d, z16.d, z17.d, z2.d"
+        "bsl z16.d, z16.d, z17.d, z2.d",
+        "movi v2.2d, #0x0",
+        "str q2, [x28, #16]"
       ]
     },
     "vpblendvb ymm0, ymm1, ymm2, ymm3": {
