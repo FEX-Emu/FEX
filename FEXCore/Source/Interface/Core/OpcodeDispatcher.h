@@ -1062,8 +1062,7 @@ public:
   void AVX128_VDPP(OpcodeArgs);
   void AVX128_VPERMQ(OpcodeArgs);
 
-  template<size_t ElementSize, bool Low>
-  void AVX128_VPSHUF(OpcodeArgs);
+  void AVX128_VPSHUFW(OpcodeArgs, bool Low);
 
   template<size_t ElementSize>
   void AVX128_VSHUF(OpcodeArgs);
