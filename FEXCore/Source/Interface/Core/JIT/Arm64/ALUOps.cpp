@@ -1280,13 +1280,9 @@ DEF_OP(FindLSB) {
   const auto Dst = GetReg(Node);
   const auto Src = GetReg(Op->Src.ID());
 
-  if (IROp->Size != 8) {
-    ubfx(EmitSize, TMP1, Src, 0, IROp->Size * 8);
-    rbit(EmitSize, TMP1, TMP1);
-  } else {
-    rbit(EmitSize, TMP1, Src);
-  }
-
+  // We assume the source is nonzero, so we can just rbit+clz without worrying
+  // about upper garbage for smaller types.
+  rbit(EmitSize, TMP1, Src);
   clz(EmitSize, Dst, TMP1);
 }
 
