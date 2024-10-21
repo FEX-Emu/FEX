@@ -1874,11 +1874,23 @@ void OpDispatchBuilder::AVX128_VPERMQ(OpcodeArgs) {
 void OpDispatchBuilder::AVX128_VPSHUFW(OpcodeArgs, bool Low) {
   auto Shuffle = Op->Src[1].Literal();
 
-  AVX128_VectorUnaryImpl(Op, GetSrcSize(Op), OpSize::i16Bit, [this, Shuffle, Low](size_t _, Ref Src) {
-    const auto IndexedVectorConstant = Low ? FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFLW :
-                                             FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFHW;
+  struct DataPacking {
+    OpDispatchBuilder* This;
+    uint8_t Shuffle;
+    bool Low;
+  };
 
-    return PShufWLane(OpSize::i128Bit, IndexedVectorConstant, Low, Src, Shuffle);
+  DataPacking Pack {
+    .This = this,
+    .Shuffle = static_cast<uint8_t>(Shuffle),
+    .Low = Low,
+  };
+
+  AVX128_VectorUnaryImpl(Op, GetSrcSize(Op), OpSize::i16Bit, [Pack](size_t _, Ref Src) {
+    const auto IndexedVectorConstant = Pack.Low ? FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFLW :
+                                                  FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFHW;
+
+    return Pack.This->PShufWLane(OpSize::i128Bit, IndexedVectorConstant, Pack.Low, Src, Pack.Shuffle);
   });
 }
 
