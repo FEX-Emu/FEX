@@ -1051,7 +1051,7 @@
       "GPR = FindLSB OpSize:#Size, GPR:$Src": {
         "Desc": ["Find least-significant-bit set",
                  "Returns the index of the least significant bit set",
-                 "In the case of zero returns ~0U"
+                 "Undefined result if Src is zero."
                 ],
         "DestSize": "Size",
         "ImplicitFlagClobber": true,
@@ -1062,7 +1062,7 @@
       "GPR = FindMSB OpSize:#Size, GPR:$Src": {
         "Desc": ["Find most-significant-bit set",
                  "Returns the index of the most significant bit set",
-                 "In the case of zero returns ~0U"
+                 "Undefined result if Src is zero."
                 ],
         "DestSize": "Size",
         "EmitValidation": [
