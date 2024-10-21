@@ -3847,14 +3847,14 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     Ref CASResult = _CAS(IR::SizeToOpSize(Size), Src3Lower, Src2, Src1);
     Ref RAXResult = CASResult;
 
-    if (GPRSize == 8 && Size == 4) {
-      // This allows us to only hit the ZEXT case on failure
-      RAXResult = _Select(FEXCore::IR::COND_EQ, CASResult, Src3Lower, Src3, CASResult);
-      Size = 8;
-    }
-
     CalculateFlags_SUB(GetSrcSize(Op), Src3Lower, CASResult);
     CalculateDeferredFlags();
+
+    if (GPRSize == 8 && Size == 4) {
+      // This allows us to only hit the ZEXT case on failure
+      RAXResult = _NZCVSelect(IR::i64Bit, {COND_EQ}, Src3, CASResult);
+      Size = 8;
+    }
 
     // RAX gets the result of the CAS op
     StoreGPRRegister(X86State::REG_RAX, RAXResult, Size);
