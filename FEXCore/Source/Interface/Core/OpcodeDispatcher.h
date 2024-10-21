@@ -1701,6 +1701,19 @@ private:
     PossiblySetNZCVBits |= (1u << Bit);
   }
 
+  // If we don't care about N/C/V and just need Z, we can test with a simple
+  // mask without any shifting.
+  void SetZ_InvalidateNCV(IR::OpSize Size, Ref Src) {
+    HandleNZCVWrite();
+    CFInverted = true;
+
+    if (Size < 4) {
+      _TestNZ(OpSize::i32Bit, Src, _InlineConstant((1u << (8 * Size)) - 1));
+    } else {
+      _TestNZ(Size, Src, Src);
+    }
+  }
+
   // Ensure the carry invert flag matches the desired form. Used before an
   // operation reading carry or at the end of a block.
   void RectifyCarryInvert(bool RequiredInvert) {

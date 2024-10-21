@@ -3716,19 +3716,15 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
 void OpDispatchBuilder::BSFOp(OpcodeArgs) {
   const uint8_t GPRSize = CTX->GetGPRSize();
   const uint8_t DstSize = GetDstSize(Op) == 2 ? 2 : GPRSize;
-  Ref Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, DstSize, Op->Flags);
-  Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-
-  InvalidateDeferredFlags();
-  CachedNZCV = nullptr;
+  Ref Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, DstSize, Op->Flags, {.AllowUpperGarbage = true});
+  Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
 
   // Find the LSB of this source
   auto Result = _FindLSB(OpSizeFromSrc(Op), Src);
 
   // OF, SF, AF, PF, CF all undefined
   // ZF is set to 1 if the source was zero
-  SetNZ_ZeroCV(GetSrcSize(Op), Src);
-  // TODO: Optimize carry zero
+  SetZ_InvalidateNCV(OpSizeFromSrc(Op), Src);
 
   // If Src was zero then the destination doesn't get modified
   auto SelectOp = NZCVSelect(IR::SizeToOpSize(GPRSize), {COND_EQ}, Dest, Result);
@@ -3738,19 +3734,15 @@ void OpDispatchBuilder::BSFOp(OpcodeArgs) {
 void OpDispatchBuilder::BSROp(OpcodeArgs) {
   const uint8_t GPRSize = CTX->GetGPRSize();
   const uint8_t DstSize = GetDstSize(Op) == 2 ? 2 : GPRSize;
-  Ref Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, DstSize, Op->Flags);
-  Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-
-  InvalidateDeferredFlags();
-  CachedNZCV = nullptr;
+  Ref Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, DstSize, Op->Flags, {.AllowUpperGarbage = true});
+  Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
 
   // Find the MSB of this source
   auto Result = _FindMSB(OpSizeFromSrc(Op), Src);
 
   // OF, SF, AF, PF, CF all undefined
   // ZF is set to 1 if the source was zero
-  SetNZ_ZeroCV(GetSrcSize(Op), Src);
-  // TODO: Optimize carry zero
+  SetZ_InvalidateNCV(OpSizeFromSrc(Op), Src);
 
   // If Src was zero then the destination doesn't get modified
   auto SelectOp = NZCVSelect(IR::SizeToOpSize(GPRSize), {COND_EQ}, Dest, Result);
