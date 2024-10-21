@@ -890,49 +890,10 @@ void OpDispatchBuilder::VPSHUFBOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, -1);
 }
 
-void OpDispatchBuilder::PSHUFW8ByteOp(OpcodeArgs) {
+Ref OpDispatchBuilder::PShufWLane(size_t Size, FEXCore::IR::IndexNamedVectorConstant IndexConstant, bool LowLane, Ref IncomingLane, uint8_t Shuffle) {
   constexpr auto IdentityCopy = 0b11'10'01'00;
 
-  uint16_t Shuffle = Op->Src[1].Data.Literal.Value;
-  const auto Size = GetSrcSize(Op);
-  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  Ref Dest {};
-
-  // TODO: There can be more optimized copies here.
-  switch (Shuffle) {
-  case IdentityCopy: {
-    // Special case identity copy.
-    Dest = Src;
-    break;
-  }
-  case 0b00'00'00'00:
-  case 0b01'01'01'01:
-  case 0b10'10'10'10:
-  case 0b11'11'11'11: {
-    // Special case element duplicate and broadcasts.
-    Dest = _VDupElement(Size, 2, Src, (Shuffle & 0b11));
-    break;
-  }
-  default: {
-    // PSHUFW (mmx) also needs to scale by 16 to get correct low element.
-    auto LookupIndexes =
-      LoadAndCacheIndexedNamedVectorConstant(Size, FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFLW, Shuffle * 16);
-    Dest = _VTBL1(Size, Src, LookupIndexes);
-    break;
-  }
-  }
-
-  StoreResult(FPRClass, Op, Dest, -1);
-}
-
-void OpDispatchBuilder::PSHUFWOp(OpcodeArgs, bool Low) {
-  constexpr auto IdentityCopy = 0b11'10'01'00;
-
-  uint16_t Shuffle = Op->Src[1].Data.Literal.Value;
-  const auto Size = GetSrcSize(Op);
-  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  Ref Dest {};
-
+  const bool Is128BitLane = Size == OpSize::i128Bit;
   const uint8_t NumElements = Size / 2;
   const uint8_t HalfNumElements = NumElements >> 1;
 
@@ -940,37 +901,54 @@ void OpDispatchBuilder::PSHUFWOp(OpcodeArgs, bool Low) {
   switch (Shuffle) {
   case IdentityCopy: {
     // Special case identity copy.
-    Dest = Src;
-    break;
+    return IncomingLane;
   }
   case 0b00'00'00'00:
   case 0b01'01'01'01:
   case 0b10'10'10'10:
   case 0b11'11'11'11: {
     // Special case element duplicate and broadcast to low or high 64-bits.
-    auto DUP = _VDupElement(Size, 2, Src, (Low ? 0 : HalfNumElements) + (Shuffle & 0b11));
-    if (Low) {
-      // DUP goes low.
-      // Source goes high.
-      Dest = _VTrn2(Size, 8, DUP, Src);
-    } else {
-      // DUP goes high.
-      // Source goes low.
-      Dest = _VTrn(Size, 8, Src, DUP);
+    Ref Dup = _VDupElement(Size, OpSize::i16Bit, IncomingLane, (LowLane ? 0 : HalfNumElements) + (Shuffle & 0b11));
+    if (Is128BitLane) {
+      if (LowLane) {
+        // DUP goes low.
+        // Source goes high.
+        Dup = _VTrn2(Size, OpSize::i64Bit, Dup, IncomingLane);
+      } else {
+        // DUP goes high.
+        // Source goes low.
+        Dup = _VTrn(Size, OpSize::i64Bit, IncomingLane, Dup);
+      }
     }
-    break;
+
+    return Dup;
   }
   default: {
     // PSHUFLW needs to scale index by 16.
     // PSHUFHW needs to scale index by 16.
     // PSHUFW (mmx) also needs to scale by 16 to get correct low element.
-    const auto IndexedVectorConstant = Low ? FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFLW :
-                                             FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFHW;
-    auto LookupIndexes = LoadAndCacheIndexedNamedVectorConstant(Size, IndexedVectorConstant, Shuffle * 16);
-    Dest = _VTBL1(Size, Src, LookupIndexes);
-    break;
+    auto LookupIndexes = LoadAndCacheIndexedNamedVectorConstant(Size, IndexConstant, Shuffle * 16);
+    return _VTBL1(Size, IncomingLane, LookupIndexes);
   }
   }
+}
+
+void OpDispatchBuilder::PSHUFW8ByteOp(OpcodeArgs) {
+  uint16_t Shuffle = Op->Src[1].Data.Literal.Value;
+  const auto Size = GetSrcSize(Op);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest = PShufWLane(Size, FEXCore::IR::INDEXED_NAMED_VECTOR_PSHUFLW, true, Src, Shuffle);
+  StoreResult(FPRClass, Op, Dest, -1);
+}
+
+void OpDispatchBuilder::PSHUFWOp(OpcodeArgs, bool Low) {
+  uint16_t Shuffle = Op->Src[1].Data.Literal.Value;
+  const auto Size = GetSrcSize(Op);
+  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  const auto IndexedVectorConstant = Low ? FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFLW :
+                                           FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFHW;
+
+  Ref Dest = PShufWLane(Size, IndexedVectorConstant, Low, Src, Shuffle);
 
   StoreResult(FPRClass, Op, Dest, -1);
 }

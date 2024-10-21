@@ -159,8 +159,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b10, 0x6F), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
 
     {OPD(1, 0b01, 0x70), 1, &OpDispatchBuilder::AVX128_VPERMILImm<4>},
-    {OPD(1, 0b10, 0x70), 1, &OpDispatchBuilder::AVX128_VPSHUF<2, false>},
-    {OPD(1, 0b11, 0x70), 1, &OpDispatchBuilder::AVX128_VPSHUF<2, true>},
+    {OPD(1, 0b10, 0x70), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPSHUFW, false>},
+    {OPD(1, 0b11, 0x70), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPSHUFW, true>},
 
     {OPD(1, 0b01, 0x74), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VCMPEQ, 1>},
     {OPD(1, 0b01, 0x75), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VCMPEQ, 2>},
@@ -1871,20 +1871,26 @@ void OpDispatchBuilder::AVX128_VPERMQ(OpcodeArgs) {
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
-template<size_t ElementSize, bool Low>
-void OpDispatchBuilder::AVX128_VPSHUF(OpcodeArgs) {
+void OpDispatchBuilder::AVX128_VPSHUFW(OpcodeArgs, bool Low) {
   auto Shuffle = Op->Src[1].Literal();
 
-  AVX128_VectorUnaryImpl(Op, GetSrcSize(Op), ElementSize, [this, Shuffle](size_t _, Ref Src) {
-    Ref Result = Src;
-    const size_t BaseElement = Low ? 0 : 4;
+  struct DataPacking {
+    OpDispatchBuilder* This;
+    uint8_t Shuffle;
+    bool Low;
+  };
 
-    for (size_t i = 0; i < 4; i++) {
-      const auto Index = (Shuffle >> (2 * i)) & 0b11;
-      Result = _VInsElement(OpSize::i128Bit, ElementSize, BaseElement + i, BaseElement + Index, Result, Src);
-    }
+  DataPacking Pack {
+    .This = this,
+    .Shuffle = static_cast<uint8_t>(Shuffle),
+    .Low = Low,
+  };
 
-    return Result;
+  AVX128_VectorUnaryImpl(Op, GetSrcSize(Op), OpSize::i16Bit, [Pack](size_t _, Ref Src) {
+    const auto IndexedVectorConstant = Pack.Low ? FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFLW :
+                                                  FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFHW;
+
+    return Pack.This->PShufWLane(OpSize::i128Bit, IndexedVectorConstant, Pack.Low, Src, Pack.Shuffle);
   });
 }
 

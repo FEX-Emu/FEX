@@ -445,6 +445,7 @@ public:
   void PUNPCKLOp(OpcodeArgs, size_t ElementSize);
   void PUNPCKHOp(OpcodeArgs, size_t ElementSize);
   void PSHUFBOp(OpcodeArgs);
+  Ref PShufWLane(size_t Size, FEXCore::IR::IndexNamedVectorConstant IndexConstant, bool LowLane, Ref IncomingLane, uint8_t Shuffle);
   void PSHUFWOp(OpcodeArgs, bool Low);
   void PSHUFW8ByteOp(OpcodeArgs);
   void PSHUFDOp(OpcodeArgs);
@@ -1061,8 +1062,7 @@ public:
   void AVX128_VDPP(OpcodeArgs);
   void AVX128_VPERMQ(OpcodeArgs);
 
-  template<size_t ElementSize, bool Low>
-  void AVX128_VPSHUF(OpcodeArgs);
+  void AVX128_VPSHUFW(OpcodeArgs, bool Low);
 
   template<size_t ElementSize>
   void AVX128_VSHUF(OpcodeArgs);
