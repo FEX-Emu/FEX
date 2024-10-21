@@ -1300,7 +1300,6 @@ DEF_OP(FindMSB) {
 
   if (OpSize == 2) {
     lsl(EmitSize, Dst, Src, 16);
-    orr(EmitSize, Dst, Dst, 0x8000);
     clz(EmitSize, Dst, Dst);
   } else {
     clz(EmitSize, Dst, Src);
