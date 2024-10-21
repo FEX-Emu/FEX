@@ -3779,6 +3779,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
   if (Op->Dest.IsGPR()) {
     // This is our source register
     Ref Src2 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+    Ref Src3 = LoadGPRRegister(X86State::REG_RAX);
 
     // If the destination is also the accumulator, we get some algebraic
     // simplifications. Not sure if this is actually hit but it's in
@@ -3788,26 +3789,16 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     Ref Src1 {};
     Ref Src1Lower {};
 
-    Ref Src3 {};
-    Ref Src3Lower {};
     if (GPRSize == 8 && Size == 4) {
       Src1 = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, GPRSize, Op->Flags, {.AllowUpperGarbage = true});
       Src1Lower = _Bfe(IR::SizeToOpSize(GPRSize), Size * 8, 0, Src1);
-      Src3 = LoadGPRRegister(X86State::REG_RAX);
     } else {
       Src1 = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, Size, Op->Flags, {.AllowUpperGarbage = true});
       Src1Lower = Src1;
-      Src3 = LoadGPRRegister(X86State::REG_RAX);
-    }
-
-    if (Size != GPRSize) {
-      Src3Lower = _Bfe(IR::SizeToOpSize(GPRSize), Size * 8, 0, Src3);
-    } else {
-      Src3Lower = Src3;
     }
 
     // Compare RAX with the destination, setting flags accordingly.
-    CalculateFlags_SUB(GetSrcSize(Op), Src3Lower, Src1Lower);
+    CalculateFlags_SUB(GetSrcSize(Op), Src3, Src1Lower);
     CalculateDeferredFlags();
 
     if (!Trivial) {
