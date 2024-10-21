@@ -3776,13 +3776,10 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
   const auto GPRSize = CTX->GetGPRSize();
   auto Size = GetSrcSize(Op);
 
-  // This is our source register
-  Ref Src2 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  // 0x80014000
-  // 0x80064000
-  // 0x80064000
-
   if (Op->Dest.IsGPR()) {
+    // This is our source register
+    Ref Src2 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+
     // If the destination is also the accumulator, we get some algebraic
     // simplifications. Not sure if this is actually hit but it's in
     // InstCountCI.
@@ -3794,11 +3791,11 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     Ref Src3 {};
     Ref Src3Lower {};
     if (GPRSize == 8 && Size == 4) {
-      Src1 = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, GPRSize, Op->Flags);
+      Src1 = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, GPRSize, Op->Flags, {.AllowUpperGarbage = true});
       Src1Lower = _Bfe(IR::SizeToOpSize(GPRSize), Size * 8, 0, Src1);
       Src3 = LoadGPRRegister(X86State::REG_RAX);
     } else {
-      Src1 = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, Size, Op->Flags);
+      Src1 = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, Size, Op->Flags, {.AllowUpperGarbage = true});
       Src1Lower = Src1;
       Src3 = LoadGPRRegister(X86State::REG_RAX);
     }
@@ -3837,6 +3834,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
       StoreResult(GPRClass, Op, DestResult, -1);
     }
   } else {
+    Ref Src2 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
     HandledLock = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK;
 
     Ref Src3 {};
