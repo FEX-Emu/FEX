@@ -1282,15 +1282,12 @@ DEF_OP(FindLSB) {
 
   if (IROp->Size != 8) {
     ubfx(EmitSize, TMP1, Src, 0, IROp->Size * 8);
-    cmp(EmitSize, TMP1, 0);
     rbit(EmitSize, TMP1, TMP1);
   } else {
     rbit(EmitSize, TMP1, Src);
-    cmp(EmitSize, Src, 0);
   }
 
   clz(EmitSize, Dst, TMP1);
-  csinv(EmitSize, Dst, Dst, ARMEmitter::Reg::zr, ARMEmitter::Condition::CC_NE);
 }
 
 DEF_OP(FindMSB) {
