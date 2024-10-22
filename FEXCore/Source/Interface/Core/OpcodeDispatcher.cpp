@@ -3726,7 +3726,11 @@ void OpDispatchBuilder::BSFOp(OpcodeArgs) {
   // ZF is set to 1 if the source was zero
   SetZ_InvalidateNCV(OpSizeFromSrc(Op), Src);
 
-  // If Src was zero then the destination doesn't get modified
+  // If Src was zero then the destination doesn't get modified.
+  //
+  // Although Intel does not guarantee that semantic, AMD does and Intel
+  // hardware satisfies it. We provide the stronger AMD behaviour as
+  // applications might rely on that in the wild.
   auto SelectOp = NZCVSelect(IR::SizeToOpSize(GPRSize), {COND_EQ}, Dest, Result);
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, SelectOp, DstSize, -1);
 }
