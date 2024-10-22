@@ -22,7 +22,12 @@ Please see [Building FEX](#building-fex).
 ## Getting Started
 FEX has been tested to build and run on ARMv8.0+ hardware.
 ARMv7 hardware will not work.
-Expected operating system usage is Linux. FEX has been tested with Ubuntu 20.04, 20.10, and 21.04. Also Arch Linux.
+Expected operating system usage is Linux. FEX has been tested with the following Linux OSes:
+
+- Ubuntu 22.04
+- Ubuntu 24.04
+- Ubuntu 24.10
+- Arch Linux
 
 On AArch64 hosts the user **MUST** have an x86-64 RootFS [Creating a RootFS](#RootFS-Generation).
 
