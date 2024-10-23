@@ -1280,17 +1280,10 @@ DEF_OP(FindLSB) {
   const auto Dst = GetReg(Node);
   const auto Src = GetReg(Op->Src.ID());
 
-  if (IROp->Size != 8) {
-    ubfx(EmitSize, TMP1, Src, 0, IROp->Size * 8);
-    cmp(EmitSize, TMP1, 0);
-    rbit(EmitSize, TMP1, TMP1);
-  } else {
-    rbit(EmitSize, TMP1, Src);
-    cmp(EmitSize, Src, 0);
-  }
-
+  // We assume the source is nonzero, so we can just rbit+clz without worrying
+  // about upper garbage for smaller types.
+  rbit(EmitSize, TMP1, Src);
   clz(EmitSize, Dst, TMP1);
-  csinv(EmitSize, Dst, Dst, ARMEmitter::Reg::zr, ARMEmitter::Condition::CC_NE);
 }
 
 DEF_OP(FindMSB) {
@@ -1307,7 +1300,6 @@ DEF_OP(FindMSB) {
 
   if (OpSize == 2) {
     lsl(EmitSize, Dst, Src, 16);
-    orr(EmitSize, Dst, Dst, 0x8000);
     clz(EmitSize, Dst, Dst);
   } else {
     clz(EmitSize, Dst, Src);
