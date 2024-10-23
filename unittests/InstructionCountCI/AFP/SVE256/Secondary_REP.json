@@ -6,7 +6,9 @@
       "SVE256",
       "AFP"
     ],
-    "DisabledHostFeatures": []
+    "DisabledHostFeatures": [
+      "RPRES"
+    ]
   },
   "Instructions": {
     "cvtsi2ss xmm0, eax": {
