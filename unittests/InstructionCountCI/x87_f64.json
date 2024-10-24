@@ -6286,23 +6286,22 @@
       ]
     },
     "frstor [rax]": {
-      "ExpectedInstructionCount": 317,
+      "ExpectedInstructionCount": 316,
       "Comment": [
         "0xdd !11b /4"
       ],
       "ExpectedArm64ASM": [
         "ldrh w20, [x4]",
-        "lsr w21, w20, #10",
-        "and w21, w21, #0x3",
-        "rbit w1, w21",
+        "strh w20, [x28, #1296]",
+        "lsr w20, w20, #10",
+        "and w20, w20, #0x3",
+        "rbit w1, w20",
         "lsr w1, w1, #30",
         "mrs x0, fpcr",
         "bfi x0, x1, #22, #2",
-        "lsr x1, x21, #2",
+        "lsr x1, x20, #2",
         "bfi x0, x1, #24, #1",
         "msr fpcr, x0",
-        "strh w20, [x28, #1296]",
-        "strh w20, [x28, #1296]",
         "ldr w20, [x4, #4]",
         "ubfx w21, w20, #11, #3",
         "strb w21, [x28, #1019]",
