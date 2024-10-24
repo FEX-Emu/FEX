@@ -5583,7 +5583,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(0xDB, 0xD8), 8, &OpDispatchBuilder::X87FCMOV},
     // E0 = Invalid
     {OPD(0xDB, 0xE2), 1, &OpDispatchBuilder::NOPOp}, // FNCLEX
-    {OPD(0xDB, 0xE3), 1, &OpDispatchBuilder::FNINITF64},
+    {OPD(0xDB, 0xE3), 1, &OpDispatchBuilder::FNINIT},
     // E4 = Invalid
     {OPD(0xDB, 0xE8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, 80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
     {OPD(0xDB, 0xF0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, 80, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
@@ -5621,10 +5621,10 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 
     {OPDReg(0xDD, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTF64, 64>},
 
-    {OPDReg(0xDD, 4) | 0x00, 8, &OpDispatchBuilder::X87FRSTORF64},
+    {OPDReg(0xDD, 4) | 0x00, 8, &OpDispatchBuilder::X87FRSTOR},
 
     // 5 = Invalid
-    {OPDReg(0xDD, 6) | 0x00, 8, &OpDispatchBuilder::X87FNSAVEF64},
+    {OPDReg(0xDD, 6) | 0x00, 8, &OpDispatchBuilder::X87FNSAVE},
 
     {OPDReg(0xDD, 7) | 0x00, 8, &OpDispatchBuilder::X87FNSTSW},
 

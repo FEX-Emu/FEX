@@ -770,7 +770,6 @@ public:
   void FABSF64(OpcodeArgs);
   void FTSTF64(OpcodeArgs);
   void FRNDINTF64(OpcodeArgs);
-  void FNINITF64(OpcodeArgs);
   void FSQRTF64(OpcodeArgs);
   void X87UnaryOpF64(OpcodeArgs, FEXCore::IR::IROps IROp);
   void X87BinaryOpF64(OpcodeArgs, FEXCore::IR::IROps IROp);
@@ -778,8 +777,6 @@ public:
   void X87FLDCWF64(OpcodeArgs);
   void X87TANF64(OpcodeArgs);
   void X87ATANF64(OpcodeArgs);
-  void X87FNSAVEF64(OpcodeArgs);
-  void X87FRSTORF64(OpcodeArgs);
   void X87FXAMF64(OpcodeArgs);
   void X87FXTRACTF64(OpcodeArgs);
   void X87LDENVF64(OpcodeArgs);

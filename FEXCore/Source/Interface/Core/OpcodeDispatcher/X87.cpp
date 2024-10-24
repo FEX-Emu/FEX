@@ -420,6 +420,7 @@ void OpDispatchBuilder::X87LDENV(OpcodeArgs) {
 
 void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
   _SyncStackToSlow();
+
   // 14 bytes for 16bit
   // 2 Bytes : FCW
   // 2 Bytes : FSW
@@ -438,7 +439,6 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
   // 2 bytes : Opcode
   // 4 bytes : data pointer offset
   // 4 bytes : data pointer selector
-
   const auto Size = GetDstSize(Op);
   Ref Mem = MakeSegmentAddress(Op, Op->Dest);
   Ref Top = GetX87Top();
@@ -478,14 +478,21 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
 
   auto OneConst = _Constant(1);
   auto SevenConst = _Constant(7);
+  size_t LoadSize = ReducedPrecisionMode ? 8 : 16;
   for (int i = 0; i < 7; ++i) {
-    auto data = _LoadContextIndexed(Top, 16, MMBaseOffset(), 16, FPRClass);
+    Ref data = _LoadContextIndexed(Top, LoadSize, MMBaseOffset(), 16, FPRClass);
+    if (ReducedPrecisionMode) {
+      data = _F80CVTTo(data, 8);
+    }
     _StoreMem(FPRClass, 16, data, Mem, _Constant((Size * 7) + (10 * i)), 1, MEM_OFFSET_SXTX, 1);
     Top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, Top, OneConst), SevenConst);
   }
 
   // The final st(7) needs a bit of special handling here
-  auto data = _LoadContextIndexed(Top, 16, MMBaseOffset(), 16, FPRClass);
+  Ref data = _LoadContextIndexed(Top, LoadSize, MMBaseOffset(), 16, FPRClass);
+  if (ReducedPrecisionMode) {
+    data = _F80CVTTo(data, 8);
+  }
   // ST7 broken in to two parts
   // Lower 64bits [63:0]
   // upper 16 bits [79:64]
@@ -504,6 +511,16 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
 
   auto NewFCW = _LoadMem(GPRClass, 2, Mem, 2);
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
+  if (ReducedPrecisionMode) {
+    // ignore the rounding precision, we're always 64-bit in F64.
+    // extract rounding mode
+    Ref roundingMode = NewFCW;
+    auto roundShift = _Constant(10);
+    auto roundMask = _Constant(3);
+    roundingMode = _Lshr(OpSize::i32Bit, roundingMode, roundShift);
+    roundingMode = _And(OpSize::i32Bit, roundingMode, roundMask);
+    _SetRoundingMode(roundingMode, false, roundingMode);
+  }
 
   auto NewFSW = _LoadMem(GPRClass, Size, Mem, _Constant(Size * 1), Size, MEM_OFFSET_SXTX, 1);
   Ref Top = ReconstructX87StateFromFSW_Helper(NewFSW);
@@ -519,13 +536,16 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
   auto high = _Constant(0xFFFF);
   Ref Mask = _VCastFromGPR(16, 8, low);
   Mask = _VInsGPR(16, 8, 1, Mask, high);
-
+  size_t StoreSize = ReducedPrecisionMode ? 8 : 16;
   for (int i = 0; i < 7; ++i) {
     Ref Reg = _LoadMem(FPRClass, 16, Mem, _Constant((Size * 7) + (10 * i)), 1, MEM_OFFSET_SXTX, 1);
     // Mask off the top bits
     Reg = _VAnd(16, 16, Reg, Mask);
-
-    _StoreContextIndexed(Reg, Top, 16, MMBaseOffset(), 16, FPRClass);
+    if (ReducedPrecisionMode) {
+      // Convert to double precision
+      Reg = _F80CVT(8, Reg);
+    }
+    _StoreContextIndexed(Reg, Top, StoreSize, MMBaseOffset(), 16, FPRClass);
 
     Top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, Top, OneConst), SevenConst);
   }
@@ -537,7 +557,10 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
   Ref Reg = _LoadMem(FPRClass, 8, Mem, _Constant((Size * 7) + (10 * 7)), 1, MEM_OFFSET_SXTX, 1);
   Ref RegHigh = _LoadMem(FPRClass, 2, Mem, _Constant((Size * 7) + (10 * 7) + 8), 1, MEM_OFFSET_SXTX, 1);
   Reg = _VInsElement(16, 2, 4, 0, Reg, RegHigh);
-  _StoreContextIndexed(Reg, Top, 16, MMBaseOffset(), 16, FPRClass);
+  if (ReducedPrecisionMode) {
+    Reg = _F80CVT(8, Reg); // Convert to double precision
+  }
+  _StoreContextIndexed(Reg, Top, StoreSize, MMBaseOffset(), 16, FPRClass);
 }
 
 // Load / Store Control Word
@@ -545,7 +568,6 @@ void OpDispatchBuilder::X87FSTCW(OpcodeArgs) {
   auto FCW = _LoadContext(2, GPRClass, offsetof(FEXCore::Core::CPUState, FCW));
   StoreResult(GPRClass, Op, FCW, -1);
 }
-
 
 void OpDispatchBuilder::X87FLDCW(OpcodeArgs) {
   // FIXME: Because loading control flags will affect several instructions in fast path, we might have
@@ -555,7 +577,6 @@ void OpDispatchBuilder::X87FLDCW(OpcodeArgs) {
   Ref NewFCW = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 }
-
 
 void OpDispatchBuilder::FXCH(OpcodeArgs) {
   uint8_t Offset = Op->OP & 7;
@@ -675,7 +696,6 @@ void OpDispatchBuilder::X87ModifySTP(OpcodeArgs, bool Inc) {
 // Optionally we can pass a pre calculated value for Top, otherwise we calculate it
 // during the function runtime.
 Ref OpDispatchBuilder::ReconstructFSW_Helper(Ref T) {
-
   // Start with the top value
   auto Top = T ? T : GetX87Top();
   Ref FSW = _Lshl(OpSize::i64Bit, Top, _Constant(11));
@@ -700,7 +720,6 @@ Ref OpDispatchBuilder::ReconstructFSW_Helper(Ref T) {
 // There's no load Status Word instruction but you can load it through frstor
 // or fldenv.
 void OpDispatchBuilder::X87FNSTSW(OpcodeArgs) {
-
   Ref TopValue = _SyncStackToSlow();
   Ref StatusWord = ReconstructFSW_Helper(TopValue);
   StoreResult(GPRClass, Op, StatusWord, -1);
@@ -708,6 +727,10 @@ void OpDispatchBuilder::X87FNSTSW(OpcodeArgs) {
 
 void OpDispatchBuilder::FNINIT(OpcodeArgs) {
   auto Zero = _Constant(0);
+
+  if (ReducedPrecisionMode) {
+    _SetRoundingMode(Zero, false, Zero);
+  }
 
   // Init FCW to 0x037F
   auto NewFCW = _Constant(16, 0x037F);
