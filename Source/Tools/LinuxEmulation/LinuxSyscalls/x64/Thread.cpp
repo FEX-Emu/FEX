@@ -137,5 +137,42 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
       auto* const* EnvpPtr = envp ? const_cast<char* const*>(Envp.data()) : nullptr;
       return FEX::HLE::ExecveHandler(Frame, pathname, ArgsPtr, EnvpPtr, AtArgs);
     }));
+
+  if (ENABLE_ROBUST_LIST2) {
+    REGISTER_SYSCALL_IMPL_X64(set_robust_list, [](FEXCore::Core::CpuStateFrame* Frame, struct robust_list_head* head, size_t len) -> uint64_t {
+      if (len != sizeof(struct robust_list_head)) {
+        // Return invalid if the passed in length doesn't match what's expected.
+        return -EINVAL;
+      }
+
+      auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
+      int Result = FEX::HLE::set_robust_list2(head, ThreadObject->ThreadInfo.robust_list_index_x64, FEX::HLE::ROBUST_LIST_64BIT);
+      if (Result != -1) {
+        // Index is returned back to us.
+        ThreadObject->ThreadInfo.robust_list_index_x64 = Result;
+        ThreadObject->ThreadInfo.robust_list_head_x64 = reinterpret_cast<uint64_t>(head);
+        Result = 0;
+      }
+
+      SYSCALL_ERRNO();
+    });
+
+    REGISTER_SYSCALL_IMPL_X64(
+      get_robust_list, [](FEXCore::Core::CpuStateFrame* Frame, int pid, struct robust_list_head** head, uint32_t* len_ptr) -> uint64_t {
+        auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
+
+        if (pid == 0 || pid == ThreadObject->ThreadInfo.PID) {
+          FaultSafeUserMemAccess::VerifyIsWritable(head, sizeof(uint64_t));
+
+          // Give the robust list back to the application
+          // Steam specifically checks to make sure the robust list is set
+          *(uint64_t*)head = ThreadObject->ThreadInfo.robust_list_head_x64;
+          *len_ptr = sizeof(struct robust_list_head);
+          return 0;
+        }
+
+        return -EPERM;
+      });
+  }
 }
 } // namespace FEX::HLE::x64

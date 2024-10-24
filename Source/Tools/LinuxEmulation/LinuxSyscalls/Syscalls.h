@@ -65,6 +65,15 @@ namespace Core {
 
 namespace FEX::HLE {
 
+enum robust_list_type {
+  ROBUST_LIST_32BIT = 0,
+  ROBUST_LIST_64BIT = 1,
+};
+
+// TODO: Switch to a kernel version check where used.
+constexpr bool ENABLE_ROBUST_LIST2 = true;
+int set_robust_list2(struct robust_list_head* head, int index, uint32_t flags);
+
 class SyscallHandler;
 class SignalDelegator;
 class ThunkHandler;

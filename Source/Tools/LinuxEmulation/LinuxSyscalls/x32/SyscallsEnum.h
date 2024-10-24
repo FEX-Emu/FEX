@@ -480,6 +480,7 @@ enum Syscalls_x86 {
   SYSCALL_x86_lsm_set_self_attr = 460,
   SYSCALL_x86_lsm_list_modules = 461,
   SYSCALL_x86_mseal = 462,
+  SYSCALL_x86_set_robust_list2 = 468, // Subject to change
   SYSCALL_x86_MAX = 512,
 };
 } // namespace FEX::HLE::x32
