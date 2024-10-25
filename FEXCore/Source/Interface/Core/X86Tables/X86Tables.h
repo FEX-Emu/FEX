@@ -225,7 +225,6 @@ enum InstType {
   TYPE_SECONDARY_TABLE_PREFIX,
   TYPE_X87_TABLE_PREFIX,
   TYPE_VEX_TABLE_PREFIX,
-  TYPE_XOP_TABLE_PREFIX,
   TYPE_INST,
   TYPE_X87 = TYPE_INST,
   TYPE_INVALID,
@@ -466,14 +465,6 @@ constexpr size_t MAX_VEX_TABLE_SIZE = (1 << 13);
 // group select (3 bits for now) | ModRM opcode (3 bits)
 constexpr size_t MAX_VEX_GROUP_TABLE_SIZE = (1 << 7);
 
-// XOP
-// group (2 bits for now) | vex.pp (2 bits) | opcode (8bit)
-constexpr size_t MAX_XOP_TABLE_SIZE = (1 << 13);
-
-// XOP group ops
-// group select (2 bits for now) | modrm opcode (3 bits)
-constexpr size_t MAX_XOP_GROUP_TABLE_SIZE = (1 << 6);
-
 extern std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps;
 extern std::array<X86InstInfo, MAX_SECOND_TABLE_SIZE> SecondBaseOps;
 extern std::array<X86InstInfo, MAX_REP_MOD_TABLE_SIZE> RepModOps;
@@ -491,10 +482,6 @@ extern std::array<X86InstInfo, MAX_0F_3A_TABLE_SIZE> H0F3ATableOps;
 // VEX
 extern std::array<X86InstInfo, MAX_VEX_TABLE_SIZE> VEXTableOps;
 extern std::array<X86InstInfo, MAX_VEX_GROUP_TABLE_SIZE> VEXTableGroupOps;
-
-// XOP
-extern std::array<X86InstInfo, MAX_XOP_TABLE_SIZE> XOPTableOps;
-extern std::array<X86InstInfo, MAX_XOP_GROUP_TABLE_SIZE> XOPTableGroupOps;
 
 template <typename OpcodeType>
 struct X86TablesInfoStruct {
