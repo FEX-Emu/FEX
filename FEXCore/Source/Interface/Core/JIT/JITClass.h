@@ -352,4 +352,7 @@ private:
 #undef DEF_OP
 };
 
+[[nodiscard]]
+fextl::unique_ptr<CPUBackend> CreateArm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::InternalThreadState* Thread);
+
 } // namespace FEXCore::CPU

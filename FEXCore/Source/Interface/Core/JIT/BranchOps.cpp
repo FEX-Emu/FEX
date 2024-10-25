@@ -9,7 +9,7 @@ $end_info$
 #include "FEXCore/IR/IR.h"
 #include "Interface/Core/LookupCache.h"
 
-#include "Interface/Core/JIT/Arm64/JITClass.h"
+#include "Interface/Core/JIT/JITClass.h"
 
 #include <FEXCore/Core/Thunks.h>
 #include <FEXCore/Core/X86Enums.h>
