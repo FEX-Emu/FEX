@@ -630,6 +630,8 @@ FEXCore::HostFeatures FetchHostFeatures() {
 
   auto HostFeatures = FetchHostFeatures(Features, true, CTR, MIDR);
   FillMIDRInformationViaLinux(&HostFeatures);
+
+  HostFeatures.SupportsCPUIndexInTPIDRRO = false;
   return HostFeatures;
 }
 } // namespace FEX

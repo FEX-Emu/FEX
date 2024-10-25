@@ -90,7 +90,7 @@ namespace ProductNames {
 #endif
 } // namespace ProductNames
 
-static uint32_t GetCPUID() {
+uint32_t GetCPUID_Syscall() {
   uint32_t CPU {};
   FHU::Syscalls::getcpu(&CPU, nullptr);
   return CPU;
@@ -135,6 +135,12 @@ constexpr uint32_t FAMILY_IDENTIFIER = GenerateFamily(CPUFamily {
 uint32_t GetCycleCounterFrequency() {
   uint64_t Result {};
   __asm("mrs %[Res], CNTFRQ_EL0" : [Res] "=r"(Result));
+  return Result;
+}
+
+uint32_t GetCPUID_TPIDRRO() {
+  uint64_t Result {};
+  __asm("mrs %[Res], TPIDRRO_EL0" : [Res] "=r"(Result));
   return Result;
 }
 
@@ -895,11 +901,11 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0000h(uint32_t Leaf) con
 // Extended processor and feature bits
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0001h(uint32_t Leaf) const {
 
-  // RDTSCP is disabled on WIN32/Wine because there is no sane way to query processor ID.
 #ifndef _WIN32
   constexpr uint32_t SUPPORTS_RDTSCP = 1;
 #else
-  constexpr uint32_t SUPPORTS_RDTSCP = 0;
+  // RDTSCP under WIN32 is only supported if CPUIndex is available in TPIDRRO.
+  const uint32_t SUPPORTS_RDTSCP = SupportsCPUIndexInTPIDRRO;
 #endif
   FEXCore::CPUID::FunctionResults Res {};
 
@@ -1213,12 +1219,20 @@ FEXCore::CPUID::XCRResults CPUIDEmu::XCRFunction_0h() const {
 }
 
 CPUIDEmu::CPUIDEmu(const FEXCore::Context::ContextImpl* ctx)
-  : CTX {ctx} {
+  : CTX {ctx}
+  , SupportsCPUIndexInTPIDRRO {CTX->HostFeatures.SupportsCPUIndexInTPIDRRO}
+  , GetCPUID {GetCPUID_Syscall} {
   Cores = CTX->HostFeatures.CPUMIDRs.size();
 
   // Setup some state tracking
   SetupHostHybridFlag();
 
   SetupFeatures();
+
+#ifdef _M_ARM_64
+  if (SupportsCPUIndexInTPIDRRO) {
+    GetCPUID = GetCPUID_TPIDRRO;
+  }
+#endif
 }
 } // namespace FEXCore

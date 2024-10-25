@@ -115,6 +115,7 @@ public:
 
 private:
   const FEXCore::Context::ContextImpl* CTX;
+  bool SupportsCPUIndexInTPIDRRO {};
   bool Hybrid {};
   uint32_t Cores {};
   FEX_CONFIG_OPT(HideHypervisorBit, HIDEHYPERVISORBIT);
@@ -510,5 +511,8 @@ private:
     // 0x8000'001F: AMD Secure Encryption
     {SupportsConstant::CONSTANT, NeedsLeafConstant::NOLEAFCONSTANT},
   }};
+
+  using GetCPUIDPtr = uint32_t (*)();
+  GetCPUIDPtr GetCPUID;
 };
 } // namespace FEXCore
