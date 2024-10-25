@@ -3573,10 +3573,6 @@ void OpDispatchBuilder::PUSHFOp(OpcodeArgs) {
   const uint8_t Size = GetSrcSize(Op);
 
   Ref Src = GetPackedRFLAG();
-  if (Size != 8) {
-    Src = _Bfe(OpSize::i32Bit, Size * 8, 0, Src);
-  }
-
   Push(Size, Src);
 }
 
