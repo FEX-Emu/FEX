@@ -124,6 +124,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: System: System register move") {
   TEST_SINGLE(msr(SystemRegister::RNDRRS, Reg::r30), "msr rndrrs, x30");
   TEST_SINGLE(msr(SystemRegister::NZCV, Reg::r30), "msr nzcv, x30");
   TEST_SINGLE(msr(SystemRegister::FPCR, Reg::r30), "msr fpcr, x30");
+  TEST_SINGLE(msr(SystemRegister::TPIDRRO_EL0, Reg::r30), "msr S3_3_c13_c0_3, x30");
   TEST_SINGLE(msr(SystemRegister::CNTFRQ_EL0, Reg::r30), "msr S3_3_c14_c0_0, x30");
   TEST_SINGLE(msr(SystemRegister::CNTVCT_EL0, Reg::r30), "msr S3_3_c14_c0_2, x30");
 
@@ -134,6 +135,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: System: System register move") {
   TEST_SINGLE(mrs(Reg::r30, SystemRegister::RNDRRS), "mrs x30, rndrrs");
   TEST_SINGLE(mrs(Reg::r30, SystemRegister::NZCV), "mrs x30, nzcv");
   TEST_SINGLE(mrs(Reg::r30, SystemRegister::FPCR), "mrs x30, fpcr");
+  TEST_SINGLE(mrs(Reg::r30, SystemRegister::TPIDRRO_EL0), "mrs x30, S3_3_c13_c0_3");
   TEST_SINGLE(mrs(Reg::r30, SystemRegister::CNTFRQ_EL0), "mrs x30, S3_3_c14_c0_0");
   TEST_SINGLE(mrs(Reg::r30, SystemRegister::CNTVCT_EL0), "mrs x30, S3_3_c14_c0_2");
 }
