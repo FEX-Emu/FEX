@@ -1696,7 +1696,7 @@
       ]
     },
     "o16 pushf": {
-      "ExpectedInstructionCount": 40,
+      "ExpectedInstructionCount": 39,
       "Comment": "0x9c",
       "ExpectedArm64ASM": [
         "cset w20, lo",
@@ -1737,7 +1737,6 @@
         "and x21, x21, #0xc0000000",
         "orr x20, x20, x21, lsr #24",
         "orr x20, x20, #0x2",
-        "uxth w20, w20",
         "strh w20, [x8, #-2]!"
       ]
     },
