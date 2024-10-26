@@ -54,7 +54,22 @@ static int GenTmpFD(const char* pathname, int flags) {
     memfd_flags |= MFD_CLOEXEC;
   }
 
-  return memfd_create(pathname, memfd_flags);
+  int ret = memfd_create(pathname, memfd_flags);
+
+  // HACK: xshmwrap bans memfd_create(*, MFD_ALLOW_SEALING | MFD_CLOEXEC).
+  // If we hit this case, work around it by setting the FD_CLOEXEC flag
+  // separately.
+  // See: https://gitlab.freedesktop.org/xorg/lib/libxshmfence/-/merge_requests/9
+  if (ret == -1 && errno == ENOSYS && (memfd_flags & MFD_CLOEXEC)) {
+    ret = memfd_create(pathname, memfd_flags & ~MFD_CLOEXEC);
+    if (ret >= 0)
+      fcntl(ret, F_SETFD, FD_CLOEXEC);
+  }
+  if (ret == -1) {
+    LogMan::Msg::EFmt("memfd_create failed! {}", errno);
+  }
+
+  return ret;
 }
 
 // Seal the tmpfd features by sealing them all.
