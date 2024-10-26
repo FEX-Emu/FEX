@@ -600,6 +600,11 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
       for (size_t i = 0, num = 0; i < Result; ++num) {
         linux_dirent_64* Incoming = (linux_dirent_64*)(reinterpret_cast<uint64_t>(dirp) + i);
         Incoming->d_off = num;
+        if (FEX::HLE::_SyscallHandler->FM.IsRootFSFD(fd, Incoming->d_ino)) {
+          Result -= Incoming->d_reclen;
+          memmove(Incoming, (linux_dirent_64*)(reinterpret_cast<uint64_t>(Incoming) + Incoming->d_reclen), Result - i);
+          continue;
+        }
         i += Incoming->d_reclen;
       }
     }

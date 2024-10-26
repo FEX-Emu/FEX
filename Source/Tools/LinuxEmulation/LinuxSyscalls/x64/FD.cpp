@@ -112,6 +112,23 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
     return GetDentsEmulation<false>(fd, reinterpret_cast<FEX::HLE::x64::linux_dirent*>(dirp), count);
   });
 
+  REGISTER_SYSCALL_IMPL_X64(getdents64, [](FEXCore::Core::CpuStateFrame* Frame, int fd, void* dirp, uint32_t count) -> uint64_t {
+    uint64_t Result = ::syscall(SYSCALL_DEF(getdents64), static_cast<uint64_t>(fd), dirp, static_cast<uint64_t>(count));
+    if (Result != -1) {
+      // Check for and hide the RootFS FD
+      for (size_t i = 0; i < Result;) {
+        linux_dirent_64* Incoming = (linux_dirent_64*)(reinterpret_cast<uint64_t>(dirp) + i);
+        if (FEX::HLE::_SyscallHandler->FM.IsRootFSFD(fd, Incoming->d_ino)) {
+          Result -= Incoming->d_reclen;
+          memmove(Incoming, (linux_dirent_64*)(reinterpret_cast<uint64_t>(Incoming) + Incoming->d_reclen), Result - i);
+          continue;
+        }
+        i += Incoming->d_reclen;
+      }
+    }
+    SYSCALL_ERRNO();
+  });
+
   REGISTER_SYSCALL_IMPL_X64(dup2, [](FEXCore::Core::CpuStateFrame* Frame, int oldfd, int newfd) -> uint64_t {
     uint64_t Result = ::dup2(oldfd, newfd);
     SYSCALL_ERRNO();

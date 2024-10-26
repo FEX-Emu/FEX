@@ -694,8 +694,6 @@ namespace x64 {
                                          SyscallPassthrough6<SYSCALL_DEF(futex)>);
     REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(io_getevents, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
                                          SyscallPassthrough5<SYSCALL_DEF(io_getevents)>);
-    REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(getdents64, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                         SyscallPassthrough3<SYSCALL_DEF(getdents64)>);
     REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(semtimedop, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
                                          SyscallPassthrough4<SYSCALL_DEF(semtimedop)>);
     REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(timer_create, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
