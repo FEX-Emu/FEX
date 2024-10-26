@@ -192,8 +192,17 @@ DEF_OP(Print) {
   PopDynamicRegsAndLR();
 }
 
-#ifndef _WIN32
 DEF_OP(ProcessorID) {
+  if (CTX->HostFeatures.SupportsCPUIndexInTPIDRRO) {
+    mrs(GetReg(Node), ARMEmitter::SystemRegister::TPIDRRO_EL0);
+    return;
+  }
+#ifdef _WIN32
+  else {
+    // If on Windows and TPIDRRO isn't supported (like in wine), then this is a programming error.
+    ERROR_AND_DIE_FMT("Unsupported");
+  }
+#else
   // We always need to spill x8 since we can't know if it is live at this SSA location
   uint32_t SpillMask = 1U << 8;
 
@@ -248,12 +257,8 @@ DEF_OP(ProcessorID) {
   // CPU is in w0
   // Node is in w1
   orr(ARMEmitter::Size::i64Bit, GetReg(Node), ARMEmitter::Reg::r0, ARMEmitter::Reg::r1, ARMEmitter::ShiftType::LSL, 12);
-}
-#else
-DEF_OP(ProcessorID) {
-  ERROR_AND_DIE_FMT("Unsupported");
-}
 #endif
+}
 
 DEF_OP(RDRAND) {
   auto Op = IROp->C<IR::IROp_RDRAND>();

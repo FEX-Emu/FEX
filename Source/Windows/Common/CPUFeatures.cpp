@@ -65,6 +65,8 @@ FEXCore::HostFeatures CPUFeatures::FetchHostFeatures(bool IsWine) {
     HostFeatures.CPUMIDRs.push_back(static_cast<uint32_t>(ReadRegU64(Key, "CP 4000")));
     RegCloseKey(Key);
   }
+
+  HostFeatures.SupportsCPUIndexInTPIDRRO = !IsWine;
   return HostFeatures;
 }
 
