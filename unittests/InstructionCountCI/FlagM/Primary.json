@@ -1695,7 +1695,7 @@
         "cfinv"
       ]
     },
-    "pushf": {
+    "o16 pushf": {
       "ExpectedInstructionCount": 39,
       "Comment": "0x9c",
       "ExpectedArm64ASM": [
@@ -1737,7 +1737,7 @@
         "and x21, x21, #0xc0000000",
         "orr x20, x20, x21, lsr #24",
         "orr x20, x20, #0x2",
-        "str x20, [x8, #-8]!"
+        "strh w20, [x8, #-2]!"
       ]
     },
     "pushfq": {
