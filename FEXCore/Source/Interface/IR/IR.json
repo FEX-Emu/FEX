@@ -366,12 +366,12 @@
         "DestSize": "Size"
       },
 
-      "GPR = LoadPF u8:#Size": {
+      "GPR = LoadPF OpSize:#Size": {
         "Desc": ["Loads raw PF"],
         "DestSize": "Size"
       },
 
-      "GPR = LoadAF u8:#Size": {
+      "GPR = LoadAF OpSize:#Size": {
         "Desc": ["Loads raw PF"],
         "DestSize": "Size"
       },
