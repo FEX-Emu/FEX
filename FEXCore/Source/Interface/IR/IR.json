@@ -412,7 +412,7 @@
         ]
       },
 
-      "SSA:$Value1, SSA:$Value2 = LoadContextPair u8:#ByteSize, RegisterClass:$Class, u32:$Offset": {
+      "SSA:$Value1, SSA:$Value2 = LoadContextPair OpSize:#ByteSize, RegisterClass:$Class, u32:$Offset": {
         "Desc": ["Loads a pair of values from the context with offset",
                  "Value0 = Ctx[Offset], Value1 = Ctx[Offset + ByteSize]"
                 ],
