@@ -6,7 +6,7 @@ $end_info$
 */
 
 #include "Interface/Core/Dispatcher/Dispatcher.h"
-#include "Interface/Core/JIT/Arm64/JITClass.h"
+#include "Interface/Core/JIT/JITClass.h"
 
 #include <FEXCore/Utils/MathUtils.h>
 

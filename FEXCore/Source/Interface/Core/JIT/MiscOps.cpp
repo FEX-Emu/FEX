@@ -10,7 +10,7 @@ $end_info$
 #endif
 
 #include "Interface/Context/Context.h"
-#include "Interface/Core/JIT/Arm64/JITClass.h"
+#include "Interface/Core/JIT/JITClass.h"
 #include "FEXCore/Debug/InternalThreadState.h"
 
 #include <FEXCore/Core/SignalDelegator.h>

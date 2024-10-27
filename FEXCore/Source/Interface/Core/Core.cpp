@@ -9,14 +9,14 @@ $end_info$
 */
 
 #include <cstdint>
-#include "Interface/Core/ArchHelpers//Arm64Emitter.h"
+#include "Interface/Core/ArchHelpers/Arm64Emitter.h"
 #include "Interface/Core/LookupCache.h"
 #include "Interface/Core/CPUBackend.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/Frontend.h"
 #include "Interface/Core/ObjectCache/ObjectCacheService.h"
 #include "Interface/Core/OpcodeDispatcher.h"
-#include "Interface/Core/JIT/JITCore.h"
+#include "Interface/Core/JIT/JITClass.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/X86Tables/X86Tables.h"
 #include "Interface/IR/IR.h"

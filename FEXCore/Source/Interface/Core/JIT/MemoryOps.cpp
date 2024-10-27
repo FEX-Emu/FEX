@@ -9,7 +9,7 @@ $end_info$
 #include "FEXCore/Utils/LogManager.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/CPUID.h"
-#include "Interface/Core/JIT/Arm64/JITClass.h"
+#include "Interface/Core/JIT/JITClass.h"
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/MathUtils.h>
 

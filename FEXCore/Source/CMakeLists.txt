@@ -105,17 +105,17 @@ set (SRCS
   Interface/Core/ArchHelpers/Arm64Emitter.cpp
   Interface/Core/Dispatcher/Dispatcher.cpp
   Interface/Core/Interpreter/Fallbacks/InterpreterFallbacks.cpp
-  Interface/Core/JIT/Arm64/JIT.cpp
-  Interface/Core/JIT/Arm64/ALUOps.cpp
-  Interface/Core/JIT/Arm64/AtomicOps.cpp
-  Interface/Core/JIT/Arm64/BranchOps.cpp
-  Interface/Core/JIT/Arm64/ConversionOps.cpp
-  Interface/Core/JIT/Arm64/EncryptionOps.cpp
-  Interface/Core/JIT/Arm64/MemoryOps.cpp
-  Interface/Core/JIT/Arm64/MiscOps.cpp
-  Interface/Core/JIT/Arm64/MoveOps.cpp
-  Interface/Core/JIT/Arm64/VectorOps.cpp
-  Interface/Core/JIT/Arm64/Arm64Relocations.cpp
+  Interface/Core/JIT/JIT.cpp
+  Interface/Core/JIT/ALUOps.cpp
+  Interface/Core/JIT/AtomicOps.cpp
+  Interface/Core/JIT/BranchOps.cpp
+  Interface/Core/JIT/ConversionOps.cpp
+  Interface/Core/JIT/EncryptionOps.cpp
+  Interface/Core/JIT/MemoryOps.cpp
+  Interface/Core/JIT/MiscOps.cpp
+  Interface/Core/JIT/MoveOps.cpp
+  Interface/Core/JIT/VectorOps.cpp
+  Interface/Core/JIT/Arm64Relocations.cpp
   Interface/Core/X86Tables/BaseTables.cpp
   Interface/Core/X86Tables/DDDTables.cpp
   Interface/Core/X86Tables/H0F38Tables.cpp
