@@ -536,7 +536,7 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
   auto high = _Constant(0xFFFF);
   Ref Mask = _VCastFromGPR(OpSize::i128Bit, OpSize::i64Bit, low);
   Mask = _VInsGPR(OpSize::i128Bit, OpSize::i64Bit, 1, Mask, high);
-  size_t StoreSize = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
+  const auto StoreSize = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
   for (int i = 0; i < 7; ++i) {
     Ref Reg = _LoadMem(FPRClass, OpSize::i128Bit, Mem, _Constant((Size * 7) + (10 * i)), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
     // Mask off the top bits

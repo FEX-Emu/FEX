@@ -331,7 +331,7 @@ inline Ref X87StackOptimization::LoadStackValueAtOffset_Slow(uint8_t Offset) {
 inline void X87StackOptimization::StoreStackValueAtOffset_Slow(Ref Value, uint8_t Offset, bool SetValid) {
   OrderedNode* TopOffset = GetOffsetTopWithCache_Slow(Offset);
   // store
-  IREmit->_StoreContextIndexed(Value, TopOffset, ReducedPrecisionMode ? 8 : 16, MMBaseOffset(), 16, FPRClass);
+  IREmit->_StoreContextIndexed(Value, TopOffset, ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit, MMBaseOffset(), 16, FPRClass);
   // mark it valid
   // In some cases we might already know it has been previously set as valid so we don't need to do it again
   if (SetValid) {
@@ -477,7 +477,8 @@ Ref X87StackOptimization::SynchronizeStackValues() {
     }
     Ref TopIndex = GetOffsetTopWithCache_Slow(i);
     if (Valid == StackSlot::VALID) {
-      IREmit->_StoreContextIndexed(StackMember.StackDataNode, TopIndex, ReducedPrecisionMode ? 8 : 16, MMBaseOffset(), 16, FPRClass);
+      IREmit->_StoreContextIndexed(StackMember.StackDataNode, TopIndex, ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit,
+                                   MMBaseOffset(), 16, FPRClass);
     }
   }
   { // Set valid tags

@@ -473,7 +473,7 @@
           "!($BaseOffset >= offsetof(Core::CPUState, xmm.avx.data[0]) && $BaseOffset < offsetof(Core::CPUState, xmm.avx.data[16])) && \"Can't LoadContextIndexed to XMM\""
         ]
       },
-      "StoreContextIndexed SSA:$Value, GPR:$Index, u8:#ByteSize, u32:$BaseOffset, u32:$Stride, RegisterClass:$Class": {
+      "StoreContextIndexed SSA:$Value, GPR:$Index, OpSize:#ByteSize, u32:$BaseOffset, u32:$Stride, RegisterClass:$Class": {
         "HasSideEffects": true,
         "Desc": ["Stores a value to the context with offset and indexed by SSA value",
                  "Ctx[BaseOffset + Index * Stride] = Value"
