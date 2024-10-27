@@ -386,13 +386,13 @@
         ]
       },
 
-      "StorePF GPR:$Value, u8:#Size": {
+      "StorePF GPR:$Value, OpSize:#Size": {
         "HasSideEffects": true,
         "Desc": ["Stores raw PF"],
         "DestSize": "Size"
       },
 
-      "StoreAF GPR:$Value, u8:#Size": {
+      "StoreAF GPR:$Value, OpSize:#Size": {
         "HasSideEffects": true,
         "Desc": ["Stores raw AF"],
         "DestSize": "Size"
