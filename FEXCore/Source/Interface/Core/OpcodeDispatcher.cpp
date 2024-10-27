@@ -135,14 +135,16 @@ void OpDispatchBuilder::LEAOp(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
 
   if (CTX->Config.Is64BitMode) {
-    const uint32_t DstSize = X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST  ? 2 :
-                             X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_WIDENING_SIZE_LAST ? 8 :
-                                                                                                                                  4;
+    const uint32_t DstSize =
+      X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST  ? OpSize::i16Bit :
+      X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_WIDENING_SIZE_LAST ? OpSize::i64Bit :
+                                                                                                           OpSize::i32Bit;
 
     auto Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], SrcSize, Op->Flags, {.LoadData = false, .AllowUpperGarbage = SrcSize > DstSize});
     StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Src, DstSize, -1);
   } else {
-    uint32_t DstSize = X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST ? 2 : 4;
+    uint32_t DstSize =
+      X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST ? OpSize::i16Bit : OpSize::i32Bit;
 
     auto Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], SrcSize, Op->Flags, {.LoadData = false, .AllowUpperGarbage = SrcSize > DstSize});
     StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Src, DstSize, -1);
@@ -203,7 +205,7 @@ void OpDispatchBuilder::IRETOp(OpcodeArgs) {
   auto NewRIP = Pop(GPRSize, SP);
   // CS (lower 16 used)
   auto NewSegmentCS = Pop(GPRSize, SP);
-  _StoreContext(2, GPRClass, NewSegmentCS, offsetof(FEXCore::Core::CPUState, cs_idx));
+  _StoreContext(OpSize::i16Bit, GPRClass, NewSegmentCS, offsetof(FEXCore::Core::CPUState, cs_idx));
   UpdatePrefixFromSegment(NewSegmentCS, FEXCore::X86Tables::DecodeFlags::FLAG_CS_PREFIX);
 
   // eflags (lower 16 used)
@@ -216,7 +218,7 @@ void OpDispatchBuilder::IRETOp(OpcodeArgs) {
 
     // ss
     auto NewSegmentSS = Pop(GPRSize, SP);
-    _StoreContext(2, GPRClass, NewSegmentSS, offsetof(FEXCore::Core::CPUState, ss_idx));
+    _StoreContext(OpSize::i16Bit, GPRClass, NewSegmentSS, offsetof(FEXCore::Core::CPUState, ss_idx));
     UpdatePrefixFromSegment(NewSegmentSS, FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX);
   } else {
     // Store the stack in 32-bit mode
@@ -288,7 +290,7 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs, uint32_t SrcIndex) {
 
   Ref Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = true});
   uint8_t Size = GetDstSize(Op);
-  const auto OpSize = IR::SizeToOpSize(std::max<uint8_t>(4u, Size));
+  const auto OpSize = IR::SizeToOpSize(std::max<uint8_t>(OpSize::i32Bit, Size));
 
   Ref Before {};
   if (DestIsLockedMem(Op)) {
@@ -302,7 +304,7 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs, uint32_t SrcIndex) {
   }
 
   Ref Result;
-  if (!DestIsLockedMem(Op) && Op->Src[SrcIndex].IsLiteral() && Op->Src[SrcIndex].Literal() == 0 && Size >= 4) {
+  if (!DestIsLockedMem(Op) && Op->Src[SrcIndex].IsLiteral() && Op->Src[SrcIndex].Literal() == 0 && Size >= OpSize::i32Bit) {
     HandleNZCV_RMW();
     RectifyCarryInvert(true);
     Result = _AdcZeroWithFlags(OpSize, Before);
@@ -324,7 +326,7 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs, uint32_t SrcIndex) {
 
   Ref Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = true});
   auto Size = GetDstSize(Op);
-  const auto OpSize = IR::SizeToOpSize(std::max<uint8_t>(4u, Size));
+  const auto OpSize = IR::SizeToOpSize(std::max<uint8_t>(OpSize::i32Bit, Size));
 
   Ref Result {};
   Ref Before {};
@@ -714,7 +716,7 @@ void OpDispatchBuilder::CMOVOp(OpcodeArgs) {
     Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   }
 
-  auto SrcCond = SelectCC(Op->OP & 0xF, IR::SizeToOpSize(std::max<uint8_t>(4u, GetSrcSize(Op))), Src, Dest);
+  auto SrcCond = SelectCC(Op->OP & 0xF, IR::SizeToOpSize(std::max<uint8_t>(OpSize::i32Bit, GetSrcSize(Op))), Src, Dest);
 
   StoreResult(GPRClass, Op, SrcCond, -1);
 }
@@ -730,7 +732,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
   uint64_t InstRIP = Op->PC + Op->InstSize;
   uint64_t Target = InstRIP + TargetOffset;
 
-  if (CTX->GetGPRSize() == 4) {
+  if (CTX->GetGPRSize() == OpSize::i32Bit) {
     // If the GPRSize is 4 then we need to be careful about PC wrapping
     if (TargetOffset < 0 && -TargetOffset > InstRIP) {
       // Invert the signed value if we are underflowing
@@ -859,8 +861,8 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
   bool ZFTrue = Op->OP == 0xE1;
 
   BlockSetRIP = true;
-  uint32_t SrcSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? 4 : 8;
-  auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
+  uint32_t SrcSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? OpSize::i32Bit : OpSize::i64Bit;
+  auto OpSize = SrcSize == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit;
 
   if (!CTX->Config.Is64BitMode) {
     // RCX size is 32-bit or 16-bit when executing in 32-bit mode.
@@ -936,7 +938,7 @@ void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
   uint64_t InstRIP = Op->PC + Op->InstSize;
   uint64_t TargetRIP = InstRIP + TargetOffset;
 
-  if (CTX->GetGPRSize() == 4) {
+  if (CTX->GetGPRSize() == OpSize::i32Bit) {
     // If the GPRSize is 4 then we need to be careful about PC wrapping
     if (TargetOffset < 0 && -TargetOffset > InstRIP) {
       // Invert the signed value if we are underflowing
@@ -1005,7 +1007,7 @@ void OpDispatchBuilder::TESTOp(OpcodeArgs, uint32_t SrcIndex) {
   bool AlwaysNonnegative = false;
   if (IsValueConstant(WrapNode(Src), &Const)) {
     // Optimize out masking constants
-    if (Const == (Size == 8 ? ~0ULL : ((1ull << Size * 8) - 1))) {
+    if (Const == (Size == OpSize::i64Bit ? ~0ULL : ((1ull << Size * 8) - 1))) {
       Src = Dest;
     }
 
@@ -1016,7 +1018,7 @@ void OpDispatchBuilder::TESTOp(OpcodeArgs, uint32_t SrcIndex) {
   if (Dest == Src) {
     // Optimize out the AND.
     SetNZP_ZeroCV(Size, Src);
-  } else if (Size < 4 && AlwaysNonnegative) {
+  } else if (Size < OpSize::i32Bit && AlwaysNonnegative) {
     // If we know the result is always nonnegative, we can use a 32-bit test.
     auto Res = _And(OpSize::i32Bit, Dest, Src);
     CalculatePF(Res);
@@ -1039,11 +1041,11 @@ void OpDispatchBuilder::MOVSXDOp(OpcodeArgs) {
   //  else
   //   Zext(32, Src)
   //
-  uint8_t Size = std::min(static_cast<uint8_t>(4), GetSrcSize(Op));
-  bool Sext = (Size != 2) && Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REX_WIDENING;
+  uint8_t Size = std::min<uint8_t>(OpSize::i32Bit, GetSrcSize(Op));
+  bool Sext = (Size != OpSize::i16Bit) && Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REX_WIDENING;
 
   Ref Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], Size, Op->Flags, {.AllowUpperGarbage = Sext});
-  if (Size == 2) {
+  if (Size == OpSize::i16Bit) {
     // This'll make sure to insert in to the lower 16bits without modifying upper bits
     StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Src, Size, -1);
   } else if (Sext) {
@@ -1064,7 +1066,7 @@ void OpDispatchBuilder::MOVSXOp(OpcodeArgs) {
   // Sign-extend to DstSize and zero-extend to the register size, using a fast
   // path for 32-bit dests where the native 32-bit Sbfe zero extends the top.
   uint8_t DstSize = GetDstSize(Op);
-  Src = _Sbfe(DstSize == 8 ? OpSize::i64Bit : OpSize::i32Bit, Size * 8, 0, Src);
+  Src = _Sbfe(DstSize == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit, Size * 8, 0, Src);
   StoreResult(GPRClass, Op, Op->Dest, Src, -1);
 }
 
@@ -1136,7 +1138,7 @@ void OpDispatchBuilder::CDQOp(OpcodeArgs) {
   uint8_t SrcSize = DstSize >> 1;
   Ref Src = LoadGPRRegister(X86State::REG_RAX, SrcSize, 0, true);
 
-  Src = _Sbfe(DstSize <= 4 ? OpSize::i32Bit : OpSize::i64Bit, SrcSize * 8, 0, Src);
+  Src = _Sbfe(DstSize <= OpSize::i32Bit ? OpSize::i32Bit : OpSize::i64Bit, SrcSize * 8, 0, Src);
 
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Src, DstSize, -1);
 }
@@ -1203,17 +1205,17 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs, bool ToSeg) {
   // The loads here also load the selector, NOT the base
 
   if (ToSeg) {
-    Ref Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], 2, Op->Flags);
+    Ref Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], OpSize::i16Bit, Op->Flags);
 
     switch (Op->Dest.Data.GPR.GPR) {
     case FEXCore::X86State::REG_RAX: // ES
     case FEXCore::X86State::REG_R8:  // ES
-      _StoreContext(2, GPRClass, Src, offsetof(FEXCore::Core::CPUState, es_idx));
+      _StoreContext(OpSize::i16Bit, GPRClass, Src, offsetof(FEXCore::Core::CPUState, es_idx));
       UpdatePrefixFromSegment(Src, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX);
       break;
     case FEXCore::X86State::REG_RBX: // DS
     case FEXCore::X86State::REG_R11: // DS
-      _StoreContext(2, GPRClass, Src, offsetof(FEXCore::Core::CPUState, ds_idx));
+      _StoreContext(OpSize::i16Bit, GPRClass, Src, offsetof(FEXCore::Core::CPUState, ds_idx));
       UpdatePrefixFromSegment(Src, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
       break;
     case FEXCore::X86State::REG_RCX: // CS
@@ -1228,13 +1230,13 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs, bool ToSeg) {
       break;
     case FEXCore::X86State::REG_RDX: // SS
     case FEXCore::X86State::REG_R10: // SS
-      _StoreContext(2, GPRClass, Src, offsetof(FEXCore::Core::CPUState, ss_idx));
+      _StoreContext(OpSize::i16Bit, GPRClass, Src, offsetof(FEXCore::Core::CPUState, ss_idx));
       UpdatePrefixFromSegment(Src, FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX);
       break;
     case FEXCore::X86State::REG_RBP: // GS
     case FEXCore::X86State::REG_R13: // GS
       if (!CTX->Config.Is64BitMode) {
-        _StoreContext(2, GPRClass, Src, offsetof(FEXCore::Core::CPUState, gs_idx));
+        _StoreContext(OpSize::i16Bit, GPRClass, Src, offsetof(FEXCore::Core::CPUState, gs_idx));
         UpdatePrefixFromSegment(Src, FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX);
       } else {
         LogMan::Msg::EFmt("We don't support modifying GS selector in 64bit mode!");
@@ -1244,7 +1246,7 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs, bool ToSeg) {
     case FEXCore::X86State::REG_RSP: // FS
     case FEXCore::X86State::REG_R12: // FS
       if (!CTX->Config.Is64BitMode) {
-        _StoreContext(2, GPRClass, Src, offsetof(FEXCore::Core::CPUState, fs_idx));
+        _StoreContext(OpSize::i16Bit, GPRClass, Src, offsetof(FEXCore::Core::CPUState, fs_idx));
         UpdatePrefixFromSegment(Src, FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX);
       } else {
         LogMan::Msg::EFmt("We don't support modifying FS selector in 64bit mode!");
@@ -1262,26 +1264,26 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs, bool ToSeg) {
     switch (Op->Src[0].Data.GPR.GPR) {
     case FEXCore::X86State::REG_RAX: // ES
     case FEXCore::X86State::REG_R8:  // ES
-      Segment = _LoadContext(2, GPRClass, offsetof(FEXCore::Core::CPUState, es_idx));
+      Segment = _LoadContext(OpSize::i16Bit, GPRClass, offsetof(FEXCore::Core::CPUState, es_idx));
       break;
     case FEXCore::X86State::REG_RBX: // DS
     case FEXCore::X86State::REG_R11: // DS
-      Segment = _LoadContext(2, GPRClass, offsetof(FEXCore::Core::CPUState, ds_idx));
+      Segment = _LoadContext(OpSize::i16Bit, GPRClass, offsetof(FEXCore::Core::CPUState, ds_idx));
       break;
     case FEXCore::X86State::REG_RCX: // CS
     case FEXCore::X86State::REG_R9:  // CS
-      Segment = _LoadContext(2, GPRClass, offsetof(FEXCore::Core::CPUState, cs_idx));
+      Segment = _LoadContext(OpSize::i16Bit, GPRClass, offsetof(FEXCore::Core::CPUState, cs_idx));
       break;
     case FEXCore::X86State::REG_RDX: // SS
     case FEXCore::X86State::REG_R10: // SS
-      Segment = _LoadContext(2, GPRClass, offsetof(FEXCore::Core::CPUState, ss_idx));
+      Segment = _LoadContext(OpSize::i16Bit, GPRClass, offsetof(FEXCore::Core::CPUState, ss_idx));
       break;
     case FEXCore::X86State::REG_RBP: // GS
     case FEXCore::X86State::REG_R13: // GS
       if (CTX->Config.Is64BitMode) {
         Segment = _Constant(0);
       } else {
-        Segment = _LoadContext(2, GPRClass, offsetof(FEXCore::Core::CPUState, gs_idx));
+        Segment = _LoadContext(OpSize::i16Bit, GPRClass, offsetof(FEXCore::Core::CPUState, gs_idx));
       }
       break;
     case FEXCore::X86State::REG_RSP: // FS
@@ -1289,7 +1291,7 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs, bool ToSeg) {
       if (CTX->Config.Is64BitMode) {
         Segment = _Constant(0);
       } else {
-        Segment = _LoadContext(2, GPRClass, offsetof(FEXCore::Core::CPUState, fs_idx));
+        Segment = _LoadContext(OpSize::i16Bit, GPRClass, offsetof(FEXCore::Core::CPUState, fs_idx));
       }
       break;
     default:
@@ -1354,8 +1356,8 @@ uint32_t OpDispatchBuilder::LoadConstantShift(X86Tables::DecodedOp Op, bool Is1B
     return 1;
   } else {
     // x86 masks the shift by 0x3F or 0x1F depending on size of op
-    const uint32_t Size = GetSrcBitSize(Op);
-    uint64_t Mask = Size == 64 ? 0x3F : 0x1F;
+    const uint32_t Size = GetSrcSize(Op);
+    uint64_t Mask = Size == OpSize::i64Bit ? 0x3F : 0x1F;
 
     return Op->Src[1].Literal() & Mask;
   }
@@ -1373,11 +1375,11 @@ void OpDispatchBuilder::XGetBVOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SHLOp(OpcodeArgs) {
-  const auto Size = GetSrcBitSize(Op);
+  const auto Size = GetSrcSize(Op);
   auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
   auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
 
-  Ref Result = _Lshl(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
+  Ref Result = _Lshl(Size == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
   HandleShift(Op, Result, Dest, ShiftType::LSL, Src);
 }
 
@@ -1400,7 +1402,7 @@ void OpDispatchBuilder::SHROp(OpcodeArgs) {
   auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= 4});
   auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
 
-  auto ALUOp = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(4, Size)), Dest, Src);
+  auto ALUOp = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(OpSize::i32Bit, Size)), Dest, Src);
   HandleShift(Op, ALUOp, Dest, ShiftType::LSR, Src);
 }
 
@@ -1557,7 +1559,7 @@ void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
 
 void OpDispatchBuilder::ASHROp(OpcodeArgs, bool Immediate, bool SHR1Bit) {
   const auto Size = GetSrcSize(Op);
-  const auto OpSize = std::max<uint8_t>(4, GetDstSize(Op));
+  const auto OpSize = std::max<uint8_t>(OpSize::i32Bit, GetDstSize(Op));
 
   // If Size < 4, then we Sbfe the Dest so we can have garbage.
   // Otherwise, if Size = Opsize, then both are 4 or 8 and match the a64
@@ -1565,7 +1567,7 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs, bool Immediate, bool SHR1Bit) {
   // need zero-extension here is when the sizes mismatch.
   auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = (OpSize == Size) || (Size < 4)});
 
-  if (Size < 4) {
+  if (Size < OpSize::i32Bit) {
     Dest = _Sbfe(OpSize::i64Bit, Size * 8, 0, Dest);
   }
 
@@ -1659,7 +1661,7 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
   // Essentially (Src1 >> Start) & ((1 << Length) - 1)
   // along with some edge-case handling and flag setting.
 
-  LOGMAN_THROW_A_FMT(Op->InstSize >= 4, "No masking needed");
+  LOGMAN_THROW_A_FMT(Op->InstSize >= OpSize::i32Bit, "No masking needed");
   auto* Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
   auto* Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
 
@@ -1700,7 +1702,7 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
 
 void OpDispatchBuilder::BLSIBMIOp(OpcodeArgs) {
   // Equivalent to performing: SRC & -SRC
-  LOGMAN_THROW_A_FMT(Op->InstSize >= 4, "No masking needed");
+  LOGMAN_THROW_A_FMT(Op->InstSize >= OpSize::i32Bit, "No masking needed");
   auto Size = OpSizeFromSrc(Op);
 
   auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
@@ -1721,7 +1723,7 @@ void OpDispatchBuilder::BLSIBMIOp(OpcodeArgs) {
 
 void OpDispatchBuilder::BLSMSKBMIOp(OpcodeArgs) {
   // Equivalent to: (Src - 1) ^ Src
-  LOGMAN_THROW_A_FMT(Op->InstSize >= 4, "No masking needed");
+  LOGMAN_THROW_A_FMT(Op->InstSize >= OpSize::i32Bit, "No masking needed");
   auto Size = OpSizeFromSrc(Op);
 
   auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
@@ -1743,7 +1745,7 @@ void OpDispatchBuilder::BLSMSKBMIOp(OpcodeArgs) {
 
 void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
   // Equivalent to: (Src - 1) & Src
-  LOGMAN_THROW_A_FMT(Op->InstSize >= 4, "No masking needed");
+  LOGMAN_THROW_A_FMT(Op->InstSize >= OpSize::i32Bit, "No masking needed");
   auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
   auto Size = OpSizeFromSrc(Op);
 
@@ -1879,7 +1881,7 @@ void OpDispatchBuilder::MULX(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PDEP(OpcodeArgs) {
-  LOGMAN_THROW_A_FMT(Op->InstSize >= 4, "No masking needed");
+  LOGMAN_THROW_A_FMT(Op->InstSize >= OpSize::i32Bit, "No masking needed");
   auto* Input = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
   auto* Mask = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
   auto Result = _PDep(OpSizeFromSrc(Op), Input, Mask);
@@ -1888,7 +1890,7 @@ void OpDispatchBuilder::PDEP(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PEXT(OpcodeArgs) {
-  LOGMAN_THROW_A_FMT(Op->InstSize >= 4, "No masking needed");
+  LOGMAN_THROW_A_FMT(Op->InstSize >= OpSize::i32Bit, "No masking needed");
   auto* Input = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
   auto* Mask = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
   auto Result = _PExt(OpSizeFromSrc(Op), Input, Mask);
@@ -2404,7 +2406,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
 
     // Get the bit selection from the src. We need to mask for 8/16-bit, but
     // rely on the implicit masking of Lshr for native sizes.
-    unsigned LshrSize = std::max<uint8_t>(4u, Size / 8);
+    unsigned LshrSize = std::max<uint8_t>(OpSize::i32Bit, Size / 8);
     auto BitSelect = (Size == (LshrSize * 8)) ? Src : _And(OpSize::i64Bit, Src, _Constant(Mask));
 
     // OF/SF/ZF/AF/PF undefined.
@@ -2611,25 +2613,25 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
   Ref Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
   Ref Src2 = LoadGPRRegister(X86State::REG_RAX);
 
-  if (Size != 8) {
+  if (Size != OpSize::i64Bit) {
     Src1 = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src1);
     Src2 = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src2);
   }
 
   // 64-bit special cased to save a move
-  Ref Result = Size < 8 ? _Mul(OpSize::i64Bit, Src1, Src2) : nullptr;
+  Ref Result = Size < OpSize::i64Bit ? _Mul(OpSize::i64Bit, Src1, Src2) : nullptr;
   Ref ResultHigh {};
-  if (Size == 1) {
+  if (Size == OpSize::i8Bit) {
     // Result is stored in AX
     StoreGPRRegister(X86State::REG_RAX, Result, 2);
     ResultHigh = _Sbfe(OpSize::i64Bit, 8, 8, Result);
-  } else if (Size == 2) {
+  } else if (Size == OpSize::i16Bit) {
     // 16bits stored in AX
     // 16bits stored in DX
     StoreGPRRegister(X86State::REG_RAX, Result, Size);
     ResultHigh = _Sbfe(OpSize::i64Bit, 16, 16, Result);
     StoreGPRRegister(X86State::REG_RDX, ResultHigh, Size);
-  } else if (Size == 4) {
+  } else if (Size == OpSize::i32Bit) {
     // 32bits stored in EAX
     // 32bits stored in EDX
     // Make sure they get Zext correctly
@@ -2639,7 +2641,7 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
     Result = _Sbfe(OpSize::i64Bit, 32, 0, Result);
     StoreGPRRegister(X86State::REG_RAX, LocalResult);
     StoreGPRRegister(X86State::REG_RDX, LocalResultHigh);
-  } else if (Size == 8) {
+  } else if (Size == OpSize::i64Bit) {
     if (!CTX->Config.Is64BitMode) {
       LogMan::Msg::EFmt("Doesn't exist in 32bit mode");
       DecodeFailure = true;
@@ -2663,31 +2665,31 @@ void OpDispatchBuilder::MULOp(OpcodeArgs) {
   Ref Src2 = LoadGPRRegister(X86State::REG_RAX);
   Ref Result;
 
-  if (Size != 8) {
+  if (Size != OpSize::i64Bit) {
     Src1 = _Bfe(OpSize::i64Bit, Size * 8, 0, Src1);
     Src2 = _Bfe(OpSize::i64Bit, Size * 8, 0, Src2);
     Result = _UMul(OpSize::i64Bit, Src1, Src2);
   }
   Ref ResultHigh {};
 
-  if (Size == 1) {
+  if (Size == OpSize::i8Bit) {
     // Result is stored in AX
     StoreGPRRegister(X86State::REG_RAX, Result, 2);
     ResultHigh = _Bfe(OpSize::i64Bit, 8, 8, Result);
-  } else if (Size == 2) {
+  } else if (Size == OpSize::i16Bit) {
     // 16bits stored in AX
     // 16bits stored in DX
     StoreGPRRegister(X86State::REG_RAX, Result, Size);
     ResultHigh = _Bfe(OpSize::i64Bit, 16, 16, Result);
     StoreGPRRegister(X86State::REG_RDX, ResultHigh, Size);
-  } else if (Size == 4) {
+  } else if (Size == OpSize::i32Bit) {
     // 32bits stored in EAX
     // 32bits stored in EDX
     Ref ResultLow = _Bfe(OpSize::i64Bit, 32, 0, Result);
     ResultHigh = _Bfe(OpSize::i64Bit, 32, 32, Result);
     StoreGPRRegister(X86State::REG_RAX, ResultLow);
     StoreGPRRegister(X86State::REG_RDX, ResultHigh);
-  } else if (Size == 8) {
+  } else if (Size == OpSize::i64Bit) {
     if (!CTX->Config.Is64BitMode) {
       LogMan::Msg::EFmt("Doesn't exist in 32bit mode");
       DecodeFailure = true;
@@ -2709,7 +2711,7 @@ void OpDispatchBuilder::MULOp(OpcodeArgs) {
 void OpDispatchBuilder::NOTOp(OpcodeArgs) {
   uint8_t Size = GetSrcSize(Op);
   Ref MaskConst {};
-  if (Size == 8) {
+  if (Size == OpSize::i64Bit) {
     MaskConst = _Constant(~0ULL);
   } else {
     MaskConst = _Constant((1ULL << (Size * 8)) - 1);
@@ -2729,7 +2731,7 @@ void OpDispatchBuilder::NOTOp(OpcodeArgs) {
     // mask and a larger type.
     auto Dest = Op->Dest;
     if (Dest.Data.GPR.HighBits) {
-      LOGMAN_THROW_A_FMT(Size == 1, "Only 8-bit GPRs get high bits");
+      LOGMAN_THROW_A_FMT(Size == OpSize::i8Bit, "Only 8-bit GPRs get high bits");
       MaskConst = _Constant(0xFF00);
       Dest.Data.GPR.HighBits = false;
     }
@@ -2741,10 +2743,10 @@ void OpDispatchBuilder::NOTOp(OpcodeArgs) {
 
     // For 8/16-bit, use 64-bit invert so we invert in place, while getting
     // insert behaviour. For 32-bit, use 32-bit invert to zero the upper bits.
-    unsigned EffectiveSize = Size == 4 ? 4 : GPRSize;
+    unsigned EffectiveSize = Size == OpSize::i32Bit ? OpSize::i32Bit : GPRSize;
 
     // If we're inverting the whole thing, use Not instead of Xor to save a constant.
-    if (Size >= 4) {
+    if (Size >= OpSize::i32Bit) {
       Src = _Not(IR::SizeToOpSize(EffectiveSize), Src);
     } else {
       Src = _Xor(IR::SizeToOpSize(EffectiveSize), Src, MaskConst);
@@ -2919,12 +2921,12 @@ void OpDispatchBuilder::AADOp(OpcodeArgs) {
 
 void OpDispatchBuilder::XLATOp(OpcodeArgs) {
   Ref Src = MakeSegmentAddress(X86State::REG_RBX, Op->Flags, X86Tables::DecodeFlags::FLAG_DS_PREFIX);
-  Ref Offset = LoadGPRRegister(X86State::REG_RAX, 1);
+  Ref Offset = LoadGPRRegister(X86State::REG_RAX, OpSize::i8Bit);
 
   AddressMode A = {.Base = Src, .Index = Offset, .AddrSize = 8};
-  auto Res = _LoadMemAutoTSO(GPRClass, 1, A, 1);
+  auto Res = _LoadMemAutoTSO(GPRClass, OpSize::i8Bit, A, OpSize::i8Bit);
 
-  StoreGPRRegister(X86State::REG_RAX, Res, 1);
+  StoreGPRRegister(X86State::REG_RAX, Res, OpSize::i8Bit);
 }
 
 void OpDispatchBuilder::ReadSegmentReg(OpcodeArgs, OpDispatchBuilder::Segment Seg) {
@@ -3001,14 +3003,14 @@ void OpDispatchBuilder::SGDTOp(OpcodeArgs) {
   //
   // Operand size prefix is ignored on this instruction, size purely depends on operating mode.
   uint64_t GDTAddress = 0xFFFFFFFFFFFE0000ULL;
-  size_t GDTStoreSize = 8;
+  size_t GDTStoreSize = OpSize::i64Bit;
   if (!CTX->Config.Is64BitMode) {
     // Mask off upper bits if 32-bit result.
     GDTAddress &= ~0U;
-    GDTStoreSize = 4;
+    GDTStoreSize = OpSize::i32Bit;
   }
 
-  _StoreMemAutoTSO(GPRClass, 2, DestAddress, _Constant(0));
+  _StoreMemAutoTSO(GPRClass, OpSize::i16Bit, DestAddress, _Constant(0));
   _StoreMemAutoTSO(GPRClass, GDTStoreSize, AddressMode {.Base = DestAddress, .Offset = 2, .AddrSize = 8}, _Constant(GDTAddress));
 }
 
@@ -3036,12 +3038,12 @@ void OpDispatchBuilder::SMSWOp(OpcodeArgs) {
               X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_WIDENING_SIZE_LAST ? 8 :
                                                                                                                    4;
 
-    if (!IsMemDst && DstSize == 4) {
+    if (!IsMemDst && DstSize == OpSize::i32Bit) {
       // Special-case version of `smsw ebx`. This instruction does an insert in to the lower 32-bits on 64-bit hosts.
       // Override and insert.
       auto Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, CTX->GetGPRSize(), Op->Flags);
       Const = _Bfi(OpSize::i64Bit, 32, 0, Dest, Const);
-      DstSize = 8;
+      DstSize = OpSize::i64Bit;
     }
   } else {
     DstSize = X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST ? 2 : 4;
@@ -3049,7 +3051,7 @@ void OpDispatchBuilder::SMSWOp(OpcodeArgs) {
 
   if (IsMemDst) {
     // Memory destinatino always writes only 16-bits.
-    DstSize = 2;
+    DstSize = OpSize::i16Bit;
   }
 
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Const, DstSize, -1);
@@ -3559,7 +3561,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
 void OpDispatchBuilder::BSWAPOp(OpcodeArgs) {
   Ref Dest;
   const auto Size = GetSrcSize(Op);
-  if (Size == 2) {
+  if (Size == OpSize::i16Bit) {
     // BSWAP of 16bit is undef. ZEN+ causes the lower 16bits to get zero'd
     Dest = _Constant(0);
   } else {
@@ -3614,16 +3616,16 @@ void OpDispatchBuilder::DIVOp(OpcodeArgs) {
   const auto GPRSize = CTX->GetGPRSize();
   const auto Size = GetSrcSize(Op);
 
-  if (Size == 1) {
-    Ref Src1 = LoadGPRRegister(X86State::REG_RAX, 2);
+  if (Size == OpSize::i8Bit) {
+    Ref Src1 = LoadGPRRegister(X86State::REG_RAX, OpSize::i16Bit);
 
     auto UDivOp = _UDiv(OpSize::i16Bit, Src1, Divisor);
     auto URemOp = _URem(OpSize::i16Bit, Src1, Divisor);
 
     // AX[15:0] = concat<URem[7:0]:UDiv[7:0]>
     auto ResultAX = _Bfi(IR::SizeToOpSize(GPRSize), 8, 8, UDivOp, URemOp);
-    StoreGPRRegister(X86State::REG_RAX, ResultAX, 2);
-  } else if (Size == 2) {
+    StoreGPRRegister(X86State::REG_RAX, ResultAX, OpSize::i16Bit);
+  } else if (Size == OpSize::i16Bit) {
     Ref Src1 = LoadGPRRegister(X86State::REG_RAX, Size);
     Ref Src2 = LoadGPRRegister(X86State::REG_RDX, Size);
     auto UDivOp = _LUDiv(OpSize::i16Bit, Src1, Src2, Divisor);
@@ -3631,7 +3633,7 @@ void OpDispatchBuilder::DIVOp(OpcodeArgs) {
 
     StoreGPRRegister(X86State::REG_RAX, UDivOp, Size);
     StoreGPRRegister(X86State::REG_RDX, URemOp, Size);
-  } else if (Size == 4) {
+  } else if (Size == OpSize::i32Bit) {
     Ref Src1 = LoadGPRRegister(X86State::REG_RAX, Size);
     Ref Src2 = LoadGPRRegister(X86State::REG_RDX, Size);
 
@@ -3640,7 +3642,7 @@ void OpDispatchBuilder::DIVOp(OpcodeArgs) {
 
     StoreGPRRegister(X86State::REG_RAX, UDivOp);
     StoreGPRRegister(X86State::REG_RDX, URemOp);
-  } else if (Size == 8) {
+  } else if (Size == OpSize::i64Bit) {
     if (!CTX->Config.Is64BitMode) {
       LogMan::Msg::EFmt("Doesn't exist in 32bit mode");
       DecodeFailure = true;
@@ -3664,8 +3666,8 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
   const auto GPRSize = CTX->GetGPRSize();
   const auto Size = GetSrcSize(Op);
 
-  if (Size == 1) {
-    Ref Src1 = LoadGPRRegister(X86State::REG_RAX, 2);
+  if (Size == OpSize::i8Bit) {
+    Ref Src1 = LoadGPRRegister(X86State::REG_RAX, OpSize::i16Bit);
     Src1 = _Sbfe(OpSize::i64Bit, 16, 0, Src1);
     Divisor = _Sbfe(OpSize::i64Bit, 8, 0, Divisor);
 
@@ -3674,8 +3676,8 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
 
     // AX[15:0] = concat<URem[7:0]:UDiv[7:0]>
     auto ResultAX = _Bfi(IR::SizeToOpSize(GPRSize), 8, 8, UDivOp, URemOp);
-    StoreGPRRegister(X86State::REG_RAX, ResultAX, 2);
-  } else if (Size == 2) {
+    StoreGPRRegister(X86State::REG_RAX, ResultAX, OpSize::i16Bit);
+  } else if (Size == OpSize::i16Bit) {
     Ref Src1 = LoadGPRRegister(X86State::REG_RAX, Size);
     Ref Src2 = LoadGPRRegister(X86State::REG_RDX, Size);
     auto UDivOp = _LDiv(OpSize::i16Bit, Src1, Src2, Divisor);
@@ -3683,7 +3685,7 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
 
     StoreGPRRegister(X86State::REG_RAX, UDivOp, Size);
     StoreGPRRegister(X86State::REG_RDX, URemOp, Size);
-  } else if (Size == 4) {
+  } else if (Size == OpSize::i32Bit) {
     Ref Src1 = LoadGPRRegister(X86State::REG_RAX, Size);
     Ref Src2 = LoadGPRRegister(X86State::REG_RDX, Size);
 
@@ -3692,7 +3694,7 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
 
     StoreGPRRegister(X86State::REG_RAX, UDivOp);
     StoreGPRRegister(X86State::REG_RDX, URemOp);
-  } else if (Size == 8) {
+  } else if (Size == OpSize::i64Bit) {
     if (!CTX->Config.Is64BitMode) {
       LogMan::Msg::EFmt("Doesn't exist in 32bit mode");
       DecodeFailure = true;
@@ -3711,7 +3713,7 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
 
 void OpDispatchBuilder::BSFOp(OpcodeArgs) {
   const uint8_t GPRSize = CTX->GetGPRSize();
-  const uint8_t DstSize = GetDstSize(Op) == 2 ? 2 : GPRSize;
+  const uint8_t DstSize = GetDstSize(Op) == OpSize::i16Bit ? OpSize::i16Bit : GPRSize;
   Ref Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, DstSize, Op->Flags, {.AllowUpperGarbage = true});
   Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
 
@@ -3733,7 +3735,7 @@ void OpDispatchBuilder::BSFOp(OpcodeArgs) {
 
 void OpDispatchBuilder::BSROp(OpcodeArgs) {
   const uint8_t GPRSize = CTX->GetGPRSize();
-  const uint8_t DstSize = GetDstSize(Op) == 2 ? 2 : GPRSize;
+  const uint8_t DstSize = GetDstSize(Op) == OpSize::i16Bit ? OpSize::i16Bit : GPRSize;
   Ref Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, DstSize, Op->Flags, {.AllowUpperGarbage = true});
   Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
 
@@ -3781,7 +3783,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     Ref Src1 {};
     Ref Src1Lower {};
 
-    if (GPRSize == 8 && Size == 4) {
+    if (GPRSize == OpSize::i64Bit && Size == OpSize::i32Bit) {
       Src1 = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, GPRSize, Op->Flags, {.AllowUpperGarbage = true});
       Src1Lower = _Bfe(IR::SizeToOpSize(GPRSize), Size * 8, 0, Src1);
     } else {
@@ -3794,7 +3796,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     CalculateDeferredFlags();
 
     if (!Trivial) {
-      if (GPRSize == 8 && Size == 4) {
+      if (GPRSize == OpSize::i64Bit && Size == OpSize::i32Bit) {
         // This allows us to only hit the ZEXT case on failure
         Ref RAXResult = NZCVSelect(IR::i64Bit, {COND_EQ}, Src3, Src1Lower);
 
@@ -3811,7 +3813,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     Ref DestResult = Trivial ? Src2 : NZCVSelect(IR::i64Bit, CondClassType {COND_EQ}, Src2, Src1);
 
     // Store in to GPR Dest
-    if (GPRSize == 8 && Size == 4) {
+    if (GPRSize == OpSize::i64Bit && Size == OpSize::i32Bit) {
       StoreResult_WithOpSize(GPRClass, Op, Op->Dest, DestResult, GPRSize, -1);
     } else {
       StoreResult(GPRClass, Op, DestResult, -1);
@@ -3822,7 +3824,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
 
     Ref Src3 {};
     Ref Src3Lower {};
-    if (GPRSize == 8 && Size == 4) {
+    if (GPRSize == OpSize::i64Bit && Size == OpSize::i32Bit) {
       Src3 = LoadGPRRegister(X86State::REG_RAX);
       Src3Lower = _Bfe(OpSize::i32Bit, 32, 0, Src3);
     } else {
@@ -3842,10 +3844,10 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     CalculateFlags_SUB(GetSrcSize(Op), Src3Lower, CASResult);
     CalculateDeferredFlags();
 
-    if (GPRSize == 8 && Size == 4) {
+    if (GPRSize == OpSize::i64Bit && Size == OpSize::i32Bit) {
       // This allows us to only hit the ZEXT case on failure
       RAXResult = _NZCVSelect(IR::i64Bit, {COND_EQ}, Src3, CASResult);
-      Size = 8;
+      Size = OpSize::i64Bit;
     }
 
     // RAX gets the result of the CAS op
@@ -4019,7 +4021,7 @@ Ref OpDispatchBuilder::GetSegment(uint32_t Flags, uint32_t DefaultPrefix, bool O
 Ref OpDispatchBuilder::AppendSegmentOffset(Ref Value, uint32_t Flags, uint32_t DefaultPrefix, bool Override) {
   auto Segment = GetSegment(Flags, DefaultPrefix, Override);
   if (Segment) {
-    Value = _Add(IR::SizeToOpSize(std::max<uint8_t>(4, std::max(GetOpSize(Value), GetOpSize(Segment)))), Value, Segment);
+    Value = _Add(IR::SizeToOpSize(std::max<uint8_t>(OpSize::i32Bit, std::max(GetOpSize(Value), GetOpSize(Segment)))), Value, Segment);
   }
 
   return Value;
@@ -4116,22 +4118,22 @@ void OpDispatchBuilder::UpdatePrefixFromSegment(Ref Segment, uint32_t SegmentReg
   CheckLegacySegmentWrite(NewSegment, SegmentReg);
   switch (SegmentReg) {
   case FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX:
-    _StoreContext(4, GPRClass, NewSegment, offsetof(FEXCore::Core::CPUState, es_cached));
+    _StoreContext(OpSize::i32Bit, GPRClass, NewSegment, offsetof(FEXCore::Core::CPUState, es_cached));
     break;
   case FEXCore::X86Tables::DecodeFlags::FLAG_CS_PREFIX:
-    _StoreContext(4, GPRClass, NewSegment, offsetof(FEXCore::Core::CPUState, cs_cached));
+    _StoreContext(OpSize::i32Bit, GPRClass, NewSegment, offsetof(FEXCore::Core::CPUState, cs_cached));
     break;
   case FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX:
-    _StoreContext(4, GPRClass, NewSegment, offsetof(FEXCore::Core::CPUState, ss_cached));
+    _StoreContext(OpSize::i32Bit, GPRClass, NewSegment, offsetof(FEXCore::Core::CPUState, ss_cached));
     break;
   case FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX:
-    _StoreContext(4, GPRClass, NewSegment, offsetof(FEXCore::Core::CPUState, ds_cached));
+    _StoreContext(OpSize::i32Bit, GPRClass, NewSegment, offsetof(FEXCore::Core::CPUState, ds_cached));
     break;
   case FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX:
-    _StoreContext(4, GPRClass, NewSegment, offsetof(FEXCore::Core::CPUState, fs_cached));
+    _StoreContext(OpSize::i32Bit, GPRClass, NewSegment, offsetof(FEXCore::Core::CPUState, fs_cached));
     break;
   case FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX:
-    _StoreContext(4, GPRClass, NewSegment, offsetof(FEXCore::Core::CPUState, gs_cached));
+    _StoreContext(OpSize::i32Bit, GPRClass, NewSegment, offsetof(FEXCore::Core::CPUState, gs_cached));
     break;
   default: break; // Do nothing
   }
@@ -4299,9 +4301,9 @@ Ref OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, const X86T
     const auto highIndex = Operand.Data.GPR.HighBits ? 1 : 0;
 
     if (gpr >= FEXCore::X86State::REG_MM_0) {
-      LOGMAN_THROW_A_FMT(OpSize == 8, "full");
+      LOGMAN_THROW_A_FMT(OpSize == OpSize::i64Bit, "full");
 
-      A.Base = LoadContext(8, MM0Index + gpr - FEXCore::X86State::REG_MM_0);
+      A.Base = LoadContext(OpSize::i64Bit, MM0Index + gpr - FEXCore::X86State::REG_MM_0);
     } else if (gpr >= FEXCore::X86State::REG_XMM_0) {
       const auto gprIndex = gpr - X86State::REG_XMM_0;
 
@@ -4340,7 +4342,7 @@ Ref OpDispatchBuilder::LoadGPRRegister(uint32_t GPR, int8_t Size, uint8_t Offset
 
   if ((!AllowUpperGarbage && (Size != GPRSize)) || Offset != 0) {
     // Extract the subregister if requested.
-    const auto OpSize = IR::SizeToOpSize(std::max<uint8_t>(4u, Size));
+    const auto OpSize = IR::SizeToOpSize(std::max<uint8_t>(OpSize::i32Bit, Size));
     if (AllowUpperGarbage) {
       Reg = _Lshr(OpSize, Reg, _Constant(Offset));
     } else {
@@ -4385,7 +4387,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
 
     const auto gpr = Operand.Data.GPR.GPR;
     if (gpr >= FEXCore::X86State::REG_MM_0) {
-      LOGMAN_THROW_A_FMT(OpSize == 8, "full");
+      LOGMAN_THROW_A_FMT(OpSize == OpSize::i64Bit, "full");
       LOGMAN_THROW_A_FMT(Class == FPRClass, "MMX is floaty");
 
       if (MMXState != MMXState_MMX) {
@@ -4415,15 +4417,15 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
 
       StoreXMMRegister(gprIndex, Result);
     } else {
-      if (GPRSize == 8 && OpSize == 4) {
+      if (GPRSize == OpSize::i64Bit && OpSize == OpSize::i32Bit) {
         // If the Source IR op is 64 bits, we need to zext the upper bits
         // For all other sizes, the upper bits are guaranteed to already be zero
-        Ref Value = GetOpSize(Src) == 8 ? _Bfe(OpSize::i32Bit, 32, 0, Src) : Src;
+        Ref Value = GetOpSize(Src) == OpSize::i64Bit ? _Bfe(OpSize::i32Bit, 32, 0, Src) : Src;
         StoreGPRRegister(gpr, Value, GPRSize);
 
         LOGMAN_THROW_AA_FMT(!Operand.Data.GPR.HighBits, "Can't handle 32bit store to high 8bit register");
       } else {
-        LOGMAN_THROW_AA_FMT(!(GPRSize == 4 && OpSize > 4), "Oops had a {} GPR load", OpSize);
+        LOGMAN_THROW_AA_FMT(!(GPRSize == OpSize::i32Bit && OpSize > OpSize::i32Bit), "Oops had a {} GPR load", OpSize);
 
         if (GPRSize != OpSize) {
           // if the GPR isn't the full size then we need to insert.
@@ -4446,9 +4448,9 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
     Ref MemStoreDst = LoadEffectiveAddress(A, true);
 
     // For X87 extended doubles, split before storing
-    _StoreMem(FPRClass, 8, MemStoreDst, Src, Align);
-    auto Upper = _VExtractToGPR(16, 8, Src, 1);
-    _StoreMem(GPRClass, 2, Upper, MemStoreDst, _Constant(8), std::min<uint8_t>(Align, 8), MEM_OFFSET_SXTX, 1);
+    _StoreMem(FPRClass, OpSize::i64Bit, MemStoreDst, Src, Align);
+    auto Upper = _VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, Src, 1);
+    _StoreMem(GPRClass, OpSize::i16Bit, Upper, MemStoreDst, _Constant(8), std::min<uint8_t>(Align, 8), MEM_OFFSET_SXTX, 1);
   } else {
     _StoreMemAutoTSO(Class, OpSize, A, Src, Align == -1 ? OpSize : Align);
   }
@@ -4503,12 +4505,12 @@ void OpDispatchBuilder::MOVGPROp(OpcodeArgs, uint32_t SrcIndex) {
   // StoreResult will store with the same size as the input, so we allow upper
   // garbage on the input. The zero extension would be pointless.
   Ref Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.Align = 1, .AllowUpperGarbage = true});
-  StoreResult(GPRClass, Op, Src, 1);
+  StoreResult(GPRClass, Op, Src, OpSize::i8Bit);
 }
 
 void OpDispatchBuilder::MOVGPRNTOp(OpcodeArgs) {
   Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.Align = 1});
-  StoreResult(GPRClass, Op, Src, 1, MemoryAccessType::STREAM);
+  StoreResult(GPRClass, Op, Src, OpSize::i8Bit, MemoryAccessType::STREAM);
 }
 
 void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, unsigned SrcIdx) {
@@ -4532,7 +4534,7 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
 
   auto RoundedSize = Size;
   if (ALUIROp != FEXCore::IR::IROps::OP_ANDWITHFLAGS) {
-    RoundedSize = std::max<uint8_t>(4u, RoundedSize);
+    RoundedSize = std::max<uint8_t>(OpSize::i32Bit, RoundedSize);
   }
 
   // X86 basic ALU ops just do the operation between the destination and a single source
@@ -4541,7 +4543,7 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
   // Try to eliminate the masking after 8/16-bit operations with constants, by
   // promoting to a full size operation that preserves the upper bits.
   uint64_t Const;
-  if (Size < 4 && !DestIsLockedMem(Op) && Op->Dest.IsGPR() && !Op->Dest.Data.GPR.HighBits && IsValueConstant(WrapNode(Src), &Const) &&
+  if (Size < OpSize::i32Bit && !DestIsLockedMem(Op) && Op->Dest.IsGPR() && !Op->Dest.Data.GPR.HighBits && IsValueConstant(WrapNode(Src), &Const) &&
       (ALUIROp == IR::IROps::OP_XOR || ALUIROp == IR::IROps::OP_OR || ALUIROp == IR::IROps::OP_ANDWITHFLAGS)) {
 
     RoundedSize = ResultSize = CTX->GetGPRSize();
@@ -4746,10 +4748,10 @@ void OpDispatchBuilder::MOVBEOp(OpcodeArgs) {
   const uint8_t GPRSize = CTX->GetGPRSize();
   const auto SrcSize = GetSrcSize(Op);
 
-  Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.Align = 1});
-  Src = _Rev(IR::SizeToOpSize(std::max<uint8_t>(4u, SrcSize)), Src);
+  Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.Align = OpSize::i8Bit});
+  Src = _Rev(IR::SizeToOpSize(std::max<uint8_t>(OpSize::i32Bit, SrcSize)), Src);
 
-  if (SrcSize == 2) {
+  if (SrcSize == OpSize::i16Bit) {
     // 16-bit does an insert.
     // Rev of 16-bit value as 32-bit replaces the result in the upper 16-bits of the result.
     // bfxil the 16-bit result in to the GPR.
@@ -4838,7 +4840,7 @@ void OpDispatchBuilder::CRC32(OpcodeArgs) {
   const uint8_t GPRSize = CTX->GetGPRSize();
 
   // Destination GPR size is always 4 or 8 bytes depending on widening
-  uint8_t DstSize = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REX_WIDENING ? 8 : 4;
+  uint8_t DstSize = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REX_WIDENING ? OpSize::i64Bit : OpSize::i32Bit;
   Ref Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, GPRSize, Op->Flags);
 
   // Incoming memory is 8, 16, 32, or 64

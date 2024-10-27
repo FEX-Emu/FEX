@@ -26,7 +26,7 @@ class OrderedNode;
 Ref OpDispatchBuilder::GetX87Top() {
   // Yes, we are storing 3 bits in a single flag register.
   // Deal with it
-  return _LoadContext(1, GPRClass, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC);
+  return _LoadContext(OpSize::i8Bit, GPRClass, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC);
 }
 
 Ref OpDispatchBuilder::GetX87Tag(Ref Value, Ref AbridgedFTW) {
@@ -56,7 +56,7 @@ void OpDispatchBuilder::SetX87FTW(Ref FTW) {
 }
 
 void OpDispatchBuilder::SetX87Top(Ref Value) {
-  _StoreContext(1, GPRClass, Value, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC);
+  _StoreContext(OpSize::i8Bit, GPRClass, Value, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC);
 }
 
 // Float LoaD operation with memory operand
@@ -79,9 +79,9 @@ void OpDispatchBuilder::FLDFromStack(OpcodeArgs) {
 
 void OpDispatchBuilder::FBLD(OpcodeArgs) {
   // Read from memory
-  Ref Data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], 16, Op->Flags);
+  Ref Data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], OpSize::i128Bit, Op->Flags);
   Ref ConvertedData = _F80BCDLoad(Data);
-  _PushStack(ConvertedData, Data, 16, true);
+  _PushStack(ConvertedData, Data, OpSize::i128Bit, true);
 }
 
 void OpDispatchBuilder::FBSTP(OpcodeArgs) {
@@ -92,8 +92,8 @@ void OpDispatchBuilder::FBSTP(OpcodeArgs) {
 
 void OpDispatchBuilder::FLD_Const(OpcodeArgs, NamedVectorConstant Constant) {
   // Update TOP
-  Ref Data = LoadAndCacheNamedVectorConstant(16, Constant);
-  _PushStack(Data, Data, 16, true);
+  Ref Data = LoadAndCacheNamedVectorConstant(OpSize::i128Bit, Constant);
+  _PushStack(Data, Data, OpSize::i128Bit, true);
 }
 
 void OpDispatchBuilder::FILD(OpcodeArgs) {
@@ -123,8 +123,8 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
   auto zeroed_exponent = _Select(COND_EQ, absolute, zero, zero, adjusted_exponent);
   auto upper = _Or(OpSize::i64Bit, sign, zeroed_exponent);
 
-  Ref ConvertedData = _VCastFromGPR(16, 8, shifted);
-  ConvertedData = _VInsElement(16, 8, 1, 0, ConvertedData, _VCastFromGPR(16, 8, upper));
+  Ref ConvertedData = _VCastFromGPR(OpSize::i64Bit, OpSize::i64Bit, shifted);
+  ConvertedData = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 1, 0, ConvertedData, _VCastFromGPR(OpSize::i128Bit, OpSize::i64Bit, upper));
   _PushStack(ConvertedData, Data, ReadWidth, false);
 }
 
@@ -347,7 +347,7 @@ void OpDispatchBuilder::X87FNSTENV(OpcodeArgs) {
   Mem = AppendSegmentOffset(Mem, Op->Flags);
 
   {
-    auto FCW = _LoadContext(2, GPRClass, offsetof(FEXCore::Core::CPUState, FCW));
+    auto FCW = _LoadContext(OpSize::i16Bit, GPRClass, offsetof(FEXCore::Core::CPUState, FCW));
     _StoreMem(GPRClass, Size, Mem, FCW, Size);
   }
 
@@ -404,8 +404,8 @@ void OpDispatchBuilder::X87LDENV(OpcodeArgs) {
   Ref Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.LoadData = false});
   Mem = AppendSegmentOffset(Mem, Op->Flags);
 
-  auto NewFCW = _LoadMem(GPRClass, 2, Mem, 2);
-  _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
+  auto NewFCW = _LoadMem(GPRClass, OpSize::i16Bit, Mem, OpSize::i16Bit);
+  _StoreContext(OpSize::i16Bit, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
   Ref MemLocation = _Add(OpSize::i64Bit, Mem, _Constant(Size * 1));
   auto NewFSW = _LoadMem(GPRClass, Size, MemLocation, Size);
@@ -443,7 +443,7 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
   Ref Mem = MakeSegmentAddress(Op, Op->Dest);
   Ref Top = GetX87Top();
   {
-    auto FCW = _LoadContext(2, GPRClass, offsetof(FEXCore::Core::CPUState, FCW));
+    auto FCW = _LoadContext(OpSize::i16Bit, GPRClass, offsetof(FEXCore::Core::CPUState, FCW));
     _StoreMem(GPRClass, Size, Mem, FCW, Size);
   }
 
@@ -478,27 +478,27 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
 
   auto OneConst = _Constant(1);
   auto SevenConst = _Constant(7);
-  size_t LoadSize = ReducedPrecisionMode ? 8 : 16;
+  size_t LoadSize = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
   for (int i = 0; i < 7; ++i) {
-    Ref data = _LoadContextIndexed(Top, LoadSize, MMBaseOffset(), 16, FPRClass);
+    Ref data = _LoadContextIndexed(Top, LoadSize, MMBaseOffset(), OpSize::i128Bit, FPRClass);
     if (ReducedPrecisionMode) {
-      data = _F80CVTTo(data, 8);
+      data = _F80CVTTo(data, OpSize::i64Bit);
     }
-    _StoreMem(FPRClass, 16, data, Mem, _Constant((Size * 7) + (10 * i)), 1, MEM_OFFSET_SXTX, 1);
+    _StoreMem(FPRClass, OpSize::i128Bit, data, Mem, _Constant((Size * 7) + (10 * i)), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
     Top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, Top, OneConst), SevenConst);
   }
 
   // The final st(7) needs a bit of special handling here
-  Ref data = _LoadContextIndexed(Top, LoadSize, MMBaseOffset(), 16, FPRClass);
+  Ref data = _LoadContextIndexed(Top, LoadSize, MMBaseOffset(), OpSize::i128Bit, FPRClass);
   if (ReducedPrecisionMode) {
-    data = _F80CVTTo(data, 8);
+    data = _F80CVTTo(data, OpSize::i64Bit);
   }
   // ST7 broken in to two parts
   // Lower 64bits [63:0]
   // upper 16 bits [79:64]
-  _StoreMem(FPRClass, 8, data, Mem, _Constant((Size * 7) + (7 * 10)), 1, MEM_OFFSET_SXTX, 1);
-  auto topBytes = _VDupElement(16, 2, data, 4);
-  _StoreMem(FPRClass, 2, topBytes, Mem, _Constant((Size * 7) + (7 * 10) + 8), 1, MEM_OFFSET_SXTX, 1);
+  _StoreMem(FPRClass, OpSize::i64Bit, data, Mem, _Constant((Size * 7) + (7 * 10)), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
+  auto topBytes = _VDupElement(OpSize::i128Bit, OpSize::i16Bit, data, 4);
+  _StoreMem(FPRClass, OpSize::i16Bit, topBytes, Mem, _Constant((Size * 7) + (7 * 10) + 8), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
 
   // reset to default
   FNINIT(Op);
@@ -509,8 +509,8 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
   const auto Size = GetSrcSize(Op);
   Ref Mem = MakeSegmentAddress(Op, Op->Src[0]);
 
-  auto NewFCW = _LoadMem(GPRClass, 2, Mem, 2);
-  _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
+  auto NewFCW = _LoadMem(GPRClass, OpSize::i16Bit, Mem, OpSize::i16Bit);
+  _StoreContext(OpSize::i16Bit, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
   if (ReducedPrecisionMode) {
     // ignore the rounding precision, we're always 64-bit in F64.
     // extract rounding mode
@@ -534,18 +534,18 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
 
   auto low = _Constant(~0ULL);
   auto high = _Constant(0xFFFF);
-  Ref Mask = _VCastFromGPR(16, 8, low);
-  Mask = _VInsGPR(16, 8, 1, Mask, high);
-  size_t StoreSize = ReducedPrecisionMode ? 8 : 16;
+  Ref Mask = _VCastFromGPR(OpSize::i128Bit, OpSize::i64Bit, low);
+  Mask = _VInsGPR(OpSize::i128Bit, OpSize::i64Bit, 1, Mask, high);
+  size_t StoreSize = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
   for (int i = 0; i < 7; ++i) {
-    Ref Reg = _LoadMem(FPRClass, 16, Mem, _Constant((Size * 7) + (10 * i)), 1, MEM_OFFSET_SXTX, 1);
+    Ref Reg = _LoadMem(FPRClass, OpSize::i128Bit, Mem, _Constant((Size * 7) + (10 * i)), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
     // Mask off the top bits
-    Reg = _VAnd(16, 16, Reg, Mask);
+    Reg = _VAnd(OpSize::i128Bit, OpSize::i128Bit, Reg, Mask);
     if (ReducedPrecisionMode) {
       // Convert to double precision
-      Reg = _F80CVT(8, Reg);
+      Reg = _F80CVT(OpSize::i64Bit, Reg);
     }
-    _StoreContextIndexed(Reg, Top, StoreSize, MMBaseOffset(), 16, FPRClass);
+    _StoreContextIndexed(Reg, Top, StoreSize, MMBaseOffset(), OpSize::i128Bit, FPRClass);
 
     Top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, Top, OneConst), SevenConst);
   }
@@ -554,18 +554,18 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
   // ST7 broken in to two parts
   // Lower 64bits [63:0]
   // upper 16 bits [79:64]
-  Ref Reg = _LoadMem(FPRClass, 8, Mem, _Constant((Size * 7) + (10 * 7)), 1, MEM_OFFSET_SXTX, 1);
-  Ref RegHigh = _LoadMem(FPRClass, 2, Mem, _Constant((Size * 7) + (10 * 7) + 8), 1, MEM_OFFSET_SXTX, 1);
-  Reg = _VInsElement(16, 2, 4, 0, Reg, RegHigh);
+  Ref Reg = _LoadMem(FPRClass, OpSize::i64Bit, Mem, _Constant((Size * 7) + (10 * 7)), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
+  Ref RegHigh = _LoadMem(FPRClass, OpSize::i16Bit, Mem, _Constant((Size * 7) + (10 * 7) + 8), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
+  Reg = _VInsElement(OpSize::i128Bit, OpSize::i16Bit, 4, 0, Reg, RegHigh);
   if (ReducedPrecisionMode) {
-    Reg = _F80CVT(8, Reg); // Convert to double precision
+    Reg = _F80CVT(OpSize::i64Bit, Reg); // Convert to double precision
   }
-  _StoreContextIndexed(Reg, Top, StoreSize, MMBaseOffset(), 16, FPRClass);
+  _StoreContextIndexed(Reg, Top, StoreSize, MMBaseOffset(), OpSize::i128Bit, FPRClass);
 }
 
 // Load / Store Control Word
 void OpDispatchBuilder::X87FSTCW(OpcodeArgs) {
-  auto FCW = _LoadContext(2, GPRClass, offsetof(FEXCore::Core::CPUState, FCW));
+  auto FCW = _LoadContext(OpSize::i16Bit, GPRClass, offsetof(FEXCore::Core::CPUState, FCW));
   StoreResult(GPRClass, Op, FCW, -1);
 }
 
@@ -575,7 +575,7 @@ void OpDispatchBuilder::X87FLDCW(OpcodeArgs) {
   // Remove the next line and try DF_04.asm in fast path.
   _StackForceSlow();
   Ref NewFCW = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
+  _StoreContext(OpSize::i16Bit, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 }
 
 void OpDispatchBuilder::FXCH(OpcodeArgs) {
@@ -590,8 +590,8 @@ void OpDispatchBuilder::FXCH(OpcodeArgs) {
 void OpDispatchBuilder::X87FYL2X(OpcodeArgs, bool IsFYL2XP1) {
   if (IsFYL2XP1) {
     // create an add between top of stack and 1.
-    Ref One = ReducedPrecisionMode ? _VCastFromGPR(8, 8, _Constant(0x3FF0000000000000)) :
-                                     LoadAndCacheNamedVectorConstant(16, NamedVectorConstant::NAMED_VECTOR_X87_ONE);
+    Ref One = ReducedPrecisionMode ? _VCastFromGPR(OpSize::i64Bit, OpSize::i64Bit, _Constant(0x3FF0000000000000)) :
+                                     LoadAndCacheNamedVectorConstant(OpSize::i128Bit, NamedVectorConstant::NAMED_VECTOR_X87_ONE);
     _F80AddValue(0, One);
   }
 
@@ -734,7 +734,7 @@ void OpDispatchBuilder::FNINIT(OpcodeArgs) {
 
   // Init FCW to 0x037F
   auto NewFCW = _Constant(16, 0x037F);
-  _StoreContext(2, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
+  _StoreContext(OpSize::i16Bit, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
   // Set top to zero
   SetX87Top(Zero);
@@ -799,13 +799,14 @@ void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {
   auto AllOneConst = _Constant(0xffff'ffff'ffff'ffffull);
 
   Ref SrcCond = SelectCC(CC, OpSize::i64Bit, AllOneConst, ZeroConst);
-  Ref VecCond = _VDupFromGPR(16, 8, SrcCond);
-  _F80VBSLStack(16, VecCond, Op->OP & 7, 0);
+  Ref VecCond = _VDupFromGPR(OpSize::i128Bit, OpSize::i64Bit, SrcCond);
+  _F80VBSLStack(OpSize::i128Bit, VecCond, Op->OP & 7, 0);
 }
 
 void OpDispatchBuilder::X87FXAM(OpcodeArgs) {
   auto a = _ReadStackValue(0);
-  Ref Result = ReducedPrecisionMode ? _VExtractToGPR(8, 8, a, 0) : _VExtractToGPR(16, 8, a, 1);
+  Ref Result =
+    ReducedPrecisionMode ? _VExtractToGPR(OpSize::i64Bit, OpSize::i64Bit, a, 0) : _VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, a, 1);
 
   // Extract the sign bit
   Result = ReducedPrecisionMode ? _Bfe(OpSize::i64Bit, 1, 63, Result) : _Bfe(OpSize::i64Bit, 1, 15, Result);

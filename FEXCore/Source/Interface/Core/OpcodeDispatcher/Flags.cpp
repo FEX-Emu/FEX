@@ -270,7 +270,7 @@ Ref OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, Ref Src1, Ref Src2) {
 
   CalculateAF(Src1, Src2);
 
-  if (SrcSize >= 4) {
+  if (SrcSize >= OpSize::i32Bit) {
     RectifyCarryInvert(false);
     HandleNZCV_RMW();
     Res = _AdcWithFlags(OpSize, Src1, Src2);
@@ -307,7 +307,7 @@ Ref OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, Ref Src1, Ref Src2) {
   CalculateAF(Src1, Src2);
 
   Ref Res;
-  if (SrcSize >= 4) {
+  if (SrcSize >= OpSize::i32Bit) {
     // Arm's subtraction has inverted CF from x86, so rectify the input and
     // invert the output.
     RectifyCarryInvert(true);
@@ -344,7 +344,7 @@ Ref OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, Ref Src1, Ref Src2, b
   CalculateAF(Src1, Src2);
 
   Ref Res;
-  if (SrcSize >= 4) {
+  if (SrcSize >= OpSize::i32Bit) {
     Res = _SubWithFlags(IR::SizeToOpSize(SrcSize), Src1, Src2);
   } else {
     _SubNZCV(IR::SizeToOpSize(SrcSize), Src1, Src2);
@@ -374,7 +374,7 @@ Ref OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, Ref Src1, Ref Src2, b
   CalculateAF(Src1, Src2);
 
   Ref Res;
-  if (SrcSize >= 4) {
+  if (SrcSize >= OpSize::i32Bit) {
     Res = _AddWithFlags(IR::SizeToOpSize(SrcSize), Src1, Src2);
   } else {
     _AddNZCV(IR::SizeToOpSize(SrcSize), Src1, Src2);

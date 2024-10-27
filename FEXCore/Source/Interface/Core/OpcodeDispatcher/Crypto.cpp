@@ -50,10 +50,10 @@ void OpDispatchBuilder::SHA1MSG1Op(OpcodeArgs) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
-  Ref NewVec = _VExtr(16, 8, Dest, Src, 1);
+  Ref NewVec = _VExtr(OpSize::i128Bit, OpSize::i64Bit, Dest, Src, 1);
 
   // [W0, W1, W2, W3] ^ [W2, W3, W4, W5]
-  Ref Result = _VXor(16, 1, Dest, NewVec);
+  Ref Result = _VXor(OpSize::i128Bit, OpSize::i8Bit, Dest, NewVec);
 
   StoreResult(FPRClass, Op, Result, -1);
 }
@@ -126,15 +126,15 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
-  auto W0E = _VExtractToGPR(16, 4, Src, 3);
+  auto W0E = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Src, 3);
 
   using RoundResult = std::tuple<Ref, Ref, Ref, Ref, Ref>;
 
   const auto Round0 = [&]() -> RoundResult {
-    auto A = _VExtractToGPR(16, 4, Dest, 3);
-    auto B = _VExtractToGPR(16, 4, Dest, 2);
-    auto C = _VExtractToGPR(16, 4, Dest, 1);
-    auto D = _VExtractToGPR(16, 4, Dest, 0);
+    auto A = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 3);
+    auto B = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 2);
+    auto C = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 1);
+    auto D = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 0);
 
     auto A1 =
       _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Fn(*this, B, C, D), _Ror(OpSize::i32Bit, A, _Constant(32, 27))), W0E), K);
@@ -147,7 +147,7 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
   };
   const auto Round1To3 = [&](Ref A, Ref B, Ref C, Ref D, Ref E, Ref Src, unsigned W_idx) -> RoundResult {
     // Kill W and E at the beginning
-    auto W = _VExtractToGPR(16, 4, Src, W_idx);
+    auto W = _VExtractToGPR(OpSize::i128Bit, 4, Src, W_idx);
     auto Q = _Add(OpSize::i32Bit, W, E);
 
     auto ANext =
@@ -165,10 +165,10 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
   auto [A3, B3, C3, D3, E3] = Round1To3(A2, B2, C2, D2, E2, Src, 1);
   auto Final = Round1To3(A3, B3, C3, D3, E3, Src, 0);
 
-  auto Dest3 = _VInsGPR(16, 4, 3, Dest, std::get<0>(Final));
-  auto Dest2 = _VInsGPR(16, 4, 2, Dest3, std::get<1>(Final));
-  auto Dest1 = _VInsGPR(16, 4, 1, Dest2, std::get<2>(Final));
-  auto Dest0 = _VInsGPR(16, 4, 0, Dest1, std::get<3>(Final));
+  auto Dest3 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 3, Dest, std::get<0>(Final));
+  auto Dest2 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 2, Dest3, std::get<1>(Final));
+  auto Dest1 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 1, Dest2, std::get<2>(Final));
+  auto Dest0 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 0, Dest1, std::get<3>(Final));
 
   StoreResult(FPRClass, Op, Dest0, -1);
 }
@@ -187,21 +187,21 @@ void OpDispatchBuilder::SHA256MSG1Op(OpcodeArgs) {
                   _Lshr(OpSize::i32Bit, W, _Constant(32, 3)));
     };
 
-    auto W4 = _VExtractToGPR(16, 4, Src, 0);
-    auto W3 = _VExtractToGPR(16, 4, Dest, 3);
-    auto W2 = _VExtractToGPR(16, 4, Dest, 2);
-    auto W1 = _VExtractToGPR(16, 4, Dest, 1);
-    auto W0 = _VExtractToGPR(16, 4, Dest, 0);
+    auto W4 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Src, 0);
+    auto W3 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 3);
+    auto W2 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 2);
+    auto W1 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 1);
+    auto W0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 0);
 
     auto Sig3 = _Add(OpSize::i32Bit, W3, Sigma0(W4));
     auto Sig2 = _Add(OpSize::i32Bit, W2, Sigma0(W3));
     auto Sig1 = _Add(OpSize::i32Bit, W1, Sigma0(W2));
     auto Sig0 = _Add(OpSize::i32Bit, W0, Sigma0(W1));
 
-    auto D3 = _VInsGPR(16, 4, 3, Dest, Sig3);
-    auto D2 = _VInsGPR(16, 4, 2, D3, Sig2);
-    auto D1 = _VInsGPR(16, 4, 1, D2, Sig1);
-    Result = _VInsGPR(16, 4, 0, D1, Sig0);
+    auto D3 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 3, Dest, Sig3);
+    auto D2 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 2, D3, Sig2);
+    auto D1 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 1, D2, Sig1);
+    Result = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 0, D1, Sig0);
   }
 
   StoreResult(FPRClass, Op, Result, -1);
@@ -216,17 +216,17 @@ void OpDispatchBuilder::SHA256MSG2Op(OpcodeArgs) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
-  auto W14 = _VExtractToGPR(16, 4, Src, 2);
-  auto W15 = _VExtractToGPR(16, 4, Src, 3);
-  auto W16 = _Add(OpSize::i32Bit, _VExtractToGPR(16, 4, Dest, 0), Sigma1(W14));
-  auto W17 = _Add(OpSize::i32Bit, _VExtractToGPR(16, 4, Dest, 1), Sigma1(W15));
-  auto W18 = _Add(OpSize::i32Bit, _VExtractToGPR(16, 4, Dest, 2), Sigma1(W16));
-  auto W19 = _Add(OpSize::i32Bit, _VExtractToGPR(16, 4, Dest, 3), Sigma1(W17));
+  auto W14 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Src, 2);
+  auto W15 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Src, 3);
+  auto W16 = _Add(OpSize::i32Bit, _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 0), Sigma1(W14));
+  auto W17 = _Add(OpSize::i32Bit, _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 1), Sigma1(W15));
+  auto W18 = _Add(OpSize::i32Bit, _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 2), Sigma1(W16));
+  auto W19 = _Add(OpSize::i32Bit, _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 3), Sigma1(W17));
 
-  auto D3 = _VInsGPR(16, 4, 3, Dest, W19);
-  auto D2 = _VInsGPR(16, 4, 2, D3, W18);
-  auto D1 = _VInsGPR(16, 4, 1, D2, W17);
-  auto D0 = _VInsGPR(16, 4, 0, D1, W16);
+  auto D3 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 3, Dest, W19);
+  auto D2 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 2, D3, W18);
+  auto D1 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 1, D2, W17);
+  auto D0 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 0, D1, W16);
 
   StoreResult(FPRClass, Op, D0, -1);
 }
@@ -259,44 +259,44 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
   // Hardcoded to XMM0
   auto XMM0 = LoadXMMRegister(0);
 
-  auto E0 = _VExtractToGPR(16, 4, Src, 1);
-  auto F0 = _VExtractToGPR(16, 4, Src, 0);
-  auto G0 = _VExtractToGPR(16, 4, Dest, 1);
+  auto E0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Src, 1);
+  auto F0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Src, 0);
+  auto G0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 1);
   Ref Q0 = _Add(OpSize::i32Bit, Ch(E0, F0, G0), Sigma1(E0));
 
-  auto WK0 = _VExtractToGPR(16, 4, XMM0, 0);
+  auto WK0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, XMM0, 0);
   Q0 = _Add(OpSize::i32Bit, Q0, WK0);
 
-  auto H0 = _VExtractToGPR(16, 4, Dest, 0);
+  auto H0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 0);
   Q0 = _Add(OpSize::i32Bit, Q0, H0);
 
-  auto A0 = _VExtractToGPR(16, 4, Src, 3);
-  auto B0 = _VExtractToGPR(16, 4, Src, 2);
-  auto C0 = _VExtractToGPR(16, 4, Dest, 3);
+  auto A0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Src, 3);
+  auto B0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Src, 2);
+  auto C0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 3);
   auto A1 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Q0, BitwiseAtLeastTwo(A0, B0, C0)), Sigma0(A0));
 
-  auto D0 = _VExtractToGPR(16, 4, Dest, 2);
+  auto D0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 2);
   auto E1 = _Add(OpSize::i32Bit, Q0, D0);
 
   Ref Q1 = _Add(OpSize::i32Bit, Ch(E1, E0, F0), Sigma1(E1));
 
-  auto WK1 = _VExtractToGPR(16, 4, XMM0, 1);
+  auto WK1 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, XMM0, 1);
   Q1 = _Add(OpSize::i32Bit, Q1, WK1);
 
   // Rematerialize G0. Costs a move but saves spilling, coming out ahead.
-  G0 = _VExtractToGPR(16, 4, Dest, 1);
+  G0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 1);
   Q1 = _Add(OpSize::i32Bit, Q1, G0);
 
   auto A2 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Q1, BitwiseAtLeastTwo(A1, A0, B0)), Sigma0(A1));
 
   // Rematerialize C0. As with G0.
-  C0 = _VExtractToGPR(16, 4, Dest, 3);
+  C0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 3);
   auto E2 = _Add(OpSize::i32Bit, Q1, C0);
 
-  auto Res3 = _VInsGPR(16, 4, 3, Dest, A2);
-  auto Res2 = _VInsGPR(16, 4, 2, Res3, A1);
-  auto Res1 = _VInsGPR(16, 4, 1, Res2, E2);
-  auto Res0 = _VInsGPR(16, 4, 0, Res1, E1);
+  auto Res3 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 3, Dest, A2);
+  auto Res2 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 2, Res3, A1);
+  auto Res1 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 1, Res2, E2);
+  auto Res0 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 0, Res1, E1);
 
   StoreResult(FPRClass, Op, Res0, -1);
 }
@@ -310,7 +310,7 @@ void OpDispatchBuilder::AESImcOp(OpcodeArgs) {
 void OpDispatchBuilder::AESEncOp(OpcodeArgs) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  Ref Result = _VAESEnc(16, Dest, Src, LoadZeroVector(16));
+  Ref Result = _VAESEnc(OpSize::i128Bit, Dest, Src, LoadZeroVector(OpSize::i128Bit));
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -331,7 +331,7 @@ void OpDispatchBuilder::VAESEncOp(OpcodeArgs) {
 void OpDispatchBuilder::AESEncLastOp(OpcodeArgs) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  Ref Result = _VAESEncLast(16, Dest, Src, LoadZeroVector(16));
+  Ref Result = _VAESEncLast(OpSize::i128Bit, Dest, Src, LoadZeroVector(OpSize::i128Bit));
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -352,7 +352,7 @@ void OpDispatchBuilder::VAESEncLastOp(OpcodeArgs) {
 void OpDispatchBuilder::AESDecOp(OpcodeArgs) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  Ref Result = _VAESDec(16, Dest, Src, LoadZeroVector(16));
+  Ref Result = _VAESDec(OpSize::i128Bit, Dest, Src, LoadZeroVector(OpSize::i128Bit));
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -373,7 +373,7 @@ void OpDispatchBuilder::VAESDecOp(OpcodeArgs) {
 void OpDispatchBuilder::AESDecLastOp(OpcodeArgs) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  Ref Result = _VAESDecLast(16, Dest, Src, LoadZeroVector(16));
+  Ref Result = _VAESDecLast(OpSize::i128Bit, Dest, Src, LoadZeroVector(OpSize::i128Bit));
   StoreResult(FPRClass, Op, Result, -1);
 }
 
@@ -395,8 +395,8 @@ Ref OpDispatchBuilder::AESKeyGenAssistImpl(OpcodeArgs) {
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   const uint64_t RCON = Op->Src[1].Literal();
 
-  auto KeyGenSwizzle = LoadAndCacheNamedVectorConstant(16, NAMED_VECTOR_AESKEYGENASSIST_SWIZZLE);
-  return _VAESKeyGenAssist(Src, KeyGenSwizzle, LoadZeroVector(16), RCON);
+  auto KeyGenSwizzle = LoadAndCacheNamedVectorConstant(OpSize::i128Bit, NAMED_VECTOR_AESKEYGENASSIST_SWIZZLE);
+  return _VAESKeyGenAssist(Src, KeyGenSwizzle, LoadZeroVector(OpSize::i128Bit), RCON);
 }
 
 void OpDispatchBuilder::AESKeyGenAssist(OpcodeArgs) {
@@ -409,7 +409,7 @@ void OpDispatchBuilder::PCLMULQDQOp(OpcodeArgs) {
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   const auto Selector = static_cast<uint8_t>(Op->Src[1].Literal());
 
-  auto Res = _PCLMUL(16, Dest, Src, Selector & 0b1'0001);
+  auto Res = _PCLMUL(OpSize::i128Bit, Dest, Src, Selector & 0b1'0001);
   StoreResult(FPRClass, Op, Res, -1);
 }
 
