@@ -426,7 +426,7 @@
         ]
       },
 
-      "StoreContext u8:#ByteSize, RegisterClass:$Class, SSA:$Value, u32:$Offset": {
+      "StoreContext OpSize:#ByteSize, RegisterClass:$Class, SSA:$Value, u32:$Offset": {
         "Desc": ["Stores a value to the context with offset",
                  "Ctx[Offset] = Value",
                  "Zero Extends if value's type is too small",

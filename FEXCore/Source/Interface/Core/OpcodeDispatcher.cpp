@@ -507,8 +507,8 @@ void OpDispatchBuilder::POPAOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::POPSegmentOp(OpcodeArgs, uint32_t SegmentReg) {
-  const uint8_t SrcSize = GetSrcSize(Op);
-  const uint8_t DstSize = GetDstSize(Op);
+  const auto SrcSize = OpSizeFromSrc(Op);
+  const auto DstSize = OpSizeFromDst(Op);
 
   auto NewSegment = Pop(SrcSize);
 
@@ -2946,7 +2946,7 @@ void OpDispatchBuilder::ReadSegmentReg(OpcodeArgs, OpDispatchBuilder::Segment Se
 void OpDispatchBuilder::WriteSegmentReg(OpcodeArgs, OpDispatchBuilder::Segment Seg) {
   // Documentation claims that the 32-bit version of this instruction inserts in to the lower 32-bits of the segment
   // This is incorrect and it instead zero extends the 32-bit value to 64-bit
-  auto Size = GetDstSize(Op);
+  const auto Size = OpSizeFromDst(Op);
   Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   if (Seg == Segment::FS) {
     _StoreContext(Size, GPRClass, Src, offsetof(FEXCore::Core::CPUState, fs_cached));
@@ -4686,7 +4686,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
   // Calculate flags early.
   FlushRegisterCache();
 
-  const uint8_t GPRSize = CTX->GetGPRSize();
+  const auto GPRSize = CTX->GetGPROpSize();
 
   if (SetRIPToNext) {
     BlockSetRIP = SetRIPToNext;
@@ -4876,7 +4876,7 @@ void OpDispatchBuilder::RDRANDOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::BreakOp(OpcodeArgs, FEXCore::IR::BreakDefinition BreakDefinition) {
-  const uint8_t GPRSize = CTX->GetGPRSize();
+  const auto GPRSize = CTX->GetGPROpSize();
 
   // We don't actually support this instruction
   // Multiblock may hit it though

@@ -1221,10 +1221,10 @@ public:
       } else if (Index >= FPR0Index && Index <= FPR15Index) {
         _StoreRegister(Value, Index - FPR0Index, FPRClass, VectorSize);
       } else if (Index == DFIndex) {
-        _StoreContext(1, GPRClass, Value, offsetof(Core::CPUState, flags[X86State::RFLAG_DF_RAW_LOC]));
+        _StoreContext(OpSize::i8Bit, GPRClass, Value, offsetof(Core::CPUState, flags[X86State::RFLAG_DF_RAW_LOC]));
       } else {
         bool Partial = RegCache.Partial & (1ull << Index);
-        unsigned Size = Partial ? 8 : CacheIndexToSize(Index);
+        auto Size = Partial ? OpSize::i64Bit : CacheIndexToOpSize(Index);
         uint64_t NextBit = (1ull << (Index - 1));
         uint32_t Offset = CacheIndexToContextOffset(Index);
         auto Class = CacheIndexClass(Index);
@@ -1243,7 +1243,7 @@ public:
           _StoreContext(Size, Class, Value, Offset);
           // If Partial and MMX register, then we need to store all 1s in bits 64-80
           if (Partial && Index >= MM0Index && Index <= MM7Index) {
-            _StoreContext(2, IR::GPRClass, _Constant(0xFFFF), Offset + 8);
+            _StoreContext(OpSize::i16Bit, IR::GPRClass, _Constant(0xFFFF), Offset + 8);
           }
         }
       }
@@ -1771,7 +1771,7 @@ private:
       // For DF, we need to transform 0/1 into 1/-1
       StoreDF(_SubShift(OpSize::i64Bit, _Constant(1), Value, ShiftType::LSL, 1));
     } else {
-      _StoreContext(1, GPRClass, Value, offsetof(FEXCore::Core::CPUState, flags[BitOffset]));
+      _StoreContext(OpSize::i8Bit, GPRClass, Value, offsetof(FEXCore::Core::CPUState, flags[BitOffset]));
     }
   }
 
