@@ -324,7 +324,8 @@ inline Ref X87StackOptimization::GetX87ValidTag_Slow(uint8_t Offset) {
 }
 
 inline Ref X87StackOptimization::LoadStackValueAtOffset_Slow(uint8_t Offset) {
-  return IREmit->_LoadContextIndexed(GetOffsetTopWithCache_Slow(Offset), ReducedPrecisionMode ? 8 : 16, MMBaseOffset(), 16, FPRClass);
+  return IREmit->_LoadContextIndexed(GetOffsetTopWithCache_Slow(Offset), ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit,
+                                     MMBaseOffset(), 16, FPRClass);
 }
 
 inline void X87StackOptimization::StoreStackValueAtOffset_Slow(Ref Value, uint8_t Offset, bool SetValid) {

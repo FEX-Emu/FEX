@@ -461,7 +461,7 @@
         ]
       },
 
-      "SSA = LoadContextIndexed GPR:$Index, u8:#ByteSize, u32:$BaseOffset, u32:$Stride, RegisterClass:$Class": {
+      "SSA = LoadContextIndexed GPR:$Index, OpSize:#ByteSize, u32:$BaseOffset, u32:$Stride, RegisterClass:$Class": {
         "Desc": ["Loads a value from the context with offset and indexed by SSA value",
                  "Dest = Ctx[BaseOffset + Index * Stride]"
                 ],

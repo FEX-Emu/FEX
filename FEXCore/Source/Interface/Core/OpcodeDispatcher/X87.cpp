@@ -478,7 +478,7 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
 
   auto OneConst = _Constant(1);
   auto SevenConst = _Constant(7);
-  size_t LoadSize = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
+  const auto LoadSize = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
   for (int i = 0; i < 7; ++i) {
     Ref data = _LoadContextIndexed(Top, LoadSize, MMBaseOffset(), OpSize::i128Bit, FPRClass);
     if (ReducedPrecisionMode) {

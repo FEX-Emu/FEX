@@ -4114,7 +4114,7 @@ void OpDispatchBuilder::UpdatePrefixFromSegment(Ref Segment, uint32_t SegmentReg
   // Use BFE to extract the selector index in bits [15,3] of the segment register.
   // In some cases the upper 16-bits of the 32-bit GPR contain garbage to ignore.
   Segment = _Bfe(OpSize::i32Bit, 16 - 3, 3, Segment);
-  auto NewSegment = _LoadContextIndexed(Segment, 4, offsetof(FEXCore::Core::CPUState, gdt[0]), 4, GPRClass);
+  auto NewSegment = _LoadContextIndexed(Segment, OpSize::i32Bit, offsetof(FEXCore::Core::CPUState, gdt[0]), 4, GPRClass);
   CheckLegacySegmentWrite(NewSegment, SegmentReg);
   switch (SegmentReg) {
   case FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX:
