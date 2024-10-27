@@ -72,7 +72,7 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs, bool IsSyscallInst) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  const uint8_t GPRSize = CTX->GetGPRSize();
+  const auto GPRSize = CTX->GetGPROpSize();
   auto NewRIP = GetRelocatedPC(Op, -Op->InstSize);
   _StoreContext(GPRSize, GPRClass, NewRIP, offsetof(FEXCore::Core::CPUState, rip));
 
@@ -230,7 +230,7 @@ void OpDispatchBuilder::IRETOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CallbackReturnOp(OpcodeArgs) {
-  const uint8_t GPRSize = CTX->GetGPRSize();
+  const auto GPRSize = CTX->GetGPROpSize();
   // Store the new RIP
   _CallbackReturn();
   auto NewRIP = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, rip));
@@ -423,8 +423,8 @@ void OpDispatchBuilder::PUSHAOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PUSHSegmentOp(OpcodeArgs, uint32_t SegmentReg) {
-  const uint8_t SrcSize = GetSrcSize(Op);
-  const uint8_t DstSize = GetDstSize(Op);
+  const auto SrcSize = OpSizeFromSrc(Op);
+  const auto DstSize = OpSizeFromDst(Op);
 
   Ref Src {};
   if (!CTX->Config.Is64BitMode()) {
@@ -2932,7 +2932,7 @@ void OpDispatchBuilder::XLATOp(OpcodeArgs) {
 void OpDispatchBuilder::ReadSegmentReg(OpcodeArgs, OpDispatchBuilder::Segment Seg) {
   // 64-bit only
   // Doesn't hit the segment register optimization
-  auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
   Ref Src {};
   if (Seg == Segment::FS) {
     Src = _LoadContext(Size, GPRClass, offsetof(FEXCore::Core::CPUState, fs_cached));
@@ -3972,7 +3972,7 @@ uint32_t OpDispatchBuilder::GetDstBitSize(X86Tables::DecodedOp Op) const {
 }
 
 Ref OpDispatchBuilder::GetSegment(uint32_t Flags, uint32_t DefaultPrefix, bool Override) {
-  const uint8_t GPRSize = CTX->GetGPRSize();
+  const auto GPRSize = CTX->GetGPROpSize();
 
   if (CTX->Config.Is64BitMode) {
     if (Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX) {

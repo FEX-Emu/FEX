@@ -283,7 +283,8 @@ inline void X87StackOptimization::MigrateToSlowPathIf(bool ShouldMigrate) {
 
 inline Ref X87StackOptimization::GetTopWithCache_Slow() {
   if (!TopOffsetCache[0]) {
-    TopOffsetCache[0] = IREmit->_LoadContext(1, GPRClass, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC);
+    TopOffsetCache[0] =
+      IREmit->_LoadContext(OpSize::i8Bit, GPRClass, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC);
   }
   return TopOffsetCache[0];
 }
@@ -311,14 +312,14 @@ inline void X87StackOptimization::SetTopWithCache_Slow(Ref Value) {
 }
 
 inline void X87StackOptimization::SetX87ValidTag(Ref Value, bool Valid) {
-  Ref AbridgedFTW = IREmit->_LoadContext(1, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+  Ref AbridgedFTW = IREmit->_LoadContext(OpSize::i8Bit, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
   Ref RegMask = IREmit->_Lshl(OpSize::i32Bit, GetConstant(1), Value);
   Ref NewAbridgedFTW = Valid ? IREmit->_Or(OpSize::i32Bit, AbridgedFTW, RegMask) : IREmit->_Andn(OpSize::i32Bit, AbridgedFTW, RegMask);
   IREmit->_StoreContext(1, GPRClass, NewAbridgedFTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
 }
 
 inline Ref X87StackOptimization::GetX87ValidTag_Slow(uint8_t Offset) {
-  Ref AbridgedFTW = IREmit->_LoadContext(1, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+  Ref AbridgedFTW = IREmit->_LoadContext(OpSize::i8Bit, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
   return IREmit->_And(OpSize::i32Bit, IREmit->_Lshr(OpSize::i32Bit, AbridgedFTW, GetOffsetTopWithCache_Slow(Offset)), GetConstant(1));
 }
 
@@ -490,7 +491,7 @@ Ref X87StackOptimization::SynchronizeStackValues() {
         // perform a rotate right on mask by top
         auto* TopValue = GetTopWithCache_Slow();
         Ref RotAmount = IREmit->_Sub(OpSize::i32Bit, GetConstant(8), TopValue);
-        Ref AbridgedFTW = IREmit->_LoadContext(1, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+        Ref AbridgedFTW = IREmit->_LoadContext(OpSize::i8Bit, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
         Ref NewAbridgedFTW = IREmit->_Or(OpSize::i32Bit, AbridgedFTW, RotateRight8(Mask, RotAmount));
         IREmit->_StoreContext(1, GPRClass, NewAbridgedFTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
       }
@@ -508,7 +509,7 @@ Ref X87StackOptimization::SynchronizeStackValues() {
         // Same rotate right as above but this time on the invalid mask
         auto* TopValue = GetTopWithCache_Slow();
         Ref RotAmount = IREmit->_Sub(OpSize::i32Bit, GetConstant(8), TopValue);
-        Ref AbridgedFTW = IREmit->_LoadContext(1, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+        Ref AbridgedFTW = IREmit->_LoadContext(OpSize::i8Bit, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
         Ref NewAbridgedFTW = IREmit->_Andn(OpSize::i32Bit, AbridgedFTW, RotateRight8(Mask, RotAmount));
         IREmit->_StoreContext(1, GPRClass, NewAbridgedFTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
       }

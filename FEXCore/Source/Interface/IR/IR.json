@@ -399,7 +399,7 @@
       }
     },
     "Memory": {
-      "SSA = LoadContext u8:#ByteSize, RegisterClass:$Class, u32:$Offset": {
+      "SSA = LoadContext OpSize:#ByteSize, RegisterClass:$Class, u32:$Offset": {
         "Desc": ["Loads a value from the context with offset",
                  "Dest = Ctx[Offset]"
                 ],

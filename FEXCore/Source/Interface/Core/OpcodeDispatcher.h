@@ -2029,7 +2029,7 @@ private:
       // Recover the sign bit, it is the logical DF value
       return _Lshr(OpSize::i64Bit, LoadDF(), _Constant(63));
     } else {
-      return _LoadContext(1, GPRClass, offsetof(Core::CPUState, flags[BitOffset]));
+      return _LoadContext(OpSize::i8Bit, GPRClass, offsetof(Core::CPUState, flags[BitOffset]));
     }
   }
 
