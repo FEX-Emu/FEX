@@ -1907,7 +1907,7 @@ private:
     return RegCache.Value[Index];
   }
 
-  RefPair AllocatePair(FEXCore::IR::RegisterClassType Class, uint8_t Size) {
+  RefPair AllocatePair(FEXCore::IR::RegisterClassType Class, IR::OpSize Size) {
     if (Class == FPRClass) {
       return {_AllocateFPR(Size, Size), _AllocateFPR(Size, Size)};
     } else {
@@ -1915,13 +1915,13 @@ private:
     }
   }
 
-  RefPair LoadContextPair_Uncached(FEXCore::IR::RegisterClassType Class, uint8_t Size, unsigned Offset) {
+  RefPair LoadContextPair_Uncached(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, unsigned Offset) {
     RefPair Values = AllocatePair(Class, Size);
     _LoadContextPair(Size, Class, Offset, Values.Low, Values.High);
     return Values;
   }
 
-  RefPair LoadRegCachePair(uint64_t Offset, uint8_t Index, RegisterClassType RegClass, uint8_t Size) {
+  RefPair LoadRegCachePair(uint64_t Offset, uint8_t Index, RegisterClassType RegClass, IR::OpSize Size) {
     LOGMAN_THROW_AA_FMT(Index != DFIndex, "must be pairable");
 
     // Try to load a pair into the cache
@@ -1952,7 +1952,7 @@ private:
     return LoadRegCache(CacheIndexToContextOffset(Index), Index, CacheIndexClass(Index), Size);
   }
 
-  RefPair LoadContextPair(uint8_t Size, uint8_t Index) {
+  RefPair LoadContextPair(IR::OpSize Size, uint8_t Index) {
     return LoadRegCachePair(CacheIndexToContextOffset(Index), Index, CacheIndexClass(Index), Size);
   }
 
@@ -2428,17 +2428,17 @@ private:
   }
 
 
-  RefPair LoadMemPair(FEXCore::IR::RegisterClassType Class, uint8_t Size, Ref Base, unsigned Offset) {
+  RefPair LoadMemPair(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, Ref Base, unsigned Offset) {
     RefPair Values = AllocatePair(Class, Size);
     _LoadMemPair(Class, Size, Base, Offset, Values.Low, Values.High);
     return Values;
   }
 
-  RefPair _LoadMemPairAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, AddressMode A, uint8_t Align = 1) {
+  RefPair _LoadMemPairAutoTSO(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, AddressMode A, uint8_t Align = 1) {
     bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
 
     // Use ldp if possible, otherwise fallback on two loads.
-    if (!AtomicTSO && !A.Segment && Size >= 4 & Size <= 16) {
+    if (!AtomicTSO && !A.Segment && Size >= OpSize::i32Bit & Size <= OpSize::i128Bit) {
       A = SelectPairAddressMode(A, Size);
       return LoadMemPair(Class, Size, A.Base, A.Offset);
     } else {
