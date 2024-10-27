@@ -534,7 +534,7 @@
         "DestSize": "Size"
       },
 
-      "SSA:$Value1, SSA:$Value2 = LoadMemPair RegisterClass:$Class, u8:#Size, GPR:$Addr, u32:$Offset": {
+      "SSA:$Value1, SSA:$Value2 = LoadMemPair RegisterClass:$Class, OpSize:#Size, GPR:$Addr, u32:$Offset": {
         "Desc": ["Load a pair of values from memory."],
         "DestSize": "Size",
         "HasSideEffects": true
