@@ -316,6 +316,11 @@ public:
     return Config.Is64BitMode ? 8 : 4;
   }
 
+  // TODO: Temporary while OpcodeDispatcher shifts over
+  IR::OpSize GetGPROpSize() const {
+    return Config.Is64BitMode ? IR::OpSize::i64Bit : IR::OpSize::i32Bit;
+  }
+
   FEXCore::JITSymbols Symbols;
 
   FEXCore::Utils::PooledAllocatorVirtual OpDispatcherAllocator;

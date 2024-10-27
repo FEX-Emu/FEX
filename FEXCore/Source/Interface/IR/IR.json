@@ -360,7 +360,7 @@
       }
     },
     "StaticRA": {
-      "SSA = LoadRegister u32:$Reg, RegisterClass:$Class, u8:#Size": {
+      "SSA = LoadRegister u32:$Reg, RegisterClass:$Class, OpSize:#Size": {
         "Desc": ["Loads a value from the given register",
                  "Size must match the execution mode."],
         "DestSize": "Size"

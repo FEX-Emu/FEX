@@ -1849,6 +1849,17 @@ private:
     }
   }
 
+  // TODO: Temporary while OpcodeDispatcher shifts over
+  IR::OpSize CacheIndexToOpSize(int Index) {
+    // MMX registers are rounded up to 128-bit since they are shared with 80-bit
+    // x87 registers, even though MMX is logically only 64-bit.
+    if (Index >= AVXHigh0Index || ((Index >= MM0Index && Index <= MM7Index))) {
+      return OpSize::i128Bit;
+    } else {
+      return OpSize::i8Bit;
+    }
+  }
+
   struct {
     uint64_t Cached;
     uint64_t Written;
@@ -1866,7 +1877,7 @@ private:
     RegCache.Written &= ~Bit;
   }
 
-  Ref LoadRegCache(uint64_t Offset, uint8_t Index, RegisterClassType RegClass, uint8_t Size) {
+  Ref LoadRegCache(uint64_t Offset, uint8_t Index, RegisterClassType RegClass, IR::OpSize Size) {
     LOGMAN_THROW_AA_FMT(Index < 64, "valid index");
     uint64_t Bit = (1ull << (uint64_t)Index);
 
@@ -1945,10 +1956,10 @@ private:
   }
 
   Ref LoadGPR(uint8_t Reg) {
-    return LoadRegCache(Reg, GPR0Index + Reg, GPRClass, CTX->GetGPRSize());
+    return LoadRegCache(Reg, GPR0Index + Reg, GPRClass, CTX->GetGPROpSize());
   }
 
-  Ref LoadContext(uint8_t Size, uint8_t Index) {
+  Ref LoadContext(IR::OpSize Size, uint8_t Index) {
     return LoadRegCache(CacheIndexToContextOffset(Index), Index, CacheIndexClass(Index), Size);
   }
 
@@ -1957,7 +1968,7 @@ private:
   }
 
   Ref LoadContext(uint8_t Index) {
-    return LoadContext(CacheIndexToSize(Index), Index);
+    return LoadContext(CacheIndexToOpSize(Index), Index);
   }
 
   Ref LoadXMMRegister(uint8_t Reg) {
