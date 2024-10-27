@@ -376,7 +376,7 @@
         "DestSize": "Size"
       },
 
-      "StoreRegister SSA:$Value, u32:$Reg, RegisterClass:$Class, u8:#Size": {
+      "StoreRegister SSA:$Value, u32:$Reg, RegisterClass:$Class, OpSize:#Size": {
          "HasSideEffects": true,
         "Desc": ["Stores a value to a given register.",
                  "Size must match the execution mode."],

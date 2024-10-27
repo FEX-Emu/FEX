@@ -1188,7 +1188,7 @@ public:
 
     CalculateDeferredFlags();
 
-    const uint8_t GPRSize = CTX->GetGPRSize();
+    const auto GPRSize = CTX->GetGPROpSize();
     const auto VectorSize = GetGuestVectorLength();
 
     // Write backwards. This is a heuristic to improve coalescing, since we
