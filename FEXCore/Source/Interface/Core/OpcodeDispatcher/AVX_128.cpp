@@ -592,7 +592,7 @@ void OpDispatchBuilder::AVX128_VMOVAPS(OpcodeArgs) {
   }
 }
 
-void OpDispatchBuilder::AVX128_VMOVScalarImpl(OpcodeArgs, size_t ElementSize) {
+void OpDispatchBuilder::AVX128_VMOVScalarImpl(OpcodeArgs, IR::OpSize ElementSize) {
   if (Op->Dest.IsGPR() && Op->Src[0].IsGPR() && Op->Src[1].IsGPR()) {
     // VMOVSS/SD xmm1, xmm2, xmm3
     // Lower 128-bits are merged
@@ -961,7 +961,7 @@ void OpDispatchBuilder::AVX128_VBROADCAST(OpcodeArgs) {
     }
   } else {
     // Get the address to broadcast from into a GPR.
-    Ref Address = MakeSegmentAddress(Op, Op->Src[0], CTX->GetGPRSize());
+    Ref Address = MakeSegmentAddress(Op, Op->Src[0], CTX->GetGPROpSize());
     Src.Low = _VBroadcastFromMem(OpSize::i128Bit, ElementSize, Address);
   }
 
@@ -1015,7 +1015,7 @@ void OpDispatchBuilder::AVX128_InsertCVTGPR_To_FPR(OpcodeArgs) {
 
   if (Op->Src[1].IsGPR()) {
     // If the source is a GPR then convert directly from the GPR.
-    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Op->Src[1], CTX->GetGPRSize(), Op->Flags);
+    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Op->Src[1], CTX->GetGPROpSize(), Op->Flags);
     Result.Low = _VSToFGPRInsert(OpSize::i128Bit, DstElementSize, SrcSize, Src1.Low, Src2, false);
   } else if (SrcSize != DstElementSize) {
     // If the source is from memory but the Source size and destination size aren't the same,
@@ -1047,7 +1047,7 @@ void OpDispatchBuilder::AVX128_CVTFPR_To_GPR(OpcodeArgs) {
   if (Op->Src[0].IsGPR()) {
     Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
   } else {
-    Src.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], GetSrcSize(Op), Op->Flags);
+    Src.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], OpSizeFromSrc(Op), Op->Flags);
   }
 
   // GPR size is determined by REX.W
@@ -1095,7 +1095,7 @@ void OpDispatchBuilder::AVX128_VPSIGN(OpcodeArgs) {
 
 template<size_t ElementSize>
 void OpDispatchBuilder::AVX128_UCOMISx(OpcodeArgs) {
-  const auto SrcSize = Op->Src[0].IsGPR() ? GetGuestVectorLength() : GetSrcSize(Op);
+  const auto SrcSize = Op->Src[0].IsGPR() ? GetGuestVectorLength() : OpSizeFromSrc(Op);
 
   auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Dest, Op->Flags, false);
 
@@ -1116,7 +1116,7 @@ void OpDispatchBuilder::AVX128_VectorScalarInsertALU(OpcodeArgs, FEXCore::IR::IR
   // We load the full vector width when dealing with a source vector,
   // so that we don't do any unnecessary zero extension to the scalar
   // element that we're going to operate on.
-  const auto SrcSize = GetSrcSize(Op);
+  const auto SrcSize = OpSizeFromSrc(Op);
 
   auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
   RefPair Src2 {};
@@ -1154,7 +1154,7 @@ void OpDispatchBuilder::AVX128_InsertScalarFCMP(OpcodeArgs) {
   // We load the full vector width when dealing with a source vector,
   // so that we don't do any unnecessary zero extension to the scalar
   // element that we're going to operate on.
-  const auto SrcSize = GetSrcSize(Op);
+  const auto SrcSize = OpSizeFromSrc(Op);
 
   auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
   RefPair Src2 {};
@@ -1180,7 +1180,7 @@ void OpDispatchBuilder::AVX128_MOVBetweenGPR_FPR(OpcodeArgs) {
     RefPair Result {};
     if (Op->Src[0].IsGPR()) {
       // Loading from GPR and moving to Vector.
-      Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], CTX->GetGPRSize(), Op->Flags);
+      Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], CTX->GetGPROpSize(), Op->Flags);
       // zext to 128bit
       Result.Low = _VCastFromGPR(OpSize::i128Bit, GetSrcSize(Op), Src);
     } else {
@@ -1249,8 +1249,8 @@ void OpDispatchBuilder::AVX128_ExtendVectorElements(OpcodeArgs, size_t ElementSi
     } else {
       // For memory operands the 256-bit variant loads twice the size specified in the table.
       const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
-      const auto SrcSize = GetSrcSize(Op);
-      const auto LoadSize = Is256Bit ? SrcSize * 2 : SrcSize;
+      const auto SrcSize = OpSizeFromSrc(Op);
+      const auto LoadSize = Is256Bit ? IR::SizeToOpSize(IR::OpSizeToSize(SrcSize) * 2) : SrcSize;
 
       return LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], LoadSize, Op->Flags);
     }
@@ -1382,7 +1382,7 @@ void OpDispatchBuilder::AVX128_PINSRImpl(OpcodeArgs, size_t ElementSize, const X
 
   if (Src2Op.IsGPR()) {
     // If the source is a GPR then convert directly from the GPR.
-    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, CTX->GetGPRSize(), Op->Flags);
+    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, CTX->GetGPROpSize(), Op->Flags);
     Result.Low = _VInsGPR(OpSize::i128Bit, ElementSize, Index, Src1.Low, Src2);
   } else {
     // If loading from memory then we only load the element size
@@ -1521,7 +1521,7 @@ void OpDispatchBuilder::AVX128_InsertScalar_CVT_Float_To_Float(OpcodeArgs) {
   // Gotta be careful with this operation.
   // It inserts in to the lowest element, retaining the remainder of the lower 128-bits.
   // Then zero extends the top 128-bit.
-  const auto SrcSize = GetSrcSize(Op);
+  const auto SrcSize = OpSizeFromSrc(Op);
   auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
   Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], SrcSize, Op->Flags, {.AllowUpperGarbage = true});
 
@@ -1531,8 +1531,8 @@ void OpDispatchBuilder::AVX128_InsertScalar_CVT_Float_To_Float(OpcodeArgs) {
 
 template<size_t DstElementSize, size_t SrcElementSize>
 void OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Float(OpcodeArgs) {
-  const auto SrcSize = GetSrcSize(Op);
-  const auto DstSize = GetDstSize(Op);
+  const auto SrcSize = OpSizeFromSrc(Op);
+  const auto DstSize = OpSizeFromDst(Op);
 
   const auto IsFloatSrc = SrcElementSize == 4;
   auto Is128BitSrc = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
@@ -1545,7 +1545,7 @@ void OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Float(OpcodeArgs) {
     Is128BitDst = true;
   }
 
-  const auto LoadSize = IsFloatSrc && !Op->Src[0].IsGPR() ? SrcSize / 2 : SrcSize;
+  const auto LoadSize = IsFloatSrc && !Op->Src[0].IsGPR() ? IR::SizeToOpSize(IR::OpSizeToSize(SrcSize) / 2) : SrcSize;
 
   RefPair Src {};
   if (Op->Src[0].IsGPR() || LoadSize >= OpSize::i128Bit) {
@@ -1650,7 +1650,7 @@ void OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int(OpcodeArgs) {
 
 template<size_t SrcElementSize, bool Widen>
 void OpDispatchBuilder::AVX128_Vector_CVT_Int_To_Float(OpcodeArgs) {
-  const size_t Size = GetDstSize(Op);
+  const auto Size = OpSizeFromDst(Op);
   const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
 
   RefPair Src = [&] {
@@ -1658,7 +1658,7 @@ void OpDispatchBuilder::AVX128_Vector_CVT_Int_To_Float(OpcodeArgs) {
       // If loading a vector, use the full size, so we don't
       // unnecessarily zero extend the vector. Otherwise, if
       // memory, then we want to load the element size exactly.
-      const auto LoadSize = 8 * (Size / 16);
+      const auto LoadSize = IR::SizeToOpSize(8 * (IR::OpSizeToSize(Size) / 16));
       return RefPair {.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], LoadSize, Op->Flags)};
     } else {
       return AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
@@ -1805,7 +1805,7 @@ void OpDispatchBuilder::AVX128_InsertScalarRound(OpcodeArgs) {
   // We load the full vector width when dealing with a source vector,
   // so that we don't do any unnecessary zero extension to the scalar
   // element that we're going to operate on.
-  const auto SrcSize = GetSrcSize(Op);
+  const auto SrcSize = OpSizeFromSrc(Op);
 
   auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
   RefPair Src2 {};
@@ -2068,7 +2068,7 @@ void OpDispatchBuilder::AVX128_VMASKMOVImpl(OpcodeArgs, size_t ElementSize, size
   auto Mask = AVX128_LoadSource_WithOpSize(Op, MaskOp, Op->Flags, !Is128Bit);
 
   const auto MakeAddress = [this, Op](const X86Tables::DecodedOperand& Data) {
-    return MakeSegmentAddress(Op, Data, CTX->GetGPRSize());
+    return MakeSegmentAddress(Op, Data, CTX->GetGPROpSize());
   };
 
   if (IsStore) {
@@ -2110,7 +2110,7 @@ void OpDispatchBuilder::AVX128_VMASKMOV(OpcodeArgs) {
 
 void OpDispatchBuilder::AVX128_MASKMOV(OpcodeArgs) {
   ///< This instruction only supports 128-bit.
-  const auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
   const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
 
   auto MaskSrc = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
@@ -2739,8 +2739,8 @@ void OpDispatchBuilder::AVX128_VPGATHER(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AVX128_VCVTPH2PS(OpcodeArgs) {
-  const auto DstSize = GetDstSize(Op);
-  const auto SrcSize = DstSize / 2;
+  const auto DstSize = OpSizeFromDst(Op);
+  const auto SrcSize = IR::SizeToOpSize(IR::OpSizeToSize(DstSize) / 2);
   const auto Is128BitSrc = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
   const auto Is128BitDst = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 

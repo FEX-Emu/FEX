@@ -61,7 +61,7 @@ void OpDispatchBuilder::SetX87Top(Ref Value) {
 
 // Float LoaD operation with memory operand
 void OpDispatchBuilder::FLD(OpcodeArgs, size_t Width) {
-  size_t ReadWidth = (Width == 80) ? 16 : Width / 8;
+  const auto ReadWidth = (Width == 80) ? OpSize::i128Bit : IR::SizeToOpSize(Width / 8);
 
   Ref Data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], ReadWidth, Op->Flags);
   Ref ConvertedData = Data;
@@ -97,12 +97,12 @@ void OpDispatchBuilder::FLD_Const(OpcodeArgs, NamedVectorConstant Constant) {
 }
 
 void OpDispatchBuilder::FILD(OpcodeArgs) {
-  size_t ReadWidth = GetSrcSize(Op);
+  const auto ReadWidth = OpSizeFromSrc(Op);
   // Read from memory
   Ref Data = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], ReadWidth, Op->Flags);
 
   // Sign extend to 64bits
-  if (ReadWidth != 8) {
+  if (ReadWidth != OpSize::i64Bit) {
     Data = _Sbfe(OpSize::i64Bit, ReadWidth * 8, 0, Data);
   }
 
@@ -400,7 +400,7 @@ Ref OpDispatchBuilder::ReconstructX87StateFromFSW_Helper(Ref FSW) {
 void OpDispatchBuilder::X87LDENV(OpcodeArgs) {
   _StackForceSlow();
 
-  auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
   Ref Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.LoadData = false});
   Mem = AppendSegmentOffset(Mem, Op->Flags);
 
@@ -506,7 +506,7 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
 
 void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
   _StackForceSlow();
-  const auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
   Ref Mem = MakeSegmentAddress(Op, Op->Src[0]);
 
   auto NewFCW = _LoadMem(GPRClass, OpSize::i16Bit, Mem, OpSize::i16Bit);

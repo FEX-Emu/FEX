@@ -553,8 +553,10 @@ enum OpSize : uint8_t {
   i16Bit = 2,
   i32Bit = 4,
   i64Bit = 8,
+  f80Bit = 10,
   i128Bit = 16,
   i256Bit = 32,
+  iInvalid = 0xFF,
 };
 
 enum class FloatCompareOp : uint8_t {
@@ -582,8 +584,25 @@ static inline OpSize SizeToOpSize(uint8_t Size) {
   case 2: return OpSize::i16Bit;
   case 4: return OpSize::i32Bit;
   case 8: return OpSize::i64Bit;
+  case 10: return OpSize::f80Bit;
   case 16: return OpSize::i128Bit;
   case 32: return OpSize::i256Bit;
+  case 0xFF: return OpSize::iInvalid;
+  default: FEX_UNREACHABLE;
+  }
+}
+
+// This is a nop operation and will be eliminated by the compiler.
+static inline uint8_t OpSizeToSize(IR::OpSize Size) {
+  switch (Size) {
+  case OpSize::i8Bit: return 1;
+  case OpSize::i16Bit: return 2;
+  case OpSize::i32Bit: return 4;
+  case OpSize::i64Bit: return 8;
+  case OpSize::f80Bit: return 10;
+  case OpSize::i128Bit: return 16;
+  case OpSize::i256Bit: return 32;
+  case OpSize::iInvalid: return 0xFF;
   default: FEX_UNREACHABLE;
   }
 }

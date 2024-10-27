@@ -26,7 +26,7 @@ class OrderedNode;
 void OpDispatchBuilder::X87LDENVF64(OpcodeArgs) {
   _StackForceSlow();
 
-  const auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
   Ref Mem = MakeSegmentAddress(Op, Op->Src[0]);
 
   auto NewFCW = _LoadMem(GPRClass, OpSize::i16Bit, Mem, OpSize::i16Bit);
@@ -59,7 +59,7 @@ void OpDispatchBuilder::X87FLDCWF64(OpcodeArgs) {
 // F64 ops
 // Float load op with memory operand
 void OpDispatchBuilder::FLDF64(OpcodeArgs, size_t Width) {
-  size_t ReadWidth = (Width == 80) ? 16 : Width / 8;
+  const auto ReadWidth = (Width == 80) ? OpSize::i128Bit : IR::SizeToOpSize(Width / 8);
   Ref Data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], ReadWidth, Op->Flags);
   // Convert to 64bit float
   Ref ConvertedData = Data;
@@ -92,14 +92,14 @@ void OpDispatchBuilder::FLDF64_Const(OpcodeArgs, uint64_t Num) {
 }
 
 void OpDispatchBuilder::FILDF64(OpcodeArgs) {
-  size_t ReadWidth = GetSrcSize(Op);
+  const auto ReadWidth = OpSizeFromSrc(Op);
 
   // Read from memory
   Ref Data = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], ReadWidth, Op->Flags);
   if (ReadWidth == OpSize::i16Bit) {
     Data = _Sbfe(OpSize::i64Bit, ReadWidth * 8, 0, Data);
   }
-  auto ConvertedData = _Float_FromGPR_S(OpSize::i64Bit, ReadWidth == 4 ? OpSize::i32Bit : OpSize::i64Bit, Data);
+  auto ConvertedData = _Float_FromGPR_S(OpSize::i64Bit, ReadWidth == OpSize::i32Bit ? OpSize::i32Bit : OpSize::i64Bit, Data);
   _PushStack(ConvertedData, Data, ReadWidth, false);
 }
 

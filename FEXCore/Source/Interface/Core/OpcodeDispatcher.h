@@ -47,8 +47,8 @@ enum class BTAction {
 };
 
 struct LoadSourceOptions {
-  // Alignment of the load in bytes. -1 signifies unaligned
-  int8_t Align = -1;
+  // Alignment of the load in bytes. iInvalid signifies opsize aligned.
+  IR::OpSize Align = OpSize::iInvalid;
 
   // Whether or not to load the data if a memory access occurs.
   // If set to false, then the address that would have been loaded from
@@ -464,7 +464,7 @@ public:
   void CVTFPR_To_GPR(OpcodeArgs);
   template<size_t SrcElementSize, bool Widen>
   void Vector_CVT_Int_To_Float(OpcodeArgs);
-  template<size_t DstElementSize, size_t SrcElementSize>
+  template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
   void Scalar_CVT_Float_To_Float(OpcodeArgs);
   void Vector_CVT_Float_To_Float(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize, bool IsAVX);
   template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
@@ -513,7 +513,7 @@ public:
   template<size_t ElementSize>
   void AVXVectorRound(OpcodeArgs);
 
-  template<size_t DstElementSize, size_t SrcElementSize>
+  template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
   void AVXScalar_CVT_Float_To_Float(OpcodeArgs);
 
   template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
@@ -590,7 +590,7 @@ public:
   void VINSERTOp(OpcodeArgs);
   void VINSERTPSOp(OpcodeArgs);
 
-  template<size_t ElementSize, bool IsStore>
+  template<IR::OpSize ElementSize, bool IsStore>
   void VMASKMOVOp(OpcodeArgs);
 
   void VMOVHPOp(OpcodeArgs);
@@ -934,7 +934,7 @@ public:
   void AVX128_StoreResult_WithOpSize(FEXCore::X86Tables::DecodedOp Op, const FEXCore::X86Tables::DecodedOperand& Operand, const RefPair Src,
                                      MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
   void InstallAVX128Handlers();
-  void AVX128_VMOVScalarImpl(OpcodeArgs, size_t ElementSize);
+  void AVX128_VMOVScalarImpl(OpcodeArgs, IR::OpSize ElementSize);
   void AVX128_VectorALU(OpcodeArgs, IROps IROp, size_t ElementSize);
   void AVX128_VectorUnary(OpcodeArgs, IROps IROp, size_t ElementSize);
   void AVX128_VectorUnaryImpl(OpcodeArgs, size_t SrcSize, size_t ElementSize, std::function<Ref(size_t ElementSize, Ref Src)> Helper);
@@ -1424,11 +1424,11 @@ private:
 
   Ref SHUFOpImpl(OpcodeArgs, size_t DstSize, size_t ElementSize, Ref Src1, Ref Src2, uint8_t Shuffle);
 
-  void VMASKMOVOpImpl(OpcodeArgs, size_t ElementSize, size_t DataSize, bool IsStore, const X86Tables::DecodedOperand& MaskOp,
+  void VMASKMOVOpImpl(OpcodeArgs, IR::OpSize ElementSize, IR::OpSize DataSize, bool IsStore, const X86Tables::DecodedOperand& MaskOp,
                       const X86Tables::DecodedOperand& DataOp);
 
-  void MOVScalarOpImpl(OpcodeArgs, size_t ElementSize);
-  void VMOVScalarOpImpl(OpcodeArgs, size_t ElementSize);
+  void MOVScalarOpImpl(OpcodeArgs, IR::OpSize ElementSize);
+  void VMOVScalarOpImpl(OpcodeArgs, IR::OpSize ElementSize);
 
   Ref VFCMPOpImpl(OpSize Size, size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType);
 
@@ -1446,26 +1446,26 @@ private:
   //   - Example 32bit ADDSS Dest, Src
   //   - Dest[31:0] = Dest[31:0] + Src[31:0]
   //   - Dest[{256,128}:32] = (Unmodified)
-  Ref VectorScalarInsertALUOpImpl(OpcodeArgs, IROps IROp, size_t DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
+  Ref VectorScalarInsertALUOpImpl(OpcodeArgs, IROps IROp, IR::OpSize DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
                                   const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits);
 
-  Ref VectorScalarUnaryInsertALUOpImpl(OpcodeArgs, IROps IROp, size_t DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
-                                       const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits);
+  Ref VectorScalarUnaryInsertALUOpImpl(OpcodeArgs, IROps IROp, IR::OpSize DstSize, size_t ElementSize,
+                                       const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits);
 
-  Ref InsertCVTGPR_To_FPRImpl(OpcodeArgs, size_t DstSize, size_t DstElementSize, const X86Tables::DecodedOperand& Src1Op,
+  Ref InsertCVTGPR_To_FPRImpl(OpcodeArgs, IR::OpSize DstSize, size_t DstElementSize, const X86Tables::DecodedOperand& Src1Op,
                               const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits);
 
-  Ref InsertScalar_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstSize, size_t DstElementSize, size_t SrcElementSize,
+  Ref InsertScalar_CVT_Float_To_FloatImpl(OpcodeArgs, IR::OpSize DstSize, size_t DstElementSize, size_t SrcElementSize,
                                           const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits);
-  Ref InsertScalarRoundImpl(OpcodeArgs, size_t DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
+  Ref InsertScalarRoundImpl(OpcodeArgs, IR::OpSize DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
                             const X86Tables::DecodedOperand& Src2Op, uint64_t Mode, bool ZeroUpperBits);
 
   Ref InsertScalarFCMPOpImpl(OpSize Size, uint8_t OpDstSize, size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType, bool ZeroUpperBits);
 
   Ref VectorRoundImpl(OpSize Size, size_t ElementSize, Ref Src, uint64_t Mode);
 
-  Ref Scalar_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize, const X86Tables::DecodedOperand& Src1Op,
-                                    const X86Tables::DecodedOperand& Src2Op);
+  Ref Scalar_CVT_Float_To_FloatImpl(OpcodeArgs, IR::OpSize DstElementSize, IR::OpSize SrcElementSize,
+                                    const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op);
 
   Ref Vector_CVT_Float_To_IntImpl(OpcodeArgs, size_t SrcElementSize, bool Narrow, bool HostRoundingMode);
 
@@ -1518,7 +1518,7 @@ private:
   Ref LoadSource(RegisterClassType Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags,
                  const LoadSourceOptions& Options = {});
   Ref LoadSource_WithOpSize(RegisterClassType Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand,
-                            uint8_t OpSize, uint32_t Flags, const LoadSourceOptions& Options = {});
+                            IR::OpSize OpSize, uint32_t Flags, const LoadSourceOptions& Options = {});
   void StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op,
                               const FEXCore::X86Tables::DecodedOperand& Operand, const Ref Src, uint8_t OpSize, int8_t Align,
                               MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
@@ -1530,13 +1530,13 @@ private:
   // In several instances, it's desirable to get a base address with the segment offset
   // applied to it. This pulls all the common-case appending into a single set of functions.
   [[nodiscard]]
-  Ref MakeSegmentAddress(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint8_t OpSize) {
+  Ref MakeSegmentAddress(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, IR::OpSize OpSize) {
     Ref Mem = LoadSource_WithOpSize(GPRClass, Op, Operand, OpSize, Op->Flags, {.LoadData = false});
     return AppendSegmentOffset(Mem, Op->Flags);
   }
   [[nodiscard]]
   Ref MakeSegmentAddress(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand) {
-    return MakeSegmentAddress(Op, Operand, GetSrcSize(Op));
+    return MakeSegmentAddress(Op, Operand, OpSizeFromSrc(Op));
   }
   [[nodiscard]]
   Ref MakeSegmentAddress(X86State::X86Reg Reg, uint32_t Flags, uint32_t DefaultPrefix = 0, bool Override = false) {
@@ -2406,7 +2406,7 @@ private:
     }
   }
 
-  Ref _LoadMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, Ref ssa0, uint8_t Align = 1) {
+  Ref _LoadMemAutoTSO(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, Ref ssa0, IR::OpSize Align = IR::OpSize::i8Bit) {
     if (IsTSOEnabled(Class)) {
       return _LoadMemTSO(Class, Size, ssa0, Invalid(), Align, MEM_OFFSET_SXTX, 1);
     } else {
@@ -2414,7 +2414,7 @@ private:
     }
   }
 
-  Ref _LoadMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, AddressMode A, uint8_t Align = 1) {
+  Ref _LoadMemAutoTSO(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, AddressMode A, IR::OpSize Align = IR::OpSize::i8Bit) {
     bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
     A = SelectAddressMode(A, AtomicTSO, Class != GPRClass, Size);
 
@@ -2445,7 +2445,7 @@ private:
     return Values;
   }
 
-  RefPair _LoadMemPairAutoTSO(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, AddressMode A, uint8_t Align = 1) {
+  RefPair _LoadMemPairAutoTSO(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, AddressMode A, IR::OpSize Align = IR::OpSize::i8Bit) {
     bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
 
     // Use ldp if possible, otherwise fallback on two loads.
