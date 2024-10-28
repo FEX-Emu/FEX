@@ -428,27 +428,27 @@ Ref OpDispatchBuilder::InsertCVTGPR_To_FPRImpl(OpcodeArgs, IR::OpSize DstSize, I
   // We load the full vector width when dealing with a source vector,
   // so that we don't do any unnecessary zero extension to the scalar
   // element that we're going to operate on.
-  const auto SrcSize = GetSrcSize(Op);
+  const auto SrcSize = OpSizeFromSrc(Op);
 
   Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, DstSize, Op->Flags);
 
   if (Src2Op.IsGPR()) {
     // If the source is a GPR then convert directly from the GPR.
     auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, CTX->GetGPROpSize(), Op->Flags);
-    return _VSToFGPRInsert(IR::SizeToOpSize(DstSize), DstElementSize, SrcSize, Src1, Src2, ZeroUpperBits);
+    return _VSToFGPRInsert(DstSize, DstElementSize, SrcSize, Src1, Src2, ZeroUpperBits);
   } else if (SrcSize != DstElementSize) {
     // If the source is from memory but the Source size and destination size aren't the same,
     // then it is more optimal to load in to a GPR and convert between GPR->FPR.
     // ARM GPR->FPR conversion supports different size source and destinations while FPR->FPR doesn't.
     auto Src2 = LoadSource(GPRClass, Op, Src2Op, Op->Flags);
-    return _VSToFGPRInsert(IR::SizeToOpSize(DstSize), DstElementSize, SrcSize, Src1, Src2, ZeroUpperBits);
+    return _VSToFGPRInsert(DstSize, DstElementSize, SrcSize, Src1, Src2, ZeroUpperBits);
   }
 
   // In the case of cvtsi2s{s,d} where the source and destination are the same size,
   // then it is more optimal to load in to the FPR register directly and convert there.
   auto Src2 = LoadSource(FPRClass, Op, Src2Op, Op->Flags);
   // Always signed
-  return _VSToFVectorInsert(IR::SizeToOpSize(DstSize), DstElementSize, DstElementSize, Src1, Src2, false, ZeroUpperBits);
+  return _VSToFVectorInsert(DstSize, DstElementSize, DstElementSize, Src1, Src2, false, ZeroUpperBits);
 }
 
 template<IR::OpSize DstElementSize>
