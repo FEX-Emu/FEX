@@ -1411,7 +1411,7 @@ private:
   Ref PSADBWOpImpl(IR::OpSize Size, Ref Src1, Ref Src2);
 
   Ref GeneratePSHUFBMask(IR::OpSize SrcSize);
-  Ref PSHUFBOpImpl(uint8_t SrcSize, Ref Src1, Ref Src2, Ref MaskVector);
+  Ref PSHUFBOpImpl(IR::OpSize SrcSize, Ref Src1, Ref Src2, Ref MaskVector);
 
   Ref PSIGNImpl(OpcodeArgs, IR::OpSize ElementSize, Ref Src1, Ref Src2);
 

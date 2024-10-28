@@ -851,12 +851,12 @@ Ref OpDispatchBuilder::GeneratePSHUFBMask(IR::OpSize SrcSize) {
   return _VectorImm(SrcSize, OpSize::i8Bit, MaskImm);
 }
 
-Ref OpDispatchBuilder::PSHUFBOpImpl(uint8_t SrcSize, Ref Src1, Ref Src2, Ref MaskVector) {
+Ref OpDispatchBuilder::PSHUFBOpImpl(IR::OpSize SrcSize, Ref Src1, Ref Src2, Ref MaskVector) {
   const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   // We perform the 256-bit version as two 128-bit operations due to
   // the lane splitting behavior, so cap the maximum size at 16.
-  const auto SanitizedSrcSize = std::min<uint8_t>(SrcSize, OpSize::i128Bit);
+  const auto SanitizedSrcSize = std::min(SrcSize, OpSize::i128Bit);
 
   Ref MaskedIndices = _VAnd(SrcSize, SrcSize, Src2, MaskVector);
 
