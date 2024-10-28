@@ -2028,7 +2028,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
-      "FPR = VSXTL u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VSXTL OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": "Sign extends elements from the source element size to the next size up",
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize << 1)"

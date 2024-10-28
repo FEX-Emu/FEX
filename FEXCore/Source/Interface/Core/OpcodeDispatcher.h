@@ -462,7 +462,7 @@ public:
   void CVTGPR_To_FPR(OpcodeArgs);
   template<IR::OpSize SrcElementSize, bool HostRoundingMode>
   void CVTFPR_To_GPR(OpcodeArgs);
-  template<size_t SrcElementSize, bool Widen>
+  template<IR::OpSize SrcElementSize, bool Widen>
   void Vector_CVT_Int_To_Float(OpcodeArgs);
   template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
   void Scalar_CVT_Float_To_Float(OpcodeArgs);
@@ -519,7 +519,7 @@ public:
   template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
   void AVXVector_CVT_Float_To_Int(OpcodeArgs);
 
-  template<size_t SrcElementSize, bool Widen>
+  template<IR::OpSize SrcElementSize, bool Widen>
   void AVXVector_CVT_Int_To_Float(OpcodeArgs);
 
   template<FEXCore::IR::IROps IROp, IR::OpSize ElementSize>
@@ -883,7 +883,7 @@ public:
   template<OpSize AddrElementSize>
   void VPGATHER(OpcodeArgs);
 
-  template<size_t ElementSize, size_t DstElementSize, bool Signed>
+  template<IR::OpSize ElementSize, IR::OpSize DstElementSize, bool Signed>
   void ExtendVectorElements(OpcodeArgs);
   template<size_t ElementSize>
   void VectorRound(OpcodeArgs);
@@ -992,7 +992,7 @@ public:
   void AVX128_MOVBetweenGPR_FPR(OpcodeArgs);
   template<IR::OpSize ElementSize>
   void AVX128_PExtr(OpcodeArgs);
-  void AVX128_ExtendVectorElements(OpcodeArgs, size_t ElementSize, size_t DstElementSize, bool Signed);
+  void AVX128_ExtendVectorElements(OpcodeArgs, IR::OpSize ElementSize, IR::OpSize DstElementSize, bool Signed);
   template<size_t ElementSize>
   void AVX128_MOVMSK(OpcodeArgs);
   void AVX128_MOVMSKB(OpcodeArgs);
@@ -1033,7 +1033,7 @@ public:
   template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
   void AVX128_Vector_CVT_Float_To_Int(OpcodeArgs);
 
-  template<size_t SrcElementSize, bool Widen>
+  template<IR::OpSize SrcElementSize, bool Widen>
   void AVX128_Vector_CVT_Int_To_Float(OpcodeArgs);
 
   void AVX128_VEXTRACT128(OpcodeArgs);
@@ -1373,7 +1373,7 @@ private:
 
   Ref VDPPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2, const X86Tables::DecodedOperand& Imm);
 
-  Ref ExtendVectorElementsImpl(OpcodeArgs, size_t ElementSize, size_t DstElementSize, bool Signed);
+  Ref ExtendVectorElementsImpl(OpcodeArgs, IR::OpSize ElementSize, IR::OpSize DstElementSize, bool Signed);
 
   Ref HSUBPOpImpl(OpSize Size, size_t ElementSize, Ref Src1, Ref Src2);
 
@@ -1400,7 +1400,7 @@ private:
 
   Ref PMADDWDOpImpl(size_t Size, Ref Src1, Ref Src2);
 
-  Ref PMADDUBSWOpImpl(size_t Size, Ref Src1, Ref Src2);
+  Ref PMADDUBSWOpImpl(IR::OpSize Size, Ref Src1, Ref Src2);
 
   Ref PMULHRSWOpImpl(OpSize Size, Ref Src1, Ref Src2);
 
@@ -1470,7 +1470,7 @@ private:
 
   Ref Vector_CVT_Float_To_IntImpl(OpcodeArgs, size_t SrcElementSize, bool Narrow, bool HostRoundingMode);
 
-  Ref Vector_CVT_Int_To_FloatImpl(OpcodeArgs, size_t SrcElementSize, bool Widen);
+  Ref Vector_CVT_Int_To_FloatImpl(OpcodeArgs, IR::OpSize SrcElementSize, bool Widen);
 
   void XSaveOpImpl(OpcodeArgs);
   void SaveX87State(OpcodeArgs, Ref MemBase);

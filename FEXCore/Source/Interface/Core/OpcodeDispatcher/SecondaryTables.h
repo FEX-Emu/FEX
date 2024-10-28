@@ -71,7 +71,7 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   {0x58, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADD, 4>},
   {0x59, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMUL, 4>},
   {0x5A, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Float_To_Float, 8, 4, false>},
-  {0x5B, 1, &OpDispatchBuilder::Vector_CVT_Int_To_Float<4, false>},
+  {0x5B, 1, &OpDispatchBuilder::Vector_CVT_Int_To_Float<OpSize::i32Bit, false>},
   {0x5C, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFSUB, 4>},
   {0x5D, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMIN, 4>},
   {0x5E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFDIV, 4>},
@@ -175,7 +175,7 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   {0xBD, 1, &OpDispatchBuilder::LZCNT},
   {0xC2, 1, &OpDispatchBuilder::InsertScalarFCMPOp<OpSize::i32Bit>},
   {0xD6, 1, &OpDispatchBuilder::MOVQ2DQ<true>},
-  {0xE6, 1, &OpDispatchBuilder::Vector_CVT_Int_To_Float<4, true>},
+  {0xE6, 1, &OpDispatchBuilder::Vector_CVT_Int_To_Float<OpSize::i32Bit, true>},
 };
 
 constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDispatch_SecondaryRepNEModTables[] = {

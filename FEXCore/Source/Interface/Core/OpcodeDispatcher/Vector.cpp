@@ -2094,7 +2094,7 @@ template void OpDispatchBuilder::CVTFPR_To_GPR<OpSize::i32Bit, false>(OpcodeArgs
 template void OpDispatchBuilder::CVTFPR_To_GPR<OpSize::i64Bit, true>(OpcodeArgs);
 template void OpDispatchBuilder::CVTFPR_To_GPR<OpSize::i64Bit, false>(OpcodeArgs);
 
-Ref OpDispatchBuilder::Vector_CVT_Int_To_FloatImpl(OpcodeArgs, size_t SrcElementSize, bool Widen) {
+Ref OpDispatchBuilder::Vector_CVT_Int_To_FloatImpl(OpcodeArgs, IR::OpSize SrcElementSize, bool Widen) {
   const auto Size = OpSizeFromDst(Op);
 
   Ref Src = [&] {
@@ -2109,16 +2109,16 @@ Ref OpDispatchBuilder::Vector_CVT_Int_To_FloatImpl(OpcodeArgs, size_t SrcElement
     }
   }();
 
-  size_t ElementSize = SrcElementSize;
+  auto ElementSize = SrcElementSize;
   if (Widen) {
     Src = _VSXTL(Size, ElementSize, Src);
-    ElementSize <<= 1;
+    ElementSize = IR::MultiplyOpSize(ElementSize, 2);
   }
 
   return _Vector_SToF(Size, ElementSize, Src);
 }
 
-template<size_t SrcElementSize, bool Widen>
+template<IR::OpSize SrcElementSize, bool Widen>
 void OpDispatchBuilder::Vector_CVT_Int_To_Float(OpcodeArgs) {
   Ref Result = Vector_CVT_Int_To_FloatImpl(Op, SrcElementSize, Widen);
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
@@ -2127,7 +2127,7 @@ void OpDispatchBuilder::Vector_CVT_Int_To_Float(OpcodeArgs) {
 template void OpDispatchBuilder::Vector_CVT_Int_To_Float<OpSize::i32Bit, true>(OpcodeArgs);
 template void OpDispatchBuilder::Vector_CVT_Int_To_Float<OpSize::i32Bit, false>(OpcodeArgs);
 
-template<size_t SrcElementSize, bool Widen>
+template<IR::OpSize SrcElementSize, bool Widen>
 void OpDispatchBuilder::AVXVector_CVT_Int_To_Float(OpcodeArgs) {
   Ref Result = Vector_CVT_Int_To_FloatImpl(Op, SrcElementSize, Widen);
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
@@ -2265,11 +2265,11 @@ void OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs) {
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   // Always 32-bit.
-  size_t ElementSize = OpSize::i32Bit;
-  size_t DstSize = GetDstSize(Op);
+  auto ElementSize = OpSize::i32Bit;
+  const auto DstSize = OpSizeFromDst(Op);
 
   Src = _VSXTL(DstSize, ElementSize, Src);
-  ElementSize <<= 1;
+  ElementSize = IR::MultiplyOpSize(ElementSize, 2);
 
   // Always signed
   Src = _Vector_SToF(DstSize, ElementSize, Src);
@@ -3209,24 +3209,25 @@ void OpDispatchBuilder::VPMADDWDOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
-Ref OpDispatchBuilder::PMADDUBSWOpImpl(size_t Size, Ref Src1, Ref Src2) {
+Ref OpDispatchBuilder::PMADDUBSWOpImpl(IR::OpSize Size, Ref Src1, Ref Src2) {
   if (Size == OpSize::i64Bit) {
+    const auto MultSize = IR::MultiplyOpSize(Size, 2);
     // 64bit is more efficient
 
     // Src1 is unsigned
-    auto Src1_16b = _VUXTL(Size * 2, OpSize::i8Bit, Src1); // [7:0 ], [15:8], [23:16], [31:24], [39:32], [47:40], [55:48], [63:56]
+    auto Src1_16b = _VUXTL(MultSize, OpSize::i8Bit, Src1); // [7:0 ], [15:8], [23:16], [31:24], [39:32], [47:40], [55:48], [63:56]
 
     // Src2 is signed
-    auto Src2_16b = _VSXTL(Size * 2, OpSize::i8Bit, Src2); // [7:0 ], [15:8], [23:16], [31:24], [39:32], [47:40], [55:48], [63:56]
+    auto Src2_16b = _VSXTL(MultSize, OpSize::i8Bit, Src2); // [7:0 ], [15:8], [23:16], [31:24], [39:32], [47:40], [55:48], [63:56]
 
-    auto ResMul_L = _VSMull(Size * 2, OpSize::i16Bit, Src1_16b, Src2_16b);
-    auto ResMul_H = _VSMull2(Size * 2, OpSize::i16Bit, Src1_16b, Src2_16b);
+    auto ResMul_L = _VSMull(MultSize, OpSize::i16Bit, Src1_16b, Src2_16b);
+    auto ResMul_H = _VSMull2(MultSize, OpSize::i16Bit, Src1_16b, Src2_16b);
 
     // Now add pairwise across the vector
-    auto ResAdd = _VAddP(Size * 2, OpSize::i32Bit, ResMul_L, ResMul_H);
+    auto ResAdd = _VAddP(MultSize, OpSize::i32Bit, ResMul_L, ResMul_H);
 
     // Add saturate back down to 16bit
-    return _VSQXTN(Size * 2, OpSize::i32Bit, ResAdd);
+    return _VSQXTN(MultSize, OpSize::i32Bit, ResAdd);
   }
 
   // V{U,S}XTL{,2}/ and VUnZip{,2} can be optimized in this solution to save about one instruction.
@@ -3251,7 +3252,7 @@ Ref OpDispatchBuilder::PMADDUBSWOpImpl(size_t Size, Ref Src1, Ref Src2) {
 }
 
 void OpDispatchBuilder::PMADDUBSW(OpcodeArgs) {
-  const auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
@@ -3261,7 +3262,7 @@ void OpDispatchBuilder::PMADDUBSW(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::VPMADDUBSWOp(OpcodeArgs) {
-  const auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
@@ -3549,7 +3550,7 @@ void OpDispatchBuilder::VPSADBWOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
-Ref OpDispatchBuilder::ExtendVectorElementsImpl(OpcodeArgs, size_t ElementSize, size_t DstElementSize, bool Signed) {
+Ref OpDispatchBuilder::ExtendVectorElementsImpl(OpcodeArgs, IR::OpSize ElementSize, IR::OpSize DstElementSize, bool Signed) {
   const auto DstSize = OpSizeFromDst(Op);
 
   const auto GetSrc = [&] {
@@ -3568,7 +3569,8 @@ Ref OpDispatchBuilder::ExtendVectorElementsImpl(OpcodeArgs, size_t ElementSize, 
   Ref Src = GetSrc();
   Ref Result {Src};
 
-  for (size_t CurrentElementSize = ElementSize; CurrentElementSize != DstElementSize; CurrentElementSize <<= 1) {
+  for (auto CurrentElementSize = ElementSize; CurrentElementSize != DstElementSize;
+       CurrentElementSize = IR::MultiplyOpSize(CurrentElementSize, 2)) {
     if (Signed) {
       Result = _VSXTL(DstSize, CurrentElementSize, Result);
     } else {
@@ -3579,7 +3581,7 @@ Ref OpDispatchBuilder::ExtendVectorElementsImpl(OpcodeArgs, size_t ElementSize, 
   return Result;
 }
 
-template<size_t ElementSize, size_t DstElementSize, bool Signed>
+template<IR::OpSize ElementSize, IR::OpSize DstElementSize, bool Signed>
 void OpDispatchBuilder::ExtendVectorElements(OpcodeArgs) {
   Ref Result = ExtendVectorElementsImpl(Op, ElementSize, DstElementSize, Signed);
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
