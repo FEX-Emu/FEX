@@ -1929,7 +1929,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VUMinV u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VUMinV OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": ["Does a horizontal vector unsigned minimum of elements across the source vector",
                  "Result is a zero extended scalar"
                 ],
