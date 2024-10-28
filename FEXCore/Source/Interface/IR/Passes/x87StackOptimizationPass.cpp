@@ -912,7 +912,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
 
         Ref CmpNode {};
         if (ReducedPrecisionMode) {
-          CmpNode = IREmit->_FCmp(8, StackValue1, StackValue2);
+          CmpNode = IREmit->_FCmp(OpSize::i64Bit, StackValue1, StackValue2);
         } else {
           CmpNode = IREmit->_F80Cmp(StackValue1, StackValue2);
         }
@@ -928,7 +928,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
 
         Ref CmpNode {};
         if (ReducedPrecisionMode) {
-          CmpNode = IREmit->_FCmp(8, StackNode, ZeroConst);
+          CmpNode = IREmit->_FCmp(OpSize::i64Bit, StackNode, ZeroConst);
         } else {
           CmpNode = IREmit->_F80Cmp(StackNode, ZeroConst);
         }
@@ -944,7 +944,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
 
         Ref CmpNode {};
         if (ReducedPrecisionMode) {
-          CmpNode = IREmit->_FCmp(8, StackNode, Value);
+          CmpNode = IREmit->_FCmp(OpSize::i64Bit, StackNode, Value);
         } else {
           CmpNode = IREmit->_F80Cmp(StackNode, Value);
         }

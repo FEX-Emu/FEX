@@ -1668,7 +1668,7 @@
         "DestSize": "DestElementSize"
       },
 
-      "FCmp u8:$ElementSize, FPR:$Scalar1, FPR:$Scalar2": {
+      "FCmp OpSize:$ElementSize, FPR:$Scalar1, FPR:$Scalar2": {
         "Desc": ["Does a scalar unordered compare and sets NZCV accordingly.",
                  "NZCV follows Arm conventions, a separate AXFLAG instruction is required for x86",
                  "Ordering flag result is true if either float input is NaN"

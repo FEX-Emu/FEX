@@ -790,7 +790,7 @@ public:
   void XSaveOp(OpcodeArgs);
 
   void PAlignrOp(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void UCOMISxOp(OpcodeArgs);
   void LDMXCSR(OpcodeArgs);
   void STMXCSR(OpcodeArgs);
@@ -980,7 +980,7 @@ public:
   Ref AVX128_PSIGNImpl(size_t ElementSize, Ref Src1, Ref Src2);
   template<size_t ElementSize>
   void AVX128_VPSIGN(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_UCOMISx(OpcodeArgs);
   void AVX128_VectorScalarInsertALU(OpcodeArgs, FEXCore::IR::IROps IROp, size_t ElementSize);
   Ref AVX128_VFCMPImpl(size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType);
@@ -2078,7 +2078,7 @@ private:
   }
 
   // Compares two floats and sets flags for a COMISS instruction
-  void Comiss(size_t ElementSize, Ref Src1, Ref Src2, bool InvalidateAF = false) {
+  void Comiss(IR::OpSize ElementSize, Ref Src1, Ref Src2, bool InvalidateAF = false) {
     // First, set flags according to Arm FCMP.
     HandleNZCVWrite();
     _FCmp(ElementSize, Src1, Src2);

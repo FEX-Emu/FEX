@@ -5037,10 +5037,10 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b10, 0x2D), 1, &OpDispatchBuilder::CVTFPR_To_GPR<OpSize::i32Bit, true>},
     {OPD(1, 0b11, 0x2D), 1, &OpDispatchBuilder::CVTFPR_To_GPR<OpSize::i64Bit, true>},
 
-    {OPD(1, 0b00, 0x2E), 1, &OpDispatchBuilder::UCOMISxOp<4>},
-    {OPD(1, 0b01, 0x2E), 1, &OpDispatchBuilder::UCOMISxOp<8>},
-    {OPD(1, 0b00, 0x2F), 1, &OpDispatchBuilder::UCOMISxOp<4>},
-    {OPD(1, 0b01, 0x2F), 1, &OpDispatchBuilder::UCOMISxOp<8>},
+    {OPD(1, 0b00, 0x2E), 1, &OpDispatchBuilder::UCOMISxOp<OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x2E), 1, &OpDispatchBuilder::UCOMISxOp<OpSize::i64Bit>},
+    {OPD(1, 0b00, 0x2F), 1, &OpDispatchBuilder::UCOMISxOp<OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x2F), 1, &OpDispatchBuilder::UCOMISxOp<OpSize::i64Bit>},
 
     {OPD(1, 0b00, 0x50), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVMSKOp, OpSize::i32Bit>},
     {OPD(1, 0b01, 0x50), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVMSKOp, OpSize::i64Bit>},

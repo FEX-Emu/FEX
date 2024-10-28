@@ -59,7 +59,7 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   {0x2B, 1, &OpDispatchBuilder::MOVVectorNTOp},
   {0x2C, 1, &OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<4, false, false>},
   {0x2D, 1, &OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<4, false, true>},
-  {0x2E, 2, &OpDispatchBuilder::UCOMISxOp<4>},
+  {0x2E, 2, &OpDispatchBuilder::UCOMISxOp<OpSize::i32Bit>},
   {0x50, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVMSKOp, OpSize::i32Bit>},
   {0x51, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VFSQRT, 4>},
   {0x52, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VFRSQRT, 4>},
@@ -215,7 +215,7 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   {0x2B, 1, &OpDispatchBuilder::MOVVectorNTOp},
   {0x2C, 1, &OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<8, true, false>},
   {0x2D, 1, &OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<8, true, true>},
-  {0x2E, 2, &OpDispatchBuilder::UCOMISxOp<8>},
+  {0x2E, 2, &OpDispatchBuilder::UCOMISxOp<OpSize::i64Bit>},
 
   {0x50, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVMSKOp, OpSize::i64Bit>},
   {0x51, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VFSQRT, 8>},

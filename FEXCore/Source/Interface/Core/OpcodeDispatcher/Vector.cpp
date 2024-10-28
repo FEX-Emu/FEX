@@ -2855,7 +2855,7 @@ void OpDispatchBuilder::VPALIGNROp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::UCOMISxOp(OpcodeArgs) {
   const auto SrcSize = Op->Src[0].IsGPR() ? GetGuestVectorLength() : OpSizeFromSrc(Op);
   Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, GetGuestVectorLength(), Op->Flags);
