@@ -1755,7 +1755,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VFRSqrtScalarInsert OpSize:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
+      "FPR = VFRSqrtScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar 'rsqrt' on Vector2, inserting in to Vector1 and storing in to the destination.",
                  "Inserting the result in to the lower element of Vector1 and returning the results.",
                  "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
