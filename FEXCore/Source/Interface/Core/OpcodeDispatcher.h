@@ -888,9 +888,9 @@ public:
   template<size_t ElementSize>
   void VectorRound(OpcodeArgs);
 
-  Ref VectorBlend(OpSize Size, size_t ElementSize, Ref Src1, Ref Src2, uint8_t Selector);
+  Ref VectorBlend(OpSize Size, IR::OpSize ElementSize, Ref Src1, Ref Src2, uint8_t Selector);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void VectorBlend(OpcodeArgs);
 
   void VectorVariableBlend(OpcodeArgs, IR::OpSize ElementSize);
@@ -1076,7 +1076,7 @@ public:
   void AVX128_VPMADDUBSW(OpcodeArgs);
   void AVX128_VPMADDWD(OpcodeArgs);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_VBLEND(OpcodeArgs);
 
   template<IR::OpSize ElementSize>

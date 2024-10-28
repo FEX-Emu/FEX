@@ -7,13 +7,13 @@ namespace FEXCore::IR {
 #define PF_3A_NONE 0
 #define PF_3A_66 1
 constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDispatch_H0F3ATable[] = {
-  {OPD(0, PF_3A_66, 0x08), 1, &OpDispatchBuilder::VectorRound<4>},
-  {OPD(0, PF_3A_66, 0x09), 1, &OpDispatchBuilder::VectorRound<8>},
+  {OPD(0, PF_3A_66, 0x08), 1, &OpDispatchBuilder::VectorRound<OpSize::i32Bit>},
+  {OPD(0, PF_3A_66, 0x09), 1, &OpDispatchBuilder::VectorRound<OpSize::i64Bit>},
   {OPD(0, PF_3A_66, 0x0A), 1, &OpDispatchBuilder::InsertScalarRound<OpSize::i32Bit>},
   {OPD(0, PF_3A_66, 0x0B), 1, &OpDispatchBuilder::InsertScalarRound<OpSize::i64Bit>},
-  {OPD(0, PF_3A_66, 0x0C), 1, &OpDispatchBuilder::VectorBlend<4>},
-  {OPD(0, PF_3A_66, 0x0D), 1, &OpDispatchBuilder::VectorBlend<8>},
-  {OPD(0, PF_3A_66, 0x0E), 1, &OpDispatchBuilder::VectorBlend<2>},
+  {OPD(0, PF_3A_66, 0x0C), 1, &OpDispatchBuilder::VectorBlend<OpSize::i32Bit>},
+  {OPD(0, PF_3A_66, 0x0D), 1, &OpDispatchBuilder::VectorBlend<OpSize::i64Bit>},
+  {OPD(0, PF_3A_66, 0x0E), 1, &OpDispatchBuilder::VectorBlend<OpSize::i16Bit>},
 
   {OPD(0, PF_3A_NONE, 0x0F), 1, &OpDispatchBuilder::PAlignrOp},
   {OPD(0, PF_3A_66, 0x0F), 1, &OpDispatchBuilder::PAlignrOp},

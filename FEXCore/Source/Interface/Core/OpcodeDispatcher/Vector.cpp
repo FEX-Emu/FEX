@@ -177,7 +177,7 @@ void OpDispatchBuilder::VMOVLPOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::VMOVSHDUPOp(OpcodeArgs) {
-  const auto SrcSize = GetSrcSize(Op);
+  const auto SrcSize = OpSizeFromSrc(Op);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Result = _VTrn2(SrcSize, OpSize::i32Bit, Src, Src);
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
@@ -3638,7 +3638,7 @@ void OpDispatchBuilder::AVXVectorRound(OpcodeArgs) {
 template void OpDispatchBuilder::AVXVectorRound<OpSize::i32Bit>(OpcodeArgs);
 template void OpDispatchBuilder::AVXVectorRound<OpSize::i64Bit>(OpcodeArgs);
 
-Ref OpDispatchBuilder::VectorBlend(OpSize Size, size_t ElementSize, Ref Src1, Ref Src2, uint8_t Selector) {
+Ref OpDispatchBuilder::VectorBlend(OpSize Size, IR::OpSize ElementSize, Ref Src1, Ref Src2, uint8_t Selector) {
   if (ElementSize == OpSize::i32Bit) {
     Selector &= 0b1111;
     switch (Selector) {
@@ -3874,7 +3874,7 @@ Ref OpDispatchBuilder::VectorBlend(OpSize Size, size_t ElementSize, Ref Src1, Re
   FEX_UNREACHABLE;
 }
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::VectorBlend(OpcodeArgs) {
   uint8_t Select = Op->Src[1].Literal();
 
