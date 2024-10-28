@@ -2186,7 +2186,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VUMin u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VUMin OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
