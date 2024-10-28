@@ -583,7 +583,7 @@ public:
 
   void VEXTRACT128Op(OpcodeArgs);
 
-  template<IROps IROp, size_t ElementSize>
+  template<IROps IROp, IR::OpSize ElementSize>
   void VHADDPOp(OpcodeArgs);
   void VHSUBPOp(OpcodeArgs, IR::OpSize ElementSize);
 

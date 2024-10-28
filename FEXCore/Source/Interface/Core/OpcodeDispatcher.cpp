@@ -5136,8 +5136,8 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 
     {OPD(1, 0b00, 0x77), 1, &OpDispatchBuilder::VZEROOp},
 
-    {OPD(1, 0b01, 0x7C), 1, &OpDispatchBuilder::VHADDPOp<IR::OP_VFADDP, 8>},
-    {OPD(1, 0b11, 0x7C), 1, &OpDispatchBuilder::VHADDPOp<IR::OP_VFADDP, 4>},
+    {OPD(1, 0b01, 0x7C), 1, &OpDispatchBuilder::VHADDPOp<IR::OP_VFADDP, OpSize::i64Bit>},
+    {OPD(1, 0b11, 0x7C), 1, &OpDispatchBuilder::VHADDPOp<IR::OP_VFADDP, OpSize::i32Bit>},
     {OPD(1, 0b01, 0x7D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VHSUBPOp, OpSize::i64Bit>},
     {OPD(1, 0b11, 0x7D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VHSUBPOp, OpSize::i32Bit>},
 
@@ -5218,8 +5218,8 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0xFE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VADD, OpSize::i32Bit>},
 
     {OPD(2, 0b01, 0x00), 1, &OpDispatchBuilder::VPSHUFBOp},
-    {OPD(2, 0b01, 0x01), 1, &OpDispatchBuilder::VHADDPOp<IR::OP_VADDP, 2>},
-    {OPD(2, 0b01, 0x02), 1, &OpDispatchBuilder::VHADDPOp<IR::OP_VADDP, 4>},
+    {OPD(2, 0b01, 0x01), 1, &OpDispatchBuilder::VHADDPOp<IR::OP_VADDP, OpSize::i16Bit>},
+    {OPD(2, 0b01, 0x02), 1, &OpDispatchBuilder::VHADDPOp<IR::OP_VADDP, OpSize::i32Bit>},
     {OPD(2, 0b01, 0x03), 1, &OpDispatchBuilder::VPHADDSWOp},
     {OPD(2, 0b01, 0x04), 1, &OpDispatchBuilder::VPMADDUBSWOp},
 

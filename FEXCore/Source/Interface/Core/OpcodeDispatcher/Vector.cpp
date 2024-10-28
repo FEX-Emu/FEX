@@ -1439,9 +1439,9 @@ void OpDispatchBuilder::VANDNOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Dest, OpSize::iInvalid);
 }
 
-template<IROps IROp, size_t ElementSize>
+template<IROps IROp, IR::OpSize ElementSize>
 void OpDispatchBuilder::VHADDPOp(OpcodeArgs) {
-  const auto SrcSize = GetSrcSize(Op);
+  const auto SrcSize = OpSizeFromSrc(Op);
   const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
@@ -1458,10 +1458,10 @@ void OpDispatchBuilder::VHADDPOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Dest, OpSize::iInvalid);
 }
 
-template void OpDispatchBuilder::VHADDPOp<IR::OP_VADDP, 2>(OpcodeArgs);
-template void OpDispatchBuilder::VHADDPOp<IR::OP_VADDP, 4>(OpcodeArgs);
-template void OpDispatchBuilder::VHADDPOp<IR::OP_VFADDP, 4>(OpcodeArgs);
-template void OpDispatchBuilder::VHADDPOp<IR::OP_VFADDP, 8>(OpcodeArgs);
+template void OpDispatchBuilder::VHADDPOp<IR::OP_VADDP, OpSize::i16Bit>(OpcodeArgs);
+template void OpDispatchBuilder::VHADDPOp<IR::OP_VADDP, OpSize::i32Bit>(OpcodeArgs);
+template void OpDispatchBuilder::VHADDPOp<IR::OP_VFADDP, OpSize::i32Bit>(OpcodeArgs);
+template void OpDispatchBuilder::VHADDPOp<IR::OP_VFADDP, OpSize::i64Bit>(OpcodeArgs);
 
 void OpDispatchBuilder::VBROADCASTOp(OpcodeArgs, IR::OpSize ElementSize) {
   const auto DstSize = OpSizeFromDst(Op);
@@ -4235,7 +4235,7 @@ template void OpDispatchBuilder::DPPOp<OpSize::i64Bit>(OpcodeArgs);
 
 Ref OpDispatchBuilder::VDPPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
                                    const X86Tables::DecodedOperand& Imm) {
-  constexpr size_t ElementSize = OpSize::i32Bit;
+  constexpr auto ElementSize = OpSize::i32Bit;
   const uint8_t Mask = Imm.Literal();
   const uint8_t SrcMask = Mask >> 4;
   const uint8_t DstMask = Mask & 0xF;

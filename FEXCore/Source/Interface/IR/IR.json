@@ -2232,7 +2232,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VFAddP u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
+      "FPR = VFAddP OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
         "Desc": "Does a horizontal pairwise add of elements across the two source vectors with float element types",
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
