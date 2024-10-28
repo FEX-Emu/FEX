@@ -2574,7 +2574,7 @@
         "NumElements": "RegisterSize / DestElementSize"
       },
 
-      "FPR = VFCVTL2 u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VFCVTL2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": [
           "Vector op: Converts float from source element size to destination size (fp32->fp64)",
           "Selecting from the high half of the register."
