@@ -98,9 +98,9 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   {0xC2, 1, &OpDispatchBuilder::VFCMPOp<OpSize::i32Bit>},
   {0xC6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SHUFOp, OpSize::i32Bit>},
 
-  {0xD1, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, 2>},
-  {0xD2, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, 4>},
-  {0xD3, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, 8>},
+  {0xD1, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, OpSize::i16Bit>},
+  {0xD2, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, OpSize::i32Bit>},
+  {0xD3, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, OpSize::i64Bit>},
   {0xD4, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADD, OpSize::i64Bit>},
   {0xD5, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VMUL, OpSize::i16Bit>},
   {0xD7, 1, &OpDispatchBuilder::MOVMSKOpOne}, // PMOVMSKB
@@ -263,9 +263,9 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   {0xC6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SHUFOp, OpSize::i64Bit>},
 
   {0xD0, 1, &OpDispatchBuilder::ADDSUBPOp<OpSize::i64Bit>},
-  {0xD1, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, 2>},
-  {0xD2, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, 4>},
-  {0xD3, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, 8>},
+  {0xD1, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, OpSize::i16Bit>},
+  {0xD2, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, OpSize::i32Bit>},
+  {0xD3, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, OpSize::i64Bit>},
   {0xD4, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADD, OpSize::i64Bit>},
   {0xD5, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VMUL, OpSize::i16Bit>},
   {0xD6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVQOp, OpDispatchBuilder::VectorOpType::SSE>},

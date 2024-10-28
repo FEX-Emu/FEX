@@ -193,9 +193,9 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0xD0), 1, &OpDispatchBuilder::AVX128_VADDSUBP<OpSize::i64Bit>},
     {OPD(1, 0b11, 0xD0), 1, &OpDispatchBuilder::AVX128_VADDSUBP<OpSize::i32Bit>},
 
-    {OPD(1, 0b01, 0xD1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftWideImpl, 2, IROps::OP_VUSHRSWIDE>}, // VPSRL
-    {OPD(1, 0b01, 0xD2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftWideImpl, 4, IROps::OP_VUSHRSWIDE>}, // VPSRL
-    {OPD(1, 0b01, 0xD3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftWideImpl, 8, IROps::OP_VUSHRSWIDE>}, // VPSRL
+    {OPD(1, 0b01, 0xD1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftWideImpl, OpSize::i16Bit, IROps::OP_VUSHRSWIDE>}, // VPSRL
+    {OPD(1, 0b01, 0xD2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftWideImpl, OpSize::i32Bit, IROps::OP_VUSHRSWIDE>}, // VPSRL
+    {OPD(1, 0b01, 0xD3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftWideImpl, OpSize::i64Bit, IROps::OP_VUSHRSWIDE>}, // VPSRL
     {OPD(1, 0b01, 0xD4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VADD, OpSize::i64Bit>},
     {OPD(1, 0b01, 0xD5), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VMUL, OpSize::i16Bit>},
     {OPD(1, 0b01, 0xD6), 1, &OpDispatchBuilder::AVX128_MOVQ},
@@ -211,8 +211,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0xDF), 1, &OpDispatchBuilder::AVX128_VANDN},
 
     {OPD(1, 0b01, 0xE0), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VURAVG, OpSize::i8Bit>},
-    {OPD(1, 0b01, 0xE1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftWideImpl, 2, IROps::OP_VSSHRSWIDE>}, // VPSRA
-    {OPD(1, 0b01, 0xE2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftWideImpl, 4, IROps::OP_VSSHRSWIDE>}, // VPSRA
+    {OPD(1, 0b01, 0xE1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftWideImpl, OpSize::i16Bit, IROps::OP_VSSHRSWIDE>}, // VPSRA
+    {OPD(1, 0b01, 0xE2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftWideImpl, OpSize::i32Bit, IROps::OP_VSSHRSWIDE>}, // VPSRA
     {OPD(1, 0b01, 0xE3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VURAVG, OpSize::i16Bit>},
     {OPD(1, 0b01, 0xE4), 1, &OpDispatchBuilder::AVX128_VPMULHW<false>},
     {OPD(1, 0b01, 0xE5), 1, &OpDispatchBuilder::AVX128_VPMULHW<true>},
@@ -233,9 +233,9 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0xEF), 1, &OpDispatchBuilder::AVX128_VectorXOR},
 
     {OPD(1, 0b11, 0xF0), 1, &OpDispatchBuilder::AVX128_MOVVectorUnaligned},
-    {OPD(1, 0b01, 0xF1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftWideImpl, 2, IROps::OP_VUSHLSWIDE>}, // VPSLL
-    {OPD(1, 0b01, 0xF2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftWideImpl, 4, IROps::OP_VUSHLSWIDE>}, // VPSLL
-    {OPD(1, 0b01, 0xF3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftWideImpl, 8, IROps::OP_VUSHLSWIDE>}, // VPSLL
+    {OPD(1, 0b01, 0xF1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftWideImpl, OpSize::i16Bit, IROps::OP_VUSHLSWIDE>}, // VPSLL
+    {OPD(1, 0b01, 0xF2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftWideImpl, OpSize::i32Bit, IROps::OP_VUSHLSWIDE>}, // VPSLL
+    {OPD(1, 0b01, 0xF3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftWideImpl, OpSize::i64Bit, IROps::OP_VUSHLSWIDE>}, // VPSLL
     {OPD(1, 0b01, 0xF4), 1, &OpDispatchBuilder::AVX128_VPMULL<OpSize::i32Bit, false>},
     {OPD(1, 0b01, 0xF5), 1, &OpDispatchBuilder::AVX128_VPMADDWD},
     {OPD(1, 0b01, 0xF6), 1, &OpDispatchBuilder::AVX128_VPSADBW},
@@ -716,7 +716,7 @@ void OpDispatchBuilder::AVX128_VectorTrinaryImpl(OpcodeArgs, size_t SrcSize, siz
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
-void OpDispatchBuilder::AVX128_VectorShiftWideImpl(OpcodeArgs, size_t ElementSize, IROps IROp) {
+void OpDispatchBuilder::AVX128_VectorShiftWideImpl(OpcodeArgs, IR::OpSize ElementSize, IROps IROp) {
   const auto Is128Bit = GetSrcSize(Op) == Core::CPUState::XMM_SSE_REG_SIZE;
 
   auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);

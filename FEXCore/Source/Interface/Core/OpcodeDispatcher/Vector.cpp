@@ -1680,14 +1680,14 @@ template void OpDispatchBuilder::VPSIGN<OpSize::i8Bit>(OpcodeArgs);
 template void OpDispatchBuilder::VPSIGN<OpSize::i16Bit>(OpcodeArgs);
 template void OpDispatchBuilder::VPSIGN<OpSize::i32Bit>(OpcodeArgs);
 
-Ref OpDispatchBuilder::PSRLDOpImpl(OpcodeArgs, size_t ElementSize, Ref Src, Ref ShiftVec) {
-  const auto Size = GetSrcSize(Op);
+Ref OpDispatchBuilder::PSRLDOpImpl(OpcodeArgs, IR::OpSize ElementSize, Ref Src, Ref ShiftVec) {
+  const auto Size = OpSizeFromSrc(Op);
 
   // Incoming element size for the shift source is always 8
   return _VUShrSWide(Size, ElementSize, Src, ShiftVec);
 }
 
-void OpDispatchBuilder::PSRLDOp(OpcodeArgs, size_t ElementSize) {
+void OpDispatchBuilder::PSRLDOp(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Result = PSRLDOpImpl(Op, ElementSize, Dest, Src);
@@ -1695,7 +1695,7 @@ void OpDispatchBuilder::PSRLDOp(OpcodeArgs, size_t ElementSize) {
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
-void OpDispatchBuilder::VPSRLDOp(OpcodeArgs, size_t ElementSize) {
+void OpDispatchBuilder::VPSRLDOp(OpcodeArgs, IR::OpSize ElementSize) {
   const auto DstSize = GetDstSize(Op);
   const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
