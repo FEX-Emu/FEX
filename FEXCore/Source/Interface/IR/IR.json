@@ -2020,7 +2020,7 @@
         "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
 
-      "FPR = VUShrNI2 u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper, u8:$BitShift": {
+      "FPR = VUShrNI2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper, u8:$BitShift": {
         "TiedSource": 0,
         "Desc": ["Unsigned shifts right each element and then narrows to the next lower element size",
                  "Inserts results in to the high elements of the first argument"
