@@ -728,7 +728,7 @@
         "HasSideEffects": true,
         "DestSize": "8"
       },
-      "VStoreNonTemporal u8:#RegisterSize, FPR:$Value, GPR:$Addr, i8:$Offset": {
+      "VStoreNonTemporal OpSize:#RegisterSize, FPR:$Value, GPR:$Addr, i8:$Offset": {
         "Desc": ["Does a non-temporal memory store of a vector.",
                  "Matches arm64 SVE stnt1b semantics.",
                  "Specifically weak-memory model ordered to match x86 non-temporal stores."

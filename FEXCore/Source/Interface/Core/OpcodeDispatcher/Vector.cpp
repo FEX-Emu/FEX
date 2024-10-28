@@ -43,7 +43,7 @@ void OpDispatchBuilder::MOVVectorUnalignedOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::MOVVectorNTOp(OpcodeArgs) {
-  const auto Size = GetDstSize(Op);
+  const auto Size = OpSizeFromDst(Op);
 
   if (Op->Dest.IsGPR() && Size >= OpSize::i128Bit) {
     ///< MOVNTDQA load non-temporal comes from SSE4.1 and is extended by AVX/AVX2.
