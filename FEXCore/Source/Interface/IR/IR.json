@@ -2324,7 +2324,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VSShr u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftVector, i1:$RangeCheck": {
+      "FPR = VSShr OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, FPR:$ShiftVector, i1:$RangeCheck": {
         "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
