@@ -643,7 +643,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VBroadcastFromMem u8:#RegisterSize, u8:#ElementSize, GPR:$Address": {
+      "FPR = VBroadcastFromMem OpSize:#RegisterSize, OpSize:#ElementSize, GPR:$Address": {
         "Desc": ["Broadcasts an ElementSize value from memory into each element of a vector."],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"

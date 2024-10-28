@@ -1462,8 +1462,8 @@ template void OpDispatchBuilder::VHADDPOp<IR::OP_VADDP, 4>(OpcodeArgs);
 template void OpDispatchBuilder::VHADDPOp<IR::OP_VFADDP, 4>(OpcodeArgs);
 template void OpDispatchBuilder::VHADDPOp<IR::OP_VFADDP, 8>(OpcodeArgs);
 
-void OpDispatchBuilder::VBROADCASTOp(OpcodeArgs, size_t ElementSize) {
-  const auto DstSize = GetDstSize(Op);
+void OpDispatchBuilder::VBROADCASTOp(OpcodeArgs, IR::OpSize ElementSize) {
+  const auto DstSize = OpSizeFromDst(Op);
   Ref Result {};
 
   if (Op->Src[0].IsGPR()) {

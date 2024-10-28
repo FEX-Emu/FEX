@@ -576,7 +576,7 @@ public:
   void VPBLENDDOp(OpcodeArgs);
   void VPBLENDWOp(OpcodeArgs);
 
-  void VBROADCASTOp(OpcodeArgs, size_t ElementSize);
+  void VBROADCASTOp(OpcodeArgs, IR::OpSize ElementSize);
 
   template<size_t ElementSize>
   void VDPPOp(OpcodeArgs);
@@ -961,7 +961,7 @@ public:
   void AVX128_VMOVDDUP(OpcodeArgs);
   void AVX128_VMOVSLDUP(OpcodeArgs);
   void AVX128_VMOVSHDUP(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_VBROADCAST(OpcodeArgs);
   template<size_t ElementSize>
   void AVX128_VPUNPCKL(OpcodeArgs);

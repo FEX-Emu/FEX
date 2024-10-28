@@ -272,9 +272,9 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(2, 0b01, 0x13), 1, &OpDispatchBuilder::AVX128_VCVTPH2PS},
     {OPD(2, 0b01, 0x16), 1, &OpDispatchBuilder::AVX128_VPERMD},
     {OPD(2, 0b01, 0x17), 1, &OpDispatchBuilder::AVX128_PTest},
-    {OPD(2, 0b01, 0x18), 1, &OpDispatchBuilder::AVX128_VBROADCAST<4>},
-    {OPD(2, 0b01, 0x19), 1, &OpDispatchBuilder::AVX128_VBROADCAST<8>},
-    {OPD(2, 0b01, 0x1A), 1, &OpDispatchBuilder::AVX128_VBROADCAST<16>},
+    {OPD(2, 0b01, 0x18), 1, &OpDispatchBuilder::AVX128_VBROADCAST<OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x19), 1, &OpDispatchBuilder::AVX128_VBROADCAST<OpSize::i64Bit>},
+    {OPD(2, 0b01, 0x1A), 1, &OpDispatchBuilder::AVX128_VBROADCAST<OpSize::i128Bit>},
     {OPD(2, 0b01, 0x1C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorUnary, IR::OP_VABS, 1>},
     {OPD(2, 0b01, 0x1D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorUnary, IR::OP_VABS, 2>},
     {OPD(2, 0b01, 0x1E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorUnary, IR::OP_VABS, 4>},
@@ -319,12 +319,12 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(2, 0b01, 0x46), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VariableShiftImpl, IROps::OP_VSSHR>}, // VPSRAVD
     {OPD(2, 0b01, 0x47), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VariableShiftImpl, IROps::OP_VUSHL>}, // VPSLLV
 
-    {OPD(2, 0b01, 0x58), 1, &OpDispatchBuilder::AVX128_VBROADCAST<4>},
-    {OPD(2, 0b01, 0x59), 1, &OpDispatchBuilder::AVX128_VBROADCAST<8>},
-    {OPD(2, 0b01, 0x5A), 1, &OpDispatchBuilder::AVX128_VBROADCAST<16>},
+    {OPD(2, 0b01, 0x58), 1, &OpDispatchBuilder::AVX128_VBROADCAST<OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x59), 1, &OpDispatchBuilder::AVX128_VBROADCAST<OpSize::i64Bit>},
+    {OPD(2, 0b01, 0x5A), 1, &OpDispatchBuilder::AVX128_VBROADCAST<OpSize::i128Bit>},
 
-    {OPD(2, 0b01, 0x78), 1, &OpDispatchBuilder::AVX128_VBROADCAST<1>},
-    {OPD(2, 0b01, 0x79), 1, &OpDispatchBuilder::AVX128_VBROADCAST<2>},
+    {OPD(2, 0b01, 0x78), 1, &OpDispatchBuilder::AVX128_VBROADCAST<OpSize::i8Bit>},
+    {OPD(2, 0b01, 0x79), 1, &OpDispatchBuilder::AVX128_VBROADCAST<OpSize::i16Bit>},
 
     {OPD(2, 0b01, 0x8C), 1, &OpDispatchBuilder::AVX128_VPMASKMOV<false>},
     {OPD(2, 0b01, 0x8E), 1, &OpDispatchBuilder::AVX128_VPMASKMOV<true>},
@@ -947,7 +947,7 @@ void OpDispatchBuilder::AVX128_VMOVSHDUP(OpcodeArgs) {
                          [this](size_t ElementSize, Ref Src) { return _VTrn2(OpSize::i128Bit, ElementSize, Src, Src); });
 }
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::AVX128_VBROADCAST(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
   const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
