@@ -382,8 +382,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(3, 0b01, 0x04), 1, &OpDispatchBuilder::AVX128_VPERMILImm<4>},
     {OPD(3, 0b01, 0x05), 1, &OpDispatchBuilder::AVX128_VPERMILImm<8>},
     {OPD(3, 0b01, 0x06), 1, &OpDispatchBuilder::AVX128_VPERM2},
-    {OPD(3, 0b01, 0x08), 1, &OpDispatchBuilder::AVX128_VectorRound<4>},
-    {OPD(3, 0b01, 0x09), 1, &OpDispatchBuilder::AVX128_VectorRound<8>},
+    {OPD(3, 0b01, 0x08), 1, &OpDispatchBuilder::AVX128_VectorRound<OpSize::i32Bit>},
+    {OPD(3, 0b01, 0x09), 1, &OpDispatchBuilder::AVX128_VectorRound<OpSize::i64Bit>},
     {OPD(3, 0b01, 0x0A), 1, &OpDispatchBuilder::AVX128_InsertScalarRound<OpSize::i32Bit>},
     {OPD(3, 0b01, 0x0B), 1, &OpDispatchBuilder::AVX128_InsertScalarRound<OpSize::i64Bit>},
     {OPD(3, 0b01, 0x0C), 1, &OpDispatchBuilder::AVX128_VBLEND<OpSize::i32Bit>},
@@ -663,8 +663,8 @@ void OpDispatchBuilder::AVX128_VectorUnary(OpcodeArgs, IROps IROp, IR::OpSize El
   }
 }
 
-void OpDispatchBuilder::AVX128_VectorUnaryImpl(OpcodeArgs, size_t SrcSize, size_t ElementSize,
-                                               std::function<Ref(size_t ElementSize, Ref Src)> Helper) {
+void OpDispatchBuilder::AVX128_VectorUnaryImpl(OpcodeArgs, IR::OpSize SrcSize, IR::OpSize ElementSize,
+                                               std::function<Ref(IR::OpSize ElementSize, Ref Src)> Helper) {
   const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
   auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
@@ -946,13 +946,13 @@ void OpDispatchBuilder::AVX128_VMOVDDUP(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AVX128_VMOVSLDUP(OpcodeArgs) {
-  AVX128_VectorUnaryImpl(Op, GetSrcSize(Op), OpSize::i32Bit,
-                         [this](size_t ElementSize, Ref Src) { return _VTrn(OpSize::i128Bit, ElementSize, Src, Src); });
+  AVX128_VectorUnaryImpl(Op, OpSizeFromSrc(Op), OpSize::i32Bit,
+                         [this](IR::OpSize ElementSize, Ref Src) { return _VTrn(OpSize::i128Bit, ElementSize, Src, Src); });
 }
 
 void OpDispatchBuilder::AVX128_VMOVSHDUP(OpcodeArgs) {
-  AVX128_VectorUnaryImpl(Op, GetSrcSize(Op), OpSize::i32Bit,
-                         [this](size_t ElementSize, Ref Src) { return _VTrn2(OpSize::i128Bit, ElementSize, Src, Src); });
+  AVX128_VectorUnaryImpl(Op, OpSizeFromSrc(Op), OpSize::i32Bit,
+                         [this](IR::OpSize ElementSize, Ref Src) { return _VTrn2(OpSize::i128Bit, ElementSize, Src, Src); });
 }
 
 template<IR::OpSize ElementSize>
@@ -1728,7 +1728,7 @@ void OpDispatchBuilder::AVX128_VEXTRACT128(OpcodeArgs) {
 
 void OpDispatchBuilder::AVX128_VAESImc(OpcodeArgs) {
   ///< 128-bit only.
-  AVX128_VectorUnaryImpl(Op, OpSize::i128Bit, OpSize::i128Bit, [this](size_t, Ref Src) { return _VAESImc(Src); });
+  AVX128_VectorUnaryImpl(Op, OpSize::i128Bit, OpSize::i128Bit, [this](IR::OpSize, Ref Src) { return _VAESImc(Src); });
 }
 
 void OpDispatchBuilder::AVX128_VAESEnc(OpcodeArgs) {
@@ -1767,7 +1767,7 @@ void OpDispatchBuilder::AVX128_VAESKeyGenAssist(OpcodeArgs) {
     .RCON = RCON,
   };
 
-  AVX128_VectorUnaryImpl(Op, OpSize::i128Bit, OpSize::i128Bit, [this, &Capture](size_t, Ref Src) {
+  AVX128_VectorUnaryImpl(Op, OpSize::i128Bit, OpSize::i128Bit, [this, &Capture](IR::OpSize, Ref Src) {
     return _VAESKeyGenAssist(Src, Capture.KeyGenSwizzle, Capture.ZeroRegister, Capture.RCON);
   });
 }
@@ -1803,13 +1803,13 @@ void OpDispatchBuilder::AVX128_PHMINPOSUW(OpcodeArgs) {
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, AVX128_Zext(Result));
 }
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::AVX128_VectorRound(OpcodeArgs) {
-  const auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
   const auto Mode = Op->Src[1].Literal();
 
   AVX128_VectorUnaryImpl(Op, Size, ElementSize,
-                         [this, Mode](size_t, Ref Src) { return VectorRoundImpl(OpSize::i128Bit, ElementSize, Src, Mode); });
+                         [this, Mode](IR::OpSize, Ref Src) { return VectorRoundImpl(OpSize::i128Bit, ElementSize, Src, Mode); });
 }
 
 template<IR::OpSize ElementSize>
@@ -1898,7 +1898,7 @@ void OpDispatchBuilder::AVX128_VPSHUFW(OpcodeArgs, bool Low) {
     .Low = Low,
   };
 
-  AVX128_VectorUnaryImpl(Op, GetSrcSize(Op), OpSize::i16Bit, [Pack](size_t _, Ref Src) {
+  AVX128_VectorUnaryImpl(Op, OpSizeFromSrc(Op), OpSize::i16Bit, [Pack](IR::OpSize, Ref Src) {
     const auto IndexedVectorConstant = Pack.Low ? FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFLW :
                                                   FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFHW;
 

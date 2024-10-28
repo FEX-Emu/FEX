@@ -184,7 +184,7 @@ void OpDispatchBuilder::VMOVSHDUPOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::VMOVSLDUPOp(OpcodeArgs) {
-  const auto SrcSize = GetSrcSize(Op);
+  const auto SrcSize = OpSizeFromSrc(Op);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Result = _VTrn(SrcSize, OpSize::i32Bit, Src, Src);
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);

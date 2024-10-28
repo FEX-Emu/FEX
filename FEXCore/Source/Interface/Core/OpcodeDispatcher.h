@@ -937,7 +937,7 @@ public:
   void AVX128_VMOVScalarImpl(OpcodeArgs, IR::OpSize ElementSize);
   void AVX128_VectorALU(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
   void AVX128_VectorUnary(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
-  void AVX128_VectorUnaryImpl(OpcodeArgs, size_t SrcSize, size_t ElementSize, std::function<Ref(size_t ElementSize, Ref Src)> Helper);
+  void AVX128_VectorUnaryImpl(OpcodeArgs, IR::OpSize SrcSize, IR::OpSize ElementSize, std::function<Ref(IR::OpSize ElementSize, Ref Src)> Helper);
   void AVX128_VectorBinaryImpl(OpcodeArgs, size_t SrcSize, IR::OpSize ElementSize,
                                std::function<Ref(IR::OpSize ElementSize, Ref Src1, Ref Src2)> Helper);
   void AVX128_VectorShiftWideImpl(OpcodeArgs, size_t ElementSize, IROps IROp);
@@ -1051,7 +1051,7 @@ public:
 
   void AVX128_PHMINPOSUW(OpcodeArgs);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_VectorRound(OpcodeArgs);
   template<IR::OpSize ElementSize>
   void AVX128_InsertScalarRound(OpcodeArgs);
