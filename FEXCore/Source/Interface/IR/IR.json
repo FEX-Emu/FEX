@@ -2307,7 +2307,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize << 1)"
       },
-      "FPR = VUABDL2 u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VUABDL2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "Desc": ["Unsigned Absolute Difference Long",
                  "Using the high elements of the source vectors"
                 ],
