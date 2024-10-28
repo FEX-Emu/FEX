@@ -3490,7 +3490,7 @@ void OpDispatchBuilder::VPHSUBSWOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Dest, OpSize::iInvalid);
 }
 
-Ref OpDispatchBuilder::PSADBWOpImpl(size_t Size, Ref Src1, Ref Src2) {
+Ref OpDispatchBuilder::PSADBWOpImpl(IR::OpSize Size, Ref Src1, Ref Src2) {
   // The documentation is actually incorrect in how this instruction operates
   // It strongly implies that the `abs(dest[i] - src[i])` operates in 8bit space
   // but it actually operates in more than 8bit space
@@ -3502,7 +3502,7 @@ Ref OpDispatchBuilder::PSADBWOpImpl(size_t Size, Ref Src1, Ref Src2) {
     auto AbsResult = _VUABDL(Size * 2, OpSize::i8Bit, Src1, Src2);
 
     // Now vector-wide add the results for each
-    return _VAddV(Size * 2, OpSize::i16Bit, AbsResult);
+    return _VAddV(IR::MultiplyOpSize(Size, 2), OpSize::i16Bit, AbsResult);
   }
 
   auto AbsResult_Low = _VUABDL(Size, OpSize::i8Bit, Src1, Src2);
@@ -3530,7 +3530,7 @@ Ref OpDispatchBuilder::PSADBWOpImpl(size_t Size, Ref Src1, Ref Src2) {
 }
 
 void OpDispatchBuilder::PSADBW(OpcodeArgs) {
-  const auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
@@ -3540,7 +3540,7 @@ void OpDispatchBuilder::PSADBW(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::VPSADBWOp(OpcodeArgs) {
-  const auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
