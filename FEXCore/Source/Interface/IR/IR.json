@@ -2117,7 +2117,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VRev64 u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VRev64 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc" : ["Reverses elements in 64-bit halfwords",
                   "Available element size: 1byte, 2 byte, 4 byte"
                  ],

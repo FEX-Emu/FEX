@@ -3002,7 +3002,7 @@ template void OpDispatchBuilder::MOVQ2DQ<true>(OpcodeArgs);
 Ref OpDispatchBuilder::ADDSUBPOpImpl(OpSize Size, size_t ElementSize, Ref Src1, Ref Src2) {
   if (CTX->HostFeatures.SupportsFCMA) {
     if (ElementSize == OpSize::i32Bit) {
-      auto Swizzle = _VRev64(Size, 4, Src2);
+      auto Swizzle = _VRev64(Size, OpSize::i32Bit, Src2);
       return _VFCADD(Size, ElementSize, Src1, Swizzle, 90);
     } else {
       auto Swizzle = _VExtr(Size, 1, Src2, Src2, 8);
@@ -3072,7 +3072,7 @@ void OpDispatchBuilder::PFPNACCOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PSWAPDOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   auto Result = _VRev64(Size, OpSize::i32Bit, Src);
