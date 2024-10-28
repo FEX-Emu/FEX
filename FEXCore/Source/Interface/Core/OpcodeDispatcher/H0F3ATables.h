@@ -23,9 +23,9 @@ constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDis
   {OPD(0, PF_3A_66, 0x16), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 4>},
   {OPD(0, PF_3A_66, 0x17), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 4>},
 
-  {OPD(0, PF_3A_66, 0x20), 1, &OpDispatchBuilder::PINSROp<1>},
+  {OPD(0, PF_3A_66, 0x20), 1, &OpDispatchBuilder::PINSROp<OpSize::i8Bit>},
   {OPD(0, PF_3A_66, 0x21), 1, &OpDispatchBuilder::InsertPSOp},
-  {OPD(0, PF_3A_66, 0x22), 1, &OpDispatchBuilder::PINSROp<4>},
+  {OPD(0, PF_3A_66, 0x22), 1, &OpDispatchBuilder::PINSROp<OpSize::i32Bit>},
   {OPD(0, PF_3A_66, 0x40), 1, &OpDispatchBuilder::DPPOp<4>},
   {OPD(0, PF_3A_66, 0x41), 1, &OpDispatchBuilder::DPPOp<8>},
   {OPD(0, PF_3A_66, 0x42), 1, &OpDispatchBuilder::MPSADBWOp},
@@ -41,7 +41,7 @@ constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDis
 constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDispatch_H0F3ATable_64[] = {
   {OPD(1, PF_3A_66, 0x0F), 1, &OpDispatchBuilder::PAlignrOp},
   {OPD(1, PF_3A_66, 0x16), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 8>},
-  {OPD(1, PF_3A_66, 0x22), 1, &OpDispatchBuilder::PINSROp<8>},
+  {OPD(1, PF_3A_66, 0x22), 1, &OpDispatchBuilder::PINSROp<OpSize::i64Bit>},
 };
 
 #undef PF_3A_NONE

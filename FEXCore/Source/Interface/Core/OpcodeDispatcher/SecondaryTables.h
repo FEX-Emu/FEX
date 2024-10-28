@@ -44,7 +44,7 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   {0xBE, 2, &OpDispatchBuilder::MOVSXOp},
   {0xC0, 2, &OpDispatchBuilder::XADDOp},
   {0xC3, 1, &OpDispatchBuilder::MOVGPRNTOp},
-  {0xC4, 1, &OpDispatchBuilder::PINSROp<2>},
+  {0xC4, 1, &OpDispatchBuilder::PINSROp<OpSize::i16Bit>},
   {0xC5, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 2>},
   {0xC8, 8, &OpDispatchBuilder::BSWAPOp},
 
@@ -258,7 +258,7 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   {0x7E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVBetweenGPR_FPR, OpDispatchBuilder::VectorOpType::SSE>},
   {0x7F, 1, &OpDispatchBuilder::MOVVectorAlignedOp},
   {0xC2, 1, &OpDispatchBuilder::VFCMPOp<8>},
-  {0xC4, 1, &OpDispatchBuilder::PINSROp<2>},
+  {0xC4, 1, &OpDispatchBuilder::PINSROp<OpSize::i16Bit>},
   {0xC5, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 2>},
   {0xC6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SHUFOp, 8>},
 

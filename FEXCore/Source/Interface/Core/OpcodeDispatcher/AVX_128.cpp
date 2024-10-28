@@ -1372,7 +1372,7 @@ void OpDispatchBuilder::AVX128_MOVMSKB(OpcodeArgs) {
   StoreResult(GPRClass, Op, Result, OpSize::iInvalid);
 }
 
-void OpDispatchBuilder::AVX128_PINSRImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
+void OpDispatchBuilder::AVX128_PINSRImpl(OpcodeArgs, IR::OpSize ElementSize, const X86Tables::DecodedOperand& Src1Op,
                                          const X86Tables::DecodedOperand& Src2Op, const X86Tables::DecodedOperand& Imm) {
   const auto NumElements = OpSize::i128Bit / ElementSize;
   const uint64_t Index = Imm.Literal() & (NumElements - 1);
@@ -1403,7 +1403,7 @@ void OpDispatchBuilder::AVX128_VPINSRW(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AVX128_VPINSRDQ(OpcodeArgs) {
-  const auto SrcSize = GetSrcSize(Op);
+  const auto SrcSize = OpSizeFromSrc(Op);
   AVX128_PINSRImpl(Op, SrcSize, Op->Src[0], Op->Src[1], Op->Src[2]);
 }
 

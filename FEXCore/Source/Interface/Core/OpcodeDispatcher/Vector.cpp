@@ -1481,7 +1481,7 @@ void OpDispatchBuilder::VBROADCASTOp(OpcodeArgs, size_t ElementSize) {
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
-Ref OpDispatchBuilder::PINSROpImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
+Ref OpDispatchBuilder::PINSROpImpl(OpcodeArgs, IR::OpSize ElementSize, const X86Tables::DecodedOperand& Src1Op,
                                    const X86Tables::DecodedOperand& Src2Op, const X86Tables::DecodedOperand& Imm) {
   const auto Size = OpSizeFromDst(Op);
   const auto NumElements = Size / ElementSize;
@@ -1499,7 +1499,7 @@ Ref OpDispatchBuilder::PINSROpImpl(OpcodeArgs, size_t ElementSize, const X86Tabl
   return _VLoadVectorElement(Size, ElementSize, Src1, Index, Src2);
 }
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::PINSROp(OpcodeArgs) {
   Ref Result = PINSROpImpl(Op, ElementSize, Op->Dest, Op->Src[0], Op->Src[1]);
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
@@ -1519,7 +1519,7 @@ void OpDispatchBuilder::VPINSRBOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::VPINSRDQOp(OpcodeArgs) {
-  const auto SrcSize = GetSrcSize(Op);
+  const auto SrcSize = OpSizeFromSrc(Op);
   Ref Result = PINSROpImpl(Op, SrcSize, Op->Src[0], Op->Src[1], Op->Src[2]);
   if (Op->Dest.Data.GPR.GPR == Op->Src[0].Data.GPR.GPR) {
     Result = _VMov(OpSize::i128Bit, Result);

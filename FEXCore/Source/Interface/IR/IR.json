@@ -628,7 +628,7 @@
           "RegisterSize != FEXCore::IR::OpSize::i256Bit && \"What does 256-bit mean in this context?\""
         ]
       },
-      "FPR = VLoadVectorElement u8:#RegisterSize, u8:#ElementSize, FPR:$DstSrc, u8:$Index, GPR:$Addr": {
+      "FPR = VLoadVectorElement OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$DstSrc, u8:$Index, GPR:$Addr": {
         "Desc": ["Does a memory load to a single element of a vector.",
                  "Leaves the rest of the vector's data intact.",
                  "Matches arm64 ld1 semantics"],

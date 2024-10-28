@@ -479,7 +479,7 @@ public:
   template<size_t ElementSize>
   void VFCMPOp(OpcodeArgs);
   void SHUFOp(OpcodeArgs, size_t ElementSize);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void PINSROp(OpcodeArgs);
   void InsertPSOp(OpcodeArgs);
   void PExtrOp(OpcodeArgs, size_t ElementSize);
@@ -995,8 +995,8 @@ public:
   template<size_t ElementSize>
   void AVX128_MOVMSK(OpcodeArgs);
   void AVX128_MOVMSKB(OpcodeArgs);
-  void AVX128_PINSRImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
-                        const X86Tables::DecodedOperand& Imm);
+  void AVX128_PINSRImpl(OpcodeArgs, IR::OpSize ElementSize, const X86Tables::DecodedOperand& Src1Op,
+                        const X86Tables::DecodedOperand& Src2Op, const X86Tables::DecodedOperand& Imm);
   void AVX128_VPINSRB(OpcodeArgs);
   void AVX128_VPINSRW(OpcodeArgs);
   void AVX128_VPINSRDQ(OpcodeArgs);
@@ -1394,7 +1394,7 @@ private:
 
   Ref PHSUBSOpImpl(OpSize Size, Ref Src1, Ref Src2);
 
-  Ref PINSROpImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
+  Ref PINSROpImpl(OpcodeArgs, IR::OpSize ElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
                   const X86Tables::DecodedOperand& Imm);
 
   Ref PMADDWDOpImpl(size_t Size, Ref Src1, Ref Src2);
