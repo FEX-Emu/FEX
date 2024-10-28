@@ -2102,7 +2102,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VSQSHL u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, u8:$BitShift": {
+      "FPR = VSQSHL OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$BitShift": {
         "Desc": ["Signed satuating shift left by immediate",
                  "Exactly matching Arm64 sqshl semantics"
                 ],
