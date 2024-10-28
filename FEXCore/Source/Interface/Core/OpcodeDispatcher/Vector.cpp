@@ -3124,7 +3124,7 @@ void OpDispatchBuilder::PMULHRWOp(OpcodeArgs) {
 
   // Implementation is more efficient for 8byte registers
   // Multiplies 4 16bit values in to 4 32bit values
-  Res = _VSMull(Size * 2, OpSize::i16Bit, Dest, Src);
+  Res = _VSMull(IR::MultiplyOpSize(Size, 2), OpSize::i16Bit, Dest, Src);
 
   // Load 0x0000_8000 in to each 32-bit element.
   Ref VConstant = _VectorImm(OpSize::i128Bit, OpSize::i32Bit, 0x80, 8);
@@ -3314,7 +3314,7 @@ Ref OpDispatchBuilder::PMULHRSWOpImpl(OpSize Size, Ref Src1, Ref Src2) {
   Ref Res {};
   if (Size == OpSize::i64Bit) {
     // Implementation is more efficient for 8byte registers
-    Res = _VSMull(Size * 2, OpSize::i16Bit, Src1, Src2);
+    Res = _VSMull(IR::MultiplyOpSize(Size, 2), OpSize::i16Bit, Src1, Src2);
     Res = _VSShrI(IR::MultiplyOpSize(Size, 2), OpSize::i32Bit, Res, 14);
     auto OneVector = _VectorImm(IR::MultiplyOpSize(Size, 2), OpSize::i32Bit, 1);
     Res = _VAdd(IR::MultiplyOpSize(Size, 2), OpSize::i32Bit, Res, OneVector);
