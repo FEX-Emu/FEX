@@ -2136,15 +2136,15 @@ void OpDispatchBuilder::AVXVector_CVT_Int_To_Float(OpcodeArgs) {
 template void OpDispatchBuilder::AVXVector_CVT_Int_To_Float<OpSize::i32Bit, false>(OpcodeArgs);
 template void OpDispatchBuilder::AVXVector_CVT_Int_To_Float<OpSize::i32Bit, true>(OpcodeArgs);
 
-Ref OpDispatchBuilder::Vector_CVT_Float_To_IntImpl(OpcodeArgs, size_t SrcElementSize, bool Narrow, bool HostRoundingMode) {
-  const size_t DstSize = GetDstSize(Op);
-  size_t ElementSize = SrcElementSize;
+Ref OpDispatchBuilder::Vector_CVT_Float_To_IntImpl(OpcodeArgs, IR::OpSize SrcElementSize, bool Narrow, bool HostRoundingMode) {
+  const auto DstSize = OpSizeFromDst(Op);
+  auto ElementSize = SrcElementSize;
 
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   if (Narrow) {
     Src = _Vector_FToF(DstSize, SrcElementSize >> 1, Src, SrcElementSize);
-    ElementSize >>= 1;
+    ElementSize = IR::DivideOpSize(ElementSize, 2);
   }
 
   if (HostRoundingMode) {
@@ -2154,7 +2154,7 @@ Ref OpDispatchBuilder::Vector_CVT_Float_To_IntImpl(OpcodeArgs, size_t SrcElement
   }
 }
 
-template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
+template<IR::OpSize SrcElementSize, bool Narrow, bool HostRoundingMode>
 void OpDispatchBuilder::Vector_CVT_Float_To_Int(OpcodeArgs) {
   const auto DstSize = OpSizeFromDst(Op);
 
@@ -2177,7 +2177,7 @@ template void OpDispatchBuilder::Vector_CVT_Float_To_Int<OpSize::i32Bit, true, f
 template void OpDispatchBuilder::Vector_CVT_Float_To_Int<OpSize::i64Bit, true, true>(OpcodeArgs);
 template void OpDispatchBuilder::Vector_CVT_Float_To_Int<OpSize::i64Bit, true, false>(OpcodeArgs);
 
-template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
+template<IR::OpSize SrcElementSize, bool Narrow, bool HostRoundingMode>
 void OpDispatchBuilder::AVXVector_CVT_Float_To_Int(OpcodeArgs) {
   const auto DstSize = OpSizeFromDst(Op);
 
@@ -2277,7 +2277,7 @@ void OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs) {
   StoreResult(FPRClass, Op, Src, OpSize::iInvalid);
 }
 
-template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
+template<IR::OpSize SrcElementSize, bool Narrow, bool HostRoundingMode>
 void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int(OpcodeArgs) {
   // This function causes a change in MMX state from X87 to MMX
   if (MMXState == MMXState_X87) {
@@ -2290,12 +2290,12 @@ void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int(OpcodeArgs) {
   const auto SrcSize = Op->Src[0].IsGPR() ? OpSize::i128Bit : OpSizeFromSrc(Op);
   Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
 
-  size_t ElementSize = SrcElementSize;
+  auto ElementSize = SrcElementSize;
   const auto Size = OpSizeFromDst(Op);
 
   if (Narrow) {
     Src = _Vector_FToF(Size, SrcElementSize >> 1, Src, SrcElementSize);
-    ElementSize >>= 1;
+    ElementSize = IR::DivideOpSize(ElementSize, 2);
   }
 
   if constexpr (HostRoundingMode) {

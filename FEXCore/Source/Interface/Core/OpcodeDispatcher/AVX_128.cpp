@@ -1605,7 +1605,7 @@ void OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Float(OpcodeArgs) {
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
-template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
+template<IR::OpSize SrcElementSize, bool Narrow, bool HostRoundingMode>
 void OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
 
@@ -1628,9 +1628,9 @@ void OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int(OpcodeArgs) {
     }
   } else {
     auto Convert = [this](Ref Src) -> Ref {
-      size_t ElementSize = SrcElementSize;
+      auto ElementSize = SrcElementSize;
       if (Narrow) {
-        ElementSize >>= 1;
+        ElementSize = IR::DivideOpSize(ElementSize, 2);
         Src = _Vector_FToF(OpSize::i128Bit, ElementSize, Src, SrcElementSize);
       }
 
