@@ -585,7 +585,7 @@ public:
 
   template<IROps IROp, size_t ElementSize>
   void VHADDPOp(OpcodeArgs);
-  void VHSUBPOp(OpcodeArgs, size_t ElementSize);
+  void VHSUBPOp(OpcodeArgs, IR::OpSize ElementSize);
 
   void VINSERTOp(OpcodeArgs);
   void VINSERTPSOp(OpcodeArgs);
@@ -653,7 +653,7 @@ public:
   template<bool Signed>
   void VPMULHWOp(OpcodeArgs);
 
-  template<size_t ElementSize, bool Signed>
+  template<IR::OpSize ElementSize, bool Signed>
   void VPMULLOp(OpcodeArgs);
 
   void VPSADBWOp(OpcodeArgs);
@@ -801,7 +801,7 @@ public:
   template<IR::OpSize ElementSize>
   void PACKSSOp(OpcodeArgs);
 
-  template<size_t ElementSize, bool Signed>
+  template<IR::OpSize ElementSize, bool Signed>
   void PMULLOp(OpcodeArgs);
 
   template<bool ToXMM>
@@ -830,7 +830,7 @@ public:
   void PMULHRSW(OpcodeArgs);
 
   void MOVBEOp(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void HSUBP(OpcodeArgs);
   template<IR::OpSize ElementSize>
   void PHSUB(OpcodeArgs);
@@ -1375,7 +1375,7 @@ private:
 
   Ref ExtendVectorElementsImpl(OpcodeArgs, IR::OpSize ElementSize, IR::OpSize DstElementSize, bool Signed);
 
-  Ref HSUBPOpImpl(OpSize Size, size_t ElementSize, Ref Src1, Ref Src2);
+  Ref HSUBPOpImpl(OpSize Size, IR::OpSize ElementSize, Ref Src1, Ref Src2);
 
   Ref InsertPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
                      const X86Tables::DecodedOperand& Imm);
@@ -1406,7 +1406,7 @@ private:
 
   Ref PMULHWOpImpl(OpcodeArgs, bool Signed, Ref Src1, Ref Src2);
 
-  Ref PMULLOpImpl(OpSize Size, size_t ElementSize, bool Signed, Ref Src1, Ref Src2);
+  Ref PMULLOpImpl(OpSize Size, IR::OpSize ElementSize, bool Signed, Ref Src1, Ref Src2);
 
   Ref PSADBWOpImpl(IR::OpSize Size, Ref Src1, Ref Src2);
 

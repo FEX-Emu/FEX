@@ -2211,7 +2211,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VUnZip u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
+      "FPR = VUnZip OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },

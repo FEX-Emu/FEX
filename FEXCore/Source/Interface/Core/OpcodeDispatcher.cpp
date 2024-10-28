@@ -5138,8 +5138,8 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 
     {OPD(1, 0b01, 0x7C), 1, &OpDispatchBuilder::VHADDPOp<IR::OP_VFADDP, 8>},
     {OPD(1, 0b11, 0x7C), 1, &OpDispatchBuilder::VHADDPOp<IR::OP_VFADDP, 4>},
-    {OPD(1, 0b01, 0x7D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VHSUBPOp, 8>},
-    {OPD(1, 0b11, 0x7D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VHSUBPOp, 4>},
+    {OPD(1, 0b01, 0x7D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VHSUBPOp, OpSize::i64Bit>},
+    {OPD(1, 0b11, 0x7D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VHSUBPOp, OpSize::i32Bit>},
 
     {OPD(1, 0b01, 0x7E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVBetweenGPR_FPR, OpDispatchBuilder::VectorOpType::AVX>},
     {OPD(1, 0b10, 0x7E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVQOp, OpDispatchBuilder::VectorOpType::AVX>},
@@ -5204,7 +5204,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0xF1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLOp, 2>},
     {OPD(1, 0b01, 0xF2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLOp, 4>},
     {OPD(1, 0b01, 0xF3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLOp, 8>},
-    {OPD(1, 0b01, 0xF4), 1, &OpDispatchBuilder::VPMULLOp<4, false>},
+    {OPD(1, 0b01, 0xF4), 1, &OpDispatchBuilder::VPMULLOp<OpSize::i32Bit, false>},
     {OPD(1, 0b01, 0xF5), 1, &OpDispatchBuilder::VPMADDWDOp},
     {OPD(1, 0b01, 0xF6), 1, &OpDispatchBuilder::VPSADBWOp},
     {OPD(1, 0b01, 0xF7), 1, &OpDispatchBuilder::MASKMOVOp},
@@ -5253,7 +5253,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(2, 0b01, 0x24), 1, &OpDispatchBuilder::ExtendVectorElements<OpSize::i16Bit, OpSize::i64Bit, true>},
     {OPD(2, 0b01, 0x25), 1, &OpDispatchBuilder::ExtendVectorElements<OpSize::i32Bit, OpSize::i64Bit, true>},
 
-    {OPD(2, 0b01, 0x28), 1, &OpDispatchBuilder::VPMULLOp<4, true>},
+    {OPD(2, 0b01, 0x28), 1, &OpDispatchBuilder::VPMULLOp<OpSize::i32Bit, true>},
     {OPD(2, 0b01, 0x29), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VCMPEQ, OpSize::i64Bit>},
     {OPD(2, 0b01, 0x2A), 1, &OpDispatchBuilder::MOVVectorNTOp},
     {OPD(2, 0b01, 0x2B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPACKUSOp, OpSize::i32Bit>},

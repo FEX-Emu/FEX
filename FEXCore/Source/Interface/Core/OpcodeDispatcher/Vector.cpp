@@ -2933,7 +2933,7 @@ void OpDispatchBuilder::VPACKSSOp(OpcodeArgs, IR::OpSize ElementSize) {
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
-Ref OpDispatchBuilder::PMULLOpImpl(OpSize Size, size_t ElementSize, bool Signed, Ref Src1, Ref Src2) {
+Ref OpDispatchBuilder::PMULLOpImpl(OpSize Size, IR::OpSize ElementSize, bool Signed, Ref Src1, Ref Src2) {
   if (Size == OpSize::i64Bit) {
     if (Signed) {
       return _VSMull(OpSize::i128Bit, ElementSize, Src1, Src2);
@@ -2952,7 +2952,7 @@ Ref OpDispatchBuilder::PMULLOpImpl(OpSize Size, size_t ElementSize, bool Signed,
   }
 }
 
-template<size_t ElementSize, bool Signed>
+template<IR::OpSize ElementSize, bool Signed>
 void OpDispatchBuilder::PMULLOp(OpcodeArgs) {
   static_assert(ElementSize == sizeof(uint32_t), "Currently only handles 32-bit -> 64-bit");
 
@@ -2966,7 +2966,7 @@ void OpDispatchBuilder::PMULLOp(OpcodeArgs) {
 template void OpDispatchBuilder::PMULLOp<OpSize::i32Bit, false>(OpcodeArgs);
 template void OpDispatchBuilder::PMULLOp<OpSize::i32Bit, true>(OpcodeArgs);
 
-template<size_t ElementSize, bool Signed>
+template<IR::OpSize ElementSize, bool Signed>
 void OpDispatchBuilder::VPMULLOp(OpcodeArgs) {
   static_assert(ElementSize == sizeof(uint32_t), "Currently only handles 32-bit -> 64-bit");
 
@@ -3041,7 +3041,7 @@ template void OpDispatchBuilder::VADDSUBPOp<OpSize::i32Bit>(OpcodeArgs);
 template void OpDispatchBuilder::VADDSUBPOp<OpSize::i64Bit>(OpcodeArgs);
 
 void OpDispatchBuilder::PFNACCOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
 
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
@@ -3356,13 +3356,13 @@ void OpDispatchBuilder::VPMULHRSWOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
-Ref OpDispatchBuilder::HSUBPOpImpl(OpSize SrcSize, size_t ElementSize, Ref Src1, Ref Src2) {
+Ref OpDispatchBuilder::HSUBPOpImpl(OpSize SrcSize, IR::OpSize ElementSize, Ref Src1, Ref Src2) {
   auto Even = _VUnZip(SrcSize, ElementSize, Src1, Src2);
   auto Odd = _VUnZip2(SrcSize, ElementSize, Src1, Src2);
   return _VFSub(SrcSize, ElementSize, Even, Odd);
 }
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::HSUBP(OpcodeArgs) {
   Ref Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
@@ -3373,7 +3373,7 @@ void OpDispatchBuilder::HSUBP(OpcodeArgs) {
 template void OpDispatchBuilder::HSUBP<OpSize::i32Bit>(OpcodeArgs);
 template void OpDispatchBuilder::HSUBP<OpSize::i64Bit>(OpcodeArgs);
 
-void OpDispatchBuilder::VHSUBPOp(OpcodeArgs, size_t ElementSize) {
+void OpDispatchBuilder::VHSUBPOp(OpcodeArgs, IR::OpSize ElementSize) {
   const auto DstSize = GetDstSize(Op);
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
