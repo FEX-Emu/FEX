@@ -2334,7 +2334,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VUShrS u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftScalar": {
+      "FPR = VUShrS OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, FPR:$ShiftScalar": {
         "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
