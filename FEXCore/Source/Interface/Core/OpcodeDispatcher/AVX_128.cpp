@@ -1192,7 +1192,7 @@ void OpDispatchBuilder::AVX128_MOVBetweenGPR_FPR(OpcodeArgs) {
       // Loading from GPR and moving to Vector.
       Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], CTX->GetGPROpSize(), Op->Flags);
       // zext to 128bit
-      Result.Low = _VCastFromGPR(OpSize::i128Bit, GetSrcSize(Op), Src);
+      Result.Low = _VCastFromGPR(OpSize::i128Bit, OpSizeFromSrc(Op), Src);
     } else {
       // Loading from Memory as a scalar. Zero extend
       Result.Low = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);

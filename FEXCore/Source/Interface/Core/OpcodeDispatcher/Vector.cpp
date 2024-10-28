@@ -2381,7 +2381,7 @@ void OpDispatchBuilder::MOVBetweenGPR_FPR(OpcodeArgs, VectorOpType VectorType) {
       // Loading from GPR and moving to Vector.
       Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], CTX->GetGPROpSize(), Op->Flags);
       // zext to 128bit
-      Result = _VCastFromGPR(OpSize::i128Bit, GetSrcSize(Op), Src);
+      Result = _VCastFromGPR(OpSize::i128Bit, OpSizeFromSrc(Op), Src);
     } else {
       // Loading from Memory as a scalar. Zero extend
       Result = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);

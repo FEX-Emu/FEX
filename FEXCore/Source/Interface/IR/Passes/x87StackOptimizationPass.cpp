@@ -650,7 +650,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         HandleUnop(OP_F64TAN, false, OP_F80TAN);
         Ref OneConst {};
         if (ReducedPrecisionMode) {
-          OneConst = IREmit->_VCastFromGPR(8, 8, GetConstant(0x3FF0000000000000));
+          OneConst = IREmit->_VCastFromGPR(OpSize::i64Bit, OpSize::i64Bit, GetConstant(0x3FF0000000000000));
         } else {
           OneConst = IREmit->_LoadNamedVectorConstant(OpSize::i128Bit, NamedVectorConstant::NAMED_VECTOR_X87_ONE);
         }
@@ -878,7 +878,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         } else {
           Ref Low = GetConstant(0);
           Ref High = GetConstant(0b1'000'0000'0000'0000ULL);
-          Ref HelperNode = IREmit->_VCastFromGPR(16, 8, Low);
+          Ref HelperNode = IREmit->_VCastFromGPR(OpSize::i128Bit, OpSize::i64Bit, Low);
           HelperNode = IREmit->_VInsGPR(OpSize::i128Bit, OpSize::i64Bit, 1, HelperNode, High);
           ResultNode = IREmit->_VXor(OpSize::i128Bit, OpSize::i8Bit, Value, HelperNode);
         }
@@ -896,7 +896,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
           // Intermediate insts
           Ref Low = GetConstant(~0ULL);
           Ref High = GetConstant(0b0'111'1111'1111'1111ULL);
-          Ref HelperNode = IREmit->_VCastFromGPR(16, 8, Low);
+          Ref HelperNode = IREmit->_VCastFromGPR(OpSize::i128Bit, OpSize::i64Bit, Low);
           HelperNode = IREmit->_VInsGPR(OpSize::i128Bit, OpSize::i64Bit, 1, HelperNode, High);
           ResultNode = IREmit->_VAnd(OpSize::i128Bit, OpSize::i8Bit, Value, HelperNode);
         }
@@ -924,7 +924,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         const auto* Op = IROp->C<IROp_F80StackTest>();
         auto Offset = Op->SrcStack;
         auto StackNode = LoadStackValue(Offset);
-        Ref ZeroConst = IREmit->_VCastFromGPR(ReducedPrecisionMode ? 8 : 16, 8, GetConstant(0));
+        Ref ZeroConst = IREmit->_VCastFromGPR(ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit, OpSize::i64Bit, GetConstant(0));
 
         Ref CmpNode {};
         if (ReducedPrecisionMode) {

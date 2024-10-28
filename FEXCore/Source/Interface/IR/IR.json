@@ -2524,7 +2524,7 @@
       }
     },
     "Conv": {
-      "FPR = VCastFromGPR u8:#RegisterSize, u8:#ElementSize, GPR:$Src": {
+      "FPR = VCastFromGPR OpSize:#RegisterSize, OpSize:#ElementSize, GPR:$Src": {
         "Desc": ["Moves a GPR to a Vector register with zero extension to full length of the register.",
                  "No conversion is done on the data as it moves register files"
                 ],
