@@ -1953,7 +1953,7 @@
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VFRecp u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VFRecp OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
