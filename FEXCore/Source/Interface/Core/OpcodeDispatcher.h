@@ -453,7 +453,7 @@ public:
   void PSRLI(OpcodeArgs, IR::OpSize ElementSize);
   void PSLLI(OpcodeArgs, IR::OpSize ElementSize);
   void PSLL(OpcodeArgs, size_t ElementSize);
-  void PSRAOp(OpcodeArgs, size_t ElementSize);
+  void PSRAOp(OpcodeArgs, IR::OpSize ElementSize);
   void PSRLDQ(OpcodeArgs);
   void PSLLDQ(OpcodeArgs);
   void PSRAIOp(OpcodeArgs, IR::OpSize ElementSize);
@@ -667,7 +667,7 @@ public:
   void VPSLLIOp(OpcodeArgs, IR::OpSize ElementSize);
   void VPSLLVOp(OpcodeArgs);
 
-  void VPSRAOp(OpcodeArgs, size_t ElementSize);
+  void VPSRAOp(OpcodeArgs, IR::OpSize ElementSize);
 
   void VPSRAIOp(OpcodeArgs, IR::OpSize ElementSize);
 
@@ -1419,7 +1419,7 @@ private:
 
   Ref PSLLImpl(OpcodeArgs, size_t ElementSize, Ref Src, Ref ShiftVec);
 
-  Ref PSRAOpImpl(OpcodeArgs, size_t ElementSize, Ref Src, Ref ShiftVec);
+  Ref PSRAOpImpl(OpcodeArgs, IR::OpSize ElementSize, Ref Src, Ref ShiftVec);
 
   Ref PSRLDOpImpl(OpcodeArgs, IR::OpSize ElementSize, Ref Src, Ref ShiftVec);
 
