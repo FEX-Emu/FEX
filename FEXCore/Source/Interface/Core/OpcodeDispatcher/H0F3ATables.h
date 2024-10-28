@@ -26,8 +26,8 @@ constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDis
   {OPD(0, PF_3A_66, 0x20), 1, &OpDispatchBuilder::PINSROp<OpSize::i8Bit>},
   {OPD(0, PF_3A_66, 0x21), 1, &OpDispatchBuilder::InsertPSOp},
   {OPD(0, PF_3A_66, 0x22), 1, &OpDispatchBuilder::PINSROp<OpSize::i32Bit>},
-  {OPD(0, PF_3A_66, 0x40), 1, &OpDispatchBuilder::DPPOp<4>},
-  {OPD(0, PF_3A_66, 0x41), 1, &OpDispatchBuilder::DPPOp<8>},
+  {OPD(0, PF_3A_66, 0x40), 1, &OpDispatchBuilder::DPPOp<OpSize::i32Bit>},
+  {OPD(0, PF_3A_66, 0x41), 1, &OpDispatchBuilder::DPPOp<OpSize::i64Bit>},
   {OPD(0, PF_3A_66, 0x42), 1, &OpDispatchBuilder::MPSADBWOp},
 
   {OPD(0, PF_3A_66, 0x60), 1, &OpDispatchBuilder::VPCMPESTRMOp},

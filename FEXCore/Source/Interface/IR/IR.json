@@ -1886,7 +1886,7 @@
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = LoadNamedVectorConstant u8:#RegisterSize, NamedVectorConstant:$Constant": {
+      "FPR = LoadNamedVectorConstant OpSize:#RegisterSize, NamedVectorConstant:$Constant": {
         "Desc": ["Load a named vector constant.",
                  "The list of vector constants can be found in <FEXCore/IR/IR.h>"
                 ],

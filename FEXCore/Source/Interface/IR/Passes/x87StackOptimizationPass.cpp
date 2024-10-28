@@ -652,7 +652,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         if (ReducedPrecisionMode) {
           OneConst = IREmit->_VCastFromGPR(8, 8, GetConstant(0x3FF0000000000000));
         } else {
-          OneConst = IREmit->_LoadNamedVectorConstant(16, NamedVectorConstant::NAMED_VECTOR_X87_ONE);
+          OneConst = IREmit->_LoadNamedVectorConstant(OpSize::i128Bit, NamedVectorConstant::NAMED_VECTOR_X87_ONE);
         }
 
         if (SlowPath) {

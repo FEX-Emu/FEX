@@ -578,7 +578,7 @@ public:
 
   void VBROADCASTOp(OpcodeArgs, IR::OpSize ElementSize);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void VDPPOp(OpcodeArgs);
 
   void VEXTRACT128Op(OpcodeArgs);
@@ -897,7 +897,7 @@ public:
   void PTestOpImpl(OpSize Size, Ref Dest, Ref Src);
   void PTestOp(OpcodeArgs);
   void PHMINPOSUWOp(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void DPPOp(OpcodeArgs);
 
   void MPSADBWOp(OpcodeArgs);
@@ -1368,7 +1368,7 @@ private:
 
   Ref CVTGPR_To_FPRImpl(OpcodeArgs, size_t DstElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op);
 
-  Ref DPPOpImpl(size_t DstSize, Ref Src1, Ref Src2, uint8_t Mask, size_t ElementSize);
+  Ref DPPOpImpl(IR::OpSize DstSize, Ref Src1, Ref Src2, uint8_t Mask, size_t ElementSize);
 
   Ref VDPPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2, const X86Tables::DecodedOperand& Imm);
 
@@ -2186,8 +2186,8 @@ private:
   fextl::unordered_map<IndexNamedVectorMapKey, Ref, IndexNamedVectorMapKeyHasher> CachedIndexedNamedVectorConstants;
 
   // Load and cache a named vector constant.
-  Ref LoadAndCacheNamedVectorConstant(uint8_t Size, FEXCore::IR::NamedVectorConstant NamedConstant) {
-    auto log2_size_bytes = FEXCore::ilog2(Size);
+  Ref LoadAndCacheNamedVectorConstant(IR::OpSize Size, FEXCore::IR::NamedVectorConstant NamedConstant) {
+    auto log2_size_bytes = FEXCore::ilog2(IR::OpSizeToSize(Size));
     if (CachedNamedVectorConstants[NamedConstant][log2_size_bytes]) {
       return CachedNamedVectorConstants[NamedConstant][log2_size_bytes];
     }
@@ -2213,11 +2213,11 @@ private:
     return Constant;
   }
 
-  Ref LoadUncachedZeroVector(uint8_t Size) {
+  Ref LoadUncachedZeroVector(IR::OpSize Size) {
     return _LoadNamedVectorConstant(Size, IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
   }
 
-  Ref LoadZeroVector(uint8_t Size) {
+  Ref LoadZeroVector(IR::OpSize Size) {
     return LoadAndCacheNamedVectorConstant(Size, IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
   }
 

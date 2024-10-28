@@ -254,7 +254,7 @@ void OpDispatchBuilder::VectorALUOp(OpcodeArgs, IROps IROp, size_t ElementSize) 
 }
 
 void OpDispatchBuilder::VectorXOROp(OpcodeArgs) {
-  const auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
 
   // Special case for vector xor with itself being the optimal way for x86 to zero vector registers.
   if (Op->Dest.IsGPR() && Op->Src[0].IsGPR() && Op->Dest.Data.GPR.GPR == Op->Src[0].Data.GPR.GPR) {
@@ -281,7 +281,7 @@ void OpDispatchBuilder::AVXVectorALUOp(OpcodeArgs, IROps IROp, size_t ElementSiz
 void OpDispatchBuilder::AVXVectorXOROp(OpcodeArgs) {
   // Special case for vector xor with itself being the optimal way for x86 to zero vector registers.
   if (Op->Src[0].IsGPR() && Op->Src[1].IsGPR() && Op->Src[0].Data.GPR.GPR == Op->Src[1].Data.GPR.GPR) {
-    const auto DstSize = GetDstSize(Op);
+    const auto DstSize = OpSizeFromDst(Op);
     const auto ZeroRegister = LoadZeroVector(DstSize);
     StoreResult(FPRClass, Op, ZeroRegister, OpSize::iInvalid);
     return;
@@ -1842,7 +1842,7 @@ void OpDispatchBuilder::PSRLDQ(OpcodeArgs) {
     return;
   }
 
-  const auto Size = GetDstSize(Op);
+  const auto Size = OpSizeFromDst(Op);
 
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Result = LoadZeroVector(Size);
@@ -1854,7 +1854,7 @@ void OpDispatchBuilder::PSRLDQ(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::VPSRLDQOp(OpcodeArgs) {
-  const auto DstSize = GetDstSize(Op);
+  const auto DstSize = OpSizeFromDst(Op);
   const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
   const uint64_t Shift = Op->Src[1].Literal();
 
@@ -1894,7 +1894,7 @@ void OpDispatchBuilder::PSLLDQ(OpcodeArgs) {
     return;
   }
 
-  const auto Size = GetDstSize(Op);
+  const auto Size = OpSizeFromDst(Op);
 
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Result = LoadZeroVector(Size);
@@ -1906,7 +1906,7 @@ void OpDispatchBuilder::PSLLDQ(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::VPSLLDQOp(OpcodeArgs) {
-  const auto DstSize = GetDstSize(Op);
+  const auto DstSize = OpSizeFromDst(Op);
   const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
   const uint64_t Shift = Op->Src[1].Literal();
 
@@ -2784,7 +2784,7 @@ void OpDispatchBuilder::DefaultX87State(OpcodeArgs) {
 
   // On top of resetting the flags to a default state, we also need to clear
   // all of the ST0-7/MM0-7 registers to zero.
-  Ref ZeroVector = LoadZeroVector(Core::CPUState::MM_REG_SIZE);
+  Ref ZeroVector = LoadZeroVector(OpSize::i64Bit);
   for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
     StoreContext(MM0Index + i, ZeroVector);
   }
@@ -2793,7 +2793,7 @@ void OpDispatchBuilder::DefaultX87State(OpcodeArgs) {
 void OpDispatchBuilder::DefaultSSEState() {
   const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
-  Ref ZeroVector = LoadZeroVector(Core::CPUState::XMM_SSE_REG_SIZE);
+  Ref ZeroVector = LoadZeroVector(OpSize::i128Bit);
   for (uint32_t i = 0; i < NumRegs; ++i) {
     StoreXMMRegister(i, ZeroVector);
   }
@@ -2812,8 +2812,8 @@ void OpDispatchBuilder::DefaultAVXState() {
 Ref OpDispatchBuilder::PALIGNROpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
                                      const X86Tables::DecodedOperand& Imm, bool IsAVX) {
   // For the 256-bit case we handle it as pairs of 128-bit halves.
-  const auto DstSize = GetDstSize(Op);
-  const auto SanitizedDstSize = std::min<uint8_t>(DstSize, OpSize::i128Bit);
+  const auto DstSize = OpSizeFromDst(Op);
+  const auto SanitizedDstSize = std::min(DstSize, OpSize::i128Bit);
 
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto Index = Imm.Literal();
@@ -3998,7 +3998,7 @@ template void OpDispatchBuilder::VTESTPOp<OpSize::i32Bit>(OpcodeArgs);
 template void OpDispatchBuilder::VTESTPOp<OpSize::i64Bit>(OpcodeArgs);
 
 Ref OpDispatchBuilder::PHMINPOSUWOpImpl(OpcodeArgs) {
-  const auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
 
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
@@ -4041,7 +4041,7 @@ void OpDispatchBuilder::PHMINPOSUWOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
-Ref OpDispatchBuilder::DPPOpImpl(size_t DstSize, Ref Src1, Ref Src2, uint8_t Mask, size_t ElementSize) {
+Ref OpDispatchBuilder::DPPOpImpl(IR::OpSize DstSize, Ref Src1, Ref Src2, uint8_t Mask, size_t ElementSize) {
   const auto SizeMask = [ElementSize]() {
     if (ElementSize == OpSize::i32Bit) {
       return 0b1111;
@@ -4217,13 +4217,13 @@ Ref OpDispatchBuilder::DPPOpImpl(size_t DstSize, Ref Src1, Ref Src2, uint8_t Mas
   FEX_UNREACHABLE;
 }
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::DPPOp(OpcodeArgs) {
 
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
-  Ref Result = DPPOpImpl(GetDstSize(Op), Dest, Src, Op->Src[1].Literal(), ElementSize);
+  Ref Result = DPPOpImpl(OpSizeFromDst(Op), Dest, Src, Op->Src[1].Literal(), ElementSize);
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
@@ -4237,7 +4237,7 @@ Ref OpDispatchBuilder::VDPPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& 
   const uint8_t SrcMask = Mask >> 4;
   const uint8_t DstMask = Mask & 0xF;
 
-  const auto DstSize = GetDstSize(Op);
+  const auto DstSize = OpSizeFromDst(Op);
 
   Ref Src1V = LoadSource(FPRClass, Op, Src1, Op->Flags);
   Ref Src2V = LoadSource(FPRClass, Op, Src2, Op->Flags);
@@ -4280,7 +4280,7 @@ Ref OpDispatchBuilder::VDPPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& 
   return Result;
 }
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::VDPPOp(OpcodeArgs) {
   const auto DstSize = GetDstSize(Op);
 
@@ -4292,7 +4292,7 @@ void OpDispatchBuilder::VDPPOp(OpcodeArgs) {
     Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
     Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
 
-    Result = DPPOpImpl(GetDstSize(Op), Src1, Src2, Op->Src[2].Literal(), ElementSize);
+    Result = DPPOpImpl(OpSizeFromDst(Op), Src1, Src2, Op->Src[2].Literal(), ElementSize);
   }
 
   // We don't need to emit a _VMov to clear the upper lane, since DPPOpImpl uses a zero vector
@@ -4468,7 +4468,7 @@ void OpDispatchBuilder::VCVTPS2PHOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::VPERM2Op(OpcodeArgs) {
-  const auto DstSize = GetDstSize(Op);
+  const auto DstSize = OpSizeFromDst(Op);
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
 
@@ -4577,7 +4577,7 @@ void OpDispatchBuilder::VPERMDOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::VPERMQOp(OpcodeArgs) {
-  const auto DstSize = GetDstSize(Op);
+  const auto DstSize = OpSizeFromDst(Op);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   const auto Selector = Op->Src[1].Literal();
@@ -4613,7 +4613,7 @@ Ref OpDispatchBuilder::VBLENDOpImpl(uint32_t VecSize, uint32_t ElementSize, Ref 
 }
 
 void OpDispatchBuilder::VBLENDPDOp(OpcodeArgs) {
-  const auto DstSize = GetDstSize(Op);
+  const auto DstSize = OpSizeFromDst(Op);
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto Selector = Op->Src[2].Literal();
 
@@ -4638,7 +4638,7 @@ void OpDispatchBuilder::VBLENDPDOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::VPBLENDDOp(OpcodeArgs) {
-  const auto DstSize = GetDstSize(Op);
+  const auto DstSize = OpSizeFromDst(Op);
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto Selector = Op->Src[2].Literal();
 
@@ -4682,7 +4682,7 @@ void OpDispatchBuilder::VPBLENDDOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::VPBLENDWOp(OpcodeArgs) {
-  const auto DstSize = GetDstSize(Op);
+  const auto DstSize = OpSizeFromDst(Op);
   const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
   const auto Selector = Op->Src[2].Literal();
 
@@ -4714,7 +4714,7 @@ void OpDispatchBuilder::VPBLENDWOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::VZEROOp(OpcodeArgs) {
-  const auto DstSize = GetDstSize(Op);
+  const auto DstSize = OpSizeFromDst(Op);
   const auto IsVZEROALL = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
 
@@ -4739,7 +4739,7 @@ void OpDispatchBuilder::VZEROOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::VPERMILImmOp(OpcodeArgs, size_t ElementSize) {
-  const auto DstSize = GetDstSize(Op);
+  const auto DstSize = OpSizeFromDst(Op);
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto Selector = Op->Src[1].Literal() & 0xFF;
 
@@ -4884,7 +4884,7 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
       const auto ElementSize = 1U << (Control & 1);
       const auto NumElements = 16U >> (Control & 1);
 
-      Ref Result = LoadZeroVector(Core::CPUState::XMM_SSE_REG_SIZE);
+      Ref Result = LoadZeroVector(OpSize::i128Bit);
       for (uint32_t i = 0; i < NumElements; i++) {
         Ref SignBit = _Sbfe(OpSize::i64Bit, 1, i, IntermediateResult);
         Result = _VInsGPR(Core::CPUState::XMM_SSE_REG_SIZE, ElementSize, i, Result, SignBit);
@@ -4960,7 +4960,7 @@ void OpDispatchBuilder::VFMAImpl(OpcodeArgs, IROps IROp, bool Scalar, uint8_t Sr
 }
 
 void OpDispatchBuilder::VFMAddSubImpl(OpcodeArgs, bool AddSub, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx) {
-  const auto Size = GetDstSize(Op);
+  const auto Size = OpSizeFromDst(Op);
   const auto Is256Bit = Size == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const OpSize ElementSize = Op->Flags & X86Tables::DecodeFlags::FLAG_OPTION_AVX_W ? OpSize::i64Bit : OpSize::i32Bit;
