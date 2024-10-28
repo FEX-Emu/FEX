@@ -2057,7 +2057,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize << 1)"
       },
-      "FPR = VUXTL2 u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VUXTL2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": ["Zero extends elements from the source element size to the next size up",
                  "Source elements come from the upper half of the register"
                 ],
