@@ -430,10 +430,10 @@ public:
   void MOVHPDOp(OpcodeArgs);
   void MOVSDOp(OpcodeArgs);
   void MOVSSOp(OpcodeArgs);
-  void VectorALUOp(OpcodeArgs, IROps IROp, size_t ElementSize);
+  void VectorALUOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
   void VectorXOROp(OpcodeArgs);
 
-  void VectorALUROp(OpcodeArgs, IROps IROp, size_t ElementSize);
+  void VectorALUROp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
   void VectorUnaryOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
   template<FEXCore::IR::IROps IROp, IR::OpSize ElementSize>
   void VectorUnaryDuplicateOp(OpcodeArgs);
@@ -935,7 +935,7 @@ public:
                                      MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
   void InstallAVX128Handlers();
   void AVX128_VMOVScalarImpl(OpcodeArgs, IR::OpSize ElementSize);
-  void AVX128_VectorALU(OpcodeArgs, IROps IROp, size_t ElementSize);
+  void AVX128_VectorALU(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
   void AVX128_VectorUnary(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
   void AVX128_VectorUnaryImpl(OpcodeArgs, size_t SrcSize, size_t ElementSize, std::function<Ref(size_t ElementSize, Ref Src)> Helper);
   void AVX128_VectorBinaryImpl(OpcodeArgs, size_t SrcSize, IR::OpSize ElementSize,
@@ -1358,7 +1358,7 @@ private:
 
   Ref ADDSUBPOpImpl(OpSize Size, size_t ElementSize, Ref Src1, Ref Src2);
 
-  void AVXVectorALUOp(OpcodeArgs, IROps IROp, size_t ElementSize);
+  void AVXVectorALUOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
   void AVXVectorUnaryOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
 
   void AVXVectorVariableBlend(OpcodeArgs, IR::OpSize ElementSize);

@@ -16,30 +16,30 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   {0x8E, 1, &OpDispatchBuilder::PFPNACCOp},
 
   {0x90, 1, &OpDispatchBuilder::VPFCMPOp<1>},
-  {0x94, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMIN, 4>},
+  {0x94, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMIN, OpSize::i32Bit>},
   {0x96, 1, &OpDispatchBuilder::VectorUnaryDuplicateOp<IR::OP_VFRECP, OpSize::i32Bit>},
   {0x97, 1, &OpDispatchBuilder::VectorUnaryDuplicateOp<IR::OP_VFRSQRT, OpSize::i32Bit>},
 
-  {0x9A, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFSUB, 4>},
-  {0x9E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADD, 4>},
+  {0x9A, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFSUB, OpSize::i32Bit>},
+  {0x9E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADD, OpSize::i32Bit>},
 
   {0xA0, 1, &OpDispatchBuilder::VPFCMPOp<2>},
-  {0xA4, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMAX, 4>},
+  {0xA4, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMAX, OpSize::i32Bit>},
   // Can be treated as a move
   {0xA6, 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
   {0xA7, 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
 
-  {0xAA, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUROp, IR::OP_VFSUB, 4>},
-  {0xAE, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADDP, 4>},
+  {0xAA, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUROp, IR::OP_VFSUB, OpSize::i32Bit>},
+  {0xAE, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADDP, OpSize::i32Bit>},
 
   {0xB0, 1, &OpDispatchBuilder::VPFCMPOp<0>},
-  {0xB4, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMUL, 4>},
+  {0xB4, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMUL, OpSize::i32Bit>},
   // Can be treated as a move
   {0xB6, 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
   {0xB7, 1, &OpDispatchBuilder::PMULHRWOp},
 
   {0xBB, 1, &OpDispatchBuilder::PSWAPDOp},
-  {0xBF, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VURAVG, 1>},
+  {0xBF, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VURAVG, OpSize::i8Bit>},
 };
 
 } // namespace FEXCore::IR

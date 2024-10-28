@@ -243,8 +243,8 @@ void OpDispatchBuilder::VMOVSSOp(OpcodeArgs) {
   VMOVScalarOpImpl(Op, OpSize::i32Bit);
 }
 
-void OpDispatchBuilder::VectorALUOp(OpcodeArgs, IROps IROp, size_t ElementSize) {
-  const auto Size = GetSrcSize(Op);
+void OpDispatchBuilder::VectorALUOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize) {
+  const auto Size = OpSizeFromSrc(Op);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
 
@@ -267,8 +267,8 @@ void OpDispatchBuilder::VectorXOROp(OpcodeArgs) {
   VectorALUOp(Op, OP_VXOR, Size);
 }
 
-void OpDispatchBuilder::AVXVectorALUOp(OpcodeArgs, IROps IROp, size_t ElementSize) {
-  const auto Size = GetSrcSize(Op);
+void OpDispatchBuilder::AVXVectorALUOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize) {
+  const auto Size = OpSizeFromSrc(Op);
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
@@ -291,8 +291,8 @@ void OpDispatchBuilder::AVXVectorXOROp(OpcodeArgs) {
   AVXVectorALUOp(Op, OP_VXOR, OpSize::i128Bit);
 }
 
-void OpDispatchBuilder::VectorALUROp(OpcodeArgs, IROps IROp, size_t ElementSize) {
-  const auto Size = GetSrcSize(Op);
+void OpDispatchBuilder::VectorALUROp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize) {
+  const auto Size = OpSizeFromSrc(Op);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
 
@@ -3129,7 +3129,7 @@ void OpDispatchBuilder::PMULHRWOp(OpcodeArgs) {
   // Load 0x0000_8000 in to each 32-bit element.
   Ref VConstant = _VectorImm(OpSize::i128Bit, OpSize::i32Bit, 0x80, 8);
 
-  Res = _VAdd(Size * 2, OpSize::i32Bit, Res, VConstant);
+  Res = _VAdd(IR::MultiplyOpSize(Size, 2), OpSize::i32Bit, Res, VConstant);
 
   // Now shift and narrow to convert 32-bit values to 16bit, storing the top 16bits
   Res = _VUShrNI(IR::MultiplyOpSize(Size, 2), OpSize::i32Bit, Res, 16);
@@ -3317,7 +3317,7 @@ Ref OpDispatchBuilder::PMULHRSWOpImpl(OpSize Size, Ref Src1, Ref Src2) {
     Res = _VSMull(Size * 2, OpSize::i16Bit, Src1, Src2);
     Res = _VSShrI(IR::MultiplyOpSize(Size, 2), OpSize::i32Bit, Res, 14);
     auto OneVector = _VectorImm(IR::MultiplyOpSize(Size, 2), OpSize::i32Bit, 1);
-    Res = _VAdd(Size * 2, OpSize::i32Bit, Res, OneVector);
+    Res = _VAdd(IR::MultiplyOpSize(Size, 2), OpSize::i32Bit, Res, OneVector);
     return _VUShrNI(IR::MultiplyOpSize(Size, 2), OpSize::i32Bit, Res, 1);
   } else {
     // 128-bit and 256-bit are less efficient
