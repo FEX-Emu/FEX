@@ -4934,7 +4934,7 @@ void OpDispatchBuilder::VPCMPISTRMOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::VFMAImpl(OpcodeArgs, IROps IROp, bool Scalar, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx) {
-  const auto Size = GetDstSize(Op);
+  const auto Size = OpSizeFromDst(Op);
   const auto Is256Bit = Size == Core::CPUState::XMM_AVX_REG_SIZE;
 
   const OpSize ElementSize = Op->Flags & X86Tables::DecodeFlags::FLAG_OPTION_AVX_W ? OpSize::i64Bit : OpSize::i32Bit;
