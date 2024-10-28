@@ -590,7 +590,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "VStoreVectorMasked u8:#RegisterSize, u8:#ElementSize, FPR:$Mask, FPR:$Data, GPR:$Addr, GPR:$Offset, MemOffsetType:$OffsetType, u8:$OffsetScale": {
+      "VStoreVectorMasked OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Mask, FPR:$Data, GPR:$Addr, GPR:$Offset, MemOffsetType:$OffsetType, u8:$OffsetScale": {
         "Desc": ["Does a masked store similar to VPMASKMOV/VMASKMOV where the upper bit of each element",
                  "determines whether or not that element will be stored to memory"],
         "HasSideEffects": true,
