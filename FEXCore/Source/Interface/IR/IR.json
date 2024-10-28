@@ -2995,7 +2995,7 @@
         "DestSize": "16",
         "JITDispatch": false
       },
-      "FPR = F80CVTToInt GPR:$Src, u8:$SrcSize": {
+      "FPR = F80CVTToInt GPR:$Src, OpSize:$SrcSize": {
         "DestSize": "16",
         "JITDispatch": false
       },
