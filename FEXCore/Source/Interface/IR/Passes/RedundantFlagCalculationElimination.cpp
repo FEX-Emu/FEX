@@ -534,7 +534,7 @@ void DeadFlagCalculationEliminination::FoldBranch(IREmitter* IREmit, IRListView&
     IREmit->ReplaceNodeArgument(CodeNode, 0, CurrentIR.GetNode(Prev->Args[0]));
     IREmit->ReplaceNodeArgument(CodeNode, 1, CurrentIR.GetNode(Prev->Args[1]));
     Op->FromNZCV = false;
-    Op->CompareSize = Prev->Size;
+    Op->CompareSize = IR::SizeToOpSize(Prev->Size);
   } else {
     return;
   }

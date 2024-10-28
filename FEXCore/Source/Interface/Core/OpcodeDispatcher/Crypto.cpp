@@ -43,7 +43,7 @@ void OpDispatchBuilder::SHA1NEXTEOp(OpcodeArgs) {
   auto Tmp = _VAdd(OpSize::i128Bit, OpSize::i32Bit, Src, RotatedNode);
   auto Result = _VInsElement(OpSize::i128Bit, OpSize::i32Bit, 3, 3, Src, Tmp);
 
-  StoreResult(FPRClass, Op, Result, -1);
+  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::SHA1MSG1Op(OpcodeArgs) {
@@ -55,7 +55,7 @@ void OpDispatchBuilder::SHA1MSG1Op(OpcodeArgs) {
   // [W0, W1, W2, W3] ^ [W2, W3, W4, W5]
   Ref Result = _VXor(OpSize::i128Bit, OpSize::i8Bit, Dest, NewVec);
 
-  StoreResult(FPRClass, Op, Result, -1);
+  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::SHA1MSG2Op(OpcodeArgs) {
@@ -86,7 +86,7 @@ void OpDispatchBuilder::SHA1MSG2Op(OpcodeArgs) {
 
   auto Result = _VInsElement(OpSize::i128Bit, OpSize::i32Bit, 0, 0, RotatedXor1, RotatedXorLower);
 
-  StoreResult(FPRClass, Op, Result, -1);
+  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
@@ -147,7 +147,7 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
   };
   const auto Round1To3 = [&](Ref A, Ref B, Ref C, Ref D, Ref E, Ref Src, unsigned W_idx) -> RoundResult {
     // Kill W and E at the beginning
-    auto W = _VExtractToGPR(OpSize::i128Bit, 4, Src, W_idx);
+    auto W = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Src, W_idx);
     auto Q = _Add(OpSize::i32Bit, W, E);
 
     auto ANext =
@@ -170,7 +170,7 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
   auto Dest1 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 1, Dest2, std::get<2>(Final));
   auto Dest0 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 0, Dest1, std::get<3>(Final));
 
-  StoreResult(FPRClass, Op, Dest0, -1);
+  StoreResult(FPRClass, Op, Dest0, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::SHA256MSG1Op(OpcodeArgs) {
@@ -204,7 +204,7 @@ void OpDispatchBuilder::SHA256MSG1Op(OpcodeArgs) {
     Result = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 0, D1, Sig0);
   }
 
-  StoreResult(FPRClass, Op, Result, -1);
+  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::SHA256MSG2Op(OpcodeArgs) {
@@ -228,7 +228,7 @@ void OpDispatchBuilder::SHA256MSG2Op(OpcodeArgs) {
   auto D1 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 1, D2, W17);
   auto D0 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 0, D1, W16);
 
-  StoreResult(FPRClass, Op, D0, -1);
+  StoreResult(FPRClass, Op, D0, OpSize::iInvalid);
 }
 
 Ref OpDispatchBuilder::BitwiseAtLeastTwo(Ref A, Ref B, Ref C) {
@@ -298,24 +298,24 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
   auto Res1 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 1, Res2, E2);
   auto Res0 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 0, Res1, E1);
 
-  StoreResult(FPRClass, Op, Res0, -1);
+  StoreResult(FPRClass, Op, Res0, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::AESImcOp(OpcodeArgs) {
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Result = _VAESImc(Src);
-  StoreResult(FPRClass, Op, Result, -1);
+  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::AESEncOp(OpcodeArgs) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Result = _VAESEnc(OpSize::i128Bit, Dest, Src, LoadZeroVector(OpSize::i128Bit));
-  StoreResult(FPRClass, Op, Result, -1);
+  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::VAESEncOp(OpcodeArgs) {
-  const auto DstSize = GetDstSize(Op);
+  const auto DstSize = OpSizeFromDst(Op);
   [[maybe_unused]] const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
   // TODO: Handle 256-bit VAESENC.
@@ -325,18 +325,18 @@ void OpDispatchBuilder::VAESEncOp(OpcodeArgs) {
   Ref Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
   Ref Result = _VAESEnc(DstSize, State, Key, LoadZeroVector(DstSize));
 
-  StoreResult(FPRClass, Op, Result, -1);
+  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::AESEncLastOp(OpcodeArgs) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Result = _VAESEncLast(OpSize::i128Bit, Dest, Src, LoadZeroVector(OpSize::i128Bit));
-  StoreResult(FPRClass, Op, Result, -1);
+  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::VAESEncLastOp(OpcodeArgs) {
-  const auto DstSize = GetDstSize(Op);
+  const auto DstSize = OpSizeFromDst(Op);
   [[maybe_unused]] const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
   // TODO: Handle 256-bit VAESENCLAST.
@@ -346,18 +346,18 @@ void OpDispatchBuilder::VAESEncLastOp(OpcodeArgs) {
   Ref Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
   Ref Result = _VAESEncLast(DstSize, State, Key, LoadZeroVector(DstSize));
 
-  StoreResult(FPRClass, Op, Result, -1);
+  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::AESDecOp(OpcodeArgs) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Result = _VAESDec(OpSize::i128Bit, Dest, Src, LoadZeroVector(OpSize::i128Bit));
-  StoreResult(FPRClass, Op, Result, -1);
+  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::VAESDecOp(OpcodeArgs) {
-  const auto DstSize = GetDstSize(Op);
+  const auto DstSize = OpSizeFromDst(Op);
   [[maybe_unused]] const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
   // TODO: Handle 256-bit VAESDEC.
@@ -367,18 +367,18 @@ void OpDispatchBuilder::VAESDecOp(OpcodeArgs) {
   Ref Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
   Ref Result = _VAESDec(DstSize, State, Key, LoadZeroVector(DstSize));
 
-  StoreResult(FPRClass, Op, Result, -1);
+  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::AESDecLastOp(OpcodeArgs) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Result = _VAESDecLast(OpSize::i128Bit, Dest, Src, LoadZeroVector(OpSize::i128Bit));
-  StoreResult(FPRClass, Op, Result, -1);
+  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::VAESDecLastOp(OpcodeArgs) {
-  const auto DstSize = GetDstSize(Op);
+  const auto DstSize = OpSizeFromDst(Op);
   [[maybe_unused]] const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
   // TODO: Handle 256-bit VAESDECLAST.
@@ -388,7 +388,7 @@ void OpDispatchBuilder::VAESDecLastOp(OpcodeArgs) {
   Ref Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
   Ref Result = _VAESDecLast(DstSize, State, Key, LoadZeroVector(DstSize));
 
-  StoreResult(FPRClass, Op, Result, -1);
+  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
 Ref OpDispatchBuilder::AESKeyGenAssistImpl(OpcodeArgs) {
@@ -401,7 +401,7 @@ Ref OpDispatchBuilder::AESKeyGenAssistImpl(OpcodeArgs) {
 
 void OpDispatchBuilder::AESKeyGenAssist(OpcodeArgs) {
   Ref Result = AESKeyGenAssistImpl(Op);
-  StoreResult(FPRClass, Op, Result, -1);
+  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::PCLMULQDQOp(OpcodeArgs) {
@@ -410,18 +410,18 @@ void OpDispatchBuilder::PCLMULQDQOp(OpcodeArgs) {
   const auto Selector = static_cast<uint8_t>(Op->Src[1].Literal());
 
   auto Res = _PCLMUL(OpSize::i128Bit, Dest, Src, Selector & 0b1'0001);
-  StoreResult(FPRClass, Op, Res, -1);
+  StoreResult(FPRClass, Op, Res, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::VPCLMULQDQOp(OpcodeArgs) {
-  const auto DstSize = GetDstSize(Op);
+  const auto DstSize = OpSizeFromDst(Op);
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
   const auto Selector = static_cast<uint8_t>(Op->Src[2].Literal());
 
   Ref Res = _PCLMUL(DstSize, Src1, Src2, Selector & 0b1'0001);
-  StoreResult(FPRClass, Op, Res, -1);
+  StoreResult(FPRClass, Op, Res, OpSize::iInvalid);
 }
 
 } // namespace FEXCore::IR

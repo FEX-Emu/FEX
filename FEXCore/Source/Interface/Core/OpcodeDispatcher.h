@@ -47,8 +47,8 @@ enum class BTAction {
 };
 
 struct LoadSourceOptions {
-  // Alignment of the load in bytes. -1 signifies unaligned
-  int8_t Align = -1;
+  // Alignment of the load in bytes. iInvalid signifies opsize aligned.
+  IR::OpSize Align = OpSize::iInvalid;
 
   // Whether or not to load the data if a memory access occurs.
   // If set to false, then the address that would have been loaded from
@@ -136,8 +136,8 @@ public:
     FlushRegisterCache();
     return _Jump(_TargetBlock);
   }
-  IRPair<IROp_CondJump>
-  CondJump(Ref _Cmp1, Ref _Cmp2, Ref _TrueBlock, Ref _FalseBlock, CondClassType _Cond = {COND_NEQ}, uint8_t _CompareSize = 0) {
+  IRPair<IROp_CondJump> CondJump(Ref _Cmp1, Ref _Cmp2, Ref _TrueBlock, Ref _FalseBlock, CondClassType _Cond = {COND_NEQ},
+                                 IR::OpSize _CompareSize = OpSize::iInvalid) {
     FlushRegisterCache();
     return _CondJump(_Cmp1, _Cmp2, _TrueBlock, _FalseBlock, _Cond, _CompareSize);
   }
@@ -151,12 +151,12 @@ public:
   }
   IRPair<IROp_CondJump> CondJumpNZCV(CondClassType Cond) {
     FlushRegisterCache();
-    return _CondJump(InvalidNode, InvalidNode, InvalidNode, InvalidNode, Cond, 0, true);
+    return _CondJump(InvalidNode, InvalidNode, InvalidNode, InvalidNode, Cond, OpSize::iInvalid, true);
   }
   IRPair<IROp_CondJump> CondJumpBit(Ref Src, unsigned Bit, bool Set) {
     FlushRegisterCache();
     auto InlineConst = _InlineConstant(Bit);
-    return _CondJump(Src, InlineConst, InvalidNode, InvalidNode, {Set ? COND_TSTNZ : COND_TSTZ}, 0, false);
+    return _CondJump(Src, InlineConst, InvalidNode, InvalidNode, {Set ? COND_TSTNZ : COND_TSTZ}, OpSize::iInvalid, false);
   }
   IRPair<IROp_ExitFunction> ExitFunction(Ref NewRIP) {
     FlushRegisterCache();
@@ -430,63 +430,63 @@ public:
   void MOVHPDOp(OpcodeArgs);
   void MOVSDOp(OpcodeArgs);
   void MOVSSOp(OpcodeArgs);
-  void VectorALUOp(OpcodeArgs, IROps IROp, size_t ElementSize);
+  void VectorALUOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
   void VectorXOROp(OpcodeArgs);
 
-  void VectorALUROp(OpcodeArgs, IROps IROp, size_t ElementSize);
-  void VectorUnaryOp(OpcodeArgs, IROps IROp, size_t ElementSize);
-  template<FEXCore::IR::IROps IROp, size_t ElementSize>
+  void VectorALUROp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
+  void VectorUnaryOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
+  template<FEXCore::IR::IROps IROp, IR::OpSize ElementSize>
   void VectorUnaryDuplicateOp(OpcodeArgs);
 
   void MOVQOp(OpcodeArgs, VectorOpType VectorType);
   void MOVQMMXOp(OpcodeArgs);
-  void MOVMSKOp(OpcodeArgs, size_t ElementSize);
+  void MOVMSKOp(OpcodeArgs, IR::OpSize ElementSize);
   void MOVMSKOpOne(OpcodeArgs);
-  void PUNPCKLOp(OpcodeArgs, size_t ElementSize);
-  void PUNPCKHOp(OpcodeArgs, size_t ElementSize);
+  void PUNPCKLOp(OpcodeArgs, IR::OpSize ElementSize);
+  void PUNPCKHOp(OpcodeArgs, IR::OpSize ElementSize);
   void PSHUFBOp(OpcodeArgs);
-  Ref PShufWLane(size_t Size, FEXCore::IR::IndexNamedVectorConstant IndexConstant, bool LowLane, Ref IncomingLane, uint8_t Shuffle);
+  Ref PShufWLane(IR::OpSize Size, FEXCore::IR::IndexNamedVectorConstant IndexConstant, bool LowLane, Ref IncomingLane, uint8_t Shuffle);
   void PSHUFWOp(OpcodeArgs, bool Low);
   void PSHUFW8ByteOp(OpcodeArgs);
   void PSHUFDOp(OpcodeArgs);
-  void PSRLDOp(OpcodeArgs, size_t ElementSize);
-  void PSRLI(OpcodeArgs, size_t ElementSize);
-  void PSLLI(OpcodeArgs, size_t ElementSize);
-  void PSLL(OpcodeArgs, size_t ElementSize);
-  void PSRAOp(OpcodeArgs, size_t ElementSize);
+  void PSRLDOp(OpcodeArgs, IR::OpSize ElementSize);
+  void PSRLI(OpcodeArgs, IR::OpSize ElementSize);
+  void PSLLI(OpcodeArgs, IR::OpSize ElementSize);
+  void PSLL(OpcodeArgs, IR::OpSize ElementSize);
+  void PSRAOp(OpcodeArgs, IR::OpSize ElementSize);
   void PSRLDQ(OpcodeArgs);
   void PSLLDQ(OpcodeArgs);
-  void PSRAIOp(OpcodeArgs, size_t ElementSize);
+  void PSRAIOp(OpcodeArgs, IR::OpSize ElementSize);
   void MOVDDUPOp(OpcodeArgs);
-  template<size_t DstElementSize>
+  template<IR::OpSize DstElementSize>
   void CVTGPR_To_FPR(OpcodeArgs);
-  template<size_t SrcElementSize, bool HostRoundingMode>
+  template<IR::OpSize SrcElementSize, bool HostRoundingMode>
   void CVTFPR_To_GPR(OpcodeArgs);
-  template<size_t SrcElementSize, bool Widen>
+  template<IR::OpSize SrcElementSize, bool Widen>
   void Vector_CVT_Int_To_Float(OpcodeArgs);
-  template<size_t DstElementSize, size_t SrcElementSize>
+  template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
   void Scalar_CVT_Float_To_Float(OpcodeArgs);
-  void Vector_CVT_Float_To_Float(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize, bool IsAVX);
-  template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
+  void Vector_CVT_Float_To_Float(OpcodeArgs, IR::OpSize DstElementSize, IR::OpSize SrcElementSize, bool IsAVX);
+  template<IR::OpSize SrcElementSize, bool Narrow, bool HostRoundingMode>
   void Vector_CVT_Float_To_Int(OpcodeArgs);
   void MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs);
-  template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
+  template<IR::OpSize SrcElementSize, bool Narrow, bool HostRoundingMode>
   void XMM_To_MMX_Vector_CVT_Float_To_Int(OpcodeArgs);
   void MASKMOVOp(OpcodeArgs);
   void MOVBetweenGPR_FPR(OpcodeArgs, VectorOpType VectorType);
   void TZCNT(OpcodeArgs);
   void LZCNT(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void VFCMPOp(OpcodeArgs);
-  void SHUFOp(OpcodeArgs, size_t ElementSize);
-  template<size_t ElementSize>
+  void SHUFOp(OpcodeArgs, IR::OpSize ElementSize);
+  template<IR::OpSize ElementSize>
   void PINSROp(OpcodeArgs);
   void InsertPSOp(OpcodeArgs);
-  void PExtrOp(OpcodeArgs, size_t ElementSize);
+  void PExtrOp(OpcodeArgs, IR::OpSize ElementSize);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void PSIGN(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void VPSIGN(OpcodeArgs);
 
   // BMI1 Ops
@@ -510,58 +510,58 @@ public:
   // AVX Ops
   void AVXVectorXOROp(OpcodeArgs);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVXVectorRound(OpcodeArgs);
 
-  template<size_t DstElementSize, size_t SrcElementSize>
+  template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
   void AVXScalar_CVT_Float_To_Float(OpcodeArgs);
 
-  template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
+  template<IR::OpSize SrcElementSize, bool Narrow, bool HostRoundingMode>
   void AVXVector_CVT_Float_To_Int(OpcodeArgs);
 
-  template<size_t SrcElementSize, bool Widen>
+  template<IR::OpSize SrcElementSize, bool Widen>
   void AVXVector_CVT_Int_To_Float(OpcodeArgs);
 
-  template<FEXCore::IR::IROps IROp, size_t ElementSize>
+  template<FEXCore::IR::IROps IROp, IR::OpSize ElementSize>
   void VectorScalarInsertALUOp(OpcodeArgs);
-  template<FEXCore::IR::IROps IROp, size_t ElementSize>
+  template<FEXCore::IR::IROps IROp, IR::OpSize ElementSize>
   void AVXVectorScalarInsertALUOp(OpcodeArgs);
 
-  template<FEXCore::IR::IROps IROp, size_t ElementSize>
+  template<FEXCore::IR::IROps IROp, IR::OpSize ElementSize>
   void VectorScalarUnaryInsertALUOp(OpcodeArgs);
-  template<FEXCore::IR::IROps IROp, size_t ElementSize>
+  template<FEXCore::IR::IROps IROp, IR::OpSize ElementSize>
   void AVXVectorScalarUnaryInsertALUOp(OpcodeArgs);
 
   void InsertMMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs);
-  template<size_t DstElementSize>
+  template<IR::OpSize DstElementSize>
   void InsertCVTGPR_To_FPR(OpcodeArgs);
-  template<size_t DstElementSize>
+  template<IR::OpSize DstElementSize>
   void AVXInsertCVTGPR_To_FPR(OpcodeArgs);
 
-  template<size_t DstElementSize, size_t SrcElementSize>
+  template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
   void InsertScalar_CVT_Float_To_Float(OpcodeArgs);
-  template<size_t DstElementSize, size_t SrcElementSize>
+  template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
   void AVXInsertScalar_CVT_Float_To_Float(OpcodeArgs);
 
   RoundType TranslateRoundType(uint8_t Mode);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void InsertScalarRound(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVXInsertScalarRound(OpcodeArgs);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void InsertScalarFCMPOp(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVXInsertScalarFCMPOp(OpcodeArgs);
 
-  template<size_t DstElementSize>
+  template<IR::OpSize DstElementSize>
   void AVXCVTGPR_To_FPR(OpcodeArgs);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVXVFCMPOp(OpcodeArgs);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void VADDSUBPOp(OpcodeArgs);
 
   void VAESDecOp(OpcodeArgs);
@@ -571,26 +571,26 @@ public:
 
   void VANDNOp(OpcodeArgs);
 
-  Ref VBLENDOpImpl(uint32_t VecSize, uint32_t ElementSize, Ref Src1, Ref Src2, Ref ZeroRegister, uint64_t Selector);
+  Ref VBLENDOpImpl(IR::OpSize VecSize, IR::OpSize ElementSize, Ref Src1, Ref Src2, Ref ZeroRegister, uint64_t Selector);
   void VBLENDPDOp(OpcodeArgs);
   void VPBLENDDOp(OpcodeArgs);
   void VPBLENDWOp(OpcodeArgs);
 
-  void VBROADCASTOp(OpcodeArgs, size_t ElementSize);
+  void VBROADCASTOp(OpcodeArgs, IR::OpSize ElementSize);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void VDPPOp(OpcodeArgs);
 
   void VEXTRACT128Op(OpcodeArgs);
 
-  template<IROps IROp, size_t ElementSize>
+  template<IROps IROp, IR::OpSize ElementSize>
   void VHADDPOp(OpcodeArgs);
-  void VHSUBPOp(OpcodeArgs, size_t ElementSize);
+  void VHSUBPOp(OpcodeArgs, IR::OpSize ElementSize);
 
   void VINSERTOp(OpcodeArgs);
   void VINSERTPSOp(OpcodeArgs);
 
-  template<size_t ElementSize, bool IsStore>
+  template<IR::OpSize ElementSize, bool IsStore>
   void VMASKMOVOp(OpcodeArgs);
 
   void VMOVHPOp(OpcodeArgs);
@@ -608,9 +608,9 @@ public:
 
   void VMPSADBWOp(OpcodeArgs);
 
-  void VPACKSSOp(OpcodeArgs, size_t ElementSize);
+  void VPACKSSOp(OpcodeArgs, IR::OpSize ElementSize);
 
-  void VPACKUSOp(OpcodeArgs, size_t ElementSize);
+  void VPACKUSOp(OpcodeArgs, IR::OpSize ElementSize);
 
   void VPALIGNROp(OpcodeArgs);
 
@@ -627,15 +627,15 @@ public:
   void VPERMDOp(OpcodeArgs);
   void VPERMQOp(OpcodeArgs);
 
-  void VPERMILImmOp(OpcodeArgs, size_t ElementSize);
+  void VPERMILImmOp(OpcodeArgs, IR::OpSize ElementSize);
 
-  Ref VPERMILRegOpImpl(OpSize DstSize, size_t ElementSize, Ref Src, Ref Indices);
-  template<size_t ElementSize>
+  Ref VPERMILRegOpImpl(OpSize DstSize, IR::OpSize ElementSize, Ref Src, Ref Indices);
+  template<IR::OpSize ElementSize>
   void VPERMILRegOp(OpcodeArgs);
 
   void VPHADDSWOp(OpcodeArgs);
 
-  void VPHSUBOp(OpcodeArgs, size_t ElementSize);
+  void VPHSUBOp(OpcodeArgs, IR::OpSize ElementSize);
   void VPHSUBSWOp(OpcodeArgs);
 
   void VPINSRBOp(OpcodeArgs);
@@ -653,39 +653,39 @@ public:
   template<bool Signed>
   void VPMULHWOp(OpcodeArgs);
 
-  template<size_t ElementSize, bool Signed>
+  template<IR::OpSize ElementSize, bool Signed>
   void VPMULLOp(OpcodeArgs);
 
   void VPSADBWOp(OpcodeArgs);
 
   void VPSHUFBOp(OpcodeArgs);
 
-  void VPSHUFWOp(OpcodeArgs, size_t ElementSize, bool Low);
+  void VPSHUFWOp(OpcodeArgs, IR::OpSize ElementSize, bool Low);
 
-  void VPSLLOp(OpcodeArgs, size_t ElementSize);
+  void VPSLLOp(OpcodeArgs, IR::OpSize ElementSize);
   void VPSLLDQOp(OpcodeArgs);
-  void VPSLLIOp(OpcodeArgs, size_t ElementSize);
+  void VPSLLIOp(OpcodeArgs, IR::OpSize ElementSize);
   void VPSLLVOp(OpcodeArgs);
 
-  void VPSRAOp(OpcodeArgs, size_t ElementSize);
+  void VPSRAOp(OpcodeArgs, IR::OpSize ElementSize);
 
-  void VPSRAIOp(OpcodeArgs, size_t ElementSize);
+  void VPSRAIOp(OpcodeArgs, IR::OpSize ElementSize);
 
   void VPSRAVDOp(OpcodeArgs);
   void VPSRLVOp(OpcodeArgs);
 
-  void VPSRLDOp(OpcodeArgs, size_t ElementSize);
+  void VPSRLDOp(OpcodeArgs, IR::OpSize ElementSize);
   void VPSRLDQOp(OpcodeArgs);
 
-  void VPUNPCKHOp(OpcodeArgs, size_t ElementSize);
+  void VPUNPCKHOp(OpcodeArgs, IR::OpSize ElementSize);
 
-  void VPUNPCKLOp(OpcodeArgs, size_t ElementSize);
+  void VPUNPCKLOp(OpcodeArgs, IR::OpSize ElementSize);
 
-  void VPSRLIOp(OpcodeArgs, size_t ElementSize);
+  void VPSRLIOp(OpcodeArgs, IR::OpSize ElementSize);
 
-  void VSHUFOp(OpcodeArgs, size_t ElementSize);
+  void VSHUFOp(OpcodeArgs, IR::OpSize ElementSize);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void VTESTPOp(OpcodeArgs);
 
   void VZEROOp(OpcodeArgs);
@@ -694,7 +694,7 @@ public:
   Ref ReconstructFSW_Helper(Ref T = nullptr);
   // Returns new x87 stack top from FSW.
   Ref ReconstructX87StateFromFSW_Helper(Ref FSW);
-  void FLD(OpcodeArgs, size_t Width);
+  void FLD(OpcodeArgs, IR::OpSize Width);
   void FLDFromStack(OpcodeArgs);
   void FLD_Const(OpcodeArgs, NamedVectorConstant Constant);
 
@@ -703,7 +703,7 @@ public:
 
   void FILD(OpcodeArgs);
 
-  void FST(OpcodeArgs, size_t Width);
+  void FST(OpcodeArgs, IR::OpSize Width);
   void FSTToStack(OpcodeArgs);
 
   void FIST(OpcodeArgs, bool Truncate);
@@ -717,10 +717,10 @@ public:
   };
 
   void X87OpHelper(OpcodeArgs, FEXCore::IR::IROps IROp, bool ZeroC2);
-  void FADD(OpcodeArgs, size_t Width, bool Integer, OpResult ResInST0);
-  void FMUL(OpcodeArgs, size_t Width, bool Integer, OpResult ResInST0);
-  void FDIV(OpcodeArgs, size_t Width, bool Integer, bool Reverse, OpResult ResInST0);
-  void FSUB(OpcodeArgs, size_t Width, bool Integer, bool Reverse, OpResult ResInST0);
+  void FADD(OpcodeArgs, IR::OpSize Width, bool Integer, OpResult ResInST0);
+  void FMUL(OpcodeArgs, IR::OpSize Width, bool Integer, OpResult ResInST0);
+  void FDIV(OpcodeArgs, IR::OpSize Width, bool Integer, bool Reverse, OpResult ResInST0);
+  void FSUB(OpcodeArgs, IR::OpSize Width, bool Integer, bool Reverse, OpResult ResInST0);
   void FTST(OpcodeArgs);
   void FNINIT(OpcodeArgs);
 
@@ -747,10 +747,10 @@ public:
     FLAGS_X87,
     FLAGS_RFLAGS,
   };
-  void FCOMI(OpcodeArgs, size_t Width, bool Integer, FCOMIFlags WhichFlags, bool PopTwice);
+  void FCOMI(OpcodeArgs, IR::OpSize Width, bool Integer, FCOMIFlags WhichFlags, bool PopTwice);
 
   // F64 X87 Ops
-  void FLDF64(OpcodeArgs, size_t Width);
+  void FLDF64(OpcodeArgs, IR::OpSize Width);
   void FLDF64_Const(OpcodeArgs, uint64_t Num);
 
   void FBLDF64(OpcodeArgs);
@@ -758,14 +758,14 @@ public:
 
   void FILDF64(OpcodeArgs);
 
-  void FSTF64(OpcodeArgs, size_t Width);
+  void FSTF64(OpcodeArgs, IR::OpSize Width);
 
   void FISTF64(OpcodeArgs, bool Truncate);
 
-  void FADDF64(OpcodeArgs, size_t Width, bool Integer, OpResult ResInST0);
-  void FMULF64(OpcodeArgs, size_t Width, bool Integer, OpResult ResInST0);
-  void FDIVF64(OpcodeArgs, size_t Width, bool Integer, bool Reverse, OpResult ResInST0);
-  void FSUBF64(OpcodeArgs, size_t Width, bool Integer, bool Reverse, OpResult ResInST0);
+  void FADDF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpResult ResInST0);
+  void FMULF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpResult ResInST0);
+  void FDIVF64(OpcodeArgs, IR::OpSize Width, bool Integer, bool Reverse, OpResult ResInST0);
+  void FSUBF64(OpcodeArgs, IR::OpSize Width, bool Integer, bool Reverse, OpResult ResInST0);
   void FCHSF64(OpcodeArgs);
   void FABSF64(OpcodeArgs);
   void FTSTF64(OpcodeArgs);
@@ -781,7 +781,7 @@ public:
   void X87FXTRACTF64(OpcodeArgs);
   void X87LDENVF64(OpcodeArgs);
 
-  void FCOMIF64(OpcodeArgs, size_t width, bool Integer, FCOMIFlags whichflags, bool poptwice);
+  void FCOMIF64(OpcodeArgs, IR::OpSize width, bool Integer, FCOMIFlags whichflags, bool poptwice);
 
   void FXSaveOp(OpcodeArgs);
   void FXRStoreOp(OpcodeArgs);
@@ -790,24 +790,24 @@ public:
   void XSaveOp(OpcodeArgs);
 
   void PAlignrOp(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void UCOMISxOp(OpcodeArgs);
   void LDMXCSR(OpcodeArgs);
   void STMXCSR(OpcodeArgs);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void PACKUSOp(OpcodeArgs);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void PACKSSOp(OpcodeArgs);
 
-  template<size_t ElementSize, bool Signed>
+  template<IR::OpSize ElementSize, bool Signed>
   void PMULLOp(OpcodeArgs);
 
   template<bool ToXMM>
   void MOVQ2DQ(OpcodeArgs);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void ADDSUBPOp(OpcodeArgs);
 
   void PFNACCOp(OpcodeArgs);
@@ -830,9 +830,9 @@ public:
   void PMULHRSW(OpcodeArgs);
 
   void MOVBEOp(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void HSUBP(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void PHSUB(OpcodeArgs);
 
   void PHADDS(OpcodeArgs);
@@ -883,21 +883,21 @@ public:
   template<OpSize AddrElementSize>
   void VPGATHER(OpcodeArgs);
 
-  template<size_t ElementSize, size_t DstElementSize, bool Signed>
+  template<IR::OpSize ElementSize, IR::OpSize DstElementSize, bool Signed>
   void ExtendVectorElements(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void VectorRound(OpcodeArgs);
 
-  Ref VectorBlend(OpSize Size, size_t ElementSize, Ref Src1, Ref Src2, uint8_t Selector);
+  Ref VectorBlend(OpSize Size, IR::OpSize ElementSize, Ref Src1, Ref Src2, uint8_t Selector);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void VectorBlend(OpcodeArgs);
 
-  void VectorVariableBlend(OpcodeArgs, size_t ElementSize);
+  void VectorVariableBlend(OpcodeArgs, IR::OpSize ElementSize);
   void PTestOpImpl(OpSize Size, Ref Dest, Ref Src);
   void PTestOp(OpcodeArgs);
   void PHMINPOSUWOp(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void DPPOp(OpcodeArgs);
 
   void MPSADBWOp(OpcodeArgs);
@@ -934,13 +934,14 @@ public:
   void AVX128_StoreResult_WithOpSize(FEXCore::X86Tables::DecodedOp Op, const FEXCore::X86Tables::DecodedOperand& Operand, const RefPair Src,
                                      MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
   void InstallAVX128Handlers();
-  void AVX128_VMOVScalarImpl(OpcodeArgs, size_t ElementSize);
-  void AVX128_VectorALU(OpcodeArgs, IROps IROp, size_t ElementSize);
-  void AVX128_VectorUnary(OpcodeArgs, IROps IROp, size_t ElementSize);
-  void AVX128_VectorUnaryImpl(OpcodeArgs, size_t SrcSize, size_t ElementSize, std::function<Ref(size_t ElementSize, Ref Src)> Helper);
-  void AVX128_VectorBinaryImpl(OpcodeArgs, size_t SrcSize, size_t ElementSize, std::function<Ref(size_t ElementSize, Ref Src1, Ref Src2)> Helper);
-  void AVX128_VectorShiftWideImpl(OpcodeArgs, size_t ElementSize, IROps IROp);
-  void AVX128_VectorShiftImmImpl(OpcodeArgs, size_t ElementSize, IROps IROp);
+  void AVX128_VMOVScalarImpl(OpcodeArgs, IR::OpSize ElementSize);
+  void AVX128_VectorALU(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
+  void AVX128_VectorUnary(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
+  void AVX128_VectorUnaryImpl(OpcodeArgs, IR::OpSize SrcSize, IR::OpSize ElementSize, std::function<Ref(IR::OpSize ElementSize, Ref Src)> Helper);
+  void AVX128_VectorBinaryImpl(OpcodeArgs, size_t SrcSize, IR::OpSize ElementSize,
+                               std::function<Ref(IR::OpSize ElementSize, Ref Src1, Ref Src2)> Helper);
+  void AVX128_VectorShiftWideImpl(OpcodeArgs, IR::OpSize ElementSize, IROps IROp);
+  void AVX128_VectorShiftImmImpl(OpcodeArgs, IR::OpSize ElementSize, IROps IROp);
   void AVX128_VectorTrinaryImpl(OpcodeArgs, size_t SrcSize, size_t ElementSize, Ref Src3,
                                 std::function<Ref(size_t ElementSize, Ref Src1, Ref Src2, Ref Src3)> Helper);
 
@@ -961,42 +962,42 @@ public:
   void AVX128_VMOVDDUP(OpcodeArgs);
   void AVX128_VMOVSLDUP(OpcodeArgs);
   void AVX128_VMOVSHDUP(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_VBROADCAST(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_VPUNPCKL(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_VPUNPCKH(OpcodeArgs);
   void AVX128_MOVVectorUnaligned(OpcodeArgs);
-  template<size_t DstElementSize>
+  template<IR::OpSize DstElementSize>
   void AVX128_InsertCVTGPR_To_FPR(OpcodeArgs);
-  template<size_t SrcElementSize, bool HostRoundingMode>
+  template<IR::OpSize SrcElementSize, bool HostRoundingMode>
   void AVX128_CVTFPR_To_GPR(OpcodeArgs);
   void AVX128_VANDN(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_VPACKSS(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_VPACKUS(OpcodeArgs);
-  Ref AVX128_PSIGNImpl(size_t ElementSize, Ref Src1, Ref Src2);
-  template<size_t ElementSize>
+  Ref AVX128_PSIGNImpl(IR::OpSize ElementSize, Ref Src1, Ref Src2);
+  template<IR::OpSize ElementSize>
   void AVX128_VPSIGN(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_UCOMISx(OpcodeArgs);
-  void AVX128_VectorScalarInsertALU(OpcodeArgs, FEXCore::IR::IROps IROp, size_t ElementSize);
-  Ref AVX128_VFCMPImpl(size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType);
-  template<size_t ElementSize>
+  void AVX128_VectorScalarInsertALU(OpcodeArgs, FEXCore::IR::IROps IROp, IR::OpSize ElementSize);
+  Ref AVX128_VFCMPImpl(IR::OpSize ElementSize, Ref Src1, Ref Src2, uint8_t CompType);
+  template<IR::OpSize ElementSize>
   void AVX128_VFCMP(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_InsertScalarFCMP(OpcodeArgs);
   void AVX128_MOVBetweenGPR_FPR(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_PExtr(OpcodeArgs);
-  void AVX128_ExtendVectorElements(OpcodeArgs, size_t ElementSize, size_t DstElementSize, bool Signed);
+  void AVX128_ExtendVectorElements(OpcodeArgs, IR::OpSize ElementSize, IR::OpSize DstElementSize, bool Signed);
   template<size_t ElementSize>
   void AVX128_MOVMSK(OpcodeArgs);
   void AVX128_MOVMSKB(OpcodeArgs);
-  void AVX128_PINSRImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
-                        const X86Tables::DecodedOperand& Imm);
+  void AVX128_PINSRImpl(OpcodeArgs, IR::OpSize ElementSize, const X86Tables::DecodedOperand& Src1Op,
+                        const X86Tables::DecodedOperand& Src2Op, const X86Tables::DecodedOperand& Imm);
   void AVX128_VPINSRB(OpcodeArgs);
   void AVX128_VPINSRW(OpcodeArgs);
   void AVX128_VPINSRDQ(OpcodeArgs);
@@ -1007,15 +1008,15 @@ public:
   void AVX128_VINSERTPS(OpcodeArgs);
 
   Ref AVX128_PHSUBImpl(Ref Src1, Ref Src2, size_t ElementSize);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_VPHSUB(OpcodeArgs);
 
   void AVX128_VPHSUBSW(OpcodeArgs);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_VADDSUBP(OpcodeArgs);
 
-  template<size_t ElementSize, bool Signed>
+  template<IR::OpSize ElementSize, bool Signed>
   void AVX128_VPMULL(OpcodeArgs);
 
   void AVX128_VPMULHRSW(OpcodeArgs);
@@ -1023,16 +1024,16 @@ public:
   template<bool Signed>
   void AVX128_VPMULHW(OpcodeArgs);
 
-  template<size_t DstElementSize, size_t SrcElementSize>
+  template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
   void AVX128_InsertScalar_CVT_Float_To_Float(OpcodeArgs);
 
-  template<size_t DstElementSize, size_t SrcElementSize>
+  template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
   void AVX128_Vector_CVT_Float_To_Float(OpcodeArgs);
 
-  template<size_t SrcElementSize, bool Narrow, bool HostRoundingMode>
+  template<IR::OpSize SrcElementSize, bool Narrow, bool HostRoundingMode>
   void AVX128_Vector_CVT_Float_To_Int(OpcodeArgs);
 
-  template<size_t SrcElementSize, bool Widen>
+  template<IR::OpSize SrcElementSize, bool Widen>
   void AVX128_Vector_CVT_Int_To_Float(OpcodeArgs);
 
   void AVX128_VEXTRACT128(OpcodeArgs);
@@ -1050,24 +1051,24 @@ public:
 
   void AVX128_PHMINPOSUW(OpcodeArgs);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_VectorRound(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_InsertScalarRound(OpcodeArgs);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_VDPP(OpcodeArgs);
   void AVX128_VPERMQ(OpcodeArgs);
 
   void AVX128_VPSHUFW(OpcodeArgs, bool Low);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_VSHUF(OpcodeArgs);
 
   template<size_t ElementSize>
   void AVX128_VPERMILImm(OpcodeArgs);
 
-  template<IROps IROp, size_t ElementSize>
+  template<IROps IROp, IR::OpSize ElementSize>
   void AVX128_VHADDP(OpcodeArgs);
 
   void AVX128_VPHADDSW(OpcodeArgs);
@@ -1075,10 +1076,10 @@ public:
   void AVX128_VPMADDUBSW(OpcodeArgs);
   void AVX128_VPMADDWD(OpcodeArgs);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_VBLEND(OpcodeArgs);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_VHSUBP(OpcodeArgs);
 
   void AVX128_VPSHUFB(OpcodeArgs);
@@ -1087,18 +1088,18 @@ public:
   void AVX128_VMPSADBW(OpcodeArgs);
   void AVX128_VPALIGNR(OpcodeArgs);
 
-  void AVX128_VMASKMOVImpl(OpcodeArgs, size_t ElementSize, size_t DstSize, bool IsStore, const X86Tables::DecodedOperand& MaskOp,
+  void AVX128_VMASKMOVImpl(OpcodeArgs, IR::OpSize ElementSize, IR::OpSize DstSize, bool IsStore, const X86Tables::DecodedOperand& MaskOp,
                            const X86Tables::DecodedOperand& DataOp);
 
   template<bool IsStore>
   void AVX128_VPMASKMOV(OpcodeArgs);
 
-  template<size_t ElementSize, bool IsStore>
+  template<IR::OpSize ElementSize, bool IsStore>
   void AVX128_VMASKMOV(OpcodeArgs);
 
   void AVX128_MASKMOV(OpcodeArgs);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_VectorVariableBlend(OpcodeArgs);
 
   void AVX128_SaveAVXState(Ref MemBase);
@@ -1106,11 +1107,11 @@ public:
   void AVX128_DefaultAVXState();
 
   void AVX128_VPERM2(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_VTESTP(OpcodeArgs);
   void AVX128_PTest(OpcodeArgs);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_VPERMILReg(OpcodeArgs);
 
   void AVX128_VPERMD(OpcodeArgs);
@@ -1134,7 +1135,7 @@ public:
 
   // AVX 256-bit operations
   void StoreResult_WithAVXInsert(VectorOpType Type, FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, Ref Value,
-                                 int8_t Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
+                                 IR::OpSize Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
     if (Op->Dest.IsGPR() && Op->Dest.Data.GPR.GPR >= X86State::REG_XMM_0 && Op->Dest.Data.GPR.GPR <= X86State::REG_XMM_15 &&
         GetGuestVectorLength() == Core::CPUState::XMM_AVX_REG_SIZE && Type == VectorOpType::SSE) {
       const auto gpr = Op->Dest.Data.GPR.GPR;
@@ -1188,7 +1189,7 @@ public:
 
     CalculateDeferredFlags();
 
-    const uint8_t GPRSize = CTX->GetGPRSize();
+    const auto GPRSize = CTX->GetGPROpSize();
     const auto VectorSize = GetGuestVectorLength();
 
     // Write backwards. This is a heuristic to improve coalescing, since we
@@ -1221,10 +1222,10 @@ public:
       } else if (Index >= FPR0Index && Index <= FPR15Index) {
         _StoreRegister(Value, Index - FPR0Index, FPRClass, VectorSize);
       } else if (Index == DFIndex) {
-        _StoreContext(1, GPRClass, Value, offsetof(Core::CPUState, flags[X86State::RFLAG_DF_RAW_LOC]));
+        _StoreContext(OpSize::i8Bit, GPRClass, Value, offsetof(Core::CPUState, flags[X86State::RFLAG_DF_RAW_LOC]));
       } else {
         bool Partial = RegCache.Partial & (1ull << Index);
-        unsigned Size = Partial ? 8 : CacheIndexToSize(Index);
+        auto Size = Partial ? OpSize::i64Bit : CacheIndexToOpSize(Index);
         uint64_t NextBit = (1ull << (Index - 1));
         uint32_t Offset = CacheIndexToContextOffset(Index);
         auto Class = CacheIndexClass(Index);
@@ -1243,7 +1244,7 @@ public:
           _StoreContext(Size, Class, Value, Offset);
           // If Partial and MMX register, then we need to store all 1s in bits 64-80
           if (Partial && Index >= MM0Index && Index <= MM7Index) {
-            _StoreContext(2, IR::GPRClass, _Constant(0xFFFF), Offset + 8);
+            _StoreContext(OpSize::i16Bit, IR::GPRClass, _Constant(0xFFFF), Offset + 8);
           }
         }
       }
@@ -1355,26 +1356,26 @@ private:
 
   // Opcode helpers for generalizing behavior across VEX and non-VEX variants.
 
-  Ref ADDSUBPOpImpl(OpSize Size, size_t ElementSize, Ref Src1, Ref Src2);
+  Ref ADDSUBPOpImpl(OpSize Size, IR::OpSize ElementSize, Ref Src1, Ref Src2);
 
-  void AVXVectorALUOp(OpcodeArgs, IROps IROp, size_t ElementSize);
-  void AVXVectorUnaryOp(OpcodeArgs, IROps IROp, size_t ElementSize);
+  void AVXVectorALUOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
+  void AVXVectorUnaryOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
 
-  void AVXVectorVariableBlend(OpcodeArgs, size_t ElementSize);
+  void AVXVectorVariableBlend(OpcodeArgs, IR::OpSize ElementSize);
 
   void AVXVariableShiftImpl(OpcodeArgs, IROps IROp);
 
   Ref AESKeyGenAssistImpl(OpcodeArgs);
 
-  Ref CVTGPR_To_FPRImpl(OpcodeArgs, size_t DstElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op);
+  Ref CVTGPR_To_FPRImpl(OpcodeArgs, IR::OpSize DstElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op);
 
-  Ref DPPOpImpl(size_t DstSize, Ref Src1, Ref Src2, uint8_t Mask, size_t ElementSize);
+  Ref DPPOpImpl(IR::OpSize DstSize, Ref Src1, Ref Src2, uint8_t Mask, IR::OpSize ElementSize);
 
   Ref VDPPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2, const X86Tables::DecodedOperand& Imm);
 
-  Ref ExtendVectorElementsImpl(OpcodeArgs, size_t ElementSize, size_t DstElementSize, bool Signed);
+  Ref ExtendVectorElementsImpl(OpcodeArgs, IR::OpSize ElementSize, IR::OpSize DstElementSize, bool Signed);
 
-  Ref HSUBPOpImpl(OpSize Size, size_t ElementSize, Ref Src1, Ref Src2);
+  Ref HSUBPOpImpl(OpSize Size, IR::OpSize ElementSize, Ref Src1, Ref Src2);
 
   Ref InsertPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
                      const X86Tables::DecodedOperand& Imm);
@@ -1390,51 +1391,51 @@ private:
 
   Ref PHMINPOSUWOpImpl(OpcodeArgs);
 
-  Ref PHSUBOpImpl(OpSize Size, Ref Src1, Ref Src2, size_t ElementSize);
+  Ref PHSUBOpImpl(OpSize Size, Ref Src1, Ref Src2, IR::OpSize ElementSize);
 
   Ref PHSUBSOpImpl(OpSize Size, Ref Src1, Ref Src2);
 
-  Ref PINSROpImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
+  Ref PINSROpImpl(OpcodeArgs, IR::OpSize ElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
                   const X86Tables::DecodedOperand& Imm);
 
-  Ref PMADDWDOpImpl(size_t Size, Ref Src1, Ref Src2);
+  Ref PMADDWDOpImpl(IR::OpSize Size, Ref Src1, Ref Src2);
 
-  Ref PMADDUBSWOpImpl(size_t Size, Ref Src1, Ref Src2);
+  Ref PMADDUBSWOpImpl(IR::OpSize Size, Ref Src1, Ref Src2);
 
   Ref PMULHRSWOpImpl(OpSize Size, Ref Src1, Ref Src2);
 
   Ref PMULHWOpImpl(OpcodeArgs, bool Signed, Ref Src1, Ref Src2);
 
-  Ref PMULLOpImpl(OpSize Size, size_t ElementSize, bool Signed, Ref Src1, Ref Src2);
+  Ref PMULLOpImpl(OpSize Size, IR::OpSize ElementSize, bool Signed, Ref Src1, Ref Src2);
 
-  Ref PSADBWOpImpl(size_t Size, Ref Src1, Ref Src2);
+  Ref PSADBWOpImpl(IR::OpSize Size, Ref Src1, Ref Src2);
 
-  Ref GeneratePSHUFBMask(uint8_t SrcSize);
-  Ref PSHUFBOpImpl(uint8_t SrcSize, Ref Src1, Ref Src2, Ref MaskVector);
+  Ref GeneratePSHUFBMask(IR::OpSize SrcSize);
+  Ref PSHUFBOpImpl(IR::OpSize SrcSize, Ref Src1, Ref Src2, Ref MaskVector);
 
-  Ref PSIGNImpl(OpcodeArgs, size_t ElementSize, Ref Src1, Ref Src2);
+  Ref PSIGNImpl(OpcodeArgs, IR::OpSize ElementSize, Ref Src1, Ref Src2);
 
-  Ref PSLLIImpl(OpcodeArgs, size_t ElementSize, Ref Src, uint64_t Shift);
+  Ref PSLLIImpl(OpcodeArgs, IR::OpSize ElementSize, Ref Src, uint64_t Shift);
 
-  Ref PSLLImpl(OpcodeArgs, size_t ElementSize, Ref Src, Ref ShiftVec);
+  Ref PSLLImpl(OpcodeArgs, IR::OpSize ElementSize, Ref Src, Ref ShiftVec);
 
-  Ref PSRAOpImpl(OpcodeArgs, size_t ElementSize, Ref Src, Ref ShiftVec);
+  Ref PSRAOpImpl(OpcodeArgs, IR::OpSize ElementSize, Ref Src, Ref ShiftVec);
 
-  Ref PSRLDOpImpl(OpcodeArgs, size_t ElementSize, Ref Src, Ref ShiftVec);
+  Ref PSRLDOpImpl(OpcodeArgs, IR::OpSize ElementSize, Ref Src, Ref ShiftVec);
 
-  Ref SHUFOpImpl(OpcodeArgs, size_t DstSize, size_t ElementSize, Ref Src1, Ref Src2, uint8_t Shuffle);
+  Ref SHUFOpImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize ElementSize, Ref Src1, Ref Src2, uint8_t Shuffle);
 
-  void VMASKMOVOpImpl(OpcodeArgs, size_t ElementSize, size_t DataSize, bool IsStore, const X86Tables::DecodedOperand& MaskOp,
+  void VMASKMOVOpImpl(OpcodeArgs, IR::OpSize ElementSize, IR::OpSize DataSize, bool IsStore, const X86Tables::DecodedOperand& MaskOp,
                       const X86Tables::DecodedOperand& DataOp);
 
-  void MOVScalarOpImpl(OpcodeArgs, size_t ElementSize);
-  void VMOVScalarOpImpl(OpcodeArgs, size_t ElementSize);
+  void MOVScalarOpImpl(OpcodeArgs, IR::OpSize ElementSize);
+  void VMOVScalarOpImpl(OpcodeArgs, IR::OpSize ElementSize);
 
-  Ref VFCMPOpImpl(OpSize Size, size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType);
+  Ref VFCMPOpImpl(OpSize Size, IR::OpSize ElementSize, Ref Src1, Ref Src2, uint8_t CompType);
 
-  void VTESTOpImpl(OpSize SrcSize, size_t ElementSize, Ref Src1, Ref Src2);
+  void VTESTOpImpl(OpSize SrcSize, IR::OpSize ElementSize, Ref Src1, Ref Src2);
 
-  void VectorUnaryDuplicateOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
+  void VectorUnaryDuplicateOpImpl(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
 
   // x86 ALU scalar operations operate in three different ways
   // - AVX512: Writemask shenanigans that we don't care about.
@@ -1446,30 +1447,30 @@ private:
   //   - Example 32bit ADDSS Dest, Src
   //   - Dest[31:0] = Dest[31:0] + Src[31:0]
   //   - Dest[{256,128}:32] = (Unmodified)
-  Ref VectorScalarInsertALUOpImpl(OpcodeArgs, IROps IROp, size_t DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
-                                  const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits);
+  Ref VectorScalarInsertALUOpImpl(OpcodeArgs, IROps IROp, IR::OpSize DstSize, IR::OpSize ElementSize,
+                                  const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits);
 
-  Ref VectorScalarUnaryInsertALUOpImpl(OpcodeArgs, IROps IROp, size_t DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
-                                       const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits);
+  Ref VectorScalarUnaryInsertALUOpImpl(OpcodeArgs, IROps IROp, IR::OpSize DstSize, IR::OpSize ElementSize,
+                                       const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits);
 
-  Ref InsertCVTGPR_To_FPRImpl(OpcodeArgs, size_t DstSize, size_t DstElementSize, const X86Tables::DecodedOperand& Src1Op,
+  Ref InsertCVTGPR_To_FPRImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize DstElementSize, const X86Tables::DecodedOperand& Src1Op,
                               const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits);
 
-  Ref InsertScalar_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstSize, size_t DstElementSize, size_t SrcElementSize,
+  Ref InsertScalar_CVT_Float_To_FloatImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize DstElementSize, IR::OpSize SrcElementSize,
                                           const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits);
-  Ref InsertScalarRoundImpl(OpcodeArgs, size_t DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
+  Ref InsertScalarRoundImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize ElementSize, const X86Tables::DecodedOperand& Src1Op,
                             const X86Tables::DecodedOperand& Src2Op, uint64_t Mode, bool ZeroUpperBits);
 
-  Ref InsertScalarFCMPOpImpl(OpSize Size, uint8_t OpDstSize, size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType, bool ZeroUpperBits);
+  Ref InsertScalarFCMPOpImpl(OpSize Size, IR::OpSize OpDstSize, IR::OpSize ElementSize, Ref Src1, Ref Src2, uint8_t CompType, bool ZeroUpperBits);
 
-  Ref VectorRoundImpl(OpSize Size, size_t ElementSize, Ref Src, uint64_t Mode);
+  Ref VectorRoundImpl(OpSize Size, IR::OpSize ElementSize, Ref Src, uint64_t Mode);
 
-  Ref Scalar_CVT_Float_To_FloatImpl(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize, const X86Tables::DecodedOperand& Src1Op,
-                                    const X86Tables::DecodedOperand& Src2Op);
+  Ref Scalar_CVT_Float_To_FloatImpl(OpcodeArgs, IR::OpSize DstElementSize, IR::OpSize SrcElementSize,
+                                    const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op);
 
-  Ref Vector_CVT_Float_To_IntImpl(OpcodeArgs, size_t SrcElementSize, bool Narrow, bool HostRoundingMode);
+  Ref Vector_CVT_Float_To_IntImpl(OpcodeArgs, IR::OpSize SrcElementSize, bool Narrow, bool HostRoundingMode);
 
-  Ref Vector_CVT_Int_To_FloatImpl(OpcodeArgs, size_t SrcElementSize, bool Widen);
+  Ref Vector_CVT_Int_To_FloatImpl(OpcodeArgs, IR::OpSize SrcElementSize, bool Widen);
 
   void XSaveOpImpl(OpcodeArgs);
   void SaveX87State(OpcodeArgs, Ref MemBase);
@@ -1518,25 +1519,25 @@ private:
   Ref LoadSource(RegisterClassType Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags,
                  const LoadSourceOptions& Options = {});
   Ref LoadSource_WithOpSize(RegisterClassType Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand,
-                            uint8_t OpSize, uint32_t Flags, const LoadSourceOptions& Options = {});
+                            IR::OpSize OpSize, uint32_t Flags, const LoadSourceOptions& Options = {});
   void StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op,
-                              const FEXCore::X86Tables::DecodedOperand& Operand, const Ref Src, uint8_t OpSize, int8_t Align,
+                              const FEXCore::X86Tables::DecodedOperand& Operand, const Ref Src, IR::OpSize OpSize, IR::OpSize Align,
                               MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
   void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, const FEXCore::X86Tables::DecodedOperand& Operand,
-                   const Ref Src, int8_t Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
-  void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, const Ref Src, int8_t Align,
+                   const Ref Src, IR::OpSize Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
+  void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, const Ref Src, IR::OpSize Align,
                    MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
 
   // In several instances, it's desirable to get a base address with the segment offset
   // applied to it. This pulls all the common-case appending into a single set of functions.
   [[nodiscard]]
-  Ref MakeSegmentAddress(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint8_t OpSize) {
+  Ref MakeSegmentAddress(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, IR::OpSize OpSize) {
     Ref Mem = LoadSource_WithOpSize(GPRClass, Op, Operand, OpSize, Op->Flags, {.LoadData = false});
     return AppendSegmentOffset(Mem, Op->Flags);
   }
   [[nodiscard]]
   Ref MakeSegmentAddress(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand) {
-    return MakeSegmentAddress(Op, Operand, GetSrcSize(Op));
+    return MakeSegmentAddress(Op, Operand, OpSizeFromSrc(Op));
   }
   [[nodiscard]]
   Ref MakeSegmentAddress(X86State::X86Reg Reg, uint32_t Flags, uint32_t DefaultPrefix = 0, bool Override = false) {
@@ -1771,7 +1772,7 @@ private:
       // For DF, we need to transform 0/1 into 1/-1
       StoreDF(_SubShift(OpSize::i64Bit, _Constant(1), Value, ShiftType::LSL, 1));
     } else {
-      _StoreContext(1, GPRClass, Value, offsetof(FEXCore::Core::CPUState, flags[BitOffset]));
+      _StoreContext(OpSize::i8Bit, GPRClass, Value, offsetof(FEXCore::Core::CPUState, flags[BitOffset]));
     }
   }
 
@@ -1849,6 +1850,17 @@ private:
     }
   }
 
+  // TODO: Temporary while OpcodeDispatcher shifts over
+  IR::OpSize CacheIndexToOpSize(int Index) {
+    // MMX registers are rounded up to 128-bit since they are shared with 80-bit
+    // x87 registers, even though MMX is logically only 64-bit.
+    if (Index >= AVXHigh0Index || ((Index >= MM0Index && Index <= MM7Index))) {
+      return OpSize::i128Bit;
+    } else {
+      return OpSize::i8Bit;
+    }
+  }
+
   struct {
     uint64_t Cached;
     uint64_t Written;
@@ -1866,7 +1878,7 @@ private:
     RegCache.Written &= ~Bit;
   }
 
-  Ref LoadRegCache(uint64_t Offset, uint8_t Index, RegisterClassType RegClass, uint8_t Size) {
+  Ref LoadRegCache(uint64_t Offset, uint8_t Index, RegisterClassType RegClass, IR::OpSize Size) {
     LOGMAN_THROW_AA_FMT(Index < 64, "valid index");
     uint64_t Bit = (1ull << (uint64_t)Index);
 
@@ -1877,7 +1889,7 @@ private:
 
       // If we did a partial store, we're inserting into the full register
       if (RegCache.Written & Bit) {
-        Full = _VInsElement(16, 8, 0, 0, Full, Value);
+        Full = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 0, 0, Full, Value);
       }
 
       RegCache.Value[Index] = Full;
@@ -1907,7 +1919,7 @@ private:
     return RegCache.Value[Index];
   }
 
-  RefPair AllocatePair(FEXCore::IR::RegisterClassType Class, uint8_t Size) {
+  RefPair AllocatePair(FEXCore::IR::RegisterClassType Class, IR::OpSize Size) {
     if (Class == FPRClass) {
       return {_AllocateFPR(Size, Size), _AllocateFPR(Size, Size)};
     } else {
@@ -1915,13 +1927,13 @@ private:
     }
   }
 
-  RefPair LoadContextPair_Uncached(FEXCore::IR::RegisterClassType Class, uint8_t Size, unsigned Offset) {
+  RefPair LoadContextPair_Uncached(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, unsigned Offset) {
     RefPair Values = AllocatePair(Class, Size);
     _LoadContextPair(Size, Class, Offset, Values.Low, Values.High);
     return Values;
   }
 
-  RefPair LoadRegCachePair(uint64_t Offset, uint8_t Index, RegisterClassType RegClass, uint8_t Size) {
+  RefPair LoadRegCachePair(uint64_t Offset, uint8_t Index, RegisterClassType RegClass, IR::OpSize Size) {
     LOGMAN_THROW_AA_FMT(Index != DFIndex, "must be pairable");
 
     // Try to load a pair into the cache
@@ -1945,19 +1957,19 @@ private:
   }
 
   Ref LoadGPR(uint8_t Reg) {
-    return LoadRegCache(Reg, GPR0Index + Reg, GPRClass, CTX->GetGPRSize());
+    return LoadRegCache(Reg, GPR0Index + Reg, GPRClass, CTX->GetGPROpSize());
   }
 
-  Ref LoadContext(uint8_t Size, uint8_t Index) {
+  Ref LoadContext(IR::OpSize Size, uint8_t Index) {
     return LoadRegCache(CacheIndexToContextOffset(Index), Index, CacheIndexClass(Index), Size);
   }
 
-  RefPair LoadContextPair(uint8_t Size, uint8_t Index) {
+  RefPair LoadContextPair(IR::OpSize Size, uint8_t Index) {
     return LoadRegCachePair(CacheIndexToContextOffset(Index), Index, CacheIndexClass(Index), Size);
   }
 
   Ref LoadContext(uint8_t Index) {
-    return LoadContext(CacheIndexToSize(Index), Index);
+    return LoadContext(CacheIndexToOpSize(Index), Index);
   }
 
   Ref LoadXMMRegister(uint8_t Reg) {
@@ -2018,7 +2030,7 @@ private:
       // Recover the sign bit, it is the logical DF value
       return _Lshr(OpSize::i64Bit, LoadDF(), _Constant(63));
     } else {
-      return _LoadContext(1, GPRClass, offsetof(Core::CPUState, flags[BitOffset]));
+      return _LoadContext(OpSize::i8Bit, GPRClass, offsetof(Core::CPUState, flags[BitOffset]));
     }
   }
 
@@ -2067,7 +2079,7 @@ private:
   }
 
   // Compares two floats and sets flags for a COMISS instruction
-  void Comiss(size_t ElementSize, Ref Src1, Ref Src2, bool InvalidateAF = false) {
+  void Comiss(IR::OpSize ElementSize, Ref Src1, Ref Src2, bool InvalidateAF = false) {
     // First, set flags according to Arm FCMP.
     HandleNZCVWrite();
     _FCmp(ElementSize, Src1, Src2);
@@ -2144,7 +2156,7 @@ private:
 
     HandleNZCV_RMW();
     CalculatePF(_ShiftFlags(OpSizeFromSrc(Op), Result, Dest, Shift, Src, OldPF, CFInverted));
-    StoreResult(GPRClass, Op, Result, -1);
+    StoreResult(GPRClass, Op, Result, OpSize::iInvalid);
   }
 
   // Helper to derive Dest by a given builder-using Expression with the opcode
@@ -2175,8 +2187,8 @@ private:
   fextl::unordered_map<IndexNamedVectorMapKey, Ref, IndexNamedVectorMapKeyHasher> CachedIndexedNamedVectorConstants;
 
   // Load and cache a named vector constant.
-  Ref LoadAndCacheNamedVectorConstant(uint8_t Size, FEXCore::IR::NamedVectorConstant NamedConstant) {
-    auto log2_size_bytes = FEXCore::ilog2(Size);
+  Ref LoadAndCacheNamedVectorConstant(IR::OpSize Size, FEXCore::IR::NamedVectorConstant NamedConstant) {
+    auto log2_size_bytes = FEXCore::ilog2(IR::OpSizeToSize(Size));
     if (CachedNamedVectorConstants[NamedConstant][log2_size_bytes]) {
       return CachedNamedVectorConstants[NamedConstant][log2_size_bytes];
     }
@@ -2185,11 +2197,11 @@ private:
     CachedNamedVectorConstants[NamedConstant][log2_size_bytes] = Constant;
     return Constant;
   }
-  Ref LoadAndCacheIndexedNamedVectorConstant(uint8_t Size, FEXCore::IR::IndexNamedVectorConstant NamedIndexedConstant, uint32_t Index) {
+  Ref LoadAndCacheIndexedNamedVectorConstant(IR::OpSize Size, FEXCore::IR::IndexNamedVectorConstant NamedIndexedConstant, uint32_t Index) {
     IndexNamedVectorMapKey Key {
       .Index = Index,
       .NamedIndexedConstant = NamedIndexedConstant,
-      .log2_size_in_bytes = FEXCore::ilog2(Size),
+      .log2_size_in_bytes = FEXCore::ilog2(IR::OpSizeToSize(Size)),
     };
     auto it = CachedIndexedNamedVectorConstants.find(Key);
 
@@ -2202,11 +2214,11 @@ private:
     return Constant;
   }
 
-  Ref LoadUncachedZeroVector(uint8_t Size) {
+  Ref LoadUncachedZeroVector(IR::OpSize Size) {
     return _LoadNamedVectorConstant(Size, IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
   }
 
-  Ref LoadZeroVector(uint8_t Size) {
+  Ref LoadZeroVector(IR::OpSize Size) {
     return LoadAndCacheNamedVectorConstant(Size, IR::NamedVectorConstant::NAMED_VECTOR_ZERO);
   }
 
@@ -2241,7 +2253,7 @@ private:
       return;
     }
     auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
-    StoreResult(GPRClass, Op, Dest, -1);
+    StoreResult(GPRClass, Op, Dest, OpSize::iInvalid);
   }
 
   using ZeroShiftFunctionPtr = void (OpDispatchBuilder::*)(FEXCore::X86Tables::DecodedOp Op);
@@ -2387,7 +2399,7 @@ private:
     }
   }
 
-  Ref _StoreMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, Ref Addr, Ref Value, uint8_t Align = 1) {
+  Ref _StoreMemAutoTSO(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, Ref Addr, Ref Value, IR::OpSize Align = IR::OpSize::i8Bit) {
     if (IsTSOEnabled(Class)) {
       return _StoreMemTSO(Class, Size, Value, Addr, Invalid(), Align, MEM_OFFSET_SXTX, 1);
     } else {
@@ -2395,7 +2407,7 @@ private:
     }
   }
 
-  Ref _LoadMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, Ref ssa0, uint8_t Align = 1) {
+  Ref _LoadMemAutoTSO(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, Ref ssa0, IR::OpSize Align = IR::OpSize::i8Bit) {
     if (IsTSOEnabled(Class)) {
       return _LoadMemTSO(Class, Size, ssa0, Invalid(), Align, MEM_OFFSET_SXTX, 1);
     } else {
@@ -2403,7 +2415,7 @@ private:
     }
   }
 
-  Ref _LoadMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, AddressMode A, uint8_t Align = 1) {
+  Ref _LoadMemAutoTSO(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, AddressMode A, IR::OpSize Align = IR::OpSize::i8Bit) {
     bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
     A = SelectAddressMode(A, AtomicTSO, Class != GPRClass, Size);
 
@@ -2428,17 +2440,17 @@ private:
   }
 
 
-  RefPair LoadMemPair(FEXCore::IR::RegisterClassType Class, uint8_t Size, Ref Base, unsigned Offset) {
+  RefPair LoadMemPair(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, Ref Base, unsigned Offset) {
     RefPair Values = AllocatePair(Class, Size);
     _LoadMemPair(Class, Size, Base, Offset, Values.Low, Values.High);
     return Values;
   }
 
-  RefPair _LoadMemPairAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, AddressMode A, uint8_t Align = 1) {
+  RefPair _LoadMemPairAutoTSO(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, AddressMode A, IR::OpSize Align = IR::OpSize::i8Bit) {
     bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
 
     // Use ldp if possible, otherwise fallback on two loads.
-    if (!AtomicTSO && !A.Segment && Size >= 4 & Size <= 16) {
+    if (!AtomicTSO && !A.Segment && Size >= OpSize::i32Bit & Size <= OpSize::i128Bit) {
       A = SelectPairAddressMode(A, Size);
       return LoadMemPair(Class, Size, A.Base, A.Offset);
     } else {
@@ -2452,7 +2464,7 @@ private:
     }
   }
 
-  Ref _StoreMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, AddressMode A, Ref Value, uint8_t Align = 1) {
+  Ref _StoreMemAutoTSO(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, AddressMode A, Ref Value, IR::OpSize Align = IR::OpSize::i8Bit) {
     bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
     A = SelectAddressMode(A, AtomicTSO, Class != GPRClass, Size);
 
@@ -2463,27 +2475,28 @@ private:
     }
   }
 
-  void _StoreMemPairAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, AddressMode A, Ref Value1, Ref Value2, uint8_t Align = 1) {
+  void _StoreMemPairAutoTSO(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, AddressMode A, Ref Value1, Ref Value2,
+                            IR::OpSize Align = IR::OpSize::i8Bit) {
     bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
 
     // Use stp if possible, otherwise fallback on two stores.
-    if (!AtomicTSO && !A.Segment && Size >= 4 & Size <= 16) {
+    if (!AtomicTSO && !A.Segment && Size >= OpSize::i32Bit & Size <= OpSize::i128Bit) {
       A = SelectPairAddressMode(A, Size);
       _StoreMemPair(Class, Size, Value1, Value2, A.Base, A.Offset);
     } else {
-      _StoreMemAutoTSO(Class, Size, A, Value1, 1);
+      _StoreMemAutoTSO(Class, Size, A, Value1, OpSize::i8Bit);
       A.Offset += Size;
-      _StoreMemAutoTSO(Class, Size, A, Value2, 1);
+      _StoreMemAutoTSO(Class, Size, A, Value2, OpSize::i8Bit);
     }
   }
 
-  Ref Pop(uint8_t Size, Ref SP_RMW) {
+  Ref Pop(IR::OpSize Size, Ref SP_RMW) {
     Ref Value = _AllocateGPR(false);
     _Pop(Size, SP_RMW, Value);
     return Value;
   }
 
-  Ref Pop(uint8_t Size) {
+  Ref Pop(IR::OpSize Size) {
     Ref SP = _RMWHandle(LoadGPRRegister(X86State::REG_RSP));
     Ref Value = _AllocateGPR(false);
 
@@ -2494,9 +2507,9 @@ private:
     return Value;
   }
 
-  void Push(uint8_t Size, Ref Value) {
+  void Push(IR::OpSize Size, Ref Value) {
     auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-    auto NewSP = _Push(CTX->GetGPRSize(), Size, Value, OldSP);
+    auto NewSP = _Push(CTX->GetGPROpSize(), Size, Value, OldSP);
     StoreGPRRegister(X86State::REG_RSP, NewSP);
   }
 

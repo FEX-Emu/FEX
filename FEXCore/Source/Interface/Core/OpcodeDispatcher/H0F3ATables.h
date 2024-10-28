@@ -7,27 +7,27 @@ namespace FEXCore::IR {
 #define PF_3A_NONE 0
 #define PF_3A_66 1
 constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDispatch_H0F3ATable[] = {
-  {OPD(0, PF_3A_66, 0x08), 1, &OpDispatchBuilder::VectorRound<4>},
-  {OPD(0, PF_3A_66, 0x09), 1, &OpDispatchBuilder::VectorRound<8>},
-  {OPD(0, PF_3A_66, 0x0A), 1, &OpDispatchBuilder::InsertScalarRound<4>},
-  {OPD(0, PF_3A_66, 0x0B), 1, &OpDispatchBuilder::InsertScalarRound<8>},
-  {OPD(0, PF_3A_66, 0x0C), 1, &OpDispatchBuilder::VectorBlend<4>},
-  {OPD(0, PF_3A_66, 0x0D), 1, &OpDispatchBuilder::VectorBlend<8>},
-  {OPD(0, PF_3A_66, 0x0E), 1, &OpDispatchBuilder::VectorBlend<2>},
+  {OPD(0, PF_3A_66, 0x08), 1, &OpDispatchBuilder::VectorRound<OpSize::i32Bit>},
+  {OPD(0, PF_3A_66, 0x09), 1, &OpDispatchBuilder::VectorRound<OpSize::i64Bit>},
+  {OPD(0, PF_3A_66, 0x0A), 1, &OpDispatchBuilder::InsertScalarRound<OpSize::i32Bit>},
+  {OPD(0, PF_3A_66, 0x0B), 1, &OpDispatchBuilder::InsertScalarRound<OpSize::i64Bit>},
+  {OPD(0, PF_3A_66, 0x0C), 1, &OpDispatchBuilder::VectorBlend<OpSize::i32Bit>},
+  {OPD(0, PF_3A_66, 0x0D), 1, &OpDispatchBuilder::VectorBlend<OpSize::i64Bit>},
+  {OPD(0, PF_3A_66, 0x0E), 1, &OpDispatchBuilder::VectorBlend<OpSize::i16Bit>},
 
   {OPD(0, PF_3A_NONE, 0x0F), 1, &OpDispatchBuilder::PAlignrOp},
   {OPD(0, PF_3A_66, 0x0F), 1, &OpDispatchBuilder::PAlignrOp},
 
-  {OPD(0, PF_3A_66, 0x14), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 1>},
-  {OPD(0, PF_3A_66, 0x15), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 2>},
-  {OPD(0, PF_3A_66, 0x16), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 4>},
-  {OPD(0, PF_3A_66, 0x17), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 4>},
+  {OPD(0, PF_3A_66, 0x14), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, OpSize::i8Bit>},
+  {OPD(0, PF_3A_66, 0x15), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, OpSize::i16Bit>},
+  {OPD(0, PF_3A_66, 0x16), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, OpSize::i32Bit>},
+  {OPD(0, PF_3A_66, 0x17), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, OpSize::i32Bit>},
 
-  {OPD(0, PF_3A_66, 0x20), 1, &OpDispatchBuilder::PINSROp<1>},
+  {OPD(0, PF_3A_66, 0x20), 1, &OpDispatchBuilder::PINSROp<OpSize::i8Bit>},
   {OPD(0, PF_3A_66, 0x21), 1, &OpDispatchBuilder::InsertPSOp},
-  {OPD(0, PF_3A_66, 0x22), 1, &OpDispatchBuilder::PINSROp<4>},
-  {OPD(0, PF_3A_66, 0x40), 1, &OpDispatchBuilder::DPPOp<4>},
-  {OPD(0, PF_3A_66, 0x41), 1, &OpDispatchBuilder::DPPOp<8>},
+  {OPD(0, PF_3A_66, 0x22), 1, &OpDispatchBuilder::PINSROp<OpSize::i32Bit>},
+  {OPD(0, PF_3A_66, 0x40), 1, &OpDispatchBuilder::DPPOp<OpSize::i32Bit>},
+  {OPD(0, PF_3A_66, 0x41), 1, &OpDispatchBuilder::DPPOp<OpSize::i64Bit>},
   {OPD(0, PF_3A_66, 0x42), 1, &OpDispatchBuilder::MPSADBWOp},
 
   {OPD(0, PF_3A_66, 0x60), 1, &OpDispatchBuilder::VPCMPESTRMOp},
@@ -40,8 +40,8 @@ constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDis
 
 constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDispatch_H0F3ATable_64[] = {
   {OPD(1, PF_3A_66, 0x0F), 1, &OpDispatchBuilder::PAlignrOp},
-  {OPD(1, PF_3A_66, 0x16), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, 8>},
-  {OPD(1, PF_3A_66, 0x22), 1, &OpDispatchBuilder::PINSROp<8>},
+  {OPD(1, PF_3A_66, 0x16), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, OpSize::i64Bit>},
+  {OPD(1, PF_3A_66, 0x22), 1, &OpDispatchBuilder::PINSROp<OpSize::i64Bit>},
 };
 
 #undef PF_3A_NONE

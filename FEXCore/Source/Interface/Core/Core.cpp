@@ -1017,12 +1017,13 @@ void ContextImpl::AddThunkTrampolineIRHandler(uintptr_t Entrypoint, uintptr_t Gu
     IRHeader.first->Blocks = emit->WrapNode(Block);
     emit->SetCurrentCodeBlock(Block);
 
-    const uint8_t GPRSize = GetGPRSize();
+    const auto GPRSize = GetGPROpSize();
 
-    if (GPRSize == 8) {
+    if (GPRSize == IR::OpSize::i64Bit) {
       emit->_StoreRegister(emit->_Constant(Entrypoint), X86State::REG_R11, IR::GPRClass, GPRSize);
     } else {
-      emit->_StoreContext(GPRSize, IR::FPRClass, emit->_VCastFromGPR(8, 8, emit->_Constant(Entrypoint)), offsetof(Core::CPUState, mm[0][0]));
+      emit->_StoreContext(GPRSize, IR::FPRClass, emit->_VCastFromGPR(IR::OpSize::i64Bit, IR::OpSize::i64Bit, emit->_Constant(Entrypoint)),
+                          offsetof(Core::CPUState, mm[0][0]));
     }
     emit->_ExitFunction(emit->_Constant(GuestThunkEntrypoint));
     },

@@ -255,7 +255,7 @@
                  "If ForPair is set, RA will try to allocate the base of a register pair"],
         "DestSize": "8"
       },
-      "FPR = AllocateFPR u8:#RegisterSize, u8:#ElementSize": {
+      "FPR = AllocateFPR OpSize:#RegisterSize, OpSize:#ElementSize": {
         "Desc": ["Like AllocateGPR, but for FPR"],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
@@ -289,7 +289,7 @@
         "HasSideEffects": true,
         "RAOverride": "0"
       },
-      "CondJump SSA:$Cmp1, SSA:$Cmp2, SSA:$TrueBlock, SSA:$FalseBlock, CondClass:$Cond{{COND_NEQ}}, u8:$CompareSize{0}, i1:$FromNZCV{false}": {
+      "CondJump SSA:$Cmp1, SSA:$Cmp2, SSA:$TrueBlock, SSA:$FalseBlock, CondClass:$Cond{{COND_NEQ}}, OpSize:$CompareSize{OpSize::iInvalid}, i1:$FromNZCV{false}": {
         "HasSideEffects": true,
         "RAOverride": "2"
       },
@@ -360,23 +360,23 @@
       }
     },
     "StaticRA": {
-      "SSA = LoadRegister u32:$Reg, RegisterClass:$Class, u8:#Size": {
+      "SSA = LoadRegister u32:$Reg, RegisterClass:$Class, OpSize:#Size": {
         "Desc": ["Loads a value from the given register",
                  "Size must match the execution mode."],
         "DestSize": "Size"
       },
 
-      "GPR = LoadPF u8:#Size": {
+      "GPR = LoadPF OpSize:#Size": {
         "Desc": ["Loads raw PF"],
         "DestSize": "Size"
       },
 
-      "GPR = LoadAF u8:#Size": {
+      "GPR = LoadAF OpSize:#Size": {
         "Desc": ["Loads raw PF"],
         "DestSize": "Size"
       },
 
-      "StoreRegister SSA:$Value, u32:$Reg, RegisterClass:$Class, u8:#Size": {
+      "StoreRegister SSA:$Value, u32:$Reg, RegisterClass:$Class, OpSize:#Size": {
          "HasSideEffects": true,
         "Desc": ["Stores a value to a given register.",
                  "Size must match the execution mode."],
@@ -386,20 +386,20 @@
         ]
       },
 
-      "StorePF GPR:$Value, u8:#Size": {
+      "StorePF GPR:$Value, OpSize:#Size": {
         "HasSideEffects": true,
         "Desc": ["Stores raw PF"],
         "DestSize": "Size"
       },
 
-      "StoreAF GPR:$Value, u8:#Size": {
+      "StoreAF GPR:$Value, OpSize:#Size": {
         "HasSideEffects": true,
         "Desc": ["Stores raw AF"],
         "DestSize": "Size"
       }
     },
     "Memory": {
-      "SSA = LoadContext u8:#ByteSize, RegisterClass:$Class, u32:$Offset": {
+      "SSA = LoadContext OpSize:#ByteSize, RegisterClass:$Class, u32:$Offset": {
         "Desc": ["Loads a value from the context with offset",
                  "Dest = Ctx[Offset]"
                 ],
@@ -412,7 +412,7 @@
         ]
       },
 
-      "SSA:$Value1, SSA:$Value2 = LoadContextPair u8:#ByteSize, RegisterClass:$Class, u32:$Offset": {
+      "SSA:$Value1, SSA:$Value2 = LoadContextPair OpSize:#ByteSize, RegisterClass:$Class, u32:$Offset": {
         "Desc": ["Loads a pair of values from the context with offset",
                  "Value0 = Ctx[Offset], Value1 = Ctx[Offset + ByteSize]"
                 ],
@@ -426,7 +426,7 @@
         ]
       },
 
-      "StoreContext u8:#ByteSize, RegisterClass:$Class, SSA:$Value, u32:$Offset": {
+      "StoreContext OpSize:#ByteSize, RegisterClass:$Class, SSA:$Value, u32:$Offset": {
         "Desc": ["Stores a value to the context with offset",
                  "Ctx[Offset] = Value",
                  "Zero Extends if value's type is too small",
@@ -443,7 +443,7 @@
         ]
       },
 
-      "StoreContextPair u8:#ByteSize, RegisterClass:$Class, SSA:$Value1, SSA:$Value2, u32:$Offset": {
+      "StoreContextPair OpSize:#ByteSize, RegisterClass:$Class, SSA:$Value1, SSA:$Value2, u32:$Offset": {
         "Desc": ["Stores a pair of values to the context with offset",
                  "Ctx[Offset] = Value1, Ctx[Offset + ByteSize] = Value2",
                  "Zero Extends if value's type is too small",
@@ -461,7 +461,7 @@
         ]
       },
 
-      "SSA = LoadContextIndexed GPR:$Index, u8:#ByteSize, u32:$BaseOffset, u32:$Stride, RegisterClass:$Class": {
+      "SSA = LoadContextIndexed GPR:$Index, OpSize:#ByteSize, u32:$BaseOffset, u32:$Stride, RegisterClass:$Class": {
         "Desc": ["Loads a value from the context with offset and indexed by SSA value",
                  "Dest = Ctx[BaseOffset + Index * Stride]"
                 ],
@@ -473,7 +473,7 @@
           "!($BaseOffset >= offsetof(Core::CPUState, xmm.avx.data[0]) && $BaseOffset < offsetof(Core::CPUState, xmm.avx.data[16])) && \"Can't LoadContextIndexed to XMM\""
         ]
       },
-      "StoreContextIndexed SSA:$Value, GPR:$Index, u8:#ByteSize, u32:$BaseOffset, u32:$Stride, RegisterClass:$Class": {
+      "StoreContextIndexed SSA:$Value, GPR:$Index, OpSize:#ByteSize, u32:$BaseOffset, u32:$Stride, RegisterClass:$Class": {
         "HasSideEffects": true,
         "Desc": ["Stores a value to the context with offset and indexed by SSA value",
                  "Ctx[BaseOffset + Index * Stride] = Value"
@@ -530,17 +530,17 @@
         "DestSize": "8"
       },
 
-      "SSA = LoadMem RegisterClass:$Class, u8:#Size, GPR:$Addr, GPR:$Offset, u8:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale": {
+      "SSA = LoadMem RegisterClass:$Class, OpSize:#Size, GPR:$Addr, GPR:$Offset, OpSize:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale": {
         "DestSize": "Size"
       },
 
-      "SSA:$Value1, SSA:$Value2 = LoadMemPair RegisterClass:$Class, u8:#Size, GPR:$Addr, u32:$Offset": {
+      "SSA:$Value1, SSA:$Value2 = LoadMemPair RegisterClass:$Class, OpSize:#Size, GPR:$Addr, u32:$Offset": {
         "Desc": ["Load a pair of values from memory."],
         "DestSize": "Size",
         "HasSideEffects": true
       },
 
-      "StoreMem RegisterClass:$Class, u8:#Size, SSA:$Value, GPR:$Addr, GPR:$Offset, u8:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale": {
+      "StoreMem RegisterClass:$Class, OpSize:#Size, SSA:$Value, GPR:$Addr, GPR:$Offset, OpSize:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale": {
         "Desc": [ "Stores a value to memory.",
                   "Zero Extends if value's type is too small",
                   "Truncates if value's type is too large"
@@ -552,7 +552,7 @@
         ]
       },
 
-      "StoreMemPair RegisterClass:$Class, u8:#Size, SSA:$Value1, SSA:$Value2, GPR:$Addr, u32:$Offset": {
+      "StoreMemPair RegisterClass:$Class, OpSize:#Size, SSA:$Value1, SSA:$Value2, GPR:$Addr, u32:$Offset": {
         "Desc": [ "Stores a pair of values to memory.",
                   "Zero Extends if value's type is too small",
                   "Truncates if value's type is too large"
@@ -565,14 +565,14 @@
         ]
       },
 
-      "SSA = LoadMemTSO RegisterClass:$Class, u8:#Size, GPR:$Addr, GPR:$Offset, u8:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale": {
+      "SSA = LoadMemTSO RegisterClass:$Class, OpSize:#Size, GPR:$Addr, GPR:$Offset, OpSize:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale": {
         "Desc": ["Does a x86 TSO compatible load from memory. Offset must be Invalid()."
                 ],
         "DestSize": "Size",
         "DynamicDispatch": true
       },
 
-      "StoreMemTSO RegisterClass:$Class, u8:#Size, SSA:$Value, GPR:$Addr, GPR:$Offset, u8:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale": {
+      "StoreMemTSO RegisterClass:$Class, OpSize:#Size, SSA:$Value, GPR:$Addr, GPR:$Offset, OpSize:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale": {
         "Desc": ["Does a x86 TSO compatible store to memory. Offset must be Invalid()."
                 ],
         "HasSideEffects": true,
@@ -583,14 +583,14 @@
         ]
       },
 
-      "FPR = VLoadVectorMasked u8:#RegisterSize, u8:#ElementSize, FPR:$Mask, GPR:$Addr, GPR:$Offset, MemOffsetType:$OffsetType, u8:$OffsetScale": {
+      "FPR = VLoadVectorMasked OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Mask, GPR:$Addr, GPR:$Offset, MemOffsetType:$OffsetType, u8:$OffsetScale": {
         "Desc": ["Does a masked load similar to VPMASKMOV/VMASKMOV where the upper bit of each element",
                  "determines whether or not that element will be loaded from memory"],
         "ImplicitFlagClobber": true,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "VStoreVectorMasked u8:#RegisterSize, u8:#ElementSize, FPR:$Mask, FPR:$Data, GPR:$Addr, GPR:$Offset, MemOffsetType:$OffsetType, u8:$OffsetScale": {
+      "VStoreVectorMasked OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Mask, FPR:$Data, GPR:$Addr, GPR:$Offset, MemOffsetType:$OffsetType, u8:$OffsetScale": {
         "Desc": ["Does a masked store similar to VPMASKMOV/VMASKMOV where the upper bit of each element",
                  "determines whether or not that element will be stored to memory"],
         "HasSideEffects": true,
@@ -598,7 +598,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VLoadVectorGatherMasked u8:#RegisterSize, u8:#ElementSize, FPR:$Incoming, FPR:$Mask, GPR:$AddrBase, FPR:$VectorIndexLow, FPR:$VectorIndexHigh, u8:$VectorIndexElementSize, u8:$OffsetScale, u8:$DataElementOffsetStart, u8:$IndexElementOffsetStart": {
+      "FPR = VLoadVectorGatherMasked OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Incoming, FPR:$Mask, GPR:$AddrBase, FPR:$VectorIndexLow, FPR:$VectorIndexHigh, u8:$VectorIndexElementSize, u8:$OffsetScale, u8:$DataElementOffsetStart, u8:$IndexElementOffsetStart": {
         "Desc": [
           "Does a masked load similar to VPGATHERD* where the upper bit of each element",
           "determines whether or not that element will be loaded from memory.",
@@ -612,7 +612,7 @@
           "$VectorIndexElementSize == OpSize::i32Bit || $VectorIndexElementSize == OpSize::i64Bit"
         ]
       },
-      "FPR = VLoadVectorGatherMaskedQPS u8:#RegisterSize, u8:#ElementSize, FPR:$Incoming, FPR:$MaskReg, GPR:$AddrBase, FPR:$VectorIndexLow, FPR:$VectorIndexHigh, u8:$OffsetScale": {
+      "FPR = VLoadVectorGatherMaskedQPS OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Incoming, FPR:$MaskReg, GPR:$AddrBase, FPR:$VectorIndexLow, FPR:$VectorIndexHigh, u8:$OffsetScale": {
         "Desc": [
           "Does a masked load similar to VPGATHERQPS where the upper bit of each element",
           "determines whether or not that element will be loaded from memory.",
@@ -628,7 +628,7 @@
           "RegisterSize != FEXCore::IR::OpSize::i256Bit && \"What does 256-bit mean in this context?\""
         ]
       },
-      "FPR = VLoadVectorElement u8:#RegisterSize, u8:#ElementSize, FPR:$DstSrc, u8:$Index, GPR:$Addr": {
+      "FPR = VLoadVectorElement OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$DstSrc, u8:$Index, GPR:$Addr": {
         "Desc": ["Does a memory load to a single element of a vector.",
                  "Leaves the rest of the vector's data intact.",
                  "Matches arm64 ld1 semantics"],
@@ -636,19 +636,19 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "VStoreVectorElement u8:#RegisterSize, u8:#ElementSize, FPR:$Value, u8:$Index, GPR:$Addr": {
+      "VStoreVectorElement OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Value, u8:$Index, GPR:$Addr": {
         "Desc": ["Does a memory store of a single element of a vector.",
                  "Matches arm64 st1 semantics"],
         "HasSideEffects": true,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VBroadcastFromMem u8:#RegisterSize, u8:#ElementSize, GPR:$Address": {
+      "FPR = VBroadcastFromMem OpSize:#RegisterSize, OpSize:#ElementSize, GPR:$Address": {
         "Desc": ["Broadcasts an ElementSize value from memory into each element of a vector."],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "GPR = Push u8:#Size, u8:$ValueSize, GPR:$Value, GPR:$Addr": {
+      "GPR = Push OpSize:#Size, OpSize:$ValueSize, GPR:$Value, GPR:$Addr": {
         "Desc": [
           "Pushes a value to the address, returning the new pointer after incrementing.",
           "The address is decremented by the value size while.",
@@ -666,7 +666,7 @@
         "HasSideEffects": true,
         "TiedSource": 0
       },
-      "GPR:$Addr, GPR:$Value = Pop u8:$Size, GPR:$Addr": {
+      "GPR:$Addr, GPR:$Value = Pop OpSize:$Size, GPR:$Addr": {
         "Desc": [
           "Pops a value from the address, updating the new pointer after incrementing.",
           "The address is incremented by the size via an RMW source/destintaion."
@@ -674,14 +674,14 @@
         "HasSideEffects": true,
         "DestSize": "Size"
       },
-      "GPR = MemSet i1:$IsAtomic, u8:$Size, GPR:$Prefix, GPR:$Addr, GPR:$Value, GPR:$Length, GPR:$Direction": {
+      "GPR = MemSet i1:$IsAtomic, OpSize:$Size, GPR:$Prefix, GPR:$Addr, GPR:$Value, GPR:$Length, GPR:$Direction": {
         "Desc": ["Duplicates behaviour of x86 STOS repeat",
                  "Returns the final address that gets generated without the prefix appended."
                 ],
         "HasSideEffects": true,
         "DestSize": "8"
       },
-      "GPR:$DstAddress, GPR:$SrcAddress = MemCpy i1:$IsAtomic, u8:$Size, GPR:$Dest, GPR:$Src, GPR:$Length, GPR:$Direction": {
+      "GPR:$DstAddress, GPR:$SrcAddress = MemCpy i1:$IsAtomic, OpSize:$Size, GPR:$Dest, GPR:$Src, GPR:$Length, GPR:$Direction": {
         "Desc": ["Duplicates behaviour of x86 MOVS repeat",
                  "Returns the final addresses after they have been incremented or decremented"
                 ],
@@ -728,7 +728,7 @@
         "HasSideEffects": true,
         "DestSize": "8"
       },
-      "VStoreNonTemporal u8:#RegisterSize, FPR:$Value, GPR:$Addr, i8:$Offset": {
+      "VStoreNonTemporal OpSize:#RegisterSize, FPR:$Value, GPR:$Addr, i8:$Offset": {
         "Desc": ["Does a non-temporal memory store of a vector.",
                  "Matches arm64 SVE stnt1b semantics.",
                  "Specifically weak-memory model ordered to match x86 non-temporal stores."
@@ -740,7 +740,7 @@
           "RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i256Bit"
         ]
       },
-      "VStoreNonTemporalPair u8:#RegisterSize, FPR:$ValueLow, FPR:$ValueHigh, GPR:$Addr, i8:$Offset": {
+      "VStoreNonTemporalPair OpSize:#RegisterSize, FPR:$ValueLow, FPR:$ValueHigh, GPR:$Addr, i8:$Offset": {
         "Desc": ["Does a non-temporal memory store of two vector registers.",
                  "Matches arm64 stnp semantics.",
                  "Specifically weak-memory model ordered to match x86 non-temporal stores."
@@ -752,7 +752,7 @@
           "RegisterSize == FEXCore::IR::OpSize::i128Bit"
         ]
       },
-      "FPR = VLoadNonTemporal u8:#RegisterSize, GPR:$Addr, i8:$Offset": {
+      "FPR = VLoadNonTemporal OpSize:#RegisterSize, GPR:$Addr, i8:$Offset": {
         "Desc": ["Does a non-temporal memory load of a vector.",
                  "Matches arm64 SVE ldnt1b semantics.",
                  "Specifically weak-memory model ordered to match x86 non-temporal stores."
@@ -1539,7 +1539,7 @@
           "ResultSize == FEXCore::IR::OpSize::i32Bit || ResultSize == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "FPR = NZCVSelectV u8:#ResultSize, CondClass:$Cond, FPR:$TrueVal, FPR:$FalseVal": {
+      "FPR = NZCVSelectV OpSize:#ResultSize, CondClass:$Cond, FPR:$TrueVal, FPR:$FalseVal": {
         "Desc": [
           "Select based on value in NZCV flags, where TrueVal and FalseVal are both FPRs.",
           "op:",
@@ -1646,14 +1646,14 @@
       },
 
       "Float to GPR": {"Ignore": 1},
-      "GPR = VExtractToGPR u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, u8:$Index": {
+      "GPR = VExtractToGPR OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$Index": {
         "Desc": ["Extracts an element from a vector and places it in a GPR",
                  "The element that is extracted from the vector is zero extended to the GPR size"
                 ],
         "DestSize": "ElementSize"
       },
 
-      "GPR = Float_ToGPR_S u8:#DestElementSize, u8:$SrcElementSize, FPR:$Scalar": {
+      "GPR = Float_ToGPR_S OpSize:#DestElementSize, OpSize:$SrcElementSize, FPR:$Scalar": {
         "Desc": ["Moves the scalar element to a GPR with conversion",
                  "Converts the 32bit or 64bit float to an signed integer",
                  "Rounding mode determined by host flag's rounding mode"
@@ -1661,14 +1661,14 @@
         "DestSize": "DestElementSize"
       },
 
-      "GPR = Float_ToGPR_ZS u8:#DestElementSize, u8:$SrcElementSize, FPR:$Scalar": {
+      "GPR = Float_ToGPR_ZS OpSize:#DestElementSize, OpSize:$SrcElementSize, FPR:$Scalar": {
         "Desc": ["Moves the scalar element to a GPR with conversion",
                  "Converts the 32bit or 64bit float to an signed integer rounding towards zero (Truncating)"
                 ],
         "DestSize": "DestElementSize"
       },
 
-      "FCmp u8:$ElementSize, FPR:$Scalar1, FPR:$Scalar2": {
+      "FCmp OpSize:$ElementSize, FPR:$Scalar1, FPR:$Scalar2": {
         "Desc": ["Does a scalar unordered compare and sets NZCV accordingly.",
                  "NZCV follows Arm conventions, a separate AXFLAG instruction is required for x86",
                  "Ordering flag result is true if either float input is NaN"
@@ -1677,7 +1677,7 @@
       }
     },
     "VectorScalar": {
-      "FPR = VFAddScalarInsert OpSize:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
+      "FPR = VFAddScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar 'add' between Vector1 and Vector2.",
                  "Inserting the result in to the lower element of Vector1 and returning the results.",
                  "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
@@ -1687,7 +1687,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VFSubScalarInsert OpSize:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
+      "FPR = VFSubScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar 'sub' between Vector1 and Vector2.",
                  "Inserting the result in to the lower element of Vector1 and returning the results.",
                  "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
@@ -1697,7 +1697,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VFMulScalarInsert OpSize:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
+      "FPR = VFMulScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar 'mul' between Vector1 and Vector2.",
                  "Inserting the result in to the lower element of Vector1 and returning the results.",
                  "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
@@ -1707,7 +1707,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VFDivScalarInsert OpSize:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
+      "FPR = VFDivScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar 'div' between Vector1 and Vector2.",
                  "Inserting the result in to the lower element of Vector1 and returning the results.",
                  "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
@@ -1717,7 +1717,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VFMinScalarInsert OpSize:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
+      "FPR = VFMinScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar 'min' between Vector1 and Vector2.",
                  "Inserting the result in to the lower element of Vector1 and returning the results.",
                  "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
@@ -1731,7 +1731,7 @@
         "NumElements": "RegisterSize / ElementSize",
         "ImplicitFlagClobber": true
       },
-      "FPR = VFMaxScalarInsert OpSize:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
+      "FPR = VFMaxScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar 'max' between Vector1 and Vector2.",
                  "Inserting the result in to the lower element of Vector1 and returning the results.",
                  "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
@@ -1745,7 +1745,7 @@
         "NumElements": "RegisterSize / ElementSize",
         "ImplicitFlagClobber": true
       },
-      "FPR = VFSqrtScalarInsert OpSize:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
+      "FPR = VFSqrtScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar 'sqrt' on Vector2, inserting in to Vector1 and storing in to the destination.",
                  "Inserting the result in to the lower element of Vector1 and returning the results.",
                  "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
@@ -1755,7 +1755,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VFRSqrtScalarInsert OpSize:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
+      "FPR = VFRSqrtScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar 'rsqrt' on Vector2, inserting in to Vector1 and storing in to the destination.",
                  "Inserting the result in to the lower element of Vector1 and returning the results.",
                  "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
@@ -1765,7 +1765,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VFRecpScalarInsert OpSize:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
+      "FPR = VFRecpScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar 'recip' on Vector2, inserting in to Vector1 and storing in to the destination.",
                  "Inserting the result in to the lower element of Vector1 and returning the results.",
                  "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
@@ -1775,7 +1775,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VFToFScalarInsert OpSize:#RegisterSize, u8:#DstElementSize, u8:$SrcElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
+      "FPR = VFToFScalarInsert OpSize:#RegisterSize, OpSize:#DstElementSize, OpSize:$SrcElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar 'cvt' between Vector1 and Vector2.",
                  "Inserting the result in to the lower element of Vector1 and returning the results.",
                  "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
@@ -1785,7 +1785,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / DstElementSize"
       },
-      "FPR = VSToFVectorInsert OpSize:#RegisterSize, u8:#DstElementSize, u8:$SrcElementSize, FPR:$Vector1, FPR:$Vector2, i8:$HasTwoElements, i1:$ZeroUpperBits": {
+      "FPR = VSToFVectorInsert OpSize:#RegisterSize, OpSize:#DstElementSize, OpSize:$SrcElementSize, FPR:$Vector1, FPR:$Vector2, i8:$HasTwoElements, i1:$ZeroUpperBits": {
         "Desc": ["Does a Vector 'scvt' between Vector1 and Vector2.",
                  "Inserting the result in to the lower element of Vector1 and returning the results.",
                  "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
@@ -1797,7 +1797,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / DstElementSize"
       },
-      "FPR = VSToFGPRInsert OpSize:#RegisterSize, u8:#DstElementSize, u8:$SrcElementSize, FPR:$Vector, GPR:$Src, i1:$ZeroUpperBits": {
+      "FPR = VSToFGPRInsert OpSize:#RegisterSize, OpSize:#DstElementSize, OpSize:$SrcElementSize, FPR:$Vector, GPR:$Src, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar 'cvt' between Vector1 and GPR.",
                  "Inserting the result in to the lower element of Vector1 and returning the results.",
                  "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",
@@ -1807,7 +1807,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / DstElementSize"
       },
-      "FPR = VFToIScalarInsert OpSize:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, RoundType:$Round, i1:$ZeroUpperBits": {
+      "FPR = VFToIScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, RoundType:$Round, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar round float to integral on Vector2, inserting in to Vector1 and storing in to the destination.",
                  "Rounding mode determined by argument",
                  "Inserting the result in to the lower element of Vector1 and returning the results.",
@@ -1818,7 +1818,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VFCMPScalarInsert OpSize:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, FloatCompareOp:$Op, i1:$ZeroUpperBits": {
+      "FPR = VFCMPScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, FloatCompareOp:$Op, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar 'cmp' between Vector1 and Vecto2, inserting in to Vector1 and storing in to the destination.",
                  "Compare op determined by argument",
                  "Inserting the result in to the lower element of Vector1 and returning the results.",
@@ -1829,7 +1829,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VFMLAScalarInsert u8:#RegisterSize, u8:#ElementSize, FPR:$Upper, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
+      "FPR = VFMLAScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Upper, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
         "Desc": [
           "Dest = (Vector1 * Vector2) + Addend",
           "This explicitly matches x86 FMA semantics because ARM semantics are mind-bending.",
@@ -1839,7 +1839,7 @@
         "NumElements": "RegisterSize / ElementSize",
         "TiedSource": 0
       },
-      "FPR = VFMLSScalarInsert u8:#RegisterSize, u8:#ElementSize, FPR:$Upper, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
+      "FPR = VFMLSScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Upper, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
         "Desc": [
           "Dest = (Vector1 * Vector2) - Addend",
           "This explicitly matches x86 FMA semantics because ARM semantics are mind-bending.",
@@ -1849,7 +1849,7 @@
         "NumElements": "RegisterSize / ElementSize",
         "TiedSource": 0
       },
-      "FPR = VFNMLAScalarInsert u8:#RegisterSize, u8:#ElementSize, FPR:$Upper, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
+      "FPR = VFNMLAScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Upper, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
         "Desc": [
           "Dest = (-Vector1 * Vector2) + Addend",
           "This explicitly matches x86 FMA semantics because ARM semantics are mind-bending.",
@@ -1859,7 +1859,7 @@
         "NumElements": "RegisterSize / ElementSize",
         "TiedSource": 0
       },
-      "FPR = VFNMLSScalarInsert u8:#RegisterSize, u8:#ElementSize, FPR:$Upper, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
+      "FPR = VFNMLSScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Upper, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
         "Desc": [
           "Dest = (-Vector1 * Vector2) - Addend",
           "This explicitly matches x86 FMA semantics because ARM semantics are mind-bending.",
@@ -1871,7 +1871,7 @@
       }
     },
     "Vector": {
-      "FPR = VMov u8:#RegisterSize, FPR:$Source": {
+      "FPR = VMov OpSize:#RegisterSize, FPR:$Source": {
         "Desc" : ["Copy vector register",
                   "When Register size is smaller than Source register size,",
                   "this op is defined to truncate and zero extend"
@@ -1879,99 +1879,99 @@
         "DestSize": "RegisterSize"
       },
 
-      "FPR = VectorImm u8:#RegisterSize, u8:#ElementSize, u8:$Immediate, u8:$ShiftAmount{0}": {
+      "FPR = VectorImm OpSize:#RegisterSize, OpSize:#ElementSize, u8:$Immediate, u8:$ShiftAmount{0}": {
         "Desc": ["Generates a vector with each element containg the immediate zexted"
                 ],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = LoadNamedVectorConstant u8:#RegisterSize, NamedVectorConstant:$Constant": {
+      "FPR = LoadNamedVectorConstant OpSize:#RegisterSize, NamedVectorConstant:$Constant": {
         "Desc": ["Load a named vector constant.",
                  "The list of vector constants can be found in <FEXCore/IR/IR.h>"
                 ],
         "DestSize": "RegisterSize"
       },
-      "FPR = LoadNamedVectorIndexedConstant u8:#RegisterSize, IndexNamedVectorConstant:$Constant, u32:$Index": {
+      "FPR = LoadNamedVectorIndexedConstant OpSize:#RegisterSize, IndexNamedVectorConstant:$Constant, u32:$Index": {
         "Desc": ["Load a named vector constant from Indexable table.",
                  "Index needs to be aligned register size.",
                  "The list of indexable vector constants can be found in <FEXCore/IR/IR.h>"
                 ],
         "DestSize": "RegisterSize"
       },
-      "FPR = VNeg u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VNeg OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VNot u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VNot OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VAbs u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VAbs OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": ["Does an signed integer absolute"
                 ],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VPopcount u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VPopcount OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": ["Does a popcount for each element of the register"
                 ],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VAddV u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VAddV OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": ["Does a horizontal vector add of elements across the source vector",
                  "Result is a zero extended scalar"
                 ],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VUMinV u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VUMinV OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": ["Does a horizontal vector unsigned minimum of elements across the source vector",
                  "Result is a zero extended scalar"
                 ],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VUMaxV u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VUMaxV OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": ["Does a horizontal vector unsigned maximum of elements across the source vector",
                  "Result is a zero extended scalar"
                 ],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VFAbs u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VFAbs OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VFNeg u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VFNeg OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VFRecp u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VFRecp OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VFSqrt u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VFSqrt OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VFRSqrt u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VFRSqrt OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VCMPEQZ u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VCMPEQZ OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VCMPGTZ u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VCMPGTZ OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": ["Vector compare signed greater than",
                  "Each element is compared, if the result is true then the resulting element is ~0, else zero",
                  "Compares the vector against zero"
@@ -1979,7 +1979,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VCMPLTZ u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VCMPLTZ OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": ["Vector compare signed less than",
                  "Each element is compared, if the result is true then the resulting element is ~0, else zero",
                  "Compares the vector against zero"
@@ -1987,40 +1987,40 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VDupElement u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, u8:$Index": {
+      "FPR = VDupElement OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$Index": {
         "Desc": ["Duplicates one element from the source register across the whole register"],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VShlI u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, u8:$BitShift": {
+      "FPR = VShlI OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$BitShift": {
         "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VUShrI u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, u8:$BitShift": {
+      "FPR = VUShrI OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$BitShift": {
         "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VUShraI u8:#RegisterSize, u8:#ElementSize, FPR:$DestVector, FPR:$Vector, u8:$BitShift": {
+      "FPR = VUShraI OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$DestVector, FPR:$Vector, u8:$BitShift": {
         "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VSShrI u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, u8:$BitShift": {
+      "FPR = VSShrI OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$BitShift": {
         "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VUShrNI u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, u8:$BitShift": {
+      "FPR = VUShrNI OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$BitShift": {
         "TiedSource": 0,
         "Desc": "Unsigned shifts right each element and then narrows to the next lower element size",
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
 
-      "FPR = VUShrNI2 u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper, u8:$BitShift": {
+      "FPR = VUShrNI2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper, u8:$BitShift": {
         "TiedSource": 0,
         "Desc": ["Unsigned shifts right each element and then narrows to the next lower element size",
                  "Inserts results in to the high elements of the first argument"
@@ -2028,73 +2028,73 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
-      "FPR = VSXTL u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VSXTL OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": "Sign extends elements from the source element size to the next size up",
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize << 1)"
       },
-      "FPR = VSXTL2 u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VSXTL2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": ["Sign extends elements from the source element size to the next size up",
                  "Source elements come from the upper half of the register"
                 ],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize << 1)"
       },
-      "FPR = VSSHLL u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, u8:$BitShift{0}": {
+      "FPR = VSSHLL OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$BitShift{0}": {
         "Desc": "Sign extends elements from the source element size to the next size up",
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize << 1)"
       },
-      "FPR = VSSHLL2 u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, u8:$BitShift{0}": {
+      "FPR = VSSHLL2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$BitShift{0}": {
         "Desc": ["Sign extends elements from the source element size to the next size up",
                  "Source elements come from the upper half of the register"
                 ],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize << 1)"
       },
-      "FPR = VUXTL u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VUXTL OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": "Zero extends elements from the source element size to the next size up",
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize << 1)"
       },
-      "FPR = VUXTL2 u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VUXTL2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": ["Zero extends elements from the source element size to the next size up",
                  "Source elements come from the upper half of the register"
                 ],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize << 1)"
       },
-      "FPR = VSQXTN u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VSQXTN OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
-      "FPR = VSQXTN2 u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
+      "FPR = VSQXTN2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
         "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
-      "FPR = VSQXTNPair u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
+      "FPR = VSQXTNPair OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
         "Desc": ["Does both VSQXTN and VSQXTN2 in a combined operation."
                 ],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
-      "FPR = VSQXTUN u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VSQXTUN OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
-      "FPR = VSQXTUN2 u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
+      "FPR = VSQXTUN2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
-      "FPR = VSQXTUNPair u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
+      "FPR = VSQXTUNPair OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
         "Desc": ["Does both VSQXTUN and VSQXTUN2 in a combined operation."
                 ],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
-      "FPR = VSRSHR u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, u8:$BitShift": {
+      "FPR = VSRSHR OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$BitShift": {
         "Desc": ["Signed rounding shift right by immediate",
                  "Exactly matching Arm64 srshr semantics"
                 ],
@@ -2102,7 +2102,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VSQSHL u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, u8:$BitShift": {
+      "FPR = VSQSHL OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$BitShift": {
         "Desc": ["Signed satuating shift left by immediate",
                  "Exactly matching Arm64 sqshl semantics"
                 ],
@@ -2110,14 +2110,14 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VRev32 u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VRev32 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc" : ["Reverses elements in 32-bit halfwords",
                   "Available element size: 1byte, 2 byte"
                  ],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VRev64 u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VRev64 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc" : ["Reverses elements in 64-bit halfwords",
                   "Available element size: 1byte, 2 byte, 4 byte"
                  ],
@@ -2125,251 +2125,251 @@
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VAdd u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VAdd OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VSub u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VSub OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VAnd u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VAnd OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VAndn u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VAndn OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VOr u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VOr OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VXor u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VXor OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VUQAdd u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VUQAdd OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VUQSub u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VUQSub OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VSQAdd u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VSQAdd OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VSQSub u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VSQSub OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VAddP u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
+      "FPR = VAddP OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
         "Desc": "Does a horizontal pairwise add of elements across the two source vectors",
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VURAvg u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VURAvg OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "Desc": ["Does an unsigned rounded average", "dst_elem = (src1_elem + src2_elem + 1) >> 1"],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VUMin u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VUMin OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VUMax u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VUMax OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VSMin u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VSMin OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VSMax u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
-        "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / ElementSize"
-      },
-
-      "FPR = VZip u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
-        "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / ElementSize"
-      },
-      "FPR = VZip2 u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
-        "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / ElementSize"
-      },
-      "FPR = VUnZip u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
-        "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / ElementSize"
-      },
-      "FPR = VUnZip2 u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
-        "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / ElementSize"
-      },
-      "FPR = VTrn u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
-        "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / ElementSize"
-      },
-      "FPR = VTrn2 u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
+      "FPR = VSMax OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VFAdd u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VZip OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VFAddP u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
+      "FPR = VZip2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
+      "FPR = VUnZip OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
+      "FPR = VUnZip2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
+      "FPR = VTrn OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
+      "FPR = VTrn2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
+
+      "FPR = VFAdd OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+        "DestSize": "RegisterSize",
+        "NumElements": "RegisterSize / ElementSize"
+      },
+      "FPR = VFAddP OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
         "Desc": "Does a horizontal pairwise add of elements across the two source vectors with float element types",
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VFAddV u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VFAddV OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": ["Does a horizontal float vector add of elements across the source vector",
                  "Result is a zero extended scalar"
                 ],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VFSub u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VFSub OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VFMul u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VFMul OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VFDiv u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VFDiv OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VFMin u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VFMin OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VFMax u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VFMax OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VMul u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VMul OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VUMull u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VUMull OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize << 1)"
       },
-      "FPR = VSMull u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VSMull OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "Desc": [ "Does a signed integer multiply with extend.",
                   "ElementSize is the source size"
                 ],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize << 1)"
       },
-      "FPR = VUMull2 u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VUMull2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "Desc": "Multiplies the high elements with size extension",
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize << 1)"
       },
-      "FPR = VSMull2 u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VSMull2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "Desc": "Multiplies the high elements with size extension",
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize << 1)"
       },
-      "FPR = VUMulH u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VUMulH OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "Desc": "Wide unsigned multiply returning the high results",
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VSMulH u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VSMulH OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "Desc": "Wide signed multiply returning the high results",
 
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VUABDL u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VUABDL OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "Desc": ["Unsigned Absolute Difference Long"
                 ],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize << 1)"
       },
-      "FPR = VUABDL2 u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VUABDL2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "Desc": ["Unsigned Absolute Difference Long",
                  "Using the high elements of the source vectors"
                 ],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize << 1)"
       },
-      "FPR = VUShl u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftVector, i1:$RangeCheck": {
+      "FPR = VUShl OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, FPR:$ShiftVector, i1:$RangeCheck": {
         "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VUShr u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftVector, i1:$RangeCheck": {
+      "FPR = VUShr OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, FPR:$ShiftVector, i1:$RangeCheck": {
         "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VSShr u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftVector, i1:$RangeCheck": {
+      "FPR = VSShr OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, FPR:$ShiftVector, i1:$RangeCheck": {
         "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VUShlS u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftScalar": {
+      "FPR = VUShlS OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, FPR:$ShiftScalar": {
         "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VUShrS u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftScalar": {
+      "FPR = VUShrS OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, FPR:$ShiftScalar": {
         "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VSShrS u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftScalar": {
+      "FPR = VSShrS OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, FPR:$ShiftScalar": {
         "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VUShrSWide u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftScalar": {
+      "FPR = VUShrSWide OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, FPR:$ShiftScalar": {
         "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VSShrSWide u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftScalar": {
+      "FPR = VSShrSWide OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, FPR:$ShiftScalar": {
         "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VUShlSWide u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, FPR:$ShiftScalar": {
+      "FPR = VUShlSWide OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, FPR:$ShiftScalar": {
         "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VInsElement u8:#RegisterSize, u8:#ElementSize, u8:$DestIdx, u8:$SrcIdx, FPR:$DestVector, FPR:$SrcVector": {
+      "FPR = VInsElement OpSize:#RegisterSize, OpSize:#ElementSize, u8:$DestIdx, u8:$SrcIdx, FPR:$DestVector, FPR:$SrcVector": {
         "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VInsGPR u8:#RegisterSize, u8:#ElementSize, u8:$DestIdx, FPR:$DestVector, GPR:$Src": {
+      "FPR = VInsGPR OpSize:#RegisterSize, OpSize:#ElementSize, u8:$DestIdx, FPR:$DestVector, GPR:$Src": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VExtr u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper, u8:$Index": {
+      "FPR = VExtr OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper, u8:$Index": {
         "Desc": ["Concats two vector registers together and extracts a full width register from the element index",
                  "Index is an element index. So it is offset by ElementSize argument",
                  "op:",
@@ -2380,12 +2380,12 @@
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VCMPEQ u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VCMPEQ OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VCMPGT u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VCMPGT OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "Desc": ["Vector compare signed greater than",
                  "Each element is compared, if the result is true then the resulting element is ~0, else zero"
                 ],
@@ -2393,35 +2393,35 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VFCMPEQ u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VFCMPEQ OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VFCMPNEQ u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VFCMPNEQ OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VFCMPLT u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VFCMPLT OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VFCMPGT u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VFCMPGT OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VFCMPLE u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VFCMPLE OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VFCMPORD u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VFCMPORD OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VFCMPUNO u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VFCMPUNO OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VTBL1 u8:#RegisterSize, FPR:$VectorTable, FPR:$VectorIndices": {
+      "FPR = VTBL1 OpSize:#RegisterSize, FPR:$VectorTable, FPR:$VectorIndices": {
         "Desc": ["Does a vector table lookup from one register in to the destination",
                  "Lookup is byte sized per byte element.",
                  "Any index larger than what the registers provide will result in zero for that element",
@@ -2430,7 +2430,7 @@
                 ],
         "DestSize": "RegisterSize"
       },
-      "FPR = VTBL2 u8:#RegisterSize, FPR:$VectorTable1, FPR:$VectorTable2, FPR:$VectorIndices": {
+      "FPR = VTBL2 OpSize:#RegisterSize, FPR:$VectorTable1, FPR:$VectorTable2, FPR:$VectorIndices": {
         "Desc": ["Does a vector table lookup from two registers in to the destination",
                  "Lookup is byte sized per byte element.",
                  "Any index larger than what the registers provide will result in zero for that element",
@@ -2440,7 +2440,7 @@
                 ],
         "DestSize": "RegisterSize"
       },
-      "FPR = VTBX1 u8:#RegisterSize, FPR:$VectorSrcDst, FPR:$VectorTable, FPR:$VectorIndices": {
+      "FPR = VTBX1 OpSize:#RegisterSize, FPR:$VectorSrcDst, FPR:$VectorTable, FPR:$VectorIndices": {
         "Desc": ["Does a vector table lookup from one register in to the destination",
                  "Lookup is byte sized per byte element.",
                  "Any index larger than what the registers provide will result in not modifying that element",
@@ -2450,7 +2450,7 @@
         "TiedSource": 0,
         "DestSize": "RegisterSize"
       },
-      "FPR = VBSL u8:#RegisterSize, FPR:$VectorMask, FPR:$VectorTrue, FPR:$VectorFalse": {
+      "FPR = VBSL OpSize:#RegisterSize, FPR:$VectorMask, FPR:$VectorTrue, FPR:$VectorFalse": {
         "Desc": ["Does a vector bitwise select.",
                  "If the bit in the field is 1 then the corresponding bit is pulled from VectorTrue",
                  "If the bit in the field is 0 then the corresponding bit is pulled from VectorFalse"
@@ -2482,11 +2482,11 @@
         "DestSize": "4",
         "JITDispatch": false
       },
-      "FPR = VFCADD u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, u16:$Rotate": {
+      "FPR = VFCADD OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, u16:$Rotate": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VFMLA u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
+      "FPR = VFMLA OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
         "Desc": [
           "Dest = (Vector1 * Vector2) + Addend",
           "This explicitly matches x86 FMA semantics because ARM semantics are mind-bending."
@@ -2495,7 +2495,7 @@
         "NumElements": "RegisterSize / ElementSize",
         "TiedSource": 2
       },
-      "FPR = VFMLS u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
+      "FPR = VFMLS OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
         "Desc": [
           "Dest = (Vector1 * Vector2) - Addend",
           "This explicitly matches x86 FMA semantics because ARM semantics are mind-bending."
@@ -2504,7 +2504,7 @@
         "NumElements": "RegisterSize / ElementSize",
         "TiedSource": 2
       },
-      "FPR = VFNMLA u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
+      "FPR = VFNMLA OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
         "Desc": [
           "Dest = (-Vector1 * Vector2) + Addend",
           "This explicitly matches x86 FMA semantics because ARM semantics are mind-bending."
@@ -2513,7 +2513,7 @@
         "NumElements": "RegisterSize / ElementSize",
         "TiedSource": 2
       },
-      "FPR = VFNMLS u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
+      "FPR = VFNMLS OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
         "Desc": [
           "Dest = (-Vector1 * Vector2) - Addend",
           "This explicitly matches x86 FMA semantics because ARM semantics are mind-bending."
@@ -2524,7 +2524,7 @@
       }
     },
     "Conv": {
-      "FPR = VCastFromGPR u8:#RegisterSize, u8:#ElementSize, GPR:$Src": {
+      "FPR = VCastFromGPR OpSize:#RegisterSize, OpSize:#ElementSize, GPR:$Src": {
         "Desc": ["Moves a GPR to a Vector register with zero extension to full length of the register.",
                  "No conversion is done on the data as it moves register files"
                 ],
@@ -2532,49 +2532,49 @@
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VDupFromGPR u8:#RegisterSize, u8:#ElementSize, GPR:$Src": {
+      "FPR = VDupFromGPR OpSize:#RegisterSize, OpSize:#ElementSize, GPR:$Src": {
         "Desc": ["Broadcasts a value in a GPR into each ElementSize-sized element in a vector"],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = Float_FromGPR_S u8:#DstElementSize, u8:$SrcElementSize, GPR:$Src": {
+      "FPR = Float_FromGPR_S OpSize:#DstElementSize, OpSize:$SrcElementSize, GPR:$Src": {
         "Desc": ["Scalar op: Converts signed GPR to Scalar float",
                  "Zeroes the upper bits of the vector register"
                 ],
         "DestSize": "DstElementSize"
       },
-      "FPR = Float_FToF u8:#DstElementSize, u8:$SrcElementSize, FPR:$Scalar": {
+      "FPR = Float_FToF OpSize:#DstElementSize, OpSize:$SrcElementSize, FPR:$Scalar": {
         "Desc": ["Scalar op: Converts float from one size to another",
                  "Zeroes the upper bits of the vector register"
                 ],
         "DestSize": "DstElementSize"
       },
 
-      "FPR = Vector_SToF u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = Vector_SToF OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": "Vector op: Converts signed integer to same size float",
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = Vector_FToS u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = Vector_FToS OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": ["Vector op: Converts float to signed integer, rounding towards zero",
                  "Rounding mode determined by host rounding mode"
                 ],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = Vector_FToZS u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = Vector_FToZS OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": "Vector op: Converts float to signed integer, rounding towards zero",
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = Vector_FToF u8:#RegisterSize, u8:#DestElementSize, FPR:$Vector, u8:$SrcElementSize": {
+      "FPR = Vector_FToF OpSize:#RegisterSize, OpSize:#DestElementSize, FPR:$Vector, OpSize:$SrcElementSize": {
         "Desc": "Vector op: Converts float from source element size to destination size (fp32<->fp64)",
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / DestElementSize"
       },
 
-      "FPR = VFCVTL2 u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VFCVTL2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": [
           "Vector op: Converts float from source element size to destination size (fp32->fp64)",
           "Selecting from the high half of the register."
@@ -2585,7 +2585,7 @@
           "RegisterSize != FEXCore::IR::OpSize::i256Bit && \"What does 256-bit mean in this context?\""
         ]
       },
-      "FPR = VFCVTN2 u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
+      "FPR = VFCVTN2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
         "TiedSource": 0,
         "Desc": [
           "Vector op: Converts float from source element size and inserting in to the high bits.",
@@ -2599,14 +2599,14 @@
           "RegisterSize != FEXCore::IR::OpSize::i256Bit && \"What does 256-bit mean in this context?\""
         ]
       },
-      "FPR = Vector_FToI u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, RoundType:$Round": {
+      "FPR = Vector_FToI OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, RoundType:$Round": {
         "Desc": ["Vector op: Rounds float to integral",
                  "Rounding mode determined by argument"
                 ],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = Vector_F64ToI32 u8:#RegisterSize, FPR:$Vector, RoundType:$Round, i1:$EnsureZeroUpperHalf": {
+      "FPR = Vector_F64ToI32 OpSize:#RegisterSize, FPR:$Vector, RoundType:$Round, i1:$EnsureZeroUpperHalf": {
         "Desc": ["Vector op: Rounds 64-bit float to 32-bit integral with round mode",
                  "Matches CVTPD2DQ/CVTTPD2DQ behaviour"
                 ],
@@ -2619,19 +2619,19 @@
         "Desc": "Does a stage of the inverse mix column transformation",
         "DestSize": "16"
       },
-      "FPR = VAESEnc u8:#RegisterSize, FPR:$State, FPR:$Key, FPR:$ZeroReg": {
+      "FPR = VAESEnc OpSize:#RegisterSize, FPR:$State, FPR:$Key, FPR:$ZeroReg": {
         "Desc": "Does a step of AES encryption",
         "DestSize": "RegisterSize"
       },
-      "FPR = VAESEncLast u8:#RegisterSize, FPR:$State, FPR:$Key, FPR:$ZeroReg": {
+      "FPR = VAESEncLast OpSize:#RegisterSize, FPR:$State, FPR:$Key, FPR:$ZeroReg": {
         "Desc": "Does the last step of AES encryption",
         "DestSize": "RegisterSize"
       },
-      "FPR = VAESDec u8:#RegisterSize, FPR:$State, FPR:$Key, FPR:$ZeroReg": {
+      "FPR = VAESDec OpSize:#RegisterSize, FPR:$State, FPR:$Key, FPR:$ZeroReg": {
         "Desc": "Does a step of AES decryption",
         "DestSize": "RegisterSize"
       },
-      "FPR = VAESDecLast u8:#RegisterSize, FPR:$State, FPR:$Key, FPR:$ZeroReg": {
+      "FPR = VAESDecLast OpSize:#RegisterSize, FPR:$State, FPR:$Key, FPR:$ZeroReg": {
         "Desc": "Does the last step of AES decryption",
         "DestSize": "RegisterSize"
       },
@@ -2647,12 +2647,12 @@
         "Desc": "Does vector scalar VSha256U0 instruction",
         "DestSize": "FEXCore::IR::OpSize::i128Bit"
       },
-      "GPR = CRC32 GPR:$Src1, GPR:$Src2, u8:$SrcSize": {
+      "GPR = CRC32 GPR:$Src1, GPR:$Src2, OpSize:$SrcSize": {
         "Desc": ["CRC32 using polynomial 0x1EDC6F41"
                 ],
         "DestSize": "4"
       },
-      "FPR = PCLMUL u8:#RegisterSize, FPR:$Src1, FPR:$Src2, u8:$Selector": {
+      "FPR = PCLMUL OpSize:#RegisterSize, FPR:$Src1, FPR:$Src2, u8:$Selector": {
         "Desc": [
           "Performs carryless multiplication of 64-bit elements depending on the selector.",
           "Selector = 0b00000000: Uses low 64-bit elements from both input vectors",
@@ -2747,7 +2747,7 @@
         "X87": true,
         "HasSideEffects": true
       },
-      "PushStack FPR:$X80Src, SSA:$OriginalValue, u8:$LoadSize, i1:$Float": {
+      "PushStack FPR:$X80Src, SSA:$OriginalValue, OpSize:$LoadSize, i1:$Float": {
         "Desc": [
           "Pushes the provided X80Src source on to the x87 stack.",
           "Tracks OriginalValue as the original value of X80Src.",
@@ -2769,7 +2769,7 @@
         "HasSideEffects": true,
         "X87": true
       },
-      "StoreStackMemory GPR:$Addr, OpSize:$SourceSize, i1:$Float, u8:$StoreSize": {
+      "StoreStackMemory GPR:$Addr, OpSize:$SourceSize, i1:$Float, OpSize:$StoreSize": {
         "Desc": [
           "Takes the top value off the x87 stack and stores it to memory.",
           "SourceSize is 128bit for F80 values, 64-bit for low precision.",
@@ -2983,19 +2983,19 @@
         "DestSize": "16",
         "JITDispatch": false
       },
-      "FPR = F80CVT u8:#Size, FPR:$X80Src": {
+      "FPR = F80CVT OpSize:#Size, FPR:$X80Src": {
         "DestSize": "Size",
         "JITDispatch": false
       },
-      "GPR = F80CVTInt u8:#Size, FPR:$X80Src, i1:$Truncate": {
+      "GPR = F80CVTInt OpSize:#Size, FPR:$X80Src, i1:$Truncate": {
         "DestSize": "Size",
         "JITDispatch": false
       },
-      "FPR = F80CVTTo FPR:$X80Src, u8:$SrcSize": {
+      "FPR = F80CVTTo FPR:$X80Src, OpSize:$SrcSize": {
         "DestSize": "16",
         "JITDispatch": false
       },
-      "FPR = F80CVTToInt GPR:$Src, u8:$SrcSize": {
+      "FPR = F80CVTToInt GPR:$Src, OpSize:$SrcSize": {
         "DestSize": "16",
         "JITDispatch": false
       },
@@ -3111,7 +3111,7 @@
         "DestSize": "16",
         "JITDispatch": false
       },
-      "F80VBSLStack u8:#RegisterSize, FPR:$VectorMask, u8:$SrcStack1, u8:$SrcStack2": {
+      "F80VBSLStack OpSize:#RegisterSize, FPR:$VectorMask, u8:$SrcStack1, u8:$SrcStack2": {
         "Desc": [
           "Does a vector bitwise select.",
           "If the bit in the field is 1 then the corresponding bit is pulled from VectorTrue",

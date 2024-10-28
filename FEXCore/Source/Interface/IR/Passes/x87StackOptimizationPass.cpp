@@ -283,7 +283,8 @@ inline void X87StackOptimization::MigrateToSlowPathIf(bool ShouldMigrate) {
 
 inline Ref X87StackOptimization::GetTopWithCache_Slow() {
   if (!TopOffsetCache[0]) {
-    TopOffsetCache[0] = IREmit->_LoadContext(1, GPRClass, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC);
+    TopOffsetCache[0] =
+      IREmit->_LoadContext(OpSize::i8Bit, GPRClass, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC);
   }
   return TopOffsetCache[0];
 }
@@ -305,31 +306,32 @@ inline Ref X87StackOptimization::GetOffsetTopWithCache_Slow(uint8_t Offset) {
 
 
 inline void X87StackOptimization::SetTopWithCache_Slow(Ref Value) {
-  IREmit->_StoreContext(1, GPRClass, Value, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC);
+  IREmit->_StoreContext(OpSize::i8Bit, GPRClass, Value, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC);
   InvalidateTopOffsetCache();
   TopOffsetCache[0] = Value;
 }
 
 inline void X87StackOptimization::SetX87ValidTag(Ref Value, bool Valid) {
-  Ref AbridgedFTW = IREmit->_LoadContext(1, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+  Ref AbridgedFTW = IREmit->_LoadContext(OpSize::i8Bit, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
   Ref RegMask = IREmit->_Lshl(OpSize::i32Bit, GetConstant(1), Value);
   Ref NewAbridgedFTW = Valid ? IREmit->_Or(OpSize::i32Bit, AbridgedFTW, RegMask) : IREmit->_Andn(OpSize::i32Bit, AbridgedFTW, RegMask);
-  IREmit->_StoreContext(1, GPRClass, NewAbridgedFTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+  IREmit->_StoreContext(OpSize::i8Bit, GPRClass, NewAbridgedFTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
 }
 
 inline Ref X87StackOptimization::GetX87ValidTag_Slow(uint8_t Offset) {
-  Ref AbridgedFTW = IREmit->_LoadContext(1, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+  Ref AbridgedFTW = IREmit->_LoadContext(OpSize::i8Bit, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
   return IREmit->_And(OpSize::i32Bit, IREmit->_Lshr(OpSize::i32Bit, AbridgedFTW, GetOffsetTopWithCache_Slow(Offset)), GetConstant(1));
 }
 
 inline Ref X87StackOptimization::LoadStackValueAtOffset_Slow(uint8_t Offset) {
-  return IREmit->_LoadContextIndexed(GetOffsetTopWithCache_Slow(Offset), ReducedPrecisionMode ? 8 : 16, MMBaseOffset(), 16, FPRClass);
+  return IREmit->_LoadContextIndexed(GetOffsetTopWithCache_Slow(Offset), ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit,
+                                     MMBaseOffset(), 16, FPRClass);
 }
 
 inline void X87StackOptimization::StoreStackValueAtOffset_Slow(Ref Value, uint8_t Offset, bool SetValid) {
   OrderedNode* TopOffset = GetOffsetTopWithCache_Slow(Offset);
   // store
-  IREmit->_StoreContextIndexed(Value, TopOffset, ReducedPrecisionMode ? 8 : 16, MMBaseOffset(), 16, FPRClass);
+  IREmit->_StoreContextIndexed(Value, TopOffset, ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit, MMBaseOffset(), 16, FPRClass);
   // mark it valid
   // In some cases we might already know it has been previously set as valid so we don't need to do it again
   if (SetValid) {
@@ -378,7 +380,7 @@ void X87StackOptimization::HandleUnop(IROps Op64, bool VFOp64, IROps Op80) {
 
   if (ReducedPrecisionMode) {
     if (VFOp64) {
-      DeriveOp(Value, Op64, IREmit->_VFSqrt(8, 8, St0));
+      DeriveOp(Value, Op64, IREmit->_VFSqrt(OpSize::i64Bit, OpSize::i64Bit, St0));
     } else {
       DeriveOp(Value, Op64, IREmit->_F64SIN(St0));
     }
@@ -398,10 +400,10 @@ void X87StackOptimization::HandleBinopValue(IROps Op64, bool VFOp64, IROps Op80,
   Ref Node = {};
   if (ReducedPrecisionMode) {
     if (Reverse) {
-      DeriveOp(Node, Op64, IREmit->_VFAdd(8, 8, ValueNode, StackNode));
+      DeriveOp(Node, Op64, IREmit->_VFAdd(OpSize::i64Bit, OpSize::i64Bit, ValueNode, StackNode));
     } else {
       if (VFOp64) {
-        DeriveOp(Node, Op64, IREmit->_VFAdd(8, 8, StackNode, ValueNode));
+        DeriveOp(Node, Op64, IREmit->_VFAdd(OpSize::i64Bit, OpSize::i64Bit, StackNode, ValueNode));
       } else {
         DeriveOp(Node, Op64, IREmit->_F64FPREM(StackNode, ValueNode));
       }
@@ -475,13 +477,14 @@ Ref X87StackOptimization::SynchronizeStackValues() {
     }
     Ref TopIndex = GetOffsetTopWithCache_Slow(i);
     if (Valid == StackSlot::VALID) {
-      IREmit->_StoreContextIndexed(StackMember.StackDataNode, TopIndex, ReducedPrecisionMode ? 8 : 16, MMBaseOffset(), 16, FPRClass);
+      IREmit->_StoreContextIndexed(StackMember.StackDataNode, TopIndex, ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit,
+                                   MMBaseOffset(), 16, FPRClass);
     }
   }
   { // Set valid tags
     uint8_t Mask = StackData.getValidMask();
     if (Mask == 0xff) {
-      IREmit->_StoreContext(1, GPRClass, GetConstant(Mask), offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+      IREmit->_StoreContext(OpSize::i8Bit, GPRClass, GetConstant(Mask), offsetof(FEXCore::Core::CPUState, AbridgedFTW));
     } else if (Mask != 0) {
       if (std::popcount(Mask) == 1) {
         uint8_t BitIdx = __builtin_ctz(Mask);
@@ -490,16 +493,16 @@ Ref X87StackOptimization::SynchronizeStackValues() {
         // perform a rotate right on mask by top
         auto* TopValue = GetTopWithCache_Slow();
         Ref RotAmount = IREmit->_Sub(OpSize::i32Bit, GetConstant(8), TopValue);
-        Ref AbridgedFTW = IREmit->_LoadContext(1, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+        Ref AbridgedFTW = IREmit->_LoadContext(OpSize::i8Bit, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
         Ref NewAbridgedFTW = IREmit->_Or(OpSize::i32Bit, AbridgedFTW, RotateRight8(Mask, RotAmount));
-        IREmit->_StoreContext(1, GPRClass, NewAbridgedFTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+        IREmit->_StoreContext(OpSize::i8Bit, GPRClass, NewAbridgedFTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
       }
     }
   }
   { // Set invalid tags
     uint8_t Mask = StackData.getInvalidMask();
     if (Mask == 0xff) {
-      IREmit->_StoreContext(1, GPRClass, GetConstant(0), offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+      IREmit->_StoreContext(OpSize::i8Bit, GPRClass, GetConstant(0), offsetof(FEXCore::Core::CPUState, AbridgedFTW));
     } else if (Mask != 0) {
       if (std::popcount(Mask)) {
         uint8_t BitIdx = __builtin_ctz(Mask);
@@ -508,9 +511,9 @@ Ref X87StackOptimization::SynchronizeStackValues() {
         // Same rotate right as above but this time on the invalid mask
         auto* TopValue = GetTopWithCache_Slow();
         Ref RotAmount = IREmit->_Sub(OpSize::i32Bit, GetConstant(8), TopValue);
-        Ref AbridgedFTW = IREmit->_LoadContext(1, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+        Ref AbridgedFTW = IREmit->_LoadContext(OpSize::i8Bit, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
         Ref NewAbridgedFTW = IREmit->_Andn(OpSize::i32Bit, AbridgedFTW, RotateRight8(Mask, RotAmount));
-        IREmit->_StoreContext(1, GPRClass, NewAbridgedFTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+        IREmit->_StoreContext(OpSize::i8Bit, GPRClass, NewAbridgedFTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
       }
     }
   }
@@ -647,9 +650,9 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         HandleUnop(OP_F64TAN, false, OP_F80TAN);
         Ref OneConst {};
         if (ReducedPrecisionMode) {
-          OneConst = IREmit->_VCastFromGPR(8, 8, GetConstant(0x3FF0000000000000));
+          OneConst = IREmit->_VCastFromGPR(OpSize::i64Bit, OpSize::i64Bit, GetConstant(0x3FF0000000000000));
         } else {
-          OneConst = IREmit->_LoadNamedVectorConstant(16, NamedVectorConstant::NAMED_VECTOR_X87_ONE);
+          OneConst = IREmit->_LoadNamedVectorConstant(OpSize::i128Bit, NamedVectorConstant::NAMED_VECTOR_X87_ONE);
         }
 
         if (SlowPath) {
@@ -708,7 +711,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
           }
         } else { // invalidate all
           if (SlowPath) {
-            IREmit->_StoreContext(1, GPRClass, GetConstant(0), offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+            IREmit->_StoreContext(OpSize::i8Bit, GPRClass, GetConstant(0), offsetof(FEXCore::Core::CPUState, AbridgedFTW));
           } else {
             for (size_t i = 0; i < StackData.size; i++) {
               StackData.setTagInvalid(i);
@@ -790,26 +793,27 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         // or similar. As long as the source size and dest size are one and the same.
         // This will avoid any conversions between source and stack element size and conversion back.
         if (!SlowPath && Value->Source && Value->Source->first == Op->StoreSize && Value->InterpretAsFloat) {
-          IREmit->_StoreMem(Value->InterpretAsFloat ? FPRClass : GPRClass, Op->StoreSize, AddrNode, Value->Source->second);
+          IREmit->_StoreMem(Value->InterpretAsFloat ? FPRClass : GPRClass, IR::SizeToOpSize(Op->StoreSize), AddrNode, Value->Source->second);
         } else {
           if (ReducedPrecisionMode) {
             switch (Op->StoreSize) {
-            case 4: {
-              StackNode = IREmit->_Float_FToF(4, 8, StackNode);
-              IREmit->_StoreMem(FPRClass, 4, AddrNode, StackNode);
+            case OpSize::i32Bit: {
+              StackNode = IREmit->_Float_FToF(OpSize::i32Bit, OpSize::i64Bit, StackNode);
+              IREmit->_StoreMem(FPRClass, OpSize::i32Bit, AddrNode, StackNode);
               break;
             }
-            case 8: {
-              IREmit->_StoreMem(FPRClass, 8, AddrNode, StackNode);
+            case OpSize::i64Bit: {
+              IREmit->_StoreMem(FPRClass, OpSize::i64Bit, AddrNode, StackNode);
               break;
             }
-            case 10: {
-              StackNode = IREmit->_F80CVTTo(StackNode, 8);
-              IREmit->_StoreMem(FPRClass, 8, AddrNode, StackNode);
-              auto Upper = IREmit->_VExtractToGPR(16, 8, StackNode, 1);
-              IREmit->_StoreMem(GPRClass, 2, Upper, AddrNode, GetConstant(8), 8, MEM_OFFSET_SXTX, 1);
+            case OpSize::f80Bit: {
+              StackNode = IREmit->_F80CVTTo(StackNode, OpSize::i64Bit);
+              IREmit->_StoreMem(FPRClass, OpSize::i64Bit, AddrNode, StackNode);
+              auto Upper = IREmit->_VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, StackNode, 1);
+              IREmit->_StoreMem(GPRClass, OpSize::i16Bit, Upper, AddrNode, GetConstant(8), OpSize::i64Bit, MEM_OFFSET_SXTX, 1);
               break;
             }
+            default: ERROR_AND_DIE_FMT("Unsupported x87 size");
             }
           } else {
             if (Op->StoreSize != 10) { // if it's not 80bits then convert
@@ -817,12 +821,12 @@ void X87StackOptimization::Run(IREmitter* Emit) {
             }
             if (Op->StoreSize == 10) { // Part of code from StoreResult_WithOpSize()
               // For X87 extended doubles, split before storing
-              IREmit->_StoreMem(FPRClass, 8, AddrNode, StackNode);
-              auto Upper = IREmit->_VExtractToGPR(16, 8, StackNode, 1);
+              IREmit->_StoreMem(FPRClass, OpSize::i64Bit, AddrNode, StackNode);
+              auto Upper = IREmit->_VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, StackNode, 1);
               auto DestAddr = IREmit->_Add(OpSize::i64Bit, AddrNode, GetConstant(8));
-              IREmit->_StoreMem(GPRClass, 2, DestAddr, Upper, 8);
+              IREmit->_StoreMem(GPRClass, OpSize::i16Bit, DestAddr, Upper, OpSize::i64Bit);
             } else {
-              IREmit->_StoreMem(FPRClass, Op->StoreSize, AddrNode, StackNode);
+              IREmit->_StoreMem(FPRClass, IR::SizeToOpSize(Op->StoreSize), AddrNode, StackNode);
             }
           }
         }
@@ -871,13 +875,13 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         // of a value
         Ref ResultNode {};
         if (ReducedPrecisionMode) {
-          ResultNode = IREmit->_VFNeg(8, 8, Value);
+          ResultNode = IREmit->_VFNeg(OpSize::i64Bit, OpSize::i64Bit, Value);
         } else {
           Ref Low = GetConstant(0);
           Ref High = GetConstant(0b1'000'0000'0000'0000ULL);
-          Ref HelperNode = IREmit->_VCastFromGPR(16, 8, Low);
-          HelperNode = IREmit->_VInsGPR(16, 8, 1, HelperNode, High);
-          ResultNode = IREmit->_VXor(16, 1, Value, HelperNode);
+          Ref HelperNode = IREmit->_VCastFromGPR(OpSize::i128Bit, OpSize::i64Bit, Low);
+          HelperNode = IREmit->_VInsGPR(OpSize::i128Bit, OpSize::i64Bit, 1, HelperNode, High);
+          ResultNode = IREmit->_VXor(OpSize::i128Bit, OpSize::i8Bit, Value, HelperNode);
         }
         StoreStackValue(ResultNode);
         break;
@@ -888,14 +892,14 @@ void X87StackOptimization::Run(IREmitter* Emit) {
 
         Ref ResultNode {};
         if (ReducedPrecisionMode) {
-          ResultNode = IREmit->_VFAbs(8, 8, Value);
+          ResultNode = IREmit->_VFAbs(OpSize::i64Bit, OpSize::i64Bit, Value);
         } else {
           // Intermediate insts
           Ref Low = GetConstant(~0ULL);
           Ref High = GetConstant(0b0'111'1111'1111'1111ULL);
-          Ref HelperNode = IREmit->_VCastFromGPR(16, 8, Low);
-          HelperNode = IREmit->_VInsGPR(16, 8, 1, HelperNode, High);
-          ResultNode = IREmit->_VAnd(16, 1, Value, HelperNode);
+          Ref HelperNode = IREmit->_VCastFromGPR(OpSize::i128Bit, OpSize::i64Bit, Low);
+          HelperNode = IREmit->_VInsGPR(OpSize::i128Bit, OpSize::i64Bit, 1, HelperNode, High);
+          ResultNode = IREmit->_VAnd(OpSize::i128Bit, OpSize::i8Bit, Value, HelperNode);
         }
         StoreStackValue(ResultNode);
         break;
@@ -909,7 +913,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
 
         Ref CmpNode {};
         if (ReducedPrecisionMode) {
-          CmpNode = IREmit->_FCmp(8, StackValue1, StackValue2);
+          CmpNode = IREmit->_FCmp(OpSize::i64Bit, StackValue1, StackValue2);
         } else {
           CmpNode = IREmit->_F80Cmp(StackValue1, StackValue2);
         }
@@ -921,11 +925,11 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         const auto* Op = IROp->C<IROp_F80StackTest>();
         auto Offset = Op->SrcStack;
         auto StackNode = LoadStackValue(Offset);
-        Ref ZeroConst = IREmit->_VCastFromGPR(ReducedPrecisionMode ? 8 : 16, 8, GetConstant(0));
+        Ref ZeroConst = IREmit->_VCastFromGPR(ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit, OpSize::i64Bit, GetConstant(0));
 
         Ref CmpNode {};
         if (ReducedPrecisionMode) {
-          CmpNode = IREmit->_FCmp(8, StackNode, ZeroConst);
+          CmpNode = IREmit->_FCmp(OpSize::i64Bit, StackNode, ZeroConst);
         } else {
           CmpNode = IREmit->_F80Cmp(StackNode, ZeroConst);
         }
@@ -941,7 +945,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
 
         Ref CmpNode {};
         if (ReducedPrecisionMode) {
-          CmpNode = IREmit->_FCmp(8, StackNode, Value);
+          CmpNode = IREmit->_FCmp(OpSize::i64Bit, StackNode, Value);
         } else {
           CmpNode = IREmit->_F80Cmp(StackNode, Value);
         }
@@ -984,7 +988,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
 
         Ref Value {};
         if (ReducedPrecisionMode) {
-          Value = IREmit->_Vector_FToI(8, 8, St0, Round_Host);
+          Value = IREmit->_Vector_FToI(OpSize::i64Bit, OpSize::i64Bit, St0, Round_Host);
         } else {
           Value = IREmit->_F80Round(St0);
         }
@@ -1000,7 +1004,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         Ref Value1 = LoadStackValue(StackOffset1);
         Ref Value2 = LoadStackValue(StackOffset2);
 
-        Ref StackNode = IREmit->_VBSL(16, CurrentIR.GetNode(Op->VectorMask), Value1, Value2);
+        Ref StackNode = IREmit->_VBSL(OpSize::i128Bit, CurrentIR.GetNode(Op->VectorMask), Value1, Value2);
         StoreStackValue(StackNode, 0, StackOffset1 && StackOffset2);
         break;
       }

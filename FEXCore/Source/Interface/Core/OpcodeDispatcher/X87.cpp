@@ -60,13 +60,13 @@ void OpDispatchBuilder::SetX87Top(Ref Value) {
 }
 
 // Float LoaD operation with memory operand
-void OpDispatchBuilder::FLD(OpcodeArgs, size_t Width) {
-  size_t ReadWidth = (Width == 80) ? 16 : Width / 8;
+void OpDispatchBuilder::FLD(OpcodeArgs, IR::OpSize Width) {
+  const auto ReadWidth = (Width == OpSize::f80Bit) ? OpSize::i128Bit : Width;
 
   Ref Data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], ReadWidth, Op->Flags);
   Ref ConvertedData = Data;
   // Convert to 80bit float
-  if (Width == 32 || Width == 64) {
+  if (Width == OpSize::i32Bit || Width == OpSize::i64Bit) {
     ConvertedData = _F80CVTTo(Data, ReadWidth);
   }
   _PushStack(ConvertedData, Data, ReadWidth, true);
@@ -86,7 +86,7 @@ void OpDispatchBuilder::FBLD(OpcodeArgs) {
 
 void OpDispatchBuilder::FBSTP(OpcodeArgs) {
   Ref converted = _F80BCDStore(_ReadStackValue(0));
-  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, converted, 10, 1);
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, converted, OpSize::f80Bit, OpSize::i8Bit);
   _PopStackDestroy();
 }
 
@@ -97,12 +97,12 @@ void OpDispatchBuilder::FLD_Const(OpcodeArgs, NamedVectorConstant Constant) {
 }
 
 void OpDispatchBuilder::FILD(OpcodeArgs) {
-  size_t ReadWidth = GetSrcSize(Op);
+  const auto ReadWidth = OpSizeFromSrc(Op);
   // Read from memory
   Ref Data = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], ReadWidth, Op->Flags);
 
   // Sign extend to 64bits
-  if (ReadWidth != 8) {
+  if (ReadWidth != OpSize::i64Bit) {
     Data = _Sbfe(OpSize::i64Bit, ReadWidth * 8, 0, Data);
   }
 
@@ -128,9 +128,9 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
   _PushStack(ConvertedData, Data, ReadWidth, false);
 }
 
-void OpDispatchBuilder::FST(OpcodeArgs, size_t Width) {
+void OpDispatchBuilder::FST(OpcodeArgs, IR::OpSize Width) {
   Ref Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-  _StoreStackMemory(Mem, OpSize::i128Bit, true, Width / 8);
+  _StoreStackMemory(Mem, OpSize::i128Bit, true, Width);
   if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
     _PopStackDestroy();
   }
@@ -149,18 +149,18 @@ void OpDispatchBuilder::FSTToStack(OpcodeArgs) {
 
 // Store integer to memory (possibly with truncation)
 void OpDispatchBuilder::FIST(OpcodeArgs, bool Truncate) {
-  auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
   Ref Data = _ReadStackValue(0);
   Data = _F80CVTInt(Size, Data, Truncate);
 
-  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Data, Size, 1);
+  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Data, Size, OpSize::i8Bit);
 
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
     _PopStackDestroy();
   }
 }
 
-void OpDispatchBuilder::FADD(OpcodeArgs, size_t Width, bool Integer, OpDispatchBuilder::OpResult ResInST0) {
+void OpDispatchBuilder::FADD(OpcodeArgs, IR::OpSize Width, bool Integer, OpDispatchBuilder::OpResult ResInST0) {
   if (Op->Src[0].IsNone()) { // Implicit argument case
     auto Offset = Op->OP & 7;
     auto St0 = 0;
@@ -175,22 +175,22 @@ void OpDispatchBuilder::FADD(OpcodeArgs, size_t Width, bool Integer, OpDispatchB
     return;
   }
 
-  LOGMAN_THROW_A_FMT(Width != 80, "No 80-bit floats from memory");
+  LOGMAN_THROW_A_FMT(Width != OpSize::f80Bit, "No 80-bit floats from memory");
   // We have one memory argument
   Ref Arg {};
   if (Integer) {
     Arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-    Arg = _F80CVTToInt(Arg, Width / 8);
+    Arg = _F80CVTToInt(Arg, Width);
   } else {
     Arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-    Arg = _F80CVTTo(Arg, Width / 8);
+    Arg = _F80CVTTo(Arg, Width);
   }
 
   // top of stack is at offset zero
   _F80AddValue(0, Arg);
 }
 
-void OpDispatchBuilder::FMUL(OpcodeArgs, size_t Width, bool Integer, OpDispatchBuilder::OpResult ResInST0) {
+void OpDispatchBuilder::FMUL(OpcodeArgs, IR::OpSize Width, bool Integer, OpDispatchBuilder::OpResult ResInST0) {
   if (Op->Src[0].IsNone()) { // Implicit argument case
     auto offset = Op->OP & 7;
     auto st0 = 0;
@@ -205,15 +205,15 @@ void OpDispatchBuilder::FMUL(OpcodeArgs, size_t Width, bool Integer, OpDispatchB
     return;
   }
 
-  LOGMAN_THROW_A_FMT(Width != 80, "No 80-bit floats from memory");
+  LOGMAN_THROW_A_FMT(Width != OpSize::f80Bit, "No 80-bit floats from memory");
   // We have one memory argument
   Ref arg {};
   if (Integer) {
     arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-    arg = _F80CVTToInt(arg, Width / 8);
+    arg = _F80CVTToInt(arg, Width);
   } else {
     arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-    arg = _F80CVTTo(arg, Width / 8);
+    arg = _F80CVTTo(arg, Width);
   }
 
   // top of stack is at offset zero
@@ -224,7 +224,7 @@ void OpDispatchBuilder::FMUL(OpcodeArgs, size_t Width, bool Integer, OpDispatchB
   }
 }
 
-void OpDispatchBuilder::FDIV(OpcodeArgs, size_t Width, bool Integer, bool Reverse, OpDispatchBuilder::OpResult ResInST0) {
+void OpDispatchBuilder::FDIV(OpcodeArgs, IR::OpSize Width, bool Integer, bool Reverse, OpDispatchBuilder::OpResult ResInST0) {
   if (Op->Src[0].IsNone()) {
     const auto Offset = Op->OP & 7;
     const auto St0 = 0;
@@ -242,15 +242,15 @@ void OpDispatchBuilder::FDIV(OpcodeArgs, size_t Width, bool Integer, bool Revers
     return;
   }
 
-  LOGMAN_THROW_A_FMT(Width != 80, "No 80-bit floats from memory");
+  LOGMAN_THROW_A_FMT(Width != OpSize::f80Bit, "No 80-bit floats from memory");
   // We have one memory argument
   Ref arg {};
   if (Integer) {
     arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-    arg = _F80CVTToInt(arg, Width / 8);
+    arg = _F80CVTToInt(arg, Width);
   } else {
     arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-    arg = _F80CVTTo(arg, Width / 8);
+    arg = _F80CVTTo(arg, Width);
   }
 
   // top of stack is at offset zero
@@ -265,7 +265,7 @@ void OpDispatchBuilder::FDIV(OpcodeArgs, size_t Width, bool Integer, bool Revers
   }
 }
 
-void OpDispatchBuilder::FSUB(OpcodeArgs, size_t Width, bool Integer, bool Reverse, OpDispatchBuilder::OpResult ResInST0) {
+void OpDispatchBuilder::FSUB(OpcodeArgs, IR::OpSize Width, bool Integer, bool Reverse, OpDispatchBuilder::OpResult ResInST0) {
   if (Op->Src[0].IsNone()) {
     const auto Offset = Op->OP & 7;
     const auto St0 = 0;
@@ -283,15 +283,15 @@ void OpDispatchBuilder::FSUB(OpcodeArgs, size_t Width, bool Integer, bool Revers
     return;
   }
 
-  LOGMAN_THROW_A_FMT(Width != 80, "No 80-bit floats from memory");
+  LOGMAN_THROW_A_FMT(Width != OpSize::f80Bit, "No 80-bit floats from memory");
   // We have one memory argument
   Ref Arg {};
   if (Integer) {
     Arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-    Arg = _F80CVTToInt(Arg, Width / 8);
+    Arg = _F80CVTToInt(Arg, Width);
   } else {
     Arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-    Arg = _F80CVTTo(Arg, Width / 8);
+    Arg = _F80CVTTo(Arg, Width);
   }
 
   // top of stack is at offset zero
@@ -342,7 +342,7 @@ void OpDispatchBuilder::X87FNSTENV(OpcodeArgs) {
   // Before we store anything we need to sync our stack to the registers.
   _SyncStackToSlow();
 
-  auto Size = GetDstSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
   Ref Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
   Mem = AppendSegmentOffset(Mem, Op->Flags);
 
@@ -351,33 +351,33 @@ void OpDispatchBuilder::X87FNSTENV(OpcodeArgs) {
     _StoreMem(GPRClass, Size, Mem, FCW, Size);
   }
 
-  { _StoreMem(GPRClass, Size, ReconstructFSW_Helper(), Mem, _Constant(Size * 1), Size, MEM_OFFSET_SXTX, 1); }
+  { _StoreMem(GPRClass, Size, ReconstructFSW_Helper(), Mem, _Constant(Size * 1), Size, MEM_OFFSET_SXTX, OpSize::i8Bit); }
 
   auto ZeroConst = _Constant(0);
 
   {
     // FTW
-    _StoreMem(GPRClass, Size, GetX87FTW_Helper(), Mem, _Constant(Size * 2), Size, MEM_OFFSET_SXTX, 1);
+    _StoreMem(GPRClass, Size, GetX87FTW_Helper(), Mem, _Constant(Size * 2), Size, MEM_OFFSET_SXTX, OpSize::i8Bit);
   }
 
   {
     // Instruction Offset
-    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(Size * 3), Size, MEM_OFFSET_SXTX, 1);
+    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(Size * 3), Size, MEM_OFFSET_SXTX, OpSize::i8Bit);
   }
 
   {
     // Instruction CS selector (+ Opcode)
-    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(Size * 4), Size, MEM_OFFSET_SXTX, 1);
+    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(Size * 4), Size, MEM_OFFSET_SXTX, OpSize::i8Bit);
   }
 
   {
     // Data pointer offset
-    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(Size * 5), Size, MEM_OFFSET_SXTX, 1);
+    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(Size * 5), Size, MEM_OFFSET_SXTX, OpSize::i8Bit);
   }
 
   {
     // Data pointer selector
-    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(Size * 6), Size, MEM_OFFSET_SXTX, 1);
+    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(Size * 6), Size, MEM_OFFSET_SXTX, OpSize::i8Bit);
   }
 }
 
@@ -400,7 +400,7 @@ Ref OpDispatchBuilder::ReconstructX87StateFromFSW_Helper(Ref FSW) {
 void OpDispatchBuilder::X87LDENV(OpcodeArgs) {
   _StackForceSlow();
 
-  auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
   Ref Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.LoadData = false});
   Mem = AppendSegmentOffset(Mem, Op->Flags);
 
@@ -439,7 +439,7 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
   // 2 bytes : Opcode
   // 4 bytes : data pointer offset
   // 4 bytes : data pointer selector
-  const auto Size = GetDstSize(Op);
+  const auto Size = OpSizeFromDst(Op);
   Ref Mem = MakeSegmentAddress(Op, Op->Dest);
   Ref Top = GetX87Top();
   {
@@ -478,7 +478,7 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
 
   auto OneConst = _Constant(1);
   auto SevenConst = _Constant(7);
-  size_t LoadSize = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
+  const auto LoadSize = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
   for (int i = 0; i < 7; ++i) {
     Ref data = _LoadContextIndexed(Top, LoadSize, MMBaseOffset(), OpSize::i128Bit, FPRClass);
     if (ReducedPrecisionMode) {
@@ -506,7 +506,7 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
 
 void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
   _StackForceSlow();
-  const auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
   Ref Mem = MakeSegmentAddress(Op, Op->Src[0]);
 
   auto NewFCW = _LoadMem(GPRClass, OpSize::i16Bit, Mem, OpSize::i16Bit);
@@ -536,7 +536,7 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
   auto high = _Constant(0xFFFF);
   Ref Mask = _VCastFromGPR(OpSize::i128Bit, OpSize::i64Bit, low);
   Mask = _VInsGPR(OpSize::i128Bit, OpSize::i64Bit, 1, Mask, high);
-  size_t StoreSize = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
+  const auto StoreSize = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
   for (int i = 0; i < 7; ++i) {
     Ref Reg = _LoadMem(FPRClass, OpSize::i128Bit, Mem, _Constant((Size * 7) + (10 * i)), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
     // Mask off the top bits
@@ -566,7 +566,7 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
 // Load / Store Control Word
 void OpDispatchBuilder::X87FSTCW(OpcodeArgs) {
   auto FCW = _LoadContext(OpSize::i16Bit, GPRClass, offsetof(FEXCore::Core::CPUState, FCW));
-  StoreResult(GPRClass, Op, FCW, -1);
+  StoreResult(GPRClass, Op, FCW, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::X87FLDCW(OpcodeArgs) {
@@ -598,7 +598,7 @@ void OpDispatchBuilder::X87FYL2X(OpcodeArgs, bool IsFYL2XP1) {
   _F80FYL2XStack();
 }
 
-void OpDispatchBuilder::FCOMI(OpcodeArgs, size_t Width, bool Integer, OpDispatchBuilder::FCOMIFlags WhichFlags, bool PopTwice) {
+void OpDispatchBuilder::FCOMI(OpcodeArgs, IR::OpSize Width, bool Integer, OpDispatchBuilder::FCOMIFlags WhichFlags, bool PopTwice) {
   Ref arg {};
   Ref b {};
 
@@ -609,13 +609,13 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs, size_t Width, bool Integer, OpDispatch
     Res = _F80CmpStack(Offset);
   } else {
     // Memory arg
-    if (Width == 16 || Width == 32 || Width == 64) {
+    if (Width == OpSize::i16Bit || Width == OpSize::i32Bit || Width == OpSize::i64Bit) {
       if (Integer) {
         arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-        b = _F80CVTToInt(arg, Width / 8);
+        b = _F80CVTToInt(arg, Width);
       } else {
         arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-        b = _F80CVTTo(arg, Width / 8);
+        b = _F80CVTTo(arg, Width);
       }
     }
     Res = _F80CmpValue(b);
@@ -722,7 +722,7 @@ Ref OpDispatchBuilder::ReconstructFSW_Helper(Ref T) {
 void OpDispatchBuilder::X87FNSTSW(OpcodeArgs) {
   Ref TopValue = _SyncStackToSlow();
   Ref StatusWord = ReconstructFSW_Helper(TopValue);
-  StoreResult(GPRClass, Op, StatusWord, -1);
+  StoreResult(GPRClass, Op, StatusWord, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::FNINIT(OpcodeArgs) {
@@ -834,8 +834,8 @@ void OpDispatchBuilder::X87FXTRACT(OpcodeArgs) {
   _PopStackDestroy();
   auto Exp = _F80XTRACT_EXP(Top);
   auto Sig = _F80XTRACT_SIG(Top);
-  _PushStack(Exp, Exp, 80, true);
-  _PushStack(Sig, Sig, 80, true);
+  _PushStack(Exp, Exp, OpSize::f80Bit, true);
+  _PushStack(Sig, Sig, OpSize::f80Bit, true);
 }
 
 } // namespace FEXCore::IR

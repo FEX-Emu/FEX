@@ -26,7 +26,7 @@ class OrderedNode;
 void OpDispatchBuilder::X87LDENVF64(OpcodeArgs) {
   _StackForceSlow();
 
-  const auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
   Ref Mem = MakeSegmentAddress(Op, Op->Src[0]);
 
   auto NewFCW = _LoadMem(GPRClass, OpSize::i16Bit, Mem, OpSize::i16Bit);
@@ -58,14 +58,14 @@ void OpDispatchBuilder::X87FLDCWF64(OpcodeArgs) {
 
 // F64 ops
 // Float load op with memory operand
-void OpDispatchBuilder::FLDF64(OpcodeArgs, size_t Width) {
-  size_t ReadWidth = (Width == 80) ? 16 : Width / 8;
+void OpDispatchBuilder::FLDF64(OpcodeArgs, IR::OpSize Width) {
+  const auto ReadWidth = (Width == OpSize::f80Bit) ? OpSize::i128Bit : Width;
   Ref Data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], ReadWidth, Op->Flags);
   // Convert to 64bit float
   Ref ConvertedData = Data;
-  if (Width == 32) {
+  if (Width == OpSize::i32Bit) {
     ConvertedData = _Float_FToF(OpSize::i64Bit, OpSize::i32Bit, Data);
-  } else if (Width == 80) {
+  } else if (Width == OpSize::f80Bit) {
     ConvertedData = _F80CVT(OpSize::i64Bit, Data);
   }
   _PushStack(ConvertedData, Data, ReadWidth, true);
@@ -82,7 +82,7 @@ void OpDispatchBuilder::FBLDF64(OpcodeArgs) {
 void OpDispatchBuilder::FBSTPF64(OpcodeArgs) {
   Ref converted = _F80CVTTo(_ReadStackValue(0), OpSize::i64Bit);
   converted = _F80BCDStore(converted);
-  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, converted, 10, 1);
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, converted, OpSize::f80Bit, OpSize::i8Bit);
   _PopStackDestroy();
 }
 
@@ -92,20 +92,20 @@ void OpDispatchBuilder::FLDF64_Const(OpcodeArgs, uint64_t Num) {
 }
 
 void OpDispatchBuilder::FILDF64(OpcodeArgs) {
-  size_t ReadWidth = GetSrcSize(Op);
+  const auto ReadWidth = OpSizeFromSrc(Op);
 
   // Read from memory
   Ref Data = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], ReadWidth, Op->Flags);
   if (ReadWidth == OpSize::i16Bit) {
     Data = _Sbfe(OpSize::i64Bit, ReadWidth * 8, 0, Data);
   }
-  auto ConvertedData = _Float_FromGPR_S(OpSize::i64Bit, ReadWidth == 4 ? OpSize::i32Bit : OpSize::i64Bit, Data);
+  auto ConvertedData = _Float_FromGPR_S(OpSize::i64Bit, ReadWidth == OpSize::i32Bit ? OpSize::i32Bit : OpSize::i64Bit, Data);
   _PushStack(ConvertedData, Data, ReadWidth, false);
 }
 
-void OpDispatchBuilder::FSTF64(OpcodeArgs, size_t Width) {
+void OpDispatchBuilder::FSTF64(OpcodeArgs, IR::OpSize Width) {
   Ref Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-  _StoreStackMemory(Mem, OpSize::i64Bit, true, Width / 8);
+  _StoreStackMemory(Mem, OpSize::i64Bit, true, Width);
 
   if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
     _PopStackDestroy();
@@ -113,7 +113,7 @@ void OpDispatchBuilder::FSTF64(OpcodeArgs, size_t Width) {
 }
 
 void OpDispatchBuilder::FISTF64(OpcodeArgs, bool Truncate) {
-  auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
 
   Ref data = _ReadStackValue(0);
   if (Truncate) {
@@ -128,7 +128,7 @@ void OpDispatchBuilder::FISTF64(OpcodeArgs, bool Truncate) {
   }
 }
 
-void OpDispatchBuilder::FADDF64(OpcodeArgs, size_t Width, bool Integer, OpDispatchBuilder::OpResult ResInST0) {
+void OpDispatchBuilder::FADDF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpDispatchBuilder::OpResult ResInST0) {
   if (Op->Src[0].IsNone()) { // Implicit argument case
     auto Offset = Op->OP & 7;
     auto St0 = 0;
@@ -148,14 +148,14 @@ void OpDispatchBuilder::FADDF64(OpcodeArgs, size_t Width, bool Integer, OpDispat
 
   if (Integer) {
     arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-    if (Width == 16) {
+    if (Width == OpSize::i16Bit) {
       arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
     }
-    arg = _Float_FromGPR_S(OpSize::i64Bit, Width == 64 ? OpSize::i64Bit : OpSize::i32Bit, arg);
-  } else if (Width == 32) {
+    arg = _Float_FromGPR_S(OpSize::i64Bit, Width == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit, arg);
+  } else if (Width == OpSize::i32Bit) {
     arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
     arg = _Float_FToF(OpSize::i64Bit, OpSize::i32Bit, arg);
-  } else if (Width == 64) {
+  } else if (Width == OpSize::i64Bit) {
     arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   }
 
@@ -164,7 +164,7 @@ void OpDispatchBuilder::FADDF64(OpcodeArgs, size_t Width, bool Integer, OpDispat
 }
 
 // FIXME: following is very similar to FADDF64
-void OpDispatchBuilder::FMULF64(OpcodeArgs, size_t Width, bool Integer, OpDispatchBuilder::OpResult ResInST0) {
+void OpDispatchBuilder::FMULF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpDispatchBuilder::OpResult ResInST0) {
   if (Op->Src[0].IsNone()) { // Implicit argument case
     auto offset = Op->OP & 7;
     auto st0 = 0;
@@ -184,14 +184,14 @@ void OpDispatchBuilder::FMULF64(OpcodeArgs, size_t Width, bool Integer, OpDispat
 
   if (Integer) {
     arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-    if (Width == 16) {
+    if (Width == OpSize::i16Bit) {
       arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
     }
-    arg = _Float_FromGPR_S(8, Width == 64 ? OpSize::i64Bit : OpSize::i32Bit, arg);
-  } else if (Width == 32) {
+    arg = _Float_FromGPR_S(OpSize::i64Bit, Width == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit, arg);
+  } else if (Width == OpSize::i32Bit) {
     arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
     arg = _Float_FToF(OpSize::i64Bit, OpSize::i32Bit, arg);
-  } else if (Width == 64) {
+  } else if (Width == OpSize::i64Bit) {
     arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   }
 
@@ -203,7 +203,7 @@ void OpDispatchBuilder::FMULF64(OpcodeArgs, size_t Width, bool Integer, OpDispat
   }
 }
 
-void OpDispatchBuilder::FDIVF64(OpcodeArgs, size_t Width, bool Integer, bool Reverse, OpDispatchBuilder::OpResult ResInST0) {
+void OpDispatchBuilder::FDIVF64(OpcodeArgs, IR::OpSize Width, bool Integer, bool Reverse, OpDispatchBuilder::OpResult ResInST0) {
   if (Op->Src[0].IsNone()) {
     const auto offset = Op->OP & 7;
     const auto st0 = 0;
@@ -231,17 +231,17 @@ void OpDispatchBuilder::FDIVF64(OpcodeArgs, size_t Width, bool Integer, bool Rev
   // We have one memory argument
   Ref Arg {};
 
-  if (Width == 16 || Width == 32 || Width == 64) {
+  if (Width == OpSize::i16Bit || Width == OpSize::i32Bit || Width == OpSize::i64Bit) {
     if (Integer) {
       Arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-      if (Width == 16) {
+      if (Width == OpSize::i16Bit) {
         Arg = _Sbfe(OpSize::i64Bit, 16, 0, Arg);
       }
-      Arg = _Float_FromGPR_S(8, Width == 64 ? OpSize::i64Bit : OpSize::i32Bit, Arg);
-    } else if (Width == 32) {
+      Arg = _Float_FromGPR_S(OpSize::i64Bit, Width == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit, Arg);
+    } else if (Width == OpSize::i32Bit) {
       Arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
       Arg = _Float_FToF(OpSize::i64Bit, OpSize::i32Bit, Arg);
-    } else if (Width == 64) {
+    } else if (Width == OpSize::i64Bit) {
       Arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
     }
   }
@@ -258,7 +258,7 @@ void OpDispatchBuilder::FDIVF64(OpcodeArgs, size_t Width, bool Integer, bool Rev
   }
 }
 
-void OpDispatchBuilder::FSUBF64(OpcodeArgs, size_t Width, bool Integer, bool Reverse, OpDispatchBuilder::OpResult ResInST0) {
+void OpDispatchBuilder::FSUBF64(OpcodeArgs, IR::OpSize Width, bool Integer, bool Reverse, OpDispatchBuilder::OpResult ResInST0) {
   if (Op->Src[0].IsNone()) {
     const auto Offset = Op->OP & 7;
     const auto St0 = 0;
@@ -286,17 +286,17 @@ void OpDispatchBuilder::FSUBF64(OpcodeArgs, size_t Width, bool Integer, bool Rev
   // We have one memory argument
   Ref arg {};
 
-  if (Width == 16 || Width == 32 || Width == 64) {
+  if (Width == OpSize::i16Bit || Width == OpSize::i32Bit || Width == OpSize::i64Bit) {
     if (Integer) {
       arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-      if (Width == 16) {
+      if (Width == OpSize::i16Bit) {
         arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
       }
-      arg = _Float_FromGPR_S(8, Width == 64 ? OpSize::i64Bit : OpSize::i32Bit, arg);
-    } else if (Width == 32) {
+      arg = _Float_FromGPR_S(OpSize::i64Bit, Width == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit, arg);
+    } else if (Width == OpSize::i32Bit) {
       arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
       arg = _Float_FToF(OpSize::i64Bit, OpSize::i32Bit, arg);
-    } else if (Width == 64) {
+    } else if (Width == OpSize::i64Bit) {
       arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
     }
   }
@@ -323,7 +323,7 @@ void OpDispatchBuilder::FTSTF64(OpcodeArgs) {
   ConvertNZCVToX87();
 }
 
-void OpDispatchBuilder::FCOMIF64(OpcodeArgs, size_t Width, bool Integer, OpDispatchBuilder::FCOMIFlags WhichFlags, bool PopTwice) {
+void OpDispatchBuilder::FCOMIF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpDispatchBuilder::FCOMIFlags WhichFlags, bool PopTwice) {
   Ref arg {};
   Ref b {};
 
@@ -333,17 +333,17 @@ void OpDispatchBuilder::FCOMIF64(OpcodeArgs, size_t Width, bool Integer, OpDispa
     b = _ReadStackValue(offset);
   } else {
     // Memory arg
-    if (Width == 16 || Width == 32 || Width == 64) {
+    if (Width == OpSize::i16Bit || Width == OpSize::i32Bit || Width == OpSize::i64Bit) {
       if (Integer) {
         arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-        if (Width == 16) {
+        if (Width == OpSize::i16Bit) {
           arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
         }
-        b = _Float_FromGPR_S(8, Width == 64 ? OpSize::i64Bit : OpSize::i32Bit, arg);
-      } else if (Width == 32) {
+        b = _Float_FromGPR_S(OpSize::i64Bit, Width == 64 ? OpSize::i64Bit : OpSize::i32Bit, arg);
+      } else if (Width == OpSize::i32Bit) {
         arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
         b = _Float_FToF(OpSize::i64Bit, OpSize::i32Bit, arg);
-      } else if (Width == 64) {
+      } else if (Width == OpSize::i64Bit) {
         b = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
       }
     }
@@ -400,7 +400,7 @@ void OpDispatchBuilder::X87FXTRACTF64(OpcodeArgs) {
   Ref Exp = _NZCVSelectV(OpSize::i64Bit, {COND_EQ}, ExpZV, ExpNZV);
 
   _PopStackDestroy();
-  _PushStack(Exp, Exp, 64, true);
-  _PushStack(Sig, Sig, 64, true);
+  _PushStack(Exp, Exp, OpSize::i64Bit, true);
+  _PushStack(Sig, Sig, OpSize::i64Bit, true);
 }
 } // namespace FEXCore::IR
