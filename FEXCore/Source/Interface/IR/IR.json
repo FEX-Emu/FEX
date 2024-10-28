@@ -2544,7 +2544,7 @@
                 ],
         "DestSize": "DstElementSize"
       },
-      "FPR = Float_FToF u8:#DstElementSize, u8:$SrcElementSize, FPR:$Scalar": {
+      "FPR = Float_FToF OpSize:#DstElementSize, OpSize:$SrcElementSize, FPR:$Scalar": {
         "Desc": ["Scalar op: Converts float from one size to another",
                  "Zeroes the upper bits of the vector register"
                 ],

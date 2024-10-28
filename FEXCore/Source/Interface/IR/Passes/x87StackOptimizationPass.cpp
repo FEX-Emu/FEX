@@ -798,7 +798,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
           if (ReducedPrecisionMode) {
             switch (Op->StoreSize) {
             case 4: {
-              StackNode = IREmit->_Float_FToF(4, 8, StackNode);
+              StackNode = IREmit->_Float_FToF(OpSize::i32Bit, OpSize::i64Bit, StackNode);
               IREmit->_StoreMem(FPRClass, OpSize::i32Bit, AddrNode, StackNode);
               break;
             }
