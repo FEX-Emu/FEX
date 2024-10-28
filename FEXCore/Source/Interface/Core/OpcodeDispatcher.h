@@ -522,14 +522,14 @@ public:
   template<size_t SrcElementSize, bool Widen>
   void AVXVector_CVT_Int_To_Float(OpcodeArgs);
 
-  template<FEXCore::IR::IROps IROp, size_t ElementSize>
+  template<FEXCore::IR::IROps IROp, IR::OpSize ElementSize>
   void VectorScalarInsertALUOp(OpcodeArgs);
-  template<FEXCore::IR::IROps IROp, size_t ElementSize>
+  template<FEXCore::IR::IROps IROp, IR::OpSize ElementSize>
   void AVXVectorScalarInsertALUOp(OpcodeArgs);
 
-  template<FEXCore::IR::IROps IROp, size_t ElementSize>
+  template<FEXCore::IR::IROps IROp, IR::OpSize ElementSize>
   void VectorScalarUnaryInsertALUOp(OpcodeArgs);
-  template<FEXCore::IR::IROps IROp, size_t ElementSize>
+  template<FEXCore::IR::IROps IROp, IR::OpSize ElementSize>
   void AVXVectorScalarUnaryInsertALUOp(OpcodeArgs);
 
   void InsertMMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs);
@@ -982,7 +982,7 @@ public:
   void AVX128_VPSIGN(OpcodeArgs);
   template<IR::OpSize ElementSize>
   void AVX128_UCOMISx(OpcodeArgs);
-  void AVX128_VectorScalarInsertALU(OpcodeArgs, FEXCore::IR::IROps IROp, size_t ElementSize);
+  void AVX128_VectorScalarInsertALU(OpcodeArgs, FEXCore::IR::IROps IROp, IR::OpSize ElementSize);
   Ref AVX128_VFCMPImpl(size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType);
   template<size_t ElementSize>
   void AVX128_VFCMP(OpcodeArgs);
@@ -1446,8 +1446,8 @@ private:
   //   - Example 32bit ADDSS Dest, Src
   //   - Dest[31:0] = Dest[31:0] + Src[31:0]
   //   - Dest[{256,128}:32] = (Unmodified)
-  Ref VectorScalarInsertALUOpImpl(OpcodeArgs, IROps IROp, IR::OpSize DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
-                                  const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits);
+  Ref VectorScalarInsertALUOpImpl(OpcodeArgs, IROps IROp, IR::OpSize DstSize, IR::OpSize ElementSize,
+                                  const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits);
 
   Ref VectorScalarUnaryInsertALUOpImpl(OpcodeArgs, IROps IROp, IR::OpSize DstSize, size_t ElementSize,
                                        const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits);

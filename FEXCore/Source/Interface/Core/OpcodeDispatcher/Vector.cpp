@@ -301,7 +301,7 @@ void OpDispatchBuilder::VectorALUROp(OpcodeArgs, IROps IROp, size_t ElementSize)
   StoreResult(FPRClass, Op, ALUOp, OpSize::iInvalid);
 }
 
-Ref OpDispatchBuilder::VectorScalarInsertALUOpImpl(OpcodeArgs, IROps IROp, IR::OpSize DstSize, size_t ElementSize,
+Ref OpDispatchBuilder::VectorScalarInsertALUOpImpl(OpcodeArgs, IROps IROp, IR::OpSize DstSize, IR::OpSize ElementSize,
                                                    const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
                                                    bool ZeroUpperBits) {
   // We load the full vector width when dealing with a source vector,
@@ -317,7 +317,7 @@ Ref OpDispatchBuilder::VectorScalarInsertALUOpImpl(OpcodeArgs, IROps IROp, IR::O
   return ALUOp;
 }
 
-template<IROps IROp, size_t ElementSize>
+template<IROps IROp, IR::OpSize ElementSize>
 void OpDispatchBuilder::VectorScalarInsertALUOp(OpcodeArgs) {
   const auto DstSize = GetGuestVectorLength();
   auto Result = VectorScalarInsertALUOpImpl(Op, IROp, DstSize, ElementSize, Op->Dest, Op->Src[0], false);
@@ -337,7 +337,7 @@ template void OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMINSCALARINSER
 template void OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMAXSCALARINSERT, OpSize::i32Bit>(OpcodeArgs);
 template void OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMAXSCALARINSERT, OpSize::i64Bit>(OpcodeArgs);
 
-template<IROps IROp, size_t ElementSize>
+template<IROps IROp, IR::OpSize ElementSize>
 void OpDispatchBuilder::AVXVectorScalarInsertALUOp(OpcodeArgs) {
   const auto DstSize = GetGuestVectorLength();
   auto Result = VectorScalarInsertALUOpImpl(Op, IROp, DstSize, ElementSize, Op->Src[0], Op->Src[1], true);
@@ -373,7 +373,7 @@ Ref OpDispatchBuilder::VectorScalarUnaryInsertALUOpImpl(OpcodeArgs, IROps IROp, 
   return ALUOp;
 }
 
-template<IROps IROp, size_t ElementSize>
+template<IROps IROp, IR::OpSize ElementSize>
 void OpDispatchBuilder::VectorScalarUnaryInsertALUOp(OpcodeArgs) {
   const auto DstSize = GetGuestVectorLength();
   auto Result = VectorScalarInsertALUOpImpl(Op, IROp, DstSize, ElementSize, Op->Dest, Op->Src[0], false);
@@ -389,7 +389,7 @@ template void OpDispatchBuilder::VectorScalarUnaryInsertALUOp<IR::OP_VFRSQRTSCAL
 template void OpDispatchBuilder::VectorScalarUnaryInsertALUOp<IR::OP_VFRECPSCALARINSERT, OpSize::i32Bit>(OpcodeArgs);
 template void OpDispatchBuilder::VectorScalarUnaryInsertALUOp<IR::OP_VFRECPSCALARINSERT, OpSize::i64Bit>(OpcodeArgs);
 
-template<IROps IROp, size_t ElementSize>
+template<IROps IROp, IR::OpSize ElementSize>
 void OpDispatchBuilder::AVXVectorScalarUnaryInsertALUOp(OpcodeArgs) {
   const auto DstSize = GetGuestVectorLength();
   auto Result = VectorScalarInsertALUOpImpl(Op, IROp, DstSize, ElementSize, Op->Src[0], Op->Src[1], true);
