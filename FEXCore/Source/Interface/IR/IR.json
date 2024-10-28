@@ -2430,7 +2430,7 @@
                 ],
         "DestSize": "RegisterSize"
       },
-      "FPR = VTBL2 u8:#RegisterSize, FPR:$VectorTable1, FPR:$VectorTable2, FPR:$VectorIndices": {
+      "FPR = VTBL2 OpSize:#RegisterSize, FPR:$VectorTable1, FPR:$VectorTable2, FPR:$VectorIndices": {
         "Desc": ["Does a vector table lookup from two registers in to the destination",
                  "Lookup is byte sized per byte element.",
                  "Any index larger than what the registers provide will result in zero for that element",
