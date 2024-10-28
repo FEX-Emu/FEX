@@ -71,10 +71,10 @@ public:
     return _Jump(InvalidNode);
   }
   IRPair<IROp_CondJump> _CondJump(Ref ssa0, CondClassType cond = {COND_NEQ}) {
-    return _CondJump(ssa0, _Constant(0), InvalidNode, InvalidNode, cond, GetOpSize(ssa0));
+    return _CondJump(ssa0, _Constant(0), InvalidNode, InvalidNode, cond, IR::SizeToOpSize(GetOpSize(ssa0)));
   }
   IRPair<IROp_CondJump> _CondJump(Ref ssa0, Ref ssa1, Ref ssa2, CondClassType cond = {COND_NEQ}) {
-    return _CondJump(ssa0, _Constant(0), ssa1, ssa2, cond, GetOpSize(ssa0));
+    return _CondJump(ssa0, _Constant(0), ssa1, ssa2, cond, IR::SizeToOpSize(GetOpSize(ssa0)));
   }
   // TODO: Work to remove this implicit sized Select implementation.
   IRPair<IROp_Select> _Select(uint8_t Cond, Ref ssa0, Ref ssa1, Ref ssa2, Ref ssa3, uint8_t CompareSize = 0) {

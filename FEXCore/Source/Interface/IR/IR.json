@@ -289,7 +289,7 @@
         "HasSideEffects": true,
         "RAOverride": "0"
       },
-      "CondJump SSA:$Cmp1, SSA:$Cmp2, SSA:$TrueBlock, SSA:$FalseBlock, CondClass:$Cond{{COND_NEQ}}, u8:$CompareSize{0}, i1:$FromNZCV{false}": {
+      "CondJump SSA:$Cmp1, SSA:$Cmp2, SSA:$TrueBlock, SSA:$FalseBlock, CondClass:$Cond{{COND_NEQ}}, OpSize:$CompareSize{OpSize::iInvalid}, i1:$FromNZCV{false}": {
         "HasSideEffects": true,
         "RAOverride": "2"
       },

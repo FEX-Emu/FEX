@@ -136,8 +136,8 @@ public:
     FlushRegisterCache();
     return _Jump(_TargetBlock);
   }
-  IRPair<IROp_CondJump>
-  CondJump(Ref _Cmp1, Ref _Cmp2, Ref _TrueBlock, Ref _FalseBlock, CondClassType _Cond = {COND_NEQ}, uint8_t _CompareSize = 0) {
+  IRPair<IROp_CondJump> CondJump(Ref _Cmp1, Ref _Cmp2, Ref _TrueBlock, Ref _FalseBlock, CondClassType _Cond = {COND_NEQ},
+                                 IR::OpSize _CompareSize = OpSize::iInvalid) {
     FlushRegisterCache();
     return _CondJump(_Cmp1, _Cmp2, _TrueBlock, _FalseBlock, _Cond, _CompareSize);
   }
@@ -151,12 +151,12 @@ public:
   }
   IRPair<IROp_CondJump> CondJumpNZCV(CondClassType Cond) {
     FlushRegisterCache();
-    return _CondJump(InvalidNode, InvalidNode, InvalidNode, InvalidNode, Cond, 0, true);
+    return _CondJump(InvalidNode, InvalidNode, InvalidNode, InvalidNode, Cond, OpSize::iInvalid, true);
   }
   IRPair<IROp_CondJump> CondJumpBit(Ref Src, unsigned Bit, bool Set) {
     FlushRegisterCache();
     auto InlineConst = _InlineConstant(Bit);
-    return _CondJump(Src, InlineConst, InvalidNode, InvalidNode, {Set ? COND_TSTNZ : COND_TSTZ}, 0, false);
+    return _CondJump(Src, InlineConst, InvalidNode, InvalidNode, {Set ? COND_TSTNZ : COND_TSTZ}, OpSize::iInvalid, false);
   }
   IRPair<IROp_ExitFunction> ExitFunction(Ref NewRIP) {
     FlushRegisterCache();
