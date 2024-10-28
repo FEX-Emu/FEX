@@ -2599,7 +2599,7 @@
           "RegisterSize != FEXCore::IR::OpSize::i256Bit && \"What does 256-bit mean in this context?\""
         ]
       },
-      "FPR = Vector_FToI u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, RoundType:$Round": {
+      "FPR = Vector_FToI OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, RoundType:$Round": {
         "Desc": ["Vector op: Rounds float to integral",
                  "Rounding mode determined by argument"
                 ],

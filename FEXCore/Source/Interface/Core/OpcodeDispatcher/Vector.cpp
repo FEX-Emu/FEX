@@ -3601,11 +3601,11 @@ template void OpDispatchBuilder::ExtendVectorElements<OpSize::i16Bit, OpSize::i3
 template void OpDispatchBuilder::ExtendVectorElements<OpSize::i16Bit, OpSize::i64Bit, true>(OpcodeArgs);
 template void OpDispatchBuilder::ExtendVectorElements<OpSize::i32Bit, OpSize::i64Bit, true>(OpcodeArgs);
 
-Ref OpDispatchBuilder::VectorRoundImpl(OpSize Size, size_t ElementSize, Ref Src, uint64_t Mode) {
+Ref OpDispatchBuilder::VectorRoundImpl(OpSize Size, IR::OpSize ElementSize, Ref Src, uint64_t Mode) {
   return _Vector_FToI(Size, ElementSize, Src, TranslateRoundType(Mode));
 }
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::VectorRound(OpcodeArgs) {
   // No need to zero extend the vector in the event we have a
   // scalar source, especially since it's only inserted into another vector.
@@ -3621,7 +3621,7 @@ void OpDispatchBuilder::VectorRound(OpcodeArgs) {
 template void OpDispatchBuilder::VectorRound<OpSize::i32Bit>(OpcodeArgs);
 template void OpDispatchBuilder::VectorRound<OpSize::i64Bit>(OpcodeArgs);
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::AVXVectorRound(OpcodeArgs) {
   const auto Mode = Op->Src[1].Literal();
 

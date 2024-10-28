@@ -510,7 +510,7 @@ public:
   // AVX Ops
   void AVXVectorXOROp(OpcodeArgs);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVXVectorRound(OpcodeArgs);
 
   template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
@@ -885,7 +885,7 @@ public:
 
   template<IR::OpSize ElementSize, IR::OpSize DstElementSize, bool Signed>
   void ExtendVectorElements(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void VectorRound(OpcodeArgs);
 
   Ref VectorBlend(OpSize Size, IR::OpSize ElementSize, Ref Src1, Ref Src2, uint8_t Selector);
@@ -1463,7 +1463,7 @@ private:
 
   Ref InsertScalarFCMPOpImpl(OpSize Size, IR::OpSize OpDstSize, IR::OpSize ElementSize, Ref Src1, Ref Src2, uint8_t CompType, bool ZeroUpperBits);
 
-  Ref VectorRoundImpl(OpSize Size, size_t ElementSize, Ref Src, uint64_t Mode);
+  Ref VectorRoundImpl(OpSize Size, IR::OpSize ElementSize, Ref Src, uint64_t Mode);
 
   Ref Scalar_CVT_Float_To_FloatImpl(OpcodeArgs, IR::OpSize DstElementSize, IR::OpSize SrcElementSize,
                                     const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op);
