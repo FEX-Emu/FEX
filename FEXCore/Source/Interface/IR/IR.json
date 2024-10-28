@@ -2069,7 +2069,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
-      "FPR = VSQXTN2 u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
+      "FPR = VSQXTN2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
         "TiedSource": 0,
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize >> 1)"
