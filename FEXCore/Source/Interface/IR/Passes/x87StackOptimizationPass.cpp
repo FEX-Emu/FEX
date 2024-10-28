@@ -880,7 +880,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
           Ref High = GetConstant(0b1'000'0000'0000'0000ULL);
           Ref HelperNode = IREmit->_VCastFromGPR(16, 8, Low);
           HelperNode = IREmit->_VInsGPR(16, 8, 1, HelperNode, High);
-          ResultNode = IREmit->_VXor(16, 1, Value, HelperNode);
+          ResultNode = IREmit->_VXor(OpSize::i128Bit, OpSize::i8Bit, Value, HelperNode);
         }
         StoreStackValue(ResultNode);
         break;

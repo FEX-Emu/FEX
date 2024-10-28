@@ -197,7 +197,7 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   {0x70, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSHUFWOp, true>},
   {0x7C, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADDP, OpSize::i32Bit>},
   {0x7D, 1, &OpDispatchBuilder::HSUBP<4>},
-  {0xD0, 1, &OpDispatchBuilder::ADDSUBPOp<4>},
+  {0xD0, 1, &OpDispatchBuilder::ADDSUBPOp<OpSize::i32Bit>},
   {0xD6, 1, &OpDispatchBuilder::MOVQ2DQ<false>},
   {0xC2, 1, &OpDispatchBuilder::InsertScalarFCMPOp<OpSize::i64Bit>},
   {0xE6, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<8, true, true>},
@@ -262,7 +262,7 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   {0xC5, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, OpSize::i16Bit>},
   {0xC6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SHUFOp, OpSize::i64Bit>},
 
-  {0xD0, 1, &OpDispatchBuilder::ADDSUBPOp<8>},
+  {0xD0, 1, &OpDispatchBuilder::ADDSUBPOp<OpSize::i64Bit>},
   {0xD1, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, 2>},
   {0xD2, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, 4>},
   {0xD3, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, 8>},

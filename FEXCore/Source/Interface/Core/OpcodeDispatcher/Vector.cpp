@@ -2999,7 +2999,7 @@ void OpDispatchBuilder::MOVQ2DQ(OpcodeArgs) {
 template void OpDispatchBuilder::MOVQ2DQ<false>(OpcodeArgs);
 template void OpDispatchBuilder::MOVQ2DQ<true>(OpcodeArgs);
 
-Ref OpDispatchBuilder::ADDSUBPOpImpl(OpSize Size, size_t ElementSize, Ref Src1, Ref Src2) {
+Ref OpDispatchBuilder::ADDSUBPOpImpl(OpSize Size, IR::OpSize ElementSize, Ref Src1, Ref Src2) {
   if (CTX->HostFeatures.SupportsFCMA) {
     if (ElementSize == OpSize::i32Bit) {
       auto Swizzle = _VRev64(Size, OpSize::i32Bit, Src2);
@@ -3016,7 +3016,7 @@ Ref OpDispatchBuilder::ADDSUBPOpImpl(OpSize Size, size_t ElementSize, Ref Src1, 
   }
 }
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::ADDSUBPOp(OpcodeArgs) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
@@ -3028,7 +3028,7 @@ void OpDispatchBuilder::ADDSUBPOp(OpcodeArgs) {
 template void OpDispatchBuilder::ADDSUBPOp<OpSize::i32Bit>(OpcodeArgs);
 template void OpDispatchBuilder::ADDSUBPOp<OpSize::i64Bit>(OpcodeArgs);
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::VADDSUBPOp(OpcodeArgs) {
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);

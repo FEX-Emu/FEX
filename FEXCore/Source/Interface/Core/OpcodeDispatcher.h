@@ -561,7 +561,7 @@ public:
   template<IR::OpSize ElementSize>
   void AVXVFCMPOp(OpcodeArgs);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void VADDSUBPOp(OpcodeArgs);
 
   void VAESDecOp(OpcodeArgs);
@@ -807,7 +807,7 @@ public:
   template<bool ToXMM>
   void MOVQ2DQ(OpcodeArgs);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void ADDSUBPOp(OpcodeArgs);
 
   void PFNACCOp(OpcodeArgs);
@@ -1356,7 +1356,7 @@ private:
 
   // Opcode helpers for generalizing behavior across VEX and non-VEX variants.
 
-  Ref ADDSUBPOpImpl(OpSize Size, size_t ElementSize, Ref Src1, Ref Src2);
+  Ref ADDSUBPOpImpl(OpSize Size, IR::OpSize ElementSize, Ref Src1, Ref Src2);
 
   void AVXVectorALUOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
   void AVXVectorUnaryOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);

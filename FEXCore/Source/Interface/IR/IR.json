@@ -2150,7 +2150,7 @@
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VXor u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VXor OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },

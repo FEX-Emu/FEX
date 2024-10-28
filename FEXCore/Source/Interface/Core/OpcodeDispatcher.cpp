@@ -5158,8 +5158,8 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b00, 0xC6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VSHUFOp, OpSize::i32Bit>},
     {OPD(1, 0b01, 0xC6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VSHUFOp, OpSize::i64Bit>},
 
-    {OPD(1, 0b01, 0xD0), 1, &OpDispatchBuilder::VADDSUBPOp<8>},
-    {OPD(1, 0b11, 0xD0), 1, &OpDispatchBuilder::VADDSUBPOp<4>},
+    {OPD(1, 0b01, 0xD0), 1, &OpDispatchBuilder::VADDSUBPOp<OpSize::i64Bit>},
+    {OPD(1, 0b11, 0xD0), 1, &OpDispatchBuilder::VADDSUBPOp<OpSize::i32Bit>},
 
     {OPD(1, 0b01, 0xD1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRLDOp, 2>},
     {OPD(1, 0b01, 0xD2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRLDOp, 4>},
