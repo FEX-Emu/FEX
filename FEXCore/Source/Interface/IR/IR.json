@@ -2013,7 +2013,7 @@
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VUShrNI u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, u8:$BitShift": {
+      "FPR = VUShrNI OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$BitShift": {
         "TiedSource": 0,
         "Desc": "Unsigned shifts right each element and then narrows to the next lower element size",
         "DestSize": "RegisterSize",

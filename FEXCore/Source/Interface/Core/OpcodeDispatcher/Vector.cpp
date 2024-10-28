@@ -3115,7 +3115,7 @@ void OpDispatchBuilder::PF2IWOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PMULHRWOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
 
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
@@ -3132,7 +3132,7 @@ void OpDispatchBuilder::PMULHRWOp(OpcodeArgs) {
   Res = _VAdd(Size * 2, OpSize::i32Bit, Res, VConstant);
 
   // Now shift and narrow to convert 32-bit values to 16bit, storing the top 16bits
-  Res = _VUShrNI(Size * 2, OpSize::i32Bit, Res, 16);
+  Res = _VUShrNI(IR::MultiplyOpSize(Size, 2), OpSize::i32Bit, Res, 16);
 
   StoreResult(FPRClass, Op, Res, OpSize::iInvalid);
 }
@@ -3317,7 +3317,7 @@ Ref OpDispatchBuilder::PMULHRSWOpImpl(OpSize Size, Ref Src1, Ref Src2) {
     Res = _VSShrI(IR::MultiplyOpSize(Size, 2), OpSize::i32Bit, Res, 14);
     auto OneVector = _VectorImm(IR::MultiplyOpSize(Size, 2), OpSize::i32Bit, 1);
     Res = _VAdd(Size * 2, OpSize::i32Bit, Res, OneVector);
-    return _VUShrNI(Size * 2, OpSize::i32Bit, Res, 1);
+    return _VUShrNI(IR::MultiplyOpSize(Size, 2), OpSize::i32Bit, Res, 1);
   } else {
     // 128-bit and 256-bit are less efficient
     Ref ResultLow;
