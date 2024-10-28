@@ -3139,7 +3139,7 @@ void OpDispatchBuilder::PMULHRWOp(OpcodeArgs) {
 
 template<uint8_t CompType>
 void OpDispatchBuilder::VPFCMPOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, OpSizeFromDst(Op), Op->Flags);
 
