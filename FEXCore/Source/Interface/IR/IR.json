@@ -1908,7 +1908,7 @@
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VAbs u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VAbs OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": ["Does an signed integer absolute"
                 ],
         "DestSize": "RegisterSize",
