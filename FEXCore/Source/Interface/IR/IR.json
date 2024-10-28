@@ -1899,7 +1899,7 @@
                 ],
         "DestSize": "RegisterSize"
       },
-      "FPR = VNeg u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VNeg OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
