@@ -740,7 +740,7 @@
           "RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i256Bit"
         ]
       },
-      "VStoreNonTemporalPair u8:#RegisterSize, FPR:$ValueLow, FPR:$ValueHigh, GPR:$Addr, i8:$Offset": {
+      "VStoreNonTemporalPair OpSize:#RegisterSize, FPR:$ValueLow, FPR:$ValueHigh, GPR:$Addr, i8:$Offset": {
         "Desc": ["Does a non-temporal memory store of two vector registers.",
                  "Matches arm64 stnp semantics.",
                  "Specifically weak-memory model ordered to match x86 non-temporal stores."
