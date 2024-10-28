@@ -1709,22 +1709,22 @@ void OpDispatchBuilder::VPSRLDOp(OpcodeArgs, size_t ElementSize) {
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
-void OpDispatchBuilder::PSRLI(OpcodeArgs, size_t ElementSize) {
+void OpDispatchBuilder::PSRLI(OpcodeArgs, IR::OpSize ElementSize) {
   const uint64_t ShiftConstant = Op->Src[1].Literal();
   if (ShiftConstant == 0) [[unlikely]] {
     // Nothing to do, value is already in Dest.
     return;
   }
 
-  const auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
 
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Shift = _VUShrI(Size, ElementSize, Dest, ShiftConstant);
   StoreResult(FPRClass, Op, Shift, OpSize::iInvalid);
 }
 
-void OpDispatchBuilder::VPSRLIOp(OpcodeArgs, size_t ElementSize) {
-  const auto Size = GetSrcSize(Op);
+void OpDispatchBuilder::VPSRLIOp(OpcodeArgs, IR::OpSize ElementSize) {
+  const auto Size = OpSizeFromSrc(Op);
   const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
   const uint64_t ShiftConstant = Op->Src[1].Literal();
 

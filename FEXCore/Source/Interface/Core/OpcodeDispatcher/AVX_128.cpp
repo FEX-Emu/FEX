@@ -428,25 +428,33 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
 #define OPD(group, pp, opcode) (((group - X86Tables::TYPE_VEX_GROUP_12) << 4) | (pp << 3) | (opcode))
   static constexpr std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> VEX128TableGroupOps[] {
     // VPSRLI
-    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b010), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftImmImpl, 2, IROps::OP_VUSHRI>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b010), 1,
+     &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftImmImpl, OpSize::i16Bit, IROps::OP_VUSHRI>},
     // VPSLLI
-    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b110), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftImmImpl, 2, IROps::OP_VSHLI>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b110), 1,
+     &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftImmImpl, OpSize::i16Bit, IROps::OP_VSHLI>},
     // VPSRAI
-    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b100), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftImmImpl, 2, IROps::OP_VSSHRI>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b100), 1,
+     &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftImmImpl, OpSize::i16Bit, IROps::OP_VSSHRI>},
 
     // VPSRLI
-    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b010), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftImmImpl, 4, IROps::OP_VUSHRI>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b010), 1,
+     &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftImmImpl, OpSize::i32Bit, IROps::OP_VUSHRI>},
     // VPSLLI
-    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b110), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftImmImpl, 4, IROps::OP_VSHLI>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b110), 1,
+     &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftImmImpl, OpSize::i32Bit, IROps::OP_VSHLI>},
     // VPSRAI
-    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b100), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftImmImpl, 4, IROps::OP_VSSHRI>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b100), 1,
+     &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftImmImpl, OpSize::i32Bit, IROps::OP_VSSHRI>},
 
     // VPSRLI
-    {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b010), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftImmImpl, 8, IROps::OP_VUSHRI>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b010), 1,
+     &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftImmImpl, OpSize::i64Bit, IROps::OP_VUSHRI>},
     // VPSRLDQ
     {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b011), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_ShiftDoubleImm, ShiftDirection::RIGHT>},
     // VPSLLI
-    {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b110), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftImmImpl, 8, IROps::OP_VSHLI>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b110), 1,
+     &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftImmImpl, OpSize::i64Bit, IROps::OP_VSHLI>},
     // VPSLLDQ
     {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b111), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_ShiftDoubleImm, ShiftDirection::LEFT>},
 
@@ -730,7 +738,7 @@ void OpDispatchBuilder::AVX128_VectorShiftWideImpl(OpcodeArgs, size_t ElementSiz
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
-void OpDispatchBuilder::AVX128_VectorShiftImmImpl(OpcodeArgs, size_t ElementSize, IROps IROp) {
+void OpDispatchBuilder::AVX128_VectorShiftImmImpl(OpcodeArgs, IR::OpSize ElementSize, IROps IROp) {
   const auto DstSize = GetDstSize(Op);
   const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
   const uint64_t ShiftConstant = Op->Src[1].Literal();

@@ -450,7 +450,7 @@ public:
   void PSHUFW8ByteOp(OpcodeArgs);
   void PSHUFDOp(OpcodeArgs);
   void PSRLDOp(OpcodeArgs, size_t ElementSize);
-  void PSRLI(OpcodeArgs, size_t ElementSize);
+  void PSRLI(OpcodeArgs, IR::OpSize ElementSize);
   void PSLLI(OpcodeArgs, IR::OpSize ElementSize);
   void PSLL(OpcodeArgs, size_t ElementSize);
   void PSRAOp(OpcodeArgs, size_t ElementSize);
@@ -681,7 +681,7 @@ public:
 
   void VPUNPCKLOp(OpcodeArgs, size_t ElementSize);
 
-  void VPSRLIOp(OpcodeArgs, size_t ElementSize);
+  void VPSRLIOp(OpcodeArgs, IR::OpSize ElementSize);
 
   void VSHUFOp(OpcodeArgs, IR::OpSize ElementSize);
 
@@ -941,7 +941,7 @@ public:
   void AVX128_VectorBinaryImpl(OpcodeArgs, size_t SrcSize, IR::OpSize ElementSize,
                                std::function<Ref(IR::OpSize ElementSize, Ref Src1, Ref Src2)> Helper);
   void AVX128_VectorShiftWideImpl(OpcodeArgs, size_t ElementSize, IROps IROp);
-  void AVX128_VectorShiftImmImpl(OpcodeArgs, size_t ElementSize, IROps IROp);
+  void AVX128_VectorShiftImmImpl(OpcodeArgs, IR::OpSize ElementSize, IROps IROp);
   void AVX128_VectorTrinaryImpl(OpcodeArgs, size_t SrcSize, size_t ElementSize, Ref Src3,
                                 std::function<Ref(size_t ElementSize, Ref Src1, Ref Src2, Ref Src3)> Helper);
 
