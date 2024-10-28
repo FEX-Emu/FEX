@@ -91,10 +91,10 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs, bool IsSyscallInst) {
     CalculateDeferredFlags();
 
     auto RFLAG = GetPackedRFLAG();
-    StoreGPRRegister(X86State::REG_R11, RFLAG, 8);
+    StoreGPRRegister(X86State::REG_R11, RFLAG, OpSize::i64Bit);
 
     auto RIPAfterInst = GetRelocatedPC(Op);
-    StoreGPRRegister(X86State::REG_RCX, RIPAfterInst, 8);
+    StoreGPRRegister(X86State::REG_RCX, RIPAfterInst, OpSize::i64Bit);
   }
 
   FlushRegisterCache();
@@ -417,7 +417,7 @@ void OpDispatchBuilder::PUSHAOp(OpcodeArgs) {
   NewSP = _Push(GPRSize, Size, Src, NewSP);
 
   // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP, 4);
+  StoreGPRRegister(X86State::REG_RSP, NewSP, OpSize::i32Bit);
   FlushRegisterCache();
 }
 
@@ -801,8 +801,8 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
   CalculateDeferredFlags();
 
   BlockSetRIP = true;
-  uint8_t JcxGPRSize = CTX->GetGPRSize();
-  JcxGPRSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? (JcxGPRSize >> 1) : JcxGPRSize;
+  auto JcxGPRSize = CTX->GetGPROpSize();
+  JcxGPRSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) ? (IR::DivideOpSize(JcxGPRSize, 2)) : JcxGPRSize;
 
   uint64_t Target = Op->PC + Op->InstSize + Op->Src[0].Literal();
 
@@ -1144,7 +1144,7 @@ void OpDispatchBuilder::CDQOp(OpcodeArgs) {
 
 void OpDispatchBuilder::SAHFOp(OpcodeArgs) {
   // Extract AH
-  Ref Src = LoadGPRRegister(X86State::REG_RAX, 1, 8);
+  Ref Src = LoadGPRRegister(X86State::REG_RAX, OpSize::i8Bit, 8);
 
   // Clear bits that aren't supposed to be set
   Src = _Andn(OpSize::i64Bit, Src, _Constant(0b101000));
@@ -1160,7 +1160,7 @@ void OpDispatchBuilder::LAHFOp(OpcodeArgs) {
   auto RFLAG = GetPackedRFLAG(0xFF);
 
   // Store the lower 8 bits of the rflags register in to AH
-  StoreGPRRegister(X86State::REG_RAX, RFLAG, 1, 8);
+  StoreGPRRegister(X86State::REG_RAX, RFLAG, OpSize::i8Bit, 8);
 }
 
 void OpDispatchBuilder::FLAGControlOp(OpcodeArgs) {
@@ -2607,7 +2607,7 @@ void OpDispatchBuilder::IMUL2SrcOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::IMULOp(OpcodeArgs) {
-  const uint8_t Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
 
   Ref Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
   Ref Src2 = LoadGPRRegister(X86State::REG_RAX);
@@ -2622,7 +2622,7 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
   Ref ResultHigh {};
   if (Size == OpSize::i8Bit) {
     // Result is stored in AX
-    StoreGPRRegister(X86State::REG_RAX, Result, 2);
+    StoreGPRRegister(X86State::REG_RAX, Result, OpSize::i16Bit);
     ResultHigh = _Sbfe(OpSize::i64Bit, 8, 8, Result);
   } else if (Size == OpSize::i16Bit) {
     // 16bits stored in AX
@@ -2658,7 +2658,7 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::MULOp(OpcodeArgs) {
-  const uint8_t Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
 
   Ref Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
   Ref Src2 = LoadGPRRegister(X86State::REG_RAX);
@@ -2673,7 +2673,7 @@ void OpDispatchBuilder::MULOp(OpcodeArgs) {
 
   if (Size == OpSize::i8Bit) {
     // Result is stored in AX
-    StoreGPRRegister(X86State::REG_RAX, Result, 2);
+    StoreGPRRegister(X86State::REG_RAX, Result, OpSize::i16Bit);
     ResultHigh = _Bfe(OpSize::i64Bit, 8, 8, Result);
   } else if (Size == OpSize::i16Bit) {
     // 16bits stored in AX
@@ -2801,7 +2801,7 @@ Ref OpDispatchBuilder::CalculateAFForDecimal(Ref A) {
 
 void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   CalculateDeferredFlags();
-  auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
+  auto AL = LoadGPRRegister(X86State::REG_RAX, OpSize::i8Bit);
   auto CFInv = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC, true);
   auto AF = CalculateAFForDecimal(AL);
 
@@ -2815,7 +2815,7 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   AL = _Select(FEXCore::IR::COND_EQ, CFInv, _Constant(0), _Add(OpSize::i64Bit, AL, _Constant(0x60)), AL);
 
   // SF, ZF, PF set according to result. CF set per above. OF undefined.
-  StoreGPRRegister(X86State::REG_RAX, AL, 1);
+  StoreGPRRegister(X86State::REG_RAX, AL, OpSize::i8Bit);
   SetNZ_ZeroCV(1, AL);
   SetCFInverted(CFInv);
   CalculatePF(AL);
@@ -2824,7 +2824,7 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
 
 void OpDispatchBuilder::DASOp(OpcodeArgs) {
   CalculateDeferredFlags();
-  auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
+  auto AL = LoadGPRRegister(X86State::REG_RAX, OpSize::i8Bit);
   auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
   auto AF = CalculateAFForDecimal(AL);
 
@@ -2841,7 +2841,7 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
   AL = _Select(FEXCore::IR::COND_NEQ, CF, _Constant(0), _Sub(OpSize::i64Bit, AL, _Constant(0x60)), AL);
 
   // SF, ZF, PF set according to result. CF set per above. OF undefined.
-  StoreGPRRegister(X86State::REG_RAX, AL, 1);
+  StoreGPRRegister(X86State::REG_RAX, AL, OpSize::i8Bit);
   SetNZ_ZeroCV(1, AL);
   SetCFDirect(NewCF);
   CalculatePF(AL);
@@ -2865,7 +2865,7 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
 
   // AL = AL & 0x0F
   A = _And(OpSize::i32Bit, A, _Constant(0xFF0F));
-  StoreGPRRegister(X86State::REG_RAX, A, 2);
+  StoreGPRRegister(X86State::REG_RAX, A, OpSize::i16Bit);
 }
 
 void OpDispatchBuilder::AASOp(OpcodeArgs) {
@@ -2885,18 +2885,18 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
 
   // AL = AL & 0x0F
   A = _And(OpSize::i32Bit, A, _Constant(0xFF0F));
-  StoreGPRRegister(X86State::REG_RAX, A, 2);
+  StoreGPRRegister(X86State::REG_RAX, A, OpSize::i16Bit);
 }
 
 void OpDispatchBuilder::AAMOp(OpcodeArgs) {
   InvalidateDeferredFlags();
 
-  auto AL = LoadGPRRegister(X86State::REG_RAX, 1);
+  auto AL = LoadGPRRegister(X86State::REG_RAX, OpSize::i8Bit);
   auto Imm8 = _Constant(Op->Src[0].Data.Literal.Value & 0xFF);
   auto UDivOp = _UDiv(OpSize::i64Bit, AL, Imm8);
   auto URemOp = _URem(OpSize::i64Bit, AL, Imm8);
   auto Res = _AddShift(OpSize::i64Bit, URemOp, UDivOp, ShiftType::LSL, 8);
-  StoreGPRRegister(X86State::REG_RAX, Res, 2);
+  StoreGPRRegister(X86State::REG_RAX, Res, OpSize::i16Bit);
 
   SetNZ_ZeroCV(1, Res);
   CalculatePF(Res);
@@ -2911,7 +2911,7 @@ void OpDispatchBuilder::AADOp(OpcodeArgs) {
   auto Imm8 = _Constant(Op->Src[0].Data.Literal.Value & 0xFF);
   auto NewAL = _Add(OpSize::i64Bit, A, _Mul(OpSize::i64Bit, AH, Imm8));
   auto Result = _And(OpSize::i64Bit, NewAL, _Constant(0xFF));
-  StoreGPRRegister(X86State::REG_RAX, Result, 2);
+  StoreGPRRegister(X86State::REG_RAX, Result, OpSize::i16Bit);
 
   SetNZ_ZeroCV(1, Result);
   CalculatePF(Result);
@@ -3612,8 +3612,8 @@ void OpDispatchBuilder::DIVOp(OpcodeArgs) {
   // This loads the divisor
   Ref Divisor = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
-  const auto GPRSize = CTX->GetGPRSize();
-  const auto Size = GetSrcSize(Op);
+  const auto GPRSize = CTX->GetGPROpSize();
+  const auto Size = OpSizeFromSrc(Op);
 
   if (Size == OpSize::i8Bit) {
     Ref Src1 = LoadGPRRegister(X86State::REG_RAX, OpSize::i16Bit);
@@ -3662,8 +3662,8 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
   // This loads the divisor
   Ref Divisor = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
-  const auto GPRSize = CTX->GetGPRSize();
-  const auto Size = GetSrcSize(Op);
+  const auto GPRSize = CTX->GetGPROpSize();
+  const auto Size = OpSizeFromSrc(Op);
 
   if (Size == OpSize::i8Bit) {
     Ref Src1 = LoadGPRRegister(X86State::REG_RAX, OpSize::i16Bit);
@@ -4227,7 +4227,7 @@ AddressMode OpDispatchBuilder::SelectAddressMode(AddressMode A, bool AtomicTSO, 
 
 AddressMode OpDispatchBuilder::DecodeAddress(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand,
                                              MemoryAccessType AccessType, bool IsLoad) {
-  const uint8_t GPRSize = CTX->GetGPRSize();
+  const auto GPRSize = CTX->GetGPROpSize();
 
   AddressMode A {};
   A.Segment = GetSegment(Op->Flags);
@@ -4332,16 +4332,16 @@ Ref OpDispatchBuilder::GetRelocatedPC(const FEXCore::X86Tables::DecodedOp& Op, i
   return _EntrypointOffset(IR::SizeToOpSize(GPRSize), Op->PC + Op->InstSize + Offset - Entry);
 }
 
-Ref OpDispatchBuilder::LoadGPRRegister(uint32_t GPR, int8_t Size, uint8_t Offset, bool AllowUpperGarbage) {
-  const uint8_t GPRSize = CTX->GetGPRSize();
-  if (Size == -1) {
+Ref OpDispatchBuilder::LoadGPRRegister(uint32_t GPR, IR::OpSize Size, uint8_t Offset, bool AllowUpperGarbage) {
+  const auto GPRSize = CTX->GetGPROpSize();
+  if (Size == OpSize::iInvalid) {
     Size = GPRSize;
   }
   Ref Reg = LoadGPR(GPR);
 
   if ((!AllowUpperGarbage && (Size != GPRSize)) || Offset != 0) {
     // Extract the subregister if requested.
-    const auto OpSize = IR::SizeToOpSize(std::max<uint8_t>(OpSize::i32Bit, Size));
+    const auto OpSize = std::max(OpSize::i32Bit, Size);
     if (AllowUpperGarbage) {
       Reg = _Lshr(OpSize, Reg, _Constant(Offset));
     } else {
@@ -4351,16 +4351,16 @@ Ref OpDispatchBuilder::LoadGPRRegister(uint32_t GPR, int8_t Size, uint8_t Offset
   return Reg;
 }
 
-void OpDispatchBuilder::StoreGPRRegister(uint32_t GPR, const Ref Src, int8_t Size, uint8_t Offset) {
-  const uint8_t GPRSize = CTX->GetGPRSize();
-  if (Size == -1) {
+void OpDispatchBuilder::StoreGPRRegister(uint32_t GPR, const Ref Src, IR::OpSize Size, uint8_t Offset) {
+  const auto GPRSize = CTX->GetGPROpSize();
+  if (Size == OpSize::iInvalid) {
     Size = GPRSize;
   }
 
   Ref Reg = Src;
   if (Size != GPRSize || Offset != 0) {
     // Need to do an insert if not automatic size or zero offset.
-    Reg = _Bfi(IR::SizeToOpSize(GPRSize), Size * 8, Offset, LoadGPRRegister(GPR), Src);
+    Reg = _Bfi(GPRSize, Size * 8, Offset, LoadGPRRegister(GPR), Src);
   }
 
   StoreRegister(GPR, false, Reg);

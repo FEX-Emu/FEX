@@ -1496,8 +1496,8 @@ private:
 
   void UpdatePrefixFromSegment(Ref Segment, uint32_t SegmentReg);
 
-  Ref LoadGPRRegister(uint32_t GPR, int8_t Size = -1, uint8_t Offset = 0, bool AllowUpperGarbage = false);
-  void StoreGPRRegister(uint32_t GPR, const Ref Src, int8_t Size = -1, uint8_t Offset = 0);
+  Ref LoadGPRRegister(uint32_t GPR, IR::OpSize Size = OpSize::iInvalid, uint8_t Offset = 0, bool AllowUpperGarbage = false);
+  void StoreGPRRegister(uint32_t GPR, const Ref Src, IR::OpSize Size = OpSize::iInvalid, uint8_t Offset = 0);
   void StoreXMMRegister(uint32_t XMM, const Ref Src);
 
   Ref GetRelocatedPC(const FEXCore::X86Tables::DecodedOp& Op, int64_t Offset = 0);
