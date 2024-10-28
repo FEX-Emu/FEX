@@ -5231,8 +5231,8 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(2, 0b01, 0x09), 1, &OpDispatchBuilder::VPSIGN<2>},
     {OPD(2, 0b01, 0x0A), 1, &OpDispatchBuilder::VPSIGN<4>},
     {OPD(2, 0b01, 0x0B), 1, &OpDispatchBuilder::VPMULHRSWOp},
-    {OPD(2, 0b01, 0x0C), 1, &OpDispatchBuilder::VPERMILRegOp<4>},
-    {OPD(2, 0b01, 0x0D), 1, &OpDispatchBuilder::VPERMILRegOp<8>},
+    {OPD(2, 0b01, 0x0C), 1, &OpDispatchBuilder::VPERMILRegOp<OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x0D), 1, &OpDispatchBuilder::VPERMILRegOp<OpSize::i64Bit>},
     {OPD(2, 0b01, 0x0E), 1, &OpDispatchBuilder::VTESTPOp<4>},
     {OPD(2, 0b01, 0x0F), 1, &OpDispatchBuilder::VTESTPOp<8>},
 

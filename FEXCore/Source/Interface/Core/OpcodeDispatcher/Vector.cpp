@@ -837,7 +837,7 @@ void OpDispatchBuilder::VPUNPCKHOp(OpcodeArgs, size_t ElementSize) {
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
-Ref OpDispatchBuilder::GeneratePSHUFBMask(uint8_t SrcSize) {
+Ref OpDispatchBuilder::GeneratePSHUFBMask(IR::OpSize SrcSize) {
   // PSHUFB doesn't 100% match VTBL behaviour
   // VTBL will set the element zero if the index is greater than
   // the number of elements in the array
@@ -848,7 +848,7 @@ Ref OpDispatchBuilder::GeneratePSHUFBMask(uint8_t SrcSize) {
   // Bits [6:3] is reserved for 64-bit
   const uint8_t MaskImm = SrcSize == OpSize::i64Bit ? 0b1000'0111 : 0b1000'1111;
 
-  return _VectorImm(SrcSize, 1, MaskImm);
+  return _VectorImm(SrcSize, OpSize::i8Bit, MaskImm);
 }
 
 Ref OpDispatchBuilder::PSHUFBOpImpl(uint8_t SrcSize, Ref Src1, Ref Src2, Ref MaskVector) {
@@ -871,7 +871,7 @@ Ref OpDispatchBuilder::PSHUFBOpImpl(uint8_t SrcSize, Ref Src1, Ref Src2, Ref Mas
 }
 
 void OpDispatchBuilder::PSHUFBOp(OpcodeArgs) {
-  const auto SrcSize = GetSrcSize(Op);
+  const auto SrcSize = OpSizeFromSrc(Op);
   Ref Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
@@ -880,7 +880,7 @@ void OpDispatchBuilder::PSHUFBOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::VPSHUFBOp(OpcodeArgs) {
-  const auto SrcSize = GetSrcSize(Op);
+  const auto SrcSize = OpSizeFromSrc(Op);
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
 
@@ -3314,7 +3314,7 @@ Ref OpDispatchBuilder::PMULHRSWOpImpl(OpSize Size, Ref Src1, Ref Src2) {
     // Implementation is more efficient for 8byte registers
     Res = _VSMull(Size * 2, OpSize::i16Bit, Src1, Src2);
     Res = _VSShrI(Size * 2, OpSize::i32Bit, Res, 14);
-    auto OneVector = _VectorImm(Size * 2, OpSize::i32Bit, 1);
+    auto OneVector = _VectorImm(IR::MultiplyOpSize(Size, 2), OpSize::i32Bit, 1);
     Res = _VAdd(Size * 2, OpSize::i32Bit, Res, OneVector);
     return _VUShrNI(Size * 2, OpSize::i32Bit, Res, 1);
   } else {
@@ -4558,7 +4558,7 @@ Ref OpDispatchBuilder::VPERMDIndices(OpSize DstSize, Ref Indices, Ref IndexMask,
 }
 
 void OpDispatchBuilder::VPERMDOp(OpcodeArgs) {
-  const auto DstSize = GetDstSize(Op);
+  const auto DstSize = OpSizeFromDst(Op);
 
   Ref Indices = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
@@ -4771,7 +4771,7 @@ void OpDispatchBuilder::VPERMILImmOp(OpcodeArgs, size_t ElementSize) {
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
-Ref OpDispatchBuilder::VPERMILRegOpImpl(OpSize DstSize, size_t ElementSize, Ref Src, Ref Indices) {
+Ref OpDispatchBuilder::VPERMILRegOpImpl(OpSize DstSize, IR::OpSize ElementSize, Ref Src, Ref Indices) {
   // NOTE: See implementation of VPERMD for the gist of what we do to make this work.
   //
   //       The only difference here is that we need to add 16 to the upper lane
@@ -4807,7 +4807,7 @@ Ref OpDispatchBuilder::VPERMILRegOpImpl(OpSize DstSize, size_t ElementSize, Ref 
 
   if (Is256Bit) {
     const auto ZeroRegister = LoadZeroVector(DstSize);
-    Ref Vector16 = _VInsElement(DstSize, OpSize::i128Bit, 1, 0, ZeroRegister, _VectorImm(DstSize, 1, 16));
+    Ref Vector16 = _VInsElement(DstSize, OpSize::i128Bit, 1, 0, ZeroRegister, _VectorImm(DstSize, OpSize::i8Bit, 16));
     Ref IndexOffsets = _VAdd(DstSize, OpSize::i8Bit, VectorConst, Vector16);
 
     FinalIndices = _VAdd(DstSize, OpSize::i8Bit, IndexOffsets, ShiftedIndices);
@@ -4818,7 +4818,7 @@ Ref OpDispatchBuilder::VPERMILRegOpImpl(OpSize DstSize, size_t ElementSize, Ref 
   return _VTBL1(DstSize, Src, FinalIndices);
 }
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::VPERMILRegOp(OpcodeArgs) {
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Indices = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);

@@ -629,8 +629,8 @@ public:
 
   void VPERMILImmOp(OpcodeArgs, size_t ElementSize);
 
-  Ref VPERMILRegOpImpl(OpSize DstSize, size_t ElementSize, Ref Src, Ref Indices);
-  template<size_t ElementSize>
+  Ref VPERMILRegOpImpl(OpSize DstSize, IR::OpSize ElementSize, Ref Src, Ref Indices);
+  template<IR::OpSize ElementSize>
   void VPERMILRegOp(OpcodeArgs);
 
   void VPHADDSWOp(OpcodeArgs);
@@ -1110,7 +1110,7 @@ public:
   void AVX128_VTESTP(OpcodeArgs);
   void AVX128_PTest(OpcodeArgs);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_VPERMILReg(OpcodeArgs);
 
   void AVX128_VPERMD(OpcodeArgs);
@@ -1409,7 +1409,7 @@ private:
 
   Ref PSADBWOpImpl(size_t Size, Ref Src1, Ref Src2);
 
-  Ref GeneratePSHUFBMask(uint8_t SrcSize);
+  Ref GeneratePSHUFBMask(IR::OpSize SrcSize);
   Ref PSHUFBOpImpl(uint8_t SrcSize, Ref Src1, Ref Src2, Ref MaskVector);
 
   Ref PSIGNImpl(OpcodeArgs, size_t ElementSize, Ref Src1, Ref Src2);

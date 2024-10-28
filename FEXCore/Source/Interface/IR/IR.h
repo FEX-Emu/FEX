@@ -607,6 +607,14 @@ static inline uint8_t OpSizeToSize(IR::OpSize Size) {
   }
 }
 
+static inline OpSize MultiplyOpSize(IR::OpSize Size, uint8_t Multiplier) {
+  return IR::SizeToOpSize(IR::OpSizeToSize(Size) * Multiplier);
+}
+
+static inline OpSize DivideOpSize(IR::OpSize Size, uint8_t Multiplier) {
+  return IR::SizeToOpSize(IR::OpSizeToSize(Size) / Multiplier);
+}
+
 #define IROP_ENUM
 #define IROP_STRUCTS
 #define IROP_SIZES
