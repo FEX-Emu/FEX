@@ -3422,7 +3422,7 @@ void OpDispatchBuilder::VPHSUBOp(OpcodeArgs, IR::OpSize ElementSize) {
 }
 
 Ref OpDispatchBuilder::PHADDSOpImpl(OpSize Size, Ref Src1, Ref Src2) {
-  const uint8_t ElementSize = 2;
+  const auto ElementSize = OpSize::i16Bit;
 
   auto Even = _VUnZip(Size, ElementSize, Src1, Src2);
   auto Odd = _VUnZip2(Size, ElementSize, Src1, Src2);
