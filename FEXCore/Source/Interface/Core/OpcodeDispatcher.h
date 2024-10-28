@@ -460,7 +460,7 @@ public:
   void MOVDDUPOp(OpcodeArgs);
   template<size_t DstElementSize>
   void CVTGPR_To_FPR(OpcodeArgs);
-  template<size_t SrcElementSize, bool HostRoundingMode>
+  template<IR::OpSize SrcElementSize, bool HostRoundingMode>
   void CVTFPR_To_GPR(OpcodeArgs);
   template<size_t SrcElementSize, bool Widen>
   void Vector_CVT_Int_To_Float(OpcodeArgs);
@@ -970,7 +970,7 @@ public:
   void AVX128_MOVVectorUnaligned(OpcodeArgs);
   template<size_t DstElementSize>
   void AVX128_InsertCVTGPR_To_FPR(OpcodeArgs);
-  template<size_t SrcElementSize, bool HostRoundingMode>
+  template<IR::OpSize SrcElementSize, bool HostRoundingMode>
   void AVX128_CVTFPR_To_GPR(OpcodeArgs);
   void AVX128_VANDN(OpcodeArgs);
   template<size_t ElementSize>

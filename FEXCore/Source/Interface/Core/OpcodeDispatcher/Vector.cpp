@@ -2066,7 +2066,7 @@ void OpDispatchBuilder::AVXCVTGPR_To_FPR(OpcodeArgs) {
 template void OpDispatchBuilder::AVXCVTGPR_To_FPR<OpSize::i32Bit>(OpcodeArgs);
 template void OpDispatchBuilder::AVXCVTGPR_To_FPR<OpSize::i64Bit>(OpcodeArgs);
 
-template<size_t SrcElementSize, bool HostRoundingMode>
+template<IR::OpSize SrcElementSize, bool HostRoundingMode>
 void OpDispatchBuilder::CVTFPR_To_GPR(OpcodeArgs) {
   // If loading a vector, use the full size, so we don't
   // unnecessarily zero extend the vector. Otherwise, if
