@@ -2421,7 +2421,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VTBL1 u8:#RegisterSize, FPR:$VectorTable, FPR:$VectorIndices": {
+      "FPR = VTBL1 OpSize:#RegisterSize, FPR:$VectorTable, FPR:$VectorIndices": {
         "Desc": ["Does a vector table lookup from one register in to the destination",
                  "Lookup is byte sized per byte element.",
                  "Any index larger than what the registers provide will result in zero for that element",
