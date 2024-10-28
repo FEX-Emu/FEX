@@ -187,7 +187,7 @@ void OpDispatchBuilder::FMULF64(OpcodeArgs, size_t Width, bool Integer, OpDispat
     if (Width == 16) {
       arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
     }
-    arg = _Float_FromGPR_S(8, Width == 64 ? OpSize::i64Bit : OpSize::i32Bit, arg);
+    arg = _Float_FromGPR_S(OpSize::i64Bit, Width == 64 ? OpSize::i64Bit : OpSize::i32Bit, arg);
   } else if (Width == 32) {
     arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
     arg = _Float_FToF(OpSize::i64Bit, OpSize::i32Bit, arg);
@@ -237,7 +237,7 @@ void OpDispatchBuilder::FDIVF64(OpcodeArgs, size_t Width, bool Integer, bool Rev
       if (Width == 16) {
         Arg = _Sbfe(OpSize::i64Bit, 16, 0, Arg);
       }
-      Arg = _Float_FromGPR_S(8, Width == 64 ? OpSize::i64Bit : OpSize::i32Bit, Arg);
+      Arg = _Float_FromGPR_S(OpSize::i64Bit, Width == 64 ? OpSize::i64Bit : OpSize::i32Bit, Arg);
     } else if (Width == 32) {
       Arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
       Arg = _Float_FToF(OpSize::i64Bit, OpSize::i32Bit, Arg);
@@ -292,7 +292,7 @@ void OpDispatchBuilder::FSUBF64(OpcodeArgs, size_t Width, bool Integer, bool Rev
       if (Width == 16) {
         arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
       }
-      arg = _Float_FromGPR_S(8, Width == 64 ? OpSize::i64Bit : OpSize::i32Bit, arg);
+      arg = _Float_FromGPR_S(OpSize::i64Bit, Width == 64 ? OpSize::i64Bit : OpSize::i32Bit, arg);
     } else if (Width == 32) {
       arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
       arg = _Float_FToF(OpSize::i64Bit, OpSize::i32Bit, arg);
@@ -339,7 +339,7 @@ void OpDispatchBuilder::FCOMIF64(OpcodeArgs, size_t Width, bool Integer, OpDispa
         if (Width == 16) {
           arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
         }
-        b = _Float_FromGPR_S(8, Width == 64 ? OpSize::i64Bit : OpSize::i32Bit, arg);
+        b = _Float_FromGPR_S(OpSize::i64Bit, Width == 64 ? OpSize::i64Bit : OpSize::i32Bit, arg);
       } else if (Width == 32) {
         arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
         b = _Float_FToF(OpSize::i64Bit, OpSize::i32Bit, arg);

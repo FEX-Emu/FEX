@@ -2026,7 +2026,7 @@ void OpDispatchBuilder::VMOVDDUPOp(OpcodeArgs) {
 
 Ref OpDispatchBuilder::CVTGPR_To_FPRImpl(OpcodeArgs, IR::OpSize DstElementSize, const X86Tables::DecodedOperand& Src1Op,
                                          const X86Tables::DecodedOperand& Src2Op) {
-  const auto SrcSize = GetSrcSize(Op);
+  const auto SrcSize = OpSizeFromSrc(Op);
 
   Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Src1Op, OpSize::i128Bit, Op->Flags);
   Ref Converted {};
