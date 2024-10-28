@@ -2606,7 +2606,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = Vector_F64ToI32 u8:#RegisterSize, FPR:$Vector, RoundType:$Round, i1:$EnsureZeroUpperHalf": {
+      "FPR = Vector_F64ToI32 OpSize:#RegisterSize, FPR:$Vector, RoundType:$Round, i1:$EnsureZeroUpperHalf": {
         "Desc": ["Vector op: Rounds 64-bit float to 32-bit integral with round mode",
                  "Matches CVTPD2DQ/CVTTPD2DQ behaviour"
                 ],
