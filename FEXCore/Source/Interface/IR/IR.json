@@ -666,7 +666,7 @@
         "HasSideEffects": true,
         "TiedSource": 0
       },
-      "GPR:$Addr, GPR:$Value = Pop u8:$Size, GPR:$Addr": {
+      "GPR:$Addr, GPR:$Value = Pop OpSize:$Size, GPR:$Addr": {
         "Desc": [
           "Pops a value from the address, updating the new pointer after incrementing.",
           "The address is incremented by the size via an RMW source/destintaion."

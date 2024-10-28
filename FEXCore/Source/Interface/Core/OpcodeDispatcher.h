@@ -2489,13 +2489,13 @@ private:
     }
   }
 
-  Ref Pop(uint8_t Size, Ref SP_RMW) {
+  Ref Pop(IR::OpSize Size, Ref SP_RMW) {
     Ref Value = _AllocateGPR(false);
     _Pop(Size, SP_RMW, Value);
     return Value;
   }
 
-  Ref Pop(uint8_t Size) {
+  Ref Pop(IR::OpSize Size) {
     Ref SP = _RMWHandle(LoadGPRRegister(X86State::REG_RSP));
     Ref Value = _AllocateGPR(false);
 

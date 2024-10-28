@@ -112,7 +112,7 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs, bool IsSyscallInst) {
 }
 
 void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
-  const uint8_t GPRSize = CTX->GetGPRSize();
+  const auto GPRSize = CTX->GetGPROpSize();
   uint8_t* sha256 = (uint8_t*)(Op->PC + 2);
 
   if (CTX->Config.Is64BitMode) {
@@ -153,7 +153,7 @@ void OpDispatchBuilder::LEAOp(OpcodeArgs) {
 void OpDispatchBuilder::NOPOp(OpcodeArgs) {}
 
 void OpDispatchBuilder::RETOp(OpcodeArgs) {
-  const uint8_t GPRSize = CTX->GetGPRSize();
+  const auto GPRSize = CTX->GetGPROpSize();
 
   // ABI Optimization: Flags don't survive calls or rets
   if (CTX->Config.ABILocalFlags) {
@@ -196,7 +196,7 @@ void OpDispatchBuilder::IRETOp(OpcodeArgs) {
     return;
   }
 
-  const uint8_t GPRSize = CTX->GetGPRSize();
+  const auto GPRSize = CTX->GetGPROpSize();
 
   Ref SP = _RMWHandle(LoadGPRRegister(X86State::REG_RSP));
 
@@ -479,13 +479,13 @@ void OpDispatchBuilder::PUSHSegmentOp(OpcodeArgs, uint32_t SegmentReg) {
 }
 
 void OpDispatchBuilder::POPOp(OpcodeArgs) {
-  Ref Value = Pop(GetSrcSize(Op));
+  Ref Value = Pop(OpSizeFromSrc(Op));
   StoreResult(GPRClass, Op, Value, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::POPAOp(OpcodeArgs) {
   // 32bit only
-  const uint8_t Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
 
   Ref SP = _RMWHandle(LoadGPRRegister(X86State::REG_RSP));
 
@@ -539,7 +539,7 @@ void OpDispatchBuilder::POPSegmentOp(OpcodeArgs, uint32_t SegmentReg) {
 void OpDispatchBuilder::LEAVEOp(OpcodeArgs) {
   // First we move RBP in to RSP and then behave effectively like a pop
   auto SP = _RMWHandle(LoadGPRRegister(X86State::REG_RBP));
-  auto NewGPR = Pop(GetSrcSize(Op), SP);
+  auto NewGPR = Pop(OpSizeFromSrc(Op), SP);
 
   // Store the new stack pointer
   StoreGPRRegister(X86State::REG_RSP, SP);
@@ -3578,7 +3578,7 @@ void OpDispatchBuilder::PUSHFOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::POPFOp(OpcodeArgs) {
-  const uint8_t Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
   Ref Src = Pop(Size);
 
   // Add back our flag constants
