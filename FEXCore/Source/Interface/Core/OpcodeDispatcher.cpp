@@ -5201,9 +5201,9 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0xEF), 1, &OpDispatchBuilder::AVXVectorXOROp},
 
     {OPD(1, 0b11, 0xF0), 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
-    {OPD(1, 0b01, 0xF1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLOp, 2>},
-    {OPD(1, 0b01, 0xF2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLOp, 4>},
-    {OPD(1, 0b01, 0xF3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLOp, 8>},
+    {OPD(1, 0b01, 0xF1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLOp, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0xF2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLOp, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0xF3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLOp, OpSize::i64Bit>},
     {OPD(1, 0b01, 0xF4), 1, &OpDispatchBuilder::VPMULLOp<OpSize::i32Bit, false>},
     {OPD(1, 0b01, 0xF5), 1, &OpDispatchBuilder::VPMADDWDOp},
     {OPD(1, 0b01, 0xF6), 1, &OpDispatchBuilder::VPSADBWOp},
