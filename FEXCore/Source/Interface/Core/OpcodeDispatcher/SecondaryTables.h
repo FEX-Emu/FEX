@@ -173,7 +173,7 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   {0xB8, 1, &OpDispatchBuilder::PopcountOp},
   {0xBC, 1, &OpDispatchBuilder::TZCNT},
   {0xBD, 1, &OpDispatchBuilder::LZCNT},
-  {0xC2, 1, &OpDispatchBuilder::InsertScalarFCMPOp<4>},
+  {0xC2, 1, &OpDispatchBuilder::InsertScalarFCMPOp<OpSize::i32Bit>},
   {0xD6, 1, &OpDispatchBuilder::MOVQ2DQ<true>},
   {0xE6, 1, &OpDispatchBuilder::Vector_CVT_Int_To_Float<4, true>},
 };
@@ -199,7 +199,7 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   {0x7D, 1, &OpDispatchBuilder::HSUBP<4>},
   {0xD0, 1, &OpDispatchBuilder::ADDSUBPOp<4>},
   {0xD6, 1, &OpDispatchBuilder::MOVQ2DQ<false>},
-  {0xC2, 1, &OpDispatchBuilder::InsertScalarFCMPOp<8>},
+  {0xC2, 1, &OpDispatchBuilder::InsertScalarFCMPOp<OpSize::i64Bit>},
   {0xE6, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<8, true, true>},
   {0xF0, 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
 };

@@ -550,9 +550,9 @@ public:
   template<IR::OpSize ElementSize>
   void AVXInsertScalarRound(OpcodeArgs);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void InsertScalarFCMPOp(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVXInsertScalarFCMPOp(OpcodeArgs);
 
   template<size_t DstElementSize>
@@ -986,7 +986,7 @@ public:
   Ref AVX128_VFCMPImpl(size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType);
   template<size_t ElementSize>
   void AVX128_VFCMP(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_InsertScalarFCMP(OpcodeArgs);
   void AVX128_MOVBetweenGPR_FPR(OpcodeArgs);
   template<IR::OpSize ElementSize>
@@ -1460,7 +1460,7 @@ private:
   Ref InsertScalarRoundImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize ElementSize, const X86Tables::DecodedOperand& Src1Op,
                             const X86Tables::DecodedOperand& Src2Op, uint64_t Mode, bool ZeroUpperBits);
 
-  Ref InsertScalarFCMPOpImpl(OpSize Size, uint8_t OpDstSize, size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType, bool ZeroUpperBits);
+  Ref InsertScalarFCMPOpImpl(OpSize Size, uint8_t OpDstSize, IR::OpSize ElementSize, Ref Src1, Ref Src2, uint8_t CompType, bool ZeroUpperBits);
 
   Ref VectorRoundImpl(OpSize Size, size_t ElementSize, Ref Src, uint64_t Mode);
 

@@ -560,7 +560,7 @@ template void OpDispatchBuilder::AVXInsertScalarRound<OpSize::i32Bit>(OpcodeArgs
 template void OpDispatchBuilder::AVXInsertScalarRound<OpSize::i64Bit>(OpcodeArgs);
 
 
-Ref OpDispatchBuilder::InsertScalarFCMPOpImpl(OpSize Size, uint8_t OpDstSize, size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType,
+Ref OpDispatchBuilder::InsertScalarFCMPOpImpl(OpSize Size, uint8_t OpDstSize, IR::OpSize ElementSize, Ref Src1, Ref Src2, uint8_t CompType,
                                               bool ZeroUpperBits) {
   switch (CompType & 7) {
   case 0x0: // EQ
@@ -591,7 +591,7 @@ Ref OpDispatchBuilder::InsertScalarFCMPOpImpl(OpSize Size, uint8_t OpDstSize, si
   FEX_UNREACHABLE;
 }
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::InsertScalarFCMPOp(OpcodeArgs) {
   const uint8_t CompType = Op->Src[1].Literal();
   const auto DstSize = GetGuestVectorLength();
@@ -607,7 +607,7 @@ void OpDispatchBuilder::InsertScalarFCMPOp(OpcodeArgs) {
 template void OpDispatchBuilder::InsertScalarFCMPOp<OpSize::i32Bit>(OpcodeArgs);
 template void OpDispatchBuilder::InsertScalarFCMPOp<OpSize::i64Bit>(OpcodeArgs);
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::AVXInsertScalarFCMPOp(OpcodeArgs) {
   const uint8_t CompType = Op->Src[2].Literal();
   const auto DstSize = GetGuestVectorLength();
