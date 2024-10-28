@@ -2045,7 +2045,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize << 1)"
       },
-      "FPR = VSSHLL2 u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, u8:$BitShift{0}": {
+      "FPR = VSSHLL2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$BitShift{0}": {
         "Desc": ["Sign extends elements from the source element size to the next size up",
                  "Source elements come from the upper half of the register"
                 ],
