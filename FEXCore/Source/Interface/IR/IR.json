@@ -612,7 +612,7 @@
           "$VectorIndexElementSize == OpSize::i32Bit || $VectorIndexElementSize == OpSize::i64Bit"
         ]
       },
-      "FPR = VLoadVectorGatherMaskedQPS u8:#RegisterSize, u8:#ElementSize, FPR:$Incoming, FPR:$MaskReg, GPR:$AddrBase, FPR:$VectorIndexLow, FPR:$VectorIndexHigh, u8:$OffsetScale": {
+      "FPR = VLoadVectorGatherMaskedQPS OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Incoming, FPR:$MaskReg, GPR:$AddrBase, FPR:$VectorIndexLow, FPR:$VectorIndexHigh, u8:$OffsetScale": {
         "Desc": [
           "Does a masked load similar to VPGATHERQPS where the upper bit of each element",
           "determines whether or not that element will be loaded from memory.",
