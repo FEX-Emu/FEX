@@ -442,8 +442,8 @@ public:
   void MOVQMMXOp(OpcodeArgs);
   void MOVMSKOp(OpcodeArgs, IR::OpSize ElementSize);
   void MOVMSKOpOne(OpcodeArgs);
-  void PUNPCKLOp(OpcodeArgs, size_t ElementSize);
-  void PUNPCKHOp(OpcodeArgs, size_t ElementSize);
+  void PUNPCKLOp(OpcodeArgs, IR::OpSize ElementSize);
+  void PUNPCKHOp(OpcodeArgs, IR::OpSize ElementSize);
   void PSHUFBOp(OpcodeArgs);
   Ref PShufWLane(IR::OpSize Size, FEXCore::IR::IndexNamedVectorConstant IndexConstant, bool LowLane, Ref IncomingLane, uint8_t Shuffle);
   void PSHUFWOp(OpcodeArgs, bool Low);
@@ -677,9 +677,9 @@ public:
   void VPSRLDOp(OpcodeArgs, size_t ElementSize);
   void VPSRLDQOp(OpcodeArgs);
 
-  void VPUNPCKHOp(OpcodeArgs, size_t ElementSize);
+  void VPUNPCKHOp(OpcodeArgs, IR::OpSize ElementSize);
 
-  void VPUNPCKLOp(OpcodeArgs, size_t ElementSize);
+  void VPUNPCKLOp(OpcodeArgs, IR::OpSize ElementSize);
 
   void VPSRLIOp(OpcodeArgs, IR::OpSize ElementSize);
 

@@ -778,8 +778,8 @@ void OpDispatchBuilder::MOVMSKOpOne(OpcodeArgs) {
   StoreResult(GPRClass, Op, Result, OpSize::iInvalid);
 }
 
-void OpDispatchBuilder::PUNPCKLOp(OpcodeArgs, size_t ElementSize) {
-  auto Size = GetSrcSize(Op);
+void OpDispatchBuilder::PUNPCKLOp(OpcodeArgs, IR::OpSize ElementSize) {
+  const auto Size = OpSizeFromSrc(Op);
 
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
@@ -788,8 +788,8 @@ void OpDispatchBuilder::PUNPCKLOp(OpcodeArgs, size_t ElementSize) {
   StoreResult(FPRClass, Op, ALUOp, OpSize::iInvalid);
 }
 
-void OpDispatchBuilder::VPUNPCKLOp(OpcodeArgs, size_t ElementSize) {
-  const auto SrcSize = GetSrcSize(Op);
+void OpDispatchBuilder::VPUNPCKLOp(OpcodeArgs, IR::OpSize ElementSize) {
+  const auto SrcSize = OpSizeFromSrc(Op);
   const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
@@ -808,7 +808,7 @@ void OpDispatchBuilder::VPUNPCKLOp(OpcodeArgs, size_t ElementSize) {
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
-void OpDispatchBuilder::PUNPCKHOp(OpcodeArgs, size_t ElementSize) {
+void OpDispatchBuilder::PUNPCKHOp(OpcodeArgs, IR::OpSize ElementSize) {
   auto Size = GetSrcSize(Op);
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
@@ -817,8 +817,8 @@ void OpDispatchBuilder::PUNPCKHOp(OpcodeArgs, size_t ElementSize) {
   StoreResult(FPRClass, Op, ALUOp, OpSize::iInvalid);
 }
 
-void OpDispatchBuilder::VPUNPCKHOp(OpcodeArgs, size_t ElementSize) {
-  const auto SrcSize = GetSrcSize(Op);
+void OpDispatchBuilder::VPUNPCKHOp(OpcodeArgs, IR::OpSize ElementSize) {
+  const auto SrcSize = OpSizeFromSrc(Op);
   const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
