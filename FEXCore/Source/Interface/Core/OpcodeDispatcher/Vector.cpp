@@ -3959,7 +3959,7 @@ void OpDispatchBuilder::PTestOp(OpcodeArgs) {
   PTestOpImpl(OpSizeFromSrc(Op), Dest, Src);
 }
 
-void OpDispatchBuilder::VTESTOpImpl(OpSize SrcSize, size_t ElementSize, Ref Src1, Ref Src2) {
+void OpDispatchBuilder::VTESTOpImpl(OpSize SrcSize, IR::OpSize ElementSize, Ref Src1, Ref Src2) {
   InvalidateDeferredFlags();
 
   const auto ElementSizeInBits = ElementSize * 8;
@@ -3990,7 +3990,7 @@ void OpDispatchBuilder::VTESTOpImpl(OpSize SrcSize, size_t ElementSize, Ref Src1
   ZeroPF_AF();
 }
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::VTESTPOp(OpcodeArgs) {
   Ref Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);

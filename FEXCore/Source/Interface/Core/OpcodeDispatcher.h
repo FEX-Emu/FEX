@@ -685,7 +685,7 @@ public:
 
   void VSHUFOp(OpcodeArgs, IR::OpSize ElementSize);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void VTESTPOp(OpcodeArgs);
 
   void VZEROOp(OpcodeArgs);
@@ -1433,7 +1433,7 @@ private:
 
   Ref VFCMPOpImpl(OpSize Size, IR::OpSize ElementSize, Ref Src1, Ref Src2, uint8_t CompType);
 
-  void VTESTOpImpl(OpSize SrcSize, size_t ElementSize, Ref Src1, Ref Src2);
+  void VTESTOpImpl(OpSize SrcSize, IR::OpSize ElementSize, Ref Src1, Ref Src2);
 
   void VectorUnaryDuplicateOpImpl(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
 

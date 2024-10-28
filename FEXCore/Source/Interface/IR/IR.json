@@ -2532,7 +2532,7 @@
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VDupFromGPR u8:#RegisterSize, u8:#ElementSize, GPR:$Src": {
+      "FPR = VDupFromGPR OpSize:#RegisterSize, OpSize:#ElementSize, GPR:$Src": {
         "Desc": ["Broadcasts a value in a GPR into each ElementSize-sized element in a vector"],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
