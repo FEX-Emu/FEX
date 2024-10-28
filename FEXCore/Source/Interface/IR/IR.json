@@ -2084,7 +2084,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
-      "FPR = VSQXTUN2 u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
+      "FPR = VSQXTUN2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
