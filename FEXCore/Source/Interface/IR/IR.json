@@ -598,7 +598,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VLoadVectorGatherMasked u8:#RegisterSize, u8:#ElementSize, FPR:$Incoming, FPR:$Mask, GPR:$AddrBase, FPR:$VectorIndexLow, FPR:$VectorIndexHigh, u8:$VectorIndexElementSize, u8:$OffsetScale, u8:$DataElementOffsetStart, u8:$IndexElementOffsetStart": {
+      "FPR = VLoadVectorGatherMasked OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Incoming, FPR:$Mask, GPR:$AddrBase, FPR:$VectorIndexLow, FPR:$VectorIndexHigh, u8:$VectorIndexElementSize, u8:$OffsetScale, u8:$DataElementOffsetStart, u8:$IndexElementOffsetStart": {
         "Desc": [
           "Does a masked load similar to VPGATHERD* where the upper bit of each element",
           "determines whether or not that element will be loaded from memory.",
