@@ -1430,7 +1430,7 @@ void OpDispatchBuilder::VSHUFOp(OpcodeArgs, IR::OpSize ElementSize) {
 }
 
 void OpDispatchBuilder::VANDNOp(OpcodeArgs) {
-  const auto SrcSize = GetSrcSize(Op);
+  const auto SrcSize = OpSizeFromSrc(Op);
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
