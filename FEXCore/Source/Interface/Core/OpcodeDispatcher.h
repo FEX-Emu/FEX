@@ -445,7 +445,7 @@ public:
   void PUNPCKLOp(OpcodeArgs, size_t ElementSize);
   void PUNPCKHOp(OpcodeArgs, size_t ElementSize);
   void PSHUFBOp(OpcodeArgs);
-  Ref PShufWLane(size_t Size, FEXCore::IR::IndexNamedVectorConstant IndexConstant, bool LowLane, Ref IncomingLane, uint8_t Shuffle);
+  Ref PShufWLane(IR::OpSize Size, FEXCore::IR::IndexNamedVectorConstant IndexConstant, bool LowLane, Ref IncomingLane, uint8_t Shuffle);
   void PSHUFWOp(OpcodeArgs, bool Low);
   void PSHUFW8ByteOp(OpcodeArgs);
   void PSHUFDOp(OpcodeArgs);
@@ -1422,7 +1422,7 @@ private:
 
   Ref PSRLDOpImpl(OpcodeArgs, size_t ElementSize, Ref Src, Ref ShiftVec);
 
-  Ref SHUFOpImpl(OpcodeArgs, size_t DstSize, size_t ElementSize, Ref Src1, Ref Src2, uint8_t Shuffle);
+  Ref SHUFOpImpl(OpcodeArgs, IR::OpSize DstSize, size_t ElementSize, Ref Src1, Ref Src2, uint8_t Shuffle);
 
   void VMASKMOVOpImpl(OpcodeArgs, IR::OpSize ElementSize, IR::OpSize DataSize, bool IsStore, const X86Tables::DecodedOperand& MaskOp,
                       const X86Tables::DecodedOperand& DataOp);
@@ -2196,11 +2196,11 @@ private:
     CachedNamedVectorConstants[NamedConstant][log2_size_bytes] = Constant;
     return Constant;
   }
-  Ref LoadAndCacheIndexedNamedVectorConstant(uint8_t Size, FEXCore::IR::IndexNamedVectorConstant NamedIndexedConstant, uint32_t Index) {
+  Ref LoadAndCacheIndexedNamedVectorConstant(IR::OpSize Size, FEXCore::IR::IndexNamedVectorConstant NamedIndexedConstant, uint32_t Index) {
     IndexNamedVectorMapKey Key {
       .Index = Index,
       .NamedIndexedConstant = NamedIndexedConstant,
-      .log2_size_in_bytes = FEXCore::ilog2(Size),
+      .log2_size_in_bytes = FEXCore::ilog2(IR::OpSizeToSize(Size)),
     };
     auto it = CachedIndexedNamedVectorConstants.find(Key);
 

@@ -1892,7 +1892,7 @@
                 ],
         "DestSize": "RegisterSize"
       },
-      "FPR = LoadNamedVectorIndexedConstant u8:#RegisterSize, IndexNamedVectorConstant:$Constant, u32:$Index": {
+      "FPR = LoadNamedVectorIndexedConstant OpSize:#RegisterSize, IndexNamedVectorConstant:$Constant, u32:$Index": {
         "Desc": ["Load a named vector constant from Indexable table.",
                  "Index needs to be aligned register size.",
                  "The list of indexable vector constants can be found in <FEXCore/IR/IR.h>"

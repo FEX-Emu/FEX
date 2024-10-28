@@ -888,7 +888,8 @@ void OpDispatchBuilder::VPSHUFBOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
-Ref OpDispatchBuilder::PShufWLane(size_t Size, FEXCore::IR::IndexNamedVectorConstant IndexConstant, bool LowLane, Ref IncomingLane, uint8_t Shuffle) {
+Ref OpDispatchBuilder::PShufWLane(IR::OpSize Size, FEXCore::IR::IndexNamedVectorConstant IndexConstant, bool LowLane, Ref IncomingLane,
+                                  uint8_t Shuffle) {
   constexpr auto IdentityCopy = 0b11'10'01'00;
 
   const bool Is128BitLane = Size == OpSize::i128Bit;
@@ -933,7 +934,7 @@ Ref OpDispatchBuilder::PShufWLane(size_t Size, FEXCore::IR::IndexNamedVectorCons
 
 void OpDispatchBuilder::PSHUFW8ByteOp(OpcodeArgs) {
   uint16_t Shuffle = Op->Src[1].Data.Literal.Value;
-  const auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Dest = PShufWLane(Size, FEXCore::IR::INDEXED_NAMED_VECTOR_PSHUFLW, true, Src, Shuffle);
   StoreResult(FPRClass, Op, Dest, OpSize::iInvalid);
@@ -941,7 +942,7 @@ void OpDispatchBuilder::PSHUFW8ByteOp(OpcodeArgs) {
 
 void OpDispatchBuilder::PSHUFWOp(OpcodeArgs, bool Low) {
   uint16_t Shuffle = Op->Src[1].Data.Literal.Value;
-  const auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   const auto IndexedVectorConstant = Low ? FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFLW :
                                            FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFHW;
@@ -1219,7 +1220,7 @@ void OpDispatchBuilder::VPSHUFWOp(OpcodeArgs, size_t ElementSize, bool Low) {
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
-Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, size_t DstSize, size_t ElementSize, Ref Src1, Ref Src2, uint8_t Shuffle) {
+Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, IR::OpSize DstSize, size_t ElementSize, Ref Src1, Ref Src2, uint8_t Shuffle) {
   // Since 256-bit variants and up don't lane cross, we can construct
   // everything in terms of the 128-variant, as each lane is essentially
   // its own 128-bit segment.
@@ -1415,7 +1416,7 @@ void OpDispatchBuilder::SHUFOp(OpcodeArgs, size_t ElementSize) {
   Ref Src2Node = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   uint8_t Shuffle = Op->Src[1].Literal();
 
-  Ref Result = SHUFOpImpl(Op, GetDstSize(Op), ElementSize, Src1Node, Src2Node, Shuffle);
+  Ref Result = SHUFOpImpl(Op, OpSizeFromDst(Op), ElementSize, Src1Node, Src2Node, Shuffle);
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
@@ -1424,7 +1425,7 @@ void OpDispatchBuilder::VSHUFOp(OpcodeArgs, size_t ElementSize) {
   Ref Src2Node = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
   uint8_t Shuffle = Op->Src[2].Literal();
 
-  Ref Result = SHUFOpImpl(Op, GetDstSize(Op), ElementSize, Src1Node, Src2Node, Shuffle);
+  Ref Result = SHUFOpImpl(Op, OpSizeFromDst(Op), ElementSize, Src1Node, Src2Node, Shuffle);
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
