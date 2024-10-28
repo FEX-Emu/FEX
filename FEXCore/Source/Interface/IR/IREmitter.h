@@ -88,7 +88,7 @@ public:
   IRPair<IROp_LoadMem> _LoadMem(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, Ref ssa0, IR::OpSize Align = OpSize::i8Bit) {
     return _LoadMem(Class, Size, ssa0, Invalid(), Align, MEM_OFFSET_SXTX, 1);
   }
-  IRPair<IROp_LoadMemTSO> _LoadMemTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, Ref ssa0, uint8_t Align = 1) {
+  IRPair<IROp_LoadMemTSO> _LoadMemTSO(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, Ref ssa0, IR::OpSize Align = OpSize::i8Bit) {
     return _LoadMemTSO(Class, Size, ssa0, Invalid(), Align, MEM_OFFSET_SXTX, 1);
   }
   IRPair<IROp_StoreMem> _StoreMem(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, Ref Addr, Ref Value, IR::OpSize Align = OpSize::i8Bit) {

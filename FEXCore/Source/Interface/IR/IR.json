@@ -565,7 +565,7 @@
         ]
       },
 
-      "SSA = LoadMemTSO RegisterClass:$Class, u8:#Size, GPR:$Addr, GPR:$Offset, u8:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale": {
+      "SSA = LoadMemTSO RegisterClass:$Class, OpSize:#Size, GPR:$Addr, GPR:$Offset, OpSize:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale": {
         "Desc": ["Does a x86 TSO compatible load from memory. Offset must be Invalid()."
                 ],
         "DestSize": "Size",
