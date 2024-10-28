@@ -355,7 +355,7 @@ void OpDispatchBuilder::SALCOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PUSHOp(OpcodeArgs) {
-  const uint8_t Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
 
   Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   Push(Size, Src);
@@ -363,7 +363,7 @@ void OpDispatchBuilder::PUSHOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PUSHREGOp(OpcodeArgs) {
-  const uint8_t Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
 
   Ref Src = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
 
@@ -373,7 +373,7 @@ void OpDispatchBuilder::PUSHREGOp(OpcodeArgs) {
 
 void OpDispatchBuilder::PUSHAOp(OpcodeArgs) {
   // 32bit only
-  const uint8_t Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
 
   auto OldSP = LoadGPRRegister(X86State::REG_RSP);
 
@@ -390,7 +390,7 @@ void OpDispatchBuilder::PUSHAOp(OpcodeArgs) {
 
   Ref Src {};
   Ref NewSP = OldSP;
-  const uint8_t GPRSize = CTX->GetGPRSize();
+  const auto GPRSize = CTX->GetGPROpSize();
 
   Src = LoadGPRRegister(X86State::REG_RAX);
   NewSP = _Push(GPRSize, Size, Src, NewSP);
@@ -549,7 +549,7 @@ void OpDispatchBuilder::LEAVEOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CALLOp(OpcodeArgs) {
-  const uint8_t GPRSize = CTX->GetGPRSize();
+  const auto GPRSize = CTX->GetGPROpSize();
 
   BlockSetRIP = true;
 
@@ -585,7 +585,7 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
 void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   BlockSetRIP = true;
 
-  const uint8_t Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
   Ref JMPPCOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
 
   // Push the return address.
@@ -2961,8 +2961,8 @@ void OpDispatchBuilder::EnterOp(OpcodeArgs) {
   const uint16_t AllocSpace = Value & 0xFFFF;
   const uint8_t Level = (Value >> 16) & 0x1F;
 
-  const auto PushValue = [&](uint8_t Size, Ref Src) -> Ref {
-    const uint8_t GPRSize = CTX->GetGPRSize();
+  const auto PushValue = [&](IR::OpSize Size, Ref Src) -> Ref {
+    const auto GPRSize = CTX->GetGPROpSize();
 
     auto OldSP = LoadGPRRegister(X86State::REG_RSP);
     auto NewSP = _Push(GPRSize, Size, Src, OldSP);
@@ -3571,7 +3571,7 @@ void OpDispatchBuilder::BSWAPOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PUSHFOp(OpcodeArgs) {
-  const uint8_t Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
 
   Ref Src = GetPackedRFLAG();
   Push(Size, Src);

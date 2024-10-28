@@ -2506,9 +2506,9 @@ private:
     return Value;
   }
 
-  void Push(uint8_t Size, Ref Value) {
+  void Push(IR::OpSize Size, Ref Value) {
     auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-    auto NewSP = _Push(CTX->GetGPRSize(), Size, Value, OldSP);
+    auto NewSP = _Push(CTX->GetGPROpSize(), Size, Value, OldSP);
     StoreGPRRegister(X86State::REG_RSP, NewSP);
   }
 

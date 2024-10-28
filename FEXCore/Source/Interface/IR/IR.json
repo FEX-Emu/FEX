@@ -648,7 +648,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "GPR = Push u8:#Size, u8:$ValueSize, GPR:$Value, GPR:$Addr": {
+      "GPR = Push OpSize:#Size, OpSize:$ValueSize, GPR:$Value, GPR:$Addr": {
         "Desc": [
           "Pushes a value to the address, returning the new pointer after incrementing.",
           "The address is decremented by the value size while.",
