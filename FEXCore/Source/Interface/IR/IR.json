@@ -552,7 +552,7 @@
         ]
       },
 
-      "StoreMemPair RegisterClass:$Class, u8:#Size, SSA:$Value1, SSA:$Value2, GPR:$Addr, u32:$Offset": {
+      "StoreMemPair RegisterClass:$Class, OpSize:#Size, SSA:$Value1, SSA:$Value2, GPR:$Addr, u32:$Offset": {
         "Desc": [ "Stores a pair of values to memory.",
                   "Zero Extends if value's type is too small",
                   "Truncates if value's type is too large"
