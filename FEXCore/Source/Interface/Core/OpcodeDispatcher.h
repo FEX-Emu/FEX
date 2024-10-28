@@ -458,7 +458,7 @@ public:
   void PSLLDQ(OpcodeArgs);
   void PSRAIOp(OpcodeArgs, IR::OpSize ElementSize);
   void MOVDDUPOp(OpcodeArgs);
-  template<size_t DstElementSize>
+  template<IR::OpSize DstElementSize>
   void CVTGPR_To_FPR(OpcodeArgs);
   template<IR::OpSize SrcElementSize, bool HostRoundingMode>
   void CVTFPR_To_GPR(OpcodeArgs);
@@ -555,7 +555,7 @@ public:
   template<IR::OpSize ElementSize>
   void AVXInsertScalarFCMPOp(OpcodeArgs);
 
-  template<size_t DstElementSize>
+  template<IR::OpSize DstElementSize>
   void AVXCVTGPR_To_FPR(OpcodeArgs);
 
   template<IR::OpSize ElementSize>
@@ -571,7 +571,7 @@ public:
 
   void VANDNOp(OpcodeArgs);
 
-  Ref VBLENDOpImpl(uint32_t VecSize, uint32_t ElementSize, Ref Src1, Ref Src2, Ref ZeroRegister, uint64_t Selector);
+  Ref VBLENDOpImpl(IR::OpSize VecSize, IR::OpSize ElementSize, Ref Src1, Ref Src2, Ref ZeroRegister, uint64_t Selector);
   void VBLENDPDOp(OpcodeArgs);
   void VPBLENDDOp(OpcodeArgs);
   void VPBLENDWOp(OpcodeArgs);
@@ -627,7 +627,7 @@ public:
   void VPERMDOp(OpcodeArgs);
   void VPERMQOp(OpcodeArgs);
 
-  void VPERMILImmOp(OpcodeArgs, size_t ElementSize);
+  void VPERMILImmOp(OpcodeArgs, IR::OpSize ElementSize);
 
   Ref VPERMILRegOpImpl(OpSize DstSize, IR::OpSize ElementSize, Ref Src, Ref Indices);
   template<IR::OpSize ElementSize>
@@ -660,7 +660,7 @@ public:
 
   void VPSHUFBOp(OpcodeArgs);
 
-  void VPSHUFWOp(OpcodeArgs, size_t ElementSize, bool Low);
+  void VPSHUFWOp(OpcodeArgs, IR::OpSize ElementSize, bool Low);
 
   void VPSLLOp(OpcodeArgs, IR::OpSize ElementSize);
   void VPSLLDQOp(OpcodeArgs);
@@ -1367,7 +1367,7 @@ private:
 
   Ref AESKeyGenAssistImpl(OpcodeArgs);
 
-  Ref CVTGPR_To_FPRImpl(OpcodeArgs, size_t DstElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op);
+  Ref CVTGPR_To_FPRImpl(OpcodeArgs, IR::OpSize DstElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op);
 
   Ref DPPOpImpl(IR::OpSize DstSize, Ref Src1, Ref Src2, uint8_t Mask, IR::OpSize ElementSize);
 
@@ -1461,7 +1461,7 @@ private:
   Ref InsertScalarRoundImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize ElementSize, const X86Tables::DecodedOperand& Src1Op,
                             const X86Tables::DecodedOperand& Src2Op, uint64_t Mode, bool ZeroUpperBits);
 
-  Ref InsertScalarFCMPOpImpl(OpSize Size, uint8_t OpDstSize, IR::OpSize ElementSize, Ref Src1, Ref Src2, uint8_t CompType, bool ZeroUpperBits);
+  Ref InsertScalarFCMPOpImpl(OpSize Size, IR::OpSize OpDstSize, IR::OpSize ElementSize, Ref Src1, Ref Src2, uint8_t CompType, bool ZeroUpperBits);
 
   Ref VectorRoundImpl(OpSize Size, size_t ElementSize, Ref Src, uint64_t Mode);
 
@@ -1889,7 +1889,7 @@ private:
 
       // If we did a partial store, we're inserting into the full register
       if (RegCache.Written & Bit) {
-        Full = _VInsElement(16, 8, 0, 0, Full, Value);
+        Full = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 0, 0, Full, Value);
       }
 
       RegCache.Value[Index] = Full;

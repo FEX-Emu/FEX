@@ -5126,9 +5126,9 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0x6F), 1, &OpDispatchBuilder::VMOVAPS_VMOVAPDOp},
     {OPD(1, 0b10, 0x6F), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPDOp},
 
-    {OPD(1, 0b01, 0x70), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSHUFWOp, 4, true>},
-    {OPD(1, 0b10, 0x70), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSHUFWOp, 2, false>},
-    {OPD(1, 0b11, 0x70), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSHUFWOp, 2, true>},
+    {OPD(1, 0b01, 0x70), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSHUFWOp, OpSize::i32Bit, true>},
+    {OPD(1, 0b10, 0x70), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSHUFWOp, OpSize::i16Bit, false>},
+    {OPD(1, 0b11, 0x70), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSHUFWOp, OpSize::i16Bit, true>},
 
     {OPD(1, 0b01, 0x74), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VCMPEQ, OpSize::i8Bit>},
     {OPD(1, 0b01, 0x75), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VCMPEQ, OpSize::i16Bit>},
@@ -5346,8 +5346,8 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(3, 0b01, 0x00), 1, &OpDispatchBuilder::VPERMQOp},
     {OPD(3, 0b01, 0x01), 1, &OpDispatchBuilder::VPERMQOp},
     {OPD(3, 0b01, 0x02), 1, &OpDispatchBuilder::VPBLENDDOp},
-    {OPD(3, 0b01, 0x04), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPERMILImmOp, 4>},
-    {OPD(3, 0b01, 0x05), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPERMILImmOp, 8>},
+    {OPD(3, 0b01, 0x04), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPERMILImmOp, OpSize::i32Bit>},
+    {OPD(3, 0b01, 0x05), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPERMILImmOp, OpSize::i64Bit>},
     {OPD(3, 0b01, 0x06), 1, &OpDispatchBuilder::VPERM2Op},
     {OPD(3, 0b01, 0x08), 1, &OpDispatchBuilder::AVXVectorRound<4>},
     {OPD(3, 0b01, 0x09), 1, &OpDispatchBuilder::AVXVectorRound<8>},
