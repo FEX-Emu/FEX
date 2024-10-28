@@ -1979,7 +1979,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VCMPLTZ u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VCMPLTZ OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": ["Vector compare signed less than",
                  "Each element is compared, if the result is true then the resulting element is ~0, else zero",
                  "Compares the vector against zero"
