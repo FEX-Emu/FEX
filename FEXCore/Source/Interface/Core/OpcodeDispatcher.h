@@ -635,7 +635,7 @@ public:
 
   void VPHADDSWOp(OpcodeArgs);
 
-  void VPHSUBOp(OpcodeArgs, size_t ElementSize);
+  void VPHSUBOp(OpcodeArgs, IR::OpSize ElementSize);
   void VPHSUBSWOp(OpcodeArgs);
 
   void VPINSRBOp(OpcodeArgs);
@@ -832,7 +832,7 @@ public:
   void MOVBEOp(OpcodeArgs);
   template<size_t ElementSize>
   void HSUBP(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void PHSUB(OpcodeArgs);
 
   void PHADDS(OpcodeArgs);
@@ -1391,7 +1391,7 @@ private:
 
   Ref PHMINPOSUWOpImpl(OpcodeArgs);
 
-  Ref PHSUBOpImpl(OpSize Size, Ref Src1, Ref Src2, size_t ElementSize);
+  Ref PHSUBOpImpl(OpSize Size, Ref Src1, Ref Src2, IR::OpSize ElementSize);
 
   Ref PHSUBSOpImpl(OpSize Size, Ref Src1, Ref Src2);
 

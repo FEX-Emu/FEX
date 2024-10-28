@@ -3390,13 +3390,13 @@ void OpDispatchBuilder::VHSUBPOp(OpcodeArgs, size_t ElementSize) {
   StoreResult(FPRClass, Op, Dest, OpSize::iInvalid);
 }
 
-Ref OpDispatchBuilder::PHSUBOpImpl(OpSize Size, Ref Src1, Ref Src2, size_t ElementSize) {
+Ref OpDispatchBuilder::PHSUBOpImpl(OpSize Size, Ref Src1, Ref Src2, IR::OpSize ElementSize) {
   auto Even = _VUnZip(Size, ElementSize, Src1, Src2);
   auto Odd = _VUnZip2(Size, ElementSize, Src1, Src2);
   return _VSub(Size, ElementSize, Even, Odd);
 }
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::PHSUB(OpcodeArgs) {
   Ref Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
@@ -3404,10 +3404,10 @@ void OpDispatchBuilder::PHSUB(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
-template void OpDispatchBuilder::PHSUB<2>(OpcodeArgs);
-template void OpDispatchBuilder::PHSUB<4>(OpcodeArgs);
+template void OpDispatchBuilder::PHSUB<OpSize::i16Bit>(OpcodeArgs);
+template void OpDispatchBuilder::PHSUB<OpSize::i32Bit>(OpcodeArgs);
 
-void OpDispatchBuilder::VPHSUBOp(OpcodeArgs, size_t ElementSize) {
+void OpDispatchBuilder::VPHSUBOp(OpcodeArgs, IR::OpSize ElementSize) {
   const auto DstSize = GetDstSize(Op);
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
