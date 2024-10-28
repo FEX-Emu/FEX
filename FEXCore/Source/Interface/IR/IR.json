@@ -1661,7 +1661,7 @@
         "DestSize": "DestElementSize"
       },
 
-      "GPR = Float_ToGPR_ZS u8:#DestElementSize, u8:$SrcElementSize, FPR:$Scalar": {
+      "GPR = Float_ToGPR_ZS OpSize:#DestElementSize, OpSize:$SrcElementSize, FPR:$Scalar": {
         "Desc": ["Moves the scalar element to a GPR with conversion",
                  "Converts the 32bit or 64bit float to an signed integer rounding towards zero (Truncating)"
                 ],
