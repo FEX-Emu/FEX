@@ -752,7 +752,7 @@
           "RegisterSize == FEXCore::IR::OpSize::i128Bit"
         ]
       },
-      "FPR = VLoadNonTemporal u8:#RegisterSize, GPR:$Addr, i8:$Offset": {
+      "FPR = VLoadNonTemporal OpSize:#RegisterSize, GPR:$Addr, i8:$Offset": {
         "Desc": ["Does a non-temporal memory load of a vector.",
                  "Matches arm64 SVE ldnt1b semantics.",
                  "Specifically weak-memory model ordered to match x86 non-temporal stores."
