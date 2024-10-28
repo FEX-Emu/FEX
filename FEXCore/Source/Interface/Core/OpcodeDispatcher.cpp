@@ -4850,7 +4850,7 @@ void OpDispatchBuilder::CRC32(OpcodeArgs) {
   } else {
     Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.Align = OpSize::i8Bit});
   }
-  auto Result = _CRC32(Dest, Src, GetSrcSize(Op));
+  auto Result = _CRC32(Dest, Src, OpSizeFromSrc(Op));
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, DstSize, OpSize::iInvalid);
 }
 

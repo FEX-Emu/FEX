@@ -2647,7 +2647,7 @@
         "Desc": "Does vector scalar VSha256U0 instruction",
         "DestSize": "FEXCore::IR::OpSize::i128Bit"
       },
-      "GPR = CRC32 GPR:$Src1, GPR:$Src2, u8:$SrcSize": {
+      "GPR = CRC32 GPR:$Src1, GPR:$Src2, OpSize:$SrcSize": {
         "Desc": ["CRC32 using polynomial 0x1EDC6F41"
                 ],
         "DestSize": "4"
