@@ -456,7 +456,7 @@ public:
   void PSRAOp(OpcodeArgs, size_t ElementSize);
   void PSRLDQ(OpcodeArgs);
   void PSLLDQ(OpcodeArgs);
-  void PSRAIOp(OpcodeArgs, size_t ElementSize);
+  void PSRAIOp(OpcodeArgs, IR::OpSize ElementSize);
   void MOVDDUPOp(OpcodeArgs);
   template<size_t DstElementSize>
   void CVTGPR_To_FPR(OpcodeArgs);
@@ -669,7 +669,7 @@ public:
 
   void VPSRAOp(OpcodeArgs, size_t ElementSize);
 
-  void VPSRAIOp(OpcodeArgs, size_t ElementSize);
+  void VPSRAIOp(OpcodeArgs, IR::OpSize ElementSize);
 
   void VPSRAVDOp(OpcodeArgs);
   void VPSRLVOp(OpcodeArgs);
@@ -893,7 +893,7 @@ public:
   template<size_t ElementSize>
   void VectorBlend(OpcodeArgs);
 
-  void VectorVariableBlend(OpcodeArgs, size_t ElementSize);
+  void VectorVariableBlend(OpcodeArgs, IR::OpSize ElementSize);
   void PTestOpImpl(OpSize Size, Ref Dest, Ref Src);
   void PTestOp(OpcodeArgs);
   void PHMINPOSUWOp(OpcodeArgs);
@@ -1099,7 +1099,7 @@ public:
 
   void AVX128_MASKMOV(OpcodeArgs);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_VectorVariableBlend(OpcodeArgs);
 
   void AVX128_SaveAVXState(Ref MemBase);
@@ -1361,7 +1361,7 @@ private:
   void AVXVectorALUOp(OpcodeArgs, IROps IROp, size_t ElementSize);
   void AVXVectorUnaryOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
 
-  void AVXVectorVariableBlend(OpcodeArgs, size_t ElementSize);
+  void AVXVectorVariableBlend(OpcodeArgs, IR::OpSize ElementSize);
 
   void AVXVariableShiftImpl(OpcodeArgs, IROps IROp);
 

@@ -412,9 +412,9 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
 
     {OPD(3, 0b01, 0x46), 1, &OpDispatchBuilder::AVX128_VPERM2},
 
-    {OPD(3, 0b01, 0x4A), 1, &OpDispatchBuilder::AVX128_VectorVariableBlend<4>},
-    {OPD(3, 0b01, 0x4B), 1, &OpDispatchBuilder::AVX128_VectorVariableBlend<8>},
-    {OPD(3, 0b01, 0x4C), 1, &OpDispatchBuilder::AVX128_VectorVariableBlend<1>},
+    {OPD(3, 0b01, 0x4A), 1, &OpDispatchBuilder::AVX128_VectorVariableBlend<OpSize::i32Bit>},
+    {OPD(3, 0b01, 0x4B), 1, &OpDispatchBuilder::AVX128_VectorVariableBlend<OpSize::i64Bit>},
+    {OPD(3, 0b01, 0x4C), 1, &OpDispatchBuilder::AVX128_VectorVariableBlend<OpSize::i8Bit>},
 
     {OPD(3, 0b01, 0x60), 1, &OpDispatchBuilder::AVX128_VPCMPESTRM},
     {OPD(3, 0b01, 0x61), 1, &OpDispatchBuilder::AVX128_VPCMPESTRI},
@@ -2143,9 +2143,9 @@ void OpDispatchBuilder::AVX128_MASKMOV(OpcodeArgs) {
   _StoreMem(FPRClass, Size, MemDest, XMMReg, OpSize::i8Bit);
 }
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::AVX128_VectorVariableBlend(OpcodeArgs) {
-  const auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
   const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
   const auto Src3Selector = Op->Src[2].Literal();
 

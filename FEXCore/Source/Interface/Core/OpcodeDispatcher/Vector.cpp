@@ -1937,23 +1937,23 @@ void OpDispatchBuilder::VPSLLDQOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
-void OpDispatchBuilder::PSRAIOp(OpcodeArgs, size_t ElementSize) {
+void OpDispatchBuilder::PSRAIOp(OpcodeArgs, IR::OpSize ElementSize) {
   const uint64_t Shift = Op->Src[1].Literal();
   if (Shift == 0) [[unlikely]] {
     // Nothing to do, value is already in Dest.
     return;
   }
 
-  const auto Size = GetDstSize(Op);
+  const auto Size = OpSizeFromDst(Op);
 
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Result = _VSShrI(Size, ElementSize, Dest, Shift);
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
-void OpDispatchBuilder::VPSRAIOp(OpcodeArgs, size_t ElementSize) {
+void OpDispatchBuilder::VPSRAIOp(OpcodeArgs, IR::OpSize ElementSize) {
   const uint64_t Shift = Op->Src[1].Literal();
-  const auto Size = GetDstSize(Op);
+  const auto Size = OpSizeFromDst(Op);
   const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
 
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
@@ -3314,7 +3314,7 @@ Ref OpDispatchBuilder::PMULHRSWOpImpl(OpSize Size, Ref Src1, Ref Src2) {
   if (Size == OpSize::i64Bit) {
     // Implementation is more efficient for 8byte registers
     Res = _VSMull(Size * 2, OpSize::i16Bit, Src1, Src2);
-    Res = _VSShrI(Size * 2, OpSize::i32Bit, Res, 14);
+    Res = _VSShrI(IR::MultiplyOpSize(Size, 2), OpSize::i32Bit, Res, 14);
     auto OneVector = _VectorImm(IR::MultiplyOpSize(Size, 2), OpSize::i32Bit, 1);
     Res = _VAdd(Size * 2, OpSize::i32Bit, Res, OneVector);
     return _VUShrNI(Size * 2, OpSize::i32Bit, Res, 1);
@@ -3886,8 +3886,8 @@ template void OpDispatchBuilder::VectorBlend<OpSize::i16Bit>(OpcodeArgs);
 template void OpDispatchBuilder::VectorBlend<OpSize::i32Bit>(OpcodeArgs);
 template void OpDispatchBuilder::VectorBlend<OpSize::i64Bit>(OpcodeArgs);
 
-void OpDispatchBuilder::VectorVariableBlend(OpcodeArgs, size_t ElementSize) {
-  auto Size = GetSrcSize(Op);
+void OpDispatchBuilder::VectorVariableBlend(OpcodeArgs, IR::OpSize ElementSize) {
+  const auto Size = OpSizeFromSrc(Op);
 
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
@@ -3906,8 +3906,8 @@ void OpDispatchBuilder::VectorVariableBlend(OpcodeArgs, size_t ElementSize) {
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
-void OpDispatchBuilder::AVXVectorVariableBlend(OpcodeArgs, size_t ElementSize) {
-  const auto SrcSize = GetSrcSize(Op);
+void OpDispatchBuilder::AVXVectorVariableBlend(OpcodeArgs, IR::OpSize ElementSize) {
+  const auto SrcSize = OpSizeFromSrc(Op);
   const auto ElementSizeBits = ElementSize * 8;
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
