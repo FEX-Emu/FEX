@@ -1871,7 +1871,7 @@
       }
     },
     "Vector": {
-      "FPR = VMov u8:#RegisterSize, FPR:$Source": {
+      "FPR = VMov OpSize:#RegisterSize, FPR:$Source": {
         "Desc" : ["Copy vector register",
                   "When Register size is smaller than Source register size,",
                   "this op is defined to truncate and zero extend"
