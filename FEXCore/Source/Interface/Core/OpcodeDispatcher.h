@@ -478,7 +478,7 @@ public:
   void LZCNT(OpcodeArgs);
   template<IR::OpSize ElementSize>
   void VFCMPOp(OpcodeArgs);
-  void SHUFOp(OpcodeArgs, size_t ElementSize);
+  void SHUFOp(OpcodeArgs, IR::OpSize ElementSize);
   template<IR::OpSize ElementSize>
   void PINSROp(OpcodeArgs);
   void InsertPSOp(OpcodeArgs);
@@ -683,7 +683,7 @@ public:
 
   void VPSRLIOp(OpcodeArgs, size_t ElementSize);
 
-  void VSHUFOp(OpcodeArgs, size_t ElementSize);
+  void VSHUFOp(OpcodeArgs, IR::OpSize ElementSize);
 
   template<size_t ElementSize>
   void VTESTPOp(OpcodeArgs);
@@ -1062,7 +1062,7 @@ public:
 
   void AVX128_VPSHUFW(OpcodeArgs, bool Low);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_VSHUF(OpcodeArgs);
 
   template<size_t ElementSize>
@@ -1369,7 +1369,7 @@ private:
 
   Ref CVTGPR_To_FPRImpl(OpcodeArgs, size_t DstElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op);
 
-  Ref DPPOpImpl(IR::OpSize DstSize, Ref Src1, Ref Src2, uint8_t Mask, size_t ElementSize);
+  Ref DPPOpImpl(IR::OpSize DstSize, Ref Src1, Ref Src2, uint8_t Mask, IR::OpSize ElementSize);
 
   Ref VDPPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2, const X86Tables::DecodedOperand& Imm);
 
@@ -1423,7 +1423,7 @@ private:
 
   Ref PSRLDOpImpl(OpcodeArgs, size_t ElementSize, Ref Src, Ref ShiftVec);
 
-  Ref SHUFOpImpl(OpcodeArgs, IR::OpSize DstSize, size_t ElementSize, Ref Src1, Ref Src2, uint8_t Shuffle);
+  Ref SHUFOpImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize ElementSize, Ref Src1, Ref Src2, uint8_t Shuffle);
 
   void VMASKMOVOpImpl(OpcodeArgs, IR::OpSize ElementSize, IR::OpSize DataSize, bool IsStore, const X86Tables::DecodedOperand& MaskOp,
                       const X86Tables::DecodedOperand& DataOp);

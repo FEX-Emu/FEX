@@ -660,7 +660,7 @@ void OpDispatchBuilder::AVXVectorUnaryOp(OpcodeArgs, IROps IROp, IR::OpSize Elem
 }
 
 void OpDispatchBuilder::VectorUnaryDuplicateOpImpl(OpcodeArgs, IROps IROp, IR::OpSize ElementSize) {
-  const auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
 
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
@@ -1220,7 +1220,7 @@ void OpDispatchBuilder::VPSHUFWOp(OpcodeArgs, size_t ElementSize, bool Low) {
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
-Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, IR::OpSize DstSize, size_t ElementSize, Ref Src1, Ref Src2, uint8_t Shuffle) {
+Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize ElementSize, Ref Src1, Ref Src2, uint8_t Shuffle) {
   // Since 256-bit variants and up don't lane cross, we can construct
   // everything in terms of the 128-variant, as each lane is essentially
   // its own 128-bit segment.
@@ -1411,7 +1411,7 @@ Ref OpDispatchBuilder::SHUFOpImpl(OpcodeArgs, IR::OpSize DstSize, size_t Element
   return Dest;
 }
 
-void OpDispatchBuilder::SHUFOp(OpcodeArgs, size_t ElementSize) {
+void OpDispatchBuilder::SHUFOp(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Src1Node = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src2Node = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   uint8_t Shuffle = Op->Src[1].Literal();
@@ -1420,7 +1420,7 @@ void OpDispatchBuilder::SHUFOp(OpcodeArgs, size_t ElementSize) {
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
-void OpDispatchBuilder::VSHUFOp(OpcodeArgs, size_t ElementSize) {
+void OpDispatchBuilder::VSHUFOp(OpcodeArgs, IR::OpSize ElementSize) {
   Ref Src1Node = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2Node = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
   uint8_t Shuffle = Op->Src[2].Literal();
@@ -2000,7 +2000,7 @@ void OpDispatchBuilder::MOVDDUPOp(OpcodeArgs) {
   // memory, then we want to load the element size exactly.
   const auto SrcSize = Op->Src[0].IsGPR() ? OpSize::i128Bit : OpSizeFromSrc(Op);
   Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
-  Ref Res = _VDupElement(OpSize::i128Bit, GetSrcSize(Op), Src, 0);
+  Ref Res = _VDupElement(OpSize::i128Bit, OpSizeFromSrc(Op), Src, 0);
 
   StoreResult(FPRClass, Op, Res, OpSize::iInvalid);
 }
@@ -3054,7 +3054,7 @@ void OpDispatchBuilder::PFNACCOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PFPNACCOp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
 
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
@@ -4042,7 +4042,7 @@ void OpDispatchBuilder::PHMINPOSUWOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
-Ref OpDispatchBuilder::DPPOpImpl(IR::OpSize DstSize, Ref Src1, Ref Src2, uint8_t Mask, size_t ElementSize) {
+Ref OpDispatchBuilder::DPPOpImpl(IR::OpSize DstSize, Ref Src1, Ref Src2, uint8_t Mask, IR::OpSize ElementSize) {
   const auto SizeMask = [ElementSize]() {
     if (ElementSize == OpSize::i32Bit) {
       return 0b1111;
@@ -4125,13 +4125,13 @@ Ref OpDispatchBuilder::DPPOpImpl(IR::OpSize DstSize, Ref Src1, Ref Src2, uint8_t
       // Dest[63:32]  = Result
       // Dest[95:64]  = Zero
       // Dest[127:96] = Zero
-      return _VZip(DstSize / 2, ElementSize, ZeroVec, Temp);
+      return _VZip(IR::DivideOpSize(DstSize, 2), ElementSize, ZeroVec, Temp);
     case 0b0011:
       // Dest[31:0]   = Result
       // Dest[63:32]  = Result
       // Dest[95:64]  = Zero
       // Dest[127:96] = Zero
-      return _VDupElement(DstSize / 2, ElementSize, Temp, 0);
+      return _VDupElement(IR::DivideOpSize(DstSize, 2), ElementSize, Temp, 0);
     case 0b0100:
       // Dest[31:0]   = Zero
       // Dest[63:32]  = Zero

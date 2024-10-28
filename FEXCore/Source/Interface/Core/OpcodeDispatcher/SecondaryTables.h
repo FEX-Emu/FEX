@@ -96,7 +96,7 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   {0x77, 1, &OpDispatchBuilder::X87EMMS},
 
   {0xC2, 1, &OpDispatchBuilder::VFCMPOp<OpSize::i32Bit>},
-  {0xC6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SHUFOp, 4>},
+  {0xC6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SHUFOp, OpSize::i32Bit>},
 
   {0xD1, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, 2>},
   {0xD2, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, 4>},
@@ -260,7 +260,7 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   {0xC2, 1, &OpDispatchBuilder::VFCMPOp<OpSize::i64Bit>},
   {0xC4, 1, &OpDispatchBuilder::PINSROp<OpSize::i16Bit>},
   {0xC5, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, OpSize::i16Bit>},
-  {0xC6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SHUFOp, 8>},
+  {0xC6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SHUFOp, OpSize::i64Bit>},
 
   {0xD0, 1, &OpDispatchBuilder::ADDSUBPOp<8>},
   {0xD1, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, 2>},

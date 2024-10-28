@@ -187,8 +187,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0xC4), 1, &OpDispatchBuilder::AVX128_VPINSRW},
     {OPD(1, 0b01, 0xC5), 1, &OpDispatchBuilder::AVX128_PExtr<OpSize::i16Bit>},
 
-    {OPD(1, 0b00, 0xC6), 1, &OpDispatchBuilder::AVX128_VSHUF<4>},
-    {OPD(1, 0b01, 0xC6), 1, &OpDispatchBuilder::AVX128_VSHUF<8>},
+    {OPD(1, 0b00, 0xC6), 1, &OpDispatchBuilder::AVX128_VSHUF<OpSize::i32Bit>},
+    {OPD(1, 0b01, 0xC6), 1, &OpDispatchBuilder::AVX128_VSHUF<OpSize::i64Bit>},
 
     {OPD(1, 0b01, 0xD0), 1, &OpDispatchBuilder::AVX128_VADDSUBP<OpSize::i64Bit>},
     {OPD(1, 0b11, 0xD0), 1, &OpDispatchBuilder::AVX128_VADDSUBP<OpSize::i32Bit>},
@@ -1281,7 +1281,7 @@ void OpDispatchBuilder::AVX128_ExtendVectorElements(OpcodeArgs, size_t ElementSi
     size_t TotalElementsToSplitSize = (TotalElementCount / 2) * ElementSize;
 
     // Split the number of elements in half between lower and upper.
-    Ref SrcHigh = _VDupElement(OpSize::i128Bit, TotalElementsToSplitSize, Src, 1);
+    Ref SrcHigh = _VDupElement(OpSize::i128Bit, IR::SizeToOpSize(TotalElementsToSplitSize), Src, 1);
     Result.Low = Transform(Src);
     Result.High = Transform(SrcHigh);
   }
@@ -1897,7 +1897,7 @@ void OpDispatchBuilder::AVX128_VPSHUFW(OpcodeArgs, bool Low) {
   });
 }
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::AVX128_VSHUF(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
   const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;

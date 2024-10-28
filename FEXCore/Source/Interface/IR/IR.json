@@ -1987,7 +1987,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VDupElement u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, u8:$Index": {
+      "FPR = VDupElement OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$Index": {
         "Desc": ["Duplicates one element from the source register across the whole register"],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
