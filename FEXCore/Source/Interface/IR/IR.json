@@ -2482,7 +2482,7 @@
         "DestSize": "4",
         "JITDispatch": false
       },
-      "FPR = VFCADD u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, u16:$Rotate": {
+      "FPR = VFCADD OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, u16:$Rotate": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
