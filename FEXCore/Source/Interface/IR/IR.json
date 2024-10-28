@@ -1785,7 +1785,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / DstElementSize"
       },
-      "FPR = VSToFVectorInsert OpSize:#RegisterSize, u8:#DstElementSize, u8:$SrcElementSize, FPR:$Vector1, FPR:$Vector2, i8:$HasTwoElements, i1:$ZeroUpperBits": {
+      "FPR = VSToFVectorInsert OpSize:#RegisterSize, OpSize:#DstElementSize, OpSize:$SrcElementSize, FPR:$Vector1, FPR:$Vector2, i8:$HasTwoElements, i1:$ZeroUpperBits": {
         "Desc": ["Does a Vector 'scvt' between Vector1 and Vector2.",
                  "Inserting the result in to the lower element of Vector1 and returning the results.",
                  "If ZeroUpperBits is set then in a 256-bit wide operation it will zero the upper 128-bits of the destination.",

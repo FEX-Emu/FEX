@@ -416,14 +416,14 @@ void OpDispatchBuilder::InsertMMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs) {
   Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
 
   // Always 32-bit.
-  const size_t ElementSize = OpSize::i32Bit;
+  const auto ElementSize = OpSize::i32Bit;
   // Always signed
   Dest = _VSToFVectorInsert(IR::SizeToOpSize(DstSize), ElementSize, ElementSize, Dest, Src, true, false);
 
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Dest, DstSize, OpSize::iInvalid);
 }
 
-Ref OpDispatchBuilder::InsertCVTGPR_To_FPRImpl(OpcodeArgs, IR::OpSize DstSize, size_t DstElementSize, const X86Tables::DecodedOperand& Src1Op,
+Ref OpDispatchBuilder::InsertCVTGPR_To_FPRImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize DstElementSize, const X86Tables::DecodedOperand& Src1Op,
                                                const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits) {
   // We load the full vector width when dealing with a source vector,
   // so that we don't do any unnecessary zero extension to the scalar
@@ -451,7 +451,7 @@ Ref OpDispatchBuilder::InsertCVTGPR_To_FPRImpl(OpcodeArgs, IR::OpSize DstSize, s
   return _VSToFVectorInsert(IR::SizeToOpSize(DstSize), DstElementSize, DstElementSize, Src1, Src2, false, ZeroUpperBits);
 }
 
-template<size_t DstElementSize>
+template<IR::OpSize DstElementSize>
 void OpDispatchBuilder::InsertCVTGPR_To_FPR(OpcodeArgs) {
   const auto DstSize = GetGuestVectorLength();
   auto Result = InsertCVTGPR_To_FPRImpl(Op, DstSize, DstElementSize, Op->Dest, Op->Src[0], false);
@@ -461,7 +461,7 @@ void OpDispatchBuilder::InsertCVTGPR_To_FPR(OpcodeArgs) {
 template void OpDispatchBuilder::InsertCVTGPR_To_FPR<OpSize::i32Bit>(OpcodeArgs);
 template void OpDispatchBuilder::InsertCVTGPR_To_FPR<OpSize::i64Bit>(OpcodeArgs);
 
-template<size_t DstElementSize>
+template<IR::OpSize DstElementSize>
 void OpDispatchBuilder::AVXInsertCVTGPR_To_FPR(OpcodeArgs) {
   const auto DstSize = GetGuestVectorLength();
   Ref Result = InsertCVTGPR_To_FPRImpl(Op, DstSize, DstElementSize, Op->Src[0], Op->Src[1], true);

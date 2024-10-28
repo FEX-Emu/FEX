@@ -151,7 +151,7 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   {0x10, 2, &OpDispatchBuilder::MOVSSOp},
   {0x12, 1, &OpDispatchBuilder::VMOVSLDUPOp},
   {0x16, 1, &OpDispatchBuilder::VMOVSHDUPOp},
-  {0x2A, 1, &OpDispatchBuilder::InsertCVTGPR_To_FPR<4>},
+  {0x2A, 1, &OpDispatchBuilder::InsertCVTGPR_To_FPR<OpSize::i32Bit>},
   {0x2B, 1, &OpDispatchBuilder::MOVVectorNTOp},
   {0x2C, 1, &OpDispatchBuilder::CVTFPR_To_GPR<OpSize::i32Bit, false>},
   {0x2D, 1, &OpDispatchBuilder::CVTFPR_To_GPR<OpSize::i32Bit, true>},
@@ -181,7 +181,7 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
 constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDispatch_SecondaryRepNEModTables[] = {
   {0x10, 2, &OpDispatchBuilder::MOVSDOp},
   {0x12, 1, &OpDispatchBuilder::MOVDDUPOp},
-  {0x2A, 1, &OpDispatchBuilder::InsertCVTGPR_To_FPR<8>},
+  {0x2A, 1, &OpDispatchBuilder::InsertCVTGPR_To_FPR<OpSize::i64Bit>},
   {0x2B, 1, &OpDispatchBuilder::MOVVectorNTOp},
   {0x2C, 1, &OpDispatchBuilder::CVTFPR_To_GPR<OpSize::i64Bit, false>},
   {0x2D, 1, &OpDispatchBuilder::CVTFPR_To_GPR<OpSize::i64Bit, true>},

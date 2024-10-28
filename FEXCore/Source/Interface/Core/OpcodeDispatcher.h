@@ -533,9 +533,9 @@ public:
   void AVXVectorScalarUnaryInsertALUOp(OpcodeArgs);
 
   void InsertMMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs);
-  template<size_t DstElementSize>
+  template<IR::OpSize DstElementSize>
   void InsertCVTGPR_To_FPR(OpcodeArgs);
-  template<size_t DstElementSize>
+  template<IR::OpSize DstElementSize>
   void AVXInsertCVTGPR_To_FPR(OpcodeArgs);
 
   template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
@@ -968,7 +968,7 @@ public:
   template<size_t ElementSize>
   void AVX128_VPUNPCKH(OpcodeArgs);
   void AVX128_MOVVectorUnaligned(OpcodeArgs);
-  template<size_t DstElementSize>
+  template<IR::OpSize DstElementSize>
   void AVX128_InsertCVTGPR_To_FPR(OpcodeArgs);
   template<IR::OpSize SrcElementSize, bool HostRoundingMode>
   void AVX128_CVTFPR_To_GPR(OpcodeArgs);
@@ -1452,7 +1452,7 @@ private:
   Ref VectorScalarUnaryInsertALUOpImpl(OpcodeArgs, IROps IROp, IR::OpSize DstSize, IR::OpSize ElementSize,
                                        const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits);
 
-  Ref InsertCVTGPR_To_FPRImpl(OpcodeArgs, IR::OpSize DstSize, size_t DstElementSize, const X86Tables::DecodedOperand& Src1Op,
+  Ref InsertCVTGPR_To_FPRImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize DstElementSize, const X86Tables::DecodedOperand& Src1Op,
                               const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits);
 
   Ref InsertScalar_CVT_Float_To_FloatImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize DstElementSize, IR::OpSize SrcElementSize,

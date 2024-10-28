@@ -57,8 +57,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b00, 0x29), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
     {OPD(1, 0b01, 0x29), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
 
-    {OPD(1, 0b10, 0x2A), 1, &OpDispatchBuilder::AVX128_InsertCVTGPR_To_FPR<4>},
-    {OPD(1, 0b11, 0x2A), 1, &OpDispatchBuilder::AVX128_InsertCVTGPR_To_FPR<8>},
+    {OPD(1, 0b10, 0x2A), 1, &OpDispatchBuilder::AVX128_InsertCVTGPR_To_FPR<OpSize::i32Bit>},
+    {OPD(1, 0b11, 0x2A), 1, &OpDispatchBuilder::AVX128_InsertCVTGPR_To_FPR<OpSize::i64Bit>},
 
     {OPD(1, 0b00, 0x2B), 1, &OpDispatchBuilder::AVX128_MOVVectorNT},
     {OPD(1, 0b01, 0x2B), 1, &OpDispatchBuilder::AVX128_MOVVectorNT},
@@ -1004,7 +1004,7 @@ void OpDispatchBuilder::AVX128_MOVVectorUnaligned(OpcodeArgs) {
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Src);
 }
 
-template<size_t DstElementSize>
+template<IR::OpSize DstElementSize>
 void OpDispatchBuilder::AVX128_InsertCVTGPR_To_FPR(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
   const auto DstSize = GetDstSize(Op);
