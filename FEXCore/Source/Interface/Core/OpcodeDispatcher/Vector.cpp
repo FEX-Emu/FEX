@@ -2877,11 +2877,11 @@ void OpDispatchBuilder::STMXCSR(OpcodeArgs) {
   StoreResult(GPRClass, Op, GetMXCSR(), OpSize::iInvalid);
 }
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::PACKUSOp(OpcodeArgs) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  Ref Result = _VSQXTUNPair(GetSrcSize(Op), ElementSize, Dest, Src);
+  Ref Result = _VSQXTUNPair(OpSizeFromSrc(Op), ElementSize, Dest, Src);
 
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
@@ -2889,13 +2889,13 @@ void OpDispatchBuilder::PACKUSOp(OpcodeArgs) {
 template void OpDispatchBuilder::PACKUSOp<OpSize::i16Bit>(OpcodeArgs);
 template void OpDispatchBuilder::PACKUSOp<OpSize::i32Bit>(OpcodeArgs);
 
-void OpDispatchBuilder::VPACKUSOp(OpcodeArgs, size_t ElementSize) {
+void OpDispatchBuilder::VPACKUSOp(OpcodeArgs, IR::OpSize ElementSize) {
   const auto DstSize = GetDstSize(Op);
   const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
-  Ref Result = _VSQXTUNPair(GetSrcSize(Op), ElementSize, Src1, Src2);
+  Ref Result = _VSQXTUNPair(OpSizeFromSrc(Op), ElementSize, Src1, Src2);
 
   if (Is256Bit) {
     // We do a little cheeky 64-bit swapping to interleave the result.

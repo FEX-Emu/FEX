@@ -610,7 +610,7 @@ public:
 
   void VPACKSSOp(OpcodeArgs, IR::OpSize ElementSize);
 
-  void VPACKUSOp(OpcodeArgs, size_t ElementSize);
+  void VPACKUSOp(OpcodeArgs, IR::OpSize ElementSize);
 
   void VPALIGNROp(OpcodeArgs);
 
@@ -795,7 +795,7 @@ public:
   void LDMXCSR(OpcodeArgs);
   void STMXCSR(OpcodeArgs);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void PACKUSOp(OpcodeArgs);
 
   template<IR::OpSize ElementSize>

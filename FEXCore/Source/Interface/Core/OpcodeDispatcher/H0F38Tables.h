@@ -52,7 +52,7 @@ constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDis
   {OPD(PF_38_66, 0x28), 1, &OpDispatchBuilder::PMULLOp<4, true>},
   {OPD(PF_38_66, 0x29), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPEQ, 8>},
   {OPD(PF_38_66, 0x2A), 1, &OpDispatchBuilder::MOVVectorNTOp},
-  {OPD(PF_38_66, 0x2B), 1, &OpDispatchBuilder::PACKUSOp<4>},
+  {OPD(PF_38_66, 0x2B), 1, &OpDispatchBuilder::PACKUSOp<OpSize::i32Bit>},
   {OPD(PF_38_66, 0x30), 1, &OpDispatchBuilder::ExtendVectorElements<OpSize::i8Bit, OpSize::i16Bit, false>},
   {OPD(PF_38_66, 0x31), 1, &OpDispatchBuilder::ExtendVectorElements<OpSize::i8Bit, OpSize::i32Bit, false>},
   {OPD(PF_38_66, 0x32), 1, &OpDispatchBuilder::ExtendVectorElements<OpSize::i8Bit, OpSize::i64Bit, false>},
