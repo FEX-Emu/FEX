@@ -2568,7 +2568,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = Vector_FToF u8:#RegisterSize, u8:#DestElementSize, FPR:$Vector, u8:$SrcElementSize": {
+      "FPR = Vector_FToF OpSize:#RegisterSize, OpSize:#DestElementSize, FPR:$Vector, OpSize:$SrcElementSize": {
         "Desc": "Vector op: Converts float from source element size to destination size (fp32<->fp64)",
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / DestElementSize"

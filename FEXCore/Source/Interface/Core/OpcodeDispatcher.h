@@ -466,7 +466,7 @@ public:
   void Vector_CVT_Int_To_Float(OpcodeArgs);
   template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
   void Scalar_CVT_Float_To_Float(OpcodeArgs);
-  void Vector_CVT_Float_To_Float(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize, bool IsAVX);
+  void Vector_CVT_Float_To_Float(OpcodeArgs, IR::OpSize DstElementSize, IR::OpSize SrcElementSize, bool IsAVX);
   template<IR::OpSize SrcElementSize, bool Narrow, bool HostRoundingMode>
   void Vector_CVT_Float_To_Int(OpcodeArgs);
   void MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs);
@@ -1027,7 +1027,7 @@ public:
   template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
   void AVX128_InsertScalar_CVT_Float_To_Float(OpcodeArgs);
 
-  template<size_t DstElementSize, size_t SrcElementSize>
+  template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
   void AVX128_Vector_CVT_Float_To_Float(OpcodeArgs);
 
   template<IR::OpSize SrcElementSize, bool Narrow, bool HostRoundingMode>

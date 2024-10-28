@@ -2143,7 +2143,7 @@ Ref OpDispatchBuilder::Vector_CVT_Float_To_IntImpl(OpcodeArgs, IR::OpSize SrcEle
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   if (Narrow) {
-    Src = _Vector_FToF(DstSize, SrcElementSize >> 1, Src, SrcElementSize);
+    Src = _Vector_FToF(DstSize, IR::DivideOpSize(SrcElementSize, 2), Src, SrcElementSize);
     ElementSize = IR::DivideOpSize(ElementSize, 2);
   }
 
@@ -2232,7 +2232,7 @@ void OpDispatchBuilder::AVXScalar_CVT_Float_To_Float(OpcodeArgs) {
 template void OpDispatchBuilder::AVXScalar_CVT_Float_To_Float<OpSize::i32Bit, OpSize::i64Bit>(OpcodeArgs);
 template void OpDispatchBuilder::AVXScalar_CVT_Float_To_Float<OpSize::i64Bit, OpSize::i32Bit>(OpcodeArgs);
 
-void OpDispatchBuilder::Vector_CVT_Float_To_Float(OpcodeArgs, size_t DstElementSize, size_t SrcElementSize, bool IsAVX) {
+void OpDispatchBuilder::Vector_CVT_Float_To_Float(OpcodeArgs, IR::OpSize DstElementSize, IR::OpSize SrcElementSize, bool IsAVX) {
   const auto SrcSize = OpSizeFromSrc(Op);
 
   const auto IsFloatSrc = SrcElementSize == OpSize::i32Bit;
@@ -2244,9 +2244,9 @@ void OpDispatchBuilder::Vector_CVT_Float_To_Float(OpcodeArgs, size_t DstElementS
 
   Ref Result {};
   if (DstElementSize > SrcElementSize) {
-    Result = _Vector_FToF(SrcSize, SrcElementSize << 1, Src, SrcElementSize);
+    Result = _Vector_FToF(SrcSize, IR::MultiplyOpSize(SrcElementSize, 2), Src, SrcElementSize);
   } else {
-    Result = _Vector_FToF(SrcSize, SrcElementSize >> 1, Src, SrcElementSize);
+    Result = _Vector_FToF(SrcSize, IR::DivideOpSize(SrcElementSize, 2), Src, SrcElementSize);
   }
 
   if (IsAVX) {
@@ -2294,7 +2294,7 @@ void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int(OpcodeArgs) {
   const auto Size = OpSizeFromDst(Op);
 
   if (Narrow) {
-    Src = _Vector_FToF(Size, SrcElementSize >> 1, Src, SrcElementSize);
+    Src = _Vector_FToF(Size, IR::DivideOpSize(SrcElementSize, 2), Src, SrcElementSize);
     ElementSize = IR::DivideOpSize(ElementSize, 2);
   }
 
