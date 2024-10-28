@@ -2563,7 +2563,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = Vector_FToZS u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = Vector_FToZS OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": "Vector op: Converts float to signed integer, rounding towards zero",
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
