@@ -1003,7 +1003,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         Ref Value1 = LoadStackValue(StackOffset1);
         Ref Value2 = LoadStackValue(StackOffset2);
 
-        Ref StackNode = IREmit->_VBSL(16, CurrentIR.GetNode(Op->VectorMask), Value1, Value2);
+        Ref StackNode = IREmit->_VBSL(OpSize::i128Bit, CurrentIR.GetNode(Op->VectorMask), Value1, Value2);
         StoreStackValue(StackNode, 0, StackOffset1 && StackOffset2);
         break;
       }
