@@ -2623,7 +2623,7 @@
         "Desc": "Does a step of AES encryption",
         "DestSize": "RegisterSize"
       },
-      "FPR = VAESEncLast u8:#RegisterSize, FPR:$State, FPR:$Key, FPR:$ZeroReg": {
+      "FPR = VAESEncLast OpSize:#RegisterSize, FPR:$State, FPR:$Key, FPR:$ZeroReg": {
         "Desc": "Does the last step of AES encryption",
         "DestSize": "RegisterSize"
       },
