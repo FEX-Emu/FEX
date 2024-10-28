@@ -766,8 +766,8 @@ void OpDispatchBuilder::MOVMSKOpOne(OpcodeArgs) {
 
   // Since we also handle the MM MOVMSKB here too,
   // we need to clamp the lower bound.
-  const auto VAdd1Size = std::max<uint8_t>(SrcSize, OpSize::i128Bit);
-  const auto VAdd2Size = std::max<uint8_t>(SrcSize / 2, OpSize::i64Bit);
+  const auto VAdd1Size = std::max(SrcSize, OpSize::i128Bit);
+  const auto VAdd2Size = std::max(IR::DivideOpSize(SrcSize, 2), OpSize::i64Bit);
 
   auto VAdd1 = _VAddP(VAdd1Size, OpSize::i8Bit, VAnd, VAnd);
   auto VAdd2 = _VAddP(VAdd2Size, OpSize::i8Bit, VAdd1, VAdd1);
@@ -3166,7 +3166,7 @@ template void OpDispatchBuilder::VPFCMPOp<0>(OpcodeArgs);
 template void OpDispatchBuilder::VPFCMPOp<1>(OpcodeArgs);
 template void OpDispatchBuilder::VPFCMPOp<2>(OpcodeArgs);
 
-Ref OpDispatchBuilder::PMADDWDOpImpl(size_t Size, Ref Src1, Ref Src2) {
+Ref OpDispatchBuilder::PMADDWDOpImpl(IR::OpSize Size, Ref Src1, Ref Src2) {
   // This is a pretty curious operation
   // Does two MADD operations across 4 16bit signed integers and accumulates to 32bit integers in the destination
   //
@@ -3177,7 +3177,7 @@ Ref OpDispatchBuilder::PMADDWDOpImpl(size_t Size, Ref Src1, Ref Src2) {
 
   if (Size == OpSize::i64Bit) {
     // MMX implementation can be slightly more optimal
-    Size <<= 1;
+    Size = IR::DivideOpSize(Size, 2);
     auto MullResult = _VSMull(Size, OpSize::i16Bit, Src1, Src2);
     return _VAddP(Size, OpSize::i32Bit, MullResult, MullResult);
   }
@@ -3190,7 +3190,7 @@ Ref OpDispatchBuilder::PMADDWDOpImpl(size_t Size, Ref Src1, Ref Src2) {
 }
 
 void OpDispatchBuilder::PMADDWD(OpcodeArgs) {
-  const auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
@@ -3200,7 +3200,7 @@ void OpDispatchBuilder::PMADDWD(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::VPMADDWDOp(OpcodeArgs) {
-  const auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);

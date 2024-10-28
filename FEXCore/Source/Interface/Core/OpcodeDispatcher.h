@@ -1398,7 +1398,7 @@ private:
   Ref PINSROpImpl(OpcodeArgs, IR::OpSize ElementSize, const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
                   const X86Tables::DecodedOperand& Imm);
 
-  Ref PMADDWDOpImpl(size_t Size, Ref Src1, Ref Src2);
+  Ref PMADDWDOpImpl(IR::OpSize Size, Ref Src1, Ref Src2);
 
   Ref PMADDUBSWOpImpl(IR::OpSize Size, Ref Src1, Ref Src2);
 
