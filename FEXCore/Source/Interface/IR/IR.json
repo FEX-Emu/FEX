@@ -3111,7 +3111,7 @@
         "DestSize": "16",
         "JITDispatch": false
       },
-      "F80VBSLStack u8:#RegisterSize, FPR:$VectorMask, u8:$SrcStack1, u8:$SrcStack2": {
+      "F80VBSLStack OpSize:#RegisterSize, FPR:$VectorMask, u8:$SrcStack1, u8:$SrcStack2": {
         "Desc": [
           "Does a vector bitwise select.",
           "If the bit in the field is 1 then the corresponding bit is pulled from VectorTrue",
