@@ -160,7 +160,7 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   {0x53, 1, &OpDispatchBuilder::VectorScalarUnaryInsertALUOp<IR::OP_VFRECPSCALARINSERT, OpSize::i32Bit>},
   {0x58, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFADDSCALARINSERT, OpSize::i32Bit>},
   {0x59, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMULSCALARINSERT, OpSize::i32Bit>},
-  {0x5A, 1, &OpDispatchBuilder::InsertScalar_CVT_Float_To_Float<8, 4>},
+  {0x5A, 1, &OpDispatchBuilder::InsertScalar_CVT_Float_To_Float<OpSize::i64Bit, OpSize::i32Bit>},
   {0x5B, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<4, false, false>},
   {0x5C, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFSUBSCALARINSERT, OpSize::i32Bit>},
   {0x5D, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMINSCALARINSERT, OpSize::i32Bit>},
@@ -189,7 +189,7 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   // x52 = Invalid
   {0x58, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFADDSCALARINSERT, OpSize::i64Bit>},
   {0x59, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMULSCALARINSERT, OpSize::i64Bit>},
-  {0x5A, 1, &OpDispatchBuilder::InsertScalar_CVT_Float_To_Float<4, 8>},
+  {0x5A, 1, &OpDispatchBuilder::InsertScalar_CVT_Float_To_Float<OpSize::i32Bit, OpSize::i64Bit>},
   {0x5C, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFSUBSCALARINSERT, OpSize::i64Bit>},
   {0x5D, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMINSCALARINSERT, OpSize::i64Bit>},
   {0x5E, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFDIVSCALARINSERT, OpSize::i64Bit>},

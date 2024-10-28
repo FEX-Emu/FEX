@@ -538,9 +538,9 @@ public:
   template<size_t DstElementSize>
   void AVXInsertCVTGPR_To_FPR(OpcodeArgs);
 
-  template<size_t DstElementSize, size_t SrcElementSize>
+  template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
   void InsertScalar_CVT_Float_To_Float(OpcodeArgs);
-  template<size_t DstElementSize, size_t SrcElementSize>
+  template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
   void AVXInsertScalar_CVT_Float_To_Float(OpcodeArgs);
 
   RoundType TranslateRoundType(uint8_t Mode);
@@ -1023,7 +1023,7 @@ public:
   template<bool Signed>
   void AVX128_VPMULHW(OpcodeArgs);
 
-  template<size_t DstElementSize, size_t SrcElementSize>
+  template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
   void AVX128_InsertScalar_CVT_Float_To_Float(OpcodeArgs);
 
   template<size_t DstElementSize, size_t SrcElementSize>
@@ -1455,7 +1455,7 @@ private:
   Ref InsertCVTGPR_To_FPRImpl(OpcodeArgs, IR::OpSize DstSize, size_t DstElementSize, const X86Tables::DecodedOperand& Src1Op,
                               const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits);
 
-  Ref InsertScalar_CVT_Float_To_FloatImpl(OpcodeArgs, IR::OpSize DstSize, size_t DstElementSize, size_t SrcElementSize,
+  Ref InsertScalar_CVT_Float_To_FloatImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize DstElementSize, IR::OpSize SrcElementSize,
                                           const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits);
   Ref InsertScalarRoundImpl(OpcodeArgs, IR::OpSize DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
                             const X86Tables::DecodedOperand& Src2Op, uint64_t Mode, bool ZeroUpperBits);

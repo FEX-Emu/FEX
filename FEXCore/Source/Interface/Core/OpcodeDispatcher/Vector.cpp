@@ -470,9 +470,9 @@ void OpDispatchBuilder::AVXInsertCVTGPR_To_FPR(OpcodeArgs) {
 template void OpDispatchBuilder::AVXInsertCVTGPR_To_FPR<OpSize::i32Bit>(OpcodeArgs);
 template void OpDispatchBuilder::AVXInsertCVTGPR_To_FPR<OpSize::i64Bit>(OpcodeArgs);
 
-Ref OpDispatchBuilder::InsertScalar_CVT_Float_To_FloatImpl(OpcodeArgs, IR::OpSize DstSize, size_t DstElementSize, size_t SrcElementSize,
-                                                           const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
-                                                           bool ZeroUpperBits) {
+Ref OpDispatchBuilder::InsertScalar_CVT_Float_To_FloatImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize DstElementSize,
+                                                           IR::OpSize SrcElementSize, const X86Tables::DecodedOperand& Src1Op,
+                                                           const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits) {
 
   // We load the full vector width when dealing with a source vector,
   // so that we don't do any unnecessary zero extension to the scalar
@@ -485,7 +485,7 @@ Ref OpDispatchBuilder::InsertScalar_CVT_Float_To_FloatImpl(OpcodeArgs, IR::OpSiz
   return _VFToFScalarInsert(IR::SizeToOpSize(DstSize), DstElementSize, SrcElementSize, Src1, Src2, ZeroUpperBits);
 }
 
-template<size_t DstElementSize, size_t SrcElementSize>
+template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
 void OpDispatchBuilder::InsertScalar_CVT_Float_To_Float(OpcodeArgs) {
   const auto DstSize = GetGuestVectorLength();
   Ref Result = InsertScalar_CVT_Float_To_FloatImpl(Op, DstSize, DstElementSize, SrcElementSize, Op->Dest, Op->Src[0], false);
@@ -495,7 +495,7 @@ void OpDispatchBuilder::InsertScalar_CVT_Float_To_Float(OpcodeArgs) {
 template void OpDispatchBuilder::InsertScalar_CVT_Float_To_Float<OpSize::i32Bit, OpSize::i64Bit>(OpcodeArgs);
 template void OpDispatchBuilder::InsertScalar_CVT_Float_To_Float<OpSize::i64Bit, OpSize::i32Bit>(OpcodeArgs);
 
-template<size_t DstElementSize, size_t SrcElementSize>
+template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
 void OpDispatchBuilder::AVXInsertScalar_CVT_Float_To_Float(OpcodeArgs) {
   const auto DstSize = GetGuestVectorLength();
   Ref Result = InsertScalar_CVT_Float_To_FloatImpl(Op, DstSize, DstElementSize, SrcElementSize, Op->Src[0], Op->Src[1], true);

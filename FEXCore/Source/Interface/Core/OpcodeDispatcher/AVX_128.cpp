@@ -112,8 +112,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
 
     {OPD(1, 0b00, 0x5A), 1, &OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Float<8, 4>},
     {OPD(1, 0b01, 0x5A), 1, &OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Float<4, 8>},
-    {OPD(1, 0b10, 0x5A), 1, &OpDispatchBuilder::AVX128_InsertScalar_CVT_Float_To_Float<8, 4>},
-    {OPD(1, 0b11, 0x5A), 1, &OpDispatchBuilder::AVX128_InsertScalar_CVT_Float_To_Float<4, 8>},
+    {OPD(1, 0b10, 0x5A), 1, &OpDispatchBuilder::AVX128_InsertScalar_CVT_Float_To_Float<OpSize::i64Bit, OpSize::i32Bit>},
+    {OPD(1, 0b11, 0x5A), 1, &OpDispatchBuilder::AVX128_InsertScalar_CVT_Float_To_Float<OpSize::i32Bit, OpSize::i64Bit>},
 
     {OPD(1, 0b00, 0x5B), 1, &OpDispatchBuilder::AVX128_Vector_CVT_Int_To_Float<4, false>},
     {OPD(1, 0b01, 0x5B), 1, &OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int<4, false, true>},
@@ -1516,7 +1516,7 @@ void OpDispatchBuilder::AVX128_VPMULHW(OpcodeArgs) {
   });
 }
 
-template<size_t DstElementSize, size_t SrcElementSize>
+template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
 void OpDispatchBuilder::AVX128_InsertScalar_CVT_Float_To_Float(OpcodeArgs) {
   // Gotta be careful with this operation.
   // It inserts in to the lowest element, retaining the remainder of the lower 128-bits.
