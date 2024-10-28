@@ -5482,9 +5482,9 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 
     // 1 = Invalid
 
-    {OPDReg(0xD9, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTF64, 32>},
+    {OPDReg(0xD9, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTF64, OpSize::i32Bit>},
 
-    {OPDReg(0xD9, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTF64, 32>},
+    {OPDReg(0xD9, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTF64, OpSize::i32Bit>},
 
     {OPDReg(0xD9, 4) | 0x00, 8, &OpDispatchBuilder::X87LDENVF64},
 
@@ -5572,7 +5572,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 
     // 6 = Invalid
 
-    {OPDReg(0xDB, 7) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTF64, 80>},
+    {OPDReg(0xDB, 7) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTF64, OpSize::f80Bit>},
 
 
     {OPD(0xDB, 0xC0), 8, &OpDispatchBuilder::X87FCMOV},
@@ -5615,9 +5615,9 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 
     {OPDReg(0xDD, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FISTF64, true>},
 
-    {OPDReg(0xDD, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTF64, 64>},
+    {OPDReg(0xDD, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTF64, OpSize::i64Bit>},
 
-    {OPDReg(0xDD, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTF64, 64>},
+    {OPDReg(0xDD, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTF64, OpSize::i64Bit>},
 
     {OPDReg(0xDD, 4) | 0x00, 8, &OpDispatchBuilder::X87FRSTOR},
 
@@ -5712,9 +5712,9 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 
     // 1 = Invalid
 
-    {OPDReg(0xD9, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FST, 32>},
+    {OPDReg(0xD9, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FST, OpSize::i32Bit>},
 
-    {OPDReg(0xD9, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FST, 32>},
+    {OPDReg(0xD9, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FST, OpSize::i32Bit>},
 
     {OPDReg(0xD9, 4) | 0x00, 8, &OpDispatchBuilder::X87LDENV},
 
@@ -5802,7 +5802,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 
     // 6 = Invalid
 
-    {OPDReg(0xDB, 7) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FST, 80>},
+    {OPDReg(0xDB, 7) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FST, OpSize::f80Bit>},
 
 
     {OPD(0xDB, 0xC0), 8, &OpDispatchBuilder::X87FCMOV},
@@ -5845,9 +5845,9 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 
     {OPDReg(0xDD, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FIST, true>},
 
-    {OPDReg(0xDD, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FST, 64>},
+    {OPDReg(0xDD, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FST, OpSize::i64Bit>},
 
-    {OPDReg(0xDD, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FST, 64>},
+    {OPDReg(0xDD, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FST, OpSize::i64Bit>},
 
     {OPDReg(0xDD, 4) | 0x00, 8, &OpDispatchBuilder::X87FRSTOR},
 

@@ -703,7 +703,7 @@ public:
 
   void FILD(OpcodeArgs);
 
-  void FST(OpcodeArgs, size_t Width);
+  void FST(OpcodeArgs, IR::OpSize Width);
   void FSTToStack(OpcodeArgs);
 
   void FIST(OpcodeArgs, bool Truncate);
@@ -758,7 +758,7 @@ public:
 
   void FILDF64(OpcodeArgs);
 
-  void FSTF64(OpcodeArgs, size_t Width);
+  void FSTF64(OpcodeArgs, IR::OpSize Width);
 
   void FISTF64(OpcodeArgs, bool Truncate);
 

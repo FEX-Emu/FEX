@@ -2769,7 +2769,7 @@
         "HasSideEffects": true,
         "X87": true
       },
-      "StoreStackMemory GPR:$Addr, OpSize:$SourceSize, i1:$Float, u8:$StoreSize": {
+      "StoreStackMemory GPR:$Addr, OpSize:$SourceSize, i1:$Float, OpSize:$StoreSize": {
         "Desc": [
           "Takes the top value off the x87 stack and stores it to memory.",
           "SourceSize is 128bit for F80 values, 64-bit for low precision.",

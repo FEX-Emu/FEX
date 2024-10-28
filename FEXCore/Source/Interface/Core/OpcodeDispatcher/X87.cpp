@@ -128,9 +128,9 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
   _PushStack(ConvertedData, Data, ReadWidth, false);
 }
 
-void OpDispatchBuilder::FST(OpcodeArgs, size_t Width) {
+void OpDispatchBuilder::FST(OpcodeArgs, IR::OpSize Width) {
   Ref Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-  _StoreStackMemory(Mem, OpSize::i128Bit, true, Width / 8);
+  _StoreStackMemory(Mem, OpSize::i128Bit, true, Width);
   if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
     _PopStackDestroy();
   }

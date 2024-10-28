@@ -797,22 +797,23 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         } else {
           if (ReducedPrecisionMode) {
             switch (Op->StoreSize) {
-            case 4: {
+            case OpSize::i32Bit: {
               StackNode = IREmit->_Float_FToF(OpSize::i32Bit, OpSize::i64Bit, StackNode);
               IREmit->_StoreMem(FPRClass, OpSize::i32Bit, AddrNode, StackNode);
               break;
             }
-            case 8: {
+            case OpSize::i64Bit: {
               IREmit->_StoreMem(FPRClass, OpSize::i64Bit, AddrNode, StackNode);
               break;
             }
-            case 10: {
+            case OpSize::f80Bit: {
               StackNode = IREmit->_F80CVTTo(StackNode, 8);
               IREmit->_StoreMem(FPRClass, OpSize::i64Bit, AddrNode, StackNode);
               auto Upper = IREmit->_VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, StackNode, 1);
               IREmit->_StoreMem(GPRClass, OpSize::i16Bit, Upper, AddrNode, GetConstant(8), OpSize::i64Bit, MEM_OFFSET_SXTX, 1);
               break;
             }
+            default: ERROR_AND_DIE_FMT("Unsupported x87 size");
             }
           } else {
             if (Op->StoreSize != 10) { // if it's not 80bits then convert
