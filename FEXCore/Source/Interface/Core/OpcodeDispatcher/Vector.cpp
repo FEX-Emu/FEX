@@ -1646,15 +1646,15 @@ void OpDispatchBuilder::VEXTRACT128Op(OpcodeArgs) {
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, StoreSize, OpSize::iInvalid);
 }
 
-Ref OpDispatchBuilder::PSIGNImpl(OpcodeArgs, size_t ElementSize, Ref Src1, Ref Src2) {
-  const auto Size = GetSrcSize(Op);
+Ref OpDispatchBuilder::PSIGNImpl(OpcodeArgs, IR::OpSize ElementSize, Ref Src1, Ref Src2) {
+  const auto Size = OpSizeFromSrc(Op);
 
   Ref Control = _VSQSHL(Size, ElementSize, Src2, (ElementSize * 8) - 1);
   Control = _VSRSHR(Size, ElementSize, Control, (ElementSize * 8) - 1);
   return _VMul(Size, ElementSize, Src1, Control);
 }
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::PSIGN(OpcodeArgs) {
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
@@ -1667,7 +1667,7 @@ template void OpDispatchBuilder::PSIGN<OpSize::i8Bit>(OpcodeArgs);
 template void OpDispatchBuilder::PSIGN<OpSize::i16Bit>(OpcodeArgs);
 template void OpDispatchBuilder::PSIGN<OpSize::i32Bit>(OpcodeArgs);
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::VPSIGN(OpcodeArgs) {
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);

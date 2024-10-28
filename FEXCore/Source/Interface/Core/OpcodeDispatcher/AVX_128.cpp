@@ -1091,7 +1091,7 @@ void OpDispatchBuilder::AVX128_VPACKUS(OpcodeArgs) {
   });
 }
 
-Ref OpDispatchBuilder::AVX128_PSIGNImpl(size_t ElementSize, Ref Src1, Ref Src2) {
+Ref OpDispatchBuilder::AVX128_PSIGNImpl(IR::OpSize ElementSize, Ref Src1, Ref Src2) {
   Ref Control = _VSQSHL(OpSize::i128Bit, ElementSize, Src2, (ElementSize * 8) - 1);
   Control = _VSRSHR(OpSize::i128Bit, ElementSize, Control, (ElementSize * 8) - 1);
   return _VMul(OpSize::i128Bit, ElementSize, Src1, Control);

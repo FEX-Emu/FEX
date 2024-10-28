@@ -484,9 +484,9 @@ public:
   void InsertPSOp(OpcodeArgs);
   void PExtrOp(OpcodeArgs, IR::OpSize ElementSize);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void PSIGN(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void VPSIGN(OpcodeArgs);
 
   // BMI1 Ops
@@ -978,7 +978,7 @@ public:
   void AVX128_VPACKSS(OpcodeArgs);
   template<IR::OpSize ElementSize>
   void AVX128_VPACKUS(OpcodeArgs);
-  Ref AVX128_PSIGNImpl(size_t ElementSize, Ref Src1, Ref Src2);
+  Ref AVX128_PSIGNImpl(IR::OpSize ElementSize, Ref Src1, Ref Src2);
   template<IR::OpSize ElementSize>
   void AVX128_VPSIGN(OpcodeArgs);
   template<IR::OpSize ElementSize>
@@ -1413,7 +1413,7 @@ private:
   Ref GeneratePSHUFBMask(IR::OpSize SrcSize);
   Ref PSHUFBOpImpl(uint8_t SrcSize, Ref Src1, Ref Src2, Ref MaskVector);
 
-  Ref PSIGNImpl(OpcodeArgs, size_t ElementSize, Ref Src1, Ref Src2);
+  Ref PSIGNImpl(OpcodeArgs, IR::OpSize ElementSize, Ref Src1, Ref Src2);
 
   Ref PSLLIImpl(OpcodeArgs, IR::OpSize ElementSize, Ref Src, uint64_t Shift);
 

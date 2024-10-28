@@ -2094,7 +2094,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
-      "FPR = VSRSHR u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, u8:$BitShift": {
+      "FPR = VSRSHR OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$BitShift": {
         "Desc": ["Signed rounding shift right by immediate",
                  "Exactly matching Arm64 srshr semantics"
                 ],
