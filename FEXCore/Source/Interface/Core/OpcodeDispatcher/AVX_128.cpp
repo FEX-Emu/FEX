@@ -2061,7 +2061,7 @@ void OpDispatchBuilder::AVX128_VPALIGNR(OpcodeArgs) {
   });
 }
 
-void OpDispatchBuilder::AVX128_VMASKMOVImpl(OpcodeArgs, size_t ElementSize, size_t DstSize, bool IsStore,
+void OpDispatchBuilder::AVX128_VMASKMOVImpl(OpcodeArgs, IR::OpSize ElementSize, IR::OpSize DstSize, bool IsStore,
                                             const X86Tables::DecodedOperand& MaskOp, const X86Tables::DecodedOperand& DataOp) {
   const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
 
@@ -2085,14 +2085,14 @@ void OpDispatchBuilder::AVX128_VMASKMOVImpl(OpcodeArgs, size_t ElementSize, size
     auto Address = MakeAddress(DataOp);
 
     RefPair Result {};
-    Result.Low = _VLoadVectorMasked(OpSize::i128Bit, ElementSize, Mask.Low, Address, Invalid(), MEM_OFFSET_SXTX, 1);
+    Result.Low = _VLoadVectorMasked(OpSize::i128Bit, ElementSize, Mask.Low, Address, Invalid(), MEM_OFFSET_SXTX, OpSize::i8Bit);
 
     if (Is128Bit) {
       Result.High = LoadZeroVector(OpSize::i128Bit);
     } else {
       ///< TODO: This can be cleaner if AVX128_LoadSource_WithOpSize could return both constructed addresses.
       auto AddressHigh = _Add(OpSize::i64Bit, Address, _Constant(16));
-      Result.High = _VLoadVectorMasked(OpSize::i128Bit, ElementSize, Mask.High, AddressHigh, Invalid(), MEM_OFFSET_SXTX, 1);
+      Result.High = _VLoadVectorMasked(OpSize::i128Bit, ElementSize, Mask.High, AddressHigh, Invalid(), MEM_OFFSET_SXTX, OpSize::i8Bit);
     }
     AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
   }
@@ -2100,12 +2100,12 @@ void OpDispatchBuilder::AVX128_VMASKMOVImpl(OpcodeArgs, size_t ElementSize, size
 
 template<bool IsStore>
 void OpDispatchBuilder::AVX128_VPMASKMOV(OpcodeArgs) {
-  AVX128_VMASKMOVImpl(Op, GetSrcSize(Op), GetDstSize(Op), IsStore, Op->Src[0], Op->Src[1]);
+  AVX128_VMASKMOVImpl(Op, OpSizeFromSrc(Op), OpSizeFromDst(Op), IsStore, Op->Src[0], Op->Src[1]);
 }
 
-template<size_t ElementSize, bool IsStore>
+template<IR::OpSize ElementSize, bool IsStore>
 void OpDispatchBuilder::AVX128_VMASKMOV(OpcodeArgs) {
-  AVX128_VMASKMOVImpl(Op, ElementSize, GetDstSize(Op), IsStore, Op->Src[0], Op->Src[1]);
+  AVX128_VMASKMOVImpl(Op, ElementSize, OpSizeFromDst(Op), IsStore, Op->Src[0], Op->Src[1]);
 }
 
 void OpDispatchBuilder::AVX128_MASKMOV(OpcodeArgs) {

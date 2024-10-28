@@ -1087,13 +1087,13 @@ public:
   void AVX128_VMPSADBW(OpcodeArgs);
   void AVX128_VPALIGNR(OpcodeArgs);
 
-  void AVX128_VMASKMOVImpl(OpcodeArgs, size_t ElementSize, size_t DstSize, bool IsStore, const X86Tables::DecodedOperand& MaskOp,
+  void AVX128_VMASKMOVImpl(OpcodeArgs, IR::OpSize ElementSize, IR::OpSize DstSize, bool IsStore, const X86Tables::DecodedOperand& MaskOp,
                            const X86Tables::DecodedOperand& DataOp);
 
   template<bool IsStore>
   void AVX128_VPMASKMOV(OpcodeArgs);
 
-  template<size_t ElementSize, bool IsStore>
+  template<IR::OpSize ElementSize, bool IsStore>
   void AVX128_VMASKMOV(OpcodeArgs);
 
   void AVX128_MASKMOV(OpcodeArgs);

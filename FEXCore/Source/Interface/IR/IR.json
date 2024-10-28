@@ -583,7 +583,7 @@
         ]
       },
 
-      "FPR = VLoadVectorMasked u8:#RegisterSize, u8:#ElementSize, FPR:$Mask, GPR:$Addr, GPR:$Offset, MemOffsetType:$OffsetType, u8:$OffsetScale": {
+      "FPR = VLoadVectorMasked OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Mask, GPR:$Addr, GPR:$Offset, MemOffsetType:$OffsetType, u8:$OffsetScale": {
         "Desc": ["Does a masked load similar to VPMASKMOV/VMASKMOV where the upper bit of each element",
                  "determines whether or not that element will be loaded from memory"],
         "ImplicitFlagClobber": true,
