@@ -2987,7 +2987,7 @@
         "DestSize": "Size",
         "JITDispatch": false
       },
-      "GPR = F80CVTInt u8:#Size, FPR:$X80Src, i1:$Truncate": {
+      "GPR = F80CVTInt OpSize:#Size, FPR:$X80Src, i1:$Truncate": {
         "DestSize": "Size",
         "JITDispatch": false
       },
