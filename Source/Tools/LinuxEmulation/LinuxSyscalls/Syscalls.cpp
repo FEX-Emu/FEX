@@ -120,6 +120,11 @@ uint64_t GetDentsEmulation(int fd, T* dirp, uint32_t count) {
       Outgoing->d_name[Outgoing->d_reclen - offsetof(T, d_name) - 1] = Tmp->d_type;
 
       TmpOffset += Tmp->d_reclen;
+
+      if (FEX::HLE::_SyscallHandler->FM.IsRootFSFD(fd, Outgoing->d_ino)) {
+        continue;
+      }
+
       // Outgoing is 5 bytes smaller
       Offset += NewRecLen;
 

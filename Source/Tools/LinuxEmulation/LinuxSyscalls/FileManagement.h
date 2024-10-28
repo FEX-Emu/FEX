@@ -81,9 +81,8 @@ public:
   std::optional<std::string_view> GetSelf(const char* Pathname);
   bool IsSelfNoFollow(const char* Pathname, int flags) const;
 
-  void UpdatePID(uint32_t PID) {
-    CurrentPID = PID;
-  }
+  void UpdatePID(uint32_t PID);
+  bool IsRootFSFD(int dirfd, uint64_t inode);
 
   fextl::string GetEmulatedPath(const char* pathname, bool FollowSymlink = false);
   using FDPathTmpData = std::array<char[PATH_MAX], 2>;
@@ -162,5 +161,7 @@ private:
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
   uint32_t CurrentPID {};
   int RootFSFD {AT_FDCWD};
+  int64_t RootFSFDInode = 0;
+  dev_t ProcFSDev;
 };
 } // namespace FEX::HLE

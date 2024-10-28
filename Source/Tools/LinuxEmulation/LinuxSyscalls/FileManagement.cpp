@@ -994,4 +994,38 @@ uint64_t FileManager::LRemovexattr(const char* path, const char* name) {
   return ::lremovexattr(SelfPath, name);
 }
 
+void FileManager::UpdatePID(uint32_t PID) {
+  CurrentPID = PID;
+
+  // Track the inode of /proc/self/fd/<RootFSFD>, to be able to hide it
+  auto FDpath = fextl::fmt::format("/proc/self/fd/{}", RootFSFD);
+  struct stat Buffer {};
+  int Result = fstatat(AT_FDCWD, FDpath.c_str(), &Buffer, AT_SYMLINK_NOFOLLOW);
+  if (Result >= 0) {
+    RootFSFDInode = Buffer.st_ino;
+  }
+
+  // Track the st_dev of /proc, to check for inode equality
+  Result = stat("/proc/self", &Buffer);
+  if (Result >= 0) {
+    ProcFSDev = Buffer.st_dev;
+  }
+}
+
+bool FileManager::IsRootFSFD(int dirfd, uint64_t inode) {
+
+  // Check if we have to hide this entry
+  if (inode == RootFSFDInode) {
+    struct stat Buffer;
+    if (fstat(dirfd, &Buffer) >= 0) {
+      if (Buffer.st_dev == ProcFSDev) {
+        LogMan::Msg::DFmt("Hiding directory entry for RootFSFD");
+        return true;
+      } else {
+      }
+    }
+  }
+  return false;
+}
+
 } // namespace FEX::HLE
