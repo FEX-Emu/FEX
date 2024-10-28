@@ -2983,7 +2983,7 @@
         "DestSize": "16",
         "JITDispatch": false
       },
-      "FPR = F80CVT u8:#Size, FPR:$X80Src": {
+      "FPR = F80CVT OpSize:#Size, FPR:$X80Src": {
         "DestSize": "Size",
         "JITDispatch": false
       },
