@@ -60,13 +60,13 @@ void OpDispatchBuilder::SetX87Top(Ref Value) {
 }
 
 // Float LoaD operation with memory operand
-void OpDispatchBuilder::FLD(OpcodeArgs, size_t Width) {
-  const auto ReadWidth = (Width == 80) ? OpSize::i128Bit : IR::SizeToOpSize(Width / 8);
+void OpDispatchBuilder::FLD(OpcodeArgs, IR::OpSize Width) {
+  const auto ReadWidth = (Width == OpSize::f80Bit) ? OpSize::i128Bit : Width;
 
   Ref Data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], ReadWidth, Op->Flags);
   Ref ConvertedData = Data;
   // Convert to 80bit float
-  if (Width == 32 || Width == 64) {
+  if (Width == OpSize::i32Bit || Width == OpSize::i64Bit) {
     ConvertedData = _F80CVTTo(Data, ReadWidth);
   }
   _PushStack(ConvertedData, Data, ReadWidth, true);
@@ -834,8 +834,8 @@ void OpDispatchBuilder::X87FXTRACT(OpcodeArgs) {
   _PopStackDestroy();
   auto Exp = _F80XTRACT_EXP(Top);
   auto Sig = _F80XTRACT_SIG(Top);
-  _PushStack(Exp, Exp, 80, true);
-  _PushStack(Sig, Sig, 80, true);
+  _PushStack(Exp, Exp, OpSize::f80Bit, true);
+  _PushStack(Sig, Sig, OpSize::f80Bit, true);
 }
 
 } // namespace FEXCore::IR

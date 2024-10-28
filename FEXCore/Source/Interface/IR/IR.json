@@ -2747,7 +2747,7 @@
         "X87": true,
         "HasSideEffects": true
       },
-      "PushStack FPR:$X80Src, SSA:$OriginalValue, u8:$LoadSize, i1:$Float": {
+      "PushStack FPR:$X80Src, SSA:$OriginalValue, OpSize:$LoadSize, i1:$Float": {
         "Desc": [
           "Pushes the provided X80Src source on to the x87 stack.",
           "Tracks OriginalValue as the original value of X80Src.",

@@ -58,14 +58,14 @@ void OpDispatchBuilder::X87FLDCWF64(OpcodeArgs) {
 
 // F64 ops
 // Float load op with memory operand
-void OpDispatchBuilder::FLDF64(OpcodeArgs, size_t Width) {
-  const auto ReadWidth = (Width == 80) ? OpSize::i128Bit : IR::SizeToOpSize(Width / 8);
+void OpDispatchBuilder::FLDF64(OpcodeArgs, IR::OpSize Width) {
+  const auto ReadWidth = (Width == OpSize::f80Bit) ? OpSize::i128Bit : Width;
   Ref Data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], ReadWidth, Op->Flags);
   // Convert to 64bit float
   Ref ConvertedData = Data;
-  if (Width == 32) {
+  if (Width == OpSize::i32Bit) {
     ConvertedData = _Float_FToF(OpSize::i64Bit, OpSize::i32Bit, Data);
-  } else if (Width == 80) {
+  } else if (Width == OpSize::f80Bit) {
     ConvertedData = _F80CVT(OpSize::i64Bit, Data);
   }
   _PushStack(ConvertedData, Data, ReadWidth, true);
@@ -400,7 +400,7 @@ void OpDispatchBuilder::X87FXTRACTF64(OpcodeArgs) {
   Ref Exp = _NZCVSelectV(OpSize::i64Bit, {COND_EQ}, ExpZV, ExpNZV);
 
   _PopStackDestroy();
-  _PushStack(Exp, Exp, 64, true);
-  _PushStack(Sig, Sig, 64, true);
+  _PushStack(Exp, Exp, OpSize::i64Bit, true);
+  _PushStack(Sig, Sig, OpSize::i64Bit, true);
 }
 } // namespace FEXCore::IR

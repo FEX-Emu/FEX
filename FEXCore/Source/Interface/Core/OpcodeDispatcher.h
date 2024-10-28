@@ -694,7 +694,7 @@ public:
   Ref ReconstructFSW_Helper(Ref T = nullptr);
   // Returns new x87 stack top from FSW.
   Ref ReconstructX87StateFromFSW_Helper(Ref FSW);
-  void FLD(OpcodeArgs, size_t Width);
+  void FLD(OpcodeArgs, IR::OpSize Width);
   void FLDFromStack(OpcodeArgs);
   void FLD_Const(OpcodeArgs, NamedVectorConstant Constant);
 
@@ -750,7 +750,7 @@ public:
   void FCOMI(OpcodeArgs, size_t Width, bool Integer, FCOMIFlags WhichFlags, bool PopTwice);
 
   // F64 X87 Ops
-  void FLDF64(OpcodeArgs, size_t Width);
+  void FLDF64(OpcodeArgs, IR::OpSize Width);
   void FLDF64_Const(OpcodeArgs, uint64_t Num);
 
   void FBLDF64(OpcodeArgs);
