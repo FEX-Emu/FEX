@@ -1197,7 +1197,7 @@ void OpDispatchBuilder::AVX128_MOVBetweenGPR_FPR(OpcodeArgs) {
     if (Op->Dest.IsGPR()) {
       auto ElementSize = OpSizeFromDst(Op);
       // Extract element from GPR. Zero extending in the process.
-      Src.Low = _VExtractToGPR(GetSrcSize(Op), ElementSize, Src.Low, 0);
+      Src.Low = _VExtractToGPR(OpSizeFromSrc(Op), ElementSize, Src.Low, 0);
       StoreResult(GPRClass, Op, Op->Dest, Src.Low, OpSize::iInvalid);
     } else {
       // Storing first element to memory.
@@ -2213,7 +2213,7 @@ void OpDispatchBuilder::AVX128_VPERM2(OpcodeArgs) {
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::AVX128_VTESTP(OpcodeArgs) {
   InvalidateDeferredFlags();
 

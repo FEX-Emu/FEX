@@ -147,7 +147,7 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
   };
   const auto Round1To3 = [&](Ref A, Ref B, Ref C, Ref D, Ref E, Ref Src, unsigned W_idx) -> RoundResult {
     // Kill W and E at the beginning
-    auto W = _VExtractToGPR(OpSize::i128Bit, 4, Src, W_idx);
+    auto W = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Src, W_idx);
     auto Q = _Add(OpSize::i32Bit, W, E);
 
     auto ANext =

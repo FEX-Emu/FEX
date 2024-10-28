@@ -809,7 +809,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
             case 10: {
               StackNode = IREmit->_F80CVTTo(StackNode, 8);
               IREmit->_StoreMem(FPRClass, OpSize::i64Bit, AddrNode, StackNode);
-              auto Upper = IREmit->_VExtractToGPR(16, 8, StackNode, 1);
+              auto Upper = IREmit->_VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, StackNode, 1);
               IREmit->_StoreMem(GPRClass, OpSize::i16Bit, Upper, AddrNode, GetConstant(8), OpSize::i64Bit, MEM_OFFSET_SXTX, 1);
               break;
             }
@@ -821,7 +821,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
             if (Op->StoreSize == 10) { // Part of code from StoreResult_WithOpSize()
               // For X87 extended doubles, split before storing
               IREmit->_StoreMem(FPRClass, OpSize::i64Bit, AddrNode, StackNode);
-              auto Upper = IREmit->_VExtractToGPR(16, 8, StackNode, 1);
+              auto Upper = IREmit->_VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, StackNode, 1);
               auto DestAddr = IREmit->_Add(OpSize::i64Bit, AddrNode, GetConstant(8));
               IREmit->_StoreMem(GPRClass, OpSize::i16Bit, DestAddr, Upper, OpSize::i64Bit);
             } else {

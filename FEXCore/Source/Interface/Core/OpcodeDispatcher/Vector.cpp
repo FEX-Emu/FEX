@@ -704,8 +704,8 @@ void OpDispatchBuilder::MOVQMMXOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Src, OpSize::i8Bit);
 }
 
-void OpDispatchBuilder::MOVMSKOp(OpcodeArgs, size_t ElementSize) {
-  auto Size = GetSrcSize(Op);
+void OpDispatchBuilder::MOVMSKOp(OpcodeArgs, IR::OpSize ElementSize) {
+  const auto Size = OpSizeFromSrc(Op);
   uint8_t NumElements = Size / ElementSize;
 
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
@@ -754,7 +754,7 @@ void OpDispatchBuilder::MOVMSKOp(OpcodeArgs, size_t ElementSize) {
 }
 
 void OpDispatchBuilder::MOVMSKOpOne(OpcodeArgs) {
-  const auto SrcSize = GetSrcSize(Op);
+  const auto SrcSize = OpSizeFromSrc(Op);
   const auto Is256Bit = SrcSize == Core::CPUState::XMM_AVX_REG_SIZE;
   const auto ExtractSize = Is256Bit ? OpSize::i32Bit : OpSize::i16Bit;
 
@@ -2393,7 +2393,7 @@ void OpDispatchBuilder::MOVBetweenGPR_FPR(OpcodeArgs, VectorOpType VectorType) {
     if (Op->Dest.IsGPR()) {
       const auto ElementSize = OpSizeFromDst(Op);
       // Extract element from GPR. Zero extending in the process.
-      Src = _VExtractToGPR(GetSrcSize(Op), ElementSize, Src, 0);
+      Src = _VExtractToGPR(OpSizeFromSrc(Op), ElementSize, Src, 0);
       StoreResult(GPRClass, Op, Op->Dest, Src, OpSize::iInvalid);
     } else {
       // Storing first element to memory.

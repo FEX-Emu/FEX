@@ -440,7 +440,7 @@ public:
 
   void MOVQOp(OpcodeArgs, VectorOpType VectorType);
   void MOVQMMXOp(OpcodeArgs);
-  void MOVMSKOp(OpcodeArgs, size_t ElementSize);
+  void MOVMSKOp(OpcodeArgs, IR::OpSize ElementSize);
   void MOVMSKOpOne(OpcodeArgs);
   void PUNPCKLOp(OpcodeArgs, size_t ElementSize);
   void PUNPCKHOp(OpcodeArgs, size_t ElementSize);
@@ -1106,7 +1106,7 @@ public:
   void AVX128_DefaultAVXState();
 
   void AVX128_VPERM2(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_VTESTP(OpcodeArgs);
   void AVX128_PTest(OpcodeArgs);
 

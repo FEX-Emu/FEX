@@ -1646,7 +1646,7 @@
       },
 
       "Float to GPR": {"Ignore": 1},
-      "GPR = VExtractToGPR u8:#RegisterSize, u8:#ElementSize, FPR:$Vector, u8:$Index": {
+      "GPR = VExtractToGPR OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$Index": {
         "Desc": ["Extracts an element from a vector and places it in a GPR",
                  "The element that is extracted from the vector is zero extended to the GPR size"
                 ],
