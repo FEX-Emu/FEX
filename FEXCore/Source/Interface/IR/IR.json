@@ -2290,7 +2290,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize << 1)"
       },
-      "FPR = VUMulH u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VUMulH OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "Desc": "Wide unsigned multiply returning the high results",
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"

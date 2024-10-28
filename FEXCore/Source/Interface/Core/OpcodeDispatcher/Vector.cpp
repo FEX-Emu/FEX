@@ -3272,7 +3272,7 @@ void OpDispatchBuilder::VPMADDUBSWOp(OpcodeArgs) {
 }
 
 Ref OpDispatchBuilder::PMULHWOpImpl(OpcodeArgs, bool Signed, Ref Src1, Ref Src2) {
-  const auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
   if (Signed) {
     return _VSMulH(Size, OpSize::i16Bit, Src1, Src2);
   } else {
