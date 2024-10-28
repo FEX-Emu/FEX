@@ -2652,7 +2652,7 @@
                 ],
         "DestSize": "4"
       },
-      "FPR = PCLMUL u8:#RegisterSize, FPR:$Src1, FPR:$Src2, u8:$Selector": {
+      "FPR = PCLMUL OpSize:#RegisterSize, FPR:$Src1, FPR:$Src2, u8:$Selector": {
         "Desc": [
           "Performs carryless multiplication of 64-bit elements depending on the selector.",
           "Selector = 0b00000000: Uses low 64-bit elements from both input vectors",

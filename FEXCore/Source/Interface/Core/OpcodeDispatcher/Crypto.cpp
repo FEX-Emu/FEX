@@ -414,7 +414,7 @@ void OpDispatchBuilder::PCLMULQDQOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::VPCLMULQDQOp(OpcodeArgs) {
-  const auto DstSize = GetDstSize(Op);
+  const auto DstSize = OpSizeFromDst(Op);
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
