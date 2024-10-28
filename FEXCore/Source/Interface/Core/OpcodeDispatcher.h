@@ -482,7 +482,7 @@ public:
   template<IR::OpSize ElementSize>
   void PINSROp(OpcodeArgs);
   void InsertPSOp(OpcodeArgs);
-  void PExtrOp(OpcodeArgs, size_t ElementSize);
+  void PExtrOp(OpcodeArgs, IR::OpSize ElementSize);
 
   template<size_t ElementSize>
   void PSIGN(OpcodeArgs);
@@ -989,7 +989,7 @@ public:
   template<size_t ElementSize>
   void AVX128_InsertScalarFCMP(OpcodeArgs);
   void AVX128_MOVBetweenGPR_FPR(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_PExtr(OpcodeArgs);
   void AVX128_ExtendVectorElements(OpcodeArgs, size_t ElementSize, size_t DstElementSize, bool Signed);
   template<size_t ElementSize>

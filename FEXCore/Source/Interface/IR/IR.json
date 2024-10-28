@@ -636,7 +636,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "VStoreVectorElement u8:#RegisterSize, u8:#ElementSize, FPR:$Value, u8:$Index, GPR:$Addr": {
+      "VStoreVectorElement OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Value, u8:$Index, GPR:$Addr": {
         "Desc": ["Does a memory store of a single element of a vector.",
                  "Matches arm64 st1 semantics"],
         "HasSideEffects": true,

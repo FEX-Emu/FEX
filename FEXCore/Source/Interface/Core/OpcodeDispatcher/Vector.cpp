@@ -1591,8 +1591,8 @@ void OpDispatchBuilder::VINSERTPSOp(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
-void OpDispatchBuilder::PExtrOp(OpcodeArgs, size_t ElementSize) {
-  const auto DstSize = GetDstSize(Op);
+void OpDispatchBuilder::PExtrOp(OpcodeArgs, IR::OpSize ElementSize) {
+  const auto DstSize = OpSizeFromDst(Op);
 
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   uint64_t Index = Op->Src[1].Literal();
@@ -1601,7 +1601,7 @@ void OpDispatchBuilder::PExtrOp(OpcodeArgs, size_t ElementSize) {
   // When the element size is 32-bit then it can be overriden as 64-bit because the encoding of PEXTRD/PEXTRQ
   // is the same except that REX.W or VEX.W is set to 1. Incredibly frustrating.
   // Use the destination size as the element size in this case.
-  size_t OverridenElementSize = ElementSize;
+  auto OverridenElementSize = ElementSize;
   if (ElementSize == OpSize::i32Bit) {
     OverridenElementSize = DstSize;
   }

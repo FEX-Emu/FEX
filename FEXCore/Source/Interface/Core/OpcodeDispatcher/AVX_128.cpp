@@ -185,7 +185,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b11, 0xC2), 1, &OpDispatchBuilder::AVX128_InsertScalarFCMP<8>},
 
     {OPD(1, 0b01, 0xC4), 1, &OpDispatchBuilder::AVX128_VPINSRW},
-    {OPD(1, 0b01, 0xC5), 1, &OpDispatchBuilder::AVX128_PExtr<2>},
+    {OPD(1, 0b01, 0xC5), 1, &OpDispatchBuilder::AVX128_PExtr<OpSize::i16Bit>},
 
     {OPD(1, 0b00, 0xC6), 1, &OpDispatchBuilder::AVX128_VSHUF<4>},
     {OPD(1, 0b01, 0xC6), 1, &OpDispatchBuilder::AVX128_VSHUF<8>},
@@ -391,10 +391,10 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(3, 0b01, 0x0E), 1, &OpDispatchBuilder::AVX128_VBLEND<OpSize::i16Bit>},
     {OPD(3, 0b01, 0x0F), 1, &OpDispatchBuilder::AVX128_VPALIGNR},
 
-    {OPD(3, 0b01, 0x14), 1, &OpDispatchBuilder::AVX128_PExtr<1>},
-    {OPD(3, 0b01, 0x15), 1, &OpDispatchBuilder::AVX128_PExtr<2>},
-    {OPD(3, 0b01, 0x16), 1, &OpDispatchBuilder::AVX128_PExtr<4>},
-    {OPD(3, 0b01, 0x17), 1, &OpDispatchBuilder::AVX128_PExtr<4>},
+    {OPD(3, 0b01, 0x14), 1, &OpDispatchBuilder::AVX128_PExtr<OpSize::i8Bit>},
+    {OPD(3, 0b01, 0x15), 1, &OpDispatchBuilder::AVX128_PExtr<OpSize::i16Bit>},
+    {OPD(3, 0b01, 0x16), 1, &OpDispatchBuilder::AVX128_PExtr<OpSize::i32Bit>},
+    {OPD(3, 0b01, 0x17), 1, &OpDispatchBuilder::AVX128_PExtr<OpSize::i32Bit>},
 
     {OPD(3, 0b01, 0x18), 1, &OpDispatchBuilder::AVX128_VINSERT},
     {OPD(3, 0b01, 0x19), 1, &OpDispatchBuilder::AVX128_VEXTRACT128},
@@ -1207,9 +1207,9 @@ void OpDispatchBuilder::AVX128_MOVBetweenGPR_FPR(OpcodeArgs) {
   }
 }
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::AVX128_PExtr(OpcodeArgs) {
-  const auto DstSize = GetDstSize(Op);
+  const auto DstSize = OpSizeFromDst(Op);
 
   auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
   uint64_t Index = Op->Src[1].Literal();
@@ -1218,7 +1218,7 @@ void OpDispatchBuilder::AVX128_PExtr(OpcodeArgs) {
   // When the element size is 32-bit then it can be overriden as 64-bit because the encoding of PEXTRD/PEXTRQ
   // is the same except that REX.W or VEX.W is set to 1. Incredibly frustrating.
   // Use the destination size as the element size in this case.
-  size_t OverridenElementSize = ElementSize;
+  auto OverridenElementSize = ElementSize;
   if constexpr (ElementSize == OpSize::i32Bit) {
     OverridenElementSize = DstSize;
   }
