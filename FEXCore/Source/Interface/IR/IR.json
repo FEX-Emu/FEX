@@ -2364,7 +2364,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VInsGPR u8:#RegisterSize, u8:#ElementSize, u8:$DestIdx, FPR:$DestVector, GPR:$Src": {
+      "FPR = VInsGPR OpSize:#RegisterSize, OpSize:#ElementSize, u8:$DestIdx, FPR:$DestVector, GPR:$Src": {
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },

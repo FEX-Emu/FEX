@@ -4890,7 +4890,7 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
       Ref Result = LoadZeroVector(OpSize::i128Bit);
       for (uint32_t i = 0; i < NumElements; i++) {
         Ref SignBit = _Sbfe(OpSize::i64Bit, 1, i, IntermediateResult);
-        Result = _VInsGPR(Core::CPUState::XMM_SSE_REG_SIZE, ElementSize, i, Result, SignBit);
+        Result = _VInsGPR(OpSize::i128Bit, IR::SizeToOpSize(ElementSize), i, Result, SignBit);
       }
       StoreXMMRegister(0, Result);
     } else {

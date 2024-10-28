@@ -879,7 +879,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
           Ref Low = GetConstant(0);
           Ref High = GetConstant(0b1'000'0000'0000'0000ULL);
           Ref HelperNode = IREmit->_VCastFromGPR(16, 8, Low);
-          HelperNode = IREmit->_VInsGPR(16, 8, 1, HelperNode, High);
+          HelperNode = IREmit->_VInsGPR(OpSize::i128Bit, OpSize::i64Bit, 1, HelperNode, High);
           ResultNode = IREmit->_VXor(OpSize::i128Bit, OpSize::i8Bit, Value, HelperNode);
         }
         StoreStackValue(ResultNode);
@@ -897,7 +897,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
           Ref Low = GetConstant(~0ULL);
           Ref High = GetConstant(0b0'111'1111'1111'1111ULL);
           Ref HelperNode = IREmit->_VCastFromGPR(16, 8, Low);
-          HelperNode = IREmit->_VInsGPR(16, 8, 1, HelperNode, High);
+          HelperNode = IREmit->_VInsGPR(OpSize::i128Bit, OpSize::i64Bit, 1, HelperNode, High);
           ResultNode = IREmit->_VAnd(OpSize::i128Bit, OpSize::i8Bit, Value, HelperNode);
         }
         StoreStackValue(ResultNode);
