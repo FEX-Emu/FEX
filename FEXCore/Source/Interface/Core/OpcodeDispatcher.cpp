@@ -5147,8 +5147,8 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0x7F), 1, &OpDispatchBuilder::VMOVAPS_VMOVAPDOp},
     {OPD(1, 0b10, 0x7F), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPDOp},
 
-    {OPD(1, 0b00, 0xC2), 1, &OpDispatchBuilder::AVXVFCMPOp<4>},
-    {OPD(1, 0b01, 0xC2), 1, &OpDispatchBuilder::AVXVFCMPOp<8>},
+    {OPD(1, 0b00, 0xC2), 1, &OpDispatchBuilder::AVXVFCMPOp<OpSize::i32Bit>},
+    {OPD(1, 0b01, 0xC2), 1, &OpDispatchBuilder::AVXVFCMPOp<OpSize::i64Bit>},
     {OPD(1, 0b10, 0xC2), 1, &OpDispatchBuilder::AVXInsertScalarFCMPOp<OpSize::i32Bit>},
     {OPD(1, 0b11, 0xC2), 1, &OpDispatchBuilder::AVXInsertScalarFCMPOp<OpSize::i64Bit>},
 

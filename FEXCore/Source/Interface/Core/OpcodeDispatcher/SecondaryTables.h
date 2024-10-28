@@ -95,7 +95,7 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   {0x76, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPEQ, 4>},
   {0x77, 1, &OpDispatchBuilder::X87EMMS},
 
-  {0xC2, 1, &OpDispatchBuilder::VFCMPOp<4>},
+  {0xC2, 1, &OpDispatchBuilder::VFCMPOp<OpSize::i32Bit>},
   {0xC6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SHUFOp, 4>},
 
   {0xD1, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLDOp, 2>},
@@ -257,7 +257,7 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   {0x7D, 1, &OpDispatchBuilder::HSUBP<8>},
   {0x7E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVBetweenGPR_FPR, OpDispatchBuilder::VectorOpType::SSE>},
   {0x7F, 1, &OpDispatchBuilder::MOVVectorAlignedOp},
-  {0xC2, 1, &OpDispatchBuilder::VFCMPOp<8>},
+  {0xC2, 1, &OpDispatchBuilder::VFCMPOp<OpSize::i64Bit>},
   {0xC4, 1, &OpDispatchBuilder::PINSROp<OpSize::i16Bit>},
   {0xC5, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, OpSize::i16Bit>},
   {0xC6, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SHUFOp, 8>},

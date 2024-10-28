@@ -2404,7 +2404,7 @@ void OpDispatchBuilder::MOVBetweenGPR_FPR(OpcodeArgs, VectorOpType VectorType) {
   }
 }
 
-Ref OpDispatchBuilder::VFCMPOpImpl(OpSize Size, size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType) {
+Ref OpDispatchBuilder::VFCMPOpImpl(OpSize Size, IR::OpSize ElementSize, Ref Src1, Ref Src2, uint8_t CompType) {
   Ref Result {};
   switch (CompType & 0x7) {
   case 0x0: // EQ
@@ -2429,7 +2429,7 @@ Ref OpDispatchBuilder::VFCMPOpImpl(OpSize Size, size_t ElementSize, Ref Src1, Re
   FEX_UNREACHABLE;
 }
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::VFCMPOp(OpcodeArgs) {
   // No need for zero-extending in the scalar case, since
   // all we need is an insert at the end of the operation.
@@ -2448,7 +2448,7 @@ void OpDispatchBuilder::VFCMPOp(OpcodeArgs) {
 template void OpDispatchBuilder::VFCMPOp<OpSize::i32Bit>(OpcodeArgs);
 template void OpDispatchBuilder::VFCMPOp<OpSize::i64Bit>(OpcodeArgs);
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::AVXVFCMPOp(OpcodeArgs) {
   // No need for zero-extending in the scalar case, since
   // all we need is an insert at the end of the operation.
