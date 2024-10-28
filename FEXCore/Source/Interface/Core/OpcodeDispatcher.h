@@ -608,7 +608,7 @@ public:
 
   void VMPSADBWOp(OpcodeArgs);
 
-  void VPACKSSOp(OpcodeArgs, size_t ElementSize);
+  void VPACKSSOp(OpcodeArgs, IR::OpSize ElementSize);
 
   void VPACKUSOp(OpcodeArgs, size_t ElementSize);
 
@@ -798,7 +798,7 @@ public:
   template<size_t ElementSize>
   void PACKUSOp(OpcodeArgs);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void PACKSSOp(OpcodeArgs);
 
   template<size_t ElementSize, bool Signed>
