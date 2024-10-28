@@ -2110,7 +2110,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VRev32 u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VRev32 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc" : ["Reverses elements in 32-bit halfwords",
                   "Available element size: 1byte, 2 byte"
                  ],
