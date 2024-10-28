@@ -2301,7 +2301,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
       },
-      "FPR = VUABDL u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VUABDL OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "Desc": ["Unsigned Absolute Difference Long"
                 ],
         "DestSize": "RegisterSize",

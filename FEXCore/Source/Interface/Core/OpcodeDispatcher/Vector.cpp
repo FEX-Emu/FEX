@@ -3500,7 +3500,7 @@ Ref OpDispatchBuilder::PSADBWOpImpl(IR::OpSize Size, Ref Src1, Ref Src2) {
   const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
 
   if (Size == OpSize::i64Bit) {
-    auto AbsResult = _VUABDL(Size * 2, OpSize::i8Bit, Src1, Src2);
+    auto AbsResult = _VUABDL(IR::MultiplyOpSize(Size, 2), OpSize::i8Bit, Src1, Src2);
 
     // Now vector-wide add the results for each
     return _VAddV(IR::MultiplyOpSize(Size, 2), OpSize::i16Bit, AbsResult);
