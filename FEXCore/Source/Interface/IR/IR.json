@@ -2280,7 +2280,7 @@
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize << 1)"
       },
-      "FPR = VUMull2 u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VUMull2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "Desc": "Multiplies the high elements with size extension",
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / (ElementSize << 1)"
