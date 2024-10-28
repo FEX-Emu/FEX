@@ -451,7 +451,7 @@ public:
   void PSHUFDOp(OpcodeArgs);
   void PSRLDOp(OpcodeArgs, size_t ElementSize);
   void PSRLI(OpcodeArgs, size_t ElementSize);
-  void PSLLI(OpcodeArgs, size_t ElementSize);
+  void PSLLI(OpcodeArgs, IR::OpSize ElementSize);
   void PSLL(OpcodeArgs, size_t ElementSize);
   void PSRAOp(OpcodeArgs, size_t ElementSize);
   void PSRLDQ(OpcodeArgs);
@@ -664,7 +664,7 @@ public:
 
   void VPSLLOp(OpcodeArgs, size_t ElementSize);
   void VPSLLDQOp(OpcodeArgs);
-  void VPSLLIOp(OpcodeArgs, size_t ElementSize);
+  void VPSLLIOp(OpcodeArgs, IR::OpSize ElementSize);
   void VPSLLVOp(OpcodeArgs);
 
   void VPSRAOp(OpcodeArgs, size_t ElementSize);
@@ -1415,7 +1415,7 @@ private:
 
   Ref PSIGNImpl(OpcodeArgs, size_t ElementSize, Ref Src1, Ref Src2);
 
-  Ref PSLLIImpl(OpcodeArgs, size_t ElementSize, Ref Src, uint64_t Shift);
+  Ref PSLLIImpl(OpcodeArgs, IR::OpSize ElementSize, Ref Src, uint64_t Shift);
 
   Ref PSLLImpl(OpcodeArgs, size_t ElementSize, Ref Src, Ref ShiftVec);
 

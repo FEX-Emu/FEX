@@ -66,30 +66,30 @@ constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDis
   {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_F3, 7), 1, &OpDispatchBuilder::RDPIDOp},
 
   // GROUP 12
-  {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_NONE, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLI, 2>},
-  {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_NONE, 4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRAIOp, 2>},
-  {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_NONE, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLLI, 2>},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_NONE, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLI, OpSize::i16Bit>},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_NONE, 4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRAIOp, OpSize::i16Bit>},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_NONE, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLLI, OpSize::i16Bit>},
 
-  {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_66, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLI, 2>},
-  {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_66, 4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRAIOp, 2>},
-  {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_66, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLLI, 2>},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_66, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLI, OpSize::i16Bit>},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_66, 4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRAIOp, OpSize::i16Bit>},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_12, PF_66, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLLI, OpSize::i16Bit>},
 
   // GROUP 13
-  {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_NONE, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLI, 4>},
-  {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_NONE, 4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRAIOp, 4>},
-  {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_NONE, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLLI, 4>},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_NONE, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLI, OpSize::i32Bit>},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_NONE, 4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRAIOp, OpSize::i32Bit>},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_NONE, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLLI, OpSize::i32Bit>},
 
-  {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_66, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLI, 4>},
-  {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_66, 4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRAIOp, 4>},
-  {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_66, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLLI, 4>},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_66, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLI, OpSize::i32Bit>},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_66, 4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRAIOp, OpSize::i32Bit>},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_13, PF_66, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLLI, OpSize::i32Bit>},
 
   // GROUP 14
-  {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_NONE, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLI, 8>},
-  {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_NONE, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLLI, 8>},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_NONE, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLI, OpSize::i64Bit>},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_NONE, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLLI, OpSize::i64Bit>},
 
-  {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLI, 8>},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSRLI, OpSize::i64Bit>},
   {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 3), 1, &OpDispatchBuilder::PSRLDQ},
-  {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLLI, 8>},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSLLI, OpSize::i64Bit>},
   {OPD(FEXCore::X86Tables::TYPE_GROUP_14, PF_66, 7), 1, &OpDispatchBuilder::PSLLDQ},
 
   // GROUP 15

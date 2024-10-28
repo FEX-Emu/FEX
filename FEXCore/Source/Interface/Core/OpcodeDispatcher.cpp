@@ -5394,17 +5394,17 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 
 #define OPD(group, pp, opcode) (((group - X86Tables::TYPE_VEX_GROUP_12) << 4) | (pp << 3) | (opcode))
   static constexpr std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> VEXTableGroupOps[] {
-    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b010), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRLIOp, 2>},
-    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b110), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLIOp, 2>},
-    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b100), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRAIOp, 2>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b010), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRLIOp, OpSize::i16Bit>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b110), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLIOp, OpSize::i16Bit>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b100), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRAIOp, OpSize::i16Bit>},
 
-    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b010), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRLIOp, 4>},
-    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b110), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLIOp, 4>},
-    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b100), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRAIOp, 4>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b010), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRLIOp, OpSize::i32Bit>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b110), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLIOp, OpSize::i32Bit>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b100), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRAIOp, OpSize::i32Bit>},
 
-    {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b010), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRLIOp, 8>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b010), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRLIOp, OpSize::i64Bit>},
     {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b011), 1, &OpDispatchBuilder::VPSRLDQOp},
-    {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b110), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLIOp, 8>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b110), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLIOp, OpSize::i64Bit>},
     {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b111), 1, &OpDispatchBuilder::VPSLLDQOp},
 
     {OPD(X86Tables::TYPE_VEX_GROUP_15, 0, 0b010), 1, &OpDispatchBuilder::LDMXCSR},
