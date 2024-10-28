@@ -2585,7 +2585,7 @@
           "RegisterSize != FEXCore::IR::OpSize::i256Bit && \"What does 256-bit mean in this context?\""
         ]
       },
-      "FPR = VFCVTN2 u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
+      "FPR = VFCVTN2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
         "TiedSource": 0,
         "Desc": [
           "Vector op: Converts float from source element size and inserting in to the high bits.",
