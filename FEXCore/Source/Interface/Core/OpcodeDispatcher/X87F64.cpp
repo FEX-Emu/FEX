@@ -128,7 +128,7 @@ void OpDispatchBuilder::FISTF64(OpcodeArgs, bool Truncate) {
   }
 }
 
-void OpDispatchBuilder::FADDF64(OpcodeArgs, size_t Width, bool Integer, OpDispatchBuilder::OpResult ResInST0) {
+void OpDispatchBuilder::FADDF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpDispatchBuilder::OpResult ResInST0) {
   if (Op->Src[0].IsNone()) { // Implicit argument case
     auto Offset = Op->OP & 7;
     auto St0 = 0;
@@ -148,14 +148,14 @@ void OpDispatchBuilder::FADDF64(OpcodeArgs, size_t Width, bool Integer, OpDispat
 
   if (Integer) {
     arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-    if (Width == 16) {
+    if (Width == OpSize::i16Bit) {
       arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
     }
-    arg = _Float_FromGPR_S(OpSize::i64Bit, Width == 64 ? OpSize::i64Bit : OpSize::i32Bit, arg);
-  } else if (Width == 32) {
+    arg = _Float_FromGPR_S(OpSize::i64Bit, Width == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit, arg);
+  } else if (Width == OpSize::i32Bit) {
     arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
     arg = _Float_FToF(OpSize::i64Bit, OpSize::i32Bit, arg);
-  } else if (Width == 64) {
+  } else if (Width == OpSize::i64Bit) {
     arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   }
 
@@ -164,7 +164,7 @@ void OpDispatchBuilder::FADDF64(OpcodeArgs, size_t Width, bool Integer, OpDispat
 }
 
 // FIXME: following is very similar to FADDF64
-void OpDispatchBuilder::FMULF64(OpcodeArgs, size_t Width, bool Integer, OpDispatchBuilder::OpResult ResInST0) {
+void OpDispatchBuilder::FMULF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpDispatchBuilder::OpResult ResInST0) {
   if (Op->Src[0].IsNone()) { // Implicit argument case
     auto offset = Op->OP & 7;
     auto st0 = 0;
@@ -184,14 +184,14 @@ void OpDispatchBuilder::FMULF64(OpcodeArgs, size_t Width, bool Integer, OpDispat
 
   if (Integer) {
     arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-    if (Width == 16) {
+    if (Width == OpSize::i16Bit) {
       arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
     }
-    arg = _Float_FromGPR_S(OpSize::i64Bit, Width == 64 ? OpSize::i64Bit : OpSize::i32Bit, arg);
-  } else if (Width == 32) {
+    arg = _Float_FromGPR_S(OpSize::i64Bit, Width == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit, arg);
+  } else if (Width == OpSize::i32Bit) {
     arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
     arg = _Float_FToF(OpSize::i64Bit, OpSize::i32Bit, arg);
-  } else if (Width == 64) {
+  } else if (Width == OpSize::i64Bit) {
     arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   }
 
@@ -203,7 +203,7 @@ void OpDispatchBuilder::FMULF64(OpcodeArgs, size_t Width, bool Integer, OpDispat
   }
 }
 
-void OpDispatchBuilder::FDIVF64(OpcodeArgs, size_t Width, bool Integer, bool Reverse, OpDispatchBuilder::OpResult ResInST0) {
+void OpDispatchBuilder::FDIVF64(OpcodeArgs, IR::OpSize Width, bool Integer, bool Reverse, OpDispatchBuilder::OpResult ResInST0) {
   if (Op->Src[0].IsNone()) {
     const auto offset = Op->OP & 7;
     const auto st0 = 0;
@@ -231,17 +231,17 @@ void OpDispatchBuilder::FDIVF64(OpcodeArgs, size_t Width, bool Integer, bool Rev
   // We have one memory argument
   Ref Arg {};
 
-  if (Width == 16 || Width == 32 || Width == 64) {
+  if (Width == OpSize::i16Bit || Width == OpSize::i32Bit || Width == OpSize::i64Bit) {
     if (Integer) {
       Arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-      if (Width == 16) {
+      if (Width == OpSize::i16Bit) {
         Arg = _Sbfe(OpSize::i64Bit, 16, 0, Arg);
       }
-      Arg = _Float_FromGPR_S(OpSize::i64Bit, Width == 64 ? OpSize::i64Bit : OpSize::i32Bit, Arg);
-    } else if (Width == 32) {
+      Arg = _Float_FromGPR_S(OpSize::i64Bit, Width == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit, Arg);
+    } else if (Width == OpSize::i32Bit) {
       Arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
       Arg = _Float_FToF(OpSize::i64Bit, OpSize::i32Bit, Arg);
-    } else if (Width == 64) {
+    } else if (Width == OpSize::i64Bit) {
       Arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
     }
   }
@@ -258,7 +258,7 @@ void OpDispatchBuilder::FDIVF64(OpcodeArgs, size_t Width, bool Integer, bool Rev
   }
 }
 
-void OpDispatchBuilder::FSUBF64(OpcodeArgs, size_t Width, bool Integer, bool Reverse, OpDispatchBuilder::OpResult ResInST0) {
+void OpDispatchBuilder::FSUBF64(OpcodeArgs, IR::OpSize Width, bool Integer, bool Reverse, OpDispatchBuilder::OpResult ResInST0) {
   if (Op->Src[0].IsNone()) {
     const auto Offset = Op->OP & 7;
     const auto St0 = 0;
@@ -286,17 +286,17 @@ void OpDispatchBuilder::FSUBF64(OpcodeArgs, size_t Width, bool Integer, bool Rev
   // We have one memory argument
   Ref arg {};
 
-  if (Width == 16 || Width == 32 || Width == 64) {
+  if (Width == OpSize::i16Bit || Width == OpSize::i32Bit || Width == OpSize::i64Bit) {
     if (Integer) {
       arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-      if (Width == 16) {
+      if (Width == OpSize::i16Bit) {
         arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
       }
-      arg = _Float_FromGPR_S(OpSize::i64Bit, Width == 64 ? OpSize::i64Bit : OpSize::i32Bit, arg);
-    } else if (Width == 32) {
+      arg = _Float_FromGPR_S(OpSize::i64Bit, Width == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit, arg);
+    } else if (Width == OpSize::i32Bit) {
       arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
       arg = _Float_FToF(OpSize::i64Bit, OpSize::i32Bit, arg);
-    } else if (Width == 64) {
+    } else if (Width == OpSize::i64Bit) {
       arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
     }
   }
@@ -323,7 +323,7 @@ void OpDispatchBuilder::FTSTF64(OpcodeArgs) {
   ConvertNZCVToX87();
 }
 
-void OpDispatchBuilder::FCOMIF64(OpcodeArgs, size_t Width, bool Integer, OpDispatchBuilder::FCOMIFlags WhichFlags, bool PopTwice) {
+void OpDispatchBuilder::FCOMIF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpDispatchBuilder::FCOMIFlags WhichFlags, bool PopTwice) {
   Ref arg {};
   Ref b {};
 
@@ -333,17 +333,17 @@ void OpDispatchBuilder::FCOMIF64(OpcodeArgs, size_t Width, bool Integer, OpDispa
     b = _ReadStackValue(offset);
   } else {
     // Memory arg
-    if (Width == 16 || Width == 32 || Width == 64) {
+    if (Width == OpSize::i16Bit || Width == OpSize::i32Bit || Width == OpSize::i64Bit) {
       if (Integer) {
         arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-        if (Width == 16) {
+        if (Width == OpSize::i16Bit) {
           arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
         }
         b = _Float_FromGPR_S(OpSize::i64Bit, Width == 64 ? OpSize::i64Bit : OpSize::i32Bit, arg);
-      } else if (Width == 32) {
+      } else if (Width == OpSize::i32Bit) {
         arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
         b = _Float_FToF(OpSize::i64Bit, OpSize::i32Bit, arg);
-      } else if (Width == 64) {
+      } else if (Width == OpSize::i64Bit) {
         b = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
       }
     }

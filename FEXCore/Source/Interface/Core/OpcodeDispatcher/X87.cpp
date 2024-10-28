@@ -160,7 +160,7 @@ void OpDispatchBuilder::FIST(OpcodeArgs, bool Truncate) {
   }
 }
 
-void OpDispatchBuilder::FADD(OpcodeArgs, size_t Width, bool Integer, OpDispatchBuilder::OpResult ResInST0) {
+void OpDispatchBuilder::FADD(OpcodeArgs, IR::OpSize Width, bool Integer, OpDispatchBuilder::OpResult ResInST0) {
   if (Op->Src[0].IsNone()) { // Implicit argument case
     auto Offset = Op->OP & 7;
     auto St0 = 0;
@@ -175,22 +175,22 @@ void OpDispatchBuilder::FADD(OpcodeArgs, size_t Width, bool Integer, OpDispatchB
     return;
   }
 
-  LOGMAN_THROW_A_FMT(Width != 80, "No 80-bit floats from memory");
+  LOGMAN_THROW_A_FMT(Width != OpSize::f80Bit, "No 80-bit floats from memory");
   // We have one memory argument
   Ref Arg {};
   if (Integer) {
     Arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-    Arg = _F80CVTToInt(Arg, Width / 8);
+    Arg = _F80CVTToInt(Arg, Width);
   } else {
     Arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-    Arg = _F80CVTTo(Arg, Width / 8);
+    Arg = _F80CVTTo(Arg, Width);
   }
 
   // top of stack is at offset zero
   _F80AddValue(0, Arg);
 }
 
-void OpDispatchBuilder::FMUL(OpcodeArgs, size_t Width, bool Integer, OpDispatchBuilder::OpResult ResInST0) {
+void OpDispatchBuilder::FMUL(OpcodeArgs, IR::OpSize Width, bool Integer, OpDispatchBuilder::OpResult ResInST0) {
   if (Op->Src[0].IsNone()) { // Implicit argument case
     auto offset = Op->OP & 7;
     auto st0 = 0;
@@ -205,15 +205,15 @@ void OpDispatchBuilder::FMUL(OpcodeArgs, size_t Width, bool Integer, OpDispatchB
     return;
   }
 
-  LOGMAN_THROW_A_FMT(Width != 80, "No 80-bit floats from memory");
+  LOGMAN_THROW_A_FMT(Width != OpSize::f80Bit, "No 80-bit floats from memory");
   // We have one memory argument
   Ref arg {};
   if (Integer) {
     arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-    arg = _F80CVTToInt(arg, Width / 8);
+    arg = _F80CVTToInt(arg, Width);
   } else {
     arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-    arg = _F80CVTTo(arg, Width / 8);
+    arg = _F80CVTTo(arg, Width);
   }
 
   // top of stack is at offset zero
@@ -224,7 +224,7 @@ void OpDispatchBuilder::FMUL(OpcodeArgs, size_t Width, bool Integer, OpDispatchB
   }
 }
 
-void OpDispatchBuilder::FDIV(OpcodeArgs, size_t Width, bool Integer, bool Reverse, OpDispatchBuilder::OpResult ResInST0) {
+void OpDispatchBuilder::FDIV(OpcodeArgs, IR::OpSize Width, bool Integer, bool Reverse, OpDispatchBuilder::OpResult ResInST0) {
   if (Op->Src[0].IsNone()) {
     const auto Offset = Op->OP & 7;
     const auto St0 = 0;
@@ -242,15 +242,15 @@ void OpDispatchBuilder::FDIV(OpcodeArgs, size_t Width, bool Integer, bool Revers
     return;
   }
 
-  LOGMAN_THROW_A_FMT(Width != 80, "No 80-bit floats from memory");
+  LOGMAN_THROW_A_FMT(Width != OpSize::f80Bit, "No 80-bit floats from memory");
   // We have one memory argument
   Ref arg {};
   if (Integer) {
     arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-    arg = _F80CVTToInt(arg, Width / 8);
+    arg = _F80CVTToInt(arg, Width);
   } else {
     arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-    arg = _F80CVTTo(arg, Width / 8);
+    arg = _F80CVTTo(arg, Width);
   }
 
   // top of stack is at offset zero
@@ -265,7 +265,7 @@ void OpDispatchBuilder::FDIV(OpcodeArgs, size_t Width, bool Integer, bool Revers
   }
 }
 
-void OpDispatchBuilder::FSUB(OpcodeArgs, size_t Width, bool Integer, bool Reverse, OpDispatchBuilder::OpResult ResInST0) {
+void OpDispatchBuilder::FSUB(OpcodeArgs, IR::OpSize Width, bool Integer, bool Reverse, OpDispatchBuilder::OpResult ResInST0) {
   if (Op->Src[0].IsNone()) {
     const auto Offset = Op->OP & 7;
     const auto St0 = 0;
@@ -283,15 +283,15 @@ void OpDispatchBuilder::FSUB(OpcodeArgs, size_t Width, bool Integer, bool Revers
     return;
   }
 
-  LOGMAN_THROW_A_FMT(Width != 80, "No 80-bit floats from memory");
+  LOGMAN_THROW_A_FMT(Width != OpSize::f80Bit, "No 80-bit floats from memory");
   // We have one memory argument
   Ref Arg {};
   if (Integer) {
     Arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-    Arg = _F80CVTToInt(Arg, Width / 8);
+    Arg = _F80CVTToInt(Arg, Width);
   } else {
     Arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-    Arg = _F80CVTTo(Arg, Width / 8);
+    Arg = _F80CVTTo(Arg, Width);
   }
 
   // top of stack is at offset zero
@@ -598,7 +598,7 @@ void OpDispatchBuilder::X87FYL2X(OpcodeArgs, bool IsFYL2XP1) {
   _F80FYL2XStack();
 }
 
-void OpDispatchBuilder::FCOMI(OpcodeArgs, size_t Width, bool Integer, OpDispatchBuilder::FCOMIFlags WhichFlags, bool PopTwice) {
+void OpDispatchBuilder::FCOMI(OpcodeArgs, IR::OpSize Width, bool Integer, OpDispatchBuilder::FCOMIFlags WhichFlags, bool PopTwice) {
   Ref arg {};
   Ref b {};
 
@@ -609,13 +609,13 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs, size_t Width, bool Integer, OpDispatch
     Res = _F80CmpStack(Offset);
   } else {
     // Memory arg
-    if (Width == 16 || Width == 32 || Width == 64) {
+    if (Width == OpSize::i16Bit || Width == OpSize::i32Bit || Width == OpSize::i64Bit) {
       if (Integer) {
         arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-        b = _F80CVTToInt(arg, Width / 8);
+        b = _F80CVTToInt(arg, Width);
       } else {
         arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-        b = _F80CVTTo(arg, Width / 8);
+        b = _F80CVTTo(arg, Width);
       }
     }
     Res = _F80CmpValue(b);

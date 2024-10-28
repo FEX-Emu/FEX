@@ -807,7 +807,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
               break;
             }
             case OpSize::f80Bit: {
-              StackNode = IREmit->_F80CVTTo(StackNode, 8);
+              StackNode = IREmit->_F80CVTTo(StackNode, OpSize::i64Bit);
               IREmit->_StoreMem(FPRClass, OpSize::i64Bit, AddrNode, StackNode);
               auto Upper = IREmit->_VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, StackNode, 1);
               IREmit->_StoreMem(GPRClass, OpSize::i16Bit, Upper, AddrNode, GetConstant(8), OpSize::i64Bit, MEM_OFFSET_SXTX, 1);

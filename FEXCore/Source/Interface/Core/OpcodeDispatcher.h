@@ -717,10 +717,10 @@ public:
   };
 
   void X87OpHelper(OpcodeArgs, FEXCore::IR::IROps IROp, bool ZeroC2);
-  void FADD(OpcodeArgs, size_t Width, bool Integer, OpResult ResInST0);
-  void FMUL(OpcodeArgs, size_t Width, bool Integer, OpResult ResInST0);
-  void FDIV(OpcodeArgs, size_t Width, bool Integer, bool Reverse, OpResult ResInST0);
-  void FSUB(OpcodeArgs, size_t Width, bool Integer, bool Reverse, OpResult ResInST0);
+  void FADD(OpcodeArgs, IR::OpSize Width, bool Integer, OpResult ResInST0);
+  void FMUL(OpcodeArgs, IR::OpSize Width, bool Integer, OpResult ResInST0);
+  void FDIV(OpcodeArgs, IR::OpSize Width, bool Integer, bool Reverse, OpResult ResInST0);
+  void FSUB(OpcodeArgs, IR::OpSize Width, bool Integer, bool Reverse, OpResult ResInST0);
   void FTST(OpcodeArgs);
   void FNINIT(OpcodeArgs);
 
@@ -747,7 +747,7 @@ public:
     FLAGS_X87,
     FLAGS_RFLAGS,
   };
-  void FCOMI(OpcodeArgs, size_t Width, bool Integer, FCOMIFlags WhichFlags, bool PopTwice);
+  void FCOMI(OpcodeArgs, IR::OpSize Width, bool Integer, FCOMIFlags WhichFlags, bool PopTwice);
 
   // F64 X87 Ops
   void FLDF64(OpcodeArgs, IR::OpSize Width);
@@ -762,10 +762,10 @@ public:
 
   void FISTF64(OpcodeArgs, bool Truncate);
 
-  void FADDF64(OpcodeArgs, size_t Width, bool Integer, OpResult ResInST0);
-  void FMULF64(OpcodeArgs, size_t Width, bool Integer, OpResult ResInST0);
-  void FDIVF64(OpcodeArgs, size_t Width, bool Integer, bool Reverse, OpResult ResInST0);
-  void FSUBF64(OpcodeArgs, size_t Width, bool Integer, bool Reverse, OpResult ResInST0);
+  void FADDF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpResult ResInST0);
+  void FMULF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpResult ResInST0);
+  void FDIVF64(OpcodeArgs, IR::OpSize Width, bool Integer, bool Reverse, OpResult ResInST0);
+  void FSUBF64(OpcodeArgs, IR::OpSize Width, bool Integer, bool Reverse, OpResult ResInST0);
   void FCHSF64(OpcodeArgs);
   void FABSF64(OpcodeArgs);
   void FTSTF64(OpcodeArgs);
@@ -781,7 +781,7 @@ public:
   void X87FXTRACTF64(OpcodeArgs);
   void X87LDENVF64(OpcodeArgs);
 
-  void FCOMIF64(OpcodeArgs, size_t width, bool Integer, FCOMIFlags whichflags, bool poptwice);
+  void FCOMIF64(OpcodeArgs, IR::OpSize width, bool Integer, FCOMIFlags whichflags, bool poptwice);
 
   void FXSaveOp(OpcodeArgs);
   void FXRStoreOp(OpcodeArgs);
