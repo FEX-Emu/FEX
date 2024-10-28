@@ -674,7 +674,7 @@
         "HasSideEffects": true,
         "DestSize": "Size"
       },
-      "GPR = MemSet i1:$IsAtomic, u8:$Size, GPR:$Prefix, GPR:$Addr, GPR:$Value, GPR:$Length, GPR:$Direction": {
+      "GPR = MemSet i1:$IsAtomic, OpSize:$Size, GPR:$Prefix, GPR:$Addr, GPR:$Value, GPR:$Length, GPR:$Direction": {
         "Desc": ["Duplicates behaviour of x86 STOS repeat",
                  "Returns the final address that gets generated without the prefix appended."
                 ],
