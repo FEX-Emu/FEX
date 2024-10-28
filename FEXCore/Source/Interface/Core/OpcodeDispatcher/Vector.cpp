@@ -357,7 +357,7 @@ template void OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMINSCALARIN
 template void OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMAXSCALARINSERT, OpSize::i32Bit>(OpcodeArgs);
 template void OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMAXSCALARINSERT, OpSize::i64Bit>(OpcodeArgs);
 
-Ref OpDispatchBuilder::VectorScalarUnaryInsertALUOpImpl(OpcodeArgs, IROps IROp, IR::OpSize DstSize, size_t ElementSize,
+Ref OpDispatchBuilder::VectorScalarUnaryInsertALUOpImpl(OpcodeArgs, IROps IROp, IR::OpSize DstSize, IR::OpSize ElementSize,
                                                         const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op,
                                                         bool ZeroUpperBits) {
   // We load the full vector width when dealing with a source vector,
@@ -369,7 +369,7 @@ Ref OpDispatchBuilder::VectorScalarUnaryInsertALUOpImpl(OpcodeArgs, IROps IROp, 
   Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Src2Op, SrcSize, Op->Flags, {.AllowUpperGarbage = true});
 
   // If OpSize == ElementSize then it only does the lower scalar op
-  DeriveOp(ALUOp, IROp, _VFSqrtScalarInsert(IR::SizeToOpSize(DstSize), ElementSize, Src1, Src2, ZeroUpperBits));
+  DeriveOp(ALUOp, IROp, _VFSqrtScalarInsert(DstSize, ElementSize, Src1, Src2, ZeroUpperBits));
   return ALUOp;
 }
 
