@@ -2551,7 +2551,7 @@
         "DestSize": "DstElementSize"
       },
 
-      "FPR = Vector_SToF u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = Vector_SToF OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": "Vector op: Converts signed integer to same size float",
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
