@@ -2181,7 +2181,7 @@
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VURAvg u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
+      "FPR = VURAvg OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "Desc": ["Does an unsigned rounded average", "dst_elem = (src1_elem + src2_elem + 1) >> 1"],
         "DestSize": "RegisterSize",
         "NumElements": "RegisterSize / ElementSize"
