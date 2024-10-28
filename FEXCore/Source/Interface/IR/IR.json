@@ -540,7 +540,7 @@
         "HasSideEffects": true
       },
 
-      "StoreMem RegisterClass:$Class, u8:#Size, SSA:$Value, GPR:$Addr, GPR:$Offset, u8:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale": {
+      "StoreMem RegisterClass:$Class, OpSize:#Size, SSA:$Value, GPR:$Addr, GPR:$Offset, OpSize:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale": {
         "Desc": [ "Stores a value to memory.",
                   "Zero Extends if value's type is too small",
                   "Truncates if value's type is too large"

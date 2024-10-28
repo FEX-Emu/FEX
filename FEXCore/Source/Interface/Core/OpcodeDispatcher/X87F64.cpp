@@ -82,7 +82,7 @@ void OpDispatchBuilder::FBLDF64(OpcodeArgs) {
 void OpDispatchBuilder::FBSTPF64(OpcodeArgs) {
   Ref converted = _F80CVTTo(_ReadStackValue(0), OpSize::i64Bit);
   converted = _F80BCDStore(converted);
-  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, converted, 10, 1);
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, converted, OpSize::f80Bit, OpSize::i8Bit);
   _PopStackDestroy();
 }
 
@@ -113,7 +113,7 @@ void OpDispatchBuilder::FSTF64(OpcodeArgs, size_t Width) {
 }
 
 void OpDispatchBuilder::FISTF64(OpcodeArgs, bool Truncate) {
-  auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
 
   Ref data = _ReadStackValue(0);
   if (Truncate) {

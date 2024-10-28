@@ -86,7 +86,7 @@ void OpDispatchBuilder::FBLD(OpcodeArgs) {
 
 void OpDispatchBuilder::FBSTP(OpcodeArgs) {
   Ref converted = _F80BCDStore(_ReadStackValue(0));
-  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, converted, 10, 1);
+  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, converted, OpSize::f80Bit, OpSize::i8Bit);
   _PopStackDestroy();
 }
 
@@ -149,11 +149,11 @@ void OpDispatchBuilder::FSTToStack(OpcodeArgs) {
 
 // Store integer to memory (possibly with truncation)
 void OpDispatchBuilder::FIST(OpcodeArgs, bool Truncate) {
-  auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
   Ref Data = _ReadStackValue(0);
   Data = _F80CVTInt(Size, Data, Truncate);
 
-  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Data, Size, 1);
+  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Data, Size, OpSize::i8Bit);
 
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
     _PopStackDestroy();
@@ -342,7 +342,7 @@ void OpDispatchBuilder::X87FNSTENV(OpcodeArgs) {
   // Before we store anything we need to sync our stack to the registers.
   _SyncStackToSlow();
 
-  auto Size = GetDstSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
   Ref Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
   Mem = AppendSegmentOffset(Mem, Op->Flags);
 
@@ -351,33 +351,33 @@ void OpDispatchBuilder::X87FNSTENV(OpcodeArgs) {
     _StoreMem(GPRClass, Size, Mem, FCW, Size);
   }
 
-  { _StoreMem(GPRClass, Size, ReconstructFSW_Helper(), Mem, _Constant(Size * 1), Size, MEM_OFFSET_SXTX, 1); }
+  { _StoreMem(GPRClass, Size, ReconstructFSW_Helper(), Mem, _Constant(Size * 1), Size, MEM_OFFSET_SXTX, OpSize::i8Bit); }
 
   auto ZeroConst = _Constant(0);
 
   {
     // FTW
-    _StoreMem(GPRClass, Size, GetX87FTW_Helper(), Mem, _Constant(Size * 2), Size, MEM_OFFSET_SXTX, 1);
+    _StoreMem(GPRClass, Size, GetX87FTW_Helper(), Mem, _Constant(Size * 2), Size, MEM_OFFSET_SXTX, OpSize::i8Bit);
   }
 
   {
     // Instruction Offset
-    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(Size * 3), Size, MEM_OFFSET_SXTX, 1);
+    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(Size * 3), Size, MEM_OFFSET_SXTX, OpSize::i8Bit);
   }
 
   {
     // Instruction CS selector (+ Opcode)
-    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(Size * 4), Size, MEM_OFFSET_SXTX, 1);
+    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(Size * 4), Size, MEM_OFFSET_SXTX, OpSize::i8Bit);
   }
 
   {
     // Data pointer offset
-    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(Size * 5), Size, MEM_OFFSET_SXTX, 1);
+    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(Size * 5), Size, MEM_OFFSET_SXTX, OpSize::i8Bit);
   }
 
   {
     // Data pointer selector
-    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(Size * 6), Size, MEM_OFFSET_SXTX, 1);
+    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(Size * 6), Size, MEM_OFFSET_SXTX, OpSize::i8Bit);
   }
 }
 
@@ -439,7 +439,7 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
   // 2 bytes : Opcode
   // 4 bytes : data pointer offset
   // 4 bytes : data pointer selector
-  const auto Size = GetDstSize(Op);
+  const auto Size = OpSizeFromDst(Op);
   Ref Mem = MakeSegmentAddress(Op, Op->Dest);
   Ref Top = GetX87Top();
   {
@@ -566,7 +566,7 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
 // Load / Store Control Word
 void OpDispatchBuilder::X87FSTCW(OpcodeArgs) {
   auto FCW = _LoadContext(OpSize::i16Bit, GPRClass, offsetof(FEXCore::Core::CPUState, FCW));
-  StoreResult(GPRClass, Op, FCW, -1);
+  StoreResult(GPRClass, Op, FCW, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::X87FLDCW(OpcodeArgs) {
@@ -722,7 +722,7 @@ Ref OpDispatchBuilder::ReconstructFSW_Helper(Ref T) {
 void OpDispatchBuilder::X87FNSTSW(OpcodeArgs) {
   Ref TopValue = _SyncStackToSlow();
   Ref StatusWord = ReconstructFSW_Helper(TopValue);
-  StoreResult(GPRClass, Op, StatusWord, -1);
+  StoreResult(GPRClass, Op, StatusWord, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::FNINIT(OpcodeArgs) {

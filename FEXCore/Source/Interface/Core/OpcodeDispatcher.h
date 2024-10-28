@@ -1134,7 +1134,7 @@ public:
 
   // AVX 256-bit operations
   void StoreResult_WithAVXInsert(VectorOpType Type, FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, Ref Value,
-                                 int8_t Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
+                                 IR::OpSize Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
     if (Op->Dest.IsGPR() && Op->Dest.Data.GPR.GPR >= X86State::REG_XMM_0 && Op->Dest.Data.GPR.GPR <= X86State::REG_XMM_15 &&
         GetGuestVectorLength() == Core::CPUState::XMM_AVX_REG_SIZE && Type == VectorOpType::SSE) {
       const auto gpr = Op->Dest.Data.GPR.GPR;
@@ -1520,11 +1520,11 @@ private:
   Ref LoadSource_WithOpSize(RegisterClassType Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand,
                             IR::OpSize OpSize, uint32_t Flags, const LoadSourceOptions& Options = {});
   void StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op,
-                              const FEXCore::X86Tables::DecodedOperand& Operand, const Ref Src, uint8_t OpSize, int8_t Align,
+                              const FEXCore::X86Tables::DecodedOperand& Operand, const Ref Src, IR::OpSize OpSize, IR::OpSize Align,
                               MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
   void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, const FEXCore::X86Tables::DecodedOperand& Operand,
-                   const Ref Src, int8_t Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
-  void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, const Ref Src, int8_t Align,
+                   const Ref Src, IR::OpSize Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
+  void StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, const Ref Src, IR::OpSize Align,
                    MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
 
   // In several instances, it's desirable to get a base address with the segment offset
@@ -2155,7 +2155,7 @@ private:
 
     HandleNZCV_RMW();
     CalculatePF(_ShiftFlags(OpSizeFromSrc(Op), Result, Dest, Shift, Src, OldPF, CFInverted));
-    StoreResult(GPRClass, Op, Result, -1);
+    StoreResult(GPRClass, Op, Result, OpSize::iInvalid);
   }
 
   // Helper to derive Dest by a given builder-using Expression with the opcode
@@ -2252,7 +2252,7 @@ private:
       return;
     }
     auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
-    StoreResult(GPRClass, Op, Dest, -1);
+    StoreResult(GPRClass, Op, Dest, OpSize::iInvalid);
   }
 
   using ZeroShiftFunctionPtr = void (OpDispatchBuilder::*)(FEXCore::X86Tables::DecodedOp Op);
@@ -2398,7 +2398,7 @@ private:
     }
   }
 
-  Ref _StoreMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, Ref Addr, Ref Value, uint8_t Align = 1) {
+  Ref _StoreMemAutoTSO(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, Ref Addr, Ref Value, IR::OpSize Align = IR::OpSize::i8Bit) {
     if (IsTSOEnabled(Class)) {
       return _StoreMemTSO(Class, Size, Value, Addr, Invalid(), Align, MEM_OFFSET_SXTX, 1);
     } else {
@@ -2463,7 +2463,7 @@ private:
     }
   }
 
-  Ref _StoreMemAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, AddressMode A, Ref Value, uint8_t Align = 1) {
+  Ref _StoreMemAutoTSO(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, AddressMode A, Ref Value, IR::OpSize Align = IR::OpSize::i8Bit) {
     bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
     A = SelectAddressMode(A, AtomicTSO, Class != GPRClass, Size);
 
@@ -2474,17 +2474,18 @@ private:
     }
   }
 
-  void _StoreMemPairAutoTSO(FEXCore::IR::RegisterClassType Class, uint8_t Size, AddressMode A, Ref Value1, Ref Value2, uint8_t Align = 1) {
+  void _StoreMemPairAutoTSO(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, AddressMode A, Ref Value1, Ref Value2,
+                            IR::OpSize Align = IR::OpSize::i8Bit) {
     bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
 
     // Use stp if possible, otherwise fallback on two stores.
-    if (!AtomicTSO && !A.Segment && Size >= 4 & Size <= 16) {
+    if (!AtomicTSO && !A.Segment && Size >= OpSize::i32Bit & Size <= OpSize::i128Bit) {
       A = SelectPairAddressMode(A, Size);
       _StoreMemPair(Class, Size, Value1, Value2, A.Base, A.Offset);
     } else {
-      _StoreMemAutoTSO(Class, Size, A, Value1, 1);
+      _StoreMemAutoTSO(Class, Size, A, Value1, OpSize::i8Bit);
       A.Offset += Size;
-      _StoreMemAutoTSO(Class, Size, A, Value2, 1);
+      _StoreMemAutoTSO(Class, Size, A, Value2, OpSize::i8Bit);
     }
   }
 

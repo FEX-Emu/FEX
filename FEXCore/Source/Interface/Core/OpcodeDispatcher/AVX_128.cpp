@@ -610,7 +610,7 @@ void OpDispatchBuilder::AVX128_VMOVScalarImpl(OpcodeArgs, IR::OpSize ElementSize
   } else {
     // VMOVSS/SD mem32/mem64, xmm1
     auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, false);
-    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src.Low, ElementSize, -1);
+    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src.Low, ElementSize, OpSize::iInvalid);
   }
 }
 
@@ -1052,7 +1052,7 @@ void OpDispatchBuilder::AVX128_CVTFPR_To_GPR(OpcodeArgs) {
 
   // GPR size is determined by REX.W
   // Source Element size is determined by instruction
-  size_t GPRSize = GetDstSize(Op);
+  const auto GPRSize = OpSizeFromDst(Op);
 
   Ref Result {};
   if constexpr (HostRoundingMode) {
@@ -1061,7 +1061,7 @@ void OpDispatchBuilder::AVX128_CVTFPR_To_GPR(OpcodeArgs) {
     Result = _Float_ToGPR_ZS(GPRSize, SrcElementSize, Src.Low);
   }
 
-  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, GPRSize, -1);
+  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, GPRSize, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::AVX128_VANDN(OpcodeArgs) {
@@ -1195,14 +1195,14 @@ void OpDispatchBuilder::AVX128_MOVBetweenGPR_FPR(OpcodeArgs) {
     auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
 
     if (Op->Dest.IsGPR()) {
-      auto ElementSize = GetDstSize(Op);
+      auto ElementSize = OpSizeFromDst(Op);
       // Extract element from GPR. Zero extending in the process.
       Src.Low = _VExtractToGPR(GetSrcSize(Op), ElementSize, Src.Low, 0);
-      StoreResult(GPRClass, Op, Op->Dest, Src.Low, -1);
+      StoreResult(GPRClass, Op, Op->Dest, Src.Low, OpSize::iInvalid);
     } else {
       // Storing first element to memory.
       Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-      _StoreMem(FPRClass, GetDstSize(Op), Dest, Src.Low, 1);
+      _StoreMem(FPRClass, OpSizeFromDst(Op), Dest, Src.Low, OpSize::i8Bit);
     }
   }
 }
@@ -1228,10 +1228,10 @@ void OpDispatchBuilder::AVX128_PExtr(OpcodeArgs) {
   Index &= NumElements - 1;
 
   if (Op->Dest.IsGPR()) {
-    const uint8_t GPRSize = CTX->GetGPRSize();
+    const auto GPRSize = CTX->GetGPROpSize();
     // Extract already zero extends the result.
     Ref Result = _VExtractToGPR(OpSize::i128Bit, OverridenElementSize, Src.Low, Index);
-    StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, GPRSize, -1);
+    StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, GPRSize, OpSize::iInvalid);
     return;
   }
 
@@ -1340,7 +1340,7 @@ void OpDispatchBuilder::AVX128_MOVMSK(OpcodeArgs) {
     auto GPRHigh = Mask8Byte(Src.High);
     GPR = _Orlshl(OpSize::i64Bit, GPRLow, GPRHigh, 2);
   }
-  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, GPR, CTX->GetGPRSize(), -1);
+  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, GPR, CTX->GetGPROpSize(), OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::AVX128_MOVMSKB(OpcodeArgs) {
@@ -1369,7 +1369,7 @@ void OpDispatchBuilder::AVX128_MOVMSKB(OpcodeArgs) {
     Result = _Orlshl(OpSize::i64Bit, Result, ResultHigh, 16);
   }
 
-  StoreResult(GPRClass, Op, Result, -1);
+  StoreResult(GPRClass, Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::AVX128_PINSRImpl(OpcodeArgs, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
@@ -2769,9 +2769,9 @@ void OpDispatchBuilder::AVX128_VCVTPH2PS(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AVX128_VCVTPS2PH(OpcodeArgs) {
-  const auto SrcSize = GetSrcSize(Op);
+  const auto SrcSize = OpSizeFromSrc(Op);
   const auto Is128BitSrc = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
-  const auto StoreSize = Op->Dest.IsGPR() ? OpSize::i128Bit : SrcSize / 2;
+  const auto StoreSize = Op->Dest.IsGPR() ? OpSize::i128Bit : IR::SizeToOpSize(IR::OpSizeToSize(SrcSize) / 2);
 
   const auto Imm8 = Op->Src[1].Literal();
   const auto UseMXCSR = (Imm8 & 0b100) != 0;
@@ -2806,7 +2806,7 @@ void OpDispatchBuilder::AVX128_VCVTPS2PH(OpcodeArgs) {
   }
 
   if (!Op->Dest.IsGPR()) {
-    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result.Low, StoreSize, -1);
+    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result.Low, StoreSize, OpSize::iInvalid);
   } else {
     AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
   }

@@ -793,24 +793,24 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         // or similar. As long as the source size and dest size are one and the same.
         // This will avoid any conversions between source and stack element size and conversion back.
         if (!SlowPath && Value->Source && Value->Source->first == Op->StoreSize && Value->InterpretAsFloat) {
-          IREmit->_StoreMem(Value->InterpretAsFloat ? FPRClass : GPRClass, Op->StoreSize, AddrNode, Value->Source->second);
+          IREmit->_StoreMem(Value->InterpretAsFloat ? FPRClass : GPRClass, IR::SizeToOpSize(Op->StoreSize), AddrNode, Value->Source->second);
         } else {
           if (ReducedPrecisionMode) {
             switch (Op->StoreSize) {
             case 4: {
               StackNode = IREmit->_Float_FToF(4, 8, StackNode);
-              IREmit->_StoreMem(FPRClass, 4, AddrNode, StackNode);
+              IREmit->_StoreMem(FPRClass, OpSize::i32Bit, AddrNode, StackNode);
               break;
             }
             case 8: {
-              IREmit->_StoreMem(FPRClass, 8, AddrNode, StackNode);
+              IREmit->_StoreMem(FPRClass, OpSize::i64Bit, AddrNode, StackNode);
               break;
             }
             case 10: {
               StackNode = IREmit->_F80CVTTo(StackNode, 8);
-              IREmit->_StoreMem(FPRClass, 8, AddrNode, StackNode);
+              IREmit->_StoreMem(FPRClass, OpSize::i64Bit, AddrNode, StackNode);
               auto Upper = IREmit->_VExtractToGPR(16, 8, StackNode, 1);
-              IREmit->_StoreMem(GPRClass, 2, Upper, AddrNode, GetConstant(8), 8, MEM_OFFSET_SXTX, 1);
+              IREmit->_StoreMem(GPRClass, OpSize::i16Bit, Upper, AddrNode, GetConstant(8), OpSize::i64Bit, MEM_OFFSET_SXTX, 1);
               break;
             }
             }
@@ -820,12 +820,12 @@ void X87StackOptimization::Run(IREmitter* Emit) {
             }
             if (Op->StoreSize == 10) { // Part of code from StoreResult_WithOpSize()
               // For X87 extended doubles, split before storing
-              IREmit->_StoreMem(FPRClass, 8, AddrNode, StackNode);
+              IREmit->_StoreMem(FPRClass, OpSize::i64Bit, AddrNode, StackNode);
               auto Upper = IREmit->_VExtractToGPR(16, 8, StackNode, 1);
               auto DestAddr = IREmit->_Add(OpSize::i64Bit, AddrNode, GetConstant(8));
-              IREmit->_StoreMem(GPRClass, 2, DestAddr, Upper, 8);
+              IREmit->_StoreMem(GPRClass, OpSize::i16Bit, DestAddr, Upper, OpSize::i64Bit);
             } else {
-              IREmit->_StoreMem(FPRClass, Op->StoreSize, AddrNode, StackNode);
+              IREmit->_StoreMem(FPRClass, IR::SizeToOpSize(Op->StoreSize), AddrNode, StackNode);
             }
           }
         }
