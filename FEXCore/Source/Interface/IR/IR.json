@@ -1915,7 +1915,7 @@
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VPopcount u8:#RegisterSize, u8:#ElementSize, FPR:$Vector": {
+      "FPR = VPopcount OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": ["Does a popcount for each element of the register"
                 ],
         "DestSize": "RegisterSize",
