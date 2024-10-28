@@ -434,8 +434,8 @@ public:
   void VectorXOROp(OpcodeArgs);
 
   void VectorALUROp(OpcodeArgs, IROps IROp, size_t ElementSize);
-  void VectorUnaryOp(OpcodeArgs, IROps IROp, size_t ElementSize);
-  template<FEXCore::IR::IROps IROp, size_t ElementSize>
+  void VectorUnaryOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
+  template<FEXCore::IR::IROps IROp, IR::OpSize ElementSize>
   void VectorUnaryDuplicateOp(OpcodeArgs);
 
   void MOVQOp(OpcodeArgs, VectorOpType VectorType);
@@ -936,7 +936,7 @@ public:
   void InstallAVX128Handlers();
   void AVX128_VMOVScalarImpl(OpcodeArgs, IR::OpSize ElementSize);
   void AVX128_VectorALU(OpcodeArgs, IROps IROp, size_t ElementSize);
-  void AVX128_VectorUnary(OpcodeArgs, IROps IROp, size_t ElementSize);
+  void AVX128_VectorUnary(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
   void AVX128_VectorUnaryImpl(OpcodeArgs, size_t SrcSize, size_t ElementSize, std::function<Ref(size_t ElementSize, Ref Src)> Helper);
   void AVX128_VectorBinaryImpl(OpcodeArgs, size_t SrcSize, IR::OpSize ElementSize,
                                std::function<Ref(IR::OpSize ElementSize, Ref Src1, Ref Src2)> Helper);
@@ -1359,7 +1359,7 @@ private:
   Ref ADDSUBPOpImpl(OpSize Size, size_t ElementSize, Ref Src1, Ref Src2);
 
   void AVXVectorALUOp(OpcodeArgs, IROps IROp, size_t ElementSize);
-  void AVXVectorUnaryOp(OpcodeArgs, IROps IROp, size_t ElementSize);
+  void AVXVectorUnaryOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
 
   void AVXVectorVariableBlend(OpcodeArgs, size_t ElementSize);
 
@@ -1435,7 +1435,7 @@ private:
 
   void VTESTOpImpl(OpSize SrcSize, size_t ElementSize, Ref Src1, Ref Src2);
 
-  void VectorUnaryDuplicateOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize);
+  void VectorUnaryDuplicateOpImpl(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
 
   // x86 ALU scalar operations operate in three different ways
   // - AVX512: Writemask shenanigans that we don't care about.

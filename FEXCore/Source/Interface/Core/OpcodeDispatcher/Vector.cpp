@@ -626,7 +626,7 @@ void OpDispatchBuilder::AVXInsertScalarFCMPOp(OpcodeArgs) {
 template void OpDispatchBuilder::AVXInsertScalarFCMPOp<OpSize::i32Bit>(OpcodeArgs);
 template void OpDispatchBuilder::AVXInsertScalarFCMPOp<OpSize::i64Bit>(OpcodeArgs);
 
-void OpDispatchBuilder::VectorUnaryOp(OpcodeArgs, IROps IROp, size_t ElementSize) {
+void OpDispatchBuilder::VectorUnaryOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize) {
   // In the event of a scalar operation and a vector source, then
   // we can specify the entire vector length in order to avoid
   // unnecessary sign extension on the element to be operated on.
@@ -640,7 +640,7 @@ void OpDispatchBuilder::VectorUnaryOp(OpcodeArgs, IROps IROp, size_t ElementSize
   StoreResult(FPRClass, Op, ALUOp, OpSize::iInvalid);
 }
 
-void OpDispatchBuilder::AVXVectorUnaryOp(OpcodeArgs, IROps IROp, size_t ElementSize) {
+void OpDispatchBuilder::AVXVectorUnaryOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize) {
   // In the event of a scalar operation and a vector source, then
   // we can specify the entire vector length in order to avoid
   // unnecessary sign extension on the element to be operated on.
@@ -659,7 +659,7 @@ void OpDispatchBuilder::AVXVectorUnaryOp(OpcodeArgs, IROps IROp, size_t ElementS
   StoreResult(FPRClass, Op, ALUOp, OpSize::iInvalid);
 }
 
-void OpDispatchBuilder::VectorUnaryDuplicateOpImpl(OpcodeArgs, IROps IROp, size_t ElementSize) {
+void OpDispatchBuilder::VectorUnaryDuplicateOpImpl(OpcodeArgs, IROps IROp, IR::OpSize ElementSize) {
   const auto Size = GetSrcSize(Op);
 
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
@@ -671,7 +671,7 @@ void OpDispatchBuilder::VectorUnaryDuplicateOpImpl(OpcodeArgs, IROps IROp, size_
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
-template<IROps IROp, size_t ElementSize>
+template<IROps IROp, IR::OpSize ElementSize>
 void OpDispatchBuilder::VectorUnaryDuplicateOp(OpcodeArgs) {
   VectorUnaryDuplicateOpImpl(Op, IROp, ElementSize);
 }

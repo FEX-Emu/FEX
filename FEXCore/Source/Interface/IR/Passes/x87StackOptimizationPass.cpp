@@ -380,7 +380,7 @@ void X87StackOptimization::HandleUnop(IROps Op64, bool VFOp64, IROps Op80) {
 
   if (ReducedPrecisionMode) {
     if (VFOp64) {
-      DeriveOp(Value, Op64, IREmit->_VFSqrt(8, 8, St0));
+      DeriveOp(Value, Op64, IREmit->_VFSqrt(OpSize::i64Bit, OpSize::i64Bit, St0));
     } else {
       DeriveOp(Value, Op64, IREmit->_F64SIN(St0));
     }
