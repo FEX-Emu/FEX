@@ -874,7 +874,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         // of a value
         Ref ResultNode {};
         if (ReducedPrecisionMode) {
-          ResultNode = IREmit->_VFNeg(8, 8, Value);
+          ResultNode = IREmit->_VFNeg(OpSize::i64Bit, OpSize::i64Bit, Value);
         } else {
           Ref Low = GetConstant(0);
           Ref High = GetConstant(0b1'000'0000'0000'0000ULL);
