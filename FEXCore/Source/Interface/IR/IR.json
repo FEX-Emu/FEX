@@ -2504,7 +2504,7 @@
         "NumElements": "RegisterSize / ElementSize",
         "TiedSource": 2
       },
-      "FPR = VFNMLA u8:#RegisterSize, u8:#ElementSize, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
+      "FPR = VFNMLA OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
         "Desc": [
           "Dest = (-Vector1 * Vector2) + Addend",
           "This explicitly matches x86 FMA semantics because ARM semantics are mind-bending."
