@@ -400,10 +400,10 @@ void X87StackOptimization::HandleBinopValue(IROps Op64, bool VFOp64, IROps Op80,
   Ref Node = {};
   if (ReducedPrecisionMode) {
     if (Reverse) {
-      DeriveOp(Node, Op64, IREmit->_VFAdd(8, 8, ValueNode, StackNode));
+      DeriveOp(Node, Op64, IREmit->_VFAdd(OpSize::i64Bit, OpSize::i64Bit, ValueNode, StackNode));
     } else {
       if (VFOp64) {
-        DeriveOp(Node, Op64, IREmit->_VFAdd(8, 8, StackNode, ValueNode));
+        DeriveOp(Node, Op64, IREmit->_VFAdd(OpSize::i64Bit, OpSize::i64Bit, StackNode, ValueNode));
       } else {
         DeriveOp(Node, Op64, IREmit->_F64FPREM(StackNode, ValueNode));
       }
