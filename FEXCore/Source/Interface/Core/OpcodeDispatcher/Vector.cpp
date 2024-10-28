@@ -1877,7 +1877,7 @@ void OpDispatchBuilder::VPSRLDQOp(OpcodeArgs) {
       }
     } else {
       if (Shift < Core::CPUState::XMM_SSE_REG_SIZE) {
-        Ref ResultBottom = _VExtr(OpSize::i128Bit, 1, Result, Src, Shift);
+        Ref ResultBottom = _VExtr(OpSize::i128Bit, OpSize::i8Bit, Result, Src, Shift);
         Ref ResultTop = _VExtr(DstSize, OpSize::i8Bit, Result, Src, 16 + Shift);
 
         Result = _VInsElement(DstSize, OpSize::i128Bit, 1, 0, ResultBottom, ResultTop);
@@ -2835,14 +2835,14 @@ Ref OpDispatchBuilder::PALIGNROpImpl(OpcodeArgs, const X86Tables::DecodedOperand
     return LoadZeroVector(DstSize);
   }
 
-  Ref Low = _VExtr(SanitizedDstSize, 1, Src1Node, Src2Node, Index);
+  Ref Low = _VExtr(SanitizedDstSize, OpSize::i8Bit, Src1Node, Src2Node, Index);
   if (!Is256Bit) {
     return Low;
   }
 
   Ref HighSrc1 = _VInsElement(DstSize, OpSize::i128Bit, 0, 1, Src1Node, Src1Node);
   Ref HighSrc2 = _VInsElement(DstSize, OpSize::i128Bit, 0, 1, Src2Node, Src2Node);
-  Ref High = _VExtr(SanitizedDstSize, 1, HighSrc1, HighSrc2, Index);
+  Ref High = _VExtr(SanitizedDstSize, OpSize::i8Bit, HighSrc1, HighSrc2, Index);
   return _VInsElement(DstSize, OpSize::i128Bit, 1, 0, Low, High);
 }
 
@@ -3005,7 +3005,7 @@ Ref OpDispatchBuilder::ADDSUBPOpImpl(OpSize Size, IR::OpSize ElementSize, Ref Sr
       auto Swizzle = _VRev64(Size, OpSize::i32Bit, Src2);
       return _VFCADD(Size, ElementSize, Src1, Swizzle, 90);
     } else {
-      auto Swizzle = _VExtr(Size, 1, Src2, Src2, 8);
+      auto Swizzle = _VExtr(Size, OpSize::i8Bit, Src2, Src2, 8);
       return _VFCADD(Size, ElementSize, Src1, Swizzle, 90);
     }
   } else {

@@ -2369,7 +2369,7 @@
         "NumElements": "RegisterSize / ElementSize"
       },
 
-      "FPR = VExtr u8:#RegisterSize, u8:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper, u8:$Index": {
+      "FPR = VExtr OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper, u8:$Index": {
         "Desc": ["Concats two vector registers together and extracts a full width register from the element index",
                  "Index is an element index. So it is offset by ElementSize argument",
                  "op:",
