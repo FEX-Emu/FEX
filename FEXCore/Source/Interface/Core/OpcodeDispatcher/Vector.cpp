@@ -519,7 +519,7 @@ RoundType OpDispatchBuilder::TranslateRoundType(uint8_t Mode) {
   return RoundControlSource ? Round_Host : SourceModes[RoundControl];
 }
 
-Ref OpDispatchBuilder::InsertScalarRoundImpl(OpcodeArgs, IR::OpSize DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
+Ref OpDispatchBuilder::InsertScalarRoundImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize ElementSize, const X86Tables::DecodedOperand& Src1Op,
                                              const X86Tables::DecodedOperand& Src2Op, uint64_t Mode, bool ZeroUpperBits) {
   // We load the full vector width when dealing with a source vector,
   // so that we don't do any unnecessary zero extension to the scalar
@@ -535,7 +535,7 @@ Ref OpDispatchBuilder::InsertScalarRoundImpl(OpcodeArgs, IR::OpSize DstSize, siz
   return ALUOp;
 }
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::InsertScalarRound(OpcodeArgs) {
   const uint64_t Mode = Op->Src[1].Literal();
   const auto DstSize = GetGuestVectorLength();
@@ -547,7 +547,7 @@ void OpDispatchBuilder::InsertScalarRound(OpcodeArgs) {
 template void OpDispatchBuilder::InsertScalarRound<OpSize::i32Bit>(OpcodeArgs);
 template void OpDispatchBuilder::InsertScalarRound<OpSize::i64Bit>(OpcodeArgs);
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::AVXInsertScalarRound(OpcodeArgs) {
   const uint64_t Mode = Op->Src[2].Literal();
   const auto DstSize = GetGuestVectorLength();

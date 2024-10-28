@@ -9,8 +9,8 @@ namespace FEXCore::IR {
 constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDispatch_H0F3ATable[] = {
   {OPD(0, PF_3A_66, 0x08), 1, &OpDispatchBuilder::VectorRound<4>},
   {OPD(0, PF_3A_66, 0x09), 1, &OpDispatchBuilder::VectorRound<8>},
-  {OPD(0, PF_3A_66, 0x0A), 1, &OpDispatchBuilder::InsertScalarRound<4>},
-  {OPD(0, PF_3A_66, 0x0B), 1, &OpDispatchBuilder::InsertScalarRound<8>},
+  {OPD(0, PF_3A_66, 0x0A), 1, &OpDispatchBuilder::InsertScalarRound<OpSize::i32Bit>},
+  {OPD(0, PF_3A_66, 0x0B), 1, &OpDispatchBuilder::InsertScalarRound<OpSize::i64Bit>},
   {OPD(0, PF_3A_66, 0x0C), 1, &OpDispatchBuilder::VectorBlend<4>},
   {OPD(0, PF_3A_66, 0x0D), 1, &OpDispatchBuilder::VectorBlend<8>},
   {OPD(0, PF_3A_66, 0x0E), 1, &OpDispatchBuilder::VectorBlend<2>},

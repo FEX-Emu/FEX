@@ -545,9 +545,9 @@ public:
 
   RoundType TranslateRoundType(uint8_t Mode);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void InsertScalarRound(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVXInsertScalarRound(OpcodeArgs);
 
   template<size_t ElementSize>
@@ -1052,7 +1052,7 @@ public:
 
   template<size_t ElementSize>
   void AVX128_VectorRound(OpcodeArgs);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_InsertScalarRound(OpcodeArgs);
 
   template<size_t ElementSize>
@@ -1457,7 +1457,7 @@ private:
 
   Ref InsertScalar_CVT_Float_To_FloatImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize DstElementSize, IR::OpSize SrcElementSize,
                                           const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op, bool ZeroUpperBits);
-  Ref InsertScalarRoundImpl(OpcodeArgs, IR::OpSize DstSize, size_t ElementSize, const X86Tables::DecodedOperand& Src1Op,
+  Ref InsertScalarRoundImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize ElementSize, const X86Tables::DecodedOperand& Src1Op,
                             const X86Tables::DecodedOperand& Src2Op, uint64_t Mode, bool ZeroUpperBits);
 
   Ref InsertScalarFCMPOpImpl(OpSize Size, uint8_t OpDstSize, size_t ElementSize, Ref Src1, Ref Src2, uint8_t CompType, bool ZeroUpperBits);
