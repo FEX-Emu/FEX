@@ -1539,7 +1539,7 @@
           "ResultSize == FEXCore::IR::OpSize::i32Bit || ResultSize == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "FPR = NZCVSelectV u8:#ResultSize, CondClass:$Cond, FPR:$TrueVal, FPR:$FalseVal": {
+      "FPR = NZCVSelectV OpSize:#ResultSize, CondClass:$Cond, FPR:$TrueVal, FPR:$FalseVal": {
         "Desc": [
           "Select based on value in NZCV flags, where TrueVal and FalseVal are both FPRs.",
           "op:",
