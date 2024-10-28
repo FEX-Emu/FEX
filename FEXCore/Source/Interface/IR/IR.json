@@ -2619,7 +2619,7 @@
         "Desc": "Does a stage of the inverse mix column transformation",
         "DestSize": "16"
       },
-      "FPR = VAESEnc u8:#RegisterSize, FPR:$State, FPR:$Key, FPR:$ZeroReg": {
+      "FPR = VAESEnc OpSize:#RegisterSize, FPR:$State, FPR:$Key, FPR:$ZeroReg": {
         "Desc": "Does a step of AES encryption",
         "DestSize": "RegisterSize"
       },
