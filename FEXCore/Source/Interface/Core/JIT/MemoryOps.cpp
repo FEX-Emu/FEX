@@ -976,27 +976,28 @@ DEF_OP(VStoreVectorMasked) {
   }
 }
 
-void Arm64JITCore::Emulate128BitGather(
-  size_t Size, size_t ElementSize, ARMEmitter::VRegister Dst, ARMEmitter::VRegister IncomingDst,
-  std::optional<ARMEmitter::Register> BaseAddr, ARMEmitter::VRegister VectorIndexLow, std::optional<ARMEmitter::VRegister> VectorIndexHigh,
-  ARMEmitter::VRegister MaskReg, size_t VectorIndexSize, size_t DataElementOffsetStart, size_t IndexElementOffsetStart, uint8_t OffsetScale) {
+void Arm64JITCore::Emulate128BitGather(IR::OpSize Size, IR::OpSize ElementSize, ARMEmitter::VRegister Dst,
+                                       ARMEmitter::VRegister IncomingDst, std::optional<ARMEmitter::Register> BaseAddr,
+                                       ARMEmitter::VRegister VectorIndexLow, std::optional<ARMEmitter::VRegister> VectorIndexHigh,
+                                       ARMEmitter::VRegister MaskReg, IR::OpSize VectorIndexSize, size_t DataElementOffsetStart,
+                                       size_t IndexElementOffsetStart, uint8_t OffsetScale) {
 
-  const auto PerformSMove = [this](size_t ElementSize, const ARMEmitter::Register Dst, const ARMEmitter::VRegister Vector, int index) {
+  const auto PerformSMove = [this](IR::OpSize ElementSize, const ARMEmitter::Register Dst, const ARMEmitter::VRegister Vector, int index) {
     switch (ElementSize) {
-    case 1: smov<ARMEmitter::SubRegSize::i8Bit>(Dst.X(), Vector, index); break;
-    case 2: smov<ARMEmitter::SubRegSize::i16Bit>(Dst.X(), Vector, index); break;
-    case 4: smov<ARMEmitter::SubRegSize::i32Bit>(Dst.X(), Vector, index); break;
-    case 8: umov<ARMEmitter::SubRegSize::i64Bit>(Dst.X(), Vector, index); break;
+    case IR::OpSize::i8Bit: smov<ARMEmitter::SubRegSize::i8Bit>(Dst.X(), Vector, index); break;
+    case IR::OpSize::i16Bit: smov<ARMEmitter::SubRegSize::i16Bit>(Dst.X(), Vector, index); break;
+    case IR::OpSize::i32Bit: smov<ARMEmitter::SubRegSize::i32Bit>(Dst.X(), Vector, index); break;
+    case IR::OpSize::i64Bit: umov<ARMEmitter::SubRegSize::i64Bit>(Dst.X(), Vector, index); break;
     default: LOGMAN_MSG_A_FMT("Unhandled ExtractElementSize: {}", ElementSize); break;
     }
   };
 
-  const auto PerformMove = [this](size_t ElementSize, const ARMEmitter::Register Dst, const ARMEmitter::VRegister Vector, int index) {
+  const auto PerformMove = [this](IR::OpSize ElementSize, const ARMEmitter::Register Dst, const ARMEmitter::VRegister Vector, int index) {
     switch (ElementSize) {
-    case 1: umov<ARMEmitter::SubRegSize::i8Bit>(Dst, Vector, index); break;
-    case 2: umov<ARMEmitter::SubRegSize::i16Bit>(Dst, Vector, index); break;
-    case 4: umov<ARMEmitter::SubRegSize::i32Bit>(Dst, Vector, index); break;
-    case 8: umov<ARMEmitter::SubRegSize::i64Bit>(Dst, Vector, index); break;
+    case IR::OpSize::i8Bit: umov<ARMEmitter::SubRegSize::i8Bit>(Dst, Vector, index); break;
+    case IR::OpSize::i16Bit: umov<ARMEmitter::SubRegSize::i16Bit>(Dst, Vector, index); break;
+    case IR::OpSize::i32Bit: umov<ARMEmitter::SubRegSize::i32Bit>(Dst, Vector, index); break;
+    case IR::OpSize::i64Bit: umov<ARMEmitter::SubRegSize::i64Bit>(Dst, Vector, index); break;
     default: LOGMAN_MSG_A_FMT("Unhandled ExtractElementSize: {}", ElementSize); break;
     }
   };
@@ -1011,11 +1012,11 @@ void Arm64JITCore::Emulate128BitGather(
 
   ///< Adventurers beware, emulated ASIMD style gather masked load operation.
   // Number of elements to load is calculated by the number of index elements available.
-  size_t NumAddrElements = (VectorIndexHigh.has_value() ? 32 : 16) / VectorIndexSize;
+  size_t NumAddrElements = (VectorIndexHigh.has_value() ? 32 : 16) / IR::OpSizeToSize(VectorIndexSize);
   // The number of elements is clamped by the resulting register size.
-  size_t NumDataElements = std::min<size_t>(Size / ElementSize, NumAddrElements);
+  size_t NumDataElements = std::min<size_t>(IR::OpSizeToSize(Size) / IR::OpSizeToSize(ElementSize), NumAddrElements);
 
-  size_t IndexElementsSizeBytes = NumAddrElements * VectorIndexSize;
+  size_t IndexElementsSizeBytes = NumAddrElements * IR::OpSizeToSize(VectorIndexSize);
   if (IndexElementsSizeBytes > 16) {
     // We must have a high register in this case.
     LOGMAN_THROW_A_FMT(VectorIndexHigh.has_value(), "Need High vector index register!");
@@ -1028,7 +1029,7 @@ void Arm64JITCore::Emulate128BitGather(
   }
   auto WorkingReg = TMP1;
   auto TempMemReg = TMP2;
-  const uint64_t ElementSizeInBits = ElementSize * 8;
+  const uint64_t ElementSizeInBits = IR::OpSizeToSize(ElementSize) * 8;
 
   if (NeedsIncomingDestMove) {
     mov(ResultReg.Q(), IncomingDst.Q());
@@ -1043,9 +1044,9 @@ void Arm64JITCore::Emulate128BitGather(
     tbz(WorkingReg, ElementSizeInBits - 1, &Skip);
 
     // Extract Index Element
-    if ((IndexElement * VectorIndexSize) >= 16) {
+    if ((IndexElement * IR::OpSizeToSize(VectorIndexSize)) >= 16) {
       // Fetch from the high index register.
-      PerformSMove(VectorIndexSize, WorkingReg, *VectorIndexHigh, IndexElement - (16 / VectorIndexSize));
+      PerformSMove(VectorIndexSize, WorkingReg, *VectorIndexHigh, IndexElement - (16 / IR::OpSizeToSize(VectorIndexSize)));
     } else {
       // Fetch from the low index register.
       PerformSMove(VectorIndexSize, WorkingReg, VectorIndexLow, IndexElement);
@@ -1053,14 +1054,14 @@ void Arm64JITCore::Emulate128BitGather(
 
     // Calculate memory position for this gather load
     if (BaseAddr.has_value()) {
-      if (VectorIndexSize == 4) {
+      if (VectorIndexSize == IR::OpSize::i32Bit) {
         add(ARMEmitter::Size::i64Bit, TempMemReg, *BaseAddr, WorkingReg, ARMEmitter::ExtendedType::SXTW, FEXCore::ilog2(OffsetScale));
       } else {
         add(ARMEmitter::Size::i64Bit, TempMemReg, *BaseAddr, WorkingReg, ARMEmitter::ShiftType::LSL, FEXCore::ilog2(OffsetScale));
       }
     } else {
       ///< In this case we have no base address, All addresses come from the vector register itself
-      if (VectorIndexSize == 4) {
+      if (VectorIndexSize == IR::OpSize::i32Bit) {
         // Sign extend and shift in to the 64-bit register
         sbfiz(ARMEmitter::Size::i64Bit, TempMemReg, WorkingReg, FEXCore::ilog2(OffsetScale), 32);
       } else {
@@ -1070,11 +1071,11 @@ void Arm64JITCore::Emulate128BitGather(
 
     // Now that the address is calculated. Do the load.
     switch (ElementSize) {
-    case 1: ld1<ARMEmitter::SubRegSize::i8Bit>(ResultReg.Q(), i, TempMemReg); break;
-    case 2: ld1<ARMEmitter::SubRegSize::i16Bit>(ResultReg.Q(), i, TempMemReg); break;
-    case 4: ld1<ARMEmitter::SubRegSize::i32Bit>(ResultReg.Q(), i, TempMemReg); break;
-    case 8: ld1<ARMEmitter::SubRegSize::i64Bit>(ResultReg.Q(), i, TempMemReg); break;
-    case 16: ldr(ResultReg.Q(), TempMemReg, 0); break;
+    case IR::OpSize::i8Bit: ld1<ARMEmitter::SubRegSize::i8Bit>(ResultReg.Q(), i, TempMemReg); break;
+    case IR::OpSize::i16Bit: ld1<ARMEmitter::SubRegSize::i16Bit>(ResultReg.Q(), i, TempMemReg); break;
+    case IR::OpSize::i32Bit: ld1<ARMEmitter::SubRegSize::i32Bit>(ResultReg.Q(), i, TempMemReg); break;
+    case IR::OpSize::i64Bit: ld1<ARMEmitter::SubRegSize::i64Bit>(ResultReg.Q(), i, TempMemReg); break;
+    case IR::OpSize::i128Bit: ldr(ResultReg.Q(), TempMemReg, 0); break;
     default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, ElementSize); FEX_UNREACHABLE;
     }
 
@@ -1121,15 +1122,16 @@ DEF_OP(VLoadVectorGatherMasked) {
     !Op->VectorIndexHigh.IsInvalid() ? std::make_optional(GetVReg(Op->VectorIndexHigh.ID())) : std::nullopt;
 
   ///< If the host supports SVE and the offset scale matches SVE limitations then it can do an SVE style load.
-  const bool SupportsSVELoad = (HostSupportsSVE128 || HostSupportsSVE256) && (OffsetScale == 1 || OffsetScale == VectorIndexSize) &&
-                               VectorIndexSize == IROp->ElementSize;
+  const bool SupportsSVELoad = (HostSupportsSVE128 || HostSupportsSVE256) &&
+                               (OffsetScale == 1 || OffsetScale == IR::OpSizeToSize(VectorIndexSize)) &&
+                               IR::OpSizeToSize(VectorIndexSize) == IROp->ElementSize;
 
   if (SupportsSVELoad) {
     uint8_t SVEScale = FEXCore::ilog2(OffsetScale);
     ARMEmitter::SVEModType ModType = ARMEmitter::SVEModType::MOD_NONE;
-    if (VectorIndexSize == 4) {
+    if (VectorIndexSize == IR::OpSize::i32Bit) {
       ModType = ARMEmitter::SVEModType::MOD_SXTW;
-    } else if (VectorIndexSize == 8 && OffsetScale != 1) {
+    } else if (VectorIndexSize == IR::OpSize::i64Bit && OffsetScale != 1) {
       ModType = ARMEmitter::SVEModType::MOD_LSL;
     }
 
@@ -1179,8 +1181,8 @@ DEF_OP(VLoadVectorGatherMasked) {
     sel(SubRegSize, Dst.Z(), CMPPredicate, TempDst.Z(), IncomingDst.Z());
   } else {
     LOGMAN_THROW_A_FMT(!Is256Bit, "Can't emulate this gather load in the backend! Programming error!");
-    Emulate128BitGather(IROp->Size, IROp->ElementSize, Dst, IncomingDst, BaseAddr, VectorIndexLow, VectorIndexHigh, MaskReg,
-                        VectorIndexSize, DataElementOffsetStart, IndexElementOffsetStart, OffsetScale);
+    Emulate128BitGather(IR::SizeToOpSize(IROp->Size), IR::SizeToOpSize(IROp->ElementSize), Dst, IncomingDst, BaseAddr, VectorIndexLow,
+                        VectorIndexHigh, MaskReg, VectorIndexSize, DataElementOffsetStart, IndexElementOffsetStart, OffsetScale);
   }
 }
 
@@ -1258,7 +1260,8 @@ DEF_OP(VLoadVectorGatherMaskedQPS) {
       sel(ARMEmitter::SubRegSize::i32Bit, Dst.Z(), CMPPredicate, TempDst.Z(), IncomingDst.Z());
     }
   } else {
-    Emulate128BitGather(16, 4, Dst, IncomingDst, BaseAddr, VectorIndexLow, VectorIndexHigh, MaskReg, 8, 0, 0, OffsetScale);
+    Emulate128BitGather(IR::OpSize::i128Bit, IR::OpSize::i32Bit, Dst, IncomingDst, BaseAddr, VectorIndexLow, VectorIndexHigh, MaskReg,
+                        IR::OpSize::i64Bit, 0, 0, OffsetScale);
   }
 }
 
@@ -1377,7 +1380,7 @@ DEF_OP(VBroadcastFromMem) {
 
 DEF_OP(Push) {
   const auto Op = IROp->C<IR::IROp_Push>();
-  const auto ValueSize = Op->ValueSize;
+  const auto ValueSize = IR::OpSizeToSize(Op->ValueSize);
   auto Src = GetReg(Op->Value.ID());
   const auto AddrSrc = GetReg(Op->Addr.ID());
   const auto Dst = GetReg(Node);
@@ -1462,26 +1465,27 @@ DEF_OP(Push) {
 
 DEF_OP(Pop) {
   const auto Op = IROp->C<IR::IROp_Pop>();
+  const auto Size = IR::OpSizeToSize(Op->Size);
   const auto Addr = GetReg(Op->InoutAddr.ID());
   const auto Dst = GetReg(Op->OutValue.ID());
 
   LOGMAN_THROW_A_FMT(Dst != Addr, "Invalid");
 
-  switch (Op->Size) {
+  switch (Size) {
   case 1: {
-    ldrb<ARMEmitter::IndexType::POST>(Dst.W(), Addr, Op->Size);
+    ldrb<ARMEmitter::IndexType::POST>(Dst.W(), Addr, Size);
     break;
   }
   case 2: {
-    ldrh<ARMEmitter::IndexType::POST>(Dst.W(), Addr, Op->Size);
+    ldrh<ARMEmitter::IndexType::POST>(Dst.W(), Addr, Size);
     break;
   }
   case 4: {
-    ldr<ARMEmitter::IndexType::POST>(Dst.W(), Addr, Op->Size);
+    ldr<ARMEmitter::IndexType::POST>(Dst.W(), Addr, Size);
     break;
   }
   case 8: {
-    ldr<ARMEmitter::IndexType::POST>(Dst.X(), Addr, Op->Size);
+    ldr<ARMEmitter::IndexType::POST>(Dst.X(), Addr, Size);
     break;
   }
   default: {
@@ -1651,7 +1655,7 @@ DEF_OP(MemSet) {
   const auto Op = IROp->C<IR::IROp_MemSet>();
 
   const bool IsAtomic = CTX->IsMemcpyAtomicTSOEnabled();
-  const int32_t Size = Op->Size;
+  const auto Size = IR::OpSizeToSize(Op->Size);
   const auto MemReg = GetReg(Op->Addr.ID());
   const auto Value = GetReg(Op->Value.ID());
   const auto Length = GetReg(Op->Length.ID());
@@ -1841,7 +1845,7 @@ DEF_OP(MemCpy) {
   const auto Op = IROp->C<IR::IROp_MemCpy>();
 
   const bool IsAtomic = CTX->IsMemcpyAtomicTSOEnabled();
-  const int32_t Size = Op->Size;
+  const auto Size = IR::OpSizeToSize(Op->Size);
   const auto MemRegDest = GetReg(Op->Dest.ID());
   const auto MemRegSrc = GetReg(Op->Src.ID());
 

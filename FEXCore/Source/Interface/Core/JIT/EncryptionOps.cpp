@@ -152,10 +152,10 @@ DEF_OP(CRC32) {
   const auto Src2 = GetReg(Op->Src2.ID());
 
   switch (Op->SrcSize) {
-  case 1: crc32cb(Dst.W(), Src1.W(), Src2.W()); break;
-  case 2: crc32ch(Dst.W(), Src1.W(), Src2.W()); break;
-  case 4: crc32cw(Dst.W(), Src1.W(), Src2.W()); break;
-  case 8: crc32cx(Dst.X(), Src1.X(), Src2.X()); break;
+  case IR::OpSize::i8Bit: crc32cb(Dst.W(), Src1.W(), Src2.W()); break;
+  case IR::OpSize::i16Bit: crc32ch(Dst.W(), Src1.W(), Src2.W()); break;
+  case IR::OpSize::i32Bit: crc32cw(Dst.W(), Src1.W(), Src2.W()); break;
+  case IR::OpSize::i64Bit: crc32cx(Dst.X(), Src1.X(), Src2.X()); break;
   default: LOGMAN_MSG_A_FMT("Unknown CRC32 size: {}", Op->SrcSize);
   }
 }

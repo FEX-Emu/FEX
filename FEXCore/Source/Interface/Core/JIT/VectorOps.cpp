@@ -578,7 +578,7 @@ DEF_OP(VFRecpScalarInsert) {
 DEF_OP(VFToFScalarInsert) {
   const auto Op = IROp->C<IR::IROp_VFToFScalarInsert>();
   const auto ElementSize = Op->Header.ElementSize;
-  const uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
+  const uint16_t Conv = (Op->Header.ElementSize << 8) | IR::OpSizeToSize(Op->SrcElementSize);
 
   auto ScalarEmit = [this, Conv](ARMEmitter::VRegister Dst, std::variant<ARMEmitter::VRegister, ARMEmitter::Register> SrcVar) {
     auto Src = *std::get_if<ARMEmitter::VRegister>(&SrcVar);
@@ -682,7 +682,7 @@ DEF_OP(VSToFGPRInsert) {
   const auto Op = IROp->C<IR::IROp_VSToFGPRInsert>();
 
   const uint16_t ElementSize = Op->Header.ElementSize;
-  const uint16_t Conv = (ElementSize << 8) | Op->SrcElementSize;
+  const uint16_t Conv = (ElementSize << 8) | IR::OpSizeToSize(Op->SrcElementSize);
 
   auto ScalarEmit = [this, Conv](ARMEmitter::VRegister Dst, std::variant<ARMEmitter::VRegister, ARMEmitter::Register> SrcVar) {
     auto Src = *std::get_if<ARMEmitter::Register>(&SrcVar);

@@ -117,7 +117,7 @@ DEF_OP(CondJump) {
     [[maybe_unused]] const bool isConst = IsInlineConstant(Op->Cmp2, &Const);
 
     auto Reg = GetReg(Op->Cmp1.ID());
-    const auto Size = Op->CompareSize == 4 ? ARMEmitter::Size::i32Bit : ARMEmitter::Size::i64Bit;
+    const auto Size = Op->CompareSize == IR::OpSize::i32Bit ? ARMEmitter::Size::i32Bit : ARMEmitter::Size::i64Bit;
 
     LOGMAN_THROW_A_FMT(IsGPR(Op->Cmp1.ID()), "CondJump: Expected GPR");
     LOGMAN_THROW_A_FMT(isConst, "CondJump: Expected constant source");

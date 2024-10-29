@@ -640,7 +640,7 @@ DEF_OP(XornShift) {
 
 DEF_OP(Ashr) {
   auto Op = IROp->C<IR::IROp_Ashr>();
-  const uint8_t OpSize = IROp->Size;
+  const auto OpSize = IROp->Size;
   const auto EmitSize = ConvertSize(IROp);
 
   const auto Dst = GetReg(Node);
@@ -669,8 +669,8 @@ DEF_OP(Ashr) {
 
 DEF_OP(ShiftFlags) {
   auto Op = IROp->C<IR::IROp_ShiftFlags>();
-  const uint8_t OpSize = Op->Size;
-  const auto EmitSize = OpSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto OpSize = Op->Size;
+  const auto EmitSize = OpSize == IR::OpSize::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
   const auto PFOutput = GetReg(Node);
   const auto PFInput = GetReg(Op->PFInput.ID());
@@ -690,16 +690,16 @@ DEF_OP(ShiftFlags) {
 
   // We need to mask the source before comparing it. We don't just skip flag
   // updates for Src2=0 but anything that masks to zero.
-  and_(ARMEmitter::Size::i32Bit, TMP1, Src2, OpSize == 8 ? 0x3f : 0x1f);
+  and_(ARMEmitter::Size::i32Bit, TMP1, Src2, OpSize == IR::OpSize::i64Bit ? 0x3f : 0x1f);
 
   ARMEmitter::SingleUseForwardLabel Done;
   cbz(EmitSize, TMP1, &Done);
   {
     // PF/SF/ZF/OF
-    if (OpSize >= 4) {
+    if (OpSize >= IR::OpSize::i32Bit) {
       ands(EmitSize, PFTemp, Dst, Dst);
     } else {
-      unsigned Shift = 32 - (OpSize * 8);
+      unsigned Shift = 32 - (IR::OpSizeToSize(OpSize) * 8);
       cmn(EmitSize, ARMEmitter::Reg::zr, Dst, ARMEmitter::ShiftType::LSL, Shift);
       mov(ARMEmitter::Size::i64Bit, PFTemp, Dst);
     }
@@ -709,12 +709,12 @@ DEF_OP(ShiftFlags) {
 
     // Extract the last bit shifted in to CF
     if (Op->Shift == IR::ShiftType::LSL) {
-      if (OpSize >= 4) {
+      if (OpSize >= IR::OpSize::i32Bit) {
         neg(EmitSize, CFWord, Src2);
         lsrv(EmitSize, CFWord, Src1, CFWord);
       } else {
         CFWord = Dst.X();
-        CFBit = (OpSize * 8);
+        CFBit = IR::OpSizeToSize(OpSize) * 8;
       }
     } else {
       sub(ARMEmitter::Size::i64Bit, CFWord, Src2, 1);
@@ -737,7 +737,7 @@ DEF_OP(ShiftFlags) {
       rmif(CFWord, (CFBit - 1) % 64, (1 << 1) /* C */);
 
       if (SetOF) {
-        rmif(TMP3, OpSize * 8 - 1, (1 << 0) /* V */);
+        rmif(TMP3, IR::OpSizeToSize(OpSize) * 8 - 1, (1 << 0) /* V */);
       }
     } else {
       mrs(TMP2, ARMEmitter::SystemRegister::NZCV);
@@ -750,7 +750,7 @@ DEF_OP(ShiftFlags) {
       bfi(ARMEmitter::Size::i32Bit, TMP2, CFWord, 29 /* C */, 1);
 
       if (SetOF) {
-        lsr(EmitSize, TMP3, TMP3, OpSize * 8 - 1);
+        lsr(EmitSize, TMP3, TMP3, IR::OpSizeToSize(OpSize) * 8 - 1);
         bfi(ARMEmitter::Size::i32Bit, TMP2, TMP3, 28 /* V */, 1);
       }
 
@@ -770,14 +770,14 @@ DEF_OP(RotateFlags) {
   const auto Result = GetReg(Op->Result.ID());
   const auto Shift = GetReg(Op->Shift.ID());
   const bool Left = Op->Left;
-  const auto EmitSize = Op->Size == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto EmitSize = Op->Size == IR::OpSize::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
   // If shift=0, flags are unaffected. Wrap the whole implementation in a cbz.
   ARMEmitter::SingleUseForwardLabel Done;
   cbz(EmitSize, Shift, &Done);
   {
     // Extract the last bit shifted in to CF
-    const auto BitSize = Op->Size * 8;
+    const auto BitSize = IR::OpSizeToSize(Op->Size) * 8;
     unsigned CFBit = Left ? 0 : BitSize - 1;
 
     // For ROR, OF is the XOR of the new CF bit and the most significant bit of the result.
@@ -1453,7 +1453,7 @@ DEF_OP(Select) {
   auto Op = IROp->C<IR::IROp_Select>();
   const uint8_t OpSize = IROp->Size;
   const auto EmitSize = ConvertSize(IROp);
-  const auto CompareEmitSize = Op->CompareSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto CompareEmitSize = Op->CompareSize == IR::OpSize::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
   uint64_t Const;
   auto cc = MapCC(Op->Cond);
@@ -1470,7 +1470,7 @@ DEF_OP(Select) {
   } else if (IsFPR(Op->Cmp1.ID())) {
     const auto Src1 = GetVReg(Op->Cmp1.ID());
     const auto Src2 = GetVReg(Op->Cmp2.ID());
-    fcmp(Op->CompareSize == 8 ? ARMEmitter::ScalarRegSize::i64Bit : ARMEmitter::ScalarRegSize::i32Bit, Src1, Src2);
+    fcmp(Op->CompareSize == IR::OpSize::i64Bit ? ARMEmitter::ScalarRegSize::i64Bit : ARMEmitter::ScalarRegSize::i32Bit, Src1, Src2);
   } else {
     LOGMAN_MSG_A_FMT("Select: Expected GPR or FPR");
   }
@@ -1605,7 +1605,7 @@ DEF_OP(Float_ToGPR_ZS) {
   ARMEmitter::Register Dst = GetReg(Node);
   ARMEmitter::VRegister Src = GetVReg(Op->Scalar.ID());
 
-  if (Op->SrcElementSize == 8) {
+  if (Op->SrcElementSize == IR::OpSize::i64Bit) {
     fcvtzs(ConvertSize(IROp), Dst, Src.D());
   } else {
     fcvtzs(ConvertSize(IROp), Dst, Src.S());
@@ -1618,7 +1618,7 @@ DEF_OP(Float_ToGPR_S) {
   ARMEmitter::Register Dst = GetReg(Node);
   ARMEmitter::VRegister Src = GetVReg(Op->Scalar.ID());
 
-  if (Op->SrcElementSize == 8) {
+  if (Op->SrcElementSize == IR::OpSize::i64Bit) {
     frinti(VTMP1.D(), Src.D());
     fcvtzs(ConvertSize(IROp), Dst, VTMP1.D());
   } else {
@@ -1629,7 +1629,7 @@ DEF_OP(Float_ToGPR_S) {
 
 DEF_OP(FCmp) {
   auto Op = IROp->C<IR::IROp_FCmp>();
-  const auto EmitSubSize = Op->ElementSize == 8 ? ARMEmitter::ScalarRegSize::i64Bit : ARMEmitter::ScalarRegSize::i32Bit;
+  const auto EmitSubSize = Op->ElementSize == IR::OpSize::i64Bit ? ARMEmitter::ScalarRegSize::i64Bit : ARMEmitter::ScalarRegSize::i32Bit;
 
   ARMEmitter::VRegister Scalar1 = GetVReg(Op->Scalar1.ID());
   ARMEmitter::VRegister Scalar2 = GetVReg(Op->Scalar2.ID());
