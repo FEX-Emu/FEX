@@ -816,10 +816,10 @@ void X87StackOptimization::Run(IREmitter* Emit) {
             default: ERROR_AND_DIE_FMT("Unsupported x87 size");
             }
           } else {
-            if (Op->StoreSize != 10) { // if it's not 80bits then convert
+            if (Op->StoreSize != OpSize::f80Bit) { // if it's not 80bits then convert
               StackNode = IREmit->_F80CVT(Op->StoreSize, StackNode);
             }
-            if (Op->StoreSize == 10) { // Part of code from StoreResult_WithOpSize()
+            if (Op->StoreSize == OpSize::f80Bit) { // Part of code from StoreResult_WithOpSize()
               // For X87 extended doubles, split before storing
               IREmit->_StoreMem(FPRClass, OpSize::i64Bit, AddrNode, StackNode);
               auto Upper = IREmit->_VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, StackNode, 1);
