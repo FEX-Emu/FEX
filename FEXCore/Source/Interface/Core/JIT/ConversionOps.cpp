@@ -127,7 +127,7 @@ DEF_OP(Float_FromGPR_S) {
   const auto Op = IROp->C<IR::IROp_Float_FromGPR_S>();
 
   const uint16_t ElementSize = Op->Header.ElementSize;
-  const uint16_t Conv = (ElementSize << 8) | Op->SrcElementSize;
+  const uint16_t Conv = (ElementSize << 8) | IR::OpSizeToSize(Op->SrcElementSize);
 
   auto Dst = GetVReg(Node);
   auto Src = GetReg(Op->Src.ID());
@@ -165,7 +165,7 @@ DEF_OP(Float_FromGPR_S) {
 
 DEF_OP(Float_FToF) {
   auto Op = IROp->C<IR::IROp_Float_FToF>();
-  const uint16_t Conv = (Op->Header.ElementSize << 8) | Op->SrcElementSize;
+  const uint16_t Conv = (Op->Header.ElementSize << 8) | IR::OpSizeToSize(Op->SrcElementSize);
 
   auto Dst = GetVReg(Node);
   auto Src = GetVReg(Op->Scalar.ID());
@@ -303,7 +303,7 @@ DEF_OP(Vector_FToF) {
   const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
   LOGMAN_THROW_A_FMT(!Is256Bit || (Is256Bit && HostSupportsSVE256), "Need SVE256 support in order to use {} with 256-bit operation", __func__);
 
-  const auto Conv = (ElementSize << 8) | Op->SrcElementSize;
+  const auto Conv = (ElementSize << 8) | IR::OpSizeToSize(Op->SrcElementSize);
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());

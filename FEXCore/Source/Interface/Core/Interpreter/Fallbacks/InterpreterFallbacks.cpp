@@ -85,11 +85,11 @@ bool InterpreterOps::GetFallbackHandler(bool SupportsPreserveAllABI, const IR::I
     auto Op = IROp->C<IR::IROp_F80CVTTo>();
 
     switch (Op->SrcSize) {
-    case 4: {
+    case IR::OpSize::i32Bit: {
       *Info = {FABI_F80_I16_F32, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTTO>::handle4, Core::OPINDEX_F80CVTTO_4, SupportsPreserveAllABI};
       return true;
     }
-    case 8: {
+    case IR::OpSize::i64Bit: {
       *Info = {FABI_F80_I16_F64, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTTO>::handle8, Core::OPINDEX_F80CVTTO_8, SupportsPreserveAllABI};
       return true;
     }
@@ -156,11 +156,11 @@ bool InterpreterOps::GetFallbackHandler(bool SupportsPreserveAllABI, const IR::I
     auto Op = IROp->C<IR::IROp_F80CVTToInt>();
 
     switch (Op->SrcSize) {
-    case 2: {
+    case IR::OpSize::i16Bit: {
       *Info = {FABI_F80_I16_I16, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTTOINT>::handle2, Core::OPINDEX_F80CVTTOINT_2, SupportsPreserveAllABI};
       return true;
     }
-    case 4: {
+    case IR::OpSize::i32Bit: {
       *Info = {FABI_F80_I16_I32, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTTOINT>::handle4, Core::OPINDEX_F80CVTTOINT_4, SupportsPreserveAllABI};
       return true;
     }
