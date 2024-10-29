@@ -13,7 +13,7 @@ namespace FEXCore::CPU {
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::NodeID Node)
 DEF_OP(CASPair) {
   auto Op = IROp->C<IR::IROp_CASPair>();
-  LOGMAN_THROW_AA_FMT(IROp->ElementSize == 4 || IROp->ElementSize == 8, "Wrong element size");
+  LOGMAN_THROW_AA_FMT(IROp->ElementSize == IR::OpSize::i32Bit || IROp->ElementSize == IR::OpSize::i64Bit, "Wrong element size");
   // Size is the size of each pair element
   auto Dst0 = GetReg(Op->OutLo.ID());
   auto Dst1 = GetReg(Op->OutHi.ID());
@@ -23,7 +23,7 @@ DEF_OP(CASPair) {
   auto Desired1 = GetReg(Op->DesiredHi.ID());
   auto MemSrc = GetReg(Op->Addr.ID());
 
-  const auto EmitSize = IROp->ElementSize == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto EmitSize = IROp->ElementSize == IR::OpSize::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
   if (CTX->HostFeatures.SupportsAtomics) {
     // RA has heuristics to try to pair sources, but we need to handle the cases
     // where they fail. We do so by moving to temporaries. Note we use 64-bit
@@ -112,9 +112,9 @@ DEF_OP(CAS) {
     ARMEmitter::SingleUseForwardLabel LoopExpected;
     Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
-    if (IROp->Size == 1) {
+    if (IROp->Size == IR::OpSize::i8Bit) {
       cmp(EmitSize, TMP2, Expected, ARMEmitter::ExtendedType::UXTB, 0);
-    } else if (IROp->Size == 2) {
+    } else if (IROp->Size == IR::OpSize::i16Bit) {
       cmp(EmitSize, TMP2, Expected, ARMEmitter::ExtendedType::UXTH, 0);
     } else {
       cmp(EmitSize, TMP2, Expected);
@@ -273,18 +273,21 @@ DEF_OP(AtomicNeg) {
 
 DEF_OP(AtomicSwap) {
   auto Op = IROp->C<IR::IROp_AtomicSwap>();
-  uint8_t OpSize = IROp->Size;
-  LOGMAN_THROW_AA_FMT(OpSize == 8 || OpSize == 4 || OpSize == 2 || OpSize == 1, "Unexpected CAS size");
+  const auto OpSize = IROp->Size;
+  LOGMAN_THROW_AA_FMT(
+    OpSize == IR::OpSize::i64Bit || OpSize == IR::OpSize::i32Bit || OpSize == IR::OpSize::i16Bit || OpSize == IR::OpSize::i8Bit, "Unexpecte"
+                                                                                                                                 "d CAS "
+                                                                                                                                 "size");
 
   auto MemSrc = GetReg(Op->Addr.ID());
   auto Src = GetReg(Op->Value.ID());
 
   const auto EmitSize = ConvertSize(IROp);
-  const auto SubEmitSize = OpSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                           OpSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-                           OpSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-                           OpSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-                                         ARMEmitter::SubRegSize::i8Bit;
+  const auto SubEmitSize = OpSize == IR::OpSize::i64Bit ? ARMEmitter::SubRegSize::i64Bit :
+                           OpSize == IR::OpSize::i32Bit ? ARMEmitter::SubRegSize::i32Bit :
+                           OpSize == IR::OpSize::i16Bit ? ARMEmitter::SubRegSize::i16Bit :
+                           OpSize == IR::OpSize::i8Bit  ? ARMEmitter::SubRegSize::i8Bit :
+                                                          ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
     ldswpal(SubEmitSize, Src, GetReg(Node), MemSrc);
@@ -294,7 +297,7 @@ DEF_OP(AtomicSwap) {
     ldaxr(SubEmitSize, TMP2, MemSrc);
     stlxr(SubEmitSize, TMP4, Src, MemSrc);
     cbnz(EmitSize, TMP4, &LoopTop);
-    ubfm(EmitSize, GetReg(Node), TMP2, 0, OpSize * 8 - 1);
+    ubfm(EmitSize, GetReg(Node), TMP2, 0, IR::OpSizeAsBits(OpSize) - 1);
   }
 }
 

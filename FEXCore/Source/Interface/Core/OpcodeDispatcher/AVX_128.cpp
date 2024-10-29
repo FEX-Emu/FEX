@@ -2618,14 +2618,14 @@ OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_VPGatherImpl(OpSize Size, O
       // If the address element size if half the size of the Element load size then we need to start fetching half-way through the low register.
       AddrAddressing.Low = VSIB.Low;
       AddrAddressing.High = VSIB.High;
-      IndexElementOffset = OpSize::i128Bit / AddrElementSize / 2;
+      IndexElementOffset = IR::NumElements(OpSize::i128Bit, AddrElementSize) / 2;
     } else if (AddrElementSize == OpSize::i64Bit && ElementLoadSize == OpSize::i32Bit) {
       AddrAddressing.Low = VSIB.High;
       AddrAddressing.High = Invalid();
       DestReg = Result.Low; ///< Start mixing with the low register.
       MaskReg = Mask.Low;   ///< Mask starts with the low mask here.
       IndexElementOffset = 0;
-      DataElementOffset = OpSize::i128Bit / ElementLoadSize / 2;
+      DataElementOffset = IR::NumElements(OpSize::i128Bit, ElementLoadSize) / 2;
     }
 
     ///< Calculate the high-half.

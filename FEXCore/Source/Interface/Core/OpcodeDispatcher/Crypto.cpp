@@ -121,7 +121,7 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
 
   const uint64_t Imm8 = Op->Src[1].Literal() & 0b11;
   const FnType Fn = fn_array[Imm8];
-  auto K = _Constant(32, k_array[Imm8]);
+  auto K = _Constant(OpSize::i32Bit, k_array[Imm8]);
 
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
@@ -137,9 +137,10 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
     auto D = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 0);
 
     auto A1 =
-      _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Fn(*this, B, C, D), _Ror(OpSize::i32Bit, A, _Constant(32, 27))), W0E), K);
+      _Add(OpSize::i32Bit,
+           _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Fn(*this, B, C, D), _Ror(OpSize::i32Bit, A, _Constant(OpSize::i32Bit, 27))), W0E), K);
     auto B1 = A;
-    auto C1 = _Ror(OpSize::i32Bit, B, _Constant(32, 2));
+    auto C1 = _Ror(OpSize::i32Bit, B, _Constant(OpSize::i32Bit, 2));
     auto D1 = C;
     auto E1 = D;
 
@@ -151,9 +152,10 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
     auto Q = _Add(OpSize::i32Bit, W, E);
 
     auto ANext =
-      _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Fn(*this, B, C, D), _Ror(OpSize::i32Bit, A, _Constant(32, 27))), Q), K);
+      _Add(OpSize::i32Bit,
+           _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Fn(*this, B, C, D), _Ror(OpSize::i32Bit, A, _Constant(OpSize::i32Bit, 27))), Q), K);
     auto BNext = A;
-    auto CNext = _Ror(OpSize::i32Bit, B, _Constant(32, 2));
+    auto CNext = _Ror(OpSize::i32Bit, B, _Constant(OpSize::i32Bit, 2));
     auto DNext = C;
     auto ENext = D;
 
@@ -183,8 +185,10 @@ void OpDispatchBuilder::SHA256MSG1Op(OpcodeArgs) {
     Result = _VSha256U0(Dest, Src);
   } else {
     const auto Sigma0 = [this](Ref W) -> Ref {
-      return _Xor(OpSize::i32Bit, _Xor(OpSize::i32Bit, _Ror(OpSize::i32Bit, W, _Constant(32, 7)), _Ror(OpSize::i32Bit, W, _Constant(32, 18))),
-                  _Lshr(OpSize::i32Bit, W, _Constant(32, 3)));
+      return _Xor(
+        OpSize::i32Bit,
+        _Xor(OpSize::i32Bit, _Ror(OpSize::i32Bit, W, _Constant(OpSize::i32Bit, 7)), _Ror(OpSize::i32Bit, W, _Constant(OpSize::i32Bit, 18))),
+        _Lshr(OpSize::i32Bit, W, _Constant(OpSize::i32Bit, 3)));
     };
 
     auto W4 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Src, 0);
@@ -209,8 +213,10 @@ void OpDispatchBuilder::SHA256MSG1Op(OpcodeArgs) {
 
 void OpDispatchBuilder::SHA256MSG2Op(OpcodeArgs) {
   const auto Sigma1 = [this](Ref W) -> Ref {
-    return _Xor(OpSize::i32Bit, _Xor(OpSize::i32Bit, _Ror(OpSize::i32Bit, W, _Constant(32, 17)), _Ror(OpSize::i32Bit, W, _Constant(32, 19))),
-                _Lshr(OpSize::i32Bit, W, _Constant(32, 10)));
+    return _Xor(
+      OpSize::i32Bit,
+      _Xor(OpSize::i32Bit, _Ror(OpSize::i32Bit, W, _Constant(OpSize::i32Bit, 17)), _Ror(OpSize::i32Bit, W, _Constant(OpSize::i32Bit, 19))),
+      _Lshr(OpSize::i32Bit, W, _Constant(OpSize::i32Bit, 10)));
   };
 
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
@@ -246,12 +252,12 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
     return _Xor(OpSize::i32Bit, _And(OpSize::i32Bit, E, F), _Andn(OpSize::i32Bit, G, E));
   };
   const auto Sigma0 = [this](Ref A) -> Ref {
-    return _XorShift(OpSize::i32Bit, _XorShift(OpSize::i32Bit, _Ror(OpSize::i32Bit, A, _Constant(32, 2)), A, ShiftType::ROR, 13), A,
-                     ShiftType::ROR, 22);
+    return _XorShift(OpSize::i32Bit, _XorShift(OpSize::i32Bit, _Ror(OpSize::i32Bit, A, _Constant(OpSize::i32Bit, 2)), A, ShiftType::ROR, 13),
+                     A, ShiftType::ROR, 22);
   };
   const auto Sigma1 = [this](Ref E) -> Ref {
-    return _XorShift(OpSize::i32Bit, _XorShift(OpSize::i32Bit, _Ror(OpSize::i32Bit, E, _Constant(32, 6)), E, ShiftType::ROR, 11), E,
-                     ShiftType::ROR, 25);
+    return _XorShift(OpSize::i32Bit, _XorShift(OpSize::i32Bit, _Ror(OpSize::i32Bit, E, _Constant(OpSize::i32Bit, 6)), E, ShiftType::ROR, 11),
+                     E, ShiftType::ROR, 25);
   };
 
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);

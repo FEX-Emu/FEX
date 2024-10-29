@@ -1388,7 +1388,7 @@ void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs, bool SHL1Bit) {
   uint64_t Shift = LoadConstantShift(Op, SHL1Bit);
   const auto Size = GetSrcBitSize(Op);
 
-  Ref Src = _Constant(Size, Shift);
+  Ref Src = _Constant(OpSizeFromSrc(Op), Shift);
   Ref Result = _Lshl(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
 
   CalculateFlags_ShiftLeftImmediate(OpSizeFromSrc(Op), Result, Dest, Shift);
@@ -1411,7 +1411,7 @@ void OpDispatchBuilder::SHRImmediateOp(OpcodeArgs, bool SHR1Bit) {
 
   uint64_t Shift = LoadConstantShift(Op, SHR1Bit);
 
-  Ref Src = _Constant(Size, Shift);
+  Ref Src = _Constant(OpSizeFromSrc(Op), Shift);
   auto ALUOp = _Lshr(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
 
   CalculateFlags_ShiftRightImmediate(OpSizeFromSrc(Op), ALUOp, Dest, Shift);
@@ -1664,28 +1664,28 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
   auto* Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
   auto* Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
 
-  const auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
   const auto SrcSize = Size * 8;
   const auto MaxSrcBit = SrcSize - 1;
-  auto MaxSrcBitOp = _Constant(SrcSize, MaxSrcBit);
+  auto MaxSrcBitOp = _Constant(Size, MaxSrcBit);
 
   // Shift the operand down to the starting bit
   auto Start = _Bfe(OpSizeFromSrc(Op), 8, 0, Src2);
-  auto Shifted = _Lshr(IR::SizeToOpSize(Size), Src1, Start);
+  auto Shifted = _Lshr(Size, Src1, Start);
 
   // Shifts larger than operand size need to be set to zero.
-  auto SanitizedShifted = _Select(IR::COND_ULE, Start, MaxSrcBitOp, Shifted, _Constant(SrcSize, 0));
+  auto SanitizedShifted = _Select(IR::COND_ULE, Start, MaxSrcBitOp, Shifted, _Constant(Size, 0));
 
   // Now handle the length specifier.
-  auto Length = _Bfe(OpSizeFromSrc(Op), 8, 8, Src2);
+  auto Length = _Bfe(Size, 8, 8, Src2);
 
   // Now build up the mask
   // (1 << Length) - 1 = ~(~0 << Length)
   auto AllOnes = _Constant(~0ull);
-  auto InvertedMask = _Lshl(IR::SizeToOpSize(Size), AllOnes, Length);
+  auto InvertedMask = _Lshl(Size, AllOnes, Length);
 
   // Now put it all together and make the result.
-  auto Masked = _Andn(IR::SizeToOpSize(Size), SanitizedShifted, InvertedMask);
+  auto Masked = _Andn(Size, SanitizedShifted, InvertedMask);
 
   // Sanitize the length. If it is above the max, we don't do the masking.
   auto Dest = _Select(IR::COND_ULE, Length, MaxSrcBitOp, Masked, SanitizedShifted);
@@ -1787,7 +1787,7 @@ void OpDispatchBuilder::BMI2Shift(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::BZHI(OpcodeArgs) {
-  const auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
   const auto OperandSize = Size * 8;
 
   // In 32-bit mode we only look at bottom 32-bit, no 8 or 16-bit BZHI so no
@@ -1799,9 +1799,9 @@ void OpDispatchBuilder::BZHI(OpcodeArgs) {
   // Clear the high bits specified by the index. A64 only considers bottom bits
   // of the shift, so we don't need to mask bottom 8-bits ourselves.
   // Out-of-bounds results ignored after.
-  auto NegOne = _Constant(OperandSize, -1);
-  auto Mask = _Lshl(IR::SizeToOpSize(Size), NegOne, Index);
-  auto MaskResult = _Andn(IR::SizeToOpSize(Size), Src, Mask);
+  auto NegOne = _Constant(Size, -1);
+  auto Mask = _Lshl(Size, NegOne, Index);
+  auto MaskResult = _Andn(Size, Src, Mask);
 
   // If the index is above OperandSize, we don't clear anything. BZHI only
   // considers the bottom 8-bits, so we really want to know if the bottom 8-bits
@@ -1810,7 +1810,7 @@ void OpDispatchBuilder::BZHI(OpcodeArgs) {
   // Because we're clobbering flags internally we ignore all carry invert
   // shenanigans and use the raw versions here.
   _TestNZ(OpSize::i64Bit, Index, _Constant(0xFF & ~(OperandSize - 1)));
-  auto Result = _NZCVSelect(IR::SizeToOpSize(Size), {COND_NEQ}, Src, MaskResult);
+  auto Result = _NZCVSelect(Size, {COND_NEQ}, Src, MaskResult);
   StoreResult(GPRClass, Op, Result, OpSize::iInvalid);
 
   auto Zero = _InlineConstant(0);
@@ -2065,7 +2065,7 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
     Ref Res = _Lshr(OpSize, Dest, Src);
     auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
-    auto One = _Constant(Size, 1);
+    auto One = _Constant(OpSizeFromSrc(Op), 1);
 
     // Res |= (Dest << (Size - Shift + 1));
     // Expressed as Res | ((Src << (Size - Shift)) << 1) to get correct
@@ -2188,7 +2188,7 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
     if (IsSrcConst) {
       SetCFDirect(Tmp, SrcConst - 1, true);
     } else {
-      auto One = _Constant(Size, 1);
+      auto One = _Constant(OpSizeFromSrc(Op), 1);
       auto NewCF = _Lshr(OpSize::i32Bit, Tmp, _Sub(OpSize::i32Bit, Src, One));
       SetCFDirect(NewCF, 0, true);
     }
@@ -2337,7 +2337,7 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
 
     auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
-    Ref Tmp = _Constant(64, 0);
+    Ref Tmp = _Constant(OpSize::i64Bit, 0);
 
     for (size_t i = 0; i < (32 + Size + 1); i += (Size + 1)) {
       // Insert incoming value
@@ -3084,7 +3084,7 @@ void OpDispatchBuilder::INCOp(OpcodeArgs) {
   Ref Dest;
   Ref Result;
   const auto Size = GetSrcBitSize(Op);
-  auto OneConst = _Constant(Size, 1);
+  auto OneConst = _Constant(OpSizeFromSrc(Op), 1);
 
   const bool IsLocked = DestIsLockedMem(Op);
 
@@ -3125,7 +3125,7 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
   Ref Dest;
   Ref Result;
   const auto Size = GetSrcBitSize(Op);
-  auto OneConst = _Constant(Size, 1);
+  auto OneConst = _Constant(OpSizeFromSrc(Op), 1);
 
   const bool IsLocked = DestIsLockedMem(Op);
 
@@ -3135,7 +3135,7 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
     Ref DestAddress = MakeSegmentAddress(Op, Op->Dest);
 
     // Use Add instead of Sub to avoid a NEG
-    Dest = _AtomicFetchAdd(OpSizeFromSrc(Op), _Constant(Size, -1), DestAddress);
+    Dest = _AtomicFetchAdd(OpSizeFromSrc(Op), _Constant(OpSizeFromSrc(Op), -1), DestAddress);
   } else {
     Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= 32});
   }
@@ -3585,7 +3585,7 @@ void OpDispatchBuilder::POPFOp(OpcodeArgs) {
   // Bit 1 is always 1
   // Bit 9 is always 1 because we always have interrupts enabled
 
-  Src = _Or(OpSize::i64Bit, Src, _Constant(Size * 8, 0x202));
+  Src = _Or(OpSize::i64Bit, Src, _Constant(Size, 0x202));
 
   SetPackedRFLAG(false, Src);
 }

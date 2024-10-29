@@ -323,8 +323,8 @@ def print_ir_structs(defines):
     output_file.write("struct __attribute__((packed)) IROp_Header {\n")
     output_file.write("\tvoid* Data[0];\n")
     output_file.write("\tIROps Op;\n\n")
-    output_file.write("\tuint8_t Size;\n")
-    output_file.write("\tuint8_t ElementSize;\n")
+    output_file.write("\tIR::OpSize Size;\n")
+    output_file.write("\tIR::OpSize ElementSize;\n")
 
     output_file.write("\ttemplate<typename T>\n")
     output_file.write("\tT const* C() const { return reinterpret_cast<T const*>(Data); }\n")
@@ -630,20 +630,20 @@ def print_ir_allocator_helpers():
     output_file.write("\t\treturn IRPair<T>{Op, CreateNode(&Op->Header)};\n")
     output_file.write("\t}\n\n")
 
-    output_file.write("\tuint8_t GetOpSize(const OrderedNode *Op) const {\n")
+    output_file.write("\tIR::OpSize GetOpSize(const OrderedNode *Op) const {\n")
     output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n")
-    output_file.write("\t\treturn HeaderOp->Size;\n")
+    output_file.write("\t\treturn IR::SizeToOpSize(HeaderOp->Size);\n")
     output_file.write("\t}\n\n")
 
-    output_file.write("\tuint8_t GetOpElementSize(const OrderedNode *Op) const {\n")
+    output_file.write("\tIR::OpSize GetOpElementSize(const OrderedNode *Op) const {\n")
     output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n")
-    output_file.write("\t\treturn HeaderOp->ElementSize;\n")
+    output_file.write("\t\treturn IR::SizeToOpSize(HeaderOp->ElementSize);\n")
     output_file.write("\t}\n\n")
 
     output_file.write("\tuint8_t GetOpElements(const OrderedNode *Op) const {\n")
     output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n")
     output_file.write("\t\tLOGMAN_THROW_A_FMT(OpHasDest(Op), \"Op {} has no dest\\n\", GetName(HeaderOp->Op));\n")
-    output_file.write("\t\treturn HeaderOp->Size / HeaderOp->ElementSize;\n")
+    output_file.write("\t\treturn IR::OpSizeToSize(GetOpSize(Op)) / IR::OpSizeToSize(GetOpElementSize(Op));\n")
     output_file.write("\t}\n\n")
 
     output_file.write("\tbool OpHasDest(const OrderedNode *Op) const {\n")
@@ -728,11 +728,11 @@ def print_ir_allocator_helpers():
                 # We can only infer a size if we have arguments
                 if op.DestSize == None:
                     # We need to infer destination size
-                    output_file.write("\t\tuint8_t InferSize = 0;\n")
+                    output_file.write("\t\tIR::OpSize InferSize = OpSize::iUnsized;\n")
                     if len(op.Arguments) != 0:
                         for arg in op.Arguments:
                             if arg.IsSSA:
-                                output_file.write("\t\tuint8_t Size{} = GetOpSize({});\n".format(arg.Name, arg.Name))
+                                output_file.write("\t\tauto Size{} = GetOpSize({});\n".format(arg.Name, arg.Name))
                         for arg in op.Arguments:
                             if arg.IsSSA:
                                 output_file.write("\t\tInferSize = std::max(InferSize, Size{});\n".format(arg.Name))
@@ -745,7 +745,7 @@ def print_ir_allocator_helpers():
                 output_file.write("\t\t_Op.first->Header.Size = {};\n".format(op.DestSize))
 
             if op.NumElements == None:
-                output_file.write("\t\t_Op.first->Header.ElementSize = _Op.first->Header.Size / ({});\n".format(1))
+                output_file.write("\t\t_Op.first->Header.ElementSize = _Op.first->Header.Size;\n")
             else:
                 output_file.write("\t\t_Op.first->Header.ElementSize = _Op.first->Header.Size / ({});\n".format(op.NumElements))
 

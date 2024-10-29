@@ -129,23 +129,25 @@ private:
 
   [[nodiscard]]
   ARMEmitter::Size ConvertSize(const IR::IROp_Header* Op) {
-    return Op->Size == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+    return Op->Size == IR::OpSize::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
   }
 
   [[nodiscard]]
   ARMEmitter::Size ConvertSize48(const IR::IROp_Header* Op) {
-    LOGMAN_THROW_AA_FMT(Op->Size == 4 || Op->Size == 8, "Invalid size");
+    LOGMAN_THROW_AA_FMT(Op->Size == IR::OpSize::i32Bit || Op->Size == IR::OpSize::i64Bit, "Invalid size");
     return ConvertSize(Op);
   }
 
   [[nodiscard]]
-  ARMEmitter::SubRegSize ConvertSubRegSize16(uint8_t ElementSize) {
-    LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid size");
-    return ElementSize == 1 ? ARMEmitter::SubRegSize::i8Bit :
-           ElementSize == 2 ? ARMEmitter::SubRegSize::i16Bit :
-           ElementSize == 4 ? ARMEmitter::SubRegSize::i32Bit :
-           ElementSize == 8 ? ARMEmitter::SubRegSize::i64Bit :
-                              ARMEmitter::SubRegSize::i128Bit;
+  ARMEmitter::SubRegSize ConvertSubRegSize16(IR::OpSize ElementSize) {
+    LOGMAN_THROW_AA_FMT(ElementSize == IR::OpSize::i8Bit || ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit ||
+                          ElementSize == IR::OpSize::i64Bit || ElementSize == IR::OpSize::i128Bit,
+                        "Invalid size");
+    return ElementSize == IR::OpSize::i8Bit  ? ARMEmitter::SubRegSize::i8Bit :
+           ElementSize == IR::OpSize::i16Bit ? ARMEmitter::SubRegSize::i16Bit :
+           ElementSize == IR::OpSize::i32Bit ? ARMEmitter::SubRegSize::i32Bit :
+           ElementSize == IR::OpSize::i64Bit ? ARMEmitter::SubRegSize::i64Bit :
+                                               ARMEmitter::SubRegSize::i128Bit;
   }
 
   [[nodiscard]]
@@ -154,8 +156,8 @@ private:
   }
 
   [[nodiscard]]
-  ARMEmitter::SubRegSize ConvertSubRegSize8(uint8_t ElementSize) {
-    LOGMAN_THROW_AA_FMT(ElementSize != 16, "Invalid size");
+  ARMEmitter::SubRegSize ConvertSubRegSize8(IR::OpSize ElementSize) {
+    LOGMAN_THROW_AA_FMT(ElementSize != IR::OpSize::i128Bit, "Invalid size");
     return ConvertSubRegSize16(ElementSize);
   }
 
@@ -166,13 +168,13 @@ private:
 
   [[nodiscard]]
   ARMEmitter::SubRegSize ConvertSubRegSize4(const IR::IROp_Header* Op) {
-    LOGMAN_THROW_AA_FMT(Op->ElementSize != 8, "Invalid size");
+    LOGMAN_THROW_AA_FMT(Op->ElementSize != IR::OpSize::i64Bit, "Invalid size");
     return ConvertSubRegSize8(Op);
   }
 
   [[nodiscard]]
   ARMEmitter::SubRegSize ConvertSubRegSize248(const IR::IROp_Header* Op) {
-    LOGMAN_THROW_AA_FMT(Op->ElementSize != 1, "Invalid size");
+    LOGMAN_THROW_AA_FMT(Op->ElementSize != IR::OpSize::i8Bit, "Invalid size");
     return ConvertSubRegSize8(Op);
   }
 
@@ -183,13 +185,13 @@ private:
 
   [[nodiscard]]
   ARMEmitter::VectorRegSizePair ConvertSubRegSizePair8(const IR::IROp_Header* Op) {
-    LOGMAN_THROW_AA_FMT(Op->ElementSize != 16, "Invalid size");
+    LOGMAN_THROW_AA_FMT(Op->ElementSize != IR::OpSize::i128Bit, "Invalid size");
     return ConvertSubRegSizePair16(Op);
   }
 
   [[nodiscard]]
   ARMEmitter::VectorRegSizePair ConvertSubRegSizePair248(const IR::IROp_Header* Op) {
-    LOGMAN_THROW_AA_FMT(Op->ElementSize != 1, "Invalid size");
+    LOGMAN_THROW_AA_FMT(Op->ElementSize != IR::OpSize::i8Bit, "Invalid size");
     return ConvertSubRegSizePair8(Op);
   }
 
