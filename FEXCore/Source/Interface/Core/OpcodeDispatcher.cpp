@@ -2466,7 +2466,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
 
     // Get the address offset by shifting out the size of the op (To shift out the bit selection)
     // Then use that to index in to the memory location by size of op
-    AddressMode Address = {.Base = Dest, .Index = Src, .AddrSize = 8};
+    AddressMode Address = {.Base = Dest, .Index = Src, .AddrSize = OpSize::i64Bit};
 
     ConstantShift = 0;
 
@@ -2922,7 +2922,7 @@ void OpDispatchBuilder::XLATOp(OpcodeArgs) {
   Ref Src = MakeSegmentAddress(X86State::REG_RBX, Op->Flags, X86Tables::DecodeFlags::FLAG_DS_PREFIX);
   Ref Offset = LoadGPRRegister(X86State::REG_RAX, OpSize::i8Bit);
 
-  AddressMode A = {.Base = Src, .Index = Offset, .AddrSize = 8};
+  AddressMode A = {.Base = Src, .Index = Offset, .AddrSize = OpSize::i64Bit};
   auto Res = _LoadMemAutoTSO(GPRClass, OpSize::i8Bit, A, OpSize::i8Bit);
 
   StoreGPRRegister(X86State::REG_RAX, Res, OpSize::i8Bit);
@@ -3010,7 +3010,7 @@ void OpDispatchBuilder::SGDTOp(OpcodeArgs) {
   }
 
   _StoreMemAutoTSO(GPRClass, OpSize::i16Bit, DestAddress, _Constant(0));
-  _StoreMemAutoTSO(GPRClass, GDTStoreSize, AddressMode {.Base = DestAddress, .Offset = 2, .AddrSize = 8}, _Constant(GDTAddress));
+  _StoreMemAutoTSO(GPRClass, GDTStoreSize, AddressMode {.Base = DestAddress, .Offset = 2, .AddrSize = OpSize::i64Bit}, _Constant(GDTAddress));
 }
 
 void OpDispatchBuilder::SMSWOp(OpcodeArgs) {
@@ -4178,7 +4178,7 @@ Ref OpDispatchBuilder::LoadEffectiveAddress(AddressMode A, bool AddSegmentBase, 
 }
 
 AddressMode OpDispatchBuilder::SelectAddressMode(AddressMode A, bool AtomicTSO, bool Vector, unsigned AccessSize) {
-  const uint8_t GPRSize = CTX->GetGPRSize();
+  const auto GPRSize = CTX->GetGPROpSize();
 
   // In the future this also needs to account for LRCPC3.
   bool SupportsRegIndex = Vector || !AtomicTSO;
@@ -4190,9 +4190,9 @@ AddressMode OpDispatchBuilder::SelectAddressMode(AddressMode A, bool AtomicTSO, 
   // TODO: Also handle GPR TSO if we can guarantee the constant inlines.
   if (SupportsRegIndex) {
     if ((A.Base || A.Segment) && A.Offset) {
-      const bool Const_16K = A.Offset > -16384 && A.Offset < 16384 && A.AddrSize == 4 && GPRSize == 4;
+      const bool Const_16K = A.Offset > -16384 && A.Offset < 16384 && A.AddrSize == OpSize::i32Bit && GPRSize == OpSize::i32Bit;
 
-      if ((A.AddrSize == 8) || Const_16K) {
+      if ((A.AddrSize == OpSize::i64Bit) || Const_16K) {
         // Peel off the offset
         AddressMode B = A;
         B.Offset = 0;
@@ -4207,7 +4207,7 @@ AddressMode OpDispatchBuilder::SelectAddressMode(AddressMode A, bool AtomicTSO, 
     }
 
     // Try a (possibly scaled) register index.
-    if (A.AddrSize == 8 && A.Base && (A.Index || A.Segment) && !A.Offset && (A.IndexScale == 1 || A.IndexScale == AccessSize)) {
+    if (A.AddrSize == OpSize::i64Bit && A.Base && (A.Index || A.Segment) && !A.Offset && (A.IndexScale == 1 || A.IndexScale == AccessSize)) {
       if (A.Index && A.Segment) {
         A.Base = _Add(IR::SizeToOpSize(GPRSize), A.Base, A.Segment);
       } else if (A.Segment) {
@@ -4231,7 +4231,7 @@ AddressMode OpDispatchBuilder::DecodeAddress(const X86Tables::DecodedOp& Op, con
 
   AddressMode A {};
   A.Segment = GetSegment(Op->Flags);
-  A.AddrSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) != 0 ? (GPRSize >> 1) : GPRSize;
+  A.AddrSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) != 0 ? (IR::DivideOpSize(GPRSize, 2)) : GPRSize;
   A.NonTSO = AccessType == MemoryAccessType::NONTSO || AccessType == MemoryAccessType::STREAM;
 
   if (Operand.IsLiteral()) {
