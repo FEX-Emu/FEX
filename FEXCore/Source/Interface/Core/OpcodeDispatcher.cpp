@@ -288,8 +288,8 @@ void OpDispatchBuilder::ADCOp(OpcodeArgs, uint32_t SrcIndex) {
   CalculateDeferredFlags();
 
   Ref Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = true});
-  uint8_t Size = GetDstSize(Op);
-  const auto OpSize = IR::SizeToOpSize(std::max<uint8_t>(OpSize::i32Bit, Size));
+  const auto Size = OpSizeFromDst(Op);
+  const auto OpSize = std::max(OpSize::i32Bit, Size);
 
   Ref Before {};
   if (DestIsLockedMem(Op)) {
@@ -324,8 +324,8 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs, uint32_t SrcIndex) {
   CalculateDeferredFlags();
 
   Ref Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = true});
-  auto Size = GetDstSize(Op);
-  const auto OpSize = IR::SizeToOpSize(std::max<uint8_t>(OpSize::i32Bit, Size));
+  const auto Size = OpSizeFromDst(Op);
+  const auto OpSize = std::max(OpSize::i32Bit, Size);
 
   Ref Result {};
   Ref Before {};
@@ -1080,7 +1080,7 @@ void OpDispatchBuilder::CMPOp(OpcodeArgs, uint32_t SrcIndex) {
   // Result isn't stored in result, only writes to flags
   Ref Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = true});
   Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
-  CalculateFlags_SUB(GetSrcSize(Op), Dest, Src);
+  CalculateFlags_SUB(OpSizeFromSrc(Op), Dest, Src);
 }
 
 void OpDispatchBuilder::CQOOp(OpcodeArgs) {
@@ -1391,7 +1391,7 @@ void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs, bool SHL1Bit) {
   Ref Src = _Constant(Size, Shift);
   Ref Result = _Lshl(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
 
-  CalculateFlags_ShiftLeftImmediate(GetSrcSize(Op), Result, Dest, Shift);
+  CalculateFlags_ShiftLeftImmediate(OpSizeFromSrc(Op), Result, Dest, Shift);
   CalculateDeferredFlags();
   StoreResult(GPRClass, Op, Result, OpSize::iInvalid);
 }
@@ -1414,7 +1414,7 @@ void OpDispatchBuilder::SHRImmediateOp(OpcodeArgs, bool SHR1Bit) {
   Ref Src = _Constant(Size, Shift);
   auto ALUOp = _Lshr(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
 
-  CalculateFlags_ShiftRightImmediate(GetSrcSize(Op), ALUOp, Dest, Shift);
+  CalculateFlags_ShiftRightImmediate(OpSizeFromSrc(Op), ALUOp, Dest, Shift);
   CalculateDeferredFlags();
   StoreResult(GPRClass, Op, ALUOp, OpSize::iInvalid);
 }
@@ -1483,7 +1483,7 @@ void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
       Res = _Extr(OpSizeFromSrc(Op), Dest, Src, Size - Shift);
     }
 
-    CalculateFlags_ShiftLeftImmediate(GetSrcSize(Op), Res, Dest, Shift);
+    CalculateFlags_ShiftLeftImmediate(OpSizeFromSrc(Op), Res, Dest, Shift);
     CalculateDeferredFlags();
     StoreResult(GPRClass, Op, Res, OpSize::iInvalid);
   } else if (Shift == 0 && Size == 32) {
@@ -1549,7 +1549,7 @@ void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
     }
 
     StoreResult(GPRClass, Op, Res, OpSize::iInvalid);
-    CalculateFlags_ShiftRightDoubleImmediate(GetSrcSize(Op), Res, Dest, Shift);
+    CalculateFlags_ShiftRightDoubleImmediate(OpSizeFromSrc(Op), Res, Dest, Shift);
   } else if (Shift == 0 && Size == 32) {
     // Ensure Zext still occurs
     StoreResult(GPRClass, Op, Dest, OpSize::iInvalid);
@@ -1574,7 +1574,7 @@ void OpDispatchBuilder::ASHROp(OpcodeArgs, bool Immediate, bool SHR1Bit) {
     uint64_t Shift = LoadConstantShift(Op, SHR1Bit);
     Ref Result = _Ashr(IR::SizeToOpSize(OpSize), Dest, _Constant(Shift));
 
-    CalculateFlags_SignShiftRightImmediate(GetSrcSize(Op), Result, Dest, Shift);
+    CalculateFlags_SignShiftRightImmediate(OpSizeFromSrc(Op), Result, Dest, Shift);
     CalculateDeferredFlags();
     StoreResult(GPRClass, Op, Result, OpSize::iInvalid);
   } else {
@@ -1653,7 +1653,7 @@ void OpDispatchBuilder::ANDNBMIOp(OpcodeArgs) {
   auto Dest = _Andn(OpSizeFromSrc(Op), Src2, Src1);
 
   StoreResult(GPRClass, Op, Dest, OpSize::iInvalid);
-  CalculateFlags_Logical(GetSrcSize(Op), Dest, Src1, Src2);
+  CalculateFlags_Logical(OpSizeFromSrc(Op), Dest, Src1, Src2);
 }
 
 void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
@@ -2535,27 +2535,27 @@ void OpDispatchBuilder::IMUL1SrcOp(OpcodeArgs) {
   Ref Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
   Ref Src2 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
 
-  uint8_t Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
 
   Ref Dest {};
   Ref ResultHigh {};
   switch (Size) {
-  case 1:
-  case 2: {
+  case OpSize::i8Bit:
+  case OpSize::i16Bit: {
     Src1 = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src1);
     Src2 = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src2);
     Dest = _Mul(OpSize::i64Bit, Src1, Src2);
     ResultHigh = _Sbfe(OpSize::i64Bit, Size * 8, Size * 8, Dest);
     break;
   }
-  case 4: {
+  case OpSize::i32Bit: {
     ResultHigh = _SMull(Src1, Src2);
     ResultHigh = _Sbfe(OpSize::i64Bit, Size * 8, Size * 8, ResultHigh);
     // Flipped order to save a move
     Dest = _Mul(OpSize::i32Bit, Src1, Src2);
     break;
   }
-  case 8: {
+  case OpSize::i64Bit: {
     ResultHigh = _MulH(OpSize::i64Bit, Src1, Src2);
     // Flipped order to save a move
     Dest = _Mul(OpSize::i64Bit, Src1, Src2);
@@ -2572,28 +2572,28 @@ void OpDispatchBuilder::IMUL2SrcOp(OpcodeArgs) {
   Ref Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
   Ref Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
 
-  uint8_t Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
 
   Ref Dest {};
   Ref ResultHigh {};
 
   switch (Size) {
-  case 1:
-  case 2: {
+  case OpSize::i8Bit:
+  case OpSize::i16Bit: {
     Src1 = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src1);
     Src2 = _Sbfe(OpSize::i64Bit, Size * 8, 0, Src2);
     Dest = _Mul(OpSize::i64Bit, Src1, Src2);
     ResultHigh = _Sbfe(OpSize::i64Bit, Size * 8, Size * 8, Dest);
     break;
   }
-  case 4: {
+  case OpSize::i32Bit: {
     ResultHigh = _SMull(Src1, Src2);
     ResultHigh = _Sbfe(OpSize::i64Bit, Size * 8, Size * 8, ResultHigh);
     // Flipped order to save a move
     Dest = _Mul(OpSize::i32Bit, Src1, Src2);
     break;
   }
-  case 8: {
+  case OpSize::i64Bit: {
     ResultHigh = _MulH(OpSize::i64Bit, Src1, Src2);
     // Flipped order to save a move
     Dest = _Mul(OpSize::i64Bit, Src1, Src2);
@@ -2764,7 +2764,7 @@ void OpDispatchBuilder::XADDOp(OpcodeArgs) {
 
   if (Op->Dest.IsGPR()) {
     // If this is a GPR then we can just do an Add
-    Result = CalculateFlags_ADD(GetSrcSize(Op), Dest, Src);
+    Result = CalculateFlags_ADD(OpSizeFromSrc(Op), Dest, Src);
 
     // Previous value in dest gets stored in src
     StoreResult(GPRClass, Op, Op->Src[0], Dest, OpSize::iInvalid);
@@ -2775,7 +2775,7 @@ void OpDispatchBuilder::XADDOp(OpcodeArgs) {
     HandledLock = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK;
     Dest = AppendSegmentOffset(Dest, Op->Flags);
     auto Before = _AtomicFetchAdd(OpSizeFromSrc(Op), Src, Dest);
-    CalculateFlags_ADD(GetSrcSize(Op), Before, Src);
+    CalculateFlags_ADD(OpSizeFromSrc(Op), Before, Src);
     StoreResult(GPRClass, Op, Op->Src[0], Before, OpSize::iInvalid);
   }
 }
@@ -3283,7 +3283,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
     auto Src1 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
     auto Src2 = _LoadMemAutoTSO(GPRClass, Size, Dest_RSI, Size);
 
-    CalculateFlags_SUB(GetSrcSize(Op), Src2, Src1);
+    CalculateFlags_SUB(OpSizeFromSrc(Op), Src2, Src1);
 
     auto PtrDir = LoadDir(Size);
 
@@ -3372,7 +3372,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
       // Grab the sources from the last iteration so we can set flags.
       auto Src1 = LoadGPR(Core::CPUState::PF_AS_GREG);
       auto Src2 = LoadGPR(Core::CPUState::AF_AS_GREG);
-      CalculateFlags_SUB(GetSrcSize(Op), Src2, Src1);
+      CalculateFlags_SUB(OpSizeFromSrc(Op), Src2, Src1);
     }
     auto Jump_ = Jump();
 
@@ -3483,7 +3483,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
     auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
     auto Src2 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
 
-    CalculateFlags_SUB(GetSrcSize(Op), Src1, Src2);
+    CalculateFlags_SUB(OpSizeFromSrc(Op), Src1, Src2);
 
     // Offset the pointer
     Ref TailDest_RDI = LoadGPRRegister(X86State::REG_RDI);
@@ -3521,7 +3521,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
         auto Src1 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
         auto Src2 = _LoadMemAutoTSO(GPRClass, Size, Dest_RDI, Size);
 
-        CalculateFlags_SUB(GetSrcSize(Op), Src1, Src2);
+        CalculateFlags_SUB(OpSizeFromSrc(Op), Src1, Src2);
 
         // Calculate flags early.
         CalculateDeferredFlags();
@@ -3593,7 +3593,7 @@ void OpDispatchBuilder::POPFOp(OpcodeArgs) {
 void OpDispatchBuilder::NEGOp(OpcodeArgs) {
   HandledLock = (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK) != 0;
 
-  auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
   auto ZeroConst = _Constant(0);
 
   if (DestIsLockedMem(Op)) {
@@ -3791,7 +3791,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     }
 
     // Compare RAX with the destination, setting flags accordingly.
-    CalculateFlags_SUB(GetSrcSize(Op), Src3, Src1Lower);
+    CalculateFlags_SUB(OpSizeFromSrc(Op), Src3, Src1Lower);
     CalculateDeferredFlags();
 
     if (!Trivial) {
@@ -3840,7 +3840,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     Ref CASResult = _CAS(IR::SizeToOpSize(Size), Src3Lower, Src2, Src1);
     Ref RAXResult = CASResult;
 
-    CalculateFlags_SUB(GetSrcSize(Op), Src3Lower, CASResult);
+    CalculateFlags_SUB(OpSizeFromSrc(Op), Src3Lower, CASResult);
     CalculateDeferredFlags();
 
     if (GPRSize == OpSize::i64Bit && Size == OpSize::i32Bit) {
@@ -4525,7 +4525,7 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
 
     auto Result = _Constant(0);
     StoreResult(GPRClass, Op, Result, OpSize::iInvalid);
-    CalculateFlags_Logical(GetSrcSize(Op), Result, Result, Result);
+    CalculateFlags_Logical(OpSizeFromSrc(Op), Result, Result, Result);
     return;
   }
 
@@ -4732,7 +4732,7 @@ void OpDispatchBuilder::TZCNT(OpcodeArgs) {
   Src = _FindTrailingZeroes(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Src, OpSize::iInvalid);
 
-  CalculateFlags_ZCNT(GetSrcSize(Op), Src);
+  CalculateFlags_ZCNT(OpSizeFromSrc(Op), Src);
 }
 
 void OpDispatchBuilder::LZCNT(OpcodeArgs) {
@@ -4741,7 +4741,7 @@ void OpDispatchBuilder::LZCNT(OpcodeArgs) {
 
   auto Res = _CountLeadingZeroes(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Res, OpSize::iInvalid);
-  CalculateFlags_ZCNT(GetSrcSize(Op), Res);
+  CalculateFlags_ZCNT(OpSizeFromSrc(Op), Res);
 }
 
 void OpDispatchBuilder::MOVBEOp(OpcodeArgs) {

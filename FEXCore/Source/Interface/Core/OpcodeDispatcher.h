@@ -2326,22 +2326,22 @@ private:
 
   Ref IncrementByCarry(OpSize OpSize, Ref Src);
 
-  void CalculateOF(uint8_t SrcSize, Ref Res, Ref Src1, Ref Src2, bool Sub);
-  Ref CalculateFlags_ADC(uint8_t SrcSize, Ref Src1, Ref Src2);
-  Ref CalculateFlags_SBB(uint8_t SrcSize, Ref Src1, Ref Src2);
-  Ref CalculateFlags_SUB(uint8_t SrcSize, Ref Src1, Ref Src2, bool UpdateCF = true);
-  Ref CalculateFlags_ADD(uint8_t SrcSize, Ref Src1, Ref Src2, bool UpdateCF = true);
-  void CalculateFlags_MUL(uint8_t SrcSize, Ref Res, Ref High);
+  void CalculateOF(IR::OpSize SrcSize, Ref Res, Ref Src1, Ref Src2, bool Sub);
+  Ref CalculateFlags_ADC(IR::OpSize SrcSize, Ref Src1, Ref Src2);
+  Ref CalculateFlags_SBB(IR::OpSize SrcSize, Ref Src1, Ref Src2);
+  Ref CalculateFlags_SUB(IR::OpSize SrcSize, Ref Src1, Ref Src2, bool UpdateCF = true);
+  Ref CalculateFlags_ADD(IR::OpSize SrcSize, Ref Src1, Ref Src2, bool UpdateCF = true);
+  void CalculateFlags_MUL(IR::OpSize SrcSize, Ref Res, Ref High);
   void CalculateFlags_UMUL(Ref High);
-  void CalculateFlags_Logical(uint8_t SrcSize, Ref Res, Ref Src1, Ref Src2);
-  void CalculateFlags_ShiftLeft(uint8_t SrcSize, Ref Res, Ref Src1, Ref Src2);
-  void CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, Ref Res, Ref Src1, uint64_t Shift);
-  void CalculateFlags_ShiftRight(uint8_t SrcSize, Ref Res, Ref Src1, Ref Src2);
-  void CalculateFlags_ShiftRightImmediate(uint8_t SrcSize, Ref Res, Ref Src1, uint64_t Shift);
-  void CalculateFlags_ShiftRightDoubleImmediate(uint8_t SrcSize, Ref Res, Ref Src1, uint64_t Shift);
-  void CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize, Ref Res, Ref Src1, uint64_t Shift);
-  void CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, Ref Res, Ref Src1, uint64_t Shift);
-  void CalculateFlags_ZCNT(uint8_t SrcSize, Ref Result);
+  void CalculateFlags_Logical(IR::OpSize SrcSize, Ref Res, Ref Src1, Ref Src2);
+  void CalculateFlags_ShiftLeft(IR::OpSize SrcSize, Ref Res, Ref Src1, Ref Src2);
+  void CalculateFlags_ShiftLeftImmediate(IR::OpSize SrcSize, Ref Res, Ref Src1, uint64_t Shift);
+  void CalculateFlags_ShiftRight(IR::OpSize SrcSize, Ref Res, Ref Src1, Ref Src2);
+  void CalculateFlags_ShiftRightImmediate(IR::OpSize SrcSize, Ref Res, Ref Src1, uint64_t Shift);
+  void CalculateFlags_ShiftRightDoubleImmediate(IR::OpSize SrcSize, Ref Res, Ref Src1, uint64_t Shift);
+  void CalculateFlags_ShiftRightImmediateCommon(IR::OpSize SrcSize, Ref Res, Ref Src1, uint64_t Shift);
+  void CalculateFlags_SignShiftRightImmediate(IR::OpSize SrcSize, Ref Res, Ref Src1, uint64_t Shift);
+  void CalculateFlags_ZCNT(IR::OpSize SrcSize, Ref Result);
   /**  @} */
 
   Ref AndConst(FEXCore::IR::OpSize Size, Ref Node, uint64_t Const) {
