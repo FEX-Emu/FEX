@@ -1355,7 +1355,7 @@ uint32_t OpDispatchBuilder::LoadConstantShift(X86Tables::DecodedOp Op, bool Is1B
     return 1;
   } else {
     // x86 masks the shift by 0x3F or 0x1F depending on size of op
-    const uint32_t Size = GetSrcSize(Op);
+    const auto Size = OpSizeFromSrc(Op);
     uint64_t Mask = Size == OpSize::i64Bit ? 0x3F : 0x1F;
 
     return Op->Src[1].Literal() & Mask;
@@ -1397,11 +1397,11 @@ void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs, bool SHL1Bit) {
 }
 
 void OpDispatchBuilder::SHROp(OpcodeArgs) {
-  auto Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
   auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= 4});
   auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
 
-  auto ALUOp = _Lshr(IR::SizeToOpSize(std::max<uint8_t>(OpSize::i32Bit, Size)), Dest, Src);
+  auto ALUOp = _Lshr(std::max(OpSize::i32Bit, Size), Dest, Src);
   HandleShift(Op, ALUOp, Dest, ShiftType::LSR, Src);
 }
 
@@ -1558,7 +1558,7 @@ void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
 
 void OpDispatchBuilder::ASHROp(OpcodeArgs, bool Immediate, bool SHR1Bit) {
   const auto Size = GetSrcSize(Op);
-  const auto OpSize = std::max<uint8_t>(OpSize::i32Bit, GetDstSize(Op));
+  const auto OpSize = std::max(OpSize::i32Bit, OpSizeFromDst(Op));
 
   // If Size < 4, then we Sbfe the Dest so we can have garbage.
   // Otherwise, if Size = Opsize, then both are 4 or 8 and match the a64
@@ -2708,7 +2708,7 @@ void OpDispatchBuilder::MULOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::NOTOp(OpcodeArgs) {
-  uint8_t Size = GetSrcSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
   Ref MaskConst {};
   if (Size == OpSize::i64Bit) {
     MaskConst = _Constant(~0ULL);
@@ -3860,7 +3860,7 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
 
   // REX.W used to determine if it is 16byte or 8byte
   // Unlike CMPXCHG, the destination can only be a memory location
-  uint8_t Size = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REX_WIDENING ? 8 : 4;
+  const auto Size = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REX_WIDENING ? OpSize::i64Bit : OpSize::i32Bit;
 
   HandledLock = (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK) != 0;
 
@@ -3930,7 +3930,7 @@ void OpDispatchBuilder::BeginFunction(uint64_t RIP, const fextl::vector<FEXCore:
 void OpDispatchBuilder::Finalize() {
   // This usually doesn't emit any IR but in the case of hitting the block instruction limit it will
   FlushRegisterCache();
-  const uint8_t GPRSize = CTX->GetGPRSize();
+  const auto GPRSize = CTX->GetGPROpSize();
 
   // Node 0 is invalid node
   Ref RealNode = reinterpret_cast<Ref>(GetNode(1));
@@ -3946,7 +3946,7 @@ void OpDispatchBuilder::Finalize() {
 
     // We haven't emitted. Dump out to the dispatcher
     SetCurrentCodeBlock(Handler.second.BlockEntry);
-    ExitFunction(_EntrypointOffset(IR::SizeToOpSize(GPRSize), Handler.first - Entry));
+    ExitFunction(_EntrypointOffset(GPRSize, Handler.first - Entry));
   }
 }
 
@@ -4139,7 +4139,7 @@ void OpDispatchBuilder::UpdatePrefixFromSegment(Ref Segment, uint32_t SegmentReg
 }
 
 Ref OpDispatchBuilder::LoadEffectiveAddress(AddressMode A, bool AddSegmentBase, bool AllowUpperGarbage) {
-  const uint8_t GPRSize = CTX->GetGPRSize();
+  const auto GPRSize = CTX->GetGPROpSize();
   Ref Tmp = A.Base;
 
   if (A.Offset) {
@@ -4153,12 +4153,12 @@ Ref OpDispatchBuilder::LoadEffectiveAddress(AddressMode A, bool AddSegmentBase, 
       uint32_t Log2 = FEXCore::ilog2(A.IndexScale);
 
       if (Tmp) {
-        Tmp = _AddShift(IR::SizeToOpSize(GPRSize), Tmp, A.Index, ShiftType::LSL, Log2);
+        Tmp = _AddShift(GPRSize, Tmp, A.Index, ShiftType::LSL, Log2);
       } else {
-        Tmp = _Lshl(IR::SizeToOpSize(GPRSize), A.Index, _Constant(Log2));
+        Tmp = _Lshl(GPRSize, A.Index, _Constant(Log2));
       }
     } else {
-      Tmp = Tmp ? _Add(IR::SizeToOpSize(GPRSize), Tmp, A.Index) : A.Index;
+      Tmp = Tmp ? _Add(GPRSize, Tmp, A.Index) : A.Index;
     }
   }
 
@@ -4167,11 +4167,11 @@ Ref OpDispatchBuilder::LoadEffectiveAddress(AddressMode A, bool AddSegmentBase, 
   //
   // If the AddrSize is not the GPRSize then we need to clear the upper bits.
   if ((A.AddrSize < GPRSize) && !AllowUpperGarbage && Tmp) {
-    Tmp = _Bfe(IR::SizeToOpSize(GPRSize), A.AddrSize * 8, 0, Tmp);
+    Tmp = _Bfe(GPRSize, A.AddrSize * 8, 0, Tmp);
   }
 
   if (A.Segment && AddSegmentBase) {
-    Tmp = Tmp ? _Add(IR::SizeToOpSize(GPRSize), Tmp, A.Segment) : A.Segment;
+    Tmp = Tmp ? _Add(GPRSize, Tmp, A.Segment) : A.Segment;
   }
 
   return Tmp ?: _Constant(0);
@@ -4328,8 +4328,8 @@ Ref OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, const X86T
 }
 
 Ref OpDispatchBuilder::GetRelocatedPC(const FEXCore::X86Tables::DecodedOp& Op, int64_t Offset) {
-  const uint8_t GPRSize = CTX->GetGPRSize();
-  return _EntrypointOffset(IR::SizeToOpSize(GPRSize), Op->PC + Op->InstSize + Offset - Entry);
+  const auto GPRSize = CTX->GetGPROpSize();
+  return _EntrypointOffset(GPRSize, Op->PC + Op->InstSize + Offset - Entry);
 }
 
 Ref OpDispatchBuilder::LoadGPRRegister(uint32_t GPR, IR::OpSize Size, uint8_t Offset, bool AllowUpperGarbage) {
@@ -4746,10 +4746,10 @@ void OpDispatchBuilder::LZCNT(OpcodeArgs) {
 
 void OpDispatchBuilder::MOVBEOp(OpcodeArgs) {
   const auto GPRSize = CTX->GetGPROpSize();
-  const auto SrcSize = GetSrcSize(Op);
+  const auto SrcSize = OpSizeFromSrc(Op);
 
   Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.Align = OpSize::i8Bit});
-  Src = _Rev(IR::SizeToOpSize(std::max<uint8_t>(OpSize::i32Bit, SrcSize)), Src);
+  Src = _Rev(std::max(OpSize::i32Bit, SrcSize), Src);
 
   if (SrcSize == OpSize::i16Bit) {
     // 16-bit does an insert.
