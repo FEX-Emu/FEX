@@ -138,7 +138,7 @@ Ref OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
   return Original;
 }
 
-void OpDispatchBuilder::CalculateOF(uint8_t SrcSize, Ref Res, Ref Src1, Ref Src2, bool Sub) {
+void OpDispatchBuilder::CalculateOF(IR::OpSize SrcSize, Ref Res, Ref Src1, Ref Src2, bool Sub) {
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
   uint64_t SignBit = (SrcSize * 8) - 1;
   Ref Anded = nullptr;
@@ -262,7 +262,7 @@ Ref OpDispatchBuilder::IncrementByCarry(OpSize OpSize, Ref Src) {
   return _NZCVSelectIncrement(OpSize, {CFInverted ? COND_UGE : COND_ULT}, Src, Src);
 }
 
-Ref OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, Ref Src1, Ref Src2) {
+Ref OpDispatchBuilder::CalculateFlags_ADC(IR::OpSize SrcSize, Ref Src1, Ref Src2) {
   auto Zero = _InlineConstant(0);
   auto One = _InlineConstant(1);
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
@@ -299,7 +299,7 @@ Ref OpDispatchBuilder::CalculateFlags_ADC(uint8_t SrcSize, Ref Src1, Ref Src2) {
   return Res;
 }
 
-Ref OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, Ref Src1, Ref Src2) {
+Ref OpDispatchBuilder::CalculateFlags_SBB(IR::OpSize SrcSize, Ref Src1, Ref Src2) {
   auto Zero = _InlineConstant(0);
   auto One = _InlineConstant(1);
   auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
@@ -335,7 +335,7 @@ Ref OpDispatchBuilder::CalculateFlags_SBB(uint8_t SrcSize, Ref Src1, Ref Src2) {
   return Res;
 }
 
-Ref OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, Ref Src1, Ref Src2, bool UpdateCF) {
+Ref OpDispatchBuilder::CalculateFlags_SUB(IR::OpSize SrcSize, Ref Src1, Ref Src2, bool UpdateCF) {
   // Stash CF before stomping over it
   auto OldCFInv = UpdateCF ? nullptr : GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC, true);
 
@@ -365,7 +365,7 @@ Ref OpDispatchBuilder::CalculateFlags_SUB(uint8_t SrcSize, Ref Src1, Ref Src2, b
   return Res;
 }
 
-Ref OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, Ref Src1, Ref Src2, bool UpdateCF) {
+Ref OpDispatchBuilder::CalculateFlags_ADD(IR::OpSize SrcSize, Ref Src1, Ref Src2, bool UpdateCF) {
   // Stash CF before stomping over it
   auto OldCFInv = UpdateCF ? nullptr : GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC, true);
 
@@ -394,7 +394,7 @@ Ref OpDispatchBuilder::CalculateFlags_ADD(uint8_t SrcSize, Ref Src1, Ref Src2, b
   return Res;
 }
 
-void OpDispatchBuilder::CalculateFlags_MUL(uint8_t SrcSize, Ref Res, Ref High) {
+void OpDispatchBuilder::CalculateFlags_MUL(IR::OpSize SrcSize, Ref Res, Ref High) {
   HandleNZCVWrite();
   InvalidatePF_AF();
 
@@ -427,7 +427,7 @@ void OpDispatchBuilder::CalculateFlags_UMUL(Ref High) {
   CFInverted = true;
 }
 
-void OpDispatchBuilder::CalculateFlags_Logical(uint8_t SrcSize, Ref Res, Ref Src1, Ref Src2) {
+void OpDispatchBuilder::CalculateFlags_Logical(IR::OpSize SrcSize, Ref Res, Ref Src1, Ref Src2) {
   InvalidateAF();
 
   CalculatePF(Res);
@@ -436,7 +436,7 @@ void OpDispatchBuilder::CalculateFlags_Logical(uint8_t SrcSize, Ref Res, Ref Src
   SetNZ_ZeroCV(SrcSize, Res);
 }
 
-void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, Ref UnmaskedRes, Ref Src1, uint64_t Shift) {
+void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(IR::OpSize SrcSize, Ref UnmaskedRes, Ref Src1, uint64_t Shift) {
   // No flags changed if shift is zero
   if (Shift == 0) {
     return;
@@ -470,7 +470,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(uint8_t SrcSize, Ref U
   }
 }
 
-void OpDispatchBuilder::CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, Ref Res, Ref Src1, uint64_t Shift) {
+void OpDispatchBuilder::CalculateFlags_SignShiftRightImmediate(IR::OpSize SrcSize, Ref Res, Ref Src1, uint64_t Shift) {
   // No flags changed if shift is zero
   if (Shift == 0) {
     return;
@@ -490,7 +490,7 @@ void OpDispatchBuilder::CalculateFlags_SignShiftRightImmediate(uint8_t SrcSize, 
   // already zeroed there's nothing to do here.
 }
 
-void OpDispatchBuilder::CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize, Ref Res, Ref Src1, uint64_t Shift) {
+void OpDispatchBuilder::CalculateFlags_ShiftRightImmediateCommon(IR::OpSize SrcSize, Ref Res, Ref Src1, uint64_t Shift) {
   // Set SF and PF. Clobbers OF, but OF only defined for Shift = 1 where it is
   // set below.
   SetNZ_ZeroCV(SrcSize, Res);
@@ -502,7 +502,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftRightImmediateCommon(uint8_t SrcSize
   InvalidateAF();
 }
 
-void OpDispatchBuilder::CalculateFlags_ShiftRightImmediate(uint8_t SrcSize, Ref Res, Ref Src1, uint64_t Shift) {
+void OpDispatchBuilder::CalculateFlags_ShiftRightImmediate(IR::OpSize SrcSize, Ref Res, Ref Src1, uint64_t Shift) {
   // No flags changed if shift is zero
   if (Shift == 0) {
     return;
@@ -520,7 +520,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftRightImmediate(uint8_t SrcSize, Ref 
   }
 }
 
-void OpDispatchBuilder::CalculateFlags_ShiftRightDoubleImmediate(uint8_t SrcSize, Ref Res, Ref Src1, uint64_t Shift) {
+void OpDispatchBuilder::CalculateFlags_ShiftRightDoubleImmediate(IR::OpSize SrcSize, Ref Res, Ref Src1, uint64_t Shift) {
   // No flags changed if shift is zero
   if (Shift == 0) {
     return;
@@ -541,7 +541,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftRightDoubleImmediate(uint8_t SrcSize
   }
 }
 
-void OpDispatchBuilder::CalculateFlags_ZCNT(uint8_t SrcSize, Ref Result) {
+void OpDispatchBuilder::CalculateFlags_ZCNT(IR::OpSize SrcSize, Ref Result) {
   // OF, SF, AF, PF all undefined
   // Test ZF of result, SF is undefined so this is ok.
   SetNZ_ZeroCV(SrcSize, Result);
