@@ -549,6 +549,7 @@ protected:
 // This must directly match bytes to the named opsize.
 // Implicit sized IR operations does math to get between sizes.
 enum OpSize : uint8_t {
+  iUnsized = 0,
   i8Bit = 1,
   i16Bit = 2,
   i32Bit = 4,
@@ -580,6 +581,7 @@ enum class ShiftType : uint8_t {
 // This is a nop operation and will be eliminated by the compiler.
 static inline OpSize SizeToOpSize(uint8_t Size) {
   switch (Size) {
+  case 0: return OpSize::iUnsized;
   case 1: return OpSize::i8Bit;
   case 2: return OpSize::i16Bit;
   case 4: return OpSize::i32Bit;
@@ -595,6 +597,7 @@ static inline OpSize SizeToOpSize(uint8_t Size) {
 // This is a nop operation and will be eliminated by the compiler.
 static inline uint8_t OpSizeToSize(IR::OpSize Size) {
   switch (Size) {
+  case OpSize::iUnsized: return 0;
   case OpSize::i8Bit: return 1;
   case OpSize::i16Bit: return 2;
   case OpSize::i32Bit: return 4;
@@ -607,12 +610,34 @@ static inline uint8_t OpSizeToSize(IR::OpSize Size) {
   }
 }
 
+static inline uint16_t OpSizeAsBits(IR::OpSize Size) {
+  LOGMAN_THROW_A_FMT(Size != IR::OpSize::iInvalid, "Invalid Size");
+  return IR::OpSizeToSize(Size) * 8u;
+}
+
 static inline OpSize MultiplyOpSize(IR::OpSize Size, uint8_t Multiplier) {
+  LOGMAN_THROW_A_FMT(Size != IR::OpSize::iInvalid, "Invalid Size");
   return IR::SizeToOpSize(IR::OpSizeToSize(Size) * Multiplier);
 }
 
-static inline OpSize DivideOpSize(IR::OpSize Size, uint8_t Multiplier) {
-  return IR::SizeToOpSize(IR::OpSizeToSize(Size) / Multiplier);
+static inline OpSize DivideOpSize(IR::OpSize Size, uint8_t Divisor) {
+  LOGMAN_THROW_A_FMT(Size != IR::OpSize::iInvalid, "Invalid Size");
+  return IR::SizeToOpSize(IR::OpSizeToSize(Size) / Divisor);
+}
+
+static inline OpSize operator/(IR::OpSize Size, IR::OpSize Divisor) {
+  LOGMAN_THROW_A_FMT(Size != IR::OpSize::iInvalid, "Invalid Size");
+  return IR::SizeToOpSize(IR::OpSizeToSize(Size) / IR::OpSizeToSize(Divisor));
+}
+
+static inline OpSize operator/(IR::OpSize Size, uint8_t Divisor) {
+  LOGMAN_THROW_A_FMT(Size != IR::OpSize::iInvalid, "Invalid Size");
+  return IR::SizeToOpSize(IR::OpSizeToSize(Size) / Divisor);
+}
+
+static inline uint8_t NumElements(IR::OpSize RegisterSize, IR::OpSize ElementSize) {
+  LOGMAN_THROW_A_FMT(RegisterSize != IR::OpSize::iInvalid && ElementSize != IR::OpSize::iInvalid, "Invalid Size");
+  return IR::OpSizeToSize(RegisterSize) / IR::OpSizeToSize(ElementSize);
 }
 
 #define IROP_ENUM

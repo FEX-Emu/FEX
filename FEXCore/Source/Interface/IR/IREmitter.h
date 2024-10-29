@@ -59,12 +59,12 @@ public:
 #define IROP_ALLOCATE_HELPERS
 #define IROP_DISPATCH_HELPERS
 #include <FEXCore/IR/IRDefines.inc>
-  IRPair<IROp_Constant> _Constant(uint8_t Size, uint64_t Constant) {
+  IRPair<IROp_Constant> _Constant(IR::OpSize Size, uint64_t Constant) {
     auto Op = AllocateOp<IROp_Constant, IROps::OP_CONSTANT>();
-    uint64_t Mask = ~0ULL >> (64 - Size);
+    uint64_t Mask = ~0ULL >> (64 - IR::OpSizeAsBits(Size));
     Op.first->Constant = (Constant & Mask);
-    Op.first->Header.Size = Size / 8;
-    Op.first->Header.ElementSize = Size / 8;
+    Op.first->Header.Size = Size;
+    Op.first->Header.ElementSize = Size;
     return Op;
   }
   IRPair<IROp_Jump> _Jump() {

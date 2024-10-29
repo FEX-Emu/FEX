@@ -294,14 +294,14 @@ void Dump(fextl::stringstream* out, const IRListView* IR, IR::RegisterAllocation
         AddIndent();
         if (GetHasDest(IROp->Op)) {
 
-          uint32_t ElementSize = IROp->ElementSize;
-          uint32_t NumElements = IROp->Size;
+          auto ElementSize = IROp->ElementSize;
+          uint8_t NumElements = 0;
           if (!IROp->ElementSize) {
             ElementSize = IROp->Size;
           }
 
           if (ElementSize) {
-            NumElements /= ElementSize;
+            NumElements = IR::NumElements(IROp->Size, ElementSize);
           }
 
           *out << "%" << std::dec << ID;
@@ -333,13 +333,13 @@ void Dump(fextl::stringstream* out, const IRListView* IR, IR::RegisterAllocation
           *out << " = ";
         } else {
 
-          uint32_t ElementSize = IROp->ElementSize;
+          auto ElementSize = IROp->ElementSize;
           if (!IROp->ElementSize) {
             ElementSize = IROp->Size;
           }
           uint32_t NumElements = 0;
           if (ElementSize) {
-            NumElements = IROp->Size / ElementSize;
+            NumElements = IR::NumElements(IROp->Size, ElementSize);
           }
 
           *out << "(%" << std::dec << ID << ' ';

@@ -733,7 +733,7 @@ void OpDispatchBuilder::FNINIT(OpcodeArgs) {
   }
 
   // Init FCW to 0x037F
-  auto NewFCW = _Constant(16, 0x037F);
+  auto NewFCW = _Constant(OpSize::i16Bit, 0x037F);
   _StoreContext(OpSize::i16Bit, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
   // Set top to zero

@@ -626,8 +626,8 @@ bool Arm64JITCore::IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode,
     auto Op = OpHeader->C<IR::IROp_InlineEntrypointOffset>();
     if (Value) {
       uint64_t Mask = ~0ULL;
-      uint8_t OpSize = OpHeader->Size;
-      if (OpSize == 4) {
+      const auto Size = OpHeader->Size;
+      if (Size == IR::OpSize::i32Bit) {
         Mask = 0xFFFF'FFFFULL;
       }
       *Value = (Entry + Op->Offset) & Mask;

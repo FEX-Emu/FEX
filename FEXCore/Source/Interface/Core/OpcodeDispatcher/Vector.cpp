@@ -706,7 +706,7 @@ void OpDispatchBuilder::MOVQMMXOp(OpcodeArgs) {
 
 void OpDispatchBuilder::MOVMSKOp(OpcodeArgs, IR::OpSize ElementSize) {
   const auto Size = OpSizeFromSrc(Op);
-  uint8_t NumElements = Size / ElementSize;
+  const auto NumElements = IR::NumElements(Size, ElementSize);
 
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
@@ -893,8 +893,8 @@ Ref OpDispatchBuilder::PShufWLane(IR::OpSize Size, FEXCore::IR::IndexNamedVector
   constexpr auto IdentityCopy = 0b11'10'01'00;
 
   const bool Is128BitLane = Size == OpSize::i128Bit;
-  const uint8_t NumElements = Size / 2;
-  const uint8_t HalfNumElements = NumElements >> 1;
+  const auto NumElements = IR::NumElements(Size, IR::OpSize::i16Bit);
+  const auto HalfNumElements = NumElements >> 1;
 
   // TODO: There can be more optimized copies here.
   switch (Shuffle) {
@@ -4593,7 +4593,7 @@ void OpDispatchBuilder::VPERMQOp(OpcodeArgs) {
     Result = _VDupElement(DstSize, OpSize::i64Bit, Src, Index);
   } else {
     Result = LoadZeroVector(DstSize);
-    for (size_t i = 0; i < DstSize / 8; i++) {
+    for (size_t i = 0; i < IR::NumElements(DstSize, IR::OpSize::i64Bit); i++) {
       const auto SrcIndex = (Selector >> (i * 2)) & 0b11;
       Result = _VInsElement(DstSize, OpSize::i64Bit, i, SrcIndex, Result, Src);
     }
@@ -4605,7 +4605,7 @@ Ref OpDispatchBuilder::VBLENDOpImpl(IR::OpSize VecSize, IR::OpSize ElementSize, 
   const std::array Sources {Src1, Src2};
 
   Ref Result = ZeroRegister;
-  const int NumElements = VecSize / ElementSize;
+  const auto NumElements = IR::NumElements(VecSize, ElementSize);
   for (int i = 0; i < NumElements; i++) {
     const auto SelectorIndex = (Selector >> i) & 1;
 
