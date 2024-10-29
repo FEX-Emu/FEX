@@ -521,7 +521,7 @@ void DeadFlagCalculationEliminination::FoldBranch(IREmitter* IREmit, IRListView&
     // Pattern match a branch fed by a compare. We could also handle bit tests
     // here, but tbz/tbnz has a limited offset range which we don't have a way to
     // deal with yet. Let's hope that's not a big deal.
-    if (!(Op->Cond == COND_NEQ || Op->Cond == COND_EQ) || (Prev->Size < 4)) {
+    if (!(Op->Cond == COND_NEQ || Op->Cond == COND_EQ) || (Prev->Size < OpSize::i32Bit)) {
       return;
     }
 
@@ -534,7 +534,7 @@ void DeadFlagCalculationEliminination::FoldBranch(IREmitter* IREmit, IRListView&
     IREmit->ReplaceNodeArgument(CodeNode, 0, CurrentIR.GetNode(Prev->Args[0]));
     IREmit->ReplaceNodeArgument(CodeNode, 1, CurrentIR.GetNode(Prev->Args[1]));
     Op->FromNZCV = false;
-    Op->CompareSize = IR::SizeToOpSize(Prev->Size);
+    Op->CompareSize = Prev->Size;
   } else {
     return;
   }
@@ -612,7 +612,7 @@ bool DeadFlagCalculationEliminination::ProcessBlock(IREmitter* IREmit, IRListVie
         // this flag is outside of the if, since the TestNZ might result from
         // optimizing AndWithFlags, and we need to converge locally in a single
         // iteration.
-        if (IROp->Op == OP_TESTNZ && IROp->Size < 4 && !(FlagsRead & (FLAG_N | FLAG_C))) {
+        if (IROp->Op == OP_TESTNZ && IROp->Size < OpSize::i32Bit && !(FlagsRead & (FLAG_N | FLAG_C))) {
           IROp->Op = OP_TESTZ;
         }
 

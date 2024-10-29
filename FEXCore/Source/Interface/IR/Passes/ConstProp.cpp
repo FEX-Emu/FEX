@@ -29,7 +29,7 @@ $end_info$
 namespace FEXCore::IR {
 
 uint64_t getMask(IROp_Header* Op) {
-  uint64_t NumBits = Op->Size * 8;
+  uint64_t NumBits = IR::OpSizeAsBits(Op->Size);
   return (~0ULL) >> (64 - NumBits);
 }
 
@@ -91,7 +91,7 @@ private:
     // We don't allow 8/16-bit operations to have constants, since no
     // constant would be in bounds after the JIT's 24/16 shift.
     auto Filter = [&IROp](uint64_t X) {
-      return ARMEmitter::IsImmAddSub(X) && IROp->Size >= 4;
+      return ARMEmitter::IsImmAddSub(X) && IROp->Size >= OpSize::i32Bit;
     };
 
     return InlineIf(IREmit, CurrentIR, CodeNode, IROp, Index, Filter);
@@ -112,7 +112,7 @@ private:
     IsSIMM9 &= (SupportsTSOImm9 || !TSO);
 
     // Extended offsets for regular loadstore only.
-    bool IsExtended = (Imm & (IROp->Size - 1)) == 0 && Imm / IROp->Size <= 4095;
+    bool IsExtended = (Imm & (IR::OpSizeToSize(IROp->Size) - 1)) == 0 && Imm / IR::OpSizeToSize(IROp->Size) <= 4095;
     IsExtended &= !TSO;
 
     if (IsSIMM9 || IsExtended) {
@@ -204,7 +204,7 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     /* IsImmAddSub assumes the constants are sign-extended, take care of that
      * here so we get the optimization for 32-bit adds too.
      */
-    if (Op->Header.Size == 4) {
+    if (Op->Header.Size == OpSize::i32Bit) {
       Constant1 = (int64_t)(int32_t)Constant1;
       Constant2 = (int64_t)(int32_t)Constant2;
     }
@@ -290,12 +290,12 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     }
 
     if (!Replaced) {
-      InlineIf(IREmit, CurrentIR, CodeNode, IROp, 1, [&IROp](uint64_t X) { return IsImmLogical(X, IROp->Size * 8); });
+      InlineIf(IREmit, CurrentIR, CodeNode, IROp, 1, [&IROp](uint64_t X) { return IsImmLogical(X, IR::OpSizeAsBits(IROp->Size)); });
     }
     break;
   }
   case OP_OR: {
-    InlineIf(IREmit, CurrentIR, CodeNode, IROp, 1, [&IROp](uint64_t X) { return IsImmLogical(X, IROp->Size * 8); });
+    InlineIf(IREmit, CurrentIR, CodeNode, IROp, 1, [&IROp](uint64_t X) { return IsImmLogical(X, IR::OpSizeAsBits(IROp->Size)); });
     break;
   }
   case OP_XOR: {
@@ -325,7 +325,7 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
       }
 
       if (!Replaced) {
-        InlineIf(IREmit, CurrentIR, CodeNode, IROp, 1, [&IROp](uint64_t X) { return IsImmLogical(X, IROp->Size * 8); });
+        InlineIf(IREmit, CurrentIR, CodeNode, IROp, 1, [&IROp](uint64_t X) { return IsImmLogical(X, IR::OpSizeAsBits(IROp->Size)); });
       }
     }
     break;
@@ -333,7 +333,7 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
   case OP_ANDWITHFLAGS:
   case OP_ANDN:
   case OP_TESTNZ: {
-    InlineIf(IREmit, CurrentIR, CodeNode, IROp, 1, [&IROp](uint64_t X) { return IsImmLogical(X, IROp->Size * 8); });
+    InlineIf(IREmit, CurrentIR, CodeNode, IROp, 1, [&IROp](uint64_t X) { return IsImmLogical(X, IR::OpSizeAsBits(IROp->Size)); });
     break;
   }
   case OP_NEG: {
@@ -356,7 +356,7 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
 
     if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) && IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
       // Shifts mask the shift amount by 63 or 31 depending on operating size;
-      uint64_t ShiftMask = IROp->Size == 8 ? 63 : 31;
+      uint64_t ShiftMask = IROp->Size == OpSize::i64Bit ? 63 : 31;
       uint64_t NewConstant = (Constant1 << (Constant2 & ShiftMask)) & getMask(IROp);
       IREmit->ReplaceWithConstant(CodeNode, NewConstant);
     } else if (IREmit->IsValueConstant(IROp->Args[1], &Constant2) && Constant2 == 0) {
@@ -384,7 +384,7 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     auto Op = IROp->C<IR::IROp_Bfe>();
     uint64_t Constant;
 
-    if (IROp->Size <= 8 && IREmit->IsValueConstant(Op->Src, &Constant)) {
+    if (IROp->Size <= OpSize::i64Bit && IREmit->IsValueConstant(Op->Src, &Constant)) {
       uint64_t SourceMask = Op->Width == 64 ? ~0ULL : ((1ULL << Op->Width) - 1);
       SourceMask <<= Op->lsb;
 
@@ -400,7 +400,7 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     if (IREmit->IsValueConstant(Op->Src, &Constant)) {
       // SBFE of a constant can be converted to a constant.
       uint64_t SourceMask = Op->Width == 64 ? ~0ULL : ((1ULL << Op->Width) - 1);
-      uint64_t DestSizeInBits = IROp->Size * 8;
+      uint64_t DestSizeInBits = IR::OpSizeAsBits(IROp->Size);
       uint64_t DestMask = DestSizeInBits == 64 ? ~0ULL : ((1ULL << DestSizeInBits) - 1);
       SourceMask <<= Op->lsb;
 
@@ -424,11 +424,11 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
       uint64_t NewConstant = SourceMask << Op->lsb;
 
       if (ConstantSrc & 1) {
-        auto orr = IREmit->_Or(IR::SizeToOpSize(IROp->Size), CurrentIR.GetNode(IROp->Args[0]), IREmit->_Constant(NewConstant));
+        auto orr = IREmit->_Or(IROp->Size, CurrentIR.GetNode(IROp->Args[0]), IREmit->_Constant(NewConstant));
         IREmit->ReplaceAllUsesWith(CodeNode, orr);
       } else {
         // We are wanting to clear the bitfield.
-        auto andn = IREmit->_Andn(IR::SizeToOpSize(IROp->Size), CurrentIR.GetNode(IROp->Args[0]), IREmit->_Constant(NewConstant));
+        auto andn = IREmit->_Andn(IROp->Size, CurrentIR.GetNode(IROp->Args[0]), IREmit->_Constant(NewConstant));
         IREmit->ReplaceAllUsesWith(CodeNode, andn);
       }
     }
@@ -596,7 +596,7 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
   case OP_SELECT: {
     InlineIf(IREmit, CurrentIR, CodeNode, IROp, 1, ARMEmitter::IsImmAddSub);
 
-    uint64_t AllOnes = IROp->Size == 8 ? 0xffff'ffff'ffff'ffffull : 0xffff'ffffull;
+    uint64_t AllOnes = IROp->Size == OpSize::i64Bit ? 0xffff'ffff'ffff'ffffull : 0xffff'ffffull;
 
     uint64_t Constant2 {};
     uint64_t Constant3 {};
@@ -614,7 +614,7 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     // We always allow source 1 to be zero, but source 0 can only be a
     // special 1/~0 constant if source 1 is 0.
     if (InlineIfZero(IREmit, CurrentIR, CodeNode, IROp, 1)) {
-      uint64_t AllOnes = IROp->Size == 8 ? 0xffff'ffff'ffff'ffffull : 0xffff'ffffull;
+      uint64_t AllOnes = IROp->Size == OpSize::i64Bit ? 0xffff'ffff'ffff'ffffull : 0xffff'ffffull;
       InlineIf(IREmit, CurrentIR, CodeNode, IROp, 0, [&AllOnes](uint64_t X) { return X == 1 || X == AllOnes; });
     }
     break;
@@ -632,7 +632,7 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
         auto EO = NewRIP->C<IR::IROp_EntrypointOffset>();
         IREmit->SetWriteCursor(CurrentIR.GetNode(Op->NewRIP));
 
-        IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->_InlineEntrypointOffset(IR::SizeToOpSize(EO->Header.Size), EO->Offset));
+        IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->_InlineEntrypointOffset(EO->Header.Size, EO->Offset));
       }
     }
     break;

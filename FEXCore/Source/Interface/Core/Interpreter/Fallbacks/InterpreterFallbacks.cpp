@@ -79,7 +79,7 @@ void InterpreterOps::FillFallbackIndexPointers(uint64_t* Info) {
 }
 
 bool InterpreterOps::GetFallbackHandler(bool SupportsPreserveAllABI, const IR::IROp_Header* IROp, FallbackInfo* Info) {
-  uint8_t OpSize = IROp->Size;
+  const auto OpSize = IROp->Size;
   switch (IROp->Op) {
   case IR::OP_F80CVTTO: {
     auto Op = IROp->C<IR::IROp_F80CVTTo>();
@@ -99,11 +99,11 @@ bool InterpreterOps::GetFallbackHandler(bool SupportsPreserveAllABI, const IR::I
   }
   case IR::OP_F80CVT: {
     switch (OpSize) {
-    case 4: {
+    case IR::OpSize::i32Bit: {
       *Info = {FABI_F32_I16_F80, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVT>::handle4, Core::OPINDEX_F80CVT_4, SupportsPreserveAllABI};
       return true;
     }
-    case 8: {
+    case IR::OpSize::i64Bit: {
       *Info = {FABI_F64_I16_F80, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVT>::handle8, Core::OPINDEX_F80CVT_8, SupportsPreserveAllABI};
       return true;
     }
@@ -115,7 +115,7 @@ bool InterpreterOps::GetFallbackHandler(bool SupportsPreserveAllABI, const IR::I
     auto Op = IROp->C<IR::IROp_F80CVTInt>();
 
     switch (OpSize) {
-    case 2: {
+    case IR::OpSize::i16Bit: {
       if (Op->Truncate) {
         *Info = {FABI_I16_I16_F80, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle2t, Core::OPINDEX_F80CVTINT_TRUNC2,
                  SupportsPreserveAllABI};
@@ -124,7 +124,7 @@ bool InterpreterOps::GetFallbackHandler(bool SupportsPreserveAllABI, const IR::I
       }
       return true;
     }
-    case 4: {
+    case IR::OpSize::i32Bit: {
       if (Op->Truncate) {
         *Info = {FABI_I32_I16_F80, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle4t, Core::OPINDEX_F80CVTINT_TRUNC4,
                  SupportsPreserveAllABI};
@@ -133,7 +133,7 @@ bool InterpreterOps::GetFallbackHandler(bool SupportsPreserveAllABI, const IR::I
       }
       return true;
     }
-    case 8: {
+    case IR::OpSize::i64Bit: {
       if (Op->Truncate) {
         *Info = {FABI_I64_I16_F80, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle8t, Core::OPINDEX_F80CVTINT_TRUNC8,
                  SupportsPreserveAllABI};

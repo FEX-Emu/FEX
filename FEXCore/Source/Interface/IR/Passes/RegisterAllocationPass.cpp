@@ -582,7 +582,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
 
             if (Reg.Class == FPRFixedClass) {
               IROp_Header* Header = IR->GetOp<IROp_Header>(Old);
-              Copy = IREmit->_VMov(IR::SizeToOpSize(Header->Size), Map(Old));
+              Copy = IREmit->_VMov(Header->Size, Map(Old));
             } else {
               Copy = IREmit->_Copy(Map(Old));
             }

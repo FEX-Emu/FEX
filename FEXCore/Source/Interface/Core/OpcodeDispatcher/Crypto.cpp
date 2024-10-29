@@ -322,7 +322,7 @@ void OpDispatchBuilder::AESEncOp(OpcodeArgs) {
 
 void OpDispatchBuilder::VAESEncOp(OpcodeArgs) {
   const auto DstSize = OpSizeFromDst(Op);
-  [[maybe_unused]] const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  [[maybe_unused]] const auto Is128Bit = DstSize == OpSize::i128Bit;
 
   // TODO: Handle 256-bit VAESENC.
   LOGMAN_THROW_A_FMT(Is128Bit, "256-bit VAESENC unimplemented");
@@ -343,7 +343,7 @@ void OpDispatchBuilder::AESEncLastOp(OpcodeArgs) {
 
 void OpDispatchBuilder::VAESEncLastOp(OpcodeArgs) {
   const auto DstSize = OpSizeFromDst(Op);
-  [[maybe_unused]] const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  [[maybe_unused]] const auto Is128Bit = DstSize == OpSize::i128Bit;
 
   // TODO: Handle 256-bit VAESENCLAST.
   LOGMAN_THROW_A_FMT(Is128Bit, "256-bit VAESENCLAST unimplemented");
@@ -364,7 +364,7 @@ void OpDispatchBuilder::AESDecOp(OpcodeArgs) {
 
 void OpDispatchBuilder::VAESDecOp(OpcodeArgs) {
   const auto DstSize = OpSizeFromDst(Op);
-  [[maybe_unused]] const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  [[maybe_unused]] const auto Is128Bit = DstSize == OpSize::i128Bit;
 
   // TODO: Handle 256-bit VAESDEC.
   LOGMAN_THROW_A_FMT(Is128Bit, "256-bit VAESDEC unimplemented");
@@ -385,7 +385,7 @@ void OpDispatchBuilder::AESDecLastOp(OpcodeArgs) {
 
 void OpDispatchBuilder::VAESDecLastOp(OpcodeArgs) {
   const auto DstSize = OpSizeFromDst(Op);
-  [[maybe_unused]] const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  [[maybe_unused]] const auto Is128Bit = DstSize == OpSize::i128Bit;
 
   // TODO: Handle 256-bit VAESDECLAST.
   LOGMAN_THROW_A_FMT(Is128Bit, "256-bit VAESDECLAST unimplemented");

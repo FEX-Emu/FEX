@@ -731,7 +731,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         } else {
           auto* SourceNode = CurrentIR.GetNode(Op->X80Src);
           auto* OriginalNode = CurrentIR.GetNode(Op->OriginalValue);
-          StackData.push(StackMemberInfo {SourceNode, OriginalNode, SizeToOpSize(Op->LoadSize), Op->Float});
+          StackData.push(StackMemberInfo {SourceNode, OriginalNode, Op->LoadSize, Op->Float});
         }
         break;
       }
@@ -793,7 +793,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         // or similar. As long as the source size and dest size are one and the same.
         // This will avoid any conversions between source and stack element size and conversion back.
         if (!SlowPath && Value->Source && Value->Source->first == Op->StoreSize && Value->InterpretAsFloat) {
-          IREmit->_StoreMem(Value->InterpretAsFloat ? FPRClass : GPRClass, IR::SizeToOpSize(Op->StoreSize), AddrNode, Value->Source->second);
+          IREmit->_StoreMem(Value->InterpretAsFloat ? FPRClass : GPRClass, Op->StoreSize, AddrNode, Value->Source->second);
         } else {
           if (ReducedPrecisionMode) {
             switch (Op->StoreSize) {
@@ -826,7 +826,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
               auto DestAddr = IREmit->_Add(OpSize::i64Bit, AddrNode, GetConstant(8));
               IREmit->_StoreMem(GPRClass, OpSize::i16Bit, DestAddr, Upper, OpSize::i64Bit);
             } else {
-              IREmit->_StoreMem(FPRClass, IR::SizeToOpSize(Op->StoreSize), AddrNode, StackNode);
+              IREmit->_StoreMem(FPRClass, Op->StoreSize, AddrNode, StackNode);
             }
           }
         }

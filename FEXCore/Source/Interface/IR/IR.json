@@ -736,7 +736,7 @@
         "HasSideEffects": true,
         "DestSize": "RegisterSize",
         "EmitValidation": [
-          "Offset % RegisterSize == 0",
+          "Offset % IR::OpSizeToSize(RegisterSize) == 0",
           "RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i256Bit"
         ]
       },
@@ -748,7 +748,7 @@
         "HasSideEffects": true,
         "DestSize": "RegisterSize",
         "EmitValidation": [
-          "Offset % RegisterSize == 0",
+          "Offset % IR::OpSizeToSize(RegisterSize) == 0",
           "RegisterSize == FEXCore::IR::OpSize::i128Bit"
         ]
       },
@@ -760,7 +760,7 @@
         "HasSideEffects": true,
         "DestSize": "RegisterSize",
         "EmitValidation": [
-          "Offset % RegisterSize == 0",
+          "Offset % IR::OpSizeToSize(RegisterSize) == 0",
           "RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i256Bit"
         ]
       }
@@ -2017,7 +2017,7 @@
         "TiedSource": 0,
         "Desc": "Unsigned shifts right each element and then narrows to the next lower element size",
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / (IR::DivideOpSize(ElementSize, 2))"
+        "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
 
       "FPR = VUShrNI2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper, u8:$BitShift": {
@@ -2026,73 +2026,73 @@
                  "Inserts results in to the high elements of the first argument"
                 ],
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / (IR::DivideOpSize(ElementSize, 2))"
+        "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
       "FPR = VSXTL OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": "Sign extends elements from the source element size to the next size up",
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / (IR::MultiplyOpSize(ElementSize, 2))"
+        "NumElements": "RegisterSize / (ElementSize << 1)"
       },
       "FPR = VSXTL2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": ["Sign extends elements from the source element size to the next size up",
                  "Source elements come from the upper half of the register"
                 ],
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / (IR::MultiplyOpSize(ElementSize, 2))"
+        "NumElements": "RegisterSize / (ElementSize << 1)"
       },
       "FPR = VSSHLL OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$BitShift{0}": {
         "Desc": "Sign extends elements from the source element size to the next size up",
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / (IR::MultiplyOpSize(ElementSize, 2))"
+        "NumElements": "RegisterSize / (ElementSize << 1)"
       },
       "FPR = VSSHLL2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$BitShift{0}": {
         "Desc": ["Sign extends elements from the source element size to the next size up",
                  "Source elements come from the upper half of the register"
                 ],
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / (IR::MultiplyOpSize(ElementSize, 2))"
+        "NumElements": "RegisterSize / (ElementSize << 1)"
       },
       "FPR = VUXTL OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": "Zero extends elements from the source element size to the next size up",
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / (IR::MultiplyOpSize(ElementSize, 2))"
+        "NumElements": "RegisterSize / (ElementSize << 1)"
       },
       "FPR = VUXTL2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": ["Zero extends elements from the source element size to the next size up",
                  "Source elements come from the upper half of the register"
                 ],
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / (IR::MultiplyOpSize(ElementSize, 2))"
+        "NumElements": "RegisterSize / (ElementSize << 1)"
       },
       "FPR = VSQXTN OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "TiedSource": 0,
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / (IR::DivideOpSize(ElementSize, 2))"
+        "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
       "FPR = VSQXTN2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
         "TiedSource": 0,
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / (IR::DivideOpSize(ElementSize, 2))"
+        "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
       "FPR = VSQXTNPair OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
         "Desc": ["Does both VSQXTN and VSQXTN2 in a combined operation."
                 ],
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / (IR::DivideOpSize(ElementSize, 2))"
+        "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
       "FPR = VSQXTUN OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / (IR::DivideOpSize(ElementSize, 2))"
+        "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
       "FPR = VSQXTUN2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / (IR::DivideOpSize(ElementSize, 2))"
+        "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
       "FPR = VSQXTUNPair OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
         "Desc": ["Does both VSQXTUN and VSQXTUN2 in a combined operation."
                 ],
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / (IR::DivideOpSize(ElementSize, 2))"
+        "NumElements": "RegisterSize / (ElementSize >> 1)"
       },
       "FPR = VSRSHR OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$BitShift": {
         "Desc": ["Signed rounding shift right by immediate",
@@ -2271,24 +2271,24 @@
       },
       "FPR = VUMull OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / (IR::MultiplyOpSize(ElementSize, 2))"
+        "NumElements": "RegisterSize / (ElementSize << 1)"
       },
       "FPR = VSMull OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "Desc": [ "Does a signed integer multiply with extend.",
                   "ElementSize is the source size"
                 ],
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / (IR::MultiplyOpSize(ElementSize, 2))"
+        "NumElements": "RegisterSize / (ElementSize << 1)"
       },
       "FPR = VUMull2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "Desc": "Multiplies the high elements with size extension",
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / (IR::MultiplyOpSize(ElementSize, 2))"
+        "NumElements": "RegisterSize / (ElementSize << 1)"
       },
       "FPR = VSMull2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "Desc": "Multiplies the high elements with size extension",
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / (IR::MultiplyOpSize(ElementSize, 2))"
+        "NumElements": "RegisterSize / (ElementSize << 1)"
       },
       "FPR = VUMulH OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "Desc": "Wide unsigned multiply returning the high results",
@@ -2305,14 +2305,14 @@
         "Desc": ["Unsigned Absolute Difference Long"
                 ],
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / (IR::MultiplyOpSize(ElementSize, 2))"
+        "NumElements": "RegisterSize / (ElementSize << 1)"
       },
       "FPR = VUABDL2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "Desc": ["Unsigned Absolute Difference Long",
                  "Using the high elements of the source vectors"
                 ],
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / (IR::MultiplyOpSize(ElementSize, 2))"
+        "NumElements": "RegisterSize / (ElementSize << 1)"
       },
       "FPR = VUShl OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, FPR:$ShiftVector, i1:$RangeCheck": {
         "TiedSource": 0,
@@ -2580,7 +2580,7 @@
           "Selecting from the high half of the register."
         ],
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / (IR::MultiplyOpSize(ElementSize, 2))",
+        "NumElements": "RegisterSize / (ElementSize << 1)",
         "EmitValidation": [
           "RegisterSize != FEXCore::IR::OpSize::i256Bit && \"What does 256-bit mean in this context?\""
         ]
@@ -2594,7 +2594,7 @@
           "F64->F32, F32->F16"
         ],
         "DestSize": "RegisterSize",
-        "NumElements": "RegisterSize / (IR::DivideOpSize(ElementSize, 2))",
+        "NumElements": "RegisterSize / (ElementSize >> 1)",
         "EmitValidation": [
           "RegisterSize != FEXCore::IR::OpSize::i256Bit && \"What does 256-bit mean in this context?\""
         ]

@@ -139,8 +139,8 @@ Ref OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
 }
 
 void OpDispatchBuilder::CalculateOF(IR::OpSize SrcSize, Ref Res, Ref Src1, Ref Src2, bool Sub) {
-  auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
-  uint64_t SignBit = (SrcSize * 8) - 1;
+  const auto OpSize = SrcSize == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit;
+  const uint64_t SignBit = IR::OpSizeAsBits(SrcSize) - 1;
   Ref Anded = nullptr;
 
   // For add, OF is set iff the sources have the same sign but the destination
@@ -171,7 +171,7 @@ void OpDispatchBuilder::CalculateOF(IR::OpSize SrcSize, Ref Res, Ref Src1, Ref S
     }
   }
 
-  SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(Anded, SrcSize * 8 - 1, true);
+  SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(Anded, SignBit, true);
 }
 
 Ref OpDispatchBuilder::LoadPFRaw(bool Mask, bool Invert) {
@@ -265,7 +265,7 @@ Ref OpDispatchBuilder::IncrementByCarry(OpSize OpSize, Ref Src) {
 Ref OpDispatchBuilder::CalculateFlags_ADC(IR::OpSize SrcSize, Ref Src1, Ref Src2) {
   auto Zero = _InlineConstant(0);
   auto One = _InlineConstant(1);
-  auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
+  auto OpSize = SrcSize == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit;
   Ref Res;
 
   CalculateAF(Src1, Src2);
@@ -277,7 +277,7 @@ Ref OpDispatchBuilder::CalculateFlags_ADC(IR::OpSize SrcSize, Ref Src1, Ref Src2
     CFInverted = false;
   } else {
     // Need to zero-extend for correct comparisons below
-    Src2 = _Bfe(OpSize, SrcSize * 8, 0, Src2);
+    Src2 = _Bfe(OpSize, IR::OpSizeAsBits(SrcSize), 0, Src2);
 
     // Note that we do not extend Src2PlusCF, since we depend on proper
     // 32-bit arithmetic to correctly handle the Src2 = 0xffff case.
@@ -285,7 +285,7 @@ Ref OpDispatchBuilder::CalculateFlags_ADC(IR::OpSize SrcSize, Ref Src1, Ref Src2
 
     // Need to zero-extend for the comparison.
     Res = _Add(OpSize, Src1, Src2PlusCF);
-    Res = _Bfe(OpSize, SrcSize * 8, 0, Res);
+    Res = _Bfe(OpSize, IR::OpSizeAsBits(SrcSize), 0, Res);
 
     // TODO: We can fold that second Bfe in (cmp uxth).
     auto SelectCFInv = _Select(FEXCore::IR::COND_UGE, Res, Src2PlusCF, One, Zero);
@@ -302,7 +302,7 @@ Ref OpDispatchBuilder::CalculateFlags_ADC(IR::OpSize SrcSize, Ref Src1, Ref Src2
 Ref OpDispatchBuilder::CalculateFlags_SBB(IR::OpSize SrcSize, Ref Src1, Ref Src2) {
   auto Zero = _InlineConstant(0);
   auto One = _InlineConstant(1);
-  auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
+  auto OpSize = SrcSize == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit;
 
   CalculateAF(Src1, Src2);
 
@@ -316,13 +316,13 @@ Ref OpDispatchBuilder::CalculateFlags_SBB(IR::OpSize SrcSize, Ref Src1, Ref Src2
     CFInverted = true;
   } else {
     // Zero extend for correct comparison behaviour with Src1 = 0xffff.
-    Src1 = _Bfe(OpSize, SrcSize * 8, 0, Src1);
-    Src2 = _Bfe(OpSize, SrcSize * 8, 0, Src2);
+    Src1 = _Bfe(OpSize, IR::OpSizeAsBits(SrcSize), 0, Src1);
+    Src2 = _Bfe(OpSize, IR::OpSizeAsBits(SrcSize), 0, Src2);
 
     auto Src2PlusCF = IncrementByCarry(OpSize, Src2);
 
     Res = _Sub(OpSize, Src1, Src2PlusCF);
-    Res = _Bfe(OpSize, SrcSize * 8, 0, Res);
+    Res = _Bfe(OpSize, IR::OpSizeAsBits(SrcSize), 0, Res);
 
     auto SelectCFInv = _Select(FEXCore::IR::COND_UGE, Src1, Src2PlusCF, One, Zero);
 
@@ -345,9 +345,9 @@ Ref OpDispatchBuilder::CalculateFlags_SUB(IR::OpSize SrcSize, Ref Src1, Ref Src2
 
   Ref Res;
   if (SrcSize >= OpSize::i32Bit) {
-    Res = _SubWithFlags(IR::SizeToOpSize(SrcSize), Src1, Src2);
+    Res = _SubWithFlags(SrcSize, Src1, Src2);
   } else {
-    _SubNZCV(IR::SizeToOpSize(SrcSize), Src1, Src2);
+    _SubNZCV(SrcSize, Src1, Src2);
     Res = _Sub(OpSize::i32Bit, Src1, Src2);
   }
 
@@ -375,9 +375,9 @@ Ref OpDispatchBuilder::CalculateFlags_ADD(IR::OpSize SrcSize, Ref Src1, Ref Src2
 
   Ref Res;
   if (SrcSize >= OpSize::i32Bit) {
-    Res = _AddWithFlags(IR::SizeToOpSize(SrcSize), Src1, Src2);
+    Res = _AddWithFlags(SrcSize, Src1, Src2);
   } else {
-    _AddNZCV(IR::SizeToOpSize(SrcSize), Src1, Src2);
+    _AddNZCV(SrcSize, Src1, Src2);
     Res = _Add(OpSize::i32Bit, Src1, Src2);
   }
 
@@ -400,7 +400,7 @@ void OpDispatchBuilder::CalculateFlags_MUL(IR::OpSize SrcSize, Ref Res, Ref High
 
   // CF and OF are set if the result of the operation can't be fit in to the destination register
   // If the value can fit then the top bits will be zero
-  auto SignBit = _Sbfe(OpSize::i64Bit, 1, SrcSize * 8 - 1, Res);
+  auto SignBit = _Sbfe(OpSize::i64Bit, 1, IR::OpSizeAsBits(SrcSize) - 1, Res);
   _SubNZCV(OpSize::i64Bit, High, SignBit);
 
   // If High = SignBit, then sets to nZCv. Else sets to nzcV. Since SF/ZF
@@ -415,7 +415,7 @@ void OpDispatchBuilder::CalculateFlags_UMUL(Ref High) {
   InvalidatePF_AF();
 
   auto Zero = _InlineConstant(0);
-  OpSize Size = IR::SizeToOpSize(GetOpSize(High));
+  const auto Size = GetOpSize(High);
 
   // CF and OF are set if the result of the operation can't be fit in to the destination register
   // The result register will be all zero if it can't fit due to how multiplication behaves
@@ -442,7 +442,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(IR::OpSize SrcSize, Re
     return;
   }
 
-  auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
+  auto OpSize = SrcSize == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit;
 
   SetNZ_ZeroCV(SrcSize, UnmaskedRes);
 
@@ -451,7 +451,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(IR::OpSize SrcSize, Re
     // Extract the last bit shifted in to CF. Shift is already masked, but for
     // 8/16-bit it might be >= SrcSizeBits, in which case CF is cleared. There's
     // nothing to do in that case since we already cleared CF above.
-    auto SrcSizeBits = SrcSize * 8;
+    const auto SrcSizeBits = IR::OpSizeAsBits(SrcSize);
     if (Shift < SrcSizeBits) {
       SetCFDirect(Src1, SrcSizeBits - Shift, true);
     }
@@ -464,7 +464,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(IR::OpSize SrcSize, Re
   // In the case of left shift. OF is only set from the result of <Top Source Bit> XOR <Top Result Bit>
   if (Shift == 1) {
     auto Xor = _Xor(OpSize, UnmaskedRes, Src1);
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(Xor, SrcSize * 8 - 1, true);
+    SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(Xor, IR::OpSizeAsBits(SrcSize) - 1, true);
   } else {
     // Undefined, we choose to zero as part of SetNZ_ZeroCV
   }
@@ -515,7 +515,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftRightImmediate(IR::OpSize SrcSize, R
     // Only defined when Shift is 1 else undefined
     // Is set to the MSB of the original value
     if (Shift == 1) {
-      SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(Src1, SrcSize * 8 - 1, true);
+      SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(Src1, IR::OpSizeAsBits(SrcSize) - 1, true);
     }
   }
 }
@@ -526,7 +526,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftRightDoubleImmediate(IR::OpSize SrcS
     return;
   }
 
-  const auto OpSize = SrcSize == 8 ? OpSize::i64Bit : OpSize::i32Bit;
+  const auto OpSize = SrcSize == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit;
   CalculateFlags_ShiftRightImmediateCommon(SrcSize, Res, Src1, Shift);
 
   // OF
@@ -536,7 +536,7 @@ void OpDispatchBuilder::CalculateFlags_ShiftRightDoubleImmediate(IR::OpSize SrcS
     // XOR of Result and Src1
     if (Shift == 1) {
       auto val = _Xor(OpSize, Src1, Res);
-      SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(val, SrcSize * 8 - 1, true);
+      SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(val, IR::OpSizeAsBits(SrcSize) - 1, true);
     }
   }
 }
@@ -549,7 +549,7 @@ void OpDispatchBuilder::CalculateFlags_ZCNT(IR::OpSize SrcSize, Ref Result) {
   // Now set CF if the Result = SrcSize * 8. Since SrcSize is a power-of-two and
   // Result is <= SrcSize * 8, we equivalently check if the log2(SrcSize * 8)
   // bit is set. No masking is needed because no higher bits could be set.
-  unsigned CarryBit = FEXCore::ilog2(SrcSize * 8u);
+  unsigned CarryBit = FEXCore::ilog2(IR::OpSizeAsBits(SrcSize));
   SetCFDirect(Result, CarryBit);
 }
 

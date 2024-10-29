@@ -54,8 +54,8 @@ DEF_OP(EntrypointOffset) {
   auto Constant = Entry + Op->Offset;
   auto Dst = GetReg(Node);
   uint64_t Mask = ~0ULL;
-  uint8_t OpSize = IROp->Size;
-  if (OpSize == 4) {
+  const auto OpSize = IROp->Size;
+  if (OpSize == IR::OpSize::i32Bit) {
     Mask = 0xFFFF'FFFFULL;
   }
 
@@ -92,10 +92,10 @@ DEF_OP(AddNZCV) {
 
   uint64_t Const;
   if (IsInlineConstant(Op->Src2, &Const)) {
-    LOGMAN_THROW_AA_FMT(IROp->Size >= 4, "Constant not allowed here");
+    LOGMAN_THROW_AA_FMT(IROp->Size >= IR::OpSize::i32Bit, "Constant not allowed here");
     cmn(EmitSize, Src1, Const);
-  } else if (IROp->Size < 4) {
-    unsigned Shift = 32 - (8 * IROp->Size);
+  } else if (IROp->Size < IR::OpSize::i32Bit) {
+    unsigned Shift = 32 - IR::OpSizeAsBits(IROp->Size);
 
     lsl(ARMEmitter::Size::i32Bit, TMP1, Src1, Shift);
     cmn(EmitSize, TMP1, GetReg(Op->Src2.ID()), ARMEmitter::ShiftType::LSL, Shift);
@@ -165,7 +165,7 @@ DEF_OP(TestNZ) {
   // Shift the sign bit into place, clearing out the garbage in upper bits.
   // Adding zero does an effective test, setting NZ according to the result and
   // zeroing CV.
-  if (IROp->Size < 4) {
+  if (IROp->Size < IR::OpSize::i32Bit) {
     // Cheaper to and+cmn than to lsl+lsl+tst, so do the and ourselves if
     // needed.
     if (Op->Src1 != Op->Src2) {
@@ -179,7 +179,7 @@ DEF_OP(TestNZ) {
       Src1 = TMP1;
     }
 
-    unsigned Shift = 32 - (IROp->Size * 8);
+    unsigned Shift = 32 - IR::OpSizeAsBits(IROp->Size);
     cmn(EmitSize, ARMEmitter::Reg::zr, Src1, ARMEmitter::ShiftType::LSL, Shift);
   } else {
     if (IsInlineConstant(Op->Src2, &Const)) {
@@ -193,11 +193,11 @@ DEF_OP(TestNZ) {
 
 DEF_OP(TestZ) {
   auto Op = IROp->C<IR::IROp_TestZ>();
-  LOGMAN_THROW_AA_FMT(IROp->Size < 4, "TestNZ used at higher sizes");
+  LOGMAN_THROW_AA_FMT(IROp->Size < IR::OpSize::i32Bit, "TestNZ used at higher sizes");
   const auto EmitSize = ARMEmitter::Size::i32Bit;
 
   uint64_t Const;
-  uint64_t Mask = IROp->Size == 8 ? ~0ULL : ((1ull << (IROp->Size * 8)) - 1);
+  uint64_t Mask = IROp->Size == IR::OpSize::i64Bit ? ~0ULL : ((1ull << IR::OpSizeAsBits(IROp->Size)) - 1);
   auto Src1 = GetReg(Op->Src1.ID());
 
   if (IsInlineConstant(Op->Src2, &Const)) {
@@ -223,25 +223,25 @@ DEF_OP(SubShift) {
 
 DEF_OP(SubNZCV) {
   auto Op = IROp->C<IR::IROp_SubNZCV>();
-  const uint8_t OpSize = IROp->Size;
+  const auto OpSize = IROp->Size;
   const auto EmitSize = ConvertSize(IROp);
 
   uint64_t Const;
   if (IsInlineConstant(Op->Src2, &Const)) {
-    LOGMAN_THROW_AA_FMT(OpSize >= 4, "Constant not allowed here");
+    LOGMAN_THROW_AA_FMT(OpSize >= IR::OpSize::i32Bit, "Constant not allowed here");
     cmp(EmitSize, GetReg(Op->Src1.ID()), Const);
   } else {
-    unsigned Shift = OpSize < 4 ? (32 - (8 * OpSize)) : 0;
+    unsigned Shift = OpSize < IR::OpSize::i32Bit ? (32 - IR::OpSizeAsBits(OpSize)) : 0;
     ARMEmitter::Register ShiftedSrc1 = GetZeroableReg(Op->Src1);
 
     // Shift to fix flags for <32-bit ops.
     // Any shift of zero is still zero so optimize out silly zero shifts.
-    if (OpSize < 4 && ShiftedSrc1 != ARMEmitter::Reg::zr) {
+    if (OpSize < IR::OpSize::i32Bit && ShiftedSrc1 != ARMEmitter::Reg::zr) {
       lsl(ARMEmitter::Size::i32Bit, TMP1, ShiftedSrc1, Shift);
       ShiftedSrc1 = TMP1;
     }
 
-    if (OpSize < 4) {
+    if (OpSize < IR::OpSize::i32Bit) {
       cmp(EmitSize, ShiftedSrc1, GetReg(Op->Src2.ID()), ARMEmitter::ShiftType::LSL, Shift);
     } else {
       cmp(EmitSize, ShiftedSrc1, GetReg(Op->Src2.ID()));
@@ -286,10 +286,10 @@ DEF_OP(SetSmallNZV) {
   auto Op = IROp->C<IR::IROp_SetSmallNZV>();
   LOGMAN_THROW_A_FMT(CTX->HostFeatures.SupportsFlagM, "Unsupported flagm op");
 
-  const uint8_t OpSize = IROp->Size;
-  LOGMAN_THROW_AA_FMT(OpSize == 1 || OpSize == 2, "Unsupported {} size: {}", __func__, OpSize);
+  const auto OpSize = IROp->Size;
+  LOGMAN_THROW_AA_FMT(OpSize == IR::OpSize::i8Bit || OpSize == IR::OpSize::i16Bit, "Unsupported {} size: {}", __func__, OpSize);
 
-  if (OpSize == 1) {
+  if (OpSize == IR::OpSize::i8Bit) {
     setf8(GetReg(Op->Src.ID()).W());
   } else {
     setf16(GetReg(Op->Src.ID()).W());
@@ -401,20 +401,20 @@ DEF_OP(Div) {
 
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
-  const uint8_t OpSize = IROp->Size;
+  const auto OpSize = IROp->Size;
   const auto EmitSize = ConvertSize(IROp);
 
   const auto Dst = GetReg(Node);
   auto Src1 = GetReg(Op->Src1.ID());
   auto Src2 = GetReg(Op->Src2.ID());
 
-  if (OpSize == 1) {
+  if (OpSize == IR::OpSize::i8Bit) {
     sxtb(EmitSize, TMP1, Src1);
     sxtb(EmitSize, TMP2, Src2);
 
     Src1 = TMP1;
     Src2 = TMP2;
-  } else if (OpSize == 2) {
+  } else if (OpSize == IR::OpSize::i16Bit) {
     sxth(EmitSize, TMP1, Src1);
     sxth(EmitSize, TMP2, Src2);
 
@@ -430,20 +430,20 @@ DEF_OP(UDiv) {
 
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
-  const uint8_t OpSize = IROp->Size;
+  const auto OpSize = IROp->Size;
   const auto EmitSize = ConvertSize(IROp);
 
   const auto Dst = GetReg(Node);
   auto Src1 = GetReg(Op->Src1.ID());
   auto Src2 = GetReg(Op->Src2.ID());
 
-  if (OpSize == 1) {
+  if (OpSize == IR::OpSize::i8Bit) {
     uxtb(EmitSize, TMP1, Src1);
     uxtb(EmitSize, TMP2, Src2);
 
     Src1 = TMP1;
     Src2 = TMP2;
-  } else if (OpSize == 2) {
+  } else if (OpSize == IR::OpSize::i16Bit) {
     uxth(EmitSize, TMP1, Src1);
     uxth(EmitSize, TMP2, Src2);
 
@@ -458,20 +458,20 @@ DEF_OP(Rem) {
   auto Op = IROp->C<IR::IROp_Rem>();
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
-  const uint8_t OpSize = IROp->Size;
+  const auto OpSize = IROp->Size;
   const auto EmitSize = ConvertSize(IROp);
 
   const auto Dst = GetReg(Node);
   auto Src1 = GetReg(Op->Src1.ID());
   auto Src2 = GetReg(Op->Src2.ID());
 
-  if (OpSize == 1) {
+  if (OpSize == IR::OpSize::i8Bit) {
     sxtb(EmitSize, TMP1, Src1);
     sxtb(EmitSize, TMP2, Src2);
 
     Src1 = TMP1;
     Src2 = TMP2;
-  } else if (OpSize == 2) {
+  } else if (OpSize == IR::OpSize::i16Bit) {
     sxth(EmitSize, TMP1, Src1);
     sxth(EmitSize, TMP2, Src2);
 
@@ -487,20 +487,20 @@ DEF_OP(URem) {
   auto Op = IROp->C<IR::IROp_URem>();
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
-  const uint8_t OpSize = IROp->Size;
+  const auto OpSize = IROp->Size;
   const auto EmitSize = ConvertSize(IROp);
 
   const auto Dst = GetReg(Node);
   auto Src1 = GetReg(Op->Src1.ID());
   auto Src2 = GetReg(Op->Src2.ID());
 
-  if (OpSize == 1) {
+  if (OpSize == IR::OpSize::i8Bit) {
     uxtb(EmitSize, TMP1, Src1);
     uxtb(EmitSize, TMP2, Src2);
 
     Src1 = TMP1;
     Src2 = TMP2;
-  } else if (OpSize == 2) {
+  } else if (OpSize == IR::OpSize::i16Bit) {
     uxth(EmitSize, TMP1, Src1);
     uxth(EmitSize, TMP2, Src2);
 
@@ -514,15 +514,15 @@ DEF_OP(URem) {
 
 DEF_OP(MulH) {
   auto Op = IROp->C<IR::IROp_MulH>();
-  const uint8_t OpSize = IROp->Size;
+  const auto OpSize = IROp->Size;
 
-  LOGMAN_THROW_AA_FMT(OpSize == 4 || OpSize == 8, "Unsupported {} size: {}", __func__, OpSize);
+  LOGMAN_THROW_AA_FMT(OpSize == IR::OpSize::i32Bit || OpSize == IR::OpSize::i64Bit, "Unsupported {} size: {}", __func__, OpSize);
 
   const auto Dst = GetReg(Node);
   const auto Src1 = GetReg(Op->Src1.ID());
   const auto Src2 = GetReg(Op->Src2.ID());
 
-  if (OpSize == 4) {
+  if (OpSize == IR::OpSize::i32Bit) {
     sxtw(TMP1, Src1.W());
     sxtw(TMP2, Src2.W());
     mul(ARMEmitter::Size::i32Bit, Dst, TMP1, TMP2);
@@ -534,15 +534,15 @@ DEF_OP(MulH) {
 
 DEF_OP(UMulH) {
   auto Op = IROp->C<IR::IROp_UMulH>();
-  const uint8_t OpSize = IROp->Size;
+  const auto OpSize = IROp->Size;
 
-  LOGMAN_THROW_AA_FMT(OpSize == 4 || OpSize == 8, "Unsupported {} size: {}", __func__, OpSize);
+  LOGMAN_THROW_AA_FMT(OpSize == IR::OpSize::i32Bit || OpSize == IR::OpSize::i64Bit, "Unsupported {} size: {}", __func__, OpSize);
 
   const auto Dst = GetReg(Node);
   const auto Src1 = GetReg(Op->Src1.ID());
   const auto Src2 = GetReg(Op->Src2.ID());
 
-  if (OpSize == 4) {
+  if (OpSize == IR::OpSize::i32Bit) {
     uxtw(ARMEmitter::Size::i64Bit, TMP1, Src1);
     uxtw(ARMEmitter::Size::i64Bit, TMP2, Src2);
     mul(ARMEmitter::Size::i64Bit, Dst, TMP1, TMP2);
@@ -593,7 +593,7 @@ DEF_OP(Ornror) {
 
 DEF_OP(AndWithFlags) {
   auto Op = IROp->C<IR::IROp_AndWithFlags>();
-  const uint8_t OpSize = IROp->Size;
+  const auto OpSize = IROp->Size;
   const auto EmitSize = ConvertSize(IROp);
 
   uint64_t Const;
@@ -601,7 +601,7 @@ DEF_OP(AndWithFlags) {
   auto Src1 = GetReg(Op->Src1.ID());
 
   // See TestNZ
-  if (OpSize < 4) {
+  if (OpSize < IR::OpSize::i32Bit) {
     if (IsInlineConstant(Op->Src2, &Const)) {
       and_(EmitSize, Dst, Src1, Const);
     } else {
@@ -614,7 +614,7 @@ DEF_OP(AndWithFlags) {
       }
     }
 
-    unsigned Shift = 32 - (OpSize * 8);
+    unsigned Shift = 32 - IR::OpSizeAsBits(OpSize);
     cmn(EmitSize, ARMEmitter::Reg::zr, Dst, ARMEmitter::ShiftType::LSL, Shift);
   } else {
     if (IsInlineConstant(Op->Src2, &Const)) {
@@ -648,21 +648,21 @@ DEF_OP(Ashr) {
 
   uint64_t Const;
   if (IsInlineConstant(Op->Src2, &Const)) {
-    if (OpSize >= 4) {
+    if (OpSize >= IR::OpSize::i32Bit) {
       asr(EmitSize, Dst, Src1, (unsigned int)Const);
     } else {
-      sbfx(EmitSize, TMP1, Src1, 0, OpSize * 8);
+      sbfx(EmitSize, TMP1, Src1, 0, IR::OpSizeAsBits(OpSize));
       asr(EmitSize, Dst, TMP1, (unsigned int)Const);
-      ubfx(EmitSize, Dst, Dst, 0, OpSize * 8);
+      ubfx(EmitSize, Dst, Dst, 0, IR::OpSizeAsBits(OpSize));
     }
   } else {
     const auto Src2 = GetReg(Op->Src2.ID());
-    if (OpSize >= 4) {
+    if (OpSize >= IR::OpSize::i32Bit) {
       asrv(EmitSize, Dst, Src1, Src2);
     } else {
-      sbfx(EmitSize, TMP1, Src1, 0, OpSize * 8);
+      sbfx(EmitSize, TMP1, Src1, 0, IR::OpSizeAsBits(OpSize));
       asrv(EmitSize, Dst, TMP1, Src2);
-      ubfx(EmitSize, Dst, Dst, 0, OpSize * 8);
+      ubfx(EmitSize, Dst, Dst, 0, IR::OpSizeAsBits(OpSize));
     }
   }
 }
@@ -897,7 +897,7 @@ DEF_OP(PDep) {
 DEF_OP(PExt) {
   auto Op = IROp->C<IR::IROp_PExt>();
   const auto OpSize = IROp->Size;
-  const auto OpSizeBitsM1 = (OpSize * 8) - 1;
+  const auto OpSizeBitsM1 = IR::OpSizeAsBits(OpSize) - 1;
   const auto EmitSize = ConvertSize48(IROp);
 
   const auto Input = GetReg(Op->Input.ID());
@@ -952,8 +952,8 @@ DEF_OP(PExt) {
 
 DEF_OP(LDiv) {
   auto Op = IROp->C<IR::IROp_LDiv>();
-  const uint8_t OpSize = IROp->Size;
-  const auto EmitSize = OpSize >= 4 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto OpSize = IROp->Size;
+  const auto EmitSize = OpSize >= IR::OpSize::i32Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
   const auto Dst = GetReg(Node);
   const auto Upper = GetReg(Op->Upper.ID());
@@ -963,14 +963,14 @@ DEF_OP(LDiv) {
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
   switch (OpSize) {
-  case 2: {
+  case IR::OpSize::i16Bit: {
     uxth(EmitSize, TMP1, Lower);
     bfi(EmitSize, TMP1, Upper, 16, 16);
     sxth(EmitSize, TMP2, Divisor);
     sdiv(EmitSize, Dst, TMP1, TMP2);
     break;
   }
-  case 4: {
+  case IR::OpSize::i32Bit: {
     // TODO: 32-bit operation should be guaranteed not to leave garbage in the upper bits.
     mov(EmitSize, TMP1, Lower);
     bfi(EmitSize, TMP1, Upper, 32, 32);
@@ -978,7 +978,7 @@ DEF_OP(LDiv) {
     sdiv(EmitSize, Dst, TMP1, TMP2);
     break;
   }
-  case 8: {
+  case IR::OpSize::i64Bit: {
     ARMEmitter::SingleUseForwardLabel Only64Bit {};
     ARMEmitter::SingleUseForwardLabel LongDIVRet {};
 
@@ -1022,8 +1022,8 @@ DEF_OP(LDiv) {
 
 DEF_OP(LUDiv) {
   auto Op = IROp->C<IR::IROp_LUDiv>();
-  const uint8_t OpSize = IROp->Size;
-  const auto EmitSize = OpSize >= 4 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto OpSize = IROp->Size;
+  const auto EmitSize = OpSize >= IR::OpSize::i32Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
   const auto Dst = GetReg(Node);
   const auto Upper = GetReg(Op->Upper.ID());
@@ -1033,20 +1033,20 @@ DEF_OP(LUDiv) {
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64=
   switch (OpSize) {
-  case 2: {
+  case IR::OpSize::i16Bit: {
     uxth(EmitSize, TMP1, Lower);
     bfi(EmitSize, TMP1, Upper, 16, 16);
     udiv(EmitSize, Dst, TMP1, Divisor);
     break;
   }
-  case 4: {
+  case IR::OpSize::i32Bit: {
     // TODO: 32-bit operation should be guaranteed not to leave garbage in the upper bits.
     mov(EmitSize, TMP1, Lower);
     bfi(EmitSize, TMP1, Upper, 32, 32);
     udiv(EmitSize, Dst, TMP1, Divisor);
     break;
   }
-  case 8: {
+  case IR::OpSize::i64Bit: {
     ARMEmitter::SingleUseForwardLabel Only64Bit {};
     ARMEmitter::SingleUseForwardLabel LongDIVRet {};
 
@@ -1086,8 +1086,8 @@ DEF_OP(LUDiv) {
 
 DEF_OP(LRem) {
   auto Op = IROp->C<IR::IROp_LRem>();
-  const uint8_t OpSize = IROp->Size;
-  const auto EmitSize = OpSize >= 4 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto OpSize = IROp->Size;
+  const auto EmitSize = OpSize >= IR::OpSize::i32Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
   const auto Dst = GetReg(Node);
   const auto Upper = GetReg(Op->Upper.ID());
@@ -1097,7 +1097,7 @@ DEF_OP(LRem) {
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
   switch (OpSize) {
-  case 2: {
+  case IR::OpSize::i16Bit: {
     uxth(EmitSize, TMP1, Lower);
     bfi(EmitSize, TMP1, Upper, 16, 16);
     sxth(EmitSize, TMP2, Divisor);
@@ -1105,7 +1105,7 @@ DEF_OP(LRem) {
     msub(EmitSize, Dst, TMP3, TMP2, TMP1);
     break;
   }
-  case 4: {
+  case IR::OpSize::i32Bit: {
     // TODO: 32-bit operation should be guaranteed not to leave garbage in the upper bits.
     mov(EmitSize, TMP1, Lower);
     bfi(EmitSize, TMP1, Upper, 32, 32);
@@ -1114,7 +1114,7 @@ DEF_OP(LRem) {
     msub(EmitSize, Dst, TMP2, TMP3, TMP1);
     break;
   }
-  case 8: {
+  case IR::OpSize::i64Bit: {
     ARMEmitter::SingleUseForwardLabel Only64Bit {};
     ARMEmitter::SingleUseForwardLabel LongDIVRet {};
 
@@ -1160,8 +1160,8 @@ DEF_OP(LRem) {
 
 DEF_OP(LURem) {
   auto Op = IROp->C<IR::IROp_LURem>();
-  const uint8_t OpSize = IROp->Size;
-  const auto EmitSize = OpSize >= 4 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto OpSize = IROp->Size;
+  const auto EmitSize = OpSize >= IR::OpSize::i32Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
   const auto Dst = GetReg(Node);
   const auto Upper = GetReg(Op->Upper.ID());
@@ -1171,14 +1171,14 @@ DEF_OP(LURem) {
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
   switch (OpSize) {
-  case 2: {
+  case IR::OpSize::i16Bit: {
     uxth(EmitSize, TMP1, Lower);
     bfi(EmitSize, TMP1, Upper, 16, 16);
     udiv(EmitSize, TMP2, TMP1, Divisor);
     msub(EmitSize, Dst, TMP2, Divisor, TMP1);
     break;
   }
-  case 4: {
+  case IR::OpSize::i32Bit: {
     // TODO: 32-bit operation should be guaranteed not to leave garbage in the upper bits.
     mov(EmitSize, TMP1, Lower);
     bfi(EmitSize, TMP1, Upper, 32, 32);
@@ -1186,7 +1186,7 @@ DEF_OP(LURem) {
     msub(EmitSize, Dst, TMP2, Divisor, TMP1);
     break;
   }
-  case 8: {
+  case IR::OpSize::i64Bit: {
     ARMEmitter::SingleUseForwardLabel Only64Bit {};
     ARMEmitter::SingleUseForwardLabel LongDIVRet {};
 
@@ -1238,30 +1238,30 @@ DEF_OP(Not) {
 
 DEF_OP(Popcount) {
   auto Op = IROp->C<IR::IROp_Popcount>();
-  const uint8_t OpSize = IROp->Size;
+  const auto OpSize = IROp->Size;
 
   const auto Dst = GetReg(Node);
   const auto Src = GetReg(Op->Src.ID());
 
   switch (OpSize) {
-  case 0x1:
+  case IR::OpSize::i8Bit:
     fmov(ARMEmitter::Size::i32Bit, VTMP1.S(), Src);
     // only use lowest byte
     cnt(ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
     break;
-  case 0x2:
+  case IR::OpSize::i16Bit:
     fmov(ARMEmitter::Size::i32Bit, VTMP1.S(), Src);
     cnt(ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
     // only count two lowest bytes
     addp(ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D(), VTMP1.D());
     break;
-  case 0x4:
+  case IR::OpSize::i32Bit:
     fmov(ARMEmitter::Size::i32Bit, VTMP1.S(), Src);
     cnt(ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
     // fmov has zero extended, unused bytes are zero
     addv(ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
     break;
-  case 0x8:
+  case IR::OpSize::i64Bit:
     fmov(ARMEmitter::Size::i64Bit, VTMP1.D(), Src);
     cnt(ARMEmitter::SubRegSize::i8Bit, VTMP1.D(), VTMP1.D());
     // fmov has zero extended, unused bytes are zero
@@ -1288,17 +1288,18 @@ DEF_OP(FindLSB) {
 
 DEF_OP(FindMSB) {
   auto Op = IROp->C<IR::IROp_FindMSB>();
-  const uint8_t OpSize = IROp->Size;
+  const auto OpSize = IROp->Size;
 
-  LOGMAN_THROW_AA_FMT(OpSize == 2 || OpSize == 4 || OpSize == 8, "Unsupported {} size: {}", __func__, OpSize);
+  LOGMAN_THROW_AA_FMT(OpSize == IR::OpSize::i16Bit || OpSize == IR::OpSize::i32Bit || OpSize == IR::OpSize::i64Bit,
+                      "Unsupported {} size: {}", __func__, OpSize);
   const auto EmitSize = ConvertSize(IROp);
 
   const auto Dst = GetReg(Node);
   const auto Src = GetReg(Op->Src.ID());
 
-  movz(ARMEmitter::Size::i64Bit, TMP1, OpSize * 8 - 1);
+  movz(ARMEmitter::Size::i64Bit, TMP1, IR::OpSizeAsBits(OpSize) - 1);
 
-  if (OpSize == 2) {
+  if (OpSize == IR::OpSize::i16Bit) {
     lsl(EmitSize, Dst, Src, 16);
     clz(EmitSize, Dst, Dst);
   } else {
@@ -1310,9 +1311,10 @@ DEF_OP(FindMSB) {
 
 DEF_OP(FindTrailingZeroes) {
   auto Op = IROp->C<IR::IROp_FindTrailingZeroes>();
-  const uint8_t OpSize = IROp->Size;
+  const auto OpSize = IROp->Size;
 
-  LOGMAN_THROW_AA_FMT(OpSize == 2 || OpSize == 4 || OpSize == 8, "Unsupported {} size: {}", __func__, OpSize);
+  LOGMAN_THROW_AA_FMT(OpSize == IR::OpSize::i16Bit || OpSize == IR::OpSize::i32Bit || OpSize == IR::OpSize::i64Bit,
+                      "Unsupported {} size: {}", __func__, OpSize);
   const auto EmitSize = ConvertSize(IROp);
 
   const auto Dst = GetReg(Node);
@@ -1320,7 +1322,7 @@ DEF_OP(FindTrailingZeroes) {
 
   rbit(EmitSize, Dst, Src);
 
-  if (OpSize == 2) {
+  if (OpSize == IR::OpSize::i16Bit) {
     // This orr does two things. First, if the (masked) source is zero, it
     // reverses to zero in the top so it forces clz to return 16. Second, it
     // ensures garbage in the upper bits of the source don't affect clz, because
@@ -1334,15 +1336,16 @@ DEF_OP(FindTrailingZeroes) {
 
 DEF_OP(CountLeadingZeroes) {
   auto Op = IROp->C<IR::IROp_CountLeadingZeroes>();
-  const uint8_t OpSize = IROp->Size;
+  const auto OpSize = IROp->Size;
 
-  LOGMAN_THROW_AA_FMT(OpSize == 2 || OpSize == 4 || OpSize == 8, "Unsupported {} size: {}", __func__, OpSize);
+  LOGMAN_THROW_AA_FMT(OpSize == IR::OpSize::i16Bit || OpSize == IR::OpSize::i32Bit || OpSize == IR::OpSize::i64Bit,
+                      "Unsupported {} size: {}", __func__, OpSize);
   const auto EmitSize = ConvertSize(IROp);
 
   const auto Dst = GetReg(Node);
   const auto Src = GetReg(Op->Src.ID());
 
-  if (OpSize == 2) {
+  if (OpSize == IR::OpSize::i16Bit) {
     // Expressing as lsl+orr+clz clears away any garbage in the upper bits
     // (alternatively could do uxth+clz+sub.. equal cost in total).
     lsl(EmitSize, Dst, Src, 16);
@@ -1355,16 +1358,17 @@ DEF_OP(CountLeadingZeroes) {
 
 DEF_OP(Rev) {
   auto Op = IROp->C<IR::IROp_Rev>();
-  const uint8_t OpSize = IROp->Size;
+  const auto OpSize = IROp->Size;
 
-  LOGMAN_THROW_AA_FMT(OpSize == 2 || OpSize == 4 || OpSize == 8, "Unsupported {} size: {}", __func__, OpSize);
+  LOGMAN_THROW_AA_FMT(OpSize == IR::OpSize::i16Bit || OpSize == IR::OpSize::i32Bit || OpSize == IR::OpSize::i64Bit,
+                      "Unsupported {} size: {}", __func__, OpSize);
   const auto EmitSize = ConvertSize(IROp);
 
   const auto Dst = GetReg(Node);
   const auto Src = GetReg(Op->Src.ID());
 
   rev(EmitSize, Dst, Src);
-  if (OpSize == 2) {
+  if (OpSize == IR::OpSize::i16Bit) {
     lsr(EmitSize, Dst, Dst, 16);
   }
 }
@@ -1390,10 +1394,10 @@ DEF_OP(Bfi) {
     mov(EmitSize, TMP1, SrcDst);
     bfi(EmitSize, TMP1, Src, Op->lsb, Op->Width);
 
-    if (IROp->Size >= 4) {
+    if (IROp->Size >= IR::OpSize::i32Bit) {
       mov(EmitSize, Dst, TMP1.R());
     } else {
-      ubfx(EmitSize, Dst, TMP1, 0, IROp->Size * 8);
+      ubfx(EmitSize, Dst, TMP1, 0, IR::OpSizeAsBits(IROp->Size));
     }
   }
 }
@@ -1424,7 +1428,7 @@ DEF_OP(Bfxil) {
 
 DEF_OP(Bfe) {
   auto Op = IROp->C<IR::IROp_Bfe>();
-  LOGMAN_THROW_AA_FMT(IROp->Size <= 8, "OpSize is too large for BFE: {}", IROp->Size);
+  LOGMAN_THROW_AA_FMT(IROp->Size <= IR::OpSize::i64Bit, "OpSize is too large for BFE: {}", IROp->Size);
   LOGMAN_THROW_AA_FMT(Op->Width != 0, "Invalid BFE width of 0");
   const auto EmitSize = ConvertSize(IROp);
 
@@ -1434,7 +1438,7 @@ DEF_OP(Bfe) {
   if (Op->lsb == 0 && Op->Width == 32) {
     mov(ARMEmitter::Size::i32Bit, Dst, Src);
   } else if (Op->lsb == 0 && Op->Width == 64) {
-    LOGMAN_THROW_AA_FMT(IROp->Size == 8, "Must be 64-bit wide register");
+    LOGMAN_THROW_AA_FMT(IROp->Size == IR::OpSize::i64Bit, "Must be 64-bit wide register");
     mov(ARMEmitter::Size::i64Bit, Dst, Src);
   } else {
     ubfx(EmitSize, Dst, Src, Op->lsb, Op->Width);
@@ -1451,7 +1455,7 @@ DEF_OP(Sbfe) {
 
 DEF_OP(Select) {
   auto Op = IROp->C<IR::IROp_Select>();
-  const uint8_t OpSize = IROp->Size;
+  const auto OpSize = IROp->Size;
   const auto EmitSize = ConvertSize(IROp);
   const auto CompareEmitSize = Op->CompareSize == IR::OpSize::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
@@ -1479,7 +1483,7 @@ DEF_OP(Select) {
   bool is_const_true = IsInlineConstant(Op->TrueVal, &const_true);
   bool is_const_false = IsInlineConstant(Op->FalseVal, &const_false);
 
-  uint64_t all_ones = OpSize == 8 ? 0xffff'ffff'ffff'ffffull : 0xffff'ffffull;
+  uint64_t all_ones = OpSize == IR::OpSize::i64Bit ? 0xffff'ffff'ffff'ffffull : 0xffff'ffffull;
 
   ARMEmitter::Register Dst = GetReg(Node);
 
@@ -1508,7 +1512,7 @@ DEF_OP(NZCVSelect) {
   bool is_const_true = IsInlineConstant(Op->TrueVal, &const_true);
   bool is_const_false = IsInlineConstant(Op->FalseVal, &const_false);
 
-  uint64_t all_ones = IROp->Size == 8 ? 0xffff'ffff'ffff'ffffull : 0xffff'ffffull;
+  uint64_t all_ones = IROp->Size == IR::OpSize::i64Bit ? 0xffff'ffff'ffff'ffffull : 0xffff'ffffull;
 
   ARMEmitter::Register Dst = GetReg(Node);
 
@@ -1547,7 +1551,7 @@ DEF_OP(VExtractToGPR) {
 
   constexpr auto AVXRegBitSize = Core::CPUState::XMM_AVX_REG_SIZE * 8;
   constexpr auto SSERegBitSize = Core::CPUState::XMM_SSE_REG_SIZE * 8;
-  const auto ElementSizeBits = Op->Header.ElementSize * 8;
+  const auto ElementSizeBits = IR::OpSizeAsBits(Op->Header.ElementSize);
 
   const auto Offset = ElementSizeBits * Op->Index;
   const auto Is256Bit = Offset >= SSERegBitSize;
@@ -1558,10 +1562,10 @@ DEF_OP(VExtractToGPR) {
 
   const auto PerformMove = [&](const ARMEmitter::VRegister reg, int index) {
     switch (OpSize) {
-    case 1: umov<ARMEmitter::SubRegSize::i8Bit>(Dst, Vector, index); break;
-    case 2: umov<ARMEmitter::SubRegSize::i16Bit>(Dst, Vector, index); break;
-    case 4: umov<ARMEmitter::SubRegSize::i32Bit>(Dst, Vector, index); break;
-    case 8: umov<ARMEmitter::SubRegSize::i64Bit>(Dst, Vector, index); break;
+    case IR::OpSize::i8Bit: umov<ARMEmitter::SubRegSize::i8Bit>(Dst, Vector, index); break;
+    case IR::OpSize::i16Bit: umov<ARMEmitter::SubRegSize::i16Bit>(Dst, Vector, index); break;
+    case IR::OpSize::i32Bit: umov<ARMEmitter::SubRegSize::i32Bit>(Dst, Vector, index); break;
+    case IR::OpSize::i64Bit: umov<ARMEmitter::SubRegSize::i64Bit>(Dst, Vector, index); break;
     default: LOGMAN_MSG_A_FMT("Unhandled ExtractElementSize: {}", OpSize); break;
     }
   };
@@ -1586,10 +1590,10 @@ DEF_OP(VExtractToGPR) {
     // upper half of the vector.
     const auto SanitizedIndex = [OpSize, Op] {
       switch (OpSize) {
-      case 1: return Op->Index - 16;
-      case 2: return Op->Index - 8;
-      case 4: return Op->Index - 4;
-      case 8: return Op->Index - 2;
+      case IR::OpSize::i8Bit: return Op->Index - 16;
+      case IR::OpSize::i16Bit: return Op->Index - 8;
+      case IR::OpSize::i32Bit: return Op->Index - 4;
+      case IR::OpSize::i64Bit: return Op->Index - 2;
       default: LOGMAN_MSG_A_FMT("Unhandled OpSize: {}", OpSize); return 0;
       }
     }();

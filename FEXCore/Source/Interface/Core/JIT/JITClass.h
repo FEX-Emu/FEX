@@ -228,7 +228,7 @@ private:
   bool IsGPR(IR::NodeID Node) const;
 
   [[nodiscard]]
-  ARMEmitter::ExtendedMemOperand GenerateMemOperand(uint8_t AccessSize, ARMEmitter::Register Base, IR::OrderedNodeWrapper Offset,
+  ARMEmitter::ExtendedMemOperand GenerateMemOperand(IR::OpSize AccessSize, ARMEmitter::Register Base, IR::OrderedNodeWrapper Offset,
                                                     IR::MemOffsetType OffsetType, uint8_t OffsetScale);
 
   // NOTE: Will use TMP1 as a way to encode immediates that happen to fall outside
@@ -237,7 +237,7 @@ private:
   //       TMP1 is safe to use again once this memory operand is used with its
   //       equivalent loads or stores that this was called for.
   [[nodiscard]]
-  ARMEmitter::SVEMemOperand GenerateSVEMemOperand(uint8_t AccessSize, ARMEmitter::Register Base, IR::OrderedNodeWrapper Offset,
+  ARMEmitter::SVEMemOperand GenerateSVEMemOperand(IR::OpSize AccessSize, ARMEmitter::Register Base, IR::OrderedNodeWrapper Offset,
                                                   IR::MemOffsetType OffsetType, uint8_t OffsetScale);
 
   [[nodiscard]]
@@ -318,15 +318,16 @@ private:
 
   using ScalarFMAOpCaller =
     std::function<void(ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2, ARMEmitter::VRegister Src3)>;
-  void VFScalarFMAOperation(uint8_t OpSize, uint8_t ElementSize, ScalarFMAOpCaller ScalarEmit, ARMEmitter::VRegister Dst,
+  void VFScalarFMAOperation(IR::OpSize OpSize, IR::OpSize ElementSize, ScalarFMAOpCaller ScalarEmit, ARMEmitter::VRegister Dst,
                             ARMEmitter::VRegister Upper, ARMEmitter::VRegister Vector1, ARMEmitter::VRegister Vector2,
                             ARMEmitter::VRegister Addend);
   using ScalarBinaryOpCaller = std::function<void(ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2)>;
-  void VFScalarOperation(uint8_t OpSize, uint8_t ElementSize, bool ZeroUpperBits, ScalarBinaryOpCaller ScalarEmit,
+  void VFScalarOperation(IR::OpSize OpSize, IR::OpSize ElementSize, bool ZeroUpperBits, ScalarBinaryOpCaller ScalarEmit,
                          ARMEmitter::VRegister Dst, ARMEmitter::VRegister Vector1, ARMEmitter::VRegister Vector2);
   using ScalarUnaryOpCaller = std::function<void(ARMEmitter::VRegister Dst, std::variant<ARMEmitter::VRegister, ARMEmitter::Register> SrcVar)>;
-  void VFScalarUnaryOperation(uint8_t OpSize, uint8_t ElementSize, bool ZeroUpperBits, ScalarUnaryOpCaller ScalarEmit, ARMEmitter::VRegister Dst,
-                              ARMEmitter::VRegister Vector1, std::variant<ARMEmitter::VRegister, ARMEmitter::Register> Vector2);
+  void VFScalarUnaryOperation(IR::OpSize OpSize, IR::OpSize ElementSize, bool ZeroUpperBits, ScalarUnaryOpCaller ScalarEmit,
+                              ARMEmitter::VRegister Dst, ARMEmitter::VRegister Vector1,
+                              std::variant<ARMEmitter::VRegister, ARMEmitter::Register> Vector2);
 
   void Emulate128BitGather(IR::OpSize Size, IR::OpSize ElementSize, ARMEmitter::VRegister Dst, ARMEmitter::VRegister IncomingDst,
                            std::optional<ARMEmitter::Register> BaseAddr, ARMEmitter::VRegister VectorIndexLow,
