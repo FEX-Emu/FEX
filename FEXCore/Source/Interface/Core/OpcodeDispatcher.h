@@ -81,7 +81,7 @@ struct AddressMode {
   int64_t Offset = 0;
 
   // Size in bytes for the address calculation. 8 for an arm64 hardware mode.
-  uint8_t AddrSize;
+  IR::OpSize AddrSize;
   bool NonTSO;
 };
 
@@ -2248,7 +2248,7 @@ private:
 
   void ZeroShiftResult(FEXCore::X86Tables::DecodedOp Op) {
     // In the case of zero-rotate, we need to store the destination still to deal with 32-bit semantics.
-    const uint32_t Size = GetSrcSize(Op);
+    const auto Size = OpSizeFromSrc(Op);
     if (Size != OpSize::i32Bit) {
       return;
     }
@@ -2426,7 +2426,7 @@ private:
     }
   }
 
-  AddressMode SelectPairAddressMode(AddressMode A, uint8_t Size) {
+  AddressMode SelectPairAddressMode(AddressMode A, IR::OpSize Size) {
     AddressMode Out {};
 
     signed OffsetEl = A.Offset / Size;
