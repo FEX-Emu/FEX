@@ -548,7 +548,7 @@ protected:
 
 // This must directly match bytes to the named opsize.
 // Implicit sized IR operations does math to get between sizes.
-enum OpSize : uint8_t {
+enum class OpSize : uint8_t {
   iUnsized = 0,
   i8Bit = 1,
   i16Bit = 2,
@@ -615,14 +615,18 @@ static inline uint16_t OpSizeAsBits(IR::OpSize Size) {
   return IR::OpSizeToSize(Size) * 8u;
 }
 
-static inline OpSize MultiplyOpSize(IR::OpSize Size, uint8_t Multiplier) {
+template<typename T>
+requires (std::is_integral_v<T>)
+static inline OpSize operator<<(IR::OpSize Size, T Shift) {
   LOGMAN_THROW_A_FMT(Size != IR::OpSize::iInvalid, "Invalid Size");
-  return IR::SizeToOpSize(IR::OpSizeToSize(Size) * Multiplier);
+  return IR::SizeToOpSize(IR::OpSizeToSize(Size) << Shift);
 }
 
-static inline OpSize DivideOpSize(IR::OpSize Size, uint8_t Divisor) {
+template<typename T>
+requires (std::is_integral_v<T>)
+static inline OpSize operator>>(IR::OpSize Size, T Shift) {
   LOGMAN_THROW_A_FMT(Size != IR::OpSize::iInvalid, "Invalid Size");
-  return IR::SizeToOpSize(IR::OpSizeToSize(Size) / Divisor);
+  return IR::SizeToOpSize(IR::OpSizeToSize(Size) >> Shift);
 }
 
 static inline OpSize operator/(IR::OpSize Size, IR::OpSize Divisor) {
@@ -630,7 +634,9 @@ static inline OpSize operator/(IR::OpSize Size, IR::OpSize Divisor) {
   return IR::SizeToOpSize(IR::OpSizeToSize(Size) / IR::OpSizeToSize(Divisor));
 }
 
-static inline OpSize operator/(IR::OpSize Size, uint8_t Divisor) {
+template<typename T>
+requires (std::is_integral_v<T>)
+static inline OpSize operator/(IR::OpSize Size, T Divisor) {
   LOGMAN_THROW_A_FMT(Size != IR::OpSize::iInvalid, "Invalid Size");
   return IR::SizeToOpSize(IR::OpSizeToSize(Size) / Divisor);
 }

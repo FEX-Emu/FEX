@@ -938,12 +938,12 @@ public:
   void AVX128_VectorALU(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
   void AVX128_VectorUnary(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
   void AVX128_VectorUnaryImpl(OpcodeArgs, IR::OpSize SrcSize, IR::OpSize ElementSize, std::function<Ref(IR::OpSize ElementSize, Ref Src)> Helper);
-  void AVX128_VectorBinaryImpl(OpcodeArgs, size_t SrcSize, IR::OpSize ElementSize,
+  void AVX128_VectorBinaryImpl(OpcodeArgs, IR::OpSize SrcSize, IR::OpSize ElementSize,
                                std::function<Ref(IR::OpSize ElementSize, Ref Src1, Ref Src2)> Helper);
   void AVX128_VectorShiftWideImpl(OpcodeArgs, IR::OpSize ElementSize, IROps IROp);
   void AVX128_VectorShiftImmImpl(OpcodeArgs, IR::OpSize ElementSize, IROps IROp);
-  void AVX128_VectorTrinaryImpl(OpcodeArgs, size_t SrcSize, size_t ElementSize, Ref Src3,
-                                std::function<Ref(size_t ElementSize, Ref Src1, Ref Src2, Ref Src3)> Helper);
+  void AVX128_VectorTrinaryImpl(OpcodeArgs, IR::OpSize SrcSize, IR::OpSize ElementSize, Ref Src3,
+                                std::function<Ref(IR::OpSize ElementSize, Ref Src1, Ref Src2, Ref Src3)> Helper);
 
   enum class ShiftDirection { RIGHT, LEFT };
   void AVX128_ShiftDoubleImm(OpcodeArgs, ShiftDirection Dir);
@@ -993,7 +993,7 @@ public:
   template<IR::OpSize ElementSize>
   void AVX128_PExtr(OpcodeArgs);
   void AVX128_ExtendVectorElements(OpcodeArgs, IR::OpSize ElementSize, IR::OpSize DstElementSize, bool Signed);
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_MOVMSK(OpcodeArgs);
   void AVX128_MOVMSKB(OpcodeArgs);
   void AVX128_PINSRImpl(OpcodeArgs, IR::OpSize ElementSize, const X86Tables::DecodedOperand& Src1Op,
@@ -1065,7 +1065,7 @@ public:
   template<IR::OpSize ElementSize>
   void AVX128_VSHUF(OpcodeArgs);
 
-  template<size_t ElementSize>
+  template<IR::OpSize ElementSize>
   void AVX128_VPERMILImm(OpcodeArgs);
 
   template<IROps IROp, IR::OpSize ElementSize>
@@ -1137,7 +1137,7 @@ public:
   void StoreResult_WithAVXInsert(VectorOpType Type, FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, Ref Value,
                                  IR::OpSize Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
     if (Op->Dest.IsGPR() && Op->Dest.Data.GPR.GPR >= X86State::REG_XMM_0 && Op->Dest.Data.GPR.GPR <= X86State::REG_XMM_15 &&
-        GetGuestVectorLength() == Core::CPUState::XMM_AVX_REG_SIZE && Type == VectorOpType::SSE) {
+        GetGuestVectorLength() == OpSize::i256Bit && Type == VectorOpType::SSE) {
       const auto gpr = Op->Dest.Data.GPR.GPR;
       const auto gprIndex = gpr - X86State::REG_XMM_0;
       auto DestVector = LoadXMMRegister(gprIndex);
@@ -1150,7 +1150,7 @@ public:
   }
 
   void StoreXMMRegister_WithAVXInsert(VectorOpType Type, uint32_t XMM, Ref Value) {
-    if (GetGuestVectorLength() == Core::CPUState::XMM_AVX_REG_SIZE && Type == VectorOpType::SSE) {
+    if (GetGuestVectorLength() == OpSize::i256Bit && Type == VectorOpType::SSE) {
       ///< SSE vector stores need to insert in the low 128-bit lane of the 256-bit register.
       auto DestVector = LoadXMMRegister(XMM);
       Value = _VInsElement(GetGuestVectorLength(), OpSize::i128Bit, 0, 0, DestVector, Value);
@@ -1233,12 +1233,14 @@ public:
         // Use stp where possible to store multiple values at a time. This accelerates AVX.
         // TODO: this is all really confusing because of backwards iteration,
         // can we peel back that hack?
-        if ((Bits & NextBit) && !Partial && Size >= 4 && CacheIndexToContextOffset(Index - 1) == Offset - Size && (Offset - Size) / Size < 64) {
+        const auto SizeInt = IR::OpSizeToSize(Size);
+        if ((Bits & NextBit) && !Partial && Size >= OpSize::i32Bit && CacheIndexToContextOffset(Index - 1) == Offset - SizeInt &&
+            (Offset - SizeInt) / SizeInt < 64) {
           LOGMAN_THROW_A_FMT(CacheIndexClass(Index - 1) == Class, "construction");
-          LOGMAN_THROW_A_FMT((Offset % Size) == 0, "construction");
+          LOGMAN_THROW_A_FMT((Offset % SizeInt) == 0, "construction");
           Ref ValueNext = RegCache.Value[Index - 1];
 
-          _StoreContextPair(Size, Class, ValueNext, Value, Offset - Size);
+          _StoreContextPair(Size, Class, ValueNext, Value, Offset - SizeInt);
           Bits &= ~NextBit;
         } else {
           _StoreContext(Size, Class, Value, Offset);
@@ -1380,7 +1382,7 @@ private:
   Ref InsertPSOpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
                      const X86Tables::DecodedOperand& Imm);
 
-  Ref MPSADBWOpImpl(size_t SrcSize, Ref Src1, Ref Src2, uint8_t Select);
+  Ref MPSADBWOpImpl(IR::OpSize SrcSize, Ref Src1, Ref Src2, uint8_t Select);
 
   Ref PALIGNROpImpl(OpcodeArgs, const X86Tables::DecodedOperand& Src1, const X86Tables::DecodedOperand& Src2,
                     const X86Tables::DecodedOperand& Imm, bool IsAVX);
@@ -1503,7 +1505,7 @@ private:
   Ref GetRelocatedPC(const FEXCore::X86Tables::DecodedOp& Op, int64_t Offset = 0);
 
   Ref LoadEffectiveAddress(AddressMode A, bool AddSegmentBase, bool AllowUpperGarbage = false);
-  AddressMode SelectAddressMode(AddressMode A, bool AtomicTSO, bool Vector, unsigned AccessSize);
+  AddressMode SelectAddressMode(AddressMode A, bool AtomicTSO, bool Vector, IR::OpSize AccessSize);
 
   bool IsOperandMem(const X86Tables::DecodedOperand& Operand, bool Load) {
     // Literals are immediates as sources but memory addresses as destinations.
@@ -1627,24 +1629,24 @@ private:
     NZCVDirty = true;
   }
 
-  void SetNZ_ZeroCV(unsigned SrcSize, Ref Res, bool SetPF = false) {
+  void SetNZ_ZeroCV(IR::OpSize SrcSize, Ref Res, bool SetPF = false) {
     HandleNZ00Write();
 
     // x - 0 = x. NZ set according to Res. C always set. V always unset. This
     // matches what we want since we want carry inverted.
     //
     // This is currently worse for 8/16-bit, but that should be optimized. TODO
-    if (SrcSize >= 4) {
+    if (SrcSize >= OpSize::i32Bit) {
       if (SetPF) {
-        CalculatePF(_SubWithFlags(IR::SizeToOpSize(SrcSize), Res, _Constant(0)));
+        CalculatePF(_SubWithFlags(SrcSize, Res, _Constant(0)));
       } else {
-        _SubNZCV(IR::SizeToOpSize(SrcSize), Res, _Constant(0));
+        _SubNZCV(SrcSize, Res, _Constant(0));
       }
 
       PossiblySetNZCVBits |= 1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC);
       CFInverted = true;
     } else {
-      _TestNZ(IR::SizeToOpSize(SrcSize), Res, Res);
+      _TestNZ(SrcSize, Res, Res);
       CFInverted = false;
 
       if (SetPF) {
@@ -1653,7 +1655,7 @@ private:
     }
   }
 
-  void SetNZP_ZeroCV(unsigned SrcSize, Ref Res) {
+  void SetNZP_ZeroCV(IR::OpSize SrcSize, Ref Res) {
     SetNZ_ZeroCV(SrcSize, Res, true);
   }
 
@@ -1705,8 +1707,8 @@ private:
     HandleNZCVWrite();
     CFInverted = true;
 
-    if (Size < 4) {
-      _TestNZ(OpSize::i32Bit, Src, _InlineConstant((1u << (8 * Size)) - 1));
+    if (Size < OpSize::i32Bit) {
+      _TestNZ(OpSize::i32Bit, Src, _InlineConstant((1u << (IR::OpSizeAsBits(Size))) - 1));
     } else {
       _TestNZ(Size, Src, Src);
     }
@@ -1882,7 +1884,7 @@ private:
     LOGMAN_THROW_AA_FMT(Index < 64, "valid index");
     uint64_t Bit = (1ull << (uint64_t)Index);
 
-    if (Size == 16 && (RegCache.Partial & Bit)) {
+    if (Size == OpSize::i128Bit && (RegCache.Partial & Bit)) {
       // We need to load the full register extend if we previously did a partial access.
       Ref Value = RegCache.Value[Index];
       Ref Full = _LoadContext(Size, RegClass, Offset);
@@ -1902,7 +1904,7 @@ private:
         RegCache.Value[Index] = _LoadContext(Size, RegClass, Offset);
 
         // We may have done a partial load, this requires special handling.
-        if (Size == 8) {
+        if (Size == OpSize::i64Bit) {
           RegCache.Partial |= Bit;
         }
       } else if (Index == PFIndex) {
@@ -1938,12 +1940,13 @@ private:
 
     // Try to load a pair into the cache
     uint64_t Bits = (3ull << (uint64_t)Index);
-    if (((RegCache.Partial | RegCache.Cached) & Bits) == 0 && ((Offset / Size) < 64)) {
+    const auto SizeInt = IR::OpSizeToSize(Size);
+    if (((RegCache.Partial | RegCache.Cached) & Bits) == 0 && ((Offset / SizeInt) < 64)) {
       auto Values = LoadContextPair_Uncached(RegClass, Size, Offset);
       RegCache.Value[Index] = Values.Low;
       RegCache.Value[Index + 1] = Values.High;
       RegCache.Cached |= Bits;
-      if (Size == 8) {
+      if (Size == OpSize::i64Bit) {
         RegCache.Partial |= Bits;
       }
       return Values;
@@ -1952,7 +1955,7 @@ private:
     // Fallback on a pair of loads
     return {
       .Low = LoadRegCache(Offset, Index, RegClass, Size),
-      .High = LoadRegCache(Offset + Size, Index + 1, RegClass, Size),
+      .High = LoadRegCache(Offset + SizeInt, Index + 1, RegClass, Size),
     };
   }
 
@@ -2427,10 +2430,11 @@ private:
   }
 
   AddressMode SelectPairAddressMode(AddressMode A, IR::OpSize Size) {
+    const auto SizeInt = IR::OpSizeToSize(Size);
     AddressMode Out {};
 
-    signed OffsetEl = A.Offset / Size;
-    if ((A.Offset % Size) == 0 && OffsetEl >= -64 && OffsetEl < 64) {
+    signed OffsetEl = A.Offset / SizeInt;
+    if ((A.Offset % SizeInt) == 0 && OffsetEl >= -64 && OffsetEl < 64) {
       Out.Offset = A.Offset;
       A.Offset = 0;
     }
@@ -2477,6 +2481,7 @@ private:
 
   void _StoreMemPairAutoTSO(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, AddressMode A, Ref Value1, Ref Value2,
                             IR::OpSize Align = IR::OpSize::i8Bit) {
+    const auto SizeInt = IR::OpSizeToSize(Size);
     bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
 
     // Use stp if possible, otherwise fallback on two stores.
@@ -2485,7 +2490,7 @@ private:
       _StoreMemPair(Class, Size, Value1, Value2, A.Base, A.Offset);
     } else {
       _StoreMemAutoTSO(Class, Size, A, Value1, OpSize::i8Bit);
-      A.Offset += Size;
+      A.Offset += SizeInt;
       _StoreMemAutoTSO(Class, Size, A, Value2, OpSize::i8Bit);
     }
   }

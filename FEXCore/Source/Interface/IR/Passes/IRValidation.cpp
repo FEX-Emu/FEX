@@ -79,12 +79,12 @@ void IRValidation::Run(IREmitter* IREmit) {
 
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
       const auto ID = CurrentIR.GetID(CodeNode);
-      const uint8_t OpSize = IROp->Size;
+      const auto OpSize = IROp->Size;
 
       if (GetHasDest(IROp->Op)) {
-        HadError |= OpSize == 0;
+        HadError |= OpSize == IR::OpSize::iInvalid;
         // Does the op have a destination of size 0?
-        if (OpSize == 0) {
+        if (OpSize == IR::OpSize::iInvalid) {
           Errors << "%" << ID << ": Had destination but with no size" << std::endl;
         }
 

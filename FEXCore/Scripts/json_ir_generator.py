@@ -632,12 +632,12 @@ def print_ir_allocator_helpers():
 
     output_file.write("\tIR::OpSize GetOpSize(const OrderedNode *Op) const {\n")
     output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n")
-    output_file.write("\t\treturn IR::SizeToOpSize(HeaderOp->Size);\n")
+    output_file.write("\t\treturn HeaderOp->Size;\n")
     output_file.write("\t}\n\n")
 
     output_file.write("\tIR::OpSize GetOpElementSize(const OrderedNode *Op) const {\n")
     output_file.write("\t\tauto HeaderOp = Op->Header.Value.GetNode(DualListData.DataBegin());\n")
-    output_file.write("\t\treturn IR::SizeToOpSize(HeaderOp->ElementSize);\n")
+    output_file.write("\t\treturn HeaderOp->ElementSize;\n")
     output_file.write("\t}\n\n")
 
     output_file.write("\tuint8_t GetOpElements(const OrderedNode *Op) const {\n")

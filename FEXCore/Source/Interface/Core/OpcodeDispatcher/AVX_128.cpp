@@ -74,8 +74,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b00, 0x2F), 1, &OpDispatchBuilder::AVX128_UCOMISx<OpSize::i32Bit>},
     {OPD(1, 0b01, 0x2F), 1, &OpDispatchBuilder::AVX128_UCOMISx<OpSize::i64Bit>},
 
-    {OPD(1, 0b00, 0x50), 1, &OpDispatchBuilder::AVX128_MOVMSK<4>},
-    {OPD(1, 0b01, 0x50), 1, &OpDispatchBuilder::AVX128_MOVMSK<8>},
+    {OPD(1, 0b00, 0x50), 1, &OpDispatchBuilder::AVX128_MOVMSK<OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x50), 1, &OpDispatchBuilder::AVX128_MOVMSK<OpSize::i64Bit>},
 
     {OPD(1, 0b00, 0x51), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorUnary, IR::OP_VFSQRT, OpSize::i32Bit>},
     {OPD(1, 0b01, 0x51), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorUnary, IR::OP_VFSQRT, OpSize::i64Bit>},
@@ -158,7 +158,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0x6F), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
     {OPD(1, 0b10, 0x6F), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
 
-    {OPD(1, 0b01, 0x70), 1, &OpDispatchBuilder::AVX128_VPERMILImm<4>},
+    {OPD(1, 0b01, 0x70), 1, &OpDispatchBuilder::AVX128_VPERMILImm<OpSize::i32Bit>},
     {OPD(1, 0b10, 0x70), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPSHUFW, false>},
     {OPD(1, 0b11, 0x70), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPSHUFW, true>},
 
@@ -379,8 +379,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(3, 0b01, 0x00), 1, &OpDispatchBuilder::AVX128_VPERMQ},
     {OPD(3, 0b01, 0x01), 1, &OpDispatchBuilder::AVX128_VPERMQ},
     {OPD(3, 0b01, 0x02), 1, &OpDispatchBuilder::AVX128_VBLEND<OpSize::i32Bit>},
-    {OPD(3, 0b01, 0x04), 1, &OpDispatchBuilder::AVX128_VPERMILImm<4>},
-    {OPD(3, 0b01, 0x05), 1, &OpDispatchBuilder::AVX128_VPERMILImm<8>},
+    {OPD(3, 0b01, 0x04), 1, &OpDispatchBuilder::AVX128_VPERMILImm<OpSize::i32Bit>},
+    {OPD(3, 0b01, 0x05), 1, &OpDispatchBuilder::AVX128_VPERMILImm<OpSize::i64Bit>},
     {OPD(3, 0b01, 0x06), 1, &OpDispatchBuilder::AVX128_VPERM2},
     {OPD(3, 0b01, 0x08), 1, &OpDispatchBuilder::AVX128_VectorRound<OpSize::i32Bit>},
     {OPD(3, 0b01, 0x09), 1, &OpDispatchBuilder::AVX128_VectorRound<OpSize::i64Bit>},
@@ -665,7 +665,7 @@ void OpDispatchBuilder::AVX128_VectorUnary(OpcodeArgs, IROps IROp, IR::OpSize El
 
 void OpDispatchBuilder::AVX128_VectorUnaryImpl(OpcodeArgs, IR::OpSize SrcSize, IR::OpSize ElementSize,
                                                std::function<Ref(IR::OpSize ElementSize, Ref Src)> Helper) {
-  const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto Is128Bit = SrcSize == OpSize::i128Bit;
 
   auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
   RefPair Result {};
@@ -680,9 +680,9 @@ void OpDispatchBuilder::AVX128_VectorUnaryImpl(OpcodeArgs, IR::OpSize SrcSize, I
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
-void OpDispatchBuilder::AVX128_VectorBinaryImpl(OpcodeArgs, size_t SrcSize, IR::OpSize ElementSize,
+void OpDispatchBuilder::AVX128_VectorBinaryImpl(OpcodeArgs, IR::OpSize SrcSize, IR::OpSize ElementSize,
                                                 std::function<Ref(IR::OpSize ElementSize, Ref Src1, Ref Src2)> Helper) {
-  const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto Is128Bit = SrcSize == OpSize::i128Bit;
 
   auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
   auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
@@ -698,9 +698,9 @@ void OpDispatchBuilder::AVX128_VectorBinaryImpl(OpcodeArgs, size_t SrcSize, IR::
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
-void OpDispatchBuilder::AVX128_VectorTrinaryImpl(OpcodeArgs, size_t SrcSize, size_t ElementSize, Ref Src3,
-                                                 std::function<Ref(size_t ElementSize, Ref Src1, Ref Src2, Ref Src3)> Helper) {
-  const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+void OpDispatchBuilder::AVX128_VectorTrinaryImpl(OpcodeArgs, IR::OpSize SrcSize, IR::OpSize ElementSize, Ref Src3,
+                                                 std::function<Ref(IR::OpSize ElementSize, Ref Src1, Ref Src2, Ref Src3)> Helper) {
+  const auto Is128Bit = SrcSize == OpSize::i128Bit;
 
   auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
   auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
@@ -984,13 +984,13 @@ void OpDispatchBuilder::AVX128_VBROADCAST(OpcodeArgs) {
 
 template<IR::OpSize ElementSize>
 void OpDispatchBuilder::AVX128_VPUNPCKL(OpcodeArgs) {
-  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize,
+  AVX128_VectorBinaryImpl(Op, OpSizeFromSrc(Op), ElementSize,
                           [this](IR::OpSize _ElementSize, Ref Src1, Ref Src2) { return _VZip(OpSize::i128Bit, _ElementSize, Src1, Src2); });
 }
 
 template<IR::OpSize ElementSize>
 void OpDispatchBuilder::AVX128_VPUNPCKH(OpcodeArgs) {
-  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize,
+  AVX128_VectorBinaryImpl(Op, OpSizeFromSrc(Op), ElementSize,
                           [this](IR::OpSize _ElementSize, Ref Src1, Ref Src2) { return _VZip2(OpSize::i128Bit, _ElementSize, Src1, Src2); });
 }
 
@@ -1039,7 +1039,7 @@ void OpDispatchBuilder::AVX128_InsertCVTGPR_To_FPR(OpcodeArgs) {
     Result.Low = _VSToFVectorInsert(DstSize, DstElementSize, DstElementSize, Src1.Low, Src2.Low, false, false);
   }
 
-  [[maybe_unused]] const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  [[maybe_unused]] const auto Is128Bit = DstSize == OpSize::i128Bit;
   LOGMAN_THROW_A_FMT(Is128Bit, "Programming Error: This should never occur!");
   Result.High = LoadZeroVector(OpSize::i128Bit);
 
@@ -1073,33 +1073,33 @@ void OpDispatchBuilder::AVX128_CVTFPR_To_GPR(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AVX128_VANDN(OpcodeArgs) {
-  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), OpSize::i128Bit,
+  AVX128_VectorBinaryImpl(Op, OpSizeFromSrc(Op), OpSize::i128Bit,
                           [this](IR::OpSize _ElementSize, Ref Src1, Ref Src2) { return _VAndn(OpSize::i128Bit, _ElementSize, Src2, Src1); });
 }
 
 template<IR::OpSize ElementSize>
 void OpDispatchBuilder::AVX128_VPACKSS(OpcodeArgs) {
-  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize, [this](IR::OpSize _ElementSize, Ref Src1, Ref Src2) {
+  AVX128_VectorBinaryImpl(Op, OpSizeFromSrc(Op), ElementSize, [this](IR::OpSize _ElementSize, Ref Src1, Ref Src2) {
     return _VSQXTNPair(OpSize::i128Bit, _ElementSize, Src1, Src2);
   });
 }
 
 template<IR::OpSize ElementSize>
 void OpDispatchBuilder::AVX128_VPACKUS(OpcodeArgs) {
-  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize, [this](IR::OpSize _ElementSize, Ref Src1, Ref Src2) {
+  AVX128_VectorBinaryImpl(Op, OpSizeFromSrc(Op), ElementSize, [this](IR::OpSize _ElementSize, Ref Src1, Ref Src2) {
     return _VSQXTUNPair(OpSize::i128Bit, _ElementSize, Src1, Src2);
   });
 }
 
 Ref OpDispatchBuilder::AVX128_PSIGNImpl(IR::OpSize ElementSize, Ref Src1, Ref Src2) {
-  Ref Control = _VSQSHL(OpSize::i128Bit, ElementSize, Src2, (ElementSize * 8) - 1);
-  Control = _VSRSHR(OpSize::i128Bit, ElementSize, Control, (ElementSize * 8) - 1);
+  Ref Control = _VSQSHL(OpSize::i128Bit, ElementSize, Src2, IR::OpSizeAsBits(ElementSize) - 1);
+  Control = _VSRSHR(OpSize::i128Bit, ElementSize, Control, IR::OpSizeAsBits(ElementSize) - 1);
   return _VMul(OpSize::i128Bit, ElementSize, Src1, Control);
 }
 
 template<IR::OpSize ElementSize>
 void OpDispatchBuilder::AVX128_VPSIGN(OpcodeArgs) {
-  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize,
+  AVX128_VectorBinaryImpl(Op, OpSizeFromSrc(Op), ElementSize,
                           [this](IR::OpSize _ElementSize, Ref Src1, Ref Src2) { return AVX128_PSIGNImpl(_ElementSize, Src1, Src2); });
 }
 
@@ -1154,7 +1154,7 @@ void OpDispatchBuilder::AVX128_VFCMP(OpcodeArgs) {
     .CompType = CompType,
   };
 
-  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize, [this, &Capture](IR::OpSize _ElementSize, Ref Src1, Ref Src2) {
+  AVX128_VectorBinaryImpl(Op, OpSizeFromSrc(Op), ElementSize, [this, &Capture](IR::OpSize _ElementSize, Ref Src1, Ref Src2) {
     return VFCMPOpImpl(OpSize::i128Bit, _ElementSize, Src1, Src2, Capture.CompType);
   });
 }
@@ -1234,7 +1234,7 @@ void OpDispatchBuilder::AVX128_PExtr(OpcodeArgs) {
   }
 
   // AVX version only operates on 128-bit.
-  const uint8_t NumElements = std::min<uint8_t>(GetSrcSize(Op), OpSize::i128Bit) / OverridenElementSize;
+  const uint8_t NumElements = IR::NumElements(std::min(OpSizeFromSrc(Op), OpSize::i128Bit), OverridenElementSize);
   Index &= NumElements - 1;
 
   if (Op->Dest.IsGPR()) {
@@ -1251,14 +1251,14 @@ void OpDispatchBuilder::AVX128_PExtr(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AVX128_ExtendVectorElements(OpcodeArgs, IR::OpSize ElementSize, IR::OpSize DstElementSize, bool Signed) {
-  const auto DstSize = GetDstSize(Op);
+  const auto DstSize = OpSizeFromDst(Op);
 
   const auto GetSrc = [&] {
     if (Op->Src[0].IsGPR()) {
       return AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false).Low;
     } else {
       // For memory operands the 256-bit variant loads twice the size specified in the table.
-      const auto Is256Bit = DstSize == Core::CPUState::XMM_AVX_REG_SIZE;
+      const auto Is256Bit = DstSize == OpSize::i256Bit;
       const auto SrcSize = OpSizeFromSrc(Op);
       const auto LoadSize = Is256Bit ? IR::SizeToOpSize(IR::OpSizeToSize(SrcSize) * 2) : SrcSize;
 
@@ -1267,8 +1267,7 @@ void OpDispatchBuilder::AVX128_ExtendVectorElements(OpcodeArgs, IR::OpSize Eleme
   };
 
   auto Transform = [=, this](Ref Src) {
-    for (auto CurrentElementSize = ElementSize; CurrentElementSize != DstElementSize;
-         CurrentElementSize = IR::MultiplyOpSize(CurrentElementSize, 2)) {
+    for (auto CurrentElementSize = ElementSize; CurrentElementSize != DstElementSize; CurrentElementSize = CurrentElementSize << 1) {
       if (Signed) {
         Src = _VSXTL(OpSize::i128Bit, CurrentElementSize, Src);
       } else {
@@ -1286,8 +1285,8 @@ void OpDispatchBuilder::AVX128_ExtendVectorElements(OpcodeArgs, IR::OpSize Eleme
     Result.Low = Transform(Src);
   } else {
     // 256-bit operation is a bit special. It splits the incoming source between lower and upper registers.
-    size_t TotalElementCount = OpSize::i256Bit / DstElementSize;
-    size_t TotalElementsToSplitSize = (TotalElementCount / 2) * ElementSize;
+    size_t TotalElementCount = IR::NumElements(OpSize::i256Bit, DstElementSize);
+    size_t TotalElementsToSplitSize = (TotalElementCount / 2) * IR::OpSizeToSize(ElementSize);
 
     // Split the number of elements in half between lower and upper.
     Ref SrcHigh = _VDupElement(OpSize::i128Bit, IR::SizeToOpSize(TotalElementsToSplitSize), Src, 1);
@@ -1303,10 +1302,10 @@ void OpDispatchBuilder::AVX128_ExtendVectorElements(OpcodeArgs, IR::OpSize Eleme
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::AVX128_MOVMSK(OpcodeArgs) {
-  const auto SrcSize = GetSrcSize(Op);
-  const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto SrcSize = OpSizeFromSrc(Op);
+  const auto Is128Bit = SrcSize == OpSize::i128Bit;
 
   auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
 
@@ -1385,7 +1384,7 @@ void OpDispatchBuilder::AVX128_MOVMSKB(OpcodeArgs) {
 
 void OpDispatchBuilder::AVX128_PINSRImpl(OpcodeArgs, IR::OpSize ElementSize, const X86Tables::DecodedOperand& Src1Op,
                                          const X86Tables::DecodedOperand& Src2Op, const X86Tables::DecodedOperand& Imm) {
-  const auto NumElements = OpSize::i128Bit / ElementSize;
+  const auto NumElements = IR::NumElements(OpSize::i128Bit, ElementSize);
   const uint64_t Index = Imm.Literal() & (NumElements - 1);
   auto Src1 = AVX128_LoadSource_WithOpSize(Op, Src1Op, Op->Flags, false);
 
@@ -1419,7 +1418,7 @@ void OpDispatchBuilder::AVX128_VPINSRDQ(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AVX128_VariableShiftImpl(OpcodeArgs, IROps IROp) {
-  AVX128_VectorBinaryImpl(Op, GetDstSize(Op), OpSizeFromSrc(Op), [this, IROp](IR::OpSize ElementSize, Ref Src1, Ref Src2) {
+  AVX128_VectorBinaryImpl(Op, OpSizeFromDst(Op), OpSizeFromSrc(Op), [this, IROp](IR::OpSize ElementSize, Ref Src1, Ref Src2) {
     DeriveOp(Shift, IROp, _VUShr(OpSize::i128Bit, ElementSize, Src1, Src2, true));
     return Shift;
   });
@@ -1431,7 +1430,7 @@ void OpDispatchBuilder::AVX128_ShiftDoubleImm(OpcodeArgs, ShiftDirection Dir) {
   const bool Right = Dir == ShiftDirection::RIGHT;
 
   const uint64_t Shift = Op->Src[1].Literal();
-  const uint64_t ExtrShift = Right ? Shift : OpSize::i128Bit - Shift;
+  const uint64_t ExtrShift = Right ? Shift : IR::OpSizeToSize(OpSize::i128Bit) - Shift;
 
   auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
 
@@ -1486,40 +1485,40 @@ void OpDispatchBuilder::AVX128_VINSERTPS(OpcodeArgs) {
 
 template<IR::OpSize ElementSize>
 void OpDispatchBuilder::AVX128_VPHSUB(OpcodeArgs) {
-  AVX128_VectorBinaryImpl(Op, GetDstSize(Op), ElementSize, [this](IR::OpSize _ElementSize, Ref Src1, Ref Src2) {
+  AVX128_VectorBinaryImpl(Op, OpSizeFromDst(Op), ElementSize, [this](IR::OpSize _ElementSize, Ref Src1, Ref Src2) {
     return PHSUBOpImpl(OpSize::i128Bit, Src1, Src2, _ElementSize);
   });
 }
 
 void OpDispatchBuilder::AVX128_VPHSUBSW(OpcodeArgs) {
-  AVX128_VectorBinaryImpl(Op, GetDstSize(Op), OpSize::i16Bit,
+  AVX128_VectorBinaryImpl(Op, OpSizeFromDst(Op), OpSize::i16Bit,
                           [this](IR::OpSize _ElementSize, Ref Src1, Ref Src2) { return PHSUBSOpImpl(OpSize::i128Bit, Src1, Src2); });
 }
 
 template<IR::OpSize ElementSize>
 void OpDispatchBuilder::AVX128_VADDSUBP(OpcodeArgs) {
-  AVX128_VectorBinaryImpl(Op, GetDstSize(Op), ElementSize, [this](IR::OpSize _ElementSize, Ref Src1, Ref Src2) {
+  AVX128_VectorBinaryImpl(Op, OpSizeFromDst(Op), ElementSize, [this](IR::OpSize _ElementSize, Ref Src1, Ref Src2) {
     return ADDSUBPOpImpl(OpSize::i128Bit, _ElementSize, Src1, Src2);
   });
 }
 
 template<IR::OpSize ElementSize, bool Signed>
 void OpDispatchBuilder::AVX128_VPMULL(OpcodeArgs) {
-  static_assert(ElementSize == sizeof(uint32_t), "Currently only handles 32-bit -> 64-bit");
+  static_assert(ElementSize == OpSize::i32Bit, "Currently only handles 32-bit -> 64-bit");
 
-  AVX128_VectorBinaryImpl(Op, GetDstSize(Op), ElementSize, [this](IR::OpSize _ElementSize, Ref Src1, Ref Src2) -> Ref {
+  AVX128_VectorBinaryImpl(Op, OpSizeFromDst(Op), ElementSize, [this](IR::OpSize _ElementSize, Ref Src1, Ref Src2) -> Ref {
     return PMULLOpImpl(OpSize::i128Bit, ElementSize, Signed, Src1, Src2);
   });
 }
 
 void OpDispatchBuilder::AVX128_VPMULHRSW(OpcodeArgs) {
-  AVX128_VectorBinaryImpl(Op, GetDstSize(Op), OpSize::i16Bit,
+  AVX128_VectorBinaryImpl(Op, OpSizeFromDst(Op), OpSize::i16Bit,
                           [this](IR::OpSize _ElementSize, Ref Src1, Ref Src2) -> Ref { return PMULHRSWOpImpl(OpSize::i128Bit, Src1, Src2); });
 }
 
 template<bool Signed>
 void OpDispatchBuilder::AVX128_VPMULHW(OpcodeArgs) {
-  AVX128_VectorBinaryImpl(Op, GetDstSize(Op), OpSize::i16Bit, [this](IR::OpSize _ElementSize, Ref Src1, Ref Src2) -> Ref {
+  AVX128_VectorBinaryImpl(Op, OpSizeFromDst(Op), OpSize::i16Bit, [this](IR::OpSize _ElementSize, Ref Src1, Ref Src2) -> Ref {
     if (Signed) {
       return _VSMulH(OpSize::i128Bit, _ElementSize, Src1, Src2);
     } else {
@@ -1546,9 +1545,9 @@ void OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Float(OpcodeArgs) {
   const auto SrcSize = OpSizeFromSrc(Op);
   const auto DstSize = OpSizeFromDst(Op);
 
-  const auto IsFloatSrc = SrcElementSize == 4;
-  auto Is128BitSrc = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
-  auto Is128BitDst = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto IsFloatSrc = SrcElementSize == OpSize::i32Bit;
+  auto Is128BitSrc = SrcSize == OpSize::i128Bit;
+  auto Is128BitDst = DstSize == OpSize::i128Bit;
 
   ///< Decompose correctly.
   if (DstElementSize > SrcElementSize && !Is128BitDst) {
@@ -1630,7 +1629,7 @@ void OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int(OpcodeArgs) {
     auto Convert = [this](Ref Src) -> Ref {
       auto ElementSize = SrcElementSize;
       if (Narrow) {
-        ElementSize = IR::DivideOpSize(ElementSize, 2);
+        ElementSize = ElementSize >> 1;
         Src = _Vector_FToF(OpSize::i128Bit, ElementSize, Src, SrcElementSize);
       }
 
@@ -1663,7 +1662,7 @@ void OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int(OpcodeArgs) {
 template<IR::OpSize SrcElementSize, bool Widen>
 void OpDispatchBuilder::AVX128_Vector_CVT_Int_To_Float(OpcodeArgs) {
   const auto Size = OpSizeFromDst(Op);
-  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto Is128Bit = Size == OpSize::i128Bit;
 
   RefPair Src = [&] {
     if (Widen && !Op->Src[0].IsGPR()) {
@@ -1682,7 +1681,7 @@ void OpDispatchBuilder::AVX128_Vector_CVT_Int_To_Float(OpcodeArgs) {
     if (Widen) {
       DeriveOp(Extended, Op, _VSXTL(OpSize::i128Bit, ElementSize, Src));
       Src = Extended;
-      ElementSize = IR::MultiplyOpSize(ElementSize, 2);
+      ElementSize = ElementSize << 1;
     }
 
     return _Vector_SToF(OpSize::i128Bit, ElementSize, Src);
@@ -1732,23 +1731,23 @@ void OpDispatchBuilder::AVX128_VAESImc(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AVX128_VAESEnc(OpcodeArgs) {
-  AVX128_VectorTrinaryImpl(Op, GetDstSize(Op), OpSize::i128Bit, LoadZeroVector(OpSize::i128Bit),
-                           [this](size_t, Ref Src1, Ref Src2, Ref Src3) { return _VAESEnc(OpSize::i128Bit, Src1, Src2, Src3); });
+  AVX128_VectorTrinaryImpl(Op, OpSizeFromDst(Op), OpSize::i128Bit, LoadZeroVector(OpSize::i128Bit),
+                           [this](IR::OpSize, Ref Src1, Ref Src2, Ref Src3) { return _VAESEnc(OpSize::i128Bit, Src1, Src2, Src3); });
 }
 
 void OpDispatchBuilder::AVX128_VAESEncLast(OpcodeArgs) {
-  AVX128_VectorTrinaryImpl(Op, GetDstSize(Op), OpSize::i128Bit, LoadZeroVector(OpSize::i128Bit),
-                           [this](size_t, Ref Src1, Ref Src2, Ref Src3) { return _VAESEncLast(OpSize::i128Bit, Src1, Src2, Src3); });
+  AVX128_VectorTrinaryImpl(Op, OpSizeFromDst(Op), OpSize::i128Bit, LoadZeroVector(OpSize::i128Bit),
+                           [this](IR::OpSize, Ref Src1, Ref Src2, Ref Src3) { return _VAESEncLast(OpSize::i128Bit, Src1, Src2, Src3); });
 }
 
 void OpDispatchBuilder::AVX128_VAESDec(OpcodeArgs) {
-  AVX128_VectorTrinaryImpl(Op, GetDstSize(Op), OpSize::i128Bit, LoadZeroVector(OpSize::i128Bit),
-                           [this](size_t, Ref Src1, Ref Src2, Ref Src3) { return _VAESDec(OpSize::i128Bit, Src1, Src2, Src3); });
+  AVX128_VectorTrinaryImpl(Op, OpSizeFromDst(Op), OpSize::i128Bit, LoadZeroVector(OpSize::i128Bit),
+                           [this](IR::OpSize, Ref Src1, Ref Src2, Ref Src3) { return _VAESDec(OpSize::i128Bit, Src1, Src2, Src3); });
 }
 
 void OpDispatchBuilder::AVX128_VAESDecLast(OpcodeArgs) {
-  AVX128_VectorTrinaryImpl(Op, GetDstSize(Op), OpSize::i128Bit, LoadZeroVector(OpSize::i128Bit),
-                           [this](size_t, Ref Src1, Ref Src2, Ref Src3) { return _VAESDecLast(OpSize::i128Bit, Src1, Src2, Src3); });
+  AVX128_VectorTrinaryImpl(Op, OpSizeFromDst(Op), OpSize::i128Bit, LoadZeroVector(OpSize::i128Bit),
+                           [this](IR::OpSize, Ref Src1, Ref Src2, Ref Src3) { return _VAESDecLast(OpSize::i128Bit, Src1, Src2, Src3); });
 }
 
 void OpDispatchBuilder::AVX128_VAESKeyGenAssist(OpcodeArgs) {
@@ -1838,7 +1837,7 @@ template<IR::OpSize ElementSize>
 void OpDispatchBuilder::AVX128_VDPP(OpcodeArgs) {
   const uint64_t Literal = Op->Src[2].Literal();
 
-  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize, [this, Literal](IR::OpSize, Ref Src1, Ref Src2) {
+  AVX128_VectorBinaryImpl(Op, OpSizeFromSrc(Op), ElementSize, [this, Literal](IR::OpSize, Ref Src1, Ref Src2) {
     return DPPOpImpl(OpSize::i128Bit, Src1, Src2, Literal, ElementSize);
   });
 }
@@ -1927,7 +1926,7 @@ void OpDispatchBuilder::AVX128_VSHUF(OpcodeArgs) {
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
-template<size_t ElementSize>
+template<IR::OpSize ElementSize>
 void OpDispatchBuilder::AVX128_VPERMILImm(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
   const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
@@ -1967,31 +1966,31 @@ void OpDispatchBuilder::AVX128_VPERMILImm(OpcodeArgs) {
 
 template<IROps IROp, IR::OpSize ElementSize>
 void OpDispatchBuilder::AVX128_VHADDP(OpcodeArgs) {
-  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize, [this](IR::OpSize, Ref Src1, Ref Src2) {
+  AVX128_VectorBinaryImpl(Op, OpSizeFromSrc(Op), ElementSize, [this](IR::OpSize, Ref Src1, Ref Src2) {
     DeriveOp(Res, IROp, _VFAddP(OpSize::i128Bit, ElementSize, Src1, Src2));
     return Res;
   });
 }
 
 void OpDispatchBuilder::AVX128_VPHADDSW(OpcodeArgs) {
-  AVX128_VectorBinaryImpl(Op, GetDstSize(Op), OpSize::i16Bit,
+  AVX128_VectorBinaryImpl(Op, OpSizeFromDst(Op), OpSize::i16Bit,
                           [this](IR::OpSize _ElementSize, Ref Src1, Ref Src2) { return PHADDSOpImpl(OpSize::i128Bit, Src1, Src2); });
 }
 
 void OpDispatchBuilder::AVX128_VPMADDUBSW(OpcodeArgs) {
-  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), OpSize::i128Bit,
+  AVX128_VectorBinaryImpl(Op, OpSizeFromDst(Op), OpSize::i128Bit,
                           [this](IR::OpSize _ElementSize, Ref Src1, Ref Src2) { return PMADDUBSWOpImpl(OpSize::i128Bit, Src1, Src2); });
 }
 
 void OpDispatchBuilder::AVX128_VPMADDWD(OpcodeArgs) {
-  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), OpSize::i128Bit,
+  AVX128_VectorBinaryImpl(Op, OpSizeFromDst(Op), OpSize::i128Bit,
                           [this](IR::OpSize _ElementSize, Ref Src1, Ref Src2) { return PMADDWDOpImpl(OpSize::i128Bit, Src1, Src2); });
 }
 
 template<IR::OpSize ElementSize>
 void OpDispatchBuilder::AVX128_VBLEND(OpcodeArgs) {
   const auto SrcSize = OpSizeFromSrc(Op);
-  const auto Is128Bit = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto Is128Bit = SrcSize == OpSize::i128Bit;
   const uint64_t Selector = Op->Src[2].Literal();
 
   ///< High Selector shift depends on element size:
@@ -2017,19 +2016,19 @@ void OpDispatchBuilder::AVX128_VBLEND(OpcodeArgs) {
 
 template<IR::OpSize ElementSize>
 void OpDispatchBuilder::AVX128_VHSUBP(OpcodeArgs) {
-  AVX128_VectorBinaryImpl(Op, GetDstSize(Op), ElementSize,
+  AVX128_VectorBinaryImpl(Op, OpSizeFromDst(Op), ElementSize,
                           [this](IR::OpSize, Ref Src1, Ref Src2) { return HSUBPOpImpl(OpSize::i128Bit, ElementSize, Src1, Src2); });
 }
 
 void OpDispatchBuilder::AVX128_VPSHUFB(OpcodeArgs) {
   auto MaskVector = GeneratePSHUFBMask(OpSize::i128Bit);
-  AVX128_VectorBinaryImpl(Op, GetDstSize(Op), OpSize::i8Bit, [this, MaskVector](IR::OpSize, Ref Src1, Ref Src2) {
+  AVX128_VectorBinaryImpl(Op, OpSizeFromDst(Op), OpSize::i8Bit, [this, MaskVector](IR::OpSize, Ref Src1, Ref Src2) {
     return PSHUFBOpImpl(OpSize::i128Bit, Src1, Src2, MaskVector);
   });
 }
 
 void OpDispatchBuilder::AVX128_VPSADBW(OpcodeArgs) {
-  AVX128_VectorBinaryImpl(Op, GetDstSize(Op), OpSize::i8Bit,
+  AVX128_VectorBinaryImpl(Op, OpSizeFromDst(Op), OpSize::i8Bit,
                           [this](IR::OpSize, Ref Src1, Ref Src2) { return PSADBWOpImpl(OpSize::i128Bit, Src1, Src2); });
 }
 
@@ -2061,7 +2060,7 @@ void OpDispatchBuilder::AVX128_VPALIGNR(OpcodeArgs) {
   const auto SanitizedDstSize = std::min(Size, OpSize::i128Bit);
 
   AVX128_VectorBinaryImpl(Op, Size, SanitizedDstSize, [this, Index](IR::OpSize SanitizedDstSize, Ref Src1, Ref Src2) -> Ref {
-    if (Index >= (SanitizedDstSize * 2)) {
+    if (Index >= (IR::OpSizeToSize(SanitizedDstSize) * 2)) {
       // If the immediate is greater than both vectors combined then it zeroes the vector
       return LoadZeroVector(OpSize::i128Bit);
     }
@@ -2076,7 +2075,7 @@ void OpDispatchBuilder::AVX128_VPALIGNR(OpcodeArgs) {
 
 void OpDispatchBuilder::AVX128_VMASKMOVImpl(OpcodeArgs, IR::OpSize ElementSize, IR::OpSize DstSize, bool IsStore,
                                             const X86Tables::DecodedOperand& MaskOp, const X86Tables::DecodedOperand& DataOp) {
-  const auto Is128Bit = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto Is128Bit = DstSize == OpSize::i128Bit;
 
   auto Mask = AVX128_LoadSource_WithOpSize(Op, MaskOp, Op->Flags, !Is128Bit);
 
@@ -2098,14 +2097,14 @@ void OpDispatchBuilder::AVX128_VMASKMOVImpl(OpcodeArgs, IR::OpSize ElementSize, 
     auto Address = MakeAddress(DataOp);
 
     RefPair Result {};
-    Result.Low = _VLoadVectorMasked(OpSize::i128Bit, ElementSize, Mask.Low, Address, Invalid(), MEM_OFFSET_SXTX, OpSize::i8Bit);
+    Result.Low = _VLoadVectorMasked(OpSize::i128Bit, ElementSize, Mask.Low, Address, Invalid(), MEM_OFFSET_SXTX, 1);
 
     if (Is128Bit) {
       Result.High = LoadZeroVector(OpSize::i128Bit);
     } else {
       ///< TODO: This can be cleaner if AVX128_LoadSource_WithOpSize could return both constructed addresses.
       auto AddressHigh = _Add(OpSize::i64Bit, Address, _Constant(16));
-      Result.High = _VLoadVectorMasked(OpSize::i128Bit, ElementSize, Mask.High, AddressHigh, Invalid(), MEM_OFFSET_SXTX, OpSize::i8Bit);
+      Result.High = _VLoadVectorMasked(OpSize::i128Bit, ElementSize, Mask.High, AddressHigh, Invalid(), MEM_OFFSET_SXTX, 1);
     }
     AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
   }
@@ -2124,7 +2123,7 @@ void OpDispatchBuilder::AVX128_VMASKMOV(OpcodeArgs) {
 void OpDispatchBuilder::AVX128_MASKMOV(OpcodeArgs) {
   ///< This instruction only supports 128-bit.
   const auto Size = OpSizeFromSrc(Op);
-  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto Is128Bit = Size == OpSize::i128Bit;
 
   auto MaskSrc = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
 
@@ -2147,10 +2146,8 @@ void OpDispatchBuilder::AVX128_MASKMOV(OpcodeArgs) {
 template<IR::OpSize ElementSize>
 void OpDispatchBuilder::AVX128_VectorVariableBlend(OpcodeArgs) {
   const auto Size = OpSizeFromSrc(Op);
-  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto Is128Bit = Size == OpSize::i128Bit;
   const auto Src3Selector = Op->Src[2].Literal();
-
-  constexpr auto ElementSizeBits = ElementSize * 8;
 
   auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
   auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, !Is128Bit);
@@ -2163,6 +2160,7 @@ void OpDispatchBuilder::AVX128_VectorVariableBlend(OpcodeArgs) {
   }
 
   auto Convert = [this](Ref Src1, Ref Src2, Ref Mask) {
+    const auto ElementSizeBits = IR::OpSizeAsBits(ElementSize);
     Ref Shifted = _VSShrI(OpSize::i128Bit, ElementSize, Mask, ElementSizeBits - 1);
     return _VBSL(OpSize::i128Bit, Shifted, Src2, Src1);
   };
@@ -2248,7 +2246,7 @@ void OpDispatchBuilder::AVX128_VTESTP(OpcodeArgs) {
   Ref ZeroConst = _Constant(0);
   Ref OneConst = _Constant(1);
 
-  const auto ElementSizeInBits = ElementSize * 8;
+  const auto ElementSizeInBits = IR::OpSizeAsBits(ElementSize);
 
   {
     // Calculate ZF first.
@@ -2292,7 +2290,7 @@ void OpDispatchBuilder::AVX128_VTESTP(OpcodeArgs) {
   }
 
   // As in PTest, this sets Z appropriately while zeroing the rest of NZCV.
-  SetNZ_ZeroCV(32, ZF);
+  SetNZ_ZeroCV(OpSize::i32Bit, ZF);
   SetCFInverted(CFInv);
   ZeroPF_AF();
 }
@@ -2339,14 +2337,14 @@ void OpDispatchBuilder::AVX128_PTest(OpcodeArgs) {
   // Set ZF according to Test1. SF will be zeroed since we do a 32-bit test on
   // the results of a 16-bit value from the UMaxV, so the 32-bit sign bit is
   // cleared even if the 16-bit scalars were negative.
-  SetNZ_ZeroCV(32, Test1);
+  SetNZ_ZeroCV(OpSize::i32Bit, Test1);
   SetCFInverted(Test2);
   ZeroPF_AF();
 }
 
 template<IR::OpSize ElementSize>
 void OpDispatchBuilder::AVX128_VPERMILReg(OpcodeArgs) {
-  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), ElementSize, [this](size_t _ElementSize, Ref Src, Ref Indices) {
+  AVX128_VectorBinaryImpl(Op, OpSizeFromSrc(Op), ElementSize, [this](IR::OpSize _ElementSize, Ref Src, Ref Indices) {
     return VPERMILRegOpImpl(OpSize::i128Bit, ElementSize, Src, Indices);
   });
 }
@@ -2376,7 +2374,7 @@ void OpDispatchBuilder::AVX128_VPERMD(OpcodeArgs) {
 void OpDispatchBuilder::AVX128_VPCLMULQDQ(OpcodeArgs) {
   const auto Selector = static_cast<uint8_t>(Op->Src[2].Literal());
 
-  AVX128_VectorBinaryImpl(Op, GetSrcSize(Op), OpSize::iInvalid, [this, Selector](size_t _, Ref Src1, Ref Src2) {
+  AVX128_VectorBinaryImpl(Op, OpSizeFromSrc(Op), OpSize::iInvalid, [this, Selector](IR::OpSize, Ref Src1, Ref Src2) {
     return _PCLMUL(OpSize::i128Bit, Src1, Src2, Selector & 0b1'0001);
   });
 }
@@ -2548,7 +2546,7 @@ void OpDispatchBuilder::AVX128_VFMAddSubImpl(OpcodeArgs, bool AddSub, uint8_t Sr
 OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_VPGatherImpl(OpSize Size, OpSize ElementLoadSize, OpSize AddrElementSize, RefPair Dest,
                                                                   RefPair Mask, RefVSIB VSIB) {
   LOGMAN_THROW_A_FMT(AddrElementSize == OpSize::i32Bit || AddrElementSize == OpSize::i64Bit, "Unknown address element size");
-  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto Is128Bit = Size == OpSize::i128Bit;
 
   ///< BaseAddr doesn't need to exist, calculate that here.
   Ref BaseAddr = VSIB.BaseAddr;
@@ -2686,17 +2684,17 @@ OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_VPGatherQPSImpl(Ref Dest, R
 template<OpSize AddrElementSize>
 void OpDispatchBuilder::AVX128_VPGATHER(OpcodeArgs) {
 
-  const auto Size = GetDstSize(Op);
-  const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto Size = OpSizeFromDst(Op);
+  const auto Is128Bit = Size == OpSize::i128Bit;
 
   ///< Element size is determined by W flag.
   const OpSize ElementLoadSize = Op->Flags & X86Tables::DecodeFlags::FLAG_OPTION_AVX_W ? OpSize::i64Bit : OpSize::i32Bit;
 
   // We only need the high address register if the number of data elements is more than what the low half can consume.
   // But also the number of address elements is clamped by the destination size as well.
-  const size_t NumDataElements = Size / ElementLoadSize;
-  const size_t NumAddrElementBytes = std::min<size_t>(Size, (NumDataElements * AddrElementSize));
-  const bool NeedsHighAddrBytes = NumAddrElementBytes > OpSize::i128Bit;
+  const size_t NumDataElements = IR::NumElements(Size, ElementLoadSize);
+  const size_t NumAddrElementBytes = std::min<size_t>(IR::OpSizeToSize(Size), (NumDataElements * IR::OpSizeToSize(AddrElementSize)));
+  const bool NeedsHighAddrBytes = NumAddrElementBytes > IR::OpSizeToSize(OpSize::i128Bit);
 
   auto Dest = AVX128_LoadSource_WithOpSize(Op, Op->Dest, Op->Flags, !Is128Bit);
   auto VSIB = AVX128_LoadVSIB(Op, Op->Src[0], Op->Flags, NeedsHighAddrBytes);
@@ -2740,7 +2738,7 @@ void OpDispatchBuilder::AVX128_VPGATHER(OpcodeArgs) {
   } else if (AddrElementSize == OpSize::i64Bit && ElementLoadSize == OpSize::i32Bit) {
     Result = AVX128_VPGatherQPSImpl(Dest.Low, Mask.Low, VSIB);
   } else {
-    Result = AVX128_VPGatherImpl(SizeToOpSize(Size), ElementLoadSize, AddrElementSize, Dest, Mask, VSIB);
+    Result = AVX128_VPGatherImpl(Size, ElementLoadSize, AddrElementSize, Dest, Mask, VSIB);
   }
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 
@@ -2754,8 +2752,8 @@ void OpDispatchBuilder::AVX128_VPGATHER(OpcodeArgs) {
 void OpDispatchBuilder::AVX128_VCVTPH2PS(OpcodeArgs) {
   const auto DstSize = OpSizeFromDst(Op);
   const auto SrcSize = IR::SizeToOpSize(IR::OpSizeToSize(DstSize) / 2);
-  const auto Is128BitSrc = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
-  const auto Is128BitDst = DstSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto Is128BitSrc = SrcSize == OpSize::i128Bit;
+  const auto Is128BitDst = DstSize == OpSize::i128Bit;
 
   RefPair Src {};
   if (Op->Src[0].IsGPR()) {
@@ -2783,7 +2781,7 @@ void OpDispatchBuilder::AVX128_VCVTPH2PS(OpcodeArgs) {
 
 void OpDispatchBuilder::AVX128_VCVTPS2PH(OpcodeArgs) {
   const auto SrcSize = OpSizeFromSrc(Op);
-  const auto Is128BitSrc = SrcSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto Is128BitSrc = SrcSize == OpSize::i128Bit;
   const auto StoreSize = Op->Dest.IsGPR() ? OpSize::i128Bit : IR::SizeToOpSize(IR::OpSizeToSize(SrcSize) / 2);
 
   const auto Imm8 = Op->Src[1].Literal();
@@ -2814,7 +2812,7 @@ void OpDispatchBuilder::AVX128_VCVTPS2PH(OpcodeArgs) {
 
   // We need to eliminate upper junk if we're storing into a register with
   // a 256-bit source (VCVTPS2PH's destination for registers is an XMM).
-  if (Op->Src[0].IsGPR() && SrcSize == Core::CPUState::XMM_AVX_REG_SIZE) {
+  if (Op->Src[0].IsGPR() && SrcSize == OpSize::i256Bit) {
     Result = AVX128_Zext(Result.Low);
   }
 

@@ -36,12 +36,12 @@ void OpDispatchBuilder::X87LDENVF64(OpcodeArgs) {
   _SetRoundingMode(roundingMode, false, roundingMode);
   _StoreContext(OpSize::i16Bit, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
-  auto NewFSW = _LoadMem(GPRClass, Size, Mem, _Constant(Size * 1), Size, MEM_OFFSET_SXTX, 1);
+  auto NewFSW = _LoadMem(GPRClass, Size, Mem, _Constant(IR::OpSizeToSize(Size)), Size, MEM_OFFSET_SXTX, 1);
   ReconstructX87StateFromFSW_Helper(NewFSW);
 
   {
     // FTW
-    SetX87FTW(_LoadMem(GPRClass, Size, Mem, _Constant(Size * 2), Size, MEM_OFFSET_SXTX, 1));
+    SetX87FTW(_LoadMem(GPRClass, Size, Mem, _Constant(IR::OpSizeToSize(Size) * 2), Size, MEM_OFFSET_SXTX, 1));
   }
 }
 
@@ -97,7 +97,7 @@ void OpDispatchBuilder::FILDF64(OpcodeArgs) {
   // Read from memory
   Ref Data = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], ReadWidth, Op->Flags);
   if (ReadWidth == OpSize::i16Bit) {
-    Data = _Sbfe(OpSize::i64Bit, ReadWidth * 8, 0, Data);
+    Data = _Sbfe(OpSize::i64Bit, IR::OpSizeAsBits(ReadWidth), 0, Data);
   }
   auto ConvertedData = _Float_FromGPR_S(OpSize::i64Bit, ReadWidth == OpSize::i32Bit ? OpSize::i32Bit : OpSize::i64Bit, Data);
   _PushStack(ConvertedData, Data, ReadWidth, false);
@@ -117,9 +117,9 @@ void OpDispatchBuilder::FISTF64(OpcodeArgs, bool Truncate) {
 
   Ref data = _ReadStackValue(0);
   if (Truncate) {
-    data = _Float_ToGPR_ZS(Size == 4 ? OpSize::i32Bit : OpSize::i64Bit, OpSize::i64Bit, data);
+    data = _Float_ToGPR_ZS(Size == OpSize::i32Bit ? OpSize::i32Bit : OpSize::i64Bit, OpSize::i64Bit, data);
   } else {
-    data = _Float_ToGPR_S(Size == 4 ? OpSize::i32Bit : OpSize::i64Bit, OpSize::i64Bit, data);
+    data = _Float_ToGPR_S(Size == OpSize::i32Bit ? OpSize::i32Bit : OpSize::i64Bit, OpSize::i64Bit, data);
   }
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, data, Size, OpSize::i8Bit);
 
@@ -339,7 +339,7 @@ void OpDispatchBuilder::FCOMIF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpD
         if (Width == OpSize::i16Bit) {
           arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
         }
-        b = _Float_FromGPR_S(OpSize::i64Bit, Width == 64 ? OpSize::i64Bit : OpSize::i32Bit, arg);
+        b = _Float_FromGPR_S(OpSize::i64Bit, Width == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit, arg);
       } else if (Width == OpSize::i32Bit) {
         arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
         b = _Float_FToF(OpSize::i64Bit, OpSize::i32Bit, arg);

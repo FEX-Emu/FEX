@@ -112,17 +112,17 @@ static void PrintArg(fextl::stringstream* out, const IRListView* IR, OrderedNode
   }
 
   if (GetHasDest(IROp->Op)) {
-    uint32_t ElementSize = IROp->ElementSize;
-    uint32_t NumElements = IROp->Size;
-    if (!IROp->ElementSize) {
+    auto ElementSize = IROp->ElementSize;
+    uint32_t NumElements = 0;
+    if (IROp->ElementSize == OpSize::iUnsized) {
       ElementSize = IROp->Size;
     }
 
-    if (ElementSize) {
-      NumElements /= ElementSize;
+    if (ElementSize != OpSize::iUnsized) {
+      NumElements = IR::NumElements(IROp->Size, ElementSize);
     }
 
-    *out << " i" << std::dec << (ElementSize * 8);
+    *out << " i" << std::dec << IR::OpSizeAsBits(ElementSize);
 
     if (NumElements > 1) {
       *out << "v" << std::dec << NumElements;
@@ -296,11 +296,11 @@ void Dump(fextl::stringstream* out, const IRListView* IR, IR::RegisterAllocation
 
           auto ElementSize = IROp->ElementSize;
           uint8_t NumElements = 0;
-          if (!IROp->ElementSize) {
+          if (IROp->ElementSize != OpSize::iUnsized) {
             ElementSize = IROp->Size;
           }
 
-          if (ElementSize) {
+          if (ElementSize != OpSize::iUnsized) {
             NumElements = IR::NumElements(IROp->Size, ElementSize);
           }
 
@@ -324,7 +324,7 @@ void Dump(fextl::stringstream* out, const IRListView* IR, IR::RegisterAllocation
             }
           }
 
-          *out << " i" << std::dec << (ElementSize * 8);
+          *out << " i" << std::dec << IR::OpSizeAsBits(ElementSize);
 
           if (NumElements > 1) {
             *out << "v" << std::dec << NumElements;
@@ -334,16 +334,16 @@ void Dump(fextl::stringstream* out, const IRListView* IR, IR::RegisterAllocation
         } else {
 
           auto ElementSize = IROp->ElementSize;
-          if (!IROp->ElementSize) {
+          if (IROp->ElementSize == OpSize::iUnsized) {
             ElementSize = IROp->Size;
           }
           uint32_t NumElements = 0;
-          if (ElementSize) {
+          if (ElementSize != OpSize::iUnsized) {
             NumElements = IR::NumElements(IROp->Size, ElementSize);
           }
 
           *out << "(%" << std::dec << ID << ' ';
-          *out << 'i' << std::dec << (ElementSize * 8);
+          *out << 'i' << std::dec << IR::OpSizeAsBits(ElementSize);
           if (NumElements > 1) {
             *out << 'v' << std::dec << NumElements;
           }

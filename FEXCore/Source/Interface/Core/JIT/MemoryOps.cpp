@@ -24,22 +24,22 @@ DEF_OP(LoadContext) {
     auto Dst = GetReg(Node);
 
     switch (OpSize) {
-    case 1: ldrb(Dst, STATE, Op->Offset); break;
-    case 2: ldrh(Dst, STATE, Op->Offset); break;
-    case 4: ldr(Dst.W(), STATE, Op->Offset); break;
-    case 8: ldr(Dst.X(), STATE, Op->Offset); break;
+    case IR::OpSize::i8Bit: ldrb(Dst, STATE, Op->Offset); break;
+    case IR::OpSize::i16Bit: ldrh(Dst, STATE, Op->Offset); break;
+    case IR::OpSize::i32Bit: ldr(Dst.W(), STATE, Op->Offset); break;
+    case IR::OpSize::i64Bit: ldr(Dst.X(), STATE, Op->Offset); break;
     default: LOGMAN_MSG_A_FMT("Unhandled LoadContext size: {}", OpSize); break;
     }
   } else {
     auto Dst = GetVReg(Node);
 
     switch (OpSize) {
-    case 1: ldrb(Dst, STATE, Op->Offset); break;
-    case 2: ldrh(Dst, STATE, Op->Offset); break;
-    case 4: ldr(Dst.S(), STATE, Op->Offset); break;
-    case 8: ldr(Dst.D(), STATE, Op->Offset); break;
-    case 16: ldr(Dst.Q(), STATE, Op->Offset); break;
-    case 32:
+    case IR::OpSize::i8Bit: ldrb(Dst, STATE, Op->Offset); break;
+    case IR::OpSize::i16Bit: ldrh(Dst, STATE, Op->Offset); break;
+    case IR::OpSize::i32Bit: ldr(Dst.S(), STATE, Op->Offset); break;
+    case IR::OpSize::i64Bit: ldr(Dst.D(), STATE, Op->Offset); break;
+    case IR::OpSize::i128Bit: ldr(Dst.Q(), STATE, Op->Offset); break;
+    case IR::OpSize::i256Bit:
       mov(TMP1, Op->Offset);
       ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), STATE, TMP1);
       break;
@@ -56,8 +56,8 @@ DEF_OP(LoadContextPair) {
     const auto Dst2 = GetReg(Op->OutValue2.ID());
 
     switch (IROp->Size) {
-    case 4: ldp<ARMEmitter::IndexType::OFFSET>(Dst1.W(), Dst2.W(), STATE, Op->Offset); break;
-    case 8: ldp<ARMEmitter::IndexType::OFFSET>(Dst1.X(), Dst2.X(), STATE, Op->Offset); break;
+    case IR::OpSize::i32Bit: ldp<ARMEmitter::IndexType::OFFSET>(Dst1.W(), Dst2.W(), STATE, Op->Offset); break;
+    case IR::OpSize::i64Bit: ldp<ARMEmitter::IndexType::OFFSET>(Dst1.X(), Dst2.X(), STATE, Op->Offset); break;
     default: LOGMAN_MSG_A_FMT("Unhandled LoadMemPair size: {}", IROp->Size); break;
     }
   } else {
@@ -65,9 +65,9 @@ DEF_OP(LoadContextPair) {
     const auto Dst2 = GetVReg(Op->OutValue2.ID());
 
     switch (IROp->Size) {
-    case 4: ldp<ARMEmitter::IndexType::OFFSET>(Dst1.S(), Dst2.S(), STATE, Op->Offset); break;
-    case 8: ldp<ARMEmitter::IndexType::OFFSET>(Dst1.D(), Dst2.D(), STATE, Op->Offset); break;
-    case 16: ldp<ARMEmitter::IndexType::OFFSET>(Dst1.Q(), Dst2.Q(), STATE, Op->Offset); break;
+    case IR::OpSize::i32Bit: ldp<ARMEmitter::IndexType::OFFSET>(Dst1.S(), Dst2.S(), STATE, Op->Offset); break;
+    case IR::OpSize::i64Bit: ldp<ARMEmitter::IndexType::OFFSET>(Dst1.D(), Dst2.D(), STATE, Op->Offset); break;
+    case IR::OpSize::i128Bit: ldp<ARMEmitter::IndexType::OFFSET>(Dst1.Q(), Dst2.Q(), STATE, Op->Offset); break;
     default: LOGMAN_MSG_A_FMT("Unhandled LoadMemPair size: {}", IROp->Size); break;
     }
   }
@@ -81,22 +81,22 @@ DEF_OP(StoreContext) {
     auto Src = GetZeroableReg(Op->Value);
 
     switch (OpSize) {
-    case 1: strb(Src, STATE, Op->Offset); break;
-    case 2: strh(Src, STATE, Op->Offset); break;
-    case 4: str(Src.W(), STATE, Op->Offset); break;
-    case 8: str(Src.X(), STATE, Op->Offset); break;
+    case IR::OpSize::i8Bit: strb(Src, STATE, Op->Offset); break;
+    case IR::OpSize::i16Bit: strh(Src, STATE, Op->Offset); break;
+    case IR::OpSize::i32Bit: str(Src.W(), STATE, Op->Offset); break;
+    case IR::OpSize::i64Bit: str(Src.X(), STATE, Op->Offset); break;
     default: LOGMAN_MSG_A_FMT("Unhandled StoreContext size: {}", OpSize); break;
     }
   } else {
     const auto Src = GetVReg(Op->Value.ID());
 
     switch (OpSize) {
-    case 1: strb(Src, STATE, Op->Offset); break;
-    case 2: strh(Src, STATE, Op->Offset); break;
-    case 4: str(Src.S(), STATE, Op->Offset); break;
-    case 8: str(Src.D(), STATE, Op->Offset); break;
-    case 16: str(Src.Q(), STATE, Op->Offset); break;
-    case 32:
+    case IR::OpSize::i8Bit: strb(Src, STATE, Op->Offset); break;
+    case IR::OpSize::i16Bit: strh(Src, STATE, Op->Offset); break;
+    case IR::OpSize::i32Bit: str(Src.S(), STATE, Op->Offset); break;
+    case IR::OpSize::i64Bit: str(Src.D(), STATE, Op->Offset); break;
+    case IR::OpSize::i128Bit: str(Src.Q(), STATE, Op->Offset); break;
+    case IR::OpSize::i256Bit:
       mov(TMP1, Op->Offset);
       st1b<ARMEmitter::SubRegSize::i8Bit>(Src.Z(), PRED_TMP_32B, STATE, TMP1);
       break;
@@ -114,8 +114,8 @@ DEF_OP(StoreContextPair) {
     auto Src2 = GetZeroableReg(Op->Value2);
 
     switch (OpSize) {
-    case 4: stp<ARMEmitter::IndexType::OFFSET>(Src1.W(), Src2.W(), STATE, Op->Offset); break;
-    case 8: stp<ARMEmitter::IndexType::OFFSET>(Src1.X(), Src2.X(), STATE, Op->Offset); break;
+    case IR::OpSize::i32Bit: stp<ARMEmitter::IndexType::OFFSET>(Src1.W(), Src2.W(), STATE, Op->Offset); break;
+    case IR::OpSize::i64Bit: stp<ARMEmitter::IndexType::OFFSET>(Src1.X(), Src2.X(), STATE, Op->Offset); break;
     default: LOGMAN_MSG_A_FMT("Unhandled StoreContext size: {}", OpSize); break;
     }
   } else {
@@ -123,9 +123,9 @@ DEF_OP(StoreContextPair) {
     const auto Src2 = GetVReg(Op->Value2.ID());
 
     switch (OpSize) {
-    case 4: stp<ARMEmitter::IndexType::OFFSET>(Src1.S(), Src2.S(), STATE, Op->Offset); break;
-    case 8: stp<ARMEmitter::IndexType::OFFSET>(Src1.D(), Src2.D(), STATE, Op->Offset); break;
-    case 16: stp<ARMEmitter::IndexType::OFFSET>(Src1.Q(), Src2.Q(), STATE, Op->Offset); break;
+    case IR::OpSize::i32Bit: stp<ARMEmitter::IndexType::OFFSET>(Src1.S(), Src2.S(), STATE, Op->Offset); break;
+    case IR::OpSize::i64Bit: stp<ARMEmitter::IndexType::OFFSET>(Src1.D(), Src2.D(), STATE, Op->Offset); break;
+    case IR::OpSize::i128Bit: stp<ARMEmitter::IndexType::OFFSET>(Src1.Q(), Src2.Q(), STATE, Op->Offset); break;
     default: LOGMAN_MSG_A_FMT("Unhandled StoreContextPair size: {}", OpSize); break;
     }
   }
@@ -142,7 +142,7 @@ DEF_OP(LoadRegister) {
       mov(GetReg(Node).X(), reg.X());
     }
   } else if (Op->Class == IR::FPRClass) {
-    [[maybe_unused]] const auto regSize = HostSupportsAVX256 ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE;
+    [[maybe_unused]] const auto regSize = HostSupportsAVX256 ? IR::OpSize::i256Bit : IR::OpSize::i128Bit;
     LOGMAN_THROW_A_FMT(Op->Reg < StaticFPRegisters.size(), "out of range reg");
     LOGMAN_THROW_A_FMT(IROp->Size == regSize, "expected sized");
 
@@ -194,7 +194,7 @@ DEF_OP(StoreRegister) {
       mov(ARMEmitter::Size::i64Bit, reg, Src);
     }
   } else if (Op->Class == IR::FPRClass) {
-    [[maybe_unused]] const auto regSize = HostSupportsAVX256 ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE;
+    [[maybe_unused]] const auto regSize = HostSupportsAVX256 ? IR::OpSize::i256Bit : IR::OpSize::i128Bit;
     LOGMAN_THROW_A_FMT(Op->Reg < StaticFPRegisters.size(), "reg out of range");
     LOGMAN_THROW_A_FMT(IROp->Size == regSize, "expected sized");
 
@@ -250,10 +250,10 @@ DEF_OP(LoadContextIndexed) {
       add(ARMEmitter::Size::i64Bit, TMP1, STATE, Index, ARMEmitter::ShiftType::LSL, FEXCore::ilog2(Op->Stride));
       const auto Dst = GetReg(Node);
       switch (OpSize) {
-      case 1: ldrb(Dst, TMP1, Op->BaseOffset); break;
-      case 2: ldrh(Dst, TMP1, Op->BaseOffset); break;
-      case 4: ldr(Dst.W(), TMP1, Op->BaseOffset); break;
-      case 8: ldr(Dst.X(), TMP1, Op->BaseOffset); break;
+      case IR::OpSize::i8Bit: ldrb(Dst, TMP1, Op->BaseOffset); break;
+      case IR::OpSize::i16Bit: ldrh(Dst, TMP1, Op->BaseOffset); break;
+      case IR::OpSize::i32Bit: ldr(Dst.W(), TMP1, Op->BaseOffset); break;
+      case IR::OpSize::i64Bit: ldr(Dst.X(), TMP1, Op->BaseOffset); break;
       default: LOGMAN_MSG_A_FMT("Unhandled LoadContextIndexed size: {}", OpSize); break;
       }
       break;
@@ -273,11 +273,11 @@ DEF_OP(LoadContextIndexed) {
       const auto Dst = GetVReg(Node);
 
       switch (OpSize) {
-      case 1: ldrb(Dst, TMP1, Op->BaseOffset); break;
-      case 2: ldrh(Dst, TMP1, Op->BaseOffset); break;
-      case 4: ldr(Dst.S(), TMP1, Op->BaseOffset); break;
-      case 8: ldr(Dst.D(), TMP1, Op->BaseOffset); break;
-      case 16:
+      case IR::OpSize::i8Bit: ldrb(Dst, TMP1, Op->BaseOffset); break;
+      case IR::OpSize::i16Bit: ldrh(Dst, TMP1, Op->BaseOffset); break;
+      case IR::OpSize::i32Bit: ldr(Dst.S(), TMP1, Op->BaseOffset); break;
+      case IR::OpSize::i64Bit: ldr(Dst.D(), TMP1, Op->BaseOffset); break;
+      case IR::OpSize::i128Bit:
         if (Op->BaseOffset % 16 == 0) {
           ldr(Dst.Q(), TMP1, Op->BaseOffset);
         } else {
@@ -285,7 +285,7 @@ DEF_OP(LoadContextIndexed) {
           ldur(Dst.Q(), TMP1, Op->BaseOffset);
         }
         break;
-      case 32:
+      case IR::OpSize::i256Bit:
         mov(TMP2, Op->BaseOffset);
         ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), TMP1, TMP2);
         break;
@@ -315,10 +315,10 @@ DEF_OP(StoreContextIndexed) {
       add(ARMEmitter::Size::i64Bit, TMP1, STATE, Index, ARMEmitter::ShiftType::LSL, FEXCore::ilog2(Op->Stride));
 
       switch (OpSize) {
-      case 1: strb(Value, TMP1, Op->BaseOffset); break;
-      case 2: strh(Value, TMP1, Op->BaseOffset); break;
-      case 4: str(Value.W(), TMP1, Op->BaseOffset); break;
-      case 8: str(Value.X(), TMP1, Op->BaseOffset); break;
+      case IR::OpSize::i8Bit: strb(Value, TMP1, Op->BaseOffset); break;
+      case IR::OpSize::i16Bit: strh(Value, TMP1, Op->BaseOffset); break;
+      case IR::OpSize::i32Bit: str(Value.W(), TMP1, Op->BaseOffset); break;
+      case IR::OpSize::i64Bit: str(Value.X(), TMP1, Op->BaseOffset); break;
       default: LOGMAN_MSG_A_FMT("Unhandled StoreContextIndexed size: {}", OpSize); break;
       }
       break;
@@ -339,11 +339,11 @@ DEF_OP(StoreContextIndexed) {
       add(ARMEmitter::Size::i64Bit, TMP1, STATE, Index, ARMEmitter::ShiftType::LSL, FEXCore::ilog2(Op->Stride));
 
       switch (OpSize) {
-      case 1: strb(Value, TMP1, Op->BaseOffset); break;
-      case 2: strh(Value, TMP1, Op->BaseOffset); break;
-      case 4: str(Value.S(), TMP1, Op->BaseOffset); break;
-      case 8: str(Value.D(), TMP1, Op->BaseOffset); break;
-      case 16:
+      case IR::OpSize::i8Bit: strb(Value, TMP1, Op->BaseOffset); break;
+      case IR::OpSize::i16Bit: strh(Value, TMP1, Op->BaseOffset); break;
+      case IR::OpSize::i32Bit: str(Value.S(), TMP1, Op->BaseOffset); break;
+      case IR::OpSize::i64Bit: str(Value.D(), TMP1, Op->BaseOffset); break;
+      case IR::OpSize::i128Bit:
         if (Op->BaseOffset % 16 == 0) {
           str(Value.Q(), TMP1, Op->BaseOffset);
         } else {
@@ -351,7 +351,7 @@ DEF_OP(StoreContextIndexed) {
           stur(Value.Q(), TMP1, Op->BaseOffset);
         }
         break;
-      case 32:
+      case IR::OpSize::i256Bit:
         mov(TMP2, Op->BaseOffset);
         st1b<ARMEmitter::SubRegSize::i8Bit>(Value.Z(), PRED_TMP_32B, TMP1, TMP2);
         break;
@@ -366,13 +366,13 @@ DEF_OP(StoreContextIndexed) {
 
 DEF_OP(SpillRegister) {
   const auto Op = IROp->C<IR::IROp_SpillRegister>();
-  const uint8_t OpSize = IROp->Size;
+  const auto OpSize = IROp->Size;
   const uint32_t SlotOffset = Op->Slot * MaxSpillSlotSize;
 
   if (Op->Class == FEXCore::IR::GPRClass) {
     const auto Src = GetReg(Op->Value.ID());
     switch (OpSize) {
-    case 1: {
+    case IR::OpSize::i8Bit: {
       if (SlotOffset > LSByteMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         strb(Src, ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
@@ -381,7 +381,7 @@ DEF_OP(SpillRegister) {
       }
       break;
     }
-    case 2: {
+    case IR::OpSize::i16Bit: {
       if (SlotOffset > LSHalfMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         strh(Src, ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
@@ -390,7 +390,7 @@ DEF_OP(SpillRegister) {
       }
       break;
     }
-    case 4: {
+    case IR::OpSize::i32Bit: {
       if (SlotOffset > LSWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         str(Src.W(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
@@ -399,7 +399,7 @@ DEF_OP(SpillRegister) {
       }
       break;
     }
-    case 8: {
+    case IR::OpSize::i64Bit: {
       if (SlotOffset > LSDWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         str(Src.X(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
@@ -414,7 +414,7 @@ DEF_OP(SpillRegister) {
     const auto Src = GetVReg(Op->Value.ID());
 
     switch (OpSize) {
-    case 4: {
+    case IR::OpSize::i32Bit: {
       if (SlotOffset > LSWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         str(Src.S(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
@@ -423,7 +423,7 @@ DEF_OP(SpillRegister) {
       }
       break;
     }
-    case 8: {
+    case IR::OpSize::i64Bit: {
       if (SlotOffset > LSDWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         str(Src.D(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
@@ -432,7 +432,7 @@ DEF_OP(SpillRegister) {
       }
       break;
     }
-    case 16: {
+    case IR::OpSize::i128Bit: {
       if (SlotOffset > LSQWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         str(Src.Q(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
@@ -441,7 +441,7 @@ DEF_OP(SpillRegister) {
       }
       break;
     }
-    case 32: {
+    case IR::OpSize::i256Bit: {
       mov(TMP3, SlotOffset);
       st1b<ARMEmitter::SubRegSize::i8Bit>(Src.Z(), PRED_TMP_32B, ARMEmitter::Reg::rsp, TMP3);
       break;
@@ -455,13 +455,13 @@ DEF_OP(SpillRegister) {
 
 DEF_OP(FillRegister) {
   const auto Op = IROp->C<IR::IROp_FillRegister>();
-  const uint8_t OpSize = IROp->Size;
+  const auto OpSize = IROp->Size;
   const uint32_t SlotOffset = Op->Slot * MaxSpillSlotSize;
 
   if (Op->Class == FEXCore::IR::GPRClass) {
     const auto Dst = GetReg(Node);
     switch (OpSize) {
-    case 1: {
+    case IR::OpSize::i8Bit: {
       if (SlotOffset > LSByteMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         ldrb(Dst, ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
@@ -470,7 +470,7 @@ DEF_OP(FillRegister) {
       }
       break;
     }
-    case 2: {
+    case IR::OpSize::i16Bit: {
       if (SlotOffset > LSHalfMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         ldrh(Dst, ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
@@ -479,7 +479,7 @@ DEF_OP(FillRegister) {
       }
       break;
     }
-    case 4: {
+    case IR::OpSize::i32Bit: {
       if (SlotOffset > LSWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         ldr(Dst.W(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
@@ -488,7 +488,7 @@ DEF_OP(FillRegister) {
       }
       break;
     }
-    case 8: {
+    case IR::OpSize::i64Bit: {
       if (SlotOffset > LSDWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         ldr(Dst.X(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
@@ -503,7 +503,7 @@ DEF_OP(FillRegister) {
     const auto Dst = GetVReg(Node);
 
     switch (OpSize) {
-    case 4: {
+    case IR::OpSize::i32Bit: {
       if (SlotOffset > LSWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         ldr(Dst.S(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
@@ -512,7 +512,7 @@ DEF_OP(FillRegister) {
       }
       break;
     }
-    case 8: {
+    case IR::OpSize::i64Bit: {
       if (SlotOffset > LSDWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         ldr(Dst.D(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
@@ -521,7 +521,7 @@ DEF_OP(FillRegister) {
       }
       break;
     }
-    case 16: {
+    case IR::OpSize::i128Bit: {
       if (SlotOffset > LSQWordMaxUnsignedOffset) {
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, SlotOffset);
         ldr(Dst.Q(), ARMEmitter::Reg::rsp, TMP1.R(), ARMEmitter::ExtendedType::LSL_64, 0);
@@ -530,7 +530,7 @@ DEF_OP(FillRegister) {
       }
       break;
     }
-    case 32: {
+    case IR::OpSize::i256Bit: {
       mov(TMP3, SlotOffset);
       ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), ARMEmitter::Reg::rsp, TMP3);
       break;
@@ -563,11 +563,11 @@ DEF_OP(LoadDF) {
 }
 
 ARMEmitter::ExtendedMemOperand Arm64JITCore::GenerateMemOperand(
-  uint8_t AccessSize, ARMEmitter::Register Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale) {
+  IR::OpSize AccessSize, ARMEmitter::Register Base, IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale) {
   if (Offset.IsInvalid()) {
     return ARMEmitter::ExtendedMemOperand(Base.X(), ARMEmitter::IndexType::OFFSET, 0);
   } else {
-    if (OffsetScale != 1 && OffsetScale != AccessSize) {
+    if (OffsetScale != 1 && OffsetScale != IR::OpSizeToSize(AccessSize)) {
       LOGMAN_MSG_A_FMT("Unhandled GenerateMemOperand OffsetScale: {}", OffsetScale);
     }
     uint64_t Const;
@@ -590,7 +590,7 @@ ARMEmitter::ExtendedMemOperand Arm64JITCore::GenerateMemOperand(
   FEX_UNREACHABLE;
 }
 
-ARMEmitter::SVEMemOperand Arm64JITCore::GenerateSVEMemOperand(uint8_t AccessSize, ARMEmitter::Register Base, IR::OrderedNodeWrapper Offset,
+ARMEmitter::SVEMemOperand Arm64JITCore::GenerateSVEMemOperand(IR::OpSize AccessSize, ARMEmitter::Register Base, IR::OrderedNodeWrapper Offset,
                                                               IR::MemOffsetType OffsetType, [[maybe_unused]] uint8_t OffsetScale) {
   if (Offset.IsInvalid()) {
     return ARMEmitter::SVEMemOperand(Base.X(), 0);
@@ -652,22 +652,22 @@ DEF_OP(LoadMem) {
     const auto Dst = GetReg(Node);
 
     switch (OpSize) {
-    case 1: ldrb(Dst, MemSrc); break;
-    case 2: ldrh(Dst, MemSrc); break;
-    case 4: ldr(Dst.W(), MemSrc); break;
-    case 8: ldr(Dst.X(), MemSrc); break;
+    case IR::OpSize::i8Bit: ldrb(Dst, MemSrc); break;
+    case IR::OpSize::i16Bit: ldrh(Dst, MemSrc); break;
+    case IR::OpSize::i32Bit: ldr(Dst.W(), MemSrc); break;
+    case IR::OpSize::i64Bit: ldr(Dst.X(), MemSrc); break;
     default: LOGMAN_MSG_A_FMT("Unhandled LoadMem size: {}", OpSize); break;
     }
   } else {
     const auto Dst = GetVReg(Node);
 
     switch (OpSize) {
-    case 1: ldrb(Dst, MemSrc); break;
-    case 2: ldrh(Dst, MemSrc); break;
-    case 4: ldr(Dst.S(), MemSrc); break;
-    case 8: ldr(Dst.D(), MemSrc); break;
-    case 16: ldr(Dst.Q(), MemSrc); break;
-    case 32: {
+    case IR::OpSize::i8Bit: ldrb(Dst, MemSrc); break;
+    case IR::OpSize::i16Bit: ldrh(Dst, MemSrc); break;
+    case IR::OpSize::i32Bit: ldr(Dst.S(), MemSrc); break;
+    case IR::OpSize::i64Bit: ldr(Dst.D(), MemSrc); break;
+    case IR::OpSize::i128Bit: ldr(Dst.Q(), MemSrc); break;
+    case IR::OpSize::i256Bit: {
       LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
       const auto Operand = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
       ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), Operand);
@@ -687,8 +687,8 @@ DEF_OP(LoadMemPair) {
     const auto Dst2 = GetReg(Op->OutValue2.ID());
 
     switch (IROp->Size) {
-    case 4: ldp<ARMEmitter::IndexType::OFFSET>(Dst1.W(), Dst2.W(), Addr, Op->Offset); break;
-    case 8: ldp<ARMEmitter::IndexType::OFFSET>(Dst1.X(), Dst2.X(), Addr, Op->Offset); break;
+    case IR::OpSize::i32Bit: ldp<ARMEmitter::IndexType::OFFSET>(Dst1.W(), Dst2.W(), Addr, Op->Offset); break;
+    case IR::OpSize::i64Bit: ldp<ARMEmitter::IndexType::OFFSET>(Dst1.X(), Dst2.X(), Addr, Op->Offset); break;
     default: LOGMAN_MSG_A_FMT("Unhandled LoadMemPair size: {}", IROp->Size); break;
     }
   } else {
@@ -696,9 +696,9 @@ DEF_OP(LoadMemPair) {
     const auto Dst2 = GetVReg(Op->OutValue2.ID());
 
     switch (IROp->Size) {
-    case 4: ldp<ARMEmitter::IndexType::OFFSET>(Dst1.S(), Dst2.S(), Addr, Op->Offset); break;
-    case 8: ldp<ARMEmitter::IndexType::OFFSET>(Dst1.D(), Dst2.D(), Addr, Op->Offset); break;
-    case 16: ldp<ARMEmitter::IndexType::OFFSET>(Dst1.Q(), Dst2.Q(), Addr, Op->Offset); break;
+    case IR::OpSize::i32Bit: ldp<ARMEmitter::IndexType::OFFSET>(Dst1.S(), Dst2.S(), Addr, Op->Offset); break;
+    case IR::OpSize::i64Bit: ldp<ARMEmitter::IndexType::OFFSET>(Dst1.D(), Dst2.D(), Addr, Op->Offset); break;
+    case IR::OpSize::i128Bit: ldp<ARMEmitter::IndexType::OFFSET>(Dst1.Q(), Dst2.Q(), Addr, Op->Offset); break;
     default: LOGMAN_MSG_A_FMT("Unhandled LoadMemPair size: {}", IROp->Size); break;
     }
   }
@@ -723,15 +723,15 @@ DEF_OP(LoadMemTSO) {
       LOGMAN_THROW_A_FMT(IsInlineConstant(Op->Offset, &Offset), "expected immediate");
     }
 
-    if (OpSize == 1) {
+    if (OpSize == IR::OpSize::i8Bit) {
       // 8bit load is always aligned to natural alignment
       const auto Dst = GetReg(Node);
       ldapurb(Dst, MemReg, Offset);
     } else {
       switch (OpSize) {
-      case 2: ldapurh(Dst, MemReg, Offset); break;
-      case 4: ldapur(Dst.W(), MemReg, Offset); break;
-      case 8: ldapur(Dst.X(), MemReg, Offset); break;
+      case IR::OpSize::i16Bit: ldapurh(Dst, MemReg, Offset); break;
+      case IR::OpSize::i32Bit: ldapur(Dst.W(), MemReg, Offset); break;
+      case IR::OpSize::i64Bit: ldapur(Dst.X(), MemReg, Offset); break;
       default: LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", OpSize); break;
       }
       // Half-barrier once back-patched.
@@ -739,14 +739,14 @@ DEF_OP(LoadMemTSO) {
     }
   } else if (CTX->HostFeatures.SupportsRCPC && Op->Class == FEXCore::IR::GPRClass) {
     const auto Dst = GetReg(Node);
-    if (OpSize == 1) {
+    if (OpSize == IR::OpSize::i8Bit) {
       // 8bit load is always aligned to natural alignment
       ldaprb(Dst.W(), MemReg);
     } else {
       switch (OpSize) {
-      case 2: ldaprh(Dst.W(), MemReg); break;
-      case 4: ldapr(Dst.W(), MemReg); break;
-      case 8: ldapr(Dst.X(), MemReg); break;
+      case IR::OpSize::i16Bit: ldaprh(Dst.W(), MemReg); break;
+      case IR::OpSize::i32Bit: ldapr(Dst.W(), MemReg); break;
+      case IR::OpSize::i64Bit: ldapr(Dst.X(), MemReg); break;
       default: LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", OpSize); break;
       }
       // Half-barrier once back-patched.
@@ -754,14 +754,14 @@ DEF_OP(LoadMemTSO) {
     }
   } else if (Op->Class == FEXCore::IR::GPRClass) {
     const auto Dst = GetReg(Node);
-    if (OpSize == 1) {
+    if (OpSize == IR::OpSize::i8Bit) {
       // 8bit load is always aligned to natural alignment
       ldarb(Dst, MemReg);
     } else {
       switch (OpSize) {
-      case 2: ldarh(Dst, MemReg); break;
-      case 4: ldar(Dst.W(), MemReg); break;
-      case 8: ldar(Dst.X(), MemReg); break;
+      case IR::OpSize::i16Bit: ldarh(Dst, MemReg); break;
+      case IR::OpSize::i32Bit: ldar(Dst.W(), MemReg); break;
+      case IR::OpSize::i64Bit: ldar(Dst.X(), MemReg); break;
       default: LOGMAN_MSG_A_FMT("Unhandled LoadMemTSO size: {}", OpSize); break;
       }
       // Half-barrier once back-patched.
@@ -771,12 +771,12 @@ DEF_OP(LoadMemTSO) {
     const auto Dst = GetVReg(Node);
     const auto MemSrc = GenerateMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
     switch (OpSize) {
-    case 1: ldrb(Dst, MemSrc); break;
-    case 2: ldrh(Dst, MemSrc); break;
-    case 4: ldr(Dst.S(), MemSrc); break;
-    case 8: ldr(Dst.D(), MemSrc); break;
-    case 16: ldr(Dst.Q(), MemSrc); break;
-    case 32: {
+    case IR::OpSize::i8Bit: ldrb(Dst, MemSrc); break;
+    case IR::OpSize::i16Bit: ldrh(Dst, MemSrc); break;
+    case IR::OpSize::i32Bit: ldr(Dst.S(), MemSrc); break;
+    case IR::OpSize::i64Bit: ldr(Dst.D(), MemSrc); break;
+    case IR::OpSize::i128Bit: ldr(Dst.Q(), MemSrc); break;
+    case IR::OpSize::i256Bit: {
       LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
       const auto MemSrc = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
       ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), MemSrc);
@@ -796,7 +796,7 @@ DEF_OP(VLoadVectorMasked) {
   const auto Op = IROp->C<IR::IROp_VLoadVectorMasked>();
   const auto OpSize = IROp->Size;
 
-  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
   LOGMAN_THROW_A_FMT(!Is256Bit || (Is256Bit && HostSupportsSVE256), "Need SVE256 support in order to use {} with 256-bit operation", __func__);
   const auto SubRegSize = ConvertSubRegSize8(IROp);
 
@@ -814,38 +814,38 @@ DEF_OP(VLoadVectorMasked) {
     cmplt(SubRegSize, CMPPredicate, GoverningPredicate.Zeroing(), MaskReg.Z(), 0);
 
     switch (IROp->ElementSize) {
-    case 1: {
+    case IR::OpSize::i8Bit: {
       ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), CMPPredicate.Zeroing(), MemSrc);
       break;
     }
-    case 2: {
+    case IR::OpSize::i16Bit: {
       ld1h<ARMEmitter::SubRegSize::i16Bit>(Dst.Z(), CMPPredicate.Zeroing(), MemSrc);
       break;
     }
-    case 4: {
+    case IR::OpSize::i32Bit: {
       ld1w<ARMEmitter::SubRegSize::i32Bit>(Dst.Z(), CMPPredicate.Zeroing(), MemSrc);
       break;
     }
-    case 8: {
+    case IR::OpSize::i64Bit: {
       ld1d(Dst.Z(), CMPPredicate.Zeroing(), MemSrc);
       break;
     }
     default: break;
     }
   } else {
-    const auto PerformMove = [this](size_t ElementSize, const ARMEmitter::Register Dst, const ARMEmitter::VRegister Vector, int index) {
+    const auto PerformMove = [this](IR::OpSize ElementSize, const ARMEmitter::Register Dst, const ARMEmitter::VRegister Vector, int index) {
       switch (ElementSize) {
-      case 1: umov<ARMEmitter::SubRegSize::i8Bit>(Dst, Vector, index); break;
-      case 2: umov<ARMEmitter::SubRegSize::i16Bit>(Dst, Vector, index); break;
-      case 4: umov<ARMEmitter::SubRegSize::i32Bit>(Dst, Vector, index); break;
-      case 8: umov<ARMEmitter::SubRegSize::i64Bit>(Dst, Vector, index); break;
+      case IR::OpSize::i8Bit: umov<ARMEmitter::SubRegSize::i8Bit>(Dst, Vector, index); break;
+      case IR::OpSize::i16Bit: umov<ARMEmitter::SubRegSize::i16Bit>(Dst, Vector, index); break;
+      case IR::OpSize::i32Bit: umov<ARMEmitter::SubRegSize::i32Bit>(Dst, Vector, index); break;
+      case IR::OpSize::i64Bit: umov<ARMEmitter::SubRegSize::i64Bit>(Dst, Vector, index); break;
       default: LOGMAN_MSG_A_FMT("Unhandled ExtractElementSize: {}", ElementSize); break;
       }
     };
 
     // Prepare yourself adventurer. For a masked load without instructions that implement it.
-    LOGMAN_THROW_A_FMT(OpSize == Core::CPUState::XMM_SSE_REG_SIZE, "Only supports 128-bit without SVE256");
-    size_t NumElements = IROp->Size / IROp->ElementSize;
+    LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i128Bit, "Only supports 128-bit without SVE256");
+    size_t NumElements = IR::NumElements(IROp->Size, IROp->ElementSize);
 
     // Use VTMP1 as the temporary destination
     auto TempDst = VTMP1;
@@ -854,7 +854,7 @@ DEF_OP(VLoadVectorMasked) {
     movi(ARMEmitter::SubRegSize::i64Bit, TempDst.Q(), 0);
     LOGMAN_THROW_A_FMT(Op->Offset.IsInvalid(), "Complex addressing requested and not supported!");
 
-    const uint64_t ElementSizeInBits = IROp->ElementSize * 8;
+    const uint64_t ElementSizeInBits = IR::OpSizeAsBits(IROp->ElementSize);
     for (size_t i = 0; i < NumElements; ++i) {
       // Extract the mask element.
       PerformMove(IROp->ElementSize, WorkingReg, MaskReg, i);
@@ -864,11 +864,11 @@ DEF_OP(VLoadVectorMasked) {
       tbz(WorkingReg, ElementSizeInBits - 1, &Skip);
       // Do the gather load for this element into the destination
       switch (IROp->ElementSize) {
-      case 1: ld1<ARMEmitter::SubRegSize::i8Bit>(TempDst.Q(), i, TempMemReg); break;
-      case 2: ld1<ARMEmitter::SubRegSize::i16Bit>(TempDst.Q(), i, TempMemReg); break;
-      case 4: ld1<ARMEmitter::SubRegSize::i32Bit>(TempDst.Q(), i, TempMemReg); break;
-      case 8: ld1<ARMEmitter::SubRegSize::i64Bit>(TempDst.Q(), i, TempMemReg); break;
-      case 16: ldr(TempDst.Q(), TempMemReg, 0); break;
+      case IR::OpSize::i8Bit: ld1<ARMEmitter::SubRegSize::i8Bit>(TempDst.Q(), i, TempMemReg); break;
+      case IR::OpSize::i16Bit: ld1<ARMEmitter::SubRegSize::i16Bit>(TempDst.Q(), i, TempMemReg); break;
+      case IR::OpSize::i32Bit: ld1<ARMEmitter::SubRegSize::i32Bit>(TempDst.Q(), i, TempMemReg); break;
+      case IR::OpSize::i64Bit: ld1<ARMEmitter::SubRegSize::i64Bit>(TempDst.Q(), i, TempMemReg); break;
+      case IR::OpSize::i128Bit: ldr(TempDst.Q(), TempMemReg, 0); break;
       default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, IROp->ElementSize); return;
       }
 
@@ -878,7 +878,7 @@ DEF_OP(VLoadVectorMasked) {
         // Handle register rename to save a move.
         auto WorkingReg = TempMemReg;
         TempMemReg = TMP2;
-        add(ARMEmitter::Size::i64Bit, TempMemReg, WorkingReg, IROp->ElementSize);
+        add(ARMEmitter::Size::i64Bit, TempMemReg, WorkingReg, IR::OpSizeToSize(IROp->ElementSize));
       }
     }
 
@@ -891,7 +891,7 @@ DEF_OP(VStoreVectorMasked) {
   const auto Op = IROp->C<IR::IROp_VStoreVectorMasked>();
   const auto OpSize = IROp->Size;
 
-  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
   LOGMAN_THROW_A_FMT(!Is256Bit || (Is256Bit && HostSupportsSVE256), "Need SVE256 support in order to use {} with 256-bit operation", __func__);
   const auto SubRegSize = ConvertSubRegSize8(IROp);
 
@@ -908,45 +908,45 @@ DEF_OP(VStoreVectorMasked) {
     cmplt(SubRegSize, CMPPredicate, GoverningPredicate.Zeroing(), MaskReg.Z(), 0);
 
     switch (IROp->ElementSize) {
-    case 1: {
+    case IR::OpSize::i8Bit: {
       st1b<ARMEmitter::SubRegSize::i8Bit>(RegData.Z(), CMPPredicate.Zeroing(), MemDst);
       break;
     }
-    case 2: {
+    case IR::OpSize::i16Bit: {
       st1h<ARMEmitter::SubRegSize::i16Bit>(RegData.Z(), CMPPredicate.Zeroing(), MemDst);
       break;
     }
-    case 4: {
+    case IR::OpSize::i32Bit: {
       st1w<ARMEmitter::SubRegSize::i32Bit>(RegData.Z(), CMPPredicate.Zeroing(), MemDst);
       break;
     }
-    case 8: {
+    case IR::OpSize::i64Bit: {
       st1d(RegData.Z(), CMPPredicate.Zeroing(), MemDst);
       break;
     }
     default: break;
     }
   } else {
-    const auto PerformMove = [this](size_t ElementSize, const ARMEmitter::Register Dst, const ARMEmitter::VRegister Vector, int index) {
+    const auto PerformMove = [this](IR::OpSize ElementSize, const ARMEmitter::Register Dst, const ARMEmitter::VRegister Vector, int index) {
       switch (ElementSize) {
-      case 1: umov<ARMEmitter::SubRegSize::i8Bit>(Dst, Vector, index); break;
-      case 2: umov<ARMEmitter::SubRegSize::i16Bit>(Dst, Vector, index); break;
-      case 4: umov<ARMEmitter::SubRegSize::i32Bit>(Dst, Vector, index); break;
-      case 8: umov<ARMEmitter::SubRegSize::i64Bit>(Dst, Vector, index); break;
+      case IR::OpSize::i8Bit: umov<ARMEmitter::SubRegSize::i8Bit>(Dst, Vector, index); break;
+      case IR::OpSize::i16Bit: umov<ARMEmitter::SubRegSize::i16Bit>(Dst, Vector, index); break;
+      case IR::OpSize::i32Bit: umov<ARMEmitter::SubRegSize::i32Bit>(Dst, Vector, index); break;
+      case IR::OpSize::i64Bit: umov<ARMEmitter::SubRegSize::i64Bit>(Dst, Vector, index); break;
       default: LOGMAN_MSG_A_FMT("Unhandled ExtractElementSize: {}", ElementSize); break;
       }
     };
 
     // Prepare yourself adventurer. For a masked store without instructions that implement it.
-    LOGMAN_THROW_A_FMT(OpSize == Core::CPUState::XMM_SSE_REG_SIZE, "Only supports 128-bit without SVE256");
-    size_t NumElements = IROp->Size / IROp->ElementSize;
+    LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i128Bit, "Only supports 128-bit without SVE256");
+    size_t NumElements = IR::NumElements(IROp->Size, IROp->ElementSize);
 
     // Use VTMP1 as the temporary destination
     auto WorkingReg = TMP1;
     auto TempMemReg = MemReg;
     LOGMAN_THROW_A_FMT(Op->Offset.IsInvalid(), "Complex addressing requested and not supported!");
 
-    const uint64_t ElementSizeInBits = IROp->ElementSize * 8;
+    const uint64_t ElementSizeInBits = IR::OpSizeAsBits(IROp->ElementSize);
     for (size_t i = 0; i < NumElements; ++i) {
       // Extract the mask element.
       PerformMove(IROp->ElementSize, WorkingReg, MaskReg, i);
@@ -956,11 +956,11 @@ DEF_OP(VStoreVectorMasked) {
       tbz(WorkingReg, ElementSizeInBits - 1, &Skip);
       // Do the gather load for this element into the destination
       switch (IROp->ElementSize) {
-      case 1: st1<ARMEmitter::SubRegSize::i8Bit>(RegData.Q(), i, TempMemReg); break;
-      case 2: st1<ARMEmitter::SubRegSize::i16Bit>(RegData.Q(), i, TempMemReg); break;
-      case 4: st1<ARMEmitter::SubRegSize::i32Bit>(RegData.Q(), i, TempMemReg); break;
-      case 8: st1<ARMEmitter::SubRegSize::i64Bit>(RegData.Q(), i, TempMemReg); break;
-      case 16: str(RegData.Q(), TempMemReg, 0); break;
+      case IR::OpSize::i8Bit: st1<ARMEmitter::SubRegSize::i8Bit>(RegData.Q(), i, TempMemReg); break;
+      case IR::OpSize::i16Bit: st1<ARMEmitter::SubRegSize::i16Bit>(RegData.Q(), i, TempMemReg); break;
+      case IR::OpSize::i32Bit: st1<ARMEmitter::SubRegSize::i32Bit>(RegData.Q(), i, TempMemReg); break;
+      case IR::OpSize::i64Bit: st1<ARMEmitter::SubRegSize::i64Bit>(RegData.Q(), i, TempMemReg); break;
+      case IR::OpSize::i128Bit: str(RegData.Q(), TempMemReg, 0); break;
       default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, IROp->ElementSize); return;
       }
 
@@ -970,7 +970,7 @@ DEF_OP(VStoreVectorMasked) {
         // Handle register rename to save a move.
         auto WorkingReg = TempMemReg;
         TempMemReg = TMP2;
-        add(ARMEmitter::Size::i64Bit, TempMemReg, WorkingReg, IROp->ElementSize);
+        add(ARMEmitter::Size::i64Bit, TempMemReg, WorkingReg, IR::OpSizeToSize(IROp->ElementSize));
       }
     }
   }
@@ -1109,7 +1109,7 @@ DEF_OP(VLoadVectorGatherMasked) {
   ///     - When the behaviour doesn't match then it gets decomposed to ASIMD style masked load.
   ///  - AddrBase also doesn't need to exist
   ///     - If the instruction is using 64-bit vector indexing or 32-bit addresses where the top-bit isn't set then this is valid!
-  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
   LOGMAN_THROW_A_FMT(!Is256Bit || (Is256Bit && HostSupportsSVE256), "Need SVE256 support in order to use {} with 256-bit operation", __func__);
 
   const auto Dst = GetVReg(Node);
@@ -1123,8 +1123,7 @@ DEF_OP(VLoadVectorGatherMasked) {
 
   ///< If the host supports SVE and the offset scale matches SVE limitations then it can do an SVE style load.
   const bool SupportsSVELoad = (HostSupportsSVE128 || HostSupportsSVE256) &&
-                               (OffsetScale == 1 || OffsetScale == IR::OpSizeToSize(VectorIndexSize)) &&
-                               IR::OpSizeToSize(VectorIndexSize) == IROp->ElementSize;
+                               (OffsetScale == 1 || OffsetScale == IR::OpSizeToSize(VectorIndexSize)) && VectorIndexSize == IROp->ElementSize;
 
   if (SupportsSVELoad) {
     uint8_t SVEScale = FEXCore::ilog2(OffsetScale);
@@ -1158,19 +1157,19 @@ DEF_OP(VLoadVectorGatherMasked) {
     }
 
     switch (IROp->ElementSize) {
-    case 1: {
+    case IR::OpSize::i8Bit: {
       ld1b<ARMEmitter::SubRegSize::i8Bit>(TempDst.Z(), CMPPredicate.Zeroing(), MemDst);
       break;
     }
-    case 2: {
+    case IR::OpSize::i16Bit: {
       ld1h<ARMEmitter::SubRegSize::i16Bit>(TempDst.Z(), CMPPredicate.Zeroing(), MemDst);
       break;
     }
-    case 4: {
+    case IR::OpSize::i32Bit: {
       ld1w<ARMEmitter::SubRegSize::i32Bit>(TempDst.Z(), CMPPredicate.Zeroing(), MemDst);
       break;
     }
-    case 8: {
+    case IR::OpSize::i64Bit: {
       ld1d(TempDst.Z(), CMPPredicate.Zeroing(), MemDst);
       break;
     }
@@ -1181,8 +1180,8 @@ DEF_OP(VLoadVectorGatherMasked) {
     sel(SubRegSize, Dst.Z(), CMPPredicate, TempDst.Z(), IncomingDst.Z());
   } else {
     LOGMAN_THROW_A_FMT(!Is256Bit, "Can't emulate this gather load in the backend! Programming error!");
-    Emulate128BitGather(IR::SizeToOpSize(IROp->Size), IR::SizeToOpSize(IROp->ElementSize), Dst, IncomingDst, BaseAddr, VectorIndexLow,
-                        VectorIndexHigh, MaskReg, VectorIndexSize, DataElementOffsetStart, IndexElementOffsetStart, OffsetScale);
+    Emulate128BitGather(IROp->Size, IROp->ElementSize, Dst, IncomingDst, BaseAddr, VectorIndexLow, VectorIndexHigh, MaskReg,
+                        VectorIndexSize, DataElementOffsetStart, IndexElementOffsetStart, OffsetScale);
   }
 }
 
@@ -1269,28 +1268,30 @@ DEF_OP(VLoadVectorElement) {
   const auto Op = IROp->C<IR::IROp_VLoadVectorElement>();
   const auto OpSize = IROp->Size;
 
-  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
   const auto ElementSize = IROp->ElementSize;
 
   const auto Dst = GetVReg(Node);
   const auto DstSrc = GetVReg(Op->DstSrc.ID());
   const auto MemReg = GetReg(Op->Addr.ID());
 
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid element "
-                                                                                                                         "size");
+  LOGMAN_THROW_AA_FMT(ElementSize == IR::OpSize::i8Bit || ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit ||
+                        ElementSize == IR::OpSize::i64Bit || ElementSize == IR::OpSize::i128Bit,
+                      "Invalid element "
+                      "size");
 
   if (Is256Bit) {
     LOGMAN_MSG_A_FMT("Unsupported 256-bit VLoadVectorElement");
   } else {
-    if (Dst != DstSrc && ElementSize != 16) {
+    if (Dst != DstSrc && ElementSize != IR::OpSize::i128Bit) {
       mov(Dst.Q(), DstSrc.Q());
     }
     switch (ElementSize) {
-    case 1: ld1<ARMEmitter::SubRegSize::i8Bit>(Dst.Q(), Op->Index, MemReg); break;
-    case 2: ld1<ARMEmitter::SubRegSize::i16Bit>(Dst.Q(), Op->Index, MemReg); break;
-    case 4: ld1<ARMEmitter::SubRegSize::i32Bit>(Dst.Q(), Op->Index, MemReg); break;
-    case 8: ld1<ARMEmitter::SubRegSize::i64Bit>(Dst.Q(), Op->Index, MemReg); break;
-    case 16: ldr(Dst.Q(), MemReg); break;
+    case IR::OpSize::i8Bit: ld1<ARMEmitter::SubRegSize::i8Bit>(Dst.Q(), Op->Index, MemReg); break;
+    case IR::OpSize::i16Bit: ld1<ARMEmitter::SubRegSize::i16Bit>(Dst.Q(), Op->Index, MemReg); break;
+    case IR::OpSize::i32Bit: ld1<ARMEmitter::SubRegSize::i32Bit>(Dst.Q(), Op->Index, MemReg); break;
+    case IR::OpSize::i64Bit: ld1<ARMEmitter::SubRegSize::i64Bit>(Dst.Q(), Op->Index, MemReg); break;
+    case IR::OpSize::i128Bit: ldr(Dst.Q(), MemReg); break;
     default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, ElementSize); return;
     }
   }
@@ -1305,14 +1306,16 @@ DEF_OP(VStoreVectorElement) {
   const auto Op = IROp->C<IR::IROp_VStoreVectorElement>();
   const auto OpSize = IROp->Size;
 
-  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
   const auto ElementSize = IROp->ElementSize;
 
   const auto Value = GetVReg(Op->Value.ID());
   const auto MemReg = GetReg(Op->Addr.ID());
 
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid element "
-                                                                                                                         "size");
+  LOGMAN_THROW_AA_FMT(ElementSize == IR::OpSize::i8Bit || ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit ||
+                        ElementSize == IR::OpSize::i64Bit || ElementSize == IR::OpSize::i128Bit,
+                      "Invalid element "
+                      "size");
 
   // Emit a half-barrier if TSO is enabled.
   if (CTX->IsVectorAtomicTSOEnabled()) {
@@ -1323,11 +1326,11 @@ DEF_OP(VStoreVectorElement) {
     LOGMAN_MSG_A_FMT("Unsupported 256-bit {}", __func__);
   } else {
     switch (ElementSize) {
-    case 1: st1<ARMEmitter::SubRegSize::i8Bit>(Value.Q(), Op->Index, MemReg); break;
-    case 2: st1<ARMEmitter::SubRegSize::i16Bit>(Value.Q(), Op->Index, MemReg); break;
-    case 4: st1<ARMEmitter::SubRegSize::i32Bit>(Value.Q(), Op->Index, MemReg); break;
-    case 8: st1<ARMEmitter::SubRegSize::i64Bit>(Value.Q(), Op->Index, MemReg); break;
-    case 16: str(Value.Q(), MemReg); break;
+    case IR::OpSize::i8Bit: st1<ARMEmitter::SubRegSize::i8Bit>(Value.Q(), Op->Index, MemReg); break;
+    case IR::OpSize::i16Bit: st1<ARMEmitter::SubRegSize::i16Bit>(Value.Q(), Op->Index, MemReg); break;
+    case IR::OpSize::i32Bit: st1<ARMEmitter::SubRegSize::i32Bit>(Value.Q(), Op->Index, MemReg); break;
+    case IR::OpSize::i64Bit: st1<ARMEmitter::SubRegSize::i64Bit>(Value.Q(), Op->Index, MemReg); break;
+    case IR::OpSize::i128Bit: str(Value.Q(), MemReg); break;
     default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, ElementSize); return;
     }
   }
@@ -1337,34 +1340,36 @@ DEF_OP(VBroadcastFromMem) {
   const auto Op = IROp->C<IR::IROp_VBroadcastFromMem>();
   const auto OpSize = IROp->Size;
 
-  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
   LOGMAN_THROW_A_FMT(!Is256Bit || (Is256Bit && HostSupportsSVE256), "Need SVE256 support in order to use {} with 256-bit operation", __func__);
   const auto ElementSize = IROp->ElementSize;
 
   const auto Dst = GetVReg(Node);
   const auto MemReg = GetReg(Op->Address.ID());
 
-  LOGMAN_THROW_AA_FMT(ElementSize == 1 || ElementSize == 2 || ElementSize == 4 || ElementSize == 8 || ElementSize == 16, "Invalid element "
-                                                                                                                         "size");
+  LOGMAN_THROW_AA_FMT(ElementSize == IR::OpSize::i8Bit || ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit ||
+                        ElementSize == IR::OpSize::i64Bit || ElementSize == IR::OpSize::i128Bit,
+                      "Invalid element "
+                      "size");
 
   if (Is256Bit && HostSupportsSVE256) {
     const auto GoverningPredicate = PRED_TMP_32B.Zeroing();
 
     switch (ElementSize) {
-    case 1: ld1rb(ARMEmitter::SubRegSize::i8Bit, Dst.Z(), GoverningPredicate, MemReg); break;
-    case 2: ld1rh(ARMEmitter::SubRegSize::i16Bit, Dst.Z(), GoverningPredicate, MemReg); break;
-    case 4: ld1rw(ARMEmitter::SubRegSize::i32Bit, Dst.Z(), GoverningPredicate, MemReg); break;
-    case 8: ld1rd(Dst.Z(), GoverningPredicate, MemReg); break;
-    case 16: ld1rqb(Dst.Z(), GoverningPredicate, MemReg); break;
+    case IR::OpSize::i8Bit: ld1rb(ARMEmitter::SubRegSize::i8Bit, Dst.Z(), GoverningPredicate, MemReg); break;
+    case IR::OpSize::i16Bit: ld1rh(ARMEmitter::SubRegSize::i16Bit, Dst.Z(), GoverningPredicate, MemReg); break;
+    case IR::OpSize::i32Bit: ld1rw(ARMEmitter::SubRegSize::i32Bit, Dst.Z(), GoverningPredicate, MemReg); break;
+    case IR::OpSize::i64Bit: ld1rd(Dst.Z(), GoverningPredicate, MemReg); break;
+    case IR::OpSize::i128Bit: ld1rqb(Dst.Z(), GoverningPredicate, MemReg); break;
     default: LOGMAN_MSG_A_FMT("Unhandled VBroadcastFromMem size: {}", ElementSize); return;
     }
   } else {
     switch (ElementSize) {
-    case 1: ld1r<ARMEmitter::SubRegSize::i8Bit>(Dst.Q(), MemReg); break;
-    case 2: ld1r<ARMEmitter::SubRegSize::i16Bit>(Dst.Q(), MemReg); break;
-    case 4: ld1r<ARMEmitter::SubRegSize::i32Bit>(Dst.Q(), MemReg); break;
-    case 8: ld1r<ARMEmitter::SubRegSize::i64Bit>(Dst.Q(), MemReg); break;
-    case 16:
+    case IR::OpSize::i8Bit: ld1r<ARMEmitter::SubRegSize::i8Bit>(Dst.Q(), MemReg); break;
+    case IR::OpSize::i16Bit: ld1r<ARMEmitter::SubRegSize::i16Bit>(Dst.Q(), MemReg); break;
+    case IR::OpSize::i32Bit: ld1r<ARMEmitter::SubRegSize::i32Bit>(Dst.Q(), MemReg); break;
+    case IR::OpSize::i64Bit: ld1r<ARMEmitter::SubRegSize::i64Bit>(Dst.Q(), MemReg); break;
+    case IR::OpSize::i128Bit:
       // Normal load, like ld1rqb with 128-bit regs.
       ldr(Dst.Q(), MemReg);
       break;
@@ -1392,7 +1397,7 @@ DEF_OP(Push) {
       // Need to be careful here, incoming source might be reused afterwards.
     } else {
       // RA constraints would let this always be true.
-      mov(IROp->Size == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit, Dst, AddrSrc);
+      mov(IROp->Size == IR::OpSize::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit, Dst, AddrSrc);
     }
   }
 
@@ -1436,7 +1441,7 @@ DEF_OP(Push) {
     }
     }
 
-    sub(IROp->Size == 8 ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit, Dst, AddrSrc, ValueSize);
+    sub(IROp->Size == IR::OpSize::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit, Dst, AddrSrc, ValueSize);
   } else {
     switch (ValueSize) {
     case 1: {
@@ -1505,37 +1510,37 @@ DEF_OP(StoreMem) {
   if (Op->Class == FEXCore::IR::GPRClass) {
     const auto Src = GetReg(Op->Value.ID());
     switch (OpSize) {
-    case 1: strb(Src, MemSrc); break;
-    case 2: strh(Src, MemSrc); break;
-    case 4: str(Src.W(), MemSrc); break;
-    case 8: str(Src.X(), MemSrc); break;
+    case IR::OpSize::i8Bit: strb(Src, MemSrc); break;
+    case IR::OpSize::i16Bit: strh(Src, MemSrc); break;
+    case IR::OpSize::i32Bit: str(Src.W(), MemSrc); break;
+    case IR::OpSize::i64Bit: str(Src.X(), MemSrc); break;
     default: LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", OpSize); break;
     }
   } else {
     const auto Src = GetVReg(Op->Value.ID());
 
     switch (OpSize) {
-    case 1: {
+    case IR::OpSize::i8Bit: {
       strb(Src, MemSrc);
       break;
     }
-    case 2: {
+    case IR::OpSize::i16Bit: {
       strh(Src, MemSrc);
       break;
     }
-    case 4: {
+    case IR::OpSize::i32Bit: {
       str(Src.S(), MemSrc);
       break;
     }
-    case 8: {
+    case IR::OpSize::i64Bit: {
       str(Src.D(), MemSrc);
       break;
     }
-    case 16: {
+    case IR::OpSize::i128Bit: {
       str(Src.Q(), MemSrc);
       break;
     }
-    case 32: {
+    case IR::OpSize::i256Bit: {
       LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
       const auto MemSrc = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
       st1b<ARMEmitter::SubRegSize::i8Bit>(Src.Z(), PRED_TMP_32B, MemSrc);
@@ -1555,8 +1560,8 @@ DEF_OP(StoreMemPair) {
     const auto Src1 = GetReg(Op->Value1.ID());
     const auto Src2 = GetReg(Op->Value2.ID());
     switch (OpSize) {
-    case 4: stp<ARMEmitter::IndexType::OFFSET>(Src1.W(), Src2.W(), Addr, Op->Offset); break;
-    case 8: stp<ARMEmitter::IndexType::OFFSET>(Src1.X(), Src2.X(), Addr, Op->Offset); break;
+    case IR::OpSize::i32Bit: stp<ARMEmitter::IndexType::OFFSET>(Src1.W(), Src2.W(), Addr, Op->Offset); break;
+    case IR::OpSize::i64Bit: stp<ARMEmitter::IndexType::OFFSET>(Src1.X(), Src2.X(), Addr, Op->Offset); break;
     default: LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", OpSize); break;
     }
   } else {
@@ -1564,9 +1569,9 @@ DEF_OP(StoreMemPair) {
     const auto Src2 = GetVReg(Op->Value2.ID());
 
     switch (OpSize) {
-    case 4: stp<ARMEmitter::IndexType::OFFSET>(Src1.S(), Src2.S(), Addr, Op->Offset); break;
-    case 8: stp<ARMEmitter::IndexType::OFFSET>(Src1.D(), Src2.D(), Addr, Op->Offset); break;
-    case 16: stp<ARMEmitter::IndexType::OFFSET>(Src1.Q(), Src2.Q(), Addr, Op->Offset); break;
+    case IR::OpSize::i32Bit: stp<ARMEmitter::IndexType::OFFSET>(Src1.S(), Src2.S(), Addr, Op->Offset); break;
+    case IR::OpSize::i64Bit: stp<ARMEmitter::IndexType::OFFSET>(Src1.D(), Src2.D(), Addr, Op->Offset); break;
+    case IR::OpSize::i128Bit: stp<ARMEmitter::IndexType::OFFSET>(Src1.Q(), Src2.Q(), Addr, Op->Offset); break;
     default: LOGMAN_MSG_A_FMT("Unhandled StoreMemPair size: {}", OpSize); break;
     }
   }
@@ -1591,32 +1596,32 @@ DEF_OP(StoreMemTSO) {
       LOGMAN_THROW_A_FMT(IsInlineConstant(Op->Offset, &Offset), "expected immediate");
     }
 
-    if (OpSize == 1) {
+    if (OpSize == IR::OpSize::i8Bit) {
       // 8bit load is always aligned to natural alignment
       stlurb(Src, MemReg, Offset);
     } else {
       // Half-barrier once back-patched.
       nop();
       switch (OpSize) {
-      case 2: stlurh(Src, MemReg, Offset); break;
-      case 4: stlur(Src.W(), MemReg, Offset); break;
-      case 8: stlur(Src.X(), MemReg, Offset); break;
+      case IR::OpSize::i16Bit: stlurh(Src, MemReg, Offset); break;
+      case IR::OpSize::i32Bit: stlur(Src.W(), MemReg, Offset); break;
+      case IR::OpSize::i64Bit: stlur(Src.X(), MemReg, Offset); break;
       default: LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", OpSize); break;
       }
     }
   } else if (Op->Class == FEXCore::IR::GPRClass) {
     const auto Src = GetReg(Op->Value.ID());
 
-    if (OpSize == 1) {
+    if (OpSize == IR::OpSize::i8Bit) {
       // 8bit load is always aligned to natural alignment
       stlrb(Src, MemReg);
     } else {
       // Half-barrier once back-patched.
       nop();
       switch (OpSize) {
-      case 2: stlrh(Src, MemReg); break;
-      case 4: stlr(Src.W(), MemReg); break;
-      case 8: stlr(Src.X(), MemReg); break;
+      case IR::OpSize::i16Bit: stlrh(Src, MemReg); break;
+      case IR::OpSize::i32Bit: stlr(Src.W(), MemReg); break;
+      case IR::OpSize::i64Bit: stlr(Src.X(), MemReg); break;
       default: LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", OpSize); break;
       }
     }
@@ -1628,12 +1633,12 @@ DEF_OP(StoreMemTSO) {
     const auto Src = GetVReg(Op->Value.ID());
     const auto MemSrc = GenerateMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
     switch (OpSize) {
-    case 1: strb(Src, MemSrc); break;
-    case 2: strh(Src, MemSrc); break;
-    case 4: str(Src.S(), MemSrc); break;
-    case 8: str(Src.D(), MemSrc); break;
-    case 16: str(Src.Q(), MemSrc); break;
-    case 32: {
+    case IR::OpSize::i8Bit: strb(Src, MemSrc); break;
+    case IR::OpSize::i16Bit: strh(Src, MemSrc); break;
+    case IR::OpSize::i32Bit: str(Src.S(), MemSrc); break;
+    case IR::OpSize::i64Bit: str(Src.D(), MemSrc); break;
+    case IR::OpSize::i128Bit: str(Src.Q(), MemSrc); break;
+    case IR::OpSize::i256Bit: {
       LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
       const auto Operand = GenerateSVEMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
       st1b<ARMEmitter::SubRegSize::i8Bit>(Src.Z(), PRED_TMP_32B, Operand);
@@ -2125,66 +2130,66 @@ DEF_OP(ParanoidLoadMemTSO) {
       (void)IsInlineConstant(Op->Offset, &Offset);
     }
 
-    if (OpSize == 1) {
+    if (OpSize == IR::OpSize::i8Bit) {
       // 8bit load is always aligned to natural alignment
       const auto Dst = GetReg(Node);
       ldapurb(Dst, MemReg, Offset);
     } else {
       switch (OpSize) {
-      case 2: ldapurh(Dst, MemReg, Offset); break;
-      case 4: ldapur(Dst.W(), MemReg, Offset); break;
-      case 8: ldapur(Dst.X(), MemReg, Offset); break;
+      case IR::OpSize::i16Bit: ldapurh(Dst, MemReg, Offset); break;
+      case IR::OpSize::i32Bit: ldapur(Dst.W(), MemReg, Offset); break;
+      case IR::OpSize::i64Bit: ldapur(Dst.X(), MemReg, Offset); break;
       default: LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", OpSize); break;
       }
     }
   } else if (CTX->HostFeatures.SupportsRCPC && Op->Class == FEXCore::IR::GPRClass) {
     const auto Dst = GetReg(Node);
-    if (OpSize == 1) {
+    if (OpSize == IR::OpSize::i8Bit) {
       // 8bit load is always aligned to natural alignment
       ldaprb(Dst.W(), MemReg);
     } else {
       switch (OpSize) {
-      case 2: ldaprh(Dst.W(), MemReg); break;
-      case 4: ldapr(Dst.W(), MemReg); break;
-      case 8: ldapr(Dst.X(), MemReg); break;
+      case IR::OpSize::i16Bit: ldaprh(Dst.W(), MemReg); break;
+      case IR::OpSize::i32Bit: ldapr(Dst.W(), MemReg); break;
+      case IR::OpSize::i64Bit: ldapr(Dst.X(), MemReg); break;
       default: LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", OpSize); break;
       }
     }
   } else if (Op->Class == FEXCore::IR::GPRClass) {
     const auto Dst = GetReg(Node);
     switch (OpSize) {
-    case 1: ldarb(Dst, MemReg); break;
-    case 2: ldarh(Dst, MemReg); break;
-    case 4: ldar(Dst.W(), MemReg); break;
-    case 8: ldar(Dst.X(), MemReg); break;
+    case IR::OpSize::i8Bit: ldarb(Dst, MemReg); break;
+    case IR::OpSize::i16Bit: ldarh(Dst, MemReg); break;
+    case IR::OpSize::i32Bit: ldar(Dst.W(), MemReg); break;
+    case IR::OpSize::i64Bit: ldar(Dst.X(), MemReg); break;
     default: LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", OpSize); break;
     }
   } else {
     const auto Dst = GetVReg(Node);
     switch (OpSize) {
-    case 1:
+    case IR::OpSize::i8Bit:
       ldarb(TMP1, MemReg);
       fmov(ARMEmitter::Size::i32Bit, Dst.S(), TMP1.W());
       break;
-    case 2:
+    case IR::OpSize::i16Bit:
       ldarh(TMP1, MemReg);
       fmov(ARMEmitter::Size::i32Bit, Dst.S(), TMP1.W());
       break;
-    case 4:
+    case IR::OpSize::i32Bit:
       ldar(TMP1.W(), MemReg);
       fmov(ARMEmitter::Size::i32Bit, Dst.S(), TMP1.W());
       break;
-    case 8:
+    case IR::OpSize::i64Bit:
       ldar(TMP1, MemReg);
       fmov(ARMEmitter::Size::i64Bit, Dst.D(), TMP1);
       break;
-    case 16:
+    case IR::OpSize::i128Bit:
       ldaxp(ARMEmitter::Size::i64Bit, TMP1, TMP2, MemReg);
       clrex();
       ins(ARMEmitter::SubRegSize::i64Bit, Dst, 0, TMP1);
       ins(ARMEmitter::SubRegSize::i64Bit, Dst, 1, TMP2);
       break;
-    case 32:
+    case IR::OpSize::i256Bit:
       LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
       dmb(ARMEmitter::BarrierScope::ISH);
       ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), PRED_TMP_32B.Zeroing(), MemReg);
@@ -2208,47 +2213,47 @@ DEF_OP(ParanoidStoreMemTSO) {
       (void)IsInlineConstant(Op->Offset, &Offset);
     }
 
-    if (OpSize == 1) {
+    if (OpSize == IR::OpSize::i8Bit) {
       // 8bit load is always aligned to natural alignment
       stlurb(Src, MemReg, Offset);
     } else {
       switch (OpSize) {
-      case 2: stlurh(Src, MemReg, Offset); break;
-      case 4: stlur(Src.W(), MemReg, Offset); break;
-      case 8: stlur(Src.X(), MemReg, Offset); break;
+      case IR::OpSize::i16Bit: stlurh(Src, MemReg, Offset); break;
+      case IR::OpSize::i32Bit: stlur(Src.W(), MemReg, Offset); break;
+      case IR::OpSize::i64Bit: stlur(Src.X(), MemReg, Offset); break;
       default: LOGMAN_MSG_A_FMT("Unhandled ParanoidStoreMemTSO size: {}", OpSize); break;
       }
     }
   } else if (Op->Class == FEXCore::IR::GPRClass) {
     const auto Src = GetReg(Op->Value.ID());
     switch (OpSize) {
-    case 1: stlrb(Src, MemReg); break;
-    case 2: stlrh(Src, MemReg); break;
-    case 4: stlr(Src.W(), MemReg); break;
-    case 8: stlr(Src.X(), MemReg); break;
+    case IR::OpSize::i8Bit: stlrb(Src, MemReg); break;
+    case IR::OpSize::i16Bit: stlrh(Src, MemReg); break;
+    case IR::OpSize::i32Bit: stlr(Src.W(), MemReg); break;
+    case IR::OpSize::i64Bit: stlr(Src.X(), MemReg); break;
     default: LOGMAN_MSG_A_FMT("Unhandled ParanoidStoreMemTSO size: {}", OpSize); break;
     }
   } else {
     const auto Src = GetVReg(Op->Value.ID());
 
     switch (OpSize) {
-    case 1:
+    case IR::OpSize::i8Bit:
       umov<ARMEmitter::SubRegSize::i8Bit>(TMP1, Src, 0);
       stlrb(TMP1, MemReg);
       break;
-    case 2:
+    case IR::OpSize::i16Bit:
       umov<ARMEmitter::SubRegSize::i16Bit>(TMP1, Src, 0);
       stlrh(TMP1, MemReg);
       break;
-    case 4:
+    case IR::OpSize::i32Bit:
       umov<ARMEmitter::SubRegSize::i32Bit>(TMP1, Src, 0);
       stlr(TMP1.W(), MemReg);
       break;
-    case 8:
+    case IR::OpSize::i64Bit:
       umov<ARMEmitter::SubRegSize::i64Bit>(TMP1, Src, 0);
       stlr(TMP1, MemReg);
       break;
-    case 16: {
+    case IR::OpSize::i128Bit: {
       // Move vector to GPRs
       umov<ARMEmitter::SubRegSize::i64Bit>(TMP1, Src, 0);
       umov<ARMEmitter::SubRegSize::i64Bit>(TMP2, Src, 1);
@@ -2261,7 +2266,7 @@ DEF_OP(ParanoidStoreMemTSO) {
       cbnz(ARMEmitter::Size::i64Bit, TMP3, &B);                           // < Overwritten with DMB
       break;
     }
-    case 32: {
+    case IR::OpSize::i256Bit: {
       LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
       dmb(ARMEmitter::BarrierScope::ISH);
       st1b<ARMEmitter::SubRegSize::i8Bit>(Src.Z(), PRED_TMP_32B, MemReg, 0);
@@ -2351,7 +2356,7 @@ DEF_OP(Prefetch) {
   const auto MemReg = GetReg(Op->Addr.ID());
 
   // Access size is only ever handled as 8-byte. Even though it is accesssed as a cacheline.
-  const auto MemSrc = GenerateMemOperand(8, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
+  const auto MemSrc = GenerateMemOperand(IR::OpSize::i64Bit, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
   size_t LUT = (Op->Stream ? 1 : 0) | ((Op->CacheLevel - 1) << 1) | (Op->ForStore ? 1U << 3 : 0);
 
@@ -2388,9 +2393,9 @@ DEF_OP(VStoreNonTemporal) {
   const auto Op = IROp->C<IR::IROp_VStoreNonTemporal>();
   const auto OpSize = IROp->Size;
 
-  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
   LOGMAN_THROW_A_FMT(!Is256Bit || (Is256Bit && HostSupportsSVE256), "Need SVE256 support in order to use {} with 256-bit operation", __func__);
-  const auto Is128Bit = OpSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto Is128Bit = OpSize == IR::OpSize::i128Bit;
 
   const auto Value = GetVReg(Op->Value.ID());
   const auto MemReg = GetReg(Op->Addr.ID());
@@ -2414,7 +2419,7 @@ DEF_OP(VStoreNonTemporalPair) {
   const auto Op = IROp->C<IR::IROp_VStoreNonTemporalPair>();
   const auto OpSize = IROp->Size;
 
-  [[maybe_unused]] const auto Is128Bit = OpSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  [[maybe_unused]] const auto Is128Bit = OpSize == IR::OpSize::i128Bit;
   LOGMAN_THROW_A_FMT(Is128Bit, "This IR operation only operates at 128-bit wide");
 
   const auto ValueLow = GetVReg(Op->ValueLow.ID());
@@ -2430,9 +2435,9 @@ DEF_OP(VLoadNonTemporal) {
   const auto Op = IROp->C<IR::IROp_VLoadNonTemporal>();
   const auto OpSize = IROp->Size;
 
-  const auto Is256Bit = OpSize == Core::CPUState::XMM_AVX_REG_SIZE;
+  const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
   LOGMAN_THROW_A_FMT(!Is256Bit || (Is256Bit && HostSupportsSVE256), "Need SVE256 support in order to use {} with 256-bit operation", __func__);
-  const auto Is128Bit = OpSize == Core::CPUState::XMM_SSE_REG_SIZE;
+  const auto Is128Bit = OpSize == IR::OpSize::i128Bit;
 
   const auto Dst = GetVReg(Node);
   const auto MemReg = GetReg(Op->Addr.ID());
