@@ -26,6 +26,12 @@ Test_SelfModifyingCode/Delinking.asm
 Test_SelfModifyingCode/DifferentBlock.asm
 Test_SelfModifyingCode/SameBlock.asm
 
+# Simulator can't do wfe
+Test_Primary/Pause.asm
+
+# Simulator can't handle `mrs x0, nzcv`
+Test_SecondaryModRM/Reg_7_1.asm
+
 # Simulator can't handle unaligned accesses
 Test_Primary/Primary_01_Atomic16.asm
 Test_Primary/Primary_01_Atomic32.asm
