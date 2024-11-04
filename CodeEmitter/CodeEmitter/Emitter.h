@@ -341,94 +341,88 @@ public:
 };
 
 template<uint32_t op0, uint32_t op1, uint32_t CRn, uint32_t CRm, uint32_t op2>
-constexpr uint32_t GenSystemReg() {
-  return op0 << 19 | op1 << 16 | CRn << 12 | CRm << 8 | op2 << 5;
-};
+inline constexpr uint32_t GenSystemReg = op0 << 19 | op1 << 16 | CRn << 12 | CRm << 8 | op2 << 5;
 
 // This `SystemRegister` enum is used for the mrs/msr instructions.
 enum class SystemRegister : uint32_t {
-  CTR_EL0 = GenSystemReg<0b11, 0b011, 0b0000, 0b0000, 0b001>(),
-  DCZID_EL0 = GenSystemReg<0b11, 0b011, 0b0000, 0b0000, 0b111>(),
-  TPIDR_EL0 = GenSystemReg<0b11, 0b011, 0b1101, 0b0000, 0b010>(),
-  RNDR = GenSystemReg<0b11, 0b011, 0b0010, 0b0100, 0b000>(),
-  RNDRRS = GenSystemReg<0b11, 0b011, 0b0010, 0b0100, 0b001>(),
-  NZCV = GenSystemReg<0b11, 0b011, 0b0100, 0b0010, 0b000>(),
-  FPCR = GenSystemReg<0b11, 0b011, 0b0100, 0b0100, 0b000>(),
-  TPIDRRO_EL0 = GenSystemReg<0b11, 0b011, 0b1101, 0b0000, 0b011>(),
-  CNTFRQ_EL0 = GenSystemReg<0b11, 0b011, 0b1110, 0b0000, 0b000>(),
-  CNTVCT_EL0 = GenSystemReg<0b11, 0b011, 0b1110, 0b0000, 0b010>(),
+  CTR_EL0 = GenSystemReg<0b11, 0b011, 0b0000, 0b0000, 0b001>,
+  DCZID_EL0 = GenSystemReg<0b11, 0b011, 0b0000, 0b0000, 0b111>,
+  TPIDR_EL0 = GenSystemReg<0b11, 0b011, 0b1101, 0b0000, 0b010>,
+  RNDR = GenSystemReg<0b11, 0b011, 0b0010, 0b0100, 0b000>,
+  RNDRRS = GenSystemReg<0b11, 0b011, 0b0010, 0b0100, 0b001>,
+  NZCV = GenSystemReg<0b11, 0b011, 0b0100, 0b0010, 0b000>,
+  FPCR = GenSystemReg<0b11, 0b011, 0b0100, 0b0100, 0b000>,
+  TPIDRRO_EL0 = GenSystemReg<0b11, 0b011, 0b1101, 0b0000, 0b011>,
+  CNTFRQ_EL0 = GenSystemReg<0b11, 0b011, 0b1110, 0b0000, 0b000>,
+  CNTVCT_EL0 = GenSystemReg<0b11, 0b011, 0b1110, 0b0000, 0b010>,
 };
 
 template<uint32_t op1, uint32_t CRm, uint32_t op2>
-constexpr uint32_t GenDCReg() {
-  return op1 << 16 | CRm << 8 | op2 << 5;
-};
+inline constexpr uint32_t GenDCReg = op1 << 16 | CRm << 8 | op2 << 5;
 
 // This `DataCacheOperation` enum is used for the dc instruction.
 enum class DataCacheOperation : uint32_t {
-  IVAC = GenDCReg<0b000, 0b0110, 0b001>(),
-  ISW = GenDCReg<0b000, 0b0110, 0b010>(),
-  CSW = GenDCReg<0b000, 0b1010, 0b010>(),
-  CISW = GenDCReg<0b000, 0b1110, 0b010>(),
-  ZVA = GenDCReg<0b011, 0b0100, 0b001>(),
-  CVAC = GenDCReg<0b011, 0b1010, 0b001>(),
-  CVAU = GenDCReg<0b011, 0b1011, 0b001>(),
-  CIVAC = GenDCReg<0b011, 0b1110, 0b001>(),
+  IVAC = GenDCReg<0b000, 0b0110, 0b001>,
+  ISW = GenDCReg<0b000, 0b0110, 0b010>,
+  CSW = GenDCReg<0b000, 0b1010, 0b010>,
+  CISW = GenDCReg<0b000, 0b1110, 0b010>,
+  ZVA = GenDCReg<0b011, 0b0100, 0b001>,
+  CVAC = GenDCReg<0b011, 0b1010, 0b001>,
+  CVAU = GenDCReg<0b011, 0b1011, 0b001>,
+  CIVAC = GenDCReg<0b011, 0b1110, 0b001>,
 
   // MTE2
-  IGVAC = GenDCReg<0b000, 0b0110, 0b011>(),
-  IGSW = GenDCReg<0b000, 0b0110, 0b100>(),
-  IGDVAC = GenDCReg<0b000, 0b0110, 0b101>(),
-  IGDSW = GenDCReg<0b000, 0b0110, 0b110>(),
-  CGSW = GenDCReg<0b000, 0b1010, 0b100>(),
-  CGDSW = GenDCReg<0b000, 0b1010, 0b110>(),
-  CIGSW = GenDCReg<0b000, 0b1110, 0b100>(),
-  CIGDSW = GenDCReg<0b000, 0b1110, 0b110>(),
+  IGVAC = GenDCReg<0b000, 0b0110, 0b011>,
+  IGSW = GenDCReg<0b000, 0b0110, 0b100>,
+  IGDVAC = GenDCReg<0b000, 0b0110, 0b101>,
+  IGDSW = GenDCReg<0b000, 0b0110, 0b110>,
+  CGSW = GenDCReg<0b000, 0b1010, 0b100>,
+  CGDSW = GenDCReg<0b000, 0b1010, 0b110>,
+  CIGSW = GenDCReg<0b000, 0b1110, 0b100>,
+  CIGDSW = GenDCReg<0b000, 0b1110, 0b110>,
 
   // MTE
-  GVA = GenDCReg<0b011, 0b0100, 0b011>(),
-  GZVA = GenDCReg<0b011, 0b0100, 0b100>(),
-  CGVAC = GenDCReg<0b011, 0b1010, 0b011>(),
-  CGDVAC = GenDCReg<0b011, 0b1010, 0b101>(),
-  CGVAP = GenDCReg<0b011, 0b1100, 0b011>(),
-  CGDVAP = GenDCReg<0b011, 0b1100, 0b101>(),
-  CGVADP = GenDCReg<0b011, 0b1101, 0b011>(),
-  CGDVADP = GenDCReg<0b011, 0b1101, 0b101>(),
-  CIGVAC = GenDCReg<0b011, 0b1110, 0b011>(),
-  CIGDVAC = GenDCReg<0b011, 0b1110, 0b101>(),
+  GVA = GenDCReg<0b011, 0b0100, 0b011>,
+  GZVA = GenDCReg<0b011, 0b0100, 0b100>,
+  CGVAC = GenDCReg<0b011, 0b1010, 0b011>,
+  CGDVAC = GenDCReg<0b011, 0b1010, 0b101>,
+  CGVAP = GenDCReg<0b011, 0b1100, 0b011>,
+  CGDVAP = GenDCReg<0b011, 0b1100, 0b101>,
+  CGVADP = GenDCReg<0b011, 0b1101, 0b011>,
+  CGDVADP = GenDCReg<0b011, 0b1101, 0b101>,
+  CIGVAC = GenDCReg<0b011, 0b1110, 0b011>,
+  CIGDVAC = GenDCReg<0b011, 0b1110, 0b101>,
 
   // DPB
-  CVAP = GenDCReg<0b011, 0b1100, 0b001>(),
+  CVAP = GenDCReg<0b011, 0b1100, 0b001>,
 
   // DPB2
-  CVADP = GenDCReg<0b011, 0b1101, 0b001>(),
+  CVADP = GenDCReg<0b011, 0b1101, 0b001>,
 };
 
 template<uint32_t CRm, uint32_t op2>
-constexpr uint32_t GenHintBarrierReg() {
-  return CRm << 8 | op2 << 5;
-}
+inline constexpr uint32_t GenHintBarrierReg = CRm << 8 | op2 << 5;
 
 // This `HintRegister` enum is used for the hint instruction.
 enum class HintRegister : uint32_t {
-  NOP = GenHintBarrierReg<0b0000, 0b000>(),
-  YIELD = GenHintBarrierReg<0b0000, 0b001>(),
-  WFE = GenHintBarrierReg<0b0000, 0b010>(),
-  WFI = GenHintBarrierReg<0b0000, 0b011>(),
-  SEV = GenHintBarrierReg<0b0000, 0b100>(),
-  SEVL = GenHintBarrierReg<0b0000, 0b101>(),
-  DGH = GenHintBarrierReg<0b0000, 0b110>(),
-  CSDB = GenHintBarrierReg<0b0010, 0b100>(),
+  NOP = GenHintBarrierReg<0b0000, 0b000>,
+  YIELD = GenHintBarrierReg<0b0000, 0b001>,
+  WFE = GenHintBarrierReg<0b0000, 0b010>,
+  WFI = GenHintBarrierReg<0b0000, 0b011>,
+  SEV = GenHintBarrierReg<0b0000, 0b100>,
+  SEVL = GenHintBarrierReg<0b0000, 0b101>,
+  DGH = GenHintBarrierReg<0b0000, 0b110>,
+  CSDB = GenHintBarrierReg<0b0010, 0b100>,
 };
 
 // This `BarrierRegister` enum is used for the various barrier instructions.
 enum class BarrierRegister : uint32_t {
-  CLREX = GenHintBarrierReg<0b0000, 0b010>(),
-  TCOMMIT = GenHintBarrierReg<0b0000, 0b011>(),
-  DSB = GenHintBarrierReg<0b0000, 0b100>(),
-  DMB = GenHintBarrierReg<0b0000, 0b101>(),
-  ISB = GenHintBarrierReg<0b0000, 0b110>(),
-  SB = GenHintBarrierReg<0b0000, 0b111>(),
+  CLREX = GenHintBarrierReg<0b0000, 0b010>,
+  TCOMMIT = GenHintBarrierReg<0b0000, 0b011>,
+  DSB = GenHintBarrierReg<0b0000, 0b100>,
+  DMB = GenHintBarrierReg<0b0000, 0b101>,
+  ISB = GenHintBarrierReg<0b0000, 0b110>,
+  SB = GenHintBarrierReg<0b0000, 0b111>,
 };
 
 // This `BarrierScope` enum is used for the dsb/dmb instructions.
