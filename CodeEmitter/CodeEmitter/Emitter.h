@@ -804,7 +804,6 @@ protected:
   uint32_t Encode_rt2(T Reg) const {
     return Reg.Idx() << 10;
   }
-  template<>
   uint32_t Encode_rt2(uint32_t Reg) const {
     return Reg << 10;
   }
@@ -840,7 +839,6 @@ protected:
   uint32_t Encode_rt(T Reg) const {
     return Reg.Idx();
   }
-  template<>
   uint32_t Encode_rt(Prefetch Reg) const {
     return FEXCore::ToUnderlying(Reg);
   }
