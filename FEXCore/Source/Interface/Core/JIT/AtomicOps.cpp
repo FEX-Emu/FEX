@@ -61,8 +61,8 @@ DEF_OP(CASPair) {
     mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
 
     ARMEmitter::BackwardLabel LoopTop;
-    ARMEmitter::SingleUseForwardLabel LoopNotExpected;
-    ARMEmitter::SingleUseForwardLabel LoopExpected;
+    ARMEmitter::ForwardLabel LoopNotExpected;
+    ARMEmitter::ForwardLabel LoopExpected;
     Bind(&LoopTop);
 
     // This instruction sequence must be synced with HandleCASPAL_Armv8.
@@ -108,8 +108,8 @@ DEF_OP(CAS) {
     mov(EmitSize, GetReg(Node), TMP2.R());
   } else {
     ARMEmitter::BackwardLabel LoopTop;
-    ARMEmitter::SingleUseForwardLabel LoopNotExpected;
-    ARMEmitter::SingleUseForwardLabel LoopExpected;
+    ARMEmitter::ForwardLabel LoopNotExpected;
+    ARMEmitter::ForwardLabel LoopExpected;
     Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
     if (IROp->Size == IR::OpSize::i8Bit) {

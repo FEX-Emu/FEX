@@ -26,10 +26,8 @@ public:
     constexpr uint32_t Op = 0b0101'010 << 25;
     Branch_Conditional(Op, 0, 0, Cond, Imm >> 2);
   }
-  template<typename LabelType>
-  requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void b(ARMEmitter::Condition Cond, LabelType* Label) {
-    AddLocationToLabel(Label, SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::BC});
+  void b(ARMEmitter::Condition Cond, ForwardLabel* Label) {
+    AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::BC});
     constexpr uint32_t Op = 0b0101'010 << 25;
     Branch_Conditional(Op, 0, 0, Cond, 0);
   }
@@ -54,10 +52,8 @@ public:
     Branch_Conditional(Op, 0, 1, Cond, Imm >> 2);
   }
 
-  template<typename LabelType>
-  requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void bc(ARMEmitter::Condition Cond, LabelType* Label) {
-    AddLocationToLabel(Label, SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::BC});
+  void bc(ARMEmitter::Condition Cond, ForwardLabel* Label) {
+    AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::BC});
     constexpr uint32_t Op = 0b0101'010 << 25;
     Branch_Conditional(Op, 0, 1, Cond, 0);
   }
@@ -109,10 +105,8 @@ public:
 
     UnconditionalBranch(Op, Imm >> 2);
   }
-  template<typename LabelType>
-  requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void b(LabelType* Label) {
-    AddLocationToLabel(Label, SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::B});
+  void b(ForwardLabel* Label) {
+    AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::B});
     constexpr uint32_t Op = 0b0001'01 << 26;
 
     UnconditionalBranch(Op, 0);
@@ -139,10 +133,8 @@ public:
 
     UnconditionalBranch(Op, Imm >> 2);
   }
-  template<typename LabelType>
-  requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void bl(LabelType* Label) {
-    AddLocationToLabel(Label, SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::B});
+  void bl(ForwardLabel* Label) {
+    AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::B});
     constexpr uint32_t Op = 0b1001'01 << 26;
 
     UnconditionalBranch(Op, 0);
@@ -172,10 +164,8 @@ public:
     CompareAndBranch(Op, s, rt, Imm >> 2);
   }
 
-  template<typename LabelType>
-  requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void cbz(ARMEmitter::Size s, ARMEmitter::Register rt, LabelType* Label) {
-    AddLocationToLabel(Label, SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::BC});
+  void cbz(ARMEmitter::Size s, ARMEmitter::Register rt, ForwardLabel* Label) {
+    AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::BC});
 
     constexpr uint32_t Op = 0b0011'0100 << 24;
 
@@ -205,10 +195,8 @@ public:
     CompareAndBranch(Op, s, rt, Imm >> 2);
   }
 
-  template<typename LabelType>
-  requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void cbnz(ARMEmitter::Size s, ARMEmitter::Register rt, LabelType* Label) {
-    AddLocationToLabel(Label, SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::BC});
+  void cbnz(ARMEmitter::Size s, ARMEmitter::Register rt, ForwardLabel* Label) {
+    AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::BC});
 
     constexpr uint32_t Op = 0b0011'0101 << 24;
 
@@ -238,11 +226,9 @@ public:
     TestAndBranch(Op, rt, Bit, Imm >> 2);
   }
 
-  template<typename LabelType>
-  requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void tbz(ARMEmitter::Register rt, uint32_t Bit, LabelType* Label) {
+  void tbz(ARMEmitter::Register rt, uint32_t Bit, ForwardLabel* Label) {
     AddLocationToLabel(
-      Label, SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::TEST_BRANCH});
+      Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::TEST_BRANCH});
 
     constexpr uint32_t Op = 0b0011'0110 << 24;
 
@@ -271,11 +257,9 @@ public:
     TestAndBranch(Op, rt, Bit, Imm >> 2);
   }
 
-  template<typename LabelType>
-  requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void tbnz(ARMEmitter::Register rt, uint32_t Bit, LabelType* Label) {
+  void tbnz(ARMEmitter::Register rt, uint32_t Bit, ForwardLabel* Label) {
     AddLocationToLabel(
-      Label, SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::TEST_BRANCH});
+      Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::TEST_BRANCH});
     constexpr uint32_t Op = 0b0011'0111 << 24;
 
     TestAndBranch(Op, rt, Bit, 0);

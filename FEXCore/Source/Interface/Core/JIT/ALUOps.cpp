@@ -692,7 +692,7 @@ DEF_OP(ShiftFlags) {
   // updates for Src2=0 but anything that masks to zero.
   and_(ARMEmitter::Size::i32Bit, TMP1, Src2, OpSize == IR::OpSize::i64Bit ? 0x3f : 0x1f);
 
-  ARMEmitter::SingleUseForwardLabel Done;
+  ARMEmitter::ForwardLabel Done;
   cbz(EmitSize, TMP1, &Done);
   {
     // PF/SF/ZF/OF
@@ -773,7 +773,7 @@ DEF_OP(RotateFlags) {
   const auto EmitSize = Op->Size == IR::OpSize::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
   // If shift=0, flags are unaffected. Wrap the whole implementation in a cbz.
-  ARMEmitter::SingleUseForwardLabel Done;
+  ARMEmitter::ForwardLabel Done;
   cbz(EmitSize, Shift, &Done);
   {
     // Extract the last bit shifted in to CF
@@ -862,7 +862,7 @@ DEF_OP(PDep) {
     const auto T1 = TMP4.R();
 
     ARMEmitter::BackwardLabel NextBit;
-    ARMEmitter::SingleUseForwardLabel Done;
+    ARMEmitter::ForwardLabel Done;
 
     // First, copy the input/mask, since we'll be clobbering. Copy as 64-bit to
     // make this 0-uop on Firestorm.
@@ -922,9 +922,9 @@ DEF_OP(PExt) {
     const auto BitReg = TMP2;
     const auto ValueReg = TMP3;
 
-    ARMEmitter::SingleUseForwardLabel EarlyExit;
+    ARMEmitter::ForwardLabel EarlyExit;
     ARMEmitter::BackwardLabel NextBit;
-    ARMEmitter::SingleUseForwardLabel Done;
+    ARMEmitter::ForwardLabel Done;
 
     cbz(EmitSize, Mask, &EarlyExit);
     mov(EmitSize, MaskReg, Mask);
@@ -979,8 +979,8 @@ DEF_OP(LDiv) {
     break;
   }
   case IR::OpSize::i64Bit: {
-    ARMEmitter::SingleUseForwardLabel Only64Bit {};
-    ARMEmitter::SingleUseForwardLabel LongDIVRet {};
+    ARMEmitter::ForwardLabel Only64Bit {};
+    ARMEmitter::ForwardLabel LongDIVRet {};
 
     // Check if the upper bits match the top bit of the lower 64-bits
     // Sign extend the top bit of lower bits
@@ -1047,8 +1047,8 @@ DEF_OP(LUDiv) {
     break;
   }
   case IR::OpSize::i64Bit: {
-    ARMEmitter::SingleUseForwardLabel Only64Bit {};
-    ARMEmitter::SingleUseForwardLabel LongDIVRet {};
+    ARMEmitter::ForwardLabel Only64Bit {};
+    ARMEmitter::ForwardLabel LongDIVRet {};
 
     // Check the upper bits for zero
     // If the upper bits are zero then we can do a 64-bit divide
@@ -1115,8 +1115,8 @@ DEF_OP(LRem) {
     break;
   }
   case IR::OpSize::i64Bit: {
-    ARMEmitter::SingleUseForwardLabel Only64Bit {};
-    ARMEmitter::SingleUseForwardLabel LongDIVRet {};
+    ARMEmitter::ForwardLabel Only64Bit {};
+    ARMEmitter::ForwardLabel LongDIVRet {};
 
     // Check if the upper bits match the top bit of the lower 64-bits
     // Sign extend the top bit of lower bits
@@ -1187,8 +1187,8 @@ DEF_OP(LURem) {
     break;
   }
   case IR::OpSize::i64Bit: {
-    ARMEmitter::SingleUseForwardLabel Only64Bit {};
-    ARMEmitter::SingleUseForwardLabel LongDIVRet {};
+    ARMEmitter::ForwardLabel Only64Bit {};
+    ARMEmitter::ForwardLabel LongDIVRet {};
 
     // Check the upper bits for zero
     // If the upper bits are zero then we can do a 64-bit divide

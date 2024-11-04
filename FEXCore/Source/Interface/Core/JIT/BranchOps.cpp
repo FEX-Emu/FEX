@@ -60,7 +60,7 @@ DEF_OP(ExitFunction) {
       br(TMP2);
     } else {
 #endif
-      ARMEmitter::SingleUseForwardLabel l_BranchHost;
+      ARMEmitter::ForwardLabel l_BranchHost;
       ldr(TMP1, &l_BranchHost);
       blr(TMP1);
 
@@ -72,7 +72,7 @@ DEF_OP(ExitFunction) {
 #endif
   } else {
 
-    ARMEmitter::SingleUseForwardLabel FullLookup;
+    ARMEmitter::ForwardLabel FullLookup;
     auto RipReg = GetReg(Op->NewRIP.ID());
 
     // L1 Cache

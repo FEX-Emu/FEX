@@ -63,7 +63,7 @@ void Dispatcher::EmitDispatcher() {
   // }
 
   ARMEmitter::ForwardLabel l_CTX;
-  ARMEmitter::SingleUseForwardLabel l_Sleep;
+  ARMEmitter::ForwardLabel l_Sleep;
   ARMEmitter::ForwardLabel l_CompileBlock;
   ARMEmitter::ForwardLabel l_CompileSingleStep;
 
@@ -274,7 +274,7 @@ void Dispatcher::EmitDispatcher() {
   // Clobbers TMP1/2
   auto EmitECExitCheck = [&]() {
     // Check the EC code bitmap incase we need to exit the JIT to call into native code.
-    ARMEmitter::SingleUseForwardLabel l_NotECCode;
+    ARMEmitter::ForwardLabel l_NotECCode;
     ldr(TMP1, ARMEmitter::XReg::x18, TEB_PEB_OFFSET);
     ldr(TMP1, TMP1, PEB_EC_CODE_BITMAP_OFFSET);
 

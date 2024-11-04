@@ -899,7 +899,7 @@ DEF_OP(VLoadVectorMasked) {
       PerformMove(IROp->ElementSize, WorkingReg, MaskReg, i);
 
       // If the sign bit is zero then skip the load
-      ARMEmitter::SingleUseForwardLabel Skip {};
+      ARMEmitter::ForwardLabel Skip {};
       tbz(WorkingReg, ElementSizeInBits - 1, &Skip);
       // Do the gather load for this element into the destination
       switch (IROp->ElementSize) {
@@ -991,7 +991,7 @@ DEF_OP(VStoreVectorMasked) {
       PerformMove(IROp->ElementSize, WorkingReg, MaskReg, i);
 
       // If the sign bit is zero then skip the load
-      ARMEmitter::SingleUseForwardLabel Skip {};
+      ARMEmitter::ForwardLabel Skip {};
       tbz(WorkingReg, ElementSizeInBits - 1, &Skip);
       // Do the gather load for this element into the destination
       switch (IROp->ElementSize) {
@@ -1075,7 +1075,7 @@ void Arm64JITCore::Emulate128BitGather(IR::OpSize Size, IR::OpSize ElementSize, 
   }
 
   for (size_t i = DataElementOffsetStart, IndexElement = IndexElementOffsetStart; i < NumDataElements; ++i, ++IndexElement) {
-    ARMEmitter::SingleUseForwardLabel Skip {};
+    ARMEmitter::ForwardLabel Skip {};
     // Extract mask element
     PerformMove(ElementSize, WorkingReg, MaskReg, i);
 
@@ -1788,8 +1788,8 @@ DEF_OP(MemSet) {
   //
   // Counter is decremented regardless.
 
-  ARMEmitter::SingleUseForwardLabel BackwardImpl {};
-  ARMEmitter::SingleUseForwardLabel Done {};
+  ARMEmitter::ForwardLabel BackwardImpl {};
+  ARMEmitter::ForwardLabel Done {};
 
   mov(TMP1, Length.X());
   if (Op->Prefix.IsInvalid()) {
@@ -1980,8 +1980,8 @@ DEF_OP(MemCpy) {
   //
   // Counter is decremented regardless.
 
-  ARMEmitter::SingleUseForwardLabel BackwardImpl {};
-  ARMEmitter::SingleUseForwardLabel Done {};
+  ARMEmitter::ForwardLabel BackwardImpl {};
+  ARMEmitter::ForwardLabel Done {};
 
   mov(TMP1, Length.X());
   mov(TMP2, MemRegDest.X());

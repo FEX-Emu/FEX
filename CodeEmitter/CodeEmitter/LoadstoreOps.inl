@@ -2035,65 +2035,44 @@ public:
     LoadStoreLiteral(Op, prfop, static_cast<uint32_t>(Imm >> 2) & 0x7'FFFF);
   }
 
-  template<typename LabelType>
-  requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void ldr(ARMEmitter::WRegister rt, LabelType* Label) {
-    AddLocationToLabel(
-      Label, SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD});
+  void ldr(ARMEmitter::WRegister rt, ForwardLabel* Label) {
+    AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::RELATIVE_LOAD});
     constexpr uint32_t Op = 0b0001'1000 << 24;
     LoadStoreLiteral(Op, rt, 0);
   }
 
-  template<typename LabelType>
-  requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void ldr(ARMEmitter::SRegister rt, LabelType* Label) {
-    AddLocationToLabel(
-      Label, SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD});
+  void ldr(ARMEmitter::SRegister rt, ForwardLabel* Label) {
+    AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::RELATIVE_LOAD});
     constexpr uint32_t Op = 0b0001'1100 << 24;
     LoadStoreLiteral(Op, rt, 0);
   }
 
-  template<typename LabelType>
-  requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void ldr(ARMEmitter::XRegister rt, LabelType* Label) {
-    AddLocationToLabel(
-      Label, SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD});
+  void ldr(ARMEmitter::XRegister rt, ForwardLabel* Label) {
+    AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::RELATIVE_LOAD});
     constexpr uint32_t Op = 0b0101'1000 << 24;
     LoadStoreLiteral(Op, rt, 0);
   }
 
-  template<typename LabelType>
-  requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void ldr(ARMEmitter::DRegister rt, LabelType* Label) {
-    AddLocationToLabel(
-      Label, SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD});
+  void ldr(ARMEmitter::DRegister rt, ForwardLabel* Label) {
+    AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::RELATIVE_LOAD});
     constexpr uint32_t Op = 0b0101'1100 << 24;
     LoadStoreLiteral(Op, rt, 0);
   }
 
-  template<typename LabelType>
-  requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void ldrsw(ARMEmitter::XRegister rt, LabelType* Label) {
-    AddLocationToLabel(
-      Label, SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD});
+  void ldrsw(ARMEmitter::XRegister rt, ForwardLabel* Label) {
+    AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::RELATIVE_LOAD});
     constexpr uint32_t Op = 0b1001'1000 << 24;
     LoadStoreLiteral(Op, rt, 0);
   }
 
-  template<typename LabelType>
-  requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void ldr(ARMEmitter::QRegister rt, LabelType* Label) {
-    AddLocationToLabel(
-      Label, SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD});
+  void ldr(ARMEmitter::QRegister rt, ForwardLabel* Label) {
+    AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::RELATIVE_LOAD});
     constexpr uint32_t Op = 0b1001'1100 << 24;
     LoadStoreLiteral(Op, rt, 0);
   }
 
-  template<typename LabelType>
-  requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void prfm(ARMEmitter::Prefetch prfop, LabelType* Label) {
-    AddLocationToLabel(
-      Label, SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD});
+  void prfm(ARMEmitter::Prefetch prfop, ForwardLabel* Label) {
+    AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::RELATIVE_LOAD});
     constexpr uint32_t Op = 0b1101'1000 << 24;
     LoadStoreLiteral(Op, prfop, 0);
   }

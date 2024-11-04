@@ -43,10 +43,8 @@ public:
     constexpr uint32_t Op = 0b0001'0000 << 24;
     DataProcessing_PCRel_Imm(Op, rd, Imm);
   }
-  template<typename LabelType>
-  requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void adr(ARMEmitter::Register rd, LabelType* Label) {
-    AddLocationToLabel(Label, SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::ADR});
+  void adr(ARMEmitter::Register rd, ForwardLabel* Label) {
+    AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::ADR});
     constexpr uint32_t Op = 0b0001'0000 << 24;
     DataProcessing_PCRel_Imm(Op, rd, 0);
   }
@@ -71,10 +69,8 @@ public:
     constexpr uint32_t Op = 0b1001'0000 << 24;
     DataProcessing_PCRel_Imm(Op, rd, Imm);
   }
-  template<typename LabelType>
-  requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void adrp(ARMEmitter::Register rd, LabelType* Label) {
-    AddLocationToLabel(Label, SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::ADRP});
+  void adrp(ARMEmitter::Register rd, ForwardLabel* Label) {
+    AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::ADRP});
     constexpr uint32_t Op = 0b1001'0000 << 24;
     DataProcessing_PCRel_Imm(Op, rd, 0);
   }
@@ -112,8 +108,7 @@ public:
     }
   }
   void LongAddressGen(ARMEmitter::Register rd, ForwardLabel* Label) {
-    Label->Insts.emplace_back(
-      SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::LONG_ADDRESS_GEN});
+    AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::LONG_ADDRESS_GEN});
     // Emit a register index and a nop. These will be backpatched.
     dc32(rd.Idx());
     nop();

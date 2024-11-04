@@ -513,7 +513,7 @@ enum class SVEFMaxMinImm : uint32_t {
   _1_0,
 };
 
-/* This `BackwardLabel` struct used for retaining a location for PC-Relative instructions.
+/* This `BackwardLabel` struct is used for retaining a location for PC-Relative instructions.
  * This is specifically a label for a target that is logically `below` an instruction that uses it.
  * Which means that a branch would jump backwards.
  */
@@ -521,13 +521,11 @@ struct BackwardLabel {
   uint8_t* Location {};
 };
 
-/* This `SingleUseForwardLabel` struct used for retaining a location for PC-Relative instructions.
+/* This `ForwardLabel` struct is used for retaining a location for PC-Relative instructions.
  * This is specifically a label for a target that is logically `above` an instruction that uses it.
  * Which means that a branch would jump forwards.
- *
- * The `ForwardLabel` struct can be bound to multiple instructions, so it needs a vector for each bind instruction type.
  */
-struct SingleUseForwardLabel {
+struct ForwardLabel {
   enum class InstType {
     UNKNOWN,
     ADR,
@@ -538,12 +536,16 @@ struct SingleUseForwardLabel {
     RELATIVE_LOAD,
     LONG_ADDRESS_GEN,
   };
-  uint8_t* Location {};
-  InstType Type = InstType::UNKNOWN;
-};
 
-struct ForwardLabel {
-  fextl::vector<SingleUseForwardLabel> Insts {};
+  struct Reference {
+    uint8_t* Location {};
+    InstType Type = InstType::UNKNOWN;
+  };
+
+  // The first element is stored separately to avoid allocations for simple cases
+  Reference FirstInst;
+
+  fextl::vector<Reference> Insts;
 };
 
 /* This `BiDirectionalLabel` struct used for retaining a location for PC-Relative instructions.
@@ -555,14 +557,12 @@ struct BiDirectionalLabel {
   ForwardLabel Forward;
 };
 
-static inline void AddLocationToLabel(SingleUseForwardLabel* Label, SingleUseForwardLabel&& Location) {
-  LOGMAN_THROW_A_FMT(Label->Type == SingleUseForwardLabel::InstType::UNKNOWN, "Trying to bind a SingleUseForwardLabel to multiple "
-                                                                              "locations. Use ForwardLabel instead.");
-  *Label = std::move(Location);
-}
-
-static inline void AddLocationToLabel(ForwardLabel* Label, SingleUseForwardLabel&& Location) {
-  Label->Insts.emplace_back(std::move(Location));
+static inline void AddLocationToLabel(ForwardLabel* Label, ForwardLabel::Reference&& Location) {
+  if (Label->FirstInst.Location == nullptr) {
+    Label->FirstInst = Location;
+  } else {
+    Label->Insts.push_back(Location);
+  }
 }
 
 // Some FCMA ASIMD instructions support a rotation argument.
@@ -635,11 +635,11 @@ public:
     Label->Location = GetCursorAddress<uint8_t*>();
   }
 
-  void Bind(const SingleUseForwardLabel* Label) {
+  void Bind(const ForwardLabel::Reference* Label) {
     uint8_t* CurrentAddress = GetCursorAddress<uint8_t*>();
     // Patch up the instructions
     switch (Label->Type) {
-    case SingleUseForwardLabel::InstType::ADR: {
+    case ForwardLabel::InstType::ADR: {
       uint32_t* Instruction = reinterpret_cast<uint32_t*>(Label->Location);
       int64_t Imm = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(Instruction);
       LOGMAN_THROW_A_FMT(IsADRRange(Imm), "Unscaled offset too large");
@@ -651,7 +651,7 @@ public:
       *Instruction = Inst;
       break;
     }
-    case SingleUseForwardLabel::InstType::ADRP: {
+    case ForwardLabel::InstType::ADRP: {
       uint32_t* Instruction = reinterpret_cast<uint32_t*>(Label->Location);
       int64_t Imm = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(Instruction);
       LOGMAN_THROW_A_FMT(IsADRPRange(Imm) && IsADRPAligned(Imm), "Unscaled offset too large");
@@ -665,7 +665,7 @@ public:
       break;
     }
 
-    case SingleUseForwardLabel::InstType::B: {
+    case ForwardLabel::InstType::B: {
       uint32_t* Instruction = reinterpret_cast<uint32_t*>(Label->Location);
       int64_t Imm = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(Instruction);
       LOGMAN_THROW_A_FMT(Imm >= -134217728 && Imm <= 134217724 && ((Imm & 0b11) == 0), "Unscaled offset too large");
@@ -679,7 +679,7 @@ public:
       break;
     }
 
-    case SingleUseForwardLabel::InstType::TEST_BRANCH: {
+    case ForwardLabel::InstType::TEST_BRANCH: {
       uint32_t* Instruction = reinterpret_cast<uint32_t*>(Label->Location);
       int64_t Imm = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(Instruction);
       LOGMAN_THROW_A_FMT(Imm >= -32768 && Imm <= 32764 && ((Imm & 0b11) == 0), "Unscaled offset too large");
@@ -692,8 +692,8 @@ public:
 
       break;
     }
-    case SingleUseForwardLabel::InstType::BC:
-    case SingleUseForwardLabel::InstType::RELATIVE_LOAD: {
+    case ForwardLabel::InstType::BC:
+    case ForwardLabel::InstType::RELATIVE_LOAD: {
       uint32_t* Instruction = reinterpret_cast<uint32_t*>(Label->Location);
       int64_t Imm = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(Instruction);
       LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
@@ -705,7 +705,7 @@ public:
       *Instruction = Inst;
       break;
     }
-    case SingleUseForwardLabel::InstType::LONG_ADDRESS_GEN: {
+    case ForwardLabel::InstType::LONG_ADDRESS_GEN: {
       uint32_t* Instructions = reinterpret_cast<uint32_t*>(Label->Location);
       int64_t ImmInstOne = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(&Instructions[0]);
       int64_t ImmInstTwo = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(&Instructions[1]);
@@ -753,7 +753,10 @@ public:
   template<bool WarnAboutEmpty = false>
   void Bind(ForwardLabel* Label) {
     if constexpr (WarnAboutEmpty) {
-      LOGMAN_THROW_A_FMT(Label->Insts.empty() == false, "Binding forward label that didn't have any instructions using it");
+      LOGMAN_THROW_A_FMT(Label->FirstInst.Location != nullptr, "Binding forward label that didn't have any instructions using it");
+    }
+    if (Label->FirstInst.Location) {
+      Bind(&Label->FirstInst);
     }
     for (auto& Inst : Label->Insts) {
       Bind(&Inst);
