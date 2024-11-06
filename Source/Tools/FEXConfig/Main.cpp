@@ -28,6 +28,32 @@ static fextl::unique_ptr<FEXCore::Config::Layer> LoadedConfig {};
 static fextl::map<FEXCore::Config::ConfigOption, std::pair<std::string, std::string_view>> ConfigToNameLookup;
 static fextl::map<std::string, FEXCore::Config::ConfigOption> NameToConfigLookup;
 
+#include "Common/JSONPool.h"
+#include <FEXCore/Utils/FileLoading.h>
+
+static void LoadThunkDatabase(fextl::unordered_map<fextl::string, bool>& HostLibsDB, bool Global) {
+  auto ThunkDBPath = FEXCore::Config::GetConfigDirectory(Global) + "ThunksDB.json";
+  fextl::vector<char> FileData;
+  if (!FEXCore::FileLoading::LoadFile(FileData, ThunkDBPath)) {
+    return;
+  }
+
+  FEX::JSON::JsonAllocator Pool {};
+  const json_t* json = FEX::JSON::CreateJSON(FileData, Pool);
+  if (!json) {
+    return;
+  }
+
+  const json_t* DB = json_getProperty(json, "DB");
+  if (!DB || JSON_OBJ != json_getType(DB)) {
+    return;
+  }
+
+  for (const json_t* Library = json_getChild(DB); Library != nullptr; Library = json_getSibling(Library)) {
+    HostLibsDB[json_getName(Library)] = false;
+  }
+}
+
 ConfigModel::ConfigModel() {
   setItemRoleNames(QHash<int, QByteArray> {{Qt::DisplayRole, "display"}, {Qt::UserRole + 1, "optionType"}, {Qt::UserRole + 2, "optionValue"}});
   Reload();
@@ -188,6 +214,64 @@ static void ConfigInit(fextl::string ConfigFilename) {
   }
 }
 
+HostLibsModel::HostLibsModel() {
+  // Load list of available libraries
+  LoadThunkDatabase(HostLibsDB, true);
+  LoadThunkDatabase(HostLibsDB, false);
+}
+
+void HostLibsModel::Reload(const fextl::string& Path) {
+  for (auto& [_, Enabled] : HostLibsDB) {
+    Enabled = false;
+  }
+
+  {
+    fextl::vector<char> FileData;
+    if (!FEXCore::FileLoading::LoadFile(FileData, Path)) {
+      goto RenderItems;
+    }
+
+    FEX::JSON::JsonAllocator Pool {};
+    const json_t* json = FEX::JSON::CreateJSON(FileData, Pool);
+    if (!json) {
+      goto RenderItems;
+    }
+
+    const json_t* ThunksDB = json_getProperty(json, "ThunksDB");
+    if (!ThunksDB) {
+      goto RenderItems;
+    }
+
+    for (const json_t* Item = json_getChild(ThunksDB); Item != nullptr; Item = json_getSibling(Item)) {
+      auto DBObject = HostLibsDB.find(json_getName(Item));
+      if (DBObject != HostLibsDB.end()) {
+        DBObject->second = (json_getInteger(Item) != 0);
+      }
+    }
+  }
+
+RenderItems:
+  beginResetModel();
+  removeRows(0, rowCount());
+  for (auto& [Name, Enabled] : HostLibsDB) {
+    auto Item = new QStandardItem(QString::fromUtf8(Name.c_str()));
+    Item->setData(Enabled, Qt::CheckStateRole);
+    appendRow(Item);
+  }
+  endResetModel();
+}
+
+QHash<int, QByteArray> HostLibsModel::roleNames() const {
+  auto ret = QStandardItemModel::roleNames();
+  ret[Qt::CheckStateRole] = "checked";
+  return ret;
+}
+
+bool HostLibsModel::setData(const QModelIndex& index, const QVariant& value, int role) {
+  std::next(HostLibsDB.begin(), index.row())->second = value.toBool();
+  return QStandardItemModel::setData(index, value, role);
+}
+
 RootFSModel::RootFSModel() {
   auto INotifyFD = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
 
@@ -315,7 +399,10 @@ static bool OpenFile(fextl::string Filename) {
 }
 
 ConfigRuntime::ConfigRuntime(const QString& ConfigFilename) {
+  HostLibs.Reload(ConfigFilename.toStdString().c_str());
+
   qmlRegisterSingletonInstance<ConfigModel>("FEX.ConfigModel", 1, 0, "ConfigModel", &ConfigModelInst);
+  qmlRegisterSingletonInstance<HostLibsModel>("FEX.HostLibsModel", 1, 0, "HostLibsModel", &HostLibs);
   qmlRegisterSingletonInstance<RootFSModel>("FEX.RootFSModel", 1, 0, "RootFSModel", &RootFSList);
   Engine.load(QUrl("qrc:/main.qml"));
 
@@ -354,6 +441,7 @@ void ConfigRuntime::onLoad(const QUrl& Filename) {
 
   ConfigModelInst.Reload();
   RootFSList.Reload();
+  HostLibs.Reload(Filename.toLocalFile().toStdString().c_str());
 
   QMetaObject::invokeMethod(Window, "refreshUI");
 }

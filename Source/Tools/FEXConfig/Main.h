@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include <Common/Async.h>
+#include <FEXCore/fextl/string.h>
+#include <FEXCore/fextl/unordered_map.h>
 
 #include <QStandardItemModel>
 #include <QQmlApplicationEngine>
@@ -33,6 +35,23 @@ public slots:
   void setInt(const QString&, int value);
 };
 
+class HostLibsModel : public QStandardItemModel {
+  Q_OBJECT
+  QML_ELEMENT
+  QML_SINGLETON
+
+public:
+  fextl::unordered_map<fextl::string, bool> HostLibsDB;
+
+  HostLibsModel();
+
+  QHash<int, QByteArray> roleNames() const override;
+
+  bool setData(const QModelIndex&, const QVariant&, int role) override;
+
+  void Reload(const fextl::string& Filename);
+};
+
 class RootFSModel : public QStandardItemModel {
   Q_OBJECT
   QML_ELEMENT
@@ -62,6 +81,7 @@ class ConfigRuntime : public QObject {
   QQuickWindow* Window = nullptr;
   RootFSModel RootFSList;
   ConfigModel ConfigModelInst;
+  HostLibsModel HostLibs;
 
 public:
   ConfigRuntime(const QString& ConfigFilename);
