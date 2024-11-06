@@ -439,17 +439,17 @@ const char* GetHomeDirectory() {
   const char* HomeDir = getenv("HOME");
 
   // Try to get home directory from uid
-  if (!HomeDir) {
+  if (!HomeDir || !FHU::Filesystem::Exists(HomeDir)) {
     HomeDir = FindUserHomeThroughUID();
   }
 
   // try the PWD
-  if (!HomeDir) {
+  if (!HomeDir || !FHU::Filesystem::Exists(HomeDir)) {
     HomeDir = getenv("PWD");
   }
 
   // Still doesn't exit? You get local
-  if (!HomeDir) {
+  if (!HomeDir || !FHU::Filesystem::Exists(HomeDir)) {
     HomeDir = ".";
   }
 
