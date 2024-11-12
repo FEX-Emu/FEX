@@ -46,6 +46,8 @@ Dispatcher::~Dispatcher() {
 }
 
 void Dispatcher::EmitDispatcher() {
+  // Don't modify TMP3 since it contains our RIP once the block doesn't exist
+  auto RipReg = TMP3;
 #ifdef VIXL_DISASSEMBLER
   const auto DisasmBegin = GetCursorAddress<const vixl::aarch64::Instruction*>();
 #endif
@@ -62,7 +64,7 @@ void Dispatcher::EmitDispatcher() {
 
   ARMEmitter::ForwardLabel l_CTX;
   ARMEmitter::SingleUseForwardLabel l_Sleep;
-  ARMEmitter::SingleUseForwardLabel l_CompileBlock;
+  ARMEmitter::ForwardLabel l_CompileBlock;
 
   // Push all the register we need to save
   PushCalleeSavedRegisters();
@@ -81,6 +83,7 @@ void Dispatcher::EmitDispatcher() {
 
   FillStaticRegs();
   ARMEmitter::BiDirectionalLabel LoopTop {};
+  ARMEmitter::ForwardLabel CompileTempSingleInst;
 
 #ifdef _M_ARM_64EC
   b(&LoopTop);
@@ -116,9 +119,10 @@ void Dispatcher::EmitDispatcher() {
   AbsoluteLoopTopAddress = GetCursorAddress<uint64_t>();
 
   // Load in our RIP
-  // Don't modify TMP3 since it contains our RIP once the block doesn't exist
-  auto RipReg = TMP3;
   ldr(RipReg, STATE_PTR(CpuStateFrame, State.rip));
+
+  ldrb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
+  cbnz(ARMEmitter::Size::i32Bit, TMP1, &CompileTempSingleInst);
 
   // L1 Cache
   ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.L1Pointer));
@@ -146,7 +150,6 @@ void Dispatcher::EmitDispatcher() {
     LoadConstant(ARMEmitter::Size::i64Bit, TMP4, VirtualMemorySize);
     and_(ARMEmitter::Size::i64Bit, TMP4, RipReg.R(), TMP4);
   }
-
   ARMEmitter::ForwardLabel NoBlock;
 
   {
@@ -254,10 +257,7 @@ void Dispatcher::EmitDispatcher() {
     br(TMP1);
   }
 
-  // Need to create the block
-  {
-    Bind(&NoBlock);
-
+  auto EmitCompileBlock = [&](bool TempSingleInst) {
 #ifdef _M_ARM_64EC
     // Check the EC code bitmap incase we need to exit the JIT to call into native code.
     ARMEmitter::SingleUseForwardLabel l_NotECCode;
@@ -300,13 +300,14 @@ void Dispatcher::EmitDispatcher() {
     ldr(ARMEmitter::XReg::x0, &l_CTX);
     mov(ARMEmitter::XReg::x1, STATE);
     // x2 contains guest RIP
-    mov(ARMEmitter::XReg::x3, 0);
-    ldr(ARMEmitter::XReg::x4, &l_CompileBlock);
+    mov(ARMEmitter::XReg::x3, TempSingleInst ? 1 : 0);
+    mov(ARMEmitter::XReg::x4, TempSingleInst ? 1 : 0);
+    ldr(ARMEmitter::XReg::x5, &l_CompileBlock);
 
     if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-      GenerateIndirectRuntimeCall<uintptr_t, void*, void*, uint64_t, uint64_t>(ARMEmitter::Reg::r4);
+      GenerateIndirectRuntimeCall<uintptr_t, void*, void*, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r5);
     } else {
-      blr(ARMEmitter::Reg::r4); // { CTX, Frame, RIP, MaxInst }
+      blr(ARMEmitter::Reg::r5); // { CTX, Frame, RIP, MaxInst, SkipCache }
     }
 
     // Result is now in x0
@@ -333,6 +334,16 @@ void Dispatcher::EmitDispatcher() {
 
     // Jump to the compiled block
     br(TMP1);
+  };
+
+  {
+    Bind(&NoBlock);
+    EmitCompileBlock(false);
+  }
+
+  {
+    Bind(&CompileTempSingleInst);
+    EmitCompileBlock(true);
   }
 
   {
