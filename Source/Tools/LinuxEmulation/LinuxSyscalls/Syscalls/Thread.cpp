@@ -26,6 +26,7 @@ $end_info$
 #include <limits.h>
 #include <linux/futex.h>
 #include <linux/seccomp.h>
+#include <linux/sched.h>
 #include <stdint.h>
 #include <sched.h>
 #include <sys/personality.h>
@@ -228,6 +229,15 @@ uint64_t HandleNewClone(FEX::HLE::ThreadStateObject* Thread, FEXCore::Context::C
   return Thread->Thread->StatusCode;
 }
 
+static int Clone3Fork(uint32_t flags) {
+  struct clone_args cl_args = {
+    .flags = (flags & (CLONE_FS | CLONE_FILES)),
+    .exit_signal = SIGCHLD,
+  };
+
+  return syscall(SYS_clone3, cl_args, sizeof(cl_args));
+}
+
 uint64_t ForkGuest(FEXCore::Core::InternalThreadState* Thread, FEXCore::Core::CpuStateFrame* Frame, uint32_t flags, void* stack,
                    size_t StackSize, pid_t* parent_tid, pid_t* child_tid, void* tls) {
   // Just before we fork, we lock all syscall mutexes so that both processes will end up with a locked mutex
@@ -248,7 +258,7 @@ uint64_t ForkGuest(FEXCore::Core::InternalThreadState* Thread, FEXCore::Core::Cp
 
     // XXX: We don't currently support a real `vfork` as it causes problems.
     // Currently behaves like a fork (with wait after the fact), which isn't correct. Need to find where the problem is
-    Result = fork();
+    Result = Clone3Fork(flags);
 
     if (Result == 0) {
       // Close the read end of the pipe.
@@ -259,7 +269,7 @@ uint64_t ForkGuest(FEXCore::Core::InternalThreadState* Thread, FEXCore::Core::Cp
       close(VForkFDs[1]);
     }
   } else {
-    Result = fork();
+    Result = Clone3Fork(flags);
   }
   const bool IsChild = Result == 0;
 
