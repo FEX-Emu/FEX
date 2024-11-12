@@ -309,24 +309,30 @@ void Dispatcher::EmitDispatcher() {
       blr(ARMEmitter::Reg::r4); // { CTX, Frame, RIP, MaxInst }
     }
 
+    // Result is now in x0
+    if (!TMP_ABIARGS) {
+      mov(TMP1, ARMEmitter::XReg::x0);
+    }
+
     FillStaticRegs();
 
 #ifdef _M_ARM_64EC
-    ldr(TMP1, ARMEmitter::XReg::x18, TEB_CPU_AREA_OFFSET);
-    strb(ARMEmitter::WReg::zr, TMP1, CPU_AREA_IN_SYSCALL_CALLBACK_OFFSET);
+    ldr(TMP2, ARMEmitter::XReg::x18, TEB_CPU_AREA_OFFSET);
+    strb(ARMEmitter::WReg::zr, TMP2, CPU_AREA_IN_SYSCALL_CALLBACK_OFFSET);
 #endif
 
 #ifndef _WIN32
-    ldr(TMP1, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
-    sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 1);
-    str(TMP1, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
+    ldr(TMP2, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
+    sub(ARMEmitter::Size::i64Bit, TMP2, TMP2, 1);
+    str(TMP2, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
 
     // Trigger segfault if any deferred signals are pending
     strb(ARMEmitter::XReg::zr, STATE,
          offsetof(FEXCore::Core::InternalThreadState, InterruptFaultPage) - offsetof(FEXCore::Core::InternalThreadState, BaseFrameState));
 #endif
 
-    b(&LoopTop);
+    // Jump to the compiled block
+    br(TMP1);
   }
 
   {
