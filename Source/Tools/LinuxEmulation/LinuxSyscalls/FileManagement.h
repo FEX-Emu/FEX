@@ -161,7 +161,9 @@ private:
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
   uint32_t CurrentPID {};
   int RootFSFD {AT_FDCWD};
+  int ProcFD {0};
   int64_t RootFSFDInode = 0;
+  int64_t ProcFDInode = 0;
   dev_t ProcFSDev;
 };
 } // namespace FEX::HLE
