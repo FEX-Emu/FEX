@@ -131,9 +131,14 @@ uint64_t GetWowTEB(void* TEB) {
     *reinterpret_cast<LONG*>(reinterpret_cast<uintptr_t>(TEB) + WowTEBOffsetMemberOffset) + reinterpret_cast<uint64_t>(TEB));
 }
 
+bool IsDispatcherAddress(uint64_t Address) {
+  const auto& Config = SignalDelegator->GetConfig();
+  return Address >= Config.DispatcherBegin && Address < Config.DispatcherEnd;
+}
+
 bool IsAddressInJit(uint64_t Address) {
   const auto& Config = SignalDelegator->GetConfig();
-  if (Address >= Config.DispatcherBegin && Address < Config.DispatcherEnd) {
+  if (IsDispatcherAddress(Address)) {
     return true;
   }
 
@@ -272,7 +277,9 @@ void ReconstructThreadState(CONTEXT* Context) {
 }
 
 WOW64_CONTEXT ReconstructWowContext(CONTEXT* Context) {
-  ReconstructThreadState(Context);
+  if (!IsDispatcherAddress(Context->Pc)) {
+    ReconstructThreadState(Context);
+  }
 
   WOW64_CONTEXT WowContext {
     .ContextFlags = WOW64_CONTEXT_ALL,
