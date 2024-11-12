@@ -445,7 +445,7 @@ static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT&
   // Current ARM64EC windows can only restore NZCV+SS when returning from an exception and other flags are left untouched from the handler context.
   // TODO: Can extend wine to support this by mapping the remaining EFlags into reserved cpsr members.
   uint32_t EFlags = CTX->ReconstructCompactedEFLAGS(Thread, false, nullptr, 0);
-  EFlags &= (1 << FEXCore::X86State::RFLAG_TF_LOC);
+  EFlags &= ~(1 << FEXCore::X86State::RFLAG_TF_LOC);
   CTX->SetFlagsFromCompactedEFLAGS(Thread, EFlags);
 
   Args->Rec = FEX::Windows::HandleGuestException(Fault, Rec, Args->Context.Pc, Args->Context.X8);
