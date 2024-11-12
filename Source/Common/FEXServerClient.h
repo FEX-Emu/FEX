@@ -53,6 +53,7 @@ fextl::string GetServerRootFSLockFile();
 fextl::string GetTempFolder();
 fextl::string GetServerMountFolder();
 fextl::string GetServerSocketName();
+fextl::string GetServerSocketPath();
 int GetServerFD();
 
 bool SetupClient(char* InterpreterPath);

@@ -19,6 +19,7 @@ namespace ProcessPipe {
 constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
 int ServerLockFD {-1};
 int ServerSocketFD {-1};
+int ServerFSSocketFD {-1};
 std::atomic<bool> ShouldShutdown {false};
 time_t RequestTimeout {10};
 bool Foreground {false};
@@ -175,39 +176,57 @@ bool InitializeServerPipe() {
   return true;
 }
 
-bool InitializeServerSocket() {
-  auto ServerSocketName = FEXServerClient::GetServerSocketName();
+bool InitializeServerSocket(bool abstract) {
 
   // Create the initial unix socket
-  ServerSocketFD = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
-  if (ServerSocketFD == -1) {
+  int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+  if (fd == -1) {
     LogMan::Msg::EFmt("Couldn't create AF_UNIX socket: {} {}\n", errno, strerror(errno));
     return false;
   }
 
   struct sockaddr_un addr {};
   addr.sun_family = AF_UNIX;
-  size_t SizeOfSocketString = std::min(ServerSocketName.size() + 1, sizeof(addr.sun_path) - 1);
-  addr.sun_path[0] = 0; // Abstract AF_UNIX sockets start with \0
-  strncpy(addr.sun_path + 1, ServerSocketName.data(), SizeOfSocketString);
+
+  size_t SizeOfSocketString;
+  if (abstract) {
+    auto ServerSocketName = FEXServerClient::GetServerSocketName();
+    SizeOfSocketString = std::min(ServerSocketName.size() + 1, sizeof(addr.sun_path) - 1);
+    addr.sun_path[0] = 0; // Abstract AF_UNIX sockets start with \0
+    strncpy(addr.sun_path + 1, ServerSocketName.data(), SizeOfSocketString);
+  } else {
+    auto ServerSocketPath = FEXServerClient::GetServerSocketPath();
+    // Unlink the socket file if it exists
+    // We are being asked to create a daemon, not error check
+    // We don't care if this failed or not
+    unlink(ServerSocketPath.c_str());
+
+    SizeOfSocketString = std::min(ServerSocketPath.size(), sizeof(addr.sun_path) - 1);
+    strncpy(addr.sun_path, ServerSocketPath.data(), SizeOfSocketString);
+  }
   // Include final null character.
   size_t SizeOfAddr = sizeof(addr.sun_family) + SizeOfSocketString;
 
   // Bind the socket to the path
-  int Result = bind(ServerSocketFD, reinterpret_cast<struct sockaddr*>(&addr), SizeOfAddr);
+  int Result = bind(fd, reinterpret_cast<struct sockaddr*>(&addr), SizeOfAddr);
   if (Result == -1) {
     LogMan::Msg::EFmt("Couldn't bind AF_UNIX socket '{}': {} {}\n", addr.sun_path, errno, strerror(errno));
-    close(ServerSocketFD);
-    ServerSocketFD = -1;
+    close(fd);
     return false;
   }
 
-  listen(ServerSocketFD, 16);
+  listen(fd, 16);
   PollFDs.emplace_back(pollfd {
-    .fd = ServerSocketFD,
+    .fd = fd,
     .events = POLLIN,
     .revents = 0,
   });
+
+  if (abstract) {
+    ServerSocketFD = fd;
+  } else {
+    ServerFSSocketFD = fd;
+  }
 
   return true;
 }
@@ -422,6 +441,7 @@ void CloseConnections() {
 
   // Close the server socket so no more connections can be started
   close(ServerSocketFD);
+  close(ServerFSSocketFD);
 }
 
 void WaitForRequests() {
@@ -441,12 +461,12 @@ void WaitForRequests() {
         bool Erase {};
 
         if (Event.revents != 0) {
-          if (Event.fd == ServerSocketFD) {
+          if (Event.fd == ServerSocketFD || Event.fd == ServerFSSocketFD) {
             if (Event.revents & POLLIN) {
               // If it is the listen socket then we have a new connection
               struct sockaddr_storage Addr {};
               socklen_t AddrSize {};
-              int NewFD = accept(ServerSocketFD, reinterpret_cast<struct sockaddr*>(&Addr), &AddrSize);
+              int NewFD = accept(Event.fd, reinterpret_cast<struct sockaddr*>(&Addr), &AddrSize);
 
               // Add the new client to the temporary array
               NewPollFDs.emplace_back(pollfd {

@@ -150,6 +150,24 @@ fextl::string GetServerSocketName() {
   return ServerSocketPath;
 }
 
+fextl::string GetServerSocketPath() {
+  FEX_CONFIG_OPT(ServerSocketPath, SERVERSOCKETPATH);
+
+  auto name = ServerSocketPath();
+
+  if (name.starts_with("/")) {
+    return name;
+  }
+
+  auto Folder = GetTempFolder();
+
+  if (name.empty()) {
+    return fextl::fmt::format("{}/{}.FEXServer.Socket", Folder, ::geteuid());
+  } else {
+    return fextl::fmt::format("{}/{}", Folder, name);
+  }
+}
+
 int GetServerFD() {
   return ServerFD;
 }
@@ -179,11 +197,27 @@ int ConnectToServer(ConnectionOption ConnectionOption) {
     if (ConnectionOption == ConnectionOption::Default || errno != ECONNREFUSED) {
       LogMan::Msg::EFmt("Couldn't connect to FEXServer socket {} {}", ServerSocketName, errno);
     }
-    close(SocketFD);
-    return -1;
+  } else {
+    return SocketFD;
   }
 
-  return SocketFD;
+  // Try again with a path-based socket, since abstract sockets will fail if we have been
+  // placed in a new netns as part of a sandbox.
+  auto ServerSocketPath = GetServerSocketPath();
+
+  SizeOfSocketString = std::min(ServerSocketPath.size(), sizeof(addr.sun_path) - 1);
+  strncpy(addr.sun_path, ServerSocketPath.data(), SizeOfSocketString);
+  SizeOfAddr = sizeof(addr.sun_family) + SizeOfSocketString;
+  if (connect(SocketFD, reinterpret_cast<struct sockaddr*>(&addr), SizeOfAddr) == -1) {
+    if (ConnectionOption == ConnectionOption::Default || (errno != ECONNREFUSED && errno != ENOENT)) {
+      LogMan::Msg::EFmt("Couldn't connect to FEXServer socket {} {}", ServerSocketPath, errno);
+    }
+  } else {
+    return SocketFD;
+  }
+
+  close(SocketFD);
+  return -1;
 }
 
 bool SetupClient(char* InterpreterPath) {
