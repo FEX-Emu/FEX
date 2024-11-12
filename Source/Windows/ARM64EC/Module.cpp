@@ -435,7 +435,9 @@ static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT&
   auto* Args = reinterpret_cast<KiUserExceptionDispatcherStackLayout*>(FEXCore::AlignDown(GuestSp, 64)) - 1;
 
   LogMan::Msg::DFmt("Reconstructing context");
-  ReconstructThreadState(Thread, Context);
+  if (!IsDispatcherAddress(Context.Pc)) {
+    ReconstructThreadState(Thread, Context);
+  }
   Args->Context = StoreStateToPackedECContext(Thread, Context.Fpcr, Context.Fpsr);
   LogMan::Msg::DFmt("pc: {:X} rip: {:X}", Context.Pc, Args->Context.Pc);
 
