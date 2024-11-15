@@ -29,8 +29,7 @@ HandleGuestException(FEXCore::Core::CpuStateFrame::SynchronousFaultDataStruct& F
     switch (Fault.TrapNo) {
     case FEXCore::X86State::X86_TRAPNO_DB: Dst.ExceptionCode = EXCEPTION_SINGLE_STEP; return Dst;
     case FEXCore::X86State::X86_TRAPNO_BP:
-      Rip -= 1;
-      Dst.ExceptionAddress = reinterpret_cast<void*>(Rip);
+      Dst.ExceptionAddress = reinterpret_cast<void*>(Rip - 1);
       Dst.ExceptionCode = EXCEPTION_BREAKPOINT;
       Dst.NumberParameters = 1;
       Dst.ExceptionInformation[0] = 0;
@@ -44,9 +43,9 @@ HandleGuestException(FEXCore::Core::CpuStateFrame::SynchronousFaultDataStruct& F
       if ((Fault.err_code & 0b111) == 0b010) {
         switch (Fault.err_code >> 3) {
         case 0x2d:
-          Rip += 2;
+          Rip += 3;
           Dst.ExceptionCode = EXCEPTION_BREAKPOINT;
-          Dst.ExceptionAddress = reinterpret_cast<void*>(Rip + 1);
+          Dst.ExceptionAddress = reinterpret_cast<void*>(Rip);
           Dst.NumberParameters = 1;
           Dst.ExceptionInformation[0] = Rax; // RAX
           // Note that ExceptionAddress doesn't equal the reported context RIP here, this discrepancy expected and not having it can trigger anti-debug logic.

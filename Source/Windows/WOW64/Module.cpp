@@ -74,6 +74,10 @@ struct TLS {
   explicit TLS(_TEB* TEB)
     : TEB(TEB) {}
 
+  WOW64INFO& Wow64Info() const {
+    return *reinterpret_cast<WOW64INFO*>(TEB->TlsSlots[WOW64_TLS_WOW64INFO]);
+  }
+
   std::atomic<uint32_t>& ControlWord() const {
     // TODO: Change this when libc++ gains std::atomic_ref support
     return reinterpret_cast<std::atomic<uint32_t>&>(TEB->TlsSlots[FEXCore::ToUnderlying(Slot::CONTROL_WORD)]);
@@ -479,6 +483,9 @@ void BTCpuProcessInit() {
   if (Sym) {
     WineUnixCall = *reinterpret_cast<decltype(WineUnixCall)*>(Sym);
   }
+
+  // wow64.dll will only initialise the cross-process queue if this is set
+  GetTLS().Wow64Info().CpuFlags = WOW64_CPUFLAGS_SOFTWARE;
 }
 
 void BTCpuProcessTerm(HANDLE Handle, BOOL After, ULONG Status) {}
@@ -705,6 +712,7 @@ bool BTCpuResetToConsistentStateImpl(EXCEPTION_POINTERS* Ptrs) {
   if (Exception->ExceptionCode == EXCEPTION_SINGLE_STEP) {
     WowContext.EFlags &= ~(1 << FEXCore::X86State::RFLAG_TF_LOC);
   }
+  // wow64.dll will handle adjusting PC in the dispatched context after a breakpoint
 
   BTCpuSetContext(GetCurrentThread(), GetCurrentProcess(), nullptr, &WowContext);
   Context::UnlockJITContext();
