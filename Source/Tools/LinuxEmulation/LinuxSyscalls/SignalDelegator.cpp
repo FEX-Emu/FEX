@@ -372,6 +372,7 @@ bool SignalDelegator::HandleDispatcherGuestSignal(FEXCore::Core::InternalThreadS
 
   Frame->State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.sigaction);
   Frame->State.gregs[FEXCore::X86State::REG_RSP] = NewGuestSP;
+  Frame->State.flags[FEXCore::X86State::RFLAG_TF_RAW_LOC] = 0;
 
   // The guest starts its signal frame with a zero initialized FPU
   // Set that up now. Little bit costly but it's a requirement
