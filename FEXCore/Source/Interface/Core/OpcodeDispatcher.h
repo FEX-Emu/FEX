@@ -1730,6 +1730,7 @@ private:
       }
 
       CFInverted ^= true;
+      PossiblySetNZCVBits |= 1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC);
     }
 
     LOGMAN_THROW_AA_FMT(CFInverted == RequiredInvert, "post condition");
