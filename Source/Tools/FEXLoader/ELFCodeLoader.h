@@ -725,6 +725,9 @@ public:
     uint64_t ExecFNLocation = TotalArgumentMemSize;
     TotalArgumentMemSize += Args[0].size() + 1;
 
+    // Align the argument block to 16 bytes to keep the stack aligned
+    TotalArgumentMemSize = FEXCore::AlignUp(TotalArgumentMemSize, 16);
+
     // Offset the stack by how much memory we need
     StackPointer -= TotalArgumentMemSize;
 
