@@ -93,6 +93,10 @@ void Dispatcher::EmitDispatcher() {
   ldr(STATE, EC_ENTRY_CPUAREA_REG, CPU_AREA_EMULATOR_DATA_OFFSET);
   FillStaticRegs();
 
+  ldr(RipReg, STATE_PTR(CpuStateFrame, State.rip));
+  // Force a single instruction block if ENTRY_FILL_SRA_SINGLE_INST_REG is nonzero entering the JIT, used for inline SMC handling.
+  cbnz(ARMEmitter::Size::i32Bit, ENTRY_FILL_SRA_SINGLE_INST_REG, &CompileSingleStep);
+
   // Enter JIT
   b(&LoopTop);
 
