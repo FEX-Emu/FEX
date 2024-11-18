@@ -38,7 +38,7 @@ public:
   ~Arm64JITCore() override;
 
   [[nodiscard]]
-  CPUBackend::CompiledCode CompileCode(uint64_t Entry, const FEXCore::IR::IRListView* IR, FEXCore::Core::DebugData* DebugData,
+  CPUBackend::CompiledCode CompileCode(uint64_t Entry, uint64_t Size, const FEXCore::IR::IRListView* IR, FEXCore::Core::DebugData* DebugData,
                                        const FEXCore::IR::RegisterAllocationData* RAData, bool CheckTF) override;
 
   void ClearCache() override;

@@ -112,13 +112,33 @@ ContextImpl::~ContextImpl() {
   }
 }
 
-uint64_t ContextImpl::RestoreRIPFromHostPC(FEXCore::Core::InternalThreadState* Thread, uint64_t HostPC) {
-  const auto Frame = Thread->CurrentFrame;
+struct GetFrameBlockInfoResult {
+  const CPU::CPUBackend::JITCodeHeader* InlineHeader;
+  const CPU::CPUBackend::JITCodeTail* InlineTail;
+};
+static GetFrameBlockInfoResult GetFrameBlockInfo(FEXCore::Core::CpuStateFrame* Frame) {
   const uint64_t BlockBegin = Frame->State.InlineJITBlockHeader;
   auto InlineHeader = reinterpret_cast<const CPU::CPUBackend::JITCodeHeader*>(BlockBegin);
 
   if (InlineHeader) {
     auto InlineTail = reinterpret_cast<const CPU::CPUBackend::JITCodeTail*>(Frame->State.InlineJITBlockHeader + InlineHeader->OffsetToBlockTail);
+    return {InlineHeader, InlineTail};
+  }
+
+  return {InlineHeader, nullptr};
+}
+
+bool ContextImpl::IsAddressInCurrentBlock(FEXCore::Core::InternalThreadState* Thread, uint64_t Address, uint64_t Size) {
+  auto [_, InlineTail] = GetFrameBlockInfo(Thread->CurrentFrame);
+  return InlineTail && (Address + Size > InlineTail->RIP && Address < InlineTail->RIP + InlineTail->GuestSize);
+}
+
+uint64_t ContextImpl::RestoreRIPFromHostPC(FEXCore::Core::InternalThreadState* Thread, uint64_t HostPC) {
+  const auto Frame = Thread->CurrentFrame;
+  const uint64_t BlockBegin = Frame->State.InlineJITBlockHeader;
+  auto [InlineHeader, InlineTail] = GetFrameBlockInfo(Thread->CurrentFrame);
+
+  if (InlineHeader) {
     auto RIPEntries = reinterpret_cast<const CPU::CPUBackend::JITRIPReconstructEntries*>(
       Frame->State.InlineJITBlockHeader + InlineHeader->OffsetToBlockTail + InlineTail->OffsetToRIPEntries);
 
@@ -794,7 +814,7 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
     // FEX currently throws away the CPUBackend::CompiledCode object other than the entrypoint
     // In the future with code caching getting wired up, we will pass the rest of the data forward.
     // TODO: Pass the data forward when code caching is wired up to this.
-    .CompiledCode = Thread->CPUBackend->CompileCode(GuestRIP, &IRView, DebugData, IR->RAData(), TFSet).BlockEntry,
+    .CompiledCode = Thread->CPUBackend->CompileCode(GuestRIP, Length, &IRView, DebugData, IR->RAData(), TFSet).BlockEntry,
     .IR = std::move(IR),
     .DebugData = DebugData,
     .GeneratedIR = true,
