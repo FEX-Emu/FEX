@@ -96,14 +96,21 @@ fextl::string GetServerRootFSLockFile() {
 }
 
 fextl::string GetTempFolder() {
-  auto XDGRuntimeEnv = getenv("XDG_RUNTIME_DIR");
-  if (XDGRuntimeEnv) {
-    // If the XDG runtime directory works then use that.
-    return XDGRuntimeEnv;
+  const std::array<const char*, 5> Vars = {
+    "XDG_RUNTIME_DIR", "TMPDIR", "TMP", "TEMP", "TEMPDIR",
+  };
+
+  for (auto& Var : Vars) {
+    auto Path = getenv(Var);
+    if (Path) {
+      // If one of the env variable-driven paths works then use that.
+      return Path;
+    }
   }
-  // Fallback to `/tmp/` if XDG_RUNTIME_DIR doesn't exist.
+
+  // Fallback to `/tmp/` if no env vars are set.
   // Might not be ideal but we don't have much of a choice.
-  return fextl::string {std::filesystem::temp_directory_path().string()};
+  return fextl::string {"/tmp"};
 }
 
 fextl::string GetServerMountFolder() {
