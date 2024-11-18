@@ -2690,7 +2690,7 @@
       ]
     },
     "popf": {
-      "ExpectedInstructionCount": 39,
+      "ExpectedInstructionCount": 43,
       "Comment": "0x9d",
       "ExpectedArm64ASM": [
         "ldr x20, [x8], #8",
@@ -2706,12 +2706,16 @@
         "ubfx x20, x27, #7, #1",
         "bfi w22, w20, #31, #1",
         "ubfx w20, w27, #8, #1",
+        "ldrb w21, [x28, #984]",
+        "and w21, w21, #0xfffffffe",
+        "mov w23, #0x1",
+        "cmp x20, #0x0 (0)",
+        "csel x20, x21, x23, eq",
         "strb w20, [x28, #984]",
         "ubfx w20, w27, #9, #1",
         "strb w20, [x28, #985]",
         "ubfx w20, w27, #10, #1",
-        "mov w21, #0x1",
-        "sub x20, x21, x20, lsl #1",
+        "sub x20, x23, x20, lsl #1",
         "ubfx x21, x27, #11, #1",
         "bfi w22, w21, #28, #1",
         "ubfx w21, w27, #12, #1",
