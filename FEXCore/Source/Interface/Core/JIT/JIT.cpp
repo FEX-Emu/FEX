@@ -720,8 +720,9 @@ void Arm64JITCore::EmitInterruptChecks(bool CheckTF) {
 #endif
 }
 
-CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, const FEXCore::IR::IRListView* IR, FEXCore::Core::DebugData* DebugData,
-                                                   const FEXCore::IR::RegisterAllocationData* RAData, bool CheckTF) {
+CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size, const FEXCore::IR::IRListView* IR,
+                                                   FEXCore::Core::DebugData* DebugData, const FEXCore::IR::RegisterAllocationData* RAData,
+                                                   bool CheckTF) {
   FEXCORE_PROFILE_SCOPED("Arm64::CompileCode");
 
   JumpTargets.clear();
@@ -861,6 +862,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, const FEXCore
   // TODO: This needs to be a data RIP relocation once code caching works.
   //   Current relocation code doesn't support this feature yet.
   JITBlockTail->RIP = Entry;
+  JITBlockTail->GuestSize = Size;
   JITBlockTail->SpinLockFutex = 0;
 
   {
