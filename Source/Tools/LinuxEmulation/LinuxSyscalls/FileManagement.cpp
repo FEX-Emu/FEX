@@ -322,6 +322,16 @@ FileManager::FileManager(FEXCore::Context::Context* ctx)
     }
   }
 
+  // Keep an fd open for /proc, to bypass chroot-style sandboxes
+  ProcFD = open("/proc", O_RDONLY | O_CLOEXEC);
+
+  // Track the st_dev of /proc, to check for inode equality
+  struct stat Buffer;
+  auto Result = fstat(ProcFD, &Buffer);
+  if (Result >= 0) {
+    ProcFSDev = Buffer.st_dev;
+  }
+
   UpdatePID(::getpid());
 }
 
@@ -998,30 +1008,39 @@ void FileManager::UpdatePID(uint32_t PID) {
   CurrentPID = PID;
 
   // Track the inode of /proc/self/fd/<RootFSFD>, to be able to hide it
-  auto FDpath = fextl::fmt::format("/proc/self/fd/{}", RootFSFD);
+  auto FDpath = fextl::fmt::format("self/fd/{}", RootFSFD);
   struct stat Buffer {};
-  int Result = fstatat(AT_FDCWD, FDpath.c_str(), &Buffer, AT_SYMLINK_NOFOLLOW);
+  int Result = fstatat(ProcFD, FDpath.c_str(), &Buffer, AT_SYMLINK_NOFOLLOW);
   if (Result >= 0) {
     RootFSFDInode = Buffer.st_ino;
+  } else {
+    // Probably in a strict sandbox
+    RootFSFDInode = 0;
+    ProcFDInode = 0;
+    return;
   }
 
-  // Track the st_dev of /proc, to check for inode equality
-  Result = stat("/proc/self", &Buffer);
+  // And track the ProcFSFD itself
+  FDpath = fextl::fmt::format("self/fd/{}", ProcFD);
+  Result = fstatat(ProcFD, FDpath.c_str(), &Buffer, AT_SYMLINK_NOFOLLOW);
   if (Result >= 0) {
-    ProcFSDev = Buffer.st_dev;
+    ProcFDInode = Buffer.st_ino;
+  } else {
+    // ??
+    ProcFDInode = 0;
+    return;
   }
 }
 
 bool FileManager::IsRootFSFD(int dirfd, uint64_t inode) {
 
   // Check if we have to hide this entry
-  if (inode == RootFSFDInode) {
+  if (inode == RootFSFDInode || inode == ProcFDInode) {
     struct stat Buffer;
     if (fstat(dirfd, &Buffer) >= 0) {
       if (Buffer.st_dev == ProcFSDev) {
         LogMan::Msg::DFmt("Hiding directory entry for RootFSFD");
         return true;
-      } else {
       }
     }
   }
