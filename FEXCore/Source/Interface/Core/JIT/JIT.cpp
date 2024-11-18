@@ -720,7 +720,7 @@ void Arm64JITCore::EmitInterruptChecks(bool CheckTF) {
 #endif
 }
 
-CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size, const FEXCore::IR::IRListView* IR,
+CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size, bool SingleInst, const FEXCore::IR::IRListView* IR,
                                                    FEXCore::Core::DebugData* DebugData, const FEXCore::IR::RegisterAllocationData* RAData,
                                                    bool CheckTF) {
   FEXCORE_PROFILE_SCOPED("Arm64::CompileCode");
@@ -863,6 +863,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   //   Current relocation code doesn't support this feature yet.
   JITBlockTail->RIP = Entry;
   JITBlockTail->GuestSize = Size;
+  JITBlockTail->SingleInst = SingleInst;
   JITBlockTail->SpinLockFutex = 0;
 
   {
