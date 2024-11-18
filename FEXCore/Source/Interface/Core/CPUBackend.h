@@ -80,8 +80,12 @@ namespace CPU {
     struct JITCodeTail {
       // The total size of the codeblock from [BlockBegin, BlockBegin+Size).
       size_t Size;
+
       // RIP that the block's entry comes from.
       uint64_t RIP;
+
+      // The length of the guest code for this block.
+      size_t GuestSize;
 
       // Number of RIP entries for this JIT Code section.
       uint32_t NumberOfRIPEntries;
@@ -119,6 +123,7 @@ namespace CPU {
      *
      * This is a thread specific compilation unit since there is one CPUBackend per guest thread
      *
+     * @param Size - The byte size of the guest code for this block
      * @param IR -  IR that maps to the IR for this RIP
      * @param DebugData - Debug data that is available for this IR indirectly
      * @param CheckTF - If EFLAGS.TF checks should be emitted at the start of the block
@@ -126,7 +131,7 @@ namespace CPU {
      * @return Information about the compiled code block.
      */
     [[nodiscard]]
-    virtual CompiledCode CompileCode(uint64_t Entry, const FEXCore::IR::IRListView* IR, FEXCore::Core::DebugData* DebugData,
+    virtual CompiledCode CompileCode(uint64_t Entry, uint64_t Size, const FEXCore::IR::IRListView* IR, FEXCore::Core::DebugData* DebugData,
                                      const FEXCore::IR::RegisterAllocationData* RAData, bool CheckTF) = 0;
 
     /**
