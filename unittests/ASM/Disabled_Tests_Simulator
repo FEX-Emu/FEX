@@ -26,6 +26,12 @@ Test_SelfModifyingCode/Delinking.asm
 Test_SelfModifyingCode/DifferentBlock.asm
 Test_SelfModifyingCode/SameBlock.asm
 
+# Simulator can't do wfe
+Test_Primary/Pause.asm
+
+# Simulator can't handle `mrs x0, nzcv`
+Test_SecondaryModRM/Reg_7_1.asm
+
 # Simulator can't handle unaligned accesses
 Test_Primary/Primary_01_Atomic16.asm
 Test_Primary/Primary_01_Atomic32.asm
@@ -108,7 +114,6 @@ Test_VEX/vcvtps2ph_rtne_mxcsr.asm
 Test_VEX/vcvtps2ph_rd_mxcsr.asm
 Test_VEX/vcvtps2ph_ru_mxcsr.asm
 Test_VEX/vcvtps2ph_trunc_mxcsr.asm
-Test_X87/Rounding.asm
 Test_X87_F64/Rounding_F64.asm
 
 # Simulator doesn't support cycle counter reading
