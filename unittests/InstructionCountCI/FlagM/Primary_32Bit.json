@@ -49,15 +49,25 @@
       ]
     },
     "pop ss": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 16,
       "Comment": "0x17",
       "ExpectedArm64ASM": [
         "ldr w20, [x8], #4",
+        "ldrb w21, [x28, #984]",
+        "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldrb w23, [x28, #984]",
+        "and w23, w23, #0xfffffffe",
+        "mrs x24, nzcv",
+        "cmp x21, #0x0 (0)",
+        "csel x21, x23, x22, eq",
+        "strb w21, [x28, #984]",
         "strh w20, [x28, #932]",
         "ubfx w20, w20, #3, #13",
         "add x0, x28, x20, lsl #2",
         "ldr w20, [x0, #1168]",
-        "str w20, [x28, #952]"
+        "str w20, [x28, #952]",
+        "msr nzcv, x24"
       ]
     },
     "push ds": {
