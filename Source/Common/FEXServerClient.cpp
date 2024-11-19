@@ -160,7 +160,7 @@ int ConnectToServer(ConnectionOption ConnectionOption) {
   // Create the initial unix socket
   int SocketFD = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
   if (SocketFD == -1) {
-    LogMan::Msg::EFmt("Couldn't open AF_UNIX socket {} {}", errno, strerror(errno));
+    LogMan::Msg::EFmt("Couldn't open AF_UNIX socket {}", errno);
     return -1;
   }
 
@@ -177,7 +177,7 @@ int ConnectToServer(ConnectionOption ConnectionOption) {
 
   if (connect(SocketFD, reinterpret_cast<struct sockaddr*>(&addr), SizeOfAddr) == -1) {
     if (ConnectionOption == ConnectionOption::Default || errno != ECONNREFUSED) {
-      LogMan::Msg::EFmt("Couldn't connect to FEXServer socket {} {} {}", ServerSocketName, errno, strerror(errno));
+      LogMan::Msg::EFmt("Couldn't connect to FEXServer socket {} {}", ServerSocketName, errno);
     }
     close(SocketFD);
     return -1;
