@@ -96,14 +96,21 @@ fextl::string GetServerRootFSLockFile() {
 }
 
 fextl::string GetTempFolder() {
-  auto XDGRuntimeEnv = getenv("XDG_RUNTIME_DIR");
-  if (XDGRuntimeEnv) {
-    // If the XDG runtime directory works then use that.
-    return XDGRuntimeEnv;
+  const std::array<const char*, 5> Vars = {
+    "XDG_RUNTIME_DIR", "TMPDIR", "TMP", "TEMP", "TEMPDIR",
+  };
+
+  for (auto& Var : Vars) {
+    auto Path = getenv(Var);
+    if (Path) {
+      // If one of the env variable-driven paths works then use that.
+      return Path;
+    }
   }
-  // Fallback to `/tmp/` if XDG_RUNTIME_DIR doesn't exist.
+
+  // Fallback to `/tmp/` if no env vars are set.
   // Might not be ideal but we don't have much of a choice.
-  return fextl::string {std::filesystem::temp_directory_path().string()};
+  return fextl::string {"/tmp"};
 }
 
 fextl::string GetServerMountFolder() {
@@ -143,6 +150,24 @@ fextl::string GetServerSocketName() {
   return ServerSocketPath;
 }
 
+fextl::string GetServerSocketPath() {
+  FEX_CONFIG_OPT(ServerSocketPath, SERVERSOCKETPATH);
+
+  auto name = ServerSocketPath();
+
+  if (name.starts_with("/")) {
+    return name;
+  }
+
+  auto Folder = GetTempFolder();
+
+  if (name.empty()) {
+    return fextl::fmt::format("{}/{}.FEXServer.Socket", Folder, ::geteuid());
+  } else {
+    return fextl::fmt::format("{}/{}", Folder, name);
+  }
+}
+
 int GetServerFD() {
   return ServerFD;
 }
@@ -153,7 +178,7 @@ int ConnectToServer(ConnectionOption ConnectionOption) {
   // Create the initial unix socket
   int SocketFD = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
   if (SocketFD == -1) {
-    LogMan::Msg::EFmt("Couldn't open AF_UNIX socket {} {}", errno, strerror(errno));
+    LogMan::Msg::EFmt("Couldn't open AF_UNIX socket {}", errno);
     return -1;
   }
 
@@ -170,13 +195,29 @@ int ConnectToServer(ConnectionOption ConnectionOption) {
 
   if (connect(SocketFD, reinterpret_cast<struct sockaddr*>(&addr), SizeOfAddr) == -1) {
     if (ConnectionOption == ConnectionOption::Default || errno != ECONNREFUSED) {
-      LogMan::Msg::EFmt("Couldn't connect to FEXServer socket {} {} {}", ServerSocketName, errno, strerror(errno));
+      LogMan::Msg::EFmt("Couldn't connect to FEXServer socket {} {}", ServerSocketName, errno);
     }
-    close(SocketFD);
-    return -1;
+  } else {
+    return SocketFD;
   }
 
-  return SocketFD;
+  // Try again with a path-based socket, since abstract sockets will fail if we have been
+  // placed in a new netns as part of a sandbox.
+  auto ServerSocketPath = GetServerSocketPath();
+
+  SizeOfSocketString = std::min(ServerSocketPath.size(), sizeof(addr.sun_path) - 1);
+  strncpy(addr.sun_path, ServerSocketPath.data(), SizeOfSocketString);
+  SizeOfAddr = sizeof(addr.sun_family) + SizeOfSocketString;
+  if (connect(SocketFD, reinterpret_cast<struct sockaddr*>(&addr), SizeOfAddr) == -1) {
+    if (ConnectionOption == ConnectionOption::Default || (errno != ECONNREFUSED && errno != ENOENT)) {
+      LogMan::Msg::EFmt("Couldn't connect to FEXServer socket {} {}", ServerSocketPath, errno);
+    }
+  } else {
+    return SocketFD;
+  }
+
+  close(SocketFD);
+  return -1;
 }
 
 bool SetupClient(char* InterpreterPath) {

@@ -79,6 +79,9 @@ Use `FHU::Filesystem::GetFilename` instead.
 #### std::filesystem::copy_file
 Use `FHU::Filesystem::CopyFile` instead.
 
+#### std::filesystem::temp_directory_path
+See `GetTempFolder()` in `FEXServerClient.cpp` (split/move to `FHU::Filesystem` if needed by other users).
+
 ### `std::fstream`
 This API always allocates memory and should be avoided.
 Use a combination of open and fextl::string APIs instead of fstream.

@@ -4,7 +4,7 @@
 
 namespace ProcessPipe {
 bool InitializeServerPipe();
-bool InitializeServerSocket();
+bool InitializeServerSocket(bool abstract);
 void WaitForRequests();
 void SetConfiguration(bool Foreground, uint32_t PersistentTimeout);
 void Shutdown();
