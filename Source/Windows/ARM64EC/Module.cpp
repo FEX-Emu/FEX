@@ -449,6 +449,9 @@ static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT&
   Args->Rec = FEX::Windows::HandleGuestException(Fault, Rec, Args->Context.Pc, Args->Context.X8);
   if (Args->Rec.ExceptionCode == EXCEPTION_SINGLE_STEP) {
     Args->Context.Cpsr &= ~(1 << 21); // PSTATE.SS
+  } else if (Args->Rec.ExceptionCode == EXCEPTION_BREAKPOINT) {
+    // INT3 will set RIP to the instruction following it, undo this (any edge cases with multibyte instructions that trigger breakpoints are bugs present in Windows also)
+    Args->Context.Pc -= 1;
   }
 
   Context.Sp = reinterpret_cast<uint64_t>(Args);

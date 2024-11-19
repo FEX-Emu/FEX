@@ -13,7 +13,10 @@ extern "C" {
 #define NtCurrentProcess() ((HANDLE) ~(ULONG_PTR)0)
 #define NtCurrentThread() ((HANDLE) ~(ULONG_PTR)1)
 
+#define WOW64_TLS_WOW64INFO 10
 #define WOW64_TLS_MAX_NUMBER 19
+
+#define WOW64_CPUFLAGS_SOFTWARE 0x02
 
 #define STATUS_EMULATION_SYSCALL ((NTSTATUS)0x40000039)
 
@@ -342,6 +345,16 @@ typedef struct __TEB {                          /* win32/win64 */
   GUID EffectiveContainerId;      /* ff0/1828 */
 } __TEB, *__PTEB;
 
+typedef struct _WOW64INFO {
+  ULONG NativeSystemPageSize;
+  ULONG CpuFlags;
+  ULONG Wow64ExecuteFlags;
+  ULONG unknown;
+  ULONGLONG SectionHandle;
+  ULONGLONG CrossProcessWorkList;
+  USHORT NativeMachineType;
+  USHORT EmulatedMachineType;
+} WOW64INFO;
 
 typedef struct _THREAD_BASIC_INFORMATION {
   NTSTATUS ExitStatus;
