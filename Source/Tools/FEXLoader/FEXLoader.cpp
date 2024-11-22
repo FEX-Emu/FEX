@@ -417,7 +417,7 @@ int main(int argc, char** argv, char** const envp) {
   FEXCore::Profiler::Init();
   FEXCore::Telemetry::Initialize();
 
-  if (Program.ProgramPath.starts_with(LDPath())) {
+  if (!LDPath().empty() && Program.ProgramPath.starts_with(LDPath())) {
     // From this point on, ProgramPath needs to not have the LDPath prefixed on to it.
     auto RootFSLength = LDPath().size();
     if (Program.ProgramPath.at(RootFSLength) != '/') {
