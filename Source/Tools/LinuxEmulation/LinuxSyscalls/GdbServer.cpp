@@ -311,8 +311,7 @@ fextl::string GdbServer::readRegs() {
     memcpy(&GDB.mm[i], &state.mm[i], sizeof(GDB.mm[i]));
   }
 
-  // Currently unsupported
-  GDB.fctrl = 0x37F;
+  GDB.fctrl = state.FCW;
 
   GDB.fstat = static_cast<uint32_t>(state.flags[FEXCore::X86State::X87FLAG_TOP_LOC]) << 11;
   GDB.fstat |= static_cast<uint32_t>(state.flags[FEXCore::X86State::X87FLAG_C0_LOC]) << 8;
@@ -320,7 +319,14 @@ fextl::string GdbServer::readRegs() {
   GDB.fstat |= static_cast<uint32_t>(state.flags[FEXCore::X86State::X87FLAG_C2_LOC]) << 10;
   GDB.fstat |= static_cast<uint32_t>(state.flags[FEXCore::X86State::X87FLAG_C3_LOC]) << 14;
 
-  memcpy(&GDB.xmm, &state.xmm.avx.data, sizeof(GDB.xmm));
+  __uint128_t XMM_Low[FEXCore::Core::CPUState::NUM_XMMS];
+  __uint128_t YMM_High[FEXCore::Core::CPUState::NUM_XMMS];
+
+  CTX->ReconstructXMMRegisters(CurrentThread->Thread, XMM_Low, YMM_High);
+  for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i) {
+    memcpy(&GDB.xmm[0], &XMM_Low[i], sizeof(__uint128_t));
+    memcpy(&GDB.xmm[2], &YMM_High[i], sizeof(__uint128_t));
+  }
 
   return encodeHex((unsigned char*)&GDB, sizeof(GDBContextDefinition));
 }
@@ -383,8 +389,16 @@ GdbServer::HandledPacketType GdbServer::readReg(const fextl::string& packet) {
     return {encodeHex((unsigned char*)(&Empty), sizeof(uint32_t)), HandledPacketType::TYPE_ACK};
   } else if (addr >= offsetof(GDBContextDefinition, xmm[0][0]) && addr < offsetof(GDBContextDefinition, xmm[16][0])) {
     const auto XmmIndex = (addr - offsetof(GDBContextDefinition, xmm[0][0])) / FEXCore::Core::CPUState::XMM_AVX_REG_SIZE;
-    const auto* Data = (unsigned char*)&state.xmm.avx.data[XmmIndex][0];
-    return {encodeHex(Data, FEXCore::Core::CPUState::XMM_AVX_REG_SIZE), HandledPacketType::TYPE_ACK};
+
+    __uint128_t XMM_Low[FEXCore::Core::CPUState::NUM_XMMS];
+    __uint128_t YMM_High[FEXCore::Core::CPUState::NUM_XMMS];
+
+    CTX->ReconstructXMMRegisters(CurrentThread->Thread, XMM_Low, YMM_High);
+    uint64_t xmm[4];
+    memcpy(&xmm[0], &XMM_Low[XmmIndex], sizeof(__uint128_t));
+    memcpy(&xmm[2], &YMM_High[XmmIndex], sizeof(__uint128_t));
+
+    return {encodeHex(reinterpret_cast<const uint8_t*>(&xmm), FEXCore::Core::CPUState::XMM_AVX_REG_SIZE), HandledPacketType::TYPE_ACK};
   } else if (addr == offsetof(GDBContextDefinition, mxcsr)) {
     uint32_t Empty {};
     return {encodeHex((unsigned char*)(&Empty), sizeof(uint32_t)), HandledPacketType::TYPE_ACK};
