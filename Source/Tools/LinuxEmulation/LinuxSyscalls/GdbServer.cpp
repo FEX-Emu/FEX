@@ -368,8 +368,7 @@ GdbServer::HandledPacketType GdbServer::readReg(const fextl::string& packet) {
     return {encodeHex((unsigned char*)(&state.mm[(addr - offsetof(GDBContextDefinition, mm[0])) / sizeof(X80Float)]), sizeof(X80Float)),
             HandledPacketType::TYPE_ACK};
   } else if (addr == offsetof(GDBContextDefinition, fctrl)) {
-    // XXX: We don't support this yet
-    uint32_t FCW = 0x37F;
+    uint32_t FCW = state.FCW;
     return {encodeHex((unsigned char*)(&FCW), sizeof(uint32_t)), HandledPacketType::TYPE_ACK};
   } else if (addr == offsetof(GDBContextDefinition, fstat)) {
     uint32_t FSW {};
