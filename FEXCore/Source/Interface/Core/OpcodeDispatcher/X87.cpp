@@ -63,7 +63,7 @@ void OpDispatchBuilder::SetX87Top(Ref Value) {
 void OpDispatchBuilder::FLD(OpcodeArgs, IR::OpSize Width) {
   const auto ReadWidth = (Width == OpSize::f80Bit) ? OpSize::i128Bit : Width;
 
-  Ref Data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], ReadWidth, Op->Flags);
+  Ref Data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], Width, Op->Flags);
   Ref ConvertedData = Data;
   // Convert to 80bit float
   if (Width == OpSize::i32Bit || Width == OpSize::i64Bit) {
@@ -79,7 +79,7 @@ void OpDispatchBuilder::FLDFromStack(OpcodeArgs) {
 
 void OpDispatchBuilder::FBLD(OpcodeArgs) {
   // Read from memory
-  Ref Data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], OpSize::i128Bit, Op->Flags);
+  Ref Data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], OpSize::f80Bit, Op->Flags);
   Ref ConvertedData = _F80BCDLoad(Data);
   _PushStack(ConvertedData, Data, OpSize::i128Bit, true);
 }
