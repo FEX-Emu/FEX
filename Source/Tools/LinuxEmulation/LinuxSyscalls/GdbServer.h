@@ -70,10 +70,32 @@ private:
 
   void SendPacketPair(const HandledPacketType& packetPair);
   HandledPacketType ProcessPacket(const fextl::string& packet);
-  HandledPacketType handleXfer(const fextl::string& packet);
   HandledPacketType handleProgramOffsets();
 
   HandledPacketType ThreadAction(char action, uint32_t tid);
+
+  // Binary data transfer handlers
+  // XFer function to correctly encode any reply
+  static fextl::string EncodeXferString(const fextl::string& data, int offset, int length) {
+    if (offset == data.size()) {
+      return "l";
+    }
+    if (offset >= data.size()) {
+      return "E34"; // ERANGE
+    }
+    if ((data.size() - offset) > length) {
+      return "m" + data.substr(offset, length);
+    }
+    return "l" + data.substr(offset);
+  };
+
+  HandledPacketType XferCommandExecFile(const fextl::string& annex, int offset, int length);
+  HandledPacketType XferCommandFeatures(const fextl::string& annex, int offset, int length);
+  HandledPacketType XferCommandThreads(const fextl::string& annex, int offset, int length);
+  HandledPacketType XferCommandOSData(const fextl::string& annex, int offset, int length);
+  HandledPacketType XferCommandLibraries(const fextl::string& annex, int offset, int length);
+  HandledPacketType XferCommandAuxv(const fextl::string& annex, int offset, int length);
+  HandledPacketType handleXfer(const fextl::string& packet);
 
   // Command handlers
   HandledPacketType CommandEnableExtendedMode(const fextl::string& packet);

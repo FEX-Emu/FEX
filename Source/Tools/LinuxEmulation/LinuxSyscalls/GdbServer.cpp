@@ -408,11 +408,100 @@ void GdbServer::buildLibraryMap() {
   LibraryMapChanged = false;
 }
 
+// Binary data transfer handlers
+
+GdbServer::HandledPacketType GdbServer::XferCommandExecFile(const fextl::string& annex, int offset, int length) {
+  int annex_pid;
+  if (annex.empty()) {
+    annex_pid = getpid();
+  } else {
+    auto ss_pid = fextl::istringstream(annex);
+    ss_pid >> std::hex >> annex_pid;
+  }
+
+  if (annex_pid == getpid()) {
+    return {EncodeXferString(Filename(), offset, length), HandledPacketType::TYPE_ACK};
+  }
+
+  return {"E00", HandledPacketType::TYPE_ACK};
+}
+
+GdbServer::HandledPacketType GdbServer::XferCommandFeatures(const fextl::string& annex, int offset, int length) {
+  if (annex == "target.xml") {
+    return {EncodeXferString(GDB::Info::BuildTargetXML(), offset, length), HandledPacketType::TYPE_ACK};
+  }
+
+  return {"E00", HandledPacketType::TYPE_ACK};
+}
+
+GdbServer::HandledPacketType GdbServer::XferCommandThreads(const fextl::string& annex, int offset, int length) {
+  if (offset == 0) {
+    auto Threads = SyscallHandler->TM.GetThreads();
+
+    ThreadString.clear();
+    fextl::ostringstream ss;
+    ss << "<threads>\n";
+    for (auto& Thread : *Threads) {
+      // Thread id is in hex without 0x prefix
+      const auto ThreadName = GDB::Info::GetThreadName(::getpid(), Thread->ThreadInfo.TID);
+      ss << "<thread id=\"" << std::hex << Thread->ThreadInfo.TID << "\"";
+      if (!ThreadName.empty()) {
+        ss << " name=\"" << ThreadName << "\"";
+      }
+      ss << "/>\n";
+    }
+
+    ss << "</threads>\n";
+    ss << std::flush;
+    ThreadString = ss.str();
+  }
+
+  return {EncodeXferString(ThreadString, offset, length), HandledPacketType::TYPE_ACK};
+}
+
+GdbServer::HandledPacketType GdbServer::XferCommandOSData(const fextl::string& annex, int offset, int length) {
+  if (offset == 0) {
+    OSDataString = GDB::Info::BuildOSXML();
+  }
+  return {EncodeXferString(OSDataString, offset, length), HandledPacketType::TYPE_ACK};
+}
+
+GdbServer::HandledPacketType GdbServer::XferCommandLibraries(const fextl::string& annex, int offset, int length) {
+  if (offset == 0) {
+    // Attempt to rebuild when reading from zero
+    buildLibraryMap();
+  }
+  return {EncodeXferString(LibraryMapString, offset, length), HandledPacketType::TYPE_ACK};
+}
+
+GdbServer::HandledPacketType GdbServer::XferCommandAuxv(const fextl::string& annex, int offset, int length) {
+  auto CodeLoader = SyscallHandler->GetCodeLoader();
+  uint64_t auxv_ptr, auxv_size;
+  CodeLoader->GetAuxv(auxv_ptr, auxv_size);
+  fextl::string data;
+  if (Is64BitMode()) {
+    data.resize(auxv_size);
+    memcpy(data.data(), reinterpret_cast<void*>(auxv_ptr), data.size());
+  } else {
+    // We need to transcode from 32-bit auxv_t to 64-bit
+    data.resize(auxv_size / sizeof(Elf32_auxv_t) * sizeof(Elf64_auxv_t));
+    size_t NumAuxv = auxv_size / sizeof(Elf32_auxv_t);
+    for (size_t i = 0; i < NumAuxv; ++i) {
+      Elf32_auxv_t* auxv = reinterpret_cast<Elf32_auxv_t*>(auxv_ptr + i * sizeof(Elf32_auxv_t));
+      Elf64_auxv_t tmp;
+      tmp.a_type = auxv->a_type;
+      tmp.a_un.a_val = auxv->a_un.a_val;
+      memcpy(data.data() + i * sizeof(Elf64_auxv_t), &tmp, sizeof(Elf64_auxv_t));
+    }
+  }
+
+  return {EncodeXferString(data, offset, length), HandledPacketType::TYPE_ACK};
+}
+
 GdbServer::HandledPacketType GdbServer::handleXfer(const fextl::string& packet) {
   fextl::string object;
   fextl::string rw;
   fextl::string annex;
-  int annex_pid;
   int offset;
   int length;
 
@@ -426,12 +515,7 @@ GdbServer::HandledPacketType GdbServer::handleXfer(const fextl::string& packet) 
     std::getline(ss, object, ':');
     std::getline(ss, rw, ':');
     std::getline(ss, annex, ':');
-    if (annex == "") {
-      annex_pid = getpid();
-    } else {
-      auto ss_pid = fextl::istringstream(annex);
-      ss_pid >> std::hex >> annex_pid;
-    }
+
     ss >> std::hex >> offset;
     ss.get(expectComma);
     ss >> std::hex >> length;
@@ -442,98 +526,42 @@ GdbServer::HandledPacketType GdbServer::handleXfer(const fextl::string& packet) 
     }
   }
 
-  // Lambda to correctly encode any reply
-  auto encode = [&](fextl::string data) -> fextl::string {
-    if (offset == data.size()) {
-      return "l";
-    }
-    if (offset >= data.size()) {
-      return "E34"; // ERANGE
-    }
-    if ((data.size() - offset) > length) {
-      return "m" + data.substr(offset, length);
-    }
-    return "l" + data.substr(offset);
-  };
+  // Specific object documentation: https://sourceware.org/gdb/current/onlinedocs/gdb.html/General-Query-Packets.html#qXfer-read
+  if (object == "auxv") {
+    return XferCommandAuxv(annex, offset, length);
+  }
+
+  // btrace
+  // btrace-conf
 
   if (object == "exec-file") {
-    if (annex_pid == getpid()) {
-      return {encode(Filename()), HandledPacketType::TYPE_ACK};
-    }
-
-    return {"E00", HandledPacketType::TYPE_ACK};
+    return XferCommandExecFile(annex, offset, length);
   }
 
   if (object == "features") {
-    if (annex == "target.xml") {
-      return {encode(GDB::Info::BuildTargetXML()), HandledPacketType::TYPE_ACK};
-    }
-
-    return {"E00", HandledPacketType::TYPE_ACK};
-  }
-
-  if (object == "threads") {
-    if (offset == 0) {
-      auto Threads = SyscallHandler->TM.GetThreads();
-
-      ThreadString.clear();
-      fextl::ostringstream ss;
-      ss << "<threads>\n";
-      for (auto& Thread : *Threads) {
-        // Thread id is in hex without 0x prefix
-        const auto ThreadName = GDB::Info::GetThreadName(::getpid(), Thread->ThreadInfo.TID);
-        ss << "<thread id=\"" << std::hex << Thread->ThreadInfo.TID << "\"";
-        if (!ThreadName.empty()) {
-          ss << " name=\"" << ThreadName << "\"";
-        }
-        ss << "/>\n";
-      }
-
-      ss << "</threads>\n";
-      ss << std::flush;
-      ThreadString = ss.str();
-    }
-
-    return {encode(ThreadString), HandledPacketType::TYPE_ACK};
-  }
-
-  if (object == "osdata") {
-    if (offset == 0) {
-      OSDataString = GDB::Info::BuildOSXML();
-    }
-    return {encode(OSDataString), HandledPacketType::TYPE_ACK};
+    return XferCommandFeatures(annex, offset, length);
   }
 
   if (object == "libraries") {
-    if (offset == 0) {
-      // Attempt to rebuild when reading from zero
-      buildLibraryMap();
-    }
-    return {encode(LibraryMapString), HandledPacketType::TYPE_ACK};
+    return XferCommandLibraries(annex, offset, length);
   }
 
-  if (object == "auxv") {
-    auto CodeLoader = SyscallHandler->GetCodeLoader();
-    uint64_t auxv_ptr, auxv_size;
-    CodeLoader->GetAuxv(auxv_ptr, auxv_size);
-    fextl::string data;
-    if (Is64BitMode()) {
-      data.resize(auxv_size);
-      memcpy(data.data(), reinterpret_cast<void*>(auxv_ptr), data.size());
-    } else {
-      // We need to transcode from 32-bit auxv_t to 64-bit
-      data.resize(auxv_size / sizeof(Elf32_auxv_t) * sizeof(Elf64_auxv_t));
-      size_t NumAuxv = auxv_size / sizeof(Elf32_auxv_t);
-      for (size_t i = 0; i < NumAuxv; ++i) {
-        Elf32_auxv_t* auxv = reinterpret_cast<Elf32_auxv_t*>(auxv_ptr + i * sizeof(Elf32_auxv_t));
-        Elf64_auxv_t tmp;
-        tmp.a_type = auxv->a_type;
-        tmp.a_un.a_val = auxv->a_un.a_val;
-        memcpy(data.data() + i * sizeof(Elf64_auxv_t), &tmp, sizeof(Elf64_auxv_t));
-      }
-    }
+  // libraries-svr4
+  // memory-map
+  // sdata
+  // siginfo:read
+  // siginfo:write
 
-    return {encode(std::move(data)), HandledPacketType::TYPE_ACK};
+  if (object == "threads") {
+    return XferCommandThreads(annex, offset, length);
+  }
+
+  // traceframe-info
+  // uib
+  // fdpic
+
+  if (object == "osdata") {
+    return XferCommandOSData(annex, offset, length);
   }
 
   return {"", HandledPacketType::TYPE_UNKNOWN};
