@@ -8,6 +8,8 @@ $end_info$
 
 #include "GdbServer/Info.h"
 
+#include <Common/StringUtil.h>
+
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/fextl/fmt.h>
@@ -55,6 +57,8 @@ fextl::string GetThreadName(uint32_t PID, uint32_t ThreadID) {
   const auto ThreadFile = fextl::fmt::format("/proc/{}/task/{}/comm", PID, ThreadID);
   fextl::string ThreadName;
   FEXCore::FileLoading::LoadFile(ThreadName, ThreadFile);
+  // Trim out the potential newline, breaks GDB if it exists.
+  FEX::StringUtil::trim(ThreadName);
   return ThreadName;
 }
 
