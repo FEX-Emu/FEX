@@ -70,18 +70,29 @@ private:
 
   void SendPacketPair(const HandledPacketType& packetPair);
   HandledPacketType ProcessPacket(const fextl::string& packet);
-  HandledPacketType handleQuery(const fextl::string& packet);
   HandledPacketType handleXfer(const fextl::string& packet);
-  HandledPacketType handleMemory(const fextl::string& packet);
-  HandledPacketType handleV(const fextl::string& packet);
-  HandledPacketType handleThreadOp(const fextl::string& packet);
-  HandledPacketType handleBreakpoint(const fextl::string& packet);
   HandledPacketType handleProgramOffsets();
 
   HandledPacketType ThreadAction(char action, uint32_t tid);
 
+  // Command handlers
+  HandledPacketType CommandEnableExtendedMode(const fextl::string& packet);
+  HandledPacketType CommandQueryHalted(const fextl::string& packet);
+  HandledPacketType CommandContinue(const fextl::string& packet);
+  HandledPacketType CommandDetach(const fextl::string& packet);
+  HandledPacketType CommandReadRegisters(const fextl::string& packet);
+  HandledPacketType CommandThreadOp(const fextl::string& packet);
+  HandledPacketType CommandKill(const fextl::string& packet);
+  HandledPacketType CommandMemory(const fextl::string& packet);
+  HandledPacketType CommandReadReg(const fextl::string& packet);
+  HandledPacketType CommandQuery(const fextl::string& packet);
+  HandledPacketType CommandSingleStep(const fextl::string& packet);
+  HandledPacketType CommandQueryThreadAlive(const fextl::string& packet);
+  HandledPacketType CommandMultiLetterV(const fextl::string& packet);
+  HandledPacketType CommandBreakpoint(const fextl::string& packet);
+  HandledPacketType CommandUnknown(const fextl::string& packet);
+
   fextl::string readRegs();
-  HandledPacketType readReg(const fextl::string& packet);
 
   FEXCore::Context::Context* CTX;
   FEX::HLE::SyscallHandler* const SyscallHandler;
