@@ -99,13 +99,13 @@
         "cset x22, hs",
         "cmn wzr, w26, lsl #24",
         "mrs x23, nzcv",
-        "orr w22, w23, w22, lsl #29",
+        "bfi w23, w22, #29, #1",
         "eor w21, w20, w21",
         "eor w20, w26, w20",
         "bic w20, w20, w21",
         "ubfx x20, x20, #7, #1",
-        "orr w20, w22, w20, lsl #28",
-        "msr nzcv, x20"
+        "bfi w23, w20, #28, #1",
+        "msr nzcv, x23"
       ]
     },
     "lock adc word [rax], cx": {
@@ -123,13 +123,13 @@
         "cset x22, hs",
         "cmn wzr, w26, lsl #16",
         "mrs x23, nzcv",
-        "orr w22, w23, w22, lsl #29",
+        "bfi w23, w22, #29, #1",
         "eor w21, w20, w21",
         "eor w20, w26, w20",
         "bic w20, w20, w21",
         "ubfx x20, x20, #15, #1",
-        "orr w20, w22, w20, lsl #28",
-        "msr nzcv, x20"
+        "bfi w23, w20, #28, #1",
+        "msr nzcv, x23"
       ]
     },
     "lock adc dword [rax], ecx": {
@@ -165,13 +165,13 @@
         "cset x22, hs",
         "cmn wzr, w26, lsl #24",
         "mrs x23, nzcv",
-        "orr w22, w23, w22, lsl #29",
+        "bfi w23, w22, #29, #1",
         "eor w21, w20, w21",
         "eor w20, w26, w20",
         "and w20, w20, w21",
         "ubfx x20, x20, #7, #1",
-        "orr w20, w22, w20, lsl #28",
-        "msr nzcv, x20"
+        "bfi w23, w20, #28, #1",
+        "msr nzcv, x23"
       ]
     },
     "lock sbb word [rax], cx": {
@@ -191,13 +191,13 @@
         "cset x22, hs",
         "cmn wzr, w26, lsl #16",
         "mrs x23, nzcv",
-        "orr w22, w23, w22, lsl #29",
+        "bfi w23, w22, #29, #1",
         "eor w21, w20, w21",
         "eor w20, w26, w20",
         "and w20, w20, w21",
         "ubfx x20, x20, #15, #1",
-        "orr w20, w22, w20, lsl #28",
-        "msr nzcv, x20"
+        "bfi w23, w20, #28, #1",
+        "msr nzcv, x23"
       ]
     },
     "lock sbb dword [rax], ecx": {
@@ -700,13 +700,13 @@
         "cset x20, hs",
         "cmn wzr, w26, lsl #24",
         "mrs x21, nzcv",
-        "orr w20, w21, w20, lsl #29",
-        "eor w21, w27, #0x1",
+        "bfi w21, w20, #29, #1",
+        "eor w20, w27, #0x1",
         "eor w22, w26, w27",
-        "bic w21, w22, w21",
-        "ubfx x21, x21, #7, #1",
-        "orr w20, w20, w21, lsl #28",
-        "msr nzcv, x20"
+        "bic w20, w22, w20",
+        "ubfx x20, x20, #7, #1",
+        "bfi w21, w20, #28, #1",
+        "msr nzcv, x21"
       ]
     },
     "lock adc byte [rax], 0xFF": {
@@ -724,13 +724,13 @@
         "cset x20, hs",
         "cmn wzr, w26, lsl #24",
         "mrs x22, nzcv",
-        "orr w20, w22, w20, lsl #29",
-        "eor w22, w21, #0xff",
+        "bfi w22, w20, #29, #1",
+        "eor w20, w21, #0xff",
         "eor w21, w26, w21",
-        "bic w21, w21, w22",
-        "ubfx x21, x21, #7, #1",
-        "orr w20, w20, w21, lsl #28",
-        "msr nzcv, x20"
+        "bic w20, w21, w20",
+        "ubfx x20, x20, #7, #1",
+        "bfi w22, w20, #28, #1",
+        "msr nzcv, x22"
       ]
     },
     "lock adc word [rax], 0x100": {
@@ -747,13 +747,13 @@
         "cset x20, hs",
         "cmn wzr, w26, lsl #16",
         "mrs x21, nzcv",
-        "orr w20, w21, w20, lsl #29",
-        "eor w21, w27, #0x100",
+        "bfi w21, w20, #29, #1",
+        "eor w20, w27, #0x100",
         "eor w22, w26, w27",
-        "bic w21, w22, w21",
-        "ubfx x21, x21, #15, #1",
-        "orr w20, w20, w21, lsl #28",
-        "msr nzcv, x20"
+        "bic w20, w22, w20",
+        "ubfx x20, x20, #15, #1",
+        "bfi w21, w20, #28, #1",
+        "msr nzcv, x21"
       ]
     },
     "lock adc word [rax], 0xFFFF": {
@@ -771,13 +771,13 @@
         "cset x20, hs",
         "cmn wzr, w26, lsl #16",
         "mrs x22, nzcv",
-        "orr w20, w22, w20, lsl #29",
-        "eor w22, w21, #0xffff",
+        "bfi w22, w20, #29, #1",
+        "eor w20, w21, #0xffff",
         "eor w21, w26, w21",
-        "bic w21, w21, w22",
-        "ubfx x21, x21, #15, #1",
-        "orr w20, w20, w21, lsl #28",
-        "msr nzcv, x20"
+        "bic w20, w21, w20",
+        "ubfx x20, x20, #15, #1",
+        "bfi w22, w20, #28, #1",
+        "msr nzcv, x22"
       ]
     },
     "lock adc dword [rax], 0x100": {
@@ -859,13 +859,13 @@
         "cset x20, hs",
         "cmn wzr, w26, lsl #16",
         "mrs x21, nzcv",
-        "orr w20, w21, w20, lsl #29",
-        "eor w21, w27, #0x1",
+        "bfi w21, w20, #29, #1",
+        "eor w20, w27, #0x1",
         "eor w22, w26, w27",
-        "bic w21, w22, w21",
-        "ubfx x21, x21, #15, #1",
-        "orr w20, w20, w21, lsl #28",
-        "msr nzcv, x20"
+        "bic w20, w22, w20",
+        "ubfx x20, x20, #15, #1",
+        "bfi w21, w20, #28, #1",
+        "msr nzcv, x21"
       ]
     },
     "lock adc dword [rax], 1": {
@@ -916,13 +916,13 @@
         "cset x20, hs",
         "cmn wzr, w26, lsl #24",
         "mrs x22, nzcv",
-        "orr w20, w22, w20, lsl #29",
-        "eor w22, w21, #0x1",
+        "bfi w22, w20, #29, #1",
+        "eor w20, w21, #0x1",
         "eor w21, w26, w21",
-        "and w21, w21, w22",
-        "ubfx x21, x21, #7, #1",
-        "orr w20, w20, w21, lsl #28",
-        "msr nzcv, x20"
+        "and w20, w21, w20",
+        "ubfx x20, x20, #7, #1",
+        "bfi w22, w20, #28, #1",
+        "msr nzcv, x22"
       ]
     },
     "lock sbb byte [rax], 0xFF": {
@@ -942,13 +942,13 @@
         "cset x20, hs",
         "cmn wzr, w26, lsl #24",
         "mrs x22, nzcv",
-        "orr w20, w22, w20, lsl #29",
-        "eor w22, w21, #0xff",
+        "bfi w22, w20, #29, #1",
+        "eor w20, w21, #0xff",
         "eor w21, w26, w21",
-        "and w21, w21, w22",
-        "ubfx x21, x21, #7, #1",
-        "orr w20, w20, w21, lsl #28",
-        "msr nzcv, x20"
+        "and w20, w21, w20",
+        "ubfx x20, x20, #7, #1",
+        "bfi w22, w20, #28, #1",
+        "msr nzcv, x22"
       ]
     },
     "lock sbb word [rax], 0x100": {
@@ -967,13 +967,13 @@
         "cset x20, hs",
         "cmn wzr, w26, lsl #16",
         "mrs x22, nzcv",
-        "orr w20, w22, w20, lsl #29",
-        "eor w22, w21, #0x100",
+        "bfi w22, w20, #29, #1",
+        "eor w20, w21, #0x100",
         "eor w21, w26, w21",
-        "and w21, w21, w22",
-        "ubfx x21, x21, #15, #1",
-        "orr w20, w20, w21, lsl #28",
-        "msr nzcv, x20"
+        "and w20, w21, w20",
+        "ubfx x20, x20, #15, #1",
+        "bfi w22, w20, #28, #1",
+        "msr nzcv, x22"
       ]
     },
     "lock sbb word [rax], 0xFFFF": {
@@ -993,13 +993,13 @@
         "cset x20, hs",
         "cmn wzr, w26, lsl #16",
         "mrs x22, nzcv",
-        "orr w20, w22, w20, lsl #29",
-        "eor w22, w21, #0xffff",
+        "bfi w22, w20, #29, #1",
+        "eor w20, w21, #0xffff",
         "eor w21, w26, w21",
-        "and w21, w21, w22",
-        "ubfx x21, x21, #15, #1",
-        "orr w20, w20, w21, lsl #28",
-        "msr nzcv, x20"
+        "and w20, w21, w20",
+        "ubfx x20, x20, #15, #1",
+        "bfi w22, w20, #28, #1",
+        "msr nzcv, x22"
       ]
     },
     "lock sbb dword [rax], 0x100": {
@@ -1063,13 +1063,13 @@
         "cset x20, hs",
         "cmn wzr, w26, lsl #16",
         "mrs x22, nzcv",
-        "orr w20, w22, w20, lsl #29",
-        "eor w22, w21, #0x1",
+        "bfi w22, w20, #29, #1",
+        "eor w20, w21, #0x1",
         "eor w21, w26, w21",
-        "and w21, w21, w22",
-        "ubfx x21, x21, #15, #1",
-        "orr w20, w20, w21, lsl #28",
-        "msr nzcv, x20"
+        "and w20, w21, w20",
+        "ubfx x20, x20, #15, #1",
+        "bfi w22, w20, #28, #1",
+        "msr nzcv, x22"
       ]
     },
     "lock sbb dword [rax], 1": {
