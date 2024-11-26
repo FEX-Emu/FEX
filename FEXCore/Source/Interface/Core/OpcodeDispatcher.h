@@ -1768,6 +1768,27 @@ private:
     CFInverted = true;
   }
 
+  // As above but with
+  //
+  //  x - 1
+  //
+  // If x = 0, hardware C is not set. If x = 1, hardware C is set.
+  void SetCFInverted_InvalidateNZV(Ref Value, unsigned ValueOffset = 0, bool MustMask = false) {
+    if (CTX->HostFeatures.SupportsFlagM) {
+      // This turns into a single rmif
+      SetCFInverted(Value, ValueOffset, MustMask);
+    } else {
+      // Do math on flagm
+      if (ValueOffset || MustMask) {
+        Value = _Bfe(OpSize::i64Bit, 1, ValueOffset, Value);
+      }
+
+      HandleNZCVWrite();
+      _SubNZCV(OpSize::i32Bit, Value, _InlineConstant(1));
+      CFInverted = true;
+    }
+  }
+
   void SetCFInverted(Ref Value, unsigned ValueOffset = 0, bool MustMask = false) {
     SetRFLAG(Value, X86State::RFLAG_CF_RAW_LOC, ValueOffset, MustMask);
     CFInverted = true;

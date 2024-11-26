@@ -2449,7 +2449,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
         Value = Dest;
       }
 
-      SetCFInverted(Value, ConstantShift, true);
+      SetCFInverted_InvalidateNZV(Value, ConstantShift, true);
       StoreResult(GPRClass, Op, Dest, OpSize::iInvalid);
       break;
     }
