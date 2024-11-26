@@ -1751,6 +1751,23 @@ private:
     CFInverted = true;
   }
 
+  // Set CF directly to the given 0/1 value. This needs to respect the
+  // invert. We use a subtraction:
+  //
+  //     0 - x = 0 + (~x) + 1.
+  //
+  // If x = 0, then 0 + (~0) + 1 = 0x100000000 so hardware C is set.
+  // If x = 1, then 0 + (~1) + 1 = 0x0ffffffff so hardware C is not set.
+  void SetCFDirect_InvalidateNZV(Ref Value, unsigned ValueOffset = 0, bool MustMask = false) {
+    if (ValueOffset || MustMask) {
+      Value = _Bfe(OpSize::i64Bit, 1, ValueOffset, Value);
+    }
+
+    HandleNZCVWrite();
+    _SubNZCV(OpSize::i32Bit, _Constant(0), Value);
+    CFInverted = true;
+  }
+
   void SetCFInverted(Ref Value, unsigned ValueOffset = 0, bool MustMask = false) {
     SetRFLAG(Value, X86State::RFLAG_CF_RAW_LOC, ValueOffset, MustMask);
     CFInverted = true;

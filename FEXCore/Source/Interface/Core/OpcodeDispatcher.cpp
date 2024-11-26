@@ -2861,8 +2861,7 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
   auto AF = CalculateAFForDecimal(A);
 
   // CF = AF, OF/SF/ZF/PF undefined
-  ZeroNZCV();
-  SetCFDirect(AF);
+  SetCFDirect_InvalidateNZV(AF);
   SetAFAndFixup(AF);
   CalculateDeferredFlags();
 
@@ -2881,8 +2880,7 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
   auto AF = CalculateAFForDecimal(A);
 
   // CF = AF, OF/SF/ZF/PF undefined
-  ZeroNZCV();
-  SetCFDirect(AF);
+  SetCFDirect_InvalidateNZV(AF);
   SetAFAndFixup(AF);
   CalculateDeferredFlags();
 
