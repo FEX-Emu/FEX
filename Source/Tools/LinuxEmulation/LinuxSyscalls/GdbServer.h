@@ -120,7 +120,25 @@ private:
    * @param TID Which TID to search for
    */
   const FEX::HLE::ThreadStateObject* FindThreadByTID(uint32_t TID);
-  fextl::string readRegs();
+
+  struct X80Float {
+    uint8_t Data[10];
+  };
+
+  struct FEX_PACKED GDBContextDefinition {
+    uint64_t gregs[FEXCore::Core::CPUState::NUM_GPRS];
+    uint64_t rip;
+    uint32_t eflags;
+    uint32_t cs, ss, ds, es, fs, gs;
+    X80Float mm[FEXCore::Core::CPUState::NUM_MMS];
+    uint32_t fctrl;
+    uint32_t fstat;
+    uint32_t dummies[6];
+    uint64_t xmm[FEXCore::Core::CPUState::NUM_XMMS][4];
+    uint32_t mxcsr;
+  };
+
+  GDBContextDefinition GenerateContextDefinition(const FEX::HLE::ThreadStateObject* ThreadObject);
 
   FEXCore::Context::Context* CTX;
   FEX::HLE::SyscallHandler* const SyscallHandler;
