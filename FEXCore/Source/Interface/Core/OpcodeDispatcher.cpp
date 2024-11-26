@@ -159,8 +159,6 @@ void OpDispatchBuilder::RETOp(OpcodeArgs) {
   if (CTX->Config.ABILocalFlags) {
     _InvalidateFlags(~0UL); // all flags
     InvalidatePF_AF();
-    // Deferred flags are invalidated now
-    InvalidateDeferredFlags();
   }
 
   Ref SP = _RMWHandle(LoadGPRRegister(X86State::REG_RSP));
@@ -557,8 +555,6 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
   if (CTX->Config.ABILocalFlags) {
     _InvalidateFlags(~0UL); // all flags
     InvalidatePF_AF();
-    // Deferred flags are invalidated now
-    InvalidateDeferredFlags();
   }
 
   auto ConstantPC = GetRelocatedPC(Op);
@@ -2029,8 +2025,6 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
     Ref Res = _Lshr(OpSize, Dest, Src);
     auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
-    InvalidateDeferredFlags();
-
     // Constant folded version of the above, with fused shifts.
     if (Const > 1) {
       Res = _Orlshl(OpSize, Res, Dest, Size + 1 - Const);
@@ -2254,8 +2248,6 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
     Ref Res = _Lshl(OpSize, Dest, Src);
     auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
-    InvalidateDeferredFlags();
-
     // Res |= (Src << (Size - Shift + 1));
     if (Const > 1) {
       Res = _Orlshr(OpSize, Res, Dest, Size + 1 - Const);
@@ -2383,9 +2375,6 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
 
   const uint32_t Size = GetDstBitSize(Op);
   const uint32_t Mask = Size - 1;
-
-  // Deferred flags are invalidated now
-  InvalidateDeferredFlags();
 
   if (IsNonconstant) {
     // Because we mask explicitly with And/Bfe/Sbfe after, we can allow garbage here.
@@ -2855,8 +2844,6 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AAAOp(OpcodeArgs) {
-  InvalidateDeferredFlags();
-
   auto A = LoadGPRRegister(X86State::REG_RAX);
   auto AF = CalculateAFForDecimal(A);
 
@@ -2874,8 +2861,6 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AASOp(OpcodeArgs) {
-  InvalidateDeferredFlags();
-
   auto A = LoadGPRRegister(X86State::REG_RAX);
   auto AF = CalculateAFForDecimal(A);
 
@@ -2893,8 +2878,6 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AAMOp(OpcodeArgs) {
-  InvalidateDeferredFlags();
-
   auto AL = LoadGPRRegister(X86State::REG_RAX, OpSize::i8Bit);
   auto Imm8 = _Constant(Op->Src[0].Data.Literal.Value & 0xFF);
   auto UDivOp = _UDiv(OpSize::i64Bit, AL, Imm8);
@@ -2908,8 +2891,6 @@ void OpDispatchBuilder::AAMOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AADOp(OpcodeArgs) {
-  InvalidateDeferredFlags();
-
   auto A = LoadGPRRegister(X86State::REG_RAX);
   auto AH = _Lshr(OpSize::i32Bit, A, _Constant(8));
   auto Imm8 = _Constant(Op->Src[0].Data.Literal.Value & 0xFF);

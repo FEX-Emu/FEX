@@ -36,13 +36,9 @@ void OpDispatchBuilder::SetPackedRFLAG(bool Lower8, Ref Src) {
   size_t NumFlags = FlagOffsets.size();
   if (Lower8) {
     // Calculate flags early.
-    // Could use InvalidateDeferredFlags() if we had masked invalidation.
     // This is only a partial overwrite of flags since OF isn't stored here.
     CalculateDeferredFlags();
     NumFlags = 5;
-  } else {
-    // We are overwriting all RFLAGS. Invalidate the deferred flag state.
-    InvalidateDeferredFlags();
   }
 
   // PF and CF are both stored inverted, so hoist the invert.

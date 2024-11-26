@@ -1579,7 +1579,6 @@ private:
 
   // Set flag tracking to prepare for an operation that directly writes NZCV.
   void HandleNZCVWrite() {
-    InvalidateDeferredFlags();
     CachedNZCV = nullptr;
     NZCVDirty = false;
   }
@@ -2252,12 +2251,6 @@ private:
    * @brief Flushes NZCV. Mostly vestigial.
    */
   void CalculateDeferredFlags();
-
-  /**
-   * @brief Invalidates NZCV. Mostly vestigial.
-   */
-  void InvalidateDeferredFlags() {
-  }
 
   void ZeroShiftResult(FEXCore::X86Tables::DecodedOp Op) {
     // In the case of zero-rotate, we need to store the destination still to deal with 32-bit semantics.
