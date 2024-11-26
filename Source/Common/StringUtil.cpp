@@ -3,7 +3,7 @@
 
 namespace FEX::StringUtil {
 void ltrim(fextl::string& s) {
-  s.erase(std::find_if(s.begin(), s.end(), [](int ch) { return !std::isspace(ch); }));
+  s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) { return !std::isspace(ch); }));
 }
 
 void rtrim(fextl::string& s) {

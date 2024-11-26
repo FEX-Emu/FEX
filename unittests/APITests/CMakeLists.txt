@@ -3,9 +3,10 @@ set (TESTS
   ArgumentParser
   InterruptableConditionVariable
   Filesystem
+  StringUtils
   )
 
-list(APPEND LIBS FEXCore JemallocLibs)
+list(APPEND LIBS Common FEXCore JemallocLibs)
 
 foreach(API_TEST ${TESTS})
   add_executable(${API_TEST} ${API_TEST}.cpp)
