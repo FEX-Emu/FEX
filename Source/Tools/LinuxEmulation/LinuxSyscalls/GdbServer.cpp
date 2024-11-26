@@ -16,6 +16,7 @@ $end_info$
 #include <iomanip>
 #include <memory>
 #include <optional>
+#include <string_view>
 
 #include <Common/FEXServerClient.h>
 #include <FEXCore/Config/Config.h>
@@ -1003,7 +1004,7 @@ GdbServer::HandledPacketType GdbServer::CommandQueryThreadAlive(const fextl::str
   return {"OK", HandledPacketType::TYPE_ACK};
 }
 
-GdbServer::HandledPacketType GdbServer::CommandMultiLetterV(const fextl::string& packet) {
+GdbServer::HandledPacketType GdbServer::HandlevFile(const fextl::string& packet) {
   const auto match = [&](const fextl::string& str) -> std::optional<fextl::istringstream> {
     if (packet.rfind(str, 0) == 0) {
       auto ss = fextl::istringstream(packet);
@@ -1074,10 +1075,26 @@ GdbServer::HandledPacketType GdbServer::CommandMultiLetterV(const fextl::string&
     data.resize(ret);
     return {F_data(ret, data), HandledPacketType::TYPE_ACK};
   }
+
+  return {"", HandledPacketType::TYPE_ACK};
+}
+
+GdbServer::HandledPacketType GdbServer::HandlevCont(const fextl::string& packet) {
+  const auto match = [&](const fextl::string& str) -> std::optional<fextl::istringstream> {
+    if (packet.rfind(str, 0) == 0) {
+      auto ss = fextl::istringstream(packet);
+      ss.seekg(str.size());
+      return ss;
+    }
+    return std::nullopt;
+  };
+
+  std::optional<fextl::istringstream> ss;
   if ((ss = match("vCont?"))) {
     return {"vCont;c;t;s;r", HandledPacketType::TYPE_ACK}; // We support continue, step and terminate
     // FIXME: We also claim to support continue with signal... because it's compulsory
   }
+
   if ((ss = match("vCont;"))) {
     char action {};
     int thread {};
@@ -1095,6 +1112,26 @@ GdbServer::HandledPacketType GdbServer::CommandMultiLetterV(const fextl::string&
 
     return ThreadAction(action, thread);
   }
+
+  return {"", HandledPacketType::TYPE_ACK};
+}
+
+GdbServer::HandledPacketType GdbServer::CommandMultiLetterV(const fextl::string& packet) {
+  // TODO: vAttach
+  if (packet.starts_with("vCont")) {
+    return HandlevCont(packet);
+  }
+
+  // TODO: vCtrlC
+
+  if (packet.starts_with("vFile")) {
+    return HandlevFile(packet);
+  }
+
+  // TODO: vKill
+  // TODO: vRun
+  // TODO: vStopped
+
   return {"", HandledPacketType::TYPE_ACK};
 }
 

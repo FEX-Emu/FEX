@@ -97,6 +97,9 @@ private:
   HandledPacketType XferCommandAuxv(const fextl::string& annex, int offset, int length);
   HandledPacketType handleXfer(const fextl::string& packet);
 
+  HandledPacketType HandlevFile(const fextl::string& packet);
+  HandledPacketType HandlevCont(const fextl::string& packet);
+
   // Command handlers
   HandledPacketType CommandEnableExtendedMode(const fextl::string& packet);
   HandledPacketType CommandQueryHalted(const fextl::string& packet);
