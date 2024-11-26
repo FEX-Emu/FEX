@@ -61,13 +61,17 @@ $end_info$
 namespace FEX {
 
 #ifndef _WIN32
-void GdbServer::Break(int signal) {
+void GdbServer::Break(FEXCore::Core::InternalThreadState* Thread, int signal) {
   std::lock_guard lk(sendMutex);
   if (!CommsStream) {
     return;
   }
 
-  const fextl::string str = fextl::fmt::format("S{:02x}", signal);
+  auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread);
+  // Current debugging thread switches to the thread that is breaking.
+  CurrentDebuggingThread = ThreadObject->ThreadInfo.TID.load();
+
+  const auto str = fextl::fmt::format("T{:02x}thread:{:x};", signal, CurrentDebuggingThread);
   SendPacket(*CommsStream, str);
 }
 
@@ -93,7 +97,7 @@ GdbServer::GdbServer(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* 
 
   ctx->SetExitHandler([this](FEXCore::Core::InternalThreadState* Thread, FEXCore::Context::ExitReason ExitReason) {
     if (ExitReason == FEXCore::Context::ExitReason::EXIT_DEBUG) {
-      this->Break(SIGTRAP);
+      this->Break(Thread, SIGTRAP);
     }
 
     if (ExitReason == FEXCore::Context::ExitReason::EXIT_SHUTDOWN) {
@@ -113,7 +117,7 @@ GdbServer::GdbServer(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* 
       }
 
       // Let GDB know that we have a signal
-      this->Break(Signal);
+      this->Break(Thread, Signal);
 
       WaitForThreadWakeup();
 
