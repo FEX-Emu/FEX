@@ -117,7 +117,6 @@ public:
     // If we loaded flags but didn't change them, invalidate the cached copy and move on.
     // Changes get stored out by CalculateDeferredFlags.
     CachedNZCV = nullptr;
-    PossiblySetNZCVBits = ~0U;
     CFInverted = CFInvertedABI;
     FlushRegisterCache();
 
@@ -1329,7 +1328,6 @@ private:
 
   Ref CachedNZCV {};
   bool NZCVDirty {};
-  uint32_t PossiblySetNZCVBits {};
 
   // Set if the host carry is inverted from the guest carry. This is set after
   // subtraction, because arm64 and x86 have inverted borrow flags, but clear
@@ -1579,31 +1577,26 @@ private:
     return IR::SizeToOpSize(GetSrcSize(Op));
   }
 
-  // Set flag tracking to prepare for an operation that directly writes NZCV. If
-  // some bits are known to be zeroed, the PossiblySetNZCVBits mask can be
-  // passed. Otherwise, it defaults to assuming all bits may be set after
-  // (this is conservative).
-  void HandleNZCVWrite(uint32_t _PossiblySetNZCVBits = ~0) {
-    InvalidateDeferredFlags();
+  // Set flag tracking to prepare for an operation that directly writes NZCV.
+  void HandleNZCVWrite() {
     CachedNZCV = nullptr;
-    PossiblySetNZCVBits = _PossiblySetNZCVBits;
     NZCVDirty = false;
   }
 
   // Set flag tracking to prepare for a read-modify-write operation on NZCV.
-  void HandleNZCV_RMW(uint32_t _PossiblySetNZCVBits = ~0) {
+  void HandleNZCV_RMW() {
     CalculateDeferredFlags();
 
     if (NZCVDirty && CachedNZCV) {
       _StoreNZCV(CachedNZCV);
     }
 
-    HandleNZCVWrite(_PossiblySetNZCVBits);
+    HandleNZCVWrite();
   }
 
   // Special case of the above where we are known to zero C/V
   void HandleNZ00Write() {
-    HandleNZCVWrite((1u << 31) | (1u << 30));
+    HandleNZCVWrite();
 
     // Host carry will be implicitly zeroed, and we want guest carry zeroed as
     // well. So do not invert.
@@ -1625,7 +1618,6 @@ private:
 
   void ZeroNZCV() {
     CachedNZCV = _Constant(0);
-    PossiblySetNZCVBits = 0;
     NZCVDirty = true;
   }
 
@@ -1643,7 +1635,6 @@ private:
         _SubNZCV(SrcSize, Res, _Constant(0));
       }
 
-      PossiblySetNZCVBits |= 1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC);
       CFInverted = true;
     } else {
       _TestNZ(SrcSize, Res, Res);
@@ -1662,13 +1653,8 @@ private:
   void InsertNZCV(unsigned BitOffset, Ref Value, signed FlagOffset, bool MustMask) {
     signed Bit = IndexNZCV(BitOffset);
 
-    // If NZCV is not dirty, we always want to use rmif, it's 1 instruction to
-    // implement this. But if NZCV is dirty, it might still be cheaper to copy
-    // the GPR flags to NZCV and rmif. This is a heuristic for cases where we
-    // expect that 2 instruction sequence to be a win (versus something like
-    // bfe+mov+bfi+mov which can happen with our RA..). It's not totally
-    // conservative but it's pretty good in practice.
-    bool PreferRmif = !NZCVDirty || FlagOffset || MustMask || (PossiblySetNZCVBits & (1u << Bit));
+    // Heuristic to choose rmif vs msr.
+    bool PreferRmif = !NZCVDirty || FlagOffset || MustMask;
 
     if (CTX->HostFeatures.SupportsFlagM && PreferRmif) {
       // Update NZCV
@@ -1689,16 +1675,8 @@ private:
         Value = _Bfe(OpSize::i64Bit, 1, FlagOffset, Value);
       }
 
-      if (PossiblySetNZCVBits == 0) {
-        SetNZCV(_Lshl(OpSize::i64Bit, Value, _Constant(Bit)));
-      } else if ((PossiblySetNZCVBits & (1u << Bit)) == 0) {
-        SetNZCV(_Orlshl(OpSize::i32Bit, GetNZCV(), Value, Bit));
-      } else {
-        SetNZCV(_Bfi(OpSize::i32Bit, 1, Bit, GetNZCV(), Value));
-      }
+      SetNZCV(_Bfi(OpSize::i32Bit, 1, Bit, GetNZCV(), Value));
     }
-
-    PossiblySetNZCVBits |= (1u << Bit);
   }
 
   // If we don't care about N/C/V and just need Z, we can test with a simple
@@ -1737,7 +1715,6 @@ private:
 
   void CarryInvert() {
     CFInverted ^= true;
-    PossiblySetNZCVBits |= 1u << IndexNZCV(FEXCore::X86State::RFLAG_CF_RAW_LOC);
   }
 
   template<unsigned BitOffset>
@@ -1749,6 +1726,44 @@ private:
     Value = _Xor(OpSize::i64Bit, Value, _InlineConstant(1ull << ValueOffset));
     SetRFLAG(Value, X86State::RFLAG_CF_RAW_LOC, ValueOffset, MustMask);
     CFInverted = true;
+  }
+
+  // Set CF directly to the given 0/1 value. This needs to respect the
+  // invert. We use a subtraction:
+  //
+  //     0 - x = 0 + (~x) + 1.
+  //
+  // If x = 0, then 0 + (~0) + 1 = 0x100000000 so hardware C is set.
+  // If x = 1, then 0 + (~1) + 1 = 0x0ffffffff so hardware C is not set.
+  void SetCFDirect_InvalidateNZV(Ref Value, unsigned ValueOffset = 0, bool MustMask = false) {
+    if (ValueOffset || MustMask) {
+      Value = _Bfe(OpSize::i64Bit, 1, ValueOffset, Value);
+    }
+
+    HandleNZCVWrite();
+    _SubNZCV(OpSize::i32Bit, _Constant(0), Value);
+    CFInverted = true;
+  }
+
+  // As above but with
+  //
+  //  x - 1
+  //
+  // If x = 0, hardware C is not set. If x = 1, hardware C is set.
+  void SetCFInverted_InvalidateNZV(Ref Value, unsigned ValueOffset = 0, bool MustMask = false) {
+    if (CTX->HostFeatures.SupportsFlagM) {
+      // This turns into a single rmif
+      SetCFInverted(Value, ValueOffset, MustMask);
+    } else {
+      // Do math on flagm
+      if (ValueOffset || MustMask) {
+        Value = _Bfe(OpSize::i64Bit, 1, ValueOffset, Value);
+      }
+
+      HandleNZCVWrite();
+      _SubNZCV(OpSize::i32Bit, Value, _InlineConstant(1));
+      CFInverted = true;
+    }
   }
 
   void SetCFInverted(Ref Value, unsigned ValueOffset = 0, bool MustMask = false) {
@@ -2010,9 +2025,7 @@ private:
         Invert ^= CFInverted;
       }
 
-      if (!(PossiblySetNZCVBits & (1u << IndexNZCV(BitOffset)))) {
-        return _Constant(Invert ? 1 : 0);
-      } else if (NZCVDirty) {
+      if (NZCVDirty) {
         auto Value = _Bfe(OpSize::i32Bit, 1, IndexNZCV(BitOffset), GetNZCV());
 
         if (Invert) {
@@ -2119,7 +2132,6 @@ private:
     //
     // Our AXFlag emulation on FlagM2-less systems needs V_inv passed.
     _AXFlag(CTX->HostFeatures.SupportsFlagM2 ? Invalid() : V_inv);
-    PossiblySetNZCVBits = ~0;
     CFInverted = true;
   }
 
@@ -2133,7 +2145,6 @@ private:
 
       // Convert to x86 flags, saves us from or'ing after.
       _AXFlag(Invalid());
-      PossiblySetNZCVBits = ~0;
       CFInverted = true;
 
       // Copy the values.
@@ -2241,14 +2252,6 @@ private:
    */
   void CalculateDeferredFlags();
 
-  /**
-   * @brief Invalidates NZCV. Mostly vestigial.
-   */
-  void InvalidateDeferredFlags() {
-    // No NZCV bits will be set, they are all invalid.
-    PossiblySetNZCVBits = 0;
-  }
-
   void ZeroShiftResult(FEXCore::X86Tables::DecodedOp Op) {
     // In the case of zero-rotate, we need to store the destination still to deal with 32-bit semantics.
     const auto Size = OpSizeFromSrc(Op);
@@ -2277,7 +2280,6 @@ private:
     }
 
     // Otherwise, prepare to branch.
-    uint32_t OldSetNZCVBits = PossiblySetNZCVBits;
     auto Zero = _Constant(0);
 
     // If the shift is zero, do not touch the flags.
@@ -2312,7 +2314,6 @@ private:
 
     SetCurrentCodeBlock(EndBlock);
     StartNewBlock();
-    PossiblySetNZCVBits |= OldSetNZCVBits;
   }
 
   /**

@@ -319,7 +319,6 @@ void OpDispatchBuilder::FTSTF64(OpcodeArgs) {
 
   // Now we do our comparison.
   _F80StackTest(0);
-  PossiblySetNZCVBits = ~0;
   ConvertNZCVToX87();
 }
 
@@ -354,7 +353,6 @@ void OpDispatchBuilder::FCOMIF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpD
     GetNZCV();
 
     _F80CmpValue(b);
-    PossiblySetNZCVBits = ~0;
     ConvertNZCVToX87();
   } else {
     HandleNZCVWrite();

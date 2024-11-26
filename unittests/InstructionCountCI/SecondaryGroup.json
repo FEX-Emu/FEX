@@ -24,204 +24,186 @@
       ]
     },
     "bt ax, 0": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 2,
       "Comment": "GROUP8 0x0F 0xBA /4",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x1",
-        "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "ubfx x20, x4, #0, #1",
+        "cmp wzr, w20"
       ]
     },
     "bt eax, 0": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 2,
       "Comment": "GROUP8 0x0F 0xBA /4",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x1",
-        "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "ubfx x20, x4, #0, #1",
+        "cmp wzr, w20"
       ]
     },
     "bt rax, 0": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 2,
       "Comment": "GROUP8 0x0F 0xBA /4",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x1",
-        "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "ubfx x20, x4, #0, #1",
+        "cmp wzr, w20"
       ]
     },
     "bt ax, 15": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 2,
       "Comment": "GROUP8 0x0F 0xBA /4",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x8000",
-        "ubfx x20, x20, #15, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "ubfx x20, x4, #15, #1",
+        "cmp wzr, w20"
       ]
     },
     "bt eax, 31": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 2,
       "Comment": "GROUP8 0x0F 0xBA /4",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x80000000",
-        "ubfx x20, x20, #31, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "ubfx x20, x4, #31, #1",
+        "cmp wzr, w20"
       ]
     },
     "bt rax, 63": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 2,
       "Comment": "GROUP8 0x0F 0xBA /4",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x8000000000000000",
-        "lsr x20, x20, #63",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "lsr x20, x4, #63",
+        "cmp wzr, w20"
       ]
     },
     "bt word [rax], 0": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 6,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "ldrb w20, [x4]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "bt dword [rax], 0": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 6,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "ldrb w20, [x4]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "bt qword [rax], 0": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 6,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "ldrb w20, [x4]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "bt word [rax], 15": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 7,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "ldrb w20, [x4, #1]",
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "bt dword [rax], 31": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 7,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "ldrb w20, [x4, #3]",
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "bt qword [rax], 63": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 7,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "ldrb w20, [x4, #7]",
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "bts ax, 0": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 4,
       "Comment": "GROUP8 0x0F 0xBA /5",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x1",
-        "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "orr w21, w4, #0x1",
-        "bfxil x4, x21, #0, #16",
-        "msr nzcv, x20"
+        "ubfx x20, x4, #0, #1",
+        "cmp wzr, w20",
+        "orr w20, w4, #0x1",
+        "bfxil x4, x20, #0, #16"
       ]
     },
     "bts eax, 0": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP8 0x0F 0xBA /5",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x1",
-        "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "orr w4, w4, #0x1",
-        "msr nzcv, x20"
+        "ubfx x20, x4, #0, #1",
+        "cmp wzr, w20",
+        "orr w4, w4, #0x1"
       ]
     },
     "bts rax, 0": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP8 0x0F 0xBA /5",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x1",
-        "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "orr x4, x4, #0x1",
-        "msr nzcv, x20"
+        "ubfx x20, x4, #0, #1",
+        "cmp wzr, w20",
+        "orr x4, x4, #0x1"
       ]
     },
     "bts ax, 15": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 4,
       "Comment": "GROUP8 0x0F 0xBA /5",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x8000",
-        "ubfx x20, x20, #15, #1",
-        "lsl x20, x20, #29",
-        "orr w21, w4, #0x8000",
-        "bfxil x4, x21, #0, #16",
-        "msr nzcv, x20"
+        "ubfx x20, x4, #15, #1",
+        "cmp wzr, w20",
+        "orr w20, w4, #0x8000",
+        "bfxil x4, x20, #0, #16"
       ]
     },
     "bts eax, 31": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP8 0x0F 0xBA /5",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x80000000",
-        "ubfx x20, x20, #31, #1",
-        "lsl x20, x20, #29",
-        "orr w4, w4, #0x80000000",
-        "msr nzcv, x20"
+        "ubfx x20, x4, #31, #1",
+        "cmp wzr, w20",
+        "orr w4, w4, #0x80000000"
       ]
     },
     "bts rax, 63": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP8 0x0F 0xBA /5",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x8000000000000000",
-        "lsr x20, x20, #63",
-        "lsl x20, x20, #29",
-        "orr x4, x4, #0x8000000000000000",
-        "msr nzcv, x20"
+        "lsr x20, x4, #63",
+        "cmp wzr, w20",
+        "orr x4, x4, #0x8000000000000000"
       ]
     },
     "bts word [rax], 0": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "ldrb w20, [x4]",
@@ -229,12 +211,13 @@
         "strb w21, [x4]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "bts dword [rax], 0": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "ldrb w20, [x4]",
@@ -242,12 +225,13 @@
         "strb w21, [x4]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "bts qword [rax], 0": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "ldrb w20, [x4]",
@@ -255,12 +239,13 @@
         "strb w21, [x4]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "bts word [rax], 15": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "ldrb w20, [x4, #1]",
@@ -269,12 +254,13 @@
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "bts dword [rax], 31": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "ldrb w20, [x4, #3]",
@@ -283,12 +269,13 @@
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "bts qword [rax], 63": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "ldrb w20, [x4, #7]",
@@ -297,12 +284,13 @@
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "lock bts word [rax], 0": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -310,12 +298,13 @@
         "ldsetalb w20, w20, [x21]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "lock bts dword [rax], 0": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -323,12 +312,13 @@
         "ldsetalb w20, w20, [x21]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "lock bts qword [rax], 0": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -336,12 +326,13 @@
         "ldsetalb w20, w20, [x21]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "lock bts word [rax], 15": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x80",
@@ -350,12 +341,13 @@
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "lock bts dword [rax], 31": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x80",
@@ -364,12 +356,13 @@
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "lock bts qword [rax], 63": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x80",
@@ -378,80 +371,69 @@
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "btr ax, 0": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 4,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x1",
-        "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "and w21, w4, #0xfffffffe",
-        "bfxil x4, x21, #0, #16",
-        "msr nzcv, x20"
+        "ubfx x20, x4, #0, #1",
+        "cmp wzr, w20",
+        "and w20, w4, #0xfffffffe",
+        "bfxil x4, x20, #0, #16"
       ]
     },
     "btr eax, 0": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x1",
-        "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "and w4, w4, #0xfffffffe",
-        "msr nzcv, x20"
+        "ubfx x20, x4, #0, #1",
+        "cmp wzr, w20",
+        "and w4, w4, #0xfffffffe"
       ]
     },
     "btr rax, 0": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x1",
-        "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "and x4, x4, #0xfffffffffffffffe",
-        "msr nzcv, x20"
+        "ubfx x20, x4, #0, #1",
+        "cmp wzr, w20",
+        "and x4, x4, #0xfffffffffffffffe"
       ]
     },
     "btr ax, 15": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 4,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x8000",
-        "ubfx x20, x20, #15, #1",
-        "lsl x20, x20, #29",
-        "and w21, w4, #0xffff7fff",
-        "bfxil x4, x21, #0, #16",
-        "msr nzcv, x20"
+        "ubfx x20, x4, #15, #1",
+        "cmp wzr, w20",
+        "and w20, w4, #0xffff7fff",
+        "bfxil x4, x20, #0, #16"
       ]
     },
     "btr eax, 31": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x80000000",
-        "ubfx x20, x20, #31, #1",
-        "lsl x20, x20, #29",
-        "and w4, w4, #0x7fffffff",
-        "msr nzcv, x20"
+        "ubfx x20, x4, #31, #1",
+        "cmp wzr, w20",
+        "and w4, w4, #0x7fffffff"
       ]
     },
     "btr rax, 63": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "eor x20, x4, #0x8000000000000000",
-        "lsr x20, x20, #63",
-        "lsl x20, x20, #29",
-        "and x4, x4, #0x7fffffffffffffff",
-        "msr nzcv, x20"
+        "lsr x20, x4, #63",
+        "cmp wzr, w20",
+        "and x4, x4, #0x7fffffffffffffff"
       ]
     },
     "btr word [rax], 0": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "ldrb w20, [x4]",
@@ -459,12 +441,13 @@
         "strb w21, [x4]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "btr dword [rax], 0": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "ldrb w20, [x4]",
@@ -472,12 +455,13 @@
         "strb w21, [x4]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "btr qword [rax], 0": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "ldrb w20, [x4]",
@@ -485,12 +469,13 @@
         "strb w21, [x4]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "btr word [rax], 15": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "ldrb w20, [x4, #1]",
@@ -499,12 +484,13 @@
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "btr dword [rax], 31": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "ldrb w20, [x4, #3]",
@@ -513,12 +499,13 @@
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "btr qword [rax], 63": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "ldrb w20, [x4, #7]",
@@ -527,12 +514,13 @@
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "lock btr word [rax], 0": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -540,12 +528,13 @@
         "ldclralb w20, w20, [x21]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "lock btr dword [rax], 0": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -553,12 +542,13 @@
         "ldclralb w20, w20, [x21]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "lock btr qword [rax], 0": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -566,12 +556,13 @@
         "ldclralb w20, w20, [x21]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "lock btr word [rax], 15": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x80",
@@ -580,12 +571,13 @@
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "lock btr dword [rax], 31": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x80",
@@ -594,12 +586,13 @@
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "lock btr qword [rax], 63": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x80",
@@ -608,74 +601,69 @@
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "btc ax, 0": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": "GROUP8 0x0F 0xBA /7",
       "ExpectedArm64ASM": [
         "eor w20, w4, #0x1",
         "ubfx x21, x20, #0, #1",
-        "lsl x21, x21, #29",
-        "bfxil x4, x20, #0, #16",
-        "msr nzcv, x21"
+        "cmp w21, #0x1 (1)",
+        "bfxil x4, x20, #0, #16"
       ]
     },
     "btc eax, 0": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP8 0x0F 0xBA /7",
       "ExpectedArm64ASM": [
         "eor w4, w4, #0x1",
         "ubfx x20, x4, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "cmp w20, #0x1 (1)"
       ]
     },
     "btc rax, 0": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP8 0x0F 0xBA /7",
       "ExpectedArm64ASM": [
         "eor x4, x4, #0x1",
         "ubfx x20, x4, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "cmp w20, #0x1 (1)"
       ]
     },
     "btc ax, 15": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 4,
       "Comment": "GROUP8 0x0F 0xBA /7",
       "ExpectedArm64ASM": [
         "eor w20, w4, #0x8000",
         "ubfx x21, x20, #15, #1",
-        "lsl x21, x21, #29",
-        "bfxil x4, x20, #0, #16",
-        "msr nzcv, x21"
+        "cmp w21, #0x1 (1)",
+        "bfxil x4, x20, #0, #16"
       ]
     },
     "btc eax, 31": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP8 0x0F 0xBA /7",
       "ExpectedArm64ASM": [
         "eor w4, w4, #0x80000000",
         "ubfx x20, x4, #31, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "cmp w20, #0x1 (1)"
       ]
     },
     "btc rax, 63": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP8 0x0F 0xBA /7",
       "ExpectedArm64ASM": [
         "eor x4, x4, #0x8000000000000000",
         "lsr x20, x4, #63",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "cmp w20, #0x1 (1)"
       ]
     },
     "btc word [rax], 0": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "ldrb w20, [x4]",
@@ -683,12 +671,13 @@
         "strb w21, [x4]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "btc dword [rax], 0": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "ldrb w20, [x4]",
@@ -696,12 +685,13 @@
         "strb w21, [x4]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "btc qword [rax], 0": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "ldrb w20, [x4]",
@@ -709,12 +699,13 @@
         "strb w21, [x4]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "btc word [rax], 15": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "ldrb w20, [x4, #1]",
@@ -723,12 +714,13 @@
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "btc dword [rax], 31": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "ldrb w20, [x4, #3]",
@@ -737,12 +729,13 @@
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "btc qword [rax], 63": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "ldrb w20, [x4, #7]",
@@ -751,12 +744,13 @@
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "lock btc word [rax], 0": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -764,12 +758,13 @@
         "ldeoralb w20, w20, [x21]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "lock btc dword [rax], 0": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -777,12 +772,13 @@
         "ldeoralb w20, w20, [x21]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "lock btc qword [rax], 0": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -790,12 +786,13 @@
         "ldeoralb w20, w20, [x21]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "lock btc word [rax], 15": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x80",
@@ -804,12 +801,13 @@
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "lock btc dword [rax], 31": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x80",
@@ -818,12 +816,13 @@
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "lock btc qword [rax], 63": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x80",
@@ -832,8 +831,9 @@
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
-        "lsl x20, x20, #29",
-        "msr nzcv, x20"
+        "mrs x21, nzcv",
+        "bfi w21, w20, #29, #1",
+        "msr nzcv, x21"
       ]
     },
     "cmpxchg8b [rbp]": {
@@ -871,7 +871,7 @@
       ]
     },
     "rdrand ax": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP9 0x0F 0xC7 /6",
       "ExpectedArm64ASM": [
         "mrs x20, rndr",
@@ -879,12 +879,14 @@
         "mov w26, #0x1",
         "mov w27, #0x0",
         "cset w20, eq",
-        "lsl x20, x20, #29",
+        "mov w0, w27",
+        "bfi w0, w20, #29, #1",
+        "mov w20, w0",
         "msr nzcv, x20"
       ]
     },
     "rdrand eax": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP9 0x0F 0xC7 /6",
       "ExpectedArm64ASM": [
         "mrs x20, rndr",
@@ -892,24 +894,28 @@
         "mov w26, #0x1",
         "mov w27, #0x0",
         "cset w20, eq",
-        "lsl x20, x20, #29",
+        "mov w0, w27",
+        "bfi w0, w20, #29, #1",
+        "mov w20, w0",
         "msr nzcv, x20"
       ]
     },
     "rdrand rax": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP9 0x0F 0xC7 /6",
       "ExpectedArm64ASM": [
         "mrs x4, rndr",
         "mov w26, #0x1",
         "mov w27, #0x0",
         "cset w20, eq",
-        "lsl x20, x20, #29",
+        "mov w0, w27",
+        "bfi w0, w20, #29, #1",
+        "mov w20, w0",
         "msr nzcv, x20"
       ]
     },
     "rdseed ax": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP9 0x0F 0xC7 /7",
       "ExpectedArm64ASM": [
         "mrs x20, rndrrs",
@@ -917,12 +923,14 @@
         "mov w26, #0x1",
         "mov w27, #0x0",
         "cset w20, eq",
-        "lsl x20, x20, #29",
+        "mov w0, w27",
+        "bfi w0, w20, #29, #1",
+        "mov w20, w0",
         "msr nzcv, x20"
       ]
     },
     "rdseed eax": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP9 0x0F 0xC7 /7",
       "ExpectedArm64ASM": [
         "mrs x20, rndrrs",
@@ -930,19 +938,23 @@
         "mov w26, #0x1",
         "mov w27, #0x0",
         "cset w20, eq",
-        "lsl x20, x20, #29",
+        "mov w0, w27",
+        "bfi w0, w20, #29, #1",
+        "mov w20, w0",
         "msr nzcv, x20"
       ]
     },
     "rdseed rax": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP9 0x0F 0xC7 /7",
       "ExpectedArm64ASM": [
         "mrs x4, rndrrs",
         "mov w26, #0x1",
         "mov w27, #0x0",
         "cset w20, eq",
-        "lsl x20, x20, #29",
+        "mov w0, w27",
+        "bfi w0, w20, #29, #1",
+        "mov w20, w0",
         "msr nzcv, x20"
       ]
     },

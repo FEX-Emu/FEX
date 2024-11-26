@@ -561,8 +561,8 @@
       "ExpectedArm64ASM": [
         "and x20, x6, #0xf",
         "lsr w20, w4, w20",
-        "eor x20, x20, #0x1",
-        "rmif x20, #63, #nzCv"
+        "ubfx x20, x20, #0, #1",
+        "cmp wzr, w20"
       ]
     },
     "bt [rax], bx": {
@@ -582,8 +582,8 @@
       "Comment": "0x0f 0xa3",
       "ExpectedArm64ASM": [
         "lsr w20, w4, w6",
-        "eor x20, x20, #0x1",
-        "rmif x20, #63, #nzCv"
+        "ubfx x20, x20, #0, #1",
+        "cmp wzr, w20"
       ]
     },
     "bt [rax], ebx": {
@@ -603,8 +603,8 @@
       "Comment": "0x0f 0xa3",
       "ExpectedArm64ASM": [
         "lsr x20, x4, x6",
-        "eor x20, x20, #0x1",
-        "rmif x20, #63, #nzCv"
+        "ubfx x20, x20, #0, #1",
+        "cmp wzr, w20"
       ]
     },
     "bt [rax], rbx": {
@@ -855,8 +855,8 @@
       "ExpectedArm64ASM": [
         "and x20, x6, #0xf",
         "lsr w21, w4, w20",
-        "eor x21, x21, #0x1",
-        "rmif x21, #63, #nzCv",
+        "ubfx x21, x21, #0, #1",
+        "cmp wzr, w21",
         "mov w21, #0x1",
         "lsl w20, w21, w20",
         "orr w20, w4, w20",
@@ -884,8 +884,8 @@
       "Comment": "0x0f 0xab",
       "ExpectedArm64ASM": [
         "lsr w20, w4, w6",
-        "eor x20, x20, #0x1",
-        "rmif x20, #63, #nzCv",
+        "ubfx x20, x20, #0, #1",
+        "cmp wzr, w20",
         "mov w20, #0x1",
         "lsl w20, w20, w6",
         "orr w4, w4, w20"
@@ -912,8 +912,8 @@
       "Comment": "0x0f 0xab",
       "ExpectedArm64ASM": [
         "lsr x20, x4, x6",
-        "eor x20, x20, #0x1",
-        "rmif x20, #63, #nzCv",
+        "ubfx x20, x20, #0, #1",
+        "cmp wzr, w20",
         "mov w20, #0x1",
         "lsl x20, x20, x6",
         "orr x4, x4, x20"
@@ -1180,8 +1180,8 @@
       "ExpectedArm64ASM": [
         "and x20, x6, #0xf",
         "lsr w21, w4, w20",
-        "eor x21, x21, #0x1",
-        "rmif x21, #63, #nzCv",
+        "ubfx x21, x21, #0, #1",
+        "cmp wzr, w21",
         "mov w21, #0x1",
         "lsl w20, w21, w20",
         "bic w20, w4, w20",
@@ -1209,8 +1209,8 @@
       "Comment": "0x0f 0xb3",
       "ExpectedArm64ASM": [
         "lsr w20, w4, w6",
-        "eor x20, x20, #0x1",
-        "rmif x20, #63, #nzCv",
+        "ubfx x20, x20, #0, #1",
+        "cmp wzr, w20",
         "mov w20, #0x1",
         "lsl w20, w20, w6",
         "bic w4, w4, w20"
@@ -1237,8 +1237,8 @@
       "Comment": "0x0f 0xb3",
       "ExpectedArm64ASM": [
         "lsr x20, x4, x6",
-        "eor x20, x20, #0x1",
-        "rmif x20, #63, #nzCv",
+        "ubfx x20, x20, #0, #1",
+        "cmp wzr, w20",
         "mov w20, #0x1",
         "lsl x20, x20, x6",
         "bic x4, x4, x20"

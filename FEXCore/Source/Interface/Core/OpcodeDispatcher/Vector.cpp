@@ -3924,9 +3924,6 @@ void OpDispatchBuilder::AVXVectorVariableBlend(OpcodeArgs, IR::OpSize ElementSiz
 }
 
 void OpDispatchBuilder::PTestOpImpl(OpSize Size, Ref Dest, Ref Src) {
-  // Invalidate deferred flags early
-  InvalidateDeferredFlags();
-
   Ref Test1 = _VAnd(Size, OpSize::i8Bit, Dest, Src);
   Ref Test2 = _VAndn(Size, OpSize::i8Bit, Src, Dest);
 
@@ -3959,8 +3956,6 @@ void OpDispatchBuilder::PTestOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::VTESTOpImpl(OpSize SrcSize, IR::OpSize ElementSize, Ref Src1, Ref Src2) {
-  InvalidateDeferredFlags();
-
   const auto ElementSizeInBits = IR::OpSizeAsBits(ElementSize);
   const auto MaskConstant = uint64_t {1} << (ElementSizeInBits - 1);
 
@@ -4835,10 +4830,6 @@ template void OpDispatchBuilder::VPERMILRegOp<OpSize::i64Bit>(OpcodeArgs);
 void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask) {
   const uint16_t Control = Op->Src[1].Literal();
 
-  // SSE4.2 string instructions modify flags, so invalidate
-  // any previously deferred flags.
-  InvalidateDeferredFlags();
-
   // NOTE: Unlike most other SSE/AVX instructions, the SSE4.2 string and text
   //       instructions do *not* require memory operands to be aligned on a 16 byte
   //       boundary (see "Other Exceptions" descriptions for the relevant
@@ -4915,7 +4906,6 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
   // Set all of the necessary flags. NZCV stored in bits 28...31 like the hw op.
   SetNZCV(IntermediateResult);
   CFInverted = false;
-  PossiblySetNZCVBits = ~0;
   ZeroPF_AF();
 }
 

@@ -634,10 +634,7 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs, IR::OpSize Width, bool Integer, OpDisp
     SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(HostFlag_Unordered);
     SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(HostFlag_ZF);
   } else {
-    // Invalidate deferred flags early
     // OF, SF, AF, PF all undefined
-    InvalidateDeferredFlags();
-
     SetCFDirect(HostFlag_CF);
     SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(HostFlag_ZF);
 

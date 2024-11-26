@@ -2226,8 +2226,6 @@ void OpDispatchBuilder::AVX128_VPERM2(OpcodeArgs) {
 
 template<IR::OpSize ElementSize>
 void OpDispatchBuilder::AVX128_VTESTP(OpcodeArgs) {
-  InvalidateDeferredFlags();
-
   const auto Size = GetSrcSize(Op);
   const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
 
@@ -2296,9 +2294,6 @@ void OpDispatchBuilder::AVX128_VTESTP(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AVX128_PTest(OpcodeArgs) {
-  // Invalidate deferred flags early
-  InvalidateDeferredFlags();
-
   const auto Size = GetSrcSize(Op);
   const auto Is128Bit = Size == Core::CPUState::XMM_SSE_REG_SIZE;
 
