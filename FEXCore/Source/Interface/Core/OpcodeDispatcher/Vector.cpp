@@ -4915,7 +4915,6 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
   // Set all of the necessary flags. NZCV stored in bits 28...31 like the hw op.
   SetNZCV(IntermediateResult);
   CFInverted = false;
-  PossiblySetNZCVBits = ~0;
   ZeroPF_AF();
 }
 

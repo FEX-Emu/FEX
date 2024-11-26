@@ -4874,7 +4874,7 @@ void OpDispatchBuilder::RDRANDOp(OpcodeArgs) {
     SetCFInverted(CF_inv);
   } else {
     // Accelerated path. Invalid is 0 or 1, so set NZCV with a single rmif.
-    HandleNZCVWrite(1u << 29 /* C */);
+    HandleNZCVWrite();
     _RmifNZCV(CF_inv, (64 - 1) /* rotate bit 0 into bit 1 = C */, 0xf);
     CFInverted = true;
   }
