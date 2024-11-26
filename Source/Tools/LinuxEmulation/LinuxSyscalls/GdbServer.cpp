@@ -282,28 +282,29 @@ struct FEX_PACKED GDBContextDefinition {
   uint32_t mxcsr;
 };
 
+const FEX::HLE::ThreadStateObject* GdbServer::FindThreadByTID(uint32_t TID) {
+  auto Threads = SyscallHandler->TM.GetThreads();
+
+  for (auto& Thread : *Threads) {
+    if (Thread->ThreadInfo.TID != TID) {
+      continue;
+    }
+
+    return Thread;
+  }
+
+  // Return parent thread if TID isn't found.
+  return Threads->at(0);
+}
+
 fextl::string GdbServer::readRegs() {
   GDBContextDefinition GDB {};
   FEXCore::Core::CPUState state {};
 
-  auto Threads = SyscallHandler->TM.GetThreads();
-  FEX::HLE::ThreadStateObject* CurrentThread {Threads->at(0)};
-  bool Found = false;
+  const FEX::HLE::ThreadStateObject* CurrentThread = FindThreadByTID(CurrentDebuggingThread);
 
-  for (auto& Thread : *Threads) {
-    if (Thread->ThreadInfo.TID != CurrentDebuggingThread) {
-      continue;
-    }
-    memcpy(&state, Thread->Thread->CurrentFrame, sizeof(state));
-    CurrentThread = Thread;
-    Found = true;
-    break;
-  }
-
-  if (!Found) {
-    // If set to an invalid thread then just get the parent thread ID
-    memcpy(&state, CurrentThread->Thread->CurrentFrame, sizeof(state));
-  }
+  // Copy the thread state.
+  memcpy(&state, CurrentThread->Thread->CurrentFrame, sizeof(state));
 
   // Encode the GDB context definition
   memcpy(&GDB.gregs[0], &state.gregs[0], sizeof(GDB.gregs));
@@ -751,25 +752,10 @@ GdbServer::HandledPacketType GdbServer::CommandReadReg(const fextl::string& pack
 
   FEXCore::Core::CPUState state {};
 
-  auto Threads = SyscallHandler->TM.GetThreads();
-  FEX::HLE::ThreadStateObject* CurrentThread {Threads->at(0)};
-  bool Found = false;
+  const FEX::HLE::ThreadStateObject* CurrentThread = FindThreadByTID(CurrentDebuggingThread);
 
-  for (auto& Thread : *Threads) {
-    if (Thread->ThreadInfo.TID != CurrentDebuggingThread) {
-      continue;
-    }
-    memcpy(&state, Thread->Thread->CurrentFrame, sizeof(state));
-    CurrentThread = Thread;
-    Found = true;
-    break;
-  }
-
-  if (!Found) {
-    // If set to an invalid thread then just get the parent thread ID
-    memcpy(&state, CurrentThread->Thread->CurrentFrame, sizeof(state));
-  }
-
+  // Copy the thread state.
+  memcpy(&state, CurrentThread->Thread->CurrentFrame, sizeof(state));
 
   if (addr >= offsetof(GDBContextDefinition, gregs[0]) && addr < offsetof(GDBContextDefinition, gregs[16])) {
     return {encodeHex((unsigned char*)(&state.gregs[addr / sizeof(uint64_t)]), sizeof(uint64_t)), HandledPacketType::TYPE_ACK};

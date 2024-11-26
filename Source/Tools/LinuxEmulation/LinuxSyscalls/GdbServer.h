@@ -114,6 +114,12 @@ private:
   HandledPacketType CommandBreakpoint(const fextl::string& packet);
   HandledPacketType CommandUnknown(const fextl::string& packet);
 
+  /**
+   * @brief Returns the ThreadStateObject for the matching TID, or parent thread if TID isn't found
+   *
+   * @param TID Which TID to search for
+   */
+  const FEX::HLE::ThreadStateObject* FindThreadByTID(uint32_t TID);
   fextl::string readRegs();
 
   FEXCore::Context::Context* CTX;
