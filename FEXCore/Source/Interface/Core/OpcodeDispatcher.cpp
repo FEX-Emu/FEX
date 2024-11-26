@@ -2416,7 +2416,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
         Value = _Lshr(IR::SizeToOpSize(LshrSize), Value, BitSelect);
       }
 
-      SetCFDirect(Value, ConstantShift, true);
+      SetCFDirect_InvalidateNZV(Value, ConstantShift, Value);
     }
 
     switch (Action) {
