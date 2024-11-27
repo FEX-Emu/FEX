@@ -412,10 +412,13 @@ configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/include/Config.h.in
   ${CMAKE_BINARY_DIR}/generated/ConfigDefines.h)
 
+include(CTest)
 if (BUILD_TESTS)
-  include(CTest)
-  enable_testing()
   message(STATUS "Unit tests are enabled")
+  if (NOT BUILD_TESTING)
+    # CMake checks this variable before generating CTestTestfile.cmake
+    message(SEND_ERROR "Unit tests require BUILD_TESTING to be enabled")
+  endif()
 
   set (TEST_JOB_COUNT "" CACHE STRING "Override number of parallel jobs to use while running tests")
   if (TEST_JOB_COUNT)
