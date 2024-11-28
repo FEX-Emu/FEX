@@ -9,6 +9,10 @@
 #include <optional>
 #include <sys/types.h>
 
+namespace FEXCore::Core {
+struct InternalThreadState;
+}
+
 namespace FEXCore::Allocator {
 FEX_DEFAULT_VISIBILITY void SetupHooks();
 FEX_DEFAULT_VISIBILITY void ClearHooks();
@@ -83,4 +87,9 @@ FEX_DEFAULT_VISIBILITY void ReclaimMemoryRegion(const fextl::vector<MemoryRegion
 // Use this to reserve the top 128TB of VA so the guest never see it
 // Returns nullptr on host VA < 48bits
 FEX_DEFAULT_VISIBILITY fextl::vector<MemoryRegion> Steal48BitVA();
+
+#ifndef _WIN32
+FEX_DEFAULT_VISIBILITY void RegisterTLSData(FEXCore::Core::InternalThreadState* Thread);
+FEX_DEFAULT_VISIBILITY void UninstallTLSData(FEXCore::Core::InternalThreadState* Thread);
+#endif
 } // namespace FEXCore::Allocator

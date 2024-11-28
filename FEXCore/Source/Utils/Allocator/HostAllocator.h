@@ -48,7 +48,5 @@ public:
 } // namespace Alloc
 
 namespace Alloc::OSAllocator {
-void RegisterTLSData(FEXCore::Core::InternalThreadState* Thread);
-void UninstallTLSData(FEXCore::Core::InternalThreadState* Thread);
 fextl::unique_ptr<Alloc::HostAllocator> Create64BitAllocator();
 } // namespace Alloc::OSAllocator
