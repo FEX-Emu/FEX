@@ -170,7 +170,6 @@ void ThreadManager::Stop(bool IgnoreCurrentThread) {
       // If the thread is waiting to start but immediately killed then there can be a hang
       // This occurs in the case of gdb attach with immediate kill
       if (Thread->Thread->RunningEvents.WaitingToStart.load()) {
-        Thread->Thread->RunningEvents.EarlyExit = true;
         Thread->Thread->StartRunning.NotifyAll();
       }
     }

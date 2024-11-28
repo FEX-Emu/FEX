@@ -83,7 +83,6 @@ struct InternalThreadState : public FEXCore::Allocator::FEXAllocOperators {
   struct {
     std::atomic_bool Running {false};
     std::atomic_bool WaitingToStart {true};
-    std::atomic_bool EarlyExit {false};
     std::atomic_bool ThreadSleeping {false};
   } RunningEvents;
 
