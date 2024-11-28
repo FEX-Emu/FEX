@@ -62,7 +62,11 @@ void ThreadManager::HandleThreadDeletion(FEX::HLE::ThreadStateObject* Thread, bo
     }
   }
 
-  CTX->DestroyThread(Thread->Thread, NeedsTLSUninstall);
+  if (NeedsTLSUninstall) {
+    FEXCore::Allocator::UninstallTLSData(Thread->Thread);
+  }
+
+  CTX->DestroyThread(Thread->Thread);
   FEX::HLE::_SyscallHandler->SeccompEmulator.FreeSeccompFilters(Thread);
 
   delete Thread;

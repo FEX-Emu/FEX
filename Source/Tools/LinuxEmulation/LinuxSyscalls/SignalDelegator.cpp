@@ -956,6 +956,8 @@ SignalDelegator::~SignalDelegator() {
 }
 
 void SignalDelegator::RegisterTLSState(FEX::HLE::ThreadStateObject* Thread) {
+  FEXCore::Allocator::RegisterTLSData(Thread->Thread);
+
   Thread->SignalInfo.Delegator = this;
 
   // Set up our signal alternative stack
@@ -999,6 +1001,8 @@ void SignalDelegator::UninstallTLSState(FEX::HLE::ThreadStateObject* Thread) {
   if (Result == -1) {
     LogMan::Msg::EFmt("Failed to uninstall alternative signal stack {}", strerror(errno));
   }
+
+  FEXCore::Allocator::UninstallTLSData(Thread->Thread);
 }
 
 void SignalDelegator::FrontendRegisterHostSignalHandler(int Signal, bool Required) {

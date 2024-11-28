@@ -124,7 +124,6 @@ public:
    *    - ExecutionThread(Thread); // Starts executing without creating another host thread
    *  Thunk callback executing guest code from native host thread
    *    - Thread = CreateThread(0, 0, NewState, PPID);
-   *    - InitializeThreadTLSData(Thread);
    *    - HandleCallback(Thread, RIP);
    */
 
@@ -139,7 +138,7 @@ public:
    *
    * @param Thread The internal FEX thread state object
    */
-  void DestroyThread(FEXCore::Core::InternalThreadState* Thread, bool NeedsTLSUninstall) override;
+  void DestroyThread(FEXCore::Core::InternalThreadState* Thread) override;
 
 #ifndef _WIN32
   void LockBeforeFork(FEXCore::Core::InternalThreadState* Thread) override;
@@ -303,13 +302,6 @@ public:
   uintptr_t CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_t GuestRIP, uint64_t MaxInst = 0);
 
   // Used for thread creation from syscalls
-  /**
-   * @brief Initializes TID, PID and TLS data for a thread
-   *
-   * @param Thread The internal FEX thread state object
-   */
-  void InitializeThreadTLSData(FEXCore::Core::InternalThreadState* Thread);
-
   void CopyMemoryMapping(FEXCore::Core::InternalThreadState* ParentThread, FEXCore::Core::InternalThreadState* ChildThread);
 
   uint8_t GetGPRSize() const {

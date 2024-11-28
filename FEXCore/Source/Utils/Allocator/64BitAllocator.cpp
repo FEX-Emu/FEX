@@ -32,14 +32,6 @@ namespace Alloc::OSAllocator {
 
 thread_local FEXCore::Core::InternalThreadState* TLSThread {};
 
-void RegisterTLSData(FEXCore::Core::InternalThreadState* Thread) {
-  TLSThread = Thread;
-}
-
-void UninstallTLSData(FEXCore::Core::InternalThreadState* Thread) {
-  TLSThread = nullptr;
-}
-
 class OSAllocator_64Bit final : public Alloc::HostAllocator {
 public:
   OSAllocator_64Bit();
@@ -585,3 +577,13 @@ fextl::unique_ptr<Alloc::HostAllocator> Create64BitAllocator() {
   return fextl::make_unique<OSAllocator_64Bit>();
 }
 } // namespace Alloc::OSAllocator
+
+namespace FEXCore::Allocator {
+void RegisterTLSData(FEXCore::Core::InternalThreadState* Thread) {
+  Alloc::OSAllocator::TLSThread = Thread;
+}
+
+void UninstallTLSData(FEXCore::Core::InternalThreadState* Thread) {
+  Alloc::OSAllocator::TLSThread = nullptr;
+}
+} // namespace FEXCore::Allocator

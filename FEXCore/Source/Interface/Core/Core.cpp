@@ -382,14 +382,6 @@ void ContextImpl::ExecuteThread(FEXCore::Core::InternalThreadState* Thread) {
   Dispatcher->ExecuteDispatch(Thread->CurrentFrame);
 }
 
-
-void ContextImpl::InitializeThreadTLSData(FEXCore::Core::InternalThreadState* Thread) {
-  // Let's do some initial bookkeeping here
-#ifndef _WIN32
-  Alloc::OSAllocator::RegisterTLSData(Thread);
-#endif
-}
-
 void ContextImpl::InitializeCompiler(FEXCore::Core::InternalThreadState* Thread) {
   Thread->OpDispatcher = fextl::make_unique<FEXCore::IR::OpDispatchBuilder>(this);
   Thread->OpDispatcher->SetMultiblock(Config.Multiblock);
@@ -443,13 +435,7 @@ ContextImpl::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, const FEXC
   return Thread;
 }
 
-void ContextImpl::DestroyThread(FEXCore::Core::InternalThreadState* Thread, bool NeedsTLSUninstall) {
-  if (NeedsTLSUninstall) {
-#ifndef _WIN32
-    Alloc::OSAllocator::UninstallTLSData(Thread);
-#endif
-  }
-
+void ContextImpl::DestroyThread(FEXCore::Core::InternalThreadState* Thread) {
   FEXCore::Allocator::VirtualProtect(&Thread->InterruptFaultPage, sizeof(Thread->InterruptFaultPage),
                                      Allocator::ProtectOptions::Read | Allocator::ProtectOptions::Write);
   delete Thread;
@@ -889,8 +875,6 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
 void ContextImpl::ExecutionThread(FEXCore::Core::InternalThreadState* Thread) {
   Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_WAITING;
 
-  InitializeThreadTLSData(Thread);
-
   // Now notify the thread that we are initialized
   Thread->ThreadWaiting.NotifyAll();
 
@@ -919,10 +903,6 @@ void ContextImpl::ExecutionThread(FEXCore::Core::InternalThreadState* Thread) {
 
   // If it is the parent thread that died then just leave
   FEX_TODO("This doesn't make sense when the parent thread doesn't outlive its children");
-
-#ifndef _WIN32
-  Alloc::OSAllocator::UninstallTLSData(Thread);
-#endif
 }
 
 static void InvalidateGuestThreadCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) {
