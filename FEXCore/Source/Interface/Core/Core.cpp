@@ -899,17 +899,15 @@ void ContextImpl::ExecutionThread(FEXCore::Core::InternalThreadState* Thread) {
     Thread->StartRunning.Wait();
   }
 
-  if (!Thread->RunningEvents.EarlyExit.load()) {
-    Thread->RunningEvents.WaitingToStart = false;
+  Thread->RunningEvents.WaitingToStart = false;
 
-    Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_NONE;
+  Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_NONE;
 
-    Thread->RunningEvents.Running = true;
+  Thread->RunningEvents.Running = true;
 
-    static_cast<ContextImpl*>(Thread->CTX)->Dispatcher->ExecuteDispatch(Thread->CurrentFrame);
+  static_cast<ContextImpl*>(Thread->CTX)->Dispatcher->ExecuteDispatch(Thread->CurrentFrame);
 
-    Thread->RunningEvents.Running = false;
-  }
+  Thread->RunningEvents.Running = false;
 
   {
     // Ensure the Code Object Serialization service has fully serialized this thread's data before clearing the cache
