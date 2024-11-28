@@ -95,10 +95,6 @@ public:
 
 protected:
 
-  void ResetBuffer() {
-    CurrentOffset = BufferBase;
-  }
-
   uint8_t* BufferBase;
   uint8_t* CurrentOffset;
   uint64_t Size;
