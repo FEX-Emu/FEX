@@ -392,6 +392,7 @@ bool SignalDelegator::HandleDispatcherGuestSignal(FEXCore::Core::InternalThreadS
 bool SignalDelegator::HandleSIGILL(FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext) {
   if (ArchHelpers::Context::GetPc(ucontext) == Config.SignalHandlerReturnAddress ||
       ArchHelpers::Context::GetPc(ucontext) == Config.SignalHandlerReturnAddressRT) {
+    auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread);
     RestoreThreadState(Thread, ucontext,
                        ArchHelpers::Context::GetPc(ucontext) == Config.SignalHandlerReturnAddressRT ? RestoreType::TYPE_REALTIME :
                                                                                                       RestoreType::TYPE_NONREALTIME);
@@ -400,7 +401,7 @@ bool SignalDelegator::HandleSIGILL(FEXCore::Core::InternalThreadState* Thread, i
     // We use this to track if it is safe to clear cache
     --Thread->CurrentFrame->SignalHandlerRefCounter;
 
-    if (Thread->DeferredSignalFrames.size() != 0) {
+    if (ThreadObject->SignalInfo.DeferredSignalFrames.size() != 0) {
       // If we have more deferred frames to process then mprotect back to PROT_NONE.
       // It will have been RW coming in to this sigreturn and now we need to remove permissions
       // to ensure FEX trampolines back to the SIGSEGV deferred handler.
@@ -548,16 +549,16 @@ void SignalDelegator::HandleGuestSignal(FEX::HLE::ThreadStateObject* ThreadObjec
 
         mprotect(reinterpret_cast<void*>(&Thread->InterruptFaultPage), sizeof(Thread->InterruptFaultPage), PROT_READ | PROT_WRITE);
 
-        if (Thread->DeferredSignalFrames.empty()) {
+        if (ThreadObject->SignalInfo.DeferredSignalFrames.empty()) {
           // No signals to defer. Just set the fault page back to RW and continue execution.
           // This occurs as a minor race condition between the refcount decrement and the access to the fault page.
           return;
         }
 
-        const auto& Top = Thread->DeferredSignalFrames.back();
+        const auto& Top = ThreadObject->SignalInfo.DeferredSignalFrames.back();
         Signal = Top.Signal;
         SigInfo = Top.Info;
-        Thread->DeferredSignalFrames.pop_back();
+        ThreadObject->SignalInfo.DeferredSignalFrames.pop_back();
 
         // Until we re-protect the page to PROT_NONE, FEX will now *permanently* defer signals and /not/ check them.
         //
@@ -596,10 +597,11 @@ void SignalDelegator::HandleGuestSignal(FEX::HLE::ThreadStateObject* ThreadObjec
       if (IsAsyncSignal(&SigInfo, Signal) && MustDeferSignal) {
         // If the signal is asynchronous (as determined by si_code) and FEX is in a state of needing
         // to defer the signal, then add the signal to the thread's signal queue.
-        LOGMAN_THROW_A_FMT(Thread->DeferredSignalFrames.size() != Thread->DeferredSignalFrames.capacity(), "Deferred signals vector hit "
-                                                                                                           "capacity size. This will "
-                                                                                                           "likely crash! Asserting now!");
-        Thread->DeferredSignalFrames.emplace_back(FEXCore::Core::InternalThreadState::DeferredSignalState {
+        LOGMAN_THROW_A_FMT(ThreadObject->SignalInfo.DeferredSignalFrames.size() != ThreadObject->SignalInfo.DeferredSignalFrames.capacity(),
+                           "Deferred signals vector hit "
+                           "capacity size. This will "
+                           "likely crash! Asserting now!");
+        ThreadObject->SignalInfo.DeferredSignalFrames.emplace_back(ThreadStateObject::DeferredSignalState {
           .Info = SigInfo,
           .Signal = Signal,
         });
@@ -982,7 +984,7 @@ void SignalDelegator::RegisterTLSState(FEX::HLE::ThreadStateObject* Thread) {
   if (Thread->Thread) {
     // Reserve a small amount of deferred signal frames. Usually the stack won't be utilized beyond
     // 1 or 2 signals but add a few more just in case.
-    Thread->Thread->DeferredSignalFrames.reserve(8);
+    Thread->SignalInfo.DeferredSignalFrames.reserve(8);
   }
 }
 

@@ -110,17 +110,6 @@ struct InternalThreadState : public FEXCore::Allocator::FEXAllocOperators {
 
   std::shared_mutex ObjectCacheRefCounter {};
 
-  struct DeferredSignalState {
-#ifndef _WIN32
-    siginfo_t Info;
-#endif
-    int Signal;
-  };
-
-  // Queue of thread local signal frames that have been deferred.
-  // Async signals aren't guaranteed to be delivered in any particular order, but FEX treats them as FILO.
-  fextl::vector<DeferredSignalState> DeferredSignalFrames;
-
   ///< Data pointer for exclusive use by the frontend
   void* FrontendPtr;
 

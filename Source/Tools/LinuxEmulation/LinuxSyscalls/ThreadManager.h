@@ -23,6 +23,11 @@ class SyscallHandler;
 class SignalDelegator;
 
 struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
+  struct DeferredSignalState {
+    siginfo_t Info;
+    int Signal;
+  };
+
   FEXCore::Core::InternalThreadState* Thread;
 
   struct {
@@ -50,6 +55,9 @@ struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
 
     uint64_t PendingSignals {};
 
+    // Queue of thread local signal frames that have been deferred.
+    // Async signals aren't guaranteed to be delivered in any particular order, but FEX treats them as FILO.
+    fextl::vector<DeferredSignalState> DeferredSignalFrames;
   } SignalInfo {};
 
   // Seccomp thread specific data.
