@@ -47,18 +47,24 @@ namespace FEX::HLE {
 struct ExecutionThreadHandler {
   FEXCore::Context::Context* CTX;
   FEX::HLE::ThreadStateObject* Thread;
+  Event* ThreadWaiting;
 };
 
 static void* ThreadHandler(void* Data) {
   ExecutionThreadHandler* Handler = reinterpret_cast<ExecutionThreadHandler*>(Data);
   auto CTX = Handler->CTX;
   auto Thread = Handler->Thread;
+  auto ThreadWaiting = Handler->ThreadWaiting;
   FEXCore::Allocator::free(Handler);
 
   Thread->ThreadInfo.PID = ::getpid();
   Thread->ThreadInfo.TID = FHU::Syscalls::gettid();
 
   FEX::HLE::_SyscallHandler->RegisterTLSState(Thread);
+
+  // Now notify the thread that we are initialized
+  ThreadWaiting->NotifyOne();
+
   CTX->ExecutionThread(Thread->Thread);
   FEX::HLE::_SyscallHandler->UninstallTLSState(Thread);
   FEX::HLE::_SyscallHandler->TM.DestroyThread(Thread);
@@ -96,13 +102,15 @@ FEX::HLE::ThreadStateObject* CreateNewThread(FEXCore::Context::Context* CTX, FEX
   NewThread->Thread->StartPaused = true;
 
   // Initialize a new thread for execution.
+  Event ThreadWaitingEvent {};
   ExecutionThreadHandler* Arg = reinterpret_cast<ExecutionThreadHandler*>(FEXCore::Allocator::malloc(sizeof(ExecutionThreadHandler)));
   Arg->CTX = CTX;
   Arg->Thread = NewThread;
+  Arg->ThreadWaiting = &ThreadWaitingEvent;
   NewThread->Thread->ExecutionThread = FEXCore::Threads::Thread::Create(ThreadHandler, Arg);
 
   // Wait for the thread to have started.
-  NewThread->Thread->ThreadWaiting.Wait();
+  ThreadWaitingEvent.Wait();
 
   if (FEX::HLE::_SyscallHandler->NeedXIDCheck()) {
     // The first time an application creates a thread, GLIBC installs their SETXID signal handler.
