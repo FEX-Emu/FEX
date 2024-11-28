@@ -25,8 +25,6 @@ public:
 
 class DummySignalDelegator final : public FEXCore::SignalDelegator, public FEXCore::Allocator::FEXAllocOperators {
 public:
-  void SignalThread(FEXCore::Core::InternalThreadState* Thread, FEXCore::Core::SignalEvent Event) override {}
-
   FEXCore::Core::InternalThreadState* GetBackingTLSThread() {
     return GetTLSThread();
   }

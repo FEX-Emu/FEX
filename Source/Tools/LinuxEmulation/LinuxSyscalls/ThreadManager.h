@@ -22,6 +22,14 @@ namespace FEX::HLE {
 class SyscallHandler;
 class SignalDelegator;
 
+enum class SignalEvent : uint32_t {
+  Nothing, // If the guest uses our signal we need to know it was errant on our end
+  Pause,
+  Stop,
+  Return,
+  ReturnRT,
+};
+
 struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
   FEXCore::Core::InternalThreadState* Thread;
 
@@ -58,6 +66,9 @@ struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
 
   // personality emulation.
   uint32_t persona {};
+
+  // Thread signaling information
+  std::atomic<SignalEvent> SignalReason {SignalEvent::Nothing};
 };
 
 class ThreadManager final {

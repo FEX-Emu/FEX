@@ -87,7 +87,6 @@ struct InternalThreadState : public FEXCore::Allocator::FEXAllocOperators {
   } RunningEvents;
 
   FEXCore::Context::Context* CTX;
-  std::atomic<SignalEvent> SignalReason {SignalEvent::Nothing};
 
   NonMovableUniquePtr<FEXCore::Threads::Thread> ExecutionThread;
   bool StartPaused {false};
