@@ -422,10 +422,11 @@ bool SignalDelegator::HandleSIGILL(FEXCore::Core::InternalThreadState* Thread, i
 }
 
 bool SignalDelegator::HandleSignalPause(FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext) {
-  FEXCore::Core::SignalEvent SignalReason = Thread->SignalReason.load();
+  auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread);
+  SignalEvent SignalReason = ThreadObject->SignalReason.load();
   auto Frame = Thread->CurrentFrame;
 
-  if (SignalReason == FEXCore::Core::SignalEvent::Pause) {
+  if (SignalReason == SignalEvent::Pause) {
     // Store our thread state so we can come back to this
     StoreThreadState(Thread, Signal, ucontext);
 
@@ -446,11 +447,11 @@ bool SignalDelegator::HandleSignalPause(FEXCore::Core::InternalThreadState* Thre
     // We use this to track if it is safe to clear cache
     ++Thread->CurrentFrame->SignalHandlerRefCounter;
 
-    Thread->SignalReason.store(FEXCore::Core::SignalEvent::Nothing);
+    ThreadObject->SignalReason.store(SignalEvent::Nothing);
     return true;
   }
 
-  if (SignalReason == FEXCore::Core::SignalEvent::Stop) {
+  if (SignalReason == SignalEvent::Stop) {
     // Our thread is stopping
     // We don't care about anything at this point
     // Set the stack to our starting location when we entered the core and get out safely
@@ -479,31 +480,30 @@ bool SignalDelegator::HandleSignalPause(FEXCore::Core::InternalThreadState* Thre
       FEX::HLE::_SyscallHandler->TM.IncrementIdleRefCount();
     }
 
-    Thread->SignalReason.store(FEXCore::Core::SignalEvent::Nothing);
+    ThreadObject->SignalReason.store(SignalEvent::Nothing);
     return true;
   }
 
-  if (SignalReason == FEXCore::Core::SignalEvent::Return || SignalReason == FEXCore::Core::SignalEvent::ReturnRT) {
-    RestoreThreadState(Thread, ucontext,
-                       SignalReason == FEXCore::Core::SignalEvent::ReturnRT ? RestoreType::TYPE_REALTIME : RestoreType::TYPE_NONREALTIME);
+  if (SignalReason == SignalEvent::Return || SignalReason == SignalEvent::ReturnRT) {
+    RestoreThreadState(Thread, ucontext, SignalReason == SignalEvent::ReturnRT ? RestoreType::TYPE_REALTIME : RestoreType::TYPE_NONREALTIME);
 
     // Ref count our faults
     // We use this to track if it is safe to clear cache
     --Thread->CurrentFrame->SignalHandlerRefCounter;
 
-    Thread->SignalReason.store(FEXCore::Core::SignalEvent::Nothing);
+    ThreadObject->SignalReason.store(SignalEvent::Nothing);
     return true;
   }
   return false;
 }
 
-void SignalDelegator::SignalThread(FEXCore::Core::InternalThreadState* Thread, FEXCore::Core::SignalEvent Event) {
-  auto ThreadObject = static_cast<const FEX::HLE::ThreadStateObject*>(Thread->FrontendPtr);
-  if (Event == FEXCore::Core::SignalEvent::Pause && Thread->RunningEvents.Running.load() == false) {
+void SignalDelegator::SignalThread(FEXCore::Core::InternalThreadState* Thread, SignalEvent Event) {
+  auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread);
+  if (Event == SignalEvent::Pause && Thread->RunningEvents.Running.load() == false) {
     // Skip signaling a thread if it is already paused.
     return;
   }
-  Thread->SignalReason.store(Event);
+  ThreadObject->SignalReason.store(Event);
   FHU::Syscalls::tgkill(ThreadObject->ThreadInfo.PID, ThreadObject->ThreadInfo.TID, SignalDelegator::SIGNAL_FOR_PAUSE);
 }
 

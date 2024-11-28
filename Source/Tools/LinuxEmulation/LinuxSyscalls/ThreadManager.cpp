@@ -42,7 +42,7 @@ void ThreadManager::DestroyThread(FEX::HLE::ThreadStateObject* Thread, bool Need
 
 void ThreadManager::StopThread(FEX::HLE::ThreadStateObject* Thread) {
   if (Thread->Thread->RunningEvents.Running.exchange(false)) {
-    SignalDelegation->SignalThread(Thread->Thread, FEXCore::Core::SignalEvent::Stop);
+    SignalDelegation->SignalThread(Thread->Thread, SignalEvent::Stop);
   }
 }
 
@@ -74,7 +74,7 @@ void ThreadManager::NotifyPause() {
   // Tell all the threads that they should pause
   std::lock_guard lk(ThreadCreationMutex);
   for (auto& Thread : Threads) {
-    SignalDelegation->SignalThread(Thread->Thread, FEXCore::Core::SignalEvent::Pause);
+    SignalDelegation->SignalThread(Thread->Thread, SignalEvent::Pause);
   }
 }
 
@@ -87,7 +87,7 @@ void ThreadManager::Run() {
   // Spin up all the threads
   std::lock_guard lk(ThreadCreationMutex);
   for (auto& Thread : Threads) {
-    Thread->Thread->SignalReason.store(FEXCore::Core::SignalEvent::Return);
+    Thread->SignalReason.store(SignalEvent::Return);
   }
 
   for (auto& Thread : Threads) {

@@ -124,7 +124,13 @@ public:
     FEX_UNREACHABLE;
   }
 
-  void SignalThread(FEXCore::Core::InternalThreadState* Thread, FEXCore::Core::SignalEvent Event) override;
+  /**
+   * @brief Signals a thread with a specific core event.
+   *
+   * @param Thread Which thread to signal.
+   * @param Event Which event to signal the event with.
+   */
+  void SignalThread(FEXCore::Core::InternalThreadState* Thread, SignalEvent Event);
 
   FEXCore::ArchHelpers::Arm64::UnalignedHandlerType GetUnalignedHandlerType() const {
     return UnalignedHandlerType;

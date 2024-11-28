@@ -15,14 +15,6 @@ namespace FEXCore {
 namespace Core {
   struct InternalThreadState;
 
-  enum class SignalEvent {
-    Nothing, // If the guest uses our signal we need to know it was errant on our end
-    Pause,
-    Stop,
-    Return,
-    ReturnRT,
-  };
-
   enum SignalNumber {
 #ifndef _WIN32
     FAULT_SIGSEGV = SIGSEGV,
@@ -77,14 +69,6 @@ public:
   const SignalDelegatorConfig& GetConfig() const {
     return Config;
   }
-
-  /**
-   * @brief Signals a thread with a specific core event.
-   *
-   * @param Thread Which thread to signal.
-   * @param Event Which event to signal the event with.
-   */
-  virtual void SignalThread(FEXCore::Core::InternalThreadState* Thread, Core::SignalEvent Event) = 0;
 
 protected:
   SignalDelegatorConfig Config;
