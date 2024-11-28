@@ -77,6 +77,8 @@ struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
 
   // Thread signaling information
   std::atomic<SignalEvent> SignalReason {SignalEvent::Nothing};
+
+  int StatusCode {};
 };
 
 class ThreadManager final {

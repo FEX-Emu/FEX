@@ -102,7 +102,6 @@ struct InternalThreadState : public FEXCore::Allocator::FEXAllocOperators {
   NonMovableUniquePtr<FEXCore::IR::PassManager> PassManager;
   NonMovableUniquePtr<JITSymbolBuffer> SymbolBuffer;
 
-  int StatusCode {};
   FEXCore::Context::ExitReason ExitReason {FEXCore::Context::ExitReason::EXIT_WAITING};
   std::shared_ptr<FEXCore::CompileService> CompileService;
 
