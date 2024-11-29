@@ -36,7 +36,7 @@ public:
   }
 
 private:
-  void Break(int signal);
+  void Break(FEXCore::Core::InternalThreadState* Thread, int signal);
 
   void OpenListenSocket();
   void CloseListenSocket();
@@ -70,18 +70,78 @@ private:
 
   void SendPacketPair(const HandledPacketType& packetPair);
   HandledPacketType ProcessPacket(const fextl::string& packet);
-  HandledPacketType handleQuery(const fextl::string& packet);
-  HandledPacketType handleXfer(const fextl::string& packet);
-  HandledPacketType handleMemory(const fextl::string& packet);
-  HandledPacketType handleV(const fextl::string& packet);
-  HandledPacketType handleThreadOp(const fextl::string& packet);
-  HandledPacketType handleBreakpoint(const fextl::string& packet);
   HandledPacketType handleProgramOffsets();
 
   HandledPacketType ThreadAction(char action, uint32_t tid);
 
-  fextl::string readRegs();
-  HandledPacketType readReg(const fextl::string& packet);
+  // Binary data transfer handlers
+  // XFer function to correctly encode any reply
+  static fextl::string EncodeXferString(const fextl::string& data, int offset, int length) {
+    if (offset == data.size()) {
+      return "l";
+    }
+    if (offset >= data.size()) {
+      return "E34"; // ERANGE
+    }
+    if ((data.size() - offset) > length) {
+      return "m" + data.substr(offset, length);
+    }
+    return "l" + data.substr(offset);
+  };
+
+  HandledPacketType XferCommandExecFile(const fextl::string& annex, int offset, int length);
+  HandledPacketType XferCommandFeatures(const fextl::string& annex, int offset, int length);
+  HandledPacketType XferCommandThreads(const fextl::string& annex, int offset, int length);
+  HandledPacketType XferCommandOSData(const fextl::string& annex, int offset, int length);
+  HandledPacketType XferCommandLibraries(const fextl::string& annex, int offset, int length);
+  HandledPacketType XferCommandAuxv(const fextl::string& annex, int offset, int length);
+  HandledPacketType handleXfer(const fextl::string& packet);
+
+  HandledPacketType HandlevFile(const fextl::string& packet);
+  HandledPacketType HandlevCont(const fextl::string& packet);
+
+  // Command handlers
+  HandledPacketType CommandEnableExtendedMode(const fextl::string& packet);
+  HandledPacketType CommandQueryHalted(const fextl::string& packet);
+  HandledPacketType CommandContinue(const fextl::string& packet);
+  HandledPacketType CommandDetach(const fextl::string& packet);
+  HandledPacketType CommandReadRegisters(const fextl::string& packet);
+  HandledPacketType CommandThreadOp(const fextl::string& packet);
+  HandledPacketType CommandKill(const fextl::string& packet);
+  HandledPacketType CommandMemory(const fextl::string& packet);
+  HandledPacketType CommandReadReg(const fextl::string& packet);
+  HandledPacketType CommandQuery(const fextl::string& packet);
+  HandledPacketType CommandSingleStep(const fextl::string& packet);
+  HandledPacketType CommandQueryThreadAlive(const fextl::string& packet);
+  HandledPacketType CommandMultiLetterV(const fextl::string& packet);
+  HandledPacketType CommandBreakpoint(const fextl::string& packet);
+  HandledPacketType CommandUnknown(const fextl::string& packet);
+
+  /**
+   * @brief Returns the ThreadStateObject for the matching TID, or parent thread if TID isn't found
+   *
+   * @param TID Which TID to search for
+   */
+  const FEX::HLE::ThreadStateObject* FindThreadByTID(uint32_t TID);
+
+  struct X80Float {
+    uint8_t Data[10];
+  };
+
+  struct FEX_PACKED GDBContextDefinition {
+    uint64_t gregs[FEXCore::Core::CPUState::NUM_GPRS];
+    uint64_t rip;
+    uint32_t eflags;
+    uint32_t cs, ss, ds, es, fs, gs;
+    X80Float mm[FEXCore::Core::CPUState::NUM_MMS];
+    uint32_t fctrl;
+    uint32_t fstat;
+    uint32_t dummies[6];
+    uint64_t xmm[FEXCore::Core::CPUState::NUM_XMMS][4];
+    uint32_t mxcsr;
+  };
+
+  GDBContextDefinition GenerateContextDefinition(const FEX::HLE::ThreadStateObject* ThreadObject);
 
   FEXCore::Context::Context* CTX;
   FEX::HLE::SyscallHandler* const SyscallHandler;

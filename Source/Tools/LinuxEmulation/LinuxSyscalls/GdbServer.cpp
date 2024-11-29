@@ -7,6 +7,7 @@ $end_info$
 */
 
 #include "CodeLoader.h"
+#include "GdbServer/Info.h"
 
 #include "LinuxSyscalls/NetStream.h"
 
@@ -15,6 +16,7 @@ $end_info$
 #include <iomanip>
 #include <memory>
 #include <optional>
+#include <string_view>
 
 #include <Common/FEXServerClient.h>
 #include <FEXCore/Config/Config.h>
@@ -59,44 +61,18 @@ $end_info$
 
 namespace FEX {
 
-constexpr std::array<std::string_view const, 22> FlagNames = {
-  "CF", "", "PF", "", "AF", "", "ZF", "SF", "TF", "IF", "DF", "OF", "IOPL", "", "NT", "", "RF", "VM", "AC", "VIF", "VIP", "ID",
-};
-
-static const std::string_view& GetFlagName(unsigned Flag) {
-  return FlagNames[Flag];
-}
-
-static std::string_view const GetGRegName(unsigned Reg) {
-  switch (Reg) {
-  case FEXCore::X86State::REG_RAX: return "rax";
-  case FEXCore::X86State::REG_RBX: return "rbx";
-  case FEXCore::X86State::REG_RCX: return "rcx";
-  case FEXCore::X86State::REG_RDX: return "rdx";
-  case FEXCore::X86State::REG_RSP: return "rsp";
-  case FEXCore::X86State::REG_RBP: return "rbp";
-  case FEXCore::X86State::REG_RSI: return "rsi";
-  case FEXCore::X86State::REG_RDI: return "rdi";
-  case FEXCore::X86State::REG_R8: return "r8";
-  case FEXCore::X86State::REG_R9: return "r9";
-  case FEXCore::X86State::REG_R10: return "r10";
-  case FEXCore::X86State::REG_R11: return "r11";
-  case FEXCore::X86State::REG_R12: return "r12";
-  case FEXCore::X86State::REG_R13: return "r13";
-  case FEXCore::X86State::REG_R14: return "r14";
-  case FEXCore::X86State::REG_R15: return "r15";
-  default: FEX_UNREACHABLE;
-  }
-}
-
 #ifndef _WIN32
-void GdbServer::Break(int signal) {
+void GdbServer::Break(FEXCore::Core::InternalThreadState* Thread, int signal) {
   std::lock_guard lk(sendMutex);
   if (!CommsStream) {
     return;
   }
 
-  const fextl::string str = fextl::fmt::format("S{:02x}", signal);
+  auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread);
+  // Current debugging thread switches to the thread that is breaking.
+  CurrentDebuggingThread = ThreadObject->ThreadInfo.TID.load();
+
+  const auto str = fextl::fmt::format("T{:02x}thread:{:x};", signal, CurrentDebuggingThread);
   SendPacket(*CommsStream, str);
 }
 
@@ -122,7 +98,7 @@ GdbServer::GdbServer(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* 
 
   ctx->SetExitHandler([this](FEXCore::Core::InternalThreadState* Thread, FEXCore::Context::ExitReason ExitReason) {
     if (ExitReason == FEXCore::Context::ExitReason::EXIT_DEBUG) {
-      this->Break(SIGTRAP);
+      this->Break(Thread, SIGTRAP);
     }
 
     if (ExitReason == FEXCore::Context::ExitReason::EXIT_SHUTDOWN) {
@@ -142,7 +118,7 @@ GdbServer::GdbServer(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* 
       }
 
       // Let GDB know that we have a signal
-      this->Break(Signal);
+      this->Break(Thread, Signal);
 
       WaitForThreadWakeup();
 
@@ -190,13 +166,6 @@ static fextl::string encodeHex(const unsigned char* data, size_t length) {
 
 static fextl::string encodeHex(std::string_view str) {
   return encodeHex(reinterpret_cast<const unsigned char*>(str.data()), str.size());
-}
-
-static fextl::string getThreadName(uint32_t ThreadID) {
-  const auto ThreadFile = fextl::fmt::format("/proc/{}/task/{}/comm", getpid(), ThreadID);
-  fextl::string ThreadName;
-  FEXCore::FileLoading::LoadFile(ThreadName, ThreadFile);
-  return ThreadName;
 }
 
 // Packet parser
@@ -297,58 +266,40 @@ void GdbServer::SendACK(std::ostream& stream, bool NACK) {
   }
 }
 
-struct X80Float {
-  uint8_t Data[10];
-};
+const FEX::HLE::ThreadStateObject* GdbServer::FindThreadByTID(uint32_t TID) {
+  auto Threads = SyscallHandler->TM.GetThreads();
 
-struct FEX_PACKED GDBContextDefinition {
-  uint64_t gregs[FEXCore::Core::CPUState::NUM_GPRS];
-  uint64_t rip;
-  uint32_t eflags;
-  uint32_t cs, ss, ds, es, fs, gs;
-  X80Float mm[FEXCore::Core::CPUState::NUM_MMS];
-  uint32_t fctrl;
-  uint32_t fstat;
-  uint32_t dummies[6];
-  uint64_t xmm[FEXCore::Core::CPUState::NUM_XMMS][4];
-  uint32_t mxcsr;
-};
+  for (auto& Thread : *Threads) {
+    if (Thread->ThreadInfo.TID != TID) {
+      continue;
+    }
 
-fextl::string GdbServer::readRegs() {
+    return Thread;
+  }
+
+  // Return parent thread if TID isn't found.
+  return Threads->at(0);
+}
+
+
+GdbServer::GDBContextDefinition GdbServer::GenerateContextDefinition(const FEX::HLE::ThreadStateObject* ThreadObject) {
   GDBContextDefinition GDB {};
   FEXCore::Core::CPUState state {};
 
-  auto Threads = SyscallHandler->TM.GetThreads();
-  FEX::HLE::ThreadStateObject* CurrentThread {Threads->at(0)};
-  bool Found = false;
-
-  for (auto& Thread : *Threads) {
-    if (Thread->ThreadInfo.TID != CurrentDebuggingThread) {
-      continue;
-    }
-    memcpy(&state, Thread->Thread->CurrentFrame, sizeof(state));
-    CurrentThread = Thread;
-    Found = true;
-    break;
-  }
-
-  if (!Found) {
-    // If set to an invalid thread then just get the parent thread ID
-    memcpy(&state, CurrentThread->Thread->CurrentFrame, sizeof(state));
-  }
+  // Copy the thread state.
+  memcpy(&state, ThreadObject->Thread->CurrentFrame, sizeof(state));
 
   // Encode the GDB context definition
   memcpy(&GDB.gregs[0], &state.gregs[0], sizeof(GDB.gregs));
   memcpy(&GDB.rip, &state.rip, sizeof(GDB.rip));
 
-  GDB.eflags = CTX->ReconstructCompactedEFLAGS(CurrentThread->Thread, false, nullptr, 0);
+  GDB.eflags = CTX->ReconstructCompactedEFLAGS(ThreadObject->Thread, false, nullptr, 0);
 
   for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_MMS; ++i) {
     memcpy(&GDB.mm[i], &state.mm[i], sizeof(GDB.mm[i]));
   }
 
-  // Currently unsupported
-  GDB.fctrl = 0x37F;
+  GDB.fctrl = state.FCW;
 
   GDB.fstat = static_cast<uint32_t>(state.flags[FEXCore::X86State::X87FLAG_TOP_LOC]) << 11;
   GDB.fstat |= static_cast<uint32_t>(state.flags[FEXCore::X86State::X87FLAG_C0_LOC]) << 8;
@@ -356,219 +307,16 @@ fextl::string GdbServer::readRegs() {
   GDB.fstat |= static_cast<uint32_t>(state.flags[FEXCore::X86State::X87FLAG_C2_LOC]) << 10;
   GDB.fstat |= static_cast<uint32_t>(state.flags[FEXCore::X86State::X87FLAG_C3_LOC]) << 14;
 
-  memcpy(&GDB.xmm, &state.xmm.avx.data, sizeof(GDB.xmm));
+  __uint128_t XMM_Low[FEXCore::Core::CPUState::NUM_XMMS];
+  __uint128_t YMM_High[FEXCore::Core::CPUState::NUM_XMMS];
 
-  return encodeHex((unsigned char*)&GDB, sizeof(GDBContextDefinition));
-}
-
-GdbServer::HandledPacketType GdbServer::readReg(const fextl::string& packet) {
-  size_t addr;
-  auto ss = fextl::istringstream(packet);
-  ss.get(); // Drop first letter
-  ss >> std::hex >> addr;
-
-  FEXCore::Core::CPUState state {};
-
-  auto Threads = SyscallHandler->TM.GetThreads();
-  FEX::HLE::ThreadStateObject* CurrentThread {Threads->at(0)};
-  bool Found = false;
-
-  for (auto& Thread : *Threads) {
-    if (Thread->ThreadInfo.TID != CurrentDebuggingThread) {
-      continue;
-    }
-    memcpy(&state, Thread->Thread->CurrentFrame, sizeof(state));
-    CurrentThread = Thread;
-    Found = true;
-    break;
+  CTX->ReconstructXMMRegisters(ThreadObject->Thread, XMM_Low, YMM_High);
+  for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; ++i) {
+    memcpy(&GDB.xmm[0], &XMM_Low[i], sizeof(__uint128_t));
+    memcpy(&GDB.xmm[2], &YMM_High[i], sizeof(__uint128_t));
   }
 
-  if (!Found) {
-    // If set to an invalid thread then just get the parent thread ID
-    memcpy(&state, CurrentThread->Thread->CurrentFrame, sizeof(state));
-  }
-
-
-  if (addr >= offsetof(GDBContextDefinition, gregs[0]) && addr < offsetof(GDBContextDefinition, gregs[16])) {
-    return {encodeHex((unsigned char*)(&state.gregs[addr / sizeof(uint64_t)]), sizeof(uint64_t)), HandledPacketType::TYPE_ACK};
-  } else if (addr == offsetof(GDBContextDefinition, rip)) {
-    return {encodeHex((unsigned char*)(&state.rip), sizeof(uint64_t)), HandledPacketType::TYPE_ACK};
-  } else if (addr == offsetof(GDBContextDefinition, eflags)) {
-    uint32_t eflags = CTX->ReconstructCompactedEFLAGS(CurrentThread->Thread, false, nullptr, 0);
-
-    return {encodeHex((unsigned char*)(&eflags), sizeof(uint32_t)), HandledPacketType::TYPE_ACK};
-  } else if (addr >= offsetof(GDBContextDefinition, cs) && addr < offsetof(GDBContextDefinition, mm[0])) {
-    uint32_t Empty {};
-    return {encodeHex((unsigned char*)(&Empty), sizeof(uint32_t)), HandledPacketType::TYPE_ACK};
-  } else if (addr >= offsetof(GDBContextDefinition, mm[0]) && addr < offsetof(GDBContextDefinition, mm[8])) {
-    return {encodeHex((unsigned char*)(&state.mm[(addr - offsetof(GDBContextDefinition, mm[0])) / sizeof(X80Float)]), sizeof(X80Float)),
-            HandledPacketType::TYPE_ACK};
-  } else if (addr == offsetof(GDBContextDefinition, fctrl)) {
-    // XXX: We don't support this yet
-    uint32_t FCW = 0x37F;
-    return {encodeHex((unsigned char*)(&FCW), sizeof(uint32_t)), HandledPacketType::TYPE_ACK};
-  } else if (addr == offsetof(GDBContextDefinition, fstat)) {
-    uint32_t FSW {};
-    FSW = static_cast<uint32_t>(state.flags[FEXCore::X86State::X87FLAG_TOP_LOC]) << 11;
-    FSW |= static_cast<uint32_t>(state.flags[FEXCore::X86State::X87FLAG_C0_LOC]) << 8;
-    FSW |= static_cast<uint32_t>(state.flags[FEXCore::X86State::X87FLAG_C1_LOC]) << 9;
-    FSW |= static_cast<uint32_t>(state.flags[FEXCore::X86State::X87FLAG_C2_LOC]) << 10;
-    FSW |= static_cast<uint32_t>(state.flags[FEXCore::X86State::X87FLAG_C3_LOC]) << 14;
-    return {encodeHex((unsigned char*)(&FSW), sizeof(uint32_t)), HandledPacketType::TYPE_ACK};
-  } else if (addr >= offsetof(GDBContextDefinition, dummies[0]) && addr < offsetof(GDBContextDefinition, dummies[6])) {
-    uint32_t Empty {};
-    return {encodeHex((unsigned char*)(&Empty), sizeof(uint32_t)), HandledPacketType::TYPE_ACK};
-  } else if (addr >= offsetof(GDBContextDefinition, xmm[0][0]) && addr < offsetof(GDBContextDefinition, xmm[16][0])) {
-    const auto XmmIndex = (addr - offsetof(GDBContextDefinition, xmm[0][0])) / FEXCore::Core::CPUState::XMM_AVX_REG_SIZE;
-    const auto* Data = (unsigned char*)&state.xmm.avx.data[XmmIndex][0];
-    return {encodeHex(Data, FEXCore::Core::CPUState::XMM_AVX_REG_SIZE), HandledPacketType::TYPE_ACK};
-  } else if (addr == offsetof(GDBContextDefinition, mxcsr)) {
-    uint32_t Empty {};
-    return {encodeHex((unsigned char*)(&Empty), sizeof(uint32_t)), HandledPacketType::TYPE_ACK};
-  }
-
-  LogMan::Msg::EFmt("Unknown GDB register 0x{:x}", addr);
-  return {"E00", HandledPacketType::TYPE_ACK};
-}
-
-fextl::string buildTargetXML() {
-  fextl::ostringstream xml;
-
-  xml << "<?xml version='1.0'?>\n";
-  xml << "<!DOCTYPE target SYSTEM 'gdb-target.dtd'>\n";
-  xml << "<target>\n";
-  xml << "<architecture>i386:x86-64</architecture>\n";
-  xml << "<osabi>GNU/Linux</osabi>\n";
-  xml << "<feature name='org.gnu.gdb.i386.core'>\n";
-
-  xml << "<flags id='fex_eflags' size='4'>\n";
-  // flags register
-  for (int i = 0; i < 22; i++) {
-    auto name = GetFlagName(i);
-    if (name.empty()) {
-      continue;
-    }
-    xml << "\t<field name='" << name << "' start='" << i << "' end='" << i << "' />\n";
-  }
-  xml << "</flags>\n";
-
-  int32_t TargetSize {};
-  auto reg = [&](std::string_view name, std::string_view type, int size) {
-    TargetSize += size;
-    xml << "<reg name='" << name << "' bitsize='" << size << "' type='" << type << "' />" << std::endl;
-  };
-
-  // Register ordering.
-  // We want to just memcpy our x86 state to gdb, so we tell it the ordering.
-
-  // GPRs
-  for (uint32_t i = 0; i < FEXCore::Core::CPUState::NUM_GPRS; i++) {
-    reg(GetGRegName(i), "int64", 64);
-  }
-
-  reg("rip", "code_ptr", 64);
-
-  reg("eflags", "fex_eflags", 32);
-
-  // Fake registers which GDB requires, but we don't support;
-  // We stick them past the end of our cpu state.
-
-  // non-userspace segment registers
-  reg("cs", "int32", 32);
-  reg("ss", "int32", 32);
-  reg("ds", "int32", 32);
-  reg("es", "int32", 32);
-
-  reg("fs", "int32", 32);
-  reg("gs", "int32", 32);
-
-  // x87 stack
-  for (int i = 0; i < 8; i++) {
-    reg(fextl::fmt::format("st{}", i), "i387_ext", 80);
-  }
-
-  // x87 control
-  reg("fctrl", "int32", 32);
-  reg("fstat", "int32", 32);
-  reg("ftag", "int32", 32);
-  reg("fiseg", "int32", 32);
-  reg("fioff", "int32", 32);
-  reg("foseg", "int32", 32);
-  reg("fooff", "int32", 32);
-  reg("fop", "int32", 32);
-
-
-  xml << "</feature>\n";
-  xml << "<feature name='org.gnu.gdb.i386.sse'>\n";
-  xml <<
-    R"(<vector id="v4f" type="ieee_single" count="4"/>
-        <vector id="v2d" type="ieee_double" count="2"/>
-        <vector id="v16i8" type="int8" count="16"/>
-        <vector id="v8i16" type="int16" count="8"/>
-        <vector id="v4i32" type="int32" count="4"/>
-        <vector id="v2i64" type="int64" count="2"/>
-        <union id="vec128">
-          <field name="v4_float" type="v4f"/>
-          <field name="v2_double" type="v2d"/>
-          <field name="v16_int8" type="v16i8"/>
-          <field name="v8_int16" type="v8i16"/>
-          <field name="v4_int32" type="v4i32"/>
-          <field name="v2_int64" type="v2i64"/>
-          <field name="uint128" type="uint128"/>
-        </union>
-        )";
-
-  // SSE regs
-  for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; i++) {
-    reg(fextl::fmt::format("xmm{}", i), "vec128", 128);
-  }
-
-  reg("mxcsr", "int", 32);
-
-  xml << "</feature>\n";
-
-  xml << "<feature name='org.gnu.gdb.i386.avx'>";
-  xml <<
-    R"(<vector id="v4f" type="ieee_single" count="4"/>
-        <vector id="v2d" type="ieee_double" count="2"/>
-        <vector id="v16i8" type="int8" count="16"/>
-        <vector id="v8i16" type="int16" count="8"/>
-        <vector id="v4i32" type="int32" count="4"/>
-        <vector id="v2i64" type="int64" count="2"/>
-        <union id="vec128">
-          <field name="v4_float" type="v4f"/>
-          <field name="v2_double" type="v2d"/>
-          <field name="v16_int8" type="v16i8"/>
-          <field name="v8_int16" type="v8i16"/>
-          <field name="v4_int32" type="v4i32"/>
-          <field name="v2_int64" type="v2i64"/>
-          <field name="uint128" type="uint128"/>
-        </union>
-        )";
-  for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_XMMS; i++) {
-    reg(fmt::format("ymm{}h", i), "vec128", 128);
-  }
-  xml << "</feature>\n";
-
-  xml << "</target>";
-  xml << std::flush;
-
-  return xml.str();
-}
-
-fextl::string buildOSData() {
-  fextl::ostringstream xml;
-
-  xml << "<?xml version='1.0'?>\n";
-
-  xml << "<!DOCTYPE target SYSTEM \"osdata.dtd\">\n";
-  xml << "<osdata type=\"processes\">";
-  // XXX
-  xml << "</osdata>";
-
-  xml << std::flush;
-
-  return xml.str();
+  return GDB;
 }
 
 void GdbServer::buildLibraryMap() {
@@ -648,11 +396,100 @@ void GdbServer::buildLibraryMap() {
   LibraryMapChanged = false;
 }
 
+// Binary data transfer handlers
+
+GdbServer::HandledPacketType GdbServer::XferCommandExecFile(const fextl::string& annex, int offset, int length) {
+  int annex_pid;
+  if (annex.empty()) {
+    annex_pid = getpid();
+  } else {
+    auto ss_pid = fextl::istringstream(annex);
+    ss_pid >> std::hex >> annex_pid;
+  }
+
+  if (annex_pid == getpid()) {
+    return {EncodeXferString(Filename(), offset, length), HandledPacketType::TYPE_ACK};
+  }
+
+  return {"E00", HandledPacketType::TYPE_ACK};
+}
+
+GdbServer::HandledPacketType GdbServer::XferCommandFeatures(const fextl::string& annex, int offset, int length) {
+  if (annex == "target.xml") {
+    return {EncodeXferString(GDB::Info::BuildTargetXML(), offset, length), HandledPacketType::TYPE_ACK};
+  }
+
+  return {"E00", HandledPacketType::TYPE_ACK};
+}
+
+GdbServer::HandledPacketType GdbServer::XferCommandThreads(const fextl::string& annex, int offset, int length) {
+  if (offset == 0) {
+    auto Threads = SyscallHandler->TM.GetThreads();
+
+    ThreadString.clear();
+    fextl::ostringstream ss;
+    ss << "<threads>\n";
+    for (auto& Thread : *Threads) {
+      // Thread id is in hex without 0x prefix
+      const auto ThreadName = GDB::Info::GetThreadName(::getpid(), Thread->ThreadInfo.TID);
+      ss << "<thread id=\"" << std::hex << Thread->ThreadInfo.TID << "\"";
+      if (!ThreadName.empty()) {
+        ss << " name=\"" << ThreadName << "\"";
+      }
+      ss << "/>\n";
+    }
+
+    ss << "</threads>\n";
+    ss << std::flush;
+    ThreadString = ss.str();
+  }
+
+  return {EncodeXferString(ThreadString, offset, length), HandledPacketType::TYPE_ACK};
+}
+
+GdbServer::HandledPacketType GdbServer::XferCommandOSData(const fextl::string& annex, int offset, int length) {
+  if (offset == 0) {
+    OSDataString = GDB::Info::BuildOSXML();
+  }
+  return {EncodeXferString(OSDataString, offset, length), HandledPacketType::TYPE_ACK};
+}
+
+GdbServer::HandledPacketType GdbServer::XferCommandLibraries(const fextl::string& annex, int offset, int length) {
+  if (offset == 0) {
+    // Attempt to rebuild when reading from zero
+    buildLibraryMap();
+  }
+  return {EncodeXferString(LibraryMapString, offset, length), HandledPacketType::TYPE_ACK};
+}
+
+GdbServer::HandledPacketType GdbServer::XferCommandAuxv(const fextl::string& annex, int offset, int length) {
+  auto CodeLoader = SyscallHandler->GetCodeLoader();
+  uint64_t auxv_ptr, auxv_size;
+  CodeLoader->GetAuxv(auxv_ptr, auxv_size);
+  fextl::string data;
+  if (Is64BitMode()) {
+    data.resize(auxv_size);
+    memcpy(data.data(), reinterpret_cast<void*>(auxv_ptr), data.size());
+  } else {
+    // We need to transcode from 32-bit auxv_t to 64-bit
+    data.resize(auxv_size / sizeof(Elf32_auxv_t) * sizeof(Elf64_auxv_t));
+    size_t NumAuxv = auxv_size / sizeof(Elf32_auxv_t);
+    for (size_t i = 0; i < NumAuxv; ++i) {
+      Elf32_auxv_t* auxv = reinterpret_cast<Elf32_auxv_t*>(auxv_ptr + i * sizeof(Elf32_auxv_t));
+      Elf64_auxv_t tmp;
+      tmp.a_type = auxv->a_type;
+      tmp.a_un.a_val = auxv->a_un.a_val;
+      memcpy(data.data() + i * sizeof(Elf64_auxv_t), &tmp, sizeof(Elf64_auxv_t));
+    }
+  }
+
+  return {EncodeXferString(data, offset, length), HandledPacketType::TYPE_ACK};
+}
+
 GdbServer::HandledPacketType GdbServer::handleXfer(const fextl::string& packet) {
   fextl::string object;
   fextl::string rw;
   fextl::string annex;
-  int annex_pid;
   int offset;
   int length;
 
@@ -666,12 +503,7 @@ GdbServer::HandledPacketType GdbServer::handleXfer(const fextl::string& packet) 
     std::getline(ss, object, ':');
     std::getline(ss, rw, ':');
     std::getline(ss, annex, ':');
-    if (annex == "") {
-      annex_pid = getpid();
-    } else {
-      auto ss_pid = fextl::istringstream(annex);
-      ss_pid >> std::hex >> annex_pid;
-    }
+
     ss >> std::hex >> offset;
     ss.get(expectComma);
     ss >> std::hex >> length;
@@ -682,98 +514,42 @@ GdbServer::HandledPacketType GdbServer::handleXfer(const fextl::string& packet) 
     }
   }
 
-  // Lambda to correctly encode any reply
-  auto encode = [&](fextl::string data) -> fextl::string {
-    if (offset == data.size()) {
-      return "l";
-    }
-    if (offset >= data.size()) {
-      return "E34"; // ERANGE
-    }
-    if ((data.size() - offset) > length) {
-      return "m" + data.substr(offset, length);
-    }
-    return "l" + data.substr(offset);
-  };
+  // Specific object documentation: https://sourceware.org/gdb/current/onlinedocs/gdb.html/General-Query-Packets.html#qXfer-read
+  if (object == "auxv") {
+    return XferCommandAuxv(annex, offset, length);
+  }
+
+  // btrace
+  // btrace-conf
 
   if (object == "exec-file") {
-    if (annex_pid == getpid()) {
-      return {encode(Filename()), HandledPacketType::TYPE_ACK};
-    }
-
-    return {"E00", HandledPacketType::TYPE_ACK};
+    return XferCommandExecFile(annex, offset, length);
   }
 
   if (object == "features") {
-    if (annex == "target.xml") {
-      return {encode(buildTargetXML()), HandledPacketType::TYPE_ACK};
-    }
-
-    return {"E00", HandledPacketType::TYPE_ACK};
-  }
-
-  if (object == "threads") {
-    if (offset == 0) {
-      auto Threads = SyscallHandler->TM.GetThreads();
-
-      ThreadString.clear();
-      fextl::ostringstream ss;
-      ss << "<threads>\n";
-      for (auto& Thread : *Threads) {
-        // Thread id is in hex without 0x prefix
-        const auto ThreadName = getThreadName(Thread->ThreadInfo.TID);
-        ss << "<thread id=\"" << std::hex << Thread->ThreadInfo.TID << "\"";
-        if (!ThreadName.empty()) {
-          ss << " name=\"" << ThreadName << "\"";
-        }
-        ss << "/>\n";
-      }
-
-      ss << "</threads>\n";
-      ss << std::flush;
-      ThreadString = ss.str();
-    }
-
-    return {encode(ThreadString), HandledPacketType::TYPE_ACK};
-  }
-
-  if (object == "osdata") {
-    if (offset == 0) {
-      OSDataString = buildOSData();
-    }
-    return {encode(OSDataString), HandledPacketType::TYPE_ACK};
+    return XferCommandFeatures(annex, offset, length);
   }
 
   if (object == "libraries") {
-    if (offset == 0) {
-      // Attempt to rebuild when reading from zero
-      buildLibraryMap();
-    }
-    return {encode(LibraryMapString), HandledPacketType::TYPE_ACK};
+    return XferCommandLibraries(annex, offset, length);
   }
 
-  if (object == "auxv") {
-    auto CodeLoader = SyscallHandler->GetCodeLoader();
-    uint64_t auxv_ptr, auxv_size;
-    CodeLoader->GetAuxv(auxv_ptr, auxv_size);
-    fextl::string data;
-    if (Is64BitMode()) {
-      data.resize(auxv_size);
-      memcpy(data.data(), reinterpret_cast<void*>(auxv_ptr), data.size());
-    } else {
-      // We need to transcode from 32-bit auxv_t to 64-bit
-      data.resize(auxv_size / sizeof(Elf32_auxv_t) * sizeof(Elf64_auxv_t));
-      size_t NumAuxv = auxv_size / sizeof(Elf32_auxv_t);
-      for (size_t i = 0; i < NumAuxv; ++i) {
-        Elf32_auxv_t* auxv = reinterpret_cast<Elf32_auxv_t*>(auxv_ptr + i * sizeof(Elf32_auxv_t));
-        Elf64_auxv_t tmp;
-        tmp.a_type = auxv->a_type;
-        tmp.a_un.a_val = auxv->a_un.a_val;
-        memcpy(data.data() + i * sizeof(Elf64_auxv_t), &tmp, sizeof(Elf64_auxv_t));
-      }
-    }
+  // libraries-svr4
+  // memory-map
+  // sdata
+  // siginfo:read
+  // siginfo:write
 
-    return {encode(std::move(data)), HandledPacketType::TYPE_ACK};
+  if (object == "threads") {
+    return XferCommandThreads(annex, offset, length);
+  }
+
+  // traceframe-info
+  // uib
+  // fdpic
+
+  if (object == "osdata") {
+    return XferCommandOSData(annex, offset, length);
   }
 
   return {"", HandledPacketType::TYPE_UNKNOWN};
@@ -814,7 +590,106 @@ GdbServer::HandledPacketType GdbServer::handleProgramOffsets() {
   return {std::move(str), HandledPacketType::TYPE_ACK};
 }
 
-GdbServer::HandledPacketType GdbServer::handleMemory(const fextl::string& packet) {
+GdbServer::HandledPacketType GdbServer::ThreadAction(char action, uint32_t tid) {
+  switch (action) {
+  case 'c': {
+    SyscallHandler->TM.Run();
+    ThreadBreakEvent.NotifyAll();
+    SyscallHandler->TM.WaitForThreadsToRun();
+    return {"", HandledPacketType::TYPE_ONLYACK};
+  }
+  case 's': {
+    SyscallHandler->TM.Step();
+    SendPacketPair({"OK", HandledPacketType::TYPE_ACK});
+    fextl::string str = fextl::fmt::format("T05thread:{:02x};", getpid());
+    if (LibraryMapChanged) {
+      // If libraries have changed then let gdb know
+      str += "library:1;";
+    }
+
+    SendPacketPair({std::move(str), HandledPacketType::TYPE_ACK});
+    return {"OK", HandledPacketType::TYPE_ACK};
+  }
+  case 't':
+    // This thread isn't part of the thread pool
+    SyscallHandler->TM.Stop();
+    return {"OK", HandledPacketType::TYPE_ACK};
+  default: return {"E00", HandledPacketType::TYPE_ACK};
+  }
+}
+
+// Command handlers
+GdbServer::HandledPacketType GdbServer::CommandEnableExtendedMode(const fextl::string& packet) {
+  return {"OK", HandledPacketType::TYPE_ACK};
+}
+
+GdbServer::HandledPacketType GdbServer::CommandQueryHalted(const fextl::string& packet) {
+  // Indicates the reason that the thread has stopped
+  // Behaviour changes if the target is in non-stop mode
+  // Binja doesn't support S response here
+  fextl::string str = fextl::fmt::format("T00thread:{:x};", getpid());
+  return {std::move(str), HandledPacketType::TYPE_ACK};
+}
+
+GdbServer::HandledPacketType GdbServer::CommandContinue(const fextl::string& packet) {
+  // Continue
+  return ThreadAction('c', 0);
+}
+
+GdbServer::HandledPacketType GdbServer::CommandDetach(const fextl::string& packet) {
+  // Detach
+  // Ensure the threads are back in running state on detach
+  SyscallHandler->TM.Run();
+  SyscallHandler->TM.WaitForThreadsToRun();
+  return {"OK", HandledPacketType::TYPE_ACK};
+}
+
+GdbServer::HandledPacketType GdbServer::CommandReadRegisters(const fextl::string& packet) {
+  // We might be running while we try reading
+  // Pause up front
+  SyscallHandler->TM.Pause();
+  const FEX::HLE::ThreadStateObject* CurrentThread = FindThreadByTID(CurrentDebuggingThread);
+  auto GDB = GenerateContextDefinition(CurrentThread);
+  return {encodeHex((unsigned char*)&GDB, sizeof(GDBContextDefinition)), HandledPacketType::TYPE_ACK};
+}
+
+GdbServer::HandledPacketType GdbServer::CommandThreadOp(const fextl::string& packet) {
+  const auto match = [&](const char* str) -> bool {
+    return packet.rfind(str, 0) == 0;
+  };
+
+  if (match("Hc")) {
+    // Sets thread to this ID for stepping
+    // This is deprecated and vCont should be used instead
+    auto ss = fextl::istringstream(packet);
+    ss.seekg(strlen("Hc"));
+    ss >> std::hex >> CurrentDebuggingThread;
+
+    SyscallHandler->TM.Pause();
+    return {"OK", HandledPacketType::TYPE_ACK};
+  }
+
+  if (match("Hg")) {
+    // Sets thread for "other" operations
+    auto ss = fextl::istringstream(packet);
+    ss.seekg(strlen("Hg"));
+    ss >> std::hex >> CurrentDebuggingThread;
+
+    // This must return quick otherwise IDA complains
+    SyscallHandler->TM.Pause();
+    return {"OK", HandledPacketType::TYPE_ACK};
+  }
+
+  return {"", HandledPacketType::TYPE_UNKNOWN};
+}
+
+GdbServer::HandledPacketType GdbServer::CommandKill(const fextl::string& packet) {
+  SyscallHandler->TM.Stop();
+  SyscallHandler->TM.WaitForIdle(); // Block until exit
+  return {"", HandledPacketType::TYPE_NONE};
+}
+
+GdbServer::HandledPacketType GdbServer::CommandMemory(const fextl::string& packet) {
   bool write;
   size_t addr;
   size_t length;
@@ -854,7 +729,45 @@ GdbServer::HandledPacketType GdbServer::handleMemory(const fextl::string& packet
   }
 }
 
-GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string& packet) {
+GdbServer::HandledPacketType GdbServer::CommandReadReg(const fextl::string& packet) {
+  size_t addr;
+  auto ss = fextl::istringstream(packet);
+  ss.get(); // Drop first letter
+  ss >> std::hex >> addr;
+
+  const FEX::HLE::ThreadStateObject* CurrentThread = FindThreadByTID(CurrentDebuggingThread);
+  auto GDB = GenerateContextDefinition(CurrentThread);
+
+  if (addr >= offsetof(GDBContextDefinition, gregs[0]) && addr < offsetof(GDBContextDefinition, gregs[16])) {
+    return {encodeHex((unsigned char*)(&GDB.gregs[addr / sizeof(uint64_t)]), sizeof(uint64_t)), HandledPacketType::TYPE_ACK};
+  } else if (addr == offsetof(GDBContextDefinition, rip)) {
+    return {encodeHex((unsigned char*)(&GDB.rip), sizeof(uint64_t)), HandledPacketType::TYPE_ACK};
+  } else if (addr == offsetof(GDBContextDefinition, eflags)) {
+    return {encodeHex((unsigned char*)(&GDB.eflags), sizeof(uint32_t)), HandledPacketType::TYPE_ACK};
+  } else if (addr >= offsetof(GDBContextDefinition, cs) && addr < offsetof(GDBContextDefinition, mm[0])) {
+    uint32_t Empty {};
+    return {encodeHex((unsigned char*)(&Empty), sizeof(uint32_t)), HandledPacketType::TYPE_ACK};
+  } else if (addr >= offsetof(GDBContextDefinition, mm[0]) && addr < offsetof(GDBContextDefinition, mm[8])) {
+    return {encodeHex((unsigned char*)(&GDB.mm[(addr - offsetof(GDBContextDefinition, mm[0])) / sizeof(X80Float)]), sizeof(X80Float)),
+            HandledPacketType::TYPE_ACK};
+  } else if (addr == offsetof(GDBContextDefinition, fctrl)) {
+    return {encodeHex((unsigned char*)(&GDB.fctrl), sizeof(uint32_t)), HandledPacketType::TYPE_ACK};
+  } else if (addr == offsetof(GDBContextDefinition, fstat)) {
+    return {encodeHex((unsigned char*)(&GDB.fstat), sizeof(uint32_t)), HandledPacketType::TYPE_ACK};
+  } else if (addr >= offsetof(GDBContextDefinition, dummies[0]) && addr < offsetof(GDBContextDefinition, dummies[6])) {
+    return {encodeHex((unsigned char*)(&GDB.dummies[0]), sizeof(uint32_t)), HandledPacketType::TYPE_ACK};
+  } else if (addr >= offsetof(GDBContextDefinition, xmm[0][0]) && addr < offsetof(GDBContextDefinition, xmm[16][0])) {
+    const auto XmmIndex = (addr - offsetof(GDBContextDefinition, xmm[0][0])) / FEXCore::Core::CPUState::XMM_AVX_REG_SIZE;
+    return {encodeHex(reinterpret_cast<const uint8_t*>(&GDB.xmm[XmmIndex]), FEXCore::Core::CPUState::XMM_AVX_REG_SIZE), HandledPacketType::TYPE_ACK};
+  } else if (addr == offsetof(GDBContextDefinition, mxcsr)) {
+    return {encodeHex((unsigned char*)(&GDB.mxcsr), sizeof(uint32_t)), HandledPacketType::TYPE_ACK};
+  }
+
+  LogMan::Msg::EFmt("Unknown GDB register 0x{:x}", addr);
+  return {"E00", HandledPacketType::TYPE_ACK};
+}
+
+GdbServer::HandledPacketType GdbServer::CommandQuery(const fextl::string& packet) {
   const auto match = [&](const char* str) -> bool {
     return packet.rfind(str, 0) == 0;
   };
@@ -977,7 +890,7 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string& packet)
     ss.get(); // discard comma
     uint32_t ThreadID;
     ss >> std::hex >> ThreadID;
-    auto ThreadName = getThreadName(ThreadID);
+    auto ThreadName = GDB::Info::GetThreadName(::getpid(), ThreadID);
     return {encodeHex((unsigned char*)ThreadName.data(), ThreadName.size()), HandledPacketType::TYPE_ACK};
   }
   if (match("qC")) {
@@ -1083,36 +996,15 @@ GdbServer::HandledPacketType GdbServer::handleQuery(const fextl::string& packet)
   return {"", HandledPacketType::TYPE_UNKNOWN};
 }
 
-
-GdbServer::HandledPacketType GdbServer::ThreadAction(char action, uint32_t tid) {
-  switch (action) {
-  case 'c': {
-    SyscallHandler->TM.Run();
-    ThreadBreakEvent.NotifyAll();
-    SyscallHandler->TM.WaitForThreadsToRun();
-    return {"", HandledPacketType::TYPE_ONLYACK};
-  }
-  case 's': {
-    SyscallHandler->TM.Step();
-    SendPacketPair({"OK", HandledPacketType::TYPE_ACK});
-    fextl::string str = fextl::fmt::format("T05thread:{:02x};", getpid());
-    if (LibraryMapChanged) {
-      // If libraries have changed then let gdb know
-      str += "library:1;";
-    }
-
-    SendPacketPair({std::move(str), HandledPacketType::TYPE_ACK});
-    return {"OK", HandledPacketType::TYPE_ACK};
-  }
-  case 't':
-    // This thread isn't part of the thread pool
-    SyscallHandler->TM.Stop();
-    return {"OK", HandledPacketType::TYPE_ACK};
-  default: return {"E00", HandledPacketType::TYPE_ACK};
-  }
+GdbServer::HandledPacketType GdbServer::CommandSingleStep(const fextl::string& packet) {
+  return ThreadAction('s', 0);
 }
 
-GdbServer::HandledPacketType GdbServer::handleV(const fextl::string& packet) {
+GdbServer::HandledPacketType GdbServer::CommandQueryThreadAlive(const fextl::string& packet) {
+  return {"OK", HandledPacketType::TYPE_ACK};
+}
+
+GdbServer::HandledPacketType GdbServer::HandlevFile(const fextl::string& packet) {
   const auto match = [&](const fextl::string& str) -> std::optional<fextl::istringstream> {
     if (packet.rfind(str, 0) == 0) {
       auto ss = fextl::istringstream(packet);
@@ -1183,10 +1075,26 @@ GdbServer::HandledPacketType GdbServer::handleV(const fextl::string& packet) {
     data.resize(ret);
     return {F_data(ret, data), HandledPacketType::TYPE_ACK};
   }
+
+  return {"", HandledPacketType::TYPE_ACK};
+}
+
+GdbServer::HandledPacketType GdbServer::HandlevCont(const fextl::string& packet) {
+  const auto match = [&](const fextl::string& str) -> std::optional<fextl::istringstream> {
+    if (packet.rfind(str, 0) == 0) {
+      auto ss = fextl::istringstream(packet);
+      ss.seekg(str.size());
+      return ss;
+    }
+    return std::nullopt;
+  };
+
+  std::optional<fextl::istringstream> ss;
   if ((ss = match("vCont?"))) {
     return {"vCont;c;t;s;r", HandledPacketType::TYPE_ACK}; // We support continue, step and terminate
     // FIXME: We also claim to support continue with signal... because it's compulsory
   }
+
   if ((ss = match("vCont;"))) {
     char action {};
     int thread {};
@@ -1204,40 +1112,30 @@ GdbServer::HandledPacketType GdbServer::handleV(const fextl::string& packet) {
 
     return ThreadAction(action, thread);
   }
+
   return {"", HandledPacketType::TYPE_ACK};
 }
 
-GdbServer::HandledPacketType GdbServer::handleThreadOp(const fextl::string& packet) {
-  const auto match = [&](const char* str) -> bool {
-    return packet.rfind(str, 0) == 0;
-  };
-
-  if (match("Hc")) {
-    // Sets thread to this ID for stepping
-    // This is deprecated and vCont should be used instead
-    auto ss = fextl::istringstream(packet);
-    ss.seekg(fextl::string("Hc").size());
-    ss >> std::hex >> CurrentDebuggingThread;
-
-    SyscallHandler->TM.Pause();
-    return {"OK", HandledPacketType::TYPE_ACK};
+GdbServer::HandledPacketType GdbServer::CommandMultiLetterV(const fextl::string& packet) {
+  // TODO: vAttach
+  if (packet.starts_with("vCont")) {
+    return HandlevCont(packet);
   }
 
-  if (match("Hg")) {
-    // Sets thread for "other" operations
-    auto ss = fextl::istringstream(packet);
-    ss.seekg(std::string_view("Hg").size());
-    ss >> std::hex >> CurrentDebuggingThread;
+  // TODO: vCtrlC
 
-    // This must return quick otherwise IDA complains
-    SyscallHandler->TM.Pause();
-    return {"OK", HandledPacketType::TYPE_ACK};
+  if (packet.starts_with("vFile")) {
+    return HandlevFile(packet);
   }
 
-  return {"", HandledPacketType::TYPE_UNKNOWN};
+  // TODO: vKill
+  // TODO: vRun
+  // TODO: vStopped
+
+  return {"", HandledPacketType::TYPE_ACK};
 }
 
-GdbServer::HandledPacketType GdbServer::handleBreakpoint(const fextl::string& packet) {
+GdbServer::HandledPacketType GdbServer::CommandBreakpoint(const fextl::string& packet) {
   auto ss = fextl::istringstream(packet);
 
   // Don't do anything with set breakpoints yet
@@ -1254,50 +1152,142 @@ GdbServer::HandledPacketType GdbServer::handleBreakpoint(const fextl::string& pa
   return {"OK", HandledPacketType::TYPE_ACK};
 }
 
+GdbServer::HandledPacketType GdbServer::CommandUnknown(const fextl::string& packet) {
+  return {"", HandledPacketType::TYPE_UNKNOWN};
+}
+
 GdbServer::HandledPacketType GdbServer::ProcessPacket(const fextl::string& packet) {
+  // Packet commands list: https://sourceware.org/gdb/current/onlinedocs/gdb.html/Packets.html#Packets
+
   switch (packet[0]) {
-  case '?': {
-    // Indicates the reason that the thread has stopped
-    // Behaviour changes if the target is in non-stop mode
-    // Binja doesn't support S response here
-    fextl::string str = fextl::fmt::format("T00thread:{:x};", getpid());
-    return {std::move(str), HandledPacketType::TYPE_ACK};
-  }
-  case 'c':
-    // Continue
-    return ThreadAction('c', 0);
-  case 'D':
-    // Detach
-    // Ensure the threads are back in running state on detach
-    SyscallHandler->TM.Run();
-    SyscallHandler->TM.WaitForThreadsToRun();
-    return {"OK", HandledPacketType::TYPE_ACK};
-  case 'g':
-    // We might be running while we try reading
-    // Pause up front
-    SyscallHandler->TM.Pause();
-    return {readRegs(), HandledPacketType::TYPE_ACK};
-  case 'p': return readReg(packet);
+  // Command: $!
+  // - Desc: Enable extended mode
+  // - Args: <None>
+  case '!': return CommandEnableExtendedMode(packet);
+  // Command: $?
+  // - Desc: Sent on connection first established to query the reason the target halted.
+  case '?': return CommandQueryHalted(packet);
+  // Command: $A
+  // - Desc: Initialized argv[] array passed in to the program.
+  // - Args: arglen,argnum,arg,...
+  case 'A': return CommandUnknown(packet);
+  // Command: $b
+  // - Desc: Change the serial line speed to baud
+  // - Args: baud
+  // - Deprecated: Behaviour isn't well-defined.
+  case 'b': return CommandUnknown(packet);
+  // Command: $B
+  // - Desc: Set or clear a breadpoint at address
+  // - Args: addr,mode
+  // - Deprecated: Use $Z and $z instead.
+  case 'B': return CommandUnknown(packet);
+  // Command: $c
+  // - Desc: Continue execution of process
+  // - Args: [addr]
+  // - Deprecated: See $vCont for multi-threaded support.
+  case 'c': return CommandContinue(packet);
+  // Command: $C
+  // - Desc: Continue execution of process with signal
+  // - Args: sig[;addr]
+  // - Deprecated: See $vCont for multi-threaded support.
+  case 'C': return CommandUnknown(packet);
+  // Command: $d
+  // - Desc: Toggle debug flag
+  // - Args: <None>
+  // - Deprecated: Use $q or $Q instead.
+  case 'd': return CommandUnknown(packet);
+  // Command: $D
+  // - Desc: Detach GDB from the remote system
+  // - Args: [;pid]
+  case 'D': return CommandDetach(packet);
+  // Command: $F
+  // - Desc: A reply from GDB to the `F` packet sent by the target. Part of the File-I/O protocol.
+  // - Args: RC,EE,CF;XX
+  case 'F': return CommandUnknown(packet);
+  // Command: $g
+  // - Desc: Read general registers
+  // - Args: <None>
+  case 'g': return CommandReadRegisters(packet);
+  // Command: $G
+  // - Desc: Write general registers
+  // - Args: XX...
+  case 'G': return CommandUnknown(packet);
+  // Command: $H
+  // - Desc: Sets thread for subsequent operations
+  // - Args: op thread-id
+  case 'H': return CommandThreadOp(packet);
+  // Command: $i
+  // - Desc: Step the remote target by a single clock cycle
+  // - Args: [addr[,nnn]]
+  case 'i': return CommandUnknown(packet);
+  // Command: $I
+  // - Desc: Signal, then cycle step
+  // - Args: <None>
+  case 'I': return CommandUnknown(packet);
+  // Command: $k
+  // - Desc: kill process
+  case 'k': return CommandKill(packet);
+  // Command: $m
+  // - Desc: Read addressable memory
+  // - Args: addr length
+  case 'm':
+  // Command: $M
+  // - Desc: Write addressable memory
+  // - Args: addr length
+  case 'M': return CommandMemory(packet);
+  // Command: $p
+  // - Desc: Read the value of a register
+  // - Args: index
+  case 'p': return CommandReadReg(packet);
+  // Command: $q
+  // - Desc: General query fetching
+  // - Args: Name params...
   case 'q':
-  case 'Q': return handleQuery(packet);
-  case 'v': return handleV(packet);
-  case 'm': // Memory read
-  case 'M': // Memory write
-    return handleMemory(packet);
-  case 'H': // Sets thread for subsequent operations
-    return handleThreadOp(packet);
-  case '!': // Enable extended mode
-  case 'T': // Is a thread alive?
-    return {"OK", HandledPacketType::TYPE_ACK};
-  case 's': // Step
-    return ThreadAction('s', 0);
-  case 'z': // Remove breakpoint or watchpoint
-  case 'Z': // Inserts breakpoint or watchpoint
-    return handleBreakpoint(packet);
-  case 'k': // Kill the process
-    SyscallHandler->TM.Stop();
-    SyscallHandler->TM.WaitForIdle(); // Block until exit
-    return {"", HandledPacketType::TYPE_NONE};
+  // Command: $Q
+  // - Desc: General query setting
+  // - Args: Name params...
+  case 'Q': return CommandQuery(packet);
+  // Command: $r
+  // - Desc: Reset the entire system
+  // - Args: <None>
+  // - Deprecated: Use $R instead.
+  case 'r': return CommandUnknown(packet);
+  // Command: $R
+  // - Desc: Restart the program beging debugged
+  // - Args: XX
+  case 'R': return CommandUnknown(packet);
+  // Command: $s
+  // - Desc: Single step
+  // - Args: [addr]
+  case 's': return CommandSingleStep(packet);
+  // Command: $S
+  // - Desc: Step with Signal
+  // - Args: sig[;addr]
+  // - Deprecated: See $vCont for multi-threaded support.
+  case 'S': return CommandUnknown(packet);
+  // Command: $t
+  // - Desc: Search backwards started at address with pattern and mask.
+  // - Args: addr:PP,MM
+  case 't': return CommandUnknown(packet);
+  // Command: $T
+  // - Desc: Find out if the thread is alive
+  // - Args: thread-id
+  case 'T': return CommandQueryThreadAlive(packet);
+  // Command: $v<Operation>
+  // - Desc: Multi-letter command
+  case 'v': return CommandMultiLetterV(packet);
+  // Command: $X
+  // - Desc: Write data to memory
+  // - Args: addr,length:XX...
+  case 'X': return CommandUnknown(packet);
+  // Command: $z
+  // - Desc: Insert a type of breakpoint or watchpoint
+  // - Args: type,addr,kind
+  case 'z':
+  // Command: $Z
+  // - Desc: Remove a type of breakpoint or watchpoint
+  // - Args: type,addr,kind
+  case 'Z': return CommandBreakpoint(packet);
   default: return {"", HandledPacketType::TYPE_UNKNOWN};
   }
 }
@@ -1457,7 +1447,7 @@ void GdbServer::OpenListenSocket() {
 
   listen(ListenSocket, 1);
   LogMan::Msg::IFmt("[GdbServer] Waiting for connection on {}", GdbUnixSocketPath);
-  LogMan::Msg::IFmt("[GdbServer] gdb-multiarch -ex \"target extended-remote {}\"", GdbUnixSocketPath);
+  LogMan::Msg::IFmt("[GdbServer] gdb-multiarch -ex \"set debug remote 1\" -ex \"target extended-remote {}\"", GdbUnixSocketPath);
 }
 
 void GdbServer::CloseListenSocket() {

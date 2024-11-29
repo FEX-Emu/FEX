@@ -378,7 +378,6 @@ private:
   IR::AOTIRCaptureCache IRCaptureCache;
   fextl::unique_ptr<FEXCore::CodeSerialize::CodeObjectSerializeService> CodeObjectCacheService;
 
-  bool StartPaused = false;
   bool IsMemoryShared = false;
   bool SupportsHardwareTSO = false;
   bool AtomicTSOEmulationEnabled = true;
