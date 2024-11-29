@@ -47,13 +47,13 @@ void ThreadManager::StopThread(FEX::HLE::ThreadStateObject* Thread) {
 }
 
 void ThreadManager::HandleThreadDeletion(FEX::HLE::ThreadStateObject* Thread, bool NeedsTLSUninstall) {
-  if (Thread->Thread->ExecutionThread) {
-    if (Thread->Thread->ExecutionThread->joinable()) {
-      Thread->Thread->ExecutionThread->join(nullptr);
+  if (Thread->ExecutionThread) {
+    if (Thread->ExecutionThread->joinable()) {
+      Thread->ExecutionThread->join(nullptr);
     }
 
-    if (Thread->Thread->ExecutionThread->IsSelf()) {
-      Thread->Thread->ExecutionThread->detach();
+    if (Thread->ExecutionThread->IsSelf()) {
+      Thread->ExecutionThread->detach();
     }
   }
 
