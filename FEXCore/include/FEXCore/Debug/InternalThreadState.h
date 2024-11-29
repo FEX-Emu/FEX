@@ -80,14 +80,7 @@ static_assert(!std::is_move_assignable_v<NonMovableUniquePtr<int>>);
 struct InternalThreadState : public FEXCore::Allocator::FEXAllocOperators {
   FEXCore::Core::CpuStateFrame* const CurrentFrame = &BaseFrameState;
 
-  struct {
-    std::atomic_bool Running {false};
-    std::atomic_bool WaitingToStart {true};
-    std::atomic_bool ThreadSleeping {false};
-  } RunningEvents;
-
   FEXCore::Context::Context* const CTX;
-
 
   NonMovableUniquePtr<FEXCore::IR::OpDispatchBuilder> OpDispatcher;
 

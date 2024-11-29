@@ -868,14 +868,7 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
 }
 
 void ContextImpl::ExecutionThread(FEXCore::Core::InternalThreadState* Thread) {
-
-  Thread->RunningEvents.WaitingToStart = false;
-
-  Thread->RunningEvents.Running = true;
-
   static_cast<ContextImpl*>(Thread->CTX)->Dispatcher->ExecuteDispatch(Thread->CurrentFrame);
-
-  Thread->RunningEvents.Running = false;
 
   {
     // Ensure the Code Object Serialization service has fully serialized this thread's data before clearing the cache

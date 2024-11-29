@@ -81,6 +81,7 @@ struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
   std::atomic<SignalEvent> SignalReason {SignalEvent::Nothing};
 
   // Thread pause handling
+  std::atomic_bool ThreadSleeping {false};
   FEXCore::InterruptableConditionVariable ThreadPaused;
 
   int StatusCode {};
