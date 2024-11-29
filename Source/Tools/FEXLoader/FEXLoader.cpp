@@ -604,16 +604,9 @@ int main(int argc, char** argv, char** const envp) {
 
   SyscallHandler->DeserializeSeccompFD(ParentThread, FEXSeccompFD);
 
-  FEXCore::Context::ExitReason ShutdownReason = FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
-
   // There might already be an exit handler, leave it installed
   if (!CTX->GetExitHandler()) {
-    CTX->SetExitHandler([&](FEXCore::Core::InternalThreadState* Thread, FEXCore::Context::ExitReason reason) {
-      if (reason != FEXCore::Context::ExitReason::EXIT_DEBUG) {
-        ShutdownReason = reason;
-        SyscallHandler->TM.Stop();
-      }
-    });
+    CTX->SetExitHandler([&](FEXCore::Core::InternalThreadState* Thread) { SyscallHandler->TM.Stop(); });
   }
 
   const bool AOTEnabled = AOTIRLoad() || AOTIRCapture() || AOTIRGenerate();
@@ -704,9 +697,5 @@ int main(int argc, char** argv, char** const envp) {
 
   FEXCore::Allocator::ReenableSBRKAllocations(SBRKPointer);
 
-  if (ShutdownReason == FEXCore::Context::ExitReason::EXIT_SHUTDOWN) {
-    return ProgramStatus;
-  } else {
-    return -64 | ShutdownReason;
-  }
+  return ProgramStatus;
 }
