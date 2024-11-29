@@ -111,7 +111,7 @@ FEX::HLE::ThreadStateObject* CreateNewThread(FEXCore::Context::Context* CTX, FEX
     .CTX = CTX,
     .Thread = NewThread,
   };
-  NewThread->Thread->ExecutionThread = FEXCore::Threads::Thread::Create(ThreadHandler, &Arg);
+  NewThread->ExecutionThread = FEXCore::Threads::Thread::Create(ThreadHandler, &Arg);
 
   // Wait for the thread to have started.
   Arg.ThreadWaiting.Wait();

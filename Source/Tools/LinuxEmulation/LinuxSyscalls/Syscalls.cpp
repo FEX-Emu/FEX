@@ -661,7 +661,7 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame* Frame, FEX::HLE::clone3_args
 
     if (flags & CLONE_VFORK) {
       // If VFORK is set then the calling process is suspended until the thread exits with execve or exit
-      NewThread->Thread->ExecutionThread->join(nullptr);
+      NewThread->ExecutionThread->join(nullptr);
 
       // Normally a thread cleans itself up on exit. But because we need to join, we are now responsible
       FEX::HLE::_SyscallHandler->TM.DestroyThread(NewThread);

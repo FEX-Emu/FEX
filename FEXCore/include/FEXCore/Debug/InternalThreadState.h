@@ -88,7 +88,6 @@ struct InternalThreadState : public FEXCore::Allocator::FEXAllocOperators {
 
   FEXCore::Context::Context* const CTX;
 
-  NonMovableUniquePtr<FEXCore::Threads::Thread> ExecutionThread;
 
   NonMovableUniquePtr<FEXCore::IR::OpDispatchBuilder> OpDispatcher;
 

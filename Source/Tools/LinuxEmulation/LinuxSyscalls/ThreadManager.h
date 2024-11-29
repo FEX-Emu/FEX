@@ -75,6 +75,8 @@ struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
   // personality emulation.
   uint32_t persona {};
 
+  FEXCore::Core::NonMovableUniquePtr<FEXCore::Threads::Thread> ExecutionThread;
+
   // Thread signaling information
   std::atomic<SignalEvent> SignalReason {SignalEvent::Nothing};
 
