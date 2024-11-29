@@ -44,14 +44,6 @@ class IREmitter;
 
 namespace FEXCore::Context {
 class Context;
-enum ExitReason {
-  EXIT_NONE,
-  EXIT_WAITING,
-  EXIT_ASYNC_RUN,
-  EXIT_SHUTDOWN,
-  EXIT_DEBUG,
-  EXIT_UNKNOWNERROR,
-};
 
 enum OperatingMode {
   MODE_32BIT,
@@ -73,7 +65,7 @@ using CodeRangeInvalidationFn = std::function<void(uint64_t start, uint64_t Leng
 
 using CustomIREntrypointHandler = std::function<void(uintptr_t Entrypoint, IR::IREmitter*)>;
 
-using ExitHandler = std::function<void(Core::InternalThreadState* Thread, ExitReason)>;
+using ExitHandler = std::function<void(Core::InternalThreadState* Thread)>;
 
 using AOTIRCodeFileWriterFn = std::function<void(const fextl::string& fileid, const fextl::string& filename)>;
 using AOTIRLoaderCBFn = std::function<int(const fextl::string&)>;
@@ -112,10 +104,8 @@ public:
    * has shutdown.
    *
    * @param CTX The context that we created
-   *
-   * @return The ExitReason for the parentthread.
    */
-  FEX_DEFAULT_VISIBILITY virtual ExitReason RunUntilExit(FEXCore::Core::InternalThreadState* Thread) = 0;
+  FEX_DEFAULT_VISIBILITY virtual void RunUntilExit(FEXCore::Core::InternalThreadState* Thread) = 0;
 
   /**
    * @brief Executes the supplied thread context on the current thread until a return is requested

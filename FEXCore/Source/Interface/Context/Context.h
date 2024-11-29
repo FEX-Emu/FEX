@@ -84,7 +84,7 @@ public:
   void SetExitHandler(ExitHandler handler) override;
   ExitHandler GetExitHandler() const override;
 
-  ExitReason RunUntilExit(FEXCore::Core::InternalThreadState* Thread) override;
+  void RunUntilExit(FEXCore::Core::InternalThreadState* Thread) override;
 
   void ExecuteThread(FEXCore::Core::InternalThreadState* Thread) override;
 

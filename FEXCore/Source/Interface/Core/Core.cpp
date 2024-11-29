@@ -363,17 +363,14 @@ void ContextImpl::HandleCallback(FEXCore::Core::InternalThreadState* Thread, uin
   static_cast<ContextImpl*>(Thread->CTX)->Dispatcher->ExecuteJITCallback(Thread->CurrentFrame, RIP);
 }
 
-FEXCore::Context::ExitReason ContextImpl::RunUntilExit(FEXCore::Core::InternalThreadState* Thread) {
+void ContextImpl::RunUntilExit(FEXCore::Core::InternalThreadState* Thread) {
   ExecutionThread(Thread);
 
   CoreShuttingDown.store(true);
 
   if (CustomExitHandler) {
-    CustomExitHandler(Thread, FEXCore::Context::ExitReason::EXIT_SHUTDOWN);
-    return Thread->ExitReason;
+    CustomExitHandler(Thread);
   }
-
-  return FEXCore::Context::ExitReason::EXIT_SHUTDOWN;
 }
 
 void ContextImpl::ExecuteThread(FEXCore::Core::InternalThreadState* Thread) {
@@ -871,7 +868,6 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
 }
 
 void ContextImpl::ExecutionThread(FEXCore::Core::InternalThreadState* Thread) {
-  Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_WAITING;
 
   if (Thread->StartPaused) {
     // Parent thread doesn't need to wait to run
@@ -879,8 +875,6 @@ void ContextImpl::ExecutionThread(FEXCore::Core::InternalThreadState* Thread) {
   }
 
   Thread->RunningEvents.WaitingToStart = false;
-
-  Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_NONE;
 
   Thread->RunningEvents.Running = true;
 
