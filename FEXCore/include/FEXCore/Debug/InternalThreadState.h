@@ -89,8 +89,6 @@ struct InternalThreadState : public FEXCore::Allocator::FEXAllocOperators {
   FEXCore::Context::Context* const CTX;
 
   NonMovableUniquePtr<FEXCore::Threads::Thread> ExecutionThread;
-  bool StartPaused {false};
-  InterruptableConditionVariable StartRunning;
 
   NonMovableUniquePtr<FEXCore::IR::OpDispatchBuilder> OpDispatcher;
 

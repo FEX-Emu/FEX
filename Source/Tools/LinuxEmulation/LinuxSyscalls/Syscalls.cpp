@@ -659,9 +659,6 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame* Frame, FEX::HLE::clone3_args
     // Return the new threads TID
     uint64_t Result = NewThread->ThreadInfo.TID;
 
-    // Actually start the thread
-    FEX::HLE::_SyscallHandler->TM.RunThread(NewThread);
-
     if (flags & CLONE_VFORK) {
       // If VFORK is set then the calling process is suspended until the thread exits with execve or exit
       NewThread->Thread->ExecutionThread->join(nullptr);

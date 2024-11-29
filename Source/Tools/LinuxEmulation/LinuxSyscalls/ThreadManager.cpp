@@ -46,11 +46,6 @@ void ThreadManager::StopThread(FEX::HLE::ThreadStateObject* Thread) {
   }
 }
 
-void ThreadManager::RunThread(FEX::HLE::ThreadStateObject* Thread) {
-  // Tell the thread to start executing
-  Thread->Thread->StartRunning.NotifyAll();
-}
-
 void ThreadManager::HandleThreadDeletion(FEX::HLE::ThreadStateObject* Thread, bool NeedsTLSUninstall) {
   if (Thread->Thread->ExecutionThread) {
     if (Thread->Thread->ExecutionThread->joinable()) {
@@ -92,10 +87,6 @@ void ThreadManager::Run() {
   std::lock_guard lk(ThreadCreationMutex);
   for (auto& Thread : Threads) {
     Thread->SignalReason.store(SignalEvent::Return);
-  }
-
-  for (auto& Thread : Threads) {
-    Thread->Thread->StartRunning.NotifyAll();
   }
 }
 
@@ -166,12 +157,6 @@ void ThreadManager::Stop(bool IgnoreCurrentThread) {
       if (Thread->Thread->RunningEvents.Running.load()) {
         StopThread(Thread);
       }
-
-      // If the thread is waiting to start but immediately killed then there can be a hang
-      // This occurs in the case of gdb attach with immediate kill
-      if (Thread->Thread->RunningEvents.WaitingToStart.load()) {
-        Thread->Thread->StartRunning.NotifyAll();
-      }
     }
   }
 
@@ -182,6 +167,7 @@ void ThreadManager::Stop(bool IgnoreCurrentThread) {
 }
 
 void ThreadManager::SleepThread(FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Frame) {
+  auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
   auto Thread = Frame->Thread;
 
   --IdleWaitRefCount;
@@ -190,13 +176,17 @@ void ThreadManager::SleepThread(FEXCore::Context::Context* CTX, FEXCore::Core::C
   Thread->RunningEvents.ThreadSleeping = true;
 
   // Go to sleep
-  Thread->StartRunning.Wait();
+  ThreadObject->ThreadPaused.Wait();
 
   Thread->RunningEvents.Running = true;
   ++IdleWaitRefCount;
   Thread->RunningEvents.ThreadSleeping = false;
 
   IdleWaitCV.notify_all();
+}
+
+void ThreadManager::UnpauseThread(FEX::HLE::ThreadStateObject* Thread) {
+  Thread->ThreadPaused.NotifyOne();
 }
 
 void ThreadManager::UnlockAfterFork(FEXCore::Core::InternalThreadState* LiveThread, bool Child) {

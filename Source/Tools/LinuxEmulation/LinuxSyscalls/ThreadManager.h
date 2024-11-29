@@ -78,6 +78,9 @@ struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
   // Thread signaling information
   std::atomic<SignalEvent> SignalReason {SignalEvent::Nothing};
 
+  // Thread pause handling
+  FEXCore::InterruptableConditionVariable ThreadPaused;
+
   int StatusCode {};
 };
 
@@ -108,7 +111,7 @@ public:
 
   void DestroyThread(FEX::HLE::ThreadStateObject* Thread, bool NeedsTLSUninstall = false);
   void StopThread(FEX::HLE::ThreadStateObject* Thread);
-  void RunThread(FEX::HLE::ThreadStateObject* Thread);
+  void UnpauseThread(FEX::HLE::ThreadStateObject* Thread);
 
   void Pause();
   void Run();
