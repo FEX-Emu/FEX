@@ -47,22 +47,17 @@ namespace FEX::HLE {
 struct ExecutionThreadHandler {
   FEXCore::Context::Context* CTX;
   FEX::HLE::ThreadStateObject* Thread;
-  Event* ThreadWaiting;
+  Event ThreadWaiting {};
 
   // Pause on thread start handling.
-  FEXCore::InterruptableConditionVariable* StartRunningCV {};
-  FEXCore::InterruptableConditionVariable* StartRunningResponse {};
+  FEXCore::InterruptableConditionVariable StartRunningCV {};
+  FEXCore::InterruptableConditionVariable StartRunningResponse {};
 };
 
 static void* ThreadHandler(void* Data) {
   ExecutionThreadHandler* Handler = reinterpret_cast<ExecutionThreadHandler*>(Data);
   auto CTX = Handler->CTX;
   auto Thread = Handler->Thread;
-  auto ThreadWaiting = Handler->ThreadWaiting;
-  auto StartRunningCV = Handler->StartRunningCV;
-  auto StartRunningResponse = Handler->StartRunningResponse;
-
-  FEXCore::Allocator::free(Handler);
 
   Thread->ThreadInfo.PID = ::getpid();
   Thread->ThreadInfo.TID = FHU::Syscalls::gettid();
@@ -70,10 +65,13 @@ static void* ThreadHandler(void* Data) {
   FEX::HLE::_SyscallHandler->RegisterTLSState(Thread);
 
   // Now notify the thread that we are initialized
-  ThreadWaiting->NotifyOne();
+  Handler->ThreadWaiting.NotifyOne();
 
-  StartRunningCV->Wait();
-  StartRunningResponse->NotifyOne();
+  Handler->StartRunningCV.Wait();
+
+  // Notify the parent thread that it can continue.
+  // Handler is a stack object on the parent thread, and will be invalid after notification.
+  Handler->StartRunningResponse.NotifyOne();
 
   CTX->ExecutionThread(Thread->Thread);
   FEX::HLE::_SyscallHandler->UninstallTLSState(Thread);
@@ -109,21 +107,14 @@ FEX::HLE::ThreadStateObject* CreateNewThread(FEXCore::Context::Context* CTX, FEX
   }
 
   // Initialize a new thread for execution.
-  Event ThreadWaitingEvent {};
-  FEXCore::InterruptableConditionVariable StartRunningCV {};
-  FEXCore::InterruptableConditionVariable StartRunningResponse {};
-
-  ExecutionThreadHandler* Arg = reinterpret_cast<ExecutionThreadHandler*>(FEXCore::Allocator::malloc(sizeof(ExecutionThreadHandler)));
-  Arg->CTX = CTX;
-  Arg->Thread = NewThread;
-  Arg->ThreadWaiting = &ThreadWaitingEvent;
-  Arg->StartRunningCV = &StartRunningCV;
-  Arg->StartRunningResponse = &StartRunningResponse;
-
-  NewThread->Thread->ExecutionThread = FEXCore::Threads::Thread::Create(ThreadHandler, Arg);
+  ExecutionThreadHandler Arg {
+    .CTX = CTX,
+    .Thread = NewThread,
+  };
+  NewThread->Thread->ExecutionThread = FEXCore::Threads::Thread::Create(ThreadHandler, &Arg);
 
   // Wait for the thread to have started.
-  ThreadWaitingEvent.Wait();
+  Arg.ThreadWaiting.Wait();
 
   if (FEX::HLE::_SyscallHandler->NeedXIDCheck()) {
     // The first time an application creates a thread, GLIBC installs their SETXID signal handler.
@@ -169,10 +160,10 @@ FEX::HLE::ThreadStateObject* CreateNewThread(FEXCore::Context::Context* CTX, FEX
   FEX::HLE::_SyscallHandler->TM.TrackThread(NewThread);
 
   // Start running the thread
-  StartRunningCV.NotifyOne();
+  Arg.StartRunningCV.NotifyOne();
 
   // Wait for the thread to start running.
-  StartRunningResponse.Wait();
+  Arg.StartRunningResponse.Wait();
 
   return NewThread;
 }
