@@ -91,7 +91,6 @@ struct InternalThreadState : public FEXCore::Allocator::FEXAllocOperators {
   NonMovableUniquePtr<FEXCore::Threads::Thread> ExecutionThread;
   bool StartPaused {false};
   InterruptableConditionVariable StartRunning;
-  Event ThreadWaiting;
 
   NonMovableUniquePtr<FEXCore::IR::OpDispatchBuilder> OpDispatcher;
 

@@ -873,9 +873,6 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
 void ContextImpl::ExecutionThread(FEXCore::Core::InternalThreadState* Thread) {
   Thread->ExitReason = FEXCore::Context::ExitReason::EXIT_WAITING;
 
-  // Now notify the thread that we are initialized
-  Thread->ThreadWaiting.NotifyAll();
-
   if (Thread->StartPaused) {
     // Parent thread doesn't need to wait to run
     Thread->StartRunning.Wait();
