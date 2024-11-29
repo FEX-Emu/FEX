@@ -48,6 +48,10 @@ struct ExecutionThreadHandler {
   FEXCore::Context::Context* CTX;
   FEX::HLE::ThreadStateObject* Thread;
   Event* ThreadWaiting;
+
+  // Pause on thread start handling.
+  FEXCore::InterruptableConditionVariable* StartRunningCV {};
+  FEXCore::InterruptableConditionVariable* StartRunningResponse {};
 };
 
 static void* ThreadHandler(void* Data) {
@@ -55,6 +59,9 @@ static void* ThreadHandler(void* Data) {
   auto CTX = Handler->CTX;
   auto Thread = Handler->Thread;
   auto ThreadWaiting = Handler->ThreadWaiting;
+  auto StartRunningCV = Handler->StartRunningCV;
+  auto StartRunningResponse = Handler->StartRunningResponse;
+
   FEXCore::Allocator::free(Handler);
 
   Thread->ThreadInfo.PID = ::getpid();
@@ -64,6 +71,9 @@ static void* ThreadHandler(void* Data) {
 
   // Now notify the thread that we are initialized
   ThreadWaiting->NotifyOne();
+
+  StartRunningCV->Wait();
+  StartRunningResponse->NotifyOne();
 
   CTX->ExecutionThread(Thread->Thread);
   FEX::HLE::_SyscallHandler->UninstallTLSState(Thread);
@@ -98,15 +108,18 @@ FEX::HLE::ThreadStateObject* CreateNewThread(FEXCore::Context::Context* CTX, FEX
     x32::AdjustRipForNewThread(NewThread->Thread->CurrentFrame);
   }
 
-  // We need to do some post-thread creation setup.
-  NewThread->Thread->StartPaused = true;
-
   // Initialize a new thread for execution.
   Event ThreadWaitingEvent {};
+  FEXCore::InterruptableConditionVariable StartRunningCV {};
+  FEXCore::InterruptableConditionVariable StartRunningResponse {};
+
   ExecutionThreadHandler* Arg = reinterpret_cast<ExecutionThreadHandler*>(FEXCore::Allocator::malloc(sizeof(ExecutionThreadHandler)));
   Arg->CTX = CTX;
   Arg->Thread = NewThread;
   Arg->ThreadWaiting = &ThreadWaitingEvent;
+  Arg->StartRunningCV = &StartRunningCV;
+  Arg->StartRunningResponse = &StartRunningResponse;
+
   NewThread->Thread->ExecutionThread = FEXCore::Threads::Thread::Create(ThreadHandler, Arg);
 
   // Wait for the thread to have started.
@@ -155,6 +168,12 @@ FEX::HLE::ThreadStateObject* CreateNewThread(FEXCore::Context::Context* CTX, FEX
 
   FEX::HLE::_SyscallHandler->TM.TrackThread(NewThread);
 
+  // Start running the thread
+  StartRunningCV.NotifyOne();
+
+  // Wait for the thread to start running.
+  StartRunningResponse.Wait();
+
   return NewThread;
 }
 
@@ -179,7 +198,6 @@ uint64_t HandleNewClone(FEX::HLE::ThreadStateObject* Thread, FEXCore::Context::C
 
     // CLONE_PARENT_SETTID, CLONE_CHILD_SETTID, CLONE_CHILD_CLEARTID, CLONE_PIDFD will be handled by kernel
     // Call execution thread directly since we already are on the new thread
-    NewThread->Thread->StartRunning.NotifyAll(); // Clear the start running flag
     CreatedNewThreadObject = true;
   } else {
     // If we don't have CLONE_THREAD then we are effectively a fork
