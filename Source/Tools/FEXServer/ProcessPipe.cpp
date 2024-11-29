@@ -514,7 +514,7 @@ void WaitForRequests() {
     } else {
       auto Now = std::chrono::system_clock::now();
       auto Diff = Now - LastDataTime;
-      if (Diff >= std::chrono::seconds(RequestTimeout) && !Foreground && PollFDs.size() == 1) {
+      if (Diff >= std::chrono::seconds(RequestTimeout) && !Foreground && PollFDs.size() == 2) {
         // If we aren't running in the foreground and we have no connections after a timeout
         // Then we can just go ahead and leave
         ShouldShutdown = true;
