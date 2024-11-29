@@ -674,7 +674,7 @@ int main(int argc, char** argv, char** const envp) {
     }
   }
 
-  auto ProgramStatus = ParentThread->Thread->StatusCode;
+  auto ProgramStatus = ParentThread->StatusCode;
 
   SignalDelegation->UninstallTLSState(ParentThread);
   SyscallHandler->TM.DestroyThread(ParentThread);

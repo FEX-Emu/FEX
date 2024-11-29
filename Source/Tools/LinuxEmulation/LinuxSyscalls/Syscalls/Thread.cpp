@@ -226,7 +226,7 @@ uint64_t HandleNewClone(FEX::HLE::ThreadStateObject* Thread, FEXCore::Context::C
   FEX::HLE::_SyscallHandler->UninstallTLSState(Thread);
 
   // The rest of the context remains as is and the thread will continue executing
-  return Thread->Thread->StatusCode;
+  return Thread->StatusCode;
 }
 
 static int Clone3Fork(uint32_t flags) {
@@ -390,8 +390,6 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
 
   REGISTER_SYSCALL_IMPL_FLAGS(exit, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY | SyscallFlags::NORETURN,
                               [](FEXCore::Core::CpuStateFrame* Frame, int status) -> uint64_t {
-                                auto Thread = Frame->Thread;
-
                                 // TLS/DTV teardown is something FEX can't control. Disable glibc checking when we leave a pthread.
                                 // Since this thread is hard stopping, we can't track the TLS/DTV teardown in FEX's thread handling.
                                 FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator::HardDisable();
@@ -403,7 +401,7 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
                                   syscall(SYSCALL_DEF(futex), ThreadObject->ThreadInfo.clear_child_tid, FUTEX_WAKE, ~0ULL, 0, 0, 0);
                                 }
 
-                                Thread->StatusCode = status;
+                                ThreadObject->StatusCode = status;
                                 FEX::HLE::_SyscallHandler->TM.StopThread(ThreadObject);
 
                                 return 0;
