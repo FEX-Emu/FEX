@@ -41,9 +41,7 @@ void ThreadManager::DestroyThread(FEX::HLE::ThreadStateObject* Thread, bool Need
 }
 
 void ThreadManager::StopThread(FEX::HLE::ThreadStateObject* Thread) {
-  if (Thread->Thread->RunningEvents.Running.exchange(false)) {
-    SignalDelegation->SignalThread(Thread->Thread, SignalEvent::Stop);
-  }
+  SignalDelegation->SignalThread(Thread->Thread, SignalEvent::Stop);
 }
 
 void ThreadManager::HandleThreadDeletion(FEX::HLE::ThreadStateObject* Thread, bool NeedsTLSUninstall) {
@@ -154,9 +152,7 @@ void ThreadManager::Stop(bool IgnoreCurrentThread) {
         continue;
       }
 
-      if (Thread->Thread->RunningEvents.Running.load()) {
-        StopThread(Thread);
-      }
+      StopThread(Thread);
     }
   }
 
@@ -168,19 +164,17 @@ void ThreadManager::Stop(bool IgnoreCurrentThread) {
 
 void ThreadManager::SleepThread(FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Frame) {
   auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
-  auto Thread = Frame->Thread;
 
   --IdleWaitRefCount;
   IdleWaitCV.notify_all();
 
-  Thread->RunningEvents.ThreadSleeping = true;
+  ThreadObject->ThreadSleeping = true;
 
   // Go to sleep
   ThreadObject->ThreadPaused.Wait();
 
-  Thread->RunningEvents.Running = true;
   ++IdleWaitRefCount;
-  Thread->RunningEvents.ThreadSleeping = false;
+  ThreadObject->ThreadSleeping = false;
 
   IdleWaitCV.notify_all();
 }
@@ -200,9 +194,6 @@ void ThreadManager::UnlockAfterFork(FEXCore::Core::InternalThreadState* LiveThre
     if (DeadThread->Thread == LiveThread) {
       continue;
     }
-
-    // Setting running to false ensures that when they are shutdown we won't send signals to kill them
-    DeadThread->Thread->RunningEvents.Running = false;
 
     // Despite what google searches may susgest, glibc actually has special code to handle forks
     // with multiple active threads.
