@@ -415,7 +415,7 @@ static ARM64_NT_CONTEXT StoreStateToPackedECContext(FEXCore::Core::InternalThrea
   // See HandleGuestException
   uint32_t EFlags = CTX->ReconstructCompactedEFLAGS(Thread, false, nullptr, 0);
   ECContext.Cpsr = 0;
-  ECContext.Cpsr |= (EFlags & (1U << FEXCore::X86State::RFLAG_TF_LOC)) ? (1U << 21) : 0;
+  ECContext.Cpsr |= (EFlags & (1U << FEXCore::X86State::RFLAG_TF_RAW_LOC)) ? (1U << 21) : 0;
   ECContext.Cpsr |= (EFlags & (1U << FEXCore::X86State::RFLAG_OF_RAW_LOC)) ? (1U << 28) : 0;
   ECContext.Cpsr |= (EFlags & (1U << FEXCore::X86State::RFLAG_CF_RAW_LOC)) ? (1U << 29) : 0;
   ECContext.Cpsr |= (EFlags & (1U << FEXCore::X86State::RFLAG_ZF_RAW_LOC)) ? (1U << 30) : 0;
@@ -435,7 +435,9 @@ static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT&
   auto* Args = reinterpret_cast<KiUserExceptionDispatcherStackLayout*>(FEXCore::AlignDown(GuestSp, 64)) - 1;
 
   LogMan::Msg::DFmt("Reconstructing context");
-  ReconstructThreadState(Thread, Context);
+  if (!IsDispatcherAddress(Context.Pc)) {
+    ReconstructThreadState(Thread, Context);
+  }
   Args->Context = StoreStateToPackedECContext(Thread, Context.Fpcr, Context.Fpsr);
   LogMan::Msg::DFmt("pc: {:X} rip: {:X}", Context.Pc, Args->Context.Pc);
 
@@ -443,7 +445,7 @@ static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT&
   // Current ARM64EC windows can only restore NZCV+SS when returning from an exception and other flags are left untouched from the handler context.
   // TODO: Can extend wine to support this by mapping the remaining EFlags into reserved cpsr members.
   uint32_t EFlags = CTX->ReconstructCompactedEFLAGS(Thread, false, nullptr, 0);
-  EFlags &= (1 << FEXCore::X86State::RFLAG_TF_LOC);
+  EFlags &= ~(1 << FEXCore::X86State::RFLAG_TF_RAW_LOC);
   CTX->SetFlagsFromCompactedEFLAGS(Thread, EFlags);
 
   Args->Rec = FEX::Windows::HandleGuestException(Fault, Rec, Args->Context.Pc, Args->Context.X8);
@@ -508,7 +510,7 @@ extern "C" void SyncThreadContext(CONTEXT* Context) {
   // This is advisable over dropping their values as thread suspend/resume uses this function, and that can happen at any point in guest code.
   static constexpr uint32_t ECValidEFlagsMask {(1U << FEXCore::X86State::RFLAG_OF_RAW_LOC) | (1U << FEXCore::X86State::RFLAG_CF_RAW_LOC) |
                                                (1U << FEXCore::X86State::RFLAG_ZF_RAW_LOC) | (1U << FEXCore::X86State::RFLAG_SF_RAW_LOC) |
-                                               (1U << FEXCore::X86State::RFLAG_TF_LOC)};
+                                               (1U << FEXCore::X86State::RFLAG_TF_RAW_LOC)};
 
   uint32_t StateEFlags = CTX->ReconstructCompactedEFLAGS(Thread, false, nullptr, 0);
   Context->EFlags = (Context->EFlags & ECValidEFlagsMask) | (StateEFlags & ~ECValidEFlagsMask);
@@ -585,7 +587,19 @@ bool ResetToConsistentStateImpl(EXCEPTION_RECORD* Exception, CONTEXT* GuestConte
 
     std::scoped_lock Lock(ThreadCreationMutex);
     if (InvalidationTracker->HandleRWXAccessViolation(FaultAddress)) {
-      LogMan::Msg::DFmt("Handled self-modifying code: pc: {:X} fault: {:X}", NativeContext->Pc, FaultAddress);
+      if (CTX->IsAddressInCodeBuffer(CPUArea.ThreadState(), NativeContext->Pc) && !CTX->IsCurrentBlockSingleInst(CPUArea.ThreadState()) &&
+          CTX->IsAddressInCurrentBlock(CPUArea.ThreadState(), FaultAddress, 8)) {
+        // If we are not patching ourself (single inst block case) and patching the current block, this is inline SMC. Reconstruct the current context (before the SMC write) then single step the write to reduce it to regular SMC.
+        Exception::ReconstructThreadState(CPUArea.ThreadState(), *NativeContext);
+        LogMan::Msg::DFmt("Handled inline self-modifying code: pc: {:X} rip: {:X} fault: {:X}", NativeContext->Pc,
+                          CPUArea.ThreadState()->CurrentFrame->State.rip, FaultAddress);
+        NativeContext->Pc = CPUArea.DispatcherLoopTopEnterECFillSRA();
+        NativeContext->Sp = CPUArea.EmulatorStackBase();
+        NativeContext->X10 = 1; // Set ENTRY_FILL_SRA_SINGLE_INST_REG to force a single step
+      } else {
+        LogMan::Msg::DFmt("Handled self-modifying code: pc: {:X} fault: {:X}", NativeContext->Pc, FaultAddress);
+      }
+
       return true;
     }
   }
