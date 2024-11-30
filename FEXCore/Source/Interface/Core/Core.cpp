@@ -916,8 +916,6 @@ void ContextImpl::ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState* Thre
   LogMan::Throw::AFmt(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex.try_lock() == false, "CodeInvalidationMutex needs to "
                                                                                                          "be unique_locked here");
 
-  std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
-
   Thread->LookupCache->Erase(Thread->CurrentFrame, GuestRIP);
 }
 
