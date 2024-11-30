@@ -4307,6 +4307,14 @@ Ref OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, const X86T
   }
 
   if ((IsOperandMem(Operand, true) && LoadData) || ForceLoad) {
+    if (OpSize == OpSize::f80Bit) {
+      Ref MemSrc = LoadEffectiveAddress(A, true);
+
+      // For X87 extended doubles, Split the load.
+      auto Res = _LoadMem(Class, OpSize::i64Bit, MemSrc, Align == OpSize::iInvalid ? OpSize : Align);
+      return _VLoadVectorElement(OpSize::i128Bit, OpSize::i16Bit, Res, 4, _Add(OpSize::i64Bit, MemSrc, _InlineConstant(8)));
+    }
+
     return _LoadMemAutoTSO(Class, OpSize, A, Align == OpSize::iInvalid ? OpSize : Align);
   } else {
     return LoadEffectiveAddress(A, false, AllowUpperGarbage);
