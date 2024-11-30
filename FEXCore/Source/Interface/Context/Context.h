@@ -248,8 +248,6 @@ public:
   ~ContextImpl();
 
   static void ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP);
-  static void ThreadAddBlockLink(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestDestination,
-                                 FEXCore::Context::ExitFunctionLinkData* HostLink, const BlockDelinkerFunc& delinker);
 
   template<auto Fn>
   static uint64_t ThreadExitFunctionLink(FEXCore::Core::CpuStateFrame* Frame, ExitFunctionLinkData* Record) {
