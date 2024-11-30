@@ -360,8 +360,6 @@ private:
    */
   void InitializeCompiler(FEXCore::Core::InternalThreadState* Thread);
 
-  void AddBlockMapping(FEXCore::Core::InternalThreadState* Thread, uint64_t Address, void* Ptr);
-
   IR::AOTIRCaptureCache IRCaptureCache;
   fextl::unique_ptr<FEXCore::CodeSerialize::CodeObjectSerializeService> CodeObjectCacheService;
 
