@@ -94,6 +94,7 @@ protected:
   std::span<const ARMEmitter::Register> ConfiguredDynamicRegisterBase {};
   std::span<const ARMEmitter::Register> StaticRegisters {};
   std::span<const ARMEmitter::Register> GeneralRegisters {};
+  std::span<const ARMEmitter::PRegister> PredicateRegisters {};
   std::span<const ARMEmitter::VRegister> StaticFPRegisters {};
   std::span<const ARMEmitter::VRegister> GeneralFPRegisters {};
   uint32_t PairRegisters = 0;

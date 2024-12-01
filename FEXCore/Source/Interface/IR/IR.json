@@ -7,6 +7,7 @@
     "  SSA = untyped",
     "  GPR = GPR class type",
     "  FPR = FPR class type",
+    "  PRED = Predicate register class type",
     "Declaring the SSA types correctly will allow validation passes to ensure the op is getting passed correct arguments",
     "",
     "Arguments must always follow a particular order. <Type>:<Prefix><Name>",
@@ -83,6 +84,7 @@
     "constexpr FEXCore::IR::RegisterClassType GPRFixedClass {1}",
     "constexpr FEXCore::IR::RegisterClassType FPRClass {2}",
     "constexpr FEXCore::IR::RegisterClassType FPRFixedClass {3}",
+    "constexpr FEXCore::IR::RegisterClassType PREDClass {4}",
     "constexpr FEXCore::IR::RegisterClassType ComplexClass {5}",
     "constexpr FEXCore::IR::RegisterClassType InvalidClass {7}",
     "",
@@ -148,6 +150,7 @@
     "SSA": "OrderedNode*",
     "GPR": "OrderedNode*",
     "FPR": "OrderedNode*",
+    "PRED": "OrderedNode*",
     "FenceType": "FenceType",
     "RegisterClass": "RegisterClassType",
     "CondClass": "CondClassType",
@@ -560,8 +563,21 @@
         "HasSideEffects": true,
         "DestSize": "Size",
         "EmitValidation": [
-          "WalkFindRegClass($Value1) == $Class",
-          "WalkFindRegClass($Value2) == $Class"
+          "WalkFindRegClass($Value1) == $Class"
+        ]
+      },
+
+      "PRED = InitPredicate OpSize:#Size, u8:$Pattern": {
+        "Desc": ["Initialize predicate register from Pattern"],
+        "DestSize": "Size"
+      },
+
+      "StoreMemPredicate RegisterClass:$Class, OpSize:#Size, SSA:$Value, PRED:$Mask, GPR:$Addr": {
+        "Desc": [ "Stores a value to memory using SVE predicate mask." ],
+        "HasSideEffects": true,
+        "DestSize": "Size",
+        "EmitValidation": [
+          "WalkFindRegClass($Value) == $Class"
         ]
       },
 

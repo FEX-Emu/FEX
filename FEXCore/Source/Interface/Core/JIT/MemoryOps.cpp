@@ -10,6 +10,7 @@ $end_info$
 #include "Interface/Context/Context.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/JIT/JITClass.h"
+#include "Interface/IR/IR.h"
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/MathUtils.h>
 
@@ -1548,6 +1549,45 @@ DEF_OP(StoreMem) {
     }
     default: LOGMAN_MSG_A_FMT("Unhandled StoreMem size: {}", OpSize); break;
     }
+  }
+}
+
+DEF_OP(InitPredicate) {
+  const auto Op = IROp->C<IR::IROp_InitPredicate>();
+  const auto OpSize = IROp->Size;
+  ptrue(ConvertSubRegSize16(OpSize), GetPReg(Node), static_cast<ARMEmitter::PredicatePattern>(Op->Pattern));
+}
+
+DEF_OP(StoreMemPredicate) {
+  const auto Op = IROp->C<IR::IROp_StoreMemPredicate>();
+  // FIXME: Dont we need OpSize then?
+  const auto Predicate = GetPReg(Op->Mask.ID());
+
+  const auto RegData = GetVReg(Op->Value.ID());
+  const auto MemReg = GetReg(Op->Addr.ID());
+
+  LOGMAN_THROW_A_FMT(HostSupportsSVE128 || HostSupportsSVE256, "StoreMemPredicate needs SVE support");
+
+  const auto MemDst = ARMEmitter::SVEMemOperand(MemReg.X(), 0);
+
+  switch (IROp->ElementSize) {
+  case IR::OpSize::i8Bit: {
+    st1b<ARMEmitter::SubRegSize::i8Bit>(RegData.Z(), Predicate, MemDst);
+    break;
+  }
+  case IR::OpSize::i16Bit: {
+    st1h<ARMEmitter::SubRegSize::i16Bit>(RegData.Z(), Predicate, MemDst);
+    break;
+  }
+  case IR::OpSize::i32Bit: {
+    st1w<ARMEmitter::SubRegSize::i32Bit>(RegData.Z(), Predicate, MemDst);
+    break;
+  }
+  case IR::OpSize::i64Bit: {
+    st1d(RegData.Z(), Predicate, MemDst);
+    break;
+  }
+  default: break;
   }
 }
 
