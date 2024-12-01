@@ -366,8 +366,6 @@ void ContextImpl::HandleCallback(FEXCore::Core::InternalThreadState* Thread, uin
 void ContextImpl::RunUntilExit(FEXCore::Core::InternalThreadState* Thread) {
   ExecutionThread(Thread);
 
-  CoreShuttingDown.store(true);
-
   if (CustomExitHandler) {
     CustomExitHandler(Thread);
   }
