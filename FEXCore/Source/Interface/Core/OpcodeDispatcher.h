@@ -185,10 +185,10 @@ public:
       auto it = JumpTargets.find(NextRIP);
       if (it == JumpTargets.end()) {
 
-        const uint8_t GPRSize = CTX->GetGPRSize();
+        const auto GPRSize = CTX->GetGPROpSize();
         // If we don't have a jump target to a new block then we have to leave
         // Set the RIP to the next instruction and leave
-        auto RelocatedNextRIP = _EntrypointOffset(IR::SizeToOpSize(GPRSize), NextRIP - Entry);
+        auto RelocatedNextRIP = _EntrypointOffset(GPRSize, NextRIP - Entry);
         ExitFunction(RelocatedNextRIP);
       } else if (it != JumpTargets.end()) {
         Jump(it->second.BlockEntry);
@@ -2056,7 +2056,7 @@ private:
     auto Shift = FEXCore::ilog2(Size);
 
     if (Shift) {
-      return _Lshl(IR::SizeToOpSize(CTX->GetGPRSize()), Dir, _Constant(Shift));
+      return _Lshl(CTX->GetGPROpSize(), Dir, _Constant(Shift));
     } else {
       return Dir;
     }
