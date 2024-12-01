@@ -1857,17 +1857,6 @@ private:
     }
   }
 
-  unsigned CacheIndexToSize(int Index) {
-    // MMX registers are rounded up to 128-bit since they are shared with 80-bit
-    // x87 registers, even though MMX is logically only 64-bit.
-    if (Index >= AVXHigh0Index || ((Index >= MM0Index && Index <= MM7Index))) {
-      return 16;
-    } else {
-      return 1;
-    }
-  }
-
-  // TODO: Temporary while OpcodeDispatcher shifts over
   IR::OpSize CacheIndexToOpSize(int Index) {
     // MMX registers are rounded up to 128-bit since they are shared with 80-bit
     // x87 registers, even though MMX is logically only 64-bit.
