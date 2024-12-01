@@ -299,11 +299,6 @@ public:
   CompileCodeResult CompileCode(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, uint64_t MaxInst = 0);
   uintptr_t CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_t GuestRIP, uint64_t MaxInst = 0);
 
-  uint8_t GetGPRSize() const {
-    return Config.Is64BitMode ? 8 : 4;
-  }
-
-  // TODO: Temporary while OpcodeDispatcher shifts over
   IR::OpSize GetGPROpSize() const {
     return Config.Is64BitMode ? IR::OpSize::i64Bit : IR::OpSize::i32Bit;
   }

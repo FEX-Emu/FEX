@@ -562,7 +562,7 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
 
     Thread->OpDispatcher->BeginFunction(GuestRIP, CodeBlocks, BlockInfo->TotalInstructionCount);
 
-    const uint8_t GPRSize = GetGPRSize();
+    const auto GPRSize = GetGPROpSize();
 
     for (size_t j = 0; j < CodeBlocks->size(); ++j) {
       const FEXCore::Frontend::Decoder::DecodedBlocks& Block = CodeBlocks->at(j);
@@ -578,7 +578,7 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
 
       if (InstsInBlock == 0) {
         // Special case for an empty instruction block.
-        Thread->OpDispatcher->ExitFunction(Thread->OpDispatcher->_EntrypointOffset(IR::SizeToOpSize(GPRSize), Block.Entry - GuestRIP));
+        Thread->OpDispatcher->ExitFunction(Thread->OpDispatcher->_EntrypointOffset(GPRSize, Block.Entry - GuestRIP));
       }
 
       for (size_t i = 0; i < InstsInBlock; ++i) {
@@ -621,8 +621,7 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
 
           Thread->OpDispatcher->SetCurrentCodeBlock(CodeWasChangedBlock);
           Thread->OpDispatcher->_ThreadRemoveCodeEntry();
-          Thread->OpDispatcher->ExitFunction(
-            Thread->OpDispatcher->_EntrypointOffset(IR::SizeToOpSize(GPRSize), Block.Entry + BlockInstructionsLength - GuestRIP));
+          Thread->OpDispatcher->ExitFunction(Thread->OpDispatcher->_EntrypointOffset(GPRSize, Block.Entry + BlockInstructionsLength - GuestRIP));
 
           auto NextOpBlock = Thread->OpDispatcher->CreateNewCodeBlockAfter(CurrentBlock);
 
@@ -652,7 +651,7 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
           }
           // Invalid instruction
           Thread->OpDispatcher->InvalidOp(DecodedInfo);
-          Thread->OpDispatcher->ExitFunction(Thread->OpDispatcher->_EntrypointOffset(IR::SizeToOpSize(GPRSize), Block.Entry - GuestRIP));
+          Thread->OpDispatcher->ExitFunction(Thread->OpDispatcher->_EntrypointOffset(GPRSize, Block.Entry - GuestRIP));
         }
 
         const bool NeedsBlockEnd =
@@ -666,11 +665,8 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
         }
 
         if (NeedsBlockEnd) {
-          const uint8_t GPRSize = GetGPRSize();
-
           // We had some instructions. Early exit
-          Thread->OpDispatcher->ExitFunction(
-            Thread->OpDispatcher->_EntrypointOffset(IR::SizeToOpSize(GPRSize), Block.Entry + BlockInstructionsLength - GuestRIP));
+          Thread->OpDispatcher->ExitFunction(Thread->OpDispatcher->_EntrypointOffset(GPRSize, Block.Entry + BlockInstructionsLength - GuestRIP));
           break;
         }
 

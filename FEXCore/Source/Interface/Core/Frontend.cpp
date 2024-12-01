@@ -926,7 +926,7 @@ void Decoder::BranchTargetInMultiblockRange() {
 
   // If the RIP setting is conditional AND within our symbol range then it can be considered for multiblock
   uint64_t TargetRIP = 0;
-  const uint8_t GPRSize = CTX->GetGPRSize();
+  const auto GPRSize = CTX->GetGPROpSize();
   bool Conditional = true;
 
   switch (DecodeInst->OP) {
@@ -954,7 +954,7 @@ void Decoder::BranchTargetInMultiblockRange() {
   default: return; break;
   }
 
-  if (GPRSize == 4) {
+  if (GPRSize == IR::OpSize::i32Bit) {
     // If we are running a 32bit guest then wrap around addresses that go above 32bit
     TargetRIP &= 0xFFFFFFFFU;
   }
@@ -995,13 +995,13 @@ bool Decoder::BranchTargetCanContinue(bool FinalInstruction) const {
   }
 
   uint64_t TargetRIP = 0;
-  const uint8_t GPRSize = CTX->GetGPRSize();
+  const auto GPRSize = CTX->GetGPROpSize();
 
   if (DecodeInst->OP == 0xE8) { // Call - immediate target
     const uint64_t NextRIP = DecodeInst->PC + DecodeInst->InstSize;
     TargetRIP = DecodeInst->PC + DecodeInst->InstSize + DecodeInst->Src[0].Literal();
 
-    if (GPRSize == 4) {
+    if (GPRSize == IR::OpSize::i32Bit) {
       // If we are running a 32bit guest then wrap around addresses that go above 32bit
       TargetRIP &= 0xFFFFFFFFU;
     }

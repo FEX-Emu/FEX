@@ -1820,10 +1820,10 @@ void OpDispatchBuilder::BZHI(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RORX(OpcodeArgs) {
-  const auto SrcSize = GetSrcSize(Op);
-  const auto SrcSizeBits = SrcSize * 8;
+  const auto SrcSize = OpSizeFromSrc(Op);
+  const auto SrcSizeBits = IR::OpSizeAsBits(SrcSize);
   const auto Amount = Op->Src[1].Literal() & (SrcSizeBits - 1);
-  const auto GPRSize = CTX->GetGPRSize();
+  const auto GPRSize = CTX->GetGPROpSize();
 
   const auto DoRotation = Amount != 0 && Amount < SrcSizeBits;
   const auto IsSameGPR = Op->Src[0].IsGPR() && Op->Dest.IsGPR() && Op->Src[0].Data.GPR.GPR == Op->Dest.Data.GPR.GPR;

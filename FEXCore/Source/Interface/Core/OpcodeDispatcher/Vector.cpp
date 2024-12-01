@@ -2485,7 +2485,7 @@ Ref OpDispatchBuilder::XSaveBase(X86Tables::DecodedOp Op) {
 void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
   // NOTE: Mask should be EAX and EDX concatenated, but we only need to test
   //       for features that are in the lower 32 bits, so EAX only is sufficient.
-  const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
+  const auto OpSize = CTX->GetGPROpSize();
 
   const auto StoreIfFlagSet = [this, OpSize](uint32_t BitIndex, auto fn, uint32_t FieldSize = 1) {
     Ref Mask = LoadGPRRegister(X86State::REG_RAX);
@@ -2658,7 +2658,7 @@ void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
-  const auto OpSize = IR::SizeToOpSize(CTX->GetGPRSize());
+  const auto OpSize = CTX->GetGPROpSize();
 
   // If a bit in our XSTATE_BV is set, then we restore from that region of the XSAVE area,
   // otherwise, if not set, then we need to set the relevant data the bit corresponds to
