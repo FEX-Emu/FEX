@@ -234,8 +234,6 @@ public:
     FEX_CONFIG_OPT(StrictInProcessSplitLocks, STRICTINPROCESSSPLITLOCKS);
   } Config;
 
-  std::atomic_bool CoreShuttingDown {false};
-
   FEXCore::ForkableSharedMutex CodeInvalidationMutex;
 
   uint32_t StrictSplitLockMutex {};
