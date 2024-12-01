@@ -73,7 +73,7 @@ static void* ThreadHandler(void* Data) {
   // Handler is a stack object on the parent thread, and will be invalid after notification.
   Handler->StartRunningResponse.NotifyOne();
 
-  CTX->ExecutionThread(Thread->Thread);
+  CTX->ExecuteThread(Thread->Thread);
   FEX::HLE::_SyscallHandler->UninstallTLSState(Thread);
   FEX::HLE::_SyscallHandler->TM.DestroyThread(Thread);
   return nullptr;
@@ -238,7 +238,7 @@ uint64_t HandleNewClone(FEX::HLE::ThreadStateObject* Thread, FEXCore::Context::C
 
   // Start exuting the thread directly
   // Our host clone starts in a new stack space, so it can't return back to the JIT space
-  CTX->ExecutionThread(Thread->Thread);
+  CTX->ExecuteThread(Thread->Thread);
 
   FEX::HLE::_SyscallHandler->UninstallTLSState(Thread);
 

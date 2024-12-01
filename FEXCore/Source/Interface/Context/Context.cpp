@@ -24,14 +24,6 @@ fextl::unique_ptr<FEXCore::Context::Context> FEXCore::Context::Context::CreateNe
   return fextl::make_unique<FEXCore::Context::ContextImpl>(Features);
 }
 
-void FEXCore::Context::ContextImpl::SetExitHandler(ExitHandler handler) {
-  CustomExitHandler = std::move(handler);
-}
-
-ExitHandler FEXCore::Context::ContextImpl::GetExitHandler() const {
-  return CustomExitHandler;
-}
-
 void FEXCore::Context::ContextImpl::CompileRIP(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP) {
   CompileBlock(Thread->CurrentFrame, GuestRIP);
 }
