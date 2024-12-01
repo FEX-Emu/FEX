@@ -1560,7 +1560,6 @@ DEF_OP(InitPredicate) {
 
 DEF_OP(StoreMemPredicate) {
   const auto Op = IROp->C<IR::IROp_StoreMemPredicate>();
-  // FIXME: Dont we need OpSize then?
   const auto Predicate = GetPReg(Op->Mask.ID());
 
   const auto RegData = GetVReg(Op->Value.ID());
@@ -1587,7 +1586,38 @@ DEF_OP(StoreMemPredicate) {
     st1d(RegData.Z(), Predicate, MemDst);
     break;
   }
-  default: break;
+  default: LOGMAN_MSG_A_FMT("Unhandled {} element size: {}", __func__, IROp->ElementSize); break;
+  }
+}
+
+DEF_OP(LoadMemPredicate) {
+  const auto Op = IROp->C<IR::IROp_LoadMemPredicate>();
+  const auto Dst = GetVReg(Node);
+  const auto Predicate = GetPReg(Op->Mask.ID());
+  const auto MemReg = GetReg(Op->Addr.ID());
+
+  LOGMAN_THROW_A_FMT(HostSupportsSVE128 || HostSupportsSVE256, "LoadMemPredicate needs SVE support");
+
+  const auto MemDst = ARMEmitter::SVEMemOperand(MemReg.X(), 0);
+
+  switch (IROp->ElementSize) {
+  case IR::OpSize::i8Bit: {
+    ld1b<ARMEmitter::SubRegSize::i8Bit>(Dst.Z(), Predicate.Zeroing(), MemDst);
+    break;
+  }
+  case IR::OpSize::i16Bit: {
+    ld1h<ARMEmitter::SubRegSize::i16Bit>(Dst.Z(), Predicate.Zeroing(), MemDst);
+    break;
+  }
+  case IR::OpSize::i32Bit: {
+    ld1w<ARMEmitter::SubRegSize::i32Bit>(Dst.Z(), Predicate.Zeroing(), MemDst);
+    break;
+  }
+  case IR::OpSize::i64Bit: {
+    ld1d(Dst.Z(), Predicate.Zeroing(), MemDst);
+    break;
+  }
+  default: LOGMAN_MSG_A_FMT("Unhandled {} element size: {}", __func__, IROp->ElementSize); break;
   }
 }
 

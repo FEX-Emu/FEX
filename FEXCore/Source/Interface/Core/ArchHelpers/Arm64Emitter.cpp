@@ -59,9 +59,9 @@ namespace x64 {
 
   // p6 and p7 registers are used as temporaries no not added here for RA
   // See PREF_TMP_16B and PREF_TMP_32B
-  // Also p8-p15 cannot be used can only encode p0-p7, so we're left with p0-p5.
-  constexpr std::array<ARMEmitter::PRegister, 6> PR = {ARMEmitter::PReg::p0, ARMEmitter::PReg::p1, ARMEmitter::PReg::p2,
-                                                       ARMEmitter::PReg::p3, ARMEmitter::PReg::p4, ARMEmitter::PReg::p5};
+  // p0-p1 are also used in the jit as temps.
+  // Also p8-p15 cannot be used can only encode p0-p7, so we're left with p2-p5.
+  constexpr std::array<ARMEmitter::PRegister, 4> PR = {ARMEmitter::PReg::p2, ARMEmitter::PReg::p3, ARMEmitter::PReg::p4, ARMEmitter::PReg::p5};
 
   constexpr unsigned RAPairs = 6;
 
@@ -111,9 +111,9 @@ namespace x64 {
 
   // p6 and p7 registers are used as temporaries no not added here for RA
   // See PREF_TMP_16B and PREF_TMP_32B
-  // Also p8-p15 cannot be used can only encode p0-p7, so we're left with p0-p5.
-  constexpr std::array<ARMEmitter::PRegister, 6> PR = {ARMEmitter::PReg::p0, ARMEmitter::PReg::p1, ARMEmitter::PReg::p2,
-                                                       ARMEmitter::PReg::p3, ARMEmitter::PReg::p4, ARMEmitter::PReg::p5};
+  // p0-p1 are also used in the jit as temps.
+  // Also p8-p15 cannot be used can only encode p0-p7, so we're left with p2-p5.
+  constexpr std::array<ARMEmitter::PRegister, 4> PR = {ARMEmitter::PReg::p2, ARMEmitter::PReg::p3, ARMEmitter::PReg::p4, ARMEmitter::PReg::p5};
 
   constexpr unsigned RAPairs = 6;
 
@@ -248,9 +248,9 @@ namespace x32 {
 
   // p6 and p7 registers are used as temporaries no not added here for RA
   // See PREF_TMP_16B and PREF_TMP_32B
-  // Also p8-p15 cannot be used can only encode p0-p7, so we're left with p0-p5.
-  constexpr std::array<ARMEmitter::PRegister, 6> PR = {ARMEmitter::PReg::p0, ARMEmitter::PReg::p1, ARMEmitter::PReg::p2,
-                                                       ARMEmitter::PReg::p3, ARMEmitter::PReg::p4, ARMEmitter::PReg::p5};
+  // p0-p1 are also used in the jit as temps.
+  // Also p8-p15 cannot be used can only encode p0-p7, so we're left with p2-p5.
+  constexpr std::array<ARMEmitter::PRegister, 4> PR = {ARMEmitter::PReg::p2, ARMEmitter::PReg::p3, ARMEmitter::PReg::p4, ARMEmitter::PReg::p5};
 
   // All are caller saved
   constexpr std::array<ARMEmitter::VRegister, 8> SRAFPR = {

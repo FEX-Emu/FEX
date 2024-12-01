@@ -572,13 +572,16 @@
         "DestSize": "Size"
       },
 
-      "StoreMemPredicate RegisterClass:$Class, OpSize:#Size, SSA:$Value, PRED:$Mask, GPR:$Addr": {
+      "StoreMemPredicate OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Value, PRED:$Mask, GPR:$Addr": {
         "Desc": [ "Stores a value to memory using SVE predicate mask." ],
+        "DestSize": "RegisterSize",
         "HasSideEffects": true,
-        "DestSize": "Size",
-        "EmitValidation": [
-          "WalkFindRegClass($Value) == $Class"
-        ]
+        "NumElements": "IR::NumElements(RegisterSize, ElementSize)"
+      },
+      "FPR = LoadMemPredicate OpSize:#RegisterSize, OpSize:#ElementSize, PRED:$Mask, GPR:$Addr": {
+        "Desc": [ "Loads a value to memory using SVE predicate mask." ],
+        "DestSize": "RegisterSize",
+        "NumElements": "IR::NumElements(RegisterSize, ElementSize)"
       },
 
       "SSA = LoadMemTSO RegisterClass:$Class, OpSize:#Size, GPR:$Addr, GPR:$Offset, OpSize:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale": {
