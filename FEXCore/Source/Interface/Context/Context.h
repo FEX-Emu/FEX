@@ -299,9 +299,6 @@ public:
   CompileCodeResult CompileCode(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, uint64_t MaxInst = 0);
   uintptr_t CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_t GuestRIP, uint64_t MaxInst = 0);
 
-  // Used for thread creation from syscalls
-  void CopyMemoryMapping(FEXCore::Core::InternalThreadState* ParentThread, FEXCore::Core::InternalThreadState* ChildThread);
-
   uint8_t GetGPRSize() const {
     return Config.Is64BitMode ? 8 : 4;
   }
