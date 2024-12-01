@@ -96,8 +96,6 @@ GdbServer::GdbServer(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* 
   // Pass all signals by default
   std::fill(PassSignals.begin(), PassSignals.end(), true);
 
-  ctx->SetExitHandler([this](FEXCore::Core::InternalThreadState* Thread) { CoreShuttingDown = true; });
-
   // This is a total hack as there is currently no way to resume once hitting a segfault
   // But it's semi-useful for debugging.
   for (uint32_t Signal = 0; Signal <= FEX::HLE::SignalDelegator::MAX_SIGNALS; ++Signal) {

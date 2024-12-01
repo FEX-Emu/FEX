@@ -94,19 +94,6 @@ public:
    */
   FEX_DEFAULT_VISIBILITY virtual bool InitCore() = 0;
 
-  FEX_DEFAULT_VISIBILITY virtual void SetExitHandler(ExitHandler handler) = 0;
-  FEX_DEFAULT_VISIBILITY virtual ExitHandler GetExitHandler() const = 0;
-
-  /**
-   * @brief Runs the CPU core until it exits
-   *
-   * If an Exit handler has been registered, this function won't return until the core
-   * has shutdown.
-   *
-   * @param CTX The context that we created
-   */
-  FEX_DEFAULT_VISIBILITY virtual void RunUntilExit(FEXCore::Core::InternalThreadState* Thread) = 0;
-
   /**
    * @brief Executes the supplied thread context on the current thread until a return is requested
    */
@@ -158,7 +145,6 @@ public:
   FEX_DEFAULT_VISIBILITY virtual FEXCore::Core::InternalThreadState* CreateThread(
     uint64_t InitialRIP, uint64_t StackPointer, const FEXCore::Core::CPUState* NewThreadState = nullptr, uint64_t ParentTID = 0) = 0;
 
-  FEX_DEFAULT_VISIBILITY virtual void ExecutionThread(FEXCore::Core::InternalThreadState* Thread) = 0;
   FEX_DEFAULT_VISIBILITY virtual void DestroyThread(FEXCore::Core::InternalThreadState* Thread) = 0;
 #ifndef _WIN32
   FEX_DEFAULT_VISIBILITY virtual void LockBeforeFork(FEXCore::Core::InternalThreadState* Thread) {}

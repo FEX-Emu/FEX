@@ -332,7 +332,7 @@ int main(int argc, char** argv, char** const envp) {
 
     int LongJumpVal = setjmp(LongJumpHandler::LongJump);
     if (!LongJumpVal) {
-      CTX->RunUntilExit(ParentThread->Thread);
+      CTX->ExecuteThread(ParentThread->Thread);
     }
 
     // Just re-use compare state. It also checks against the expected values in config.

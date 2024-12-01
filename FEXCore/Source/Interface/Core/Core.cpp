@@ -363,16 +363,17 @@ void ContextImpl::HandleCallback(FEXCore::Core::InternalThreadState* Thread, uin
   static_cast<ContextImpl*>(Thread->CTX)->Dispatcher->ExecuteJITCallback(Thread->CurrentFrame, RIP);
 }
 
-void ContextImpl::RunUntilExit(FEXCore::Core::InternalThreadState* Thread) {
-  ExecutionThread(Thread);
-
-  if (CustomExitHandler) {
-    CustomExitHandler(Thread);
-  }
-}
-
 void ContextImpl::ExecuteThread(FEXCore::Core::InternalThreadState* Thread) {
   Dispatcher->ExecuteDispatch(Thread->CurrentFrame);
+
+  {
+    // Ensure the Code Object Serialization service has fully serialized this thread's data before clearing the cache
+    // Use the thread's object cache ref counter for this
+    CodeSerialize::CodeObjectSerializeService::WaitForEmptyJobQueue(&Thread->ObjectCacheRefCounter);
+  }
+
+  // If it is the parent thread that died then just leave
+  FEX_TODO("This doesn't make sense when the parent thread doesn't outlive its children");
 }
 
 void ContextImpl::InitializeCompiler(FEXCore::Core::InternalThreadState* Thread) {
@@ -859,19 +860,6 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
   AddBlockMapping(Thread, GuestRIP, CodePtr);
 
   return (uintptr_t)CodePtr;
-}
-
-void ContextImpl::ExecutionThread(FEXCore::Core::InternalThreadState* Thread) {
-  static_cast<ContextImpl*>(Thread->CTX)->Dispatcher->ExecuteDispatch(Thread->CurrentFrame);
-
-  {
-    // Ensure the Code Object Serialization service has fully serialized this thread's data before clearing the cache
-    // Use the thread's object cache ref counter for this
-    CodeSerialize::CodeObjectSerializeService::WaitForEmptyJobQueue(&Thread->ObjectCacheRefCounter);
-  }
-
-  // If it is the parent thread that died then just leave
-  FEX_TODO("This doesn't make sense when the parent thread doesn't outlive its children");
 }
 
 static void InvalidateGuestThreadCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) {

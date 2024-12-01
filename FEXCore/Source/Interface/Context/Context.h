@@ -81,11 +81,6 @@ public:
   // Context base class implementation.
   bool InitCore() override;
 
-  void SetExitHandler(ExitHandler handler) override;
-  ExitHandler GetExitHandler() const override;
-
-  void RunUntilExit(FEXCore::Core::InternalThreadState* Thread) override;
-
   void ExecuteThread(FEXCore::Core::InternalThreadState* Thread) override;
 
   void CompileRIP(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP) override;
@@ -113,15 +108,15 @@ public:
    * Usecases:
    *  Parent thread Creation:
    *    - Thread = CreateThread(InitialRIP, InitialStack, nullptr, 0);
-   *    - CTX->RunUntilExit(Thread);
+   *    - CTX->ExecuteThread(Thread);
    *  OS thread Creation:
    *    - Thread = CreateThread(0, 0, NewState, PPID);
    *    - Thread->ExecutionThread = FEXCore::Threads::Thread::Create(ThreadHandler, Arg);
-   *    - ThreadHandler calls `CTX->ExecutionThread(Thread)`
+   *    - ThreadHandler calls `CTX->ExecuteThread(Thread)`
    *  OS fork (New thread created with a clone of thread state):
    *    - clone{2, 3}
    *    - Thread = CreateThread(0, 0, CopyOfThreadState, PPID);
-   *    - ExecutionThread(Thread); // Starts executing without creating another host thread
+   *    - ExecuteThread(Thread); // Starts executing without creating another host thread
    *  Thunk callback executing guest code from native host thread
    *    - Thread = CreateThread(0, 0, NewState, PPID);
    *    - HandleCallback(Thread, RIP);
@@ -129,9 +124,6 @@ public:
 
   FEXCore::Core::InternalThreadState*
   CreateThread(uint64_t InitialRIP, uint64_t StackPointer, const FEXCore::Core::CPUState* NewThreadState, uint64_t ParentTID) override;
-
-  // Public for threading
-  void ExecutionThread(FEXCore::Core::InternalThreadState* Thread) override;
 
   /**
    * @brief Destroys this FEX thread object and stops tracking it internally
@@ -245,8 +237,6 @@ public:
   FEXCore::HLE::SourcecodeResolver* SourcecodeResolver {};
   FEXCore::ThunkHandler* ThunkHandler {};
   fextl::unique_ptr<FEXCore::CPU::Dispatcher> Dispatcher;
-
-  FEXCore::Context::ExitHandler CustomExitHandler;
 
   SignalDelegator* SignalDelegation {};
   X86GeneratedCode X86CodeGen;

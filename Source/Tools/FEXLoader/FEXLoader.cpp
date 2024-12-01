@@ -604,11 +604,6 @@ int main(int argc, char** argv, char** const envp) {
 
   SyscallHandler->DeserializeSeccompFD(ParentThread, FEXSeccompFD);
 
-  // There might already be an exit handler, leave it installed
-  if (!CTX->GetExitHandler()) {
-    CTX->SetExitHandler([&](FEXCore::Core::InternalThreadState* Thread) { SyscallHandler->TM.Stop(); });
-  }
-
   const bool AOTEnabled = AOTIRLoad() || AOTIRCapture() || AOTIRGenerate();
   if (AOTEnabled) {
     LogMan::Msg::IFmt("Warning: AOTIR is experimental, and might lead to crashes. "
@@ -646,8 +641,11 @@ int main(int argc, char** argv, char** const envp) {
       FEX::AOT::AOTGenSection(CTX.get(), Section);
     }
   } else {
-    CTX->RunUntilExit(ParentThread->Thread);
+    CTX->ExecuteThread(ParentThread->Thread);
   }
+
+  DebugServer.reset();
+  SyscallHandler->TM.Stop();
 
   if (AOTEnabled) {
     if (FHU::Filesystem::CreateDirectories(fextl::fmt::format("{}/aotir", FEXCore::Config::GetDataDirectory()))) {
