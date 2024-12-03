@@ -223,7 +223,7 @@ def parse_ops(ops):
                         (OpArg.Type == "GPR" or
                         OpArg.Type == "GPRPair" or
                         OpArg.Type == "FPR" or
-                        OpArg.Type == "PR")):
+                        OpArg.Type == "PRED")):
                         OpDef.EmitValidation.append(f"GetOpRegClass({ArgName}) == InvalidClass || WalkFindRegClass({ArgName}) == {OpArg.Type}Class")
 
                     OpArg.Name = ArgName

@@ -824,7 +824,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
             }
             if (Op->StoreSize == OpSize::f80Bit) { // Part of code from StoreResult_WithOpSize()
               if (Features.SupportsSVE128 || Features.SupportsSVE256) {
-                auto PReg = IREmit->_InitPredicate(OpSize::i16Bit, FEXCore::ToUnderlying(ARMEmitter::PredicatePattern::SVE_VL5));
+                auto PReg = IREmit->InitPredicateCached(OpSize::i16Bit, ARMEmitter::PredicatePattern::SVE_VL5);
                 IREmit->_StoreMemPredicate(OpSize::i128Bit, OpSize::i16Bit, StackNode, PReg, AddrNode);
               } else {
                 // For X87 extended doubles, split before storing
