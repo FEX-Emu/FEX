@@ -130,7 +130,11 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
 
 void OpDispatchBuilder::FST(OpcodeArgs, IR::OpSize Width) {
   Ref Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-  _StoreStackMemory(Mem, OpSize::i128Bit, true, Width);
+  Ref PredReg = Invalid();
+  if (CTX->HostFeatures.SupportsSVE128 || CTX->HostFeatures.SupportsSVE256) {
+    PredReg = InitPredicateCached(OpSize::i16Bit, ARMEmitter::PredicatePattern::SVE_VL5);
+  }
+  _StoreStackMemory(PredReg, Mem, OpSize::i128Bit, true, Width);
   if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
     _PopStackDestroy();
   }
@@ -267,9 +271,9 @@ void OpDispatchBuilder::FDIV(OpcodeArgs, IR::OpSize Width, bool Integer, bool Re
 
 void OpDispatchBuilder::FSUB(OpcodeArgs, IR::OpSize Width, bool Integer, bool Reverse, OpDispatchBuilder::OpResult ResInST0) {
   if (Op->Src[0].IsNone()) {
-    const auto Offset = Op->OP & 7;
-    const auto St0 = 0;
-    const auto Result = (ResInST0 == OpResult::RES_STI) ? Offset : St0;
+    const uint8_t Offset = Op->OP & 7;
+    const uint8_t St0 = 0;
+    const uint8_t Result = (ResInST0 == OpResult::RES_STI) ? Offset : St0;
 
     if (Reverse ^ (ResInST0 == OpResult::RES_STI)) {
       _F80SubStack(Result, Offset, St0);
@@ -751,13 +755,11 @@ void OpDispatchBuilder::FNINIT(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::X87FFREE(OpcodeArgs) {
-
   _InvalidateStack(Op->OP & 7);
 }
 
 void OpDispatchBuilder::X87EMMS(OpcodeArgs) {
   // Tags all get set to 0b11
-
   _InvalidateStack(0xff);
 }
 

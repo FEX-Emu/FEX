@@ -55,6 +55,7 @@ class OpDefinition:
     NonSSAArgNum: int
     DynamicDispatch: bool
     LoweredX87: bool
+    MaybeClobbersPredRegs: bool
     JITDispatch: bool
     JITDispatchOverride: str
     TiedSource: int
@@ -79,6 +80,7 @@ class OpDefinition:
         self.NonSSAArgNum = 0
         self.DynamicDispatch = False
         self.LoweredX87 = False
+        self.MaybeClobbersPredRegs = False
         self.JITDispatch = True
         self.JITDispatchOverride = None
         self.TiedSource = -1
@@ -223,7 +225,7 @@ def parse_ops(ops):
                         (OpArg.Type == "GPR" or
                         OpArg.Type == "GPRPair" or
                         OpArg.Type == "FPR" or
-                        OpArg.Type == "PR")):
+                        OpArg.Type == "PRED")):
                         OpDef.EmitValidation.append(f"GetOpRegClass({ArgName}) == InvalidClass || WalkFindRegClass({ArgName}) == {OpArg.Type}Class")
 
                     OpArg.Name = ArgName
@@ -276,6 +278,9 @@ def parse_ops(ops):
                 # X87 implies !JITDispatch
                 assert("JITDispatch" not in op_val)
                 OpDef.JITDispatch = False
+
+            if "MaybeClobbersPredRegs" in op_val:
+                OpDef.MaybeClobbersPredRegs = op_val["MaybeClobbersPredRegs"]
 
             if "TiedSource" in op_val:
                 OpDef.TiedSource = op_val["TiedSource"]
@@ -506,6 +511,7 @@ def print_ir_hassideeffects():
         ("HasSideEffects", "bool"),
         ("ImplicitFlagClobber", "bool"),
         ("LoweredX87", "bool"),
+        ("MaybeClobbersPredRegs", "bool"),
         ("TiedSource", "int8_t"),
     ]:
         output_file.write(
@@ -706,6 +712,9 @@ def print_ir_allocator_helpers():
                 output_file.write(
                     "\t\tif(MMXState == MMXState_MMX) ChgStateMMX_X87();\n"
                 )
+
+            if op.MaybeClobbersPredRegs:
+                output_file.write("\t\tResetInitPredicateCache();\n")
 
             output_file.write("\t\tauto _Op = AllocateOp<IROp_{}, IROps::OP_{}>();\n".format(op.Name, op.Name.upper()))
 

@@ -822,10 +822,11 @@ void X87StackOptimization::Run(IREmitter* Emit) {
             if (Op->StoreSize != OpSize::f80Bit) { // if it's not 80bits then convert
               StackNode = IREmit->_F80CVT(Op->StoreSize, StackNode);
             }
-            if (Op->StoreSize == OpSize::f80Bit) { // Part of code from StoreResult_WithOpSize()
-              if (Features.SupportsSVE128 || Features.SupportsSVE256) {
-                auto PReg = IREmit->_InitPredicate(OpSize::i16Bit, FEXCore::ToUnderlying(ARMEmitter::PredicatePattern::SVE_VL5));
-                IREmit->_StoreMemPredicate(OpSize::i128Bit, OpSize::i16Bit, StackNode, PReg, AddrNode);
+            if (Op->StoreSize == OpSize::f80Bit) {
+              Ref PredReg = CurrentIR.GetNode(Op->PredReg);
+              bool CanUsePredicateStore = (Features.SupportsSVE128 || Features.SupportsSVE256) && PredReg;
+              if (CanUsePredicateStore) {
+                IREmit->_StoreMemPredicate(OpSize::i128Bit, OpSize::i16Bit, StackNode, PredReg, AddrNode);
               } else {
                 // For X87 extended doubles, split before storing
                 IREmit->_StoreMem(FPRClass, OpSize::i64Bit, AddrNode, StackNode);

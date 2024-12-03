@@ -211,7 +211,8 @@
       },
 
       "ThreadRemoveCodeEntry": {
-        "HasSideEffects": true
+        "HasSideEffects": true,
+        "MaybeClobbersPredRegs": true
       },
 
       "GPR = ProcessorID": {
@@ -248,7 +249,8 @@
       "Print SSA:$Value": {
         "HasSideEffects": true,
         "Desc": ["Debug operation that prints an SSA value to the console",
-                 "May only print 64bits of the value"]
+                 "May only print 64bits of the value"],
+        "MaybeClobbersPredRegs": true
       },
       "GPR = AllocateGPR i1:$ForPair": {
         "Desc": ["Silly pseudo-instruction to allocate a register for a future destination",
@@ -312,7 +314,8 @@
         "HasSideEffects": true,
         "Desc": ["Dispatches a guest syscall through to the SyscallHandler class"
                 ],
-        "DestSize": "OpSize::i64Bit"
+        "DestSize": "OpSize::i64Bit",
+        "MaybeClobbersPredRegs": true
       },
 
       "GPR = InlineSyscall GPR:$Arg0, GPR:$Arg1, GPR:$Arg2, GPR:$Arg3, GPR:$Arg4, GPR:$Arg5, i32:$HostSyscallNumber, SyscallFlags:$Flags": {
@@ -328,18 +331,21 @@
       },
 
       "Thunk GPR:$ArgPtr, SHA256Sum:$ThunkNameHash": {
-        "HasSideEffects": true
+        "HasSideEffects": true,
+        "MaybeClobbersPredRegs": true
       },
 
       "GPR:$EAX, GPR:$EBX, GPR:$ECX, GPR:$EDX = CPUID GPR:$Function, GPR:$Leaf": {
         "Desc": ["Calls in to the CPUID handler function to return emulated CPUID"],
         "DestSize": "OpSize::i32Bit",
-        "HasSideEffects": true
+        "HasSideEffects": true,
+        "MaybeClobbersPredRegs": true
       },
       "GPR:$EAX, GPR:$EDX = XGetBV GPR:$Function": {
         "Desc": ["Calls in to the XCR handler function to return emulated XCR"],
         "DestSize": "OpSize::i32Bit",
-        "HasSideEffects": true
+        "HasSideEffects": true,
+        "MaybeClobbersPredRegs": true
       }
     },
     "Moves": {
@@ -578,6 +584,7 @@
         "HasSideEffects": true,
         "ElementSize": "ElementSize"
       },
+      
       "FPR = LoadMemPredicate OpSize:#RegisterSize, OpSize:#ElementSize, PRED:$Mask, GPR:$Addr": {
         "Desc": [ "Loads a value to memory using SVE predicate mask." ],
         "DestSize": "RegisterSize",
@@ -1631,7 +1638,8 @@
         "DestSize": "Size",
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
+        ],
+        "MaybeClobbersPredRegs": true
       },
       "GPR = LUDiv OpSize:#Size, GPR:$Lower, GPR:$Upper, GPR:$Divisor": {
         "Desc": ["Integer long unsigned division returning lower bits",
@@ -1641,7 +1649,8 @@
         "DestSize": "Size",
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
+        ],
+        "MaybeClobbersPredRegs": true
       },
       "GPR = LRem OpSize:#Size, GPR:$Lower, GPR:$Upper, GPR:$Divisor": {
         "Desc": ["Integer long signed remainder returning lower bits",
@@ -1651,7 +1660,8 @@
         "DestSize": "Size",
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
+        ],
+        "MaybeClobbersPredRegs": true
       },
       "GPR = LURem OpSize:#Size, GPR:$Lower, GPR:$Upper, GPR:$Divisor": {
         "Desc": ["Integer long unsigned remainder returning lower bits",
@@ -1661,7 +1671,8 @@
         "DestSize": "Size",
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
+        ],
+        "MaybeClobbersPredRegs": true
       },
 
       "Float to GPR": {"Ignore": 1},
@@ -2487,7 +2498,8 @@
                  "course of creating the intermediate result"
                 ],
         "DestSize": "OpSize::i32Bit",
-        "JITDispatch": false
+        "JITDispatch": false,
+        "MaybeClobbersPredRegs": true
       },
       "GPR = VPCMPISTRX FPR:$LHS, FPR:$RHS, u8:$Control": {
         "Desc": ["Performs intermediate behavior analogous to the x86 PCMPISTRI/PCMPISTRM instruction",
@@ -2788,13 +2800,14 @@
         "HasSideEffects": true,
         "X87": true
       },
-      "StoreStackMemory GPR:$Addr, OpSize:$SourceSize, i1:$Float, OpSize:$StoreSize": {
+      "StoreStackMemory PRED:$PredReg, GPR:$Addr, OpSize:$SourceSize, i1:$Float, OpSize:$StoreSize": {
         "Desc": [
           "Takes the top value off the x87 stack and stores it to memory.",
           "SourceSize is 128bit for F80 values, 64-bit for low precision.",
           "StoreSize is the store size for conversion:",
           "Float: 80-bit, 64-bit, or 32-bit",
-          "Int: 64-bit, 32-bit, 16-bit"
+          "Int: 64-bit, 32-bit, 16-bit",
+          "If possible, it will use the PredReg for an SVE store."
         ],
         "HasSideEffects": true,
         "X87": true
@@ -2834,18 +2847,21 @@
           "Adds two stack locations together, storing the result in to the first stack location"
         ],
         "HasSideEffects": true,
-        "X87": true
+        "X87": true,
+        "MaybeClobbersPredRegs": true
       },
       "F80AddValue u8:$SrcStack, FPR:$X80Src": {
         "Desc": [
           "Adds a operand value to a stack location. The result stored in to the stack location provided."
         ],
         "HasSideEffects": true,
-        "X87": true
+        "X87": true,
+        "MaybeClobbersPredRegs": true
       },
       "FPR = F80Add FPR:$X80Src1, FPR:$X80Src2": {
         "DestSize": "OpSize::i128Bit",
-        "JITDispatch": false
+        "JITDispatch": false,
+        "MaybeClobbersPredRegs": true
       },
       "F80SubStack u8:$DstStack, u8:$SrcStack1, u8:$SrcStack2": {
         "Desc": [
@@ -2853,7 +2869,8 @@
           "The result is stored in stack location TOP+$DstStack."
         ],
         "HasSideEffects": true,
-        "X87": true
+        "X87": true,
+        "MaybeClobbersPredRegs": true
       },
       "F80SubValue u8:$SrcStack, FPR:$X80Src": {
         "Desc": [
@@ -2861,7 +2878,8 @@
           "The result is stored in stack location TOP."
         ],
         "HasSideEffects": true,
-        "X87": true
+        "X87": true,
+        "MaybeClobbersPredRegs": true
       },
       "F80SubRValue FPR:$X80Src, u8:$SrcStack": {
         "Desc": [
@@ -2869,7 +2887,8 @@
           "The result is stored in stack location TOP."
         ],
         "HasSideEffects": true,
-        "X87": true
+        "X87": true,
+        "MaybeClobbersPredRegs": true
       },
       "FPR = F80Sub FPR:$X80Src1, FPR:$X80Src2": {
         "Desc": [
@@ -2878,25 +2897,29 @@
           "`FPR = X80Src2 - X80Src1`"
         ],
         "DestSize": "OpSize::i128Bit",
-        "JITDispatch": false
+        "JITDispatch": false,
+        "MaybeClobbersPredRegs": true
       },
       "F80MulStack u8:$SrcStack1, u8:$SrcStack2": {
         "Desc": [
           "Multiplies two stack locations together, storing the result in to the first stack location"
         ],
         "HasSideEffects": true,
-        "X87": true
+        "X87": true,
+        "MaybeClobbersPredRegs": true
       },
       "F80MulValue u8:$SrcStack, FPR:$X80Src": {
         "Desc": [
           "Multiplies a operand value to a stack location. The result stored in to the stack location provided."
         ],
         "HasSideEffects": true,
-        "X87": true
+        "X87": true,
+        "MaybeClobbersPredRegs": true
       },
       "FPR = F80Mul FPR:$X80Src1, FPR:$X80Src2": {
         "DestSize": "OpSize::i128Bit",
-        "JITDispatch": false
+        "JITDispatch": false,
+        "MaybeClobbersPredRegs": true
       },
       "F80DivStack u8:$DstStack, u8:$SrcStack1, u8:$SrcStack2": {
         "Desc": [
@@ -2905,7 +2928,8 @@
           "`FPR|Stack[TOP+DstStack] = Stack[TOP+SrcStack1] / Stack[TOP+SrcStack2]`"
         ],
         "HasSideEffects": true,
-        "X87": true
+        "X87": true,
+        "MaybeClobbersPredRegs": true
       },
       "F80DivValue u8:$SrcStack, FPR:$X80Src": {
         "Desc": [
@@ -2914,7 +2938,8 @@
           "`FPR|Stack[TOP] = Stack[TOP+SrcStack] / X80Src`"
         ],
         "HasSideEffects": true,
-        "X87": true
+        "X87": true,
+        "MaybeClobbersPredRegs": true
       },
       "F80DivRValue FPR:$X80Src, u8:$SrcStack": {
         "Desc": [
@@ -2923,7 +2948,8 @@
           "`FPR|Stack[TOP] = X80Src / Stack[TOP+SrcStack]`"
         ],
         "HasSideEffects": true,
-        "X87": true
+        "X87": true,
+        "MaybeClobbersPredRegs": true
       },
       "FPR = F80Div FPR:$X80Src1, FPR:$X80Src2": {
         "Desc": [
@@ -2932,7 +2958,8 @@
           "`FPR = X80Src1 / X80Src2`"
         ],
         "DestSize": "OpSize::i128Bit",
-        "JITDispatch": false
+        "JITDispatch": false,
+        "MaybeClobbersPredRegs": true
       },
       "F80StackXchange u8:$SrcStack": {
         "Desc": [
@@ -2957,14 +2984,16 @@
         ],
         "HasSideEffects": true,
         "DestSize": "OpSize::i128Bit",
-        "X87": true
+        "X87": true,
+        "MaybeClobbersPredRegs": true
       },
       "F80PTANStack": {
         "Desc": [
           "Computes the approximate tangent of the source operand in register ST(0), stores the result in ST(0), and pushes a 1.0 onto the FPU register stack."
         ],
         "X87": true,
-        "HasSideEffects": true
+        "HasSideEffects": true,
+        "MaybeClobbersPredRegs": true
       },
       "FPR = F80ATANStack": {
         "Desc": [
@@ -2972,51 +3001,63 @@
         ],
         "DestSize": "OpSize::i128Bit",
         "X87": true,
-        "HasSideEffects": true
+        "HasSideEffects": true,
+        "MaybeClobbersPredRegs": true
       },
       "FPR = F80ATAN FPR:$X80Src1, FPR:$X80Src2": {
         "DestSize": "OpSize::i128Bit",
-        "JITDispatch": false
+        "JITDispatch": false,
+        "MaybeClobbersPredRegs": true
       },
       "F80FPREMStack": {
         "X87": true,
-        "HasSideEffects": true
+        "HasSideEffects": true,
+        "MaybeClobbersPredRegs": true
       },
       "FPR = F80FPREM FPR:$X80Src1, FPR:$X80Src2": {
         "DestSize": "OpSize::i128Bit",
-        "JITDispatch": false
+        "JITDispatch": false,
+        "MaybeClobbersPredRegs": true
       },
       "F80FPREM1Stack": {
         "X87": true,
-        "HasSideEffects": true
+        "HasSideEffects": true,
+        "MaybeClobbersPredRegs": true
       },
       "FPR = F80FPREM1 FPR:$X80Src1, FPR:$X80Src2": {
         "DestSize": "OpSize::i128Bit",
-        "JITDispatch": false
+        "JITDispatch": false,
+        "MaybeClobbersPredRegs": true
       },
       "F80SCALEStack": {
         "X87": true,
-        "HasSideEffects": true
+        "HasSideEffects": true,
+        "MaybeClobbersPredRegs": true
       },
       "FPR = F80SCALE FPR:$X80Src1, FPR:$X80Src2": {
         "DestSize": "OpSize::i128Bit",
-        "JITDispatch": false
+        "JITDispatch": false,
+        "MaybeClobbersPredRegs": true
       },
       "FPR = F80CVT OpSize:#Size, FPR:$X80Src": {
         "DestSize": "Size",
-        "JITDispatch": false
+        "JITDispatch": false,
+        "MaybeClobbersPredRegs": true
       },
       "GPR = F80CVTInt OpSize:#Size, FPR:$X80Src, i1:$Truncate": {
         "DestSize": "Size",
-        "JITDispatch": false
+        "JITDispatch": false,
+        "MaybeClobbersPredRegs": true
       },
       "FPR = F80CVTTo FPR:$X80Src, OpSize:$SrcSize": {
         "DestSize": "OpSize::i128Bit",
-        "JITDispatch": false
+        "JITDispatch": false,
+        "MaybeClobbersPredRegs": true
       },
       "FPR = F80CVTToInt GPR:$Src, OpSize:$SrcSize": {
         "DestSize": "OpSize::i128Bit",
-        "JITDispatch": false
+        "JITDispatch": false,
+        "MaybeClobbersPredRegs": true
       },
       "F80RoundStack": {
         "Desc": [
@@ -3027,62 +3068,76 @@
       },
       "FPR = F80Round FPR:$X80Src": {
         "DestSize": "OpSize::i128Bit",
-        "JITDispatch": false
+        "JITDispatch": false,
+        "MaybeClobbersPredRegs": true
       },
       "F80F2XM1Stack": {
         "X87": true,
-        "HasSideEffects": true
+        "HasSideEffects": true,
+        "MaybeClobbersPredRegs": true
       },
       "FPR = F80F2XM1 FPR:$X80Src": {
         "DestSize": "OpSize::i128Bit",
-        "JITDispatch": false
+        "JITDispatch": false,
+        "MaybeClobbersPredRegs": true
       },
       "FPR = F80TAN FPR:$X80Src": {
         "DestSize": "OpSize::i128Bit",
-        "JITDispatch": false
+        "JITDispatch": false,
+        "MaybeClobbersPredRegs": true
       },
       "F80SINStack": {
         "X87": true,
-        "HasSideEffects": true
+        "HasSideEffects": true,
+        "MaybeClobbersPredRegs": true
       },
       "FPR = F80SIN FPR:$X80Src": {
         "DestSize": "OpSize::i128Bit",
-        "JITDispatch": false
+        "JITDispatch": false,
+        "MaybeClobbersPredRegs": true
       },
       "F80COSStack": {
         "X87": true,
-        "HasSideEffects": true
+        "HasSideEffects": true,
+        "MaybeClobbersPredRegs": true
       },
       "FPR = F80COS FPR:$X80Src": {
         "DestSize": "OpSize::i128Bit",
-        "JITDispatch": false
+        "JITDispatch": false,
+        "MaybeClobbersPredRegs": true
       },
       "F80SINCOSStack": {
         "X87": true,
-        "HasSideEffects": true
+        "HasSideEffects": true,
+        "MaybeClobbersPredRegs": true
       },
       "F80SQRTStack": {
         "X87": true,
-        "HasSideEffects": true
+        "HasSideEffects": true,
+        "MaybeClobbersPredRegs": true
       },
       "FPR = F80SQRT FPR:$X80Src": {
         "DestSize": "OpSize::i128Bit",
-        "JITDispatch": false
+        "JITDispatch": false,
+        "MaybeClobbersPredRegs": true
       },
       "FPR = F80XTRACT_EXP FPR:$X80Src": {
         "DestSize": "OpSize::i128Bit",
-        "JITDispatch": false
+        "JITDispatch": false,
+        "MaybeClobbersPredRegs": true
       },
       "FPR = F80XTRACT_SIG FPR:$X80Src": {
         "DestSize": "OpSize::i128Bit",
-        "JITDispatch": false
+        "JITDispatch": false,
+        "MaybeClobbersPredRegs": true
       },
       "GPR = F80StackTest u8:$SrcStack": {
         "Desc": [
           "Does comparison between value in stack at TOP + SrcStack"
         ],
         "DestSize": "OpSize::i32Bit",
-        "X87": true
+        "X87": true,
+        "MaybeClobbersPredRegs": true
       },
       "GPR = F80CmpStack u8:$SrcStack": {
         "Desc": [
@@ -3090,7 +3145,8 @@
           "Ordering flag result is true if either float input is NaN"
         ],
         "DestSize": "OpSize::i32Bit",
-        "X87": true
+        "X87": true,
+        "MaybeClobbersPredRegs": true
       },
       "GPR = F80CmpValue FPR:$X80Src": {
         "Desc": [
@@ -3099,14 +3155,16 @@
         ],
         "DestSize": "OpSize::i32Bit",
         "HasSideEffects": true,
-        "X87": true
+        "X87": true,
+        "MaybeClobbersPredRegs": true
       },
       "GPR = F80Cmp FPR:$X80Src1, FPR:$X80Src2": {
         "Desc": ["Does a scalar unordered compare and stores the flags in to a GPR",
                  "Ordering flag result is true if either float input is NaN"
                 ],
         "DestSize": "OpSize::i32Bit",
-        "JITDispatch": false
+        "JITDispatch": false,
+        "MaybeClobbersPredRegs": true
       },
       "FPR = F80BCDLoad FPR:$X80Src": {
         "DestSize": "OpSize::i128Bit",
@@ -3124,11 +3182,13 @@
         ],
         "HasSideEffects": true,
         "DestSize": "OpSize::i128Bit",
-        "X87": true
+        "X87": true,
+        "MaybeClobbersPredRegs": true
       },
       "FPR = F80FYL2X FPR:$X80Src1, FPR:$X80Src2": {
         "DestSize": "OpSize::i128Bit",
-        "JITDispatch": false
+        "JITDispatch": false,
+        "MaybeClobbersPredRegs": true
       },
       "F80VBSLStack OpSize:#RegisterSize, FPR:$VectorMask, u8:$SrcStack1, u8:$SrcStack2": {
         "Desc": [
@@ -3138,7 +3198,8 @@
           "Writes the result to the top of the stack."
         ],
         "X87": true,
-        "HasSideEffects": true
+        "HasSideEffects": true,
+        "MaybeClobbersPredRegs": true
       }
     },
     "Backend": {
