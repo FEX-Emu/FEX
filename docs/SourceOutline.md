@@ -1,4 +1,4 @@
-# FEX-2410
+# FEX-2412
 
 ## FEXCore
 See [FEXCore/Readme.md](../FEXCore/Readme.md) for more details
@@ -16,18 +16,18 @@ See [FEXCore/Readme.md](../FEXCore/Readme.md) for more details
 IR to host code generation
 
 #### arm64
-- [ALUOps.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/ALUOps.cpp)
-- [Arm64Relocations.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/Arm64Relocations.cpp): relocation logic of the arm64 splatter backend
-- [AtomicOps.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/AtomicOps.cpp)
-- [BranchOps.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/BranchOps.cpp)
-- [ConversionOps.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/ConversionOps.cpp)
-- [EncryptionOps.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/EncryptionOps.cpp)
-- [JIT.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/JIT.cpp): Main glue logic of the arm64 splatter backend
-- [JITClass.h](../FEXCore/Source/Interface/Core/JIT/Arm64/JITClass.h)
-- [MemoryOps.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/MemoryOps.cpp)
-- [MiscOps.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/MiscOps.cpp)
-- [MoveOps.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/MoveOps.cpp)
-- [VectorOps.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64/VectorOps.cpp)
+- [ALUOps.cpp](../FEXCore/Source/Interface/Core/JIT/ALUOps.cpp)
+- [Arm64Relocations.cpp](../FEXCore/Source/Interface/Core/JIT/Arm64Relocations.cpp): relocation logic of the arm64 splatter backend
+- [AtomicOps.cpp](../FEXCore/Source/Interface/Core/JIT/AtomicOps.cpp)
+- [BranchOps.cpp](../FEXCore/Source/Interface/Core/JIT/BranchOps.cpp)
+- [ConversionOps.cpp](../FEXCore/Source/Interface/Core/JIT/ConversionOps.cpp)
+- [EncryptionOps.cpp](../FEXCore/Source/Interface/Core/JIT/EncryptionOps.cpp)
+- [JIT.cpp](../FEXCore/Source/Interface/Core/JIT/JIT.cpp): Main glue logic of the arm64 splatter backend
+- [JITClass.h](../FEXCore/Source/Interface/Core/JIT/JITClass.h)
+- [MemoryOps.cpp](../FEXCore/Source/Interface/Core/JIT/MemoryOps.cpp)
+- [MiscOps.cpp](../FEXCore/Source/Interface/Core/JIT/MiscOps.cpp)
+- [MoveOps.cpp](../FEXCore/Source/Interface/Core/JIT/MoveOps.cpp)
+- [VectorOps.cpp](../FEXCore/Source/Interface/Core/JIT/VectorOps.cpp)
 
 #### shared
 - [CPUBackend.h](../FEXCore/Source/Interface/Core/CPUBackend.h)
@@ -50,9 +50,9 @@ Metadata that drives the frontend x86/64 decoding
 - [SecondaryModRMTables.cpp](../FEXCore/Source/Interface/Core/X86Tables/SecondaryModRMTables.cpp)
 - [SecondaryTables.cpp](../FEXCore/Source/Interface/Core/X86Tables/SecondaryTables.cpp)
 - [VEXTables.cpp](../FEXCore/Source/Interface/Core/X86Tables/VEXTables.cpp)
+- [X86TableGen.h](../FEXCore/Source/Interface/Core/X86Tables/X86TableGen.h)
 - [X86Tables.h](../FEXCore/Source/Interface/Core/X86Tables/X86Tables.h)
 - [X87Tables.cpp](../FEXCore/Source/Interface/Core/X86Tables/X87Tables.cpp)
-- [XOPTables.cpp](../FEXCore/Source/Interface/Core/X86Tables/XOPTables.cpp)
 - [X86Tables.cpp](../FEXCore/Source/Interface/Core/X86Tables.cpp)
 
 #### x86-to-ir
