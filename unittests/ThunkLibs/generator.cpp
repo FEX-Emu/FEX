@@ -415,9 +415,15 @@ TEST_CASE_METHOD(Fixture, "UnknownAnnotation") {
 TEST_CASE_METHOD(Fixture, "VersionedLibrary") {
   const auto output = run_thunkgen_host("", "template<auto> struct fex_gen_config { int version = 123; };\n");
 
+#if CLANG_VERSION_MAJOR >= 17
+  CHECK_THAT(output, matches(callExpr(callee(functionDecl(hasName("dlopen"))), hasArgument(0, stringLiteral().bind("libname"))))
+                       .check_binding(
+                         "libname", +[](const clang::StringLiteral* lit) { return lit->getString().ends_with(".so.123"); }));
+#else
   CHECK_THAT(output, matches(callExpr(callee(functionDecl(hasName("dlopen"))), hasArgument(0, stringLiteral().bind("libname"))))
                        .check_binding(
                          "libname", +[](const clang::StringLiteral* lit) { return lit->getString().endswith(".so.123"); }));
+#endif
 }
 
 TEST_CASE_METHOD(Fixture, "FunctionPointerViaType") {
