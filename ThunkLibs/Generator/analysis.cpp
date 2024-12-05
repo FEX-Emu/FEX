@@ -2,6 +2,7 @@
 #include "diagnostics.h"
 
 #include <clang/AST/RecursiveASTVisitor.h>
+#include <clang/Basic/Version.h>
 #include <clang/Frontend/CompilerInstance.h>
 
 #include <fmt/format.h>
@@ -12,6 +13,14 @@ struct NamespaceAnnotations {
   bool generate_guest_symtable = false;
   bool indirect_guest_calls = false;
 };
+
+static clang::SourceLocation GetTemplateArgLocation(clang::ClassTemplateSpecializationDecl* decl, unsigned i) {
+#if CLANG_VERSION_MAJOR >= 19
+  return decl->getTemplateArgsAsWritten()->getTemplateArgs()[i].getLocation();
+#else
+  return decl->getTypeAsWritten()->getTypeLoc().getAs<clang::TemplateSpecializationTypeLoc>().getArgLoc(i).getLocation();
+#endif
+}
 
 static NamespaceAnnotations GetNamespaceAnnotations(clang::ASTContext& context, clang::CXXRecordDecl* decl) {
   if (!decl->hasDefinition()) {
@@ -245,8 +254,7 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
         type = type->getLocallyUnqualifiedSingleStepDesugaredType();
 
         if (param_idx >= function->getNumParams() || param_idx < -1) {
-          throw report_error(decl->getTypeAsWritten()->getTypeLoc().getAs<clang::TemplateSpecializationTypeLoc>().getArgLoc(1).getLocation(),
-                             "Out-of-bounds parameter index passed to fex_gen_param");
+          throw report_error(GetTemplateArgLocation(decl, 1), "Out-of-bounds parameter index passed to fex_gen_param");
         }
 
         auto expected_type = param_idx == -1 ? function->getReturnType() : function->getParamDecl(param_idx)->getType();
@@ -254,8 +262,7 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
         if (!type->isVoidType() && !context.hasSameType(type, expected_type)) {
           auto loc = param_idx == -1 ? function->getReturnTypeSourceRange().getBegin() :
                                        function->getParamDecl(param_idx)->getTypeSourceInfo()->getTypeLoc().getBeginLoc();
-          throw report_error(decl->getTypeAsWritten()->getTypeLoc().getAs<clang::TemplateSpecializationTypeLoc>().getArgLoc(2).getLocation(),
-                             "Type passed to fex_gen_param doesn't match the function signature")
+          throw report_error(GetTemplateArgLocation(decl, 2), "Type passed to fex_gen_param doesn't match the function signature")
             .addNote(report_error(loc, "Expected this type instead"));
         }
 
@@ -296,8 +303,7 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
         const auto& template_args = decl->getTemplateArgs();
         assert(template_args.size() == 1);
 
-        const auto template_arg_loc =
-          decl->getTypeAsWritten()->getTypeLoc().castAs<clang::TemplateSpecializationTypeLoc>().getArgLoc(0).getLocation();
+        const auto template_arg_loc = GetTemplateArgLocation(decl, 0);
 
         if (auto emitted_function = llvm::dyn_cast<clang::FunctionDecl>(template_args[0].getAsDecl())) {
           // Process later
@@ -333,8 +339,7 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
         const auto& template_args = decl->getTemplateArgs();
         assert(template_args.size() == 1);
 
-        const auto template_arg_loc =
-          decl->getTypeAsWritten()->getTypeLoc().castAs<clang::TemplateSpecializationTypeLoc>().getArgLoc(0).getLocation();
+        const auto template_arg_loc = GetTemplateArgLocation(decl, 0);
 
         if (auto emitted_function = llvm::dyn_cast<clang::FunctionDecl>(template_args[0].getAsDecl())) {
           auto return_type = emitted_function->getReturnType();
