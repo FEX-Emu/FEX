@@ -1,3 +1,15 @@
+# Simulator on x86 doesn't pass these tests due to not using float128
+Test_X87/precision_test_fcos.asm
+Test_X87/precision_test_fsin.asm
+Test_X87/precision_test_ftan.asm
+Test_X87/precision_test_fatan.asm
+Test_X87/precision_test_fyl2xp1.asm
+Test_X87/precision_test_neg_fcos.asm
+Test_X87/precision_test_neg_fsin.asm
+Test_X87/precision_test_neg_ftan.asm
+Test_X87/precision_test_neg_fatan.asm
+Test_X87/precision_test_neg_fyl2xp1.asm
+
 # AES unsupported in simulator
 Test_H0F38/66_DB.asm
 Test_H0F38/66_DC.asm
