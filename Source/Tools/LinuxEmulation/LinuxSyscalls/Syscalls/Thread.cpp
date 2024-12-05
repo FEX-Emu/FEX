@@ -246,17 +246,12 @@ uint64_t HandleNewClone(FEX::HLE::ThreadStateObject* Thread, FEXCore::Context::C
   return Thread->StatusCode;
 }
 
-static int Clone3Fork(uint32_t flags) {
-  struct clone_args cl_args = {
-    .flags = (flags & (CLONE_FS | CLONE_FILES)),
-    .exit_signal = SIGCHLD,
-  };
-
-  return syscall(SYS_clone3, cl_args, sizeof(cl_args));
+static int CloneFork(uint32_t flags, uint64_t exit_signal) {
+  return ::syscall(SYSCALL_DEF(clone), (flags & (CLONE_FS | CLONE_FILES)) | exit_signal, nullptr, nullptr, nullptr, nullptr);
 }
 
 uint64_t ForkGuest(FEXCore::Core::InternalThreadState* Thread, FEXCore::Core::CpuStateFrame* Frame, uint32_t flags, void* stack,
-                   size_t StackSize, pid_t* parent_tid, pid_t* child_tid, void* tls) {
+                   size_t StackSize, pid_t* parent_tid, pid_t* child_tid, void* tls, uint64_t exit_signal) {
   // Just before we fork, we lock all syscall mutexes so that both processes will end up with a locked mutex
 
   uint64_t Mask {~0ULL};
@@ -275,7 +270,7 @@ uint64_t ForkGuest(FEXCore::Core::InternalThreadState* Thread, FEXCore::Core::Cp
 
     // XXX: We don't currently support a real `vfork` as it causes problems.
     // Currently behaves like a fork (with wait after the fact), which isn't correct. Need to find where the problem is
-    Result = Clone3Fork(flags);
+    Result = CloneFork(flags, exit_signal);
 
     if (Result == 0) {
       // Close the read end of the pipe.
@@ -286,7 +281,7 @@ uint64_t ForkGuest(FEXCore::Core::InternalThreadState* Thread, FEXCore::Core::Cp
       close(VForkFDs[1]);
     }
   } else {
-    Result = Clone3Fork(flags);
+    Result = CloneFork(flags, exit_signal);
   }
   const bool IsChild = Result == 0;
 
@@ -384,11 +379,11 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
   });
 
   REGISTER_SYSCALL_IMPL_FLAGS(fork, SyscallFlags::DEFAULT, [](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t {
-    return ForkGuest(Frame->Thread, Frame, 0, 0, 0, 0, 0, 0);
+    return ForkGuest(Frame->Thread, Frame, 0, 0, 0, 0, 0, 0, SIGCHLD);
   });
 
   REGISTER_SYSCALL_IMPL_FLAGS(vfork, SyscallFlags::DEFAULT, [](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t {
-    return ForkGuest(Frame->Thread, Frame, CLONE_VFORK, 0, 0, 0, 0, 0);
+    return ForkGuest(Frame->Thread, Frame, CLONE_VFORK, 0, 0, 0, 0, 0, SIGCHLD);
   });
 
   REGISTER_SYSCALL_IMPL_FLAGS(getpgrp, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,

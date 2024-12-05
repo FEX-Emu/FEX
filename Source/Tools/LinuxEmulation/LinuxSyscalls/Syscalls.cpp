@@ -652,7 +652,7 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame* Frame, FEX::HLE::clone3_args
     // CLONE_PARENT is ignored (Implied by CLONE_THREAD)
     return FEX::HLE::ForkGuest(Thread, Frame, flags, reinterpret_cast<void*>(args->args.stack), args->args.stack_size,
                                reinterpret_cast<pid_t*>(args->args.parent_tid), reinterpret_cast<pid_t*>(args->args.child_tid),
-                               reinterpret_cast<void*>(args->args.tls));
+                               reinterpret_cast<void*>(args->args.tls), args->args.exit_signal);
   } else {
     auto NewThread = FEX::HLE::CreateNewThread(Thread->CTX, Frame, args);
 
