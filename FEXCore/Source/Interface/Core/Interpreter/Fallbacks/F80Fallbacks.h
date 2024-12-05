@@ -6,17 +6,20 @@
 #include "Interface/IR/IR.h"
 
 namespace FEXCore::CPU {
-FEXCORE_PRESERVE_ALL_ATTR static softfloat_state SoftFloatStateFromFCW(uint16_t FCW) {
+FEXCORE_PRESERVE_ALL_ATTR static softfloat_state SoftFloatStateFromFCW(uint16_t FCW, bool Force80BitPrecision = false) {
   softfloat_state State {};
   State.detectTininess = softfloat_tininess_afterRounding;
   State.exceptionFlags = 0;
+  State.roundingPrecision = 80;
 
-  auto PC = (FCW >> 8) & 3;
-  switch (PC) {
-  case 0: State.roundingPrecision = 32; break;
-  case 2: State.roundingPrecision = 64; break;
-  case 3: State.roundingPrecision = 80; break;
-  case 1: LOGMAN_MSG_A_FMT("Invalid x87 precision mode, {}", PC);
+  if (!Force80BitPrecision) {
+    auto PC = (FCW >> 8) & 3;
+    switch (PC) {
+    case 0: State.roundingPrecision = 32; break;
+    case 2: State.roundingPrecision = 64; break;
+    case 3: State.roundingPrecision = 80; break;
+    case 1: LOGMAN_MSG_A_FMT("Invalid x87 precision mode, {}", PC);
+    }
   }
 
   auto RC = (FCW >> 10) & 3;
@@ -132,7 +135,7 @@ struct OpHandlers<IR::OP_F80CVTTOINT> {
 template<>
 struct OpHandlers<IR::OP_F80ROUND> {
   FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat handle(uint16_t FCW, X80SoftFloat Src1) {
-    softfloat_state State = SoftFloatStateFromFCW(FCW);
+    softfloat_state State = SoftFloatStateFromFCW(FCW, true);
     return X80SoftFloat::FRNDINT(&State, Src1);
   }
 };
@@ -140,7 +143,7 @@ struct OpHandlers<IR::OP_F80ROUND> {
 template<>
 struct OpHandlers<IR::OP_F80F2XM1> {
   FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat handle(uint16_t FCW, X80SoftFloat Src1) {
-    softfloat_state State = SoftFloatStateFromFCW(FCW);
+    softfloat_state State = SoftFloatStateFromFCW(FCW, true);
     return X80SoftFloat::F2XM1(&State, Src1);
   }
 };
@@ -148,7 +151,7 @@ struct OpHandlers<IR::OP_F80F2XM1> {
 template<>
 struct OpHandlers<IR::OP_F80TAN> {
   FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat handle(uint16_t FCW, X80SoftFloat Src1) {
-    softfloat_state State = SoftFloatStateFromFCW(FCW);
+    softfloat_state State = SoftFloatStateFromFCW(FCW, true);
     return X80SoftFloat::FTAN(&State, Src1);
   }
 };
@@ -164,7 +167,7 @@ struct OpHandlers<IR::OP_F80SQRT> {
 template<>
 struct OpHandlers<IR::OP_F80SIN> {
   FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat handle(uint16_t FCW, X80SoftFloat Src1) {
-    softfloat_state State = SoftFloatStateFromFCW(FCW);
+    softfloat_state State = SoftFloatStateFromFCW(FCW, true);
     return X80SoftFloat::FSIN(&State, Src1);
   }
 };
@@ -172,7 +175,7 @@ struct OpHandlers<IR::OP_F80SIN> {
 template<>
 struct OpHandlers<IR::OP_F80COS> {
   FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat handle(uint16_t FCW, X80SoftFloat Src1) {
-    softfloat_state State = SoftFloatStateFromFCW(FCW);
+    softfloat_state State = SoftFloatStateFromFCW(FCW, true);
     return X80SoftFloat::FCOS(&State, Src1);
   }
 };
@@ -226,7 +229,7 @@ struct OpHandlers<IR::OP_F80DIV> {
 template<>
 struct OpHandlers<IR::OP_F80FYL2X> {
   FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat handle(uint16_t FCW, X80SoftFloat Src1, X80SoftFloat Src2) {
-    softfloat_state State = SoftFloatStateFromFCW(FCW);
+    softfloat_state State = SoftFloatStateFromFCW(FCW, true);
     return X80SoftFloat::FYL2X(&State, Src1, Src2);
   }
 };
@@ -234,7 +237,7 @@ struct OpHandlers<IR::OP_F80FYL2X> {
 template<>
 struct OpHandlers<IR::OP_F80ATAN> {
   FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat handle(uint16_t FCW, X80SoftFloat Src1, X80SoftFloat Src2) {
-    softfloat_state State = SoftFloatStateFromFCW(FCW);
+    softfloat_state State = SoftFloatStateFromFCW(FCW, true);
     return X80SoftFloat::FATAN(&State, Src1, Src2);
   }
 };
@@ -242,7 +245,7 @@ struct OpHandlers<IR::OP_F80ATAN> {
 template<>
 struct OpHandlers<IR::OP_F80FPREM1> {
   FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat handle(uint16_t FCW, X80SoftFloat Src1, X80SoftFloat Src2) {
-    softfloat_state State = SoftFloatStateFromFCW(FCW);
+    softfloat_state State = SoftFloatStateFromFCW(FCW, true);
     return X80SoftFloat::FREM1(&State, Src1, Src2);
   }
 };
@@ -250,7 +253,7 @@ struct OpHandlers<IR::OP_F80FPREM1> {
 template<>
 struct OpHandlers<IR::OP_F80FPREM> {
   FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat handle(uint16_t FCW, X80SoftFloat Src1, X80SoftFloat Src2) {
-    softfloat_state State = SoftFloatStateFromFCW(FCW);
+    softfloat_state State = SoftFloatStateFromFCW(FCW, true);
     return X80SoftFloat::FREM(&State, Src1, Src2);
   }
 };
@@ -258,7 +261,7 @@ struct OpHandlers<IR::OP_F80FPREM> {
 template<>
 struct OpHandlers<IR::OP_F80SCALE> {
   FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat handle(uint16_t FCW, X80SoftFloat Src1, X80SoftFloat Src2) {
-    softfloat_state State = SoftFloatStateFromFCW(FCW);
+    softfloat_state State = SoftFloatStateFromFCW(FCW, true);
     return X80SoftFloat::FSCALE(&State, Src1, Src2);
   }
 };
