@@ -52,8 +52,9 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
         .Type = TypeOfClone::TYPE_CLONE2,
         .args =
           {
-            .flags = flags, // CSIGNAL is contained in here
-            .pidfd = 0,     // For clone, pidfd is duplicated here
+
+            .flags = flags & ~CSIGNAL, // This no longer contains CSIGNAL
+            .pidfd = 0,                // For clone, pidfd is duplicated here
             .child_tid = reinterpret_cast<uint64_t>(child_tid),
             .parent_tid = reinterpret_cast<uint64_t>(parent_tid),
             .exit_signal = flags & CSIGNAL,
