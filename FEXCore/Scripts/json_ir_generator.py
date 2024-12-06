@@ -101,7 +101,8 @@ def is_ssa_type(type):
     if (type == "SSA" or
        type == "GPR" or
        type == "GPRPair" or
-       type == "FPR"):
+       type == "FPR" or
+       type == "PRED"):
        return True
     return False
 
@@ -150,8 +151,8 @@ def parse_ops(ops):
                             RHS += f", {DType}:$Out{Name}"
                 else:
                     # Single anonymous destination
-                    if LHS not in ["SSA", "GPR", "GPRPair", "FPR"]:
-                        ExitError(f"Unknown destination class type {LHS}. Needs to be one of SSA, GPR, GPRPair, FPR")
+                    if LHS not in ["SSA", "GPR", "GPRPair", "FPR", "PRED"]:
+                        ExitError(f"Unknown destination class type {LHS}. Needs to be one of SSA, GPR, GPRPair, FPR, PRED")
 
                     OpDef.HasDest = True
                     OpDef.DestType = LHS
@@ -221,7 +222,8 @@ def parse_ops(ops):
                     if (OpArg.IsSSA and
                         (OpArg.Type == "GPR" or
                         OpArg.Type == "GPRPair" or
-                        OpArg.Type == "FPR")):
+                        OpArg.Type == "FPR" or
+                        OpArg.Type == "PRED")):
                         OpDef.EmitValidation.append(f"GetOpRegClass({ArgName}) == InvalidClass || WalkFindRegClass({ArgName}) == {OpArg.Type}Class")
 
                     OpArg.Name = ArgName

@@ -6,6 +6,7 @@ desc: Handles x86/64 ops to IR, no-pf opt, local-flags opt
 $end_info$
 */
 
+#include "FEXCore/Core/HostFeatures.h"
 #include "FEXCore/Utils/Telemetry.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/OpcodeDispatcher.h"
@@ -4309,10 +4310,15 @@ Ref OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, const X86T
   if ((IsOperandMem(Operand, true) && LoadData) || ForceLoad) {
     if (OpSize == OpSize::f80Bit) {
       Ref MemSrc = LoadEffectiveAddress(A, true);
-
-      // For X87 extended doubles, Split the load.
-      auto Res = _LoadMem(Class, OpSize::i64Bit, MemSrc, Align == OpSize::iInvalid ? OpSize : Align);
-      return _VLoadVectorElement(OpSize::i128Bit, OpSize::i16Bit, Res, 4, _Add(OpSize::i64Bit, MemSrc, _InlineConstant(8)));
+      if (CTX->HostFeatures.SupportsSVE128 || CTX->HostFeatures.SupportsSVE256) {
+        // Using SVE we can load this with a single instruction.
+        auto PReg = InitPredicateCached(OpSize::i16Bit, ARMEmitter::PredicatePattern::SVE_VL5);
+        return _LoadMemPredicate(OpSize::i128Bit, OpSize::i16Bit, PReg, MemSrc);
+      } else {
+        // For X87 extended doubles, Split the load.
+        auto Res = _LoadMem(Class, OpSize::i64Bit, MemSrc, Align == OpSize::iInvalid ? OpSize : Align);
+        return _VLoadVectorElement(OpSize::i128Bit, OpSize::i16Bit, Res, 4, _Add(OpSize::i64Bit, MemSrc, _InlineConstant(8)));
+      }
     }
 
     return _LoadMemAutoTSO(Class, OpSize, A, Align == OpSize::iInvalid ? OpSize : Align);
@@ -4439,11 +4445,15 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
 
   if (OpSize == OpSize::f80Bit) {
     Ref MemStoreDst = LoadEffectiveAddress(A, true);
-
-    // For X87 extended doubles, split before storing
-    _StoreMem(FPRClass, OpSize::i64Bit, MemStoreDst, Src, Align);
-    auto Upper = _VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, Src, 1);
-    _StoreMem(GPRClass, OpSize::i16Bit, Upper, MemStoreDst, _Constant(8), std::min(Align, OpSize::i64Bit), MEM_OFFSET_SXTX, 1);
+    if (CTX->HostFeatures.SupportsSVE128 || CTX->HostFeatures.SupportsSVE256) {
+      auto PReg = InitPredicateCached(OpSize::i16Bit, ARMEmitter::PredicatePattern::SVE_VL5);
+      _StoreMemPredicate(OpSize::i128Bit, OpSize::i16Bit, Src, PReg, MemStoreDst);
+    } else {
+      // For X87 extended doubles, split before storing
+      _StoreMem(FPRClass, OpSize::i64Bit, MemStoreDst, Src, Align);
+      auto Upper = _VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, Src, 1);
+      _StoreMem(GPRClass, OpSize::i16Bit, Upper, MemStoreDst, _Constant(8), std::min(Align, OpSize::i64Bit), MEM_OFFSET_SXTX, 1);
+    }
   } else {
     _StoreMemAutoTSO(Class, OpSize, A, Src, Align == OpSize::iInvalid ? OpSize : Align);
   }

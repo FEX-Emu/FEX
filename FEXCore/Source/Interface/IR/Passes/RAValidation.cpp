@@ -47,6 +47,7 @@ struct RegState {
       // On arm64, there are 16 Fixed and 12 normal
       FPRsFixed[Reg.Reg] = ssa;
       return true;
+    case PREDClass: PREGs[Reg.Reg] = ssa; return true;
     }
     return false;
   }
@@ -59,6 +60,7 @@ struct RegState {
     case GPRFixedClass: return GPRsFixed[Reg.Reg];
     case FPRClass: return FPRs[Reg.Reg];
     case FPRFixedClass: return FPRsFixed[Reg.Reg];
+    case PREDClass: return PREGs[Reg.Reg];
     }
     return InvalidReg;
   }
@@ -82,6 +84,7 @@ private:
   std::array<IR::NodeID, 32> FPRsFixed = {};
   std::array<IR::NodeID, 32> GPRs = {};
   std::array<IR::NodeID, 32> FPRs = {};
+  std::array<IR::NodeID, 32> PREGs = {};
 
   fextl::unordered_map<uint32_t, IR::NodeID> Spills;
 };

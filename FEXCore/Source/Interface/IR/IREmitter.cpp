@@ -41,6 +41,7 @@ FEXCore::IR::RegisterClassType IREmitter::WalkFindRegClass(Ref Node) {
   case FPRClass:
   case GPRFixedClass:
   case FPRFixedClass:
+  case PREDClass:
   case InvalidClass: return Class;
   default: break;
   }

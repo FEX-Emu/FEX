@@ -57,6 +57,12 @@ namespace x64 {
     ARMEmitter::Reg::r24, ARMEmitter::Reg::r25, ARMEmitter::Reg::r30, ARMEmitter::Reg::r18,
   };
 
+  // p6 and p7 registers are used as temporaries no not added here for RA
+  // See PREF_TMP_16B and PREF_TMP_32B
+  // p0-p1 are also used in the jit as temps.
+  // Also p8-p15 cannot be used can only encode p0-p7, so we're left with p2-p5.
+  constexpr std::array<ARMEmitter::PRegister, 4> PR = {ARMEmitter::PReg::p2, ARMEmitter::PReg::p3, ARMEmitter::PReg::p4, ARMEmitter::PReg::p5};
+
   constexpr unsigned RAPairs = 6;
 
   // All are caller saved
@@ -102,6 +108,12 @@ namespace x64 {
     ARMEmitter::Reg::r6,  ARMEmitter::Reg::r7,  ARMEmitter::Reg::r14, ARMEmitter::Reg::r15,
     ARMEmitter::Reg::r16, ARMEmitter::Reg::r17, ARMEmitter::Reg::r30,
   };
+
+  // p6 and p7 registers are used as temporaries no not added here for RA
+  // See PREF_TMP_16B and PREF_TMP_32B
+  // p0-p1 are also used in the jit as temps.
+  // Also p8-p15 cannot be used can only encode p0-p7, so we're left with p2-p5.
+  constexpr std::array<ARMEmitter::PRegister, 4> PR = {ARMEmitter::PReg::p2, ARMEmitter::PReg::p3, ARMEmitter::PReg::p4, ARMEmitter::PReg::p5};
 
   constexpr unsigned RAPairs = 6;
 
@@ -234,6 +246,12 @@ namespace x32 {
 
   constexpr unsigned RAPairs = 12;
 
+  // p6 and p7 registers are used as temporaries no not added here for RA
+  // See PREF_TMP_16B and PREF_TMP_32B
+  // p0-p1 are also used in the jit as temps.
+  // Also p8-p15 cannot be used can only encode p0-p7, so we're left with p2-p5.
+  constexpr std::array<ARMEmitter::PRegister, 4> PR = {ARMEmitter::PReg::p2, ARMEmitter::PReg::p3, ARMEmitter::PReg::p4, ARMEmitter::PReg::p5};
+
   // All are caller saved
   constexpr std::array<ARMEmitter::VRegister, 8> SRAFPR = {
     ARMEmitter::VReg::v16, ARMEmitter::VReg::v17, ARMEmitter::VReg::v18, ARMEmitter::VReg::v19,
@@ -357,6 +375,7 @@ Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl* ctx, void* EmissionPtr
     GeneralRegisters = x64::RA;
     StaticFPRegisters = x64::SRAFPR;
     GeneralFPRegisters = x64::RAFPR;
+    PredicateRegisters = x64::PR;
     PairRegisters = x64::RAPairs;
 #ifdef _M_ARM_64EC
     ConfiguredDynamicRegisterBase = std::span(x64::RA.begin(), 7);
@@ -370,6 +389,8 @@ Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl* ctx, void* EmissionPtr
 
     StaticFPRegisters = x32::SRAFPR;
     GeneralFPRegisters = x32::RAFPR;
+
+    PredicateRegisters = x32::PR;
   }
 }
 

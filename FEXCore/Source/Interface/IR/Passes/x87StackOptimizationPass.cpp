@@ -3,9 +3,10 @@
 #include "Interface/IR/IR.h"
 #include "Interface/IR/IREmitter.h"
 #include "Interface/IR/PassManager.h"
-#include <FEXCore/IR/IR.h>
-#include <FEXCore/Utils/Profiler.h>
-#include <FEXCore/fextl/deque.h>
+#include "FEXCore/IR/IR.h"
+#include "FEXCore/Utils/Profiler.h"
+#include "FEXCore/Core/HostFeatures.h"
+#include "CodeEmitter/Emitter.h"
 
 #include <array>
 #include <cstddef>
@@ -146,13 +147,15 @@ private:
 
 class X87StackOptimization final : public Pass {
 public:
-  X87StackOptimization() {
+  X87StackOptimization(const FEXCore::HostFeatures& Features)
+    : Features(Features) {
     FEX_CONFIG_OPT(ReducedPrecision, X87REDUCEDPRECISION);
     ReducedPrecisionMode = ReducedPrecision;
   }
   void Run(IREmitter* Emit) override;
 
 private:
+  const FEXCore::HostFeatures& Features;
   bool ReducedPrecisionMode;
 
   // Helpers
@@ -820,11 +823,16 @@ void X87StackOptimization::Run(IREmitter* Emit) {
               StackNode = IREmit->_F80CVT(Op->StoreSize, StackNode);
             }
             if (Op->StoreSize == OpSize::f80Bit) { // Part of code from StoreResult_WithOpSize()
-              // For X87 extended doubles, split before storing
-              IREmit->_StoreMem(FPRClass, OpSize::i64Bit, AddrNode, StackNode);
-              auto Upper = IREmit->_VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, StackNode, 1);
-              auto DestAddr = IREmit->_Add(OpSize::i64Bit, AddrNode, GetConstant(8));
-              IREmit->_StoreMem(GPRClass, OpSize::i16Bit, DestAddr, Upper, OpSize::i64Bit);
+              if (Features.SupportsSVE128 || Features.SupportsSVE256) {
+                auto PReg = IREmit->InitPredicateCached(OpSize::i16Bit, ARMEmitter::PredicatePattern::SVE_VL5);
+                IREmit->_StoreMemPredicate(OpSize::i128Bit, OpSize::i16Bit, StackNode, PReg, AddrNode);
+              } else {
+                // For X87 extended doubles, split before storing
+                IREmit->_StoreMem(FPRClass, OpSize::i64Bit, AddrNode, StackNode);
+                auto Upper = IREmit->_VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, StackNode, 1);
+                auto DestAddr = IREmit->_Add(OpSize::i64Bit, AddrNode, GetConstant(8));
+                IREmit->_StoreMem(GPRClass, OpSize::i16Bit, DestAddr, Upper, OpSize::i64Bit);
+              }
             } else {
               IREmit->_StoreMem(FPRClass, Op->StoreSize, AddrNode, StackNode);
             }
@@ -1025,7 +1033,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
   return;
 }
 
-fextl::unique_ptr<Pass> CreateX87StackOptimizationPass() {
-  return fextl::make_unique<X87StackOptimization>();
+fextl::unique_ptr<Pass> CreateX87StackOptimizationPass(const FEXCore::HostFeatures& Features) {
+  return fextl::make_unique<X87StackOptimization>(Features);
 }
 } // namespace FEXCore::IR
