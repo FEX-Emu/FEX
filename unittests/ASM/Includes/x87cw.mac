@@ -1,0 +1,34 @@
+%ifndef X87_CW_INC
+%define X87_CW_INC
+
+; Sets x87 precision and rounding modes
+; Uses the stack and clobbers rax
+; Args: precision constant, rounding constant
+%macro set_cw_precision_rounding 2
+  sub rsp, 2
+  fnstcw [rsp]
+  movzx ax, [rsp]
+
+  ; Precision
+  and eax, ~(3 << 8)
+  or eax, %1 << 8
+
+  ; Rounding
+  and eax, ~(3 << 10)
+  or eax, %2 << 10
+
+  mov [rsp], ax
+  fldcw [rsp]
+  add rsp, 2
+%endmacro
+
+x87_prec_32 equ 00b
+x87_prec_64 equ 10b
+x87_prec_80 equ 11b
+
+x87_round_nearest equ 00b
+x87_round_down equ 01b
+x87_round_up equ 10b
+x87_round_towards_zero equ 11b
+
+%endif
