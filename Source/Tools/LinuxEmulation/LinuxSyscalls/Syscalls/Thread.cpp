@@ -414,9 +414,10 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
                                 }
 
                                 ThreadObject->StatusCode = status;
-                                FEX::HLE::_SyscallHandler->TM.StopThread(ThreadObject);
-
-                                return 0;
+                                FEX::HLE::_SyscallHandler->TM.DestroyThread(ThreadObject, true);
+                                syscall(SYSCALL_DEF(exit), status);
+                                // This will never be reached
+                                std::terminate();
                               });
 
   REGISTER_SYSCALL_IMPL_FLAGS(prctl, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
