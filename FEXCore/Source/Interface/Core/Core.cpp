@@ -366,7 +366,7 @@ void ContextImpl::HandleCallback(FEXCore::Core::InternalThreadState* Thread, uin
 void ContextImpl::ExecuteThread(FEXCore::Core::InternalThreadState* Thread) {
   Dispatcher->ExecuteDispatch(Thread->CurrentFrame);
 
-  {
+  if (CodeObjectCacheService) {
     // Ensure the Code Object Serialization service has fully serialized this thread's data before clearing the cache
     // Use the thread's object cache ref counter for this
     CodeSerialize::CodeObjectSerializeService::WaitForEmptyJobQueue(&Thread->ObjectCacheRefCounter);
@@ -469,7 +469,7 @@ void ContextImpl::AddBlockMapping(FEXCore::Core::InternalThreadState* Thread, ui
 void ContextImpl::ClearCodeCache(FEXCore::Core::InternalThreadState* Thread) {
   FEXCORE_PROFILE_INSTANT("ClearCodeCache");
 
-  {
+  if (CodeObjectCacheService) {
     // Ensure the Code Object Serialization service has fully serialized this thread's data before clearing the cache
     // Use the thread's object cache ref counter for this
     CodeSerialize::CodeObjectSerializeService::WaitForEmptyJobQueue(&Thread->ObjectCacheRefCounter);
