@@ -40,12 +40,6 @@ Follow the steps in: https://github.com/FEX-Emu/FEX-ppa/blob/main/README.md
 * Requires PPA GPG key signing access
 * Wait the 20-30 minutes for Ubuntu PPA to build and publish the binaries
 
-## ArchLinux AUR package
-* Clone https://aur.archlinux.org/packages/fex-emu
-  * Requires maintainer or co-maintainer permissions
-* Update PKGBUILD and .SRCINFO file.
-* Push changes upstream
-
 ## Github releases page Steps
 * Requires administrative rights
 * Go to https://github.com/FEX-Emu/FEX/releases
