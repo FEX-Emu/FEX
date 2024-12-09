@@ -204,37 +204,21 @@ void Dispatcher::EmitDispatcher() {
     ret();
   }
 
-  {
-    ExitFunctionLinkerAddress = GetCursorAddress<uint64_t>();
-    SpillStaticRegs(TMP1);
-
+  // Clobbers TMP1/2
+  auto EmitSignalGuardedRegion = [&](auto Body) {
 #ifndef _WIN32
-    ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
-    add(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::x0, ARMEmitter::XReg::x0, 1);
-    str(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
+    ldr(TMP2, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
+    add(ARMEmitter::Size::i64Bit, TMP2, TMP2, 1);
+    str(TMP2, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
 #endif
 
 #ifdef _M_ARM_64EC
-    ldr(ARMEmitter::XReg::x0, ARMEmitter::XReg::x18, TEB_CPU_AREA_OFFSET);
-    LoadConstant(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r1, 1);
-    strb(ARMEmitter::WReg::w1, ARMEmitter::XReg::x0, CPU_AREA_IN_SYSCALL_CALLBACK_OFFSET);
+    ldr(TMP2, ARMEmitter::XReg::x18, TEB_CPU_AREA_OFFSET);
+    LoadConstant(ARMEmitter::Size::i32Bit, TMP1, 1);
+    strb(TMP1.W(), TMP2, CPU_AREA_IN_SYSCALL_CALLBACK_OFFSET);
 #endif
 
-    mov(ARMEmitter::XReg::x0, STATE);
-    mov(ARMEmitter::XReg::x1, ARMEmitter::XReg::lr);
-
-    ldr(ARMEmitter::XReg::x2, STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionLink));
-    if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-      GenerateIndirectRuntimeCall<uintptr_t, void*, void*>(ARMEmitter::Reg::r2);
-    } else {
-      blr(ARMEmitter::Reg::r2);
-    }
-
-    if (!TMP_ABIARGS) {
-      mov(TMP1, ARMEmitter::XReg::x0);
-    }
-
-    FillStaticRegs();
+    Body();
 
 #ifdef _M_ARM_64EC
     ldr(TMP2, ARMEmitter::XReg::x18, TEB_CPU_AREA_OFFSET);
@@ -250,15 +234,36 @@ void Dispatcher::EmitDispatcher() {
     strb(ARMEmitter::XReg::zr, STATE,
          offsetof(FEXCore::Core::InternalThreadState, InterruptFaultPage) - offsetof(FEXCore::Core::InternalThreadState, BaseFrameState));
 #endif
+  };
+
+  {
+    ExitFunctionLinkerAddress = GetCursorAddress<uint64_t>();
+    EmitSignalGuardedRegion([&]() {
+      SpillStaticRegs(TMP1);
+
+      mov(ARMEmitter::XReg::x0, STATE);
+      mov(ARMEmitter::XReg::x1, ARMEmitter::XReg::lr);
+
+      ldr(ARMEmitter::XReg::x2, STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionLink));
+      if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+        GenerateIndirectRuntimeCall<uintptr_t, void*, void*>(ARMEmitter::Reg::r2);
+      } else {
+        blr(ARMEmitter::Reg::r2);
+      }
+
+      if (!TMP_ABIARGS) {
+        mov(TMP1, ARMEmitter::XReg::x0);
+      }
+
+      FillStaticRegs();
+    });
 
     br(TMP1);
   }
 
-  // Need to create the block
-  {
-    Bind(&NoBlock);
-
 #ifdef _M_ARM_64EC
+  // Clobbers TMP1/2
+  auto EmitECExitCheck = [&]() {
     // Check the EC code bitmap incase we need to exit the JIT to call into native code.
     ARMEmitter::SingleUseForwardLabel l_NotECCode;
     ldr(TMP1, ARMEmitter::XReg::x18, TEB_PEB_OFFSET);
@@ -277,59 +282,43 @@ void Dispatcher::EmitDispatcher() {
     br(TMP2);
 
     Bind(&l_NotECCode);
+  };
 #endif
 
-    SpillStaticRegs(TMP1);
-
-    if (!TMP_ABIARGS) {
-      mov(ARMEmitter::XReg::x2, RipReg);
-    }
-
-#ifndef _WIN32
-    ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
-    add(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::x0, ARMEmitter::XReg::x0, 1);
-    str(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
-#endif
+  // Need to create the block
+  {
+    Bind(&NoBlock);
 
 #ifdef _M_ARM_64EC
-    ldr(ARMEmitter::XReg::x0, ARMEmitter::XReg::x18, TEB_CPU_AREA_OFFSET);
-    LoadConstant(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r1, 1);
-    strb(ARMEmitter::WReg::w1, ARMEmitter::XReg::x0, CPU_AREA_IN_SYSCALL_CALLBACK_OFFSET);
+    EmitECExitCheck();
 #endif
 
-    ldr(ARMEmitter::XReg::x0, &l_CTX);
-    mov(ARMEmitter::XReg::x1, STATE);
-    // x2 contains guest RIP
-    mov(ARMEmitter::XReg::x3, 0);
-    ldr(ARMEmitter::XReg::x4, &l_CompileBlock);
+    EmitSignalGuardedRegion([&]() {
+      SpillStaticRegs(TMP1);
 
-    if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-      GenerateIndirectRuntimeCall<uintptr_t, void*, void*, uint64_t, uint64_t>(ARMEmitter::Reg::r4);
-    } else {
-      blr(ARMEmitter::Reg::r4); // { CTX, Frame, RIP, MaxInst }
-    }
+      if (!TMP_ABIARGS) {
+        mov(ARMEmitter::XReg::x2, RipReg);
+      }
 
-    // Result is now in x0
-    if (!TMP_ABIARGS) {
-      mov(TMP1, ARMEmitter::XReg::x0);
-    }
+      ldr(ARMEmitter::XReg::x0, &l_CTX);
+      mov(ARMEmitter::XReg::x1, STATE);
+      // x2 contains guest RIP
+      mov(ARMEmitter::XReg::x3, 0);
+      ldr(ARMEmitter::XReg::x4, &l_CompileBlock);
 
-    FillStaticRegs();
+      if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+        GenerateIndirectRuntimeCall<uintptr_t, void*, void*, uint64_t, uint64_t>(ARMEmitter::Reg::r4);
+      } else {
+        blr(ARMEmitter::Reg::r4); // { CTX, Frame, RIP, MaxInst }
+      }
 
-#ifdef _M_ARM_64EC
-    ldr(TMP2, ARMEmitter::XReg::x18, TEB_CPU_AREA_OFFSET);
-    strb(ARMEmitter::WReg::zr, TMP2, CPU_AREA_IN_SYSCALL_CALLBACK_OFFSET);
-#endif
+      // Result is now in x0
+      if (!TMP_ABIARGS) {
+        mov(TMP1, ARMEmitter::XReg::x0);
+      }
 
-#ifndef _WIN32
-    ldr(TMP2, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
-    sub(ARMEmitter::Size::i64Bit, TMP2, TMP2, 1);
-    str(TMP2, STATE, offsetof(FEXCore::Core::CPUState, DeferredSignalRefCount));
-
-    // Trigger segfault if any deferred signals are pending
-    strb(ARMEmitter::XReg::zr, STATE,
-         offsetof(FEXCore::Core::InternalThreadState, InterruptFaultPage) - offsetof(FEXCore::Core::InternalThreadState, BaseFrameState));
-#endif
+      FillStaticRegs();
+    });
 
     // Jump to the compiled block
     br(TMP1);
