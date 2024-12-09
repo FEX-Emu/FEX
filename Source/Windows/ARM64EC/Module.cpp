@@ -415,7 +415,7 @@ static ARM64_NT_CONTEXT StoreStateToPackedECContext(FEXCore::Core::InternalThrea
   // See HandleGuestException
   uint32_t EFlags = CTX->ReconstructCompactedEFLAGS(Thread, false, nullptr, 0);
   ECContext.Cpsr = 0;
-  ECContext.Cpsr |= (EFlags & (1U << FEXCore::X86State::RFLAG_TF_LOC)) ? (1U << 21) : 0;
+  ECContext.Cpsr |= (EFlags & (1U << FEXCore::X86State::RFLAG_TF_RAW_LOC)) ? (1U << 21) : 0;
   ECContext.Cpsr |= (EFlags & (1U << FEXCore::X86State::RFLAG_OF_RAW_LOC)) ? (1U << 28) : 0;
   ECContext.Cpsr |= (EFlags & (1U << FEXCore::X86State::RFLAG_CF_RAW_LOC)) ? (1U << 29) : 0;
   ECContext.Cpsr |= (EFlags & (1U << FEXCore::X86State::RFLAG_ZF_RAW_LOC)) ? (1U << 30) : 0;
@@ -435,7 +435,9 @@ static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT&
   auto* Args = reinterpret_cast<KiUserExceptionDispatcherStackLayout*>(FEXCore::AlignDown(GuestSp, 64)) - 1;
 
   LogMan::Msg::DFmt("Reconstructing context");
-  ReconstructThreadState(Thread, Context);
+  if (!IsDispatcherAddress(Context.Pc)) {
+    ReconstructThreadState(Thread, Context);
+  }
   Args->Context = StoreStateToPackedECContext(Thread, Context.Fpcr, Context.Fpsr);
   LogMan::Msg::DFmt("pc: {:X} rip: {:X}", Context.Pc, Args->Context.Pc);
 
@@ -443,7 +445,7 @@ static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT&
   // Current ARM64EC windows can only restore NZCV+SS when returning from an exception and other flags are left untouched from the handler context.
   // TODO: Can extend wine to support this by mapping the remaining EFlags into reserved cpsr members.
   uint32_t EFlags = CTX->ReconstructCompactedEFLAGS(Thread, false, nullptr, 0);
-  EFlags &= (1 << FEXCore::X86State::RFLAG_TF_LOC);
+  EFlags &= ~(1 << FEXCore::X86State::RFLAG_TF_RAW_LOC);
   CTX->SetFlagsFromCompactedEFLAGS(Thread, EFlags);
 
   Args->Rec = FEX::Windows::HandleGuestException(Fault, Rec, Args->Context.Pc, Args->Context.X8);
@@ -508,7 +510,7 @@ extern "C" void SyncThreadContext(CONTEXT* Context) {
   // This is advisable over dropping their values as thread suspend/resume uses this function, and that can happen at any point in guest code.
   static constexpr uint32_t ECValidEFlagsMask {(1U << FEXCore::X86State::RFLAG_OF_RAW_LOC) | (1U << FEXCore::X86State::RFLAG_CF_RAW_LOC) |
                                                (1U << FEXCore::X86State::RFLAG_ZF_RAW_LOC) | (1U << FEXCore::X86State::RFLAG_SF_RAW_LOC) |
-                                               (1U << FEXCore::X86State::RFLAG_TF_LOC)};
+                                               (1U << FEXCore::X86State::RFLAG_TF_RAW_LOC)};
 
   uint32_t StateEFlags = CTX->ReconstructCompactedEFLAGS(Thread, false, nullptr, 0);
   Context->EFlags = (Context->EFlags & ECValidEFlagsMask) | (StateEFlags & ~ECValidEFlagsMask);
