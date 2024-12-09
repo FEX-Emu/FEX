@@ -46,6 +46,8 @@ Dispatcher::~Dispatcher() {
 }
 
 void Dispatcher::EmitDispatcher() {
+  // Don't modify TMP3 since it contains our RIP once the block doesn't exist
+  auto RipReg = TMP3;
 #ifdef VIXL_DISASSEMBLER
   const auto DisasmBegin = GetCursorAddress<const vixl::aarch64::Instruction*>();
 #endif
@@ -62,7 +64,8 @@ void Dispatcher::EmitDispatcher() {
 
   ARMEmitter::ForwardLabel l_CTX;
   ARMEmitter::SingleUseForwardLabel l_Sleep;
-  ARMEmitter::SingleUseForwardLabel l_CompileBlock;
+  ARMEmitter::ForwardLabel l_CompileBlock;
+  ARMEmitter::ForwardLabel l_CompileSingleStep;
 
   // Push all the register we need to save
   PushCalleeSavedRegisters();
@@ -81,6 +84,7 @@ void Dispatcher::EmitDispatcher() {
 
   FillStaticRegs();
   ARMEmitter::BiDirectionalLabel LoopTop {};
+  ARMEmitter::ForwardLabel CompileSingleStep;
 
 #ifdef _M_ARM_64EC
   b(&LoopTop);
@@ -116,9 +120,10 @@ void Dispatcher::EmitDispatcher() {
   AbsoluteLoopTopAddress = GetCursorAddress<uint64_t>();
 
   // Load in our RIP
-  // Don't modify TMP3 since it contains our RIP once the block doesn't exist
-  auto RipReg = TMP3;
   ldr(RipReg, STATE_PTR(CpuStateFrame, State.rip));
+
+  ldrb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
+  cbnz(ARMEmitter::Size::i32Bit, TMP1, &CompileSingleStep);
 
   // L1 Cache
   ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.L1Pointer));
@@ -325,6 +330,43 @@ void Dispatcher::EmitDispatcher() {
   }
 
   {
+    Bind(&CompileSingleStep);
+
+#ifdef _M_ARM_64EC
+    EmitECExitCheck();
+#endif
+
+    EmitSignalGuardedRegion([&]() {
+      SpillStaticRegs(TMP1);
+
+      if (!TMP_ABIARGS) {
+        mov(ARMEmitter::XReg::x2, RipReg);
+      }
+
+      ldr(ARMEmitter::XReg::x0, &l_CTX);
+      mov(ARMEmitter::XReg::x1, STATE);
+      // x2 contains guest RIP
+      ldr(ARMEmitter::XReg::x4, &l_CompileSingleStep);
+
+      if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+        GenerateIndirectRuntimeCall<uintptr_t, void*, void*, uint64_t, uint64_t>(ARMEmitter::Reg::r4);
+      } else {
+        blr(ARMEmitter::Reg::r4); // { CTX, Frame, RIP }
+      }
+
+      // Result is now in x0
+      if (!TMP_ABIARGS) {
+        mov(TMP1, ARMEmitter::XReg::x0);
+      }
+
+      FillStaticRegs();
+    });
+
+    // Jump to the compiled block
+    br(TMP1);
+  }
+
+  {
     SignalHandlerReturnAddress = GetCursorAddress<uint64_t>();
 
     // Now to get back to our old location we need to do a fault dance
@@ -500,8 +542,11 @@ void Dispatcher::EmitDispatcher() {
   Bind(&l_Sleep);
   dc64(reinterpret_cast<uint64_t>(SleepThread));
   Bind(&l_CompileBlock);
-  FEXCore::Utils::MemberFunctionToPointerCast PMF(&FEXCore::Context::ContextImpl::CompileBlock);
-  dc64(PMF.GetConvertedPointer());
+  FEXCore::Utils::MemberFunctionToPointerCast PMFCompileBlock(&FEXCore::Context::ContextImpl::CompileBlock);
+  dc64(PMFCompileBlock.GetConvertedPointer());
+  Bind(&l_CompileSingleStep);
+  FEXCore::Utils::MemberFunctionToPointerCast PMFCompileSingleStep(&FEXCore::Context::ContextImpl::CompileSingleStep);
+  dc64(PMFCompileSingleStep.GetConvertedPointer());
 
   Start = reinterpret_cast<uint64_t>(DispatchPtr);
   End = GetCursorAddress<uint64_t>();

@@ -19,7 +19,7 @@ $end_info$
 namespace FEXCore::IR {
 constexpr std::array<uint32_t, 17> FlagOffsets = {
   FEXCore::X86State::RFLAG_CF_RAW_LOC, FEXCore::X86State::RFLAG_PF_RAW_LOC, FEXCore::X86State::RFLAG_AF_RAW_LOC,
-  FEXCore::X86State::RFLAG_ZF_RAW_LOC, FEXCore::X86State::RFLAG_SF_RAW_LOC, FEXCore::X86State::RFLAG_TF_LOC,
+  FEXCore::X86State::RFLAG_ZF_RAW_LOC, FEXCore::X86State::RFLAG_SF_RAW_LOC, FEXCore::X86State::RFLAG_TF_RAW_LOC,
   FEXCore::X86State::RFLAG_IF_LOC,     FEXCore::X86State::RFLAG_DF_RAW_LOC, FEXCore::X86State::RFLAG_OF_RAW_LOC,
   FEXCore::X86State::RFLAG_IOPL_LOC,   FEXCore::X86State::RFLAG_NT_LOC,     FEXCore::X86State::RFLAG_RF_LOC,
   FEXCore::X86State::RFLAG_VM_LOC,     FEXCore::X86State::RFLAG_AC_LOC,     FEXCore::X86State::RFLAG_VIF_LOC,

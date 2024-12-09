@@ -717,7 +717,7 @@ bool BTCpuResetToConsistentStateImpl(EXCEPTION_POINTERS* Ptrs) {
   auto& Fault = Thread->CurrentFrame->SynchronousFaultData;
   *Exception = FEX::Windows::HandleGuestException(Fault, *Exception, WowContext.Eip, WowContext.Eax);
   if (Exception->ExceptionCode == EXCEPTION_SINGLE_STEP) {
-    WowContext.EFlags &= ~(1 << FEXCore::X86State::RFLAG_TF_LOC);
+    WowContext.EFlags &= ~(1 << FEXCore::X86State::RFLAG_TF_RAW_LOC);
   }
   // wow64.dll will handle adjusting PC in the dispatched context after a breakpoint
 
