@@ -38,8 +38,9 @@ public:
   ~Arm64JITCore() override;
 
   [[nodiscard]]
-  CPUBackend::CompiledCode CompileCode(uint64_t Entry, const FEXCore::IR::IRListView* IR, FEXCore::Core::DebugData* DebugData,
-                                       const FEXCore::IR::RegisterAllocationData* RAData) override;
+  CPUBackend::CompiledCode
+  CompileCode(uint64_t Entry, uint64_t Size, bool SingleInst, const FEXCore::IR::IRListView* IR, FEXCore::Core::DebugData* DebugData,
+              const FEXCore::IR::RegisterAllocationData* RAData, bool CheckTF) override;
 
   void ClearCache() override;
 
@@ -346,6 +347,9 @@ private:
                            std::optional<ARMEmitter::Register> BaseAddr, ARMEmitter::VRegister VectorIndexLow,
                            std::optional<ARMEmitter::VRegister> VectorIndexHigh, ARMEmitter::VRegister MaskReg, IR::OpSize VectorIndexSize,
                            size_t DataElementOffsetStart, size_t IndexElementOffsetStart, uint8_t OffsetScale);
+
+  void EmitInterruptChecks(bool CheckTF);
+
   // Runtime selection;
   // Load and store TSO memory style
   OpType RT_LoadMemTSO;

@@ -76,6 +76,9 @@ constexpr size_t CPU_AREA_EMULATOR_STACK_BASE_OFFSET = 0x8;
 constexpr size_t CPU_AREA_EMULATOR_DATA_OFFSET = 0x30;
 #endif
 
+// Will force one single instruction block to be generated first if set when entering the JIT filling SRA.
+constexpr auto ENTRY_FILL_SRA_SINGLE_INST_REG = TMP1;
+
 // Predicate register temporaries (used when AVX support is enabled)
 // PRED_TMP_16B indicates a predicate register that indicates the first 16 bytes set to 1.
 // PRED_TMP_32B indicates a predicate register that indicates the first 32 bytes set to 1.
