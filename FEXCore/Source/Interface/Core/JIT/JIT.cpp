@@ -484,11 +484,16 @@ static void IndirectBlockDelinker(FEXCore::Core::CpuStateFrame* Frame, FEXCore::
 
 static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record) {
   auto Thread = Frame->Thread;
+  bool TFSet = Thread->CurrentFrame->State.flags[X86State::RFLAG_TF_RAW_LOC];
+  uintptr_t HostCode {};
   auto GuestRip = Record->GuestRIP;
 
-  auto HostCode = Thread->LookupCache->FindBlock(GuestRip);
+  if (!TFSet) {
+    HostCode = Thread->LookupCache->FindBlock(GuestRip);
+  }
 
-  if (!HostCode) {
+  if (TFSet || !HostCode) {
+    // If TF is set, the cache must be skipped as different code needs to be generated.
     Frame->State.rip = GuestRip;
     return Frame->Pointers.Common.DispatcherLoopTop;
   }
@@ -655,8 +660,68 @@ bool Arm64JITCore::IsGPR(IR::NodeID Node) const {
   return Class == IR::GPRClass || Class == IR::GPRFixedClass;
 }
 
+void Arm64JITCore::EmitInterruptChecks(bool CheckTF) {
+  if (CheckTF) {
+    ARMEmitter::SingleUseForwardLabel l_TFUnset;
+    ARMEmitter::SingleUseForwardLabel l_TFBlocked;
+
+    // Note that this needs to be before the below suspend checks, as X86 checks this flag immediately after executing an instruction.
+    ldrb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
+
+    cbz(ARMEmitter::Size::i32Bit, TMP1, &l_TFUnset);
+
+    // X86 semantically checks TF after executing each instruction, so e.g. setting a context with TF set will execute a single instruction
+    // and then raise an exception. However on the FEX side this is simpler to implement by checking at the start of each instruction, handle this by having bit 1 being unset in the flag state indicate that TF is blocked for a single instruction.
+    tbz(TMP1, 1, &l_TFBlocked);
+
+    // Block TF for a single instruction when the frontend jumps to a new context by unsetting bit 1.
+    ldrb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
+    and_(ARMEmitter::Size::i32Bit, TMP1, TMP1, ~(1 << 1));
+    strb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
+
+    Core::CpuStateFrame::SynchronousFaultDataStruct State = {
+      .FaultToTopAndGeneratedException = 1,
+      .Signal = Core::FAULT_SIGTRAP,
+      .TrapNo = X86State::X86_TRAPNO_DB,
+      .si_code = 2,
+      .err_code = 0,
+    };
+
+    uint64_t Constant {};
+    memcpy(&Constant, &State, sizeof(State));
+
+    LoadConstant(ARMEmitter::Size::i64Bit, TMP1, Constant);
+    str(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData));
+    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGTRAP));
+    br(TMP1);
+
+    Bind(&l_TFBlocked);
+    // If TF was blocked for this instruction, unblock it for the next.
+    LoadConstant(ARMEmitter::Size::i32Bit, TMP1, 0b11);
+    strb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
+    Bind(&l_TFUnset);
+  }
+
+  if (CTX->Config.NeedsPendingInterruptFaultCheck) {
+    // Trigger a fault if there are any pending interrupts
+    // Used only for suspend on WIN32 at the moment
+    strb(ARMEmitter::XReg::zr, STATE,
+         offsetof(FEXCore::Core::InternalThreadState, InterruptFaultPage) - offsetof(FEXCore::Core::InternalThreadState, BaseFrameState));
+  }
+
+#ifdef _M_ARM_64EC
+  static constexpr uint16_t SuspendMagic {0xCAFE};
+
+  ldr(TMP2.W(), STATE_PTR(CpuStateFrame, SuspendDoorbell));
+  ARMEmitter::SingleUseForwardLabel l_NoSuspend;
+  cbz(ARMEmitter::Size::i32Bit, TMP2, &l_NoSuspend);
+  brk(SuspendMagic);
+  Bind(&l_NoSuspend);
+#endif
+}
+
 CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, const FEXCore::IR::IRListView* IR, FEXCore::Core::DebugData* DebugData,
-                                                   const FEXCore::IR::RegisterAllocationData* RAData) {
+                                                   const FEXCore::IR::RegisterAllocationData* RAData, bool CheckTF) {
   FEXCORE_PROFILE_SCOPED("Arm64::CompileCode");
 
   JumpTargets.clear();
@@ -712,22 +777,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, const FEXCore
   adr(TMP1, &JITCodeHeaderLabel);
   str(TMP1, STATE, offsetof(FEXCore::Core::CPUState, InlineJITBlockHeader));
 
-  if (CTX->Config.NeedsPendingInterruptFaultCheck) {
-    // Trigger a fault if there are any pending interrupts
-    // Used only for suspend on WIN32 at the moment
-    strb(ARMEmitter::XReg::zr, STATE,
-         offsetof(FEXCore::Core::InternalThreadState, InterruptFaultPage) - offsetof(FEXCore::Core::InternalThreadState, BaseFrameState));
-  }
-
-#ifdef _M_ARM_64EC
-  static constexpr uint16_t SuspendMagic {0xCAFE};
-
-  ldr(TMP2.W(), STATE_PTR(CpuStateFrame, SuspendDoorbell));
-  ARMEmitter::SingleUseForwardLabel l_NoSuspend;
-  cbz(ARMEmitter::Size::i32Bit, TMP2, &l_NoSuspend);
-  brk(SuspendMagic);
-  Bind(&l_NoSuspend);
-#endif
+  EmitInterruptChecks(CheckTF);
 
   SpillSlots = RAData->SpillSlots();
 
