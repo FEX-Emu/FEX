@@ -224,21 +224,23 @@ void EnvLoader::Load() {
     }
   }
 
-  auto GetVar = [](EnvMapType& EnvMap, const std::string_view id) -> std::optional<std::string_view> {
-    if (EnvMap.find(id) != EnvMap.end()) {
-      return EnvMap.at(id);
+  auto GetVar = [](EnvMapType& EnvMap, const std::string_view id) -> std::optional<fextl::string> {
+    auto it = EnvMap.find(id);
+    if (it != EnvMap.end()) {
+      return fextl::string(it->second);
     }
 
     // If envp[] was empty, search using std::getenv()
-    const char* vs = std::getenv(id.data());
+    fextl::string id_str(id);
+    const char* vs = std::getenv(id_str.c_str());
     if (vs) {
-      return vs;
+      return fextl::string(vs);
     } else {
       return std::nullopt;
     }
   };
 
-  std::optional<std::string_view> Value;
+  std::optional<fextl::string> Value;
 
   // Walk all the environment options and corresponding config option.
 #define OPT_BASE(type, group, enum, json, default) \
