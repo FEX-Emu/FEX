@@ -1118,7 +1118,10 @@ GdbServer::HandledPacketType GdbServer::CommandMultiLetterV(const fextl::string&
     return HandlevFile(packet);
   }
 
-  // TODO: vKill
+  if (packet.starts_with("vKill")) {
+    tgkill(::getpid(), ::getpid(), SIGKILL);
+  }
+
   // TODO: vRun
   // TODO: vStopped
 
