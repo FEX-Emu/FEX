@@ -108,6 +108,16 @@ GdbServer::GdbServer(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* 
         return false;
       }
 
+      auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread);
+      ThreadObject->GdbInfo.Signal = Signal;
+
+      ThreadObject->GdbInfo.SignalPC = ArchHelpers::Context::GetPc(ucontext);
+      uint32_t IgnoreMask = Thread->CurrentFrame->InSyscallInfo & 0xFFFF;
+      this->SignalDelegation->SpillSRA(Thread, ucontext, IgnoreMask);
+
+      memcpy(ThreadObject->GdbInfo.GPRs, ArchHelpers::Context::GetArmGPRs(ucontext), sizeof(uint64_t) * 32);
+      ThreadObject->GdbInfo.PState = ArchHelpers::Context::GetArmPState(ucontext);
+
       // Let GDB know that we have a signal
       this->Break(Thread, Signal);
 
