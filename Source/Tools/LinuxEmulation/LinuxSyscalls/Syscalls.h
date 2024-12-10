@@ -52,6 +52,7 @@ $end_info$
 
 namespace FEX {
 class CodeLoader;
+class GdbServer;
 }
 
 namespace FEXCore {
@@ -281,6 +282,14 @@ public:
 
   constexpr static uint64_t TASK_MAX_64BIT = (1ULL << 48);
 
+  void SetGdbServer(FEX::GdbServer* Server) {
+    GdbServer = Server;
+  }
+
+  FEX::GdbServer* GetGdbServer() {
+    return GdbServer;
+  }
+
 protected:
   SyscallHandler(FEXCore::Context::Context* _CTX, FEX::HLE::SignalDelegator* _SignalDelegation, FEX::HLE::ThunkHandler* ThunkHandler);
 
@@ -307,6 +316,7 @@ private:
 
   FEX::HLE::SignalDelegator* SignalDelegation;
   FEX::HLE::ThunkHandler* ThunkHandler;
+  FEX::GdbServer* GdbServer {};
 
   std::mutex FutexMutex;
   std::mutex SyscallMutex;
