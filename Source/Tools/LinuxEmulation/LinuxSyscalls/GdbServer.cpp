@@ -92,7 +92,8 @@ GdbServer::~GdbServer() {
 
 GdbServer::GdbServer(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* SignalDelegation, FEX::HLE::SyscallHandler* const SyscallHandler)
   : CTX(ctx)
-  , SyscallHandler {SyscallHandler} {
+  , SyscallHandler {SyscallHandler}
+  , SignalDelegation {SignalDelegation} {
   // Pass all signals by default
   std::fill(PassSignals.begin(), PassSignals.end(), true);
 
