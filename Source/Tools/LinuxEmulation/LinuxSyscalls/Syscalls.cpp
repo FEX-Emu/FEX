@@ -744,7 +744,7 @@ void SyscallHandler::DefaultProgramBreak(uint64_t Base, uint64_t Size) {
 }
 
 SyscallHandler::SyscallHandler(FEXCore::Context::Context* _CTX, FEX::HLE::SignalDelegator* _SignalDelegation, FEX::HLE::ThunkHandler* ThunkHandler)
-  : TM {_CTX, _SignalDelegation}
+  : TM {_CTX, this, _SignalDelegation}
   , SeccompEmulator {this, _SignalDelegation}
   , FM {_CTX}
   , CTX {_CTX}
