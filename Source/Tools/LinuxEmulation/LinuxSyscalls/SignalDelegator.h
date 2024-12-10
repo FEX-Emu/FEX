@@ -137,6 +137,9 @@ public:
   }
 
   void SaveTelemetry();
+
+  void SpillSRA(FEXCore::Core::InternalThreadState* Thread, void* ucontext, uint32_t IgnoreMask);
+
 private:
   // Called from the thunk handler to handle the signal
   void HandleGuestSignal(FEX::HLE::ThreadStateObject* ThreadObject, int Signal, void* Info, void* UContext);
@@ -241,8 +244,6 @@ private:
     char retcode[8]; ///< Unused but needs to be filled. GDB seemingly uses as a debug marker.
     ///< FP state now follows after this.
   };
-
-  void SpillSRA(FEXCore::Core::InternalThreadState* Thread, void* ucontext, uint32_t IgnoreMask);
 
   void RestoreFrame_x64(FEXCore::Core::InternalThreadState* Thread, ArchHelpers::Context::ContextBackup* Context,
                         FEXCore::Core::CpuStateFrame* Frame, void* ucontext);
