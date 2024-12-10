@@ -22,6 +22,80 @@ namespace FEX::HLE {
 class SyscallHandler;
 class SignalDelegator;
 
+// This is similar to FEXCore::InterruptableConditionVariable with the exception that notifying only occurs if there is a waiter and can check if
+// there is a waiter.
+// This allows us to remove the race condition between a thread trying to go asleep and something else telling it to go to sleep or wake up.
+//
+// Only one thread can ever wait on a latch, while another thread signals it.
+class InspectableLatch final {
+public:
+  bool Wait(struct timespec* Timeout = nullptr) {
+    while (true) {
+      uint32_t Expected = HAS_NO_WAITER;
+      const uint32_t Desired = HAS_WAITER;
+
+      if (Mutex.compare_exchange_strong(Expected, Desired)) {
+        // We have latched, now futex.
+        constexpr int Op = FUTEX_WAIT | FUTEX_PRIVATE_FLAG;
+        // WAIT will keep sleeping on the futex word while it is `val`
+        int Result = ::syscall(SYS_futex, &Mutex, Op,
+                               Desired, // val
+                               Timeout, // Timeout/val2
+                               nullptr, // Addr2
+                               0);      // val3
+
+        if (Timeout && Result == -1 && errno == ETIMEDOUT) {
+          return false;
+        }
+      } else if (Expected == HAS_SIGNALED) {
+        // Reset the latch once signaled
+        Mutex.store(HAS_NO_WAITER);
+        return true;
+      }
+    }
+  }
+
+  template<class Rep, class Period>
+  bool WaitFor(const std::chrono::duration<Rep, Period>& time) {
+    struct timespec Timeout {};
+    auto SecondsDuration = std::chrono::duration_cast<std::chrono::seconds>(time);
+    Timeout.tv_sec = SecondsDuration.count();
+    Timeout.tv_nsec = std::chrono::duration_cast<std::chrono::nanoseconds>(time - SecondsDuration).count();
+    return Wait(&Timeout);
+  }
+
+  void NotifyOne() {
+    DoNotify(1);
+  }
+
+  bool HasWaiter() const {
+    return Mutex.load() == HAS_WAITER;
+  }
+
+private:
+  std::atomic<uint32_t> Mutex {};
+  constexpr static uint32_t HAS_NO_WAITER = 0;
+  constexpr static uint32_t HAS_WAITER = 1;
+  constexpr static uint32_t HAS_SIGNALED = 2;
+
+  void DoNotify(int Waiters) {
+    uint32_t Expected = HAS_WAITER;
+    const uint32_t Desired = HAS_SIGNALED;
+
+    // If the mutex is in a waiting state and we have CAS exchanged it to HAS_SIGNALED, then futex.
+    // otherwise just leave since nothing was waiting.
+    if (Mutex.compare_exchange_strong(Expected, Desired)) {
+      constexpr int Op = FUTEX_WAKE | FUTEX_PRIVATE_FLAG;
+
+      ::syscall(SYS_futex, &Mutex, Op,
+                Waiters, // val - Number of waiters to wake
+                0,       // val2
+                &Mutex,  // Addr2 - Mutex to do the operation on
+                0);      // val3
+    }
+  }
+};
+
 enum class SignalEvent : uint32_t {
   Nothing, // If the guest uses our signal we need to know it was errant on our end
   Pause,
@@ -81,8 +155,15 @@ struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
   std::atomic<SignalEvent> SignalReason {SignalEvent::Nothing};
 
   // Thread pause handling
-  std::atomic_bool ThreadSleeping {false};
-  FEXCore::InterruptableConditionVariable ThreadPaused;
+  InspectableLatch ThreadSleeping;
+
+  // GDB signal information
+  struct GdbInfoStruct {
+    int Signal {};
+    uint64_t SignalPC {};
+    uint64_t GPRs[32];
+    uint64_t PState {};
+  } GdbInfo;
 
   int StatusCode {};
 };
@@ -90,8 +171,9 @@ struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
 class ThreadManager final {
 public:
 
-  ThreadManager(FEXCore::Context::Context* CTX, FEX::HLE::SignalDelegator* SignalDelegation)
+  ThreadManager(FEXCore::Context::Context* CTX, FEX::HLE::SyscallHandler* SyscallHandler, FEX::HLE::SignalDelegator* SignalDelegation)
     : CTX {CTX}
+    , SyscallHandler {SyscallHandler}
     , SignalDelegation {SignalDelegation} {}
 
   ~ThreadManager();
@@ -107,10 +189,7 @@ public:
 
   FEX::HLE::ThreadStateObject* CreateThread(uint64_t InitialRIP, uint64_t StackPointer, const FEXCore::Core::CPUState* NewThreadState = nullptr,
                                             uint64_t ParentTID = 0, FEX::HLE::ThreadStateObject* InheritThread = nullptr);
-  void TrackThread(FEX::HLE::ThreadStateObject* Thread) {
-    std::lock_guard lk(ThreadCreationMutex);
-    Threads.emplace_back(Thread);
-  }
+  void TrackThread(FEX::HLE::ThreadStateObject* Thread);
 
   void DestroyThread(FEX::HLE::ThreadStateObject* Thread, bool NeedsTLSUninstall = false);
   void StopThread(FEX::HLE::ThreadStateObject* Thread);
@@ -125,7 +204,11 @@ public:
   void WaitForIdleWithTimeout();
   void WaitForThreadsToRun();
 
-  void SleepThread(FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Frame);
+  void SleepThread(FEXCore::Context::Context* CTX, FEX::HLE::ThreadStateObject* ThreadObject);
+  void SleepThread(FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Frame) {
+    auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
+    SleepThread(CTX, ThreadObject);
+  }
 
   void UnlockAfterFork(FEXCore::Core::InternalThreadState* Thread, bool Child);
 
@@ -164,8 +247,14 @@ public:
     return &Threads;
   }
 
+  size_t GetThreadCount() {
+    std::lock_guard lk(ThreadCreationMutex);
+    return Threads.size();
+  }
+
 private:
   FEXCore::Context::Context* CTX;
+  FEX::HLE::SyscallHandler* SyscallHandler;
   FEX::HLE::SignalDelegator* SignalDelegation;
 
   FEXCore::ForkableUniqueMutex ThreadCreationMutex;
