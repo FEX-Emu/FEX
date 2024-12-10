@@ -150,7 +150,8 @@ uint64_t ContextImpl::RestoreRIPFromHostPC(FEXCore::Core::InternalThreadState* T
   return Frame->State.rip;
 }
 
-uint32_t ContextImpl::ReconstructCompactedEFLAGS(FEXCore::Core::InternalThreadState* Thread, bool WasInJIT, uint64_t* HostGPRs, uint64_t PSTATE) {
+uint32_t ContextImpl::ReconstructCompactedEFLAGS(FEXCore::Core::InternalThreadState* Thread, bool WasInJIT, const uint64_t* HostGPRs,
+                                                 uint64_t PSTATE) {
   const auto Frame = Thread->CurrentFrame;
   uint32_t EFLAGS {};
 

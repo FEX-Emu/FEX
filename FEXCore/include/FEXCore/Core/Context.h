@@ -121,7 +121,7 @@ public:
    * @return x86 EFLAGS reconstructed
    */
   FEX_DEFAULT_VISIBILITY virtual uint32_t
-  ReconstructCompactedEFLAGS(FEXCore::Core::InternalThreadState* Thread, bool WasInJIT, uint64_t* HostGPRs, uint64_t PSTATE) = 0;
+  ReconstructCompactedEFLAGS(FEXCore::Core::InternalThreadState* Thread, bool WasInJIT, const uint64_t* HostGPRs, uint64_t PSTATE) = 0;
   ///< Sets FEX's internal EFLAGS representation to the passed in compacted form.
   FEX_DEFAULT_VISIBILITY virtual void SetFlagsFromCompactedEFLAGS(FEXCore::Core::InternalThreadState* Thread, uint32_t EFLAGS) = 0;
 
