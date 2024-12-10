@@ -145,6 +145,7 @@ private:
 
   FEXCore::Context::Context* CTX;
   FEX::HLE::SyscallHandler* const SyscallHandler;
+  FEX::HLE::SignalDelegator* SignalDelegation;
   fextl::unique_ptr<FEXCore::Threads::Thread> gdbServerThread;
   fextl::unique_ptr<std::iostream> CommsStream;
   std::mutex sendMutex;
