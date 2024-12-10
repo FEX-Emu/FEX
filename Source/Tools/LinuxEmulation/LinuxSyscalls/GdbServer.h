@@ -36,7 +36,7 @@ public:
   }
 
 private:
-  void Break(FEXCore::Core::InternalThreadState* Thread, int signal);
+  void Break(FEX::HLE::ThreadStateObject* ThreadObject, int signal);
 
   void OpenListenSocket();
   void CloseListenSocket();
