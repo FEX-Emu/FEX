@@ -18,14 +18,14 @@ void InvalidationTracker::HandleMemoryProtectionNotification(uint64_t Address, u
   const auto AlignedBase = Address & FEXCore::Utils::FEX_PAGE_MASK;
   const auto AlignedSize = (Address - AlignedBase + Size + FEXCore::Utils::FEX_PAGE_SIZE - 1) & FEXCore::Utils::FEX_PAGE_MASK;
 
-  if (Prot & (PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE)) {
+  if (Prot & (PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) {
     std::scoped_lock Lock(CTX.GetCodeInvalidationMutex());
     for (auto Thread : Threads) {
       CTX.InvalidateGuestCodeRange(Thread.second, AlignedBase, AlignedSize);
     }
   }
 
-  if (Prot & PAGE_EXECUTE_READWRITE) {
+  if (Prot & (PAGE_EXECUTE_WRITECOPY | PAGE_EXECUTE_READWRITE)) {
     LogMan::Msg::DFmt("Add SMC interval: {:X} - {:X}", AlignedBase, AlignedBase + AlignedSize);
     std::scoped_lock Lock(RWXIntervalsLock);
     RWXIntervals.Insert({AlignedBase, AlignedBase + AlignedSize});
