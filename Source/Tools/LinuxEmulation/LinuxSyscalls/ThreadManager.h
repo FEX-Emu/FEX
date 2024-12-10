@@ -99,8 +99,9 @@ struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
 class ThreadManager final {
 public:
 
-  ThreadManager(FEXCore::Context::Context* CTX, FEX::HLE::SignalDelegator* SignalDelegation)
+  ThreadManager(FEXCore::Context::Context* CTX, FEX::HLE::SyscallHandler* SyscallHandler, FEX::HLE::SignalDelegator* SignalDelegation)
     : CTX {CTX}
+    , SyscallHandler {SyscallHandler}
     , SignalDelegation {SignalDelegation} {}
 
   ~ThreadManager();
@@ -175,6 +176,7 @@ public:
 
 private:
   FEXCore::Context::Context* CTX;
+  FEX::HLE::SyscallHandler* SyscallHandler;
   FEX::HLE::SignalDelegator* SignalDelegation;
 
   FEXCore::ForkableUniqueMutex ThreadCreationMutex;
