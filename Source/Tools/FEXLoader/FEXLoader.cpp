@@ -587,6 +587,7 @@ int main(int argc, char** argv, char** const envp) {
   fextl::unique_ptr<FEX::GdbServer> DebugServer;
   if (GdbServer) {
     DebugServer = fextl::make_unique<FEX::GdbServer>(CTX.get(), SignalDelegation.get(), SyscallHandler.get());
+    SyscallHandler->SetGdbServer(DebugServer.get());
   }
 
   if (!CTX->InitCore()) {
