@@ -160,6 +160,7 @@ uint32_t ContextImpl::ReconstructCompactedEFLAGS(FEXCore::Core::InternalThreadSt
     case X86State::RFLAG_CF_RAW_LOC:
     case X86State::RFLAG_PF_RAW_LOC:
     case X86State::RFLAG_AF_RAW_LOC:
+    case X86State::RFLAG_TF_RAW_LOC:
     case X86State::RFLAG_ZF_RAW_LOC:
     case X86State::RFLAG_SF_RAW_LOC:
     case X86State::RFLAG_OF_RAW_LOC:
@@ -211,6 +212,9 @@ uint32_t ContextImpl::ReconstructCompactedEFLAGS(FEXCore::Core::InternalThreadSt
   // XOR with PF byte and extract bit 4.
   uint32_t AF = ((Frame->State.af_raw ^ PFByte) & (1 << 4)) ? 1 : 0;
   EFLAGS |= AF << X86State::RFLAG_AF_RAW_LOC;
+
+  uint8_t TFByte = Frame->State.flags[X86State::RFLAG_TF_RAW_LOC];
+  EFLAGS |= (TFByte & 1) << X86State::RFLAG_TF_RAW_LOC;
 
   // DF is pretransformed, undo the transform from 1/-1 back to 0/1
   uint8_t DFByte = Frame->State.flags[X86State::RFLAG_DF_RAW_LOC];
@@ -771,13 +775,17 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
   if (!IR) {
     return {};
   }
+
+  // If the trap flag is set we generate single instruction blocks that each check to generate a single step exception.
+  bool TFSet = Thread->CurrentFrame->State.flags[X86State::RFLAG_TF_RAW_LOC];
+
   // Attempt to get the CPU backend to compile this code
   auto IRView = IR->GetIRView();
   return {
     // FEX currently throws away the CPUBackend::CompiledCode object other than the entrypoint
     // In the future with code caching getting wired up, we will pass the rest of the data forward.
     // TODO: Pass the data forward when code caching is wired up to this.
-    .CompiledCode = Thread->CPUBackend->CompileCode(GuestRIP, &IRView, DebugData, IR->RAData()).BlockEntry,
+    .CompiledCode = Thread->CPUBackend->CompileCode(GuestRIP, &IRView, DebugData, IR->RAData(), TFSet).BlockEntry,
     .IR = std::move(IR),
     .DebugData = DebugData,
     .GeneratedIR = true,
@@ -858,6 +866,24 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
   // Insert to lookup cache
   // Pages containing this block are added via AddBlockExecutableRange before each page gets accessed in the frontend
   AddBlockMapping(Thread, GuestRIP, CodePtr);
+
+  return (uintptr_t)CodePtr;
+}
+
+uintptr_t ContextImpl::CompileSingleStep(FEXCore::Core::CpuStateFrame* Frame, uint64_t GuestRIP) {
+  FEXCORE_PROFILE_SCOPED("CompileSingleStep");
+  auto Thread = Frame->Thread;
+
+  // Invalidate might take a unique lock on this, to guarantee that during invalidation no code gets compiled
+  auto lk = GuardSignalDeferringSection<std::shared_lock>(CodeInvalidationMutex, Thread);
+
+  auto [CodePtr, IR, DebugData, GeneratedIR, StartAddr, Length] = CompileCode(Thread, GuestRIP, 1);
+  if (CodePtr == nullptr) {
+    return 0;
+  }
+
+  // Clear any relocations that might have been generated
+  Thread->CPUBackend->ClearRelocations();
 
   return (uintptr_t)CodePtr;
 }
