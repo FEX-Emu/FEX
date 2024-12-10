@@ -47,5 +47,5 @@ fextl::string BuildOSXML();
 /**
  * @brief Returns the GDB specific construct of target describing XML.
  */
-fextl::string BuildTargetXML();
+fextl::string BuildTargetXML(bool Is64Bit);
 } // namespace FEX::GDB::Info

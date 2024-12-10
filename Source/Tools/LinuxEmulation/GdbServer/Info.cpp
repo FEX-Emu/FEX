@@ -77,13 +77,17 @@ fextl::string BuildOSXML() {
   return xml.str();
 }
 
-fextl::string BuildTargetXML() {
+fextl::string BuildTargetXML(bool Is64Bit) {
   fextl::ostringstream xml;
 
   xml << "<?xml version='1.0'?>\n";
   xml << "<!DOCTYPE target SYSTEM 'gdb-target.dtd'>\n";
   xml << "<target>\n";
-  xml << "<architecture>i386:x86-64</architecture>\n";
+  if (Is64Bit) {
+    xml << "<architecture>i386:x86-64</architecture>\n";
+  } else {
+    xml << "<architecture>i386</architecture>\n";
+  }
   xml << "<osabi>GNU/Linux</osabi>\n";
   xml << "<feature name='org.gnu.gdb.i386.core'>\n";
 

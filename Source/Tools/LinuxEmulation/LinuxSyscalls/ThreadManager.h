@@ -90,7 +90,8 @@ struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
     uint64_t SignalPC {};
     uint64_t GPRs[32];
     uint64_t PState {};
-  } GdbInfo;
+  };
+  std::optional<GdbInfoStruct> GdbInfo;
 
   int StatusCode {};
 };
