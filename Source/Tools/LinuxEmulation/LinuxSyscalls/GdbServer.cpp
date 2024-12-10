@@ -62,13 +62,12 @@ $end_info$
 namespace FEX {
 
 #ifndef _WIN32
-void GdbServer::Break(FEXCore::Core::InternalThreadState* Thread, int signal) {
+void GdbServer::Break(FEX::HLE::ThreadStateObject* ThreadObject, int signal) {
   std::lock_guard lk(sendMutex);
   if (!CommsStream) {
     return;
   }
 
-  auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread);
   // Current debugging thread switches to the thread that is breaking.
   CurrentDebuggingThread = ThreadObject->ThreadInfo.TID.load();
 
@@ -119,7 +118,7 @@ GdbServer::GdbServer(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* 
       ThreadObject->GdbInfo->PState = ArchHelpers::Context::GetArmPState(ucontext);
 
       // Let GDB know that we have a signal
-      this->Break(Thread, Signal);
+      this->Break(ThreadObject, Signal);
 
       WaitForThreadWakeup();
       ThreadObject->GdbInfo.reset();
