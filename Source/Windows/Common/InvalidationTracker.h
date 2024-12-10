@@ -21,6 +21,7 @@ class InvalidationTracker {
 public:
   InvalidationTracker(FEXCore::Context::Context& CTX, const std::unordered_map<DWORD, FEXCore::Core::InternalThreadState*>& Threads);
   void HandleMemoryProtectionNotification(uint64_t Address, uint64_t Size, ULONG Prot);
+  void HandleImageMap(uint64_t Address);
   void InvalidateContainingSection(uint64_t Address, bool Free);
   void InvalidateAlignedInterval(uint64_t Address, uint64_t Size, bool Free);
   void ReprotectRWXIntervals(uint64_t Address, uint64_t Size);
