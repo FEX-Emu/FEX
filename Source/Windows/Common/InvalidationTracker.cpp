@@ -35,6 +35,21 @@ void InvalidationTracker::HandleMemoryProtectionNotification(uint64_t Address, u
   }
 }
 
+void InvalidationTracker::HandleImageMap(uint64_t Address) {
+  auto* Nt = RtlImageNtHeader(reinterpret_cast<HMODULE>(Address));
+  auto* SectionsBegin = IMAGE_FIRST_SECTION(Nt);
+  auto* SectionsEnd = SectionsBegin + Nt->FileHeader.NumberOfSections;
+
+  for (auto* Section = SectionsBegin; Section != SectionsEnd; Section++) {
+    if ((Section->Characteristics & IMAGE_SCN_MEM_EXECUTE) && (Section->Characteristics & IMAGE_SCN_MEM_WRITE)) {
+      uint64_t SectionBase = Address + Section->VirtualAddress;
+      LogMan::Msg::DFmt("Add image SMC interval: {:X} - {:X}", SectionBase, SectionBase + Section->Misc.VirtualSize);
+      std::scoped_lock Lock(RWXIntervalsLock);
+      RWXIntervals.Insert({SectionBase, SectionBase + Section->Misc.VirtualSize});
+    }
+  }
+}
+
 void InvalidationTracker::InvalidateContainingSection(uint64_t Address, bool Free) {
   MEMORY_BASIC_INFORMATION Info;
   if (NtQueryVirtualMemory(NtCurrentProcess(), reinterpret_cast<void*>(Address), MemoryBasicInformation, &Info, sizeof(Info), nullptr)) {

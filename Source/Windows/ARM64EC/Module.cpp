@@ -547,6 +547,10 @@ NTSTATUS ProcessInit() {
   CTX->SetSyscallHandler(SyscallHandler.get());
   CTX->InitCore();
   InvalidationTracker.emplace(*CTX, Threads);
+
+  auto MainModule = reinterpret_cast<__TEB*>(NtCurrentTeb())->Peb->ImageBaseAddress;
+  InvalidationTracker->HandleImageMap(reinterpret_cast<uint64_t>(MainModule));
+
   CPUFeatures.emplace(*CTX);
 
   X64ReturnInstr = ::VirtualAlloc(nullptr, FEXCore::Utils::FEX_PAGE_SIZE, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
@@ -694,6 +698,12 @@ void NotifyMemoryProtect(void* Address, SIZE_T Size, ULONG NewProt, BOOL After, 
 }
 
 NTSTATUS NotifyMapViewOfSection(void* Unk1, void* Address, void* Unk2, SIZE_T Size, ULONG AllocType, ULONG Prot) {
+  if (!InvalidationTracker || !GetCPUArea().ThreadState()) {
+    return STATUS_SUCCESS;
+  }
+
+  std::scoped_lock Lock(ThreadCreationMutex);
+  InvalidationTracker->HandleImageMap(reinterpret_cast<uint64_t>(Address));
   return STATUS_SUCCESS;
 }
 
