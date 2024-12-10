@@ -595,9 +595,9 @@ int main(int argc, char** argv, char** const envp) {
   }
 
   auto ParentThread = SyscallHandler->TM.CreateThread(Loader.DefaultRIP(), Loader.GetStackPointer());
-  SyscallHandler->TM.TrackThread(ParentThread);
   SignalDelegation->RegisterTLSState(ParentThread);
   ThunkHandler->RegisterTLSState(ParentThread);
+  SyscallHandler->TM.TrackThread(ParentThread);
 
   // Pass in our VDSO thunks
   ThunkHandler->AppendThunkDefinitions(FEX::VDSO::GetVDSOThunkDefinitions(Loader.Is64BitMode()));
