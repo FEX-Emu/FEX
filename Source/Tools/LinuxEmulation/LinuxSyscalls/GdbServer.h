@@ -128,20 +128,26 @@ private:
     uint8_t Data[10];
   };
 
-  struct FEX_PACKED GDBContextDefinition {
-    uint64_t gregs[FEXCore::Core::CPUState::NUM_GPRS];
-    uint64_t rip;
+  template<size_t GPRCount, typename GPRType, size_t XMMCount, size_t XMMArray>
+  struct FEX_PACKED GDBContextDefinitionBase {
+    GPRType gregs[GPRCount];
+    GPRType rip;
     uint32_t eflags;
     uint32_t cs, ss, ds, es, fs, gs;
     X80Float mm[FEXCore::Core::CPUState::NUM_MMS];
     uint32_t fctrl;
     uint32_t fstat;
     uint32_t dummies[6];
-    uint64_t xmm[FEXCore::Core::CPUState::NUM_XMMS][4];
+    uint64_t xmm[XMMCount][XMMArray];
     uint32_t mxcsr;
   };
 
-  GDBContextDefinition GenerateContextDefinition(const FEX::HLE::ThreadStateObject* ThreadObject);
+  using GDBContextDefinition = GDBContextDefinitionBase<FEXCore::Core::CPUState::NUM_GPRS, uint64_t, FEXCore::Core::CPUState::NUM_XMMS, 4>;
+  using GDBContextDefinition_32 =
+    GDBContextDefinitionBase<FEXCore::Core::CPUState::NUM_GPRS / 2, uint32_t, FEXCore::Core::CPUState::NUM_XMMS / 2, 2>;
+
+  template<class T>
+  T GenerateContextDefinition(const FEX::HLE::ThreadStateObject* ThreadObject);
 
   FEXCore::Context::Context* CTX;
   FEX::HLE::SyscallHandler* const SyscallHandler;
