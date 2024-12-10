@@ -54,7 +54,7 @@ $end_info$
 namespace FEX {
 class CodeLoader;
 class GdbServer;
-}
+} // namespace FEX
 
 namespace FEXCore {
 namespace Context {

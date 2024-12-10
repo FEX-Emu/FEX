@@ -35,6 +35,8 @@ public:
     LibraryMapChanged = true;
   }
 
+  void OnThreadCreated(FEX::HLE::ThreadStateObject* ThreadObject);
+
 private:
   void Break(FEX::HLE::ThreadStateObject* ThreadObject, int signal);
 
@@ -51,9 +53,6 @@ private:
   void SendPacket(std::ostream& stream, const fextl::string& packet);
 
   void SendACK(std::ostream& stream, bool NACK);
-
-  Event ThreadBreakEvent {};
-  void WaitForThreadWakeup();
 
   struct HandledPacketType {
     fextl::string Response {};
