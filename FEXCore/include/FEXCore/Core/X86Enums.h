@@ -62,7 +62,7 @@ enum X86RegLocation : uint32_t {
   RFLAG_AF_RAW_LOC = 4,   // Contains multiple bits, needs to be reconstructed using `ReconstructCompactedEFLAGS`
   RFLAG_ZF_RAW_LOC = 6,   // Not used directly, needs to be reconstructed using `ReconstructCompactedEFLAGS`
   RFLAG_SF_RAW_LOC = 7,   // Not used directly, needs to be reconstructed using `ReconstructCompactedEFLAGS`
-  RFLAG_TF_LOC = 8,
+  RFLAG_TF_RAW_LOC = 8,   // Contains multiple bits, needs to be reconstructed using `ReconstructCompactedEFLAGS`
   RFLAG_IF_LOC = 9,
   RFLAG_DF_RAW_LOC = 10, // Contains multiple bits, needs to be reconstructed using `ReconstructCompactedEFLAGS`
   RFLAG_OF_RAW_LOC = 11, // Not used directly, needs to be reconstructed using `ReconstructCompactedEFLAGS`

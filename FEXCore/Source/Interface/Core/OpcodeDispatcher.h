@@ -1791,6 +1791,13 @@ private:
     } else if (BitOffset == FEXCore::X86State::RFLAG_DF_RAW_LOC) {
       // For DF, we need to transform 0/1 into 1/-1
       StoreDF(_SubShift(OpSize::i64Bit, _Constant(1), Value, ShiftType::LSL, 1));
+    } else if (BitOffset == FEXCore::X86State::RFLAG_TF_RAW_LOC) {
+      auto PackedTF = _LoadContext(OpSize::i8Bit, GPRClass, offsetof(FEXCore::Core::CPUState, flags[BitOffset]));
+      // An exception should still be raised after an instruction that unsets TF, leave the unblocked bit set but unset
+      // the TF bit to cause such behaviour. The handling code at the start of the next block will then unset the
+      // unblocked bit before raising the exception.
+      auto NewPackedTF = _Select(FEXCore::IR::COND_EQ, Value, _Constant(0), _And(OpSize::i32Bit, PackedTF, _Constant(~1)), _Constant(1));
+      _StoreContext(OpSize::i8Bit, GPRClass, NewPackedTF, offsetof(FEXCore::Core::CPUState, flags[BitOffset]));
     } else {
       _StoreContext(OpSize::i8Bit, GPRClass, Value, offsetof(FEXCore::Core::CPUState, flags[BitOffset]));
     }
