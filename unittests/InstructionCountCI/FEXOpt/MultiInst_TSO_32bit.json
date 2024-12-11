@@ -1,0 +1,70 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "TSO",
+      "LRCPC",
+      "LRCPC2",
+      "FLAGM",
+      "FLAGM2"
+    ],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256",
+      "RPRES",
+      "AFP"
+    ]
+  },
+  "Comment": [
+    "These are instruction combinations that could be more optimal if FEX optimized for them"
+  ],
+  "Instructions": {
+    "Load variables from structs": {
+      "x86InstructionCount": 7,
+      "ExpectedInstructionCount": 27,
+      "Comment": [
+        "Saw this in 32-bit libvulkan_freedreno.so:tu_cs_begin_sub_stream_aligned",
+        "Loads a bunch of values from structs passed as arguments",
+        "Loads failed to use LRCPC2/ldapur with small immediate offset when possible"
+      ],
+      "x86Insts": [
+        "mov edi, [ecx + 8]",
+        "mov edx, [ecx + 4]",
+        "mov ebx, [ecx]",
+        "mov esi, [ecx + 0xc]",
+        "imul edx, edi",
+        "mov eax, [ebx + 0xc]",
+        "sub eax, [ebx + 4]"
+      ],
+      "ExpectedArm64ASM": [
+        "add x20, x7, #0x8 (8)",
+        "mov w20, w20",
+        "ldapur w11, [x20]",
+        "nop",
+        "add x20, x7, #0x4 (4)",
+        "mov w20, w20",
+        "ldapur w5, [x20]",
+        "nop",
+        "mov w20, w7",
+        "ldapur w6, [x20]",
+        "nop",
+        "add x20, x7, #0xc (12)",
+        "mov w20, w20",
+        "ldapur w10, [x20]",
+        "nop",
+        "mul w5, w5, w11",
+        "add x20, x6, #0xc (12)",
+        "mov w20, w20",
+        "ldapur w4, [x20]",
+        "nop",
+        "add x20, x6, #0x4 (4)",
+        "mov w20, w20",
+        "ldapur w20, [x20]",
+        "nop",
+        "eor w27, w4, w20",
+        "subs w26, w4, w20",
+        "mov x4, x26"
+      ]
+    }
+  }
+}
