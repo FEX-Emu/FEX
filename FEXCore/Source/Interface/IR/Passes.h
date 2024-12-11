@@ -6,7 +6,7 @@
 namespace FEXCore {
 class CPUIDEmu;
 struct HostFeatures;
-}
+} // namespace FEXCore
 
 namespace FEXCore::Utils {
 class IntrusivePooledAllocator;
