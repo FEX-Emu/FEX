@@ -506,6 +506,9 @@ int main(int argc, char** argv, char** const envp) {
     FEATURE_CRYPTO = (1U << 10),
     FEATURE_AES256 = (1U << 11),
     FEATURE_SVEBITPERM = (1U << 12),
+    FEATURE_TSO = (1U << 13),
+    FEATURE_LRCPC = (1U << 14),
+    FEATURE_LRCPC2 = (1U << 15),
   };
 
   uint64_t SVEWidth = 0;
@@ -547,6 +550,20 @@ int main(int argc, char** argv, char** const envp) {
   if (TestHeaderData->EnabledHostFeatures & FEATURE_SVEBITPERM) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLESVEBITPERM);
   }
+  if (TestHeaderData->EnabledHostFeatures & FEATURE_LRCPC) {
+    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLELRCPC);
+  }
+  if (TestHeaderData->EnabledHostFeatures & FEATURE_LRCPC2) {
+    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLELRCPC2);
+  }
+
+  if (TestHeaderData->EnabledHostFeatures & FEATURE_TSO) {
+    // Always disable auto migration.
+    FEXCore::Config::EraseSet(FEXCore::Config::ConfigOption::CONFIG_TSOAUTOMIGRATION, "0");
+    FEXCore::Config::EraseSet(FEXCore::Config::ConfigOption::CONFIG_TSOENABLED, "1");
+    FEXCore::Config::EraseSet(FEXCore::Config::ConfigOption::CONFIG_VECTORTSOENABLED, "1");
+    FEXCore::Config::EraseSet(FEXCore::Config::ConfigOption::CONFIG_MEMCPYSETTSOENABLED, "1");
+  }
 
   // Always enable ARMv8.1 LSE atomics.
   HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLEATOMICS);
@@ -583,6 +600,20 @@ int main(int argc, char** argv, char** const envp) {
   }
   if (TestHeaderData->DisabledHostFeatures & FEATURE_SVEBITPERM) {
     HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLESVEBITPERM);
+  }
+  if (TestHeaderData->DisabledHostFeatures & FEATURE_LRCPC) {
+    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLELRCPC);
+  }
+  if (TestHeaderData->DisabledHostFeatures & FEATURE_LRCPC2) {
+    HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::DISABLELRCPC2);
+  }
+
+  if (TestHeaderData->DisabledHostFeatures & FEATURE_TSO) {
+    // Always disable auto migration.
+    FEXCore::Config::EraseSet(FEXCore::Config::ConfigOption::CONFIG_TSOAUTOMIGRATION, "0");
+    FEXCore::Config::EraseSet(FEXCore::Config::ConfigOption::CONFIG_TSOENABLED, "0");
+    FEXCore::Config::EraseSet(FEXCore::Config::ConfigOption::CONFIG_VECTORTSOENABLED, "0");
+    FEXCore::Config::EraseSet(FEXCore::Config::ConfigOption::CONFIG_MEMCPYSETTSOENABLED, "0");
   }
 
   // Always enable preserve_all abi.
