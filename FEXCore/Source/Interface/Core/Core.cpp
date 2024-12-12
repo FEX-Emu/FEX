@@ -112,13 +112,38 @@ ContextImpl::~ContextImpl() {
   }
 }
 
-uint64_t ContextImpl::RestoreRIPFromHostPC(FEXCore::Core::InternalThreadState* Thread, uint64_t HostPC) {
-  const auto Frame = Thread->CurrentFrame;
+struct GetFrameBlockInfoResult {
+  const CPU::CPUBackend::JITCodeHeader* InlineHeader;
+  const CPU::CPUBackend::JITCodeTail* InlineTail;
+};
+static GetFrameBlockInfoResult GetFrameBlockInfo(FEXCore::Core::CpuStateFrame* Frame) {
   const uint64_t BlockBegin = Frame->State.InlineJITBlockHeader;
   auto InlineHeader = reinterpret_cast<const CPU::CPUBackend::JITCodeHeader*>(BlockBegin);
 
   if (InlineHeader) {
     auto InlineTail = reinterpret_cast<const CPU::CPUBackend::JITCodeTail*>(Frame->State.InlineJITBlockHeader + InlineHeader->OffsetToBlockTail);
+    return {InlineHeader, InlineTail};
+  }
+
+  return {InlineHeader, nullptr};
+}
+
+bool ContextImpl::IsAddressInCurrentBlock(FEXCore::Core::InternalThreadState* Thread, uint64_t Address, uint64_t Size) {
+  auto [_, InlineTail] = GetFrameBlockInfo(Thread->CurrentFrame);
+  return InlineTail && (Address + Size > InlineTail->RIP && Address < InlineTail->RIP + InlineTail->GuestSize);
+}
+
+bool ContextImpl::IsCurrentBlockSingleInst(FEXCore::Core::InternalThreadState* Thread) {
+  auto [_, InlineTail] = GetFrameBlockInfo(Thread->CurrentFrame);
+  return InlineTail && InlineTail->SingleInst;
+}
+
+uint64_t ContextImpl::RestoreRIPFromHostPC(FEXCore::Core::InternalThreadState* Thread, uint64_t HostPC) {
+  const auto Frame = Thread->CurrentFrame;
+  const uint64_t BlockBegin = Frame->State.InlineJITBlockHeader;
+  auto [InlineHeader, InlineTail] = GetFrameBlockInfo(Thread->CurrentFrame);
+
+  if (InlineHeader) {
     auto RIPEntries = reinterpret_cast<const CPU::CPUBackend::JITRIPReconstructEntries*>(
       Frame->State.InlineJITBlockHeader + InlineHeader->OffsetToBlockTail + InlineTail->OffsetToRIPEntries);
 
@@ -555,6 +580,7 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
     GuestCode = reinterpret_cast<const uint8_t*>(GuestRIP);
 
     bool HadDispatchError {false};
+    bool HadInvalidInst {false};
 
     Thread->FrontendDecoder->DecodeInstructionsAtEntry(GuestCode, GuestRIP, MaxInst,
                                                        [Thread](uint64_t BlockEntry, uint64_t Start, uint64_t Length) {
@@ -652,16 +678,23 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
             ++TotalInstructions;
           }
         } else {
-          if (TableInfo) {
-            LogMan::Msg::EFmt("Invalid or Unknown instruction: {} 0x{:x}", TableInfo->Name ?: "UND", Block.Entry - GuestRIP);
-          }
           // Invalid instruction
-          Thread->OpDispatcher->InvalidOp(DecodedInfo);
-          Thread->OpDispatcher->ExitFunction(Thread->OpDispatcher->_EntrypointOffset(GPRSize, Block.Entry - GuestRIP));
+          if (!BlockInstructionsLength) {
+            // SMC can modify block contents and patch invalid instructions to valid ones inline.
+            // End blocks upon encountering them and only emit an invalid opcode exception if there are no prior instructions in the block (that could have modified it to be valid).
+
+            if (TableInfo) {
+              LogMan::Msg::EFmt("Invalid or Unknown instruction: {} 0x{:x}", TableInfo->Name ?: "UND", Block.Entry - GuestRIP);
+            }
+
+            Thread->OpDispatcher->InvalidOp(DecodedInfo);
+          }
+
+          HadInvalidInst = true;
         }
 
-        const bool NeedsBlockEnd =
-          (HadDispatchError && TotalInstructions > 0) || (Thread->OpDispatcher->NeedsBlockEnder() && i + 1 == InstsInBlock);
+        const bool NeedsBlockEnd = (HadDispatchError && TotalInstructions > 0) ||
+                                   (Thread->OpDispatcher->NeedsBlockEnder() && i + 1 == InstsInBlock) || HadInvalidInst;
 
         // If we had a dispatch error then leave early
         if (HadDispatchError && TotalInstructions == 0) {
@@ -747,6 +780,7 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
 
   fextl::unique_ptr<FEXCore::IR::IRStorageBase> IR;
   FEXCore::Core::DebugData* DebugData {};
+  uint64_t TotalInstructions {};
   uint64_t StartAddr {};
   uint64_t Length {};
 
@@ -764,11 +798,12 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
 
   if (!IR) {
     // Generate IR + Meta Info
-    auto [IRCopy, TotalInstructions, TotalInstructionsLength, _StartAddr, _Length] = GenerateIR(Thread, GuestRIP, Config.GDBSymbols(), MaxInst);
+    auto [IRCopy, _TotalInstructions, TotalInstructionsLength, _StartAddr, _Length] = GenerateIR(Thread, GuestRIP, Config.GDBSymbols(), MaxInst);
 
     // Setup pointers to internal structures
     IR = std::move(IRCopy);
     DebugData = new FEXCore::Core::DebugData();
+    TotalInstructions = _TotalInstructions;
     StartAddr = _StartAddr;
     Length = _Length;
   }
@@ -786,7 +821,7 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
     // FEX currently throws away the CPUBackend::CompiledCode object other than the entrypoint
     // In the future with code caching getting wired up, we will pass the rest of the data forward.
     // TODO: Pass the data forward when code caching is wired up to this.
-    .CompiledCode = Thread->CPUBackend->CompileCode(GuestRIP, &IRView, DebugData, IR->RAData(), TFSet).BlockEntry,
+    .CompiledCode = Thread->CPUBackend->CompileCode(GuestRIP, Length, TotalInstructions == 1, &IRView, DebugData, IR->RAData(), TFSet).BlockEntry,
     .IR = std::move(IR),
     .DebugData = DebugData,
     .GeneratedIR = true,

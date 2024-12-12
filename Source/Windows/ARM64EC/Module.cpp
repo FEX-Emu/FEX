@@ -467,6 +467,8 @@ public:
   }
 
   uint64_t HandleSyscall(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) override {
+    ProcessPendingCrossProcessEmulatorWork();
+
     // Manually raise an exeption with the current JIT state packed into a native context, ntdll handles this and
     // reenters the JIT (see dlls/ntdll/signal_arm64ec.c in wine).
     uint64_t FPCR, FPSR;
@@ -505,6 +507,7 @@ public:
 } // namespace Exception
 
 extern "C" void SyncThreadContext(CONTEXT* Context) {
+  ProcessPendingCrossProcessEmulatorWork();
   auto* Thread = GetCPUArea().ThreadState();
   // All other EFlags bits are lost when converting to/from an ARM64EC context, so merge them in from the current JIT state.
   // This is advisable over dropping their values as thread suspend/resume uses this function, and that can happen at any point in guest code.
@@ -591,7 +594,19 @@ bool ResetToConsistentStateImpl(EXCEPTION_RECORD* Exception, CONTEXT* GuestConte
 
     std::scoped_lock Lock(ThreadCreationMutex);
     if (InvalidationTracker->HandleRWXAccessViolation(FaultAddress)) {
-      LogMan::Msg::DFmt("Handled self-modifying code: pc: {:X} fault: {:X}", NativeContext->Pc, FaultAddress);
+      if (CTX->IsAddressInCodeBuffer(CPUArea.ThreadState(), NativeContext->Pc) && !CTX->IsCurrentBlockSingleInst(CPUArea.ThreadState()) &&
+          CTX->IsAddressInCurrentBlock(CPUArea.ThreadState(), FaultAddress, 8)) {
+        // If we are not patching ourself (single inst block case) and patching the current block, this is inline SMC. Reconstruct the current context (before the SMC write) then single step the write to reduce it to regular SMC.
+        Exception::ReconstructThreadState(CPUArea.ThreadState(), *NativeContext);
+        LogMan::Msg::DFmt("Handled inline self-modifying code: pc: {:X} rip: {:X} fault: {:X}", NativeContext->Pc,
+                          CPUArea.ThreadState()->CurrentFrame->State.rip, FaultAddress);
+        NativeContext->Pc = CPUArea.DispatcherLoopTopEnterECFillSRA();
+        NativeContext->Sp = CPUArea.EmulatorStackBase();
+        NativeContext->X10 = 1; // Set ENTRY_FILL_SRA_SINGLE_INST_REG to force a single step
+      } else {
+        LogMan::Msg::DFmt("Handled self-modifying code: pc: {:X} fault: {:X}", NativeContext->Pc, FaultAddress);
+      }
+
       return true;
     }
   }
