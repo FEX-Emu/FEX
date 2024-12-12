@@ -476,6 +476,10 @@ void BTCpuProcessInit() {
   CTX->SetSyscallHandler(SyscallHandler.get());
   CTX->InitCore();
   InvalidationTracker.emplace(*CTX, Threads);
+
+  auto MainModule = reinterpret_cast<__TEB*>(NtCurrentTeb())->Peb->ImageBaseAddress;
+  InvalidationTracker->HandleImageMap(reinterpret_cast<uint64_t>(MainModule));
+
   CPUFeatures.emplace(*CTX);
 
   // Allocate the syscall/unixcall trampolines in the lower 2GB of the address space
