@@ -518,6 +518,8 @@ void OpDispatchBuilder::POPSegmentOp(OpcodeArgs, uint32_t SegmentReg) {
     _StoreContext(DstSize, GPRClass, NewSegment, offsetof(FEXCore::Core::CPUState, cs_idx));
     break;
   case FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX:
+    // Unset the 'active' bit in the packed TF, skipping the single step exception after this instruction
+    SetRFLAG<FEXCore::X86State::RFLAG_TF_RAW_LOC>(_And(OpSize::i32Bit, GetRFLAG(FEXCore::X86State::RFLAG_TF_RAW_LOC), _Constant(1)));
     _StoreContext(DstSize, GPRClass, NewSegment, offsetof(FEXCore::Core::CPUState, ss_idx));
     break;
   case FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX:

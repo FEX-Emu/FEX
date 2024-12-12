@@ -121,12 +121,13 @@ namespace CPU {
      *
      * @param IR -  IR that maps to the IR for this RIP
      * @param DebugData - Debug data that is available for this IR indirectly
+     * @param CheckTF - If EFLAGS.TF checks should be emitted at the start of the block
      *
      * @return Information about the compiled code block.
      */
     [[nodiscard]]
     virtual CompiledCode CompileCode(uint64_t Entry, const FEXCore::IR::IRListView* IR, FEXCore::Core::DebugData* DebugData,
-                                     const FEXCore::IR::RegisterAllocationData* RAData) = 0;
+                                     const FEXCore::IR::RegisterAllocationData* RAData, bool CheckTF) = 0;
 
     /**
      * @brief Relocates a block of code from the JIT code object cache
