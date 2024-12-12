@@ -84,6 +84,15 @@ struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
   std::atomic_bool ThreadSleeping {false};
   FEXCore::InterruptableConditionVariable ThreadPaused;
 
+  // GDB signal information
+  struct GdbInfoStruct {
+    int Signal {};
+    uint64_t SignalPC {};
+    uint64_t GPRs[32];
+    uint64_t PState {};
+  };
+  std::optional<GdbInfoStruct> GdbInfo;
+
   int StatusCode {};
 };
 
