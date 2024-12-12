@@ -25,7 +25,7 @@ FMT_NODISCARD auto to_string(const fextl::fmt::basic_memory_buffer<Char, SIZE>& 
   return fextl::basic_string<Char>(buf.data(), size);
 }
 
-FMT_FUNC FMT_INLINE fextl::string vformat(::fmt::string_view fmt, ::fmt::format_args args) {
+FMT_INLINE fextl::string vformat(::fmt::string_view fmt, ::fmt::format_args args) {
   // Don't optimize the "{}" case to keep the binary size small and because it
   // can be better optimized in fmt::format anyway.
   auto buffer = memory_buffer();
