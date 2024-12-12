@@ -211,9 +211,11 @@ namespace PThreads {
         int AttachState {};
         if (pthread_attr_getdetachstate(&Attr, &AttachState) == 0) {
           if (AttachState == PTHREAD_CREATE_JOINABLE) {
+            pthread_attr_destroy(&Attr);
             return true;
           }
         }
+        pthread_attr_destroy(&Attr);
       }
       return false;
     }
