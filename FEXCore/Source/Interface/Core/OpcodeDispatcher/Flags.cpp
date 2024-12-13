@@ -185,8 +185,9 @@ Ref OpDispatchBuilder::LoadAF() {
   // Read the result, stored for PF.
   auto Result = GetRFLAG(FEXCore::X86State::RFLAG_PF_RAW_LOC);
 
-  // What's left is to XOR and extract. This is the deferred part.
-  return _Bfe(OpSize::i32Bit, 1, 4, _Xor(OpSize::i32Bit, AFWord, Result));
+  // What's left is to XOR and extract. This is the deferred part. We
+  // specifically use a 64-bit Xor here as we don't need masking.
+  return _Bfe(OpSize::i32Bit, 1, 4, _Xor(OpSize::i64Bit, AFWord, Result));
 }
 
 void OpDispatchBuilder::FixupAF() {
@@ -199,7 +200,8 @@ void OpDispatchBuilder::FixupAF() {
   auto PFRaw = GetRFLAG(FEXCore::X86State::RFLAG_PF_RAW_LOC);
   auto AFRaw = GetRFLAG(FEXCore::X86State::RFLAG_AF_RAW_LOC);
 
-  Ref XorRes = _Xor(OpSize::i32Bit, AFRaw, PFRaw);
+  // Again 64-bit as masking is more expensive given our ConstProp design.
+  Ref XorRes = _Xor(OpSize::i64Bit, AFRaw, PFRaw);
   SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(XorRes);
 }
 
@@ -238,8 +240,8 @@ void OpDispatchBuilder::CalculateAF(Ref Src1, Ref Src2) {
 
   // We store the XOR of the arguments. At read time, we XOR with the
   // appropriate bit of the result (available as the PF flag) and extract the
-  // appropriate bit.
-  Ref XorRes = _Xor(OpSize::i32Bit, Src1, Src2);
+  // appropriate bit. Again 64-bit to avoid masking.
+  Ref XorRes = _Xor(OpSize::i64Bit, Src1, Src2);
   SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(XorRes);
 }
 
