@@ -1,6 +1,6 @@
 {
   "Features": {
-    "Bitness": 64,
+    "Bitness": 32,
     "EnabledHostFeatures": [
       "TSO",
       "LRCPC",
@@ -21,7 +21,7 @@
   "Instructions": {
     "Load variables from structs": {
       "x86InstructionCount": 7,
-      "ExpectedInstructionCount": 27,
+      "ExpectedInstructionCount": 21,
       "Comment": [
         "Saw this in 32-bit libvulkan_freedreno.so:tu_cs_begin_sub_stream_aligned",
         "Loads a bunch of values from structs passed as arguments",
@@ -37,28 +37,22 @@
         "sub eax, [ebx + 4]"
       ],
       "ExpectedArm64ASM": [
-        "add x20, x7, #0x8 (8)",
-        "mov w20, w20",
+        "add w20, w7, #0x8 (8)",
         "ldapur w11, [x20]",
         "nop",
-        "add x20, x7, #0x4 (4)",
-        "mov w20, w20",
+        "add w20, w7, #0x4 (4)",
         "ldapur w5, [x20]",
         "nop",
-        "mov w20, w7",
-        "ldapur w6, [x20]",
+        "ldapur w6, [x7]",
         "nop",
-        "add x20, x7, #0xc (12)",
-        "mov w20, w20",
+        "add w20, w7, #0xc (12)",
         "ldapur w10, [x20]",
         "nop",
         "mul w5, w5, w11",
-        "add x20, x6, #0xc (12)",
-        "mov w20, w20",
+        "add w20, w6, #0xc (12)",
         "ldapur w4, [x20]",
         "nop",
-        "add x20, x6, #0x4 (4)",
-        "mov w20, w20",
+        "add w20, w6, #0x4 (4)",
         "ldapur w20, [x20]",
         "nop",
         "eor x27, x4, x20",
@@ -68,7 +62,7 @@
     },
     "Load variables from memory": {
       "x86InstructionCount": 4,
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "Just to ensure small atomic offset loads are using LRCPC2"
       ],
@@ -79,27 +73,23 @@
         "mov bl, [ecx + 26]"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, w7",
-        "ldapur w11, [x20]",
+        "ldapur w11, [x7]",
         "nop",
-        "add x20, x7, #0x4 (4)",
-        "mov w20, w20",
+        "add w20, w7, #0x4 (4)",
         "ldapur w5, [x20]",
         "nop",
-        "add x20, x7, #0x18 (24)",
-        "mov w20, w20",
+        "add w20, w7, #0x18 (24)",
         "ldapurh w20, [x20]",
         "nop",
-        "bfxil x4, x20, #0, #16",
-        "add x20, x7, #0x1a (26)",
-        "mov w20, w20",
+        "bfxil w4, w20, #0, #16",
+        "add w20, w7, #0x1a (26)",
         "ldapurb w20, [x20]",
-        "bfxil x6, x20, #0, #8"
+        "bfxil w6, w20, #0, #8"
       ]
     },
     "Store variables to memory": {
       "x86InstructionCount": 4,
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 10,
       "Comment": [
         "Just to ensure small atomic offset stores are using LRCPC2"
       ],
@@ -110,19 +100,15 @@
         "mov [ecx + 26], bl"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, w7",
         "nop",
-        "stlur w11, [x20]",
-        "add x20, x7, #0x4 (4)",
-        "mov w20, w20",
+        "stlur w11, [x7]",
+        "add w20, w7, #0x4 (4)",
         "nop",
         "stlur w5, [x20]",
-        "add x20, x7, #0x18 (24)",
-        "mov w20, w20",
+        "add w20, w7, #0x18 (24)",
         "nop",
         "stlurh w4, [x20]",
-        "add x20, x7, #0x1a (26)",
-        "mov w20, w20",
+        "add w20, w7, #0x1a (26)",
         "stlurb w6, [x20]"
       ]
     }
