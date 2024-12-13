@@ -4176,10 +4176,18 @@ AddressMode OpDispatchBuilder::SelectAddressMode(AddressMode A, bool AtomicTSO, 
   // addresses are reserved and therefore wrap around is invalid.
   //
   // TODO: Also handle GPR TSO if we can guarantee the constant inlines.
-  if (SupportsRegIndex && (A.Base || A.Segment) && A.Offset) {
-    const bool Const_16K = A.Offset > -16384 && A.Offset < 16384 && A.AddrSize == OpSize::i32Bit && GPRSize == OpSize::i32Bit;
+  if ((A.Base || A.Segment) && A.Offset) {
+    const bool SupportsSmallConst = A.AddrSize == OpSize::i32Bit && GPRSize == OpSize::i32Bit;
+    const bool Const_16K = A.Offset > -16384 && A.Offset < 16384 && SupportsSmallConst;
 
-    if ((A.AddrSize == OpSize::i64Bit) || Const_16K) {
+    // Signed immediate unscaled 9-bit range for both regular and LRCPC2 ops.
+    bool IsSIMM9 = (A.Offset >= -256) && (A.Offset <= 255) && SupportsSmallConst;
+    IsSIMM9 &= CTX->HostFeatures.SupportsTSOImm9;
+
+    // More general offsets work only for regular ops.
+    bool IsGeneral = ((A.AddrSize == OpSize::i64Bit) || Const_16K);
+
+    if (IsSIMM9 || (!AtomicTSO && IsGeneral)) {
       // Peel off the offset
       AddressMode B = A;
       B.Offset = 0;
