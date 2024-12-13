@@ -4176,35 +4176,33 @@ AddressMode OpDispatchBuilder::SelectAddressMode(AddressMode A, bool AtomicTSO, 
   // addresses are reserved and therefore wrap around is invalid.
   //
   // TODO: Also handle GPR TSO if we can guarantee the constant inlines.
-  if (SupportsRegIndex) {
-    if ((A.Base || A.Segment) && A.Offset) {
-      const bool Const_16K = A.Offset > -16384 && A.Offset < 16384 && A.AddrSize == OpSize::i32Bit && GPRSize == OpSize::i32Bit;
+  if (SupportsRegIndex && (A.Base || A.Segment) && A.Offset) {
+    const bool Const_16K = A.Offset > -16384 && A.Offset < 16384 && A.AddrSize == OpSize::i32Bit && GPRSize == OpSize::i32Bit;
 
-      if ((A.AddrSize == OpSize::i64Bit) || Const_16K) {
-        // Peel off the offset
-        AddressMode B = A;
-        B.Offset = 0;
+    if ((A.AddrSize == OpSize::i64Bit) || Const_16K) {
+      // Peel off the offset
+      AddressMode B = A;
+      B.Offset = 0;
 
-        return {
-          .Base = LoadEffectiveAddress(B, true /* AddSegmentBase */, false),
-          .Index = _Constant(A.Offset),
-          .IndexType = MEM_OFFSET_SXTX,
-          .IndexScale = 1,
-        };
-      }
+      return {
+        .Base = LoadEffectiveAddress(B, true /* AddSegmentBase */, false),
+        .Index = _Constant(A.Offset),
+        .IndexType = MEM_OFFSET_SXTX,
+        .IndexScale = 1,
+      };
     }
+  }
 
-    // Try a (possibly scaled) register index.
-    if (A.AddrSize == OpSize::i64Bit && A.Base && (A.Index || A.Segment) && !A.Offset &&
-        (A.IndexScale == 1 || A.IndexScale == IR::OpSizeToSize(AccessSize))) {
-      if (A.Index && A.Segment) {
-        A.Base = _Add(GPRSize, A.Base, A.Segment);
-      } else if (A.Segment) {
-        A.Index = A.Segment;
-        A.IndexScale = 1;
-      }
-      return A;
+  // Try a (possibly scaled) register index.
+  if (SupportsRegIndex && A.AddrSize == OpSize::i64Bit && A.Base && (A.Index || A.Segment) && !A.Offset &&
+      (A.IndexScale == 1 || A.IndexScale == IR::OpSizeToSize(AccessSize))) {
+    if (A.Index && A.Segment) {
+      A.Base = _Add(GPRSize, A.Base, A.Segment);
+    } else if (A.Segment) {
+      A.Index = A.Segment;
+      A.IndexScale = 1;
     }
+    return A;
   }
 
   // Fallback on software address calculation
