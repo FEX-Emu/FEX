@@ -41,7 +41,7 @@
         "mul w5, w5, w11",
         "ldr w4, [x6, #12]",
         "ldr w20, [x6, #4]",
-        "eor w27, w4, w20",
+        "eor x27, x4, x20",
         "subs w26, w4, w20",
         "mov x4, x26"
       ]

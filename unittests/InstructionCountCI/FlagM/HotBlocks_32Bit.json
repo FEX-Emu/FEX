@@ -42,7 +42,7 @@
         "orr w20, w20, w5",
         "str w20, [x4]",
         "add w4, w4, #0x4 (4)",
-        "eor w27, w10, w6",
+        "eor x27, x10, x6",
         "subs w26, w10, w6"
       ]
     },

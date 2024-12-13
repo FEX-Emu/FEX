@@ -61,7 +61,7 @@
         "mov w20, w20",
         "ldapur w20, [x20]",
         "nop",
-        "eor w27, w4, w20",
+        "eor x27, x4, x20",
         "subs w26, w4, w20",
         "mov x4, x26"
       ]

@@ -35,7 +35,7 @@
       ],
       "ExpectedArm64ASM": [
         "subs x4, x4, x6",
-        "eor w27, w7, w5",
+        "eor x27, x7, x5",
         "sbcs x26, x7, x5",
         "mov x7, x26"
       ]
@@ -50,7 +50,7 @@
       ],
       "ExpectedArm64ASM": [
         "adds x4, x4, x6",
-        "eor w27, w7, w5",
+        "eor x27, x7, x5",
         "adcs x26, x7, x5",
         "mov x7, x26"
       ]
