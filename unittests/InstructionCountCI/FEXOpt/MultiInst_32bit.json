@@ -1,0 +1,50 @@
+{
+  "Features": {
+    "Bitness": 32,
+    "EnabledHostFeatures": [
+      "FLAGM",
+      "FLAGM2"
+    ],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256",
+      "RPRES",
+      "AFP"
+    ]
+  },
+  "Comment": [
+    "These are instruction combinations that could be more optimal if FEX optimized for them"
+  ],
+  "Instructions": {
+    "Load variables from structs": {
+      "x86InstructionCount": 7,
+      "ExpectedInstructionCount": 10,
+      "Comment": [
+        "Saw this in 32-bit libvulkan_freedreno.so:tu_cs_begin_sub_stream_aligned",
+        "Loads a bunch of values from structs passed as arguments",
+        "Loads failed to use LRCPC2/ldapur with small immediate offset when TSO is enabled, but is fine when TSO isn't enabled."
+      ],
+      "x86Insts": [
+        "mov edi, [ecx + 8]",
+        "mov edx, [ecx + 4]",
+        "mov ebx, [ecx]",
+        "mov esi, [ecx + 0xc]",
+        "imul edx, edi",
+        "mov eax, [ebx + 0xc]",
+        "sub eax, [ebx + 4]"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr w11, [x7, #8]",
+        "ldr w5, [x7, #4]",
+        "ldr w6, [x7]",
+        "ldr w10, [x7, #12]",
+        "mul w5, w5, w11",
+        "ldr w4, [x6, #12]",
+        "ldr w20, [x6, #4]",
+        "eor w27, w4, w20",
+        "subs w26, w4, w20",
+        "mov x4, x26"
+      ]
+    }
+  }
+}

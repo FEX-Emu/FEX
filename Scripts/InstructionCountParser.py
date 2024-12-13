@@ -55,6 +55,9 @@ class HostFeatures(Flag) :
     FEATURE_CRYPTO = (1 << 10)
     FEATURE_AES256 = (1 << 11)
     FEATURE_SVEBITPERM = (1 << 12)
+    FEATURE_TSO    = (1 << 13)
+    FEATURE_LRCPC  = (1 << 14)
+    FEATURE_LRCPC2 = (1 << 15)
 
 HostFeaturesLookup = {
     "SVE128"  : HostFeatures.FEATURE_SVE128,
@@ -70,6 +73,9 @@ HostFeaturesLookup = {
     "CRYPTO"  : HostFeatures.FEATURE_CRYPTO,
     "AES256"  : HostFeatures.FEATURE_AES256,
     "SVEBITPERM" : HostFeatures.FEATURE_SVEBITPERM,
+    "TSO" : HostFeatures.FEATURE_TSO,
+    "LRCPC" : HostFeatures.FEATURE_LRCPC,
+    "LRCPC2" : HostFeatures.FEATURE_LRCPC2,
 }
 
 def GetHostFeatures(data):
