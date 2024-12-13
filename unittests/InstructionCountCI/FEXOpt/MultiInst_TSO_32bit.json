@@ -21,7 +21,7 @@
   "Instructions": {
     "Load variables from structs": {
       "x86InstructionCount": 7,
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 16,
       "Comment": [
         "Saw this in 32-bit libvulkan_freedreno.so:tu_cs_begin_sub_stream_aligned",
         "Loads a bunch of values from structs passed as arguments",
@@ -37,23 +37,18 @@
         "sub eax, [ebx + 4]"
       ],
       "ExpectedArm64ASM": [
-        "add w20, w7, #0x8 (8)",
-        "ldapur w11, [x20]",
+        "ldapur w11, [x7, #8]",
         "nop",
-        "add w20, w7, #0x4 (4)",
-        "ldapur w5, [x20]",
+        "ldapur w5, [x7, #4]",
         "nop",
         "ldapur w6, [x7]",
         "nop",
-        "add w20, w7, #0xc (12)",
-        "ldapur w10, [x20]",
+        "ldapur w10, [x7, #12]",
         "nop",
         "mul w5, w5, w11",
-        "add w20, w6, #0xc (12)",
-        "ldapur w4, [x20]",
+        "ldapur w4, [x6, #12]",
         "nop",
-        "add w20, w6, #0x4 (4)",
-        "ldapur w20, [x20]",
+        "ldapur w20, [x6, #4]",
         "nop",
         "eor w27, w4, w20",
         "subs w26, w4, w20",
