@@ -18,13 +18,8 @@ $end_info$
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/unordered_map.h>
 
-#include <bit>
 #include <cstdint>
-#include <memory>
-#include <optional>
 #include <string.h>
-#include <tuple>
-#include <utility>
 
 namespace FEXCore::IR {
 
