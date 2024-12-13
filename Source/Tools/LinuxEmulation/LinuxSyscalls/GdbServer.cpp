@@ -158,7 +158,7 @@ static fextl::string hexstring(fextl::istringstream& ss, int delm) {
 }
 
 static fextl::string appendHex(const char* data, size_t length) {
-  return fextl::fmt::format("{:#02x}", fmt::join(data, data + length, ""));
+  return fextl::fmt::format("{:02x}", fmt::join(data, data + length, ""));
 }
 
 static fextl::string encodeHex(const unsigned char* data, size_t length) {
