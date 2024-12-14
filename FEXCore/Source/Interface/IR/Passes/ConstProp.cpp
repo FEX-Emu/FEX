@@ -18,13 +18,8 @@ $end_info$
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/unordered_map.h>
 
-#include <bit>
 #include <cstdint>
-#include <memory>
-#include <optional>
 #include <string.h>
-#include <tuple>
-#include <utility>
 
 namespace FEXCore::IR {
 
@@ -188,6 +183,35 @@ void ConstProp::HandleConstantPools(IREmitter* IREmit, const IRListView& Current
   }
 }
 
+// Helper to replace the destination of an instruction with one of its sources,
+// to implement algebraic identities. This is surprisingly tricky due to
+// implicit masking in our IR.
+//
+// FEX's IR uses sized opcodes, matching arm64 semantics. 64-bit opcodes do not
+// mask, whereas smaller opcodes mask/zero-extend from 32-bits. Therefore, if
+// the instruction is 32-bit, we need to mask the source for a sound
+// replacement, in case there was garbage in the upper bits.
+//
+// However, if that source is in turn written by a 32-bit instruction, it is
+// guaranteed to have already been masked, so we know there's no garbage and we
+// can avoid the zero-extension. This is the case 99% of the time, but the
+// masking here is correctness-bearing nevertheless (and new versions of Denuvo
+// break if you get this wrong!)
+static inline void ReplaceWithSource(IREmitter* IREmit, const IRListView& CurrentIR, Ref CodeNode, IROp_Header* IROp, unsigned Idx) {
+  Ref Arg = CurrentIR.GetNode(IROp->Args[Idx]);
+
+  if (IROp->Size < OpSize::i64Bit) {
+    LOGMAN_THROW_A_FMT(IROp->Size == OpSize::i32Bit, "other sizes not here");
+
+    auto Header = IREmit->GetOpHeader(IROp->Args[Idx]);
+    if (Header->Size > OpSize::i32Bit) {
+      Arg = IREmit->_Bfe(OpSize::i32Bit, 32, 0, Arg);
+    }
+  }
+
+  IREmit->ReplaceAllUsesWith(CodeNode, Arg);
+}
+
 // constprop + some more per instruction logic
 void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& CurrentIR, Ref CodeNode, IROp_Header* IROp) {
   switch (IROp->Op) {
@@ -285,7 +309,7 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
       Replaced = true;
     } else if (IROp->Args[0].ID() == IROp->Args[1].ID() || (Constant2 & getMask(IROp)) == getMask(IROp)) {
       // AND with same value results in original value
-      IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(IROp->Args[0]));
+      ReplaceWithSource(IREmit, CurrentIR, CodeNode, IROp, 0);
       Replaced = true;
     }
 
@@ -318,8 +342,7 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
         }
 
         IREmit->SetWriteCursor(CodeNode);
-        Ref Arg = CurrentIR.GetNode(IROp->Args[1 - i]);
-        IREmit->ReplaceAllUsesWith(CodeNode, Arg);
+        ReplaceWithSource(IREmit, CurrentIR, CodeNode, IROp, 1 - i);
         Replaced = true;
         break;
       }
@@ -361,8 +384,7 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
       IREmit->ReplaceWithConstant(CodeNode, NewConstant);
     } else if (IREmit->IsValueConstant(IROp->Args[1], &Constant2) && Constant2 == 0) {
       IREmit->SetWriteCursor(CodeNode);
-      Ref Arg = CurrentIR.GetNode(IROp->Args[0]);
-      IREmit->ReplaceAllUsesWith(CodeNode, Arg);
+      ReplaceWithSource(IREmit, CurrentIR, CodeNode, IROp, 0);
     } else {
       Inline(IREmit, CurrentIR, CodeNode, IROp, 1);
     }
@@ -373,8 +395,7 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
 
     if (IREmit->IsValueConstant(IROp->Args[1], &Constant2) && Constant2 == 0) {
       IREmit->SetWriteCursor(CodeNode);
-      Ref Arg = CurrentIR.GetNode(IROp->Args[0]);
-      IREmit->ReplaceAllUsesWith(CodeNode, Arg);
+      ReplaceWithSource(IREmit, CurrentIR, CodeNode, IROp, 0);
     } else {
       Inline(IREmit, CurrentIR, CodeNode, IROp, 1);
     }

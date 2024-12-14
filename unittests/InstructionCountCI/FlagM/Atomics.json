@@ -17,7 +17,7 @@
       "Comment": "0x00",
       "ExpectedArm64ASM": [
         "ldaddalb w7, w20, [x4]",
-        "eor w27, w20, w7",
+        "eor x27, x20, x7",
         "lsl w0, w20, #24",
         "cmn w0, w7, lsl #24",
         "add w26, w20, w7",
@@ -29,7 +29,7 @@
       "Comment": "0x01",
       "ExpectedArm64ASM": [
         "ldaddalh w7, w20, [x4]",
-        "eor w27, w20, w7",
+        "eor x27, x20, x7",
         "lsl w0, w20, #16",
         "cmn w0, w7, lsl #16",
         "add w26, w20, w7",
@@ -41,7 +41,7 @@
       "Comment": "0x01",
       "ExpectedArm64ASM": [
         "ldaddal w7, w20, [x4]",
-        "eor w27, w20, w7",
+        "eor x27, x20, x7",
         "adds w26, w20, w7",
         "cfinv"
       ]
@@ -81,7 +81,7 @@
       "ExpectedArm64ASM": [
         "cinc w20, w7, lo",
         "ldaddalb w20, w20, [x4]",
-        "eor w27, w20, w7",
+        "eor x27, x20, x7",
         "uxtb w21, w7",
         "cinc w22, w21, lo",
         "add w23, w20, w22",
@@ -102,7 +102,7 @@
       "ExpectedArm64ASM": [
         "cinc w20, w7, lo",
         "ldaddalh w20, w20, [x4]",
-        "eor w27, w20, w7",
+        "eor x27, x20, x7",
         "uxth w21, w7",
         "cinc w22, w21, lo",
         "add w23, w20, w22",
@@ -123,7 +123,7 @@
       "ExpectedArm64ASM": [
         "cinc w20, w7, lo",
         "ldaddal w20, w20, [x4]",
-        "eor w27, w20, w7",
+        "eor x27, x20, x7",
         "cfinv",
         "adcs w26, w20, w7",
         "cfinv"
@@ -136,7 +136,7 @@
         "cinc w20, w7, lo",
         "neg w1, w20",
         "ldaddalb w1, w20, [x4]",
-        "eor w27, w20, w7",
+        "eor x27, x20, x7",
         "uxtb w20, w20",
         "uxtb w21, w7",
         "cinc w22, w21, lo",
@@ -159,7 +159,7 @@
         "cinc w20, w7, lo",
         "neg w1, w20",
         "ldaddalh w1, w20, [x4]",
-        "eor w27, w20, w7",
+        "eor x27, x20, x7",
         "uxth w20, w20",
         "uxth w21, w7",
         "cinc w22, w21, lo",
@@ -182,7 +182,7 @@
         "cinc w20, w7, lo",
         "neg w1, w20",
         "ldaddal w1, w20, [x4]",
-        "eor w27, w20, w7",
+        "eor x27, x20, x7",
         "sbcs w26, w20, w7"
       ]
     },
@@ -224,7 +224,7 @@
       "ExpectedArm64ASM": [
         "neg w1, w7",
         "ldaddalb w1, w20, [x4]",
-        "eor w27, w20, w7",
+        "eor x27, x20, x7",
         "lsl w0, w20, #24",
         "cmp w0, w7, lsl #24",
         "sub w26, w20, w7"
@@ -236,7 +236,7 @@
       "ExpectedArm64ASM": [
         "neg w1, w7",
         "ldaddalh w1, w20, [x4]",
-        "eor w27, w20, w7",
+        "eor x27, x20, x7",
         "lsl w0, w20, #16",
         "cmp w0, w7, lsl #16",
         "sub w26, w20, w7"
@@ -248,7 +248,7 @@
       "ExpectedArm64ASM": [
         "neg w1, w7",
         "ldaddal w1, w20, [x4]",
-        "eor w27, w20, w7",
+        "eor x27, x20, x7",
         "subs w26, w20, w7"
       ]
     },
@@ -286,7 +286,7 @@
       "Comment": "0x01",
       "ExpectedArm64ASM": [
         "ldaddal x7, x20, [x4]",
-        "eor w27, w20, w7",
+        "eor x27, x20, x7",
         "adds x26, x20, x7",
         "cfinv"
       ]
@@ -297,7 +297,7 @@
       "ExpectedArm64ASM": [
         "uxtb w20, w6",
         "ldaddalb w20, w21, [x4]",
-        "eor w27, w21, w20",
+        "eor x27, x21, x20",
         "lsl w0, w21, #24",
         "cmn w0, w20, lsl #24",
         "add w26, w21, w20",
@@ -311,7 +311,7 @@
       "ExpectedArm64ASM": [
         "uxth w20, w6",
         "ldaddalh w20, w21, [x4]",
-        "eor w27, w21, w20",
+        "eor x27, x21, x20",
         "lsl w0, w21, #16",
         "cmn w0, w20, lsl #16",
         "add w26, w21, w20",
@@ -325,7 +325,7 @@
       "ExpectedArm64ASM": [
         "mov w20, w6",
         "ldaddal w20, w6, [x4]",
-        "eor w27, w6, w20",
+        "eor x27, x6, x20",
         "adds w26, w6, w20",
         "cfinv"
       ]
@@ -335,7 +335,7 @@
       "Comment": "0x0f 0xc1",
       "ExpectedArm64ASM": [
         "ldaddal x6, x20, [x4]",
-        "eor w27, w20, w6",
+        "eor x27, x20, x6",
         "adds x26, x20, x6",
         "cfinv",
         "mov x6, x20"
