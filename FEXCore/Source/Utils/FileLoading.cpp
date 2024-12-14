@@ -31,24 +31,28 @@ static bool LoadFileImpl(T& Data, const fextl::string& Filepath, size_t FixedSiz
     FileSize = FixedSize;
   }
 
+  ssize_t CurrentOffset = 0;
   ssize_t Read = -1;
   bool LoadedFile {};
   if (FileSize) {
     // File size is known upfront
     Data.resize(FileSize);
-    Read = pread(FD, &Data.at(0), FileSize, 0);
+    while (CurrentOffset != FileSize && (Read = pread(FD, &Data.at(CurrentOffset), FileSize, 0)) > 0) {
+      CurrentOffset += Read;
+    }
 
-    LoadedFile = Read == FileSize;
+    LoadedFile = CurrentOffset == FileSize && Read != -1;
   } else {
     // The file is either empty or its size is unknown (e.g. procfs data).
     // Try reading in chunks instead
-    ssize_t CurrentOffset = 0;
     constexpr size_t READ_SIZE = 4096;
     Data.resize(READ_SIZE);
 
-    while ((Read = pread(FD, &Data.at(CurrentOffset), READ_SIZE, CurrentOffset)) == READ_SIZE) {
+    while ((Read = pread(FD, &Data.at(CurrentOffset), READ_SIZE, CurrentOffset)) > 0) {
       CurrentOffset += Read;
-      Data.resize(CurrentOffset + Read);
+      if ((CurrentOffset + READ_SIZE) > Data.size()) {
+        Data.resize(CurrentOffset + READ_SIZE);
+      }
     }
 
     if (Read == -1) {
