@@ -20,7 +20,7 @@ $end_info$
 
 namespace FEX::HLE {
 class SyscallHandler;
-class SignalDelegator;
+class SignalDelegatorBase;
 
 // A latch that can be inspected to see if there is a waiter currently active.
 // This allows us to remove the race condition between a thread trying to go asleep and something else telling it to go to sleep or wake up.
@@ -121,7 +121,7 @@ struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
   } ThreadInfo {};
 
   struct {
-    SignalDelegator* Delegator {};
+    SignalDelegatorBase* Delegator {};
 
     void* AltStackPtr {};
     stack_t GuestAltStack {

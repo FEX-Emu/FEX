@@ -877,7 +877,7 @@ SignalDelegator::SignalDelegator(FEXCore::Context::Context* _CTX, const std::str
       if (PC == reinterpret_cast<uint64_t>(&FEXCore::Assert::ForcedAssert)) {
         // This is a host side assert. Don't deliver this to the guest
         // We want to actually break here
-        FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread)->SignalInfo.Delegator->UninstallHostHandler(Signal);
+        static_cast<SignalDelegator*>(FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread)->SignalInfo.Delegator)->UninstallHostHandler(Signal);
         return true;
       }
       return false;
@@ -885,17 +885,19 @@ SignalDelegator::SignalDelegator(FEXCore::Context::Context* _CTX, const std::str
     true);
 
   const auto PauseHandler = [](FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext) -> bool {
-    return FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread)->SignalInfo.Delegator->HandleSignalPause(Thread, Signal, info, ucontext);
+    return static_cast<SignalDelegator*>(FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread)->SignalInfo.Delegator)
+      ->HandleSignalPause(Thread, Signal, info, ucontext);
   };
 
   const auto GuestSignalHandler = [](FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext,
                                      GuestSigAction* GuestAction, stack_t* GuestStack) -> bool {
-    return FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread)->SignalInfo.Delegator->HandleDispatcherGuestSignal(
-      Thread, Signal, info, ucontext, GuestAction, GuestStack);
+    return static_cast<SignalDelegator*>(FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread)->SignalInfo.Delegator)
+      ->HandleDispatcherGuestSignal(Thread, Signal, info, ucontext, GuestAction, GuestStack);
   };
 
   const auto SigillHandler = [](FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext) -> bool {
-    return FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread)->SignalInfo.Delegator->HandleSIGILL(Thread, Signal, info, ucontext);
+    return static_cast<SignalDelegator*>(FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread)->SignalInfo.Delegator)
+      ->HandleSIGILL(Thread, Signal, info, ucontext);
   };
 
   // Register SIGILL signal handler.
@@ -916,7 +918,7 @@ SignalDelegator::SignalDelegator(FEXCore::Context::Context* _CTX, const std::str
       return false;
     }
 
-    const auto Delegator = FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread)->SignalInfo.Delegator;
+    const auto Delegator = static_cast<SignalDelegator*>(FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread)->SignalInfo.Delegator);
     const auto Result = FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(Thread, Delegator->GetUnalignedHandlerType(), PC,
                                                                            ArchHelpers::Context::GetArmGPRs(ucontext));
     ArchHelpers::Context::SetPc(ucontext, PC + Result.second);

@@ -40,7 +40,13 @@ using HostSignalDelegatorFunction = std::function<bool(FEXCore::Core::InternalTh
 using HostSignalDelegatorFunctionForGuest =
   std::function<bool(FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext, GuestSigAction* GuestAction, stack_t* GuestStack)>;
 
-class SignalDelegator final : public FEXCore::SignalDelegator, public FEXCore::Allocator::FEXAllocOperators {
+class SignalDelegatorBase {
+public:
+  // Called from the signal trampoline function.
+  virtual void HandleSignal(FEX::HLE::ThreadStateObject* Thread, int Signal, void* Info, void* UContext) = 0;
+};
+
+class SignalDelegator final : public SignalDelegatorBase, public FEXCore::SignalDelegator, public FEXCore::Allocator::FEXAllocOperators {
 public:
   constexpr static size_t MAX_SIGNALS {64};
 
@@ -54,7 +60,7 @@ public:
   ~SignalDelegator() override;
 
   // Called from the signal trampoline function.
-  void HandleSignal(FEX::HLE::ThreadStateObject* Thread, int Signal, void* Info, void* UContext);
+  void HandleSignal(FEX::HLE::ThreadStateObject* Thread, int Signal, void* Info, void* UContext) override;
 
   void RegisterTLSState(FEX::HLE::ThreadStateObject* Thread);
   void UninstallTLSState(FEX::HLE::ThreadStateObject* Thread);

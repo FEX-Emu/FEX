@@ -165,6 +165,13 @@ private:
   fextl::string GdbUnixSocketPath {};
   FEX_CONFIG_OPT(Filename, APP_FILENAME);
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
+
+  class PersonalFaultHandler final : public FEX::HLE::SignalDelegatorBase {
+  public:
+    void HandleSignal(FEX::HLE::ThreadStateObject* Thread, int Signal, void* Info, void* UContext) override;
+  };
+  PersonalFaultHandler BasicSignalHandler;
+  FEX::HLE::ThreadStateObject FakeThreadObject;
 };
 
 } // namespace FEX

@@ -85,6 +85,15 @@ GdbServer::~GdbServer() {
   }
 }
 
+void GdbServer::PersonalFaultHandler::HandleSignal(FEX::HLE::ThreadStateObject* Thread, int Signal, void* Info, void* UContext) {
+  siginfo_t* SigInfo = reinterpret_cast<siginfo_t*>(Info);
+  if (HLE::FaultSafeUserMemAccess::TryHandleSafeFault(Signal, *SigInfo, UContext)) {
+    return;
+  }
+
+  ERROR_AND_DIE_FMT("Received invalid data to gdbserver. Crashing now!");
+}
+
 GdbServer::GdbServer(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* SignalDelegation, FEX::HLE::SyscallHandler* const SyscallHandler)
   : CTX(ctx)
   , SyscallHandler {SyscallHandler}
@@ -562,34 +571,6 @@ GdbServer::HandledPacketType GdbServer::handleXfer(const fextl::string& packet) 
   return {"", HandledPacketType::TYPE_UNKNOWN};
 }
 
-static size_t CheckMemMapping(uint64_t Address, size_t Size) {
-  uint64_t AddressEnd = Address + Size;
-  fextl::string MapsFile;
-  FEXCore::FileLoading::LoadFile(MapsFile, "/proc/self/maps");
-  fextl::istringstream MapsStream(MapsFile);
-
-  fextl::string Line;
-
-  while (std::getline(MapsStream, Line)) {
-    if (MapsStream.eof()) {
-      break;
-    }
-    uint64_t Begin, End;
-    char r, w, x, p;
-    if (sscanf(Line.c_str(), "%lx-%lx %c%c%c%c", &Begin, &End, &r, &w, &x, &p) == 6) {
-      if (Begin <= Address && End > Address) {
-        ssize_t Overrun {};
-        if (AddressEnd > End) {
-          Overrun = AddressEnd - End;
-        }
-        return Size - Overrun;
-      }
-    }
-  }
-
-  return 0;
-}
-
 GdbServer::HandledPacketType GdbServer::handleProgramOffsets() {
   auto CodeLoader = SyscallHandler->GetCodeLoader();
   uint64_t BaseOffset = CodeLoader->GetBaseOffset();
@@ -755,13 +736,7 @@ GdbServer::HandledPacketType GdbServer::CommandMemory(const fextl::string& packe
     return {"E00", HandledPacketType::TYPE_ACK};
   }
 
-  length = CheckMemMapping(addr, length);
-  if (length == 0) {
-    return {"E00", HandledPacketType::TYPE_ACK};
-  }
-
-  // TODO: check we are in a valid memory range
-  //       Also, clamp length
+  // TODO: Clamp length
   void* ptr = reinterpret_cast<void*>(addr);
 
   if (write) {
@@ -769,6 +744,11 @@ GdbServer::HandledPacketType GdbServer::CommandMemory(const fextl::string& packe
     // TODO: invalidate any code
     return {"OK", HandledPacketType::TYPE_ACK};
   } else {
+    data.resize(length);
+    auto ReadResult = HLE::FaultSafeUserMemAccess::CopyFromUser(data.data(), ptr, length);
+    if (ReadResult == EFAULT) {
+      return {"E01", HandledPacketType::TYPE_ACK};
+    }
     return {encodeHex((unsigned char*)ptr, length), HandledPacketType::TYPE_ACK};
   }
 }
@@ -1380,6 +1360,18 @@ GdbServer::WaitForConnectionResult GdbServer::WaitForConnection() {
 }
 
 void GdbServer::GdbServerLoop() {
+  // Register our fake thread object to the global signaldelegator.
+  SignalDelegation->RegisterTLSState(&FakeThreadObject);
+
+  // Overwrite the internal signal delegator handler to our own.
+  FakeThreadObject.SignalInfo.Delegator = &BasicSignalHandler;
+
+  // Restore the signal mask for SIGSEGV.
+  uint64_t Mask {};
+  ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, nullptr, &Mask, 8);
+  Mask &= ~(1ULL << (SIGSEGV - 1));
+  ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &Mask, nullptr, 8);
+
   OpenListenSocket();
   if (ListenSocket == -1) {
     // Couldn't open socket, just exit.
@@ -1438,6 +1430,9 @@ void GdbServer::GdbServerLoop() {
   }
 
   CloseListenSocket();
+
+  // Unregister our fake thread object to the global signaldelegator.
+  SignalDelegation->UninstallTLSState(&FakeThreadObject);
 }
 static void* ThreadHandler(void* Arg) {
   FEXCore::Threads::SetThreadName("FEX:gdbserver");
