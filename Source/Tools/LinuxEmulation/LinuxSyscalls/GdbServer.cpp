@@ -621,6 +621,32 @@ GdbServer::HandledPacketType GdbServer::ThreadAction(char action, uint32_t tid) 
   }
 }
 
+GdbServer::HandledPacketType GdbServer::SingleThreadAction(char action, uint32_t tid, uint32_t Signal, uint64_t NewRIP) {
+  switch (action) {
+  case 'C': {
+    auto Threads = SyscallHandler->TM.GetThreads();
+    for (auto& Thread : *Threads) {
+      if (tid == Thread->ThreadInfo.TID) {
+        if (Thread->GdbInfo.has_value()) {
+          LOGMAN_THROW_A_FMT(Thread->GdbInfo->Signal == Signal,
+                             "Gdb trying to resume thread with different signal than invoked: Original: {} New: {}",
+                             Thread->GdbInfo->Signal, Signal);
+          [[maybe_unused]] const bool MatchingRIP = NewRIP == 0 || CTX->RestoreRIPFromHostPC(Thread->Thread, Thread->GdbInfo->SignalPC) == NewRIP;
+          LOGMAN_THROW_A_FMT(MatchingRIP, "Gdb trying to return thread to new RIP");
+          Thread->GdbInfo->Continue = true;
+        }
+      }
+
+      Thread->ThreadSleeping.NotifyOne();
+    }
+    SyscallHandler->TM.Run();
+    SyscallHandler->TM.WaitForThreadsToRun();
+    return {"", HandledPacketType::TYPE_ONLYACK};
+  }
+  default: return {"E00", HandledPacketType::TYPE_ACK};
+  }
+}
+
 // Command handlers
 GdbServer::HandledPacketType GdbServer::CommandEnableExtendedMode(const fextl::string& packet) {
   return {"OK", HandledPacketType::TYPE_ACK};
@@ -637,6 +663,25 @@ GdbServer::HandledPacketType GdbServer::CommandQueryHalted(const fextl::string& 
 GdbServer::HandledPacketType GdbServer::CommandContinue(const fextl::string& packet) {
   // Continue
   return ThreadAction('c', 0);
+}
+
+GdbServer::HandledPacketType GdbServer::CommandContinueSignal(const fextl::string& packet) {
+  // Continue with signal
+  auto Information = split(packet.substr(strlen("C")), ';');
+  LOGMAN_THROW_A_FMT(Information.size() >= 1, "Needs at least a signal");
+
+  const auto& SignalStr = Information.at(0);
+  int Signal {};
+  uint64_t NewRIP {};
+  [[maybe_unused]] auto ec = std::from_chars(SignalStr.data(), SignalStr.data() + SignalStr.size(), Signal, 16);
+  LOGMAN_THROW_A_FMT(ec.ec == std::errc(), "Invalid signal number: {} {}", SignalStr, ec.ptr);
+
+  if (Information.size() >= 2) {
+    const auto& RIPReturnStr = Information.at(1);
+    [[maybe_unused]] auto ec = std::from_chars(RIPReturnStr.data(), RIPReturnStr.data() + RIPReturnStr.size(), NewRIP, 16);
+    LOGMAN_THROW_A_FMT(ec.ec == std::errc(), "Invalid RIP return: {} {}", RIPReturnStr, ec.ptr);
+  }
+  return SingleThreadAction('C', CurrentDebuggingThread, Signal, NewRIP);
 }
 
 GdbServer::HandledPacketType GdbServer::CommandDetach(const fextl::string& packet) {
@@ -1218,7 +1263,7 @@ GdbServer::HandledPacketType GdbServer::ProcessPacket(const fextl::string& packe
   // - Desc: Continue execution of process with signal
   // - Args: sig[;addr]
   // - Deprecated: See $vCont for multi-threaded support.
-  case 'C': return CommandUnknown(packet);
+  case 'C': return CommandContinueSignal(packet);
   // Command: $d
   // - Desc: Toggle debug flag
   // - Args: <None>

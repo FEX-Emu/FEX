@@ -72,6 +72,7 @@ private:
   HandledPacketType handleProgramOffsets();
 
   HandledPacketType ThreadAction(char action, uint32_t tid);
+  HandledPacketType SingleThreadAction(char action, uint32_t tid, uint32_t Signal, uint64_t NewRIP);
 
   // Binary data transfer handlers
   // XFer function to correctly encode any reply
@@ -103,6 +104,7 @@ private:
   HandledPacketType CommandEnableExtendedMode(const fextl::string& packet);
   HandledPacketType CommandQueryHalted(const fextl::string& packet);
   HandledPacketType CommandContinue(const fextl::string& packet);
+  HandledPacketType CommandContinueSignal(const fextl::string& packet);
   HandledPacketType CommandDetach(const fextl::string& packet);
   HandledPacketType CommandReadRegisters(const fextl::string& packet);
   HandledPacketType CommandThreadOp(const fextl::string& packet);
