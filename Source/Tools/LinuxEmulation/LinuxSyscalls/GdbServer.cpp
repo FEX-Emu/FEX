@@ -131,12 +131,13 @@ GdbServer::GdbServer(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* 
       this->Break(ThreadObject, Signal);
 
       this->SyscallHandler->TM.SleepThread(this->CTX, ThreadObject);
+      bool Continue = ThreadObject->GdbInfo->Continue;
       ThreadObject->GdbInfo.reset();
 
       // Unmask the signals.
       sigprocmask(SIG_SETMASK, &set, nullptr);
 
-      return true;
+      return Continue;
       },
       true);
   }
