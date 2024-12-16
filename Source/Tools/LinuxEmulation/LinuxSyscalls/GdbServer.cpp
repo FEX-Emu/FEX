@@ -807,14 +807,6 @@ GdbServer::HandledPacketType GdbServer::CommandQuery(const fextl::string& packet
     return Str.rfind(str, 0) == 0;
   };
 
-  const auto split = [](const fextl::string& Str, char deliminator) -> fextl::vector<fextl::string> {
-    fextl::vector<fextl::string> Elements;
-    fextl::istringstream Input(Str);
-    for (fextl::string line; std::getline(Input, line); Elements.emplace_back(line))
-      ;
-    return Elements;
-  };
-
   if (match("QNonStop:")) {
     auto ss = fextl::istringstream(packet);
     ss.seekg(fextl::string("QNonStop:").size());

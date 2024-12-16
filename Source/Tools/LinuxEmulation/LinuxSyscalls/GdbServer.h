@@ -172,6 +172,14 @@ private:
   };
   PersonalFaultHandler BasicSignalHandler;
   FEX::HLE::ThreadStateObject FakeThreadObject;
+
+  static inline fextl::vector<fextl::string> split(const fextl::string& Str, char deliminator) {
+    fextl::vector<fextl::string> Elements;
+    fextl::istringstream Input(Str);
+    for (fextl::string line; std::getline(Input, line); Elements.emplace_back(line))
+      ;
+    return Elements;
+  };
 };
 
 } // namespace FEX
