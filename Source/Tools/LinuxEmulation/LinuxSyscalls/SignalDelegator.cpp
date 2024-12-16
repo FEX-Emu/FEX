@@ -578,18 +578,8 @@ void SignalDelegator::HandleGuestSignal(FEX::HLE::ThreadStateObject* ThreadObjec
         ERROR_AND_DIE_FMT("X86 shouldn't hit this InterruptFaultPage");
 #endif
       }
-    } else if (Signal == SIGSEGV && (SigInfo.si_code == SEGV_MAPERR || SigInfo.si_code == SEGV_ACCERR) &&
-               FaultSafeUserMemAccess::IsFaultLocation(ArchHelpers::Context::GetPc(UContext))) {
-      // If you want to emulate EFAULT behaviour then enable this if-statement.
-      // Do this once we find an application that depends on this.
-      if constexpr (false) {
-        // Return from the subroutine, returning EFAULT.
-        ArchHelpers::Context::SetArmReg(UContext, 0, EFAULT);
-        ArchHelpers::Context::SetPc(UContext, ArchHelpers::Context::GetArmReg(UContext, 30));
-        return;
-      } else {
-        ERROR_AND_DIE_FMT("Received invalid data to syscall. Crashing now!");
-      }
+    } else if (FaultSafeUserMemAccess::TryHandleSafeFault(Signal, SigInfo, UContext)) {
+      ERROR_AND_DIE_FMT("Received invalid data to syscall. Crashing now!");
     } else {
       if (IsAsyncSignal(&SigInfo, Signal) && MustDeferSignal) {
         // If the signal is asynchronous (as determined by si_code) and FEX is in a state of needing

@@ -12,6 +12,7 @@ $end_info$
 #include "LinuxSyscalls/LinuxAllocator.h"
 #include "LinuxSyscalls/ThreadManager.h"
 #include "LinuxSyscalls/Seccomp/SeccompEmulator.h"
+#include "ArchHelpers/MContext.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Thunks.h>
@@ -684,6 +685,18 @@ namespace FaultSafeUserMemAccess {
   }
 #endif
   bool IsFaultLocation(uint64_t PC);
+
+  static inline bool TryHandleSafeFault(int Signal, const siginfo_t& SigInfo, void* UContext) {
+    if (Signal == SIGSEGV && (SigInfo.si_code == SEGV_MAPERR || SigInfo.si_code == SEGV_ACCERR) &&
+        FaultSafeUserMemAccess::IsFaultLocation(ArchHelpers::Context::GetPc(UContext))) {
+      // Return from the subroutine, returning EFAULT.
+      ArchHelpers::Context::SetArmReg(UContext, 0, EFAULT);
+      ArchHelpers::Context::SetPc(UContext, ArchHelpers::Context::GetArmReg(UContext, 30));
+      return true;
+    }
+
+    return false;
+  }
 } // namespace FaultSafeUserMemAccess
 
 } // namespace FEX::HLE
