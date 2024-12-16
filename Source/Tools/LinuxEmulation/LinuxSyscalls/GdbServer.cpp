@@ -112,6 +112,11 @@ GdbServer::GdbServer(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* 
         return false;
       }
 
+      // Mask all signals while in the gdb handler.
+      sigset_t set;
+      sigfillset(&set);
+      sigprocmask(SIG_SETMASK, &set, &set);
+
       auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread);
       ThreadObject->GdbInfo = {};
       ThreadObject->GdbInfo->Signal = Signal;
@@ -127,6 +132,9 @@ GdbServer::GdbServer(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* 
 
       this->SyscallHandler->TM.SleepThread(this->CTX, ThreadObject);
       ThreadObject->GdbInfo.reset();
+
+      // Unmask the signals.
+      sigprocmask(SIG_SETMASK, &set, nullptr);
 
       return true;
       },
