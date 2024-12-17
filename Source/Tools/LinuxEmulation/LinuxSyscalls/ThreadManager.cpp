@@ -69,6 +69,14 @@ void ThreadManager::HandleThreadDeletion(FEX::HLE::ThreadStateObject* Thread, bo
   }
 
   if (NeedsTLSUninstall) {
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+    // Sanity check. This can only be called from the owning thread.
+    {
+      const auto pid = ::getpid();
+      const auto tid = FHU::Syscalls::gettid();
+      LOGMAN_THROW_A_FMT(Thread->ThreadInfo.PID == pid && Thread->ThreadInfo.TID == tid, "Can't delete TLS data from a different thread!");
+    }
+#endif
     FEXCore::Allocator::UninstallTLSData(Thread->Thread);
   }
 
@@ -92,6 +100,17 @@ void ThreadManager::NotifyPause() {
 }
 
 void ThreadManager::Pause() {
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+  // Sanity check. This can't be called from an emulation thread.
+  {
+    const auto pid = ::getpid();
+    const auto tid = FHU::Syscalls::gettid();
+    std::lock_guard lk(ThreadCreationMutex);
+    for (auto& Thread : Threads) {
+      LOGMAN_THROW_A_FMT(!(Thread->ThreadInfo.PID == pid && Thread->ThreadInfo.TID == tid), "Can't put threads to sleep from inside emulation thread!");
+    }
+  }
+#endif
   NotifyPause();
   WaitForIdle();
 }
@@ -179,6 +198,15 @@ void ThreadManager::Stop(bool IgnoreCurrentThread) {
 }
 
 void ThreadManager::SleepThread(FEXCore::Context::Context* CTX, FEX::HLE::ThreadStateObject* ThreadObject) {
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+    // Sanity check. This can only be called from the owning thread.
+    {
+      const auto pid = ::getpid();
+      const auto tid = FHU::Syscalls::gettid();
+      LOGMAN_THROW_A_FMT(ThreadObject->ThreadInfo.PID == pid && ThreadObject->ThreadInfo.TID == tid, "Can't delete TLS data from a different thread!");
+    }
+#endif
+
   --IdleWaitRefCount;
   IdleWaitCV.notify_all();
 
