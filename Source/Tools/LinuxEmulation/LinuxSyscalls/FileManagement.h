@@ -85,6 +85,7 @@ public:
   bool IsRootFSFD(int dirfd, uint64_t inode);
 
   fextl::string GetEmulatedPath(const char* pathname, bool FollowSymlink = false);
+  fextl::string GetHostPath(fextl::string& Path, bool AliasedOnly);
   using FDPathTmpData = std::array<char[PATH_MAX], 2>;
   std::pair<int, const char*> GetEmulatedFDPath(int dirfd, const char* pathname, bool FollowSymlink, FDPathTmpData& TmpFilename);
 

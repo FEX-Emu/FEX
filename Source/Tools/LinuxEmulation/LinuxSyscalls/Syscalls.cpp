@@ -354,6 +354,17 @@ uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname
     EnvpPtr = const_cast<char* const*>(EnvpArgs.data());
   }
 
+  if (!IsFDExec && (IsShebang || IsOtherELF)) {
+    // With a merged RootFS, the entire real filesystem is visible through the rootfs
+    // prefix. If we are executing a non-emulated binary, we should do so through the host
+    // path.
+
+    auto Path = SyscallHandler->FM.GetHostPath(Filename, true);
+    if (!Path.empty() && FHU::Filesystem::Exists(Path)) {
+      Filename = std::move(Path);
+    }
+  }
+
   if (IsBinfmtCompatible || IsOtherELF) {
     Result = ::syscall(SYS_execveat, Args.dirfd, Filename.c_str(), argv, EnvpPtr, Args.flags);
     CloseSeccompFD();

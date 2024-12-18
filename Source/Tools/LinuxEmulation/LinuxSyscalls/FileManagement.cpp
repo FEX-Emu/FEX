@@ -418,6 +418,21 @@ ssize_t FileManager::StripRootFSPrefix(char* pathname, ssize_t len, bool leaky) 
   return len - Prefix;
 }
 
+fextl::string FileManager::GetHostPath(fextl::string& Path, bool AliasedOnly) {
+  auto Prefix = GetRootFSPrefixLen(Path.c_str(), Path.length(), AliasedOnly);
+
+  if (Prefix == 0) {
+    return {};
+  }
+
+  auto ret = Path.substr(Prefix);
+  if (ret.empty()) { // Getting the root
+    ret = "/";
+  }
+
+  return ret;
+}
+
 fextl::string FileManager::GetEmulatedPath(const char* pathname, bool FollowSymlink) {
   if (!pathname ||                  // If no pathname
       pathname[0] != '/' ||         // If relative
