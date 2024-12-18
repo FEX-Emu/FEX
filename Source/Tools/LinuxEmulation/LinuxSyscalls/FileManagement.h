@@ -142,6 +142,8 @@ private:
 #endif
 
   bool RootFSPathExists(const char* Filepath);
+  size_t GetRootFSPrefixLen(const char* pathname, size_t len, bool AliasedOnly);
+  ssize_t StripRootFSPrefix(char* pathname, ssize_t len, bool leaky);
 
   struct ThunkDBObject {
     fextl::string LibraryName;

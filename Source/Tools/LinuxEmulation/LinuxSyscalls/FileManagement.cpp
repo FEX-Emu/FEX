@@ -339,6 +339,85 @@ FileManager::~FileManager() {
   close(RootFSFD);
 }
 
+size_t FileManager::GetRootFSPrefixLen(const char* pathname, size_t len, bool AliasedOnly) {
+  if (len < 2 ||            // If no pathname or root
+      pathname[0] != '/') { // If we are getting root
+    return 0;
+  }
+
+  const auto& RootFSPath = LDPath();
+  if (RootFSPath.empty()) { // If RootFS doesn't exist
+    return 0;
+  }
+
+  auto RootFSLen = RootFSPath.length();
+  if (RootFSPath.ends_with("/")) {
+    RootFSLen -= 1;
+  }
+
+  if (RootFSLen > len) {
+    return 0;
+  }
+
+  if (memcmp(pathname, RootFSPath.c_str(), RootFSLen) || (len > RootFSLen && pathname[RootFSLen] != '/')) {
+    return 0; // If the path is not within the RootFS
+  }
+
+  if (AliasedOnly) {
+    fextl::string Path(pathname, len); // Need to nul-terminate so copy
+
+    struct stat HostStat {};
+    struct stat RootFSStat {};
+    if (lstat(Path.c_str(), &RootFSStat)) {
+      LogMan::Msg::DFmt("GetRootFSPrefixLen: lstat on RootFS path failed: {}", std::string_view(pathname, len));
+      return 0; // RootFS path does not exist?
+    }
+    if (lstat(Path.c_str() + RootFSLen, &HostStat)) {
+      return 0; // Host path does not exist or not accessible
+    }
+    // Note: We do not check st_dev, since the RootFS might be
+    // an overlayfs mount that changes it. This means there could
+    // be false positives. However, since we check the size too,
+    // this is highly unlikely (an overlaid file would need to
+    // have the same exact size and coincidentally the same
+    // inode number as on the host, which is implausible for things
+    // like binaries and libraries).
+    if (RootFSStat.st_size != HostStat.st_size || RootFSStat.st_ino != HostStat.st_ino || RootFSStat.st_mode != HostStat.st_mode) {
+      return 0; // Host path is a different file
+    }
+  }
+
+  return RootFSLen;
+}
+
+ssize_t FileManager::StripRootFSPrefix(char* pathname, ssize_t len, bool leaky) {
+  if (len < 0) {
+    return len;
+  }
+
+  auto Prefix = GetRootFSPrefixLen(pathname, len, false);
+  if (Prefix == 0) {
+    return len;
+  }
+
+  if (Prefix == len) {
+    if (leaky) {
+      // Getting the root, without a trailing /. This is a hack pressure-vessel uses to get the FEX RootFS,
+      // so we have to leak it here...
+      LogMan::Msg::DFmt("Leaking RootFS path for pressure-vessel");
+      return len;
+    } else {
+      ::strcpy(pathname, "/");
+      return 1;
+    }
+  }
+
+  ::memmove(pathname, pathname + Prefix, len - Prefix);
+  pathname[len - Prefix] = '\0';
+
+  return len - Prefix;
+}
+
 fextl::string FileManager::GetEmulatedPath(const char* pathname, bool FollowSymlink) {
   if (!pathname ||                  // If no pathname
       pathname[0] != '/' ||         // If relative
@@ -683,11 +762,9 @@ uint64_t FileManager::Readlink(const char* pathname, char* buf, size_t bufsiz) {
 
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(AT_FDCWD, pathname, false, TmpFilename);
+  uint64_t Result = -1;
   if (Path.first != -1) {
-    uint64_t Result = ::readlinkat(Path.first, Path.second, buf, bufsiz);
-    if (Result != -1) {
-      return Result;
-    }
+    Result = ::readlinkat(Path.first, Path.second, buf, bufsiz);
 
     if (Result == -1 && errno == EINVAL) {
       // This means that the file wasn't a symlink
@@ -695,8 +772,12 @@ uint64_t FileManager::Readlink(const char* pathname, char* buf, size_t bufsiz) {
       return -errno;
     }
   }
+  if (Result == -1) {
+    Result = ::readlink(pathname, buf, bufsiz);
+  }
 
-  return ::readlink(pathname, buf, bufsiz);
+  // We might have read a /proc/self/fd/* link. If so, strip the RootFS prefix from it.
+  return StripRootFSPrefix(buf, Result, true);
 }
 
 uint64_t FileManager::Chmod(const char* pathname, mode_t mode) {
@@ -758,11 +839,10 @@ uint64_t FileManager::Readlinkat(int dirfd, const char* pathname, char* buf, siz
 
   FDPathTmpData TmpFilename;
   auto NewPath = GetEmulatedFDPath(dirfd, pathname, false, TmpFilename);
+  uint64_t Result = -1;
+
   if (NewPath.first != -1) {
-    uint64_t Result = ::readlinkat(NewPath.first, NewPath.second, buf, bufsiz);
-    if (Result != -1) {
-      return Result;
-    }
+    Result = ::readlinkat(NewPath.first, NewPath.second, buf, bufsiz);
 
     if (Result == -1 && errno == EINVAL) {
       // This means that the file wasn't a symlink
@@ -771,7 +851,12 @@ uint64_t FileManager::Readlinkat(int dirfd, const char* pathname, char* buf, siz
     }
   }
 
-  return ::readlinkat(dirfd, pathname, buf, bufsiz);
+  if (Result == -1) {
+    Result = ::readlinkat(dirfd, pathname, buf, bufsiz);
+  }
+
+  // We might have read a /proc/self/fd/* link. If so, strip the RootFS prefix from it.
+  return StripRootFSPrefix(buf, Result, true);
 }
 
 uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char* pathname, int flags, uint32_t mode) {
