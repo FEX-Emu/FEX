@@ -22,19 +22,20 @@ namespace FEX::HLE {
 class SyscallHandler;
 class SignalDelegator;
 
-// A latch that can be inspected to see if there is a waiter currently active.
-// This allows us to remove the race condition between a thread trying to go asleep and something else telling it to go to sleep or wake up.
-//
-// Only one thread can ever wait on a latch, while another thread signals it.
+// This is basically a std::condition_variable with only one waiter and can be inspected if there is a waiter.
 class InspectableLatch final {
 public:
   bool Wait(struct timespec* Timeout = nullptr) {
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+    LOGMAN_THROW_A_FMT(Mutex.load() != HAS_SIGNALED, "Stale signal mutex!");
+    LOGMAN_THROW_A_FMT(Mutex.load() != HAS_WAITER, "Can't have multiple waiters on a single InspectableLatch!");
+#endif
     while (true) {
       uint32_t Expected = HAS_NO_WAITER;
       const uint32_t Desired = HAS_WAITER;
 
       if (Mutex.compare_exchange_strong(Expected, Desired)) {
-        // We have latched, now futex.
+        // We have latched, sleep using a futex syscall until signaled.
         constexpr int Op = FUTEX_WAIT | FUTEX_PRIVATE_FLAG;
         // WAIT will keep sleeping on the futex word while it is `val`
         int Result = ::syscall(SYS_futex, &Mutex, Op,
@@ -64,6 +65,9 @@ public:
   }
 
   void NotifyOne() {
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
+    LOGMAN_THROW_A_FMT(Mutex.load() != HAS_SIGNALED, "Trying to double signal!");
+#endif
     DoNotify(1);
   }
 
@@ -81,8 +85,8 @@ private:
     uint32_t Expected = HAS_WAITER;
     const uint32_t Desired = HAS_SIGNALED;
 
-    // If the mutex is in a waiting state and we have CAS exchanged it to HAS_SIGNALED, then execute a futex syscall.
-    // otherwise just leave since nothing was waiting.
+    // If the mutex is in a waiting state and we have CAS exchanged it to HAS_SIGNALED, then signal the thread to wake up with a futex
+    // syscall. otherwise just leave since nothing was waiting.
     if (Mutex.compare_exchange_strong(Expected, Desired)) {
       constexpr int Op = FUTEX_WAKE | FUTEX_PRIVATE_FLAG;
 
@@ -243,8 +247,8 @@ public:
     }
   }
 
-  FEXCore::ForkableUniqueMutex* GetThreadsCreationMutex() {
-    return &ThreadCreationMutex;
+  FEXCore::ForkableUniqueMutex& GetThreadsCreationMutex() {
+    return ThreadCreationMutex;
   }
 
   const fextl::vector<FEX::HLE::ThreadStateObject*>* GetThreads() const {
