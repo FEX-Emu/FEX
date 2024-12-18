@@ -23,7 +23,7 @@ class EmulatedFDManager {
 public:
   EmulatedFDManager(FEXCore::Context::Context* ctx);
   ~EmulatedFDManager();
-  int32_t OpenAt(int dirfs, const char* pathname, int flags, uint32_t mode);
+  int32_t Open(const char* pathname, int flags, uint32_t mode);
 
 private:
   FEXCore::Context::Context* CTX;

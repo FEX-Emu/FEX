@@ -515,23 +515,48 @@ static bool ShouldSkipOpenInEmu(int flags) {
   return false;
 }
 
+bool FileManager::ReplaceEmuFd(int fd, int flags, uint32_t mode) {
+  char Tmp[PATH_MAX + 1];
+
+  if (fd < 0) {
+    return false;
+  }
+
+  // Get the path of the file we just opened
+  auto PathLength = FEX::get_fdpath(fd, Tmp);
+  if (PathLength == -1) {
+    return false;
+  }
+  Tmp[PathLength] = '\0';
+
+  // And try to open via EmuFD
+  auto EmuFd = EmuFD.Open(Tmp, flags, mode);
+  if (EmuFd == -1) {
+    return false;
+  }
+
+  // If we succeeded, swap out the fd
+  ::dup2(EmuFd, fd);
+  ::close(EmuFd);
+  return true;
+}
+
 uint64_t FileManager::Open(const char* pathname, int flags, uint32_t mode) {
   auto NewPath = GetSelf(pathname);
   const char* SelfPath = NewPath ? NewPath->data() : nullptr;
   int fd = -1;
 
   if (!ShouldSkipOpenInEmu(flags)) {
-    fd = EmuFD.OpenAt(AT_FDCWD, SelfPath, flags, mode);
-    if (fd == -1) {
-      FDPathTmpData TmpFilename;
-      auto Path = GetEmulatedFDPath(AT_FDCWD, SelfPath, true, TmpFilename);
-      if (Path.first != -1) {
-        fd = ::openat(Path.first, Path.second, flags, mode);
-      }
+    FDPathTmpData TmpFilename;
+    auto Path = GetEmulatedFDPath(AT_FDCWD, SelfPath, true, TmpFilename);
+    if (Path.first != -1) {
+      fd = ::openat(Path.first, Path.second, flags, mode);
+    } else {
+      fd = ::open(SelfPath, flags, mode);
     }
-  }
 
-  if (fd == -1) {
+    ReplaceEmuFd(fd, flags, mode);
+  } else {
     fd = ::open(SelfPath, flags, mode);
   }
 
@@ -756,17 +781,16 @@ uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char* pathname, i
   int32_t fd = -1;
 
   if (!ShouldSkipOpenInEmu(flags)) {
-    fd = EmuFD.OpenAt(dirfs, SelfPath, flags, mode);
-    if (fd == -1) {
-      FDPathTmpData TmpFilename;
-      auto Path = GetEmulatedFDPath(dirfs, SelfPath, true, TmpFilename);
-      if (Path.first != -1) {
-        fd = ::syscall(SYSCALL_DEF(openat), Path.first, Path.second, flags, mode);
-      }
+    FDPathTmpData TmpFilename;
+    auto Path = GetEmulatedFDPath(dirfs, SelfPath, true, TmpFilename);
+    if (Path.first != -1) {
+      fd = ::syscall(SYSCALL_DEF(openat), Path.first, Path.second, flags, mode);
+    } else {
+      fd = ::syscall(SYSCALL_DEF(openat), dirfs, SelfPath, flags, mode);
     }
-  }
 
-  if (fd == -1) {
+    ReplaceEmuFd(fd, flags, mode);
+  } else {
     fd = ::syscall(SYSCALL_DEF(openat), dirfs, SelfPath, flags, mode);
   }
 
@@ -780,17 +804,16 @@ uint64_t FileManager::Openat2(int dirfs, const char* pathname, FEX::HLE::open_ho
   int32_t fd = -1;
 
   if (!ShouldSkipOpenInEmu(how->flags)) {
-    fd = EmuFD.OpenAt(dirfs, SelfPath, how->flags, how->mode);
-    if (fd == -1) {
-      FDPathTmpData TmpFilename;
-      auto Path = GetEmulatedFDPath(dirfs, SelfPath, true, TmpFilename);
-      if (Path.first != -1) {
-        fd = ::syscall(SYSCALL_DEF(openat2), Path.first, Path.second, how, usize);
-      }
+    FDPathTmpData TmpFilename;
+    auto Path = GetEmulatedFDPath(dirfs, SelfPath, true, TmpFilename);
+    if (Path.first != -1) {
+      fd = ::syscall(SYSCALL_DEF(openat2), Path.first, Path.second, how, usize);
+    } else {
+      fd = ::syscall(SYSCALL_DEF(openat2), dirfs, SelfPath, how, usize);
     }
-  }
 
-  if (fd == -1) {
+    ReplaceEmuFd(fd, how->flags, how->mode);
+  } else {
     fd = ::syscall(SYSCALL_DEF(openat2), dirfs, SelfPath, how, usize);
   }
 

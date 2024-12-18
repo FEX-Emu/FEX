@@ -88,6 +88,8 @@ public:
   using FDPathTmpData = std::array<char[PATH_MAX], 2>;
   std::pair<int, const char*> GetEmulatedFDPath(int dirfd, const char* pathname, bool FollowSymlink, FDPathTmpData& TmpFilename);
 
+  bool ReplaceEmuFd(int fd, int flags, uint32_t mode);
+
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
   void TrackFEXFD(int FD) noexcept {
     std::lock_guard lk(FEXTrackingFDMutex);
