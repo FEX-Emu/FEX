@@ -517,8 +517,8 @@ std::pair<int, const char*> FileManager::GetEmulatedFDPath(int dirfd, const char
         // Get the symlink of RootFS FD + stripped subpath.
         auto SymlinkSize = FEX::HLE::GetSymlink(RootFSFD, &SubPath[1], CurrentTmp, PATH_MAX - 1);
 
-        if (SymlinkSize > 0 && CurrentTmp[0] == '/') {
-          // If the symlink is absolute:
+        if (SymlinkSize > 1 && CurrentTmp[0] == '/') {
+          // If the symlink is absolute and not the root:
           // 1) Zero terminate it.
           // 2) Set the path as our current subpath.
           // 3) Switch to the next temporary index. (We don't want to overwrite the current one on the next loop iteration).
