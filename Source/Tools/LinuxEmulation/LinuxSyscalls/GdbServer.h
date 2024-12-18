@@ -14,11 +14,11 @@ $end_info$
 #include <FEXCore/fextl/string.h>
 
 #include <atomic>
-#include <istream>
 #include <memory>
 #include <mutex>
 #include <stdint.h>
 
+#include "LinuxSyscalls/NetStream.h"
 #include "LinuxSyscalls/SignalDelegator.h"
 
 namespace FEX {
@@ -45,12 +45,12 @@ private:
     ERROR,
   };
   WaitForConnectionResult WaitForConnection();
-  fextl::unique_ptr<std::iostream> OpenSocket();
+  void OpenSocket();
   void StartThread();
-  fextl::string ReadPacket(std::iostream& stream);
-  void SendPacket(std::ostream& stream, const fextl::string& packet);
+  fextl::string ReadPacket();
+  void SendPacket(const fextl::string& packet);
 
-  void SendACK(std::ostream& stream, bool NACK);
+  void SendACK(bool NACK);
 
   Event ThreadBreakEvent {};
   void WaitForThreadWakeup();
@@ -147,7 +147,7 @@ private:
   FEX::HLE::SyscallHandler* const SyscallHandler;
   FEX::HLE::SignalDelegator* SignalDelegation;
   fextl::unique_ptr<FEXCore::Threads::Thread> gdbServerThread;
-  fextl::unique_ptr<std::iostream> CommsStream;
+  FEX::Utils::NetStream CommsStream;
   std::mutex sendMutex;
   bool SettingNoAckMode {false};
   bool NoAckMode {false};
