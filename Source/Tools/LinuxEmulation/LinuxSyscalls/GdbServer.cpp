@@ -601,7 +601,7 @@ GdbServer::HandledPacketType GdbServer::ThreadAction(char action, uint32_t tid) 
   switch (action) {
   case 'c': {
     {
-      std::lock_guard lk(*SyscallHandler->TM.GetThreadsCreationMutex());
+      std::lock_guard lk(SyscallHandler->TM.GetThreadsCreationMutex());
       auto Threads = SyscallHandler->TM.GetThreads();
       for (auto& Thread : *Threads) {
         Thread->ThreadSleeping.NotifyOne();
