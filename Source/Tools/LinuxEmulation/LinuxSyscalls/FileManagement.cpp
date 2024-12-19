@@ -517,6 +517,9 @@ std::pair<int, const char*> FileManager::GetEmulatedFDPath(int dirfd, const char
         // Get the symlink of RootFS FD + stripped subpath.
         auto SymlinkSize = FEX::HLE::GetSymlink(RootFSFD, &SubPath[1], CurrentTmp, PATH_MAX - 1);
 
+        // This might be a /proc symlink into the RootFS, so strip it in that case.
+        SymlinkSize = StripRootFSPrefix(CurrentTmp, SymlinkSize, false);
+
         if (SymlinkSize > 1 && CurrentTmp[0] == '/') {
           // If the symlink is absolute and not the root:
           // 1) Zero terminate it.
