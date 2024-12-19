@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+#include "LinuxSyscalls/GdbServer.h"
 #include "LinuxSyscalls/Syscalls.h"
 #include "LinuxSyscalls/SignalDelegator.h"
 
@@ -27,6 +28,18 @@ FEX::HLE::ThreadStateObject* ThreadManager::CreateThread(uint64_t InitialRIP, ui
 
   ++IdleWaitRefCount;
   return ThreadStateObject;
+}
+
+void ThreadManager::TrackThread(FEX::HLE::ThreadStateObject* Thread) {
+  {
+    std::lock_guard lk(ThreadCreationMutex);
+    Threads.emplace_back(Thread);
+  }
+
+  auto GdbServer = SyscallHandler->GetGdbServer();
+  if (GdbServer) {
+    GdbServer->OnThreadCreated(Thread);
+  }
 }
 
 void ThreadManager::DestroyThread(FEX::HLE::ThreadStateObject* Thread, bool NeedsTLSUninstall) {
@@ -79,7 +92,10 @@ void ThreadManager::NotifyPause() {
   // Tell all the threads that they should pause
   std::lock_guard lk(ThreadCreationMutex);
   for (auto& Thread : Threads) {
-    SignalDelegation->SignalThread(Thread->Thread, SignalEvent::Pause);
+    if (!Thread->ThreadSleeping.HasWaiter()) {
+      // Only signal if it isn't already sleeping.
+      SignalDelegation->SignalThread(Thread->Thread, SignalEvent::Pause);
+    }
   }
 }
 
@@ -182,8 +198,7 @@ void ThreadManager::Stop(bool IgnoreCurrentThread) {
   }
 }
 
-void ThreadManager::SleepThread(FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Frame) {
-  auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
+void ThreadManager::SleepThread(FEXCore::Context::Context* CTX, FEX::HLE::ThreadStateObject* ThreadObject) {
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
   // Sanity check. This can only be called from the owning thread.
   {
@@ -197,19 +212,16 @@ void ThreadManager::SleepThread(FEXCore::Context::Context* CTX, FEXCore::Core::C
   --IdleWaitRefCount;
   IdleWaitCV.notify_all();
 
-  ThreadObject->ThreadSleeping = true;
-
-  // Go to sleep
-  ThreadObject->ThreadPaused.Wait();
+  // Go to sleep.
+  ThreadObject->ThreadSleeping.Wait();
 
   ++IdleWaitRefCount;
-  ThreadObject->ThreadSleeping = false;
 
   IdleWaitCV.notify_all();
 }
 
 void ThreadManager::UnpauseThread(FEX::HLE::ThreadStateObject* Thread) {
-  Thread->ThreadPaused.NotifyOne();
+  Thread->ThreadSleeping.NotifyOne();
 }
 
 void ThreadManager::UnlockAfterFork(FEXCore::Core::InternalThreadState* LiveThread, bool Child) {

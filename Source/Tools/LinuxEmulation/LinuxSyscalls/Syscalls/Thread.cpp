@@ -230,11 +230,11 @@ uint64_t HandleNewClone(FEX::HLE::ThreadStateObject* Thread, FEXCore::Context::C
   Thread->ThreadInfo.PID = ::getpid();
   FEX::HLE::_SyscallHandler->FM.UpdatePID(Thread->ThreadInfo.PID);
 
+  FEX::HLE::_SyscallHandler->RegisterTLSState(Thread);
+
   if (CreatedNewThreadObject) {
     FEX::HLE::_SyscallHandler->TM.TrackThread(Thread);
   }
-
-  FEX::HLE::_SyscallHandler->RegisterTLSState(Thread);
 
   // Start exuting the thread directly
   // Our host clone starts in a new stack space, so it can't return back to the JIT space
