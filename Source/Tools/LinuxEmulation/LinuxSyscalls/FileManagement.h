@@ -170,5 +170,6 @@ private:
   int64_t RootFSFDInode = 0;
   int64_t ProcFDInode = 0;
   dev_t ProcFSDev;
+  bool HasOpenat2;
 };
 } // namespace FEX::HLE
