@@ -29,6 +29,7 @@ $end_info$
 #include <algorithm>
 #include <errno.h>
 #include <cstring>
+#include <linux/openat2.h>
 #include <fcntl.h>
 #include <filesystem>
 #include <optional>
@@ -645,10 +646,23 @@ uint64_t FileManager::Open(const char* pathname, int flags, uint32_t mode) {
 
   if (!ShouldSkipOpenInEmu(flags)) {
     FDPathTmpData TmpFilename;
-    auto Path = GetEmulatedFDPath(AT_FDCWD, SelfPath, true, TmpFilename);
+    auto Path = GetEmulatedFDPath(AT_FDCWD, SelfPath, false, TmpFilename);
     if (Path.first != -1) {
-      fd = ::openat(Path.first, Path.second, flags, mode);
-    } else {
+      FEX::HLE::open_how how = {
+        .flags = (uint64_t)flags,
+        .mode = (flags & (O_CREAT | O_TMPFILE)) ? mode & 07777 : 0, // openat2() is stricter about this
+        .resolve = (Path.first == AT_FDCWD) ? 0u : RESOLVE_IN_ROOT, // AT_FDCWD means it's a thunk and not via RootFS
+      };
+      fd = ::syscall(SYSCALL_DEF(openat2), Path.first, Path.second, &how, sizeof(how));
+      if (fd == -1 && errno == EXDEV) {
+        // This means a magic symlink (/proc/foo) was involved. In this case we
+        // just punt and do the access without RESOLVE_IN_ROOT.
+        fd = ::syscall(SYSCALL_DEF(openat), Path.first, Path.second, flags, mode);
+      }
+    }
+
+    // Open through RootFS failed (probably nonexistent), so open directly.
+    if (fd == -1) {
       fd = ::open(SelfPath, flags, mode);
     }
 
@@ -885,10 +899,23 @@ uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char* pathname, i
 
   if (!ShouldSkipOpenInEmu(flags)) {
     FDPathTmpData TmpFilename;
-    auto Path = GetEmulatedFDPath(dirfs, SelfPath, true, TmpFilename);
+    auto Path = GetEmulatedFDPath(dirfs, SelfPath, false, TmpFilename);
     if (Path.first != -1) {
-      fd = ::syscall(SYSCALL_DEF(openat), Path.first, Path.second, flags, mode);
-    } else {
+      FEX::HLE::open_how how = {
+        .flags = (uint64_t)flags,
+        .mode = (flags & (O_CREAT | O_TMPFILE)) ? mode & 07777 : 0, // openat2() is stricter about this,
+        .resolve = (Path.first == AT_FDCWD) ? 0u : RESOLVE_IN_ROOT, // AT_FDCWD means it's a thunk and not via RootFS
+      };
+      fd = ::syscall(SYSCALL_DEF(openat2), Path.first, Path.second, &how, sizeof(how));
+      if (fd == -1 && errno == EXDEV) {
+        // This means a magic symlink (/proc/foo) was involved. In this case we
+        // just punt and do the access without RESOLVE_IN_ROOT.
+        fd = ::syscall(SYSCALL_DEF(openat), Path.first, Path.second, flags, mode);
+      }
+    }
+
+    // Open through RootFS failed (probably nonexistent), so open directly.
+    if (fd == -1) {
       fd = ::syscall(SYSCALL_DEF(openat), dirfs, SelfPath, flags, mode);
     }
 
@@ -908,10 +935,23 @@ uint64_t FileManager::Openat2(int dirfs, const char* pathname, FEX::HLE::open_ho
 
   if (!ShouldSkipOpenInEmu(how->flags)) {
     FDPathTmpData TmpFilename;
-    auto Path = GetEmulatedFDPath(dirfs, SelfPath, true, TmpFilename);
-    if (Path.first != -1) {
+    auto Path = GetEmulatedFDPath(dirfs, SelfPath, false, TmpFilename);
+    if (Path.first != -1 && !(how->resolve & RESOLVE_IN_ROOT)) {
+      // AT_FDCWD means it's a thunk and not via RootFS
+      if (Path.first != AT_FDCWD) {
+        how->resolve |= RESOLVE_IN_ROOT;
+      }
       fd = ::syscall(SYSCALL_DEF(openat2), Path.first, Path.second, how, usize);
-    } else {
+      how->resolve &= RESOLVE_IN_ROOT;
+      if (fd == -1 && errno == EXDEV) {
+        // This means a magic symlink (/proc/foo) was involved. In this case we
+        // just punt and do the access without RESOLVE_IN_ROOT.
+        fd = ::syscall(SYSCALL_DEF(openat2), Path.first, Path.second, how, usize);
+      }
+    }
+
+    // Open through RootFS failed (probably nonexistent), so open directly.
+    if (fd == -1) {
       fd = ::syscall(SYSCALL_DEF(openat2), dirfs, SelfPath, how, usize);
     }
 
