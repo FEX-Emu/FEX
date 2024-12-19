@@ -693,6 +693,71 @@
         "mov x26, x5"
       ]
     },
+    "Factorio drawSprite+0x890": {
+      "x86InstructionCount": 3,
+      "ExpectedInstructionCount": 5,
+      "Comment": "first load should be rip relative",
+      "x86Insts": [
+        "movss  xmm9,dword [rbp]",
+        "and    r9d,0x800000",
+        "movss  dword [rbp-0x58],xmm9"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr s25, [x9]",
+        "ands w26, w13, #0x800000",
+        "mov x13, x26",
+        "stur s25, [x9, #-88]",
+        "cfinv"
+      ]
+    },
+    "Factorio drawSprite+0xf2": {
+      "x86InstructionCount": 9,
+      "ExpectedInstructionCount": 11,
+      "x86Insts": [
+        "movss  xmm8,dword [rbp-0x58]",
+        "mov    byte [rbp-0x49],r13b",
+        "mov    byte [rbp-0x4a],r14b",
+        "mov    rdx,qword [rdi+0x8]",
+        "mov    qword [rbp-0x38],rbx",
+        "mov    byte [rbp-0x4b],al",
+        "mov    qword [rbp-0x40],r11",
+        "movss  dword [rbp-0x48],xmm8",
+        "cmp    rdx,qword [rdi]"
+      ],
+      "ExpectedArm64ASM": [
+        "ldur s24, [x9, #-88]",
+        "sturb w17, [x9, #-73]",
+        "sturb w19, [x9, #-74]",
+        "ldr x5, [x11, #8]",
+        "stur x6, [x9, #-56]",
+        "sturb w4, [x9, #-75]",
+        "stur x15, [x9, #-64]",
+        "stur s24, [x9, #-72]",
+        "ldr x20, [x11]",
+        "eor x27, x5, x20",
+        "subs x26, x5, x20"
+      ]
+    },
+    "Factorio drawSprite+0x520": {
+      "x86InstructionCount": 4,
+      "ExpectedInstructionCount": 8,
+      "x86Insts": [
+        "sub    ecx,0x9",
+        "xor    r11d,r11d",
+        "cmp    cl,0x1",
+        "cmovbe r11,rsi"
+      ],
+      "ExpectedArm64ASM": [
+        "sub w7, w7, #0x9 (9)",
+        "mov w15, #0x0",
+        "mov w20, #0x1",
+        "lsl w0, w7, #24",
+        "cmp w0, w20, lsl #24",
+        "sub w26, w7, #0x1 (1)",
+        "mov x27, x7",
+        "csel x15, x10, x15, ls"
+      ]
+    },
     "pcmpistri xmm0, xmm1, 0_0_00_11_01b": {
       "ExpectedInstructionCount": 38,
       "Comment": [
