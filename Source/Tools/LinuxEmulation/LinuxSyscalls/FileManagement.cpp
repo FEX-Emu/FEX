@@ -787,7 +787,7 @@ uint64_t FileManager::Readlink(const char* pathname, char* buf, size_t bufsiz) {
     if (Result == -1 && errno == EINVAL) {
       // This means that the file wasn't a symlink
       // This is expected behaviour
-      return -errno;
+      return -1;
     }
   }
   if (Result == -1) {
@@ -865,7 +865,7 @@ uint64_t FileManager::Readlinkat(int dirfd, const char* pathname, char* buf, siz
     if (Result == -1 && errno == EINVAL) {
       // This means that the file wasn't a symlink
       // This is expected behaviour
-      return -errno;
+      return -1;
     }
   }
 
