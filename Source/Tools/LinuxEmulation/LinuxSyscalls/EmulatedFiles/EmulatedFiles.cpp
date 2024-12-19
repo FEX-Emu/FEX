@@ -582,67 +582,17 @@ EmulatedFDManager::EmulatedFDManager(FEXCore::Context::Context* ctx)
 
 EmulatedFDManager::~EmulatedFDManager() {}
 
-int32_t EmulatedFDManager::OpenAt(int dirfs, const char* pathname, int flags, uint32_t mode) {
-  char Tmp[PATH_MAX];
-  const char* Path {};
-
+int32_t EmulatedFDManager::Open(const char* pathname, int flags, uint32_t mode) {
   auto Creator = FDReadCreators.end();
   if (pathname) {
     Creator = FDReadCreators.find(pathname);
-    Path = pathname;
   }
 
   if (Creator == FDReadCreators.end()) {
-    if (((pathname && pathname[0] != '/') || // If pathname exists then it must not be absolute
-         !pathname) &&
-        dirfs != AT_FDCWD) {
-      // Passed in a dirfd that isn't magic FDCWD
-      // We need to get the path from the fd now
-      auto PathLength = FEX::get_fdpath(dirfs, Tmp);
-      if (PathLength != -1) {
-        if (pathname) {
-          Tmp[PathLength] = '/';
-          PathLength += 1;
-          strncpy(&Tmp[PathLength], pathname, PATH_MAX - PathLength);
-        } else {
-          Tmp[PathLength] = '\0';
-        }
-        Path = Tmp;
-      } else if (pathname) {
-        Path = pathname;
-      }
-    } else {
-      if (!pathname || pathname[0] == 0) {
-        return -1;
-      }
-
-      Path = pathname;
-    }
-
-    bool exists = access(Path, F_OK) == 0;
-    bool RealPathExists = false;
-
-    if (exists) {
-      // If realpath fails then the temporary buffer is in an undefined state.
-      // Need to use another temporary just in-case realpath doesn't succeed.
-      char ExistsTempPath[PATH_MAX];
-      char* RealPath = realpath(Path, ExistsTempPath);
-      if (RealPath) {
-        RealPathExists = true;
-        Creator = FDReadCreators.find(RealPath);
-      }
-    }
-
-    if (!RealPathExists) {
-      Creator = FDReadCreators.find(FHU::Filesystem::LexicallyNormal(Path));
-    }
-
-    if (Creator == FDReadCreators.end()) {
-      return -1;
-    }
+    return -1;
   }
 
-  return Creator->second(CTX, dirfs, Path, flags, mode);
+  return Creator->second(CTX, AT_FDCWD, pathname, flags, mode);
 }
 
 int32_t EmulatedFDManager::ProcAuxv(FEXCore::Context::Context* ctx, int32_t fd, const char* pathname, int32_t flags, mode_t mode) {
