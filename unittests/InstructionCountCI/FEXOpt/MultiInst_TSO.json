@@ -1,0 +1,91 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "TSO",
+      "LRCPC",
+      "LRCPC2",
+      "FLAGM",
+      "FLAGM2"
+    ],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256",
+      "RPRES",
+      "AFP"
+    ]
+  },
+  "Comment": [
+    "These are instruction combinations that could be more optimal if FEX optimized for them"
+  ],
+  "Instructions": {
+    "Load variables from memory": {
+      "x86InstructionCount": 6,
+      "ExpectedInstructionCount": 18,
+      "Comment": [
+        "Just to ensure small atomic offset loads are using LRCPC2"
+      ],
+      "x86Insts": [
+        "mov edi, [rcx]",
+        "mov edx, [rcx + 4]",
+        "mov rbx, [rcx + 8]",
+        "mov rsi, [rcx + 16]",
+        "mov ax, [rcx + 24]",
+        "mov bl, [rcx + 26]"
+      ],
+      "ExpectedArm64ASM": [
+        "ldapur w11, [x7]",
+        "nop",
+        "add x20, x7, #0x4 (4)",
+        "ldapur w5, [x20]",
+        "nop",
+        "add x20, x7, #0x8 (8)",
+        "ldapur x6, [x20]",
+        "nop",
+        "add x20, x7, #0x10 (16)",
+        "ldapur x10, [x20]",
+        "nop",
+        "add x20, x7, #0x18 (24)",
+        "ldapurh w20, [x20]",
+        "nop",
+        "bfxil x4, x20, #0, #16",
+        "add x20, x7, #0x1a (26)",
+        "ldapurb w20, [x20]",
+        "bfxil x6, x20, #0, #8"
+      ]
+    },
+    "Store variables to memory": {
+      "x86InstructionCount": 6,
+      "ExpectedInstructionCount": 16,
+      "Comment": [
+        "Just to ensure small atomic offset stores are using LRCPC2"
+      ],
+      "x86Insts": [
+        "mov [rcx], edi",
+        "mov [rcx + 4], edx",
+        "mov [rcx + 8], rbx",
+        "mov [rcx + 16], rsi",
+        "mov [rcx + 24], ax",
+        "mov [rcx + 26], bl"
+      ],
+      "ExpectedArm64ASM": [
+        "nop",
+        "stlur w11, [x7]",
+        "add x20, x7, #0x4 (4)",
+        "nop",
+        "stlur w5, [x20]",
+        "add x20, x7, #0x8 (8)",
+        "nop",
+        "stlur x6, [x20]",
+        "add x20, x7, #0x10 (16)",
+        "nop",
+        "stlur x10, [x20]",
+        "add x20, x7, #0x18 (24)",
+        "nop",
+        "stlurh w4, [x20]",
+        "add x20, x7, #0x1a (26)",
+        "stlurb w6, [x20]"
+      ]
+    }
+  }
+}
