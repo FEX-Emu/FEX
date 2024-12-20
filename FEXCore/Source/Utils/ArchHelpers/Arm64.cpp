@@ -2118,7 +2118,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
     LDUR |= Size << 30;
     LDUR |= AddrReg << 5;
     LDUR |= DataReg;
-    LDUR |= Instr & (0b1'1111'1111 << 9);
+    LDUR |= Instr & (0b1'1111'1111 << 12);
     if (HandleType != UnalignedHandlerType::NonAtomic) {
       // Ordering matters with cross-thread visibility!
       std::atomic_ref<uint32_t>(PC[1]).store(DMB_LD, std::memory_order_release); // Back-patch the half-barrier.
@@ -2132,7 +2132,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
     STUR |= Size << 30;
     STUR |= AddrReg << 5;
     STUR |= DataReg;
-    STUR |= Instr & (0b1'1111'1111 << 9);
+    STUR |= Instr & (0b1'1111'1111 << 12);
     if (HandleType != UnalignedHandlerType::NonAtomic) {
       std::atomic_ref<uint32_t>(PC[-1]).store(DMB, std::memory_order_release); // Back-patch the half-barrier.
     }
