@@ -8,31 +8,38 @@
 namespace FHU {
 
 /**
- * @brief Parses a string of arguments, returning a vector of string_views.
+ * @brief Parses a shebang string, returning a vector of string_views.
  *
- * @param ArgumentString The string of arguments to parse
+ * @param ArgumentString The shebang string to parse
  *
- * @return The array of parsed arguments
+ * @return The array of parsed elements
  */
 static inline fextl::vector<std::string_view> ParseArgumentsFromString(const std::string_view ArgumentString) {
   fextl::vector<std::string_view> Arguments;
 
-  auto Begin = ArgumentString.begin();
-  auto ArgEnd = Begin;
-  const auto End = ArgumentString.end();
-  while (ArgEnd != End && Begin != End) {
-    // The end of an argument ends with a space or the end of the interpreter line.
-    ArgEnd = std::find(Begin, End, ' ');
+  const auto SPACE = " \f\n\r\t\v";
 
-    if (Begin != ArgEnd) {
-      const auto View = std::string_view(Begin, ArgEnd - Begin);
-      if (!View.empty()) {
-        Arguments.emplace_back(View);
-      }
-    }
-
-    Begin = ArgEnd + 1;
+  auto InterpBegin = ArgumentString.find_first_not_of(SPACE);
+  if (InterpBegin == std::string::npos) {
+    return Arguments;
   }
+
+  auto InterpLen = ArgumentString.substr(InterpBegin).find_first_of(SPACE);
+  Arguments.emplace_back(ArgumentString.substr(InterpBegin, InterpLen));
+  if (InterpLen == std::string::npos) {
+    return Arguments;
+  }
+
+  auto Arg = ArgumentString.substr(InterpBegin + InterpLen);
+  auto ArgBegin = Arg.find_first_not_of(SPACE);
+  if (ArgBegin == std::string::npos) {
+    return Arguments;
+  }
+
+  Arg = Arg.substr(ArgBegin);
+
+  auto ArgEnd = Arg.find_last_not_of(SPACE);
+  Arguments.emplace_back(Arg.substr(0, ArgEnd + 1));
 
   return Arguments;
 }
