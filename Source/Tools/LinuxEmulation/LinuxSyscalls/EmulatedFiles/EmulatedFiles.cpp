@@ -573,6 +573,12 @@ EmulatedFDManager::EmulatedFDManager(FEXCore::Context::Context* ctx)
   fextl::string procCmdLine = fextl::fmt::format("/proc/{}/cmdline", getpid());
   FDReadCreators[procCmdLine] = cmdline_handler;
 
+  // FEX-Emu specific file handles
+  FDReadCreators["/sys/fex/rootfs"] = [&](FEXCore::Context::Context* ctx, int32_t fd, const char* pathname, int32_t flags, mode_t mode) -> int32_t {
+    // Redirect to the guest rootfs
+    return ::syscall(SYSCALL_DEF(openat), fd, LDPath().c_str(), flags, mode);
+  };
+
   if (ThreadsConfig > 1) {
     cpus_online = fextl::fmt::format("0-{}", ThreadsConfig - 1);
   } else {

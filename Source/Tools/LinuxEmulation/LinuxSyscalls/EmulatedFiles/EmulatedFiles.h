@@ -35,5 +35,7 @@ private:
 
   static int32_t ProcAuxv(FEXCore::Context::Context* ctx, int32_t fd, const char* pathname, int32_t flags, mode_t mode);
   const uint32_t ThreadsConfig;
+
+  FEX_CONFIG_OPT(LDPath, ROOTFS);
 };
 } // namespace FEX::EmulatedFile
