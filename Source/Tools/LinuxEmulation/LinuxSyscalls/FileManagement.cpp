@@ -29,6 +29,7 @@ $end_info$
 #include <algorithm>
 #include <errno.h>
 #include <cstring>
+#include <linux/openat2.h>
 #include <fcntl.h>
 #include <filesystem>
 #include <optional>
@@ -332,11 +333,107 @@ FileManager::FileManager(FEXCore::Context::Context* ctx)
     ProcFSDev = Buffer.st_dev;
   }
 
+  uint32_t KernelVersion = FEX::HLE::SyscallHandler::CalculateHostKernelVersion();
+  HasOpenat2 = KernelVersion >= FEX::HLE::SyscallHandler::KernelVersion(5, 8, 0);
   UpdatePID(::getpid());
 }
 
 FileManager::~FileManager() {
   close(RootFSFD);
+}
+
+size_t FileManager::GetRootFSPrefixLen(const char* pathname, size_t len, bool AliasedOnly) {
+  if (len < 2 ||            // If no pathname or root
+      pathname[0] != '/') { // If we are getting root
+    return 0;
+  }
+
+  const auto& RootFSPath = LDPath();
+  if (RootFSPath.empty()) { // If RootFS doesn't exist
+    return 0;
+  }
+
+  auto RootFSLen = RootFSPath.length();
+  if (RootFSPath.ends_with("/")) {
+    RootFSLen -= 1;
+  }
+
+  if (RootFSLen > len) {
+    return 0;
+  }
+
+  if (memcmp(pathname, RootFSPath.c_str(), RootFSLen) || (len > RootFSLen && pathname[RootFSLen] != '/')) {
+    return 0; // If the path is not within the RootFS
+  }
+
+  if (AliasedOnly) {
+    fextl::string Path(pathname, len); // Need to nul-terminate so copy
+
+    struct stat HostStat {};
+    struct stat RootFSStat {};
+    if (lstat(Path.c_str(), &RootFSStat)) {
+      LogMan::Msg::DFmt("GetRootFSPrefixLen: lstat on RootFS path failed: {}", std::string_view(pathname, len));
+      return 0; // RootFS path does not exist?
+    }
+    if (lstat(Path.c_str() + RootFSLen, &HostStat)) {
+      return 0; // Host path does not exist or not accessible
+    }
+    // Note: We do not check st_dev, since the RootFS might be
+    // an overlayfs mount that changes it. This means there could
+    // be false positives. However, since we check the size too,
+    // this is highly unlikely (an overlaid file would need to
+    // have the same exact size and coincidentally the same
+    // inode number as on the host, which is implausible for things
+    // like binaries and libraries).
+    if (RootFSStat.st_size != HostStat.st_size || RootFSStat.st_ino != HostStat.st_ino || RootFSStat.st_mode != HostStat.st_mode) {
+      return 0; // Host path is a different file
+    }
+  }
+
+  return RootFSLen;
+}
+
+ssize_t FileManager::StripRootFSPrefix(char* pathname, ssize_t len, bool leaky) {
+  if (len < 0) {
+    return len;
+  }
+
+  auto Prefix = GetRootFSPrefixLen(pathname, len, false);
+  if (Prefix == 0) {
+    return len;
+  }
+
+  if (Prefix == len) {
+    if (leaky) {
+      // Getting the root, without a trailing /. This is a hack pressure-vessel uses to get the FEX RootFS,
+      // so we have to leak it here...
+      LogMan::Msg::DFmt("Leaking RootFS path for pressure-vessel");
+      return len;
+    } else {
+      ::strcpy(pathname, "/");
+      return 1;
+    }
+  }
+
+  ::memmove(pathname, pathname + Prefix, len - Prefix);
+  pathname[len - Prefix] = '\0';
+
+  return len - Prefix;
+}
+
+fextl::string FileManager::GetHostPath(fextl::string& Path, bool AliasedOnly) {
+  auto Prefix = GetRootFSPrefixLen(Path.c_str(), Path.length(), AliasedOnly);
+
+  if (Prefix == 0) {
+    return {};
+  }
+
+  auto ret = Path.substr(Prefix);
+  if (ret.empty()) { // Getting the root
+    ret = "/";
+  }
+
+  return ret;
 }
 
 fextl::string FileManager::GetEmulatedPath(const char* pathname, bool FollowSymlink) {
@@ -438,8 +535,11 @@ std::pair<int, const char*> FileManager::GetEmulatedFDPath(int dirfd, const char
         // Get the symlink of RootFS FD + stripped subpath.
         auto SymlinkSize = FEX::HLE::GetSymlink(RootFSFD, &SubPath[1], CurrentTmp, PATH_MAX - 1);
 
-        if (SymlinkSize > 0 && CurrentTmp[0] == '/') {
-          // If the symlink is absolute:
+        // This might be a /proc symlink into the RootFS, so strip it in that case.
+        SymlinkSize = StripRootFSPrefix(CurrentTmp, SymlinkSize, false);
+
+        if (SymlinkSize > 1 && CurrentTmp[0] == '/') {
+          // If the symlink is absolute and not the root:
           // 1) Zero terminate it.
           // 2) Set the path as our current subpath.
           // 3) Switch to the next temporary index. (We don't want to overwrite the current one on the next loop iteration).
@@ -515,23 +615,63 @@ static bool ShouldSkipOpenInEmu(int flags) {
   return false;
 }
 
+bool FileManager::ReplaceEmuFd(int fd, int flags, uint32_t mode) {
+  char Tmp[PATH_MAX + 1];
+
+  if (fd < 0) {
+    return false;
+  }
+
+  // Get the path of the file we just opened
+  auto PathLength = FEX::get_fdpath(fd, Tmp);
+  if (PathLength == -1) {
+    return false;
+  }
+  Tmp[PathLength] = '\0';
+
+  // And try to open via EmuFD
+  auto EmuFd = EmuFD.Open(Tmp, flags, mode);
+  if (EmuFd == -1) {
+    return false;
+  }
+
+  // If we succeeded, swap out the fd
+  ::dup2(EmuFd, fd);
+  ::close(EmuFd);
+  return true;
+}
+
 uint64_t FileManager::Open(const char* pathname, int flags, uint32_t mode) {
   auto NewPath = GetSelf(pathname);
   const char* SelfPath = NewPath ? NewPath->data() : nullptr;
   int fd = -1;
 
   if (!ShouldSkipOpenInEmu(flags)) {
-    fd = EmuFD.OpenAt(AT_FDCWD, SelfPath, flags, mode);
-    if (fd == -1) {
-      FDPathTmpData TmpFilename;
-      auto Path = GetEmulatedFDPath(AT_FDCWD, SelfPath, true, TmpFilename);
-      if (Path.first != -1) {
-        fd = ::openat(Path.first, Path.second, flags, mode);
+    FDPathTmpData TmpFilename;
+    auto Path = GetEmulatedFDPath(AT_FDCWD, SelfPath, !HasOpenat2, TmpFilename);
+    if (Path.first != -1) {
+      FEX::HLE::open_how how = {
+        .flags = (uint64_t)flags,
+        .mode = (flags & (O_CREAT | O_TMPFILE)) ? mode & 07777 : 0, // openat2() is stricter about this
+        .resolve = (Path.first == AT_FDCWD) ? 0u : RESOLVE_IN_ROOT, // AT_FDCWD means it's a thunk and not via RootFS
+      };
+      if (HasOpenat2) {
+        fd = ::syscall(SYSCALL_DEF(openat2), Path.first, Path.second, &how, sizeof(how));
+      }
+      if (fd == -1 && (!HasOpenat2 || errno == EXDEV)) {
+        // This means a magic symlink (/proc/foo) was involved. In this case we
+        // just punt and do the access without RESOLVE_IN_ROOT.
+        fd = ::syscall(SYSCALL_DEF(openat), Path.first, Path.second, flags, mode);
       }
     }
-  }
 
-  if (fd == -1) {
+    // Open through RootFS failed (probably nonexistent), so open directly.
+    if (fd == -1) {
+      fd = ::open(SelfPath, flags, mode);
+    }
+
+    ReplaceEmuFd(fd, flags, mode);
+  } else {
     fd = ::open(SelfPath, flags, mode);
   }
 
@@ -658,20 +798,22 @@ uint64_t FileManager::Readlink(const char* pathname, char* buf, size_t bufsiz) {
 
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(AT_FDCWD, pathname, false, TmpFilename);
+  uint64_t Result = -1;
   if (Path.first != -1) {
-    uint64_t Result = ::readlinkat(Path.first, Path.second, buf, bufsiz);
-    if (Result != -1) {
-      return Result;
-    }
+    Result = ::readlinkat(Path.first, Path.second, buf, bufsiz);
 
     if (Result == -1 && errno == EINVAL) {
       // This means that the file wasn't a symlink
       // This is expected behaviour
-      return -errno;
+      return -1;
     }
   }
+  if (Result == -1) {
+    Result = ::readlink(pathname, buf, bufsiz);
+  }
 
-  return ::readlink(pathname, buf, bufsiz);
+  // We might have read a /proc/self/fd/* link. If so, strip the RootFS prefix from it.
+  return StripRootFSPrefix(buf, Result, true);
 }
 
 uint64_t FileManager::Chmod(const char* pathname, mode_t mode) {
@@ -733,20 +875,24 @@ uint64_t FileManager::Readlinkat(int dirfd, const char* pathname, char* buf, siz
 
   FDPathTmpData TmpFilename;
   auto NewPath = GetEmulatedFDPath(dirfd, pathname, false, TmpFilename);
+  uint64_t Result = -1;
+
   if (NewPath.first != -1) {
-    uint64_t Result = ::readlinkat(NewPath.first, NewPath.second, buf, bufsiz);
-    if (Result != -1) {
-      return Result;
-    }
+    Result = ::readlinkat(NewPath.first, NewPath.second, buf, bufsiz);
 
     if (Result == -1 && errno == EINVAL) {
       // This means that the file wasn't a symlink
       // This is expected behaviour
-      return -errno;
+      return -1;
     }
   }
 
-  return ::readlinkat(dirfd, pathname, buf, bufsiz);
+  if (Result == -1) {
+    Result = ::readlinkat(dirfd, pathname, buf, bufsiz);
+  }
+
+  // We might have read a /proc/self/fd/* link. If so, strip the RootFS prefix from it.
+  return StripRootFSPrefix(buf, Result, true);
 }
 
 uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char* pathname, int flags, uint32_t mode) {
@@ -756,17 +902,31 @@ uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char* pathname, i
   int32_t fd = -1;
 
   if (!ShouldSkipOpenInEmu(flags)) {
-    fd = EmuFD.OpenAt(dirfs, SelfPath, flags, mode);
-    if (fd == -1) {
-      FDPathTmpData TmpFilename;
-      auto Path = GetEmulatedFDPath(dirfs, SelfPath, true, TmpFilename);
-      if (Path.first != -1) {
+    FDPathTmpData TmpFilename;
+    auto Path = GetEmulatedFDPath(dirfs, SelfPath, !HasOpenat2, TmpFilename);
+    if (Path.first != -1) {
+      FEX::HLE::open_how how = {
+        .flags = (uint64_t)flags,
+        .mode = (flags & (O_CREAT | O_TMPFILE)) ? mode & 07777 : 0, // openat2() is stricter about this,
+        .resolve = (Path.first == AT_FDCWD) ? 0u : RESOLVE_IN_ROOT, // AT_FDCWD means it's a thunk and not via RootFS
+      };
+      if (HasOpenat2) {
+        fd = ::syscall(SYSCALL_DEF(openat2), Path.first, Path.second, &how, sizeof(how));
+      }
+      if (fd == -1 && (!HasOpenat2 || errno == EXDEV)) {
+        // This means a magic symlink (/proc/foo) was involved. In this case we
+        // just punt and do the access without RESOLVE_IN_ROOT.
         fd = ::syscall(SYSCALL_DEF(openat), Path.first, Path.second, flags, mode);
       }
     }
-  }
 
-  if (fd == -1) {
+    // Open through RootFS failed (probably nonexistent), so open directly.
+    if (fd == -1) {
+      fd = ::syscall(SYSCALL_DEF(openat), dirfs, SelfPath, flags, mode);
+    }
+
+    ReplaceEmuFd(fd, flags, mode);
+  } else {
     fd = ::syscall(SYSCALL_DEF(openat), dirfs, SelfPath, flags, mode);
   }
 
@@ -780,17 +940,29 @@ uint64_t FileManager::Openat2(int dirfs, const char* pathname, FEX::HLE::open_ho
   int32_t fd = -1;
 
   if (!ShouldSkipOpenInEmu(how->flags)) {
-    fd = EmuFD.OpenAt(dirfs, SelfPath, how->flags, how->mode);
-    if (fd == -1) {
-      FDPathTmpData TmpFilename;
-      auto Path = GetEmulatedFDPath(dirfs, SelfPath, true, TmpFilename);
-      if (Path.first != -1) {
+    FDPathTmpData TmpFilename;
+    auto Path = GetEmulatedFDPath(dirfs, SelfPath, false, TmpFilename);
+    if (Path.first != -1 && !(how->resolve & RESOLVE_IN_ROOT)) {
+      // AT_FDCWD means it's a thunk and not via RootFS
+      if (Path.first != AT_FDCWD) {
+        how->resolve |= RESOLVE_IN_ROOT;
+      }
+      fd = ::syscall(SYSCALL_DEF(openat2), Path.first, Path.second, how, usize);
+      how->resolve &= RESOLVE_IN_ROOT;
+      if (fd == -1 && errno == EXDEV) {
+        // This means a magic symlink (/proc/foo) was involved. In this case we
+        // just punt and do the access without RESOLVE_IN_ROOT.
         fd = ::syscall(SYSCALL_DEF(openat2), Path.first, Path.second, how, usize);
       }
     }
-  }
 
-  if (fd == -1) {
+    // Open through RootFS failed (probably nonexistent), so open directly.
+    if (fd == -1) {
+      fd = ::syscall(SYSCALL_DEF(openat2), dirfs, SelfPath, how, usize);
+    }
+
+    ReplaceEmuFd(fd, how->flags, how->mode);
+  } else {
     fd = ::syscall(SYSCALL_DEF(openat2), dirfs, SelfPath, how, usize);
   }
 
