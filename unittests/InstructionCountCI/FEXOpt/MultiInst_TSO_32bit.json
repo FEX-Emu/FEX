@@ -65,6 +65,66 @@
         "subs w26, w4, w20",
         "mov x4, x26"
       ]
+    },
+    "Load variables from memory": {
+      "x86InstructionCount": 4,
+      "ExpectedInstructionCount": 16,
+      "Comment": [
+        "Just to ensure small atomic offset loads are using LRCPC2"
+      ],
+      "x86Insts": [
+        "mov edi, [ecx]",
+        "mov edx, [ecx + 4]",
+        "mov ax, [ecx + 24]",
+        "mov bl, [ecx + 26]"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, w7",
+        "ldapur w11, [x20]",
+        "nop",
+        "add x20, x7, #0x4 (4)",
+        "mov w20, w20",
+        "ldapur w5, [x20]",
+        "nop",
+        "add x20, x7, #0x18 (24)",
+        "mov w20, w20",
+        "ldapurh w20, [x20]",
+        "nop",
+        "bfxil x4, x20, #0, #16",
+        "add x20, x7, #0x1a (26)",
+        "mov w20, w20",
+        "ldapurb w20, [x20]",
+        "bfxil x6, x20, #0, #8"
+      ]
+    },
+    "Store variables to memory": {
+      "x86InstructionCount": 4,
+      "ExpectedInstructionCount": 14,
+      "Comment": [
+        "Just to ensure small atomic offset stores are using LRCPC2"
+      ],
+      "x86Insts": [
+        "mov [ecx], edi",
+        "mov [ecx + 4], edx",
+        "mov [ecx + 24], ax",
+        "mov [ecx + 26], bl"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, w7",
+        "nop",
+        "stlur w11, [x20]",
+        "add x20, x7, #0x4 (4)",
+        "mov w20, w20",
+        "nop",
+        "stlur w5, [x20]",
+        "add x20, x7, #0x18 (24)",
+        "mov w20, w20",
+        "nop",
+        "stlurh w4, [x20]",
+        "add x20, x7, #0x1a (26)",
+        "mov w20, w20",
+        "stlurb w6, [x20]"
+      ]
     }
   }
 }
