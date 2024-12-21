@@ -3613,16 +3613,16 @@ void OpDispatchBuilder::DIVOp(OpcodeArgs) {
     auto ResultAX = _Bfi(GPRSize, 8, 8, UDivOp, URemOp);
     StoreGPRRegister(X86State::REG_RAX, ResultAX, OpSize::i16Bit);
   } else if (Size == OpSize::i16Bit) {
-    Ref Src1 = LoadGPRRegister(X86State::REG_RAX, Size);
-    Ref Src2 = LoadGPRRegister(X86State::REG_RDX, Size);
+    Ref Src1 = LoadGPRRegister(X86State::REG_RAX);
+    Ref Src2 = LoadGPRRegister(X86State::REG_RDX);
     auto UDivOp = _LUDiv(OpSize::i16Bit, Src1, Src2, Divisor);
     auto URemOp = _LURem(OpSize::i16Bit, Src1, Src2, Divisor);
 
     StoreGPRRegister(X86State::REG_RAX, UDivOp, Size);
     StoreGPRRegister(X86State::REG_RDX, URemOp, Size);
   } else if (Size == OpSize::i32Bit) {
-    Ref Src1 = LoadGPRRegister(X86State::REG_RAX, Size);
-    Ref Src2 = LoadGPRRegister(X86State::REG_RDX, Size);
+    Ref Src1 = LoadGPRRegister(X86State::REG_RAX);
+    Ref Src2 = LoadGPRRegister(X86State::REG_RDX);
 
     Ref UDivOp = _Bfe(OpSize::i32Bit, IR::OpSizeAsBits(Size), 0, _LUDiv(OpSize::i32Bit, Src1, Src2, Divisor));
     Ref URemOp = _Bfe(OpSize::i32Bit, IR::OpSizeAsBits(Size), 0, _LURem(OpSize::i32Bit, Src1, Src2, Divisor));
@@ -3654,7 +3654,7 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
   const auto Size = OpSizeFromSrc(Op);
 
   if (Size == OpSize::i8Bit) {
-    Ref Src1 = LoadGPRRegister(X86State::REG_RAX, OpSize::i16Bit);
+    Ref Src1 = LoadGPRRegister(X86State::REG_RAX);
     Src1 = _Sbfe(OpSize::i64Bit, 16, 0, Src1);
     Divisor = _Sbfe(OpSize::i64Bit, 8, 0, Divisor);
 
@@ -3665,16 +3665,16 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
     auto ResultAX = _Bfi(GPRSize, 8, 8, UDivOp, URemOp);
     StoreGPRRegister(X86State::REG_RAX, ResultAX, OpSize::i16Bit);
   } else if (Size == OpSize::i16Bit) {
-    Ref Src1 = LoadGPRRegister(X86State::REG_RAX, Size);
-    Ref Src2 = LoadGPRRegister(X86State::REG_RDX, Size);
+    Ref Src1 = LoadGPRRegister(X86State::REG_RAX);
+    Ref Src2 = LoadGPRRegister(X86State::REG_RDX);
     auto UDivOp = _LDiv(OpSize::i16Bit, Src1, Src2, Divisor);
     auto URemOp = _LRem(OpSize::i16Bit, Src1, Src2, Divisor);
 
     StoreGPRRegister(X86State::REG_RAX, UDivOp, Size);
     StoreGPRRegister(X86State::REG_RDX, URemOp, Size);
   } else if (Size == OpSize::i32Bit) {
-    Ref Src1 = LoadGPRRegister(X86State::REG_RAX, Size);
-    Ref Src2 = LoadGPRRegister(X86State::REG_RDX, Size);
+    Ref Src1 = LoadGPRRegister(X86State::REG_RAX);
+    Ref Src2 = LoadGPRRegister(X86State::REG_RDX);
 
     Ref UDivOp = _Bfe(OpSize::i32Bit, IR::OpSizeAsBits(Size), 0, _LDiv(OpSize::i32Bit, Src1, Src2, Divisor));
     Ref URemOp = _Bfe(OpSize::i32Bit, IR::OpSizeAsBits(Size), 0, _LRem(OpSize::i32Bit, Src1, Src2, Divisor));

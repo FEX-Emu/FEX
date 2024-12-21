@@ -2196,12 +2196,11 @@
       ]
     },
     "idiv bl": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP2 0xf6 /7",
       "ExpectedArm64ASM": [
         "uxtb w20, w6",
-        "uxth w21, w4",
-        "sxth x21, w21",
+        "sxth x21, w4",
         "sxtb x20, w20",
         "sdiv x22, x21, x20",
         "sdiv x0, x21, x20",
@@ -2367,20 +2366,18 @@
       ]
     },
     "div bx": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 10,
       "Comment": "GROUP2 0xf7 /6",
       "ExpectedArm64ASM": [
         "uxth w20, w6",
-        "uxth w21, w4",
-        "uxth w22, w5",
-        "uxth w0, w21",
-        "bfi w0, w22, #16, #16",
-        "udiv w23, w0, w20",
-        "uxth w0, w21",
-        "bfi w0, w22, #16, #16",
+        "uxth w0, w4",
+        "bfi w0, w5, #16, #16",
+        "udiv w21, w0, w20",
+        "uxth w0, w4",
+        "bfi w0, w5, #16, #16",
         "udiv w1, w0, w20",
         "msub w20, w1, w20, w0",
-        "bfxil x4, x23, #0, #16",
+        "bfxil x4, x21, #0, #16",
         "bfxil x5, x20, #0, #16"
       ]
     },
