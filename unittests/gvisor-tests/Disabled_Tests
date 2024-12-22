@@ -199,3 +199,17 @@ pselect_test
 # On older kernels it would return -ESPIPE, on new kernels it returns 0.
 # This test expects -ESPIPE behaviour.
 timerfd_test
+
+# Sub-test SealGrowPartialWriteTruncated tests some behaviour of F_SEAL_GROW that changes behaviour depending on kernel version.
+#  - Grows the memfd region to 1 page
+#  - Seals it
+#  - Seeks to 3/4 in to the page
+#  - Tries to write one page of data
+#  - Expects the kernel to only write 1024 bytes
+#  - Newer kernels return EPERM instead
+# Sub-test SealWriteWithMmap tests behaviour of F_SEAL_WRITE that changes behaviour depending on kernel version
+# - Seals the memfd region
+# - Tries to map it with MAP_SHARED and PROT_WRITE - Expects failure
+# - Tries to map it with MAP_SHARED and PROT_READ - Expects failure
+# - Older Linux kernel versions accidentally allowed PROT_READ mappings through.
+memfd_test
