@@ -73,7 +73,7 @@ void GdbServer::Break(FEXCore::Core::InternalThreadState* Thread, int signal) {
   CurrentDebuggingThread = ThreadObject->ThreadInfo.TID.load();
 
   const auto str = fextl::fmt::format("T{:02x}thread:{:x};", signal, CurrentDebuggingThread);
-  SendPacket(*CommsStream, str);
+  SendPacket(str);
 }
 
 void GdbServer::WaitForThreadWakeup() {
@@ -178,7 +178,7 @@ static fextl::string encodeHex(std::string_view str) {
 // Takes a serial stream and reads a single packet
 // Un-escapes chars, checks the checksum and request a retransmit if it fails.
 // Once the checksum is validated, it acknowledges and returns the packet in a string
-fextl::string GdbServer::ReadPacket(std::iostream& stream) {
+fextl::string GdbServer::ReadPacket() {
   fextl::string packet {};
 
   // The GDB "Remote Serial Protocal" was originally 7bit clean for use on serial ports.
@@ -190,9 +190,9 @@ fextl::string GdbServer::ReadPacket(std::iostream& stream) {
   // where any $ or # in the packet body are escaped ('}' followed by the char XORed with 0x20)
   // The checksum is a single unsigned byte sum of the data, hex encoded.
 
-  int c;
-  while ((c = stream.get()) > 0) {
-    switch (c) {
+  std::optional<Utils::NetStream::ReturnGet> c;
+  while ((c = CommsStream->get()).has_value() && !c->Hangup) {
+    switch (c->data) {
     case '$': // start of packet
       if (packet.size() != 0) {
         LogMan::Msg::EFmt("Dropping unexpected data: \"{}\"", packet);
@@ -203,15 +203,18 @@ fextl::string GdbServer::ReadPacket(std::iostream& stream) {
       break;
     case '}': // escape char
     {
-      char escaped;
-      stream >> escaped;
-      packet.push_back(escaped ^ 0x20);
+      auto escaped = CommsStream->get();
+      if (escaped.has_value() && !escaped->Hangup) {
+        packet.push_back(escaped->data ^ 0x20);
+      } else {
+        LogMan::Msg::EFmt("Received Invalid escape char: ${}", packet);
+      }
       break;
     }
     case '#': // end of packet
     {
       char hexString[3] = {0, 0, 0};
-      stream.read(hexString, 2);
+      CommsStream->read(hexString, 2);
       int expected_checksum = std::strtoul(hexString, nullptr, 16);
 
       if (calculateChecksum(packet) == expected_checksum) {
@@ -221,7 +224,7 @@ fextl::string GdbServer::ReadPacket(std::iostream& stream) {
       }
       break;
     }
-    default: packet.push_back((char)c); break;
+    default: packet.push_back(c->data); break;
     }
   }
 
@@ -248,22 +251,22 @@ static fextl::string escapePacket(const fextl::string& packet) {
   return ss.str();
 }
 
-void GdbServer::SendPacket(std::ostream& stream, const fextl::string& packet) {
+void GdbServer::SendPacket(const fextl::string& packet) {
   const auto escaped = escapePacket(packet);
   const auto str = fextl::fmt::format("${}#{:02x}", escaped, calculateChecksum(escaped));
 
-  stream << str << std::flush;
+  CommsStream->SendPacket(str);
 }
 
-void GdbServer::SendACK(std::ostream& stream, bool NACK) {
+void GdbServer::SendACK(bool NACK) {
   if (NoAckMode) {
     return;
   }
 
   if (NACK) {
-    stream << "-" << std::flush;
+    CommsStream->SendPacket("-");
   } else {
-    stream << "+" << std::flush;
+    CommsStream->SendPacket("+");
   }
 
   if (SettingNoAckMode) {
@@ -1341,16 +1344,16 @@ GdbServer::HandledPacketType GdbServer::ProcessPacket(const fextl::string& packe
 void GdbServer::SendPacketPair(const HandledPacketType& response) {
   std::lock_guard lk(sendMutex);
   if (response.TypeResponse == HandledPacketType::TYPE_ACK || response.TypeResponse == HandledPacketType::TYPE_ONLYACK) {
-    SendACK(*CommsStream, false);
+    SendACK(false);
   } else if (response.TypeResponse == HandledPacketType::TYPE_NACK || response.TypeResponse == HandledPacketType::TYPE_ONLYNACK) {
-    SendACK(*CommsStream, true);
+    SendACK(true);
   }
 
   if (response.TypeResponse == HandledPacketType::TYPE_UNKNOWN) {
-    SendPacket(*CommsStream, "");
+    SendPacket("");
   } else if (response.TypeResponse != HandledPacketType::TYPE_ONLYNACK && response.TypeResponse != HandledPacketType::TYPE_ONLYACK &&
              response.TypeResponse != HandledPacketType::TYPE_NONE) {
-    SendPacket(*CommsStream, response.Response);
+    SendPacket(response.Response);
   }
 }
 
@@ -1394,41 +1397,47 @@ void GdbServer::GdbServerLoop() {
 
     // Outer server loop. Handles packet start, ACK/NAK and break
 
-    int c;
-    while ((c = CommsStream->get()) >= 0) {
-      switch (c) {
-      case '$': {
-        auto packet = ReadPacket(*CommsStream);
-        response = ProcessPacket(packet);
-        SendPacketPair(response);
-        if (response.TypeResponse == HandledPacketType::TYPE_UNKNOWN) {
-          LogMan::Msg::DFmt("Unknown packet {}", packet);
+    do {
+      std::optional<Utils::NetStream::ReturnGet> c;
+      while ((c = CommsStream->get()).has_value() && !c->Hangup) {
+        switch (c->data) {
+        case '$': {
+          auto packet = ReadPacket();
+          response = ProcessPacket(packet);
+          SendPacketPair(response);
+          if (response.TypeResponse == HandledPacketType::TYPE_UNKNOWN) {
+            LogMan::Msg::DFmt("Unknown packet {}", packet);
+          }
+          break;
         }
+        case '+':
+          // ACK, do nothing.
+          break;
+        case '-':
+          // NAK, Resend requested
+          {
+            std::lock_guard lk(sendMutex);
+            SendPacket(response.Response);
+          }
+          break;
+        case '\x03': { // ASCII EOT
+          SyscallHandler->TM.Pause();
+          fextl::string str = fextl::fmt::format("T02thread:{:02x};", getpid());
+          if (LibraryMapChanged) {
+            // If libraries have changed then let gdb know
+            str += "library:1;";
+          }
+          SendPacketPair({std::move(str), HandledPacketType::TYPE_ACK});
+          break;
+        }
+        default: LogMan::Msg::DFmt("GdbServer: Unexpected byte {} ({:02x})", c->data, c->data);
+        }
+      }
+
+      if (c.has_value() && c->Hangup) {
         break;
       }
-      case '+':
-        // ACK, do nothing.
-        break;
-      case '-':
-        // NAK, Resend requested
-        {
-          std::lock_guard lk(sendMutex);
-          SendPacket(*CommsStream, response.Response);
-        }
-        break;
-      case '\x03': { // ASCII EOT
-        SyscallHandler->TM.Pause();
-        fextl::string str = fextl::fmt::format("T02thread:{:02x};", getpid());
-        if (LibraryMapChanged) {
-          // If libraries have changed then let gdb know
-          str += "library:1;";
-        }
-        SendPacketPair({std::move(str), HandledPacketType::TYPE_ACK});
-        break;
-      }
-      default: LogMan::Msg::DFmt("GdbServer: Unexpected byte {} ({:02x})", static_cast<char>(c), c);
-      }
-    }
+    } while (!CoreShuttingDown.load());
 
     {
       std::lock_guard lk(sendMutex);
@@ -1504,14 +1513,14 @@ void GdbServer::CloseListenSocket() {
   unlink(GdbUnixSocketPath.c_str());
 }
 
-fextl::unique_ptr<std::iostream> GdbServer::OpenSocket() {
+fextl::unique_ptr<FEX::Utils::NetStream> GdbServer::OpenSocket() {
   // Block until a connection arrives
   struct sockaddr_storage their_addr {};
   socklen_t addr_size {};
 
   int new_fd = accept(ListenSocket, (struct sockaddr*)&their_addr, &addr_size);
 
-  return fextl::make_unique<FEXCore::Utils::NetStream>(new_fd);
+  return fextl::make_unique<FEX::Utils::NetStream>(new_fd);
 }
 
 #endif
