@@ -5089,9 +5089,9 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b10, 0x5A), 1, &OpDispatchBuilder::AVXInsertScalar_CVT_Float_To_Float<OpSize::i64Bit, OpSize::i32Bit>},
     {OPD(1, 0b11, 0x5A), 1, &OpDispatchBuilder::AVXInsertScalar_CVT_Float_To_Float<OpSize::i32Bit, OpSize::i64Bit>},
 
-    {OPD(1, 0b00, 0x5B), 1, &OpDispatchBuilder::AVXVector_CVT_Int_To_Float<OpSize::i32Bit, false>},
-    {OPD(1, 0b01, 0x5B), 1, &OpDispatchBuilder::AVXVector_CVT_Float_To_Int<OpSize::i32Bit, false, true>},
-    {OPD(1, 0b10, 0x5B), 1, &OpDispatchBuilder::AVXVector_CVT_Float_To_Int<OpSize::i32Bit, false, false>},
+    {OPD(1, 0b00, 0x5B), 1, &OpDispatchBuilder::Vector_CVT_Int_To_Float<OpSize::i32Bit, false>},
+    {OPD(1, 0b01, 0x5B), 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<OpSize::i32Bit, false, true>},
+    {OPD(1, 0b10, 0x5B), 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<OpSize::i32Bit, false, false>},
 
     {OPD(1, 0b00, 0x5C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VFSUB, OpSize::i32Bit>},
     {OPD(1, 0b01, 0x5C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VFSUB, OpSize::i64Bit>},
@@ -5191,9 +5191,9 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(1, 0b01, 0xE4), 1, &OpDispatchBuilder::VPMULHWOp<false>},
     {OPD(1, 0b01, 0xE5), 1, &OpDispatchBuilder::VPMULHWOp<true>},
 
-    {OPD(1, 0b01, 0xE6), 1, &OpDispatchBuilder::AVXVector_CVT_Float_To_Int<OpSize::i64Bit, true, false>},
-    {OPD(1, 0b10, 0xE6), 1, &OpDispatchBuilder::AVXVector_CVT_Int_To_Float<OpSize::i32Bit, true>},
-    {OPD(1, 0b11, 0xE6), 1, &OpDispatchBuilder::AVXVector_CVT_Float_To_Int<OpSize::i64Bit, true, true>},
+    {OPD(1, 0b01, 0xE6), 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<OpSize::i64Bit, true, false>},
+    {OPD(1, 0b10, 0xE6), 1, &OpDispatchBuilder::Vector_CVT_Int_To_Float<OpSize::i32Bit, true>},
+    {OPD(1, 0b11, 0xE6), 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<OpSize::i64Bit, true, true>},
 
     {OPD(1, 0b01, 0xE7), 1, &OpDispatchBuilder::MOVVectorNTOp},
 

@@ -2127,15 +2127,6 @@ void OpDispatchBuilder::Vector_CVT_Int_To_Float(OpcodeArgs) {
 template void OpDispatchBuilder::Vector_CVT_Int_To_Float<OpSize::i32Bit, true>(OpcodeArgs);
 template void OpDispatchBuilder::Vector_CVT_Int_To_Float<OpSize::i32Bit, false>(OpcodeArgs);
 
-template<IR::OpSize SrcElementSize, bool Widen>
-void OpDispatchBuilder::AVXVector_CVT_Int_To_Float(OpcodeArgs) {
-  Ref Result = Vector_CVT_Int_To_FloatImpl(Op, SrcElementSize, Widen);
-  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
-}
-
-template void OpDispatchBuilder::AVXVector_CVT_Int_To_Float<OpSize::i32Bit, false>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVector_CVT_Int_To_Float<OpSize::i32Bit, true>(OpcodeArgs);
-
 Ref OpDispatchBuilder::Vector_CVT_Float_To_IntImpl(OpcodeArgs, IR::OpSize SrcElementSize, bool Narrow, bool HostRoundingMode) {
   const auto DstSize = OpSizeFromDst(Op);
   auto ElementSize = SrcElementSize;
@@ -2176,28 +2167,6 @@ template void OpDispatchBuilder::Vector_CVT_Float_To_Int<OpSize::i32Bit, true, f
 
 template void OpDispatchBuilder::Vector_CVT_Float_To_Int<OpSize::i64Bit, true, true>(OpcodeArgs);
 template void OpDispatchBuilder::Vector_CVT_Float_To_Int<OpSize::i64Bit, true, false>(OpcodeArgs);
-
-template<IR::OpSize SrcElementSize, bool Narrow, bool HostRoundingMode>
-void OpDispatchBuilder::AVXVector_CVT_Float_To_Int(OpcodeArgs) {
-  const auto DstSize = OpSizeFromDst(Op);
-
-  Ref Result {};
-  if (SrcElementSize == OpSize::i64Bit && Narrow) {
-    ///< Special case for CVTPD2DQ/CVTTPD2DQ because it has weird rounding requirements.
-    Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-    Result = _Vector_F64ToI32(DstSize, Src, HostRoundingMode ? Round_Host : Round_Towards_Zero, true);
-  } else {
-    Result = Vector_CVT_Float_To_IntImpl(Op, SrcElementSize, Narrow, HostRoundingMode);
-  }
-
-  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, OpSize::iInvalid);
-}
-
-template void OpDispatchBuilder::AVXVector_CVT_Float_To_Int<OpSize::i32Bit, false, false>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVector_CVT_Float_To_Int<OpSize::i32Bit, false, true>(OpcodeArgs);
-
-template void OpDispatchBuilder::AVXVector_CVT_Float_To_Int<OpSize::i64Bit, true, false>(OpcodeArgs);
-template void OpDispatchBuilder::AVXVector_CVT_Float_To_Int<OpSize::i64Bit, true, true>(OpcodeArgs);
 
 Ref OpDispatchBuilder::Scalar_CVT_Float_To_FloatImpl(OpcodeArgs, IR::OpSize DstElementSize, IR::OpSize SrcElementSize,
                                                      const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op) {

@@ -518,12 +518,6 @@ public:
   template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
   void AVXScalar_CVT_Float_To_Float(OpcodeArgs);
 
-  template<IR::OpSize SrcElementSize, bool Narrow, bool HostRoundingMode>
-  void AVXVector_CVT_Float_To_Int(OpcodeArgs);
-
-  template<IR::OpSize SrcElementSize, bool Widen>
-  void AVXVector_CVT_Int_To_Float(OpcodeArgs);
-
   template<FEXCore::IR::IROps IROp, IR::OpSize ElementSize>
   void VectorScalarInsertALUOp(OpcodeArgs);
   template<FEXCore::IR::IROps IROp, IR::OpSize ElementSize>
