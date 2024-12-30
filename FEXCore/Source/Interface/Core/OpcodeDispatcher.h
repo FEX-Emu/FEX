@@ -469,10 +469,10 @@ public:
   template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
   void Scalar_CVT_Float_To_Float(OpcodeArgs);
   void Vector_CVT_Float_To_Float(OpcodeArgs, IR::OpSize DstElementSize, IR::OpSize SrcElementSize, bool IsAVX);
-  template<IR::OpSize SrcElementSize, bool Narrow, bool HostRoundingMode>
+  template<IR::OpSize SrcElementSize, bool HostRoundingMode>
   void Vector_CVT_Float_To_Int(OpcodeArgs);
   void MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs);
-  template<IR::OpSize SrcElementSize, bool Narrow, bool HostRoundingMode>
+  template<IR::OpSize SrcElementSize, bool HostRoundingMode>
   void XMM_To_MMX_Vector_CVT_Float_To_Int(OpcodeArgs);
   void MASKMOVOp(OpcodeArgs);
   void MOVBetweenGPR_FPR(OpcodeArgs, VectorOpType VectorType);
@@ -1026,7 +1026,7 @@ public:
   template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
   void AVX128_Vector_CVT_Float_To_Float(OpcodeArgs);
 
-  template<IR::OpSize SrcElementSize, bool Narrow, bool HostRoundingMode>
+  template<IR::OpSize SrcElementSize, bool HostRoundingMode>
   void AVX128_Vector_CVT_Float_To_Int(OpcodeArgs);
 
   template<IR::OpSize SrcElementSize, bool Widen>
@@ -1465,7 +1465,7 @@ private:
   Ref Scalar_CVT_Float_To_FloatImpl(OpcodeArgs, IR::OpSize DstElementSize, IR::OpSize SrcElementSize,
                                     const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op);
 
-  Ref Vector_CVT_Float_To_IntImpl(OpcodeArgs, IR::OpSize SrcElementSize, bool Narrow, bool HostRoundingMode);
+  Ref Vector_CVT_Float_To_IntImpl(OpcodeArgs, IR::OpSize SrcElementSize, bool HostRoundingMode);
 
   Ref Vector_CVT_Int_To_FloatImpl(OpcodeArgs, IR::OpSize SrcElementSize, bool Widen);
 

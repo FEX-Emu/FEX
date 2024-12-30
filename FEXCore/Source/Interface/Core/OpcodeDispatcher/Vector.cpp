@@ -2127,13 +2127,13 @@ void OpDispatchBuilder::Vector_CVT_Int_To_Float(OpcodeArgs) {
 template void OpDispatchBuilder::Vector_CVT_Int_To_Float<OpSize::i32Bit, true>(OpcodeArgs);
 template void OpDispatchBuilder::Vector_CVT_Int_To_Float<OpSize::i32Bit, false>(OpcodeArgs);
 
-Ref OpDispatchBuilder::Vector_CVT_Float_To_IntImpl(OpcodeArgs, IR::OpSize SrcElementSize, bool Narrow, bool HostRoundingMode) {
+Ref OpDispatchBuilder::Vector_CVT_Float_To_IntImpl(OpcodeArgs, IR::OpSize SrcElementSize, bool HostRoundingMode) {
   const auto DstSize = OpSizeFromDst(Op);
   auto ElementSize = SrcElementSize;
 
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
-  if (Narrow) {
+  if (SrcElementSize == OpSize::i64Bit) {
     Src = _Vector_FToF(DstSize, SrcElementSize >> 1, Src, SrcElementSize);
     ElementSize = ElementSize >> 1;
   }
@@ -2145,28 +2145,28 @@ Ref OpDispatchBuilder::Vector_CVT_Float_To_IntImpl(OpcodeArgs, IR::OpSize SrcEle
   }
 }
 
-template<IR::OpSize SrcElementSize, bool Narrow, bool HostRoundingMode>
+template<IR::OpSize SrcElementSize, bool HostRoundingMode>
 void OpDispatchBuilder::Vector_CVT_Float_To_Int(OpcodeArgs) {
   const auto DstSize = OpSizeFromDst(Op);
 
   Ref Result {};
-  if (SrcElementSize == OpSize::i64Bit && Narrow) {
+  if (SrcElementSize == OpSize::i64Bit) {
     ///< Special case for CVTTPD2DQ because it has weird rounding requirements.
     Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
     Result = _Vector_F64ToI32(DstSize, Src, HostRoundingMode ? Round_Host : Round_Towards_Zero, true);
   } else {
-    Result = Vector_CVT_Float_To_IntImpl(Op, SrcElementSize, Narrow, HostRoundingMode);
+    Result = Vector_CVT_Float_To_IntImpl(Op, SrcElementSize, HostRoundingMode);
   }
 
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result, DstSize, OpSize::iInvalid);
 }
 
-template void OpDispatchBuilder::Vector_CVT_Float_To_Int<OpSize::i32Bit, false, false>(OpcodeArgs);
-template void OpDispatchBuilder::Vector_CVT_Float_To_Int<OpSize::i32Bit, false, true>(OpcodeArgs);
-template void OpDispatchBuilder::Vector_CVT_Float_To_Int<OpSize::i32Bit, true, false>(OpcodeArgs);
+template void OpDispatchBuilder::Vector_CVT_Float_To_Int<OpSize::i32Bit, false>(OpcodeArgs);
+template void OpDispatchBuilder::Vector_CVT_Float_To_Int<OpSize::i32Bit, true>(OpcodeArgs);
+template void OpDispatchBuilder::Vector_CVT_Float_To_Int<OpSize::i32Bit, false>(OpcodeArgs);
 
-template void OpDispatchBuilder::Vector_CVT_Float_To_Int<OpSize::i64Bit, true, true>(OpcodeArgs);
-template void OpDispatchBuilder::Vector_CVT_Float_To_Int<OpSize::i64Bit, true, false>(OpcodeArgs);
+template void OpDispatchBuilder::Vector_CVT_Float_To_Int<OpSize::i64Bit, true>(OpcodeArgs);
+template void OpDispatchBuilder::Vector_CVT_Float_To_Int<OpSize::i64Bit, false>(OpcodeArgs);
 
 Ref OpDispatchBuilder::Scalar_CVT_Float_To_FloatImpl(OpcodeArgs, IR::OpSize DstElementSize, IR::OpSize SrcElementSize,
                                                      const X86Tables::DecodedOperand& Src1Op, const X86Tables::DecodedOperand& Src2Op) {
@@ -2246,7 +2246,7 @@ void OpDispatchBuilder::MMX_To_XMM_Vector_CVT_Int_To_Float(OpcodeArgs) {
   StoreResult(FPRClass, Op, Src, OpSize::iInvalid);
 }
 
-template<IR::OpSize SrcElementSize, bool Narrow, bool HostRoundingMode>
+template<IR::OpSize SrcElementSize, bool HostRoundingMode>
 void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int(OpcodeArgs) {
   // This function causes a change in MMX state from X87 to MMX
   if (MMXState == MMXState_X87) {
@@ -2262,7 +2262,7 @@ void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int(OpcodeArgs) {
   auto ElementSize = SrcElementSize;
   const auto Size = OpSizeFromDst(Op);
 
-  if (Narrow) {
+  if (SrcElementSize == OpSize::i64Bit) {
     Src = _Vector_FToF(Size, SrcElementSize >> 1, Src, SrcElementSize);
     ElementSize = ElementSize >> 1;
   }
@@ -2276,10 +2276,10 @@ void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int(OpcodeArgs) {
   StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src, Size, OpSize::iInvalid);
 }
 
-template void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<OpSize::i32Bit, false, false>(OpcodeArgs);
-template void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<OpSize::i32Bit, false, true>(OpcodeArgs);
-template void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<OpSize::i64Bit, true, false>(OpcodeArgs);
-template void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<OpSize::i64Bit, true, true>(OpcodeArgs);
+template void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<OpSize::i32Bit, false>(OpcodeArgs);
+template void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<OpSize::i32Bit, true>(OpcodeArgs);
+template void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<OpSize::i64Bit, false>(OpcodeArgs);
+template void OpDispatchBuilder::XMM_To_MMX_Vector_CVT_Float_To_Int<OpSize::i64Bit, true>(OpcodeArgs);
 
 void OpDispatchBuilder::MASKMOVOp(OpcodeArgs) {
   const auto Size = OpSizeFromSrc(Op);
