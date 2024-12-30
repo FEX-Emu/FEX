@@ -220,7 +220,8 @@ void Decoder::DecodeModRM_64(X86Tables::DecodedOperand* Operand, X86Tables::ModR
     // The invalid encoding types are described at Table 1-12. "promoted nsigned is always non-zero"
     {
       // If we have a VSIB byte (as opposed to SIB), then the index register is a vector.
-      const bool IsIndexVector = (DecodeInst->TableInfo->Flags & InstFlags::FLAGS_VEX_VSIB) != 0;
+      // DecodeInst->TableInfo may be null in the case of 3DNow! ModRM decoding.
+      const bool IsIndexVector = DecodeInst->TableInfo && (DecodeInst->TableInfo->Flags & InstFlags::FLAGS_VEX_VSIB) != 0;
       uint8_t InvalidSIBIndex = 0b100; ///< SIB Index where there is no register encoding.
       if (IsIndexVector) {
         DecodeInst->Flags |= X86Tables::DecodeFlags::FLAG_VSIB_BYTE;
