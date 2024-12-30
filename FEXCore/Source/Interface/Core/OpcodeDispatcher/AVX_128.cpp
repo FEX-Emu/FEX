@@ -1058,18 +1058,8 @@ void OpDispatchBuilder::AVX128_CVTFPR_To_GPR(OpcodeArgs) {
     Src.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], OpSizeFromSrc(Op), Op->Flags);
   }
 
-  // GPR size is determined by REX.W
-  // Source Element size is determined by instruction
-  const auto GPRSize = OpSizeFromDst(Op);
-
-  Ref Result {};
-  if constexpr (HostRoundingMode) {
-    Result = _Float_ToGPR_S(GPRSize, SrcElementSize, Src.Low);
-  } else {
-    Result = _Float_ToGPR_ZS(GPRSize, SrcElementSize, Src.Low);
-  }
-
-  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, GPRSize, OpSize::iInvalid);
+  Ref Result = CVTFPR_To_GPRImpl(Op, Src.Low, SrcElementSize, HostRoundingMode);
+  StoreResult(GPRClass, Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::AVX128_VANDN(OpcodeArgs) {
@@ -1614,38 +1604,20 @@ void OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int(OpcodeArgs) {
   auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128BitSrc);
   RefPair Result {};
 
-  if (SrcElementSize == OpSize::i64Bit) {
-    ///< Special case for VCVTPD2DQ/CVTTPD2DQ because it has weird rounding requirements.
-    Result.Low = _Vector_F64ToI32(OpSize::i128Bit, Src.Low, HostRoundingMode ? Round_Host : Round_Towards_Zero, Is128BitSrc);
-
-    if (!Is128BitSrc) {
-      // Also convert the upper 128-bit lane
-      auto ResultHigh = _Vector_F64ToI32(OpSize::i128Bit, Src.High, HostRoundingMode ? Round_Host : Round_Towards_Zero, false);
-
-      // Zip the two halves together in to the lower 128-bits
-      Result.Low = _VZip(OpSize::i128Bit, OpSize::i64Bit, Result.Low, ResultHigh);
-    }
-  } else {
-    auto Convert = [this](Ref Src) -> Ref {
-      auto ElementSize = SrcElementSize;
-
-      if (HostRoundingMode) {
-        return _Vector_FToS(OpSize::i128Bit, ElementSize, Src);
-      } else {
-        return _Vector_FToZS(OpSize::i128Bit, ElementSize, Src);
-      }
-    };
-
-    Result.Low = Convert(Src.Low);
-
-    if (!Is128BitSrc) {
-      Result.High = Convert(Src.High);
-    }
-  }
-
-  if (SrcElementSize == OpSize::i64Bit || Is128BitSrc) {
+  Result.Low = Vector_CVT_Float_To_Int32Impl(Op, OpSize::i128Bit, Src.Low, OpSize::i128Bit, SrcElementSize, HostRoundingMode, Is128BitSrc);
+  if (Is128BitSrc) {
     // Zero the upper 128-bit lane of the result.
     Result = AVX128_Zext(Result.Low);
+  } else {
+    Result.High = Vector_CVT_Float_To_Int32Impl(Op, OpSize::i128Bit, Src.High, OpSize::i128Bit, SrcElementSize, HostRoundingMode, false);
+    // Also convert the upper 128-bit lane
+    if (SrcElementSize == OpSize::i64Bit) {
+      // Zip the two halves together in to the lower 128-bits
+      Result.Low = _VZip(OpSize::i128Bit, OpSize::i64Bit, Result.Low, Result.High);
+
+      // Zero the upper 128-bit lane of the result.
+      Result = AVX128_Zext(Result.Low);
+    }
   }
 
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
