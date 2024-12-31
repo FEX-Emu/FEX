@@ -37,6 +37,7 @@ option(USE_PDB_DEBUGINFO "Builds debug info in PDB format" FALSE)
 
 set (X86_32_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/toolchain_x86_32.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting i686")
 set (X86_64_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/toolchain_x86_64.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting x86_64")
+set (X86_DEV_ROOTFS "/" CACHE FILEPATH "Path to the sysroot used for cross-compiling for i686 and x86_64")
 set (DATA_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/fex-emu" CACHE PATH "global data directory")
 
 string(FIND ${CMAKE_BASE_NAME} mingw CONTAINS_MINGW)
@@ -479,6 +480,7 @@ if (BUILD_THUNKS)
       "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
       "-DFEX_PROJECT_SOURCE_DIR=${FEX_PROJECT_SOURCE_DIR}"
       "-DGENERATOR_EXE=$<TARGET_FILE:thunkgen>"
+      "-DX86_DEV_ROOTFS=${X86_DEV_ROOTFS}"
     INSTALL_COMMAND ""
     BUILD_ALWAYS ON
     DEPENDS thunkgen
@@ -497,6 +499,7 @@ if (BUILD_THUNKS)
       "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}"
       "-DFEX_PROJECT_SOURCE_DIR=${FEX_PROJECT_SOURCE_DIR}"
       "-DGENERATOR_EXE=$<TARGET_FILE:thunkgen>"
+      "-DX86_DEV_ROOTFS=${X86_DEV_ROOTFS}"
     INSTALL_COMMAND ""
     BUILD_ALWAYS ON
     DEPENDS thunkgen
