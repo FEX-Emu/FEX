@@ -4963,9 +4963,11 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 #define PF_3A_66 1
   constexpr static std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F3A_AES[] = {
     {OPD(0, PF_3A_66, 0xDF), 1, &OpDispatchBuilder::AESKeyGenAssist},
+    {OPD(1, PF_3A_66, 0xDF), 1, &OpDispatchBuilder::AESKeyGenAssist},
   };
   constexpr static std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F3A_PCLMUL[] = {
     {OPD(0, PF_3A_66, 0x44), 1, &OpDispatchBuilder::PCLMULQDQOp},
+    {OPD(1, PF_3A_66, 0x44), 1, &OpDispatchBuilder::PCLMULQDQOp},
   };
 
 #undef PF_3A_NONE
