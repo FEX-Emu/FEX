@@ -80,33 +80,29 @@ void RegisterEpoll(FEX::HLE::SyscallHandler* Handler) {
                               SYSCALL_ERRNO();
                             });
 
-  if (Handler->IsHostKernelVersionAtLeast(5, 11, 0)) {
-    REGISTER_SYSCALL_IMPL_X32(epoll_pwait2,
-                              [](FEXCore::Core::CpuStateFrame* Frame, int epfd, compat_ptr<FEX::HLE::x32::epoll_event32> events,
-                                 int maxevent, compat_ptr<timespec32> timeout, const uint64_t* sigmask, size_t sigsetsize) -> uint64_t {
-                                fextl::vector<struct epoll_event> Events(std::max(0, maxevent));
+  REGISTER_SYSCALL_IMPL_X32(epoll_pwait2,
+                            [](FEXCore::Core::CpuStateFrame* Frame, int epfd, compat_ptr<FEX::HLE::x32::epoll_event32> events, int maxevent,
+                               compat_ptr<timespec32> timeout, const uint64_t* sigmask, size_t sigsetsize) -> uint64_t {
+                              fextl::vector<struct epoll_event> Events(std::max(0, maxevent));
 
-                                struct timespec tp64 {};
-                                struct timespec* timed_ptr {};
-                                if (timeout) {
-                                  tp64 = *timeout;
-                                  timed_ptr = &tp64;
+                              struct timespec tp64 {};
+                              struct timespec* timed_ptr {};
+                              if (timeout) {
+                                tp64 = *timeout;
+                                timed_ptr = &tp64;
+                              }
+
+                              uint64_t Result =
+                                ::syscall(SYSCALL_DEF(epoll_pwait2), epfd, Events.data(), maxevent, timed_ptr, sigmask, sigsetsize);
+
+                              if (Result != -1) {
+                                FaultSafeUserMemAccess::VerifyIsWritable(events, sizeof(FEX::HLE::x32::epoll_event32) * Result);
+                                for (size_t i = 0; i < Result; ++i) {
+                                  events[i] = Events[i];
                                 }
+                              }
 
-                                uint64_t Result =
-                                  ::syscall(SYSCALL_DEF(epoll_pwait2), epfd, Events.data(), maxevent, timed_ptr, sigmask, sigsetsize);
-
-                                if (Result != -1) {
-                                  FaultSafeUserMemAccess::VerifyIsWritable(events, sizeof(FEX::HLE::x32::epoll_event32) * Result);
-                                  for (size_t i = 0; i < Result; ++i) {
-                                    events[i] = Events[i];
-                                  }
-                                }
-
-                                SYSCALL_ERRNO();
-                              });
-  } else {
-    REGISTER_SYSCALL_IMPL_X32(epoll_pwait2, UnimplementedSyscallSafe);
-  }
+                              SYSCALL_ERRNO();
+                            });
 }
 } // namespace FEX::HLE::x32

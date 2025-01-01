@@ -492,90 +492,42 @@ void RegisterCommon(FEX::HLE::SyscallHandler* Handler) {
                                    SyscallPassthrough2<SYSCALL_DEF(pkey_alloc)>);
   REGISTER_SYSCALL_IMPL_PASS_FLAGS(pkey_free, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
                                    SyscallPassthrough1<SYSCALL_DEF(pkey_free)>);
-  if (Handler->IsHostKernelVersionAtLeast(5, 1, 0)) {
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(io_uring_setup, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                     SyscallPassthrough2<SYSCALL_DEF(io_uring_setup)>);
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(io_uring_enter, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                     SyscallPassthrough6<SYSCALL_DEF(io_uring_enter)>);
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(io_uring_register, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                     SyscallPassthrough4<SYSCALL_DEF(io_uring_register)>);
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(open_tree, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                     SyscallPassthrough3<SYSCALL_DEF(open_tree)>);
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(move_mount, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                     SyscallPassthrough5<SYSCALL_DEF(move_mount)>);
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(fsopen, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                     SyscallPassthrough3<SYSCALL_DEF(fsopen)>);
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(fsconfig, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                     SyscallPassthrough5<SYSCALL_DEF(fsconfig)>);
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(fsmount, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                     SyscallPassthrough3<SYSCALL_DEF(fsmount)>);
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(fspick, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                     SyscallPassthrough3<SYSCALL_DEF(fspick)>);
-  } else {
-    REGISTER_SYSCALL_IMPL(io_uring_setup, UnimplementedSyscallSafe);
-    REGISTER_SYSCALL_IMPL(io_uring_enter, UnimplementedSyscallSafe);
-    REGISTER_SYSCALL_IMPL(io_uring_register, UnimplementedSyscallSafe);
-    REGISTER_SYSCALL_IMPL(open_tree, UnimplementedSyscallSafe);
-    REGISTER_SYSCALL_IMPL(move_mount, UnimplementedSyscallSafe);
-    REGISTER_SYSCALL_IMPL(fsopen, UnimplementedSyscallSafe);
-    REGISTER_SYSCALL_IMPL(fsconfig, UnimplementedSyscallSafe);
-    REGISTER_SYSCALL_IMPL(fsmount, UnimplementedSyscallSafe);
-    REGISTER_SYSCALL_IMPL(fspick, UnimplementedSyscallSafe);
-  }
-  if (Handler->IsHostKernelVersionAtLeast(5, 3, 0)) {
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(pidfd_open, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                     SyscallPassthrough2<SYSCALL_DEF(pidfd_open)>);
-  } else {
-    REGISTER_SYSCALL_IMPL(pidfd_open, UnimplementedSyscallSafe);
-  }
-  if (Handler->IsHostKernelVersionAtLeast(5, 8, 0)) {
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(pidfd_getfd, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                     SyscallPassthrough3<SYSCALL_DEF(pidfd_getfd)>);
-  } else {
-    REGISTER_SYSCALL_IMPL(pidfd_getfd, UnimplementedSyscallSafe);
-  }
-  if (Handler->IsHostKernelVersionAtLeast(5, 12, 0)) {
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(mount_setattr, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                     SyscallPassthrough5<SYSCALL_DEF(mount_setattr)>);
-  } else {
-    REGISTER_SYSCALL_IMPL(mount_setattr, UnimplementedSyscallSafe);
-  }
-  if (Handler->IsHostKernelVersionAtLeast(5, 14, 0)) {
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(quotactl_fd, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                     SyscallPassthrough4<SYSCALL_DEF(quotactl_fd)>);
-  } else {
-    REGISTER_SYSCALL_IMPL(quotactl_fd, UnimplementedSyscallSafe);
-  }
-  if (Handler->IsHostKernelVersionAtLeast(5, 13, 0)) {
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(landlock_create_ruleset, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                     SyscallPassthrough3<SYSCALL_DEF(landlock_create_ruleset)>);
-  } else {
-    REGISTER_SYSCALL_IMPL(landlock_create_ruleset, UnimplementedSyscallSafe);
-  }
-  if (Handler->IsHostKernelVersionAtLeast(5, 13, 0)) {
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(landlock_add_rule, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                     SyscallPassthrough4<SYSCALL_DEF(landlock_add_rule)>);
-  } else {
-    REGISTER_SYSCALL_IMPL(landlock_add_rule, UnimplementedSyscallSafe);
-  }
-  if (Handler->IsHostKernelVersionAtLeast(5, 13, 0)) {
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(landlock_restrict_self, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                     SyscallPassthrough2<SYSCALL_DEF(landlock_restrict_self)>);
-  } else {
-    REGISTER_SYSCALL_IMPL(landlock_restrict_self, UnimplementedSyscallSafe);
-  }
-  if (Handler->IsHostKernelVersionAtLeast(5, 14, 0)) {
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(memfd_secret, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                     SyscallPassthrough1<SYSCALL_DEF(memfd_secret)>);
-  } else {
-    REGISTER_SYSCALL_IMPL(memfd_secret, UnimplementedSyscallSafe);
-  }
-  if (Handler->IsHostKernelVersionAtLeast(5, 15, 0)) {
-    REGISTER_SYSCALL_IMPL_PASS_FLAGS(process_mrelease, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                     SyscallPassthrough2<SYSCALL_DEF(process_mrelease)>);
-  } else {
-    REGISTER_SYSCALL_IMPL(process_mrelease, UnimplementedSyscallSafe);
-  }
+  REGISTER_SYSCALL_IMPL_PASS_FLAGS(io_uring_setup, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                   SyscallPassthrough2<SYSCALL_DEF(io_uring_setup)>);
+  REGISTER_SYSCALL_IMPL_PASS_FLAGS(io_uring_enter, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                   SyscallPassthrough6<SYSCALL_DEF(io_uring_enter)>);
+  REGISTER_SYSCALL_IMPL_PASS_FLAGS(io_uring_register, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                   SyscallPassthrough4<SYSCALL_DEF(io_uring_register)>);
+  REGISTER_SYSCALL_IMPL_PASS_FLAGS(open_tree, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                   SyscallPassthrough3<SYSCALL_DEF(open_tree)>);
+  REGISTER_SYSCALL_IMPL_PASS_FLAGS(move_mount, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                   SyscallPassthrough5<SYSCALL_DEF(move_mount)>);
+  REGISTER_SYSCALL_IMPL_PASS_FLAGS(fsopen, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                   SyscallPassthrough3<SYSCALL_DEF(fsopen)>);
+  REGISTER_SYSCALL_IMPL_PASS_FLAGS(fsconfig, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                   SyscallPassthrough5<SYSCALL_DEF(fsconfig)>);
+  REGISTER_SYSCALL_IMPL_PASS_FLAGS(fsmount, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                   SyscallPassthrough3<SYSCALL_DEF(fsmount)>);
+  REGISTER_SYSCALL_IMPL_PASS_FLAGS(fspick, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                   SyscallPassthrough3<SYSCALL_DEF(fspick)>);
+  REGISTER_SYSCALL_IMPL_PASS_FLAGS(pidfd_open, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                   SyscallPassthrough2<SYSCALL_DEF(pidfd_open)>);
+  REGISTER_SYSCALL_IMPL_PASS_FLAGS(pidfd_getfd, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                   SyscallPassthrough3<SYSCALL_DEF(pidfd_getfd)>);
+  REGISTER_SYSCALL_IMPL_PASS_FLAGS(mount_setattr, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                   SyscallPassthrough5<SYSCALL_DEF(mount_setattr)>);
+  REGISTER_SYSCALL_IMPL_PASS_FLAGS(quotactl_fd, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                   SyscallPassthrough4<SYSCALL_DEF(quotactl_fd)>);
+  REGISTER_SYSCALL_IMPL_PASS_FLAGS(landlock_create_ruleset, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                   SyscallPassthrough3<SYSCALL_DEF(landlock_create_ruleset)>);
+  REGISTER_SYSCALL_IMPL_PASS_FLAGS(landlock_add_rule, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                   SyscallPassthrough4<SYSCALL_DEF(landlock_add_rule)>);
+  REGISTER_SYSCALL_IMPL_PASS_FLAGS(landlock_restrict_self, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                   SyscallPassthrough2<SYSCALL_DEF(landlock_restrict_self)>);
+  REGISTER_SYSCALL_IMPL_PASS_FLAGS(memfd_secret, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                   SyscallPassthrough1<SYSCALL_DEF(memfd_secret)>);
+  REGISTER_SYSCALL_IMPL_PASS_FLAGS(process_mrelease, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                   SyscallPassthrough2<SYSCALL_DEF(process_mrelease)>);
   if (Handler->IsHostKernelVersionAtLeast(5, 16, 0)) {
     REGISTER_SYSCALL_IMPL_PASS_FLAGS(futex_waitv, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
                                      SyscallPassthrough5<SYSCALL_DEF(futex_waitv)>);
@@ -764,18 +716,10 @@ namespace x64 {
                                          SyscallPassthrough6<SYSCALL_DEF(pwritev2)>);
     REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(io_pgetevents, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
                                          SyscallPassthrough6<SYSCALL_DEF(io_pgetevents)>);
-    if (Handler->IsHostKernelVersionAtLeast(5, 1, 0)) {
-      REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(pidfd_send_signal, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                           SyscallPassthrough4<SYSCALL_DEF(pidfd_send_signal)>);
-    } else {
-      REGISTER_SYSCALL_IMPL_X64(pidfd_send_signal, UnimplementedSyscallSafe);
-    }
-    if (Handler->IsHostKernelVersionAtLeast(5, 10, 0)) {
-      REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(process_madvise, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                           SyscallPassthrough5<SYSCALL_DEF(process_madvise)>);
-    } else {
-      REGISTER_SYSCALL_IMPL_X64(process_madvise, UnimplementedSyscallSafe);
-    }
+    REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(pidfd_send_signal, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                         SyscallPassthrough4<SYSCALL_DEF(pidfd_send_signal)>);
+    REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(process_madvise, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                         SyscallPassthrough5<SYSCALL_DEF(process_madvise)>);
     if (Handler->IsHostKernelVersionAtLeast(6, 5, 0)) {
       REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(cachestat, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
                                            SyscallPassthrough4<SYSCALL_DEF(cachestat)>);

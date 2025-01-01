@@ -439,9 +439,8 @@ int main(int argc, char** argv, char** const envp) {
   }
 
   uint32_t KernelVersion = FEX::HLE::SyscallHandler::CalculateHostKernelVersion();
-  if (KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(4, 17)) {
-    // We require 4.17 minimum for MAP_FIXED_NOREPLACE
-    LogMan::Msg::EFmt("FEXLoader requires kernel 4.17 minimum. Expect problems.");
+  if (KernelVersion < FEX::HLE::SyscallHandler::KernelVersion(5, 15)) {
+    LogMan::Msg::EFmt("FEXLoader requires kernel 5.15 minimum. Expect problems.");
   }
 
   // Before we go any further, set all of our host environment variables that the config has provided
