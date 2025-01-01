@@ -23,7 +23,8 @@ mov [rdx + 8 * 5], rax
 
 movapd xmm2, [rdx + 8 * 0]
 
-movq xmm0, xmm2
+; movq xmm0, xmm2
+db 0x66, 0x0f, 0xd6, 11_010_000b
 movq [rdx + 8 * 2], xmm2
 movapd xmm1, [rdx + 8 * 2]
 
