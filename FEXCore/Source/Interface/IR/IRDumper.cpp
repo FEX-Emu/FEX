@@ -209,6 +209,22 @@ static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView
         return "x87_log10_2";
       case NamedVectorConstant::NAMED_VECTOR_X87_LOG_2:
         return "x87_log2";
+      case NamedVectorConstant::NAMED_VECTOR_CVTMAX_F32_I32:
+        return "cvtmax_f32_i32";
+      case NamedVectorConstant::NAMED_VECTOR_CVTMAX_F32_I32_UPPER:
+        return "cvtmax_f32_i32_upper";
+      case NamedVectorConstant::NAMED_VECTOR_CVTMAX_F32_I64:
+        return "cvtmax_f32_i64";
+      case NamedVectorConstant::NAMED_VECTOR_CVTMAX_F64_I32:
+        return "cvtmax_f64_i32";
+      case NamedVectorConstant::NAMED_VECTOR_CVTMAX_F64_I32_UPPER:
+        return "cvtmax_f64_i32_upper";
+      case NamedVectorConstant::NAMED_VECTOR_CVTMAX_F64_I64:
+        return "cvtmax_f64_i64";
+      case NamedVectorConstant::NAMED_VECTOR_CVTMAX_I32:
+        return "cvtmax_i32";
+      case NamedVectorConstant::NAMED_VECTOR_CVTMAX_I64:
+        return "cvtmax_i64";
       default:
         return "<Unknown Named Vector Constant>";
     }

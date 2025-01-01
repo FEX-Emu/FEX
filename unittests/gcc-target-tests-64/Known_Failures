@@ -12,13 +12,3 @@ asm-5.c.gcc-target-test-64
 # Which turns the value in to 0xfffff2f5
 # This causes its comparison to fail
 sse2-mmx-pextrw.c.gcc-target-test-64
-
-# These tests fail because of things unrelated to the sse4.1 instructions
-sse4_1-ceil-sfix-vec.c.gcc-target-test-64
-sse4_1-ceilf-sfix-vec.c.gcc-target-test-64
-sse4_1-floor-sfix-vec.c.gcc-target-test-64
-sse4_1-floorf-sfix-vec.c.gcc-target-test-64
-sse4_1-rint-sfix-vec.c.gcc-target-test-64
-sse4_1-rintf-sfix-vec.c.gcc-target-test-64
-sse4_1-round-sfix-vec.c.gcc-target-test-64
-sse4_1-roundf-sfix-vec.c.gcc-target-test-64

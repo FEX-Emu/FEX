@@ -116,8 +116,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b11, 0x5A), 1, &OpDispatchBuilder::AVX128_InsertScalar_CVT_Float_To_Float<OpSize::i32Bit, OpSize::i64Bit>},
 
     {OPD(1, 0b00, 0x5B), 1, &OpDispatchBuilder::AVX128_Vector_CVT_Int_To_Float<OpSize::i32Bit, false>},
-    {OPD(1, 0b01, 0x5B), 1, &OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int<OpSize::i32Bit, false, true>},
-    {OPD(1, 0b10, 0x5B), 1, &OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int<OpSize::i32Bit, false, false>},
+    {OPD(1, 0b01, 0x5B), 1, &OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int<OpSize::i32Bit, true>},
+    {OPD(1, 0b10, 0x5B), 1, &OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int<OpSize::i32Bit, false>},
 
     {OPD(1, 0b00, 0x5C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VFSUB, OpSize::i32Bit>},
     {OPD(1, 0b01, 0x5C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VFSUB, OpSize::i64Bit>},
@@ -217,9 +217,9 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(1, 0b01, 0xE4), 1, &OpDispatchBuilder::AVX128_VPMULHW<false>},
     {OPD(1, 0b01, 0xE5), 1, &OpDispatchBuilder::AVX128_VPMULHW<true>},
 
-    {OPD(1, 0b01, 0xE6), 1, &OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int<OpSize::i64Bit, true, false>},
+    {OPD(1, 0b01, 0xE6), 1, &OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int<OpSize::i64Bit, false>},
     {OPD(1, 0b10, 0xE6), 1, &OpDispatchBuilder::AVX128_Vector_CVT_Int_To_Float<OpSize::i32Bit, true>},
-    {OPD(1, 0b11, 0xE6), 1, &OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int<OpSize::i64Bit, true, true>},
+    {OPD(1, 0b11, 0xE6), 1, &OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int<OpSize::i64Bit, true>},
 
     {OPD(1, 0b01, 0xE7), 1, &OpDispatchBuilder::AVX128_MOVVectorNT},
 
@@ -1058,18 +1058,8 @@ void OpDispatchBuilder::AVX128_CVTFPR_To_GPR(OpcodeArgs) {
     Src.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], OpSizeFromSrc(Op), Op->Flags);
   }
 
-  // GPR size is determined by REX.W
-  // Source Element size is determined by instruction
-  const auto GPRSize = OpSizeFromDst(Op);
-
-  Ref Result {};
-  if constexpr (HostRoundingMode) {
-    Result = _Float_ToGPR_S(GPRSize, SrcElementSize, Src.Low);
-  } else {
-    Result = _Float_ToGPR_ZS(GPRSize, SrcElementSize, Src.Low);
-  }
-
-  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, GPRSize, OpSize::iInvalid);
+  Ref Result = CVTFPR_To_GPRImpl(Op, Src.Low, SrcElementSize, HostRoundingMode);
+  StoreResult(GPRClass, Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::AVX128_VANDN(OpcodeArgs) {
@@ -1604,7 +1594,7 @@ void OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Float(OpcodeArgs) {
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
 }
 
-template<IR::OpSize SrcElementSize, bool Narrow, bool HostRoundingMode>
+template<IR::OpSize SrcElementSize, bool HostRoundingMode>
 void OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int(OpcodeArgs) {
   const auto SrcSize = GetSrcSize(Op);
 
@@ -1614,46 +1604,20 @@ void OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int(OpcodeArgs) {
   auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128BitSrc);
   RefPair Result {};
 
-  if (SrcElementSize == OpSize::i64Bit && Narrow) {
-    ///< Special case for VCVTPD2DQ/CVTTPD2DQ because it has weird rounding requirements.
-    Result.Low = _Vector_F64ToI32(OpSize::i128Bit, Src.Low, HostRoundingMode ? Round_Host : Round_Towards_Zero, Is128BitSrc);
-
-    if (!Is128BitSrc) {
-      // Also convert the upper 128-bit lane
-      auto ResultHigh = _Vector_F64ToI32(OpSize::i128Bit, Src.High, HostRoundingMode ? Round_Host : Round_Towards_Zero, false);
-
-      // Zip the two halves together in to the lower 128-bits
-      Result.Low = _VZip(OpSize::i128Bit, OpSize::i64Bit, Result.Low, ResultHigh);
-    }
-  } else {
-    auto Convert = [this](Ref Src) -> Ref {
-      auto ElementSize = SrcElementSize;
-      if (Narrow) {
-        ElementSize = ElementSize >> 1;
-        Src = _Vector_FToF(OpSize::i128Bit, ElementSize, Src, SrcElementSize);
-      }
-
-      if (HostRoundingMode) {
-        return _Vector_FToS(OpSize::i128Bit, ElementSize, Src);
-      } else {
-        return _Vector_FToZS(OpSize::i128Bit, ElementSize, Src);
-      }
-    };
-
-    Result.Low = Convert(Src.Low);
-
-    if (!Is128BitSrc) {
-      if (!Narrow) {
-        Result.High = Convert(Src.High);
-      } else {
-        Result.Low = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 1, 0, Result.Low, Convert(Src.High));
-      }
-    }
-  }
-
-  if (Narrow || Is128BitSrc) {
+  Result.Low = Vector_CVT_Float_To_Int32Impl(Op, OpSize::i128Bit, Src.Low, OpSize::i128Bit, SrcElementSize, HostRoundingMode, Is128BitSrc);
+  if (Is128BitSrc) {
     // Zero the upper 128-bit lane of the result.
     Result = AVX128_Zext(Result.Low);
+  } else {
+    Result.High = Vector_CVT_Float_To_Int32Impl(Op, OpSize::i128Bit, Src.High, OpSize::i128Bit, SrcElementSize, HostRoundingMode, false);
+    // Also convert the upper 128-bit lane
+    if (SrcElementSize == OpSize::i64Bit) {
+      // Zip the two halves together in to the lower 128-bits
+      Result.Low = _VZip(OpSize::i128Bit, OpSize::i64Bit, Result.Low, Result.High);
+
+      // Zero the upper 128-bit lane of the result.
+      Result = AVX128_Zext(Result.Low);
+    }
   }
 
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);

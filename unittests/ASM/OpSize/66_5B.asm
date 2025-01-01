@@ -2,7 +2,8 @@
 {
   "RegData": {
     "XMM0":  ["0x0000000100000001", "0x0000000200000002"],
-    "XMM1":  ["0x0000000400000004", "0x0000000800000008"]
+    "XMM1":  ["0x0000000400000004", "0x0000000800000008"],
+    "XMM2":  ["0x8000000000000000", "0x8000000080000000"]
   }
 }
 %endif
@@ -24,6 +25,11 @@ mov [rdx + 8 * 4], rax
 mov rax, 0x5152535455565758
 mov [rdx + 8 * 5], rax
 
+mov rax, 0x7fc000007f800000
+mov [rdx + 8 * 6], rax
+mov rax, 0xff800000ff7fffee
+mov [rdx + 8 * 7], rax
+
 ; Set up MXCSR to truncate
 mov eax, 0x7F80
 mov [rdx + 8 * 6], eax
@@ -36,5 +42,6 @@ movapd xmm2, [rdx + 8 * 0]
 
 cvtps2dq xmm0, xmm2
 cvtps2dq xmm1, [rdx + 8 * 2]
+cvtps2dq xmm2, [rdx + 8 * 6]
 
 hlt
