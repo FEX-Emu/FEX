@@ -85,8 +85,11 @@ public:
   bool IsRootFSFD(int dirfd, uint64_t inode);
 
   fextl::string GetEmulatedPath(const char* pathname, bool FollowSymlink = false);
+  fextl::string GetHostPath(fextl::string& Path, bool AliasedOnly);
   using FDPathTmpData = std::array<char[PATH_MAX], 2>;
   std::pair<int, const char*> GetEmulatedFDPath(int dirfd, const char* pathname, bool FollowSymlink, FDPathTmpData& TmpFilename);
+
+  bool ReplaceEmuFd(int fd, int flags, uint32_t mode);
 
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
   void TrackFEXFD(int FD) noexcept {
@@ -140,6 +143,8 @@ private:
 #endif
 
   bool RootFSPathExists(const char* Filepath);
+  size_t GetRootFSPrefixLen(const char* pathname, size_t len, bool AliasedOnly);
+  ssize_t StripRootFSPrefix(char* pathname, ssize_t len, bool leaky);
 
   struct ThunkDBObject {
     fextl::string LibraryName;
@@ -165,5 +170,6 @@ private:
   int64_t RootFSFDInode = 0;
   int64_t ProcFDInode = 0;
   dev_t ProcFSDev;
+  bool HasOpenat2;
 };
 } // namespace FEX::HLE

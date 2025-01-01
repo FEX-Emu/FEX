@@ -9,6 +9,7 @@ $end_info$
 
 #include "CodeLoader.h"
 
+#include "FEXHeaderUtils/StringArgumentParser.h"
 #include "Linux/Utils/ELFContainer.h"
 #include "Linux/Utils/ELFParser.h"
 
@@ -139,30 +140,20 @@ template uint64_t GetDentsEmulation<false>(int, FEX::HLE::x64::linux_dirent*, ui
 
 template uint64_t GetDentsEmulation<true>(int, FEX::HLE::x32::linux_dirent_32*, uint32_t);
 
-static bool IsShebangFile(std::span<char> Data) {
+static fextl::string GetShebangInterpFile(std::span<char> Data) {
   // File isn't large enough to even contain a shebang.
   if (Data.size() <= 2) {
-    return false;
+    return {};
   }
 
   // Handle shebang files.
   if (Data[0] == '#' && Data[1] == '!') {
     fextl::string InterpreterLine {Data.begin() + 2, // strip off "#!" prefix
                                    std::find(Data.begin(), Data.end(), '\n')};
-    fextl::vector<fextl::string> ShebangArguments {};
-
-    // Shebang line can have a single argument
-    fextl::istringstream InterpreterSS(InterpreterLine);
-    fextl::string Argument;
-    while (std::getline(InterpreterSS, Argument, ' ')) {
-      if (Argument.empty()) {
-        continue;
-      }
-      ShebangArguments.push_back(std::move(Argument));
-    }
+    fextl::vector<std::string_view> ShebangArguments = FHU::ParseArgumentsFromString(InterpreterLine);
 
     // Executable argument
-    fextl::string& ShebangProgram = ShebangArguments[0];
+    fextl::string ShebangProgram(ShebangArguments[0]);
 
     // If the filename is absolute then prepend the rootfs
     // If it is relative then don't append the rootfs
@@ -170,13 +161,15 @@ static bool IsShebangFile(std::span<char> Data) {
       ShebangProgram = FEX::HLE::_SyscallHandler->RootFSPath() + ShebangProgram;
     }
 
-    return FHU::Filesystem::Exists(ShebangProgram);
+    if (FHU::Filesystem::Exists(ShebangProgram)) {
+      return ShebangProgram;
+    }
   }
 
-  return false;
+  return {};
 }
 
-static bool IsShebangFD(int FD) {
+static fextl::string GetShebangInterpFD(int FD) {
   // We don't know the state of the FD coming in since this might be a guest tracked FD.
   // Need to be extra careful here not to adjust file offsets and status flags.
   //
@@ -187,19 +180,19 @@ static bool IsShebangFD(int FD) {
   const auto ChunkSize = 257l;
   const auto ReadSize = pread(FD, &Header.at(0), ChunkSize, 0);
 
-  return IsShebangFile(std::span<char>(Header.data(), ReadSize));
+  return GetShebangInterpFile(std::span<char>(Header.data(), ReadSize));
 }
 
-static bool IsShebangFilename(const fextl::string& Filename) {
+static fextl::string GetShebangInterpFilename(const fextl::string& Filename) {
   // Open the Filename to determine if it is a shebang file.
   int FD = open(Filename.c_str(), O_RDONLY | O_CLOEXEC);
   if (FD == -1) {
-    return false;
+    return {};
   }
 
-  bool IsShebang = IsShebangFD(FD);
+  auto Interp = GetShebangInterpFD(FD);
   close(FD);
-  return IsShebang;
+  return Interp;
 }
 
 uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname, char* const* argv, char* const* envp, ExecveAtArgs Args) {
@@ -208,18 +201,19 @@ uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname
 
   fextl::string RootFS = SyscallHandler->RootFSPath();
   ELFLoader::ELFContainer::ELFType Type {};
+  ELFLoader::ELFContainer::ELFType InterpreterType {};
 
   // AT_EMPTY_PATH is only used if the pathname is empty.
   const bool IsFDExec = (Args.flags & AT_EMPTY_PATH) && strlen(pathname) == 0;
   fextl::string FDExecEnv;
   fextl::string FDSeccompEnv;
 
-  bool IsShebang {};
+  fextl::string ShebangInterpreter {};
 
   if (IsFDExec) {
     Type = ELFLoader::ELFContainer::GetELFType(Args.dirfd);
 
-    IsShebang = IsShebangFD(Args.dirfd);
+    ShebangInterpreter = GetShebangInterpFD(Args.dirfd);
   } else {
     // For absolute paths, check the rootfs first (if available)
     if (pathname[0] == '/') {
@@ -253,7 +247,12 @@ uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname
 
     Type = ELFLoader::ELFContainer::GetELFType(Filename);
 
-    IsShebang = IsShebangFilename(Filename);
+    ShebangInterpreter = GetShebangInterpFilename(Filename);
+  }
+
+  const bool IsShebang = !ShebangInterpreter.empty();
+  if (IsShebang) {
+    InterpreterType = ELFLoader::ELFContainer::GetELFType(ShebangInterpreter);
   }
 
   if (!IsShebang && Type == ELFLoader::ELFContainer::ELFType::TYPE_NONE) {
@@ -306,6 +305,10 @@ uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname
   // - FEXServer FD inheritance (unshare(CLONE_NEWNET))
   const bool NeedsEnvpCopy = (IsFDExec && !(IsBinfmtCompatible || IsOtherELF)) || HasSeccomp;
 
+  // We are trying to execute a shebang handled by a different architecture interpreter (e.g. /usr/bin/python from the host FS).
+  // In this case we just defer to the kernel.
+  const bool IsForeignShebang = (IsShebang && InterpreterType == ELFLoader::ELFContainer::ELFType::TYPE_OTHER_ELF);
+
   if (NeedsEnvpCopy) {
     if (envp) {
       auto OldEnvp = envp;
@@ -354,11 +357,34 @@ uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname
     EnvpPtr = const_cast<char* const*>(EnvpArgs.data());
   }
 
-  if (IsBinfmtCompatible || IsOtherELF) {
+  if (!IsFDExec && (IsForeignShebang || IsOtherELF || !IsBinfmtCompatible)) {
+    // With a merged RootFS, the entire real filesystem is visible through the rootfs
+    // prefix. If we are executing a non-emulated binary, we should do so through the host
+    // path.
+
+    auto Path = SyscallHandler->FM.GetHostPath(Filename, true);
+    if (!Path.empty() && FHU::Filesystem::Exists(Path)) {
+      Filename = std::move(Path);
+    }
+  }
+
+  if (IsBinfmtCompatible || IsOtherELF || IsForeignShebang) {
     Result = ::syscall(SYS_execveat, Args.dirfd, Filename.c_str(), argv, EnvpPtr, Args.flags);
     CloseSeccompFD();
     CloseFDExecFD();
     SYSCALL_ERRNO();
+  }
+
+  // If we are executing an emulated interpreter shebang file through the loader,
+  // we need to strip the RootFS prefix. The loader will pass this filename to the
+  // interpreter as-is, which will access it using RootFS redirection.
+  // Note that unlike above, the prefix is stripped unconditionally (AliasedOnly=false),
+  // and the script path need not exist in the host.
+  if (IsShebang) {
+    auto Path = SyscallHandler->FM.GetHostPath(Filename, false);
+    if (!Path.empty()) {
+      Filename = std::move(Path);
+    }
   }
 
   // We don't have an interpreter installed or we are executing a non-ELF executable
