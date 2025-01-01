@@ -64,8 +64,8 @@ $end_info$
 #include <sys/signal.h>
 
 namespace {
-static bool SilentLog;
-static int OutputFD {-1};
+static bool SilentLog {};
+static int OutputFD {STDERR_FILENO};
 
 void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
   if (SilentLog) {
