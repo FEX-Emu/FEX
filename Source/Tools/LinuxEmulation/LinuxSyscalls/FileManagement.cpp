@@ -948,7 +948,7 @@ uint64_t FileManager::Openat2(int dirfs, const char* pathname, FEX::HLE::open_ho
         how->resolve |= RESOLVE_IN_ROOT;
       }
       fd = ::syscall(SYSCALL_DEF(openat2), Path.first, Path.second, how, usize);
-      how->resolve &= RESOLVE_IN_ROOT;
+      how->resolve &= ~RESOLVE_IN_ROOT;
       if (fd == -1 && errno == EXDEV) {
         // This means a magic symlink (/proc/foo) was involved. In this case we
         // just punt and do the access without RESOLVE_IN_ROOT.
