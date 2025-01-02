@@ -323,8 +323,8 @@ int main(int argc, char** argv, char** const envp) {
       return 1;
     }
     auto ParentThread = SyscallHandler->TM.CreateThread(Loader.DefaultRIP(), Loader.GetStackPointer());
-    SyscallHandler->TM.TrackThread(ParentThread);
     SignalDelegation->RegisterTLSState(ParentThread);
+    SyscallHandler->TM.TrackThread(ParentThread);
 
     if (!ParentThread) {
       return 1;
