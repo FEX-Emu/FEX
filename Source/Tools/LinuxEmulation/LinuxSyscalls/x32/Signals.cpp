@@ -212,24 +212,20 @@ void RegisterSignals(FEX::HLE::SyscallHandler* Handler) {
                               return Result;
                             });
 
-  if (Handler->IsHostKernelVersionAtLeast(5, 1, 0)) {
-    REGISTER_SYSCALL_IMPL_X32(
-      pidfd_send_signal,
-      [](FEXCore::Core::CpuStateFrame* Frame, int pidfd, int sig, compat_ptr<FEXCore::x86::siginfo_t> info, unsigned int flags) -> uint64_t {
-        siginfo_t* InfoHost_ptr {};
-        siginfo_t InfoHost {};
-        if (info) {
-          FaultSafeUserMemAccess::VerifyIsReadable(info, sizeof(*info));
-          InfoHost = *info;
-          InfoHost_ptr = &InfoHost;
-        }
+  REGISTER_SYSCALL_IMPL_X32(
+    pidfd_send_signal,
+    [](FEXCore::Core::CpuStateFrame* Frame, int pidfd, int sig, compat_ptr<FEXCore::x86::siginfo_t> info, unsigned int flags) -> uint64_t {
+      siginfo_t* InfoHost_ptr {};
+      siginfo_t InfoHost {};
+      if (info) {
+        FaultSafeUserMemAccess::VerifyIsReadable(info, sizeof(*info));
+        InfoHost = *info;
+        InfoHost_ptr = &InfoHost;
+      }
 
-        uint64_t Result = ::syscall(SYSCALL_DEF(pidfd_send_signal), pidfd, sig, InfoHost_ptr, flags);
-        SYSCALL_ERRNO();
-      });
-  } else {
-    REGISTER_SYSCALL_IMPL_X32(pidfd_send_signal, UnimplementedSyscallSafe);
-  }
+      uint64_t Result = ::syscall(SYSCALL_DEF(pidfd_send_signal), pidfd, sig, InfoHost_ptr, flags);
+      SYSCALL_ERRNO();
+    });
 
   REGISTER_SYSCALL_IMPL_X32(
     rt_sigqueueinfo, [](FEXCore::Core::CpuStateFrame* Frame, pid_t pid, int sig, compat_ptr<FEXCore::x86::siginfo_t> info) -> uint64_t {

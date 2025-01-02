@@ -110,29 +110,22 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                                 SYSCALL_ERRNO();
                               });
 
-  if (Handler->IsHostKernelVersionAtLeast(5, 8, 0)) {
-    // Only exists on kernel 5.8+
-    REGISTER_SYSCALL_IMPL_FLAGS(faccessat2, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                [](FEXCore::Core::CpuStateFrame* Frame, int dirfd, const char* pathname, int mode, int flags) -> uint64_t {
-                                  uint64_t Result = FEX::HLE::_SyscallHandler->FM.FAccessat2(dirfd, pathname, mode, flags);
-                                  SYSCALL_ERRNO();
-                                });
+  REGISTER_SYSCALL_IMPL_FLAGS(faccessat2, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                              [](FEXCore::Core::CpuStateFrame* Frame, int dirfd, const char* pathname, int mode, int flags) -> uint64_t {
+                                uint64_t Result = FEX::HLE::_SyscallHandler->FM.FAccessat2(dirfd, pathname, mode, flags);
+                                SYSCALL_ERRNO();
+                              });
 
-    REGISTER_SYSCALL_IMPL_FLAGS(
-      openat2, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-      [](FEXCore::Core::CpuStateFrame* Frame, int dirfs, const char* pathname, struct open_how* how, size_t usize) -> uint64_t {
-        open_how HostHow {};
-        size_t HostSize = std::min(sizeof(open_how), usize);
-        memcpy(&HostHow, how, HostSize);
+  REGISTER_SYSCALL_IMPL_FLAGS(openat2, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                              [](FEXCore::Core::CpuStateFrame* Frame, int dirfs, const char* pathname, struct open_how* how, size_t usize) -> uint64_t {
+                                open_how HostHow {};
+                                size_t HostSize = std::min(sizeof(open_how), usize);
+                                memcpy(&HostHow, how, HostSize);
 
-        HostHow.flags = FEX::HLE::RemapFromX86Flags(HostHow.flags);
-        uint64_t Result = FEX::HLE::_SyscallHandler->FM.Openat2(dirfs, pathname, &HostHow, HostSize);
-        SYSCALL_ERRNO();
-      });
-  } else {
-    REGISTER_SYSCALL_IMPL(faccessat2, UnimplementedSyscallSafe);
-    REGISTER_SYSCALL_IMPL(openat2, UnimplementedSyscallSafe);
-  }
+                                HostHow.flags = FEX::HLE::RemapFromX86Flags(HostHow.flags);
+                                uint64_t Result = FEX::HLE::_SyscallHandler->FM.Openat2(dirfs, pathname, &HostHow, HostSize);
+                                SYSCALL_ERRNO();
+                              });
 
   REGISTER_SYSCALL_IMPL_FLAGS(eventfd, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
                               [](FEXCore::Core::CpuStateFrame* Frame, uint32_t count) -> uint64_t {
@@ -155,14 +148,10 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
       SYSCALL_ERRNO();
     });
 
-  if (Handler->IsHostKernelVersionAtLeast(5, 9, 0)) {
-    REGISTER_SYSCALL_IMPL_FLAGS(close_range, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                [](FEXCore::Core::CpuStateFrame* Frame, unsigned int first, unsigned int last, unsigned int flags) -> uint64_t {
-                                  uint64_t Result = FEX::HLE::_SyscallHandler->FM.CloseRange(first, last, flags);
-                                  SYSCALL_ERRNO();
-                                });
-  } else {
-    REGISTER_SYSCALL_IMPL(close_range, UnimplementedSyscallSafe);
-  }
+  REGISTER_SYSCALL_IMPL_FLAGS(close_range, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                              [](FEXCore::Core::CpuStateFrame* Frame, unsigned int first, unsigned int last, unsigned int flags) -> uint64_t {
+                                uint64_t Result = FEX::HLE::_SyscallHandler->FM.CloseRange(first, last, flags);
+                                SYSCALL_ERRNO();
+                              });
 }
 } // namespace FEX::HLE
