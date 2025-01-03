@@ -1948,6 +1948,7 @@ private:
 
   RefPair LoadRegCachePair(uint64_t Offset, uint8_t Index, RegisterClassType RegClass, IR::OpSize Size) {
     LOGMAN_THROW_AA_FMT(Index != DFIndex, "must be pairable");
+    LOGMAN_THROW_AA_FMT(Size != IR::OpSize::iUnsized, "Invalid size!");
 
     // Try to load a pair into the cache
     uint64_t Bits = (3ull << (uint64_t)Index);
@@ -2427,6 +2428,7 @@ private:
   }
 
   AddressMode SelectPairAddressMode(AddressMode A, IR::OpSize Size) {
+    LOGMAN_THROW_AA_FMT(Size != IR::OpSize::iUnsized, "Invalid size!");
     const auto SizeInt = IR::OpSizeToSize(Size);
     AddressMode Out {};
 

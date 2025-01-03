@@ -445,7 +445,7 @@ void OpDispatchBuilder::PUSHSegmentOp(OpcodeArgs, uint32_t SegmentReg) {
     case FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX:
       Src = _LoadContext(SrcSize, GPRClass, offsetof(FEXCore::Core::CPUState, gs_idx));
       break;
-    default: break; // Do nothing
+    default: FEX_UNREACHABLE;
     }
   } else {
     switch (SegmentReg) {
@@ -467,7 +467,7 @@ void OpDispatchBuilder::PUSHSegmentOp(OpcodeArgs, uint32_t SegmentReg) {
     case FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX:
       Src = _LoadContext(SrcSize, GPRClass, offsetof(FEXCore::Core::CPUState, gs_cached));
       break;
-    default: break; // Do nothing
+    default: FEX_UNREACHABLE;
     }
   }
 
