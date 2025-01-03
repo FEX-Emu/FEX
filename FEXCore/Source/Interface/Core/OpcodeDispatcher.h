@@ -2427,6 +2427,7 @@ private:
   }
 
   AddressMode SelectPairAddressMode(AddressMode A, IR::OpSize Size) {
+    LOGMAN_THROW_AA_FMT(Size != IR::OpSize::iUnsized, "Invalid size!");
     const auto SizeInt = IR::OpSizeToSize(Size);
     AddressMode Out {};
 
