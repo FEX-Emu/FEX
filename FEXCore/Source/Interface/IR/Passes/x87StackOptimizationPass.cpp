@@ -885,10 +885,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         if (ReducedPrecisionMode) {
           ResultNode = IREmit->_VFNeg(OpSize::i64Bit, OpSize::i64Bit, Value);
         } else {
-          Ref Low = GetConstant(0);
-          Ref High = GetConstant(0b1'000'0000'0000'0000ULL);
-          Ref HelperNode = IREmit->_VCastFromGPR(OpSize::i128Bit, OpSize::i64Bit, Low);
-          HelperNode = IREmit->_VInsGPR(OpSize::i128Bit, OpSize::i64Bit, 1, HelperNode, High);
+          Ref HelperNode = IREmit->_LoadNamedVectorConstant(OpSize::i128Bit, IR::NamedVectorConstant::NAMED_VECTOR_F80_SIGN_MASK);
           ResultNode = IREmit->_VXor(OpSize::i128Bit, OpSize::i8Bit, Value, HelperNode);
         }
         StoreStackValue(ResultNode);
@@ -903,11 +900,8 @@ void X87StackOptimization::Run(IREmitter* Emit) {
           ResultNode = IREmit->_VFAbs(OpSize::i64Bit, OpSize::i64Bit, Value);
         } else {
           // Intermediate insts
-          Ref Low = GetConstant(~0ULL);
-          Ref High = GetConstant(0b0'111'1111'1111'1111ULL);
-          Ref HelperNode = IREmit->_VCastFromGPR(OpSize::i128Bit, OpSize::i64Bit, Low);
-          HelperNode = IREmit->_VInsGPR(OpSize::i128Bit, OpSize::i64Bit, 1, HelperNode, High);
-          ResultNode = IREmit->_VAnd(OpSize::i128Bit, OpSize::i8Bit, Value, HelperNode);
+          Ref HelperNode = IREmit->_LoadNamedVectorConstant(OpSize::i128Bit, IR::NamedVectorConstant::NAMED_VECTOR_F80_SIGN_MASK);
+          ResultNode = IREmit->_VAndn(OpSize::i128Bit, OpSize::i8Bit, Value, HelperNode);
         }
         StoreStackValue(ResultNode);
         break;

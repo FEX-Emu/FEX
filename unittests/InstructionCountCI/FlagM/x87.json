@@ -4353,7 +4353,7 @@
       "ExpectedArm64ASM": []
     },
     "fchs": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "0xd9 11b 0xe0 /4"
       ],
@@ -4361,17 +4361,14 @@
         "ldrb w20, [x28, #1019]",
         "add x0, x28, x20, lsl #4",
         "ldr q2, [x0, #1040]",
-        "mov w21, #0x0",
-        "mov w22, #0x8000",
-        "fmov d3, x21",
-        "mov v3.d[1], x22",
+        "ldr q3, [x28, #2912]",
         "eor v2.16b, v2.16b, v3.16b",
         "add x0, x28, x20, lsl #4",
         "str q2, [x0, #1040]"
       ]
     },
     "fabs": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "0xd9 11b 0xe1 /4"
       ],
@@ -4379,11 +4376,8 @@
         "ldrb w20, [x28, #1019]",
         "add x0, x28, x20, lsl #4",
         "ldr q2, [x0, #1040]",
-        "mov x21, #0xffffffffffffffff",
-        "mov w22, #0x7fff",
-        "fmov d3, x21",
-        "mov v3.d[1], x22",
-        "and v2.16b, v2.16b, v3.16b",
+        "ldr q3, [x28, #2912]",
+        "bic v2.16b, v2.16b, v3.16b",
         "add x0, x28, x20, lsl #4",
         "str q2, [x0, #1040]"
       ]
@@ -4468,7 +4462,7 @@
         "0xd9 11b 0xe8 /5"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2672]",
+        "ldr q2, [x28, #2688]",
         "ldrb w20, [x28, #1019]",
         "mov w21, #0x1",
         "sub w20, w20, #0x1 (1)",
@@ -4488,7 +4482,7 @@
         "0xd9 11b 0xe9 /5"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2688]",
+        "ldr q2, [x28, #2704]",
         "ldrb w20, [x28, #1019]",
         "mov w21, #0x1",
         "sub w20, w20, #0x1 (1)",
@@ -4508,7 +4502,7 @@
         "0xd9 11b 0xea /5"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2704]",
+        "ldr q2, [x28, #2720]",
         "ldrb w20, [x28, #1019]",
         "mov w21, #0x1",
         "sub w20, w20, #0x1 (1)",
@@ -4528,7 +4522,7 @@
         "0xd9 11b 0xeb /5"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2720]",
+        "ldr q2, [x28, #2736]",
         "ldrb w20, [x28, #1019]",
         "mov w21, #0x1",
         "sub w20, w20, #0x1 (1)",
@@ -4548,7 +4542,7 @@
         "0xd9 11b 0xec /5"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2736]",
+        "ldr q2, [x28, #2752]",
         "ldrb w20, [x28, #1019]",
         "mov w21, #0x1",
         "sub w20, w20, #0x1 (1)",
@@ -4568,7 +4562,7 @@
         "0xd9 11b 0xed /5"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2752]",
+        "ldr q2, [x28, #2768]",
         "ldrb w20, [x28, #1019]",
         "mov w21, #0x1",
         "sub w20, w20, #0x1 (1)",
@@ -4732,7 +4726,7 @@
         "mov v2.h[4], w1",
         "add x0, x28, x20, lsl #4",
         "str q2, [x0, #1040]",
-        "ldr q2, [x28, #2672]",
+        "ldr q2, [x28, #2688]",
         "mov w21, #0x1",
         "sub w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
@@ -5015,7 +5009,7 @@
         "0xd9 11b 0xf9 /7"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2672]",
+        "ldr q2, [x28, #2688]",
         "ldrb w20, [x28, #1019]",
         "add x0, x28, x20, lsl #4",
         "ldr q3, [x0, #1040]",
