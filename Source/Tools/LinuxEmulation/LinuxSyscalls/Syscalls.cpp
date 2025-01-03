@@ -526,7 +526,7 @@ static uint64_t Clone2Handler(FEXCore::Core::CpuStateFrame* Frame, FEX::HLE::clo
 
   // Remove flags that will break us
   constexpr uint64_t INVALID_FOR_HOST = CLONE_SETTLS;
-  uint64_t Flags = args->args.flags & ~INVALID_FOR_HOST;
+  uint64_t Flags = (args->args.flags & ~INVALID_FOR_HOST) | args->args.exit_signal;
   uint64_t Result = ::clone(Clone2HandlerRet,                                    // To be called function
                             (void*)((uint64_t)args->NewStack + args->StackSize), // Stack
                             Flags,                                               // Flags
