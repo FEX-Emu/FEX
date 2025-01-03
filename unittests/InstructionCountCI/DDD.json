@@ -65,8 +65,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #1056]",
-        "ldr d3, [x28, #2864]",
-        "ldr d4, [x28, #2768]",
+        "ldr d3, [x28, #2880]",
+        "ldr d4, [x28, #2784]",
         "fcvtzs v5.2s, v2.2s",
         "fcmgt v2.4s, v4.4s, v2.4s",
         "bsl v2.8b, v5.8b, v3.8b",

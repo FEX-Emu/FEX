@@ -321,7 +321,7 @@
         "0x66 0x0f 0x3a 0x0c"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2544]",
+        "ldr q2, [x28, #2560]",
         "tbx v16.16b, {v17.16b}, v2.16b"
       ]
     },
@@ -331,7 +331,7 @@
         "0x66 0x0f 0x3a 0x0c"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2560]",
+        "ldr q2, [x28, #2576]",
         "tbx v16.16b, {v17.16b}, v2.16b"
       ]
     },
@@ -350,7 +350,7 @@
         "0x66 0x0f 0x3a 0x0c"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2576]",
+        "ldr q2, [x28, #2592]",
         "tbx v16.16b, {v17.16b}, v2.16b"
       ]
     },
@@ -370,7 +370,7 @@
         "0x66 0x0f 0x3a 0x0c"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2592]",
+        "ldr q2, [x28, #2608]",
         "tbx v16.16b, {v17.16b}, v2.16b"
       ]
     },
@@ -389,7 +389,7 @@
         "0x66 0x0f 0x3a 0x0c"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2608]",
+        "ldr q2, [x28, #2624]",
         "tbx v16.16b, {v17.16b}, v2.16b"
       ]
     },
@@ -399,7 +399,7 @@
         "0x66 0x0f 0x3a 0x0c"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2624]",
+        "ldr q2, [x28, #2640]",
         "tbx v16.16b, {v17.16b}, v2.16b"
       ]
     },
@@ -468,7 +468,7 @@
         "0x66 0x0f 0x3a 0x0e"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2088]",
+        "ldr x0, [x28, #2096]",
         "ldr q2, [x0, #3440]",
         "tbx v16.16b, {v17.16b}, v2.16b"
       ]
