@@ -44,7 +44,7 @@ class OpDefinition:
     HasDest: bool
     DestType: str
     DestSize: str
-    NumElements: str
+    ElementSize: str
     OpClass: str
     HasSideEffects: bool
     ImplicitFlagClobber: bool
@@ -67,7 +67,7 @@ class OpDefinition:
         self.HasDest = False
         self.DestType = None
         self.DestSize = None
-        self.NumElements = None
+        self.ElementSize = None
         self.OpClass = None
         self.OpSize = 0
         self.HasSideEffects = False
@@ -234,8 +234,8 @@ def parse_ops(ops):
             if "DestSize" in op_val:
                 OpDef.DestSize = op_val["DestSize"]
 
-            if "NumElements" in op_val:
-                OpDef.NumElements = op_val["NumElements"]
+            if "ElementSize" in op_val:
+                OpDef.ElementSize = op_val["ElementSize"]
 
             if len(op_class):
                 OpDef.OpClass = op_class
@@ -745,10 +745,10 @@ def print_ir_allocator_helpers():
             if op.DestSize != None:
                 output_file.write("\t\t_Op.first->Header.Size = {};\n".format(op.DestSize))
 
-            if op.NumElements == None:
+            if op.ElementSize == None:
                 output_file.write("\t\t_Op.first->Header.ElementSize = _Op.first->Header.Size;\n")
             else:
-                output_file.write("\t\t_Op.first->Header.ElementSize = _Op.first->Header.Size / ({});\n".format(op.NumElements))
+                output_file.write("\t\t_Op.first->Header.ElementSize = {};\n".format(op.ElementSize))
 
             # Insert validation here
             if op.EmitValidation != None:
