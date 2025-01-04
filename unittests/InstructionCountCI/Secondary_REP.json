@@ -116,7 +116,7 @@
       "ExpectedArm64ASM": [
         "fcvtzs w20, s16",
         "mov w21, #0x80000000",
-        "ldr s2, [x28, #2768]",
+        "ldr s2, [x28, #2784]",
         "mrs x22, nzcv",
         "fcmp s2, s16",
         "csel w4, w20, w21, gt",
@@ -130,7 +130,7 @@
         "ldr s2, [x6]",
         "fcvtzs w20, s2",
         "mov w21, #0x80000000",
-        "ldr s3, [x28, #2768]",
+        "ldr s3, [x28, #2784]",
         "mrs x22, nzcv",
         "fcmp s3, s2",
         "csel w4, w20, w21, gt",
@@ -143,7 +143,7 @@
       "ExpectedArm64ASM": [
         "fcvtzs x20, s16",
         "mov x21, #0x8000000000000000",
-        "ldr s2, [x28, #2800]",
+        "ldr s2, [x28, #2816]",
         "mrs x22, nzcv",
         "fcmp s2, s16",
         "csel x4, x20, x21, gt",
@@ -157,7 +157,7 @@
         "ldr d2, [x6]",
         "fcvtzs x20, s2",
         "mov x21, #0x8000000000000000",
-        "ldr s3, [x28, #2800]",
+        "ldr s3, [x28, #2816]",
         "mrs x22, nzcv",
         "fcmp s3, s2",
         "csel x4, x20, x21, gt",
@@ -171,7 +171,7 @@
         "frinti s2, s16",
         "fcvtzs w20, s2",
         "mov w21, #0x80000000",
-        "ldr s3, [x28, #2768]",
+        "ldr s3, [x28, #2784]",
         "mrs x22, nzcv",
         "fcmp s3, s2",
         "csel w4, w20, w21, gt",
@@ -186,7 +186,7 @@
         "frinti s2, s2",
         "fcvtzs w20, s2",
         "mov w21, #0x80000000",
-        "ldr s3, [x28, #2768]",
+        "ldr s3, [x28, #2784]",
         "mrs x22, nzcv",
         "fcmp s3, s2",
         "csel w4, w20, w21, gt",
@@ -200,7 +200,7 @@
         "frinti s2, s16",
         "fcvtzs x20, s2",
         "mov x21, #0x8000000000000000",
-        "ldr s3, [x28, #2800]",
+        "ldr s3, [x28, #2816]",
         "mrs x22, nzcv",
         "fcmp s3, s2",
         "csel x4, x20, x21, gt",
@@ -215,7 +215,7 @@
         "frinti s2, s2",
         "fcvtzs x20, s2",
         "mov x21, #0x8000000000000000",
-        "ldr s3, [x28, #2800]",
+        "ldr s3, [x28, #2816]",
         "mrs x22, nzcv",
         "fcmp s3, s2",
         "csel x4, x20, x21, gt",
@@ -294,8 +294,8 @@
       "ExpectedInstructionCount": 6,
       "Comment": "0xf3 0x0f 0x5b",
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2864]",
-        "ldr q3, [x28, #2768]",
+        "ldr q2, [x28, #2880]",
+        "ldr q3, [x28, #2784]",
         "fcvtzs v4.4s, v17.4s",
         "fcmgt v3.4s, v3.4s, v17.4s",
         "mov v16.16b, v3.16b",
@@ -395,7 +395,7 @@
         "0xf3 0x0f 0x70"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2048]",
+        "ldr x0, [x28, #2056]",
         "ldr q2, [x0, #1280]",
         "tbl v16.16b, {v17.16b}, v2.16b"
       ]
@@ -408,7 +408,7 @@
         "0xf3 0x0f 0x70"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2048]",
+        "ldr x0, [x28, #2056]",
         "ldr q2, [x0, #16]",
         "tbl v16.16b, {v17.16b}, v2.16b"
       ]
