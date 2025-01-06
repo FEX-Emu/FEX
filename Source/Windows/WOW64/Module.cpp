@@ -137,7 +137,6 @@ bool IsDispatcherAddress(uint64_t Address) {
 }
 
 bool IsAddressInJit(uint64_t Address) {
-  const auto& Config = SignalDelegator->GetConfig();
   if (IsDispatcherAddress(Address)) {
     return true;
   }
