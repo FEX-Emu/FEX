@@ -250,10 +250,24 @@ static int CloneFork(uint32_t flags, uint64_t exit_signal) {
   return ::syscall(SYSCALL_DEF(clone), (flags & (CLONE_FS | CLONE_FILES)) | exit_signal, nullptr, nullptr, nullptr, nullptr);
 }
 
-uint64_t ForkGuest(FEXCore::Core::InternalThreadState* Thread, FEXCore::Core::CpuStateFrame* Frame, uint32_t flags, void* stack,
-                   size_t StackSize, pid_t* parent_tid, pid_t* child_tid, void* tls, uint64_t exit_signal) {
-  // Just before we fork, we lock all syscall mutexes so that both processes will end up with a locked mutex
+uint64_t ForkGuest(FEXCore::Core::InternalThreadState* Thread, FEXCore::Core::CpuStateFrame* Frame, FEX::HLE::clone3_args* args) {
+  const uint64_t flags = args->args.flags;
+  auto stack = reinterpret_cast<const void*>(args->args.stack);
+  const uint64_t stack_size = args->args.stack_size;
+  auto parent_tid = reinterpret_cast<pid_t*>(args->args.parent_tid);
+  auto child_tid = reinterpret_cast<pid_t*>(args->args.child_tid);
+  auto tls = reinterpret_cast<void*>(args->args.tls);
+  const uint64_t exit_signal = args->args.exit_signal;
 
+  // Sanity check flags here.
+  if (args->Type == TypeOfClone::TYPE_CLONE3) {
+    constexpr uint64_t UnsupportedFlags = CLONE_CLEAR_SIGHAND | CLONE_INTO_CGROUP | CLONE_NEWTIME;
+    if (args->args.flags & UnsupportedFlags) {
+      LogMan::Msg::EFmt("fork: Unsupported flags passed. {:#x}", args->args.flags & UnsupportedFlags);
+    }
+  }
+
+  // Just before we fork, we lock all syscall mutexes so that both processes will end up with a locked mutex
   uint64_t Mask {~0ULL};
   ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &Mask, &Mask, sizeof(Mask));
 
@@ -304,7 +318,7 @@ uint64_t ForkGuest(FEXCore::Core::InternalThreadState* Thread, FEXCore::Core::Cp
     // Handle child setup now
     if (stack != nullptr) {
       // use specified stack
-      Frame->State.gregs[FEXCore::X86State::REG_RSP] = reinterpret_cast<uint64_t>(stack) + StackSize;
+      Frame->State.gregs[FEXCore::X86State::REG_RSP] = reinterpret_cast<uint64_t>(stack) + stack_size;
     } else {
       // In the case of fork and nullptr stack then the child uses the same stack space as the parent
       // Same virtual address, different addressspace
@@ -378,13 +392,43 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
     FEX_UNREACHABLE;
   });
 
-  REGISTER_SYSCALL_IMPL_FLAGS(fork, SyscallFlags::DEFAULT, [](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t {
-    return ForkGuest(Frame->Thread, Frame, 0, 0, 0, 0, 0, 0, SIGCHLD);
-  });
+  REGISTER_SYSCALL_IMPL_FLAGS(fork, SyscallFlags::DEFAULT, ([](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t {
+                                FEX::HLE::clone3_args args {.Type = TypeOfClone::TYPE_CLONE2,
+                                                            .args = {
+                                                              .flags = 0,
+                                                              .pidfd = 0,
+                                                              .child_tid = 0,
+                                                              .parent_tid = 0,
+                                                              .exit_signal = SIGCHLD,
+                                                              .stack = 0,
+                                                              .stack_size = 0,
+                                                              .tls = 0,
+                                                              .set_tid = 0,
+                                                              .set_tid_size = 0,
+                                                              .cgroup = 0,
+                                                            }};
 
-  REGISTER_SYSCALL_IMPL_FLAGS(vfork, SyscallFlags::DEFAULT, [](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t {
-    return ForkGuest(Frame->Thread, Frame, CLONE_VFORK, 0, 0, 0, 0, 0, SIGCHLD);
-  });
+                                return ForkGuest(Frame->Thread, Frame, &args);
+                              }));
+
+  REGISTER_SYSCALL_IMPL_FLAGS(vfork, SyscallFlags::DEFAULT, ([](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t {
+                                FEX::HLE::clone3_args args {.Type = TypeOfClone::TYPE_CLONE2,
+                                                            .args = {
+                                                              .flags = CLONE_VFORK,
+                                                              .pidfd = 0,
+                                                              .child_tid = 0,
+                                                              .parent_tid = 0,
+                                                              .exit_signal = SIGCHLD,
+                                                              .stack = 0,
+                                                              .stack_size = 0,
+                                                              .tls = 0,
+                                                              .set_tid = 0,
+                                                              .set_tid_size = 0,
+                                                              .cgroup = 0,
+                                                            }};
+
+                                return ForkGuest(Frame->Thread, Frame, &args);
+                              }));
 
   REGISTER_SYSCALL_IMPL_FLAGS(getpgrp, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
                               [](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t {
