@@ -609,8 +609,8 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs, IR::OpSize Width, bool Integer, OpDisp
     uint8_t Offset = Op->OP & 7;
     Res = _F80CmpStack(Offset);
   } else {
-    // Memory arg
     if (Width == OpSize::i16Bit || Width == OpSize::i32Bit || Width == OpSize::i64Bit) {
+      // Memory arg
       if (Integer) {
         arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
         b = _F80CVTToInt(arg, Width);
@@ -618,6 +618,8 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs, IR::OpSize Width, bool Integer, OpDisp
         arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
         b = _F80CVTTo(arg, Width);
       }
+    } else {
+      FEX_UNREACHABLE;
     }
     Res = _F80CmpValue(b);
   }
