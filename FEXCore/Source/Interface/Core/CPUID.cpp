@@ -192,7 +192,6 @@ void CPUIDEmu::SetupHostHybridFlag() {
     {0x41, 0xd4e, 1, ProductNames::ARM_X3},      // X3
     {0x41, 0xd4d, 1, ProductNames::ARM_A715},    // A715
     {0x41, 0xd4f, 1, ProductNames::ARM_V2},      // V2
-    {0x41, 0xd49, 1, ProductNames::ARM_N2},      // N2
     {0x41, 0xd4b, 1, ProductNames::ARM_A78C},    // A78C
     {0x41, 0xd4a, 1, ProductNames::ARM_E1},      // E1
     {0x41, 0xd49, 1, ProductNames::ARM_N2},      // N2
