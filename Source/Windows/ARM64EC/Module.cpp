@@ -816,20 +816,22 @@ NTSTATUS ThreadTerm(HANDLE Thread, LONG ExitCode) {
   auto* OldThreadState = CPUArea.ThreadState();
   CPUArea.ThreadState() = nullptr;
 
-  {
-    THREAD_BASIC_INFORMATION Info;
-    if (NTSTATUS Err = NtQueryInformationThread(Thread, ThreadBasicInformation, &Info, sizeof(Info), nullptr); Err) {
-      return Err;
-    }
+  THREAD_BASIC_INFORMATION Info;
+  if (NTSTATUS Err = NtQueryInformationThread(Thread, ThreadBasicInformation, &Info, sizeof(Info), nullptr); Err) {
+    return Err;
+  }
 
-    const auto ThreadTID = reinterpret_cast<uint64_t>(Info.ClientId.UniqueThread);
+  const auto ThreadTID = reinterpret_cast<uint64_t>(Info.ClientId.UniqueThread);
+  {
     std::scoped_lock Lock(ThreadCreationMutex);
     Threads.erase(ThreadTID);
   }
 
   CTX->DestroyThread(OldThreadState);
-  ::VirtualFree(reinterpret_cast<void*>(GetCPUArea().EmulatorStackLimit()), 0, MEM_RELEASE);
-  FEX::Windows::DeinitCRTThread();
+  ::VirtualFree(reinterpret_cast<void*>(CPUArea.EmulatorStackLimit()), 0, MEM_RELEASE);
+  if (ThreadTID == GetCurrentThreadId()) {
+    FEX::Windows::DeinitCRTThread();
+  }
   return STATUS_SUCCESS;
 }
 

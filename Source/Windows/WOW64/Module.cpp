@@ -137,7 +137,6 @@ bool IsDispatcherAddress(uint64_t Address) {
 }
 
 bool IsAddressInJit(uint64_t Address) {
-  const auto& Config = SignalDelegator->GetConfig();
   if (IsDispatcherAddress(Address)) {
     return true;
   }
@@ -517,19 +516,21 @@ void BTCpuThreadTerm(HANDLE Thread, LONG ExitCode) {
     return;
   }
 
-  {
-    THREAD_BASIC_INFORMATION Info;
-    if (NTSTATUS Err = NtQueryInformationThread(Thread, ThreadBasicInformation, &Info, sizeof(Info), nullptr); Err) {
-      return;
-    }
+  THREAD_BASIC_INFORMATION Info;
+  if (NTSTATUS Err = NtQueryInformationThread(Thread, ThreadBasicInformation, &Info, sizeof(Info), nullptr); Err) {
+    return;
+  }
 
-    const auto ThreadTID = reinterpret_cast<uint64_t>(Info.ClientId.UniqueThread);
+  const auto ThreadTID = reinterpret_cast<uint64_t>(Info.ClientId.UniqueThread);
+  {
     std::scoped_lock Lock(ThreadCreationMutex);
     Threads.erase(ThreadTID);
   }
 
   CTX->DestroyThread(TLS.ThreadState());
-  FEX::Windows::DeinitCRTThread();
+  if (ThreadTID == GetCurrentThreadId()) {
+    FEX::Windows::DeinitCRTThread();
+  }
 }
 
 void* BTCpuGetBopCode() {
