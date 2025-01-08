@@ -11,7 +11,7 @@ if (NOT CLANG_RESOURCE_DIR)
     OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif()
 
-add_library(thunkgenlib analysis.cpp data_layout.cpp gen.cpp)
+add_library(thunkgenlib STATIC analysis.cpp data_layout.cpp gen.cpp)
 target_include_directories(thunkgenlib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(thunkgenlib SYSTEM PUBLIC ${CLANG_INCLUDE_DIRS})
 target_link_libraries(thunkgenlib PUBLIC clang-cpp LLVM)
