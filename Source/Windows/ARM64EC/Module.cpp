@@ -17,6 +17,7 @@ $end_info$
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/Utils/EnumOperators.h>
 #include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/FPState.h>
@@ -532,6 +533,8 @@ NTSTATUS ProcessInit() {
 
   // Not applicable to Windows
   FEXCore::Config::EraseSet(FEXCore::Config::ConfigOption::CONFIG_TSOAUTOMIGRATION, "0");
+
+  FEXCore::Profiler::Init();
 
   FEXCore::Context::InitializeStaticTables(FEXCore::Context::MODE_64BIT);
 
