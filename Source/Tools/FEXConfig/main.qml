@@ -222,6 +222,8 @@ ApplicationWindow {
     component ConfigSpinBox: SpinBox {
         property string config
 
+        editable: true
+
         textFromValue: (val) => {
             if (valueFromConfig === "") {
                 return qsTr("(not set)");
