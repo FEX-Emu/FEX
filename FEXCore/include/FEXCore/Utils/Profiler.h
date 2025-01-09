@@ -2,7 +2,6 @@
 #pragma once
 #include <cstdint>
 #include <string_view>
-#include <time.h>
 
 #include <FEXCore/Utils/CompilerDefs.h>
 
@@ -13,14 +12,6 @@ FEX_DEFAULT_VISIBILITY void Init();
 FEX_DEFAULT_VISIBILITY void Shutdown();
 FEX_DEFAULT_VISIBILITY void TraceObject(std::string_view const Format);
 FEX_DEFAULT_VISIBILITY void TraceObject(std::string_view const Format, uint64_t Duration);
-
-static inline uint64_t GetTime() {
-  // We want the time in the least amount of overhead possible
-  // clock_gettime will do a VDSO call with the least amount of overhead
-  struct timespec ts;
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  return ts.tv_sec * 1'000'000'000ULL + ts.tv_nsec;
-}
 
 // A class that follows scoping rules to generate a profile duration block
 class ProfilerBlock final {
