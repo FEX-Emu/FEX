@@ -126,7 +126,13 @@ DLLEXPORT_FUNC(int, _wopen, (const wchar_t* Filename, int OpenFlag, ...)) {
       Attrs = FILE_ATTRIBUTE_READONLY;
     }
   }
-  HANDLE Handle = CreateFileW(Filename, OpenFlagToAccess(OpenFlag), FILE_SHARE_READ, nullptr, OpenFlagToCreation(OpenFlag), Attrs, nullptr);
+  auto access = OpenFlagToAccess(OpenFlag);
+  ULONG sharing = FILE_SHARE_READ;
+  if (access == GENERIC_WRITE) {
+    sharing |= FILE_SHARE_WRITE;
+  }
+
+  HANDLE Handle = CreateFileW(Filename, access, sharing, nullptr, OpenFlagToCreation(OpenFlag), Attrs, nullptr);
   if (Handle != INVALID_HANDLE_VALUE) {
     return AllocateFile(std::make_unique<FILE>(Handle, -1, OpenFlag & _O_APPEND));
   }
