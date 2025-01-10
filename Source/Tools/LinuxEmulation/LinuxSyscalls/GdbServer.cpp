@@ -190,9 +190,9 @@ fextl::string GdbServer::ReadPacket() {
   // where any $ or # in the packet body are escaped ('}' followed by the char XORed with 0x20)
   // The checksum is a single unsigned byte sum of the data, hex encoded.
 
-  std::optional<Utils::NetStream::ReturnGet> c;
-  while ((c = CommsStream.get()).has_value() && !c->Hangup) {
-    switch (c->data) {
+  Utils::NetStream::ReturnGet c;
+  while ((c = CommsStream.get()).HasData()) {
+    switch (c.GetData()) {
     case '$': // start of packet
       if (packet.size() != 0) {
         LogMan::Msg::EFmt("Dropping unexpected data: \"{}\"", packet);
@@ -204,8 +204,8 @@ fextl::string GdbServer::ReadPacket() {
     case '}': // escape char
     {
       auto escaped = CommsStream.get();
-      if (escaped.has_value() && !escaped->Hangup) {
-        packet.push_back(escaped->data ^ 0x20);
+      if (escaped.HasData()) {
+        packet.push_back(escaped.GetData() ^ 0x20);
       } else {
         LogMan::Msg::EFmt("Received Invalid escape char: ${}", packet);
       }
@@ -224,7 +224,7 @@ fextl::string GdbServer::ReadPacket() {
       }
       break;
     }
-    default: packet.push_back(c->data); break;
+    default: packet.push_back(c.GetData()); break;
     }
   }
 
@@ -1396,9 +1396,9 @@ void GdbServer::GdbServerLoop() {
     HandledPacketType response {};
 
     // Outer server loop. Handles packet start, ACK/NAK and break
-    std::optional<Utils::NetStream::ReturnGet> c;
-    while (!CoreShuttingDown.load() && (c = CommsStream.get()).has_value() && !c->Hangup) {
-      switch (c->data) {
+    Utils::NetStream::ReturnGet c;
+    while (!CoreShuttingDown.load() && (c = CommsStream.get()).HasData()) {
+      switch (c.GetData()) {
       case '$': {
         auto packet = ReadPacket();
         response = ProcessPacket(packet);
@@ -1428,11 +1428,11 @@ void GdbServer::GdbServerLoop() {
         SendPacketPair({std::move(str), HandledPacketType::TYPE_ACK});
         break;
       }
-      default: LogMan::Msg::DFmt("GdbServer: Unexpected byte {} ({:02x})", c->data, c->data);
+      default: LogMan::Msg::DFmt("GdbServer: Unexpected byte {} ({:02x})", c.GetData(), c.GetData());
       }
     }
 
-    if (c.has_value() && c->Hangup) {
+    if (c.HasHangup()) {
       break;
     }
 

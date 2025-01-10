@@ -10,11 +10,11 @@
 #include <unistd.h>
 
 namespace FEX::Utils {
-std::optional<NetStream::ReturnGet> NetStream::get() {
+NetStream::ReturnGet NetStream::get() {
   if (read_offset != receive_buffer.size() && read_offset != receive_offset) {
     auto Result = receive_buffer.at(read_offset);
     ++read_offset;
-    return ReturnGet {Result, false};
+    return NetStream::ReturnGet {Result};
   }
 
   if (read_offset == receive_buffer.size()) {
@@ -29,7 +29,7 @@ std::optional<NetStream::ReturnGet> NetStream::get() {
   auto Result = ppoll(&pfd, 1, nullptr, nullptr);
   if (Result > 0) {
     if (pfd.revents & POLLHUP) {
-      return ReturnGet {'\0', true};
+      return NetStream::ReturnGet {true};
     }
 
     const auto remaining_size = receive_buffer.size() - receive_offset;
@@ -38,19 +38,19 @@ std::optional<NetStream::ReturnGet> NetStream::get() {
       receive_offset += Result;
       auto Result = receive_buffer.at(read_offset);
       ++read_offset;
-      return ReturnGet {Result, false};
+      return NetStream::ReturnGet {Result};
     }
   }
 
-  return std::nullopt;
+  return NetStream::ReturnGet {false};
 }
 
 size_t NetStream::read(char* buf, size_t size) {
   size_t Read {};
   while (Read < size) {
     auto Result = get();
-    if (Result.has_value() && !Result->Hangup) {
-      buf[Read] = Result->data;
+    if (Result.HasData()) {
+      buf[Read] = Result.GetData();
       ++Read;
     } else {
       return Read;
