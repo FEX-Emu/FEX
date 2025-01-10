@@ -7,6 +7,7 @@
 #include <linux/magic.h>
 #include <sys/stat.h>
 #include <sys/vfs.h>
+#include <time.h>
 #endif
 
 #include <FEXCore/Utils/LogManager.h>
@@ -18,6 +19,36 @@
 #define BACKEND_GPUVIS 1
 
 #ifdef ENABLE_FEXCORE_PROFILER
+#ifndef _WIN32
+static inline uint64_t GetTime() {
+  // We want the time in the least amount of overhead possible
+  // clock_gettime will do a VDSO call with the least amount of overhead
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return ts.tv_sec * 1'000'000'000ULL + ts.tv_nsec;
+}
+#else
+
+static inline uint64_t GetTime() {
+  // GetTime needs to return nanoseconds, query the interface.
+  static uint64_t FrequencyScale = {};
+  if (!FrequencyScale) [[unlikely]] {
+    LARGE_INTEGER Frequency {};
+    while (!QueryPerformanceFrequency(&Frequency))
+      ;
+    constexpr uint64_t NanosecondsInSecond = 1'000'000'000ULL;
+
+    // On WINE this will always result in a scale of 100.
+    FrequencyScale = NanosecondsInSecond / Frequency.QuadPart;
+  }
+  LARGE_INTEGER ticks;
+  while (!QueryPerformanceCounter(&ticks))
+    ;
+  return ticks.QuadPart * FrequencyScale;
+}
+
+#endif
+
 #if FEXCORE_PROFILER_BACKEND == BACKEND_GPUVIS
 namespace FEXCore::Profiler {
 ProfilerBlock::ProfilerBlock(std::string_view const Format)
@@ -41,23 +72,18 @@ static std::array<const char*, 2> TraceFSDirectories {
   "/sys/kernel/debug/tracing",
 };
 
-static bool IsTraceFS(const char* Path) {
-  struct statfs stat;
-  if (statfs(Path, &stat)) {
-    return false;
-  }
-  return stat.f_type == TRACEFS_MAGIC;
-}
-
 void Init() {
   for (auto Path : TraceFSDirectories) {
-    if (IsTraceFS(Path)) {
-      fextl::string FilePath = fextl::fmt::format("{}/trace_marker", Path);
-      TraceFD = open(FilePath.c_str(), O_WRONLY | O_CLOEXEC);
-      if (TraceFD != -1) {
-        // Opened TraceFD, early exit
-        break;
-      }
+#ifdef _WIN32
+    constexpr auto flags = O_WRONLY;
+#else
+    constexpr auto flags = O_WRONLY | O_CLOEXEC;
+#endif
+    fextl::string FilePath = fextl::fmt::format("{}/trace_marker", Path);
+    TraceFD = open(FilePath.c_str(), flags);
+    if (TraceFD != -1) {
+      // Opened TraceFD, early exit
+      break;
     }
   }
 }
