@@ -586,6 +586,7 @@ int main(int argc, char** argv, char** const envp) {
   fextl::unique_ptr<FEX::GdbServer> DebugServer;
   if (GdbServer) {
     DebugServer = fextl::make_unique<FEX::GdbServer>(CTX.get(), SignalDelegation.get(), SyscallHandler.get());
+    SyscallHandler->SetGdbServer(DebugServer.get());
   }
 
   if (!CTX->InitCore()) {
@@ -593,9 +594,9 @@ int main(int argc, char** argv, char** const envp) {
   }
 
   auto ParentThread = SyscallHandler->TM.CreateThread(Loader.DefaultRIP(), Loader.GetStackPointer());
-  SyscallHandler->TM.TrackThread(ParentThread);
   SignalDelegation->RegisterTLSState(ParentThread);
   ThunkHandler->RegisterTLSState(ParentThread);
+  SyscallHandler->TM.TrackThread(ParentThread);
 
   // Pass in our VDSO thunks
   ThunkHandler->AppendThunkDefinitions(FEX::VDSO::GetVDSOThunkDefinitions(Loader.Is64BitMode()));
