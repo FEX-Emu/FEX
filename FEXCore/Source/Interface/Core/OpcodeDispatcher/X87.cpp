@@ -129,8 +129,20 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FST(OpcodeArgs, IR::OpSize Width) {
-  Ref Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-  _StoreStackMemory(Mem, OpSize::i128Bit, true, Width);
+  // Ref Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
+  //  FIXME: Is TSO relevant for x87?
+  AddressMode A = DecodeAddress(Op, Op->Dest, MemoryAccessType::DEFAULT, false);
+
+  Ref Addr = A.Base ? A.Base : _Constant(0);
+  if (A.Index) {
+    Ref ScaledIndex = A.Index;
+    if (A.IndexScale > 1) {
+      ScaledIndex = _Lshl(A.AddrSize, ScaledIndex, _Constant(A.IndexScale >> 1));
+    }
+    Addr = _Add(A.AddrSize, Addr, ScaledIndex);
+  }
+
+  _StoreStackMem(OpSize::i128Bit, Width, Addr, _Constant(A.Offset), /*Float=*/true);
   if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
     _PopStackDestroy();
   }
