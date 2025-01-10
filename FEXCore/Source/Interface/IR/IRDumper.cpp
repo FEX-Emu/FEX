@@ -240,6 +240,7 @@ static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView
   case OpSize::i64Bit: *out << "i64"; break;
   case OpSize::i128Bit: *out << "i128"; break;
   case OpSize::i256Bit: *out << "i256"; break;
+  case OpSize::f80Bit: *out << "f80"; break;
   default: *out << "<Unknown OpSize Type>"; break;
   }
 }
