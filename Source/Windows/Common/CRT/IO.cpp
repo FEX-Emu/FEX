@@ -36,6 +36,10 @@ struct FILE {
     : Handle {Handle}
     , FileHandle {FileHandle}
     , Append {Append} {}
+
+  ~FILE() {
+    CloseHandle(Handle);
+  }
 };
 
 namespace {
