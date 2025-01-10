@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include "CodeEmitter/Emitter.h"
 #include "Interface/IR/IR.h"
 #include "Interface/IR/IntrusiveIRList.h"
 
@@ -10,9 +9,9 @@
 
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/vector.h>
-#include <FEXCore/fextl/unordered_map.h>
 
 #include <algorithm>
+#include <new>
 #include <stdint.h>
 #include <string.h>
 
@@ -45,37 +44,6 @@ public:
     return IRListView(&DualListData);
   }
   void ResetWorkingList();
-
-  // Predicate Cache Implementation
-  // This lives here rather than OpcodeDispatcher because x87StackOptimization Pass
-  // also needs it.
-  struct PredicateKey {
-    ARMEmitter::PredicatePattern Pattern;
-    OpSize Size;
-    bool operator==(const PredicateKey& rhs) const = default;
-  };
-
-  struct PredicateKeyHash {
-    size_t operator()(const PredicateKey& key) const {
-      return FEXCore::ToUnderlying(key.Pattern) + (FEXCore::ToUnderlying(key.Size) * FEXCore::ToUnderlying(OpSize::iInvalid));
-    }
-  };
-  fextl::unordered_map<PredicateKey, Ref, PredicateKeyHash> InitPredicateCache;
-
-  Ref InitPredicateCached(OpSize Size, ARMEmitter::PredicatePattern Pattern) {
-    PredicateKey Key {Pattern, Size};
-    auto ValIt = InitPredicateCache.find(Key);
-    if (ValIt == InitPredicateCache.end()) {
-      auto Predicate = _InitPredicate(Size, static_cast<uint8_t>(FEXCore::ToUnderlying(Pattern)));
-      InitPredicateCache[Key] = Predicate;
-      return Predicate;
-    }
-    return ValIt->second;
-  }
-
-  void ResetInitPredicateCache() {
-    InitPredicateCache.clear();
-  }
 
   /**
    * @name IR allocation routines

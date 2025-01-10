@@ -125,9 +125,6 @@ public:
 
     // Need to clear any named constants that were cached.
     ClearCachedNamedConstants();
-
-    // Clear predicate cache for x87 ldst
-    ResetInitPredicateCache();
   }
 
   IRPair<IROp_Jump> Jump() {
