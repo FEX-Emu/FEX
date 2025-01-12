@@ -1103,6 +1103,12 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
       auto OpMinPage = OpMinAddress & FEXCore::Utils::FEX_PAGE_MASK;
       auto OpMaxPage = OpMaxAddress & FEXCore::Utils::FEX_PAGE_MASK;
 
+      if (!EntryBlock && OpMinPage == OpMaxPage && PeekByte(0) == 0 && PeekByte(1) == 0) [[unlikely]] {
+        // End the multiblock early if we hit 2 consecutive null bytes (add [rax], al) in the same page with the
+        // assumption we are most likely trying to explore garbage code.
+        break;
+      }
+
       if (OpMinPage != CurrentCodePage) {
         CurrentCodePage = OpMinPage;
         CodePages.insert(CurrentCodePage);
