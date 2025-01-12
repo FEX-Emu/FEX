@@ -12,10 +12,16 @@ function(build_implib name)
   add_dependencies(${name_ex} ${name_ex}lib)
 endfunction()
 
+# Output DLL patching binary. Needs to be exactly 32-bytes.
+add_custom_target(wine_builtin_patch
+  COMMAND echo -n 'Wine builtin DLL\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0\\0' > ${CMAKE_BINARY_DIR}/wine_builtin.bin
+  BYPRODUCTS ${CMAKE_BINARY_DIR}/wine_builtin.bin)
+
 function(patch_library_wine target)
+  add_dependencies(${target} wine_builtin_patch)
   add_custom_command(
     TARGET ${target} POST_BUILD
-    COMMAND dd bs=32 count=1 seek=2 conv=notrunc if=${CMAKE_SOURCE_DIR}/Source/Windows/wine_builtin.bin of=$<TARGET_FILE:${target}>
+    COMMAND dd bs=32 count=1 seek=2 conv=notrunc if=${CMAKE_BINARY_DIR}/wine_builtin.bin of=$<TARGET_FILE:${target}>
   )
 endfunction()
 
