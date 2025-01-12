@@ -929,6 +929,7 @@ void Decoder::BranchTargetInMultiblockRange() {
   uint64_t TargetRIP = 0;
   const auto GPRSize = CTX->GetGPROpSize();
   bool Conditional = true;
+  const auto InstEnd = DecodeInst->PC + DecodeInst->InstSize;
 
   switch (DecodeInst->OP) {
   case 0x70 ... 0x7F:   // Conditional JUMP
@@ -937,17 +938,17 @@ void Decoder::BranchTargetInMultiblockRange() {
     // auto RIPOffset = LoadSource(Op, Op->Src[0], Op->Flags);
     // auto RIPTargetConst = _Constant(Op->PC + Op->InstSize);
     // Target offset is PC + InstSize + Literal
-    TargetRIP = DecodeInst->PC + DecodeInst->InstSize + DecodeInst->Src[0].Literal();
+    TargetRIP = InstEnd + DecodeInst->Src[0].Literal();
     break;
   }
   case 0xE9:
   case 0xEB: // Both are unconditional JMP instructions
-    TargetRIP = DecodeInst->PC + DecodeInst->InstSize + DecodeInst->Src[0].Literal();
+    TargetRIP = InstEnd + DecodeInst->Src[0].Literal();
     Conditional = false;
     break;
   case 0xE8: // Call - Immediate target, We don't want to inline calls
     if (ExternalBranches) {
-      ExternalBranches->insert(DecodeInst->PC + DecodeInst->InstSize);
+      ExternalBranches->insert(InstEnd);
     }
     [[fallthrough]];
   case 0xC2: // RET imm
@@ -961,7 +962,9 @@ void Decoder::BranchTargetInMultiblockRange() {
   }
 
   // If the target RIP is x86 code within the symbol ranges then we are golden
-  bool ValidMultiblockMember = TargetRIP >= SymbolMinAddress && TargetRIP < SymbolMaxAddress;
+  // Forbid cross-page branches to both avoid massive (range-wise) code blocks in highly fragmented code and trying to decode unmapped branch targets
+  bool ValidMultiblockMember =
+    TargetRIP >= SymbolMinAddress && TargetRIP < std::min(FEXCore::AlignUp(InstEnd, FEXCore::Utils::FEX_PAGE_SIZE), SymbolMaxAddress);
 
 #ifdef _M_ARM_64EC
   ValidMultiblockMember = ValidMultiblockMember && !RtlIsEcCode(TargetRIP);
@@ -974,9 +977,8 @@ void Decoder::BranchTargetInMultiblockRange() {
       MaxCondBranchBackwards = std::min(MaxCondBranchBackwards, TargetRIP);
 
       // If we are conditional then a target can be the instruction past the conditional instruction
-      uint64_t FallthroughRIP = DecodeInst->PC + DecodeInst->InstSize;
-      if (!HasBlocks.contains(FallthroughRIP)) {
-        CurrentBlockTargets.insert(FallthroughRIP);
+      if (!HasBlocks.contains(InstEnd)) {
+        CurrentBlockTargets.insert(InstEnd);
       }
     }
 
