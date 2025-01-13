@@ -11,7 +11,6 @@
 #include <FEXCore/fextl/vector.h>
 
 #include <algorithm>
-#include <new>
 #include <stdint.h>
 #include <string.h>
 
