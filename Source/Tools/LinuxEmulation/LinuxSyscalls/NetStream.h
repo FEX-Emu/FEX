@@ -11,8 +11,7 @@
 namespace FEX::Utils {
 class NetStream final {
 public:
-  NetStream()
-    : receive_buffer(1500) {}
+  NetStream();
 
   void OpenSocket(int _socketfd) {
     socketfd = _socketfd;
@@ -37,12 +36,16 @@ public:
       return std::get<char>(*this);
     }
   };
+
   ReturnGet get();
-  size_t read(char* buf, size_t size);
+  size_t read(char* buf, size_t size, bool ContinueOnInterrupt);
+
+  void InterruptReader();
 
   bool SendPacket(const fextl::string& packet);
 private:
   int socketfd {-1};
+  int eventfd {-1};
   size_t read_offset {};
   size_t receive_offset {};
   fextl::vector<char> receive_buffer;

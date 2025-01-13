@@ -203,7 +203,12 @@ fextl::string GdbServer::ReadPacket() {
       break;
     case '}': // escape char
     {
-      auto escaped = CommsStream.get();
+      Utils::NetStream::ReturnGet escaped;
+
+      do {
+        escaped = CommsStream.get();
+      } while (!escaped.HasData() && !escaped.HasHangup());
+
       if (escaped.HasData()) {
         packet.push_back(escaped.GetData() ^ 0x20);
       } else {
@@ -214,7 +219,7 @@ fextl::string GdbServer::ReadPacket() {
     case '#': // end of packet
     {
       char hexString[3] = {0, 0, 0};
-      CommsStream.read(hexString, 2);
+      CommsStream.read(hexString, 2, true);
       int expected_checksum = std::strtoul(hexString, nullptr, 16);
 
       if (calculateChecksum(packet) == expected_checksum) {
@@ -1395,45 +1400,47 @@ void GdbServer::GdbServerLoop() {
 
     HandledPacketType response {};
 
-    // Outer server loop. Handles packet start, ACK/NAK and break
-    Utils::NetStream::ReturnGet c;
-    while (!CoreShuttingDown.load() && (c = CommsStream.get()).HasData()) {
-      switch (c.GetData()) {
-      case '$': {
-        auto packet = ReadPacket();
-        response = ProcessPacket(packet);
-        SendPacketPair(response);
-        if (response.TypeResponse == HandledPacketType::TYPE_UNKNOWN) {
-          LogMan::Msg::DFmt("Unknown packet {}", packet);
+    while (!CoreShuttingDown.load()) {
+      // Outer server loop. Handles packet start, ACK/NAK and break
+      Utils::NetStream::ReturnGet c;
+      while ((c = CommsStream.get()).HasData()) {
+        switch (c.GetData()) {
+        case '$': {
+          auto packet = ReadPacket();
+          response = ProcessPacket(packet);
+          SendPacketPair(response);
+          if (response.TypeResponse == HandledPacketType::TYPE_UNKNOWN) {
+            LogMan::Msg::DFmt("Unknown packet {}", packet);
+          }
+          break;
         }
-        break;
-      }
-      case '+':
-        // ACK, do nothing.
-        break;
-      case '-':
-        // NAK, Resend requested
-        {
-          std::lock_guard lk(sendMutex);
-          SendPacket(response.Response);
+        case '+':
+          // ACK, do nothing.
+          break;
+        case '-':
+          // NAK, Resend requested
+          {
+            std::lock_guard lk(sendMutex);
+            SendPacket(response.Response);
+          }
+          break;
+        case '\x03': { // ASCII EOT
+          SyscallHandler->TM.Pause();
+          fextl::string str = fextl::fmt::format("T02thread:{:02x};", getpid());
+          if (LibraryMapChanged) {
+            // If libraries have changed then let gdb know
+            str += "library:1;";
+          }
+          SendPacketPair({std::move(str), HandledPacketType::TYPE_ACK});
+          break;
         }
-        break;
-      case '\x03': { // ASCII EOT
-        SyscallHandler->TM.Pause();
-        fextl::string str = fextl::fmt::format("T02thread:{:02x};", getpid());
-        if (LibraryMapChanged) {
-          // If libraries have changed then let gdb know
-          str += "library:1;";
+        default: LogMan::Msg::DFmt("GdbServer: Unexpected byte {} ({:02x})", c.GetData(), c.GetData());
         }
-        SendPacketPair({std::move(str), HandledPacketType::TYPE_ACK});
-        break;
       }
-      default: LogMan::Msg::DFmt("GdbServer: Unexpected byte {} ({:02x})", c.GetData(), c.GetData());
-      }
-    }
 
-    if (c.HasHangup()) {
-      break;
+      if (c.HasHangup()) {
+        break;
+      }
     }
 
     {
