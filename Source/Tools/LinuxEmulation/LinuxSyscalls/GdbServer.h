@@ -37,6 +37,11 @@ public:
 
   void OnThreadCreated(FEX::HLE::ThreadStateObject* ThreadObject);
 
+  void ClaimLibraryChange(FEX::HLE::ThreadStateObject* ThreadObject);
+  void SetLibrariesChanged() {
+    LibraryMapChanged = true;
+  }
+
 private:
   void Break(FEX::HLE::ThreadStateObject* ThreadObject, int signal);
 
@@ -167,6 +172,10 @@ private:
   fextl::string GdbUnixSocketPath {};
   FEX_CONFIG_OPT(Filename, APP_FILENAME);
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
+  FEX_CONFIG_OPT(GdbServerNoWait, GDBSERVERNOWAIT);
+
+  bool CurrentStateRunning{};
+  std::atomic_bool InSignaledState{};
 
   class PersonalFaultHandler final : public FEX::HLE::SignalDelegatorBase {
   public:
@@ -182,6 +191,25 @@ private:
       ;
     return Elements;
   };
+
+  std::mutex RunningResponseQueueMutex;
+
+  struct ResponsePacketContainer {
+    HandledPacketType Packet;
+    std::function<void()> PrologueHandler;
+  };
+  fextl::list<ResponsePacketContainer> ResponseQueueWhileRunning;
+  void QueuePacketWhileForWhileRunning(HandledPacketType& response, std::function<void()> PrologueHandler = nullptr) {
+    std::lock_guard lk(RunningResponseQueueMutex);
+    ResponseQueueWhileRunning.emplace_back(response, PrologueHandler);
+  }
+  std::optional<ResponsePacketContainer> GetResponsePacket() {
+    std::lock_guard lk(RunningResponseQueueMutex);
+    if (ResponseQueueWhileRunning.empty()) return std::nullopt;
+    auto pkt = ResponseQueueWhileRunning.front();
+    ResponseQueueWhileRunning.pop_front();
+    return pkt;
+  }
 };
 
 } // namespace FEX

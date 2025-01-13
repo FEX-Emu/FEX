@@ -11,6 +11,7 @@ $end_info$
 
 #include "LinuxSyscalls/NetStream.h"
 #include "LinuxSyscalls/SignalDelegator.h"
+#include "LinuxSyscalls/Syscalls.h"
 
 #include <cstdlib>
 #include <cstdio>
@@ -64,16 +65,29 @@ namespace FEX {
 
 #ifndef _WIN32
 void GdbServer::Break(FEX::HLE::ThreadStateObject* ThreadObject, int signal) {
-  std::lock_guard lk(sendMutex);
-  if (!CommsStream) {
-    return;
-  }
-
   // Current debugging thread switches to the thread that is breaking.
   CurrentDebuggingThread = ThreadObject->ThreadInfo.TID.load();
 
-  const auto str = fextl::fmt::format("T{:02x}thread:{:x};", signal, CurrentDebuggingThread);
-  SendPacket(str);
+  InSignaledState = true;
+
+  auto PrologueHandler = [this]() {
+    CurrentStateRunning = false;
+  };
+
+  ClaimLibraryChange(ThreadObject);
+  auto pkt = HandledPacketType {fextl::fmt::format("T{:02x}thread:{:x};", signal, CurrentDebuggingThread), HandledPacketType::TYPE_ACK};
+  QueuePacketWhileForWhileRunning(pkt, PrologueHandler);
+}
+
+void GdbServer::ClaimLibraryChange(FEX::HLE::ThreadStateObject* ThreadObject) {
+  if (!LibraryMapChanged) return;
+
+  auto PrologueHandler = [this]() {
+    CurrentStateRunning = false;
+  };
+
+  auto pkt = HandledPacketType {fextl::fmt::format("T05thread:{:x};library:0;", CurrentDebuggingThread), HandledPacketType::TYPE_ACK};
+  QueuePacketWhileForWhileRunning(pkt, PrologueHandler);
 }
 
 GdbServer::~GdbServer() {
@@ -87,7 +101,14 @@ GdbServer::~GdbServer() {
 
 void GdbServer::PersonalFaultHandler::HandleSignal(FEX::HLE::ThreadStateObject* Thread, int Signal, void* Info, void* UContext) {
   siginfo_t* SigInfo = reinterpret_cast<siginfo_t*>(Info);
-  if (HLE::FaultSafeUserMemAccess::TryHandleSafeFault(Signal, *SigInfo, UContext)) {
+  if (Signal == SIGSEGV) {
+    if (HLE::FaultSafeUserMemAccess::TryHandleSafeFault(Signal, *SigInfo, UContext)) {
+      return;
+    }
+  }
+
+  if (Signal == SIGUSR1) {
+    // This is just a signal to the gdbserver thread to process packets
     return;
   }
 
@@ -129,6 +150,9 @@ GdbServer::GdbServer(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* 
 
       // Let GDB know that we have a signal
       this->Break(ThreadObject, Signal);
+
+      // Let Gdbserver know that it needs to handle packets
+      tgkill(::getpid(), this->FakeThreadObject.ThreadInfo.TID, SIGUSR1);
 
       this->SyscallHandler->TM.SleepThread(this->CTX, ThreadObject);
       bool Continue = ThreadObject->GdbInfo->Continue;
@@ -268,6 +292,8 @@ void GdbServer::SendPacket(const fextl::string& packet) {
   const auto escaped = escapePacket(packet);
   const auto str = fextl::fmt::format("${}#{:02x}", escaped, calculateChecksum(escaped));
 
+  LogMan::Msg::IFmt("[client] '{}'", str);
+
   CommsStream->SendPacket(str);
 }
 
@@ -299,6 +325,7 @@ const FEX::HLE::ThreadStateObject* GdbServer::FindThreadByTID(uint32_t TID) {
     return Thread;
   }
 
+  LogMan::Msg::DFmt("\tCouldn't find TID: {}", TID);
   // Return parent thread if TID isn't found.
   return Threads->at(0);
 }
@@ -593,26 +620,25 @@ GdbServer::HandledPacketType GdbServer::handleProgramOffsets() {
 GdbServer::HandledPacketType GdbServer::ThreadAction(char action, uint32_t tid) {
   switch (action) {
   case 'c': {
-    {
-      std::lock_guard lk(*SyscallHandler->TM.GetThreadsCreationMutex());
-      auto Threads = SyscallHandler->TM.GetThreads();
-      for (auto& Thread : *Threads) {
-        Thread->ThreadSleeping.NotifyOne();
+    if (!InSignaledState.load()) {
+      {
+        std::lock_guard lk(*SyscallHandler->TM.GetThreadsCreationMutex());
+        auto Threads = SyscallHandler->TM.GetThreads();
+        for (auto& Thread : *Threads) {
+          Thread->ThreadSleeping.NotifyOne();
+        }
       }
+      SyscallHandler->TM.Run();
+      SyscallHandler->TM.WaitForThreadsToRun();
     }
-    SyscallHandler->TM.Run();
-    SyscallHandler->TM.WaitForThreadsToRun();
+
+    CurrentStateRunning = true;
     return {"", HandledPacketType::TYPE_ONLYACK};
   }
   case 's': {
     SyscallHandler->TM.Step();
     SendPacketPair({"OK", HandledPacketType::TYPE_ACK});
     fextl::string str = fextl::fmt::format("T05thread:{:02x};", getpid());
-    if (LibraryMapChanged) {
-      // If libraries have changed then let gdb know
-      str += "library:1;";
-    }
-
     SendPacketPair({std::move(str), HandledPacketType::TYPE_ACK});
     return {"OK", HandledPacketType::TYPE_ACK};
   }
@@ -627,23 +653,27 @@ GdbServer::HandledPacketType GdbServer::ThreadAction(char action, uint32_t tid) 
 GdbServer::HandledPacketType GdbServer::SingleThreadAction(char action, uint32_t tid, uint32_t Signal, uint64_t NewRIP) {
   switch (action) {
   case 'C': {
-    auto Threads = SyscallHandler->TM.GetThreads();
-    for (auto& Thread : *Threads) {
-      if (tid == Thread->ThreadInfo.TID) {
-        if (Thread->GdbInfo.has_value()) {
-          LOGMAN_THROW_A_FMT(Thread->GdbInfo->Signal == Signal,
-                             "Gdb trying to resume thread with different signal than invoked: Original: {} New: {}",
-                             Thread->GdbInfo->Signal, Signal);
-          [[maybe_unused]] const bool MatchingRIP = NewRIP == 0 || CTX->RestoreRIPFromHostPC(Thread->Thread, Thread->GdbInfo->SignalPC) == NewRIP;
-          LOGMAN_THROW_A_FMT(MatchingRIP, "Gdb trying to return thread to new RIP");
-          Thread->GdbInfo->Continue = true;
+    if (!InSignaledState.load()) {
+      auto Threads = SyscallHandler->TM.GetThreads();
+      for (auto& Thread : *Threads) {
+        if (tid == Thread->ThreadInfo.TID) {
+          if (Thread->GdbInfo.has_value()) {
+            LOGMAN_THROW_A_FMT(Thread->GdbInfo->Signal == Signal,
+                               "Gdb trying to resume thread with different signal than invoked: Original: {} New: {}",
+                               Thread->GdbInfo->Signal, Signal);
+            [[maybe_unused]] const bool MatchingRIP = NewRIP == 0 || CTX->RestoreRIPFromHostPC(Thread->Thread, Thread->GdbInfo->SignalPC) == NewRIP;
+            LOGMAN_THROW_A_FMT(MatchingRIP, "Gdb trying to return thread to new RIP");
+            Thread->GdbInfo->Continue = true;
+          }
         }
-      }
 
-      Thread->ThreadSleeping.NotifyOne();
+        Thread->ThreadSleeping.NotifyOne();
+      }
+      SyscallHandler->TM.Run();
+      SyscallHandler->TM.WaitForThreadsToRun();
     }
-    SyscallHandler->TM.Run();
-    SyscallHandler->TM.WaitForThreadsToRun();
+
+    CurrentStateRunning = true;
     return {"", HandledPacketType::TYPE_ONLYACK};
   }
   default: return {"E00", HandledPacketType::TYPE_ACK};
@@ -692,13 +722,18 @@ GdbServer::HandledPacketType GdbServer::CommandDetach(const fextl::string& packe
   // Ensure the threads are back in running state on detach
   SyscallHandler->TM.Run();
   SyscallHandler->TM.WaitForThreadsToRun();
+  CurrentStateRunning = true;
   return {"OK", HandledPacketType::TYPE_ACK};
 }
 
 GdbServer::HandledPacketType GdbServer::CommandReadRegisters(const fextl::string& packet) {
   // We might be running while we try reading
   // Pause up front
-  SyscallHandler->TM.Pause();
+  if (!InSignaledState.load()) {
+    SyscallHandler->TM.Pause();
+    CurrentStateRunning = false;
+  }
+
   const FEX::HLE::ThreadStateObject* CurrentThread = FindThreadByTID(CurrentDebuggingThread);
   const size_t NumGPR = Is64BitMode() ? FEXCore::Core::CPUState::NUM_GPRS : FEXCore::Core::CPUState::NUM_GPRS / 2;
   const size_t GPRSize = Is64BitMode() ? sizeof(uint64_t) : sizeof(uint32_t);
@@ -748,6 +783,7 @@ GdbServer::HandledPacketType GdbServer::CommandThreadOp(const fextl::string& pac
     ss >> std::hex >> CurrentDebuggingThread;
 
     SyscallHandler->TM.Pause();
+    CurrentStateRunning = false;
     return {"OK", HandledPacketType::TYPE_ACK};
   }
 
@@ -756,9 +792,11 @@ GdbServer::HandledPacketType GdbServer::CommandThreadOp(const fextl::string& pac
     auto ss = fextl::istringstream(packet);
     ss.seekg(strlen("Hg"));
     ss >> std::hex >> CurrentDebuggingThread;
+    LogMan::Msg::DFmt("Debugging thread set to: {}", CurrentDebuggingThread);
 
     // This must return quick otherwise IDA complains
     SyscallHandler->TM.Pause();
+    CurrentStateRunning = false;
     return {"OK", HandledPacketType::TYPE_ACK};
   }
 
@@ -886,8 +924,6 @@ GdbServer::HandledPacketType GdbServer::CommandQuery(const fextl::string& packet
     // It is likely used for embedded environments where you have a fixed
     // memory map.
     // SupportedFeatures += "qXfer:memory-map:read+;";
-    SupportedFeatures += "qXfer:siginfo:read+;";
-    SupportedFeatures += "qXfer:siginfo:write+;";
     SupportedFeatures += "qXfer:threads:read+;";
     SupportedFeatures += "QCatchSignals+;";
     SupportedFeatures += "QPassSignals+;";
@@ -913,6 +949,20 @@ GdbServer::HandledPacketType GdbServer::CommandQuery(const fextl::string& packet
       }
       if (MatchStr(Feature, "vContSupported+")) {
         SupportedFeatures += "vContSupported+;";
+      }
+
+      if (MatchStr(Feature, "qXfer:siginfo:read+")) {
+        SupportedFeatures += "qXfer:siginfo:read+;";
+      }
+      else if (MatchStr(Feature, "qXfer:siginfo:read")) {
+        SupportedFeatures += "qXfer:siginfo:read;";
+      }
+
+      if (MatchStr(Feature, "qXfer:siginfo:write+")) {
+        SupportedFeatures += "qXfer:siginfo:write+;";
+      }
+      else if (MatchStr(Feature, "qXfer:siginfo:write")) {
+        SupportedFeatures += "qXfer:siginfo:write;";
       }
 
       // Unsupported:
@@ -1225,6 +1275,7 @@ GdbServer::HandledPacketType GdbServer::CommandBreakpoint(const fextl::string& p
   ss >> std::hex >> Type;
 
   SyscallHandler->TM.Pause();
+  CurrentStateRunning = false;
   return {"OK", HandledPacketType::TYPE_ACK};
 }
 
@@ -1409,16 +1460,18 @@ GdbServer::WaitForConnectionResult GdbServer::WaitForConnection() {
 }
 
 void GdbServer::GdbServerLoop() {
+  FakeThreadObject.ThreadInfo.TID = FHU::Syscalls::gettid();
+
   // Register our fake thread object to the global signaldelegator.
   SignalDelegation->RegisterTLSState(&FakeThreadObject);
 
   // Overwrite the internal signal delegator handler to our own.
   FakeThreadObject.SignalInfo.Delegator = &BasicSignalHandler;
 
-  // Restore the signal mask for SIGSEGV.
+  // Restore the signal mask for SIGSEGV and SIGUSR1.
   uint64_t Mask {};
   ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, nullptr, &Mask, 8);
-  Mask &= ~(1ULL << (SIGSEGV - 1));
+  Mask &= ~((1ULL << (SIGSEGV - 1)) | (1ULL << (SIGUSR1 - 1)));
   ::syscall(SYS_rt_sigprocmask, SIG_SETMASK, &Mask, nullptr, 8);
 
   OpenListenSocket();
@@ -1432,43 +1485,80 @@ void GdbServer::GdbServerLoop() {
       break;
     }
 
+    auto DoStopRequest = [&](bool AllowLibraryUpdate) {
+      // Stop request expects all threads to stop without $g
+      auto PrologueHandler = [this]() {
+        SyscallHandler->TM.Pause();
+        CurrentStateRunning = false;
+      };
+
+      auto stop_pkt = HandledPacketType {fextl::fmt::format("T02thread:{:02x};", getpid()), HandledPacketType::TYPE_ACK};
+      if (AllowLibraryUpdate && LibraryMapChanged) {
+        // If libraries have changed then let gdb know before actually pausing.
+        auto pkt = HandledPacketType {fextl::fmt::format("T05thread:{:02x};library:1;", getpid()), HandledPacketType::TYPE_ACK};
+        QueuePacketWhileForWhileRunning(pkt, PrologueHandler);
+      }
+
+      QueuePacketWhileForWhileRunning(stop_pkt, PrologueHandler);
+    };
     HandledPacketType response {};
 
     // Outer server loop. Handles packet start, ACK/NAK and break
+    std::optional<Utils::NetStream::ReturnGet> c;
+    while (!CoreShuttingDown.load()) {
+      // Wait for communication
+      c = CommsStream->get();
 
-    std::optional<char> c;
-    while ((c = CommsStream->get()).has_value()) {
-      switch (*c) {
-      case '$': {
-        auto packet = ReadPacket();
-        response = ProcessPacket(packet);
-        SendPacketPair(response);
-        if (response.TypeResponse == HandledPacketType::TYPE_UNKNOWN) {
-          LogMan::Msg::DFmt("Unknown packet {}", packet);
+      if (!ResponseQueueWhileRunning.empty()) {
+        LogMan::Msg::DFmt("[client] {} response packets", ResponseQueueWhileRunning.size());
+      }
+      if (c.has_value() && !c->Hangup) {
+        switch (c->data) {
+        case '$': {
+          auto packet = ReadPacket();
+          LogMan::Msg::IFmt("[server] '{}'", packet);
+          response = ProcessPacket(packet);
+          SendPacketPair(response);
+          if (response.TypeResponse == HandledPacketType::TYPE_UNKNOWN) {
+            LogMan::Msg::DFmt("Unknown packet {}", packet);
+          }
+          break;
         }
+        case '+':
+          // ACK, do nothing.
+          break;
+        case '-':
+          // NAK, Resend requested
+          {
+            LogMan::Msg::DFmt("Explicit NAK!");
+            std::lock_guard lk(sendMutex);
+            SendPacket(response.Response);
+          }
+          break;
+        case '\x03': { // ASCII EOT
+          DoStopRequest(true);
+          break;
+        }
+        default: LogMan::Msg::DFmt("GdbServer: Unexpected byte {} ({:02x})", c->data, c->data);
+        }
+      }
+
+      if (c.has_value() && c->Hangup) {
         break;
       }
-      case '+':
-        // ACK, do nothing.
-        break;
-      case '-':
-        // NAK, Resend requested
-        {
-          std::lock_guard lk(sendMutex);
-          SendPacket(response.Response);
+
+      // Only send response packets when the gdbserver is in "running" state.
+      if (CurrentStateRunning == true) {
+        auto response_pkt = GetResponsePacket();
+
+        if (response_pkt.has_value()) {
+          LogMan::Msg::DFmt("Handling 1 out of {} response packets", ResponseQueueWhileRunning.size());
+          if (response_pkt->PrologueHandler) {
+            response_pkt->PrologueHandler();
+          }
+          // Send one packet.
+          SendPacketPair(response_pkt->Packet);
         }
-        break;
-      case '\x03': { // ASCII EOT
-        SyscallHandler->TM.Pause();
-        fextl::string str = fextl::fmt::format("T02thread:{:02x};", getpid());
-        if (LibraryMapChanged) {
-          // If libraries have changed then let gdb know
-          str += "library:1;";
-        }
-        SendPacketPair({std::move(str), HandledPacketType::TYPE_ACK});
-        break;
-      }
-      default: LogMan::Msg::DFmt("GdbServer: Unexpected byte {} ({:02x})", *c, *c);
       }
     }
 
@@ -1497,14 +1587,14 @@ void GdbServer::StartThread() {
 }
 
 void GdbServer::OnThreadCreated(FEX::HLE::ThreadStateObject* ThreadObject) {
-  if (SyscallHandler->TM.GetThreadCount() == 1) {
+  if (SyscallHandler->TM.GetThreadCount() == 1 && !GdbServerNoWait()) {
     // Sleep the first thread created. This is because FEX only supports attaching at startup currently.
     SyscallHandler->TM.SleepThread(CTX, ThreadObject);
   }
 }
 
 void GdbServer::OpenListenSocket() {
-  const auto GdbUnixPath = fextl::fmt::format("{}/FEX_gdbserver/", FEXServerClient::GetTempFolder());
+  const auto GdbUnixPath = fextl::fmt::format("/home/ryanh/FEX_gdbserver/");
   if (FHU::Filesystem::CreateDirectory(GdbUnixPath) == FHU::Filesystem::CreateDirectoryResult::ERROR) {
     LogMan::Msg::EFmt("[GdbServer] Couldn't create gdbserver folder {}", GdbUnixPath);
     return;

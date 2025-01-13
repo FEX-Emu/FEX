@@ -13,6 +13,7 @@ $end_info$
 #include <sys/shm.h>
 #include <sys/mman.h>
 
+#include "LinuxSyscalls/GdbServer.h"
 #include "LinuxSyscalls/Syscalls.h"
 
 #include <FEXCore/Debug/InternalThreadState.h>
@@ -233,6 +234,10 @@ void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uintp
     // VMATracking.Mutex can't be held while executing this, otherwise it hangs if the JIT is in the process of looking up code in the AOT JIT.
     _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, (uintptr_t)Base, Size);
   }
+
+  if (GdbServer && !(Flags & MAP_ANONYMOUS)) [[unlikely]] {
+    GdbServer->SetLibrariesChanged();
+  }
 }
 
 void SyscallHandler::TrackMunmap(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base, uintptr_t Size) {
@@ -259,10 +264,6 @@ void SyscallHandler::TrackMprotect(FEXCore::Core::InternalThreadState* Thread, u
     auto lk = FEXCore::GuardSignalDeferringSection(VMATracking.Mutex, Thread);
 
     VMATracking.ChangeUnsafe(Base, Size, VMAProt::fromProt(Prot));
-  }
-
-  if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
-    _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, Base, Size);
   }
 }
 

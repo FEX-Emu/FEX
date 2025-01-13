@@ -215,6 +215,13 @@
           "Enables the GDB server."
         ]
       },
+      "GdbServerNoWait": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "Enables the GDB server but doesn't wait for attachment."
+        ]
+      },
       "DumpIR": {
         "Type": "str",
         "Default": "no",

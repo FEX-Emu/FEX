@@ -107,7 +107,8 @@ void ThreadManager::Pause() {
     const auto tid = FHU::Syscalls::gettid();
     std::lock_guard lk(ThreadCreationMutex);
     for (auto& Thread : Threads) {
-      LOGMAN_THROW_A_FMT(!(Thread->ThreadInfo.PID == pid && Thread->ThreadInfo.TID == tid), "Can't put threads to sleep from inside emulation thread!");
+      LOGMAN_THROW_A_FMT(!(Thread->ThreadInfo.PID == pid && Thread->ThreadInfo.TID == tid), "Can't put threads to sleep from inside "
+                                                                                            "emulation thread!");
     }
   }
 #endif
@@ -199,12 +200,13 @@ void ThreadManager::Stop(bool IgnoreCurrentThread) {
 
 void ThreadManager::SleepThread(FEXCore::Context::Context* CTX, FEX::HLE::ThreadStateObject* ThreadObject) {
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-    // Sanity check. This can only be called from the owning thread.
-    {
-      const auto pid = ::getpid();
-      const auto tid = FHU::Syscalls::gettid();
-      LOGMAN_THROW_A_FMT(ThreadObject->ThreadInfo.PID == pid && ThreadObject->ThreadInfo.TID == tid, "Can't delete TLS data from a different thread!");
-    }
+  // Sanity check. This can only be called from the owning thread.
+  {
+    const auto pid = ::getpid();
+    const auto tid = FHU::Syscalls::gettid();
+    LOGMAN_THROW_A_FMT(ThreadObject->ThreadInfo.PID == pid && ThreadObject->ThreadInfo.TID == tid, "Can't delete TLS data from a different "
+                                                                                                   "thread!");
+  }
 #endif
 
   --IdleWaitRefCount;
