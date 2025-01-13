@@ -1,0 +1,41 @@
+{
+  "Features": {
+    "Bitness": 32,
+    "EnabledHostFeatures": [],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256",
+      "CSSC",
+      "AFP",
+      "FLAGM",
+      "FLAGM2"
+    ]
+  },
+  "Instructions": {
+    "Multiple fld/fst": {
+      "x86InstructionCount": 4,
+      "ExpectedInstructionCount": 13,
+      "x86Insts": [
+        "fld     dword [ebp+16380]",
+        "fstp    dword [eax-0x4]",
+        "fld     dword [ebp-0x8]",
+        "fstp    dword [eax+16370]"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr s2, [x9, #16380]",
+        "stur s2, [x4, #-4]",
+        "ldur s2, [x9, #-8]",
+        "mov w20, #0x3ff2",
+        "str s2, [x4, x20, sxtx]",
+        "ldrb w20, [x28, #1019]",
+        "add w20, w20, #0x7 (7)",
+        "and w20, w20, #0x7",
+        "ldrb w21, [x28, #1298]",
+        "mov w22, #0x1",
+        "lsl w20, w22, w20",
+        "bic w20, w21, w20",
+        "strb w20, [x28, #1298]"
+      ]
+    }
+  }
+}
