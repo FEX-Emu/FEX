@@ -1079,8 +1079,9 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
   }
 
   bool EntryBlock {true};
+  bool FinalInstruction {false};
 
-  while (!BlocksToDecode.empty()) {
+  while (!FinalInstruction && !BlocksToDecode.empty()) {
     auto BlockDecodeIt = BlocksToDecode.begin();
     uint64_t RIPToDecode = *BlockDecodeIt;
     BlockInfo.Blocks.emplace_back();
@@ -1158,7 +1159,7 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
         CanContinue = true;
       }
 
-      bool FinalInstruction = DecodedSize >= MaxInst || DecodedSize >= DefaultDecodedBufferSize || TotalInstructions >= MaxInst;
+      FinalInstruction = DecodedSize >= MaxInst || DecodedSize >= DefaultDecodedBufferSize || TotalInstructions >= MaxInst;
 
       if (DecodeInst->TableInfo->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SETS_RIP) {
         // If we have multiblock enabled
