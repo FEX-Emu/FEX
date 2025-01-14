@@ -463,7 +463,7 @@ void BTCpuProcessInit() {
   SyscallHandler = fextl::make_unique<WowSyscallHandler>();
   Context::HandlerConfig.emplace();
   const auto NtDll = GetModuleHandle("ntdll.dll");
-  const bool IsWine = !!GetProcAddress(NtDll, "__wine_get_version");
+  const bool IsWine = !!GetProcAddress(NtDll, "wine_get_version");
   OvercommitTracker.emplace(IsWine);
 
   {
