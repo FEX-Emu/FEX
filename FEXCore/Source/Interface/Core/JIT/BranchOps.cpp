@@ -53,7 +53,7 @@ DEF_OP(ExitFunction) {
 
   if (IsInlineConstant(Op->NewRIP, &NewRIP) || IsInlineEntrypointOffset(Op->NewRIP, &NewRIP)) {
 #ifdef _M_ARM_64EC
-    if (RtlIsEcCode(NewRIP)) {
+    if (NewRIP < EC_CODE_BITMAP_MAX_ADDRESS && RtlIsEcCode(NewRIP)) {
       add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, StaticRegisters[X86State::REG_RSP], 0);
       LoadConstant(ARMEmitter::Size::i64Bit, EC_CALL_CHECKER_PC_REG, NewRIP);
       ldr(TMP2, STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionEC));

@@ -74,6 +74,8 @@ constexpr size_t PEB_EC_CODE_BITMAP_OFFSET = 0x368;
 constexpr size_t CPU_AREA_IN_SYSCALL_CALLBACK_OFFSET = 0x1;
 constexpr size_t CPU_AREA_EMULATOR_STACK_BASE_OFFSET = 0x8;
 constexpr size_t CPU_AREA_EMULATOR_DATA_OFFSET = 0x30;
+
+constexpr uint64_t EC_CODE_BITMAP_MAX_ADDRESS = 1ULL << 47;
 #endif
 
 // Will force one single instruction block to be generated first if set when entering the JIT filling SRA.
