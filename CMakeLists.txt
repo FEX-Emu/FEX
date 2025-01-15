@@ -29,7 +29,6 @@ option(ENABLE_CCACHE "Enables ccache for compile caching" TRUE)
 option(ENABLE_VIXL_SIMULATOR "Forces the FEX JIT to use the VIXL simulator" FALSE)
 option(ENABLE_VIXL_DISASSEMBLER "Enables debug disassembler output with VIXL" FALSE)
 option(USE_LEGACY_BINFMTMISC "Uses legacy method of setting up binfmt_misc" FALSE)
-option(COMPILE_VIXL_DISASSEMBLER "Compiles the vixl disassembler in to vixl" FALSE)
 option(ENABLE_FEXCORE_PROFILER "Enables use of the FEXCore timeline profiling capabilities" FALSE)
 set (FEXCORE_PROFILER_BACKEND "gpuvis" CACHE STRING "Set which backend you want to use for the FEXCore profiler")
 option(ENABLE_GLIBC_ALLOCATOR_HOOK_FAULT "Enables glibc memory allocation hooking with fault for CI testing")
@@ -266,12 +265,7 @@ set (CMAKE_LINKER_FLAGS_RELEASE "${CMAKE_LINKER_FLAGS_RELEASE} -fomit-frame-poin
 
 include_directories(External/robin-map/include/)
 
-if (BUILD_TESTS)
-  # Enable vixl disassembler if tests are enabled.
-  set(COMPILE_VIXL_DISASSEMBLER TRUE)
-endif()
-
-if (COMPILE_VIXL_DISASSEMBLER OR ENABLE_VIXL_DISASSEMBLER OR ENABLE_VIXL_SIMULATOR)
+if (BUILD_TESTS OR ENABLE_VIXL_DISASSEMBLER OR ENABLE_VIXL_SIMULATOR)
   add_subdirectory(External/vixl/)
   include_directories(SYSTEM External/vixl/src/)
 endif()
