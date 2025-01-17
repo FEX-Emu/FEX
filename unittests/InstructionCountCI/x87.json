@@ -6884,7 +6884,7 @@
       ]
     },
     "fstp tword [rax]": {
-      "ExpectedInstructionCount": 15,
+      "ExpectedInstructionCount": 14,
       "Comment": [
         "0xdb !11b /7"
       ],
@@ -6894,8 +6894,7 @@
         "ldr q2, [x0, #1040]",
         "str d2, [x4]",
         "mov x21, v2.d[1]",
-        "add x22, x4, #0x8 (8)",
-        "strh w21, [x22]",
+        "strh w21, [x4, #8]",
         "ldrb w21, [x28, #1298]",
         "mov w22, #0x1",
         "lsl w22, w22, w20",
@@ -17748,7 +17747,7 @@
     },
     "memcpy4_32": {
       "x86InstructionCount": 8,
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 16,
       "x86Insts": [
         "fld dword [rax]",
         "fstp dword [rdx]",
@@ -17763,14 +17762,11 @@
         "ldr s2, [x4]",
         "str s2, [x5]",
         "ldr s2, [x4, #4]",
-        "add x20, x5, #0x4 (4)",
-        "str s2, [x20]",
+        "str s2, [x5, #4]",
         "ldr s2, [x4, #8]",
-        "add x20, x5, #0x8 (8)",
-        "str s2, [x20]",
+        "str s2, [x5, #8]",
         "ldr s2, [x4, #12]",
-        "add x20, x5, #0xc (12)",
-        "str s2, [x20]",
+        "str s2, [x5, #12]",
         "ldrb w20, [x28, #1019]",
         "add w20, w20, #0x7 (7)",
         "and w20, w20, #0x7",
@@ -17783,7 +17779,7 @@
     },
     "memcpy4_64": {
       "x86InstructionCount": 8,
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 16,
       "x86Insts": [
         "fld qword [rax]",
         "fstp qword [rdx]",
@@ -17798,14 +17794,41 @@
         "ldr d2, [x4]",
         "str d2, [x5]",
         "ldr d2, [x4, #8]",
-        "add x20, x5, #0x8 (8)",
-        "str d2, [x20]",
+        "str d2, [x5, #8]",
         "ldr d2, [x4, #16]",
-        "add x20, x5, #0x10 (16)",
-        "str d2, [x20]",
+        "str d2, [x5, #16]",
         "ldr d2, [x4, #32]",
-        "add x20, x5, #0x20 (32)",
-        "str d2, [x20]",
+        "str d2, [x5, #32]",
+        "ldrb w20, [x28, #1019]",
+        "add w20, w20, #0x7 (7)",
+        "and w20, w20, #0x7",
+        "ldrb w21, [x28, #1298]",
+        "mov w22, #0x1",
+        "lsl w20, w22, w20",
+        "bic w20, w21, w20",
+        "strb w20, [x28, #1298]"
+      ]
+    },
+    "Multiple fld/fst": {
+      "x86InstructionCount": 4,
+      "ExpectedInstructionCount": 18,
+      "x86Insts": [
+        "fld     qword [ebp+16380]",
+        "fstp    qword [eax-0x4]",
+        "fld     qword [ebp-0x8]",
+        "fstp    qword [eax+16370]"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, #0x3ffc",
+        "add x20, x9, x20",
+        "mov w20, w20",
+        "ldr d2, [x20]",
+        "stur d2, [x4, #-4]",
+        "sub x20, x9, #0x8 (8)",
+        "mov w20, w20",
+        "ldr d2, [x20]",
+        "mov w20, #0x3ff2",
+        "str d2, [x4, x20, sxtx]",
         "ldrb w20, [x28, #1019]",
         "add w20, w20, #0x7 (7)",
         "and w20, w20, #0x7",

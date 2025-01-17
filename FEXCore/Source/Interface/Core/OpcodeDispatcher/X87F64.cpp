@@ -104,9 +104,21 @@ void OpDispatchBuilder::FILDF64(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FSTF64(OpcodeArgs, IR::OpSize Width) {
-  Ref Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-  _StoreStackMemory(Mem, OpSize::i64Bit, true, Width);
+  AddressMode A = DecodeAddress(Op, Op->Dest, MemoryAccessType::DEFAULT, false);
 
+  // Index scale is a power of 2?
+  LOGMAN_THROW_A_FMT(A.IndexScale > 0 && (A.IndexScale & (A.IndexScale - 1)) == 0, "Invalid index scale");
+
+  Ref Addr = A.Base ? A.Base : _Constant(0);
+  if (A.Index) {
+    Ref ScaledIndex = A.Index;
+    if (A.IndexScale > 1) {
+      ScaledIndex = _Lshl(A.AddrSize, ScaledIndex, _Constant(std::log2(A.IndexScale)));
+    }
+    Addr = _Add(A.AddrSize, Addr, ScaledIndex);
+  }
+
+  _StoreStackMem(OpSize::i64Bit, Width, Addr, _Constant(A.Offset), /*Float=*/true);
   if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
     _PopStackDestroy();
   }
