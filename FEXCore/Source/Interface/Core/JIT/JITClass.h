@@ -245,6 +245,10 @@ private:
   ARMEmitter::ExtendedMemOperand GenerateMemOperand(IR::OpSize AccessSize, ARMEmitter::Register Base, IR::OrderedNodeWrapper Offset,
                                                     IR::MemOffsetType OffsetType, uint8_t OffsetScale);
 
+  [[nodiscard]]
+  ARMEmitter::Register ApplyMemOperand(IR::OpSize AccessSize, ARMEmitter::Register Base, ARMEmitter::Register Tmp,
+                                       IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale);
+
   // NOTE: Will use TMP1 as a way to encode immediates that happen to fall outside
   //       the limits of the scalar plus immediate variant of SVE load/stores.
   //

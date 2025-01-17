@@ -591,6 +591,44 @@ ARMEmitter::ExtendedMemOperand Arm64JITCore::GenerateMemOperand(
   FEX_UNREACHABLE;
 }
 
+ARMEmitter::Register Arm64JITCore::ApplyMemOperand(IR::OpSize AccessSize, ARMEmitter::Register Base, ARMEmitter::Register Tmp,
+                                                   IR::OrderedNodeWrapper Offset, IR::MemOffsetType OffsetType, uint8_t OffsetScale) {
+  if (Offset.IsInvalid()) {
+    return Base;
+  }
+
+  if (OffsetScale != 1 && OffsetScale != IR::OpSizeToSize(AccessSize)) {
+    LOGMAN_MSG_A_FMT("Unhandled OffsetScale: {}", OffsetScale);
+  }
+
+  uint64_t Const;
+  if (IsInlineConstant(Offset, &Const)) {
+    if (Const == 0) {
+      return Base;
+    }
+    LoadConstant(ARMEmitter::Size::i64Bit, Tmp, Const);
+    add(ARMEmitter::Size::i64Bit, Tmp, Base, Tmp, ARMEmitter::ShiftType::LSL, FEXCore::ilog2(OffsetScale));
+  } else {
+    auto RegOffset = GetReg(Offset.ID());
+    switch (OffsetType.Val) {
+    case IR::MEM_OFFSET_SXTX.Val:
+      add(ARMEmitter::Size::i64Bit, Tmp, Base, RegOffset, ARMEmitter::ExtendedType::SXTX, FEXCore::ilog2(OffsetScale));
+      break;
+
+    case IR::MEM_OFFSET_UXTW.Val:
+      add(ARMEmitter::Size::i64Bit, Tmp, Base, RegOffset, ARMEmitter::ExtendedType::UXTW, FEXCore::ilog2(OffsetScale));
+      break;
+
+    case IR::MEM_OFFSET_SXTW.Val:
+      add(ARMEmitter::Size::i64Bit, Tmp, Base, RegOffset, ARMEmitter::ExtendedType::SXTW, FEXCore::ilog2(OffsetScale));
+      break;
+
+    default: LOGMAN_MSG_A_FMT("Unhandled OffsetType: {}", OffsetType.Val); break;
+    }
+  }
+  return Tmp;
+}
+
 ARMEmitter::SVEMemOperand Arm64JITCore::GenerateSVEMemOperand(IR::OpSize AccessSize, ARMEmitter::Register Base, IR::OrderedNodeWrapper Offset,
                                                               IR::MemOffsetType OffsetType, [[maybe_unused]] uint8_t OffsetScale) {
   if (Offset.IsInvalid()) {
@@ -2191,13 +2229,15 @@ DEF_OP(ParanoidLoadMemTSO) {
   const auto Op = IROp->C<IR::IROp_LoadMemTSO>();
   const auto OpSize = IROp->Size;
 
-  const auto MemReg = GetReg(Op->Addr.ID());
+  auto MemReg = GetReg(Op->Addr.ID());
 
   if (CTX->HostFeatures.SupportsTSOImm9 && Op->Class == FEXCore::IR::GPRClass) {
     const auto Dst = GetReg(Node);
     uint64_t Offset = 0;
     if (!Op->Offset.IsInvalid()) {
-      (void)IsInlineConstant(Op->Offset, &Offset);
+      if (!IsInlineConstant(Op->Offset, &Offset)) {
+        MemReg = ApplyMemOperand(OpSize, MemReg, TMP4, Op->Offset, Op->OffsetType, Op->OffsetScale);
+      }
     }
 
     if (OpSize == IR::OpSize::i8Bit) {
@@ -2214,6 +2254,7 @@ DEF_OP(ParanoidLoadMemTSO) {
     }
   } else if (CTX->HostFeatures.SupportsRCPC && Op->Class == FEXCore::IR::GPRClass) {
     const auto Dst = GetReg(Node);
+    MemReg = ApplyMemOperand(OpSize, MemReg, TMP4, Op->Offset, Op->OffsetType, Op->OffsetScale);
     if (OpSize == IR::OpSize::i8Bit) {
       // 8bit load is always aligned to natural alignment
       ldaprb(Dst.W(), MemReg);
@@ -2227,6 +2268,7 @@ DEF_OP(ParanoidLoadMemTSO) {
     }
   } else if (Op->Class == FEXCore::IR::GPRClass) {
     const auto Dst = GetReg(Node);
+    MemReg = ApplyMemOperand(OpSize, MemReg, TMP4, Op->Offset, Op->OffsetType, Op->OffsetScale);
     switch (OpSize) {
     case IR::OpSize::i8Bit: ldarb(Dst, MemReg); break;
     case IR::OpSize::i16Bit: ldarh(Dst, MemReg); break;
@@ -2236,6 +2278,7 @@ DEF_OP(ParanoidLoadMemTSO) {
     }
   } else {
     const auto Dst = GetVReg(Node);
+    MemReg = ApplyMemOperand(OpSize, MemReg, TMP4, Op->Offset, Op->OffsetType, Op->OffsetScale);
     switch (OpSize) {
     case IR::OpSize::i8Bit:
       ldarb(TMP1, MemReg);
@@ -2274,13 +2317,15 @@ DEF_OP(ParanoidStoreMemTSO) {
   const auto Op = IROp->C<IR::IROp_StoreMemTSO>();
   const auto OpSize = IROp->Size;
 
-  const auto MemReg = GetReg(Op->Addr.ID());
+  auto MemReg = GetReg(Op->Addr.ID());
 
   if (CTX->HostFeatures.SupportsTSOImm9 && Op->Class == FEXCore::IR::GPRClass) {
     const auto Src = GetReg(Op->Value.ID());
     uint64_t Offset = 0;
     if (!Op->Offset.IsInvalid()) {
-      (void)IsInlineConstant(Op->Offset, &Offset);
+      if (!IsInlineConstant(Op->Offset, &Offset)) {
+        MemReg = ApplyMemOperand(OpSize, MemReg, TMP1, Op->Offset, Op->OffsetType, Op->OffsetScale);
+      }
     }
 
     if (OpSize == IR::OpSize::i8Bit) {
@@ -2296,6 +2341,7 @@ DEF_OP(ParanoidStoreMemTSO) {
     }
   } else if (Op->Class == FEXCore::IR::GPRClass) {
     const auto Src = GetReg(Op->Value.ID());
+    MemReg = ApplyMemOperand(OpSize, MemReg, TMP1, Op->Offset, Op->OffsetType, Op->OffsetScale);
     switch (OpSize) {
     case IR::OpSize::i8Bit: stlrb(Src, MemReg); break;
     case IR::OpSize::i16Bit: stlrh(Src, MemReg); break;
@@ -2305,6 +2351,8 @@ DEF_OP(ParanoidStoreMemTSO) {
     }
   } else {
     const auto Src = GetVReg(Op->Value.ID());
+
+    MemReg = ApplyMemOperand(OpSize, MemReg, TMP4, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
     switch (OpSize) {
     case IR::OpSize::i8Bit:
