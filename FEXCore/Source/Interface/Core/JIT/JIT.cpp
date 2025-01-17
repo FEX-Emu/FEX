@@ -35,6 +35,7 @@ $end_info$
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <limits>
 
 static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
 // We don't want to move above 128MB atm because that means we will have to encode longer jumps
@@ -875,6 +876,11 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
     for (size_t i = 0; i < DebugData->GuestOpcodes.size(); i++) {
       const auto& GuestOpcode = DebugData->GuestOpcodes[i];
       auto& RIPEntry = JITRIPEntries[i];
+      uint64_t HostPCOffset = GuestOpcode.HostEntryOffset - CurrentPCOffset;
+      int64_t GuestRIPOffset = GuestOpcode.GuestEntryOffset - CurrentRIPOffset;
+      LOGMAN_THROW_AA_FMT(HostPCOffset <= std::numeric_limits<uint16_t>::max(), "PC offset too large");
+      LOGMAN_THROW_AA_FMT(GuestRIPOffset >= std::numeric_limits<int16_t>::min(), "RIP offset too small");
+      LOGMAN_THROW_AA_FMT(GuestRIPOffset <= std::numeric_limits<int16_t>::max(), "RIP offset too large");
       RIPEntry.HostPCOffset = GuestOpcode.HostEntryOffset - CurrentPCOffset;
       RIPEntry.GuestRIPOffset = GuestOpcode.GuestEntryOffset - CurrentRIPOffset;
       CurrentPCOffset = GuestOpcode.HostEntryOffset;

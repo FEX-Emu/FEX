@@ -115,7 +115,7 @@ namespace CPU {
       uint16_t HostPCOffset;
 
       // How much to offset the RIP from the previous entry.
-      uint16_t GuestRIPOffset;
+      int16_t GuestRIPOffset;
     };
 
     /**
