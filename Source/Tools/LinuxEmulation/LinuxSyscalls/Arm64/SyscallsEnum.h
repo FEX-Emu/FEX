@@ -348,6 +348,10 @@ enum Syscalls_Arm64 {
   SYSCALL_Arm64_lsm_set_self_attr = 460,
   SYSCALL_Arm64_lsm_list_modules = 461,
   SYSCALL_Arm64_mseal = 462,
+  SYSCALL_Arm64_setxattrat = 463,
+  SYSCALL_Arm64_getxattrat = 464,
+  SYSCALL_Arm64_listxattrat = 465,
+  SYSCALL_Arm64_removexattrat = 466,
   SYSCALL_Arm64_MAX = 512,
 
   // Unsupported syscalls on this host

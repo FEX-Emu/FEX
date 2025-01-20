@@ -75,6 +75,17 @@ public:
   uint64_t LListxattr(const char* path, char* list, size_t size);
   uint64_t Removexattr(const char* path, const char* name);
   uint64_t LRemovexattr(const char* path, const char* name);
+  struct xattr_args {
+    uint64_t value;
+    uint32_t size;
+    uint32_t flags;
+  };
+
+  uint64_t SetxattrAt(int dfd, const char* pathname, uint32_t at_flags, const char* name, const xattr_args* uargs, size_t usize);
+  uint64_t GetxattrAt(int dfd, const char* pathname, uint32_t at_flags, const char* name, const xattr_args* uargs, size_t usize);
+  uint64_t ListxattrAt(int dfd, const char* pathname, uint32_t at_flags, char* list, size_t size);
+  uint64_t RemovexattrAt(int dfd, const char* pathname, uint32_t at_flags, const char* name);
+
   // vfs
   uint64_t Statfs(const char* path, void* buf);
 
