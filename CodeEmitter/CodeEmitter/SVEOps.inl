@@ -60,8 +60,8 @@ public:
   }
 
   void fcmla(SubRegSize size, ZRegister zda, PRegisterMerge pv, ZRegister zn, ZRegister zm, Rotation rot) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
-                        "SubRegSize must be 16-bit, 32-bit, or 64-bit");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "SubRegSize must be 16-bit, "
+                                                                                                               "32-bit, or 64-bit");
     LOGMAN_THROW_A_FMT(pv <= PReg::p7.Merging(), "fcmla can only use p0 to p7");
 
     uint32_t Op = 0b0110'0100'0000'0000'0000'0000'0000'0000;
@@ -76,11 +76,10 @@ public:
   }
 
   void fcadd(SubRegSize size, ZRegister zd, PRegisterMerge pv, ZRegister zn, ZRegister zm, Rotation rot) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
-                        "SubRegSize must be 16-bit, 32-bit, or 64-bit");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "SubRegSize must be 16-bit, "
+                                                                                                               "32-bit, or 64-bit");
     LOGMAN_THROW_A_FMT(pv <= PReg::p7.Merging(), "fcadd can only use p0 to p7");
-    LOGMAN_THROW_A_FMT(rot == Rotation::ROTATE_90 || rot == Rotation::ROTATE_270,
-                        "fcadd rotation may only be 90 or 270 degrees");
+    LOGMAN_THROW_A_FMT(rot == Rotation::ROTATE_90 || rot == Rotation::ROTATE_270, "fcadd rotation may only be 90 or 270 degrees");
     LOGMAN_THROW_A_FMT(zd == zn, "fcadd zd and zn must be the same register");
 
     const uint32_t ConvertedRotation = rot == Rotation::ROTATE_90 ? 0 : 1;
@@ -116,8 +115,7 @@ public:
   }
 
   // SVE address generation
-  void adr(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm,
-           SVEModType mod = SVEModType::MOD_NONE, uint32_t scale = 0) {
+  void adr(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm, SVEModType mod = SVEModType::MOD_NONE, uint32_t scale = 0) {
     SVEAddressGeneration(size, zd, zn, zm, mod, scale);
   }
 
@@ -276,32 +274,22 @@ public:
   }
   ///< Size is destination size
   void fcvtnt(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i16Bit,
-                        "Unsupported size in {}", __func__);
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i16Bit, "Unsupported size in {}", __func__);
 
-    const auto ConvertedDestSize =
-      size == SubRegSize::i16Bit ? 0b00 :
-      size == SubRegSize::i32Bit ? 0b10 : 0b00;
+    const auto ConvertedDestSize = size == SubRegSize::i16Bit ? 0b00 : size == SubRegSize::i32Bit ? 0b10 : 0b00;
 
-    const auto ConvertedSrcSize =
-      size == SubRegSize::i16Bit ? 0b10 :
-      size == SubRegSize::i32Bit ? 0b11 : 0b00;
+    const auto ConvertedSrcSize = size == SubRegSize::i16Bit ? 0b10 : size == SubRegSize::i32Bit ? 0b11 : 0b00;
 
     SVEFloatConvertOdd(ConvertedSrcSize, ConvertedDestSize, pg, zn, zd);
   }
 
   ///< Size is destination size
   void fcvtlt(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i64Bit || size == SubRegSize::i32Bit,
-                        "Unsupported size in {}", __func__);
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i64Bit || size == SubRegSize::i32Bit, "Unsupported size in {}", __func__);
 
-    const auto ConvertedDestSize =
-      size == SubRegSize::i32Bit ? 0b01 :
-      size == SubRegSize::i64Bit ? 0b11 : 0b00;
+    const auto ConvertedDestSize = size == SubRegSize::i32Bit ? 0b01 : size == SubRegSize::i64Bit ? 0b11 : 0b00;
 
-    const auto ConvertedSrcSize =
-      size == SubRegSize::i32Bit ? 0b10 :
-      size == SubRegSize::i64Bit ? 0b11 : 0b00;
+    const auto ConvertedSrcSize = size == SubRegSize::i32Bit ? 0b10 : size == SubRegSize::i64Bit ? 0b11 : 0b00;
 
     SVEFloatConvertOdd(ConvertedSrcSize, ConvertedDestSize, pg, zn, zd);
   }
@@ -335,8 +323,7 @@ public:
 
   // SVE floating-point complex multiply-add (indexed)
   void fcmla(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, uint32_t index, Rotation rot) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit,
-                        "SubRegSize must be 16-bit or 32-bit");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit, "SubRegSize must be 16-bit or 32-bit");
 
     // 16 -> 32, 32 -> 64, since fcmla (indexed)'s restrictions and encodings
     // are essentially as if 16-bit were 32-bit and 32-bit were 64-bit.
@@ -513,14 +500,16 @@ public:
   // SVE Integer Reduction
   // SVE integer add reduction (predicated)
   void saddv(SubRegSize size, DRegister vd, PRegister pg, ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit,
-                       "saddv may only use 8-bit, 16-bit, or 32-bit elements.");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit, "saddv may only use 8-bit, "
+                                                                                                              "16-bit, or 32-bit "
+                                                                                                              "elements.");
     constexpr uint32_t Op = 0b0000'0100'0000'0000'0010'0000'0000'0000;
     SVEIntegerReductionOperation(Op, 0b00, size, vd, pg, zn);
   }
   void uaddv(SubRegSize size, DRegister vd, PRegister pg, ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit,
-                       "uaddv may only use 8-bit, 16-bit, or 32-bit elements.");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit, "uaddv may only use 8-bit, "
+                                                                                                              "16-bit, or 32-bit "
+                                                                                                              "elements.");
     constexpr uint32_t Op = 0b0000'0100'0000'0000'0010'0000'0000'0000;
     SVEIntegerReductionOperation(Op, 0b01, size, vd, pg, zn);
   }
@@ -545,7 +534,7 @@ public:
 
   // SVE constructive prefix (predicated)
   template<typename T>
-  requires(std::is_same_v<PRegisterZero, T> || std::is_same_v<PRegisterMerge, T>)
+  requires (std::is_same_v<PRegisterZero, T> || std::is_same_v<PRegisterMerge, T>)
   void movprfx(SubRegSize size, ZRegister zd, T pg, ZRegister zn) {
     constexpr uint32_t M = std::is_same_v<PRegisterMerge, T> ? 1 : 0;
     SVEConstructivePrefixPredicated(0b00, M, size, pg, zn, zd);
@@ -826,14 +815,16 @@ public:
   // SVE Integer Misc - Unpredicated
   // SVE floating-point trig select coefficient
   void ftssel(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
-                        "ftssel may only have 16-bit, 32-bit, or 64-bit element sizes");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "ftssel may only have "
+                                                                                                               "16-bit, 32-bit, or 64-bit "
+                                                                                                               "element sizes");
     SVEIntegerMiscUnpredicated(0b00, zm.Idx(), FEXCore::ToUnderlying(size), zd, zn);
   }
   // SVE floating-point exponential accelerator
   void fexpa(SubRegSize size, ZRegister zd, ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
-                        "fexpa may only have 16-bit, 32-bit, or 64-bit element sizes");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "fexpa may only have "
+                                                                                                               "16-bit, 32-bit, or 64-bit "
+                                                                                                               "element sizes");
     SVEIntegerMiscUnpredicated(0b10, 0b00000, FEXCore::ToUnderlying(size), zd, zn);
   }
   // SVE constructive prefix (unpredicated)
@@ -882,16 +873,16 @@ public:
 
   // SVE element count
   void cntb(XRegister rd, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(0, 0b1000, SubRegSize::i8Bit, ZRegister{rd.Idx()}, pattern, imm);
+    SVEElementCount(0, 0b1000, SubRegSize::i8Bit, ZRegister {rd.Idx()}, pattern, imm);
   }
   void cnth(XRegister rd, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(0, 0b1000, SubRegSize::i16Bit, ZRegister{rd.Idx()}, pattern, imm);
+    SVEElementCount(0, 0b1000, SubRegSize::i16Bit, ZRegister {rd.Idx()}, pattern, imm);
   }
   void cntw(XRegister rd, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(0, 0b1000, SubRegSize::i32Bit, ZRegister{rd.Idx()}, pattern, imm);
+    SVEElementCount(0, 0b1000, SubRegSize::i32Bit, ZRegister {rd.Idx()}, pattern, imm);
   }
   void cntd(XRegister rd, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(0, 0b1000, SubRegSize::i64Bit, ZRegister{rd.Idx()}, pattern, imm);
+    SVEElementCount(0, 0b1000, SubRegSize::i64Bit, ZRegister {rd.Idx()}, pattern, imm);
   }
 
   // SVE inc/dec vector by element count
@@ -916,129 +907,129 @@ public:
 
   // SVE inc/dec register by element count
   void incb(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(1, 0b1000, SubRegSize::i8Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(1, 0b1000, SubRegSize::i8Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void decb(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(1, 0b1001, SubRegSize::i8Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(1, 0b1001, SubRegSize::i8Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void inch(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(1, 0b1000, SubRegSize::i16Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(1, 0b1000, SubRegSize::i16Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void dech(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(1, 0b1001, SubRegSize::i16Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(1, 0b1001, SubRegSize::i16Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void incw(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(1, 0b1000, SubRegSize::i32Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(1, 0b1000, SubRegSize::i32Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void decw(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(1, 0b1001, SubRegSize::i32Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(1, 0b1001, SubRegSize::i32Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void incd(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(1, 0b1000, SubRegSize::i64Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(1, 0b1000, SubRegSize::i64Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void decd(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(1, 0b1001, SubRegSize::i64Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(1, 0b1001, SubRegSize::i64Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
 
   // SVE saturating inc/dec register by element count
   void sqincb(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(1, 0b1100, SubRegSize::i8Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(1, 0b1100, SubRegSize::i8Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void sqincb(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(0, 0b1100, SubRegSize::i8Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(0, 0b1100, SubRegSize::i8Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void uqincb(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(1, 0b1101, SubRegSize::i8Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(1, 0b1101, SubRegSize::i8Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void uqincb(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(0, 0b1101, SubRegSize::i8Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(0, 0b1101, SubRegSize::i8Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void sqdecb(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(1, 0b1110, SubRegSize::i8Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(1, 0b1110, SubRegSize::i8Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void sqdecb(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(0, 0b1110, SubRegSize::i8Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(0, 0b1110, SubRegSize::i8Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void uqdecb(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(1, 0b1111, SubRegSize::i8Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(1, 0b1111, SubRegSize::i8Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void uqdecb(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(0, 0b1111, SubRegSize::i8Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(0, 0b1111, SubRegSize::i8Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
 
   void sqinch(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(1, 0b1100, SubRegSize::i16Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(1, 0b1100, SubRegSize::i16Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void sqinch(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(0, 0b1100, SubRegSize::i16Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(0, 0b1100, SubRegSize::i16Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void uqinch(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(1, 0b1101, SubRegSize::i16Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(1, 0b1101, SubRegSize::i16Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void uqinch(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(0, 0b1101, SubRegSize::i16Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(0, 0b1101, SubRegSize::i16Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void sqdech(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(1, 0b1110, SubRegSize::i16Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(1, 0b1110, SubRegSize::i16Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void sqdech(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(0, 0b1110, SubRegSize::i16Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(0, 0b1110, SubRegSize::i16Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void uqdech(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(1, 0b1111, SubRegSize::i16Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(1, 0b1111, SubRegSize::i16Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void uqdech(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(0, 0b1111, SubRegSize::i16Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(0, 0b1111, SubRegSize::i16Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
 
   void sqincw(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(1, 0b1100, SubRegSize::i32Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(1, 0b1100, SubRegSize::i32Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void sqincw(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(0, 0b1100, SubRegSize::i32Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(0, 0b1100, SubRegSize::i32Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void uqincw(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(1, 0b1101, SubRegSize::i32Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(1, 0b1101, SubRegSize::i32Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void uqincw(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(0, 0b1101, SubRegSize::i32Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(0, 0b1101, SubRegSize::i32Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void sqdecw(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(1, 0b1110, SubRegSize::i32Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(1, 0b1110, SubRegSize::i32Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void sqdecw(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(0, 0b1110, SubRegSize::i32Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(0, 0b1110, SubRegSize::i32Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void uqdecw(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(1, 0b1111, SubRegSize::i32Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(1, 0b1111, SubRegSize::i32Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void uqdecw(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(0, 0b1111, SubRegSize::i32Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(0, 0b1111, SubRegSize::i32Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
 
   void sqincd(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(1, 0b1100, SubRegSize::i64Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(1, 0b1100, SubRegSize::i64Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void sqincd(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(0, 0b1100, SubRegSize::i64Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(0, 0b1100, SubRegSize::i64Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void uqincd(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(1, 0b1101, SubRegSize::i64Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(1, 0b1101, SubRegSize::i64Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void uqincd(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(0, 0b1101, SubRegSize::i64Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(0, 0b1101, SubRegSize::i64Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void sqdecd(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(1, 0b1110, SubRegSize::i64Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(1, 0b1110, SubRegSize::i64Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void sqdecd(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(0, 0b1110, SubRegSize::i64Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(0, 0b1110, SubRegSize::i64Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void uqdecd(XRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(1, 0b1111, SubRegSize::i64Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(1, 0b1111, SubRegSize::i64Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
   void uqdecd(WRegister rdn, PredicatePattern pattern, uint32_t imm) {
-    SVEElementCount(0, 0b1111, SubRegSize::i64Bit, ZRegister{rdn.Idx()}, pattern, imm);
+    SVEElementCount(0, 0b1111, SubRegSize::i64Bit, ZRegister {rdn.Idx()}, pattern, imm);
   }
 
   // SVE Bitwise Immediate
@@ -1070,13 +1061,13 @@ public:
 
   // SVE Permute Vector - Unpredicated
   void dup(SubRegSize size, ZRegister zd, Register rn) {
-    SVEPermuteUnpredicated(size, 0b00000, zd, ZRegister{rn.Idx()});
+    SVEPermuteUnpredicated(size, 0b00000, zd, ZRegister {rn.Idx()});
   }
   void mov(SubRegSize size, ZRegister zd, Register rn) {
     dup(size, zd, rn);
   }
   void insr(SubRegSize size, ZRegister zdn, Register rm) {
-    SVEPermuteUnpredicated(size, 0b00100, zdn, ZRegister{rm.Idx()});
+    SVEPermuteUnpredicated(size, 0b00100, zdn, ZRegister {rm.Idx()});
   }
   void insr(SubRegSize size, ZRegister zdn, VRegister vm) {
     SVEPermuteUnpredicated(size, 0b10100, zdn, vm.Z());
@@ -1139,29 +1130,28 @@ public:
   // SVE Permute Vector - Predicated - Base
   // CPY (SIMD&FP scalar)
   void cpy(SubRegSize size, ZRegister zd, PRegisterMerge pg, VRegister vn) {
-    SVEPermuteVectorPredicated(0b00000, 0b0, size, zd, pg, ZRegister{vn.Idx()});
+    SVEPermuteVectorPredicated(0b00000, 0b0, size, zd, pg, ZRegister {vn.Idx()});
   }
 
   void compact(SubRegSize size, ZRegister zd, PRegister pg, ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i64Bit || size == SubRegSize::i32Bit,
-                        "Invalid element size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i64Bit || size == SubRegSize::i32Bit, "Invalid element size");
     SVEPermuteVectorPredicated(0b00001, 0b0, size, zd, pg, zn);
   }
 
   // CPY (scalar)
   void cpy(SubRegSize size, ZRegister zd, PRegisterMerge pg, Register rn) {
-    SVEPermuteVectorPredicated(0b01000, 0b1, size, zd, pg, ZRegister{rn.Idx()});
+    SVEPermuteVectorPredicated(0b01000, 0b1, size, zd, pg, ZRegister {rn.Idx()});
   }
 
   template<OpType optype>
-  requires(optype == OpType::Constructive)
+  requires (optype == OpType::Constructive)
   void splice(SubRegSize size, ZRegister zd, PRegister pv, ZRegister zn, ZRegister zn2) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zn, zn2), "zn and zn2 must be sequential registers");
     SVEPermuteVectorPredicated(0b01101, 0b0, size, zd, pv, zn);
   }
 
   template<OpType optype>
-  requires(optype == OpType::Destructive)
+  requires (optype == OpType::Destructive)
   void splice(SubRegSize size, ZRegister zd, PRegister pv, ZRegister zn, ZRegister zm) {
     LOGMAN_THROW_A_FMT(zd == zn, "zd needs to equal zn");
     SVEPermuteVectorPredicated(0b01100, 0b0, size, zd, pv, zm);
@@ -1170,18 +1160,18 @@ public:
   // SVE Permute Vector - Predicated
   // SVE extract element to general register
   void lasta(SubRegSize size, Register rd, PRegister pg, ZRegister zn) {
-    SVEPermuteVectorPredicated(0b00000, 0b1, size, ZRegister{rd.Idx()}, pg, zn);
+    SVEPermuteVectorPredicated(0b00000, 0b1, size, ZRegister {rd.Idx()}, pg, zn);
   }
   void lastb(SubRegSize size, Register rd, PRegister pg, ZRegister zn) {
-    SVEPermuteVectorPredicated(0b00001, 0b1, size, ZRegister{rd.Idx()}, pg, zn);
+    SVEPermuteVectorPredicated(0b00001, 0b1, size, ZRegister {rd.Idx()}, pg, zn);
   }
 
   // SVE extract element to SIMD&FP scalar register
   void lasta(SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
-    SVEPermuteVectorPredicated(0b00010, 0b0, size, ZRegister{vd.Idx()}, pg, zn);
+    SVEPermuteVectorPredicated(0b00010, 0b0, size, ZRegister {vd.Idx()}, pg, zn);
   }
   void lastb(SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
-    SVEPermuteVectorPredicated(0b00011, 0b0, size, ZRegister{vd.Idx()}, pg, zn);
+    SVEPermuteVectorPredicated(0b00011, 0b0, size, ZRegister {vd.Idx()}, pg, zn);
   }
 
   // SVE reverse within elements
@@ -1190,8 +1180,7 @@ public:
     SVEPermuteVectorPredicated(0b00100, 0b0, size, zd, pg, zn);
   }
   void revh(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i16Bit,
-                        "Can't use 8/16-bit element sizes");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i16Bit, "Can't use 8/16-bit element sizes");
     SVEPermuteVectorPredicated(0b00101, 0b0, size, zd, pg, zn);
   }
   void revw(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
@@ -1215,11 +1204,11 @@ public:
   // SVE conditionally extract element to SIMD&FP scalar
   void clasta(SubRegSize size, VRegister vd, PRegister pg, VRegister vn, ZRegister zm) {
     LOGMAN_THROW_A_FMT(vd == vn, "vd must be the same as vn");
-    SVEPermuteVectorPredicated(0b01010, 0b0, size, ZRegister{vd.Idx()}, pg, zm);
+    SVEPermuteVectorPredicated(0b01010, 0b0, size, ZRegister {vd.Idx()}, pg, zm);
   }
   void clastb(SubRegSize size, VRegister vd, PRegister pg, VRegister vn, ZRegister zm) {
     LOGMAN_THROW_A_FMT(vd == vn, "vd must be the same as vn");
-    SVEPermuteVectorPredicated(0b01011, 0b0, size, ZRegister{vd.Idx()}, pg, zm);
+    SVEPermuteVectorPredicated(0b01011, 0b0, size, ZRegister {vd.Idx()}, pg, zm);
   }
 
   // SVE reverse doublewords (SME)
@@ -1228,17 +1217,17 @@ public:
   // SVE conditionally extract element to general register
   void clasta(SubRegSize size, Register rd, PRegister pg, Register rn, ZRegister zm) {
     LOGMAN_THROW_A_FMT(rd == rn, "rd must be the same as rn");
-    SVEPermuteVectorPredicated(0b10000, 0b1, size, ZRegister{rd.Idx()}, pg, zm);
+    SVEPermuteVectorPredicated(0b10000, 0b1, size, ZRegister {rd.Idx()}, pg, zm);
   }
   void clastb(SubRegSize size, Register rd, PRegister pg, Register rn, ZRegister zm) {
     LOGMAN_THROW_A_FMT(rd == rn, "rd must be the same as rn");
-    SVEPermuteVectorPredicated(0b10001, 0b1, size, ZRegister{rd.Idx()}, pg, zm);
+    SVEPermuteVectorPredicated(0b10001, 0b1, size, ZRegister {rd.Idx()}, pg, zm);
   }
 
   // SVE Permute Vector - Extract
   // Constructive
   template<OpType optype>
-  requires(optype == OpType::Constructive)
+  requires (optype == OpType::Constructive)
   void ext(ZRegister zd, ZRegister zn, ZRegister zn2, uint8_t Imm) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(zn, zn2), "zn and zn2 must be sequential registers");
     SVEPermuteVector(1, zd, zn, Imm);
@@ -1246,7 +1235,7 @@ public:
 
   // Destructive
   template<OpType optype>
-  requires(optype == OpType::Destructive)
+  requires (optype == OpType::Destructive)
   void ext(ZRegister zd, ZRegister zdn, ZRegister zm, uint8_t Imm) {
     LOGMAN_THROW_A_FMT(zd == zdn, "Dest needs to equal zdn");
     SVEPermuteVector(0, zd, zm, Imm);
@@ -1401,54 +1390,54 @@ public:
 
   // SVE Integer Compare - Scalars
   // SVE integer compare scalar count and limit
-  template <IsXOrWRegister T>
+  template<IsXOrWRegister T>
   void whilege(SubRegSize size, PRegister pd, T rn, T rm) {
     constexpr auto IsXRegister = static_cast<uint32_t>(std::is_same_v<T, XRegister>);
     SVEIntCompareScalar(IsXRegister << 2, 0, pd.Idx(), size, rn, rm);
   }
-  template <IsXOrWRegister T>
+  template<IsXOrWRegister T>
   void whilegt(SubRegSize size, PRegister pd, T rn, T rm) {
     constexpr auto IsXRegister = static_cast<uint32_t>(std::is_same_v<T, XRegister>);
     SVEIntCompareScalar(IsXRegister << 2, 1, pd.Idx(), size, rn, rm);
   }
-  template <IsXOrWRegister T>
+  template<IsXOrWRegister T>
   void whilelt(SubRegSize size, PRegister pd, T rn, T rm) {
     constexpr auto IsXRegister = static_cast<uint32_t>(std::is_same_v<T, XRegister>);
     SVEIntCompareScalar((IsXRegister << 2) | 0b001, 0, pd.Idx(), size, rn, rm);
   }
-  template <IsXOrWRegister T>
+  template<IsXOrWRegister T>
   void whilele(SubRegSize size, PRegister pd, T rn, T rm) {
     constexpr auto IsXRegister = static_cast<uint32_t>(std::is_same_v<T, XRegister>);
     SVEIntCompareScalar((IsXRegister << 2) | 0b001, 1, pd.Idx(), size, rn, rm);
   }
-  template <IsXOrWRegister T>
+  template<IsXOrWRegister T>
   void whilehs(SubRegSize size, PRegister pd, T rn, T rm) {
     constexpr auto IsXRegister = static_cast<uint32_t>(std::is_same_v<T, XRegister>);
     SVEIntCompareScalar((IsXRegister << 2) | 0b010, 0, pd.Idx(), size, rn, rm);
   }
-  template <IsXOrWRegister T>
+  template<IsXOrWRegister T>
   void whilehi(SubRegSize size, PRegister pd, T rn, T rm) {
     constexpr auto IsXRegister = static_cast<uint32_t>(std::is_same_v<T, XRegister>);
     SVEIntCompareScalar((IsXRegister << 2) | 0b010, 1, pd.Idx(), size, rn, rm);
   }
-  template <IsXOrWRegister T>
+  template<IsXOrWRegister T>
   void whilelo(SubRegSize size, PRegister pd, T rn, T rm) {
     constexpr auto IsXRegister = static_cast<uint32_t>(std::is_same_v<T, XRegister>);
     SVEIntCompareScalar((IsXRegister << 2) | 0b011, 0, pd.Idx(), size, rn, rm);
   }
-  template <IsXOrWRegister T>
+  template<IsXOrWRegister T>
   void whilels(SubRegSize size, PRegister pd, T rn, T rm) {
     constexpr auto IsXRegister = static_cast<uint32_t>(std::is_same_v<T, XRegister>);
     SVEIntCompareScalar((IsXRegister << 2) | 0b011, 1, pd.Idx(), size, rn, rm);
   }
 
   // SVE conditionally terminate scalars
-  template <IsXOrWRegister T>
+  template<IsXOrWRegister T>
   void ctermeq(T rn, T rm) {
     constexpr auto size = std::is_same_v<T, XRegister> ? SubRegSize::i64Bit : SubRegSize::i32Bit;
     SVEIntCompareScalar(0b1000, 0, 0b0000, size, rn, rm);
   }
-  template <IsXOrWRegister T>
+  template<IsXOrWRegister T>
   void ctermne(T rn, T rm) {
     constexpr auto size = std::is_same_v<T, XRegister> ? SubRegSize::i64Bit : SubRegSize::i32Bit;
     SVEIntCompareScalar(0b1000, 1, 0b0000, size, rn, rm);
@@ -1515,10 +1504,9 @@ public:
 
   // SVE broadcast floating-point immediate (unpredicated)
   void fdup(ARMEmitter::SubRegSize size, ARMEmitter::ZRegister zd, float Value) {
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i16Bit ||
-                        size == ARMEmitter::SubRegSize::i32Bit ||
-                        size == ARMEmitter::SubRegSize::i64Bit, "Unsupported fmov size");
-    uint32_t Imm{};
+    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i16Bit || size == ARMEmitter::SubRegSize::i32Bit || size == ARMEmitter::SubRegSize::i64Bit,
+                       "Unsupported fmov size");
+    uint32_t Imm {};
     if (size == SubRegSize::i16Bit) {
       LOGMAN_MSG_A_FMT("Unsupported");
       FEX_UNREACHABLE;
@@ -2337,31 +2325,16 @@ public:
       LOGMAN_THROW_A_FMT(dstsize == SubRegSize::i16Bit, "Unsupported size in {}", __func__);
       opc1 = 0b01;
       opc2 = 0b01;
-    }
-    else if (srcsize == SubRegSize::i32Bit) {
+    } else if (srcsize == SubRegSize::i32Bit) {
       // Srcsize = fp32, opc1 encodes dst size
-      opc1 =
-        dstsize == SubRegSize::i64Bit ? 0b11 :
-        dstsize == SubRegSize::i32Bit ? 0b10 :
-        dstsize == SubRegSize::i16Bit ? 0b01 :0b00;
+      opc1 = dstsize == SubRegSize::i64Bit ? 0b11 : dstsize == SubRegSize::i32Bit ? 0b10 : dstsize == SubRegSize::i16Bit ? 0b01 : 0b00;
 
-      opc2 =
-        dstsize == SubRegSize::i64Bit ? 0b00 :
-        dstsize == SubRegSize::i32Bit ? 0b10 :
-        dstsize == SubRegSize::i16Bit ? 0b10 :0b00;
-    }
-    else if (srcsize == SubRegSize::i64Bit) {
+      opc2 = dstsize == SubRegSize::i64Bit ? 0b00 : dstsize == SubRegSize::i32Bit ? 0b10 : dstsize == SubRegSize::i16Bit ? 0b10 : 0b00;
+    } else if (srcsize == SubRegSize::i64Bit) {
       // SrcSize = fp64, opc2 encodes dst size
-      opc1 =
-        dstsize == SubRegSize::i64Bit ? 0b11 :
-        dstsize == SubRegSize::i32Bit ? 0b11 :
-        dstsize == SubRegSize::i16Bit ? 0b01 :0b00;
-      opc2 =
-        dstsize == SubRegSize::i64Bit ? 0b11 :
-        dstsize == SubRegSize::i32Bit ? 0b10 :
-        dstsize == SubRegSize::i16Bit ? 0b11 :0b00;
-    }
-    else {
+      opc1 = dstsize == SubRegSize::i64Bit ? 0b11 : dstsize == SubRegSize::i32Bit ? 0b11 : dstsize == SubRegSize::i16Bit ? 0b01 : 0b00;
+      opc2 = dstsize == SubRegSize::i64Bit ? 0b11 : dstsize == SubRegSize::i32Bit ? 0b10 : dstsize == SubRegSize::i16Bit ? 0b11 : 0b00;
+    } else {
       FEX_UNREACHABLE;
     }
     SVEIntegerConvertToFloat(dstsize, srcsize, opc1, opc2, 0, pg, zn, zd);
@@ -2373,31 +2346,16 @@ public:
       LOGMAN_THROW_A_FMT(dstsize == SubRegSize::i16Bit, "Unsupported size in {}", __func__);
       opc1 = 0b01;
       opc2 = 0b01;
-    }
-    else if (srcsize == SubRegSize::i32Bit) {
+    } else if (srcsize == SubRegSize::i32Bit) {
       // Srcsize = fp32, opc1 encodes dst size
-      opc1 =
-        dstsize == SubRegSize::i64Bit ? 0b11 :
-        dstsize == SubRegSize::i32Bit ? 0b10 :
-        dstsize == SubRegSize::i16Bit ? 0b01 :0b00;
+      opc1 = dstsize == SubRegSize::i64Bit ? 0b11 : dstsize == SubRegSize::i32Bit ? 0b10 : dstsize == SubRegSize::i16Bit ? 0b01 : 0b00;
 
-      opc2 =
-        dstsize == SubRegSize::i64Bit ? 0b00 :
-        dstsize == SubRegSize::i32Bit ? 0b10 :
-        dstsize == SubRegSize::i16Bit ? 0b10 :0b00;
-    }
-    else if (srcsize == SubRegSize::i64Bit) {
+      opc2 = dstsize == SubRegSize::i64Bit ? 0b00 : dstsize == SubRegSize::i32Bit ? 0b10 : dstsize == SubRegSize::i16Bit ? 0b10 : 0b00;
+    } else if (srcsize == SubRegSize::i64Bit) {
       // SrcSize = fp64, opc2 encodes dst size
-      opc1 =
-        dstsize == SubRegSize::i64Bit ? 0b11 :
-        dstsize == SubRegSize::i32Bit ? 0b11 :
-        dstsize == SubRegSize::i16Bit ? 0b01 :0b00;
-      opc2 =
-        dstsize == SubRegSize::i64Bit ? 0b11 :
-        dstsize == SubRegSize::i32Bit ? 0b10 :
-        dstsize == SubRegSize::i16Bit ? 0b11 :0b00;
-    }
-    else {
+      opc1 = dstsize == SubRegSize::i64Bit ? 0b11 : dstsize == SubRegSize::i32Bit ? 0b11 : dstsize == SubRegSize::i16Bit ? 0b01 : 0b00;
+      opc2 = dstsize == SubRegSize::i64Bit ? 0b11 : dstsize == SubRegSize::i32Bit ? 0b10 : dstsize == SubRegSize::i16Bit ? 0b11 : 0b00;
+    } else {
       FEX_UNREACHABLE;
     }
     SVEIntegerConvertToFloat(dstsize, srcsize, opc1, opc2, 1, pg, zn, zd);
@@ -2405,10 +2363,10 @@ public:
 
   // SVE floating-point convert to integer
   void flogb(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
-    const auto ConvertedSize =
-      size == SubRegSize::i64Bit ? 0b11 :
-      size == SubRegSize::i32Bit ? 0b10 :
-      size == SubRegSize::i16Bit ? 0b01 : 0b00;
+    const auto ConvertedSize = size == SubRegSize::i64Bit ? 0b11 :
+                               size == SubRegSize::i32Bit ? 0b10 :
+                               size == SubRegSize::i16Bit ? 0b01 :
+                                                            0b00;
 
     SVEFloatConvertToInt(size, size, 1, 0b00, ConvertedSize, 0, pg, zn, zd);
   }
@@ -2417,25 +2375,18 @@ public:
     if (srcsize == SubRegSize::i16Bit) {
       // Srcsize = fp16, opc2 encodes dst size
       opc1 = 0b01;
-      opc2 = dstsize == SubRegSize::i64Bit ? 0b11 :
-             dstsize == SubRegSize::i32Bit ? 0b10 :
-             dstsize == SubRegSize::i16Bit ? 0b01 : 0b00;
-    }
-    else if (srcsize == SubRegSize::i32Bit) {
+      opc2 = dstsize == SubRegSize::i64Bit ? 0b11 : dstsize == SubRegSize::i32Bit ? 0b10 : dstsize == SubRegSize::i16Bit ? 0b01 : 0b00;
+    } else if (srcsize == SubRegSize::i32Bit) {
       // Srcsize = fp32, opc1 encodes dst size
       LOGMAN_THROW_A_FMT(dstsize != SubRegSize::i16Bit, "Unsupported size in {}", __func__);
       opc2 = 0b10;
-      opc1 = dstsize == SubRegSize::i64Bit ? 0b11 :
-             dstsize == SubRegSize::i32Bit ? 0b10 : 0b00;
-    }
-    else if (srcsize == SubRegSize::i64Bit) {
+      opc1 = dstsize == SubRegSize::i64Bit ? 0b11 : dstsize == SubRegSize::i32Bit ? 0b10 : 0b00;
+    } else if (srcsize == SubRegSize::i64Bit) {
       LOGMAN_THROW_A_FMT(dstsize != SubRegSize::i16Bit, "Unsupported size in {}", __func__);
       // SrcSize = fp64, opc2 encodes dst size
       opc1 = 0b11;
-      opc2 = dstsize == SubRegSize::i64Bit ? 0b11 :
-             dstsize == SubRegSize::i32Bit ? 0b00 : 0b00;
-    }
-    else {
+      opc2 = dstsize == SubRegSize::i64Bit ? 0b11 : dstsize == SubRegSize::i32Bit ? 0b00 : 0b00;
+    } else {
       FEX_UNREACHABLE;
     }
     SVEFloatConvertToInt(dstsize, srcsize, 1, opc1, opc2, 0, pg, zn, zd);
@@ -2445,25 +2396,18 @@ public:
     if (srcsize == SubRegSize::i16Bit) {
       // Srcsize = fp16, opc2 encodes dst size
       opc1 = 0b01;
-      opc2 = dstsize == SubRegSize::i64Bit ? 0b11 :
-             dstsize == SubRegSize::i32Bit ? 0b10 :
-             dstsize == SubRegSize::i16Bit ? 0b01 : 0b00;
-    }
-    else if (srcsize == SubRegSize::i32Bit) {
+      opc2 = dstsize == SubRegSize::i64Bit ? 0b11 : dstsize == SubRegSize::i32Bit ? 0b10 : dstsize == SubRegSize::i16Bit ? 0b01 : 0b00;
+    } else if (srcsize == SubRegSize::i32Bit) {
       // Srcsize = fp32, opc1 encodes dst size
       LOGMAN_THROW_A_FMT(dstsize != SubRegSize::i16Bit, "Unsupported size in {}", __func__);
       opc2 = 0b10;
-      opc1 = dstsize == SubRegSize::i64Bit ? 0b11 :
-             dstsize == SubRegSize::i32Bit ? 0b10 : 0b00;
-    }
-    else if (srcsize == SubRegSize::i64Bit) {
+      opc1 = dstsize == SubRegSize::i64Bit ? 0b11 : dstsize == SubRegSize::i32Bit ? 0b10 : 0b00;
+    } else if (srcsize == SubRegSize::i64Bit) {
       LOGMAN_THROW_A_FMT(dstsize != SubRegSize::i16Bit, "Unsupported size in {}", __func__);
       // SrcSize = fp64, opc2 encodes dst size
       opc1 = 0b11;
-      opc2 = dstsize == SubRegSize::i64Bit ? 0b11 :
-             dstsize == SubRegSize::i32Bit ? 0b00 : 0b00;
-    }
-    else {
+      opc2 = dstsize == SubRegSize::i64Bit ? 0b11 : dstsize == SubRegSize::i32Bit ? 0b00 : 0b00;
+    } else {
       FEX_UNREACHABLE;
     }
     SVEFloatConvertToInt(dstsize, srcsize, 1, opc1, opc2, 1, pg, zn, zd);
@@ -2536,7 +2480,7 @@ public:
 
   // SVE Memory - 32-bit Gather and Unsized Contiguous
   void ldr(PRegister pt, XRegister rn, int32_t imm = 0) {
-    SVEUnsizedLoadStoreContiguous(0b0, imm, ZRegister{pt.Idx()}, rn, false);
+    SVEUnsizedLoadStoreContiguous(0b0, imm, ZRegister {pt.Idx()}, rn, false);
   }
   void ldr(ZRegister zt, XRegister rn, int32_t imm = 0) {
     SVEUnsizedLoadStoreContiguous(0b1, imm, zt, rn, false);
@@ -2647,17 +2591,13 @@ public:
   void ld1b(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
       ld1b<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
-    }
-    else if (Src.IsScalarPlusImm()) {
+    } else if (Src.IsScalarPlusImm()) {
       ld1b<size>(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
-    }
-    else if (Src.IsScalarPlusVector()) {
+    } else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i8Bit, zt, pg, Src, true, false);
-    }
-    else if (Src.IsVectorPlusImm()) {
+    } else if (Src.IsVectorPlusImm()) {
       SVEGatherLoadVectorPlusImm(size, SubRegSize::i8Bit, zt, pg, Src, true, false);
-    }
-    else {
+    } else {
       FEX_UNREACHABLE;
     }
   }
@@ -2666,17 +2606,13 @@ public:
   void ldff1b(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
       ldff1b<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
-    }
-    else if (Src.IsScalarPlusImm()) {
+    } else if (Src.IsScalarPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1b doesn't have a scalar plus immediate variant");
-    }
-    else if (Src.IsScalarPlusVector()) {
+    } else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i8Bit, zt, pg, Src, true, true);
-    }
-    else if (Src.IsVectorPlusImm()) {
+    } else if (Src.IsVectorPlusImm()) {
       SVEGatherLoadVectorPlusImm(size, SubRegSize::i8Bit, zt, pg, Src, true, true);
-    }
-    else {
+    } else {
       FEX_UNREACHABLE;
     }
   }
@@ -2684,17 +2620,13 @@ public:
   void ld1sw(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
       ld1sw(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
-    }
-    else if (Src.IsScalarPlusImm()) {
+    } else if (Src.IsScalarPlusImm()) {
       ld1sw(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
-    }
-    else if (Src.IsScalarPlusVector()) {
+    } else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(SubRegSize::i64Bit, SubRegSize::i32Bit, zt, pg, Src, false, false);
-    }
-    else if (Src.IsVectorPlusImm()) {
+    } else if (Src.IsVectorPlusImm()) {
       SVEGatherLoadVectorPlusImm(SubRegSize::i64Bit, SubRegSize::i32Bit, zt, pg, Src, false, false);
-    }
-    else {
+    } else {
       FEX_UNREACHABLE;
     }
   }
@@ -2703,17 +2635,13 @@ public:
   void ld1h(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
       ld1h<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
-    }
-    else if (Src.IsScalarPlusImm()) {
+    } else if (Src.IsScalarPlusImm()) {
       ld1h<size>(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
-    }
-    else if (Src.IsScalarPlusVector()) {
+    } else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i16Bit, zt, pg, Src, true, false);
-    }
-    else if (Src.IsVectorPlusImm()) {
+    } else if (Src.IsVectorPlusImm()) {
       SVEGatherLoadVectorPlusImm(size, SubRegSize::i16Bit, zt, pg, Src, true, false);
-    }
-    else {
+    } else {
       FEX_UNREACHABLE;
     }
   }
@@ -2722,17 +2650,13 @@ public:
   void ld1sh(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
       ld1sh<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
-    }
-    else if (Src.IsScalarPlusImm()) {
+    } else if (Src.IsScalarPlusImm()) {
       ld1sh<size>(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
-    }
-    else if (Src.IsScalarPlusVector()) {
+    } else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i16Bit, zt, pg, Src, false, false);
-    }
-    else if (Src.IsVectorPlusImm()) {
+    } else if (Src.IsVectorPlusImm()) {
       SVEGatherLoadVectorPlusImm(size, SubRegSize::i16Bit, zt, pg, Src, false, false);
-    }
-    else {
+    } else {
       FEX_UNREACHABLE;
     }
   }
@@ -2741,17 +2665,13 @@ public:
   void ldff1h(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
       ldff1h<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
-    }
-    else if (Src.IsScalarPlusImm()) {
+    } else if (Src.IsScalarPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1h doesn't have a scalar plus immediate variant");
-    }
-    else if (Src.IsScalarPlusVector()) {
+    } else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i16Bit, zt, pg, Src, true, true);
-    }
-    else if (Src.IsVectorPlusImm()) {
+    } else if (Src.IsVectorPlusImm()) {
       SVEGatherLoadVectorPlusImm(size, SubRegSize::i16Bit, zt, pg, Src, true, true);
-    }
-    else {
+    } else {
       FEX_UNREACHABLE;
     }
   }
@@ -2760,17 +2680,13 @@ public:
   void ldff1sh(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
       ldff1sh<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
-    }
-    else if (Src.IsScalarPlusImm()) {
+    } else if (Src.IsScalarPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1sh doesn't have a scalar plus immediate variant");
-    }
-    else if (Src.IsScalarPlusVector()) {
+    } else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i16Bit, zt, pg, Src, false, true);
-    }
-    else if (Src.IsVectorPlusImm()) {
+    } else if (Src.IsVectorPlusImm()) {
       SVEGatherLoadVectorPlusImm(size, SubRegSize::i16Bit, zt, pg, Src, false, true);
-    }
-    else {
+    } else {
       FEX_UNREACHABLE;
     }
   }
@@ -2779,17 +2695,13 @@ public:
   void ld1w(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
       ld1w<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
-    }
-    else if (Src.IsScalarPlusImm()) {
+    } else if (Src.IsScalarPlusImm()) {
       ld1w<size>(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
-    }
-    else if (Src.IsScalarPlusVector()) {
+    } else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i32Bit, zt, pg, Src, true, false);
-    }
-    else if (Src.IsVectorPlusImm()) {
+    } else if (Src.IsVectorPlusImm()) {
       SVEGatherLoadVectorPlusImm(size, SubRegSize::i32Bit, zt, pg, Src, true, false);
-    }
-    else {
+    } else {
       FEX_UNREACHABLE;
     }
   }
@@ -2798,17 +2710,13 @@ public:
   void ldff1w(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
       ldff1w<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
-    }
-    else if (Src.IsScalarPlusImm()) {
+    } else if (Src.IsScalarPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1w doesn't have a scalar plus immediate variant");
-    }
-    else if (Src.IsScalarPlusVector()) {
+    } else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i32Bit, zt, pg, Src, true, true);
-    }
-    else if (Src.IsVectorPlusImm()) {
+    } else if (Src.IsVectorPlusImm()) {
       SVEGatherLoadVectorPlusImm(size, SubRegSize::i32Bit, zt, pg, Src, true, true);
-    }
-    else {
+    } else {
       FEX_UNREACHABLE;
     }
   }
@@ -2816,17 +2724,13 @@ public:
   void ldff1sw(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
       ldff1sw(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
-    }
-    else if (Src.IsScalarPlusImm()) {
+    } else if (Src.IsScalarPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1sw doesn't have a scalar plus immediate variant");
-    }
-    else if (Src.IsScalarPlusVector()) {
+    } else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(SubRegSize::i64Bit, SubRegSize::i32Bit, zt, pg, Src, false, true);
-    }
-    else if (Src.IsVectorPlusImm()) {
+    } else if (Src.IsVectorPlusImm()) {
       SVEGatherLoadVectorPlusImm(SubRegSize::i64Bit, SubRegSize::i32Bit, zt, pg, Src, false, true);
-    }
-    else {
+    } else {
       FEX_UNREACHABLE;
     }
   }
@@ -2835,17 +2739,13 @@ public:
   void ld1sb(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
       ld1sb<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
-    }
-    else if (Src.IsScalarPlusImm()) {
+    } else if (Src.IsScalarPlusImm()) {
       ld1sb<size>(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
-    }
-    else if (Src.IsScalarPlusVector()) {
+    } else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i8Bit, zt, pg, Src, false, false);
-    }
-    else if (Src.IsVectorPlusImm()) {
+    } else if (Src.IsVectorPlusImm()) {
       SVEGatherLoadVectorPlusImm(size, SubRegSize::i8Bit, zt, pg, Src, false, false);
-    }
-    else {
+    } else {
       FEX_UNREACHABLE;
     }
   }
@@ -2854,17 +2754,13 @@ public:
   void ldff1sb(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
       ldff1sb<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
-    }
-    else if (Src.IsScalarPlusImm()) {
+    } else if (Src.IsScalarPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1sb doesn't have a scalar plus immediate variant");
-    }
-    else if (Src.IsScalarPlusVector()) {
+    } else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(size, SubRegSize::i8Bit, zt, pg, Src, false, true);
-    }
-    else if (Src.IsVectorPlusImm()) {
+    } else if (Src.IsVectorPlusImm()) {
       SVEGatherLoadVectorPlusImm(size, SubRegSize::i8Bit, zt, pg, Src, false, true);
-    }
-    else {
+    } else {
       FEX_UNREACHABLE;
     }
   }
@@ -2872,17 +2768,13 @@ public:
   void ld1d(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
       ld1d(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
-    }
-    else if (Src.IsScalarPlusImm()) {
+    } else if (Src.IsScalarPlusImm()) {
       ld1d(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
-    }
-    else if (Src.IsScalarPlusVector()) {
+    } else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(SubRegSize::i64Bit, SubRegSize::i64Bit, zt, pg, Src, true, false);
-    }
-    else if (Src.IsVectorPlusImm()) {
+    } else if (Src.IsVectorPlusImm()) {
       SVEGatherLoadVectorPlusImm(SubRegSize::i64Bit, SubRegSize::i64Bit, zt, pg, Src, true, false);
-    }
-    else {
+    } else {
       FEX_UNREACHABLE;
     }
   }
@@ -2890,17 +2782,13 @@ public:
   void ldff1d(ZRegister zt, PRegisterZero pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
       ldff1d(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
-    }
-    else if (Src.IsScalarPlusImm()) {
+    } else if (Src.IsScalarPlusImm()) {
       LOGMAN_THROW_A_FMT(false, "ldff1d doesn't have a scalar plus immediate variant");
-    }
-    else if (Src.IsScalarPlusVector()) {
+    } else if (Src.IsScalarPlusVector()) {
       SVEGatherLoadScalarPlusVector(SubRegSize::i64Bit, SubRegSize::i64Bit, zt, pg, Src, true, true);
-    }
-    else if (Src.IsVectorPlusImm()) {
+    } else if (Src.IsVectorPlusImm()) {
       SVEGatherLoadVectorPlusImm(SubRegSize::i64Bit, SubRegSize::i64Bit, zt, pg, Src, true, true);
-    }
-    else {
+    } else {
       FEX_UNREACHABLE;
     }
   }
@@ -2909,17 +2797,13 @@ public:
   void st1b(ZRegister zt, PRegister pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
       st1b<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
-    }
-    else if (Src.IsScalarPlusImm()) {
+    } else if (Src.IsScalarPlusImm()) {
       st1b<size>(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
-    }
-    else if (Src.IsScalarPlusVector()) {
+    } else if (Src.IsScalarPlusVector()) {
       SVEScatterStoreScalarPlusVector(size, SubRegSize::i8Bit, zt, pg, Src);
-    }
-    else if (Src.IsVectorPlusImm()) {
+    } else if (Src.IsVectorPlusImm()) {
       SVEScatterStoreVectorPlusImm(size, SubRegSize::i8Bit, zt, pg, Src);
-    }
-    else {
+    } else {
       FEX_UNREACHABLE;
     }
   }
@@ -2928,17 +2812,13 @@ public:
   void st1h(ZRegister zt, PRegister pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
       st1h<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
-    }
-    else if (Src.IsScalarPlusImm()) {
+    } else if (Src.IsScalarPlusImm()) {
       st1h<size>(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
-    }
-    else if (Src.IsScalarPlusVector()) {
+    } else if (Src.IsScalarPlusVector()) {
       SVEScatterStoreScalarPlusVector(size, SubRegSize::i16Bit, zt, pg, Src);
-    }
-    else if (Src.IsVectorPlusImm()) {
+    } else if (Src.IsVectorPlusImm()) {
       SVEScatterStoreVectorPlusImm(size, SubRegSize::i16Bit, zt, pg, Src);
-    }
-    else {
+    } else {
       FEX_UNREACHABLE;
     }
   }
@@ -2947,17 +2827,13 @@ public:
   void st1w(ZRegister zt, PRegister pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
       st1w<size>(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
-    }
-    else if (Src.IsScalarPlusImm()) {
+    } else if (Src.IsScalarPlusImm()) {
       st1w<size>(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
-    }
-    else if (Src.IsScalarPlusVector()) {
+    } else if (Src.IsScalarPlusVector()) {
       SVEScatterStoreScalarPlusVector(size, SubRegSize::i32Bit, zt, pg, Src);
-    }
-    else if (Src.IsVectorPlusImm()) {
+    } else if (Src.IsVectorPlusImm()) {
       SVEScatterStoreVectorPlusImm(size, SubRegSize::i32Bit, zt, pg, Src);
-    }
-    else {
+    } else {
       FEX_UNREACHABLE;
     }
   }
@@ -2965,17 +2841,13 @@ public:
   void st1d(ZRegister zt, PRegister pg, SVEMemOperand Src) {
     if (Src.IsScalarPlusScalar()) {
       st1d(zt, pg, Src.rn, Src.MetaType.ScalarScalarType.rm);
-    }
-    else if (Src.IsScalarPlusImm()) {
+    } else if (Src.IsScalarPlusImm()) {
       st1d(zt, pg, Src.rn, Src.MetaType.ScalarImmType.Imm);
-    }
-    else if (Src.IsScalarPlusVector()) {
+    } else if (Src.IsScalarPlusVector()) {
       SVEScatterStoreScalarPlusVector(SubRegSize::i64Bit, SubRegSize::i64Bit, zt, pg, Src);
-    }
-    else if (Src.IsVectorPlusImm()) {
+    } else if (Src.IsVectorPlusImm()) {
       SVEScatterStoreVectorPlusImm(SubRegSize::i64Bit, SubRegSize::i64Bit, zt, pg, Src);
-    }
-    else {
+    } else {
       FEX_UNREACHABLE;
     }
   }
@@ -3076,9 +2948,7 @@ public:
   void ld1sh(ZRegister zt, PRegisterZero pg, Register rn, int32_t Imm = 0) {
     static_assert(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid size");
 
-    constexpr uint32_t ConvertedSize =
-      size == SubRegSize::i32Bit ? 1 :
-      size == SubRegSize::i64Bit ? 0 : -1;
+    constexpr uint32_t ConvertedSize = size == SubRegSize::i32Bit ? 1 : size == SubRegSize::i64Bit ? 0 : -1;
 
     SVEContiguousLoadImm(false, 0b1000 | ConvertedSize, Imm, pg, rn, zt);
   }
@@ -3087,23 +2957,19 @@ public:
   void ld1w(ZRegister zt, PRegisterZero pg, Register rn, int32_t Imm = 0) {
     static_assert(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid size");
 
-    constexpr uint32_t ConvertedSize =
-      size == SubRegSize::i32Bit ? 0 :
-      size == SubRegSize::i64Bit ? 1 : -1;
+    constexpr uint32_t ConvertedSize = size == SubRegSize::i32Bit ? 0 : size == SubRegSize::i64Bit ? 1 : -1;
 
     SVEContiguousLoadImm(false, 0b1010 | ConvertedSize, Imm, pg, rn, zt);
   }
 
   template<SubRegSize size>
   void ld1sb(ZRegister zt, PRegisterZero pg, Register rn, int32_t Imm = 0) {
-    static_assert(size == SubRegSize::i16Bit ||
-                  size == SubRegSize::i32Bit ||
-                  size == SubRegSize::i64Bit, "Invalid size");
+    static_assert(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid size");
 
-    constexpr uint32_t ConvertedSize =
-      size == SubRegSize::i16Bit ? 0b10 :
-      size == SubRegSize::i32Bit ? 0b01 :
-      size == SubRegSize::i64Bit ? 0b00 : -1;
+    constexpr uint32_t ConvertedSize = size == SubRegSize::i16Bit ? 0b10 :
+                                       size == SubRegSize::i32Bit ? 0b01 :
+                                       size == SubRegSize::i64Bit ? 0b00 :
+                                                                    -1;
 
     SVEContiguousLoadImm(false, 0b1100 | ConvertedSize, Imm, pg, rn, zt);
   }
@@ -3158,32 +3024,24 @@ public:
 
   template<SubRegSize size>
   void ld1sh(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
-    static_assert(size == SubRegSize::i32Bit ||
-                  size == SubRegSize::i64Bit, "Invalid size");
-    constexpr uint32_t ConvertedSize =
-      size == SubRegSize::i32Bit ? 1 :
-      size == SubRegSize::i64Bit ? 0 : -1;
+    static_assert(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid size");
+    constexpr uint32_t ConvertedSize = size == SubRegSize::i32Bit ? 1 : size == SubRegSize::i64Bit ? 0 : -1;
     SVEContiguousLoadStore(0, 0, 0b1000 | ConvertedSize, rm, pg, rn, zt);
   }
 
   template<SubRegSize size>
   void ld1w(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
-    static_assert(size == SubRegSize::i32Bit ||
-                  size == SubRegSize::i64Bit, "Invalid size");
-    constexpr uint32_t ConvertedSize =
-      size == SubRegSize::i32Bit ? 0 :
-      size == SubRegSize::i64Bit ? 1 : -1;
+    static_assert(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid size");
+    constexpr uint32_t ConvertedSize = size == SubRegSize::i32Bit ? 0 : size == SubRegSize::i64Bit ? 1 : -1;
     SVEContiguousLoadStore(0, 0, 0b1010 | ConvertedSize, rm, pg, rn, zt);
   }
   template<SubRegSize size>
   void ld1sb(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
-    static_assert(size == SubRegSize::i16Bit ||
-                  size == SubRegSize::i32Bit ||
-                  size == SubRegSize::i64Bit, "Invalid size");
-    constexpr uint32_t ConvertedSize =
-      size == SubRegSize::i16Bit ? 0b10 :
-      size == SubRegSize::i32Bit ? 0b01 :
-      size == SubRegSize::i64Bit ? 0b00 : -1;
+    static_assert(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid size");
+    constexpr uint32_t ConvertedSize = size == SubRegSize::i16Bit ? 0b10 :
+                                       size == SubRegSize::i32Bit ? 0b01 :
+                                       size == SubRegSize::i64Bit ? 0b00 :
+                                                                    -1;
     SVEContiguousLoadStore(0, 0, 0b1100 | ConvertedSize, rm, pg, rn, zt);
   }
 
@@ -3198,13 +3056,11 @@ public:
   }
   template<SubRegSize size>
   void ldff1sb(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
-    static_assert(size == SubRegSize::i16Bit ||
-                  size == SubRegSize::i32Bit ||
-                  size == SubRegSize::i64Bit, "Invalid size");
-    constexpr uint32_t ConvertedSize =
-      size == SubRegSize::i16Bit ? 0b10 :
-      size == SubRegSize::i32Bit ? 0b01 :
-      size == SubRegSize::i64Bit ? 0b00 : -1;
+    static_assert(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid size");
+    constexpr uint32_t ConvertedSize = size == SubRegSize::i16Bit ? 0b10 :
+                                       size == SubRegSize::i32Bit ? 0b01 :
+                                       size == SubRegSize::i64Bit ? 0b00 :
+                                                                    -1;
     SVEContiguousLoadStore(0, 1, 0b1100 | ConvertedSize, rm, pg, rn, zt);
   }
   template<SubRegSize size>
@@ -3214,20 +3070,14 @@ public:
   }
   template<SubRegSize size>
   void ldff1sh(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
-    static_assert(size == SubRegSize::i32Bit ||
-                  size == SubRegSize::i64Bit, "Invalid size");
-    constexpr uint32_t ConvertedSize =
-      size == SubRegSize::i32Bit ? 1 :
-      size == SubRegSize::i64Bit ? 0 : -1;
+    static_assert(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid size");
+    constexpr uint32_t ConvertedSize = size == SubRegSize::i32Bit ? 1 : size == SubRegSize::i64Bit ? 0 : -1;
     SVEContiguousLoadStore(0, 1, 0b1000 | ConvertedSize, rm, pg, rn, zt);
   }
   template<SubRegSize size>
   void ldff1w(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
-    static_assert(size == SubRegSize::i32Bit ||
-                  size == SubRegSize::i64Bit, "Invalid size");
-    constexpr uint32_t ConvertedSize =
-      size == SubRegSize::i32Bit ? 0 :
-      size == SubRegSize::i64Bit ? 1 : -1;
+    static_assert(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid size");
+    constexpr uint32_t ConvertedSize = size == SubRegSize::i32Bit ? 0 : size == SubRegSize::i64Bit ? 1 : -1;
     SVEContiguousLoadStore(0, 1, 0b1010 | ConvertedSize, rm, pg, rn, zt);
   }
   void ldff1sw(ZRegister zt, PRegisterZero pg, Register rn, Register rm) {
@@ -3249,7 +3099,7 @@ public:
 
   // SVE Memory - Contiguous Store and Unsized Contiguous
   void str(PRegister pt, XRegister rn, int32_t imm = 0) {
-    SVEUnsizedLoadStoreContiguous(0b0, imm, ZRegister{pt.Idx()}, rn, true);
+    SVEUnsizedLoadStoreContiguous(0b0, imm, ZRegister {pt.Idx()}, rn, true);
   }
   void str(ZRegister zt, XRegister rn, int32_t imm = 0) {
     SVEUnsizedLoadStoreContiguous(0b1, imm, zt, rn, true);
@@ -3269,11 +3119,8 @@ public:
 
   template<SubRegSize size>
   void st1w(ZRegister zt, PRegister pg, Register rn, Register rm) {
-    static_assert(size == SubRegSize::i32Bit ||
-                  size == SubRegSize::i64Bit, "Invalid size");
-    constexpr uint32_t ConvertedSize =
-      size == SubRegSize::i32Bit ? 0 :
-      size == SubRegSize::i64Bit ? 1 : -1;
+    static_assert(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid size");
+    constexpr uint32_t ConvertedSize = size == SubRegSize::i32Bit ? 0 : size == SubRegSize::i64Bit ? 1 : -1;
 
     SVEContiguousLoadStore(1, 0, 0b1010 | ConvertedSize, rm, pg, rn, zt);
   }
@@ -3420,9 +3267,7 @@ public:
   void st1w(ZRegister zt, PRegister pg, Register rn, int32_t Imm = 0) {
     static_assert(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid size");
 
-    constexpr uint32_t ConvertedSize =
-      size == SubRegSize::i32Bit ? 0 :
-      size == SubRegSize::i64Bit ? 1 : -1;
+    constexpr uint32_t ConvertedSize = size == SubRegSize::i32Bit ? 0 : size == SubRegSize::i64Bit ? 1 : -1;
 
     SVEContiguousLoadImm(true, 0b1010 | ConvertedSize, Imm, pg, rn, zt);
   }
@@ -3438,8 +3283,7 @@ private:
 
     // We can index up to 512-bit registers with dup
     [[maybe_unused]] const auto max_index = (64U >> log2_size_bytes) - 1;
-    LOGMAN_THROW_A_FMT(Index <= max_index, "dup index ({}) too large. Must be within [0, {}].",
-                        Index, max_index);
+    LOGMAN_THROW_A_FMT(Index <= max_index, "dup index ({}) too large. Must be within [0, {}].", Index, max_index);
 
     // imm2:tsz make up a 7 bit wide field, with each increasing element size
     // restricting the range of those 7 bits (e.g. B: tsz=xxxx1, H: tsz=xxx10,
@@ -3492,11 +3336,9 @@ private:
 
     const bool is_signed = (opc & 1) == 0;
     if (is_signed) {
-      LOGMAN_THROW_A_FMT(imm >= -128 && imm <= 127,
-                          "Invalid immediate ({}). Must be within [-127, 128]", imm);
+      LOGMAN_THROW_A_FMT(imm >= -128 && imm <= 127, "Invalid immediate ({}). Must be within [-127, 128]", imm);
     } else {
-      LOGMAN_THROW_A_FMT(imm >= 0 && imm <= 255,
-                          "Invalid immediate ({}). Must be within [0, 255]", imm);
+      LOGMAN_THROW_A_FMT(imm >= 0 && imm <= 255, "Invalid immediate ({}). Must be within [0, 255]", imm);
     }
 
     const auto imm8 = static_cast<uint32_t>(imm) & 0xFF;
@@ -3512,8 +3354,7 @@ private:
   void SVEMultiplyImmediateUnpred(uint32_t opc, SubRegSize size, ZRegister zd, ZRegister zn, int32_t imm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
     LOGMAN_THROW_A_FMT(zd == zn, "zd needs to equal zn");
-    LOGMAN_THROW_A_FMT(imm >= -128 && imm <= 127,
-                        "Invalid immediate ({}). Must be within [-127, 128]", imm);
+    LOGMAN_THROW_A_FMT(imm >= -128 && imm <= 127, "Invalid immediate ({}). Must be within [-127, 128]", imm);
 
     const auto imm8 = static_cast<uint32_t>(imm) & 0xFF;
 
@@ -3540,10 +3381,9 @@ private:
   }
 
   void SVEBroadcastFloatImmPredicated(SubRegSize size, ZRegister zd, PRegister pg, float value) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit ||
-                        size == SubRegSize::i32Bit ||
-                        size == SubRegSize::i64Bit, "Unsupported fcpy/fmov size");
-    uint32_t imm{};
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Unsupported fcpy/fmov "
+                                                                                                               "size");
+    uint32_t imm {};
     if (size == SubRegSize::i16Bit) {
       LOGMAN_MSG_A_FMT("Unsupported");
       FEX_UNREACHABLE;
@@ -3605,11 +3445,9 @@ private:
     case SVEModType::MOD_NONE:
     case SVEModType::MOD_LSL: {
       if (mod == SVEModType::MOD_NONE) {
-        LOGMAN_THROW_A_FMT(scale == 0,
-                            "Cannot scale packed ADR without a modifier");
+        LOGMAN_THROW_A_FMT(scale == 0, "Cannot scale packed ADR without a modifier");
       }
-      LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
-                          "Packed ADR must be using 32-bit or 64-bit elements");
+      LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Packed ADR must be using 32-bit or 64-bit elements");
       Instr |= FEXCore::ToUnderlying(size) << 22;
       break;
     }
@@ -3691,8 +3529,7 @@ private:
   }
 
   // SVE predicate logical operations
-  void SVEPredicateLogical(uint32_t op, uint32_t S, uint32_t o2, uint32_t o3,
-                           PRegister pm, PRegister pg, PRegister pn, PRegister pd) {
+  void SVEPredicateLogical(uint32_t op, uint32_t S, uint32_t o2, uint32_t o3, PRegister pm, PRegister pg, PRegister pn, PRegister pd) {
     uint32_t Instr = 0b0010'0101'0000'0000'0100'0000'0000'0000;
     Instr |= op << 23;
     Instr |= S << 22;
@@ -3721,8 +3558,7 @@ private:
   // SVE2 floating-point pairwise operations
   void SVEFloatPairwiseArithmetic(uint32_t opc, SubRegSize size, PRegister pg, ZRegister zd, ZRegister zn, ZRegister zm) {
     LOGMAN_THROW_A_FMT(zd == zn, "zd needs to equal zn");
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
-                       "Invalid float size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid float size");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = 0b0110'0100'0001'0000'1000'0000'0000'0000;
@@ -3736,8 +3572,7 @@ private:
 
   // SVE floating-point arithmetic (unpredicated)
   void SVEFloatArithmeticUnpredicated(uint32_t opc, SubRegSize size, ZRegister zm, ZRegister zn, ZRegister zd) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
-                        "Invalid float size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid float size");
 
     uint32_t Instr = 0b0110'0101'0000'0000'0000'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
@@ -3859,8 +3694,7 @@ private:
   }
 
   void SVECharacterMatch(uint32_t opc, SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit,
-                        "match/nmatch can only use 8-bit or 16-bit element sizes");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit, "match/nmatch can only use 8-bit or 16-bit element sizes");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7.Zeroing(), "match/nmatch can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = 0b0100'0101'0010'0000'1000'0000'0000'0000;
@@ -3874,8 +3708,9 @@ private:
   }
 
   void SVEFPRecursiveReduction(uint32_t opc, SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
-                        "FP reduction operation can only use 16-bit, 32-bit, or 64-bit element sizes");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "FP reduction operation can "
+                                                                                                               "only use 16-bit, 32-bit, "
+                                                                                                               "or 64-bit element sizes");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "FP reduction operation can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = 0b0110'0101'0000'0000'0010'0000'0000'0000;
@@ -3906,8 +3741,8 @@ private:
 
     // Division instruction
     if (b18 != 0) {
-      LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
-                          "Predicated divide only handles 32-bit or 64-bit elements");
+      LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Predicated divide only handles 32-bit or 64-bit "
+                                                                                   "elements");
     }
 
     uint32_t Instr = 0b0000'0100'0001'0000'0000'0000'0000'0000;
@@ -3949,8 +3784,7 @@ private:
   }
 
   void SVEStackFrameOperation(uint32_t opc, XRegister rd, XRegister rn, int32_t imm) {
-    LOGMAN_THROW_A_FMT(imm >= -32 && imm <= 31,
-                        "Stack frame operation immediate must be within -32 to 31");
+    LOGMAN_THROW_A_FMT(imm >= -32 && imm <= 31, "Stack frame operation immediate must be within -32 to 31");
 
     uint32_t Instr = 0b0000'0100'0010'0000'0101'0000'0000'0000;
     Instr |= opc << 22;
@@ -3961,8 +3795,7 @@ private:
   }
 
   void SVEBitwiseShiftByWideElementPredicated(SubRegSize size, uint32_t opc, ZRegister zd, PRegisterMerge pg, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit && size != SubRegSize::i128Bit,
-                       "Can't use 64-bit or 128-bit element size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit && size != SubRegSize::i128Bit, "Can't use 64-bit or 128-bit element size");
     LOGMAN_THROW_A_FMT(zd == zn, "zd and zn must be the same register");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7.Merging(), "Wide shift can only use p0-p7 as a governing predicate");
 
@@ -3976,8 +3809,7 @@ private:
   }
 
   void SVEBitwiseShiftByWideElementsUnpredicated(SubRegSize size, uint32_t opc, ZRegister zd, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit && size != SubRegSize::i128Bit,
-                       "Can't use 64-bit or 128-bit element size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit && size != SubRegSize::i128Bit, "Can't use 64-bit or 128-bit element size");
 
     uint32_t Instr = 0b0000'0100'0010'0000'1000'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
@@ -3990,8 +3822,7 @@ private:
 
   void SVEFPArithWithImmediate(uint32_t opc, SubRegSize size, ZRegister zd, PRegister pg, uint32_t i1) {
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
-    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i128Bit,
-                       "Can't use 8-bit or 128-bit element size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i128Bit, "Can't use 8-bit or 128-bit element size");
 
     uint32_t Instr = 0b0110'0101'0001'1000'1000'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
@@ -4005,8 +3836,7 @@ private:
   void SVEFPConvertPrecision(SubRegSize to, SubRegSize from, ZRegister zd, PRegister pg, ZRegister zn) {
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
     LOGMAN_THROW_A_FMT(to != from, "to and from sizes cannot be the same.");
-    LOGMAN_THROW_A_FMT(to != SubRegSize::i8Bit && to != SubRegSize::i128Bit &&
-                       from != SubRegSize::i8Bit && from != SubRegSize::i128Bit,
+    LOGMAN_THROW_A_FMT(to != SubRegSize::i8Bit && to != SubRegSize::i128Bit && from != SubRegSize::i8Bit && from != SubRegSize::i128Bit,
                        "Can't use 8-bit or 128-bit element size");
 
     // Encodings for the to and from sizes can get a little funky
@@ -4015,39 +3845,29 @@ private:
       switch (from) {
       case SubRegSize::i16Bit: {
         switch (to) {
-        case SubRegSize::i32Bit:
-          return 0x00810000U;
-        case SubRegSize::i64Bit:
-          return 0x00C10000U;
-        default:
-          return UINT32_MAX;
+        case SubRegSize::i32Bit: return 0x00810000U;
+        case SubRegSize::i64Bit: return 0x00C10000U;
+        default: return UINT32_MAX;
         }
-        }
+      }
 
       case SubRegSize::i32Bit: {
         switch (to) {
-        case SubRegSize::i16Bit:
-          return 0x00800000U;
-        case SubRegSize::i64Bit:
-          return 0x00C30000U;
-        default:
-          return UINT32_MAX;
+        case SubRegSize::i16Bit: return 0x00800000U;
+        case SubRegSize::i64Bit: return 0x00C30000U;
+        default: return UINT32_MAX;
         }
       }
 
       case SubRegSize::i64Bit: {
         switch (to) {
-        case SubRegSize::i16Bit:
-          return 0x00C00000U;
-        case SubRegSize::i32Bit:
-          return 0x00C20000U;
-        default:
-          return UINT32_MAX;
+        case SubRegSize::i16Bit: return 0x00C00000U;
+        case SubRegSize::i32Bit: return 0x00C20000U;
+        default: return UINT32_MAX;
         }
       }
 
-      default:
-        return UINT32_MAX;
+      default: return UINT32_MAX;
       }
     }();
     LOGMAN_THROW_A_FMT(op != UINT32_MAX, "Invalid conversion op value: {}", op);
@@ -4061,8 +3881,7 @@ private:
   }
 
   void SVE2IntegerAddSubNarrowHighPart(SubRegSize size, uint32_t opc, ZRegister zd, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit && size != SubRegSize::i128Bit,
-                       "Can't use 64-bit or 128-bit element size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit && size != SubRegSize::i128Bit, "Can't use 64-bit or 128-bit element size");
 
     uint32_t Instr = 0b0100'0101'0010'0000'0110'0000'0000'0000;
     Instr |= (FEXCore::ToUnderlying(size) + 1) << 22;
@@ -4107,8 +3926,7 @@ private:
   }
 
   void SVE2IntegerAddSubInterleavedLong(SubRegSize size, uint32_t opc, ZRegister zd, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i128Bit,
-                       "Can't use 8-bit or 128-bit element size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i128Bit, "Can't use 8-bit or 128-bit element size");
 
     uint32_t Instr = 0b0100'0101'0000'0000'1000'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
@@ -4132,8 +3950,7 @@ private:
   }
 
   void SVE2IntegerAddSubLongWithCarry(SubRegSize size, uint32_t sizep1, uint32_t T, ZRegister zda, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
-                       "Element size must be 32-bit or 64-bit");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Element size must be 32-bit or 64-bit");
 
     const uint32_t NewSize = size == SubRegSize::i32Bit ? 0 : 1;
 
@@ -4177,13 +3994,12 @@ private:
   }
 
   void SVE2BitwiseShiftLeftLong(SubRegSize size, uint32_t opc, ZRegister zd, ZRegister zn, uint32_t shift) {
-    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i128Bit,
-                       "Can't use 8-bit or 128-bit element size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i128Bit, "Can't use 8-bit or 128-bit element size");
 
     // The size provided in is the size to expand to (e.g. 16-bit means a long shift
     // expanding from 8-bit) so we just need to subtract the size by 1 so that our
     // encoding helper will perform the proper encoding.
-    const auto size_minus_1 = SubRegSize{FEXCore::ToUnderlying(size) - 1};
+    const auto size_minus_1 = SubRegSize {FEXCore::ToUnderlying(size) - 1};
     const auto [tszh, tszl_imm3] = EncodeSVEShiftImmediate(size_minus_1, shift, true);
 
     uint32_t Instr = 0b0100'0101'0000'0000'1010'0000'0000'0000;
@@ -4198,8 +4014,7 @@ private:
   void SVE2ComplexIntAdd(SubRegSize size, uint32_t opc, Rotation rot, ZRegister zd, ZRegister zn, ZRegister zm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Complex add cannot use 128-bit element size");
     LOGMAN_THROW_A_FMT(zd == zn, "zd and zn must be the same register");
-    LOGMAN_THROW_A_FMT(rot == Rotation::ROTATE_90 || rot == Rotation::ROTATE_270,
-                       "Rotation must be 90 or 270 degrees");
+    LOGMAN_THROW_A_FMT(rot == Rotation::ROTATE_90 || rot == Rotation::ROTATE_270, "Rotation must be 90 or 270 degrees");
 
     const uint32_t SanitizedRot = rot == Rotation::ROTATE_90 ? 0 : 1;
 
@@ -4213,8 +4028,7 @@ private:
   }
 
   void SVE2AbsDiffAccLong(SubRegSize size, uint32_t opc, ZRegister zda, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i128Bit,
-                      "Cannot use 8-bit or 128-bit element size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i128Bit, "Cannot use 8-bit or 128-bit element size");
 
     uint32_t Instr = 0b0100'0101'0000'0000'1100'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
@@ -4249,8 +4063,7 @@ private:
     // 0b111 - I - Current
 
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
-                        "Unsupported size in {}", __func__);
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Unsupported size in {}", __func__);
 
     uint32_t Instr = 0b0110'0101'0000'0000'1010'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
@@ -4262,12 +4075,13 @@ private:
   }
 
   // SVE floating-point convert to integer
-  void SVEFloatConvertToInt(SubRegSize dstsize, SubRegSize srcsize, uint32_t b19, uint32_t opc, uint32_t opc2, uint32_t U, PRegister pg, ZRegister zn, ZRegister zd) {
+  void SVEFloatConvertToInt(SubRegSize dstsize, SubRegSize srcsize, uint32_t b19, uint32_t opc, uint32_t opc2, uint32_t U, PRegister pg,
+                            ZRegister zn, ZRegister zd) {
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
     LOGMAN_THROW_A_FMT(srcsize == SubRegSize::i16Bit || srcsize == SubRegSize::i32Bit || srcsize == SubRegSize::i64Bit,
-                        "Unsupported src size in {}", __func__);
+                       "Unsupported src size in {}", __func__);
     LOGMAN_THROW_A_FMT(dstsize == SubRegSize::i16Bit || dstsize == SubRegSize::i32Bit || dstsize == SubRegSize::i64Bit,
-                        "Unsupported dst size in {}", __func__);
+                       "Unsupported dst size in {}", __func__);
 
     uint32_t Instr = 0b0110'0101'0001'0000'1010'0000'0000'0000;
     Instr |= opc << 22;
@@ -4282,7 +4096,8 @@ private:
   // SVE integer convert to floating-point
   // We can implement this in terms of the floating-point to int version above,
   // since the only difference in encoding is setting bit 19 to 0.
-  void SVEIntegerConvertToFloat(SubRegSize dstsize, SubRegSize srcsize, uint32_t opc, uint32_t opc2, uint32_t U, PRegister pg, ZRegister zn, ZRegister zd) {
+  void SVEIntegerConvertToFloat(SubRegSize dstsize, SubRegSize srcsize, uint32_t opc, uint32_t opc2, uint32_t U, PRegister pg, ZRegister zn,
+                                ZRegister zd) {
     SVEFloatConvertToInt(dstsize, srcsize, 0, opc, opc2, U, pg, zn, zd);
   }
 
@@ -4291,16 +4106,14 @@ private:
   //       compact and in the same place.
   void SVEGatherLoadScalarPlusVector(SubRegSize esize, SubRegSize msize, ZRegister zt, PRegisterZero pg, SVEMemOperand mem_op,
                                      bool is_unsigned, bool is_fault_first) {
-    LOGMAN_THROW_A_FMT(esize == SubRegSize::i32Bit || esize == SubRegSize::i64Bit,
-                       "Gather load element size must be 32-bit or 64-bit");
+    LOGMAN_THROW_A_FMT(esize == SubRegSize::i32Bit || esize == SubRegSize::i64Bit, "Gather load element size must be 32-bit or 64-bit");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
     const auto& op_data = mem_op.MetaType.ScalarVectorType;
     const bool is_scaled = op_data.scale != 0;
     [[maybe_unused]] const auto msize_value = FEXCore::ToUnderlying(msize);
 
-    LOGMAN_THROW_A_FMT(op_data.scale == 0 || op_data.scale == msize_value,
-                       "scale may only be 0 or {}", msize_value);
+    LOGMAN_THROW_A_FMT(op_data.scale == 0 || op_data.scale == msize_value, "scale may only be 0 or {}", msize_value);
 
     uint32_t mod_value = FEXCore::ToUnderlying(op_data.mod);
     uint32_t Instr = 0b1000'0100'0000'0000'0000'0000'0000'0000;
@@ -4315,20 +4128,17 @@ private:
       // LSL and no modifier encodings should be setting bit 22 to 1.
       if (is_lsl || is_none) {
         if (is_lsl) {
-          LOGMAN_THROW_A_FMT(op_data.scale == msize_value,
-                             "mod type of LSL must have a scale of {}", msize_value);
+          LOGMAN_THROW_A_FMT(op_data.scale == msize_value, "mod type of LSL must have a scale of {}", msize_value);
         } else {
-          LOGMAN_THROW_A_FMT(op_data.scale == 0,
-                             "mod type of none must have a scale of 0");
+          LOGMAN_THROW_A_FMT(op_data.scale == 0, "mod type of none must have a scale of 0");
         }
 
         Instr |= 1U << 15;
         mod_value = 1;
       }
     } else {
-      LOGMAN_THROW_A_FMT(op_data.mod == SVEModType::MOD_UXTW ||
-                         op_data.mod == SVEModType::MOD_SXTW,
-                         "mod type for 32-bit lane size may only be UXTW or SXTW");
+      LOGMAN_THROW_A_FMT(op_data.mod == SVEModType::MOD_UXTW || op_data.mod == SVEModType::MOD_SXTW, "mod type for 32-bit lane size may "
+                                                                                                     "only be UXTW or SXTW");
     }
 
     Instr |= FEXCore::ToUnderlying(msize) << 23;
@@ -4345,8 +4155,7 @@ private:
   }
 
   void SVEScatterStoreScalarPlusVector(SubRegSize esize, SubRegSize msize, ZRegister zt, PRegister pg, SVEMemOperand mem_op) {
-    LOGMAN_THROW_A_FMT(esize == SubRegSize::i32Bit || esize == SubRegSize::i64Bit,
-                       "Gather load element size must be 32-bit or 64-bit");
+    LOGMAN_THROW_A_FMT(esize == SubRegSize::i32Bit || esize == SubRegSize::i64Bit, "Gather load element size must be 32-bit or 64-bit");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
     const auto& op_data = mem_op.MetaType.ScalarVectorType;
@@ -4355,8 +4164,7 @@ private:
     const auto msize_value = FEXCore::ToUnderlying(msize);
     uint32_t mod_value = FEXCore::ToUnderlying(op_data.mod);
 
-    LOGMAN_THROW_A_FMT(op_data.scale == 0 || op_data.scale == msize_value,
-                       "scale may only be 0 or {}", msize_value);
+    LOGMAN_THROW_A_FMT(op_data.scale == 0 || op_data.scale == msize_value, "scale may only be 0 or {}", msize_value);
 
     uint32_t Instr = 0b1110'0100'0000'0000'1000'0000'0000'0000;
 
@@ -4367,16 +4175,13 @@ private:
 
       if (is_lsl || is_none) {
         if (is_lsl) {
-          LOGMAN_THROW_A_FMT(op_data.scale == msize_value,
-                             "mod type of LSL must have a scale of {}", msize_value);
+          LOGMAN_THROW_A_FMT(op_data.scale == msize_value, "mod type of LSL must have a scale of {}", msize_value);
         } else {
-          LOGMAN_THROW_A_FMT(op_data.scale == 0,
-                             "mod type of none must have a scale of 0");
+          LOGMAN_THROW_A_FMT(op_data.scale == 0, "mod type of none must have a scale of 0");
         }
         if (is_lsl || is_scaled) {
-          LOGMAN_THROW_A_FMT(msize != SubRegSize::i8Bit,
-                           "Cannot use 8-bit store elements with unpacked 32-bit scaled offset and "
-                           "64-bit scaled offset variants. Instructions not allocated.");
+          LOGMAN_THROW_A_FMT(msize != SubRegSize::i8Bit, "Cannot use 8-bit store elements with unpacked 32-bit scaled offset and "
+                                                         "64-bit scaled offset variants. Instructions not allocated.");
         }
 
         // 64-bit scaled/unscaled scatters need to set bit 13
@@ -4385,18 +4190,16 @@ private:
       }
     } else {
       if (is_scaled) {
-        LOGMAN_THROW_A_FMT(msize != SubRegSize::i8Bit && msize != SubRegSize::i64Bit,
-                           "Cannot use 8-bit or 64-bit store elements with 32-bit scaled offset variant. "
-                           "Instructions not allocated");
+        LOGMAN_THROW_A_FMT(msize != SubRegSize::i8Bit && msize != SubRegSize::i64Bit, "Cannot use 8-bit or 64-bit store elements with "
+                                                                                      "32-bit scaled offset variant. "
+                                                                                      "Instructions not allocated");
       } else {
-        LOGMAN_THROW_A_FMT(msize != SubRegSize::i64Bit,
-                           "Cannot use 64-bit store elements with 32-bit unscaled offset variant. "
-                           "Instruction not allocated.");
+        LOGMAN_THROW_A_FMT(msize != SubRegSize::i64Bit, "Cannot use 64-bit store elements with 32-bit unscaled offset variant. "
+                                                        "Instruction not allocated.");
       }
 
-      LOGMAN_THROW_A_FMT(op_data.mod == SVEModType::MOD_UXTW ||
-                         op_data.mod == SVEModType::MOD_SXTW,
-                         "mod type for 32-bit lane size may only be UXTW or SXTW");
+      LOGMAN_THROW_A_FMT(op_data.mod == SVEModType::MOD_UXTW || op_data.mod == SVEModType::MOD_SXTW, "mod type for 32-bit lane size may "
+                                                                                                     "only be UXTW or SXTW");
 
       // 32-bit scatters need to set bit 22.
       Instr |= 1U << 22;
@@ -4413,10 +4216,10 @@ private:
     dc32(Instr);
   }
 
-  void SVEGatherScatterVectorPlusImm(SubRegSize esize, SubRegSize msize, ZRegister zt, PRegister pg, SVEMemOperand mem_op,
-                                     bool is_store, bool is_unsigned, bool is_fault_first) {
-    LOGMAN_THROW_A_FMT(esize == SubRegSize::i32Bit || esize == SubRegSize::i64Bit,
-                       "Gather load/store element size must be 32-bit or 64-bit");
+  void SVEGatherScatterVectorPlusImm(SubRegSize esize, SubRegSize msize, ZRegister zt, PRegister pg, SVEMemOperand mem_op, bool is_store,
+                                     bool is_unsigned, bool is_fault_first) {
+    LOGMAN_THROW_A_FMT(esize == SubRegSize::i32Bit || esize == SubRegSize::i64Bit, "Gather load/store element size must be 32-bit or "
+                                                                                   "64-bit");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
     const auto msize_value = FEXCore::ToUnderlying(msize);
@@ -4427,8 +4230,7 @@ private:
     const auto imm_to_encode = imm >> msize_value;
 
     LOGMAN_THROW_A_FMT(imm <= imm_limit, "Immediate must be within [0, {}]", imm_limit);
-    LOGMAN_THROW_A_FMT(imm == 0 || (imm % msize_bytes) == 0,
-                       "Immediate must be cleanly divisible by {}", msize_bytes);
+    LOGMAN_THROW_A_FMT(imm == 0 || (imm % msize_bytes) == 0, "Immediate must be cleanly divisible by {}", msize_bytes);
 
     uint32_t Instr = 0b1000'0100'0000'0000'1000'0000'0000'0000;
 
@@ -4465,8 +4267,7 @@ private:
   }
 
   void SVEUnsizedLoadStoreContiguous(uint32_t op2, int32_t imm, ZRegister zt, Register rn, bool is_store) {
-    LOGMAN_THROW_A_FMT(imm >= -256 && imm <= 255,
-                        "Immediate offset ({}) too large. Must be within [-256, 255].", imm);
+    LOGMAN_THROW_A_FMT(imm >= -256 && imm <= 255, "Immediate offset ({}) too large. Must be within [-256, 255].", imm);
 
     const auto imm9 = static_cast<uint32_t>(imm) & 0b1'1111'1111;
 
@@ -4493,8 +4294,8 @@ private:
     [[maybe_unused]] const auto min_offset = -8 * num_regs;
     [[maybe_unused]] const auto max_offset = 7 * num_regs;
     LOGMAN_THROW_A_FMT(imm >= min_offset && imm <= max_offset,
-                        "Invalid load/store offset ({}). Offset must be a multiple of {} and be within [{}, {}]",
-                        imm, num_regs, min_offset, max_offset);
+                       "Invalid load/store offset ({}). Offset must be a multiple of {} and be within [{}, {}]", imm, num_regs, min_offset,
+                       max_offset);
 
     const auto imm4 = static_cast<uint32_t>(imm / num_regs) & 0xF;
     const auto opc = static_cast<uint32_t>(num_regs - 1);
@@ -4515,8 +4316,7 @@ private:
   // SVE contiguous non-temporal load (scalar plus immediate)
   void SVEContiguousNontemporalLoad(uint32_t msz, ZRegister zt, PRegister pg, Register rn, int32_t imm) {
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
-    LOGMAN_THROW_A_FMT(imm >= -8 && imm <= 7,
-                        "Invalid loadstore offset ({}). Must be between [-8, 7]", imm);
+    LOGMAN_THROW_A_FMT(imm >= -8 && imm <= 7, "Invalid loadstore offset ({}). Must be between [-8, 7]", imm);
 
     const auto imm4 = static_cast<uint32_t>(imm) & 0xF;
     uint32_t Instr = 0b1010'0100'0000'0000'1110'0000'0000'0000;
@@ -4531,8 +4331,7 @@ private:
   // SVE contiguous non-temporal store (scalar plus immediate)
   void SVEContiguousNontemporalStore(uint32_t msz, ZRegister zt, PRegister pg, Register rn, int32_t imm) {
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
-    LOGMAN_THROW_A_FMT(imm >= -8 && imm <= 7,
-                        "Invalid loadstore offset ({}). Must be between [-8, 7]", imm);
+    LOGMAN_THROW_A_FMT(imm >= -8 && imm <= 7, "Invalid loadstore offset ({}). Must be between [-8, 7]", imm);
 
     const auto imm4 = static_cast<uint32_t>(imm) & 0xF;
     uint32_t Instr = 0b1110'0100'0001'0000'1110'0000'0000'0000;
@@ -4546,8 +4345,7 @@ private:
 
   void SVEContiguousLoadImm(bool is_store, uint32_t dtype, int32_t imm, PRegister pg, Register rn, ZRegister zt) {
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
-    LOGMAN_THROW_A_FMT(imm >= -8 && imm <= 7,
-                        "Invalid loadstore offset ({}). Must be between [-8, 7]", imm);
+    LOGMAN_THROW_A_FMT(imm >= -8 && imm <= 7, "Invalid loadstore offset ({}). Must be between [-8, 7]", imm);
 
     const auto imm4 = static_cast<uint32_t>(imm) & 0xF;
 
@@ -4578,8 +4376,7 @@ private:
     dc32(Instr);
   }
 
-  void SVEContiguousLoadStoreMultipleScalar(bool is_store, SubRegSize msz, uint32_t opc, ZRegister zt,
-                                            PRegister pg, Register rn, Register rm) {
+  void SVEContiguousLoadStoreMultipleScalar(bool is_store, SubRegSize msz, uint32_t opc, ZRegister zt, PRegister pg, Register rn, Register rm) {
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
     LOGMAN_THROW_A_FMT(rm != Reg::rsp, "rm cannot be the stack pointer");
 
@@ -4598,8 +4395,7 @@ private:
     dc32(Instr);
   }
 
-  void SVELoadBroadcastQuadScalarPlusImm(uint32_t msz, uint32_t ssz, ZRegister zt,
-                                         PRegister pg, Register rn, int imm) {
+  void SVELoadBroadcastQuadScalarPlusImm(uint32_t msz, uint32_t ssz, ZRegister zt, PRegister pg, Register rn, int imm) {
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
     const auto esize = static_cast<int>(16 << ssz);
@@ -4607,8 +4403,7 @@ private:
     [[maybe_unused]] const auto min_imm = -(max_imm + esize);
 
     LOGMAN_THROW_A_FMT((imm % esize) == 0, "imm ({}) must be a multiple of {}", imm, esize);
-    LOGMAN_THROW_A_FMT(imm >= min_imm && imm <= max_imm, "imm ({}) must be within [{}, {}]",
-                        imm, min_imm, max_imm);
+    LOGMAN_THROW_A_FMT(imm >= min_imm && imm <= max_imm, "imm ({}) must be within [{}, {}]", imm, min_imm, max_imm);
 
     const auto sanitized_imm = static_cast<uint32_t>(imm / esize) & 0b1111;
 
@@ -4622,8 +4417,7 @@ private:
     dc32(Instr);
   }
 
-  void SVELoadBroadcastQuadScalarPlusScalar(uint32_t msz, uint32_t ssz, ZRegister zt,
-                                            PRegister pg, Register rn, Register rm) {
+  void SVELoadBroadcastQuadScalarPlusScalar(uint32_t msz, uint32_t ssz, ZRegister zt, PRegister pg, Register rn, Register rm) {
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
     LOGMAN_THROW_A_FMT(rm != Reg::rsp, "rm may not be the stack pointer");
 
@@ -4637,15 +4431,13 @@ private:
     dc32(Instr);
   }
 
-  void SVELoadAndBroadcastElement(bool is_signed, SubRegSize esize, SubRegSize msize,
-                                  ZRegister zt, PRegister pg, Register rn, uint32_t imm) {
+  void SVELoadAndBroadcastElement(bool is_signed, SubRegSize esize, SubRegSize msize, ZRegister zt, PRegister pg, Register rn, uint32_t imm) {
     LOGMAN_THROW_A_FMT(esize != SubRegSize::i128Bit, "Cannot use 128-bit elements.");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
     if (is_signed) {
       // The element size needs to be larger than memory size, otherwise you tell
       // me how we're gonna sign extend this bad boy in memory.
-      LOGMAN_THROW_A_FMT(esize > msize,
-                          "Signed broadcast element size must be greater than memory size.");
+      LOGMAN_THROW_A_FMT(esize > msize, "Signed broadcast element size must be greater than memory size.");
     }
 
     const auto esize_value = FEXCore::ToUnderlying(esize);
@@ -4653,9 +4445,8 @@ private:
 
     const auto data_size_bytes = 1U << msize_value;
     [[maybe_unused]] const auto max_imm = (64U << msize_value) - data_size_bytes;
-    LOGMAN_THROW_A_FMT((imm % data_size_bytes) == 0 && imm <= max_imm,
-                        "imm must be a multiple of {} and be within [0, {}]",
-                        data_size_bytes, max_imm);
+    LOGMAN_THROW_A_FMT((imm % data_size_bytes) == 0 && imm <= max_imm, "imm must be a multiple of {} and be within [0, {}]",
+                       data_size_bytes, max_imm);
 
     const auto sanitized_imm = imm / data_size_bytes;
 
@@ -4672,8 +4463,9 @@ private:
     // being passed in. Unsigned variants will always have dtypeh be less than
     // or equal to dtypel. The only time this isn't the case is with signed variants.
     LOGMAN_THROW_A_FMT(is_signed == (dtypeh > dtypel),
-                        "Invalid element size used with load broadcast instruction "
-                        "(esize: {}, msize: {})", esize_value, msize_value);
+                       "Invalid element size used with load broadcast instruction "
+                       "(esize: {}, msize: {})",
+                       esize_value, msize_value);
 
     uint32_t Instr = 0b1000'0100'0100'0000'1000'0000'0000'0000;
     Instr |= dtypeh << 23;
@@ -4762,7 +4554,8 @@ private:
     dc32(Instr);
   }
 
-  void SVEBitWiseShiftImmediatePred(SubRegSize size, uint32_t opc, uint32_t L, uint32_t U, PRegister pg, ZRegister zd, ZRegister zdn, uint32_t Shift) {
+  void SVEBitWiseShiftImmediatePred(SubRegSize size, uint32_t opc, uint32_t L, uint32_t U, PRegister pg, ZRegister zd, ZRegister zdn,
+                                    uint32_t Shift) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
     LOGMAN_THROW_A_FMT(zd == zdn, "zd needs to equal zdn");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
@@ -4879,9 +4672,7 @@ private:
 
   void SVEFloatUnary(uint32_t opc, SubRegSize size, PRegister pg, ZRegister zn, ZRegister zd) {
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit ||
-                        size == SubRegSize::i32Bit ||
-                        size == SubRegSize::i64Bit, "Unsupported size in {}", __func__);
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Unsupported size in {}", __func__);
 
     uint32_t Instr = 0b0110'0101'0000'1100'1010'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
@@ -4969,8 +4760,8 @@ private:
   }
 
   void SVEFPUnaryOpsUnpredicated(uint32_t opc, SubRegSize size, ZRegister zd, ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
-                        "SubRegSize must be 16-bit, 32-bit, or 64-bit");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "SubRegSize must be 16-bit, "
+                                                                                                               "32-bit, or 64-bit");
 
     uint32_t Instr = 0b0110'0101'0000'1000'0011'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
@@ -4981,8 +4772,8 @@ private:
   }
 
   void SVEFPSerialReductionPredicated(uint32_t opc, SubRegSize size, VRegister vd, PRegister pg, VRegister vn, ZRegister zm) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
-                        "SubRegSize must be 16-bit, 32-bit, or 64-bit");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "SubRegSize must be 16-bit, "
+                                                                                                               "32-bit, or 64-bit");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
     LOGMAN_THROW_A_FMT(vd == vn, "vn must be the same as vd");
 
@@ -4996,8 +4787,8 @@ private:
   }
 
   void SVEFPCompareWithZero(uint32_t eqlt, uint32_t ne, SubRegSize size, PRegister pd, PRegister pg, ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
-                        "SubRegSize must be 16-bit, 32-bit, or 64-bit");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "SubRegSize must be 16-bit, "
+                                                                                                               "32-bit, or 64-bit");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = 0b0110'0101'0001'0000'0010'0000'0000'0000;
@@ -5012,8 +4803,8 @@ private:
 
   void SVEFPMultiplyAdd(uint32_t opc, SubRegSize size, ZRegister zd, PRegister pg, ZRegister zn, ZRegister zm) {
     // NOTE: opc also includes the op0 bit (bit 15) like op0:opc, since the fields are adjacent
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
-                        "SubRegSize must be 16-bit, 32-bit, or 64-bit");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "SubRegSize must be 16-bit, "
+                                                                                                               "32-bit, or 64-bit");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = 0b0110'0101'0010'0000'0000'0000'0000'0000;
@@ -5027,11 +4818,11 @@ private:
   }
 
   void SVEFPMultiplyAddIndexed(uint32_t op, SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, uint32_t index) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
-                        "SubRegSize must be 16-bit, 32-bit, or 64-bit");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "SubRegSize must be 16-bit, "
+                                                                                                               "32-bit, or 64-bit");
     LOGMAN_THROW_A_FMT((size <= SubRegSize::i32Bit && zm <= ZReg::z7) || (size == SubRegSize::i64Bit && zm <= ZReg::z15),
-                        "16-bit and 32-bit indexed variants may only use Zm between z0-z7\n"
-                        "64-bit variants may only use Zm between z0-z15");
+                       "16-bit and 32-bit indexed variants may only use Zm between z0-z7\n"
+                       "64-bit variants may only use Zm between z0-z15");
 
     const auto Underlying = FEXCore::ToUnderlying(size);
     [[maybe_unused]] const uint32_t IndexMax = (16 / (1U << Underlying)) - 1;
@@ -5051,8 +4842,8 @@ private:
     dc32(Instr);
   }
 
-  void SVEFPMultiplyAddLongIndexed(uint32_t o2, uint32_t op, uint32_t T, SubRegSize dstsize,
-                                   ZRegister zda, ZRegister zn, ZRegister zm, uint32_t index) {
+  void SVEFPMultiplyAddLongIndexed(uint32_t o2, uint32_t op, uint32_t T, SubRegSize dstsize, ZRegister zda, ZRegister zn, ZRegister zm,
+                                   uint32_t index) {
     LOGMAN_THROW_A_FMT(dstsize == SubRegSize::i32Bit, "Destination size must be 32-bit.");
     LOGMAN_THROW_A_FMT(index <= 7, "Index ({}) must be within [0, 7]", index);
     LOGMAN_THROW_A_FMT(zm <= ZReg::z7, "zm (z{}) must be within [z0, z7]", zm.Idx());
@@ -5069,8 +4860,7 @@ private:
     dc32(Inst);
   }
 
-  void SVEFPMultiplyAddLong(uint32_t o2, uint32_t op, uint32_t T, SubRegSize dstsize,
-                            ZRegister zda, ZRegister zn, ZRegister zm) {
+  void SVEFPMultiplyAddLong(uint32_t o2, uint32_t op, uint32_t T, SubRegSize dstsize, ZRegister zda, ZRegister zn, ZRegister zm) {
     LOGMAN_THROW_A_FMT(dstsize == SubRegSize::i32Bit, "Destination size must be 32-bit.");
 
     uint32_t Instr = 0b0110'0100'1010'0000'1000'0000'0000'0000;
@@ -5084,8 +4874,7 @@ private:
   }
 
   void SVEFPMatrixMultiplyAccumulate(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
-                        "SubRegSize must be 32-bit or 64-bit");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "SubRegSize must be 32-bit or 64-bit");
 
     uint32_t Instr = 0b0110'0100'0010'0000'1110'0100'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
@@ -5137,7 +4926,7 @@ private:
   }
   void SVEIncDecPredicateCountVector(uint32_t op0, uint32_t op1, uint32_t opc, uint32_t b16, SubRegSize size, ZRegister zdn, PRegister pm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Cannot use 8-bit element size");
-    SVEIncDecPredicateCountScalar(op0, op1, opc, b16, size, Register{zdn.Idx()}, pm);
+    SVEIncDecPredicateCountScalar(op0, op1, opc, b16, size, Register {zdn.Idx()}, pm);
   }
 
   void SVE2IntegerPredicated(uint32_t op0, uint32_t op1, SubRegSize size, ZRegister zd, PRegister pg, ZRegister zn) {
@@ -5155,8 +4944,8 @@ private:
   }
 
   void SVE2IntegerPairwiseAddAccumulateLong(uint32_t U, SubRegSize size, ZRegister zda, PRegisterMerge pg, ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
-                        "SubRegSize must be 16-bit, 32-bit, or 64-bit");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "SubRegSize must be 16-bit, "
+                                                                                                               "32-bit, or 64-bit");
     SVE2IntegerPredicated((0b0010 << 1) | U, 0b101, size, zda, pg, zn);
   }
 
@@ -5197,8 +4986,8 @@ private:
   }
 
   void SVEIntegerDotProduct(uint32_t op, SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, Rotation rot) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
-                       "Dot product must only use 32-bit or 64-bit element sizes");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Dot product must only use 32-bit or 64-bit element "
+                                                                                 "sizes");
     SVEIntegerComplexMulAdd(op, size, zda, zn, zm, rot);
   }
 
@@ -5208,8 +4997,7 @@ private:
   }
 
   void SVE2SaturatingMulAddInterleaved(uint32_t op0, SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit,
-                       "Element size may only be 16-bit, 32-bit, or 64-bit");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Element size may only be 16-bit, 32-bit, or 64-bit");
     SVEIntegerMultiplyAddUnpredicated(op0, size, zda, zn, zm);
   }
 
@@ -5263,11 +5051,9 @@ private:
     const uint32_t element_size = SubRegSizeInBits(size);
 
     if (is_left_shift) {
-      LOGMAN_THROW_A_FMT(shift >= 0 && shift < element_size,
-                         "Invalid left shift value ({}). Must be within [0, {}]", shift, element_size - 1);
+      LOGMAN_THROW_A_FMT(shift >= 0 && shift < element_size, "Invalid left shift value ({}). Must be within [0, {}]", shift, element_size - 1);
     } else {
-      LOGMAN_THROW_A_FMT(shift > 0 && shift <= element_size,
-                         "Invalid right shift value ({}). Must be within [1, {}]", shift, element_size);
+      LOGMAN_THROW_A_FMT(shift > 0 && shift <= element_size, "Invalid right shift value ({}). Must be within [1, {}]", shift, element_size);
     }
 
     // Both left and right shifts encodes their shift as if it were
@@ -5282,8 +5068,7 @@ private:
     // Right shifts instead encode it like a subtraction. e.g. A shift of 1
     // would encode like (S: tsize=0b0111 imm3=0b111, where 64 - 1 = 63, etc).
     // so the more lower in value the bits are set, the larger the shift.
-    const uint32_t encoded_shift = is_left_shift ? element_size + shift
-                                                 : (2 * element_size) - shift;
+    const uint32_t encoded_shift = is_left_shift ? element_size + shift : (2 * element_size) - shift;
 
     return {
       .tszh = encoded_shift >> 5,
@@ -5292,20 +5077,21 @@ private:
   }
 
   // Alias that returns the equivalently sized unsigned type for a floating-point type T.
-  template <typename T>
-  requires(std::is_same_v<T, float> || std::is_same_v<T, double>)
+  template<typename T>
+  requires (std::is_same_v<T, float> || std::is_same_v<T, double>)
   using FloatToEquivalentUInt = std::conditional_t<std::is_same_v<T, float>, uint32_t, uint64_t>;
 
   // Determines if a floating-point value is capable of being converted
   // into an 8-bit immediate. See pseudocode definition of VFPExpandImm
   // in ARM A-profile reference manual for a general overview of how this was derived.
-  template <typename T>
-  requires(std::is_same_v<T, float> || std::is_same_v<T, double>)
-  [[nodiscard, maybe_unused]] static bool IsValidFPValueForImm8(T value) {
+  template<typename T>
+  requires (std::is_same_v<T, float> || std::is_same_v<T, double>)
+  [[nodiscard, maybe_unused]]
+  static bool IsValidFPValueForImm8(T value) {
     const uint64_t bits = FEXCore::BitCast<FloatToEquivalentUInt<T>>(value);
     const uint64_t datasize_idx = FEXCore::ilog2(sizeof(T)) - 1;
 
-    static constexpr std::array mantissa_masks{
+    static constexpr std::array mantissa_masks {
       0x00000000'0000003FULL, // half (bits [5:0])
       0x00000000'0007FFFFULL, // single (bits [18:0])
       0x0000FFFF'FFFFFFFFULL, // double (bits [47:0])
@@ -5317,7 +5103,7 @@ private:
       return false;
     }
 
-    static constexpr std::array exponent_masks{
+    static constexpr std::array exponent_masks {
       0x00000000'00003000ULL, // half (bits [13:12])
       0x00000000'3E000000ULL, // single (bits [29:25])
       0x3FC00000'00000000ULL, // double (bits [61:54])
@@ -5343,8 +5129,7 @@ private:
 
 protected:
   static uint32_t FP32ToImm8(float value) {
-    LOGMAN_THROW_A_FMT(IsValidFPValueForImm8(value),
-                       "Value ({}) cannot be encoded into an 8-bit immediate", value);
+    LOGMAN_THROW_A_FMT(IsValidFPValueForImm8(value), "Value ({}) cannot be encoded into an 8-bit immediate", value);
 
     const auto bits = FEXCore::BitCast<uint32_t>(value);
     const auto sign = (bits & 0x80000000) >> 24;
@@ -5355,8 +5140,7 @@ protected:
   }
 
   static uint32_t FP64ToImm8(double value) {
-    LOGMAN_THROW_A_FMT(IsValidFPValueForImm8(value),
-                       "Value ({}) cannot be encoded into an 8-bit immediate", value);
+    LOGMAN_THROW_A_FMT(IsValidFPValueForImm8(value), "Value ({}) cannot be encoded into an 8-bit immediate", value);
 
     const auto bits = FEXCore::BitCast<uint64_t>(value);
     const auto sign = (bits & 0x80000000'00000000) >> 56;

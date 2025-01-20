@@ -36,7 +36,7 @@ public:
     DataProcessing_PCRel_Imm(Op, rd, Imm);
   }
 
-  void adr(ARMEmitter::Register rd, BackwardLabel const* Label) {
+  void adr(ARMEmitter::Register rd, const BackwardLabel* Label) {
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
     LOGMAN_THROW_A_FMT(IsADRRange(Imm), "Unscaled offset too large");
 
@@ -45,17 +45,16 @@ public:
   }
   template<typename LabelType>
   requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void adr(ARMEmitter::Register rd, LabelType *Label) {
-    AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::ADR });
+  void adr(ARMEmitter::Register rd, LabelType* Label) {
+    AddLocationToLabel(Label, SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::ADR});
     constexpr uint32_t Op = 0b0001'0000 << 24;
     DataProcessing_PCRel_Imm(Op, rd, 0);
   }
 
-  void adr(ARMEmitter::Register rd, BiDirectionalLabel *Label) {
+  void adr(ARMEmitter::Register rd, BiDirectionalLabel* Label) {
     if (Label->Backward.Location) {
       adr(rd, &Label->Backward);
-    }
-    else {
+    } else {
       adr(rd, &Label->Forward);
     }
   }
@@ -65,7 +64,7 @@ public:
     DataProcessing_PCRel_Imm(Op, rd, Imm);
   }
 
-  void adrp(ARMEmitter::Register rd, BackwardLabel const* Label) {
+  void adrp(ARMEmitter::Register rd, const BackwardLabel* Label) {
     int64_t Imm = reinterpret_cast<int64_t>(Label->Location) - (GetCursorAddress<int64_t>() & ~0xFFFLL);
     LOGMAN_THROW_A_FMT(IsADRPRange(Imm) && IsADRPAligned(Imm), "Unscaled offset too large");
 
@@ -74,30 +73,27 @@ public:
   }
   template<typename LabelType>
   requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void adrp(ARMEmitter::Register rd, LabelType *Label) {
-    AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::ADRP });
+  void adrp(ARMEmitter::Register rd, LabelType* Label) {
+    AddLocationToLabel(Label, SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::ADRP});
     constexpr uint32_t Op = 0b1001'0000 << 24;
     DataProcessing_PCRel_Imm(Op, rd, 0);
   }
 
-  void adrp(ARMEmitter::Register rd, BiDirectionalLabel *Label) {
+  void adrp(ARMEmitter::Register rd, BiDirectionalLabel* Label) {
     if (Label->Backward.Location) {
       adrp(rd, &Label->Backward);
-    }
-    else {
+    } else {
       adrp(rd, &Label->Forward);
     }
   }
 
-  void LongAddressGen(ARMEmitter::Register rd, BackwardLabel const* Label) {
+  void LongAddressGen(ARMEmitter::Register rd, const BackwardLabel* Label) {
     int64_t Imm = reinterpret_cast<int64_t>(Label->Location) - (GetCursorAddress<int64_t>());
     if (IsADRRange(Imm)) {
       // If the range is in ADR range then we can just use ADR.
       adr(rd, Label);
-    }
-    else if (IsADRPRange(Imm)) {
-      int64_t ADRPImm = (reinterpret_cast<int64_t>(Label->Location) & ~0xFFFLL)
-        - (GetCursorAddress<int64_t>() & ~0xFFFLL);
+    } else if (IsADRPRange(Imm)) {
+      int64_t ADRPImm = (reinterpret_cast<int64_t>(Label->Location) & ~0xFFFLL) - (GetCursorAddress<int64_t>() & ~0xFFFLL);
 
       // If the range is in the ADRP range then we can use ADRP.
       bool NeedsOffset = !IsADRPAligned(reinterpret_cast<uint64_t>(Label->Location));
@@ -110,24 +106,23 @@ public:
         // Now even an add
         add(ARMEmitter::Size::i64Bit, rd, rd, AlignedOffset);
       }
-    }
-    else {
+    } else {
       LOGMAN_MSG_A_FMT("Unscaled offset too large");
       FEX_UNREACHABLE;
     }
   }
   void LongAddressGen(ARMEmitter::Register rd, ForwardLabel* Label) {
-    Label->Insts.emplace_back(SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::LONG_ADDRESS_GEN });
+    Label->Insts.emplace_back(
+      SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::LONG_ADDRESS_GEN});
     // Emit a register index and a nop. These will be backpatched.
     dc32(rd.Idx());
     nop();
   }
 
-  void LongAddressGen(ARMEmitter::Register rd, BiDirectionalLabel *Label) {
+  void LongAddressGen(ARMEmitter::Register rd, BiDirectionalLabel* Label) {
     if (Label->Backward.Location) {
       LongAddressGen(rd, &Label->Backward);
-    }
-    else {
+    } else {
       LongAddressGen(rd, &Label->Forward);
     }
   }
@@ -184,11 +179,7 @@ public:
   // Logical immediate
   void and_(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, uint64_t Imm) {
     uint32_t n, immr, imms;
-    [[maybe_unused]] const auto IsImm = IsImmLogical(Imm,
-                           RegSizeInBits(s),
-                           &n,
-                           &imms,
-                           &immr);
+    [[maybe_unused]] const auto IsImm = IsImmLogical(Imm, RegSizeInBits(s), &n, &imms, &immr);
     LOGMAN_THROW_A_FMT(IsImm, "Couldn't encode immediate to logical op");
     and_(s, rd, rn, n, immr, imms);
   }
@@ -199,11 +190,7 @@ public:
 
   void ands(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, uint64_t Imm) {
     uint32_t n, immr, imms;
-    [[maybe_unused]] const auto IsImm = IsImmLogical(Imm,
-                           RegSizeInBits(s),
-                           &n,
-                           &imms,
-                           &immr);
+    [[maybe_unused]] const auto IsImm = IsImmLogical(Imm, RegSizeInBits(s), &n, &imms, &immr);
     LOGMAN_THROW_A_FMT(IsImm, "Couldn't encode immediate to logical op");
     ands(s, rd, rn, n, immr, imms);
   }
@@ -214,22 +201,14 @@ public:
 
   void orr(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, uint64_t Imm) {
     uint32_t n, immr, imms;
-    [[maybe_unused]] const auto IsImm = IsImmLogical(Imm,
-                           RegSizeInBits(s),
-                           &n,
-                           &imms,
-                           &immr);
+    [[maybe_unused]] const auto IsImm = IsImmLogical(Imm, RegSizeInBits(s), &n, &imms, &immr);
     LOGMAN_THROW_A_FMT(IsImm, "Couldn't encode immediate to logical op");
     orr(s, rd, rn, n, immr, imms);
   }
 
   void eor(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, uint64_t Imm) {
     uint32_t n, immr, imms;
-    [[maybe_unused]] const auto IsImm = IsImmLogical(Imm,
-                           RegSizeInBits(s),
-                           &n,
-                           &imms,
-                           &immr);
+    [[maybe_unused]] const auto IsImm = IsImmLogical(Imm, RegSizeInBits(s), &n, &imms, &immr);
     LOGMAN_THROW_A_FMT(IsImm, "Couldn't encode immediate to logical op");
     eor(s, rd, rn, n, immr, imms);
   }
@@ -363,8 +342,8 @@ public:
     const auto lsb_p_width = lsb + width;
 
     LOGMAN_THROW_A_FMT(width >= 1, "bfxil needs width >= 1");
-    LOGMAN_THROW_A_FMT(lsb_p_width <= reg_size_bits, "bfxil lsb + width ({}) must be <= {}. lsb={}, width={}",
-                       lsb_p_width, reg_size_bits, lsb, width);
+    LOGMAN_THROW_A_FMT(lsb_p_width <= reg_size_bits, "bfxil lsb + width ({}) must be <= {}. lsb={}, width={}", lsb_p_width, reg_size_bits,
+                       lsb, width);
 
     bfm(s, rd, rn, lsb, lsb_p_width - 1);
   }
@@ -383,188 +362,142 @@ public:
 
   // Data processing - 2 source
   void udiv(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm) {
-    constexpr uint32_t Op = (0b001'1010'110U << 21) |
-                        (0b0000'10U << 10);
+    constexpr uint32_t Op = (0b001'1010'110U << 21) | (0b0000'10U << 10);
     DataProcessing_2Source(Op, s, rd, rn, rm);
   }
   void sdiv(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm) {
-    constexpr uint32_t Op = (0b001'1010'110U << 21) |
-                        (0b0000'11U << 10);
+    constexpr uint32_t Op = (0b001'1010'110U << 21) | (0b0000'11U << 10);
     DataProcessing_2Source(Op, s, rd, rn, rm);
   }
 
   void lslv(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm) {
-    constexpr uint32_t Op = (0b001'1010'110U << 21) |
-                        (0b0010'00U << 10);
+    constexpr uint32_t Op = (0b001'1010'110U << 21) | (0b0010'00U << 10);
     DataProcessing_2Source(Op, s, rd, rn, rm);
   }
   void lsrv(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm) {
-    constexpr uint32_t Op = (0b001'1010'110U << 21) |
-                        (0b0010'01U << 10);
+    constexpr uint32_t Op = (0b001'1010'110U << 21) | (0b0010'01U << 10);
     DataProcessing_2Source(Op, s, rd, rn, rm);
   }
   void asrv(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm) {
-    constexpr uint32_t Op = (0b001'1010'110U << 21) |
-                        (0b0010'10U << 10);
+    constexpr uint32_t Op = (0b001'1010'110U << 21) | (0b0010'10U << 10);
     DataProcessing_2Source(Op, s, rd, rn, rm);
   }
   void rorv(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm) {
-    constexpr uint32_t Op = (0b001'1010'110U << 21) |
-                        (0b0010'11U << 10);
+    constexpr uint32_t Op = (0b001'1010'110U << 21) | (0b0010'11U << 10);
     DataProcessing_2Source(Op, s, rd, rn, rm);
   }
   void crc32b(ARMEmitter::WRegister rd, ARMEmitter::WRegister rn, ARMEmitter::WRegister rm) {
-    constexpr uint32_t Op = (0b001'1010'110U << 21) |
-                        (0b0100'00U << 10);
+    constexpr uint32_t Op = (0b001'1010'110U << 21) | (0b0100'00U << 10);
     DataProcessing_2Source(Op, ARMEmitter::Size::i32Bit, rd, rn, rm);
   }
   void crc32h(ARMEmitter::WRegister rd, ARMEmitter::WRegister rn, ARMEmitter::WRegister rm) {
-    constexpr uint32_t Op = (0b001'1010'110U << 21) |
-                        (0b0100'01U << 10);
+    constexpr uint32_t Op = (0b001'1010'110U << 21) | (0b0100'01U << 10);
     DataProcessing_2Source(Op, ARMEmitter::Size::i32Bit, rd, rn, rm);
   }
   void crc32w(ARMEmitter::WRegister rd, ARMEmitter::WRegister rn, ARMEmitter::WRegister rm) {
-    constexpr uint32_t Op = (0b001'1010'110U << 21) |
-                        (0b0100'10U << 10);
+    constexpr uint32_t Op = (0b001'1010'110U << 21) | (0b0100'10U << 10);
     DataProcessing_2Source(Op, ARMEmitter::Size::i32Bit, rd, rn, rm);
   }
   void crc32cb(ARMEmitter::WRegister rd, ARMEmitter::WRegister rn, ARMEmitter::WRegister rm) {
-    constexpr uint32_t Op = (0b001'1010'110U << 21) |
-                        (0b0101'00U << 10);
+    constexpr uint32_t Op = (0b001'1010'110U << 21) | (0b0101'00U << 10);
     DataProcessing_2Source(Op, ARMEmitter::Size::i32Bit, rd, rn, rm);
   }
   void crc32ch(ARMEmitter::WRegister rd, ARMEmitter::WRegister rn, ARMEmitter::WRegister rm) {
-    constexpr uint32_t Op = (0b001'1010'110U << 21) |
-                        (0b0101'01U << 10);
+    constexpr uint32_t Op = (0b001'1010'110U << 21) | (0b0101'01U << 10);
     DataProcessing_2Source(Op, ARMEmitter::Size::i32Bit, rd, rn, rm);
   }
   void crc32cw(ARMEmitter::WRegister rd, ARMEmitter::WRegister rn, ARMEmitter::WRegister rm) {
-    constexpr uint32_t Op = (0b001'1010'110U << 21) |
-                        (0b0101'10U << 10);
+    constexpr uint32_t Op = (0b001'1010'110U << 21) | (0b0101'10U << 10);
     DataProcessing_2Source(Op, ARMEmitter::Size::i32Bit, rd, rn, rm);
   }
   void smax(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm) {
-    constexpr uint32_t Op = (0b001'1010'110U << 21) |
-                        (0b0110'00U << 10);
+    constexpr uint32_t Op = (0b001'1010'110U << 21) | (0b0110'00U << 10);
     DataProcessing_2Source(Op, s, rd, rn, rm);
   }
   void umax(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm) {
-    constexpr uint32_t Op = (0b001'1010'110U << 21) |
-                        (0b0110'01U << 10);
+    constexpr uint32_t Op = (0b001'1010'110U << 21) | (0b0110'01U << 10);
     DataProcessing_2Source(Op, s, rd, rn, rm);
   }
   void smin(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm) {
-    constexpr uint32_t Op = (0b001'1010'110U << 21) |
-                        (0b0110'10U << 10);
+    constexpr uint32_t Op = (0b001'1010'110U << 21) | (0b0110'10U << 10);
     DataProcessing_2Source(Op, s, rd, rn, rm);
   }
   void umin(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm) {
-    constexpr uint32_t Op = (0b001'1010'110U << 21) |
-                        (0b0110'11U << 10);
+    constexpr uint32_t Op = (0b001'1010'110U << 21) | (0b0110'11U << 10);
     DataProcessing_2Source(Op, s, rd, rn, rm);
   }
   void subp(ARMEmitter::XRegister rd, ARMEmitter::XRegister rn, ARMEmitter::XRegister rm) {
-    constexpr uint32_t Op = (0b001'1010'110U << 21) |
-                        (0b0000'00U << 10);
+    constexpr uint32_t Op = (0b001'1010'110U << 21) | (0b0000'00U << 10);
     DataProcessing_2Source(Op, ARMEmitter::Size::i64Bit, rd, rn, rm);
   }
   void irg(ARMEmitter::XRegister rd, ARMEmitter::XRegister rn, ARMEmitter::XRegister rm) {
-    constexpr uint32_t Op = (0b001'1010'110U << 21) |
-                        (0b0001'00U << 10);
+    constexpr uint32_t Op = (0b001'1010'110U << 21) | (0b0001'00U << 10);
     DataProcessing_2Source(Op, ARMEmitter::Size::i64Bit, rd, rn, rm);
   }
   void gmi(ARMEmitter::XRegister rd, ARMEmitter::XRegister rn, ARMEmitter::XRegister rm) {
-    constexpr uint32_t Op = (0b001'1010'110U << 21) |
-                        (0b0001'01U << 10);
+    constexpr uint32_t Op = (0b001'1010'110U << 21) | (0b0001'01U << 10);
     DataProcessing_2Source(Op, ARMEmitter::Size::i64Bit, rd, rn, rm);
   }
   void pacga(ARMEmitter::XRegister rd, ARMEmitter::XRegister rn, ARMEmitter::XRegister rm) {
-    constexpr uint32_t Op = (0b001'1010'110U << 21) |
-                        (0b0011'00U << 10);
+    constexpr uint32_t Op = (0b001'1010'110U << 21) | (0b0011'00U << 10);
     DataProcessing_2Source(Op, ARMEmitter::Size::i64Bit, rd, rn, rm);
   }
   void crc32x(ARMEmitter::XRegister rd, ARMEmitter::XRegister rn, ARMEmitter::XRegister rm) {
-    constexpr uint32_t Op = (0b001'1010'110U << 21) |
-                        (0b0100'11U << 10);
+    constexpr uint32_t Op = (0b001'1010'110U << 21) | (0b0100'11U << 10);
     DataProcessing_2Source(Op, ARMEmitter::Size::i64Bit, rd, rn, rm);
   }
   void crc32cx(ARMEmitter::XRegister rd, ARMEmitter::XRegister rn, ARMEmitter::XRegister rm) {
-    constexpr uint32_t Op = (0b001'1010'110U << 21) |
-                        (0b0101'11U << 10);
+    constexpr uint32_t Op = (0b001'1010'110U << 21) | (0b0101'11U << 10);
     DataProcessing_2Source(Op, ARMEmitter::Size::i64Bit, rd, rn, rm);
   }
   void subps(ARMEmitter::XRegister rd, ARMEmitter::XRegister rn, ARMEmitter::XRegister rm) {
-    constexpr uint32_t Op = (0b011'1010'110U << 21) |
-                        (0b0000'00U << 10);
+    constexpr uint32_t Op = (0b011'1010'110U << 21) | (0b0000'00U << 10);
     DataProcessing_2Source(Op, ARMEmitter::Size::i64Bit, rd, rn, rm);
   }
 
   // Data processing - 1 source
   void rbit(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn) {
-    constexpr uint32_t Op = (0b101'1010'110U << 21) |
-                        (0b0'0000U << 16) |
-                        (0b0000'00U << 10);
+    constexpr uint32_t Op = (0b101'1010'110U << 21) | (0b0'0000U << 16) | (0b0000'00U << 10);
     DataProcessing_1Source(Op, s, rd, rn);
   }
   void rev16(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn) {
-    constexpr uint32_t Op = (0b101'1010'110U << 21) |
-                        (0b0'0000U << 16) |
-                        (0b0000'01U << 10);
+    constexpr uint32_t Op = (0b101'1010'110U << 21) | (0b0'0000U << 16) | (0b0000'01U << 10);
     DataProcessing_1Source(Op, s, rd, rn);
   }
   void rev(ARMEmitter::WRegister rd, ARMEmitter::WRegister rn) {
-    constexpr uint32_t Op = (0b101'1010'110U << 21) |
-                        (0b0'0000U << 16) |
-                        (0b0000'10U << 10);
+    constexpr uint32_t Op = (0b101'1010'110U << 21) | (0b0'0000U << 16) | (0b0000'10U << 10);
     DataProcessing_1Source(Op, ARMEmitter::Size::i32Bit, rd, rn);
   }
   void rev32(ARMEmitter::XRegister rd, ARMEmitter::XRegister rn) {
-    constexpr uint32_t Op = (0b101'1010'110U << 21) |
-                        (0b0'0000U << 16) |
-                        (0b0000'10U << 10);
+    constexpr uint32_t Op = (0b101'1010'110U << 21) | (0b0'0000U << 16) | (0b0000'10U << 10);
     DataProcessing_1Source(Op, ARMEmitter::Size::i64Bit, rd, rn);
   }
   void clz(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn) {
-    constexpr uint32_t Op = (0b101'1010'110U << 21) |
-                        (0b0'0000U << 16) |
-                        (0b0001'00U << 10);
+    constexpr uint32_t Op = (0b101'1010'110U << 21) | (0b0'0000U << 16) | (0b0001'00U << 10);
     DataProcessing_1Source(Op, s, rd, rn);
   }
   void cls(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn) {
-    constexpr uint32_t Op = (0b101'1010'110U << 21) |
-                        (0b0'0000U << 16) |
-                        (0b0001'01U << 10);
+    constexpr uint32_t Op = (0b101'1010'110U << 21) | (0b0'0000U << 16) | (0b0001'01U << 10);
     DataProcessing_1Source(Op, s, rd, rn);
   }
   void rev(ARMEmitter::XRegister rd, ARMEmitter::XRegister rn) {
-    constexpr uint32_t Op = (0b101'1010'110U << 21) |
-                        (0b0'0000U << 16) |
-                        (0b0000'11U << 10);
+    constexpr uint32_t Op = (0b101'1010'110U << 21) | (0b0'0000U << 16) | (0b0000'11U << 10);
     DataProcessing_1Source(Op, ARMEmitter::Size::i64Bit, rd, rn);
   }
   void rev(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn) {
-    uint32_t Op = (0b101'1010'110U << 21) |
-                        (0b0'0000U << 16) |
-                        (0b0000'10U << 10) |
-                        (s == ARMEmitter::Size::i64Bit ? (1U << 10) : 0);
+    uint32_t Op = (0b101'1010'110U << 21) | (0b0'0000U << 16) | (0b0000'10U << 10) | (s == ARMEmitter::Size::i64Bit ? (1U << 10) : 0);
     DataProcessing_1Source(Op, s, rd, rn);
   }
   void ctz(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn) {
-    constexpr uint32_t Op = (0b101'1010'110U << 21) |
-                        (0b0'0000U << 16) |
-                        (0b0001'10U << 10);
+    constexpr uint32_t Op = (0b101'1010'110U << 21) | (0b0'0000U << 16) | (0b0001'10U << 10);
     DataProcessing_1Source(Op, s, rd, rn);
   }
   void cnt(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn) {
-    constexpr uint32_t Op = (0b101'1010'110U << 21) |
-                        (0b0'0000U << 16) |
-                        (0b0001'11U << 10);
+    constexpr uint32_t Op = (0b101'1010'110U << 21) | (0b0'0000U << 16) | (0b0001'11U << 10);
     DataProcessing_1Source(Op, s, rd, rn);
   }
   void abs(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn) {
-    constexpr uint32_t Op = (0b101'1010'110U << 21) |
-                        (0b0'0000U << 16) |
-                        (0b0010'00U << 10);
+    constexpr uint32_t Op = (0b101'1010'110U << 21) | (0b0'0000U << 16) | (0b0010'00U << 10);
     DataProcessing_1Source(Op, s, rd, rn);
   }
 
@@ -581,27 +514,33 @@ public:
     orr(ARMEmitter::Size::i32Bit, rd.R(), ARMEmitter::Reg::zr, rn.R(), ARMEmitter::ShiftType::LSL, 0);
   }
 
-  void mvn(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+  void mvn(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL,
+           uint32_t amt = 0) {
     orn(s, rd, ARMEmitter::Reg::zr, rn, Shift, amt);
   }
 
-  void and_(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+  void and_(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm,
+            ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     constexpr uint32_t Op = 0b000'1010'000U << 21;
     DataProcessing_Shifted_Reg(Op, s, rd, rn, rm, Shift, amt);
   }
-  void ands(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+  void ands(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm,
+            ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     constexpr uint32_t Op = 0b110'1010'000U << 21;
     DataProcessing_Shifted_Reg(Op, s, rd, rn, rm, Shift, amt);
   }
-  void bic(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+  void bic(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm,
+           ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     constexpr uint32_t Op = 0b000'1010'001U << 21;
     DataProcessing_Shifted_Reg(Op, s, rd, rn, rm, Shift, amt);
   }
-  void bics(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+  void bics(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm,
+            ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     constexpr uint32_t Op = 0b110'1010'001U << 21;
     DataProcessing_Shifted_Reg(Op, s, rd, rn, rm, Shift, amt);
   }
-  void orr(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+  void orr(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm,
+           ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     constexpr uint32_t Op = 0b010'1010'000U << 21;
     DataProcessing_Shifted_Reg(Op, s, rd, rn, rm, Shift, amt);
   }
@@ -609,30 +548,36 @@ public:
     ands(s, Reg::zr, rn, rm, shift, amt);
   }
 
-  void orn(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+  void orn(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm,
+           ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     constexpr uint32_t Op = 0b010'1010'001U << 21;
     DataProcessing_Shifted_Reg(Op, s, rd, rn, rm, Shift, amt);
   }
-  void eor(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+  void eor(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm,
+           ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     constexpr uint32_t Op = 0b100'1010'000U << 21;
     DataProcessing_Shifted_Reg(Op, s, rd, rn, rm, Shift, amt);
   }
-  void eon(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+  void eon(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm,
+           ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     constexpr uint32_t Op = 0b100'1010'001U << 21;
     DataProcessing_Shifted_Reg(Op, s, rd, rn, rm, Shift, amt);
   }
 
   // AddSub - shifted register
-  void add(ARMEmitter::XRegister rd, ARMEmitter::XRegister rn, ARMEmitter::XRegister rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+  void add(ARMEmitter::XRegister rd, ARMEmitter::XRegister rn, ARMEmitter::XRegister rm,
+           ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     add(ARMEmitter::Size::i64Bit, rd.R(), rn.R(), rm.R(), Shift, amt);
   }
-  void adds(ARMEmitter::XRegister rd, ARMEmitter::XRegister rn, ARMEmitter::XRegister rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+  void adds(ARMEmitter::XRegister rd, ARMEmitter::XRegister rn, ARMEmitter::XRegister rm,
+            ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     adds(ARMEmitter::Size::i64Bit, rd.R(), rn.R(), rm.R(), Shift, amt);
   }
   void cmn(ARMEmitter::XRegister rn, ARMEmitter::XRegister rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     adds(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::zr, rn.R(), rm.R(), Shift, amt);
   }
-  void sub(ARMEmitter::XRegister rd, ARMEmitter::XRegister rn, ARMEmitter::XRegister rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+  void sub(ARMEmitter::XRegister rd, ARMEmitter::XRegister rn, ARMEmitter::XRegister rm,
+           ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     sub(ARMEmitter::Size::i64Bit, rd.R(), rn.R(), rm.R(), Shift, amt);
   }
   void neg(ARMEmitter::XRegister rd, ARMEmitter::XRegister rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
@@ -641,23 +586,27 @@ public:
   void cmp(ARMEmitter::XRegister rn, ARMEmitter::XRegister rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     subs(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, rn.R(), rm.R(), Shift, amt);
   }
-  void subs(ARMEmitter::XRegister rd, ARMEmitter::XRegister rn, ARMEmitter::XRegister rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+  void subs(ARMEmitter::XRegister rd, ARMEmitter::XRegister rn, ARMEmitter::XRegister rm,
+            ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     subs(ARMEmitter::Size::i64Bit, rd.R(), rn.R(), rm.R(), Shift, amt);
   }
   void negs(ARMEmitter::XRegister rd, ARMEmitter::XRegister rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     subs(rd, ARMEmitter::XReg::zr, rm, Shift, amt);
   }
 
-  void add(ARMEmitter::WRegister rd, ARMEmitter::WRegister rn, ARMEmitter::WRegister rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+  void add(ARMEmitter::WRegister rd, ARMEmitter::WRegister rn, ARMEmitter::WRegister rm,
+           ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     add(ARMEmitter::Size::i32Bit, rd.R(), rn.R(), rm.R(), Shift, amt);
   }
-  void adds(ARMEmitter::WRegister rd, ARMEmitter::WRegister rn, ARMEmitter::WRegister rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+  void adds(ARMEmitter::WRegister rd, ARMEmitter::WRegister rn, ARMEmitter::WRegister rm,
+            ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     adds(ARMEmitter::Size::i32Bit, rd.R(), rn.R(), rm.R(), Shift, amt);
   }
   void cmn(ARMEmitter::WRegister rn, ARMEmitter::WRegister rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     adds(ARMEmitter::Size::i32Bit, ARMEmitter::WReg::zr, rn.R(), rm.R(), Shift, amt);
   }
-  void sub(ARMEmitter::WRegister rd, ARMEmitter::WRegister rn, ARMEmitter::WRegister rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+  void sub(ARMEmitter::WRegister rd, ARMEmitter::WRegister rn, ARMEmitter::WRegister rm,
+           ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     sub(ARMEmitter::Size::i32Bit, rd.R(), rn.R(), rm.R(), Shift, amt);
   }
   void neg(ARMEmitter::WRegister rd, ARMEmitter::WRegister rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
@@ -666,65 +615,78 @@ public:
   void cmp(ARMEmitter::WRegister rn, ARMEmitter::WRegister rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     subs(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::rsp, rn.R(), rm.R(), Shift, amt);
   }
-  void subs(ARMEmitter::WRegister rd, ARMEmitter::WRegister rn, ARMEmitter::WRegister rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+  void subs(ARMEmitter::WRegister rd, ARMEmitter::WRegister rn, ARMEmitter::WRegister rm,
+            ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     subs(ARMEmitter::Size::i32Bit, rd.R(), rn.R(), rm.R(), Shift, amt);
   }
   void negs(ARMEmitter::WRegister rd, ARMEmitter::WRegister rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     subs(rd, ARMEmitter::WReg::zr, rm, Shift, amt);
   }
 
-  void add(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+  void add(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm,
+           ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     LOGMAN_THROW_A_FMT(Shift != ARMEmitter::ShiftType::ROR, "Doesn't support ROR");
     constexpr uint32_t Op = 0b000'1011'000U << 21;
     DataProcessing_Shifted_Reg(Op, s, rd, rn, rm, Shift, amt);
   }
-  void adds(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+  void adds(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm,
+            ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     LOGMAN_THROW_A_FMT(Shift != ARMEmitter::ShiftType::ROR, "Doesn't support ROR");
     constexpr uint32_t Op = 0b010'1011'000U << 21;
     DataProcessing_Shifted_Reg(Op, s, rd, rn, rm, Shift, amt);
   }
-  void cmn(ARMEmitter::Size s, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+  void cmn(ARMEmitter::Size s, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL,
+           uint32_t amt = 0) {
     adds(s, ARMEmitter::Reg::zr, rn, rm, Shift, amt);
   }
-  void sub(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+  void sub(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm,
+           ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     LOGMAN_THROW_A_FMT(Shift != ARMEmitter::ShiftType::ROR, "Doesn't support ROR");
     constexpr uint32_t Op = 0b100'1011'000U << 21;
     DataProcessing_Shifted_Reg(Op, s, rd, rn, rm, Shift, amt);
   }
-  void neg(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+  void neg(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL,
+           uint32_t amt = 0) {
     sub(s, rd, ARMEmitter::Reg::zr, rm, Shift, amt);
   }
-  void cmp(ARMEmitter::Size s, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+  void cmp(ARMEmitter::Size s, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL,
+           uint32_t amt = 0) {
     subs(s, ARMEmitter::Reg::zr, rn, rm, Shift, amt);
   }
 
-  void subs(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+  void subs(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm,
+            ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
     LOGMAN_THROW_A_FMT(Shift != ARMEmitter::ShiftType::ROR, "Doesn't support ROR");
     constexpr uint32_t Op = 0b110'1011'000U << 21;
     DataProcessing_Shifted_Reg(Op, s, rd, rn, rm, Shift, amt);
   }
-  void negs(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
+  void negs(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL,
+            uint32_t amt = 0) {
     subs(s, rd, ARMEmitter::Reg::zr, rm, Shift, amt);
   }
 
   // AddSub - extended register
-  void add(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift = 0) {
+  void add(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option,
+           uint32_t Shift = 0) {
     LOGMAN_THROW_A_FMT(Shift <= 4, "Shift amount is too large");
     constexpr uint32_t Op = 0b000'1011'001U << 21;
     DataProcessing_Extended_Reg(Op, s, rd, rn, rm, Option, Shift);
   }
-  void adds(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift = 0) {
+  void adds(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option,
+            uint32_t Shift = 0) {
     constexpr uint32_t Op = 0b010'1011'001U << 21;
     DataProcessing_Extended_Reg(Op, s, rd, rn, rm, Option, Shift);
   }
   void cmn(ARMEmitter::Size s, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift = 0) {
     adds(s, ARMEmitter::Reg::zr, rn, rm, Option, Shift);
   }
-  void sub(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift = 0) {
+  void sub(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option,
+           uint32_t Shift = 0) {
     constexpr uint32_t Op = 0b100'1011'001U << 21;
     DataProcessing_Extended_Reg(Op, s, rd, rn, rm, Option, Shift);
   }
-  void subs(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift = 0) {
+  void subs(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option,
+            uint32_t Shift = 0) {
     constexpr uint32_t Op = 0b110'1011'001U << 21;
     DataProcessing_Extended_Reg(Op, s, rd, rn, rm, Option, Shift);
   }
@@ -824,7 +786,8 @@ public:
   }
   void cset(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Condition Cond) {
     constexpr uint32_t Op = 0b0001'1010'100 << 21;
-    ConditionalCompare(Op, 0, 0b01, s, rd, ARMEmitter::Reg::zr, ARMEmitter::Reg::zr, static_cast<ARMEmitter::Condition>(FEXCore::ToUnderlying(Cond) ^ FEXCore::ToUnderlying(ARMEmitter::Condition::CC_NE)));
+    ConditionalCompare(Op, 0, 0b01, s, rd, ARMEmitter::Reg::zr, ARMEmitter::Reg::zr,
+                       static_cast<ARMEmitter::Condition>(FEXCore::ToUnderlying(Cond) ^ FEXCore::ToUnderlying(ARMEmitter::Condition::CC_NE)));
   }
   void csinc(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::Condition Cond) {
     constexpr uint32_t Op = 0b0001'1010'100 << 21;
@@ -906,8 +869,7 @@ public:
 private:
   static constexpr Condition InvertCondition(Condition cond) {
     // These behave as always, so it makes no sense to allow inverting these.
-    LOGMAN_THROW_A_FMT(cond != Condition::CC_AL && cond != Condition::CC_NV,
-                        "Cannot invert CC_AL or CC_NV");
+    LOGMAN_THROW_A_FMT(cond != Condition::CC_AL && cond != Condition::CC_NV, "Cannot invert CC_AL or CC_NV");
     return static_cast<Condition>(FEXCore::ToUnderlying(cond) ^ 1);
   }
 
@@ -1003,7 +965,8 @@ private:
   }
 
   // Logical immediate
-  void DataProcessing_Logical_Imm(uint32_t Op, ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, uint32_t n, uint32_t immr, uint32_t imms) {
+  void DataProcessing_Logical_Imm(uint32_t Op, ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, uint32_t n,
+                                  uint32_t immr, uint32_t imms) {
     const uint32_t SF = s == ARMEmitter::Size::i64Bit ? (1U << 31) : 0;
 
     uint32_t Instr = Op;
@@ -1022,8 +985,7 @@ private:
     [[maybe_unused]] const auto lsb_p_width = lsb + width;
     const auto reg_size_bits = RegSizeInBits(s);
 
-    LOGMAN_THROW_A_FMT(lsb_p_width <= reg_size_bits, "lsb + width ({}) must be <= {}. lsb={}, width={}",
-                        lsb_p_width, reg_size_bits, lsb, width);
+    LOGMAN_THROW_A_FMT(lsb_p_width <= reg_size_bits, "lsb + width ({}) must be <= {}. lsb={}, width={}", lsb_p_width, reg_size_bits, lsb, width);
     LOGMAN_THROW_A_FMT(width >= 1, "xbfiz width must be >= 1");
 
     const auto immr = (reg_size_bits - lsb) & (reg_size_bits - 1);
@@ -1036,12 +998,13 @@ private:
     }
   }
 
-  void DataProcessing_Extract(uint32_t Op, ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, uint32_t Imm) {
+  void DataProcessing_Extract(uint32_t Op, ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm,
+                              uint32_t Imm) {
     const uint32_t SF = s == ARMEmitter::Size::i64Bit ? (1U << 31) : 0;
 
     // Current ARMv8 spec hardcodes SF == N for this class of instructions.
     // Anythign else is undefined behaviour.
-    const uint32_t N  = s == ARMEmitter::Size::i64Bit ? (1U << 22) : 0;
+    const uint32_t N = s == ARMEmitter::Size::i64Bit ? (1U << 22) : 0;
 
     uint32_t Instr = Op;
 
@@ -1084,7 +1047,8 @@ private:
   }
 
   // AddSub - shifted register
-  void DataProcessing_Shifted_Reg(uint32_t Op, ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ShiftType Shift, uint32_t amt) {
+  void DataProcessing_Shifted_Reg(uint32_t Op, ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn,
+                                  ARMEmitter::Register rm, ARMEmitter::ShiftType Shift, uint32_t amt) {
     LOGMAN_THROW_A_FMT((amt & ~0b11'1111U) == 0, "Shift amount too large");
     if (s == ARMEmitter::Size::i32Bit) {
       LOGMAN_THROW_A_FMT(amt < 32, "Shift amount for 32-bit must be below 32");
@@ -1105,7 +1069,8 @@ private:
   }
 
   // AddSub - extended register
-  void DataProcessing_Extended_Reg(uint32_t Op, ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift) {
+  void DataProcessing_Extended_Reg(uint32_t Op, ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn,
+                                   ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift) {
     const uint32_t SF = s == ARMEmitter::Size::i64Bit ? (1U << 31) : 0;
 
     uint32_t Instr = Op;
@@ -1121,7 +1086,8 @@ private:
   }
   // Conditional compare - register
   template<typename T>
-  void ConditionalCompare(uint32_t Op, uint32_t o1, uint32_t o2, uint32_t o3, ARMEmitter::Size s, ARMEmitter::Register rn, T rm, ARMEmitter::StatusFlags flags, ARMEmitter::Condition Cond) {
+  void ConditionalCompare(uint32_t Op, uint32_t o1, uint32_t o2, uint32_t o3, ARMEmitter::Size s, ARMEmitter::Register rn, T rm,
+                          ARMEmitter::StatusFlags flags, ARMEmitter::Condition Cond) {
     const uint32_t SF = s == ARMEmitter::Size::i64Bit ? (1U << 31) : 0;
 
     uint32_t Instr = Op;
@@ -1139,7 +1105,8 @@ private:
   }
 
   template<typename T>
-  void ConditionalCompare(uint32_t Op, uint32_t o1, uint32_t o2, ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, T rm, ARMEmitter::Condition Cond) {
+  void ConditionalCompare(uint32_t Op, uint32_t o1, uint32_t o2, ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, T rm,
+                          ARMEmitter::Condition Cond) {
     const uint32_t SF = s == ARMEmitter::Size::i64Bit ? (1U << 31) : 0;
 
     uint32_t Instr = Op;
@@ -1156,7 +1123,8 @@ private:
   }
 
   // Data-processing - 3 source
-  void DataProcessing_3Source(uint32_t Op, uint32_t Op0, ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::Register ra) {
+  void DataProcessing_3Source(uint32_t Op, uint32_t Op0, ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn,
+                              ARMEmitter::Register rm, ARMEmitter::Register ra) {
     const uint32_t SF = s == ARMEmitter::Size::i64Bit ? (1U << 31) : 0;
 
     uint32_t Instr = Op;
