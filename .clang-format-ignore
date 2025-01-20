@@ -3,10 +3,13 @@
 # Ignore all files in the External directory
 External/*
 
-# SoftFloat-3e code doesn't belong to us 
+# SoftFloat-3e code doesn't belong to us
 FEXCore/Source/Common/SoftFloat-3e/*
 Source/Common/cpp-optparse/*
 
 # Files with human-indented tables for readability - don't mess with these
 FEXCore/Source/Interface/Core/X86Tables/*
 
+# Inline headers with list-like content that can't be processed individually
+Source/Tools/LinuxEmulation/LinuxSyscalls/x*/SyscallsNames.inl
+Source/Tools/LinuxEmulation/LinuxSyscalls/x*/Ioctl/*.inl
