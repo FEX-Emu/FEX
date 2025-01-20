@@ -4,6 +4,14 @@
  * This is mostly a mashup of various instruction types.
  * Nothing follows an explicit pattern since they are mostly different.
  */
+
+#pragma once
+#ifndef INCLUDED_BY_EMITTER
+#include <CodeEmitter/Emitter.h>
+namespace ARMEmitter {
+struct EmitterOps : Emitter {
+#endif
+
 public:
     // System with result
     // TODO: SYSL
@@ -174,3 +182,7 @@ private:
       dc32(Instr);
     }
 
+#ifndef INCLUDED_BY_EMITTER
+}; // struct LoadstoreEmitterOps
+} // namespace ARMEmitter
+#endif

@@ -10,6 +10,14 @@
  * There are some load-store helper functions which take a `ExtendedMemOperand` argument.
  * This helper will select the viable load-store that can work with the provided encapsulated arguments.
  */
+
+#pragma once
+#ifndef INCLUDED_BY_EMITTER
+#include <CodeEmitter/Emitter.h>
+namespace ARMEmitter {
+struct EmitterOps : Emitter {
+#endif
+
 public:
   // Compare and swap pair
   void casp(ARMEmitter::Size s, ARMEmitter::Register rs, ARMEmitter::Register rs2, ARMEmitter::Register rt, ARMEmitter::Register rt2, ARMEmitter::Register rn) {
@@ -4687,4 +4695,7 @@ private:
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
 
-
+#ifndef INCLUDED_BY_EMITTER
+}; // struct LoadstoreEmitterOps
+} // namespace ARMEmitter
+#endif

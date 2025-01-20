@@ -17,6 +17,14 @@
  * There are some SVE load-store helper functions which take a `SVEMemOperand` argument.
  * This helper will select the viable SVE load-store that can work with the provided encapsulated arguments.
  */
+
+#pragma once
+#ifndef INCLUDED_BY_EMITTER
+#include <CodeEmitter/Emitter.h>
+namespace ARMEmitter {
+struct EmitterOps : Emitter {
+#endif
+
 public:
   // SVE encodings
   void dup(SubRegSize size, ZRegister zd, ZRegister zn, uint32_t Index) {
@@ -5333,6 +5341,7 @@ private:
     return true;
   }
 
+protected:
   static uint32_t FP32ToImm8(float value) {
     LOGMAN_THROW_A_FMT(IsValidFPValueForImm8(value),
                        "Value ({}) cannot be encoded into an 8-bit immediate", value);
@@ -5357,6 +5366,7 @@ private:
     return static_cast<uint32_t>(sign | expb2 | b5_to_0);
   }
 
+private:
   // Handling for signed 8-bit immediate shifts (e.g. in cpy/dup)
   struct HandledSImm8Shift {
     int32_t imm;
@@ -5386,3 +5396,8 @@ private:
       .is_shift = shift,
     };
   }
+
+#ifndef INCLUDED_BY_EMITTER
+}; // struct LoadstoreEmitterOps
+} // namespace ARMEmitter
+#endif

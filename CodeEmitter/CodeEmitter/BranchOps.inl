@@ -3,6 +3,14 @@
  *
  * Most of these instructions will use `BackwardLabel`, `ForwardLabel`, or `BiDirectionLabel` to determine where a branch targets.
  */
+
+#pragma once
+#ifndef INCLUDED_BY_EMITTER
+#include <CodeEmitter/Emitter.h>
+namespace ARMEmitter {
+struct EmitterOps : Emitter {
+#endif
+
 public:
   // Branches, Exception Generating and System instructions
   public:
@@ -339,3 +347,8 @@ private:
       Instr |= Encode_rt(rt);
       dc32(Instr);
     }
+
+#ifndef INCLUDED_BY_EMITTER
+}; // struct LoadstoreEmitterOps
+} // namespace ARMEmitter
+#endif

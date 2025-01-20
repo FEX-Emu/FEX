@@ -11,6 +11,14 @@
  * FEX-Emu ALU operations usually have a 32-bit or 64-bit operating size encoded in the IR operation,
  * This allows FEX to use a single helper function which decodes to both handlers.
  */
+
+#pragma once
+#ifndef INCLUDED_BY_EMITTER
+#include <CodeEmitter/Emitter.h>
+namespace ARMEmitter {
+struct EmitterOps : Emitter {
+#endif
+
 private:
   static bool IsADRRange(int64_t Imm) {
     return Imm >= -1048576 && Imm <= 1048575;
@@ -1170,4 +1178,7 @@ private:
     dc32(Instr);
   }
 
-
+#ifndef INCLUDED_BY_EMITTER
+}; // struct LoadstoreEmitterOps
+} // namespace ARMEmitter
+#endif

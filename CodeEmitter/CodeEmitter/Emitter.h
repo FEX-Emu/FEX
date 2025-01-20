@@ -772,6 +772,12 @@ public:
 #include <CodeEmitter/VixlUtils.inl>
 
 public:
+
+// This symbol is used to allow external tooling (IDEs, clang-format, ...) to process the included files individually:
+// If defined, the files will inject member functions into this class.
+// If not, the files will wrap the member functions in a class so that tooling will process them properly.
+#define INCLUDED_BY_EMITTER
+
   // TODO: Implement SME when it matters.
 #include <CodeEmitter/ALUOps.inl>
 #include <CodeEmitter/BranchOps.inl>
@@ -781,7 +787,9 @@ public:
 #include <CodeEmitter/ASIMDOps.inl>
 #include <CodeEmitter/SVEOps.inl>
 
-private:
+#undef INCLUDED_BY_EMITTER
+
+protected:
   template<typename T>
   uint32_t Encode_ra(T Reg) const {
     return Reg.Idx() << 10;

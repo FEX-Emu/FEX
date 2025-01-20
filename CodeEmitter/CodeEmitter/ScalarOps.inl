@@ -16,6 +16,14 @@
  * Exceptions to this rule will have asserts in the emitter implementation when misused.
  *
  */
+
+#pragma once
+#ifndef INCLUDED_BY_EMITTER
+#include <CodeEmitter/Emitter.h>
+namespace ARMEmitter {
+struct EmitterOps : Emitter {
+#endif
+
 public:
 // Advanced SIMD scalar copy
   void dup(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Index) {
@@ -1485,3 +1493,8 @@ private:
     Instr |= Encode_rd(rd);
     dc32(Instr);
   }
+
+#ifndef INCLUDED_BY_EMITTER
+}; // struct LoadstoreEmitterOps
+} // namespace ARMEmitter
+#endif

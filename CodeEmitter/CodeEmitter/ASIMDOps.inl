@@ -13,6 +13,14 @@
  *
  * Only two instructions support the `i128Bit` ElementSize.
  */
+
+#pragma once
+#ifndef INCLUDED_BY_EMITTER
+#include <CodeEmitter/Emitter.h>
+namespace ARMEmitter {
+struct EmitterOps : Emitter {
+#endif
+
 public:
   // Data Processing -- Scalar Floating-Point and Advanced SIMD
   // Cryptographic AES
@@ -5246,4 +5254,7 @@ private:
     dc32(Instr);
   }
 
-
+#ifndef INCLUDED_BY_EMITTER
+}; // struct LoadstoreEmitterOps
+} // namespace ARMEmitter
+#endif
