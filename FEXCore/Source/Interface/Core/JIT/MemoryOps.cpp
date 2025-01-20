@@ -1826,7 +1826,6 @@ DEF_OP(MemSet) {
       case 8: stlr(Value.X(), TMP2); break;
       default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size); break;
       }
-      nop();
     }
 
     if (Size >= 0) {
@@ -2031,23 +2030,23 @@ DEF_OP(MemCpy) {
         ldaprb(TMP4.W(), TMP3);
         stlrb(TMP4.W(), TMP2);
       } else {
-        nop();
         switch (OpSize) {
         case 2: ldaprh(TMP4.W(), TMP3); break;
         case 4: ldapr(TMP4.W(), TMP3); break;
         case 8: ldapr(TMP4, TMP3); break;
         default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size); break;
         }
+
+        // Placeholders for backpatching barriers (one per load/store)
+        nop();
         nop();
 
-        nop();
         switch (OpSize) {
         case 2: stlrh(TMP4.W(), TMP2); break;
         case 4: stlr(TMP4.W(), TMP2); break;
         case 8: stlr(TMP4, TMP2); break;
         default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size); break;
         }
-        nop();
       }
     } else {
       if (OpSize == 1) {
@@ -2055,23 +2054,23 @@ DEF_OP(MemCpy) {
         ldarb(TMP4.W(), TMP3);
         stlrb(TMP4.W(), TMP2);
       } else {
-        nop();
         switch (OpSize) {
         case 2: ldarh(TMP4.W(), TMP3); break;
         case 4: ldar(TMP4.W(), TMP3); break;
         case 8: ldar(TMP4, TMP3); break;
         default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size); break;
         }
+
+        // Placeholders for backpatching barriers (one per load/store)
+        nop();
         nop();
 
-        nop();
         switch (OpSize) {
         case 2: stlrh(TMP4.W(), TMP2); break;
         case 4: stlr(TMP4.W(), TMP2); break;
         case 8: stlr(TMP4, TMP2); break;
         default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Size); break;
         }
-        nop();
       }
     }
 
