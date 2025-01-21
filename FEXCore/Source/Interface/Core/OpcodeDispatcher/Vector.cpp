@@ -4956,9 +4956,8 @@ OpDispatchBuilder::RefVSIB OpDispatchBuilder::LoadVSIB(const X86Tables::DecodedO
   const auto Index_gpr = Operand.Data.SIB.Index;
   const auto Base_gpr = Operand.Data.SIB.Base;
   LOGMAN_THROW_A_FMT(Index_gpr >= FEXCore::X86State::REG_XMM_0 && Index_gpr <= FEXCore::X86State::REG_XMM_15, "must be AVX reg");
-  LOGMAN_THROW_A_FMT(
-    Base_gpr == FEXCore::X86State::REG_INVALID || (Base_gpr >= FEXCore::X86State::REG_RAX && Base_gpr <= FEXCore::X86State::REG_R15),
-    "Base must be a GPR.");
+  LOGMAN_THROW_A_FMT(Base_gpr == FEXCore::X86State::REG_INVALID || (Base_gpr >= FEXCore::X86State::REG_RAX && Base_gpr <= FEXCore::X86State::REG_R15),
+                     "Base must be a GPR.");
   const auto Index_XMM_gpr = Index_gpr - X86State::REG_XMM_0;
 
   return {

@@ -283,9 +283,9 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
   }
 
   LOGMAN_THROW_A_FMT(!(Info->Type >= FEXCore::X86Tables::TYPE_GROUP_1 && Info->Type <= FEXCore::X86Tables::TYPE_GROUP_P), "Group Ops "
-                                                                                                                           "should have "
-                                                                                                                           "been decoded "
-                                                                                                                           "before this!");
+                                                                                                                          "should have "
+                                                                                                                          "been decoded "
+                                                                                                                          "before this!");
 
   uint8_t DestSize {};
   const bool HasWideningDisplacement =
@@ -546,7 +546,7 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
   }
 
   LOGMAN_THROW_A_FMT(Bytes == 0, "Inst at 0x{:x}: 0x{:04x} '{}' Had an instruction of size {} with {} remaining", DecodeInst->PC,
-                      DecodeInst->OP, DecodeInst->TableInfo->Name ?: "UND", InstructionSize, Bytes);
+                     DecodeInst->OP, DecodeInst->TableInfo->Name ?: "UND", InstructionSize, Bytes);
   DecodeInst->InstSize = InstructionSize;
   return true;
 }

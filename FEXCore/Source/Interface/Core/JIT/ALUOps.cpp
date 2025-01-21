@@ -1291,7 +1291,7 @@ DEF_OP(FindMSB) {
   const auto OpSize = IROp->Size;
 
   LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i16Bit || OpSize == IR::OpSize::i32Bit || OpSize == IR::OpSize::i64Bit,
-                      "Unsupported {} size: {}", __func__, OpSize);
+                     "Unsupported {} size: {}", __func__, OpSize);
   const auto EmitSize = ConvertSize(IROp);
 
   const auto Dst = GetReg(Node);
@@ -1314,7 +1314,7 @@ DEF_OP(FindTrailingZeroes) {
   const auto OpSize = IROp->Size;
 
   LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i16Bit || OpSize == IR::OpSize::i32Bit || OpSize == IR::OpSize::i64Bit,
-                      "Unsupported {} size: {}", __func__, OpSize);
+                     "Unsupported {} size: {}", __func__, OpSize);
   const auto EmitSize = ConvertSize(IROp);
 
   const auto Dst = GetReg(Node);
@@ -1339,7 +1339,7 @@ DEF_OP(CountLeadingZeroes) {
   const auto OpSize = IROp->Size;
 
   LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i16Bit || OpSize == IR::OpSize::i32Bit || OpSize == IR::OpSize::i64Bit,
-                      "Unsupported {} size: {}", __func__, OpSize);
+                     "Unsupported {} size: {}", __func__, OpSize);
   const auto EmitSize = ConvertSize(IROp);
 
   const auto Dst = GetReg(Node);
@@ -1361,7 +1361,7 @@ DEF_OP(Rev) {
   const auto OpSize = IROp->Size;
 
   LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i16Bit || OpSize == IR::OpSize::i32Bit || OpSize == IR::OpSize::i64Bit,
-                      "Unsupported {} size: {}", __func__, OpSize);
+                     "Unsupported {} size: {}", __func__, OpSize);
   const auto EmitSize = ConvertSize(IROp);
 
   const auto Dst = GetReg(Node);

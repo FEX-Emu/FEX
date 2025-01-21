@@ -265,8 +265,8 @@ void Arm64JITCore::VFScalarFMAOperation(IR::OpSize OpSize, IR::OpSize ElementSiz
                                         ARMEmitter::VRegister Addend) {
   LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i128Bit, "256-bit unsupported", __func__);
 
-  LOGMAN_THROW_A_FMT(ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit || ElementSize == IR::OpSize::i64Bit, "Invalid"
-                                                                                                                                   " size");
+  LOGMAN_THROW_A_FMT(ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit || ElementSize == IR::OpSize::i64Bit, "Invalid "
+                                                                                                                                  "size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == IR::OpSize::i16Bit ? ARMEmitter::SubRegSize::i16Bit :
                                                        ElementSize == IR::OpSize::i32Bit ? ARMEmitter::SubRegSize::i32Bit :
                                                                                            ARMEmitter::SubRegSize::i64Bit);
@@ -299,8 +299,8 @@ void Arm64JITCore::VFScalarOperation(IR::OpSize OpSize, IR::OpSize ElementSize, 
 
   // Bit of a tricky detail.
   // The upper bits of the destination comes from Vector1.
-  LOGMAN_THROW_A_FMT(ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit || ElementSize == IR::OpSize::i64Bit, "Invalid"
-                                                                                                                                   " size");
+  LOGMAN_THROW_A_FMT(ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit || ElementSize == IR::OpSize::i64Bit, "Invalid "
+                                                                                                                                  "size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == IR::OpSize::i16Bit ? ARMEmitter::SubRegSize::i16Bit :
                                                        ElementSize == IR::OpSize::i32Bit ? ARMEmitter::SubRegSize::i32Bit :
                                                                                            ARMEmitter::SubRegSize::i64Bit);
@@ -371,8 +371,8 @@ void Arm64JITCore::VFScalarUnaryOperation(IR::OpSize OpSize, IR::OpSize ElementS
   LOGMAN_THROW_A_FMT(!Is256Bit || (Is256Bit && HostSupportsSVE256), "Need SVE256 support in order to use {} with 256-bit operation", __func__);
   LOGMAN_THROW_A_FMT(Is256Bit || !ZeroUpperBits, "128-bit operation doesn't support ZeroUpperBits in {}", __func__);
 
-  LOGMAN_THROW_A_FMT(ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit || ElementSize == IR::OpSize::i64Bit, "Invalid"
-                                                                                                                                   " size");
+  LOGMAN_THROW_A_FMT(ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit || ElementSize == IR::OpSize::i64Bit, "Invalid "
+                                                                                                                                  "size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == IR::OpSize::i16Bit ? ARMEmitter::SubRegSize::i16Bit :
                                                        ElementSize == IR::OpSize::i32Bit ? ARMEmitter::SubRegSize::i32Bit :
                                                                                            ARMEmitter::SubRegSize::i64Bit);
@@ -1122,8 +1122,7 @@ DEF_OP(VFAddV) {
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
 
-  LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i128Bit || OpSize == IR::OpSize::i256Bit, "Only AVX and SSE size "
-                                                                                      "supported");
+  LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i128Bit || OpSize == IR::OpSize::i256Bit, "Only AVX and SSE size supported");
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
     faddv(SubRegSize.Vector, Dst, Pred, Vector.Z());

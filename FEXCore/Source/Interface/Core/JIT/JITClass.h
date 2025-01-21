@@ -155,8 +155,8 @@ private:
   [[nodiscard]]
   ARMEmitter::SubRegSize ConvertSubRegSize16(IR::OpSize ElementSize) {
     LOGMAN_THROW_A_FMT(ElementSize == IR::OpSize::i8Bit || ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit ||
-                          ElementSize == IR::OpSize::i64Bit || ElementSize == IR::OpSize::i128Bit,
-                        "Invalid size");
+                         ElementSize == IR::OpSize::i64Bit || ElementSize == IR::OpSize::i128Bit,
+                       "Invalid size");
     return ElementSize == IR::OpSize::i8Bit  ? ARMEmitter::SubRegSize::i8Bit :
            ElementSize == IR::OpSize::i16Bit ? ARMEmitter::SubRegSize::i16Bit :
            ElementSize == IR::OpSize::i32Bit ? ARMEmitter::SubRegSize::i32Bit :

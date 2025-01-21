@@ -1277,9 +1277,9 @@ DEF_OP(VLoadVectorElement) {
   const auto MemReg = GetReg(Op->Addr.ID());
 
   LOGMAN_THROW_A_FMT(ElementSize == IR::OpSize::i8Bit || ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit ||
-                        ElementSize == IR::OpSize::i64Bit || ElementSize == IR::OpSize::i128Bit,
-                      "Invalid element "
-                      "size");
+                       ElementSize == IR::OpSize::i64Bit || ElementSize == IR::OpSize::i128Bit,
+                     "Invalid element "
+                     "size");
 
   if (Is256Bit) {
     LOGMAN_MSG_A_FMT("Unsupported 256-bit VLoadVectorElement");
@@ -1314,9 +1314,9 @@ DEF_OP(VStoreVectorElement) {
   const auto MemReg = GetReg(Op->Addr.ID());
 
   LOGMAN_THROW_A_FMT(ElementSize == IR::OpSize::i8Bit || ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit ||
-                        ElementSize == IR::OpSize::i64Bit || ElementSize == IR::OpSize::i128Bit,
-                      "Invalid element "
-                      "size");
+                       ElementSize == IR::OpSize::i64Bit || ElementSize == IR::OpSize::i128Bit,
+                     "Invalid element "
+                     "size");
 
   // Emit a half-barrier if TSO is enabled.
   if (CTX->IsVectorAtomicTSOEnabled()) {
@@ -1349,9 +1349,9 @@ DEF_OP(VBroadcastFromMem) {
   const auto MemReg = GetReg(Op->Address.ID());
 
   LOGMAN_THROW_A_FMT(ElementSize == IR::OpSize::i8Bit || ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit ||
-                        ElementSize == IR::OpSize::i64Bit || ElementSize == IR::OpSize::i128Bit,
-                      "Invalid element "
-                      "size");
+                       ElementSize == IR::OpSize::i64Bit || ElementSize == IR::OpSize::i128Bit,
+                     "Invalid element "
+                     "size");
 
   if (Is256Bit && HostSupportsSVE256) {
     const auto GoverningPredicate = PRED_TMP_32B.Zeroing();
