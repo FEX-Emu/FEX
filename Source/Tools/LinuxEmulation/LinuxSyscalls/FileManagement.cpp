@@ -1171,6 +1171,86 @@ uint64_t FileManager::LRemovexattr(const char* path, const char* name) {
   return ::lremovexattr(SelfPath, name);
 }
 
+uint64_t FileManager::SetxattrAt(int dfd, const char* pathname, uint32_t at_flags, const char* name, const xattr_args* uargs, size_t usize) {
+  if (IsSelfNoFollow(pathname, at_flags)) {
+    // See Statx
+    return syscall(SYSCALL_DEF(setxattrat), dfd, pathname, at_flags, name, uargs, usize);
+  }
+
+  auto NewPath = GetSelf(pathname);
+  const char* SelfPath = NewPath ? NewPath->data() : nullptr;
+
+  FDPathTmpData TmpFilename;
+  auto Path = GetEmulatedFDPath(dfd, SelfPath, (at_flags & AT_SYMLINK_NOFOLLOW) == 0, TmpFilename);
+  if (Path.first != -1) {
+    uint64_t Result = syscall(SYSCALL_DEF(setxattrat), Path.first, Path.second, at_flags, name, uargs, usize);
+    if (Result != -1) {
+      return Result;
+    }
+  }
+  return syscall(SYSCALL_DEF(setxattrat), dfd, SelfPath, at_flags, name, uargs, usize);
+}
+
+uint64_t FileManager::GetxattrAt(int dfd, const char* pathname, uint32_t at_flags, const char* name, const xattr_args* uargs, size_t usize) {
+  if (IsSelfNoFollow(pathname, at_flags)) {
+    // See Statx
+    return syscall(SYSCALL_DEF(getxattrat), dfd, pathname, at_flags, name, uargs, usize);
+  }
+
+  auto NewPath = GetSelf(pathname);
+  const char* SelfPath = NewPath ? NewPath->data() : nullptr;
+
+  FDPathTmpData TmpFilename;
+  auto Path = GetEmulatedFDPath(dfd, SelfPath, (at_flags & AT_SYMLINK_NOFOLLOW) == 0, TmpFilename);
+  if (Path.first != -1) {
+    uint64_t Result = syscall(SYSCALL_DEF(getxattrat), Path.first, Path.second, at_flags, name, uargs, usize);
+    if (Result != -1) {
+      return Result;
+    }
+  }
+  return syscall(SYSCALL_DEF(getxattrat), dfd, SelfPath, at_flags, name, uargs, usize);
+}
+
+uint64_t FileManager::ListxattrAt(int dfd, const char* pathname, uint32_t at_flags, char* list, size_t size) {
+  if (IsSelfNoFollow(pathname, at_flags)) {
+    // See Statx
+    return syscall(SYSCALL_DEF(listxattrat), dfd, pathname, at_flags, list, size);
+  }
+
+  auto NewPath = GetSelf(pathname);
+  const char* SelfPath = NewPath ? NewPath->data() : nullptr;
+
+  FDPathTmpData TmpFilename;
+  auto Path = GetEmulatedFDPath(dfd, SelfPath, (at_flags & AT_SYMLINK_NOFOLLOW) == 0, TmpFilename);
+  if (Path.first != -1) {
+    uint64_t Result = syscall(SYSCALL_DEF(listxattrat), Path.first, Path.second, at_flags, list, size);
+    if (Result != -1) {
+      return Result;
+    }
+  }
+  return syscall(SYSCALL_DEF(listxattrat), dfd, SelfPath, at_flags, list, size);
+}
+
+uint64_t FileManager::RemovexattrAt(int dfd, const char* pathname, uint32_t at_flags, const char* name) {
+  if (IsSelfNoFollow(pathname, at_flags)) {
+    // See Statx
+    return syscall(SYSCALL_DEF(removexattrat), dfd, pathname, at_flags, name);
+  }
+
+  auto NewPath = GetSelf(pathname);
+  const char* SelfPath = NewPath ? NewPath->data() : nullptr;
+
+  FDPathTmpData TmpFilename;
+  auto Path = GetEmulatedFDPath(dfd, SelfPath, (at_flags & AT_SYMLINK_NOFOLLOW) == 0, TmpFilename);
+  if (Path.first != -1) {
+    uint64_t Result = syscall(SYSCALL_DEF(removexattrat), Path.first, Path.second, at_flags, name);
+    if (Result != -1) {
+      return Result;
+    }
+  }
+  return syscall(SYSCALL_DEF(removexattrat), dfd, SelfPath, at_flags, name);
+}
+
 void FileManager::UpdatePID(uint32_t PID) {
   CurrentPID = PID;
 

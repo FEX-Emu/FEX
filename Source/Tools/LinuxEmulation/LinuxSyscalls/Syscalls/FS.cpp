@@ -126,5 +126,31 @@ void RegisterFS(FEX::HLE::SyscallHandler* Handler) {
     uint64_t Result = FEX::HLE::_SyscallHandler->FM.LRemovexattr(path, name);
     SYSCALL_ERRNO();
   });
+  if (Handler->IsHostKernelVersionAtLeast(6, 13, 0)) {
+    REGISTER_SYSCALL_IMPL(
+      setxattrat, [](int dfd, const char* pathname, uint32_t at_flags, const char* name, const FileManager::xattr_args* uargs, size_t usize) -> uint64_t {
+        uint64_t Result = FEX::HLE::_SyscallHandler->FM.SetxattrAt(dfd, pathname, at_flags, name, uargs, usize);
+        SYSCALL_ERRNO();
+      });
+    REGISTER_SYSCALL_IMPL(
+      getxattrat, [](int dfd, const char* pathname, uint32_t at_flags, const char* name, const FileManager::xattr_args* uargs, size_t usize) -> uint64_t {
+        uint64_t Result = FEX::HLE::_SyscallHandler->FM.GetxattrAt(dfd, pathname, at_flags, name, uargs, usize);
+        SYSCALL_ERRNO();
+      });
+
+    REGISTER_SYSCALL_IMPL(listxattrat, [](int dfd, const char* pathname, uint32_t at_flags, char* list, size_t size) -> uint64_t {
+      uint64_t Result = FEX::HLE::_SyscallHandler->FM.ListxattrAt(dfd, pathname, at_flags, list, size);
+      SYSCALL_ERRNO();
+    });
+    REGISTER_SYSCALL_IMPL(removexattrat, [](int dfd, const char* pathname, uint32_t at_flags, const char* name) -> uint64_t {
+      uint64_t Result = FEX::HLE::_SyscallHandler->FM.RemovexattrAt(dfd, pathname, at_flags, name);
+      SYSCALL_ERRNO();
+    });
+  } else {
+    REGISTER_SYSCALL_IMPL(setxattrat, UnimplementedSyscallSafe);
+    REGISTER_SYSCALL_IMPL(getxattrat, UnimplementedSyscallSafe);
+    REGISTER_SYSCALL_IMPL(listxattrat, UnimplementedSyscallSafe);
+    REGISTER_SYSCALL_IMPL(removexattrat, UnimplementedSyscallSafe);
+  }
 }
 } // namespace FEX::HLE
