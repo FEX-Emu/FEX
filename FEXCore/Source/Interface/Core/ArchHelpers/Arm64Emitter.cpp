@@ -1067,7 +1067,7 @@ void Arm64Emitter::FillForPreserveAllABICall(bool FPRs) {
   }
 
   // Fill the static registers.
-  FillStaticRegs(true, PreserveSRAMask, PreserveSRAFPRMask);
+  FillStaticRegs(FPRs, PreserveSRAMask, PreserveSRAFPRMask);
 
   // Pop the vector registers.
   PopVectorRegisters(CanUseSVE256, DynamicFPRs);
