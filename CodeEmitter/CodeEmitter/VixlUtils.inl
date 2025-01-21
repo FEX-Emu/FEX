@@ -34,11 +34,7 @@
 // by the corresponding fields in the logical instruction.
 // If it can not be encoded, the function returns false, and the values pointed
 // to by n, imm_s and imm_r are undefined.
-static bool IsImmLogical(uint64_t value,
-                             unsigned width,
-                             unsigned* n = nullptr,
-                             unsigned* imm_s = nullptr,
-                             unsigned* imm_r = nullptr) {
+static bool IsImmLogical(uint64_t value, unsigned width, unsigned* n = nullptr, unsigned* imm_s = nullptr, unsigned* imm_r = nullptr) {
   [[maybe_unused]] constexpr auto kBRegSize = 8;
   [[maybe_unused]] constexpr auto kHRegSize = 16;
   [[maybe_unused]] constexpr auto kSRegSize = 32;
@@ -47,8 +43,7 @@ static bool IsImmLogical(uint64_t value,
   constexpr auto kWRegSize = 32;
   constexpr auto kXRegSize = 64;
 
-  LOGMAN_THROW_A_FMT((width == kBRegSize) || (width == kHRegSize) ||
-              (width == kSRegSize) || (width == kDRegSize), "Unexpected imm size");
+  LOGMAN_THROW_A_FMT((width == kBRegSize) || (width == kHRegSize) || (width == kSRegSize) || (width == kDRegSize), "Unexpected imm size");
 
   bool negate = false;
 
@@ -182,12 +177,7 @@ static bool IsImmLogical(uint64_t value,
   // (1 + 2^d + 2^(2d) + ...), i.e. 0x0001000100010001 or similar. These can
   // be derived using a table lookup on CLZ(d).
   static const uint64_t multipliers[] = {
-      0x0000000000000001UL,
-      0x0000000100000001UL,
-      0x0001000100010001UL,
-      0x0101010101010101UL,
-      0x1111111111111111UL,
-      0x5555555555555555UL,
+    0x0000000000000001UL, 0x0000000100000001UL, 0x0001000100010001UL, 0x0101010101010101UL, 0x1111111111111111UL, 0x5555555555555555UL,
   };
   uint64_t multiplier = multipliers[CountLeadingZeros(d, kXRegSize) - 57];
   uint64_t candidate = (b - a) * multiplier;
@@ -244,7 +234,9 @@ static bool IsImmLogical(uint64_t value,
 }
 
 static inline bool IsIntN(unsigned n, int64_t x) {
-  if (n == 64) return true;
+  if (n == 64) {
+    return true;
+  }
   int64_t limit = INT64_C(1) << (n - 1);
   return (-limit <= x) && (x < limit);
 }
@@ -271,11 +263,15 @@ V(57) V(58) V(59) V(60) V(61) V(62) V(63)
 
 // clang-format on
 
-#define DECLARE_IS_INT_N(N)                                       \
-  static inline bool IsInt##N(int64_t x) { return IsIntN(N, x); }
+#define DECLARE_IS_INT_N(N)                \
+  static inline bool IsInt##N(int64_t x) { \
+    return IsIntN(N, x);                   \
+  }
 
-#define DECLARE_IS_UINT_N(N)                                        \
-  static inline bool IsUint##N(int64_t x) { return IsUintN(N, x); }
+#define DECLARE_IS_UINT_N(N)                \
+  static inline bool IsUint##N(int64_t x) { \
+    return IsUintN(N, x);                   \
+  }
 
 INT_1_TO_63_LIST(DECLARE_IS_INT_N)
 INT_1_TO_63_LIST(DECLARE_IS_UINT_N)
@@ -285,14 +281,14 @@ INT_1_TO_63_LIST(DECLARE_IS_UINT_N)
 
 private:
 
-template <typename V>
+template<typename V>
 static inline bool IsPowerOf2(V value) {
   return (value != 0) && ((value & (value - 1)) == 0);
 }
 
 // Some compilers dislike negating unsigned integers,
 // so we provide an equivalent.
-template <typename T>
+template<typename T>
 static inline T UnsignedNegate(T value) {
   static_assert(std::is_unsigned<T>::value);
   return ~value + 1;
@@ -302,7 +298,7 @@ static inline uint64_t LowestSetBit(uint64_t value) {
   return value & UnsignedNegate(value);
 }
 
-template <typename V>
+template<typename V>
 static inline int CountLeadingZeros(V value, int width = (sizeof(V) * 8)) {
 #if COMPILER_HAS_BUILTIN_CLZ
   if (width == 32) {

@@ -13,3 +13,6 @@
 
 # Second reformat to find fixed point PR#3577
 905aa935f5ce344a48ef4d5edab3c31efa8d793e
+
+# Reformat of CodeEmitter inl files
+8760c593ece92d7e9fa94c40da0368fd367c9cad

@@ -10,5 +10,5 @@ fi
 
 # Reformat whole tree.
 # This is run by the reformat target.
-git ls-files -z '*.cpp' '*.h' | xargs -0 -n 1 -P $(nproc) python3 Scripts/clang-format.py -i  
+git ls-files -z '*.cpp' '*.h' '*.inl' | xargs -0 -n 1 -P $(nproc) python3 Scripts/clang-format.py -i
 cd $DIR

@@ -10,27 +10,39 @@
  * There are some load-store helper functions which take a `ExtendedMemOperand` argument.
  * This helper will select the viable load-store that can work with the provided encapsulated arguments.
  */
+
+#pragma once
+#ifndef INCLUDED_BY_EMITTER
+#include <CodeEmitter/Emitter.h>
+namespace ARMEmitter {
+struct EmitterOps : Emitter {
+#endif
+
 public:
   // Compare and swap pair
-  void casp(ARMEmitter::Size s, ARMEmitter::Register rs, ARMEmitter::Register rs2, ARMEmitter::Register rt, ARMEmitter::Register rt2, ARMEmitter::Register rn) {
+  void casp(ARMEmitter::Size s, ARMEmitter::Register rs, ARMEmitter::Register rs2, ARMEmitter::Register rt, ARMEmitter::Register rt2,
+            ARMEmitter::Register rn) {
     LOGMAN_THROW_A_FMT((rs.Idx() + 1) == rs2.Idx(), "These must be sequential");
     LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
     constexpr uint32_t Op = 0b0000'1000'001 << 21;
     AtomicOp(Op, s, 0, 0, rs, rt, ARMEmitter::Reg::r31, rn);
   }
-  void caspa(ARMEmitter::Size s, ARMEmitter::Register rs, ARMEmitter::Register rs2, ARMEmitter::Register rt, ARMEmitter::Register rt2, ARMEmitter::Register rn) {
+  void caspa(ARMEmitter::Size s, ARMEmitter::Register rs, ARMEmitter::Register rs2, ARMEmitter::Register rt, ARMEmitter::Register rt2,
+             ARMEmitter::Register rn) {
     LOGMAN_THROW_A_FMT((rs.Idx() + 1) == rs2.Idx(), "These must be sequential");
     LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
     constexpr uint32_t Op = 0b0000'1000'001 << 21;
     AtomicOp(Op, s, 1, 0, rs, rt, ARMEmitter::Reg::r31, rn);
   }
-  void caspl(ARMEmitter::Size s, ARMEmitter::Register rs, ARMEmitter::Register rs2, ARMEmitter::Register rt, ARMEmitter::Register rt2, ARMEmitter::Register rn) {
+  void caspl(ARMEmitter::Size s, ARMEmitter::Register rs, ARMEmitter::Register rs2, ARMEmitter::Register rt, ARMEmitter::Register rt2,
+             ARMEmitter::Register rn) {
     LOGMAN_THROW_A_FMT((rs.Idx() + 1) == rs2.Idx(), "These must be sequential");
     LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
     constexpr uint32_t Op = 0b0000'1000'001 << 21;
     AtomicOp(Op, s, 0, 1, rs, rt, ARMEmitter::Reg::r31, rn);
   }
-  void caspal(ARMEmitter::Size s, ARMEmitter::Register rs, ARMEmitter::Register rs2, ARMEmitter::Register rt, ARMEmitter::Register rt2, ARMEmitter::Register rn) {
+  void caspal(ARMEmitter::Size s, ARMEmitter::Register rs, ARMEmitter::Register rs2, ARMEmitter::Register rt, ARMEmitter::Register rt2,
+              ARMEmitter::Register rn) {
     LOGMAN_THROW_A_FMT((rs.Idx() + 1) == rs2.Idx(), "These must be sequential");
     LOGMAN_THROW_A_FMT((rt.Idx() + 1) == rt2.Idx(), "These must be sequential");
     constexpr uint32_t Op = 0b0000'1000'001 << 21;
@@ -143,10 +155,8 @@ public:
   }
   template<SubRegSize size, typename T>
   void ld1(T rt, Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT(
-      (std::is_same_v<QRegister, T> && (PostOffset == 16)) ||
-      (std::is_same_v<DRegister, T> && (PostOffset == 8)),
-      "Post-index offset needs to match number of elements times their size");
+    LOGMAN_THROW_A_FMT((std::is_same_v<QRegister, T> && (PostOffset == 16)) || (std::is_same_v<DRegister, T> && (PostOffset == 8)),
+                       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b0111 << 12;
     ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
@@ -160,10 +170,8 @@ public:
   template<SubRegSize size, typename T>
   void ld1(T rt, T rt2, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
-    LOGMAN_THROW_A_FMT(
-      (std::is_same_v<QRegister, T> && (PostOffset == 32)) ||
-      (std::is_same_v<DRegister, T> && (PostOffset == 16)),
-      "Post-index offset needs to match number of elements times their size");
+    LOGMAN_THROW_A_FMT((std::is_same_v<QRegister, T> && (PostOffset == 32)) || (std::is_same_v<DRegister, T> && (PostOffset == 16)),
+                       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b1010 << 12;
     ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
@@ -177,10 +185,8 @@ public:
   template<SubRegSize size, typename T>
   void ld1(T rt, T rt2, T rt3, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
-    LOGMAN_THROW_A_FMT(
-      (std::is_same_v<QRegister, T> && (PostOffset == 48)) ||
-      (std::is_same_v<DRegister, T> && (PostOffset == 24)),
-      "Post-index offset needs to match number of elements times their size");
+    LOGMAN_THROW_A_FMT((std::is_same_v<QRegister, T> && (PostOffset == 48)) || (std::is_same_v<DRegister, T> && (PostOffset == 24)),
+                       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b0110 << 12;
     ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
@@ -194,10 +200,8 @@ public:
   template<SubRegSize size, typename T>
   void ld1(T rt, T rt2, T rt3, T rt4, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
-    LOGMAN_THROW_A_FMT(
-      (std::is_same_v<QRegister, T> && (PostOffset == 64)) ||
-      (std::is_same_v<DRegister, T> && (PostOffset == 32)),
-      "Post-index offset needs to match number of elements times their size");
+    LOGMAN_THROW_A_FMT((std::is_same_v<QRegister, T> && (PostOffset == 64)) || (std::is_same_v<DRegister, T> && (PostOffset == 32)),
+                       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b0010 << 12;
     ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
@@ -210,10 +214,8 @@ public:
   }
   template<SubRegSize size, typename T>
   void st1(T rt, Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT(
-      (std::is_same_v<QRegister, T> && (PostOffset == 16)) ||
-      (std::is_same_v<DRegister, T> && (PostOffset == 8)),
-      "Post-index offset needs to match number of elements times their size");
+    LOGMAN_THROW_A_FMT((std::is_same_v<QRegister, T> && (PostOffset == 16)) || (std::is_same_v<DRegister, T> && (PostOffset == 8)),
+                       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b0111 << 12;
     ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
@@ -227,10 +229,8 @@ public:
   template<SubRegSize size, typename T>
   void st1(T rt, T rt2, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
-    LOGMAN_THROW_A_FMT(
-      (std::is_same_v<QRegister, T> && (PostOffset == 32)) ||
-      (std::is_same_v<DRegister, T> && (PostOffset == 16)),
-      "Post-index offset needs to match number of elements times their size");
+    LOGMAN_THROW_A_FMT((std::is_same_v<QRegister, T> && (PostOffset == 32)) || (std::is_same_v<DRegister, T> && (PostOffset == 16)),
+                       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b1010 << 12;
     ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
@@ -244,10 +244,8 @@ public:
   template<SubRegSize size, typename T>
   void st1(T rt, T rt2, T rt3, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
-    LOGMAN_THROW_A_FMT(
-      (std::is_same_v<QRegister, T> && (PostOffset == 48)) ||
-      (std::is_same_v<DRegister, T> && (PostOffset == 24)),
-      "Post-index offset needs to match number of elements times their size");
+    LOGMAN_THROW_A_FMT((std::is_same_v<QRegister, T> && (PostOffset == 48)) || (std::is_same_v<DRegister, T> && (PostOffset == 24)),
+                       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b0110 << 12;
     ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
@@ -261,10 +259,8 @@ public:
   template<SubRegSize size, typename T>
   void st1(T rt, T rt2, T rt3, T rt4, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
-    LOGMAN_THROW_A_FMT(
-      (std::is_same_v<QRegister, T> && (PostOffset == 64)) ||
-      (std::is_same_v<DRegister, T> && (PostOffset == 32)),
-      "Post-index offset needs to match number of elements times their size");
+    LOGMAN_THROW_A_FMT((std::is_same_v<QRegister, T> && (PostOffset == 64)) || (std::is_same_v<DRegister, T> && (PostOffset == 32)),
+                       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b0010 << 12;
     ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
@@ -279,10 +275,8 @@ public:
   template<SubRegSize size, typename T>
   void ld2(T rt, T rt2, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
-    LOGMAN_THROW_A_FMT(
-      (std::is_same_v<QRegister, T> && (PostOffset == 32)) ||
-      (std::is_same_v<DRegister, T> && (PostOffset == 16)),
-      "Post-index offset needs to match number of elements times their size");
+    LOGMAN_THROW_A_FMT((std::is_same_v<QRegister, T> && (PostOffset == 32)) || (std::is_same_v<DRegister, T> && (PostOffset == 16)),
+                       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b1000 << 12;
     ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
@@ -296,10 +290,8 @@ public:
   template<SubRegSize size, typename T>
   void st2(T rt, T rt2, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
-    LOGMAN_THROW_A_FMT(
-      (std::is_same_v<QRegister, T> && (PostOffset == 32)) ||
-      (std::is_same_v<DRegister, T> && (PostOffset == 16)),
-      "Post-index offset needs to match number of elements times their size");
+    LOGMAN_THROW_A_FMT((std::is_same_v<QRegister, T> && (PostOffset == 32)) || (std::is_same_v<DRegister, T> && (PostOffset == 16)),
+                       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b1000 << 12;
     ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
@@ -313,10 +305,8 @@ public:
   template<SubRegSize size, typename T>
   void ld3(T rt, T rt2, T rt3, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
-    LOGMAN_THROW_A_FMT(
-      (std::is_same_v<QRegister, T> && (PostOffset == 48)) ||
-      (std::is_same_v<DRegister, T> && (PostOffset == 24)),
-      "Post-index offset needs to match number of elements times their size");
+    LOGMAN_THROW_A_FMT((std::is_same_v<QRegister, T> && (PostOffset == 48)) || (std::is_same_v<DRegister, T> && (PostOffset == 24)),
+                       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b0100 << 12;
     ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
@@ -330,10 +320,8 @@ public:
   template<SubRegSize size, typename T>
   void st3(T rt, T rt2, T rt3, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
-    LOGMAN_THROW_A_FMT(
-      (std::is_same_v<QRegister, T> && (PostOffset == 48)) ||
-      (std::is_same_v<DRegister, T> && (PostOffset == 24)),
-      "Post-index offset needs to match number of elements times their size");
+    LOGMAN_THROW_A_FMT((std::is_same_v<QRegister, T> && (PostOffset == 48)) || (std::is_same_v<DRegister, T> && (PostOffset == 24)),
+                       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b0100 << 12;
     ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
@@ -347,10 +335,8 @@ public:
   template<SubRegSize size, typename T>
   void ld4(T rt, T rt2, T rt3, T rt4, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
-    LOGMAN_THROW_A_FMT(
-      (std::is_same_v<QRegister, T> && (PostOffset == 64)) ||
-      (std::is_same_v<DRegister, T> && (PostOffset == 32)),
-      "Post-index offset needs to match number of elements times their size");
+    LOGMAN_THROW_A_FMT((std::is_same_v<QRegister, T> && (PostOffset == 64)) || (std::is_same_v<DRegister, T> && (PostOffset == 32)),
+                       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b0000 << 12;
     ASIMDLoadStoreMultipleStructure<size, true>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
@@ -364,10 +350,8 @@ public:
   template<SubRegSize size, typename T>
   void st4(T rt, T rt2, T rt3, T rt4, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
-    LOGMAN_THROW_A_FMT(
-      (std::is_same_v<QRegister, T> && (PostOffset == 64)) ||
-      (std::is_same_v<DRegister, T> && (PostOffset == 32)),
-      "Post-index offset needs to match number of elements times their size");
+    LOGMAN_THROW_A_FMT((std::is_same_v<QRegister, T> && (PostOffset == 64)) || (std::is_same_v<DRegister, T> && (PostOffset == 32)),
+                       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Opcode = 0b0000 << 12;
     ASIMDLoadStoreMultipleStructure<size, false>(ASIMDLoadstoreMultiplePost_Op, Opcode, rt, rn, Reg::r31);
@@ -433,7 +417,7 @@ public:
     ASIMDSTLD<size, true, 1>(Op, Opcode, rt, Index, rn, Reg::r0);
   }
   template<SubRegSize size, typename T>
-  requires(std::is_same_v<QRegister, T> || std::is_same_v<DRegister, T>)
+  requires (std::is_same_v<QRegister, T> || std::is_same_v<DRegister, T>)
   void ld1r(T rt, Register rn) {
     constexpr uint32_t Op = 0b0000'1101'000 << 21;
     constexpr uint32_t Opcode = 0b110;
@@ -452,7 +436,7 @@ public:
     ASIMDSTLD<size, true, 2>(Op, Opcode, rt, Index, rn, Reg::r0);
   }
   template<SubRegSize size, typename T>
-  requires(std::is_same_v<QRegister, T> || std::is_same_v<DRegister, T>)
+  requires (std::is_same_v<QRegister, T> || std::is_same_v<DRegister, T>)
   void ld2r(T rt, T rt2, Register rn) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'000 << 21;
@@ -472,7 +456,7 @@ public:
     ASIMDSTLD<size, true, 3>(Op, Opcode, rt, Index, rn, Reg::r0);
   }
   template<SubRegSize size, typename T>
-  requires(std::is_same_v<QRegister, T> || std::is_same_v<DRegister, T>)
+  requires (std::is_same_v<QRegister, T> || std::is_same_v<DRegister, T>)
   void ld3r(T rt, T rt2, T rt3, Register rn) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'000 << 21;
@@ -492,7 +476,7 @@ public:
     ASIMDSTLD<size, true, 4>(Op, Opcode, rt, Index, rn, Reg::r0);
   }
   template<SubRegSize size, typename T>
-  requires(std::is_same_v<QRegister, T> || std::is_same_v<DRegister, T>)
+  requires (std::is_same_v<QRegister, T> || std::is_same_v<DRegister, T>)
   void ld4r(T rt, T rt2, T rt3, T rt4, Register rn) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'000 << 21;
@@ -514,11 +498,9 @@ public:
   }
   template<SubRegSize size>
   void st1(VRegister rt, uint32_t Index, Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT(
-      (size == SubRegSize::i8Bit && (PostOffset == 1)) ||
-      (size == SubRegSize::i16Bit && (PostOffset == 2)) ||
-      (size == SubRegSize::i32Bit && (PostOffset == 4)) ||
-      (size == SubRegSize::i64Bit && (PostOffset == 8)), "Post-index offset needs to match number of elements times their size");
+    LOGMAN_THROW_A_FMT((size == SubRegSize::i8Bit && (PostOffset == 1)) || (size == SubRegSize::i16Bit && (PostOffset == 2)) ||
+                         (size == SubRegSize::i32Bit && (PostOffset == 4)) || (size == SubRegSize::i64Bit && (PostOffset == 8)),
+                       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode =
@@ -543,11 +525,9 @@ public:
   }
   template<SubRegSize size>
   void st2(VRegister rt, uint32_t Index, Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT(
-      (size == SubRegSize::i8Bit && (PostOffset == 2)) ||
-      (size == SubRegSize::i16Bit && (PostOffset == 4)) ||
-      (size == SubRegSize::i32Bit && (PostOffset == 8)) ||
-      (size == SubRegSize::i64Bit && (PostOffset == 16)), "Post-index offset needs to match number of elements times their size");
+    LOGMAN_THROW_A_FMT((size == SubRegSize::i8Bit && (PostOffset == 2)) || (size == SubRegSize::i16Bit && (PostOffset == 4)) ||
+                         (size == SubRegSize::i32Bit && (PostOffset == 8)) || (size == SubRegSize::i64Bit && (PostOffset == 16)),
+                       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode =
@@ -572,11 +552,9 @@ public:
   }
   template<SubRegSize size>
   void st3(VRegister rt, uint32_t Index, Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT(
-      (size == SubRegSize::i8Bit && (PostOffset == 3)) ||
-      (size == SubRegSize::i16Bit && (PostOffset == 6)) ||
-      (size == SubRegSize::i32Bit && (PostOffset == 8)) ||
-      (size == SubRegSize::i64Bit && (PostOffset == 24)), "Post-index offset needs to match number of elements times their size");
+    LOGMAN_THROW_A_FMT((size == SubRegSize::i8Bit && (PostOffset == 3)) || (size == SubRegSize::i16Bit && (PostOffset == 6)) ||
+                         (size == SubRegSize::i32Bit && (PostOffset == 8)) || (size == SubRegSize::i64Bit && (PostOffset == 24)),
+                       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode =
@@ -601,11 +579,9 @@ public:
   }
   template<SubRegSize size>
   void st4(VRegister rt, uint32_t Index, Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT(
-      (size == SubRegSize::i8Bit && (PostOffset == 4)) ||
-      (size == SubRegSize::i16Bit && (PostOffset == 8)) ||
-      (size == SubRegSize::i32Bit && (PostOffset == 16)) ||
-      (size == SubRegSize::i64Bit && (PostOffset == 32)), "Post-index offset needs to match number of elements times their size");
+    LOGMAN_THROW_A_FMT((size == SubRegSize::i8Bit && (PostOffset == 4)) || (size == SubRegSize::i16Bit && (PostOffset == 8)) ||
+                         (size == SubRegSize::i32Bit && (PostOffset == 16)) || (size == SubRegSize::i64Bit && (PostOffset == 32)),
+                       "Post-index offset needs to match number of elements times their size");
 
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode =
@@ -629,11 +605,9 @@ public:
   }
   template<SubRegSize size>
   void ld1(VRegister rt, uint32_t Index, Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT(
-      (size == SubRegSize::i8Bit && (PostOffset == 1)) ||
-      (size == SubRegSize::i16Bit && (PostOffset == 2)) ||
-      (size == SubRegSize::i32Bit && (PostOffset == 4)) ||
-      (size == SubRegSize::i64Bit && (PostOffset == 8)), "Post-index offset needs to match number of elements times their size");
+    LOGMAN_THROW_A_FMT((size == SubRegSize::i8Bit && (PostOffset == 1)) || (size == SubRegSize::i16Bit && (PostOffset == 2)) ||
+                         (size == SubRegSize::i32Bit && (PostOffset == 4)) || (size == SubRegSize::i64Bit && (PostOffset == 8)),
+                       "Post-index offset needs to match number of elements times their size");
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode =
         size == SubRegSize::i8Bit  ? 0b000 : // Scale = 0
@@ -651,11 +625,9 @@ public:
   }
   template<SubRegSize size>
   void ld1r(VRegister rt, Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT(
-      (size == SubRegSize::i8Bit && (PostOffset == 1)) ||
-      (size == SubRegSize::i16Bit && (PostOffset == 2)) ||
-      (size == SubRegSize::i32Bit && (PostOffset == 4)) ||
-      (size == SubRegSize::i64Bit && (PostOffset == 8)), "Post-index offset needs to match number of elements times their size");
+    LOGMAN_THROW_A_FMT((size == SubRegSize::i8Bit && (PostOffset == 1)) || (size == SubRegSize::i16Bit && (PostOffset == 2)) ||
+                         (size == SubRegSize::i32Bit && (PostOffset == 4)) || (size == SubRegSize::i64Bit && (PostOffset == 8)),
+                       "Post-index offset needs to match number of elements times their size");
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode = 0b110;
     ASIMDSTLD<size, true, 1>(Op, Opcode, rt, 0, rn, Reg::r31);
@@ -674,11 +646,9 @@ public:
   }
   template<SubRegSize size>
   void ld2(VRegister rt, uint32_t Index, Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT(
-      (size == SubRegSize::i8Bit && (PostOffset == 2)) ||
-      (size == SubRegSize::i16Bit && (PostOffset == 4)) ||
-      (size == SubRegSize::i32Bit && (PostOffset == 8)) ||
-      (size == SubRegSize::i64Bit && (PostOffset == 16)), "Post-index offset needs to match number of elements times their size");
+    LOGMAN_THROW_A_FMT((size == SubRegSize::i8Bit && (PostOffset == 2)) || (size == SubRegSize::i16Bit && (PostOffset == 4)) ||
+                         (size == SubRegSize::i32Bit && (PostOffset == 8)) || (size == SubRegSize::i64Bit && (PostOffset == 16)),
+                       "Post-index offset needs to match number of elements times their size");
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode =
         size == SubRegSize::i8Bit  ? 0b000 : // Scale = 0
@@ -698,11 +668,9 @@ public:
   template<SubRegSize size>
   void ld2r(VRegister rt, VRegister rt2, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
-    LOGMAN_THROW_A_FMT(
-      (size == SubRegSize::i8Bit && (PostOffset == 2)) ||
-      (size == SubRegSize::i16Bit && (PostOffset == 4)) ||
-      (size == SubRegSize::i32Bit && (PostOffset == 8)) ||
-      (size == SubRegSize::i64Bit && (PostOffset == 16)), "Post-index offset needs to match number of elements times their size");
+    LOGMAN_THROW_A_FMT((size == SubRegSize::i8Bit && (PostOffset == 2)) || (size == SubRegSize::i16Bit && (PostOffset == 4)) ||
+                         (size == SubRegSize::i32Bit && (PostOffset == 8)) || (size == SubRegSize::i64Bit && (PostOffset == 16)),
+                       "Post-index offset needs to match number of elements times their size");
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode = 0b110;
     ASIMDSTLD<size, true, 2>(Op, Opcode, rt, 0, rn, Reg::r31);
@@ -721,11 +689,9 @@ public:
   }
   template<SubRegSize size>
   void ld3(VRegister rt, uint32_t Index, Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT(
-      (size == SubRegSize::i8Bit && (PostOffset == 3)) ||
-      (size == SubRegSize::i16Bit && (PostOffset == 6)) ||
-      (size == SubRegSize::i32Bit && (PostOffset == 12)) ||
-      (size == SubRegSize::i64Bit && (PostOffset == 16)), "Post-index offset needs to match number of elements times their size");
+    LOGMAN_THROW_A_FMT((size == SubRegSize::i8Bit && (PostOffset == 3)) || (size == SubRegSize::i16Bit && (PostOffset == 6)) ||
+                         (size == SubRegSize::i32Bit && (PostOffset == 12)) || (size == SubRegSize::i64Bit && (PostOffset == 16)),
+                       "Post-index offset needs to match number of elements times their size");
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode =
         size == SubRegSize::i8Bit  ? 0b000 : // Scale = 0
@@ -745,11 +711,9 @@ public:
   template<SubRegSize size>
   void ld3r(VRegister rt, VRegister rt2, VRegister rt3, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
-    LOGMAN_THROW_A_FMT(
-      (size == SubRegSize::i8Bit && (PostOffset == 3)) ||
-      (size == SubRegSize::i16Bit && (PostOffset == 6)) ||
-      (size == SubRegSize::i32Bit && (PostOffset == 12)) ||
-      (size == SubRegSize::i64Bit && (PostOffset == 16)), "Post-index offset needs to match number of elements times their size");
+    LOGMAN_THROW_A_FMT((size == SubRegSize::i8Bit && (PostOffset == 3)) || (size == SubRegSize::i16Bit && (PostOffset == 6)) ||
+                         (size == SubRegSize::i32Bit && (PostOffset == 12)) || (size == SubRegSize::i64Bit && (PostOffset == 16)),
+                       "Post-index offset needs to match number of elements times their size");
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode = 0b110;
     ASIMDSTLD<size, true, 3>(Op, Opcode, rt, 0, rn, Reg::r31);
@@ -768,11 +732,9 @@ public:
   }
   template<SubRegSize size>
   void ld4(VRegister rt, uint32_t Index, Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT(
-      (size == SubRegSize::i8Bit && (PostOffset == 4)) ||
-      (size == SubRegSize::i16Bit && (PostOffset == 8)) ||
-      (size == SubRegSize::i32Bit && (PostOffset == 16)) ||
-      (size == SubRegSize::i64Bit && (PostOffset == 32)), "Post-index offset needs to match number of elements times their size");
+    LOGMAN_THROW_A_FMT((size == SubRegSize::i8Bit && (PostOffset == 4)) || (size == SubRegSize::i16Bit && (PostOffset == 8)) ||
+                         (size == SubRegSize::i32Bit && (PostOffset == 16)) || (size == SubRegSize::i64Bit && (PostOffset == 32)),
+                       "Post-index offset needs to match number of elements times their size");
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode =
         size == SubRegSize::i8Bit  ? 0b000 : // Scale = 0
@@ -792,11 +754,9 @@ public:
   template<SubRegSize size>
   void ld4r(VRegister rt, VRegister rt2, VRegister rt3, VRegister rt4, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
-    LOGMAN_THROW_A_FMT(
-      (size == SubRegSize::i8Bit && (PostOffset == 4)) ||
-      (size == SubRegSize::i16Bit && (PostOffset == 8)) ||
-      (size == SubRegSize::i32Bit && (PostOffset == 16)) ||
-      (size == SubRegSize::i64Bit && (PostOffset == 32)), "Post-index offset needs to match number of elements times their size");
+    LOGMAN_THROW_A_FMT((size == SubRegSize::i8Bit && (PostOffset == 4)) || (size == SubRegSize::i16Bit && (PostOffset == 8)) ||
+                         (size == SubRegSize::i32Bit && (PostOffset == 16)) || (size == SubRegSize::i64Bit && (PostOffset == 32)),
+                       "Post-index offset needs to match number of elements times their size");
     constexpr uint32_t Op = 0b0000'1101'100 << 21;
     constexpr uint32_t Opcode = 0b110;
     ASIMDSTLD<size, true, 4>(Op, Opcode, rt, 0, rn, Reg::r31);
@@ -805,7 +765,8 @@ public:
   // Advanced SIMD load/store single structure (post-indexed)
   template<typename T>
   void st1(ARMEmitter::SubRegSize size, T rt, uint32_t Index, ARMEmitter::Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                       "Incorrect size");
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     uint32_t Q;
     uint32_t R = 0;
@@ -818,29 +779,25 @@ public:
       S = (Index >> 2) & 1;
       opcode = 0b000;
       Size = Index & 0b11;
-    }
-    else if (size == SubRegSize::i16Bit) {
+    } else if (size == SubRegSize::i16Bit) {
       LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b010;
       Size = (Index & 0b1) << 1;
-    }
-    else if (size == SubRegSize::i32Bit) {
+    } else if (size == SubRegSize::i32Bit) {
       LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b100;
       Size = 0b00;
-    }
-    else if (size == SubRegSize::i64Bit) {
+    } else if (size == SubRegSize::i64Bit) {
       LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b100;
       Size = 0b01;
-    }
-    else {
+    } else {
       LOGMAN_MSG_A_FMT("Unknown size");
       FEX_UNREACHABLE;
     }
@@ -849,7 +806,8 @@ public:
   }
   template<typename T>
   void ld1(ARMEmitter::SubRegSize size, T rt, uint32_t Index, ARMEmitter::Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                       "Incorrect size");
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     uint32_t Q;
     uint32_t R = 0;
@@ -862,29 +820,25 @@ public:
       S = (Index >> 2) & 1;
       opcode = 0b001;
       Size = Index & 0b11;
-    }
-    else if (size == SubRegSize::i16Bit) {
+    } else if (size == SubRegSize::i16Bit) {
       LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b011;
       Size = (Index & 0b1) << 1;
-    }
-    else if (size == SubRegSize::i32Bit) {
+    } else if (size == SubRegSize::i32Bit) {
       LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b100;
       Size = 0b00;
-    }
-    else if (size == SubRegSize::i64Bit) {
+    } else if (size == SubRegSize::i64Bit) {
       LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b101;
       Size = 0b01;
-    }
-    else {
+    } else {
       LOGMAN_MSG_A_FMT("Unknown size");
       FEX_UNREACHABLE;
     }
@@ -943,7 +897,8 @@ public:
 
   template<typename T>
   void st2(SubRegSize size, T rt, T rt2, uint32_t Index, Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                       "Incorrect size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -958,29 +913,25 @@ public:
       S = (Index >> 2) & 1;
       opcode = 0b000;
       Size = Index & 0b11;
-    }
-    else if (size == SubRegSize::i16Bit) {
+    } else if (size == SubRegSize::i16Bit) {
       LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b010;
       Size = (Index & 0b1) << 1;
-    }
-    else if (size == SubRegSize::i32Bit) {
+    } else if (size == SubRegSize::i32Bit) {
       LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b100;
       Size = 0b00;
-    }
-    else if (size == SubRegSize::i64Bit) {
+    } else if (size == SubRegSize::i64Bit) {
       LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b100;
       Size = 0b01;
-    }
-    else {
+    } else {
       LOGMAN_MSG_A_FMT("Unknown size");
       FEX_UNREACHABLE;
     }
@@ -989,7 +940,8 @@ public:
   }
   template<typename T>
   void ld2(SubRegSize size, T rt, T rt2, uint32_t Index, Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                       "Incorrect size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -1004,29 +956,25 @@ public:
       S = (Index >> 2) & 1;
       opcode = 0b000;
       Size = Index & 0b11;
-    }
-    else if (size == SubRegSize::i16Bit) {
+    } else if (size == SubRegSize::i16Bit) {
       LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b010;
       Size = (Index & 0b1) << 1;
-    }
-    else if (size == SubRegSize::i32Bit) {
+    } else if (size == SubRegSize::i32Bit) {
       LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b100;
       Size = 0b00;
-    }
-    else if (size == SubRegSize::i64Bit) {
+    } else if (size == SubRegSize::i64Bit) {
       LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b100;
       Size = 0b01;
-    }
-    else {
+    } else {
       LOGMAN_MSG_A_FMT("Unknown size");
       FEX_UNREACHABLE;
     }
@@ -1035,7 +983,8 @@ public:
   }
   template<typename T>
   void st3(SubRegSize size, T rt, T rt2, T rt3, uint32_t Index, Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                       "Incorrect size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -1050,29 +999,25 @@ public:
       S = (Index >> 2) & 1;
       opcode = 0b001;
       Size = Index & 0b11;
-    }
-    else if (size == SubRegSize::i16Bit) {
+    } else if (size == SubRegSize::i16Bit) {
       LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b011;
       Size = (Index & 0b1) << 1;
-    }
-    else if (size == SubRegSize::i32Bit) {
+    } else if (size == SubRegSize::i32Bit) {
       LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b101;
       Size = 0b00;
-    }
-    else if (size == SubRegSize::i64Bit) {
+    } else if (size == SubRegSize::i64Bit) {
       LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b101;
       Size = 0b01;
-    }
-    else {
+    } else {
       LOGMAN_MSG_A_FMT("Unknown size");
       FEX_UNREACHABLE;
     }
@@ -1081,7 +1026,8 @@ public:
   }
   template<typename T>
   void ld3(SubRegSize size, T rt, T rt2, T rt3, uint32_t Index, Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                       "Incorrect size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -1096,29 +1042,25 @@ public:
       S = (Index >> 2) & 1;
       opcode = 0b001;
       Size = Index & 0b11;
-    }
-    else if (size == SubRegSize::i16Bit) {
+    } else if (size == SubRegSize::i16Bit) {
       LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b011;
       Size = (Index & 0b1) << 1;
-    }
-    else if (size == SubRegSize::i32Bit) {
+    } else if (size == SubRegSize::i32Bit) {
       LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b101;
       Size = 0b00;
-    }
-    else if (size == SubRegSize::i64Bit) {
+    } else if (size == SubRegSize::i64Bit) {
       LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b101;
       Size = 0b01;
-    }
-    else {
+    } else {
       LOGMAN_MSG_A_FMT("Unknown size");
       FEX_UNREACHABLE;
     }
@@ -1127,7 +1069,8 @@ public:
   }
   template<typename T>
   void st4(SubRegSize size, T rt, T rt2, T rt3, T rt4, uint32_t Index, Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                       "Incorrect size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -1142,29 +1085,25 @@ public:
       S = (Index >> 2) & 1;
       opcode = 0b001;
       Size = Index & 0b11;
-    }
-    else if (size == SubRegSize::i16Bit) {
+    } else if (size == SubRegSize::i16Bit) {
       LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b011;
       Size = (Index & 0b1) << 1;
-    }
-    else if (size == SubRegSize::i32Bit) {
+    } else if (size == SubRegSize::i32Bit) {
       LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b101;
       Size = 0b00;
-    }
-    else if (size == SubRegSize::i64Bit) {
+    } else if (size == SubRegSize::i64Bit) {
       LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b101;
       Size = 0b01;
-    }
-    else {
+    } else {
       LOGMAN_MSG_A_FMT("Unknown size");
       FEX_UNREACHABLE;
     }
@@ -1173,7 +1112,8 @@ public:
   }
   template<typename T>
   void ld4(SubRegSize size, T rt, T rt2, T rt3, T rt4, uint32_t Index, Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                       "Incorrect size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -1188,29 +1128,25 @@ public:
       S = (Index >> 2) & 1;
       opcode = 0b001;
       Size = Index & 0b11;
-    }
-    else if (size == SubRegSize::i16Bit) {
+    } else if (size == SubRegSize::i16Bit) {
       LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b011;
       Size = (Index & 0b1) << 1;
-    }
-    else if (size == SubRegSize::i32Bit) {
+    } else if (size == SubRegSize::i32Bit) {
       LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b101;
       Size = 0b00;
-    }
-    else if (size == SubRegSize::i64Bit) {
+    } else if (size == SubRegSize::i64Bit) {
       LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b101;
       Size = 0b01;
-    }
-    else {
+    } else {
       LOGMAN_MSG_A_FMT("Unknown size");
       FEX_UNREACHABLE;
     }
@@ -1220,7 +1156,8 @@ public:
 
   template<typename T>
   void st1(ARMEmitter::SubRegSize size, T rt, uint32_t Index, ARMEmitter::Register rn, ARMEmitter::Register rm) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                       "Incorrect size");
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     uint32_t Q;
     uint32_t R = 0;
@@ -1233,29 +1170,25 @@ public:
       S = (Index >> 2) & 1;
       opcode = 0b000;
       Size = Index & 0b11;
-    }
-    else if (size == SubRegSize::i16Bit) {
+    } else if (size == SubRegSize::i16Bit) {
       LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b010;
       Size = (Index & 0b1) << 1;
-    }
-    else if (size == SubRegSize::i32Bit) {
+    } else if (size == SubRegSize::i32Bit) {
       LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b100;
       Size = 0b00;
-    }
-    else if (size == SubRegSize::i64Bit) {
+    } else if (size == SubRegSize::i64Bit) {
       LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b100;
       Size = 0b01;
-    }
-    else {
+    } else {
       LOGMAN_MSG_A_FMT("Unknown size");
       FEX_UNREACHABLE;
     }
@@ -1264,7 +1197,8 @@ public:
   }
   template<typename T>
   void ld1(ARMEmitter::SubRegSize size, T rt, uint32_t Index, ARMEmitter::Register rn, ARMEmitter::Register rm) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                       "Incorrect size");
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     uint32_t Q;
     uint32_t R = 0;
@@ -1277,29 +1211,25 @@ public:
       S = (Index >> 2) & 1;
       opcode = 0b001;
       Size = Index & 0b11;
-    }
-    else if (size == SubRegSize::i16Bit) {
+    } else if (size == SubRegSize::i16Bit) {
       LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b011;
       Size = (Index & 0b1) << 1;
-    }
-    else if (size == SubRegSize::i32Bit) {
+    } else if (size == SubRegSize::i32Bit) {
       LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b100;
       Size = 0b00;
-    }
-    else if (size == SubRegSize::i64Bit) {
+    } else if (size == SubRegSize::i64Bit) {
       LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b101;
       Size = 0b01;
-    }
-    else {
+    } else {
       LOGMAN_MSG_A_FMT("Unknown size");
       FEX_UNREACHABLE;
     }
@@ -1354,7 +1284,8 @@ public:
 
   template<typename T>
   void st2(SubRegSize size, T rt, T rt2, uint32_t Index, Register rn, Register rm) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                       "Incorrect size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -1369,29 +1300,25 @@ public:
       S = (Index >> 2) & 1;
       opcode = 0b000;
       Size = Index & 0b11;
-    }
-    else if (size == SubRegSize::i16Bit) {
+    } else if (size == SubRegSize::i16Bit) {
       LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b010;
       Size = (Index & 0b1) << 1;
-    }
-    else if (size == SubRegSize::i32Bit) {
+    } else if (size == SubRegSize::i32Bit) {
       LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b100;
       Size = 0b00;
-    }
-    else if (size == SubRegSize::i64Bit) {
+    } else if (size == SubRegSize::i64Bit) {
       LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b100;
       Size = 0b01;
-    }
-    else {
+    } else {
       LOGMAN_MSG_A_FMT("Unknown size");
       FEX_UNREACHABLE;
     }
@@ -1400,7 +1327,8 @@ public:
   }
   template<typename T>
   void ld2(SubRegSize size, T rt, T rt2, uint32_t Index, Register rn, Register rm) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                       "Incorrect size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -1415,29 +1343,25 @@ public:
       S = (Index >> 2) & 1;
       opcode = 0b000;
       Size = Index & 0b11;
-    }
-    else if (size == SubRegSize::i16Bit) {
+    } else if (size == SubRegSize::i16Bit) {
       LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b010;
       Size = (Index & 0b1) << 1;
-    }
-    else if (size == SubRegSize::i32Bit) {
+    } else if (size == SubRegSize::i32Bit) {
       LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b100;
       Size = 0b00;
-    }
-    else if (size == SubRegSize::i64Bit) {
+    } else if (size == SubRegSize::i64Bit) {
       LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b100;
       Size = 0b01;
-    }
-    else {
+    } else {
       LOGMAN_MSG_A_FMT("Unknown size");
       FEX_UNREACHABLE;
     }
@@ -1446,7 +1370,8 @@ public:
   }
   template<typename T>
   void st3(SubRegSize size, T rt, T rt2, T rt3, uint32_t Index, Register rn, Register rm) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                       "Incorrect size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -1461,29 +1386,25 @@ public:
       S = (Index >> 2) & 1;
       opcode = 0b001;
       Size = Index & 0b11;
-    }
-    else if (size == SubRegSize::i16Bit) {
+    } else if (size == SubRegSize::i16Bit) {
       LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b011;
       Size = (Index & 0b1) << 1;
-    }
-    else if (size == SubRegSize::i32Bit) {
+    } else if (size == SubRegSize::i32Bit) {
       LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b101;
       Size = 0b00;
-    }
-    else if (size == SubRegSize::i64Bit) {
+    } else if (size == SubRegSize::i64Bit) {
       LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b101;
       Size = 0b01;
-    }
-    else {
+    } else {
       LOGMAN_MSG_A_FMT("Unknown size");
       FEX_UNREACHABLE;
     }
@@ -1492,7 +1413,8 @@ public:
   }
   template<typename T>
   void ld3(SubRegSize size, T rt, T rt2, T rt3, uint32_t Index, Register rn, Register rm) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                       "Incorrect size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -1507,29 +1429,25 @@ public:
       S = (Index >> 2) & 1;
       opcode = 0b001;
       Size = Index & 0b11;
-    }
-    else if (size == SubRegSize::i16Bit) {
+    } else if (size == SubRegSize::i16Bit) {
       LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b011;
       Size = (Index & 0b1) << 1;
-    }
-    else if (size == SubRegSize::i32Bit) {
+    } else if (size == SubRegSize::i32Bit) {
       LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b101;
       Size = 0b00;
-    }
-    else if (size == SubRegSize::i64Bit) {
+    } else if (size == SubRegSize::i64Bit) {
       LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b101;
       Size = 0b01;
-    }
-    else {
+    } else {
       LOGMAN_MSG_A_FMT("Unknown size");
       FEX_UNREACHABLE;
     }
@@ -1538,7 +1456,8 @@ public:
   }
   template<typename T>
   void st4(SubRegSize size, T rt, T rt2, T rt3, T rt4, uint32_t Index, Register rn, Register rm) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                       "Incorrect size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -1553,29 +1472,25 @@ public:
       S = (Index >> 2) & 1;
       opcode = 0b001;
       Size = Index & 0b11;
-    }
-    else if (size == SubRegSize::i16Bit) {
+    } else if (size == SubRegSize::i16Bit) {
       LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b011;
       Size = (Index & 0b1) << 1;
-    }
-    else if (size == SubRegSize::i32Bit) {
+    } else if (size == SubRegSize::i32Bit) {
       LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b101;
       Size = 0b00;
-    }
-    else if (size == SubRegSize::i64Bit) {
+    } else if (size == SubRegSize::i64Bit) {
       LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b101;
       Size = 0b01;
-    }
-    else {
+    } else {
       LOGMAN_MSG_A_FMT("Unknown size");
       FEX_UNREACHABLE;
     }
@@ -1584,7 +1499,8 @@ public:
   }
   template<typename T>
   void ld4(SubRegSize size, T rt, T rt2, T rt3, T rt4, uint32_t Index, Register rn, Register rm) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+                       "Incorrect size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -1599,29 +1515,25 @@ public:
       S = (Index >> 2) & 1;
       opcode = 0b001;
       Size = Index & 0b11;
-    }
-    else if (size == SubRegSize::i16Bit) {
+    } else if (size == SubRegSize::i16Bit) {
       LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b011;
       Size = (Index & 0b1) << 1;
-    }
-    else if (size == SubRegSize::i32Bit) {
+    } else if (size == SubRegSize::i32Bit) {
       LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b101;
       Size = 0b00;
-    }
-    else if (size == SubRegSize::i64Bit) {
+    } else if (size == SubRegSize::i64Bit) {
       LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b101;
       Size = 0b01;
-    }
-    else {
+    } else {
       LOGMAN_MSG_A_FMT("Unknown size");
       FEX_UNREACHABLE;
     }
@@ -1730,8 +1642,10 @@ public:
   }
 
   template<typename T>
-  void ASIMDLoadStoreSinglePost(uint32_t Op, uint32_t Q, uint32_t L, uint32_t R, uint32_t opcode, uint32_t S, uint32_t size, ARMEmitter::Register rm, ARMEmitter::Register rn, T rt) {
-    LOGMAN_THROW_A_FMT(std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>, "Only supports 128-bit and 64-bit vector registers.");
+  void ASIMDLoadStoreSinglePost(uint32_t Op, uint32_t Q, uint32_t L, uint32_t R, uint32_t opcode, uint32_t S, uint32_t size,
+                                ARMEmitter::Register rm, ARMEmitter::Register rn, T rt) {
+    LOGMAN_THROW_A_FMT(std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>, "Only supports 128-bit and "
+                                                                                                             "64-bit vector registers.");
     uint32_t Instr = Op;
 
     Instr |= Q << 30;
@@ -2078,43 +1992,43 @@ public:
     constexpr uint32_t Op = 0b1101'1000 << 24;
     LoadStoreLiteral(Op, prfop, static_cast<uint32_t>(Imm >> 2) & 0x7'FFFF);
   }
-  void ldr(ARMEmitter::WRegister rt, BackwardLabel const* Label) {
+  void ldr(ARMEmitter::WRegister rt, const BackwardLabel* Label) {
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
     LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b0001'1000 << 24;
     LoadStoreLiteral(Op, rt, static_cast<uint32_t>(Imm >> 2) & 0x7'FFFF);
   }
-  void ldr(ARMEmitter::SRegister rt, BackwardLabel const* Label) {
+  void ldr(ARMEmitter::SRegister rt, const BackwardLabel* Label) {
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
     LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b0001'1100 << 24;
     LoadStoreLiteral(Op, rt, static_cast<uint32_t>(Imm >> 2) & 0x7'FFFF);
   }
-  void ldr(ARMEmitter::XRegister rt, BackwardLabel const* Label) {
+  void ldr(ARMEmitter::XRegister rt, const BackwardLabel* Label) {
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
     LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b0101'1000 << 24;
     LoadStoreLiteral(Op, rt, static_cast<uint32_t>(Imm >> 2) & 0x7'FFFF);
   }
-  void ldr(ARMEmitter::DRegister rt, BackwardLabel const* Label) {
+  void ldr(ARMEmitter::DRegister rt, const BackwardLabel* Label) {
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
     LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b0101'1100 << 24;
     LoadStoreLiteral(Op, rt, static_cast<uint32_t>(Imm >> 2) & 0x7'FFFF);
   }
-  void ldrsw(ARMEmitter::XRegister rt, BackwardLabel const* Label) {
+  void ldrsw(ARMEmitter::XRegister rt, const BackwardLabel* Label) {
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
     LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b1001'1000 << 24;
     LoadStoreLiteral(Op, rt, static_cast<uint32_t>(Imm >> 2) & 0x7'FFFF);
   }
-  void ldr(ARMEmitter::QRegister rt, BackwardLabel const* Label) {
+  void ldr(ARMEmitter::QRegister rt, const BackwardLabel* Label) {
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
     LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b1001'1100 << 24;
     LoadStoreLiteral(Op, rt, static_cast<uint32_t>(Imm >> 2) & 0x7'FFFF);
   }
-  void prfm(ARMEmitter::Prefetch prfop, BackwardLabel const* Label) {
+  void prfm(ARMEmitter::Prefetch prfop, const BackwardLabel* Label) {
     int32_t Imm = static_cast<int32_t>(Label->Location - GetCursorAddress<uint8_t*>());
     LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
     constexpr uint32_t Op = 0b1101'1000 << 24;
@@ -2123,113 +2037,113 @@ public:
 
   template<typename LabelType>
   requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void ldr(ARMEmitter::WRegister rt, LabelType *Label) {
-    AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD });
+  void ldr(ARMEmitter::WRegister rt, LabelType* Label) {
+    AddLocationToLabel(
+      Label, SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD});
     constexpr uint32_t Op = 0b0001'1000 << 24;
     LoadStoreLiteral(Op, rt, 0);
   }
 
   template<typename LabelType>
   requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void ldr(ARMEmitter::SRegister rt, LabelType *Label) {
-    AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD });
+  void ldr(ARMEmitter::SRegister rt, LabelType* Label) {
+    AddLocationToLabel(
+      Label, SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD});
     constexpr uint32_t Op = 0b0001'1100 << 24;
     LoadStoreLiteral(Op, rt, 0);
   }
 
   template<typename LabelType>
   requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void ldr(ARMEmitter::XRegister rt, LabelType *Label) {
-    AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD });
+  void ldr(ARMEmitter::XRegister rt, LabelType* Label) {
+    AddLocationToLabel(
+      Label, SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD});
     constexpr uint32_t Op = 0b0101'1000 << 24;
     LoadStoreLiteral(Op, rt, 0);
   }
 
   template<typename LabelType>
   requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void ldr(ARMEmitter::DRegister rt, LabelType *Label) {
-    AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD });
+  void ldr(ARMEmitter::DRegister rt, LabelType* Label) {
+    AddLocationToLabel(
+      Label, SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD});
     constexpr uint32_t Op = 0b0101'1100 << 24;
     LoadStoreLiteral(Op, rt, 0);
   }
 
   template<typename LabelType>
   requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void ldrsw(ARMEmitter::XRegister rt, LabelType *Label) {
-    AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD });
+  void ldrsw(ARMEmitter::XRegister rt, LabelType* Label) {
+    AddLocationToLabel(
+      Label, SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD});
     constexpr uint32_t Op = 0b1001'1000 << 24;
     LoadStoreLiteral(Op, rt, 0);
   }
 
   template<typename LabelType>
   requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void ldr(ARMEmitter::QRegister rt, LabelType *Label) {
-    AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD });
+  void ldr(ARMEmitter::QRegister rt, LabelType* Label) {
+    AddLocationToLabel(
+      Label, SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD});
     constexpr uint32_t Op = 0b1001'1100 << 24;
     LoadStoreLiteral(Op, rt, 0);
   }
 
   template<typename LabelType>
   requires (std::is_same_v<LabelType, ForwardLabel> || std::is_same_v<LabelType, SingleUseForwardLabel>)
-  void prfm(ARMEmitter::Prefetch prfop, LabelType *Label) {
-    AddLocationToLabel(Label, SingleUseForwardLabel{ .Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD });
+  void prfm(ARMEmitter::Prefetch prfop, LabelType* Label) {
+    AddLocationToLabel(
+      Label, SingleUseForwardLabel {.Location = GetCursorAddress<uint8_t*>(), .Type = SingleUseForwardLabel::InstType::RELATIVE_LOAD});
     constexpr uint32_t Op = 0b1101'1000 << 24;
     LoadStoreLiteral(Op, prfop, 0);
   }
 
-  void ldr(ARMEmitter::WRegister rt, BiDirectionalLabel *Label) {
+  void ldr(ARMEmitter::WRegister rt, BiDirectionalLabel* Label) {
     if (Label->Backward.Location) {
       ldr(rt, &Label->Backward);
-    }
-    else {
+    } else {
       ldr(rt, &Label->Forward);
     }
   }
-  void ldr(ARMEmitter::SRegister rt, BiDirectionalLabel *Label) {
+  void ldr(ARMEmitter::SRegister rt, BiDirectionalLabel* Label) {
     if (Label->Backward.Location) {
       ldr(rt, &Label->Backward);
-    }
-    else {
+    } else {
       ldr(rt, &Label->Forward);
     }
   }
-  void ldr(ARMEmitter::XRegister rt, BiDirectionalLabel *Label) {
+  void ldr(ARMEmitter::XRegister rt, BiDirectionalLabel* Label) {
     if (Label->Backward.Location) {
       ldr(rt, &Label->Backward);
-    }
-    else {
+    } else {
       ldr(rt, &Label->Forward);
     }
   }
-  void ldr(ARMEmitter::DRegister rt, BiDirectionalLabel *Label) {
+  void ldr(ARMEmitter::DRegister rt, BiDirectionalLabel* Label) {
     if (Label->Backward.Location) {
       ldr(rt, &Label->Backward);
-    }
-    else {
+    } else {
       ldr(rt, &Label->Forward);
     }
   }
-  void ldrs(ARMEmitter::WRegister rt, BiDirectionalLabel *Label) {
+  void ldrs(ARMEmitter::WRegister rt, BiDirectionalLabel* Label) {
     if (Label->Backward.Location) {
       ldr(rt, &Label->Backward);
-    }
-    else {
+    } else {
       ldr(rt, &Label->Forward);
     }
   }
-  void ldr(ARMEmitter::QRegister rt, BiDirectionalLabel *Label) {
+  void ldr(ARMEmitter::QRegister rt, BiDirectionalLabel* Label) {
     if (Label->Backward.Location) {
       ldr(rt, &Label->Backward);
-    }
-    else {
+    } else {
       ldr(rt, &Label->Forward);
     }
   }
-  void prfm(ARMEmitter::Prefetch prfop, BiDirectionalLabel *Label) {
+  void prfm(ARMEmitter::Prefetch prfop, BiDirectionalLabel* Label) {
     if (Label->Backward.Location) {
       prfm(prfop, &Label->Backward);
-    }
-    else {
+    } else {
       prfm(prfop, &Label->Forward);
     }
   }
@@ -2293,83 +2207,73 @@ public:
   template<IndexType Index>
   void stp(ARMEmitter::WRegister rt, ARMEmitter::WRegister rt2, ARMEmitter::Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 252 && ((Imm & 0b11) == 0), "Unscaled offset too large");
-    constexpr uint32_t Op = (0b0010'1000'00 << 22) |
-      (
-        Index == IndexType::POST   ? (0b01 << 23) :
-        Index == IndexType::PRE    ? (0b11 << 23) :
-        Index == IndexType::OFFSET ? (0b10 << 23) : -1
-      );
+    constexpr uint32_t Op = (0b0010'1000'00 << 22) | (Index == IndexType::POST   ? (0b01 << 23) :
+                                                      Index == IndexType::PRE    ? (0b11 << 23) :
+                                                      Index == IndexType::OFFSET ? (0b10 << 23) :
+                                                                                   -1);
 
     LoadStorePair(Op, rt, rt2, rn, (Imm >> 2) & 0b111'1111);
   }
   template<IndexType Index>
   void ldp(ARMEmitter::WRegister rt, ARMEmitter::WRegister rt2, ARMEmitter::Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 252 && ((Imm & 0b11) == 0), "Unscaled offset too large");
-    constexpr uint32_t Op = (0b0010'1000'01 << 22) |
-      (
-        Index == IndexType::POST   ? (0b01 << 23) :
-        Index == IndexType::PRE    ? (0b11 << 23) :
-        Index == IndexType::OFFSET ? (0b10 << 23) : -1
-      );
+    constexpr uint32_t Op = (0b0010'1000'01 << 22) | (Index == IndexType::POST   ? (0b01 << 23) :
+                                                      Index == IndexType::PRE    ? (0b11 << 23) :
+                                                      Index == IndexType::OFFSET ? (0b10 << 23) :
+                                                                                   -1);
 
     LoadStorePair(Op, rt, rt2, rn, (Imm >> 2) & 0b111'1111);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void ldpsw(ARMEmitter::XRegister rt, ARMEmitter::XRegister rt2, ARMEmitter::Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 252 && ((Imm & 0b11) == 0), "Unscaled offset too large");
-    constexpr uint32_t Op = (0b0110'1000'01 << 22) |
-      (
-        Index == IndexType::POST   ? (0b01 << 23) :
-        Index == IndexType::PRE    ? (0b11 << 23) :
-        Index == IndexType::OFFSET ? (0b10 << 23) : -1
-      );
+    constexpr uint32_t Op = (0b0110'1000'01 << 22) | (Index == IndexType::POST   ? (0b01 << 23) :
+                                                      Index == IndexType::PRE    ? (0b11 << 23) :
+                                                      Index == IndexType::OFFSET ? (0b10 << 23) :
+                                                                                   -1);
     LoadStorePair(Op, rt, rt2, rn, (Imm >> 2) & 0b111'1111);
   }
   template<IndexType Index>
   void stp(ARMEmitter::XRegister rt, ARMEmitter::XRegister rt2, ARMEmitter::Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_A_FMT(Imm >= -512 && Imm <= 504 && ((Imm & 0b111) == 0), "Unscaled offset too large");
-    constexpr uint32_t Op = (0b1010'1000'00 << 22) |
-      (
-        Index == IndexType::POST   ? (0b01 << 23) :
-        Index == IndexType::PRE    ? (0b11 << 23) :
-        Index == IndexType::OFFSET ? (0b10 << 23) : -1
-      );
+    constexpr uint32_t Op = (0b1010'1000'00 << 22) | (Index == IndexType::POST   ? (0b01 << 23) :
+                                                      Index == IndexType::PRE    ? (0b11 << 23) :
+                                                      Index == IndexType::OFFSET ? (0b10 << 23) :
+                                                                                   -1);
 
     LoadStorePair(Op, rt, rt2, rn, (Imm >> 3) & 0b111'1111);
   }
   template<IndexType Index>
   void ldp(ARMEmitter::XRegister rt, ARMEmitter::XRegister rt2, ARMEmitter::Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_A_FMT(Imm >= -512 && Imm <= 504 && ((Imm & 0b111) == 0), "Unscaled offset too large");
-    constexpr uint32_t Op = (0b1010'1000'01 << 22) |
-      (
-        Index == IndexType::POST   ? (0b01 << 23) :
-        Index == IndexType::PRE    ? (0b11 << 23) :
-        Index == IndexType::OFFSET ? (0b10 << 23) : -1
-      );
+    constexpr uint32_t Op = (0b1010'1000'01 << 22) | (Index == IndexType::POST   ? (0b01 << 23) :
+                                                      Index == IndexType::PRE    ? (0b11 << 23) :
+                                                      Index == IndexType::OFFSET ? (0b10 << 23) :
+                                                                                   -1);
 
     LoadStorePair(Op, rt, rt2, rn, (Imm >> 3) & 0b111'1111);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void stp(ARMEmitter::SRegister rt, ARMEmitter::SRegister rt2, ARMEmitter::Register rn, int32_t Imm = 0) {
     stp_w<Index>(rt.V(), rt2.V(), rn, Imm);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void ldp(ARMEmitter::SRegister rt, ARMEmitter::SRegister rt2, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldp_w<Index>(rt.V(), rt2.V(), rn, Imm);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void stp(ARMEmitter::DRegister rt, ARMEmitter::DRegister rt2, ARMEmitter::Register rn, int32_t Imm = 0) {
     stp_x<Index>(rt.V(), rt2.V(), rn, Imm);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void ldp(ARMEmitter::DRegister rt, ARMEmitter::DRegister rt2, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldp_x<Index>(rt.V(), rt2.V(), rn, Imm);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void stp(ARMEmitter::QRegister rt, ARMEmitter::QRegister rt2, ARMEmitter::Register rn, int32_t Imm = 0) {
     stp_q<Index>(rt.V(), rt2.V(), rn, Imm);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void ldp(ARMEmitter::QRegister rt, ARMEmitter::QRegister rt2, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldp_q<Index>(rt.V(), rt2.V(), rn, Imm);
   }
@@ -2444,7 +2348,7 @@ public:
   void ldur(ARMEmitter::QRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXr<IndexType::OFFSET>(rt, rn, Imm);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void prfum(ARMEmitter::Prefetch prfop, ARMEmitter::Register rn, int32_t Imm = 0) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
     static_assert(Index == IndexType::OFFSET, "Doesn't support another index type");
@@ -2457,118 +2361,118 @@ public:
 
   // Loadstore register immediate post-indexed
   // Loadstore register immediate pre-indexed
-  template <IndexType Index>
-  requires(Index == IndexType::POST || Index == IndexType::PRE)
+  template<IndexType Index>
+  requires (Index == IndexType::POST || Index == IndexType::PRE)
   void strb(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXrb<Index>(rt, rn, Imm);
   }
-  template <IndexType Index>
-  requires(Index == IndexType::POST || Index == IndexType::PRE)
+  template<IndexType Index>
+  requires (Index == IndexType::POST || Index == IndexType::PRE)
   void ldrb(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrb<Index>(rt, rn, Imm);
   }
-  template <IndexType Index>
-  requires(Index == IndexType::POST || Index == IndexType::PRE)
+  template<IndexType Index>
+  requires (Index == IndexType::POST || Index == IndexType::PRE)
   void strb(ARMEmitter::VRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXrb<Index>(rt, rn, Imm);
   }
-  template <IndexType Index>
-  requires(Index == IndexType::POST || Index == IndexType::PRE)
+  template<IndexType Index>
+  requires (Index == IndexType::POST || Index == IndexType::PRE)
   void ldrb(ARMEmitter::VRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrb<Index>(rt, rn, Imm);
   }
-  template <IndexType Index>
-  requires(Index == IndexType::POST || Index == IndexType::PRE)
+  template<IndexType Index>
+  requires (Index == IndexType::POST || Index == IndexType::PRE)
   void ldrsb(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrsb<Index>(rt, rn, Imm);
   }
-  template <IndexType Index>
-  requires(Index == IndexType::POST || Index == IndexType::PRE)
+  template<IndexType Index>
+  requires (Index == IndexType::POST || Index == IndexType::PRE)
   void ldrsb(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrsb<Index>(rt, rn, Imm);
   }
-  template <IndexType Index>
-  requires(Index == IndexType::POST || Index == IndexType::PRE)
+  template<IndexType Index>
+  requires (Index == IndexType::POST || Index == IndexType::PRE)
   void strh(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXrh<Index>(rt, rn, Imm);
   }
-  template <IndexType Index>
-  requires(Index == IndexType::POST || Index == IndexType::PRE)
+  template<IndexType Index>
+  requires (Index == IndexType::POST || Index == IndexType::PRE)
   void ldrh(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrh<Index>(rt, rn, Imm);
   }
-  template <IndexType Index>
-  requires(Index == IndexType::POST || Index == IndexType::PRE)
+  template<IndexType Index>
+  requires (Index == IndexType::POST || Index == IndexType::PRE)
   void strh(ARMEmitter::VRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXrh<Index>(rt, rn, Imm);
   }
-  template <IndexType Index>
-  requires(Index == IndexType::POST || Index == IndexType::PRE)
+  template<IndexType Index>
+  requires (Index == IndexType::POST || Index == IndexType::PRE)
   void ldrh(ARMEmitter::VRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrh<Index>(rt, rn, Imm);
   }
-  template <IndexType Index>
-  requires(Index == IndexType::POST || Index == IndexType::PRE)
+  template<IndexType Index>
+  requires (Index == IndexType::POST || Index == IndexType::PRE)
   void ldrsh(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrsh<Index>(rt, rn, Imm);
   }
-  template <IndexType Index>
-  requires(Index == IndexType::POST || Index == IndexType::PRE)
+  template<IndexType Index>
+  requires (Index == IndexType::POST || Index == IndexType::PRE)
   void ldrsh(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrsh<Index>(rt, rn, Imm);
   }
-  template <IndexType Index>
-  requires(Index == IndexType::POST || Index == IndexType::PRE)
+  template<IndexType Index>
+  requires (Index == IndexType::POST || Index == IndexType::PRE)
   void str(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXr<Index>(rt, rn, Imm);
   }
-  template <IndexType Index>
-  requires(Index == IndexType::POST || Index == IndexType::PRE)
+  template<IndexType Index>
+  requires (Index == IndexType::POST || Index == IndexType::PRE)
   void ldr(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXr<Index>(rt, rn, Imm);
   }
-  template <IndexType Index>
-  requires(Index == IndexType::POST || Index == IndexType::PRE)
+  template<IndexType Index>
+  requires (Index == IndexType::POST || Index == IndexType::PRE)
   void str(ARMEmitter::SRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXr<Index>(rt, rn, Imm);
   }
-  template <IndexType Index>
-  requires(Index == IndexType::POST || Index == IndexType::PRE)
+  template<IndexType Index>
+  requires (Index == IndexType::POST || Index == IndexType::PRE)
   void ldr(ARMEmitter::SRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXr<Index>(rt, rn, Imm);
   }
-  template <IndexType Index>
-  requires(Index == IndexType::POST || Index == IndexType::PRE)
+  template<IndexType Index>
+  requires (Index == IndexType::POST || Index == IndexType::PRE)
   void ldrsw(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXrsw<Index>(rt, rn, Imm);
   }
-  template <IndexType Index>
-  requires(Index == IndexType::POST || Index == IndexType::PRE)
+  template<IndexType Index>
+  requires (Index == IndexType::POST || Index == IndexType::PRE)
   void str(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXr<Index>(rt, rn, Imm);
   }
-  template <IndexType Index>
-  requires(Index == IndexType::POST || Index == IndexType::PRE)
+  template<IndexType Index>
+  requires (Index == IndexType::POST || Index == IndexType::PRE)
   void ldr(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXr<Index>(rt, rn, Imm);
   }
-  template <IndexType Index>
-  requires(Index == IndexType::POST || Index == IndexType::PRE)
+  template<IndexType Index>
+  requires (Index == IndexType::POST || Index == IndexType::PRE)
   void str(ARMEmitter::DRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXr<Index>(rt, rn, Imm);
   }
-  template <IndexType Index>
-  requires(Index == IndexType::POST || Index == IndexType::PRE)
+  template<IndexType Index>
+  requires (Index == IndexType::POST || Index == IndexType::PRE)
   void ldr(ARMEmitter::DRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXr<Index>(rt, rn, Imm);
   }
-  template <IndexType Index>
-  requires(Index == IndexType::POST || Index == IndexType::PRE)
+  template<IndexType Index>
+  requires (Index == IndexType::POST || Index == IndexType::PRE)
   void str(ARMEmitter::QRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     stXr<Index>(rt, rn, Imm);
   }
-  template <IndexType Index>
-  requires(Index == IndexType::POST || Index == IndexType::PRE)
+  template<IndexType Index>
+  requires (Index == IndexType::POST || Index == IndexType::PRE)
   void ldr(ARMEmitter::QRegister rt, ARMEmitter::Register rn, int32_t Imm = 0) {
     ldXr<Index>(rt, rn, Imm);
   }
@@ -3379,26 +3283,20 @@ public:
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       strb(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
-    }
-    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       strb(rt, MemSrc.rn);
-    }
-    else {
+    } else {
       if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::OFFSET) {
         if (MemSrc.MetaType.ImmType.Imm < 0) {
           sturb(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-        }
-        else {
+        } else {
           strb(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
         }
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
         strb<ARMEmitter::IndexType::POST>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
         strb<ARMEmitter::IndexType::PRE>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else {
+      } else {
         LOGMAN_MSG_A_FMT("Unexpected loadstore index type");
         FEX_UNREACHABLE;
       }
@@ -3408,26 +3306,20 @@ public:
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       ldrb(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
-    }
-    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrb(rt, MemSrc.rn);
-    }
-    else {
+    } else {
       if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::OFFSET) {
         if (MemSrc.MetaType.ImmType.Imm < 0) {
           ldurb(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-        }
-        else {
+        } else {
           ldrb(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
         }
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
         ldrb<ARMEmitter::IndexType::POST>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
         ldrb<ARMEmitter::IndexType::PRE>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else {
+      } else {
         LOGMAN_MSG_A_FMT("Unexpected loadstore index type");
         FEX_UNREACHABLE;
       }
@@ -3437,26 +3329,20 @@ public:
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       ldrsb(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
-    }
-    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrsb(rt, MemSrc.rn);
-    }
-    else {
+    } else {
       if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::OFFSET) {
         if (MemSrc.MetaType.ImmType.Imm < 0) {
           ldursb(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-        }
-        else {
+        } else {
           ldrsb(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
         }
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
         ldrsb<ARMEmitter::IndexType::POST>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
         ldrsb<ARMEmitter::IndexType::PRE>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else {
+      } else {
         LOGMAN_MSG_A_FMT("Unexpected loadstore index type");
         FEX_UNREACHABLE;
       }
@@ -3466,26 +3352,20 @@ public:
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       ldrsb(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
-    }
-    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrsb(rt, MemSrc.rn);
-    }
-    else {
+    } else {
       if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::OFFSET) {
         if (MemSrc.MetaType.ImmType.Imm < 0) {
           ldursb(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-        }
-        else {
+        } else {
           ldrsb(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
         }
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
         ldrsb<ARMEmitter::IndexType::POST>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
         ldrsb<ARMEmitter::IndexType::PRE>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else {
+      } else {
         LOGMAN_MSG_A_FMT("Unexpected loadstore index type");
         FEX_UNREACHABLE;
       }
@@ -3495,26 +3375,20 @@ public:
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       strh(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
-    }
-    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       strh(rt, MemSrc.rn);
-    }
-    else {
+    } else {
       if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::OFFSET) {
         if ((MemSrc.MetaType.ImmType.Imm & 0b1) || MemSrc.MetaType.ImmType.Imm < 0) {
           sturh(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-        }
-        else {
+        } else {
           strh(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
         }
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
         strh<ARMEmitter::IndexType::POST>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
         strh<ARMEmitter::IndexType::PRE>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else {
+      } else {
         LOGMAN_MSG_A_FMT("Unexpected loadstore index type");
         FEX_UNREACHABLE;
       }
@@ -3524,26 +3398,20 @@ public:
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       ldrh(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
-    }
-    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrh(rt, MemSrc.rn);
-    }
-    else {
+    } else {
       if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::OFFSET) {
         if ((MemSrc.MetaType.ImmType.Imm & 0b1) || MemSrc.MetaType.ImmType.Imm < 0) {
           ldurh(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-        }
-        else {
+        } else {
           ldrh(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
         }
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
         ldrh<ARMEmitter::IndexType::POST>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
         ldrh<ARMEmitter::IndexType::PRE>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else {
+      } else {
         LOGMAN_MSG_A_FMT("Unexpected loadstore index type");
         FEX_UNREACHABLE;
       }
@@ -3553,26 +3421,20 @@ public:
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       ldrsh(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
-    }
-    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrsh(rt, MemSrc.rn);
-    }
-    else {
+    } else {
       if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::OFFSET) {
         if ((MemSrc.MetaType.ImmType.Imm & 0b1) || MemSrc.MetaType.ImmType.Imm < 0) {
           ldursh(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-        }
-        else {
+        } else {
           ldrsh(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
         }
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
         ldrsh<ARMEmitter::IndexType::POST>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
         ldrsh<ARMEmitter::IndexType::PRE>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else {
+      } else {
         LOGMAN_MSG_A_FMT("Unexpected loadstore index type");
         FEX_UNREACHABLE;
       }
@@ -3582,26 +3444,20 @@ public:
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       ldrsh(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
-    }
-    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrsh(rt, MemSrc.rn);
-    }
-    else {
+    } else {
       if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::OFFSET) {
         if ((MemSrc.MetaType.ImmType.Imm & 0b1) || MemSrc.MetaType.ImmType.Imm < 0) {
           ldursh(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-        }
-        else {
+        } else {
           ldrsh(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
         }
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
         ldrsh<ARMEmitter::IndexType::POST>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
         ldrsh<ARMEmitter::IndexType::PRE>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else {
+      } else {
         LOGMAN_MSG_A_FMT("Unexpected loadstore index type");
         FEX_UNREACHABLE;
       }
@@ -3611,26 +3467,20 @@ public:
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       str(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
-    }
-    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       str(rt, MemSrc.rn);
-    }
-    else {
+    } else {
       if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::OFFSET) {
         if ((MemSrc.MetaType.ImmType.Imm & 0b11) || MemSrc.MetaType.ImmType.Imm < 0) {
           stur(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-        }
-        else {
+        } else {
           str(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
         }
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
         str<ARMEmitter::IndexType::POST>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
         str<ARMEmitter::IndexType::PRE>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else {
+      } else {
         LOGMAN_MSG_A_FMT("Unexpected loadstore index type");
         FEX_UNREACHABLE;
       }
@@ -3640,26 +3490,20 @@ public:
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       ldr(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
-    }
-    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldr(rt, MemSrc.rn);
-    }
-    else {
+    } else {
       if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::OFFSET) {
         if ((MemSrc.MetaType.ImmType.Imm & 0b11) || MemSrc.MetaType.ImmType.Imm < 0) {
           ldur(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-        }
-        else {
+        } else {
           ldr(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
         }
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
         ldr<ARMEmitter::IndexType::POST>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
         ldr<ARMEmitter::IndexType::PRE>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else {
+      } else {
         LOGMAN_MSG_A_FMT("Unexpected loadstore index type");
         FEX_UNREACHABLE;
       }
@@ -3669,26 +3513,20 @@ public:
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       ldrsw(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
-    }
-    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrsw(rt, MemSrc.rn);
-    }
-    else {
+    } else {
       if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::OFFSET) {
         if ((MemSrc.MetaType.ImmType.Imm & 0b11) || MemSrc.MetaType.ImmType.Imm < 0) {
           ldursw(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-        }
-        else {
+        } else {
           ldrsw(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
         }
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
         ldrsw<ARMEmitter::IndexType::POST>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
         ldrsw<ARMEmitter::IndexType::PRE>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else {
+      } else {
         LOGMAN_MSG_A_FMT("Unexpected loadstore index type");
         FEX_UNREACHABLE;
       }
@@ -3698,26 +3536,20 @@ public:
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       str(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
-    }
-    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       str(rt, MemSrc.rn);
-    }
-    else {
+    } else {
       if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::OFFSET) {
         if ((MemSrc.MetaType.ImmType.Imm & 0b111) || MemSrc.MetaType.ImmType.Imm < 0) {
           stur(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-        }
-        else {
+        } else {
           str(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
         }
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
         str<ARMEmitter::IndexType::POST>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
         str<ARMEmitter::IndexType::PRE>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else {
+      } else {
         LOGMAN_MSG_A_FMT("Unexpected loadstore index type");
         FEX_UNREACHABLE;
       }
@@ -3727,26 +3559,20 @@ public:
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       ldr(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
-    }
-    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldr(rt, MemSrc.rn);
-    }
-    else {
+    } else {
       if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::OFFSET) {
         if ((MemSrc.MetaType.ImmType.Imm & 0b111) || MemSrc.MetaType.ImmType.Imm < 0) {
           ldur(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-        }
-        else {
+        } else {
           ldr(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
         }
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
         ldr<ARMEmitter::IndexType::POST>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
         ldr<ARMEmitter::IndexType::PRE>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else {
+      } else {
         LOGMAN_MSG_A_FMT("Unexpected loadstore index type");
         FEX_UNREACHABLE;
       }
@@ -3756,20 +3582,16 @@ public:
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       prfm(prfop, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
-    }
-    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       prfm(prfop, MemSrc.rn);
-    }
-    else {
+    } else {
       if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::OFFSET) {
         if ((MemSrc.MetaType.ImmType.Imm & 0b111) || MemSrc.MetaType.ImmType.Imm < 0) {
           prfum<IndexType::OFFSET>(prfop, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-        }
-        else {
+        } else {
           prfm(prfop, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
         }
-      }
-      else {
+      } else {
         LOGMAN_MSG_A_FMT("Unexpected loadstore index type");
         FEX_UNREACHABLE;
       }
@@ -3781,26 +3603,20 @@ public:
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       LOGMAN_THROW_A_FMT(MemSrc.MetaType.ExtendedType.Shift == false, "Can't shift byte");
       strb(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option);
-    }
-    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       strb(rt, MemSrc.rn);
-    }
-    else {
+    } else {
       if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::OFFSET) {
         if (MemSrc.MetaType.ImmType.Imm < 0) {
           sturb(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-        }
-        else {
+        } else {
           strb(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
         }
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
         strb<ARMEmitter::IndexType::POST>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
         strb<ARMEmitter::IndexType::PRE>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else {
+      } else {
         LOGMAN_MSG_A_FMT("Unexpected loadstore index type");
         FEX_UNREACHABLE;
       }
@@ -3811,26 +3627,20 @@ public:
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       LOGMAN_THROW_A_FMT(MemSrc.MetaType.ExtendedType.Shift == false, "Can't shift byte");
       ldrb(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option);
-    }
-    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrb(rt, MemSrc.rn);
-    }
-    else {
+    } else {
       if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::OFFSET) {
         if (MemSrc.MetaType.ImmType.Imm < 0) {
           ldurb(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-        }
-        else {
+        } else {
           ldrb(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
         }
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
         ldrb<ARMEmitter::IndexType::POST>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
         ldrb<ARMEmitter::IndexType::PRE>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else {
+      } else {
         LOGMAN_MSG_A_FMT("Unexpected loadstore index type");
         FEX_UNREACHABLE;
       }
@@ -3840,26 +3650,20 @@ public:
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       strh(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
-    }
-    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       strh(rt, MemSrc.rn);
-    }
-    else {
+    } else {
       if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::OFFSET) {
         if ((MemSrc.MetaType.ImmType.Imm & 0b1) || MemSrc.MetaType.ImmType.Imm < 0) {
           sturh(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-        }
-        else {
+        } else {
           strh(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
         }
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
         strh<ARMEmitter::IndexType::POST>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
         strh<ARMEmitter::IndexType::PRE>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else {
+      } else {
         LOGMAN_MSG_A_FMT("Unexpected loadstore index type");
         FEX_UNREACHABLE;
       }
@@ -3869,26 +3673,20 @@ public:
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       ldrh(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
-    }
-    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrh(rt, MemSrc.rn);
-    }
-    else {
+    } else {
       if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::OFFSET) {
         if ((MemSrc.MetaType.ImmType.Imm & 0b1) || MemSrc.MetaType.ImmType.Imm < 0) {
           ldurh(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-        }
-        else {
+        } else {
           ldrh(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
         }
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
         ldrh<ARMEmitter::IndexType::POST>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
         ldrh<ARMEmitter::IndexType::PRE>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else {
+      } else {
         LOGMAN_MSG_A_FMT("Unexpected loadstore index type");
         FEX_UNREACHABLE;
       }
@@ -3898,26 +3696,20 @@ public:
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       str(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
-    }
-    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       str(rt, MemSrc.rn);
-    }
-    else {
+    } else {
       if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::OFFSET) {
         if ((MemSrc.MetaType.ImmType.Imm & 0b11) || MemSrc.MetaType.ImmType.Imm < 0) {
           stur(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-        }
-        else {
+        } else {
           str(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
         }
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
         str<ARMEmitter::IndexType::POST>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
         str<ARMEmitter::IndexType::PRE>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else {
+      } else {
         LOGMAN_MSG_A_FMT("Unexpected loadstore index type");
         FEX_UNREACHABLE;
       }
@@ -3927,26 +3719,20 @@ public:
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       ldr(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
-    }
-    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldr(rt, MemSrc.rn);
-    }
-    else {
+    } else {
       if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::OFFSET) {
         if ((MemSrc.MetaType.ImmType.Imm & 0b11) || MemSrc.MetaType.ImmType.Imm < 0) {
           ldur(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-        }
-        else {
+        } else {
           ldr(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
         }
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
         ldr<ARMEmitter::IndexType::POST>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
         ldr<ARMEmitter::IndexType::PRE>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else {
+      } else {
         LOGMAN_MSG_A_FMT("Unexpected loadstore index type");
         FEX_UNREACHABLE;
       }
@@ -3956,26 +3742,20 @@ public:
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       str(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
-    }
-    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       str(rt, MemSrc.rn);
-    }
-    else {
+    } else {
       if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::OFFSET) {
         if ((MemSrc.MetaType.ImmType.Imm & 0b111) || MemSrc.MetaType.ImmType.Imm < 0) {
           stur(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-        }
-        else {
+        } else {
           str(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
         }
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
         str<ARMEmitter::IndexType::POST>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
         str<ARMEmitter::IndexType::PRE>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else {
+      } else {
         LOGMAN_MSG_A_FMT("Unexpected loadstore index type");
         FEX_UNREACHABLE;
       }
@@ -3985,26 +3765,20 @@ public:
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       ldr(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
-    }
-    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldr(rt, MemSrc.rn);
-    }
-    else {
+    } else {
       if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::OFFSET) {
         if ((MemSrc.MetaType.ImmType.Imm & 0b111) || MemSrc.MetaType.ImmType.Imm < 0) {
           ldur(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-        }
-        else {
+        } else {
           ldr(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
         }
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
         ldr<ARMEmitter::IndexType::POST>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
         ldr<ARMEmitter::IndexType::PRE>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else {
+      } else {
         LOGMAN_MSG_A_FMT("Unexpected loadstore index type");
         FEX_UNREACHABLE;
       }
@@ -4014,26 +3788,20 @@ public:
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       str(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
-    }
-    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       str(rt, MemSrc.rn);
-    }
-    else {
+    } else {
       if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::OFFSET) {
         if ((MemSrc.MetaType.ImmType.Imm & 0b1111) || MemSrc.MetaType.ImmType.Imm < 0) {
           stur(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-        }
-        else {
+        } else {
           str(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
         }
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
         str<ARMEmitter::IndexType::POST>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
         str<ARMEmitter::IndexType::PRE>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else {
+      } else {
         LOGMAN_MSG_A_FMT("Unexpected loadstore index type");
         FEX_UNREACHABLE;
       }
@@ -4043,26 +3811,20 @@ public:
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
       ldr(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
-    }
-    else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
+    } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldr(rt, MemSrc.rn);
-    }
-    else {
+    } else {
       if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::OFFSET) {
         if ((MemSrc.MetaType.ImmType.Imm & 0b1111) || MemSrc.MetaType.ImmType.Imm < 0) {
           ldur(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-        }
-        else {
+        } else {
           ldr(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
         }
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::POST) {
         ldr<ARMEmitter::IndexType::POST>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
+      } else if (MemSrc.MetaType.ImmType.Index == ARMEmitter::IndexType::PRE) {
         ldr<ARMEmitter::IndexType::PRE>(rt, MemSrc.rn, MemSrc.MetaType.ImmType.Imm);
-      }
-      else {
+      } else {
         LOGMAN_MSG_A_FMT("Unexpected loadstore index type");
         FEX_UNREACHABLE;
       }
@@ -4164,7 +3926,8 @@ public:
   }
 
 private:
-  void AtomicOp(uint32_t Op, ARMEmitter::Size s, uint32_t L, uint32_t o0, ARMEmitter::Register rs, ARMEmitter::Register rt, ARMEmitter::Register rt2, ARMEmitter::Register rn) {
+  void AtomicOp(uint32_t Op, ARMEmitter::Size s, uint32_t L, uint32_t o0, ARMEmitter::Register rs, ARMEmitter::Register rt,
+                ARMEmitter::Register rt2, ARMEmitter::Register rn) {
     const uint32_t sz = s == ARMEmitter::Size::i64Bit ? (1U << 30) : 0;
     uint32_t Instr = Op;
 
@@ -4256,8 +4019,7 @@ private:
   }
 
   // Atomic memory operations
-  void LoadStoreAtomicLSE(SubRegSize s, uint32_t A, uint32_t R, uint32_t o3, uint32_t opc,
-                          Register rs, Register rt, Register rn) {
+  void LoadStoreAtomicLSE(SubRegSize s, uint32_t A, uint32_t R, uint32_t o3, uint32_t opc, Register rs, Register rt, Register rn) {
     uint32_t Instr = 0b0011'1000'0010'0000'0000'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(s) << 30;
     Instr |= A << 23;
@@ -4272,7 +4034,8 @@ private:
 
   // Loadstore register-register offset
   template<typename T>
-  void LoadStoreRegisterOffset(uint32_t Op, uint32_t opc, T rt, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift) {
+  void LoadStoreRegisterOffset(uint32_t Op, uint32_t opc, T rt, ARMEmitter::Register rn, ARMEmitter::Register rm,
+                               ARMEmitter::ExtendedType Option, uint32_t Shift) {
     uint32_t Instr = Op;
 
     Instr |= opc << 22;
@@ -4285,7 +4048,7 @@ private:
   }
 
   // Loadstore unsigned immediate
-  template <typename T>
+  template<typename T>
   void LoadStoreUnsigned(uint32_t size, uint32_t V, uint32_t opc, T rt, Register rn, uint32_t Imm) {
     uint32_t SizeShift = size;
     if constexpr (std::is_same_v<T, QRegister>) {
@@ -4317,374 +4080,365 @@ private:
   template<IndexType Index>
   void ldp_w(ARMEmitter::VRegister rt, ARMEmitter::VRegister rt2, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 252 && ((Imm & 0b11) == 0), "Unscaled offset too large");
-    constexpr uint32_t Op = (0b0010'1100'01 << 22) |
-      (
-        Index == IndexType::POST   ? (0b01 << 23) :
-        Index == IndexType::PRE    ? (0b11 << 23) :
-        Index == IndexType::OFFSET ? (0b10 << 23) : -1
-      );
+    constexpr uint32_t Op = (0b0010'1100'01 << 22) | (Index == IndexType::POST   ? (0b01 << 23) :
+                                                      Index == IndexType::PRE    ? (0b11 << 23) :
+                                                      Index == IndexType::OFFSET ? (0b10 << 23) :
+                                                                                   -1);
 
     LoadStorePair(Op, rt, rt2, rn, (Imm >> 2) & 0b111'1111);
   }
   template<IndexType Index>
   void ldp_x(ARMEmitter::VRegister rt, ARMEmitter::VRegister rt2, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -512 && Imm <= 504 && ((Imm & 0b111) == 0), "Unscaled offset too large");
-    constexpr uint32_t Op = (0b0110'1100'01 << 22) |
-      (
-        Index == IndexType::POST   ? (0b01 << 23) :
-        Index == IndexType::PRE    ? (0b11 << 23) :
-        Index == IndexType::OFFSET ? (0b10 << 23) : -1
-      );
+    constexpr uint32_t Op = (0b0110'1100'01 << 22) | (Index == IndexType::POST   ? (0b01 << 23) :
+                                                      Index == IndexType::PRE    ? (0b11 << 23) :
+                                                      Index == IndexType::OFFSET ? (0b10 << 23) :
+                                                                                   -1);
 
     LoadStorePair(Op, rt, rt2, rn, (Imm >> 3) & 0b111'1111);
   }
   template<IndexType Index>
   void stp_w(ARMEmitter::VRegister rt, ARMEmitter::VRegister rt2, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 252 && ((Imm & 0b11) == 0), "Unscaled offset too large");
-    constexpr uint32_t Op = (0b0010'1100'00 << 22) |
-      (
-        Index == IndexType::POST   ? (0b01 << 23) :
-        Index == IndexType::PRE    ? (0b11 << 23) :
-        Index == IndexType::OFFSET ? (0b10 << 23) : -1
-      );
+    constexpr uint32_t Op = (0b0010'1100'00 << 22) | (Index == IndexType::POST   ? (0b01 << 23) :
+                                                      Index == IndexType::PRE    ? (0b11 << 23) :
+                                                      Index == IndexType::OFFSET ? (0b10 << 23) :
+                                                                                   -1);
 
     LoadStorePair(Op, rt, rt2, rn, (Imm >> 2) & 0b111'1111);
   }
   template<IndexType Index>
   void stp_x(ARMEmitter::VRegister rt, ARMEmitter::VRegister rt2, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -512 && Imm <= 504 && ((Imm & 0b111) == 0), "Unscaled offset too large");
-    constexpr uint32_t Op = (0b0110'1100'00 << 22) |
-      (
-        Index == IndexType::POST   ? (0b01 << 23) :
-        Index == IndexType::PRE    ? (0b11 << 23) :
-        Index == IndexType::OFFSET ? (0b10 << 23) : -1
-      );
+    constexpr uint32_t Op = (0b0110'1100'00 << 22) | (Index == IndexType::POST   ? (0b01 << 23) :
+                                                      Index == IndexType::PRE    ? (0b11 << 23) :
+                                                      Index == IndexType::OFFSET ? (0b10 << 23) :
+                                                                                   -1);
 
     LoadStorePair(Op, rt, rt2, rn, (Imm >> 3) & 0b111'1111);
   }
   template<IndexType Index>
   void ldp_q(ARMEmitter::VRegister rt, ARMEmitter::VRegister rt2, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -1024 && Imm <= 1008 && ((Imm & 0b1111) == 0), "Unscaled offset too large");
-    constexpr uint32_t Op = (0b1010'1100'01 << 22) |
-      (
-        Index == IndexType::POST   ? (0b01 << 23) :
-        Index == IndexType::PRE    ? (0b11 << 23) :
-        Index == IndexType::OFFSET ? (0b10 << 23) : -1
-      );
+    constexpr uint32_t Op = (0b1010'1100'01 << 22) | (Index == IndexType::POST   ? (0b01 << 23) :
+                                                      Index == IndexType::PRE    ? (0b11 << 23) :
+                                                      Index == IndexType::OFFSET ? (0b10 << 23) :
+                                                                                   -1);
 
     LoadStorePair(Op, rt, rt2, rn, (Imm >> 4) & 0b111'1111);
   }
   template<IndexType Index>
   void stp_q(ARMEmitter::VRegister rt, ARMEmitter::VRegister rt2, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -1024 && Imm <= 1008 && ((Imm & 0b1111) == 0), "Unscaled offset too large");
-    constexpr uint32_t Op = (0b1010'1100'00 << 22) |
-      (
-        Index == IndexType::POST   ? (0b01 << 23) :
-        Index == IndexType::PRE    ? (0b11 << 23) :
-        Index == IndexType::OFFSET ? (0b10 << 23) : -1
-      );
+    constexpr uint32_t Op = (0b1010'1100'00 << 22) | (Index == IndexType::POST   ? (0b01 << 23) :
+                                                      Index == IndexType::PRE    ? (0b11 << 23) :
+                                                      Index == IndexType::OFFSET ? (0b10 << 23) :
+                                                                                   -1);
 
     LoadStorePair(Op, rt, rt2, rn, (Imm >> 4) & 0b111'1111);
   }
 
-  template <IndexType Index>
+  template<IndexType Index>
   void stXrb(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0011'1000'00 << 22;
-    constexpr uint32_t o2 =
-      Index == IndexType::POST   ? 0b01 :
-      Index == IndexType::PRE    ? 0b11 :
-      Index == IndexType::OFFSET ? 0b00 :
-      Index == IndexType::UNPRIVILEGED ? 0b10 :  -1;
+    constexpr uint32_t o2 = Index == IndexType::POST         ? 0b01 :
+                            Index == IndexType::PRE          ? 0b11 :
+                            Index == IndexType::OFFSET       ? 0b00 :
+                            Index == IndexType::UNPRIVILEGED ? 0b10 :
+                                                               -1;
 
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void ldXrb(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0011'1000'01 << 22;
-    constexpr uint32_t o2 =
-      Index == IndexType::POST   ? 0b01 :
-      Index == IndexType::PRE    ? 0b11 :
-      Index == IndexType::OFFSET ? 0b00 :
-      Index == IndexType::UNPRIVILEGED ? 0b10 :  -1;
+    constexpr uint32_t o2 = Index == IndexType::POST         ? 0b01 :
+                            Index == IndexType::PRE          ? 0b11 :
+                            Index == IndexType::OFFSET       ? 0b00 :
+                            Index == IndexType::UNPRIVILEGED ? 0b10 :
+                                                               -1;
 
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void stXrb(ARMEmitter::VRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0011'1100'00 << 22;
-    constexpr uint32_t o2 =
-      Index == IndexType::POST   ? 0b01 :
-      Index == IndexType::PRE    ? 0b11 :
-      Index == IndexType::OFFSET ? 0b00 :
-      Index == IndexType::UNPRIVILEGED ? 0b10 :  -1;
+    constexpr uint32_t o2 = Index == IndexType::POST         ? 0b01 :
+                            Index == IndexType::PRE          ? 0b11 :
+                            Index == IndexType::OFFSET       ? 0b00 :
+                            Index == IndexType::UNPRIVILEGED ? 0b10 :
+                                                               -1;
 
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void ldXrb(ARMEmitter::VRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0011'1100'01 << 22;
-    constexpr uint32_t o2 =
-      Index == IndexType::POST   ? 0b01 :
-      Index == IndexType::PRE    ? 0b11 :
-      Index == IndexType::OFFSET ? 0b00 :
-      Index == IndexType::UNPRIVILEGED ? 0b10 :  -1;
+    constexpr uint32_t o2 = Index == IndexType::POST         ? 0b01 :
+                            Index == IndexType::PRE          ? 0b11 :
+                            Index == IndexType::OFFSET       ? 0b00 :
+                            Index == IndexType::UNPRIVILEGED ? 0b10 :
+                                                               -1;
 
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void ldXrsb(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0011'1000'10 << 22;
-    constexpr uint32_t o2 =
-      Index == IndexType::POST   ? 0b01 :
-      Index == IndexType::PRE    ? 0b11 :
-      Index == IndexType::OFFSET ? 0b00 :
-      Index == IndexType::UNPRIVILEGED ? 0b10 :  -1;
+    constexpr uint32_t o2 = Index == IndexType::POST         ? 0b01 :
+                            Index == IndexType::PRE          ? 0b11 :
+                            Index == IndexType::OFFSET       ? 0b00 :
+                            Index == IndexType::UNPRIVILEGED ? 0b10 :
+                                                               -1;
 
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void ldXrsb(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0011'1000'11 << 22;
-    constexpr uint32_t o2 =
-      Index == IndexType::POST   ? 0b01 :
-      Index == IndexType::PRE    ? 0b11 :
-      Index == IndexType::OFFSET ? 0b00 :
-      Index == IndexType::UNPRIVILEGED ? 0b10 :  -1;
+    constexpr uint32_t o2 = Index == IndexType::POST         ? 0b01 :
+                            Index == IndexType::PRE          ? 0b11 :
+                            Index == IndexType::OFFSET       ? 0b00 :
+                            Index == IndexType::UNPRIVILEGED ? 0b10 :
+                                                               -1;
 
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void stXrh(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0111'1000'00 << 22;
-    constexpr uint32_t o2 =
-      Index == IndexType::POST   ? 0b01 :
-      Index == IndexType::PRE    ? 0b11 :
-      Index == IndexType::OFFSET ? 0b00 :
-      Index == IndexType::UNPRIVILEGED ? 0b10 :  -1;
+    constexpr uint32_t o2 = Index == IndexType::POST         ? 0b01 :
+                            Index == IndexType::PRE          ? 0b11 :
+                            Index == IndexType::OFFSET       ? 0b00 :
+                            Index == IndexType::UNPRIVILEGED ? 0b10 :
+                                                               -1;
 
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void ldXrh(ARMEmitter::Register rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0111'1000'01 << 22;
-    constexpr uint32_t o2 =
-      Index == IndexType::POST   ? 0b01 :
-      Index == IndexType::PRE    ? 0b11 :
-      Index == IndexType::OFFSET ? 0b00 :
-      Index == IndexType::UNPRIVILEGED ? 0b10 :  -1;
+    constexpr uint32_t o2 = Index == IndexType::POST         ? 0b01 :
+                            Index == IndexType::PRE          ? 0b11 :
+                            Index == IndexType::OFFSET       ? 0b00 :
+                            Index == IndexType::UNPRIVILEGED ? 0b10 :
+                                                               -1;
 
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void stXrh(ARMEmitter::VRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0111'1100'00 << 22;
-    constexpr uint32_t o2 =
-      Index == IndexType::POST   ? 0b01 :
-      Index == IndexType::PRE    ? 0b11 :
-      Index == IndexType::OFFSET ? 0b00 :
-      Index == IndexType::UNPRIVILEGED ? 0b10 :  -1;
+    constexpr uint32_t o2 = Index == IndexType::POST         ? 0b01 :
+                            Index == IndexType::PRE          ? 0b11 :
+                            Index == IndexType::OFFSET       ? 0b00 :
+                            Index == IndexType::UNPRIVILEGED ? 0b10 :
+                                                               -1;
 
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void ldXrh(ARMEmitter::VRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0111'1100'01 << 22;
-    constexpr uint32_t o2 =
-      Index == IndexType::POST   ? 0b01 :
-      Index == IndexType::PRE    ? 0b11 :
-      Index == IndexType::OFFSET ? 0b00 :
-      Index == IndexType::UNPRIVILEGED ? 0b10 :  -1;
+    constexpr uint32_t o2 = Index == IndexType::POST         ? 0b01 :
+                            Index == IndexType::PRE          ? 0b11 :
+                            Index == IndexType::OFFSET       ? 0b00 :
+                            Index == IndexType::UNPRIVILEGED ? 0b10 :
+                                                               -1;
 
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void ldXrsh(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0111'1000'10 << 22;
-    constexpr uint32_t o2 =
-      Index == IndexType::POST   ? 0b01 :
-      Index == IndexType::PRE    ? 0b11 :
-      Index == IndexType::OFFSET ? 0b00 :
-      Index == IndexType::UNPRIVILEGED ? 0b10 :  -1;
+    constexpr uint32_t o2 = Index == IndexType::POST         ? 0b01 :
+                            Index == IndexType::PRE          ? 0b11 :
+                            Index == IndexType::OFFSET       ? 0b00 :
+                            Index == IndexType::UNPRIVILEGED ? 0b10 :
+                                                               -1;
 
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void ldXrsh(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0111'1000'11 << 22;
-    constexpr uint32_t o2 =
-      Index == IndexType::POST   ? 0b01 :
-      Index == IndexType::PRE    ? 0b11 :
-      Index == IndexType::OFFSET ? 0b00 :
-      Index == IndexType::UNPRIVILEGED ? 0b10 :  -1;
+    constexpr uint32_t o2 = Index == IndexType::POST         ? 0b01 :
+                            Index == IndexType::PRE          ? 0b11 :
+                            Index == IndexType::OFFSET       ? 0b00 :
+                            Index == IndexType::UNPRIVILEGED ? 0b10 :
+                                                               -1;
 
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void stXr(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b1011'1000'00 << 22;
-    constexpr uint32_t o2 =
-      Index == IndexType::POST   ? 0b01 :
-      Index == IndexType::PRE    ? 0b11 :
-      Index == IndexType::OFFSET ? 0b00 :
-      Index == IndexType::UNPRIVILEGED ? 0b10 :  -1;
+    constexpr uint32_t o2 = Index == IndexType::POST         ? 0b01 :
+                            Index == IndexType::PRE          ? 0b11 :
+                            Index == IndexType::OFFSET       ? 0b00 :
+                            Index == IndexType::UNPRIVILEGED ? 0b10 :
+                                                               -1;
 
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void ldXr(ARMEmitter::WRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b1011'1000'01 << 22;
-    constexpr uint32_t o2 =
-      Index == IndexType::POST   ? 0b01 :
-      Index == IndexType::PRE    ? 0b11 :
-      Index == IndexType::OFFSET ? 0b00 :
-      Index == IndexType::UNPRIVILEGED ? 0b10 :  -1;
+    constexpr uint32_t o2 = Index == IndexType::POST         ? 0b01 :
+                            Index == IndexType::PRE          ? 0b11 :
+                            Index == IndexType::OFFSET       ? 0b00 :
+                            Index == IndexType::UNPRIVILEGED ? 0b10 :
+                                                               -1;
 
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void stXr(ARMEmitter::SRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b1011'1100'00 << 22;
-    constexpr uint32_t o2 =
-      Index == IndexType::POST   ? 0b01 :
-      Index == IndexType::PRE    ? 0b11 :
-      Index == IndexType::OFFSET ? 0b00 :
-      Index == IndexType::UNPRIVILEGED ? 0b10 :  -1;
+    constexpr uint32_t o2 = Index == IndexType::POST         ? 0b01 :
+                            Index == IndexType::PRE          ? 0b11 :
+                            Index == IndexType::OFFSET       ? 0b00 :
+                            Index == IndexType::UNPRIVILEGED ? 0b10 :
+                                                               -1;
 
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void ldXr(ARMEmitter::SRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b1011'1100'01 << 22;
-    constexpr uint32_t o2 =
-      Index == IndexType::POST   ? 0b01 :
-      Index == IndexType::PRE    ? 0b11 :
-      Index == IndexType::OFFSET ? 0b00 :
-      Index == IndexType::UNPRIVILEGED ? 0b10 :  -1;
+    constexpr uint32_t o2 = Index == IndexType::POST         ? 0b01 :
+                            Index == IndexType::PRE          ? 0b11 :
+                            Index == IndexType::OFFSET       ? 0b00 :
+                            Index == IndexType::UNPRIVILEGED ? 0b10 :
+                                                               -1;
 
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void ldXrsw(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b1011'1000'10 << 22;
-    constexpr uint32_t o2 =
-      Index == IndexType::POST   ? 0b01 :
-      Index == IndexType::PRE    ? 0b11 :
-      Index == IndexType::OFFSET ? 0b00 :
-      Index == IndexType::UNPRIVILEGED ? 0b10 :  -1;
+    constexpr uint32_t o2 = Index == IndexType::POST         ? 0b01 :
+                            Index == IndexType::PRE          ? 0b11 :
+                            Index == IndexType::OFFSET       ? 0b00 :
+                            Index == IndexType::UNPRIVILEGED ? 0b10 :
+                                                               -1;
 
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void stXr(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b1111'1000'00 << 22;
-    constexpr uint32_t o2 =
-      Index == IndexType::POST   ? 0b01 :
-      Index == IndexType::PRE    ? 0b11 :
-      Index == IndexType::OFFSET ? 0b00 :
-      Index == IndexType::UNPRIVILEGED ? 0b10 :  -1;
+    constexpr uint32_t o2 = Index == IndexType::POST         ? 0b01 :
+                            Index == IndexType::PRE          ? 0b11 :
+                            Index == IndexType::OFFSET       ? 0b00 :
+                            Index == IndexType::UNPRIVILEGED ? 0b10 :
+                                                               -1;
 
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void ldXr(ARMEmitter::XRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b1111'1000'01 << 22;
-    constexpr uint32_t o2 =
-      Index == IndexType::POST   ? 0b01 :
-      Index == IndexType::PRE    ? 0b11 :
-      Index == IndexType::OFFSET ? 0b00 :
-      Index == IndexType::UNPRIVILEGED ? 0b10 :  -1;
+    constexpr uint32_t o2 = Index == IndexType::POST         ? 0b01 :
+                            Index == IndexType::PRE          ? 0b11 :
+                            Index == IndexType::OFFSET       ? 0b00 :
+                            Index == IndexType::UNPRIVILEGED ? 0b10 :
+                                                               -1;
 
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void stXr(ARMEmitter::DRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b1111'1100'00 << 22;
-    constexpr uint32_t o2 =
-      Index == IndexType::POST   ? 0b01 :
-      Index == IndexType::PRE    ? 0b11 :
-      Index == IndexType::OFFSET ? 0b00 :
-      Index == IndexType::UNPRIVILEGED ? 0b10 :  -1;
+    constexpr uint32_t o2 = Index == IndexType::POST         ? 0b01 :
+                            Index == IndexType::PRE          ? 0b11 :
+                            Index == IndexType::OFFSET       ? 0b00 :
+                            Index == IndexType::UNPRIVILEGED ? 0b10 :
+                                                               -1;
 
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void ldXr(ARMEmitter::DRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b1111'1100'01 << 22;
-    constexpr uint32_t o2 =
-      Index == IndexType::POST   ? 0b01 :
-      Index == IndexType::PRE    ? 0b11 :
-      Index == IndexType::OFFSET ? 0b00 :
-      Index == IndexType::UNPRIVILEGED ? 0b10 :  -1;
+    constexpr uint32_t o2 = Index == IndexType::POST         ? 0b01 :
+                            Index == IndexType::PRE          ? 0b11 :
+                            Index == IndexType::OFFSET       ? 0b00 :
+                            Index == IndexType::UNPRIVILEGED ? 0b10 :
+                                                               -1;
 
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void stXr(ARMEmitter::QRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0011'1100'10 << 22;
-    constexpr uint32_t o2 =
-      Index == IndexType::POST   ? 0b01 :
-      Index == IndexType::PRE    ? 0b11 :
-      Index == IndexType::OFFSET ? 0b00 :
-      Index == IndexType::UNPRIVILEGED ? 0b10 :  -1;
+    constexpr uint32_t o2 = Index == IndexType::POST         ? 0b01 :
+                            Index == IndexType::PRE          ? 0b11 :
+                            Index == IndexType::OFFSET       ? 0b00 :
+                            Index == IndexType::UNPRIVILEGED ? 0b10 :
+                                                               -1;
 
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
-  template <IndexType Index>
+  template<IndexType Index>
   void ldXr(ARMEmitter::QRegister rt, ARMEmitter::Register rn, int32_t Imm) {
     LOGMAN_THROW_A_FMT(Imm >= -256 && Imm <= 255, "Unscaled offset too large");
 
     constexpr uint32_t Op = 0b0011'1100'11 << 22;
-    constexpr uint32_t o2 =
-      Index == IndexType::POST   ? 0b01 :
-      Index == IndexType::PRE    ? 0b11 :
-      Index == IndexType::OFFSET ? 0b00 :
-      Index == IndexType::UNPRIVILEGED ? 0b10 :  -1;
+    constexpr uint32_t o2 = Index == IndexType::POST         ? 0b01 :
+                            Index == IndexType::PRE          ? 0b11 :
+                            Index == IndexType::OFFSET       ? 0b00 :
+                            Index == IndexType::UNPRIVILEGED ? 0b10 :
+                                                               -1;
 
     LoadStoreImm(Op, o2, rt, rn, Imm & 0b1'1111'1111);
   }
 
-
+#ifndef INCLUDED_BY_EMITTER
+}; // struct LoadstoreEmitterOps
+} // namespace ARMEmitter
+#endif

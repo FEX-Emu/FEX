@@ -16,8 +16,16 @@
  * Exceptions to this rule will have asserts in the emitter implementation when misused.
  *
  */
+
+#pragma once
+#ifndef INCLUDED_BY_EMITTER
+#include <CodeEmitter/Emitter.h>
+namespace ARMEmitter {
+struct EmitterOps : Emitter {
+#endif
+
 public:
-// Advanced SIMD scalar copy
+  // Advanced SIMD scalar copy
   void dup(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Index) {
     constexpr uint32_t Op = 0b0101'1110'0000'0000'0000'01 << 10;
 
@@ -37,7 +45,7 @@ public:
     dup(size, rd, rn, Index);
   }
 
-// Advanced SIMD scalar three same FP16
+  // Advanced SIMD scalar three same FP16
   void fmulx(HRegister rd, HRegister rn, HRegister rm) {
     ASIMDScalarThreeSameFP16(0, 0, 0b011, rm, rn, rd);
   }
@@ -66,7 +74,7 @@ public:
     ASIMDScalarThreeSameFP16(1, 1, 0b101, rm, rn, rd);
   }
 
-// Advanced SIMD scalar two-register miscellaneous FP16
+  // Advanced SIMD scalar two-register miscellaneous FP16
   void fcvtns(HRegister rd, HRegister rn) {
     ASIMDScalarTwoRegMiscFP16(0, 0, 0b11010, rn, rd);
   }
@@ -128,9 +136,9 @@ public:
     ASIMDScalarTwoRegMiscFP16(1, 1, 0b11101, rn, rd);
   }
 
-// Advanced SIMD scalar three same extra
-// XXX:
-// Advanced SIMD scalar two-register miscellaneous
+  // Advanced SIMD scalar three same extra
+  // XXX:
+  // Advanced SIMD scalar two-register miscellaneous
   void suqadd(ScalarRegSize size, VRegister rd, VRegister rn) {
     ASIMDScalar2RegMisc(0, 0, size, 0b00011, rd, rn);
   }
@@ -167,40 +175,28 @@ public:
   void fcvtns(ScalarRegSize size, VRegister rd, VRegister rn) {
     LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
-    const ScalarRegSize ConvertedSize =
-      size == ScalarRegSize::i64Bit ?
-        ScalarRegSize::i16Bit :
-        ScalarRegSize::i8Bit;
+    const ScalarRegSize ConvertedSize = size == ScalarRegSize::i64Bit ? ScalarRegSize::i16Bit : ScalarRegSize::i8Bit;
 
     ASIMDScalar2RegMisc(0, 0, ConvertedSize, 0b11010, rd, rn);
   }
   void fcvtms(ScalarRegSize size, VRegister rd, VRegister rn) {
     LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
-    const ScalarRegSize ConvertedSize =
-      size == ScalarRegSize::i64Bit ?
-        ScalarRegSize::i16Bit :
-        ScalarRegSize::i8Bit;
+    const ScalarRegSize ConvertedSize = size == ScalarRegSize::i64Bit ? ScalarRegSize::i16Bit : ScalarRegSize::i8Bit;
 
     ASIMDScalar2RegMisc(0, 0, ConvertedSize, 0b11011, rd, rn);
   }
   void fcvtas(ScalarRegSize size, VRegister rd, VRegister rn) {
     LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
-    const ScalarRegSize ConvertedSize =
-      size == ScalarRegSize::i64Bit ?
-        ScalarRegSize::i16Bit :
-        ScalarRegSize::i8Bit;
+    const ScalarRegSize ConvertedSize = size == ScalarRegSize::i64Bit ? ScalarRegSize::i16Bit : ScalarRegSize::i8Bit;
 
     ASIMDScalar2RegMisc(0, 0, ConvertedSize, 0b11100, rd, rn);
   }
   void scvtf(ScalarRegSize size, VRegister rd, VRegister rn) {
     LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
-    const ScalarRegSize ConvertedSize =
-      size == ScalarRegSize::i64Bit ?
-        ScalarRegSize::i16Bit :
-        ScalarRegSize::i8Bit;
+    const ScalarRegSize ConvertedSize = size == ScalarRegSize::i64Bit ? ScalarRegSize::i16Bit : ScalarRegSize::i8Bit;
 
     ASIMDScalar2RegMisc(0, 0, ConvertedSize, 0b11101, rd, rn);
   }
@@ -279,40 +275,28 @@ public:
   void fcvtnu(ScalarRegSize size, VRegister rd, VRegister rn) {
     LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
-    const ScalarRegSize ConvertedSize =
-      size == ScalarRegSize::i64Bit ?
-        ScalarRegSize::i16Bit :
-        ScalarRegSize::i8Bit;
+    const ScalarRegSize ConvertedSize = size == ScalarRegSize::i64Bit ? ScalarRegSize::i16Bit : ScalarRegSize::i8Bit;
 
     ASIMDScalar2RegMisc(0, 1, ConvertedSize, 0b11010, rd, rn);
   }
   void fcvtmu(ScalarRegSize size, VRegister rd, VRegister rn) {
     LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
-    const ScalarRegSize ConvertedSize =
-      size == ScalarRegSize::i64Bit ?
-        ScalarRegSize::i16Bit :
-        ScalarRegSize::i8Bit;
+    const ScalarRegSize ConvertedSize = size == ScalarRegSize::i64Bit ? ScalarRegSize::i16Bit : ScalarRegSize::i8Bit;
 
     ASIMDScalar2RegMisc(0, 1, ConvertedSize, 0b11011, rd, rn);
   }
   void fcvtau(ScalarRegSize size, VRegister rd, VRegister rn) {
     LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
-    const ScalarRegSize ConvertedSize =
-      size == ScalarRegSize::i64Bit ?
-        ScalarRegSize::i16Bit :
-        ScalarRegSize::i8Bit;
+    const ScalarRegSize ConvertedSize = size == ScalarRegSize::i64Bit ? ScalarRegSize::i16Bit : ScalarRegSize::i8Bit;
 
     ASIMDScalar2RegMisc(0, 1, ConvertedSize, 0b11100, rd, rn);
   }
   void ucvtf(ScalarRegSize size, VRegister rd, VRegister rn) {
     LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
-    const ScalarRegSize ConvertedSize =
-      size == ScalarRegSize::i64Bit ?
-        ScalarRegSize::i16Bit :
-        ScalarRegSize::i8Bit;
+    const ScalarRegSize ConvertedSize = size == ScalarRegSize::i64Bit ? ScalarRegSize::i16Bit : ScalarRegSize::i8Bit;
 
     ASIMDScalar2RegMisc(0, 1, ConvertedSize, 0b11101, rd, rn);
   }
@@ -368,30 +352,21 @@ public:
   void fmaxnmp(ScalarRegSize size, VRegister rd, VRegister rn) {
     LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
-    const ScalarRegSize ConvertedSize =
-      size == ScalarRegSize::i64Bit ?
-        ScalarRegSize::i16Bit :
-        ScalarRegSize::i8Bit;
+    const ScalarRegSize ConvertedSize = size == ScalarRegSize::i64Bit ? ScalarRegSize::i16Bit : ScalarRegSize::i8Bit;
 
     ASIMDScalar2RegMisc(1, 1, ConvertedSize, 0b01100, rd, rn);
   }
   void faddp(ScalarRegSize size, VRegister rd, VRegister rn) {
     LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
-    const ScalarRegSize ConvertedSize =
-      size == ScalarRegSize::i64Bit ?
-        ScalarRegSize::i16Bit :
-        ScalarRegSize::i8Bit;
+    const ScalarRegSize ConvertedSize = size == ScalarRegSize::i64Bit ? ScalarRegSize::i16Bit : ScalarRegSize::i8Bit;
 
     ASIMDScalar2RegMisc(1, 1, ConvertedSize, 0b01101, rd, rn);
   }
   void fmaxp(ScalarRegSize size, VRegister rd, VRegister rn) {
     LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
-    const ScalarRegSize ConvertedSize =
-      size == ScalarRegSize::i64Bit ?
-        ScalarRegSize::i16Bit :
-        ScalarRegSize::i8Bit;
+    const ScalarRegSize ConvertedSize = size == ScalarRegSize::i64Bit ? ScalarRegSize::i16Bit : ScalarRegSize::i8Bit;
 
     ASIMDScalar2RegMisc(1, 1, ConvertedSize, 0b01111, rd, rn);
   }
@@ -403,36 +378,27 @@ public:
     LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
     ASIMDScalar2RegMisc(1, 1, size, 0b01111, rd, rn);
   }
-// Advanced SIMD scalar three different
+  // Advanced SIMD scalar three different
   ///< size is destination.
   void sqdmlal(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
     LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
-    const ScalarRegSize ConvertedSize =
-      size == ScalarRegSize::i64Bit ?
-        ScalarRegSize::i32Bit :
-        ScalarRegSize::i16Bit;
+    const ScalarRegSize ConvertedSize = size == ScalarRegSize::i64Bit ? ScalarRegSize::i32Bit : ScalarRegSize::i16Bit;
     ASIMD3RegDifferent(0, ConvertedSize, 0b1001, rd, rn, rm);
   }
   ///< size is destination.
   void sqdmlsl(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
     LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
-    const ScalarRegSize ConvertedSize =
-      size == ScalarRegSize::i64Bit ?
-        ScalarRegSize::i32Bit :
-        ScalarRegSize::i16Bit;
+    const ScalarRegSize ConvertedSize = size == ScalarRegSize::i64Bit ? ScalarRegSize::i32Bit : ScalarRegSize::i16Bit;
     ASIMD3RegDifferent(0, ConvertedSize, 0b1011, rd, rn, rm);
   }
 
   ///< size is destination.
   void sqdmull(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
     LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
-    const ScalarRegSize ConvertedSize =
-      size == ScalarRegSize::i64Bit ?
-        ScalarRegSize::i32Bit :
-        ScalarRegSize::i16Bit;
+    const ScalarRegSize ConvertedSize = size == ScalarRegSize::i64Bit ? ScalarRegSize::i32Bit : ScalarRegSize::i16Bit;
     ASIMD3RegDifferent(0, ConvertedSize, 0b1101, rd, rn, rm);
   }
-// Advanced SIMD scalar three same
+  // Advanced SIMD scalar three same
   void sqadd(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
     ASIMD3RegSame(0, size, 0b00001, rd, rn, rm);
   }
@@ -476,30 +442,21 @@ public:
   void fmulx(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
     LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
-    const ScalarRegSize ConvertedSize =
-      size == ScalarRegSize::i64Bit ?
-        ScalarRegSize::i16Bit :
-        ScalarRegSize::i8Bit;
+    const ScalarRegSize ConvertedSize = size == ScalarRegSize::i64Bit ? ScalarRegSize::i16Bit : ScalarRegSize::i8Bit;
 
     ASIMD3RegSame(0, ConvertedSize, 0b11011, rd, rn, rm);
   }
   void fcmeq(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
     LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
-    const ScalarRegSize ConvertedSize =
-      size == ScalarRegSize::i64Bit ?
-        ScalarRegSize::i16Bit :
-        ScalarRegSize::i8Bit;
+    const ScalarRegSize ConvertedSize = size == ScalarRegSize::i64Bit ? ScalarRegSize::i16Bit : ScalarRegSize::i8Bit;
 
     ASIMD3RegSame(0, ConvertedSize, 0b11100, rd, rn, rm);
   }
   void frecps(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
     LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
-    const ScalarRegSize ConvertedSize =
-      size == ScalarRegSize::i64Bit ?
-        ScalarRegSize::i16Bit :
-        ScalarRegSize::i8Bit;
+    const ScalarRegSize ConvertedSize = size == ScalarRegSize::i64Bit ? ScalarRegSize::i16Bit : ScalarRegSize::i8Bit;
 
     ASIMD3RegSame(0, ConvertedSize, 0b11111, rd, rn, rm);
   }
@@ -550,20 +507,14 @@ public:
   void fcmge(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
     LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
-    const ScalarRegSize ConvertedSize =
-      size == ScalarRegSize::i64Bit ?
-        ScalarRegSize::i16Bit :
-        ScalarRegSize::i8Bit;
+    const ScalarRegSize ConvertedSize = size == ScalarRegSize::i64Bit ? ScalarRegSize::i16Bit : ScalarRegSize::i8Bit;
 
     ASIMD3RegSame(1, ConvertedSize, 0b11100, rd, rn, rm);
   }
   void facge(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
     LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
-    const ScalarRegSize ConvertedSize =
-      size == ScalarRegSize::i64Bit ?
-        ScalarRegSize::i16Bit :
-        ScalarRegSize::i8Bit;
+    const ScalarRegSize ConvertedSize = size == ScalarRegSize::i64Bit ? ScalarRegSize::i16Bit : ScalarRegSize::i8Bit;
 
     ASIMD3RegSame(1, ConvertedSize, 0b11101, rd, rn, rm);
   }
@@ -579,7 +530,7 @@ public:
     LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
     ASIMD3RegSame(1, size, 0b11101, rd, rn, rm);
   }
-// Advanced SIMD scalar shift by immediate
+  // Advanced SIMD scalar shift by immediate
   void sshr(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_A_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
     LOGMAN_THROW_A_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
@@ -794,10 +745,10 @@ public:
     ASIMDScalarShiftByImm(1, immh, immb, 0b10011, rd, rn);
   }
   // TODO: UCVTF, FCVTZU
-// Advanced SIMD scalar x indexed element
-// XXX:
-//
-// Floating-point data-processing (1 source)
+  // Advanced SIMD scalar x indexed element
+  // XXX:
+  //
+  // Floating-point data-processing (1 source)
   void fmov(ScalarRegSize size, VRegister rd, VRegister rn) {
     Float1Source(size, 0, 0, 0b000000, rd, rn);
   }
@@ -991,14 +942,14 @@ public:
     Float1Source(0, 0, 0b11, 0b001111, rd.V(), rn.V());
   }
 
-// Floating-point compare
+  // Floating-point compare
   void fcmp(ScalarRegSize Size, VRegister rn, VRegister rm) {
     LOGMAN_THROW_A_FMT(Size != ScalarRegSize::i8Bit, "8-bit destination not supported");
 
-    const auto ConvertedSize =
-      Size == ARMEmitter::ScalarRegSize::i64Bit ? 0b01 :
-      Size == ARMEmitter::ScalarRegSize::i32Bit ? 0b00 :
-      Size == ARMEmitter::ScalarRegSize::i16Bit ? 0b11 : 0;
+    const auto ConvertedSize = Size == ARMEmitter::ScalarRegSize::i64Bit ? 0b01 :
+                               Size == ARMEmitter::ScalarRegSize::i32Bit ? 0b00 :
+                               Size == ARMEmitter::ScalarRegSize::i16Bit ? 0b11 :
+                                                                           0;
 
     FloatCompare(0, 0, ConvertedSize, 0b00, 0b00000, rn, rm);
   }
@@ -1051,7 +1002,7 @@ public:
     FloatCompare(0, 0, 0b11, 0b00, 0b11000, rn.V(), VReg::v0);
   }
 
-// Floating-point immediate
+  // Floating-point immediate
   void fmov(ARMEmitter::ScalarRegSize size, ARMEmitter::VRegister rd, float Value) {
     uint32_t M = 0;
     uint32_t S = 0;
@@ -1061,16 +1012,13 @@ public:
     if (size == ARMEmitter::ScalarRegSize::i16Bit) {
       LOGMAN_MSG_A_FMT("Unsupported");
       FEX_UNREACHABLE;
-    }
-    else if (size == ARMEmitter::ScalarRegSize::i32Bit) {
+    } else if (size == ARMEmitter::ScalarRegSize::i32Bit) {
       ptype = 0b00;
       imm8 = FP32ToImm8(Value);
-    }
-    else if (size == ARMEmitter::ScalarRegSize::i64Bit) {
+    } else if (size == ARMEmitter::ScalarRegSize::i64Bit) {
       ptype = 0b01;
       imm8 = FP64ToImm8(Value);
-    }
-    else {
+    } else {
       FEX_UNREACHABLE;
     }
 
@@ -1090,7 +1038,7 @@ public:
     dc32(Instr);
   }
 
-// Floating-point conditional compare
+  // Floating-point conditional compare
   void fccmp(SRegister rn, SRegister rm, StatusFlags flags, Condition Cond) {
     FloatConditionalCompare(0, 0, 0b00, 0b0, rn.V(), rm.V(), flags, Cond);
   }
@@ -1110,7 +1058,7 @@ public:
     FloatConditionalCompare(0, 0, 0b11, 0b1, rn.V(), rm.V(), flags, Cond);
   }
 
-// Floating-point data-processing (2 source)
+  // Floating-point data-processing (2 source)
   void fmul(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
     Float2Source(size, 0, 0, 0b0000, rd, rn, rm);
   }
@@ -1225,11 +1173,10 @@ public:
 
   // Floating-point conditional select
   void fcsel(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm, Condition Cond) {
-    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i16Bit || size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for {}", __func__);
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i16Bit || size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit,
+                       "Invalid size selected for {}", __func__);
 
-    const uint32_t ConvertedSize =
-      size == ScalarRegSize::i64Bit ? 0b01 :
-      size == ScalarRegSize::i32Bit ? 0b00 : 0b11;
+    const uint32_t ConvertedSize = size == ScalarRegSize::i64Bit ? 0b01 : size == ScalarRegSize::i32Bit ? 0b00 : 0b11;
 
     FloatConditionalSelect(0, 0, ConvertedSize, rd, rn, rm, Cond);
   }
@@ -1244,7 +1191,7 @@ public:
     FloatConditionalSelect(0, 0, 0b11, rd.V(), rn.V(), rm.V(), Cond);
   }
 
-// Floating-point data-processing (3 source)
+  // Floating-point data-processing (3 source)
   void fmadd(SRegister rd, SRegister rn, SRegister rm, SRegister ra) {
     Float3Source(0, 0, 0b00, 0, 0, rd.V(), rn.V(), rm.V(), ra.V());
   }
@@ -1285,7 +1232,7 @@ public:
   }
 
 private:
-// Advanced SIMD scalar copy
+  // Advanced SIMD scalar copy
   void ASIMDScalarCopy(uint32_t Op, uint32_t Q, uint32_t imm5, uint32_t imm4, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
     uint32_t Instr = Op;
 
@@ -1297,7 +1244,7 @@ private:
     dc32(Instr);
   }
 
-// Advanced SIMD scalar three same FP16
+  // Advanced SIMD scalar three same FP16
   void ASIMDScalarThreeSameFP16(uint32_t U, uint32_t a, uint32_t opcode, HRegister rm, HRegister rn, HRegister rd) {
     uint32_t Instr = 0b0101'1110'0100'0000'0000'0100'0000'0000;
 
@@ -1309,7 +1256,7 @@ private:
     Instr |= rd.Idx();
     dc32(Instr);
   }
-// Advanced SIMD scalar two-register miscellaneous FP16
+  // Advanced SIMD scalar two-register miscellaneous FP16
   void ASIMDScalarTwoRegMiscFP16(uint32_t U, uint32_t a, uint32_t opcode, HRegister rn, HRegister rd) {
     uint32_t Instr = 0b0101'1110'0111'1000'0000'1000'0000'0000;
 
@@ -1321,9 +1268,9 @@ private:
     dc32(Instr);
   }
 
-// Advanced SIMD scalar three same extra
-// XXX:
-// Advanced SIMD scalar two-register miscellaneous
+  // Advanced SIMD scalar three same extra
+  // XXX:
+  // Advanced SIMD scalar two-register miscellaneous
   void ASIMDScalar2RegMisc(uint32_t b20, uint32_t U, ScalarRegSize size, uint32_t opcode, VRegister rd, VRegister rn) {
     uint32_t Instr = 0b0101'1110'0010'0000'0000'1000'0000'0000;
 
@@ -1336,9 +1283,9 @@ private:
     dc32(Instr);
   }
 
-// Advanced SIMD scalar pairwise
-// XXX:
-// Advanced SIMD scalar three different
+  // Advanced SIMD scalar pairwise
+  // XXX:
+  // Advanced SIMD scalar three different
   void ASIMD3RegDifferent(uint32_t U, ScalarRegSize size, uint32_t opcode, VRegister rd, VRegister rn, VRegister rm) {
     uint32_t Instr = 0b0101'1110'0010'0000'0000'0000'0000'0000;
 
@@ -1350,7 +1297,7 @@ private:
     Instr |= Encode_rd(rd);
     dc32(Instr);
   }
-// Advanced SIMD scalar three same
+  // Advanced SIMD scalar three same
   void ASIMD3RegSame(uint32_t U, ScalarRegSize size, uint32_t opcode, VRegister rd, VRegister rn, VRegister rm) {
     uint32_t Instr = 0b0101'1110'0010'0000'0000'0100'0000'0000;
 
@@ -1362,7 +1309,7 @@ private:
     Instr |= Encode_rd(rd);
     dc32(Instr);
   }
-// Advanced SIMD scalar shift by immediate
+  // Advanced SIMD scalar shift by immediate
   void ASIMDScalarShiftByImm(uint32_t U, uint32_t immh, uint32_t immb, uint32_t opcode, VRegister rd, VRegister rn) {
     uint32_t Instr = 0b0101'1111'0000'0000'0000'0100'0000'0000;
 
@@ -1374,9 +1321,9 @@ private:
     Instr |= Encode_rd(rd);
     dc32(Instr);
   }
-// Advanced SIMD scalar x indexed element
-// XXX:
-// Floating-point data-processing (1 source)
+  // Advanced SIMD scalar x indexed element
+  // XXX:
+  // Floating-point data-processing (1 source)
   void Float1Source(uint32_t M, uint32_t S, uint32_t ptype, uint32_t opcode, VRegister rd, VRegister rn) {
     uint32_t Instr = 0b0001'1110'0010'0000'0100'0000'0000'0000;
 
@@ -1390,16 +1337,15 @@ private:
     dc32(Instr);
   }
   void Float1Source(ScalarRegSize size, uint32_t M, uint32_t S, uint32_t opcode, VRegister rd, VRegister rn) {
-    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i16Bit || size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for {}", __func__);
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i16Bit || size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit,
+                       "Invalid size selected for {}", __func__);
 
-    const uint32_t ConvertedSize =
-      size == ScalarRegSize::i64Bit ? 0b01 :
-      size == ScalarRegSize::i32Bit ? 0b00 : 0b11;
+    const uint32_t ConvertedSize = size == ScalarRegSize::i64Bit ? 0b01 : size == ScalarRegSize::i32Bit ? 0b00 : 0b11;
 
     Float1Source(M, S, ConvertedSize, opcode, rd, rn);
   }
 
-// Floating-point compare
+  // Floating-point compare
   void FloatCompare(uint32_t M, uint32_t S, uint32_t ftype, uint32_t op, uint32_t opcode2, VRegister rn, VRegister rm) {
     uint32_t Instr = 0b0001'1110'0010'0000'0010'0000'0000'0000;
 
@@ -1413,9 +1359,9 @@ private:
 
     dc32(Instr);
   }
-// Floating-point immediate
-// XXX:
-// Floating-point conditional compare
+  // Floating-point immediate
+  // XXX:
+  // Floating-point conditional compare
   void FloatConditionalCompare(uint32_t M, uint32_t S, uint32_t ptype, uint32_t op, VRegister rn, VRegister rm, StatusFlags flags, Condition Cond) {
     uint32_t Instr = 0b0001'1110'0010'0000'0000'0100'0000'0000;
 
@@ -1430,7 +1376,7 @@ private:
 
     dc32(Instr);
   }
-// Floating-point data-processing (2 source)
+  // Floating-point data-processing (2 source)
 
   void Float2Source(uint32_t M, uint32_t S, uint32_t ptype, uint32_t opcode, VRegister rd, VRegister rn, VRegister rm) {
     uint32_t Instr = 0b0001'1110'0010'0000'0000'1000'0000'0000;
@@ -1447,16 +1393,15 @@ private:
   }
 
   void Float2Source(ScalarRegSize size, uint32_t M, uint32_t S, uint32_t opcode, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i16Bit || size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for {}", __func__);
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i16Bit || size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit,
+                       "Invalid size selected for {}", __func__);
 
-    const uint32_t ConvertedSize =
-      size == ScalarRegSize::i64Bit ? 0b01 :
-      size == ScalarRegSize::i32Bit ? 0b00 : 0b11;
+    const uint32_t ConvertedSize = size == ScalarRegSize::i64Bit ? 0b01 : size == ScalarRegSize::i32Bit ? 0b00 : 0b11;
 
     Float2Source(M, S, ConvertedSize, opcode, rd, rn, rm);
   }
 
-// Floating-point conditional select
+  // Floating-point conditional select
   void FloatConditionalSelect(uint32_t M, uint32_t S, uint32_t ptype, VRegister rd, VRegister rn, VRegister rm, Condition Cond) {
     uint32_t Instr = 0b0001'1110'0010'0000'0000'1100'0000'0000;
 
@@ -1470,7 +1415,7 @@ private:
     dc32(Instr);
   }
 
-// Floating-point data-processing (3 source)
+  // Floating-point data-processing (3 source)
   void Float3Source(uint32_t M, uint32_t S, uint32_t ptype, uint32_t o1, uint32_t o0, VRegister rd, VRegister rn, VRegister rm, VRegister ra) {
     uint32_t Instr = 0b0001'1111'0000'0000'0000'0000'0000'0000;
 
@@ -1485,3 +1430,8 @@ private:
     Instr |= Encode_rd(rd);
     dc32(Instr);
   }
+
+#ifndef INCLUDED_BY_EMITTER
+}; // struct LoadstoreEmitterOps
+} // namespace ARMEmitter
+#endif
