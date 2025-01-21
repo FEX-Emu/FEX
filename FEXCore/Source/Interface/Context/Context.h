@@ -337,6 +337,10 @@ protected:
       AtomicTSOEmulationEnabled = false;
       VectorAtomicTSOEmulationEnabled = false;
       MemcpyAtomicTSOEmulationEnabled = false;
+    } else if (Config.ParanoidTSO) {
+      AtomicTSOEmulationEnabled = true;
+      VectorAtomicTSOEmulationEnabled = true;
+      MemcpyAtomicTSOEmulationEnabled = true;
     } else {
       // Atomic TSO emulation only enabled if the config option is enabled.
       AtomicTSOEmulationEnabled = (IsMemoryShared || !Config.TSOAutoMigration) && Config.TSOEnabled;
