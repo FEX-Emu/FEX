@@ -744,11 +744,7 @@ public:
   // Bind a forward label to a location.
   // This walks all the instructions in the label's vector.
   // Then backpatching all instructions that have used the label.
-  template<bool WarnAboutEmpty = false>
   void Bind(ForwardLabel* Label) {
-    if constexpr (WarnAboutEmpty) {
-      LOGMAN_THROW_A_FMT(Label->FirstInst.Location != nullptr, "Binding forward label that didn't have any instructions using it");
-    }
     if (Label->FirstInst.Location) {
       Bind(&Label->FirstInst);
     }
@@ -763,7 +759,7 @@ public:
     if (!Label->Backward.Location) {
       Bind(&Label->Backward);
     }
-    Bind<false>(&Label->Forward);
+    Bind(&Label->Forward);
   }
 
 #include <CodeEmitter/VixlUtils.inl>
