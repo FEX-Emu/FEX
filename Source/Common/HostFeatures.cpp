@@ -378,6 +378,7 @@ static void SetFPCR(uint64_t Value) {
   __asm("msr FPCR, %[Value]" ::[Value] "r"(Value));
 }
 
+#ifndef VIXL_SIMULATOR
 __attribute__((naked)) static uint64_t ReadSVEVectorLengthInBits() {
   ///< Can't use rdvl instruction directly because compilers will complain that sve/sme is required.
   __asm(R"(
@@ -385,6 +386,7 @@ __attribute__((naked)) static uint64_t ReadSVEVectorLengthInBits() {
   ret;
   )");
 }
+#endif
 #else
 [[maybe_unused]]
 static uint32_t GetDCZID() {
