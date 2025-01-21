@@ -21,12 +21,12 @@ struct BitSet final {
   ElementType* Memory;
   void Allocate(size_t Elements) {
     size_t AllocateSize = ToBytes(Elements);
-    LOGMAN_THROW_AA_FMT((AllocateSize * MinimumSize) >= Elements, "Fail");
+    LOGMAN_THROW_A_FMT((AllocateSize * MinimumSize) >= Elements, "Fail");
     Memory = static_cast<ElementType*>(FEXCore::Allocator::malloc(AllocateSize));
   }
   void Realloc(size_t Elements) {
     size_t AllocateSize = ToBytes(Elements);
-    LOGMAN_THROW_AA_FMT((AllocateSize * MinimumSize) >= Elements, "Fail");
+    LOGMAN_THROW_A_FMT((AllocateSize * MinimumSize) >= Elements, "Fail");
     Memory = static_cast<ElementType*>(FEXCore::Allocator::realloc(Memory, AllocateSize));
   }
   void Free() {
@@ -68,7 +68,7 @@ struct BitSetView final {
   ElementType* Memory;
 
   void GetView(BitSet<T>& Set, uint64_t ElementOffset) {
-    LOGMAN_THROW_AA_FMT((ElementOffset % MinimumSize) == 0, "Bitset view offset needs to be aligned to size of backing element");
+    LOGMAN_THROW_A_FMT((ElementOffset % MinimumSize) == 0, "Bitset view offset needs to be aligned to size of backing element");
     Memory = &Set.Memory[ElementOffset / MinimumSizeBits];
   }
 

@@ -205,7 +205,7 @@ public:
 
     ReplaceAllUsesWithRange(Node, NewNode, Start, AllNodesIterator(DualListData.ListBegin(), DualListData.DataBegin()));
 
-    LOGMAN_THROW_AA_FMT(Node->NumUses == 0, "Node still used");
+    LOGMAN_THROW_A_FMT(Node->NumUses == 0, "Node still used");
 
     auto IROp = Node->Op(DualListData.DataBegin())->CW<FEXCore::IR::IROp_Header>();
     // We can not remove the op if there are side-effects

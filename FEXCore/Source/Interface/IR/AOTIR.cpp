@@ -138,7 +138,7 @@ static bool LoadAOTIRCache(AOTIRCacheEntry* Entry, int streamfd) {
 
   auto Array = (AOTIRInlineIndex*)((char*)FilePtr + IndexOffset);
 
-  LOGMAN_THROW_AA_FMT(Entry->Array == nullptr && Entry->FilePtr == nullptr, "Entry must not be initialized here");
+  LOGMAN_THROW_A_FMT(Entry->Array == nullptr && Entry->FilePtr == nullptr, "Entry must not be initialized here");
   Entry->Array = Array;
   Entry->FilePtr = FilePtr;
   Entry->Size = Size;
@@ -392,7 +392,7 @@ AOTIRCacheEntry* AOTIRCaptureCache::LoadAOTIRCacheEntry(const fextl::string& fil
     auto Inserted = AOTIRCache.insert({fileid, AOTIRCacheEntry {.FileId = fileid, .Filename = filename}});
     auto Entry = &(Inserted.first->second);
 
-    LOGMAN_THROW_AA_FMT(Entry->Array == nullptr, "Duplicate LoadAOTIRCacheEntry");
+    LOGMAN_THROW_A_FMT(Entry->Array == nullptr, "Duplicate LoadAOTIRCacheEntry");
 
     if (CTX->Config.AOTIRLoad && AOTIRLoader) {
       auto streamfd = AOTIRLoader(fileid);
@@ -409,7 +409,7 @@ AOTIRCacheEntry* AOTIRCaptureCache::LoadAOTIRCacheEntry(const fextl::string& fil
 
 void AOTIRCaptureCache::UnloadAOTIRCacheEntry(AOTIRCacheEntry* Entry) {
 #ifndef _WIN32
-  LOGMAN_THROW_AA_FMT(Entry != nullptr, "Removing not existing entry");
+  LOGMAN_THROW_A_FMT(Entry != nullptr, "Removing not existing entry");
 
   if (Entry->Array) {
     FEXCore::Allocator::munmap(Entry->FilePtr, Entry->Size);

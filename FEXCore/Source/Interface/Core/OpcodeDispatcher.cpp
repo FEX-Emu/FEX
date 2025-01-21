@@ -753,7 +753,7 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
     auto OP = Op->OP & 0xF;
     auto [Complex, SimpleCond] = DecodeNZCVCondition(OP);
     if (Complex) {
-      LOGMAN_THROW_AA_FMT(OP == 0xA || OP == 0xB, "only PF left");
+      LOGMAN_THROW_A_FMT(OP == 0xA || OP == 0xB, "only PF left");
       CondJump_ = CondJumpBit(LoadPFRaw(false, false), 0, OP == 0xB);
     } else {
       CondJump_ = CondJumpNZCV(SimpleCond);
@@ -3924,7 +3924,7 @@ void OpDispatchBuilder::Finalize() {
   Ref RealNode = reinterpret_cast<Ref>(GetNode(1));
 
   [[maybe_unused]] const FEXCore::IR::IROp_Header* IROp = RealNode->Op(DualListData.DataBegin());
-  LOGMAN_THROW_AA_FMT(IROp->Op == OP_IRHEADER, "First op in function must be our header");
+  LOGMAN_THROW_A_FMT(IROp->Op == OP_IRHEADER, "First op in function must be our header");
 
   // Let's walk the jump blocks and see if we have handled every block target
   for (auto& Handler : JumpTargets) {
@@ -3940,13 +3940,13 @@ void OpDispatchBuilder::Finalize() {
 
 uint8_t OpDispatchBuilder::GetDstSize(X86Tables::DecodedOp Op) const {
   const uint32_t DstSizeFlag = X86Tables::DecodeFlags::GetSizeDstFlags(Op->Flags);
-  LOGMAN_THROW_AA_FMT(DstSizeFlag != 0 && DstSizeFlag != X86Tables::DecodeFlags::SIZE_MASK, "Invalid destination size for op");
+  LOGMAN_THROW_A_FMT(DstSizeFlag != 0 && DstSizeFlag != X86Tables::DecodeFlags::SIZE_MASK, "Invalid destination size for op");
   return 1u << (DstSizeFlag - 1);
 }
 
 uint8_t OpDispatchBuilder::GetSrcSize(X86Tables::DecodedOp Op) const {
   const uint32_t SrcSizeFlag = X86Tables::DecodeFlags::GetSizeSrcFlags(Op->Flags);
-  LOGMAN_THROW_AA_FMT(SrcSizeFlag != 0 && SrcSizeFlag != X86Tables::DecodeFlags::SIZE_MASK, "Invalid destination size for op");
+  LOGMAN_THROW_A_FMT(SrcSizeFlag != 0 && SrcSizeFlag != X86Tables::DecodeFlags::SIZE_MASK, "Invalid destination size for op");
   return 1u << (SrcSizeFlag - 1);
 }
 
@@ -4137,7 +4137,7 @@ Ref OpDispatchBuilder::LoadEffectiveAddress(AddressMode A, bool AddSegmentBase, 
 
   if (A.Index) {
     if (A.IndexScale != 1) {
-      LOGMAN_THROW_AA_FMT((A.IndexScale & (A.IndexScale - 1)) == 0, "power of two");
+      LOGMAN_THROW_A_FMT((A.IndexScale & (A.IndexScale - 1)) == 0, "power of two");
       uint32_t Log2 = FEXCore::ilog2(A.IndexScale);
 
       if (Tmp) {
@@ -4424,9 +4424,9 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
         Ref Value = GetOpSize(Src) == OpSize::i64Bit ? _Bfe(OpSize::i32Bit, 32, 0, Src) : Src;
         StoreGPRRegister(gpr, Value, GPRSize);
 
-        LOGMAN_THROW_AA_FMT(!Operand.Data.GPR.HighBits, "Can't handle 32bit store to high 8bit register");
+        LOGMAN_THROW_A_FMT(!Operand.Data.GPR.HighBits, "Can't handle 32bit store to high 8bit register");
       } else {
-        LOGMAN_THROW_AA_FMT(!(GPRSize == OpSize::i32Bit && OpSize > OpSize::i32Bit), "Oops had a {} GPR load", OpSize);
+        LOGMAN_THROW_A_FMT(!(GPRSize == OpSize::i32Bit && OpSize > OpSize::i32Bit), "Oops had a {} GPR load", OpSize);
 
         if (GPRSize != OpSize) {
           // if the GPR isn't the full size then we need to insert.

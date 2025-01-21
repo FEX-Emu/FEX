@@ -44,11 +44,11 @@ LookupCache::LookupCache(FEXCore::Context::ContextImpl* CTX)
   // We currently limit to 128MB of real memory for caching for the total cache size.
   // Can end up being inefficient if we compile a small number of blocks per page
   PageMemory = PagePointer + ctx->Config.VirtualMemSize / 4096 * 8;
-  LOGMAN_THROW_AA_FMT(PageMemory != -1ULL, "Failed to allocate page memory");
+  LOGMAN_THROW_A_FMT(PageMemory != -1ULL, "Failed to allocate page memory");
 
   // L1 Cache
   L1Pointer = PageMemory + CODE_SIZE;
-  LOGMAN_THROW_AA_FMT(L1Pointer != -1ULL, "Failed to allocate L1Pointer");
+  LOGMAN_THROW_A_FMT(L1Pointer != -1ULL, "Failed to allocate L1Pointer");
 
   VirtualMemSize = ctx->Config.VirtualMemSize;
 }

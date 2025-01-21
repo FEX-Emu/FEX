@@ -53,7 +53,7 @@ void IRDumper::Run(IREmitter* IREmit) {
 
   auto IR = IREmit->ViewIR();
   auto HeaderOp = IR.GetHeader();
-  LOGMAN_THROW_AA_FMT(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
+  LOGMAN_THROW_A_FMT(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
 
   // DumpIRStr might be no if not dumping but ShouldDump is set in OpDisp
   if (DumpToFile) {

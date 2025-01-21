@@ -17,14 +17,14 @@ DEF_OP(VAESImc) {
 
 DEF_OP(VAESEnc) {
   const auto Op = IROp->C<IR::IROp_VAESEnc>();
-  const auto OpSize = IROp->Size;
+  [[maybe_unused]] const auto OpSize = IROp->Size;
 
   const auto Dst = GetVReg(Node);
   const auto Key = GetVReg(Op->Key.ID());
   const auto State = GetVReg(Op->State.ID());
   const auto ZeroReg = GetVReg(Op->ZeroReg.ID());
 
-  LOGMAN_THROW_AA_FMT(OpSize == IR::OpSize::i128Bit, "Currently only supports 128-bit operations.");
+  LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i128Bit, "Currently only supports 128-bit operations.");
 
   if (Dst == State && Dst != Key) {
     // Optimal case in which Dst already contains the starting state.
@@ -42,14 +42,14 @@ DEF_OP(VAESEnc) {
 
 DEF_OP(VAESEncLast) {
   const auto Op = IROp->C<IR::IROp_VAESEncLast>();
-  const auto OpSize = IROp->Size;
+  [[maybe_unused]] const auto OpSize = IROp->Size;
 
   const auto Dst = GetVReg(Node);
   const auto Key = GetVReg(Op->Key.ID());
   const auto State = GetVReg(Op->State.ID());
   const auto ZeroReg = GetVReg(Op->ZeroReg.ID());
 
-  LOGMAN_THROW_AA_FMT(OpSize == IR::OpSize::i128Bit, "Currently only supports 128-bit operations.");
+  LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i128Bit, "Currently only supports 128-bit operations.");
 
   if (Dst == State && Dst != Key) {
     // Optimal case in which Dst already contains the starting state.
@@ -65,14 +65,14 @@ DEF_OP(VAESEncLast) {
 
 DEF_OP(VAESDec) {
   const auto Op = IROp->C<IR::IROp_VAESDec>();
-  const auto OpSize = IROp->Size;
+  [[maybe_unused]] const auto OpSize = IROp->Size;
 
   const auto Dst = GetVReg(Node);
   const auto Key = GetVReg(Op->Key.ID());
   const auto State = GetVReg(Op->State.ID());
   const auto ZeroReg = GetVReg(Op->ZeroReg.ID());
 
-  LOGMAN_THROW_AA_FMT(OpSize == IR::OpSize::i128Bit, "Currently only supports 128-bit operations.");
+  LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i128Bit, "Currently only supports 128-bit operations.");
 
   if (Dst == State && Dst != Key) {
     // Optimal case in which Dst already contains the starting state.
@@ -90,14 +90,14 @@ DEF_OP(VAESDec) {
 
 DEF_OP(VAESDecLast) {
   const auto Op = IROp->C<IR::IROp_VAESDecLast>();
-  const auto OpSize = IROp->Size;
+  [[maybe_unused]] const auto OpSize = IROp->Size;
 
   const auto Dst = GetVReg(Node);
   const auto Key = GetVReg(Op->Key.ID());
   const auto State = GetVReg(Op->State.ID());
   const auto ZeroReg = GetVReg(Op->ZeroReg.ID());
 
-  LOGMAN_THROW_AA_FMT(OpSize == IR::OpSize::i128Bit, "Currently only supports 128-bit operations.");
+  LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i128Bit, "Currently only supports 128-bit operations.");
 
   if (Dst == State && Dst != Key) {
     // Optimal case in which Dst already contains the starting state.
@@ -187,13 +187,13 @@ DEF_OP(VSha256U0) {
 
 DEF_OP(PCLMUL) {
   const auto Op = IROp->C<IR::IROp_PCLMUL>();
-  const auto OpSize = IROp->Size;
+  [[maybe_unused]] const auto OpSize = IROp->Size;
 
   const auto Dst = GetVReg(Node);
   const auto Src1 = GetVReg(Op->Src1.ID());
   const auto Src2 = GetVReg(Op->Src2.ID());
 
-  LOGMAN_THROW_AA_FMT(OpSize == IR::OpSize::i128Bit, "Currently only supports 128-bit operations.");
+  LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i128Bit, "Currently only supports 128-bit operations.");
 
   switch (Op->Selector) {
   case 0b00000000: pmull(ARMEmitter::SubRegSize::i128Bit, Dst.D(), Src1.D(), Src2.D()); break;

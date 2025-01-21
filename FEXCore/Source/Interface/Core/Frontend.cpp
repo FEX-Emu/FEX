@@ -75,7 +75,7 @@ Decoder::~Decoder() {
 
 uint8_t Decoder::ReadByte() {
   uint8_t Byte = InstStream[InstructionSize];
-  LOGMAN_THROW_AA_FMT(InstructionSize < MAX_INST_SIZE, "Max instruction size exceeded!");
+  LOGMAN_THROW_A_FMT(InstructionSize < MAX_INST_SIZE, "Max instruction size exceeded!");
   Instruction[InstructionSize] = Byte;
   InstructionSize++;
   return Byte;
@@ -87,7 +87,7 @@ uint8_t Decoder::PeekByte(uint8_t Offset) const {
 }
 
 uint64_t Decoder::ReadData(uint8_t Size) {
-  LOGMAN_THROW_AA_FMT(Size != 0 && Size <= sizeof(uint64_t), "Unknown data size to read");
+  LOGMAN_THROW_A_FMT(Size != 0 && Size <= sizeof(uint64_t), "Unknown data size to read");
 
   uint64_t Res = 0;
   std::memcpy(&Res, &InstStream[InstructionSize], Size);
@@ -235,7 +235,7 @@ void Decoder::DecodeModRM_64(X86Tables::DecodedOperand* Operand, X86Tables::ModR
       Operand->Data.SIB.Base = MapModRMToReg(BaseREX, SIB.base, false, false, false, false, ModRM.mod == 0 ? 0b101 : 16);
     }
 
-    LOGMAN_THROW_AA_FMT(Displacement <= 4, "Number of bytes should be <= 4 for literal src");
+    LOGMAN_THROW_A_FMT(Displacement <= 4, "Number of bytes should be <= 4 for literal src");
 
     if (Displacement) {
       uint64_t Literal = ReadData(Displacement);
@@ -282,10 +282,10 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
     return false;
   }
 
-  LOGMAN_THROW_AA_FMT(!(Info->Type >= FEXCore::X86Tables::TYPE_GROUP_1 && Info->Type <= FEXCore::X86Tables::TYPE_GROUP_P), "Group Ops "
-                                                                                                                           "should have "
-                                                                                                                           "been decoded "
-                                                                                                                           "before this!");
+  LOGMAN_THROW_A_FMT(!(Info->Type >= FEXCore::X86Tables::TYPE_GROUP_1 && Info->Type <= FEXCore::X86Tables::TYPE_GROUP_P), "Group Ops "
+                                                                                                                          "should have "
+                                                                                                                          "been decoded "
+                                                                                                                          "before this!");
 
   uint8_t DestSize {};
   const bool HasWideningDisplacement =
@@ -404,7 +404,7 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
       HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_DST_RAX) ? FEXCore::X86State::REG_RAX : FEXCore::X86State::REG_RDX;
     CurrentDest = &DecodeInst->Src[0];
   } else if (HAS_NON_XMM_SUBFLAG(Info->Flags, FEXCore::X86Tables::InstFlags::FLAGS_SF_REX_IN_BYTE)) {
-    LOGMAN_THROW_AA_FMT(!HasMODRM, "This instruction shouldn't have ModRM!");
+    LOGMAN_THROW_A_FMT(!HasMODRM, "This instruction shouldn't have ModRM!");
 
     // If the REX is in the byte that means the lower nibble of the OP contains the destination GPR
     // This also means that the destination is always a GPR on these ones
@@ -522,7 +522,7 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
   }
 
   if (Bytes != 0) {
-    LOGMAN_THROW_AA_FMT(Bytes <= 8, "Number of bytes should be <= 8 for literal src");
+    LOGMAN_THROW_A_FMT(Bytes <= 8, "Number of bytes should be <= 8 for literal src");
 
     DecodeInst->Src[CurrentSrc].Data.Literal.Size = Bytes;
 
@@ -545,8 +545,8 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
     DecodeInst->Src[CurrentSrc].Data.Literal.Value = Literal;
   }
 
-  LOGMAN_THROW_AA_FMT(Bytes == 0, "Inst at 0x{:x}: 0x{:04x} '{}' Had an instruction of size {} with {} remaining", DecodeInst->PC,
-                      DecodeInst->OP, DecodeInst->TableInfo->Name ?: "UND", InstructionSize, Bytes);
+  LOGMAN_THROW_A_FMT(Bytes == 0, "Inst at 0x{:x}: 0x{:04x} '{}' Had an instruction of size {} with {} remaining", DecodeInst->PC,
+                     DecodeInst->OP, DecodeInst->TableInfo->Name ?: "UND", InstructionSize, Bytes);
   DecodeInst->InstSize = InstructionSize;
   return true;
 }
@@ -563,7 +563,7 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
     return false;
   }
 
-  LOGMAN_THROW_AA_FMT(Info->Type != FEXCore::X86Tables::TYPE_REX_PREFIX, "REX PREFIX should have been decoded before this!");
+  LOGMAN_THROW_A_FMT(Info->Type != FEXCore::X86Tables::TYPE_REX_PREFIX, "REX PREFIX should have been decoded before this!");
 
   // A normal instruction is the most likely.
   if (Info->Type == FEXCore::X86Tables::TYPE_INST) [[likely]] {
@@ -613,7 +613,7 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
         255, 0, 1, 2, 255, 255, 255, 3,
       };
       uint8_t Field = RegToField[ModRM.reg];
-      LOGMAN_THROW_AA_FMT(Field != 255, "Invalid field selected!");
+      LOGMAN_THROW_A_FMT(Field != 255, "Invalid field selected!");
 
       LocalOp = (Field << 3) | ModRM.rm;
       return NormalOp(&SecondModRMTableOps[LocalOp], LocalOp);

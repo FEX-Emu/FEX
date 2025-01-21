@@ -21,7 +21,7 @@ using namespace FEXCore;
 
 namespace FEXCore::IR {
 namespace {
-  constexpr uint32_t INVALID_REG = IR::InvalidReg;
+  [[maybe_unused]] constexpr uint32_t INVALID_REG = IR::InvalidReg;
   constexpr uint32_t INVALID_CLASS = IR::InvalidClass.Val;
 
   struct RegisterClass {
@@ -160,7 +160,7 @@ private:
 
     // Otherwise fill from stack
     uint32_t SlotPlusOne = SpillSlots[IR->GetID(Old).Value];
-    LOGMAN_THROW_AA_FMT(SlotPlusOne >= 1, "Old must have been spilled");
+    LOGMAN_THROW_A_FMT(SlotPlusOne >= 1, "Old must have been spilled");
 
     RegisterClassType RegClass = GetRegClassFromNode(IR, IROp);
 
@@ -214,7 +214,7 @@ private:
     RegisterClass* Class = GetClass(Reg);
     uint32_t RegBits = GetRegBits(Reg);
 
-    LOGMAN_THROW_AA_FMT(!(Class->Available & RegBits), "Register double-free");
+    LOGMAN_THROW_A_FMT(!(Class->Available & RegBits), "Register double-free");
 
     Class->Available |= RegBits;
   };
@@ -260,7 +260,7 @@ private:
       Class = Op->Class;
       Reg = Op->Reg;
     } else if (IROp->Op == OP_STOREREGISTER) {
-      LOGMAN_THROW_AA_FMT(IROp->Op == OP_STOREREGISTER, "node is SRA");
+      LOGMAN_THROW_A_FMT(IROp->Op == OP_STOREREGISTER, "node is SRA");
       const IROp_StoreRegister* Op = IROp->C<IR::IROp_StoreRegister>();
 
       Class = Op->Class;
@@ -289,13 +289,13 @@ private:
     // next-use has the /smallest/ unsigned IP.
     Ref Candidate = nullptr;
     uint32_t BestDistance = UINT32_MAX;
-    uint8_t BestReg = ~0;
+    [[maybe_unused]] uint8_t BestReg = ~0;
     uint32_t Allocated = ((1u << Class->Count) - 1) & ~Class->Available;
 
     foreach_bit(i, Allocated) {
       Ref Old = Class->RegToSSA[i];
 
-      LOGMAN_THROW_AA_FMT(Old != nullptr, "Invariant3");
+      LOGMAN_THROW_A_FMT(Old != nullptr, "Invariant3");
       LOGMAN_THROW_A_FMT(SSAToReg[IR->GetID(Map(Old)).Value].Reg == i, "Invariant4");
 
       // Skip any source used by the current instruction, it is unspillable.
@@ -316,11 +316,11 @@ private:
       }
     }
 
-    LOGMAN_THROW_AA_FMT(Candidate != nullptr, "must've found something..");
+    LOGMAN_THROW_A_FMT(Candidate != nullptr, "must've found something..");
     LOGMAN_THROW_A_FMT(IsOld(Candidate), "Invariant5");
 
     PhysicalRegister Reg = SSAToReg[IR->GetID(Map(Candidate)).Value];
-    LOGMAN_THROW_AA_FMT(Reg.Reg == BestReg, "Invariant6");
+    LOGMAN_THROW_A_FMT(Reg.Reg == BestReg, "Invariant6");
 
     IROp_Header* Header = IR->GetOp<IROp_Header>(Candidate);
     uint32_t Value = IR->GetID(Candidate).Value;
@@ -357,7 +357,7 @@ private:
     RegisterClass* Class = GetClass(Reg);
     uint32_t RegBits = GetRegBits(Reg);
 
-    LOGMAN_THROW_AA_FMT((Class->Available & RegBits) == RegBits, "Precondition");
+    LOGMAN_THROW_A_FMT((Class->Available & RegBits) == RegBits, "Precondition");
 
     Class->Available &= ~RegBits;
     Class->RegToSSA[Reg.Reg] = Unmap(Node);
@@ -435,7 +435,7 @@ private:
     }
 
     // Assign a free register in the appropriate class.
-    LOGMAN_THROW_AA_FMT(Class->Available != 0, "Post-condition of spilling");
+    LOGMAN_THROW_A_FMT(Class->Available != 0, "Post-condition of spilling");
     unsigned Reg = std::countr_zero(Class->Available);
     SetReg(CodeNode, PhysicalRegister(ClassType, Reg));
   };
@@ -446,7 +446,7 @@ private:
 };
 
 void ConstrainedRAPass::AddRegisters(IR::RegisterClassType Class, uint32_t RegisterCount) {
-  LOGMAN_THROW_AA_FMT(RegisterCount <= INVALID_REG, "Up to {} regs supported", INVALID_REG);
+  LOGMAN_THROW_A_FMT(RegisterCount <= INVALID_REG, "Up to {} regs supported", INVALID_REG);
 
   Classes[Class].Count = RegisterCount;
 }
@@ -623,7 +623,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         }
 
         SourceIndex--;
-        LOGMAN_THROW_AA_FMT(SourceIndex >= 0, "Consistent source count");
+        LOGMAN_THROW_A_FMT(SourceIndex >= 0, "Consistent source count");
 
         if (!SourcesNextUses[SourceIndex]) {
           Ref Old = IR->GetNode(IROp->Args[s]);
@@ -654,11 +654,11 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         }
       }
 
-      LOGMAN_THROW_AA_FMT(IP >= 1, "IP relative to end of block, iterating forward");
+      LOGMAN_THROW_A_FMT(IP >= 1, "IP relative to end of block, iterating forward");
       --IP;
     }
 
-    LOGMAN_THROW_AA_FMT(SourceIndex == 0, "Consistent source count in block");
+    LOGMAN_THROW_A_FMT(SourceIndex == 0, "Consistent source count in block");
   }
 
   /* Now that we're done growing things, we can finalize our results.

@@ -541,7 +541,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
 
   auto CurrentIR = Emit->ViewIR();
   auto* HeaderOp = CurrentIR.GetHeader();
-  LOGMAN_THROW_AA_FMT(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
+  LOGMAN_THROW_A_FMT(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
 
   if (!HeaderOp->HasX87) {
     // If there is no x87 in this, just early exit.

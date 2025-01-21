@@ -265,8 +265,8 @@ void Arm64JITCore::VFScalarFMAOperation(IR::OpSize OpSize, IR::OpSize ElementSiz
                                         ARMEmitter::VRegister Addend) {
   LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i128Bit, "256-bit unsupported", __func__);
 
-  LOGMAN_THROW_AA_FMT(ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit || ElementSize == IR::OpSize::i64Bit, "Invalid"
-                                                                                                                                   " size");
+  LOGMAN_THROW_A_FMT(ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit || ElementSize == IR::OpSize::i64Bit, "Invalid "
+                                                                                                                                  "size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == IR::OpSize::i16Bit ? ARMEmitter::SubRegSize::i16Bit :
                                                        ElementSize == IR::OpSize::i32Bit ? ARMEmitter::SubRegSize::i32Bit :
                                                                                            ARMEmitter::SubRegSize::i64Bit);
@@ -299,8 +299,8 @@ void Arm64JITCore::VFScalarOperation(IR::OpSize OpSize, IR::OpSize ElementSize, 
 
   // Bit of a tricky detail.
   // The upper bits of the destination comes from Vector1.
-  LOGMAN_THROW_AA_FMT(ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit || ElementSize == IR::OpSize::i64Bit, "Invalid"
-                                                                                                                                   " size");
+  LOGMAN_THROW_A_FMT(ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit || ElementSize == IR::OpSize::i64Bit, "Invalid "
+                                                                                                                                  "size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == IR::OpSize::i16Bit ? ARMEmitter::SubRegSize::i16Bit :
                                                        ElementSize == IR::OpSize::i32Bit ? ARMEmitter::SubRegSize::i32Bit :
                                                                                            ARMEmitter::SubRegSize::i64Bit);
@@ -371,8 +371,8 @@ void Arm64JITCore::VFScalarUnaryOperation(IR::OpSize OpSize, IR::OpSize ElementS
   LOGMAN_THROW_A_FMT(!Is256Bit || (Is256Bit && HostSupportsSVE256), "Need SVE256 support in order to use {} with 256-bit operation", __func__);
   LOGMAN_THROW_A_FMT(Is256Bit || !ZeroUpperBits, "128-bit operation doesn't support ZeroUpperBits in {}", __func__);
 
-  LOGMAN_THROW_AA_FMT(ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit || ElementSize == IR::OpSize::i64Bit, "Invalid"
-                                                                                                                                   " size");
+  LOGMAN_THROW_A_FMT(ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit || ElementSize == IR::OpSize::i64Bit, "Invalid "
+                                                                                                                                  "size");
   const auto SubRegSize = ARMEmitter::ToVectorSizePair(ElementSize == IR::OpSize::i16Bit ? ARMEmitter::SubRegSize::i16Bit :
                                                        ElementSize == IR::OpSize::i32Bit ? ARMEmitter::SubRegSize::i32Bit :
                                                                                            ARMEmitter::SubRegSize::i64Bit);
@@ -630,9 +630,9 @@ DEF_OP(VSToFVectorInsert) {
   const auto ElementSize = Op->Header.ElementSize;
   const auto HasTwoElements = Op->HasTwoElements;
 
-  LOGMAN_THROW_AA_FMT(ElementSize == IR::OpSize::i32Bit || ElementSize == IR::OpSize::i64Bit, "Invalid size");
+  LOGMAN_THROW_A_FMT(ElementSize == IR::OpSize::i32Bit || ElementSize == IR::OpSize::i64Bit, "Invalid size");
   if (HasTwoElements) {
-    LOGMAN_THROW_AA_FMT(ElementSize == IR::OpSize::i32Bit, "Can't have two elements for 8-byte size");
+    LOGMAN_THROW_A_FMT(ElementSize == IR::OpSize::i32Bit, "Can't have two elements for 8-byte size");
   }
 
   auto ScalarEmit = [this, ElementSize, HasTwoElements](ARMEmitter::VRegister Dst, std::variant<ARMEmitter::VRegister, ARMEmitter::Register> SrcVar) {
@@ -1122,8 +1122,7 @@ DEF_OP(VFAddV) {
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
 
-  LOGMAN_THROW_AA_FMT(OpSize == IR::OpSize::i128Bit || OpSize == IR::OpSize::i256Bit, "Only AVX and SSE size "
-                                                                                      "supported");
+  LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i128Bit || OpSize == IR::OpSize::i256Bit, "Only AVX and SSE size supported");
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Pred = PRED_TMP_32B.Merging();
     faddv(SubRegSize.Vector, Dst, Pred, Vector.Z());
@@ -1349,7 +1348,7 @@ DEF_OP(VFMin) {
 
   const auto ElementSize = Op->Header.ElementSize;
   const auto SubRegSize = ConvertSubRegSize248(IROp);
-  const auto IsScalar = ElementSize == OpSize;
+  [[maybe_unused]] const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
   LOGMAN_THROW_A_FMT(!Is256Bit || (Is256Bit && HostSupportsSVE256), "Need SVE256 support in order to use {} with 256-bit operation", __func__);
 
@@ -1390,7 +1389,7 @@ DEF_OP(VFMin) {
       mov(Dst.Z(), VTMP1.Z());
     }
   } else {
-    LOGMAN_THROW_AA_FMT(!IsScalar, "should use VFMinScalarInsert instead");
+    LOGMAN_THROW_A_FMT(!IsScalar, "should use VFMinScalarInsert instead");
 
     if (Dst == Vector1) {
       // Destination is already Vector1, need to insert Vector2 on false.
@@ -1415,7 +1414,7 @@ DEF_OP(VFMax) {
 
   const auto ElementSize = Op->Header.ElementSize;
   const auto SubRegSize = ConvertSubRegSize248(IROp);
-  const auto IsScalar = ElementSize == OpSize;
+  [[maybe_unused]] const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
   LOGMAN_THROW_A_FMT(!Is256Bit || (Is256Bit && HostSupportsSVE256), "Need SVE256 support in order to use {} with 256-bit operation", __func__);
 
@@ -1442,7 +1441,7 @@ DEF_OP(VFMax) {
       mov(Dst.Z(), VTMP1.Z());
     }
   } else {
-    LOGMAN_THROW_AA_FMT(!IsScalar, "should use VFMaxScalarInsert instead");
+    LOGMAN_THROW_A_FMT(!IsScalar, "should use VFMaxScalarInsert instead");
 
     if (Dst == Vector1) {
       // Destination is already Vector1, need to insert Vector2 on true.
@@ -3912,7 +3911,7 @@ DEF_OP(VTBL1) {
     break;
   }
   case IR::OpSize::i256Bit: {
-    LOGMAN_THROW_AA_FMT(HostSupportsSVE256, "Host does not support SVE. Cannot perform 256-bit table lookup");
+    LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Host does not support SVE. Cannot perform 256-bit table lookup");
 
     tbl(ARMEmitter::SubRegSize::i8Bit, Dst.Z(), VectorTable.Z(), VectorIndices.Z());
     break;
@@ -3956,7 +3955,7 @@ DEF_OP(VTBL2) {
     break;
   }
   case IR::OpSize::i256Bit: {
-    LOGMAN_THROW_AA_FMT(HostSupportsSVE256, "Host does not support SVE. Cannot perform 256-bit table lookup");
+    LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Host does not support SVE. Cannot perform 256-bit table lookup");
 
     tbl(ARMEmitter::SubRegSize::i8Bit, Dst.Z(), VectorTable1.Z(), VectorTable2.Z(), VectorIndices.Z());
     break;
@@ -3989,7 +3988,7 @@ DEF_OP(VTBX1) {
       break;
     }
     case IR::OpSize::i256Bit: {
-      LOGMAN_THROW_AA_FMT(HostSupportsSVE256, "Host does not support SVE. Cannot perform 256-bit table lookup");
+      LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Host does not support SVE. Cannot perform 256-bit table lookup");
       mov(VTMP1.Z(), VectorSrcDst.Z());
       tbx(ARMEmitter::SubRegSize::i8Bit, VTMP1.Z(), VectorTable.Z(), VectorIndices.Z());
       mov(Dst.Z(), VTMP1.Z());
@@ -4008,7 +4007,7 @@ DEF_OP(VTBX1) {
       break;
     }
     case IR::OpSize::i256Bit: {
-      LOGMAN_THROW_AA_FMT(HostSupportsSVE256, "Host does not support SVE. Cannot perform 256-bit table lookup");
+      LOGMAN_THROW_A_FMT(HostSupportsSVE256, "Host does not support SVE. Cannot perform 256-bit table lookup");
 
       tbx(ARMEmitter::SubRegSize::i8Bit, VectorSrcDst.Z(), VectorTable.Z(), VectorIndices.Z());
       break;
@@ -4029,7 +4028,7 @@ DEF_OP(VRev32) {
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
 
-  LOGMAN_THROW_AA_FMT(ElementSize == IR::OpSize::i8Bit || ElementSize == IR::OpSize::i16Bit, "Invalid size");
+  LOGMAN_THROW_A_FMT(ElementSize == IR::OpSize::i8Bit || ElementSize == IR::OpSize::i16Bit, "Invalid size");
   const auto SubRegSize = ElementSize == IR::OpSize::i8Bit ? ARMEmitter::SubRegSize::i8Bit : ARMEmitter::SubRegSize::i16Bit;
 
   if (HostSupportsSVE256 && Is256Bit) {

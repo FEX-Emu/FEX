@@ -454,7 +454,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
   });
 
   REGISTER_SYSCALL_IMPL_X32(fstatfs64, [](FEXCore::Core::CpuStateFrame* Frame, int fd, size_t sz, struct statfs64_32* buf) -> uint64_t {
-    LOGMAN_THROW_AA_FMT(sz == sizeof(struct statfs64_32), "This needs to match");
+    LOGMAN_THROW_A_FMT(sz == sizeof(struct statfs64_32), "This needs to match");
 
     struct statfs64 host_stat;
     uint64_t Result = ::fstatfs64(fd, &host_stat);
@@ -466,7 +466,7 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
   });
 
   REGISTER_SYSCALL_IMPL_X32(statfs64, [](FEXCore::Core::CpuStateFrame* Frame, const char* path, size_t sz, struct statfs64_32* buf) -> uint64_t {
-    LOGMAN_THROW_AA_FMT(sz == sizeof(struct statfs64_32), "This needs to match");
+    LOGMAN_THROW_A_FMT(sz == sizeof(struct statfs64_32), "This needs to match");
 
     struct statfs host_stat;
     uint64_t Result = FEX::HLE::_SyscallHandler->FM.Statfs(path, &host_stat);

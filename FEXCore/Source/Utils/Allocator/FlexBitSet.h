@@ -72,7 +72,7 @@ struct FlexBitSet final {
     bool FoundHole {};
     for (size_t CurrentPage = BeginningElement; CurrentPage >= (MinimumElement + ElementCount);) {
       size_t Remaining = ElementCount;
-      LOGMAN_THROW_AA_FMT(Remaining <= CurrentPage, "Scanning less than available range");
+      LOGMAN_THROW_A_FMT(Remaining <= CurrentPage, "Scanning less than available range");
 
       while (Remaining) {
         if (this->Get(CurrentPage - Remaining) == WantUnset) {
@@ -112,7 +112,7 @@ struct FlexBitSet final {
       // If we have enough free space, check if we have enough free pages that are contiguous
       size_t Remaining = ElementCount;
 
-      LOGMAN_THROW_AA_FMT((CurrentElement + Remaining - 1) < ElementsInSet, "Scanning less than available range");
+      LOGMAN_THROW_A_FMT((CurrentElement + Remaining - 1) < ElementsInSet, "Scanning less than available range");
 
       while (Remaining) {
         if (this->Get(CurrentElement + Remaining - 1) == WantUnset) {

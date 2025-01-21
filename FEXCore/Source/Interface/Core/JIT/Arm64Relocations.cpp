@@ -86,7 +86,7 @@ bool Arm64JITCore::ApplyRelocations(uint64_t GuestEntry, uint64_t CodeEntry, uin
   size_t DataIndex {};
   for (size_t j = 0; j < NumRelocations; ++j) {
     const FEXCore::CPU::Relocation* Reloc = reinterpret_cast<const FEXCore::CPU::Relocation*>(&EntryRelocations[DataIndex]);
-    LOGMAN_THROW_AA_FMT((DataIndex % alignof(Relocation)) == 0, "Alignment of relocation wasn't adhered to");
+    LOGMAN_THROW_A_FMT((DataIndex % alignof(Relocation)) == 0, "Alignment of relocation wasn't adhered to");
 
     switch (Reloc->Header.Type) {
     case FEXCore::CPU::RelocationTypes::RELOC_NAMED_SYMBOL_LITERAL: {

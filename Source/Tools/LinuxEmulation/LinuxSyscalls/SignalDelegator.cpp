@@ -956,7 +956,7 @@ void SignalDelegator::RegisterTLSState(FEX::HLE::ThreadStateObject* Thread) {
   altstack.ss_sp = reinterpret_cast<void*>(reinterpret_cast<uint64_t>(Thread->SignalInfo.AltStackPtr) + 8);
   altstack.ss_size = SIGSTKSZ * 16 - 8;
   altstack.ss_flags = 0;
-  LOGMAN_THROW_AA_FMT(!!altstack.ss_sp, "Couldn't allocate stack pointer");
+  LOGMAN_THROW_A_FMT(!!altstack.ss_sp, "Couldn't allocate stack pointer");
 
   // Copy the thread object to the start of the alt-stack
   memcpy(Thread->SignalInfo.AltStackPtr, &Thread, sizeof(void*));

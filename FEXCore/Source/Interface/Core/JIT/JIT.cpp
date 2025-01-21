@@ -800,7 +800,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
     using namespace FEXCore::IR;
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
     auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
-    LOGMAN_THROW_AA_FMT(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
+    LOGMAN_THROW_A_FMT(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 #endif
 
     auto BlockStartHostCode = GetCursorAddress<uint8_t*>();
@@ -876,11 +876,11 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
     for (size_t i = 0; i < DebugData->GuestOpcodes.size(); i++) {
       const auto& GuestOpcode = DebugData->GuestOpcodes[i];
       auto& RIPEntry = JITRIPEntries[i];
-      uint64_t HostPCOffset = GuestOpcode.HostEntryOffset - CurrentPCOffset;
-      int64_t GuestRIPOffset = GuestOpcode.GuestEntryOffset - CurrentRIPOffset;
-      LOGMAN_THROW_AA_FMT(HostPCOffset <= std::numeric_limits<uint16_t>::max(), "PC offset too large");
-      LOGMAN_THROW_AA_FMT(GuestRIPOffset >= std::numeric_limits<int16_t>::min(), "RIP offset too small");
-      LOGMAN_THROW_AA_FMT(GuestRIPOffset <= std::numeric_limits<int16_t>::max(), "RIP offset too large");
+      [[maybe_unused]] uint64_t HostPCOffset = GuestOpcode.HostEntryOffset - CurrentPCOffset;
+      [[maybe_unused]] int64_t GuestRIPOffset = GuestOpcode.GuestEntryOffset - CurrentRIPOffset;
+      LOGMAN_THROW_A_FMT(HostPCOffset <= std::numeric_limits<uint16_t>::max(), "PC offset too large");
+      LOGMAN_THROW_A_FMT(GuestRIPOffset >= std::numeric_limits<int16_t>::min(), "RIP offset too small");
+      LOGMAN_THROW_A_FMT(GuestRIPOffset <= std::numeric_limits<int16_t>::max(), "RIP offset too large");
       RIPEntry.HostPCOffset = GuestOpcode.HostEntryOffset - CurrentPCOffset;
       RIPEntry.GuestRIPOffset = GuestOpcode.GuestEntryOffset - CurrentRIPOffset;
       CurrentPCOffset = GuestOpcode.HostEntryOffset;
@@ -899,7 +899,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 #ifdef VIXL_DISASSEMBLER
   if (Disassemble() & FEXCore::Config::Disassemble::STATS) {
     auto HeaderOp = IR->GetHeader();
-    LOGMAN_THROW_AA_FMT(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
+    LOGMAN_THROW_A_FMT(HeaderOp->Header.Op == IR::OP_IRHEADER, "First op wasn't IRHeader");
 
     LogMan::Msg::IFmt("RIP: 0x{:x}", Entry);
     LogMan::Msg::IFmt("Guest Code instructions: {}", HeaderOp->NumHostInstructions);

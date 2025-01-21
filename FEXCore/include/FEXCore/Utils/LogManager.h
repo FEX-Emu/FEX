@@ -44,19 +44,9 @@ namespace Throw {
   [[noreturn]]
   void MFmt(const char* fmt, const fmt::format_args& args);
 
-// AA_FMT and AAFmt are assume versions of {AA_FMT, AFmt} which will assert in debug builds if the assumption is incorrect.
-// In a release build these use __builtin_assume so compilers can optimize around the case that these cases always hold true.
-// The assume version should be preferred unless what is being checked has side effects.
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
   template<typename... Args>
   static inline void AFmt(bool Value, const char* fmt, const Args&... args) {
-    if (MSG_LEVEL < ASSERT || Value) {
-      return;
-    }
-    MFmt(fmt, fmt::make_format_args(args...));
-  }
-  template<typename... Args>
-  static inline void AAFmt(bool Value, const char* fmt, const Args&... args) {
     if (MSG_LEVEL < ASSERT || Value) {
       return;
     }
@@ -67,21 +57,10 @@ namespace Throw {
   do {                                      \
     LogMan::Throw::AFmt(pred, __VA_ARGS__); \
   } while (0)
-#define LOGMAN_THROW_AA_FMT(pred, ...)      \
-  do {                                      \
-    LogMan::Throw::AFmt(pred, __VA_ARGS__); \
-  } while (0)
 #else
   static inline void AFmt(bool, const char*, ...) {}
 #define LOGMAN_THROW_A_FMT(pred, ...) \
   do {                                \
-  } while (0)
-  static inline void AAFmt(bool pred, const char*, ...) {
-    __builtin_assume(pred);
-  }
-#define LOGMAN_THROW_AA_FMT(pred, ...) \
-  do {                                 \
-    __builtin_assume(pred);            \
   } while (0)
 #endif
 

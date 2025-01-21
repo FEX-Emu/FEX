@@ -24,9 +24,9 @@ public:
     const uint32_t SizeImm = FEXCore::ToUnderlying(size);
     const uint32_t IndexShift = SizeImm + 1;
     const uint32_t ElementSize = 1U << SizeImm;
-    const uint32_t MaxIndex = 128U / (ElementSize * 8);
+    [[maybe_unused]] const uint32_t MaxIndex = 128U / (ElementSize * 8);
 
-    LOGMAN_THROW_AA_FMT(Index < MaxIndex, "Index too large. Index={}, Max Index: {}", Index, MaxIndex);
+    LOGMAN_THROW_A_FMT(Index < MaxIndex, "Index too large. Index={}, Max Index: {}", Index, MaxIndex);
 
     const uint32_t imm5 = (Index << IndexShift) | ElementSize;
 
@@ -140,27 +140,27 @@ public:
 
   ///< Comparison against 0.0
   void cmgt(ScalarRegSize size, VRegister rd, VRegister rn) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
     ASIMDScalar2RegMisc(0, 0, size, 0b01000, rd, rn);
   }
   ///< Comparison against 0.0
   void cmeq(ScalarRegSize size, VRegister rd, VRegister rn) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
     ASIMDScalar2RegMisc(0, 0, size, 0b01001, rd, rn);
   }
 
   ///< Comparison against 0.0
   void cmlt(ScalarRegSize size, VRegister rd, VRegister rn) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
     ASIMDScalar2RegMisc(0, 0, size, 0b01010, rd, rn);
   }
   void abs(ScalarRegSize size, VRegister rd, VRegister rn) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
     ASIMDScalar2RegMisc(0, 0, size, 0b01011, rd, rn);
   }
   ///< size is destination size.
   void sqxtn(ScalarRegSize size, VRegister rd, VRegister rn) {
-    LOGMAN_THROW_AA_FMT(size != ScalarRegSize::i64Bit, "64-bit destination not supported");
+    LOGMAN_THROW_A_FMT(size != ScalarRegSize::i64Bit, "64-bit destination not supported");
     ASIMDScalar2RegMisc(0, 0, size, 0b10100, rd, rn);
   }
 
@@ -249,31 +249,31 @@ public:
   }
   ///< Comparison against 0.0
   void cmge(ScalarRegSize size, VRegister rd, VRegister rn) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
     ASIMDScalar2RegMisc(0, 1, size, 0b01000, rd, rn);
   }
   ///< Comparison against 0.0
   void cmle(ScalarRegSize size, VRegister rd, VRegister rn) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
     ASIMDScalar2RegMisc(0, 1, size, 0b01001, rd, rn);
   }
   void neg(ScalarRegSize size, VRegister rd, VRegister rn) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
     ASIMDScalar2RegMisc(0, 1, size, 0b01011, rd, rn);
   }
   ///< size is destination.
   void sqxtun(ScalarRegSize size, VRegister rd, VRegister rn) {
-    LOGMAN_THROW_AA_FMT(size != ScalarRegSize::i64Bit, "64-bit destination not supported");
+    LOGMAN_THROW_A_FMT(size != ScalarRegSize::i64Bit, "64-bit destination not supported");
     ASIMDScalar2RegMisc(0, 1, size, 0b10010, rd, rn);
   }
   ///< size is destination.
   void uqxtn(ScalarRegSize size, VRegister rd, VRegister rn) {
-    LOGMAN_THROW_AA_FMT(size != ScalarRegSize::i64Bit, "64-bit destination not supported");
+    LOGMAN_THROW_A_FMT(size != ScalarRegSize::i64Bit, "64-bit destination not supported");
     ASIMDScalar2RegMisc(0, 1, size, 0b10100, rd, rn);
   }
   ///< size is destination.
   void fcvtxn(ScalarRegSize size, VRegister rd, VRegister rn) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
     ASIMDScalar2RegMisc(0, 1, ScalarRegSize::i16Bit, 0b10110, rd, rn);
   }
   void fcvtnu(ScalarRegSize size, VRegister rd, VRegister rn) {
@@ -366,7 +366,7 @@ public:
   }
 
   void fmaxnmp(ScalarRegSize size, VRegister rd, VRegister rn) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
     const ScalarRegSize ConvertedSize =
       size == ScalarRegSize::i64Bit ?
@@ -376,7 +376,7 @@ public:
     ASIMDScalar2RegMisc(1, 1, ConvertedSize, 0b01100, rd, rn);
   }
   void faddp(ScalarRegSize size, VRegister rd, VRegister rn) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
     const ScalarRegSize ConvertedSize =
       size == ScalarRegSize::i64Bit ?
@@ -386,7 +386,7 @@ public:
     ASIMDScalar2RegMisc(1, 1, ConvertedSize, 0b01101, rd, rn);
   }
   void fmaxp(ScalarRegSize size, VRegister rd, VRegister rn) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
     const ScalarRegSize ConvertedSize =
       size == ScalarRegSize::i64Bit ?
@@ -396,17 +396,17 @@ public:
     ASIMDScalar2RegMisc(1, 1, ConvertedSize, 0b01111, rd, rn);
   }
   void fminnmp(ScalarRegSize size, VRegister rd, VRegister rn) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
     ASIMDScalar2RegMisc(1, 1, size, 0b01100, rd, rn);
   }
   void fminp(ScalarRegSize size, VRegister rd, VRegister rn) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
     ASIMDScalar2RegMisc(1, 1, size, 0b01111, rd, rn);
   }
 // Advanced SIMD scalar three different
   ///< size is destination.
   void sqdmlal(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
     const ScalarRegSize ConvertedSize =
       size == ScalarRegSize::i64Bit ?
         ScalarRegSize::i32Bit :
@@ -415,7 +415,7 @@ public:
   }
   ///< size is destination.
   void sqdmlsl(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
     const ScalarRegSize ConvertedSize =
       size == ScalarRegSize::i64Bit ?
         ScalarRegSize::i32Bit :
@@ -425,7 +425,7 @@ public:
 
   ///< size is destination.
   void sqdmull(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
     const ScalarRegSize ConvertedSize =
       size == ScalarRegSize::i64Bit ?
         ScalarRegSize::i32Bit :
@@ -440,41 +440,41 @@ public:
     ASIMD3RegSame(0, size, 0b00101, rd, rn, rm);
   }
   void cmgt(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
     ASIMD3RegSame(0, size, 0b00110, rd, rn, rm);
   }
   void cmge(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
     ASIMD3RegSame(0, size, 0b00111, rd, rn, rm);
   }
   void sshl(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
     ASIMD3RegSame(0, size, 0b01000, rd, rn, rm);
   }
   void sqshl(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
     ASIMD3RegSame(0, size, 0b01001, rd, rn, rm);
   }
   void srshl(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
     ASIMD3RegSame(0, size, 0b01010, rd, rn, rm);
   }
   void sqrshl(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
     ASIMD3RegSame(0, size, 0b01011, rd, rn, rm);
   }
   void add(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
     ASIMD3RegSame(0, size, 0b10000, rd, rn, rm);
   }
   void cmtst(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
     ASIMD3RegSame(0, size, 0b10001, rd, rn, rm);
   }
   void sqdmulh(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i32Bit || size == ScalarRegSize::i16Bit, "Invalid size");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i32Bit || size == ScalarRegSize::i16Bit, "Invalid size");
     ASIMD3RegSame(0, size, 0b10110, rd, rn, rm);
   }
   void fmulx(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
     const ScalarRegSize ConvertedSize =
       size == ScalarRegSize::i64Bit ?
@@ -484,7 +484,7 @@ public:
     ASIMD3RegSame(0, ConvertedSize, 0b11011, rd, rn, rm);
   }
   void fcmeq(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
     const ScalarRegSize ConvertedSize =
       size == ScalarRegSize::i64Bit ?
@@ -494,7 +494,7 @@ public:
     ASIMD3RegSame(0, ConvertedSize, 0b11100, rd, rn, rm);
   }
   void frecps(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
     const ScalarRegSize ConvertedSize =
       size == ScalarRegSize::i64Bit ?
@@ -504,7 +504,7 @@ public:
     ASIMD3RegSame(0, ConvertedSize, 0b11111, rd, rn, rm);
   }
   void frsqrts(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
     ASIMD3RegSame(0, size, 0b11111, rd, rn, rm);
   }
   void uqadd(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
@@ -514,41 +514,41 @@ public:
     ASIMD3RegSame(1, size, 0b00101, rd, rn, rm);
   }
   void cmhi(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
     ASIMD3RegSame(1, size, 0b00110, rd, rn, rm);
   }
   void cmhs(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
     ASIMD3RegSame(1, size, 0b00111, rd, rn, rm);
   }
   void ushl(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
     ASIMD3RegSame(1, size, 0b01000, rd, rn, rm);
   }
   void uqshl(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
     ASIMD3RegSame(1, size, 0b01001, rd, rn, rm);
   }
   void urshl(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
     ASIMD3RegSame(1, size, 0b01010, rd, rn, rm);
   }
   void uqrshl(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
     ASIMD3RegSame(1, size, 0b01011, rd, rn, rm);
   }
   void sub(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
     ASIMD3RegSame(1, size, 0b10000, rd, rn, rm);
   }
   void cmeq(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit, "Only supports 64-bit");
     ASIMD3RegSame(1, size, 0b10001, rd, rn, rm);
   }
   void sqrdmulh(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i32Bit || size == ScalarRegSize::i16Bit, "Invalid size");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i32Bit || size == ScalarRegSize::i16Bit, "Invalid size");
     ASIMD3RegSame(1, size, 0b10110, rd, rn, rm);
   }
   void fcmge(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
     const ScalarRegSize ConvertedSize =
       size == ScalarRegSize::i64Bit ?
@@ -558,7 +558,7 @@ public:
     ASIMD3RegSame(1, ConvertedSize, 0b11100, rd, rn, rm);
   }
   void facge(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
 
     const ScalarRegSize ConvertedSize =
       size == ScalarRegSize::i64Bit ?
@@ -568,21 +568,21 @@ public:
     ASIMD3RegSame(1, ConvertedSize, 0b11101, rd, rn, rm);
   }
   void fabd(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
     ASIMD3RegSame(1, size, 0b11010, rd, rn, rm);
   }
   void fcmgt(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
     ASIMD3RegSame(1, size, 0b11100, rd, rn, rm);
   }
   void facgt(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for float convert");
     ASIMD3RegSame(1, size, 0b11101, rd, rn, rm);
   }
 // Advanced SIMD scalar shift by immediate
   void sshr(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
-    LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
+    LOGMAN_THROW_A_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
+    LOGMAN_THROW_A_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
@@ -592,8 +592,8 @@ public:
     ASIMDScalarShiftByImm(0, immh, immb, 0b00000, rd, rn);
   }
   void ssra(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
-    LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
+    LOGMAN_THROW_A_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
+    LOGMAN_THROW_A_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
@@ -603,8 +603,8 @@ public:
     ASIMDScalarShiftByImm(0, immh, immb, 0b00010, rd, rn);
   }
   void srshr(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
-    LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
+    LOGMAN_THROW_A_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
+    LOGMAN_THROW_A_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
@@ -614,8 +614,8 @@ public:
     ASIMDScalarShiftByImm(0, immh, immb, 0b00100, rd, rn);
   }
   void srsra(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
-    LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
+    LOGMAN_THROW_A_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
+    LOGMAN_THROW_A_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
@@ -625,8 +625,8 @@ public:
     ASIMDScalarShiftByImm(0, immh, immb, 0b00110, rd, rn);
   }
   void shl(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
-    LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
+    LOGMAN_THROW_A_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
+    LOGMAN_THROW_A_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
     // Shift encoded a bit weirdly.
     // shift = immh:immb - elementsize but immh is /also/ used for element size.
     const uint32_t immh = 1 << FEXCore::ToUnderlying(size) | (Shift >> 3);
@@ -644,7 +644,7 @@ public:
   ///< size is destination
   void sqshrn(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_A_FMT(Shift > 0 && Shift < ScalarRegSizeInBits(size), "Invalid shift for sshr");
-    LOGMAN_THROW_AA_FMT(size != ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sqshrn");
+    LOGMAN_THROW_A_FMT(size != ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sqshrn");
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
@@ -655,7 +655,7 @@ public:
   }
   void sqrshrn(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_A_FMT(Shift > 0 && Shift < ScalarRegSizeInBits(size), "Invalid shift for sshr");
-    LOGMAN_THROW_AA_FMT(size != ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sqshrn");
+    LOGMAN_THROW_A_FMT(size != ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sqshrn");
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
@@ -666,8 +666,8 @@ public:
   }
   // TODO: SCVTF, FCVTZS
   void ushr(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
-    LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
+    LOGMAN_THROW_A_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
+    LOGMAN_THROW_A_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
@@ -677,8 +677,8 @@ public:
     ASIMDScalarShiftByImm(1, immh, immb, 0b00000, rd, rn);
   }
   void usra(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
-    LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
+    LOGMAN_THROW_A_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
+    LOGMAN_THROW_A_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
@@ -688,8 +688,8 @@ public:
     ASIMDScalarShiftByImm(1, immh, immb, 0b00010, rd, rn);
   }
   void urshr(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
-    LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
+    LOGMAN_THROW_A_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
+    LOGMAN_THROW_A_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
@@ -699,8 +699,8 @@ public:
     ASIMDScalarShiftByImm(1, immh, immb, 0b00100, rd, rn);
   }
   void ursra(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
-    LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
+    LOGMAN_THROW_A_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
+    LOGMAN_THROW_A_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
@@ -710,8 +710,8 @@ public:
     ASIMDScalarShiftByImm(1, immh, immb, 0b00110, rd, rn);
   }
   void sri(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
-    LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
+    LOGMAN_THROW_A_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
+    LOGMAN_THROW_A_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
@@ -721,8 +721,8 @@ public:
     ASIMDScalarShiftByImm(1, immh, immb, 0b01000, rd, rn);
   }
   void sli(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
-    LOGMAN_THROW_AA_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
+    LOGMAN_THROW_A_FMT(Shift > 0 && Shift < 64, "Invalid shift for sshr");
+    LOGMAN_THROW_A_FMT(size == ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sshr");
     // Shift encoded a bit weirdly.
     // shift = immh:immb - elementsize but immh is /also/ used for element size.
     const uint32_t immh = 1 << FEXCore::ToUnderlying(size) | (Shift >> 3);
@@ -748,7 +748,7 @@ public:
   ///< size is destination.
   void sqshrun(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_A_FMT(Shift > 0 && Shift < ScalarRegSizeInBits(size), "Invalid shift for sshr");
-    LOGMAN_THROW_AA_FMT(size != ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sqshrun");
+    LOGMAN_THROW_A_FMT(size != ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sqshrun");
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
@@ -760,7 +760,7 @@ public:
   ///< size is destination.
   void sqrshrun(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_A_FMT(Shift > 0 && Shift < ScalarRegSizeInBits(size), "Invalid shift for sshr");
-    LOGMAN_THROW_AA_FMT(size != ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sqrshrun");
+    LOGMAN_THROW_A_FMT(size != ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sqrshrun");
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
@@ -772,7 +772,7 @@ public:
   ///< size is destination.
   void uqshrn(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_A_FMT(Shift > 0 && Shift < ScalarRegSizeInBits(size), "Invalid shift for sshr");
-    LOGMAN_THROW_AA_FMT(size != ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sqrshrun");
+    LOGMAN_THROW_A_FMT(size != ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sqrshrun");
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
@@ -784,7 +784,7 @@ public:
   ///< size is destination.
   void uqrshrn(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Shift) {
     LOGMAN_THROW_A_FMT(Shift > 0 && Shift < ScalarRegSizeInBits(size), "Invalid shift for sshr");
-    LOGMAN_THROW_AA_FMT(size != ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sqrshrun");
+    LOGMAN_THROW_A_FMT(size != ARMEmitter::ScalarRegSize::i64Bit, "Invalid size selected for sqrshrun");
     const size_t SubregSizeInBits = ScalarRegSizeInBits(size);
     // Shift encoded in immh:immb, but inverted with 128-bit source
     // shift = (esize * 2) - immh:immb
@@ -993,7 +993,7 @@ public:
 
 // Floating-point compare
   void fcmp(ScalarRegSize Size, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(Size != ScalarRegSize::i8Bit, "8-bit destination not supported");
+    LOGMAN_THROW_A_FMT(Size != ScalarRegSize::i8Bit, "8-bit destination not supported");
 
     const auto ConvertedSize =
       Size == ARMEmitter::ScalarRegSize::i64Bit ? 0b01 :
@@ -1225,7 +1225,7 @@ public:
 
   // Floating-point conditional select
   void fcsel(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm, Condition Cond) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i16Bit || size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for {}", __func__);
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i16Bit || size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for {}", __func__);
 
     const uint32_t ConvertedSize =
       size == ScalarRegSize::i64Bit ? 0b01 :
@@ -1390,7 +1390,7 @@ private:
     dc32(Instr);
   }
   void Float1Source(ScalarRegSize size, uint32_t M, uint32_t S, uint32_t opcode, VRegister rd, VRegister rn) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i16Bit || size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for {}", __func__);
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i16Bit || size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for {}", __func__);
 
     const uint32_t ConvertedSize =
       size == ScalarRegSize::i64Bit ? 0b01 :
@@ -1447,7 +1447,7 @@ private:
   }
 
   void Float2Source(ScalarRegSize size, uint32_t M, uint32_t S, uint32_t opcode, VRegister rd, VRegister rn, VRegister rm) {
-    LOGMAN_THROW_AA_FMT(size == ScalarRegSize::i16Bit || size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for {}", __func__);
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i16Bit || size == ScalarRegSize::i64Bit || size == ScalarRegSize::i32Bit, "Invalid size selected for {}", __func__);
 
     const uint32_t ConvertedSize =
       size == ScalarRegSize::i64Bit ? 0b01 :

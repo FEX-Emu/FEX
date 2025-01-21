@@ -158,7 +158,7 @@ DEF_OP(LoadRegister) {
       }
     }
   } else {
-    LOGMAN_THROW_AA_FMT(false, "Unhandled Op->Class {}", Op->Class);
+    LOGMAN_THROW_A_FMT(false, "Unhandled Op->Class {}", Op->Class);
   }
 }
 
@@ -210,7 +210,7 @@ DEF_OP(StoreRegister) {
       }
     }
   } else {
-    LOGMAN_THROW_AA_FMT(false, "Unhandled Op->Class {}", Op->Class);
+    LOGMAN_THROW_A_FMT(false, "Unhandled Op->Class {}", Op->Class);
   }
 }
 
@@ -1276,10 +1276,10 @@ DEF_OP(VLoadVectorElement) {
   const auto DstSrc = GetVReg(Op->DstSrc.ID());
   const auto MemReg = GetReg(Op->Addr.ID());
 
-  LOGMAN_THROW_AA_FMT(ElementSize == IR::OpSize::i8Bit || ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit ||
-                        ElementSize == IR::OpSize::i64Bit || ElementSize == IR::OpSize::i128Bit,
-                      "Invalid element "
-                      "size");
+  LOGMAN_THROW_A_FMT(ElementSize == IR::OpSize::i8Bit || ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit ||
+                       ElementSize == IR::OpSize::i64Bit || ElementSize == IR::OpSize::i128Bit,
+                     "Invalid element "
+                     "size");
 
   if (Is256Bit) {
     LOGMAN_MSG_A_FMT("Unsupported 256-bit VLoadVectorElement");
@@ -1313,10 +1313,10 @@ DEF_OP(VStoreVectorElement) {
   const auto Value = GetVReg(Op->Value.ID());
   const auto MemReg = GetReg(Op->Addr.ID());
 
-  LOGMAN_THROW_AA_FMT(ElementSize == IR::OpSize::i8Bit || ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit ||
-                        ElementSize == IR::OpSize::i64Bit || ElementSize == IR::OpSize::i128Bit,
-                      "Invalid element "
-                      "size");
+  LOGMAN_THROW_A_FMT(ElementSize == IR::OpSize::i8Bit || ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit ||
+                       ElementSize == IR::OpSize::i64Bit || ElementSize == IR::OpSize::i128Bit,
+                     "Invalid element "
+                     "size");
 
   // Emit a half-barrier if TSO is enabled.
   if (CTX->IsVectorAtomicTSOEnabled()) {
@@ -1348,10 +1348,10 @@ DEF_OP(VBroadcastFromMem) {
   const auto Dst = GetVReg(Node);
   const auto MemReg = GetReg(Op->Address.ID());
 
-  LOGMAN_THROW_AA_FMT(ElementSize == IR::OpSize::i8Bit || ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit ||
-                        ElementSize == IR::OpSize::i64Bit || ElementSize == IR::OpSize::i128Bit,
-                      "Invalid element "
-                      "size");
+  LOGMAN_THROW_A_FMT(ElementSize == IR::OpSize::i8Bit || ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit ||
+                       ElementSize == IR::OpSize::i64Bit || ElementSize == IR::OpSize::i128Bit,
+                     "Invalid element "
+                     "size");
 
   if (Is256Bit && HostSupportsSVE256) {
     const auto GoverningPredicate = PRED_TMP_32B.Zeroing();
@@ -1894,7 +1894,7 @@ DEF_OP(MemSet) {
   };
 
   if (DirectionIsInline) {
-    LOGMAN_THROW_AA_FMT(DirectionConstant == 1 || DirectionConstant == -1, "unexpected direction");
+    LOGMAN_THROW_A_FMT(DirectionConstant == 1 || DirectionConstant == -1, "unexpected direction");
     EmitMemset(DirectionConstant);
   } else {
     // Emit forward direction memset then backward direction memset.
@@ -2171,7 +2171,7 @@ DEF_OP(MemCpy) {
   };
 
   if (DirectionIsInline) {
-    LOGMAN_THROW_AA_FMT(DirectionConstant == 1 || DirectionConstant == -1, "unexpected direction");
+    LOGMAN_THROW_A_FMT(DirectionConstant == 1 || DirectionConstant == -1, "unexpected direction");
     EmitMemcpy(DirectionConstant);
   } else {
     // Emit forward direction memset then backward direction memset.

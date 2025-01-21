@@ -805,7 +805,7 @@ public:
   // Advanced SIMD load/store single structure (post-indexed)
   template<typename T>
   void st1(ARMEmitter::SubRegSize size, T rt, uint32_t Index, ARMEmitter::Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     uint32_t Q;
     uint32_t R = 0;
@@ -813,28 +813,28 @@ public:
     uint32_t S;
     uint32_t Size;
     if (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 16, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 16, "Index too large");
       Q = Index >> 3;
       S = (Index >> 2) & 1;
       opcode = 0b000;
       Size = Index & 0b11;
     }
     else if (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 8, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b010;
       Size = (Index & 0b1) << 1;
     }
     else if (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 4, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b100;
       Size = 0b00;
     }
     else if (size == SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 2, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b100;
@@ -849,7 +849,7 @@ public:
   }
   template<typename T>
   void ld1(ARMEmitter::SubRegSize size, T rt, uint32_t Index, ARMEmitter::Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     uint32_t Q;
     uint32_t R = 0;
@@ -857,28 +857,28 @@ public:
     uint32_t S;
     uint32_t Size;
     if (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 16, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 16, "Index too large");
       Q = Index >> 3;
       S = (Index >> 2) & 1;
       opcode = 0b001;
       Size = Index & 0b11;
     }
     else if (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 8, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b011;
       Size = (Index & 0b1) << 1;
     }
     else if (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 4, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b100;
       Size = 0b00;
     }
     else if (size == SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 2, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b101;
@@ -893,7 +893,7 @@ public:
   }
   template<typename T>
   void ld1r(ARMEmitter::SubRegSize size, T rt, ARMEmitter::Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_AA_FMT(PostOffset == 1 || PostOffset == 2 || PostOffset == 4 || PostOffset == 8, "Index too large");
+    LOGMAN_THROW_A_FMT(PostOffset == 1 || PostOffset == 2 || PostOffset == 4 || PostOffset == 8, "Index too large");
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     constexpr uint32_t Q = std::is_same_v<ARMEmitter::QRegister, T> ? 1 : 0;
     uint32_t R = 0;
@@ -906,7 +906,7 @@ public:
   template<typename T>
   void ld2r(SubRegSize size, T rt, T rt2, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
-    LOGMAN_THROW_AA_FMT(PostOffset == 2 || PostOffset == 4 || PostOffset == 8 || PostOffset == 16, "Index too large");
+    LOGMAN_THROW_A_FMT(PostOffset == 2 || PostOffset == 4 || PostOffset == 8 || PostOffset == 16, "Index too large");
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     constexpr uint32_t Q = std::is_same_v<QRegister, T> ? 1 : 0;
     uint32_t R = 1;
@@ -919,7 +919,7 @@ public:
   template<typename T>
   void ld3r(SubRegSize size, T rt, T rt2, T rt3, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
-    LOGMAN_THROW_AA_FMT(PostOffset == 3 || PostOffset == 6 || PostOffset == 12 || PostOffset == 24, "Index too large");
+    LOGMAN_THROW_A_FMT(PostOffset == 3 || PostOffset == 6 || PostOffset == 12 || PostOffset == 24, "Index too large");
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     constexpr uint32_t Q = std::is_same_v<QRegister, T> ? 1 : 0;
     uint32_t R = 0;
@@ -931,7 +931,7 @@ public:
   template<typename T>
   void ld4r(SubRegSize size, T rt, T rt2, T rt3, T rt4, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
-    LOGMAN_THROW_AA_FMT(PostOffset == 4 || PostOffset == 8 || PostOffset == 16 || PostOffset == 32, "Index too large");
+    LOGMAN_THROW_A_FMT(PostOffset == 4 || PostOffset == 8 || PostOffset == 16 || PostOffset == 32, "Index too large");
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     constexpr uint32_t Q = std::is_same_v<QRegister, T> ? 1 : 0;
     uint32_t R = 1;
@@ -943,7 +943,7 @@ public:
 
   template<typename T>
   void st2(SubRegSize size, T rt, T rt2, uint32_t Index, Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -953,28 +953,28 @@ public:
     uint32_t S;
     uint32_t Size;
     if (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 16, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 16, "Index too large");
       Q = Index >> 3;
       S = (Index >> 2) & 1;
       opcode = 0b000;
       Size = Index & 0b11;
     }
     else if (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 8, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b010;
       Size = (Index & 0b1) << 1;
     }
     else if (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 4, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b100;
       Size = 0b00;
     }
     else if (size == SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 2, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b100;
@@ -989,7 +989,7 @@ public:
   }
   template<typename T>
   void ld2(SubRegSize size, T rt, T rt2, uint32_t Index, Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -999,28 +999,28 @@ public:
     uint32_t S;
     uint32_t Size;
     if (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 16, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 16, "Index too large");
       Q = Index >> 3;
       S = (Index >> 2) & 1;
       opcode = 0b000;
       Size = Index & 0b11;
     }
     else if (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 8, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b010;
       Size = (Index & 0b1) << 1;
     }
     else if (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 4, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b100;
       Size = 0b00;
     }
     else if (size == SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 2, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b100;
@@ -1035,7 +1035,7 @@ public:
   }
   template<typename T>
   void st3(SubRegSize size, T rt, T rt2, T rt3, uint32_t Index, Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -1045,28 +1045,28 @@ public:
     uint32_t S;
     uint32_t Size;
     if (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 16, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 16, "Index too large");
       Q = Index >> 3;
       S = (Index >> 2) & 1;
       opcode = 0b001;
       Size = Index & 0b11;
     }
     else if (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 8, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b011;
       Size = (Index & 0b1) << 1;
     }
     else if (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 4, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b101;
       Size = 0b00;
     }
     else if (size == SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 2, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b101;
@@ -1081,7 +1081,7 @@ public:
   }
   template<typename T>
   void ld3(SubRegSize size, T rt, T rt2, T rt3, uint32_t Index, Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -1091,28 +1091,28 @@ public:
     uint32_t S;
     uint32_t Size;
     if (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 16, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 16, "Index too large");
       Q = Index >> 3;
       S = (Index >> 2) & 1;
       opcode = 0b001;
       Size = Index & 0b11;
     }
     else if (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 8, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b011;
       Size = (Index & 0b1) << 1;
     }
     else if (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 4, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b101;
       Size = 0b00;
     }
     else if (size == SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 2, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b101;
@@ -1127,7 +1127,7 @@ public:
   }
   template<typename T>
   void st4(SubRegSize size, T rt, T rt2, T rt3, T rt4, uint32_t Index, Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -1137,28 +1137,28 @@ public:
     uint32_t S;
     uint32_t Size;
     if (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 16, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 16, "Index too large");
       Q = Index >> 3;
       S = (Index >> 2) & 1;
       opcode = 0b001;
       Size = Index & 0b11;
     }
     else if (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 8, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b011;
       Size = (Index & 0b1) << 1;
     }
     else if (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 4, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b101;
       Size = 0b00;
     }
     else if (size == SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 2, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b101;
@@ -1173,7 +1173,7 @@ public:
   }
   template<typename T>
   void ld4(SubRegSize size, T rt, T rt2, T rt3, T rt4, uint32_t Index, Register rn, uint32_t PostOffset) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -1183,28 +1183,28 @@ public:
     uint32_t S;
     uint32_t Size;
     if (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 16, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 16, "Index too large");
       Q = Index >> 3;
       S = (Index >> 2) & 1;
       opcode = 0b001;
       Size = Index & 0b11;
     }
     else if (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 8, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b011;
       Size = (Index & 0b1) << 1;
     }
     else if (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 4, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b101;
       Size = 0b00;
     }
     else if (size == SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 2, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b101;
@@ -1220,7 +1220,7 @@ public:
 
   template<typename T>
   void st1(ARMEmitter::SubRegSize size, T rt, uint32_t Index, ARMEmitter::Register rn, ARMEmitter::Register rm) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     uint32_t Q;
     uint32_t R = 0;
@@ -1228,28 +1228,28 @@ public:
     uint32_t S;
     uint32_t Size;
     if (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 16, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 16, "Index too large");
       Q = Index >> 3;
       S = (Index >> 2) & 1;
       opcode = 0b000;
       Size = Index & 0b11;
     }
     else if (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 8, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b010;
       Size = (Index & 0b1) << 1;
     }
     else if (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 4, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b100;
       Size = 0b00;
     }
     else if (size == SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 2, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b100;
@@ -1264,7 +1264,7 @@ public:
   }
   template<typename T>
   void ld1(ARMEmitter::SubRegSize size, T rt, uint32_t Index, ARMEmitter::Register rn, ARMEmitter::Register rm) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     uint32_t Q;
     uint32_t R = 0;
@@ -1272,28 +1272,28 @@ public:
     uint32_t S;
     uint32_t Size;
     if (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 16, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 16, "Index too large");
       Q = Index >> 3;
       S = (Index >> 2) & 1;
       opcode = 0b001;
       Size = Index & 0b11;
     }
     else if (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 8, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b011;
       Size = (Index & 0b1) << 1;
     }
     else if (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 4, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b100;
       Size = 0b00;
     }
     else if (size == SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 2, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b101;
@@ -1354,7 +1354,7 @@ public:
 
   template<typename T>
   void st2(SubRegSize size, T rt, T rt2, uint32_t Index, Register rn, Register rm) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -1364,28 +1364,28 @@ public:
     uint32_t S;
     uint32_t Size;
     if (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 16, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 16, "Index too large");
       Q = Index >> 3;
       S = (Index >> 2) & 1;
       opcode = 0b000;
       Size = Index & 0b11;
     }
     else if (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 8, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b010;
       Size = (Index & 0b1) << 1;
     }
     else if (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 4, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b100;
       Size = 0b00;
     }
     else if (size == SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 2, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b100;
@@ -1400,7 +1400,7 @@ public:
   }
   template<typename T>
   void ld2(SubRegSize size, T rt, T rt2, uint32_t Index, Register rn, Register rm) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -1410,28 +1410,28 @@ public:
     uint32_t S;
     uint32_t Size;
     if (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 16, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 16, "Index too large");
       Q = Index >> 3;
       S = (Index >> 2) & 1;
       opcode = 0b000;
       Size = Index & 0b11;
     }
     else if (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 8, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b010;
       Size = (Index & 0b1) << 1;
     }
     else if (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 4, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b100;
       Size = 0b00;
     }
     else if (size == SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 2, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b100;
@@ -1446,7 +1446,7 @@ public:
   }
   template<typename T>
   void st3(SubRegSize size, T rt, T rt2, T rt3, uint32_t Index, Register rn, Register rm) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -1456,28 +1456,28 @@ public:
     uint32_t S;
     uint32_t Size;
     if (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 16, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 16, "Index too large");
       Q = Index >> 3;
       S = (Index >> 2) & 1;
       opcode = 0b001;
       Size = Index & 0b11;
     }
     else if (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 8, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b011;
       Size = (Index & 0b1) << 1;
     }
     else if (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 4, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b101;
       Size = 0b00;
     }
     else if (size == SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 2, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b101;
@@ -1492,7 +1492,7 @@ public:
   }
   template<typename T>
   void ld3(SubRegSize size, T rt, T rt2, T rt3, uint32_t Index, Register rn, Register rm) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -1502,28 +1502,28 @@ public:
     uint32_t S;
     uint32_t Size;
     if (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 16, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 16, "Index too large");
       Q = Index >> 3;
       S = (Index >> 2) & 1;
       opcode = 0b001;
       Size = Index & 0b11;
     }
     else if (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 8, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b011;
       Size = (Index & 0b1) << 1;
     }
     else if (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 4, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b101;
       Size = 0b00;
     }
     else if (size == SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 2, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b101;
@@ -1538,7 +1538,7 @@ public:
   }
   template<typename T>
   void st4(SubRegSize size, T rt, T rt2, T rt3, T rt4, uint32_t Index, Register rn, Register rm) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -1548,28 +1548,28 @@ public:
     uint32_t S;
     uint32_t Size;
     if (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 16, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 16, "Index too large");
       Q = Index >> 3;
       S = (Index >> 2) & 1;
       opcode = 0b001;
       Size = Index & 0b11;
     }
     else if (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 8, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b011;
       Size = (Index & 0b1) << 1;
     }
     else if (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 4, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b101;
       Size = 0b00;
     }
     else if (size == SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 2, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b101;
@@ -1584,7 +1584,7 @@ public:
   }
   template<typename T>
   void ld4(SubRegSize size, T rt, T rt2, T rt3, T rt4, uint32_t Index, Register rn, Register rm) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Incorrect size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -1594,28 +1594,28 @@ public:
     uint32_t S;
     uint32_t Size;
     if (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 16, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 16, "Index too large");
       Q = Index >> 3;
       S = (Index >> 2) & 1;
       opcode = 0b001;
       Size = Index & 0b11;
     }
     else if (size == SubRegSize::i16Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 8, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 8, "Index too large");
       Q = Index >> 2;
       S = (Index >> 1) & 1;
       opcode = 0b011;
       Size = (Index & 0b1) << 1;
     }
     else if (size == SubRegSize::i32Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 4, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 4, "Index too large");
       Q = Index >> 1;
       S = Index & 1;
       opcode = 0b101;
       Size = 0b00;
     }
     else if (size == SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(Index < 2, "Index too large");
+      LOGMAN_THROW_A_FMT(Index < 2, "Index too large");
       Q = Index;
       S = 0;
       opcode = 0b101;
@@ -3779,7 +3779,7 @@ public:
   void strb(ARMEmitter::VRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      LOGMAN_THROW_AA_FMT(MemSrc.MetaType.ExtendedType.Shift == false, "Can't shift byte");
+      LOGMAN_THROW_A_FMT(MemSrc.MetaType.ExtendedType.Shift == false, "Can't shift byte");
       strb(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option);
     }
     else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
@@ -3809,7 +3809,7 @@ public:
   void ldrb(ARMEmitter::VRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
         MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      LOGMAN_THROW_AA_FMT(MemSrc.MetaType.ExtendedType.Shift == false, "Can't shift byte");
+      LOGMAN_THROW_A_FMT(MemSrc.MetaType.ExtendedType.Shift == false, "Can't shift byte");
       ldrb(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option);
     }
     else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
@@ -4139,11 +4139,11 @@ public:
   }
 
   void ldr(SubRegSize size, Register rt, Register rn, uint32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
     LoadStoreUnsigned(FEXCore::ToUnderlying(size), 0, 0b01, rt, rn, Imm);
   }
   void str(SubRegSize size, Register rt, Register rn, uint32_t Imm = 0) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
     LoadStoreUnsigned(FEXCore::ToUnderlying(size), 0, 0b00, rt, rn, Imm);
   }
 

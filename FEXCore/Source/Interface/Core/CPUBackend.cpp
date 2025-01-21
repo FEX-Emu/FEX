@@ -373,7 +373,7 @@ namespace CPU {
     CodeBuffer Buffer;
     Buffer.Size = Size;
     Buffer.Ptr = static_cast<uint8_t*>(FEXCore::Allocator::VirtualAlloc(Buffer.Size, true));
-    LOGMAN_THROW_AA_FMT(!!Buffer.Ptr, "Couldn't allocate code buffer");
+    LOGMAN_THROW_A_FMT(!!Buffer.Ptr, "Couldn't allocate code buffer");
 
     if (static_cast<Context::ContextImpl*>(ThreadState->CTX)->Config.GlobalJITNaming()) {
       static_cast<Context::ContextImpl*>(ThreadState->CTX)->Symbols.RegisterJITSpace(Buffer.Ptr, Buffer.Size);

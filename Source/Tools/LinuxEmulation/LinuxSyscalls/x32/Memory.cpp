@@ -22,11 +22,11 @@ $end_info$
 namespace FEX::HLE::x32 {
 
 void* x32SyscallHandler::GuestMmap(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length, int prot, int flags, int fd, off_t offset) {
-  LOGMAN_THROW_AA_FMT((length >> 32) == 0, "values must fit to 32 bits");
+  LOGMAN_THROW_A_FMT((length >> 32) == 0, "values must fit to 32 bits");
 
   auto Result = (uint64_t)GetAllocator()->Mmap((void*)addr, length, prot, flags, fd, offset);
 
-  LOGMAN_THROW_AA_FMT((Result >> 32) == 0 || (Result >> 32) == 0xFFFFFFFF, "values must fit to 32 bits");
+  LOGMAN_THROW_A_FMT((Result >> 32) == 0 || (Result >> 32) == 0xFFFFFFFF, "values must fit to 32 bits");
 
   if (!FEX::HLE::HasSyscallError(Result)) {
     FEX::HLE::_SyscallHandler->TrackMmap(Thread, Result, length, prot, flags, fd, offset);
@@ -38,8 +38,8 @@ void* x32SyscallHandler::GuestMmap(FEXCore::Core::InternalThreadState* Thread, v
 }
 
 int x32SyscallHandler::GuestMunmap(FEXCore::Core::InternalThreadState* Thread, void* addr, uint64_t length) {
-  LOGMAN_THROW_AA_FMT((uintptr_t(addr) >> 32) == 0, "values must fit to 32 bits");
-  LOGMAN_THROW_AA_FMT((length >> 32) == 0, "values must fit to 32 bits");
+  LOGMAN_THROW_A_FMT((uintptr_t(addr) >> 32) == 0, "values must fit to 32 bits");
+  LOGMAN_THROW_A_FMT((length >> 32) == 0, "values must fit to 32 bits");
 
   auto Result = GetAllocator()->Munmap(addr, length);
 

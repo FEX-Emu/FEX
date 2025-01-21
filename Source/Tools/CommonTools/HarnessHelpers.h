@@ -409,7 +409,7 @@ public:
       return reinterpret_cast<uint64_t>(FEXCore::Allocator::VirtualAlloc(StackSize())) + StackSize();
     } else {
       uint64_t Result = reinterpret_cast<uint64_t>(FEXCore::Allocator::VirtualAlloc(reinterpret_cast<void*>(STACK_OFFSET), StackSize()));
-      LOGMAN_THROW_AA_FMT(Result != ~0ULL, "Stack Pointer mmap failed");
+      LOGMAN_THROW_A_FMT(Result != ~0ULL, "Stack Pointer mmap failed");
       return Result + StackSize();
     }
   }
@@ -422,7 +422,7 @@ public:
     bool LimitedSize = true;
     auto DoMMap = [](uint64_t Address, size_t Size) -> void* {
       void* Result = FEXCore::Allocator::VirtualAlloc(reinterpret_cast<void*>(Address), Size, true);
-      LOGMAN_THROW_AA_FMT(Result == reinterpret_cast<void*>(Address), "Map Memory mmap failed");
+      LOGMAN_THROW_A_FMT(Result == reinterpret_cast<void*>(Address), "Map Memory mmap failed");
       return Result;
     };
 

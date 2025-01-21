@@ -191,7 +191,7 @@ unsigned DeadFlagCalculationEliminination::FlagsForCondClassType(CondClassType C
   case COND_FLEU:
   case COND_FGT: return FLAG_N | FLAG_Z | FLAG_V;
 
-  default: LOGMAN_THROW_AA_FMT(false, "unknown cond class type"); return FLAG_NZCV;
+  default: LOGMAN_THROW_A_FMT(false, "unknown cond class type"); return FLAG_NZCV;
   }
 }
 
@@ -435,7 +435,7 @@ FlagInfo DeadFlagCalculationEliminination::Classify(IROp_Header* IROp) {
     });
   }
 
-  default: LOGMAN_THROW_AA_FMT(false, "invalid special op"); FEX_UNREACHABLE;
+  default: LOGMAN_THROW_A_FMT(false, "invalid special op"); FEX_UNREACHABLE;
   }
 
   FEX_UNREACHABLE;

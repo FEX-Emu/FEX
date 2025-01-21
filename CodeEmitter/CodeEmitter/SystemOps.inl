@@ -83,7 +83,7 @@ public:
 
     // Barriers
     void clrex(uint32_t imm = 15) {
-      LOGMAN_THROW_AA_FMT(imm < 16, "Immediate out of range");
+      LOGMAN_THROW_A_FMT(imm < 16, "Immediate out of range");
       Barrier(ARMEmitter::BarrierRegister::CLREX, imm);
     }
     void dsb(ARMEmitter::BarrierScope Scope) {
@@ -117,7 +117,7 @@ private:
 
     // Exception Generation
     void ExceptionGeneration(uint32_t opc, uint32_t op2, uint32_t LL, uint32_t Imm) {
-      LOGMAN_THROW_AA_FMT((Imm & 0xFFFF'0000) == 0, "Imm amount too large");
+      LOGMAN_THROW_A_FMT((Imm & 0xFFFF'0000) == 0, "Imm amount too large");
 
       uint32_t Instr = 0b1101'0100 << 24;
 

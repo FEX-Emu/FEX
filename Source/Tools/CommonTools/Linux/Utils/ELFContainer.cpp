@@ -147,7 +147,7 @@ ELFContainer::ELFContainer(const fextl::string& Filename, const fextl::string& R
   // PrintInitArray();
   // PrintDynamicTable();
 
-  // LOGMAN_THROW_AA_FMT(InterpreterHeader == nullptr, "Can only handle static programs");
+  // LOGMAN_THROW_A_FMT(InterpreterHeader == nullptr, "Can only handle static programs");
 }
 
 ELFContainer::~ELFContainer() {
@@ -191,8 +191,8 @@ bool ELFContainer::LoadELF_32() {
   Mode = MODE_32BIT;
 
   memcpy(&Header, reinterpret_cast<Elf32_Ehdr*>(&RawFile.at(0)), sizeof(Elf32_Ehdr));
-  LOGMAN_THROW_AA_FMT(Header._32.e_phentsize == sizeof(Elf32_Phdr), "PH Entry size wasn't correct size");
-  LOGMAN_THROW_AA_FMT(Header._32.e_shentsize == sizeof(Elf32_Shdr), "PH Entry size wasn't correct size");
+  LOGMAN_THROW_A_FMT(Header._32.e_phentsize == sizeof(Elf32_Phdr), "PH Entry size wasn't correct size");
+  LOGMAN_THROW_A_FMT(Header._32.e_shentsize == sizeof(Elf32_Shdr), "PH Entry size wasn't correct size");
 
   if (Header._32.e_machine != EM_386) {
     LogMan::Msg::DFmt("32bit ELF wasn't x86 based");
@@ -229,8 +229,8 @@ bool ELFContainer::LoadELF_64() {
   Mode = MODE_64BIT;
 
   memcpy(&Header, reinterpret_cast<Elf64_Ehdr*>(&RawFile.at(0)), sizeof(Elf64_Ehdr));
-  LOGMAN_THROW_AA_FMT(Header._64.e_phentsize == 56, "PH Entry size wasn't 56");
-  LOGMAN_THROW_AA_FMT(Header._64.e_shentsize == 64, "PH Entry size wasn't 64");
+  LOGMAN_THROW_A_FMT(Header._64.e_phentsize == 56, "PH Entry size wasn't 56");
+  LOGMAN_THROW_A_FMT(Header._64.e_shentsize == 64, "PH Entry size wasn't 64");
 
   if (Header._64.e_machine != EM_X86_64) {
     LogMan::Msg::DFmt("64bit ELF wasn't x86-64 based");
@@ -402,7 +402,7 @@ void ELFContainer::CalculateSymbols() {
     uint64_t NumDynSymSymbols = 0;
     if (SymTabHeader) {
       LOGMAN_THROW_A_FMT(SymTabHeader->sh_link < SectionHeaders.size(), "Symbol table string table section is wrong");
-      LOGMAN_THROW_AA_FMT(SymTabHeader->sh_entsize == sizeof(Elf32_Sym), "Entry size doesn't match symbol entry");
+      LOGMAN_THROW_A_FMT(SymTabHeader->sh_entsize == sizeof(Elf32_Sym), "Entry size doesn't match symbol entry");
 
       StringTableHeader = SectionHeaders.at(SymTabHeader->sh_link)._32;
       StrTab = &RawFile.at(StringTableHeader->sh_offset);
@@ -411,7 +411,7 @@ void ELFContainer::CalculateSymbols() {
 
     if (DynSymTabHeader) {
       LOGMAN_THROW_A_FMT(DynSymTabHeader->sh_link < SectionHeaders.size(), "Symbol table string table section is wrong");
-      LOGMAN_THROW_AA_FMT(DynSymTabHeader->sh_entsize == sizeof(Elf32_Sym), "Entry size doesn't match symbol entry");
+      LOGMAN_THROW_A_FMT(DynSymTabHeader->sh_entsize == sizeof(Elf32_Sym), "Entry size doesn't match symbol entry");
 
       DynStringTableHeader = SectionHeaders.at(DynSymTabHeader->sh_link)._32;
       DynStrTab = &RawFile.at(DynStringTableHeader->sh_offset);
@@ -526,7 +526,7 @@ void ELFContainer::CalculateSymbols() {
     uint64_t NumDynSymSymbols = 0;
     if (SymTabHeader) {
       LOGMAN_THROW_A_FMT(SymTabHeader->sh_link < SectionHeaders.size(), "Symbol table string table section is wrong");
-      LOGMAN_THROW_AA_FMT(SymTabHeader->sh_entsize == sizeof(Elf64_Sym), "Entry size doesn't match symbol entry");
+      LOGMAN_THROW_A_FMT(SymTabHeader->sh_entsize == sizeof(Elf64_Sym), "Entry size doesn't match symbol entry");
 
       StringTableHeader = SectionHeaders.at(SymTabHeader->sh_link)._64;
       StrTab = &RawFile.at(StringTableHeader->sh_offset);
@@ -535,7 +535,7 @@ void ELFContainer::CalculateSymbols() {
 
     if (DynSymTabHeader) {
       LOGMAN_THROW_A_FMT(DynSymTabHeader->sh_link < SectionHeaders.size(), "Symbol table string table section is wrong");
-      LOGMAN_THROW_AA_FMT(DynSymTabHeader->sh_entsize == sizeof(Elf64_Sym), "Entry size doesn't match symbol entry");
+      LOGMAN_THROW_A_FMT(DynSymTabHeader->sh_entsize == sizeof(Elf64_Sym), "Entry size doesn't match symbol entry");
 
       DynStringTableHeader = SectionHeaders.at(DynSymTabHeader->sh_link)._64;
       DynStrTab = &RawFile.at(DynStringTableHeader->sh_offset);
@@ -795,7 +795,7 @@ void ELFContainer::PrintSymbolTable() const {
     }
 
     LOGMAN_THROW_A_FMT(SymTabHeader->sh_link < SectionHeaders.size(), "Symbol table string table section is wrong");
-    LOGMAN_THROW_AA_FMT(SymTabHeader->sh_entsize == sizeof(Elf32_Sym), "Entry size doesn't match symbol entry");
+    LOGMAN_THROW_A_FMT(SymTabHeader->sh_entsize == sizeof(Elf32_Sym), "Entry size doesn't match symbol entry");
 
     StringTableHeader = SectionHeaders.at(SymTabHeader->sh_link)._32;
     StrTab = &RawFile.at(StringTableHeader->sh_offset);
@@ -826,7 +826,7 @@ void ELFContainer::PrintSymbolTable() const {
     }
 
     LOGMAN_THROW_A_FMT(SymTabHeader->sh_link < SectionHeaders.size(), "Symbol table string table section is wrong");
-    LOGMAN_THROW_AA_FMT(SymTabHeader->sh_entsize == sizeof(Elf64_Sym), "Entry size doesn't match symbol entry");
+    LOGMAN_THROW_A_FMT(SymTabHeader->sh_entsize == sizeof(Elf64_Sym), "Entry size doesn't match symbol entry");
 
     StringTableHeader = SectionHeaders.at(SymTabHeader->sh_link)._64;
     StrTab = &RawFile.at(StringTableHeader->sh_offset);
@@ -885,7 +885,7 @@ void ELFContainer::PrintRelocationTable() const {
           LogMan::Msg::DFmt("\toffset: 0x{:x}", Entry->r_offset);
           LogMan::Msg::DFmt("\tSym:    0x{:x}", Sym);
           if (DynSymHeader && Sym != 0) {
-            LOGMAN_THROW_AA_FMT(DynSymHeader->sh_entsize == sizeof(Elf64_Sym), "Oops, entry size doesn't match");
+            LOGMAN_THROW_A_FMT(DynSymHeader->sh_entsize == sizeof(Elf64_Sym), "Oops, entry size doesn't match");
 
             const uint64_t offset = DynSymHeader->sh_offset + Sym * DynSymHeader->sh_entsize;
             const auto* Symbol = reinterpret_cast<const Elf64_Sym*>(&RawFile.at(offset));
@@ -957,7 +957,7 @@ void ELFContainer::FixupRelocations(void* ELFBase, uint64_t GuestELFBase, Symbol
           const Elf64_Sym* EntrySymbol {nullptr};
           const char* EntrySymbolName {nullptr};
           if (DynSymHeader && Sym != 0) {
-            LOGMAN_THROW_AA_FMT(DynSymHeader->sh_entsize == sizeof(Elf64_Sym), "Oops, entry size doesn't match");
+            LOGMAN_THROW_A_FMT(DynSymHeader->sh_entsize == sizeof(Elf64_Sym), "Oops, entry size doesn't match");
 
             const uint64_t offset = DynSymHeader->sh_offset + Sym * DynSymHeader->sh_entsize;
             EntrySymbol = reinterpret_cast<const Elf64_Sym*>(&RawFile.at(offset));
