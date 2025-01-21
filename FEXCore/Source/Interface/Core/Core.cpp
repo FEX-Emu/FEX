@@ -999,11 +999,11 @@ ContextImpl::AddCustomIREntrypoint(uintptr_t Entrypoint, CustomIREntrypointHandl
 }
 
 void ContextImpl::AddThunkTrampolineIRHandler(uintptr_t Entrypoint, uintptr_t GuestThunkEntrypoint) {
-  LOGMAN_THROW_AA_FMT(Entrypoint, "Tried to link null pointer address to guest function");
-  LOGMAN_THROW_AA_FMT(GuestThunkEntrypoint, "Tried to link address to null pointer guest function");
+  LOGMAN_THROW_A_FMT(Entrypoint, "Tried to link null pointer address to guest function");
+  LOGMAN_THROW_A_FMT(GuestThunkEntrypoint, "Tried to link address to null pointer guest function");
   if (!Config.Is64BitMode) {
-    LOGMAN_THROW_AA_FMT((Entrypoint >> 32) == 0, "Tried to link 64-bit address in 32-bit mode");
-    LOGMAN_THROW_AA_FMT((GuestThunkEntrypoint >> 32) == 0, "Tried to link 64-bit address in 32-bit mode");
+    LOGMAN_THROW_A_FMT((Entrypoint >> 32) == 0, "Tried to link 64-bit address in 32-bit mode");
+    LOGMAN_THROW_A_FMT((GuestThunkEntrypoint >> 32) == 0, "Tried to link 64-bit address in 32-bit mode");
   }
 
   LogMan::Msg::DFmt("Thunks: Adding guest trampoline from address {:#x} to guest function {:#x}", Entrypoint, GuestThunkEntrypoint);

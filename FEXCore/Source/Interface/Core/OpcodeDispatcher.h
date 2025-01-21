@@ -1548,7 +1548,7 @@ private:
 
   [[nodiscard]]
   static uint32_t GPROffset(X86State::X86Reg reg) {
-    LOGMAN_THROW_AA_FMT(reg <= X86State::X86Reg::REG_R15, "Invalid reg used");
+    LOGMAN_THROW_A_FMT(reg <= X86State::X86Reg::REG_R15, "Invalid reg used");
     return static_cast<uint32_t>(offsetof(Core::CPUState, gregs[static_cast<size_t>(reg)]));
   }
 
@@ -1707,7 +1707,7 @@ private:
       CFInverted ^= true;
     }
 
-    LOGMAN_THROW_AA_FMT(CFInverted == RequiredInvert, "post condition");
+    LOGMAN_THROW_A_FMT(CFInverted == RequiredInvert, "post condition");
   }
 
   void CarryInvert() {
@@ -1889,7 +1889,7 @@ private:
   }
 
   Ref LoadRegCache(uint64_t Offset, uint8_t Index, RegisterClassType RegClass, IR::OpSize Size) {
-    LOGMAN_THROW_AA_FMT(Index < 64, "valid index");
+    LOGMAN_THROW_A_FMT(Index < 64, "valid index");
     uint64_t Bit = (1ull << (uint64_t)Index);
 
     if (Size == OpSize::i128Bit && (RegCache.Partial & Bit)) {
@@ -1944,8 +1944,8 @@ private:
   }
 
   RefPair LoadRegCachePair(uint64_t Offset, uint8_t Index, RegisterClassType RegClass, IR::OpSize Size) {
-    LOGMAN_THROW_AA_FMT(Index != DFIndex, "must be pairable");
-    LOGMAN_THROW_AA_FMT(Size != IR::OpSize::iUnsized, "Invalid size!");
+    LOGMAN_THROW_A_FMT(Index != DFIndex, "must be pairable");
+    LOGMAN_THROW_A_FMT(Size != IR::OpSize::iUnsized, "Invalid size!");
 
     // Try to load a pair into the cache
     uint64_t Bits = (3ull << (uint64_t)Index);
@@ -1993,8 +1993,8 @@ private:
   }
 
   void StoreContext(uint8_t Index, Ref Value) {
-    LOGMAN_THROW_AA_FMT(Index < 64, "valid index");
-    LOGMAN_THROW_AA_FMT(Value != InvalidNode, "storing valid");
+    LOGMAN_THROW_A_FMT(Index < 64, "valid index");
+    LOGMAN_THROW_A_FMT(Value != InvalidNode, "storing valid");
 
     uint64_t Bit = (1ull << (uint64_t)Index);
 
@@ -2425,7 +2425,7 @@ private:
   }
 
   AddressMode SelectPairAddressMode(AddressMode A, IR::OpSize Size) {
-    LOGMAN_THROW_AA_FMT(Size != IR::OpSize::iUnsized, "Invalid size!");
+    LOGMAN_THROW_A_FMT(Size != IR::OpSize::iUnsized, "Invalid size!");
     const auto SizeInt = IR::OpSizeToSize(Size);
     AddressMode Out {};
 

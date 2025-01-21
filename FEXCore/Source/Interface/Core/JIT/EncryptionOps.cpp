@@ -24,7 +24,7 @@ DEF_OP(VAESEnc) {
   const auto State = GetVReg(Op->State.ID());
   const auto ZeroReg = GetVReg(Op->ZeroReg.ID());
 
-  LOGMAN_THROW_AA_FMT(OpSize == IR::OpSize::i128Bit, "Currently only supports 128-bit operations.");
+  LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i128Bit, "Currently only supports 128-bit operations.");
 
   if (Dst == State && Dst != Key) {
     // Optimal case in which Dst already contains the starting state.
@@ -49,7 +49,7 @@ DEF_OP(VAESEncLast) {
   const auto State = GetVReg(Op->State.ID());
   const auto ZeroReg = GetVReg(Op->ZeroReg.ID());
 
-  LOGMAN_THROW_AA_FMT(OpSize == IR::OpSize::i128Bit, "Currently only supports 128-bit operations.");
+  LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i128Bit, "Currently only supports 128-bit operations.");
 
   if (Dst == State && Dst != Key) {
     // Optimal case in which Dst already contains the starting state.
@@ -72,7 +72,7 @@ DEF_OP(VAESDec) {
   const auto State = GetVReg(Op->State.ID());
   const auto ZeroReg = GetVReg(Op->ZeroReg.ID());
 
-  LOGMAN_THROW_AA_FMT(OpSize == IR::OpSize::i128Bit, "Currently only supports 128-bit operations.");
+  LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i128Bit, "Currently only supports 128-bit operations.");
 
   if (Dst == State && Dst != Key) {
     // Optimal case in which Dst already contains the starting state.
@@ -97,7 +97,7 @@ DEF_OP(VAESDecLast) {
   const auto State = GetVReg(Op->State.ID());
   const auto ZeroReg = GetVReg(Op->ZeroReg.ID());
 
-  LOGMAN_THROW_AA_FMT(OpSize == IR::OpSize::i128Bit, "Currently only supports 128-bit operations.");
+  LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i128Bit, "Currently only supports 128-bit operations.");
 
   if (Dst == State && Dst != Key) {
     // Optimal case in which Dst already contains the starting state.
@@ -193,7 +193,7 @@ DEF_OP(PCLMUL) {
   const auto Src1 = GetVReg(Op->Src1.ID());
   const auto Src2 = GetVReg(Op->Src2.ID());
 
-  LOGMAN_THROW_AA_FMT(OpSize == IR::OpSize::i128Bit, "Currently only supports 128-bit operations.");
+  LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i128Bit, "Currently only supports 128-bit operations.");
 
   switch (Op->Selector) {
   case 0b00000000: pmull(ARMEmitter::SubRegSize::i128Bit, Dst.D(), Src1.D(), Src2.D()); break;

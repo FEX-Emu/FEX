@@ -666,12 +666,12 @@ public:
   }
 
   void add(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
-    LOGMAN_THROW_AA_FMT(Shift != ARMEmitter::ShiftType::ROR, "Doesn't support ROR");
+    LOGMAN_THROW_A_FMT(Shift != ARMEmitter::ShiftType::ROR, "Doesn't support ROR");
     constexpr uint32_t Op = 0b000'1011'000U << 21;
     DataProcessing_Shifted_Reg(Op, s, rd, rn, rm, Shift, amt);
   }
   void adds(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
-    LOGMAN_THROW_AA_FMT(Shift != ARMEmitter::ShiftType::ROR, "Doesn't support ROR");
+    LOGMAN_THROW_A_FMT(Shift != ARMEmitter::ShiftType::ROR, "Doesn't support ROR");
     constexpr uint32_t Op = 0b010'1011'000U << 21;
     DataProcessing_Shifted_Reg(Op, s, rd, rn, rm, Shift, amt);
   }
@@ -679,7 +679,7 @@ public:
     adds(s, ARMEmitter::Reg::zr, rn, rm, Shift, amt);
   }
   void sub(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
-    LOGMAN_THROW_AA_FMT(Shift != ARMEmitter::ShiftType::ROR, "Doesn't support ROR");
+    LOGMAN_THROW_A_FMT(Shift != ARMEmitter::ShiftType::ROR, "Doesn't support ROR");
     constexpr uint32_t Op = 0b100'1011'000U << 21;
     DataProcessing_Shifted_Reg(Op, s, rd, rn, rm, Shift, amt);
   }
@@ -691,7 +691,7 @@ public:
   }
 
   void subs(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ShiftType Shift = ARMEmitter::ShiftType::LSL, uint32_t amt = 0) {
-    LOGMAN_THROW_AA_FMT(Shift != ARMEmitter::ShiftType::ROR, "Doesn't support ROR");
+    LOGMAN_THROW_A_FMT(Shift != ARMEmitter::ShiftType::ROR, "Doesn't support ROR");
     constexpr uint32_t Op = 0b110'1011'000U << 21;
     DataProcessing_Shifted_Reg(Op, s, rd, rn, rm, Shift, amt);
   }
@@ -701,7 +701,7 @@ public:
 
   // AddSub - extended register
   void add(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ExtendedType Option, uint32_t Shift = 0) {
-    LOGMAN_THROW_AA_FMT(Shift <= 4, "Shift amount is too large");
+    LOGMAN_THROW_A_FMT(Shift <= 4, "Shift amount is too large");
     constexpr uint32_t Op = 0b000'1011'001U << 21;
     DataProcessing_Extended_Reg(Op, s, rd, rn, rm, Option, Shift);
   }
@@ -751,8 +751,8 @@ public:
 
   // Rotate right into flags
   void rmif(XRegister rn, uint32_t shift, uint32_t mask) {
-    LOGMAN_THROW_AA_FMT(shift <= 63, "Shift must be within 0-63. Shift: {}", shift);
-    LOGMAN_THROW_AA_FMT(mask <= 15, "Mask must be within 0-15. Mask: {}", mask);
+    LOGMAN_THROW_A_FMT(shift <= 63, "Shift must be within 0-63. Shift: {}", shift);
+    LOGMAN_THROW_A_FMT(mask <= 15, "Mask must be within 0-15. Mask: {}", mask);
 
     uint32_t Op = 0b1011'1010'0000'0000'0000'0100'0000'0000;
     Op |= rn.Idx() << 5;
@@ -898,7 +898,7 @@ public:
 private:
   static constexpr Condition InvertCondition(Condition cond) {
     // These behave as always, so it makes no sense to allow inverting these.
-    LOGMAN_THROW_AA_FMT(cond != Condition::CC_AL && cond != Condition::CC_NV,
+    LOGMAN_THROW_A_FMT(cond != Condition::CC_AL && cond != Condition::CC_NV,
                         "Cannot invert CC_AL or CC_NV");
     return static_cast<Condition>(FEXCore::ToUnderlying(cond) ^ 1);
   }
@@ -950,7 +950,7 @@ private:
       LSL12 = true;
       Imm >>= 12;
     }
-    LOGMAN_THROW_AA_FMT(TooLarge == false, "Imm amount too large: 0x{:x}", Imm);
+    LOGMAN_THROW_A_FMT(TooLarge == false, "Imm amount too large: 0x{:x}", Imm);
 
     const uint32_t SF = s == ARMEmitter::Size::i64Bit ? (1U << 31) : 0;
 
@@ -1014,9 +1014,9 @@ private:
     [[maybe_unused]] const auto lsb_p_width = lsb + width;
     const auto reg_size_bits = RegSizeInBits(s);
 
-    LOGMAN_THROW_AA_FMT(lsb_p_width <= reg_size_bits, "lsb + width ({}) must be <= {}. lsb={}, width={}",
+    LOGMAN_THROW_A_FMT(lsb_p_width <= reg_size_bits, "lsb + width ({}) must be <= {}. lsb={}, width={}",
                         lsb_p_width, reg_size_bits, lsb, width);
-    LOGMAN_THROW_AA_FMT(width >= 1, "xbfiz width must be >= 1");
+    LOGMAN_THROW_A_FMT(width >= 1, "xbfiz width must be >= 1");
 
     const auto immr = (reg_size_bits - lsb) & (reg_size_bits - 1);
     const auto imms = width - 1;
@@ -1077,9 +1077,9 @@ private:
 
   // AddSub - shifted register
   void DataProcessing_Shifted_Reg(uint32_t Op, ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, ARMEmitter::Register rm, ARMEmitter::ShiftType Shift, uint32_t amt) {
-    LOGMAN_THROW_AA_FMT((amt & ~0b11'1111U) == 0, "Shift amount too large");
+    LOGMAN_THROW_A_FMT((amt & ~0b11'1111U) == 0, "Shift amount too large");
     if (s == ARMEmitter::Size::i32Bit) {
-      LOGMAN_THROW_AA_FMT(amt < 32, "Shift amount for 32-bit must be below 32");
+      LOGMAN_THROW_A_FMT(amt < 32, "Shift amount for 32-bit must be below 32");
     }
 
     const uint32_t SF = s == ARMEmitter::Size::i64Bit ? (1U << 31) : 0;

@@ -486,7 +486,7 @@ OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_LoadSource_WithOpSize(
 
   if (Operand.IsGPR()) {
     const auto gpr = Operand.Data.GPR.GPR;
-    LOGMAN_THROW_AA_FMT(gpr >= FEXCore::X86State::REG_XMM_0 && gpr <= FEXCore::X86State::REG_XMM_15, "must be AVX reg");
+    LOGMAN_THROW_A_FMT(gpr >= FEXCore::X86State::REG_XMM_0 && gpr <= FEXCore::X86State::REG_XMM_15, "must be AVX reg");
     const auto gprIndex = gpr - X86State::REG_XMM_0;
     return {
       .Low = AVX128_LoadXMMRegister(gprIndex, false),
@@ -502,7 +502,7 @@ OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_LoadSource_WithOpSize(
 
     if (Operand.IsSIB()) {
       const bool IsVSIB = (Op->Flags & X86Tables::DecodeFlags::FLAG_VSIB_BYTE) != 0;
-      LOGMAN_THROW_AA_FMT(!IsVSIB, "VSIB uses LoadVSIB instead");
+      LOGMAN_THROW_A_FMT(!IsVSIB, "VSIB uses LoadVSIB instead");
     }
 
     if (NeedsHigh) {
@@ -523,8 +523,8 @@ OpDispatchBuilder::AVX128_LoadVSIB(const X86Tables::DecodedOp& Op, const X86Tabl
 
   const auto Index_gpr = Operand.Data.SIB.Index;
   const auto Base_gpr = Operand.Data.SIB.Base;
-  LOGMAN_THROW_AA_FMT(Index_gpr >= FEXCore::X86State::REG_XMM_0 && Index_gpr <= FEXCore::X86State::REG_XMM_15, "must be AVX reg");
-  LOGMAN_THROW_AA_FMT(
+  LOGMAN_THROW_A_FMT(Index_gpr >= FEXCore::X86State::REG_XMM_0 && Index_gpr <= FEXCore::X86State::REG_XMM_15, "must be AVX reg");
+  LOGMAN_THROW_A_FMT(
     Base_gpr == FEXCore::X86State::REG_INVALID || (Base_gpr >= FEXCore::X86State::REG_RAX && Base_gpr <= FEXCore::X86State::REG_R15),
     "Base must be a GPR.");
   const auto Index_XMM_gpr = Index_gpr - X86State::REG_XMM_0;
@@ -542,7 +542,7 @@ void OpDispatchBuilder::AVX128_StoreResult_WithOpSize(FEXCore::X86Tables::Decode
                                                       const RefPair Src, MemoryAccessType AccessType) {
   if (Operand.IsGPR()) {
     const auto gpr = Operand.Data.GPR.GPR;
-    LOGMAN_THROW_AA_FMT(gpr >= FEXCore::X86State::REG_XMM_0 && gpr <= FEXCore::X86State::REG_XMM_15, "expected AVX register");
+    LOGMAN_THROW_A_FMT(gpr >= FEXCore::X86State::REG_XMM_0 && gpr <= FEXCore::X86State::REG_XMM_15, "expected AVX register");
     const auto gprIndex = gpr - X86State::REG_XMM_0;
 
     if (Src.Low) {
@@ -1817,7 +1817,7 @@ void OpDispatchBuilder::AVX128_VPERMQ(OpcodeArgs) {
   uint8_t SelectorLow = Selector & 0b1111;
   uint8_t SelectorHigh = (Selector >> 4) & 0b1111;
   auto SelectLane = [this](uint8_t Selector, RefPair Src) -> Ref {
-    LOGMAN_THROW_AA_FMT(Selector < 16, "Selector too large!");
+    LOGMAN_THROW_A_FMT(Selector < 16, "Selector too large!");
 
     switch (Selector) {
     case 0b00'00: return _VDupElement(OpSize::i128Bit, OpSize::i64Bit, Src.Low, 0);

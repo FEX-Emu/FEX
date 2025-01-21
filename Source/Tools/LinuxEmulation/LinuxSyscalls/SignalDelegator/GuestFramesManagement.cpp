@@ -577,7 +577,7 @@ uint64_t SignalDelegator::SetupFrame_ia32(FEXCore::Core::InternalThreadState* Th
     guest_uctx->pretcode = (uint32_t)(uint64_t)GuestAction->restorer;
   } else {
     guest_uctx->pretcode = SignalReturn;
-    LOGMAN_THROW_AA_FMT(SignalReturn < 0x1'0000'0000ULL, "This needs to be below 4GB");
+    LOGMAN_THROW_A_FMT(SignalReturn < 0x1'0000'0000ULL, "This needs to be below 4GB");
   }
 
   // Support regparm=3
@@ -776,7 +776,7 @@ uint64_t SignalDelegator::SetupRTFrame_ia32(FEXCore::Core::InternalThreadState* 
     guest_uctx->pretcode = (uint32_t)(uint64_t)GuestAction->restorer;
   } else {
     guest_uctx->pretcode = SignalReturn;
-    LOGMAN_THROW_AA_FMT(SignalReturn < 0x1'0000'0000ULL, "This needs to be below 4GB");
+    LOGMAN_THROW_A_FMT(SignalReturn < 0x1'0000'0000ULL, "This needs to be below 4GB");
   }
 
   // Support regparm=3

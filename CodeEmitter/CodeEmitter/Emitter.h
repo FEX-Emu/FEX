@@ -631,7 +631,7 @@ public:
   // Bind a backward label to an address.
   // Address that is bound is the current emitter location.
   void Bind(BackwardLabel* Label) {
-    LOGMAN_THROW_AA_FMT(Label->Location == nullptr, "Trying to bind a label twice");
+    LOGMAN_THROW_A_FMT(Label->Location == nullptr, "Trying to bind a label twice");
     Label->Location = GetCursorAddress<uint8_t*>();
   }
 

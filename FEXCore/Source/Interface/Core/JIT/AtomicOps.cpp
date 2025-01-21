@@ -13,7 +13,7 @@ namespace FEXCore::CPU {
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::NodeID Node)
 DEF_OP(CASPair) {
   auto Op = IROp->C<IR::IROp_CASPair>();
-  LOGMAN_THROW_AA_FMT(IROp->ElementSize == IR::OpSize::i32Bit || IROp->ElementSize == IR::OpSize::i64Bit, "Wrong element size");
+  LOGMAN_THROW_A_FMT(IROp->ElementSize == IR::OpSize::i32Bit || IROp->ElementSize == IR::OpSize::i64Bit, "Wrong element size");
   // Size is the size of each pair element
   auto Dst0 = GetReg(Op->OutLo.ID());
   auto Dst1 = GetReg(Op->OutHi.ID());
@@ -274,7 +274,7 @@ DEF_OP(AtomicNeg) {
 DEF_OP(AtomicSwap) {
   auto Op = IROp->C<IR::IROp_AtomicSwap>();
   const auto OpSize = IROp->Size;
-  LOGMAN_THROW_AA_FMT(
+  LOGMAN_THROW_A_FMT(
     OpSize == IR::OpSize::i64Bit || OpSize == IR::OpSize::i32Bit || OpSize == IR::OpSize::i16Bit || OpSize == IR::OpSize::i8Bit, "Unexpecte"
                                                                                                                                  "d CAS "
                                                                                                                                  "size");

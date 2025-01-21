@@ -31,7 +31,7 @@ public:
   }
 
   void histcnt(SubRegSize size, ZRegister zd, PRegisterZero pv, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "SubRegSize must be 32-bit or 64-bit");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "SubRegSize must be 32-bit or 64-bit");
     LOGMAN_THROW_A_FMT(pv <= PReg::p7.Zeroing(), "histcnt can only use p0 to p7");
 
     uint32_t Op = 0b0100'0101'0010'0000'1100'0000'0000'0000;
@@ -52,7 +52,7 @@ public:
   }
 
   void fcmla(SubRegSize size, ZRegister zda, PRegisterMerge pv, ZRegister zn, ZRegister zm, Rotation rot) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                         "SubRegSize must be 16-bit, 32-bit, or 64-bit");
     LOGMAN_THROW_A_FMT(pv <= PReg::p7.Merging(), "fcmla can only use p0 to p7");
 
@@ -68,10 +68,10 @@ public:
   }
 
   void fcadd(SubRegSize size, ZRegister zd, PRegisterMerge pv, ZRegister zn, ZRegister zm, Rotation rot) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                         "SubRegSize must be 16-bit, 32-bit, or 64-bit");
     LOGMAN_THROW_A_FMT(pv <= PReg::p7.Merging(), "fcadd can only use p0 to p7");
-    LOGMAN_THROW_AA_FMT(rot == Rotation::ROTATE_90 || rot == Rotation::ROTATE_270,
+    LOGMAN_THROW_A_FMT(rot == Rotation::ROTATE_90 || rot == Rotation::ROTATE_270,
                         "fcadd rotation may only be 90 or 270 degrees");
     LOGMAN_THROW_A_FMT(zd == zn, "fcadd zd and zn must be the same register");
 
@@ -268,7 +268,7 @@ public:
   }
   ///< Size is destination size
   void fcvtnt(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i16Bit,
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i16Bit,
                         "Unsupported size in {}", __func__);
 
     const auto ConvertedDestSize =
@@ -284,7 +284,7 @@ public:
 
   ///< Size is destination size
   void fcvtlt(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i64Bit || size == SubRegSize::i32Bit,
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i64Bit || size == SubRegSize::i32Bit,
                         "Unsupported size in {}", __func__);
 
     const auto ConvertedDestSize =
@@ -327,7 +327,7 @@ public:
 
   // SVE floating-point complex multiply-add (indexed)
   void fcmla(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, uint32_t index, Rotation rot) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit,
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit,
                         "SubRegSize must be 16-bit or 32-bit");
 
     // 16 -> 32, 32 -> 64, since fcmla (indexed)'s restrictions and encodings
@@ -665,11 +665,11 @@ public:
     SVEIntegerUnaryPredicated(0b11, 0b011, size, pg, zn, zd);
   }
   void fabs(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "Invalid size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Invalid size");
     SVEIntegerUnaryPredicated(0b11, 0b100, size, pg, zn, zd);
   }
   void fneg(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "Invalid size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Invalid size");
     SVEIntegerUnaryPredicated(0b11, 0b101, size, pg, zn, zd);
   }
   void not_(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
@@ -818,13 +818,13 @@ public:
   // SVE Integer Misc - Unpredicated
   // SVE floating-point trig select coefficient
   void ftssel(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                         "ftssel may only have 16-bit, 32-bit, or 64-bit element sizes");
     SVEIntegerMiscUnpredicated(0b00, zm.Idx(), FEXCore::ToUnderlying(size), zd, zn);
   }
   // SVE floating-point exponential accelerator
   void fexpa(SubRegSize size, ZRegister zd, ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                         "fexpa may only have 16-bit, 32-bit, or 64-bit element sizes");
     SVEIntegerMiscUnpredicated(0b10, 0b00000, FEXCore::ToUnderlying(size), zd, zn);
   }
@@ -1135,7 +1135,7 @@ public:
   }
 
   void compact(SubRegSize size, ZRegister zd, PRegister pg, ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i64Bit || size == SubRegSize::i32Bit,
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i64Bit || size == SubRegSize::i32Bit,
                         "Invalid element size");
     SVEPermuteVectorPredicated(0b00001, 0b0, size, zd, pg, zn);
   }
@@ -1178,16 +1178,16 @@ public:
 
   // SVE reverse within elements
   void revb(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "Can't use 8-bit element size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Can't use 8-bit element size");
     SVEPermuteVectorPredicated(0b00100, 0b0, size, zd, pg, zn);
   }
   void revh(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i16Bit,
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i16Bit,
                         "Can't use 8/16-bit element sizes");
     SVEPermuteVectorPredicated(0b00101, 0b0, size, zd, pg, zn);
   }
   void revw(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i64Bit, "Can't use 8/16/32-bit element sizes");
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i64Bit, "Can't use 8/16/32-bit element sizes");
     SVEPermuteVectorPredicated(0b00110, 0b0, size, zd, pg, zn);
   }
   void rbit(SubRegSize size, ZRegister zd, PRegisterMerge pg, ZRegister zn) {
@@ -1507,7 +1507,7 @@ public:
 
   // SVE broadcast floating-point immediate (unpredicated)
   void fdup(ARMEmitter::SubRegSize size, ARMEmitter::ZRegister zd, float Value) {
-    LOGMAN_THROW_AA_FMT(size == ARMEmitter::SubRegSize::i16Bit ||
+    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i16Bit ||
                         size == ARMEmitter::SubRegSize::i32Bit ||
                         size == ARMEmitter::SubRegSize::i64Bit, "Unsupported fmov size");
     uint32_t Imm{};
@@ -2206,7 +2206,7 @@ public:
 
   // SVE Floating Point Arithmetic - Predicated
   void ftmad(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm, uint32_t imm) {
-    LOGMAN_THROW_AA_FMT(imm <= 7, "ftmad immediate must be within 0-7");
+    LOGMAN_THROW_A_FMT(imm <= 7, "ftmad immediate must be within 0-7");
     SVEFloatArithmeticPredicated(0b10000 | imm, size, PReg::p0, zd, zn, zm);
   }
   // SVE floating-point arithmetic (predicated)
@@ -2326,7 +2326,7 @@ public:
     uint32_t opc1, opc2;
     if (srcsize == SubRegSize::i16Bit) {
       // Srcsize = fp16, opc2 encodes dst size
-      LOGMAN_THROW_AA_FMT(dstsize == SubRegSize::i16Bit, "Unsupported size in {}", __func__);
+      LOGMAN_THROW_A_FMT(dstsize == SubRegSize::i16Bit, "Unsupported size in {}", __func__);
       opc1 = 0b01;
       opc2 = 0b01;
     }
@@ -2362,7 +2362,7 @@ public:
     uint32_t opc1, opc2;
     if (srcsize == SubRegSize::i16Bit) {
       // Srcsize = fp16, opc2 encodes dst size
-      LOGMAN_THROW_AA_FMT(dstsize == SubRegSize::i16Bit, "Unsupported size in {}", __func__);
+      LOGMAN_THROW_A_FMT(dstsize == SubRegSize::i16Bit, "Unsupported size in {}", __func__);
       opc1 = 0b01;
       opc2 = 0b01;
     }
@@ -2415,13 +2415,13 @@ public:
     }
     else if (srcsize == SubRegSize::i32Bit) {
       // Srcsize = fp32, opc1 encodes dst size
-      LOGMAN_THROW_AA_FMT(dstsize != SubRegSize::i16Bit, "Unsupported size in {}", __func__);
+      LOGMAN_THROW_A_FMT(dstsize != SubRegSize::i16Bit, "Unsupported size in {}", __func__);
       opc2 = 0b10;
       opc1 = dstsize == SubRegSize::i64Bit ? 0b11 :
              dstsize == SubRegSize::i32Bit ? 0b10 : 0b00;
     }
     else if (srcsize == SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(dstsize != SubRegSize::i16Bit, "Unsupported size in {}", __func__);
+      LOGMAN_THROW_A_FMT(dstsize != SubRegSize::i16Bit, "Unsupported size in {}", __func__);
       // SrcSize = fp64, opc2 encodes dst size
       opc1 = 0b11;
       opc2 = dstsize == SubRegSize::i64Bit ? 0b11 :
@@ -2443,13 +2443,13 @@ public:
     }
     else if (srcsize == SubRegSize::i32Bit) {
       // Srcsize = fp32, opc1 encodes dst size
-      LOGMAN_THROW_AA_FMT(dstsize != SubRegSize::i16Bit, "Unsupported size in {}", __func__);
+      LOGMAN_THROW_A_FMT(dstsize != SubRegSize::i16Bit, "Unsupported size in {}", __func__);
       opc2 = 0b10;
       opc1 = dstsize == SubRegSize::i64Bit ? 0b11 :
              dstsize == SubRegSize::i32Bit ? 0b10 : 0b00;
     }
     else if (srcsize == SubRegSize::i64Bit) {
-      LOGMAN_THROW_AA_FMT(dstsize != SubRegSize::i16Bit, "Unsupported size in {}", __func__);
+      LOGMAN_THROW_A_FMT(dstsize != SubRegSize::i16Bit, "Unsupported size in {}", __func__);
       // SrcSize = fp64, opc2 encodes dst size
       opc1 = 0b11;
       opc2 = dstsize == SubRegSize::i64Bit ? 0b11 :
@@ -3430,7 +3430,7 @@ private:
 
     // We can index up to 512-bit registers with dup
     [[maybe_unused]] const auto max_index = (64U >> log2_size_bytes) - 1;
-    LOGMAN_THROW_AA_FMT(Index <= max_index, "dup index ({}) too large. Must be within [0, {}].",
+    LOGMAN_THROW_A_FMT(Index <= max_index, "dup index ({}) too large. Must be within [0, {}].",
                         Index, max_index);
 
     // imm2:tsz make up a 7 bit wide field, with each increasing element size
@@ -3450,20 +3450,20 @@ private:
   }
 
   void SVEAddSubImmediateUnpred(uint32_t opc, SubRegSize size, ZRegister zd, ZRegister zn, uint32_t imm) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
     LOGMAN_THROW_A_FMT(zd == zn, "zd needs to equal zn");
 
     const bool is_uint8_imm = (imm >> 8) == 0;
     if (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(is_uint8_imm, "Can't perform LSL #8 shift on 8-bit elements.");
+      LOGMAN_THROW_A_FMT(is_uint8_imm, "Can't perform LSL #8 shift on 8-bit elements.");
     }
 
     uint32_t shift = 0;
     if (!is_uint8_imm) {
       const bool is_uint16_imm = (imm >> 16) == 0;
 
-      LOGMAN_THROW_AA_FMT(is_uint16_imm, "Immediate ({}) must be a 16-bit value within [256, 65280]", imm);
-      LOGMAN_THROW_AA_FMT((imm % 256) == 0, "Immediate ({}) must be a multiple of 256", imm);
+      LOGMAN_THROW_A_FMT(is_uint16_imm, "Immediate ({}) must be a 16-bit value within [256, 65280]", imm);
+      LOGMAN_THROW_A_FMT((imm % 256) == 0, "Immediate ({}) must be a multiple of 256", imm);
 
       imm /= 256;
       shift = 1;
@@ -3479,15 +3479,15 @@ private:
   }
 
   void SVEMinMaxImmediateUnpred(uint32_t opc, SubRegSize size, ZRegister zd, ZRegister zn, int32_t imm) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
     LOGMAN_THROW_A_FMT(zd == zn, "zd needs to equal zn");
 
     const bool is_signed = (opc & 1) == 0;
     if (is_signed) {
-      LOGMAN_THROW_AA_FMT(imm >= -128 && imm <= 127,
+      LOGMAN_THROW_A_FMT(imm >= -128 && imm <= 127,
                           "Invalid immediate ({}). Must be within [-127, 128]", imm);
     } else {
-      LOGMAN_THROW_AA_FMT(imm >= 0 && imm <= 255,
+      LOGMAN_THROW_A_FMT(imm >= 0 && imm <= 255,
                           "Invalid immediate ({}). Must be within [0, 255]", imm);
     }
 
@@ -3502,9 +3502,9 @@ private:
   }
 
   void SVEMultiplyImmediateUnpred(uint32_t opc, SubRegSize size, ZRegister zd, ZRegister zn, int32_t imm) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
     LOGMAN_THROW_A_FMT(zd == zn, "zd needs to equal zn");
-    LOGMAN_THROW_AA_FMT(imm >= -128 && imm <= 127,
+    LOGMAN_THROW_A_FMT(imm >= -128 && imm <= 127,
                         "Invalid immediate ({}). Must be within [-127, 128]", imm);
 
     const auto imm8 = static_cast<uint32_t>(imm) & 0xFF;
@@ -3518,7 +3518,7 @@ private:
   }
 
   void SVEBroadcastImm(uint32_t opc, int32_t imm, SubRegSize size, ZRegister zd) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
 
     const auto [new_imm, is_shift] = HandleSVESImm8Shift(size, imm);
 
@@ -3532,7 +3532,7 @@ private:
   }
 
   void SVEBroadcastFloatImmPredicated(SubRegSize size, ZRegister zd, PRegister pg, float value) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit ||
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit ||
                         size == SubRegSize::i32Bit ||
                         size == SubRegSize::i64Bit, "Unsupported fcpy/fmov size");
     uint32_t imm{};
@@ -3564,7 +3564,7 @@ private:
   }
 
   void SVEBroadcastIntegerImmPredicated(uint32_t m, SubRegSize size, ZRegister zd, PRegister pg, int32_t imm) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
 
     const auto [new_imm, is_shift] = HandleSVESImm8Shift(size, imm);
 
@@ -3579,14 +3579,14 @@ private:
   }
 
   void SVEAddressGeneration(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm, SVEModType mod, uint32_t scale) {
-    LOGMAN_THROW_AA_FMT(scale <= 3, "Scale ({}) must be within [0, 3]", scale);
+    LOGMAN_THROW_A_FMT(scale <= 3, "Scale ({}) must be within [0, 3]", scale);
 
     uint32_t Instr = 0b0000'0100'0010'0000'1010'0000'0000'0000;
 
     switch (mod) {
     case SVEModType::MOD_UXTW:
     case SVEModType::MOD_SXTW: {
-      LOGMAN_THROW_AA_FMT(size == SubRegSize::i64Bit, "Unpacked ADR must be using 64-bit elements");
+      LOGMAN_THROW_A_FMT(size == SubRegSize::i64Bit, "Unpacked ADR must be using 64-bit elements");
 
       const auto is_unsigned = mod == SVEModType::MOD_UXTW;
       if (is_unsigned) {
@@ -3597,10 +3597,10 @@ private:
     case SVEModType::MOD_NONE:
     case SVEModType::MOD_LSL: {
       if (mod == SVEModType::MOD_NONE) {
-        LOGMAN_THROW_AA_FMT(scale == 0,
+        LOGMAN_THROW_A_FMT(scale == 0,
                             "Cannot scale packed ADR without a modifier");
       }
-      LOGMAN_THROW_AA_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+      LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                           "Packed ADR must be using 32-bit or 64-bit elements");
       Instr |= FEXCore::ToUnderlying(size) << 22;
       break;
@@ -3615,7 +3615,7 @@ private:
   }
 
   void SVESel(SubRegSize size, ZRegister zm, PRegister pv, ZRegister zn, ZRegister zd) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
 
     uint32_t Instr = 0b0000'0101'0010'0000'1100'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
@@ -3627,7 +3627,7 @@ private:
   }
 
   void SVEBitwiseShiftbyVector(uint32_t R, uint32_t L, uint32_t U, SubRegSize size, PRegister pg, ZRegister zd, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
     LOGMAN_THROW_A_FMT(zd == zn, "Dest needs to equal zn");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
@@ -3645,7 +3645,7 @@ private:
 
   // SVE integer add/subtract vectors (unpredicated)
   void SVEIntegerAddSubUnpredicated(uint32_t opc, SubRegSize size, ZRegister zm, ZRegister zn, ZRegister zd) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
 
     uint32_t Instr = 0b0000'0100'0010'0000'0000'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
@@ -3658,7 +3658,7 @@ private:
 
   // SVE table lookup (three sources)
   void SVETableLookup(uint32_t op, SubRegSize size, ZRegister zm, ZRegister zn, ZRegister zd) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
 
     uint32_t Instr = 0b0000'0101'0010'0000'0010'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
@@ -3671,7 +3671,7 @@ private:
 
   // SVE permute vector elements
   void SVEPermute(uint32_t opc, SubRegSize size, ZRegister zm, ZRegister zn, ZRegister zd) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
 
     uint32_t Instr = 0b0000'0101'0010'0000'0110'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
@@ -3728,7 +3728,7 @@ private:
 
   // SVE floating-point arithmetic (unpredicated)
   void SVEFloatArithmeticUnpredicated(uint32_t opc, SubRegSize size, ZRegister zm, ZRegister zn, ZRegister zd) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                         "Invalid float size");
 
     uint32_t Instr = 0b0110'0101'0000'0000'0000'0000'0000'0000;
@@ -3742,7 +3742,7 @@ private:
 
   // SVE bitwise logical operations (predicated)
   void SVEBitwiseLogicalPredicated(uint32_t opc, SubRegSize size, PRegister pg, ZRegister zdn, ZRegister zm, ZRegister zd) {
-    LOGMAN_THROW_AA_FMT(size != ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
+    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i128Bit, "Can't use 128-bit size");
     LOGMAN_THROW_A_FMT(zd == zdn, "zd needs to equal zdn");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
@@ -3757,7 +3757,7 @@ private:
 
   // SVE constructive prefix (predicated)
   void SVEConstructivePrefixPredicated(uint32_t opc, uint32_t M, SubRegSize size, PRegister pg, ZRegister zn, ZRegister zd) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = 0b0000'0100'0001'0000'0010'0000'0000'0000;
@@ -3772,7 +3772,7 @@ private:
 
   // SVE bitwise unary operations (predicated)
   void SVEIntegerUnaryPredicated(uint32_t op0, uint32_t opc, SubRegSize size, PRegister pg, ZRegister zn, ZRegister zd) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = 0b0000'0100'0000'0000'1010'0000'0000'0000;
@@ -3851,7 +3851,7 @@ private:
   }
 
   void SVECharacterMatch(uint32_t opc, SubRegSize size, PRegister pd, PRegisterZero pg, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit,
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit,
                         "match/nmatch can only use 8-bit or 16-bit element sizes");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7.Zeroing(), "match/nmatch can only use p0-p7 as a governing predicate");
 
@@ -3866,7 +3866,7 @@ private:
   }
 
   void SVEFPRecursiveReduction(uint32_t opc, SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                         "FP reduction operation can only use 16-bit, 32-bit, or 64-bit element sizes");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "FP reduction operation can only use p0-p7 as a governing predicate");
 
@@ -3898,7 +3898,7 @@ private:
 
     // Division instruction
     if (b18 != 0) {
-      LOGMAN_THROW_AA_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+      LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                           "Predicated divide only handles 32-bit or 64-bit elements");
     }
 
@@ -3913,7 +3913,7 @@ private:
   }
 
   void SVEIntegerReductionOperation(uint32_t op, uint32_t opc, SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size for reduction operation");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size for reduction operation");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Integer reduction operation can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = op;
@@ -3926,7 +3926,7 @@ private:
   }
 
   void SVEIntegerMultiplyAddSubPredicated(uint32_t op0, uint32_t opc, SubRegSize size, ZRegister zd, PRegister pg, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = 0b0000'0100'0000'0000'0100'0000'0000'0000;
@@ -3941,7 +3941,7 @@ private:
   }
 
   void SVEStackFrameOperation(uint32_t opc, XRegister rd, XRegister rn, int32_t imm) {
-    LOGMAN_THROW_AA_FMT(imm >= -32 && imm <= 31,
+    LOGMAN_THROW_A_FMT(imm >= -32 && imm <= 31,
                         "Stack frame operation immediate must be within -32 to 31");
 
     uint32_t Instr = 0b0000'0100'0010'0000'0101'0000'0000'0000;
@@ -4241,7 +4241,7 @@ private:
     // 0b111 - I - Current
 
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                         "Unsupported size in {}", __func__);
 
     uint32_t Instr = 0b0110'0101'0000'0000'1010'0000'0000'0000;
@@ -4256,9 +4256,9 @@ private:
   // SVE floating-point convert to integer
   void SVEFloatConvertToInt(SubRegSize dstsize, SubRegSize srcsize, uint32_t b19, uint32_t opc, uint32_t opc2, uint32_t U, PRegister pg, ZRegister zn, ZRegister zd) {
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
-    LOGMAN_THROW_AA_FMT(srcsize == SubRegSize::i16Bit || srcsize == SubRegSize::i32Bit || srcsize == SubRegSize::i64Bit,
+    LOGMAN_THROW_A_FMT(srcsize == SubRegSize::i16Bit || srcsize == SubRegSize::i32Bit || srcsize == SubRegSize::i64Bit,
                         "Unsupported src size in {}", __func__);
-    LOGMAN_THROW_AA_FMT(dstsize == SubRegSize::i16Bit || dstsize == SubRegSize::i32Bit || dstsize == SubRegSize::i64Bit,
+    LOGMAN_THROW_A_FMT(dstsize == SubRegSize::i16Bit || dstsize == SubRegSize::i32Bit || dstsize == SubRegSize::i64Bit,
                         "Unsupported dst size in {}", __func__);
 
     uint32_t Instr = 0b0110'0101'0001'0000'1010'0000'0000'0000;
@@ -4457,7 +4457,7 @@ private:
   }
 
   void SVEUnsizedLoadStoreContiguous(uint32_t op2, int32_t imm, ZRegister zt, Register rn, bool is_store) {
-    LOGMAN_THROW_AA_FMT(imm >= -256 && imm <= 255,
+    LOGMAN_THROW_A_FMT(imm >= -256 && imm <= 255,
                         "Immediate offset ({}) too large. Must be within [-256, 255].", imm);
 
     const auto imm9 = static_cast<uint32_t>(imm) & 0b1'1111'1111;
@@ -4480,11 +4480,11 @@ private:
   // SVE load/store multiple structures (scalar plus immediate)
   void SVEContiguousMultipleStructures(int32_t num_regs, bool is_store, uint32_t msz, int32_t imm, ZRegister zt, PRegister pg, Register rn) {
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
-    LOGMAN_THROW_AA_FMT((imm % num_regs) == 0, "Offset must be a multiple of {}", num_regs);
+    LOGMAN_THROW_A_FMT((imm % num_regs) == 0, "Offset must be a multiple of {}", num_regs);
 
     [[maybe_unused]] const auto min_offset = -8 * num_regs;
     [[maybe_unused]] const auto max_offset = 7 * num_regs;
-    LOGMAN_THROW_AA_FMT(imm >= min_offset && imm <= max_offset,
+    LOGMAN_THROW_A_FMT(imm >= min_offset && imm <= max_offset,
                         "Invalid load/store offset ({}). Offset must be a multiple of {} and be within [{}, {}]",
                         imm, num_regs, min_offset, max_offset);
 
@@ -4507,7 +4507,7 @@ private:
   // SVE contiguous non-temporal load (scalar plus immediate)
   void SVEContiguousNontemporalLoad(uint32_t msz, ZRegister zt, PRegister pg, Register rn, int32_t imm) {
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
-    LOGMAN_THROW_AA_FMT(imm >= -8 && imm <= 7,
+    LOGMAN_THROW_A_FMT(imm >= -8 && imm <= 7,
                         "Invalid loadstore offset ({}). Must be between [-8, 7]", imm);
 
     const auto imm4 = static_cast<uint32_t>(imm) & 0xF;
@@ -4523,7 +4523,7 @@ private:
   // SVE contiguous non-temporal store (scalar plus immediate)
   void SVEContiguousNontemporalStore(uint32_t msz, ZRegister zt, PRegister pg, Register rn, int32_t imm) {
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
-    LOGMAN_THROW_AA_FMT(imm >= -8 && imm <= 7,
+    LOGMAN_THROW_A_FMT(imm >= -8 && imm <= 7,
                         "Invalid loadstore offset ({}). Must be between [-8, 7]", imm);
 
     const auto imm4 = static_cast<uint32_t>(imm) & 0xF;
@@ -4538,7 +4538,7 @@ private:
 
   void SVEContiguousLoadImm(bool is_store, uint32_t dtype, int32_t imm, PRegister pg, Register rn, ZRegister zt) {
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
-    LOGMAN_THROW_AA_FMT(imm >= -8 && imm <= 7,
+    LOGMAN_THROW_A_FMT(imm >= -8 && imm <= 7,
                         "Invalid loadstore offset ({}). Must be between [-8, 7]", imm);
 
     const auto imm4 = static_cast<uint32_t>(imm) & 0xF;
@@ -4598,8 +4598,8 @@ private:
     [[maybe_unused]] const auto max_imm = (esize << 3) - esize;
     [[maybe_unused]] const auto min_imm = -(max_imm + esize);
 
-    LOGMAN_THROW_AA_FMT((imm % esize) == 0, "imm ({}) must be a multiple of {}", imm, esize);
-    LOGMAN_THROW_AA_FMT(imm >= min_imm && imm <= max_imm, "imm ({}) must be within [{}, {}]",
+    LOGMAN_THROW_A_FMT((imm % esize) == 0, "imm ({}) must be a multiple of {}", imm, esize);
+    LOGMAN_THROW_A_FMT(imm >= min_imm && imm <= max_imm, "imm ({}) must be within [{}, {}]",
                         imm, min_imm, max_imm);
 
     const auto sanitized_imm = static_cast<uint32_t>(imm / esize) & 0b1111;
@@ -4631,12 +4631,12 @@ private:
 
   void SVELoadAndBroadcastElement(bool is_signed, SubRegSize esize, SubRegSize msize,
                                   ZRegister zt, PRegister pg, Register rn, uint32_t imm) {
-    LOGMAN_THROW_AA_FMT(esize != SubRegSize::i128Bit, "Cannot use 128-bit elements.");
+    LOGMAN_THROW_A_FMT(esize != SubRegSize::i128Bit, "Cannot use 128-bit elements.");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
     if (is_signed) {
       // The element size needs to be larger than memory size, otherwise you tell
       // me how we're gonna sign extend this bad boy in memory.
-      LOGMAN_THROW_AA_FMT(esize > msize,
+      LOGMAN_THROW_A_FMT(esize > msize,
                           "Signed broadcast element size must be greater than memory size.");
     }
 
@@ -4645,7 +4645,7 @@ private:
 
     const auto data_size_bytes = 1U << msize_value;
     [[maybe_unused]] const auto max_imm = (64U << msize_value) - data_size_bytes;
-    LOGMAN_THROW_AA_FMT((imm % data_size_bytes) == 0 && imm <= max_imm,
+    LOGMAN_THROW_A_FMT((imm % data_size_bytes) == 0 && imm <= max_imm,
                         "imm must be a multiple of {} and be within [0, {}]",
                         data_size_bytes, max_imm);
 
@@ -4663,7 +4663,7 @@ private:
     // Guards against bogus combinations of element size and memory size values
     // being passed in. Unsigned variants will always have dtypeh be less than
     // or equal to dtypel. The only time this isn't the case is with signed variants. 
-    LOGMAN_THROW_AA_FMT(is_signed == (dtypeh > dtypel),
+    LOGMAN_THROW_A_FMT(is_signed == (dtypeh > dtypel),
                         "Invalid element size used with load broadcast instruction "
                         "(esize: {}, msize: {})", esize_value, msize_value);
 
@@ -4690,8 +4690,8 @@ private:
   }
 
   void SVEIntegerCompareImm(uint32_t lt, uint32_t ne, uint32_t imm7, SubRegSize size, PRegister pg, ZRegister zn, PRegister pd) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_AA_FMT(imm7 < 128, "Invalid imm ({}). Must be within [0, 128]", imm7);
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
+    LOGMAN_THROW_A_FMT(imm7 < 128, "Invalid imm ({}). Must be within [0, 128]", imm7);
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = 0b0010'0100'0010'0000'0000'0000'0000'0000;
@@ -4706,8 +4706,8 @@ private:
   }
 
   void SVEIntegerCompareSignedImm(uint32_t op, uint32_t o2, uint32_t ne, int32_t imm5, SubRegSize size, PRegister pg, ZRegister zn, PRegister pd) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_AA_FMT(imm5 >= -16 && imm5 <= 15, "Invalid imm ({}). Must be within [-16, 15].", imm5);
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
+    LOGMAN_THROW_A_FMT(imm5 >= -16 && imm5 <= 15, "Invalid imm ({}). Must be within [-16, 15].", imm5);
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = 0b0010'0101'0000'0000'0000'0000'0000'0000;
@@ -4723,8 +4723,8 @@ private:
   }
 
   void SVEFloatCompareVector(uint32_t op, uint32_t o2, uint32_t o3, SubRegSize size, ZRegister zm, PRegister pg, ZRegister zn, PRegister pd) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "Can't use 8-bit size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Can't use 8-bit size");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = 0b0110'0101'0000'0000'0100'0000'0000'0000;
@@ -4740,7 +4740,7 @@ private:
   }
 
   void SVEIntegerMinMaxDifferencePredicated(uint32_t opc, uint32_t U, SubRegSize size, PRegister pg, ZRegister zdn, ZRegister zm, ZRegister zd) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
     LOGMAN_THROW_A_FMT(zd == zdn, "zd needs to equal zdn");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
@@ -4755,7 +4755,7 @@ private:
   }
 
   void SVEBitWiseShiftImmediatePred(SubRegSize size, uint32_t opc, uint32_t L, uint32_t U, PRegister pg, ZRegister zd, ZRegister zdn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
     LOGMAN_THROW_A_FMT(zd == zdn, "zd needs to equal zdn");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
@@ -4774,7 +4774,7 @@ private:
   }
 
   void SVEBitWiseShiftImmediateUnpred(SubRegSize size, uint32_t opc, ZRegister zd, ZRegister zn, uint32_t Shift) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit element size");
 
     const bool IsLeftShift = opc == 0b11;
     const auto [tszh, tszl_imm3] = EncodeSVEShiftImmediate(size, Shift, IsLeftShift);
@@ -4836,7 +4836,7 @@ private:
   }
 
   void SVE2SaturatingExtractNarrow(SubRegSize size, uint32_t opc, uint32_t T, ZRegister zn, ZRegister zd) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit && size != SubRegSize::i64Bit, "Can't use 64/128-bit size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit && size != SubRegSize::i64Bit, "Can't use 64/128-bit size");
 
     // While not necessarily a left shift, we can piggyback off its
     // encoding behavior to encode the tszh and tszl bits.
@@ -4853,7 +4853,7 @@ private:
   }
 
   void SVE2BitwiseShiftRightNarrow(SubRegSize size, uint32_t shift, uint32_t opc, uint32_t U, uint32_t R, uint32_t T, ZRegister zn, ZRegister zd) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit && size != SubRegSize::i64Bit, "Can't use 64/128-bit element size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit && size != SubRegSize::i64Bit, "Can't use 64/128-bit element size");
 
     const auto [tszh, tszl_imm3] = EncodeSVEShiftImmediate(size, shift);
 
@@ -4871,7 +4871,7 @@ private:
 
   void SVEFloatUnary(uint32_t opc, SubRegSize size, PRegister pg, ZRegister zn, ZRegister zd) {
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit ||
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit ||
                         size == SubRegSize::i32Bit ||
                         size == SubRegSize::i64Bit, "Unsupported size in {}", __func__);
 
@@ -4885,7 +4885,7 @@ private:
   }
 
   void SVE2IntegerMultiplyVectors(uint32_t opc, SubRegSize size, ZRegister zm, ZRegister zn, ZRegister zd) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Can't use 128-bit size");
 
     constexpr uint32_t Op = 0b0000'0100'0010'0000'0110 << 12;
     uint32_t Instr = Op;
@@ -4961,7 +4961,7 @@ private:
   }
 
   void SVEFPUnaryOpsUnpredicated(uint32_t opc, SubRegSize size, ZRegister zd, ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                         "SubRegSize must be 16-bit, 32-bit, or 64-bit");
 
     uint32_t Instr = 0b0110'0101'0000'1000'0011'0000'0000'0000;
@@ -4973,7 +4973,7 @@ private:
   }
 
   void SVEFPSerialReductionPredicated(uint32_t opc, SubRegSize size, VRegister vd, PRegister pg, VRegister vn, ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                         "SubRegSize must be 16-bit, 32-bit, or 64-bit");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
     LOGMAN_THROW_A_FMT(vd == vn, "vn must be the same as vd");
@@ -4988,7 +4988,7 @@ private:
   }
 
   void SVEFPCompareWithZero(uint32_t eqlt, uint32_t ne, SubRegSize size, PRegister pd, PRegister pg, ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                         "SubRegSize must be 16-bit, 32-bit, or 64-bit");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
@@ -5004,7 +5004,7 @@ private:
 
   void SVEFPMultiplyAdd(uint32_t opc, SubRegSize size, ZRegister zd, PRegister pg, ZRegister zn, ZRegister zm) {
     // NOTE: opc also includes the op0 bit (bit 15) like op0:opc, since the fields are adjacent
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                         "SubRegSize must be 16-bit, 32-bit, or 64-bit");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
@@ -5019,7 +5019,7 @@ private:
   }
 
   void SVEFPMultiplyAddIndexed(uint32_t op, SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, uint32_t index) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                         "SubRegSize must be 16-bit, 32-bit, or 64-bit");
     LOGMAN_THROW_A_FMT((size <= SubRegSize::i32Bit && zm <= ZReg::z7) || (size == SubRegSize::i64Bit && zm <= ZReg::z15),
                         "16-bit and 32-bit indexed variants may only use Zm between z0-z7\n"
@@ -5027,7 +5027,7 @@ private:
 
     const auto Underlying = FEXCore::ToUnderlying(size);
     [[maybe_unused]] const uint32_t IndexMax = (16 / (1U << Underlying)) - 1;
-    LOGMAN_THROW_AA_FMT(index <= IndexMax, "Index must be within 0-{}", IndexMax);
+    LOGMAN_THROW_A_FMT(index <= IndexMax, "Index must be within 0-{}", IndexMax);
 
     // Can be bit 20 or 19 depending on whether or not the element size is 64-bit.
     const auto IndexShift = 19 + static_cast<uint32_t>(size == SubRegSize::i64Bit);
@@ -5045,8 +5045,8 @@ private:
 
   void SVEFPMultiplyAddLongIndexed(uint32_t o2, uint32_t op, uint32_t T, SubRegSize dstsize,
                                    ZRegister zda, ZRegister zn, ZRegister zm, uint32_t index) {
-    LOGMAN_THROW_AA_FMT(dstsize == SubRegSize::i32Bit, "Destination size must be 32-bit.");
-    LOGMAN_THROW_AA_FMT(index <= 7, "Index ({}) must be within [0, 7]", index);
+    LOGMAN_THROW_A_FMT(dstsize == SubRegSize::i32Bit, "Destination size must be 32-bit.");
+    LOGMAN_THROW_A_FMT(index <= 7, "Index ({}) must be within [0, 7]", index);
     LOGMAN_THROW_A_FMT(zm <= ZReg::z7, "zm (z{}) must be within [z0, z7]", zm.Idx());
 
     uint32_t Inst = 0b0110'0100'1010'0000'0100'0000'0000'0000;
@@ -5063,7 +5063,7 @@ private:
 
   void SVEFPMultiplyAddLong(uint32_t o2, uint32_t op, uint32_t T, SubRegSize dstsize,
                             ZRegister zda, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(dstsize == SubRegSize::i32Bit, "Destination size must be 32-bit.");
+    LOGMAN_THROW_A_FMT(dstsize == SubRegSize::i32Bit, "Destination size must be 32-bit.");
 
     uint32_t Instr = 0b0110'0100'1010'0000'1000'0000'0000'0000;
     Instr |= o2 << 22;
@@ -5076,7 +5076,7 @@ private:
   }
 
   void SVEFPMatrixMultiplyAccumulate(SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                         "SubRegSize must be 32-bit or 64-bit");
 
     uint32_t Instr = 0b0110'0100'0010'0000'1110'0100'0000'0000;
@@ -5088,7 +5088,7 @@ private:
   }
 
   void SVEPredicateCount(uint32_t opc, SubRegSize size, XRegister rd, PRegister pg, PRegister pn) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Cannot use 128-bit element size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Cannot use 128-bit element size");
 
     uint32_t Instr = 0b0010'0101'0010'0000'1000'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
@@ -5101,8 +5101,8 @@ private:
   }
 
   void SVEElementCount(uint32_t b20, uint32_t op1, SubRegSize size, ZRegister zdn, PredicatePattern pattern, uint32_t imm4) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Cannot use 128-bit element size");
-    LOGMAN_THROW_AA_FMT(imm4 >= 1 && imm4 <= 16, "Immediate must be between 1-16 inclusive");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Cannot use 128-bit element size");
+    LOGMAN_THROW_A_FMT(imm4 >= 1 && imm4 <= 16, "Immediate must be between 1-16 inclusive");
 
     uint32_t Instr = 0b0000'0100'0010'0000'1100'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
@@ -5115,7 +5115,7 @@ private:
   }
 
   void SVEIncDecPredicateCountScalar(uint32_t op0, uint32_t op1, uint32_t opc, uint32_t b16, SubRegSize size, Register rdn, PRegister pm) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Cannot use 128-bit element size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Cannot use 128-bit element size");
 
     uint32_t Instr = 0b0010'0101'0010'1000'1000'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
@@ -5128,12 +5128,12 @@ private:
     dc32(Instr);
   }
   void SVEIncDecPredicateCountVector(uint32_t op0, uint32_t op1, uint32_t opc, uint32_t b16, SubRegSize size, ZRegister zdn, PRegister pm) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "Cannot use 8-bit element size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Cannot use 8-bit element size");
     SVEIncDecPredicateCountScalar(op0, op1, opc, b16, size, Register{zdn.Idx()}, pm);
   }
 
   void SVE2IntegerPredicated(uint32_t op0, uint32_t op1, SubRegSize size, ZRegister zd, PRegister pg, ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Cannot use 128-bit size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Cannot use 128-bit size");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = 0b0100'0100'0000'0000'0000'0000'0000'0000;
@@ -5147,7 +5147,7 @@ private:
   }
 
   void SVE2IntegerPairwiseAddAccumulateLong(uint32_t U, SubRegSize size, ZRegister zda, PRegisterMerge pg, ZRegister zn) {
-    LOGMAN_THROW_AA_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                         "SubRegSize must be 16-bit, 32-bit, or 64-bit");
     SVE2IntegerPredicated((0b0010 << 1) | U, 0b101, size, zda, pg, zn);
   }
@@ -5177,7 +5177,7 @@ private:
   }
 
   void SVEIntegerMultiplyAddUnpredicated(uint32_t op0, SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i128Bit, "Cannot use 128-bit element size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i128Bit, "Cannot use 128-bit element size");
 
     uint32_t Instr = 0b0100'0100'0000'0000'0000'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
@@ -5221,26 +5221,26 @@ private:
   }
 
   void SVE2IntegerAddSubLong(uint32_t op, uint32_t SUT, SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i128Bit, "Can't use 8-bit or 128-bit element size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i128Bit, "Can't use 8-bit or 128-bit element size");
     SVE2WideningIntegerArithmetic(op, SUT, size, zd, zn, zm);
   }
 
   void SVE2IntegerAddSubWide(uint32_t SUT, SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i128Bit, "Can't use 8-bit or 128-bit element size");
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i128Bit, "Can't use 8-bit or 128-bit element size");
     SVE2WideningIntegerArithmetic(0b10, SUT, size, zd, zn, zm);
   }
 
   void SVE2IntegerMultiplyLong(uint32_t SUT, SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
     // PMULLB and PMULLT support the use of 128-bit element sizes (with the SVE2PMULL128 extension)
     if (SUT == 0b010 || SUT == 0b011) {
-      LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit, "Can't use 8-bit element size");
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Can't use 8-bit element size");
 
       // 128-bit variant is encoded as if it were 8-bit (0b00)
       if (size == SubRegSize::i128Bit) {
         size = SubRegSize::i8Bit;
       }
     } else {
-      LOGMAN_THROW_AA_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i128Bit, "Can't use 8-bit or 128-bit element size");
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i128Bit, "Can't use 8-bit or 128-bit element size");
     }
 
     SVE2WideningIntegerArithmetic(0b11, SUT, size, zd, zn, zm);
@@ -5366,7 +5366,7 @@ private:
     const int32_t imm8_limit = 128;
     const bool is_int8_imm = -imm8_limit <= imm && imm < imm8_limit;
     if (size == SubRegSize::i8Bit) {
-      LOGMAN_THROW_AA_FMT(is_int8_imm, "Can't perform LSL #8 shift on 8-bit elements.");
+      LOGMAN_THROW_A_FMT(is_int8_imm, "Can't perform LSL #8 shift on 8-bit elements.");
     }
 
     uint32_t shift = 0;
@@ -5374,8 +5374,8 @@ private:
       const int32_t imm16_limit = 32768;
       const bool is_int16_imm = -imm16_limit <= imm && imm < imm16_limit;
 
-      LOGMAN_THROW_AA_FMT(is_int16_imm, "Immediate ({}) must be a 16-bit value within [-32768, 32512]", imm);
-      LOGMAN_THROW_AA_FMT((imm % 256) == 0, "Immediate ({}) must be a multiple of 256", imm);
+      LOGMAN_THROW_A_FMT(is_int16_imm, "Immediate ({}) must be a 16-bit value within [-32768, 32512]", imm);
+      LOGMAN_THROW_A_FMT((imm % 256) == 0, "Immediate ({}) must be a multiple of 256", imm);
 
       imm /= 256;
       shift = 1;
