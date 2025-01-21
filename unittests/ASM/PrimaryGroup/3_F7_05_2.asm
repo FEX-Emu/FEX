@@ -44,40 +44,49 @@ mov [r8 + 8 * 5], rax
 
 ; Negative * Negative
 mov ax, -128
+cwd
 imul word [r8 + 8 * 0 + 0]
 ofcfmerge
 
 mov eax, -128
+cdq
 imul dword [r8 + 8 * 1 + 0]
 ofcfmerge
 
 mov rax, -128
+cqo
 imul qword [r8 + 8 * 2 + 0]
 ofcfmerge
 
 ; Negative * Positive
 mov ax, -128
+cwd
 imul word [r8 + 8 * 3 + 0]
 ofcfmerge
 
 mov eax, -128
+cdq
 imul dword [r8 + 8 * 4 + 0]
 ofcfmerge
 
 mov rax, -128
+cqo
 imul qword [r8 + 8 * 5 + 0]
 ofcfmerge
 
 ; Positive * Positive
 mov ax, 128
+cwd
 imul word [r8 + 8 * 3 + 0]
 ofcfmerge
 
 mov eax, 128
+cdq
 imul dword [r8 + 8 * 4 + 0]
 ofcfmerge
 
 mov rax, 128
+cqo
 imul qword [r8 + 8 * 5 + 0]
 ofcfmerge
 
