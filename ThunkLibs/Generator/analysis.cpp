@@ -305,7 +305,7 @@ void AnalysisAction::ParseInterface(clang::ASTContext& context) {
 
         const auto template_arg_loc = GetTemplateArgLocation(decl, 0);
 
-        if (auto emitted_function = llvm::dyn_cast<clang::FunctionDecl>(template_args[0].getAsDecl())) {
+        if (llvm::isa<clang::FunctionDecl>(template_args[0].getAsDecl())) {
           // Process later
         } else if (auto annotated_member = llvm::dyn_cast<clang::FieldDecl>(template_args[0].getAsDecl())) {
           {
