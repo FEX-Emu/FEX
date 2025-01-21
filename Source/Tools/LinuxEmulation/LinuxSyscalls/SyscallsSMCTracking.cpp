@@ -324,7 +324,7 @@ void SyscallHandler::TrackShmat(FEXCore::Core::InternalThreadState* Thread, int 
 
   shmid_ds stat;
 
-  auto res = shmctl(shmid, IPC_STAT, &stat);
+  [[maybe_unused]] auto res = shmctl(shmid, IPC_STAT, &stat);
   LOGMAN_THROW_A_FMT(res != -1, "shmctl IPC_STAT failed");
 
   uint64_t Length = stat.shm_segsz;

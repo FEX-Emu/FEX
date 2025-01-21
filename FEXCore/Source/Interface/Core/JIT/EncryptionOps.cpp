@@ -17,7 +17,7 @@ DEF_OP(VAESImc) {
 
 DEF_OP(VAESEnc) {
   const auto Op = IROp->C<IR::IROp_VAESEnc>();
-  const auto OpSize = IROp->Size;
+  [[maybe_unused]] const auto OpSize = IROp->Size;
 
   const auto Dst = GetVReg(Node);
   const auto Key = GetVReg(Op->Key.ID());
@@ -42,7 +42,7 @@ DEF_OP(VAESEnc) {
 
 DEF_OP(VAESEncLast) {
   const auto Op = IROp->C<IR::IROp_VAESEncLast>();
-  const auto OpSize = IROp->Size;
+  [[maybe_unused]] const auto OpSize = IROp->Size;
 
   const auto Dst = GetVReg(Node);
   const auto Key = GetVReg(Op->Key.ID());
@@ -65,7 +65,7 @@ DEF_OP(VAESEncLast) {
 
 DEF_OP(VAESDec) {
   const auto Op = IROp->C<IR::IROp_VAESDec>();
-  const auto OpSize = IROp->Size;
+  [[maybe_unused]] const auto OpSize = IROp->Size;
 
   const auto Dst = GetVReg(Node);
   const auto Key = GetVReg(Op->Key.ID());
@@ -90,7 +90,7 @@ DEF_OP(VAESDec) {
 
 DEF_OP(VAESDecLast) {
   const auto Op = IROp->C<IR::IROp_VAESDecLast>();
-  const auto OpSize = IROp->Size;
+  [[maybe_unused]] const auto OpSize = IROp->Size;
 
   const auto Dst = GetVReg(Node);
   const auto Key = GetVReg(Op->Key.ID());
@@ -187,7 +187,7 @@ DEF_OP(VSha256U0) {
 
 DEF_OP(PCLMUL) {
   const auto Op = IROp->C<IR::IROp_PCLMUL>();
-  const auto OpSize = IROp->Size;
+  [[maybe_unused]] const auto OpSize = IROp->Size;
 
   const auto Dst = GetVReg(Node);
   const auto Src1 = GetVReg(Op->Src1.ID());

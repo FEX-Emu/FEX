@@ -501,7 +501,7 @@ OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_LoadSource_WithOpSize(
     HighA.Offset += 16;
 
     if (Operand.IsSIB()) {
-      const bool IsVSIB = (Op->Flags & X86Tables::DecodeFlags::FLAG_VSIB_BYTE) != 0;
+      [[maybe_unused]] const bool IsVSIB = (Op->Flags & X86Tables::DecodeFlags::FLAG_VSIB_BYTE) != 0;
       LOGMAN_THROW_A_FMT(!IsVSIB, "VSIB uses LoadVSIB instead");
     }
 

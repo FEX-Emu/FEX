@@ -1549,12 +1549,12 @@ DEF_OP(VExtractToGPR) {
   const auto Op = IROp->C<IR::IROp_VExtractToGPR>();
   const auto OpSize = IROp->Size;
 
-  constexpr auto AVXRegBitSize = Core::CPUState::XMM_AVX_REG_SIZE * 8;
+  [[maybe_unused]] constexpr auto AVXRegBitSize = Core::CPUState::XMM_AVX_REG_SIZE * 8;
   constexpr auto SSERegBitSize = Core::CPUState::XMM_SSE_REG_SIZE * 8;
   const auto ElementSizeBits = IR::OpSizeAsBits(Op->Header.ElementSize);
 
   const auto Offset = ElementSizeBits * Op->Index;
-  const auto Is256Bit = Offset >= SSERegBitSize;
+  [[maybe_unused]] const auto Is256Bit = Offset >= SSERegBitSize;
   LOGMAN_THROW_A_FMT(!Is256Bit || (Is256Bit && HostSupportsSVE256), "Need SVE256 support in order to use {} with 256-bit operation", __func__);
 
   const auto Dst = GetReg(Node);

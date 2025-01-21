@@ -3460,7 +3460,7 @@ private:
 
     uint32_t shift = 0;
     if (!is_uint8_imm) {
-      const bool is_uint16_imm = (imm >> 16) == 0;
+      [[maybe_unused]] const bool is_uint16_imm = (imm >> 16) == 0;
 
       LOGMAN_THROW_A_FMT(is_uint16_imm, "Immediate ({}) must be a 16-bit value within [256, 65280]", imm);
       LOGMAN_THROW_A_FMT((imm % 256) == 0, "Immediate ({}) must be a multiple of 256", imm);
@@ -3957,7 +3957,7 @@ private:
                        "Can't use 64-bit or 128-bit element size");
     LOGMAN_THROW_A_FMT(zd == zn, "zd and zn must be the same register");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7.Merging(), "Wide shift can only use p0-p7 as a governing predicate");
-    
+
     uint32_t Instr = 0b0000'0100'0001'1000'1000'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= opc << 16;
@@ -4313,7 +4313,7 @@ private:
           LOGMAN_THROW_A_FMT(op_data.scale == 0,
                              "mod type of none must have a scale of 0");
         }
-        
+
         Instr |= 1U << 15;
         mod_value = 1;
       }
@@ -4662,7 +4662,7 @@ private:
     }
     // Guards against bogus combinations of element size and memory size values
     // being passed in. Unsigned variants will always have dtypeh be less than
-    // or equal to dtypel. The only time this isn't the case is with signed variants. 
+    // or equal to dtypel. The only time this isn't the case is with signed variants.
     LOGMAN_THROW_A_FMT(is_signed == (dtypeh > dtypel),
                         "Invalid element size used with load broadcast instruction "
                         "(esize: {}, msize: {})", esize_value, msize_value);
@@ -5372,7 +5372,7 @@ private:
     uint32_t shift = 0;
     if (!is_int8_imm) {
       const int32_t imm16_limit = 32768;
-      const bool is_int16_imm = -imm16_limit <= imm && imm < imm16_limit;
+      [[maybe_unused]] const bool is_int16_imm = -imm16_limit <= imm && imm < imm16_limit;
 
       LOGMAN_THROW_A_FMT(is_int16_imm, "Immediate ({}) must be a 16-bit value within [-32768, 32512]", imm);
       LOGMAN_THROW_A_FMT((imm % 256) == 0, "Immediate ({}) must be a multiple of 256", imm);

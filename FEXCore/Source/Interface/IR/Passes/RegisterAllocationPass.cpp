@@ -21,7 +21,7 @@ using namespace FEXCore;
 
 namespace FEXCore::IR {
 namespace {
-  constexpr uint32_t INVALID_REG = IR::InvalidReg;
+  [[maybe_unused]] constexpr uint32_t INVALID_REG = IR::InvalidReg;
   constexpr uint32_t INVALID_CLASS = IR::InvalidClass.Val;
 
   struct RegisterClass {
@@ -289,7 +289,7 @@ private:
     // next-use has the /smallest/ unsigned IP.
     Ref Candidate = nullptr;
     uint32_t BestDistance = UINT32_MAX;
-    uint8_t BestReg = ~0;
+    [[maybe_unused]] uint8_t BestReg = ~0;
     uint32_t Allocated = ((1u << Class->Count) - 1) & ~Class->Available;
 
     foreach_bit(i, Allocated) {

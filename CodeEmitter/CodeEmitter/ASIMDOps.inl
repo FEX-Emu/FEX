@@ -307,7 +307,7 @@ public:
     const uint32_t SizeImm = FEXCore::ToUnderlying(size);
     const uint32_t IndexShift = SizeImm + 1;
     const uint32_t ElementSize = 1U << SizeImm;
-    const uint32_t MaxIndex = 128U / (ElementSize * 8);
+    [[maybe_unused]] const uint32_t MaxIndex = 128U / (ElementSize * 8);
 
     LOGMAN_THROW_A_FMT(Index < MaxIndex, "Index too large. Index={}, Max Index: {}", Index, MaxIndex);
 
@@ -397,7 +397,7 @@ public:
     constexpr uint32_t SizeImm = FEXCore::ToUnderlying(size);
     constexpr uint32_t IndexShift = SizeImm + 1;
     constexpr uint32_t ElementSize = 1U << SizeImm;
-    constexpr uint32_t MaxIndex = 128U / (ElementSize * 8);
+    [[maybe_unused]] constexpr uint32_t MaxIndex = 128U / (ElementSize * 8);
 
     LOGMAN_THROW_A_FMT(Index < MaxIndex, "Index too large. Index={}, Max Index: {}", Index, MaxIndex);
 
@@ -416,7 +416,7 @@ public:
     constexpr uint32_t SizeImm = FEXCore::ToUnderlying(size);
     constexpr uint32_t IndexShift = SizeImm + 1;
     constexpr uint32_t ElementSize = 1U << SizeImm;
-    constexpr uint32_t MaxIndex = 128U / (ElementSize * 8);
+    [[maybe_unused]] constexpr uint32_t MaxIndex = 128U / (ElementSize * 8);
 
     LOGMAN_THROW_A_FMT(Index < MaxIndex, "Index too large. Index={}, Max Index: {}", Index, MaxIndex);
 
@@ -439,7 +439,7 @@ public:
     constexpr uint32_t SizeImm = FEXCore::ToUnderlying(size);
     constexpr uint32_t IndexShift = SizeImm + 1;
     constexpr uint32_t ElementSize = 1U << SizeImm;
-    constexpr uint32_t MaxIndex = 128U / (ElementSize * 8);
+    [[maybe_unused]] constexpr uint32_t MaxIndex = 128U / (ElementSize * 8);
 
     LOGMAN_THROW_A_FMT(Index < MaxIndex, "Index too large. Index={}, Max Index: {}", Index, MaxIndex);
 
@@ -455,7 +455,7 @@ public:
     constexpr uint32_t SizeImm = FEXCore::ToUnderlying(size);
     constexpr uint32_t IndexShift = SizeImm + 1;
     constexpr uint32_t ElementSize = 1U << SizeImm;
-    constexpr uint32_t MaxIndex = 128U / (ElementSize * 8);
+    [[maybe_unused]] constexpr uint32_t MaxIndex = 128U / (ElementSize * 8);
 
     LOGMAN_THROW_A_FMT(Index < MaxIndex, "Index too large. Index={}, Max Index: {}", Index, MaxIndex);
 
@@ -470,7 +470,7 @@ public:
     const uint32_t SizeImm = FEXCore::ToUnderlying(size);
     const uint32_t IndexShift = SizeImm + 1;
     const uint32_t ElementSize = 1U << SizeImm;
-    const uint32_t MaxIndex = 128U / (ElementSize * 8);
+    [[maybe_unused]] const uint32_t MaxIndex = 128U / (ElementSize * 8);
 
     LOGMAN_THROW_A_FMT(Index < MaxIndex, "Index too large. Index={}, Max Index: {}", Index, MaxIndex);
 
@@ -481,11 +481,11 @@ public:
 
   void ins(SubRegSize size, VRegister rd, uint32_t Index, VRegister rn, uint32_t Index2) {
     constexpr uint32_t Op = 0b0110'1110'0000'0000'0000'01 << 10;
-    
+
     const uint32_t SizeImm = FEXCore::ToUnderlying(size);
     const uint32_t IndexShift = SizeImm + 1;
     const uint32_t ElementSize = 1U << SizeImm;
-    const uint32_t MaxIndex = 128U / (ElementSize * 8);
+    [[maybe_unused]] const uint32_t MaxIndex = 128U / (ElementSize * 8);
 
     LOGMAN_THROW_A_FMT(Index < MaxIndex,  "Index too large. Index={}, Max Index: {}", Index, MaxIndex);
     LOGMAN_THROW_A_FMT(Index2 < MaxIndex, "Index2 too large. Index2={}, Max Index: {}", Index2, MaxIndex);

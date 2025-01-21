@@ -24,7 +24,7 @@ public:
     const uint32_t SizeImm = FEXCore::ToUnderlying(size);
     const uint32_t IndexShift = SizeImm + 1;
     const uint32_t ElementSize = 1U << SizeImm;
-    const uint32_t MaxIndex = 128U / (ElementSize * 8);
+    [[maybe_unused]] const uint32_t MaxIndex = 128U / (ElementSize * 8);
 
     LOGMAN_THROW_A_FMT(Index < MaxIndex, "Index too large. Index={}, Max Index: {}", Index, MaxIndex);
 

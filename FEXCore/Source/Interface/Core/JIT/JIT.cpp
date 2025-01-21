@@ -876,8 +876,8 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
     for (size_t i = 0; i < DebugData->GuestOpcodes.size(); i++) {
       const auto& GuestOpcode = DebugData->GuestOpcodes[i];
       auto& RIPEntry = JITRIPEntries[i];
-      uint64_t HostPCOffset = GuestOpcode.HostEntryOffset - CurrentPCOffset;
-      int64_t GuestRIPOffset = GuestOpcode.GuestEntryOffset - CurrentRIPOffset;
+      [[maybe_unused]] uint64_t HostPCOffset = GuestOpcode.HostEntryOffset - CurrentPCOffset;
+      [[maybe_unused]] int64_t GuestRIPOffset = GuestOpcode.GuestEntryOffset - CurrentRIPOffset;
       LOGMAN_THROW_A_FMT(HostPCOffset <= std::numeric_limits<uint16_t>::max(), "PC offset too large");
       LOGMAN_THROW_A_FMT(GuestRIPOffset >= std::numeric_limits<int16_t>::min(), "RIP offset too small");
       LOGMAN_THROW_A_FMT(GuestRIPOffset <= std::numeric_limits<int16_t>::max(), "RIP offset too large");
