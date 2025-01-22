@@ -256,12 +256,14 @@ struct alignas(16) KiUserExceptionDispatcherStackLayout {
 };
 
 static bool HandleUnalignedAccess(ARM64_NT_CONTEXT& Context) {
-  if (!CTX->IsAddressInCodeBuffer(GetCPUArea().ThreadState(), Context.Pc)) {
+  auto Thread = GetCPUArea().ThreadState();
+  if (!CTX->IsAddressInCodeBuffer(Thread, Context.Pc)) {
     return false;
   }
 
-  const auto Result = FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(GetCPUArea().ThreadState(),
-                                                                         HandlerConfig->GetUnalignedHandlerType(), Context.Pc, &Context.X0);
+  FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedSIGBUSCount, 1);
+  const auto Result =
+    FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(Thread, HandlerConfig->GetUnalignedHandlerType(), Context.Pc, &Context.X0);
   if (!Result.first) {
     return false;
   }
@@ -591,19 +593,22 @@ public:
 // Returns true if exception dispatch should be halted and the execution context restored to NativeContext
 bool ResetToConsistentStateImpl(EXCEPTION_RECORD* Exception, CONTEXT* GuestContext, ARM64_NT_CONTEXT* NativeContext) {
   const auto CPUArea = GetCPUArea();
+  auto Thread = CPUArea.ThreadState();
+  FEXCORE_PROFILE_ACCUMULATION(Thread, AccumulatedSignalTime);
   LogMan::Msg::DFmt("Exception: Code: {:X} Address: {:X}", Exception->ExceptionCode, reinterpret_cast<uintptr_t>(Exception->ExceptionAddress));
 
-  if (Exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION && CPUArea.ThreadState() && InvalidationTracker) {
+  if (Exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION && Thread && InvalidationTracker) {
     const auto FaultAddress = static_cast<uint64_t>(Exception->ExceptionInformation[1]);
 
     std::scoped_lock Lock(ThreadCreationMutex);
     if (InvalidationTracker->HandleRWXAccessViolation(FaultAddress)) {
-      if (CTX->IsAddressInCodeBuffer(CPUArea.ThreadState(), NativeContext->Pc) && !CTX->IsCurrentBlockSingleInst(CPUArea.ThreadState()) &&
-          CTX->IsAddressInCurrentBlock(CPUArea.ThreadState(), FaultAddress, 8)) {
+      FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedSMCCount, 1);
+      if (CTX->IsAddressInCodeBuffer(Thread, NativeContext->Pc) && !CTX->IsCurrentBlockSingleInst(CPUArea.ThreadState()) &&
+          CTX->IsAddressInCurrentBlock(Thread, FaultAddress, 8)) {
         // If we are not patching ourself (single inst block case) and patching the current block, this is inline SMC. Reconstruct the current context (before the SMC write) then single step the write to reduce it to regular SMC.
-        Exception::ReconstructThreadState(CPUArea.ThreadState(), *NativeContext);
+        Exception::ReconstructThreadState(Thread, *NativeContext);
         LogMan::Msg::DFmt("Handled inline self-modifying code: pc: {:X} rip: {:X} fault: {:X}", NativeContext->Pc,
-                          CPUArea.ThreadState()->CurrentFrame->State.rip, FaultAddress);
+                          Thread->CurrentFrame->State.rip, FaultAddress);
         NativeContext->Pc = CPUArea.DispatcherLoopTopEnterECFillSRA();
         NativeContext->Sp = CPUArea.EmulatorStackBase();
         NativeContext->X10 = 1;                                        // Set ENTRY_FILL_SRA_SINGLE_INST_REG to force a single step

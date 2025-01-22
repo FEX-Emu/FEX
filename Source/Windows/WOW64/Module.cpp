@@ -520,6 +520,8 @@ void BTCpuThreadTerm(HANDLE Thread, LONG ExitCode) {
     return;
   }
 
+  auto* OldThreadState = TLS.ThreadState();
+
   THREAD_BASIC_INFORMATION Info;
   if (NTSTATUS Err = NtQueryInformationThread(Thread, ThreadBasicInformation, &Info, sizeof(Info), nullptr); Err) {
     return;
@@ -531,7 +533,7 @@ void BTCpuThreadTerm(HANDLE Thread, LONG ExitCode) {
     Threads.erase(ThreadTID);
   }
 
-  CTX->DestroyThread(TLS.ThreadState());
+  CTX->DestroyThread(OldThreadState);
   if (ThreadTID == GetCurrentThreadId()) {
     FEX::Windows::DeinitCRTThread();
   }
@@ -687,6 +689,7 @@ bool BTCpuResetToConsistentStateImpl(EXCEPTION_POINTERS* Ptrs) {
   auto* Context = Ptrs->ContextRecord;
   auto* Exception = Ptrs->ExceptionRecord;
   auto Thread = GetTLS().ThreadState();
+  FEXCORE_PROFILE_ACCUMULATION(Thread, AccumulatedSignalTime);
 
   if (Exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
     const auto FaultAddress = static_cast<uint64_t>(Exception->ExceptionInformation[1]);
@@ -702,6 +705,7 @@ bool BTCpuResetToConsistentStateImpl(EXCEPTION_POINTERS* Ptrs) {
 
     if (Thread) {
       std::scoped_lock Lock(ThreadCreationMutex);
+      FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedSMCCount, 1);
       if (InvalidationTracker->HandleRWXAccessViolation(FaultAddress)) {
         LogMan::Msg::DFmt("Handled self-modifying code: pc: {:X} fault: {:X}", Context->Pc, FaultAddress);
         return true;
@@ -713,6 +717,7 @@ bool BTCpuResetToConsistentStateImpl(EXCEPTION_POINTERS* Ptrs) {
     return false;
   }
 
+  FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedSIGBUSCount, 1);
   if (Exception->ExceptionCode == EXCEPTION_DATATYPE_MISALIGNMENT && Context::HandleUnalignedAccess(Context)) {
     LogMan::Msg::DFmt("Handled unaligned atomic: new pc: {:X}", Context->Pc);
     return true;
