@@ -20,7 +20,7 @@ __attribute__((naked)) uint64_t linux_getpid() {
                  : "r0", "r8");
 }
 
-uint64_t StatAlloc::AllocateMoreSlots(uint64_t NewSize) {
+uint32_t StatAlloc::FrontendAllocateSlots(uint32_t NewSize) {
   LogMan::Msg::DFmt("Ran out of slots. Can't allocate more");
   return CurrentSize;
 }

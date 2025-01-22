@@ -580,9 +580,7 @@ NTSTATUS ProcessInit() {
   return STATUS_SUCCESS;
 }
 
-void ProcessTerm(HANDLE Handle, BOOL After, NTSTATUS Status) {
-  StatAllocHandler.reset();
-}
+void ProcessTerm(HANDLE Handle, BOOL After, NTSTATUS Status) {}
 
 class ScopedCallbackDisable {
 private:

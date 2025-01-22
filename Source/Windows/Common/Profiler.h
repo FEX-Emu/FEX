@@ -10,7 +10,7 @@ public:
   virtual ~StatAlloc();
 
   FEXCore::Profiler::ThreadStats* AllocateSlot(uint32_t TID) {
-    return AllocateBaseSlot(TID);
+    return StatAllocBase::AllocateSlot(TID);
   }
 
   void DeallocateSlot(FEXCore::Profiler::ThreadStats* AllocatedSlot) {
@@ -18,11 +18,11 @@ public:
       return;
     }
 
-    DeallocateBaseSlot(AllocatedSlot);
+    StatAllocBase::DeallocateSlot(AllocatedSlot);
   }
 
 private:
-  uint64_t AllocateMoreSlots(uint64_t NewSize) override;
+  uint32_t FrontendAllocateSlots(uint32_t NewSize) override;
 };
 
 } // namespace FEX::Windows

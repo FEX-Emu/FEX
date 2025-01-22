@@ -26,7 +26,8 @@ struct ThreadStatsHeader {
   uint8_t _pad[2];
   char fex_version[48];
   std::atomic<uint32_t> Head;
-  std::atomic<uint64_t> Size;
+  std::atomic<uint32_t> Size;
+  uint32_t Pad;
 };
 
 struct ThreadStats {
@@ -46,7 +47,7 @@ struct ThreadStats {
 
 #ifdef _M_ARM_64
 /**
- * @brief Get the raw cycle counter which is synchronizing.
+ * @brief Get the raw cycle counter with synchronizing isb.
  *
  * `CNTVCTSS_EL0` also does the same thing, but requires the FEAT_ECV feature.
  */

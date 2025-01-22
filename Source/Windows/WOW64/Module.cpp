@@ -510,9 +510,7 @@ void BTCpuProcessInit() {
   }
 }
 
-void BTCpuProcessTerm(HANDLE Handle, BOOL After, ULONG Status) {
-  StatAllocHandler.reset();
-}
+void BTCpuProcessTerm(HANDLE Handle, BOOL After, ULONG Status) {}
 
 void BTCpuThreadInit() {
   FEX::Windows::InitCRTThread();
@@ -534,7 +532,7 @@ void BTCpuThreadTerm(HANDLE Thread, LONG ExitCode) {
     return;
   }
 
-  auto* OldThreadState = TLS.ThreadState();
+  auto* ThreadState = TLS.ThreadState();
 
   THREAD_BASIC_INFORMATION Info;
   if (NTSTATUS Err = NtQueryInformationThread(Thread, ThreadBasicInformation, &Info, sizeof(Info), nullptr); Err) {
@@ -546,11 +544,11 @@ void BTCpuThreadTerm(HANDLE Thread, LONG ExitCode) {
     std::scoped_lock Lock(ThreadCreationMutex);
     Threads.erase(ThreadTID);
     if (StatAllocHandler) {
-      StatAllocHandler->DeallocateSlot(OldThreadState->ThreadStats);
+      StatAllocHandler->DeallocateSlot(ThreadState->ThreadStats);
     }
   }
 
-  CTX->DestroyThread(OldThreadState);
+  CTX->DestroyThread(ThreadState);
   if (ThreadTID == GetCurrentThreadId()) {
     FEX::Windows::DeinitCRTThread();
   }
