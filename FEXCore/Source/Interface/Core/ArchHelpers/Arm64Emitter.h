@@ -18,10 +18,8 @@
 #include <CodeEmitter/Emitter.h>
 #include <CodeEmitter/Registers.h>
 
-#include <array>
 #include <cstddef>
 #include <cstdint>
-#include <utility>
 #include <span>
 
 namespace FEXCore::Context {

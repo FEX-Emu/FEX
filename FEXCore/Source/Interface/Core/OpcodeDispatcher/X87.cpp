@@ -242,9 +242,9 @@ void OpDispatchBuilder::FMUL(OpcodeArgs, IR::OpSize Width, bool Integer, OpDispa
 
 void OpDispatchBuilder::FDIV(OpcodeArgs, IR::OpSize Width, bool Integer, bool Reverse, OpDispatchBuilder::OpResult ResInST0) {
   if (Op->Src[0].IsNone()) {
-    const auto Offset = Op->OP & 7;
-    const auto St0 = 0;
-    const auto Result = (ResInST0 == OpResult::RES_STI) ? Offset : St0;
+    const uint8_t Offset = Op->OP & 7;
+    const uint8_t St0 = 0;
+    const uint8_t Result = (ResInST0 == OpResult::RES_STI) ? Offset : St0;
 
     if (Reverse ^ (ResInST0 == OpResult::RES_STI)) {
       _F80DivStack(Result, Offset, St0);
@@ -767,13 +767,11 @@ void OpDispatchBuilder::FNINIT(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::X87FFREE(OpcodeArgs) {
-
   _InvalidateStack(Op->OP & 7);
 }
 
 void OpDispatchBuilder::X87EMMS(OpcodeArgs) {
   // Tags all get set to 0b11
-
   _InvalidateStack(0xff);
 }
 
