@@ -4,8 +4,160 @@
 #include "LinuxSyscalls/SignalDelegator.h"
 
 #include <FEXHeaderUtils/Syscalls.h>
+#include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/fmt.h>
+
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <git_version.h>
 
 namespace FEX::HLE {
+
+ThreadManager::StatAlloc::StatAlloc() {
+  Initialize();
+  SaveHeader(Is64BitMode() ? FEXCore::Profiler::AppType::LINUX_64 : FEXCore::Profiler::AppType::LINUX_32);
+}
+
+void ThreadManager::StatAlloc::Initialize() {
+  if (!ProfileStats()) {
+    return;
+  }
+
+  int fd = shm_open(fextl::fmt::format("fex-{}-stats", ::getpid()).c_str(), O_CREAT | O_TRUNC | O_RDWR, USER_PERMS);
+  if (!fd) {
+    return;
+  }
+  CurrentSize = sysconf(_SC_PAGESIZE);
+  if (CurrentSize == 0) {
+    CurrentSize = 4096;
+  }
+
+  if (ftruncate(fd, CurrentSize) == -1) {
+    LogMan::Msg::EFmt("[StatAlloc] ftruncate failed");
+    goto err;
+  }
+
+  // 128MB ought to be enough for anyone.
+  Base = ::mmap(nullptr, MAX_STATS_SIZE, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+  if (Base == MAP_FAILED) {
+    LogMan::Msg::EFmt("[StatAlloc] mmap base failed");
+    Base = nullptr;
+    goto err;
+  }
+
+  // Allocate a small working shared space for now, grow as necessary.
+  {
+    auto SharedBase = ::mmap(Base, CurrentSize, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
+    if (SharedBase == MAP_FAILED) {
+      LogMan::Msg::EFmt("[StatAlloc] mmap shm failed");
+      munmap(Base, MAX_STATS_SIZE);
+      Base = nullptr;
+      goto err;
+    }
+  }
+
+err:
+  close(fd);
+}
+
+uint64_t ThreadManager::StatAlloc::AllocateMoreSlots(uint64_t NewSize) {
+  if (CurrentSize == MAX_STATS_SIZE) {
+    // Nope.
+    return CurrentSize;
+  }
+  NewSize = std::max(MAX_STATS_SIZE, NewSize);
+
+  // When allocating more slots, open the fd without O_TRUNC | O_CREAT.
+  int fd = shm_open(fextl::fmt::format("fex-{}-stats", ::getpid()).c_str(), O_RDWR, USER_PERMS);
+  if (!fd) {
+    return CurrentSize;
+  }
+
+  if (ftruncate(fd, NewSize) == -1) {
+    LogMan::Msg::EFmt("[StatAlloc] ftruncate more failed");
+
+    goto err;
+  }
+
+  {
+    auto SharedBase = ::mmap(Base, NewSize, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
+    if (SharedBase == MAP_FAILED) {
+      LogMan::Msg::EFmt("[StatAlloc] allocate more mmap shm failed");
+      goto err;
+    }
+
+    // TODO: Just a sanity check.
+    const char* SharedTest = (const char*)Base;
+    for (size_t i = CurrentSize; i < NewSize; ++i) {
+      if (SharedTest[i] != 0) {
+        LogMan::Msg::EFmt("truncate and map shared resulted in not zero'd memory!");
+      }
+    }
+  }
+
+err:
+  close(fd);
+  return NewSize;
+}
+
+FEXCore::Profiler::ThreadStats* ThreadManager::StatAlloc::AllocateSlot(uint32_t TID) {
+  std::scoped_lock lk(StatMutex);
+  return AllocateBaseSlot(TID);
+}
+
+void ThreadManager::StatAlloc::DeallocateSlot(FEXCore::Profiler::ThreadStats* AllocatedSlot) {
+  if (!AllocatedSlot) {
+    return;
+  }
+
+  std::scoped_lock lk(StatMutex);
+  DeallocateBaseSlot(AllocatedSlot);
+}
+
+void ThreadManager::StatAlloc::CleanupForExit() {
+  shm_unlink(fextl::fmt::format("fex-{}-stats", ::getpid()).c_str());
+}
+
+void ThreadManager::StatAlloc::LockBeforeFork() {
+  if (!ProfileStats()) {
+    return;
+  }
+  StatMutex.lock();
+}
+
+void ThreadManager::StatAlloc::UnlockAfterFork(FEXCore::Core::InternalThreadState* Thread, bool Child) {
+  if (!ProfileStats()) {
+    return;
+  }
+
+  if (!Child) {
+    StatMutex.unlock();
+    return;
+  }
+
+  StatMutex.StealAndDropActiveLocks();
+
+  // shm_memory tied to this process is now not owned by this process.
+  // Replace the shm region! Otherwise this process will keep reporting time in the original parent thread's stats region!
+  munmap(Base, MAX_STATS_SIZE);
+  Base = nullptr;
+  CurrentSize = 0;
+  Head = nullptr;
+  Stats = nullptr;
+  StatTail = nullptr;
+  RemainingSlots = 0;
+
+  Thread->ThreadStats = nullptr;
+
+  Initialize();
+  SaveHeader(Is64BitMode() ? FEXCore::Profiler::AppType::LINUX_64 : FEXCore::Profiler::AppType::LINUX_32);
+
+  // Update this thread's ThreadStats object
+  auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread);
+  ThreadObject->Thread->ThreadStats = AllocateSlot(ThreadObject->ThreadInfo.TID);
+}
+
 FEX::HLE::ThreadStateObject* ThreadManager::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, const FEXCore::Core::CPUState* NewThreadState,
                                                          uint64_t ParentTID, FEX::HLE::ThreadStateObject* InheritThread) {
   auto ThreadStateObject = new FEX::HLE::ThreadStateObject;
@@ -13,12 +165,13 @@ FEX::HLE::ThreadStateObject* ThreadManager::CreateThread(uint64_t InitialRIP, ui
   ThreadStateObject->ThreadInfo.parent_tid = ParentTID;
   ThreadStateObject->ThreadInfo.PID = ::getpid();
 
-  if (ParentTID == 0) {
-    ThreadStateObject->ThreadInfo.TID = FHU::Syscalls::gettid();
-  }
+  ThreadStateObject->ThreadInfo.TID = FHU::Syscalls::gettid();
 
   ThreadStateObject->Thread = CTX->CreateThread(InitialRIP, StackPointer, NewThreadState, ParentTID);
   ThreadStateObject->Thread->FrontendPtr = ThreadStateObject;
+  if (ProfileStats()) {
+    ThreadStateObject->Thread->ThreadStats = Stat.AllocateSlot(ThreadStateObject->ThreadInfo.TID);
+  }
 
   if (InheritThread) {
     FEX::HLE::_SyscallHandler->SeccompEmulator.InheritSeccompFilters(InheritThread, ThreadStateObject);
@@ -36,6 +189,8 @@ void ThreadManager::DestroyThread(FEX::HLE::ThreadStateObject* Thread, bool Need
     LOGMAN_THROW_A_FMT(It != Threads.end(), "Thread wasn't in Threads");
     Threads.erase(It);
   }
+
+  Stat.DeallocateSlot(Thread->Thread->ThreadStats);
 
   HandleThreadDeletion(Thread, NeedsTLSUninstall);
 }
@@ -212,7 +367,12 @@ void ThreadManager::UnpauseThread(FEX::HLE::ThreadStateObject* Thread) {
   Thread->ThreadPaused.NotifyOne();
 }
 
+void ThreadManager::LockBeforeFork() {
+  Stat.LockBeforeFork();
+}
+
 void ThreadManager::UnlockAfterFork(FEXCore::Core::InternalThreadState* LiveThread, bool Child) {
+  Stat.UnlockAfterFork(LiveThread, Child);
   if (!Child) {
     return;
   }
@@ -220,6 +380,9 @@ void ThreadManager::UnlockAfterFork(FEXCore::Core::InternalThreadState* LiveThre
   // This function is called after fork
   // We need to cleanup some of the thread data that is dead
   for (auto& DeadThread : Threads) {
+    // This is not owned by the child after fork.
+    DeadThread->Thread->ThreadStats = nullptr;
+
     if (DeadThread->Thread == LiveThread) {
       continue;
     }

@@ -18,6 +18,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/FPState.h>
+#include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/Utils/ArchHelpers/Arm64.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
@@ -673,6 +674,8 @@ void SignalDelegator::HandleGuestSignal(FEX::HLE::ThreadStateObject* ThreadObjec
     }
     SaveTelemetry();
 #endif
+
+    FEX::HLE::_SyscallHandler->TM.CleanupForExit();
 
     // Reassign back to DFL and crash
     signal(Signal, SIG_DFL);
