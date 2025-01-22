@@ -99,6 +99,7 @@ struct InternalThreadState : public FEXCore::Allocator::FEXAllocOperators {
 
   std::shared_mutex ObjectCacheRefCounter {};
 
+  // This pointer is owned by the frontend.
   FEXCore::Profiler::ThreadStats* ThreadStats {};
 
   ///< Data pointer for exclusive use by the frontend

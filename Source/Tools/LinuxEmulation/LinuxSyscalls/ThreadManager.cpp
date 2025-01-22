@@ -25,7 +25,7 @@ void ThreadManager::StatAlloc::Initialize() {
   }
 
   int fd = shm_open(fextl::fmt::format("fex-{}-stats", ::getpid()).c_str(), O_CREAT | O_TRUNC | O_RDWR, USER_PERMS);
-  if (!fd) {
+  if (fd == -1) {
     return;
   }
   CurrentSize = sysconf(_SC_PAGESIZE);
@@ -38,7 +38,11 @@ void ThreadManager::StatAlloc::Initialize() {
     goto err;
   }
 
-  // 128MB ought to be enough for anyone.
+  // Reserve a region of MAX_STATS_SIZE so we can grow the allocation buffer.
+  // Number of thread slots when ThreadStatsHeader == 64bytes and ThreadStats == 40bytes:
+  // 1 page: 99 slots
+  // 1 MB: 26211 slots
+  // 128 MB: 3355440 slots
   Base = ::mmap(nullptr, MAX_STATS_SIZE, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
   if (Base == MAP_FAILED) {
     LogMan::Msg::EFmt("[StatAlloc] mmap base failed");
@@ -61,9 +65,10 @@ err:
   close(fd);
 }
 
-uint64_t ThreadManager::StatAlloc::AllocateMoreSlots(uint64_t NewSize) {
+uint32_t ThreadManager::StatAlloc::FrontendAllocateSlots(uint32_t NewSize) {
   if (CurrentSize == MAX_STATS_SIZE) {
-    // Nope.
+    // Allocator has reached maximum slots. We can't allocate anymore.
+    // New threads won't get stats.
     return CurrentSize;
   }
   NewSize = std::max(MAX_STATS_SIZE, NewSize);
@@ -86,14 +91,6 @@ uint64_t ThreadManager::StatAlloc::AllocateMoreSlots(uint64_t NewSize) {
       LogMan::Msg::EFmt("[StatAlloc] allocate more mmap shm failed");
       goto err;
     }
-
-    // TODO: Just a sanity check.
-    const char* SharedTest = (const char*)Base;
-    for (size_t i = CurrentSize; i < NewSize; ++i) {
-      if (SharedTest[i] != 0) {
-        LogMan::Msg::EFmt("truncate and map shared resulted in not zero'd memory!");
-      }
-    }
   }
 
 err:
@@ -103,7 +100,7 @@ err:
 
 FEXCore::Profiler::ThreadStats* ThreadManager::StatAlloc::AllocateSlot(uint32_t TID) {
   std::scoped_lock lk(StatMutex);
-  return AllocateBaseSlot(TID);
+  return StatAllocBase::AllocateSlot(TID);
 }
 
 void ThreadManager::StatAlloc::DeallocateSlot(FEXCore::Profiler::ThreadStats* AllocatedSlot) {
@@ -112,7 +109,7 @@ void ThreadManager::StatAlloc::DeallocateSlot(FEXCore::Profiler::ThreadStats* Al
   }
 
   std::scoped_lock lk(StatMutex);
-  DeallocateBaseSlot(AllocatedSlot);
+  StatAllocBase::DeallocateSlot(AllocatedSlot);
 }
 
 void ThreadManager::StatAlloc::CleanupForExit() {
@@ -138,8 +135,8 @@ void ThreadManager::StatAlloc::UnlockAfterFork(FEXCore::Core::InternalThreadStat
 
   StatMutex.StealAndDropActiveLocks();
 
-  // shm_memory tied to this process is now not owned by this process.
-  // Replace the shm region! Otherwise this process will keep reporting time in the original parent thread's stats region!
+  // shm_memory ownership is retained by the parent process, so the child must replace it with its own one.
+  // Otherwise this process will keep reporting in the original parent thread's stats region.
   munmap(Base, MAX_STATS_SIZE);
   Base = nullptr;
   CurrentSize = 0;
@@ -380,7 +377,7 @@ void ThreadManager::UnlockAfterFork(FEXCore::Core::InternalThreadState* LiveThre
   // This function is called after fork
   // We need to cleanup some of the thread data that is dead
   for (auto& DeadThread : Threads) {
-    // This is not owned by the child after fork.
+    // The fork parent retains ownership of ThreadStats
     DeadThread->Thread->ThreadStats = nullptr;
 
     if (DeadThread->Thread == LiveThread) {

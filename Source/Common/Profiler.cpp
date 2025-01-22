@@ -14,7 +14,7 @@ void StatAllocBase::SaveHeader(FEXCore::Profiler::AppType AppType) {
   Head->Size.store(CurrentSize, std::memory_order_relaxed);
   Head->Version = FEXCore::Profiler::STATS_VERSION;
 
-  constexpr std::array<char, std::char_traits<char>::length(GIT_DESCRIBE_STRING) + 1> GitString = {GIT_DESCRIBE_STRING};
+  std::string_view GitString = GIT_DESCRIBE_STRING;
   strncpy(Head->fex_version, GitString.data(), std::min(GitString.size(), sizeof(Head->fex_version)));
   Head->app_type = AppType;
 
@@ -26,7 +26,7 @@ void StatAllocBase::SaveHeader(FEXCore::Profiler::AppType AppType) {
 bool StatAllocBase::AllocateMoreSlots() {
   const auto OriginalSlotCount = TotalSlotsFromSize();
 
-  uint64_t NewSize = AllocateMoreSlots(CurrentSize * 2);
+  uint32_t NewSize = FrontendAllocateSlots(CurrentSize * 2);
 
   if (NewSize == CurrentSize) {
     return false;
@@ -39,7 +39,7 @@ bool StatAllocBase::AllocateMoreSlots() {
   return true;
 }
 
-FEXCore::Profiler::ThreadStats* StatAllocBase::AllocateBaseSlot(uint32_t TID) {
+FEXCore::Profiler::ThreadStats* StatAllocBase::AllocateSlot(uint32_t TID) {
   if (!RemainingSlots) {
     if (!AllocateMoreSlots()) {
       return nullptr;
@@ -47,7 +47,7 @@ FEXCore::Profiler::ThreadStats* StatAllocBase::AllocateBaseSlot(uint32_t TID) {
   }
 
   // Find a free slot
-  memory_barrier();
+  store_memory_barrier();
   FEXCore::Profiler::ThreadStats* AllocatedSlot {};
   for (size_t i = 0; i < TotalSlotsFromSize(); ++i) {
     AllocatedSlot = &Stats[i];
@@ -76,7 +76,7 @@ FEXCore::Profiler::ThreadStats* StatAllocBase::AllocateBaseSlot(uint32_t TID) {
   return AllocatedSlot;
 }
 
-void StatAllocBase::DeallocateBaseSlot(FEXCore::Profiler::ThreadStats* AllocatedSlot) {
+void StatAllocBase::DeallocateSlot(FEXCore::Profiler::ThreadStats* AllocatedSlot) {
   if (!AllocatedSlot) {
     return;
   }
@@ -84,7 +84,7 @@ void StatAllocBase::DeallocateBaseSlot(FEXCore::Profiler::ThreadStats* Allocated
   // TID == 0 will signal the reader to ignore this slot & deallocate it!
   AllocatedSlot->TID.store(0, std::memory_order_relaxed);
 
-  memory_barrier();
+  store_memory_barrier();
 
   const auto SlotOffset = OffsetFromStat(AllocatedSlot);
   const auto AllocatedSlotNext = AllocatedSlot->Next.load(std::memory_order_relaxed);

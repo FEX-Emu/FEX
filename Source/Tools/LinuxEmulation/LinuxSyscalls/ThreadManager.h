@@ -123,7 +123,7 @@ public:
   private:
     void Initialize();
 
-    uint64_t AllocateMoreSlots(uint64_t NewSize) override;
+    uint32_t FrontendAllocateSlots(uint32_t NewSize) override;
     FEX_CONFIG_OPT(ProfileStats, PROFILESTATS);
     FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
 
