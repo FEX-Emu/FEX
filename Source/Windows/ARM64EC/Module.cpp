@@ -38,6 +38,7 @@ $end_info$
 #include "Common/PortabilityInfo.h"
 #include "DummyHandlers.h"
 #include "BTInterface.h"
+#include "Windows/Common/Profiler.h"
 
 #include <cstdint>
 #include <cstdio>
@@ -123,6 +124,7 @@ namespace {
 fextl::unique_ptr<FEXCore::Context::Context> CTX;
 fextl::unique_ptr<FEX::DummyHandlers::DummySignalDelegator> SignalDelegator;
 fextl::unique_ptr<Exception::ECSyscallHandler> SyscallHandler;
+fextl::unique_ptr<FEX::Windows::StatAlloc> StatAllocHandler;
 std::optional<FEX::Windows::InvalidationTracker> InvalidationTracker;
 std::optional<FEX::Windows::CPUFeatures> CPUFeatures;
 std::optional<FEX::Windows::OvercommitTracker> OvercommitTracker;
@@ -570,10 +572,17 @@ NTSTATUS ProcessInit() {
   const uintptr_t KiUserExceptionDispatcherFFS = reinterpret_cast<uintptr_t>(GetProcAddress(NtDll, "KiUserExceptionDispatcher"));
   Exception::KiUserExceptionDispatcher = NtDllRedirectionLUT[KiUserExceptionDispatcherFFS - NtDllBase] + NtDllBase;
 
+  FEX_CONFIG_OPT(ProfileStats, PROFILESTATS);
+
+  if (IsWine && ProfileStats()) {
+    StatAllocHandler = fextl::make_unique<FEX::Windows::StatAlloc>(FEXCore::Profiler::AppType::WIN_ARM64EC);
+  }
   return STATUS_SUCCESS;
 }
 
-void ProcessTerm(HANDLE Handle, BOOL After, NTSTATUS Status) {}
+void ProcessTerm(HANDLE Handle, BOOL After, NTSTATUS Status) {
+  StatAllocHandler.reset();
+}
 
 class ScopedCallbackDisable {
 private:
@@ -810,7 +819,11 @@ NTSTATUS ThreadInit() {
 
   {
     std::scoped_lock Lock(ThreadCreationMutex);
-    Threads.emplace(GetCurrentThreadId(), Thread);
+    auto ThreadTID = GetCurrentThreadId();
+    Threads.emplace(ThreadTID, Thread);
+    if (StatAllocHandler) {
+      Thread->ThreadStats = StatAllocHandler->AllocateSlot(ThreadTID);
+    }
   }
 
   CPUArea.ThreadState() = Thread;
@@ -835,6 +848,9 @@ NTSTATUS ThreadTerm(HANDLE Thread, LONG ExitCode) {
   {
     std::scoped_lock Lock(ThreadCreationMutex);
     Threads.erase(ThreadTID);
+    if (StatAllocHandler) {
+      StatAllocHandler->DeallocateSlot(OldThreadState->ThreadStats);
+    }
   }
 
   CTX->DestroyThread(OldThreadState);

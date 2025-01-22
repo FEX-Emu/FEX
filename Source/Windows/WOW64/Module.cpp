@@ -39,6 +39,7 @@ $end_info$
 #include "Common/PortabilityInfo.h"
 #include "DummyHandlers.h"
 #include "BTInterface.h"
+#include "Windows/Common/Profiler.h"
 
 #include <cstdint>
 #include <type_traits>
@@ -106,6 +107,7 @@ namespace BridgeInstrs {
 fextl::unique_ptr<FEXCore::Context::Context> CTX;
 fextl::unique_ptr<FEX::DummyHandlers::DummySignalDelegator> SignalDelegator;
 fextl::unique_ptr<WowSyscallHandler> SyscallHandler;
+fextl::unique_ptr<FEX::Windows::StatAlloc> StatAllocHandler;
 
 std::optional<FEX::Windows::InvalidationTracker> InvalidationTracker;
 std::optional<FEX::Windows::CPUFeatures> CPUFeatures;
@@ -500,9 +502,17 @@ void BTCpuProcessInit() {
 
   // wow64.dll will only initialise the cross-process queue if this is set
   GetTLS().Wow64Info().CpuFlags = WOW64_CPUFLAGS_SOFTWARE;
+
+  FEX_CONFIG_OPT(ProfileStats, PROFILESTATS);
+
+  if (IsWine && ProfileStats()) {
+    StatAllocHandler = fextl::make_unique<FEX::Windows::StatAlloc>(FEXCore::Profiler::AppType::WIN_WOW64);
+  }
 }
 
-void BTCpuProcessTerm(HANDLE Handle, BOOL After, ULONG Status) {}
+void BTCpuProcessTerm(HANDLE Handle, BOOL After, ULONG Status) {
+  StatAllocHandler.reset();
+}
 
 void BTCpuThreadInit() {
   FEX::Windows::InitCRTThread();
@@ -511,7 +521,11 @@ void BTCpuThreadInit() {
   GetTLS().ControlWord().fetch_or(ControlBits::WOW_CPU_AREA_DIRTY, std::memory_order::relaxed);
 
   std::scoped_lock Lock(ThreadCreationMutex);
-  Threads.emplace(GetCurrentThreadId(), Thread);
+  auto ThreadTID = GetCurrentThreadId();
+  Threads.emplace(ThreadTID, Thread);
+  if (StatAllocHandler) {
+    Thread->ThreadStats = StatAllocHandler->AllocateSlot(ThreadTID);
+  }
 }
 
 void BTCpuThreadTerm(HANDLE Thread, LONG ExitCode) {
@@ -531,6 +545,9 @@ void BTCpuThreadTerm(HANDLE Thread, LONG ExitCode) {
   {
     std::scoped_lock Lock(ThreadCreationMutex);
     Threads.erase(ThreadTID);
+    if (StatAllocHandler) {
+      StatAllocHandler->DeallocateSlot(OldThreadState->ThreadStats);
+    }
   }
 
   CTX->DestroyThread(OldThreadState);
