@@ -47,10 +47,10 @@ for item in sorted(Meta.items()):
     if Tag != tag and tag != category:
         Tag = tag
         print("")
-        print(" - " + tag.split("/")[1])
-    
+        print("  - " + tag.split("/")[1])
+
     for change in item[1]:
         if Tag == "":
-            print(" - " + change)
-        else:
             print("  - " + change)
+        else:
+            print("    - " + change)
