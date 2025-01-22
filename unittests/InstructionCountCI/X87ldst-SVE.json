@@ -14,13 +14,12 @@
   },
   "Instructions": {
     "fstp tword [rax]": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 12,
       "Comment": "Single 80-bit store.",
       "ExpectedArm64ASM": [
         "ldrb w20, [x28, #1019]",
         "add x0, x28, x20, lsl #4",
         "ldr q2, [x0, #1040]",
-        "ptrue p2.h, vl5",
         "st1h {z2.h}, p2, [x4]",
         "ldrb w21, [x28, #1298]",
         "mov w22, #0x1",
@@ -34,7 +33,7 @@
     },
     "2-store 80bit": {
       "x86InstructionCount": 2,
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 23,
       "x86Insts": [
         "fstp tword [rax]",
         "fstp tword [rax+10]"
@@ -43,7 +42,6 @@
         "ldrb w20, [x28, #1019]",
         "add x0, x28, x20, lsl #4",
         "ldr q2, [x0, #1040]",
-        "ptrue p2.h, vl5",
         "st1h {z2.h}, p2, [x4]",
         "ldrb w21, [x28, #1298]",
         "mov w22, #0x1",
@@ -55,7 +53,6 @@
         "strb w20, [x28, #1019]",
         "add x0, x28, x20, lsl #4",
         "ldr q2, [x0, #1040]",
-        "ptrue p2.h, vl5",
         "add x21, x4, #0xa (10)",
         "st1h {z2.h}, p2, [x21]",
         "ldrb w21, [x28, #1298]",
@@ -69,7 +66,7 @@
     },
     "8-store 80bit": {
       "x86InstructionCount": 8,
-      "ExpectedInstructionCount": 97,
+      "ExpectedInstructionCount": 89,
       "x86Insts": [
         "fstp tword [rax]",
         "fstp tword [rax+10]",
@@ -84,7 +81,6 @@
         "ldrb w20, [x28, #1019]",
         "add x0, x28, x20, lsl #4",
         "ldr q2, [x0, #1040]",
-        "ptrue p2.h, vl5",
         "st1h {z2.h}, p2, [x4]",
         "ldrb w21, [x28, #1298]",
         "mov w22, #0x1",
@@ -96,7 +92,6 @@
         "strb w20, [x28, #1019]",
         "add x0, x28, x20, lsl #4",
         "ldr q2, [x0, #1040]",
-        "ptrue p2.h, vl5",
         "add x21, x4, #0xa (10)",
         "st1h {z2.h}, p2, [x21]",
         "ldrb w21, [x28, #1298]",
@@ -108,7 +103,6 @@
         "strb w20, [x28, #1019]",
         "add x0, x28, x20, lsl #4",
         "ldr q2, [x0, #1040]",
-        "ptrue p2.h, vl5",
         "add x21, x4, #0x14 (20)",
         "st1h {z2.h}, p2, [x21]",
         "ldrb w21, [x28, #1298]",
@@ -120,7 +114,6 @@
         "strb w20, [x28, #1019]",
         "add x0, x28, x20, lsl #4",
         "ldr q2, [x0, #1040]",
-        "ptrue p2.h, vl5",
         "add x21, x4, #0x1e (30)",
         "st1h {z2.h}, p2, [x21]",
         "ldrb w21, [x28, #1298]",
@@ -132,7 +125,6 @@
         "strb w20, [x28, #1019]",
         "add x0, x28, x20, lsl #4",
         "ldr q2, [x0, #1040]",
-        "ptrue p2.h, vl5",
         "add x21, x4, #0x28 (40)",
         "st1h {z2.h}, p2, [x21]",
         "ldrb w21, [x28, #1298]",
@@ -144,7 +136,6 @@
         "strb w20, [x28, #1019]",
         "add x0, x28, x20, lsl #4",
         "ldr q2, [x0, #1040]",
-        "ptrue p2.h, vl5",
         "add x21, x4, #0x32 (50)",
         "st1h {z2.h}, p2, [x21]",
         "ldrb w21, [x28, #1298]",
@@ -156,7 +147,6 @@
         "strb w20, [x28, #1019]",
         "add x0, x28, x20, lsl #4",
         "ldr q2, [x0, #1040]",
-        "ptrue p2.h, vl5",
         "add x21, x4, #0x3c (60)",
         "st1h {z2.h}, p2, [x21]",
         "ldrb w21, [x28, #1298]",
@@ -168,7 +158,6 @@
         "strb w20, [x28, #1019]",
         "add x0, x28, x20, lsl #4",
         "ldr q2, [x0, #1040]",
-        "ptrue p2.h, vl5",
         "add x21, x4, #0x46 (70)",
         "st1h {z2.h}, p2, [x21]",
         "ldrb w21, [x28, #1298]",
@@ -181,10 +170,9 @@
       ]
     },
     "fld tword [rax]": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 12,
       "Comment": "Single 80-bit store.",
       "ExpectedArm64ASM": [
-        "ptrue p2.h, vl5",
         "ld1h {z2.h}, p2/z, [x4]",
         "ldrb w20, [x28, #1019]",
         "mov w21, #0x1",
@@ -201,16 +189,14 @@
     },
     "2-load 80bit": {
       "x86InstructionCount": 2,
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 20,
       "x86Insts": [
         "fld tword [rax]",
         "fld tword [rax+10]"
       ],
       "ExpectedArm64ASM": [
-        "ptrue p2.h, vl5",
         "ld1h {z2.h}, p2/z, [x4]",
         "add x20, x4, #0xa (10)",
-        "ptrue p2.h, vl5",
         "ld1h {z3.h}, p2/z, [x20]",
         "ldrb w20, [x28, #1019]",
         "sub w20, w20, #0x2 (2)",
@@ -233,7 +219,7 @@
     },
     "8-load 80bit": {
       "x86InstructionCount": 8,
-      "ExpectedInstructionCount": 59,
+      "ExpectedInstructionCount": 51,
       "x86Insts": [
         "fld tword [rax]",
         "fld tword [rax+10]",
@@ -245,28 +231,20 @@
         "fld tword [rax+70]"
       ],
       "ExpectedArm64ASM": [
-        "ptrue p2.h, vl5",
         "ld1h {z2.h}, p2/z, [x4]",
         "add x20, x4, #0xa (10)",
-        "ptrue p2.h, vl5",
         "ld1h {z3.h}, p2/z, [x20]",
         "add x20, x4, #0x14 (20)",
-        "ptrue p2.h, vl5",
         "ld1h {z4.h}, p2/z, [x20]",
         "add x20, x4, #0x1e (30)",
-        "ptrue p2.h, vl5",
         "ld1h {z5.h}, p2/z, [x20]",
         "add x20, x4, #0x28 (40)",
-        "ptrue p2.h, vl5",
         "ld1h {z6.h}, p2/z, [x20]",
         "add x20, x4, #0x32 (50)",
-        "ptrue p2.h, vl5",
         "ld1h {z7.h}, p2/z, [x20]",
         "add x20, x4, #0x3c (60)",
-        "ptrue p2.h, vl5",
         "ld1h {z8.h}, p2/z, [x20]",
         "add x20, x4, #0x46 (70)",
-        "ptrue p2.h, vl5",
         "ld1h {z9.h}, p2/z, [x20]",
         "ldrb w20, [x28, #1019]",
         "sub w20, w20, #0x8 (8)",
