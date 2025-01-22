@@ -4313,9 +4313,7 @@ Ref OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, const X86T
     if (OpSize == OpSize::f80Bit) {
       Ref MemSrc = LoadEffectiveAddress(A, true);
       if (CTX->HostFeatures.SupportsSVE128 || CTX->HostFeatures.SupportsSVE256) {
-        // Using SVE we can load this with a single instruction.
-        auto PReg = _InitPredicate(OpSize::i16Bit, FEXCore::ToUnderlying(ARMEmitter::PredicatePattern::SVE_VL5));
-        return _LoadMemPredicate(OpSize::i128Bit, OpSize::i16Bit, PReg, MemSrc);
+        return _LoadMemX87SVEOptPredicate(OpSize::i128Bit, OpSize::i16Bit, MemSrc);
       } else {
         // For X87 extended doubles, Split the load.
         auto Res = _LoadMem(Class, OpSize::i64Bit, MemSrc, Align == OpSize::iInvalid ? OpSize : Align);
@@ -4448,8 +4446,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
   if (OpSize == OpSize::f80Bit) {
     Ref MemStoreDst = LoadEffectiveAddress(A, true);
     if (CTX->HostFeatures.SupportsSVE128 || CTX->HostFeatures.SupportsSVE256) {
-      auto PReg = _InitPredicate(OpSize::i16Bit, FEXCore::ToUnderlying(ARMEmitter::PredicatePattern::SVE_VL5));
-      _StoreMemPredicate(OpSize::i128Bit, OpSize::i16Bit, Src, PReg, MemStoreDst);
+      _StoreMemX87SVEOptPredicate(OpSize::i128Bit, OpSize::i16Bit, Src, MemStoreDst);
     } else {
       // For X87 extended doubles, split before storing
       _StoreMem(FPRClass, OpSize::i64Bit, MemStoreDst, Src, Align);

@@ -567,19 +567,16 @@
         ]
       },
 
-      "PRED = InitPredicate OpSize:#Size, u8:$Pattern": {
-        "Desc": ["Initialize predicate register from Pattern"],
-        "DestSize": "Size"
-      },
-
-      "StoreMemPredicate OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Value, PRED:$Mask, GPR:$Addr": {
-        "Desc": [ "Stores a value to memory using SVE predicate mask." ],
+      "StoreMemX87SVEOptPredicate OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Value, GPR:$Addr": {
+        "Desc": [ "Stores a value to memory using SVE predicate mask that's designed",
+                  "specifically for use in the X87 SVE Ldst optimization." ],
         "DestSize": "RegisterSize",
         "HasSideEffects": true,
         "ElementSize": "ElementSize"
       },
-      "FPR = LoadMemPredicate OpSize:#RegisterSize, OpSize:#ElementSize, PRED:$Mask, GPR:$Addr": {
-        "Desc": [ "Loads a value to memory using SVE predicate mask." ],
+      "FPR = LoadMemX87SVEOptPredicate OpSize:#RegisterSize, OpSize:#ElementSize, GPR:$Addr": {
+        "Desc": [ "Loads a value to memory using SVE predicate mask that's designed",
+                  "specifically for use in the X87 SVE Ldst optimization." ],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize"
       },

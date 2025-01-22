@@ -8,6 +8,7 @@ $end_info$
 #include "FEXCore/Core/X86Enums.h"
 #include "FEXCore/Utils/LogManager.h"
 #include "Interface/Context/Context.h"
+#include "Interface/Core/ArchHelpers/Arm64Emitter.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/JIT/JITClass.h"
 #include "Interface/IR/IR.h"
@@ -1590,21 +1591,14 @@ DEF_OP(StoreMem) {
   }
 }
 
-DEF_OP(InitPredicate) {
-  const auto Op = IROp->C<IR::IROp_InitPredicate>();
-  const auto OpSize = IROp->Size;
-  ptrue(ConvertSubRegSize16(OpSize), GetPReg(Node), static_cast<ARMEmitter::PredicatePattern>(Op->Pattern));
-}
+DEF_OP(StoreMemX87SVEOptPredicate) {
+  const auto Op = IROp->C<IR::IROp_StoreMemX87SVEOptPredicate>();
+  const auto Predicate = PRED_X87_SVEOPT;
 
-DEF_OP(StoreMemPredicate) {
-  const auto Op = IROp->C<IR::IROp_StoreMemPredicate>();
-  const auto Predicate = GetPReg(Op->Mask.ID());
+  LOGMAN_THROW_A_FMT(HostSupportsSVE128 || HostSupportsSVE256, "StoreMemX87SVEOptPredicate needs SVE support");
 
   const auto RegData = GetVReg(Op->Value.ID());
   const auto MemReg = GetReg(Op->Addr.ID());
-
-  LOGMAN_THROW_A_FMT(HostSupportsSVE128 || HostSupportsSVE256, "StoreMemPredicate needs SVE support");
-
   const auto MemDst = ARMEmitter::SVEMemOperand(MemReg.X(), 0);
 
   switch (IROp->ElementSize) {
@@ -1628,13 +1622,13 @@ DEF_OP(StoreMemPredicate) {
   }
 }
 
-DEF_OP(LoadMemPredicate) {
-  const auto Op = IROp->C<IR::IROp_LoadMemPredicate>();
+DEF_OP(LoadMemX87SVEOptPredicate) {
+  const auto Op = IROp->C<IR::IROp_LoadMemX87SVEOptPredicate>();
   const auto Dst = GetVReg(Node);
-  const auto Predicate = GetPReg(Op->Mask.ID());
+  const auto Predicate = PRED_X87_SVEOPT;
   const auto MemReg = GetReg(Op->Addr.ID());
 
-  LOGMAN_THROW_A_FMT(HostSupportsSVE128 || HostSupportsSVE256, "LoadMemPredicate needs SVE support");
+  LOGMAN_THROW_A_FMT(HostSupportsSVE128 || HostSupportsSVE256, "LoadMemX87SVEOptPredicate needs SVE support");
 
   const auto MemDst = ARMEmitter::SVEMemOperand(MemReg.X(), 0);
 

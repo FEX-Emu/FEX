@@ -6,7 +6,7 @@
 #include "FEXCore/IR/IR.h"
 #include "FEXCore/Utils/Profiler.h"
 #include "FEXCore/Core/HostFeatures.h"
-#include "CodeEmitter/Emitter.h"
+#include "Interface/Core/ArchHelpers/Arm64Emitter.h"
 
 #include <array>
 #include <cstddef>
@@ -838,13 +838,12 @@ void X87StackOptimization::Run(IREmitter* Emit) {
             if (Op->StoreSize != OpSize::f80Bit) { // if it's not 80bits then convert
               StackNode = IREmit->_F80CVT(Op->StoreSize, StackNode);
             }
-            if (Op->StoreSize == OpSize::f80Bit) { // Part of code from StoreResult_WithOpSize()
+            if (Op->StoreSize == OpSize::f80Bit) {
               if (Features.SupportsSVE128 || Features.SupportsSVE256) {
-                auto PReg = IREmit->_InitPredicate(OpSize::i16Bit, FEXCore::ToUnderlying(ARMEmitter::PredicatePattern::SVE_VL5));
                 if (!IsZero(Offset)) {
                   AddrNode = IREmit->_Add(OpSize::i64Bit, AddrNode, Offset);
                 }
-                IREmit->_StoreMemPredicate(OpSize::i128Bit, OpSize::i16Bit, StackNode, PReg, AddrNode);
+                IREmit->_StoreMemX87SVEOptPredicate(OpSize::i128Bit, OpSize::i16Bit, StackNode, AddrNode);
               } else {
                 // For X87 extended doubles, split before storing
                 IREmit->_StoreMem(FPRClass, OpSize::i64Bit, StackNode, AddrNode, Offset, OpSize::iInvalid, MEM_OFFSET_SXTX, 1);

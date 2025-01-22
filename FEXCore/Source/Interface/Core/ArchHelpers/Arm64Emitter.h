@@ -46,6 +46,10 @@ constexpr auto REG_AF = ARMEmitter::Reg::r27;
 // Vector temporaries
 constexpr auto VTMP1 = ARMEmitter::VReg::v0;
 constexpr auto VTMP2 = ARMEmitter::VReg::v1;
+
+// Predicate register for X87 SVE Optimization
+constexpr auto SVE_OPT_PRED = ARMEmitter::PReg::p2;
+
 #else
 constexpr auto TMP1 = ARMEmitter::XReg::x10;
 constexpr auto TMP2 = ARMEmitter::XReg::x11;
@@ -65,6 +69,9 @@ constexpr auto VTMP2 = ARMEmitter::VReg::v17;
 constexpr auto EC_CALL_CHECKER_PC_REG = ARMEmitter::XReg::x9;
 constexpr auto EC_ENTRY_CPUAREA_REG = ARMEmitter::XReg::x17;
 
+// Predicate register for X87 SVE Optimization
+constexpr auto SVE_OPT_PRED = ARMEmitter::PReg::p2;
+
 // These structures are not included in the standard Windows headers, define the offsets of members we care about for EC here.
 constexpr size_t TEB_CPU_AREA_OFFSET = 0x1788;
 constexpr size_t TEB_PEB_OFFSET = 0x60;
@@ -78,6 +85,9 @@ constexpr uint64_t EC_CODE_BITMAP_MAX_ADDRESS = 1ULL << 47;
 
 // Will force one single instruction block to be generated first if set when entering the JIT filling SRA.
 constexpr auto ENTRY_FILL_SRA_SINGLE_INST_REG = TMP1;
+
+// Predicate to use in the X87 SVE optimization
+constexpr ARMEmitter::PRegister PRED_X87_SVEOPT = ARMEmitter::PReg::p2;
 
 // Predicate register temporaries (used when AVX support is enabled)
 // PRED_TMP_16B indicates a predicate register that indicates the first 16 bytes set to 1.
