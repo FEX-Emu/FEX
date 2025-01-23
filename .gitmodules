@@ -47,3 +47,6 @@
 [submodule "External/jemalloc_glibc"]
 	path = External/jemalloc_glibc
 	url = https://github.com/FEX-Emu/jemalloc.git
+[submodule "External/tracy"]
+	path = External/tracy
+	url = https://github.com/wolfpld/tracy
