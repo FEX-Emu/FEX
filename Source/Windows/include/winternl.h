@@ -434,6 +434,7 @@ typedef enum _MEMORY_INFORMATION_CLASS {
   MemoryWineUnixFuncs = 1000,
   MemoryWineUnixWow64Funcs,
 #endif
+  MemoryFexStatsShm = 2000,
 } MEMORY_INFORMATION_CLASS;
 
 typedef enum _KEY_VALUE_INFORMATION_CLASS {
@@ -451,6 +452,12 @@ typedef struct _KEY_VALUE_PARTIAL_INFORMATION {
   ULONG DataLength;
   UCHAR Data[1];
 } KEY_VALUE_PARTIAL_INFORMATION, *PKEY_VALUE_PARTIAL_INFORMATION;
+
+typedef struct _MEMORY_FEX_STATS_SHM_INFORMATION {
+  void* shm_base;
+  DWORD map_size;
+  DWORD max_size;
+} MEMORY_FEX_STATS_SHM_INFORMATION, *PMEMORY_FEX_STATS_SHM_INFORMATION;
 
 NTSTATUS WINAPIV DbgPrint(LPCSTR fmt, ...);
 NTSTATUS WINAPI LdrDisableThreadCalloutsForDll(HMODULE);
