@@ -126,7 +126,7 @@ jobs:
 
     - name: Upload results
       if: ${{ always() }}
-      uses: 'actions/upload-artifact@v3'
+      uses: 'actions/upload-artifact@v4'
       timeout-minutes: 1
       with:
         name: Results-${{ env.runner_name }}
