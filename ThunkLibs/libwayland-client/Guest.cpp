@@ -337,4 +337,6 @@ void OnInit() {
   fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_callback_interface), "wl_callback_interface");
 }
 
-LOAD_LIB_INIT(libwayland - client, OnInit)
+// Would insert spaces around -
+// clang-format off
+LOAD_LIB_INIT(libwayland-client, OnInit)
