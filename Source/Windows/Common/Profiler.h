@@ -7,7 +7,6 @@ namespace FEX::Windows {
 class StatAlloc final : public FEX::Profiler::StatAllocBase {
 public:
   StatAlloc(FEXCore::Profiler::AppType AppType);
-  virtual ~StatAlloc();
 
   FEXCore::Profiler::ThreadStats* AllocateSlot(uint32_t TID) {
     return StatAllocBase::AllocateSlot(TID);
