@@ -470,7 +470,7 @@ static void DirectBlockDelinker(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Co
   auto LinkerAddress = Frame->Pointers.Common.ExitFunctionLinker;
   uintptr_t branch = (uintptr_t)(Record)-8;
   ARMEmitter::Emitter emit((uint8_t*)(branch), 8);
-  ARMEmitter::SingleUseForwardLabel l_BranchHost;
+  ARMEmitter::ForwardLabel l_BranchHost;
   emit.ldr(TMP1, &l_BranchHost);
   emit.blr(TMP1);
   emit.Bind(&l_BranchHost);
@@ -663,8 +663,8 @@ bool Arm64JITCore::IsGPR(IR::NodeID Node) const {
 
 void Arm64JITCore::EmitInterruptChecks(bool CheckTF) {
   if (CheckTF) {
-    ARMEmitter::SingleUseForwardLabel l_TFUnset;
-    ARMEmitter::SingleUseForwardLabel l_TFBlocked;
+    ARMEmitter::ForwardLabel l_TFUnset;
+    ARMEmitter::ForwardLabel l_TFBlocked;
 
     // Note that this needs to be before the below suspend checks, as X86 checks this flag immediately after executing an instruction.
     ldrb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
@@ -714,7 +714,7 @@ void Arm64JITCore::EmitInterruptChecks(bool CheckTF) {
   static constexpr uint16_t SuspendMagic {0xCAFE};
 
   ldr(TMP2.W(), STATE_PTR(CpuStateFrame, SuspendDoorbell));
-  ARMEmitter::SingleUseForwardLabel l_NoSuspend;
+  ARMEmitter::ForwardLabel l_NoSuspend;
   cbz(ARMEmitter::Size::i32Bit, TMP2, &l_NoSuspend);
   brk(SuspendMagic);
   Bind(&l_NoSuspend);

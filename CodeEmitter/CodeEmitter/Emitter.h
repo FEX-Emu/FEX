@@ -341,94 +341,88 @@ public:
 };
 
 template<uint32_t op0, uint32_t op1, uint32_t CRn, uint32_t CRm, uint32_t op2>
-constexpr uint32_t GenSystemReg() {
-  return op0 << 19 | op1 << 16 | CRn << 12 | CRm << 8 | op2 << 5;
-};
+inline constexpr uint32_t GenSystemReg = op0 << 19 | op1 << 16 | CRn << 12 | CRm << 8 | op2 << 5;
 
 // This `SystemRegister` enum is used for the mrs/msr instructions.
 enum class SystemRegister : uint32_t {
-  CTR_EL0 = GenSystemReg<0b11, 0b011, 0b0000, 0b0000, 0b001>(),
-  DCZID_EL0 = GenSystemReg<0b11, 0b011, 0b0000, 0b0000, 0b111>(),
-  TPIDR_EL0 = GenSystemReg<0b11, 0b011, 0b1101, 0b0000, 0b010>(),
-  RNDR = GenSystemReg<0b11, 0b011, 0b0010, 0b0100, 0b000>(),
-  RNDRRS = GenSystemReg<0b11, 0b011, 0b0010, 0b0100, 0b001>(),
-  NZCV = GenSystemReg<0b11, 0b011, 0b0100, 0b0010, 0b000>(),
-  FPCR = GenSystemReg<0b11, 0b011, 0b0100, 0b0100, 0b000>(),
-  TPIDRRO_EL0 = GenSystemReg<0b11, 0b011, 0b1101, 0b0000, 0b011>(),
-  CNTFRQ_EL0 = GenSystemReg<0b11, 0b011, 0b1110, 0b0000, 0b000>(),
-  CNTVCT_EL0 = GenSystemReg<0b11, 0b011, 0b1110, 0b0000, 0b010>(),
+  CTR_EL0 = GenSystemReg<0b11, 0b011, 0b0000, 0b0000, 0b001>,
+  DCZID_EL0 = GenSystemReg<0b11, 0b011, 0b0000, 0b0000, 0b111>,
+  TPIDR_EL0 = GenSystemReg<0b11, 0b011, 0b1101, 0b0000, 0b010>,
+  RNDR = GenSystemReg<0b11, 0b011, 0b0010, 0b0100, 0b000>,
+  RNDRRS = GenSystemReg<0b11, 0b011, 0b0010, 0b0100, 0b001>,
+  NZCV = GenSystemReg<0b11, 0b011, 0b0100, 0b0010, 0b000>,
+  FPCR = GenSystemReg<0b11, 0b011, 0b0100, 0b0100, 0b000>,
+  TPIDRRO_EL0 = GenSystemReg<0b11, 0b011, 0b1101, 0b0000, 0b011>,
+  CNTFRQ_EL0 = GenSystemReg<0b11, 0b011, 0b1110, 0b0000, 0b000>,
+  CNTVCT_EL0 = GenSystemReg<0b11, 0b011, 0b1110, 0b0000, 0b010>,
 };
 
 template<uint32_t op1, uint32_t CRm, uint32_t op2>
-constexpr uint32_t GenDCReg() {
-  return op1 << 16 | CRm << 8 | op2 << 5;
-};
+inline constexpr uint32_t GenDCReg = op1 << 16 | CRm << 8 | op2 << 5;
 
 // This `DataCacheOperation` enum is used for the dc instruction.
 enum class DataCacheOperation : uint32_t {
-  IVAC = GenDCReg<0b000, 0b0110, 0b001>(),
-  ISW = GenDCReg<0b000, 0b0110, 0b010>(),
-  CSW = GenDCReg<0b000, 0b1010, 0b010>(),
-  CISW = GenDCReg<0b000, 0b1110, 0b010>(),
-  ZVA = GenDCReg<0b011, 0b0100, 0b001>(),
-  CVAC = GenDCReg<0b011, 0b1010, 0b001>(),
-  CVAU = GenDCReg<0b011, 0b1011, 0b001>(),
-  CIVAC = GenDCReg<0b011, 0b1110, 0b001>(),
+  IVAC = GenDCReg<0b000, 0b0110, 0b001>,
+  ISW = GenDCReg<0b000, 0b0110, 0b010>,
+  CSW = GenDCReg<0b000, 0b1010, 0b010>,
+  CISW = GenDCReg<0b000, 0b1110, 0b010>,
+  ZVA = GenDCReg<0b011, 0b0100, 0b001>,
+  CVAC = GenDCReg<0b011, 0b1010, 0b001>,
+  CVAU = GenDCReg<0b011, 0b1011, 0b001>,
+  CIVAC = GenDCReg<0b011, 0b1110, 0b001>,
 
   // MTE2
-  IGVAC = GenDCReg<0b000, 0b0110, 0b011>(),
-  IGSW = GenDCReg<0b000, 0b0110, 0b100>(),
-  IGDVAC = GenDCReg<0b000, 0b0110, 0b101>(),
-  IGDSW = GenDCReg<0b000, 0b0110, 0b110>(),
-  CGSW = GenDCReg<0b000, 0b1010, 0b100>(),
-  CGDSW = GenDCReg<0b000, 0b1010, 0b110>(),
-  CIGSW = GenDCReg<0b000, 0b1110, 0b100>(),
-  CIGDSW = GenDCReg<0b000, 0b1110, 0b110>(),
+  IGVAC = GenDCReg<0b000, 0b0110, 0b011>,
+  IGSW = GenDCReg<0b000, 0b0110, 0b100>,
+  IGDVAC = GenDCReg<0b000, 0b0110, 0b101>,
+  IGDSW = GenDCReg<0b000, 0b0110, 0b110>,
+  CGSW = GenDCReg<0b000, 0b1010, 0b100>,
+  CGDSW = GenDCReg<0b000, 0b1010, 0b110>,
+  CIGSW = GenDCReg<0b000, 0b1110, 0b100>,
+  CIGDSW = GenDCReg<0b000, 0b1110, 0b110>,
 
   // MTE
-  GVA = GenDCReg<0b011, 0b0100, 0b011>(),
-  GZVA = GenDCReg<0b011, 0b0100, 0b100>(),
-  CGVAC = GenDCReg<0b011, 0b1010, 0b011>(),
-  CGDVAC = GenDCReg<0b011, 0b1010, 0b101>(),
-  CGVAP = GenDCReg<0b011, 0b1100, 0b011>(),
-  CGDVAP = GenDCReg<0b011, 0b1100, 0b101>(),
-  CGVADP = GenDCReg<0b011, 0b1101, 0b011>(),
-  CGDVADP = GenDCReg<0b011, 0b1101, 0b101>(),
-  CIGVAC = GenDCReg<0b011, 0b1110, 0b011>(),
-  CIGDVAC = GenDCReg<0b011, 0b1110, 0b101>(),
+  GVA = GenDCReg<0b011, 0b0100, 0b011>,
+  GZVA = GenDCReg<0b011, 0b0100, 0b100>,
+  CGVAC = GenDCReg<0b011, 0b1010, 0b011>,
+  CGDVAC = GenDCReg<0b011, 0b1010, 0b101>,
+  CGVAP = GenDCReg<0b011, 0b1100, 0b011>,
+  CGDVAP = GenDCReg<0b011, 0b1100, 0b101>,
+  CGVADP = GenDCReg<0b011, 0b1101, 0b011>,
+  CGDVADP = GenDCReg<0b011, 0b1101, 0b101>,
+  CIGVAC = GenDCReg<0b011, 0b1110, 0b011>,
+  CIGDVAC = GenDCReg<0b011, 0b1110, 0b101>,
 
   // DPB
-  CVAP = GenDCReg<0b011, 0b1100, 0b001>(),
+  CVAP = GenDCReg<0b011, 0b1100, 0b001>,
 
   // DPB2
-  CVADP = GenDCReg<0b011, 0b1101, 0b001>(),
+  CVADP = GenDCReg<0b011, 0b1101, 0b001>,
 };
 
 template<uint32_t CRm, uint32_t op2>
-constexpr uint32_t GenHintBarrierReg() {
-  return CRm << 8 | op2 << 5;
-}
+inline constexpr uint32_t GenHintBarrierReg = CRm << 8 | op2 << 5;
 
 // This `HintRegister` enum is used for the hint instruction.
 enum class HintRegister : uint32_t {
-  NOP = GenHintBarrierReg<0b0000, 0b000>(),
-  YIELD = GenHintBarrierReg<0b0000, 0b001>(),
-  WFE = GenHintBarrierReg<0b0000, 0b010>(),
-  WFI = GenHintBarrierReg<0b0000, 0b011>(),
-  SEV = GenHintBarrierReg<0b0000, 0b100>(),
-  SEVL = GenHintBarrierReg<0b0000, 0b101>(),
-  DGH = GenHintBarrierReg<0b0000, 0b110>(),
-  CSDB = GenHintBarrierReg<0b0010, 0b100>(),
+  NOP = GenHintBarrierReg<0b0000, 0b000>,
+  YIELD = GenHintBarrierReg<0b0000, 0b001>,
+  WFE = GenHintBarrierReg<0b0000, 0b010>,
+  WFI = GenHintBarrierReg<0b0000, 0b011>,
+  SEV = GenHintBarrierReg<0b0000, 0b100>,
+  SEVL = GenHintBarrierReg<0b0000, 0b101>,
+  DGH = GenHintBarrierReg<0b0000, 0b110>,
+  CSDB = GenHintBarrierReg<0b0010, 0b100>,
 };
 
 // This `BarrierRegister` enum is used for the various barrier instructions.
 enum class BarrierRegister : uint32_t {
-  CLREX = GenHintBarrierReg<0b0000, 0b010>(),
-  TCOMMIT = GenHintBarrierReg<0b0000, 0b011>(),
-  DSB = GenHintBarrierReg<0b0000, 0b100>(),
-  DMB = GenHintBarrierReg<0b0000, 0b101>(),
-  ISB = GenHintBarrierReg<0b0000, 0b110>(),
-  SB = GenHintBarrierReg<0b0000, 0b111>(),
+  CLREX = GenHintBarrierReg<0b0000, 0b010>,
+  TCOMMIT = GenHintBarrierReg<0b0000, 0b011>,
+  DSB = GenHintBarrierReg<0b0000, 0b100>,
+  DMB = GenHintBarrierReg<0b0000, 0b101>,
+  ISB = GenHintBarrierReg<0b0000, 0b110>,
+  SB = GenHintBarrierReg<0b0000, 0b111>,
 };
 
 // This `BarrierScope` enum is used for the dsb/dmb instructions.
@@ -513,7 +507,7 @@ enum class SVEFMaxMinImm : uint32_t {
   _1_0,
 };
 
-/* This `BackwardLabel` struct used for retaining a location for PC-Relative instructions.
+/* This `BackwardLabel` struct is used for retaining a location for PC-Relative instructions.
  * This is specifically a label for a target that is logically `below` an instruction that uses it.
  * Which means that a branch would jump backwards.
  */
@@ -521,13 +515,11 @@ struct BackwardLabel {
   uint8_t* Location {};
 };
 
-/* This `SingleUseForwardLabel` struct used for retaining a location for PC-Relative instructions.
+/* This `ForwardLabel` struct is used for retaining a location for PC-Relative instructions.
  * This is specifically a label for a target that is logically `above` an instruction that uses it.
  * Which means that a branch would jump forwards.
- *
- * The `ForwardLabel` struct can be bound to multiple instructions, so it needs a vector for each bind instruction type.
  */
-struct SingleUseForwardLabel {
+struct ForwardLabel {
   enum class InstType {
     UNKNOWN,
     ADR,
@@ -538,12 +530,16 @@ struct SingleUseForwardLabel {
     RELATIVE_LOAD,
     LONG_ADDRESS_GEN,
   };
-  uint8_t* Location {};
-  InstType Type = InstType::UNKNOWN;
-};
 
-struct ForwardLabel {
-  fextl::vector<SingleUseForwardLabel> Insts {};
+  struct Reference {
+    uint8_t* Location {};
+    InstType Type = InstType::UNKNOWN;
+  };
+
+  // The first element is stored separately to avoid allocations for simple cases
+  Reference FirstInst;
+
+  fextl::vector<Reference> Insts;
 };
 
 /* This `BiDirectionalLabel` struct used for retaining a location for PC-Relative instructions.
@@ -555,14 +551,12 @@ struct BiDirectionalLabel {
   ForwardLabel Forward;
 };
 
-static inline void AddLocationToLabel(SingleUseForwardLabel* Label, SingleUseForwardLabel&& Location) {
-  LOGMAN_THROW_A_FMT(Label->Type == SingleUseForwardLabel::InstType::UNKNOWN, "Trying to bind a SingleUseForwardLabel to multiple "
-                                                                              "locations. Use ForwardLabel instead.");
-  *Label = std::move(Location);
-}
-
-static inline void AddLocationToLabel(ForwardLabel* Label, SingleUseForwardLabel&& Location) {
-  Label->Insts.emplace_back(std::move(Location));
+static inline void AddLocationToLabel(ForwardLabel* Label, ForwardLabel::Reference&& Location) {
+  if (Label->FirstInst.Location == nullptr) {
+    Label->FirstInst = Location;
+  } else {
+    Label->Insts.push_back(Location);
+  }
 }
 
 // Some FCMA ASIMD instructions support a rotation argument.
@@ -635,11 +629,11 @@ public:
     Label->Location = GetCursorAddress<uint8_t*>();
   }
 
-  void Bind(const SingleUseForwardLabel* Label) {
+  void Bind(const ForwardLabel::Reference* Label) {
     uint8_t* CurrentAddress = GetCursorAddress<uint8_t*>();
     // Patch up the instructions
     switch (Label->Type) {
-    case SingleUseForwardLabel::InstType::ADR: {
+    case ForwardLabel::InstType::ADR: {
       uint32_t* Instruction = reinterpret_cast<uint32_t*>(Label->Location);
       int64_t Imm = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(Instruction);
       LOGMAN_THROW_A_FMT(IsADRRange(Imm), "Unscaled offset too large");
@@ -651,7 +645,7 @@ public:
       *Instruction = Inst;
       break;
     }
-    case SingleUseForwardLabel::InstType::ADRP: {
+    case ForwardLabel::InstType::ADRP: {
       uint32_t* Instruction = reinterpret_cast<uint32_t*>(Label->Location);
       int64_t Imm = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(Instruction);
       LOGMAN_THROW_A_FMT(IsADRPRange(Imm) && IsADRPAligned(Imm), "Unscaled offset too large");
@@ -665,7 +659,7 @@ public:
       break;
     }
 
-    case SingleUseForwardLabel::InstType::B: {
+    case ForwardLabel::InstType::B: {
       uint32_t* Instruction = reinterpret_cast<uint32_t*>(Label->Location);
       int64_t Imm = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(Instruction);
       LOGMAN_THROW_A_FMT(Imm >= -134217728 && Imm <= 134217724 && ((Imm & 0b11) == 0), "Unscaled offset too large");
@@ -679,7 +673,7 @@ public:
       break;
     }
 
-    case SingleUseForwardLabel::InstType::TEST_BRANCH: {
+    case ForwardLabel::InstType::TEST_BRANCH: {
       uint32_t* Instruction = reinterpret_cast<uint32_t*>(Label->Location);
       int64_t Imm = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(Instruction);
       LOGMAN_THROW_A_FMT(Imm >= -32768 && Imm <= 32764 && ((Imm & 0b11) == 0), "Unscaled offset too large");
@@ -692,8 +686,8 @@ public:
 
       break;
     }
-    case SingleUseForwardLabel::InstType::BC:
-    case SingleUseForwardLabel::InstType::RELATIVE_LOAD: {
+    case ForwardLabel::InstType::BC:
+    case ForwardLabel::InstType::RELATIVE_LOAD: {
       uint32_t* Instruction = reinterpret_cast<uint32_t*>(Label->Location);
       int64_t Imm = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(Instruction);
       LOGMAN_THROW_A_FMT(Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0), "Unscaled offset too large");
@@ -705,7 +699,7 @@ public:
       *Instruction = Inst;
       break;
     }
-    case SingleUseForwardLabel::InstType::LONG_ADDRESS_GEN: {
+    case ForwardLabel::InstType::LONG_ADDRESS_GEN: {
       uint32_t* Instructions = reinterpret_cast<uint32_t*>(Label->Location);
       int64_t ImmInstOne = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(&Instructions[0]);
       int64_t ImmInstTwo = reinterpret_cast<int64_t>(CurrentAddress) - reinterpret_cast<int64_t>(&Instructions[1]);
@@ -750,10 +744,9 @@ public:
   // Bind a forward label to a location.
   // This walks all the instructions in the label's vector.
   // Then backpatching all instructions that have used the label.
-  template<bool WarnAboutEmpty = false>
   void Bind(ForwardLabel* Label) {
-    if constexpr (WarnAboutEmpty) {
-      LOGMAN_THROW_A_FMT(Label->Insts.empty() == false, "Binding forward label that didn't have any instructions using it");
+    if (Label->FirstInst.Location) {
+      Bind(&Label->FirstInst);
     }
     for (auto& Inst : Label->Insts) {
       Bind(&Inst);
@@ -766,7 +759,7 @@ public:
     if (!Label->Backward.Location) {
       Bind(&Label->Backward);
     }
-    Bind<false>(&Label->Forward);
+    Bind(&Label->Forward);
   }
 
 #include <CodeEmitter/VixlUtils.inl>
@@ -801,7 +794,6 @@ protected:
   uint32_t Encode_rt2(T Reg) const {
     return Reg.Idx() << 10;
   }
-  template<>
   uint32_t Encode_rt2(uint32_t Reg) const {
     return Reg << 10;
   }
@@ -837,7 +829,6 @@ protected:
   uint32_t Encode_rt(T Reg) const {
     return Reg.Idx();
   }
-  template<>
   uint32_t Encode_rt(Prefetch Reg) const {
     return FEXCore::ToUnderlying(Reg);
   }
