@@ -2,9 +2,10 @@
 #pragma once
 #include <FEXCore/fextl/allocator.h>
 #include <FEXCore/fextl/memory.h>
+#include <FEXCore/fextl/vector.h>
+#include <FEXCore/Utils/Allocator.h>
 
 #include <cstddef>
-#include <cstdint>
 #include <sys/types.h>
 
 namespace FEXCore::Core {
@@ -49,4 +50,5 @@ public:
 
 namespace Alloc::OSAllocator {
 fextl::unique_ptr<Alloc::HostAllocator> Create64BitAllocator();
+fextl::unique_ptr<Alloc::HostAllocator> Create64BitAllocatorWithRegions(fextl::vector<FEXCore::Allocator::MemoryRegion>& Regions);
 } // namespace Alloc::OSAllocator

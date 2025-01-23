@@ -491,12 +491,11 @@ int main(int argc, char** argv, char** const envp) {
   FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
   fextl::unique_ptr<FEX::HLE::MemAllocator> Allocator;
-  fextl::vector<FEXCore::Allocator::MemoryRegion> Base48Bit;
   fextl::vector<FEXCore::Allocator::MemoryRegion> Low4GB;
 
   if (Loader.Is64BitMode()) {
     // Destroy the 48th bit if it exists
-    Base48Bit = FEXCore::Allocator::Steal48BitVA();
+    FEXCore::Allocator::Setup48BitAllocatorIfExists();
   } else {
     // Reserve [0x1_0000_0000, 0x2_0000_0000).
     // Safety net if 32-bit address calculation overflows in to 64-bit range.
@@ -685,7 +684,6 @@ int main(int argc, char** argv, char** const envp) {
   LogMan::Msg::UnInstallHandler();
 
   FEXCore::Allocator::ClearHooks();
-  FEXCore::Allocator::ReclaimMemoryRegion(Base48Bit);
   FEXCore::Allocator::ReclaimMemoryRegion(Low4GB);
 
   // Allocator is now original system allocator
