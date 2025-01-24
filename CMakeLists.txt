@@ -71,6 +71,8 @@ if (ENABLE_FEXCORE_PROFILER)
     # Tracy can gather call stack samples in regular intervals, but this
     # isn't useful for us since it would usually sample opaque JIT code
     add_definitions(-DTRACY_NO_SAMPLING=1)
+    # This pulls in libbacktrace which allocators in global constructors (before FEX can set up its allocator hooks)
+    add_definitions(-DTRACY_NO_CALLSTACK=1)
   else()
     message(FATAL_ERROR "Unknown FEXCore profiler backend ${FEXCORE_PROFILER_BACKEND}")
   endif()
