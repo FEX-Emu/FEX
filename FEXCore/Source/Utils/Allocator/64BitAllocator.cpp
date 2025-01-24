@@ -554,8 +554,12 @@ void OSAllocator_64Bit::AllocateMemoryRegions(fextl::vector<FEXCore::Allocator::
   }
 
   for (auto [Ptr, AllocationSize] : Ranges) {
-    // Skip size of zero if ObjectAllocSize matched the size of region.
-    if (AllocationSize == 0) continue;
+    // Skip using any regions that are <= two pages. FEX's VMA allocator requires two pages
+    // for tracking data. So three pages are minimum for a single page VMA allocation.
+    if (AllocationSize <= (FEXCore::Utils::FEX_PAGE_SIZE * 2)) {
+      continue;
+    }
+
     ReservedVMARegion* Region = ObjectAlloc->new_construct<ReservedVMARegion>();
     Region->Base = reinterpret_cast<uint64_t>(Ptr);
     Region->RegionSize = AllocationSize;
