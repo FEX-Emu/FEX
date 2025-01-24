@@ -86,7 +86,7 @@ FEX_DEFAULT_VISIBILITY void ReclaimMemoryRegion(const fextl::vector<MemoryRegion
 // AArch64 canonical addresses are only up to bits 48/52 with the remainder being other things
 // Use this to reserve the top 128TB of VA so the guest never see it
 // Returns nullptr on host VA < 48bits
-FEX_DEFAULT_VISIBILITY void Setup48BitAllocatorIfExists();
+FEX_DEFAULT_VISIBILITY fextl::vector<MemoryRegion> Setup48BitAllocatorIfExists();
 
 #ifndef _WIN32
 FEX_DEFAULT_VISIBILITY void RegisterTLSData(FEXCore::Core::InternalThreadState* Thread);

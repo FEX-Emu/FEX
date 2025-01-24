@@ -304,10 +304,10 @@ fextl::vector<MemoryRegion> StealMemoryRegion(uintptr_t Begin, uintptr_t End) {
   return Regions;
 }
 
-void Setup48BitAllocatorIfExists() {
+fextl::vector<MemoryRegion> Setup48BitAllocatorIfExists() {
   size_t Bits = FEXCore::Allocator::DetermineVASize();
   if (Bits < 48) {
-    return;
+    return {};
   }
 
   uintptr_t Begin48BitVA = 0x0'8000'0000'0000ULL;
@@ -316,6 +316,8 @@ void Setup48BitAllocatorIfExists() {
 
   Alloc64 = Alloc::OSAllocator::Create64BitAllocatorWithRegions(Regions);
   AssignHookOverrides();
+
+  return Regions;
 }
 
 void ReclaimMemoryRegion(const fextl::vector<MemoryRegion>& Regions) {
