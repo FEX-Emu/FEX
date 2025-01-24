@@ -414,10 +414,7 @@ int main(int argc, char** argv, char** const envp) {
     std::this_thread::sleep_for(std::chrono::seconds(StartupSleep()));
   }
 
-  const char* ProfileTargetName = getenv("FEX_PROFILE_TARGET_NAME"); // Match by application name
-  const char* ProfileTargetPath = getenv("FEX_PROFILE_TARGET_PATH"); // Match by path suffix
-  FEXCore::Profiler::Init((ProfileTargetName && Program.ProgramName == ProfileTargetName) ||
-                          (ProfileTargetPath && Program.ProgramPath.ends_with(ProfileTargetPath)));
+  FEXCore::Profiler::Init(Program.ProgramName, Program.ProgramPath);
   FEXCore::Telemetry::Initialize();
 
   if (!LDPath().empty() && Program.ProgramPath.starts_with(LDPath())) {

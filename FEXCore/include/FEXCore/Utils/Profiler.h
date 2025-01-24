@@ -3,7 +3,9 @@
 #include <cstdint>
 #include <string_view>
 
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/Utils/CompilerDefs.h>
+
 #if defined(ENABLE_FEXCORE_PROFILER) && FEXCORE_PROFILER_BACKEND == 2
 #include "tracy/Tracy.hpp"
 #endif
@@ -11,7 +13,8 @@
 namespace FEXCore::Profiler {
 #ifdef ENABLE_FEXCORE_PROFILER
 
-FEX_DEFAULT_VISIBILITY void Init(bool Active);
+FEX_DEFAULT_VISIBILITY void Init(const fextl::string& ProgramName, const fextl::string& ProgramPath);
+FEX_DEFAULT_VISIBILITY void PostForkAction(bool IsChild);
 FEX_DEFAULT_VISIBILITY bool IsActive();
 FEX_DEFAULT_VISIBILITY void Shutdown();
 FEX_DEFAULT_VISIBILITY void TraceObject(std::string_view const Format);
@@ -42,7 +45,9 @@ private:
 
 #else
 [[maybe_unused]]
-static void Init(bool Active) {}
+static void Init(const fextl::string& ProgramName, const fextl::string& ProgramPath) {}
+[[maybe_unused]]
+static void PostForkAction(bool IsChild) {}
 [[maybe_unused]]
 static void Shutdown() {}
 [[maybe_unused]]
