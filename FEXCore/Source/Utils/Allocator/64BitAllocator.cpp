@@ -103,19 +103,20 @@ private:
     // This returns the size of the LiveVMARegion in addition to the flex set that tracks the used data
     // The LiveVMARegion lives at the start of the VMA region which means on initialization we need to set that
     // tracked ranged as used immediately
-    static size_t GetSizeWithFlexSet(size_t Size) {
+    static size_t GetFEXManagedVMARegionSize(size_t Size) {
       // One element per page
 
       // 0x10'0000'0000 bytes
       // 0x100'0000 Pages
       // 1 bit per page for tracking means 0x20'0000 (Pages / 8) bytes of flex space
       // Which is 2MB of tracking
-      uint64_t NumElements = (Size >> FEXCore::Utils::FEX_PAGE_SHIFT) * sizeof(FlexBitElementType);
-      return sizeof(LiveVMARegion) + FEXCore::FlexBitSet<FlexBitElementType>::Size(NumElements);
+      const uint64_t NumElements = Size >> FEXCore::Utils::FEX_PAGE_SHIFT;
+      return sizeof(LiveVMARegion) + FEXCore::FlexBitSet<FlexBitElementType>::SizeInBytes(NumElements);
     }
 
     static void InitializeVMARegionUsed(LiveVMARegion* Region, size_t AdditionalSize) {
-      size_t SizeOfLiveRegion = FEXCore::AlignUp(LiveVMARegion::GetSizeWithFlexSet(Region->SlabInfo->RegionSize), FEXCore::Utils::FEX_PAGE_SIZE);
+      size_t SizeOfLiveRegion =
+        FEXCore::AlignUp(LiveVMARegion::GetFEXManagedVMARegionSize(Region->SlabInfo->RegionSize), FEXCore::Utils::FEX_PAGE_SIZE);
       size_t SizePlusManagedData = SizeOfLiveRegion + AdditionalSize;
 
       Region->FreeSpace = Region->SlabInfo->RegionSize - SizePlusManagedData;
@@ -159,7 +160,8 @@ private:
     ReservedRegions->erase(ReservedIterator);
 
     // mprotect the new region we've allocated
-    size_t SizeOfLiveRegion = FEXCore::AlignUp(LiveVMARegion::GetSizeWithFlexSet(ReservedRegion->RegionSize), FEXCore::Utils::FEX_PAGE_SIZE);
+    size_t SizeOfLiveRegion =
+      FEXCore::AlignUp(LiveVMARegion::GetFEXManagedVMARegionSize(ReservedRegion->RegionSize), FEXCore::Utils::FEX_PAGE_SIZE);
     size_t SizePlusManagedData = UsedSize + SizeOfLiveRegion;
 
     [[maybe_unused]] auto Res = mprotect(reinterpret_cast<void*>(ReservedRegion->Base), SizePlusManagedData, PROT_READ | PROT_WRITE);
@@ -387,7 +389,7 @@ again:
     if (!LiveRegion) {
       // Couldn't find a fit in the live regions
       // Allocate a new reserved region
-      size_t lengthOfLiveRegion = FEXCore::AlignUp(LiveVMARegion::GetSizeWithFlexSet(length), FEXCore::Utils::FEX_PAGE_SIZE);
+      size_t lengthOfLiveRegion = FEXCore::AlignUp(LiveVMARegion::GetFEXManagedVMARegionSize(length), FEXCore::Utils::FEX_PAGE_SIZE);
       size_t lengthPlusManagedData = length + lengthOfLiveRegion;
       for (auto it = ReservedRegions->begin(); it != ReservedRegions->end(); ++it) {
         if ((*it)->RegionSize >= lengthPlusManagedData) {
@@ -625,15 +627,16 @@ fextl::unique_ptr<T> make_alloc_unique(FEXCore::Allocator::MemoryRegion& Base, A
     ERROR_AND_DIE_FMT("Couldn't fit allocator in to page!");
   }
 
+  auto ptr = ::mmap(Base.Ptr, MinPage, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+  if (ptr == MAP_FAILED) {
+    ERROR_AND_DIE_FMT("Couldn't allocate memory region");
+  }
+
   // Remove the page from the base region.
   // Could be zero after this.
   Base.Size -= MinPage;
   Base.Ptr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(Base.Ptr) + MinPage);
 
-  auto ptr = ::mmap(Base.Ptr, MinPage, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
-  if (ptr == MAP_FAILED) {
-    ERROR_AND_DIE_FMT("Couldn't allocate memory region");
-  }
   auto Result = ::new (ptr) T(std::forward<Args>(args)...);
   return fextl::unique_ptr<T, alloc_delete<T>>(Result);
 }
