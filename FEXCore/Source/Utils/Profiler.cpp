@@ -106,7 +106,7 @@ void TraceObject(std::string_view const Format, uint64_t Duration) {
 void TraceObject(std::string_view const Format) {
   if (TraceFD != -1) {
     fextl::string Event = fextl::fmt::format("{}\n", Format);
-    write(TraceFD, Format.data(), Format.size());
+    write(TraceFD, Event.data(), Event.size());
   }
 }
 } // namespace GPUVis
