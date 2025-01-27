@@ -227,8 +227,7 @@ public:
   }
 
   void tbz(ARMEmitter::Register rt, uint32_t Bit, ForwardLabel* Label) {
-    AddLocationToLabel(
-      Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::TEST_BRANCH});
+    AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::TEST_BRANCH});
 
     constexpr uint32_t Op = 0b0011'0110 << 24;
 
@@ -258,8 +257,7 @@ public:
   }
 
   void tbnz(ARMEmitter::Register rt, uint32_t Bit, ForwardLabel* Label) {
-    AddLocationToLabel(
-      Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::TEST_BRANCH});
+    AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::TEST_BRANCH});
     constexpr uint32_t Op = 0b0011'0111 << 24;
 
     TestAndBranch(Op, rt, Bit, 0);
