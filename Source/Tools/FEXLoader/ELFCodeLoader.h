@@ -655,7 +655,7 @@ public:
       }
 
       // Set the null terminator for the string
-      *reinterpret_cast<uint8_t*>(ArgumentBackingBase + CurrentOffset + ArgSize + 1) = 0;
+      *reinterpret_cast<uint8_t*>(ArgumentBackingBase + CurrentOffset + ArgSize) = 0;
 
       CurrentOffset += ArgSize + 1;
     }
@@ -667,10 +667,12 @@ public:
       EnvpPointers[i] = EnvpBackingBaseGuest + CurrentOffset;
 
       // Copy the string in to the final location
-      memcpy(reinterpret_cast<void*>(EnvpBackingBase + CurrentOffset), &EnvironmentVariables[i].at(0), EnvpSize);
+      if (EnvpSize) {
+        memcpy(reinterpret_cast<void*>(EnvpBackingBase + CurrentOffset), &EnvironmentVariables[i].at(0), EnvpSize);
+      }
 
       // Set the null terminator for the string
-      *reinterpret_cast<uint8_t*>(EnvpBackingBase + CurrentOffset + EnvpSize + 1) = 0;
+      *reinterpret_cast<uint8_t*>(EnvpBackingBase + CurrentOffset + EnvpSize) = 0;
 
       CurrentOffset += EnvpSize + 1;
     }
