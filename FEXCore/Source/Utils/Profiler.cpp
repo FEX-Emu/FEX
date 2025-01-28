@@ -98,15 +98,19 @@ void Shutdown() {
 void TraceObject(std::string_view const Format, uint64_t Duration) {
   if (TraceFD != -1) {
     // Print the duration as something that began negative duration ago
-    fextl::string Event = fextl::fmt::format("{} (lduration=-{})\n", Format, Duration);
-    write(TraceFD, Event.c_str(), Event.size());
+    const auto StringSize = Format.size() + strlen(" (lduration=-)\n") + 22;
+    auto Event = reinterpret_cast<char*>(alloca(StringSize));
+    auto Res = ::fmt::format_to_n(Event, StringSize, "{} (lduration=-{})\n", Format, Duration);
+    write(TraceFD, Event, Res.size);
   }
 }
 
 void TraceObject(std::string_view const Format) {
   if (TraceFD != -1) {
-    fextl::string Event = fextl::fmt::format("{}\n", Format);
-    write(TraceFD, Event.data(), Event.size());
+    const auto StringSize = Format.size() + 1;
+    auto Event = reinterpret_cast<char*>(alloca(StringSize));
+    auto Res = ::fmt::format_to_n(Event, StringSize, "{}\n", Format);
+    write(TraceFD, Event, Res.size);
   }
 }
 } // namespace GPUVis
