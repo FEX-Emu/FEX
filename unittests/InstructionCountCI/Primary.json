@@ -1992,9 +1992,25 @@
         "subs x26, x4, #0x0 (0)"
       ]
     },
-    "xchg bl, cl": {
+    "db 0x86, 0xcb": {
       "ExpectedInstructionCount": 4,
-      "Comment": "0x86",
+      "Comment": [
+        "0x86",
+        "xchg bl, cl"
+      ],
+      "ExpectedArm64ASM": [
+        "mov x20, x6",
+        "bfxil x20, x7, #0, #8",
+        "bfxil x7, x6, #0, #8",
+        "mov x6, x20"
+      ]
+    },
+    "db 0x86, 0xd9": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "0x86",
+        "xchg cl, bl"
+      ],
       "ExpectedArm64ASM": [
         "mov x20, x7",
         "bfxil x20, x6, #0, #8",
@@ -2010,9 +2026,25 @@
         "bfxil x7, x20, #0, #8"
       ]
     },
-    "xchg bx, cx": {
+    "db 0x66, 0x87, 0xcb": {
       "ExpectedInstructionCount": 4,
-      "Comment": "0x87",
+      "Comment": [
+        "0x87",
+        "xchg bx, cx"
+      ],
+      "ExpectedArm64ASM": [
+        "mov x20, x6",
+        "bfxil x20, x7, #0, #16",
+        "bfxil x7, x6, #0, #16",
+        "mov x6, x20"
+      ]
+    },
+    "db 0x66, 0x87, 0xd9": {
+      "ExpectedInstructionCount": 4,
+      "Comment": [
+        "0x87",
+        "xchg cx, bx"
+      ],
       "ExpectedArm64ASM": [
         "mov x20, x7",
         "bfxil x20, x6, #0, #16",
@@ -2028,9 +2060,24 @@
         "bfxil x7, x20, #0, #16"
       ]
     },
-    "xchg ebx, ecx": {
+    "db 0x87, 0xcb": {
       "ExpectedInstructionCount": 3,
-      "Comment": "0x87",
+      "Comment": [
+        "0x87",
+        "xchg ebx, ecx"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w20, w7",
+        "mov w7, w6",
+        "mov x6, x20"
+      ]
+    },
+    "db 0x87, 0xd9": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "0x87",
+        "xchg ecx, ebx"
+      ],
       "ExpectedArm64ASM": [
         "mov w20, w6",
         "mov w6, w7",
@@ -2044,9 +2091,24 @@
         "swpal w7, w7, [x4]"
       ]
     },
-    "xchg rbx, rcx": {
+    "db 0x48, 0x87, 0xcb": {
       "ExpectedInstructionCount": 3,
-      "Comment": "0x87",
+      "Comment": [
+        "0x87",
+        "xchg rbx, rcx"
+      ],
+      "ExpectedArm64ASM": [
+        "mov x20, x6",
+        "mov x6, x7",
+        "mov x7, x20"
+      ]
+    },
+    "db 0x48, 0x87, 0xd9": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "0x87",
+        "xchg rcx, rbx"
+      ],
       "ExpectedArm64ASM": [
         "mov x20, x6",
         "mov x6, x7",
