@@ -452,18 +452,12 @@ static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT&
   uint32_t EFlags = CTX->ReconstructCompactedEFLAGS(Thread, false, nullptr, 0);
 
   // Store TF, DF, AF in reserved CPSR bits before clearing them
-  uint32_t SavedFlags = 0;
-  if (EFlags & (1 << FEXCore::X86State::RFLAG_TF_RAW_LOC)) {
-    SavedFlags |= CPSR_X86_TF;
-  }
-  if (EFlags & (1 << FEXCore::X86State::RFLAG_DF_RAW_LOC)) {
-    SavedFlags |= CPSR_X86_DF;
-  }
-  if (EFlags & (1 << FEXCore::X86State::RFLAG_AF_RAW_LOC)) {
-    SavedFlags |= CPSR_X86_AF;
-  }
+  constexpr uint32_t CPSR_MASK = CPSR_X86_TF | CPSR_X86_DF | CPSR_X86_AF;
+  uint32_t SavedFlags = (((EFlags >> FEXCore::X86State::RFLAG_TF_RAW_LOC) & 1) << __builtin_ctz(CPSR_X86_TF)) |
+                        (((EFlags >> FEXCore::X86State::RFLAG_DF_RAW_LOC) & 1) << __builtin_ctz(CPSR_X86_DF)) |
+                        (((EFlags >> FEXCore::X86State::RFLAG_AF_RAW_LOC) & 1) << __builtin_ctz(CPSR_X86_AF));
 
-  Args->Context.Cpsr = (Args->Context.Cpsr & ~(CPSR_X86_TF | CPSR_X86_DF | CPSR_X86_AF)) | SavedFlags;
+  Args->Context.Cpsr = (Args->Context.Cpsr & ~CPSR_MASK) | SavedFlags;
 
   EFlags &= ~(1 << FEXCore::X86State::RFLAG_TF_RAW_LOC);
   CTX->SetFlagsFromCompactedEFLAGS(Thread, EFlags);
