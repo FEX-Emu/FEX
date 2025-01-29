@@ -451,6 +451,10 @@ static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT&
   // Current ARM64EC windows can only restore NZCV+SS when returning from an exception and other flags are left untouched from the handler context.
   uint32_t EFlags = CTX->ReconstructCompactedEFLAGS(Thread, false, nullptr, 0);
 
+  // Ensure no CPSR Flag Overlapping
+  static_assert((CPSR_X86_TF & (CPSR_X86_DF | CPSR_X86_AF)) == 0, "CPSR flag overlap");
+  static_assert((CPSR_X86_DF & CPSR_X86_AF) == 0, "CPSR flag overlap");
+
   // Store TF, DF, AF in reserved CPSR bits before clearing them
   constexpr uint32_t CPSR_MASK = CPSR_X86_TF | CPSR_X86_DF | CPSR_X86_AF;
   uint32_t SavedFlags = (((EFlags >> FEXCore::X86State::RFLAG_TF_RAW_LOC) & 1) << __builtin_ctz(CPSR_X86_TF)) |
