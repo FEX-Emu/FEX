@@ -96,19 +96,6 @@ private:
   }
 
   [[nodiscard]]
-  ARMEmitter::PRegister GetPReg(IR::NodeID Node) const {
-    const auto Reg = GetPhys(Node);
-
-    LOGMAN_THROW_A_FMT(Reg.Class == IR::PREDClass.Val, "Unexpected Class: {}", Reg.Class);
-
-    if (Reg.Class == IR::PREDClass.Val) {
-      return PredicateRegisters[Reg.Reg];
-    }
-
-    FEX_UNREACHABLE;
-  }
-
-  [[nodiscard]]
   FEXCore::IR::RegisterClassType GetRegClass(IR::NodeID Node) const;
 
   [[nodiscard]]

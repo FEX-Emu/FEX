@@ -11,7 +11,6 @@ $end_info$
 #include "Interface/Core/ArchHelpers/Arm64Emitter.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/JIT/JITClass.h"
-#include "Interface/IR/IR.h"
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/MathUtils.h>
 
