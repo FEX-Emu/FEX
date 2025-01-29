@@ -112,12 +112,16 @@ void ReenableSBRKAllocations(void* Ptr) {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-void SetupHooks() {
-  Alloc64 = Alloc::OSAllocator::Create64BitAllocator();
+static void AssignHookOverrides() {
   SetJemallocMmapHook(FEX_mmap);
   SetJemallocMunmapHook(FEX_munmap);
   FEXCore::Allocator::mmap = FEX_mmap;
   FEXCore::Allocator::munmap = FEX_munmap;
+}
+
+void SetupHooks() {
+  Alloc64 = Alloc::OSAllocator::Create64BitAllocator();
+  AssignHookOverrides();
 }
 
 void ClearHooks() {
@@ -300,7 +304,7 @@ fextl::vector<MemoryRegion> StealMemoryRegion(uintptr_t Begin, uintptr_t End) {
   return Regions;
 }
 
-fextl::vector<MemoryRegion> Steal48BitVA() {
+fextl::vector<MemoryRegion> Setup48BitAllocatorIfExists() {
   size_t Bits = FEXCore::Allocator::DetermineVASize();
   if (Bits < 48) {
     return {};
@@ -308,7 +312,12 @@ fextl::vector<MemoryRegion> Steal48BitVA() {
 
   uintptr_t Begin48BitVA = 0x0'8000'0000'0000ULL;
   uintptr_t End48BitVA = 0x1'0000'0000'0000ULL;
-  return StealMemoryRegion(Begin48BitVA, End48BitVA);
+  auto Regions = StealMemoryRegion(Begin48BitVA, End48BitVA);
+
+  Alloc64 = Alloc::OSAllocator::Create64BitAllocatorWithRegions(Regions);
+  AssignHookOverrides();
+
+  return Regions;
 }
 
 void ReclaimMemoryRegion(const fextl::vector<MemoryRegion>& Regions) {

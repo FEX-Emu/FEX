@@ -145,8 +145,14 @@ struct FlexBitSet final {
     return Get(Element);
   }
 
-  static size_t Size(uint64_t Elements) {
-    return FEXCore::AlignUp(Elements / MinimumSizeBits, MinimumSizeBits);
+  // Returns the number of bits required to hold the number of elements.
+  // Just rounds up to the MinimumSizeInBits.
+  constexpr static size_t SizeInBits(uint64_t Elements) {
+    return FEXCore::AlignUp(Elements, MinimumSizeBits);
+  }
+  // Returns the number of bytes required to hold the number of elements.
+  constexpr static size_t SizeInBytes(uint64_t Elements) {
+    return SizeInBits(Elements) / 8;
   }
 };
 

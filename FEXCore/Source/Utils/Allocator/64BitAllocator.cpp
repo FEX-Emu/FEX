@@ -7,6 +7,8 @@
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
 #include <FEXCore/Utils/TypeDefines.h>
+#include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/fextl/sstream.h>
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXCore/fextl/memory.h>
@@ -35,6 +37,8 @@ thread_local FEXCore::Core::InternalThreadState* TLSThread {};
 class OSAllocator_64Bit final : public Alloc::HostAllocator {
 public:
   OSAllocator_64Bit();
+  OSAllocator_64Bit(fextl::vector<FEXCore::Allocator::MemoryRegion>& Regions);
+
   virtual ~OSAllocator_64Bit();
   void* AllocateSlab(size_t Size) override {
     return nullptr;
@@ -99,19 +103,20 @@ private:
     // This returns the size of the LiveVMARegion in addition to the flex set that tracks the used data
     // The LiveVMARegion lives at the start of the VMA region which means on initialization we need to set that
     // tracked ranged as used immediately
-    static size_t GetSizeWithFlexSet(size_t Size) {
+    static size_t GetFEXManagedVMARegionSize(size_t Size) {
       // One element per page
 
       // 0x10'0000'0000 bytes
       // 0x100'0000 Pages
       // 1 bit per page for tracking means 0x20'0000 (Pages / 8) bytes of flex space
       // Which is 2MB of tracking
-      uint64_t NumElements = (Size >> FEXCore::Utils::FEX_PAGE_SHIFT) * sizeof(FlexBitElementType);
-      return sizeof(LiveVMARegion) + FEXCore::FlexBitSet<FlexBitElementType>::Size(NumElements);
+      const uint64_t NumElements = Size >> FEXCore::Utils::FEX_PAGE_SHIFT;
+      return sizeof(LiveVMARegion) + FEXCore::FlexBitSet<FlexBitElementType>::SizeInBytes(NumElements);
     }
 
     static void InitializeVMARegionUsed(LiveVMARegion* Region, size_t AdditionalSize) {
-      size_t SizeOfLiveRegion = FEXCore::AlignUp(LiveVMARegion::GetSizeWithFlexSet(Region->SlabInfo->RegionSize), FEXCore::Utils::FEX_PAGE_SIZE);
+      size_t SizeOfLiveRegion =
+        FEXCore::AlignUp(LiveVMARegion::GetFEXManagedVMARegionSize(Region->SlabInfo->RegionSize), FEXCore::Utils::FEX_PAGE_SIZE);
       size_t SizePlusManagedData = SizeOfLiveRegion + AdditionalSize;
 
       Region->FreeSpace = Region->SlabInfo->RegionSize - SizePlusManagedData;
@@ -155,7 +160,8 @@ private:
     ReservedRegions->erase(ReservedIterator);
 
     // mprotect the new region we've allocated
-    size_t SizeOfLiveRegion = FEXCore::AlignUp(LiveVMARegion::GetSizeWithFlexSet(ReservedRegion->RegionSize), FEXCore::Utils::FEX_PAGE_SIZE);
+    size_t SizeOfLiveRegion =
+      FEXCore::AlignUp(LiveVMARegion::GetFEXManagedVMARegionSize(ReservedRegion->RegionSize), FEXCore::Utils::FEX_PAGE_SIZE);
     size_t SizePlusManagedData = UsedSize + SizeOfLiveRegion;
 
     [[maybe_unused]] auto Res = mprotect(reinterpret_cast<void*>(ReservedRegion->Base), SizePlusManagedData, PROT_READ | PROT_WRITE);
@@ -180,7 +186,7 @@ private:
   // 32-bit old kernel workarounds
   fextl::vector<FEXCore::Allocator::MemoryRegion> Steal32BitIfOldKernel();
 
-  void AllocateMemoryRegions(const fextl::vector<FEXCore::Allocator::MemoryRegion>& Ranges);
+  void AllocateMemoryRegions(fextl::vector<FEXCore::Allocator::MemoryRegion>& Ranges);
   LiveVMARegion* FindLiveRegionForAddress(uintptr_t Addr, uintptr_t AddrEnd);
 };
 
@@ -383,7 +389,7 @@ again:
     if (!LiveRegion) {
       // Couldn't find a fit in the live regions
       // Allocate a new reserved region
-      size_t lengthOfLiveRegion = FEXCore::AlignUp(LiveVMARegion::GetSizeWithFlexSet(length), FEXCore::Utils::FEX_PAGE_SIZE);
+      size_t lengthOfLiveRegion = FEXCore::AlignUp(LiveVMARegion::GetFEXManagedVMARegionSize(length), FEXCore::Utils::FEX_PAGE_SIZE);
       size_t lengthPlusManagedData = length + lengthOfLiveRegion;
       for (auto it = ReservedRegions->begin(); it != ReservedRegions->end(); ++it) {
         if ((*it)->RegionSize >= lengthPlusManagedData) {
@@ -515,27 +521,43 @@ fextl::vector<FEXCore::Allocator::MemoryRegion> OSAllocator_64Bit::Steal32BitIfO
   return FEXCore::Allocator::StealMemoryRegion(LOWER_BOUND_32, UPPER_BOUND_32);
 }
 
-void OSAllocator_64Bit::AllocateMemoryRegions(const fextl::vector<FEXCore::Allocator::MemoryRegion>& Ranges) {
+void OSAllocator_64Bit::AllocateMemoryRegions(fextl::vector<FEXCore::Allocator::MemoryRegion>& Ranges) {
+  // Need to allocate the ObjectAlloc up front. Find a region that is larger than our minimum size first.
+  const size_t ObjectAllocSize = 64 * 1024 * 1024;
+
+  for (auto& it : Ranges) {
+    if (ObjectAllocSize > it.Size) {
+      continue;
+    }
+
+    // Allocate up to 64 MiB the first allocation for an intrusive allocator
+    mprotect(it.Ptr, ObjectAllocSize, PROT_READ | PROT_WRITE);
+
+    // This enables the kernel to use transparent large pages in the allocator which can reduce memory pressure
+    ::madvise(it.Ptr, ObjectAllocSize, MADV_HUGEPAGE);
+
+    ObjectAlloc = new (it.Ptr) Alloc::ForwardOnlyIntrusiveArenaAllocator(it.Ptr, ObjectAllocSize);
+    ReservedRegions = ObjectAlloc->new_construct(ReservedRegions, ObjectAlloc);
+    LiveRegions = ObjectAlloc->new_construct(LiveRegions, ObjectAlloc);
+
+    if (it.Size >= ObjectAllocSize) {
+      // Modify region size
+      it.Size -= ObjectAllocSize;
+      (uint8_t*&)it.Ptr += ObjectAllocSize;
+    }
+
+    break;
+  }
+
+  if (!ObjectAlloc) {
+    ERROR_AND_DIE_FMT("Couldn't allocate object allocator!");
+  }
+
   for (auto [Ptr, AllocationSize] : Ranges) {
-    if (!ObjectAlloc) {
-      auto MaxSize = std::min(size_t(64) * 1024 * 1024, AllocationSize);
-
-      // Allocate up to 64 MiB the first allocation for an intrusive allocator
-      mprotect(Ptr, MaxSize, PROT_READ | PROT_WRITE);
-
-      // This enables the kernel to use transparent large pages in the allocator which can reduce memory pressure
-      ::madvise(Ptr, MaxSize, MADV_HUGEPAGE);
-
-      ObjectAlloc = new (Ptr) Alloc::ForwardOnlyIntrusiveArenaAllocator(Ptr, MaxSize);
-      ReservedRegions = ObjectAlloc->new_construct(ReservedRegions, ObjectAlloc);
-      LiveRegions = ObjectAlloc->new_construct(LiveRegions, ObjectAlloc);
-
-      if (AllocationSize > MaxSize) {
-        AllocationSize -= MaxSize;
-        (uint8_t*&)Ptr += MaxSize;
-      } else {
-        continue;
-      }
+    // Skip using any regions that are <= two pages. FEX's VMA allocator requires two pages
+    // for tracking data. So three pages are minimum for a single page VMA allocation.
+    if (AllocationSize <= (FEXCore::Utils::FEX_PAGE_SIZE * 2)) {
+      continue;
     }
 
     ReservedVMARegion* Region = ObjectAlloc->new_construct<ReservedVMARegion>();
@@ -557,6 +579,10 @@ OSAllocator_64Bit::OSAllocator_64Bit() {
   FEXCore::Allocator::ReclaimMemoryRegion(LowMem);
 }
 
+OSAllocator_64Bit::OSAllocator_64Bit(fextl::vector<FEXCore::Allocator::MemoryRegion>& Regions) {
+  AllocateMemoryRegions(Regions);
+}
+
 OSAllocator_64Bit::~OSAllocator_64Bit() {
   // This needs a mutex to be thread safe
   auto lk = FEXCore::GuardSignalDeferringSectionWithFallback(AllocationMutex, TLSThread);
@@ -576,6 +602,62 @@ OSAllocator_64Bit::~OSAllocator_64Bit() {
 fextl::unique_ptr<Alloc::HostAllocator> Create64BitAllocator() {
   return fextl::make_unique<OSAllocator_64Bit>();
 }
+
+template<class T>
+struct alloc_delete : public std::default_delete<T> {
+  void operator()(T* ptr) const {
+    if (ptr) {
+      const auto size = sizeof(T);
+      const auto MinPage = FEXCore::AlignUp(size, FEXCore::Utils::FEX_PAGE_SIZE);
+
+      std::destroy_at(ptr);
+      ::munmap(ptr, MinPage);
+    }
+  }
+
+  template<typename U>
+  requires (std::is_base_of_v<U, T>)
+  operator fextl::default_delete<U>() {
+    return fextl::default_delete<U>();
+  }
+};
+
+template<class T, class... Args>
+requires (!std::is_array_v<T>)
+fextl::unique_ptr<T> make_alloc_unique(FEXCore::Allocator::MemoryRegion& Base, Args&&... args) {
+  const auto size = sizeof(T);
+  const auto MinPage = FEXCore::AlignUp(size, FEXCore::Utils::FEX_PAGE_SIZE);
+  if (Base.Size < size || MinPage != FEXCore::Utils::FEX_PAGE_SIZE) {
+    ERROR_AND_DIE_FMT("Couldn't fit allocator in to page!");
+  }
+
+  auto ptr = ::mmap(Base.Ptr, MinPage, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+  if (ptr == MAP_FAILED) {
+    ERROR_AND_DIE_FMT("Couldn't allocate memory region");
+  }
+
+  // Remove the page from the base region.
+  // Could be zero after this.
+  Base.Size -= MinPage;
+  Base.Ptr = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(Base.Ptr) + MinPage);
+
+  auto Result = ::new (ptr) T(std::forward<Args>(args)...);
+  return fextl::unique_ptr<T, alloc_delete<T>>(Result);
+}
+
+fextl::unique_ptr<Alloc::HostAllocator> Create64BitAllocatorWithRegions(fextl::vector<FEXCore::Allocator::MemoryRegion>& Regions) {
+  // This is a bit tricky as we can't allocate memory safely except from the Regions provided. Otherwise we might overwrite memory pages we
+  // don't own. Scan the memory regions and find the smallest one.
+  FEXCore::Allocator::MemoryRegion& Smallest = Regions[0];
+  for (auto& it : Regions) {
+    if (it.Size <= Smallest.Size) {
+      Smallest = it;
+    }
+  }
+
+  return make_alloc_unique<OSAllocator_64Bit>(Smallest, Regions);
+}
+
 } // namespace Alloc::OSAllocator
 
 namespace FEXCore::Allocator {

@@ -496,7 +496,7 @@ int main(int argc, char** argv, char** const envp) {
 
   if (Loader.Is64BitMode()) {
     // Destroy the 48th bit if it exists
-    Base48Bit = FEXCore::Allocator::Steal48BitVA();
+    Base48Bit = FEXCore::Allocator::Setup48BitAllocatorIfExists();
   } else {
     // Reserve [0x1_0000_0000, 0x2_0000_0000).
     // Safety net if 32-bit address calculation overflows in to 64-bit range.
