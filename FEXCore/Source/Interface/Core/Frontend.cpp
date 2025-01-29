@@ -1100,10 +1100,10 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
 
     while (1) {
       // MAX_INST_SIZE assumes worst case
-      auto OpMinAddress = RIPToDecode + PCOffset;
-      auto OpMaxAddress = OpMinAddress + MAX_INST_SIZE;
+      auto OpAddress = RIPToDecode + PCOffset;
+      auto OpMaxAddress = OpAddress + MAX_INST_SIZE;
 
-      auto OpMinPage = OpMinAddress & FEXCore::Utils::FEX_PAGE_MASK;
+      auto OpMinPage = OpAddress & FEXCore::Utils::FEX_PAGE_MASK;
       auto OpMaxPage = OpMaxAddress & FEXCore::Utils::FEX_PAGE_MASK;
 
       if (!EntryBlock && OpMinPage == OpMaxPage && PeekByte(0) == 0 && PeekByte(1) == 0) [[unlikely]] {
@@ -1122,7 +1122,7 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
         CodePages.insert(CurrentCodePage);
       }
 
-      bool ErrorDuringDecoding = !DecodeInstruction(RIPToDecode + PCOffset);
+      bool ErrorDuringDecoding = !DecodeInstruction(OpAddress);
 
       if (ErrorDuringDecoding) [[unlikely]] {
         // Put an invalid instruction in the stream so the core can raise SIGILL if hit
@@ -1140,8 +1140,8 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
         }
       }
 
-      DecodedMinAddress = std::min(DecodedMinAddress, RIPToDecode + PCOffset);
-      DecodedMaxAddress = std::max(DecodedMaxAddress, RIPToDecode + PCOffset + DecodeInst->InstSize);
+      DecodedMinAddress = std::min(DecodedMinAddress, OpAddress);
+      DecodedMaxAddress = std::max(DecodedMaxAddress, OpAddress + DecodeInst->InstSize);
       ++TotalInstructions;
       ++BlockNumberOfInstructions;
       ++DecodedSize;
