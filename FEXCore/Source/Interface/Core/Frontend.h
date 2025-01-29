@@ -22,6 +22,7 @@ public:
   // New Frontend decoding
   struct DecodedBlocks final {
     uint64_t Entry {};
+    uint64_t Size {};
     uint64_t NumInstructions {};
     FEXCore::X86Tables::DecodedInst* DecodedInstructions;
     bool HasInvalidInstruction {};
@@ -70,7 +71,9 @@ private:
   bool DecodeInstruction(uint64_t PC);
 
   void BranchTargetInMultiblockRange();
-  bool BranchTargetCanContinue(bool FinalInstruction) const;
+  bool InstCanContinue() const;
+
+  void AddBranchTarget(uint64_t Target);
 
   uint8_t ReadByte();
   uint8_t PeekByte(uint8_t Offset) const;
@@ -102,11 +105,12 @@ private:
   uint64_t SymbolMaxAddress {};
   uint64_t SymbolMinAddress {~0ULL};
   uint64_t SectionMaxAddress {~0ULL};
+  uint64_t NextBlockStartAddress {~0ULL};
 
   DecodedBlockInformation BlockInfo;
   fextl::set<uint64_t> CurrentBlockTargets;
   fextl::set<uint64_t> BlocksToDecode;
-  fextl::set<uint64_t> HasBlocks;
+  fextl::set<uint64_t> VisitedBlocks;
   fextl::set<uint64_t>* ExternalBranches {nullptr};
 
   // ModRM rm decoding
