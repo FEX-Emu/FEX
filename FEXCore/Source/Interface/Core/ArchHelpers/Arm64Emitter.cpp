@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "Interface/Core/ArchHelpers/Arm64Emitter.h"
 #include "FEXCore/Core/X86Enums.h"
-#include "FEXCore/Utils/AllocatorHooks.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Context/Context.h"
 
@@ -60,8 +59,8 @@ namespace x64 {
   // p6 and p7 registers are used as temporaries no not added here for RA
   // See PREF_TMP_16B and PREF_TMP_32B
   // p0-p1 are also used in the jit as temps.
-  // Also p8-p15 cannot be used can only encode p0-p7, so we're left with p2-p5.
-  constexpr std::array<ARMEmitter::PRegister, 4> PR = {ARMEmitter::PReg::p2, ARMEmitter::PReg::p3, ARMEmitter::PReg::p4, ARMEmitter::PReg::p5};
+  // Also p8-p15 cannot be used can only encode p0-p7, p2 is a special register, so we're left with p3-p5.
+  constexpr std::array<ARMEmitter::PRegister, 3> PR = {ARMEmitter::PReg::p3, ARMEmitter::PReg::p4, ARMEmitter::PReg::p5};
 
   constexpr unsigned RAPairs = 6;
 
@@ -100,6 +99,7 @@ namespace x64 {
     ARMEmitter::Reg::r20,
     ARMEmitter::Reg::r21,
     ARMEmitter::Reg::r22,
+    // PF/AF must be last.
     REG_PF,
     REG_AF,
   };
@@ -112,8 +112,8 @@ namespace x64 {
   // p6 and p7 registers are used as temporaries no not added here for RA
   // See PREF_TMP_16B and PREF_TMP_32B
   // p0-p1 are also used in the jit as temps.
-  // Also p8-p15 cannot be used can only encode p0-p7, so we're left with p2-p5.
-  constexpr std::array<ARMEmitter::PRegister, 4> PR = {ARMEmitter::PReg::p2, ARMEmitter::PReg::p3, ARMEmitter::PReg::p4, ARMEmitter::PReg::p5};
+  // Also p8-p15 cannot be used can only encode p0-p7, p2 is a special register, so we're left with p3-p5.
+  constexpr std::array<ARMEmitter::PRegister, 3> PR = {ARMEmitter::PReg::p3, ARMEmitter::PReg::p4, ARMEmitter::PReg::p5};
 
   constexpr unsigned RAPairs = 6;
 
@@ -249,8 +249,8 @@ namespace x32 {
   // p6 and p7 registers are used as temporaries no not added here for RA
   // See PREF_TMP_16B and PREF_TMP_32B
   // p0-p1 are also used in the jit as temps.
-  // Also p8-p15 cannot be used can only encode p0-p7, so we're left with p2-p5.
-  constexpr std::array<ARMEmitter::PRegister, 4> PR = {ARMEmitter::PReg::p2, ARMEmitter::PReg::p3, ARMEmitter::PReg::p4, ARMEmitter::PReg::p5};
+  // Also p8-p15 cannot be used can only encode p0-p7, p2 is a special register, so we're left with p3-p5.
+  constexpr std::array<ARMEmitter::PRegister, 3> PR = {ARMEmitter::PReg::p3, ARMEmitter::PReg::p4, ARMEmitter::PReg::p5};
 
   // All are caller saved
   constexpr std::array<ARMEmitter::VRegister, 8> SRAFPR = {
@@ -631,7 +631,7 @@ void Arm64Emitter::FillSpecialRegs(ARMEmitter::Register TmpReg, ARMEmitter::Regi
   }
 #endif
 
-  if (SetPredRegs) {
+  if (SetPredRegs && (EmitterCTX->HostFeatures.SupportsSVE256 || EmitterCTX->HostFeatures.SupportsSVE128)) {
     // Set up predicate registers.
     // We don't bother spilling these in SpillStaticRegs,
     // since all that matters is we restore them on a fill.
@@ -643,6 +643,9 @@ void Arm64Emitter::FillSpecialRegs(ARMEmitter::Register TmpReg, ARMEmitter::Regi
     if (EmitterCTX->HostFeatures.SupportsSVE128) {
       ptrue(ARMEmitter::SubRegSize::i8Bit, PRED_TMP_16B, ARMEmitter::PredicatePattern::SVE_VL16);
     }
+
+    // Fill in the predicate register for the x87 ldst SVE optimization.
+    ptrue(ARMEmitter::SubRegSize::i16Bit, PRED_X87_SVEOPT, ARMEmitter::PredicatePattern::SVE_VL5);
   }
 }
 
