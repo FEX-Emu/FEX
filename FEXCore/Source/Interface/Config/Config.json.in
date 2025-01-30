@@ -472,6 +472,13 @@
           "Sleeps the process at startup for a duration of seconds.",
           "Useful if an application crashes too quickly to attach a debugger."
         ]
+      },
+      "StartupSleepProcName": {
+        "Type": "str",
+        "Default": "",
+        "Desc": [
+          "Contrains the startup sleep to only apply to processes that match this name."
+        ]
       }
     },
     "Misc": {
