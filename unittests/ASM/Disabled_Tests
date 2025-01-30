@@ -17,7 +17,6 @@ Test_Primary/Primary_E9.asm
 
 # Relies on undefined behaviour
 Test_X87/D9_F9.asm
-
 Test_X87/D9_F2.asm
 
 # Relies on rounding correctness
@@ -25,3 +24,9 @@ Test_X87/D9_F8.asm
 
 # This is basically a benchmark.
 FEX_bugs/XeSS_quadratic.asm
+
+# 3DNow reciprocal with rpres doesn't offer the same precision as native and fails the tests.
+Test_3DNow/86.asm
+Test_3DNow/87.asm
+Test_3DNow/96.asm
+Test_3DNow/97.asm
