@@ -358,6 +358,7 @@ int main(int argc, char** argv, char** const envp) {
   // Doesn't use CONFIG_ROOTFS and we don't want it to spin up a squashfs instance
   FEX_CONFIG_OPT(StallProcess, STALLPROCESS);
   FEX_CONFIG_OPT(StartupSleep, STARTUPSLEEP);
+  FEX_CONFIG_OPT(StartupSleepProcName, STARTUPSLEEPPROCNAME);
   if (StallProcess) {
     while (1) {
       // Stall this process out forever
@@ -409,7 +410,7 @@ int main(int argc, char** argv, char** const envp) {
     }
   }
 
-  if (StartupSleep()) {
+  if (StartupSleep() && (StartupSleepProcName().empty() || Program.ProgramName == StartupSleepProcName())) {
     LogMan::Msg::IFmt("[{}][{}] Sleeping for {} seconds", ::getpid(), Program.ProgramName, StartupSleep());
     std::this_thread::sleep_for(std::chrono::seconds(StartupSleep()));
   }
