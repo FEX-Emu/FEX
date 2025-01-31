@@ -293,7 +293,7 @@ add_definitions(-Wno-trigraphs)
 add_definitions(-DGLOBAL_DATA_DIRECTORY="${DATA_DIRECTORY}/")
 
 if (BUILD_TESTS)
-  find_package(Catch2 QUIET)
+  find_package(Catch2 3 QUIET)
   if (NOT Catch2_FOUND)
     add_subdirectory(External/Catch2/)
 
