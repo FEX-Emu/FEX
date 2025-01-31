@@ -200,7 +200,7 @@ int main(int argc, char** argv, char** const envp) {
   // This will let FEXInterpreter know we are ready
   PipeScanner::ClosePipes();
 
-  ProcessPipe::SetConfiguration(Options.Foreground, Options.PersistentTimeout ?: 10);
+  ProcessPipe::SetConfiguration(Options.Foreground, Options.PersistentTimeout ?: 1);
 
   // Actually spin up the request thread.
   // Any applications that were waiting for the socket to accept will then go through here.
