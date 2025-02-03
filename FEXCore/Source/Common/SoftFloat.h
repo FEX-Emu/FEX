@@ -486,9 +486,7 @@ struct FEX_PACKED X80SoftFloat {
   }
 
   VectorRegType ToVector() const {
-    // Explicitly not zero initializing this.
-    // Makes the resulting assembly more optimal.
-    VectorRegType Ret;
+    VectorRegType Ret {};
     memcpy(&Ret, this, sizeof(*this));
     return Ret;
   }
