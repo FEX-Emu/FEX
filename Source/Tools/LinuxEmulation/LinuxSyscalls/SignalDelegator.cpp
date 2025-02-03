@@ -961,6 +961,9 @@ void SignalDelegator::RegisterTLSState(FEX::HLE::ThreadStateObject* Thread) {
   // Copy the thread object to the start of the alt-stack
   memcpy(Thread->SignalInfo.AltStackPtr, &Thread, sizeof(void*));
 
+  // Protect the first page of the alt-stack for overflow protection.
+  mprotect(Thread->SignalInfo.AltStackPtr, 4096, PROT_READ);
+
   // Register the alt stack
   const int Result = sigaltstack(&altstack, nullptr);
   if (Result == -1) {
