@@ -518,40 +518,6 @@ static void IRDumper(FEXCore::Core::InternalThreadState* Thread, IR::IREmitter* 
   fextl::fmt::print(FD, "IR-ShouldDump-{} 0x{:x}:\n{}\n@@@@@\n", RA ? "post" : "pre", GuestRIP, out.str());
 };
 
-// IRStorageBase with fully owned memory
-struct IRListCopy : public IR::IRStorageBase {
-  std::span<std::byte> IRData;
-  std::span<std::byte> ListData;
-
-  // TODO: Consider defaulting to empty RAData instead?
-  IR::RegisterAllocationData::UniquePtr RADataInternal;
-
-  IRListCopy(const IR::IRListView& view, IR::RegisterAllocationData::UniquePtr RAData)
-    : RADataInternal(std::move(RAData)) {
-    std::byte* Storage = reinterpret_cast<std::byte*>(FEXCore::Allocator::malloc(view.GetDataSize() + view.GetListSize()));
-
-    IRData = {Storage, Storage + view.GetDataSize()};
-    ListData = {Storage + view.GetDataSize(), Storage + view.GetDataSize() + view.GetListSize()};
-    memcpy(IRData.data(), (char*)view.GetData(), IRData.size());
-    memcpy(ListData.data(), (char*)view.GetListData(), ListData.size());
-  }
-
-  IRListCopy(const IRListCopy& other) = delete;
-  IRListCopy(IRListCopy&& other) = delete;
-
-  ~IRListCopy() {
-    FEXCore::Allocator::free(IRData.data());
-  }
-
-  const IR::RegisterAllocationData* RAData() override {
-    return RADataInternal.get();
-  }
-  IR::IRListView GetIRView() override {
-    return IR::IRListView {IRData.data(), ListData.data(), IRData.size(), ListData.size()};
-  }
-};
-
-
 ContextImpl::GenerateIRResult
 ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, bool ExtendedDebugInfo, uint64_t MaxInst) {
   FEXCORE_PROFILE_SCOPED("GenerateIR");
@@ -700,7 +666,7 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
         if (HadDispatchError && TotalInstructions == 0) {
           // Couldn't handle any instruction in op dispatcher
           Thread->OpDispatcher->ResetWorkingList();
-          return {nullptr, 0, 0, 0, 0};
+          return {{}, nullptr, 0, 0, 0, 0};
         }
 
         if (NeedsBlockEnd) {
@@ -732,19 +698,16 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
   // Run the passmanager over the IR from the dispatcher
   Thread->PassManager->Run(IREmitter);
 
+  auto RAData = Thread->PassManager->HasPass("RA") ? Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->GetAllocationData() : nullptr;
+
   // Debug
   if (ShouldDump) {
-    IRDumper(Thread, IREmitter, GuestRIP,
-             Thread->PassManager->HasPass("RA") ? Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->GetAllocationData() : nullptr);
+    IRDumper(Thread, IREmitter, GuestRIP, RAData);
   }
 
-  auto RAData = Thread->PassManager->HasPass("RA") ? Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->PullAllocationData() : nullptr;
-  auto IRList = fextl::make_unique<IRListCopy>(IREmitter->ViewIR(), std::move(RAData));
-
-  IREmitter->DelayedDisownBuffer();
-
   return {
-    .IR = std::move(IRList),
+    .IRView = IREmitter->ViewIR(),
+    .RAData = RAData,
     .TotalInstructions = TotalInstructions,
     .TotalInstructionsLength = TotalInstructionsLength,
     .StartAddr = Thread->FrontendDecoder->DecodedMinAddress,
@@ -761,9 +724,7 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
       if (CompiledCode) {
         return {
           .CompiledCode = CompiledCode,
-          .IR = nullptr,        // No IR/RA data generated
           .DebugData = nullptr, // nullptr here ensures that code serialization doesn't occur on from cache read
-          .GeneratedIR = false, // nullptr here ensures IR cache mechanisms won't run
           .StartAddr = 0,       // Unused
           .Length = 0,          // Unused
         };
@@ -778,53 +739,30 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
     }
   }
 
-  fextl::unique_ptr<FEXCore::IR::IRStorageBase> IR;
-  FEXCore::Core::DebugData* DebugData {};
-  uint64_t TotalInstructions {};
-  uint64_t StartAddr {};
-  uint64_t Length {};
-
-  // AOT IR bookkeeping and cache
-  {
-    auto IRFromAOT = IRCaptureCache.PreGenerateIRFetch(Thread, GuestRIP);
-    if (IRFromAOT) {
-      // Setup pointers to internal structures
-      IR = std::move(IRFromAOT->IR);
-      DebugData = IRFromAOT->DebugData;
-      StartAddr = IRFromAOT->StartAddr;
-      Length = IRFromAOT->Length;
-    }
+  // Generate IR + Meta Info
+  auto [IRView, RAData, TotalInstructions, TotalInstructionsLength, StartAddr, Length] =
+    GenerateIR(Thread, GuestRIP, Config.GDBSymbols(), MaxInst);
+  if (!IRView) {
+    return {nullptr, nullptr, 0, 0};
   }
-
-  if (!IR) {
-    // Generate IR + Meta Info
-    auto [IRCopy, _TotalInstructions, TotalInstructionsLength, _StartAddr, _Length] = GenerateIR(Thread, GuestRIP, Config.GDBSymbols(), MaxInst);
-
-    // Setup pointers to internal structures
-    IR = std::move(IRCopy);
-    DebugData = new FEXCore::Core::DebugData();
-    TotalInstructions = _TotalInstructions;
-    StartAddr = _StartAddr;
-    Length = _Length;
-  }
-
-  if (!IR) {
-    return {};
-  }
+  auto DebugData = fextl::make_unique<FEXCore::Core::DebugData>();
 
   // If the trap flag is set we generate single instruction blocks that each check to generate a single step exception.
   bool TFSet = Thread->CurrentFrame->State.flags[X86State::RFLAG_TF_RAW_LOC];
 
   // Attempt to get the CPU backend to compile this code
-  auto IRView = IR->GetIRView();
+
+  auto CompiledCode = Thread->CPUBackend->CompileCode(GuestRIP, Length, TotalInstructions == 1, &*IRView, DebugData.get(), RAData, TFSet);
+
+  // Release the IR
+  Thread->OpDispatcher->DelayedDisownBuffer();
+
   return {
     // FEX currently throws away the CPUBackend::CompiledCode object other than the entrypoint
     // In the future with code caching getting wired up, we will pass the rest of the data forward.
     // TODO: Pass the data forward when code caching is wired up to this.
-    .CompiledCode = Thread->CPUBackend->CompileCode(GuestRIP, Length, TotalInstructions == 1, &IRView, DebugData, IR->RAData(), TFSet).BlockEntry,
-    .IR = std::move(IR),
-    .DebugData = DebugData,
-    .GeneratedIR = true,
+    .CompiledCode = CompiledCode.BlockEntry,
+    .DebugData = std::move(DebugData),
     .StartAddr = StartAddr,
     .Length = Length,
   };
@@ -843,7 +781,7 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
     return HostCode;
   }
 
-  auto [CodePtr, IR, DebugData, GeneratedIR, StartAddr, Length] = CompileCode(Thread, GuestRIP, MaxInst);
+  auto [CodePtr, DebugData, StartAddr, Length] = CompileCode(Thread, GuestRIP, MaxInst);
   if (CodePtr == nullptr) {
     return 0;
   }
@@ -894,7 +832,7 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
   // Clear any relocations that might have been generated
   Thread->CPUBackend->ClearRelocations();
 
-  if (IRCaptureCache.PostCompileCode(Thread, CodePtr, GuestRIP, StartAddr, Length, std::move(IR), DebugData, GeneratedIR)) {
+  if (IRCaptureCache.PostCompileCode(Thread, CodePtr, GuestRIP, StartAddr, Length, {}, DebugData.get(), false)) {
     // Early exit
     return (uintptr_t)CodePtr;
   }
@@ -913,7 +851,7 @@ uintptr_t ContextImpl::CompileSingleStep(FEXCore::Core::CpuStateFrame* Frame, ui
   // Invalidate might take a unique lock on this, to guarantee that during invalidation no code gets compiled
   auto lk = GuardSignalDeferringSection<std::shared_lock>(CodeInvalidationMutex, Thread);
 
-  auto [CodePtr, IR, DebugData, GeneratedIR, StartAddr, Length] = CompileCode(Thread, GuestRIP, 1);
+  auto [CodePtr, DebugData, StartAddr, Length] = CompileCode(Thread, GuestRIP, 1);
   if (CodePtr == nullptr) {
     return 0;
   }
