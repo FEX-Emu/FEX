@@ -11,6 +11,7 @@ $end_info$
 #include "Common/FEXServerClient.h"
 #include "Common/Config.h"
 #include "Common/HostFeatures.h"
+#include "PortabilityInfo.h"
 #include "ELFCodeLoader.h"
 #include "VDSO_Emulation.h"
 #include "LinuxSyscalls/GdbServer.h"
@@ -176,34 +177,6 @@ bool InterpreterHandler(fextl::string* Filename, const fextl::string& RootFS, fe
   return true;
 }
 
-FEX::Config::PortableInformation ReadPortabilityInformation() {
-  const FEX::Config::PortableInformation BadResult {false, {}};
-  const char* PortableConfig = getenv("FEX_PORTABLE");
-  if (!PortableConfig) {
-    return BadResult;
-  }
-
-  uint32_t Value {};
-  std::string_view PortableView {PortableConfig};
-
-  if (std::from_chars(PortableView.data(), PortableView.data() + PortableView.size(), Value).ec != std::errc {} || Value == 0) {
-    return BadResult;
-  }
-
-  // Read the FEXInterpreter path from `/proc/self/exe` which is always a symlink to the absolute path of the executable running.
-  // This way we can get the parent path that the application is executing from.
-  char SelfPath[PATH_MAX];
-  auto Result = readlink("/proc/self/exe", SelfPath, PATH_MAX);
-  if (Result == -1) {
-    return BadResult;
-  }
-
-  std::string_view SelfPathView {SelfPath, std::min<size_t>(PATH_MAX, Result)};
-
-  // Extract the absolute path from the FEXInterpreter path
-  return {true, fextl::string {SelfPathView.substr(0, SelfPathView.find_last_of('/') + 1)}};
-}
-
 bool RanAsInterpreter(bool ExecutedWithFD) {
   return ExecutedWithFD || FEXLOADER_AS_INTERPRETER;
 }
@@ -323,7 +296,7 @@ int main(int argc, char** argv, char** const envp) {
 
   const bool ExecutedWithFD = getauxval(AT_EXECFD) != 0;
   const bool IsInterpreter = RanAsInterpreter(ExecutedWithFD);
-  const auto PortableInfo = ReadPortabilityInformation();
+  const auto PortableInfo = FEX::ReadPortabilityInformation();
   const bool InterpreterInstalled = QueryInterpreterInstalled(ExecutedWithFD, PortableInfo);
 
   int FEXFD {StealFEXFDFromEnv("FEX_EXECVEFD")};

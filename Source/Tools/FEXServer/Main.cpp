@@ -2,6 +2,7 @@
 #include "ArgumentLoader.h"
 #include "Logger.h"
 #include "PipeScanner.h"
+#include "PortabilityInfo.h"
 #include "ProcessPipe.h"
 #include "SquashFS.h"
 #include "Common/ArgumentLoader.h"
@@ -117,7 +118,7 @@ int main(int argc, char** argv, char** const envp) {
   }
 
   auto ArgsLoader = fextl::make_unique<FEX::ArgLoader::ArgLoader>(FEX::ArgLoader::ArgLoader::LoadType::WITHOUT_FEXLOADER_PARSER, argc, argv);
-  FEX::Config::LoadConfig(std::move(ArgsLoader), {}, envp);
+  FEX::Config::LoadConfig(std::move(ArgsLoader), {}, envp, FEX::ReadPortabilityInformation());
 
   // Reload the meta layer
   FEXCore::Config::ReloadMetaLayer();
