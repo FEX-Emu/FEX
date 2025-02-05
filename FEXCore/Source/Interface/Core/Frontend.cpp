@@ -1174,6 +1174,8 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
     InstStream = AdjustAddrForSpecialRegion(_InstStream, EntryPoint, RIPToDecode);
 
     while (1) {
+      InstructionSize = 0;
+
       // MAX_INST_SIZE assumes worst case
       auto OpAddress = RIPToDecode + PCOffset;
       auto OpMaxAddress = OpAddress + MAX_INST_SIZE;
