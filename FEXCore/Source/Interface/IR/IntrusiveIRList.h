@@ -147,7 +147,6 @@ private:
 class IRListView final {
 public:
   IRListView() = delete;
-  IRListView(IRListView&&) = delete;
 
   IRListView(DualIntrusiveAllocator* Data)
     : IRListView(reinterpret_cast<void*>(Data->DataBegin()), reinterpret_cast<void*>(Data->ListBegin()), Data->DataSize(), Data->ListSize()) {}
