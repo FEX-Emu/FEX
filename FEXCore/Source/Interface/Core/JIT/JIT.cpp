@@ -21,6 +21,7 @@ $end_info$
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 
 #include "Utils/MemberFunctionToPointer.h"
+#include "Utils/variable_length_integer.h"
 
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/InternalThreadState.h>
@@ -852,10 +853,23 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   auto JITBlockTail = GetCursorAddress<JITCodeTail*>();
   CursorIncrement(sizeof(JITCodeTail));
 
-  auto JITRIPEntriesLocation = GetCursorAddress<uint8_t*>();
-  auto JITRIPEntries = GetCursorAddress<JITRIPReconstructEntries*>();
+  // Entries that live after the JITCodeTail.
+  // These entries correlate JIT code regions with guest RIP regions.
+  // Using these entries FEX is able to reconstruct the guest RIP accurately when an instruction cause a signal fault.
+  // Packed using two variable length integer entries to ensure the size isn't too large.
+  // These smaller sizes means that each entry is relative to each other instead of absolute offset from the start of the JIT block.
+  // When reconstructing the RIP, each entry must be walked linearly and accumulated with the previous entries.
+  // This is a trade-off between compression inside the JIT code space and execution time when reconstruction the RIP.
+  // RIP reconstruction when faulting is less likely so we are requiring the accumulation.
+  //
+  // struct {
+  //   // The Host PC offset from the previous entry.
+  //   FEXCore::Utils::vl64 HostPCOffset;
+  //   // How much to offset the RIP from the previous entry.
+  //   FEXCore::Utils::vl64 GuestRIPOffset;
+  // };
 
-  CursorIncrement(sizeof(JITRIPReconstructEntries) * DebugData->GuestOpcodes.size());
+  auto JITRIPEntriesBegin = GetCursorAddress<uint8_t*>();
 
   // Put the block's RIP entry in the tail.
   // This will be used for RIP reconstruction in the future.
@@ -866,26 +880,33 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   JITBlockTail->SingleInst = SingleInst;
   JITBlockTail->SpinLockFutex = 0;
 
+  auto JITRIPEntriesLocation = JITRIPEntriesBegin;
+
   {
     // Store the RIP entries.
     JITBlockTail->NumberOfRIPEntries = DebugData->GuestOpcodes.size();
-    JITBlockTail->OffsetToRIPEntries = JITRIPEntriesLocation - JITBlockTailLocation;
+    JITBlockTail->OffsetToRIPEntries = JITRIPEntriesBegin - JITBlockTailLocation;
     uintptr_t CurrentRIPOffset = 0;
     uint64_t CurrentPCOffset = 0;
+
     for (size_t i = 0; i < DebugData->GuestOpcodes.size(); i++) {
       const auto& GuestOpcode = DebugData->GuestOpcodes[i];
-      auto& RIPEntry = JITRIPEntries[i];
-      [[maybe_unused]] uint64_t HostPCOffset = GuestOpcode.HostEntryOffset - CurrentPCOffset;
-      [[maybe_unused]] int64_t GuestRIPOffset = GuestOpcode.GuestEntryOffset - CurrentRIPOffset;
-      LOGMAN_THROW_A_FMT(HostPCOffset <= std::numeric_limits<uint16_t>::max(), "PC offset too large");
-      LOGMAN_THROW_A_FMT(GuestRIPOffset >= std::numeric_limits<int16_t>::min(), "RIP offset too small");
-      LOGMAN_THROW_A_FMT(GuestRIPOffset <= std::numeric_limits<int16_t>::max(), "RIP offset too large");
-      RIPEntry.HostPCOffset = GuestOpcode.HostEntryOffset - CurrentPCOffset;
-      RIPEntry.GuestRIPOffset = GuestOpcode.GuestEntryOffset - CurrentRIPOffset;
+      int64_t HostPCOffset = GuestOpcode.HostEntryOffset - CurrentPCOffset;
+      int64_t GuestRIPOffset = GuestOpcode.GuestEntryOffset - CurrentRIPOffset;
+
+      size_t Size = FEXCore::Utils::vl64::Encode(JITRIPEntriesLocation, HostPCOffset);
+      JITRIPEntriesLocation += Size;
+
+      Size = FEXCore::Utils::vl64::Encode(JITRIPEntriesLocation, GuestRIPOffset);
+      JITRIPEntriesLocation += Size;
+
       CurrentPCOffset = GuestOpcode.HostEntryOffset;
       CurrentRIPOffset = GuestOpcode.GuestEntryOffset;
     }
   }
+
+  CursorIncrement(JITRIPEntriesLocation - JITRIPEntriesBegin);
+  Align();
 
   CodeHeader->OffsetToBlockTail = JITBlockTailLocation - CodeData.BlockBegin;
 

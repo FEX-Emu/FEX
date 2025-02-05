@@ -28,6 +28,7 @@ $end_info$
 #include "Utils/Allocator.h"
 #include "Utils/Allocator/HostAllocator.h"
 #include "Utils/SpinWaitLock.h"
+#include "Utils/variable_length_integer.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
@@ -144,24 +145,27 @@ uint64_t ContextImpl::RestoreRIPFromHostPC(FEXCore::Core::InternalThreadState* T
   auto [InlineHeader, InlineTail] = GetFrameBlockInfo(Thread->CurrentFrame);
 
   if (InlineHeader) {
-    auto RIPEntries = reinterpret_cast<const CPU::CPUBackend::JITRIPReconstructEntries*>(
-      Frame->State.InlineJITBlockHeader + InlineHeader->OffsetToBlockTail + InlineTail->OffsetToRIPEntries);
-
     // Check if the host PC is currently within a code block.
     // If it is then RIP can be reconstructed from the beginning of the code block.
     // This is currently as close as FEX can get RIP reconstructions.
     if (HostPC >= reinterpret_cast<uint64_t>(BlockBegin) && HostPC < reinterpret_cast<uint64_t>(BlockBegin + InlineTail->Size)) {
+
+      auto RIPEntry =
+        reinterpret_cast<const uint8_t*>(Frame->State.InlineJITBlockHeader + InlineHeader->OffsetToBlockTail + InlineTail->OffsetToRIPEntries);
 
       // Reconstruct RIP from JIT entries for this block.
       uint64_t StartingHostPC = BlockBegin;
       uint64_t StartingGuestRIP = InlineTail->RIP;
 
       for (uint32_t i = 0; i < InlineTail->NumberOfRIPEntries; ++i) {
-        const auto& RIPEntry = RIPEntries[i];
-        if (HostPC >= (StartingHostPC + RIPEntry.HostPCOffset)) {
+        auto HostPCOffset = FEXCore::Utils::vl64::Decode(RIPEntry);
+        RIPEntry += HostPCOffset.Size;
+        auto GuestRIPOffset = FEXCore::Utils::vl64::Decode(RIPEntry);
+        RIPEntry += GuestRIPOffset.Size;
+        if (HostPC >= (StartingHostPC + HostPCOffset.Integer)) {
           // We are beyond this entry, keep going forward.
-          StartingHostPC += RIPEntry.HostPCOffset;
-          StartingGuestRIP += RIPEntry.GuestRIPOffset;
+          StartingHostPC += HostPCOffset.Integer;
+          StartingGuestRIP += GuestRIPOffset.Integer;
         } else {
           // Passed where the Host PC is at. Break now.
           break;
