@@ -56,7 +56,7 @@ struct tcp_socket {
       return post_callback::drop;
     };
 
-    [[maybe_unused]] auto Previous = std::exchange(Reactor.read_callbacks[FD], std::move(Callback));
+    [[maybe_unused]] auto Previous = std::exchange(Reactor.callbacks[FD], std::move(Callback));
     assert(!Previous && "May not queue multiple async operations");
   }
 
@@ -249,7 +249,7 @@ struct tcp_acceptor {
   }
 
   void async_accept(fextl::move_only_function<post_callback(error, std::optional<tcp_socket>)> OnAccept) {
-    Reactor.read_callbacks[FD] = [ServerFD = FD, &Reactor = Reactor, OnAccept = std::move(OnAccept)](error ec) mutable {
+    Reactor.callbacks[FD] = [ServerFD = FD, &Reactor = Reactor, OnAccept = std::move(OnAccept)](error ec) mutable {
       if (ec != error::success) {
         return post_callback::drop;
       }

@@ -64,7 +64,7 @@ public:
   }
 
   // Maps FD to callback
-  fextl::map<int, fextl::move_only_function<post_callback(error)>> read_callbacks;
+  fextl::map<int, fextl::move_only_function<post_callback(error)>> callbacks;
 
   struct Event {
     pollfd FD;
@@ -78,7 +78,7 @@ public:
   void enable_async_stop() {
     ::pipe(AsyncStopRequest);
     PollFDs.push_back(pollfd {.fd = AsyncStopRequest[0], .events = POLLHUP, .revents = 0});
-    read_callbacks[AsyncStopRequest[0]] = [](error) {
+    callbacks[AsyncStopRequest[0]] = [](error) {
       return post_callback::stop_reactor;
     };
   }
@@ -114,19 +114,19 @@ public:
           }
           if (ActiveFD.revents & POLLIN) {
             // NOTE: For sockets, this is triggered on close, too. Pipes only report POLLHUP, however.
-            auto Callback = std::move(read_callbacks[ActiveFD.fd]);
+            auto Callback = std::move(callbacks[ActiveFD.fd]);
             if (!Callback) {
               ERROR_AND_DIE_FMT("Data available for reading on FD {} but no read callback registered", ActiveFD.fd);
             }
             auto Ret = Callback(error::success);
             if (Ret == post_callback::repeat) {
-              read_callbacks[ActiveFD.fd] = std::move(Callback);
+              callbacks[ActiveFD.fd] = std::move(Callback);
             } else if (Ret == post_callback::stop_reactor) {
               exit_requested = true;
             }
           }
           if (ActiveFD.revents & (POLLHUP | POLLERR | POLLNVAL | POLLRDHUP)) {
-            auto Callback = std::move(read_callbacks[ActiveFD.fd]);
+            auto Callback = std::move(callbacks[ActiveFD.fd]);
             if (Callback) {
               exit_requested |= (Callback(error::eof) == post_callback::stop_reactor);
             }
@@ -167,7 +167,7 @@ private:
         }
         close(Event.FD.fd);
         PollFDs.erase(PollFDs.begin() + Index);
-        read_callbacks.erase(Event.FD.fd);
+        callbacks.erase(Event.FD.fd);
       }
 
       if (Event.Insert) {
@@ -366,7 +366,7 @@ struct posix_descriptor {
   template<typename Fn>
   requires std::is_invocable_r_v<post_callback, Fn, error>
   void async_wait(Fn Callback) {
-    [[maybe_unused]] auto Previous = std::exchange(Reactor->read_callbacks[FD], std::move(Callback));
+    [[maybe_unused]] auto Previous = std::exchange(Reactor->callbacks[FD], std::move(Callback));
     assert(!Previous && "May not queue multiple async operations");
   }
 };

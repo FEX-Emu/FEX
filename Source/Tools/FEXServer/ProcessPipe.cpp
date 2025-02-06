@@ -196,7 +196,7 @@ bool InitializeServerSocket(bool abstract) {
   }
   auto Acceptor = fasio::tcp_acceptor::create(Reactor, abstract, ServerSocketName);
   if (!Acceptor) {
-    LogMan::Msg::EFmt("Failed to create FEXServer socket: error {} (){})", errno, strerror(errno));
+    LogMan::Msg::EFmt("Failed to create FEXServer socket: error {} ({})", errno, strerror(errno));
     return false;
   }
 
@@ -210,7 +210,7 @@ bool InitializeServerSocket(bool abstract) {
     }
 
     int FD = Socket->FD;
-    Reactor.read_callbacks[FD] = [Socket = std::move(Socket).value()](fasio::error ec) mutable {
+    Reactor.callbacks[FD] = [Socket = std::move(Socket).value()](fasio::error ec) mutable {
       if (ec != fasio::error::success) {
         return fasio::post_callback::drop;
       }
