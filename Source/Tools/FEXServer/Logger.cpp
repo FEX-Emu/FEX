@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
-#include "Common/FEXServerClient.h"
+#include <Common/Async.h>
+#include <Common/FEXServerClient.h>
 
-#include <atomic>
-#include <mutex>
-#include <poll.h>
 #include <thread>
 #include <vector>
 
@@ -28,6 +26,9 @@ void HandleLogData(int Socket) {
         // No more to read
         break;
       }
+    } else if (Read == 0) {
+      // Socket closed
+      return;
     } else {
       if (errno == EWOULDBLOCK) {
         // no error
@@ -54,65 +55,36 @@ void HandleLogData(int Socket) {
 }
 
 void LogThreadFunc() {
-  std::vector<pollfd> PollFDs;
-  PollFDs.push_back(pollfd {.fd = LogClientQueuePipe[0], .events = POLLIN | POLLHUP, .revents = 0});
+  fasio::poll_reactor Reactor;
 
-  while (true) {
-    int Result = ppoll(PollFDs.data(), PollFDs.size(), nullptr, nullptr);
-    if (Result <= 0) {
-      continue;
+  auto Pipe = fasio::posix_descriptor {Reactor, LogClientQueuePipe[0]};
+
+  // Wait for AppendLogFD to send file descriptors over LogClientQueuePipe.
+  // When data becomes ready, we read the FD and register it to the reactor.
+  Pipe.async_wait([&](fasio::error ec) {
+    if (ec != fasio::error::success) {
+      return fasio::post_callback::stop_reactor;
     }
 
-    // Process events for client pipe
-    if (PollFDs[0].revents) {
-      --Result;
+    int ReceivedFD;
+    read(Pipe.FD, &ReceivedFD, sizeof(ReceivedFD));
 
-      auto [PipeFD, _, revents] = PollFDs[0];
-      PollFDs[0].revents = 0;
-
-      if (revents & POLLIN) {
-        int ReceivedFD;
-        read(PipeFD, &ReceivedFD, sizeof(ReceivedFD));
-        PollFDs.push_back(pollfd {
-          .fd = ReceivedFD,
-          .events = POLLIN,
-          .revents = 0,
-        });
+    // Register client and set up read callback
+    fasio::posix_descriptor Client {Reactor, ReceivedFD};
+    Client.async_wait([ReceivedFD](fasio::error ec) {
+      if (ec != fasio::error::success) {
+        close(ReceivedFD);
+        return fasio::post_callback::drop;
       }
 
-      if (revents & POLLHUP) {
-        close(PipeFD);
-        return;
-      }
-    }
+      HandleLogData(ReceivedFD);
+      return fasio::post_callback::repeat;
+    });
 
-    // Process events for log FDs
-    for (auto it = PollFDs.begin() + 1; Result && it != PollFDs.end();) {
-      if (it->revents == 0) {
-        ++it;
-        continue;
-      }
-      --Result;
+    return fasio::post_callback::repeat;
+  });
 
-      bool Erase {};
-      if (it->revents & POLLIN) {
-        // Data from the socket
-        HandleLogData(it->fd);
-      } else if (it->revents & (POLLHUP | POLLERR | POLLNVAL | POLLRDHUP)) {
-        // Error or hangup, close the socket and erase it from our list
-        Erase = true;
-        close(it->fd);
-      }
-
-      it->revents = 0;
-
-      if (Erase) {
-        it = PollFDs.erase(it);
-      } else {
-        ++it;
-      }
-    }
-  }
+  Reactor.run();
 }
 
 void StartLogThread() {
