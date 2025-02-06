@@ -188,12 +188,12 @@ bool InitializeServerSocket(bool abstract) {
   struct sockaddr_un addr {};
   addr.sun_family = AF_UNIX;
 
-  size_t SizeOfSocketString;
+  // NOTE: sun_path must be null-terminated.
+  //       For abstract sockets, it *starts* with \0, too.
   if (abstract) {
+    addr.sun_path[0] = 0;
     auto ServerSocketName = FEXServerClient::GetServerSocketName();
-    SizeOfSocketString = std::min(ServerSocketName.size() + 1, sizeof(addr.sun_path) - 1);
-    addr.sun_path[0] = 0; // Abstract AF_UNIX sockets start with \0
-    strncpy(addr.sun_path + 1, ServerSocketName.data(), SizeOfSocketString);
+    memcpy(addr.sun_path + 1, ServerSocketName.data(), std::min(ServerSocketName.size(), sizeof(addr.sun_path) - 2));
   } else {
     auto ServerSocketPath = FEXServerClient::GetServerSocketPath();
     // Unlink the socket file if it exists
@@ -201,14 +201,11 @@ bool InitializeServerSocket(bool abstract) {
     // We don't care if this failed or not
     unlink(ServerSocketPath.c_str());
 
-    SizeOfSocketString = std::min(ServerSocketPath.size(), sizeof(addr.sun_path) - 1);
-    strncpy(addr.sun_path, ServerSocketPath.data(), SizeOfSocketString);
+    memcpy(addr.sun_path, ServerSocketPath.data(), std::min(ServerSocketPath.size(), sizeof(addr.sun_path) - 1));
   }
-  // Include final null character.
-  size_t SizeOfAddr = sizeof(addr.sun_family) + SizeOfSocketString;
 
   // Bind the socket to the path
-  int Result = bind(fd, reinterpret_cast<struct sockaddr*>(&addr), SizeOfAddr);
+  int Result = bind(fd, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr));
   if (Result == -1) {
     LogMan::Msg::EFmt("Couldn't bind AF_UNIX socket '{}': {} {}\n", addr.sun_path, errno, strerror(errno));
     close(fd);
