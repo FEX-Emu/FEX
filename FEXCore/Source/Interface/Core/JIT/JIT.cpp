@@ -11,6 +11,7 @@ desc: Main glue logic of the arm64 splatter backend
 $end_info$
 */
 
+#include "Common/SoftFloat.h"
 #include "FEXCore/Utils/Telemetry.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/LookupCache.h"
@@ -87,16 +88,13 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
   } else {
     auto FillF80Result = [&]() {
       if (!TMP_ABIARGS) {
-        mov(TMP1, ARMEmitter::XReg::x0);
-        mov(TMP2, ARMEmitter::XReg::x1);
+        mov(VTMP1.Q(), ARMEmitter::VReg::v0.Q());
       }
 
       FillForABICall(Info.SupportsPreserveAllABI, true);
 
       const auto Dst = GetVReg(Node);
-      eor(Dst.Q(), Dst.Q(), Dst.Q());
-      ins(ARMEmitter::SubRegSize::i64Bit, Dst, 0, TMP1);
-      ins(ARMEmitter::SubRegSize::i16Bit, Dst, 4, TMP2);
+      mov(Dst.Q(), VTMP1.Q());
     };
 
     auto FillF64Result = [&]() {
@@ -128,7 +126,7 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
       ldr(ARMEmitter::XReg::x1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
       if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-        GenerateIndirectRuntimeCall<__uint128_t, uint16_t, float>(ARMEmitter::Reg::r1);
+        GenerateIndirectRuntimeCall<VectorRegType, uint16_t, float>(ARMEmitter::Reg::r1);
       } else {
         blr(ARMEmitter::Reg::r1);
       }
@@ -144,7 +142,7 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
       ldr(ARMEmitter::XReg::x1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
       if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-        GenerateIndirectRuntimeCall<__uint128_t, uint16_t, double>(ARMEmitter::Reg::r1);
+        GenerateIndirectRuntimeCall<VectorRegType, uint16_t, double>(ARMEmitter::Reg::r1);
       } else {
         blr(ARMEmitter::Reg::r1);
       }
@@ -165,7 +163,7 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
       ldr(ARMEmitter::XReg::x2, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
       if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-        GenerateIndirectRuntimeCall<__uint128_t, uint16_t, uint32_t>(ARMEmitter::Reg::r2);
+        GenerateIndirectRuntimeCall<VectorRegType, uint16_t, uint32_t>(ARMEmitter::Reg::r2);
       } else {
         blr(ARMEmitter::Reg::r2);
       }
@@ -179,14 +177,13 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       const auto Src1 = GetVReg(IROp->Args[0].ID());
 
       ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
-      umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r1, Src1, 0);
-      umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r2, Src1, 4);
+      mov(ARMEmitter::VReg::v0.Q(), Src1.Q());
 
-      ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
+      ldr(ARMEmitter::XReg::x1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
       if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-        GenerateIndirectRuntimeCall<float, uint16_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
+        GenerateIndirectRuntimeCall<float, uint16_t, VectorRegType>(ARMEmitter::Reg::r1);
       } else {
-        blr(ARMEmitter::Reg::r3);
+        blr(ARMEmitter::Reg::r1);
       }
 
       if (!TMP_ABIARGS) {
@@ -204,14 +201,13 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       const auto Src1 = GetVReg(IROp->Args[0].ID());
 
       ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
-      umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r1, Src1, 0);
-      umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r2, Src1, 4);
+      mov(ARMEmitter::VReg::v0.Q(), Src1.Q());
 
-      ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
+      ldr(ARMEmitter::XReg::x1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
       if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-        GenerateIndirectRuntimeCall<double, uint16_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
+        GenerateIndirectRuntimeCall<double, uint16_t, VectorRegType>(ARMEmitter::Reg::r1);
       } else {
-        blr(ARMEmitter::Reg::r3);
+        blr(ARMEmitter::Reg::r1);
       }
 
       FillF64Result();
@@ -265,14 +261,13 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       const auto Src1 = GetVReg(IROp->Args[0].ID());
 
       ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
-      umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r1, Src1, 0);
-      umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r2, Src1, 4);
+      mov(ARMEmitter::VReg::v0.Q(), Src1.Q());
 
-      ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
+      ldr(ARMEmitter::XReg::x1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
       if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-        GenerateIndirectRuntimeCall<uint32_t, uint16_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
+        GenerateIndirectRuntimeCall<uint32_t, uint16_t, VectorRegType>(ARMEmitter::Reg::r1);
       } else {
-        blr(ARMEmitter::Reg::r3);
+        blr(ARMEmitter::Reg::r1);
       }
 
       if (!TMP_ABIARGS) {
@@ -289,14 +284,13 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       const auto Src1 = GetVReg(IROp->Args[0].ID());
 
       ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
-      umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r1, Src1, 0);
-      umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r2, Src1, 4);
+      mov(ARMEmitter::VReg::v0.Q(), Src1.Q());
 
-      ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
+      ldr(ARMEmitter::XReg::x1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
       if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-        GenerateIndirectRuntimeCall<uint32_t, uint16_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
+        GenerateIndirectRuntimeCall<uint32_t, uint16_t, VectorRegType>(ARMEmitter::Reg::r1);
       } else {
-        blr(ARMEmitter::Reg::r3);
+        blr(ARMEmitter::Reg::r1);
       }
 
       FillI32Result();
@@ -307,14 +301,13 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       const auto Src1 = GetVReg(IROp->Args[0].ID());
 
       ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
-      umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r1, Src1, 0);
-      umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r2, Src1, 4);
+      mov(ARMEmitter::VReg::v0.Q(), Src1.Q());
 
-      ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
+      ldr(ARMEmitter::XReg::x1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
       if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-        GenerateIndirectRuntimeCall<uint64_t, uint16_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
+        GenerateIndirectRuntimeCall<uint64_t, uint16_t, VectorRegType>(ARMEmitter::Reg::r1);
       } else {
-        blr(ARMEmitter::Reg::r3);
+        blr(ARMEmitter::Reg::r1);
       }
 
       if (!TMP_ABIARGS) {
@@ -332,17 +325,20 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       const auto Src2 = GetVReg(IROp->Args[1].ID());
 
       ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
-      umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r1, Src1, 0);
-      umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r2, Src1, 4);
-
-      umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r3, Src2, 0);
-      umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r4, Src2, 4);
-
-      ldr(ARMEmitter::XReg::x5, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
-      if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-        GenerateIndirectRuntimeCall<uint64_t, uint16_t, uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r5);
+      if (!TMP_ABIARGS) {
+        mov(VTMP1.Q(), Src1.Q());
+        mov(ARMEmitter::VReg::v1.Q(), Src2.Q());
+        mov(ARMEmitter::VReg::v0.Q(), VTMP1.Q());
       } else {
-        blr(ARMEmitter::Reg::r5);
+        mov(ARMEmitter::VReg::v0.Q(), Src1.Q());
+        mov(ARMEmitter::VReg::v1.Q(), Src2.Q());
+      }
+
+      ldr(ARMEmitter::XReg::x1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
+      if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+        GenerateIndirectRuntimeCall<uint64_t, uint16_t, VectorRegType, VectorRegType>(ARMEmitter::Reg::r1);
+      } else {
+        blr(ARMEmitter::Reg::r1);
       }
 
       if (!TMP_ABIARGS) {
@@ -359,14 +355,13 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       const auto Src1 = GetVReg(IROp->Args[0].ID());
 
       ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
-      umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r1, Src1, 0);
-      umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r2, Src1, 4);
+      ldr(ARMEmitter::XReg::x1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
+      mov(ARMEmitter::VReg::v0.Q(), Src1.Q());
 
-      ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
       if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-        GenerateIndirectRuntimeCall<__uint128_t, uint16_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
+        GenerateIndirectRuntimeCall<VectorRegType, uint16_t, VectorRegType>(ARMEmitter::Reg::r1);
       } else {
-        blr(ARMEmitter::Reg::r3);
+        blr(ARMEmitter::Reg::r1);
       }
 
       FillF80Result();
@@ -378,17 +373,20 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       const auto Src2 = GetVReg(IROp->Args[1].ID());
 
       ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
-      umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r1, Src1, 0);
-      umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r2, Src1, 4);
-
-      umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r3, Src2, 0);
-      umov<ARMEmitter::SubRegSize::i16Bit>(ARMEmitter::Reg::r4, Src2, 4);
-
-      ldr(ARMEmitter::XReg::x5, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
-      if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-        GenerateIndirectRuntimeCall<__uint128_t, uint16_t, uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r5);
+      if (!TMP_ABIARGS) {
+        mov(VTMP1.Q(), Src1.Q());
+        mov(ARMEmitter::VReg::v1.Q(), Src2.Q());
+        mov(ARMEmitter::VReg::v0.Q(), VTMP1.Q());
       } else {
-        blr(ARMEmitter::Reg::r5);
+        mov(ARMEmitter::VReg::v0.Q(), Src1.Q());
+        mov(ARMEmitter::VReg::v1.Q(), Src2.Q());
+      }
+
+      ldr(ARMEmitter::XReg::x1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
+      if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+        GenerateIndirectRuntimeCall<VectorRegType, uint16_t, VectorRegType, VectorRegType>(ARMEmitter::Reg::r1);
+      } else {
+        blr(ARMEmitter::Reg::r1);
       }
 
       FillF80Result();
