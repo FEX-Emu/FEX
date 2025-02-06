@@ -187,13 +187,11 @@ int ConnectToServer(ConnectionOption ConnectionOption) {
   // The entirety of the name is used as a path to a socket that doesn't have any filesystem backing.
   struct sockaddr_un addr {};
   addr.sun_family = AF_UNIX;
-  size_t SizeOfSocketString = std::min(ServerSocketName.size() + 1, sizeof(addr.sun_path) - 1);
-  addr.sun_path[0] = 0; // Abstract AF_UNIX sockets start with \0
-  strncpy(addr.sun_path + 1, ServerSocketName.data(), SizeOfSocketString);
-  // Include final null character.
-  size_t SizeOfAddr = sizeof(addr.sun_family) + SizeOfSocketString;
+  addr.sun_path[0] = 0;
+  // Skip the leading 0 and leave space for the null terminator
+  memcpy(addr.sun_path + 1, ServerSocketName.data(), std::min(ServerSocketName.size(), sizeof(addr.sun_path) - 2));
 
-  if (connect(SocketFD, reinterpret_cast<struct sockaddr*>(&addr), SizeOfAddr) == -1) {
+  if (connect(SocketFD, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) == -1) {
     if (ConnectionOption == ConnectionOption::Default || errno != ECONNREFUSED) {
       LogMan::Msg::EFmt("Couldn't connect to FEXServer socket {} {}", ServerSocketName, errno);
     }
@@ -205,10 +203,9 @@ int ConnectToServer(ConnectionOption ConnectionOption) {
   // placed in a new netns as part of a sandbox.
   auto ServerSocketPath = GetServerSocketPath();
 
-  SizeOfSocketString = std::min(ServerSocketPath.size(), sizeof(addr.sun_path) - 1);
-  strncpy(addr.sun_path, ServerSocketPath.data(), SizeOfSocketString);
-  SizeOfAddr = sizeof(addr.sun_family) + SizeOfSocketString;
-  if (connect(SocketFD, reinterpret_cast<struct sockaddr*>(&addr), SizeOfAddr) == -1) {
+  memset(addr.sun_path, 0, sizeof(addr.sun_path));
+  memcpy(addr.sun_path, ServerSocketPath.data(), std::min(ServerSocketPath.size(), sizeof(addr.sun_path) - 1));
+  if (connect(SocketFD, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) == -1) {
     if (ConnectionOption == ConnectionOption::Default || (errno != ECONNREFUSED && errno != ENOENT)) {
       LogMan::Msg::EFmt("Couldn't connect to FEXServer socket {} {}", ServerSocketPath, errno);
     }
