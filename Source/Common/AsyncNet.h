@@ -11,9 +11,6 @@
 
 namespace fasio {
 
-// TODO: Move to main header?
-using read_callback = fextl::move_only_function<void(error, size_t, std::optional<int>)>;
-
 /**
  * Non-owning wrapper around a socket, which is registered to the
  * reactor on construction.
@@ -37,21 +34,23 @@ struct tcp_socket {
   }
 
   /**
-   * Queues an asynchronous operation that will run the completion token once
-   * at least one byte of data was received
+   * Queues an asynchronous operation that will run the completion callback
+   * once at least one byte of data was received
    */
-  void async_read_some(mutable_buffer Buffers, read_callback token) {
-    auto Callback = [Buffers, Socket = FD, token = std::move(token)](error ec) {
+  template<typename OnComplete>
+  requires std::is_invocable_r_v<void, OnComplete, error, size_t, std::optional<int>>
+  void async_read_some(mutable_buffer Buffers, OnComplete UserCallback) {
+    auto Callback = [Buffers, Socket = FD, UserCallback = std::move(UserCallback)](error ec) mutable {
       if (ec != error::success) {
-        token(ec, 0, std::nullopt);
+        UserCallback(ec, 0, std::nullopt);
         return post_callback::drop;
       }
 
       auto BytesRead = read_some_from_fd(Buffers, ec, Socket);
       if (ec != error::success) {
-        token(ec, BytesRead, std::nullopt);
+        UserCallback(ec, BytesRead, std::nullopt);
       } else {
-        token(ec, BytesRead, Buffers.FD ? std::optional {**Buffers.FD} : std::nullopt);
+        UserCallback(ec, BytesRead, Buffers.FD ? std::optional {**Buffers.FD} : std::nullopt);
       }
       return post_callback::drop;
     };

@@ -263,19 +263,20 @@ struct dynamic_vector_buffer {
  *
  * Corresponds to asio::async_read_until.
  */
-template<typename AsyncReadStream, typename MatchPredicate>
-void async_read_until(AsyncReadStream& Stream, dynamic_vector_buffer Buffers, MatchPredicate Predicate, auto token) {
+template<typename AsyncReadStream, typename MatchPredicate, typename OnComplete>
+requires std::is_invocable_r_v<void, OnComplete, error, size_t>
+void async_read_until(AsyncReadStream& Stream, dynamic_vector_buffer Buffers, MatchPredicate Predicate, OnComplete UserCallback) {
   struct Callback {
     size_t BeginPos;
     size_t EndPos;
     AsyncReadStream& Stream;
     dynamic_vector_buffer Buffers;
     MatchPredicate Predicate;
-    decltype(token) Token;
+    OnComplete UserCallback;
 
     void operator()(error Err, size_t BytesRead, std::optional<int> FD) {
       if (Err != error::success) {
-        Token(Err, 0);
+        UserCallback(Err, 0);
         return;
       }
 
@@ -288,7 +289,7 @@ void async_read_until(AsyncReadStream& Stream, dynamic_vector_buffer Buffers, Ma
         BeginPos = It - Buffers.Data.begin();
         if (Found) {
           Buffers.Data.resize(EndPos); // Shrink down to size of data actually received
-          Token(error::success, BeginPos);
+          UserCallback(error::success, BeginPos);
           return;
         }
       }
@@ -308,7 +309,7 @@ void async_read_until(AsyncReadStream& Stream, dynamic_vector_buffer Buffers, Ma
   };
 
   // Check existing data for a predicate match, then initiate async reading if necessary
-  Callback {0, Buffers.Data.size(), Stream, Buffers, std::move(Predicate), std::move(token)}(error::success, 0, std::nullopt);
+  Callback {0, Buffers.Data.size(), Stream, Buffers, std::move(Predicate), std::move(UserCallback)}(error::success, 0, std::nullopt);
 }
 
 using read_callback = fextl::move_only_function<void(error, size_t, std::optional<int>)>;
