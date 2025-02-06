@@ -276,8 +276,6 @@ void RootFSModel::INotifyThreadFunc(int INotifyFD) {
   });
 
   INotifyReactor.run();
-
-  close(INotifyFD);
 }
 
 // Returns true on success

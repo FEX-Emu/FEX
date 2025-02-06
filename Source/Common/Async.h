@@ -52,16 +52,9 @@ enum class post_callback {
 struct poll_reactor {
 private:
   std::vector<pollfd> PollFDs;
+  std::optional<int> CurrentFD; // FD that is currently being processed
 
   int AsyncStopRequest[2] = {-1, -1};
-
-public:
-  ~poll_reactor() {
-    if (AsyncStopRequest[0]) {
-      ::close(AsyncStopRequest[0]);
-      ::close(AsyncStopRequest[1]);
-    }
-  }
 
   // Maps FD to callback
   fextl::map<int, fextl::move_only_function<post_callback(error)>> callbacks;
@@ -71,8 +64,15 @@ public:
     bool Erase = false;
     bool Insert = false;
   };
-
   std::vector<Event> QueuedEvents;
+
+public:
+  ~poll_reactor() {
+    if (AsyncStopRequest[0]) {
+      ::close(AsyncStopRequest[0]);
+      ::close(AsyncStopRequest[1]);
+    }
+  }
 
   // Adds an internal FD to wake up and exit the reactor when stop_async() is called from any thread.
   void enable_async_stop() {
@@ -101,8 +101,10 @@ public:
       int Result = ppoll(PollFDs.data(), PollFDs.size(), Timeout ? &ts : nullptr, nullptr);
 
       if (Result < 0) {
+        callbacks.clear();
         return error::generic_errno;
       } else if (Result == 0) {
+        callbacks.clear();
         return error::timeout;
       } else {
         bool exit_requested = false;
@@ -112,8 +114,14 @@ public:
           if (ActiveFD.revents == 0) {
             continue;
           }
+          if (Result-- == 0) {
+            break;
+          }
+
           if (ActiveFD.revents & POLLIN) {
             // NOTE: For sockets, this is triggered on close, too. Pipes only report POLLHUP, however.
+            CurrentFD = ActiveFD.fd;
+
             auto Callback = std::move(callbacks[ActiveFD.fd]);
             if (!Callback) {
               ERROR_AND_DIE_FMT("Data available for reading on FD {} but no read callback registered", ActiveFD.fd);
@@ -121,31 +129,46 @@ public:
             auto Ret = Callback(error::success);
             if (Ret == post_callback::repeat) {
               callbacks[ActiveFD.fd] = std::move(Callback);
+            } else if (Ret == post_callback::drop) {
+              // If no new callback was registered, drop the FD from the list and skip any remaining events
+              if (!callbacks.contains(ActiveFD.fd)) {
+                QueuedEvents.push_back(Event {.FD = {.fd = ActiveFD.fd}, .Erase = true});
+                ActiveFD.revents = 0;
+              }
             } else if (Ret == post_callback::stop_reactor) {
               exit_requested = true;
             }
+            CurrentFD.reset();
           }
           if (ActiveFD.revents & (POLLHUP | POLLERR | POLLNVAL | POLLRDHUP)) {
             auto Callback = std::move(callbacks[ActiveFD.fd]);
             if (Callback) {
               exit_requested |= (Callback(error::eof) == post_callback::stop_reactor);
             }
-            // Error or hangup, close the socket and erase it from our list
+            // Error or hangup, erase the socket from our list
             QueuedEvents.push_back(Event {.FD = {.fd = ActiveFD.fd}, .Erase = true});
           }
 
           ActiveFD.revents = 0;
-          if (--Result == 0) {
-            break;
-          }
         }
 
         if (exit_requested) {
+          callbacks.clear();
           return error::success;
         }
 
         update_fd_list();
       }
+    }
+  }
+
+  void bind_handler(pollfd FD, fextl::move_only_function<post_callback(error)> Callback) {
+    [[maybe_unused]] auto Previous = std::exchange(callbacks[FD.fd], std::move(Callback));
+    assert(!Previous && "May not queue multiple async operations");
+
+    // Add the FD to the poll list if it's not already contained
+    if (CurrentFD != FD.fd && PollFDs.end() == std::find_if(PollFDs.begin(), PollFDs.end(), [&](auto& Prev) { return FD.fd == Prev.fd; })) {
+      QueuedEvents.push_back(Event {.FD = FD, .Insert = true});
     }
   }
 
@@ -161,12 +184,8 @@ private:
   void update_fd_list() {
     for (auto& Event : QueuedEvents) {
       if (Event.Erase) {
-        auto Index = std::find_if(PollFDs.begin(), PollFDs.end(), [&](pollfd& FD) { return FD.fd == Event.FD.fd; }) - PollFDs.begin();
-        if (Index == PollFDs.size()) {
-          ERROR_AND_DIE_FMT("bla");
-        }
-        close(Event.FD.fd);
-        PollFDs.erase(PollFDs.begin() + Index);
+        std::iter_swap(std::find_if(PollFDs.begin(), PollFDs.end(), [&](auto& FD) { return FD.fd == Event.FD.fd; }), std::prev(PollFDs.end()));
+        PollFDs.pop_back();
         callbacks.erase(Event.FD.fd);
       }
 
@@ -340,8 +359,7 @@ std::size_t write(AsyncReadStream& Stream, mutable_buffer Buffers, error& ec) {
 }
 
 /**
- * Non-owning wrapper around a file descriptor, which is registered to the
- * reactor on construction.
+ * Owning RAII wrapper around a file descriptor.
  *
  * Corresponds to asio::posix::descriptor.
  */
@@ -351,14 +369,23 @@ struct posix_descriptor {
 
   posix_descriptor(poll_reactor& Reactor, int FD)
     : Reactor(&Reactor)
-    , FD(FD) {
-    Reactor.QueuedEvents.push_back(fasio::poll_reactor::Event {.FD =
-                                                                 pollfd {
-                                                                   .fd = FD,
-                                                                   .events = POLLIN,
-                                                                   .revents = 0,
-                                                                 },
-                                                               .Insert = true});
+    , FD(FD) {}
+
+  posix_descriptor(posix_descriptor&& Other)
+    : Reactor(Other.Reactor)
+    , FD(std::exchange(Other.FD, -1)) {}
+
+  posix_descriptor& operator=(posix_descriptor&& Other) {
+    posix_descriptor::~posix_descriptor();
+    Reactor = Other.Reactor;
+    FD = std::exchange(Other.FD, -1);
+    return *this;
+  }
+
+  ~posix_descriptor() {
+    if (FD != -1) {
+      close(FD);
+    }
   }
 
   /**
@@ -367,8 +394,13 @@ struct posix_descriptor {
   template<typename Fn>
   requires std::is_invocable_r_v<post_callback, Fn, error>
   void async_wait(Fn Callback) {
-    [[maybe_unused]] auto Previous = std::exchange(Reactor->callbacks[FD], std::move(Callback));
-    assert(!Previous && "May not queue multiple async operations");
+    Reactor->bind_handler(
+      pollfd {
+        .fd = FD,
+        .events = POLLIN,
+        .revents = 0,
+      },
+      std::move(Callback));
   }
 };
 

@@ -210,14 +210,21 @@ bool InitializeServerSocket(bool abstract) {
     }
 
     int FD = Socket->FD;
-    Reactor.callbacks[FD] = [Socket = std::move(Socket).value()](fasio::error ec) mutable {
+    Reactor.bind_handler(
+      pollfd {
+        .fd = FD,
+        .events = POLLIN | POLLPRI | POLLRDHUP,
+        .revents = 0,
+      },
+      [Socket = std::move(Socket).value()](fasio::error ec) mutable {
       if (ec != fasio::error::success) {
+        close(Socket.FD);
         return fasio::post_callback::drop;
       }
       HandleSocketData(Socket);
       // Wait for next data
       return fasio::post_callback::repeat;
-    };
+      });
 
     // Wait for next connection
     return fasio::post_callback::repeat;

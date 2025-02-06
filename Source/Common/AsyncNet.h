@@ -12,8 +12,7 @@
 namespace fasio {
 
 /**
- * Non-owning wrapper around a socket, which is registered to the
- * reactor on construction.
+ * Non-owning wrapper around a socket.
  *
  * Corresponds to asio::local::stream_protocol::socket.
  */
@@ -23,15 +22,7 @@ struct tcp_socket {
 
   tcp_socket(poll_reactor& Reactor_, int FD_)
     : Reactor(Reactor_)
-    , FD(FD_) {
-    Reactor.QueuedEvents.push_back(poll_reactor::Event {.FD =
-                                                          pollfd {
-                                                            .fd = FD,
-                                                            .events = POLLIN | POLLPRI | POLLRDHUP,
-                                                            .revents = 0,
-                                                          },
-                                                        .Insert = true});
-  }
+    , FD(FD_) {}
 
   /**
    * Queues an asynchronous operation that will run the completion callback
@@ -55,8 +46,13 @@ struct tcp_socket {
       return post_callback::drop;
     };
 
-    [[maybe_unused]] auto Previous = std::exchange(Reactor.callbacks[FD], std::move(Callback));
-    assert(!Previous && "May not queue multiple async operations");
+    Reactor.bind_handler(
+      pollfd {
+        .fd = FD,
+        .events = POLLIN | POLLPRI | POLLRDHUP,
+        .revents = 0,
+      },
+      std::move(Callback));
   }
 
   /**
@@ -237,18 +233,17 @@ struct tcp_acceptor {
       return {};
     }
 
-    Reactor.QueuedEvents.push_back(poll_reactor::Event {.FD =
-                                                          {
-                                                            .fd = FD,
-                                                            .events = POLLIN,
-                                                            .revents = 0,
-                                                          },
-                                                        .Insert = true});
     return tcp_acceptor(Reactor, FD);
   }
 
   void async_accept(fextl::move_only_function<post_callback(error, std::optional<tcp_socket>)> OnAccept) {
-    Reactor.callbacks[FD] = [ServerFD = FD, &Reactor = Reactor, OnAccept = std::move(OnAccept)](error ec) mutable {
+    Reactor.bind_handler(
+      {
+        .fd = FD,
+        .events = POLLIN,
+        .revents = 0,
+      },
+      [ServerFD = FD, &Reactor = Reactor, OnAccept = std::move(OnAccept)](error ec) mutable {
       if (ec != error::success) {
         return post_callback::drop;
       }
@@ -261,7 +256,7 @@ struct tcp_acceptor {
       }
 
       return OnAccept(error::success, tcp_socket {Reactor, NewFD});
-    };
+      });
   }
 
 private:

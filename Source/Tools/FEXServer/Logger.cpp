@@ -58,6 +58,7 @@ void LogThreadFunc() {
   fasio::poll_reactor Reactor;
 
   auto Pipe = fasio::posix_descriptor {Reactor, LogClientQueuePipe[0]};
+  fextl::vector<fasio::posix_descriptor> Clients;
 
   // Wait for AppendLogFD to send file descriptors over LogClientQueuePipe.
   // When data becomes ready, we read the FD and register it to the reactor.
@@ -70,10 +71,11 @@ void LogThreadFunc() {
     read(Pipe.FD, &ReceivedFD, sizeof(ReceivedFD));
 
     // Register client and set up read callback
-    fasio::posix_descriptor Client {Reactor, ReceivedFD};
-    Client.async_wait([ReceivedFD](fasio::error ec) {
+    Clients.emplace_back(Reactor, ReceivedFD);
+    Clients.back().async_wait([&Clients, ReceivedFD](fasio::error ec) {
       if (ec != fasio::error::success) {
-        close(ReceivedFD);
+        std::iter_swap(std::find_if(Clients.begin(), Clients.end(), [=](auto& desc) { return desc.FD == ReceivedFD; }), std::prev(Clients.end()));
+        Clients.pop_back();
         return fasio::post_callback::drop;
       }
 
