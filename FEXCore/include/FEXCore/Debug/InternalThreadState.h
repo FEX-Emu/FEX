@@ -36,6 +36,10 @@ class OpDispatchBuilder;
 class PassManager;
 } // namespace FEXCore::IR
 
+namespace FEXCore::Profiler {
+struct ThreadStats;
+};
+
 namespace FEXCore::Core {
 
 // Special-purpose replacement for std::unique_ptr to allow InternalThreadState to be standard layout.
@@ -94,6 +98,9 @@ struct InternalThreadState : public FEXCore::Allocator::FEXAllocOperators {
   std::shared_ptr<FEXCore::CompileService> CompileService;
 
   std::shared_mutex ObjectCacheRefCounter {};
+
+  // This pointer is owned by the frontend.
+  FEXCore::Profiler::ThreadStats* ThreadStats {};
 
   ///< Data pointer for exclusive use by the frontend
   void* FrontendPtr;

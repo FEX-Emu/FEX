@@ -61,6 +61,9 @@ static void* ThreadHandler(void* Data) {
 
   Thread->ThreadInfo.PID = ::getpid();
   Thread->ThreadInfo.TID = FHU::Syscalls::gettid();
+  if (Thread->Thread->ThreadStats) {
+    Thread->Thread->ThreadStats->TID.store(Thread->ThreadInfo.TID, std::memory_order_relaxed);
+  }
 
   FEX::HLE::_SyscallHandler->RegisterTLSState(Thread);
 
@@ -558,6 +561,7 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
                               [](FEXCore::Core::CpuStateFrame* Frame, int status) -> uint64_t {
                                 // Save telemetry if we're exiting.
                                 FEX::HLE::_SyscallHandler->GetSignalDelegator()->SaveTelemetry();
+                                FEX::HLE::_SyscallHandler->TM.CleanupForExit();
 
                                 syscall(SYSCALL_DEF(exit_group), status);
                                 // This will never be reached

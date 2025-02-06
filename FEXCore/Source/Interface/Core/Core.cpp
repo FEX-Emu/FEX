@@ -773,8 +773,9 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
 }
 
 uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_t GuestRIP, uint64_t MaxInst) {
-  FEXCORE_PROFILE_SCOPED("CompileBlock");
   auto Thread = Frame->Thread;
+  FEXCORE_PROFILE_SCOPED("CompileBlock");
+  FEXCORE_PROFILE_ACCUMULATION(Thread, AccumulatedJITTime);
 
   // Invalidate might take a unique lock on this, to guarantee that during invalidation no code gets compiled
   auto lk = GuardSignalDeferringSection<std::shared_lock>(CodeInvalidationMutex, Thread);
