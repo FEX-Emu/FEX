@@ -55,8 +55,8 @@ struct vl64 final {
 
     if (vl8_type->Type == vl8_type_header) {
       return {vl8_type->Integer, sizeof(vl8_enc)};
-    } else if (vl16_type->Type == vl16_type_header) {
-      return {vl16_type->Integer, sizeof(vl16_enc)};
+    } else if (vl16_type->HighBits.Type == vl16_type_header) {
+      return {vl16_type->Integer(), sizeof(vl16_enc)};
     } else if (vl32_type->Type == vl32_type_header) {
       return {vl32_type->Integer, sizeof(vl32_enc)};
     }
@@ -77,8 +77,11 @@ struct vl64 final {
       return sizeof(vl8_enc);
     } else if (Data >= vl16_min && Data <= vl16_max) {
       *vl16_type = {
-        .Integer = static_cast<int16_t>(Data),
-        .Type = vl16_type_header,
+        .HighBits {
+          .Top = static_cast<int8_t>((Data >> 8) & 0xFF),
+          .Type = vl16_type_header,
+        },
+        .LowBits = static_cast<uint8_t>(Data & 0xFF),
       };
       return sizeof(vl16_enc);
     } else if (Data >= vl32_min && Data <= vl32_max) {
@@ -105,8 +108,18 @@ private:
   static_assert(sizeof(vl8_enc) == 1);
 
   struct vl16_enc {
-    int16_t Integer : 14;
-    uint16_t Type   : 2;
+    struct {
+      int8_t Top   : 6;
+      uint8_t Type : 2;
+    } HighBits;
+    uint8_t LowBits;
+
+    int64_t Integer() const {
+      int16_t Value {};
+      Value |= (HighBits.Top << 8);
+      Value |= LowBits;
+      return (Value << 2) >> 2;
+    }
   };
   static_assert(sizeof(vl16_enc) == 2);
 
