@@ -88,7 +88,7 @@ public:
       ERROR_AND_DIE_FMT("Tried to use stop_async without calling enable_async_stop during setup");
     }
     // Wake up run() thread by closing this pipe endpoint
-    close(AsyncStopRequest[1]);
+    ::close(AsyncStopRequest[1]);
   }
 
   error run(std::optional<std::chrono::nanoseconds> Timeout = std::nullopt) {
@@ -98,7 +98,7 @@ public:
     timespec ts = to_timespec(Timeout.value_or(std::chrono::nanoseconds {0}));
 
     while (true) {
-      int Result = ppoll(PollFDs.data(), PollFDs.size(), Timeout ? &ts : nullptr, nullptr);
+      int Result = ::ppoll(PollFDs.data(), PollFDs.size(), Timeout ? &ts : nullptr, nullptr);
 
       if (Result < 0) {
         if (errno == EINTR || errno == EAGAIN) {
@@ -387,7 +387,7 @@ struct posix_descriptor {
 
   ~posix_descriptor() {
     if (FD != -1) {
-      close(FD);
+      ::close(FD);
     }
   }
 

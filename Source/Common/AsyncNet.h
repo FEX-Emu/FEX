@@ -106,7 +106,7 @@ struct tcp_socket {
 
     ssize_t Ret;
     do {
-      Ret = sendmsg(FD, &msg, 0);
+      Ret = ::sendmsg(FD, &msg, 0);
     } while (Ret < 0 && (errno == EINTR || errno == EAGAIN));
     if (Ret < 0) {
       ec = error::generic_errno;
@@ -148,7 +148,7 @@ private:
 
     ssize_t BytesRead;
     do {
-      BytesRead = recvmsg(FD, &msg, 0);
+      BytesRead = ::recvmsg(FD, &msg, 0);
     } while (BytesRead < 0 && (errno == EINTR || errno == EAGAIN));
     if (BytesRead < 0) {
       if (errno != 0) {
@@ -192,7 +192,7 @@ struct tcp_acceptor {
 
   ~tcp_acceptor() {
     if (FD != -1) {
-      close(FD);
+      ::close(FD);
     }
   }
 
@@ -229,13 +229,13 @@ struct tcp_acceptor {
     // Bind the socket to the path
     int Result = bind(FD, reinterpret_cast<sockaddr*>(&addr), sizeof(addr.sun_family) + (NameEnd - addr.sun_path));
     if (Result == -1) {
-      close(FD);
+      ::close(FD);
       return {};
     }
 
-    Result = listen(FD, MaxPending);
+    Result = ::listen(FD, MaxPending);
     if (Result == -1) {
-      close(FD);
+      ::close(FD);
       return {};
     }
 
@@ -258,7 +258,7 @@ struct tcp_acceptor {
       socklen_t AddrSize {};
       int NewFD;
       do {
-        NewFD = accept(ServerFD, reinterpret_cast<sockaddr*>(&Addr), &AddrSize);
+        NewFD = ::accept(ServerFD, reinterpret_cast<sockaddr*>(&Addr), &AddrSize);
       } while (NewFD < 0 && (errno == EINTR || errno == EAGAIN));
       if (NewFD < 0) {
         return OnAccept(error::generic_errno, std::nullopt);
