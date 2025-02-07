@@ -337,6 +337,31 @@ void async_read_until(AsyncReadStream& Stream, dynamic_vector_buffer Buffers, Ma
 using read_callback = fextl::move_only_function<void(error, size_t, std::optional<int>)>;
 
 /**
+ * Synchronously reads fixed-length data from the given Stream.
+ *
+ * The length is inferred from the size of the output buffer(s).
+ *
+ * Corresponds to asio::read.
+ */
+template<typename AsyncReadStream>
+std::size_t read(AsyncReadStream& Stream, mutable_buffer Buffers, error& ec) {
+  size_t TotalBytesRead = 0;
+  while (Buffers.size() != 0 || Buffers.FD) {
+    auto BytesRead = Stream.read_some(Buffers, ec);
+    TotalBytesRead += BytesRead;
+    if (Buffers.FD) {
+      (void)Buffers.consume_fd();
+    }
+    Buffers += BytesRead;
+    if (ec != error::success) {
+      return TotalBytesRead;
+    }
+  }
+  ec = error::success;
+  return TotalBytesRead;
+}
+
+/**
  * Synchronously writes fixed-length data to the given Stream.
  *
  * The length is inferred from the size of the input buffer(s).

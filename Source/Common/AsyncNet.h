@@ -17,12 +17,17 @@ namespace fasio {
  * Corresponds to asio::local::stream_protocol::socket.
  */
 struct tcp_socket {
-  poll_reactor& Reactor;
+  poll_reactor* Reactor = nullptr;
   int FD;
 
+  // Constructor for synchronous and asynchronous operation
   tcp_socket(poll_reactor& Reactor_, int FD_)
-    : Reactor(Reactor_)
+    : Reactor(&Reactor_)
     , FD(FD_) {}
+
+  // Constructor for purely synchronous operation
+  tcp_socket(int FD_)
+    : FD(FD_) {}
 
   /**
    * Queues an asynchronous operation that will run the completion callback
@@ -46,7 +51,7 @@ struct tcp_socket {
       return post_callback::drop;
     };
 
-    Reactor.bind_handler(
+    Reactor->bind_handler(
       pollfd {
         .fd = FD,
         .events = POLLIN | POLLPRI | POLLRDHUP,
