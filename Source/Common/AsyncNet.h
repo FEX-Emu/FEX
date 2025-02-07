@@ -160,13 +160,15 @@ private:
       return 0;
     }
 
-    if (Buffers.FD && msg.msg_controllen != CMSG_SIZE) {
+    struct cmsghdr* cmsg = CMSG_FIRSTHDR(&msg);
+    if (Buffers.FD &&
+        (cmsg == nullptr || cmsg->cmsg_len != CMSG_LEN(sizeof(int)) || cmsg->cmsg_level != SOL_SOCKET || cmsg->cmsg_type != SCM_RIGHTS)) {
       ec = error::invalid;
       return 0;
     }
 
     if (Buffers.FD) {
-      memcpy(*Buffers.FD, AncBuf.Buffer, sizeof(FD));
+      memcpy(*Buffers.FD, CMSG_DATA(cmsg), sizeof(FD));
     }
 
     ec = error::success;
