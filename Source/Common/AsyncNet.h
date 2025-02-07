@@ -104,7 +104,10 @@ struct tcp_socket {
       memcpy(CMSG_DATA(cmsg), Buffers.FD.value(), sizeof(int));
     }
 
-    auto Ret = sendmsg(FD, &msg, 0);
+    ssize_t Ret;
+    do {
+      Ret = sendmsg(FD, &msg, 0);
+    } while (Ret < 0 && (errno == EINTR || errno == EAGAIN));
     if (Ret < 0) {
       ec = error::generic_errno;
       return 0;
@@ -143,7 +146,10 @@ private:
       msg.msg_controllen = CMSG_SIZE;
     }
 
-    ssize_t BytesRead = recvmsg(FD, &msg, 0);
+    ssize_t BytesRead;
+    do {
+      BytesRead = recvmsg(FD, &msg, 0);
+    } while (BytesRead < 0 && (errno == EINTR || errno == EAGAIN));
     if (BytesRead < 0) {
       if (errno != 0) {
         ec = error::generic_errno;
@@ -250,7 +256,10 @@ struct tcp_acceptor {
 
       sockaddr_storage Addr {};
       socklen_t AddrSize {};
-      int NewFD = accept(ServerFD, reinterpret_cast<sockaddr*>(&Addr), &AddrSize);
+      int NewFD;
+      do {
+        NewFD = accept(ServerFD, reinterpret_cast<sockaddr*>(&Addr), &AddrSize);
+      } while (NewFD < 0 && (errno == EINTR || errno == EAGAIN));
       if (NewFD < 0) {
         return OnAccept(error::generic_errno, std::nullopt);
       }

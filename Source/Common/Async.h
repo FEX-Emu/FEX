@@ -101,6 +101,9 @@ public:
       int Result = ppoll(PollFDs.data(), PollFDs.size(), Timeout ? &ts : nullptr, nullptr);
 
       if (Result < 0) {
+        if (errno == EINTR || errno == EAGAIN) {
+          continue;
+        }
         callbacks.clear();
         return error::generic_errno;
       } else if (Result == 0) {
