@@ -10,6 +10,7 @@ $end_info$
 #include "GdbServer/Info.h"
 
 #include "LinuxSyscalls/NetStream.h"
+#include "LinuxSyscalls/SignalDelegator.h"
 
 #include <cstdlib>
 #include <cstdio>
@@ -62,23 +63,17 @@ $end_info$
 namespace FEX {
 
 #ifndef _WIN32
-void GdbServer::Break(FEXCore::Core::InternalThreadState* Thread, int signal) {
+void GdbServer::Break(FEX::HLE::ThreadStateObject* ThreadObject, int signal) {
   std::lock_guard lk(sendMutex);
   if (!CommsStream.HasSocket()) {
     return;
   }
 
-  auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread);
   // Current debugging thread switches to the thread that is breaking.
   CurrentDebuggingThread = ThreadObject->ThreadInfo.TID.load();
 
   const auto str = fextl::fmt::format("T{:02x}thread:{:x};", signal, CurrentDebuggingThread);
   SendPacket(str);
-}
-
-void GdbServer::WaitForThreadWakeup() {
-  // Wait for gdbserver to tell us to wake up
-  ThreadBreakEvent.Wait();
 }
 
 GdbServer::~GdbServer() {
@@ -119,9 +114,9 @@ GdbServer::GdbServer(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* 
       ThreadObject->GdbInfo->PState = ArchHelpers::Context::GetArmPState(ucontext);
 
       // Let GDB know that we have a signal
-      this->Break(Thread, Signal);
+      this->Break(ThreadObject, Signal);
 
-      WaitForThreadWakeup();
+      this->SyscallHandler->TM.SleepThread(this->CTX, ThreadObject);
       ThreadObject->GdbInfo.reset();
 
       return true;
@@ -613,8 +608,14 @@ GdbServer::HandledPacketType GdbServer::handleProgramOffsets() {
 GdbServer::HandledPacketType GdbServer::ThreadAction(char action, uint32_t tid) {
   switch (action) {
   case 'c': {
+    {
+      std::lock_guard lk(SyscallHandler->TM.GetThreadsCreationMutex());
+      auto Threads = SyscallHandler->TM.GetThreads();
+      for (auto& Thread : *Threads) {
+        Thread->ThreadSleeping.NotifyOne();
+      }
+    }
     SyscallHandler->TM.Run();
-    ThreadBreakEvent.NotifyAll();
     SyscallHandler->TM.WaitForThreadsToRun();
     return {"", HandledPacketType::TYPE_ONLYACK};
   }
@@ -1462,6 +1463,13 @@ void GdbServer::StartThread() {
   uint64_t OldMask = FEXCore::Threads::SetSignalMask(~0ULL);
   gdbServerThread = FEXCore::Threads::Thread::Create(ThreadHandler, this);
   FEXCore::Threads::SetSignalMask(OldMask);
+}
+
+void GdbServer::OnThreadCreated(FEX::HLE::ThreadStateObject* ThreadObject) {
+  if (SyscallHandler->TM.GetThreadCount() == 1) {
+    // Sleep the first thread created. This is because FEX only supports attaching at startup currently.
+    SyscallHandler->TM.SleepThread(CTX, ThreadObject);
+  }
 }
 
 void GdbServer::OpenListenSocket() {

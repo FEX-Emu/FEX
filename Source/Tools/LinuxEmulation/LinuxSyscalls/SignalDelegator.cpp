@@ -476,7 +476,7 @@ bool SignalDelegator::HandleSignalPause(FEXCore::Core::InternalThreadState* Thre
     // We need to be a little bit careful here
     // If we were already paused (due to GDB) and we are immediately stopping (due to gdb kill)
     // Then we need to ensure we don't double decrement our idle thread counter
-    if (ThreadObject->ThreadSleeping) {
+    if (ThreadObject->ThreadSleeping.HasWaiter()) {
       // If the thread was sleeping then its idle counter was decremented
       // Reincrement it here to not break logic
       FEX::HLE::_SyscallHandler->TM.IncrementIdleRefCount();
