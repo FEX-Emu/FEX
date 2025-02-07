@@ -35,6 +35,7 @@ $end_info$
 #include "Common/Logging.h"
 #include "Common/Module.h"
 #include "Common/CRT/CRT.h"
+#include "Common/PortabilityInfo.h"
 #include "DummyHandlers.h"
 #include "BTInterface.h"
 
@@ -525,7 +526,7 @@ NTSTATUS ProcessInit() {
   InitSyscalls();
 
   FEX::Windows::InitCRTProcess();
-  FEX::Config::LoadConfig(nullptr, FEX::Windows::GetExecutableFilePath());
+  FEX::Config::LoadConfig(nullptr, FEX::Windows::GetExecutableFilePath(), nullptr, FEX::ReadPortabilityInformation());
   FEXCore::Config::ReloadMetaLayer();
   FEX::Windows::Logging::Init();
 
@@ -605,7 +606,7 @@ bool ResetToConsistentStateImpl(EXCEPTION_RECORD* Exception, CONTEXT* GuestConte
                           CPUArea.ThreadState()->CurrentFrame->State.rip, FaultAddress);
         NativeContext->Pc = CPUArea.DispatcherLoopTopEnterECFillSRA();
         NativeContext->Sp = CPUArea.EmulatorStackBase();
-        NativeContext->X10 = 1; // Set ENTRY_FILL_SRA_SINGLE_INST_REG to force a single step
+        NativeContext->X10 = 1;                                        // Set ENTRY_FILL_SRA_SINGLE_INST_REG to force a single step
         NativeContext->X17 = reinterpret_cast<uint64_t>(CPUArea.Area); // Set EC_ENTRY_CPUAREA_REG
       } else {
         LogMan::Msg::DFmt("Handled self-modifying code: pc: {:X} fault: {:X}", NativeContext->Pc, FaultAddress);

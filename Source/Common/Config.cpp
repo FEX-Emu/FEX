@@ -479,7 +479,7 @@ fextl::string GetDataDirectory(bool Global, const PortableInformation& PortableI
   const char* DataOverride = getenv("FEX_APP_DATA_LOCATION");
 
   if (PortableInfo.IsPortable && (Global || !DataOverride)) {
-    return fextl::fmt::format("{}fex-emu/", PortableInfo.InterpreterPath);
+    return fextl::fmt::format("{}/fex-emu/", PortableInfo.InterpreterPath);
   }
 
   fextl::string DataDir {};
@@ -502,7 +502,7 @@ fextl::string GetDataDirectory(bool Global, const PortableInformation& PortableI
 fextl::string GetConfigDirectory(bool Global, const PortableInformation& PortableInfo) {
   const char* ConfigOverride = getenv("FEX_APP_CONFIG_LOCATION");
   if (PortableInfo.IsPortable && (Global || !ConfigOverride)) {
-    return fextl::fmt::format("{}fex-emu/", PortableInfo.InterpreterPath);
+    return fextl::fmt::format("{}/fex-emu/", PortableInfo.InterpreterPath);
   }
 
   fextl::string ConfigDir;

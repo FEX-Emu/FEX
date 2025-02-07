@@ -220,7 +220,11 @@ def print_man_environment_tail():
     print_man_env_option(
     "FEX_PORTABLE",
     [
-    "Allows FEX to run without installation. Global locations for configuration and binfmt_misc are ignored. These files are instead read from <FEXInterpreterPath>/fex-emu/ by default.",
+    "Allows FEX to run without installation. Global locations for configuration and binfmt_misc are ignored.",
+    "For FEXInterpreter on Linux:",
+    "These files are instead read from <FEXInterpreterPath>/fex-emu/ by default.",
+    "For Arm64ec/Wow64 WINE builds:",
+    "These files are instead read from $LOCALAPPDATA/fex-emu/ by default.",
     "For further customization, see FEX_APP_CONFIG_LOCATION and FEX_APP_DATA_LOCATION."
     ],
     "''", True)

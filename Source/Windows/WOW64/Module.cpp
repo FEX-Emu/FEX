@@ -36,6 +36,7 @@ $end_info$
 #include "Common/Logging.h"
 #include "Common/Module.h"
 #include "Common/CRT/CRT.h"
+#include "Common/PortabilityInfo.h"
 #include "DummyHandlers.h"
 #include "BTInterface.h"
 
@@ -447,7 +448,7 @@ public:
 
 void BTCpuProcessInit() {
   FEX::Windows::InitCRTProcess();
-  FEX::Config::LoadConfig(nullptr, FEX::Windows::GetExecutableFilePath());
+  FEX::Config::LoadConfig(nullptr, FEX::Windows::GetExecutableFilePath(), nullptr, FEX::ReadPortabilityInformation());
   FEXCore::Config::ReloadMetaLayer();
   FEX::Windows::Logging::Init();
 
