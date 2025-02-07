@@ -5,6 +5,9 @@
 #include "Interface/Core/Interpreter/Fallbacks/FallbackOpHandler.h"
 #include "Interface/IR/IR.h"
 
+#include <FEXCore/Debug/InternalThreadState.h>
+#include <FEXCore/Utils/Profiler.h>
+
 namespace FEXCore::CPU {
 FEXCORE_PRESERVE_ALL_ATTR static softfloat_state SoftFloatStateFromFCW(uint16_t FCW, bool Force80BitPrecision = false) {
   softfloat_state State {};
@@ -35,12 +38,14 @@ FEXCORE_PRESERVE_ALL_ATTR static softfloat_state SoftFloatStateFromFCW(uint16_t 
 
 template<>
 struct OpHandlers<IR::OP_F80CVTTO> {
-  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle4(uint16_t FCW, float src) {
+  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle4(uint16_t FCW, float src, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     softfloat_state State = SoftFloatStateFromFCW(FCW);
     return X80SoftFloat(&State, src);
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle8(uint16_t FCW, double src) {
+  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle8(uint16_t FCW, double src, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     softfloat_state State = SoftFloatStateFromFCW(FCW);
     return X80SoftFloat(&State, src);
   }
@@ -48,7 +53,8 @@ struct OpHandlers<IR::OP_F80CVTTO> {
 
 template<>
 struct OpHandlers<IR::OP_F80CMP> {
-  FEXCORE_PRESERVE_ALL_ATTR static uint64_t handle(uint16_t FCW, VectorRegType Src1, VectorRegType Src2) {
+  FEXCORE_PRESERVE_ALL_ATTR static uint64_t handle(uint16_t FCW, VectorRegType Src1, VectorRegType Src2, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     softfloat_state State = SoftFloatStateFromFCW(FCW);
 
     bool eq, lt, nan;
@@ -70,12 +76,14 @@ struct OpHandlers<IR::OP_F80CMP> {
 
 template<>
 struct OpHandlers<IR::OP_F80CVT> {
-  FEXCORE_PRESERVE_ALL_ATTR static float handle4(uint16_t FCW, VectorRegType src) {
+  FEXCORE_PRESERVE_ALL_ATTR static float handle4(uint16_t FCW, VectorRegType src, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     softfloat_state State = SoftFloatStateFromFCW(FCW);
     return X80SoftFloat(src).ToF32(&State);
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR static double handle8(uint16_t FCW, VectorRegType src) {
+  FEXCORE_PRESERVE_ALL_ATTR static double handle8(uint16_t FCW, VectorRegType src, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     softfloat_state State = SoftFloatStateFromFCW(FCW);
     return X80SoftFloat(src).ToF64(&State);
   }
@@ -83,22 +91,26 @@ struct OpHandlers<IR::OP_F80CVT> {
 
 template<>
 struct OpHandlers<IR::OP_F80CVTINT> {
-  FEXCORE_PRESERVE_ALL_ATTR static int16_t handle2(uint16_t FCW, VectorRegType src) {
+  FEXCORE_PRESERVE_ALL_ATTR static int16_t handle2(uint16_t FCW, VectorRegType src, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     softfloat_state State = SoftFloatStateFromFCW(FCW);
     return X80SoftFloat(src).ToI16(&State);
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR static int32_t handle4(uint16_t FCW, VectorRegType src) {
+  FEXCORE_PRESERVE_ALL_ATTR static int32_t handle4(uint16_t FCW, VectorRegType src, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     softfloat_state State = SoftFloatStateFromFCW(FCW);
     return X80SoftFloat(src).ToI32(&State);
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR static int64_t handle8(uint16_t FCW, VectorRegType src) {
+  FEXCORE_PRESERVE_ALL_ATTR static int64_t handle8(uint16_t FCW, VectorRegType src, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     softfloat_state State = SoftFloatStateFromFCW(FCW);
     return X80SoftFloat(src).ToI64(&State);
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR static int16_t handle2t(uint16_t FCW, VectorRegType src) {
+  FEXCORE_PRESERVE_ALL_ATTR static int16_t handle2t(uint16_t FCW, VectorRegType src, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     softfloat_state State = SoftFloatStateFromFCW(FCW);
     auto rv = extF80_to_i32(&State, X80SoftFloat(src), softfloat_round_minMag, false);
 
@@ -110,12 +122,14 @@ struct OpHandlers<IR::OP_F80CVTINT> {
     }
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR static int32_t handle4t(uint16_t FCW, VectorRegType src) {
+  FEXCORE_PRESERVE_ALL_ATTR static int32_t handle4t(uint16_t FCW, VectorRegType src, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     softfloat_state State = SoftFloatStateFromFCW(FCW);
     return extF80_to_i32(&State, X80SoftFloat(src), softfloat_round_minMag, false);
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR static int64_t handle8t(uint16_t FCW, VectorRegType src) {
+  FEXCORE_PRESERVE_ALL_ATTR static int64_t handle8t(uint16_t FCW, VectorRegType src, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     softfloat_state State = SoftFloatStateFromFCW(FCW);
     return extF80_to_i64(&State, X80SoftFloat(src), softfloat_round_minMag, false);
   }
@@ -123,18 +137,21 @@ struct OpHandlers<IR::OP_F80CVTINT> {
 
 template<>
 struct OpHandlers<IR::OP_F80CVTTOINT> {
-  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle2(uint16_t FCW, int16_t src) {
+  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle2(uint16_t FCW, int16_t src, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     return X80SoftFloat(src);
   }
 
-  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle4(uint16_t FCW, int32_t src) {
+  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle4(uint16_t FCW, int32_t src, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     return X80SoftFloat(src);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F80ROUND> {
-  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1) {
+  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     softfloat_state State = SoftFloatStateFromFCW(FCW, true);
     return X80SoftFloat::FRNDINT(&State, Src1);
   }
@@ -142,7 +159,8 @@ struct OpHandlers<IR::OP_F80ROUND> {
 
 template<>
 struct OpHandlers<IR::OP_F80F2XM1> {
-  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1) {
+  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     softfloat_state State = SoftFloatStateFromFCW(FCW, true);
     return X80SoftFloat::F2XM1(&State, Src1);
   }
@@ -150,7 +168,8 @@ struct OpHandlers<IR::OP_F80F2XM1> {
 
 template<>
 struct OpHandlers<IR::OP_F80TAN> {
-  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1) {
+  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     softfloat_state State = SoftFloatStateFromFCW(FCW, true);
     return X80SoftFloat::FTAN(&State, Src1);
   }
@@ -158,7 +177,8 @@ struct OpHandlers<IR::OP_F80TAN> {
 
 template<>
 struct OpHandlers<IR::OP_F80SQRT> {
-  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1) {
+  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     softfloat_state State = SoftFloatStateFromFCW(FCW);
     return X80SoftFloat::FSQRT(&State, Src1);
   }
@@ -166,7 +186,8 @@ struct OpHandlers<IR::OP_F80SQRT> {
 
 template<>
 struct OpHandlers<IR::OP_F80SIN> {
-  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1) {
+  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     softfloat_state State = SoftFloatStateFromFCW(FCW, true);
     return X80SoftFloat::FSIN(&State, Src1);
   }
@@ -174,7 +195,8 @@ struct OpHandlers<IR::OP_F80SIN> {
 
 template<>
 struct OpHandlers<IR::OP_F80COS> {
-  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1) {
+  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     softfloat_state State = SoftFloatStateFromFCW(FCW, true);
     return X80SoftFloat::FCOS(&State, Src1);
   }
@@ -182,21 +204,24 @@ struct OpHandlers<IR::OP_F80COS> {
 
 template<>
 struct OpHandlers<IR::OP_F80XTRACT_EXP> {
-  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1) {
+  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     return X80SoftFloat::FXTRACT_EXP(Src1);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F80XTRACT_SIG> {
-  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1) {
+  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     return X80SoftFloat::FXTRACT_SIG(Src1);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F80ADD> {
-  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, VectorRegType Src2) {
+  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, VectorRegType Src2, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     softfloat_state State = SoftFloatStateFromFCW(FCW);
     return X80SoftFloat::FADD(&State, Src1, Src2);
   }
@@ -204,7 +229,8 @@ struct OpHandlers<IR::OP_F80ADD> {
 
 template<>
 struct OpHandlers<IR::OP_F80SUB> {
-  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, VectorRegType Src2) {
+  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, VectorRegType Src2, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     softfloat_state State = SoftFloatStateFromFCW(FCW);
     return X80SoftFloat::FSUB(&State, Src1, Src2);
   }
@@ -212,7 +238,8 @@ struct OpHandlers<IR::OP_F80SUB> {
 
 template<>
 struct OpHandlers<IR::OP_F80MUL> {
-  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, VectorRegType Src2) {
+  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, VectorRegType Src2, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     softfloat_state State = SoftFloatStateFromFCW(FCW);
     return X80SoftFloat::FMUL(&State, Src1, Src2);
   }
@@ -220,7 +247,8 @@ struct OpHandlers<IR::OP_F80MUL> {
 
 template<>
 struct OpHandlers<IR::OP_F80DIV> {
-  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, VectorRegType Src2) {
+  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, VectorRegType Src2, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     softfloat_state State = SoftFloatStateFromFCW(FCW);
     return X80SoftFloat::FDIV(&State, Src1, Src2);
   }
@@ -228,7 +256,8 @@ struct OpHandlers<IR::OP_F80DIV> {
 
 template<>
 struct OpHandlers<IR::OP_F80FYL2X> {
-  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, VectorRegType Src2) {
+  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, VectorRegType Src2, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     softfloat_state State = SoftFloatStateFromFCW(FCW, true);
     return X80SoftFloat::FYL2X(&State, Src1, Src2);
   }
@@ -236,7 +265,8 @@ struct OpHandlers<IR::OP_F80FYL2X> {
 
 template<>
 struct OpHandlers<IR::OP_F80ATAN> {
-  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, VectorRegType Src2) {
+  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, VectorRegType Src2, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     softfloat_state State = SoftFloatStateFromFCW(FCW, true);
     return X80SoftFloat::FATAN(&State, Src1, Src2);
   }
@@ -244,7 +274,8 @@ struct OpHandlers<IR::OP_F80ATAN> {
 
 template<>
 struct OpHandlers<IR::OP_F80FPREM1> {
-  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, VectorRegType Src2) {
+  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, VectorRegType Src2, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     softfloat_state State = SoftFloatStateFromFCW(FCW, true);
     return X80SoftFloat::FREM1(&State, Src1, Src2);
   }
@@ -252,7 +283,8 @@ struct OpHandlers<IR::OP_F80FPREM1> {
 
 template<>
 struct OpHandlers<IR::OP_F80FPREM> {
-  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, VectorRegType Src2) {
+  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, VectorRegType Src2, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     softfloat_state State = SoftFloatStateFromFCW(FCW, true);
     return X80SoftFloat::FREM(&State, Src1, Src2);
   }
@@ -260,7 +292,8 @@ struct OpHandlers<IR::OP_F80FPREM> {
 
 template<>
 struct OpHandlers<IR::OP_F80SCALE> {
-  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, VectorRegType Src2) {
+  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, VectorRegType Src2, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     softfloat_state State = SoftFloatStateFromFCW(FCW, true);
     return X80SoftFloat::FSCALE(&State, Src1, Src2);
   }
@@ -268,63 +301,72 @@ struct OpHandlers<IR::OP_F80SCALE> {
 
 template<>
 struct OpHandlers<IR::OP_F64SIN> {
-  static double handle(uint16_t FCW, double src) {
+  static double handle(uint16_t FCW, double src, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     return sin(src);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F64COS> {
-  static double handle(uint16_t FCW, double src) {
+  static double handle(uint16_t FCW, double src, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     return cos(src);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F64TAN> {
-  static double handle(uint16_t FCW, double src) {
+  static double handle(uint16_t FCW, double src, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     return tan(src);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F64F2XM1> {
-  static double handle(uint16_t FCW, double src) {
+  static double handle(uint16_t FCW, double src, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     return exp2(src) - 1.0;
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F64ATAN> {
-  static double handle(uint16_t FCW, double src1, double src2) {
+  static double handle(uint16_t FCW, double src1, double src2, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     return atan2(src1, src2);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F64FPREM> {
-  static double handle(uint16_t FCW, double src1, double src2) {
+  static double handle(uint16_t FCW, double src1, double src2, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     return fmod(src1, src2);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F64FPREM1> {
-  static double handle(uint16_t FCW, double src1, double src2) {
+  static double handle(uint16_t FCW, double src1, double src2, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     return remainder(src1, src2);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F64FYL2X> {
-  static double handle(uint16_t FCW, double src1, double src2) {
+  static double handle(uint16_t FCW, double src1, double src2, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     return src2 * log2(src1);
   }
 };
 
 template<>
 struct OpHandlers<IR::OP_F64SCALE> {
-  static double handle(uint16_t FCW, double src1, double src2) {
+  static double handle(uint16_t FCW, double src1, double src2, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     if (src1 == 0.0) { // src1 might be +/- zero
       return src1;     // this will return negative or positive zero if when appropriate
     }
@@ -335,7 +377,8 @@ struct OpHandlers<IR::OP_F64SCALE> {
 
 template<>
 struct OpHandlers<IR::OP_F80BCDSTORE> {
-  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1q) {
+  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1q, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     X80SoftFloat Src1 = Src1q;
     softfloat_state State = SoftFloatStateFromFCW(FCW);
     bool Negative = Src1.Sign;
@@ -377,7 +420,8 @@ struct OpHandlers<IR::OP_F80BCDSTORE> {
 
 template<>
 struct OpHandlers<IR::OP_F80BCDLOAD> {
-  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src) {
+  FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     uint8_t* Src1 = reinterpret_cast<uint8_t*>(&Src);
     uint64_t BCD {};
     // We walk through each uint8_t and pull out the BCD encoding
