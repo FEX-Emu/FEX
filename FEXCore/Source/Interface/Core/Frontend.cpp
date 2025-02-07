@@ -977,14 +977,10 @@ void Decoder::BranchTargetInMultiblockRange() {
       MaxCondBranchBackwards = std::min(MaxCondBranchBackwards, TargetRIP);
 
       // If we are conditional then a target can be the instruction past the conditional instruction
-      if (!HasBlocks.contains(InstEnd)) {
-        CurrentBlockTargets.insert(InstEnd);
-      }
+      AddBranchTarget(InstEnd);
     }
 
-    if (!HasBlocks.contains(TargetRIP)) {
-      CurrentBlockTargets.insert(TargetRIP);
-    }
+    AddBranchTarget(TargetRIP);
   } else {
     if (ExternalBranches) {
       ExternalBranches->insert(TargetRIP);
@@ -992,9 +988,13 @@ void Decoder::BranchTargetInMultiblockRange() {
   }
 }
 
-bool Decoder::BranchTargetCanContinue(bool FinalInstruction) const {
-  if (FinalInstruction) {
+bool Decoder::InstCanContinue() const {
+  if (DecodeInst->PC + DecodeInst->InstSize == NextBlockStartAddress) {
     return false;
+  }
+
+  if (!(DecodeInst->TableInfo->Flags & (FEXCore::X86Tables::InstFlags::FLAGS_BLOCK_END | FEXCore::X86Tables::InstFlags::FLAGS_SETS_RIP))) {
+    return true;
   }
 
   uint64_t TargetRIP = 0;
@@ -1020,6 +1020,59 @@ bool Decoder::BranchTargetCanContinue(bool FinalInstruction) const {
   return false;
 }
 
+void Decoder::AddBranchTarget(uint64_t Target) {
+  if (VisitedBlocks.contains(Target)) {
+    return;
+  }
+
+  auto BlockSuccIt = std::lower_bound(BlockInfo.Blocks.begin(), BlockInfo.Blocks.end(), Target,
+                                      [](const auto& a, uint64_t Address) { return a.Entry < Address; });
+
+  LOGMAN_THROW_A_FMT(BlockSuccIt == BlockInfo.Blocks.end() || BlockSuccIt->Entry != Target, "unexpected");
+
+  if (BlockSuccIt != BlockInfo.Blocks.begin()) {
+    auto BlockIt = std::prev(BlockSuccIt);
+    if (BlockIt->Entry + BlockIt->Size > Target) {
+      uint64_t SplitIdx = 0;
+      uint64_t SplitAddr = BlockIt->Entry;
+      // Find the instruction boundary of the split
+      for (; SplitIdx < BlockIt->NumInstructions && SplitAddr < Target; SplitIdx++) {
+        SplitAddr += BlockIt->DecodedInstructions[SplitIdx].InstSize;
+      }
+      uint64_t SplitOffset = SplitAddr - BlockIt->Entry;
+
+      LOGMAN_THROW_A_FMT(SplitIdx != 0, "unexpected");
+
+      if (SplitAddr == Target) {
+        // Split at the boundary
+        DecodedBlocks SplitBlock {
+          .Entry = SplitAddr,
+          .Size = BlockIt->Size - SplitOffset,
+          .NumInstructions = BlockIt->NumInstructions - SplitIdx,
+          .DecodedInstructions = BlockIt->DecodedInstructions + SplitIdx,
+          .HasInvalidInstruction = BlockIt->HasInvalidInstruction,
+        };
+
+        BlockIt->Size = SplitOffset;
+        BlockIt->NumInstructions = SplitIdx;
+
+        BlockInfo.Blocks.insert(BlockSuccIt, SplitBlock);
+      } // else misaligned, leave as a branch out of the block
+
+      // If we split a block then the target has already been visited as part of that, if it was
+      // misaligned the jump will just leave the multiblock, mark it as visited to avoid running
+      // this code path again and just bail out early.
+      VisitedBlocks.insert(Target);
+      return;
+    }
+  }
+
+  CurrentBlockTargets.insert(Target);
+  if (Target >= DecodeInst->PC + DecodeInst->InstSize && Target < NextBlockStartAddress) {
+    NextBlockStartAddress = Target;
+  }
+}
+
 const uint8_t* Decoder::AdjustAddrForSpecialRegion(const uint8_t* _InstStream, uint64_t EntryPoint, uint64_t RIP) {
   constexpr uint64_t VSyscall_Base = 0xFFFF'FFFF'FF60'0000ULL;
   constexpr uint64_t VSyscall_End = VSyscall_Base + 0x1000;
@@ -1043,7 +1096,7 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
   BlockInfo.TotalInstructionCount = 0;
   BlockInfo.Blocks.clear();
   BlocksToDecode.clear();
-  HasBlocks.clear();
+  VisitedBlocks.clear();
   // Reset internal state management
   DecodedSize = 0;
   MaxCondBranchForward = 0;
@@ -1086,24 +1139,48 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
   while (!FinalInstruction && !BlocksToDecode.empty()) {
     auto BlockDecodeIt = BlocksToDecode.begin();
     uint64_t RIPToDecode = *BlockDecodeIt;
-    BlockInfo.Blocks.emplace_back();
-    DecodedBlocks& CurrentBlockDecoding = BlockInfo.Blocks.back();
+    BlocksToDecode.erase(BlockDecodeIt);
+    VisitedBlocks.emplace(RIPToDecode);
 
-    CurrentBlockDecoding.Entry = RIPToDecode;
+    auto BlockSuccIt = std::lower_bound(BlockInfo.Blocks.begin(), BlockInfo.Blocks.end(), RIPToDecode,
+                                        [](const auto& a, uint64_t Address) { return a.Entry < Address; });
+
+    LOGMAN_THROW_A_FMT(BlockSuccIt == BlockInfo.Blocks.end() || BlockSuccIt->Entry != RIPToDecode, "unexpected");
+
+    NextBlockStartAddress = ~0ULL;
+    if (!BlocksToDecode.empty()) {
+      // We just erased the lowest, the front is then the second lowest
+      NextBlockStartAddress = *BlocksToDecode.begin();
+    }
+    if (BlockSuccIt != BlockInfo.Blocks.end() && BlockSuccIt->Entry < NextBlockStartAddress) {
+      NextBlockStartAddress = BlockSuccIt->Entry;
+    }
+    LOGMAN_THROW_A_FMT(NextBlockStartAddress > RIPToDecode, "unexpected");
+
+    // Insert the block now so it can be looked up and split if necessary on a backward edge
+    auto BlockIt = BlockInfo.Blocks.emplace(BlockSuccIt);
+
+    BlockIt->Entry = RIPToDecode;
+    BlockIt->Size = 0;
 
     uint64_t PCOffset = 0;
-    uint64_t BlockNumberOfInstructions {};
     uint64_t BlockStartOffset = DecodedSize;
+    bool EraseBlock = true; // Unset once the block contains an instruction
+
+    BlockIt->DecodedInstructions = &DecodedBuffer[BlockStartOffset];
+    BlockIt->NumInstructions = 0;
 
     // Do a bit of pointer math to figure out where we are in code
     InstStream = AdjustAddrForSpecialRegion(_InstStream, EntryPoint, RIPToDecode);
 
     while (1) {
-      // MAX_INST_SIZE assumes worst case
-      auto OpMinAddress = RIPToDecode + PCOffset;
-      auto OpMaxAddress = OpMinAddress + MAX_INST_SIZE;
+      InstructionSize = 0;
 
-      auto OpMinPage = OpMinAddress & FEXCore::Utils::FEX_PAGE_MASK;
+      // MAX_INST_SIZE assumes worst case
+      auto OpAddress = RIPToDecode + PCOffset;
+      auto OpMaxAddress = OpAddress + MAX_INST_SIZE;
+
+      auto OpMinPage = OpAddress & FEXCore::Utils::FEX_PAGE_MASK;
       auto OpMaxPage = OpMaxAddress & FEXCore::Utils::FEX_PAGE_MASK;
 
       if (!EntryBlock && OpMinPage == OpMaxPage && PeekByte(0) == 0 && PeekByte(1) == 0) [[unlikely]] {
@@ -1122,64 +1199,66 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
         CodePages.insert(CurrentCodePage);
       }
 
-      bool ErrorDuringDecoding = !DecodeInstruction(RIPToDecode + PCOffset);
+      bool ErrorDuringDecoding = !DecodeInstruction(OpAddress);
+      uint64_t OpEndAddress = OpAddress + DecodeInst->InstSize;
 
       if (ErrorDuringDecoding) [[unlikely]] {
         // Put an invalid instruction in the stream so the core can raise SIGILL if hit
-        CurrentBlockDecoding.HasInvalidInstruction = true;
+        BlockIt->HasInvalidInstruction = true;
         // Error while decoding instruction. We don't know the table or instruction size
         DecodeInst->TableInfo = nullptr;
         DecodeInst->InstSize = 0;
-      }
-
-      if (!ErrorDuringDecoding) {
+      } else {
         // If there wasn't an error during decoding but we have no dispatcher for the instruction then claim invalid instruction.
-        auto TableInfo = DecodedBuffer[BlockStartOffset + BlockNumberOfInstructions].TableInfo;
+        auto TableInfo = DecodeInst->TableInfo;
         if (!TableInfo || !TableInfo->OpcodeDispatcher) {
-          CurrentBlockDecoding.HasInvalidInstruction = true;
+          BlockIt->HasInvalidInstruction = true;
         }
       }
 
-      DecodedMinAddress = std::min(DecodedMinAddress, RIPToDecode + PCOffset);
-      DecodedMaxAddress = std::max(DecodedMaxAddress, RIPToDecode + PCOffset + DecodeInst->InstSize);
+      DecodedMinAddress = std::min(DecodedMinAddress, OpAddress);
+      DecodedMaxAddress = std::max(DecodedMaxAddress, OpEndAddress);
+
+      if (OpEndAddress > NextBlockStartAddress) {
+        // This instruction would overlap with another so skip adding it to the multiblock
+        break;
+      }
+
+      EraseBlock = false; // Block contains at least one valid instruction, so unset erase
       ++TotalInstructions;
-      ++BlockNumberOfInstructions;
       ++DecodedSize;
+      ++BlockIt->NumInstructions;
+      BlockIt->Size += DecodeInst->InstSize;
 
       // Can not continue this block at all on invalid instruction
-      if (CurrentBlockDecoding.HasInvalidInstruction) [[unlikely]] {
+      if (BlockIt->HasInvalidInstruction) [[unlikely]] {
         if (!EntryBlock) {
           // In multiblock configurations, we can early terminate any non-entrypoint blocks with the expectation that this won't get hit.
           // Improves compile-times.
           // Just need to undo additions that this block decoding has caused.
-          TotalInstructions -= CurrentBlockDecoding.NumInstructions;
+          TotalInstructions -= BlockIt->NumInstructions;
           DecodedSize = BlockStartOffset;
-          BlockNumberOfInstructions = 0;
           InstStream -= PCOffset;
-          CurrentBlockTargets.clear();
+          EraseBlock = true;
         }
         break;
       }
 
-      bool CanContinue = false;
-      if (!(DecodeInst->TableInfo->Flags & (FEXCore::X86Tables::InstFlags::FLAGS_BLOCK_END | FEXCore::X86Tables::InstFlags::FLAGS_SETS_RIP))) {
-        // If this isn't a block ender then we can keep going regardless
-        CanContinue = true;
-      }
-
+      // Check if we need to end the entire multiblock
       FinalInstruction = DecodedSize >= MaxInst || DecodedSize >= DefaultDecodedBufferSize || TotalInstructions >= MaxInst;
-
-      if (DecodeInst->TableInfo->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SETS_RIP) {
-        // If we have multiblock enabled
-        // If the branch target is within our multiblock range then we can keep going on
-        // We don't want to short circuit this since we want to calculate our ranges still
-        BranchTargetInMultiblockRange();
-
-        // Bypass branches if we can continue through them in some cases.
-        CanContinue |= BranchTargetCanContinue(FinalInstruction);
+      if (FinalInstruction) {
+        break;
       }
 
-      if (FinalInstruction || !CanContinue) {
+      if (!InstCanContinue()) {
+        if (DecodeInst->TableInfo->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SETS_RIP) {
+          // If we have multiblock enabled
+          // If the branch target is within our multiblock range then we can keep going on
+          // We don't want to short circuit this since we want to calculate our ranges still
+          // NOTE: This will invalidate BlockIt, this is fine as we immediately break from the loop and EraseBlock cannot be true
+          BranchTargetInMultiblockRange();
+        }
+
         break;
       }
 
@@ -1187,29 +1266,22 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
       InstStream += DecodeInst->InstSize;
     }
 
-    BlocksToDecode.merge(CurrentBlockTargets);
+    // NOTE: BlockIt is only valid here in the EraseBlock case
+    if (EraseBlock) {
+      BlockInfo.Blocks.erase(BlockIt);
+    } else {
+      BlocksToDecode.merge(CurrentBlockTargets);
+    }
+
     CurrentBlockTargets.clear();
-
-    BlocksToDecode.erase(BlockDecodeIt);
-    HasBlocks.emplace(RIPToDecode);
-
-    // Copy over only the number of instructions we decoded
-    CurrentBlockDecoding.NumInstructions = BlockNumberOfInstructions;
-    CurrentBlockDecoding.DecodedInstructions = &DecodedBuffer[BlockStartOffset];
-    BlockInfo.TotalInstructionCount += BlockNumberOfInstructions;
-
     EntryBlock = false;
   }
+
+  BlockInfo.TotalInstructionCount = TotalInstructions;
 
   for (auto CodePage : CodePages) {
     AddContainedCodePage(PC, CodePage, FEXCore::Utils::FEX_PAGE_SIZE);
   }
-
-  // sort for better branching
-  std::sort(BlockInfo.Blocks.begin(), BlockInfo.Blocks.end(),
-            [](const FEXCore::Frontend::Decoder::DecodedBlocks& a, const FEXCore::Frontend::Decoder::DecodedBlocks& b) {
-    return a.Entry < b.Entry;
-  });
 }
 
 } // namespace FEXCore::Frontend

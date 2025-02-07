@@ -4886,12 +4886,13 @@ void OpDispatchBuilder::BreakOp(OpcodeArgs, FEXCore::IR::BreakDefinition BreakDe
   _StoreContext(GPRSize, GPRClass, GetRelocatedPC(Op, -Op->InstSize), offsetof(FEXCore::Core::CPUState, rip));
   Break(BreakDefinition);
 
-  BlockSetRIP = true;
 
   if (Multiblock) {
     auto NextBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
     SetCurrentCodeBlock(NextBlock);
     StartNewBlock();
+  } else {
+    BlockSetRIP = true;
   }
 }
 
