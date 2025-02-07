@@ -334,9 +334,14 @@ void ReloadMetaLayer() {
       FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, ExpandedString);
     } else if (!PathName->empty()) {
       // If the filesystem doesn't exist then let's see if it exists in the fex-emu folder
-      fextl::string NamedRootFS = GetDataDirectory(false) + "RootFS/" + *PathName;
-      if (FHU::Filesystem::Exists(NamedRootFS)) {
-        FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, NamedRootFS);
+      const auto PathNameCopy = *PathName;
+      for (auto Global : {true, false}) {
+        for (auto DirectoryFetchers : {GetDataDirectory, GetConfigDirectory}) {
+          fextl::string NamedRootFS = DirectoryFetchers(Global) + "RootFS/" + PathNameCopy;
+          if (FHU::Filesystem::Exists(NamedRootFS)) {
+            FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, NamedRootFS);
+          }
+        }
       }
     }
   }
@@ -356,9 +361,14 @@ void ReloadMetaLayer() {
       FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_THUNKCONFIG, ExpandedString);
     } else if (!PathName->empty()) {
       // If the filesystem doesn't exist then let's see if it exists in the fex-emu folder
-      fextl::string NamedConfig = GetDataDirectory(false) + "ThunkConfigs/" + *PathName;
-      if (FHU::Filesystem::Exists(NamedConfig)) {
-        FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_THUNKCONFIG, NamedConfig);
+      const auto PathNameCopy = *PathName;
+      for (auto Global : {true, false}) {
+        for (auto DirectoryFetchers : {GetDataDirectory, GetConfigDirectory}) {
+          fextl::string NamedConfig = DirectoryFetchers(Global) + "ThunkConfigs/" + PathNameCopy;
+          if (FHU::Filesystem::Exists(NamedConfig)) {
+            FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_THUNKCONFIG, NamedConfig);
+          }
+        }
       }
     }
   }
