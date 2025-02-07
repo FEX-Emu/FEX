@@ -13,7 +13,7 @@
   },
   "Instructions": {
     "fadd dword [rax]": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 59,
       "Comment": [
         "0xd8 !11b /0"
       ],
@@ -32,8 +32,9 @@
         "str x30, [x0], #16",
         "fmov s0, s2",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1424]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1424]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -61,8 +62,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -78,7 +80,7 @@
       ]
     },
     "fmul dword [rax]": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 59,
       "Comment": [
         "0xd8 !11b /1"
       ],
@@ -97,8 +99,9 @@
         "str x30, [x0], #16",
         "fmov s0, s2",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1424]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1424]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -126,8 +129,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -143,7 +147,7 @@
       ]
     },
     "fcom dword [rax]": {
-      "ExpectedInstructionCount": 64,
+      "ExpectedInstructionCount": 66,
       "Comment": [
         "0xd8 !11b /2"
       ],
@@ -162,8 +166,9 @@
         "str x30, [x0], #16",
         "fmov s0, s2",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1424]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1424]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -191,8 +196,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -215,7 +221,7 @@
       ]
     },
     "fcomp dword [rax]": {
-      "ExpectedInstructionCount": 72,
+      "ExpectedInstructionCount": 74,
       "Comment": [
         "0xd8 !11b /3"
       ],
@@ -234,8 +240,9 @@
         "str x30, [x0], #16",
         "fmov s0, s2",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1424]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1424]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -263,8 +270,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -295,7 +303,7 @@
       ]
     },
     "fsub dword [rax]": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 59,
       "Comment": [
         "0xd8 !11b /4"
       ],
@@ -314,8 +322,9 @@
         "str x30, [x0], #16",
         "fmov s0, s2",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1424]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1424]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -343,8 +352,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -360,7 +370,7 @@
       ]
     },
     "fsubr dword [rax]": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 59,
       "Comment": [
         "0xd8 !11b /5"
       ],
@@ -379,8 +389,9 @@
         "str x30, [x0], #16",
         "fmov s0, s2",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1424]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1424]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -408,8 +419,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -425,7 +437,7 @@
       ]
     },
     "fdiv dword [rax]": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 59,
       "Comment": [
         "0xd8 !11b /6"
       ],
@@ -444,8 +456,9 @@
         "str x30, [x0], #16",
         "fmov s0, s2",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1424]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1424]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -473,8 +486,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -490,7 +504,7 @@
       ]
     },
     "fdivr dword [rax]": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 59,
       "Comment": [
         "0xd8 !11b /7"
       ],
@@ -509,8 +523,9 @@
         "str x30, [x0], #16",
         "fmov s0, s2",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1424]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1424]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -538,8 +553,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -555,7 +571,7 @@
       ]
     },
     "fadd st0, st0": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 34,
       "Comment": [
         "0xd8 11b 0xc0 /0"
       ],
@@ -579,8 +595,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -596,7 +613,7 @@
       ]
     },
     "fadd st0, st1": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xc1 /0"
       ],
@@ -622,8 +639,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -639,7 +657,7 @@
       ]
     },
     "fadd st0, st2": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xc2 /0"
       ],
@@ -665,8 +683,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -682,7 +701,7 @@
       ]
     },
     "fadd st0, st3": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xc3 /0"
       ],
@@ -708,8 +727,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -725,7 +745,7 @@
       ]
     },
     "fadd st0, st4": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xc4 /0"
       ],
@@ -751,8 +771,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -768,7 +789,7 @@
       ]
     },
     "fadd st0, st5": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xc5 /0"
       ],
@@ -794,8 +815,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -811,7 +833,7 @@
       ]
     },
     "fadd st0, st6": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xc6 /0"
       ],
@@ -837,8 +859,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -854,7 +877,7 @@
       ]
     },
     "fadd st0, st7": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xc7 /0"
       ],
@@ -880,8 +903,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -897,7 +921,7 @@
       ]
     },
     "fmul st0, st0": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 34,
       "Comment": [
         "0xd8 11b 0xc8 /1"
       ],
@@ -921,8 +945,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -938,7 +963,7 @@
       ]
     },
     "fmul st0, st1": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xc9 /1"
       ],
@@ -964,8 +989,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -981,7 +1007,7 @@
       ]
     },
     "fmul st0, st2": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xca /1"
       ],
@@ -1007,8 +1033,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -1024,7 +1051,7 @@
       ]
     },
     "fmul st0, st3": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xcb /1"
       ],
@@ -1050,8 +1077,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -1067,7 +1095,7 @@
       ]
     },
     "fmul st0, st4": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xcc /1"
       ],
@@ -1093,8 +1121,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -1110,7 +1139,7 @@
       ]
     },
     "fmul st0, st5": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xcd /1"
       ],
@@ -1136,8 +1165,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -1153,7 +1183,7 @@
       ]
     },
     "fmul st0, st6": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xce /1"
       ],
@@ -1179,8 +1209,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -1196,7 +1227,7 @@
       ]
     },
     "fmul st0, st7": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xcf /1"
       ],
@@ -1222,8 +1253,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -1239,7 +1271,7 @@
       ]
     },
     "fcom st0, st0": {
-      "ExpectedInstructionCount": 40,
+      "ExpectedInstructionCount": 41,
       "Comment": [
         "0xd8 11b 0xd0 /2"
       ],
@@ -1263,8 +1295,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -1287,7 +1320,7 @@
       ]
     },
     "fcom st0, st1": {
-      "ExpectedInstructionCount": 42,
+      "ExpectedInstructionCount": 43,
       "Comment": [
         "0xd8 11b 0xd1 /2"
       ],
@@ -1313,8 +1346,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -1337,7 +1371,7 @@
       ]
     },
     "fcom st0, st2": {
-      "ExpectedInstructionCount": 42,
+      "ExpectedInstructionCount": 43,
       "Comment": [
         "0xd8 11b 0xd2 /2"
       ],
@@ -1363,8 +1397,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -1387,7 +1422,7 @@
       ]
     },
     "fcom st0, st3": {
-      "ExpectedInstructionCount": 42,
+      "ExpectedInstructionCount": 43,
       "Comment": [
         "0xd8 11b 0xd3 /2"
       ],
@@ -1413,8 +1448,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -1437,7 +1473,7 @@
       ]
     },
     "fcom st0, st4": {
-      "ExpectedInstructionCount": 42,
+      "ExpectedInstructionCount": 43,
       "Comment": [
         "0xd8 11b 0xd4 /2"
       ],
@@ -1463,8 +1499,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -1487,7 +1524,7 @@
       ]
     },
     "fcom st0, st5": {
-      "ExpectedInstructionCount": 42,
+      "ExpectedInstructionCount": 43,
       "Comment": [
         "0xd8 11b 0xd5 /2"
       ],
@@ -1513,8 +1550,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -1537,7 +1575,7 @@
       ]
     },
     "fcom st0, st6": {
-      "ExpectedInstructionCount": 42,
+      "ExpectedInstructionCount": 43,
       "Comment": [
         "0xd8 11b 0xd6 /2"
       ],
@@ -1563,8 +1601,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -1587,7 +1626,7 @@
       ]
     },
     "fcom st0, st7": {
-      "ExpectedInstructionCount": 42,
+      "ExpectedInstructionCount": 43,
       "Comment": [
         "0xd8 11b 0xd7 /2"
       ],
@@ -1613,8 +1652,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -1637,7 +1677,7 @@
       ]
     },
     "fcomp st0, st0": {
-      "ExpectedInstructionCount": 48,
+      "ExpectedInstructionCount": 49,
       "Comment": [
         "0xd8 11b 0xd8 /3"
       ],
@@ -1661,8 +1701,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -1693,7 +1734,7 @@
       ]
     },
     "fcomp st0, st1": {
-      "ExpectedInstructionCount": 50,
+      "ExpectedInstructionCount": 51,
       "Comment": [
         "0xd8 11b 0xd9 /3"
       ],
@@ -1720,8 +1761,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -1751,7 +1793,7 @@
       ]
     },
     "fcomp st0, st2": {
-      "ExpectedInstructionCount": 50,
+      "ExpectedInstructionCount": 51,
       "Comment": [
         "0xd8 11b 0xda /3"
       ],
@@ -1777,8 +1819,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -1809,7 +1852,7 @@
       ]
     },
     "fcomp st0, st3": {
-      "ExpectedInstructionCount": 50,
+      "ExpectedInstructionCount": 51,
       "Comment": [
         "0xd8 11b 0xdb /3"
       ],
@@ -1835,8 +1878,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -1867,7 +1911,7 @@
       ]
     },
     "fcomp st0, st4": {
-      "ExpectedInstructionCount": 50,
+      "ExpectedInstructionCount": 51,
       "Comment": [
         "0xd8 11b 0xdc /3"
       ],
@@ -1893,8 +1937,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -1925,7 +1970,7 @@
       ]
     },
     "fcomp st0, st5": {
-      "ExpectedInstructionCount": 50,
+      "ExpectedInstructionCount": 51,
       "Comment": [
         "0xd8 11b 0xdd /3"
       ],
@@ -1951,8 +1996,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -1983,7 +2029,7 @@
       ]
     },
     "fcomp st0, st6": {
-      "ExpectedInstructionCount": 50,
+      "ExpectedInstructionCount": 51,
       "Comment": [
         "0xd8 11b 0xde /3"
       ],
@@ -2009,8 +2055,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -2041,7 +2088,7 @@
       ]
     },
     "fcomp st0, st7": {
-      "ExpectedInstructionCount": 50,
+      "ExpectedInstructionCount": 51,
       "Comment": [
         "0xd8 11b 0xdf /3"
       ],
@@ -2067,8 +2114,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -2099,7 +2147,7 @@
       ]
     },
     "fsub st0, st0": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 34,
       "Comment": [
         "0xd8 11b 0xe0 /4"
       ],
@@ -2123,8 +2171,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -2140,7 +2189,7 @@
       ]
     },
     "fsub st0, st1": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xe1 /4"
       ],
@@ -2166,8 +2215,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -2183,7 +2233,7 @@
       ]
     },
     "fsub st0, st2": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xe2 /4"
       ],
@@ -2209,8 +2259,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -2226,7 +2277,7 @@
       ]
     },
     "fsub st0, st3": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xe3 /4"
       ],
@@ -2252,8 +2303,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -2269,7 +2321,7 @@
       ]
     },
     "fsub st0, st4": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xe4 /4"
       ],
@@ -2295,8 +2347,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -2312,7 +2365,7 @@
       ]
     },
     "fsub st0, st5": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xe5 /4"
       ],
@@ -2338,8 +2391,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -2355,7 +2409,7 @@
       ]
     },
     "fsub st0, st6": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xe6 /4"
       ],
@@ -2381,8 +2435,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -2398,7 +2453,7 @@
       ]
     },
     "fsub st0, st7": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xe7 /4"
       ],
@@ -2424,8 +2479,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -2441,7 +2497,7 @@
       ]
     },
     "fsubr st0, st0": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 34,
       "Comment": [
         "0xd8 11b 0xe8 /5"
       ],
@@ -2465,8 +2521,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -2482,7 +2539,7 @@
       ]
     },
     "fsubr st0, st1": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xe9 /5"
       ],
@@ -2508,8 +2565,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -2525,7 +2583,7 @@
       ]
     },
     "fsubr st0, st2": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xea /5"
       ],
@@ -2551,8 +2609,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -2568,7 +2627,7 @@
       ]
     },
     "fsubr st0, st3": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xeb /5"
       ],
@@ -2594,8 +2653,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -2611,7 +2671,7 @@
       ]
     },
     "fsubr st0, st4": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xec /5"
       ],
@@ -2637,8 +2697,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -2654,7 +2715,7 @@
       ]
     },
     "fsubr st0, st5": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xed /5"
       ],
@@ -2680,8 +2741,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -2697,7 +2759,7 @@
       ]
     },
     "fsubr st0, st6": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xee /5"
       ],
@@ -2723,8 +2785,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -2740,7 +2803,7 @@
       ]
     },
     "fsubr st0, st7": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xef /5"
       ],
@@ -2766,8 +2829,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -2783,7 +2847,7 @@
       ]
     },
     "fdiv st0, st0": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 34,
       "Comment": [
         "0xd8 11b 0xf0 /6"
       ],
@@ -2807,8 +2871,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -2824,7 +2889,7 @@
       ]
     },
     "fdiv st0, st1": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xf1 /6"
       ],
@@ -2850,8 +2915,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -2867,7 +2933,7 @@
       ]
     },
     "fdiv st0, st2": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xf2 /6"
       ],
@@ -2893,8 +2959,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -2910,7 +2977,7 @@
       ]
     },
     "fdiv st0, st3": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xf3 /6"
       ],
@@ -2936,8 +3003,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -2953,7 +3021,7 @@
       ]
     },
     "fdiv st0, st4": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xf4 /6"
       ],
@@ -2979,8 +3047,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -2996,7 +3065,7 @@
       ]
     },
     "fdiv st0, st5": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xf5 /6"
       ],
@@ -3022,8 +3091,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -3039,7 +3109,7 @@
       ]
     },
     "fdiv st0, st6": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xf6 /6"
       ],
@@ -3065,8 +3135,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -3082,7 +3153,7 @@
       ]
     },
     "fdiv st0, st7": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xf7 /6"
       ],
@@ -3108,8 +3179,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -3125,7 +3197,7 @@
       ]
     },
     "fdivr st0, st0": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 34,
       "Comment": [
         "0xd8 11b 0xf8 /7"
       ],
@@ -3149,8 +3221,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -3166,7 +3239,7 @@
       ]
     },
     "fdivr st0, st1": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xf9 /7"
       ],
@@ -3192,8 +3265,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -3209,7 +3283,7 @@
       ]
     },
     "fdivr st0, st2": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xfa /7"
       ],
@@ -3235,8 +3309,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -3252,7 +3327,7 @@
       ]
     },
     "fdivr st0, st3": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xfb /7"
       ],
@@ -3278,8 +3353,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -3295,7 +3371,7 @@
       ]
     },
     "fdivr st0, st4": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xfc /7"
       ],
@@ -3321,8 +3397,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -3338,7 +3415,7 @@
       ]
     },
     "fdivr st0, st5": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xfd /7"
       ],
@@ -3364,8 +3441,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -3381,7 +3459,7 @@
       ]
     },
     "fdivr st0, st6": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xfe /7"
       ],
@@ -3407,8 +3485,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -3424,7 +3503,7 @@
       ]
     },
     "fdivr st0, st7": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd8 11b 0xff /7"
       ],
@@ -3450,8 +3529,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -3467,7 +3547,7 @@
       ]
     },
     "fld dword [rax]": {
-      "ExpectedInstructionCount": 37,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xd9 !11b /0"
       ],
@@ -3486,8 +3566,9 @@
         "str x30, [x0], #16",
         "fmov s0, s2",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1424]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1424]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -3512,7 +3593,7 @@
       ]
     },
     "fst dword [rax]": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xd9 !11b /2"
       ],
@@ -3533,8 +3614,9 @@
         "str x30, [x0], #16",
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
-        "ldr x1, [x28, #1440]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1440]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -3549,7 +3631,7 @@
       ]
     },
     "fstp dword [rax]": {
-      "ExpectedInstructionCount": 37,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xd9 !11b /3"
       ],
@@ -3570,8 +3652,9 @@
         "str x30, [x0], #16",
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
-        "ldr x1, [x28, #1440]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1440]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -4110,7 +4193,7 @@
       ]
     },
     "ftst": {
-      "ExpectedInstructionCount": 40,
+      "ExpectedInstructionCount": 41,
       "Comment": [
         "0xd9 11b 0xe4 /4"
       ],
@@ -4134,8 +4217,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -4322,7 +4406,7 @@
       ]
     },
     "f2xm1": {
-      "ExpectedInstructionCount": 30,
+      "ExpectedInstructionCount": 31,
       "Comment": [
         "0xd9 11b 0xf0 /6"
       ],
@@ -4342,9 +4426,10 @@
         "st1 {v4.2d, v5.2d, v6.2d, v7.2d}, [x0], #64",
         "str x30, [x0], #16",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1536]",
+        "mov x1, x28",
+        "ldr x2, [x28, #1536]",
         "mov v0.16b, v2.16b",
-        "blr x1",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -4360,7 +4445,7 @@
       ]
     },
     "fyl2x": {
-      "ExpectedInstructionCount": 38,
+      "ExpectedInstructionCount": 39,
       "Comment": [
         "0xd9 11b 0xf1 /6"
       ],
@@ -4386,8 +4471,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1640]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1640]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -4406,7 +4492,7 @@
       ]
     },
     "fptan": {
-      "ExpectedInstructionCount": 42,
+      "ExpectedInstructionCount": 43,
       "Comment": [
         "0xd9 11b 0xf2 /6"
       ],
@@ -4426,9 +4512,10 @@
         "st1 {v4.2d, v5.2d, v6.2d, v7.2d}, [x0], #64",
         "str x30, [x0], #16",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1544]",
+        "mov x1, x28",
+        "ldr x2, [x28, #1544]",
         "mov v0.16b, v2.16b",
-        "blr x1",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -4456,7 +4543,7 @@
       ]
     },
     "fpatan": {
-      "ExpectedInstructionCount": 38,
+      "ExpectedInstructionCount": 39,
       "Comment": [
         "0xd9 11b 0xf3 /6"
       ],
@@ -4482,8 +4569,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1648]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1648]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -4502,7 +4590,7 @@
       ]
     },
     "fxtract": {
-      "ExpectedInstructionCount": 79,
+      "ExpectedInstructionCount": 81,
       "Comment": [
         "0xd9 11b 0xf4 /6"
       ],
@@ -4530,9 +4618,10 @@
         "st1 {v4.2d, v5.2d, v6.2d, v7.2d}, [x0], #64",
         "str x30, [x0], #16",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1576]",
+        "mov x1, x28",
+        "ldr x2, [x28, #1576]",
         "mov v0.16b, v2.16b",
-        "blr x1",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -4555,9 +4644,10 @@
         "st1 {v4.2d, v5.2d, v6.2d, v7.2d}, [x0], #64",
         "str x30, [x0], #16",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1584]",
+        "mov x1, x28",
+        "ldr x2, [x28, #1584]",
         "mov v0.16b, v2.16b",
-        "blr x1",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -4589,7 +4679,7 @@
       ]
     },
     "fprem1": {
-      "ExpectedInstructionCount": 36,
+      "ExpectedInstructionCount": 37,
       "Comment": [
         "0xd9 11b 0xf5 /6"
       ],
@@ -4615,8 +4705,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1656]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1656]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -4657,7 +4748,7 @@
       ]
     },
     "fprem": {
-      "ExpectedInstructionCount": 36,
+      "ExpectedInstructionCount": 37,
       "Comment": [
         "0xd9 11b 0xf8 /7"
       ],
@@ -4683,8 +4774,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1664]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1664]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -4701,7 +4793,7 @@
       ]
     },
     "fyl2xp1": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 71,
       "Comment": [
         "0xd9 11b 0xf9 /7"
       ],
@@ -4724,8 +4816,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -4758,8 +4851,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1640]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1640]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -4778,7 +4872,7 @@
       ]
     },
     "fsqrt": {
-      "ExpectedInstructionCount": 30,
+      "ExpectedInstructionCount": 31,
       "Comment": [
         "0xd9 11b 0xfa /7"
       ],
@@ -4798,9 +4892,10 @@
         "st1 {v4.2d, v5.2d, v6.2d, v7.2d}, [x0], #64",
         "str x30, [x0], #16",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1552]",
+        "mov x1, x28",
+        "ldr x2, [x28, #1552]",
         "mov v0.16b, v2.16b",
-        "blr x1",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -4816,7 +4911,7 @@
       ]
     },
     "fsincos": {
-      "ExpectedInstructionCount": 66,
+      "ExpectedInstructionCount": 68,
       "Comment": [
         "0xd9 11b 0xfb /7"
       ],
@@ -4836,9 +4931,10 @@
         "st1 {v4.2d, v5.2d, v6.2d, v7.2d}, [x0], #64",
         "str x30, [x0], #16",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1560]",
+        "mov x1, x28",
+        "ldr x2, [x28, #1560]",
         "mov v0.16b, v2.16b",
-        "blr x1",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -4861,9 +4957,10 @@
         "st1 {v4.2d, v5.2d, v6.2d, v7.2d}, [x0], #64",
         "str x30, [x0], #16",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1568]",
+        "mov x1, x28",
+        "ldr x2, [x28, #1568]",
         "mov v0.16b, v2.16b",
-        "blr x1",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -4890,7 +4987,7 @@
       ]
     },
     "frndint": {
-      "ExpectedInstructionCount": 30,
+      "ExpectedInstructionCount": 31,
       "Comment": [
         "0xd9 11b 0xfc /7"
       ],
@@ -4910,9 +5007,10 @@
         "st1 {v4.2d, v5.2d, v6.2d, v7.2d}, [x0], #64",
         "str x30, [x0], #16",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1528]",
+        "mov x1, x28",
+        "ldr x2, [x28, #1528]",
         "mov v0.16b, v2.16b",
-        "blr x1",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -4928,7 +5026,7 @@
       ]
     },
     "fscale": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xd9 11b 0xfd /7"
       ],
@@ -4954,8 +5052,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1672]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1672]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -4971,7 +5070,7 @@
       ]
     },
     "fsin": {
-      "ExpectedInstructionCount": 31,
+      "ExpectedInstructionCount": 32,
       "Comment": [
         "0xd9 11b 0xfe /7"
       ],
@@ -4991,9 +5090,10 @@
         "st1 {v4.2d, v5.2d, v6.2d, v7.2d}, [x0], #64",
         "str x30, [x0], #16",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1560]",
+        "mov x1, x28",
+        "ldr x2, [x28, #1560]",
         "mov v0.16b, v2.16b",
-        "blr x1",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -5010,7 +5110,7 @@
       ]
     },
     "fcos": {
-      "ExpectedInstructionCount": 31,
+      "ExpectedInstructionCount": 32,
       "Comment": [
         "0xd9 11b 0xff /7"
       ],
@@ -5030,9 +5130,10 @@
         "st1 {v4.2d, v5.2d, v6.2d, v7.2d}, [x0], #64",
         "str x30, [x0], #16",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1568]",
+        "mov x1, x28",
+        "ldr x2, [x28, #1568]",
         "mov v0.16b, v2.16b",
-        "blr x1",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -5049,7 +5150,7 @@
       ]
     },
     "fiadd dword [rax]": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 59,
       "Comment": [
         "0xda !11b /0"
       ],
@@ -5068,8 +5169,9 @@
         "str x30, [x0], #16",
         "mov w1, w20",
         "ldrh w0, [x28, #1296]",
-        "ldr x2, [x28, #1520]",
-        "blr x2",
+        "mov x2, x28",
+        "ldr x3, [x28, #1520]",
+        "blr x3",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -5097,8 +5199,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -5114,7 +5217,7 @@
       ]
     },
     "fimul dword [rax]": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 59,
       "Comment": [
         "0xda !11b /1"
       ],
@@ -5133,8 +5236,9 @@
         "str x30, [x0], #16",
         "mov w1, w20",
         "ldrh w0, [x28, #1296]",
-        "ldr x2, [x28, #1520]",
-        "blr x2",
+        "mov x2, x28",
+        "ldr x3, [x28, #1520]",
+        "blr x3",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -5162,8 +5266,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -5179,7 +5284,7 @@
       ]
     },
     "ficom dword [rax]": {
-      "ExpectedInstructionCount": 64,
+      "ExpectedInstructionCount": 66,
       "Comment": [
         "0xda !11b /2"
       ],
@@ -5198,8 +5303,9 @@
         "str x30, [x0], #16",
         "mov w1, w20",
         "ldrh w0, [x28, #1296]",
-        "ldr x2, [x28, #1520]",
-        "blr x2",
+        "mov x2, x28",
+        "ldr x3, [x28, #1520]",
+        "blr x3",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -5227,8 +5333,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -5251,7 +5358,7 @@
       ]
     },
     "ficomp dword [rax]": {
-      "ExpectedInstructionCount": 72,
+      "ExpectedInstructionCount": 74,
       "Comment": [
         "0xda !11b /3"
       ],
@@ -5270,8 +5377,9 @@
         "str x30, [x0], #16",
         "mov w1, w20",
         "ldrh w0, [x28, #1296]",
-        "ldr x2, [x28, #1520]",
-        "blr x2",
+        "mov x2, x28",
+        "ldr x3, [x28, #1520]",
+        "blr x3",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -5299,8 +5407,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -5331,7 +5440,7 @@
       ]
     },
     "fisub dword [rax]": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 59,
       "Comment": [
         "0xda !11b /4"
       ],
@@ -5350,8 +5459,9 @@
         "str x30, [x0], #16",
         "mov w1, w20",
         "ldrh w0, [x28, #1296]",
-        "ldr x2, [x28, #1520]",
-        "blr x2",
+        "mov x2, x28",
+        "ldr x3, [x28, #1520]",
+        "blr x3",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -5379,8 +5489,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -5396,7 +5507,7 @@
       ]
     },
     "fisubr dword [rax]": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 59,
       "Comment": [
         "0xda !11b /5"
       ],
@@ -5415,8 +5526,9 @@
         "str x30, [x0], #16",
         "mov w1, w20",
         "ldrh w0, [x28, #1296]",
-        "ldr x2, [x28, #1520]",
-        "blr x2",
+        "mov x2, x28",
+        "ldr x3, [x28, #1520]",
+        "blr x3",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -5444,8 +5556,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -5461,7 +5574,7 @@
       ]
     },
     "fidiv dword [rax]": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 59,
       "Comment": [
         "0xda !11b /6"
       ],
@@ -5480,8 +5593,9 @@
         "str x30, [x0], #16",
         "mov w1, w20",
         "ldrh w0, [x28, #1296]",
-        "ldr x2, [x28, #1520]",
-        "blr x2",
+        "mov x2, x28",
+        "ldr x3, [x28, #1520]",
+        "blr x3",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -5509,8 +5623,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -5526,7 +5641,7 @@
       ]
     },
     "fidivr dword [rax]": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 59,
       "Comment": [
         "0xda !11b /7"
       ],
@@ -5545,8 +5660,9 @@
         "str x30, [x0], #16",
         "mov w1, w20",
         "ldrh w0, [x28, #1296]",
-        "ldr x2, [x28, #1520]",
-        "blr x2",
+        "mov x2, x28",
+        "ldr x3, [x28, #1520]",
+        "blr x3",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -5574,8 +5690,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -6247,7 +6364,7 @@
       ]
     },
     "fucompp": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 58,
       "Comment": [
         "0xda 11b 0xe9 /5"
       ],
@@ -6274,8 +6391,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -6354,7 +6472,7 @@
       ]
     },
     "fisttp dword [rax]": {
-      "ExpectedInstructionCount": 37,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdb !11b /1"
       ],
@@ -6375,8 +6493,9 @@
         "str x30, [x0], #16",
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
-        "ldr x1, [x28, #1488]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1488]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -6399,7 +6518,7 @@
       ]
     },
     "fist dword [rax]": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdb !11b /2"
       ],
@@ -6420,8 +6539,9 @@
         "str x30, [x0], #16",
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
-        "ldr x1, [x28, #1464]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1464]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -6436,7 +6556,7 @@
       ]
     },
     "fistp dword [rax]": {
-      "ExpectedInstructionCount": 37,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf !11b /7"
       ],
@@ -6457,8 +6577,9 @@
         "str x30, [x0], #16",
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
-        "ldr x1, [x28, #1464]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1464]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -7204,7 +7325,7 @@
       ]
     },
     "fucomi st0, st0": {
-      "ExpectedInstructionCount": 42,
+      "ExpectedInstructionCount": 43,
       "Comment": [
         "0xdb 11b 0xe8 /5"
       ],
@@ -7228,8 +7349,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -7254,7 +7376,7 @@
       ]
     },
     "fucomi st0, st1": {
-      "ExpectedInstructionCount": 44,
+      "ExpectedInstructionCount": 45,
       "Comment": [
         "0xdb 11b 0xe9 /5"
       ],
@@ -7280,8 +7402,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -7306,7 +7429,7 @@
       ]
     },
     "fucomi st0, st2": {
-      "ExpectedInstructionCount": 44,
+      "ExpectedInstructionCount": 45,
       "Comment": [
         "0xdb 11b 0xea /5"
       ],
@@ -7332,8 +7455,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -7358,7 +7482,7 @@
       ]
     },
     "fucomi st0, st3": {
-      "ExpectedInstructionCount": 44,
+      "ExpectedInstructionCount": 45,
       "Comment": [
         "0xdb 11b 0xeb /5"
       ],
@@ -7384,8 +7508,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -7410,7 +7535,7 @@
       ]
     },
     "fucomi st0, st4": {
-      "ExpectedInstructionCount": 44,
+      "ExpectedInstructionCount": 45,
       "Comment": [
         "0xdb 11b 0xec /5"
       ],
@@ -7436,8 +7561,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -7462,7 +7588,7 @@
       ]
     },
     "fucomi st0, st5": {
-      "ExpectedInstructionCount": 44,
+      "ExpectedInstructionCount": 45,
       "Comment": [
         "0xdb 11b 0xed /5"
       ],
@@ -7488,8 +7614,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -7514,7 +7641,7 @@
       ]
     },
     "fucomi st0, st6": {
-      "ExpectedInstructionCount": 44,
+      "ExpectedInstructionCount": 45,
       "Comment": [
         "0xdb 11b 0xee /5"
       ],
@@ -7540,8 +7667,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -7566,7 +7694,7 @@
       ]
     },
     "fucomi st0, st7": {
-      "ExpectedInstructionCount": 44,
+      "ExpectedInstructionCount": 45,
       "Comment": [
         "0xdb 11b 0xef /5"
       ],
@@ -7592,8 +7720,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -7618,7 +7747,7 @@
       ]
     },
     "fcomi st0, st0": {
-      "ExpectedInstructionCount": 42,
+      "ExpectedInstructionCount": 43,
       "Comment": [
         "0xdb 11b 0xf0 /6"
       ],
@@ -7642,8 +7771,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -7668,7 +7798,7 @@
       ]
     },
     "fcomi st0, st1": {
-      "ExpectedInstructionCount": 44,
+      "ExpectedInstructionCount": 45,
       "Comment": [
         "0xdb 11b 0xf1 /6"
       ],
@@ -7694,8 +7824,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -7720,7 +7851,7 @@
       ]
     },
     "fcomi st0, st2": {
-      "ExpectedInstructionCount": 44,
+      "ExpectedInstructionCount": 45,
       "Comment": [
         "0xdb 11b 0xf2 /6"
       ],
@@ -7746,8 +7877,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -7772,7 +7904,7 @@
       ]
     },
     "fcomi st0, st3": {
-      "ExpectedInstructionCount": 44,
+      "ExpectedInstructionCount": 45,
       "Comment": [
         "0xdb 11b 0xf3 /6"
       ],
@@ -7798,8 +7930,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -7824,7 +7957,7 @@
       ]
     },
     "fcomi st0, st4": {
-      "ExpectedInstructionCount": 44,
+      "ExpectedInstructionCount": 45,
       "Comment": [
         "0xdb 11b 0xf4 /6"
       ],
@@ -7850,8 +7983,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -7876,7 +8010,7 @@
       ]
     },
     "fcomi st0, st5": {
-      "ExpectedInstructionCount": 44,
+      "ExpectedInstructionCount": 45,
       "Comment": [
         "0xdb 11b 0xf5 /6"
       ],
@@ -7902,8 +8036,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -7928,7 +8063,7 @@
       ]
     },
     "fcomi st0, st6": {
-      "ExpectedInstructionCount": 44,
+      "ExpectedInstructionCount": 45,
       "Comment": [
         "0xdb 11b 0xf6 /6"
       ],
@@ -7954,8 +8089,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -7980,7 +8116,7 @@
       ]
     },
     "fcomi st0, st7": {
-      "ExpectedInstructionCount": 44,
+      "ExpectedInstructionCount": 45,
       "Comment": [
         "0xdb 11b 0xf7 /6"
       ],
@@ -8006,8 +8142,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -8032,7 +8169,7 @@
       ]
     },
     "fadd qword [rax]": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 59,
       "Comment": [
         "0xdc !11b /0"
       ],
@@ -8051,8 +8188,9 @@
         "str x30, [x0], #16",
         "mov v0.8b, v2.8b",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1432]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1432]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -8080,8 +8218,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -8097,7 +8236,7 @@
       ]
     },
     "fmul qword [rax]": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 59,
       "Comment": [
         "0xdc !11b /1"
       ],
@@ -8116,8 +8255,9 @@
         "str x30, [x0], #16",
         "mov v0.8b, v2.8b",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1432]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1432]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -8145,8 +8285,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -8162,7 +8303,7 @@
       ]
     },
     "fcom qword [rax]": {
-      "ExpectedInstructionCount": 64,
+      "ExpectedInstructionCount": 66,
       "Comment": [
         "0xdc !11b /2"
       ],
@@ -8181,8 +8322,9 @@
         "str x30, [x0], #16",
         "mov v0.8b, v2.8b",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1432]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1432]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -8210,8 +8352,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -8234,7 +8377,7 @@
       ]
     },
     "fcomp qword [rax]": {
-      "ExpectedInstructionCount": 72,
+      "ExpectedInstructionCount": 74,
       "Comment": [
         "0xdc !11b /3"
       ],
@@ -8253,8 +8396,9 @@
         "str x30, [x0], #16",
         "mov v0.8b, v2.8b",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1432]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1432]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -8282,8 +8426,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -8314,7 +8459,7 @@
       ]
     },
     "fsub qword [rax]": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 59,
       "Comment": [
         "0xdc !11b /4"
       ],
@@ -8333,8 +8478,9 @@
         "str x30, [x0], #16",
         "mov v0.8b, v2.8b",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1432]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1432]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -8362,8 +8508,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -8379,7 +8526,7 @@
       ]
     },
     "fsubr qword [rax]": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 59,
       "Comment": [
         "0xdc !11b /5"
       ],
@@ -8398,8 +8545,9 @@
         "str x30, [x0], #16",
         "mov v0.8b, v2.8b",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1432]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1432]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -8427,8 +8575,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -8444,7 +8593,7 @@
       ]
     },
     "fdiv qword [rax]": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 59,
       "Comment": [
         "0xdc !11b /6"
       ],
@@ -8463,8 +8612,9 @@
         "str x30, [x0], #16",
         "mov v0.8b, v2.8b",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1432]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1432]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -8492,8 +8642,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -8509,7 +8660,7 @@
       ]
     },
     "fdivr qword [rax]": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 59,
       "Comment": [
         "0xdc !11b /7"
       ],
@@ -8528,8 +8679,9 @@
         "str x30, [x0], #16",
         "mov v0.8b, v2.8b",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1432]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1432]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -8557,8 +8709,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -8574,7 +8727,7 @@
       ]
     },
     "db 0xdc, 0xc0": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 34,
       "Comment": [
         "fadd st0, st0",
         "Needs manual encoding since otherwise nasm will emit the 0xd8 variant.",
@@ -8600,8 +8753,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -8617,7 +8771,7 @@
       ]
     },
     "fadd st1, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xc1 /0"
       ],
@@ -8643,8 +8797,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -8660,7 +8815,7 @@
       ]
     },
     "fadd st2, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xc2 /0"
       ],
@@ -8686,8 +8841,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -8703,7 +8859,7 @@
       ]
     },
     "fadd st3, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xc3 /0"
       ],
@@ -8729,8 +8885,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -8746,7 +8903,7 @@
       ]
     },
     "fadd st4, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xc4 /0"
       ],
@@ -8772,8 +8929,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -8789,7 +8947,7 @@
       ]
     },
     "fadd st5, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xc5 /0"
       ],
@@ -8815,8 +8973,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -8832,7 +8991,7 @@
       ]
     },
     "fadd st6, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xc6 /0"
       ],
@@ -8858,8 +9017,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -8875,7 +9035,7 @@
       ]
     },
     "fadd st7, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xc7 /0"
       ],
@@ -8901,8 +9061,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -8918,7 +9079,7 @@
       ]
     },
     "db 0xdc, 0xc8": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 34,
       "Comment": [
         "fmul st0, st0",
         "Needs manual encoding since otherwise nasm will emit the 0xd8 variant.",
@@ -8944,8 +9105,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -8961,7 +9123,7 @@
       ]
     },
     "fmul st1, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xc9 /1"
       ],
@@ -8987,8 +9149,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -9004,7 +9167,7 @@
       ]
     },
     "fmul st2, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xca /1"
       ],
@@ -9030,8 +9193,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -9047,7 +9211,7 @@
       ]
     },
     "fmul st3, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xcb /1"
       ],
@@ -9073,8 +9237,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -9090,7 +9255,7 @@
       ]
     },
     "fmul st4, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xcc /1"
       ],
@@ -9116,8 +9281,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -9133,7 +9299,7 @@
       ]
     },
     "fmul st5, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xcd /1"
       ],
@@ -9159,8 +9325,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -9176,7 +9343,7 @@
       ]
     },
     "fmul st6, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xce /1"
       ],
@@ -9202,8 +9369,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -9219,7 +9387,7 @@
       ]
     },
     "fmul st7, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xcf /1"
       ],
@@ -9245,8 +9413,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -9262,7 +9431,7 @@
       ]
     },
     "db 0xdc, 0xe0": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 34,
       "Comment": [
         "fsubr st0, st0",
         "Needs manual encoding since otherwise nasm will emit the 0xd8 variant.",
@@ -9288,8 +9457,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -9305,7 +9475,7 @@
       ]
     },
     "fsubr st1, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xe1 /4"
       ],
@@ -9331,8 +9501,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -9348,7 +9519,7 @@
       ]
     },
     "fsubr st2, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xe2 /4"
       ],
@@ -9374,8 +9545,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -9391,7 +9563,7 @@
       ]
     },
     "fsubr st3, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xe3 /4"
       ],
@@ -9417,8 +9589,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -9434,7 +9607,7 @@
       ]
     },
     "fsubr st4, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xe4 /4"
       ],
@@ -9460,8 +9633,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -9477,7 +9651,7 @@
       ]
     },
     "fsubr st5, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xe5 /4"
       ],
@@ -9503,8 +9677,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -9520,7 +9695,7 @@
       ]
     },
     "fsubr st6, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xe6 /4"
       ],
@@ -9546,8 +9721,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -9563,7 +9739,7 @@
       ]
     },
     "fsubr st7, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xe7 /4"
       ],
@@ -9589,8 +9765,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -9606,7 +9783,7 @@
       ]
     },
     "db 0xdc, 0xe8": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 34,
       "Comment": [
         "fsub st0, st0",
         "Needs manual encoding since otherwise nasm will emit the 0xd8 variant.",
@@ -9632,8 +9809,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -9649,7 +9827,7 @@
       ]
     },
     "fsub st1, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xe9 /5"
       ],
@@ -9675,8 +9853,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -9692,7 +9871,7 @@
       ]
     },
     "fsub st2, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xea /5"
       ],
@@ -9718,8 +9897,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -9735,7 +9915,7 @@
       ]
     },
     "fsub st3, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xeb /5"
       ],
@@ -9761,8 +9941,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -9778,7 +9959,7 @@
       ]
     },
     "fsub st4, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xec /5"
       ],
@@ -9804,8 +9985,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -9821,7 +10003,7 @@
       ]
     },
     "fsub st5, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xed /5"
       ],
@@ -9847,8 +10029,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -9864,7 +10047,7 @@
       ]
     },
     "fsub st6, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xee /5"
       ],
@@ -9890,8 +10073,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -9907,7 +10091,7 @@
       ]
     },
     "fsub st7, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xef /5"
       ],
@@ -9933,8 +10117,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -9950,7 +10135,7 @@
       ]
     },
     "db 0xdc, 0xf0": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 34,
       "Comment": [
         "fdivr st0, st0",
         "Needs manual encoding since otherwise nasm will emit the 0xd8 variant.",
@@ -9976,8 +10161,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -9993,7 +10179,7 @@
       ]
     },
     "fdivr st1, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xf1 /6"
       ],
@@ -10019,8 +10205,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -10036,7 +10223,7 @@
       ]
     },
     "fdivr st2, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xf2 /6"
       ],
@@ -10062,8 +10249,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -10079,7 +10267,7 @@
       ]
     },
     "fdivr st3, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xf3 /6"
       ],
@@ -10105,8 +10293,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -10122,7 +10311,7 @@
       ]
     },
     "fdivr st4, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xf4 /6"
       ],
@@ -10148,8 +10337,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -10165,7 +10355,7 @@
       ]
     },
     "fdivr st5, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xf5 /6"
       ],
@@ -10191,8 +10381,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -10208,7 +10399,7 @@
       ]
     },
     "fdivr st6, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xf6 /6"
       ],
@@ -10234,8 +10425,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -10251,7 +10443,7 @@
       ]
     },
     "fdivr st7, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xf7 /6"
       ],
@@ -10277,8 +10469,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -10294,7 +10487,7 @@
       ]
     },
     "db 0xdc, 0xf8": {
-      "ExpectedInstructionCount": 33,
+      "ExpectedInstructionCount": 34,
       "Comment": [
         "fdiv st0, st0",
         "Needs manual encoding since otherwise nasm will emit the 0xd8 variant.",
@@ -10320,8 +10513,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -10337,7 +10531,7 @@
       ]
     },
     "fdiv st1, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xf9 /7"
       ],
@@ -10363,8 +10557,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -10380,7 +10575,7 @@
       ]
     },
     "fdiv st2, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xfa /7"
       ],
@@ -10406,8 +10601,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -10423,7 +10619,7 @@
       ]
     },
     "fdiv st3, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xfb /7"
       ],
@@ -10449,8 +10645,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -10466,7 +10663,7 @@
       ]
     },
     "fdiv st4, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xfc /7"
       ],
@@ -10492,8 +10689,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -10509,7 +10707,7 @@
       ]
     },
     "fdiv st5, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xfd /7"
       ],
@@ -10535,8 +10733,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -10552,7 +10751,7 @@
       ]
     },
     "fdiv st6, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xfe /7"
       ],
@@ -10578,8 +10777,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -10595,7 +10795,7 @@
       ]
     },
     "fdiv st7, st0": {
-      "ExpectedInstructionCount": 35,
+      "ExpectedInstructionCount": 36,
       "Comment": [
         "0xdc 11b 0xff /7"
       ],
@@ -10621,8 +10821,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -10638,7 +10839,7 @@
       ]
     },
     "fld qword [rax]": {
-      "ExpectedInstructionCount": 37,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdd !11b /0"
       ],
@@ -10657,8 +10858,9 @@
         "str x30, [x0], #16",
         "mov v0.8b, v2.8b",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1432]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1432]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -10683,7 +10885,7 @@
       ]
     },
     "fisttp qword [rax]": {
-      "ExpectedInstructionCount": 37,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdd !11b /1"
       ],
@@ -10704,8 +10906,9 @@
         "str x30, [x0], #16",
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
-        "ldr x1, [x28, #1496]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1496]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -10728,7 +10931,7 @@
       ]
     },
     "fst qword [rax]": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdd !11b /2"
       ],
@@ -10749,8 +10952,9 @@
         "str x30, [x0], #16",
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
-        "ldr x1, [x28, #1448]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1448]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -10765,7 +10969,7 @@
       ]
     },
     "fstp qword [rax]": {
-      "ExpectedInstructionCount": 37,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdd !11b /3"
       ],
@@ -10786,8 +10990,9 @@
         "str x30, [x0], #16",
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
-        "ldr x1, [x28, #1448]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1448]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -11536,7 +11741,7 @@
       ]
     },
     "fucom st0": {
-      "ExpectedInstructionCount": 40,
+      "ExpectedInstructionCount": 41,
       "Comment": [
         "0xdd 11b 0xe0 /4"
       ],
@@ -11560,8 +11765,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -11584,7 +11790,7 @@
       ]
     },
     "fucom st1": {
-      "ExpectedInstructionCount": 42,
+      "ExpectedInstructionCount": 43,
       "Comment": [
         "0xdd 11b 0xe1 /4"
       ],
@@ -11610,8 +11816,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -11634,7 +11841,7 @@
       ]
     },
     "fucom st2": {
-      "ExpectedInstructionCount": 42,
+      "ExpectedInstructionCount": 43,
       "Comment": [
         "0xdd 11b 0xe2 /4"
       ],
@@ -11660,8 +11867,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -11684,7 +11892,7 @@
       ]
     },
     "fucom st3": {
-      "ExpectedInstructionCount": 42,
+      "ExpectedInstructionCount": 43,
       "Comment": [
         "0xdd 11b 0xe3 /4"
       ],
@@ -11710,8 +11918,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -11734,7 +11943,7 @@
       ]
     },
     "fucom st4": {
-      "ExpectedInstructionCount": 42,
+      "ExpectedInstructionCount": 43,
       "Comment": [
         "0xdd 11b 0xe4 /4"
       ],
@@ -11760,8 +11969,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -11784,7 +11994,7 @@
       ]
     },
     "fucom st5": {
-      "ExpectedInstructionCount": 42,
+      "ExpectedInstructionCount": 43,
       "Comment": [
         "0xdd 11b 0xe5 /4"
       ],
@@ -11810,8 +12020,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -11834,7 +12045,7 @@
       ]
     },
     "fucom st6": {
-      "ExpectedInstructionCount": 42,
+      "ExpectedInstructionCount": 43,
       "Comment": [
         "0xdd 11b 0xe6 /4"
       ],
@@ -11860,8 +12071,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -11884,7 +12096,7 @@
       ]
     },
     "fucom st7": {
-      "ExpectedInstructionCount": 42,
+      "ExpectedInstructionCount": 43,
       "Comment": [
         "0xdd 11b 0xe7 /4"
       ],
@@ -11910,8 +12122,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -11934,7 +12147,7 @@
       ]
     },
     "fucomp st0": {
-      "ExpectedInstructionCount": 48,
+      "ExpectedInstructionCount": 49,
       "Comment": [
         "0xdd 11b 0xe8 /5"
       ],
@@ -11958,8 +12171,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -11990,7 +12204,7 @@
       ]
     },
     "fucomp st1": {
-      "ExpectedInstructionCount": 50,
+      "ExpectedInstructionCount": 51,
       "Comment": [
         "0xdd 11b 0xe9 /5"
       ],
@@ -12017,8 +12231,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -12048,7 +12263,7 @@
       ]
     },
     "fucomp st2": {
-      "ExpectedInstructionCount": 50,
+      "ExpectedInstructionCount": 51,
       "Comment": [
         "0xdd 11b 0xea /5"
       ],
@@ -12074,8 +12289,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -12106,7 +12322,7 @@
       ]
     },
     "fucomp st3": {
-      "ExpectedInstructionCount": 50,
+      "ExpectedInstructionCount": 51,
       "Comment": [
         "0xdd 11b 0xeb /5"
       ],
@@ -12132,8 +12348,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -12164,7 +12381,7 @@
       ]
     },
     "fucomp st4": {
-      "ExpectedInstructionCount": 50,
+      "ExpectedInstructionCount": 51,
       "Comment": [
         "0xdd 11b 0xec /5"
       ],
@@ -12190,8 +12407,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -12222,7 +12440,7 @@
       ]
     },
     "fucomp st5": {
-      "ExpectedInstructionCount": 50,
+      "ExpectedInstructionCount": 51,
       "Comment": [
         "0xdd 11b 0xed /5"
       ],
@@ -12248,8 +12466,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -12280,7 +12499,7 @@
       ]
     },
     "fucomp st6": {
-      "ExpectedInstructionCount": 50,
+      "ExpectedInstructionCount": 51,
       "Comment": [
         "0xdd 11b 0xee /5"
       ],
@@ -12306,8 +12525,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -12338,7 +12558,7 @@
       ]
     },
     "fucomp st7": {
-      "ExpectedInstructionCount": 50,
+      "ExpectedInstructionCount": 51,
       "Comment": [
         "0xdd 11b 0xef /5"
       ],
@@ -12364,8 +12584,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -12396,7 +12617,7 @@
       ]
     },
     "fiadd word [rax]": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 59,
       "Comment": [
         "0xde !11b /0"
       ],
@@ -12415,8 +12636,9 @@
         "str x30, [x0], #16",
         "sxth w1, w20",
         "ldrh w0, [x28, #1296]",
-        "ldr x2, [x28, #1512]",
-        "blr x2",
+        "mov x2, x28",
+        "ldr x3, [x28, #1512]",
+        "blr x3",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -12444,8 +12666,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -12461,7 +12684,7 @@
       ]
     },
     "fimul word [rax]": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 59,
       "Comment": [
         "0xde !11b /1"
       ],
@@ -12480,8 +12703,9 @@
         "str x30, [x0], #16",
         "sxth w1, w20",
         "ldrh w0, [x28, #1296]",
-        "ldr x2, [x28, #1512]",
-        "blr x2",
+        "mov x2, x28",
+        "ldr x3, [x28, #1512]",
+        "blr x3",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -12509,8 +12733,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -12526,7 +12751,7 @@
       ]
     },
     "ficom word [rax]": {
-      "ExpectedInstructionCount": 64,
+      "ExpectedInstructionCount": 66,
       "Comment": [
         "0xde !11b /2"
       ],
@@ -12545,8 +12770,9 @@
         "str x30, [x0], #16",
         "sxth w1, w20",
         "ldrh w0, [x28, #1296]",
-        "ldr x2, [x28, #1512]",
-        "blr x2",
+        "mov x2, x28",
+        "ldr x3, [x28, #1512]",
+        "blr x3",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -12574,8 +12800,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -12598,7 +12825,7 @@
       ]
     },
     "ficomp word [rax]": {
-      "ExpectedInstructionCount": 72,
+      "ExpectedInstructionCount": 74,
       "Comment": [
         "0xde !11b /3"
       ],
@@ -12617,8 +12844,9 @@
         "str x30, [x0], #16",
         "sxth w1, w20",
         "ldrh w0, [x28, #1296]",
-        "ldr x2, [x28, #1512]",
-        "blr x2",
+        "mov x2, x28",
+        "ldr x3, [x28, #1512]",
+        "blr x3",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -12646,8 +12874,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -12678,7 +12907,7 @@
       ]
     },
     "fisub word [rax]": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 59,
       "Comment": [
         "0xde !11b /4"
       ],
@@ -12697,8 +12926,9 @@
         "str x30, [x0], #16",
         "sxth w1, w20",
         "ldrh w0, [x28, #1296]",
-        "ldr x2, [x28, #1512]",
-        "blr x2",
+        "mov x2, x28",
+        "ldr x3, [x28, #1512]",
+        "blr x3",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -12726,8 +12956,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -12743,7 +12974,7 @@
       ]
     },
     "fisubr word [rax]": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 59,
       "Comment": [
         "0xde !11b /5"
       ],
@@ -12762,8 +12993,9 @@
         "str x30, [x0], #16",
         "sxth w1, w20",
         "ldrh w0, [x28, #1296]",
-        "ldr x2, [x28, #1512]",
-        "blr x2",
+        "mov x2, x28",
+        "ldr x3, [x28, #1512]",
+        "blr x3",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -12791,8 +13023,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -12808,7 +13041,7 @@
       ]
     },
     "fidiv word [rax]": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 59,
       "Comment": [
         "0xde !11b /6"
       ],
@@ -12827,8 +13060,9 @@
         "str x30, [x0], #16",
         "sxth w1, w20",
         "ldrh w0, [x28, #1296]",
-        "ldr x2, [x28, #1512]",
-        "blr x2",
+        "mov x2, x28",
+        "ldr x3, [x28, #1512]",
+        "blr x3",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -12856,8 +13090,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -12873,7 +13108,7 @@
       ]
     },
     "fidivr word [rax]": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 59,
       "Comment": [
         "0xde !11b /7"
       ],
@@ -12892,8 +13127,9 @@
         "str x30, [x0], #16",
         "sxth w1, w20",
         "ldrh w0, [x28, #1296]",
-        "ldr x2, [x28, #1512]",
-        "blr x2",
+        "mov x2, x28",
+        "ldr x3, [x28, #1512]",
+        "blr x3",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -12921,8 +13157,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -12938,7 +13175,7 @@
       ]
     },
     "faddp st0": {
-      "ExpectedInstructionCount": 41,
+      "ExpectedInstructionCount": 42,
       "Comment": [
         "0xd8 11b 0xc0 /0"
       ],
@@ -12962,8 +13199,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -12987,7 +13225,7 @@
       ]
     },
     "faddp st1": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xc1 /0"
       ],
@@ -13014,8 +13252,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -13038,7 +13277,7 @@
       ]
     },
     "faddp st2": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xc2 /0"
       ],
@@ -13064,8 +13303,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -13089,7 +13329,7 @@
       ]
     },
     "faddp st3": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xc3 /0"
       ],
@@ -13115,8 +13355,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -13140,7 +13381,7 @@
       ]
     },
     "faddp st4": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xc4 /0"
       ],
@@ -13166,8 +13407,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -13191,7 +13433,7 @@
       ]
     },
     "faddp st5": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xc5 /0"
       ],
@@ -13217,8 +13459,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -13242,7 +13485,7 @@
       ]
     },
     "faddp st6": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xc6 /0"
       ],
@@ -13268,8 +13511,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -13293,7 +13537,7 @@
       ]
     },
     "faddp st7": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xc7 /0"
       ],
@@ -13319,8 +13563,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1608]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1608]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -13344,7 +13589,7 @@
       ]
     },
     "fmulp st0": {
-      "ExpectedInstructionCount": 41,
+      "ExpectedInstructionCount": 42,
       "Comment": [
         "0xde 11b 0xc8 /1"
       ],
@@ -13368,8 +13613,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -13393,7 +13639,7 @@
       ]
     },
     "fmulp st1": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xc9 /1"
       ],
@@ -13420,8 +13666,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -13444,7 +13691,7 @@
       ]
     },
     "fmulp st2": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xca /1"
       ],
@@ -13470,8 +13717,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -13495,7 +13743,7 @@
       ]
     },
     "fmulp st3": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xcb /1"
       ],
@@ -13521,8 +13769,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -13546,7 +13795,7 @@
       ]
     },
     "fmulp st4": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xcc /1"
       ],
@@ -13572,8 +13821,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -13597,7 +13847,7 @@
       ]
     },
     "fmulp st5": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xcd /1"
       ],
@@ -13623,8 +13873,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -13648,7 +13899,7 @@
       ]
     },
     "fmulp st6": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xce /1"
       ],
@@ -13674,8 +13925,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -13699,7 +13951,7 @@
       ]
     },
     "fmulp st7": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xcf /1"
       ],
@@ -13725,8 +13977,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1624]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1624]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -13750,7 +14003,7 @@
       ]
     },
     "fcompp": {
-      "ExpectedInstructionCount": 57,
+      "ExpectedInstructionCount": 58,
       "Comment": [
         "0xde 11b 0xd9 /3"
       ],
@@ -13777,8 +14030,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -13815,7 +14069,7 @@
       ]
     },
     "db 0xde, 0xe0": {
-      "ExpectedInstructionCount": 41,
+      "ExpectedInstructionCount": 42,
       "Comment": [
         "fsubrp st0, st0",
         "Needs manual encoding since otherwise nasm will emit the 0xd8 variant.",
@@ -13841,8 +14095,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -13866,7 +14121,7 @@
       ]
     },
     "fsubrp st1, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xe1 /4"
       ],
@@ -13893,8 +14148,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -13917,7 +14173,7 @@
       ]
     },
     "fsubrp st2, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xe2 /4"
       ],
@@ -13943,8 +14199,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -13968,7 +14225,7 @@
       ]
     },
     "fsubrp st3, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xe3 /4"
       ],
@@ -13994,8 +14251,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -14019,7 +14277,7 @@
       ]
     },
     "fsubrp st4, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xe4 /4"
       ],
@@ -14045,8 +14303,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -14070,7 +14329,7 @@
       ]
     },
     "fsubrp st5, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xe5 /4"
       ],
@@ -14096,8 +14355,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -14121,7 +14381,7 @@
       ]
     },
     "fsubrp st6, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xe6 /4"
       ],
@@ -14147,8 +14407,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -14172,7 +14433,7 @@
       ]
     },
     "fsubrp st7, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xe7 /4"
       ],
@@ -14198,8 +14459,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -14223,7 +14485,7 @@
       ]
     },
     "db 0xde, 0xe8": {
-      "ExpectedInstructionCount": 41,
+      "ExpectedInstructionCount": 42,
       "Comment": [
         "fsubp st0, st0",
         "Needs manual encoding since otherwise nasm will emit the 0xd8 variant.",
@@ -14249,8 +14511,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -14274,7 +14537,7 @@
       ]
     },
     "fsubp st1, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xe9 /5"
       ],
@@ -14301,8 +14564,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -14325,7 +14589,7 @@
       ]
     },
     "fsubp st2, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xea /5"
       ],
@@ -14351,8 +14615,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -14376,7 +14641,7 @@
       ]
     },
     "fsubp st3, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xeb /5"
       ],
@@ -14402,8 +14667,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -14427,7 +14693,7 @@
       ]
     },
     "fsubp st4, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xec /5"
       ],
@@ -14453,8 +14719,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -14478,7 +14745,7 @@
       ]
     },
     "fsubp st5, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xed /5"
       ],
@@ -14504,8 +14771,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -14529,7 +14797,7 @@
       ]
     },
     "fsubp st6, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xee /5"
       ],
@@ -14555,8 +14823,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -14580,7 +14849,7 @@
       ]
     },
     "fsubp st7, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xef /5"
       ],
@@ -14606,8 +14875,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1616]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1616]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -14631,7 +14901,7 @@
       ]
     },
     "db 0xde, 0xf0": {
-      "ExpectedInstructionCount": 41,
+      "ExpectedInstructionCount": 42,
       "Comment": [
         "fdivrp st0, st0",
         "Needs manual encoding since otherwise nasm will emit the 0xd8 variant.",
@@ -14657,8 +14927,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -14682,7 +14953,7 @@
       ]
     },
     "fdivrp st1, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xf1 /6"
       ],
@@ -14709,8 +14980,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -14733,7 +15005,7 @@
       ]
     },
     "fdivrp st2, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xf2 /6"
       ],
@@ -14759,8 +15031,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -14784,7 +15057,7 @@
       ]
     },
     "fdivrp st3, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xf3 /6"
       ],
@@ -14810,8 +15083,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -14835,7 +15109,7 @@
       ]
     },
     "fdivrp st4, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xf4 /6"
       ],
@@ -14861,8 +15135,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -14886,7 +15161,7 @@
       ]
     },
     "fdivrp st5, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xf5 /6"
       ],
@@ -14912,8 +15187,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -14937,7 +15213,7 @@
       ]
     },
     "fdivrp st6, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xf6 /6"
       ],
@@ -14963,8 +15239,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -14988,7 +15265,7 @@
       ]
     },
     "fdivrp st7, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xf7 /6"
       ],
@@ -15014,8 +15291,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -15039,7 +15317,7 @@
       ]
     },
     "db 0xde, 0xf8": {
-      "ExpectedInstructionCount": 41,
+      "ExpectedInstructionCount": 42,
       "Comment": [
         "fdivp st0, st0",
         "Needs manual encoding since otherwise nasm will emit the 0xd8 variant.",
@@ -15065,8 +15343,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -15090,7 +15369,7 @@
       ]
     },
     "fdivp st1, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xf9 /7"
       ],
@@ -15117,8 +15396,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -15141,7 +15421,7 @@
       ]
     },
     "fdivp st2, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xfa /7"
       ],
@@ -15167,8 +15447,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -15192,7 +15473,7 @@
       ]
     },
     "fdivp st3, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xfb /7"
       ],
@@ -15218,8 +15499,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -15243,7 +15525,7 @@
       ]
     },
     "fdivp st4, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xfc /7"
       ],
@@ -15269,8 +15551,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -15294,7 +15577,7 @@
       ]
     },
     "fdivp st5, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xfd /7"
       ],
@@ -15320,8 +15603,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -15345,7 +15629,7 @@
       ]
     },
     "fdivp st6, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xfe /7"
       ],
@@ -15371,8 +15655,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -15396,7 +15681,7 @@
       ]
     },
     "fdivp st7, st0": {
-      "ExpectedInstructionCount": 43,
+      "ExpectedInstructionCount": 44,
       "Comment": [
         "0xde 11b 0xff /7"
       ],
@@ -15422,8 +15707,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v3.16b",
         "mov v1.16b, v2.16b",
-        "ldr x1, [x28, #1632]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1632]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -15489,7 +15775,7 @@
       ]
     },
     "fisttp word [rax]": {
-      "ExpectedInstructionCount": 37,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf !11b /1"
       ],
@@ -15510,8 +15796,9 @@
         "str x30, [x0], #16",
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
-        "ldr x1, [x28, #1480]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1480]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -15534,7 +15821,7 @@
       ]
     },
     "fist word [rax]": {
-      "ExpectedInstructionCount": 29,
+      "ExpectedInstructionCount": 30,
       "Comment": [
         "0xdf !11b /2"
       ],
@@ -15555,8 +15842,9 @@
         "str x30, [x0], #16",
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
-        "ldr x1, [x28, #1456]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1456]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -15571,7 +15859,7 @@
       ]
     },
     "fistp word [rax]": {
-      "ExpectedInstructionCount": 37,
+      "ExpectedInstructionCount": 38,
       "Comment": [
         "0xdf !11b /3"
       ],
@@ -15592,8 +15880,9 @@
         "str x30, [x0], #16",
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
-        "ldr x1, [x28, #1456]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1456]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -15616,7 +15905,7 @@
       ]
     },
     "fbld tword [rax]": {
-      "ExpectedInstructionCount": 39,
+      "ExpectedInstructionCount": 40,
       "Comment": [
         "0xdf !11b /4"
       ],
@@ -15636,9 +15925,10 @@
         "st1 {v4.2d, v5.2d, v6.2d, v7.2d}, [x0], #64",
         "str x30, [x0], #16",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1600]",
+        "mov x1, x28",
+        "ldr x2, [x28, #1600]",
         "mov v0.16b, v2.16b",
-        "blr x1",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -15663,7 +15953,7 @@
       ]
     },
     "fbstp tword [rax]": {
-      "ExpectedInstructionCount": 39,
+      "ExpectedInstructionCount": 40,
       "Comment": [
         "0xdf !11b /6"
       ],
@@ -15683,9 +15973,10 @@
         "st1 {v4.2d, v5.2d, v6.2d, v7.2d}, [x0], #64",
         "str x30, [x0], #16",
         "ldrh w0, [x28, #1296]",
-        "ldr x1, [x28, #1592]",
+        "mov x1, x28",
+        "ldr x2, [x28, #1592]",
         "mov v0.16b, v2.16b",
-        "blr x1",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -15825,7 +16116,7 @@
       ]
     },
     "fucomip st0": {
-      "ExpectedInstructionCount": 50,
+      "ExpectedInstructionCount": 51,
       "Comment": [
         "0xdf 11b 0xe8 /5"
       ],
@@ -15849,8 +16140,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -15883,7 +16175,7 @@
       ]
     },
     "fucomip st1": {
-      "ExpectedInstructionCount": 52,
+      "ExpectedInstructionCount": 53,
       "Comment": [
         "0xdf 11b 0xe9 /5"
       ],
@@ -15910,8 +16202,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -15943,7 +16236,7 @@
       ]
     },
     "fucomip st2": {
-      "ExpectedInstructionCount": 52,
+      "ExpectedInstructionCount": 53,
       "Comment": [
         "0xdf 11b 0xea /5"
       ],
@@ -15969,8 +16262,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -16003,7 +16297,7 @@
       ]
     },
     "fucomip st3": {
-      "ExpectedInstructionCount": 52,
+      "ExpectedInstructionCount": 53,
       "Comment": [
         "0xdf 11b 0xeb /5"
       ],
@@ -16029,8 +16323,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -16063,7 +16358,7 @@
       ]
     },
     "fucomip st4": {
-      "ExpectedInstructionCount": 52,
+      "ExpectedInstructionCount": 53,
       "Comment": [
         "0xdf 11b 0xec /5"
       ],
@@ -16089,8 +16384,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -16123,7 +16419,7 @@
       ]
     },
     "fucomip st5": {
-      "ExpectedInstructionCount": 52,
+      "ExpectedInstructionCount": 53,
       "Comment": [
         "0xdf 11b 0xed /5"
       ],
@@ -16149,8 +16445,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -16183,7 +16480,7 @@
       ]
     },
     "fucomip st6": {
-      "ExpectedInstructionCount": 52,
+      "ExpectedInstructionCount": 53,
       "Comment": [
         "0xdf 11b 0xee /5"
       ],
@@ -16209,8 +16506,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -16243,7 +16541,7 @@
       ]
     },
     "fucomip st7": {
-      "ExpectedInstructionCount": 52,
+      "ExpectedInstructionCount": 53,
       "Comment": [
         "0xdf 11b 0xef /5"
       ],
@@ -16269,8 +16567,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -16303,7 +16602,7 @@
       ]
     },
     "fcomip st0": {
-      "ExpectedInstructionCount": 50,
+      "ExpectedInstructionCount": 51,
       "Comment": [
         "0xdf 11b 0xf0 /6"
       ],
@@ -16327,8 +16626,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -16361,7 +16661,7 @@
       ]
     },
     "fcomip st1": {
-      "ExpectedInstructionCount": 52,
+      "ExpectedInstructionCount": 53,
       "Comment": [
         "0xdf 11b 0xf1 /6"
       ],
@@ -16388,8 +16688,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -16421,7 +16722,7 @@
       ]
     },
     "fcomip st2": {
-      "ExpectedInstructionCount": 52,
+      "ExpectedInstructionCount": 53,
       "Comment": [
         "0xdf 11b 0xf2 /6"
       ],
@@ -16447,8 +16748,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -16481,7 +16783,7 @@
       ]
     },
     "fcomip st3": {
-      "ExpectedInstructionCount": 52,
+      "ExpectedInstructionCount": 53,
       "Comment": [
         "0xdf 11b 0xf3 /6"
       ],
@@ -16507,8 +16809,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -16541,7 +16844,7 @@
       ]
     },
     "fcomip st4": {
-      "ExpectedInstructionCount": 52,
+      "ExpectedInstructionCount": 53,
       "Comment": [
         "0xdf 11b 0xf4 /6"
       ],
@@ -16567,8 +16870,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -16601,7 +16905,7 @@
       ]
     },
     "fcomip st5": {
-      "ExpectedInstructionCount": 52,
+      "ExpectedInstructionCount": 53,
       "Comment": [
         "0xdf 11b 0xf5 /6"
       ],
@@ -16627,8 +16931,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -16661,7 +16966,7 @@
       ]
     },
     "fcomip st6": {
-      "ExpectedInstructionCount": 52,
+      "ExpectedInstructionCount": 53,
       "Comment": [
         "0xdf 11b 0xf6 /6"
       ],
@@ -16687,8 +16992,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
@@ -16721,7 +17027,7 @@
       ]
     },
     "fcomip st7": {
-      "ExpectedInstructionCount": 52,
+      "ExpectedInstructionCount": 53,
       "Comment": [
         "0xdf 11b 0xf7 /6"
       ],
@@ -16747,8 +17053,9 @@
         "ldrh w0, [x28, #1296]",
         "mov v0.16b, v2.16b",
         "mov v1.16b, v3.16b",
-        "ldr x1, [x28, #1504]",
-        "blr x1",
+        "mov x1, x28",
+        "ldr x2, [x28, #1504]",
+        "blr x2",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "ldp x4, x7, [x28, #280]",
