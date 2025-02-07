@@ -12,7 +12,7 @@
 
 namespace FEXCore::Profiler {
 // FEXCore live-stats
-constexpr uint8_t STATS_VERSION = 1;
+constexpr uint8_t STATS_VERSION = 2;
 enum class AppType : uint8_t {
   LINUX_32,
   LINUX_64,
@@ -41,6 +41,7 @@ struct ThreadStats {
   // Accumulated event counts
   uint64_t AccumulatedSIGBUSCount;
   uint64_t AccumulatedSMCCount;
+  uint64_t AccumulatedFloatFallbackCount;
 };
 
 #ifdef ENABLE_FEXCORE_PROFILER
