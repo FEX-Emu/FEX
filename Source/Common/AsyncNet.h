@@ -88,15 +88,11 @@ struct tcp_socket {
     // Setup the ancillary buffer. This is where we will be getting pipe FDs
     // We only need 4 bytes for the FD
     constexpr size_t CMSG_SIZE = CMSG_SPACE(sizeof(int));
-    union AncillaryBuffer {
-      cmsghdr Header;
-      uint8_t Buffer[CMSG_SIZE];
-    };
-    AncillaryBuffer AncBuf {};
+    alignas(cmsghdr) uint8_t AncBuf[CMSG_SIZE];
 
     if (Buffers.FD) {
       // Enable ancillary buffer
-      msg.msg_control = AncBuf.Buffer;
+      msg.msg_control = AncBuf;
       msg.msg_controllen = CMSG_SIZE;
 
       // Now we need to setup the ancillary buffer data. We are only sending an FD
@@ -139,15 +135,11 @@ private:
 
     // If requested, set up a 4-byte ancillary buffer for receiving a file descriptor
     constexpr size_t CMSG_SIZE = CMSG_SPACE(sizeof(int));
-    union AncillaryBuffer {
-      cmsghdr Header;
-      uint8_t Buffer[CMSG_SIZE];
-    };
-    AncillaryBuffer AncBuf {};
+    alignas(cmsghdr) uint8_t AncBuf[CMSG_SIZE];
 
     if (Buffers.FD) {
       // Enable ancillary buffer
-      msg.msg_control = AncBuf.Buffer;
+      msg.msg_control = AncBuf;
       msg.msg_controllen = CMSG_SIZE;
     }
 
