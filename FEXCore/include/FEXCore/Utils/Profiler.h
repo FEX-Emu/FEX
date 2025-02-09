@@ -3,12 +3,19 @@
 #include <cstdint>
 #include <string_view>
 
+#include <FEXCore/fextl/string.h>
 #include <FEXCore/Utils/CompilerDefs.h>
+
+#if defined(ENABLE_FEXCORE_PROFILER) && FEXCORE_PROFILER_BACKEND == 2
+#include "tracy/Tracy.hpp"
+#endif
 
 namespace FEXCore::Profiler {
 #ifdef ENABLE_FEXCORE_PROFILER
 
-FEX_DEFAULT_VISIBILITY void Init();
+FEX_DEFAULT_VISIBILITY void Init(const fextl::string& ProgramName, const fextl::string& ProgramPath);
+FEX_DEFAULT_VISIBILITY void PostForkAction(bool IsChild);
+FEX_DEFAULT_VISIBILITY bool IsActive();
 FEX_DEFAULT_VISIBILITY void Shutdown();
 FEX_DEFAULT_VISIBILITY void TraceObject(std::string_view const Format);
 FEX_DEFAULT_VISIBILITY void TraceObject(std::string_view const Format, uint64_t Duration);
@@ -25,18 +32,22 @@ private:
   std::string_view const Format;
 };
 
-#define UniqueScopeName2(name, line) name##line
-#define UniqueScopeName(name, line) UniqueScopeName2(name, line)
+//#define UniqueScopeName2(name, line) name##line
+//#define UniqueScopeName(name, line) UniqueScopeName2(name, line)
 
 // Declare an instantaneous profiler event.
 #define FEXCORE_PROFILE_INSTANT(name) FEXCore::Profiler::TraceObject(name)
 
 // Declare a scoped profile block variable with a fixed name.
-#define FEXCORE_PROFILE_SCOPED(name) FEXCore::Profiler::ProfilerBlock UniqueScopeName(ScopedBlock_, __LINE__)(name)
+//#define FEXCORE_PROFILE_SCOPED(name) FEXCore::Profiler::ProfilerBlock UniqueScopeName(ScopedBlock_, __LINE__)(name)
+#define FEXCORE_PROFILE_SCOPED(name) \
+  ZoneNamedN( ___tracy_scoped_zone, name, ::FEXCore::Profiler::IsActive())
 
 #else
 [[maybe_unused]]
-static void Init() {}
+static void Init(const fextl::string& ProgramName, const fextl::string& ProgramPath) {}
+[[maybe_unused]]
+static void PostForkAction(bool IsChild) {}
 [[maybe_unused]]
 static void Shutdown() {}
 [[maybe_unused]]

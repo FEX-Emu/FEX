@@ -388,7 +388,6 @@ int main(int argc, char** argv, char** const envp) {
     std::this_thread::sleep_for(std::chrono::seconds(StartupSleep()));
   }
 
-  FEXCore::Profiler::Init();
   FEXCore::Telemetry::Initialize();
 
   if (!LDPath().empty() && Program.ProgramPath.starts_with(LDPath())) {
@@ -491,6 +490,8 @@ int main(int argc, char** argv, char** const envp) {
     } while (reinterpret_cast<uintptr_t>(data) >> 32 != 0);
     free(data);
   }
+
+  FEXCore::Profiler::Init(Program.ProgramName, Program.ProgramPath);
 
   // System allocator is now system allocator or FEX
   FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);

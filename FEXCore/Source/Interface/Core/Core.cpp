@@ -473,6 +473,7 @@ void ContextImpl::DestroyThread(FEXCore::Core::InternalThreadState* Thread) {
 void ContextImpl::UnlockAfterFork(FEXCore::Core::InternalThreadState* LiveThread, bool Child) {
   Allocator::UnlockAfterFork(LiveThread, Child);
 
+  Profiler::PostForkAction(Child);
   if (Child) {
     CodeInvalidationMutex.StealAndDropActiveLocks();
     if (Config.StrictInProcessSplitLocks) {

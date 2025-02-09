@@ -17,6 +17,7 @@
 
 #define BACKEND_OFF 0
 #define BACKEND_GPUVIS 1
+#define BACKEND_TRACY 2
 
 #ifdef ENABLE_FEXCORE_PROFILER
 #ifndef _WIN32
@@ -114,35 +115,113 @@ void TraceObject(std::string_view const Format) {
   }
 }
 } // namespace GPUVis
+#elif FEXCORE_PROFILER_BACKEND == BACKEND_TRACY
+#include "tracy/TracyC.h"
+namespace Tracy {
+void Init() {}
+
+void Shutdown() {}
+
+void TraceObject(std::string_view const Format, uint64_t Duration) {}
+
+void TraceObject(std::string_view const Format) {}
+} // namespace Tracy
 #else
 #error Unknown profiler backend
 #endif
 #endif
 
 namespace FEXCore::Profiler {
+
 #ifdef ENABLE_FEXCORE_PROFILER
-void Init() {
+static int g_EnableAfterFork = 0;
+static bool g_Enable = false;
+
+void Init(const fextl::string& ProgramName, const fextl::string& ProgramPath) {
 #if FEXCORE_PROFILER_BACKEND == BACKEND_GPUVIS
   GPUVis::Init();
+#elif FEXCORE_PROFILER_BACKEND == BACKEND_TRACY
+  const char* ProfileTargetName = getenv("FEX_PROFILE_TARGET_NAME"); // Match by application name
+  const char* ProfileTargetPath = getenv("FEX_PROFILE_TARGET_PATH"); // Match by path suffix
+  const char* WaitForFork = getenv("FEX_PROFILE_WAIT_FOR_FORK");     // Don't enable profiling until the process forks N times
+  bool Enable = (ProfileTargetName && ProgramName == ProfileTargetName) || (ProfileTargetPath && ProgramPath.ends_with(ProfileTargetPath));
+  if (Enable && WaitForFork) {
+    g_EnableAfterFork = std::atoi(WaitForFork);
+  }
+  g_Enable = Enable && !g_EnableAfterFork;
+  if (g_Enable) {
+    Tracy::Init();
+    tracy::StartupProfiler();
+    LogMan::Msg::IFmt("Tracy profiling started");
+  } else if (g_EnableAfterFork) {
+    LogMan::Msg::IFmt("Tracy profiling will start after {} forks", g_EnableAfterFork);
+  }
+#endif
+}
+
+void PostForkAction(bool IsChild) {
+#if FEXCORE_PROFILER_BACKEND == BACKEND_TRACY
+  if (g_Enable) {
+    // Tracy does not support multiprocess profiling
+    LogMan::Msg::EFmt("Warning: Profiling a process with forks is not supported. Set the environment variable "
+                      "FEX_PROFILE_WAIT_FOR_FORK=<n> to start profiling after the n-th fork.");
+  }
+
+  if (IsChild) {
+    g_Enable = false;
+    return;
+  }
+
+  if (g_EnableAfterFork > 1) {
+    --g_EnableAfterFork;
+    LogMan::Msg::IFmt("Tracy profiling will start after {} forks", g_EnableAfterFork);
+  } else if (g_EnableAfterFork == 1) {
+    g_Enable = true;
+    g_EnableAfterFork = 0;
+    Tracy::Init();
+    tracy::StartupProfiler();
+    LogMan::Msg::IFmt("Tracy profiling started");
+  }
+#endif
+}
+
+bool IsActive() {
+#if FEXCORE_PROFILER_BACKEND == BACKEND_GPUVIS
+  // Always active
+  return true;
+#elif FEXCORE_PROFILER_BACKEND == BACKEND_TRACY
+  // Active if previously enabled
+  return g_Enable;
 #endif
 }
 
 void Shutdown() {
 #if FEXCORE_PROFILER_BACKEND == BACKEND_GPUVIS
   GPUVis::Shutdown();
+#elif FEXCORE_PROFILER_BACKEND == BACKEND_TRACY
+  if (g_Enable) {
+    LogMan::Msg::IFmt("Stopping Tracy profiling");
+    tracy::ShutdownProfiler();
+    Tracy::Shutdown();
+  }
 #endif
 }
 
 void TraceObject(std::string_view const Format, uint64_t Duration) {
 #if FEXCORE_PROFILER_BACKEND == BACKEND_GPUVIS
   GPUVis::TraceObject(Format, Duration);
+#elif FEXCORE_PROFILER_BACKEND == BACKEND_TRACY
+  Tracy::TraceObject(Format, Duration);
 #endif
 }
 
 void TraceObject(std::string_view const Format) {
 #if FEXCORE_PROFILER_BACKEND == BACKEND_GPUVIS
   GPUVis::TraceObject(Format);
+#elif FEXCORE_PROFILER_BACKEND == BACKEND_TRACY
+  Tracy::TraceObject(Format);
 #endif
 }
+
 #endif
 } // namespace FEXCore::Profiler
