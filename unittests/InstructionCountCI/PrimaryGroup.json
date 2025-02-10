@@ -3049,35 +3049,31 @@
       ]
     },
     "mov byte [rax], 0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": "GROUP11 0xc6 /0",
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "strb w20, [x4]"
+        "strb wzr, [x4]"
       ]
     },
     "mov word [rax], 0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": "GROUP11 0xc7 /0",
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "strh w20, [x4]"
+        "strh wzr, [x4]"
       ]
     },
     "mov dword [rax], 0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": "GROUP11 0xc7 /0",
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "str w20, [x4]"
+        "str wzr, [x4]"
       ]
     },
     "mov qword [rax], 0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": "GROUP11 0xc7 /0",
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "str x20, [x4]"
+        "str xzr, [x4]"
       ]
     },
     "mov byte [rax], 1": {
