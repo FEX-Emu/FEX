@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 namespace PipeScanner {
-void ScanForPipes();
+void SetWaitPipe(int FD);
 void ClosePipes();
 } // namespace PipeScanner
