@@ -4,6 +4,7 @@ set (TESTS
   InterruptableConditionVariable
   Filesystem
   StringUtils
+  fextl_function
   )
 
 list(APPEND LIBS Common FEXCore JemallocLibs)

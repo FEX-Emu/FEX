@@ -3,9 +3,13 @@
 #include "Logger.h"
 #include "SquashFS.h"
 
-#include "Common/FEXServerClient.h"
+#include <Common/AsyncNet.h>
+#include <Common/FEXServerClient.h>
+
+#include <fmt/ranges.h>
 
 #include <atomic>
+#include <cassert>
 #include <fcntl.h>
 #include <filesystem>
 #include <poll.h>
@@ -18,9 +22,8 @@
 namespace ProcessPipe {
 constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
 int ServerLockFD {-1};
-int ServerSocketFD {-1};
-int ServerFSSocketFD {-1};
-std::atomic<bool> ShouldShutdown {false};
+std::optional<fasio::tcp_acceptor> ServerAcceptor;
+std::optional<fasio::tcp_acceptor> ServerFSAcceptor;
 time_t RequestTimeout {10};
 bool Foreground {false};
 std::vector<struct pollfd> PollFDs {};
@@ -176,161 +179,114 @@ bool InitializeServerPipe() {
   return true;
 }
 
+static fasio::poll_reactor Reactor;
+
+void HandleSocketData(fasio::tcp_socket&);
+
 bool InitializeServerSocket(bool abstract) {
-
-  // Create the initial unix socket
-  int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
-  if (fd == -1) {
-    LogMan::Msg::EFmt("Couldn't create AF_UNIX socket: {} {}\n", errno, strerror(errno));
-    return false;
-  }
-
-  struct sockaddr_un addr {};
-  addr.sun_family = AF_UNIX;
-
-  size_t SizeOfSocketString;
+  fextl::string ServerSocketName;
   if (abstract) {
-    auto ServerSocketName = FEXServerClient::GetServerSocketName();
-    SizeOfSocketString = std::min(ServerSocketName.size() + 1, sizeof(addr.sun_path) - 1);
-    addr.sun_path[0] = 0; // Abstract AF_UNIX sockets start with \0
-    strncpy(addr.sun_path + 1, ServerSocketName.data(), SizeOfSocketString);
+    ServerSocketName = FEXServerClient::GetServerSocketName();
   } else {
-    auto ServerSocketPath = FEXServerClient::GetServerSocketPath();
+    ServerSocketName = FEXServerClient::GetServerSocketPath();
     // Unlink the socket file if it exists
     // We are being asked to create a daemon, not error check
     // We don't care if this failed or not
-    unlink(ServerSocketPath.c_str());
-
-    SizeOfSocketString = std::min(ServerSocketPath.size(), sizeof(addr.sun_path) - 1);
-    strncpy(addr.sun_path, ServerSocketPath.data(), SizeOfSocketString);
+    unlink(ServerSocketName.c_str());
   }
-  // Include final null character.
-  size_t SizeOfAddr = sizeof(addr.sun_family) + SizeOfSocketString;
-
-  // Bind the socket to the path
-  int Result = bind(fd, reinterpret_cast<struct sockaddr*>(&addr), SizeOfAddr);
-  if (Result == -1) {
-    LogMan::Msg::EFmt("Couldn't bind AF_UNIX socket '{}': {} {}\n", addr.sun_path, errno, strerror(errno));
-    close(fd);
+  auto Acceptor = fasio::tcp_acceptor::create(Reactor, abstract, ServerSocketName);
+  if (!Acceptor) {
+    LogMan::Msg::EFmt("Failed to create FEXServer socket: error {} ({})", errno, strerror(errno));
     return false;
   }
 
-  listen(fd, 16);
-  PollFDs.emplace_back(pollfd {
-    .fd = fd,
-    .events = POLLIN,
-    .revents = 0,
+  Acceptor->async_accept([](fasio::error ec, std::optional<fasio::tcp_socket> Socket) {
+    if (ec != fasio::error::success) {
+      if (ec == fasio::error::generic_errno) {
+        LogMan::Msg::EFmt("FEXServer failed to establish client connection: error {} ({})", errno, strerror(errno));
+      }
+      // Ignore error and wait for next connection
+      return fasio::post_callback::repeat;
+    }
+
+    int FD = Socket->FD;
+    Reactor.bind_handler(
+      pollfd {
+        .fd = FD,
+        .events = POLLIN | POLLPRI | POLLRDHUP,
+        .revents = 0,
+      },
+      [Socket = std::move(Socket).value()](fasio::error ec) mutable {
+      if (ec != fasio::error::success) {
+        close(Socket.FD);
+        return fasio::post_callback::drop;
+      }
+      HandleSocketData(Socket);
+      // Wait for next data
+      return fasio::post_callback::repeat;
+      });
+
+    // Wait for next connection
+    return fasio::post_callback::repeat;
   });
 
-  if (abstract) {
-    ServerSocketFD = fd;
-  } else {
-    ServerFSSocketFD = fd;
-  }
-
+  (abstract ? ServerAcceptor : ServerFSAcceptor) = std::move(Acceptor).value();
   return true;
 }
 
-void SendEmptyErrorPacket(int Socket) {
+void SendEmptyErrorPacket(fasio::tcp_socket& Socket) {
   FEXServerClient::FEXServerResultPacket Res {
     .Header {
       .Type = FEXServerClient::PacketType::TYPE_ERROR,
     },
   };
 
-  struct iovec iov {
-    .iov_base = &Res, .iov_len = sizeof(Res),
-  };
-
-  struct msghdr msg {
-    .msg_name = nullptr, .msg_namelen = 0, .msg_iov = &iov, .msg_iovlen = 1,
-  };
-
-  sendmsg(Socket, &msg, 0);
+  fasio::mutable_buffer Data = {.Data = std::as_writable_bytes(std::span(&Res, 1))};
+  fasio::error ec;
+  write(Socket, Data, ec);
 }
 
-void SendFDSuccessPacket(int Socket, int FD) {
+void SendFDSuccessPacket(fasio::tcp_socket& Socket, int FD) {
   FEXServerClient::FEXServerResultPacket Res {
     .Header {
       .Type = FEXServerClient::PacketType::TYPE_SUCCESS,
     },
   };
 
-  struct iovec iov {
-    .iov_base = &Res, .iov_len = sizeof(Res),
-  };
-
-  struct msghdr msg {
-    .msg_name = nullptr, .msg_namelen = 0, .msg_iov = &iov, .msg_iovlen = 1,
-  };
-
-  // Setup the ancillary buffer. This is where we will be getting pipe FDs
-  // We only need 4 bytes for the FD
-  constexpr size_t CMSG_SIZE = CMSG_SPACE(sizeof(int));
-  union AncillaryBuffer {
-    struct cmsghdr Header;
-    uint8_t Buffer[CMSG_SIZE];
-  };
-  AncillaryBuffer AncBuf {};
-
-  // Now link to our ancilllary buffer
-  msg.msg_control = AncBuf.Buffer;
-  msg.msg_controllen = CMSG_SIZE;
-
-  // Now we need to setup the ancillary buffer data. We are only sending an FD
-  struct cmsghdr* cmsg = CMSG_FIRSTHDR(&msg);
-  cmsg->cmsg_len = CMSG_LEN(sizeof(int));
-  cmsg->cmsg_level = SOL_SOCKET;
-  cmsg->cmsg_type = SCM_RIGHTS;
-
-  // We are giving the daemon the write side of the pipe
-  memcpy(CMSG_DATA(cmsg), &FD, sizeof(int));
-
-  sendmsg(Socket, &msg, 0);
+  fasio::mutable_buffer Data = {.Data = std::as_writable_bytes(std::span(&Res, 1)), .FD = &FD};
+  fasio::error ec;
+  write(Socket, Data, ec);
 }
 
-void HandleSocketData(int Socket) {
+void HandleSocketData(fasio::tcp_socket& Socket) {
   std::vector<uint8_t> Data(1500);
-  size_t CurrentRead {};
 
   // Get the current number of FDs of the process before we start handling sockets.
   GetMaxFDs();
 
-  while (true) {
-    struct iovec iov {
-      .iov_base = &Data.at(CurrentRead), .iov_len = Data.size() - CurrentRead,
-    };
+  fasio::mutable_buffer buffer = {std::as_writable_bytes(std::span(Data))};
 
-    struct msghdr msg {
-      .msg_name = nullptr, .msg_namelen = 0, .msg_iov = &iov, .msg_iovlen = 1,
-    };
+  {
+    fasio::error ec;
 
-    ssize_t Read = recvmsg(Socket, &msg, 0);
-    if (Read <= msg.msg_iov->iov_len) {
-      CurrentRead += Read;
-      if (CurrentRead == Data.size()) {
-        Data.resize(Data.size() << 1);
-      } else {
-        // No more to read
-        break;
-      }
+    auto Read = Socket.read_some(buffer, ec);
+    if (ec == fasio::error::success) {
+      assert(Read >= sizeof(FEXServerClient::FEXServerRequestPacket));
+      buffer = {buffer.Data.subspan(0, Read)};
+    } else if (ec == fasio::error::eof) {
+      return;
     } else {
-      if (errno == EWOULDBLOCK) {
-        // no error
-      } else {
-        perror("read");
-      }
-      break;
+      perror("read");
+      return;
     }
   }
 
-  size_t CurrentOffset {};
-  while (CurrentOffset < CurrentRead) {
-    FEXServerClient::FEXServerRequestPacket* Req = reinterpret_cast<FEXServerClient::FEXServerRequestPacket*>(&Data[CurrentOffset]);
+  while (buffer.size() > 0) {
+    FEXServerClient::FEXServerRequestPacket* Req = reinterpret_cast<FEXServerClient::FEXServerRequestPacket*>(Data.data());
     switch (Req->Header.Type) {
     case FEXServerClient::PacketType::TYPE_KILL:
-      ShouldShutdown = true;
-      CurrentOffset += sizeof(FEXServerClient::FEXServerRequestPacket::BasicRequest);
+      Reactor.stop_async();
+      buffer += sizeof(FEXServerClient::FEXServerRequestPacket::BasicRequest);
       break;
     case FEXServerClient::PacketType::TYPE_GET_LOG_FD: {
       if (Logger::LogThreadRunning()) {
@@ -353,7 +309,7 @@ void HandleSocketData(int Socket) {
         SendEmptyErrorPacket(Socket);
       }
 
-      CurrentOffset += sizeof(FEXServerClient::FEXServerRequestPacket::Header);
+      buffer += sizeof(FEXServerClient::FEXServerRequestPacket::Header);
       break;
     }
     case FEXServerClient::PacketType::TYPE_GET_ROOTFS_PATH: {
@@ -370,28 +326,15 @@ void HandleSocketData(int Socket) {
 
       char Null {};
 
-      iovec iov[3] {
-        {
-          .iov_base = &Res,
-          .iov_len = sizeof(Res),
-        },
-        {
-          .iov_base = const_cast<char*>(MountFolder.data()),
-          .iov_len = MountFolder.size(),
-        },
-        {
-          .iov_base = &Null,
-          .iov_len = 1,
-        },
+      fasio::mutable_buffer Data[] = {
+        {.Data = std::as_writable_bytes(std::span(&Res, 1))},
+        {.Data = std::as_writable_bytes(std::span(const_cast<fextl::string&>(MountFolder)))},
+        {.Data = std::as_writable_bytes(std::span(&Null, 1))},
       };
+      fasio::error ec;
+      write(Socket, Chained(Data), ec);
 
-      struct msghdr msg {
-        .msg_name = nullptr, .msg_namelen = 0, .msg_iov = iov, .msg_iovlen = 3,
-      };
-
-      sendmsg(Socket, &msg, 0);
-
-      CurrentOffset += sizeof(FEXServerClient::FEXServerRequestPacket::BasicRequest);
+      buffer += sizeof(FEXServerClient::FEXServerRequestPacket::BasicRequest);
       break;
     }
     case FEXServerClient::PacketType::TYPE_GET_PID_FD: {
@@ -420,16 +363,16 @@ void HandleSocketData(int Socket) {
         close(FD);
       }
 
-      CurrentOffset += sizeof(FEXServerClient::FEXServerRequestPacket::Header);
+      buffer += sizeof(FEXServerClient::FEXServerRequestPacket::Header);
       break;
     }
-      // Invalid
+    // Invalid
     case FEXServerClient::PacketType::TYPE_ERROR:
     default:
-      // Something sent us an invalid packet. To ensure we don't spin infinitely, consume all the data.
-      LogMan::Msg::EFmt("[FEXServer] InvalidPacket size received 0x{:x} bytes", CurrentRead - CurrentOffset);
-      CurrentOffset = CurrentRead;
-      break;
+      // Something sent us an invalid packet. Drop this client and continue
+      LogMan::Msg::EFmt("Invalid FEXServer packet received: {:02x}", fmt::join(buffer.Data, ""));
+      close(Socket.FD);
+      return;
     }
   }
 }
@@ -440,88 +383,15 @@ void CloseConnections() {
   close(ServerLockFD);
 
   // Close the server socket so no more connections can be started
-  close(ServerSocketFD);
-  close(ServerFSSocketFD);
+  ServerAcceptor.reset();
+  ServerFSAcceptor.reset();
 }
 
 void WaitForRequests() {
-  auto LastDataTime = std::chrono::system_clock::now();
+  Reactor.enable_async_stop();
+  Reactor.run(Foreground ? std::nullopt : std::optional {std::chrono::seconds {RequestTimeout}});
 
-  while (!ShouldShutdown) {
-    struct timespec ts {};
-    ts.tv_sec = RequestTimeout;
-
-    int Result = ppoll(&PollFDs.at(0), PollFDs.size(), &ts, nullptr);
-    std::vector<struct pollfd> NewPollFDs {};
-
-    if (Result > 0) {
-      // Walk the FDs and see if we got any results
-      for (auto it = PollFDs.begin(); it != PollFDs.end();) {
-        auto& Event = *it;
-        bool Erase {};
-
-        if (Event.revents != 0) {
-          if (Event.fd == ServerSocketFD || Event.fd == ServerFSSocketFD) {
-            if (Event.revents & POLLIN) {
-              // If it is the listen socket then we have a new connection
-              struct sockaddr_storage Addr {};
-              socklen_t AddrSize {};
-              int NewFD = accept(Event.fd, reinterpret_cast<struct sockaddr*>(&Addr), &AddrSize);
-
-              // Add the new client to the temporary array
-              NewPollFDs.emplace_back(pollfd {
-                .fd = NewFD,
-                .events = POLLIN | POLLPRI | POLLRDHUP,
-                .revents = 0,
-              });
-            } else if (Event.revents & (POLLHUP | POLLERR | POLLNVAL)) {
-              // Listen socket error or shutting down
-              break;
-            }
-          } else {
-            if (Event.revents & POLLIN) {
-              // Data from the socket
-              HandleSocketData(Event.fd);
-            }
-
-            if (Event.revents & (POLLHUP | POLLERR | POLLNVAL | POLLRDHUP)) {
-              // Error or hangup, close the socket and erase it from our list
-              Erase = true;
-              close(Event.fd);
-            }
-          }
-
-          Event.revents = 0;
-          --Result;
-        }
-
-        if (Erase) {
-          it = PollFDs.erase(it);
-        } else {
-          ++it;
-        }
-
-        if (Result == 0) {
-          // Early break if we've consumed all the results
-          break;
-        }
-      }
-
-      // Insert the new FDs to poll
-      PollFDs.insert(PollFDs.begin(), NewPollFDs.begin(), NewPollFDs.end());
-
-      LastDataTime = std::chrono::system_clock::now();
-    } else {
-      auto Now = std::chrono::system_clock::now();
-      auto Diff = Now - LastDataTime;
-      if (Diff >= std::chrono::seconds(RequestTimeout) && !Foreground && PollFDs.size() == 2) {
-        // If we aren't running in the foreground and we have no connections after a timeout
-        // Then we can just go ahead and leave
-        ShouldShutdown = true;
-        LogMan::Msg::DFmt("[FEXServer] Shutting Down");
-      }
-    }
-  }
+  LogMan::Msg::DFmt("[FEXServer] Shutting Down");
 
   CloseConnections();
 }
@@ -532,6 +402,6 @@ void SetConfiguration(bool Foreground, uint32_t PersistentTimeout) {
 }
 
 void Shutdown() {
-  ShouldShutdown = true;
+  Reactor.stop_async();
 }
 } // namespace ProcessPipe

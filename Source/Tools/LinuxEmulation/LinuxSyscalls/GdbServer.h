@@ -13,12 +13,12 @@ $end_info$
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
 
+#include <Common/AsyncNet.h>
+
 #include <atomic>
-#include <memory>
 #include <mutex>
 #include <stdint.h>
 
-#include "LinuxSyscalls/NetStream.h"
 #include "LinuxSyscalls/SignalDelegator.h"
 
 namespace FEX {
@@ -40,17 +40,11 @@ private:
 
   void OpenListenSocket();
   void CloseListenSocket();
-  enum class WaitForConnectionResult {
-    CONNECTION,
-    ERROR,
-  };
-  WaitForConnectionResult WaitForConnection();
-  void OpenSocket();
   void StartThread();
-  fextl::string ReadPacket();
-  void SendPacket(const fextl::string& packet);
+  fextl::string ReadPacket(const std::span<std::byte>& stream);
+  void SendPacket(fasio::tcp_socket&, const fextl::string& packet);
 
-  void SendACK(bool NACK);
+  void SendACK(fasio::tcp_socket&, bool NACK);
 
   Event ThreadBreakEvent {};
   void WaitForThreadWakeup();
@@ -147,7 +141,14 @@ private:
   FEX::HLE::SyscallHandler* const SyscallHandler;
   FEX::HLE::SignalDelegator* SignalDelegation;
   fextl::unique_ptr<FEXCore::Threads::Thread> gdbServerThread;
-  FEX::Utils::NetStream CommsStream;
+  fasio::poll_reactor Reactor;
+  std::optional<fasio::tcp_acceptor> Acceptor;
+  std::optional<fasio::tcp_socket> CommsSocket;
+  fextl::vector<std::byte> CommsBuffer;
+
+  std::pair<fextl::vector<std::byte>::iterator, bool> MatchPacket(fextl::vector<std::byte>::iterator begin, fextl::vector<std::byte>::iterator end);
+  void HandlePacket(fasio::error ec, size_t BytesInMessage);
+
   std::mutex sendMutex;
   bool SettingNoAckMode {false};
   bool NoAckMode {false};
@@ -156,13 +157,11 @@ private:
   fextl::string OSDataString {};
   void buildLibraryMap();
   std::atomic<bool> LibraryMapChanged = true;
-  std::atomic<bool> CoreShuttingDown {};
   fextl::string LibraryMapString {};
 
   // Used to keep track of which signals to pass to the guest
   std::array<bool, FEX::HLE::SignalDelegator::MAX_SIGNALS + 1> PassSignals {};
   uint32_t CurrentDebuggingThread {};
-  int ListenSocket {};
   fextl::string GdbUnixSocketPath {};
   FEX_CONFIG_OPT(Filename, APP_FILENAME);
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "Main.h"
 
+#include <Common/Async.h>
 #include <Common/Config.h>
 #include <Common/FileFormatCheck.h>
 #include <FEXCore/fextl/memory.h>
@@ -188,7 +189,7 @@ static void ConfigInit(fextl::string ConfigFilename) {
 }
 
 RootFSModel::RootFSModel() {
-  INotifyFD = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
+  auto INotifyFD = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
 
   fextl::string RootFS = FEXCore::Config::GetDataDirectory(false) + "RootFS/";
   int LocalFolderWD = inotify_add_watch(INotifyFD, RootFS.c_str(), IN_CREATE | IN_DELETE);
@@ -196,7 +197,8 @@ RootFSModel::RootFSModel() {
   RootFS = FEXCore::Config::GetDataDirectory(true) + "RootFS/";
   int GlobalFolderWD = inotify_add_watch(INotifyFD, RootFS.c_str(), IN_CREATE | IN_DELETE);
   if (INotifyFD != -1 && (LocalFolderWD != -1 || GlobalFolderWD != -1)) {
-    Thread = std::thread {&RootFSModel::INotifyThreadFunc, this};
+    INotifyReactor.enable_async_stop();
+    Thread = std::thread {&RootFSModel::INotifyThreadFunc, this, INotifyFD};
   } else {
     qWarning() << "Could not set up inotify. RootFS folder won't be monitored for changes.";
   }
@@ -206,10 +208,7 @@ RootFSModel::RootFSModel() {
 }
 
 RootFSModel::~RootFSModel() {
-  close(INotifyFD);
-  INotifyFD = -1;
-
-  ExitRequest.count_down();
+  INotifyReactor.stop_async();
   Thread.join();
 }
 
@@ -261,39 +260,22 @@ QUrl RootFSModel::getBaseUrl() const {
   return QUrl::fromLocalFile(QString::fromStdString(FEXCore::Config::GetDataDirectory().c_str()) + "RootFS/");
 }
 
-void RootFSModel::INotifyThreadFunc() {
-  while (!ExitRequest.try_wait()) {
+void RootFSModel::INotifyThreadFunc(int INotifyFD) {
+  fasio::posix_descriptor INotify {INotifyReactor, INotifyFD};
+
+  INotify.async_wait([this, INotifyFD](fasio::error ec) {
+    // Spin through the events, we don't actually care what they are
     constexpr size_t DATA_SIZE = (16 * (sizeof(struct inotify_event) + NAME_MAX + 1));
     char buf[DATA_SIZE];
-    int Ret {};
-    struct pollfd watch_fd = {
-      .fd = INotifyFD,
-      .events = POLLIN,
-      .revents = 0,
-    };
-    do {
-      // 50 ms
-      struct timespec tv {
-        .tv_sec = 0, .tv_nsec = 50'000'000,
-      };
-
-      // Reset revents.
-      watch_fd.revents = 0;
-      Ret = ppoll(&watch_fd, 1, &tv, nullptr);
-    } while (Ret == 0 && INotifyFD != -1);
-
-    if (Ret == -1 || INotifyFD == -1) {
-      // Just return on error
-      return;
-    }
-
-    // Spin through the events, we don't actually care what they are
     while (read(INotifyFD, buf, DATA_SIZE) > 0)
       ;
 
     // Queue update to the data model
     QMetaObject::invokeMethod(this, "Reload");
-  }
+    return fasio::post_callback::repeat;
+  });
+
+  INotifyReactor.run();
 }
 
 // Returns true on success
