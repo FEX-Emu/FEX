@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "ArgumentLoader.h"
 #include "Common/cpp-optparse/OptionParser.h"
+#include "PipeScanner.h"
 
 #include "git_version.h"
 
@@ -20,6 +21,7 @@ FEXServerOptions Load(int argc, char** argv) {
   Parser.add_option("-p", "--persistent").action("store").type("int").set_default(0).set_optional_value(true).metavar("n").help("Make FEXServer persistent. Optional number of seconds");
 
   Parser.add_option("-w", "--wait").action("store_true").set_default(false).help("Wait for the FEXServer to shutdown");
+  Parser.add_option("--wait_pipe").action("store").type("int").set_default(-1).set_optional_value(true);
 
   Parser.add_option("-v").action("version").help("Version string");
 
@@ -33,6 +35,10 @@ FEXServerOptions Load(int argc, char** argv) {
   }
   FEXOptions.PersistentTimeout = Options.get("persistent");
 
+  int WaitPipe = Options.get("wait_pipe");
+  if (WaitPipe != -1) {
+    PipeScanner::SetWaitPipe(WaitPipe);
+  }
   return FEXOptions;
 }
 } // namespace FEXServer::Config
