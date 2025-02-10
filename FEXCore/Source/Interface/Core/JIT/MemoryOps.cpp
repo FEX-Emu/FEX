@@ -759,7 +759,8 @@ DEF_OP(LoadMemTSO) {
     const auto Dst = GetReg(Node);
     uint64_t Offset = 0;
     if (!Op->Offset.IsInvalid()) {
-      LOGMAN_THROW_A_FMT(IsInlineConstant(Op->Offset, &Offset), "expected immediate");
+      [[maybe_unused]] bool IsInline = IsInlineConstant(Op->Offset, &Offset);
+      LOGMAN_THROW_A_FMT(IsInline, "expected immediate");
     }
 
     if (OpSize == IR::OpSize::i8Bit) {
@@ -1694,7 +1695,8 @@ DEF_OP(StoreMemTSO) {
     const auto Src = GetZeroableReg(Op->Value);
     uint64_t Offset = 0;
     if (!Op->Offset.IsInvalid()) {
-      LOGMAN_THROW_A_FMT(IsInlineConstant(Op->Offset, &Offset), "expected immediate");
+      [[maybe_unused]] bool IsInline = IsInlineConstant(Op->Offset, &Offset);
+      LOGMAN_THROW_A_FMT(IsInline, "expected immediate");
     }
 
     if (OpSize == IR::OpSize::i8Bit) {

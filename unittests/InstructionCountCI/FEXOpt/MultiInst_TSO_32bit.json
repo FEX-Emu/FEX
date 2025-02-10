@@ -21,7 +21,7 @@
   "Instructions": {
     "Load variables from structs": {
       "x86InstructionCount": 7,
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 16,
       "Comment": [
         "Saw this in 32-bit libvulkan_freedreno.so:tu_cs_begin_sub_stream_aligned",
         "Loads a bunch of values from structs passed as arguments",
@@ -37,23 +37,18 @@
         "sub eax, [ebx + 4]"
       ],
       "ExpectedArm64ASM": [
-        "add w20, w7, #0x8 (8)",
-        "ldapur w11, [x20]",
+        "ldapur w11, [x7, #8]",
         "nop",
-        "add w20, w7, #0x4 (4)",
-        "ldapur w5, [x20]",
+        "ldapur w5, [x7, #4]",
         "nop",
         "ldapur w6, [x7]",
         "nop",
-        "add w20, w7, #0xc (12)",
-        "ldapur w10, [x20]",
+        "ldapur w10, [x7, #12]",
         "nop",
         "mul w5, w5, w11",
-        "add w20, w6, #0xc (12)",
-        "ldapur w4, [x20]",
+        "ldapur w4, [x6, #12]",
         "nop",
-        "add w20, w6, #0x4 (4)",
-        "ldapur w20, [x20]",
+        "ldapur w20, [x6, #4]",
         "nop",
         "eor x27, x4, x20",
         "subs w26, w4, w20",
@@ -62,7 +57,7 @@
     },
     "Load variables from memory": {
       "x86InstructionCount": 4,
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 9,
       "Comment": [
         "Just to ensure small atomic offset loads are using LRCPC2"
       ],
@@ -75,21 +70,18 @@
       "ExpectedArm64ASM": [
         "ldapur w11, [x7]",
         "nop",
-        "add w20, w7, #0x4 (4)",
-        "ldapur w5, [x20]",
+        "ldapur w5, [x7, #4]",
         "nop",
-        "add w20, w7, #0x18 (24)",
-        "ldapurh w20, [x20]",
+        "ldapurh w20, [x7, #24]",
         "nop",
         "bfxil w4, w20, #0, #16",
-        "add w20, w7, #0x1a (26)",
-        "ldapurb w20, [x20]",
+        "ldapurb w20, [x7, #26]",
         "bfxil w6, w20, #0, #8"
       ]
     },
     "Store variables to memory": {
       "x86InstructionCount": 4,
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "Just to ensure small atomic offset stores are using LRCPC2"
       ],
@@ -102,14 +94,11 @@
       "ExpectedArm64ASM": [
         "nop",
         "stlur w11, [x7]",
-        "add w20, w7, #0x4 (4)",
         "nop",
-        "stlur w5, [x20]",
-        "add w20, w7, #0x18 (24)",
+        "stlur w5, [x7, #4]",
         "nop",
-        "stlurh w4, [x20]",
-        "add w20, w7, #0x1a (26)",
-        "stlurb w6, [x20]"
+        "stlurh w4, [x7, #24]",
+        "stlurb w6, [x7, #26]"
       ]
     }
   }

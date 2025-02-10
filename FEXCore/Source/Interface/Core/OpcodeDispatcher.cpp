@@ -4166,21 +4166,97 @@ Ref OpDispatchBuilder::LoadEffectiveAddress(AddressMode A, bool AddSegmentBase, 
 }
 
 AddressMode OpDispatchBuilder::SelectAddressMode(AddressMode A, bool AtomicTSO, bool Vector, IR::OpSize AccessSize) {
+  auto SoftwareAddressCalculation = [this, &A]() -> AddressMode {
+    return {
+      .Base = LoadEffectiveAddress(A, true),
+      .Index = InvalidNode,
+    };
+  };
+
   const auto GPRSize = CTX->GetGPROpSize();
+  const auto Is32Bit = GPRSize == OpSize::i32Bit;
+  const auto GPRSizeMatchesAddrSize = A.AddrSize == GPRSize;
+  const auto OffsetIndexToLargeFor32Bit = Is32Bit && (A.Offset <= -16384 || A.Offset >= 16384);
+  if (!GPRSizeMatchesAddrSize || OffsetIndexToLargeFor32Bit) {
+    // If address size doesn't match GPR size then no optimizations can occur.
+    return SoftwareAddressCalculation();
+  }
 
-  // In the future this also needs to account for LRCPC3.
-  bool SupportsRegIndex = Vector || !AtomicTSO;
-
-  // Try a constant offset. For 64-bit, this maps directly. For 32-bit, this
-  // works only for displacements with magnitude < 16KB, since those bottom
-  // addresses are reserved and therefore wrap around is invalid.
+  // Loadstore rules:
+  // Non-TSO GPR:
+  // * LDR/STR:   [Reg]
+  // * LDR/STR:   [Reg + Reg, {Shift <AccessSize>}]
+  //   * Can't use with 32-bit
+  // * LDR/STR:   [Reg + [0,4095] * <AccessSize>]
+  //   * Imm must be smaller than 16k with 32-bit
+  // * LDUR/STUR: [Reg + [-256, 255]]
   //
-  // TODO: Also handle GPR TSO if we can guarantee the constant inlines.
-  if (SupportsRegIndex) {
-    if ((A.Base || A.Segment) && A.Offset) {
-      const bool Const_16K = A.Offset > -16384 && A.Offset < 16384 && A.AddrSize == OpSize::i32Bit && GPRSize == OpSize::i32Bit;
+  // TSO GPR:
+  // * ARMv8.0:
+  //  LDAR/STLR: [Reg]
+  // * FEAT_LRCPC:
+  //  LDAPR: [Reg]
+  // * FEAT_LRCPC2:
+  //  LDAPUR/STLUR: [Reg + [-256, 255]]
+  //
+  // Non-TSO Vector:
+  // * LDR/STR: [Reg + [0,4095] * <AccessSize>]
+  // * LDUR/STUR: [Reg + [-256,255]]
+  //
+  // TSO Vector:
+  // * ARMv8.0:
+  //   Just DMB + previous
+  // * FEAT_LRCPC3 (Unsupported by FEXCore currently):
+  //   LDAPUR/STLUR: [Reg + [-256,255]]
 
-      if ((A.AddrSize == OpSize::i64Bit) || Const_16K) {
+  const auto AccessSizeAsImm = OpSizeToSize(AccessSize);
+  const bool OffsetIsSIMM9 = A.Offset && A.Offset >= -256 && A.Offset <= 255;
+  const bool OffsetIsUnsignedScaled = A.Offset > 0 && (A.Offset & (AccessSizeAsImm - 1)) == 0 && (A.Offset / AccessSizeAsImm) <= 4095;
+
+  auto InlineImmOffsetLoadstore = [this](AddressMode A) -> AddressMode {
+    // Peel off the offset
+    AddressMode B = A;
+    B.Offset = 0;
+
+    return {
+      .Base = LoadEffectiveAddress(B, true /* AddSegmentBase */, false),
+      .Index = _InlineConstant(A.Offset),
+      .IndexType = MEM_OFFSET_SXTX,
+      .IndexScale = 1,
+    };
+  };
+
+  auto ScaledRegisterLoadstore = [this, &GPRSize](AddressMode A) -> AddressMode {
+    if (A.Index && A.Segment) {
+      A.Base = _Add(GPRSize, A.Base, A.Segment);
+    } else if (A.Segment) {
+      A.Index = A.Segment;
+      A.IndexScale = 1;
+    }
+    return A;
+  };
+
+  if (AtomicTSO) {
+    if (!Vector) {
+      if (CTX->HostFeatures.SupportsTSOImm9 && OffsetIsSIMM9) {
+        return InlineImmOffsetLoadstore(A);
+      }
+    } else {
+      // TODO: LRCPC3 support for vector Imm9.
+    }
+  } else {
+    if (OffsetIsSIMM9 || OffsetIsUnsignedScaled) {
+      return InlineImmOffsetLoadstore(A);
+    } else if (!Is32Bit && A.Base && (A.Index || A.Segment) & !A.Offset && (A.IndexScale == 1 || A.IndexScale == AccessSizeAsImm)) {
+      return ScaledRegisterLoadstore(A);
+    }
+  }
+
+  if (Vector || !AtomicTSO) {
+    if ((A.Base || A.Segment) && A.Offset) {
+      const bool Const_16K = A.Offset > -16384 && A.Offset < 16384 && GPRSizeMatchesAddrSize && Is32Bit;
+
+      if (!Is32Bit || Const_16K) {
         // Peel off the offset
         AddressMode B = A;
         B.Offset = 0;
@@ -4193,25 +4269,10 @@ AddressMode OpDispatchBuilder::SelectAddressMode(AddressMode A, bool AtomicTSO, 
         };
       }
     }
-
-    // Try a (possibly scaled) register index.
-    if (A.AddrSize == OpSize::i64Bit && A.Base && (A.Index || A.Segment) && !A.Offset &&
-        (A.IndexScale == 1 || A.IndexScale == IR::OpSizeToSize(AccessSize))) {
-      if (A.Index && A.Segment) {
-        A.Base = _Add(GPRSize, A.Base, A.Segment);
-      } else if (A.Segment) {
-        A.Index = A.Segment;
-        A.IndexScale = 1;
-      }
-      return A;
-    }
   }
 
   // Fallback on software address calculation
-  return {
-    .Base = LoadEffectiveAddress(A, true),
-    .Index = InvalidNode,
-  };
+  return SoftwareAddressCalculation();
 }
 
 AddressMode OpDispatchBuilder::DecodeAddress(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand,
