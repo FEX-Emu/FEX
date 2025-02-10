@@ -14,11 +14,10 @@
   },
   "Instructions": {
     "sgdt [rax]": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP7 0x0F 0x1 /0",
       "ExpectedArm64ASM": [
-        "mov w20, #0x0",
-        "strh w20, [x4]",
+        "strh wzr, [x4]",
         "mov x20, #0xfffffffffffe0000",
         "stur x20, [x4, #2]"
       ]
