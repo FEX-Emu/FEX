@@ -667,6 +667,7 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
   case OP_STOREMEM: {
     auto Op = IROp->CW<IR::IROp_StoreMem>();
     InlineMemImmediate(IREmit, CurrentIR, CodeNode, IROp, Op->Offset, Op->OffsetType, Op->Offset_Index, Op->OffsetScale, false);
+    InlineIfZero(IREmit, CurrentIR, CodeNode, IROp, Op->Value_Index);
     break;
   }
   case OP_PREFETCH: {
@@ -682,6 +683,13 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
   case OP_STOREMEMTSO: {
     auto Op = IROp->CW<IR::IROp_StoreMemTSO>();
     InlineMemImmediate(IREmit, CurrentIR, CodeNode, IROp, Op->Offset, Op->OffsetType, Op->Offset_Index, Op->OffsetScale, true);
+    InlineIfZero(IREmit, CurrentIR, CodeNode, IROp, Op->Value_Index);
+    break;
+  }
+  case OP_STOREMEMPAIR: {
+    auto Op = IROp->CW<IR::IROp_StoreMemPair>();
+    InlineIfZero(IREmit, CurrentIR, CodeNode, IROp, Op->Value1_Index);
+    InlineIfZero(IREmit, CurrentIR, CodeNode, IROp, Op->Value2_Index);
     break;
   }
   case OP_MEMCPY: {
@@ -692,6 +700,7 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
   case OP_MEMSET: {
     auto Op = IROp->CW<IR::IROp_MemSet>();
     Inline(IREmit, CurrentIR, CodeNode, IROp, Op->Direction_Index);
+    InlineIfZero(IREmit, CurrentIR, CodeNode, IROp, Op->Value_Index);
     break;
   }
 

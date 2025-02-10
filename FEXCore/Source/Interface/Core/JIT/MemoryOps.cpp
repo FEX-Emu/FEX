@@ -1547,7 +1547,7 @@ DEF_OP(StoreMem) {
   const auto MemSrc = GenerateMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
   if (Op->Class == FEXCore::IR::GPRClass) {
-    const auto Src = GetReg(Op->Value.ID());
+    const auto Src = GetZeroableReg(Op->Value);
     switch (OpSize) {
     case IR::OpSize::i8Bit: strb(Src, MemSrc); break;
     case IR::OpSize::i16Bit: strh(Src, MemSrc); break;
@@ -1658,8 +1658,8 @@ DEF_OP(StoreMemPair) {
   const auto Addr = GetReg(Op->Addr.ID());
 
   if (Op->Class == FEXCore::IR::GPRClass) {
-    const auto Src1 = GetReg(Op->Value1.ID());
-    const auto Src2 = GetReg(Op->Value2.ID());
+    const auto Src1 = GetZeroableReg(Op->Value1);
+    const auto Src2 = GetZeroableReg(Op->Value2);
     switch (OpSize) {
     case IR::OpSize::i32Bit: stp<ARMEmitter::IndexType::OFFSET>(Src1.W(), Src2.W(), Addr, Op->Offset); break;
     case IR::OpSize::i64Bit: stp<ARMEmitter::IndexType::OFFSET>(Src1.X(), Src2.X(), Addr, Op->Offset); break;
@@ -1691,7 +1691,7 @@ DEF_OP(StoreMemTSO) {
   }
 
   if (CTX->HostFeatures.SupportsTSOImm9 && Op->Class == FEXCore::IR::GPRClass) {
-    const auto Src = GetReg(Op->Value.ID());
+    const auto Src = GetZeroableReg(Op->Value);
     uint64_t Offset = 0;
     if (!Op->Offset.IsInvalid()) {
       LOGMAN_THROW_A_FMT(IsInlineConstant(Op->Offset, &Offset), "expected immediate");
@@ -1711,7 +1711,7 @@ DEF_OP(StoreMemTSO) {
       }
     }
   } else if (Op->Class == FEXCore::IR::GPRClass) {
-    const auto Src = GetReg(Op->Value.ID());
+    const auto Src = GetZeroableReg(Op->Value);
 
     if (OpSize == IR::OpSize::i8Bit) {
       // 8bit load is always aligned to natural alignment
@@ -1763,7 +1763,7 @@ DEF_OP(MemSet) {
   const bool IsAtomic = CTX->IsMemcpyAtomicTSOEnabled();
   const auto Size = IR::OpSizeToSize(Op->Size);
   const auto MemReg = GetReg(Op->Addr.ID());
-  const auto Value = GetReg(Op->Value.ID());
+  const auto Value = GetZeroableReg(Op->Value);
   const auto Length = GetReg(Op->Length.ID());
   const auto Dst = GetReg(Node);
 
@@ -2312,7 +2312,7 @@ DEF_OP(ParanoidStoreMemTSO) {
   auto MemReg = GetReg(Op->Addr.ID());
 
   if (CTX->HostFeatures.SupportsTSOImm9 && Op->Class == FEXCore::IR::GPRClass) {
-    const auto Src = GetReg(Op->Value.ID());
+    const auto Src = GetZeroableReg(Op->Value);
     uint64_t Offset = 0;
     if (!Op->Offset.IsInvalid()) {
       if (!IsInlineConstant(Op->Offset, &Offset)) {
@@ -2332,7 +2332,7 @@ DEF_OP(ParanoidStoreMemTSO) {
       }
     }
   } else if (Op->Class == FEXCore::IR::GPRClass) {
-    const auto Src = GetReg(Op->Value.ID());
+    const auto Src = GetZeroableReg(Op->Value);
     MemReg = ApplyMemOperand(OpSize, MemReg, TMP1, Op->Offset, Op->OffsetType, Op->OffsetScale);
     switch (OpSize) {
     case IR::OpSize::i8Bit: stlrb(Src, MemReg); break;
