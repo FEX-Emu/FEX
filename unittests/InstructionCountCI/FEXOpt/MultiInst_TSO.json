@@ -21,7 +21,7 @@
   "Instructions": {
     "Load variables from memory": {
       "x86InstructionCount": 6,
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "Just to ensure small atomic offset loads are using LRCPC2"
       ],
@@ -36,27 +36,22 @@
       "ExpectedArm64ASM": [
         "ldapur w11, [x7]",
         "nop",
-        "add x20, x7, #0x4 (4)",
-        "ldapur w5, [x20]",
+        "ldapur w5, [x7, #4]",
         "nop",
-        "add x20, x7, #0x8 (8)",
-        "ldapur x6, [x20]",
+        "ldapur x6, [x7, #8]",
         "nop",
-        "add x20, x7, #0x10 (16)",
-        "ldapur x10, [x20]",
+        "ldapur x10, [x7, #16]",
         "nop",
-        "add x20, x7, #0x18 (24)",
-        "ldapurh w20, [x20]",
+        "ldapurh w20, [x7, #24]",
         "nop",
         "bfxil x4, x20, #0, #16",
-        "add x20, x7, #0x1a (26)",
-        "ldapurb w20, [x20]",
+        "ldapurb w20, [x7, #26]",
         "bfxil x6, x20, #0, #8"
       ]
     },
     "Store variables to memory": {
       "x86InstructionCount": 6,
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "Just to ensure small atomic offset stores are using LRCPC2"
       ],
@@ -71,20 +66,15 @@
       "ExpectedArm64ASM": [
         "nop",
         "stlur w11, [x7]",
-        "add x20, x7, #0x4 (4)",
         "nop",
-        "stlur w5, [x20]",
-        "add x20, x7, #0x8 (8)",
+        "stlur w5, [x7, #4]",
         "nop",
-        "stlur x6, [x20]",
-        "add x20, x7, #0x10 (16)",
+        "stlur x6, [x7, #8]",
         "nop",
-        "stlur x10, [x20]",
-        "add x20, x7, #0x18 (24)",
+        "stlur x10, [x7, #16]",
         "nop",
-        "stlurh w4, [x20]",
-        "add x20, x7, #0x1a (26)",
-        "stlurb w6, [x20]"
+        "stlurh w4, [x7, #24]",
+        "stlurb w6, [x7, #26]"
       ]
     }
   }
