@@ -220,7 +220,7 @@ int ConnectToServer(ConnectionOption ConnectionOption) {
   return -1;
 }
 
-bool SetupClient(char* InterpreterPath) {
+bool SetupClient(std::string_view InterpreterPath) {
   ServerFD = FEXServerClient::ConnectToAndStartServer(InterpreterPath);
   if (ServerFD == -1) {
     return false;
@@ -238,7 +238,7 @@ bool SetupClient(char* InterpreterPath) {
   return true;
 }
 
-int ConnectToAndStartServer(char* InterpreterPath) {
+int ConnectToAndStartServer(std::string_view InterpreterPath) {
   int ServerFD = ConnectToServer(ConnectionOption::NoPrintConnectionError);
   if (ServerFD == -1) {
     // Couldn't connect to the server. Start one
@@ -250,7 +250,7 @@ int ConnectToAndStartServer(char* InterpreterPath) {
       return -1;
     }
 
-    fextl::string FEXServerPath = FHU::Filesystem::ParentPath(InterpreterPath) + "/FEXServer";
+    fextl::string FEXServerPath = fextl::fmt::format("{}/FEXServer", InterpreterPath);
     // Check if a local FEXServer next to FEXInterpreter exists
     // If it does then it takes priority over the installed one
     if (!FHU::Filesystem::Exists(FEXServerPath)) {

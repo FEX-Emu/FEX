@@ -56,14 +56,14 @@ fextl::string GetServerSocketName();
 fextl::string GetServerSocketPath();
 int GetServerFD();
 
-bool SetupClient(char* InterpreterPath);
+bool SetupClient(std::string_view InterpreterPath);
 
 /**
  * @brief Connect to and start a FEXServer instance if required
  *
  * @return socket FD for communicating with server
  */
-int ConnectToAndStartServer(char* InterpreterPath);
+int ConnectToAndStartServer(std::string_view InterpreterPath);
 
 enum class ConnectionOption {
   Default,

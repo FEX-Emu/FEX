@@ -340,7 +340,8 @@ int main(int argc, char** argv, char** const envp) {
   }
 
   // Ensure FEXServer is setup before config options try to pull CONFIG_ROOTFS
-  if (!FEXServerClient::SetupClient(argv[0])) {
+  auto SelfPath = FEX::GetSelfPath();
+  if (!FEXServerClient::SetupClient(SelfPath.value_or(argv[0]))) {
     LogMan::Msg::EFmt("FEXServerClient: Failure to setup client");
     return -1;
   }
