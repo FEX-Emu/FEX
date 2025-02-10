@@ -15,13 +15,14 @@ static FallbackInfo GetFallbackInfo(R (*fn)(Args...), FEXCore::Core::FallbackHan
 }
 
 template<>
-FallbackInfo GetFallbackInfo(double (*fn)(uint16_t, double), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
-  return {FABI_F64_I16_F64, (void*)fn, HandlerIndex, false};
+FallbackInfo GetFallbackInfo(double (*fn)(uint16_t, double, FEXCore::Core::CpuStateFrame*), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
+  return {FABI_F64_I16_F64_PTR, (void*)fn, HandlerIndex, false};
 }
 
 template<>
-FallbackInfo GetFallbackInfo(double (*fn)(uint16_t, double, double), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
-  return {FABI_F64_I16_F64_F64, (void*)fn, HandlerIndex, false};
+FallbackInfo
+GetFallbackInfo(double (*fn)(uint16_t, double, double, FEXCore::Core::CpuStateFrame*), FEXCore::Core::FallbackHandlerIndex HandlerIndex) {
+  return {FABI_F64_I16_F64_F64_PTR, (void*)fn, HandlerIndex, false};
 }
 
 void InterpreterOps::FillFallbackIndexPointers(uint64_t* Info) {
@@ -86,11 +87,11 @@ bool InterpreterOps::GetFallbackHandler(bool SupportsPreserveAllABI, const IR::I
 
     switch (Op->SrcSize) {
     case IR::OpSize::i32Bit: {
-      *Info = {FABI_F80_I16_F32, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTTO>::handle4, Core::OPINDEX_F80CVTTO_4, SupportsPreserveAllABI};
+      *Info = {FABI_F80_I16_F32_PTR, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTTO>::handle4, Core::OPINDEX_F80CVTTO_4, SupportsPreserveAllABI};
       return true;
     }
     case IR::OpSize::i64Bit: {
-      *Info = {FABI_F80_I16_F64, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTTO>::handle8, Core::OPINDEX_F80CVTTO_8, SupportsPreserveAllABI};
+      *Info = {FABI_F80_I16_F64_PTR, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTTO>::handle8, Core::OPINDEX_F80CVTTO_8, SupportsPreserveAllABI};
       return true;
     }
     default: LogMan::Msg::DFmt("Unhandled size: {}", OpSize);
@@ -100,11 +101,11 @@ bool InterpreterOps::GetFallbackHandler(bool SupportsPreserveAllABI, const IR::I
   case IR::OP_F80CVT: {
     switch (OpSize) {
     case IR::OpSize::i32Bit: {
-      *Info = {FABI_F32_I16_F80, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVT>::handle4, Core::OPINDEX_F80CVT_4, SupportsPreserveAllABI};
+      *Info = {FABI_F32_I16_F80_PTR, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVT>::handle4, Core::OPINDEX_F80CVT_4, SupportsPreserveAllABI};
       return true;
     }
     case IR::OpSize::i64Bit: {
-      *Info = {FABI_F64_I16_F80, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVT>::handle8, Core::OPINDEX_F80CVT_8, SupportsPreserveAllABI};
+      *Info = {FABI_F64_I16_F80_PTR, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVT>::handle8, Core::OPINDEX_F80CVT_8, SupportsPreserveAllABI};
       return true;
     }
     default: LogMan::Msg::DFmt("Unhandled size: {}", OpSize);
@@ -117,28 +118,31 @@ bool InterpreterOps::GetFallbackHandler(bool SupportsPreserveAllABI, const IR::I
     switch (OpSize) {
     case IR::OpSize::i16Bit: {
       if (Op->Truncate) {
-        *Info = {FABI_I16_I16_F80, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle2t, Core::OPINDEX_F80CVTINT_TRUNC2,
+        *Info = {FABI_I16_I16_F80_PTR, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle2t, Core::OPINDEX_F80CVTINT_TRUNC2,
                  SupportsPreserveAllABI};
       } else {
-        *Info = {FABI_I16_I16_F80, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle2, Core::OPINDEX_F80CVTINT_2, SupportsPreserveAllABI};
+        *Info = {FABI_I16_I16_F80_PTR, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle2, Core::OPINDEX_F80CVTINT_2,
+                 SupportsPreserveAllABI};
       }
       return true;
     }
     case IR::OpSize::i32Bit: {
       if (Op->Truncate) {
-        *Info = {FABI_I32_I16_F80, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle4t, Core::OPINDEX_F80CVTINT_TRUNC4,
+        *Info = {FABI_I32_I16_F80_PTR, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle4t, Core::OPINDEX_F80CVTINT_TRUNC4,
                  SupportsPreserveAllABI};
       } else {
-        *Info = {FABI_I32_I16_F80, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle4, Core::OPINDEX_F80CVTINT_4, SupportsPreserveAllABI};
+        *Info = {FABI_I32_I16_F80_PTR, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle4, Core::OPINDEX_F80CVTINT_4,
+                 SupportsPreserveAllABI};
       }
       return true;
     }
     case IR::OpSize::i64Bit: {
       if (Op->Truncate) {
-        *Info = {FABI_I64_I16_F80, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle8t, Core::OPINDEX_F80CVTINT_TRUNC8,
+        *Info = {FABI_I64_I16_F80_PTR, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle8t, Core::OPINDEX_F80CVTINT_TRUNC8,
                  SupportsPreserveAllABI};
       } else {
-        *Info = {FABI_I64_I16_F80, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle8, Core::OPINDEX_F80CVTINT_8, SupportsPreserveAllABI};
+        *Info = {FABI_I64_I16_F80_PTR, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTINT>::handle8, Core::OPINDEX_F80CVTINT_8,
+                 SupportsPreserveAllABI};
       }
       return true;
     }
@@ -147,7 +151,7 @@ bool InterpreterOps::GetFallbackHandler(bool SupportsPreserveAllABI, const IR::I
     break;
   }
   case IR::OP_F80CMP: {
-    *Info = {FABI_I64_I16_F80_F80, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle,
+    *Info = {FABI_I64_I16_F80_F80_PTR, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CMP>::handle,
              (Core::FallbackHandlerIndex)(Core::OPINDEX_F80CMP), SupportsPreserveAllABI};
     return true;
   }
@@ -157,11 +161,13 @@ bool InterpreterOps::GetFallbackHandler(bool SupportsPreserveAllABI, const IR::I
 
     switch (Op->SrcSize) {
     case IR::OpSize::i16Bit: {
-      *Info = {FABI_F80_I16_I16, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTTOINT>::handle2, Core::OPINDEX_F80CVTTOINT_2, SupportsPreserveAllABI};
+      *Info = {FABI_F80_I16_I16_PTR, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTTOINT>::handle2, Core::OPINDEX_F80CVTTOINT_2,
+               SupportsPreserveAllABI};
       return true;
     }
     case IR::OpSize::i32Bit: {
-      *Info = {FABI_F80_I16_I32, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTTOINT>::handle4, Core::OPINDEX_F80CVTTOINT_4, SupportsPreserveAllABI};
+      *Info = {FABI_F80_I16_I32_PTR, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80CVTTOINT>::handle4, Core::OPINDEX_F80CVTTOINT_4,
+               SupportsPreserveAllABI};
       return true;
     }
     default: LogMan::Msg::DFmt("Unhandled size: {}", OpSize);
@@ -169,16 +175,16 @@ bool InterpreterOps::GetFallbackHandler(bool SupportsPreserveAllABI, const IR::I
     break;
   }
 
-#define COMMON_UNARY_X87_OP(OP)                                                                                                          \
-  case IR::OP_F80##OP: {                                                                                                                 \
-    *Info = {FABI_F80_I16_F80, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80##OP>::handle, Core::OPINDEX_F80##OP, SupportsPreserveAllABI}; \
-    return true;                                                                                                                         \
+#define COMMON_UNARY_X87_OP(OP)                                                                                                              \
+  case IR::OP_F80##OP: {                                                                                                                     \
+    *Info = {FABI_F80_I16_F80_PTR, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80##OP>::handle, Core::OPINDEX_F80##OP, SupportsPreserveAllABI}; \
+    return true;                                                                                                                             \
   }
 
-#define COMMON_BINARY_X87_OP(OP)                                                                                                             \
-  case IR::OP_F80##OP: {                                                                                                                     \
-    *Info = {FABI_F80_I16_F80_F80, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80##OP>::handle, Core::OPINDEX_F80##OP, SupportsPreserveAllABI}; \
-    return true;                                                                                                                             \
+#define COMMON_BINARY_X87_OP(OP)                                                                                                                 \
+  case IR::OP_F80##OP: {                                                                                                                         \
+    *Info = {FABI_F80_I16_F80_F80_PTR, (void*)&FEXCore::CPU::OpHandlers<IR::OP_F80##OP>::handle, Core::OPINDEX_F80##OP, SupportsPreserveAllABI}; \
+    return true;                                                                                                                                 \
   }
 
 #define COMMON_F64_OP(OP)                                                                              \
