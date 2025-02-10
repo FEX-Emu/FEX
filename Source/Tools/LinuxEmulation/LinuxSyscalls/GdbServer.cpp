@@ -9,8 +9,6 @@ $end_info$
 #include "CodeLoader.h"
 #include "GdbServer/Info.h"
 
-#include "LinuxSyscalls/NetStream.h"
-
 #include <cstdlib>
 #include <cstdio>
 #include <iomanip>
@@ -47,7 +45,6 @@ $end_info$
 #endif
 #include <errno.h>
 #include <fcntl.h>
-#include <poll.h>
 #include <signal.h>
 #include <stddef.h>
 #include <string_view>
@@ -64,7 +61,7 @@ namespace FEX {
 #ifndef _WIN32
 void GdbServer::Break(FEXCore::Core::InternalThreadState* Thread, int signal) {
   std::lock_guard lk(sendMutex);
-  if (!CommsStream.HasSocket()) {
+  if (!CommsSocket) {
     return;
   }
 
@@ -73,7 +70,7 @@ void GdbServer::Break(FEXCore::Core::InternalThreadState* Thread, int signal) {
   CurrentDebuggingThread = ThreadObject->ThreadInfo.TID.load();
 
   const auto str = fextl::fmt::format("T{:02x}thread:{:x};", signal, CurrentDebuggingThread);
-  SendPacket(str);
+  SendPacket(*CommsSocket, str);
 }
 
 void GdbServer::WaitForThreadWakeup() {
@@ -83,7 +80,6 @@ void GdbServer::WaitForThreadWakeup() {
 
 GdbServer::~GdbServer() {
   CloseListenSocket();
-  CoreShuttingDown = true;
 
   if (gdbServerThread->joinable()) {
     gdbServerThread->join(nullptr);
@@ -178,7 +174,7 @@ static fextl::string encodeHex(std::string_view str) {
 // Takes a serial stream and reads a single packet
 // Un-escapes chars, checks the checksum and request a retransmit if it fails.
 // Once the checksum is validated, it acknowledges and returns the packet in a string
-fextl::string GdbServer::ReadPacket() {
+fextl::string GdbServer::ReadPacket(const std::span<std::byte>& RawMessage) {
   fextl::string packet {};
 
   // The GDB "Remote Serial Protocal" was originally 7bit clean for use on serial ports.
@@ -190,36 +186,36 @@ fextl::string GdbServer::ReadPacket() {
   // where any $ or # in the packet body are escaped ('}' followed by the char XORed with 0x20)
   // The checksum is a single unsigned byte sum of the data, hex encoded.
 
-  Utils::NetStream::ReturnGet c;
-  while ((c = CommsStream.get()).HasData()) {
-    switch (c.GetData()) {
-    case '$': // start of packet
-      if (packet.size() != 0) {
-        LogMan::Msg::EFmt("Dropping unexpected data: \"{}\"", packet);
-      }
+  if (RawMessage.empty() || (char)RawMessage[0] != '$') {
+    ERROR_AND_DIE_FMT("Expected GDB protocol messages to start with '$'");
+  }
 
-      // clear any existing data, must have been a mistake.
-      packet = fextl::string();
+  for (auto It = std::next(RawMessage.begin()); It != RawMessage.end(); ++It) {
+    char c = (char)*It;
+    switch (c) {
+    case '$': // start of packet
+      ERROR_AND_DIE_FMT("Unescaped control character");
       break;
+
     case '}': // escape char
     {
-      Utils::NetStream::ReturnGet escaped;
-
-      do {
-        escaped = CommsStream.get();
-      } while (!escaped.HasData() && !escaped.HasHangup());
-
-      if (escaped.HasData()) {
-        packet.push_back(escaped.GetData() ^ 0x20);
-      } else {
-        LogMan::Msg::EFmt("Received Invalid escape char: ${}", packet);
+      if (std::next(It) == RawMessage.end()) {
+        ERROR_AND_DIE_FMT("Missing character after escape indicator");
       }
+      char escaped = (char)*++It;
+      packet.push_back(escaped ^ 0x20);
       break;
     }
+
     case '#': // end of packet
     {
+      if (RawMessage.end() - It <= 2) {
+        ERROR_AND_DIE_FMT("Missing checksum at end of packet");
+      }
+
       char hexString[3] = {0, 0, 0};
-      CommsStream.read(hexString, 2, true);
+      hexString[0] = (char)*++It;
+      hexString[1] = (char)*++It;
       int expected_checksum = std::strtoul(hexString, nullptr, 16);
 
       if (calculateChecksum(packet) == expected_checksum) {
@@ -229,7 +225,8 @@ fextl::string GdbServer::ReadPacket() {
       }
       break;
     }
-    default: packet.push_back(c.GetData()); break;
+
+    default: packet.push_back(c); break;
     }
   }
 
@@ -256,22 +253,25 @@ static fextl::string escapePacket(const fextl::string& packet) {
   return ss.str();
 }
 
-void GdbServer::SendPacket(const fextl::string& packet) {
+void GdbServer::SendPacket(fasio::tcp_socket& Socket, const fextl::string& packet) {
   const auto escaped = escapePacket(packet);
-  const auto str = fextl::fmt::format("${}#{:02x}", escaped, calculateChecksum(escaped));
+  auto str = fextl::fmt::format("${}#{:02x}", escaped, calculateChecksum(escaped));
 
-  CommsStream.SendPacket(str);
+  fasio::error ec;
+  write(Socket, fasio::mutable_buffer {std::as_writable_bytes(std::span {str})}, ec);
 }
 
-void GdbServer::SendACK(bool NACK) {
+void GdbServer::SendACK(fasio::tcp_socket& Socket, bool NACK) {
   if (NoAckMode) {
     return;
   }
 
   if (NACK) {
-    CommsStream.SendPacket("-");
+    std::string_view message = "-";
+    send(Socket.FD, message.data(), message.size(), 0);
   } else {
-    CommsStream.SendPacket("+");
+    std::string_view message = "+";
+    send(Socket.FD, message.data(), message.size(), 0);
   }
 
   if (SettingNoAckMode) {
@@ -1349,104 +1349,133 @@ GdbServer::HandledPacketType GdbServer::ProcessPacket(const fextl::string& packe
 void GdbServer::SendPacketPair(const HandledPacketType& response) {
   std::lock_guard lk(sendMutex);
   if (response.TypeResponse == HandledPacketType::TYPE_ACK || response.TypeResponse == HandledPacketType::TYPE_ONLYACK) {
-    SendACK(false);
+    SendACK(*CommsSocket, false);
   } else if (response.TypeResponse == HandledPacketType::TYPE_NACK || response.TypeResponse == HandledPacketType::TYPE_ONLYNACK) {
-    SendACK(true);
+    SendACK(*CommsSocket, true);
   }
 
   if (response.TypeResponse == HandledPacketType::TYPE_UNKNOWN) {
-    SendPacket("");
+    SendPacket(*CommsSocket, "");
   } else if (response.TypeResponse != HandledPacketType::TYPE_ONLYNACK && response.TypeResponse != HandledPacketType::TYPE_ONLYACK &&
              response.TypeResponse != HandledPacketType::TYPE_NONE) {
-    SendPacket(response.Response);
+    SendPacket(*CommsSocket, response.Response);
   }
 }
 
-GdbServer::WaitForConnectionResult GdbServer::WaitForConnection() {
-  while (!CoreShuttingDown.load()) {
-    struct pollfd PollFD {
-      .fd = ListenSocket, .events = POLLIN | POLLPRI | POLLRDHUP, .revents = 0,
-    };
-    int Result = ppoll(&PollFD, 1, nullptr, nullptr);
-    if (Result > 0) {
-      if (PollFD.revents & POLLIN) {
-        OpenSocket();
-        return WaitForConnectionResult::CONNECTION;
-      } else if (PollFD.revents & (POLLHUP | POLLERR | POLLNVAL)) {
-        // Listen socket error or shutting down
-        LogMan::Msg::EFmt("[GdbServer] gdbserver shutting down: {}");
-        return WaitForConnectionResult::ERROR;
-      }
-    } else if (Result == -1) {
-      LogMan::Msg::EFmt("[GdbServer] poll failure: {}", errno);
+std::pair<fextl::vector<std::byte>::iterator, bool>
+GdbServer::MatchPacket(fextl::vector<std::byte>::iterator begin, fextl::vector<std::byte>::iterator end) {
+  if (CommsBuffer.empty()) {
+    return std::make_pair(begin, false);
+  }
+  switch ((char)CommsBuffer[0]) {
+  case '+':
+  case '-':
+  case '\x03':
+    // No further data
+    return std::make_pair(std::next(begin), true);
+
+  case '$': {
+    // Message format: $packet-data#checksum, where checksum is a single byte.
+    auto match = std::find(begin, end, (std::byte)'#');
+    if (match == end) {
+      // No match; fetch more data
+      return std::make_pair(end, false);
+    } else if (end - match <= 2) {
+      // Found '#' but missing the checksum bytes
+      return std::make_pair(match, false);
+    } else {
+      return std::make_pair(std::next(match, 3), true);
     }
+    break;
   }
 
-  LogMan::Msg::EFmt("[GdbServer] Shutting Down");
-  return WaitForConnectionResult::ERROR;
+  default: ERROR_AND_DIE_FMT("Unexpected character at beginning of GDB packet: {}", CommsBuffer[0]);
+  }
 }
+
+void GdbServer::HandlePacket(fasio::error ec, size_t BytesInMessage) {
+  if (ec != fasio::error::success || BytesInMessage == 0) {
+    ERROR_AND_DIE_FMT("Failed");
+  }
+
+  char c = (char)CommsBuffer[0];
+  switch (c) {
+  case '$': {
+    auto packet = ReadPacket(std::span {CommsBuffer}.subspan(0, BytesInMessage));
+    auto response = ProcessPacket(packet);
+    SendPacketPair(response);
+    if (response.TypeResponse == HandledPacketType::TYPE_UNKNOWN) {
+      LogMan::Msg::DFmt("Unknown packet {}", packet);
+    }
+    break;
+  }
+  case '+':
+    // ACK, do nothing.
+    break;
+  case '-':
+    // NAK, Resend requested
+    {
+      std::lock_guard lk(sendMutex);
+      SendPacket(*CommsSocket, {});
+    }
+    break;
+  case '\x03': { // ASCII EOT
+    SyscallHandler->TM.Pause();
+    fextl::string str = fextl::fmt::format("T02thread:{:02x};", getpid());
+    if (LibraryMapChanged) {
+      // If libraries have changed then let gdb know
+      str += "library:1;";
+    }
+    SendPacketPair({std::move(str), HandledPacketType::TYPE_ACK});
+    break;
+  }
+  default: LogMan::Msg::DFmt("GdbServer: Unexpected byte {} ({:02x})", c, c);
+  }
+
+  CommsBuffer.erase(CommsBuffer.begin(), CommsBuffer.begin() + BytesInMessage);
+
+  async_read_until(*CommsSocket, fasio::dynamic_vector_buffer {CommsBuffer}, std::bind_front(&GdbServer::MatchPacket, this),
+                   std::bind_front(&GdbServer::HandlePacket, this));
+}
+
 
 void GdbServer::GdbServerLoop() {
   OpenListenSocket();
-  if (ListenSocket == -1) {
+  if (!Acceptor) {
     // Couldn't open socket, just exit.
     return;
   }
 
-  while (!CoreShuttingDown.load()) {
-    if (WaitForConnection() == WaitForConnectionResult::ERROR) {
-      break;
+  Acceptor->async_accept([this](fasio::error ec, std::optional<fasio::tcp_socket> Socket) {
+    if (ec != fasio::error::success) {
+      // Listen socket error or shutting down
+      LogMan::Msg::EFmt("[GdbServer] gdbserver shutting down: {}");
+      close(CommsSocket->FD);
+      CommsSocket.reset();
+      // Repeat to wait for another connection
+      return fasio::post_callback::repeat;
     }
 
-    HandledPacketType response {};
+    CommsSocket.emplace(*std::move(Socket));
 
-    while (!CoreShuttingDown.load()) {
-      // Outer server loop. Handles packet start, ACK/NAK and break
-      Utils::NetStream::ReturnGet c;
-      while ((c = CommsStream.get()).HasData()) {
-        switch (c.GetData()) {
-        case '$': {
-          auto packet = ReadPacket();
-          response = ProcessPacket(packet);
-          SendPacketPair(response);
-          if (response.TypeResponse == HandledPacketType::TYPE_UNKNOWN) {
-            LogMan::Msg::DFmt("Unknown packet {}", packet);
-          }
-          break;
-        }
-        case '+':
-          // ACK, do nothing.
-          break;
-        case '-':
-          // NAK, Resend requested
-          {
-            std::lock_guard lk(sendMutex);
-            SendPacket(response.Response);
-          }
-          break;
-        case '\x03': { // ASCII EOT
-          SyscallHandler->TM.Pause();
-          fextl::string str = fextl::fmt::format("T02thread:{:02x};", getpid());
-          if (LibraryMapChanged) {
-            // If libraries have changed then let gdb know
-            str += "library:1;";
-          }
-          SendPacketPair({std::move(str), HandledPacketType::TYPE_ACK});
-          break;
-        }
-        default: LogMan::Msg::DFmt("GdbServer: Unexpected byte {} ({:02x})", c.GetData(), c.GetData());
-        }
-      }
+    // Receive packet data
+    async_read_until(*CommsSocket, fasio::dynamic_vector_buffer {CommsBuffer}, std::bind_front(&GdbServer::MatchPacket, this),
+                     std::bind_front(&GdbServer::HandlePacket, this));
 
-      if (c.HasHangup()) {
-        break;
-      }
-    }
+    // Repeat to catch disconnect events
+    return fasio::post_callback::repeat;
+  });
 
-    {
-      std::lock_guard lk(sendMutex);
-      CommsStream.InvalidateSocket();
-    }
+  CommsBuffer.reserve(1000);
+
+  // Enter event loop
+  Reactor.run();
+
+  // Shut down
+  std::lock_guard lk(sendMutex);
+  if (CommsSocket) {
+    close(CommsSocket->FD);
+    CommsSocket.reset();
   }
 
   CloseListenSocket();
@@ -1473,22 +1502,9 @@ void GdbServer::OpenListenSocket() {
 
   GdbUnixSocketPath = fextl::fmt::format("{}{}-gdb", GdbUnixPath, ::getpid());
 
-  ListenSocket = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
-  if (ListenSocket == -1) {
-    LogMan::Msg::EFmt("[GdbServer] Couldn't open AF_UNIX socket {} {}", errno, strerror(errno));
-    return;
-  }
-
-  struct sockaddr_un addr {};
-  addr.sun_family = AF_UNIX;
-  strncpy(addr.sun_path, GdbUnixSocketPath.data(), sizeof(addr.sun_path));
-  size_t SizeOfAddr = offsetof(sockaddr_un, sun_path) + GdbUnixSocketPath.size();
-
-  // Bind the socket to the path
-  int Result {};
   for (int attempt = 0; attempt < 2; ++attempt) {
-    Result = bind(ListenSocket, reinterpret_cast<struct sockaddr*>(&addr), SizeOfAddr);
-    if (Result == 0) {
+    Acceptor = fasio::tcp_acceptor::create(Reactor, false, GdbUnixSocketPath, 1);
+    if (Acceptor) {
       break;
     }
 
@@ -1497,34 +1513,18 @@ void GdbServer::OpenListenSocket() {
     unlink(GdbUnixSocketPath.c_str());
   }
 
-  if (Result != 0) {
-    LogMan::Msg::EFmt("[GdbServer] Couldn't bind AF_UNIX socket '{}': {} {}\n", addr.sun_path, errno, strerror(errno));
-    close(ListenSocket);
-    ListenSocket = -1;
+  if (!Acceptor) {
+    LogMan::Msg::EFmt("[GdbServer] Couldn't bind AF_UNIX socket '{}': {} {}\n", GdbUnixSocketPath, errno, strerror(errno));
     return;
   }
 
-  listen(ListenSocket, 1);
   LogMan::Msg::IFmt("[GdbServer] Waiting for connection on {}", GdbUnixSocketPath);
   LogMan::Msg::IFmt("[GdbServer] gdb-multiarch -ex \"set debug remote 1\" -ex \"target extended-remote {}\"", GdbUnixSocketPath);
 }
 
 void GdbServer::CloseListenSocket() {
-  if (ListenSocket != -1) {
-    close(ListenSocket);
-    ListenSocket = -1;
-  }
+  Acceptor.reset();
   unlink(GdbUnixSocketPath.c_str());
-}
-
-void GdbServer::OpenSocket() {
-  // Block until a connection arrives
-  struct sockaddr_storage their_addr {};
-  socklen_t addr_size {};
-
-  int new_fd = accept(ListenSocket, (struct sockaddr*)&their_addr, &addr_size);
-
-  CommsStream.OpenSocket(new_fd);
 }
 
 #endif

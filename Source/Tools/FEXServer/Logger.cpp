@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
-#include "Common/FEXServerClient.h"
+#include <Common/Async.h>
+#include <Common/FEXServerClient.h>
 
-#include <atomic>
-#include <mutex>
-#include <poll.h>
 #include <thread>
 #include <vector>
 
@@ -12,12 +10,8 @@ void ClientMsgHandler(int FD, FEXServerClient::Logging::PacketMsg* const Msg, co
 }
 
 namespace Logger {
-std::vector<struct pollfd> PollFDs {};
-std::mutex IncomingPollFDsLock {};
-std::vector<struct pollfd> IncomingPollFDs {};
+int LogClientQueuePipe[2];
 std::thread LogThread;
-std::atomic<bool> ShouldShutdown {false};
-std::atomic<int32_t> LoggerThreadTID {};
 
 void HandleLogData(int Socket) {
   std::vector<uint8_t> Data(1500);
@@ -32,6 +26,9 @@ void HandleLogData(int Socket) {
         // No more to read
         break;
       }
+    } else if (Read == 0) {
+      // Socket closed
+      return;
     } else {
       if (errno == EWOULDBLOCK) {
         // no error
@@ -58,71 +55,48 @@ void HandleLogData(int Socket) {
 }
 
 void LogThreadFunc() {
-  LoggerThreadTID = FHU::Syscalls::gettid();
+  fasio::poll_reactor Reactor;
 
-  while (!ShouldShutdown) {
-    struct timespec ts {};
-    ts.tv_sec = 5;
+  auto Pipe = fasio::posix_descriptor {Reactor, LogClientQueuePipe[0]};
+  fextl::vector<fasio::posix_descriptor> Clients;
 
-    {
-      std::unique_lock lk {IncomingPollFDsLock};
-      PollFDs.insert(PollFDs.end(), std::make_move_iterator(IncomingPollFDs.begin()), std::make_move_iterator(IncomingPollFDs.end()));
-      IncomingPollFDs.clear();
+  // Wait for AppendLogFD to send file descriptors over LogClientQueuePipe.
+  // When data becomes ready, we read the FD and register it to the reactor.
+  Pipe.async_wait([&](fasio::error ec) {
+    if (ec != fasio::error::success) {
+      return fasio::post_callback::stop_reactor;
     }
-    if (PollFDs.size() == 0) {
-      pselect(0, nullptr, nullptr, nullptr, &ts, nullptr);
-    } else {
-      int Result = ppoll(&PollFDs.at(0), PollFDs.size(), &ts, nullptr);
-      if (Result > 0) {
-        // Walk the FDs and see if we got any results
-        for (auto it = PollFDs.begin(); it != PollFDs.end();) {
-          bool Erase {};
-          if (it->revents != 0) {
-            if (it->revents & POLLIN) {
-              // Data from the socket
-              HandleLogData(it->fd);
-            } else if (it->revents & (POLLHUP | POLLERR | POLLNVAL | POLLRDHUP)) {
-              // Error or hangup, close the socket and erase it from our list
-              Erase = true;
-              close(it->fd);
-            }
 
-            it->revents = 0;
-            --Result;
-          }
+    int ReceivedFD;
+    read(Pipe.FD, &ReceivedFD, sizeof(ReceivedFD));
 
-          if (Erase) {
-            it = PollFDs.erase(it);
-          } else {
-            ++it;
-          }
-
-          if (Result == 0) {
-            // Early break if we've consumed all the results
-            break;
-          }
-        }
+    // Register client and set up read callback
+    Clients.emplace_back(Reactor, ReceivedFD);
+    Clients.back().async_wait([&Clients, ReceivedFD](fasio::error ec) {
+      if (ec != fasio::error::success) {
+        std::iter_swap(std::find_if(Clients.begin(), Clients.end(), [=](auto& desc) { return desc.FD == ReceivedFD; }), std::prev(Clients.end()));
+        Clients.pop_back();
+        return fasio::post_callback::drop;
       }
-    }
-  }
+
+      HandleLogData(ReceivedFD);
+      return fasio::post_callback::repeat;
+    });
+
+    return fasio::post_callback::repeat;
+  });
+
+  Reactor.run();
 }
 
 void StartLogThread() {
+  pipe2(LogClientQueuePipe, 0);
+
   LogThread = std::thread(LogThreadFunc);
 }
 
 void AppendLogFD(int FD) {
-  {
-    std::unique_lock lk {IncomingPollFDsLock};
-    IncomingPollFDs.emplace_back(pollfd {
-      .fd = FD,
-      .events = POLLIN,
-      .revents = 0,
-    });
-  }
-
-  // Wake up the thread immediately
-  FHU::Syscalls::tgkill(::getpid(), LoggerThreadTID, SIGUSR1);
+  write(LogClientQueuePipe[1], &FD, sizeof(FD));
 }
 
 bool LogThreadRunning() {
@@ -130,10 +104,7 @@ bool LogThreadRunning() {
 }
 
 void Shutdown() {
-  ShouldShutdown = true;
-
-  // Wake up the thread immediately
-  FHU::Syscalls::tgkill(::getpid(), LoggerThreadTID, SIGUSR1);
+  close(LogClientQueuePipe[1]);
 
   if (LogThread.joinable()) {
     LogThread.join();

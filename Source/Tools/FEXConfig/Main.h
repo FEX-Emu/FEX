@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
+#include <Common/Async.h>
+
 #include <QStandardItemModel>
 #include <QQmlApplicationEngine>
 
-#include <latch>
 #include <thread>
 
 class QQuickWindow;
@@ -38,11 +39,9 @@ class RootFSModel : public QStandardItemModel {
   QML_SINGLETON
 
   std::thread Thread;
-  std::latch ExitRequest {1};
+  fasio::poll_reactor INotifyReactor;
 
-  int INotifyFD;
-
-  void INotifyThreadFunc();
+  void INotifyThreadFunc(int INotifyFD);
 
 public:
   RootFSModel();
