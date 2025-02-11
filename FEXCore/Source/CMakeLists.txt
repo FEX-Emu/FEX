@@ -105,6 +105,7 @@ set (SRCS
   Interface/Core/ArchHelpers/Arm64Emitter.cpp
   Interface/Core/Dispatcher/Dispatcher.cpp
   Interface/Core/Interpreter/Fallbacks/InterpreterFallbacks.cpp
+  Interface/Core/Interpreter/Fallbacks/StringCompareFallbacks.cpp
   Interface/Core/JIT/JIT.cpp
   Interface/Core/JIT/ALUOps.cpp
   Interface/Core/JIT/AtomicOps.cpp
