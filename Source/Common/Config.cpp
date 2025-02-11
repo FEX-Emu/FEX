@@ -108,7 +108,7 @@ class MainLoader final : public OptionMapper {
 public:
   explicit MainLoader(FEXCore::Config::LayerType Type);
   explicit MainLoader(fextl::string ConfigFile);
-  explicit MainLoader(FEXCore::Config::LayerType Type, const char* ConfigFile);
+  explicit MainLoader(FEXCore::Config::LayerType Type, std::string_view ConfigFile);
 
   void Load() override;
 
@@ -168,7 +168,7 @@ MainLoader::MainLoader(fextl::string ConfigFile)
   , Config {std::move(ConfigFile)} {}
 
 
-MainLoader::MainLoader(FEXCore::Config::LayerType Type, const char* ConfigFile)
+MainLoader::MainLoader(FEXCore::Config::LayerType Type, std::string_view ConfigFile)
   : OptionMapper(Type)
   , Config {ConfigFile} {}
 
@@ -259,7 +259,7 @@ fextl::unique_ptr<FEXCore::Config::Layer> CreateMainLayer(const fextl::string* F
   }
 }
 
-fextl::unique_ptr<FEXCore::Config::Layer> CreateUserOverrideLayer(const char* AppConfig) {
+fextl::unique_ptr<FEXCore::Config::Layer> CreateUserOverrideLayer(std::string_view AppConfig) {
   return fextl::make_unique<MainLoader>(FEXCore::Config::LayerType::LAYER_USER_OVERRIDE, AppConfig);
 }
 
@@ -418,8 +418,15 @@ void LoadConfig(fextl::unique_ptr<FEX::ArgLoader::ArgLoader> ArgsLoader, fextl::
   }
 
   const char* AppConfig = getenv("FEX_APP_CONFIG");
-  if (AppConfig && FHU::Filesystem::Exists(AppConfig)) {
-    FEXCore::Config::AddLayer(CreateUserOverrideLayer(AppConfig));
+  if (AppConfig) {
+    fextl::string AppConfigStr = AppConfig;
+    if (IsPortable && FHU::Filesystem::IsRelative(AppConfig)) {
+      AppConfigStr = PortableInfo.InterpreterPath + AppConfigStr;
+    }
+
+    if (FHU::Filesystem::Exists(AppConfigStr)) {
+      FEXCore::Config::AddLayer(CreateUserOverrideLayer(AppConfigStr));
+    }
   }
 
   FEXCore::Config::AddLayer(CreateEnvironmentLayer(envp));
@@ -503,6 +510,13 @@ fextl::string GetConfigDirectory(bool Global, const PortableInformation& Portabl
   const char* ConfigOverride = getenv("FEX_APP_CONFIG_LOCATION");
   if (PortableInfo.IsPortable && (Global || !ConfigOverride)) {
     return fextl::fmt::format("{}/fex-emu/", PortableInfo.InterpreterPath);
+  } else if (PortableInfo.IsPortable && ConfigOverride && !Global) {
+    fextl::string AppConfigStr = ConfigOverride;
+    if (PortableInfo.IsPortable && FHU::Filesystem::IsRelative(AppConfigStr)) {
+      AppConfigStr = PortableInfo.InterpreterPath + AppConfigStr;
+    }
+
+    return AppConfigStr;
   }
 
   fextl::string ConfigDir;

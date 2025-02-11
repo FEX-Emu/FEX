@@ -193,6 +193,9 @@ def print_man_environment_tail():
     "Allows the user to override where FEX looks for configuration files",
     "By default FEX will look in {$HOME, $XDG_CONFIG_HOME}/.fex-emu/",
     "This will override the full path",
+    "If FEX_PORTABLE is declared then relative paths are also supported",
+    "For FEXInterpreter: Relative to the FEXInterpreter binary",
+    "For WINE: Relative to %LOCALAPPDATA%"
     ],
     "''", True)
 
@@ -204,6 +207,9 @@ def print_man_environment_tail():
     "This will override this file location",
     "One must be careful with this option as it will override any applications that load with execve as well"
     "If you need to support applications that execve then use FEX_APP_CONFIG_LOCATION instead"
+    "If FEX_PORTABLE is declared then relative paths are also supported",
+    "For FEXInterpreter: Relative to the FEXInterpreter binary",
+    "For WINE: Relative to %LOCALAPPDATA%"
     ],
     "''", True)
 
