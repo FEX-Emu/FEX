@@ -7,7 +7,8 @@ set(SRCS
   EnvironmentLoader.cpp
   HostFeatures.cpp
   JSONPool.cpp
-  StringUtil.cpp)
+  StringUtil.cpp
+  Profiler.cpp)
 
 if (NOT MINGW_BUILD)
   list (APPEND SRCS

@@ -8,11 +8,14 @@ $end_info$
 
 #pragma once
 
+#include "Common/Profiler.h"
+
 #include "LinuxSyscalls/Types.h"
 #include "LinuxSyscalls/Seccomp/SeccompEmulator.h"
 
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/fextl/vector.h>
+#include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
 
 #include <cstdint>
@@ -105,6 +108,35 @@ public:
 
   ~ThreadManager();
 
+  class StatAlloc final : public FEX::Profiler::StatAllocBase {
+  public:
+    StatAlloc();
+
+    void LockBeforeFork();
+    void UnlockAfterFork(FEXCore::Core::InternalThreadState* Thread, bool Child);
+
+    void CleanupForExit();
+
+    FEXCore::Profiler::ThreadStats* AllocateSlot(uint32_t TID);
+    void DeallocateSlot(FEXCore::Profiler::ThreadStats* AllocatedSlot);
+
+  private:
+    void Initialize();
+
+    uint32_t FrontendAllocateSlots(uint32_t NewSize) override;
+    FEX_CONFIG_OPT(ProfileStats, PROFILESTATS);
+    FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
+
+    constexpr static int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
+    FEXCore::ForkableUniqueMutex StatMutex;
+  };
+
+  void CleanupForExit() {
+    Stat.CleanupForExit();
+  }
+
+  StatAlloc Stat;
+
   ///< Returns the ThreadStateObject from a CpuStateFrame object.
   static inline FEX::HLE::ThreadStateObject* GetStateObjectFromCPUState(FEXCore::Core::CpuStateFrame* Frame) {
     return static_cast<FEX::HLE::ThreadStateObject*>(Frame->Thread->FrontendPtr);
@@ -136,6 +168,7 @@ public:
 
   void SleepThread(FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Frame);
 
+  void LockBeforeFork();
   void UnlockAfterFork(FEXCore::Core::InternalThreadState* Thread, bool Child);
 
   void IncrementIdleRefCount() {
@@ -188,6 +221,7 @@ private:
 
   void HandleThreadDeletion(FEX::HLE::ThreadStateObject* Thread, bool NeedsTLSUninstall = false);
   void NotifyPause();
+  FEX_CONFIG_OPT(ProfileStats, PROFILESTATS);
 };
 
 } // namespace FEX::HLE

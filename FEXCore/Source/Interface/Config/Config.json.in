@@ -363,6 +363,14 @@
           "Redirects the telemetry folder that FEX usually writes to.",
           "By default telemetry data is stored in {$FEX_APP_DATA_LOCATION,{$XDG_DATA_HOME,$HOME}/.fex-emu/Telemetry/}"
         ]
+      },
+      "ProfileStats": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "Enables FEX's low-overhead sampling profile statistics.",
+          "Requires a supported version of Mangohud to see the results"
+        ]
       }
     },
     "Hacks": {

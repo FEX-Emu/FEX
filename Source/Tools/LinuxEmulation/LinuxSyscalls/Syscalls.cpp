@@ -883,6 +883,7 @@ uint64_t UnimplementedSyscallSafe(FEXCore::Core::CpuStateFrame* Frame, uint64_t 
 }
 
 void SyscallHandler::LockBeforeFork(FEXCore::Core::InternalThreadState* Thread) {
+  TM.LockBeforeFork();
   Thread->CTX->LockBeforeFork(Thread);
   VMATracking.Mutex.lock();
 }

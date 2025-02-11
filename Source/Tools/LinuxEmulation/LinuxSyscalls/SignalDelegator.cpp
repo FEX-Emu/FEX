@@ -18,6 +18,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/FPState.h>
+#include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/Utils/ArchHelpers/Arm64.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
@@ -59,6 +60,7 @@ static FEX::HLE::ThreadStateObject* GetThreadFromAltStack(const stack_t& alt_sta
 static void SignalHandlerThunk(int Signal, siginfo_t* Info, void* UContext) {
   ucontext_t* _context = (ucontext_t*)UContext;
   auto ThreadObject = GetThreadFromAltStack(_context->uc_stack);
+  FEXCORE_PROFILE_ACCUMULATION(ThreadObject->Thread, AccumulatedSignalTime);
   ThreadObject->SignalInfo.Delegator->HandleSignal(ThreadObject, Signal, Info, UContext);
 }
 
@@ -673,6 +675,8 @@ void SignalDelegator::HandleGuestSignal(FEX::HLE::ThreadStateObject* ThreadObjec
     SaveTelemetry();
 #endif
 
+    FEX::HLE::_SyscallHandler->TM.CleanupForExit();
+
     // Reassign back to DFL and crash
     signal(Signal, SIG_DFL);
     if (SigInfo.si_code != SI_KERNEL) {
@@ -916,6 +920,7 @@ SignalDelegator::SignalDelegator(FEXCore::Context::Context* _CTX, const std::str
       return false;
     }
 
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedSIGBUSCount, 1);
     const auto Delegator = FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread)->SignalInfo.Delegator;
     const auto Result = FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(Thread, Delegator->GetUnalignedHandlerType(), PC,
                                                                            ArchHelpers::Context::GetArmGPRs(ucontext));

@@ -39,6 +39,7 @@ $end_info$
 #include "Common/PortabilityInfo.h"
 #include "DummyHandlers.h"
 #include "BTInterface.h"
+#include "Windows/Common/Profiler.h"
 
 #include <cstdint>
 #include <type_traits>
@@ -106,6 +107,7 @@ namespace BridgeInstrs {
 fextl::unique_ptr<FEXCore::Context::Context> CTX;
 fextl::unique_ptr<FEX::DummyHandlers::DummySignalDelegator> SignalDelegator;
 fextl::unique_ptr<WowSyscallHandler> SyscallHandler;
+fextl::unique_ptr<FEX::Windows::StatAlloc> StatAllocHandler;
 
 std::optional<FEX::Windows::InvalidationTracker> InvalidationTracker;
 std::optional<FEX::Windows::CPUFeatures> CPUFeatures;
@@ -500,6 +502,12 @@ void BTCpuProcessInit() {
 
   // wow64.dll will only initialise the cross-process queue if this is set
   GetTLS().Wow64Info().CpuFlags = WOW64_CPUFLAGS_SOFTWARE;
+
+  FEX_CONFIG_OPT(ProfileStats, PROFILESTATS);
+
+  if (IsWine && ProfileStats()) {
+    StatAllocHandler = fextl::make_unique<FEX::Windows::StatAlloc>(FEXCore::Profiler::AppType::WIN_WOW64);
+  }
 }
 
 void BTCpuProcessTerm(HANDLE Handle, BOOL After, ULONG Status) {}
@@ -511,7 +519,11 @@ void BTCpuThreadInit() {
   GetTLS().ControlWord().fetch_or(ControlBits::WOW_CPU_AREA_DIRTY, std::memory_order::relaxed);
 
   std::scoped_lock Lock(ThreadCreationMutex);
-  Threads.emplace(GetCurrentThreadId(), Thread);
+  auto ThreadTID = GetCurrentThreadId();
+  Threads.emplace(ThreadTID, Thread);
+  if (StatAllocHandler) {
+    Thread->ThreadStats = StatAllocHandler->AllocateSlot(ThreadTID);
+  }
 }
 
 void BTCpuThreadTerm(HANDLE Thread, LONG ExitCode) {
@@ -519,6 +531,8 @@ void BTCpuThreadTerm(HANDLE Thread, LONG ExitCode) {
   if (Err) {
     return;
   }
+
+  auto* ThreadState = TLS.ThreadState();
 
   THREAD_BASIC_INFORMATION Info;
   if (NTSTATUS Err = NtQueryInformationThread(Thread, ThreadBasicInformation, &Info, sizeof(Info), nullptr); Err) {
@@ -529,9 +543,12 @@ void BTCpuThreadTerm(HANDLE Thread, LONG ExitCode) {
   {
     std::scoped_lock Lock(ThreadCreationMutex);
     Threads.erase(ThreadTID);
+    if (StatAllocHandler) {
+      StatAllocHandler->DeallocateSlot(ThreadState->ThreadStats);
+    }
   }
 
-  CTX->DestroyThread(TLS.ThreadState());
+  CTX->DestroyThread(ThreadState);
   if (ThreadTID == GetCurrentThreadId()) {
     FEX::Windows::DeinitCRTThread();
   }
@@ -687,6 +704,7 @@ bool BTCpuResetToConsistentStateImpl(EXCEPTION_POINTERS* Ptrs) {
   auto* Context = Ptrs->ContextRecord;
   auto* Exception = Ptrs->ExceptionRecord;
   auto Thread = GetTLS().ThreadState();
+  FEXCORE_PROFILE_ACCUMULATION(Thread, AccumulatedSignalTime);
 
   if (Exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
     const auto FaultAddress = static_cast<uint64_t>(Exception->ExceptionInformation[1]);
@@ -702,6 +720,7 @@ bool BTCpuResetToConsistentStateImpl(EXCEPTION_POINTERS* Ptrs) {
 
     if (Thread) {
       std::scoped_lock Lock(ThreadCreationMutex);
+      FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedSMCCount, 1);
       if (InvalidationTracker->HandleRWXAccessViolation(FaultAddress)) {
         LogMan::Msg::DFmt("Handled self-modifying code: pc: {:X} fault: {:X}", Context->Pc, FaultAddress);
         return true;
@@ -713,6 +732,7 @@ bool BTCpuResetToConsistentStateImpl(EXCEPTION_POINTERS* Ptrs) {
     return false;
   }
 
+  FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedSIGBUSCount, 1);
   if (Exception->ExceptionCode == EXCEPTION_DATATYPE_MISALIGNMENT && Context::HandleUnalignedAccess(Context)) {
     LogMan::Msg::DFmt("Handled unaligned atomic: new pc: {:X}", Context->Pc);
     return true;
