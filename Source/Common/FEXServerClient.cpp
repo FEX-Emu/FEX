@@ -242,10 +242,13 @@ int ConnectToAndStartServer(std::string_view InterpreterPath) {
       // Child
       close(fds[0]); // Close read end of pipe
 
-      const char* argv[2];
+      const char* argv[4];
 
+      auto pipe_string = fextl::fmt::format("{}", fds[1]);
       argv[0] = FEXServerPath.c_str();
-      argv[1] = nullptr;
+      argv[1] = "--wait_pipe";
+      argv[2] = pipe_string.c_str();
+      argv[3] = nullptr;
 
       if (execvp(argv[0], (char* const*)argv) == -1) {
         // Let the parent know that we couldn't execute for some reason

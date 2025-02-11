@@ -109,10 +109,6 @@ int main(int argc, char** argv, char** const envp) {
     LogMan::Msg::InstallHandler(Logging::MsgHandler);
   }
 
-  // Scan for any incoming pipes
-  // We will close these later
-  PipeScanner::ScanForPipes();
-
   if (!Options.Foreground) {
     DeparentSelf();
   }
