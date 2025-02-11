@@ -230,7 +230,7 @@ bool InterpreterOps::GetFallbackHandler(bool SupportsPreserveAllABI, const IR::I
              SupportsPreserveAllABI};
     return true;
   case IR::OP_VPCMPISTRX:
-    *Info = {FABI_I32_I128_I128_I16, (void*)&FEXCore::CPU::OpHandlers<IR::OP_VPCMPISTRX>::handle, Core::OPINDEX_VPCMPISTRX, SupportsPreserveAllABI};
+    *Info = {FABI_I32_V128_V128_I16, (void*)&FEXCore::CPU::OpHandlers<IR::OP_VPCMPISTRX>::handle, Core::OPINDEX_VPCMPISTRX, SupportsPreserveAllABI};
     return true;
 
   default: break;
