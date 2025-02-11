@@ -188,7 +188,7 @@ def print_man_environment_tail():
 
     # Additional environment variables that live outside of the normal loop
     print_man_env_option(
-    "FEX_APP_CONFIG_LOCATION",
+    "APP_CONFIG_LOCATION",
     [
     "Allows the user to override where FEX looks for configuration files",
     "By default FEX will look in {$HOME, $XDG_CONFIG_HOME}/.fex-emu/",
@@ -197,7 +197,7 @@ def print_man_environment_tail():
     "''", True)
 
     print_man_env_option(
-    "FEX_APP_CONFIG",
+    "APP_CONFIG",
     [
     "Allows the user to override where FEX looks for only the application config file",
     "By default FEX will look in {$HOME, $XDG_CONFIG_HOME}/.fex-emu/Config.json",
@@ -208,7 +208,7 @@ def print_man_environment_tail():
     "''", True)
 
     print_man_env_option(
-    "FEX_APP_DATA_LOCATION",
+    "APP_DATA_LOCATION",
     [
     "Allows the user to override where FEX looks for data files",
     "By default FEX will look in {$HOME, $XDG_DATA_HOME}/.fex-emu/",
@@ -218,7 +218,7 @@ def print_man_environment_tail():
     "''", True)
 
     print_man_env_option(
-    "FEX_PORTABLE",
+    "PORTABLE",
     [
     "Allows FEX to run without installation. Global locations for configuration and binfmt_misc are ignored.",
     "For FEXInterpreter on Linux:",
