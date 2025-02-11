@@ -10,14 +10,7 @@
 #include <cstring>
 #include <stdint.h>
 
-#ifdef _M_ARM_64
-// Can't use uint8x16_t directly from arm_neon.h here.
-// Overrides softfloat-3e's defines which causes problems.
-using VectorRegType = __attribute__((neon_vector_type(16))) uint8_t;
-#elif defined(_M_X86_64)
-#include <xmmintrin.h>
-using VectorRegType = __m128i;
-#endif
+#include "Common/VectorRegType.h"
 
 extern "C" {
 #include "SoftFloat-3e/platform.h"
@@ -485,8 +478,8 @@ struct FEX_PACKED X80SoftFloat {
     return FEXCore::BitCast<double>(Result);
   }
 
-  VectorRegType ToVector() const {
-    VectorRegType Ret {};
+  FEXCore::VectorRegType ToVector() const {
+    FEXCore::VectorRegType Ret {};
     memcpy(&Ret, this, sizeof(*this));
     return Ret;
   }
@@ -582,7 +575,7 @@ struct FEX_PACKED X80SoftFloat {
     *this = i32_to_extF80(rhs);
   }
 
-  X80SoftFloat(const VectorRegType rhs) {
+  X80SoftFloat(const FEXCore::VectorRegType rhs) {
     memcpy(this, &rhs, sizeof(*this));
   }
 
@@ -592,7 +585,7 @@ struct FEX_PACKED X80SoftFloat {
     Sign = rhs.signExp >> 15;
   }
 
-  operator VectorRegType() const {
+  operator FEXCore::VectorRegType() const {
     return ToVector();
   }
 

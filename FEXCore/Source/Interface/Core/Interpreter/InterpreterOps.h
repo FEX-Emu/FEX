@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include <array>
-#include <cstddef>
 #include <cstdint>
 
 #include <FEXCore/Core/CoreState.h>
@@ -31,7 +29,7 @@ enum FallbackABI {
   FABI_F80_I16_F80,
   FABI_F80_I16_F80_F80,
   FABI_I32_I64_I64_I128_I128_I16,
-  FABI_I32_I128_I128_I16,
+  FABI_I32_V128_V128_I16,
 };
 
 struct FallbackInfo {

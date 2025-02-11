@@ -8,6 +8,7 @@
 
 #include "Interface/Core/Interpreter/Fallbacks/FallbackOpHandler.h"
 #include "Interface/IR/IR.h"
+#include "Common/VectorRegType.h"
 
 namespace FEXCore::CPU {
 
@@ -343,7 +344,7 @@ struct OpHandlers<IR::OP_VPCMPESTRX> {
 
 template<>
 struct OpHandlers<IR::OP_VPCMPISTRX> {
-  FEXCORE_PRESERVE_ALL_ATTR static uint32_t handle(__uint128_t lhs, __uint128_t rhs, uint16_t control);
+  FEXCORE_PRESERVE_ALL_ATTR static uint32_t handle(VectorRegType lhs, VectorRegType rhs, uint16_t control);
 };
 
 } // namespace FEXCore::CPU
