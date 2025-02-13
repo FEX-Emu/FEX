@@ -155,7 +155,7 @@ int main(int argc, char** argv) {
     PIDs.emplace_back(PIDInfo {
       .pid = pid,
       .cmdline = CMDLineData.str(),
-      .exe_link = exe_link,
+      .exe_link = std::move(exe_link),
       .State = State,
     });
   }
