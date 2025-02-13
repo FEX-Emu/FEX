@@ -10,6 +10,14 @@
 
 #include <FEXCore/Utils/CompilerDefs.h>
 
+#define FEXCORE_PROFILER_BACKEND_OFF 0
+#define FEXCORE_PROFILER_BACKEND_GPUVIS 1
+#define FEXCORE_PROFILER_BACKEND_TRACY 2
+
+#if defined(ENABLE_FEXCORE_PROFILER) && FEXCORE_PROFILER_BACKEND == FEXCORE_PROFILER_BACKEND_TRACY
+#include "tracy/Tracy.hpp"
+#endif
+
 namespace FEXCore::Profiler {
 // FEXCore live-stats
 constexpr uint8_t STATS_VERSION = 2;
@@ -69,11 +77,23 @@ static inline uint64_t GetCycleCounter() {
 }
 #endif
 
-FEX_DEFAULT_VISIBILITY void Init();
+FEX_DEFAULT_VISIBILITY void Init(std::string_view ProgramName, std::string_view ProgramPath);
+FEX_DEFAULT_VISIBILITY void PostForkAction(bool IsChild);
+FEX_DEFAULT_VISIBILITY bool IsActive();
 FEX_DEFAULT_VISIBILITY void Shutdown();
 FEX_DEFAULT_VISIBILITY void TraceObject(std::string_view const Format);
 FEX_DEFAULT_VISIBILITY void TraceObject(std::string_view const Format, uint64_t Duration);
 
+#define UniqueScopeName2(name, line) name##line
+#define UniqueScopeName(name, line) UniqueScopeName2(name, line)
+
+// Declare an instantaneous profiler event.
+#define FEXCORE_PROFILE_INSTANT(name) FEXCore::Profiler::TraceObject(name)
+
+#if FEXCORE_PROFILER_BACKEND == FEXCORE_PROFILER_BACKEND_TRACY
+// Declare a scoped profile block variable with a fixed name.
+#define FEXCORE_PROFILE_SCOPED(name) ZoneNamedN(___tracy_scoped_zone, name, ::FEXCore::Profiler::IsActive())
+#else
 // A class that follows scoping rules to generate a profile duration block
 class ProfilerBlock final {
 public:
@@ -86,14 +106,9 @@ private:
   std::string_view const Format;
 };
 
-#define UniqueScopeName2(name, line) name##line
-#define UniqueScopeName(name, line) UniqueScopeName2(name, line)
-
-// Declare an instantaneous profiler event.
-#define FEXCORE_PROFILE_INSTANT(name) FEXCore::Profiler::TraceObject(name)
-
 // Declare a scoped profile block variable with a fixed name.
 #define FEXCORE_PROFILE_SCOPED(name) FEXCore::Profiler::ProfilerBlock UniqueScopeName(ScopedBlock_, __LINE__)(name)
+#endif
 
 template<typename T, size_t FlatOffset = 0>
 class AccumulationBlock final {
@@ -127,7 +142,9 @@ private:
 
 #else
 [[maybe_unused]]
-static void Init() {}
+static void Init(std::string_view ProgramName, std::string_view ProgramPath) {}
+[[maybe_unused]]
+static void PostForkAction(bool IsChild) {}
 [[maybe_unused]]
 static void Shutdown() {}
 [[maybe_unused]]

@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: MIT
-#include <array>
 #include <cstdint>
 #include <fcntl.h>
-#include <limits.h>
 #ifndef _WIN32
 #include <linux/magic.h>
 #include <sys/stat.h>
 #include <sys/vfs.h>
-#include <time.h>
 #endif
 
 #include <FEXCore/Utils/LogManager.h>
@@ -15,10 +12,11 @@
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/string.h>
 
-#define BACKEND_OFF 0
-#define BACKEND_GPUVIS 1
-
 #ifdef ENABLE_FEXCORE_PROFILER
+#if FEXCORE_PROFILER_BACKEND == FEXCORE_PROFILER_BACKEND_GPUVIS
+#include <array>
+#include <limits.h>
+#include <time.h>
 #ifndef _WIN32
 static inline uint64_t GetTime() {
   // We want the time in the least amount of overhead possible
@@ -49,7 +47,6 @@ static inline uint64_t GetTime() {
 
 #endif
 
-#if FEXCORE_PROFILER_BACKEND == BACKEND_GPUVIS
 namespace FEXCore::Profiler {
 ProfilerBlock::ProfilerBlock(std::string_view const Format)
   : DurationBegin {GetTime()}
@@ -114,35 +111,125 @@ void TraceObject(std::string_view const Format) {
   }
 }
 } // namespace GPUVis
+#elif FEXCORE_PROFILER_BACKEND == FEXCORE_PROFILER_BACKEND_TRACY
+#include "tracy/Tracy.hpp"
+namespace Tracy {
+static int EnableAfterFork = 0;
+static bool Enable = false;
+
+void Init(std::string_view ProgramName, std::string_view ProgramPath) {
+  const char* ProfileTargetName = getenv("FEX_PROFILE_TARGET_NAME"); // Match by application name
+  const char* ProfileTargetPath = getenv("FEX_PROFILE_TARGET_PATH"); // Match by path suffix
+  const char* WaitForFork = getenv("FEX_PROFILE_WAIT_FOR_FORK");     // Don't enable profiling until the process forks N times
+  bool Matched = (ProfileTargetName && ProgramName == ProfileTargetName) || (ProfileTargetPath && ProgramPath.ends_with(ProfileTargetPath));
+  if (Matched && WaitForFork) {
+    EnableAfterFork = std::atoi(WaitForFork);
+  }
+  Enable = Matched && !EnableAfterFork;
+  if (Enable) {
+    tracy::StartupProfiler();
+    LogMan::Msg::IFmt("Tracy profiling started");
+  } else if (EnableAfterFork) {
+    LogMan::Msg::IFmt("Tracy profiling will start after fork");
+  }
+}
+
+void PostForkAction(bool IsChild) {
+  if (Enable) {
+    // Tracy does not support multiprocess profiling
+    LogMan::Msg::EFmt("Warning: Profiling a process with forks is not supported. Set the environment variable "
+                      "FEX_PROFILE_WAIT_FOR_FORK=<n> to start profiling after the n-th fork.");
+  }
+
+  if (IsChild) {
+    Enable = false;
+    return;
+  }
+
+  if (EnableAfterFork > 1) {
+    --EnableAfterFork;
+    LogMan::Msg::IFmt("Tracy profiling will start after {} forks", EnableAfterFork);
+  } else if (EnableAfterFork == 1) {
+    Enable = true;
+    EnableAfterFork = 0;
+    tracy::StartupProfiler();
+    LogMan::Msg::IFmt("Tracy profiling started");
+  }
+}
+
+void Shutdown() {
+  if (Tracy::Enable) {
+    LogMan::Msg::IFmt("Stopping Tracy profiling");
+    tracy::ShutdownProfiler();
+  }
+}
+
+void TraceObject(std::string_view const Format, uint64_t Duration) {}
+
+void TraceObject(std::string_view const Format) {
+  if (Tracy::Enable) {
+    TracyMessage(Format.data(), Format.size());
+  }
+}
+} // namespace Tracy
 #else
 #error Unknown profiler backend
 #endif
 #endif
 
 namespace FEXCore::Profiler {
+
 #ifdef ENABLE_FEXCORE_PROFILER
-void Init() {
-#if FEXCORE_PROFILER_BACKEND == BACKEND_GPUVIS
+void Init(std::string_view ProgramName, std::string_view ProgramPath) {
+#if FEXCORE_PROFILER_BACKEND == FEXCORE_PROFILER_BACKEND_GPUVIS
   GPUVis::Init();
+#elif FEXCORE_PROFILER_BACKEND == FEXCORE_PROFILER_BACKEND_TRACY
+  Tracy::Init(ProgramName, ProgramPath);
+#endif
+}
+
+void PostForkAction(bool IsChild) {
+#if FEXCORE_PROFILER_BACKEND == FEXCORE_PROFILER_BACKEND_TRACY
+  Tracy::PostForkAction(IsChild);
+#endif
+}
+
+bool IsActive() {
+#if FEXCORE_PROFILER_BACKEND == FEXCORE_PROFILER_BACKEND_GPUVIS
+  // Always active
+  return true;
+#elif FEXCORE_PROFILER_BACKEND == FEXCORE_PROFILER_BACKEND_TRACY
+  // Active if previously enabled
+  if (Tracy::Enable) {
+    LogMan::Msg::EFmt("PROFILE ENABLED");
+  }
+  return Tracy::Enable;
 #endif
 }
 
 void Shutdown() {
-#if FEXCORE_PROFILER_BACKEND == BACKEND_GPUVIS
+#if FEXCORE_PROFILER_BACKEND == FEXCORE_PROFILER_BACKEND_GPUVIS
   GPUVis::Shutdown();
+#elif FEXCORE_PROFILER_BACKEND == FEXCORE_PROFILER_BACKEND_TRACY
+  Tracy::Shutdown();
 #endif
 }
 
 void TraceObject(std::string_view const Format, uint64_t Duration) {
-#if FEXCORE_PROFILER_BACKEND == BACKEND_GPUVIS
+#if FEXCORE_PROFILER_BACKEND == FEXCORE_PROFILER_BACKEND_GPUVIS
   GPUVis::TraceObject(Format, Duration);
+#elif FEXCORE_PROFILER_BACKEND == FEXCORE_PROFILER_BACKEND_TRACY
+  Tracy::TraceObject(Format, Duration);
 #endif
 }
 
 void TraceObject(std::string_view const Format) {
-#if FEXCORE_PROFILER_BACKEND == BACKEND_GPUVIS
+#if FEXCORE_PROFILER_BACKEND == FEXCORE_PROFILER_BACKEND_GPUVIS
   GPUVis::TraceObject(Format);
+#elif FEXCORE_PROFILER_BACKEND == FEXCORE_PROFILER_BACKEND_TRACY
+  Tracy::TraceObject(Format);
 #endif
 }
+
 #endif
 } // namespace FEXCore::Profiler

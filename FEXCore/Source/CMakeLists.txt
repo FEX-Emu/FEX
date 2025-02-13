@@ -338,6 +338,10 @@ add_library(FEXCore_Base STATIC ${FEXCORE_BASE_SRCS})
 target_link_libraries(FEXCore_Base ${LIBS})
 AddDefaultOptionsToTarget(FEXCore_Base)
 
+if (ENABLE_FEXCORE_PROFILER AND FEXCORE_PROFILER_BACKEND STREQUAL "TRACY")
+  target_link_libraries(FEXCore_Base TracyClient)
+endif()
+
 function(AddObject Name Type)
   add_library(${Name} ${Type} ${SRCS})
 
