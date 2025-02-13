@@ -42,7 +42,8 @@ constexpr uint32_t STLR_INST = 0x08'9F'FC'00;
 constexpr uint32_t STLXR_MASK = 0x3F'E0'FC'00;
 constexpr uint32_t STLXR_INST = 0x08'00'FC'00;
 
-constexpr uint32_t LDSTREGISTER_MASK = 0b0011'1011'0010'0000'0000'1100'0000'0000;
+// Load/store register (register offset) (Rm encoded as xzr)
+constexpr uint32_t LDSTREGISTER_MASK = 0b0011'1111'1111'1111'1111'1100'0000'0000;
 constexpr uint32_t LDR_INST = 0b0011'1000'0111'1111'0110'1000'0000'0000;
 constexpr uint32_t STR_INST = 0b0011'1000'0011'1111'0110'1000'0000'0000;
 
