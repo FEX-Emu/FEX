@@ -263,7 +263,7 @@ FileManager::FileManager(FEXCore::Context::Context* ctx)
   }
 
   // Now that we loaded the thunks object, walk through and ensure dependencies are enabled as well
-  auto ThunkGuestPath = Is64BitMode() ? ThunkGuestLibs() : ThunkGuestLibs32();
+  const auto& ThunkGuestPath = Is64BitMode() ? ThunkGuestLibs() : ThunkGuestLibs32();
   for (const auto& DBObject : ThunkDB) {
     if (!DBObject.second.Enabled) {
       continue;

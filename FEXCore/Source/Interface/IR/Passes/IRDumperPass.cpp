@@ -27,7 +27,7 @@ private:
 };
 
 IRDumper::IRDumper() {
-  const auto DumpIRStr = DumpIR();
+  const auto& DumpIRStr = DumpIR();
   if (DumpIRStr == "stderr" || DumpIRStr == "stdout" || DumpIRStr == "no") {
     // Intentionally do nothing
   } else if (DumpIRStr == "server") {
