@@ -6,7 +6,6 @@ set(SRCS
 if (NOT MINGW_BUILD)
   list(APPEND SRCS
   Linux/Utils/ELFContainer.cpp
-  Linux/Utils/ELFSymbolDatabase.cpp
   )
 endif()
 

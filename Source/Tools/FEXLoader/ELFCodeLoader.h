@@ -4,19 +4,13 @@
 
 #include "ArchHelpers/UContext.h"
 #include "CodeLoader.h"
-#include "Common/Config.h"
 #include "Common/FDUtils.h"
 #include "FEXCore/Utils/Allocator.h"
 #include "LinuxSyscalls/Syscalls.h"
 #include "VDSO_Emulation.h"
 #include "Linux/Utils/ELFParser.h"
-#include "Linux/Utils/ELFSymbolDatabase.h"
 
-#include <array>
-#include <bitset>
-#include <cassert>
 #include <cstring>
-#include <random>
 
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Utils/MathUtils.h>
