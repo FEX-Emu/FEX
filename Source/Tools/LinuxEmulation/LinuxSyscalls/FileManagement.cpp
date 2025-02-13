@@ -325,12 +325,15 @@ FileManager::FileManager(FEXCore::Context::Context* ctx)
 
   // Keep an fd open for /proc, to bypass chroot-style sandboxes
   ProcFD = open("/proc", O_RDONLY | O_CLOEXEC);
-
-  // Track the st_dev of /proc, to check for inode equality
-  struct stat Buffer;
-  auto Result = fstat(ProcFD, &Buffer);
-  if (Result >= 0) {
-    ProcFSDev = Buffer.st_dev;
+  if (ProcFD != -1) {
+    // Track the st_dev of /proc, to check for inode equality
+    struct stat Buffer;
+    auto Result = fstat(ProcFD, &Buffer);
+    if (Result >= 0) {
+      ProcFSDev = Buffer.st_dev;
+    }
+  } else {
+    LogMan::Msg::EFmt("Couldn't open `/proc`. Is ProcFS mounted? FEX won't be able to track FD conflicts");
   }
 
   UpdatePID(::getpid());
