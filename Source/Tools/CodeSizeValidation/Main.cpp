@@ -291,7 +291,7 @@ static bool TestInstructions(FEXCore::Context::Context* CTX, FEXCore::Core::Inte
     bool ShouldShowCode = INSTStats->first.HostCodeInstructions != CurrentTest->ExpectedInstructionCount;
 
     if (ShouldShowCode) {
-      for (auto Line : INSTStats->second) {
+      for (const auto& Line : INSTStats->second) {
         LogMan::Msg::EFmt("\t{}", Line);
       }
     }

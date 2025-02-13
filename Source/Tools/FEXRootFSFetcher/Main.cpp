@@ -96,7 +96,7 @@ void ParseArguments(int argc, char** argv) {
   }
 
   if (Options.is_set_by_user("force_ui")) {
-    auto Option = Options["force_ui"];
+    const auto& Option = Options["force_ui"];
     if (Option == "tty") {
       UIOption = UIOverrideOption::TTY;
     } else if (Option == "zenity") {

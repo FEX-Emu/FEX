@@ -360,7 +360,7 @@ int main(int argc, char** argv, char** const envp) {
     LogMan::Throw::UnInstallHandler();
     LogMan::Msg::UnInstallHandler();
   } else {
-    auto LogFile = OutputLog();
+    const auto& LogFile = OutputLog();
     // If stderr or stdout then we need to dup the FD
     // In some cases some applications will close stderr and stdout
     // then redirect the FD to either a log OR some cases just not use

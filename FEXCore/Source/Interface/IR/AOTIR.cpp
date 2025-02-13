@@ -338,7 +338,7 @@ bool AOTIRCaptureCache::PostCompileCode(FEXCore::Core::InternalThreadState* Thre
 
         auto LocalRIP = GuestRIP - AOTIRCacheEntry.VAFileStart;
         auto LocalStartAddr = StartAddr - AOTIRCacheEntry.VAFileStart;
-        auto FileId = AOTIRCacheEntry.Entry->FileId;
+        const auto& FileId = AOTIRCacheEntry.Entry->FileId;
 
         // The lambda is converted to std::function. This is tricky to refactor so it doesn't allocate memory through glibc.
         // NOTE: unique_ptr must be passed as a raw pointer since std::function requires lambda captures to be copyable

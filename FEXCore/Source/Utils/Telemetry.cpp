@@ -45,7 +45,7 @@ void Initialize() {
     return;
   }
 
-  auto DataDirectory = Config::GetTelemetryDirectory();
+  const auto& DataDirectory = Config::GetTelemetryDirectory();
 
   // Ensure the folder structure is created for our configuration
   if (!FHU::Filesystem::Exists(DataDirectory) && !FHU::Filesystem::CreateDirectories(DataDirectory)) {
