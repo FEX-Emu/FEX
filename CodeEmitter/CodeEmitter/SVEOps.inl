@@ -2379,13 +2379,13 @@ public:
     } else if (srcsize == SubRegSize::i32Bit) {
       // Srcsize = fp32, opc1 encodes dst size
       LOGMAN_THROW_A_FMT(dstsize != SubRegSize::i16Bit, "Unsupported size in {}", __func__);
+      opc1 = dstsize == SubRegSize::i64Bit ? 0b11 : 0b10;
       opc2 = 0b10;
-      opc1 = dstsize == SubRegSize::i64Bit ? 0b11 : dstsize == SubRegSize::i32Bit ? 0b10 : 0b00;
     } else if (srcsize == SubRegSize::i64Bit) {
       LOGMAN_THROW_A_FMT(dstsize != SubRegSize::i16Bit, "Unsupported size in {}", __func__);
       // SrcSize = fp64, opc2 encodes dst size
       opc1 = 0b11;
-      opc2 = dstsize == SubRegSize::i64Bit ? 0b11 : dstsize == SubRegSize::i32Bit ? 0b00 : 0b00;
+      opc2 = dstsize == SubRegSize::i64Bit ? 0b11 : 0b00;
     } else {
       FEX_UNREACHABLE;
     }
@@ -2400,13 +2400,13 @@ public:
     } else if (srcsize == SubRegSize::i32Bit) {
       // Srcsize = fp32, opc1 encodes dst size
       LOGMAN_THROW_A_FMT(dstsize != SubRegSize::i16Bit, "Unsupported size in {}", __func__);
+      opc1 = dstsize == SubRegSize::i64Bit ? 0b11 : 0b10;
       opc2 = 0b10;
-      opc1 = dstsize == SubRegSize::i64Bit ? 0b11 : dstsize == SubRegSize::i32Bit ? 0b10 : 0b00;
     } else if (srcsize == SubRegSize::i64Bit) {
       LOGMAN_THROW_A_FMT(dstsize != SubRegSize::i16Bit, "Unsupported size in {}", __func__);
       // SrcSize = fp64, opc2 encodes dst size
       opc1 = 0b11;
-      opc2 = dstsize == SubRegSize::i64Bit ? 0b11 : dstsize == SubRegSize::i32Bit ? 0b00 : 0b00;
+      opc2 = dstsize == SubRegSize::i64Bit ? 0b11 : 0b00;
     } else {
       FEX_UNREACHABLE;
     }
