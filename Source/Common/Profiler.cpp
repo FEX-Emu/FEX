@@ -59,7 +59,7 @@ FEXCore::Profiler::ThreadStats* StatAllocBase::AllocateSlot(uint32_t TID) {
   --RemainingSlots;
 
   // Slot might be reused, just zero it now.
-  memset(AllocatedSlot, 0, sizeof(FEXCore::Profiler::ThreadStatsHeader));
+  memset(AllocatedSlot, 0, sizeof(*AllocatedSlot));
 
   // TID != 0 means slot is allocated.
   AllocatedSlot->TID.store(TID, std::memory_order_relaxed);
