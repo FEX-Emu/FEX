@@ -652,7 +652,7 @@ void LoadGuestVDSOSymbols(bool Is64Bit, char* VDSOBase) {
 void LoadUnique32BitSigreturn(VDSOMapping* Mapping) {
   // Hardcoded to one page for now
   const auto PageSize = sysconf(_SC_PAGESIZE);
-  Mapping->OptionalMappingSize = PageSize;
+  Mapping->OptionalMappingSize = PageSize > 0 ? PageSize : FEXCore::Utils::FEX_PAGE_SIZE;
 
   // First 64bit page
   constexpr uintptr_t LOCATION_MAX = 0x1'0000'0000;

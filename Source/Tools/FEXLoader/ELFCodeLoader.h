@@ -564,21 +564,21 @@ public:
     // All done
 
     // Setup AuxVars
-    AuxVariables.emplace_back(auxv_t {11, getauxval(AT_UID)});          // AT_UID
-    AuxVariables.emplace_back(auxv_t {12, getauxval(AT_EUID)});         // AT_EUID
-    AuxVariables.emplace_back(auxv_t {13, getauxval(AT_GID)});          // AT_GID
-    AuxVariables.emplace_back(auxv_t {14, getauxval(AT_EGID)});         // AT_EGID
-    AuxVariables.emplace_back(auxv_t {17, getauxval(AT_CLKTCK)});       // AT_CLKTIK
-    AuxVariables.emplace_back(auxv_t {6, 0x1000});                      // AT_PAGESIZE
-    AuxRandom = &AuxVariables.emplace_back(auxv_t {25, ~0ULL});         // AT_RANDOM
-    AuxVariables.emplace_back(auxv_t {23, getauxval(AT_SECURE)});       // AT_SECURE
-    AuxVariables.emplace_back(auxv_t {8, 0});                           // AT_FLAGS
-    AuxVariables.emplace_back(auxv_t {5, MainElf.phdrs.size()});        // AT_PHNUM
-    AuxVariables.emplace_back(auxv_t {16, HWCap});                      // AT_HWCAP
-    AuxVariables.emplace_back(auxv_t {26, HWCap2});                     // AT_HWCAP2
-    AuxVariables.emplace_back(auxv_t {51, CalculateSignalStackSize()}); // AT_MINSIGSTKSZ
-    AuxPlatform = &AuxVariables.emplace_back(auxv_t {24, ~0ULL});       // AT_PLATFORM
-    AuxExecFN = &AuxVariables.emplace_back(auxv_t {AT_EXECFN, ~0ULL});  // AT_EXECFN
+    AuxVariables.emplace_back(auxv_t {11, getauxval(AT_UID)});            // AT_UID
+    AuxVariables.emplace_back(auxv_t {12, getauxval(AT_EUID)});           // AT_EUID
+    AuxVariables.emplace_back(auxv_t {13, getauxval(AT_GID)});            // AT_GID
+    AuxVariables.emplace_back(auxv_t {14, getauxval(AT_EGID)});           // AT_EGID
+    AuxVariables.emplace_back(auxv_t {17, getauxval(AT_CLKTCK)});         // AT_CLKTIK
+    AuxVariables.emplace_back(auxv_t {6, FEXCore::Utils::FEX_PAGE_SIZE}); // AT_PAGESIZE
+    AuxRandom = &AuxVariables.emplace_back(auxv_t {25, ~0ULL});           // AT_RANDOM
+    AuxVariables.emplace_back(auxv_t {23, getauxval(AT_SECURE)});         // AT_SECURE
+    AuxVariables.emplace_back(auxv_t {8, 0});                             // AT_FLAGS
+    AuxVariables.emplace_back(auxv_t {5, MainElf.phdrs.size()});          // AT_PHNUM
+    AuxVariables.emplace_back(auxv_t {16, HWCap});                        // AT_HWCAP
+    AuxVariables.emplace_back(auxv_t {26, HWCap2});                       // AT_HWCAP2
+    AuxVariables.emplace_back(auxv_t {51, CalculateSignalStackSize()});   // AT_MINSIGSTKSZ
+    AuxPlatform = &AuxVariables.emplace_back(auxv_t {24, ~0ULL});         // AT_PLATFORM
+    AuxExecFN = &AuxVariables.emplace_back(auxv_t {AT_EXECFN, ~0ULL});    // AT_EXECFN
 
     if (Is64BitMode()) {
       AuxVariables.emplace_back(auxv_t {4, 0x38}); // AT_PHENT

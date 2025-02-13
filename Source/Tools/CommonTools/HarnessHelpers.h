@@ -401,7 +401,8 @@ public:
   }
 
   uint64_t StackSize() const override {
-    return sysconf(_SC_PAGESIZE);
+    const auto Page = sysconf(_SC_PAGESIZE);
+    return Page > 0 ? Page : FEXCore::Utils::FEX_PAGE_SIZE;
   }
 
   uint64_t GetStackPointer() override {
@@ -426,7 +427,11 @@ public:
       return Result;
     };
 
-    const auto AllocPageSize = sysconf(_SC_PAGESIZE);
+    auto AllocPageSize = sysconf(_SC_PAGESIZE);
+    if (AllocPageSize <= 0) {
+      AllocPageSize = FEXCore::Utils::FEX_PAGE_SIZE;
+    }
+
     if (LimitedSize) {
       DoMMap(0xe000'0000, AllocPageSize * 10);
 
