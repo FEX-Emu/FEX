@@ -257,7 +257,9 @@ std::optional<int> SeccompEmulator::SerializeFilters(FEXCore::Core::CpuStateFram
   lseek(FD, 0, SEEK_SET);
 
   // Seal everything about this FD.
-  fcntl(FD, F_ADD_SEALS, F_SEAL_SEAL | F_SEAL_SHRINK | F_SEAL_GROW | F_SEAL_WRITE | F_SEAL_FUTURE_WRITE);
+  if (fcntl(FD, F_ADD_SEALS, F_SEAL_SEAL | F_SEAL_SHRINK | F_SEAL_GROW | F_SEAL_WRITE | F_SEAL_FUTURE_WRITE) == -1) {
+    LogMan::Msg::IFmt("Couldn't seal seccomp serialize FD. Nefarious code could modify");
+  }
 
   return FD;
 }
@@ -410,7 +412,7 @@ SeccompEmulator::ExecuteFilter(FEXCore::Core::CpuStateFrame* Frame, uint64_t JIT
   case SECCOMP_RET_KILL_PROCESS: {
     const int KillSignal = GetKillSignal();
     // Ignores signal handler and sigmask
-    uint64_t Mask = 1 << (KillSignal - 1);
+    uint64_t Mask = 1ULL << (KillSignal - 1);
     SignalDelegation->GuestSigProcMask(Thread, SIG_UNBLOCK, &Mask, nullptr);
     SignalDelegation->UninstallHostHandler(KillSignal);
     kill(0, KillSignal);
