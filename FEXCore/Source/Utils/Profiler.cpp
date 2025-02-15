@@ -200,9 +200,6 @@ bool IsActive() {
   return true;
 #elif FEXCORE_PROFILER_BACKEND == FEXCORE_PROFILER_BACKEND_TRACY
   // Active if previously enabled
-  if (Tracy::Enable) {
-    LogMan::Msg::EFmt("PROFILE ENABLED");
-  }
   return Tracy::Enable;
 #endif
 }
