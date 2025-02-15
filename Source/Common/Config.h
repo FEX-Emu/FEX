@@ -19,7 +19,8 @@ public:
 protected:
 };
 
-void SaveLayerToJSON(const fextl::string& Filename, FEXCore::Config::Layer* const Layer);
+void SaveLayerToJSON(const fextl::string& Filename, const FEXCore::Config::Layer* Layer);
+void SaveLayerToJSON(const fextl::string& Filename, const FEXCore::Config::Layer* Layer, const fextl::unordered_map<fextl::string, bool>& HostLibs);
 
 struct ApplicationNames {
   // This is the full path to the program (if it exists).

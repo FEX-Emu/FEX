@@ -335,7 +335,7 @@ ConfigRuntime::ConfigRuntime(const QString& ConfigFilename) {
 
 void ConfigRuntime::onSave(const QUrl& Filename) {
   qInfo() << "Saving to" << Filename.toLocalFile().toStdString().c_str();
-  FEX::Config::SaveLayerToJSON(Filename.toLocalFile().toStdString().c_str(), LoadedConfig.get());
+  FEX::Config::SaveLayerToJSON(Filename.toLocalFile().toStdString().c_str(), LoadedConfig.get(), HostLibs.HostLibsDB);
 }
 
 void ConfigRuntime::onLoad(const QUrl& Filename) {
