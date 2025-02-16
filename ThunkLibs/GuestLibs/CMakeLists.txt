@@ -199,6 +199,7 @@ endif()
 
 generate(libwayland-client ${CMAKE_CURRENT_SOURCE_DIR}/../libwayland-client/libwayland-client_interface.cpp)
 add_guest_lib(wayland-client "libwayland-client.so.0.20.0")
+target_include_directories(libwayland-client-guest-deps INTERFACE /usr/include/wayland)
 
 generate(libVDSO ${CMAKE_CURRENT_SOURCE_DIR}/../libVDSO/libVDSO_interface.cpp)
 add_guest_lib(VDSO "linux-vdso.so.1")
