@@ -52,6 +52,10 @@ unsigned long long wcstoull(const wchar_t* __restrict__ nptr, wchar_t** __restri
   UNIMPLEMENTED();
 }
 
+long long atoll(const char*) {
+  UNIMPLEMENTED();
+}
+
 long long strtoll(const char* __restrict__, char** __restrict, int) {
   UNIMPLEMENTED();
 }
