@@ -1881,6 +1881,12 @@
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize",
         "TiedSource": 0
+      },
+      "FPR = VFCopySign OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1,  FPR:$Vector2": {
+        "Desc": ["Returns a vector where each element has has the magniture of each corresponding element in vector1 and the sign of vector 2."],
+        "DestSize": "RegisterSize",
+        "ElementSize": "ElementSize",
+        "TiedSource": 0
       }
     },
     "Vector": {
@@ -1967,8 +1973,24 @@
       },
 
       "FPR = VFRecp OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
+        "Desc": [
+          "Reciprocal value - matches the precision required by the x86 spec.",
+          "It has a relative error of at most 1.5 * 2^-12"
+        ],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize"
+      },
+      "FPR = VFRecpPrecision OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
+        "Desc": [
+          "Similar to VFRecp but carrying more precision for 3DNow!",
+          "It provides at least 14 bits precision, with a relative error of at most 2^-14"
+        ],
+        "DestSize": "RegisterSize",
+        "ElementSize": "ElementSize",
+        "EmitValidation": [
+          "RegisterSize == FEXCore::IR::OpSize::i64Bit || RegisterSize == FEXCore::IR::OpSize::i32Bit",
+          "ElementSize == FEXCore::IR::OpSize::i32Bit"
+        ]
       },
 
       "FPR = VFSqrt OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
@@ -1977,9 +1999,26 @@
       },
 
       "FPR = VFRSqrt OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
+        "Desc": [
+          "Reciprocal Square Root - matches the precision required by the x86 spec.",
+          "It has a relative error of at most 1.5 * 2^-12"
+        ],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize"
       },
+      "FPR = VFRSqrtPrecision OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
+        "Desc": [
+          "Similar to VFRSqrt but carrying more precision for 3DNow!",
+          "It provides at least 15 bits precision, with a relative error of at most 2^-15"
+        ],
+        "DestSize": "RegisterSize",
+        "ElementSize": "ElementSize",
+        "EmitValidation": [
+          "RegisterSize == FEXCore::IR::OpSize::i64Bit || RegisterSize == FEXCore::IR::OpSize::i32Bit",
+          "ElementSize == FEXCore::IR::OpSize::i32Bit"
+        ]
+      },
+
       "FPR = VCMPEQZ OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize"

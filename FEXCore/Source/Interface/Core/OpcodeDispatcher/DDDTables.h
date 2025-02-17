@@ -9,16 +9,16 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   {0x1C, 1, &OpDispatchBuilder::PF2IWOp},
   {0x1D, 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<OpSize::i32Bit, false>},
 
-  {0x86, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VFRECP, OpSize::i32Bit>},
-  {0x87, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VFRSQRT, OpSize::i32Bit>},
+  {0x86, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorUnaryOp, IR::OP_VFRECPPRECISION, OpSize::i32Bit>},
+  {0x87, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::RSqrt3DNowOp, false>},
 
   {0x8A, 1, &OpDispatchBuilder::PFNACCOp},
   {0x8E, 1, &OpDispatchBuilder::PFPNACCOp},
 
   {0x90, 1, &OpDispatchBuilder::VPFCMPOp<1>},
   {0x94, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFMIN, OpSize::i32Bit>},
-  {0x96, 1, &OpDispatchBuilder::VectorUnaryDuplicateOp<IR::OP_VFRECP, OpSize::i32Bit>},
-  {0x97, 1, &OpDispatchBuilder::VectorUnaryDuplicateOp<IR::OP_VFRSQRT, OpSize::i32Bit>},
+  {0x96, 1, &OpDispatchBuilder::VectorUnaryDuplicateOp<IR::OP_VFRECPPRECISION, OpSize::i32Bit>},
+  {0x97, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::RSqrt3DNowOp, true>},
 
   {0x9A, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFSUB, OpSize::i32Bit>},
   {0x9E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADD, OpSize::i32Bit>},

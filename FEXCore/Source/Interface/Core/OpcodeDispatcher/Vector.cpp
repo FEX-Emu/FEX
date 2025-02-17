@@ -626,17 +626,36 @@ void OpDispatchBuilder::AVXInsertScalarFCMPOp(OpcodeArgs) {
 template void OpDispatchBuilder::AVXInsertScalarFCMPOp<OpSize::i32Bit>(OpcodeArgs);
 template void OpDispatchBuilder::AVXInsertScalarFCMPOp<OpSize::i64Bit>(OpcodeArgs);
 
+void OpDispatchBuilder::RSqrt3DNowOp(OpcodeArgs, bool Duplicate) {
+  const auto Size = OpSizeFromSrc(Op);
+  const auto ElementSize = OpSize::i32Bit;
+
+  Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], Size, Op->Flags);
+
+  // For the sqrt reciprocal in 3DNow!, if the source is negative,
+  // then the result has the same sign as the source but the result is always calculated
+  // as if the source was positive.
+  Ref AbsSrc = _VFAbs(Size, ElementSize, Src);
+  Ref PosRSqrt = _VFRSqrtPrecision(Size, ElementSize, AbsSrc);
+  Ref Result = _VFCopySign(Size, ElementSize, PosRSqrt, Src);
+
+  if (Duplicate) {
+    Result = _VDupElement(Size, ElementSize, Result, 0);
+  }
+
+  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
+}
+
 void OpDispatchBuilder::VectorUnaryOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize) {
   // In the event of a scalar operation and a vector source, then
   // we can specify the entire vector length in order to avoid
   // unnecessary sign extension on the element to be operated on.
   // In the event of a memory operand, we load the exact element size.
-  const auto SrcSize = OpSizeFromSrc(Op);
+  const auto Size = OpSizeFromSrc(Op);
 
-  Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
+  Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], Size, Op->Flags);
 
-  DeriveOp(ALUOp, IROp, _VFSqrt(SrcSize, ElementSize, Src));
-
+  DeriveOp(ALUOp, IROp, _VFSqrt(Size, ElementSize, Src));
   StoreResult(FPRClass, Op, ALUOp, OpSize::iInvalid);
 }
 
@@ -676,8 +695,8 @@ void OpDispatchBuilder::VectorUnaryDuplicateOp(OpcodeArgs) {
   VectorUnaryDuplicateOpImpl(Op, IROp, ElementSize);
 }
 
-template void OpDispatchBuilder::VectorUnaryDuplicateOp<IR::OP_VFRSQRT, OpSize::i32Bit>(OpcodeArgs);
-template void OpDispatchBuilder::VectorUnaryDuplicateOp<IR::OP_VFRECP, OpSize::i32Bit>(OpcodeArgs);
+// TODO: there's only one instantiation of this template. Lets remove it.
+template void OpDispatchBuilder::VectorUnaryDuplicateOp<IR::OP_VFRECPPRECISION, OpSize::i32Bit>(OpcodeArgs);
 
 void OpDispatchBuilder::MOVQOp(OpcodeArgs, VectorOpType VectorType) {
   const auto SrcSize = Op->Src[0].IsGPR() ? OpSize::i128Bit : OpSizeFromSrc(Op);
