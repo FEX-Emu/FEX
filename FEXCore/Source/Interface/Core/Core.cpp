@@ -497,10 +497,6 @@ void ContextImpl::LockBeforeFork(FEXCore::Core::InternalThreadState* Thread) {
 }
 #endif
 
-void ContextImpl::AddBlockMapping(FEXCore::Core::InternalThreadState* Thread, uint64_t Address, void* Ptr) {
-  Thread->LookupCache->AddBlockMapping(Address, Ptr);
-}
-
 void ContextImpl::ClearCodeCache(FEXCore::Core::InternalThreadState* Thread) {
   FEXCORE_PROFILE_INSTANT("ClearCodeCache");
 
@@ -845,7 +841,7 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
 
   // Insert to lookup cache
   // Pages containing this block are added via AddBlockExecutableRange before each page gets accessed in the frontend
-  AddBlockMapping(Thread, GuestRIP, CodePtr);
+  Thread->LookupCache->AddBlockMapping(GuestRIP, CodePtr);
 
   return (uintptr_t)CodePtr;
 }
@@ -909,18 +905,9 @@ void ContextImpl::MarkMemoryShared(FEXCore::Core::InternalThreadState* Thread) {
   }
 }
 
-void ContextImpl::ThreadAddBlockLink(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestDestination,
-                                     FEXCore::Context::ExitFunctionLinkData* HostLink, const FEXCore::Context::BlockDelinkerFunc& delinker) {
-  auto lk = GuardSignalDeferringSection<std::shared_lock>(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
-
-  Thread->LookupCache->AddBlockLink(GuestDestination, HostLink, delinker);
-}
-
 void ContextImpl::ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP) {
   LogMan::Throw::AFmt(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex.try_lock() == false, "CodeInvalidationMutex needs to "
                                                                                                          "be unique_locked here");
-
-  std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
 
   Thread->LookupCache->Erase(Thread->CurrentFrame, GuestRIP);
 }
