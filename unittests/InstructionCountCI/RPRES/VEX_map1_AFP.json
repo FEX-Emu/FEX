@@ -29,14 +29,18 @@
       ]
     },
     "vrsqrtss xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "AFP can make this more optimal",
         "Map 1 0b10 0x52 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v17.16b",
-        "frsqrte s16, s18"
+        "frsqrte s0, s18",
+        "fmul s1, s0, s0",
+        "frsqrts s1, s1, s18",
+        "fmul s0, s0, s1",
+        "mov v16.s[0], v0.s[0]"
       ]
     },
     "vrcpps xmm0, xmm1": {
@@ -58,13 +62,16 @@
       ]
     },
     "vrcpss xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "Map 1 0b10 0x53 128-bit"
       ],
       "ExpectedArm64ASM": [
         "mov v16.16b, v17.16b",
-        "frecpe s16, s18"
+        "frecpe s0, s18",
+        "frecps s1, s0, s18",
+        "fmul s0, s0, s1",
+        "mov v16.s[0], v0.s[0]"
       ]
     }
   }
