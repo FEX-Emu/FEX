@@ -9,114 +9,12 @@
         "@PREFIX_LIB@/libGL.so.1.7.0"
       ]
     },
-    "GLESv2": {
-      "Library": "libGLESv2-guest.so",
-      "Depends": [
-        "X11"
-      ],
-      "Overlay": [
-        "@PREFIX_LIB@/libGLESv2.so",
-        "@PREFIX_LIB@/libGLESv2.so.2",
-        "@PREFIX_LIB@/libGLESv2.so.2.0.0"
-      ]
-    },
-    "X11": {
-      "Library": "libX11-guest.so",
-      "Overlay": [
-        "@PREFIX_LIB@/libX11.so",
-        "@PREFIX_LIB@/libX11.so.6",
-        "@PREFIX_LIB@/libX11.so.6.4.0"
-      ]
-    },
     "Vulkan": {
       "Library": "libvulkan-guest.so",
       "Overlay": [
         "@PREFIX_LIB@/libvulkan.so",
         "@PREFIX_LIB@/libvulkan.so.1",
         "@HOME@/.local/share/Steam/ubuntu12_32/steam-runtime/pinned_libs_64/libvulkan.so.1"
-      ]
-    },
-    "xcb": {
-      "Depends": [
-        "X11"
-      ],
-      "Library": "libxcb-guest.so",
-      "Overlay": [
-        "@PREFIX_LIB@/libxcb.so",
-        "@PREFIX_LIB@/libxcb.so.1",
-        "@PREFIX_LIB@/libxcb.so.1.1.0"
-      ]
-    },
-    "xcb-dri2": {
-      "Library": "libxcb-dri2-guest.so",
-      "Overlay": [
-        "@PREFIX_LIB@/libxcb-dri2.so",
-        "@PREFIX_LIB@/libxcb-dri2.so.0",
-        "@PREFIX_LIB@/libxcb-dri2.so.0.0.0"
-      ]
-    },
-    "xcb-dri3": {
-      "Library": "libxcb-dri3-guest.so",
-      "Overlay": [
-        "@PREFIX_LIB@/libxcb-dri3.so",
-        "@PREFIX_LIB@/libxcb-dri3.so.0",
-        "@PREFIX_LIB@/libxcb-dri3.so.0.0.0"
-      ]
-    },
-    "xcb-xfixes": {
-      "Library": "libxcb-xfixes-guest.so",
-      "Overlay": [
-        "@PREFIX_LIB@/libxcb-xfixes.so",
-        "@PREFIX_LIB@/libxcb-xfixes.so.0",
-        "@PREFIX_LIB@/libxcb-xfixes.so.0.0.0"
-      ]
-    },
-    "xcb-shm": {
-      "Library": "libxcb-shm-guest.so",
-      "Overlay": [
-        "@PREFIX_LIB@/libxcb-shm.so",
-        "@PREFIX_LIB@/libxcb-shm.so.0",
-        "@PREFIX_LIB@/libxcb-shm.so.0.0.0"
-      ]
-    },
-    "xcb-sync": {
-      "Library": "libxcb-sync-guest.so",
-      "Overlay": [
-        "@PREFIX_LIB@/libxcb-sync.so",
-        "@PREFIX_LIB@/libxcb-sync.so.1",
-        "@PREFIX_LIB@/libxcb-sync.so.1.0.0"
-      ]
-    },
-    "xcb-randr": {
-      "Library": "libxcb-randr-guest.so",
-      "Overlay": [
-        "@PREFIX_LIB@/libxcb-randr.so",
-        "@PREFIX_LIB@/libxcb-randr.so.0",
-        "@PREFIX_LIB@/libxcb-randr.so.0.1.0"
-      ]
-    },
-    "xcb-present": {
-      "Library": "libxcb-present-guest.so",
-      "Overlay": [
-        "@PREFIX_LIB@/libxcb-present.so",
-        "@PREFIX_LIB@/libxcb-present.so.0",
-        "@PREFIX_LIB@/libxcb-present.so.0.0.0"
-      ]
-    },
-    "xcb-glx": {
-      "Library": "libxcb-glx-guest.so",
-      "Overlay": [
-        "@PREFIX_LIB@/libxcb-glx.so",
-        "@PREFIX_LIB@/libxcb-glx.so.0",
-        "@PREFIX_LIB@/libxcb-glx.so.0.0.0"
-      ]
-    },
-    "xshmfence": {
-      "Library": "libxshmfence-guest.so",
-      "Overlay": [
-        "@PREFIX_LIB@/libxshmfence.so",
-        "@PREFIX_LIB@/libxshmfence.so.1",
-        "@PREFIX_LIB@/libxshmfence.so.1.0.0"
       ]
     },
     "drm": {
@@ -141,38 +39,6 @@
         "@PREFIX_LIB@/libfex_thunk_test.so"
       ]
     },
-    "Xrender": {
-      "Library": "libXrender-guest.so",
-      "Overlay": [
-        "@PREFIX_LIB@/libXrender.so",
-        "@PREFIX_LIB@/libXrender.so.1",
-        "@PREFIX_LIB@/libXrender.so.1.3.0"
-      ]
-    },
-    "Xext": {
-      "Library": "libXext-guest.so",
-      "Overlay": [
-        "@PREFIX_LIB@/libXext.so",
-        "@PREFIX_LIB@/libXext.so.6",
-        "@PREFIX_LIB@/libXext.so.6.4.0"
-      ]
-    },
-    "Xfixes": {
-      "Library": "libXfixes-guest.so",
-      "Overlay": [
-        "@PREFIX_LIB@/libXfixes.so",
-        "@PREFIX_LIB@/libXfixes.so.3",
-        "@PREFIX_LIB@/libXfixes.so.3.1.0"
-      ]
-    },
-    "OpenCL": {
-      "Library" : "libOpenCL-guest.so",
-      "Overlay": [
-        "@PREFIX_LIB@/libOpenCL.so",
-        "@PREFIX_LIB@/libOpenCL.so.1",
-        "@PREFIX_LIB@/libOpenCL.so.1.0.0"
-      ]
-    },
     "WaylandClient": {
       "Library" : "libwayland-client-guest.so",
       "Overlay": [
@@ -180,7 +46,6 @@
         "@PREFIX_LIB@/libwayland-client.so.0",
         "@PREFIX_LIB@/libwayland-client.so.0.20.0"
       ]
-    },
-    "":{}
+    }
   }
 }

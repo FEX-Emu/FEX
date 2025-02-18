@@ -66,11 +66,8 @@ static constexpr std::pair<std::string_view, FEXCore::Config::ConfigOption> Conf
 #include <FEXCore/Config/ConfigValues.inl>
 };
 
-void SaveLayerToJSON(const fextl::string& Filename, FEXCore::Config::Layer* const Layer) {
-  char Buffer[4096];
-  char* Dest {};
-  Dest = json_objOpen(Buffer, nullptr);
-  Dest = json_objOpen(Dest, "Config");
+static char* SaveLayerToJSON(char* JsonBuffer, const FEXCore::Config::Layer* Layer) {
+  JsonBuffer = json_objOpen(JsonBuffer, "Config");
   for (auto& it : Layer->GetOptionMap()) {
     std::string_view Name {};
     for (auto& name_it : ConfigLookup) {
@@ -80,12 +77,29 @@ void SaveLayerToJSON(const fextl::string& Filename, FEXCore::Config::Layer* cons
       }
     }
     for (auto& var : it.second) {
-      Dest = json_str(Dest, Name.data(), var.c_str());
+      JsonBuffer = json_str(JsonBuffer, Name.data(), var.c_str());
     }
   }
+  return json_objClose(JsonBuffer);
+}
+
+void SaveLayerToJSON(const fextl::string& Filename, const FEXCore::Config::Layer* Layer, const fextl::unordered_map<fextl::string, bool>& HostLibs) {
+  char Buffer[4096];
+  char* Dest {};
+  Dest = json_objOpen(Buffer, nullptr);
+
+  Dest = SaveLayerToJSON(Dest, Layer);
+
+  Dest = json_objOpen(Dest, "ThunksDB");
+  for (auto& [Name, Enabled] : HostLibs) {
+    Dest = json_int(Dest, Name.c_str(), Enabled);
+  }
   Dest = json_objClose(Dest);
+
   Dest = json_objClose(Dest);
   json_end(Dest);
+
+  LogMan::Throw::AFmt(Dest <= std::end(Buffer), "Exceeded JSON buffer size");
 
   auto File = FEXCore::File::File(Filename.c_str(),
                                   FEXCore::File::FileModes::WRITE | FEXCore::File::FileModes::CREATE | FEXCore::File::FileModes::TRUNCATE);
@@ -93,6 +107,37 @@ void SaveLayerToJSON(const fextl::string& Filename, FEXCore::Config::Layer* cons
   if (File.IsValid()) {
     File.Write(Buffer, strlen(Buffer));
   }
+}
+
+void SaveLayerToJSON(const fextl::string& Filename, const FEXCore::Config::Layer* Layer) {
+  fextl::unordered_map<fextl::string, bool> HostLibsDB;
+
+  // Load existing ThunksDB entry to persist it
+  {
+    fextl::vector<char> FileData;
+    if (!FEXCore::FileLoading::LoadFile(FileData, Filename)) {
+      goto WriteConfig;
+    }
+
+    // Find bounds of previously existing Config entry (if any)
+    FEX::JSON::JsonAllocator Pool {};
+    const json_t* json = FEX::JSON::CreateJSON(FileData, Pool);
+    if (!json) {
+      goto WriteConfig;
+    }
+
+    const json_t* ThunksDB = json_getProperty(json, "ThunksDB");
+    if (!ThunksDB) {
+      goto WriteConfig;
+    }
+
+    for (const json_t* Item = json_getChild(ThunksDB); Item != nullptr; Item = json_getSibling(Item)) {
+      HostLibsDB.emplace(json_getName(Item), (json_getInteger(Item) != 0));
+    }
+  }
+
+WriteConfig:
+  SaveLayerToJSON(Filename, Layer, HostLibsDB);
 }
 
 // Application loaders

@@ -4,6 +4,7 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 
 import FEX.ConfigModel 1.0
+import FEX.HostLibsModel 1.0
 import FEX.RootFSModel 1.0
 
 // Qt 6 changed the API of the Dialogs module slightly.
@@ -186,6 +187,8 @@ ApplicationWindow {
         id: tabBar
         currentIndex: 0
 
+        readonly property int advancedIndex: 4
+
         TabButton {
             text: qsTr("General")
         }
@@ -194,6 +197,9 @@ ApplicationWindow {
         }
         TabButton {
             text: qsTr("CPU")
+        }
+        TabButton {
+            text: qsTr("Libraries")
         }
         TabButton {
             text: qsTr("Advanced")
@@ -416,53 +422,6 @@ ApplicationWindow {
                             text: qsTr("Add folder")
                             icon.name: "folder"
                             onClicked: addRootfsFolderDialog.open()
-                        }
-                    }
-                }
-            }
-
-            GroupBox {
-                title: qsTr("Library forwarding:")
-                width: parent.width - parent.padding * 2
-
-                ColumnLayout {
-                    anchors.left: parent ? parent.left : undefined
-                    anchors.right: parent ? parent.right : undefined
-
-                    id: libfwdConfig
-
-                    property url configDir: (() => {
-                        var configPath = urlToLocalFile(configFilename)
-                        var slashIndex = configPath.lastIndexOf('/')
-                        if (slashIndex === -1) {
-                            return ""
-                        }
-                        return "file://" + configPath.substr(0, slashIndex)
-                    })()
-
-                    ConfigTextFieldForPath {
-                        text: qsTr("Configuration:")
-                        config: "ThunkConfig"
-                        dialog: FileDialog {
-                            title: qsTr("Select library forwarding configuration")
-                            nameFilters: [ qsTr("JSON files (*.json)"), qsTr("All files(*)") ]
-                            currentFolder: libfwdConfig.configDir
-                        }
-                    }
-                    ConfigTextFieldForPath {
-                        text: qsTr("Host library folder:")
-                        config: "ThunkHostLibs"
-                        dialog: FolderDialog {
-                            title: qsTr("Select path for host libraries")
-                            currentFolder: libfwdConfig.configDir
-                        }
-                    }
-                    ConfigTextFieldForPath {
-                        text: qsTr("Guest library folder:")
-                        config: "ThunkGuestLibs"
-                        dialog: FolderDialog {
-                            title: qsTr("Select path for guest libraries")
-                            currentFolder: libfwdConfig.configDir
                         }
                     }
                 }
@@ -833,11 +792,91 @@ ApplicationWindow {
             }
         }
 
+        // Libraries settings
+        ScrollablePage {
+            GroupBox {
+                title: qsTr("Library forwarding:")
+                width: parent.width - parent.padding * 2
+
+                ColumnLayout {
+                    anchors.left: parent ? parent.left : undefined
+                    anchors.right: parent ? parent.right : undefined
+
+                    id: libfwdConfig
+
+                    property url configDir: (() => {
+                        var configPath = urlToLocalFile(configFilename)
+                        var slashIndex = configPath.lastIndexOf('/')
+                        if (slashIndex === -1) {
+                            return ""
+                        }
+                        return "file://" + configPath.substr(0, slashIndex)
+                    })()
+
+                    ConfigTextFieldForPath {
+                        text: qsTr("Host library folder:")
+                        config: "ThunkHostLibs"
+                        dialog: FolderDialog {
+                            title: qsTr("Select path for host libraries")
+                            currentFolder: libfwdConfig.configDir
+                        }
+                    }
+                    ConfigTextFieldForPath {
+                        text: qsTr("Guest library folder:")
+                        config: "ThunkGuestLibs"
+                        dialog: FolderDialog {
+                            title: qsTr("Select path for guest libraries")
+                            currentFolder: libfwdConfig.configDir
+                        }
+                    }
+                }
+            }
+
+            GroupBox {
+                id: hostLibsGroupBox
+                title: qsTr("Use host library for:")
+                width: parent.width - parent.padding * 2
+
+                ColumnLayout {
+                    width: hostLibsGroupBox.width - hostLibsGroupBox.padding * 2
+                    ScrollView {
+                        Layout.fillWidth: true
+                        Layout.maximumHeight: 200
+                        clip: true
+
+                        Column {
+                            property string selectedItem
+                            property string explicitEntry
+
+                            spacing: 4
+
+                            Component.onCompleted: {
+                                // root.refreshCacheChanged.connect(initState)
+                            }
+
+                            Repeater {
+                                model: HostLibsModel
+                                delegate: CheckBox {
+                                    text: model.display
+                                    visible: text !== "fex_thunk_test" // Hide test library
+                                    checked: (root.refreshCache, model.checked)
+                                    onToggled: {
+                                        configDirty = true
+                                        model.checked = checked
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // Advanced settings
         // NOTE: This is wrapped in a Loader that dynamically instantiates/destroys the page contents whenever the tab is selected.
         //       This avoids costly UI updates for its UI elements.
         // TODO: Options contained multiple times in JSON aren't listed (neither are they in old FEXConfig though)
-        Loader { sourceComponent: tabBar.currentIndex === 3 ? advancedSettingsPage : null }
+        Loader { sourceComponent: tabBar.currentIndex === tabBar.advancedIndex ? advancedSettingsPage : null }
         Component {
             id: advancedSettingsPage
             ScrollablePage {
