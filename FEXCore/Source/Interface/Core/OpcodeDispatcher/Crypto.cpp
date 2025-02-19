@@ -222,19 +222,28 @@ void OpDispatchBuilder::SHA256MSG2Op(OpcodeArgs) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
-  auto W14 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Src, 2);
-  auto W15 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Src, 3);
-  auto W16 = _Add(OpSize::i32Bit, _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 0), Sigma1(W14));
-  auto W17 = _Add(OpSize::i32Bit, _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 1), Sigma1(W15));
-  auto W18 = _Add(OpSize::i32Bit, _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 2), Sigma1(W16));
-  auto W19 = _Add(OpSize::i32Bit, _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 3), Sigma1(W17));
+  Ref Result;
+  if (CTX->HostFeatures.SupportsSHA) {
+    auto Src1 = _VExtr(OpSize::i128Bit, OpSize::i32Bit, Dest, Dest, 3);
+    auto DupDst = _VDupElement(OpSize::i128Bit, OpSize::i32Bit, Dest, 3);
+    auto Src2 = _VZip2(OpSize::i128Bit, OpSize::i64Bit, DupDst, Src);
 
-  auto D3 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 3, Dest, W19);
-  auto D2 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 2, D3, W18);
-  auto D1 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 1, D2, W17);
-  auto D0 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 0, D1, W16);
+    Result = _VSha256U1(Src1, Src2);
+  } else {
+    auto W14 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Src, 2);
+    auto W15 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Src, 3);
+    auto W16 = _Add(OpSize::i32Bit, _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 0), Sigma1(W14));
+    auto W17 = _Add(OpSize::i32Bit, _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 1), Sigma1(W15));
+    auto W18 = _Add(OpSize::i32Bit, _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 2), Sigma1(W16));
+    auto W19 = _Add(OpSize::i32Bit, _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 3), Sigma1(W17));
 
-  StoreResult(FPRClass, Op, D0, OpSize::iInvalid);
+    auto D3 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 3, Dest, W19);
+    auto D2 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 2, D3, W18);
+    auto D1 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 1, D2, W17);
+    Result = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 0, D1, W16);
+  }
+
+  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
 Ref OpDispatchBuilder::BitwiseAtLeastTwo(Ref A, Ref B, Ref C) {
