@@ -185,6 +185,23 @@ DEF_OP(VSha256U0) {
   }
 }
 
+DEF_OP(VSha256U1) {
+  auto Op = IROp->C<IR::IROp_VSha256U1>();
+
+  const auto Dst = GetVReg(Node);
+  const auto Src1 = GetVReg(Op->Src1.ID());
+  const auto Src2 = GetVReg(Op->Src2.ID());
+
+  if (Dst != Src1 && Dst != Src1) {
+    movi(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), 0);
+    sha256su1(Dst, Src1, Src2);
+  } else {
+    movi(ARMEmitter::SubRegSize::i64Bit, VTMP1.Q(), 0);
+    sha256su1(VTMP1, Src1, Src2);
+    mov(Dst.Q(), VTMP1.Q());
+  }
+}
+
 DEF_OP(PCLMUL) {
   const auto Op = IROp->C<IR::IROp_PCLMUL>();
   [[maybe_unused]] const auto OpSize = IROp->Size;
