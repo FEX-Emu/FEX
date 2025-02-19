@@ -39,7 +39,7 @@ void Arm64JITCore::InsertNamedThunkRelocation(ARMEmitter::Register Reg, const IR
 Arm64JITCore::NamedSymbolLiteralPair Arm64JITCore::InsertNamedSymbolLiteral(FEXCore::CPU::RelocNamedSymbolLiteral::NamedSymbol Op) {
   uint64_t Pointer = GetNamedSymbolLiteral(Op);
 
-  Arm64JITCore::NamedSymbolLiteralPair Lit {
+  NamedSymbolLiteralPair Lit {
     .Lit = Pointer,
     .MoveABI =
       {
@@ -60,20 +60,43 @@ Arm64JITCore::NamedSymbolLiteralPair Arm64JITCore::InsertNamedSymbolLiteral(FEXC
 void Arm64JITCore::PlaceNamedSymbolLiteral(NamedSymbolLiteralPair& Lit) {
   // Offset is the offset from the entrypoint of the block
   auto CurrentCursor = GetCursorAddress<uint8_t*>();
-  Lit.MoveABI.Header.Offset = CurrentCursor - CodeData.BlockBegin;
+  switch (Lit.MoveABI.Header.Type) {
+  case RelocationTypes::RELOC_NAMED_SYMBOL_LITERAL:
+  case RelocationTypes::RELOC_GUEST_RIP_LITERAL: {
+    Lit.MoveABI.Header.Offset = CurrentCursor - CodeData.BlockBegin;
+    break;
+  }
+
+  default: ERROR_AND_DIE_FMT("Unknown relocation type for {}", __FUNCTION__);
+  }
 
   BindOrRestart(&Lit.Loc);
   dc64(Lit.Lit);
   Relocations.emplace_back(Lit.MoveABI);
 }
 
+auto Arm64JITCore::InsertGuestRIPLiteral(uint64_t GuestRIP) -> NamedSymbolLiteralPair {
+  return {
+    .Lit = GuestRIP,
+    .MoveABI =
+      {
+        .GuestRIP = {.Header =
+                       {
+                         .Offset = 0, // Set by PlaceNamedSymbolLiteral
+                         .Type = FEXCore::CPU::RelocationTypes::RELOC_GUEST_RIP_LITERAL,
+                       },
+                     .GuestRIP = GuestRIP - Entry},
+      },
+  };
+}
+
 void Arm64JITCore::InsertGuestRIPMove(ARMEmitter::Register Reg, uint64_t Constant) {
   Relocation MoveABI {};
   auto CurrentCursor = GetCursorAddress<uint8_t*>();
-  MoveABI.GuestRIPMove.Header = {.Offset = static_cast<uint64_t>(CurrentCursor - CodeData.BlockBegin),
-                                 .Type = FEXCore::CPU::RelocationTypes::RELOC_GUEST_RIP_MOVE};
-  MoveABI.GuestRIPMove.GuestRIP = Constant;
-  MoveABI.GuestRIPMove.RegisterIndex = Reg.Idx();
+  MoveABI.GuestRIP.Header = {.Offset = static_cast<uint64_t>(CurrentCursor - CodeData.BlockBegin),
+                             .Type = FEXCore::CPU::RelocationTypes::RELOC_GUEST_RIP_MOVE};
+  MoveABI.GuestRIP.GuestRIP = Constant - Entry;
+  MoveABI.GuestRIP.RegisterIndex = Reg.Idx();
 
   LoadConstant(ARMEmitter::Size::i64Bit, Reg, Constant, false);
   Relocations.emplace_back(MoveABI);
@@ -105,17 +128,21 @@ bool Arm64JITCore::ApplyRelocations(uint64_t GuestEntry, std::span<std::byte> Co
       LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(Reloc.NamedThunkMove.RegisterIndex), Pointer, true);
       break;
     }
+    case FEXCore::CPU::RelocationTypes::RELOC_GUEST_RIP_LITERAL: {
+      dc64(GuestEntry + Reloc.GuestRIP.GuestRIP);
+      break;
+    }
     case FEXCore::CPU::RelocationTypes::RELOC_GUEST_RIP_MOVE: {
       // XXX: Reenable once the JIT Object Cache is upstream
       // XXX: Should spin the relocation list, create a list of guest RIP moves, and ask for them all once, reduces lock contention.
-      uint64_t Pointer = ~0ULL; // EmitterCTX->JITObjectCache->FindRelocatedRIP(Reloc->GuestRIPMove.GuestRIP);
+      uint64_t Pointer = ~0ULL; // EmitterCTX->JITObjectCache->FindRelocatedRIP(Reloc->GuestRIP.GuestRIP);
       if (Pointer == ~0ULL) {
         SetBuffer(OrigBase, OrigSize);
         SetCursorOffset(OrigOffset);
         return false;
       }
 
-      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(Reloc.GuestRIPMove.RegisterIndex), Pointer, true);
+      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(Reloc.GuestRIP.RegisterIndex), Pointer, true);
       break;
     }
     }

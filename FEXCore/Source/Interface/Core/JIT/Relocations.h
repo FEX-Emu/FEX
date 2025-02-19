@@ -10,15 +10,16 @@ enum class RelocationTypes : uint32_t {
   RELOC_NAMED_SYMBOL_LITERAL,
 
   // Fixed size named thunk move
-  // 4 instruction constant generation on AArch64
-  // 64-bit mov on x86-64
+  // 4 instruction constant generation
   // Aligned to struct RelocNamedThunkMove
   RELOC_NAMED_THUNK_MOVE,
 
+  // 8 byte literal (relative to binary base address)
+  RELOC_GUEST_RIP_LITERAL,
+
   // Fixed size guest RIP move
-  // 4 instruction constant generation on AArch64
-  // 64-bit mov on x86-64
-  // Aligned to struct RelocGuestRIPMove
+  // 4 instruction constant generation
+  // Aligned to struct RelocGuestRIP
   RELOC_GUEST_RIP_MOVE,
 };
 
@@ -53,15 +54,16 @@ struct RelocNamedThunkMove final {
   IR::SHA256Sum Symbol;
 };
 
-struct RelocGuestRIPMove final {
+struct RelocGuestRIP final {
   RelocationHeader Header {};
 
-  // GPR index the constant is being moved to
+  // GPR index the constant is being moved to (for non-literal relocations)
   uint8_t RegisterIndex;
 
   char Pad[3];
 
-  // The unrelocated RIP that is being moved
+  // The base RIP (to be moved by the register for non-literal relocations).
+  // In a serialized code cache, this is relative to the binary base address.
   uint64_t GuestRIP;
 
   uint32_t pad2[6] {};
@@ -75,6 +77,6 @@ union Relocation {
   // It might be more efficient to not use a union
   RelocNamedThunkMove NamedThunkMove;
 
-  RelocGuestRIPMove GuestRIPMove;
+  RelocGuestRIP GuestRIP;
 };
 } // namespace FEXCore::CPU

@@ -575,6 +575,14 @@ private:
   NamedSymbolLiteralPair InsertNamedSymbolLiteral(FEXCore::CPU::RelocNamedSymbolLiteral::NamedSymbol Op);
 
   /**
+   * @brief Inserts a relocation for a constant value relative to the guest entrypoint
+   *
+   * @param Reg - The GPR to move the guest RIP in to
+   * @param Constant - The guest RIP that will be relocated
+   */
+  NamedSymbolLiteralPair InsertGuestRIPLiteral(uint64_t GuestRIP);
+
+  /**
    * @brief Place the named symbol literal relocation in memory
    *
    * @param Lit - Which literal to place

@@ -50,14 +50,13 @@ DEF_OP(EntrypointOffset) {
   auto Op = IROp->C<IR::IROp_EntrypointOffset>();
 
   auto Constant = Entry + Op->Offset;
-  auto Dst = GetReg(Node);
   uint64_t Mask = ~0ULL;
   const auto OpSize = IROp->Size;
   if (OpSize == IR::OpSize::i32Bit) {
     Mask = 0xFFFF'FFFFULL;
   }
 
-  LoadConstant(ARMEmitter::Size::i64Bit, Dst, Constant & Mask);
+  InsertGuestRIPMove(GetReg(Node), Constant & Mask);
 }
 
 DEF_OP(InlineConstant) {
