@@ -967,12 +967,16 @@ Ref OpDispatchBuilder::Single128Bit4ByteVectorShuffle(Ref Src, uint8_t Shuffle) 
     // Special case element duplicate and broadcast to low or high 64-bits.
     return _VDupElement(OpSize::i128Bit, OpSize::i32Bit, Src, Shuffle & 0b11);
   }
-
   case 0b00'00'10'10: {
     // Weird reverse low elements and broadcast to each half of the register
     Ref Tmp = _VUnZip(OpSize::i128Bit, OpSize::i32Bit, Src, Src);
     Tmp = _VRev64(OpSize::i128Bit, OpSize::i32Bit, Tmp);
     return _VZip(OpSize::i128Bit, OpSize::i32Bit, Tmp, Tmp);
+  }
+  case 0b00'00'11'10: {
+    // First element duplicated and shifted in to the top.
+    auto Dup = _VDupElement(OpSize::i128Bit, OpSize::i32Bit, Src, 0);
+    return _VExtr(OpSize::i128Bit, OpSize::i32Bit, Dup, Src, 2);
   }
   case 0b00'01'00'01: {
     ///< Weird reversed low elements and broadcast
@@ -983,6 +987,11 @@ Ref OpDispatchBuilder::Single128Bit4ByteVectorShuffle(Ref Src, uint8_t Shuffle) 
     ///< Weird reverse low two elements in to high half
     Ref Tmp = _VZip(OpSize::i128Bit, OpSize::i32Bit, Src, Src);
     return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 4);
+  }
+  case 0b00'01'10'11: {
+    // Inverse elements
+    Ref Tmp = _VRev64(OpSize::i128Bit, OpSize::i32Bit, Src);
+    return _VExtr(OpSize::i128Bit, OpSize::i32Bit, Tmp, Tmp, 2);
   }
   case 0b00'10'00'10: {
     ///< Weird reversed even elements and broadcast
@@ -1101,6 +1110,10 @@ Ref OpDispatchBuilder::Single128Bit4ByteVectorShuffle(Ref Src, uint8_t Shuffle) 
     ///< Reverse top two elements and broadcast to each half of the register
     Ref Tmp = _VZip2(OpSize::i128Bit, OpSize::i32Bit, Src, Src);
     return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Tmp, Tmp, 8);
+  }
+  case 0b10'11'00'01: {
+    // Reverse each 64-bit lane.
+    return _VRev64(OpSize::i128Bit, OpSize::i32Bit, Src);
   }
   case 0b10'11'10'11: {
     ///< Weird top two elements reverse and broadcast
