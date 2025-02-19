@@ -62,29 +62,40 @@ void OpDispatchBuilder::SHA1MSG2Op(OpcodeArgs) {
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
-  // This instruction mostly matches ARMv8's SHA1SU1 instruction but one of the elements are flipped in an unexpected way.
-  // Do all the work without it.
+  Ref Result;
+  if (CTX->HostFeatures.SupportsSHA) {
+    // ARM SHA1 mostly matches x86 semantics, except the input and outputs are both flipped from elements 0,1,2,3 to 3,2,1,0.
+    auto FlipIt = [this](Ref Src) {
+      auto Tmp = _VRev64(OpSize::i128Bit, OpSize::i32Bit, Src);
+      return _VExtr(OpSize::i128Bit, OpSize::i32Bit, Tmp, Tmp, 2);
+    };
+    auto Src1 = FlipIt(Dest);
+    auto Src2 = FlipIt(Src);
 
-  const auto ZeroRegister = LoadZeroVector(OpSize::i32Bit);
+    // The result is swizzled differently than expected
+    Result = FlipIt(_VSha1SU1(Src1, Src2));
+  } else {
+    // Shift the incoming source left by a 32-bit element, inserting Zeros.
+    // This could be slightly improved to use a VInsGPR with the zero register.
+    const auto ZeroRegister = LoadZeroVector(OpSize::i32Bit);
+    auto Src2Shift = _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src, ZeroRegister, 12);
+    auto Xor1 = _VXor(OpSize::i128Bit, OpSize::i8Bit, Dest, Src2Shift);
 
-  // Shift the incoming source left by a 32-bit element, inserting Zeros.
-  // This could be slightly improved to use a VInsGPR with the zero register.
-  auto Src2Shift = _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src, ZeroRegister, 12);
-  auto Xor1 = _VXor(OpSize::i128Bit, OpSize::i8Bit, Dest, Src2Shift);
+    // Emulate rotate.
+    auto ShiftLeftXor1 = _VShlI(OpSize::i128Bit, OpSize::i32Bit, Xor1, 1);
+    auto RotatedXor1 = _VUShraI(OpSize::i128Bit, OpSize::i32Bit, ShiftLeftXor1, Xor1, 31);
 
-  // Emulate rotate.
-  auto ShiftLeftXor1 = _VShlI(OpSize::i128Bit, OpSize::i32Bit, Xor1, 1);
-  auto RotatedXor1 = _VUShraI(OpSize::i128Bit, OpSize::i32Bit, ShiftLeftXor1, Xor1, 31);
+    // Element0 didn't get XOR'd with anything, so do it now.
+    auto ExtractUpper = _VDupElement(OpSize::i128Bit, OpSize::i32Bit, RotatedXor1, 3);
+    auto XorLower = _VXor(OpSize::i128Bit, OpSize::i8Bit, Dest, ExtractUpper);
 
-  // Element0 didn't get XOR'd with anything, so do it now.
-  auto ExtractUpper = _VDupElement(OpSize::i128Bit, OpSize::i32Bit, RotatedXor1, 3);
-  auto XorLower = _VXor(OpSize::i128Bit, OpSize::i8Bit, Dest, ExtractUpper);
+    // Emulate rotate.
+    auto ShiftLeftXorLower = _VShlI(OpSize::i128Bit, OpSize::i32Bit, XorLower, 1);
+    auto RotatedXorLower = _VUShraI(OpSize::i128Bit, OpSize::i32Bit, ShiftLeftXorLower, XorLower, 31);
 
-  // Emulate rotate.
-  auto ShiftLeftXorLower = _VShlI(OpSize::i128Bit, OpSize::i32Bit, XorLower, 1);
-  auto RotatedXorLower = _VUShraI(OpSize::i128Bit, OpSize::i32Bit, ShiftLeftXorLower, XorLower, 31);
+    Result = _VInsElement(OpSize::i128Bit, OpSize::i32Bit, 0, 0, RotatedXor1, RotatedXorLower);
+  }
 
-  auto Result = _VInsElement(OpSize::i128Bit, OpSize::i32Bit, 0, 0, RotatedXor1, RotatedXorLower);
 
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
