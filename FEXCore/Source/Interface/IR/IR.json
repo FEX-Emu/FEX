@@ -2656,6 +2656,11 @@
         "Desc": "Does vector scalar SHA1H instruction",
         "DestSize": "FEXCore::IR::OpSize::i32Bit"
       },
+      "FPR = VSha1SU1 FPR:$Src1, FPR:$Src2": {
+        "Desc": "Does vector scalar SHA1H instruction",
+        "DestSize": "FEXCore::IR::OpSize::i128Bit",
+        "TiedSource": 0
+      },
       "FPR = VSha256U0 FPR:$Src1, FPR:$Src2": {
         "Desc": "Does vector scalar VSha256U0 instruction",
         "DestSize": "FEXCore::IR::OpSize::i128Bit",

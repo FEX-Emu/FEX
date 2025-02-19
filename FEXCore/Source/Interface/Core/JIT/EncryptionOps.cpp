@@ -169,6 +169,25 @@ DEF_OP(VSha1H) {
   sha1h(Dst.S(), Src.S());
 }
 
+DEF_OP(VSha1SU1) {
+  auto Op = IROp->C<IR::IROp_VSha1SU1>();
+
+  const auto Dst = GetVReg(Node);
+  const auto Src1 = GetVReg(Op->Src1.ID());
+  const auto Src2 = GetVReg(Op->Src2.ID());
+
+  if (Dst == Src1) {
+    sha1su1(Dst, Src2);
+  } else if (Dst != Src2) {
+    mov(Dst.Q(), Src1.Q());
+    sha1su1(Dst, Src2);
+  } else {
+    mov(VTMP1.Q(), Src1.Q());
+    sha1su1(VTMP1, Src2);
+    mov(Dst.Q(), VTMP1.Q());
+  }
+}
+
 DEF_OP(VSha256U0) {
   auto Op = IROp->C<IR::IROp_VSha256U0>();
 
