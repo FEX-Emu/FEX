@@ -34,6 +34,19 @@
         "unimplemented (Unimplemented)"
       ]
     },
+    "sha256msg2 xmm0, xmm1": {
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "0x66 0x0f 0x38 0xcd"
+      ],
+      "ExpectedArm64ASM": [
+        "ext v2.16b, v16.16b, v16.16b, #12",
+        "dup v3.4s, v16.s[3]",
+        "zip2 v3.2d, v3.2d, v17.2d",
+        "movi v16.2d, #0x0",
+        "unimplemented (Unimplemented)"
+      ]
+    },
     "aesimc xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
       "Comment": [
