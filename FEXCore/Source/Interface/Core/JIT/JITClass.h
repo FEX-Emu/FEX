@@ -587,7 +587,7 @@ private:
    *
    * @param Lit - Which literal to place
    */
-  void PlaceNamedSymbolLiteral(NamedSymbolLiteralPair& Lit);
+  void PlaceNamedSymbolLiteral(NamedSymbolLiteralPair Lit);
 
   fextl::vector<FEXCore::CPU::Relocation> Relocations;
 

@@ -1001,9 +1001,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
   // Add the JitCodeTail
   Align(alignof(JITCodeTail));
-  auto JITBlockTailLocation = GetCursorAddress<uint8_t*>();
-  auto JITBlockTail = GetCursorAddress<JITCodeTail*>();
-  CursorIncrement(sizeof(JITCodeTail));
+  const auto JITBlockTailLocation = GetCursorAddress<uint8_t*>();
 
   // Entries that live after the JITCodeTail.
   // These entries correlate JIT code regions with guest RIP regions.
@@ -1021,23 +1019,27 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   //   FEXCore::Utils::vl64 GuestRIPOffset;
   // };
 
-  auto JITRIPEntriesBegin = GetCursorAddress<uint8_t*>();
-
   // Put the block's RIP entry in the tail.
   // This will be used for RIP reconstruction in the future.
-  // TODO: This needs to be a data RIP relocation once code caching works.
-  //   Current relocation code doesn't support this feature yet.
-  JITBlockTail->RIP = Entry;
-  JITBlockTail->GuestSize = Size;
-  JITBlockTail->SingleInst = SingleInst;
-  JITBlockTail->SpinLockFutex = 0;
+  JITCodeTail JITBlockTail {
+    .RIP = Entry,
+    .GuestSize = Size,
+    .SpinLockFutex = 0,
+    .SingleInst = SingleInst,
+  };
 
+  // Delay tail write until all fields are initialized
+  CursorIncrement(sizeof(JITBlockTail));
+
+  const auto JITRIPEntriesBegin = GetCursorAddress<uint8_t*>();
   auto JITRIPEntriesLocation = JITRIPEntriesBegin;
+
+  SetCursorOffset(JITRIPEntriesLocation - CodeData.BlockBegin);
 
   {
     // Store the RIP entries.
-    JITBlockTail->NumberOfRIPEntries = DebugData->GuestOpcodes.size();
-    JITBlockTail->OffsetToRIPEntries = JITRIPEntriesBegin - JITBlockTailLocation;
+    JITBlockTail.NumberOfRIPEntries = DebugData->GuestOpcodes.size();
+    JITBlockTail.OffsetToRIPEntries = JITRIPEntriesBegin - JITBlockTailLocation;
     uintptr_t CurrentRIPOffset = 0;
     uint64_t CurrentPCOffset = 0;
 
@@ -1060,7 +1062,15 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
   CodeData.Size = GetCursorAddress<uint8_t*>() - CodeData.BlockBegin;
 
-  JITBlockTail->Size = CodeData.Size;
+  // Finalize block tail data
+  JITBlockTail.Size = CodeData.Size;
+  {
+    auto PrevCur = GetCursorOffset();
+    memcpy(JITBlockTailLocation, &JITBlockTail, sizeof(JITBlockTail));
+    SetCursorOffset(JITBlockTailLocation - CodeData.BlockBegin + offsetof(JITCodeTail, RIP));
+    PlaceNamedSymbolLiteral(InsertGuestRIPLiteral(JITBlockTail.RIP));
+    SetCursorOffset(PrevCur);
+  }
 
   // Migrate the compile output from temporary storage to the actual CodeBuffer.
   // This can block progress in other compiling threads, so the duration of the lock should be as small as possible.

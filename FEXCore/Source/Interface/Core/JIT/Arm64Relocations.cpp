@@ -57,7 +57,7 @@ Arm64JITCore::NamedSymbolLiteralPair Arm64JITCore::InsertNamedSymbolLiteral(FEXC
   return Lit;
 }
 
-void Arm64JITCore::PlaceNamedSymbolLiteral(NamedSymbolLiteralPair& Lit) {
+void Arm64JITCore::PlaceNamedSymbolLiteral(NamedSymbolLiteralPair Lit) {
   // Offset is the offset from the entrypoint of the block
   auto CurrentCursor = GetCursorAddress<uint8_t*>();
   switch (Lit.MoveABI.Header.Type) {
