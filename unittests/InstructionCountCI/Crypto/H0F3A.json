@@ -55,7 +55,7 @@
         "0x66 0x0f 0x3a 0xdf"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2544]",
+        "ldr q2, [x28, #2576]",
         "movi v3.2d, #0x0",
         "mov v16.16b, v17.16b",
         "unimplemented (Unimplemented)",
@@ -68,7 +68,7 @@
         "0x66 0x0f 0x3a 0xdf"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2544]",
+        "ldr q2, [x28, #2576]",
         "movi v3.2d, #0x0",
         "mov v16.16b, v17.16b",
         "unimplemented (Unimplemented)",
@@ -76,6 +76,78 @@
         "mov x0, #0xff00000000",
         "dup v1.2d, x0",
         "eor v16.16b, v16.16b, v1.16b"
+      ]
+    },
+    "sha1rnds4 xmm0, xmm1, 00b": {
+      "ExpectedInstructionCount": 10,
+      "Comment": [
+        "0x66 0x0f 0x3a 0xcc"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #2960]",
+        "movi v3.2d, #0x0",
+        "rev64 v4.4s, v16.4s",
+        "ext v4.16b, v4.16b, v4.16b, #8",
+        "rev64 v5.4s, v17.4s",
+        "ext v5.16b, v5.16b, v5.16b, #8",
+        "add v2.4s, v5.4s, v2.4s",
+        "unimplemented (Unimplemented)",
+        "rev64 v2.4s, v4.4s",
+        "ext v16.16b, v2.16b, v2.16b, #8"
+      ]
+    },
+    "sha1rnds4 xmm0, xmm1, 01b": {
+      "ExpectedInstructionCount": 10,
+      "Comment": [
+        "0x66 0x0f 0x3a 0xcc"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #2976]",
+        "movi v3.2d, #0x0",
+        "rev64 v4.4s, v16.4s",
+        "ext v4.16b, v4.16b, v4.16b, #8",
+        "rev64 v5.4s, v17.4s",
+        "ext v5.16b, v5.16b, v5.16b, #8",
+        "add v2.4s, v5.4s, v2.4s",
+        "unimplemented (Unimplemented)",
+        "rev64 v2.4s, v4.4s",
+        "ext v16.16b, v2.16b, v2.16b, #8"
+      ]
+    },
+    "sha1rnds4 xmm0, xmm1, 10b": {
+      "ExpectedInstructionCount": 10,
+      "Comment": [
+        "0x66 0x0f 0x3a 0xcc"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #2992]",
+        "movi v3.2d, #0x0",
+        "rev64 v4.4s, v16.4s",
+        "ext v4.16b, v4.16b, v4.16b, #8",
+        "rev64 v5.4s, v17.4s",
+        "ext v5.16b, v5.16b, v5.16b, #8",
+        "add v2.4s, v5.4s, v2.4s",
+        "unimplemented (Unimplemented)",
+        "rev64 v2.4s, v4.4s",
+        "ext v16.16b, v2.16b, v2.16b, #8"
+      ]
+    },
+    "sha1rnds4 xmm0, xmm1, 11b": {
+      "ExpectedInstructionCount": 10,
+      "Comment": [
+        "0x66 0x0f 0x3a 0xcc"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #3008]",
+        "movi v3.2d, #0x0",
+        "rev64 v4.4s, v16.4s",
+        "ext v4.16b, v4.16b, v4.16b, #8",
+        "rev64 v5.4s, v17.4s",
+        "ext v5.16b, v5.16b, v5.16b, #8",
+        "add v2.4s, v5.4s, v2.4s",
+        "unimplemented (Unimplemented)",
+        "rev64 v2.4s, v4.4s",
+        "ext v16.16b, v2.16b, v2.16b, #8"
       ]
     }
   }

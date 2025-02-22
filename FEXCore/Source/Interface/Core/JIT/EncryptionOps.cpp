@@ -169,6 +169,66 @@ DEF_OP(VSha1H) {
   sha1h(Dst.S(), Src.S());
 }
 
+DEF_OP(VSha1C) {
+  auto Op = IROp->C<IR::IROp_VSha1C>();
+
+  const auto Dst = GetVReg(Node);
+  const auto Src1 = GetVReg(Op->Src1.ID());
+  const auto Src2 = GetVReg(Op->Src2.ID());
+  const auto Src3 = GetVReg(Op->Src3.ID());
+
+  if (Dst == Src1) {
+    sha1c(Dst, Src2.S(), Src3);
+  } else if (Dst != Src2 && Dst != Src3) {
+    mov(Dst.Q(), Src1.Q());
+    sha1c(Dst, Src2.S(), Src3);
+  } else {
+    mov(VTMP1.Q(), Src1.Q());
+    sha1c(VTMP1, Src2.S(), Src3);
+    mov(Dst.Q(), VTMP1.Q());
+  }
+}
+
+DEF_OP(VSha1M) {
+  auto Op = IROp->C<IR::IROp_VSha1M>();
+
+  const auto Dst = GetVReg(Node);
+  const auto Src1 = GetVReg(Op->Src1.ID());
+  const auto Src2 = GetVReg(Op->Src2.ID());
+  const auto Src3 = GetVReg(Op->Src3.ID());
+
+  if (Dst == Src1) {
+    sha1m(Dst, Src2.S(), Src3);
+  } else if (Dst != Src2 && Dst != Src3) {
+    mov(Dst.Q(), Src1.Q());
+    sha1m(Dst, Src2.S(), Src3);
+  } else {
+    mov(VTMP1.Q(), Src1.Q());
+    sha1m(VTMP1, Src2.S(), Src3);
+    mov(Dst.Q(), VTMP1.Q());
+  }
+}
+
+DEF_OP(VSha1P) {
+  auto Op = IROp->C<IR::IROp_VSha1P>();
+
+  const auto Dst = GetVReg(Node);
+  const auto Src1 = GetVReg(Op->Src1.ID());
+  const auto Src2 = GetVReg(Op->Src2.ID());
+  const auto Src3 = GetVReg(Op->Src3.ID());
+
+  if (Dst == Src1) {
+    sha1p(Dst, Src2.S(), Src3);
+  } else if (Dst != Src2 && Dst != Src3) {
+    mov(Dst.Q(), Src1.Q());
+    sha1p(Dst, Src2.S(), Src3);
+  } else {
+    mov(VTMP1.Q(), Src1.Q());
+    sha1p(VTMP1, Src2.S(), Src3);
+    mov(Dst.Q(), VTMP1.Q());
+  }
+}
+
 DEF_OP(VSha1SU1) {
   auto Op = IROp->C<IR::IROp_VSha1SU1>();
 
