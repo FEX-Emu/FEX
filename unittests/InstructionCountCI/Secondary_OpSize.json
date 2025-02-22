@@ -126,8 +126,8 @@
       "ExpectedInstructionCount": 11,
       "Comment": "0x66 0x0f 0x2c",
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #2880]",
-        "ldr q3, [x28, #2832]",
+        "ldr d2, [x28, #2912]",
+        "ldr q3, [x28, #2864]",
         "frintz v4.2d, v16.2d",
         "fcvtn v4.2s, v4.2d",
         "fcvtzs v4.2s, v4.2s",
@@ -144,8 +144,8 @@
       "Comment": "0x66 0x0f 0x2d",
       "ExpectedArm64ASM": [
         "frinti v2.2d, v16.2d",
-        "ldr d3, [x28, #2880]",
-        "ldr q4, [x28, #2832]",
+        "ldr d3, [x28, #2912]",
+        "ldr q4, [x28, #2864]",
         "frintz v5.2d, v2.2d",
         "fcvtn v5.2s, v5.2d",
         "fcvtzs v5.2s, v5.2s",
@@ -230,8 +230,8 @@
       "Comment": "0x66 0x0f 0x5b",
       "ExpectedArm64ASM": [
         "frinti v2.4s, v17.4s",
-        "ldr q3, [x28, #2880]",
-        "ldr q4, [x28, #2784]",
+        "ldr q3, [x28, #2912]",
+        "ldr q4, [x28, #2816]",
         "fcvtzs v5.4s, v2.4s",
         "fcmgt v2.4s, v4.4s, v2.4s",
         "mov v16.16b, v2.16b",
@@ -244,8 +244,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x4]",
         "frinti v2.4s, v2.4s",
-        "ldr q3, [x28, #2880]",
-        "ldr q4, [x28, #2784]",
+        "ldr q3, [x28, #2912]",
+        "ldr q4, [x28, #2816]",
         "fcvtzs v5.4s, v2.4s",
         "fcmgt v2.4s, v4.4s, v2.4s",
         "mov v16.16b, v2.16b",
@@ -537,7 +537,7 @@
         "0x66 0x0f 0x70"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2064]",
+        "ldr x0, [x28, #2096]",
         "ldr q2, [x0, #16]",
         "tbl v16.16b, {v17.16b}, v2.16b"
       ]
@@ -551,7 +551,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x4]",
-        "ldr x0, [x28, #2064]",
+        "ldr x0, [x28, #2096]",
         "ldr q3, [x0, #16]",
         "tbl v16.16b, {v2.16b}, v3.16b"
       ]
@@ -689,7 +689,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x4]",
-        "ldr x0, [x28, #2064]",
+        "ldr x0, [x28, #2096]",
         "ldr q3, [x0, #2480]",
         "tbl v16.16b, {v2.16b}, v3.16b"
       ]
@@ -1241,7 +1241,7 @@
       "ExpectedInstructionCount": 3,
       "Comment": "0x66 0x0f 0xd0",
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2432]",
+        "ldr q2, [x28, #2464]",
         "eor v2.16b, v17.16b, v2.16b",
         "fadd v16.2d, v16.2d, v2.2d"
       ]
@@ -1297,7 +1297,7 @@
       "ExpectedInstructionCount": 7,
       "Comment": "0x66 0x0f 0xd7",
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2656]",
+        "ldr q2, [x28, #2688]",
         "cmlt v3.16b, v16.16b, #0",
         "and v2.16b, v3.16b, v2.16b",
         "addp v2.16b, v2.16b, v2.16b",
@@ -1420,8 +1420,8 @@
       "ExpectedInstructionCount": 9,
       "Comment": "0x66 0x0f 0xe6",
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #2880]",
-        "ldr q3, [x28, #2832]",
+        "ldr d2, [x28, #2912]",
+        "ldr q3, [x28, #2864]",
         "frintz v4.2d, v17.2d",
         "fcvtn v4.2s, v4.2d",
         "fcvtzs v4.2s, v4.2s",
