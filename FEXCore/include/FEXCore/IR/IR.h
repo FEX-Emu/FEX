@@ -80,6 +80,10 @@ enum NamedVectorConstant : uint8_t {
   NAMED_VECTOR_CVTMAX_I32,
   NAMED_VECTOR_CVTMAX_I64,
   NAMED_VECTOR_F80_SIGN_MASK,
+  NAMED_VECTOR_SHA1RNDS_K0,
+  NAMED_VECTOR_SHA1RNDS_K1,
+  NAMED_VECTOR_SHA1RNDS_K2,
+  NAMED_VECTOR_SHA1RNDS_K3,
 
   NAMED_VECTOR_CONST_POOL_MAX,
   // Beginning of named constants that don't have a constant pool backing.
