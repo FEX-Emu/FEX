@@ -4024,7 +4024,7 @@
         "movi v2.2d, #0x0",
         "ldr q3, [x28, #2576]",
         "mov v16.16b, v17.16b",
-        "unimplemented (Unimplemented)",
+        "aese v16.16b, v2.16b",
         "tbl v16.16b, {v16.16b}, v3.16b",
         "str q2, [x28, #16]"
       ]
@@ -4038,7 +4038,7 @@
         "movi v2.2d, #0x0",
         "ldr q3, [x28, #2576]",
         "mov v16.16b, v17.16b",
-        "unimplemented (Unimplemented)",
+        "aese v16.16b, v2.16b",
         "tbl v16.16b, {v16.16b}, v3.16b",
         "mov x0, #0xff00000000",
         "dup v1.2d, x0",
