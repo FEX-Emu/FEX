@@ -565,6 +565,16 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
 
     for (size_t j = 0; j < CodeBlocks->size(); ++j) {
       const FEXCore::Frontend::Decoder::DecodedBlocks& Block = CodeBlocks->at(j);
+
+      bool BlockInForceTSOValidRange = false;
+      auto InstForceTSOIt = ForceTSOInstructions.end();
+      if (ForceTSOValidRanges.Contains({Block.Entry, Block.Entry + Block.Size})) {
+        if (auto It = ForceTSOInstructions.lower_bound(Block.Entry); *It < Block.Entry + Block.Size) {
+          InstForceTSOIt = It;
+          BlockInForceTSOValidRange = true;
+        }
+      }
+
       // Set the block entry point
       Thread->OpDispatcher->SetNewBlockIfChanged(Block.Entry);
 
@@ -581,6 +591,7 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
       }
 
       for (size_t i = 0; i < InstsInBlock; ++i) {
+        uint64_t InstAddress = Block.Entry + BlockInstructionsLength;
         const FEXCore::X86Tables::X86InstInfo* TableInfo {nullptr};
         const FEXCore::X86Tables::DecodedInst* DecodedInfo {nullptr};
 
@@ -603,7 +614,7 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
         Thread->OpDispatcher->FlushRegisterCache(true);
 
         if (ExtendedDebugInfo || Thread->OpDispatcher->CanHaveSideEffects(TableInfo, DecodedInfo)) {
-          Thread->OpDispatcher->_GuestOpcode(Block.Entry + BlockInstructionsLength - GuestRIP);
+          Thread->OpDispatcher->_GuestOpcode(InstAddress - GuestRIP);
         }
 
         if (Config.SMCChecks == FEXCore::Config::CONFIG_SMC_FULL) {
@@ -620,7 +631,7 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
 
           Thread->OpDispatcher->SetCurrentCodeBlock(CodeWasChangedBlock);
           Thread->OpDispatcher->_ThreadRemoveCodeEntry();
-          Thread->OpDispatcher->ExitFunction(Thread->OpDispatcher->_EntrypointOffset(GPRSize, Block.Entry + BlockInstructionsLength - GuestRIP));
+          Thread->OpDispatcher->ExitFunction(Thread->OpDispatcher->_EntrypointOffset(GPRSize, InstAddress - GuestRIP));
 
           auto NextOpBlock = Thread->OpDispatcher->CreateNewCodeBlockAfter(CurrentBlock);
 
@@ -632,17 +643,27 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
           auto Fn = TableInfo->OpcodeDispatcher;
           Thread->OpDispatcher->ResetHandledLock();
           Thread->OpDispatcher->ResetDecodeFailure();
+          IR::ForceTSOMode ForceTSO =
+            BlockInForceTSOValidRange ?
+              (InstForceTSOIt != ForceTSOInstructions.end() && *InstForceTSOIt == InstAddress ? IR::ForceTSOMode::ForceEnabled :
+                                                                                                IR::ForceTSOMode::ForceDisabled) :
+              IR::ForceTSOMode::NoOverride;
+          Thread->OpDispatcher->SetForceTSO(ForceTSO);
           std::invoke(Fn, Thread->OpDispatcher, DecodedInfo);
           if (Thread->OpDispatcher->HadDecodeFailure()) {
             HadDispatchError = true;
           } else {
             if (Thread->OpDispatcher->HasHandledLock() != IsLocked) {
               HadDispatchError = true;
-              LogMan::Msg::EFmt("Missing LOCK HANDLER at 0x{:x}{{'{}'}}", Block.Entry + BlockInstructionsLength, TableInfo->Name ?: "UND");
+              LogMan::Msg::EFmt("Missing LOCK HANDLER at 0x{:x}{{'{}'}}", InstAddress, TableInfo->Name ?: "UND");
             }
             BlockInstructionsLength += DecodedInfo->InstSize;
             TotalInstructionsLength += DecodedInfo->InstSize;
             ++TotalInstructions;
+
+            // Walk InstForceTSOIt forward past the handled instruction
+            InstForceTSOIt =
+              std::find_if(InstForceTSOIt, ForceTSOInstructions.end(), [&](auto Val) { return Val >= Block.Entry + BlockInstructionsLength; });
           }
         } else {
           // Invalid instruction
