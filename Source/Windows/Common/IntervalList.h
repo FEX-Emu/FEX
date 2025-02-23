@@ -66,6 +66,12 @@ public:
     FirstIt->End = End;
   }
 
+  void Insert(const IntervalList<SizeType> &Other) {
+    for (const auto &Interval : Other.Intervals) {
+      Insert(Interval);
+    }
+  }
+
   void Remove(Interval Entry) {
     if (Entry.Offset == Entry.End) {
       return;
@@ -141,5 +147,13 @@ public:
     }); // Lowest offset interval that (maybe) overlaps with the query offset
 
     return It != Intervals.end() && It->Offset < Entry.End;
+  }
+
+  bool Contains(Interval Entry) {
+    const auto It = std::upper_bound(Intervals.begin(), Intervals.end(), Entry, [](const auto& LHS, const auto& RHS) {
+      return LHS.Offset < RHS.End;
+    }); // Lowest offset interval that (maybe) overlaps with the query offset
+
+    return It != Intervals.end() && It->Offset <= Entry.Offset && It->End >= Entry.End;
   }
 };
