@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include "IntervalList.h"
+#include <FEXCore/Utils/IntervalList.h>
 #include <mutex>
 #include <unordered_map>
 
@@ -28,7 +28,7 @@ public:
   bool HandleRWXAccessViolation(uint64_t FaultAddress);
 
 private:
-  IntervalList<uint64_t> RWXIntervals;
+  FEXCore::IntervalList<uint64_t> RWXIntervals;
   std::mutex RWXIntervalsLock;
   FEXCore::Context::Context& CTX;
   const std::unordered_map<DWORD, FEXCore::Core::InternalThreadState*>& Threads;

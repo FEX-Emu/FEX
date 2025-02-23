@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include "IntervalList.h"
+#include <FEXCore/Utils/IntervalList.h>
 #include <thread>
 #include <shared_mutex>
 
@@ -13,7 +13,7 @@ namespace FEX::Windows {
 class OvercommitTracker {
 private:
   bool IsWine;
-  IntervalList<uint64_t> OvercommitIntervals;
+  FEXCore::IntervalList<uint64_t> OvercommitIntervals;
   std::shared_mutex OvercommitIntervalsMutex;
 
 public:
