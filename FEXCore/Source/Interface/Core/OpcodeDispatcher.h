@@ -46,6 +46,12 @@ enum class BTAction {
   BTComplement,
 };
 
+enum class ForceTSOMode {
+  Default,
+  ForceDisabled,
+  ForceEnabled,
+};
+
 struct LoadSourceOptions {
   // Alignment of the load in bytes. iInvalid signifies opsize aligned.
   IR::OpSize Align = OpSize::iInvalid;
@@ -271,6 +277,13 @@ public:
   }
   bool HasHandledLock() const {
     return HandledLock;
+  }
+
+  void SetForceTSO(ForceTSOMode Mode) {
+    ForceTSO = Mode;
+  }
+  ForceTSOMode GetForceTSO() const {
+    return ForceTSO;
   }
 
   void SetDumpIR(bool DumpIR) {
@@ -1329,6 +1342,7 @@ private:
   bool HandledLock {false};
   bool DecodeFailure {false};
   bool NeedsBlockEnd {false};
+  ForceTSOMode ForceTSO {ForceTSOMode::Default};
   // Used during new op bringup
   bool ShouldDump {false};
 
@@ -2380,7 +2394,11 @@ private:
   IROp_IRHeader* CurrentHeader {};
 
   bool IsTSOEnabled(FEXCore::IR::RegisterClassType Class) {
-    if (Class == FPRClass) {
+    if (ForceTSO == ForceTSOMode::ForceEnabled) {
+      return true;
+    } else if (ForceTSO == ForceTSOMode::ForceDisabled) {
+      return false;
+    } else if (Class == FPRClass) {
       return CTX->IsVectorAtomicTSOEnabled();
     } else {
       return CTX->IsAtomicTSOEnabled();
