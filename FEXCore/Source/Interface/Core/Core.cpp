@@ -971,6 +971,19 @@ void ContextImpl::AddThunkTrampolineIRHandler(uintptr_t Entrypoint, uintptr_t Gu
   }
 }
 
+void ContextImpl::AddForceTSOInformation(const IntervalList<uint64_t>& ValidRanges, fextl::set<uint64_t>&& Instructions) {
+  LogMan::Throw::AFmt(CodeInvalidationMutex.try_lock() == false, "CodeInvalidationMutex needs to be unique_locked here");
+  ForceTSOValidRanges.Insert(ValidRanges);
+  ForceTSOInstructions.merge(Instructions);
+}
+
+void ContextImpl::RemoveForceTSOInformation(uint64_t Address, uint64_t Size) {
+  LogMan::Throw::AFmt(CodeInvalidationMutex.try_lock() == false, "CodeInvalidationMutex needs to be unique_locked here");
+
+  ForceTSOValidRanges.Remove({Address, Address + Size});
+  ForceTSOInstructions.erase(ForceTSOInstructions.lower_bound(Address), ForceTSOInstructions.upper_bound(Address + Size));
+}
+
 void ContextImpl::RemoveCustomIREntrypoint(uintptr_t Entrypoint) {
   LOGMAN_THROW_A_FMT(Config.Is64BitMode || !(Entrypoint >> 32), "64-bit Entrypoint in 32-bit mode {:x}", Entrypoint);
 
