@@ -186,6 +186,10 @@ public:
 
   void AddThunkTrampolineIRHandler(uintptr_t Entrypoint, uintptr_t GuestThunkEntrypoint) override;
 
+  void AddForceTSOInformation(const IntervalList<uint64_t>& ValidRanges, fextl::set<uint64_t>&& Instructions) override;
+
+  void RemoveForceTSOInformation(uint64_t Address, uint64_t Size) override;
+
 public:
   friend class FEXCore::HLE::SyscallHandler;
 #ifdef JIT_ARM64
@@ -373,5 +377,7 @@ private:
   std::shared_mutex CustomIRMutex;
   std::atomic<bool> HasCustomIRHandlers {};
   fextl::unordered_map<uint64_t, std::tuple<CustomIREntrypointHandler, void*, void*>> CustomIRHandlers;
+  IntervalList<uint64_t> ForceTSOValidRanges; // The ranges for which ForceTSOInstructions has populated data
+  fextl::set<uint64_t> ForceTSOInstructions;
 };
 } // namespace FEXCore::Context

@@ -7,6 +7,7 @@
 #include <FEXCore/Core/CPUID.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/Utils/IntervalList.h>
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/set.h>
 #include <FEXCore/fextl/string.h>
@@ -216,6 +217,15 @@ public:
    */
   FEX_DEFAULT_VISIBILITY virtual void AddThunkTrampolineIRHandler(uintptr_t Entrypoint, uintptr_t GuestThunkEntrypoint) = 0;
 
+  /**
+   * @brief Adds additional per-instruction granularity TSO enable/disable information for the given range.
+   *
+   * @param ValidRanges The set of address ranges covered by this information
+   * @param Instructions The set of instruction addresses within the given ranges for which TSO should be enabled
+   */
+  FEX_DEFAULT_VISIBILITY virtual void AddForceTSOInformation(const IntervalList<uint64_t>& ValidRanges, fextl::set<uint64_t>&& Instructions) = 0;
+
+  FEX_DEFAULT_VISIBILITY virtual void RemoveForceTSOInformation(uint64_t Address, uint64_t Size) = 0;
 private:
 };
 
