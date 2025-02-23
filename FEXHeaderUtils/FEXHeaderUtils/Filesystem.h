@@ -125,6 +125,16 @@ inline fextl::string GetFilename(const fextl::string& Path) {
   return Path.substr(LastSeparator + 1);
 }
 
+inline std::string_view GetFilename(std::string_view Path) {
+  auto LastSeparator = Path.rfind('/');
+  if (LastSeparator == fextl::string::npos) {
+    // No separator. Likely relative `.`, `..`, `<Application Name>`, or empty string.
+    return Path;
+  }
+
+  return Path.substr(LastSeparator + 1);
+}
+
 inline fextl::string ParentPath(const fextl::string& Path) {
   auto LastSeparator = Path.rfind('/');
 

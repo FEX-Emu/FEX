@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 #include "OptionParser.h"
 
+#include <FEXHeaderUtils/Filesystem.h>
+
 #include <charconv>
 #include <cstring>
 #include <filesystem>
@@ -62,6 +64,43 @@ void LoadOptions(int argc, char** argv) {
   }
 }
 } // namespace Config
+
+bool FindWineFEXApplication(int64_t PID, std::string_view exe, const std::vector<std::string_view>& Args) {
+  // Walk the arguments and see if anything contains wine.
+  bool FoundWine = false;
+
+  if (exe.find("wine") != exe.npos) {
+    FoundWine = true;
+  }
+
+  if (!FoundWine) {
+    for (auto Arg : Args) {
+      if (Arg.find("wine") != Arg.npos) {
+        FoundWine = true;
+        break;
+      }
+    }
+  }
+
+  if (!FoundWine) {
+    return false;
+  }
+
+  // Wine was found, scan the mapped files to see if anything mapped "libarm64ecfex.dll" or "libwow64fex.dll"
+  for (const auto& Entry : std::filesystem::directory_iterator(fmt::format("/proc/{}/map_files", PID))) {
+    // If not a symlink then skip.
+    if (!Entry.is_symlink()) {
+      continue;
+    }
+
+    const auto filename = std::filesystem::read_symlink(Entry.path()).filename().string();
+    if (filename.find("arm64ecfex.dll") != filename.npos || filename.find("wow64fex.dll") != filename.npos) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 struct PIDInfo {
   int64_t pid;
@@ -177,28 +216,98 @@ int main(int argc, char** argv) {
       arg += strlen(arg) + 1;
     }
 
-    auto IsFEX = [](auto& Path) {
+    auto FindFEXArgument = [](auto& Path) -> int32_t {
       if (Path.ends_with("FEXInterpreter")) {
-        return true;
+        return 1;
       }
       if (Path.ends_with("FEXLoader")) {
-        return true;
+        return 1;
       }
 
-      return false;
+      return -1;
     };
-    bool IsFEXBin = IsFEX(pid.exe_link) || IsFEX(Args[0]);
-    if (!IsFEXBin) {
+
+    struct ProgramPair {
+      std::string_view ProgramPath;
+      std::string_view ProgramFilename;
+    };
+
+    auto FindEmulatedWineArgument = [](int32_t BeginningArg, const std::vector<std::string_view>& Args, bool Wine) -> ProgramPair {
+      std::string_view ProgramName = Args[BeginningArg];
+
+      for (size_t i = BeginningArg; i < Args.size(); ++i) {
+        auto CurrentProgramName = FHU::Filesystem::GetFilename(Args[i]);
+
+        if (CurrentProgramName == "wine-preloader" || CurrentProgramName == "wine64-preloader") {
+          // Wine preloader is required to be in the format of `wine-preloader <wine executable>`
+          // The preloader doesn't execve the executable, instead maps it directly itself
+          // Skip the next argument since we know it is wine (potentially with custom wine executable name)
+          ++i;
+          Wine = true;
+        } else if (CurrentProgramName == "wine" || CurrentProgramName == "wine64") {
+          // Next argument, this isn't the program we want
+          //
+          // If we are running wine or wine64 then we should check the next argument for the application name instead.
+          // wine will change the active program name with `setprogname` or `prctl(PR_SET_NAME`.
+          // Since FEX needs this data far earlier than libraries we need a different check.
+          Wine = true;
+        } else {
+          if (Wine == true) {
+            // If this was path separated with '\' then we need to check that.
+            auto WinSeparator = CurrentProgramName.find_last_of('\\');
+            if (WinSeparator != CurrentProgramName.npos) {
+              // Used windows separators
+              CurrentProgramName = CurrentProgramName.substr(WinSeparator + 1);
+            }
+
+            return {
+              .ProgramPath = Args[i],
+              .ProgramFilename = CurrentProgramName,
+            };
+          }
+          break;
+        }
+      }
+
+      auto ProgramFilename = ProgramName;
+      auto Separator = ProgramName.find_last_of('/');
+      if (Separator != ProgramName.npos) {
+        // Used windows separators
+        ProgramFilename = ProgramFilename.substr(Separator + 1);
+      }
+
+      return {
+        .ProgramPath = ProgramName,
+        .ProgramFilename = ProgramFilename,
+      };
+    };
+
+    int32_t ProgramArg = -1;
+    ProgramArg = FindFEXArgument(pid.exe_link);
+    if (ProgramArg == -1) {
+      ProgramArg = FindFEXArgument(Args[0]);
+    }
+
+    bool IsWine = false;
+    if (ProgramArg == -1) {
+      // If we still haven't found a FEXInterpreter path then this might be an arm64ec FEX application.
+      // The only way to know for sure is the walk the mapped files of the process and check if FEX is mapped.
+      if (FindWineFEXApplication(pid.pid, pid.exe_link, Args)) {
+        // Search from the start.
+        ProgramArg = 0;
+        IsWine = true;
+      }
+    }
+
+    if (ProgramArg == -1 || ProgramArg >= Args.size()) {
       continue;
     }
 
-    auto Arg1 = Args[1];
-    auto Arg1Program = std::filesystem::path(Arg1).filename();
-
+    ProgramPair Arg = FindEmulatedWineArgument(ProgramArg, Args, IsWine);
     bool Matched = false;
     for (const auto& CompareProgram : Config::Programs) {
       auto CompareProgramFilename = std::filesystem::path(CompareProgram).filename();
-      if (CompareProgram == Arg1Program || CompareProgram == Arg1 || CompareProgramFilename == Arg1Program) {
+      if (CompareProgram == Arg.ProgramFilename || CompareProgram == Arg.ProgramPath || CompareProgramFilename == Arg.ProgramFilename) {
         MatchedPIDs.emplace(pid.pid);
         Matched = true;
         break;
