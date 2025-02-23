@@ -417,6 +417,7 @@ public:
   void EnterOp(OpcodeArgs);
 
   void SGDTOp(OpcodeArgs);
+  void SIDTOp(OpcodeArgs);
   void SMSWOp(OpcodeArgs);
 
   enum class VectorOpType {

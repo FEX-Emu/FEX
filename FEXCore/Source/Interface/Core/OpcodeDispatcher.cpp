@@ -3001,6 +3001,22 @@ void OpDispatchBuilder::SGDTOp(OpcodeArgs) {
   _StoreMemAutoTSO(GPRClass, GDTStoreSize, AddressMode {.Base = DestAddress, .Offset = 2, .AddrSize = OpSize::i64Bit}, _Constant(GDTAddress));
 }
 
+void OpDispatchBuilder::SIDTOp(OpcodeArgs) {
+  auto DestAddress = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
+
+  // See SGDTOp, matches Linux in reported values
+  uint64_t IDTAddress = 0xFFFFFE0000000000ULL;
+  auto IDTStoreSize = OpSize::i64Bit;
+  if (!CTX->Config.Is64BitMode) {
+    // Mask off upper bits if 32-bit result.
+    IDTAddress &= ~0U;
+    IDTStoreSize = OpSize::i32Bit;
+  }
+
+  _StoreMemAutoTSO(GPRClass, OpSize::i16Bit, DestAddress, _Constant(0xfff));
+  _StoreMemAutoTSO(GPRClass, IDTStoreSize, AddressMode {.Base = DestAddress, .Offset = 2, .AddrSize = OpSize::i64Bit}, _Constant(IDTAddress));
+}
+
 void OpDispatchBuilder::SMSWOp(OpcodeArgs) {
   const bool IsMemDst = DestIsMem(Op);
 
