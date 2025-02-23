@@ -5029,7 +5029,7 @@ private:
   void SVE2IntegerMultiplyLong(uint32_t SUT, SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
     // PMULLB and PMULLT support the use of 128-bit element sizes (with the SVE2PMULL128 extension)
     if (SUT == 0b010 || SUT == 0b011) {
-      LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Can't use 8-bit element size");
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i32Bit, "Can't use 8-bit or 32-bit element size");
 
       // 128-bit variant is encoded as if it were 8-bit (0b00)
       if (size == SubRegSize::i128Bit) {

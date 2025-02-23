@@ -110,15 +110,14 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: System: Barriers") {
 
   TEST_SINGLE(isb(), "isb");
 
-  // vixl has a decoding bug claiming these are system level instructions.
-  TEST_SINGLE(sb(), "sb (System)");
-  TEST_SINGLE(tcommit(), "tcommit (System)");
+  TEST_SINGLE(sb(), "sb");
+  TEST_SINGLE(tcommit(), "tcommit");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: System: System register move") {
   // vixl doesn't have decoding for a bunch of these.
   // Also most of these aren't writeable from el0, just testing the encoding.
   TEST_SINGLE(msr(SystemRegister::CTR_EL0, Reg::r30), "msr S3_3_c0_c0_1, x30");
-  TEST_SINGLE(msr(SystemRegister::DCZID_EL0, Reg::r30), "msr S3_3_c0_c0_7, x30");
+  TEST_SINGLE(msr(SystemRegister::DCZID_EL0, Reg::r30), "msr dczid_el0, x30");
   TEST_SINGLE(msr(SystemRegister::TPIDR_EL0, Reg::r30), "msr S3_3_c13_c0_2, x30");
   TEST_SINGLE(msr(SystemRegister::RNDR, Reg::r30), "msr rndr, x30");
   TEST_SINGLE(msr(SystemRegister::RNDRRS, Reg::r30), "msr rndrrs, x30");
@@ -129,7 +128,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: System: System register move") {
   TEST_SINGLE(msr(SystemRegister::CNTVCT_EL0, Reg::r30), "msr S3_3_c14_c0_2, x30");
 
   TEST_SINGLE(mrs(Reg::r30, SystemRegister::CTR_EL0), "mrs x30, S3_3_c0_c0_1");
-  TEST_SINGLE(mrs(Reg::r30, SystemRegister::DCZID_EL0), "mrs x30, S3_3_c0_c0_7");
+  TEST_SINGLE(mrs(Reg::r30, SystemRegister::DCZID_EL0), "mrs x30, dczid_el0");
   TEST_SINGLE(mrs(Reg::r30, SystemRegister::TPIDR_EL0), "mrs x30, S3_3_c13_c0_2");
   TEST_SINGLE(mrs(Reg::r30, SystemRegister::RNDR), "mrs x30, rndr");
   TEST_SINGLE(mrs(Reg::r30, SystemRegister::RNDRRS), "mrs x30, rndrrs");
