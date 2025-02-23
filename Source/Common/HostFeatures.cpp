@@ -543,10 +543,14 @@ FEXCore::HostFeatures FetchHostFeatures(FEX::CPUFeatures& Features, bool Support
 #endif
 
 #ifdef VIXL_SIMULATOR
-  // simulator doesn't support dc(ZVA)
-  HostFeatures.SupportsCLZERO = false;
-  // Simulator doesn't support SHA
-  HostFeatures.SupportsSHA = false;
+  // simulator has a hardcoded ZVA size of 64-bytes.
+  HostFeatures.SupportsCLZERO = true;
+  HostFeatures.SupportsAES = true;
+  HostFeatures.SupportsCRC = true;
+  HostFeatures.SupportsAVX = true;
+  HostFeatures.SupportsSHA = true;
+  HostFeatures.SupportsPMULL_128Bit = true;
+  HostFeatures.SupportsAES256 = true;
 #else
   // Check if we can support cacheline clears
   uint32_t DCZID = GetDCZID();
