@@ -58,7 +58,7 @@
         "ldr q2, [x28, #2576]",
         "movi v3.2d, #0x0",
         "mov v16.16b, v17.16b",
-        "unimplemented (Unimplemented)",
+        "aese v16.16b, v3.16b",
         "tbl v16.16b, {v16.16b}, v2.16b"
       ]
     },
@@ -71,7 +71,7 @@
         "ldr q2, [x28, #2576]",
         "movi v3.2d, #0x0",
         "mov v16.16b, v17.16b",
-        "unimplemented (Unimplemented)",
+        "aese v16.16b, v3.16b",
         "tbl v16.16b, {v16.16b}, v2.16b",
         "mov x0, #0xff00000000",
         "dup v1.2d, x0",
@@ -91,7 +91,7 @@
         "rev64 v5.4s, v17.4s",
         "ext v5.16b, v5.16b, v5.16b, #8",
         "add v2.4s, v5.4s, v2.4s",
-        "unimplemented (Unimplemented)",
+        "sha1c q4, s3, v2.4s",
         "rev64 v2.4s, v4.4s",
         "ext v16.16b, v2.16b, v2.16b, #8"
       ]
@@ -109,7 +109,7 @@
         "rev64 v5.4s, v17.4s",
         "ext v5.16b, v5.16b, v5.16b, #8",
         "add v2.4s, v5.4s, v2.4s",
-        "unimplemented (Unimplemented)",
+        "sha1p q4, s3, v2.4s",
         "rev64 v2.4s, v4.4s",
         "ext v16.16b, v2.16b, v2.16b, #8"
       ]
@@ -127,7 +127,7 @@
         "rev64 v5.4s, v17.4s",
         "ext v5.16b, v5.16b, v5.16b, #8",
         "add v2.4s, v5.4s, v2.4s",
-        "unimplemented (Unimplemented)",
+        "sha1m q4, s3, v2.4s",
         "rev64 v2.4s, v4.4s",
         "ext v16.16b, v2.16b, v2.16b, #8"
       ]
@@ -145,7 +145,7 @@
         "rev64 v5.4s, v17.4s",
         "ext v5.16b, v5.16b, v5.16b, #8",
         "add v2.4s, v5.4s, v2.4s",
-        "unimplemented (Unimplemented)",
+        "sha1p q4, s3, v2.4s",
         "rev64 v2.4s, v4.4s",
         "ext v16.16b, v2.16b, v2.16b, #8"
       ]

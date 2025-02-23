@@ -5920,7 +5920,7 @@
         "Map 2 0b01 0xdb 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "unimplemented (Unimplemented)",
+        "aesimc v16.16b, v17.16b",
         "movi v2.2d, #0x0",
         "str q2, [x28, #16]"
       ]
@@ -5933,8 +5933,8 @@
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
         "mov v0.16b, v17.16b",
-        "unimplemented (Unimplemented)",
-        "unimplemented (Unimplemented)",
+        "aese v0.16b, v2.16b",
+        "aesmc v0.16b, v0.16b",
         "eor v16.16b, v0.16b, v18.16b",
         "str q2, [x28, #16]"
       ]
@@ -5949,12 +5949,12 @@
         "ldr q3, [x28, #32]",
         "ldr q4, [x28, #48]",
         "mov v0.16b, v17.16b",
-        "unimplemented (Unimplemented)",
-        "unimplemented (Unimplemented)",
+        "aese v0.16b, v2.16b",
+        "aesmc v0.16b, v0.16b",
         "eor v16.16b, v0.16b, v18.16b",
         "mov v0.16b, v3.16b",
-        "unimplemented (Unimplemented)",
-        "unimplemented (Unimplemented)",
+        "aese v0.16b, v2.16b",
+        "aesmc v0.16b, v0.16b",
         "eor v2.16b, v0.16b, v4.16b",
         "str q2, [x28, #16]"
       ]
@@ -5967,7 +5967,7 @@
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
         "mov v0.16b, v17.16b",
-        "unimplemented (Unimplemented)",
+        "aese v0.16b, v2.16b",
         "eor v16.16b, v0.16b, v18.16b",
         "str q2, [x28, #16]"
       ]
@@ -5982,10 +5982,10 @@
         "ldr q3, [x28, #32]",
         "ldr q4, [x28, #48]",
         "mov v0.16b, v17.16b",
-        "unimplemented (Unimplemented)",
+        "aese v0.16b, v2.16b",
         "eor v16.16b, v0.16b, v18.16b",
         "mov v0.16b, v3.16b",
-        "unimplemented (Unimplemented)",
+        "aese v0.16b, v2.16b",
         "eor v2.16b, v0.16b, v4.16b",
         "str q2, [x28, #16]"
       ]
@@ -5998,8 +5998,8 @@
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
         "mov v0.16b, v17.16b",
-        "unimplemented (Unimplemented)",
-        "unimplemented (Unimplemented)",
+        "aesd v0.16b, v2.16b",
+        "aesimc v0.16b, v0.16b",
         "eor v16.16b, v0.16b, v18.16b",
         "str q2, [x28, #16]"
       ]
@@ -6014,12 +6014,12 @@
         "ldr q3, [x28, #32]",
         "ldr q4, [x28, #48]",
         "mov v0.16b, v17.16b",
-        "unimplemented (Unimplemented)",
-        "unimplemented (Unimplemented)",
+        "aesd v0.16b, v2.16b",
+        "aesimc v0.16b, v0.16b",
         "eor v16.16b, v0.16b, v18.16b",
         "mov v0.16b, v3.16b",
-        "unimplemented (Unimplemented)",
-        "unimplemented (Unimplemented)",
+        "aesd v0.16b, v2.16b",
+        "aesimc v0.16b, v0.16b",
         "eor v2.16b, v0.16b, v4.16b",
         "str q2, [x28, #16]"
       ]
@@ -6032,7 +6032,7 @@
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
         "mov v0.16b, v17.16b",
-        "unimplemented (Unimplemented)",
+        "aesd v0.16b, v2.16b",
         "eor v16.16b, v0.16b, v18.16b",
         "str q2, [x28, #16]"
       ]
@@ -6047,10 +6047,10 @@
         "ldr q3, [x28, #32]",
         "ldr q4, [x28, #48]",
         "mov v0.16b, v17.16b",
-        "unimplemented (Unimplemented)",
+        "aesd v0.16b, v2.16b",
         "eor v16.16b, v0.16b, v18.16b",
         "mov v0.16b, v3.16b",
-        "unimplemented (Unimplemented)",
+        "aesd v0.16b, v2.16b",
         "eor v2.16b, v0.16b, v4.16b",
         "str q2, [x28, #16]"
       ]

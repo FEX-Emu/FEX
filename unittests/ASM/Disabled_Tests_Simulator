@@ -10,27 +10,13 @@ Test_X87/precision_test_neg_ftan.asm
 Test_X87/precision_test_neg_fatan.asm
 Test_X87/precision_test_neg_fyl2xp1.asm
 
-# AES unsupported in simulator
-Test_H0F38/66_DB.asm
-Test_H0F38/66_DC.asm
-Test_H0F38/66_DD.asm
-Test_H0F38/66_DE.asm
-Test_H0F38/66_DF.asm
-Test_H0F3A/0_66_DF.asm
+# AES and vpclmul unsupported in 256-bit SVE currently
 Test_VEX/vaesdec.asm
 Test_VEX/vaesdeclast.asm
-Test_VEX/vaesenc.asm
-Test_VEX/vaesenclast.asm
-Test_VEX/vaesimc.asm
 Test_VEX/vaesdec256.asm
 Test_VEX/vaesdeclast256.asm
 Test_VEX/vaesenc256.asm
 Test_VEX/vaesenclast256.asm
-Test_VEX/vaeskeygenassist.asm
-
-# PCMUL considered to be part of crypto operations. Simulator doesn't support this.
-Test_H0F3A/pclmulqdq.asm
-Test_VEX/vpclmulqdq.asm
 Test_VEX/vpclmulqdq_256.asm
 
 # Simulator can't handle self-modifying code
