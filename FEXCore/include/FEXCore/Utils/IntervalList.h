@@ -6,6 +6,7 @@
 
 #include <FEXCore/fextl/vector.h>
 
+namespace FEXCore {
 template<typename SizeType>
 class IntervalList {
 public:
@@ -66,8 +67,8 @@ public:
     FirstIt->End = End;
   }
 
-  void Insert(const IntervalList<SizeType> &Other) {
-    for (const auto &Interval : Other.Intervals) {
+  void Insert(const IntervalList<SizeType>& Other) {
+    for (const auto& Interval : Other.Intervals) {
       Insert(Interval);
     }
   }
@@ -157,3 +158,5 @@ public:
     return It != Intervals.end() && It->Offset <= Entry.Offset && It->End >= Entry.End;
   }
 };
+
+} // namespace FEXCore
