@@ -1881,6 +1881,12 @@
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize",
         "TiedSource": 0
+      },
+      "FPR = VFCopySign OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1,  FPR:$Vector2": {
+        "Desc": ["Returns a vector where each element has has the magniture of each corresponding element in vector1 and the sign of vector 2."],
+        "DestSize": "RegisterSize",
+        "ElementSize": "ElementSize",
+        "TiedSource": 0
       }
     },
     "Vector": {

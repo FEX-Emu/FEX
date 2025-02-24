@@ -12,21 +12,28 @@
   },
   "Instructions": {
     "rsqrtss xmm0, xmm1": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "0xf3 0x0f 0x52"
       ],
       "ExpectedArm64ASM": [
-        "frsqrte s16, s17"
+        "frsqrte s0, s17",
+        "fmul s1, s0, s0",
+        "frsqrts s1, s1, s17",
+        "fmul s0, s0, s1",
+        "mov v16.s[0], v0.s[0]"
       ]
     },
     "rcpss xmm0, xmm1": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "0xf3 0x0f 0x53"
       ],
       "ExpectedArm64ASM": [
-        "frecpe s16, s17"
+        "frecpe s0, s17",
+        "frecps s1, s0, s17",
+        "fmul s0, s0, s1",
+        "mov v16.s[0], v0.s[0]"
       ]
     }
   }
