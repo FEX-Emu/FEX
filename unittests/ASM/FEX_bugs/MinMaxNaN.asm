@@ -47,63 +47,124 @@
 
 %endmacro
 
-%macro min 3
+%macro case_d 4
+  ; Load sources
+  mov rax, %2
+  mov rbx, %3
+  movq xmm0, rax
+  movq xmm1, rbx
+
+  ; Calculate scalar min/max
+  %1sd xmm0, xmm1
+
+  ; Check result
+  movq rcx, xmm0
+  mov rdx, %4
+  cmp rcx, rdx
+  jne fexi_fexi_im_so_broken
+  mov rcx, 0
+
+  ; Now try the SSE vector
+  %1pd xmm0, xmm1
+  movq rcx, xmm0
+  mov rdx, %4
+  cmp rcx, rdx
+  jne fexi_fexi_im_so_broken
+  mov rcx, 0
+
+  ; And the AVX-128 version
+  v%1pd xmm2, xmm0, xmm1
+  movq rcx, xmm2
+  mov rdx, %4
+  cmp rcx, rdx
+  jne fexi_fexi_im_so_broken
+  mov rcx, 0
+
+  ; And the AVX-256 version
+  v%1pd ymm2, ymm0, ymm1
+  movq rcx, xmm2
+  mov rdx, %4
+  cmp rcx, rdx
+  jne fexi_fexi_im_so_broken
+%endmacro
+
+%macro min_s 3
   single_case min, %1, %2, %3
 %endmacro
 
-%macro max 3
+%macro max_s 3
   single_case max, %1, %2, %3
 %endmacro
 
-zero equ 0x00000000
-negzero equ 0x80000000
-qnan equ 0x7fc00000
-snan equ 0x7f800001
+%macro min_d 3
+  case_d min, %1, %2, %3
+%endmacro
 
-cases:
+%macro max_d 3
+  case_d max, %1, %2, %3
+%endmacro
+
+zero_s equ 0x00000000
+negzero_s equ 0x80000000
+qnan_s equ 0x7fc00000
+snan_s equ 0x7f800001
+
+zero_d equ 0x0000_0000_0000_0000
+negzero_d equ 0x8000_0000_0000_0000
+qnan_d equ 0x7ff8_0000_0000_0000
+snan_d equ 0x7ff0_0000_0000_0001
+
+%macro cases 1
   ; Basic identities
-  min zero,    zero,    zero
-  max zero,    zero,    zero
-  min negzero, negzero, negzero
-  max negzero, negzero, negzero
-  min qnan,    qnan,    qnan
-  max qnan,    qnan,    qnan
+  min%1 zero%1,    zero%1,    zero%1
+  max%1 zero%1,    zero%1,    zero%1
+  min%1 negzero%1, negzero%1, negzero%1
+  max%1 negzero%1, negzero%1, negzero%1
+  min%1 qnan%1,    qnan%1,    qnan%1
+  max%1 qnan%1,    qnan%1,    qnan%1
 
   ; "If the values being compared are both 0.0s (of either sign), the value in
   ; the second source operand is returned"
-  min zero,    negzero, negzero
-  max zero,    negzero, negzero
-  min negzero, zero,    zero
-  max negzero, zero,    zero
+  min%1 zero%1,    negzero%1, negzero%1
+  max%1 zero%1,    negzero%1, negzero%1
+  min%1 negzero%1, zero%1,    zero%1
+  max%1 negzero%1, zero%1,    zero%1
 
   ; "If only one value is a NaN (SNaN or QNaN) for this instruction, the second
   ; source operand, either a NaN or a valid floating-point value, is written to
   ; the result"
-  min zero,    qnan,    qnan
-  min negzero, qnan,    qnan
-  min qnan,    zero,    zero
-  min qnan,    negzero, negzero
+  min%1 zero%1,    qnan%1,    qnan%1
+  min%1 negzero%1, qnan%1,    qnan%1
+  min%1 qnan%1,    zero%1,    zero%1
+  min%1 qnan%1,    negzero%1, negzero%1
 
-  max zero,    qnan,    qnan
-  max negzero, qnan,    qnan
-  max qnan,    zero,    zero
-  max qnan,    negzero, negzero
+  max%1 zero%1,    qnan%1,    qnan%1
+  max%1 negzero%1, qnan%1,    qnan%1
+  max%1 qnan%1,    zero%1,    zero%1
+  max%1 qnan%1,    negzero%1, negzero%1
 
-  min zero,    snan,    snan
-  min negzero, snan,    snan
-  min snan,    zero,    zero
-  min snan,    negzero, negzero
+  min%1 zero%1,    snan%1,    snan%1
+  min%1 negzero%1, snan%1,    snan%1
+  min%1 snan%1,    zero%1,    zero%1
+  min%1 snan%1,    negzero%1, negzero%1
 
-  max zero,    snan,    snan
-  max negzero, snan,    snan
-  max snan,    zero,    zero
-  max snan,    negzero, negzero
+  max%1 zero%1,    snan%1,    snan%1
+  max%1 negzero%1, snan%1,    snan%1
+  max%1 snan%1,    zero%1,    zero%1
+  max%1 snan%1,    negzero%1, negzero%1
 
   ; "If a value in the second operand is an SNaN, that SNaN is returned
   ; unchanged to the destination (that is, a QNaN version of the SNaN is not
   ; returned)."
-  min qnan, snan, snan
-  min snan, snan, snan
+  min%1 qnan%1, snan%1, snan%1
+  min%1 snan%1, snan%1, snan%1
+%endmacro
+
+single_cases:
+  cases _s
+
+cases_double:
+  cases _d
 
 success:
   mov rax, 0
