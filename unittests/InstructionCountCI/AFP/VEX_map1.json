@@ -404,14 +404,12 @@
       ]
     },
     "vminps xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Map 1 0b00 0x5d 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fcmgt v0.4s, v18.4s, v17.4s",
-        "mov v16.16b, v17.16b",
-        "bif v16.16b, v18.16b, v0.16b"
+        "fmin v16.4s, v17.4s, v18.4s"
       ]
     },
     "vminps ymm0, ymm1, ymm2": {
@@ -428,14 +426,12 @@
       ]
     },
     "vminpd xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Map 1 0b01 0x5d 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "fcmgt v0.2d, v18.2d, v17.2d",
-        "mov v16.16b, v17.16b",
-        "bif v16.16b, v18.16b, v0.16b"
+        "fmin v16.2d, v17.2d, v18.2d"
       ]
     },
     "vminpd ymm0, ymm1, ymm2": {
