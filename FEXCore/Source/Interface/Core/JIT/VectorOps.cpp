@@ -1356,13 +1356,14 @@ DEF_OP(VFMin) {
   const auto Vector1 = GetVReg(Op->Vector1.ID());
   const auto Vector2 = GetVReg(Op->Vector2.ID());
 
-  // NOTE: We don't directly use FMIN here for any of the implementations,
+  // NOTE: We don't directly use FMIN** here for any of the implementations,
   //       because it has undesirable NaN handling behavior (it sets
   //       entries either to the incoming NaN value*, or the default NaN
   //       depending on FPCR flags set). We want behavior that sets NaN
   //       entries to zero for the comparison result.
   //
   // * - Not exactly (differs slightly with SNaNs), but close enough for the explanation
+  // ** - Unless the host supports AFP.AH, which allows FMIN/FMAX to select the second source element as expected of x86.
 
   if (HostSupportsSVE256 && Is256Bit) {
     const auto Mask = PRED_TMP_32B;
@@ -1390,6 +1391,12 @@ DEF_OP(VFMin) {
     }
   } else {
     LOGMAN_THROW_A_FMT(!IsScalar, "should use VFMinScalarInsert instead");
+
+    if (HostSupportsAFP) {
+      // AFP.AH lets fmin behave like x86 min
+      fmin(SubRegSize, Dst.Q(), Vector1.Q(), Vector2.Q());
+      return;
+    }
 
     if (Dst == Vector1) {
       // Destination is already Vector1, need to insert Vector2 on false.
@@ -1442,6 +1449,12 @@ DEF_OP(VFMax) {
     }
   } else {
     LOGMAN_THROW_A_FMT(!IsScalar, "should use VFMaxScalarInsert instead");
+
+    if (HostSupportsAFP) {
+      // AFP.AH lets fmax behave like x86 max
+      fmax(SubRegSize, Dst.Q(), Vector1.Q(), Vector2.Q());
+      return;
+    }
 
     if (Dst == Vector1) {
       // Destination is already Vector1, need to insert Vector2 on true.
