@@ -901,6 +901,15 @@ public:
     return Pair;
   }
 
+  Ref SHADataShuffle(Ref Src) {
+    // SHA data shuffle matches PSHUFD shuffle where elements are inverted.
+    // Because this shuffle mask gets reused multiple times per instruction, it's always a win to load the mask once and reuse it.
+    const uint32_t Shuffle = 0b00'01'10'11;
+    auto LookupIndexes =
+      LoadAndCacheIndexedNamedVectorConstant(OpSize::i128Bit, FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFD, Shuffle * 16);
+    return _VTBL1(OpSize::i128Bit, Src, LookupIndexes);
+  }
+
   RefPair AVX128_LoadSource_WithOpSize(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags,
                                        bool NeedsHigh, MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
 
