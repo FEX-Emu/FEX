@@ -5,8 +5,13 @@ tags: backend|arm64
 $end_info$
 */
 
+
+#include "FEXCore/Utils/CompilerDefs.h"
+#include "Interface/Core/ArchHelpers/Arm64Emitter.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/JIT/JITClass.h"
+#include "CodeEmitter/Emitter.h"
+#include "Interface/IR/IR.h"
 
 #include <FEXCore/Utils/MathUtils.h>
 
@@ -529,7 +534,12 @@ DEF_OP(VFRSqrtScalarInsert) {
 
   auto ScalarEmitRPRES = [this, SubRegSize](ARMEmitter::VRegister Dst, std::variant<ARMEmitter::VRegister, ARMEmitter::Register> SrcVar) {
     auto Src = *std::get_if<ARMEmitter::VRegister>(&SrcVar);
-    frsqrte(SubRegSize.Scalar, Dst.D(), Src.D());
+    frsqrte(SubRegSize.Scalar, VTMP1.D(), Src.D());
+    // Improve initial estimate which is not good enough.
+    fmul(SubRegSize.Scalar, VTMP2.D(), VTMP1.D(), VTMP1.D());
+    frsqrts(SubRegSize.Scalar, VTMP2.D(), VTMP2.D(), Src.D());
+    fmul(SubRegSize.Scalar, VTMP1.D(), VTMP1.D(), VTMP2.D());
+    ins(SubRegSize.Vector, Dst, 0, VTMP1, 0);
   };
 
   std::array<ScalarUnaryOpCaller, 2> Handlers = {
@@ -556,12 +566,21 @@ DEF_OP(VFRecpScalarInsert) {
     auto Src = *std::get_if<ARMEmitter::VRegister>(&SrcVar);
 
     fmov(SubRegSize.Scalar, VTMP1.Q(), 1.0f);
-    fdiv(SubRegSize.Scalar, Dst, VTMP1, Src);
+    if (HostSupportsAFP) {
+      fdiv(SubRegSize.Scalar, VTMP1, VTMP1, Src);
+      ins(SubRegSize.Vector, Dst, 0, VTMP1, 0);
+    } else {
+      fdiv(SubRegSize.Scalar, Dst, VTMP1, Src);
+    }
   };
 
   auto ScalarEmitRPRES = [this, SubRegSize](ARMEmitter::VRegister Dst, std::variant<ARMEmitter::VRegister, ARMEmitter::Register> SrcVar) {
     auto Src = *std::get_if<ARMEmitter::VRegister>(&SrcVar);
-    frecpe(SubRegSize.Scalar, Dst, Src);
+    frecpe(SubRegSize.Scalar, VTMP1, Src);
+    // Improve initial estimate which is not good enough.
+    frecps(SubRegSize.Scalar, VTMP2.S(), VTMP1.S(), Src.S());
+    fmul(SubRegSize.Scalar, VTMP1.S(), VTMP1.S(), VTMP2.S());
+    ins(SubRegSize.Vector, Dst, 0, VTMP1, 0);
   };
 
   std::array<ScalarUnaryOpCaller, 2> Handlers = {
@@ -1491,6 +1510,7 @@ DEF_OP(VFRecp) {
 
     if (ElementSize == IR::OpSize::i32Bit && HostSupportsRPRES) {
       // RPRES gives enough precision for this.
+      // TODO: need test for this
       frecpe(SubRegSize.Vector, Dst.Z(), Vector.Z());
       return;
     }
@@ -1501,8 +1521,10 @@ DEF_OP(VFRecp) {
   } else {
     if (IsScalar) {
       if (ElementSize == IR::OpSize::i32Bit && HostSupportsRPRES) {
-        // RPRES gives enough precision for this.
-        frecpe(SubRegSize.Scalar, Dst.S(), Vector.S());
+        // Not enough precision so we need to improve it with frecps
+        frecpe(SubRegSize.Scalar, VTMP1.S(), Vector.S());
+        frecps(SubRegSize.Scalar, VTMP2.S(), VTMP1.S(), Vector.S());
+        fmul(SubRegSize.Scalar, Dst.S(), VTMP1.S(), VTMP2.S());
         return;
       }
 
@@ -1520,15 +1542,22 @@ DEF_OP(VFRecp) {
         fdiv(Dst.D(), VTMP1.D(), Vector.D());
         break;
       }
-      default: break;
+      default: {
+        LOGMAN_MSG_A_FMT("Unexpected ElementSize for {}", __func__);
+        FEX_UNREACHABLE;
+      }
       }
     } else {
       if (ElementSize == IR::OpSize::i32Bit && HostSupportsRPRES) {
         // RPRES gives enough precision for this.
         if (OpSize == IR::OpSize::i64Bit) {
-          frecpe(SubRegSize.Vector, Dst.D(), Vector.D());
+          // Not enough precision so we need to improve it with frecps
+          frecpe(SubRegSize.Vector, VTMP1.D(), Vector.D());
+          frecps(SubRegSize.Vector, VTMP2.D(), VTMP1.D(), Vector.D());
+          fmul(SubRegSize.Vector, Dst.D(), VTMP1.D(), VTMP2.D());
         } else {
           frecpe(SubRegSize.Vector, Dst.Q(), Vector.Q());
+          // TODO: need test for this
         }
         return;
       }
@@ -1557,6 +1586,7 @@ DEF_OP(VFRSqrt) {
     if (ElementSize == IR::OpSize::i32Bit && HostSupportsRPRES) {
       // RPRES gives enough precision for this.
       frsqrte(SubRegSize.Vector, Dst.Z(), Vector.Z());
+      // TODO: need test for this
       return;
     }
 
@@ -1566,8 +1596,11 @@ DEF_OP(VFRSqrt) {
   } else {
     if (IsScalar) {
       if (ElementSize == IR::OpSize::i32Bit && HostSupportsRPRES) {
-        // RPRES gives enough precision for this.
-        frsqrte(SubRegSize.Scalar, Dst.S(), Vector.S());
+        frsqrte(SubRegSize.Scalar, VTMP1.S(), Vector.S());
+        // Improve initial estimate which is not good enough.
+        fmul(SubRegSize.Scalar, VTMP2.S(), VTMP1.S(), VTMP1.S());
+        frsqrts(SubRegSize.Scalar, VTMP2.S(), VTMP2.S(), Vector.S());
+        fmul(SubRegSize.Scalar, Dst.S(), VTMP1.S(), VTMP2.S());
         return;
       }
 
@@ -1594,9 +1627,14 @@ DEF_OP(VFRSqrt) {
       if (ElementSize == IR::OpSize::i32Bit && HostSupportsRPRES) {
         // RPRES gives enough precision for this.
         if (OpSize == IR::OpSize::i64Bit) {
-          frsqrte(SubRegSize.Vector, Dst.D(), Vector.D());
+          frsqrte(SubRegSize.Vector, VTMP1.D(), Vector.D());
+          // Improve initial estimate which is not good enough.
+          fmul(SubRegSize.Vector, VTMP2.D(), VTMP1.D(), VTMP1.D());
+          frsqrts(SubRegSize.Vector, VTMP2.D(), VTMP2.D(), Vector.D());
+          fmul(SubRegSize.Vector, Dst.D(), VTMP1.D(), VTMP2.D());
         } else {
           frsqrte(SubRegSize.Vector, Dst.Q(), Vector.Q());
+          // TODO: need test for this
         }
         return;
       }
@@ -4465,6 +4503,30 @@ DEF_OP(VFNMLS) {
     }
   }
 }
+
+DEF_OP(VFCopySign) {
+  auto Op = IROp->C<IR::IROp_VFCopySign>();
+  const auto OpSize = IROp->Size;
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
+
+  ARMEmitter::VRegister Magnitude = GetVReg(Op->Vector1.ID());
+  ARMEmitter::VRegister Sign = GetVReg(Op->Vector2.ID());
+
+  //  We don't assign explicity to Dst but Dst and Magniture are tied to the same register.
+  //  Similar in semantics to C's copysignf.
+  switch (OpSize) {
+  case IR::OpSize::i64Bit:
+    movi(SubRegSize, VTMP1.D(), 0x80, 24);
+    bit(Magnitude.D(), Sign.D(), VTMP1.D());
+    break;
+  case IR::OpSize::i128Bit:
+    movi(SubRegSize, VTMP1.Q(), 0x80, 24);
+    bit(Magnitude.Q(), Sign.Q(), VTMP1.Q());
+    break;
+  default: LOGMAN_MSG_A_FMT("Unsupported element size for operation {}", __func__); FEX_UNREACHABLE;
+  }
+}
+
 
 #undef DEF_OP
 } // namespace FEXCore::CPU

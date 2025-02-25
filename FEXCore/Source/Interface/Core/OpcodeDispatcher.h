@@ -434,6 +434,7 @@ public:
 
   void VectorALUROp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
   void VectorUnaryOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
+  void RSqrt3DNowOp(OpcodeArgs, bool Duplicate);
   template<FEXCore::IR::IROps IROp, IR::OpSize ElementSize>
   void VectorUnaryDuplicateOp(OpcodeArgs);
 
