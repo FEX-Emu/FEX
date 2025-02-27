@@ -4684,6 +4684,12 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
   }
 }
 
+void OpDispatchBuilder::LSLOp(OpcodeArgs) {
+  // Emulate by always returning failure, this deviates from both Linux and Windows but
+  // shouldn't be depended on by anything.
+  SetRFLAG<FEXCore::X86State::RFLAG_ZF_RAW_LOC>(_Constant(0));
+}
+
 void OpDispatchBuilder::INTOp(OpcodeArgs) {
   IR::BreakDefinition Reason;
   bool SetRIPToNext = false;
