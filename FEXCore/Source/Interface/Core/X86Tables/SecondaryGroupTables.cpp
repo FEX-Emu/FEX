@@ -74,7 +74,7 @@ std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> SecondInstGroupOps = [
     {OPD(TYPE_GROUP_7, PF_NONE, 4), 1, X86InstInfo{"SMSW", TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST,          0, nullptr}},
     {OPD(TYPE_GROUP_7, PF_NONE, 5), 1, X86InstInfo{"",     TYPE_INVALID, FLAGS_NONE,            0, nullptr}},
     {OPD(TYPE_GROUP_7, PF_NONE, 6), 1, X86InstInfo{"LMSW", TYPE_INST, FLAGS_MODRM,          0, nullptr}},
-    {OPD(TYPE_GROUP_7, PF_NONE, 7), 1, X86InstInfo{"",     TYPE_SECOND_GROUP_MODRM, FLAGS_NONE, 0, nullptr}},
+    {OPD(TYPE_GROUP_7, PF_NONE, 7), 1, X86InstInfo{"INVLPG", TYPE_SECOND_GROUP_MODRM, FLAGS_MODRM | FLAGS_SF_MOD_DST, 0, nullptr}},
 
     {OPD(TYPE_GROUP_7, PF_F3, 0), 1, X86InstInfo{"SGDT", TYPE_SECOND_GROUP_MODRM, FLAGS_MODRM | FLAGS_SF_MOD_DST,           0, nullptr}},
     {OPD(TYPE_GROUP_7, PF_F3, 1), 1, X86InstInfo{"SIDT", TYPE_SECOND_GROUP_MODRM, FLAGS_MODRM | FLAGS_SF_MOD_DST,           0, nullptr}},
@@ -83,7 +83,7 @@ std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> SecondInstGroupOps = [
     {OPD(TYPE_GROUP_7, PF_F3, 4), 1, X86InstInfo{"SMSW", TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST,            0, nullptr}},
     {OPD(TYPE_GROUP_7, PF_F3, 5), 1, X86InstInfo{"",     TYPE_INVALID, FLAGS_NONE,              0, nullptr}},
     {OPD(TYPE_GROUP_7, PF_F3, 6), 1, X86InstInfo{"LMSW", TYPE_INST, FLAGS_MODRM,            0, nullptr}},
-    {OPD(TYPE_GROUP_7, PF_F3, 7), 1, X86InstInfo{"",     TYPE_SECOND_GROUP_MODRM, FLAGS_NONE,   0, nullptr}},
+    {OPD(TYPE_GROUP_7, PF_F3, 7), 1, X86InstInfo{"INVLPG", TYPE_SECOND_GROUP_MODRM, FLAGS_MODRM | FLAGS_SF_MOD_DST,   0, nullptr}},
 
     {OPD(TYPE_GROUP_7, PF_66, 0), 1, X86InstInfo{"SGDT", TYPE_SECOND_GROUP_MODRM, FLAGS_MODRM | FLAGS_SF_MOD_DST,           0, nullptr}},
     {OPD(TYPE_GROUP_7, PF_66, 1), 1, X86InstInfo{"SIDT", TYPE_SECOND_GROUP_MODRM, FLAGS_MODRM | FLAGS_SF_MOD_DST,           0, nullptr}},
@@ -92,7 +92,7 @@ std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> SecondInstGroupOps = [
     {OPD(TYPE_GROUP_7, PF_66, 4), 1, X86InstInfo{"SMSW", TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST,            0, nullptr}},
     {OPD(TYPE_GROUP_7, PF_66, 5), 1, X86InstInfo{"",     TYPE_INVALID, FLAGS_NONE,              0, nullptr}},
     {OPD(TYPE_GROUP_7, PF_66, 6), 1, X86InstInfo{"LMSW", TYPE_INST, FLAGS_MODRM,            0, nullptr}},
-    {OPD(TYPE_GROUP_7, PF_66, 7), 1, X86InstInfo{"",     TYPE_SECOND_GROUP_MODRM, FLAGS_NONE,   0, nullptr}},
+    {OPD(TYPE_GROUP_7, PF_66, 7), 1, X86InstInfo{"INVLPG", TYPE_SECOND_GROUP_MODRM, FLAGS_MODRM | FLAGS_SF_MOD_DST,   0, nullptr}},
 
     {OPD(TYPE_GROUP_7, PF_F2, 0), 1, X86InstInfo{"SGDT", TYPE_SECOND_GROUP_MODRM, FLAGS_MODRM | FLAGS_SF_MOD_DST,           0, nullptr}},
     {OPD(TYPE_GROUP_7, PF_F2, 1), 1, X86InstInfo{"SIDT", TYPE_SECOND_GROUP_MODRM, FLAGS_MODRM | FLAGS_SF_MOD_DST,           0, nullptr}},
@@ -101,7 +101,7 @@ std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> SecondInstGroupOps = [
     {OPD(TYPE_GROUP_7, PF_F2, 4), 1, X86InstInfo{"SMSW", TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST,            0, nullptr}},
     {OPD(TYPE_GROUP_7, PF_F2, 5), 1, X86InstInfo{"",     TYPE_INVALID, FLAGS_NONE,              0, nullptr}},
     {OPD(TYPE_GROUP_7, PF_F2, 6), 1, X86InstInfo{"LMSW", TYPE_INST, FLAGS_MODRM,            0, nullptr}},
-    {OPD(TYPE_GROUP_7, PF_F2, 7), 1, X86InstInfo{"",     TYPE_SECOND_GROUP_MODRM, FLAGS_NONE,   0, nullptr}},
+    {OPD(TYPE_GROUP_7, PF_F2, 7), 1, X86InstInfo{"INVLPG", TYPE_SECOND_GROUP_MODRM, FLAGS_MODRM | FLAGS_SF_MOD_DST,   0, nullptr}},
 
     // GROUP 8
     {OPD(TYPE_GROUP_8, PF_NONE, 0), 1, X86InstInfo{"",    TYPE_INVALID, FLAGS_NONE,   0, nullptr}},
