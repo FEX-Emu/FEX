@@ -1520,7 +1520,10 @@ DEF_OP(VFRecp) {
         fdiv(Dst.D(), VTMP1.D(), Vector.D());
         break;
       }
-      default: break;
+      default: {
+        LOGMAN_MSG_A_FMT("Unexpected ElementSize for {}", __func__);
+        FEX_UNREACHABLE;
+      }
       }
     } else {
       if (ElementSize == IR::OpSize::i32Bit && HostSupportsRPRES) {
@@ -1536,6 +1539,46 @@ DEF_OP(VFRecp) {
       fmov(SubRegSize.Vector, VTMP1.Q(), 1.0f);
       fdiv(SubRegSize.Vector, Dst.Q(), VTMP1.Q(), Vector.Q());
     }
+  }
+}
+
+DEF_OP(VFRecpPrecision) {
+  const auto Op = IROp->C<IR::IROp_VFRecpPrecision>();
+  const auto OpSize = IROp->Size;
+  const auto ElementSize = Op->Header.ElementSize;
+
+  LOGMAN_THROW_A_FMT((OpSize == IR::OpSize::i64Bit || OpSize == IR::OpSize::i32Bit) && ElementSize == IR::OpSize::i32Bit,
+                     "Unexpected sizes for operation.", __func__);
+
+  const auto SubRegSize = ConvertSubRegSizePair16(IROp);
+  const auto IsScalar = OpSize == ElementSize;
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
+
+  if (IsScalar) {
+    if (ElementSize == IR::OpSize::i32Bit && HostSupportsRPRES) {
+      // Not enough precision so we need to improve it with frecps
+      frecpe(SubRegSize.Scalar, VTMP1.S(), Vector.S());
+      frecps(SubRegSize.Scalar, VTMP2.S(), VTMP1.S(), Vector.S());
+      fmul(SubRegSize.Scalar, Dst.S(), VTMP1.S(), VTMP2.S());
+      return;
+    }
+
+    fmov(SubRegSize.Scalar, VTMP1.Q(), 1.0f);
+    // Element size is known to be 32bits
+    fdiv(Dst.S(), VTMP1.S(), Vector.S());
+  } else { // Vector operation - Opsize 64bits, elementsize 32bits
+    if (HostSupportsRPRES) {
+      frecpe(SubRegSize.Vector, VTMP1.D(), Vector.D());
+      frecps(SubRegSize.Vector, VTMP2.D(), VTMP1.D(), Vector.D());
+      fmul(SubRegSize.Vector, Dst.D(), VTMP1.D(), VTMP2.D());
+      return;
+    }
+
+    // No RPRES, so normal division
+    fmov(SubRegSize.Vector, VTMP1.Q(), 1.0f);
+    fdiv(SubRegSize.Vector, Dst.Q(), VTMP1.Q(), Vector.Q());
   }
 }
 
@@ -1605,6 +1648,50 @@ DEF_OP(VFRSqrt) {
       fsqrt(SubRegSize.Vector, VTMP2.Q(), Vector.Q());
       fdiv(SubRegSize.Vector, Dst.Q(), VTMP1.Q(), VTMP2.Q());
     }
+  }
+}
+
+DEF_OP(VFRSqrtPrecision) {
+  const auto Op = IROp->C<IR::IROp_VFRSqrtPrecision>();
+  const auto OpSize = IROp->Size;
+  const auto ElementSize = Op->Header.ElementSize;
+
+
+  LOGMAN_THROW_A_FMT((OpSize == IR::OpSize::i64Bit || OpSize == IR::OpSize::i32Bit) && ElementSize == IR::OpSize::i32Bit,
+                     "Unexpected sizes for operation.", __func__);
+
+  const auto SubRegSize = ConvertSubRegSizePair16(IROp);
+  const auto IsScalar = ElementSize == OpSize;
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
+
+  if (IsScalar) {
+    if (HostSupportsRPRES) {
+      frsqrte(SubRegSize.Scalar, VTMP1.S(), Vector.S());
+      // Improve initial estimate which is not good enough.
+      fmul(SubRegSize.Scalar, VTMP2.S(), VTMP1.S(), VTMP1.S());
+      frsqrts(SubRegSize.Scalar, VTMP2.S(), VTMP2.S(), Vector.S());
+      fmul(SubRegSize.Scalar, Dst.S(), VTMP1.S(), VTMP2.S());
+      return;
+    }
+
+    fmov(SubRegSize.Scalar, VTMP1.Q(), 1.0);
+    // element size is known to be 32bits
+    fsqrt(VTMP2.S(), Vector.S());
+    fdiv(Dst.S(), VTMP1.S(), VTMP2.S());
+  } else {
+    if (HostSupportsRPRES) {
+      frsqrte(SubRegSize.Vector, VTMP1.D(), Vector.D());
+      // Improve initial estimate which is not good enough.
+      fmul(SubRegSize.Vector, VTMP2.D(), VTMP1.D(), VTMP1.D());
+      frsqrts(SubRegSize.Vector, VTMP2.D(), VTMP2.D(), Vector.D());
+      fmul(SubRegSize.Vector, Dst.D(), VTMP1.D(), VTMP2.D());
+      return;
+    }
+    fmov(SubRegSize.Vector, VTMP1.Q(), 1.0);
+    fsqrt(SubRegSize.Vector, VTMP2.Q(), Vector.Q());
+    fdiv(SubRegSize.Vector, Dst.Q(), VTMP1.Q(), VTMP2.Q());
   }
 }
 
@@ -4465,6 +4552,30 @@ DEF_OP(VFNMLS) {
     }
   }
 }
+
+DEF_OP(VFCopySign) {
+  auto Op = IROp->C<IR::IROp_VFCopySign>();
+  const auto OpSize = IROp->Size;
+  const auto SubRegSize = ConvertSubRegSize248(IROp);
+
+  ARMEmitter::VRegister Magnitude = GetVReg(Op->Vector1.ID());
+  ARMEmitter::VRegister Sign = GetVReg(Op->Vector2.ID());
+
+  //  We don't assign explicity to Dst but Dst and Magniture are tied to the same register.
+  //  Similar in semantics to C's copysignf.
+  switch (OpSize) {
+  case IR::OpSize::i64Bit:
+    movi(SubRegSize, VTMP1.D(), 0x80, 24);
+    bit(Magnitude.D(), Sign.D(), VTMP1.D());
+    break;
+  case IR::OpSize::i128Bit:
+    movi(SubRegSize, VTMP1.Q(), 0x80, 24);
+    bit(Magnitude.Q(), Sign.Q(), VTMP1.Q());
+    break;
+  default: LOGMAN_MSG_A_FMT("Unsupported element size for operation {}", __func__); FEX_UNREACHABLE;
+  }
+}
+
 
 #undef DEF_OP
 } // namespace FEXCore::CPU

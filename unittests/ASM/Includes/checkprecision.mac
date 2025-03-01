@@ -1,0 +1,30 @@
+%ifndef CHECK_PRECISION_INC
+%define CHECK_PRECISION_INC
+
+; CheckPrecision.inc - NASM include file containing macro to check precision
+; of single floating-point number.
+
+;; Clobbers xmm12, xmm13, xmm14, xmm15
+;; Returns result in al.
+;; Arguments are in memory locations.
+%macro check_relerr 3; %1=REF %2=X %3=TOLERANCE
+        movss   xmm12, dword [ %1 ] ; xmm12 has REF
+        movss   xmm13, dword [ %2 ] ; xmm13 has X
+        movss   xmm15, dword [rel abs_mask_float] ; xmm15 has the abs float mask
+        movaps  xmm14, xmm12 ; xmm14 has REF
+        subss   xmm14, xmm13 ; xmm14 = REF - X
+        andps   xmm12, xmm15 ; xmm12 = abs(REF)
+        mulss   xmm12, dword [ %3 ] ; xmm12 = abs(REF) * tolerance
+        movaps  xmm13, xmm14 ; xmm13 = REF - X
+        andps   xmm13, xmm15 ; xmm13 = abs(REF - X)
+
+        xor     eax, eax ; clears eax
+        comiss  xmm12, xmm13 ; compares xmm12 and xmm13
+        setnb   al ; stores xmm12 >= xmm13, i.e. abs(REF) * tolerance >= abs(REF - X)
+%endmacro
+
+%macro define_check_data_constants 0
+abs_mask_float:    
+  dd 0x7fffffff   ; Bitmask to get absolute value of a float (single precision)
+%endmacro
+%endif
