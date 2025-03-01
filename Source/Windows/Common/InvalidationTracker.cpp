@@ -50,10 +50,10 @@ void InvalidationTracker::HandleImageMap(uint64_t Address) {
   }
 }
 
-void InvalidationTracker::InvalidateContainingSection(uint64_t Address, bool Free) {
+InvalidationTracker::InvalidateContainingSectionResult InvalidationTracker::InvalidateContainingSection(uint64_t Address, bool Free) {
   MEMORY_BASIC_INFORMATION Info;
   if (NtQueryVirtualMemory(NtCurrentProcess(), reinterpret_cast<void*>(Address), MemoryBasicInformation, &Info, sizeof(Info), nullptr)) {
-    return;
+    return {Address, 0};
   }
 
   const auto SectionBase = reinterpret_cast<uint64_t>(Info.AllocationBase);
@@ -75,6 +75,8 @@ void InvalidationTracker::InvalidateContainingSection(uint64_t Address, bool Fre
     std::scoped_lock Lock(RWXIntervalsLock);
     RWXIntervals.Remove({SectionBase, SectionBase + SectionSize});
   }
+
+  return {SectionBase, SectionSize};
 }
 
 void InvalidationTracker::InvalidateAlignedInterval(uint64_t Address, uint64_t Size, bool Free) {
