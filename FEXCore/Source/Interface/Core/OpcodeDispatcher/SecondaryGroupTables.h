@@ -21,6 +21,11 @@ constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDis
   {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_66, 0), 1, &OpDispatchBuilder::SGDTOp},
   {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F2, 0), 1, &OpDispatchBuilder::SGDTOp},
 
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_NONE, 1), 1, &OpDispatchBuilder::SIDTOp},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F3, 1), 1, &OpDispatchBuilder::SIDTOp},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_66, 1), 1, &OpDispatchBuilder::SIDTOp},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F2, 1), 1, &OpDispatchBuilder::SIDTOp},
+
   {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_NONE, 3), 1, &OpDispatchBuilder::PermissionRestrictedOp},
   {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F3, 3), 1, &OpDispatchBuilder::PermissionRestrictedOp},
   {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_66, 3), 1, &OpDispatchBuilder::PermissionRestrictedOp},
@@ -35,6 +40,11 @@ constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDis
   {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F3, 6), 1, &OpDispatchBuilder::PermissionRestrictedOp},
   {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_66, 6), 1, &OpDispatchBuilder::PermissionRestrictedOp},
   {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F2, 6), 1, &OpDispatchBuilder::PermissionRestrictedOp},
+
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_NONE, 7), 1, &OpDispatchBuilder::PermissionRestrictedOp},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F3, 7), 1, &OpDispatchBuilder::PermissionRestrictedOp},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_66, 7), 1, &OpDispatchBuilder::PermissionRestrictedOp},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_7, PF_F2, 7), 1, &OpDispatchBuilder::PermissionRestrictedOp},
 
   // GROUP 8
   {OPD(FEXCore::X86Tables::TYPE_GROUP_8, PF_NONE, 4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::BTOp, 1, BTAction::BTNone>},

@@ -607,7 +607,7 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
     uint16_t LocalOp = OPD(Info->Type, PrefixType, ModRM.reg);
     FEXCore::X86Tables::X86InstInfo* LocalInfo = &SecondInstGroupOps[LocalOp];
 #undef OPD
-    if (LocalInfo->Type == FEXCore::X86Tables::TYPE_SECOND_GROUP_MODRM) {
+    if (LocalInfo->Type == FEXCore::X86Tables::TYPE_SECOND_GROUP_MODRM && ModRM.mod == 0b11) {
       // Everything in this group is privileged instructions aside from XGETBV
       constexpr std::array<uint8_t, 8> RegToField = {
         255, 0, 1, 2, 255, 255, 255, 3,

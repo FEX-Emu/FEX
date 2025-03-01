@@ -5,6 +5,7 @@
 namespace FEXCore::IR {
 constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDispatch_TwoByteOpTable[] = {
   // Instructions
+  {0x03, 1, &OpDispatchBuilder::LSLOp},
   {0x06, 1, &OpDispatchBuilder::PermissionRestrictedOp},
   {0x07, 1, &OpDispatchBuilder::PermissionRestrictedOp},
   {0x0B, 1, &OpDispatchBuilder::INTOp},

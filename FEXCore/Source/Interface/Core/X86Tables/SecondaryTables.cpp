@@ -23,7 +23,7 @@ auto BaseOpsLambda = []() consteval {
     {0x01, 1, X86InstInfo{"",           TYPE_GROUP_7, FLAGS_NO_OVERLAY,                                                                                 0, nullptr}},
     // These two load segment register data
     {0x02, 1, X86InstInfo{"LAR",        TYPE_UNDEC, FLAGS_NO_OVERLAY,                                                                                   0, nullptr}},
-    {0x03, 1, X86InstInfo{"LSL",        TYPE_UNDEC, FLAGS_NO_OVERLAY,                                                                                   0, nullptr}},
+    {0x03, 1, X86InstInfo{"LSL",        TYPE_INST, GenFlagsSrcSize(SIZE_16BIT) | FLAGS_MODRM | FLAGS_NO_OVERLAY,                                                                                    0, nullptr}},
     {0x04, 1, X86InstInfo{"",           TYPE_INVALID, FLAGS_NO_OVERLAY,                                                                                 0, nullptr}},
     {0x05, 1, X86InstInfo{"SYSCALL",    TYPE_INST, DEFAULT_SYSCALL_FLAGS,                                                                               0, nullptr}},
     {0x06, 1, X86InstInfo{"CLTS",       TYPE_INST, FLAGS_NO_OVERLAY,                                                                                    0, nullptr}},
