@@ -767,6 +767,7 @@ public:
   void st1(ARMEmitter::SubRegSize size, T rt, uint32_t Index, ARMEmitter::Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                        "Incorrect size");
+    LOGMAN_THROW_A_FMT((PostOffset * 8) == SubRegSizeInBits(size), "Post-Index size must match element size");
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     uint32_t Q;
     uint32_t R = 0;
@@ -808,6 +809,7 @@ public:
   void ld1(ARMEmitter::SubRegSize size, T rt, uint32_t Index, ARMEmitter::Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                        "Incorrect size");
+    LOGMAN_THROW_A_FMT((PostOffset * 8) == SubRegSizeInBits(size), "Post-Index size must match element size");
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
     uint32_t Q;
     uint32_t R = 0;
@@ -899,6 +901,7 @@ public:
   void st2(SubRegSize size, T rt, T rt2, uint32_t Index, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                        "Incorrect size");
+    LOGMAN_THROW_A_FMT((PostOffset * 8) == (SubRegSizeInBits(size) * 2), "Post-Index size must match element size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -942,6 +945,7 @@ public:
   void ld2(SubRegSize size, T rt, T rt2, uint32_t Index, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                        "Incorrect size");
+    LOGMAN_THROW_A_FMT((PostOffset * 8) == (SubRegSizeInBits(size) * 2), "Post-Index size must match element size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -985,6 +989,7 @@ public:
   void st3(SubRegSize size, T rt, T rt2, T rt3, uint32_t Index, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                        "Incorrect size");
+    LOGMAN_THROW_A_FMT((PostOffset * 8) == (SubRegSizeInBits(size) * 3), "Post-Index size must match element size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -1028,6 +1033,7 @@ public:
   void ld3(SubRegSize size, T rt, T rt2, T rt3, uint32_t Index, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                        "Incorrect size");
+    LOGMAN_THROW_A_FMT((PostOffset * 8) == (SubRegSizeInBits(size) * 3), "Post-Index size must match element size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -1071,6 +1077,7 @@ public:
   void st4(SubRegSize size, T rt, T rt2, T rt3, T rt4, uint32_t Index, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                        "Incorrect size");
+    LOGMAN_THROW_A_FMT((PostOffset * 8) == (SubRegSizeInBits(size) * 4), "Post-Index size must match element size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
@@ -1114,6 +1121,7 @@ public:
   void ld4(SubRegSize size, T rt, T rt2, T rt3, T rt4, uint32_t Index, Register rn, uint32_t PostOffset) {
     LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                        "Incorrect size");
+    LOGMAN_THROW_A_FMT((PostOffset * 8) == (SubRegSizeInBits(size) * 4), "Post-Index size must match element size");
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
 
     constexpr uint32_t Op = 0b0000'1101'1 << 23;
