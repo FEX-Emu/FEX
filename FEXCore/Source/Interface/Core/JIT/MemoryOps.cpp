@@ -642,10 +642,10 @@ ARMEmitter::SVEMemOperand Arm64JITCore::GenerateSVEMemOperand(IR::OpSize AccessS
     }
 
     const auto SignedConst = static_cast<int64_t>(Const);
-    const auto SignedAVXSize = static_cast<int64_t>(Core::CPUState::XMM_AVX_REG_SIZE);
+    const auto SignedSVESize = static_cast<int64_t>(HostSupportsSVE256 ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE);
 
-    const auto IsCleanlyDivisible = (SignedConst % SignedAVXSize) == 0;
-    const auto Index = SignedConst / SignedAVXSize;
+    const auto IsCleanlyDivisible = (SignedConst % SignedSVESize) == 0;
+    const auto Index = SignedConst / SignedSVESize;
 
     // SVE's immediate variants of load stores are quite limited in terms
     // of immediate range. They also operate on a by-vector-length basis.
@@ -892,7 +892,15 @@ DEF_OP(VLoadVectorMasked) {
     auto WorkingReg = TMP1;
     auto TempMemReg = MemReg;
     movi(ARMEmitter::SubRegSize::i64Bit, TempDst.Q(), 0);
-    LOGMAN_THROW_A_FMT(Op->Offset.IsInvalid(), "Complex addressing requested and not supported!");
+    uint64_t Const {};
+    if (Op->Offset.IsInvalid()) {
+      // Intentional no-op.
+    } else if (IsInlineConstant(Op->Offset, &Const)) {
+      TempMemReg = TMP2;
+      add(ARMEmitter::Size::i64Bit, TMP2, MemReg, Const);
+    } else {
+      LOGMAN_MSG_A_FMT("Complex addressing requested and not supported!");
+    }
 
     const uint64_t ElementSizeInBits = IR::OpSizeAsBits(IROp->ElementSize);
     for (size_t i = 0; i < NumElements; ++i) {
@@ -984,7 +992,16 @@ DEF_OP(VStoreVectorMasked) {
     // Use VTMP1 as the temporary destination
     auto WorkingReg = TMP1;
     auto TempMemReg = MemReg;
-    LOGMAN_THROW_A_FMT(Op->Offset.IsInvalid(), "Complex addressing requested and not supported!");
+
+    uint64_t Const {};
+    if (Op->Offset.IsInvalid()) {
+      // Intentional no-op.
+    } else if (IsInlineConstant(Op->Offset, &Const)) {
+      TempMemReg = TMP2;
+      add(ARMEmitter::Size::i64Bit, TMP2, MemReg, Const);
+    } else {
+      LOGMAN_MSG_A_FMT("Complex addressing requested and not supported!");
+    }
 
     const uint64_t ElementSizeInBits = IR::OpSizeAsBits(IROp->ElementSize);
     for (size_t i = 0; i < NumElements; ++i) {
