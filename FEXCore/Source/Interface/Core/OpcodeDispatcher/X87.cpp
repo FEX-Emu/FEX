@@ -40,7 +40,7 @@ Ref OpDispatchBuilder::GetX87Tag(Ref Value, Ref AbridgedFTW) {
 
 void OpDispatchBuilder::SetX87FTW(Ref FTW) {
   Ref X87Empty = _Constant(static_cast<uint8_t>(FPState::X87Tag::Empty));
-  Ref NewAbridgedFTW;
+  Ref NewAbridgedFTW {};
 
   for (int i = 0; i < 8; i++) {
     Ref RegTag = _Bfe(OpSize::i32Bit, 2, i * 2, FTW);

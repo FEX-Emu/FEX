@@ -1589,7 +1589,7 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool I
 
   const uint32_t Size = GetSrcBitSize(Op);
   const auto OpSize = Size == 64 ? OpSize::i64Bit : OpSize::i32Bit;
-  uint64_t UnmaskedConst;
+  uint64_t UnmaskedConst {};
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op. But it's
   // equivalent to mask to the actual size of the op, that way we can bound
@@ -2658,7 +2658,7 @@ void OpDispatchBuilder::MULOp(OpcodeArgs) {
 
   Ref Src1 = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
   Ref Src2 = LoadGPRRegister(X86State::REG_RAX);
-  Ref Result;
+  Ref Result {};
 
   if (Size != OpSize::i64Bit) {
     Src1 = _Bfe(OpSize::i64Bit, SizeBits, 0, Src1);
