@@ -46,12 +46,12 @@ protected:
 
   void SaveHeader(FEXCore::Profiler::AppType AppType);
 
-  void* Base;
+  void* Base {};
   uint32_t CurrentSize {};
   FEXCore::Profiler::ThreadStatsHeader* Head {};
-  FEXCore::Profiler::ThreadStats* Stats;
+  FEXCore::Profiler::ThreadStats* Stats {};
   FEXCore::Profiler::ThreadStats* StatTail {};
-  uint32_t RemainingSlots;
+  uint32_t RemainingSlots {};
 
   // Limited to 4MB which should be a few hundred threads of tracking capability.
   // I (Sonicadvance1) wanted to reserve 128MB of VA space because it's cheap, but ran in to a bug when running WINE.
