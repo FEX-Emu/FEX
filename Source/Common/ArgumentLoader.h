@@ -18,10 +18,13 @@ public:
     , Type {Type}
     , argc {argc}
     , argv {argv} {
-    Load();
+    PreLoad();
   }
 
-  void Load() override;
+  void Load() override {
+    // Intentional no-op.
+  }
+  void PreLoad();
   void LoadWithoutArguments();
   fextl::vector<fextl::string> Get() {
     return RemainingArgs;
