@@ -9,12 +9,12 @@
 extern "C" {
 #endif
 
-typedef struct _IMAGE_LOAD_CONFIG_CODE_INTEGRITY {
+typedef struct ___IMAGE_LOAD_CONFIG_CODE_INTEGRITY {
   WORD Flags;
   WORD Catalog;
   DWORD CatalogOffset;
   DWORD Reserved;
-} IMAGE_LOAD_CONFIG_CODE_INTEGRITY, *PIMAGE_LOAD_CONFIG_CODE_INTEGRITY;
+} __IMAGE_LOAD_CONFIG_CODE_INTEGRITY, *__PIMAGE_LOAD_CONFIG_CODE_INTEGRITY;
 
 typedef struct __IMAGE_LOAD_CONFIG_DIRECTORY64 {
   DWORD Size; /* 000 */
@@ -42,7 +42,7 @@ typedef struct __IMAGE_LOAD_CONFIG_DIRECTORY64 {
   ULONGLONG GuardCFFunctionTable; /* 080 */
   ULONGLONG GuardCFFunctionCount;
   DWORD GuardFlags; /* 090 */
-  IMAGE_LOAD_CONFIG_CODE_INTEGRITY CodeIntegrity;
+  __IMAGE_LOAD_CONFIG_CODE_INTEGRITY CodeIntegrity;
   ULONGLONG GuardAddressTakenIatEntryTable; /* 0a0 */
   ULONGLONG GuardAddressTakenIatEntryCount;
   ULONGLONG GuardLongJumpTargetTable; /* 0b0 */

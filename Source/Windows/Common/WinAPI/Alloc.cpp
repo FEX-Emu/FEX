@@ -72,6 +72,10 @@ DLLEXPORT_FUNC(WINBOOL, FlsFree, (DWORD dwFlsIndex)) {
   UNIMPLEMENTED();
 }
 
+DLLEXPORT_FUNC(HLOCAL, LocalFree, (HLOCAL hMem)) {
+  UNIMPLEMENTED();
+}
+
 DLLEXPORT_FUNC(DWORD, TlsAlloc, ()) {
   RtlAcquirePebLock();
 
