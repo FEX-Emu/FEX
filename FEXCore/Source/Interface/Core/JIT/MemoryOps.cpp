@@ -642,10 +642,10 @@ ARMEmitter::SVEMemOperand Arm64JITCore::GenerateSVEMemOperand(IR::OpSize AccessS
     }
 
     const auto SignedConst = static_cast<int64_t>(Const);
-    const auto SignedAVXSize = static_cast<int64_t>(Core::CPUState::XMM_AVX_REG_SIZE);
+    const auto SignedSVESize = static_cast<int64_t>(HostSupportsSVE256 ? Core::CPUState::XMM_AVX_REG_SIZE : Core::CPUState::XMM_SSE_REG_SIZE);
 
-    const auto IsCleanlyDivisible = (SignedConst % SignedAVXSize) == 0;
-    const auto Index = SignedConst / SignedAVXSize;
+    const auto IsCleanlyDivisible = (SignedConst % SignedSVESize) == 0;
+    const auto Index = SignedConst / SignedSVESize;
 
     // SVE's immediate variants of load stores are quite limited in terms
     // of immediate range. They also operate on a by-vector-length basis.
