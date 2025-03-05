@@ -892,7 +892,15 @@ DEF_OP(VLoadVectorMasked) {
     auto WorkingReg = TMP1;
     auto TempMemReg = MemReg;
     movi(ARMEmitter::SubRegSize::i64Bit, TempDst.Q(), 0);
-    LOGMAN_THROW_A_FMT(Op->Offset.IsInvalid(), "Complex addressing requested and not supported!");
+    uint64_t Const {};
+    if (Op->Offset.IsInvalid()) {
+      // Intentional no-op.
+    } else if (IsInlineConstant(Op->Offset, &Const)) {
+      TempMemReg = TMP2;
+      add(ARMEmitter::Size::i64Bit, TMP2, MemReg, Const);
+    } else {
+      LOGMAN_MSG_A_FMT("Complex addressing requested and not supported!");
+    }
 
     const uint64_t ElementSizeInBits = IR::OpSizeAsBits(IROp->ElementSize);
     for (size_t i = 0; i < NumElements; ++i) {
@@ -984,7 +992,16 @@ DEF_OP(VStoreVectorMasked) {
     // Use VTMP1 as the temporary destination
     auto WorkingReg = TMP1;
     auto TempMemReg = MemReg;
-    LOGMAN_THROW_A_FMT(Op->Offset.IsInvalid(), "Complex addressing requested and not supported!");
+
+    uint64_t Const {};
+    if (Op->Offset.IsInvalid()) {
+      // Intentional no-op.
+    } else if (IsInlineConstant(Op->Offset, &Const)) {
+      TempMemReg = TMP2;
+      add(ARMEmitter::Size::i64Bit, TMP2, MemReg, Const);
+    } else {
+      LOGMAN_MSG_A_FMT("Complex addressing requested and not supported!");
+    }
 
     const uint64_t ElementSizeInBits = IR::OpSizeAsBits(IROp->ElementSize);
     for (size_t i = 0; i < NumElements; ++i) {
