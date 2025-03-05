@@ -783,7 +783,7 @@ void OpDispatchBuilder::AVX128_VZERO(OpcodeArgs) {
   if (IsVZEROALL) {
     // NOTE: Despite the name being VZEROALL, this will still only ever
     //       zero out up to the first 16 registers (even on AVX-512, where we have 32 registers)
-    Ref ZeroVector;
+    Ref ZeroVector {};
 
     for (uint32_t i = 0; i < NumRegs; i++) {
       // Explicitly not caching named vector zero. This ensures that every register gets movi #0.0 directly.

@@ -250,7 +250,7 @@ private:
 
   PhysicalRegister DecodeSRAReg(const IROp_Header* IROp, Ref Node) {
     RegisterClassType Class;
-    uint8_t Reg;
+    uint8_t Reg {};
 
     uint8_t FlagOffset = Classes[GPRFixedClass.Val].Count - 2;
 
