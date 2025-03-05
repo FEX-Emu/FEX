@@ -913,10 +913,10 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Advanced SIMD load/store
   TEST_SINGLE(ld3<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30, 12), "ld3 {v26.s, v27.s, v28.s}[0], [x30], #12");
   TEST_SINGLE(ld3<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, 0, Reg::r30, 24), "ld3 {v26.d, v27.d, v28.d}[0], [x30], #24");
 
-  TEST_SINGLE(ld3<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, 15, Reg::r30, 1), "ld3 {v26.b, v27.b, v28.b}[15], [x30], #3");
-  TEST_SINGLE(ld3<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, 7, Reg::r30, 2), "ld3 {v26.h, v27.h, v28.h}[7], [x30], #6");
-  TEST_SINGLE(ld3<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, 3, Reg::r30, 4), "ld3 {v26.s, v27.s, v28.s}[3], [x30], #12");
-  TEST_SINGLE(ld3<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, 1, Reg::r30, 8), "ld3 {v26.d, v27.d, v28.d}[1], [x30], #24");
+  TEST_SINGLE(ld3<SubRegSize::i8Bit>(VReg::v26, VReg::v27, VReg::v28, 15, Reg::r30, 3), "ld3 {v26.b, v27.b, v28.b}[15], [x30], #3");
+  TEST_SINGLE(ld3<SubRegSize::i16Bit>(VReg::v26, VReg::v27, VReg::v28, 7, Reg::r30, 6), "ld3 {v26.h, v27.h, v28.h}[7], [x30], #6");
+  TEST_SINGLE(ld3<SubRegSize::i32Bit>(VReg::v26, VReg::v27, VReg::v28, 3, Reg::r30, 12), "ld3 {v26.s, v27.s, v28.s}[3], [x30], #12");
+  TEST_SINGLE(ld3<SubRegSize::i64Bit>(VReg::v26, VReg::v27, VReg::v28, 1, Reg::r30, 24), "ld3 {v26.d, v27.d, v28.d}[1], [x30], #24");
 
   TEST_SINGLE(ld3r<SubRegSize::i8Bit>(DReg::d31, DReg::d0, DReg::d1, Reg::r30, 3), "ld3r {v31.8b, v0.8b, v1.8b}, [x30], #3");
   TEST_SINGLE(ld3r<SubRegSize::i8Bit>(DReg::d26, DReg::d27, DReg::d28, Reg::r30, 3), "ld3r {v26.8b, v27.8b, v28.8b}, [x30], #3");
