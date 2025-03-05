@@ -11,7 +11,7 @@
 #include <stdint.h>
 
 namespace FEX::ArgLoader {
-void FEX::ArgLoader::ArgLoader::Load() {
+void FEX::ArgLoader::ArgLoader::PreLoad() {
   RemainingArgs.clear();
   ProgramArguments.clear();
   if (Type == LoadType::WITHOUT_FEXLOADER_PARSER) {
