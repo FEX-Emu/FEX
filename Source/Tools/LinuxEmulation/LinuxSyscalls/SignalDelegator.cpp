@@ -374,6 +374,10 @@ bool SignalDelegator::HandleDispatcherGuestSignal(FEXCore::Core::InternalThreadS
 
   Frame->State.rip = reinterpret_cast<uint64_t>(GuestAction->sigaction_handler.sigaction);
   Frame->State.gregs[FEXCore::X86State::REG_RSP] = NewGuestSP;
+
+  // Linux clears DF, RF, and TF flags on signal.
+  Frame->State.flags[FEXCore::X86State::RFLAG_DF_RAW_LOC] = 1;
+  Frame->State.flags[FEXCore::X86State::RFLAG_RF_LOC] = 0;
   Frame->State.flags[FEXCore::X86State::RFLAG_TF_RAW_LOC] = 0;
 
   // The guest starts its signal frame with a zero initialized FPU
