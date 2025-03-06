@@ -749,8 +749,8 @@
         "HasSideEffects": true,
         "DestSize": "RegisterSize",
         "EmitValidation": [
-          "Offset % IR::OpSizeToSize(RegisterSize) == 0",
-          "RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i256Bit"
+          "RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i256Bit",
+          "Offset % IR::OpSizeToSize(RegisterSize) == 0"
         ]
       },
       "VStoreNonTemporalPair OpSize:#RegisterSize, FPR:$ValueLow, FPR:$ValueHigh, GPR:$Addr, i8:$Offset": {
@@ -761,8 +761,8 @@
         "HasSideEffects": true,
         "DestSize": "RegisterSize",
         "EmitValidation": [
-          "Offset % IR::OpSizeToSize(RegisterSize) == 0",
-          "RegisterSize == FEXCore::IR::OpSize::i128Bit"
+          "RegisterSize == FEXCore::IR::OpSize::i128Bit",
+          "Offset % IR::OpSizeToSize(RegisterSize) == 0"
         ]
       },
       "FPR = VLoadNonTemporal OpSize:#RegisterSize, GPR:$Addr, i8:$Offset": {
@@ -773,8 +773,8 @@
         "HasSideEffects": true,
         "DestSize": "RegisterSize",
         "EmitValidation": [
-          "Offset % IR::OpSizeToSize(RegisterSize) == 0",
-          "RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i256Bit"
+          "RegisterSize == FEXCore::IR::OpSize::i128Bit || RegisterSize == FEXCore::IR::OpSize::i256Bit",
+          "Offset % IR::OpSizeToSize(RegisterSize) == 0"
         ]
       }
     },
