@@ -114,9 +114,10 @@ namespace DefaultValues {
 #include <FEXCore/Config/ConfigValues.inl>
 
   namespace Type {
+    using StringArrayType = fextl::list<fextl::string>;
 #define OPT_BASE(type, group, enum, json, default) using P(enum) = P(type);
 #define OPT_STR(group, enum, json, default) using P(enum) = fextl::string;
-#define OPT_STRARRAY(group, enum, json, default) OPT_STR(group, enum, json, default)
+#define OPT_STRARRAY(group, enum, json, default) using P(enum) = StringArrayType;
 #include <FEXCore/Config/ConfigValues.inl>
   } // namespace Type
 #define FEX_CONFIG_OPT(name, enum)                                          \
@@ -230,50 +231,17 @@ FEX_DEFAULT_VISIBILITY void EraseSet(ConfigOption Option, std::string_view Data)
 template<typename T>
 class FEX_DEFAULT_VISIBILITY Value {
 public:
+  // Single value type.
   template<typename TT = T>
-  requires (!std::is_same_v<TT, fextl::string>)
-  Value(FEXCore::Config::ConfigOption _Option, TT Default)
-    : Option {_Option} {
+  requires (std::is_fundamental_v<TT> || std::is_same_v<TT, fextl::string>)
+  Value(FEXCore::Config::ConfigOption Option, TT Default) {
     ValueData = GetIfExists(Option, Default);
   }
 
   template<typename TT = T>
-  requires (std::is_same_v<TT, fextl::string>)
-  Value(FEXCore::Config::ConfigOption _Option, TT Default)
-    : Option {_Option} {
+  requires (std::is_fundamental_v<TT> || std::is_same_v<TT, fextl::string>)
+  Value(FEXCore::Config::ConfigOption Option, std::string_view Default) {
     ValueData = GetIfExists(Option, Default);
-    GetListIfExists(Option, &AppendList);
-  }
-
-  template<typename TT = T>
-  requires (std::is_same_v<TT, fextl::string>)
-  Value(FEXCore::Config::ConfigOption _Option, std::string_view Default)
-    : Option {_Option} {
-    ValueData = GetIfExists(Option, Default);
-    GetListIfExists(Option, &AppendList);
-  }
-
-  template<typename TT = T>
-  requires (!std::is_same_v<TT, fextl::string>)
-  Value(FEXCore::Config::ConfigOption _Option)
-    : Option {_Option} {
-    if (!FEXCore::Config::Exists(Option)) {
-      ERROR_AND_DIE_FMT("FEXCore::Config::Value has no value");
-    }
-
-    ValueData = Get(Option);
-  }
-
-  template<typename TT = T>
-  requires (std::is_same_v<TT, fextl::string>)
-  Value(FEXCore::Config::ConfigOption _Option)
-    : Option {_Option} {
-    if (!FEXCore::Config::Exists(Option)) {
-      ERROR_AND_DIE_FMT("FEXCore::Config::Value has no value");
-    }
-
-    ValueData = GetIfExists(Option);
-    GetListIfExists(Option, &AppendList);
   }
 
   operator T() const {
@@ -281,7 +249,7 @@ public:
   }
 
   template<typename TT = T>
-  requires (!std::is_same_v<TT, fextl::string>)
+  requires (std::is_fundamental_v<TT>)
   T operator()() const {
     return ValueData;
   }
@@ -292,22 +260,32 @@ public:
     return ValueData;
   }
 
+  template<typename TT = T>
+  requires (!std::is_same_v<TT, DefaultValues::Type::StringArrayType>)
   Value<T>(T Value) {
     ValueData = std::move(Value);
   }
-  fextl::list<T>& All() {
-    return AppendList;
+
+  // Array value types.
+  template<typename TT = T>
+  requires (std::is_same_v<TT, DefaultValues::Type::StringArrayType>)
+  Value(FEXCore::Config::ConfigOption Option, std::string_view) {
+    GetListIfExists(Option, &ValueData);
+  }
+
+  template<typename TT = T>
+  requires (std::is_same_v<TT, DefaultValues::Type::StringArrayType>)
+  DefaultValues::Type::StringArrayType& All() {
+    return ValueData;
   }
 
 private:
-  FEXCore::Config::ConfigOption Option;
-  T ValueData;
-  fextl::list<T> AppendList;
+  T ValueData {};
 
   static T Get(FEXCore::Config::ConfigOption Option);
   static T GetIfExists(FEXCore::Config::ConfigOption Option, T Default);
   static T GetIfExists(FEXCore::Config::ConfigOption Option, std::string_view Default);
 
-  static void GetListIfExists(FEXCore::Config::ConfigOption Option, fextl::list<fextl::string>* List);
+  static void GetListIfExists(FEXCore::Config::ConfigOption Option, DefaultValues::Type::StringArrayType* List);
 };
 } // namespace FEXCore::Config

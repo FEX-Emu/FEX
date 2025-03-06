@@ -482,12 +482,13 @@ template Value<uint8_t>::Value(FEXCore::Config::ConfigOption _Option, uint8_t De
 template Value<uint64_t>::Value(FEXCore::Config::ConfigOption _Option, uint64_t Default);
 
 template<typename T>
-void Value<T>::GetListIfExists(FEXCore::Config::ConfigOption Option, fextl::list<fextl::string>* List) {
+void Value<T>::GetListIfExists(FEXCore::Config::ConfigOption Option, DefaultValues::Type::StringArrayType* List) {
   auto Value = FEXCore::Config::All(Option);
   List->clear();
   if (Value) {
     *List = **Value;
   }
 }
-template void Value<fextl::string>::GetListIfExists(FEXCore::Config::ConfigOption Option, fextl::list<fextl::string>* List);
+template void Value<DefaultValues::Type::StringArrayType>::GetListIfExists(FEXCore::Config::ConfigOption Option,
+                                                                           DefaultValues::Type::StringArrayType* List);
 } // namespace FEXCore::Config
