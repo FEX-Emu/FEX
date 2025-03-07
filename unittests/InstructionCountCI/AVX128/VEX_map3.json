@@ -1891,14 +1891,24 @@
       ]
     },
     "vpalignr xmm0, xmm1, xmm2, 16": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 3 0b01 0x0f 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "movi v0.2d, #0x0",
-        "ext v16.16b, v17.16b, v0.16b, #0",
         "movi v2.2d, #0x0",
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
+      ]
+    },
+    "vpalignr xmm0, xmm1, xmm2, 17": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 3 0b01 0x0f 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "ext v16.16b, v17.16b, v2.16b, #1",
         "str q2, [x28, #16]"
       ]
     },
@@ -1940,17 +1950,26 @@
       ]
     },
     "vpalignr ymm0, ymm1, ymm2, 16": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 3 0b01 0x0f 256-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
-        "ldr q3, [x28, #48]",
-        "movi v0.2d, #0x0",
-        "ext v16.16b, v17.16b, v0.16b, #0",
-        "movi v0.2d, #0x0",
-        "ext v2.16b, v2.16b, v0.16b, #0",
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
+      ]
+    },
+    "vpalignr ymm0, ymm1, ymm2, 17": {
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "Map 3 0b01 0x0f 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
+        "movi v3.2d, #0x0",
+        "ext v16.16b, v17.16b, v3.16b, #1",
+        "ext v2.16b, v2.16b, v3.16b, #1",
         "str q2, [x28, #16]"
       ]
     },
@@ -3563,456 +3582,6 @@
         "sshr v4.16b, v4.16b, #7",
         "bit v2.16b, v3.16b, v4.16b",
         "str q2, [x28, #16]"
-      ]
-    },
-    "vfmaddsubps xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x5c 128-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xb00c",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfmaddsubps ymm0, ymm1, ymm2, ymm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x5c 256-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xb0ae",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfmaddsubpd xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x5d 128-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xb150",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfmaddsubpd ymm0, ymm1, ymm2, ymm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x5d 256-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xb1f2",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfmsubaddps xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x5e 128-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xb294",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfmsubaddps ymm0, ymm1, ymm2, ymm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x5e 256-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xb336",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfmsubaddpd xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x5f 128-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xb3d8",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfmsubaddpd ymm0, ymm1, ymm2, ymm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x5f 256-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xb47a",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfmaddps xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x68 128-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xb51c",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfmaddps ymm0, ymm1, ymm2, ymm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x68 256-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xb5be",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfmaddpd xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x69 128-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xb660",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfmaddpd ymm0, ymm1, ymm2, ymm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x69 256-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xb702",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfmaddss xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x6a 128-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xb7a4",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfmaddsd xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x6b 128-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xb846",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfmsubps xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x6c 128-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xb8e8",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfmsubps ymm0, ymm1, ymm2, ymm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x6c 256-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xb98a",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfmsubpd xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x6d 128-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xba2c",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfmsubpd ymm0, ymm1, ymm2, ymm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x6d 256-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xbace",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfmsubss xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x6e 128-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xbb70",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfmsubsd xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x6f 128-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xbc12",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfnmaddps xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x78 128-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xbcb4",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfnmaddpd ymm0, ymm1, ymm2, ymm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x78 256-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xbd56",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfnmaddss xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x79 128-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xbdf8",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfnmaddsd xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x7a 128-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xbe9a",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfnmsubps xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x7c 128-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xbf3c",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfnmsubps ymm0, ymm1, ymm2, ymm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x7c 256-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xbfde",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfnmsubpd xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x7d 128-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xc080",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfnmsubpd ymm0, ymm1, ymm2, ymm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x7d 256-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xc122",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfnmsubss xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x7e 128-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xc1c4",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
-      ]
-    },
-    "vfnmsubsd xmm0, xmm1, xmm2, xmm3": {
-      "ExpectedInstructionCount": 7,
-      "Comment": [
-        "Map 3 0b01 0x7f 128-bit"
-      ],
-      "ExpectedArm64ASM": [
-        "mov w20, #0xc266",
-        "movk w20, #0x1, lsl #16",
-        "str x20, [x28, #272]",
-        "mov w1, #0x401",
-        "str x1, [x28, #1328]",
-        "ldr x0, [x28, #2336]",
-        "br x0"
       ]
     },
     "vaeskeygenassist xmm0, xmm1, 0": {

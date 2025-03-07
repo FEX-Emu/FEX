@@ -2032,7 +2032,18 @@ void OpDispatchBuilder::AVX128_VPALIGNR(OpcodeArgs) {
       return Src2;
     }
 
-    return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src1, Src2, Index);
+    if (Index == 16) {
+      return Src1;
+    }
+
+    auto SanitizedIndex = Index;
+    if (Index > 16) {
+      Src2 = Src1;
+      Src1 = LoadZeroVector(OpSize::i128Bit);
+      SanitizedIndex -= 16;
+    }
+
+    return _VExtr(OpSize::i128Bit, OpSize::i8Bit, Src1, Src2, SanitizedIndex);
   });
 }
 
