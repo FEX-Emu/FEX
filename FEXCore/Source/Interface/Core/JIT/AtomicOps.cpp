@@ -101,11 +101,16 @@ DEF_OP(CAS) {
   auto Expected = GetReg(Op->Expected.ID());
   auto Desired = GetReg(Op->Desired.ID());
   auto MemSrc = GetReg(Op->Addr.ID());
+  auto Dst = GetReg(Node);
 
   if (CTX->HostFeatures.SupportsAtomics) {
-    mov(EmitSize, TMP2, Expected);
-    casal(SubEmitSize, TMP2, Desired, MemSrc);
-    mov(EmitSize, GetReg(Node), TMP2.R());
+    if (Expected == Dst && Dst != MemSrc && Dst != Desired) {
+      casal(SubEmitSize, Dst, Desired, MemSrc);
+    } else {
+      mov(EmitSize, TMP2, Expected);
+      casal(SubEmitSize, TMP2, Desired, MemSrc);
+      mov(EmitSize, Dst, TMP2.R());
+    }
   } else {
     ARMEmitter::BackwardLabel LoopTop;
     ARMEmitter::ForwardLabel LoopNotExpected;
@@ -122,11 +127,11 @@ DEF_OP(CAS) {
     b(ARMEmitter::Condition::CC_NE, &LoopNotExpected);
     stlxr(SubEmitSize, TMP3, Desired, MemSrc);
     cbnz(EmitSize, TMP3, &LoopTop);
-    mov(EmitSize, GetReg(Node), Expected);
+    mov(EmitSize, Dst, Expected);
     b(&LoopExpected);
 
     Bind(&LoopNotExpected);
-    mov(EmitSize, GetReg(Node), TMP2.R());
+    mov(EmitSize, Dst, TMP2.R());
     // exclusive monitor needs to be cleared here
     // Might have hit the case where ldaxr was hit but stlxr wasn't
     clrex();
