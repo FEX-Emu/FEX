@@ -556,7 +556,12 @@ DEF_OP(VFRecpScalarInsert) {
     auto Src = *std::get_if<ARMEmitter::VRegister>(&SrcVar);
 
     fmov(SubRegSize.Scalar, VTMP1.Q(), 1.0f);
-    fdiv(SubRegSize.Scalar, Dst, VTMP1, Src);
+    if (HostSupportsAFP) {
+      fdiv(SubRegSize.Scalar, VTMP1, VTMP1, Src);
+      ins(SubRegSize.Vector, Dst, 0, VTMP1, 0);
+    } else {
+      fdiv(SubRegSize.Scalar, Dst, VTMP1, Src);
+    }
   };
 
   auto ScalarEmitRPRES = [this, SubRegSize](ARMEmitter::VRegister Dst, std::variant<ARMEmitter::VRegister, ARMEmitter::Register> SrcVar) {

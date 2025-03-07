@@ -61,14 +61,15 @@
       ]
     },
     "rcpss xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "FEAT_FPRES could make this more optimal",
         "0xf3 0x0f 0x53"
       ],
       "ExpectedArm64ASM": [
         "fmov s0, #0x70 (1.0000)",
-        "fdiv s16, s0, s17"
+        "fdiv s0, s0, s17",
+        "mov v16.s[0], v0.s[0]"
       ]
     },
     "addss xmm0, xmm1": {
