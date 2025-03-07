@@ -46,7 +46,7 @@
       ]
     },
     "vrcpss xmm0, xmm1, xmm2": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "FEAT_FPRES could make this more optimal",
         "Map 1 0b10 0x53 128-bit"
@@ -54,7 +54,8 @@
       "ExpectedArm64ASM": [
         "mov v16.16b, v17.16b",
         "fmov s0, #0x70 (1.0000)",
-        "fdiv s16, s0, s18"
+        "fdiv s0, s0, s18",
+        "mov v16.s[0], v0.s[0]"
       ]
     },
     "vcmpss xmm0, xmm1, xmm2, 0x00": {
