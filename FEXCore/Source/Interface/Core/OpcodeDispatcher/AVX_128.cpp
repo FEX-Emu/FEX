@@ -1670,7 +1670,6 @@ void OpDispatchBuilder::AVX128_VEXTRACT128(OpcodeArgs) {
   const auto DstIsXMM = Op->Dest.IsGPR();
   const auto Selector = Op->Src[1].Literal() & 0b1;
 
-  ///< TODO: Once we support loading only upper-half of the ymm register we can load the half depending on selection literal.
   auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, true);
 
   RefPair Result {};
