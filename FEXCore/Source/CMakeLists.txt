@@ -24,9 +24,6 @@ set (SRCS
   Common/SoftFloat-3e/extF80_mul.c
   Common/SoftFloat-3e/extF80_rem.c
   Common/SoftFloat-3e/extF80_sqrt.c
-  Common/SoftFloat-3e/s_add128.c
-  Common/SoftFloat-3e/s_sub128.c
-  Common/SoftFloat-3e/s_le128.c
   Common/SoftFloat-3e/extF80_to_i32.c
   Common/SoftFloat-3e/extF80_to_i64.c
   Common/SoftFloat-3e/extF80_to_ui64.c
@@ -39,7 +36,6 @@ set (SRCS
   Common/SoftFloat-3e/s_roundToUI64.c
   Common/SoftFloat-3e/s_f128UIToCommonNaN.c
   Common/SoftFloat-3e/s_commonNaNToF128UI.c
-  Common/SoftFloat-3e/s_shortShiftRight128.c
   Common/SoftFloat-3e/s_normSubnormalF128Sig.c
   Common/SoftFloat-3e/s_roundToI32.c
   Common/SoftFloat-3e/s_roundToI64.c
@@ -48,22 +44,14 @@ set (SRCS
   Common/SoftFloat-3e/s_extF80UIToCommonNaN.c
   Common/SoftFloat-3e/s_commonNaNToF32UI.c
   Common/SoftFloat-3e/s_commonNaNToF64UI.c
-  Common/SoftFloat-3e/s_shortShiftRightJam64.c
-  Common/SoftFloat-3e/s_shortShiftRightJam64Extra.c
-  Common/SoftFloat-3e/s_shiftRightJam64Extra.c
-  Common/SoftFloat-3e/s_shortShiftRightJam64Extra.c
   Common/SoftFloat-3e/s_roundPackToF64.c
   Common/SoftFloat-3e/s_propagateNaNExtF80UI.c
   Common/SoftFloat-3e/s_roundPackToExtF80.c
   Common/SoftFloat-3e/s_normSubnormalExtF80Sig.c
-  Common/SoftFloat-3e/s_shiftRightJam64.c
   Common/SoftFloat-3e/s_subMagsExtF80.c
-  Common/SoftFloat-3e/s_shiftRightJam32.c
   Common/SoftFloat-3e/s_shiftRightJam128.c
   Common/SoftFloat-3e/s_shiftRightJam128Extra.c
   Common/SoftFloat-3e/s_normRoundPackToExtF80.c
-  Common/SoftFloat-3e/s_shortShiftLeft128.c
-  Common/SoftFloat-3e/s_approxRecip32_1.c
   Common/SoftFloat-3e/s_approxRecip_1Ks.c
   Common/SoftFloat-3e/s_approxRecipSqrt32_1.c
   Common/SoftFloat-3e/s_approxRecipSqrt_1Ks.c
@@ -75,12 +63,6 @@ set (SRCS
   Common/SoftFloat-3e/extF80_roundToInt.c
   Common/SoftFloat-3e/extF80_eq.c
   Common/SoftFloat-3e/extF80_lt.c
-  Common/SoftFloat-3e/s_lt128.c
-  Common/SoftFloat-3e/s_mul64ByShifted32To128.c
-  Common/SoftFloat-3e/s_mul64To128.c
-  Common/SoftFloat-3e/s_countLeadingZeros8.c
-  Common/SoftFloat-3e/s_countLeadingZeros32.c
-  Common/SoftFloat-3e/s_countLeadingZeros64.c
   Common/SoftFloat-3e/f32_to_extF80.c
   Common/SoftFloat-3e/s_normSubnormalF32Sig.c
   Common/SoftFloat-3e/s_f32UIToCommonNaN.c
@@ -176,7 +158,7 @@ else()
 endif()
 
 # Some defines for the softfloat library
-list(APPEND DEFINES "-DSOFTFLOAT_BUILTIN_CLZ")
+list(APPEND DEFINES "-DSOFTFLOAT_BUILTIN_CLZ=1;-DINLINE=static inline;-DINLINE_LEVEL=4;-DSOFTFLOAT_FAST_INT64=1;-DSOFTFLOAT_FAST_DIV32TO16=1;-DSOFTFLOAT_FAST_DIV64TO32=1")
 
 set (LIBS fmt::fmt xxHash::xxhash FEXHeaderUtils CodeEmitter)
 
