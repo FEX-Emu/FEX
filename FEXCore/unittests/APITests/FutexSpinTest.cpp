@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "Utils/SpinWaitLock.h"
 #include <catch2/catch_test_macros.hpp>
 #include <chrono>

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include <FEXCore/Utils/MathUtils.h>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators_range.hpp>

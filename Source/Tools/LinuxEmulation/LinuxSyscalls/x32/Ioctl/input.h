@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "LinuxSyscalls/x32/Types.h"
 #include "LinuxSyscalls/x32/Ioctl/HelperDefines.h"
 
