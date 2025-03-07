@@ -1891,14 +1891,24 @@
       ]
     },
     "vpalignr xmm0, xmm1, xmm2, 16": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 3 0b01 0x0f 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "movi v0.2d, #0x0",
-        "ext v16.16b, v17.16b, v0.16b, #0",
         "movi v2.2d, #0x0",
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
+      ]
+    },
+    "vpalignr xmm0, xmm1, xmm2, 17": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 3 0b01 0x0f 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "ext v16.16b, v17.16b, v2.16b, #1",
         "str q2, [x28, #16]"
       ]
     },
@@ -1940,17 +1950,26 @@
       ]
     },
     "vpalignr ymm0, ymm1, ymm2, 16": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 3 0b01 0x0f 256-bit"
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
-        "ldr q3, [x28, #48]",
-        "movi v0.2d, #0x0",
-        "ext v16.16b, v17.16b, v0.16b, #0",
-        "movi v0.2d, #0x0",
-        "ext v2.16b, v2.16b, v0.16b, #0",
+        "str q2, [x28, #16]",
+        "mov v16.16b, v17.16b"
+      ]
+    },
+    "vpalignr ymm0, ymm1, ymm2, 17": {
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "Map 3 0b01 0x0f 256-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #32]",
+        "movi v3.2d, #0x0",
+        "ext v16.16b, v17.16b, v3.16b, #1",
+        "ext v2.16b, v2.16b, v3.16b, #1",
         "str q2, [x28, #16]"
       ]
     },
