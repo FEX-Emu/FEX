@@ -3825,15 +3825,9 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     Ref Src2 = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
     HandledLock = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK;
 
-    Ref Src3 {};
-    Ref Src3Lower {};
-    if (GPRSize == OpSize::i64Bit && Size == OpSize::i32Bit) {
-      Src3 = LoadGPRRegister(X86State::REG_RAX);
-      Src3Lower = _Bfe(OpSize::i32Bit, 32, 0, Src3);
-    } else {
-      Src3 = LoadGPRRegister(X86State::REG_RAX, Size);
-      Src3Lower = Src3;
-    }
+    auto Src3 = LoadGPRRegister(X86State::REG_RAX);
+    auto Src3Lower = _Bfe(OpSize::i64Bit, OpSizeAsBits(Size), 0, Src3);
+
     // If this is a memory location then we want the pointer to it
     Ref Src1 = MakeSegmentAddress(Op, Op->Dest);
 
@@ -3841,7 +3835,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     // if (DataSrc == Src3) { *Src1 == Src2; } Src2 = DataSrc
     // This will write to memory! Careful!
     // Third operand must be a calculated guest memory address
-    Ref CASResult = _CAS(Size, Src3Lower, Src2, Src1);
+    Ref CASResult = _CAS(Size, Src3, Src2, Src1);
     Ref RAXResult = CASResult;
 
     CalculateFlags_SUB(OpSizeFromSrc(Op), Src3Lower, CASResult);

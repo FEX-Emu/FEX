@@ -1972,14 +1972,14 @@
         "bfxil x4, x6, #0, #8"
       ]
     },
-    "cmpxchg [rax], bl": {
+    "cmpxchg [rcx], bl": {
       "ExpectedInstructionCount": 10,
       "Comment": "0x0f 0xb0",
       "ExpectedArm64ASM": [
         "uxtb w20, w6",
-        "uxtb w21, w4",
-        "mov w1, w21",
-        "casalb w1, w20, [x4]",
+        "uxtb x21, w4",
+        "mov w1, w4",
+        "casalb w1, w20, [x7]",
         "mov w20, w1",
         "eor x27, x21, x20",
         "lsl w0, w21, #24",
@@ -1999,14 +1999,14 @@
         "bfxil x4, x6, #0, #16"
       ]
     },
-    "cmpxchg [rax], bx": {
+    "cmpxchg [rcx], bx": {
       "ExpectedInstructionCount": 10,
       "Comment": "0x0f 0xb1",
       "ExpectedArm64ASM": [
         "uxth w20, w6",
-        "uxth w21, w4",
-        "mov w1, w21",
-        "casalh w1, w20, [x4]",
+        "uxth x21, w4",
+        "mov w1, w4",
+        "casalh w1, w20, [x7]",
         "mov w20, w1",
         "eor x27, x21, x20",
         "lsl w0, w21, #16",
@@ -2025,14 +2025,14 @@
         "mov x4, x6"
       ]
     },
-    "cmpxchg [rax], ebx": {
+    "cmpxchg [rcx], ebx": {
       "ExpectedInstructionCount": 8,
       "Comment": "0x0f 0xb1",
       "ExpectedArm64ASM": [
         "mov w20, w6",
         "mov w21, w4",
-        "mov w1, w21",
-        "casal w1, w20, [x4]",
+        "mov w1, w4",
+        "casal w1, w20, [x7]",
         "mov w20, w1",
         "eor x27, x21, x20",
         "subs w26, w21, w20",
@@ -2048,16 +2048,14 @@
         "mov x4, x6"
       ]
     },
-    "cmpxchg [rax], rbx": {
-      "ExpectedInstructionCount": 6,
+    "cmpxchg [rcx], rbx": {
+      "ExpectedInstructionCount": 4,
       "Comment": "0x0f 0xb1",
       "ExpectedArm64ASM": [
-        "mov x1, x4",
-        "casal x1, x6, [x4]",
-        "mov x20, x1",
-        "eor x27, x4, x20",
-        "subs x26, x4, x20",
-        "mov x4, x20"
+        "mov x20, x4",
+        "casal x4, x6, [x7]",
+        "eor x27, x20, x4",
+        "subs x26, x20, x4"
       ]
     },
     "btr ax, bx": {

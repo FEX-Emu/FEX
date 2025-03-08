@@ -789,7 +789,7 @@
                  "Dest = %Expected",
                  "if (deref(%Addr) != %Expected) Dest = deref(%Addr)"
                 ],
-
+        "TiedSource": 0,
         "DestSize": "Size",
         "ImplicitFlagClobber": true,
         "EmitValidation": [
