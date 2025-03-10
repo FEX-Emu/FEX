@@ -1,8 +1,8 @@
 %ifdef CONFIG
 {
   "RegData": {
-    "RCX":  ["0x3fe0000000000000"],
-    "RSI":  ["0xbfe0000000000000"]
+    "RCX":  "0x3fe0000000000000",
+    "RSI":  "0xbfe0000000000000"
   },
   "Env": { "FEX_X87REDUCEDPRECISION" : "1" }
 }
