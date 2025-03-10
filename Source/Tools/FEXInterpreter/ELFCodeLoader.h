@@ -254,7 +254,7 @@ public:
 
   ELFCodeLoader(const fextl::string& Filename, int ProgramFDFromEnv, const fextl::string& RootFS, const fextl::vector<fextl::string>& args,
                 const fextl::vector<fextl::string>& ParsedArgs, char** const envp = nullptr,
-                FEXCore::Config::Value<FEXCore::Config::StringArrayType>* AdditionalEnvp = nullptr) {
+                FEXCore::Config::Value<FEXCore::Config::StringArrayType>* AdditionalEnvp = nullptr, bool SkipInterpreter = false) {
     ApplicationArgs = args;
 
     bool LoadedWithFD = false;
@@ -302,7 +302,7 @@ public:
     const auto AdditionalArgs = AdditionalArguments.All();
     ApplicationArgs.insert(ApplicationArgs.end(), AdditionalArgs.begin(), AdditionalArgs.end());
 
-    if (!MainElf.InterpreterElf.empty()) {
+    if (!MainElf.InterpreterElf.empty() && !SkipInterpreter) {
       if (!InterpElf.ReadElf(ResolveRootfsFile(MainElf.InterpreterElf, RootFS)) && !InterpElf.ReadElf(MainElf.InterpreterElf)) {
         return;
       }
