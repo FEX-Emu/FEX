@@ -659,21 +659,21 @@ def main():
         BaseArgs.append(sys.argv[ArgIndex])
 
     args_x86_32 = [
-        "-I/usr/i686-linux-gnu/include",
+        "-isystem", "/usr/i686-linux-gnu/include",
         "-O2",
         "-m32",
         "--target=i686-linux-unknown",
     ]
 
     args_x86_64 = [
-        "-I/usr/x86_64-linux-gnu/include",
+        "-isystem", "/usr/x86_64-linux-gnu/include",
         "-O2",
         "--target=x86_64-linux-unknown",
         "-D_M_X86_64",
     ]
 
     args_aarch64 = [
-        "-I/usr/aarch64-linux-gnu/include",
+        "-isystem", "/usr/aarch64-linux-gnu/include",
         "-O2",
         "--target=aarch64-linux-unknown",
         "-D_M_ARM_64",
