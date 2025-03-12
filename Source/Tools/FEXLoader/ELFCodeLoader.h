@@ -36,17 +36,17 @@
 #define PAGE_ALIGN(x) (((x) + 4095) & ~(uintptr_t)(4095))
 
 class ELFCodeLoader final : public FEX::CodeLoader {
-  ELFParser MainElf;
-  ELFParser InterpElf;
+  ELFParser MainElf {};
+  ELFParser InterpElf {};
 
   bool ElfValid {false};
   bool ExecutableStack {false};
-  uintptr_t MainElfBase;
-  uintptr_t InterpeterElfBase;
-  uintptr_t MainElfEntrypoint;
-  uintptr_t Entrypoint;
-  uintptr_t BrkStart;
-  uintptr_t StackPointer;
+  uintptr_t MainElfBase {};
+  uintptr_t InterpeterElfBase {};
+  uintptr_t MainElfEntrypoint {};
+  uintptr_t Entrypoint {};
+  uintptr_t BrkStart {};
+  uintptr_t StackPointer {};
 
   size_t CalculateTotalElfSize(const fextl::vector<Elf64_Phdr>& headers) {
     auto first = std::find_if(headers.begin(), headers.end(), [](const Elf64_Phdr& Header) { return Header.p_type == PT_LOAD; });
@@ -887,7 +887,7 @@ public:
   fextl::vector<const char*> LoaderArgs;
 
   fextl::list<auxv_t> AuxVariables;
-  uint64_t AuxTabBase, AuxTabSize;
+  uint64_t AuxTabBase {}, AuxTabSize {};
   uint64_t ArgumentBackingSize {};
   uint64_t EnvironmentBackingSize {};
   uint64_t BaseOffset {};

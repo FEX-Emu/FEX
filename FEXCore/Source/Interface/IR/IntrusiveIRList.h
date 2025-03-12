@@ -98,11 +98,11 @@ protected:
   DualIntrusiveAllocator(size_t Size)
     : MemorySize {Size} {}
 
-  uintptr_t Data;
-  uintptr_t List;
+  uintptr_t Data {};
+  uintptr_t List {};
   size_t DataCurrentOffset {0};
   size_t ListCurrentOffset {0};
-  size_t MemorySize;
+  size_t MemorySize {};
 };
 
 class DualIntrusiveAllocatorMalloc final : public DualIntrusiveAllocator {
