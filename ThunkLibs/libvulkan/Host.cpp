@@ -1013,7 +1013,7 @@ VULKAN_DEFAULT_CUSTOM_REPACK(VkCopyDescriptorSet)
 // VULKAN_DEFAULT_CUSTOM_REPACK(VkCopyImageToImageInfoEXT)
 // VULKAN_DEFAULT_CUSTOM_REPACK(VkCopyImageToMemoryInfoEXT)
 // VULKAN_DEFAULT_CUSTOM_REPACK(VkCopyMemoryToAccelerationStructureInfoKHR)
-// VULKAN_DEFAULT_CUSTOM_REPACK(VkCopyMemoryToImageInfoEXT)
+VULKAN_NONDEFAULT_CUSTOM_REPACK(VkCopyMemoryToImageInfoEXT)
 // VULKAN_DEFAULT_CUSTOM_REPACK(VkCopyMemoryToMicromapInfoEXT)
 VULKAN_DEFAULT_CUSTOM_REPACK(VkCopyMicromapInfoEXT)
 // VULKAN_DEFAULT_CUSTOM_REPACK(VkCopyMicromapToMemoryInfoEXT)
@@ -1178,7 +1178,7 @@ VULKAN_DEFAULT_CUSTOM_REPACK(VkMemoryMapInfoKHR)
 VULKAN_DEFAULT_CUSTOM_REPACK(VkMemoryOpaqueCaptureAddressAllocateInfo)
 VULKAN_DEFAULT_CUSTOM_REPACK(VkMemoryPriorityAllocateInfoEXT)
 VULKAN_DEFAULT_CUSTOM_REPACK(VkMemoryRequirements2)
-// VULKAN_DEFAULT_CUSTOM_REPACK(VkMemoryToImageCopyEXT)
+VULKAN_NONDEFAULT_CUSTOM_REPACK(VkMemoryToImageCopyEXT)
 VULKAN_DEFAULT_CUSTOM_REPACK(VkMemoryUnmapInfoKHR)
 // VULKAN_DEFAULT_CUSTOM_REPACK(VkMicromapBuildInfoEXT)
 VULKAN_DEFAULT_CUSTOM_REPACK(VkMicromapBuildSizesInfoEXT)
@@ -1659,6 +1659,15 @@ bool fex_custom_repack_exit(guest_layout<VkInstanceCreateInfo>& into, const host
   return false;
 }
 
+void fex_custom_repack_entry(host_layout<VkMemoryToImageCopyEXT>& into, const guest_layout<VkMemoryToImageCopyEXT>& from) {
+  default_fex_custom_repack_entry(into, from);
+  into.data.pHostPointer = from.data.pHostPointer.get_pointer();
+}
+
+bool fex_custom_repack_exit(guest_layout<VkMemoryToImageCopyEXT>& into, const host_layout<VkMemoryToImageCopyEXT>& from) {
+  return false;
+}
+
 void fex_custom_repack_entry(host_layout<VkDeviceCreateInfo>& into, const guest_layout<VkDeviceCreateInfo>& from) {
   default_fex_custom_repack_entry(into, from);
 
@@ -1841,6 +1850,16 @@ bool fex_custom_repack_exit(guest_layout<VkDescriptorGetInfoEXT>& into, const ho
     // Nothing to do for the rest
     break;
   }
+  return false;
+}
+
+void fex_custom_repack_entry(host_layout<VkCopyMemoryToImageInfoEXT>& into, const guest_layout<VkCopyMemoryToImageInfoEXT>& from) {
+  default_fex_custom_repack_entry(into, from);
+  into.data.pRegions = RepackStructArray(from.data.regionCount.data, from.data.pRegions).data();
+}
+
+bool fex_custom_repack_exit(guest_layout<VkCopyMemoryToImageInfoEXT>& into, const host_layout<VkCopyMemoryToImageInfoEXT>& from) {
+  DeleteRepackedStructArray(from.data.regionCount, from.data.pRegions, into.data.pRegions);
   return false;
 }
 

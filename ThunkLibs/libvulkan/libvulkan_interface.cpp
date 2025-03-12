@@ -240,7 +240,10 @@ struct fex_gen_config<&VkCopyDescriptorSet::pNext> : fexgen::custom_repack {};
 // template<> struct fex_gen_config<&VkCopyImageToImageInfoEXT::pNext> : fexgen::custom_repack {};
 // template<> struct fex_gen_config<&VkCopyImageToMemoryInfoEXT::pNext> : fexgen::custom_repack {};
 // template<> struct fex_gen_config<&VkCopyMemoryToAccelerationStructureInfoKHR::pNext> : fexgen::custom_repack {};
-// template<> struct fex_gen_config<&VkCopyMemoryToImageInfoEXT::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkCopyMemoryToImageInfoEXT::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkCopyMemoryToImageInfoEXT::pRegions> : fexgen::custom_repack {};
 // template<> struct fex_gen_config<&VkCopyMemoryToMicromapInfoEXT::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkCopyMicromapInfoEXT::pNext> : fexgen::custom_repack {};
@@ -542,7 +545,10 @@ template<>
 struct fex_gen_config<&VkMemoryPriorityAllocateInfoEXT::pNext> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkMemoryRequirements2::pNext> : fexgen::custom_repack {};
-// template<> struct fex_gen_config<&VkMemoryToImageCopyEXT::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkMemoryToImageCopyEXT::pNext> : fexgen::custom_repack {};
+template<>
+struct fex_gen_config<&VkMemoryToImageCopyEXT::pHostPointer> : fexgen::custom_repack {};
 template<>
 struct fex_gen_config<&VkMemoryUnmapInfoKHR::pNext> : fexgen::custom_repack {};
 // template<> struct fex_gen_config<&VkMicromapBuildInfoEXT::pNext> : fexgen::custom_repack {};
@@ -1659,8 +1665,10 @@ struct fex_gen_config<vkGetImageMemoryRequirements> {};
 #ifndef IS_32BIT_THUNK
 template<>
 struct fex_gen_config<vkGetImageSparseMemoryRequirements> {};
+#endif
 template<>
 struct fex_gen_config<vkGetPhysicalDeviceSparseImageFormatProperties> {};
+#ifndef IS_32BIT_THUNK
 template<>
 struct fex_gen_config<vkQueueBindSparse> {};
 #endif
@@ -2145,8 +2153,10 @@ template<>
 struct fex_gen_config<vkCmdPushDescriptorSet2> {};
 template<>
 struct fex_gen_config<vkCmdPushDescriptorSetWithTemplate2> {};
+#endif
 template<>
 struct fex_gen_config<vkCopyMemoryToImage> {};
+#ifndef IS_32BIT_THUNK
 template<>
 struct fex_gen_config<vkCopyImageToMemory> {};
 template<>
@@ -2272,12 +2282,10 @@ template<>
 struct fex_gen_config<vkCmdPushDescriptorSetWithTemplateKHR> {};
 template<>
 struct fex_gen_param<vkCmdPushDescriptorSetWithTemplateKHR, 4, const void*> : fexgen::assume_compatible_data_layout {};
-#ifndef IS_32BIT_THUNK
 template<>
 struct fex_gen_config<vkCreateDescriptorUpdateTemplateKHR> {};
 template<>
 struct fex_gen_config<vkDestroyDescriptorUpdateTemplateKHR> {};
-#endif
 template<>
 struct fex_gen_config<vkUpdateDescriptorSetWithTemplateKHR> {};
 template<>
@@ -2441,10 +2449,12 @@ template<>
 struct fex_gen_config<vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR> {};
 template<>
 struct fex_gen_config<vkCmdSetLineStippleKHR> {};
+#endif
 template<>
 struct fex_gen_config<vkGetPhysicalDeviceCalibrateableTimeDomainsKHR> {};
 template<>
 struct fex_gen_config<vkGetCalibratedTimestampsKHR> {};
+#ifndef IS_32BIT_THUNK
 template<>
 struct fex_gen_config<vkCmdBindDescriptorSets2KHR> {};
 template<>
@@ -2717,14 +2727,18 @@ template<>
 struct fex_gen_config<vkCmdSetStencilTestEnableEXT> {};
 template<>
 struct fex_gen_config<vkCmdSetStencilOpEXT> {};
+#endif
 template<>
 struct fex_gen_config<vkCopyMemoryToImageEXT> {};
+#ifndef IS_32BIT_THUNK
 template<>
 struct fex_gen_config<vkCopyImageToMemoryEXT> {};
 template<>
 struct fex_gen_config<vkCopyImageToImageEXT> {};
+#endif
 template<>
 struct fex_gen_config<vkTransitionImageLayoutEXT> {};
+#ifndef IS_32BIT_THUNK
 template<>
 struct fex_gen_config<vkGetImageSubresourceLayout2EXT> {};
 template<>
@@ -3005,8 +3019,10 @@ template<>
 struct fex_gen_config<vkGetLatencyTimingsNV> {};
 template<>
 struct fex_gen_config<vkQueueNotifyOutOfBandNV> {};
+#endif
 template<>
 struct fex_gen_config<vkCmdSetAttachmentFeedbackLoopEnableEXT> {};
+#ifndef IS_32BIT_THUNK
 template<>
 struct fex_gen_config<vkGetClusterAccelerationStructureBuildSizesNV> {};
 template<>
