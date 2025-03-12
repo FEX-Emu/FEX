@@ -82,5 +82,5 @@ minus_one:
 
 align 8
 qnan:
-  dq 0xC000000000000000
+  dq 0xC000000000000001
   dw 0x7FFF
