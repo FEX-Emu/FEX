@@ -2101,24 +2101,31 @@ struct fex_gen_config<vkGetDeviceImageSparseMemoryRequirements> {};
 #endif
 template<>
 struct fex_gen_config<vkCmdSetLineStipple> {};
+#ifndef IS_32BIT_THUNK
 template<>
 struct fex_gen_config<vkMapMemory2> {};
+#endif
 template<>
 struct fex_gen_config<vkUnmapMemory2> {};
 template<>
 struct fex_gen_config<vkCmdBindIndexBuffer2> {};
 template<>
 struct fex_gen_config<vkGetRenderingAreaGranularity> {};
+#ifndef IS_32BIT_THUNK
 template<>
 struct fex_gen_config<vkGetDeviceImageSubresourceLayout> {};
+#endif
 template<>
 struct fex_gen_config<vkGetImageSubresourceLayout2> {};
+#ifndef IS_32BIT_THUNK
 template<>
 struct fex_gen_config<vkCmdPushDescriptorSet> {};
+#endif
 template<>
 struct fex_gen_config<vkCmdPushDescriptorSetWithTemplate> {};
 template<>
 struct fex_gen_param<vkCmdPushDescriptorSetWithTemplate, 4, const void*> : fexgen::assume_compatible_data_layout {};
+#ifndef IS_32BIT_THUNK
 template<>
 struct fex_gen_config<vkCmdSetRenderingAttachmentLocations> {};
 template<>
@@ -2137,6 +2144,7 @@ template<>
 struct fex_gen_config<vkCopyImageToMemory> {};
 template<>
 struct fex_gen_config<vkCopyImageToImage> {};
+#endif
 template<>
 struct fex_gen_config<vkTransitionImageLayout> {};
 template<>
