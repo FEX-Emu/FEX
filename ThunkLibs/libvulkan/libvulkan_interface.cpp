@@ -3069,6 +3069,7 @@ template<>
 struct fex_gen_config<vkCmdDrawMeshTasksIndirectEXT> {};
 template<>
 struct fex_gen_config<vkCmdDrawMeshTasksIndirectCountEXT> {};
+#endif
 
 // vulkan_xlib_xrandr.h
 template<>
@@ -3081,10 +3082,8 @@ template<>
 struct fex_gen_param<vkGetRandROutputDisplayEXT, 1, Display*> : fexgen::ptr_passthrough {};
 
 // vulkan_wayland.h
-#endif
 template<>
 struct fex_gen_config<vkCreateWaylandSurfaceKHR> {};
-#ifndef IS_32BIT_THUNK
 template<>
 struct fex_gen_config<vkGetPhysicalDeviceWaylandPresentationSupportKHR> {};
 
@@ -3103,5 +3102,5 @@ template<>
 struct fex_gen_config<vkGetPhysicalDeviceXlibPresentationSupportKHR> : fexgen::custom_host_impl {};
 template<>
 struct fex_gen_param<vkGetPhysicalDeviceXlibPresentationSupportKHR, 2, Display*> : fexgen::ptr_passthrough {};
-#endif
+
 } // namespace internal

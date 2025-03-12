@@ -314,7 +314,6 @@ static PFN_vkVoidFunction LookupCustomVulkanFunction(const char* a_1) {
     return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkAllocateMemory;
   } else if (a_1 == "vkFreeMemory"sv) {
     return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkFreeMemory;
-    // TODO: Review if 32-bit changes are needed
   } else if (a_1 == "vkAcquireXlibDisplayEXT"sv) {
     return (PFN_vkVoidFunction)fexfn_impl_libvulkan_vkAcquireXlibDisplayEXT;
   } else if (a_1 == "vkGetRandROutputDisplayEXT"sv) {
@@ -1584,8 +1583,8 @@ VULKAN_DEFAULT_CUSTOM_REPACK(VkWriteDescriptorSet)
 VULKAN_DEFAULT_CUSTOM_REPACK(VkWriteDescriptorSetAccelerationStructureKHR)
 VULKAN_DEFAULT_CUSTOM_REPACK(VkWriteDescriptorSetAccelerationStructureNV)
 // VULKAN_DEFAULT_CUSTOM_REPACK(VkWriteDescriptorSetInlineUniformBlock)
-VULKAN_DEFAULT_CUSTOM_REPACK(VkXcbSurfaceCreateInfoKHR)
-VULKAN_DEFAULT_CUSTOM_REPACK(VkXlibSurfaceCreateInfoKHR)
+VULKAN_NONDEFAULT_CUSTOM_REPACK(VkXcbSurfaceCreateInfoKHR)
+VULKAN_NONDEFAULT_CUSTOM_REPACK(VkXlibSurfaceCreateInfoKHR)
 
 
 void fex_custom_repack_entry(host_layout<VkInstanceCreateInfo>& into, const guest_layout<VkInstanceCreateInfo>& from) {
