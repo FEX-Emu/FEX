@@ -80,6 +80,8 @@ template<>
 struct fex_gen_type<VkIndirectExecutionSetInfoEXT> : fexgen::assume_compatible_data_layout {};
 template<>
 struct fex_gen_type<VkIndirectCommandsTokenDataEXT> : fexgen::assume_compatible_data_layout {};
+template<>
+struct fex_gen_type<VkClusterAccelerationStructureOpInputNV> : fexgen::assume_compatible_data_layout {};
 #endif
 
 // Explicitly register types that are only ever referenced through nested pointers
@@ -561,6 +563,44 @@ struct fex_gen_config<vkGetDeviceImageMemoryRequirements> {};
 template<>
 struct fex_gen_config<vkGetDeviceImageSparseMemoryRequirements> {};
 template<>
+struct fex_gen_config<vkCmdSetLineStipple> {};
+template<>
+struct fex_gen_config<vkMapMemory2> {};
+template<>
+struct fex_gen_config<vkUnmapMemory2> {};
+template<>
+struct fex_gen_config<vkCmdBindIndexBuffer2> {};
+template<>
+struct fex_gen_config<vkGetRenderingAreaGranularity> {};
+template<>
+struct fex_gen_config<vkGetDeviceImageSubresourceLayout> {};
+template<>
+struct fex_gen_config<vkGetImageSubresourceLayout2> {};
+template<>
+struct fex_gen_config<vkCmdPushDescriptorSet> {};
+template<>
+struct fex_gen_param<vkCmdPushDescriptorSetWithTemplate, 4, const void*> : fexgen::assume_compatible_data_layout {};
+template<>
+struct fex_gen_config<vkCmdSetRenderingAttachmentLocations> {};
+template<>
+struct fex_gen_config<vkCmdSetRenderingInputAttachmentIndices> {};
+template<>
+struct fex_gen_config<vkCmdBindDescriptorSets2> {};
+template<>
+struct fex_gen_config<vkCmdPushConstants2> {};
+template<>
+struct fex_gen_config<vkCmdPushDescriptorSet2> {};
+template<>
+struct fex_gen_config<vkCmdPushDescriptorSetWithTemplate2> {};
+template<>
+struct fex_gen_config<vkCopyMemoryToImage> {};
+template<>
+struct fex_gen_config<vkCopyImageToMemory> {};
+template<>
+struct fex_gen_config<vkCopyImageToImage> {};
+template<>
+struct fex_gen_config<vkTransitionImageLayout> {};
+template<>
 struct fex_gen_config<vkDestroySurfaceKHR> {};
 template<>
 struct fex_gen_config<vkGetPhysicalDeviceSurfaceSupportKHR> {};
@@ -801,10 +841,6 @@ struct fex_gen_config<vkCmdWriteTimestamp2KHR> {};
 template<>
 struct fex_gen_config<vkQueueSubmit2KHR> {};
 template<>
-struct fex_gen_config<vkCmdWriteBufferMarker2AMD> {};
-template<>
-struct fex_gen_config<vkGetQueueCheckpointData2NV> {};
-template<>
 struct fex_gen_config<vkCmdCopyBuffer2KHR> {};
 template<>
 struct fex_gen_config<vkCmdCopyImage2KHR> {};
@@ -904,6 +940,8 @@ template<>
 struct fex_gen_config<vkCmdCuLaunchKernelNVX> {};
 template<>
 struct fex_gen_config<vkGetImageViewHandleNVX> {};
+template<>
+struct fex_gen_config<vkGetImageViewHandle64NVX> {};
 template<>
 struct fex_gen_config<vkGetImageViewAddressNVX> {};
 template<>
@@ -1031,6 +1069,8 @@ struct fex_gen_param<vkGetMemoryHostPointerPropertiesEXT, 2, const void*> : fexg
 template<>
 struct fex_gen_config<vkCmdWriteBufferMarkerAMD> {};
 template<>
+struct fex_gen_config<vkCmdWriteBufferMarker2AMD> {};
+template<>
 struct fex_gen_config<vkGetPhysicalDeviceCalibrateableTimeDomainsEXT> {};
 template<>
 struct fex_gen_config<vkGetCalibratedTimestampsEXT> {};
@@ -1050,6 +1090,8 @@ template<>
 struct fex_gen_param<vkCmdSetCheckpointNV, 1, const void*> : fexgen::assume_compatible_data_layout {};
 template<>
 struct fex_gen_config<vkGetQueueCheckpointDataNV> {};
+template<>
+struct fex_gen_config<vkGetQueueCheckpointData2NV> {};
 template<>
 struct fex_gen_config<vkInitializePerformanceApiINTEL> {};
 template<>
@@ -1359,6 +1401,12 @@ struct fex_gen_config<vkGetFramebufferTilePropertiesQCOM> {};
 template<>
 struct fex_gen_config<vkGetDynamicRenderingTilePropertiesQCOM> {};
 template<>
+struct fex_gen_config<vkGetPhysicalDeviceCooperativeVectorPropertiesNV> {};
+template<>
+struct fex_gen_config<vkConvertCooperativeVectorMatrixNV> {};
+template<>
+struct fex_gen_config<vkCmdConvertCooperativeVectorMatrixNV> {};
+template<>
 struct fex_gen_config<vkSetLatencySleepModeNV> {};
 template<>
 struct fex_gen_config<vkLatencySleepNV> {};
@@ -1370,6 +1418,14 @@ template<>
 struct fex_gen_config<vkQueueNotifyOutOfBandNV> {};
 template<>
 struct fex_gen_config<vkCmdSetAttachmentFeedbackLoopEnableEXT> {};
+template<>
+struct fex_gen_config<vkGetClusterAccelerationStructureBuildSizesNV> {};
+template<>
+struct fex_gen_config<vkCmdBuildClusterAccelerationStructureIndirectNV> {};
+template<>
+struct fex_gen_config<vkGetPartitionedAccelerationStructuresBuildSizesNV> {};
+template<>
+struct fex_gen_config<vkCmdBuildPartitionedAccelerationStructuresNV> {};
 template<>
 struct fex_gen_config<vkGetGeneratedCommandsMemoryRequirementsEXT> {};
 template<>
@@ -1388,6 +1444,8 @@ template<>
 struct fex_gen_config<vkUpdateIndirectExecutionSetPipelineEXT> {};
 template<>
 struct fex_gen_config<vkUpdateIndirectExecutionSetShaderEXT> {};
+template<>
+struct fex_gen_config<vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV> {};
 template<>
 struct fex_gen_config<vkCreateAccelerationStructureKHR> {};
 template<>
