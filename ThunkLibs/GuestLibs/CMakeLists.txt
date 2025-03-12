@@ -187,15 +187,15 @@ if (BITNESS EQUAL 64)
   # target_link_libraries(SDL2-guest PRIVATE GL)
   # target_link_libraries(SDL2-guest PRIVATE dl)
 
+  generate(libvulkan ${CMAKE_CURRENT_SOURCE_DIR}/../libvulkan/libvulkan_interface.cpp)
+  target_include_directories(libvulkan-guest-deps INTERFACE ${FEX_PROJECT_SOURCE_DIR}/External/Vulkan-Headers/include/)
+  add_guest_lib(vulkan "libvulkan.so.1")
+
   generate(libdrm ${CMAKE_CURRENT_SOURCE_DIR}/../libdrm/libdrm_interface.cpp)
   target_include_directories(libdrm-guest-deps INTERFACE /usr/include/drm/)
   target_include_directories(libdrm-guest-deps INTERFACE /usr/include/libdrm/)
   add_guest_lib(drm "libdrm.so.2")
 endif()
-
-generate(libvulkan ${CMAKE_CURRENT_SOURCE_DIR}/../libvulkan/libvulkan_interface.cpp)
-target_include_directories(libvulkan-guest-deps INTERFACE ${FEX_PROJECT_SOURCE_DIR}/External/Vulkan-Headers/include/)
-add_guest_lib(vulkan "libvulkan.so.1")
 
 generate(libwayland-client ${CMAKE_CURRENT_SOURCE_DIR}/../libwayland-client/libwayland-client_interface.cpp)
 add_guest_lib(wayland-client "libwayland-client.so.0.20.0")
