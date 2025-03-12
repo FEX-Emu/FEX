@@ -87,6 +87,12 @@ struct fex_gen_type<VkClusterAccelerationStructureOpInputNV> : fexgen::assume_co
 // Explicitly register types that are only ever referenced through nested pointers
 template<>
 struct fex_gen_type<VkAccelerationStructureBuildRangeInfoKHR> {};
+template<>
+struct fex_gen_type<VkDescriptorSetLayoutBinding> {};
+template<>
+struct fex_gen_type<VkDescriptorUpdateTemplateEntry> {};
+template<>
+struct fex_gen_type<VkSubpassDescription> {};
 
 // Structures that contain function pointers
 // TODO: Use custom repacking for these instead
