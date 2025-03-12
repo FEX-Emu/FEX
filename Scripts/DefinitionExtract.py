@@ -168,7 +168,7 @@ def HandleFunctionDeclCursor(Arch, Cursor):
 
 def PrintFunctionDecls():
     for Decl in FunctionDecls:
-        print("template<> struct fex_gen_config<{}> {{}};".format(Decl.Name))
+        print("template<>\nstruct fex_gen_config<{}> {{}};".format(Decl.Name))
 
 def FindClangArguments(OriginalArguments):
     AddedArguments = ["clang"]
