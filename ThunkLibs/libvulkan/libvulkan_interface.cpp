@@ -579,6 +579,8 @@ struct fex_gen_config<vkGetImageSubresourceLayout2> {};
 template<>
 struct fex_gen_config<vkCmdPushDescriptorSet> {};
 template<>
+struct fex_gen_config<vkCmdPushDescriptorSetWithTemplate> {};
+template<>
 struct fex_gen_param<vkCmdPushDescriptorSetWithTemplate, 4, const void*> : fexgen::assume_compatible_data_layout {};
 template<>
 struct fex_gen_config<vkCmdSetRenderingAttachmentLocations> {};
