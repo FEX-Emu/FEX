@@ -136,6 +136,25 @@ typedef struct _CONTEXT_EX {
 #endif
 } CONTEXT_EX, *PCONTEXT_EX;
 
+// From process hacker
+typedef struct _IMAGE_VOLATILE_METADATA {
+  ULONG Size;
+  ULONG Version;
+  ULONG VolatileAccessTable;
+  ULONG VolatileAccessTableSize;
+  ULONG VolatileInfoRangeTable;
+  ULONG VolatileInfoRangeTableSize;
+} IMAGE_VOLATILE_METADATA, *PIMAGE_VOLATILE_METADATA;
+
+typedef struct _IMAGE_VOLATILE_RVA_METADATA {
+  ULONG Rva;
+} IMAGE_VOLATILE_RVA_METADATA, *PIMAGE_VOLATILE_RVA_METADATA;
+
+typedef struct _IMAGE_VOLATILE_RANGE_METADATA {
+  ULONG Rva;
+  ULONG Size;
+} IMAGE_VOLATILE_RANGE_METADATA, *PIMAGE_VOLATILE_RANGE_METADATA;
+
 NTSYSAPI DWORD WINAPI RtlRunOnceExecuteOnce(PRTL_RUN_ONCE, PRTL_RUN_ONCE_INIT_FN, PVOID, PVOID*);
 
 // This is a FEX extension, and requires corresponding wine patches
