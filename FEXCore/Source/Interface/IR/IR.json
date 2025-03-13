@@ -2590,6 +2590,12 @@
         "ElementSize": "ElementSize"
       },
 
+      "FPR = VLoadTwoGPRs GPR:$Lower, GPR:$Upper": {
+        "Desc": ["Moves two 64-bit registers to a vector register optimally"],
+        "DestSize": "OpSize::i128Bit",
+        "ElementSize": "OpSize::i64Bit"
+      },
+
       "FPR = Float_FromGPR_S OpSize:#DstElementSize, OpSize:$SrcElementSize, GPR:$Src": {
         "Desc": ["Scalar op: Converts signed GPR to Scalar float",
                  "Zeroes the upper bits of the vector register"
