@@ -104,6 +104,16 @@ DEF_OP(VCastFromGPR) {
   }
 }
 
+DEF_OP(VLoadTwoGPRs) {
+  const auto Op = IROp->C<IR::IROp_VLoadTwoGPRs>();
+
+  const auto Dst = GetVReg(Node);
+  const auto SrcLower = GetReg(Op->Lower.ID());
+  const auto SrcUpper = GetReg(Op->Upper.ID());
+  fmov(ARMEmitter::Size::i64Bit, Dst.D(), SrcLower);
+  fmov(ARMEmitter::Size::i64Bit, Dst.D(), SrcUpper, true);
+}
+
 DEF_OP(VDupFromGPR) {
   const auto Op = IROp->C<IR::IROp_VDupFromGPR>();
   const auto OpSize = IROp->Size;
