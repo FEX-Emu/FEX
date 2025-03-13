@@ -300,9 +300,8 @@ fextl::unique_ptr<StackTracker> SetupThreadHandlers() {
 
   FEXCore::Threads::Thread::SetInternalPointers(Ptrs);
 
-  auto STracker = fextl::make_unique<StackTracker>();
-  PThreads::STracker = STracker.get();
-  return STracker;
+  PThreads::STracker = new StackTracker();
+  return fextl::unique_ptr<StackTracker>(PThreads::STracker);
 }
 
 void* AllocateStackObject() {

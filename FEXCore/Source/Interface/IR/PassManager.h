@@ -80,7 +80,7 @@ public:
   void Finalize();
 
 protected:
-  FEXCore::HLE::SyscallHandler* SyscallHandler;
+  FEXCore::HLE::SyscallHandler* SyscallHandler {};
 
 private:
   using PassArrayType = fextl::vector<fextl::unique_ptr<Pass>>;

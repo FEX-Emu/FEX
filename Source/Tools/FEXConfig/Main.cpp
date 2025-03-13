@@ -60,7 +60,7 @@ ConfigModel::ConfigModel() {
 }
 
 void ConfigModel::Reload() {
-  auto Options = LoadedConfig->GetOptionMap();
+  const auto& Options = LoadedConfig->GetOptionMap();
 
   beginResetModel();
   removeRows(0, rowCount());
@@ -81,20 +81,16 @@ void ConfigModel::Reload() {
 }
 
 bool ConfigModel::has(const QString& Name, bool) const {
-  auto Options = LoadedConfig->GetOptionMap();
   return LoadedConfig->OptionExists(NameToConfigLookup.at(Name.toStdString()));
 }
 
 void ConfigModel::erase(const QString& Name) {
   assert(has(Name, false));
-  auto Options = LoadedConfig->GetOptionMap();
   LoadedConfig->Erase(NameToConfigLookup.at(Name.toStdString()));
   Reload();
 }
 
 bool ConfigModel::getBool(const QString& Name, bool) const {
-  auto Options = LoadedConfig->GetOptionMap();
-
   auto ret = LoadedConfig->Get(NameToConfigLookup.at(Name.toStdString()));
   if (!ret || !*ret) {
     throw std::runtime_error("Could not find setting");
@@ -103,20 +99,16 @@ bool ConfigModel::getBool(const QString& Name, bool) const {
 }
 
 void ConfigModel::setBool(const QString& Name, bool Value) {
-  auto Options = LoadedConfig->GetOptionMap();
   LoadedConfig->EraseSet(NameToConfigLookup.at(Name.toStdString()), Value ? "1" : "0");
   Reload();
 }
 
 void ConfigModel::setString(const QString& Name, const QString& Value) {
-  auto Options = LoadedConfig->GetOptionMap();
   LoadedConfig->EraseSet(NameToConfigLookup.at(Name.toStdString()), Value.toStdString());
   Reload();
 }
 
 void ConfigModel::setStringList(const QString& Name, const QStringList& Values) {
-  auto Options = LoadedConfig->GetOptionMap();
-
   const auto& Option = NameToConfigLookup.at(Name.toStdString());
   LoadedConfig->Erase(Option);
   for (auto& Value : Values) {
@@ -126,14 +118,11 @@ void ConfigModel::setStringList(const QString& Name, const QStringList& Values) 
 }
 
 void ConfigModel::setInt(const QString& Name, int Value) {
-  auto Options = LoadedConfig->GetOptionMap();
   LoadedConfig->EraseSet(NameToConfigLookup.at(Name.toStdString()), std::to_string(Value));
   Reload();
 }
 
 QString ConfigModel::getString(const QString& Name, bool) const {
-  auto Options = LoadedConfig->GetOptionMap();
-
   auto ret = LoadedConfig->Get(NameToConfigLookup.at(Name.toStdString()));
   if (!ret || !*ret) {
     throw std::runtime_error("Could not find setting");
@@ -142,8 +131,6 @@ QString ConfigModel::getString(const QString& Name, bool) const {
 }
 
 QStringList ConfigModel::getStringList(const QString& Name, bool) const {
-  auto Options = LoadedConfig->GetOptionMap();
-
   auto Values = LoadedConfig->All(NameToConfigLookup.at(Name.toStdString()));
   if (!Values || !*Values) {
     return {};
@@ -156,8 +143,6 @@ QStringList ConfigModel::getStringList(const QString& Name, bool) const {
 }
 
 int ConfigModel::getInt(const QString& Name, bool) const {
-  auto Options = LoadedConfig->GetOptionMap();
-
   auto ret = LoadedConfig->Get(NameToConfigLookup.at(Name.toStdString()));
   if (!ret || !*ret) {
     throw std::runtime_error("Could not find setting");

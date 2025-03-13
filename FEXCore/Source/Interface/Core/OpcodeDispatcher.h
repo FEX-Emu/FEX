@@ -2379,7 +2379,7 @@ private:
   bool BlockSetRIP {false};
 
   bool Multiblock {};
-  uint64_t Entry;
+  uint64_t Entry {};
   IROp_IRHeader* CurrentHeader {};
 
   bool IsTSOEnabled(FEXCore::IR::RegisterClassType Class) {

@@ -1538,7 +1538,7 @@ void OpDispatchBuilder::SHRDImmediateOp(OpcodeArgs) {
       Ref ShiftRight = _Constant(Shift);
       auto ShiftLeft = _Constant(Size - Shift);
 
-      auto Tmp1 = _Lshr(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, ShiftRight);
+      auto Tmp1 = _Lshr(OpSize::i32Bit, Dest, ShiftRight);
       auto Tmp2 = _Lshl(OpSize::i64Bit, Src, ShiftLeft);
 
       Res = _Or(OpSize::i64Bit, Tmp1, Tmp2);
@@ -3313,7 +3313,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
     SetCurrentCodeBlock(BeforeLoop);
     StartNewBlock();
 
-    ForeachDirection([this, Op, Size, REPE](int PtrDir) {
+    ForeachDirection([this, Op, Size, REPE](int32_t PtrDir) {
       IRPair<IROp_CondJump> InnerJump;
       auto JumpIntoLoop = Jump();
 
@@ -3346,11 +3346,11 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
         StoreGPRRegister(X86State::REG_RCX, TailCounter);
 
         // Offset the pointer
-        Dest_RDI = _Add(OpSize::i64Bit, Dest_RDI, _Constant(PtrDir * IR::OpSizeToSize(Size)));
+        Dest_RDI = _Add(OpSize::i64Bit, Dest_RDI, _Constant(PtrDir * static_cast<int32_t>(IR::OpSizeToSize(Size))));
         StoreGPRRegister(X86State::REG_RDI, Dest_RDI);
 
         // Offset second pointer
-        Dest_RSI = _Add(OpSize::i64Bit, Dest_RSI, _Constant(PtrDir * IR::OpSizeToSize(Size)));
+        Dest_RSI = _Add(OpSize::i64Bit, Dest_RSI, _Constant(PtrDir * static_cast<int32_t>(IR::OpSizeToSize(Size))));
         StoreGPRRegister(X86State::REG_RSI, Dest_RSI);
 
         // If TailCounter != 0, compare sources.
@@ -3412,7 +3412,7 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
     // Calculate flags early. because end of block
     CalculateDeferredFlags();
 
-    ForeachDirection([this, Op, Size](int PtrDir) {
+    ForeachDirection([this, Op, Size](int32_t PtrDir) {
       // XXX: Theoretically LODS could be optimized to
       // RSI += {-}(RCX * Size)
       // RAX = [RSI - Size]
@@ -3456,7 +3456,7 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
         StoreGPRRegister(X86State::REG_RCX, TailCounter);
 
         // Offset the pointer
-        TailDest_RSI = _Add(OpSize::i64Bit, TailDest_RSI, _Constant(PtrDir * IR::OpSizeToSize(Size)));
+        TailDest_RSI = _Add(OpSize::i64Bit, TailDest_RSI, _Constant(PtrDir * static_cast<int32_t>(IR::OpSizeToSize(Size))));
         StoreGPRRegister(X86State::REG_RSI, TailDest_RSI);
 
         // Jump back to the start, we have more work to do
@@ -3496,7 +3496,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
     // Calculate flags early. because end of block
     CalculateDeferredFlags();
 
-    ForeachDirection([this, Op, Size](int Dir) {
+    ForeachDirection([this, Op, Size](int32_t Dir) {
       bool REPE = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX;
 
       auto JumpStart = Jump();
@@ -3540,7 +3540,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
         StoreGPRRegister(X86State::REG_RCX, TailCounter);
 
         // Offset the pointer
-        TailDest_RDI = _Add(OpSize::i64Bit, TailDest_RDI, _Constant(Dir * IR::OpSizeToSize(Size)));
+        TailDest_RDI = _Add(OpSize::i64Bit, TailDest_RDI, _Constant(Dir * static_cast<int32_t>(IR::OpSizeToSize(Size))));
         StoreGPRRegister(X86State::REG_RDI, TailDest_RDI);
 
         CalculateDeferredFlags();
@@ -4006,7 +4006,7 @@ Ref OpDispatchBuilder::GetSegment(uint32_t Flags, uint32_t DefaultPrefix, bool O
     case FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX:
       SegmentResult = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, gs_cached));
       break;
-    default: break; // Do nothing
+    default: return nullptr;
     }
 
     CheckLegacySegmentRead(SegmentResult, Prefix);

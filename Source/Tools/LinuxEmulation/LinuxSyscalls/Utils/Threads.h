@@ -24,7 +24,7 @@ struct DeadStackPoolItem {
   bool ReadyToBeReaped;
 };
 
-class StackTracker final {
+class StackTracker final : public FEXCore::Allocator::FEXAllocOperators {
 public:
   void* AllocateStackObject();
   bool* AddStackToDeadPool(void* Ptr);

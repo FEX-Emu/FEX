@@ -420,7 +420,7 @@ ApplicationNames GetApplicationNames(const fextl::vector<fextl::string>& Args, b
         }
       }
 
-      ProgramName = CurrentProgramName;
+      ProgramName = std::move(CurrentProgramName);
 
       // Past any wine program names
       break;

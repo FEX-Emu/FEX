@@ -47,9 +47,9 @@ int main(int argc, char* const argv[]) {
 
   OutputFilenames output_filenames;
   if (target_abi == "-host") {
-    output_filenames.host = output_filename;
+    output_filenames.host = std::move(output_filename);
   } else if (target_abi == "-guest") {
-    output_filenames.guest = output_filename;
+    output_filenames.guest = std::move(output_filename);
   } else {
     std::cerr << "Unrecognized generator target ABI \"" << target_abi << "\"\n";
     return EXIT_FAILURE;

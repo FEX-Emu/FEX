@@ -57,10 +57,10 @@ private:
   const bool HostSupportsRPRES {};
   const bool HostSupportsAFP {};
 
-  ARMEmitter::BiDirectionalLabel* PendingTargetLabel;
-  FEXCore::Context::ContextImpl* CTX;
-  const FEXCore::IR::IRListView* IR;
-  uint64_t Entry;
+  ARMEmitter::BiDirectionalLabel* PendingTargetLabel {};
+  FEXCore::Context::ContextImpl* CTX {};
+  const FEXCore::IR::IRListView* IR {};
+  uint64_t Entry {};
   CPUBackend::CompiledCode CodeData {};
 
   fextl::map<IR::NodeID, ARMEmitter::BiDirectionalLabel> JumpTargets;
@@ -257,9 +257,9 @@ private:
 
   // This is purely a debugging aid for developers to see if they are in JIT code space when inspecting raw memory
   void EmitDetectionString();
-  IR::RegisterAllocationPass* RAPass;
-  const IR::RegisterAllocationData* RAData;
-  FEXCore::Core::DebugData* DebugData;
+  IR::RegisterAllocationPass* RAPass {};
+  const IR::RegisterAllocationData* RAData {};
+  FEXCore::Core::DebugData* DebugData {};
 
   void ResetStack();
   /**

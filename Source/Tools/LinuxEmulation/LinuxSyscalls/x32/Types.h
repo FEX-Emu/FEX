@@ -153,7 +153,7 @@ struct FEX_ANNOTATE("alias-x86_32-timespec") FEX_ANNOTATE("fex-match") timespec3
     return spec;
   }
 
-  timespec32(struct timespec spec) {
+  timespec32(const struct timespec& spec) {
     tv_sec = spec.tv_sec;
     tv_nsec = spec.tv_nsec;
   }
@@ -183,7 +183,7 @@ struct FEX_ANNOTATE("alias-x86_32-timeval") FEX_ANNOTATE("fex-match") timeval32 
     return spec;
   }
 
-  timeval32(struct timeval spec) {
+  timeval32(const struct timeval& spec) {
     tv_sec = spec.tv_sec;
     tv_usec = spec.tv_usec;
   }
@@ -213,7 +213,7 @@ struct FEX_ANNOTATE("alias-x86_32-itimerval") FEX_ANNOTATE("fex-match") itimerva
     return spec;
   }
 
-  itimerval32(struct itimerval spec)
+  itimerval32(const struct itimerval& spec)
     : it_interval {spec.it_interval}
     , it_value {spec.it_value} {}
 };
@@ -242,7 +242,7 @@ struct FEX_ANNOTATE("alias-x86_32-iovec") FEX_ANNOTATE("fex-match") iovec32 {
     return vec;
   }
 
-  iovec32(struct iovec vec) {
+  iovec32(const struct iovec& vec) {
     iov_base = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(vec.iov_base));
     iov_len = vec.iov_len;
   }
@@ -300,7 +300,7 @@ struct FEX_ANNOTATE("alias-x86_32-stack_t") FEX_ANNOTATE("fex-match") stack_t32 
     return ss;
   }
 
-  stack_t32(stack_t ss)
+  stack_t32(const stack_t& ss)
     : ss_sp {auto_compat_ptr {ss.ss_sp}} {
     ss_flags = ss.ss_flags;
     ss_size = ss.ss_size;
@@ -330,7 +330,7 @@ struct
 
   oldstat32() = delete;
 
-  oldstat32(struct stat host) {
+  oldstat32(const struct stat& host) {
 #define COPY(x) x = host.x
     const uint32_t MINORBITS = 20;
     const uint32_t MINORMASK = (1U << MINORBITS) - 1;
@@ -388,7 +388,7 @@ struct
 
   stat32() = delete;
 
-  stat32(struct stat host) {
+  stat32(const struct stat& host) {
 #define COPY(x) x = host.x
     COPY(st_dev);
     COPY(st_ino);
@@ -412,6 +412,7 @@ struct
     st_ctime_ = host.st_ctime;
     fex_st_ctime_nsec = host.st_ctim.tv_nsec;
 #undef COPY
+    __pad1 = __pad2 = __unused4 = __unused5 = 0;
   }
 };
 static_assert(std::is_trivial<stat32>::value, "Needs to be trivial");
@@ -446,7 +447,7 @@ struct
 
   stat64_32() = delete;
 
-  stat64_32(struct stat host) {
+  stat64_32(const struct stat& host) {
 #define COPY(x) x = host.x
     COPY(st_dev);
     COPY(st_ino);
@@ -475,7 +476,7 @@ struct
   }
 
 #ifndef stat64
-  stat64_32(struct stat64 host) {
+  stat64_32(const struct stat64& host) {
 #define COPY(x) x = host.x
     COPY(st_dev);
     COPY(st_ino);
@@ -523,7 +524,7 @@ struct FEX_PACKED FEX_ALIGNED(4) FEX_ANNOTATE("alias-x86_32-statfs64") FEX_ANNOT
 
   statfs64_32() = delete;
 
-  statfs64_32(struct statfs host) {
+  statfs64_32(const struct statfs& host) {
 #define COPY(x) x = host.x
     COPY(f_type);
     COPY(f_bsize);
@@ -541,7 +542,7 @@ struct FEX_PACKED FEX_ALIGNED(4) FEX_ANNOTATE("alias-x86_32-statfs64") FEX_ANNOT
   }
 
 #ifndef statfs64
-  statfs64_32(struct statfs64 host) {
+  statfs64_32(const struct statfs64& host) {
 #define COPY(x) x = host.x
     COPY(f_type);
     COPY(f_bsize);
@@ -578,7 +579,7 @@ struct FEX_ANNOTATE("alias-x86_32-statfs") FEX_ANNOTATE("fex-match") statfs32_32
 
   statfs32_32() = delete;
 
-  statfs32_32(struct statfs host) {
+  statfs32_32(const struct statfs& host) {
 #define COPY(x) x = host.x
     COPY(f_type);
     COPY(f_bsize);
@@ -626,7 +627,7 @@ struct FEX_ANNOTATE("alias-x86_32-flock") FEX_ANNOTATE("fex-match") flock_32 {
 
   flock_32() = delete;
 
-  flock_32(struct flock host) {
+  flock_32(const struct flock& host) {
     l_type = host.l_type;
     l_whence = host.l_whence;
     l_start = host.l_start;
@@ -660,7 +661,7 @@ struct FEX_ANNOTATE("fex-match") FEX_PACKED flock64_32 {
 
   flock64_32() = delete;
 
-  flock64_32(struct flock host) {
+  flock64_32(const struct flock& host) {
     l_type = host.l_type;
     l_whence = host.l_whence;
     l_start = host.l_start;
@@ -789,7 +790,7 @@ struct FEX_ANNOTATE("alias-x86_32-rusage") FEX_ANNOTATE("fex-match") rusage_32 {
   };
 
   rusage_32() = delete;
-  rusage_32(struct rusage usage)
+  rusage_32(const struct rusage& usage)
     : ru_utime {usage.ru_utime}
     , ru_stime {usage.ru_stime} {
     // These only truncate
@@ -852,7 +853,7 @@ struct FEX_PACKED FEX_ANNOTATE("fex-match") OldGuestSigAction_32 {
     return action;
   }
 
-  OldGuestSigAction_32(FEX::HLE::GuestSigAction action)
+  OldGuestSigAction_32(const FEX::HLE::GuestSigAction& action)
     : handler_32 {auto_compat_ptr {reinterpret_cast<void*>(action.sigaction_handler.handler)}}
     , restorer_32 {auto_compat_ptr {reinterpret_cast<void*>(action.restorer)}} {
     sa_flags = action.sa_flags;
@@ -885,7 +886,7 @@ struct FEX_PACKED FEX_ANNOTATE("fex-match") GuestSigAction_32 {
     return action;
   }
 
-  GuestSigAction_32(FEX::HLE::GuestSigAction action)
+  GuestSigAction_32(const FEX::HLE::GuestSigAction& action)
     : handler_32 {auto_compat_ptr {reinterpret_cast<void*>(action.sigaction_handler.handler)}}
     , restorer_32 {auto_compat_ptr {reinterpret_cast<void*>(action.restorer)}} {
     sa_flags = action.sa_flags;
@@ -911,7 +912,7 @@ struct FEX_ANNOTATE("alias-x86_32-tms") FEX_ANNOTATE("fex-match") compat_tms {
     val.tms_cstime = tms_cstime;
     return val;
   }
-  compat_tms(struct tms val) {
+  compat_tms(const struct tms& val) {
     tms_utime = val.tms_utime;
     tms_stime = val.tms_stime;
     tms_cutime = val.tms_cutime;
@@ -934,7 +935,7 @@ struct FEX_ANNOTATE("alias-x86_32-utimbuf") FEX_ANNOTATE("fex-match") old_utimbu
     return val;
   }
 
-  old_utimbuf32(struct utimbuf val) {
+  old_utimbuf32(const struct utimbuf& val) {
     actime = val.actime;
     modtime = val.modtime;
   }
@@ -955,7 +956,7 @@ struct FEX_ANNOTATE("alias-x86_32-itimerspec") FEX_ANNOTATE("fex-match") old_iti
     return val;
   }
 
-  old_itimerspec32(struct itimerspec val)
+  old_itimerspec32(const struct itimerspec& val)
     : it_interval {val.it_interval}
     , it_value {val.it_value} {}
 };
@@ -986,7 +987,7 @@ struct FEX_ANNOTATE("alias-x86_32-rlimit") FEX_ANNOTATE("fex-match") rlimit32 {
     return val;
   }
 
-  rlimit32(struct rlimit val) {
+  rlimit32(const struct rlimit& val) {
     constexpr uint32_t Limit = Signed ? 0x7FFF'FFFF : 0xFFFF'FFFF;
     if (val.rlim_cur > Limit) {
       rlim_cur = Limit;
@@ -1068,7 +1069,7 @@ struct FEX_ANNOTATE("alias-x86_32-timex") FEX_ANNOTATE("fex-match") timex32 {
     return val;
   }
 
-  timex32(struct timex val)
+  timex32(const struct timex& val)
     : time {val.time} {
     modes = val.modes;
     offset = val.offset;
@@ -1153,7 +1154,7 @@ struct FEX_ANNOTATE("fex-match") sigevent32 {
     return val;
   }
 
-  sigevent32(sigevent val)
+  sigevent32(const sigevent& val)
     : sigev_value {val.sigev_value} {
     sigev_signo = val.sigev_signo;
     sigev_notify = val.sigev_notify;
@@ -1187,7 +1188,7 @@ struct FEX_ANNOTATE("alias-x86_32-mq_attr") FEX_ANNOTATE("fex-match") mq_attr32 
     return val;
   }
 
-  mq_attr32(struct mq_attr val) {
+  mq_attr32(const struct mq_attr& val) {
     mq_flags = val.mq_flags;
     mq_maxmsg = val.mq_maxmsg;
     mq_msgsize = val.mq_msgsize;
@@ -1218,7 +1219,7 @@ struct FEX_PACKED FEX_ANNOTATE("alias-x86_32-epoll_event") FEX_ANNOTATE("fex-mat
     return event;
   }
 
-  epoll_event32(struct epoll_event event)
+  epoll_event32(const struct epoll_event& event)
     : data {auto_compat_ptr<void> {static_cast<uint32_t>(event.data.u64)}} {
     events = event.events;
   }
@@ -1249,7 +1250,7 @@ struct ipc_perm_32 {
     return perm;
   }
 
-  ipc_perm_32(struct ipc64_perm perm) {
+  ipc_perm_32(const struct ipc64_perm& perm) {
     key = perm.key;
     uid = perm.uid;
     gid = perm.gid;
@@ -1289,7 +1290,7 @@ struct ipc_perm_64 {
     return perm;
   }
 
-  ipc_perm_64(struct ipc64_perm perm) {
+  ipc_perm_64(const struct ipc64_perm& perm) {
     key = perm.key;
     uid = perm.uid;
     gid = perm.gid;
@@ -1297,6 +1298,7 @@ struct ipc_perm_64 {
     cgid = perm.cgid;
     mode = perm.mode;
     seq = perm.seq;
+    _pad1 = _pad2 = 0;
   }
 };
 
@@ -1332,7 +1334,7 @@ struct shmid_ds_32 {
     return buf;
   }
 
-  shmid_ds_32(struct shmid64_ds buf)
+  shmid_ds_32(const struct shmid64_ds& buf)
     : shm_perm {buf.shm_perm} {
     shm_segsz = buf.shm_segsz;
     shm_atime = buf.shm_atime;
@@ -1387,7 +1389,7 @@ struct shmid_ds_64 {
     return buf;
   }
 
-  shmid_ds_64(struct shmid64_ds buf)
+  shmid_ds_64(const struct shmid64_ds& buf)
     : shm_perm {buf.shm_perm} {
     shm_segsz = buf.shm_segsz;
     shm_atime = buf.shm_atime;
@@ -1399,6 +1401,7 @@ struct shmid_ds_64 {
     shm_cpid = buf.shm_cpid;
     shm_lpid = buf.shm_lpid;
     shm_nattch = buf.shm_nattch;
+    shm_unused4 = shm_unused5 = 0;
   }
 };
 
@@ -1431,11 +1434,12 @@ struct semid_ds_32 {
     return buf;
   }
 
-  semid_ds_32(struct semid64_ds buf)
+  semid_ds_32(const struct semid64_ds& buf)
     : sem_perm {buf.sem_perm} {
     sem_otime = buf.sem_otime;
     sem_ctime = buf.sem_ctime;
     sem_nsems = buf.sem_nsems;
+    sem_base = sem_pending = sem_pending_last = undo = _pad = 0;
   }
 };
 
@@ -1470,7 +1474,7 @@ struct semid_ds_64 {
     return buf;
   }
 
-  semid_ds_64(struct semid64_ds buf)
+  semid_ds_64(const struct semid64_ds& buf)
     : sem_perm {buf.sem_perm} {
     sem_otime = buf.sem_otime;
     sem_otime_high = buf.sem_otime >> 32;
@@ -1515,7 +1519,7 @@ struct msqid_ds_32 {
     return val;
   }
 
-  msqid_ds_32(struct msqid64_ds buf)
+  msqid_ds_32(const struct msqid64_ds& buf)
     : msg_perm {buf.msg_perm} {
     // msg_first and msg_last are unused and untouched
     msg_stime = buf.msg_stime;
@@ -1542,6 +1546,7 @@ struct msqid_ds_32 {
     msg_lqbytes = buf.msg_qbytes;
     msg_lspid = buf.msg_lspid;
     msg_lrpid = buf.msg_lrpid;
+    msg_first = msg_last = msg_qbytes = 0;
   }
 };
 static_assert(std::is_trivial<msqid_ds_32>::value, "Needs to be trivial");
@@ -1586,7 +1591,7 @@ struct msqid_ds_64 {
     return val;
   }
 
-  msqid_ds_64(struct msqid64_ds buf)
+  msqid_ds_64(const struct msqid64_ds& buf)
     : msg_perm {buf.msg_perm} {
     msg_stime = buf.msg_stime;
     msg_stime_high = buf.msg_stime >> 32;
@@ -1624,7 +1629,7 @@ struct FEX_ANNOTATE("fex-match") shminfo_32 {
     return si;
   }
 
-  shminfo_32(struct shminfo si) {
+  shminfo_32(const struct shminfo& si) {
     shmmax = si.shmmax;
     shmmin = si.shmmin;
     shmmni = si.shmmni;
@@ -1659,12 +1664,13 @@ struct FEX_ANNOTATE("alias-x86_32-shminfo64") FEX_ANNOTATE("fex-match") shminfo_
     return si;
   }
 
-  shminfo_64(struct shminfo si) {
+  shminfo_64(const struct shminfo& si) {
     shmmax = si.shmmax;
     shmmin = si.shmmin;
     shmmni = si.shmmni;
     shmseg = si.shmseg;
     shmall = si.shmall;
+    __unused1 = __unused2 = __unused3 = __unused4 = 0;
   }
 };
 
@@ -1681,7 +1687,7 @@ struct FEX_ANNOTATE("alias-x86_32-shm_info") FEX_ANNOTATE("fex-match") shm_info_
 
   shm_info_32() = delete;
 
-  shm_info_32(struct shm_info si) {
+  shm_info_32(const struct shm_info& si) {
     used_ids = si.used_ids;
     shm_tot = si.shm_tot;
     shm_rss = si.shm_rss;

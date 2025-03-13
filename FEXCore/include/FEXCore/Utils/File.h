@@ -197,7 +197,7 @@ private:
   bool ShouldClose {};
   bool IsValidHandle {};
 
-  FileHandleType Handle;
+  FileHandleType Handle {};
 #ifndef _WIN32
   static constexpr int DEFAULT_USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
 

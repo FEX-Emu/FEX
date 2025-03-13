@@ -701,7 +701,7 @@ GdbServer::HandledPacketType GdbServer::CommandReadRegisters(const fextl::string
 
   str += appendHex(reinterpret_cast<const char*>(&GDB.mxcsr), sizeof(uint32_t));
 
-  return {str, HandledPacketType::TYPE_ACK};
+  return {std::move(str), HandledPacketType::TYPE_ACK};
 }
 
 GdbServer::HandledPacketType GdbServer::CommandThreadOp(const fextl::string& packet) {

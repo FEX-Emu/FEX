@@ -17,22 +17,21 @@ static inline std::optional<fextl::string> GetSelfPath() {
 }
 
 static inline FEX::Config::PortableInformation ReadPortabilityInformation() {
-  const FEX::Config::PortableInformation BadResult {false, {}};
   const char* PortableConfig = getenv("FEX_PORTABLE");
   if (!PortableConfig) {
-    return BadResult;
+    return {false, {}};
   }
 
   uint32_t Value {};
   std::string_view PortableView {PortableConfig};
 
   if (std::from_chars(PortableView.data(), PortableView.data() + PortableView.size(), Value).ec != std::errc {} || Value == 0) {
-    return BadResult;
+    return {false, {}};
   }
 
   auto SelfPath = GetSelfPath();
   if (!SelfPath) {
-    return BadResult;
+    return {false, {}};
   }
 
   // Extract the absolute path from the FEXInterpreter path

@@ -5051,7 +5051,7 @@ private:
     const uint32_t element_size = SubRegSizeInBits(size);
 
     if (is_left_shift) {
-      LOGMAN_THROW_A_FMT(shift >= 0 && shift < element_size, "Invalid left shift value ({}). Must be within [0, {}]", shift, element_size - 1);
+      LOGMAN_THROW_A_FMT(shift < element_size, "Invalid left shift value ({}). Must be within [0, {}]", shift, element_size - 1);
     } else {
       LOGMAN_THROW_A_FMT(shift > 0 && shift <= element_size, "Invalid right shift value ({}). Must be within [1, {}]", shift, element_size);
     }

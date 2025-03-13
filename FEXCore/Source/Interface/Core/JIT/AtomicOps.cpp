@@ -291,7 +291,6 @@ DEF_OP(AtomicSwap) {
   const auto SubEmitSize = OpSize == IR::OpSize::i64Bit ? ARMEmitter::SubRegSize::i64Bit :
                            OpSize == IR::OpSize::i32Bit ? ARMEmitter::SubRegSize::i32Bit :
                            OpSize == IR::OpSize::i16Bit ? ARMEmitter::SubRegSize::i16Bit :
-                           OpSize == IR::OpSize::i8Bit  ? ARMEmitter::SubRegSize::i8Bit :
                                                           ARMEmitter::SubRegSize::i8Bit;
 
   if (CTX->HostFeatures.SupportsAtomics) {
