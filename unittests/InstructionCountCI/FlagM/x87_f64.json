@@ -6321,7 +6321,7 @@
         "mov x22, #0xffffffffffffffff",
         "mov w24, #0xffff",
         "fmov d2, x22",
-        "mov v2.d[1], x24",
+        "fmov v2.D[1], x24",
         "ldur q3, [x4, #28]",
         "and v3.16b, v3.16b, v2.16b",
         "mrs x0, nzcv",
