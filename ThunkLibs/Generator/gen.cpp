@@ -812,7 +812,11 @@ bool GenerateThunkLibsActionFactory::runInvocation(std::shared_ptr<clang::Compil
 
   GenerateThunkLibsAction Action(libname, output_filenames, abi);
 
+#if LLVM_VERSION_MAJOR >= 20
+  Compiler.createDiagnostics(Compiler.getVirtualFileSystem(), DiagConsumer, false);
+#else
   Compiler.createDiagnostics(DiagConsumer, false);
+#endif
   if (!Compiler.hasDiagnostics()) {
     return false;
   }
