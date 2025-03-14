@@ -52,7 +52,7 @@ namespace DRM {
     LRUCacheFDCache() {
       // Set the last element to our handler
       // This element will always be the last one
-      LRUCache[LRUSize] = std::make_pair(0, AddAndRunHandler);
+      LRUCache[LRUSize] = LRUObject {-1, AddAndRunHandler};
     }
 
     using HandlerType = uint32_t (*)(int fd, uint32_t cmd, uint32_t args);
@@ -67,16 +67,16 @@ namespace DRM {
       }
     }
 
-    HandlerType FindHandler(uint32_t FD) {
+    HandlerType FindHandler(int32_t FD) {
       HandlerType Handler {};
       for (size_t i = 0; i < LRUSize; ++i) {
         auto& it = LRUCache[i];
-        if (it.first == FD) {
+        if (it.FD == FD) {
           if (i == 0) {
             // If we are the first in the queue then just return it
-            return it.second;
+            return it.Handler;
           }
-          Handler = it.second;
+          Handler = it.Handler;
           break;
         }
       }
@@ -85,7 +85,7 @@ namespace DRM {
         AddToFront(FD, Handler);
         return Handler;
       }
-      return LRUCache[LRUSize].second;
+      return LRUCache[LRUSize].Handler;
     }
 
     uint32_t AddAndRunMapHandler(int fd, uint32_t cmd, uint32_t args) {
@@ -122,17 +122,22 @@ namespace DRM {
     }
 
   private:
-    void AddToFront(uint32_t FD, HandlerType Handler) {
+    void AddToFront(int32_t FD, HandlerType Handler) {
       // Push the element to the front if we found one
       // First copy all the other elements back one
       // Ensuring the final element isn't written over
       memmove(&LRUCache[1], &LRUCache[0], (LRUSize - 1) * sizeof(LRUCache[0]));
       // Now set the first element to the one we just found
-      LRUCache[0] = std::make_pair(FD, Handler);
+      LRUCache[0] = LRUObject {FD, Handler};
     }
+
+    struct LRUObject {
+      int32_t FD;
+      HandlerType Handler;
+    };
     // With four elements total (3 + 1) then this is a single cacheline in size
-    std::pair<uint32_t, HandlerType> LRUCache[LRUSize + 1];
-    fextl::map<uint32_t, HandlerType> FDToHandler;
+    LRUObject LRUCache[LRUSize + 1];
+    fextl::map<int32_t, HandlerType> FDToHandler;
   };
 
   static LRUCacheFDCache<3> FDToHandler;
