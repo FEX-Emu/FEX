@@ -45,7 +45,8 @@ set (SRCS
   src/math/fabsl.c
   src/math/frexpl.c
   src/math/ldexpl.c
-  src/math/log2l.c
+  # Disabled because it only operates at 64-bit precision in musl v1.2.5. Enable once fixed!
+  # src/math/log2l.c
   src/math/scalbnl.c
   src/math/sinl.c
   src/math/tanl.c
