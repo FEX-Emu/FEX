@@ -168,7 +168,7 @@
       ]
     },
     "vmaskmovps xmm0, xmm1, [rax]": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 18,
       "Comment": [
         "Map 2 0b01 0x2c 128-bit"
       ],
@@ -190,8 +190,7 @@
         "tbz w0, #31, #+0x8",
         "ld1 {v0.s}[3], [x1]",
         "mov v16.16b, v0.16b",
-        "movi v2.2d, #0x0",
-        "str q2, [x28, #16]"
+        "stp xzr, xzr, [x28, #16]"
       ]
     },
     "vmaskmovps ymm0, ymm1, [rax]": {
@@ -240,7 +239,7 @@
       ]
     },
     "vmaskmovpd xmm0, xmm1, [rax]": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Comment": [
         "Map 2 0b01 0x2d 128-bit"
       ],
@@ -254,8 +253,7 @@
         "tbz x0, #63, #+0x8",
         "ld1 {v0.d}[1], [x1]",
         "mov v16.16b, v0.16b",
-        "movi v2.2d, #0x0",
-        "str q2, [x28, #16]"
+        "stp xzr, xzr, [x28, #16]"
       ]
     },
     "vmaskmovpd ymm0, ymm1, [rax]": {
@@ -392,7 +390,7 @@
       ]
     },
     "vpmaskmovd xmm0, xmm1, [rax]": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 18,
       "Comment": [
         "Map 2 0b01 0x8c 128-bit"
       ],
@@ -414,8 +412,7 @@
         "tbz w0, #31, #+0x8",
         "ld1 {v0.s}[3], [x1]",
         "mov v16.16b, v0.16b",
-        "movi v2.2d, #0x0",
-        "str q2, [x28, #16]"
+        "stp xzr, xzr, [x28, #16]"
       ]
     },
     "vpmaskmovd ymm0, ymm1, [rax]": {
@@ -464,7 +461,7 @@
       ]
     },
     "vpmaskmovq xmm0, xmm1, [rax]": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "Comment": [
         "Map 2 0b01 0x8c 128-bit"
       ],
@@ -478,8 +475,7 @@
         "tbz x0, #63, #+0x8",
         "ld1 {v0.d}[1], [x1]",
         "mov v16.16b, v0.16b",
-        "movi v2.2d, #0x0",
-        "str q2, [x28, #16]"
+        "stp xzr, xzr, [x28, #16]"
       ]
     },
     "vpmaskmovq ymm0, ymm1, [rax]": {
