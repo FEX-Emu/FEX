@@ -25,8 +25,8 @@ public:
 
 private:
 
-  BitSet<uint64_t> NodeIsLive;
-  OrderedNode* EntryBlock;
+  BitSet<uint64_t> NodeIsLive {};
+  OrderedNode* EntryBlock {};
   fextl::unordered_map<IR::NodeID, BlockInfo> OffsetToBlockMap;
   size_t MaxNodes {};
 

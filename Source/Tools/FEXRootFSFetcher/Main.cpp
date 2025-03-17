@@ -423,7 +423,7 @@ DistroInfo GetDistroInfo() {
       std::getline(ss, Value, '=');
 
       if (Key == "ID") {
-        Info.DistroName = Value;
+        Info.DistroName = std::move(Value);
         ++FoundCount;
       } else if (Key == "VERSION_ID") {
         // Ubuntu provides VERSION_ID
@@ -1289,7 +1289,7 @@ int main(int argc, char** argv, char** const envp) {
         auto FolderName = filename.substr(0, filename.find_last_of('.'));
         if (ExtractHelper(RootFS, PathName, FolderName)) {
           // Remove the image file suffix since we extracted to that.
-          filename = FolderName;
+          filename = std::move(FolderName);
         }
       }
 

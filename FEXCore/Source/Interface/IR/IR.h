@@ -642,7 +642,9 @@ static inline OpSize operator/(IR::OpSize Size, T Divisor) {
 }
 
 static inline uint8_t NumElements(IR::OpSize RegisterSize, IR::OpSize ElementSize) {
-  LOGMAN_THROW_A_FMT(RegisterSize != IR::OpSize::iInvalid && ElementSize != IR::OpSize::iInvalid, "Invalid Size");
+  LOGMAN_THROW_A_FMT(RegisterSize != IR::OpSize::iInvalid && ElementSize != IR::OpSize::iInvalid && RegisterSize != IR::OpSize::iUnsized &&
+                       ElementSize != IR::OpSize::iUnsized,
+                     "Invalid Size");
   return IR::OpSizeToSize(RegisterSize) / IR::OpSizeToSize(ElementSize);
 }
 

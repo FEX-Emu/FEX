@@ -4650,8 +4650,7 @@ void OpDispatchBuilder::VPBLENDDOp(OpcodeArgs) {
     return;
   }
   if (Selector == 0xFF && Is256Bit) {
-    Ref Result = Is256Bit ? Src2 : _VMov(OpSize::i128Bit, Src2);
-    StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
+    StoreResult(FPRClass, Op, Src2, OpSize::iInvalid);
     return;
   }
   // The only bits we care about from the 8-bit immediate for 128-bit operations

@@ -249,7 +249,7 @@ private:
   };
 
   PhysicalRegister DecodeSRAReg(const IROp_Header* IROp, Ref Node) {
-    RegisterClassType Class;
+    RegisterClassType Class {};
     uint8_t Reg {};
 
     uint8_t FlagOffset = Classes[GPRFixedClass.Val].Count - 2;
@@ -559,7 +559,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
     // assumed by the forward pass. Do not reset it.
 
     // SourcesNextUses is read backwards, this tracks the index
-    unsigned SourceIndex = SourcesNextUses.size();
+    int64_t SourceIndex = SourcesNextUses.size();
 
     // Forward pass: Assign registers, spilling as we go.
     for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {

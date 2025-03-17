@@ -90,10 +90,10 @@ private:
   Utils::FixedSizePooledAllocation<FEXCore::X86Tables::DecodedInst*, 5000, 500> PoolObject;
   size_t DecodedSize {};
 
-  const uint8_t* InstStream;
+  const uint8_t* InstStream {};
 
   static constexpr size_t MAX_INST_SIZE = 15;
-  uint8_t InstructionSize;
+  uint8_t InstructionSize {};
   std::array<uint8_t, MAX_INST_SIZE> Instruction;
   FEXCore::X86Tables::DecodedInst* DecodeInst;
 

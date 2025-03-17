@@ -57,6 +57,7 @@ struct ipc_perm_64 {
     cgid = perm.cgid;
     mode = perm.mode;
     seq = perm.seq;
+    _pad1 = _pad2 = 0;
   }
 };
 
@@ -183,6 +184,7 @@ struct FEX_ANNOTATE("fex-match") FEX_PACKED guest_stat {
     st_ctime_ = val.st_ctime;
     fex_st_ctime_nsec = val.st_ctim.tv_nsec;
 #undef COPY
+    __pad0 = 0;
   }
 };
 

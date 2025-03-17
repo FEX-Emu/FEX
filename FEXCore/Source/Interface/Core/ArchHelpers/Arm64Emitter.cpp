@@ -284,17 +284,7 @@ namespace x32 {
   constexpr std::array<ARMEmitter::Register, 3> PreserveAll_Dynamic = {ARMEmitter::Reg::r16, ARMEmitter::Reg::r17, ARMEmitter::Reg::r30};
 
   // SRA FPRs that need to be spilled when calling a function with `preserve_all` ABI.
-  constexpr std::array<ARMEmitter::Register, 0> PreserveAll_SRAFPR = {
-    // None.
-  };
-
-  constexpr uint32_t PreserveAll_SRAFPRMask = {[]() -> uint32_t {
-    uint32_t Mask {};
-    for (auto Reg : PreserveAll_SRAFPR) {
-      Mask |= (1U << Reg.Idx());
-    }
-    return Mask;
-  }()};
+  constexpr uint32_t PreserveAll_SRAFPRMask = 0;
 
   // Dynamic FPRs
   // - v0-v7

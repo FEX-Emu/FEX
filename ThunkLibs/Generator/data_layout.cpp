@@ -126,7 +126,7 @@ ComputeDataLayout(const clang::ASTContext& context, const std::unordered_map<con
         }
       }
 
-      info.members.push_back(member_info);
+      info.members.push_back(std::move(member_info));
     }
   }
 
@@ -262,7 +262,7 @@ TypeCompatibility DataLayoutCompareAction::GetTypeCompatibility(const clang::AST
   auto type_name = get_type_name(context, type);
   // Look up the same type name in the guest map,
   // unless it's an integer (which is mapped to fixed-size uintX_t types)
-  auto guest_info = guest_abi.at(!type->isIntegerType() ? type_name : get_fixed_size_int_name(type, context));
+  auto guest_info = guest_abi.at(!type->isIntegerType() ? std::move(type_name) : get_fixed_size_int_name(type, context));
   auto& host_info = host_abi.at(type->isBuiltinType() ? type : context.getCanonicalType(type));
 
   const bool is_32bit = (guest_abi.pointer_size == 4);

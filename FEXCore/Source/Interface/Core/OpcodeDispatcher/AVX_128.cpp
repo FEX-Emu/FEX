@@ -1326,10 +1326,12 @@ void OpDispatchBuilder::AVX128_MOVMSK(OpcodeArgs) {
   };
 
   Ref GPR {};
-  if (SrcSize == OpSize::i128Bit && ElementSize == OpSize::i64Bit) {
-    GPR = Mask8Byte(Src.Low);
-  } else if (SrcSize == OpSize::i128Bit && ElementSize == OpSize::i32Bit) {
-    GPR = Mask4Byte(Src.Low);
+  if (Is128Bit) {
+    if (ElementSize == OpSize::i64Bit) {
+      GPR = Mask8Byte(Src.Low);
+    } else {
+      GPR = Mask4Byte(Src.Low);
+    }
   } else if (ElementSize == OpSize::i32Bit) {
     auto GPRLow = Mask4Byte(Src.Low);
     auto GPRHigh = Mask4Byte(Src.High);
