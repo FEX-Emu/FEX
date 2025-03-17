@@ -6430,7 +6430,7 @@
       ]
     },
     "fild dword [rax]": {
-      "ExpectedInstructionCount": 34,
+      "ExpectedInstructionCount": 33,
       "Comment": [
         "0xdf !11b /5"
       ],
@@ -6455,8 +6455,7 @@
         "csel x20, x22, x24, eq",
         "orr x20, x23, x20",
         "fmov d2, x25",
-        "fmov d3, x20",
-        "mov v2.d[1], v3.d[0]",
+        "fmov v2.D[1], x20",
         "msr nzcv, x21",
         "ldrb w20, [x28, #1019]",
         "mov w21, #0x1",
@@ -11069,7 +11068,7 @@
         "mov x22, #0xffffffffffffffff",
         "mov w24, #0xffff",
         "fmov d2, x22",
-        "mov v2.d[1], x24",
+        "fmov v2.D[1], x24",
         "ldur q3, [x4, #28]",
         "and v3.16b, v3.16b, v2.16b",
         "add x0, x28, x21, lsl #4",
@@ -15733,7 +15732,7 @@
       ]
     },
     "fild word [rax]": {
-      "ExpectedInstructionCount": 34,
+      "ExpectedInstructionCount": 33,
       "Comment": [
         "0xdf !11b /0"
       ],
@@ -15758,8 +15757,7 @@
         "csel x20, x22, x24, eq",
         "orr x20, x23, x20",
         "fmov d2, x25",
-        "fmov d3, x20",
-        "mov v2.d[1], v3.d[0]",
+        "fmov v2.D[1], x20",
         "msr nzcv, x21",
         "ldrb w20, [x28, #1019]",
         "mov w21, #0x1",

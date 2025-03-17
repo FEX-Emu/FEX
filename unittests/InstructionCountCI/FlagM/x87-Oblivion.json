@@ -55094,7 +55094,7 @@
     },
     "Block5": {
       "x86InstructionCount": 368,
-      "ExpectedInstructionCount": 270,
+      "ExpectedInstructionCount": 268,
       "x86Insts": [
         "mov ebx,dword [eax + 0x68]",
         "fld dword [esi + 0x2c]",
@@ -55552,8 +55552,7 @@
         "csel x20, x22, x12, eq",
         "orr x20, x24, x20",
         "fmov d2, x13",
-        "fmov d3, x20",
-        "mov v2.d[1], v3.d[0]",
+        "fmov v2.D[1], x20",
         "msr nzcv, x21",
         "str w4, [x8, #64]",
         "mov w20, #0xddd8",
@@ -55659,8 +55658,7 @@
         "csel x20, x22, x24, eq",
         "orr x20, x23, x20",
         "fmov d2, x25",
-        "fmov d4, x20",
-        "mov v2.d[1], v4.d[0]",
+        "fmov v2.D[1], x20",
         "msr nzcv, x21",
         "mrs x0, nzcv",
         "str w0, [x28, #1000]",

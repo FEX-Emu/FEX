@@ -124,8 +124,7 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
   auto zeroed_exponent = _Select(COND_EQ, absolute, zero, zero, adjusted_exponent);
   auto upper = _Or(OpSize::i64Bit, sign, zeroed_exponent);
 
-  Ref ConvertedData = _VCastFromGPR(OpSize::i64Bit, OpSize::i64Bit, shifted);
-  ConvertedData = _VInsElement(OpSize::i128Bit, OpSize::i64Bit, 1, 0, ConvertedData, _VCastFromGPR(OpSize::i128Bit, OpSize::i64Bit, upper));
+  Ref ConvertedData = _VLoadTwoGPRs(shifted, upper);
   _PushStack(ConvertedData, Data, ReadWidth, false);
 }
 
@@ -550,8 +549,7 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
 
   auto low = _Constant(~0ULL);
   auto high = _Constant(0xFFFF);
-  Ref Mask = _VCastFromGPR(OpSize::i128Bit, OpSize::i64Bit, low);
-  Mask = _VInsGPR(OpSize::i128Bit, OpSize::i64Bit, 1, Mask, high);
+  Ref Mask = _VLoadTwoGPRs(low, high);
   const auto StoreSize = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
   for (int i = 0; i < 7; ++i) {
     Ref Reg = _LoadMem(FPRClass, OpSize::i128Bit, Mem, _Constant((IR::OpSizeToSize(Size) * 7) + (10 * i)), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
