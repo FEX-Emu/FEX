@@ -753,7 +753,6 @@ public:
   void FLDF64_Const(OpcodeArgs, uint64_t Num);
   void FLDF64(OpcodeArgs, IR::OpSize Width);
   void FMULF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpResult ResInST0);
-  void FSTF64(OpcodeArgs, IR::OpSize Width);
   void FSUBF64(OpcodeArgs, IR::OpSize Width, bool Integer, bool Reverse, OpResult ResInST0);
   void FTSTF64(OpcodeArgs);
   void X87FLDCWF64(OpcodeArgs);
