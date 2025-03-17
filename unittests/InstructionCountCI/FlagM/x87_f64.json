@@ -4162,7 +4162,7 @@
       ]
     },
     "fstp tword [rax]": {
-      "ExpectedInstructionCount": 40,
+      "ExpectedInstructionCount": 41,
       "Comment": [
         "0xdb !11b /7"
       ],
@@ -4198,7 +4198,8 @@
         "mov v2.16b, v0.16b",
         "str d2, [x4]",
         "mov x21, v2.d[1]",
-        "strh w21, [x4, #8]",
+        "add x22, x4, #0x8 (8)",
+        "strh w21, [x22]",
         "ldrb w21, [x28, #1298]",
         "mov w22, #0x1",
         "lsl w22, w22, w20",
