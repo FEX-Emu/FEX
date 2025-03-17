@@ -129,23 +129,36 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FST(OpcodeArgs, IR::OpSize Width) {
-  // Ref Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-  //  FIXME: Is TSO relevant for x87?
-  AddressMode A = DecodeAddress(Op, Op->Dest, MemoryAccessType::DEFAULT, false);
+  const auto SourceSize = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
 
-  // Index scale is a power of 2?
-  LOGMAN_THROW_A_FMT(A.IndexScale > 0 && (A.IndexScale & (A.IndexScale - 1)) == 0, "Invalid index scale");
+  // If this is a 32bit guest with something besides a base address we
+  // need to calculate the effective address directly,
+  // due to wraparound behaviour and 32bit semantics of the addressing mode.
+  // Otherwise we can use the normal memory access.
+  if (!CTX->Config.Is64BitMode) {
+    Ref Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
+    _StoreStackMem(SourceSize, Width, Mem, _Constant(0), /*Float=*/true);
+  } else {
+    AddressMode A = DecodeAddress(Op, Op->Dest, MemoryAccessType::DEFAULT, false);
 
-  Ref Addr = A.Base ? A.Base : _Constant(0);
-  if (A.Index) {
-    Ref ScaledIndex = A.Index;
-    if (A.IndexScale > 1) {
-      ScaledIndex = _Lshl(A.AddrSize, ScaledIndex, _Constant(std::log2(A.IndexScale)));
+    // Index scale is a power of 2?
+    LOGMAN_THROW_A_FMT(A.IndexScale > 0 && (A.IndexScale & (A.IndexScale - 1)) == 0, "Invalid index scale");
+
+    Ref Addr = A.Base;
+    if (A.Index) {
+      Ref ScaledIndex = A.Index;
+      if (A.IndexScale > 1) {
+        ScaledIndex = _Lshl(A.AddrSize, ScaledIndex, _Constant(std::log2(A.IndexScale)));
+      }
+      Addr = Addr ? _Add(A.AddrSize, Addr, ScaledIndex) : ScaledIndex;
     }
-    Addr = _Add(A.AddrSize, Addr, ScaledIndex);
+    if (!Addr) {
+      Addr = _Constant(0);
+    }
+
+    _StoreStackMem(SourceSize, Width, Addr, _Constant(A.Offset), /*Float=*/true);
   }
 
-  _StoreStackMem(OpSize::i128Bit, Width, Addr, _Constant(A.Offset), /*Float=*/true);
   if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
     _PopStackDestroy();
   }
