@@ -561,8 +561,8 @@
       "ExpectedArm64ASM": [
         "and x20, x6, #0xf",
         "lsr w20, w4, w20",
-        "ubfx x20, x20, #0, #1",
-        "cmp wzr, w20"
+        "rmif x20, #63, #nzCv",
+        "cfinv"
       ]
     },
     "bt [rax], bx": {
@@ -582,8 +582,8 @@
       "Comment": "0x0f 0xa3",
       "ExpectedArm64ASM": [
         "lsr w20, w4, w6",
-        "ubfx x20, x20, #0, #1",
-        "cmp wzr, w20"
+        "rmif x20, #63, #nzCv",
+        "cfinv"
       ]
     },
     "bt [rax], ebx": {
@@ -603,8 +603,8 @@
       "Comment": "0x0f 0xa3",
       "ExpectedArm64ASM": [
         "lsr x20, x4, x6",
-        "ubfx x20, x20, #0, #1",
-        "cmp wzr, w20"
+        "rmif x20, #63, #nzCv",
+        "cfinv"
       ]
     },
     "bt [rax], rbx": {
@@ -855,12 +855,12 @@
       "ExpectedArm64ASM": [
         "and x20, x6, #0xf",
         "lsr w21, w4, w20",
-        "ubfx x21, x21, #0, #1",
-        "cmp wzr, w21",
+        "rmif x21, #63, #nzCv",
         "mov w21, #0x1",
         "lsl w20, w21, w20",
         "orr w20, w4, w20",
-        "bfxil x4, x20, #0, #16"
+        "bfxil x4, x20, #0, #16",
+        "cfinv"
       ]
     },
     "bts [rax], bx": {
@@ -884,11 +884,11 @@
       "Comment": "0x0f 0xab",
       "ExpectedArm64ASM": [
         "lsr w20, w4, w6",
-        "ubfx x20, x20, #0, #1",
-        "cmp wzr, w20",
+        "rmif x20, #63, #nzCv",
         "mov w20, #0x1",
         "lsl w20, w20, w6",
-        "orr w4, w4, w20"
+        "orr w4, w4, w20",
+        "cfinv"
       ]
     },
     "bts [rax], ebx": {
@@ -912,11 +912,11 @@
       "Comment": "0x0f 0xab",
       "ExpectedArm64ASM": [
         "lsr x20, x4, x6",
-        "ubfx x20, x20, #0, #1",
-        "cmp wzr, w20",
+        "rmif x20, #63, #nzCv",
         "mov w20, #0x1",
         "lsl x20, x20, x6",
-        "orr x4, x4, x20"
+        "orr x4, x4, x20",
+        "cfinv"
       ]
     },
     "bts [rax], rbx": {
@@ -1178,12 +1178,12 @@
       "ExpectedArm64ASM": [
         "and x20, x6, #0xf",
         "lsr w21, w4, w20",
-        "ubfx x21, x21, #0, #1",
-        "cmp wzr, w21",
+        "rmif x21, #63, #nzCv",
         "mov w21, #0x1",
         "lsl w20, w21, w20",
         "bic w20, w4, w20",
-        "bfxil x4, x20, #0, #16"
+        "bfxil x4, x20, #0, #16",
+        "cfinv"
       ]
     },
     "btr [rax], bx": {
@@ -1207,11 +1207,11 @@
       "Comment": "0x0f 0xb3",
       "ExpectedArm64ASM": [
         "lsr w20, w4, w6",
-        "ubfx x20, x20, #0, #1",
-        "cmp wzr, w20",
+        "rmif x20, #63, #nzCv",
         "mov w20, #0x1",
         "lsl w20, w20, w6",
-        "bic w4, w4, w20"
+        "bic w4, w4, w20",
+        "cfinv"
       ]
     },
     "btr [rax], ebx": {
@@ -1235,11 +1235,11 @@
       "Comment": "0x0f 0xb3",
       "ExpectedArm64ASM": [
         "lsr x20, x4, x6",
-        "ubfx x20, x20, #0, #1",
-        "cmp wzr, w20",
+        "rmif x20, #63, #nzCv",
         "mov w20, #0x1",
         "lsl x20, x20, x6",
-        "bic x4, x4, x20"
+        "bic x4, x4, x20",
+        "cfinv"
       ]
     },
     "btr [rax], rbx": {

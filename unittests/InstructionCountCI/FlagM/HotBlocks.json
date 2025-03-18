@@ -292,7 +292,7 @@
     },
     "bytemark huffman 1": {
       "x86InstructionCount": 18,
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 23,
       "x86Insts": [
         "mov    r9,rdx",
         "mov    r8,rcx",
@@ -322,12 +322,11 @@
         "mov w15, w10",
         "and w15, w15, #0x7",
         "lsr w20, w14, w15",
-        "ubfx x20, x20, #0, #1",
-        "cmp wzr, w20",
+        "rmif x20, #63, #nzCv",
         "add x12, x12, x12, lsl #2",
         "add x20, x6, #0x10 (16)",
         "add x12, x20, x12, lsl #2",
-        "csel x12, x13, x12, hs",
+        "csel x12, x13, x12, lo",
         "ldr w20, [x12]",
         "sxtw x12, w20",
         "add x10, x10, #0x1 (1)",
