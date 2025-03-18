@@ -2400,7 +2400,10 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
     unsigned LshrSize = std::max<uint8_t>(IR::OpSizeToSize(OpSize::i32Bit), Size / 8);
     auto BitSelect = (Size == (LshrSize * 8)) ? Src : _And(OpSize::i64Bit, Src, _Constant(Mask));
 
-    // OF/SF/ZF/AF/PF undefined.
+    // OF/SF/AF/PF undefined. ZF must be preserved. We choose to preserve OF/SF
+    // too since we just use an rmif to insert into CF directly. We could
+    // optimize perhaps.
+    //
     // Set CF before the action to save a move, except for complements where we
     // can reuse the invert.
     if (Action != BTAction::BTComplement) {
@@ -2408,7 +2411,8 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
         Value = _Lshr(IR::SizeToOpSize(LshrSize), Value, BitSelect);
       }
 
-      SetCFDirect_InvalidateNZV(Value, ConstantShift, Value);
+      SetRFLAG(Value, X86State::RFLAG_CF_RAW_LOC, ConstantShift, true);
+      CFInverted = false;
     }
 
     switch (Action) {
@@ -2441,7 +2445,9 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
         Value = Dest;
       }
 
-      SetCFInverted_InvalidateNZV(Value, ConstantShift, true);
+      SetRFLAG(Value, X86State::RFLAG_CF_RAW_LOC, ConstantShift, true);
+      CFInverted = true;
+
       StoreResult(GPRClass, Op, Dest, OpSize::iInvalid);
       break;
     }
