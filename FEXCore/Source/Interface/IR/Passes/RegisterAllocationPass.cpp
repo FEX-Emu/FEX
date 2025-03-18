@@ -659,6 +659,180 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
     }
 
     LOGMAN_THROW_A_FMT(SourceIndex == 0, "Consistent source count in block");
+
+    // Delete coalesced copies
+    for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
+      if (auto Node = DecodeSRANode(IROp, CodeNode); Node != nullptr) {
+        auto Reg = DecodeSRAReg(IROp, Node);
+        auto Phys = SSAToReg[IR->GetID(Node).Value];
+        if (Phys.Reg == Reg.Reg && Phys.Class == Reg.Class) {
+          IREmit->Remove(CodeNode);
+        }
+      }
+    }
+
+    // Post-RA peephole optimization. First, copyprop StoreRegister within a
+    // block to try to make StoreRegister's pointless.
+
+    // Map from registers to propagated values.
+    struct Remapping {
+      Ref Reg;
+      bool Zext;
+    } Map[18];
+
+    struct Remapping NullMap = {
+      .Reg = nullptr,
+      .Zext = false,
+    };
+
+    memset(Map, 0, sizeof(Map));
+
+    for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
+      if (auto Node = DecodeSRANode(IROp, CodeNode); Node != nullptr) {
+        auto Reg = DecodeSRAReg(IROp, Node);
+        if (IROp->Op == OP_STOREREGISTER) {
+          // Stop propagating anything writing here
+          for (unsigned i = 0; i < 18; ++i) {
+            if (Map[i].Reg && SSAToReg[IR->GetID(Map[i].Reg).Value] == Reg) {
+              Map[i] = NullMap;
+            }
+          }
+
+          if (Reg.Class == GPRFixedClass) {
+            Map[Reg.Reg].Reg = Node;
+            Map[Reg.Reg].Zext = false;
+            continue;
+          }
+        }
+      }
+
+      // Remap sources
+      for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
+        if (!IsValidArg(IROp->Args[s])) {
+          continue;
+        }
+
+        auto Reg = SSAToReg[IR->GetID(IR->GetNode(IROp->Args[s])).Value];
+        if (Reg.Class == GPRFixedClass) {
+          auto Repl = Map[Reg.Reg];
+          if (Repl.Reg && (!Repl.Zext || IROp->Size == OpSize::i32Bit || IROp->Op == OP_STOREAF || IROp->Op == OP_STOREPF || IROp->Op == OP_AND)) {
+            IREmit->ReplaceNodeArgument(CodeNode, s, Repl.Reg);
+
+            // Rewrite 64-bit AND to 32-bit AND to fold in a zero-extension. This optimizes code like bytemark's:
+            //
+            //   mov ecx, eax
+            //   and cl, 0x7
+            //
+            // This relies on the algebraic identity:
+            //
+            //    a & zext(b) = zext(a & b)
+            //
+            // Proof:
+            //    zext(x) = x & 0xffffffff
+            //    a & zext(b) = a & (b & 0xfffffffff)
+            //                = (a & b) & 0xffffffff = zext(a & b)
+            if (IROp->Op == OP_AND && Repl.Zext) {
+              IROp->Size = OpSize::i32Bit;
+            }
+          }
+        }
+      }
+
+      // Once the source reg is overwritten, stop propagating
+      if (GetHasDest(IROp->Op)) {
+        auto Phys = SSAToReg[IR->GetID(CodeNode).Value];
+        for (unsigned i = 0; i < 18; ++i) {
+          if (Map[i].Reg && SSAToReg[IR->GetID(Map[i].Reg).Value] == Phys) {
+            Map[i] = NullMap;
+          }
+        }
+
+        if (Phys.Class == GPRFixedClass) {
+          Map[Phys.Reg] = NullMap;
+
+          if (IROp->Op == OP_BFE) {
+            const IROp_Bfe* Bfe = IROp->C<IR::IROp_Bfe>();
+            if (Bfe->lsb == 0 && Bfe->Width == 32) {
+              Map[Phys.Reg].Reg = IR->GetNode(IROp->Args[0]);
+              Map[Phys.Reg].Zext = true;
+            }
+          }
+        }
+      }
+    }
+
+
+    // Post-RA dead code elimination. This is required to get any benefit from
+    // the above copyprop.
+    uint32_t Dead = 0;
+
+    {
+      // Reverse iteration is not yet working with the iterators
+      auto BlockIROp = BlockHeader->CW<IR::IROp_CodeBlock>();
+
+      // We grab these nodes this way so we can iterate easily
+      auto CodeBegin = IR->at(BlockIROp->Begin);
+      auto CodeLast = IR->at(BlockIROp->Last);
+
+      while (1) {
+        auto [CodeNode, IROp] = CodeLast();
+        // End of iteration gunk
+
+        // Static register spills read everything.
+        if (IR::SpillsStaticRegs(IROp->Op)) {
+          Dead = 0;
+        }
+
+        // Delete dead instructions
+        if (auto Node = DecodeSRANode(IROp, CodeNode); Node != nullptr) {
+          auto Reg = DecodeSRAReg(IROp, Node);
+          if (Reg.Class == GPRFixedClass) {
+            if (IROp->Op == OP_STOREREGISTER) {
+              if (Dead & (1u << Reg.Reg)) {
+                IREmit->Remove(CodeNode);
+                goto NextInstruction;
+              }
+
+              // Kill destination
+              Dead |= (1u << Reg.Reg);
+            }
+          }
+        }
+
+        if (GetHasDest(IROp->Op)) {
+          auto Phys = SSAToReg[IR->GetID(CodeNode).Value];
+          if (Phys.Class == GPRFixedClass) {
+            // Kill dead instructions without side effects
+            if (!IR::HasSideEffects(IROp->Op) && (Dead & (1u << Phys.Reg))) {
+              IREmit->Remove(CodeNode);
+              goto NextInstruction;
+            }
+
+            // Kill destinations
+            Dead |= (1u << Phys.Reg);
+          }
+        }
+
+        // Make sources live
+        for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
+          if (!IsValidArg(IROp->Args[s])) {
+            continue;
+          }
+
+          auto Reg = SSAToReg[IR->GetID(IR->GetNode(IROp->Args[s])).Value];
+          if (Reg.Class == GPRFixedClass) {
+            Dead &= ~(1u << Reg.Reg);
+          }
+        }
+
+NextInstruction:
+        // Rest is iteration gunk
+        if (CodeLast == CodeBegin) {
+          break;
+        }
+        --CodeLast;
+      }
+    }
   }
 
   /* Now that we're done growing things, we can finalize our results.
