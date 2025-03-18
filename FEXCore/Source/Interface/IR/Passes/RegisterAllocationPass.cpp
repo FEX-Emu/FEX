@@ -656,12 +656,8 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
 
       LOGMAN_THROW_A_FMT(IP >= 1, "IP relative to end of block, iterating forward");
       --IP;
-    }
 
-    LOGMAN_THROW_A_FMT(SourceIndex == 0, "Consistent source count in block");
-
-    // Delete coalesced copies
-    for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
+      // Delete coalesced copies
       if (auto Node = DecodeSRANode(IROp, CodeNode); Node != nullptr) {
         auto Reg = DecodeSRAReg(IROp, Node);
         auto Phys = SSAToReg[IR->GetID(Node).Value];
@@ -670,6 +666,8 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         }
       }
     }
+
+    LOGMAN_THROW_A_FMT(SourceIndex == 0, "Consistent source count in block");
 
     // Post-RA peephole optimization. First, copyprop StoreRegister within a
     // block to try to make StoreRegister's pointless.
