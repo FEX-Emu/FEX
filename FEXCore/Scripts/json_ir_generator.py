@@ -57,6 +57,7 @@ class OpDefinition:
     LoweredX87: bool
     JITDispatch: bool
     JITDispatchOverride: str
+    SpillsStaticRegs: bool
     TiedSource: int
     Arguments: list
     EmitValidation: list
@@ -81,6 +82,7 @@ class OpDefinition:
         self.LoweredX87 = False
         self.JITDispatch = True
         self.JITDispatchOverride = None
+        self.SpillsStaticRegs = False
         self.TiedSource = -1
         self.Arguments = []
         self.EmitValidation = []
@@ -262,8 +264,15 @@ def parse_ops(ops):
             if "DynamicDispatch" in op_val:
                 OpDef.DynamicDispatch = bool(op_val["DynamicDispatch"])
 
+            if "SpillsStaticRegs" in op_val:
+                OpDef.SpillsStaticRegs = bool(op_val["SpillsStaticRegs"])
+
             if "JITDispatch" in op_val:
                 OpDef.JITDispatch = bool(op_val["JITDispatch"])
+
+                # !JITDispatch implies SpillsStaticRegs
+                assert("SpillsStaticRegs" not in op_val)
+                OpDef.SpillsStaticRegs = True
 
             if "JITDispatchOverride" in op_val:
                 OpDef.JITDispatchOverride = op_val["JITDispatchOverride"]
@@ -274,6 +283,10 @@ def parse_ops(ops):
                 # X87 implies !JITDispatch
                 assert("JITDispatch" not in op_val)
                 OpDef.JITDispatch = False
+
+                # X87 implies SpillsStaticRegs
+                assert("SpillsStaticRegs" not in op_val)
+                OpDef.SpillsStaticRegs = True
 
             if "TiedSource" in op_val:
                 OpDef.TiedSource = op_val["TiedSource"]
@@ -406,6 +419,7 @@ def print_ir_sizes():
     [[nodiscard, gnu::const, gnu::visibility("default")]] bool ImplicitFlagClobber(IROps Op);
     [[nodiscard, gnu::const, gnu::visibility("default")]] bool GetHasDest(IROps Op);
     [[nodiscard, gnu::const, gnu::visibility("default")]] bool LoweredX87(IROps Op);
+    [[nodiscard, gnu::const, gnu::visibility("default")]] bool SpillsStaticRegs(IROps Op);
     [[nodiscard, gnu::const, gnu::visibility("default")]] int8_t TiedSource(IROps Op);
 
     #undef IROP_SIZES
@@ -504,6 +518,7 @@ def print_ir_hassideeffects():
         ("HasSideEffects", "bool"),
         ("ImplicitFlagClobber", "bool"),
         ("LoweredX87", "bool"),
+        ("SpillsStaticRegs", "bool"),
         ("TiedSource", "int8_t"),
     ]:
         output_file.write(

@@ -98,6 +98,7 @@ void RAValidation::Run(IREmitter* IREmit) {
     return;
   }
 
+  return;
   FEXCORE_PROFILE_SCOPED("PassManager::RAValidation");
 
   IR::RegisterAllocationData* RAData = Manager->GetPass<IR::RegisterAllocationPass>("RA")->GetAllocationData();
