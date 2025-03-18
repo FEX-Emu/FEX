@@ -6,8 +6,8 @@
 #include "Interface/IR/PassManager.h"
 #include "FEXCore/IR/IR.h"
 #include "FEXCore/Utils/Profiler.h"
+#include "FEXCore/Utils/MathUtils.h"
 #include "FEXCore/Core/HostFeatures.h"
-#include "Interface/Core/ArchHelpers/Arm64Emitter.h"
 
 #include <array>
 #include <cstddef>
@@ -21,7 +21,7 @@
 // and apply the operations in a block of code. Once the block finishes, we emit the necessary operations
 // that we recorded onto the virtual stack. This allows us to save a lot of code movement
 // to and from stack registers, top management and valid flags. It also allows us to
-// perform memcpy optimizations like the one performed in STORESTACKMEMORY.
+// perform memcpy optimizations like the one performed in STORESTACKMEM.
 //
 // By default we run on the fast path - i.e. we assume all values are in the stack and we have a complete
 // stack overview. However, if we encounter a value that's not in the virtual stack - maybe it was added
@@ -162,6 +162,99 @@ private:
   // Helpers
   Ref RotateRight8(uint32_t V, Ref Amount);
 
+  void F80SplitStore_Helper(const IROp_StoreStackMem* Op, Ref StackNode) {
+    Ref AddrNode = IR->GetNode(Op->Addr);
+    Ref Offset = IR->GetNode(Op->Offset);
+    OpSize Align = Op->Align;
+    MemOffsetType OffsetType = Op->OffsetType;
+    uint8_t OffsetScale = Op->OffsetScale;
+
+    const uint32_t Log2 = FEXCore::ilog2(OffsetScale);
+
+    IREmit->_StoreMem(FPRClass, OpSize::i64Bit, StackNode, AddrNode, Offset, Align, OffsetType, OffsetScale);
+    auto Upper = IREmit->_VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, StackNode, 1);
+    if (Op->Offset.IsInvalid()) {
+      LOGMAN_THROW_A_FMT(OffsetScale == 1, "Unexpected offset scale {}", OffsetScale);
+      AddrNode = IREmit->_Add(OpSize::i64Bit, AddrNode, GetConstant(8));
+    } else {
+      uint64_t Const = 0;
+      [[maybe_unused]] bool IsConst = IsInlineConstant(Op->Offset, &Const);
+      LOGMAN_THROW_A_FMT(IsConst, "Expected inline constant as offset");
+      Ref OffsetConstant = GetConstant(Const);
+      if (Log2 != 0) {
+        AddrNode = IREmit->_AddShift(OpSize::i64Bit, AddrNode, OffsetConstant, ShiftType::LSL, Log2);
+      } else {
+        AddrNode = IREmit->_Add(OpSize::i64Bit, AddrNode, OffsetConstant);
+      }
+      AddrNode = IREmit->_Add(OpSize::i64Bit, AddrNode, GetConstant(8));
+    }
+    IREmit->_StoreMem(GPRClass, OpSize::i16Bit, Upper, AddrNode, IREmit->Invalid(), OpSize::i64Bit, MEM_OFFSET_SXTX, 1);
+  }
+
+  void StoreStackMem_Helper(const IROp_StoreStackMem* Op, Ref StackNode) {
+    Ref AddrNode = IR->GetNode(Op->Addr);
+    Ref Offset = IR->GetNode(Op->Offset);
+    OpSize Align = Op->Align;
+    MemOffsetType OffsetType = Op->OffsetType;
+    uint8_t OffsetScale = Op->OffsetScale;
+
+    // Normal Precision Mode
+    switch (Op->StoreSize) {
+    case OpSize::i32Bit:
+    case OpSize::i64Bit: {
+      StackNode = IREmit->_F80CVT(Op->StoreSize, StackNode);
+      IREmit->_StoreMem(FPRClass, Op->StoreSize, StackNode, AddrNode, Offset, Align, OffsetType, OffsetScale);
+      break;
+    }
+
+    case OpSize::f80Bit: {
+      if (Features.SupportsSVE128 || Features.SupportsSVE256) {
+        if (!Op->Offset.IsInvalid() && !IsZero(Offset)) {
+          uint64_t Const = 0;
+          [[maybe_unused]] bool IsConst = IsInlineConstant(Op->Offset, &Const);
+          LOGMAN_THROW_A_FMT(IsConst, "Expected inline constant");
+          AddrNode = IREmit->_AddShift(OpSize::i64Bit, AddrNode, GetConstant(Const), ShiftType::LSL, FEXCore::ilog2(OffsetScale));
+        }
+        IREmit->_StoreMemX87SVEOptPredicate(OpSize::i128Bit, OpSize::i16Bit, StackNode, AddrNode);
+      } else { // 80bit requires split-store
+        F80SplitStore_Helper(Op, StackNode);
+      }
+      break;
+    }
+    default: ERROR_AND_DIE_FMT("Unsupported x87 size");
+    }
+  }
+
+  // Performs a store to memory from a value the stack passed in as StackNode.
+  // This is the version dealing with the reduced precision case.
+  void StoreStackMem_Reduced_Helper(const IROp_StoreStackMem* Op, Ref StackNode) {
+    Ref AddrNode = IR->GetNode(Op->Addr);
+    Ref Offset = IR->GetNode(Op->Offset);
+    OpSize Align = Op->Align;
+    MemOffsetType OffsetType = Op->OffsetType;
+    uint8_t OffsetScale = Op->OffsetScale;
+
+    switch (Op->StoreSize) {
+    case OpSize::i32Bit: {
+      StackNode = IREmit->_Float_FToF(OpSize::i32Bit, OpSize::i64Bit, StackNode);
+      [[fallthrough]];
+    }
+    case OpSize::i64Bit: {
+      IREmit->_StoreMem(FPRClass, Op->StoreSize, StackNode, AddrNode, Offset, Align, OffsetType, OffsetScale);
+      break;
+    }
+
+    // 80bit requires split-store
+    case OpSize::f80Bit: {
+      StackNode = IREmit->_F80CVTTo(StackNode, OpSize::i64Bit);
+      F80SplitStore_Helper(Op, StackNode);
+      break;
+    }
+    default: ERROR_AND_DIE_FMT("Unsupported x87 size");
+    }
+  }
+
+
   // Helper to check if a Ref is a Zero constant
   bool IsZero(Ref Node) {
     auto Header = IR->GetOp<IR::IROp_Header>(Node);
@@ -173,6 +266,21 @@ private:
     return Const->Constant == 0;
   }
 
+  // FIXME: copy from JITClass.h - dedup!
+  [[nodiscard]]
+  bool IsInlineConstant(const IR::OrderedNodeWrapper& WNode, uint64_t* Value = nullptr) const {
+    auto OpHeader = IR->GetOp<IR::IROp_Header>(WNode);
+
+    if (OpHeader->Op == IR::IROps::OP_INLINECONSTANT) {
+      auto Op = OpHeader->C<IR::IROp_InlineConstant>();
+      if (Value) {
+        *Value = Op->Constant;
+      }
+      return true;
+    } else {
+      return false;
+    }
+  }
 
   // Handles a Unary operation.
   // Takes the op we are handling, the Node for the reduced precision case and the node for the normal case.
@@ -801,6 +909,9 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         Ref StackNode = SlowPath ? LoadStackValueAtOffset_Slow() : Value->StackDataNode;
         Ref AddrNode = CurrentIR.GetNode(Op->Addr);
         Ref Offset = CurrentIR.GetNode(Op->Offset);
+        OpSize Align = Op->Align;
+        MemOffsetType OffsetType = Op->OffsetType;
+        uint8_t OffsetScale = Op->OffsetScale;
 
         // On the fast path we can optimize memory copies.
         // If we are doing:
@@ -812,51 +923,17 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         // or similar. As long as the source size and dest size are one and the same.
         // This will avoid any conversions between source and stack element size and conversion back.
         if (!SlowPath && Value->Source && Value->Source->first == Op->StoreSize && Value->InterpretAsFloat) {
-          IREmit->_StoreMem(Value->InterpretAsFloat ? FPRClass : GPRClass, Op->StoreSize, Value->Source->second, AddrNode, Offset,
-                            OpSize::iInvalid, MEM_OFFSET_SXTX, 1);
-        } else {
-          if (ReducedPrecisionMode) {
-            switch (Op->StoreSize) {
-            case OpSize::i32Bit:
-            case OpSize::i64Bit: {
-              if (Op->StoreSize == OpSize::i32Bit) {
-                StackNode = IREmit->_Float_FToF(OpSize::i32Bit, OpSize::i64Bit, StackNode);
-              }
-              IREmit->_StoreMem(FPRClass, Op->StoreSize, StackNode, AddrNode, Offset, OpSize::iInvalid, MEM_OFFSET_SXTX, 1);
-              break;
-            }
-            case OpSize::f80Bit: {
-              StackNode = IREmit->_F80CVTTo(StackNode, OpSize::i64Bit);
-              IREmit->_StoreMem(FPRClass, OpSize::i64Bit, StackNode, AddrNode, Offset, OpSize::iInvalid, MEM_OFFSET_SXTX, 1);
-              auto Upper = IREmit->_VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, StackNode, 1);
-              auto NewOffset = IREmit->_Add(OpSize::i64Bit, Offset, GetConstant(8));
-              IREmit->_StoreMem(GPRClass, OpSize::i16Bit, Upper, AddrNode, NewOffset, OpSize::i64Bit, MEM_OFFSET_SXTX, 1);
-              break;
-            }
-            default: ERROR_AND_DIE_FMT("Unsupported x87 size");
-            }
-          } else {                                 // !ReducedPrecisionMode
-            if (Op->StoreSize != OpSize::f80Bit) { // if it's not 80bits then convert
-              StackNode = IREmit->_F80CVT(Op->StoreSize, StackNode);
-            }
-            if (Op->StoreSize == OpSize::f80Bit) {
-              if (Features.SupportsSVE128 || Features.SupportsSVE256) {
-                if (!IsZero(Offset)) {
-                  AddrNode = IREmit->_Add(OpSize::i64Bit, AddrNode, Offset);
-                }
-                IREmit->_StoreMemX87SVEOptPredicate(OpSize::i128Bit, OpSize::i16Bit, StackNode, AddrNode);
-              } else {
-                // For X87 extended doubles, split before storing
-                IREmit->_StoreMem(FPRClass, OpSize::i64Bit, StackNode, AddrNode, Offset, OpSize::iInvalid, MEM_OFFSET_SXTX, 1);
-                auto Upper = IREmit->_VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, StackNode, 1);
-                auto NewOffset = IREmit->_Add(OpSize::i64Bit, Offset, GetConstant(8));
-                IREmit->_StoreMem(GPRClass, OpSize::i16Bit, Upper, AddrNode, NewOffset, OpSize::i64Bit, MEM_OFFSET_SXTX, 1);
-              }
-            } else {
-              IREmit->_StoreMem(FPRClass, Op->StoreSize, StackNode, AddrNode, Offset, OpSize::iInvalid, MEM_OFFSET_SXTX, 1);
-            }
-          }
+          IREmit->_StoreMem(Value->InterpretAsFloat ? FPRClass : GPRClass, Op->StoreSize, Value->Source->second, AddrNode, Offset, Align,
+                            OffsetType, OffsetScale);
+          break;
         }
+
+        if (ReducedPrecisionMode) {
+          StoreStackMem_Reduced_Helper(Op, StackNode);
+          break;
+        }
+
+        StoreStackMem_Helper(Op, StackNode);
         break;
       }
 
