@@ -350,6 +350,7 @@ private:
     using ContainerType = fextl::map<MRID, MappedResource>;
 
     FEXCore::IR::AOTIRCacheEntry* AOTIRCacheEntry;
+    // Pointer to lowest memory range this file is mapped to
     VMAEntry* FirstVMA;
     uint64_t Length; // 0 if not fixed size
     ContainerType::iterator Iterator;
@@ -377,7 +378,7 @@ private:
   struct VMAEntry {
     MappedResource* Resource;
 
-    // these are for Intrusive linked list tracking, starting from Resource->FirstVMA
+    // these are for intrusive linked list tracking, starting from Resource->FirstVMA and ordered by address
     VMAEntry* ResourcePrevVMA;
     VMAEntry* ResourceNextVMA;
 

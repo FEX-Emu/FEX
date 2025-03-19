@@ -146,14 +146,25 @@ void SyscallHandler::VMATracking::SetUnsafe(FEXCore::Context::Context* CTX, Mapp
                                             uintptr_t Offset, uintptr_t Length, VMAFlags Flags, VMAProt Prot) {
   ClearUnsafe(CTX, Base, Length, MappedResource);
 
-  auto [Iter, Inserted] = VMAs.emplace(
-    Base, VMAEntry {MappedResource, nullptr, MappedResource ? MappedResource->FirstVMA : nullptr, Base, Offset, Length, Flags, Prot});
+  auto PrevResVMA = MappedResource ? MappedResource->FirstVMA : nullptr;
+  auto NextResVMA = PrevResVMA ? PrevResVMA->ResourceNextVMA : nullptr;
+  if (PrevResVMA && PrevResVMA->Base > Base) {
+    NextResVMA = std::exchange(PrevResVMA, nullptr);
+  }
+  while (NextResVMA && NextResVMA->Base < Base) {
+    PrevResVMA = NextResVMA;
+    NextResVMA = PrevResVMA->ResourceNextVMA;
+  }
+
+  auto [Iter, Inserted] = VMAs.emplace(Base, VMAEntry {MappedResource, PrevResVMA, NextResVMA, Base, Offset, Length, Flags, Prot});
 
   LOGMAN_THROW_A_FMT(Inserted == true, "VMA Tracking corruption");
 
-  if (MappedResource) {
+  if (MappedResource && !PrevResVMA) {
     // Insert to the front of the linked list
     ListPrepend(MappedResource, &Iter->second);
+  } else if (MappedResource) {
+    ListInsertAfter(PrevResVMA, &Iter->second);
   }
 }
 
