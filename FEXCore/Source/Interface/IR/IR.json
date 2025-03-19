@@ -208,6 +208,7 @@
       },
 
       "ThreadRemoveCodeEntry": {
+        "SpillsStaticRegs": true,
         "HasSideEffects": true
       },
 
@@ -218,6 +219,7 @@
                  "uint32_t Res = (node << 12) | cpu;",
                  "This means it has a limitation of 4096 CPU cores. Which is fine and matches x86 behaviour"
                 ],
+        "SpillsStaticRegs": true,
         "DestSize": "OpSize::i64Bit"
       },
       "GPR = GetRoundingMode": {
@@ -243,6 +245,7 @@
         "HasSideEffects": true
       },
       "Print SSA:$Value": {
+        "SpillsStaticRegs": true,
         "HasSideEffects": true,
         "Desc": ["Debug operation that prints an SSA value to the console",
                  "May only print 64bits of the value"]
@@ -303,9 +306,11 @@
         "HasSideEffects": true
       },
       "CallbackReturn": {
+        "SpillsStaticRegs": true,
         "HasSideEffects": true
       },
       "GPR = Syscall GPR:$SyscallID, GPR:$Arg0, GPR:$Arg1, GPR:$Arg2, GPR:$Arg3, GPR:$Arg4, GPR:$Arg5, SyscallFlags:$Flags": {
+        "SpillsStaticRegs": true,
         "HasSideEffects": true,
         "Desc": ["Dispatches a guest syscall through to the SyscallHandler class"
                 ],
@@ -313,6 +318,7 @@
       },
 
       "GPR = InlineSyscall GPR:$Arg0, GPR:$Arg1, GPR:$Arg2, GPR:$Arg3, GPR:$Arg4, GPR:$Arg5, i32:$HostSyscallNumber, SyscallFlags:$Flags": {
+        "SpillsStaticRegs": true,
         "HasSideEffects": true,
         "Desc": ["Dispatches a guest syscall directly to the host syscall interface,",
                  "bypassing the SyscallHandler class used by Syscall.",
@@ -325,17 +331,20 @@
       },
 
       "Thunk GPR:$ArgPtr, SHA256Sum:$ThunkNameHash": {
+        "SpillsStaticRegs": true,
         "HasSideEffects": true
       },
 
       "GPR:$EAX, GPR:$EBX, GPR:$ECX, GPR:$EDX = CPUID GPR:$Function, GPR:$Leaf": {
         "Desc": ["Calls in to the CPUID handler function to return emulated CPUID"],
         "DestSize": "OpSize::i32Bit",
+        "SpillsStaticRegs": true,
         "HasSideEffects": true
       },
       "GPR:$EAX, GPR:$EDX = XGetBV GPR:$Function": {
         "Desc": ["Calls in to the XCR handler function to return emulated XCR"],
         "DestSize": "OpSize::i32Bit",
+        "SpillsStaticRegs": true,
         "HasSideEffects": true
       }
     },
