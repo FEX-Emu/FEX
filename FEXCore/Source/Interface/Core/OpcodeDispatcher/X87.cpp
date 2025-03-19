@@ -9,6 +9,7 @@ $end_info$
 #include "Interface/Core/OpcodeDispatcher.h"
 #include "Interface/Core/X86Tables/X86Tables.h"
 #include "Interface/IR/IR.h"
+#include "Interface/Core/Addressing.h"
 
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/X86Enums.h>
@@ -132,7 +133,7 @@ void OpDispatchBuilder::FST(OpcodeArgs, IR::OpSize Width) {
   const auto SourceSize = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
   AddressMode A = DecodeAddress(Op, Op->Dest, MemoryAccessType::DEFAULT, false);
 
-  A = SelectAddressMode(A, false, false, Width);
+  A = SelectAddressMode(this, A, CTX->GetGPROpSize(), CTX->HostFeatures.SupportsTSOImm9, false, false, Width);
   _StoreStackMem(SourceSize, Width, A.Base, A.Index, OpSize::iInvalid, A.IndexType, A.IndexScale, /*Float=*/true);
 
   if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {

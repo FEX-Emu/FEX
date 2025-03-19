@@ -8,6 +8,7 @@
 #include "FEXCore/Utils/Profiler.h"
 #include "FEXCore/Utils/MathUtils.h"
 #include "FEXCore/Core/HostFeatures.h"
+#include "Interface/Core/Addressing.h"
 
 #include <array>
 #include <cstddef>
@@ -148,8 +149,9 @@ private:
 
 class X87StackOptimization final : public Pass {
 public:
-  X87StackOptimization(const FEXCore::HostFeatures& Features)
-    : Features(Features) {
+  X87StackOptimization(const FEXCore::HostFeatures& Features, OpSize GPROpSize)
+    : Features(Features)
+    , GPROpSize(GPROpSize) {
     FEX_CONFIG_OPT(ReducedPrecision, X87REDUCEDPRECISION);
     ReducedPrecisionMode = ReducedPrecision;
   }
@@ -157,6 +159,7 @@ public:
 
 private:
   const FEXCore::HostFeatures& Features;
+  const OpSize GPROpSize;
   bool ReducedPrecisionMode;
 
   // Helpers
@@ -169,26 +172,18 @@ private:
     MemOffsetType OffsetType = Op->OffsetType;
     uint8_t OffsetScale = Op->OffsetScale;
 
-    const uint32_t Log2 = FEXCore::ilog2(OffsetScale);
-
     IREmit->_StoreMem(FPRClass, OpSize::i64Bit, StackNode, AddrNode, Offset, Align, OffsetType, OffsetScale);
     auto Upper = IREmit->_VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, StackNode, 1);
-    if (Op->Offset.IsInvalid()) {
-      LOGMAN_THROW_A_FMT(OffsetScale == 1, "Unexpected offset scale {}", OffsetScale);
-      AddrNode = IREmit->_Add(OpSize::i64Bit, AddrNode, GetConstant(8));
-    } else {
-      uint64_t Const = 0;
-      [[maybe_unused]] bool IsConst = IsInlineConstant(Op->Offset, &Const);
-      LOGMAN_THROW_A_FMT(IsConst, "Expected inline constant as offset");
-      Ref OffsetConstant = GetConstant(Const);
-      if (Log2 != 0) {
-        AddrNode = IREmit->_AddShift(OpSize::i64Bit, AddrNode, OffsetConstant, ShiftType::LSL, Log2);
-      } else {
-        AddrNode = IREmit->_Add(OpSize::i64Bit, AddrNode, OffsetConstant);
-      }
-      AddrNode = IREmit->_Add(OpSize::i64Bit, AddrNode, GetConstant(8));
-    }
-    IREmit->_StoreMem(GPRClass, OpSize::i16Bit, Upper, AddrNode, IREmit->Invalid(), OpSize::i64Bit, MEM_OFFSET_SXTX, 1);
+
+    // Store the Upper part of the register (the remaining 2 bytes) into memory.
+    AddressMode A {.Base = AddrNode,
+                   .Index = Op->Offset.IsInvalid() ? nullptr : Offset,
+                   .IndexType = MEM_OFFSET_SXTX,
+                   .IndexScale = OffsetScale,
+                   .Offset = 8,
+                   .AddrSize = OpSize::i64Bit};
+    A = SelectAddressMode(IREmit, A, GPROpSize, Features.SupportsTSOImm9, false, false, OpSize::i16Bit);
+    IREmit->_StoreMem(GPRClass, OpSize::i16Bit, Upper, A.Base, A.Index, OpSize::i64Bit, MEM_OFFSET_SXTX, A.IndexScale);
   }
 
   void StoreStackMem_Helper(const IROp_StoreStackMem* Op, Ref StackNode) {
@@ -209,12 +204,12 @@ private:
 
     case OpSize::f80Bit: {
       if (Features.SupportsSVE128 || Features.SupportsSVE256) {
-        if (!Op->Offset.IsInvalid() && !IsZero(Offset)) {
-          uint64_t Const = 0;
-          [[maybe_unused]] bool IsConst = IsInlineConstant(Op->Offset, &Const);
-          LOGMAN_THROW_A_FMT(IsConst, "Expected inline constant");
-          AddrNode = IREmit->_AddShift(OpSize::i64Bit, AddrNode, GetConstant(Const), ShiftType::LSL, FEXCore::ilog2(OffsetScale));
-        }
+        AddressMode A {.Base = AddrNode,
+                       .Index = Op->Offset.IsInvalid() ? nullptr : Offset,
+                       .IndexType = MEM_OFFSET_SXTX,
+                       .IndexScale = OffsetScale,
+                       .AddrSize = OpSize::i64Bit};
+        AddrNode = LoadEffectiveAddress(IREmit, A, GPROpSize, false);
         IREmit->_StoreMemX87SVEOptPredicate(OpSize::i128Bit, OpSize::i16Bit, StackNode, AddrNode);
       } else { // 80bit requires split-store
         F80SplitStore_Helper(Op, StackNode);
@@ -264,22 +259,6 @@ private:
 
     auto Const = Header->C<IROp_Constant>();
     return Const->Constant == 0;
-  }
-
-  // FIXME: copy from JITClass.h - dedup!
-  [[nodiscard]]
-  bool IsInlineConstant(const IR::OrderedNodeWrapper& WNode, uint64_t* Value = nullptr) const {
-    auto OpHeader = IR->GetOp<IR::IROp_Header>(WNode);
-
-    if (OpHeader->Op == IR::IROps::OP_INLINECONSTANT) {
-      auto Op = OpHeader->C<IR::IROp_InlineConstant>();
-      if (Value) {
-        *Value = Op->Constant;
-      }
-      return true;
-    } else {
-      return false;
-    }
   }
 
   // Handles a Unary operation.
@@ -1123,7 +1102,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
   return;
 }
 
-fextl::unique_ptr<Pass> CreateX87StackOptimizationPass(const FEXCore::HostFeatures& Features) {
-  return fextl::make_unique<X87StackOptimization>(Features);
+fextl::unique_ptr<Pass> CreateX87StackOptimizationPass(const FEXCore::HostFeatures& Features, OpSize GPROpSize) {
+  return fextl::make_unique<X87StackOptimization>(Features, GPROpSize);
 }
 } // namespace FEXCore::IR

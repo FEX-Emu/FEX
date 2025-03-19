@@ -3,6 +3,7 @@
 
 #include "Interface/Core/Frontend.h"
 #include "Interface/Core/X86Tables/X86Tables.h"
+#include "Interface/Core/Addressing.h"
 #include "Interface/Context/Context.h"
 #include "Interface/IR/IR.h"
 #include "Interface/IR/IREmitter.h"
@@ -70,19 +71,6 @@ struct LoadSourceOptions {
   // or 56 bits depending on the operating mode).
   // If true, no zero-extension occurs.
   bool AllowUpperGarbage = false;
-};
-
-struct AddressMode {
-  Ref Segment {nullptr};
-  Ref Base {nullptr};
-  Ref Index {nullptr};
-  MemOffsetType IndexType = MEM_OFFSET_SXTX;
-  uint8_t IndexScale = 1;
-  int64_t Offset = 0;
-
-  // Size in bytes for the address calculation. 8 for an arm64 hardware mode.
-  IR::OpSize AddrSize;
-  bool NonTSO;
 };
 
 class OpDispatchBuilder final : public IREmitter {
@@ -1491,9 +1479,6 @@ private:
 
   Ref GetRelocatedPC(const FEXCore::X86Tables::DecodedOp& Op, int64_t Offset = 0);
 
-  Ref LoadEffectiveAddress(AddressMode A, bool AddSegmentBase, bool AllowUpperGarbage = false);
-  AddressMode SelectAddressMode(AddressMode A, bool AtomicTSO, bool Vector, IR::OpSize AccessSize);
-
   bool IsOperandMem(const X86Tables::DecodedOperand& Operand, bool Load) {
     // Literals are immediates as sources but memory addresses as destinations.
     return !(Load && Operand.IsLiteral()) && !Operand.IsGPR();
@@ -2407,7 +2392,7 @@ private:
 
   Ref _LoadMemAutoTSO(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, AddressMode A, IR::OpSize Align = IR::OpSize::i8Bit) {
     bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
-    A = SelectAddressMode(A, AtomicTSO, Class != GPRClass, Size);
+    A = SelectAddressMode(this, A, CTX->GetGPROpSize(), CTX->HostFeatures.SupportsTSOImm9, AtomicTSO, Class != GPRClass, Size);
 
     if (AtomicTSO) {
       return _LoadMemTSO(Class, Size, A.Base, A.Index, Align, A.IndexType, A.IndexScale);
@@ -2427,7 +2412,7 @@ private:
       A.Offset = 0;
     }
 
-    Out.Base = LoadEffectiveAddress(A, true, false);
+    Out.Base = LoadEffectiveAddress(this, A, CTX->GetGPROpSize(), true, false);
     return Out;
   }
 
@@ -2458,7 +2443,7 @@ private:
 
   Ref _StoreMemAutoTSO(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, AddressMode A, Ref Value, IR::OpSize Align = IR::OpSize::i8Bit) {
     bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
-    A = SelectAddressMode(A, AtomicTSO, Class != GPRClass, Size);
+    A = SelectAddressMode(this, A, CTX->GetGPROpSize(), CTX->HostFeatures.SupportsTSOImm9, AtomicTSO, Class != GPRClass, Size);
 
     if (AtomicTSO) {
       return _StoreMemTSO(Class, Size, Value, A.Base, A.Index, Align, A.IndexType, A.IndexScale);
