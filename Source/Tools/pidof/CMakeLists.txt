@@ -1,7 +1,4 @@
 add_executable(FEXpidof pidof.cpp)
-target_include_directories(FEXpidof
-  PRIVATE
-  ${PROJECT_SOURCE_DIR}/Source/Common/cpp-optparse/)
 
 target_link_libraries(FEXpidof
   PRIVATE
