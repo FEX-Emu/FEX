@@ -3,12 +3,19 @@ import clang.cindex
 from clang.cindex import CursorKind
 from clang.cindex import TypeKind
 from clang.cindex import TranslationUnit
+import json
+import re
 import sys
+import tempfile
+import os
 from dataclasses import dataclass, field
 import subprocess
 import logging
 logger = logging.getLogger()
 logger.setLevel(logging.WARNING)
+
+HeaderFile = None
+HeaderFileTemp = False
 
 @dataclass
 class TypeDefinition:
@@ -119,6 +126,191 @@ class ArchDB:
         self.FieldDecls = []
 
 @dataclass
+class DecorationsDefinition:
+    Has64BitDecoration: bool
+    Has32BitDecoration: bool
+    Decorations: list
+    Decorations32Bit: list
+
+    def __init__(self, Has64BitDecoration, Has32BitDecoration, Decorations, Decorations32Bit):
+        self.Has64BitDecoration = Has64BitDecoration
+        self.Has32BitDecoration = Has32BitDecoration
+        self.Decorations = Decorations
+        self.Decorations32Bit = Decorations32Bit
+
+@dataclass
+class DecorationEnabled:
+    TotalEnable: bool
+    Has64BitEnabled: bool
+    Has32BitEnabled: bool
+    def __init__(self, TotalEnable, Has64BitEnabled, Has32BitEnabled):
+        self.TotalEnable = TotalEnable
+        self.Has64BitEnabled = Has64BitEnabled
+        self.Has32BitEnabled = Has32BitEnabled
+        if not self.TotalEnable:
+            self.Has64BitEnabled = False
+            self.Has32BitEnabled = False
+
+@dataclass
+class ArgumentDecorationsDefinition:
+    Type: str
+    Decorations: list
+
+    def __init__(self, Type, Decorations):
+        self.Type = Type
+        self.Decorations = Decorations
+
+@dataclass
+class FunctionArgumentDefinitions:
+    @dataclass
+    class FunctionArgumentDefinitionData:
+        Type: str
+        Decorations: DecorationsDefinition
+        def __init__(self, Type, Decorations):
+            self.Type = Type
+            self.Decorations = Decorations
+
+    ArgumentData : dict
+
+    def __init__(self):
+        self.ArgumentData = {}
+
+@dataclass
+class JSONDefinitionDB:
+    # Regex operations
+    FunctionAllowList: list
+    FunctionDisallowList: list
+
+    StructAllowList: list
+    StructDisallowList: list
+
+    Headers: str
+
+    # Function decorations
+    FunctionDefaultNamespace: str
+    FunctionComments: dict
+    FunctionDecorations: dict
+    FunctionArgumentDefinitions: dict
+    FunctionNamespace: dict
+    FunctionEnabled: dict
+
+    # Type decorations
+    TypeDefaultNamespace: str
+    TypeComments: dict
+    TypeDecorations: dict
+    TypeNamespace: dict
+    TypeEnabled: dict
+
+    AllNamespaces: dict
+
+    def __init__(self, FunctionAllowList, FunctionDisallowList, StructAllowList, StructDisallowList):
+        self.FunctionAllowList = FunctionAllowList
+        self.FunctionDisallowList = FunctionDisallowList
+        self.StructAllowList = StructAllowList
+        self.StructDisallowList = StructDisallowList
+
+        self.Headers = ""
+
+        # Functions
+        self.FunctionDefaultNamespace = None
+        self.FunctionComments = {}
+        self.FunctionDecorations = {}
+        self.FunctionArgumentDefinitions = {}
+        self.FunctionNamespace = {}
+        self.FunctionEnabled = {}
+
+        # Types
+        self.TypeDefaultNamespace = None
+        self.TypeComments = {}
+        self.TypeDecorations = {}
+        self.TypeNamespace = {}
+        self.TypeEnabled = {}
+
+        self.AllNamespaces = {}
+
+    # If any regex matches the disallow list then it isn't allowed through.
+    # If any regex matches the allow list, then it gets through.
+    # If it matches neither then it isn't allowed through.
+    def IsAllowedFunction(self, FunctionName):
+        for DisallowFunc in self.FunctionDisallowList:
+            if re.search(DisallowFunc, FunctionName) != None:
+                return False
+
+        for AllowFunc in self.FunctionAllowList:
+            if re.search(AllowFunc, FunctionName) != None:
+                return True
+
+        return False
+
+    def IsAllowedStruct(self, StructName):
+        for DisallowStruct in self.StructDisallowList:
+            if re.search(DisallowStruct, StructName) != None:
+                return False
+
+        for AllowStruct in self.StructAllowList:
+            if re.search(AllowStruct, StructName) != None:
+                return True
+
+        return False
+
+    def FindFunctionComment(self, FunctionName):
+        if FunctionName in self.FunctionComments:
+            return self.FunctionComments[FunctionName]
+
+        return None
+
+    def FindFunctionEnabled(self, FunctionName):
+        if FunctionName in self.FunctionEnabled:
+            return self.FunctionEnabled[FunctionName]
+
+        # Not found defaults to enabled
+        return DecorationEnabled(True, True, True)
+
+    def FindFunctionDecoration(self, FunctionName):
+        if FunctionName in self.FunctionDecorations:
+            return self.FunctionDecorations[FunctionName]
+
+        return None
+
+    def FindFunctionArgumentDefinitions(self, FunctionName):
+        if FunctionName in self.FunctionArgumentDefinitions:
+            return self.FunctionArgumentDefinitions[FunctionName]
+
+        return None
+
+    def FindFunctionNamespace(self, FunctionName):
+        if FunctionName in self.FunctionNamespace:
+            return self.FunctionNamespace[FunctionName]
+
+        return self.FunctionDefaultNamespace
+
+
+    def FindTypeComment(self, TypeName):
+        if TypeName in self.TypeComments:
+            return self.TypeComments[TypeName]
+
+        return None
+
+    def FindTypeEnabled(self, TypeName):
+        if TypeName in self.TypeEnabled:
+            return self.TypeEnabled[TypeName]
+
+        # Not found defaults to enabled
+        return DecorationEnabled(True, True, True)
+
+    def FindTypeDecoration(self, TypeName):
+        if TypeName in self.TypeDecorations:
+            return self.TypeDecorations[TypeName]
+
+        return None
+
+    def FindTypeNamespace(self, TypeName):
+        if TypeName in self.TypeNamespace:
+            return self.TypeNamespace[TypeName]
+
+        return self.TypeDefaultNamespace
+
+@dataclass
 class FunctionDecl:
     Name: str
     Ret: str
@@ -130,13 +322,22 @@ class FunctionDecl:
         self.Params = []
 
 FunctionDecls = []
+StructDecls = []
 
+JSONDefinition = None
+
+ListOfDisallowedFunctions = {}
+ListOfDisallowedStructs = {}
 def HandleFunctionDeclCursor(Arch, Cursor):
+    global ListOfDisallowedFunctions
     if (Cursor.is_definition()):
         return Arch
 
     #logging.critical ("Unhandled FunctionDeclCursor {0}-{1}-{2}-{3}".format(Cursor.kind, Cursor.type.spelling, Cursor.spelling,
     #    Cursor.result_type.spelling))
+    if not JSONDefinition.IsAllowedFunction(Cursor.spelling):
+        ListOfDisallowedFunctions[Cursor.spelling] = True
+        return Arch
 
     Function = FunctionDecl(Cursor.spelling, Cursor.result_type.spelling)
 
@@ -166,9 +367,237 @@ def HandleFunctionDeclCursor(Arch, Cursor):
     FunctionDecls.append(Function)
     return Arch
 
+def PrintComment(Comment):
+    if Comment == None or len(Comment) == 0:
+        return
+
+    for Line in Comment:
+        print(Line)
+
+def PrintFunctionDecl(Decl):
+    logging.critical(Decl.Name)
+
+    Namespace = JSONDefinition.FindFunctionNamespace(Decl.Name)
+    Comments = JSONDefinition.FindFunctionComment(Decl.Name)
+    Enabled = JSONDefinition.FindFunctionEnabled(Decl.Name)
+    Decorations = JSONDefinition.FindFunctionDecoration(Decl.Name)
+    ArgumentDecorations = JSONDefinition.FindFunctionArgumentDefinitions(Decl.Name)
+
+    Has32BitDecoration = False
+    Has64BitDecoration = False
+    Decorations64Bit = ""
+    Decorations32Bit = ""
+    if Decorations != None:
+        logging.critical(Decorations)
+        if Decorations.Has32BitDecoration:
+            Has32BitDecoration = True
+            if len(Decorations.Decorations32Bit):
+                Decorations32Bit = " : {}".format(", ".join(Decorations.Decorations32Bit))
+
+        if Decorations.Has64BitDecoration:
+            Has64BitDecoration = True
+            if len(Decorations.Decorations):
+                Decorations64Bit = " : {}".format(", ".join(Decorations.Decorations))
+
+        if len(Decorations.Decorations):
+            Decorations64Bit = " : {}".format(", ".join(Decorations.Decorations))
+
+    if Has32BitDecoration:
+        print("#ifdef IS_32BIT_THUNK")
+        PrintComment(Comments)
+        FrontLineComment = ""
+        if not Enabled.Has32BitEnabled:
+            FrontLineComment = "//"
+            print("// TODO: Disabled by order of the JSON.")
+
+        print("{}template<>\n{}struct fex_gen_config<{}>{} {{}};".format(FrontLineComment, FrontLineComment, Decl.Name, Decorations32Bit))
+        if not Has64BitDecoration:
+            print("#else")
+            print("template<>\nstruct fex_gen_config<{}> {{}};".format(Decl.Name))
+        print("#endif")
+
+    if Has64BitDecoration:
+        print("#ifndef IS_32BIT_THUNK")
+        PrintComment(Comments)
+
+        FrontLineComment = ""
+        if not Enabled.Has64BitEnabled:
+            FrontLineComment = "//"
+            print("// TODO: Disabled by order of the JSON.")
+
+        print("{}template<>\n{}struct fex_gen_config<{}>{} {{}};".format(FrontLineComment, FrontLineComment, Decl.Name, Decorations64Bit))
+        if not Has32BitDecoration:
+            print("#else")
+            print("template<>\nstruct fex_gen_config<{}> {{}};".format(Decl.Name))
+        print("#endif")
+
+    if not (Has32BitDecoration or Has64BitDecoration):
+        PrintComment(Comments)
+        FrontLineComment = ""
+        if not Enabled.TotalEnable:
+            FrontLineComment = "//"
+            print("// TODO: Disabled by order of the JSON.")
+
+        print("{}template<>\n{}struct fex_gen_config<{}>{} {{}};".format(FrontLineComment, FrontLineComment, Decl.Name, Decorations64Bit))
+
+    if ArgumentDecorations != None:
+        if ArgumentDecorations[1] != None and len(ArgumentDecorations[1]):
+            print("#ifndef IS_32BIT_THUNK")
+            for DecoNum, DecoData in ArgumentDecorations[1].items():
+                Type = ""
+                if DecoData.Type != None:
+                    Type = ", {}".format(DecoData.Type)
+                Decorations = " : {}".format(", ".join(DecoData.Decorations))
+
+                print("  template<>\n  struct fex_gen_param<{}, {}{}>{} {{}};".format(Decl.Name, DecoNum, Type, Decorations))
+            print("#endif")
+
+        if ArgumentDecorations[2] != None and len(ArgumentDecorations[2]):
+            print("#ifdef IS_32BIT_THUNK")
+            for DecoNum, DecoData in ArgumentDecorations[2].items():
+                Type = ""
+                if DecoData.Type != None:
+                    Type = ", {}".format(DecoData.Type)
+                Decorations = " : {}".format(", ".join(DecoData.Decorations))
+
+                print("  template<>\n  struct fex_gen_param<{}, {}{}>{} {{}};".format(Decl.Name, DecoNum, Type, Decorations))
+            print("#endif")
+
+        if ArgumentDecorations[0] != None and len(ArgumentDecorations[0]):
+            for DecoNum, DecoData in ArgumentDecorations[0].items():
+                Type = ""
+                if DecoData.Type != None:
+                    Type = ", {}".format(DecoData.Type)
+                Decorations = " : {}".format(", ".join(DecoData.Decorations))
+
+                print("  template<>\n  struct fex_gen_param<{}, {}{}>{} {{}};".format(Decl.Name, DecoNum, Type, Decorations))
+
+def PrintStructDecl(Decl):
+
+    # template<>
+    # struct fex_gen_type<VkCommandBuffer_T> : fexgen::opaque_type {};
+    logging.critical(Decl.Name)
+
+    Namespace = JSONDefinition.FindTypeNamespace(Decl.Name)
+    Comments = JSONDefinition.FindTypeComment(Decl.Name)
+    Enabled = JSONDefinition.FindTypeEnabled(Decl.Name)
+    Decorations = JSONDefinition.FindTypeDecoration(Decl.Name)
+
+    Has32BitDecoration = False
+    Has64BitDecoration = False
+    Decorations64Bit = ""
+    Decorations32Bit = ""
+    if Decorations != None:
+        logging.critical(Decorations)
+        if Decorations.Has32BitDecoration:
+            Has32BitDecoration = True
+            if len(Decorations.Decorations32Bit):
+                Decorations32Bit = " : {}".format(", ".join(Decorations.Decorations32Bit))
+
+        if Decorations.Has64BitDecoration:
+            Has64BitDecoration = True
+            if len(Decorations.Decorations):
+                Decorations64Bit = " : {}".format(", ".join(Decorations.Decorations))
+
+        if len(Decorations.Decorations):
+            Decorations64Bit = " : {}".format(", ".join(Decorations.Decorations))
+
+    if Has32BitDecoration:
+        print("#ifdef IS_32BIT_THUNK")
+        PrintComment(Comments)
+        FrontLineComment = ""
+        if not Enabled.Has32BitEnabled:
+            FrontLineComment = "//"
+            print("// TODO: Disabled by order of the JSON.")
+
+        print("{}template<>\n{}struct fex_gen_type<{}>{} {{}};".format(FrontLineComment, FrontLineComment, Decl.Name, Decorations32Bit))
+        if not Has64BitDecoration:
+            print("#else")
+            print("template<>\nstruct fex_gen_type<{}> {{}};".format(Decl.Name))
+        print("#endif")
+
+    if Has64BitDecoration:
+        print("#ifndef IS_32BIT_THUNK")
+        PrintComment(Comments)
+
+        FrontLineComment = ""
+        if not Enabled.Has64BitEnabled:
+            FrontLineComment = "//"
+            print("// TODO: Disabled by order of the JSON.")
+
+        print("{}template<>\n{}struct fex_gen_type<{}>{} {{}};".format(FrontLineComment, FrontLineComment, Decl.Name, Decorations64Bit))
+        if not Has32BitDecoration:
+            print("#else")
+            print("template<>\nstruct fex_gen_type<{}> {{}};".format(Decl.Name))
+        print("#endif")
+
+    if not (Has32BitDecoration or Has64BitDecoration):
+        PrintComment(Comments)
+        FrontLineComment = ""
+        if not Enabled.TotalEnable:
+            FrontLineComment = "//"
+            print("// TODO: Disabled by order of the JSON.")
+
+        print("{}template<>\n{}struct fex_gen_type<{}>{} {{}};".format(FrontLineComment, FrontLineComment, Decl.Name, Decorations64Bit))
+
+def PrintHeaders():
+    for Line in JSONDefinition.Headers:
+        print(Line)
+
+def PrintStructDecls():
+    CurrentNamespace = None
+    PrintedDefinitions = {}
+
+    for Decl in StructDecls:
+        if Decl.Name in PrintedDefinitions:
+            continue
+
+        PrintStructDecl(Decl)
+        PrintedDefinitions[Decl.Name] = True
+
 def PrintFunctionDecls():
+    CurrentNamespace = None
+    PrintedDefinitions = {}
+
+    # First print all non-namespaced functions, then namespaced functions.
     for Decl in FunctionDecls:
-        print("template<>\nstruct fex_gen_config<{}> {{}};".format(Decl.Name))
+        if Decl.Name in PrintedDefinitions:
+            continue
+
+        Namespace = JSONDefinition.FindFunctionNamespace(Decl.Name)
+        if Namespace != "":
+            continue
+
+        PrintFunctionDecl(Decl)
+
+        PrintedDefinitions[Decl.Name] = True
+
+    for MatchedNamespace in JSONDefinition.AllNamespaces:
+        if len(MatchedNamespace):
+            print("namespace {} {{".format(MatchedNamespace))
+        for Decl in FunctionDecls:
+            if Decl.Name in PrintedDefinitions:
+                continue
+
+            Namespace = JSONDefinition.FindFunctionNamespace(Decl.Name)
+            if Namespace != MatchedNamespace:
+                continue
+
+            PrintFunctionDecl(Decl)
+
+            PrintedDefinitions[Decl.Name] = True
+
+        if len(MatchedNamespace):
+            print("}} // namespace {}".format(MatchedNamespace))
+
+    # Now print everything else
+    for Decl in FunctionDecls:
+        if Decl.Name in PrintedDefinitions:
+            continue
+
+        PrintFunctionDecl(Decl)
+
+        PrintedDefinitions[Decl.Name] = True
 
 def FindClangArguments(OriginalArguments):
     AddedArguments = ["clang"]
@@ -213,19 +642,26 @@ def HandleStructDeclCursor(Arch, Cursor, NameOverride = ""):
     else:
         CursorName = StructType.spelling
 
-    if (len(CursorName) != 0):
-        Arch.NamespaceScope.append(CursorName)
+    StructName = CursorName.removeprefix("struct ")
+
+    if (len(StructName) != 0):
+        Arch.NamespaceScope.append(StructName)
         SetNamespace(Arch)
 
     Struct = StructDefinition(
-        Name = CursorName,
+        Name = StructName,
         Size = StructType.get_size())
 
-    # Handle children
-    Arch.Structs[Struct.Name] = HandleStructElements(Arch, Struct, Cursor)
+    if not JSONDefinition.IsAllowedStruct(Struct.Name):
+        ListOfDisallowedStructs[Struct.Name] = True
+        return Arch
+    else:
+        # Handle children
+        Arch.Structs[Struct.Name] = HandleStructElements(Arch, Struct, Cursor, False)
+        StructDecls.append(Arch.Structs[Struct.Name])
 
     # Pop namespace off
-    if (len(CursorName) != 0):
+    if (len(StructName) != 0):
         Arch.NamespaceScope.pop()
         SetNamespace(Arch)
 
@@ -240,21 +676,32 @@ def HandleUnionDeclCursor(Arch, Cursor, NameOverride = ""):
     else:
         CursorName = Cursor.spelling
 
-    if (len(CursorName) != 0):
-        Arch.NamespaceScope.append(CursorName)
+    UnionName = CursorName.removeprefix("union ")
+
+    if (len(UnionName) != 0):
+        Arch.NamespaceScope.append(UnionName)
         SetNamespace(Arch)
 
     UnionType = Cursor.type
     Union = UnionDefinition(
-        Name = CursorName,
+        Name = UnionName,
         Size = UnionType.get_size())
     Arch.Unions[Union.Name] = Union
 
+    if not JSONDefinition.IsAllowedStruct(Union.Name):
+        ListOfDisallowedStructs[Union.Name] = True
+        return Arch
+    else:
+        logging.critical("HandleUnionDeclCursor: {}".format(Union.Name))
+        # Handle children
+        Arch.Unions[Union.Name] = HandleStructElements(Arch, Union, Cursor, False)
+        StructDecls.append(Arch.Unions[Union.Name])
+
     # Handle children
-    Arch.Unions[Union.Name] = HandleStructElements(Arch, Union, Cursor)
+    Arch.Unions[Union.Name] = HandleStructElements(Arch, Union, Cursor, False)
 
     # Pop namespace off
-    if (len(CursorName) != 0):
+    if (len(UnionName) != 0):
         Arch.NamespaceScope.pop()
         SetNamespace(Arch)
 
@@ -326,7 +773,7 @@ def HandleTypeDefDeclCursor(Arch, Cursor):
             #Arch.Structs[TypeDefName] = Struct
 
             ## Handle children
-            #Arch.Structs[TypeDefName] = HandleStructElements(Arch, Struct, Cursor)
+            #Arch.Structs[TypeDefName] = HandleStructElements(Arch, Struct, Cursor, False)
 
             # Pop namespace off
             Arch.NamespaceScope.pop()
@@ -342,9 +789,9 @@ def HandleTypeDefDeclCursor(Arch, Cursor):
 
     return Arch
 
-def HandleStructElements(Arch, Struct, Cursor):
+def HandleStructElements(Arch, Struct, Cursor, Print):
     for Child in Cursor.get_children():
-        # logging.info ("\t\tStruct/Union Children: Cursor \"{0}{1}\" of kind {2}".format(Arch.CurrentNamespace, Child.spelling, Child.kind))
+        # logging.critical ("\t\tStruct/Union Children: Cursor \"{0}\" of kind {1}".format(Child.spelling, Child.kind))
         if (Child.kind == CursorKind.ANNOTATE_ATTR):
             if (Child.spelling.startswith("alias-")):
                 Sections = Child.spelling.split("-")
@@ -376,13 +823,14 @@ def HandleStructElements(Arch, Struct, Cursor):
                 OffsetOf = ParentType.get_offset(Child.spelling),
                 Alignment = FieldType.get_align())
 
-            #logging.info ("\t{0}".format(Child.spelling))
-            #logging.info ("\t\tSize of type: {0}".format(FieldType.get_size()));
-            #logging.info ("\t\tAlignment of type: {0}".format(FieldType.get_align()));
-            #logging.info ("\t\tOffsetof of type: {0}".format(ParentType.get_offset(Child.spelling)));
+            if Print:
+                logging.info ("\t{0}".format(Child.spelling))
+                logging.info ("\t\tSize of type: {0}".format(FieldType.get_size()));
+                logging.info ("\t\tAlignment of type: {0}".format(FieldType.get_align()));
+                logging.info ("\t\tOffsetof of type: {0}".format(ParentType.get_offset(Child.spelling)));
             Struct.Members.append(Field)
             Arch.FieldDecls.append(Field)
-        elif (Child.kind == CursorKind.STRUCT_DECL):
+        elif (Child.kind == CursorKind.STRUCT_DECL) or (Child.kind == CursorKind.UNION_DECL):
             ParentType = Cursor.type
             FieldType = Child.type
             Field = FieldDefinition(
@@ -391,30 +839,15 @@ def HandleStructElements(Arch, Struct, Cursor):
                 OffsetOf = ParentType.get_offset(Child.spelling),
                 Alignment = FieldType.get_align())
 
-            #logging.info ("\t{0}".format(Child.spelling))
-            #logging.info ("\t\tSize of type: {0}".format(FieldType.get_size()));
-            #logging.info ("\t\tAlignment of type: {0}".format(FieldType.get_align()));
-            #logging.info ("\t\tOffsetof of type: {0}".format(ParentType.get_offset(Child.spelling)));
+            if Print:
+                logging.info ("\t{0}".format(Child.spelling))
+                logging.info ("\t\tSize of type: {0}".format(FieldType.get_size()));
+                logging.info ("\t\tAlignment of type: {0}".format(FieldType.get_align()));
+                logging.info ("\t\tOffsetof of type: {0}".format(ParentType.get_offset(Child.spelling)));
             Struct.Members.append(Field)
             Arch.FieldDecls.append(Field)
-            Arch = HandleStructDeclCursor(Arch, Child)
-        elif (Child.kind == CursorKind.UNION_DECL):
-            Struct = HandleStructElements(Arch, Struct, Child)
-            #ParentType = Cursor.type
-            #FieldType = Child.type
-            #Field = FieldDefinition(
-            #    Name = Child.spelling,
-            #    Size = FieldType.get_size(),
-            #    OffsetOf = ParentType.get_offset(Child.spelling),
-            #    Alignment = FieldType.get_align())
 
-            #logging.info ("\t{0}".format(Child.spelling))
-            #logging.info ("\t\tSize of type: {0}".format(FieldType.get_size()));
-            #logging.info ("\t\tAlignment of type: {0}".format(FieldType.get_align()));
-            #logging.info ("\t\tOffsetof of type: {0}".format(ParentType.get_offset(Child.spelling)));
-            #Struct.Members.append(Field)
-            #Arch.FieldDecls.append(Field)
-            #Arch = HandleUnionDeclCursor(Arch, Child)
+            Arch = HandleStructDeclCursor(Arch, Child)
         elif (Child.kind == CursorKind.TYPEDEF_DECL):
             Arch = HandleTypeDefDeclCursor(Arch, Child)
         else:
@@ -424,9 +857,7 @@ def HandleStructElements(Arch, Struct, Cursor):
 
 def HandleTypeDefDecl(Arch, Cursor, Name):
     for Child in Cursor.get_children():
-        if (Child.kind == CursorKind.UNION_DECL):
-            pass
-        elif (Child.kind == CursorKind.STRUCT_DECL):
+        if (Child.kind == CursorKind.STRUCT_DECL):
             Arch = HandleStructDeclCursor(Arch, Child, Name)
         elif (Child.kind == CursorKind.UNION_DECL):
             Arch = HandleUnionDeclCursor(Arch, Child, Name)
@@ -511,21 +942,232 @@ def GetDB(Arch, filename, args):
 
     return Arch
 
+def ParseFunctionComments(Function, DecorationData):
+    if "Comment" in DecorationData:
+        return DecorationData["Comment"]
+    return None
+
+def ParseFunctionDecorations(Function, DecorationData):
+    Has32BitDecoration = False
+    Has64BitDecoration = False
+    Decorations64Bit = []
+    Decorations32Bit = []
+
+    if "64Bit" in DecorationData:
+        Has64BitDecoration = True
+        if "Decorations" in DecorationData["64Bit"]:
+            Decorations64Bit = DecorationData["64Bit"]["Decorations"]
+
+    if "32Bit" in DecorationData:
+        Has32BitDecoration = True
+        if "Decorations" in DecorationData["32Bit"]:
+            Decorations32Bit = DecorationData["32Bit"]["Decorations"]
+            logging.critical("32bit deco: {} {}".format(Function, Decorations32Bit))
+
+    if "Decorations" in DecorationData:
+        Decorations64Bit = DecorationData["Decorations"]
+        if Has32BitDecoration or Has64BitDecoration:
+            logging.critical("Had base Decorations declared but also 32-bit or 64-bit for {}".format(Function))
+
+    return DecorationsDefinition(Has64BitDecoration, Has32BitDecoration, Decorations64Bit, Decorations32Bit)
+
+def ParseFunctionEnabled(Function, DecorationData):
+    TotalEnable = True
+    Has32BitEnabled = True
+    Has64BitEnabled = True
+    if "32Bit" in DecorationData:
+        if "Enabled" in DecorationData["32Bit"]:
+            Has32BitEnabled = DecorationData["32Bit"]["Enabled"]
+
+    if "64Bit" in DecorationData:
+        if "Enabled" in DecorationData["64Bit"]:
+            Has64BitEnabled = DecorationData["64Bit"]["Enabled"]
+
+    if "Enabled" in DecorationData:
+        TotalEnable = DecorationData["Enabled"]
+    return DecorationEnabled(TotalEnable, Has64BitEnabled, Has32BitEnabled)
+
+def DecodeArgumentDecorations(DecorationData):
+    ArgumentDefs = {}
+    for Parameter, ParameterData in DecorationData.items():
+        Type = None
+        Decorations = None
+
+        if "Type" in ParameterData:
+            Type = ParameterData["Type"]
+
+        if not "Decorations" in ParameterData:
+            logging.critical("Function parameter needs decoration if declared")
+
+        ArgumentDefs[Parameter] = ArgumentDecorationsDefinition(Type, ParameterData["Decorations"])
+    return ArgumentDefs
+
+def ParseArgumentDefinitions(DecorationData):
+    # Parameter decorations are a bit silly. They can be inside "32Bit", "64Bit" or base.
+
+    ArgumentDefs = {}
+    ArgumentDefs32Bit = {}
+    ArgumentDefs64Bit = {}
+
+    Has32BitDecoration = False
+    Has64BitDecoration = False
+    Decorations64Bit = []
+    Decorations32Bit = []
+
+    if "64Bit" in DecorationData:
+        Has64BitDecoration = True
+        if "Parameters" in DecorationData["64Bit"]:
+            ArgumentDefs64Bit = DecodeArgumentDecorations(DecorationData["64Bit"]["Parameters"])
+
+    if "32Bit" in DecorationData:
+        Has32BitDecoration = True
+        if "Parameters" in DecorationData["32Bit"]:
+            ArgumentDefs32Bit = DecodeArgumentDecorations(DecorationData["32Bit"]["Parameters"])
+
+    if "Parameters" in DecorationData:
+        ArgumentDefs = DecodeArgumentDecorations(DecorationData["Parameters"])
+
+    # Validate combination of arguments
+    # Any argument declared in 32Bit or 64Bit can't be declared in base.
+    for ArgumentDefName, ArgumentDefData in ArgumentDefs32Bit.items():
+        if ArgumentDefName in ArgumentDefs:
+            logging.critical("{} accidentally declared in base non-bitness parameter def!".format(ArgumentDefName))
+
+    for ArgumentDefName, ArgumentDefData in ArgumentDefs64Bit.items():
+        if ArgumentDefName in ArgumentDefs:
+            logging.critical("{} accidentally declared in base non-bitness parameter def!".format(ArgumentDefName))
+
+    return (ArgumentDefs, ArgumentDefs64Bit, ArgumentDefs32Bit)
+
+def ParseJSONType(Type, TypeData):
+    global JSONDefinition
+    logging.critical(Type)
+    logging.critical(TypeData)
+
+    if Type in JSONDefinition.TypeDecorations:
+        logging.critical("Duplicate function '{}' in json definition!".format(Type))
+
+    JSONDefinition.TypeComments[Type] = ParseFunctionComments(Type, TypeData)
+    JSONDefinition.TypeDecorations[Type] = ParseFunctionDecorations(Type, TypeData)
+    JSONDefinition.TypeEnabled[Type] = ParseFunctionEnabled(Type, TypeData)
+    #logging.critical(JSONDefinition.TypeComments[Type])
+    #logging.critical(JSONDefinition.TypeDecorations[Type])
+    #logging.critical(JSONDefinition.TypeEnabled[Type])
+
+def ParseJSONFunction(Function, FunctionData):
+    global JSONDefinition
+    logging.critical(Function)
+    logging.critical(FunctionData)
+
+    if Function in JSONDefinition.FunctionDecorations:
+        logging.critical("Duplicate function '{}' in json definition!".format(Function))
+
+    JSONDefinition.FunctionComments[Function] = ParseFunctionComments(Function, FunctionData)
+    JSONDefinition.FunctionDecorations[Function] = ParseFunctionDecorations(Function, FunctionData)
+    JSONDefinition.FunctionArgumentDefinitions[Function] = ParseArgumentDefinitions(FunctionData)
+    JSONDefinition.FunctionEnabled[Function] = ParseFunctionEnabled(Function, FunctionData)
+
+    if "Namespace" in FunctionData:
+        JSONDefinition.FunctionNamespace[Function] = FunctionData["Namespace"]
+        JSONDefinition.AllNamespaces[FunctionData["Namespace"]] = True
+
+def ParseJSONDefinition(filename):
+    global JSONDefinition
+    global HeaderFile
+    global HeaderFileTemp
+
+    # Default json definition
+    JSONText = '''
+{
+  "FunctionAllowList": [
+    ".*"
+  ]
+}
+'''
+    if len(filename):
+        JSONFile = open(filename, "r")
+        JSONText = JSONFile.read()
+        JSONFile.close()
+
+    json_object = json.loads(JSONText)
+
+    AllowList = [".*"]
+    DisallowList = []
+
+    StructAllowList = [".*"]
+    StructDisallowList = []
+
+    if "FunctionAllowList" in json_object:
+        AllowList = json_object["FunctionAllowList"]
+
+    if "FunctionDisallowList" in json_object:
+        DisallowList = json_object["FunctionDisallowList"]
+
+    if "StructAllowList" in json_object:
+        StructAllowList = json_object["StructAllowList"]
+
+    if "StructDisallowList" in json_object:
+        StructDisallowList = json_object["StructDisallowList"]
+
+    JSONDefinition = JSONDefinitionDB(AllowList, DisallowList, StructAllowList, StructDisallowList)
+
+    if "Headers" in json_object:
+        JSONDefinition.Headers = json_object["Headers"]
+
+    if "FunctionDefaultNamespace" in json_object:
+        JSONDefinition.FunctionDefaultNamespace = json_object["FunctionDefaultNamespace"]
+        JSONDefinition.AllNamespaces[JSONDefinition.FunctionDefaultNamespace] = True
+
+    if "Functions" in json_object:
+        for Function, FunctionData  in json_object["Functions"].items():
+            ParseJSONFunction(Function, FunctionData)
+
+    if "Types" in json_object:
+        for Type, TypeData  in json_object["Types"].items():
+            ParseJSONType(Type, TypeData)
+    if "GenerationFile" in json_object and HeaderFile == None:
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, delete_on_close=False, suffix=".h") as Temp:
+            for Line in json_object["GenerationFile"]:
+                Temp.write("{}\n".format(Line))
+            HeaderFile = Temp.name
+            HeaderFileTemp = True
+            Temp.close()
+
+def PrintDisallowedFunctions():
+    global ListOfDisallowedFunctions
+    for Func in ListOfDisallowedFunctions:
+        logging.critical("DisallowedFunc: {}".format(Func))
+
 def main():
+    global HeaderFile
+    global HeaderFileTemp
     if sys.version_info[0] < 3:
         logging.critical ("Python 3 or a more recent version is required.")
 
     if (len(sys.argv) < 2):
-        print ("usage: %s <Header.hpp> <clang arguments...>" % (sys.argv[0]))
+        print ("usage: %s [--json_def <def.json>] [<Header.hpp>] -- <clang arguments...>" % (sys.argv[0]))
 
-    Header = ""
+    JSONDef = ""
     BaseArgs = []
 
-    # Parse our arguments
-    Header = sys.argv[1]
+    BeginClangArgs = 1
+
+    while BeginClangArgs < len(sys.argv):
+        Arg = sys.argv[BeginClangArgs]
+        if Arg == "--json_def":
+            BeginClangArgs += 1
+            JSONDef = sys.argv[BeginClangArgs]
+            BeginClangArgs += 1
+            continue
+
+        if Arg == "--":
+            BeginClangArgs += 1
+            break
+        HeaderFile = sys.argv[BeginClangArgs]
+        BeginClangArgs += 1
 
     # Add arguments for clang
-    for ArgIndex in range(2, len(sys.argv)):
+    for ArgIndex in range(BeginClangArgs, len(sys.argv)):
         BaseArgs.append(sys.argv[ArgIndex])
 
     args_x86_64 = [
@@ -537,6 +1179,8 @@ def main():
         "-D_M_X86_64",
     ]
 
+    ParseJSONDefinition(JSONDef)
+
     # Add all the arguments to the different lists
     args_x86_64.extend(BaseArgs)
 
@@ -544,8 +1188,16 @@ def main():
     args_x86_64 = FindClangArguments(args_x86_64)
 
     Arch_x86_64 = ArchDB("x86_64")
-    Arch_x86_64 = GetDB(Arch_x86_64, Header, args_x86_64)
+    Arch_x86_64 = GetDB(Arch_x86_64, HeaderFile, args_x86_64)
+
+    PrintHeaders()
+    PrintStructDecls()
     PrintFunctionDecls()
+
+    PrintDisallowedFunctions()
+
+    if HeaderFileTemp:
+        os.remove(HeaderFile)
 
 if __name__ == "__main__":
 # execute only if run as a script
