@@ -1,0 +1,1306 @@
+{
+  "GenerationFile": [
+    "void SetGuestXSync(uintptr_t, uintptr_t);",
+    "void SetGuestXGetVisualInfo(uintptr_t, uintptr_t);",
+    "void SetGuestXDisplayString(uintptr_t, uintptr_t);",
+    "",
+    "#define VK_USE_PLATFORM_XLIB_XRANDR_EXT",
+    "#define VK_USE_PLATFORM_XLIB_KHR",
+    "#define VK_USE_PLATFORM_XCB_KHR",
+    "#define VK_USE_PLATFORM_WAYLAND_KHR",
+    "#define VK_USE_64_BIT_PTR_DEFINES 0",
+    "#include <vulkan/vulkan.h>"
+  ],
+  "Headers": [
+    "// This is a completely generated file!",
+    "// To generate this file, Execute the following command!",
+    "// ./Scripts/DefinitionExtract.py --json_def ThunkLibs/libvulkan/vulkan_interface.json -- -isystem `readlink -f External/Vulkan-Headers/include/` > ThunkLibs/libvulkan/libvulkan_interface.cpp",
+    "",
+    "#include <common/GeneratorInterface.h>",
+    "#include <type_traits>",
+    "",
+    "template<auto>",
+    "struct fex_gen_config {",
+    "  unsigned version = 1;",
+    "};",
+    "",
+    "// Some of Vulkan's handle types are so-called \"non-dispatchable handles\".",
+    "// On 64-bit, these are defined as dedicated types by default, which makes",
+    "// annotating these handle types unnecessarily complicated. Instead, setting",
+    "// the following define will make the Vulkan headers alias all handle types",
+    "// to uint64_t.",
+    "#define VK_USE_64_BIT_PTR_DEFINES 0",
+    "",
+    "#define VK_USE_PLATFORM_XLIB_XRANDR_EXT",
+    "#define VK_USE_PLATFORM_XLIB_KHR",
+    "#define VK_USE_PLATFORM_XCB_KHR",
+    "#define VK_USE_PLATFORM_WAYLAND_KHR",
+    "#include <vulkan/vulkan.h>",
+    "",
+    "#include \"libvulkan_pnext_gen.inl\"",
+    "",
+    "template<typename>",
+    "struct fex_gen_type {};",
+    "",
+    "namespace internal {",
+    "  // Function, parameter index, parameter type [optional]",
+    "  template<auto, int, typename = void>",
+    "  struct fex_gen_param {};",
+    "",
+    "  template<auto>",
+    "  struct fex_gen_config : fexgen::generate_guest_symtable, fexgen::indirect_guest_calls {};",
+    "}",
+    "",
+    "// internal use",
+    "void SetGuestXSync(uintptr_t, uintptr_t);",
+    "void SetGuestXGetVisualInfo(uintptr_t, uintptr_t);",
+    "void SetGuestXDisplayString(uintptr_t, uintptr_t);",
+    "",
+    "// X11 interop",
+    "template<>",
+    "struct fex_gen_config<&VkXcbSurfaceCreateInfoKHR::connection> : fexgen::custom_repack {};",
+    "template<>",
+    "struct fex_gen_config<&VkXlibSurfaceCreateInfoKHR::dpy> : fexgen::custom_repack {};",
+    ""
+  ],
+  "Types": {
+    "VkCommandBuffer_T": {
+      "Decorations": [
+        "fexgen::opaque_type"
+      ],
+      "Comment": [
+        "// So-called \"dispatchable\" handles are represented as opaque pointers.",
+        "// In addition to marking them as such, API functions that create these objects",
+        "// need special care since they wrap these handles in another pointer, which",
+        "// the thunk generator can't automatically handle.",
+        "//",
+        "// So-called \"non-dispatchable\" handles don't need this extra treatment, since",
+        "// they are uint64_t IDs on both 32-bit and 64-bit systems."
+      ]
+    },
+    "VkDevice_T": {
+      "Decorations": [
+        "fexgen::opaque_type"
+      ]
+    },
+    "VkInstance_T": {
+      "Decorations": [
+        "fexgen::opaque_type"
+      ]
+    },
+    "VkPhysicalDevice_T": {
+      "Decorations": [
+        "fexgen::opaque_type"
+      ]
+    },
+    "VkQueue_T": {
+      "Decorations": [
+        "fexgen::opaque_type"
+      ]
+    },
+    "VkClearValue": {
+      "Decorations": [
+        "fexgen::assume_compatible_data_layout"
+      ],
+      "Comment": [
+        "// Mark union types with compatible layout as such",
+        "// TODO: These may still have different alignment requirements!"
+      ]
+    },
+    "VkClearColorValue": {
+      "Decorations": [
+        "fexgen::assume_compatible_data_layout"
+      ]
+    },
+    "VkPipelineExecutableStatisticValueKHR": {
+      "Decorations": [
+        "fexgen::assume_compatible_data_layout"
+      ]
+    },
+    "VkAccelerationStructureGeometryDataKHR": {
+      "32Bit": { "Enabled": false },
+      "64Bit": { "Decorations": [ "fexgen::assume_compatible_data_layout" ] }
+    },
+    "VkDescriptorDataEXT": {
+       "32Bit": { "Enabled": false },
+       "64Bit": { "Decorations": [ "fexgen::assume_compatible_data_layout" ] }
+    },
+    "VkDeviceOrHostAddressKHR": {
+       "32Bit": { "Enabled": false },
+       "64Bit": { "Decorations": [ "fexgen::assume_compatible_data_layout" ] }
+    },
+    "VkDeviceOrHostAddressConstKHR": {
+       "32Bit": { "Enabled": false },
+       "64Bit": { "Decorations": [ "fexgen::assume_compatible_data_layout" ] }
+    },
+    "VkPerformanceValueDataINTEL": {
+       "32Bit": { "Enabled": false },
+       "64Bit": { "Decorations": [ "fexgen::assume_compatible_data_layout" ] }
+    },
+    "VkIndirectExecutionSetInfoEXT": {
+       "32Bit": { "Enabled": false },
+       "64Bit": { "Decorations": [ "fexgen::assume_compatible_data_layout" ] }
+    },
+    "VkIndirectCommandsTokenDataEXT": {
+       "32Bit": { "Enabled": false },
+       "64Bit": { "Decorations": [ "fexgen::assume_compatible_data_layout" ] }
+    },
+    "VkClusterAccelerationStructureOpInputNV": {
+       "32Bit": { "Enabled": false },
+       "64Bit": { "Decorations": [ "fexgen::assume_compatible_data_layout" ] }
+    },
+
+    "VkDebugReportCallbackCreateInfoEXT": {
+      "Comment": [
+        "// Structures that contain function pointers",
+        "// TODO: Use custom repacking for these instead"
+      ],
+      "Decorations": [
+        "fexgen::emit_layout_wrappers"
+      ]
+    },
+    "VkDebugUtilsMessengerCreateInfoEXT": {
+      "Comment": [
+        "// Structures that contain function pointers",
+        "// TODO: Use custom repacking for these instead"
+      ],
+      "Decorations": [
+        "fexgen::emit_layout_wrappers"
+      ]
+    },
+    "VkBaseOutStructure": {
+      "Comment": [
+        "// The pNext member of this is a pointer to another VkBaseOutStructure, so data layout compatibility can't be inferred automatically"
+      ],
+      "32Bit": { "Decorations": [ "fexgen::emit_layout_wrappers" ] },
+      "64Bit": { "Decorations": [ "fexgen::assume_compatible_data_layout" ] }
+    },
+    "VkWriteDescriptorSet": {
+      "Comment": [
+        "// These types have incompatible data layout but we use their layout wrappers elsewhere"
+      ],
+      "32Bit": { "Decorations": [ "fexgen::emit_layout_wrappers" ] },
+      "64Bit": { "Enabled": false }
+    },
+
+    "VkAllocationCallbacks": {
+      "Comment": [
+        "// TODO: Should not be opaque, but it's usually NULL anyway. Supporting the contained function pointers will need more work."
+      ],
+      "Decorations": [
+        "fexgen::opaque_type"
+      ]
+    },
+    "wl_display": {
+      "Comment": [
+        "// Wayland interop"
+      ],
+      "Decorations": [
+        "fexgen::opaque_type"
+      ]
+    },
+    "wl_surface": {
+      "Comment": [
+        "// Wayland interop"
+      ],
+      "Decorations": [
+        "fexgen::opaque_type"
+      ]
+    }
+  },
+  "Functions": {
+    "vkGetDeviceProcAddr": {
+      "Namespace": "",
+      "Decorations": [
+        "fexgen::custom_host_impl",
+        "fexgen::custom_guest_entrypoint",
+        "fexgen::returns_guest_pointer"
+      ]
+    },
+    "vkGetInstanceProcAddr": {
+      "Namespace": "",
+      "Decorations": [
+        "fexgen::custom_host_impl",
+        "fexgen::custom_guest_entrypoint",
+        "fexgen::returns_guest_pointer"
+      ]
+    },
+    "SetGuestXSync": {
+      "Namespace": "",
+      "Decorations": [
+        "fexgen::custom_guest_entrypoint",
+        "fexgen::custom_host_impl"
+      ]
+    },
+    "SetGuestXGetVisualInfo": {
+      "Namespace": "",
+      "Decorations": [
+        "fexgen::custom_guest_entrypoint",
+        "fexgen::custom_host_impl"
+      ]
+    },
+    "SetGuestXDisplayString": {
+      "Namespace": "",
+      "Decorations": [
+        "fexgen::custom_guest_entrypoint",
+        "fexgen::custom_host_impl"
+      ]
+    },
+    "vkCreateInstance": {
+      "Decorations": [
+        "fexgen::custom_host_impl"
+      ],
+      "Parameters": {
+        "2": {
+          "Type": "VkInstance*",
+          "Decorations": [
+            "fexgen::ptr_passthrough"
+          ]
+        }
+      }
+    },
+    "vkEnumeratePhysicalDevices": {
+      "32Bit": {
+        "Decorations": [
+          "fexgen::custom_host_impl"
+        ],
+        "Parameters": {
+          "2": {
+            "Type": "VkPhysicalDevice*",
+            "Decorations": [
+              "fexgen::ptr_passthrough"
+            ]
+          }
+        }
+      }
+    },
+    "vkGetPhysicalDeviceProperties": {
+      "Comment": [
+        "// TODO: Output parameter must repack on exit!"
+      ]
+    },
+    "vkCreateDevice": {
+      "Decorations": [
+        "fexgen::custom_host_impl"
+      ],
+      "Parameters": {
+        "3": {
+          "Type": "VkDevice*",
+          "Decorations": [
+            "fexgen::ptr_passthrough"
+          ]
+        }
+      }
+    },
+    "vkGetDeviceQueue": {
+      "32Bit": {
+        "Decorations": [
+          "fexgen::custom_host_impl"
+        ],
+        "Parameters": {
+          "3": {
+            "Type": "VkQueue*",
+            "Decorations": [
+              "fexgen::ptr_passthrough"
+            ]
+          }
+        }
+      }
+    },
+    "vkQueueSubmit": {
+      "32Bit": {
+        "Decorations": [
+          "fexgen::custom_host_impl"
+        ],
+        "Parameters": {
+          "2": {
+            "Type": "const VkSubmitInfo*",
+            "Decorations": [
+              "fexgen::ptr_passthrough"
+            ]
+          }
+        }
+      }
+    },
+    "vkAllocateMemory": {
+      "Decorations": [
+        "fexgen::custom_host_impl"
+      ]
+    },
+    "vkFreeMemory": {
+      "Decorations": [
+        "fexgen::custom_host_impl"
+      ]
+    },
+    "vkMapMemory": {
+      "32Bit": {
+        "Decorations": [
+          "fexgen::custom_host_impl"
+        ],
+        "Parameters": {
+          "5": {
+            "Type": "void**",
+            "Decorations": [
+              "fexgen::ptr_passthrough"
+            ]
+          }
+        }
+      }
+    },
+    "vkFlushMappedMemoryRanges": { "32Bit": { "Enabled": false }},
+    "vkInvalidateMappedMemoryRanges": { "32Bit": { "Enabled": false }},
+    "vkGetDeviceMemoryCommitment": { "32Bit": { "Enabled": false }},
+    "vkGetImageSparseMemoryRequirements": { "32Bit": { "Enabled": false }},
+    "vkQueueBindSparse": { "32Bit": { "Enabled": false }},
+    "vkGetFenceStatus": { "32Bit": { "Enabled": false }},
+    "vkCreateEvent": { "32Bit": { "Enabled": false }},
+    "vkDestroyEvent": { "32Bit": { "Enabled": false }},
+    "vkGetEventStatus": { "32Bit": { "Enabled": false }},
+    "vkSetEvent": { "32Bit": { "Enabled": false }},
+    "vkResetEvent": { "32Bit": { "Enabled": false }},
+    "vkCreateQueryPool": { "32Bit": { "Enabled": false }},
+    "vkGetQueryPoolResults": {
+      "32Bit": {
+        "Enabled": false
+      },
+      "64Bit": {
+        "Parameters": {
+          "5": {
+            "Type": "void*",
+            "Decorations": [
+              "fexgen::assume_compatible_data_layout"
+            ]
+          }
+        }
+      }
+    },
+    "vkCreateShaderModule": {
+      "Decorations": [
+        "fexgen::custom_host_impl"
+      ]
+    },
+    "vkGetPipelineCacheData": {
+      "32Bit": {
+        "Decorations": [
+          "fexgen::custom_host_impl"
+        ],
+        "Parameters": {
+          "2": {
+            "Type": "size_t*",
+            "Decorations": [
+              "fexgen::ptr_passthrough"
+            ]
+          }
+        }
+      },
+      "Parameters": {
+        "3": {
+          "Type": "void*",
+          "Decorations": [
+            "fexgen::assume_compatible_data_layout"
+          ]
+        }
+      }
+    },
+    "vkCreateGraphicsPipelines": {
+      "Comment": [
+        "// TODO: Should be custom_host_impl since there may be more than one VkGraphicsPipelineCreateInfo and more than one output pipeline"
+      ]
+    },
+    "vkCreateComputePipelines": { "32Bit": { "Enabled": false }},
+    "vkUpdateDescriptorSets": {
+      "32Bit": {
+        "Decorations": [
+          "fexgen::custom_host_impl"
+        ],
+        "Parameters": {
+          "2": {
+            "Type": "const VkWriteDescriptorSet*",
+            "Decorations": [
+              "fexgen::ptr_passthrough"
+            ]
+          },
+          "4": {
+            "Type": "const VkCopyDescriptorSet*",
+            "Decorations": [
+              "fexgen::ptr_passthrough"
+            ]
+          }
+        }
+      }
+    },
+    "vkAllocateCommandBuffers": {
+      "32Bit": {
+        "Decorations": [
+          "fexgen::custom_host_impl"
+        ],
+        "Parameters": {
+          "2": {
+            "Type": "VkCommandBuffer*",
+            "Decorations": [
+              "fexgen::ptr_passthrough"
+            ]
+          }
+        }
+      }
+    },
+    "vkFreeCommandBuffers": {
+      "32Bit": {
+        "Decorations": [
+          "fexgen::custom_host_impl"
+        ],
+        "Parameters": {
+          "3": {
+            "Type": "const VkCommandBuffer*",
+            "Decorations": [
+              "fexgen::ptr_passthrough"
+            ]
+          }
+        }
+      }
+    },
+    "vkCmdDrawIndexed": { "32Bit": { "Enabled": false }},
+    "vkCmdDrawIndirect": { "32Bit": { "Enabled": false }},
+    "vkCmdDrawIndexedIndirect": { "32Bit": { "Enabled": false }},
+    "vkCmdDispatch": { "32Bit": { "Enabled": false }},
+    "vkCmdDispatchIndirect": { "32Bit": { "Enabled": false }},
+    "vkCmdCopyBuffer": { "32Bit": { "Enabled": false }},
+    "vkCmdCopyImage": { "32Bit": { "Enabled": false }},
+    "vkCmdBlitImage": { "32Bit": { "Enabled": false }},
+
+    "vkCmdCopyImageToBuffer": { "32Bit": { "Enabled": false }},
+    "vkCmdUpdateBuffer": {
+      "32Bit": {
+        "Enabled": false
+      },
+
+      "Parameters": {
+        "4": {
+          "Type": "const void*",
+          "Decorations": [
+            "fexgen::assume_compatible_data_layout"
+          ]
+        }
+      }
+    },
+    "vkCmdFillBuffer": { "32Bit": { "Enabled": false }},
+    "vkCmdClearColorImage": { "32Bit": { "Enabled": false }},
+    "vkCmdClearDepthStencilImage": { "32Bit": { "Enabled": false }},
+    "vkCmdResolveImage": { "32Bit": { "Enabled": false }},
+    "vkCmdSetEvent": { "32Bit": { "Enabled": false }},
+    "vkCmdResetEvent": { "32Bit": { "Enabled": false }},
+    "vkCmdWaitEvents": { "32Bit": { "Enabled": false }},
+    "vkCmdBeginQuery": { "32Bit": { "Enabled": false }},
+    "vkCmdEndQuery": { "32Bit": { "Enabled": false }},
+    "vkCmdResetQueryPool": { "32Bit": { "Enabled": false }},
+    "vkCmdWriteTimestamp": { "32Bit": { "Enabled": false }},
+    "vkCmdCopyQueryPoolResults": { "32Bit": { "Enabled": false }},
+    "vkCmdPushConstants": {
+      "32Bit": {
+        "Enabled": false
+      },
+
+      "Parameters": {
+        "5": {
+          "Type": "const void*",
+          "Decorations": [
+            "fexgen::assume_compatible_data_layout"
+          ]
+        }
+      }
+    },
+
+    "vkCmdNextSubpass": { "32Bit": { "Enabled": false }},
+    "vkCmdExecuteCommands": { "32Bit": { "Enabled": false }},
+    "vkBindBufferMemory2": { "32Bit": { "Enabled": false }},
+    "vkBindImageMemory2": { "32Bit": { "Enabled": false }},
+    "vkGetDeviceGroupPeerMemoryFeatures": { "32Bit": { "Enabled": false }},
+    "vkCmdSetDeviceMask": { "32Bit": { "Enabled": false }},
+    "vkCmdDispatchBase": { "32Bit": { "Enabled": false }},
+    "vkEnumeratePhysicalDeviceGroups": { "32Bit": { "Enabled": false }},
+    "vkGetBufferMemoryRequirements2": { "32Bit": { "Enabled": false }},
+    "vkGetImageSparseMemoryRequirements2": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceQueueFamilyProperties2": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceMemoryProperties2": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceSparseImageFormatProperties2": { "32Bit": { "Enabled": false }},
+    "vkTrimCommandPool": { "32Bit": { "Enabled": false }},
+    "vkGetDeviceQueue2": { "32Bit": { "Enabled": false }},
+    "vkCreateSamplerYcbcrConversion": { "32Bit": { "Enabled": false }},
+    "vkDestroySamplerYcbcrConversion": { "32Bit": { "Enabled": false }},
+    "vkUpdateDescriptorSetWithTemplate": {
+      "Parameters": {
+        "3": {
+          "Type": "const void*",
+          "Decorations": [
+            "fexgen::assume_compatible_data_layout"
+          ]
+        }
+      }
+    },
+    "vkUpdateDescriptorSetWithTemplateKHR": {
+      "Parameters": {
+        "3": {
+          "Type": "const void*",
+          "Decorations": [
+            "fexgen::assume_compatible_data_layout"
+          ]
+        }
+      }
+    },
+    "vkGetPhysicalDeviceExternalBufferProperties": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceExternalFenceProperties": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceExternalSemaphoreProperties": { "32Bit": { "Enabled": false }},
+
+    "vkCmdDrawIndirectCount": { "32Bit": { "Enabled": false }},
+    "vkCmdDrawIndexedIndirectCount": { "32Bit": { "Enabled": false }},
+    "vkCmdBeginRenderPass2": { "32Bit": { "Enabled": false }},
+    "vkCmdNextSubpass2": { "32Bit": { "Enabled": false }},
+    "vkCmdEndRenderPass2": { "32Bit": { "Enabled": false }},
+    "vkResetQueryPool": { "32Bit": { "Enabled": false }},
+    "vkGetSemaphoreCounterValue": { "32Bit": { "Enabled": false }},
+    "vkSignalSemaphore": { "32Bit": { "Enabled": false }},
+    "vkGetBufferOpaqueCaptureAddress": { "32Bit": { "Enabled": false }},
+    "vkGetDeviceMemoryOpaqueCaptureAddress": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceToolProperties": { "32Bit": { "Enabled": false }},
+    "vkCreatePrivateDataSlot": { "32Bit": { "Enabled": false }},
+    "vkDestroyPrivateDataSlot": { "32Bit": { "Enabled": false }},
+    "vkSetPrivateData": { "32Bit": { "Enabled": false }},
+    "vkGetPrivateData": { "32Bit": { "Enabled": false }},
+    "vkCmdSetEvent2": { "32Bit": { "Enabled": false }},
+    "vkCmdResetEvent2": { "32Bit": { "Enabled": false }},
+    "vkCmdWaitEvents2": { "32Bit": { "Enabled": false }},
+
+    "vkCmdWriteTimestamp2": { "32Bit": { "Enabled": false }},
+    "vkQueueSubmit2": { "32Bit": { "Enabled": false }},
+    "vkCmdCopyBuffer2": { "32Bit": { "Enabled": false }},
+    "vkCmdCopyImage2": { "32Bit": { "Enabled": false }},
+    "vkCmdCopyBufferToImage2": { "32Bit": { "Enabled": false }},
+    "vkCmdCopyImageToBuffer2": { "32Bit": { "Enabled": false }},
+    "vkCmdBlitImage2": { "32Bit": { "Enabled": false }},
+    "vkCmdResolveImage2": { "32Bit": { "Enabled": false }},
+    "vkGetDeviceBufferMemoryRequirements": { "32Bit": { "Enabled": false }},
+    "vkGetDeviceImageMemoryRequirements": { "32Bit": { "Enabled": false }},
+    "vkGetDeviceImageSparseMemoryRequirements": { "32Bit": { "Enabled": false }},
+    "vkMapMemory2": { "32Bit": { "Enabled": false }},
+    "vkGetDeviceImageSubresourceLayout": { "32Bit": { "Enabled": false }},
+    "vkCmdPushDescriptorSet": { "32Bit": { "Enabled": false }},
+
+    "vkCmdPushDescriptorSetWithTemplate": {
+      "Parameters": {
+        "4": {
+          "Type": "const void*",
+          "Decorations": [
+            "fexgen::assume_compatible_data_layout"
+          ]
+        }
+      }
+    },
+    "vkCmdPushDescriptorSetWithTemplateKHR": {
+      "Parameters": {
+        "4": {
+          "Type": "const void*",
+          "Decorations": [
+            "fexgen::assume_compatible_data_layout"
+          ]
+        }
+      }
+    },
+
+    "vkCmdSetRenderingAttachmentLocations": { "32Bit": { "Enabled": false }},
+    "vkCmdSetRenderingInputAttachmentIndices": { "32Bit": { "Enabled": false }},
+    "vkCmdBindDescriptorSets2": { "32Bit": { "Enabled": false }},
+    "vkCmdPushConstants2": { "32Bit": { "Enabled": false }},
+    "vkCmdPushDescriptorSet2": { "32Bit": { "Enabled": false }},
+    "vkCmdPushDescriptorSetWithTemplate2": { "32Bit": { "Enabled": false }},
+
+    "vkCopyImageToMemory": { "32Bit": { "Enabled": false }},
+    "vkCopyImageToImage": { "32Bit": { "Enabled": false }},
+
+    "vkGetPhysicalDeviceSurfaceFormatsKHR": {
+      "Comment": [
+        "// TODO: Need to figure out how *not* to repack the last parameter on input..."
+      ]
+    },
+
+    "vkGetDeviceGroupPresentCapabilitiesKHR": { "32Bit": { "Enabled": false }},
+    "vkGetDeviceGroupSurfacePresentModesKHR": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDevicePresentRectanglesKHR": { "32Bit": { "Enabled": false }},
+    "vkAcquireNextImage2KHR": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceDisplayPropertiesKHR": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceDisplayPlanePropertiesKHR": { "32Bit": { "Enabled": false }},
+    "vkGetDisplayPlaneSupportedDisplaysKHR": { "32Bit": { "Enabled": false }},
+    "vkGetDisplayModePropertiesKHR": { "32Bit": { "Enabled": false }},
+    "vkCreateDisplayModeKHR": { "32Bit": { "Enabled": false }},
+    "vkGetDisplayPlaneCapabilitiesKHR": { "32Bit": { "Enabled": false }},
+    "vkCreateDisplayPlaneSurfaceKHR": { "32Bit": { "Enabled": false }},
+    "vkCreateSharedSwapchainsKHR": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceVideoCapabilitiesKHR": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceVideoFormatPropertiesKHR": { "32Bit": { "Enabled": false }},
+    "vkCreateVideoSessionKHR": { "32Bit": { "Enabled": false }},
+    "vkDestroyVideoSessionKHR": { "32Bit": { "Enabled": false }},
+    "vkGetVideoSessionMemoryRequirementsKHR": { "32Bit": { "Enabled": false }},
+    "vkBindVideoSessionMemoryKHR": { "32Bit": { "Enabled": false }},
+    "vkCreateVideoSessionParametersKHR": { "32Bit": { "Enabled": false }},
+    "vkUpdateVideoSessionParametersKHR": { "32Bit": { "Enabled": false }},
+    "vkDestroyVideoSessionParametersKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdBeginVideoCodingKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdEndVideoCodingKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdControlVideoCodingKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdDecodeVideoKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdBeginRenderingKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdEndRenderingKHR": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceFeatures2KHR": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceProperties2KHR": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceFormatProperties2KHR": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceImageFormatProperties2KHR": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceQueueFamilyProperties2KHR": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceMemoryProperties2KHR": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceSparseImageFormatProperties2KHR": { "32Bit": { "Enabled": false }},
+    "vkGetDeviceGroupPeerMemoryFeaturesKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdSetDeviceMaskKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdDispatchBaseKHR": { "32Bit": { "Enabled": false }},
+    "vkTrimCommandPoolKHR": { "32Bit": { "Enabled": false }},
+    "vkEnumeratePhysicalDeviceGroupsKHR": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceExternalBufferPropertiesKHR": { "32Bit": { "Enabled": false }},
+    "vkGetMemoryFdKHR": { "32Bit": { "Enabled": false }},
+    "vkGetMemoryFdPropertiesKHR": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceExternalSemaphorePropertiesKHR": { "32Bit": { "Enabled": false }},
+    "vkImportSemaphoreFdKHR": { "32Bit": { "Enabled": false }},
+    "vkGetSemaphoreFdKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdPushDescriptorSetKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdBeginRenderPass2KHR": { "32Bit": { "Enabled": false }},
+    "vkCmdNextSubpass2KHR": { "32Bit": { "Enabled": false }},
+    "vkCmdEndRenderPass2KHR": { "32Bit": { "Enabled": false }},
+    "vkGetSwapchainStatusKHR": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceExternalFencePropertiesKHR": { "32Bit": { "Enabled": false }},
+    "vkImportFenceFdKHR": { "32Bit": { "Enabled": false }},
+    "vkGetFenceFdKHR": { "32Bit": { "Enabled": false }},
+    "vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR": { "32Bit": { "Enabled": false }},
+    "vkAcquireProfilingLockKHR": { "32Bit": { "Enabled": false }},
+    "vkReleaseProfilingLockKHR": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceSurfaceCapabilities2KHR": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceSurfaceFormats2KHR": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceDisplayProperties2KHR": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceDisplayPlaneProperties2KHR": { "32Bit": { "Enabled": false }},
+    "vkGetDisplayPlaneCapabilities2KHR": { "32Bit": { "Enabled": false }},
+    "vkGetImageMemoryRequirements2KHR": { "32Bit": { "Enabled": false }},
+    "vkGetBufferMemoryRequirements2KHR": { "32Bit": { "Enabled": false }},
+    "vkGetImageSparseMemoryRequirements2KHR": { "32Bit": { "Enabled": false }},
+    "vkCreateSamplerYcbcrConversionKHR": { "32Bit": { "Enabled": false }},
+    "vkDestroySamplerYcbcrConversionKHR": { "32Bit": { "Enabled": false }},
+    "vkBindBufferMemory2KHR": { "32Bit": { "Enabled": false }},
+    "vkBindImageMemory2KHR": { "32Bit": { "Enabled": false }},
+    "vkGetDescriptorSetLayoutSupportKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdDrawIndirectCountKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdDrawIndexedIndirectCountKHR": { "32Bit": { "Enabled": false }},
+    "vkGetSemaphoreCounterValueKHR": { "32Bit": { "Enabled": false }},
+    "vkWaitSemaphoresKHR": { "32Bit": { "Enabled": false }},
+    "vkSignalSemaphoreKHR": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceFragmentShadingRatesKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdSetFragmentShadingRateKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdSetRenderingAttachmentLocationsKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdSetRenderingInputAttachmentIndicesKHR": { "32Bit": { "Enabled": false }},
+    "vkWaitForPresentKHR": { "32Bit": { "Enabled": false }},
+    "vkGetBufferDeviceAddressKHR": { "32Bit": { "Enabled": false }},
+    "vkGetBufferOpaqueCaptureAddressKHR": { "32Bit": { "Enabled": false }},
+    "vkGetDeviceMemoryOpaqueCaptureAddressKHR": { "32Bit": { "Enabled": false }},
+    "vkCreateDeferredOperationKHR": { "32Bit": { "Enabled": false }},
+    "vkDestroyDeferredOperationKHR": { "32Bit": { "Enabled": false }},
+    "vkGetDeferredOperationMaxConcurrencyKHR": { "32Bit": { "Enabled": false }},
+    "vkGetDeferredOperationResultKHR": { "32Bit": { "Enabled": false }},
+    "vkDeferredOperationJoinKHR": { "32Bit": { "Enabled": false }},
+    "vkGetPipelineExecutablePropertiesKHR": { "32Bit": { "Enabled": false }},
+    "vkGetPipelineExecutableStatisticsKHR": { "32Bit": { "Enabled": false }},
+    "vkGetPipelineExecutableInternalRepresentationsKHR": { "32Bit": { "Enabled": false }},
+    "vkMapMemory2KHR": { "32Bit": { "Enabled": false }},
+    "vkUnmapMemory2KHR": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR": { "32Bit": { "Enabled": false }},
+    "vkGetEncodedVideoSessionParametersKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdEncodeVideoKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdSetEvent2KHR": { "32Bit": { "Enabled": false }},
+    "vkCmdResetEvent2KHR": { "32Bit": { "Enabled": false }},
+    "vkCmdWaitEvents2KHR": { "32Bit": { "Enabled": false }},
+    "vkCmdPipelineBarrier2KHR": { "32Bit": { "Enabled": false }},
+    "vkCmdWriteTimestamp2KHR": { "32Bit": { "Enabled": false }},
+    "vkQueueSubmit2KHR": { "32Bit": { "Enabled": false }},
+    "vkCmdCopyBuffer2KHR": { "32Bit": { "Enabled": false }},
+    "vkCmdCopyImage2KHR": { "32Bit": { "Enabled": false }},
+    "vkCmdCopyBufferToImage2KHR": { "32Bit": { "Enabled": false }},
+    "vkCmdCopyImageToBuffer2KHR": { "32Bit": { "Enabled": false }},
+    "vkCmdBlitImage2KHR": { "32Bit": { "Enabled": false }},
+    "vkCmdResolveImage2KHR": { "32Bit": { "Enabled": false }},
+    "vkCmdTraceRaysIndirect2KHR": { "32Bit": { "Enabled": false }},
+    "vkGetDeviceBufferMemoryRequirementsKHR": { "32Bit": { "Enabled": false }},
+    "vkGetDeviceImageMemoryRequirementsKHR": { "32Bit": { "Enabled": false }},
+    "vkGetDeviceImageSparseMemoryRequirementsKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdBindIndexBuffer2KHR": { "32Bit": { "Enabled": false }},
+    "vkGetRenderingAreaGranularityKHR": { "32Bit": { "Enabled": false }},
+    "vkGetDeviceImageSubresourceLayoutKHR": { "32Bit": { "Enabled": false }},
+    "vkGetImageSubresourceLayout2KHR": { "32Bit": { "Enabled": false }},
+    "vkCreatePipelineBinariesKHR": { "32Bit": { "Enabled": false }},
+    "vkDestroyPipelineBinaryKHR": { "32Bit": { "Enabled": false }},
+    "vkGetPipelineKeyKHR": { "32Bit": { "Enabled": false }},
+    "vkGetPipelineBinaryDataKHR": { "32Bit": { "Enabled": false }},
+    "vkReleaseCapturedPipelineDataKHR": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdSetLineStippleKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdBindDescriptorSets2KHR": { "32Bit": { "Enabled": false }},
+    "vkCmdPushConstants2KHR": { "32Bit": { "Enabled": false }},
+    "vkCmdPushDescriptorSet2KHR": { "32Bit": { "Enabled": false }},
+    "vkCmdPushDescriptorSetWithTemplate2KHR": { "32Bit": { "Enabled": false }},
+    "vkCmdSetDescriptorBufferOffsets2EXT": { "32Bit": { "Enabled": false }},
+    "vkCmdBindDescriptorBufferEmbeddedSamplers2EXT": { "32Bit": { "Enabled": false }},
+    "vkCreateDebugReportCallbackEXT": {
+      "Decorations": [
+        "fexgen::custom_host_impl"
+      ],
+      "Parameters": {
+        "1": {
+          "Type": "const VkDebugReportCallbackCreateInfoEXT*",
+          "Decorations": [
+            "fexgen::ptr_passthrough"
+          ]
+        }
+      }
+    },
+    "vkDestroyDebugReportCallbackEXT": {
+      "Decorations": [
+        "fexgen::custom_host_impl"
+      ]
+    },
+    "vkDebugReportMessageEXT": { "32Bit": { "Enabled": false }},
+    "vkDebugMarkerSetObjectTagEXT": { "32Bit": { "Enabled": false }},
+    "vkDebugMarkerSetObjectNameEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdDebugMarkerBeginEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdDebugMarkerEndEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdDebugMarkerInsertEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdBindTransformFeedbackBuffersEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdBeginTransformFeedbackEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdEndTransformFeedbackEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdBeginQueryIndexedEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdEndQueryIndexedEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdDrawIndirectByteCountEXT": { "32Bit": { "Enabled": false }},
+    "vkCreateCuModuleNVX": { "32Bit": { "Enabled": false }},
+    "vkCreateCuFunctionNVX": { "32Bit": { "Enabled": false }},
+    "vkDestroyCuModuleNVX": { "32Bit": { "Enabled": false }},
+    "vkDestroyCuFunctionNVX": { "32Bit": { "Enabled": false }},
+    "vkCmdCuLaunchKernelNVX": { "32Bit": { "Enabled": false }},
+    "vkGetImageViewHandleNVX": { "32Bit": { "Enabled": false }},
+    "vkGetImageViewHandle64NVX": { "32Bit": { "Enabled": false }},
+    "vkGetImageViewAddressNVX": { "32Bit": { "Enabled": false }},
+    "vkCmdDrawIndirectCountAMD": { "32Bit": { "Enabled": false }},
+    "vkCmdDrawIndexedIndirectCountAMD": { "32Bit": { "Enabled": false }},
+    "vkGetShaderInfoAMD": {
+      "32Bit": {
+        "Enabled": false
+      },
+
+      "Parameters": {
+        "5": {
+          "Type": "void*",
+          "Decorations": [
+            "fexgen::assume_compatible_data_layout"
+          ]
+        }
+      }
+    },
+    "vkGetPhysicalDeviceExternalImageFormatPropertiesNV": { "32Bit": { "Enabled": false }},
+    "vkCmdBeginConditionalRenderingEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdEndConditionalRenderingEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdSetViewportWScalingNV": { "32Bit": { "Enabled": false }},
+    "vkReleaseDisplayEXT": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceSurfaceCapabilities2EXT": { "32Bit": { "Enabled": false }},
+    "vkDisplayPowerControlEXT": { "32Bit": { "Enabled": false }},
+    "vkRegisterDeviceEventEXT": { "32Bit": { "Enabled": false }},
+    "vkRegisterDisplayEventEXT": { "32Bit": { "Enabled": false }},
+    "vkGetSwapchainCounterEXT": { "32Bit": { "Enabled": false }},
+    "vkGetRefreshCycleDurationGOOGLE": { "32Bit": { "Enabled": false }},
+    "vkGetPastPresentationTimingGOOGLE": { "32Bit": { "Enabled": false }},
+    "vkCmdSetDiscardRectangleEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdSetDiscardRectangleEnableEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdSetDiscardRectangleModeEXT": { "32Bit": { "Enabled": false }},
+    "vkSetHdrMetadataEXT": { "32Bit": { "Enabled": false }},
+    "vkSetDebugUtilsObjectNameEXT": { "32Bit": { "Enabled": false }},
+    "vkSetDebugUtilsObjectTagEXT": { "32Bit": { "Enabled": false }},
+    "vkQueueBeginDebugUtilsLabelEXT": { "32Bit": { "Enabled": false }},
+    "vkQueueEndDebugUtilsLabelEXT": { "32Bit": { "Enabled": false }},
+    "vkQueueInsertDebugUtilsLabelEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdBeginDebugUtilsLabelEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdEndDebugUtilsLabelEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdInsertDebugUtilsLabelEXT": { "32Bit": { "Enabled": false }},
+    "vkCreateDebugUtilsMessengerEXT": {
+      "Decorations": [
+        "fexgen::custom_host_impl"
+      ],
+      "Parameters": {
+        "1": {
+          "Type": "const VkDebugUtilsMessengerCreateInfoEXT*",
+          "Decorations": [
+            "fexgen::ptr_passthrough"
+          ]
+        }
+      }
+    },
+    "vkSubmitDebugUtilsMessageEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdSetSampleLocationsEXT": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceMultisamplePropertiesEXT": { "32Bit": { "Enabled": false }},
+    "vkGetImageDrmFormatModifierPropertiesEXT": { "32Bit": { "Enabled": false }},
+    "vkCreateValidationCacheEXT": { "32Bit": { "Enabled": false }},
+    "vkDestroyValidationCacheEXT": { "32Bit": { "Enabled": false }},
+    "vkMergeValidationCachesEXT": { "32Bit": { "Enabled": false }},
+    "vkGetValidationCacheDataEXT": {
+      "32Bit": {
+        "Enabled": false
+      },
+
+      "Parameters": {
+        "3": {
+          "Type": "void*",
+          "Decorations": [
+            "fexgen::assume_compatible_data_layout"
+          ]
+        }
+      }
+    },
+    "vkCmdBindShadingRateImageNV": { "32Bit": { "Enabled": false }},
+    "vkCmdSetViewportShadingRatePaletteNV": { "32Bit": { "Enabled": false }},
+    "vkCmdSetCoarseSampleOrderNV": { "32Bit": { "Enabled": false }},
+    "vkCreateAccelerationStructureNV": { "32Bit": { "Enabled": false }},
+    "vkDestroyAccelerationStructureNV": { "32Bit": { "Enabled": false }},
+    "vkGetAccelerationStructureMemoryRequirementsNV": { "32Bit": { "Enabled": false }},
+    "vkBindAccelerationStructureMemoryNV": { "32Bit": { "Enabled": false }},
+    "vkCmdBuildAccelerationStructureNV": { "32Bit": { "Enabled": false }},
+    "vkCmdCopyAccelerationStructureNV": { "32Bit": { "Enabled": false }},
+    "vkCmdTraceRaysNV": { "32Bit": { "Enabled": false }},
+    "vkCreateRayTracingPipelinesNV": { "32Bit": { "Enabled": false }},
+    "vkGetRayTracingShaderGroupHandlesKHR": { "32Bit": { "Enabled": false }},
+
+    "vkGetRayTracingShaderGroupHandlesKHR": {
+      "32Bit": {
+        "Enabled": false
+      },
+
+      "Parameters": {
+        "5": {
+          "Type": "void*",
+          "Decorations": [
+            "fexgen::assume_compatible_data_layout"
+          ]
+        }
+      }
+    },
+    "vkGetRayTracingShaderGroupHandlesNV": {
+      "32Bit": {
+        "Enabled": false
+      },
+
+      "Parameters": {
+        "5": {
+          "Type": "void*",
+          "Decorations": [
+            "fexgen::assume_compatible_data_layout"
+          ]
+        }
+      }
+    },
+    "vkGetAccelerationStructureHandleNV": {
+      "32Bit": {
+        "Enabled": false
+      },
+
+      "Parameters": {
+        "3": {
+          "Type": "void*",
+          "Decorations": [
+            "fexgen::assume_compatible_data_layout"
+          ]
+        }
+      }
+    },
+    "vkCmdWriteAccelerationStructuresPropertiesNV": { "32Bit": { "Enabled": false }},
+    "vkCompileDeferredNV": { "32Bit": { "Enabled": false }},
+
+    "vkGetMemoryHostPointerPropertiesEXT": {
+      "32Bit": {
+        "Enabled": false
+      },
+
+      "Parameters": {
+        "2": {
+          "Type": "const void*",
+          "Decorations": [
+            "fexgen::assume_compatible_data_layout"
+          ]
+        }
+      }
+    },
+    "vkCmdWriteBufferMarkerAMD": { "32Bit": { "Enabled": false }},
+    "vkGetCalibratedTimestampsEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdDrawMeshTasksNV": { "32Bit": { "Enabled": false }},
+    "vkCmdDrawMeshTasksIndirectNV": { "32Bit": { "Enabled": false }},
+    "vkCmdDrawMeshTasksIndirectCountNV": { "32Bit": { "Enabled": false }},
+    "vkCmdSetExclusiveScissorEnableNV": { "32Bit": { "Enabled": false }},
+    "vkCmdSetExclusiveScissorNV": { "32Bit": { "Enabled": false }},
+
+    "vkCmdSetCheckpointNV": {
+      "32Bit": {
+        "Enabled": false
+      },
+
+      "Parameters": {
+        "1": {
+          "Type": "const void*",
+          "Decorations": [
+            "fexgen::assume_compatible_data_layout"
+          ]
+        }
+      }
+    },
+
+    "vkGetQueueCheckpointDataNV": { "32Bit": { "Enabled": false }},
+    "vkGetQueueCheckpointData2NV": { "32Bit": { "Enabled": false }},
+    "vkInitializePerformanceApiINTEL": { "32Bit": { "Enabled": false }},
+    "vkUninitializePerformanceApiINTEL": { "32Bit": { "Enabled": false }},
+    "vkCmdSetPerformanceMarkerINTEL": { "32Bit": { "Enabled": false }},
+    "vkCmdSetPerformanceStreamMarkerINTEL": { "32Bit": { "Enabled": false }},
+    "vkCmdSetPerformanceOverrideINTEL": { "32Bit": { "Enabled": false }},
+    "vkAcquirePerformanceConfigurationINTEL": { "32Bit": { "Enabled": false }},
+    "vkReleasePerformanceConfigurationINTEL": { "32Bit": { "Enabled": false }},
+    "vkQueueSetPerformanceConfigurationINTEL": { "32Bit": { "Enabled": false }},
+    "vkGetPerformanceParameterINTEL": { "32Bit": { "Enabled": false }},
+    "vkSetLocalDimmingAMD": { "32Bit": { "Enabled": false }},
+    "vkGetBufferDeviceAddressEXT": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceToolPropertiesEXT": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceCooperativeMatrixPropertiesNV": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV": { "32Bit": { "Enabled": false }},
+    "vkCreateHeadlessSurfaceEXT": { "32Bit": { "Enabled": false }},
+    "vkResetQueryPoolEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdSetCullModeEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdSetFrontFaceEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdSetPrimitiveTopologyEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdSetViewportWithCountEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdSetScissorWithCountEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdBindVertexBuffers2EXT": { "32Bit": { "Enabled": false }},
+    "vkCmdSetDepthTestEnableEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdSetDepthWriteEnableEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdSetDepthCompareOpEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdSetDepthBoundsTestEnableEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdSetStencilTestEnableEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdSetStencilOpEXT": { "32Bit": { "Enabled": false }},
+    "vkCopyImageToMemoryEXT": { "32Bit": { "Enabled": false }},
+    "vkCopyImageToImageEXT": { "32Bit": { "Enabled": false }},
+    "vkGetImageSubresourceLayout2EXT": { "32Bit": { "Enabled": false }},
+    "vkReleaseSwapchainImagesEXT": { "32Bit": { "Enabled": false }},
+    "vkGetGeneratedCommandsMemoryRequirementsNV": { "32Bit": { "Enabled": false }},
+    "vkCmdPreprocessGeneratedCommandsNV": { "32Bit": { "Enabled": false }},
+    "vkCmdExecuteGeneratedCommandsNV": { "32Bit": { "Enabled": false }},
+    "vkCmdBindPipelineShaderGroupNV": { "32Bit": { "Enabled": false }},
+    "vkCreateIndirectCommandsLayoutNV": { "32Bit": { "Enabled": false }},
+    "vkDestroyIndirectCommandsLayoutNV": { "32Bit": { "Enabled": false }},
+    "vkCmdSetDepthBias2EXT": { "32Bit": { "Enabled": false }},
+    "vkAcquireDrmDisplayEXT": { "32Bit": { "Enabled": false }},
+    "vkGetDrmDisplayEXT": { "32Bit": { "Enabled": false }},
+    "vkCreatePrivateDataSlotEXT": { "32Bit": { "Enabled": false }},
+    "vkDestroyPrivateDataSlotEXT": { "32Bit": { "Enabled": false }},
+    "vkSetPrivateDataEXT": { "32Bit": { "Enabled": false }},
+    "vkGetPrivateDataEXT": { "32Bit": { "Enabled": false }},
+    "vkCreateCudaModuleNV": { "32Bit": { "Enabled": false }},
+    "vkGetCudaModuleCacheNV": { "32Bit": { "Enabled": false }},
+    "vkCreateCudaFunctionNV": { "32Bit": { "Enabled": false }},
+    "vkDestroyCudaModuleNV": { "32Bit": { "Enabled": false }},
+    "vkDestroyCudaFunctionNV": { "32Bit": { "Enabled": false }},
+    "vkCmdCudaLaunchKernelNV": { "32Bit": { "Enabled": false }},
+    "vkGetDescriptorEXT": {
+      "Parameters": {
+        "3": {
+          "Type": "void*",
+          "Decorations": [
+            "fexgen::assume_compatible_data_layout"
+          ]
+        }
+      }
+    },
+    "vkCmdBindDescriptorBufferEmbeddedSamplersEXT": { "32Bit": { "Enabled": false }},
+    "vkGetBufferOpaqueCaptureDescriptorDataEXT": { "32Bit": { "Enabled": false }},
+    "vkGetImageOpaqueCaptureDescriptorDataEXT": { "32Bit": { "Enabled": false }},
+    "vkGetImageViewOpaqueCaptureDescriptorDataEXT": { "32Bit": { "Enabled": false }},
+    "vkGetSamplerOpaqueCaptureDescriptorDataEXT": { "32Bit": { "Enabled": false }},
+    "vkGetAccelerationStructureOpaqueCaptureDescriptorDataEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdSetFragmentShadingRateEnumNV": { "32Bit": { "Enabled": false }},
+    "vkGetDeviceFaultInfoEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdSetVertexInputEXT": {
+      "32Bit": {
+        "Decorations": [
+          "fexgen::custom_host_impl"
+        ],
+        "Parameters": {
+          "2": {
+            "Type": "const VkVertexInputBindingDescription2EXT*",
+            "Decorations": [
+              "fexgen::ptr_passthrough"
+            ]
+          },
+          "4": {
+            "Type": "const VkVertexInputAttributeDescription2EXT*",
+            "Decorations": [
+              "fexgen::ptr_passthrough"
+            ]
+          }
+        }
+      }
+    },
+    "vkGetDeviceSubpassShadingMaxWorkgroupSizeHUAWEI": { "32Bit": { "Enabled": false }},
+    "vkCmdSubpassShadingHUAWEI": { "32Bit": { "Enabled": false }},
+    "vkCmdBindInvocationMaskHUAWEI": { "32Bit": { "Enabled": false }},
+    "vkGetMemoryRemoteAddressNV": {
+      "Comment": [
+        "// VkRemoteAddressNV* expands to void**, so it needs custom repacking on on 32-bit"
+      ],
+      "32Bit": { "Enabled": false }
+    },
+
+    "vkGetPipelinePropertiesEXT": { "32Bit": { "Enabled": false }},
+    "vkCreateMicromapEXT": { "32Bit": { "Enabled": false }},
+    "vkDestroyMicromapEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdBuildMicromapsEXT": { "32Bit": { "Enabled": false }},
+    "vkBuildMicromapsEXT": { "32Bit": { "Enabled": false }},
+    "vkCopyMicromapEXT": { "32Bit": { "Enabled": false }},
+    "vkCopyMicromapToMemoryEXT": { "32Bit": { "Enabled": false }},
+    "vkCopyMemoryToMicromapEXT": { "32Bit": { "Enabled": false }},
+    "vkWriteMicromapsPropertiesEXT": {
+      "32Bit": {
+        "Enabled": false
+      },
+
+      "Parameters": {
+        "5": {
+          "Type": "void*",
+          "Decorations": [
+            "fexgen::assume_compatible_data_layout"
+          ]
+        }
+      }
+    },
+    "vkCmdCopyMicromapEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdCopyMicromapToMemoryEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdCopyMemoryToMicromapEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdWriteMicromapsPropertiesEXT": { "32Bit": { "Enabled": false }},
+    "vkGetDeviceMicromapCompatibilityEXT": { "32Bit": { "Enabled": false }},
+    "vkGetMicromapBuildSizesEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdDrawClusterHUAWEI": { "32Bit": { "Enabled": false }},
+    "vkCmdDrawClusterIndirectHUAWEI": { "32Bit": { "Enabled": false }},
+    "vkSetDeviceMemoryPriorityEXT": { "32Bit": { "Enabled": false }},
+    "vkGetDescriptorSetLayoutHostMappingInfoVALVE": { "32Bit": { "Enabled": false }},
+    "vkGetDescriptorSetHostMappingVALVE": { "32Bit": { "Enabled": false }},
+    "vkCmdCopyMemoryIndirectNV": { "32Bit": { "Enabled": false }},
+    "vkCmdCopyMemoryToImageIndirectNV": { "32Bit": { "Enabled": false }},
+    "vkCmdDecompressMemoryNV": { "32Bit": { "Enabled": false }},
+    "vkCmdDecompressMemoryIndirectCountNV": { "32Bit": { "Enabled": false }},
+    "vkGetPipelineIndirectMemoryRequirementsNV": { "32Bit": { "Enabled": false }},
+    "vkCmdUpdatePipelineIndirectBufferNV": { "32Bit": { "Enabled": false }},
+    "vkGetPipelineIndirectDeviceAddressNV": { "32Bit": { "Enabled": false }},
+    "vkCmdSetViewportWScalingEnableNV": { "32Bit": { "Enabled": false }},
+    "vkCmdSetViewportSwizzleNV": { "32Bit": { "Enabled": false }},
+    "vkCmdSetCoverageToColorEnableNV": { "32Bit": { "Enabled": false }},
+    "vkCmdSetCoverageToColorLocationNV": { "32Bit": { "Enabled": false }},
+    "vkCmdSetCoverageModulationModeNV": { "32Bit": { "Enabled": false }},
+    "vkCmdSetCoverageModulationTableEnableNV": { "32Bit": { "Enabled": false }},
+    "vkCmdSetCoverageModulationTableNV": { "32Bit": { "Enabled": false }},
+    "vkCmdSetShadingRateImageEnableNV": { "32Bit": { "Enabled": false }},
+    "vkCmdSetRepresentativeFragmentTestEnableNV": { "32Bit": { "Enabled": false }},
+    "vkCmdSetCoverageReductionModeNV": { "32Bit": { "Enabled": false }},
+    "vkGetShaderModuleIdentifierEXT": { "32Bit": { "Enabled": false }},
+    "vkGetShaderModuleCreateInfoIdentifierEXT": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceOpticalFlowImageFormatsNV": { "32Bit": { "Enabled": false }},
+    "vkCreateOpticalFlowSessionNV": { "32Bit": { "Enabled": false }},
+    "vkDestroyOpticalFlowSessionNV": { "32Bit": { "Enabled": false }},
+    "vkBindOpticalFlowSessionImageNV": { "32Bit": { "Enabled": false }},
+    "vkCmdOpticalFlowExecuteNV": { "32Bit": { "Enabled": false }},
+    "vkAntiLagUpdateAMD": { "32Bit": { "Enabled": false }},
+    "vkCreateShadersEXT": { "32Bit": { "Enabled": false }},
+    "vkDestroyShaderEXT": { "32Bit": { "Enabled": false }},
+    "vkGetShaderBinaryDataEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdBindShadersEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdSetDepthClampRangeEXT": { "32Bit": { "Enabled": false }},
+    "vkGetFramebufferTilePropertiesQCOM": { "32Bit": { "Enabled": false }},
+    "vkGetDynamicRenderingTilePropertiesQCOM": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceCooperativeVectorPropertiesNV": { "32Bit": { "Enabled": false }},
+    "vkConvertCooperativeVectorMatrixNV": { "32Bit": { "Enabled": false }},
+    "vkCmdConvertCooperativeVectorMatrixNV": { "32Bit": { "Enabled": false }},
+    "vkSetLatencySleepModeNV": { "32Bit": { "Enabled": false }},
+    "vkLatencySleepNV": { "32Bit": { "Enabled": false }},
+    "vkSetLatencyMarkerNV": { "32Bit": { "Enabled": false }},
+    "vkGetLatencyTimingsNV": { "32Bit": { "Enabled": false }},
+    "vkQueueNotifyOutOfBandNV": { "32Bit": { "Enabled": false }},
+    "vkGetClusterAccelerationStructureBuildSizesNV": { "32Bit": { "Enabled": false }},
+    "vkCmdBuildClusterAccelerationStructureIndirectNV": { "32Bit": { "Enabled": false }},
+    "vkGetPartitionedAccelerationStructuresBuildSizesNV": { "32Bit": { "Enabled": false }},
+    "vkCmdBuildPartitionedAccelerationStructuresNV": { "32Bit": { "Enabled": false }},
+    "vkGetGeneratedCommandsMemoryRequirementsEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdPreprocessGeneratedCommandsEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdExecuteGeneratedCommandsEXT": { "32Bit": { "Enabled": false }},
+    "vkCreateIndirectCommandsLayoutEXT": { "32Bit": { "Enabled": false }},
+    "vkDestroyIndirectCommandsLayoutEXT": { "32Bit": { "Enabled": false }},
+    "vkCreateIndirectExecutionSetEXT": { "32Bit": { "Enabled": false }},
+    "vkDestroyIndirectExecutionSetEXT": { "32Bit": { "Enabled": false }},
+    "vkUpdateIndirectExecutionSetPipelineEXT": { "32Bit": { "Enabled": false }},
+    "vkUpdateIndirectExecutionSetShaderEXT": { "32Bit": { "Enabled": false }},
+    "vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV": { "32Bit": { "Enabled": false }},
+    "vkCreateAccelerationStructureKHR": { "32Bit": { "Enabled": false }},
+    "vkDestroyAccelerationStructureKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdBuildAccelerationStructuresKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdBuildAccelerationStructuresIndirectKHR": { "32Bit": { "Enabled": false }},
+    "vkBuildAccelerationStructuresKHR": { "32Bit": { "Enabled": false }},
+    "vkCopyAccelerationStructureKHR": { "32Bit": { "Enabled": false }},
+    "vkCopyAccelerationStructureToMemoryKHR": { "32Bit": { "Enabled": false }},
+    "vkCopyMemoryToAccelerationStructureKHR": { "32Bit": { "Enabled": false }},
+    "vkWriteAccelerationStructuresPropertiesKHR": {
+      "32Bit": {
+        "Enabled": false
+      },
+
+      "Parameters": {
+        "5": {
+          "Type": "void*",
+          "Decorations": [
+            "fexgen::assume_compatible_data_layout"
+          ]
+        }
+      }
+    },
+    "vkCmdCopyAccelerationStructureKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdCopyAccelerationStructureToMemoryKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdCopyMemoryToAccelerationStructureKHR": { "32Bit": { "Enabled": false }},
+    "vkGetAccelerationStructureDeviceAddressKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdWriteAccelerationStructuresPropertiesKHR": { "32Bit": { "Enabled": false }},
+    "vkGetDeviceAccelerationStructureCompatibilityKHR": { "32Bit": { "Enabled": false }},
+    "vkGetAccelerationStructureBuildSizesKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdTraceRaysKHR": { "32Bit": { "Enabled": false }},
+    "vkCreateRayTracingPipelinesKHR": { "32Bit": { "Enabled": false }},
+    "vkGetRayTracingCaptureReplayShaderGroupHandlesKHR": {
+      "32Bit": {
+        "Enabled": false
+      },
+
+      "Parameters": {
+        "5": {
+          "Type": "void*",
+          "Decorations": [
+            "fexgen::assume_compatible_data_layout"
+          ]
+        }
+      }
+    },
+    "vkCmdTraceRaysIndirectKHR": { "32Bit": { "Enabled": false }},
+    "vkGetRayTracingShaderGroupStackSizeKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdSetRayTracingPipelineStackSizeKHR": { "32Bit": { "Enabled": false }},
+    "vkCmdDrawMeshTasksEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdDrawMeshTasksIndirectEXT": { "32Bit": { "Enabled": false }},
+    "vkCmdDrawMeshTasksIndirectCountEXT": { "32Bit": { "Enabled": false }},
+    "vkAcquireXlibDisplayEXT": {
+      "Decorations": [
+        "fexgen::custom_host_impl"
+      ],
+      "Parameters": {
+        "1": {
+          "Type": "Display*",
+          "Decorations": [
+            "fexgen::ptr_passthrough"
+          ]
+        }
+      }
+    },
+    "vkGetRandROutputDisplayEXT": {
+      "Decorations": [
+        "fexgen::custom_host_impl"
+      ],
+      "Parameters": {
+        "1": {
+          "Type": "Display*",
+          "Decorations": [
+            "fexgen::ptr_passthrough"
+          ]
+        }
+      }
+    },
+
+    "vkGetPhysicalDeviceXcbPresentationSupportKHR": {
+      "Decorations": [
+        "fexgen::custom_host_impl"
+      ],
+      "Parameters": {
+        "2": {
+          "Type": "xcb_connection_t*",
+          "Decorations": [
+            "fexgen::ptr_passthrough"
+          ]
+        }
+      }
+    },
+    "vkGetPhysicalDeviceXlibPresentationSupportKHR": {
+      "Decorations": [
+        "fexgen::custom_host_impl"
+      ],
+      "Parameters": {
+        "2": {
+          "Type": "Display*",
+          "Decorations": [
+            "fexgen::ptr_passthrough"
+          ]
+        }
+      }
+    },
+
+    "vkCopyMemoryToImageEXT": {
+      "Enabled": false
+    }
+  },
+  "FunctionDefaultNamespace": "internal",
+  "FunctionAllowList": [
+    "^vk.*",
+    "SetGuestXSync",
+    "SetGuestXGetVisualInfo",
+    "SetGuestXDisplayString"
+  ],
+  "FunctionDisallowList": [
+  ],
+  "StructAllowList": [
+    "^Vk.*",
+    "wl_display",
+    "wl_surface"
+  ],
+  "StructDisallowList": [
+    "VkAccelerationStructureGeometryKHR",
+    "VkCopyMemoryToAccelerationStructureInfoKHR",
+    "VkVideo.*",
+    "VkTransformMatrixKHR",
+    "VkAccelerationStructureGeometryInstancesDataKHR",
+    "VkCopyAccelerationStructureToMemoryInfoKHR",
+    "VkBaseInStructure",
+    "VkCopyMicromapToMemoryInfoEXT",
+    "VkAccelerationStructureGeometryTrianglesDataKHR",
+    "VkAccelerationStructureBuildGeometryInfoKHR",
+    "VkAccelerationStructureGeometryAabbsDataKHR",
+    "VkCopyMemoryToMicromapInfoEXT",
+    "VkMicromapBuildInfoEXT",
+    "VkAccelerationStructureTrianglesOpacityMicromapEXT",
+    "VkPerformanceValueINTEL",
+    "VkAccelerationStructureGeometryMotionTrianglesDataNV",
+    "VkAccelerationStructureInstanceKHR",
+    "VkAccelerationStructureInstanceNV",
+    "VkAccelerationStructureMotionInstanceDataNV",
+    "VkAccelerationStructureMotionInstanceNV",
+    "VkPartitionedAccelerationStructureWriteInstanceDataNV",
+    "VkPerformanceCounterResultKHR",
+    "VkAccelerationStructureMatrixMotionInstanceNV",
+    "VkAccelerationStructureGeometrySpheresDataNV",
+    "VkIndirectExecutionSetCreateInfoEXT",
+    "VkIndirectCommandsLayoutTokenEXT",
+    "VkIndirectCommandsLayoutCreateInfoEXT",
+    "VkClusterAccelerationStructureInputInfoNV",
+    "VkClusterAccelerationStructureCommandsInfoNV",
+    "VkAccelerationStructureGeometryLinearSweptSpheresDataNV",
+    "VkConvertCooperativeVectorMatrixInfoNV"
+  ]
+}
