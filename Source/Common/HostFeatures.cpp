@@ -8,14 +8,7 @@
 #include <FEXCore/Utils/StringUtils.h>
 
 #ifdef _M_X86_64
-#define XBYAK64
-#define XBYAK_NO_EXCEPTION
-#include <FEXCore/fextl/list.h>
-#include <FEXCore/fextl/unordered_map.h>
-#include <FEXCore/fextl/unordered_set.h>
-
-#include <xbyak/xbyak.h>
-#include <xbyak/xbyak_util.h>
+#include "Common/X86Features.h"
 #endif
 
 namespace FEX {
@@ -572,27 +565,17 @@ FEXCore::HostFeatures FetchHostFeatures(FEX::CPUFeatures& Features, bool Support
   }
 
 #if defined(_M_X86_64) && !defined(VIXL_SIMULATOR)
-  Xbyak::util::Cpu X86Features {};
-  HostFeatures.SupportsAES = X86Features.has(Xbyak::util::Cpu::tAESNI);
-  HostFeatures.SupportsCRC = X86Features.has(Xbyak::util::Cpu::tSSE42);
-  HostFeatures.SupportsRAND = X86Features.has(Xbyak::util::Cpu::tRDRAND) && X86Features.has(Xbyak::util::Cpu::tRDSEED);
+  FEX::X86::Features Feature {};
+  HostFeatures.SupportsAES = Feature.Feat_aes;
+  HostFeatures.SupportsCRC = Feature.Feat_crc;
+  HostFeatures.SupportsRAND = Feature.Feat_rand;
   HostFeatures.SupportsRCPC = true;
   HostFeatures.SupportsTSOImm9 = true;
   HostFeatures.SupportsAVX = true;
-  HostFeatures.SupportsSHA = X86Features.has(Xbyak::util::Cpu::tSHA);
-  HostFeatures.SupportsPMULL_128Bit = X86Features.has(Xbyak::util::Cpu::tPCLMULQDQ);
-  HostFeatures.SupportsAES256 = HostFeatures.SupportsAES && X86Features.has(Xbyak::util::Cpu::tVAES);
-
-  // xbyak doesn't know how to check for CLZero
-  // First ensure we support a new enough extended CPUID function range
-
-  uint32_t data[4];
-  Xbyak::util::Cpu::getCpuid(0x8000'0000, data);
-  if (data[0] >= 0x8000'0008U) {
-    // CLZero defined in 8000_00008_EBX[bit 0]
-    Xbyak::util::Cpu::getCpuid(0x8000'0008, data);
-    HostFeatures.SupportsCLZERO = data[1] & 1;
-  }
+  HostFeatures.SupportsSHA = Feature.Feat_rand;
+  HostFeatures.SupportsPMULL_128Bit = Feature.Feat_pclmulqdq;
+  HostFeatures.SupportsAES256 = Feature.Feat_aes;
+  HostFeatures.SupportsCLZERO = Feature.Feat_clzero;
 
   HostFeatures.SupportsAFP = true;
   HostFeatures.SupportsFloatExceptions = true;

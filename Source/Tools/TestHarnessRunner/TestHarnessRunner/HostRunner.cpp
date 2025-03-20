@@ -18,110 +18,116 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
-#include <string>
 #include <ucontext.h>
-#include <vector>
 
 #include <signal.h>
-#define XBYAK64
-#define XBYAK_NO_EXCEPTION
-#include <xbyak/xbyak.h>
-using namespace Xbyak;
 
 #ifdef _M_X86_64
 static inline int modify_ldt(int func, void* ldt) {
   return ::syscall(SYS_modify_ldt, func, ldt, sizeof(struct user_desc));
 }
 
-class x86HostRunner final : public Xbyak::CodeGenerator {
-public:
-  using AsmDispatch = void (*)(uintptr_t InitialRip, uintptr_t InitialStack);
-  AsmDispatch DispatchPtr;
-
-  x86HostRunner()
-    : CodeGenerator(4096) {
-    Setup32BitCodeSegment();
-
-    DispatchPtr = getCurr<AsmDispatch>();
+__attribute__((naked)) void Dispatcher(uintptr_t BranchTarget, void* ReturningStackLocation, int CodeSegment) {
+  // BranchTarget: rdi
+  // ReturningStackLocation: rsi
+  // CodeSegment: rdx
+  __asm volatile(R"(
+  .intel_syntax noprefix;
     // x86-64 ABI has the stack aligned when /call/ happens
     // Which means the destination has a misaligned stack at that point
-    push(rbx);
-    push(rbp);
-    push(r12);
-    push(r13);
-    push(r14);
-    push(r15);
-    rdfsbase(rbx);
-    push(rbx);
-    rdgsbase(rbx);
-    push(rbx);
-    sub(rsp, 8);
+    push rbx;
+    push rbp;
+    push r12;
+    push r13;
+    push r14;
+    push r15;
+    rdfsbase rbx;
+    push rbx;
+    rdgsbase rbx;
+    push rbx;
+    sub rsp, 8;
 
     // Save this stack pointer so we can cleanly shutdown the emulation with a long jump
     // regardless of where we were in the stack
-    mov(rax, (uint64_t)&ReturningStackLocation);
-    mov(qword[rax], rsp);
+    mov [rsi], rsp;
 
-    mov(rax, 0);
-    mov(rbx, 0);
-    mov(rcx, 0);
-    mov(rdx, 0);
-    mov(rbp, 0);
-    mov(rsi, 0);
-    mov(r8, 0);
-    mov(r9, 0);
-    mov(r10, 0);
-    mov(r11, 0);
-    mov(r12, 0);
-    mov(r13, 0);
-    mov(r14, 0);
-    mov(r15, 0);
-    finit();
+    // Clear all state going in to the branch target.
+    // Only remaining state, rdi, rdx, rsp
+    mov rax, 0;
+    mov rbx, 0;
+    mov rcx, 0;
+    mov rbp, 0;
+    mov rsi, 0;
+    mov r8, 0;
+    mov r9, 0;
+    mov r10, 0;
+    mov r11, 0;
+    mov r12, 0;
+    mov r13, 0;
+    mov r14, 0;
+    mov r15, 0;
+    finit;
 
-    if (Is64BitMode()) {
-      push(rdi);
+    cmp rdx, 0;
+    jnz .32_bit;
 
-      // Load our RIP
-      // RSP won't be set to zero here but should be fine
-      ret();
-    } else {
+    .64_bit:
+      // Clear rdx and also set flags to a sane state.
+      xor rdx, rdx;
+      mov rsp, 0;
+
+      // Tail-call
+      jmp rdi;
+
+    .32_bit:
       // Far call needs to go through a gate
       // This is setup just like the following packing
       // {
       //  uint32_t RIP;
       //  uint16_t CodeSegment;
       // }
+      sub rsp, 16
+      mov [rsp], edi;
+      mov [rsp+4], dx
 
-      GetCodeSegmentEntryLocation = getCurr<uint64_t>();
-      hlt();
+      // Clear rdx and also set flags to a sane state.
+      xor rdx, rdx;
 
-      Label Gate {};
-      // Patch gate entry point
-      // mov(dword[rip + Gate], edi)
-      jmp(qword[rip + Gate], LabelType::T_FAR);
+      GetCodeSegmentEntryLocation:
+      hlt;
 
-      L(Gate);
-      dd(0x1'0000); // This is a 32-bit offset from the start of the gate. We start at 0x1'0000 + 0
-      dw(CodeSegmentEntry);
-    }
+      jmp fword ptr [rsp];
 
-    ThreadStopHandlerAddress = getCurr<uint64_t>();
+    ThreadStopHandlerAddress:
 
-    add(rsp, 8);
+    add rsp, 8;
+    pop rbx;
+    wrgsbase rbx;
+    pop rbx;
+    wrfsbase rbx;
+    pop r15;
+    pop r14;
+    pop r13;
+    pop r12;
+    pop rbp;
+    pop rbx;
 
-    pop(rbx);
-    wrgsbase(rbx);
-    pop(rbx);
-    wrfsbase(rbx);
-    pop(r15);
-    pop(r14);
-    pop(r13);
-    pop(r12);
-    pop(rbp);
-    pop(rbx);
+    ret;
 
-    ret();
-    ready();
+  .att_syntax prefix;
+  )" ::
+                   : "memory", "cc");
+}
+
+extern "C" void* GetCodeSegmentEntryLocation;
+uintptr_t GetCodeSegmentEntryLocationPtr = (uintptr_t)&GetCodeSegmentEntryLocation;
+extern "C" void* ThreadStopHandlerAddress;
+uintptr_t ThreadStopHandlerAddressPtr = (uintptr_t)&ThreadStopHandlerAddress;
+
+class x86HostRunner final {
+public:
+  x86HostRunner() {
+    Setup32BitCodeSegment();
   }
 
   bool HandleSIGSEGV(FEXCore::Core::CPUState* OutState, int Signal, void* info, void* ucontext) {
@@ -133,7 +139,7 @@ public:
 
     Inst = reinterpret_cast<uint8_t*>(_mcontext->gregs[REG_RIP]);
     if (!Is64BitMode()) {
-      if (_mcontext->gregs[REG_RIP] == GetCodeSegmentEntryLocation) {
+      if (_mcontext->gregs[REG_RIP] == ::GetCodeSegmentEntryLocationPtr) {
         // Backup the CSGSFS register
         GlobalCodeSegmentEntry = _mcontext->gregs[REG_CSGSFS];
         // Skip past this hlt and keep running
@@ -187,7 +193,7 @@ public:
     _mcontext->gregs[REG_RSP] = ReturningStackLocation;
 
     // Set the new PC
-    _mcontext->gregs[REG_RIP] = ThreadStopHandlerAddress;
+    _mcontext->gregs[REG_RIP] = ::ThreadStopHandlerAddressPtr;
 
     if (!Is64BitMode()) {
       // Unset code segment so we can jump back in to 64-bit mode
@@ -197,14 +203,15 @@ public:
     return true;
   }
 
+  void Dispatch(uint64_t InitialRip) {
+    Dispatcher(InitialRip, &ReturningStackLocation, CodeSegmentEntry);
+  }
+
 private:
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
-  int CodeSegmentEntry {};
   int GlobalCodeSegmentEntry {};
-  uint64_t GetCodeSegmentEntryLocation;
-
+  int CodeSegmentEntry {};
   uint64_t ReturningStackLocation;
-  uint64_t ThreadStopHandlerAddress;
 
   uint32_t MakeSelector(int Segment, bool LDT) const {
     // Selector Index, Table Indicator (1 = LDT, 0 = GDT), CPL (3 = userland)
@@ -285,7 +292,7 @@ void RunAsHost(fextl::unique_ptr<FEX::HLE::SignalDelegator>& SignalDelegation, u
     },
     true);
 
-  runner.DispatchPtr(InitialRip, StackPointer);
+  runner.Dispatch(InitialRip);
 }
 #else
 void RunAsHost(fextl::unique_ptr<FEX::HLE::SignalDelegator>& SignalDelegation, uintptr_t InitialRip, uintptr_t StackPointer,

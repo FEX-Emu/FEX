@@ -22,4 +22,3 @@ target_link_libraries(TestHarnessRunner
     ${LIBS}
     ${PTHREAD_LIB}
 )
-target_include_directories(TestHarnessRunner PRIVATE ${CMAKE_SOURCE_DIR}/External/xbyak/)
