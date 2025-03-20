@@ -1,0 +1,42 @@
+{
+  "Features": {
+    "Env": {
+      "FEX_X87REDUCEDPRECISION": "1"
+    },
+    "Bitness": 32,
+    "EnabledHostFeatures": [
+      "AFP",
+      "RPRES",
+      "FLAGM",
+      "FLAGM2"
+    ],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256",
+      "CSSC"
+    ]
+  },
+  "Instructions": {
+    "fstp dword [ebx*4+0x204a20]": {
+      "ExpectedInstructionCount": 16,
+      "ExpectedArm64ASM": [
+        "mov w20, #0x4a20",
+        "movk w20, #0x20, lsl #16",
+        "add w20, w20, w6, lsl #2",
+        "ldrb w21, [x28, #1019]",
+        "add x0, x28, x21, lsl #4",
+        "ldr d2, [x0, #1040]",
+        "fcvt s2, d2",
+        "str s2, [x20]",
+        "ldrb w20, [x28, #1298]",
+        "mov w22, #0x1",
+        "lsl w22, w22, w21",
+        "bic w20, w20, w22",
+        "strb w20, [x28, #1298]",
+        "add w20, w21, #0x1 (1)",
+        "and w20, w20, #0x7",
+        "strb w20, [x28, #1019]"
+      ]
+    }
+  }
+}

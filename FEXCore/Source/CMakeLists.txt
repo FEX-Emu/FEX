@@ -70,6 +70,7 @@ set (SRCS
   Interface/Core/LookupCache.cpp
   Interface/Core/Core.cpp
   Interface/Core/CPUBackend.cpp
+  Interface/Core/Addressing.cpp
   Interface/Core/CPUID.cpp
   Interface/Core/Frontend.cpp
   Interface/Core/ObjectCache/JobHandling.cpp
