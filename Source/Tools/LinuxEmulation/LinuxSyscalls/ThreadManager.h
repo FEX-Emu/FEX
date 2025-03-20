@@ -200,8 +200,10 @@ public:
     auto CodeInvalidationlk = GuardSignalDeferringSectionWithFallback(CTX->GetCodeInvalidationMutex(), CallingThread);
 
     for (auto& Thread : Threads) {
-      CTX->InvalidateGuestCodeRange(Thread->Thread, Start, Length, callback);
+      CTX->InvalidateGuestCodeRange(Thread->Thread, Start, Length);
     }
+
+    callback(Start, Length);
   }
 
   const fextl::vector<FEX::HLE::ThreadStateObject*>* GetThreads() const {

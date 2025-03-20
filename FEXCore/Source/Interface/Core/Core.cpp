@@ -889,7 +889,7 @@ uintptr_t ContextImpl::CompileSingleStep(FEXCore::Core::CpuStateFrame* Frame, ui
   return (uintptr_t)CodePtr;
 }
 
-static void InvalidateGuestThreadCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) {
+void ContextImpl::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) {
   std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
 
   auto lower = Thread->LookupCache->CodePages.lower_bound(Start >> 12);
@@ -901,16 +901,6 @@ static void InvalidateGuestThreadCodeRange(FEXCore::Core::InternalThreadState* T
     }
     it->second.clear();
   }
-}
-
-void ContextImpl::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) {
-  InvalidateGuestThreadCodeRange(Thread, Start, Length);
-}
-
-void ContextImpl::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length,
-                                           CodeRangeInvalidationFn CallAfter) {
-  InvalidateGuestThreadCodeRange(Thread, Start, Length);
-  CallAfter(Start, Length);
 }
 
 void ContextImpl::MarkMemoryShared(FEXCore::Core::InternalThreadState* Thread) {
@@ -1014,8 +1004,9 @@ void ContextImpl::RemoveCustomIREntrypoint(uintptr_t Entrypoint) {
 
   std::scoped_lock lk(CustomIRMutex);
 
-  InvalidateGuestCodeRange(nullptr, Entrypoint, 1, [this](uint64_t Entrypoint, uint64_t) { CustomIRHandlers.erase(Entrypoint); });
+  InvalidateGuestCodeRange(nullptr, Entrypoint, 1);
 
+  CustomIRHandlers.erase(Entrypoint);
   HasCustomIRHandlers = !CustomIRHandlers.empty();
 }
 
