@@ -76,8 +76,14 @@ static char* SaveLayerToJSON(char* JsonBuffer, const FEXCore::Config::Layer* Lay
         break;
       }
     }
-    for (auto& var : it.second) {
-      JsonBuffer = json_str(JsonBuffer, Name.data(), var.c_str());
+    if (std::holds_alternative<fextl::string>(it.second)) {
+      JsonBuffer = json_str(JsonBuffer, Name.data(), std::get<fextl::string>(it.second).c_str());
+    } else if (std::holds_alternative<FEXCore::Config::DefaultValues::Type::StringArrayType>(it.second)) {
+      for (auto& var : std::get<FEXCore::Config::DefaultValues::Type::StringArrayType>(it.second)) {
+        JsonBuffer = json_str(JsonBuffer, Name.data(), var.c_str());
+      }
+    } else {
+      LogMan::Msg::AFmt("Trying to store config with pre-converted type");
     }
   }
   return json_objClose(JsonBuffer);
@@ -289,6 +295,10 @@ void EnvLoader::Load() {
 #define OPT_BASE(type, group, enum, json, default) \
   Value = GetVar(EnvMap, "FEX_" #enum);            \
   if (Value.has_value()) Set(FEXCore::Config::ConfigOption::CONFIG_##enum, *Value);
+#define OPT_STRARRAY(group, enum, json, default) \
+  Value = GetVar(EnvMap, "FEX_" #enum);          \
+  if (Value.has_value()) AppendStrArrayValue(FEXCore::Config::ConfigOption::CONFIG_##enum, *Value);
+
 #include <FEXCore/Config/ConfigValues.inl>
 }
 

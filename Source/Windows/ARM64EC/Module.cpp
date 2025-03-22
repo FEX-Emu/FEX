@@ -534,10 +534,10 @@ NTSTATUS ProcessInit() {
   FEXCore::Config::ReloadMetaLayer();
   FEX::Windows::Logging::Init();
 
-  FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_IS64BIT_MODE, "1");
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, "1");
 
   // Not applicable to Windows
-  FEXCore::Config::EraseSet(FEXCore::Config::ConfigOption::CONFIG_TSOAUTOMIGRATION, "0");
+  FEXCore::Config::Set(FEXCore::Config::ConfigOption::CONFIG_TSOAUTOMIGRATION, "0");
 
   FEXCore::Profiler::Init("", "");
 

@@ -122,7 +122,8 @@ uint64_t GetConfig(FEXCore::Context::Context* CTX, ConfigOption Option) {
 }
 
 static fextl::map<FEXCore::Config::LayerType, fextl::unique_ptr<FEXCore::Config::Layer>> ConfigLayers;
-static FEXCore::Config::Layer* Meta {};
+class MetaLayer;
+static FEXCore::Config::MetaLayer* Meta {};
 
 constexpr std::array<FEXCore::Config::LayerType, 10> LoadOrder = {
   FEXCore::Config::LayerType::LAYER_GLOBAL_MAIN,      FEXCore::Config::LayerType::LAYER_MAIN,
@@ -143,9 +144,39 @@ public:
   ~MetaLayer() {}
   void Load();
 
+  template<typename T>
+  requires (!std::is_same_v<fextl::string, T> && !std::is_same_v<DefaultValues::Type::StringArrayType, T>)
+  std::optional<T> GetConv(ConfigOption Option) {
+    const auto it = OptionMap.find(Option);
+    if (it == OptionMap.end()) {
+      return std::nullopt;
+    }
+
+    const auto& Value = it->second;
+    LOGMAN_THROW_A_FMT(!std::holds_alternative<DefaultValues::Type::StringArrayType>(Value), "Tried to get config of invalid type!");
+
+    if (std::holds_alternative<T>(Value)) [[likely]] {
+      return std::get<T>(Value);
+    }
+
+    T ConvertedValue;
+    if (std::holds_alternative<fextl::string>(Value)) {
+      const auto& StrVal = std::get<fextl::string>(Value);
+      if (FEXCore::StrConv::Conv(StrVal, &ConvertedValue)) {
+        // Convert the value.
+        OptionMap[Option].emplace<T>(ConvertedValue);
+        return ConvertedValue;
+      } else {
+        LOGMAN_MSG_A_FMT("Couldn't Convert {} to specified type!", StrVal);
+      }
+    }
+
+    FEX_UNREACHABLE;
+  }
+
 private:
   void MergeConfigMap(const LayerOptions& Options);
-  void MergeEnvironmentVariables(const ConfigOption& Option, const LayerValue& Value);
+  void MergeEnvironmentVariables(const ConfigOption& Option, const DefaultValues::Type::StringArrayType& Value);
 };
 
 void MetaLayer::Load() {
@@ -161,7 +192,7 @@ void MetaLayer::Load() {
 }
 
 
-void MetaLayer::MergeEnvironmentVariables(const ConfigOption& Option, const LayerValue& Value) {
+void MetaLayer::MergeEnvironmentVariables(const ConfigOption& Option, const DefaultValues::Type::StringArrayType& Value) {
   // Environment variables need a bit of additional work
   // We want to merge the arrays rather than overwrite entirely
   auto MetaEnvironment = OptionMap.find(Option);
@@ -173,7 +204,7 @@ void MetaLayer::MergeEnvironmentVariables(const ConfigOption& Option, const Laye
 
   // If an environment variable exists in both current meta and in the incoming layer then the meta layer value is overwritten
   fextl::unordered_map<fextl::string, fextl::string> LookupMap;
-  const auto AddToMap = [&LookupMap](const FEXCore::Config::LayerValue& Value) {
+  const auto AddToMap = [&LookupMap](const DefaultValues::Type::StringArrayType& Value) {
     for (const auto& EnvVar : Value) {
       const auto ItEq = EnvVar.find_first_of('=');
       if (ItEq == fextl::string::npos) {
@@ -189,7 +220,7 @@ void MetaLayer::MergeEnvironmentVariables(const ConfigOption& Option, const Laye
     }
   };
 
-  AddToMap(MetaEnvironment->second);
+  AddToMap(std::get<DefaultValues::Type::StringArrayType>(MetaEnvironment->second));
   AddToMap(Value);
 
   // Now with the two layers merged in the map
@@ -197,7 +228,7 @@ void MetaLayer::MergeEnvironmentVariables(const ConfigOption& Option, const Laye
   Erase(Option);
   for (auto& Val : LookupMap) {
     // Set will emplace multiple options in to its list
-    Set(Option, Val.first + "=" + Val.second);
+    AppendStrArrayValue(Option, Val.first + "=" + Val.second);
   }
 }
 
@@ -205,7 +236,8 @@ void MetaLayer::MergeConfigMap(const LayerOptions& Options) {
   // Insert this layer's options, overlaying previous options that exist here
   for (auto& it : Options) {
     if (it.first == FEXCore::Config::ConfigOption::CONFIG_ENV || it.first == FEXCore::Config::ConfigOption::CONFIG_HOSTENV) {
-      MergeEnvironmentVariables(it.first, it.second);
+      LOGMAN_THROW_A_FMT(std::holds_alternative<DefaultValues::Type::StringArrayType>(it.second), "Tried to get config of invalid type!");
+      MergeEnvironmentVariables(it.first, std::get<DefaultValues::Type::StringArrayType>(it.second));
     } else {
       OptionMap.insert_or_assign(it.first, it.second);
     }
@@ -214,7 +246,7 @@ void MetaLayer::MergeConfigMap(const LayerOptions& Options) {
 
 void Initialize() {
   AddLayer(fextl::make_unique<MetaLayer>(FEXCore::Config::LayerType::LAYER_TOP));
-  Meta = ConfigLayers.begin()->second.get();
+  Meta = dynamic_cast<MetaLayer*>(ConfigLayers.begin()->second.get());
 }
 
 void Shutdown() {
@@ -322,7 +354,7 @@ void ReloadMetaLayer() {
   auto ExpandPathIfExists = [&ContainerPrefix](FEXCore::Config::ConfigOption Config, const fextl::string& PathName) {
     const auto NewPath = ExpandPath(ContainerPrefix, PathName);
     if (!NewPath.empty()) {
-      FEXCore::Config::EraseSet(Config, NewPath);
+      FEXCore::Config::Set(Config, NewPath);
     }
   };
 
@@ -331,7 +363,7 @@ void ReloadMetaLayer() {
     const auto ExpandedString = ExpandPath(ContainerPrefix, *PathName);
     if (!ExpandedString.empty()) {
       // Adjust the path if it ended up being relative
-      FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, ExpandedString);
+      FEXCore::Config::Set(FEXCore::Config::CONFIG_ROOTFS, ExpandedString);
     } else if (!PathName->empty()) {
       // If the filesystem doesn't exist then let's see if it exists in the fex-emu folder
       const auto PathNameCopy = *PathName;
@@ -339,7 +371,7 @@ void ReloadMetaLayer() {
         for (auto DirectoryFetchers : {GetDataDirectory, GetConfigDirectory}) {
           fextl::string NamedRootFS = DirectoryFetchers(Global) + "RootFS/" + PathNameCopy;
           if (FHU::Filesystem::Exists(NamedRootFS)) {
-            FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, NamedRootFS);
+            FEXCore::Config::Set(FEXCore::Config::CONFIG_ROOTFS, NamedRootFS);
           }
         }
       }
@@ -358,7 +390,7 @@ void ReloadMetaLayer() {
     const auto ExpandedString = ExpandPath(ContainerPrefix, *PathName);
     if (!ExpandedString.empty()) {
       // Adjust the path if it ended up being relative
-      FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_THUNKCONFIG, ExpandedString);
+      FEXCore::Config::Set(FEXCore::Config::CONFIG_THUNKCONFIG, ExpandedString);
     } else if (!PathName->empty()) {
       // If the filesystem doesn't exist then let's see if it exists in the fex-emu folder
       const auto PathNameCopy = *PathName;
@@ -366,7 +398,7 @@ void ReloadMetaLayer() {
         for (auto DirectoryFetchers : {GetDataDirectory, GetConfigDirectory}) {
           fextl::string NamedConfig = DirectoryFetchers(Global) + "ThunkConfigs/" + PathNameCopy;
           if (FHU::Filesystem::Exists(NamedConfig)) {
-            FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_THUNKCONFIG, NamedConfig);
+            FEXCore::Config::Set(FEXCore::Config::CONFIG_THUNKCONFIG, NamedConfig);
           }
         }
       }
@@ -383,8 +415,8 @@ void ReloadMetaLayer() {
     // If DumpIR is set but no PassManagerDumpIR configuration is set, then default to `afteropt`
     const auto PathName = *Meta->Get(FEXCore::Config::CONFIG_DUMPIR);
     if (*PathName != "no") {
-      EraseSet(FEXCore::Config::ConfigOption::CONFIG_PASSMANAGERDUMPIR,
-               fextl::fmt::format("{}", static_cast<uint64_t>(FEXCore::Config::PassManagerDumpIR::AFTEROPT)));
+      Set(FEXCore::Config::ConfigOption::CONFIG_PASSMANAGERDUMPIR,
+          fextl::fmt::format("{}", static_cast<uint64_t>(FEXCore::Config::PassManagerDumpIR::AFTEROPT)));
     }
   }
 
@@ -402,12 +434,17 @@ bool Exists(ConfigOption Option) {
   return Meta->OptionExists(Option);
 }
 
-std::optional<LayerValue*> All(ConfigOption Option) {
+std::optional<DefaultValues::Type::StringArrayType*> All(ConfigOption Option) {
   return Meta->All(Option);
 }
 
 std::optional<fextl::string*> Get(ConfigOption Option) {
   return Meta->Get(Option);
+}
+
+template<typename T>
+std::optional<T> GetConv(ConfigOption Option) {
+  return Meta->GetConv<T>(Option);
 }
 
 void Set(ConfigOption Option, std::string_view Data) {
@@ -418,31 +455,14 @@ void Erase(ConfigOption Option) {
   Meta->Erase(Option);
 }
 
-void EraseSet(ConfigOption Option, std::string_view Data) {
-  Meta->EraseSet(Option, Data);
-}
-
-template<typename T>
-T Value<T>::Get(FEXCore::Config::ConfigOption Option) {
-  T Result;
-  auto Value = FEXCore::Config::Get(Option);
-
-  if (!FEXCore::StrConv::Conv(**Value, &Result)) {
-    LOGMAN_MSG_A_FMT("Attempted to convert invalid value");
-  }
-  return Result;
-}
-
 template<typename T>
 T Value<T>::GetIfExists(FEXCore::Config::ConfigOption Option, T Default) {
-  T Result;
-  auto Value = FEXCore::Config::Get(Option);
-
-  if (Value && FEXCore::StrConv::Conv(**Value, &Result)) {
-    return Result;
-  } else {
-    return Default;
+  auto Value = FEXCore::Config::GetConv<T>(Option);
+  if (Value) {
+    return *Value;
   }
+
+  return Default;
 }
 
 template<>
