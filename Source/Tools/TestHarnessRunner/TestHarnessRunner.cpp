@@ -232,7 +232,7 @@ int main(int argc, char** argv, char** const envp) {
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 #ifdef VIXL_SIMULATOR
   // If running under the vixl simulator, ensure that indirect runtime calls are enabled.
-  FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_DISABLE_VIXL_INDIRECT_RUNTIME_CALLS, "0");
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_DISABLE_VIXL_INDIRECT_RUNTIME_CALLS, "0");
 #endif
 
 #ifndef _WIN32

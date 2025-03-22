@@ -74,7 +74,7 @@ void ConfigModel::Reload() {
 
     const char* OptionType = TypeId.data();
     Item->setData(OptionType, Qt::UserRole + 1);
-    Item->setData(QString::fromStdString(Option.second.front().c_str()), Qt::UserRole + 2);
+    Item->setData(QString::fromStdString(std::get<fextl::string>(Option.second).c_str()), Qt::UserRole + 2);
     appendRow(Item);
   }
   endResetModel();
@@ -99,12 +99,12 @@ bool ConfigModel::getBool(const QString& Name, bool) const {
 }
 
 void ConfigModel::setBool(const QString& Name, bool Value) {
-  LoadedConfig->EraseSet(NameToConfigLookup.at(Name.toStdString()), Value ? "1" : "0");
+  LoadedConfig->Set(NameToConfigLookup.at(Name.toStdString()), Value ? "1" : "0");
   Reload();
 }
 
 void ConfigModel::setString(const QString& Name, const QString& Value) {
-  LoadedConfig->EraseSet(NameToConfigLookup.at(Name.toStdString()), Value.toStdString());
+  LoadedConfig->Set(NameToConfigLookup.at(Name.toStdString()), Value.toStdString());
   Reload();
 }
 
@@ -118,7 +118,7 @@ void ConfigModel::setStringList(const QString& Name, const QStringList& Values) 
 }
 
 void ConfigModel::setInt(const QString& Name, int Value) {
-  LoadedConfig->EraseSet(NameToConfigLookup.at(Name.toStdString()), std::to_string(Value));
+  LoadedConfig->Set(NameToConfigLookup.at(Name.toStdString()), std::to_string(Value));
   Reload();
 }
 
@@ -358,18 +358,18 @@ static bool OpenFile(fextl::string Filename) {
   LoadedConfig->Load();
 
   // Load default options and only overwrite only if the option didn't exist
-#define OPT_BASE(type, group, enum, json, default)                                                 \
-  if (!LoadedConfig->OptionExists(FEXCore::Config::ConfigOption::CONFIG_##enum)) {                 \
-    LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_##enum, std::to_string(default)); \
+#define OPT_BASE(type, group, enum, json, default)                                            \
+  if (!LoadedConfig->OptionExists(FEXCore::Config::ConfigOption::CONFIG_##enum)) {            \
+    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_##enum, std::to_string(default)); \
   }
 #define OPT_STR(group, enum, json, default)                                        \
   if (!LoadedConfig->OptionExists(FEXCore::Config::ConfigOption::CONFIG_##enum)) { \
-    LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_##enum, default); \
+    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_##enum, default);      \
   }
 #define OPT_STRARRAY(group, enum, json, default) // Do nothing
-#define OPT_STRENUM(group, enum, json, default)                                                                           \
-  if (!LoadedConfig->OptionExists(FEXCore::Config::ConfigOption::CONFIG_##enum)) {                                        \
-    LoadedConfig->EraseSet(FEXCore::Config::ConfigOption::CONFIG_##enum, std::to_string(FEXCore::ToUnderlying(default))); \
+#define OPT_STRENUM(group, enum, json, default)                                                                      \
+  if (!LoadedConfig->OptionExists(FEXCore::Config::ConfigOption::CONFIG_##enum)) {                                   \
+    LoadedConfig->Set(FEXCore::Config::ConfigOption::CONFIG_##enum, std::to_string(FEXCore::ToUnderlying(default))); \
   }
 #include <FEXCore/Config/ConfigValues.inl>
 
