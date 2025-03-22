@@ -447,7 +447,18 @@ public:
 
     for (auto& it : EnvConfigLookup) {
       if (auto Value = GetVar(it.first); Value) {
-        Set(it.second, *Value);
+#define OPT_BASE(type, group, enum, json, default) // Nothing
+#define OPT_STRARRAY(group, enum, json, default)                        \
+  else if (it.second == FEXCore::Config::ConfigOption::CONFIG_##enum) { \
+    AppendStrArrayValue(it.second, *Value);                             \
+  }
+
+        if (false) {
+        }
+#include <FEXCore/Config/ConfigValues.inl>
+        else {
+          Set(it.second, *Value);
+        }
       }
     }
   }
@@ -479,17 +490,17 @@ int main(int argc, char** argv, char** const envp) {
 
   // Setup configurations that this tool needs
   // Maximum one instruction.
-  FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_MAXINST, "1");
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_MAXINST, "1");
   // Enable block disassembly.
-  FEXCore::Config::EraseSet(
+  FEXCore::Config::Set(
     FEXCore::Config::CONFIG_DISASSEMBLE,
     fextl::fmt::format("{}", static_cast<uint64_t>(FEXCore::Config::Disassemble::BLOCKS | FEXCore::Config::Disassemble::STATS)));
   // Choose bitness.
-  FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_IS64BIT_MODE, TestHeaderData->Bitness == 64 ? "1" : "0");
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, TestHeaderData->Bitness == 64 ? "1" : "0");
   // Disable telemetry, it can affect instruction counts.
-  FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_DISABLETELEMETRY, "1");
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_DISABLETELEMETRY, "1");
   // Disable vixl simulator indirect calls as it can affect instruction counts.
-  FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_DISABLE_VIXL_INDIRECT_RUNTIME_CALLS, "1");
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_DISABLE_VIXL_INDIRECT_RUNTIME_CALLS, "1");
 
   // Host feature override. Only supports overriding SVE width.
   enum HostFeatures {
@@ -559,10 +570,10 @@ int main(int argc, char** argv, char** const envp) {
 
   if (TestHeaderData->EnabledHostFeatures & FEATURE_TSO) {
     // Always disable auto migration.
-    FEXCore::Config::EraseSet(FEXCore::Config::ConfigOption::CONFIG_TSOAUTOMIGRATION, "0");
-    FEXCore::Config::EraseSet(FEXCore::Config::ConfigOption::CONFIG_TSOENABLED, "1");
-    FEXCore::Config::EraseSet(FEXCore::Config::ConfigOption::CONFIG_VECTORTSOENABLED, "1");
-    FEXCore::Config::EraseSet(FEXCore::Config::ConfigOption::CONFIG_MEMCPYSETTSOENABLED, "1");
+    FEXCore::Config::Set(FEXCore::Config::ConfigOption::CONFIG_TSOAUTOMIGRATION, "0");
+    FEXCore::Config::Set(FEXCore::Config::ConfigOption::CONFIG_TSOENABLED, "1");
+    FEXCore::Config::Set(FEXCore::Config::ConfigOption::CONFIG_VECTORTSOENABLED, "1");
+    FEXCore::Config::Set(FEXCore::Config::ConfigOption::CONFIG_MEMCPYSETTSOENABLED, "1");
   }
 
   // Always enable ARMv8.1 LSE atomics.
@@ -610,17 +621,17 @@ int main(int argc, char** argv, char** const envp) {
 
   if (TestHeaderData->DisabledHostFeatures & FEATURE_TSO) {
     // Always disable auto migration.
-    FEXCore::Config::EraseSet(FEXCore::Config::ConfigOption::CONFIG_TSOAUTOMIGRATION, "0");
-    FEXCore::Config::EraseSet(FEXCore::Config::ConfigOption::CONFIG_TSOENABLED, "0");
-    FEXCore::Config::EraseSet(FEXCore::Config::ConfigOption::CONFIG_VECTORTSOENABLED, "0");
-    FEXCore::Config::EraseSet(FEXCore::Config::ConfigOption::CONFIG_MEMCPYSETTSOENABLED, "0");
+    FEXCore::Config::Set(FEXCore::Config::ConfigOption::CONFIG_TSOAUTOMIGRATION, "0");
+    FEXCore::Config::Set(FEXCore::Config::ConfigOption::CONFIG_TSOENABLED, "0");
+    FEXCore::Config::Set(FEXCore::Config::ConfigOption::CONFIG_VECTORTSOENABLED, "0");
+    FEXCore::Config::Set(FEXCore::Config::ConfigOption::CONFIG_MEMCPYSETTSOENABLED, "0");
   }
 
   // Always enable preserve_all abi.
   HostFeatureControl |= static_cast<uint64_t>(FEXCore::Config::HostFeatures::ENABLEPRESERVEALLABI);
 
-  FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_HOSTFEATURES, fextl::fmt::format("{}", HostFeatureControl));
-  FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_FORCESVEWIDTH, fextl::fmt::format("{}", SVEWidth));
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_HOSTFEATURES, fextl::fmt::format("{}", HostFeatureControl));
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_FORCESVEWIDTH, fextl::fmt::format("{}", SVEWidth));
 
   // Initialize static tables.
   FEXCore::Context::InitializeStaticTables(TestHeaderData->Bitness == 64 ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);

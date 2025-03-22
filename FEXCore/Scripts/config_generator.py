@@ -423,7 +423,7 @@ def print_parse_argloader_options(options):
                 # these need a bit more help
                 output_argloader.write("\tauto Array = Options.all(\"{0}\");\n".format(op_key))
                 output_argloader.write("\tfor (auto iter = Array.begin(); iter != Array.end(); ++iter) {\n")
-                output_argloader.write("\t\tSet(FEXCore::Config::ConfigOption::CONFIG_{0}, *iter);\n".format(op_key.upper()))
+                output_argloader.write("\t\tAppendStrArrayValue(FEXCore::Config::ConfigOption::CONFIG_{0}, *iter);\n".format(op_key.upper()))
                 output_argloader.write("\t}\n")
             else:
                 if (NeedsString):
@@ -466,7 +466,11 @@ def print_parse_jsonloader_options(options):
             value_type = op_vals["Type"]
             if (value_type == "strenum"):
                 output_argloader.write("else if (KeyName == \"{0}\") {{\n".format(op_key))
-                output_argloader.write("Set(KeyOption, FEXCore::Config::EnumParser<FEXCore::Config::{}ConfigPair>(FEXCore::Config::{}_EnumPairs, Value_View));\n".format(op_key, op_key, op_key))
+                output_argloader.write("\tSet(KeyOption, FEXCore::Config::EnumParser<FEXCore::Config::{}ConfigPair>(FEXCore::Config::{}_EnumPairs, Value_View));\n".format(op_key, op_key, op_key))
+                output_argloader.write("}\n")
+            elif (value_type == "strarray"):
+                output_argloader.write("else if (KeyName == \"{0}\") {{\n".format(op_key))
+                output_argloader.write("\tAppendStrArrayValue(KeyOption, ConfigString);\n")
                 output_argloader.write("}\n")
 
     output_argloader.write("else {{\n".format(op_key))

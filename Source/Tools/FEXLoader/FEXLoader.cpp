@@ -324,7 +324,7 @@ int main(int argc, char** argv, char** const envp) {
   FEXCore::Config::Set(FEXCore::Config::CONFIG_INTERPRETER_INSTALLED, InterpreterInstalled ? "1" : "0");
 #ifdef VIXL_SIMULATOR
   // If running under the vixl simulator, ensure that indirect runtime calls are enabled.
-  FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_DISABLE_VIXL_INDIRECT_RUNTIME_CALLS, "0");
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_DISABLE_VIXL_INDIRECT_RUNTIME_CALLS, "0");
 #endif
 
   // Early check for process stall
@@ -442,27 +442,27 @@ int main(int argc, char** argv, char** const envp) {
 
   if (ExecutedWithFD) {
     // Don't need to canonicalize Program.ProgramPath, Config loader will have resolved this already.
-    FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_FILENAME, Program.ProgramPath);
-    FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_CONFIG_NAME, Program.ProgramName);
+    FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, Program.ProgramPath);
+    FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_CONFIG_NAME, Program.ProgramName);
   } else if (FEXFD != -1) {
     // Anonymous program.
-    FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_FILENAME, "<Anonymous>");
-    FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_CONFIG_NAME, "<Anonymous>");
+    FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, "<Anonymous>");
+    FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_CONFIG_NAME, "<Anonymous>");
   } else {
     {
       char ExistsTempPath[PATH_MAX];
       char* RealPath = realpath(Program.ProgramPath.c_str(), ExistsTempPath);
       if (RealPath) {
-        FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_FILENAME, fextl::string(RealPath));
+        FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_FILENAME, fextl::string(RealPath));
       }
     }
-    FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_APP_CONFIG_NAME, Program.ProgramName);
+    FEXCore::Config::Set(FEXCore::Config::CONFIG_APP_CONFIG_NAME, Program.ProgramName);
   }
 
   // Setup Thread handlers, so FEXCore can create threads.
   auto StackTracker = FEX::LinuxEmulation::Threads::SetupThreadHandlers();
 
-  FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, Loader.Is64BitMode() ? "1" : "0");
 
   fextl::unique_ptr<FEX::HLE::MemAllocator> Allocator;
   fextl::vector<FEXCore::Allocator::MemoryRegion> Base48Bit;

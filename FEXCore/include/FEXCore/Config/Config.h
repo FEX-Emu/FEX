@@ -15,6 +15,7 @@
 #include <charconv>
 #include <optional>
 #include <stdint.h>
+#include <variant>
 
 namespace FEXCore::Config {
 namespace Handler {
@@ -138,7 +139,9 @@ FEX_DEFAULT_VISIBILITY const fextl::string& GetConfigDirectory(bool Global);
 FEX_DEFAULT_VISIBILITY const fextl::string& GetConfigFileLocation(bool Global = false);
 FEX_DEFAULT_VISIBILITY fextl::string GetApplicationConfig(const std::string_view Program, bool Global);
 
-using LayerValue = fextl::list<fextl::string>;
+using LayerValue =
+  std::variant< fextl::string, DefaultValues::Type::StringArrayType, uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t, uint64_t, int64_t, bool >;
+
 using LayerOptions = fextl::unordered_map<ConfigOption, LayerValue>;
 
 class FEX_DEFAULT_VISIBILITY Layer {
@@ -152,13 +155,16 @@ public:
     return OptionMap.find(Option) != OptionMap.end();
   }
 
-  std::optional<LayerValue*> All(ConfigOption Option) {
+  std::optional<DefaultValues::Type::StringArrayType*> All(ConfigOption Option) {
     const auto it = OptionMap.find(Option);
     if (it == OptionMap.end()) {
       return std::nullopt;
     }
 
-    return &it->second;
+    auto& Value = it->second;
+    LOGMAN_THROW_A_FMT(std::holds_alternative<DefaultValues::Type::StringArrayType>(Value), "Tried to get config of invalid type!");
+
+    return &std::get<DefaultValues::Type::StringArrayType>(Value);
   }
 
   std::optional<fextl::string*> Get(ConfigOption Option) {
@@ -167,31 +173,44 @@ public:
       return std::nullopt;
     }
 
-    return &it->second.front();
+    auto& Value = it->second;
+    LOGMAN_THROW_A_FMT(std::holds_alternative<fextl::string>(Value), "Tried to get config of invalid type!");
+
+    return &std::get<fextl::string>(Value);
   }
 
+  // Set will overwrite the object with a fextl::string without tests.
   void Set(ConfigOption Option, const char* Data) {
     LOGMAN_THROW_A_FMT(Data != nullptr, "Data can't be null");
-    OptionMap[Option].emplace_back(fextl::string(Data));
+    OptionMap[Option].emplace<fextl::string>(fextl::string(Data));
   }
 
   void Set(ConfigOption Option, std::string_view Data) {
-    OptionMap[Option].emplace_back(fextl::string(Data));
+    OptionMap[Option].emplace<fextl::string>(fextl::string(Data));
   }
 
   void Set(ConfigOption Option, fextl::string Data) {
-    OptionMap[Option].emplace_back(std::move(Data));
+    OptionMap[Option].emplace<fextl::string>(std::move(Data));
   }
 
   void Set(ConfigOption Option, std::optional<fextl::string> Data) {
     if (Data) {
-      OptionMap[Option].emplace_back(std::move(*Data));
+      OptionMap[Option].emplace<fextl::string>(std::move(*Data));
     }
   }
 
-  void EraseSet(ConfigOption Option, std::string_view Data) {
-    Erase(Option);
-    Set(Option, Data);
+  // AppendStrArrayValue will append strings to its StringArrayType.
+  // If the value was previously a different type, then throw an assert.
+  void AppendStrArrayValue(ConfigOption Option, std::string_view Data) {
+    auto it = OptionMap.find(Option);
+    if (it == OptionMap.end()) {
+      // If the option didn't exist as a StringArrayType yet, emplace it.
+      it = OptionMap.emplace(Option, DefaultValues::Type::StringArrayType {}).first;
+    }
+
+    auto& Value = it->second;
+    LOGMAN_THROW_A_FMT(std::holds_alternative<DefaultValues::Type::StringArrayType>(Value), "Tried to get config of invalid type!");
+    std::get<DefaultValues::Type::StringArrayType>(Value).emplace_back(Data);
   }
 
   void Erase(ConfigOption Option) {
@@ -221,12 +240,10 @@ FEX_DEFAULT_VISIBILITY fextl::string FindContainerPrefix();
 FEX_DEFAULT_VISIBILITY void AddLayer(fextl::unique_ptr<FEXCore::Config::Layer> _Layer);
 
 FEX_DEFAULT_VISIBILITY bool Exists(ConfigOption Option);
-FEX_DEFAULT_VISIBILITY std::optional<LayerValue*> All(ConfigOption Option);
+FEX_DEFAULT_VISIBILITY std::optional<DefaultValues::Type::StringArrayType*> All(ConfigOption Option);
 FEX_DEFAULT_VISIBILITY std::optional<fextl::string*> Get(ConfigOption Option);
-
 FEX_DEFAULT_VISIBILITY void Set(ConfigOption Option, std::string_view Data);
 FEX_DEFAULT_VISIBILITY void Erase(ConfigOption Option);
-FEX_DEFAULT_VISIBILITY void EraseSet(ConfigOption Option, std::string_view Data);
 
 template<typename T>
 class FEX_DEFAULT_VISIBILITY Value {
@@ -282,7 +299,6 @@ public:
 private:
   T ValueData {};
 
-  static T Get(FEXCore::Config::ConfigOption Option);
   static T GetIfExists(FEXCore::Config::ConfigOption Option, T Default);
   static T GetIfExists(FEXCore::Config::ConfigOption Option, std::string_view Default);
 
