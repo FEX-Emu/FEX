@@ -13,7 +13,7 @@
 }
 %endif
 
-mov r15, 0xe0000080
+mov rsp, 0xe0000080
 
 mov rax, 1
 mov rbx, 2

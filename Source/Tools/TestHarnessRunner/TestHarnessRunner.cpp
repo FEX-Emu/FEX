@@ -45,10 +45,7 @@ $end_info$
 #include <utility>
 
 #ifdef _M_X86_64
-#define XBYAK64
-#define XBYAK_NO_EXCEPTION
-#include <xbyak/xbyak.h>
-#include <xbyak/xbyak_util.h>
+#include "Common/X86Features.h"
 #endif
 
 void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
@@ -278,12 +275,12 @@ int main(int argc, char** argv, char** const envp) {
 #if !defined(VIXL_SIMULATOR) && defined(_M_X86_64)
   IsHostRunner = true;
   ///< Features that are only unsupported when running using the HostRunner and the CI machine doesn't support the feature getting tested.
-  Xbyak::util::Cpu X86Features {};
-  const bool Supports3DNow = X86Features.has(Xbyak::util::Cpu::t3DN) && X86Features.has(Xbyak::util::Cpu::tE3DN);
-  const bool SupportsSSE4A = X86Features.has(Xbyak::util::Cpu::tSSE4a);
-  const bool SupportsBMI1 = X86Features.has(Xbyak::util::Cpu::tBMI1);
-  const bool SupportsBMI2 = X86Features.has(Xbyak::util::Cpu::tBMI2);
-  const bool SupportsCLWB = X86Features.has(Xbyak::util::Cpu::tCLWB);
+  FEX::X86::Features Feature {};
+  const bool Supports3DNow = Feature.Feat_3dnow;
+  const bool SupportsSSE4A = Feature.Feat_sse4a;
+  const bool SupportsBMI1 = Feature.Feat_bmi1;
+  const bool SupportsBMI2 = Feature.Feat_bmi2;
+  const bool SupportsCLWB = Feature.Feat_clwb;
 
   TestUnsupported |= (!Supports3DNow && Loader.Requires3DNow()) || (!SupportsSSE4A && Loader.RequiresSSE4A()) ||
                      (!SupportsBMI1 && Loader.RequiresBMI1()) || (!SupportsBMI2 && Loader.RequiresBMI2()) ||

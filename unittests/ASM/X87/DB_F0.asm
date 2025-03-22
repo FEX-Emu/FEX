@@ -8,6 +8,8 @@
 }
 %endif
 
+mov rsp, 0xe000_1000
+
 lea rdx, [rel minus_one]
 fld tword [rdx + 8 * 0]
 
