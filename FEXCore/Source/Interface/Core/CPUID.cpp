@@ -395,25 +395,7 @@ void CPUIDEmu::SetupFeatures() {
     XCR0 |= XCR0_AVX;
   }
 
-  // Override features if the user has specifically called for it.
-  FEX_CONFIG_OPT(CPUIDFeatures, CPUID);
-  if (!CPUIDFeatures()) {
-    // Early exit if no features are overriden.
-    return;
-  }
-
-#define ENABLE_DISABLE_OPTION(FeatureName, name, enum_name)                                                                        \
-  do {                                                                                                                             \
-    const bool Disable##name = (CPUIDFeatures() & FEXCore::Config::CPUID::DISABLE##enum_name) != 0;                                \
-    const bool Enable##name = (CPUIDFeatures() & FEXCore::Config::CPUID::ENABLE##enum_name) != 0;                                  \
-    LogMan::Throw::AFmt(!(Disable##name && Enable##name), "Disabling and Enabling CPU feature (" #name ") is mutually exclusive"); \
-    const bool AlreadyEnabled = Features.FeatureName;                                                                              \
-    const bool Result = (AlreadyEnabled | Enable##name) & !Disable##name;                                                          \
-    Features.FeatureName = Result;                                                                                                 \
-  } while (0)
-
-  ENABLE_DISABLE_OPTION(SHA, SHA, SHA);
-#undef ENABLE_DISABLE_OPTION
+  Features.SHA = CTX->HostFeatures.SupportsSHA;
 }
 
 FEXCore::CPUID::FunctionResults CPUIDEmu::Function_0h(uint32_t Leaf) const {

@@ -90,19 +90,6 @@
           "\t{enable,disable}preserveallabi: Will force enable or disable preserve_all abi even if the host doesn't support it"
         ]
       },
-      "CPUID": {
-        "Type": "strenum",
-        "Default": "FEXCore::Config::CPUID::OFF",
-        "Enums": {
-          "ENABLESHA": "enablesha",
-          "DISABLESHA": "disablesha"
-        },
-        "Desc": [
-          "Allows controlling of the CPU features are exposed in CPUID.",
-          "\toff: Default CPU features queried from CPU features",
-          "\t{enable,disable}sha: Will force enable or disable sha even if the host doesn't support it"
-        ]
-      },
       "SmallTSCScale": {
         "Type": "bool",
         "Default": "true",
