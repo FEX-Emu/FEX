@@ -261,7 +261,6 @@ private:
       Class = Op->Class;
       Reg = Op->Reg;
     } else if (IROp->Op == OP_STOREREGISTER) {
-      LOGMAN_THROW_A_FMT(IROp->Op == OP_STOREREGISTER, "node is SRA");
       const IROp_StoreRegister* Op = IROp->C<IR::IROp_StoreRegister>();
 
       Class = Op->Class;
