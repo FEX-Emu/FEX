@@ -12,7 +12,12 @@ namespace FEXCore::CPU {
 DEF_OP(Copy) {
   auto Op = IROp->C<IR::IROp_Copy>();
 
-  mov(ARMEmitter::Size::i64Bit, GetReg(Node), GetReg(Op->Source.ID()));
+  uint64_t Const;
+  if (IsInlineConstant(Op->Source, &Const)) {
+    LoadConstant(ARMEmitter::Size::i64Bit, GetReg(Node), Const);
+  } else {
+    mov(ARMEmitter::Size::i64Bit, GetReg(Node), GetZeroableReg(Op->Source));
+  }
 }
 
 DEF_OP(RMWHandle) {
