@@ -249,7 +249,7 @@ private:
     return nullptr;
   };
 
-  PhysicalRegister DecodeSRAReg(const IROp_Header* IROp, Ref Node) {
+  PhysicalRegister DecodeSRAReg(const IROp_Header* IROp) {
     RegisterClassType Class {};
     uint8_t Reg {};
 
@@ -538,7 +538,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         // each register, used below. Since we initialized Class->Available,
         // RegToSSA is otherwise undefined so we can stash our temps there.
         if (auto Node = DecodeSRANode(IROp, CodeNode); Node != nullptr) {
-          auto Reg = DecodeSRAReg(IROp, Node);
+          auto Reg = DecodeSRAReg(IROp);
 
           PreferredReg[IR->GetID(Node).Value] = Reg;
           GetClass(Reg)->RegToSSA[Reg.Reg] = CodeNode;
@@ -585,7 +585,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
 
       // Static registers must be consistent at SRA load/store. Evict to ensure.
       if (auto Node = DecodeSRANode(IROp, CodeNode); Node != nullptr) {
-        auto Reg = DecodeSRAReg(IROp, Node);
+        auto Reg = DecodeSRAReg(IROp);
         RegisterClass* Class = &Classes[Reg.Class];
 
         if (!(Class->Available & (1u << Reg.Reg))) {
