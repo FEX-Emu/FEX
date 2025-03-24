@@ -1114,10 +1114,7 @@
         "Desc": [ "Integer Add",
                   "Will truncate to 64 or 32bits"
                 ],
-        "DestSize": "Size",
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
+        "DestSize": "Size"
       },
       "GPR = Adc OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": [ "Integer Add with carry",
@@ -1253,10 +1250,7 @@
         "Desc": [ "Integer Sub",
                   "Will truncate to 64 or 32bits"
                 ],
-        "DestSize": "Size",
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
+        "DestSize": "Size"
       },
       "GPR = SubShift OpSize:#Size, GPR:$Src1, GPR:$Src2, ShiftType:$Shift{ShiftType::LSL}, u8:$ShiftAmount{0}": {
         "Desc": [ "Integer Sub with shifted register",
@@ -1292,10 +1286,7 @@
       "GPR = Or OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer binary or"
                 ],
-        "DestSize": "Size",
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
+        "DestSize": "Size"
       },
       "GPR = Orlshl OpSize:#Size, GPR:$Src1, GPR:$Src2, u8:$BitShift": {
         "Desc": ["Integer binary or with logical shift left"
@@ -1324,10 +1315,7 @@
       "GPR = Xor OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer binary exclusive or"
                 ],
-        "DestSize": "Size",
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
+        "DestSize": "Size"
       },
       "GPR = XorShift OpSize:#Size, GPR:$Src1, GPR:$Src2, ShiftType:$Shift{ShiftType::LSL}, u8:$ShiftAmount{0}": {
         "Desc": [ "Integer binary exclusive or with shifted register"],
@@ -1346,10 +1334,7 @@
       "GPR = And OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer binary and"
                 ],
-        "DestSize": "Size",
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
+        "DestSize": "Size"
       },
       "GPR = AndWithFlags OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer binary and"
@@ -1378,10 +1363,7 @@
       "GPR = Lshl OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer logical shift left"
                 ],
-        "DestSize": "Size",
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
+        "DestSize": "Size"
       },
       "GPR = Lshr OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer logical shift right"

@@ -1376,7 +1376,7 @@ void OpDispatchBuilder::SHLOp(OpcodeArgs) {
   auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
   auto Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
 
-  Ref Result = _Lshl(Size == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
+  Ref Result = _Lshl(Size, Dest, Src);
   HandleShift(Op, Result, Dest, ShiftType::LSL, Src);
 }
 
@@ -1384,12 +1384,12 @@ void OpDispatchBuilder::SHLImmediateOp(OpcodeArgs, bool SHL1Bit) {
   Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
 
   uint64_t Shift = LoadConstantShift(Op, SHL1Bit);
-  const auto Size = GetSrcBitSize(Op);
+  const auto Size = OpSizeFromSrc(Op);
 
-  Ref Src = _Constant(OpSizeFromSrc(Op), Shift);
-  Ref Result = _Lshl(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Src);
+  Ref Src = _Constant(Size, Shift);
+  Ref Result = _Lshl(Size, Dest, Src);
 
-  CalculateFlags_ShiftLeftImmediate(OpSizeFromSrc(Op), Result, Dest, Shift);
+  CalculateFlags_ShiftLeftImmediate(Size, Result, Dest, Shift);
   CalculateDeferredFlags();
   StoreResult(GPRClass, Op, Result, OpSize::iInvalid);
 }
@@ -4463,11 +4463,6 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
   auto Size = OpSizeFromDst(Op);
   auto ResultSize = Size;
 
-  auto RoundedSize = Size;
-  if (ALUIROp != FEXCore::IR::IROps::OP_ANDWITHFLAGS) {
-    RoundedSize = std::max(OpSize::i32Bit, RoundedSize);
-  }
-
   // X86 basic ALU ops just do the operation between the destination and a single source
   Ref Src = LoadSource(GPRClass, Op, Op->Src[SrcIdx], Op->Flags, {.AllowUpperGarbage = true});
 
@@ -4477,7 +4472,7 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
   if (Size < OpSize::i32Bit && !DestIsLockedMem(Op) && Op->Dest.IsGPR() && !Op->Dest.Data.GPR.HighBits && IsValueConstant(WrapNode(Src), &Const) &&
       (ALUIROp == IR::IROps::OP_XOR || ALUIROp == IR::IROps::OP_OR || ALUIROp == IR::IROps::OP_ANDWITHFLAGS)) {
 
-    RoundedSize = ResultSize = CTX->GetGPROpSize();
+    ResultSize = CTX->GetGPROpSize();
     LOGMAN_THROW_A_FMT(Const < (1ull << IR::OpSizeAsBits(Size)), "does not clobber");
 
     // For AND, we can play the same trick but we instead need the upper bits of
@@ -4507,8 +4502,7 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
     Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
   }
 
-  const auto OpSize = RoundedSize;
-  DeriveOp(ALUOp, ALUIROp, _AndWithFlags(OpSize, Dest, Src));
+  DeriveOp(ALUOp, ALUIROp, _AndWithFlags(ResultSize, Dest, Src));
   Result = ALUOp;
 
   // Flags set
