@@ -412,7 +412,7 @@
         "bfxil x15, x20, #0, #8",
         "mov w7, w4",
         "and x20, x7, #0x7",
-        "mov w21, w15",
+        "mov x21, x15",
         "bfi w21, w15, #24, #8",
         "neg w20, w20",
         "ror w20, w21, w20",

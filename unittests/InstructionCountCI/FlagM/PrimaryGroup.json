@@ -909,7 +909,7 @@
       "ExpectedInstructionCount": 6,
       "Comment": "GROUP2 0xC0 /0",
       "ExpectedArm64ASM": [
-        "mov w20, w4",
+        "mov x20, x4",
         "bfi w20, w4, #24, #8",
         "ror w20, w20, #30",
         "bfxil x4, x20, #0, #8",
@@ -921,7 +921,7 @@
       "ExpectedInstructionCount": 6,
       "Comment": "GROUP2 0xC0 /1",
       "ExpectedArm64ASM": [
-        "mov w20, w4",
+        "mov x20, x4",
         "bfi w20, w4, #8, #8",
         "ror w20, w20, #2",
         "bfxil x4, x20, #0, #8",
@@ -1009,7 +1009,7 @@
       "ExpectedInstructionCount": 6,
       "Comment": "GROUP2 0xC1 /0",
       "ExpectedArm64ASM": [
-        "mov w20, w4",
+        "mov x20, x4",
         "bfi w20, w4, #16, #16",
         "ror w20, w20, #30",
         "bfxil x4, x20, #0, #16",
@@ -1039,7 +1039,7 @@
       "ExpectedInstructionCount": 6,
       "Comment": "GROUP2 0xC1 /1",
       "ExpectedArm64ASM": [
-        "mov w20, w4",
+        "mov x20, x4",
         "bfi w20, w4, #16, #16",
         "ror w20, w20, #2",
         "bfxil x4, x20, #0, #16",
@@ -1254,7 +1254,7 @@
       "ExpectedInstructionCount": 8,
       "Comment": "GROUP2 0xd0 /0",
       "ExpectedArm64ASM": [
-        "mov w20, w4",
+        "mov x20, x4",
         "bfi w20, w4, #24, #8",
         "ror w20, w20, #31",
         "bfxil x4, x20, #0, #8",
@@ -1268,7 +1268,7 @@
       "ExpectedInstructionCount": 8,
       "Comment": "GROUP2 0xd0 /1",
       "ExpectedArm64ASM": [
-        "mov w20, w4",
+        "mov x20, x4",
         "bfi w20, w4, #8, #8",
         "ror w20, w20, #1",
         "bfxil x4, x20, #0, #8",
@@ -1349,7 +1349,7 @@
       "ExpectedInstructionCount": 8,
       "Comment": "GROUP2 0xd1 /0",
       "ExpectedArm64ASM": [
-        "mov w20, w4",
+        "mov x20, x4",
         "bfi w20, w4, #16, #16",
         "ror w20, w20, #31",
         "bfxil x4, x20, #0, #16",
@@ -1385,7 +1385,7 @@
       "ExpectedInstructionCount": 8,
       "Comment": "GROUP2 0xd1 /1",
       "ExpectedArm64ASM": [
-        "mov w20, w4",
+        "mov x20, x4",
         "bfi w20, w4, #16, #16",
         "ror w20, w20, #1",
         "bfxil x4, x20, #0, #16",
@@ -1610,7 +1610,7 @@
       "Comment": "GROUP2 0xd2 /0",
       "ExpectedArm64ASM": [
         "and x20, x7, #0x7",
-        "mov w21, w4",
+        "mov x21, x4",
         "bfi w21, w4, #24, #8",
         "neg w20, w20",
         "ror w20, w21, w20",
@@ -1628,7 +1628,7 @@
       "Comment": "GROUP2 0xd2 /1",
       "ExpectedArm64ASM": [
         "and x20, x7, #0x7",
-        "mov w21, w4",
+        "mov x21, x4",
         "bfi w21, w4, #8, #8",
         "ror w20, w21, w20",
         "bfxil x4, x20, #0, #8",
@@ -1753,7 +1753,7 @@
       "Comment": "GROUP2 0xd3 /0",
       "ExpectedArm64ASM": [
         "and x20, x7, #0x1f",
-        "mov w21, w4",
+        "mov x21, x4",
         "bfi w21, w4, #16, #16",
         "neg w22, w20",
         "ror w21, w21, w22",
@@ -1798,7 +1798,7 @@
       "Comment": "GROUP2 0xd3 /1",
       "ExpectedArm64ASM": [
         "and x20, x7, #0x1f",
-        "mov w21, w4",
+        "mov x21, x4",
         "bfi w21, w4, #16, #16",
         "ror w21, w21, w20",
         "bfxil x4, x21, #0, #16",
