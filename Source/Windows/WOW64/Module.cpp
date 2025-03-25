@@ -450,7 +450,8 @@ public:
 
 void BTCpuProcessInit() {
   FEX::Windows::InitCRTProcess();
-  FEX::Config::LoadConfig(nullptr, FEX::Windows::GetExecutableFilePath(), nullptr, FEX::ReadPortabilityInformation());
+  const auto ExecutablePath = FEX::Windows::GetExecutableFilePath();
+  FEX::Config::LoadConfig(nullptr, ExecutablePath, nullptr, FEX::ReadPortabilityInformation());
   FEXCore::Config::ReloadMetaLayer();
   FEX::Windows::Logging::Init();
 
@@ -504,9 +505,16 @@ void BTCpuProcessInit() {
   GetTLS().Wow64Info().CpuFlags = WOW64_CPUFLAGS_SOFTWARE;
 
   FEX_CONFIG_OPT(ProfileStats, PROFILESTATS);
+  FEX_CONFIG_OPT(StartupSleep, STARTUPSLEEP);
+  FEX_CONFIG_OPT(StartupSleepProcName, STARTUPSLEEPPROCNAME);
 
   if (IsWine && ProfileStats()) {
     StatAllocHandler = fextl::make_unique<FEX::Windows::StatAlloc>(FEXCore::Profiler::AppType::WIN_WOW64);
+  }
+
+  if (StartupSleep() && (StartupSleepProcName().empty() || ExecutablePath == StartupSleepProcName())) {
+    LogMan::Msg::IFmt("[{}][{}] Sleeping for {} seconds", GetCurrentProcessId(), ExecutablePath, StartupSleep());
+    std::this_thread::sleep_for(std::chrono::seconds(StartupSleep()));
   }
 }
 
