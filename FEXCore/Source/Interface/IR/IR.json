@@ -2419,6 +2419,7 @@
         "ElementSize": "ElementSize"
       },
       "FPR = VInsGPR OpSize:#RegisterSize, OpSize:#ElementSize, u8:$DestIdx, FPR:$DestVector, GPR:$Src": {
+        "TiedSource": 0,
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize"
       },
