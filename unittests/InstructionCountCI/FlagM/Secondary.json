@@ -1140,12 +1140,11 @@
       ]
     },
     "cmpxchg eax, ebx": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "0x0f 0xb1",
       "ExpectedArm64ASM": [
-        "mov w20, w4",
-        "eor x27, x4, x20",
-        "subs w26, w4, w20",
+        "mov w27, #0x0",
+        "subs w26, w4, w4",
         "mov x4, x6"
       ]
     },

@@ -3793,7 +3793,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
 
     if (GPRSize == OpSize::i64Bit && Size == OpSize::i32Bit) {
       Src1 = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, GPRSize, Op->Flags, {.AllowUpperGarbage = true});
-      Src1Lower = _Bfe(GPRSize, IR::OpSizeAsBits(Size), 0, Src1);
+      Src1Lower = Trivial ? Src1 : _Bfe(GPRSize, IR::OpSizeAsBits(Size), 0, Src1);
     } else {
       Src1 = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, Size, Op->Flags, {.AllowUpperGarbage = true});
       Src1Lower = Src1;
