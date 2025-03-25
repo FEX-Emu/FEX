@@ -420,6 +420,14 @@
           "Should work without issues in most cases."
         ]
       },
+      "VolatileMetadata": {
+        "Type": "bool",
+        "Default": "true",
+        "Desc": [
+          "Use volatile metadata in PE files to inform TSO instructions when available.",
+	  "When metadata is unavailable falls back to the currently enabled TSO options."
+        ]
+      },
       "X87ReducedPrecision": {
         "Type": "bool",
         "Default": "false",

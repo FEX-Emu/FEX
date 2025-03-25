@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include "IntervalList.h"
+#include <FEXCore/Utils/IntervalList.h>
 #include <mutex>
 #include <unordered_map>
 
@@ -22,13 +22,17 @@ public:
   InvalidationTracker(FEXCore::Context::Context& CTX, const std::unordered_map<DWORD, FEXCore::Core::InternalThreadState*>& Threads);
   void HandleMemoryProtectionNotification(uint64_t Address, uint64_t Size, ULONG Prot);
   void HandleImageMap(uint64_t Address);
-  void InvalidateContainingSection(uint64_t Address, bool Free);
+  struct InvalidateContainingSectionResult {
+    uint64_t SectionStart;
+    uint64_t SectionSize;
+  };
+  InvalidateContainingSectionResult InvalidateContainingSection(uint64_t Address, bool Free);
   void InvalidateAlignedInterval(uint64_t Address, uint64_t Size, bool Free);
   void ReprotectRWXIntervals(uint64_t Address, uint64_t Size);
   bool HandleRWXAccessViolation(uint64_t FaultAddress);
 
 private:
-  IntervalList<uint64_t> RWXIntervals;
+  FEXCore::IntervalList<uint64_t> RWXIntervals;
   std::mutex RWXIntervalsLock;
   FEXCore::Context::Context& CTX;
   const std::unordered_map<DWORD, FEXCore::Core::InternalThreadState*>& Threads;

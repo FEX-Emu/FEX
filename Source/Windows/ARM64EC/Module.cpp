@@ -24,6 +24,7 @@ $end_info$
 #include <FEXCore/Utils/ArchHelpers/Arm64.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/TypeDefines.h>
+#include <FEXCore/Utils/SignalScopeGuards.h>
 
 #include "Common/ArgumentLoader.h"
 #include "Common/Config.h"
@@ -242,6 +243,55 @@ void InitSyscalls() {
 
   FillNtDllLUTs(NtDll);
   PatchCallChecker();
+}
+
+void LoadImageVolatileMetadata(uint64_t Address) {
+  const auto Module = reinterpret_cast<HMODULE>(Address);
+  IMAGE_NT_HEADERS* Nt = RtlImageNtHeader(Module);
+  uint64_t EndAddress = Address + Nt->OptionalHeader.SizeOfImage;
+  ULONG Size;
+  const auto* LoadConfig =
+    reinterpret_cast<_IMAGE_LOAD_CONFIG_DIRECTORY64*>(RtlImageDirectoryEntryToData(Module, true, IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG, &Size));
+  if (!LoadConfig || LoadConfig->Size <= offsetof(_IMAGE_LOAD_CONFIG_DIRECTORY64, VolatileMetadataPointer)) {
+    return;
+  }
+
+  if (LoadConfig->VolatileMetadataPointer < Address || LoadConfig->VolatileMetadataPointer + sizeof(IMAGE_VOLATILE_METADATA) >= EndAddress) {
+    return;
+  }
+
+  const auto* VolatileMetadata = reinterpret_cast<IMAGE_VOLATILE_METADATA*>(LoadConfig->VolatileMetadataPointer);
+  if (!VolatileMetadata || Address + VolatileMetadata->VolatileAccessTable + VolatileMetadata->VolatileAccessTableSize >= EndAddress ||
+      Address + VolatileMetadata->VolatileInfoRangeTable + VolatileMetadata->VolatileInfoRangeTableSize >= EndAddress) {
+    return;
+  }
+
+  fextl::set<uint64_t> VolatileInstructions;
+  const auto* VolatileAccessTableBegin = reinterpret_cast<IMAGE_VOLATILE_RVA_METADATA*>(Address + VolatileMetadata->VolatileAccessTable);
+  const auto* VolatileAccessTableEnd =
+    VolatileAccessTableBegin + (VolatileMetadata->VolatileAccessTableSize / sizeof(IMAGE_VOLATILE_RVA_METADATA));
+  for (auto It = VolatileAccessTableBegin; It != VolatileAccessTableEnd; It++) {
+    VolatileInstructions.emplace(Address + It->Rva);
+  }
+
+  FEXCore::IntervalList<uint64_t> VolatileValidRanges;
+  const auto* VolatileInfoRangeTableBegin = reinterpret_cast<IMAGE_VOLATILE_RANGE_METADATA*>(Address + VolatileMetadata->VolatileInfoRangeTable);
+  const auto* VolatileInfoRangeTableEnd =
+    VolatileInfoRangeTableBegin + (VolatileMetadata->VolatileInfoRangeTableSize / sizeof(IMAGE_VOLATILE_RANGE_METADATA));
+  for (auto It = VolatileInfoRangeTableBegin; It != VolatileInfoRangeTableEnd; It++) {
+    VolatileValidRanges.Insert({Address + It->Rva, Address + It->Rva + It->Size});
+  }
+
+  std::scoped_lock Lock(CTX->GetCodeInvalidationMutex());
+  CTX->AddForceTSOInformation(VolatileValidRanges, std::move(VolatileInstructions));
+}
+
+void HandleImageMap(uint64_t Address) {
+  FEX_CONFIG_OPT(VolatileMetadata, VOLATILEMETADATA);
+  if (VolatileMetadata) {
+    LoadImageVolatileMetadata(Address);
+  }
+  InvalidationTracker->HandleImageMap(Address);
 }
 } // namespace
 
@@ -563,7 +613,7 @@ NTSTATUS ProcessInit() {
   InvalidationTracker.emplace(*CTX, Threads);
 
   auto MainModule = reinterpret_cast<__TEB*>(NtCurrentTeb())->Peb->ImageBaseAddress;
-  InvalidationTracker->HandleImageMap(reinterpret_cast<uint64_t>(MainModule));
+  HandleImageMap(reinterpret_cast<uint64_t>(MainModule));
 
   CPUFeatures.emplace(*CTX);
 
@@ -745,8 +795,12 @@ NTSTATUS NotifyMapViewOfSection(void* Unk1, void* Address, void* Unk2, SIZE_T Si
     return STATUS_SUCCESS;
   }
 
-  std::scoped_lock Lock(ThreadCreationMutex);
-  InvalidationTracker->HandleImageMap(reinterpret_cast<uint64_t>(Address));
+  {
+    std::scoped_lock Lock(ThreadCreationMutex);
+    HandleImageMap(reinterpret_cast<uint64_t>(Address));
+  }
+
+
   return STATUS_SUCCESS;
 }
 
@@ -760,7 +814,11 @@ void NotifyUnmapViewOfSection(void* Address, BOOL After, NTSTATUS Status) {
   }
 
   std::scoped_lock Lock(ThreadCreationMutex);
-  InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
+  auto [Start, Size] = InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
+  if (Size) {
+    std::scoped_lock Lock(CTX->GetCodeInvalidationMutex());
+    CTX->RemoveForceTSOInformation(Start, Size);
+  }
 }
 
 void FlushInstructionCacheHeavy(const void* Address, SIZE_T Size) {

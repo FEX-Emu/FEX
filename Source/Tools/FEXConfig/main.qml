@@ -601,6 +601,11 @@ ApplicationWindow {
                         text: qsTr("Enable non-tearing split-lock atomics")
                         config: "StrictInProcessSplitLocks"
                     }
+                    ConfigCheckBox {
+                        topPadding: 4
+                        text: qsTr("Use PE volatile metadata for ARM64EC")
+                        config: "VolatileMetadata"
+                    }
                 }
             }
 
