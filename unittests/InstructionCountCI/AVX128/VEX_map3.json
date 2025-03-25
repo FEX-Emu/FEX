@@ -1870,8 +1870,8 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #48]",
         "ext v16.16b, v18.16b, v17.16b, #1",
-        "ext v2.16b, v3.16b, v2.16b, #1",
-        "str q2, [x28, #16]"
+        "ext v3.16b, v3.16b, v2.16b, #1",
+        "str q3, [x28, #16]"
       ]
     },
     "vpalignr ymm0, ymm1, ymm2, 15": {
@@ -1883,8 +1883,8 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #48]",
         "ext v16.16b, v18.16b, v17.16b, #15",
-        "ext v2.16b, v3.16b, v2.16b, #15",
-        "str q2, [x28, #16]"
+        "ext v3.16b, v3.16b, v2.16b, #15",
+        "str q3, [x28, #16]"
       ]
     },
     "vpalignr ymm0, ymm1, ymm2, 16": {
@@ -3419,8 +3419,8 @@
         "mov v16.16b, v5.16b",
         "bsl v16.16b, v18.16b, v17.16b",
         "sshr v4.4s, v4.4s, #31",
-        "bit v2.16b, v3.16b, v4.16b",
-        "str q2, [x28, #16]"
+        "bsl v4.16b, v3.16b, v2.16b",
+        "str q4, [x28, #16]"
       ]
     },
     "vblendvpd xmm0, xmm1, xmm2, xmm3": {
@@ -3448,8 +3448,8 @@
         "mov v16.16b, v5.16b",
         "bsl v16.16b, v18.16b, v17.16b",
         "sshr v4.2d, v4.2d, #63",
-        "bit v2.16b, v3.16b, v4.16b",
-        "str q2, [x28, #16]"
+        "bsl v4.16b, v3.16b, v2.16b",
+        "str q4, [x28, #16]"
       ]
     },
     "vpblendvb xmm0, xmm1, xmm2, xmm3": {
@@ -3477,8 +3477,8 @@
         "mov v16.16b, v5.16b",
         "bsl v16.16b, v18.16b, v17.16b",
         "sshr v4.16b, v4.16b, #7",
-        "bit v2.16b, v3.16b, v4.16b",
-        "str q2, [x28, #16]"
+        "bsl v4.16b, v3.16b, v2.16b",
+        "str q4, [x28, #16]"
       ]
     },
     "vaeskeygenassist xmm0, xmm1, 0": {

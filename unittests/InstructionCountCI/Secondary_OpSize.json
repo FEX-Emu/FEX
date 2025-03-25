@@ -133,8 +133,8 @@
         "fcvtzs v4.2s, v4.2s",
         "fcmgt v3.2d, v3.2d, v16.2d",
         "shrn v3.2s, v3.2d, #32",
-        "bit v2.8b, v4.8b, v3.8b",
-        "str d2, [x28, #1040]",
+        "bsl v3.8b, v4.8b, v2.8b",
+        "str d3, [x28, #1040]",
         "mov w20, #0xffff",
         "strh w20, [x28, #1048]"
       ]

@@ -154,9 +154,9 @@
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #1056]",
         "ldr d3, [x28, #1040]",
-        "fcmgt v0.4s, v3.4s, v2.4s",
-        "bif v2.16b, v3.16b, v0.16b",
-        "str d2, [x28, #1040]",
+        "fcmgt v0.4s, v2.4s, v3.4s",
+        "bif v3.16b, v2.16b, v0.16b",
+        "str d3, [x28, #1040]",
         "mov w20, #0xffff",
         "strh w20, [x28, #1048]"
       ]
@@ -237,9 +237,9 @@
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #1056]",
         "ldr d3, [x28, #1040]",
-        "fcmgt v0.4s, v3.4s, v2.4s",
-        "bit v2.16b, v3.16b, v0.16b",
-        "str d2, [x28, #1040]",
+        "fcmgt v0.4s, v2.4s, v3.4s",
+        "bit v3.16b, v2.16b, v0.16b",
+        "str d3, [x28, #1040]",
         "mov w20, #0xffff",
         "strh w20, [x28, #1048]"
       ]
