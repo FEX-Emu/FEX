@@ -1421,13 +1421,14 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
   // Calculate flags early.
   CalculateDeferredFlags();
 
-  Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+  const auto Size = GetSrcBitSize(Op);
+
+  // Allow garbage on the Src if it will be ignored by the Lshr below
+  Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = Size >= 32});
   Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
   // Allow garbage on the shift, we're masking it anyway.
   Ref Shift = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
-
-  const auto Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op.
   if (Size == 64) {
