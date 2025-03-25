@@ -2311,11 +2311,13 @@
 
       "FPR = VFMin OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "TiedSource": 0
       },
       "FPR = VFMax OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "TiedSource": 0
       },
       "FPR = VMul OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
@@ -2417,6 +2419,7 @@
         "ElementSize": "ElementSize"
       },
       "FPR = VInsGPR OpSize:#RegisterSize, OpSize:#ElementSize, u8:$DestIdx, FPR:$DestVector, GPR:$Src": {
+        "TiedSource": 0,
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize"
       },
@@ -2428,6 +2431,7 @@
                  "TmpVector <RegisterSize *2> = concat(Upper:Lower)",
                  "Dest = TmpVector >> (ElementSize * Index * 8); // Or can be thought of `concat(&TmpVector[Index], i128)`"
                 ],
+        "TiedSource": 1,
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize"
       },
@@ -2507,6 +2511,7 @@
                  "If the bit in the field is 1 then the corresponding bit is pulled from VectorTrue",
                  "If the bit in the field is 0 then the corresponding bit is pulled from VectorFalse"
                 ],
+        "TiedSource": 0,
         "DestSize": "RegisterSize"
       },
 

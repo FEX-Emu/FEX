@@ -647,8 +647,8 @@
         "ldr q2, [x28, #32]",
         "movi v3.2d, #0x0",
         "ext v16.16b, v3.16b, v17.16b, #1",
-        "ext v2.16b, v3.16b, v2.16b, #1",
-        "str q2, [x28, #16]"
+        "ext v3.16b, v3.16b, v2.16b, #1",
+        "str q3, [x28, #16]"
       ]
     },
     "vpslldq ymm0, ymm1, 16": {

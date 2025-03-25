@@ -3350,8 +3350,8 @@
         "mov z1.q, z18.q[1]",
         "mov z4.d, z18.d",
         "mov z4.b, p6/m, z1.b",
-        "ext v3.16b, v4.16b, v3.16b, #1",
-        "mov z1.q, q3",
+        "ext v4.16b, v4.16b, v3.16b, #1",
+        "mov z1.q, q4",
         "mov z16.d, z2.d",
         "not p0.b, p7/z, p6.b",
         "mov z16.b, p0/m, z1.b"
@@ -3370,8 +3370,8 @@
         "mov z1.q, z18.q[1]",
         "mov z4.d, z18.d",
         "mov z4.b, p6/m, z1.b",
-        "ext v3.16b, v4.16b, v3.16b, #15",
-        "mov z1.q, q3",
+        "ext v4.16b, v4.16b, v3.16b, #15",
+        "mov z1.q, q4",
         "mov z16.d, z2.d",
         "not p0.b, p7/z, p6.b",
         "mov z16.b, p0/m, z1.b"
@@ -3392,8 +3392,8 @@
         "mov z4.d, z18.d",
         "mov z4.b, p6/m, z1.b",
         "movi v0.2d, #0x0",
-        "ext v3.16b, v3.16b, v0.16b, #0",
-        "mov z1.q, q3",
+        "ext v4.16b, v3.16b, v0.16b, #0",
+        "mov z1.q, q4",
         "mov z16.d, z2.d",
         "not p0.b, p7/z, p6.b",
         "mov z16.b, p0/m, z1.b"
