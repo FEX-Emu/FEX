@@ -204,7 +204,7 @@ bool SetupClient(std::string_view InterpreterPath) {
     fextl::string RootFSPath = FEXServerClient::RequestRootFSPath(ServerFD);
 
     //// If everything has passed then we can now update the rootfs path
-    FEXCore::Config::EraseSet(FEXCore::Config::CONFIG_ROOTFS, RootFSPath);
+    FEXCore::Config::Set(FEXCore::Config::CONFIG_ROOTFS, RootFSPath);
   }
 
   return true;
