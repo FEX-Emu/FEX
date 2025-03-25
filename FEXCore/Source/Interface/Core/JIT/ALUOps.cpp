@@ -1386,7 +1386,10 @@ DEF_OP(Bfi) {
     bfi(EmitSize, Dst, Src, Op->lsb, Op->Width);
   } else if (Dst != Src) {
     // If the destination isn't the source then we can move the DstSrc and insert directly.
-    mov(EmitSize, Dst, SrcDst);
+    //
+    // The move is 64-bit to allow register renaming, the upper bits don't
+    // matter because of the bfi's EmitSize.
+    mov(ARMEmitter::Size::i64Bit, Dst, SrcDst);
     bfi(EmitSize, Dst, Src, Op->lsb, Op->Width);
   } else {
     // Destination didn't match the dst source register.
