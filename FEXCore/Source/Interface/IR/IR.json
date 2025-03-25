@@ -2431,6 +2431,7 @@
                  "TmpVector <RegisterSize *2> = concat(Upper:Lower)",
                  "Dest = TmpVector >> (ElementSize * Index * 8); // Or can be thought of `concat(&TmpVector[Index], i128)`"
                 ],
+        "TiedSource": 1,
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize"
       },
