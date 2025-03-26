@@ -705,10 +705,12 @@ void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs, uint3
 
   // Now handle PF/AF
   if (PFAFSpillMask) {
+    auto PFOffset = offsetof(FEXCore::Core::CpuStateFrame, State.pf_raw);
+    auto AFOffset = offsetof(FEXCore::Core::CpuStateFrame, State.af_raw);
     LOGMAN_THROW_A_FMT(PFAFSpillMask == PFAFMask, "PF/AF not spilled together");
+    LOGMAN_THROW_A_FMT(AFOffset == PFOffset + 4, "PF/AF are together");
 
-    str(REG_PF.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.pf_raw));
-    str(REG_AF.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.af_raw));
+    stp<ARMEmitter::IndexType::OFFSET>(REG_PF.W(), REG_AF.W(), STATE.R(), PFOffset);
   }
 
   if (FPRs) {
@@ -854,8 +856,7 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
   if (PFAFFillMask) {
     LOGMAN_THROW_A_FMT(PFAFFillMask == PFAFMask, "PF/AF not filled together");
 
-    ldr(REG_PF.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.pf_raw));
-    ldr(REG_AF.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.af_raw));
+    ldp<ARMEmitter::IndexType::OFFSET>(REG_PF.W(), REG_AF.W(), STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.pf_raw));
   }
 }
 
