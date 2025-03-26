@@ -150,12 +150,12 @@ protected:
   // Spills and fills SRA/Dynamic registers that are required for Arm64 `preserve_all` ABI.
   // This ABI changes most registers to be callee saved.
   // Caller Saved:
-  // - X0-X8, X16-X18.
+  // - X0-X8, X16-X18, X30.
   // - v0-v7
   // - For 256-bit SVE hosts: top 128-bits of v8-v31
   //
   // Callee Saved:
-  // - X9-X15, X19-X31
+  // - X9-X15, X19-X29, X31
   // - Low 128-bits of v8-v31
   void SpillForPreserveAllABICall(ARMEmitter::Register TmpReg, bool FPRs = true);
   void FillForPreserveAllABICall(bool FPRs = true);
