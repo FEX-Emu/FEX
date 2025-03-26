@@ -31,8 +31,7 @@ namespace JSON {
     const json_t* json = FEX::JSON::CreateJSON(Data, Pool);
 
     if (!json) {
-      LogMan::Msg::EFmt("Couldn't create json");
-      return;
+      ERROR_AND_DIE_FMT("Failed to parse JSON from file '{}' - invalid JSON format", Config);
     }
 
     const json_t* ConfigList = json_getProperty(json, "Config");
@@ -47,12 +46,12 @@ namespace JSON {
       const char* ConfigString = json_getValue(ConfigItem);
 
       if (!ConfigName) {
-        LogMan::Msg::EFmt("Couldn't get config name");
+        LogMan::Msg::EFmt("JSON file '{}': Couldn't get config name for an item", Config);
         return;
       }
 
       if (!ConfigString) {
-        LogMan::Msg::EFmt("Couldn't get ConfigString for '{}'", ConfigName);
+        LogMan::Msg::EFmt("JSON file '{}': Couldn't get value for config item '{}'", Config, ConfigName);
         return;
       }
 

@@ -98,7 +98,7 @@ void FileManager::LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBO
     const json_t* json = FEX::JSON::CreateJSON(FileData, Pool);
 
     if (!json) {
-      return;
+      ERROR_AND_DIE_FMT("Failed to parse JSON from ThunkDB file '{}' - invalid JSON format", ThunkDBPath);
     }
 
     const json_t* DB = json_getProperty(json, "DB");
