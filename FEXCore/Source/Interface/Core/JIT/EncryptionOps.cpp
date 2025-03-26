@@ -271,7 +271,7 @@ DEF_OP(VSha256U1) {
   const auto Src1 = GetVReg(Op->Src1.ID());
   const auto Src2 = GetVReg(Op->Src2.ID());
 
-  if (Dst != Src1 && Dst != Src1) {
+  if (Dst != Src1 && Dst != Src2) {
     movi(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), 0);
     sha256su1(Dst, Src1, Src2);
   } else {
