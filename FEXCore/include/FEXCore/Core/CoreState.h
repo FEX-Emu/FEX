@@ -92,12 +92,18 @@ struct CPUState {
   // Counts the nesting depth of program sections that cause signals to be deferred.
   NonAtomicRefCounter<uint64_t> DeferredSignalRefCount;
 
+  // PF/AF raw values. Really only a byte of each matters, but this layout
+  // (32-bits and in the first 256 bytes) is necessary to use ldp/stp to
+  // spill/fill these togethers efficiently.
+  uint32_t pf_raw {};
+  uint32_t af_raw {};
+
+  uint64_t rip {}; ///< Current core's RIP. May not be entirely accurate while JIT is active
+
   // The high 128-bits of AVX registers when not being emulated by SVE256.
   uint64_t avx_high[16][2];
 
-  uint64_t rip {}; ///< Current core's RIP. May not be entirely accurate while JIT is active
   uint64_t gregs[16] {};
-  uint64_t _pad {};
   XMMRegs xmm {};
 
   // Raw segment register indexes
@@ -110,8 +116,8 @@ struct CPUState {
   uint64_t gs_cached {};
   uint64_t fs_cached {};
   uint8_t flags[48] {};
-  uint64_t pf_raw {};
-  uint64_t af_raw {};
+  uint64_t _pad1 {};
+  uint64_t _pad2 {};
   uint64_t mm[8][2] {};
 
   // 32bit x86 state
