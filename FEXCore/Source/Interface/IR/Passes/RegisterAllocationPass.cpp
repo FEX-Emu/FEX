@@ -765,10 +765,10 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
             IREmit->ReplaceNodeArgument(CodeNode, s, MapRef[Idx]);
             Remapped = true;
           }
-        } else if (K == KIND_SCALAR_INSERT && IROp->Op == OP_VFADDSCALARINSERT && s == 0) {
+        } else if (K == KIND_SCALAR_INSERT && (IROp->Op == OP_VFADDSCALARINSERT || IROp->Op == OP_VFMULSCALARINSERT) && s == 0) {
           auto Header = IR->GetOp<IROp_Header>(MapRef[Idx]);
           if (SSAToReg[IR->GetID(CodeNode).Value] == Reg) {
-            Header->Op = OP_VFADD;
+            Header->Op = IROp->Op == OP_VFADDSCALARINSERT ? OP_VFADD : OP_VFMUL;
           }
         }
 
@@ -828,7 +828,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
           if (K->Constant == 0) {
             Map[Idx] = KIND_ZERO;
           }
-        } else if (IROp->Op == OP_VFADDSCALARINSERT) {
+        } else if (IROp->Op == OP_VFADDSCALARINSERT || IROp->Op == OP_VFMULSCALARINSERT) {
           auto I = IROp->C<IR::IROp_VFAddScalarInsert>();
           if (!I->ZeroUpperBits) {
             Map[Idx] = KIND_SCALAR_INSERT;
