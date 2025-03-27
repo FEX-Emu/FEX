@@ -1507,7 +1507,8 @@
         "DestSize": "Size",
         "TiedSource": 0,
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit",
+          "(Width + lsb) <= IR::OpSizeAsBits(Size)"
         ]
       },
       "GPR = Bfxil OpSize:#Size, u8:$Width, u8:$lsb, GPR:$Dest, GPR:$Src": {
@@ -1519,7 +1520,8 @@
         "DestSize": "Size",
         "TiedSource": 0,
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit",
+          "(Width + lsb) <= IR::OpSizeAsBits(Size)"
         ]
       },
       "GPR = Bfe OpSize:#Size, u8:$Width, u8:$lsb, GPR:$Src": {
@@ -1529,7 +1531,8 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit",
+          "(Width + lsb) <= IR::OpSizeAsBits(Size)"
         ]
       },
       "GPR = Sbfe OpSize:#Size, u8:$Width, u8:$lsb, GPR:$Src": {
@@ -1539,7 +1542,8 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit",
+          "(Width + lsb) <= IR::OpSizeAsBits(Size)"
         ]
       },
       "GPR = NZCVSelect OpSize:#ResultSize, CondClass:$Cond, GPR:$TrueVal, GPR:$FalseVal": {
