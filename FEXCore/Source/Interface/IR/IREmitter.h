@@ -60,6 +60,7 @@ public:
 #include <FEXCore/IR/IRDefines.inc>
   IRPair<IROp_Constant> _Constant(IR::OpSize Size, uint64_t Constant) {
     auto Op = AllocateOp<IROp_Constant, IROps::OP_CONSTANT>();
+    LOGMAN_THROW_A_FMT(Size >= IR::OpSize::i8Bit && Size <= IR::OpSize::i64Bit, "Invalid size");
     uint64_t Mask = ~0ULL >> (64 - IR::OpSizeAsBits(Size));
     Op.first->Constant = (Constant & Mask);
     Op.first->Header.Size = Size;
@@ -356,10 +357,10 @@ protected:
   // These could be combined with a little bit of work to be more efficient with memory usage. Isn't a big deal
   DualIntrusiveAllocatorThreadPool DualListData;
 
-  Ref InvalidNode;
+  Ref InvalidNode {};
   Ref CurrentCodeBlock {};
   fextl::vector<Ref> CodeBlocks;
-  uint64_t Entry;
+  uint64_t Entry {};
 };
 
 } // namespace FEXCore::IR
