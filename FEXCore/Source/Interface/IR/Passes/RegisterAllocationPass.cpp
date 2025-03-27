@@ -717,11 +717,6 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
     Ref LastNode = nullptr;
 
     for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
-      // These are just markers, skip for optimization.
-      if (IROp->Op == OP_GUESTOPCODE) {
-        continue;
-      }
-
       // Static register spills read everything.
       if (IR::SpillsStaticRegs(IROp->Op)) {
         memset(LastWriteBeforeRead, 0, sizeof(LastWriteBeforeRead));
@@ -858,26 +853,42 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
           }
         }
       }
-
-      // Merge adjacent instructions
-      if (IROp->Op == OP_PUSH) {
-        auto Header = IR->GetOp<IROp_Header>(LastNode);
-        auto SP = SSAToReg[IR->GetID(CodeNode).Value];
-        if (Header->Op == OP_PUSH && Header->Size == IROp->Size &&
-            IR->GetOp<IROp_Push>(LastNode)->ValueSize == IR->GetOp<IROp_Push>(CodeNode)->ValueSize &&
-            SP == SSAToReg[IR->GetID(LastNode).Value] && SP == SSAToReg[IR->GetID(IR->GetNode(IROp->Args[1])).Value] &&
-            SP == SSAToReg[IR->GetID(IR->GetNode(Header->Args[1])).Value] && SP != SSAToReg[IR->GetID(IR->GetNode(IROp->Args[0])).Value] &&
-            SP != SSAToReg[IR->GetID(IR->GetNode(Header->Args[0])).Value] && IR->GetOp<IROp_Push>(LastNode)->ValueSize >= OpSize::i32Bit) {
-
-          IREmit->SetWriteCursorBefore(CodeNode);
-          IREmit->_PushTwo(Header->Size, IR->GetOp<IROp_Push>(LastNode)->ValueSize, IR->GetNode(Header->Args[0]),
-                           IR->GetNode(IROp->Args[0]), IR->GetNode(IROp->Args[1]));
-          LastNode = nullptr;
-        }
-      }
-
-      LastNode = CodeNode;
     }
+
+      for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
+        // These are just markers, skip for optimization.
+        if (IROp->Op == OP_GUESTOPCODE) {
+          continue;
+        }
+
+        // Merge adjacent instructions
+        if (IROp->Op == OP_PUSH) {
+          auto Header = IR->GetOp<IROp_Header>(LastNode);
+          auto SP = SSAToReg[IR->GetID(CodeNode).Value];
+          if (Header->Op == OP_PUSH && Header->Size == IROp->Size &&
+              IR->GetOp<IROp_Push>(LastNode)->ValueSize == IR->GetOp<IROp_Push>(CodeNode)->ValueSize &&
+              SP == SSAToReg[IR->GetID(LastNode).Value] && SP == SSAToReg[IR->GetID(IR->GetNode(IROp->Args[1])).Value] &&
+              SP == SSAToReg[IR->GetID(IR->GetNode(Header->Args[1])).Value] && SP != SSAToReg[IR->GetID(IR->GetNode(IROp->Args[0])).Value] &&
+              SP != SSAToReg[IR->GetID(IR->GetNode(Header->Args[0])).Value] && IR->GetOp<IROp_Push>(LastNode)->ValueSize >= OpSize::i32Bit) {
+
+            IREmit->SetWriteCursorBefore(CodeNode);
+            IREmit->_PushTwo(Header->Size, IR->GetOp<IROp_Push>(LastNode)->ValueSize, IR->GetNode(Header->Args[0]),
+                             IR->GetNode(IROp->Args[0]), IR->GetNode(IROp->Args[1]));
+
+            IREmit->Remove(CodeNode);
+            IREmit->Remove(LastNode);
+            LastNode = nullptr;
+
+            // XXX: Don't dump everything
+            memset(LastWriteBeforeRead, 0, sizeof(LastWriteBeforeRead));
+            memset(Map, 0, sizeof(Map));
+            memset(MapRef, 0, sizeof(MapRef));
+            continue;
+          }
+        }
+
+        LastNode = CodeNode;
+      }
   }
 
   /* Now that we're done growing things, we can finalize our results.
