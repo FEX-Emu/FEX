@@ -699,8 +699,8 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
       KIND_ZERO,
     };
 
-    // XXX: Handle 32-bit/64-bit properly
-    const unsigned RegIndices = 40;
+    // XXX: Do we care to compact? Simpler this way!
+    const unsigned RegIndices = 256;
 
     // Map from registers to what's stored there.
     Kind Map[RegIndices] = {KIND_UNDEF};
@@ -725,51 +725,49 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         }
 
         auto Reg = SSAToReg[IR->GetID(IR->GetNode(IROp->Args[s])).Value];
-        if (Reg.Class == GPRFixedClass || Reg.Class == GPRClass) {
-          unsigned Idx = Reg.Class == GPRClass ? Reg.Reg + 18 : Reg.Reg;
-          auto K = Map[Idx];
+        unsigned Idx = Reg.Raw;
+        auto K = Map[Idx];
 
-          bool ExtGood = (IROp->Op == OP_OR || IROp->Op == OP_XOR || IROp->Op == OP_AND || IROp->Op == OP_ADD || IROp->Op == OP_SUB ||
-                          IROp->Op == OP_ASHR || IROp->Op == OP_LSHL || IROp->Op == OP_LSHR || IROp->Op == OP_ADDNZCV ||
-                          IROp->Op == OP_ADDWITHFLAGS || IROp->Op == OP_SUBNZCV || IROp->Op == OP_SUBWITHFLAGS);
-          bool ExtAny = IROp->Op == OP_STOREAF || IROp->Op == OP_STOREPF;
-          bool Remapped = false;
+        bool ExtGood = (IROp->Op == OP_OR || IROp->Op == OP_XOR || IROp->Op == OP_AND || IROp->Op == OP_ADD || IROp->Op == OP_SUB ||
+                        IROp->Op == OP_ASHR || IROp->Op == OP_LSHL || IROp->Op == OP_LSHR || IROp->Op == OP_ADDNZCV ||
+                        IROp->Op == OP_ADDWITHFLAGS || IROp->Op == OP_SUBNZCV || IROp->Op == OP_SUBWITHFLAGS);
+        bool ExtAny = IROp->Op == OP_STOREAF || IROp->Op == OP_STOREPF;
+        bool Remapped = false;
 
-          if (K == KIND_COPY || (K == KIND_ZEXT && ((IROp->Size == OpSize::i32Bit && ExtGood) || ExtAny || IROp->Op == OP_AND)) ||
-              (K == KIND_ZEXT8 && ((IROp->Size == OpSize::i8Bit && ExtGood) || ExtAny)) ||
-              (K == KIND_ZEXT16 && ((IROp->Size == OpSize::i16Bit && ExtGood) || ExtAny))) {
+        if (K == KIND_COPY || (K == KIND_ZEXT && ((IROp->Size == OpSize::i32Bit && ExtGood) || ExtAny || IROp->Op == OP_AND)) ||
+            (K == KIND_ZEXT8 && ((IROp->Size == OpSize::i8Bit && ExtGood) || ExtAny)) ||
+            (K == KIND_ZEXT16 && ((IROp->Size == OpSize::i16Bit && ExtGood) || ExtAny))) {
 
+          IREmit->ReplaceNodeArgument(CodeNode, s, MapRef[Idx]);
+          Remapped = true;
+
+          // Rewrite 64-bit AND to 32-bit AND to fold in a zero-extension with
+          // the algebraic identity:
+          //
+          // a & zext(b) = a & (b & 0xfffffffff)
+          //             = (a & b) & 0xffffffff
+          //             = zext(a & b)
+          if (IROp->Op == OP_AND && K == KIND_ZEXT) {
+            IROp->Size = OpSize::i32Bit;
+          }
+        } else if (K == KIND_ZERO && IROp->Op == OP_NZCVSELECT) {
+          IREmit->SetWriteCursorBefore(CodeNode);
+          IREmit->ReplaceNodeArgument(CodeNode, s, IREmit->_InlineConstant(0));
+          Remapped = true;
+        } else if ((K == KIND_BFI_UNDEF8 || K == KIND_ZEXT8) && IROp->Op == OP_BFI && s == 0) {
+          const IROp_Bfi* Bfi = IROp->C<IR::IROp_Bfi>();
+          Remapped = (Bfi->lsb == 0 && Bfi->Width == 8);
+        } else if (K == KIND_ZEXT8 && IROp->Op == OP_BFE) {
+          const IROp_Bfe* Bfe = IROp->C<IR::IROp_Bfe>();
+          if (Bfe->lsb == 0 && Bfe->Width == 8) {
             IREmit->ReplaceNodeArgument(CodeNode, s, MapRef[Idx]);
             Remapped = true;
-
-            // Rewrite 64-bit AND to 32-bit AND to fold in a zero-extension with
-            // the algebraic identity:
-            //
-            // a & zext(b) = a & (b & 0xfffffffff)
-            //             = (a & b) & 0xffffffff
-            //             = zext(a & b)
-            if (IROp->Op == OP_AND && K == KIND_ZEXT) {
-              IROp->Size = OpSize::i32Bit;
-            }
-          } else if (K == KIND_ZERO && IROp->Op == OP_NZCVSELECT) {
-            IREmit->SetWriteCursorBefore(CodeNode);
-            IREmit->ReplaceNodeArgument(CodeNode, s, IREmit->_InlineConstant(0));
-            Remapped = true;
-          } else if ((K == KIND_BFI_UNDEF8 || K == KIND_ZEXT8) && IROp->Op == OP_BFI && s == 0) {
-            const IROp_Bfi* Bfi = IROp->C<IR::IROp_Bfi>();
-            Remapped = (Bfi->lsb == 0 && Bfi->Width == 8);
-          } else if (K == KIND_ZEXT8 && IROp->Op == OP_BFE) {
-            const IROp_Bfe* Bfe = IROp->C<IR::IROp_Bfe>();
-            if (Bfe->lsb == 0 && Bfe->Width == 8) {
-              IREmit->ReplaceNodeArgument(CodeNode, s, MapRef[Idx]);
-              Remapped = true;
-            }
           }
+        }
 
-          // Update for the read per the data structure invariant.
-          if (!Remapped) {
-            LastWriteBeforeRead[Idx] = nullptr;
-          }
+        // Update for the read per the data structure invariant.
+        if (!Remapped) {
+          LastWriteBeforeRead[Idx] = nullptr;
         }
       }
 
@@ -784,46 +782,44 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
           }
         }
 
-        if (Phys.Class == GPRFixedClass || Phys.Class == GPRClass) {
-          unsigned Idx = Phys.Class == GPRClass ? Phys.Reg + 18 : Phys.Reg;
+        unsigned Idx = Phys.Raw;
 
-          // Once the source reg is overwritten, stop propagating
-          Map[Idx] = KIND_UNDEF;
-          MapRef[Idx] = nullptr;
+        // Once the source reg is overwritten, stop propagating
+        Map[Idx] = KIND_UNDEF;
+        MapRef[Idx] = nullptr;
 
-          // DCE
-          if (auto Last = LastWriteBeforeRead[Idx]; Last) {
-            IREmit->Remove(Last);
-          }
+        // DCE
+        if (auto Last = LastWriteBeforeRead[Idx]; Last) {
+          IREmit->Remove(Last);
+        }
 
-          // Record DCE'able writes
-          bool CanDCE = SRA || !IR::HasSideEffects(IROp->Op);
-          LastWriteBeforeRead[Idx] = CanDCE ? CodeNode : nullptr;
+        // Record DCE'able writes
+        bool CanDCE = SRA || !IR::HasSideEffects(IROp->Op);
+        LastWriteBeforeRead[Idx] = CanDCE ? CodeNode : nullptr;
 
-          // Copyprop
-          if (SRA) {
-            Map[Idx] = KIND_COPY;
-            MapRef[Idx] = DecodeSRANode(IROp, CodeNode);
-          } else if (IROp->Op == OP_COPY) {
-            Map[Idx] = KIND_COPY;
+        // Copyprop
+        if (SRA) {
+          Map[Idx] = KIND_COPY;
+          MapRef[Idx] = DecodeSRANode(IROp, CodeNode);
+        } else if (IROp->Op == OP_COPY) {
+          Map[Idx] = KIND_COPY;
+          MapRef[Idx] = IR->GetNode(IROp->Args[0]);
+        } else if (IROp->Op == OP_BFE) {
+          const IROp_Bfe* Bfe = IROp->C<IR::IROp_Bfe>();
+          if (Bfe->lsb == 0 && Bfe->Width == 32) {
+            Map[Idx] = KIND_ZEXT;
             MapRef[Idx] = IR->GetNode(IROp->Args[0]);
-          } else if (IROp->Op == OP_BFE) {
-            const IROp_Bfe* Bfe = IROp->C<IR::IROp_Bfe>();
-            if (Bfe->lsb == 0 && Bfe->Width == 32) {
-              Map[Idx] = KIND_ZEXT;
-              MapRef[Idx] = IR->GetNode(IROp->Args[0]);
-            }
-          } else if (IROp->Op == OP_BFI) {
-            const IROp_Bfi* Bfi = IROp->C<IR::IROp_Bfi>();
-            if (Bfi->lsb == 0 && (Bfi->Width == 8 || Bfi->Width == 16) && Phys == SSAToReg[IR->GetID(IR->GetNode(IROp->Args[0])).Value]) {
-              Map[Idx] = Bfi->Width == 16 ? KIND_ZEXT16 : KIND_ZEXT8;
-              MapRef[Idx] = IR->GetNode(IROp->Args[1]);
-            }
-          } else if (IROp->Op == OP_CONSTANT) {
-            const IROp_Constant* K = IROp->C<IR::IROp_Constant>();
-            if (K->Constant == 0) {
-              Map[Idx] = KIND_ZERO;
-            }
+          }
+        } else if (IROp->Op == OP_BFI) {
+          const IROp_Bfi* Bfi = IROp->C<IR::IROp_Bfi>();
+          if (Bfi->lsb == 0 && (Bfi->Width == 8 || Bfi->Width == 16) && Phys == SSAToReg[IR->GetID(IR->GetNode(IROp->Args[0])).Value]) {
+            Map[Idx] = Bfi->Width == 16 ? KIND_ZEXT16 : KIND_ZEXT8;
+            MapRef[Idx] = IR->GetNode(IROp->Args[1]);
+          }
+        } else if (IROp->Op == OP_CONSTANT) {
+          const IROp_Constant* K = IROp->C<IR::IROp_Constant>();
+          if (K->Constant == 0) {
+            Map[Idx] = KIND_ZERO;
           }
         }
       }
