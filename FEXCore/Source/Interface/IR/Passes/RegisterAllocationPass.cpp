@@ -27,6 +27,7 @@ namespace {
   struct RegisterClass {
     uint32_t Available;
     uint32_t Count;
+    uint32_t RoundRobin;
 
     // If bit R of Available is 0, then RegToSSA[R] is the Old node
     // currently allocated to R. Else, RegToSSA[R] is UNDEFINED, no need to
@@ -435,8 +436,25 @@ private:
     }
 
     // Assign a free register in the appropriate class.
+    // We use a round robin scheme to reduce false post-RA dependencies.
     LOGMAN_THROW_A_FMT(Class->Available != 0, "Post-condition of spilling");
-    unsigned Reg = std::countr_zero(Class->Available);
+
+    uint32_t Shift = Class->RoundRobin;
+    uint32_t AvailableShifted = Class->Available >> Shift;
+
+    if (AvailableShifted == 0) {
+      AvailableShifted = Class->Available;
+      Shift = 0;
+    }
+
+    unsigned Reg = std::countr_zero(AvailableShifted) + Shift;
+
+    Class->RoundRobin = Reg + 1;
+
+    if (Class->RoundRobin >= Class->Count) {
+      Class->RoundRobin = 0;
+    }
+
     SetReg(CodeNode, PhysicalRegister(ClassType, Reg));
   };
 
@@ -480,6 +498,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
     // At the start of each block, all registers are available.
     for (auto& Class : Classes) {
       Class.Available = (1u << Class.Count) - 1;
+      Class.RoundRobin = 0;
     }
 
     SourcesNextUses.clear();

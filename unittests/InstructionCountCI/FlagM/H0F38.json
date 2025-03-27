@@ -20,16 +20,16 @@
       "ExpectedArm64ASM": [
         "and v2.16b, v16.16b, v17.16b",
         "bic v3.16b, v17.16b, v16.16b",
-        "umaxv h2, v2.8h",
-        "umaxv h3, v3.8h",
-        "umov w20, v2.h[0]",
-        "umov w21, v3.h[0]",
+        "umaxv h4, v2.8h",
+        "umaxv h5, v3.8h",
+        "umov w20, v4.h[0]",
+        "umov w21, v5.h[0]",
         "mov w27, #0x0",
         "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
-        "cset x21, ne",
+        "cset x22, ne",
         "cmp w20, #0x0 (0)",
-        "rmif x21, #63, #nzCv"
+        "rmif x22, #63, #nzCv"
       ]
     },
     "adcx eax, ebx": {

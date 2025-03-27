@@ -17,8 +17,8 @@
         "ushr v2.4s, v16.4s, #31",
         "index z3.s, #0, #1",
         "ushl v2.4s, v2.4s, v3.4s",
-        "addv s2, v2.4s",
-        "mov w4, v2.s[0]"
+        "addv s4, v2.4s",
+        "mov w4, v4.s[0]"
       ]
     },
     "movmskps rax, xmm0": {
@@ -28,8 +28,8 @@
         "ushr v2.4s, v16.4s, #31",
         "index z3.s, #0, #1",
         "ushl v2.4s, v2.4s, v3.4s",
-        "addv s2, v2.4s",
-        "mov w4, v2.s[0]"
+        "addv s4, v2.4s",
+        "mov w4, v4.s[0]"
       ]
     },
     "psrlw mm0, mm1": {

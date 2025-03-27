@@ -21,10 +21,10 @@
         "fcvtzs z5.s, p6/m, z2.d",
         "uzp1 z5.s, z5.s, z5.s",
         "mov v5.8b, v5.8b",
-        "fcmgt v2.2d, v4.2d, v2.2d",
-        "shrn v2.2s, v2.2d, #32",
+        "fcmgt v6.2d, v4.2d, v2.2d",
+        "shrn v6.2s, v6.2d, #32",
         "movprfx z16, z5",
-        "bsl z16.d, z16.d, z3.d, z2.d"
+        "bsl z16.d, z16.d, z3.d, z6.d"
       ]
     }
   }
