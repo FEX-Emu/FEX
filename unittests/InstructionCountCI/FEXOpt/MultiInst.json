@@ -48,7 +48,7 @@
     },
     "adds xmm0, xmm1, xmm2": {
       "x86InstructionCount": 2,
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Redundant scalar adds that can get eliminated without AFP."
       ],
@@ -57,8 +57,7 @@
         "addss xmm0, xmm2"
       ],
       "ExpectedArm64ASM": [
-        "fadd s0, s16, s17",
-        "mov v16.s[0], v0.s[0]",
+        "fadd v16.4s, v16.4s, v17.4s",
         "fadd s0, s16, s18",
         "mov v16.s[0], v0.s[0]"
       ]
