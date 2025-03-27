@@ -765,10 +765,12 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
             IREmit->ReplaceNodeArgument(CodeNode, s, MapRef[Idx]);
             Remapped = true;
           }
-        } else if (K == KIND_SCALAR_INSERT && (IROp->Op == OP_VFADDSCALARINSERT || IROp->Op == OP_VFMULSCALARINSERT) && s == 0) {
-          auto Header = IR->GetOp<IROp_Header>(MapRef[Idx]);
-          if (SSAToReg[IR->GetID(CodeNode).Value] == Reg) {
-            Header->Op = Header->Op == OP_VFADDSCALARINSERT ? OP_VFADD : OP_VFMUL;
+        }
+
+        if (K == KIND_SCALAR_INSERT) {
+          bool OK = s == 0 && (IROp->Op == OP_VFADDSCALARINSERT || IROp->Op == OP_VFMULSCALARINSERT);
+          if (!OK) {
+            Map[Idx] = KIND_UNDEF;
           }
         }
 
@@ -790,6 +792,14 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         }
 
         unsigned Idx = Phys.Raw;
+
+        // If we're overwriting the float register and all the uses only care
+        // about the scalar portion, we can go back and optimize the write to
+        // clobber the upper bits.
+        if (Map[Idx] == KIND_SCALAR_INSERT) {
+          auto Header = IR->GetOp<IROp_Header>(MapRef[Idx]);
+          Header->Op = Header->Op == OP_VFADDSCALARINSERT ? OP_VFADD : OP_VFMUL;
+        }
 
         // Once the source reg is overwritten, stop propagating
         Map[Idx] = KIND_UNDEF;
