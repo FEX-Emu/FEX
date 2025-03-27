@@ -1580,6 +1580,31 @@ DEF_OP(Pop) {
   }
 }
 
+DEF_OP(PopTwo) {
+  const auto Op = IROp->C<IR::IROp_PopTwo>();
+  const auto Size = IR::OpSizeToSize(Op->Size);
+  const auto Addr = GetReg(Op->InoutAddr.ID());
+  const auto Dst1 = GetReg(Op->OutValue1.ID());
+  const auto Dst2 = GetReg(Op->OutValue2.ID());
+
+  LOGMAN_THROW_A_FMT(Dst1 != Addr && Dst2 != Addr, "Invalid");
+
+  switch (Size) {
+  case 4: {
+    ldp<ARMEmitter::IndexType::POST>(Dst1.W(), Dst2.W(), Addr, Size);
+    break;
+  }
+  case 8: {
+    ldp<ARMEmitter::IndexType::POST>(Dst1.X(), Dst2.X(), Addr, Size);
+    break;
+  }
+  default: {
+    LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Op->Size);
+    break;
+  }
+  }
+}
+
 DEF_OP(StoreMem) {
   const auto Op = IROp->C<IR::IROp_StoreMem>();
   const auto OpSize = IROp->Size;
