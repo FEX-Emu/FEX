@@ -135,6 +135,7 @@ Ref OpDispatchBuilder::GetPackedRFLAG(uint32_t FlagsMask) {
 }
 
 void OpDispatchBuilder::CalculateOF(IR::OpSize SrcSize, Ref Res, Ref Src1, Ref Src2, bool Sub) {
+  LOGMAN_THROW_A_FMT(SrcSize >= IR::OpSize::i8Bit && SrcSize <= IR::OpSize::i64Bit, "Invalid size");
   const auto OpSize = SrcSize == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit;
   const uint64_t SignBit = IR::OpSizeAsBits(SrcSize) - 1;
   Ref Anded = nullptr;
