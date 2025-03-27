@@ -127,7 +127,7 @@ AddressMode SelectAddressMode(IREmitter* IREmit, AddressMode A, IR::OpSize GPRSi
   } else {
     if (OffsetIsSIMM9 || OffsetIsUnsignedScaled) {
       return InlineImmOffsetLoadstore(A);
-    } else if (!Is32Bit && A.Base && (A.Index || A.Segment) & !A.Offset && (A.IndexScale == 1 || A.IndexScale == AccessSizeAsImm)) {
+    } else if (!Is32Bit && A.Base && (A.Index || A.Segment) && !A.Offset && (A.IndexScale == 1 || A.IndexScale == AccessSizeAsImm)) {
       return ScaledRegisterLoadstore(A);
     }
   }
