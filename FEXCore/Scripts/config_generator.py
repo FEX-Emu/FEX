@@ -461,6 +461,7 @@ def print_parse_jsonloader_options(options):
     output_argloader.write("#ifdef JSONLOADER\n")
     output_argloader.write("#undef JSONLOADER\n")
     output_argloader.write("if (false) {}\n")
+    op_key = None
     for op_group, group_vals in options.items():
         for op_key, op_vals in group_vals.items():
             value_type = op_vals["Type"]
@@ -472,7 +473,7 @@ def print_parse_jsonloader_options(options):
                 output_argloader.write("else if (KeyName == \"{0}\") {{\n".format(op_key))
                 output_argloader.write("\tAppendStrArrayValue(KeyOption, ConfigString);\n")
                 output_argloader.write("}\n")
-
+    assert op_key is not None, "No options found in JSONLOADER"
     output_argloader.write("else {{\n".format(op_key))
     output_argloader.write("Set(KeyOption, ConfigString);\n")
     output_argloader.write("}\n")
