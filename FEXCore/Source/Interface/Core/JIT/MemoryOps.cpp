@@ -1525,6 +1525,29 @@ DEF_OP(Push) {
   }
 }
 
+DEF_OP(PushTwo) {
+  const auto Op = IROp->C<IR::IROp_PushTwo>();
+  const auto ValueSize = IR::OpSizeToSize(Op->ValueSize);
+  auto Src1 = GetReg(Op->Value1.ID());
+  auto Src2 = GetReg(Op->Value2.ID());
+  const auto Dst = GetReg(Node);
+
+  switch (ValueSize) {
+  case 4: {
+    stp<ARMEmitter::IndexType::PRE>(Src1.W(), Src2.W(), Dst, -2 * ValueSize);
+    break;
+  }
+  case 8: {
+    stp<ARMEmitter::IndexType::PRE>(Src1.X(), Src2.X(), Dst, -2 * ValueSize);
+    break;
+  }
+  default: {
+    LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, ValueSize);
+    break;
+  }
+  }
+}
+
 DEF_OP(Pop) {
   const auto Op = IROp->C<IR::IROp_Pop>();
   const auto Size = IR::OpSizeToSize(Op->Size);
