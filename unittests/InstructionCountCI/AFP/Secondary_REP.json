@@ -199,8 +199,8 @@
       ],
       "ExpectedArm64ASM": [
         "fcmgt s2, s17, s16",
-        "mvn v2.16b, v2.16b",
-        "mov v16.s[0], v2.s[0]"
+        "mvn v3.16b, v2.16b",
+        "mov v16.s[0], v3.s[0]"
       ]
     },
     "cmpss xmm0, xmm1, 6": {
@@ -210,8 +210,8 @@
       ],
       "ExpectedArm64ASM": [
         "fcmge s2, s17, s16",
-        "mvn v2.16b, v2.16b",
-        "mov v16.s[0], v2.s[0]"
+        "mvn v3.16b, v2.16b",
+        "mov v16.s[0], v3.s[0]"
       ]
     },
     "cmpss xmm0, xmm1, 7": {

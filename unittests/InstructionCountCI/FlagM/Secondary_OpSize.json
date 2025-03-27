@@ -39,11 +39,11 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #2688]",
         "cmlt v3.16b, v16.16b, #0",
-        "and v2.16b, v3.16b, v2.16b",
-        "addp v2.16b, v2.16b, v2.16b",
-        "addp v2.8b, v2.8b, v2.8b",
-        "addp v2.8b, v2.8b, v2.8b",
-        "umov w4, v2.h[0]"
+        "and v4.16b, v3.16b, v2.16b",
+        "addp v5.16b, v4.16b, v4.16b",
+        "addp v6.8b, v5.8b, v5.8b",
+        "addp v7.8b, v6.8b, v6.8b",
+        "umov w4, v7.h[0]"
       ]
     },
     "maskmovdqu xmm0, xmm1": {

@@ -20,9 +20,9 @@
         "sub w20, w6, #0x1 (1)",
         "and w4, w20, w6",
         "cmp x6, #0x0 (0)",
-        "cset x20, ne",
+        "cset x21, ne",
         "cmp w4, #0x0 (0)",
-        "rmif x20, #63, #nzCv"
+        "rmif x21, #63, #nzCv"
       ]
     },
     "blsr rax, rbx": {
@@ -34,9 +34,9 @@
         "sub x20, x6, #0x1 (1)",
         "and x4, x20, x6",
         "cmp x6, #0x0 (0)",
-        "cset x20, ne",
+        "cset x21, ne",
         "cmp x4, #0x0 (0)",
-        "rmif x20, #63, #nzCv"
+        "rmif x21, #63, #nzCv"
       ]
     },
     "blsmsk eax, ebx": {
@@ -48,9 +48,9 @@
         "sub w20, w6, #0x1 (1)",
         "eor w4, w20, w6",
         "cmp x6, #0x0 (0)",
-        "cset x20, ne",
+        "cset x21, ne",
         "cmp w4, #0x0 (0)",
-        "rmif x20, #63, #nzCv"
+        "rmif x21, #63, #nzCv"
       ]
     },
     "blsmsk rax, rbx": {
@@ -62,9 +62,9 @@
         "sub x20, x6, #0x1 (1)",
         "eor x4, x20, x6",
         "cmp x6, #0x0 (0)",
-        "cset x20, ne",
+        "cset x21, ne",
         "cmp x4, #0x0 (0)",
-        "rmif x20, #63, #nzCv"
+        "rmif x21, #63, #nzCv"
       ]
     },
     "blsi eax, ebx": {
@@ -76,8 +76,8 @@
         "neg w20, w6",
         "and w4, w6, w20",
         "cmp w4, #0x0 (0)",
-        "cset w20, eq",
-        "rmif x20, #63, #nzCv"
+        "cset w21, eq",
+        "rmif x21, #63, #nzCv"
       ]
     },
     "blsi rax, rbx": {
@@ -89,8 +89,8 @@
         "neg x20, x6",
         "and x4, x6, x20",
         "cmp x4, #0x0 (0)",
-        "cset w20, eq",
-        "rmif x20, #63, #nzCv"
+        "cset w21, eq",
+        "rmif x21, #63, #nzCv"
       ]
     }
   }

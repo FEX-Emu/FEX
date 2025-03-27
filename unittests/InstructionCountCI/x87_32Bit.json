@@ -24,17 +24,17 @@
       "ExpectedArm64ASM": [
         "ldr s2, [x9, #16380]",
         "stur s2, [x4, #-4]",
-        "ldur s2, [x9, #-8]",
+        "ldur s3, [x9, #-8]",
         "mov w20, #0x3ff2",
-        "str s2, [x4, x20, sxtx]",
-        "ldrb w20, [x28, #1019]",
-        "add w20, w20, #0x7 (7)",
-        "and w20, w20, #0x7",
-        "ldrb w21, [x28, #1298]",
-        "mov w22, #0x1",
-        "lsl w20, w22, w20",
-        "bic w20, w21, w20",
-        "strb w20, [x28, #1298]"
+        "str s3, [x4, x20, sxtx]",
+        "ldrb w21, [x28, #1019]",
+        "add w22, w21, #0x7 (7)",
+        "and w23, w22, #0x7",
+        "ldrb w24, [x28, #1298]",
+        "mov w25, #0x1",
+        "lsl w12, w25, w23",
+        "bic w13, w24, w12",
+        "strb w13, [x28, #1298]"
       ]
     }
   }

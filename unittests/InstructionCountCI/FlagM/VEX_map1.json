@@ -70,11 +70,11 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #2688]",
         "cmlt v3.16b, v16.16b, #0",
-        "and v2.16b, v3.16b, v2.16b",
-        "addp v2.16b, v2.16b, v2.16b",
-        "addp v2.8b, v2.8b, v2.8b",
-        "addp v2.8b, v2.8b, v2.8b",
-        "umov w4, v2.h[0]"
+        "and v4.16b, v3.16b, v2.16b",
+        "addp v5.16b, v4.16b, v4.16b",
+        "addp v6.8b, v5.8b, v5.8b",
+        "addp v7.8b, v6.8b, v6.8b",
+        "umov w4, v7.h[0]"
       ]
     },
     "vpmovmskb rax, ymm0": {
@@ -92,15 +92,15 @@
         "orr z0.b, p0/m, z0.b, z16.b",
         "mov z3.d, z0.d",
         "msr nzcv, x0",
-        "and z2.d, z3.d, z2.d",
-        "movprfx z0, z2",
-        "addp z0.b, p7/m, z0.b, z2.b",
-        "uzp1 z2.b, z0.b, z0.b",
+        "and z4.d, z3.d, z2.d",
+        "movprfx z0, z4",
+        "addp z0.b, p7/m, z0.b, z4.b",
+        "uzp1 z5.b, z0.b, z0.b",
         "uzp2 z1.b, z0.b, z0.b",
-        "splice z2.d, p6, z2.d, z1.d",
-        "addp v2.16b, v2.16b, v2.16b",
-        "addp v2.8b, v2.8b, v2.8b",
-        "mov w4, v2.s[0]"
+        "splice z5.d, p6, z5.d, z1.d",
+        "addp v6.16b, v5.16b, v5.16b",
+        "addp v7.8b, v6.8b, v6.8b",
+        "mov w4, v7.s[0]"
       ]
     },
     "vmaskmovdqu xmm0, xmm1": {

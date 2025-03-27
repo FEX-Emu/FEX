@@ -436,17 +436,16 @@
       ]
     },
     "vpsrldq ymm0, ymm1, 15": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map group 14 0b011 256-bit"
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
         "ext v3.16b, v17.16b, v2.16b, #15",
-        "movprfx z1, z17",
-        "ext z1.b, z1.b, z2.b, #31",
-        "mov z2.d, z1.d",
-        "mov z1.q, q2",
+        "movprfx z4, z17",
+        "ext z4.b, z4.b, z2.b, #31",
+        "mov z1.q, q4",
         "mov z16.d, z3.d",
         "not p0.b, p7/z, p6.b",
         "mov z16.b, p0/m, z1.b"
@@ -584,14 +583,14 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x4]",
-        "and w20, w20, #0xffc0",
-        "str w20, [x28, #940]",
-        "ubfx w21, w20, #13, #3",
-        "rbit w1, w21",
+        "and w21, w20, #0xffc0",
+        "str w21, [x28, #940]",
+        "ubfx w22, w21, #13, #3",
+        "rbit w1, w22",
         "lsr w1, w1, #30",
         "mrs x0, fpcr",
         "bfi x0, x1, #22, #2",
-        "lsr x1, x21, #2",
+        "lsr x1, x22, #2",
         "bfi x0, x1, #24, #1",
         "msr fpcr, x0"
       ]
@@ -603,8 +602,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #940]",
-        "and w20, w20, #0xffc0",
-        "str w20, [x4]"
+        "and w21, w20, #0xffc0",
+        "str w21, [x4]"
       ]
     },
     "blsr eax, ebx": {
@@ -616,11 +615,11 @@
         "sub w20, w6, #0x1 (1)",
         "and w4, w20, w6",
         "cmp x6, #0x0 (0)",
-        "cset x20, ne",
+        "cset x21, ne",
         "cmp w4, #0x0 (0)",
-        "mrs x21, nzcv",
-        "bfi w21, w20, #29, #1",
-        "msr nzcv, x21"
+        "mrs x22, nzcv",
+        "bfi w22, w21, #29, #1",
+        "msr nzcv, x22"
       ]
     },
     "blsr rax, rbx": {
@@ -632,11 +631,11 @@
         "sub x20, x6, #0x1 (1)",
         "and x4, x20, x6",
         "cmp x6, #0x0 (0)",
-        "cset x20, ne",
+        "cset x21, ne",
         "cmp x4, #0x0 (0)",
-        "mrs x21, nzcv",
-        "bfi w21, w20, #29, #1",
-        "msr nzcv, x21"
+        "mrs x22, nzcv",
+        "bfi w22, w21, #29, #1",
+        "msr nzcv, x22"
       ]
     },
     "blsmsk eax, ebx": {
@@ -648,11 +647,11 @@
         "sub w20, w6, #0x1 (1)",
         "eor w4, w20, w6",
         "cmp x6, #0x0 (0)",
-        "cset x20, ne",
+        "cset x21, ne",
         "cmp w4, #0x0 (0)",
-        "mrs x21, nzcv",
-        "bfi w21, w20, #29, #1",
-        "msr nzcv, x21"
+        "mrs x22, nzcv",
+        "bfi w22, w21, #29, #1",
+        "msr nzcv, x22"
       ]
     },
     "blsmsk rax, rbx": {
@@ -664,11 +663,11 @@
         "sub x20, x6, #0x1 (1)",
         "eor x4, x20, x6",
         "cmp x6, #0x0 (0)",
-        "cset x20, ne",
+        "cset x21, ne",
         "cmp x4, #0x0 (0)",
-        "mrs x21, nzcv",
-        "bfi w21, w20, #29, #1",
-        "msr nzcv, x21"
+        "mrs x22, nzcv",
+        "bfi w22, w21, #29, #1",
+        "msr nzcv, x22"
       ]
     },
     "blsi eax, ebx": {
@@ -680,10 +679,10 @@
         "neg w20, w6",
         "and w4, w6, w20",
         "cmp w4, #0x0 (0)",
-        "cset w20, eq",
-        "mrs x21, nzcv",
-        "bfi w21, w20, #29, #1",
-        "msr nzcv, x21"
+        "cset w21, eq",
+        "mrs x22, nzcv",
+        "bfi w22, w21, #29, #1",
+        "msr nzcv, x22"
       ]
     },
     "blsi rax, rbx": {
@@ -695,10 +694,10 @@
         "neg x20, x6",
         "and x4, x6, x20",
         "cmp x4, #0x0 (0)",
-        "cset w20, eq",
-        "mrs x21, nzcv",
-        "bfi w21, w20, #29, #1",
-        "msr nzcv, x21"
+        "cset w21, eq",
+        "mrs x22, nzcv",
+        "bfi w22, w21, #29, #1",
+        "msr nzcv, x22"
       ]
     }
   }
