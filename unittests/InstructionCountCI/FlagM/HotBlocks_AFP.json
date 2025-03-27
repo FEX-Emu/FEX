@@ -14,7 +14,7 @@
   "Instructions": {
     "FMOD scalar loop": {
       "x86InstructionCount": 38,
-      "ExpectedInstructionCount": 48,
+      "ExpectedInstructionCount": 45,
       "x86Insts": [
         "mov     esi, ecx",
         "mov     rdx, rbp",
@@ -56,13 +56,10 @@
         "sub     esi, 0x1"
       ],
       "ExpectedArm64ASM": [
-        "mov w10, w7",
-        "mov x5, x9",
-        "mov x4, x6",
-        "ldr s18, [x5]",
-        "add x4, x4, #0x20 (32)",
+        "ldr s18, [x9]",
+        "add x4, x6, #0x20 (32)",
         "fmul s18, s18, s16",
-        "add x5, x5, #0x20 (32)",
+        "add x5, x9, #0x20 (32)",
         "ldur s2, [x4, #-32]",
         "fadd s18, s18, s2",
         "stur s18, [x4, #-32]",
@@ -101,8 +98,8 @@
         "ldur s9, [x4, #-4]",
         "fadd s18, s18, s9",
         "stur s18, [x4, #-4]",
-        "subs w26, w10, #0x1 (1)",
-        "mov x27, x10",
+        "subs w26, w7, #0x1 (1)",
+        "mov x27, x7",
         "mov x10, x26"
       ]
     }

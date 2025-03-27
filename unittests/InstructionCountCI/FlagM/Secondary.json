@@ -1058,7 +1058,7 @@
       "ExpectedArm64ASM": [
         "mov w20, w7",
         "eor x27, x4, x20",
-        "subs w26, w4, w20",
+        "subs w26, w4, w7",
         "csel x4, x4, x20, eq",
         "csel x7, x6, x7, eq"
       ]
@@ -1157,7 +1157,7 @@
         "casal w1, w20, [x7]",
         "mov w22, w1",
         "eor x27, x21, x22",
-        "subs w26, w21, w22",
+        "subs w26, w4, w22",
         "csel x4, x4, x22, eq"
       ]
     },
@@ -1560,7 +1560,7 @@
         "mov w20, w4",
         "mov w21, w6",
         "eor x27, x20, x21",
-        "adds w26, w20, w21",
+        "adds w26, w4, w6",
         "cfinv",
         "mov x6, x20",
         "mov x4, x26"

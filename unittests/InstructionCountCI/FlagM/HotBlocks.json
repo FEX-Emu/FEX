@@ -14,7 +14,7 @@
   "Instructions": {
     "The Witcher 3": {
       "x86InstructionCount": 7,
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 9,
       "x86Insts": [
         "mov eax, 0x1",
         "lock xadd qword [rcx], rax",
@@ -27,8 +27,7 @@
       "ExpectedArm64ASM": [
         "mov w4, #0x1",
         "ldaddal x4, x4, [x7]",
-        "mov x5, x4",
-        "and w5, w5, #0x1f",
+        "and w5, w4, #0x1f",
         "add x5, x5, #0x1 (1)",
         "lsl x5, x5, #6",
         "eor x27, x5, x7",
@@ -39,7 +38,7 @@
     },
     "FMOD scalar loop": {
       "x86InstructionCount": 38,
-      "ExpectedInstructionCount": 64,
+      "ExpectedInstructionCount": 61,
       "x86Insts": [
         "mov     esi, ecx",
         "mov     rdx, rbp",
@@ -81,14 +80,11 @@
         "sub     esi, 0x1"
       ],
       "ExpectedArm64ASM": [
-        "mov w10, w7",
-        "mov x5, x9",
-        "mov x4, x6",
-        "ldr s18, [x5]",
-        "add x4, x4, #0x20 (32)",
+        "ldr s18, [x9]",
+        "add x4, x6, #0x20 (32)",
         "fmul s0, s18, s16",
         "mov v18.s[0], v0.s[0]",
-        "add x5, x5, #0x20 (32)",
+        "add x5, x9, #0x20 (32)",
         "ldur s2, [x4, #-32]",
         "fadd s0, s18, s2",
         "mov v18.s[0], v0.s[0]",
@@ -142,8 +138,8 @@
         "fadd s0, s18, s9",
         "mov v18.s[0], v0.s[0]",
         "stur s18, [x4, #-4]",
-        "subs w26, w10, #0x1 (1)",
-        "mov x27, x10",
+        "subs w26, w7, #0x1 (1)",
+        "mov x27, x7",
         "mov x10, x26"
       ]
     },
@@ -171,7 +167,7 @@
     },
     "bytemark data xor loop": {
       "x86InstructionCount": 9,
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "Saw this in bytemark"
       ],
@@ -189,11 +185,10 @@
       "ExpectedArm64ASM": [
         "mov x5, x4",
         "mov x7, x4",
-        "mov x19, x10",
         "add x4, x4, #0x1 (1)",
         "lsr x5, x5, #6",
         "and w7, w7, #0x3f",
-        "lsl x19, x19, x7",
+        "lsl x19, x10, x7",
         "ldr x20, [x6, x5, sxtx #3]",
         "eor x21, x20, x19",
         "str x21, [x6, x5, sxtx #3]",
@@ -203,7 +198,7 @@
     },
     "bytemark num sort": {
       "x86InstructionCount": 4,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "Saw this in bytemark"
       ],
@@ -215,8 +210,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr x17, [x10, x13, sxtx #3]",
-        "mov x15, x13",
-        "orr x15, x15, #0x1",
+        "orr x15, x13, #0x1",
         "ldr x20, [x10, x15, sxtx #3]",
         "eor x27, x17, x20",
         "subs x26, x17, x20"
@@ -285,14 +279,14 @@
         "add x20, x14, x14, lsl #2",
         "mov w7, w20",
         "ldrb w4, [x10]",
-        "add w4, w4, w7",
+        "add w4, w4, w20",
         "mvn w27, w4",
         "subs w26, w4, #0x18 (24)"
       ]
     },
     "bytemark huffman 1": {
       "x86InstructionCount": 18,
-      "ExpectedInstructionCount": 23,
+      "ExpectedInstructionCount": 19,
       "x86Insts": [
         "mov    r9,rdx",
         "mov    r8,rcx",
@@ -314,19 +308,15 @@
         "cmp    dword [rbx+r10*4+0xc],0xffffffff"
       ],
       "ExpectedArm64ASM": [
-        "mov x13, x5",
-        "mov x12, x7",
-        "mov w14, w10",
-        "lsr w14, w14, #3",
+        "lsr w14, w10, #3",
         "ldrb w14, [x9, x14, sxtx]",
-        "mov w15, w10",
-        "and w15, w15, #0x7",
+        "and w15, w10, #0x7",
         "lsr w20, w14, w15",
         "rmif x20, #63, #nzCv",
-        "add x12, x12, x12, lsl #2",
+        "add x12, x7, x7, lsl #2",
         "add x21, x6, #0x10 (16)",
         "add x12, x21, x12, lsl #2",
-        "csel x12, x13, x12, lo",
+        "csel x12, x5, x12, lo",
         "ldr w22, [x12]",
         "sxtw x12, w22",
         "add x10, x10, #0x1 (1)",
@@ -376,7 +366,7 @@
     },
     "bytemark huffman 3": {
       "x86InstructionCount": 19,
-      "ExpectedInstructionCount": 36,
+      "ExpectedInstructionCount": 29,
       "x86Insts": [
         "mov    ecx,eax",
         "and    cl,0x7",
@@ -399,35 +389,28 @@
         "add    rdi,0xffffffffffffffff"
       ],
       "ExpectedArm64ASM": [
-        "mov w7, w4",
-        "and x7, x7, #0xffffffffffffff07",
+        "and w7, w4, #0xffffff07",
         "mov w20, #0x1",
-        "bfxil x12, x20, #0, #8",
-        "lsl w21, w12, w7",
-        "bfxil x12, x21, #0, #8",
-        "mov w13, w4",
-        "lsr w13, w13, #3",
+        "lsl w21, w20, w7",
+        "lsr w13, w4, #3",
         "ldrb w14, [x9, x13, sxtx]",
         "mov w22, #0xfe",
         "bfxil x15, x22, #0, #8",
-        "mov w7, w4",
-        "and x23, x7, #0x7",
+        "and w23, w4, #0x7",
         "mov x24, x15",
         "bfi w24, w15, #24, #8",
         "neg w25, w23",
         "ror w30, w24, w25",
-        "bfxil x15, x30, #0, #8",
-        "and w18, w15, w14",
+        "and w18, w30, w14",
         "bfxil x15, x18, #0, #8",
-        "orr w20, w12, w14",
-        "bfxil x12, x20, #0, #8",
+        "orr w20, w21, w14",
         "mov w21, #0x31",
         "add x22, x8, x11",
         "ldrb w23, [x22, #79]",
         "lsl w0, w23, #24",
         "cmp w0, w21, lsl #24",
-        "uxtb w7, w12",
-        "uxtb w12, w15",
+        "uxtb w7, w20",
+        "uxtb w12, w18",
         "csel w12, w7, w12, eq",
         "add x4, x4, #0x1 (1)",
         "strb w12, [x9, x13, sxtx]",
@@ -554,7 +537,7 @@
     },
     "bytemark strsift": {
       "x86InstructionCount": 15,
-      "ExpectedInstructionCount": 20,
+      "ExpectedInstructionCount": 19,
       "x86Insts": [
         "mov    rsi,rdx",
         "and    rsi,0xfffffffffffffffc",
@@ -573,8 +556,7 @@
         "cmp    rsi,r8"
       ],
       "ExpectedArm64ASM": [
-        "mov x10, x5",
-        "and x10, x10, #0xfffffffffffffffc",
+        "and x10, x5, #0xfffffffffffffffc",
         "fmov d16, x7",
         "dup v16.2d, v16.d[0]",
         "ldr x11, [x8, #32]",
@@ -597,7 +579,7 @@
     },
     "bytemark idea 1": {
       "x86InstructionCount": 8,
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 11,
       "x86Insts": [
         "movzx  eax,ax",
         "imul   r8d,eax",
@@ -611,8 +593,7 @@
       "ExpectedArm64ASM": [
         "uxth w4, w4",
         "mul w12, w12, w4",
-        "mov w4, w12",
-        "lsr w4, w4, #16",
+        "lsr w4, w12, #16",
         "uxth w13, w12",
         "sub w12, w12, w4",
         "cmp w13, w4",
@@ -625,7 +606,7 @@
     },
     "bytemark idea 2": {
       "x86InstructionCount": 12,
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 15,
       "x86Insts": [
         "movzx  eax,ax",
         "imul   r10d,eax",
@@ -643,8 +624,7 @@
       "ExpectedArm64ASM": [
         "uxth w4, w4",
         "mul w14, w14, w4",
-        "mov w4, w14",
-        "lsr w4, w4, #16",
+        "lsr w4, w14, #16",
         "uxth w10, w14",
         "sub w14, w14, w4",
         "cmp w10, w4",
@@ -661,7 +641,7 @@
     },
     "bytemark idea 3": {
       "x86InstructionCount": 11,
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 13,
       "x86Insts": [
         "movzx  eax,si",
         "imul   r8d,eax",
@@ -678,8 +658,7 @@
       "ExpectedArm64ASM": [
         "uxth w4, w10",
         "mul w12, w12, w4",
-        "mov w4, w12",
-        "lsr w4, w4, #16",
+        "lsr w4, w12, #16",
         "uxth w10, w12",
         "sub w12, w12, w4",
         "cmp w10, w4",
@@ -739,7 +718,7 @@
     },
     "Factorio drawSprite+0x520": {
       "x86InstructionCount": 4,
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "x86Insts": [
         "sub    ecx,0x9",
         "xor    r11d,r11d",
@@ -748,13 +727,12 @@
       ],
       "ExpectedArm64ASM": [
         "sub w7, w7, #0x9 (9)",
-        "mov w15, #0x0",
         "mov w20, #0x1",
         "lsl w0, w7, #24",
         "cmp w0, w20, lsl #24",
         "sub w26, w7, #0x1 (1)",
         "mov x27, x7",
-        "csel x15, x10, x15, ls"
+        "csel x15, x10, xzr, ls"
       ]
     },
     "pcmpistri xmm0, xmm1, 0_0_00_11_01b": {

@@ -82,7 +82,7 @@
     },
     "dxvk hotblock from MGRR": {
       "x86InstructionCount": 14,
-      "ExpectedInstructionCount": 27,
+      "ExpectedInstructionCount": 24,
       "Comment": [
         "Hottest block in Metal Gear Rising: Revengeance render thread"
       ],
@@ -106,16 +106,13 @@
         "ldr w5, [x4, #12]",
         "ldr w4, [x4, #8]",
         "stur w10, [x9, #-52]",
-        "mov x7, x4",
-        "mov x6, x5",
         "ldur w10, [x9, #-36]",
         "mov w20, #0xffffffff",
-        "subs w7, w7, #0x1 (1)",
-        "mvn w27, w6",
-        "adcs w26, w6, w20",
-        "mov x6, x26",
+        "subs w7, w4, #0x1 (1)",
+        "mvn w27, w5",
+        "adcs w26, w5, w20",
         "stur w7, [x9, #-40]",
-        "stur w6, [x9, #-44]",
+        "stur w26, [x9, #-44]",
         "mov x6, x7",
         "stur w7, [x9, #-48]",
         "ldur w7, [x9, #-44]",
@@ -134,7 +131,7 @@
     },
     "Psychonauts matrix swizzle": {
       "x86InstructionCount": 103,
-      "ExpectedInstructionCount": 113,
+      "ExpectedInstructionCount": 112,
       "Comment": [
         "Hottest block in Windows Psychonauts",
         "Doing a 4x4 32-bit float matrix swizzle",
@@ -250,7 +247,6 @@
         "mov x9, x8",
         "subs w26, w8, #0x44 (68)",
         "mov x27, x8",
-        "mov x8, x26",
         "stur w7, [x9, #-68]",
         "ldur w4, [x9, #-68]",
         "ldr s2, [x4]",
