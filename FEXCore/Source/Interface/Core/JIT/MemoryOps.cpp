@@ -1038,6 +1038,7 @@ void Arm64JITCore::Emulate128BitGather(IR::OpSize Size, IR::OpSize ElementSize, 
                                        ARMEmitter::VRegister VectorIndexLow, std::optional<ARMEmitter::VRegister> VectorIndexHigh,
                                        ARMEmitter::VRegister MaskReg, IR::OpSize VectorIndexSize, size_t DataElementOffsetStart,
                                        size_t IndexElementOffsetStart, uint8_t OffsetScale) {
+  LOGMAN_THROW_A_FMT(ElementSize >= IR::OpSize::i8Bit && ElementSize <= IR::OpSize::i64Bit, "Invalid element size");
 
   const auto PerformSMove = [this](IR::OpSize ElementSize, const ARMEmitter::Register Dst, const ARMEmitter::VRegister Vector, int index) {
     switch (ElementSize) {

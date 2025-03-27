@@ -3180,6 +3180,7 @@ DEF_OP(VSShrI) {
   const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
+  LOGMAN_THROW_A_FMT(ElementSize >= IR::OpSize::i8Bit && ElementSize <= IR::OpSize::i64Bit, "Invalid element size");
   const auto SubRegSize = ConvertSubRegSize8(IROp);
   const auto Shift = std::min<uint8_t>(IR::OpSizeAsBits(ElementSize) - 1, Op->BitShift);
   const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
