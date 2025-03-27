@@ -837,7 +837,7 @@ DEF_OP(VLoadVectorMasked) {
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
-  LOGMAN_THROW_A_FMT(!Is256Bit || (Is256Bit && HostSupportsSVE256), "Need SVE256 support in order to use {} with 256-bit operation", __func__);
+  LOGMAN_THROW_A_FMT(!Is256Bit || HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
   const auto SubRegSize = ConvertSubRegSize8(IROp);
 
   const auto CMPPredicate = ARMEmitter::PReg::p0;
@@ -940,7 +940,7 @@ DEF_OP(VStoreVectorMasked) {
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
-  LOGMAN_THROW_A_FMT(!Is256Bit || (Is256Bit && HostSupportsSVE256), "Need SVE256 support in order to use {} with 256-bit operation", __func__);
+  LOGMAN_THROW_A_FMT(!Is256Bit || HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
   const auto SubRegSize = ConvertSubRegSize8(IROp);
 
   const auto CMPPredicate = ARMEmitter::PReg::p0;
@@ -1167,7 +1167,7 @@ DEF_OP(VLoadVectorGatherMasked) {
   ///  - AddrBase also doesn't need to exist
   ///     - If the instruction is using 64-bit vector indexing or 32-bit addresses where the top-bit isn't set then this is valid!
   const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
-  LOGMAN_THROW_A_FMT(!Is256Bit || (Is256Bit && HostSupportsSVE256), "Need SVE256 support in order to use {} with 256-bit operation", __func__);
+  LOGMAN_THROW_A_FMT(!Is256Bit || HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
 
   const auto Dst = GetVReg(Node);
   const auto IncomingDst = GetVReg(Op->Incoming.ID());
@@ -1398,7 +1398,7 @@ DEF_OP(VBroadcastFromMem) {
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
-  LOGMAN_THROW_A_FMT(!Is256Bit || (Is256Bit && HostSupportsSVE256), "Need SVE256 support in order to use {} with 256-bit operation", __func__);
+  LOGMAN_THROW_A_FMT(!Is256Bit || HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
   const auto ElementSize = IROp->ElementSize;
 
   const auto Dst = GetVReg(Node);
@@ -2523,7 +2523,7 @@ DEF_OP(VStoreNonTemporal) {
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
-  LOGMAN_THROW_A_FMT(!Is256Bit || (Is256Bit && HostSupportsSVE256), "Need SVE256 support in order to use {} with 256-bit operation", __func__);
+  LOGMAN_THROW_A_FMT(!Is256Bit || HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
   const auto Is128Bit = OpSize == IR::OpSize::i128Bit;
 
   const auto Value = GetVReg(Op->Value.ID());
@@ -2565,7 +2565,7 @@ DEF_OP(VLoadNonTemporal) {
   const auto OpSize = IROp->Size;
 
   const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
-  LOGMAN_THROW_A_FMT(!Is256Bit || (Is256Bit && HostSupportsSVE256), "Need SVE256 support in order to use {} with 256-bit operation", __func__);
+  LOGMAN_THROW_A_FMT(!Is256Bit || HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
   const auto Is128Bit = OpSize == IR::OpSize::i128Bit;
 
   const auto Dst = GetVReg(Node);

@@ -1558,7 +1558,7 @@ DEF_OP(VExtractToGPR) {
 
   const auto Offset = ElementSizeBits * Op->Index;
   [[maybe_unused]] const auto Is256Bit = Offset >= SSERegBitSize;
-  LOGMAN_THROW_A_FMT(!Is256Bit || (Is256Bit && HostSupportsSVE256), "Need SVE256 support in order to use {} with 256-bit operation", __func__);
+  LOGMAN_THROW_A_FMT(!Is256Bit || HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
 
   const auto Dst = GetReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
