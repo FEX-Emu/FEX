@@ -14,7 +14,7 @@
   },
   "Instructions": {
     "xgetbv": {
-      "ExpectedInstructionCount": 52,
+      "ExpectedInstructionCount": 50,
       "Comment": "0xF 0x01 /2 RM-0",
       "ExpectedArm64ASM": [
         "sub sp, sp, #0xf0 (240)",
@@ -34,8 +34,7 @@
         "stp x14, x15, [x28, #368]",
         "stp x16, x17, [x28, #384]",
         "stp x19, x29, [x28, #400]",
-        "str w26, [x28, #16]",
-        "str w27, [x28, #20]",
+        "stp w26, w27, [x28, #16]",
         "add x3, x28, #0x1a0 (416)",
         "st1 {v16.2d, v17.2d, v18.2d, v19.2d}, [x3], #64",
         "st1 {v20.2d, v21.2d, v22.2d, v23.2d}, [x3], #64",
@@ -60,8 +59,7 @@
         "ldp x14, x15, [x28, #368]",
         "ldp x16, x17, [x28, #384]",
         "ldp x19, x29, [x28, #400]",
-        "ldr w26, [x28, #16]",
-        "ldr w27, [x28, #20]",
+        "ldp w26, w27, [x28, #16]",
         "ld1 {v2.2d, v3.2d}, [sp], #32",
         "ld1 {v4.2d, v5.2d, v6.2d, v7.2d}, [sp], #64",
         "ld1 {v8.2d, v9.2d, v10.2d, v11.2d}, [sp], #64",
