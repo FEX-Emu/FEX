@@ -703,6 +703,11 @@
         "HasSideEffects": true,
         "DestSize": "Size"
       },
+      "GPR:$Addr, GPR:$Value1, GPR:$Value2 = PopTwo OpSize:$Size, GPR:$Addr": {
+        "Desc": ["Pop two values from the address. Fused post-RA."],
+        "HasSideEffects": true,
+        "DestSize": "Size"
+      },
       "GPR = MemSet i1:$IsAtomic, OpSize:$Size, GPR:$Prefix, GPR:$Addr, GPR:$Value, GPR:$Length, GPR:$Direction": {
         "Desc": ["Duplicates behaviour of x86 STOS repeat",
                  "Returns the final address that gets generated without the prefix appended."

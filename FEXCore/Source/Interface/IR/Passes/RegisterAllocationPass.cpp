@@ -856,8 +856,9 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
     }
 
     for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
-      // These are just markers, skip for optimization.
-      if (IROp->Op == OP_GUESTOPCODE) {
+      // These go away
+      if (IROp->Op == OP_GUESTOPCODE || IROp->Op == OP_ALLOCATEGPR ||
+          (IROp->Op == OP_RMWHANDLE && SSAToReg[IR->GetID(CodeNode).Value] == SSAToReg[IR->GetID(IR->GetNode(IROp->Args[0])).Value])) {
         continue;
       }
 
@@ -879,13 +880,22 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
           IREmit->Remove(CodeNode);
           IREmit->Remove(LastNode);
           LastNode = nullptr;
+          continue;
+        }
+      } else if (LastNode && IROp->Op == OP_POP) {
+        auto Header = IR->GetOp<IROp_Header>(LastNode);
+        auto SP = SSAToReg[IR->GetID(IR->GetNode(IROp->Args[0])).Value];
+        if (Header->Op == OP_POP && Header->Size == IROp->Size && IROp->Size >= OpSize::i32Bit &&
+            SP == SSAToReg[IR->GetID(IR->GetNode(Header->Args[0])).Value]) {
 
-#if 0
-          // XXX: Don't dump everything
-          memset(LastWriteBeforeRead, 0, sizeof(LastWriteBeforeRead));
-          memset(Map, 0, sizeof(Map));
-          memset(MapRef, 0, sizeof(MapRef));
-#endif
+          IREmit->SetWriteCursor(CodeNode);
+          IREmit->_PopTwo(Header->Size, IR->GetOp<IROp_Push>(LastNode)->ValueSize, IR->GetNode(IROp->Args[0]), IR->GetNode(Header->Args[0]),
+
+                          IR->GetNode(IROp->Args[1]));
+
+          IREmit->Remove(CodeNode);
+          IREmit->Remove(LastNode);
+          LastNode = nullptr;
           continue;
         }
       }
