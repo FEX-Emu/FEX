@@ -394,7 +394,7 @@ DistroInfo GetDistroInfo() {
         Info.DistroName = ToLower(Value);
         ++FoundCount;
       } else if (Key == "DISTRIB_RELEASE") {
-        Info.DistroVersion = Value;
+        Info.DistroVersion = std::move(Value);
         ++FoundCount;
       }
     }
@@ -429,11 +429,11 @@ DistroInfo GetDistroInfo() {
         // Ubuntu provides VERSION_ID
         // Strip the two quotes from the VERSION_ID
         Value = Value.substr(1, Value.size() - 2);
-        Info.DistroVersion = Value;
+        Info.DistroVersion = std::move(Value);
         ++FoundCount;
       } else if (Key == "IMAGE_VERSION") {
         // Arch provides IMAGE_VERSION
-        Info.DistroVersion = Value;
+        Info.DistroVersion = std::move(Value);
         ++FoundCount;
       }
     }
