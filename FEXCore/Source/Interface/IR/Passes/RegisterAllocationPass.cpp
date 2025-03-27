@@ -856,9 +856,16 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
     }
 
     for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
-      // These go away
-      if (IROp->Op == OP_GUESTOPCODE || IROp->Op == OP_ALLOCATEGPR ||
+      // Get rid of more RA things in the way
+      if (IROp->Op == OP_ALLOCATEGPR ||
           (IROp->Op == OP_RMWHANDLE && SSAToReg[IR->GetID(CodeNode).Value] == SSAToReg[IR->GetID(IR->GetNode(IROp->Args[0])).Value])) {
+
+        IREmit->Remove(CodeNode);
+        continue;
+      }
+
+      // This doesn't affect anything we care about here
+      if (IROp->Op == OP_GUESTOPCODE) {
         continue;
       }
 
@@ -888,11 +895,13 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         if (Header->Op == OP_POP && Header->Size == IROp->Size && IROp->Size >= OpSize::i32Bit &&
             SP == SSAToReg[IR->GetID(IR->GetNode(Header->Args[0])).Value]) {
 
+#if 0
           IREmit->SetWriteCursor(CodeNode);
           IREmit->_PopTwo(Header->Size, IR->GetNode(IROp->Args[0]), IR->GetNode(Header->Args[1]), IR->GetNode(IROp->Args[2]));
 
           IREmit->Remove(CodeNode);
           IREmit->Remove(LastNode);
+#endif
           LastNode = nullptr;
           continue;
         }
