@@ -26844,8 +26844,7 @@
         "fmov s14, s0",
         "str s14, [x7, #960]",
         "mov x8, x9",
-        "ldr w9, [x8], #4",
-        "ldr w12, [x8], #4",
+        "ldp w9, w12, [x8], #8",
         "ldrb w13, [x28, #1019]",
         "add w14, w13, #0x3 (3)",
         "and w15, w14, #0x7",
@@ -26860,7 +26859,7 @@
         "ldp x1, x0, [x0]"
       ],
       "x86InstructionCount": 809,
-      "ExpectedInstructionCount": 26033
+      "ExpectedInstructionCount": 26032
     }
   }
 }
