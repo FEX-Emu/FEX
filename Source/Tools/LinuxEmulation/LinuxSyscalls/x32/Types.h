@@ -1343,6 +1343,9 @@ struct shmid_ds_32 {
     shm_cpid = buf.shm_cpid;
     shm_lpid = buf.shm_lpid;
     shm_nattch = buf.shm_nattch;
+    shm_unused = 0;
+    shm_unused2 = 0;
+    shm_unused3 = 0;
   }
 };
 

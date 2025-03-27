@@ -345,7 +345,7 @@ private:
   bool SlowPath = false;
   // Keeping IREmitter not to pass arguments around
   IREmitter* IREmit = nullptr;
-  IRListView* IR;
+  IRListView* IR = nullptr;
 };
 
 inline void X87StackOptimization::InvalidateCaches() {
