@@ -680,15 +680,12 @@
         "HasSideEffects": true,
         "DestSize": "Size"
       },
-      "GPR = PushTwo OpSize:#Size, OpSize:$ValueSize, GPR:$Value1, GPR:$Value2, GPR:$Addr": {
+      "PushTwo OpSize:#Size, OpSize:$ValueSize, GPR:$Value1, GPR:$Value2, GPR:$Addr": {
         "Desc": [
-          "Push two values to the address, returning the new pointer after incrementing.",
-          "The address is decremented by twice the value size while.",
-          "The return value size is the size of the current operating mode"
+          "Push two values to the address, incrementing the pointer in the place.",
+          "Fused post-RA so doesn't have a destination."
         ],
-        "TiedSource": 2,
-        "HasSideEffects": true,
-        "DestSize": "Size"
+        "HasSideEffects": true
       },
       "GPR = RMWHandle GPR:$Value": {
         "Desc": [

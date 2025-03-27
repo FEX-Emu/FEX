@@ -1530,7 +1530,7 @@ DEF_OP(PushTwo) {
   const auto ValueSize = IR::OpSizeToSize(Op->ValueSize);
   auto Src1 = GetReg(Op->Value1.ID());
   auto Src2 = GetReg(Op->Value2.ID());
-  const auto Dst = GetReg(Node);
+  const auto Dst = GetReg(Op->Addr.ID());
 
   switch (ValueSize) {
   case 4: {
