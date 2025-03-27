@@ -898,10 +898,8 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
           IREmit->SetWriteCursor(CodeNode);
           IREmit->_PopTwo(Header->Size, IR->GetNode(IROp->Args[0]), IR->GetNode(Header->Args[1]), IR->GetNode(IROp->Args[1]));
 
-#if 0
           IREmit->Remove(CodeNode);
           IREmit->Remove(LastNode);
-#endif
           LastNode = nullptr;
           continue;
         }
