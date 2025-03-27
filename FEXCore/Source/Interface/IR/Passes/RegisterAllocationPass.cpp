@@ -867,7 +867,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
             IR->GetOp<IROp_Push>(LastNode)->ValueSize == IR->GetOp<IROp_Push>(CodeNode)->ValueSize &&
             SP == SSAToReg[IR->GetID(LastNode).Value] && SP == SSAToReg[IR->GetID(IR->GetNode(IROp->Args[1])).Value] &&
             SP == SSAToReg[IR->GetID(IR->GetNode(Header->Args[1])).Value] && SP != SSAToReg[IR->GetID(IR->GetNode(IROp->Args[0])).Value] &&
-            SP != SSAToReg[IR->GetID(IR->GetNode(Header->Args[0])).Value] && IR->GetOp<IROp_Push>(LastNode)->ValueSize >= 4) {
+            SP != SSAToReg[IR->GetID(IR->GetNode(Header->Args[0])).Value] && IR->GetOp<IROp_Push>(LastNode)->ValueSize >= OpSize::i32Bit) {
 
           IREmit->SetWriteCursorBefore(CodeNode);
           IREmit->_PushTwo(Header->Size, IR->GetOp<IROp_Push>(LastNode)->ValueSize, IR->GetNode(Header->Args[0]),
