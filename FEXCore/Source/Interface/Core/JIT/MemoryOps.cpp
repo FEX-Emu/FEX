@@ -1591,11 +1591,11 @@ DEF_OP(PopTwo) {
 
   switch (Size) {
   case 4: {
-    ldp<ARMEmitter::IndexType::POST>(Dst1.W(), Dst2.W(), Addr, Size);
+    ldp<ARMEmitter::IndexType::POST>(Dst1.W(), Dst2.W(), Addr, 2 * Size);
     break;
   }
   case 8: {
-    ldp<ARMEmitter::IndexType::POST>(Dst1.X(), Dst2.X(), Addr, Size);
+    ldp<ARMEmitter::IndexType::POST>(Dst1.X(), Dst2.X(), Addr, 2 * Size);
     break;
   }
   default: {
