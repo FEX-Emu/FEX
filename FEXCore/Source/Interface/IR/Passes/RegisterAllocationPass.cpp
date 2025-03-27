@@ -783,14 +783,6 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
       bool SRA = IROp->Op == OP_STOREREGISTER;
       if (GetHasDest(IROp->Op) || SRA) {
         auto Phys = SRA ? DecodeSRAReg(IROp) : SSAToReg[IR->GetID(CodeNode).Value];
-
-        for (unsigned i = 0; i < RegIndices; ++i) {
-          if (MapRef[i] && SSAToReg[IR->GetID(MapRef[i]).Value] == Phys) {
-            Map[i] = Map[i] != KIND_ZEXT8 ? KIND_UNDEF : KIND_BFI_UNDEF8;
-            MapRef[i] = nullptr;
-          }
-        }
-
         unsigned Idx = Phys.Raw;
 
         // If we're overwriting the float register and all the uses only care
@@ -799,6 +791,14 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         if (Map[Idx] == KIND_SCALAR_INSERT) {
           auto Header = IR->GetOp<IROp_Header>(MapRef[Idx]);
           Header->Op = Header->Op == OP_VFADDSCALARINSERT ? OP_VFADD : OP_VFMUL;
+        }
+
+
+        for (unsigned i = 0; i < RegIndices; ++i) {
+          if (MapRef[i] && SSAToReg[IR->GetID(MapRef[i]).Value] == Phys) {
+            Map[i] = Map[i] != KIND_ZEXT8 ? KIND_UNDEF : KIND_BFI_UNDEF8;
+            MapRef[i] = nullptr;
+          }
         }
 
         // Once the source reg is overwritten, stop propagating
