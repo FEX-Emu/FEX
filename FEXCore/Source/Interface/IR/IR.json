@@ -680,6 +680,16 @@
         "HasSideEffects": true,
         "DestSize": "Size"
       },
+      "GPR = PushTwo OpSize:#Size, OpSize:$ValueSize, GPR:$Value1, GPR:$Value2, GPR:$Addr": {
+        "Desc": [
+          "Push two values to the address, returning the new pointer after incrementing.",
+          "The address is decremented by twice the value size while.",
+          "The return value size is the size of the current operating mode"
+        ],
+        "TiedSource": 2,
+        "HasSideEffects": true,
+        "DestSize": "Size"
+      },
       "GPR = RMWHandle GPR:$Value": {
         "Desc": [
           "This is a special move that indicates the result will be poisoned by a non-SSA instruction writing to its result.",
