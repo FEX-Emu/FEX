@@ -769,6 +769,9 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
 
         if (K == KIND_SCALAR_INSERT) {
           bool OK = s == 0 && (IROp->Op == OP_VFADDSCALARINSERT || IROp->Op == OP_VFMULSCALARINSERT);
+          if (s == 0 && (IROp->Op == OP_STOREMEM || IROp->Op == OP_STOREMEMTSO)) {
+            OK = (IROp->Size == IROp->ElementSize);
+          }
           if (!OK) {
             Map[Idx] = KIND_UNDEF;
           }
