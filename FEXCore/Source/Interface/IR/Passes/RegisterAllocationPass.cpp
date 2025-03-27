@@ -27,6 +27,7 @@ namespace {
   struct RegisterClass {
     uint32_t Available;
     uint32_t Count;
+    uint32_t RoundRobin;
 
     // If bit R of Available is 0, then RegToSSA[R] is the Old node
     // currently allocated to R. Else, RegToSSA[R] is UNDEFINED, no need to
@@ -248,7 +249,7 @@ private:
     return nullptr;
   };
 
-  PhysicalRegister DecodeSRAReg(const IROp_Header* IROp, Ref Node) {
+  PhysicalRegister DecodeSRAReg(const IROp_Header* IROp) {
     RegisterClassType Class {};
     uint8_t Reg {};
 
@@ -260,7 +261,6 @@ private:
       Class = Op->Class;
       Reg = Op->Reg;
     } else if (IROp->Op == OP_STOREREGISTER) {
-      LOGMAN_THROW_A_FMT(IROp->Op == OP_STOREREGISTER, "node is SRA");
       const IROp_StoreRegister* Op = IROp->C<IR::IROp_StoreRegister>();
 
       Class = Op->Class;
@@ -435,8 +435,25 @@ private:
     }
 
     // Assign a free register in the appropriate class.
+    // We use a round robin scheme to reduce false post-RA dependencies.
     LOGMAN_THROW_A_FMT(Class->Available != 0, "Post-condition of spilling");
-    unsigned Reg = std::countr_zero(Class->Available);
+
+    uint32_t Shift = Class->RoundRobin;
+    uint32_t AvailableShifted = Class->Available >> Shift;
+
+    if (AvailableShifted == 0) {
+      AvailableShifted = Class->Available;
+      Shift = 0;
+    }
+
+    unsigned Reg = std::countr_zero(AvailableShifted) + Shift;
+
+    Class->RoundRobin = Reg + 1;
+
+    if (Class->RoundRobin >= Class->Count) {
+      Class->RoundRobin = 0;
+    }
+
     SetReg(CodeNode, PhysicalRegister(ClassType, Reg));
   };
 
@@ -480,6 +497,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
     // At the start of each block, all registers are available.
     for (auto& Class : Classes) {
       Class.Available = (1u << Class.Count) - 1;
+      Class.RoundRobin = 0;
     }
 
     SourcesNextUses.clear();
@@ -520,7 +538,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         // each register, used below. Since we initialized Class->Available,
         // RegToSSA is otherwise undefined so we can stash our temps there.
         if (auto Node = DecodeSRANode(IROp, CodeNode); Node != nullptr) {
-          auto Reg = DecodeSRAReg(IROp, Node);
+          auto Reg = DecodeSRAReg(IROp);
 
           PreferredReg[IR->GetID(Node).Value] = Reg;
           GetClass(Reg)->RegToSSA[Reg.Reg] = CodeNode;
@@ -567,7 +585,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
 
       // Static registers must be consistent at SRA load/store. Evict to ensure.
       if (auto Node = DecodeSRANode(IROp, CodeNode); Node != nullptr) {
-        auto Reg = DecodeSRAReg(IROp, Node);
+        auto Reg = DecodeSRAReg(IROp);
         RegisterClass* Class = &Classes[Reg.Class];
 
         if (!(Class->Available & (1u << Reg.Reg))) {
@@ -656,9 +674,239 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
 
       LOGMAN_THROW_A_FMT(IP >= 1, "IP relative to end of block, iterating forward");
       --IP;
+
+      // Delete coalesced copies
+      if (auto Node = DecodeSRANode(IROp, CodeNode); Node != nullptr) {
+        auto Reg = DecodeSRAReg(IROp);
+        auto Phys = SSAToReg[IR->GetID(Node).Value];
+        if (Phys.Reg == Reg.Reg && Phys.Class == Reg.Class) {
+          IREmit->Remove(CodeNode);
+        }
+      }
     }
 
     LOGMAN_THROW_A_FMT(SourceIndex == 0, "Consistent source count in block");
+
+    // Post-RA peephole optimization.
+
+    enum Kind {
+      KIND_UNDEF = 0,
+      KIND_COPY,
+      KIND_BFI_UNDEF8,
+      KIND_ZEXT8,
+      KIND_ZEXT16,
+      KIND_ZEXT,
+      KIND_ZERO,
+
+      KIND_SCALAR_INSERT,
+    };
+
+    // XXX: Do we care to compact? Simpler this way!
+    const unsigned RegIndices = 256;
+
+    // Map from registers to what's stored there.
+    Kind Map[RegIndices] = {KIND_UNDEF};
+
+    // If Map is KIND_COPY or KIND_ZEXT, the associated Ref. Else nullptr.
+    Ref MapRef[RegIndices] = {nullptr};
+
+    // If a GPR has been written but not yet read, LastWrite is the last write
+    // in the block processed so far. Else, it is null.
+    Ref LastWriteBeforeRead[RegIndices] = {nullptr};
+
+    Ref LastNode = nullptr;
+
+    for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
+      // Static register spills read everything.
+      if (IR::SpillsStaticRegs(IROp->Op)) {
+        memset(LastWriteBeforeRead, 0, sizeof(LastWriteBeforeRead));
+      }
+
+      // Remap sources
+      for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
+        if (!IsValidArg(IROp->Args[s])) {
+          continue;
+        }
+
+        auto Reg = SSAToReg[IR->GetID(IR->GetNode(IROp->Args[s])).Value];
+        unsigned Idx = Reg.Raw;
+        auto K = Map[Idx];
+
+        bool ExtGood = (IROp->Op == OP_OR || IROp->Op == OP_XOR || IROp->Op == OP_AND || IROp->Op == OP_ADD || IROp->Op == OP_SUB ||
+                        IROp->Op == OP_ASHR || IROp->Op == OP_LSHL || IROp->Op == OP_LSHR || IROp->Op == OP_ADDNZCV ||
+                        IROp->Op == OP_ADDWITHFLAGS || IROp->Op == OP_SUBNZCV || IROp->Op == OP_SUBWITHFLAGS);
+        bool ExtAny = IROp->Op == OP_STOREAF || IROp->Op == OP_STOREPF;
+        bool Remapped = false;
+
+        if (K == KIND_COPY || (K == KIND_ZEXT && ((IROp->Size == OpSize::i32Bit && ExtGood) || ExtAny || IROp->Op == OP_AND)) ||
+            (K == KIND_ZEXT8 && ((IROp->Size == OpSize::i8Bit && ExtGood) || ExtAny)) ||
+            (K == KIND_ZEXT16 && ((IROp->Size == OpSize::i16Bit && ExtGood) || ExtAny))) {
+
+          IREmit->ReplaceNodeArgument(CodeNode, s, MapRef[Idx]);
+          Remapped = true;
+
+          // Rewrite 64-bit AND to 32-bit AND to fold in a zero-extension with
+          // the algebraic identity:
+          //
+          // a & zext(b) = a & (b & 0xfffffffff)
+          //             = (a & b) & 0xffffffff
+          //             = zext(a & b)
+          if (IROp->Op == OP_AND && K == KIND_ZEXT) {
+            IROp->Size = OpSize::i32Bit;
+          }
+        } else if (K == KIND_ZERO && IROp->Op == OP_NZCVSELECT) {
+          IREmit->SetWriteCursorBefore(CodeNode);
+          IREmit->ReplaceNodeArgument(CodeNode, s, IREmit->_InlineConstant(0));
+          Remapped = true;
+        } else if ((K == KIND_BFI_UNDEF8 || K == KIND_ZEXT8) && IROp->Op == OP_BFI && s == 0) {
+          const IROp_Bfi* Bfi = IROp->C<IR::IROp_Bfi>();
+          Remapped = (Bfi->lsb == 0 && Bfi->Width == 8);
+        } else if (K == KIND_ZEXT8 && IROp->Op == OP_BFE) {
+          const IROp_Bfe* Bfe = IROp->C<IR::IROp_Bfe>();
+          if (Bfe->lsb == 0 && Bfe->Width == 8) {
+            IREmit->ReplaceNodeArgument(CodeNode, s, MapRef[Idx]);
+            Remapped = true;
+          }
+        }
+
+        if (K == KIND_SCALAR_INSERT) {
+          bool OK = s == 0 && (IROp->Op == OP_VFADDSCALARINSERT || IROp->Op == OP_VFMULSCALARINSERT);
+
+          // If we only store the scalar at the bottom of an FPR, we're OK.
+          if (s == 0 && (IROp->Op == OP_STOREMEM || IROp->Op == OP_STOREMEMTSO)) {
+            OK = (IROp->Size == IROp->ElementSize);
+          }
+          if (!OK) {
+            Map[Idx] = KIND_UNDEF;
+          }
+        }
+
+        // Update for the read per the data structure invariant.
+        if (!Remapped) {
+          LastWriteBeforeRead[Idx] = nullptr;
+        }
+      }
+
+      bool SRA = IROp->Op == OP_STOREREGISTER;
+      if (GetHasDest(IROp->Op) || SRA) {
+        auto Phys = SRA ? DecodeSRAReg(IROp) : SSAToReg[IR->GetID(CodeNode).Value];
+        unsigned Idx = Phys.Raw;
+
+        // If we're overwriting the float register and all the uses only care
+        // about the scalar portion, we can go back and optimize the write to
+        // clobber the upper bits.
+        if (Map[Idx] == KIND_SCALAR_INSERT) {
+          auto Header = IR->GetOp<IROp_Header>(MapRef[Idx]);
+          Header->Op = Header->Op == OP_VFADDSCALARINSERT ? OP_VFADD : OP_VFMUL;
+        }
+
+
+        for (unsigned i = 0; i < RegIndices; ++i) {
+          if (MapRef[i] && SSAToReg[IR->GetID(MapRef[i]).Value] == Phys) {
+            Map[i] = Map[i] != KIND_ZEXT8 ? KIND_UNDEF : KIND_BFI_UNDEF8;
+            MapRef[i] = nullptr;
+          }
+        }
+
+        // Once the source reg is overwritten, stop propagating
+        Map[Idx] = KIND_UNDEF;
+        MapRef[Idx] = nullptr;
+
+        // DCE
+        if (auto Last = LastWriteBeforeRead[Idx]; Last) {
+          IREmit->Remove(Last);
+        }
+
+        // Record DCE'able writes
+        bool CanDCE = SRA || !IR::HasSideEffects(IROp->Op);
+        LastWriteBeforeRead[Idx] = CanDCE ? CodeNode : nullptr;
+
+        // Copyprop
+        if (SRA) {
+          Map[Idx] = KIND_COPY;
+          MapRef[Idx] = DecodeSRANode(IROp, CodeNode);
+        } else if (IROp->Op == OP_COPY) {
+          Map[Idx] = KIND_COPY;
+          MapRef[Idx] = IR->GetNode(IROp->Args[0]);
+        } else if (IROp->Op == OP_BFE) {
+          const IROp_Bfe* Bfe = IROp->C<IR::IROp_Bfe>();
+          if (Bfe->lsb == 0 && Bfe->Width == 32) {
+            Map[Idx] = KIND_ZEXT;
+            MapRef[Idx] = IR->GetNode(IROp->Args[0]);
+          }
+        } else if (IROp->Op == OP_BFI) {
+          const IROp_Bfi* Bfi = IROp->C<IR::IROp_Bfi>();
+          if (Bfi->lsb == 0 && (Bfi->Width == 8 || Bfi->Width == 16) && Phys == SSAToReg[IR->GetID(IR->GetNode(IROp->Args[0])).Value]) {
+            Map[Idx] = Bfi->Width == 16 ? KIND_ZEXT16 : KIND_ZEXT8;
+            MapRef[Idx] = IR->GetNode(IROp->Args[1]);
+          }
+        } else if (IROp->Op == OP_CONSTANT) {
+          const IROp_Constant* K = IROp->C<IR::IROp_Constant>();
+          if (K->Constant == 0) {
+            Map[Idx] = KIND_ZERO;
+          }
+        } else if (IROp->Op == OP_VFADDSCALARINSERT || IROp->Op == OP_VFMULSCALARINSERT) {
+          auto I = IROp->C<IR::IROp_VFAddScalarInsert>();
+          if (!I->ZeroUpperBits) {
+            Map[Idx] = KIND_SCALAR_INSERT;
+            MapRef[Idx] = CodeNode;
+          }
+        }
+      }
+    }
+
+    for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
+      // Get rid of more RA things in the way
+      if (IROp->Op == OP_ALLOCATEGPR ||
+          (IROp->Op == OP_RMWHANDLE && SSAToReg[IR->GetID(CodeNode).Value] == SSAToReg[IR->GetID(IR->GetNode(IROp->Args[0])).Value])) {
+
+        IREmit->Remove(CodeNode);
+        continue;
+      }
+
+      // This doesn't affect anything we care about here
+      if (IROp->Op == OP_GUESTOPCODE) {
+        continue;
+      }
+
+      // Merge adjacent instructions
+      if (LastNode && IROp->Op == OP_PUSH) {
+        auto Header = IR->GetOp<IROp_Header>(LastNode);
+        auto SP = SSAToReg[IR->GetID(CodeNode).Value];
+        if (Header->Op == OP_PUSH && Header->Size == IROp->Size &&
+            IR->GetOp<IROp_Push>(LastNode)->ValueSize == IR->GetOp<IROp_Push>(CodeNode)->ValueSize &&
+            SP == SSAToReg[IR->GetID(LastNode).Value] && SP == SSAToReg[IR->GetID(IR->GetNode(IROp->Args[1])).Value] &&
+            SP == SSAToReg[IR->GetID(IR->GetNode(Header->Args[1])).Value] && SP != SSAToReg[IR->GetID(IR->GetNode(IROp->Args[0])).Value] &&
+            SP != SSAToReg[IR->GetID(IR->GetNode(Header->Args[0])).Value] && IR->GetOp<IROp_Push>(LastNode)->ValueSize >= OpSize::i32Bit) {
+
+          IREmit->SetWriteCursor(CodeNode);
+          IREmit->_PushTwo(Header->Size, IR->GetOp<IROp_Push>(LastNode)->ValueSize, IR->GetNode(IROp->Args[0]), IR->GetNode(Header->Args[0]),
+
+                           IR->GetNode(IROp->Args[1]));
+
+          IREmit->Remove(CodeNode);
+          IREmit->Remove(LastNode);
+          LastNode = nullptr;
+          continue;
+        }
+      } else if (LastNode && IROp->Op == OP_POP) {
+        auto Header = IR->GetOp<IROp_Header>(LastNode);
+        auto SP = SSAToReg[IR->GetID(IR->GetNode(IROp->Args[0])).Value];
+        if (Header->Op == OP_POP && Header->Size == IROp->Size && IROp->Size >= OpSize::i32Bit &&
+            SP == SSAToReg[IR->GetID(IR->GetNode(Header->Args[0])).Value]) {
+
+          IREmit->SetWriteCursor(CodeNode);
+          IREmit->_PopTwo(Header->Size, IR->GetNode(IROp->Args[0]), IR->GetNode(Header->Args[1]), IR->GetNode(IROp->Args[1]));
+
+          IREmit->Remove(CodeNode);
+          IREmit->Remove(LastNode);
+          LastNode = nullptr;
+          continue;
+        }
+      }
+
+      LastNode = CodeNode;
+    }
   }
 
   /* Now that we're done growing things, we can finalize our results.

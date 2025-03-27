@@ -23,10 +23,10 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x8], #4",
         "strh w20, [x28, #938]",
-        "ubfx w20, w20, #3, #13",
-        "add x0, x28, x20, lsl #2",
-        "ldr w20, [x0, #1168]",
-        "str w20, [x28, #968]"
+        "ubfx w21, w20, #3, #13",
+        "add x0, x28, x21, lsl #2",
+        "ldr w22, [x0, #1168]",
+        "str w22, [x28, #968]"
       ]
     },
     "push gs": {
@@ -43,10 +43,10 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x8], #4",
         "strh w20, [x28, #936]",
-        "ubfx w20, w20, #3, #13",
-        "add x0, x28, x20, lsl #2",
-        "ldr w20, [x0, #1168]",
-        "str w20, [x28, #960]"
+        "ubfx w21, w20, #3, #13",
+        "add x0, x28, x21, lsl #2",
+        "ldr w22, [x0, #1168]",
+        "str w22, [x28, #960]"
       ]
     }
   }

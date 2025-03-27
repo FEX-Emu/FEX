@@ -121,9 +121,9 @@
       ],
       "ExpectedArm64ASM": [
         "fcmgt s2, s18, s17",
-        "mvn v2.16b, v2.16b",
+        "mvn v3.16b, v2.16b",
         "mov v16.16b, v17.16b",
-        "mov v16.s[0], v2.s[0]"
+        "mov v16.s[0], v3.s[0]"
       ]
     },
     "vcmpss xmm0, xmm1, xmm2, 0x06": {
@@ -133,9 +133,9 @@
       ],
       "ExpectedArm64ASM": [
         "fcmge s2, s18, s17",
-        "mvn v2.16b, v2.16b",
+        "mvn v3.16b, v2.16b",
         "mov v16.16b, v17.16b",
-        "mov v16.s[0], v2.s[0]"
+        "mov v16.s[0], v3.s[0]"
       ]
     },
     "vcmpss xmm0, xmm1, xmm2, 0x07": {
@@ -214,9 +214,9 @@
       ],
       "ExpectedArm64ASM": [
         "fcmgt d2, d18, d17",
-        "mvn v2.16b, v2.16b",
+        "mvn v3.16b, v2.16b",
         "mov v16.16b, v17.16b",
-        "mov v16.d[0], v2.d[0]"
+        "mov v16.d[0], v3.d[0]"
       ]
     },
     "vcmpsd xmm0, xmm1, xmm2, 0x06": {
@@ -226,9 +226,9 @@
       ],
       "ExpectedArm64ASM": [
         "fcmge d2, d18, d17",
-        "mvn v2.16b, v2.16b",
+        "mvn v3.16b, v2.16b",
         "mov v16.16b, v17.16b",
-        "mov v16.d[0], v2.d[0]"
+        "mov v16.d[0], v3.d[0]"
       ]
     },
     "vcmpsd xmm0, xmm1, xmm2, 0x07": {

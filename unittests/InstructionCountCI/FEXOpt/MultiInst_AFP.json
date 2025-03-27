@@ -25,7 +25,7 @@
         "addss xmm0, xmm2"
       ],
       "ExpectedArm64ASM": [
-        "fadd s16, s16, s17",
+        "fadd v16.4s, v16.4s, v17.4s",
         "fadd s16, s16, s18"
       ]
     }

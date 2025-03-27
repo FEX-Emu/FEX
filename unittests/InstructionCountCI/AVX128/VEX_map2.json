@@ -18,8 +18,8 @@
       ],
       "ExpectedArm64ASM": [
         "movi v2.16b, #0x8f",
-        "and v2.16b, v18.16b, v2.16b",
-        "tbl v16.16b, {v17.16b}, v2.16b",
+        "and v3.16b, v18.16b, v2.16b",
+        "tbl v16.16b, {v17.16b}, v3.16b",
         "stp xzr, xzr, [x28, #16]"
       ]
     },
@@ -34,9 +34,9 @@
         "ldr q4, [x28, #48]",
         "and v5.16b, v18.16b, v2.16b",
         "tbl v16.16b, {v17.16b}, v5.16b",
-        "and v2.16b, v4.16b, v2.16b",
-        "tbl v2.16b, {v3.16b}, v2.16b",
-        "str q2, [x28, #16]"
+        "and v6.16b, v4.16b, v2.16b",
+        "tbl v7.16b, {v3.16b}, v6.16b",
+        "str q7, [x28, #16]"
       ]
     },
     "vphaddw xmm0, xmm1, xmm2": {
@@ -58,8 +58,8 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #48]",
         "addp v16.8h, v17.8h, v18.8h",
-        "addp v2.8h, v2.8h, v3.8h",
-        "str q2, [x28, #16]"
+        "addp v4.8h, v2.8h, v3.8h",
+        "str q4, [x28, #16]"
       ]
     },
     "vphaddd xmm0, xmm1, xmm2": {
@@ -81,8 +81,8 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #48]",
         "addp v16.4s, v17.4s, v18.4s",
-        "addp v2.4s, v2.4s, v3.4s",
-        "str q2, [x28, #16]"
+        "addp v4.4s, v2.4s, v3.4s",
+        "str q4, [x28, #16]"
       ]
     },
     "vphaddsw xmm0, xmm1, xmm2": {
@@ -108,10 +108,10 @@
         "uzp1 v4.8h, v17.8h, v18.8h",
         "uzp2 v5.8h, v17.8h, v18.8h",
         "sqadd v16.8h, v4.8h, v5.8h",
-        "uzp1 v4.8h, v2.8h, v3.8h",
-        "uzp2 v2.8h, v2.8h, v3.8h",
-        "sqadd v2.8h, v4.8h, v2.8h",
-        "str q2, [x28, #16]"
+        "uzp1 v6.8h, v2.8h, v3.8h",
+        "uzp2 v7.8h, v2.8h, v3.8h",
+        "sqadd v8.8h, v6.8h, v7.8h",
+        "str q8, [x28, #16]"
       ]
     },
     "vpmaddubsw xmm0, xmm1, xmm2": {
@@ -122,13 +122,13 @@
       "ExpectedArm64ASM": [
         "uxtl v2.8h, v17.8b",
         "sxtl v3.8h, v18.8b",
-        "mul v2.8h, v2.8h, v3.8h",
-        "uxtl2 v3.8h, v17.16b",
-        "sxtl2 v4.8h, v18.16b",
-        "mul v3.8h, v3.8h, v4.8h",
-        "uzp1 v4.8h, v2.8h, v3.8h",
-        "uzp2 v2.8h, v2.8h, v3.8h",
-        "sqadd v16.8h, v4.8h, v2.8h",
+        "mul v4.8h, v2.8h, v3.8h",
+        "uxtl2 v5.8h, v17.16b",
+        "sxtl2 v6.8h, v18.16b",
+        "mul v7.8h, v5.8h, v6.8h",
+        "uzp1 v8.8h, v4.8h, v7.8h",
+        "uzp2 v9.8h, v4.8h, v7.8h",
+        "sqadd v16.8h, v8.8h, v9.8h",
         "stp xzr, xzr, [x28, #16]"
       ]
     },
@@ -142,23 +142,23 @@
         "ldr q3, [x28, #48]",
         "uxtl v4.8h, v17.8b",
         "sxtl v5.8h, v18.8b",
-        "mul v4.8h, v4.8h, v5.8h",
-        "uxtl2 v5.8h, v17.16b",
-        "sxtl2 v6.8h, v18.16b",
-        "mul v5.8h, v5.8h, v6.8h",
-        "uzp1 v6.8h, v4.8h, v5.8h",
-        "uzp2 v4.8h, v4.8h, v5.8h",
-        "sqadd v16.8h, v6.8h, v4.8h",
-        "uxtl v4.8h, v2.8b",
-        "sxtl v5.8h, v3.8b",
-        "mul v4.8h, v4.8h, v5.8h",
-        "uxtl2 v2.8h, v2.16b",
-        "sxtl2 v3.8h, v3.16b",
-        "mul v2.8h, v2.8h, v3.8h",
-        "uzp1 v3.8h, v4.8h, v2.8h",
-        "uzp2 v2.8h, v4.8h, v2.8h",
-        "sqadd v2.8h, v3.8h, v2.8h",
-        "str q2, [x28, #16]"
+        "mul v6.8h, v4.8h, v5.8h",
+        "uxtl2 v7.8h, v17.16b",
+        "sxtl2 v8.8h, v18.16b",
+        "mul v9.8h, v7.8h, v8.8h",
+        "uzp1 v10.8h, v6.8h, v9.8h",
+        "uzp2 v11.8h, v6.8h, v9.8h",
+        "sqadd v16.8h, v10.8h, v11.8h",
+        "uxtl v12.8h, v2.8b",
+        "sxtl v13.8h, v3.8b",
+        "mul v14.8h, v12.8h, v13.8h",
+        "uxtl2 v15.8h, v2.16b",
+        "sxtl2 v2.8h, v3.16b",
+        "mul v3.8h, v15.8h, v2.8h",
+        "uzp1 v4.8h, v14.8h, v3.8h",
+        "uzp2 v5.8h, v14.8h, v3.8h",
+        "sqadd v6.8h, v4.8h, v5.8h",
+        "str q6, [x28, #16]"
       ]
     },
     "vphsubw xmm0, xmm1, xmm2": {
@@ -184,10 +184,10 @@
         "uzp1 v4.8h, v17.8h, v18.8h",
         "uzp2 v5.8h, v17.8h, v18.8h",
         "sub v16.8h, v4.8h, v5.8h",
-        "uzp1 v4.8h, v2.8h, v3.8h",
-        "uzp2 v2.8h, v2.8h, v3.8h",
-        "sub v2.8h, v4.8h, v2.8h",
-        "str q2, [x28, #16]"
+        "uzp1 v6.8h, v2.8h, v3.8h",
+        "uzp2 v7.8h, v2.8h, v3.8h",
+        "sub v8.8h, v6.8h, v7.8h",
+        "str q8, [x28, #16]"
       ]
     },
     "vphsubd xmm0, xmm1, xmm2": {
@@ -213,10 +213,10 @@
         "uzp1 v4.4s, v17.4s, v18.4s",
         "uzp2 v5.4s, v17.4s, v18.4s",
         "sub v16.4s, v4.4s, v5.4s",
-        "uzp1 v4.4s, v2.4s, v3.4s",
-        "uzp2 v2.4s, v2.4s, v3.4s",
-        "sub v2.4s, v4.4s, v2.4s",
-        "str q2, [x28, #16]"
+        "uzp1 v6.4s, v2.4s, v3.4s",
+        "uzp2 v7.4s, v2.4s, v3.4s",
+        "sub v8.4s, v6.4s, v7.4s",
+        "str q8, [x28, #16]"
       ]
     },
     "vphsubsw xmm0, xmm1, xmm2": {
@@ -242,10 +242,10 @@
         "uzp1 v4.8h, v17.8h, v18.8h",
         "uzp2 v5.8h, v17.8h, v18.8h",
         "sqsub v16.8h, v4.8h, v5.8h",
-        "uzp1 v4.8h, v2.8h, v3.8h",
-        "uzp2 v2.8h, v2.8h, v3.8h",
-        "sqsub v2.8h, v4.8h, v2.8h",
-        "str q2, [x28, #16]"
+        "uzp1 v6.8h, v2.8h, v3.8h",
+        "uzp2 v7.8h, v2.8h, v3.8h",
+        "sqsub v8.8h, v6.8h, v7.8h",
+        "str q8, [x28, #16]"
       ]
     },
     "vpsignb xmm0, xmm1, xmm2": {
@@ -273,8 +273,8 @@
         "mul v16.16b, v17.16b, v4.16b",
         "sqshl v3.16b, v3.16b, #7",
         "srshr v3.16b, v3.16b, #7",
-        "mul v2.16b, v2.16b, v3.16b",
-        "str q2, [x28, #16]"
+        "mul v5.16b, v2.16b, v3.16b",
+        "str q5, [x28, #16]"
       ]
     },
     "vpsignw xmm0, xmm1, xmm2": {
@@ -302,8 +302,8 @@
         "mul v16.8h, v17.8h, v4.8h",
         "sqshl v3.8h, v3.8h, #15",
         "srshr v3.8h, v3.8h, #15",
-        "mul v2.8h, v2.8h, v3.8h",
-        "str q2, [x28, #16]"
+        "mul v5.8h, v2.8h, v3.8h",
+        "str q5, [x28, #16]"
       ]
     },
     "vpsignd xmm0, xmm1, xmm2": {
@@ -331,8 +331,8 @@
         "mul v16.4s, v17.4s, v4.4s",
         "sqshl v3.4s, v3.4s, #31",
         "srshr v3.4s, v3.4s, #31",
-        "mul v2.4s, v2.4s, v3.4s",
-        "str q2, [x28, #16]"
+        "mul v5.4s, v2.4s, v3.4s",
+        "str q5, [x28, #16]"
       ]
     },
     "vpmulhrsw xmm0, xmm1, xmm2": {
@@ -346,11 +346,11 @@
         "sshr v2.4s, v2.4s, #14",
         "sshr v3.4s, v3.4s, #14",
         "movi v4.4s, #0x1, lsl #0",
-        "add v2.4s, v2.4s, v4.4s",
-        "add v3.4s, v3.4s, v4.4s",
-        "shrn v2.4h, v2.4s, #1",
-        "mov v0.16b, v2.16b",
-        "shrn2 v0.8h, v3.4s, #1",
+        "add v5.4s, v2.4s, v4.4s",
+        "add v6.4s, v3.4s, v4.4s",
+        "shrn v5.4h, v5.4s, #1",
+        "mov v0.16b, v5.16b",
+        "shrn2 v0.8h, v6.4s, #1",
         "mov v16.16b, v0.16b",
         "stp xzr, xzr, [x28, #16]"
       ]
@@ -368,22 +368,22 @@
         "sshr v4.4s, v4.4s, #14",
         "sshr v5.4s, v5.4s, #14",
         "movi v6.4s, #0x1, lsl #0",
-        "add v4.4s, v4.4s, v6.4s",
-        "add v5.4s, v5.4s, v6.4s",
-        "shrn v4.4h, v4.4s, #1",
-        "mov v0.16b, v4.16b",
-        "shrn2 v0.8h, v5.4s, #1",
+        "add v7.4s, v4.4s, v6.4s",
+        "add v8.4s, v5.4s, v6.4s",
+        "shrn v7.4h, v7.4s, #1",
+        "mov v0.16b, v7.16b",
+        "shrn2 v0.8h, v8.4s, #1",
         "mov v16.16b, v0.16b",
-        "smull v4.4s, v2.4h, v3.4h",
-        "smull2 v2.4s, v2.8h, v3.8h",
-        "sshr v4.4s, v4.4s, #14",
-        "sshr v2.4s, v2.4s, #14",
-        "movi v3.4s, #0x1, lsl #0",
-        "add v4.4s, v4.4s, v3.4s",
-        "add v2.4s, v2.4s, v3.4s",
-        "shrn v4.4h, v4.4s, #1",
-        "shrn2 v4.8h, v2.4s, #1",
-        "str q4, [x28, #16]"
+        "smull v9.4s, v2.4h, v3.4h",
+        "smull2 v10.4s, v2.8h, v3.8h",
+        "sshr v9.4s, v9.4s, #14",
+        "sshr v10.4s, v10.4s, #14",
+        "movi v11.4s, #0x1, lsl #0",
+        "add v12.4s, v9.4s, v11.4s",
+        "add v13.4s, v10.4s, v11.4s",
+        "shrn v12.4h, v12.4s, #1",
+        "shrn2 v12.8h, v13.4s, #1",
+        "str q12, [x28, #16]"
       ]
     },
     "vpermilps xmm0, xmm1, xmm2": {
@@ -393,15 +393,15 @@
       ],
       "ExpectedArm64ASM": [
         "movi v2.4s, #0x3, lsl #0",
-        "and v2.16b, v18.16b, v2.16b",
-        "trn1 v2.16b, v2.16b, v2.16b",
-        "trn1 v2.8h, v2.8h, v2.8h",
-        "shl v2.16b, v2.16b, #2",
+        "and v3.16b, v18.16b, v2.16b",
+        "trn1 v4.16b, v3.16b, v3.16b",
+        "trn1 v5.8h, v4.8h, v4.8h",
+        "shl v5.16b, v5.16b, #2",
         "mov w20, #0x100",
         "movk w20, #0x302, lsl #16",
-        "dup v3.4s, w20",
-        "add v2.16b, v3.16b, v2.16b",
-        "tbl v16.16b, {v17.16b}, v2.16b",
+        "dup v6.4s, w20",
+        "add v7.16b, v6.16b, v5.16b",
+        "tbl v16.16b, {v17.16b}, v7.16b",
         "stp xzr, xzr, [x28, #16]"
       ]
     },
@@ -414,23 +414,23 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #48]",
         "movi v4.4s, #0x3, lsl #0",
-        "and v4.16b, v18.16b, v4.16b",
-        "trn1 v4.16b, v4.16b, v4.16b",
-        "trn1 v4.8h, v4.8h, v4.8h",
-        "shl v4.16b, v4.16b, #2",
+        "and v5.16b, v18.16b, v4.16b",
+        "trn1 v6.16b, v5.16b, v5.16b",
+        "trn1 v7.8h, v6.8h, v6.8h",
+        "shl v7.16b, v7.16b, #2",
         "mov w20, #0x100",
         "movk w20, #0x302, lsl #16",
-        "dup v5.4s, w20",
-        "add v4.16b, v5.16b, v4.16b",
-        "tbl v16.16b, {v17.16b}, v4.16b",
-        "movi v4.4s, #0x3, lsl #0",
-        "and v3.16b, v3.16b, v4.16b",
-        "trn1 v3.16b, v3.16b, v3.16b",
-        "trn1 v3.8h, v3.8h, v3.8h",
-        "shl v3.16b, v3.16b, #2",
-        "dup v4.4s, w20",
-        "add v3.16b, v4.16b, v3.16b",
-        "tbl v2.16b, {v2.16b}, v3.16b",
+        "dup v8.4s, w20",
+        "add v9.16b, v8.16b, v7.16b",
+        "tbl v16.16b, {v17.16b}, v9.16b",
+        "movi v10.4s, #0x3, lsl #0",
+        "and v11.16b, v3.16b, v10.16b",
+        "trn1 v12.16b, v11.16b, v11.16b",
+        "trn1 v13.8h, v12.8h, v12.8h",
+        "shl v13.16b, v13.16b, #2",
+        "dup v14.4s, w20",
+        "add v15.16b, v14.16b, v13.16b",
+        "tbl v2.16b, {v2.16b}, v15.16b",
         "str q2, [x28, #16]"
       ]
     },
@@ -443,18 +443,18 @@
         "ushr v2.2d, v18.2d, #1",
         "mov w0, #0x1",
         "dup v3.2d, x0",
-        "and v2.16b, v2.16b, v3.16b",
-        "trn1 v2.16b, v2.16b, v2.16b",
-        "trn1 v2.8h, v2.8h, v2.8h",
-        "trn1 v2.4s, v2.4s, v2.4s",
-        "shl v2.16b, v2.16b, #3",
+        "and v4.16b, v2.16b, v3.16b",
+        "trn1 v5.16b, v4.16b, v4.16b",
+        "trn1 v6.8h, v5.8h, v5.8h",
+        "trn1 v7.4s, v6.4s, v6.4s",
+        "shl v7.16b, v7.16b, #3",
         "mov x20, #0x100",
         "movk x20, #0x302, lsl #16",
         "movk x20, #0x504, lsl #32",
         "movk x20, #0x706, lsl #48",
-        "dup v3.2d, x20",
-        "add v2.16b, v3.16b, v2.16b",
-        "tbl v16.16b, {v17.16b}, v2.16b",
+        "dup v8.2d, x20",
+        "add v9.16b, v8.16b, v7.16b",
+        "tbl v16.16b, {v17.16b}, v9.16b",
         "stp xzr, xzr, [x28, #16]"
       ]
     },
@@ -469,30 +469,30 @@
         "ushr v4.2d, v18.2d, #1",
         "mov w0, #0x1",
         "dup v5.2d, x0",
-        "and v4.16b, v4.16b, v5.16b",
-        "trn1 v4.16b, v4.16b, v4.16b",
-        "trn1 v4.8h, v4.8h, v4.8h",
-        "trn1 v4.4s, v4.4s, v4.4s",
-        "shl v4.16b, v4.16b, #3",
+        "and v6.16b, v4.16b, v5.16b",
+        "trn1 v7.16b, v6.16b, v6.16b",
+        "trn1 v8.8h, v7.8h, v7.8h",
+        "trn1 v9.4s, v8.4s, v8.4s",
+        "shl v9.16b, v9.16b, #3",
         "mov x20, #0x100",
         "movk x20, #0x302, lsl #16",
         "movk x20, #0x504, lsl #32",
         "movk x20, #0x706, lsl #48",
-        "dup v5.2d, x20",
-        "add v4.16b, v5.16b, v4.16b",
-        "tbl v16.16b, {v17.16b}, v4.16b",
+        "dup v10.2d, x20",
+        "add v11.16b, v10.16b, v9.16b",
+        "tbl v16.16b, {v17.16b}, v11.16b",
         "ushr v3.2d, v3.2d, #1",
         "mov w0, #0x1",
-        "dup v4.2d, x0",
-        "and v3.16b, v3.16b, v4.16b",
-        "trn1 v3.16b, v3.16b, v3.16b",
-        "trn1 v3.8h, v3.8h, v3.8h",
-        "trn1 v3.4s, v3.4s, v3.4s",
+        "dup v12.2d, x0",
+        "and v13.16b, v3.16b, v12.16b",
+        "trn1 v14.16b, v13.16b, v13.16b",
+        "trn1 v15.8h, v14.8h, v14.8h",
+        "trn1 v3.4s, v15.4s, v15.4s",
         "shl v3.16b, v3.16b, #3",
         "dup v4.2d, x20",
-        "add v3.16b, v4.16b, v3.16b",
-        "tbl v2.16b, {v2.16b}, v3.16b",
-        "str q2, [x28, #16]"
+        "add v5.16b, v4.16b, v3.16b",
+        "tbl v6.16b, {v2.16b}, v5.16b",
+        "str q6, [x28, #16]"
       ]
     },
     "vtestps xmm0, xmm1": {
@@ -505,20 +505,20 @@
         "dup v2.4s, w20",
         "and v3.16b, v17.16b, v16.16b",
         "bic v4.16b, v17.16b, v16.16b",
-        "and v3.16b, v3.16b, v2.16b",
-        "and v2.16b, v4.16b, v2.16b",
-        "umaxv h3, v3.8h",
-        "umaxv h2, v2.8h",
-        "umov w20, v3.h[0]",
-        "umov w21, v2.h[0]",
+        "and v5.16b, v3.16b, v2.16b",
+        "and v6.16b, v4.16b, v2.16b",
+        "umaxv h7, v5.8h",
+        "umaxv h8, v6.8h",
+        "umov w21, v7.h[0]",
+        "umov w22, v8.h[0]",
         "mov w27, #0x0",
         "mov w26, #0x1",
-        "cmp x21, #0x0 (0)",
-        "cset x21, ne",
-        "cmp w20, #0x0 (0)",
-        "mrs x20, nzcv",
-        "bfi w20, w21, #29, #1",
-        "msr nzcv, x20"
+        "cmp x22, #0x0 (0)",
+        "cset x23, ne",
+        "cmp w21, #0x0 (0)",
+        "mrs x24, nzcv",
+        "bfi w24, w23, #29, #1",
+        "msr nzcv, x24"
       ]
     },
     "vtestps ymm0, ymm1": {
@@ -535,22 +535,22 @@
         "and v5.16b, v3.16b, v2.16b",
         "ushr v4.4s, v4.4s, #31",
         "ushr v5.4s, v5.4s, #31",
-        "add v4.4s, v5.4s, v4.4s",
-        "addv s4, v4.4s",
-        "mov w20, v4.s[0]",
-        "bic v4.16b, v17.16b, v16.16b",
-        "bic v2.16b, v3.16b, v2.16b",
-        "ushr v4.4s, v4.4s, #31",
-        "ushr v2.4s, v2.4s, #31",
-        "add v2.4s, v2.4s, v4.4s",
-        "addv s2, v2.4s",
-        "mov w21, v2.s[0]",
+        "add v6.4s, v5.4s, v4.4s",
+        "addv s7, v6.4s",
+        "mov w20, v7.s[0]",
+        "bic v8.16b, v17.16b, v16.16b",
+        "bic v9.16b, v3.16b, v2.16b",
+        "ushr v8.4s, v8.4s, #31",
+        "ushr v9.4s, v9.4s, #31",
+        "add v10.4s, v9.4s, v8.4s",
+        "addv s11, v10.4s",
+        "mov w21, v11.s[0]",
         "cmp x21, #0x0 (0)",
-        "cset x21, ne",
+        "cset x22, ne",
         "cmp w20, #0x0 (0)",
-        "mrs x20, nzcv",
-        "bfi w20, w21, #29, #1",
-        "msr nzcv, x20"
+        "mrs x23, nzcv",
+        "bfi w23, w22, #29, #1",
+        "msr nzcv, x23"
       ]
     },
     "vtestpd xmm0, xmm1": {
@@ -563,20 +563,20 @@
         "dup v2.2d, x20",
         "and v3.16b, v17.16b, v16.16b",
         "bic v4.16b, v17.16b, v16.16b",
-        "and v3.16b, v3.16b, v2.16b",
-        "and v2.16b, v4.16b, v2.16b",
-        "umaxv h3, v3.8h",
-        "umaxv h2, v2.8h",
-        "umov w20, v3.h[0]",
-        "umov w21, v2.h[0]",
+        "and v5.16b, v3.16b, v2.16b",
+        "and v6.16b, v4.16b, v2.16b",
+        "umaxv h7, v5.8h",
+        "umaxv h8, v6.8h",
+        "umov w21, v7.h[0]",
+        "umov w22, v8.h[0]",
         "mov w27, #0x0",
         "mov w26, #0x1",
-        "cmp x21, #0x0 (0)",
-        "cset x21, ne",
-        "cmp w20, #0x0 (0)",
-        "mrs x20, nzcv",
-        "bfi w20, w21, #29, #1",
-        "msr nzcv, x20"
+        "cmp x22, #0x0 (0)",
+        "cset x23, ne",
+        "cmp w21, #0x0 (0)",
+        "mrs x24, nzcv",
+        "bfi w24, w23, #29, #1",
+        "msr nzcv, x24"
       ]
     },
     "vtestpd ymm0, ymm1": {
@@ -593,22 +593,22 @@
         "and v5.16b, v3.16b, v2.16b",
         "ushr v4.2d, v4.2d, #63",
         "ushr v5.2d, v5.2d, #63",
-        "add v4.2d, v5.2d, v4.2d",
-        "addp v4.2d, v4.2d, v4.2d",
-        "mov x20, v4.d[0]",
-        "bic v4.16b, v17.16b, v16.16b",
-        "bic v2.16b, v3.16b, v2.16b",
-        "ushr v4.2d, v4.2d, #63",
-        "ushr v2.2d, v2.2d, #63",
-        "add v2.2d, v2.2d, v4.2d",
-        "addp v2.2d, v2.2d, v2.2d",
-        "mov x21, v2.d[0]",
+        "add v6.2d, v5.2d, v4.2d",
+        "addp v7.2d, v6.2d, v6.2d",
+        "mov x20, v7.d[0]",
+        "bic v8.16b, v17.16b, v16.16b",
+        "bic v9.16b, v3.16b, v2.16b",
+        "ushr v8.2d, v8.2d, #63",
+        "ushr v9.2d, v9.2d, #63",
+        "add v10.2d, v9.2d, v8.2d",
+        "addp v11.2d, v10.2d, v10.2d",
+        "mov x21, v11.d[0]",
         "cmp x21, #0x0 (0)",
-        "cset x21, ne",
+        "cset x22, ne",
         "cmp w20, #0x0 (0)",
-        "mrs x20, nzcv",
-        "bfi w20, w21, #29, #1",
-        "msr nzcv, x20"
+        "mrs x23, nzcv",
+        "bfi w23, w22, #29, #1",
+        "msr nzcv, x23"
       ]
     },
     "vcvtph2ps xmm0, xmm1": {
@@ -645,22 +645,22 @@
         "movk w20, #0x302, lsl #16",
         "dup v5.4s, w20",
         "and v6.16b, v17.16b, v4.16b",
-        "trn1 v6.16b, v6.16b, v6.16b",
-        "trn1 v6.8h, v6.8h, v6.8h",
-        "shl v6.16b, v6.16b, #2",
-        "add v6.16b, v6.16b, v5.16b",
+        "trn1 v7.16b, v6.16b, v6.16b",
+        "trn1 v8.8h, v7.8h, v7.8h",
+        "shl v8.16b, v8.16b, #2",
+        "add v9.16b, v8.16b, v5.16b",
         "mov v0.16b, v18.16b",
         "mov v1.16b, v3.16b",
-        "tbl v16.16b, {v0.16b, v1.16b}, v6.16b",
-        "and v2.16b, v2.16b, v4.16b",
-        "trn1 v2.16b, v2.16b, v2.16b",
-        "trn1 v2.8h, v2.8h, v2.8h",
-        "shl v2.16b, v2.16b, #2",
-        "add v2.16b, v2.16b, v5.16b",
+        "tbl v16.16b, {v0.16b, v1.16b}, v9.16b",
+        "and v10.16b, v2.16b, v4.16b",
+        "trn1 v11.16b, v10.16b, v10.16b",
+        "trn1 v12.8h, v11.8h, v11.8h",
+        "shl v12.16b, v12.16b, #2",
+        "add v13.16b, v12.16b, v5.16b",
         "mov v0.16b, v18.16b",
         "mov v1.16b, v3.16b",
-        "tbl v2.16b, {v0.16b, v1.16b}, v2.16b",
-        "str q2, [x28, #16]"
+        "tbl v14.16b, {v0.16b, v1.16b}, v13.16b",
+        "str q14, [x28, #16]"
       ]
     },
     "vptest xmm0, xmm1": {
@@ -671,18 +671,18 @@
       "ExpectedArm64ASM": [
         "and v2.16b, v16.16b, v17.16b",
         "bic v3.16b, v17.16b, v16.16b",
-        "umaxv h2, v2.8h",
-        "umaxv h3, v3.8h",
-        "umov w20, v2.h[0]",
-        "umov w21, v3.h[0]",
+        "umaxv h4, v2.8h",
+        "umaxv h5, v3.8h",
+        "umov w20, v4.h[0]",
+        "umov w21, v5.h[0]",
         "mov w27, #0x0",
         "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
-        "cset x21, ne",
+        "cset x22, ne",
         "cmp w20, #0x0 (0)",
-        "mrs x20, nzcv",
-        "bfi w20, w21, #29, #1",
-        "msr nzcv, x20"
+        "mrs x23, nzcv",
+        "bfi w23, w22, #29, #1",
+        "msr nzcv, x23"
       ]
     },
     "vptest ymm0, ymm1": {
@@ -696,21 +696,21 @@
         "and v4.16b, v16.16b, v17.16b",
         "bic v5.16b, v17.16b, v16.16b",
         "and v6.16b, v2.16b, v3.16b",
-        "bic v2.16b, v3.16b, v2.16b",
-        "umax v3.8h, v4.8h, v6.8h",
-        "umax v2.8h, v5.8h, v2.8h",
-        "umaxv h3, v3.8h",
-        "umaxv h2, v2.8h",
-        "umov w20, v3.h[0]",
-        "umov w21, v2.h[0]",
+        "bic v7.16b, v3.16b, v2.16b",
+        "umax v8.8h, v4.8h, v6.8h",
+        "umax v9.8h, v5.8h, v7.8h",
+        "umaxv h10, v8.8h",
+        "umaxv h11, v9.8h",
+        "umov w20, v10.h[0]",
+        "umov w21, v11.h[0]",
         "mov w27, #0x0",
         "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
-        "cset x21, ne",
+        "cset x22, ne",
         "cmp w20, #0x0 (0)",
-        "mrs x20, nzcv",
-        "bfi w20, w21, #29, #1",
-        "msr nzcv, x20"
+        "mrs x23, nzcv",
+        "bfi w23, w22, #29, #1",
+        "msr nzcv, x23"
       ]
     },
     "vbroadcastss xmm0, [rax]": {
@@ -771,8 +771,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "abs v16.16b, v17.16b",
-        "abs v2.16b, v2.16b",
-        "str q2, [x28, #16]"
+        "abs v3.16b, v2.16b",
+        "str q3, [x28, #16]"
       ]
     },
     "vpabsw xmm0, xmm1": {
@@ -793,8 +793,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "abs v16.8h, v17.8h",
-        "abs v2.8h, v2.8h",
-        "str q2, [x28, #16]"
+        "abs v3.8h, v2.8h",
+        "str q3, [x28, #16]"
       ]
     },
     "vpabsd xmm0, xmm1": {
@@ -815,8 +815,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "abs v16.4s, v17.4s",
-        "abs v2.4s, v2.4s",
-        "str q2, [x28, #16]"
+        "abs v3.4s, v2.4s",
+        "str q3, [x28, #16]"
       ]
     },
     "vpmovsxbw xmm0, xmm1": {
@@ -837,8 +837,8 @@
       "ExpectedArm64ASM": [
         "dup v2.2d, v17.d[1]",
         "sxtl v16.8h, v17.8b",
-        "sxtl v2.8h, v2.8b",
-        "str q2, [x28, #16]"
+        "sxtl v3.8h, v2.8b",
+        "str q3, [x28, #16]"
       ]
     },
     "vpmovsxbd xmm0, xmm1": {
@@ -861,9 +861,9 @@
         "dup v2.4s, v17.s[1]",
         "sxtl v3.8h, v17.8b",
         "sxtl v16.4s, v3.4h",
-        "sxtl v2.8h, v2.8b",
-        "sxtl v2.4s, v2.4h",
-        "str q2, [x28, #16]"
+        "sxtl v4.8h, v2.8b",
+        "sxtl v5.4s, v4.4h",
+        "str q5, [x28, #16]"
       ]
     },
     "vpmovsxbq xmm0, xmm1": {
@@ -873,8 +873,8 @@
       ],
       "ExpectedArm64ASM": [
         "sxtl v2.8h, v17.8b",
-        "sxtl v2.4s, v2.4h",
-        "sxtl v16.2d, v2.2s",
+        "sxtl v3.4s, v2.4h",
+        "sxtl v16.2d, v3.2s",
         "stp xzr, xzr, [x28, #16]"
       ]
     },
@@ -886,12 +886,12 @@
       "ExpectedArm64ASM": [
         "dup v2.8h, v17.h[1]",
         "sxtl v3.8h, v17.8b",
-        "sxtl v3.4s, v3.4h",
-        "sxtl v16.2d, v3.2s",
-        "sxtl v2.8h, v2.8b",
-        "sxtl v2.4s, v2.4h",
-        "sxtl v2.2d, v2.2s",
-        "str q2, [x28, #16]"
+        "sxtl v4.4s, v3.4h",
+        "sxtl v16.2d, v4.2s",
+        "sxtl v5.8h, v2.8b",
+        "sxtl v6.4s, v5.4h",
+        "sxtl v7.2d, v6.2s",
+        "str q7, [x28, #16]"
       ]
     },
     "vpmovsxwd xmm0, xmm1": {
@@ -912,8 +912,8 @@
       "ExpectedArm64ASM": [
         "dup v2.2d, v17.d[1]",
         "sxtl v16.4s, v17.4h",
-        "sxtl v2.4s, v2.4h",
-        "str q2, [x28, #16]"
+        "sxtl v3.4s, v2.4h",
+        "str q3, [x28, #16]"
       ]
     },
     "vpmovsxwq xmm0, xmm1": {
@@ -936,9 +936,9 @@
         "dup v2.4s, v17.s[1]",
         "sxtl v3.4s, v17.4h",
         "sxtl v16.2d, v3.2s",
-        "sxtl v2.4s, v2.4h",
-        "sxtl v2.2d, v2.2s",
-        "str q2, [x28, #16]"
+        "sxtl v4.4s, v2.4h",
+        "sxtl v5.2d, v4.2s",
+        "str q5, [x28, #16]"
       ]
     },
     "vpmovsxdq xmm0, xmm1": {
@@ -959,8 +959,8 @@
       "ExpectedArm64ASM": [
         "dup v2.2d, v17.d[1]",
         "sxtl v16.2d, v17.2s",
-        "sxtl v2.2d, v2.2s",
-        "str q2, [x28, #16]"
+        "sxtl v3.2d, v2.2s",
+        "str q3, [x28, #16]"
       ]
     },
     "vpmuldq xmm0, xmm1, xmm2": {
@@ -986,10 +986,10 @@
         "uzp1 v4.4s, v17.4s, v17.4s",
         "uzp1 v5.4s, v18.4s, v18.4s",
         "smull v16.2d, v4.2s, v5.2s",
-        "uzp1 v2.4s, v2.4s, v2.4s",
-        "uzp1 v3.4s, v3.4s, v3.4s",
-        "smull v2.2d, v2.2s, v3.2s",
-        "str q2, [x28, #16]"
+        "uzp1 v6.4s, v2.4s, v2.4s",
+        "uzp1 v7.4s, v3.4s, v3.4s",
+        "smull v8.2d, v6.2s, v7.2s",
+        "str q8, [x28, #16]"
       ]
     },
     "vpcmpeqq xmm0, xmm1, xmm2": {
@@ -1011,8 +1011,8 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #48]",
         "cmeq v16.2d, v17.2d, v18.2d",
-        "cmeq v2.2d, v2.2d, v3.2d",
-        "str q2, [x28, #16]"
+        "cmeq v4.2d, v2.2d, v3.2d",
+        "str q4, [x28, #16]"
       ]
     },
     "vmovntdqa xmm0, [rax]": {
@@ -1057,9 +1057,9 @@
         "ldr q3, [x28, #48]",
         "sqxtun v16.4h, v17.4s",
         "sqxtun2 v16.8h, v18.4s",
-        "sqxtun v2.4h, v2.4s",
-        "sqxtun2 v2.8h, v3.4s",
-        "str q2, [x28, #16]"
+        "sqxtun v4.4h, v2.4s",
+        "sqxtun2 v4.8h, v3.4s",
+        "str q4, [x28, #16]"
       ]
     },
     "vmaskmovps xmm0, xmm1, [rax]": {
@@ -1129,8 +1129,8 @@
         "mov w0, v2.s[3]",
         "tbz w0, #31, #+0x8",
         "ld1 {v0.s}[3], [x1]",
-        "mov v2.16b, v0.16b",
-        "str q2, [x28, #16]"
+        "mov v3.16b, v0.16b",
+        "str q3, [x28, #16]"
       ]
     },
     "vmaskmovpd xmm0, xmm1, [rax]": {
@@ -1176,8 +1176,8 @@
         "mov x0, v2.d[1]",
         "tbz x0, #63, #+0x8",
         "ld1 {v0.d}[1], [x1]",
-        "mov v2.16b, v0.16b",
-        "str q2, [x28, #16]"
+        "mov v3.16b, v0.16b",
+        "str q3, [x28, #16]"
       ]
     },
     "vmaskmovps [rax], xmm0, xmm1": {
@@ -1302,8 +1302,8 @@
       "ExpectedArm64ASM": [
         "dup v2.2d, v17.d[1]",
         "uxtl v16.8h, v17.8b",
-        "uxtl v2.8h, v2.8b",
-        "str q2, [x28, #16]"
+        "uxtl v3.8h, v2.8b",
+        "str q3, [x28, #16]"
       ]
     },
     "vpmovzxbd xmm0, xmm1": {
@@ -1326,9 +1326,9 @@
         "dup v2.4s, v17.s[1]",
         "uxtl v3.8h, v17.8b",
         "uxtl v16.4s, v3.4h",
-        "uxtl v2.8h, v2.8b",
-        "uxtl v2.4s, v2.4h",
-        "str q2, [x28, #16]"
+        "uxtl v4.8h, v2.8b",
+        "uxtl v5.4s, v4.4h",
+        "str q5, [x28, #16]"
       ]
     },
     "vpmovzxbq xmm0, xmm1": {
@@ -1338,8 +1338,8 @@
       ],
       "ExpectedArm64ASM": [
         "uxtl v2.8h, v17.8b",
-        "uxtl v2.4s, v2.4h",
-        "uxtl v16.2d, v2.2s",
+        "uxtl v3.4s, v2.4h",
+        "uxtl v16.2d, v3.2s",
         "stp xzr, xzr, [x28, #16]"
       ]
     },
@@ -1351,12 +1351,12 @@
       "ExpectedArm64ASM": [
         "dup v2.8h, v17.h[1]",
         "uxtl v3.8h, v17.8b",
-        "uxtl v3.4s, v3.4h",
-        "uxtl v16.2d, v3.2s",
-        "uxtl v2.8h, v2.8b",
-        "uxtl v2.4s, v2.4h",
-        "uxtl v2.2d, v2.2s",
-        "str q2, [x28, #16]"
+        "uxtl v4.4s, v3.4h",
+        "uxtl v16.2d, v4.2s",
+        "uxtl v5.8h, v2.8b",
+        "uxtl v6.4s, v5.4h",
+        "uxtl v7.2d, v6.2s",
+        "str q7, [x28, #16]"
       ]
     },
     "vpmovzxwd xmm0, xmm1": {
@@ -1377,8 +1377,8 @@
       "ExpectedArm64ASM": [
         "dup v2.2d, v17.d[1]",
         "uxtl v16.4s, v17.4h",
-        "uxtl v2.4s, v2.4h",
-        "str q2, [x28, #16]"
+        "uxtl v3.4s, v2.4h",
+        "str q3, [x28, #16]"
       ]
     },
     "vpmovzxwq xmm0, xmm1": {
@@ -1401,9 +1401,9 @@
         "dup v2.4s, v17.s[1]",
         "uxtl v3.4s, v17.4h",
         "uxtl v16.2d, v3.2s",
-        "uxtl v2.4s, v2.4h",
-        "uxtl v2.2d, v2.2s",
-        "str q2, [x28, #16]"
+        "uxtl v4.4s, v2.4h",
+        "uxtl v5.2d, v4.2s",
+        "str q5, [x28, #16]"
       ]
     },
     "vpmovzxdq xmm0, xmm1": {
@@ -1424,8 +1424,8 @@
       "ExpectedArm64ASM": [
         "dup v2.2d, v17.d[1]",
         "uxtl v16.2d, v17.2s",
-        "uxtl v2.2d, v2.2s",
-        "str q2, [x28, #16]"
+        "uxtl v3.2d, v2.2s",
+        "str q3, [x28, #16]"
       ]
     },
     "vpermd ymm0, ymm1, ymm2": {
@@ -1441,22 +1441,22 @@
         "movk w20, #0x302, lsl #16",
         "dup v5.4s, w20",
         "and v6.16b, v17.16b, v4.16b",
-        "trn1 v6.16b, v6.16b, v6.16b",
-        "trn1 v6.8h, v6.8h, v6.8h",
-        "shl v6.16b, v6.16b, #2",
-        "add v6.16b, v6.16b, v5.16b",
+        "trn1 v7.16b, v6.16b, v6.16b",
+        "trn1 v8.8h, v7.8h, v7.8h",
+        "shl v8.16b, v8.16b, #2",
+        "add v9.16b, v8.16b, v5.16b",
         "mov v0.16b, v18.16b",
         "mov v1.16b, v3.16b",
-        "tbl v16.16b, {v0.16b, v1.16b}, v6.16b",
-        "and v2.16b, v2.16b, v4.16b",
-        "trn1 v2.16b, v2.16b, v2.16b",
-        "trn1 v2.8h, v2.8h, v2.8h",
-        "shl v2.16b, v2.16b, #2",
-        "add v2.16b, v2.16b, v5.16b",
+        "tbl v16.16b, {v0.16b, v1.16b}, v9.16b",
+        "and v10.16b, v2.16b, v4.16b",
+        "trn1 v11.16b, v10.16b, v10.16b",
+        "trn1 v12.8h, v11.8h, v11.8h",
+        "shl v12.16b, v12.16b, #2",
+        "add v13.16b, v12.16b, v5.16b",
         "mov v0.16b, v18.16b",
         "mov v1.16b, v3.16b",
-        "tbl v2.16b, {v0.16b, v1.16b}, v2.16b",
-        "str q2, [x28, #16]"
+        "tbl v14.16b, {v0.16b, v1.16b}, v13.16b",
+        "str q14, [x28, #16]"
       ]
     },
     "vpcmpgtq xmm0, xmm1, xmm2": {
@@ -1478,8 +1478,8 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #48]",
         "cmgt v16.2d, v17.2d, v18.2d",
-        "cmgt v2.2d, v2.2d, v3.2d",
-        "str q2, [x28, #16]"
+        "cmgt v4.2d, v2.2d, v3.2d",
+        "str q4, [x28, #16]"
       ]
     },
     "vpminsb xmm0, xmm1, xmm2": {
@@ -1502,8 +1502,8 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #16]",
         "smin v16.16b, v17.16b, v16.16b",
-        "smin v2.16b, v2.16b, v3.16b",
-        "str q2, [x28, #16]"
+        "smin v4.16b, v2.16b, v3.16b",
+        "str q4, [x28, #16]"
       ]
     },
     "vpminsb ymm0, ymm0, ymm2": {
@@ -1516,8 +1516,8 @@
         "ldr q2, [x28, #16]",
         "ldr q3, [x28, #48]",
         "smin v16.16b, v16.16b, v18.16b",
-        "smin v2.16b, v2.16b, v3.16b",
-        "str q2, [x28, #16]"
+        "smin v4.16b, v2.16b, v3.16b",
+        "str q4, [x28, #16]"
       ]
     },
     "vpminsb ymm0, ymm1, ymm2": {
@@ -1529,8 +1529,8 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #48]",
         "smin v16.16b, v17.16b, v18.16b",
-        "smin v2.16b, v2.16b, v3.16b",
-        "str q2, [x28, #16]"
+        "smin v4.16b, v2.16b, v3.16b",
+        "str q4, [x28, #16]"
       ]
     },
     "vpminsd xmm0, xmm1, xmm2": {
@@ -1553,8 +1553,8 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #16]",
         "smin v16.4s, v17.4s, v16.4s",
-        "smin v2.4s, v2.4s, v3.4s",
-        "str q2, [x28, #16]"
+        "smin v4.4s, v2.4s, v3.4s",
+        "str q4, [x28, #16]"
       ]
     },
     "vpminsd ymm0, ymm0, ymm2": {
@@ -1567,8 +1567,8 @@
         "ldr q2, [x28, #16]",
         "ldr q3, [x28, #48]",
         "smin v16.4s, v16.4s, v18.4s",
-        "smin v2.4s, v2.4s, v3.4s",
-        "str q2, [x28, #16]"
+        "smin v4.4s, v2.4s, v3.4s",
+        "str q4, [x28, #16]"
       ]
     },
     "vpminsd ymm0, ymm1, ymm2": {
@@ -1580,8 +1580,8 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #48]",
         "smin v16.4s, v17.4s, v18.4s",
-        "smin v2.4s, v2.4s, v3.4s",
-        "str q2, [x28, #16]"
+        "smin v4.4s, v2.4s, v3.4s",
+        "str q4, [x28, #16]"
       ]
     },
     "vpminuw xmm0, xmm1, xmm2": {
@@ -1604,8 +1604,8 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #16]",
         "umin v16.8h, v17.8h, v16.8h",
-        "umin v2.8h, v2.8h, v3.8h",
-        "str q2, [x28, #16]"
+        "umin v4.8h, v2.8h, v3.8h",
+        "str q4, [x28, #16]"
       ]
     },
     "vpminuw ymm0, ymm0, ymm2": {
@@ -1618,8 +1618,8 @@
         "ldr q2, [x28, #16]",
         "ldr q3, [x28, #48]",
         "umin v16.8h, v16.8h, v18.8h",
-        "umin v2.8h, v2.8h, v3.8h",
-        "str q2, [x28, #16]"
+        "umin v4.8h, v2.8h, v3.8h",
+        "str q4, [x28, #16]"
       ]
     },
     "vpminuw ymm0, ymm1, ymm2": {
@@ -1631,8 +1631,8 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #48]",
         "umin v16.8h, v17.8h, v18.8h",
-        "umin v2.8h, v2.8h, v3.8h",
-        "str q2, [x28, #16]"
+        "umin v4.8h, v2.8h, v3.8h",
+        "str q4, [x28, #16]"
       ]
     },
     "vpminud xmm0, xmm1, xmm2": {
@@ -1655,8 +1655,8 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #16]",
         "umin v16.4s, v17.4s, v16.4s",
-        "umin v2.4s, v2.4s, v3.4s",
-        "str q2, [x28, #16]"
+        "umin v4.4s, v2.4s, v3.4s",
+        "str q4, [x28, #16]"
       ]
     },
     "vpminud ymm0, ymm0, ymm2": {
@@ -1669,8 +1669,8 @@
         "ldr q2, [x28, #16]",
         "ldr q3, [x28, #48]",
         "umin v16.4s, v16.4s, v18.4s",
-        "umin v2.4s, v2.4s, v3.4s",
-        "str q2, [x28, #16]"
+        "umin v4.4s, v2.4s, v3.4s",
+        "str q4, [x28, #16]"
       ]
     },
     "vpminud ymm0, ymm1, ymm2": {
@@ -1682,8 +1682,8 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #48]",
         "umin v16.4s, v17.4s, v18.4s",
-        "umin v2.4s, v2.4s, v3.4s",
-        "str q2, [x28, #16]"
+        "umin v4.4s, v2.4s, v3.4s",
+        "str q4, [x28, #16]"
       ]
     },
     "vpmaxsb xmm0, xmm1, xmm2": {
@@ -1706,8 +1706,8 @@
         "ldr q2, [x28, #16]",
         "ldr q3, [x28, #48]",
         "smax v16.16b, v16.16b, v18.16b",
-        "smax v2.16b, v2.16b, v3.16b",
-        "str q2, [x28, #16]"
+        "smax v4.16b, v2.16b, v3.16b",
+        "str q4, [x28, #16]"
       ]
     },
     "vpmaxsb ymm0, ymm1, ymm0": {
@@ -1719,8 +1719,8 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #16]",
         "smax v16.16b, v17.16b, v16.16b",
-        "smax v2.16b, v2.16b, v3.16b",
-        "str q2, [x28, #16]"
+        "smax v4.16b, v2.16b, v3.16b",
+        "str q4, [x28, #16]"
       ]
     },
     "vpmaxsb ymm0, ymm1, ymm2": {
@@ -1732,8 +1732,8 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #48]",
         "smax v16.16b, v17.16b, v18.16b",
-        "smax v2.16b, v2.16b, v3.16b",
-        "str q2, [x28, #16]"
+        "smax v4.16b, v2.16b, v3.16b",
+        "str q4, [x28, #16]"
       ]
     },
     "vpmaxsd xmm0, xmm1, xmm2": {
@@ -1756,8 +1756,8 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #16]",
         "smax v16.4s, v17.4s, v16.4s",
-        "smax v2.4s, v2.4s, v3.4s",
-        "str q2, [x28, #16]"
+        "smax v4.4s, v2.4s, v3.4s",
+        "str q4, [x28, #16]"
       ]
     },
     "vpmaxsd ymm0, ymm0, ymm2": {
@@ -1770,8 +1770,8 @@
         "ldr q2, [x28, #16]",
         "ldr q3, [x28, #48]",
         "smax v16.4s, v16.4s, v18.4s",
-        "smax v2.4s, v2.4s, v3.4s",
-        "str q2, [x28, #16]"
+        "smax v4.4s, v2.4s, v3.4s",
+        "str q4, [x28, #16]"
       ]
     },
     "vpmaxsd ymm0, ymm1, ymm2": {
@@ -1783,8 +1783,8 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #48]",
         "smax v16.4s, v17.4s, v18.4s",
-        "smax v2.4s, v2.4s, v3.4s",
-        "str q2, [x28, #16]"
+        "smax v4.4s, v2.4s, v3.4s",
+        "str q4, [x28, #16]"
       ]
     },
     "vpmaxuw xmm0, xmm1, xmm2": {
@@ -1807,8 +1807,8 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #16]",
         "umax v16.8h, v17.8h, v16.8h",
-        "umax v2.8h, v2.8h, v3.8h",
-        "str q2, [x28, #16]"
+        "umax v4.8h, v2.8h, v3.8h",
+        "str q4, [x28, #16]"
       ]
     },
     "vpmaxuw ymm0, ymm0, ymm2": {
@@ -1821,8 +1821,8 @@
         "ldr q2, [x28, #16]",
         "ldr q3, [x28, #48]",
         "umax v16.8h, v16.8h, v18.8h",
-        "umax v2.8h, v2.8h, v3.8h",
-        "str q2, [x28, #16]"
+        "umax v4.8h, v2.8h, v3.8h",
+        "str q4, [x28, #16]"
       ]
     },
     "vpmaxuw ymm0, ymm1, ymm2": {
@@ -1834,8 +1834,8 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #48]",
         "umax v16.8h, v17.8h, v18.8h",
-        "umax v2.8h, v2.8h, v3.8h",
-        "str q2, [x28, #16]"
+        "umax v4.8h, v2.8h, v3.8h",
+        "str q4, [x28, #16]"
       ]
     },
     "vpmaxud xmm0, xmm1, xmm2": {
@@ -1858,8 +1858,8 @@
         "ldr q2, [x28, #16]",
         "ldr q3, [x28, #48]",
         "umax v16.4s, v16.4s, v18.4s",
-        "umax v2.4s, v2.4s, v3.4s",
-        "str q2, [x28, #16]"
+        "umax v4.4s, v2.4s, v3.4s",
+        "str q4, [x28, #16]"
       ]
     },
     "vpmaxud ymm0, ymm1, ymm0": {
@@ -1871,8 +1871,8 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #16]",
         "umax v16.4s, v17.4s, v16.4s",
-        "umax v2.4s, v2.4s, v3.4s",
-        "str q2, [x28, #16]"
+        "umax v4.4s, v2.4s, v3.4s",
+        "str q4, [x28, #16]"
       ]
     },
     "vpmaxud ymm0, ymm1, ymm2": {
@@ -1884,8 +1884,8 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #48]",
         "umax v16.4s, v17.4s, v18.4s",
-        "umax v2.4s, v2.4s, v3.4s",
-        "str q2, [x28, #16]"
+        "umax v4.4s, v2.4s, v3.4s",
+        "str q4, [x28, #16]"
       ]
     },
     "vpmulld xmm0, xmm1, xmm2": {
@@ -1907,8 +1907,8 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #48]",
         "mul v16.4s, v17.4s, v18.4s",
-        "mul v2.4s, v2.4s, v3.4s",
-        "str q2, [x28, #16]"
+        "mul v4.4s, v2.4s, v3.4s",
+        "str q4, [x28, #16]"
       ]
     },
     "vphminposuw xmm0, xmm1": {
@@ -1919,10 +1919,10 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #2400]",
         "zip1 v3.8h, v2.8h, v17.8h",
-        "zip2 v2.8h, v2.8h, v17.8h",
-        "umin v2.4s, v3.4s, v2.4s",
-        "uminv s2, v2.4s",
-        "rev32 v16.8h, v2.8h",
+        "zip2 v4.8h, v2.8h, v17.8h",
+        "umin v5.4s, v3.4s, v4.4s",
+        "uminv s6, v5.4s",
+        "rev32 v16.8h, v6.8h",
         "stp xzr, xzr, [x28, #16]"
       ]
     },
@@ -2332,8 +2332,8 @@
         "mov w0, v2.s[3]",
         "tbz w0, #31, #+0x8",
         "ld1 {v0.s}[3], [x1]",
-        "mov v2.16b, v0.16b",
-        "str q2, [x28, #16]"
+        "mov v3.16b, v0.16b",
+        "str q3, [x28, #16]"
       ]
     },
     "vpmaskmovq xmm0, xmm1, [rax]": {
@@ -2379,8 +2379,8 @@
         "mov x0, v2.d[1]",
         "tbz x0, #63, #+0x8",
         "ld1 {v0.d}[1], [x1]",
-        "mov v2.16b, v0.16b",
-        "str q2, [x28, #16]"
+        "mov v3.16b, v0.16b",
+        "str q3, [x28, #16]"
       ]
     },
     "vpmaskmovd [rax], xmm0, xmm1": {
@@ -4486,8 +4486,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #2432]",
-        "eor v2.16b, v17.16b, v2.16b",
-        "mov v0.16b, v2.16b",
+        "eor v3.16b, v17.16b, v2.16b",
+        "mov v0.16b, v3.16b",
         "fmla v0.4s, v16.4s, v18.4s",
         "mov v16.16b, v0.16b",
         "stp xzr, xzr, [x28, #16]"
@@ -4507,9 +4507,9 @@
         "mov v0.16b, v6.16b",
         "fmla v0.4s, v16.4s, v18.4s",
         "mov v16.16b, v0.16b",
-        "eor v3.16b, v3.16b, v5.16b",
-        "fmla v3.4s, v2.4s, v4.4s",
-        "str q3, [x28, #16]"
+        "eor v7.16b, v3.16b, v5.16b",
+        "fmla v7.4s, v2.4s, v4.4s",
+        "str q7, [x28, #16]"
       ]
     },
     "vfmaddsub132pd xmm0, xmm1, xmm2": {
@@ -4519,8 +4519,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #2464]",
-        "eor v2.16b, v17.16b, v2.16b",
-        "mov v0.16b, v2.16b",
+        "eor v3.16b, v17.16b, v2.16b",
+        "mov v0.16b, v3.16b",
         "fmla v0.2d, v16.2d, v18.2d",
         "mov v16.16b, v0.16b",
         "stp xzr, xzr, [x28, #16]"
@@ -4540,9 +4540,9 @@
         "mov v0.16b, v6.16b",
         "fmla v0.2d, v16.2d, v18.2d",
         "mov v16.16b, v0.16b",
-        "eor v3.16b, v3.16b, v5.16b",
-        "fmla v3.2d, v2.2d, v4.2d",
-        "str q3, [x28, #16]"
+        "eor v7.16b, v3.16b, v5.16b",
+        "fmla v7.2d, v2.2d, v4.2d",
+        "str q7, [x28, #16]"
       ]
     },
     "vfmsubadd132ps xmm0, xmm1, xmm2": {
@@ -4552,8 +4552,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #2496]",
-        "eor v2.16b, v17.16b, v2.16b",
-        "mov v0.16b, v2.16b",
+        "eor v3.16b, v17.16b, v2.16b",
+        "mov v0.16b, v3.16b",
         "fmla v0.4s, v16.4s, v18.4s",
         "mov v16.16b, v0.16b",
         "stp xzr, xzr, [x28, #16]"
@@ -4573,9 +4573,9 @@
         "mov v0.16b, v6.16b",
         "fmla v0.4s, v16.4s, v18.4s",
         "mov v16.16b, v0.16b",
-        "eor v3.16b, v3.16b, v5.16b",
-        "fmla v3.4s, v2.4s, v4.4s",
-        "str q3, [x28, #16]"
+        "eor v7.16b, v3.16b, v5.16b",
+        "fmla v7.4s, v2.4s, v4.4s",
+        "str q7, [x28, #16]"
       ]
     },
     "vfmsubadd132pd xmm0, xmm1, xmm2": {
@@ -4585,8 +4585,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #2528]",
-        "eor v2.16b, v17.16b, v2.16b",
-        "mov v0.16b, v2.16b",
+        "eor v3.16b, v17.16b, v2.16b",
+        "mov v0.16b, v3.16b",
         "fmla v0.2d, v16.2d, v18.2d",
         "mov v16.16b, v0.16b",
         "stp xzr, xzr, [x28, #16]"
@@ -4606,9 +4606,9 @@
         "mov v0.16b, v6.16b",
         "fmla v0.2d, v16.2d, v18.2d",
         "mov v16.16b, v0.16b",
-        "eor v3.16b, v3.16b, v5.16b",
-        "fmla v3.2d, v2.2d, v4.2d",
-        "str q3, [x28, #16]"
+        "eor v7.16b, v3.16b, v5.16b",
+        "fmla v7.2d, v2.2d, v4.2d",
+        "str q7, [x28, #16]"
       ]
     },
     "vfmadd132ps xmm0, xmm1, xmm2": {
@@ -5542,8 +5542,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #2432]",
-        "eor v2.16b, v18.16b, v2.16b",
-        "mov v0.16b, v2.16b",
+        "eor v3.16b, v18.16b, v2.16b",
+        "mov v0.16b, v3.16b",
         "fmla v0.4s, v17.4s, v16.4s",
         "mov v16.16b, v0.16b",
         "stp xzr, xzr, [x28, #16]"
@@ -5563,9 +5563,9 @@
         "mov v0.16b, v6.16b",
         "fmla v0.4s, v17.4s, v16.4s",
         "mov v16.16b, v0.16b",
-        "eor v4.16b, v4.16b, v5.16b",
-        "fmla v4.4s, v3.4s, v2.4s",
-        "str q4, [x28, #16]"
+        "eor v7.16b, v4.16b, v5.16b",
+        "fmla v7.4s, v3.4s, v2.4s",
+        "str q7, [x28, #16]"
       ]
     },
     "vfmaddsub213pd xmm0, xmm1, xmm2": {
@@ -5575,8 +5575,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #2464]",
-        "eor v2.16b, v18.16b, v2.16b",
-        "mov v0.16b, v2.16b",
+        "eor v3.16b, v18.16b, v2.16b",
+        "mov v0.16b, v3.16b",
         "fmla v0.2d, v17.2d, v16.2d",
         "mov v16.16b, v0.16b",
         "stp xzr, xzr, [x28, #16]"
@@ -5596,9 +5596,9 @@
         "mov v0.16b, v6.16b",
         "fmla v0.2d, v17.2d, v16.2d",
         "mov v16.16b, v0.16b",
-        "eor v4.16b, v4.16b, v5.16b",
-        "fmla v4.2d, v3.2d, v2.2d",
-        "str q4, [x28, #16]"
+        "eor v7.16b, v4.16b, v5.16b",
+        "fmla v7.2d, v3.2d, v2.2d",
+        "str q7, [x28, #16]"
       ]
     },
     "vfmsubadd213ps xmm0, xmm1, xmm2": {
@@ -5608,8 +5608,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #2496]",
-        "eor v2.16b, v18.16b, v2.16b",
-        "mov v0.16b, v2.16b",
+        "eor v3.16b, v18.16b, v2.16b",
+        "mov v0.16b, v3.16b",
         "fmla v0.4s, v17.4s, v16.4s",
         "mov v16.16b, v0.16b",
         "stp xzr, xzr, [x28, #16]"
@@ -5629,9 +5629,9 @@
         "mov v0.16b, v6.16b",
         "fmla v0.4s, v17.4s, v16.4s",
         "mov v16.16b, v0.16b",
-        "eor v4.16b, v4.16b, v5.16b",
-        "fmla v4.4s, v3.4s, v2.4s",
-        "str q4, [x28, #16]"
+        "eor v7.16b, v4.16b, v5.16b",
+        "fmla v7.4s, v3.4s, v2.4s",
+        "str q7, [x28, #16]"
       ]
     },
     "vfmsubadd213pd xmm0, xmm1, xmm2": {
@@ -5641,8 +5641,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #2528]",
-        "eor v2.16b, v18.16b, v2.16b",
-        "mov v0.16b, v2.16b",
+        "eor v3.16b, v18.16b, v2.16b",
+        "mov v0.16b, v3.16b",
         "fmla v0.2d, v17.2d, v16.2d",
         "mov v16.16b, v0.16b",
         "stp xzr, xzr, [x28, #16]"
@@ -5662,9 +5662,9 @@
         "mov v0.16b, v6.16b",
         "fmla v0.2d, v17.2d, v16.2d",
         "mov v16.16b, v0.16b",
-        "eor v4.16b, v4.16b, v5.16b",
-        "fmla v4.2d, v3.2d, v2.2d",
-        "str q4, [x28, #16]"
+        "eor v7.16b, v4.16b, v5.16b",
+        "fmla v7.2d, v3.2d, v2.2d",
+        "str q7, [x28, #16]"
       ]
     },
     "vfmaddsub231ps xmm0, xmm1, xmm2": {
@@ -5674,8 +5674,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #2432]",
-        "eor v2.16b, v16.16b, v2.16b",
-        "mov v16.16b, v2.16b",
+        "eor v3.16b, v16.16b, v2.16b",
+        "mov v16.16b, v3.16b",
         "fmla v16.4s, v17.4s, v18.4s",
         "stp xzr, xzr, [x28, #16]"
       ]
@@ -5693,9 +5693,9 @@
         "eor v6.16b, v16.16b, v5.16b",
         "mov v16.16b, v6.16b",
         "fmla v16.4s, v17.4s, v18.4s",
-        "eor v2.16b, v2.16b, v5.16b",
-        "fmla v2.4s, v3.4s, v4.4s",
-        "str q2, [x28, #16]"
+        "eor v7.16b, v2.16b, v5.16b",
+        "fmla v7.4s, v3.4s, v4.4s",
+        "str q7, [x28, #16]"
       ]
     },
     "vfmaddsub231pd xmm0, xmm1, xmm2": {
@@ -5705,8 +5705,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #2464]",
-        "eor v2.16b, v16.16b, v2.16b",
-        "mov v16.16b, v2.16b",
+        "eor v3.16b, v16.16b, v2.16b",
+        "mov v16.16b, v3.16b",
         "fmla v16.2d, v17.2d, v18.2d",
         "stp xzr, xzr, [x28, #16]"
       ]
@@ -5724,9 +5724,9 @@
         "eor v6.16b, v16.16b, v5.16b",
         "mov v16.16b, v6.16b",
         "fmla v16.2d, v17.2d, v18.2d",
-        "eor v2.16b, v2.16b, v5.16b",
-        "fmla v2.2d, v3.2d, v4.2d",
-        "str q2, [x28, #16]"
+        "eor v7.16b, v2.16b, v5.16b",
+        "fmla v7.2d, v3.2d, v4.2d",
+        "str q7, [x28, #16]"
       ]
     },
     "vfmsubadd231ps xmm0, xmm1, xmm2": {
@@ -5736,8 +5736,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #2496]",
-        "eor v2.16b, v16.16b, v2.16b",
-        "mov v16.16b, v2.16b",
+        "eor v3.16b, v16.16b, v2.16b",
+        "mov v16.16b, v3.16b",
         "fmla v16.4s, v17.4s, v18.4s",
         "stp xzr, xzr, [x28, #16]"
       ]
@@ -5755,9 +5755,9 @@
         "eor v6.16b, v16.16b, v5.16b",
         "mov v16.16b, v6.16b",
         "fmla v16.4s, v17.4s, v18.4s",
-        "eor v2.16b, v2.16b, v5.16b",
-        "fmla v2.4s, v3.4s, v4.4s",
-        "str q2, [x28, #16]"
+        "eor v7.16b, v2.16b, v5.16b",
+        "fmla v7.4s, v3.4s, v4.4s",
+        "str q7, [x28, #16]"
       ]
     },
     "vfmsubadd231pd xmm0, xmm1, xmm2": {
@@ -5767,8 +5767,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #2528]",
-        "eor v2.16b, v16.16b, v2.16b",
-        "mov v16.16b, v2.16b",
+        "eor v3.16b, v16.16b, v2.16b",
+        "mov v16.16b, v3.16b",
         "fmla v16.2d, v17.2d, v18.2d",
         "stp xzr, xzr, [x28, #16]"
       ]
@@ -5786,9 +5786,9 @@
         "eor v6.16b, v16.16b, v5.16b",
         "mov v16.16b, v6.16b",
         "fmla v16.2d, v17.2d, v18.2d",
-        "eor v2.16b, v2.16b, v5.16b",
-        "fmla v2.2d, v3.2d, v4.2d",
-        "str q2, [x28, #16]"
+        "eor v7.16b, v2.16b, v5.16b",
+        "fmla v7.2d, v3.2d, v4.2d",
+        "str q7, [x28, #16]"
       ]
     },
     "vaesimc xmm0, xmm1": {
@@ -5831,8 +5831,8 @@
         "mov v0.16b, v3.16b",
         "aese v0.16b, v2.16b",
         "aesmc v0.16b, v0.16b",
-        "eor v2.16b, v0.16b, v4.16b",
-        "str q2, [x28, #16]"
+        "eor v5.16b, v0.16b, v4.16b",
+        "str q5, [x28, #16]"
       ]
     },
     "vaesenclast xmm0, xmm1, xmm2": {
@@ -5862,8 +5862,8 @@
         "eor v16.16b, v0.16b, v18.16b",
         "mov v0.16b, v3.16b",
         "aese v0.16b, v2.16b",
-        "eor v2.16b, v0.16b, v4.16b",
-        "str q2, [x28, #16]"
+        "eor v5.16b, v0.16b, v4.16b",
+        "str q5, [x28, #16]"
       ]
     },
     "vaesdec xmm0, xmm1, xmm2": {
@@ -5896,8 +5896,8 @@
         "mov v0.16b, v3.16b",
         "aesd v0.16b, v2.16b",
         "aesimc v0.16b, v0.16b",
-        "eor v2.16b, v0.16b, v4.16b",
-        "str q2, [x28, #16]"
+        "eor v5.16b, v0.16b, v4.16b",
+        "str q5, [x28, #16]"
       ]
     },
     "vaesdeclast xmm0, xmm1, xmm2": {
@@ -5927,8 +5927,8 @@
         "eor v16.16b, v0.16b, v18.16b",
         "mov v0.16b, v3.16b",
         "aesd v0.16b, v2.16b",
-        "eor v2.16b, v0.16b, v4.16b",
-        "str q2, [x28, #16]"
+        "eor v5.16b, v0.16b, v4.16b",
+        "str q5, [x28, #16]"
       ]
     }
   }

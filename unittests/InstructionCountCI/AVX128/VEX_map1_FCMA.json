@@ -34,8 +34,8 @@
         "ext v4.16b, v18.16b, v18.16b, #8",
         "fcadd v16.2d, v16.2d, v4.2d, #90",
         "ext v3.16b, v3.16b, v3.16b, #8",
-        "fcadd v2.2d, v2.2d, v3.2d, #90",
-        "str q2, [x28, #16]"
+        "fcadd v5.2d, v2.2d, v3.2d, #90",
+        "str q5, [x28, #16]"
       ]
     },
     "vaddsubpd ymm0, ymm1, ymm0": {
@@ -50,8 +50,8 @@
         "ext v4.16b, v16.16b, v16.16b, #8",
         "fcadd v16.2d, v17.2d, v4.2d, #90",
         "ext v3.16b, v3.16b, v3.16b, #8",
-        "fcadd v2.2d, v2.2d, v3.2d, #90",
-        "str q2, [x28, #16]"
+        "fcadd v5.2d, v2.2d, v3.2d, #90",
+        "str q5, [x28, #16]"
       ]
     },
     "vaddsubpd ymm0, ymm1, ymm2": {
@@ -65,8 +65,8 @@
         "ext v4.16b, v18.16b, v18.16b, #8",
         "fcadd v16.2d, v17.2d, v4.2d, #90",
         "ext v3.16b, v3.16b, v3.16b, #8",
-        "fcadd v2.2d, v2.2d, v3.2d, #90",
-        "str q2, [x28, #16]"
+        "fcadd v5.2d, v2.2d, v3.2d, #90",
+        "str q5, [x28, #16]"
       ]
     },
     "vaddsubps xmm0, xmm1, xmm2": {
@@ -91,9 +91,9 @@
         "ldr q3, [x28, #16]",
         "rev64 v4.4s, v16.4s",
         "fcadd v16.4s, v17.4s, v4.4s, #90",
-        "rev64 v3.4s, v3.4s",
-        "fcadd v2.4s, v2.4s, v3.4s, #90",
-        "str q2, [x28, #16]"
+        "rev64 v5.4s, v3.4s",
+        "fcadd v6.4s, v2.4s, v5.4s, #90",
+        "str q6, [x28, #16]"
       ]
     },
     "vaddsubps ymm0, ymm0, ymm2": {
@@ -107,9 +107,9 @@
         "ldr q3, [x28, #48]",
         "rev64 v4.4s, v18.4s",
         "fcadd v16.4s, v16.4s, v4.4s, #90",
-        "rev64 v3.4s, v3.4s",
-        "fcadd v2.4s, v2.4s, v3.4s, #90",
-        "str q2, [x28, #16]"
+        "rev64 v5.4s, v3.4s",
+        "fcadd v6.4s, v2.4s, v5.4s, #90",
+        "str q6, [x28, #16]"
       ]
     },
     "vaddsubps ymm0, ymm1, ymm2": {
@@ -122,9 +122,9 @@
         "ldr q3, [x28, #48]",
         "rev64 v4.4s, v18.4s",
         "fcadd v16.4s, v17.4s, v4.4s, #90",
-        "rev64 v3.4s, v3.4s",
-        "fcadd v2.4s, v2.4s, v3.4s, #90",
-        "str q2, [x28, #16]"
+        "rev64 v5.4s, v3.4s",
+        "fcadd v6.4s, v2.4s, v5.4s, #90",
+        "str q6, [x28, #16]"
       ]
     }
   }

@@ -168,12 +168,12 @@
       "Comment": "0xf2 0x0f 0x2d",
       "ExpectedArm64ASM": [
         "ldr d2, [x6]",
-        "frinti d2, d2",
-        "fcvtzs x20, d2",
+        "frinti d3, d2",
+        "fcvtzs x20, d3",
         "mov x21, #0x8000000000000000",
-        "ldr d3, [x28, #2896]",
+        "ldr d4, [x28, #2896]",
         "mrs x22, nzcv",
-        "fcmp d3, d2",
+        "fcmp d4, d3",
         "csel x4, x20, x21, gt",
         "msr nzcv, x22"
       ]
@@ -197,12 +197,12 @@
       "Comment": "0xf2 0x0f 0x2d",
       "ExpectedArm64ASM": [
         "ldr d2, [x6]",
-        "frinti d2, d2",
-        "fcvtzs x20, d2",
+        "frinti d3, d2",
+        "fcvtzs x20, d3",
         "mov x21, #0x8000000000000000",
-        "ldr d3, [x28, #2896]",
+        "ldr d4, [x28, #2896]",
         "mrs x22, nzcv",
-        "fcmp d3, d2",
+        "fcmp d4, d3",
         "csel x4, x20, x21, gt",
         "msr nzcv, x22"
       ]
@@ -470,8 +470,8 @@
       ],
       "ExpectedArm64ASM": [
         "fcmgt d2, d17, d16",
-        "mvn v2.16b, v2.16b",
-        "mov v16.d[0], v2.d[0]"
+        "mvn v3.16b, v2.16b",
+        "mov v16.d[0], v3.d[0]"
       ]
     },
     "cmpsd xmm0, xmm1, 6": {
@@ -481,8 +481,8 @@
       ],
       "ExpectedArm64ASM": [
         "fcmge d2, d17, d16",
-        "mvn v2.16b, v2.16b",
-        "mov v16.d[0], v2.d[0]"
+        "mvn v3.16b, v2.16b",
+        "mov v16.d[0], v3.d[0]"
       ]
     },
     "cmpsd xmm0, xmm1, 7": {
@@ -502,8 +502,8 @@
       "Comment": "0xf2 0x0f 0xd0",
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #2432]",
-        "eor v2.16b, v17.16b, v2.16b",
-        "fadd v16.4s, v16.4s, v2.4s"
+        "eor v3.16b, v17.16b, v2.16b",
+        "fadd v16.4s, v16.4s, v3.4s"
       ]
     },
     "movdq2q mm0, xmm0": {
@@ -525,9 +525,9 @@
         "frintz v5.2d, v2.2d",
         "fcvtn v5.2s, v5.2d",
         "fcvtzs v5.2s, v5.2s",
-        "fcmgt v2.2d, v4.2d, v2.2d",
-        "shrn v2.2s, v2.2d, #32",
-        "mov v16.16b, v2.16b",
+        "fcmgt v6.2d, v4.2d, v2.2d",
+        "shrn v6.2s, v6.2d, #32",
+        "mov v16.16b, v6.16b",
         "bsl v16.16b, v5.16b, v3.16b"
       ]
     },

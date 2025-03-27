@@ -45,8 +45,8 @@
         "ldapurh w20, [x7, #24]",
         "nop",
         "bfxil x4, x20, #0, #16",
-        "ldapurb w20, [x7, #26]",
-        "bfxil x6, x20, #0, #8"
+        "ldapurb w21, [x7, #26]",
+        "bfxil x6, x21, #0, #8"
       ]
     },
     "Store variables to memory": {

@@ -208,6 +208,7 @@
       },
 
       "ThreadRemoveCodeEntry": {
+        "SpillsStaticRegs": true,
         "HasSideEffects": true
       },
 
@@ -218,6 +219,7 @@
                  "uint32_t Res = (node << 12) | cpu;",
                  "This means it has a limitation of 4096 CPU cores. Which is fine and matches x86 behaviour"
                 ],
+        "SpillsStaticRegs": true,
         "DestSize": "OpSize::i64Bit"
       },
       "GPR = GetRoundingMode": {
@@ -243,6 +245,7 @@
         "HasSideEffects": true
       },
       "Print SSA:$Value": {
+        "SpillsStaticRegs": true,
         "HasSideEffects": true,
         "Desc": ["Debug operation that prints an SSA value to the console",
                  "May only print 64bits of the value"]
@@ -303,9 +306,11 @@
         "HasSideEffects": true
       },
       "CallbackReturn": {
+        "SpillsStaticRegs": true,
         "HasSideEffects": true
       },
       "GPR = Syscall GPR:$SyscallID, GPR:$Arg0, GPR:$Arg1, GPR:$Arg2, GPR:$Arg3, GPR:$Arg4, GPR:$Arg5, SyscallFlags:$Flags": {
+        "SpillsStaticRegs": true,
         "HasSideEffects": true,
         "Desc": ["Dispatches a guest syscall through to the SyscallHandler class"
                 ],
@@ -313,6 +318,7 @@
       },
 
       "GPR = InlineSyscall GPR:$Arg0, GPR:$Arg1, GPR:$Arg2, GPR:$Arg3, GPR:$Arg4, GPR:$Arg5, i32:$HostSyscallNumber, SyscallFlags:$Flags": {
+        "SpillsStaticRegs": true,
         "HasSideEffects": true,
         "Desc": ["Dispatches a guest syscall directly to the host syscall interface,",
                  "bypassing the SyscallHandler class used by Syscall.",
@@ -325,17 +331,20 @@
       },
 
       "Thunk GPR:$ArgPtr, SHA256Sum:$ThunkNameHash": {
+        "SpillsStaticRegs": true,
         "HasSideEffects": true
       },
 
       "GPR:$EAX, GPR:$EBX, GPR:$ECX, GPR:$EDX = CPUID GPR:$Function, GPR:$Leaf": {
         "Desc": ["Calls in to the CPUID handler function to return emulated CPUID"],
         "DestSize": "OpSize::i32Bit",
+        "SpillsStaticRegs": true,
         "HasSideEffects": true
       },
       "GPR:$EAX, GPR:$EDX = XGetBV GPR:$Function": {
         "Desc": ["Calls in to the XCR handler function to return emulated XCR"],
         "DestSize": "OpSize::i32Bit",
+        "SpillsStaticRegs": true,
         "HasSideEffects": true
       }
     },
@@ -671,6 +680,13 @@
         "HasSideEffects": true,
         "DestSize": "Size"
       },
+      "PushTwo OpSize:#Size, OpSize:$ValueSize, GPR:$Value1, GPR:$Value2, GPR:$Addr": {
+        "Desc": [
+          "Push two values to the address, incrementing the pointer in the place.",
+          "Fused post-RA so doesn't have a destination."
+        ],
+        "HasSideEffects": true
+      },
       "GPR = RMWHandle GPR:$Value": {
         "Desc": [
           "This is a special move that indicates the result will be poisoned by a non-SSA instruction writing to its result.",
@@ -684,6 +700,11 @@
           "Pops a value from the address, updating the new pointer after incrementing.",
           "The address is incremented by the size via an RMW source/destintaion."
         ],
+        "HasSideEffects": true,
+        "DestSize": "Size"
+      },
+      "GPR:$Addr, GPR:$Value1, GPR:$Value2 = PopTwo OpSize:$Size, GPR:$Addr": {
+        "Desc": ["Pop two values from the address. Fused post-RA."],
         "HasSideEffects": true,
         "DestSize": "Size"
       },
@@ -1114,10 +1135,7 @@
         "Desc": [ "Integer Add",
                   "Will truncate to 64 or 32bits"
                 ],
-        "DestSize": "Size",
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
+        "DestSize": "Size"
       },
       "GPR = Adc OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": [ "Integer Add with carry",
@@ -1253,10 +1271,7 @@
         "Desc": [ "Integer Sub",
                   "Will truncate to 64 or 32bits"
                 ],
-        "DestSize": "Size",
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
+        "DestSize": "Size"
       },
       "GPR = SubShift OpSize:#Size, GPR:$Src1, GPR:$Src2, ShiftType:$Shift{ShiftType::LSL}, u8:$ShiftAmount{0}": {
         "Desc": [ "Integer Sub with shifted register",
@@ -1292,10 +1307,7 @@
       "GPR = Or OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer binary or"
                 ],
-        "DestSize": "Size",
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
+        "DestSize": "Size"
       },
       "GPR = Orlshl OpSize:#Size, GPR:$Src1, GPR:$Src2, u8:$BitShift": {
         "Desc": ["Integer binary or with logical shift left"
@@ -1324,10 +1336,7 @@
       "GPR = Xor OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer binary exclusive or"
                 ],
-        "DestSize": "Size",
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
+        "DestSize": "Size"
       },
       "GPR = XorShift OpSize:#Size, GPR:$Src1, GPR:$Src2, ShiftType:$Shift{ShiftType::LSL}, u8:$ShiftAmount{0}": {
         "Desc": [ "Integer binary exclusive or with shifted register"],
@@ -1346,10 +1355,7 @@
       "GPR = And OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer binary and"
                 ],
-        "DestSize": "Size",
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
+        "DestSize": "Size"
       },
       "GPR = AndWithFlags OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer binary and"
@@ -1378,10 +1384,7 @@
       "GPR = Lshl OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer logical shift left"
                 ],
-        "DestSize": "Size",
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
+        "DestSize": "Size"
       },
       "GPR = Lshr OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer logical shift right"

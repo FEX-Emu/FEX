@@ -28,8 +28,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "zip1 v16.2d, v2.2d, v17.2d",
-        "dup v2.2d, v17.d[0]",
-        "str q2, [x28, #16]"
+        "dup v3.2d, v17.d[0]",
+        "str q3, [x28, #16]"
       ]
     },
     "vpermq ymm0, ymm1, 3": {
@@ -40,8 +40,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "ext v16.16b, v2.16b, v17.16b, #8",
-        "dup v2.2d, v17.d[0]",
-        "str q2, [x28, #16]"
+        "dup v3.2d, v17.d[0]",
+        "str q3, [x28, #16]"
       ]
     },
     "vpermq ymm0, ymm1, 4": {
@@ -75,8 +75,8 @@
         "ldr q2, [x28, #32]",
         "mov v16.16b, v2.16b",
         "mov v16.d[1], v17.d[1]",
-        "dup v2.2d, v17.d[0]",
-        "str q2, [x28, #16]"
+        "dup v3.2d, v17.d[0]",
+        "str q3, [x28, #16]"
       ]
     },
     "vpermq ymm0, ymm1, 7": {
@@ -87,8 +87,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "trn2 v16.2d, v2.2d, v17.2d",
-        "dup v2.2d, v17.d[0]",
-        "str q2, [x28, #16]"
+        "dup v3.2d, v17.d[0]",
+        "str q3, [x28, #16]"
       ]
     },
     "vpermq ymm0, ymm1, 8": {
@@ -99,8 +99,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "zip1 v16.2d, v17.2d, v2.2d",
-        "dup v2.2d, v17.d[0]",
-        "str q2, [x28, #16]"
+        "dup v3.2d, v17.d[0]",
+        "str q3, [x28, #16]"
       ]
     },
     "vpermq ymm0, ymm1, 9": {
@@ -111,8 +111,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "ext v16.16b, v17.16b, v2.16b, #8",
-        "dup v2.2d, v17.d[0]",
-        "str q2, [x28, #16]"
+        "dup v3.2d, v17.d[0]",
+        "str q3, [x28, #16]"
       ]
     },
     "vpermq ymm0, ymm1, 10": {
@@ -123,8 +123,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "dup v16.2d, v2.d[0]",
-        "dup v2.2d, v17.d[0]",
-        "str q2, [x28, #16]"
+        "dup v3.2d, v17.d[0]",
+        "str q3, [x28, #16]"
       ]
     },
     "vpermq ymm0, ymm1, 11": {
@@ -135,8 +135,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "ext v16.16b, v2.16b, v2.16b, #8",
-        "dup v2.2d, v17.d[0]",
-        "str q2, [x28, #16]"
+        "dup v3.2d, v17.d[0]",
+        "str q3, [x28, #16]"
       ]
     },
     "vpermq ymm0, ymm1, 12": {
@@ -148,8 +148,8 @@
         "ldr q2, [x28, #32]",
         "mov v16.16b, v17.16b",
         "mov v16.d[1], v2.d[1]",
-        "dup v2.2d, v17.d[0]",
-        "str q2, [x28, #16]"
+        "dup v3.2d, v17.d[0]",
+        "str q3, [x28, #16]"
       ]
     },
     "vpermq ymm0, ymm1, 13": {
@@ -160,8 +160,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "trn2 v16.2d, v17.2d, v2.2d",
-        "dup v2.2d, v17.d[0]",
-        "str q2, [x28, #16]"
+        "dup v3.2d, v17.d[0]",
+        "str q3, [x28, #16]"
       ]
     },
     "vpermq ymm0, ymm1, 14": {
@@ -183,8 +183,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "dup v16.2d, v2.d[1]",
-        "dup v2.2d, v17.d[0]",
-        "str q2, [x28, #16]"
+        "dup v3.2d, v17.d[0]",
+        "str q3, [x28, #16]"
       ]
     },
     "vpermq ymm0, ymm1, 00000000b": {
@@ -458,9 +458,9 @@
         "ldr q3, [x28, #32]",
         "rev64 v4.4s, v17.4s",
         "trn2 v16.4s, v4.4s, v16.4s",
-        "rev64 v3.4s, v3.4s",
-        "trn2 v2.4s, v3.4s, v2.4s",
-        "str q2, [x28, #16]"
+        "rev64 v5.4s, v3.4s",
+        "trn2 v6.4s, v5.4s, v2.4s",
+        "str q6, [x28, #16]"
       ]
     },
     "vpblendd ymm0, ymm1, 10101010b": {
@@ -473,9 +473,9 @@
         "ldr q3, [x28, #32]",
         "rev64 v4.4s, v16.4s",
         "trn2 v16.4s, v4.4s, v17.4s",
-        "rev64 v2.4s, v2.4s",
-        "trn2 v2.4s, v2.4s, v3.4s",
-        "str q2, [x28, #16]"
+        "rev64 v5.4s, v2.4s",
+        "trn2 v6.4s, v5.4s, v3.4s",
+        "str q6, [x28, #16]"
       ]
     },
     "vpblendd ymm0, ymm1, 11111111b": {
@@ -537,8 +537,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "dup v16.4s, v17.s[0]",
-        "dup v2.4s, v2.s[0]",
-        "str q2, [x28, #16]"
+        "dup v3.4s, v2.s[0]",
+        "str q3, [x28, #16]"
       ]
     },
     "vpermilps ymm0, ymm1, 01010101b": {
@@ -549,8 +549,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "dup v16.4s, v17.s[1]",
-        "dup v2.4s, v2.s[1]",
-        "str q2, [x28, #16]"
+        "dup v3.4s, v2.s[1]",
+        "str q3, [x28, #16]"
       ]
     },
     "vpermilps ymm0, ymm1, 10101010b": {
@@ -561,8 +561,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "dup v16.4s, v17.s[2]",
-        "dup v2.4s, v2.s[2]",
-        "str q2, [x28, #16]"
+        "dup v3.4s, v2.s[2]",
+        "str q3, [x28, #16]"
       ]
     },
     "vpermilps ymm0, ymm1, 11111111b": {
@@ -573,8 +573,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "dup v16.4s, v17.s[3]",
-        "dup v2.4s, v2.s[3]",
-        "str q2, [x28, #16]"
+        "dup v3.4s, v2.s[3]",
+        "str q3, [x28, #16]"
       ]
     },
     "vpermilpd xmm0, xmm1, 00b": {
@@ -625,8 +625,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "dup v16.2d, v17.d[0]",
-        "dup v2.2d, v2.d[0]",
-        "str q2, [x28, #16]"
+        "dup v3.2d, v2.d[0]",
+        "str q3, [x28, #16]"
       ]
     },
     "vpermilpd ymm0, ymm1, 0001b": {
@@ -637,8 +637,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "ext v16.16b, v17.16b, v17.16b, #8",
-        "dup v2.2d, v2.d[0]",
-        "str q2, [x28, #16]"
+        "dup v3.2d, v2.d[0]",
+        "str q3, [x28, #16]"
       ]
     },
     "vpermilpd ymm0, ymm1, 0010b": {
@@ -648,8 +648,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
-        "dup v2.2d, v2.d[0]",
-        "str q2, [x28, #16]",
+        "dup v3.2d, v2.d[0]",
+        "str q3, [x28, #16]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -661,8 +661,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "dup v16.2d, v17.d[1]",
-        "dup v2.2d, v2.d[0]",
-        "str q2, [x28, #16]"
+        "dup v3.2d, v2.d[0]",
+        "str q3, [x28, #16]"
       ]
     },
     "vpermilpd ymm0, ymm1, 0100b": {
@@ -765,8 +765,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "dup v16.2d, v17.d[0]",
-        "dup v2.2d, v2.d[1]",
-        "str q2, [x28, #16]"
+        "dup v3.2d, v2.d[1]",
+        "str q3, [x28, #16]"
       ]
     },
     "vpermilpd ymm0, ymm1, 1101b": {
@@ -777,8 +777,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "ext v16.16b, v17.16b, v17.16b, #8",
-        "dup v2.2d, v2.d[1]",
-        "str q2, [x28, #16]"
+        "dup v3.2d, v2.d[1]",
+        "str q3, [x28, #16]"
       ]
     },
     "vpermilpd ymm0, ymm1, 1110b": {
@@ -788,8 +788,8 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
-        "dup v2.2d, v2.d[1]",
-        "str q2, [x28, #16]",
+        "dup v3.2d, v2.d[1]",
+        "str q3, [x28, #16]",
         "mov v16.16b, v17.16b"
       ]
     },
@@ -801,8 +801,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "dup v16.2d, v17.d[1]",
-        "dup v2.2d, v2.d[1]",
-        "str q2, [x28, #16]"
+        "dup v3.2d, v2.d[1]",
+        "str q3, [x28, #16]"
       ]
     },
     "vperm2f128 ymm0, ymm1, ymm2, 00000000b": {
@@ -1127,8 +1127,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "frintn v16.4s, v17.4s",
-        "frintn v2.4s, v2.4s",
-        "str q2, [x28, #16]"
+        "frintn v3.4s, v2.4s",
+        "str q3, [x28, #16]"
       ]
     },
     "vroundps ymm0, ymm1, 00000001b": {
@@ -1140,8 +1140,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "frintm v16.4s, v17.4s",
-        "frintm v2.4s, v2.4s",
-        "str q2, [x28, #16]"
+        "frintm v3.4s, v2.4s",
+        "str q3, [x28, #16]"
       ]
     },
     "vroundps ymm0, ymm1, 00000010b": {
@@ -1153,8 +1153,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "frintp v16.4s, v17.4s",
-        "frintp v2.4s, v2.4s",
-        "str q2, [x28, #16]"
+        "frintp v3.4s, v2.4s",
+        "str q3, [x28, #16]"
       ]
     },
     "vroundps ymm0, ymm1, 00000011b": {
@@ -1166,8 +1166,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "frintz v16.4s, v17.4s",
-        "frintz v2.4s, v2.4s",
-        "str q2, [x28, #16]"
+        "frintz v3.4s, v2.4s",
+        "str q3, [x28, #16]"
       ]
     },
     "vroundps ymm0, ymm1, 00000100b": {
@@ -1179,8 +1179,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "frinti v16.4s, v17.4s",
-        "frinti v2.4s, v2.4s",
-        "str q2, [x28, #16]"
+        "frinti v3.4s, v2.4s",
+        "str q3, [x28, #16]"
       ]
     },
     "vroundpd xmm0, xmm1, 00000000b": {
@@ -1247,8 +1247,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "frintn v16.2d, v17.2d",
-        "frintn v2.2d, v2.2d",
-        "str q2, [x28, #16]"
+        "frintn v3.2d, v2.2d",
+        "str q3, [x28, #16]"
       ]
     },
     "vroundpd ymm0, ymm1, 00000001b": {
@@ -1260,8 +1260,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "frintm v16.2d, v17.2d",
-        "frintm v2.2d, v2.2d",
-        "str q2, [x28, #16]"
+        "frintm v3.2d, v2.2d",
+        "str q3, [x28, #16]"
       ]
     },
     "vroundpd ymm0, ymm1, 00000010b": {
@@ -1273,8 +1273,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "frintp v16.2d, v17.2d",
-        "frintp v2.2d, v2.2d",
-        "str q2, [x28, #16]"
+        "frintp v3.2d, v2.2d",
+        "str q3, [x28, #16]"
       ]
     },
     "vroundpd ymm0, ymm1, 00000011b": {
@@ -1286,8 +1286,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "frintz v16.2d, v17.2d",
-        "frintz v2.2d, v2.2d",
-        "str q2, [x28, #16]"
+        "frintz v3.2d, v2.2d",
+        "str q3, [x28, #16]"
       ]
     },
     "vroundpd ymm0, ymm1, 00000100b": {
@@ -1299,8 +1299,8 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "frinti v16.2d, v17.2d",
-        "frinti v2.2d, v2.2d",
-        "str q2, [x28, #16]"
+        "frinti v3.2d, v2.2d",
+        "str q3, [x28, #16]"
       ]
     },
     "vroundss xmm0, xmm1, 00000000b": {
@@ -2445,9 +2445,9 @@
       ],
       "ExpectedArm64ASM": [
         "fmul v2.4s, v17.4s, v18.4s",
-        "faddp v2.4s, v2.4s, v2.4s",
-        "faddp s2, v2.2s",
-        "dup v16.4s, v2.s[0]",
+        "faddp v3.4s, v2.4s, v2.4s",
+        "faddp s3, v3.2s",
+        "dup v16.4s, v3.s[0]",
         "stp xzr, xzr, [x28, #16]"
       ]
     },
@@ -2490,14 +2490,14 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #48]",
         "fmul v4.4s, v17.4s, v18.4s",
-        "faddp v4.4s, v4.4s, v4.4s",
-        "faddp s4, v4.2s",
-        "dup v16.4s, v4.s[0]",
-        "fmul v2.4s, v2.4s, v3.4s",
-        "faddp v2.4s, v2.4s, v2.4s",
-        "faddp s2, v2.2s",
-        "dup v2.4s, v2.s[0]",
-        "str q2, [x28, #16]"
+        "faddp v5.4s, v4.4s, v4.4s",
+        "faddp s5, v5.2s",
+        "dup v16.4s, v5.s[0]",
+        "fmul v6.4s, v2.4s, v3.4s",
+        "faddp v7.4s, v6.4s, v6.4s",
+        "faddp s7, v7.2s",
+        "dup v8.4s, v7.s[0]",
+        "str q8, [x28, #16]"
       ]
     },
     "vdppd xmm0, xmm1, xmm2, 00000000b": {
@@ -2537,8 +2537,8 @@
       ],
       "ExpectedArm64ASM": [
         "fmul v2.2d, v17.2d, v18.2d",
-        "faddp d2, v2.2d",
-        "dup v16.2d, v2.d[0]",
+        "faddp d3, v2.2d",
+        "dup v16.2d, v3.d[0]",
         "stp xzr, xzr, [x28, #16]"
       ]
     },
@@ -2553,15 +2553,15 @@
         "ext v4.16b, v17.16b, v17.16b, #1",
         "ext v5.16b, v17.16b, v17.16b, #2",
         "ext v6.16b, v17.16b, v17.16b, #3",
-        "uabdl v3.8h, v3.8b, v2.8b",
-        "uabdl v4.8h, v4.8b, v2.8b",
-        "uabdl v5.8h, v5.8b, v2.8b",
-        "uabdl v2.8h, v6.8b, v2.8b",
-        "addp v3.8h, v3.8h, v5.8h",
-        "addp v2.8h, v4.8h, v2.8h",
-        "trn1 v4.4s, v3.4s, v2.4s",
-        "trn2 v2.4s, v3.4s, v2.4s",
-        "addp v16.8h, v4.8h, v2.8h",
+        "uabdl v7.8h, v3.8b, v2.8b",
+        "uabdl v8.8h, v4.8b, v2.8b",
+        "uabdl v9.8h, v5.8b, v2.8b",
+        "uabdl v10.8h, v6.8b, v2.8b",
+        "addp v11.8h, v7.8h, v9.8h",
+        "addp v12.8h, v8.8h, v10.8h",
+        "trn1 v13.4s, v11.4s, v12.4s",
+        "trn2 v14.4s, v11.4s, v12.4s",
+        "addp v16.8h, v13.8h, v14.8h",
         "stp xzr, xzr, [x28, #16]"
       ]
     },
@@ -2576,15 +2576,15 @@
         "ext v4.16b, v17.16b, v17.16b, #1",
         "ext v5.16b, v17.16b, v17.16b, #2",
         "ext v6.16b, v17.16b, v17.16b, #3",
-        "uabdl v3.8h, v3.8b, v2.8b",
-        "uabdl v4.8h, v4.8b, v2.8b",
-        "uabdl v5.8h, v5.8b, v2.8b",
-        "uabdl v2.8h, v6.8b, v2.8b",
-        "addp v3.8h, v3.8h, v5.8h",
-        "addp v2.8h, v4.8h, v2.8h",
-        "trn1 v4.4s, v3.4s, v2.4s",
-        "trn2 v2.4s, v3.4s, v2.4s",
-        "addp v16.8h, v4.8h, v2.8h",
+        "uabdl v7.8h, v3.8b, v2.8b",
+        "uabdl v8.8h, v4.8b, v2.8b",
+        "uabdl v9.8h, v5.8b, v2.8b",
+        "uabdl v10.8h, v6.8b, v2.8b",
+        "addp v11.8h, v7.8h, v9.8h",
+        "addp v12.8h, v8.8h, v10.8h",
+        "trn1 v13.4s, v11.4s, v12.4s",
+        "trn2 v14.4s, v11.4s, v12.4s",
+        "addp v16.8h, v13.8h, v14.8h",
         "stp xzr, xzr, [x28, #16]"
       ]
     },
@@ -2599,15 +2599,15 @@
         "ext v4.16b, v17.16b, v17.16b, #1",
         "ext v5.16b, v17.16b, v17.16b, #2",
         "ext v6.16b, v17.16b, v17.16b, #3",
-        "uabdl v3.8h, v3.8b, v2.8b",
-        "uabdl v4.8h, v4.8b, v2.8b",
-        "uabdl v5.8h, v5.8b, v2.8b",
-        "uabdl v2.8h, v6.8b, v2.8b",
-        "addp v3.8h, v3.8h, v5.8h",
-        "addp v2.8h, v4.8h, v2.8h",
-        "trn1 v4.4s, v3.4s, v2.4s",
-        "trn2 v2.4s, v3.4s, v2.4s",
-        "addp v16.8h, v4.8h, v2.8h",
+        "uabdl v7.8h, v3.8b, v2.8b",
+        "uabdl v8.8h, v4.8b, v2.8b",
+        "uabdl v9.8h, v5.8b, v2.8b",
+        "uabdl v10.8h, v6.8b, v2.8b",
+        "addp v11.8h, v7.8h, v9.8h",
+        "addp v12.8h, v8.8h, v10.8h",
+        "trn1 v13.4s, v11.4s, v12.4s",
+        "trn2 v14.4s, v11.4s, v12.4s",
+        "addp v16.8h, v13.8h, v14.8h",
         "stp xzr, xzr, [x28, #16]"
       ]
     },
@@ -2622,15 +2622,15 @@
         "ext v4.16b, v17.16b, v17.16b, #1",
         "ext v5.16b, v17.16b, v17.16b, #2",
         "ext v6.16b, v17.16b, v17.16b, #3",
-        "uabdl v3.8h, v3.8b, v2.8b",
-        "uabdl v4.8h, v4.8b, v2.8b",
-        "uabdl v5.8h, v5.8b, v2.8b",
-        "uabdl v2.8h, v6.8b, v2.8b",
-        "addp v3.8h, v3.8h, v5.8h",
-        "addp v2.8h, v4.8h, v2.8h",
-        "trn1 v4.4s, v3.4s, v2.4s",
-        "trn2 v2.4s, v3.4s, v2.4s",
-        "addp v16.8h, v4.8h, v2.8h",
+        "uabdl v7.8h, v3.8b, v2.8b",
+        "uabdl v8.8h, v4.8b, v2.8b",
+        "uabdl v9.8h, v5.8b, v2.8b",
+        "uabdl v10.8h, v6.8b, v2.8b",
+        "addp v11.8h, v7.8h, v9.8h",
+        "addp v12.8h, v8.8h, v10.8h",
+        "trn1 v13.4s, v11.4s, v12.4s",
+        "trn2 v14.4s, v11.4s, v12.4s",
+        "addp v16.8h, v13.8h, v14.8h",
         "stp xzr, xzr, [x28, #16]"
       ]
     },
@@ -2645,15 +2645,15 @@
         "ext v4.16b, v17.16b, v17.16b, #5",
         "ext v5.16b, v17.16b, v17.16b, #6",
         "ext v6.16b, v17.16b, v17.16b, #7",
-        "uabdl v3.8h, v3.8b, v2.8b",
-        "uabdl v4.8h, v4.8b, v2.8b",
-        "uabdl v5.8h, v5.8b, v2.8b",
-        "uabdl v2.8h, v6.8b, v2.8b",
-        "addp v3.8h, v3.8h, v5.8h",
-        "addp v2.8h, v4.8h, v2.8h",
-        "trn1 v4.4s, v3.4s, v2.4s",
-        "trn2 v2.4s, v3.4s, v2.4s",
-        "addp v16.8h, v4.8h, v2.8h",
+        "uabdl v7.8h, v3.8b, v2.8b",
+        "uabdl v8.8h, v4.8b, v2.8b",
+        "uabdl v9.8h, v5.8b, v2.8b",
+        "uabdl v10.8h, v6.8b, v2.8b",
+        "addp v11.8h, v7.8h, v9.8h",
+        "addp v12.8h, v8.8h, v10.8h",
+        "trn1 v13.4s, v11.4s, v12.4s",
+        "trn2 v14.4s, v11.4s, v12.4s",
+        "addp v16.8h, v13.8h, v14.8h",
         "stp xzr, xzr, [x28, #16]"
       ]
     },
@@ -2668,15 +2668,15 @@
         "ext v4.16b, v17.16b, v17.16b, #5",
         "ext v5.16b, v17.16b, v17.16b, #6",
         "ext v6.16b, v17.16b, v17.16b, #7",
-        "uabdl v3.8h, v3.8b, v2.8b",
-        "uabdl v4.8h, v4.8b, v2.8b",
-        "uabdl v5.8h, v5.8b, v2.8b",
-        "uabdl v2.8h, v6.8b, v2.8b",
-        "addp v3.8h, v3.8h, v5.8h",
-        "addp v2.8h, v4.8h, v2.8h",
-        "trn1 v4.4s, v3.4s, v2.4s",
-        "trn2 v2.4s, v3.4s, v2.4s",
-        "addp v16.8h, v4.8h, v2.8h",
+        "uabdl v7.8h, v3.8b, v2.8b",
+        "uabdl v8.8h, v4.8b, v2.8b",
+        "uabdl v9.8h, v5.8b, v2.8b",
+        "uabdl v10.8h, v6.8b, v2.8b",
+        "addp v11.8h, v7.8h, v9.8h",
+        "addp v12.8h, v8.8h, v10.8h",
+        "trn1 v13.4s, v11.4s, v12.4s",
+        "trn2 v14.4s, v11.4s, v12.4s",
+        "addp v16.8h, v13.8h, v14.8h",
         "stp xzr, xzr, [x28, #16]"
       ]
     },
@@ -2691,15 +2691,15 @@
         "ext v4.16b, v17.16b, v17.16b, #5",
         "ext v5.16b, v17.16b, v17.16b, #6",
         "ext v6.16b, v17.16b, v17.16b, #7",
-        "uabdl v3.8h, v3.8b, v2.8b",
-        "uabdl v4.8h, v4.8b, v2.8b",
-        "uabdl v5.8h, v5.8b, v2.8b",
-        "uabdl v2.8h, v6.8b, v2.8b",
-        "addp v3.8h, v3.8h, v5.8h",
-        "addp v2.8h, v4.8h, v2.8h",
-        "trn1 v4.4s, v3.4s, v2.4s",
-        "trn2 v2.4s, v3.4s, v2.4s",
-        "addp v16.8h, v4.8h, v2.8h",
+        "uabdl v7.8h, v3.8b, v2.8b",
+        "uabdl v8.8h, v4.8b, v2.8b",
+        "uabdl v9.8h, v5.8b, v2.8b",
+        "uabdl v10.8h, v6.8b, v2.8b",
+        "addp v11.8h, v7.8h, v9.8h",
+        "addp v12.8h, v8.8h, v10.8h",
+        "trn1 v13.4s, v11.4s, v12.4s",
+        "trn2 v14.4s, v11.4s, v12.4s",
+        "addp v16.8h, v13.8h, v14.8h",
         "stp xzr, xzr, [x28, #16]"
       ]
     },
@@ -2714,15 +2714,15 @@
         "ext v4.16b, v17.16b, v17.16b, #5",
         "ext v5.16b, v17.16b, v17.16b, #6",
         "ext v6.16b, v17.16b, v17.16b, #7",
-        "uabdl v3.8h, v3.8b, v2.8b",
-        "uabdl v4.8h, v4.8b, v2.8b",
-        "uabdl v5.8h, v5.8b, v2.8b",
-        "uabdl v2.8h, v6.8b, v2.8b",
-        "addp v3.8h, v3.8h, v5.8h",
-        "addp v2.8h, v4.8h, v2.8h",
-        "trn1 v4.4s, v3.4s, v2.4s",
-        "trn2 v2.4s, v3.4s, v2.4s",
-        "addp v16.8h, v4.8h, v2.8h",
+        "uabdl v7.8h, v3.8b, v2.8b",
+        "uabdl v8.8h, v4.8b, v2.8b",
+        "uabdl v9.8h, v5.8b, v2.8b",
+        "uabdl v10.8h, v6.8b, v2.8b",
+        "addp v11.8h, v7.8h, v9.8h",
+        "addp v12.8h, v8.8h, v10.8h",
+        "trn1 v13.4s, v11.4s, v12.4s",
+        "trn2 v14.4s, v11.4s, v12.4s",
+        "addp v16.8h, v13.8h, v14.8h",
         "stp xzr, xzr, [x28, #16]"
       ]
     },
@@ -2739,30 +2739,30 @@
         "ext v6.16b, v17.16b, v17.16b, #1",
         "ext v7.16b, v17.16b, v17.16b, #2",
         "ext v8.16b, v17.16b, v17.16b, #3",
-        "uabdl v5.8h, v5.8b, v4.8b",
-        "uabdl v6.8h, v6.8b, v4.8b",
-        "uabdl v7.8h, v7.8b, v4.8b",
-        "uabdl v4.8h, v8.8b, v4.8b",
-        "addp v5.8h, v5.8h, v7.8h",
-        "addp v4.8h, v6.8h, v4.8h",
-        "trn1 v6.4s, v5.4s, v4.4s",
-        "trn2 v4.4s, v5.4s, v4.4s",
-        "addp v16.8h, v6.8h, v4.8h",
-        "dup v3.4s, v3.s[0]",
-        "ext v4.16b, v2.16b, v2.16b, #0",
-        "ext v5.16b, v2.16b, v2.16b, #1",
-        "ext v6.16b, v2.16b, v2.16b, #2",
+        "uabdl v9.8h, v5.8b, v4.8b",
+        "uabdl v10.8h, v6.8b, v4.8b",
+        "uabdl v11.8h, v7.8b, v4.8b",
+        "uabdl v12.8h, v8.8b, v4.8b",
+        "addp v13.8h, v9.8h, v11.8h",
+        "addp v14.8h, v10.8h, v12.8h",
+        "trn1 v15.4s, v13.4s, v14.4s",
+        "trn2 v4.4s, v13.4s, v14.4s",
+        "addp v16.8h, v15.8h, v4.8h",
+        "dup v5.4s, v3.s[0]",
+        "ext v6.16b, v2.16b, v2.16b, #0",
+        "ext v7.16b, v2.16b, v2.16b, #1",
+        "ext v8.16b, v2.16b, v2.16b, #2",
         "ext v2.16b, v2.16b, v2.16b, #3",
-        "uabdl v4.8h, v4.8b, v3.8b",
-        "uabdl v5.8h, v5.8b, v3.8b",
-        "uabdl v6.8h, v6.8b, v3.8b",
-        "uabdl v2.8h, v2.8b, v3.8b",
-        "addp v3.8h, v4.8h, v6.8h",
-        "addp v2.8h, v5.8h, v2.8h",
-        "trn1 v4.4s, v3.4s, v2.4s",
-        "trn2 v2.4s, v3.4s, v2.4s",
-        "addp v2.8h, v4.8h, v2.8h",
-        "str q2, [x28, #16]"
+        "uabdl v9.8h, v6.8b, v5.8b",
+        "uabdl v10.8h, v7.8b, v5.8b",
+        "uabdl v11.8h, v8.8b, v5.8b",
+        "uabdl v12.8h, v2.8b, v5.8b",
+        "addp v13.8h, v9.8h, v11.8h",
+        "addp v14.8h, v10.8h, v12.8h",
+        "trn1 v15.4s, v13.4s, v14.4s",
+        "trn2 v2.4s, v13.4s, v14.4s",
+        "addp v3.8h, v15.8h, v2.8h",
+        "str q3, [x28, #16]"
       ]
     },
     "vmpsadbw ymm0, ymm1, ymm2, 001b": {
@@ -2778,30 +2778,30 @@
         "ext v6.16b, v17.16b, v17.16b, #1",
         "ext v7.16b, v17.16b, v17.16b, #2",
         "ext v8.16b, v17.16b, v17.16b, #3",
-        "uabdl v5.8h, v5.8b, v4.8b",
-        "uabdl v6.8h, v6.8b, v4.8b",
-        "uabdl v7.8h, v7.8b, v4.8b",
-        "uabdl v4.8h, v8.8b, v4.8b",
-        "addp v5.8h, v5.8h, v7.8h",
-        "addp v4.8h, v6.8h, v4.8h",
-        "trn1 v6.4s, v5.4s, v4.4s",
-        "trn2 v4.4s, v5.4s, v4.4s",
-        "addp v16.8h, v6.8h, v4.8h",
-        "dup v3.4s, v3.s[0]",
-        "ext v4.16b, v2.16b, v2.16b, #0",
-        "ext v5.16b, v2.16b, v2.16b, #1",
-        "ext v6.16b, v2.16b, v2.16b, #2",
+        "uabdl v9.8h, v5.8b, v4.8b",
+        "uabdl v10.8h, v6.8b, v4.8b",
+        "uabdl v11.8h, v7.8b, v4.8b",
+        "uabdl v12.8h, v8.8b, v4.8b",
+        "addp v13.8h, v9.8h, v11.8h",
+        "addp v14.8h, v10.8h, v12.8h",
+        "trn1 v15.4s, v13.4s, v14.4s",
+        "trn2 v4.4s, v13.4s, v14.4s",
+        "addp v16.8h, v15.8h, v4.8h",
+        "dup v5.4s, v3.s[0]",
+        "ext v6.16b, v2.16b, v2.16b, #0",
+        "ext v7.16b, v2.16b, v2.16b, #1",
+        "ext v8.16b, v2.16b, v2.16b, #2",
         "ext v2.16b, v2.16b, v2.16b, #3",
-        "uabdl v4.8h, v4.8b, v3.8b",
-        "uabdl v5.8h, v5.8b, v3.8b",
-        "uabdl v6.8h, v6.8b, v3.8b",
-        "uabdl v2.8h, v2.8b, v3.8b",
-        "addp v3.8h, v4.8h, v6.8h",
-        "addp v2.8h, v5.8h, v2.8h",
-        "trn1 v4.4s, v3.4s, v2.4s",
-        "trn2 v2.4s, v3.4s, v2.4s",
-        "addp v2.8h, v4.8h, v2.8h",
-        "str q2, [x28, #16]"
+        "uabdl v9.8h, v6.8b, v5.8b",
+        "uabdl v10.8h, v7.8b, v5.8b",
+        "uabdl v11.8h, v8.8b, v5.8b",
+        "uabdl v12.8h, v2.8b, v5.8b",
+        "addp v13.8h, v9.8h, v11.8h",
+        "addp v14.8h, v10.8h, v12.8h",
+        "trn1 v15.4s, v13.4s, v14.4s",
+        "trn2 v2.4s, v13.4s, v14.4s",
+        "addp v3.8h, v15.8h, v2.8h",
+        "str q3, [x28, #16]"
       ]
     },
     "vmpsadbw ymm0, ymm1, ymm2, 010b": {
@@ -2817,30 +2817,30 @@
         "ext v6.16b, v17.16b, v17.16b, #1",
         "ext v7.16b, v17.16b, v17.16b, #2",
         "ext v8.16b, v17.16b, v17.16b, #3",
-        "uabdl v5.8h, v5.8b, v4.8b",
-        "uabdl v6.8h, v6.8b, v4.8b",
-        "uabdl v7.8h, v7.8b, v4.8b",
-        "uabdl v4.8h, v8.8b, v4.8b",
-        "addp v5.8h, v5.8h, v7.8h",
-        "addp v4.8h, v6.8h, v4.8h",
-        "trn1 v6.4s, v5.4s, v4.4s",
-        "trn2 v4.4s, v5.4s, v4.4s",
-        "addp v16.8h, v6.8h, v4.8h",
-        "dup v3.4s, v3.s[0]",
-        "ext v4.16b, v2.16b, v2.16b, #0",
-        "ext v5.16b, v2.16b, v2.16b, #1",
-        "ext v6.16b, v2.16b, v2.16b, #2",
+        "uabdl v9.8h, v5.8b, v4.8b",
+        "uabdl v10.8h, v6.8b, v4.8b",
+        "uabdl v11.8h, v7.8b, v4.8b",
+        "uabdl v12.8h, v8.8b, v4.8b",
+        "addp v13.8h, v9.8h, v11.8h",
+        "addp v14.8h, v10.8h, v12.8h",
+        "trn1 v15.4s, v13.4s, v14.4s",
+        "trn2 v4.4s, v13.4s, v14.4s",
+        "addp v16.8h, v15.8h, v4.8h",
+        "dup v5.4s, v3.s[0]",
+        "ext v6.16b, v2.16b, v2.16b, #0",
+        "ext v7.16b, v2.16b, v2.16b, #1",
+        "ext v8.16b, v2.16b, v2.16b, #2",
         "ext v2.16b, v2.16b, v2.16b, #3",
-        "uabdl v4.8h, v4.8b, v3.8b",
-        "uabdl v5.8h, v5.8b, v3.8b",
-        "uabdl v6.8h, v6.8b, v3.8b",
-        "uabdl v2.8h, v2.8b, v3.8b",
-        "addp v3.8h, v4.8h, v6.8h",
-        "addp v2.8h, v5.8h, v2.8h",
-        "trn1 v4.4s, v3.4s, v2.4s",
-        "trn2 v2.4s, v3.4s, v2.4s",
-        "addp v2.8h, v4.8h, v2.8h",
-        "str q2, [x28, #16]"
+        "uabdl v9.8h, v6.8b, v5.8b",
+        "uabdl v10.8h, v7.8b, v5.8b",
+        "uabdl v11.8h, v8.8b, v5.8b",
+        "uabdl v12.8h, v2.8b, v5.8b",
+        "addp v13.8h, v9.8h, v11.8h",
+        "addp v14.8h, v10.8h, v12.8h",
+        "trn1 v15.4s, v13.4s, v14.4s",
+        "trn2 v2.4s, v13.4s, v14.4s",
+        "addp v3.8h, v15.8h, v2.8h",
+        "str q3, [x28, #16]"
       ]
     },
     "vmpsadbw ymm0, ymm1, ymm2, 011b": {
@@ -2856,30 +2856,30 @@
         "ext v6.16b, v17.16b, v17.16b, #1",
         "ext v7.16b, v17.16b, v17.16b, #2",
         "ext v8.16b, v17.16b, v17.16b, #3",
-        "uabdl v5.8h, v5.8b, v4.8b",
-        "uabdl v6.8h, v6.8b, v4.8b",
-        "uabdl v7.8h, v7.8b, v4.8b",
-        "uabdl v4.8h, v8.8b, v4.8b",
-        "addp v5.8h, v5.8h, v7.8h",
-        "addp v4.8h, v6.8h, v4.8h",
-        "trn1 v6.4s, v5.4s, v4.4s",
-        "trn2 v4.4s, v5.4s, v4.4s",
-        "addp v16.8h, v6.8h, v4.8h",
-        "dup v3.4s, v3.s[0]",
-        "ext v4.16b, v2.16b, v2.16b, #0",
-        "ext v5.16b, v2.16b, v2.16b, #1",
-        "ext v6.16b, v2.16b, v2.16b, #2",
+        "uabdl v9.8h, v5.8b, v4.8b",
+        "uabdl v10.8h, v6.8b, v4.8b",
+        "uabdl v11.8h, v7.8b, v4.8b",
+        "uabdl v12.8h, v8.8b, v4.8b",
+        "addp v13.8h, v9.8h, v11.8h",
+        "addp v14.8h, v10.8h, v12.8h",
+        "trn1 v15.4s, v13.4s, v14.4s",
+        "trn2 v4.4s, v13.4s, v14.4s",
+        "addp v16.8h, v15.8h, v4.8h",
+        "dup v5.4s, v3.s[0]",
+        "ext v6.16b, v2.16b, v2.16b, #0",
+        "ext v7.16b, v2.16b, v2.16b, #1",
+        "ext v8.16b, v2.16b, v2.16b, #2",
         "ext v2.16b, v2.16b, v2.16b, #3",
-        "uabdl v4.8h, v4.8b, v3.8b",
-        "uabdl v5.8h, v5.8b, v3.8b",
-        "uabdl v6.8h, v6.8b, v3.8b",
-        "uabdl v2.8h, v2.8b, v3.8b",
-        "addp v3.8h, v4.8h, v6.8h",
-        "addp v2.8h, v5.8h, v2.8h",
-        "trn1 v4.4s, v3.4s, v2.4s",
-        "trn2 v2.4s, v3.4s, v2.4s",
-        "addp v2.8h, v4.8h, v2.8h",
-        "str q2, [x28, #16]"
+        "uabdl v9.8h, v6.8b, v5.8b",
+        "uabdl v10.8h, v7.8b, v5.8b",
+        "uabdl v11.8h, v8.8b, v5.8b",
+        "uabdl v12.8h, v2.8b, v5.8b",
+        "addp v13.8h, v9.8h, v11.8h",
+        "addp v14.8h, v10.8h, v12.8h",
+        "trn1 v15.4s, v13.4s, v14.4s",
+        "trn2 v2.4s, v13.4s, v14.4s",
+        "addp v3.8h, v15.8h, v2.8h",
+        "str q3, [x28, #16]"
       ]
     },
     "vmpsadbw ymm0, ymm1, ymm2, 100b": {
@@ -2895,30 +2895,30 @@
         "ext v6.16b, v17.16b, v17.16b, #5",
         "ext v7.16b, v17.16b, v17.16b, #6",
         "ext v8.16b, v17.16b, v17.16b, #7",
-        "uabdl v5.8h, v5.8b, v4.8b",
-        "uabdl v6.8h, v6.8b, v4.8b",
-        "uabdl v7.8h, v7.8b, v4.8b",
-        "uabdl v4.8h, v8.8b, v4.8b",
-        "addp v5.8h, v5.8h, v7.8h",
-        "addp v4.8h, v6.8h, v4.8h",
-        "trn1 v6.4s, v5.4s, v4.4s",
-        "trn2 v4.4s, v5.4s, v4.4s",
-        "addp v16.8h, v6.8h, v4.8h",
-        "dup v3.4s, v3.s[0]",
-        "ext v4.16b, v2.16b, v2.16b, #0",
-        "ext v5.16b, v2.16b, v2.16b, #1",
-        "ext v6.16b, v2.16b, v2.16b, #2",
+        "uabdl v9.8h, v5.8b, v4.8b",
+        "uabdl v10.8h, v6.8b, v4.8b",
+        "uabdl v11.8h, v7.8b, v4.8b",
+        "uabdl v12.8h, v8.8b, v4.8b",
+        "addp v13.8h, v9.8h, v11.8h",
+        "addp v14.8h, v10.8h, v12.8h",
+        "trn1 v15.4s, v13.4s, v14.4s",
+        "trn2 v4.4s, v13.4s, v14.4s",
+        "addp v16.8h, v15.8h, v4.8h",
+        "dup v5.4s, v3.s[0]",
+        "ext v6.16b, v2.16b, v2.16b, #0",
+        "ext v7.16b, v2.16b, v2.16b, #1",
+        "ext v8.16b, v2.16b, v2.16b, #2",
         "ext v2.16b, v2.16b, v2.16b, #3",
-        "uabdl v4.8h, v4.8b, v3.8b",
-        "uabdl v5.8h, v5.8b, v3.8b",
-        "uabdl v6.8h, v6.8b, v3.8b",
-        "uabdl v2.8h, v2.8b, v3.8b",
-        "addp v3.8h, v4.8h, v6.8h",
-        "addp v2.8h, v5.8h, v2.8h",
-        "trn1 v4.4s, v3.4s, v2.4s",
-        "trn2 v2.4s, v3.4s, v2.4s",
-        "addp v2.8h, v4.8h, v2.8h",
-        "str q2, [x28, #16]"
+        "uabdl v9.8h, v6.8b, v5.8b",
+        "uabdl v10.8h, v7.8b, v5.8b",
+        "uabdl v11.8h, v8.8b, v5.8b",
+        "uabdl v12.8h, v2.8b, v5.8b",
+        "addp v13.8h, v9.8h, v11.8h",
+        "addp v14.8h, v10.8h, v12.8h",
+        "trn1 v15.4s, v13.4s, v14.4s",
+        "trn2 v2.4s, v13.4s, v14.4s",
+        "addp v3.8h, v15.8h, v2.8h",
+        "str q3, [x28, #16]"
       ]
     },
     "vmpsadbw ymm0, ymm1, ymm2, 101b": {
@@ -2934,30 +2934,30 @@
         "ext v6.16b, v17.16b, v17.16b, #5",
         "ext v7.16b, v17.16b, v17.16b, #6",
         "ext v8.16b, v17.16b, v17.16b, #7",
-        "uabdl v5.8h, v5.8b, v4.8b",
-        "uabdl v6.8h, v6.8b, v4.8b",
-        "uabdl v7.8h, v7.8b, v4.8b",
-        "uabdl v4.8h, v8.8b, v4.8b",
-        "addp v5.8h, v5.8h, v7.8h",
-        "addp v4.8h, v6.8h, v4.8h",
-        "trn1 v6.4s, v5.4s, v4.4s",
-        "trn2 v4.4s, v5.4s, v4.4s",
-        "addp v16.8h, v6.8h, v4.8h",
-        "dup v3.4s, v3.s[0]",
-        "ext v4.16b, v2.16b, v2.16b, #0",
-        "ext v5.16b, v2.16b, v2.16b, #1",
-        "ext v6.16b, v2.16b, v2.16b, #2",
+        "uabdl v9.8h, v5.8b, v4.8b",
+        "uabdl v10.8h, v6.8b, v4.8b",
+        "uabdl v11.8h, v7.8b, v4.8b",
+        "uabdl v12.8h, v8.8b, v4.8b",
+        "addp v13.8h, v9.8h, v11.8h",
+        "addp v14.8h, v10.8h, v12.8h",
+        "trn1 v15.4s, v13.4s, v14.4s",
+        "trn2 v4.4s, v13.4s, v14.4s",
+        "addp v16.8h, v15.8h, v4.8h",
+        "dup v5.4s, v3.s[0]",
+        "ext v6.16b, v2.16b, v2.16b, #0",
+        "ext v7.16b, v2.16b, v2.16b, #1",
+        "ext v8.16b, v2.16b, v2.16b, #2",
         "ext v2.16b, v2.16b, v2.16b, #3",
-        "uabdl v4.8h, v4.8b, v3.8b",
-        "uabdl v5.8h, v5.8b, v3.8b",
-        "uabdl v6.8h, v6.8b, v3.8b",
-        "uabdl v2.8h, v2.8b, v3.8b",
-        "addp v3.8h, v4.8h, v6.8h",
-        "addp v2.8h, v5.8h, v2.8h",
-        "trn1 v4.4s, v3.4s, v2.4s",
-        "trn2 v2.4s, v3.4s, v2.4s",
-        "addp v2.8h, v4.8h, v2.8h",
-        "str q2, [x28, #16]"
+        "uabdl v9.8h, v6.8b, v5.8b",
+        "uabdl v10.8h, v7.8b, v5.8b",
+        "uabdl v11.8h, v8.8b, v5.8b",
+        "uabdl v12.8h, v2.8b, v5.8b",
+        "addp v13.8h, v9.8h, v11.8h",
+        "addp v14.8h, v10.8h, v12.8h",
+        "trn1 v15.4s, v13.4s, v14.4s",
+        "trn2 v2.4s, v13.4s, v14.4s",
+        "addp v3.8h, v15.8h, v2.8h",
+        "str q3, [x28, #16]"
       ]
     },
     "vmpsadbw ymm0, ymm1, ymm2, 110b": {
@@ -2973,30 +2973,30 @@
         "ext v6.16b, v17.16b, v17.16b, #5",
         "ext v7.16b, v17.16b, v17.16b, #6",
         "ext v8.16b, v17.16b, v17.16b, #7",
-        "uabdl v5.8h, v5.8b, v4.8b",
-        "uabdl v6.8h, v6.8b, v4.8b",
-        "uabdl v7.8h, v7.8b, v4.8b",
-        "uabdl v4.8h, v8.8b, v4.8b",
-        "addp v5.8h, v5.8h, v7.8h",
-        "addp v4.8h, v6.8h, v4.8h",
-        "trn1 v6.4s, v5.4s, v4.4s",
-        "trn2 v4.4s, v5.4s, v4.4s",
-        "addp v16.8h, v6.8h, v4.8h",
-        "dup v3.4s, v3.s[0]",
-        "ext v4.16b, v2.16b, v2.16b, #0",
-        "ext v5.16b, v2.16b, v2.16b, #1",
-        "ext v6.16b, v2.16b, v2.16b, #2",
+        "uabdl v9.8h, v5.8b, v4.8b",
+        "uabdl v10.8h, v6.8b, v4.8b",
+        "uabdl v11.8h, v7.8b, v4.8b",
+        "uabdl v12.8h, v8.8b, v4.8b",
+        "addp v13.8h, v9.8h, v11.8h",
+        "addp v14.8h, v10.8h, v12.8h",
+        "trn1 v15.4s, v13.4s, v14.4s",
+        "trn2 v4.4s, v13.4s, v14.4s",
+        "addp v16.8h, v15.8h, v4.8h",
+        "dup v5.4s, v3.s[0]",
+        "ext v6.16b, v2.16b, v2.16b, #0",
+        "ext v7.16b, v2.16b, v2.16b, #1",
+        "ext v8.16b, v2.16b, v2.16b, #2",
         "ext v2.16b, v2.16b, v2.16b, #3",
-        "uabdl v4.8h, v4.8b, v3.8b",
-        "uabdl v5.8h, v5.8b, v3.8b",
-        "uabdl v6.8h, v6.8b, v3.8b",
-        "uabdl v2.8h, v2.8b, v3.8b",
-        "addp v3.8h, v4.8h, v6.8h",
-        "addp v2.8h, v5.8h, v2.8h",
-        "trn1 v4.4s, v3.4s, v2.4s",
-        "trn2 v2.4s, v3.4s, v2.4s",
-        "addp v2.8h, v4.8h, v2.8h",
-        "str q2, [x28, #16]"
+        "uabdl v9.8h, v6.8b, v5.8b",
+        "uabdl v10.8h, v7.8b, v5.8b",
+        "uabdl v11.8h, v8.8b, v5.8b",
+        "uabdl v12.8h, v2.8b, v5.8b",
+        "addp v13.8h, v9.8h, v11.8h",
+        "addp v14.8h, v10.8h, v12.8h",
+        "trn1 v15.4s, v13.4s, v14.4s",
+        "trn2 v2.4s, v13.4s, v14.4s",
+        "addp v3.8h, v15.8h, v2.8h",
+        "str q3, [x28, #16]"
       ]
     },
     "vmpsadbw ymm0, ymm1, ymm2, 111b": {
@@ -3012,30 +3012,30 @@
         "ext v6.16b, v17.16b, v17.16b, #5",
         "ext v7.16b, v17.16b, v17.16b, #6",
         "ext v8.16b, v17.16b, v17.16b, #7",
-        "uabdl v5.8h, v5.8b, v4.8b",
-        "uabdl v6.8h, v6.8b, v4.8b",
-        "uabdl v7.8h, v7.8b, v4.8b",
-        "uabdl v4.8h, v8.8b, v4.8b",
-        "addp v5.8h, v5.8h, v7.8h",
-        "addp v4.8h, v6.8h, v4.8h",
-        "trn1 v6.4s, v5.4s, v4.4s",
-        "trn2 v4.4s, v5.4s, v4.4s",
-        "addp v16.8h, v6.8h, v4.8h",
-        "dup v3.4s, v3.s[0]",
-        "ext v4.16b, v2.16b, v2.16b, #0",
-        "ext v5.16b, v2.16b, v2.16b, #1",
-        "ext v6.16b, v2.16b, v2.16b, #2",
+        "uabdl v9.8h, v5.8b, v4.8b",
+        "uabdl v10.8h, v6.8b, v4.8b",
+        "uabdl v11.8h, v7.8b, v4.8b",
+        "uabdl v12.8h, v8.8b, v4.8b",
+        "addp v13.8h, v9.8h, v11.8h",
+        "addp v14.8h, v10.8h, v12.8h",
+        "trn1 v15.4s, v13.4s, v14.4s",
+        "trn2 v4.4s, v13.4s, v14.4s",
+        "addp v16.8h, v15.8h, v4.8h",
+        "dup v5.4s, v3.s[0]",
+        "ext v6.16b, v2.16b, v2.16b, #0",
+        "ext v7.16b, v2.16b, v2.16b, #1",
+        "ext v8.16b, v2.16b, v2.16b, #2",
         "ext v2.16b, v2.16b, v2.16b, #3",
-        "uabdl v4.8h, v4.8b, v3.8b",
-        "uabdl v5.8h, v5.8b, v3.8b",
-        "uabdl v6.8h, v6.8b, v3.8b",
-        "uabdl v2.8h, v2.8b, v3.8b",
-        "addp v3.8h, v4.8h, v6.8h",
-        "addp v2.8h, v5.8h, v2.8h",
-        "trn1 v4.4s, v3.4s, v2.4s",
-        "trn2 v2.4s, v3.4s, v2.4s",
-        "addp v2.8h, v4.8h, v2.8h",
-        "str q2, [x28, #16]"
+        "uabdl v9.8h, v6.8b, v5.8b",
+        "uabdl v10.8h, v7.8b, v5.8b",
+        "uabdl v11.8h, v8.8b, v5.8b",
+        "uabdl v12.8h, v2.8b, v5.8b",
+        "addp v13.8h, v9.8h, v11.8h",
+        "addp v14.8h, v10.8h, v12.8h",
+        "trn1 v15.4s, v13.4s, v14.4s",
+        "trn2 v2.4s, v13.4s, v14.4s",
+        "addp v3.8h, v15.8h, v2.8h",
+        "str q3, [x28, #16]"
       ]
     },
     "vpclmulqdq xmm0, xmm1, xmm2, 00000b": {
@@ -3089,8 +3089,8 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #48]",
         "pmull v16.1q, v17.1d, v18.1d",
-        "pmull v2.1q, v2.1d, v3.1d",
-        "str q2, [x28, #16]"
+        "pmull v4.1q, v2.1d, v3.1d",
+        "str q4, [x28, #16]"
       ]
     },
     "vpclmulqdq ymm0, ymm1, ymm2, 00001b": {
@@ -3104,8 +3104,8 @@
         "dup v0.2d, v17.d[1]",
         "pmull v16.1q, v0.1d, v18.1d",
         "dup v0.2d, v2.d[1]",
-        "pmull v2.1q, v0.1d, v3.1d",
-        "str q2, [x28, #16]"
+        "pmull v4.1q, v0.1d, v3.1d",
+        "str q4, [x28, #16]"
       ]
     },
     "vpclmulqdq ymm0, ymm1, ymm2, 10000b": {
@@ -3119,8 +3119,8 @@
         "dup v0.2d, v18.d[1]",
         "pmull v16.1q, v0.1d, v17.1d",
         "dup v0.2d, v3.d[1]",
-        "pmull v2.1q, v0.1d, v2.1d",
-        "str q2, [x28, #16]"
+        "pmull v4.1q, v0.1d, v2.1d",
+        "str q4, [x28, #16]"
       ]
     },
     "vpclmulqdq ymm0, ymm1, ymm2, 10001b": {
@@ -3132,8 +3132,8 @@
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #48]",
         "pmull2 v16.1q, v17.2d, v18.2d",
-        "pmull2 v2.1q, v2.2d, v3.2d",
-        "str q2, [x28, #16]"
+        "pmull2 v4.1q, v2.2d, v3.2d",
+        "str q4, [x28, #16]"
       ]
     },
     "vperm2i128 ymm0, ymm1, ymm2, 00000000b": {

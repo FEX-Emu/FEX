@@ -149,7 +149,7 @@
     },
     "8-bit DEC consumed": {
       "x86InstructionCount": 2,
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 10,
       "x86Insts": [
         "sub al, ah",
         "dec al"
@@ -158,19 +158,18 @@
         "lsr w20, w4, #8",
         "lsl w0, w4, #24",
         "cmp w0, w20, lsl #24",
-        "sub w20, w4, w20",
-        "bfxil x4, x20, #0, #8",
-        "uxtb w27, w4",
+        "sub w21, w4, w20",
+        "uxtb w27, w21",
         "sub w26, w27, #0x1 (1)",
         "setf8 w26",
-        "bic w20, w27, w26",
-        "rmif x20, #7, #nzcV",
+        "bic w22, w27, w26",
+        "rmif x22, #7, #nzcV",
         "bfxil x4, x26, #0, #8"
       ]
     },
     "8-bit DEC dead": {
       "x86InstructionCount": 3,
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "x86Insts": [
         "sub al, ah",
         "dec al",
@@ -178,14 +177,13 @@
       ],
       "ExpectedArm64ASM": [
         "lsr w20, w4, #8",
-        "sub w20, w4, w20",
-        "bfxil x4, x20, #0, #8",
-        "uxtb w20, w4",
-        "sub w20, w20, #0x1 (1)",
-        "bfxil x4, x20, #0, #8",
+        "sub w21, w4, w20",
+        "uxtb w22, w21",
+        "sub w23, w22, #0x1 (1)",
+        "bfxil x4, x23, #0, #8",
         "cmn wzr, w4, lsl #24",
         "cfinv",
-        "mov x26, x4"
+        "mov x26, x23"
       ]
     },
     "Variable shift dead": {
@@ -215,9 +213,9 @@
         "cset w21, lo",
         "neg x22, x7",
         "lsl x23, x4, x22",
-        "orr x20, x20, x23, lsl #1",
-        "lsl x21, x21, x22",
-        "orr x4, x20, x21",
+        "orr x24, x20, x23, lsl #1",
+        "lsl x25, x21, x22",
+        "orr x4, x24, x25",
         "ands x26, x4, x5",
         "cfinv"
       ]
@@ -236,7 +234,7 @@
         "bfxil x7, x20, #0, #8",
         "cmn wzr, w7, lsl #24",
         "cfinv",
-        "mov x26, x7"
+        "mov x26, x20"
       ]
     },
     "Partial NZCV select (add)": {
@@ -253,7 +251,7 @@
         "bfxil x7, x20, #0, #8",
         "cmn wzr, w7, lsl #24",
         "cfinv",
-        "mov x26, x7"
+        "mov x26, x20"
       ]
     },
     "AND use only ZF": {
@@ -270,7 +268,7 @@
         "bfxil x7, x20, #0, #8",
         "cmn wzr, w7, lsl #24",
         "cfinv",
-        "mov x26, x7"
+        "mov x26, x20"
       ]
     },
     "AND use only PF": {
@@ -291,7 +289,7 @@
         "bfxil x7, x20, #0, #8",
         "cmn wzr, w7, lsl #24",
         "cfinv",
-        "mov x26, x7"
+        "mov x26, x20"
       ]
     },
     "UCOMISS use only PF": {
@@ -356,8 +354,8 @@
         "mov w20, #0x89",
         "and w0, w4, w20",
         "tst w0, #0xff",
-        "cset x20, ne",
-        "bfxil x4, x20, #0, #8",
+        "cset x21, ne",
+        "bfxil x4, x21, #0, #8",
         "cmn wzr, w7, lsl #24",
         "cfinv",
         "mov x26, x7"

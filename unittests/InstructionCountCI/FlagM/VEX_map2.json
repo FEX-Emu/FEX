@@ -22,18 +22,18 @@
         "dup v2.4s, w20",
         "and v3.16b, v17.16b, v16.16b",
         "bic v4.16b, v17.16b, v16.16b",
-        "and v3.16b, v3.16b, v2.16b",
-        "and v2.16b, v4.16b, v2.16b",
-        "umaxv h3, v3.8h",
-        "umaxv h2, v2.8h",
-        "umov w20, v3.h[0]",
-        "umov w21, v2.h[0]",
+        "and v5.16b, v3.16b, v2.16b",
+        "and v6.16b, v4.16b, v2.16b",
+        "umaxv h7, v5.8h",
+        "umaxv h8, v6.8h",
+        "umov w21, v7.h[0]",
+        "umov w22, v8.h[0]",
         "mov w27, #0x0",
         "mov w26, #0x1",
-        "cmp x21, #0x0 (0)",
-        "cset x21, ne",
-        "cmp w20, #0x0 (0)",
-        "rmif x21, #63, #nzCv"
+        "cmp x22, #0x0 (0)",
+        "cset x23, ne",
+        "cmp w21, #0x0 (0)",
+        "rmif x23, #63, #nzCv"
       ]
     },
     "vtestps ymm0, ymm1": {
@@ -46,18 +46,18 @@
         "mov z2.s, w20",
         "and z3.d, z17.d, z16.d",
         "bic z4.d, z17.d, z16.d",
-        "and z3.d, z3.d, z2.d",
-        "and z2.d, z4.d, z2.d",
-        "umaxv h3, p7, z3.h",
-        "umaxv h2, p7, z2.h",
-        "umov w20, v3.h[0]",
-        "umov w21, v2.h[0]",
+        "and z5.d, z3.d, z2.d",
+        "and z6.d, z4.d, z2.d",
+        "umaxv h7, p7, z5.h",
+        "umaxv h8, p7, z6.h",
+        "umov w21, v7.h[0]",
+        "umov w22, v8.h[0]",
         "mov w27, #0x0",
         "mov w26, #0x1",
-        "cmp x21, #0x0 (0)",
-        "cset x21, ne",
-        "cmp w20, #0x0 (0)",
-        "rmif x21, #63, #nzCv"
+        "cmp x22, #0x0 (0)",
+        "cset x23, ne",
+        "cmp w21, #0x0 (0)",
+        "rmif x23, #63, #nzCv"
       ]
     },
     "vtestpd xmm0, xmm1": {
@@ -70,18 +70,18 @@
         "dup v2.2d, x20",
         "and v3.16b, v17.16b, v16.16b",
         "bic v4.16b, v17.16b, v16.16b",
-        "and v3.16b, v3.16b, v2.16b",
-        "and v2.16b, v4.16b, v2.16b",
-        "umaxv h3, v3.8h",
-        "umaxv h2, v2.8h",
-        "umov w20, v3.h[0]",
-        "umov w21, v2.h[0]",
+        "and v5.16b, v3.16b, v2.16b",
+        "and v6.16b, v4.16b, v2.16b",
+        "umaxv h7, v5.8h",
+        "umaxv h8, v6.8h",
+        "umov w21, v7.h[0]",
+        "umov w22, v8.h[0]",
         "mov w27, #0x0",
         "mov w26, #0x1",
-        "cmp x21, #0x0 (0)",
-        "cset x21, ne",
-        "cmp w20, #0x0 (0)",
-        "rmif x21, #63, #nzCv"
+        "cmp x22, #0x0 (0)",
+        "cset x23, ne",
+        "cmp w21, #0x0 (0)",
+        "rmif x23, #63, #nzCv"
       ]
     },
     "vtestpd ymm0, ymm1": {
@@ -94,18 +94,18 @@
         "mov z2.d, x20",
         "and z3.d, z17.d, z16.d",
         "bic z4.d, z17.d, z16.d",
-        "and z3.d, z3.d, z2.d",
-        "and z2.d, z4.d, z2.d",
-        "umaxv h3, p7, z3.h",
-        "umaxv h2, p7, z2.h",
-        "umov w20, v3.h[0]",
-        "umov w21, v2.h[0]",
+        "and z5.d, z3.d, z2.d",
+        "and z6.d, z4.d, z2.d",
+        "umaxv h7, p7, z5.h",
+        "umaxv h8, p7, z6.h",
+        "umov w21, v7.h[0]",
+        "umov w22, v8.h[0]",
         "mov w27, #0x0",
         "mov w26, #0x1",
-        "cmp x21, #0x0 (0)",
-        "cset x21, ne",
-        "cmp w20, #0x0 (0)",
-        "rmif x21, #63, #nzCv"
+        "cmp x22, #0x0 (0)",
+        "cset x23, ne",
+        "cmp w21, #0x0 (0)",
+        "rmif x23, #63, #nzCv"
       ]
     },
     "vptest xmm0, xmm1": {
@@ -116,16 +116,16 @@
       "ExpectedArm64ASM": [
         "and v2.16b, v16.16b, v17.16b",
         "bic v3.16b, v17.16b, v16.16b",
-        "umaxv h2, v2.8h",
-        "umaxv h3, v3.8h",
-        "umov w20, v2.h[0]",
-        "umov w21, v3.h[0]",
+        "umaxv h4, v2.8h",
+        "umaxv h5, v3.8h",
+        "umov w20, v4.h[0]",
+        "umov w21, v5.h[0]",
         "mov w27, #0x0",
         "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
-        "cset x21, ne",
+        "cset x22, ne",
         "cmp w20, #0x0 (0)",
-        "rmif x21, #63, #nzCv"
+        "rmif x22, #63, #nzCv"
       ]
     },
     "vptest ymm0, ymm1": {
@@ -136,16 +136,16 @@
       "ExpectedArm64ASM": [
         "and z2.d, z16.d, z17.d",
         "bic z3.d, z17.d, z16.d",
-        "umaxv h2, p7, z2.h",
-        "umaxv h3, p7, z3.h",
-        "umov w20, v2.h[0]",
-        "umov w21, v3.h[0]",
+        "umaxv h4, p7, z2.h",
+        "umaxv h5, p7, z3.h",
+        "umov w20, v4.h[0]",
+        "umov w21, v5.h[0]",
         "mov w27, #0x0",
         "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
-        "cset x21, ne",
+        "cset x22, ne",
         "cmp w20, #0x0 (0)",
-        "rmif x21, #63, #nzCv"
+        "rmif x22, #63, #nzCv"
       ]
     },
     "vmaskmovps xmm0, xmm1, [rax]": {
@@ -373,13 +373,13 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
-        "lsl w20, w20, w7",
-        "bic w20, w6, w20",
+        "lsl w21, w20, w7",
+        "bic w22, w6, w21",
         "tst x7, #0xe0",
-        "csel w4, w6, w20, ne",
-        "cset w20, eq",
+        "csel w4, w6, w22, ne",
+        "cset w23, eq",
         "cmp w4, #0x0 (0)",
-        "rmif x20, #63, #nzCv"
+        "rmif x23, #63, #nzCv"
       ]
     },
     "bzhi rax, rbx, rcx": {
@@ -389,13 +389,13 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "lsl x20, x20, x7",
-        "bic x20, x6, x20",
+        "lsl x21, x20, x7",
+        "bic x22, x6, x21",
         "tst x7, #0xc0",
-        "csel x4, x6, x20, ne",
-        "cset w20, eq",
+        "csel x4, x6, x22, ne",
+        "cset w23, eq",
         "cmp x4, #0x0 (0)",
-        "rmif x20, #63, #nzCv"
+        "rmif x23, #63, #nzCv"
       ]
     },
     "pdep eax, ebx, ecx": {
@@ -452,13 +452,13 @@
         "lsr w21, w6, w20",
         "mov w22, #0x0",
         "cmp w20, #0x1f (31)",
-        "csel w20, w21, w22, ls",
-        "ubfx w21, w7, #8, #8",
-        "mov x22, #0xffffffffffffffff",
-        "lsl w22, w22, w21",
-        "bic w22, w20, w22",
-        "cmp w21, #0x1f (31)",
-        "csel w4, w22, w20, ls",
+        "csel w23, w21, w22, ls",
+        "ubfx w24, w7, #8, #8",
+        "mov x25, #0xffffffffffffffff",
+        "lsl w30, w25, w24",
+        "bic w18, w23, w30",
+        "cmp w24, #0x1f (31)",
+        "csel w4, w18, w23, ls",
         "cmp w4, #0x0 (0)"
       ]
     },
@@ -472,13 +472,13 @@
         "lsr x21, x6, x20",
         "mov w22, #0x0",
         "cmp x20, #0x3f (63)",
-        "csel x20, x21, x22, ls",
-        "ubfx x21, x7, #8, #8",
-        "mov x22, #0xffffffffffffffff",
-        "lsl x22, x22, x21",
-        "bic x22, x20, x22",
-        "cmp x21, #0x3f (63)",
-        "csel x4, x22, x20, ls",
+        "csel x23, x21, x22, ls",
+        "ubfx x24, x7, #8, #8",
+        "mov x25, #0xffffffffffffffff",
+        "lsl x30, x25, x24",
+        "bic x18, x23, x30",
+        "cmp x24, #0x3f (63)",
+        "csel x4, x18, x23, ls",
         "cmp x4, #0x0 (0)"
       ]
     }

@@ -21,10 +21,10 @@
         "fmov s0, w20",
         "cnt v0.8b, v0.8b",
         "addp v0.8b, v0.8b, v0.8b",
-        "umov w20, v0.b[0]",
-        "bfxil x4, x20, #0, #16",
+        "umov w21, v0.b[0]",
+        "bfxil x4, x21, #0, #16",
         "mov w27, #0x0",
-        "cmp w20, #0x0 (0)",
+        "cmp w21, #0x0 (0)",
         "mov w26, #0x1"
       ]
     },
@@ -63,8 +63,8 @@
         "clz w20, w20",
         "bfxil x4, x20, #0, #16",
         "cmn wzr, w20, lsl #16",
-        "eor x20, x20, #0x10",
-        "rmif x20, #3, #nzCv"
+        "eor x21, x20, #0x10",
+        "rmif x21, #3, #nzCv"
       ]
     },
     "tzcnt eax, ebx": {
@@ -98,8 +98,8 @@
         "clz w20, w20",
         "bfxil x4, x20, #0, #16",
         "cmn wzr, w20, lsl #16",
-        "eor x20, x20, #0x10",
-        "rmif x20, #3, #nzCv"
+        "eor x21, x20, #0x10",
+        "rmif x21, #3, #nzCv"
       ]
     },
     "lzcnt eax, ebx": {

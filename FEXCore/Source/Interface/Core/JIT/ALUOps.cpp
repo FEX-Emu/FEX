@@ -1519,7 +1519,7 @@ DEF_OP(NZCVSelect) {
 
   ARMEmitter::Register Dst = GetReg(Node);
 
-  if (is_const_true) {
+  if (is_const_true && const_true != 0) {
     if (is_const_false != true || !(const_true == 1 || const_true == all_ones) || const_false != 0) {
       LOGMAN_MSG_A_FMT("NZCVSelect: Unsupported constant");
     }
@@ -1530,7 +1530,7 @@ DEF_OP(NZCVSelect) {
       cset(EmitSize, Dst, cc);
     }
   } else {
-    csel(EmitSize, Dst, GetReg(Op->TrueVal.ID()), GetZeroableReg(Op->FalseVal), cc);
+    csel(EmitSize, Dst, GetZeroableReg(Op->TrueVal), GetZeroableReg(Op->FalseVal), cc);
   }
 }
 

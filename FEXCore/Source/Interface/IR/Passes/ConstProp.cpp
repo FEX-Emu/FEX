@@ -201,8 +201,7 @@ static inline void ReplaceWithSource(IREmitter* IREmit, const IRListView& Curren
   Ref Arg = CurrentIR.GetNode(IROp->Args[Idx]);
 
   if (IROp->Size < OpSize::i64Bit) {
-    LOGMAN_THROW_A_FMT(IROp->Size == OpSize::i32Bit, "other sizes not here");
-
+    // All small sizes treated as 32-bits.
     auto Header = IREmit->GetOpHeader(IROp->Args[Idx]);
     if (Header->Size > OpSize::i32Bit) {
       Arg = IREmit->_Bfe(OpSize::i32Bit, 32, 0, Arg);

@@ -80,19 +80,19 @@
       "Comment": "0x10",
       "ExpectedArm64ASM": [
         "cinc w20, w7, lo",
-        "ldaddalb w20, w20, [x4]",
-        "eor x27, x20, x7",
-        "uxtb w21, w7",
-        "cinc w22, w21, lo",
-        "add w23, w20, w22",
-        "uxtb w26, w23",
-        "cmp w26, w22",
-        "cset x22, hs",
+        "ldaddalb w20, w21, [x4]",
+        "eor x27, x21, x7",
+        "uxtb w22, w7",
+        "cinc w23, w22, lo",
+        "add w24, w21, w23",
+        "uxtb w26, w24",
+        "cmp w26, w23",
+        "cset x25, hs",
         "cmn wzr, w26, lsl #24",
-        "rmif x22, #63, #nzCv",
-        "eor w21, w20, w21",
-        "eor w20, w26, w20",
-        "bic w20, w20, w21",
+        "rmif x25, #63, #nzCv",
+        "eor w30, w21, w22",
+        "eor w18, w26, w21",
+        "bic w20, w18, w30",
         "rmif x20, #7, #nzcV"
       ]
     },
@@ -101,19 +101,19 @@
       "Comment": "0x11",
       "ExpectedArm64ASM": [
         "cinc w20, w7, lo",
-        "ldaddalh w20, w20, [x4]",
-        "eor x27, x20, x7",
-        "uxth w21, w7",
-        "cinc w22, w21, lo",
-        "add w23, w20, w22",
-        "uxth w26, w23",
-        "cmp w26, w22",
-        "cset x22, hs",
+        "ldaddalh w20, w21, [x4]",
+        "eor x27, x21, x7",
+        "uxth w22, w7",
+        "cinc w23, w22, lo",
+        "add w24, w21, w23",
+        "uxth w26, w24",
+        "cmp w26, w23",
+        "cset x25, hs",
         "cmn wzr, w26, lsl #16",
-        "rmif x22, #63, #nzCv",
-        "eor w21, w20, w21",
-        "eor w20, w26, w20",
-        "bic w20, w20, w21",
+        "rmif x25, #63, #nzCv",
+        "eor w30, w21, w22",
+        "eor w18, w26, w21",
+        "bic w20, w18, w30",
         "rmif x20, #15, #nzcV"
       ]
     },
@@ -122,10 +122,10 @@
       "Comment": "0x11",
       "ExpectedArm64ASM": [
         "cinc w20, w7, lo",
-        "ldaddal w20, w20, [x4]",
-        "eor x27, x20, x7",
+        "ldaddal w20, w21, [x4]",
+        "eor x27, x21, x7",
         "cfinv",
-        "adcs w26, w20, w7",
+        "adcs w26, w21, w7",
         "cfinv"
       ]
     },
@@ -135,21 +135,21 @@
       "ExpectedArm64ASM": [
         "cinc w20, w7, lo",
         "neg w1, w20",
-        "ldaddalb w1, w20, [x4]",
-        "eor x27, x20, x7",
-        "uxtb w20, w20",
-        "uxtb w21, w7",
-        "cinc w22, w21, lo",
-        "sub w23, w20, w22",
-        "uxtb w26, w23",
-        "cmp w20, w22",
-        "cset x22, hs",
+        "ldaddalb w1, w21, [x4]",
+        "eor x27, x21, x7",
+        "uxtb w22, w21",
+        "uxtb w23, w7",
+        "cinc w24, w23, lo",
+        "sub w25, w22, w24",
+        "uxtb w26, w25",
+        "cmp w22, w24",
+        "cset x30, hs",
         "cmn wzr, w26, lsl #24",
-        "rmif x22, #63, #nzCv",
-        "eor w21, w20, w21",
-        "eor w20, w26, w20",
-        "and w20, w20, w21",
-        "rmif x20, #7, #nzcV"
+        "rmif x30, #63, #nzCv",
+        "eor w18, w22, w23",
+        "eor w20, w26, w22",
+        "and w21, w20, w18",
+        "rmif x21, #7, #nzcV"
       ]
     },
     "lock sbb word [rax], cx": {
@@ -158,21 +158,21 @@
       "ExpectedArm64ASM": [
         "cinc w20, w7, lo",
         "neg w1, w20",
-        "ldaddalh w1, w20, [x4]",
-        "eor x27, x20, x7",
-        "uxth w20, w20",
-        "uxth w21, w7",
-        "cinc w22, w21, lo",
-        "sub w23, w20, w22",
-        "uxth w26, w23",
-        "cmp w20, w22",
-        "cset x22, hs",
+        "ldaddalh w1, w21, [x4]",
+        "eor x27, x21, x7",
+        "uxth w22, w21",
+        "uxth w23, w7",
+        "cinc w24, w23, lo",
+        "sub w25, w22, w24",
+        "uxth w26, w25",
+        "cmp w22, w24",
+        "cset x30, hs",
         "cmn wzr, w26, lsl #16",
-        "rmif x22, #63, #nzCv",
-        "eor w21, w20, w21",
-        "eor w20, w26, w20",
-        "and w20, w20, w21",
-        "rmif x20, #15, #nzcV"
+        "rmif x30, #63, #nzCv",
+        "eor w18, w22, w23",
+        "eor w20, w26, w22",
+        "and w21, w20, w18",
+        "rmif x21, #15, #nzcV"
       ]
     },
     "lock sbb dword [rax], ecx": {
@@ -181,9 +181,9 @@
       "ExpectedArm64ASM": [
         "cinc w20, w7, lo",
         "neg w1, w20",
-        "ldaddal w1, w20, [x4]",
-        "eor x27, x20, x7",
-        "sbcs w26, w20, w7"
+        "ldaddal w1, w21, [x4]",
+        "eor x27, x21, x7",
+        "sbcs w26, w21, w7"
       ]
     },
     "lock and byte [rax], cl": {
@@ -406,9 +406,9 @@
       "Comment": "GROUP1 0x81 /0",
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
-        "ldaddal w20, w20, [x4]",
-        "mvn w27, w20",
-        "subs w26, w20, #0x1 (1)",
+        "ldaddal w20, w21, [x4]",
+        "mvn w27, w21",
+        "subs w26, w21, #0x1 (1)",
         "cfinv"
       ]
     },
@@ -469,8 +469,8 @@
       "Comment": "GROUP1 0x80 /1",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "ldsetalb w20, w20, [x4]",
-        "orr w26, w20, #0x1",
+        "ldsetalb w20, w21, [x4]",
+        "orr w26, w21, #0x1",
         "cmn wzr, w26, lsl #24",
         "cfinv"
       ]
@@ -480,8 +480,8 @@
       "Comment": "GROUP1 0x80 /1",
       "ExpectedArm64ASM": [
         "mov w20, #0xff",
-        "ldsetalb w20, w20, [x4]",
-        "orr w26, w20, #0xff",
+        "ldsetalb w20, w21, [x4]",
+        "orr w26, w21, #0xff",
         "cmn wzr, w26, lsl #24",
         "cfinv"
       ]
@@ -491,8 +491,8 @@
       "Comment": "GROUP1 0x81 /1",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
-        "ldsetalh w20, w20, [x4]",
-        "orr w26, w20, #0x100",
+        "ldsetalh w20, w21, [x4]",
+        "orr w26, w21, #0x100",
         "cmn wzr, w26, lsl #16",
         "cfinv"
       ]
@@ -502,8 +502,8 @@
       "Comment": "GROUP1 0x81 /1",
       "ExpectedArm64ASM": [
         "mov w20, #0xffff",
-        "ldsetalh w20, w20, [x4]",
-        "orr w26, w20, #0xffff",
+        "ldsetalh w20, w21, [x4]",
+        "orr w26, w21, #0xffff",
         "cmn wzr, w26, lsl #16",
         "cfinv"
       ]
@@ -513,8 +513,8 @@
       "Comment": "GROUP1 0x81 /1",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
-        "ldsetal w20, w20, [x4]",
-        "orr w26, w20, #0x100",
+        "ldsetal w20, w21, [x4]",
+        "orr w26, w21, #0x100",
         "cmp w26, #0x0 (0)"
       ]
     },
@@ -533,8 +533,8 @@
       "Comment": "GROUP1 0x81 /1",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
-        "ldsetal x20, x20, [x4]",
-        "orr x26, x20, #0x100",
+        "ldsetal x20, x21, [x4]",
+        "orr x26, x21, #0x100",
         "cmp x26, #0x0 (0)"
       ]
     },
@@ -543,8 +543,8 @@
       "Comment": "GROUP1 0x81 /1",
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffff80000001",
-        "ldsetal x20, x20, [x4]",
-        "orr x26, x20, #0xffffffff80000001",
+        "ldsetal x20, x21, [x4]",
+        "orr x26, x21, #0xffffffff80000001",
         "cmp x26, #0x0 (0)"
       ]
     },
@@ -553,8 +553,8 @@
       "Comment": "GROUP1 0x83 /1",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "ldsetalh w20, w20, [x4]",
-        "orr w26, w20, #0x1",
+        "ldsetalh w20, w21, [x4]",
+        "orr w26, w21, #0x1",
         "cmn wzr, w26, lsl #16",
         "cfinv"
       ]
@@ -564,8 +564,8 @@
       "Comment": "GROUP1 0x83 /1",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "ldsetal w20, w20, [x4]",
-        "orr w26, w20, #0x1",
+        "ldsetal w20, w21, [x4]",
+        "orr w26, w21, #0x1",
         "cmp w26, #0x0 (0)"
       ]
     },
@@ -574,8 +574,8 @@
       "Comment": "GROUP1 0x83 /1",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "ldsetal x20, x20, [x4]",
-        "orr x26, x20, #0x1",
+        "ldsetal x20, x21, [x4]",
+        "orr x26, x21, #0x1",
         "cmp x26, #0x0 (0)"
       ]
     },
@@ -586,17 +586,17 @@
         "mov w20, #0x1",
         "cinc w21, w20, lo",
         "ldaddalb w21, w27, [x4]",
-        "cinc w20, w20, lo",
-        "add w21, w27, w20",
-        "uxtb w26, w21",
-        "cmp w26, w20",
-        "cset x20, hs",
+        "cinc w22, w20, lo",
+        "add w23, w27, w22",
+        "uxtb w26, w23",
+        "cmp w26, w22",
+        "cset x24, hs",
         "cmn wzr, w26, lsl #24",
-        "rmif x20, #63, #nzCv",
-        "eor w20, w27, #0x1",
-        "eor w21, w26, w27",
-        "bic w20, w21, w20",
-        "rmif x20, #7, #nzcV"
+        "rmif x24, #63, #nzCv",
+        "eor w25, w27, #0x1",
+        "eor w30, w26, w27",
+        "bic w18, w30, w25",
+        "rmif x18, #7, #nzcV"
       ]
     },
     "lock adc byte [rax], 0xFF": {
@@ -605,18 +605,18 @@
       "ExpectedArm64ASM": [
         "mov w20, #0xff",
         "cinc w21, w20, lo",
-        "ldaddalb w21, w21, [x4]",
-        "mvn w27, w21",
-        "cinc w20, w20, lo",
-        "add w22, w21, w20",
-        "uxtb w26, w22",
-        "cmp w26, w20",
-        "cset x20, hs",
+        "ldaddalb w21, w22, [x4]",
+        "mvn w27, w22",
+        "cinc w23, w20, lo",
+        "add w24, w22, w23",
+        "uxtb w26, w24",
+        "cmp w26, w23",
+        "cset x25, hs",
         "cmn wzr, w26, lsl #24",
-        "rmif x20, #63, #nzCv",
-        "eor w20, w21, #0xff",
-        "eor w21, w26, w21",
-        "bic w20, w21, w20",
+        "rmif x25, #63, #nzCv",
+        "eor w30, w22, #0xff",
+        "eor w18, w26, w22",
+        "bic w20, w18, w30",
         "rmif x20, #7, #nzcV"
       ]
     },
@@ -627,17 +627,17 @@
         "mov w20, #0x100",
         "cinc w21, w20, lo",
         "ldaddalh w21, w27, [x4]",
-        "cinc w20, w20, lo",
-        "add w21, w27, w20",
-        "uxth w26, w21",
-        "cmp w26, w20",
-        "cset x20, hs",
+        "cinc w22, w20, lo",
+        "add w23, w27, w22",
+        "uxth w26, w23",
+        "cmp w26, w22",
+        "cset x24, hs",
         "cmn wzr, w26, lsl #16",
-        "rmif x20, #63, #nzCv",
-        "eor w20, w27, #0x100",
-        "eor w21, w26, w27",
-        "bic w20, w21, w20",
-        "rmif x20, #15, #nzcV"
+        "rmif x24, #63, #nzCv",
+        "eor w25, w27, #0x100",
+        "eor w30, w26, w27",
+        "bic w18, w30, w25",
+        "rmif x18, #15, #nzcV"
       ]
     },
     "lock adc word [rax], 0xFFFF": {
@@ -646,18 +646,18 @@
       "ExpectedArm64ASM": [
         "mov w20, #0xffff",
         "cinc w21, w20, lo",
-        "ldaddalh w21, w21, [x4]",
-        "mvn w27, w21",
-        "cinc w20, w20, lo",
-        "add w22, w21, w20",
-        "uxth w26, w22",
-        "cmp w26, w20",
-        "cset x20, hs",
+        "ldaddalh w21, w22, [x4]",
+        "mvn w27, w22",
+        "cinc w23, w20, lo",
+        "add w24, w22, w23",
+        "uxth w26, w24",
+        "cmp w26, w23",
+        "cset x25, hs",
         "cmn wzr, w26, lsl #16",
-        "rmif x20, #63, #nzCv",
-        "eor w20, w21, #0xffff",
-        "eor w21, w26, w21",
-        "bic w20, w21, w20",
+        "rmif x25, #63, #nzCv",
+        "eor w30, w22, #0xffff",
+        "eor w18, w26, w22",
+        "bic w20, w18, w30",
         "rmif x20, #15, #nzcV"
       ]
     },
@@ -679,10 +679,10 @@
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
         "cinc w21, w20, lo",
-        "ldaddal w21, w21, [x4]",
-        "mvn w27, w21",
+        "ldaddal w21, w22, [x4]",
+        "mvn w27, w22",
         "cfinv",
-        "adcs w26, w21, w20",
+        "adcs w26, w22, w20",
         "cfinv"
       ]
     },
@@ -717,17 +717,17 @@
         "mov w20, #0x1",
         "cinc w21, w20, lo",
         "ldaddalh w21, w27, [x4]",
-        "cinc w20, w20, lo",
-        "add w21, w27, w20",
-        "uxth w26, w21",
-        "cmp w26, w20",
-        "cset x20, hs",
+        "cinc w22, w20, lo",
+        "add w23, w27, w22",
+        "uxth w26, w23",
+        "cmp w26, w22",
+        "cset x24, hs",
         "cmn wzr, w26, lsl #16",
-        "rmif x20, #63, #nzCv",
-        "eor w20, w27, #0x1",
-        "eor w21, w26, w27",
-        "bic w20, w21, w20",
-        "rmif x20, #15, #nzcV"
+        "rmif x24, #63, #nzCv",
+        "eor w25, w27, #0x1",
+        "eor w30, w26, w27",
+        "bic w18, w30, w25",
+        "rmif x18, #15, #nzcV"
       ]
     },
     "lock adc dword [rax], 1": {
@@ -762,17 +762,17 @@
         "cinc w21, w20, lo",
         "neg w1, w21",
         "ldaddalb w1, w27, [x4]",
-        "uxtb w21, w27",
-        "cinc w20, w20, lo",
-        "sub w22, w21, w20",
-        "uxtb w26, w22",
-        "cmp w21, w20",
-        "cset x20, hs",
+        "uxtb w22, w27",
+        "cinc w23, w20, lo",
+        "sub w24, w22, w23",
+        "uxtb w26, w24",
+        "cmp w22, w23",
+        "cset x25, hs",
         "cmn wzr, w26, lsl #24",
-        "rmif x20, #63, #nzCv",
-        "eor w20, w21, #0x1",
-        "eor w21, w26, w21",
-        "and w20, w21, w20",
+        "rmif x25, #63, #nzCv",
+        "eor w30, w22, #0x1",
+        "eor w18, w26, w22",
+        "and w20, w18, w30",
         "rmif x20, #7, #nzcV"
       ]
     },
@@ -783,20 +783,20 @@
         "mov w20, #0xff",
         "cinc w21, w20, lo",
         "neg w1, w21",
-        "ldaddalb w1, w21, [x4]",
-        "mvn w27, w21",
-        "uxtb w21, w21",
-        "cinc w20, w20, lo",
-        "sub w22, w21, w20",
-        "uxtb w26, w22",
-        "cmp w21, w20",
-        "cset x20, hs",
+        "ldaddalb w1, w22, [x4]",
+        "mvn w27, w22",
+        "uxtb w23, w22",
+        "cinc w24, w20, lo",
+        "sub w25, w23, w24",
+        "uxtb w26, w25",
+        "cmp w23, w24",
+        "cset x30, hs",
         "cmn wzr, w26, lsl #24",
-        "rmif x20, #63, #nzCv",
-        "eor w20, w21, #0xff",
-        "eor w21, w26, w21",
-        "and w20, w21, w20",
-        "rmif x20, #7, #nzcV"
+        "rmif x30, #63, #nzCv",
+        "eor w18, w23, #0xff",
+        "eor w20, w26, w23",
+        "and w21, w20, w18",
+        "rmif x21, #7, #nzcV"
       ]
     },
     "lock sbb word [rax], 0x100": {
@@ -807,17 +807,17 @@
         "cinc w21, w20, lo",
         "neg w1, w21",
         "ldaddalh w1, w27, [x4]",
-        "uxth w21, w27",
-        "cinc w20, w20, lo",
-        "sub w22, w21, w20",
-        "uxth w26, w22",
-        "cmp w21, w20",
-        "cset x20, hs",
+        "uxth w22, w27",
+        "cinc w23, w20, lo",
+        "sub w24, w22, w23",
+        "uxth w26, w24",
+        "cmp w22, w23",
+        "cset x25, hs",
         "cmn wzr, w26, lsl #16",
-        "rmif x20, #63, #nzCv",
-        "eor w20, w21, #0x100",
-        "eor w21, w26, w21",
-        "and w20, w21, w20",
+        "rmif x25, #63, #nzCv",
+        "eor w30, w22, #0x100",
+        "eor w18, w26, w22",
+        "and w20, w18, w30",
         "rmif x20, #15, #nzcV"
       ]
     },
@@ -828,20 +828,20 @@
         "mov w20, #0xffff",
         "cinc w21, w20, lo",
         "neg w1, w21",
-        "ldaddalh w1, w21, [x4]",
-        "mvn w27, w21",
-        "uxth w21, w21",
-        "cinc w20, w20, lo",
-        "sub w22, w21, w20",
-        "uxth w26, w22",
-        "cmp w21, w20",
-        "cset x20, hs",
+        "ldaddalh w1, w22, [x4]",
+        "mvn w27, w22",
+        "uxth w23, w22",
+        "cinc w24, w20, lo",
+        "sub w25, w23, w24",
+        "uxth w26, w25",
+        "cmp w23, w24",
+        "cset x30, hs",
         "cmn wzr, w26, lsl #16",
-        "rmif x20, #63, #nzCv",
-        "eor w20, w21, #0xffff",
-        "eor w21, w26, w21",
-        "and w20, w21, w20",
-        "rmif x20, #15, #nzcV"
+        "rmif x30, #63, #nzCv",
+        "eor w18, w23, #0xffff",
+        "eor w20, w26, w23",
+        "and w21, w20, w18",
+        "rmif x21, #15, #nzcV"
       ]
     },
     "lock sbb dword [rax], 0x100": {
@@ -862,9 +862,9 @@
         "mov w20, #0xffffffff",
         "cinc w21, w20, lo",
         "neg w1, w21",
-        "ldaddal w1, w21, [x4]",
-        "mvn w27, w21",
-        "sbcs w26, w21, w20"
+        "ldaddal w1, w22, [x4]",
+        "mvn w27, w22",
+        "sbcs w26, w22, w20"
       ]
     },
     "lock sbb qword [rax], 0x100": {
@@ -897,17 +897,17 @@
         "cinc w21, w20, lo",
         "neg w1, w21",
         "ldaddalh w1, w27, [x4]",
-        "uxth w21, w27",
-        "cinc w20, w20, lo",
-        "sub w22, w21, w20",
-        "uxth w26, w22",
-        "cmp w21, w20",
-        "cset x20, hs",
+        "uxth w22, w27",
+        "cinc w23, w20, lo",
+        "sub w24, w22, w23",
+        "uxth w26, w24",
+        "cmp w22, w23",
+        "cset x25, hs",
         "cmn wzr, w26, lsl #16",
-        "rmif x20, #63, #nzCv",
-        "eor w20, w21, #0x1",
-        "eor w21, w26, w21",
-        "and w20, w21, w20",
+        "rmif x25, #63, #nzCv",
+        "eor w30, w22, #0x1",
+        "eor w18, w26, w22",
+        "and w20, w18, w30",
         "rmif x20, #15, #nzcV"
       ]
     },
@@ -939,8 +939,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "mvn w1, w20",
-        "ldclralb w1, w20, [x4]",
-        "and w26, w20, #0x1",
+        "ldclralb w1, w21, [x4]",
+        "and w26, w21, #0x1",
         "cmn wzr, w26, lsl #24",
         "cfinv"
       ]
@@ -951,8 +951,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0xff",
         "mvn w1, w20",
-        "ldclralb w1, w20, [x4]",
-        "and w26, w20, #0xff",
+        "ldclralb w1, w21, [x4]",
+        "and w26, w21, #0xff",
         "cmn wzr, w26, lsl #24",
         "cfinv"
       ]
@@ -963,8 +963,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
         "mvn w1, w20",
-        "ldclralh w1, w20, [x4]",
-        "and w26, w20, #0x100",
+        "ldclralh w1, w21, [x4]",
+        "and w26, w21, #0x100",
         "cmn wzr, w26, lsl #16",
         "cfinv"
       ]
@@ -975,8 +975,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0xffff",
         "mvn w1, w20",
-        "ldclralh w1, w20, [x4]",
-        "and w26, w20, #0xffff",
+        "ldclralh w1, w21, [x4]",
+        "and w26, w21, #0xffff",
         "cmn wzr, w26, lsl #16",
         "cfinv"
       ]
@@ -987,8 +987,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
         "mvn w1, w20",
-        "ldclral w1, w20, [x4]",
-        "ands w26, w20, #0x100",
+        "ldclral w1, w21, [x4]",
+        "ands w26, w21, #0x100",
         "cfinv"
       ]
     },
@@ -1009,8 +1009,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
         "mvn x1, x20",
-        "ldclral x1, x20, [x4]",
-        "ands x26, x20, #0x100",
+        "ldclral x1, x21, [x4]",
+        "ands x26, x21, #0x100",
         "cfinv"
       ]
     },
@@ -1020,8 +1020,8 @@
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffff80000001",
         "mvn x1, x20",
-        "ldclral x1, x20, [x4]",
-        "ands x26, x20, #0xffffffff80000001",
+        "ldclral x1, x21, [x4]",
+        "ands x26, x21, #0xffffffff80000001",
         "cfinv"
       ]
     },
@@ -1031,8 +1031,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "mvn w1, w20",
-        "ldclralh w1, w20, [x4]",
-        "and w26, w20, #0x1",
+        "ldclralh w1, w21, [x4]",
+        "and w26, w21, #0x1",
         "cmn wzr, w26, lsl #16",
         "cfinv"
       ]
@@ -1043,8 +1043,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "mvn w1, w20",
-        "ldclral w1, w20, [x4]",
-        "ands w26, w20, #0x1",
+        "ldclral w1, w21, [x4]",
+        "ands w26, w21, #0x1",
         "cfinv"
       ]
     },
@@ -1054,8 +1054,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "mvn x1, x20",
-        "ldclral x1, x20, [x4]",
-        "ands x26, x20, #0x1",
+        "ldclral x1, x21, [x4]",
+        "ands x26, x21, #0x1",
         "cfinv"
       ]
     },
@@ -1125,9 +1125,9 @@
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
         "neg w1, w20",
-        "ldaddal w1, w20, [x4]",
-        "mvn w27, w20",
-        "adds w26, w20, #0x1 (1)"
+        "ldaddal w1, w21, [x4]",
+        "mvn w27, w21",
+        "adds w26, w21, #0x1 (1)"
       ]
     },
     "lock sub qword [rax], 0x100": {
@@ -1187,8 +1187,8 @@
       "Comment": "GROUP1 0x80 /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "ldeoralb w20, w20, [x4]",
-        "eor w26, w20, #0x1",
+        "ldeoralb w20, w21, [x4]",
+        "eor w26, w21, #0x1",
         "cmn wzr, w26, lsl #24",
         "cfinv"
       ]
@@ -1198,8 +1198,8 @@
       "Comment": "GROUP1 0x80 /6",
       "ExpectedArm64ASM": [
         "mov w20, #0xff",
-        "ldeoralb w20, w20, [x4]",
-        "eor w26, w20, #0xff",
+        "ldeoralb w20, w21, [x4]",
+        "eor w26, w21, #0xff",
         "cmn wzr, w26, lsl #24",
         "cfinv"
       ]
@@ -1209,8 +1209,8 @@
       "Comment": "GROUP1 0x81 /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
-        "ldeoralh w20, w20, [x4]",
-        "eor w26, w20, #0x100",
+        "ldeoralh w20, w21, [x4]",
+        "eor w26, w21, #0x100",
         "cmn wzr, w26, lsl #16",
         "cfinv"
       ]
@@ -1220,8 +1220,8 @@
       "Comment": "GROUP1 0x81 /6",
       "ExpectedArm64ASM": [
         "mov w20, #0xffff",
-        "ldeoralh w20, w20, [x4]",
-        "eor w26, w20, #0xffff",
+        "ldeoralh w20, w21, [x4]",
+        "eor w26, w21, #0xffff",
         "cmn wzr, w26, lsl #16",
         "cfinv"
       ]
@@ -1231,8 +1231,8 @@
       "Comment": "GROUP1 0x81 /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
-        "ldeoral w20, w20, [x4]",
-        "eor w26, w20, #0x100",
+        "ldeoral w20, w21, [x4]",
+        "eor w26, w21, #0x100",
         "cmp w26, #0x0 (0)"
       ]
     },
@@ -1251,8 +1251,8 @@
       "Comment": "GROUP1 0x81 /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
-        "ldeoral x20, x20, [x4]",
-        "eor x26, x20, #0x100",
+        "ldeoral x20, x21, [x4]",
+        "eor x26, x21, #0x100",
         "cmp x26, #0x0 (0)"
       ]
     },
@@ -1261,8 +1261,8 @@
       "Comment": "GROUP1 0x81 /6",
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffff80000001",
-        "ldeoral x20, x20, [x4]",
-        "eor x26, x20, #0xffffffff80000001",
+        "ldeoral x20, x21, [x4]",
+        "eor x26, x21, #0xffffffff80000001",
         "cmp x26, #0x0 (0)"
       ]
     },
@@ -1271,8 +1271,8 @@
       "Comment": "GROUP1 0x83 /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "ldeoralh w20, w20, [x4]",
-        "eor w26, w20, #0x1",
+        "ldeoralh w20, w21, [x4]",
+        "eor w26, w21, #0x1",
         "cmn wzr, w26, lsl #16",
         "cfinv"
       ]
@@ -1282,8 +1282,8 @@
       "Comment": "GROUP1 0x83 /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "ldeoral w20, w20, [x4]",
-        "eor w26, w20, #0x1",
+        "ldeoral w20, w21, [x4]",
+        "eor w26, w21, #0x1",
         "cmp w26, #0x0 (0)"
       ]
     },
@@ -1292,8 +1292,8 @@
       "Comment": "GROUP1 0x83 /6",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "ldeoral x20, x20, [x4]",
-        "eor x26, x20, #0x1",
+        "ldeoral x20, x21, [x4]",
+        "eor x26, x21, #0x1",
         "cmp x26, #0x0 (0)"
       ]
     },
@@ -1305,8 +1305,8 @@
         "ldaddalb w20, w27, [x4]",
         "sub w26, w27, #0x1 (1)",
         "setf8 w26",
-        "bic w20, w27, w26",
-        "rmif x20, #7, #nzcV"
+        "bic w21, w27, w26",
+        "rmif x21, #7, #nzcV"
       ]
     },
     "lock not byte [rax]": {
@@ -1399,8 +1399,8 @@
         "ldaddalh w20, w27, [x4]",
         "sub w26, w27, #0x1 (1)",
         "setf16 w26",
-        "bic w20, w27, w26",
-        "rmif x20, #15, #nzcV"
+        "bic w21, w27, w26",
+        "rmif x21, #15, #nzcV"
       ]
     },
     "lock dec dword [rax]": {
@@ -1409,9 +1409,9 @@
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
         "ldaddal w20, w27, [x4]",
-        "cset w20, hs",
+        "cset w21, hs",
         "subs w26, w27, #0x1 (1)",
-        "rmif x20, #63, #nzCv"
+        "rmif x21, #63, #nzCv"
       ]
     },
     "lock dec qword [rax]": {
@@ -1420,9 +1420,9 @@
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
         "ldaddal x20, x27, [x4]",
-        "cset w20, hs",
+        "cset w21, hs",
         "subs x26, x27, #0x1 (1)",
-        "rmif x20, #63, #nzCv"
+        "rmif x21, #63, #nzCv"
       ]
     },
     "lock inc byte [rax]": {
@@ -1433,8 +1433,8 @@
         "ldaddalb w20, w27, [x4]",
         "add w26, w27, #0x1 (1)",
         "setf8 w26",
-        "bic w20, w26, w27",
-        "rmif x20, #7, #nzcV"
+        "bic w21, w26, w27",
+        "rmif x21, #7, #nzcV"
       ]
     },
     "lock inc word [rax]": {
@@ -1445,8 +1445,8 @@
         "ldaddalh w20, w27, [x4]",
         "add w26, w27, #0x1 (1)",
         "setf16 w26",
-        "bic w20, w26, w27",
-        "rmif x20, #15, #nzcV"
+        "bic w21, w26, w27",
+        "rmif x21, #15, #nzcV"
       ]
     },
     "lock inc dword [rax]": {
@@ -1455,9 +1455,9 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "ldaddal w20, w27, [x4]",
-        "cset w20, hs",
+        "cset w21, hs",
         "adds w26, w27, #0x1 (1)",
-        "rmif x20, #63, #nzCv"
+        "rmif x21, #63, #nzCv"
       ]
     },
     "lock inc qword [rax]": {
@@ -1466,9 +1466,9 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "ldaddal x20, x27, [x4]",
-        "cset w20, hs",
+        "cset w21, hs",
         "adds x26, x27, #0x1 (1)",
-        "rmif x20, #63, #nzCv"
+        "rmif x21, #63, #nzCv"
       ]
     }
   }

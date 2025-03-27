@@ -204,24 +204,24 @@
       "ExpectedInstructionCount": 3,
       "ExpectedArm64ASM": [
         "mov w20, #0x7ff7",
-        "add w20, w7, w20",
-        "ldr d16, [x20]"
+        "add w21, w7, w20",
+        "ldr d16, [x21]"
       ]
     },
     "movsd xmm0, [ecx + 32760]": {
       "ExpectedInstructionCount": 3,
       "ExpectedArm64ASM": [
         "mov w20, #0x7ff8",
-        "add w20, w7, w20",
-        "ldr d16, [x20]"
+        "add w21, w7, w20",
+        "ldr d16, [x21]"
       ]
     },
     "movsd xmm0, [ecx + 32761]": {
       "ExpectedInstructionCount": 3,
       "ExpectedArm64ASM": [
         "mov w20, #0x7ff9",
-        "add w20, w7, w20",
-        "ldr d16, [x20]"
+        "add w21, w7, w20",
+        "ldr d16, [x21]"
       ]
     },
     "movsd xmm0, [ecx - 257]": {
@@ -253,24 +253,24 @@
       "ExpectedInstructionCount": 3,
       "ExpectedArm64ASM": [
         "mov w20, #0xffef",
-        "add w20, w7, w20",
-        "ldr d16, [x20]"
+        "add w21, w7, w20",
+        "ldr d16, [x21]"
       ]
     },
     "movq xmm0, [ecx + 65520]": {
       "ExpectedInstructionCount": 3,
       "ExpectedArm64ASM": [
         "mov w20, #0xfff0",
-        "add w20, w7, w20",
-        "ldr d16, [x20]"
+        "add w21, w7, w20",
+        "ldr d16, [x21]"
       ]
     },
     "movq xmm0, [ecx + 65521]": {
       "ExpectedInstructionCount": 3,
       "ExpectedArm64ASM": [
         "mov w20, #0xfff1",
-        "add w20, w7, w20",
-        "ldr d16, [x20]"
+        "add w21, w7, w20",
+        "ldr d16, [x21]"
       ]
     },
     "movq xmm0, [ecx - 257]": {
@@ -322,8 +322,8 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #960]",
         "ldr w4, [x20, #256]",
-        "ldr w20, [x28, #960]",
-        "ldr w6, [x20, #20]"
+        "ldr w21, [x28, #960]",
+        "ldr w6, [x21, #20]"
       ]
     }
   }
