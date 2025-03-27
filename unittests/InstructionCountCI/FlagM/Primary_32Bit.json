@@ -247,33 +247,27 @@
       ]
     },
     "pusha": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 7,
       "Comment": "0x60",
       "ExpectedArm64ASM": [
         "mov w20, w8",
         "str w4, [x20, #-4]!",
-        "str w7, [x20, #-4]!",
-        "str w5, [x20, #-4]!",
-        "str w6, [x20, #-4]!",
-        "str w8, [x20, #-4]!",
-        "str w9, [x20, #-4]!",
-        "str w10, [x20, #-4]!",
+        "stp w5, w7, [x20, #-8]!",
+        "stp w8, w6, [x20, #-8]!",
+        "stp w10, w9, [x20, #-8]!",
         "mov w8, w20",
         "str w11, [x8, #-4]!"
       ]
     },
     "pushad": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 7,
       "Comment": "0x60",
       "ExpectedArm64ASM": [
         "mov w20, w8",
         "str w4, [x20, #-4]!",
-        "str w7, [x20, #-4]!",
-        "str w5, [x20, #-4]!",
-        "str w6, [x20, #-4]!",
-        "str w8, [x20, #-4]!",
-        "str w9, [x20, #-4]!",
-        "str w10, [x20, #-4]!",
+        "stp w5, w7, [x20, #-8]!",
+        "stp w8, w6, [x20, #-8]!",
+        "stp w10, w9, [x20, #-8]!",
         "mov w8, w20",
         "str w11, [x8, #-4]!"
       ]

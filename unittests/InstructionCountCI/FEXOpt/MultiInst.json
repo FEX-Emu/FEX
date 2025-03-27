@@ -33,7 +33,7 @@
     },
     "push rax, rbx": {
       "x86InstructionCount": 2,
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "Mergable 64-bit pushes"
       ],
@@ -42,8 +42,7 @@
         "push rbx"
       ],
       "ExpectedArm64ASM": [
-        "str x4, [x8, #-8]!",
-        "str x6, [x8, #-8]!"
+        "stp x6, x4, [x8, #-16]!"
       ]
     },
     "adds xmm0, xmm1, xmm2": {
@@ -1054,7 +1053,7 @@
     },
     "Sekiro spill block": {
       "x86InstructionCount": 119,
-      "ExpectedInstructionCount": 119,
+      "ExpectedInstructionCount": 115,
       "Comment": [
         "This block of code came from the settings screen when it loaded",
         "It was originally at RIP: 0x14232cca0 and has been deobfuscated"
@@ -1182,14 +1181,10 @@
       ],
       "ExpectedArm64ASM": [
         "str x7, [x8, #8]",
-        "str x6, [x8, #-8]!",
-        "str x9, [x8, #-8]!",
-        "str x10, [x8, #-8]!",
-        "str x11, [x8, #-8]!",
-        "str x16, [x8, #-8]!",
-        "str x17, [x8, #-8]!",
-        "str x19, [x8, #-8]!",
-        "str x29, [x8, #-8]!",
+        "stp x9, x6, [x8, #-16]!",
+        "stp x11, x10, [x8, #-16]!",
+        "stp x17, x16, [x8, #-16]!",
+        "stp x29, x19, [x8, #-16]!",
         "sub x8, x8, #0x18 (24)",
         "ldr w7, [x5, #36]",
         "ldr w10, [x5]",
