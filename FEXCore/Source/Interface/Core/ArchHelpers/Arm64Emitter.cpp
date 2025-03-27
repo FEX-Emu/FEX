@@ -34,6 +34,11 @@ namespace FEXCore::CPU {
 //
 // Note that the call necessarily also clobbers x30, the link register (LR)
 // which is not considered general purpose.
+//
+// Meanwhile, for non-preserve_all, the AAPCS64 ABI says:
+//
+//    A subroutine invocation must preserve the contents of the registers
+//    r19-r29 and SP.
 
 namespace x64 {
 #ifndef _M_ARM_64EC
@@ -81,6 +86,8 @@ namespace x64 {
     ARMEmitter::Reg::r18,
     ARMEmitter::Reg::r30,
   };
+
+  constexpr std::array<ARMEmitter::Register, 2> NotPreserved_Dynamic = PreserveAll_Dynamic;
 
   // All are caller saved
   constexpr std::array<ARMEmitter::VRegister, 16> SRAFPR = {
@@ -144,6 +151,8 @@ namespace x64 {
   constexpr std::array<ARMEmitter::Register, 5> PreserveAll_Dynamic = {
     ARMEmitter::Reg::r6, ARMEmitter::Reg::r7, ARMEmitter::Reg::r16, ARMEmitter::Reg::r17, ARMEmitter::Reg::r30,
   };
+
+  constexpr std::array<ARMEmitter::Register, 7> NotPreserved_Dynamic = RA;
 
   constexpr unsigned RAPairs = 6;
 
@@ -259,6 +268,11 @@ namespace x32 {
     ARMEmitter::Reg::r19,
   };
 
+  constexpr std::array<ARMEmitter::Register, 7> NotPreserved_Dynamic = {
+    ARMEmitter::Reg::r12, ARMEmitter::Reg::r13, ARMEmitter::Reg::r14, ARMEmitter::Reg::r15,
+    ARMEmitter::Reg::r16, ARMEmitter::Reg::r17, ARMEmitter::Reg::r30,
+  };
+
   constexpr unsigned RAPairs = 12;
 
   // All are caller saved
@@ -372,18 +386,16 @@ Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl* ctx, void* EmissionPtr
   if (EmitterCTX->Config.Is64BitMode()) {
     StaticRegisters = x64::SRA;
     GeneralRegisters = x64::RA;
+    GeneralRegistersNotPreserved = x64::NotPreserved_Dynamic;
     StaticFPRegisters = x64::SRAFPR;
     GeneralFPRegisters = x64::RAFPR;
     PairRegisters = x64::RAPairs;
-#ifdef _M_ARM_64EC
-    ConfiguredDynamicRegisterBase = std::span(x64::RA.begin(), 7);
-#endif
   } else {
-    ConfiguredDynamicRegisterBase = std::span(x32::RA.begin() + 6, 8);
     PairRegisters = x32::RAPairs;
 
     StaticRegisters = x32::SRA;
     GeneralRegisters = x32::RA;
+    GeneralRegistersNotPreserved = x32::NotPreserved_Dynamic;
 
     StaticFPRegisters = x32::SRAFPR;
     GeneralFPRegisters = x32::RAFPR;
@@ -947,9 +959,9 @@ void Arm64Emitter::PopGeneralRegisters(std::span<const ARMEmitter::Register> Reg
   }
 }
 
-void Arm64Emitter::PushDynamicRegsAndLR(ARMEmitter::Register TmpReg) {
+void Arm64Emitter::PushDynamicRegs(ARMEmitter::Register TmpReg) {
   const auto CanUseSVE256 = EmitterCTX->HostFeatures.SupportsSVE256;
-  const auto GPRSize = (ConfiguredDynamicRegisterBase.size() + 1) * Core::CPUState::GPR_REG_SIZE;
+  const auto GPRSize = GeneralRegistersNotPreserved.size() * Core::CPUState::GPR_REG_SIZE;
   const auto FPRRegSize = CanUseSVE256 ? 32 : 16;
   const auto FPRSize = GeneralFPRegisters.size() * FPRRegSize;
   const uint64_t SPOffset = AlignUp(GPRSize + FPRSize, 16);
@@ -965,25 +977,17 @@ void Arm64Emitter::PushDynamicRegsAndLR(ARMEmitter::Register TmpReg) {
   PushVectorRegisters(TmpReg, CanUseSVE256, GeneralFPRegisters);
 
   // Push the general registers.
-  PushGeneralRegisters(TmpReg, ConfiguredDynamicRegisterBase);
-
-#ifndef _M_ARM_64EC
-  str(ARMEmitter::XReg::lr, TmpReg, 0);
-#endif
+  PushGeneralRegisters(TmpReg, GeneralRegistersNotPreserved);
 }
 
-void Arm64Emitter::PopDynamicRegsAndLR() {
+void Arm64Emitter::PopDynamicRegs() {
   const auto CanUseSVE256 = EmitterCTX->HostFeatures.SupportsSVE256;
 
   // Pop vectors first
   PopVectorRegisters(CanUseSVE256, GeneralFPRegisters);
 
   // Pop GPRs second
-  PopGeneralRegisters(ConfiguredDynamicRegisterBase);
-
-#ifndef _M_ARM_64EC
-  ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
-#endif
+  PopGeneralRegisters(GeneralRegistersNotPreserved);
 }
 
 void Arm64Emitter::SpillForPreserveAllABICall(ARMEmitter::Register TmpReg, bool FPRs) {

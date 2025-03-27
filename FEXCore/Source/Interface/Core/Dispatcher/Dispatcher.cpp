@@ -505,7 +505,7 @@ void Dispatcher::EmitDispatcher() {
   auto EmitLongALUOpHandler = [&](auto R, auto Offset) {
     auto Address = GetCursorAddress<uint64_t>();
 
-    PushDynamicRegsAndLR(TMP4);
+    PushDynamicRegs(TMP4);
     SpillStaticRegs(TMP4);
 
     if (!TMP_ABIARGS) {
@@ -529,7 +529,7 @@ void Dispatcher::EmitDispatcher() {
     FillStaticRegs();
 
     // Fix the stack and any values that were stepped on
-    PopDynamicRegsAndLR();
+    PopDynamicRegs();
 
     // Go back to our code block
     ret();

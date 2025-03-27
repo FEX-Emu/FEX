@@ -150,7 +150,7 @@ DEF_OP(Syscall) {
   // X2: Pointer to SyscallArguments
 
   FEXCore::IR::SyscallFlags Flags = Op->Flags;
-  PushDynamicRegsAndLR(TMP1);
+  PushDynamicRegs(TMP1);
 
   uint32_t GPRSpillMask = ~0U;
   uint32_t FPRSpillMask = ~0U;
@@ -201,7 +201,7 @@ DEF_OP(Syscall) {
     // We can safely claim we are no longer in a syscall
     str(ARMEmitter::XReg::zr, STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo));
 
-    PopDynamicRegsAndLR();
+    PopDynamicRegs();
 
     if ((Flags & FEXCore::IR::SyscallFlags::NORETURNEDRESULT) != FEXCore::IR::SyscallFlags::NORETURNEDRESULT) {
       // Move result to its destination register.
@@ -314,7 +314,7 @@ DEF_OP(Thunk) {
 
   SpillStaticRegs(TMP1); // spill to ctx before ra64 spill
 
-  PushDynamicRegsAndLR(TMP1);
+  PushDynamicRegs(TMP1);
 
   mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, GetReg(Op->ArgPtr.ID()));
 
@@ -326,7 +326,7 @@ DEF_OP(Thunk) {
     blr(ARMEmitter::Reg::r2);
   }
 
-  PopDynamicRegsAndLR();
+  PopDynamicRegs();
 
   FillStaticRegs(); // load from ctx after ra64 refill
 }
@@ -378,7 +378,7 @@ DEF_OP(ValidateCode) {
 }
 
 DEF_OP(ThreadRemoveCodeEntry) {
-  PushDynamicRegsAndLR(TMP4);
+  PushDynamicRegs(TMP4);
   SpillStaticRegs(TMP4);
 
   // Arguments are passed as follows:
@@ -397,7 +397,7 @@ DEF_OP(ThreadRemoveCodeEntry) {
   FillStaticRegs();
 
   // Fix the stack and any values that were stepped on
-  PopDynamicRegsAndLR();
+  PopDynamicRegs();
 }
 
 DEF_OP(CPUID) {
@@ -406,7 +406,7 @@ DEF_OP(CPUID) {
   mov(ARMEmitter::Size::i64Bit, TMP2, GetReg(Op->Function.ID()));
   mov(ARMEmitter::Size::i64Bit, TMP3, GetReg(Op->Leaf.ID()));
 
-  PushDynamicRegsAndLR(TMP4);
+  PushDynamicRegs(TMP4);
   SpillStaticRegs(TMP4);
 
   // x0 = CPUID Handler
@@ -433,7 +433,7 @@ DEF_OP(CPUID) {
 
   FillStaticRegs();
 
-  PopDynamicRegsAndLR();
+  PopDynamicRegs();
 
   // Results are in x0, x1
   // Results want to be 4xi32 scalars
@@ -446,7 +446,7 @@ DEF_OP(CPUID) {
 DEF_OP(XGetBV) {
   auto Op = IROp->C<IR::IROp_XGetBV>();
 
-  PushDynamicRegsAndLR(TMP4);
+  PushDynamicRegs(TMP4);
   SpillStaticRegs(TMP4);
 
   mov(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r1, GetReg(Op->Function.ID()));
@@ -467,7 +467,7 @@ DEF_OP(XGetBV) {
 
   FillStaticRegs();
 
-  PopDynamicRegsAndLR();
+  PopDynamicRegs();
 
   // Results are in x0, need to split into i32 parts
   mov(ARMEmitter::Size::i32Bit, GetReg(Op->OutEAX.ID()), TMP1);
