@@ -104,9 +104,9 @@ protected:
 
   FEXCore::Context::ContextImpl* EmitterCTX;
 
-  std::span<const ARMEmitter::Register> ConfiguredDynamicRegisterBase {};
   std::span<const ARMEmitter::Register> StaticRegisters {};
   std::span<const ARMEmitter::Register> GeneralRegisters {};
+  std::span<const ARMEmitter::Register> GeneralRegistersNotPreserved {};
   std::span<const ARMEmitter::VRegister> StaticFPRegisters {};
   std::span<const ARMEmitter::VRegister> GeneralFPRegisters {};
   uint32_t PairRegisters = 0;
@@ -141,8 +141,8 @@ protected:
   void PopVectorRegisters(bool SVERegs, std::span<const ARMEmitter::VRegister> VRegs);
   void PopGeneralRegisters(std::span<const ARMEmitter::Register> Regs);
 
-  void PushDynamicRegsAndLR(ARMEmitter::Register TmpReg);
-  void PopDynamicRegsAndLR();
+  void PushDynamicRegs(ARMEmitter::Register TmpReg);
+  void PopDynamicRegs();
 
   void PushCalleeSavedRegisters();
   void PopCalleeSavedRegisters();
@@ -150,12 +150,12 @@ protected:
   // Spills and fills SRA/Dynamic registers that are required for Arm64 `preserve_all` ABI.
   // This ABI changes most registers to be callee saved.
   // Caller Saved:
-  // - X0-X8, X16-X18.
+  // - X0-X8, X16-X18, X30.
   // - v0-v7
   // - For 256-bit SVE hosts: top 128-bits of v8-v31
   //
   // Callee Saved:
-  // - X9-X15, X19-X31
+  // - X9-X15, X19-X29, X31
   // - Low 128-bits of v8-v31
   void SpillForPreserveAllABICall(ARMEmitter::Register TmpReg, bool FPRs = true);
   void FillForPreserveAllABICall(bool FPRs = true);
@@ -165,7 +165,7 @@ protected:
       SpillForPreserveAllABICall(TmpReg, FPRs);
     } else {
       SpillStaticRegs(TmpReg, FPRs);
-      PushDynamicRegsAndLR(TmpReg);
+      PushDynamicRegs(TmpReg);
     }
   }
 
@@ -173,7 +173,7 @@ protected:
     if (SupportsPreserveAllABI) {
       FillForPreserveAllABICall(FPRs);
     } else {
-      PopDynamicRegsAndLR();
+      PopDynamicRegs();
       FillStaticRegs(FPRs);
     }
   }

@@ -24,6 +24,22 @@
 #include <utility>
 
 namespace FEXCore::CPU {
+
+// LLVM's preserve_all doc, this is used throughout this file and reproduced
+// here for reference:
+//
+//    the callee preserve all general purpose registers,
+//    except X0-X8 and X16-X18. Furthermore it also preserves lower 128 bits of
+//    V8-V31 SIMD - floating point registers.
+//
+// Note that the call necessarily also clobbers x30, the link register (LR)
+// which is not considered general purpose.
+//
+// Meanwhile, for non-preserve_all, the AAPCS64 ABI says:
+//
+//    A subroutine invocation must preserve the contents of the registers
+//    r19-r29 and SP.
+
 namespace x64 {
 #ifndef _M_ARM_64EC
   // All but x19 and x29 are caller saved
@@ -50,6 +66,13 @@ namespace x64 {
     REG_AF,
   };
 
+  // I wish this could get constexpr generated from SRA's definition but impossible until libstdc++12, libc++15.
+  // SRA GPRs that need to be spilled when calling a function with `preserve_all` ABI.
+  constexpr std::array<ARMEmitter::Register, 7> PreserveAll_SRA = {
+    ARMEmitter::Reg::r4, ARMEmitter::Reg::r5,  ARMEmitter::Reg::r6,  ARMEmitter::Reg::r7,
+    ARMEmitter::Reg::r8, ARMEmitter::Reg::r16, ARMEmitter::Reg::r17,
+  };
+
   constexpr std::array<ARMEmitter::Register, 8> RA = {
     // All these callee saved
     ARMEmitter::Reg::r20, ARMEmitter::Reg::r21, ARMEmitter::Reg::r22, ARMEmitter::Reg::r23,
@@ -58,12 +81,25 @@ namespace x64 {
 
   constexpr unsigned RAPairs = 6;
 
+  // Dynamic GPRs
+  constexpr std::array<ARMEmitter::Register, 2> PreserveAll_Dynamic = {
+    ARMEmitter::Reg::r18,
+    ARMEmitter::Reg::r30,
+  };
+
+  constexpr std::array<ARMEmitter::Register, 2> NotPreserved_Dynamic = PreserveAll_Dynamic;
+
   // All are caller saved
   constexpr std::array<ARMEmitter::VRegister, 16> SRAFPR = {
     ARMEmitter::VReg::v16, ARMEmitter::VReg::v17, ARMEmitter::VReg::v18, ARMEmitter::VReg::v19,
     ARMEmitter::VReg::v20, ARMEmitter::VReg::v21, ARMEmitter::VReg::v22, ARMEmitter::VReg::v23,
     ARMEmitter::VReg::v24, ARMEmitter::VReg::v25, ARMEmitter::VReg::v26, ARMEmitter::VReg::v27,
     ARMEmitter::VReg::v28, ARMEmitter::VReg::v29, ARMEmitter::VReg::v30, ARMEmitter::VReg::v31};
+
+  // SRA FPRs that need to be spilled when calling a function with `preserve_all` ABI.
+  constexpr std::array<ARMEmitter::Register, 0> PreserveAll_SRAFPR = {
+    // None.
+  };
 
   //  v8..v15 = (lower 64bits) Callee saved
   constexpr std::array<ARMEmitter::VRegister, 14> RAFPR = {
@@ -73,6 +109,10 @@ namespace x64 {
     ARMEmitter::VReg::v2,  ARMEmitter::VReg::v3,  ARMEmitter::VReg::v4,  ARMEmitter::VReg::v5,  ARMEmitter::VReg::v6,
     ARMEmitter::VReg::v7,  ARMEmitter::VReg::v8,  ARMEmitter::VReg::v9,  ARMEmitter::VReg::v10, ARMEmitter::VReg::v11,
     ARMEmitter::VReg::v12, ARMEmitter::VReg::v13, ARMEmitter::VReg::v14, ARMEmitter::VReg::v15,
+  };
+
+  constexpr std::array<ARMEmitter::VRegister, 6> PreserveAll_DynamicFPR = {
+    ARMEmitter::VReg::v2, ARMEmitter::VReg::v3, ARMEmitter::VReg::v4, ARMEmitter::VReg::v5, ARMEmitter::VReg::v6, ARMEmitter::VReg::v7,
   };
 #else
   constexpr std::array<ARMEmitter::Register, 18> SRA = {
@@ -98,10 +138,21 @@ namespace x64 {
     REG_AF,
   };
 
+  constexpr std::array<ARMEmitter::Register, 7> PreserveAll_SRA = {
+    ARMEmitter::Reg::r0, ARMEmitter::Reg::r1, ARMEmitter::Reg::r2, ARMEmitter::Reg::r3,
+    ARMEmitter::Reg::r4, ARMEmitter::Reg::r5, ARMEmitter::Reg::r8,
+  };
+
   constexpr std::array<ARMEmitter::Register, 7> RA = {
     ARMEmitter::Reg::r6,  ARMEmitter::Reg::r7,  ARMEmitter::Reg::r14, ARMEmitter::Reg::r15,
     ARMEmitter::Reg::r16, ARMEmitter::Reg::r17, ARMEmitter::Reg::r30,
   };
+
+  constexpr std::array<ARMEmitter::Register, 5> PreserveAll_Dynamic = {
+    ARMEmitter::Reg::r6, ARMEmitter::Reg::r7, ARMEmitter::Reg::r16, ARMEmitter::Reg::r17, ARMEmitter::Reg::r30,
+  };
+
+  constexpr std::array<ARMEmitter::Register, 7> NotPreserved_Dynamic = RA;
 
   constexpr unsigned RAPairs = 6;
 
@@ -112,18 +163,20 @@ namespace x64 {
     ARMEmitter::VReg::v12, ARMEmitter::VReg::v13, ARMEmitter::VReg::v14, ARMEmitter::VReg::v15,
   };
 
+  constexpr std::array<ARMEmitter::VRegister, 8> PreserveAll_SRAFPR = {
+    ARMEmitter::VReg::v0, ARMEmitter::VReg::v1, ARMEmitter::VReg::v2, ARMEmitter::VReg::v3,
+    ARMEmitter::VReg::v4, ARMEmitter::VReg::v5, ARMEmitter::VReg::v6, ARMEmitter::VReg::v7,
+  };
+
   constexpr std::array<ARMEmitter::VRegister, 14> RAFPR = {
     ARMEmitter::VReg::v18, ARMEmitter::VReg::v19, ARMEmitter::VReg::v20, ARMEmitter::VReg::v21, ARMEmitter::VReg::v22,
     ARMEmitter::VReg::v23, ARMEmitter::VReg::v24, ARMEmitter::VReg::v25, ARMEmitter::VReg::v26, ARMEmitter::VReg::v27,
     ARMEmitter::VReg::v28, ARMEmitter::VReg::v29, ARMEmitter::VReg::v30, ARMEmitter::VReg::v31};
-#endif
 
-  // I wish this could get constexpr generated from SRA's definition but impossible until libstdc++12, libc++15.
-  // SRA GPRs that need to be spilled when calling a function with `preserve_all` ABI.
-  constexpr std::array<ARMEmitter::Register, 7> PreserveAll_SRA = {
-    ARMEmitter::Reg::r4, ARMEmitter::Reg::r5,  ARMEmitter::Reg::r6,  ARMEmitter::Reg::r7,
-    ARMEmitter::Reg::r8, ARMEmitter::Reg::r16, ARMEmitter::Reg::r17,
+  constexpr std::array<ARMEmitter::VRegister, 0> PreserveAll_DynamicFPR = {
+    // None
   };
+#endif
 
   constexpr uint32_t PreserveAll_SRAMask = {[]() -> uint32_t {
     uint32_t Mask {};
@@ -147,16 +200,6 @@ namespace x64 {
     return Mask;
   }()};
 
-  // Dynamic GPRs
-  constexpr std::array<ARMEmitter::Register, 1> PreserveAll_Dynamic = {
-    // Only LR needs to get saved.
-    ARMEmitter::Reg::r30};
-
-  // SRA FPRs that need to be spilled when calling a function with `preserve_all` ABI.
-  constexpr std::array<ARMEmitter::Register, 0> PreserveAll_SRAFPR = {
-    // None.
-  };
-
   constexpr uint32_t PreserveAll_SRAFPRMask = {[]() -> uint32_t {
     uint32_t Mask {};
     for (auto Reg : PreserveAll_SRAFPR) {
@@ -164,13 +207,6 @@ namespace x64 {
     }
     return Mask;
   }()};
-
-  // Dynamic FPRs
-  // - v0-v7
-  constexpr std::array<ARMEmitter::VRegister, 6> PreserveAll_DynamicFPR = {
-    // v0 ~ v1 are temps
-    ARMEmitter::VReg::v2, ARMEmitter::VReg::v3, ARMEmitter::VReg::v4, ARMEmitter::VReg::v5, ARMEmitter::VReg::v6, ARMEmitter::VReg::v7,
-  };
 
   // SRA FPRs that need to be spilled when the host supports SVE-256bit with `preserve_all` ABI.
   // This is /all/ of the SRA registers
@@ -230,6 +266,11 @@ namespace x32 {
     ARMEmitter::Reg::r30,
 
     ARMEmitter::Reg::r19,
+  };
+
+  constexpr std::array<ARMEmitter::Register, 7> NotPreserved_Dynamic = {
+    ARMEmitter::Reg::r12, ARMEmitter::Reg::r13, ARMEmitter::Reg::r14, ARMEmitter::Reg::r15,
+    ARMEmitter::Reg::r16, ARMEmitter::Reg::r17, ARMEmitter::Reg::r30,
   };
 
   constexpr unsigned RAPairs = 12;
@@ -345,18 +386,16 @@ Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl* ctx, void* EmissionPtr
   if (EmitterCTX->Config.Is64BitMode()) {
     StaticRegisters = x64::SRA;
     GeneralRegisters = x64::RA;
+    GeneralRegistersNotPreserved = x64::NotPreserved_Dynamic;
     StaticFPRegisters = x64::SRAFPR;
     GeneralFPRegisters = x64::RAFPR;
     PairRegisters = x64::RAPairs;
-#ifdef _M_ARM_64EC
-    ConfiguredDynamicRegisterBase = std::span(x64::RA.begin(), 7);
-#endif
   } else {
-    ConfiguredDynamicRegisterBase = std::span(x32::RA.begin() + 6, 8);
     PairRegisters = x32::RAPairs;
 
     StaticRegisters = x32::SRA;
     GeneralRegisters = x32::RA;
+    GeneralRegistersNotPreserved = x32::NotPreserved_Dynamic;
 
     StaticFPRegisters = x32::SRAFPR;
     GeneralFPRegisters = x32::RAFPR;
@@ -920,9 +959,9 @@ void Arm64Emitter::PopGeneralRegisters(std::span<const ARMEmitter::Register> Reg
   }
 }
 
-void Arm64Emitter::PushDynamicRegsAndLR(ARMEmitter::Register TmpReg) {
+void Arm64Emitter::PushDynamicRegs(ARMEmitter::Register TmpReg) {
   const auto CanUseSVE256 = EmitterCTX->HostFeatures.SupportsSVE256;
-  const auto GPRSize = (ConfiguredDynamicRegisterBase.size() + 1) * Core::CPUState::GPR_REG_SIZE;
+  const auto GPRSize = GeneralRegistersNotPreserved.size() * Core::CPUState::GPR_REG_SIZE;
   const auto FPRRegSize = CanUseSVE256 ? 32 : 16;
   const auto FPRSize = GeneralFPRegisters.size() * FPRRegSize;
   const uint64_t SPOffset = AlignUp(GPRSize + FPRSize, 16);
@@ -938,25 +977,17 @@ void Arm64Emitter::PushDynamicRegsAndLR(ARMEmitter::Register TmpReg) {
   PushVectorRegisters(TmpReg, CanUseSVE256, GeneralFPRegisters);
 
   // Push the general registers.
-  PushGeneralRegisters(TmpReg, ConfiguredDynamicRegisterBase);
-
-#ifndef _M_ARM_64EC
-  str(ARMEmitter::XReg::lr, TmpReg, 0);
-#endif
+  PushGeneralRegisters(TmpReg, GeneralRegistersNotPreserved);
 }
 
-void Arm64Emitter::PopDynamicRegsAndLR() {
+void Arm64Emitter::PopDynamicRegs() {
   const auto CanUseSVE256 = EmitterCTX->HostFeatures.SupportsSVE256;
 
   // Pop vectors first
   PopVectorRegisters(CanUseSVE256, GeneralFPRegisters);
 
   // Pop GPRs second
-  PopGeneralRegisters(ConfiguredDynamicRegisterBase);
-
-#ifndef _M_ARM_64EC
-  ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
-#endif
+  PopGeneralRegisters(GeneralRegistersNotPreserved);
 }
 
 void Arm64Emitter::SpillForPreserveAllABICall(ARMEmitter::Register TmpReg, bool FPRs) {

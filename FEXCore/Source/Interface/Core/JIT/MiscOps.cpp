@@ -166,7 +166,7 @@ DEF_OP(PopRoundingMode) {
 DEF_OP(Print) {
   auto Op = IROp->C<IR::IROp_Print>();
 
-  PushDynamicRegsAndLR(TMP1);
+  PushDynamicRegs(TMP1);
   SpillStaticRegs(TMP1);
 
   if (IsGPR(Op->Value.ID())) {
@@ -189,7 +189,7 @@ DEF_OP(Print) {
   }
 
   FillStaticRegs();
-  PopDynamicRegsAndLR();
+  PopDynamicRegs();
 }
 
 DEF_OP(ProcessorID) {
