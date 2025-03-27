@@ -769,6 +769,8 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
 
         if (K == KIND_SCALAR_INSERT) {
           bool OK = s == 0 && (IROp->Op == OP_VFADDSCALARINSERT || IROp->Op == OP_VFMULSCALARINSERT);
+
+          // If we only store the scalar at the bottom of an FPR, we're OK.
           if (s == 0 && (IROp->Op == OP_STOREMEM || IROp->Op == OP_STOREMEMTSO)) {
             OK = (IROp->Size == IROp->ElementSize);
           }
