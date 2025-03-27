@@ -697,6 +697,8 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
       KIND_ZEXT16,
       KIND_ZEXT,
       KIND_ZERO,
+
+      KIND_SCALAR_INSERT,
     };
 
     // XXX: Do we care to compact? Simpler this way!
@@ -763,6 +765,11 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
             IREmit->ReplaceNodeArgument(CodeNode, s, MapRef[Idx]);
             Remapped = true;
           }
+        } else if (K == KIND_SCALAR_INSERT && IROp->Op == OP_VFADDSCALARINSERT && s == 0) {
+          auto Header = IR->GetOp<IROp_Header>(MapRef[Idx]);
+          if (SSAToReg[IR->GetID(CodeNode).Value] == Reg) {
+            Header->Op = OP_VFADD;
+          }
         }
 
         // Update for the read per the data structure invariant.
@@ -820,6 +827,12 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
           const IROp_Constant* K = IROp->C<IR::IROp_Constant>();
           if (K->Constant == 0) {
             Map[Idx] = KIND_ZERO;
+          }
+        } else if (IROp->Op == OP_VFADDSCALARINSERT) {
+          auto I = IROp->C<IR::IROp_VFAddScalarInsert>();
+          if (!I->ZeroUpperBits) {
+            Map[Idx] = KIND_SCALAR_INSERT;
+            MapRef[Idx] = CodeNode;
           }
         }
       }
