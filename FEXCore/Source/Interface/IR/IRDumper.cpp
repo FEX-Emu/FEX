@@ -37,7 +37,7 @@ static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView
 }
 
 static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView* IR, uint64_t Arg) {
-  *out << "#0x" << std::hex << Arg;
+  *out << "#0x" << std::hex << Arg << std::dec;
 }
 
 [[maybe_unused]]
