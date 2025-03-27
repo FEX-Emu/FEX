@@ -768,7 +768,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         } else if (K == KIND_SCALAR_INSERT && (IROp->Op == OP_VFADDSCALARINSERT || IROp->Op == OP_VFMULSCALARINSERT) && s == 0) {
           auto Header = IR->GetOp<IROp_Header>(MapRef[Idx]);
           if (SSAToReg[IR->GetID(CodeNode).Value] == Reg) {
-            Header->Op = IROp->Op == OP_VFADDSCALARINSERT ? OP_VFADD : OP_VFMUL;
+            Header->Op = Header->Op == OP_VFADDSCALARINSERT ? OP_VFADD : OP_VFMUL;
           }
         }
 
