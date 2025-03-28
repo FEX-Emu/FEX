@@ -302,11 +302,14 @@ void LoadImageVolatileMetadata(uint64_t Address) {
     VolatileValidRanges.Insert({Address + It->Rva, Address + It->Rva + It->Size});
   }
 
+  LogMan::Msg::DFmt("Loaded volatile metadata for {:X}: {} entries", Address, VolatileInstructions.size());
   std::scoped_lock Lock(CTX->GetCodeInvalidationMutex());
   CTX->AddForceTSOInformation(VolatileValidRanges, std::move(VolatileInstructions));
 }
 
 void HandleImageMap(uint64_t Address) {
+  fextl::string ModuleName = FEX::Windows::GetSectionFilePath(Address);
+  LogMan::Msg::DFmt("Load module {}: {:X}", ModuleName, Address);
   FEX_CONFIG_OPT(VolatileMetadata, VOLATILEMETADATA);
   if (VolatileMetadata) {
     LoadImageVolatileMetadata(Address);

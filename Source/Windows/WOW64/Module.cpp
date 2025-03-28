@@ -159,6 +159,8 @@ bool IsAddressInJit(uint64_t Address) {
 }
 
 void HandleImageMap(uint64_t Address) {
+  fextl::string ModuleName = FEX::Windows::GetSectionFilePath(Address);
+  LogMan::Msg::DFmt("Load module {}: {:X}", ModuleName, Address);
   InvalidationTracker->HandleImageMap(Address);
 }
 } // namespace

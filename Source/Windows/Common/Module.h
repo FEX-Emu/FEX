@@ -21,4 +21,22 @@ fextl::string GetExecutableFilePath() {
 
   return Path.substr(Path.find_last_of('\\') + 1);
 }
+
+fextl::string GetSectionFilePath(uint64_t Address) {
+  struct {
+    MEMORY_SECTION_NAME Info;
+    std::array<WCHAR, PATH_MAX> PathW;
+  } Buffer;
+
+  if (NtQueryVirtualMemory(GetCurrentProcess(), reinterpret_cast<void *>(Address), MemoryMappedFilenameInformation, &Buffer, sizeof(Buffer), NULL)) {
+    return {};
+  }
+
+  STRING PathA;
+  RtlUnicodeStringToAnsiString(&PathA, &Buffer.Info.SectionFileName, TRUE);
+  fextl::string Path(PathA.Buffer);
+  RtlFreeAnsiString(&PathA);
+
+  return Path.substr(Path.find_last_of('\\') + 1);
+}
 } // namespace FEX::Windows
