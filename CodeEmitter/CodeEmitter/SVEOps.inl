@@ -2142,7 +2142,16 @@ public:
   }
 
   // SVE2 crypto destructive binary operations
-  // XXX:
+  void aese(ZRegister zdn, ZRegister zn, ZRegister zm) {
+    SVE2CryptoDestructiveBinaryOperation(0, 0, zdn, zn, zm);
+  }
+  void aesd(ZRegister zdn, ZRegister zn, ZRegister zm) {
+    SVE2CryptoDestructiveBinaryOperation(0, 1, zdn, zn, zm);
+  }
+  void sm4e(ZRegister zdn, ZRegister zn, ZRegister zm) {
+    SVE2CryptoDestructiveBinaryOperation(1, 0, zdn, zn, zm);
+  }
+
   // SVE2 crypto constructive binary operations
   // XXX:
 
@@ -3903,6 +3912,17 @@ private:
 
     uint32_t Instr = 0b0100'0101'0010'0000'1110'0000'0000'0000;
     Instr |= op << 10;
+    Instr |= zdn.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2CryptoDestructiveBinaryOperation(uint32_t op, uint32_t o2, ZRegister zdn, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(zdn == zn, "zdn and zn must be the same register");
+
+    uint32_t Instr = 0b0100'0101'0010'0010'1110'0000'0000'0000;
+    Instr |= op << 16;
+    Instr |= o2 << 10;
+    Instr |= zm.Idx() << 5;
     Instr |= zdn.Idx();
     dc32(Instr);
   }

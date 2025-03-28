@@ -3384,7 +3384,14 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 crypto unary operations")
   TEST_SINGLE(aesmc(ZReg::z31, ZReg::z31), "aesmc z31.b, z31.b");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 crypto destructive binary operations") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(aesd(ZReg::z7, ZReg::z7, ZReg::z8), "aesd z7.b, z7.b, z8.b");
+  TEST_SINGLE(aesd(ZReg::z30, ZReg::z30, ZReg::z31), "aesd z30.b, z30.b, z31.b");
+
+  TEST_SINGLE(aese(ZReg::z7, ZReg::z7, ZReg::z8), "aese z7.b, z7.b, z8.b");
+  TEST_SINGLE(aese(ZReg::z30, ZReg::z30, ZReg::z31), "aese z30.b, z30.b, z31.b");
+
+  TEST_SINGLE(sm4e(ZReg::z7, ZReg::z7, ZReg::z8), "sm4e z7.s, z7.s, z8.s");
+  TEST_SINGLE(sm4e(ZReg::z30, ZReg::z30, ZReg::z31), "sm4e z30.s, z30.s, z31.s");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 crypto constructive binary operations") {
   // TODO: Implement in emitter.
