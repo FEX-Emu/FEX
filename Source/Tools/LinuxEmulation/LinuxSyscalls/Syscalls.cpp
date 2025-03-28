@@ -1095,7 +1095,7 @@ DoGenerate:
         if (isHEX(Line[0])) {
           fextl::string addr;
           int offs = 1;
-          for (; !isspace(Line[offs]) && offs < Line.size(); offs++)
+          for (; offs < Line.size() && !isspace(Line[offs]); offs++)
             ;
 
           if (offs == Line.size()) {
@@ -1120,7 +1120,7 @@ DoGenerate:
           }
           LastSymbolOffset = CurrentSymbolOffset;
 
-          for (; Line[offs] != '<' && offs < Line.size(); offs++)
+          for (; offs < Line.size() && Line[offs] != '<'; offs++)
             ;
 
           if (offs == Line.size()) {
@@ -1134,7 +1134,7 @@ DoGenerate:
           // LogMan::Msg::DFmt("Symbol {} @ {:x} -> Line {}", LastSymbolName, LastSymbolOffset, LineNum);
         } else if (isspace(Line[0])) {
           int offs = 1;
-          for (; isspace(Line[offs]) && offs < Line.size(); offs++)
+          for (; offs < Line.size() && isspace(Line[offs]); offs++)
             ;
 
           if (offs == Line.size()) {
@@ -1143,7 +1143,7 @@ DoGenerate:
 
           int start = offs;
 
-          for (; Line[offs] != ':' && offs < Line.size(); offs++)
+          for (; offs < Line.size() && Line[offs] != ':'; offs++)
             ;
 
           if (offs == Line.size()) {
