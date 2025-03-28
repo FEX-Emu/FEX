@@ -2134,11 +2134,31 @@ public:
 
   // SVE2 Crypto Extensions
   // SVE2 crypto unary operations
-  // XXX:
+  void aesimc(ZRegister zdn, ZRegister zn) {
+    SVE2CryptoUnaryOperation(1, zdn, zn);
+  }
+  void aesmc(ZRegister zdn, ZRegister zn) {
+    SVE2CryptoUnaryOperation(0, zdn, zn);
+  }
+
   // SVE2 crypto destructive binary operations
-  // XXX:
+  void aese(ZRegister zdn, ZRegister zn, ZRegister zm) {
+    SVE2CryptoDestructiveBinaryOperation(0, 0, zdn, zn, zm);
+  }
+  void aesd(ZRegister zdn, ZRegister zn, ZRegister zm) {
+    SVE2CryptoDestructiveBinaryOperation(0, 1, zdn, zn, zm);
+  }
+  void sm4e(ZRegister zdn, ZRegister zn, ZRegister zm) {
+    SVE2CryptoDestructiveBinaryOperation(1, 0, zdn, zn, zm);
+  }
+
   // SVE2 crypto constructive binary operations
-  // XXX:
+  void sm4ekey(ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2CryptoConstructiveBinaryOperation(0, zd, zn, zm);
+  }
+  void rax1(ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2CryptoConstructiveBinaryOperation(1, zd, zn, zm);
+  }
 
   // SVE Floating Point Widening Multiply-Add - Indexed
   // SVE BFloat16 floating-point dot product (indexed)
@@ -3887,6 +3907,35 @@ private:
     Instr |= (FEXCore::ToUnderlying(size) + 1) << 22;
     Instr |= zm.Idx() << 16;
     Instr |= opc << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2CryptoUnaryOperation(uint32_t op, ZRegister zdn, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(zdn == zn, "zdn and zn must be the same register");
+
+    uint32_t Instr = 0b0100'0101'0010'0000'1110'0000'0000'0000;
+    Instr |= op << 10;
+    Instr |= zdn.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2CryptoDestructiveBinaryOperation(uint32_t op, uint32_t o2, ZRegister zdn, ZRegister zn, ZRegister zm) {
+    LOGMAN_THROW_A_FMT(zdn == zn, "zdn and zn must be the same register");
+
+    uint32_t Instr = 0b0100'0101'0010'0010'1110'0000'0000'0000;
+    Instr |= op << 16;
+    Instr |= o2 << 10;
+    Instr |= zm.Idx() << 5;
+    Instr |= zdn.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2CryptoConstructiveBinaryOperation(uint32_t op, ZRegister zd, ZRegister zn, ZRegister zm) {
+    uint32_t Instr = 0b0100'0101'0010'0000'1111'0000'0000'0000;
+    Instr |= zm.Idx() << 16;
+    Instr |= op << 10;
     Instr |= zn.Idx() << 5;
     Instr |= zd.Idx();
     dc32(Instr);

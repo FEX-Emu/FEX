@@ -3377,13 +3377,28 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 Histogram Computation - S
   TEST_SINGLE(histseg(ZReg::z30, ZReg::z29, ZReg::z28), "histseg z30.b, z29.b, z28.b");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 crypto unary operations") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(aesimc(ZReg::z7, ZReg::z7), "aesimc z7.b, z7.b");
+  TEST_SINGLE(aesimc(ZReg::z31, ZReg::z31), "aesimc z31.b, z31.b");
+
+  TEST_SINGLE(aesmc(ZReg::z7, ZReg::z7), "aesmc z7.b, z7.b");
+  TEST_SINGLE(aesmc(ZReg::z31, ZReg::z31), "aesmc z31.b, z31.b");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 crypto destructive binary operations") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(aesd(ZReg::z7, ZReg::z7, ZReg::z8), "aesd z7.b, z7.b, z8.b");
+  TEST_SINGLE(aesd(ZReg::z30, ZReg::z30, ZReg::z31), "aesd z30.b, z30.b, z31.b");
+
+  TEST_SINGLE(aese(ZReg::z7, ZReg::z7, ZReg::z8), "aese z7.b, z7.b, z8.b");
+  TEST_SINGLE(aese(ZReg::z30, ZReg::z30, ZReg::z31), "aese z30.b, z30.b, z31.b");
+
+  TEST_SINGLE(sm4e(ZReg::z7, ZReg::z7, ZReg::z8), "sm4e z7.s, z7.s, z8.s");
+  TEST_SINGLE(sm4e(ZReg::z30, ZReg::z30, ZReg::z31), "sm4e z30.s, z30.s, z31.s");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 crypto constructive binary operations") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(sm4ekey(ZReg::z0, ZReg::z1, ZReg::z2), "sm4ekey z0.s, z1.s, z2.s");
+  TEST_SINGLE(sm4ekey(ZReg::z29, ZReg::z30, ZReg::z31), "sm4ekey z29.s, z30.s, z31.s");
+
+  TEST_SINGLE(rax1(ZReg::z0, ZReg::z1, ZReg::z2), "rax1 z0.d, z1.d, z2.d");
+  TEST_SINGLE(rax1(ZReg::z29, ZReg::z30, ZReg::z31), "rax1 z29.d, z30.d, z31.d");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE BFloat16 floating-point dot product (indexed)") {
   // TODO: Implement in emitter.
