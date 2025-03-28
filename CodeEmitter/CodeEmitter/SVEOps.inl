@@ -2134,7 +2134,13 @@ public:
 
   // SVE2 Crypto Extensions
   // SVE2 crypto unary operations
-  // XXX:
+  void aesimc(ZRegister zdn, ZRegister zn) {
+    SVE2CryptoUnaryOperation(1, zdn, zn);
+  }
+  void aesmc(ZRegister zdn, ZRegister zn) {
+    SVE2CryptoUnaryOperation(0, zdn, zn);
+  }
+
   // SVE2 crypto destructive binary operations
   // XXX:
   // SVE2 crypto constructive binary operations
@@ -3889,6 +3895,15 @@ private:
     Instr |= opc << 10;
     Instr |= zn.Idx() << 5;
     Instr |= zd.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2CryptoUnaryOperation(uint32_t op, ZRegister zdn, ZRegister zn) {
+    LOGMAN_THROW_A_FMT(zdn == zn, "zdn and zn must be the same register");
+
+    uint32_t Instr = 0b0100'0101'0010'0000'1110'0000'0000'0000;
+    Instr |= op << 10;
+    Instr |= zdn.Idx();
     dc32(Instr);
   }
 

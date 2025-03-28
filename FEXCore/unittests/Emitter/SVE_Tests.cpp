@@ -3377,7 +3377,11 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 Histogram Computation - S
   TEST_SINGLE(histseg(ZReg::z30, ZReg::z29, ZReg::z28), "histseg z30.b, z29.b, z28.b");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 crypto unary operations") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(aesimc(ZReg::z7, ZReg::z7), "aesimc z7.b, z7.b");
+  TEST_SINGLE(aesimc(ZReg::z31, ZReg::z31), "aesimc z31.b, z31.b");
+
+  TEST_SINGLE(aesmc(ZReg::z7, ZReg::z7), "aesmc z7.b, z7.b");
+  TEST_SINGLE(aesmc(ZReg::z31, ZReg::z31), "aesmc z31.b, z31.b");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 crypto destructive binary operations") {
   // TODO: Implement in emitter.
