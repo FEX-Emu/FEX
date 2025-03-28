@@ -454,6 +454,11 @@ VDSOParser::VDSOParser(const uint8_t* HeaderBase) {
     }
   }
 
+  if (!DynamicSymbolHeader || !DynamicStringHeader) {
+    LogMan::Msg::DFmt("Couldn't parse host VDSO symbols. Falling back to glibc implementations.");
+    return;
+  }
+
   auto NumberOfDynamicSymbols = DynamicSymbolHeader->sh_size / DynamicSymbolHeader->sh_entsize;
   const char* DynamicStringTable = reinterpret_cast<const char*>(&HeaderBase[DynamicStringHeader->sh_offset]);
 
