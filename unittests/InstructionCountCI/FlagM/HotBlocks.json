@@ -483,7 +483,7 @@
     },
     "000000000020e9bd <DoNNetIteration+0x21d>:": {
       "x86InstructionCount": 35,
-      "ExpectedInstructionCount": 60,
+      "ExpectedInstructionCount": 55,
       "x86Insts": [
         "mov    rsi,0xfffffffffffffee8",
         "xchg   ax,ax",
@@ -523,11 +523,6 @@
       ],
       "ExpectedArm64ASM": [
         "mov x10, #0xfffffffffffffee8",
-        "mov x20, x4",
-        "bfxil x20, x4, #0, #16",
-        "mov x0, x20",
-        "bfxil x0, x4, #0, #16",
-        "mov x4, x0",
         "mov w7, w4",
         "mov w20, #0x149a",
         "movk w20, #0x8, lsl #16",
