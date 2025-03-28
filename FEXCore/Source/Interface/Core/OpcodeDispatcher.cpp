@@ -999,6 +999,7 @@ void OpDispatchBuilder::TESTOp(OpcodeArgs, uint32_t SrcIndex) {
   Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
 
   const auto Size = OpSizeFromDst(Op);
+  LOGMAN_THROW_A_FMT(Size >= IR::OpSize::i8Bit && Size <= IR::OpSize::i64Bit, "Invalid size");
 
   uint64_t Const;
   bool AlwaysNonnegative = false;
@@ -2712,6 +2713,7 @@ void OpDispatchBuilder::MULOp(OpcodeArgs) {
 void OpDispatchBuilder::NOTOp(OpcodeArgs) {
   const auto Size = OpSizeFromSrc(Op);
   const auto SizeBits = IR::OpSizeAsBits(Size);
+  LOGMAN_THROW_A_FMT(Size >= IR::OpSize::i8Bit && Size <= IR::OpSize::i64Bit, "Invalid size");
 
   Ref MaskConst {};
   if (Size == OpSize::i64Bit) {

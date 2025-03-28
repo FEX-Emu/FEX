@@ -1215,6 +1215,7 @@ public:
         uint64_t NextBit = (1ull << (Index - 1));
         uint32_t Offset = CacheIndexToContextOffset(Index);
         auto Class = CacheIndexClass(Index);
+        LOGMAN_THROW_A_FMT(Offset != ~0U, "Invalid offset");
 
         // Use stp where possible to store multiple values at a time. This accelerates AVX.
         // TODO: this is all really confusing because of backwards iteration,
@@ -1814,12 +1815,12 @@ private:
   static const int AVXHigh0Index = 48;
   static const int AVXHigh15Index = 63;
 
-  int CacheIndexToContextOffset(int Index) {
+  uint32_t CacheIndexToContextOffset(int Index) {
     switch (Index) {
     case MM0Index ... MM7Index: return offsetof(FEXCore::Core::CPUState, mm[Index - MM0Index]);
     case AVXHigh0Index ... AVXHigh15Index: return offsetof(FEXCore::Core::CPUState, avx_high[Index - AVXHigh0Index][0]);
     case AbridgedFTWIndex: return offsetof(FEXCore::Core::CPUState, AbridgedFTW);
-    default: return -1;
+    default: return ~0U;
     }
   }
 

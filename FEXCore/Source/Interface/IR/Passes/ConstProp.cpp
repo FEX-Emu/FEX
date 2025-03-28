@@ -24,6 +24,7 @@ $end_info$
 namespace FEXCore::IR {
 
 uint64_t getMask(IROp_Header* Op) {
+  LOGMAN_THROW_A_FMT(Op->Size >= IR::OpSize::i8Bit && Op->Size <= IR::OpSize::i64Bit, "Invalid mask size");
   uint64_t NumBits = IR::OpSizeAsBits(Op->Size);
   return (~0ULL) >> (64 - NumBits);
 }
@@ -92,8 +93,8 @@ private:
     return InlineIf(IREmit, CurrentIR, CodeNode, IROp, Index, Filter);
   }
 
-  void InlineMemImmediate(IREmitter* IREmit, const IRListView& IR, Ref CodeNode, IROp_Header* IROp, OrderedNodeWrapper Offset,
-                          MemOffsetType OffsetType, const size_t Offset_Index, uint8_t& OffsetScale, bool TSO) {
+  void InlineMemImmediate(IREmitter* IREmit, const IRListView& IR, Ref CodeNode, IR::RegisterClassType RegisterClass, IROp_Header* IROp,
+                          OrderedNodeWrapper Offset, MemOffsetType OffsetType, const size_t Offset_Index, uint8_t& OffsetScale, bool TSO) {
     uint64_t Imm {};
     if (OffsetType != MEM_OFFSET_SXTX || !IREmit->IsValueConstant(Offset, &Imm)) {
       return;
@@ -107,6 +108,9 @@ private:
     IsSIMM9 &= (SupportsTSOImm9 || !TSO);
 
     // Extended offsets for regular loadstore only.
+    LOGMAN_THROW_A_FMT(IROp->Size >= IR::OpSize::i8Bit && IROp->Size <= (RegisterClass == GPRClass ? IR::OpSize::i64Bit : IR::OpSize::i256Bit),
+                       "Invalid "
+                       "size");
     bool IsExtended = (Imm & (IR::OpSizeToSize(IROp->Size) - 1)) == 0 && Imm / IR::OpSizeToSize(IROp->Size) <= 4095;
     IsExtended &= !TSO;
 
@@ -419,6 +423,7 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     auto Op = IROp->C<IR::IROp_Bfe>();
     uint64_t Constant;
     if (IREmit->IsValueConstant(Op->Src, &Constant)) {
+      LOGMAN_THROW_A_FMT(IROp->Size >= IR::OpSize::i8Bit && IROp->Size <= IR::OpSize::i64Bit, "Invalid size");
       // SBFE of a constant can be converted to a constant.
       uint64_t SourceMask = Op->Width == 64 ? ~0ULL : ((1ULL << Op->Width) - 1);
       uint64_t DestSizeInBits = IR::OpSizeAsBits(IROp->Size);
@@ -691,28 +696,28 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
 
   case OP_LOADMEM: {
     auto Op = IROp->CW<IR::IROp_LoadMem>();
-    InlineMemImmediate(IREmit, CurrentIR, CodeNode, IROp, Op->Offset, Op->OffsetType, Op->Offset_Index, Op->OffsetScale, false);
+    InlineMemImmediate(IREmit, CurrentIR, CodeNode, Op->Class, IROp, Op->Offset, Op->OffsetType, Op->Offset_Index, Op->OffsetScale, false);
     break;
   }
   case OP_STOREMEM: {
     auto Op = IROp->CW<IR::IROp_StoreMem>();
-    InlineMemImmediate(IREmit, CurrentIR, CodeNode, IROp, Op->Offset, Op->OffsetType, Op->Offset_Index, Op->OffsetScale, false);
+    InlineMemImmediate(IREmit, CurrentIR, CodeNode, Op->Class, IROp, Op->Offset, Op->OffsetType, Op->Offset_Index, Op->OffsetScale, false);
     InlineIfZero(IREmit, CurrentIR, CodeNode, IROp, Op->Value_Index);
     break;
   }
   case OP_PREFETCH: {
     auto Op = IROp->CW<IR::IROp_Prefetch>();
-    InlineMemImmediate(IREmit, CurrentIR, CodeNode, IROp, Op->Offset, Op->OffsetType, Op->Offset_Index, Op->OffsetScale, false);
+    InlineMemImmediate(IREmit, CurrentIR, CodeNode, GPRClass, IROp, Op->Offset, Op->OffsetType, Op->Offset_Index, Op->OffsetScale, false);
     break;
   }
   case OP_LOADMEMTSO: {
     auto Op = IROp->CW<IR::IROp_LoadMemTSO>();
-    InlineMemImmediate(IREmit, CurrentIR, CodeNode, IROp, Op->Offset, Op->OffsetType, Op->Offset_Index, Op->OffsetScale, true);
+    InlineMemImmediate(IREmit, CurrentIR, CodeNode, Op->Class, IROp, Op->Offset, Op->OffsetType, Op->Offset_Index, Op->OffsetScale, true);
     break;
   }
   case OP_STOREMEMTSO: {
     auto Op = IROp->CW<IR::IROp_StoreMemTSO>();
-    InlineMemImmediate(IREmit, CurrentIR, CodeNode, IROp, Op->Offset, Op->OffsetType, Op->Offset_Index, Op->OffsetScale, true);
+    InlineMemImmediate(IREmit, CurrentIR, CodeNode, Op->Class, IROp, Op->Offset, Op->OffsetType, Op->Offset_Index, Op->OffsetScale, true);
     InlineIfZero(IREmit, CurrentIR, CodeNode, IROp, Op->Value_Index);
     break;
   }

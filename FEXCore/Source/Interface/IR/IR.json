@@ -1507,7 +1507,8 @@
         "DestSize": "Size",
         "TiedSource": 0,
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit",
+          "(Width + lsb) <= IR::OpSizeAsBits(Size)"
         ]
       },
       "GPR = Bfxil OpSize:#Size, u8:$Width, u8:$lsb, GPR:$Dest, GPR:$Src": {
@@ -1519,7 +1520,8 @@
         "DestSize": "Size",
         "TiedSource": 0,
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit",
+          "(Width + lsb) <= IR::OpSizeAsBits(Size)"
         ]
       },
       "GPR = Bfe OpSize:#Size, u8:$Width, u8:$lsb, GPR:$Src": {
@@ -1529,7 +1531,8 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit",
+          "(Width + lsb) <= IR::OpSizeAsBits(Size)"
         ]
       },
       "GPR = Sbfe OpSize:#Size, u8:$Width, u8:$lsb, GPR:$Src": {
@@ -1539,7 +1542,8 @@
                 ],
         "DestSize": "Size",
         "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit",
+          "(Width + lsb) <= IR::OpSizeAsBits(Size)"
         ]
       },
       "GPR = NZCVSelect OpSize:#ResultSize, CondClass:$Cond, GPR:$TrueVal, GPR:$FalseVal": {
@@ -2047,29 +2051,49 @@
       "FPR = VShlI OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$BitShift": {
         "TiedSource": 0,
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "EmitValidation": [
+          "ElementSize >= FEXCore::IR::OpSize::i8Bit && ElementSize <= FEXCore::IR::OpSize::i64Bit",
+          "BitShift > 0"
+        ]
       },
       "FPR = VUShrI OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$BitShift": {
         "TiedSource": 0,
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "EmitValidation": [
+          "ElementSize >= FEXCore::IR::OpSize::i8Bit && ElementSize <= FEXCore::IR::OpSize::i64Bit",
+          "BitShift > 0"
+        ]
       },
       "FPR = VUShraI OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$DestVector, FPR:$Vector, u8:$BitShift": {
         "TiedSource": 0,
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "EmitValidation": [
+          "ElementSize >= FEXCore::IR::OpSize::i8Bit && ElementSize <= FEXCore::IR::OpSize::i64Bit",
+          "BitShift > 0 && BitShift <= IR::OpSizeAsBits(ElementSize)"
+        ]
       },
       "FPR = VSShrI OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$BitShift": {
         "TiedSource": 0,
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "EmitValidation": [
+          "ElementSize >= FEXCore::IR::OpSize::i8Bit && ElementSize <= FEXCore::IR::OpSize::i64Bit",
+          "BitShift > 0"
+        ]
       },
 
       "FPR = VUShrNI OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, u8:$BitShift": {
         "TiedSource": 0,
         "Desc": "Unsigned shifts right each element and then narrows to the next lower element size",
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize >> 1"
+        "ElementSize": "ElementSize >> 1",
+        "EmitValidation": [
+          "ElementSize >= FEXCore::IR::OpSize::i16Bit && ElementSize <= FEXCore::IR::OpSize::i64Bit",
+          "BitShift > 0 && BitShift <= IR::OpSizeAsBits(ElementSize)"
+        ]
       },
 
       "FPR = VUShrNI2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper, u8:$BitShift": {
@@ -2078,7 +2102,11 @@
                  "Inserts results in to the high elements of the first argument"
                 ],
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize >> 1"
+        "ElementSize": "ElementSize >> 1",
+        "EmitValidation": [
+          "ElementSize >= FEXCore::IR::OpSize::i16Bit && ElementSize <= FEXCore::IR::OpSize::i64Bit",
+          "BitShift > 0 && BitShift <= IR::OpSizeAsBits(ElementSize)"
+        ]
       },
       "FPR = VSXTL OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": "Sign extends elements from the source element size to the next size up",

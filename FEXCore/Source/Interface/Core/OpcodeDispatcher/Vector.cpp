@@ -3949,6 +3949,7 @@ void OpDispatchBuilder::PTestOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::VTESTOpImpl(OpSize SrcSize, IR::OpSize ElementSize, Ref Src1, Ref Src2) {
+  LOGMAN_THROW_A_FMT(ElementSize >= IR::OpSize::i8Bit && ElementSize <= IR::OpSize::i64Bit, "Invalid size");
   const auto ElementSizeInBits = IR::OpSizeAsBits(ElementSize);
   const auto MaskConstant = uint64_t {1} << (ElementSizeInBits - 1);
 
