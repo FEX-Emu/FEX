@@ -17,7 +17,6 @@ Ref LoadEffectiveAddress(IREmitter* IREmit, AddressMode A, IR::OpSize GPRSize, b
 
   if (A.Index) {
     if (A.IndexScale != 1) {
-      LOGMAN_THROW_A_FMT((A.IndexScale & (A.IndexScale - 1)) == 0, "power of two");
       uint32_t Log2 = FEXCore::ilog2(A.IndexScale);
 
       if (Tmp) {
