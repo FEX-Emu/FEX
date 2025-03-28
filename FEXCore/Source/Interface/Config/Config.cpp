@@ -420,7 +420,7 @@ void ReloadMetaLayer() {
     }
   }
 
-  if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_SINGLESTEP)) {
+  if (FEXCore::Config::Exists(FEXCore::Config::CONFIG_SINGLESTEP) && Meta->GetConv<bool>(FEXCore::Config::CONFIG_SINGLESTEP).value_or(false)) {
     // Single stepping also enforces single instruction size blocks
     Set(FEXCore::Config::ConfigOption::CONFIG_MAXINST, "1");
   }
