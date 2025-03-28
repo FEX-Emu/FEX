@@ -1091,8 +1091,8 @@ void OpDispatchBuilder::CQOOp(OpcodeArgs) {
 
 void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
   // Load both the source and the destination
-  if (Op->OP == 0x90 && GetSrcSize(Op) >= 4 && Op->Src[0].IsGPR() && Op->Src[0].Data.GPR.GPR == FEXCore::X86State::REG_RAX &&
-      Op->Dest.IsGPR() && Op->Dest.Data.GPR.GPR == FEXCore::X86State::REG_RAX) {
+  if (Op->OP == 0x90 && Op->Src[0].IsGPR() && Op->Src[0].Data.GPR.GPR == FEXCore::X86State::REG_RAX && Op->Dest.IsGPR() &&
+      Op->Dest.Data.GPR.GPR == FEXCore::X86State::REG_RAX) {
     // This is one heck of a sucky special case
     // If we are the 0x90 XCHG opcode (Meaning source is GPR RAX)
     // and destination register is ALSO RAX
@@ -1102,6 +1102,14 @@ void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
     // But this would result in a zext on 64bit, which would ruin the no-op nature of the instruction
     // So x86-64 spec mandates this special case that even though it is a 32bit instruction and
     // is supposed to zext the result, it is a true no-op
+    //
+    // x86 spec text here:
+    //
+    //    XCHG (E)AX, (E)AX (encoded instruction byte is 90H) is an alias for
+    //    NOP regardless of data size prefixes, including REX.W.
+    //
+    // Note that also includes 16-bit so we don't gate this on size. The
+    // sequence (66 90) is a valid two-byte nop that we also ignore.
     if (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REP_PREFIX) {
       // If this instruction has a REP prefix then this is architecturally
       // defined to be a `PAUSE` instruction. On older processors this ends up
