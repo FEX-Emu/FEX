@@ -5072,7 +5072,7 @@ void OpDispatchBuilder::VPGATHER(OpcodeArgs) {
       // Only loads two 32-bit elements in to the lower 64-bits of the first destination.
       // Bits [255:65] all become zero.
       Result = _VMov(OpSize::i64Bit, Result);
-    } else if (Is128Bit) {
+    } else {
       Result = _VMov(OpSize::i128Bit, Result);
     }
   } else {
