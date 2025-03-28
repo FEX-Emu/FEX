@@ -583,8 +583,8 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame* Frame, FEX::HLE::clone3_args
   auto HasUnhandledFlags = [](FEX::HLE::clone3_args* args) -> bool {
     constexpr uint64_t UNHANDLED_FLAGS = CLONE_NEWNS |
                                          // CLONE_UNTRACED |
-                                         CLONE_NEWCGROUP | CLONE_NEWUTS | CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWUSER | CLONE_NEWPID |
-                                         CLONE_NEWNET | CLONE_IO | CLONE_CLEAR_SIGHAND | CLONE_INTO_CGROUP;
+                                         CLONE_NEWCGROUP | CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWUSER | CLONE_NEWPID | CLONE_NEWNET |
+                                         CLONE_IO | CLONE_CLEAR_SIGHAND | CLONE_INTO_CGROUP;
 
     if ((args->args.flags & UNHANDLED_FLAGS) != 0) {
       // Basic unhandled flags
