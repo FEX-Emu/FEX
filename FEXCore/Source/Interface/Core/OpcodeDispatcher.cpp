@@ -2177,7 +2177,7 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
 
     StoreResult(GPRClass, Op, Res, OpSize::iInvalid);
 
-    uint64_t SrcConst;
+    uint64_t SrcConst = 0;
     bool IsSrcConst = IsValueConstant(WrapNode(Src), &SrcConst);
     SrcConst &= 0x1f;
 
