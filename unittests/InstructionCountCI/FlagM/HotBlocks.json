@@ -437,6 +437,50 @@
         "mov x11, x26"
       ]
     },
+    "bytemark nn": {
+      "x86InstructionCount": 12,
+      "ExpectedInstructionCount": 24,
+      "x86Insts": [
+        "mulpd  xmm3,xmm2",
+        "movupd xmm4,oword [rax+rdx*8+0x216190]",
+        "mulpd  xmm4,xmm6",
+        "addpd  xmm4,xmm3",
+        "movupd xmm3,oword [rax+rdx*8+0x2155d0]",
+        "addpd  xmm3,xmm4",
+        "movupd oword [rax+rdx*8+0x2155d0],xmm3",
+        "movupd xmm3,oword [rax+rdx*8+0x217c10]",
+        "addpd  xmm3,xmm4",
+        "movupd oword [rax+rdx*8+0x217c10],xmm3",
+        "add    rdx,0x2",
+        "cmp    rdx,0x22"
+      ],
+      "ExpectedArm64ASM": [
+        "fmul v19.2d, v19.2d, v18.2d",
+        "add x20, x4, x5, lsl #3",
+        "mov w21, #0x6190",
+        "movk w21, #0x21, lsl #16",
+        "ldr q20, [x20, x21, sxtx]",
+        "fmul v20.2d, v20.2d, v22.2d",
+        "fadd v20.2d, v20.2d, v19.2d",
+        "add x20, x4, x5, lsl #3",
+        "mov w21, #0x55d0",
+        "movk w21, #0x21, lsl #16",
+        "ldr q19, [x20, x21, sxtx]",
+        "fadd v19.2d, v19.2d, v20.2d",
+        "add x20, x4, x5, lsl #3",
+        "str q19, [x20, x21, sxtx]",
+        "add x20, x4, x5, lsl #3",
+        "mov w21, #0x7c10",
+        "movk w21, #0x21, lsl #16",
+        "ldr q19, [x20, x21, sxtx]",
+        "fadd v19.2d, v19.2d, v20.2d",
+        "add x20, x4, x5, lsl #3",
+        "str q19, [x20, x21, sxtx]",
+        "add x5, x5, #0x2 (2)",
+        "subs x26, x5, #0x22 (34)",
+        "mov x27, x5"
+      ]
+    },
     "glibc AVX memcpy block 1": {
       "x86InstructionCount": 20,
       "ExpectedInstructionCount": 26,
