@@ -2153,7 +2153,12 @@ public:
   }
 
   // SVE2 crypto constructive binary operations
-  // XXX:
+  void sm4ekey(ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2CryptoConstructiveBinaryOperation(0, zd, zn, zm);
+  }
+  void rax1(ZRegister zd, ZRegister zn, ZRegister zm) {
+    SVE2CryptoConstructiveBinaryOperation(1, zd, zn, zm);
+  }
 
   // SVE Floating Point Widening Multiply-Add - Indexed
   // SVE BFloat16 floating-point dot product (indexed)
@@ -3924,6 +3929,15 @@ private:
     Instr |= o2 << 10;
     Instr |= zm.Idx() << 5;
     Instr |= zdn.Idx();
+    dc32(Instr);
+  }
+
+  void SVE2CryptoConstructiveBinaryOperation(uint32_t op, ZRegister zd, ZRegister zn, ZRegister zm) {
+    uint32_t Instr = 0b0100'0101'0010'0000'1111'0000'0000'0000;
+    Instr |= zm.Idx() << 16;
+    Instr |= op << 10;
+    Instr |= zn.Idx() << 5;
+    Instr |= zd.Idx();
     dc32(Instr);
   }
 

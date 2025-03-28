@@ -3394,7 +3394,11 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 crypto destructive binary
   TEST_SINGLE(sm4e(ZReg::z30, ZReg::z30, ZReg::z31), "sm4e z30.s, z30.s, z31.s");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE2 crypto constructive binary operations") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(sm4ekey(ZReg::z0, ZReg::z1, ZReg::z2), "sm4ekey z0.s, z1.s, z2.s");
+  TEST_SINGLE(sm4ekey(ZReg::z29, ZReg::z30, ZReg::z31), "sm4ekey z29.s, z30.s, z31.s");
+
+  TEST_SINGLE(rax1(ZReg::z0, ZReg::z1, ZReg::z2), "rax1 z0.d, z1.d, z2.d");
+  TEST_SINGLE(rax1(ZReg::z29, ZReg::z30, ZReg::z31), "rax1 z29.d, z30.d, z31.d");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: SVE: SVE BFloat16 floating-point dot product (indexed)") {
   // TODO: Implement in emitter.
