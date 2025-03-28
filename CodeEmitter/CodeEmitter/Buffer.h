@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <type_traits>
 
 namespace ARMEmitter {
 class Buffer {
@@ -21,29 +22,25 @@ public:
     Size = BaseSize;
   }
 
+  template<typename T>
+  requires (std::is_trivially_copyable_v<T>)
+  void dcn(const T& Data) {
+    std::memcpy(CurrentOffset, &Data, sizeof(Data));
+    CurrentOffset += sizeof(Data);
+  }
   void dc8(uint8_t Data) {
-    decltype(Data)* Memory = reinterpret_cast<decltype(Data)*>(CurrentOffset);
-    *Memory = Data;
-    CurrentOffset += sizeof(Data);
+    dcn(Data);
   }
-
   void dc16(uint16_t Data) {
-    decltype(Data)* Memory = reinterpret_cast<decltype(Data)*>(CurrentOffset);
-    *Memory = Data;
-    CurrentOffset += sizeof(Data);
+    dcn(Data);
   }
-
   void dc32(uint32_t Data) {
-    decltype(Data)* Memory = reinterpret_cast<decltype(Data)*>(CurrentOffset);
-    *Memory = Data;
-    CurrentOffset += sizeof(Data);
+    dcn(Data);
+  }
+  void dc64(uint64_t Data) {
+    dcn(Data);
   }
 
-  void dc64(uint64_t Data) {
-    decltype(Data)* Memory = reinterpret_cast<decltype(Data)*>(CurrentOffset);
-    *Memory = Data;
-    CurrentOffset += sizeof(Data);
-  }
   void EmitString(const char* String) {
     const auto StringLength = strlen(String);
     memcpy(CurrentOffset, String, StringLength);
