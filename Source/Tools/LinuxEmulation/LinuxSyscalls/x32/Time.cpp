@@ -186,18 +186,7 @@ void RegisterTime(FEX::HLE::SyscallHandler* Handler) {
   });
 
   REGISTER_SYSCALL_IMPL_X32(futimesat, [](FEXCore::Core::CpuStateFrame* Frame, int dirfd, const char* pathname, const timeval32 times[2]) -> uint64_t {
-    // TODO: This will always return ENOSYS on Arm64 since `futimesat` doesn't exist on that platform.
-    uint64_t Result = 0;
-    if (times) {
-      FaultSafeUserMemAccess::VerifyIsReadable(times, sizeof(timeval32) * 2);
-      struct timeval times64[2] {};
-      times64[0] = times[0];
-      times64[1] = times[1];
-      Result = ::syscall(SYSCALL_DEF(futimesat), dirfd, pathname, times64);
-    } else {
-      Result = ::syscall(SYSCALL_DEF(futimesat), dirfd, pathname, nullptr);
-    }
-    SYSCALL_ERRNO();
+    return FEX::HLE::futimesat_compat<timeval32>(dirfd, pathname, times);
   });
 
   REGISTER_SYSCALL_IMPL_X32(
