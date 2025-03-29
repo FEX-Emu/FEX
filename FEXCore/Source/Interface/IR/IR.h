@@ -159,7 +159,7 @@ struct NodeWrapperBase final {
   operator==(const NodeWrapperBase<Type>&, const NodeWrapperBase<Type>&) = default;
 };
 
-static_assert(std::is_trivial_v<NodeWrapperBase<OrderedNode>>);
+static_assert(std::is_trivially_copyable_v<NodeWrapperBase<OrderedNode>>);
 
 static_assert(sizeof(NodeWrapperBase<OrderedNode>) == sizeof(uint32_t));
 
@@ -355,7 +355,7 @@ private:
   }
 };
 
-static_assert(std::is_trivial_v<OrderedNode>);
+static_assert(std::is_trivially_constructible_v<OrderedNode>);
 static_assert(std::is_trivially_copyable_v<OrderedNode>);
 static_assert(offsetof(OrderedNode, Header) == 0);
 static_assert(sizeof(OrderedNode) == (sizeof(OrderedNodeHeader) + sizeof(uint32_t)));
@@ -439,7 +439,7 @@ struct TypeDefinition final {
   operator==(const TypeDefinition&, const TypeDefinition&) = default;
 };
 
-static_assert(std::is_trivial_v<TypeDefinition>);
+static_assert(std::is_trivially_copyable_v<TypeDefinition>);
 
 struct FenceType final {
   using value_type = uint8_t;
