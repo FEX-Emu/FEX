@@ -690,6 +690,32 @@ namespace FaultSafeUserMemAccess {
   }
 } // namespace FaultSafeUserMemAccess
 
+
+template<typename T>
+inline static uint64_t futimesat_compat(int dirfd, const char* pathname, const T times[2]) {
+  FaultSafeUserMemAccess::VerifyIsReadableOrNull(times, sizeof(*times) * 2);
+
+  timespec tvs[2] {};
+  timespec* tv_ptr {};
+  if (times) {
+    constexpr int64_t ONE_SECOND_AS_USEC = 1'000'000LL;
+
+    // Incoming microsecond time must not be negative or be larger than one second.
+    if (times[0].tv_usec < 0 || times[1].tv_usec < 0 || times[0].tv_usec >= ONE_SECOND_AS_USEC || times[1].tv_usec >= ONE_SECOND_AS_USEC) {
+      return -EINVAL;
+    }
+
+    tvs[0].tv_sec = times[0].tv_sec;
+    tvs[0].tv_nsec = 1000LL * times[0].tv_usec;
+    tvs[1].tv_sec = times[1].tv_sec;
+    tvs[1].tv_nsec = 1000LL * times[1].tv_usec;
+    tv_ptr = tvs;
+  }
+
+  uint64_t Result = ::syscall(SYSCALL_DEF(utimensat), dirfd, pathname, tv_ptr, 0);
+  SYSCALL_ERRNO();
+}
+
 } // namespace FEX::HLE
 
 // Registers syscall for both 32bit and 64bit
