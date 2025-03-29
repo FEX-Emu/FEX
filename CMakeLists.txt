@@ -384,10 +384,6 @@ if (TUNE_CPU STREQUAL "native")
         list(APPEND FEX_TUNE_COMPILE_FLAGS "-mcpu=native")
       endif()
     else()
-      # Due to an oversight in llvm, it declares any reasonably new Kryo CPU to only be ARMv8.0
-      # Manually detect newer CPU revisions until clang and llvm fixes their bug
-      # This script will either provide a supported CPU or 'native'
-      # Additionally -march doesn't work under AArch64+Clang, so you have to use -mcpu or -mtune
       execute_process(COMMAND python3 "${PROJECT_SOURCE_DIR}/Scripts/aarch64_fit_native.py" "/proc/cpuinfo" "${CMAKE_CXX_COMPILER_VERSION}"
         OUTPUT_VARIABLE AARCH64_CPU)
 
