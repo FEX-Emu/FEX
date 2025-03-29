@@ -124,7 +124,5 @@ private:
   };
 
   const uint8_t* AdjustAddrForSpecialRegion(const uint8_t* _InstStream, uint64_t EntryPoint, uint64_t RIP);
-
-  FEXCORE_TELEMETRY_INIT(EVEXOpTelem, TYPE_USES_EVEX_OPS);
 };
 } // namespace FEXCore::Frontend

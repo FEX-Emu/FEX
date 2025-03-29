@@ -119,14 +119,6 @@ inline uint32_t GetRmReg(uint32_t Instr) {
   return (Instr >> RM_OFFSET) & REGISTER_MASK;
 }
 
-
-FEXCORE_TELEMETRY_STATIC_INIT(SplitLock, TYPE_HAS_SPLIT_LOCKS);
-FEXCORE_TELEMETRY_STATIC_INIT(SplitLock16B, TYPE_16BYTE_SPLIT);
-FEXCORE_TELEMETRY_STATIC_INIT(Cas16Tear, TYPE_CAS_16BIT_TEAR);
-FEXCORE_TELEMETRY_STATIC_INIT(Cas32Tear, TYPE_CAS_32BIT_TEAR);
-FEXCORE_TELEMETRY_STATIC_INIT(Cas64Tear, TYPE_CAS_64BIT_TEAR);
-FEXCORE_TELEMETRY_STATIC_INIT(Cas128Tear, TYPE_CAS_128BIT_TEAR);
-
 static void ClearICache(void* Begin, std::size_t Length) {
   __builtin___clear_cache(static_cast<char*>(Begin), static_cast<char*>(Begin) + Length);
 }
@@ -367,7 +359,7 @@ static bool RunCASPAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg1, uint3
 
     // Check for Split lock across a cacheline
     if ((Addr & 63) > 56) {
-      FEXCORE_TELEMETRY_SET(SplitLock, 1);
+      FEXCORE_TELEMETRY_SET(TYPE_HAS_SPLIT_LOCKS, 1);
       if (StrictSplitLockMutex && !Lock.has_value()) {
         Lock.emplace(StrictSplitLockMutex);
       }
@@ -375,7 +367,7 @@ static bool RunCASPAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg1, uint3
 
     uint64_t AlignmentMask = 0b1111;
     if ((Addr & AlignmentMask) > 8) {
-      FEXCORE_TELEMETRY_SET(SplitLock16B, 1);
+      FEXCORE_TELEMETRY_SET(TYPE_16BYTE_SPLIT, 1);
       if (StrictSplitLockMutex && !Lock.has_value()) {
         Lock.emplace(StrictSplitLockMutex);
       }
@@ -431,7 +423,7 @@ static bool RunCASPAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg1, uint3
             } else {
               // CAS managed to tear, we can't really solve this
               // Continue down the path to let the guest know values weren't expected
-              FEXCORE_TELEMETRY_SET(Cas128Tear, 1);
+              FEXCORE_TELEMETRY_SET(TYPE_CAS_128BIT_TEAR, 1);
             }
           }
 
@@ -667,7 +659,7 @@ static uint16_t DoCAS16(uint16_t DesiredSrc, uint16_t ExpectedSrc, uint64_t Addr
   std::optional<FEXCore::Utils::SpinWaitLock::UniqueSpinMutex<uint32_t>> Lock {};
 
   if ((Addr & 63) == 63) {
-    FEXCORE_TELEMETRY_SET(SplitLock, 1);
+    FEXCORE_TELEMETRY_SET(TYPE_HAS_SPLIT_LOCKS, 1);
     if (StrictSplitLockMutex && !Lock.has_value()) {
       Lock.emplace(StrictSplitLockMutex);
     }
@@ -676,7 +668,7 @@ static uint16_t DoCAS16(uint16_t DesiredSrc, uint16_t ExpectedSrc, uint64_t Addr
   // 16 bit
   uint64_t AlignmentMask = 0b1111;
   if ((Addr & AlignmentMask) == 15) {
-    FEXCORE_TELEMETRY_SET(SplitLock16B, 1);
+    FEXCORE_TELEMETRY_SET(TYPE_16BYTE_SPLIT, 1);
     if (StrictSplitLockMutex && !Lock.has_value()) {
       Lock.emplace(StrictSplitLockMutex);
     }
@@ -714,12 +706,11 @@ static uint16_t DoCAS16(uint16_t DesiredSrc, uint16_t ExpectedSrc, uint64_t Addr
             // CAS managed to tear, we can't really solve this
             // Continue down the path to let the guest know values weren't expected
             Tear = true;
-            FEXCORE_TELEMETRY_SET(Cas16Tear, 1);
+            FEXCORE_TELEMETRY_SET(TYPE_CAS_16BIT_TEAR, 1);
           }
         }
 
         ActualLower = ExpectedLower;
-        ActualUpper = ExpectedUpper;
       }
 
       // If the bits changed that we were wanting to change then we have failed and can return
@@ -943,7 +934,7 @@ static uint32_t DoCAS32(uint32_t DesiredSrc, uint32_t ExpectedSrc, uint64_t Addr
   std::optional<FEXCore::Utils::SpinWaitLock::UniqueSpinMutex<uint32_t>> Lock {};
 
   if ((Addr & 63) > 60) {
-    FEXCORE_TELEMETRY_SET(SplitLock, 1);
+    FEXCORE_TELEMETRY_SET(TYPE_HAS_SPLIT_LOCKS, 1);
     if (StrictSplitLockMutex && !Lock.has_value()) {
       Lock.emplace(StrictSplitLockMutex);
     }
@@ -952,7 +943,7 @@ static uint32_t DoCAS32(uint32_t DesiredSrc, uint32_t ExpectedSrc, uint64_t Addr
   // 32 bit
   uint64_t AlignmentMask = 0b1111;
   if ((Addr & AlignmentMask) > 12) {
-    FEXCORE_TELEMETRY_SET(SplitLock16B, 1);
+    FEXCORE_TELEMETRY_SET(TYPE_16BYTE_SPLIT, 1);
     if (StrictSplitLockMutex && !Lock.has_value()) {
       Lock.emplace(StrictSplitLockMutex);
     }
@@ -1001,7 +992,7 @@ static uint32_t DoCAS32(uint32_t DesiredSrc, uint32_t ExpectedSrc, uint64_t Addr
             // CAS managed to tear, we can't really solve this
             // Continue down the path to let the guest know values weren't expected
             Tear = true;
-            FEXCORE_TELEMETRY_SET(Cas32Tear, 1);
+            FEXCORE_TELEMETRY_SET(TYPE_CAS_32BIT_TEAR, 1);
           }
         }
 
@@ -1175,7 +1166,7 @@ static uint64_t DoCAS64(uint64_t DesiredSrc, uint64_t ExpectedSrc, uint64_t Addr
   std::optional<FEXCore::Utils::SpinWaitLock::UniqueSpinMutex<uint32_t>> Lock {};
 
   if ((Addr & 63) > 56) {
-    FEXCORE_TELEMETRY_SET(SplitLock, 1);
+    FEXCORE_TELEMETRY_SET(TYPE_HAS_SPLIT_LOCKS, 1);
     if (StrictSplitLockMutex && !Lock.has_value()) {
       Lock.emplace(StrictSplitLockMutex);
     }
@@ -1184,7 +1175,7 @@ static uint64_t DoCAS64(uint64_t DesiredSrc, uint64_t ExpectedSrc, uint64_t Addr
   // 64bit
   uint64_t AlignmentMask = 0b1111;
   if ((Addr & AlignmentMask) > 8) {
-    FEXCORE_TELEMETRY_SET(SplitLock16B, 1);
+    FEXCORE_TELEMETRY_SET(TYPE_16BYTE_SPLIT, 1);
     if (StrictSplitLockMutex && !Lock.has_value()) {
       Lock.emplace(StrictSplitLockMutex);
     }
@@ -1235,7 +1226,7 @@ static uint64_t DoCAS64(uint64_t DesiredSrc, uint64_t ExpectedSrc, uint64_t Addr
             // CAS managed to tear, we can't really solve this
             // Continue down the path to let the guest know values weren't expected
             Tear = true;
-            FEXCORE_TELEMETRY_SET(Cas64Tear, 1);
+            FEXCORE_TELEMETRY_SET(TYPE_CAS_64BIT_TEAR, 1);
           }
         }
 
