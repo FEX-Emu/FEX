@@ -471,7 +471,9 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
 
   size_t CurrentSrc = 0;
 
-  if ((Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_VEX_1ST_SRC) != 0) {
+  const auto VEXOperand = Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_VEX_SRC_MASK;
+
+  if (VEXOperand == FEXCore::X86Tables::InstFlags::FLAGS_VEX_1ST_SRC) {
     DecodeInst->Src[CurrentSrc].Type = DecodedOperand::OpType::GPR;
     DecodeInst->Src[CurrentSrc].Data.GPR.HighBits = false;
 
@@ -496,7 +498,7 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
     ++CurrentSrc;
   }
 
-  if ((Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_VEX_2ND_SRC) != 0) {
+  if (VEXOperand == FEXCore::X86Tables::InstFlags::FLAGS_VEX_2ND_SRC) {
     DecodeInst->Src[CurrentSrc].Type = DecodedOperand::OpType::GPR;
     DecodeInst->Src[CurrentSrc].Data.GPR.HighBits = false;
     DecodeInst->Src[CurrentSrc].Data.GPR.GPR = MapVEXToReg(Options.vvvv, HasXMMSrc);
@@ -515,7 +517,7 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
     ++CurrentSrc;
   }
 
-  if ((Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_VEX_DST) != 0) {
+  if (VEXOperand == FEXCore::X86Tables::InstFlags::FLAGS_VEX_DST) {
     CurrentDest->Type = DecodedOperand::OpType::GPR;
     CurrentDest->Data.GPR.HighBits = false;
     CurrentDest->Data.GPR.GPR = MapVEXToReg(Options.vvvv, HasXMMDst);
