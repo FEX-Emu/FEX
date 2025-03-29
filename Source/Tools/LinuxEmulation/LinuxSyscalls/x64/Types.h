@@ -61,8 +61,8 @@ struct ipc_perm_64 {
   }
 };
 
-static_assert(std::is_trivial<ipc_perm_64>::value, "Needs to be trivial");
-static_assert(sizeof(ipc_perm_64) == 48, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<ipc_perm_64>);
+static_assert(sizeof(ipc_perm_64) == 48);
 
 // Matches the definition x86/include/uapi/asm/sembuf.h
 struct FEX_ANNOTATE("alias-x86_64-semid64_ds") FEX_ANNOTATE("fex-match") semid_ds_64 {
@@ -95,8 +95,8 @@ struct FEX_ANNOTATE("alias-x86_64-semid64_ds") FEX_ANNOTATE("fex-match") semid_d
   }
 };
 
-static_assert(std::is_trivial<FEX::HLE::x64::semid_ds_64>::value, "Needs to be trivial");
-static_assert(sizeof(FEX::HLE::x64::semid_ds_64) == 104, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<FEX::HLE::x64::semid_ds_64>);
+static_assert(sizeof(FEX::HLE::x64::semid_ds_64) == 104);
 
 union semun {
   int val;
@@ -106,8 +106,8 @@ union semun {
   void* __pad;
 };
 
-static_assert(std::is_trivial<FEX::HLE::x64::semun>::value, "Needs to be trivial");
-static_assert(sizeof(FEX::HLE::x64::semun) == 8, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<FEX::HLE::x64::semun>);
+static_assert(sizeof(FEX::HLE::x64::semun) == 8);
 
 struct FEX_ANNOTATE("fex-match") FEX_PACKED guest_stat {
   uint64_t st_dev;
@@ -189,8 +189,8 @@ struct FEX_ANNOTATE("fex-match") FEX_PACKED guest_stat {
 };
 
 // Original definition in `arch/x86/include/uapi/asm/stat.h` for future excavation
-static_assert(std::is_trivial<FEX::HLE::x64::guest_stat>::value, "Needs to be trivial");
-static_assert(sizeof(FEX::HLE::x64::guest_stat) == 144, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<FEX::HLE::x64::guest_stat>);
+static_assert(sizeof(FEX::HLE::x64::guest_stat) == 144);
 
 // There is no public definition of this struct
 // Matches the definition of `struct linux_dirent` in fs/readdir.c
@@ -201,12 +201,12 @@ struct FEX_ANNOTATE("fex-match") linux_dirent {
   char d_name[1];
   /* Has hidden null character and d_type */
 };
-static_assert(std::is_trivial<linux_dirent>::value, "Needs to be trivial");
-static_assert(offsetof(linux_dirent, d_ino) == 0, "Incorrect offset");
-static_assert(offsetof(linux_dirent, d_off) == 8, "Incorrect offset");
-static_assert(offsetof(linux_dirent, d_reclen) == 16, "Incorrect offset");
-static_assert(offsetof(linux_dirent, d_name) == 18, "Incorrect offset");
-static_assert(sizeof(linux_dirent) == 24, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<linux_dirent>);
+static_assert(offsetof(linux_dirent, d_ino) == 0);
+static_assert(offsetof(linux_dirent, d_off) == 8);
+static_assert(offsetof(linux_dirent, d_reclen) == 16);
+static_assert(offsetof(linux_dirent, d_name) == 18);
+static_assert(sizeof(linux_dirent) == 24);
 
 // There is no public definition of this struct
 // Matches the definition of `struct linux_dirent64` in include/linux/dirent.h
@@ -217,6 +217,6 @@ struct FEX_ANNOTATE("fex-match") FEX_PACKED linux_dirent_64 {
   uint8_t d_type;
   char d_name[];
 };
-static_assert(std::is_trivial<linux_dirent_64>::value, "Needs to be trivial");
-static_assert(sizeof(linux_dirent_64) == 19, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<linux_dirent_64>);
+static_assert(sizeof(linux_dirent_64) == 19);
 } // namespace FEX::HLE::x64

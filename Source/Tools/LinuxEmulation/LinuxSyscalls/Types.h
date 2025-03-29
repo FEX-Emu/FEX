@@ -71,8 +71,8 @@ struct FEX_PACKED epoll_event_x86 {
     data = event.data;
   }
 };
-static_assert(std::is_trivial<epoll_event_x86>::value, "Needs to be trivial");
-static_assert(sizeof(epoll_event_x86) == 12, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<epoll_event_x86>);
+static_assert(sizeof(epoll_event_x86) == 12);
 
 // This directly matches the Linux `struct seminfo` structure
 // Due to the way this definition cyclic depends inside of includes, redefine it

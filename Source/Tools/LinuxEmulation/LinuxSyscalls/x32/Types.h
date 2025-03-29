@@ -112,8 +112,8 @@ private:
     return reinterpret_cast<T*>(Ptr);
   }
 };
-static_assert(std::is_trivial<compat_ptr<void>>::value, "Needs to be trivial");
-static_assert(sizeof(compat_ptr<void>) == 4, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<compat_ptr<void>>);
+static_assert(sizeof(compat_ptr<void>) == 4);
 
 /**
  * Helper class to import a compat_ptr from a native pointer or raw address.
@@ -159,8 +159,8 @@ struct FEX_ANNOTATE("alias-x86_32-timespec") FEX_ANNOTATE("fex-match") timespec3
   }
 };
 
-static_assert(std::is_trivial<timespec32>::value, "Needs to be trivial");
-static_assert(sizeof(timespec32) == 8, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<timespec32>);
+static_assert(sizeof(timespec32) == 8);
 /**  @} */
 
 /**
@@ -190,8 +190,8 @@ struct FEX_ANNOTATE("alias-x86_32-timeval") FEX_ANNOTATE("fex-match") timeval32 
 };
 /**  @} */
 
-static_assert(std::is_trivial<timeval32>::value, "Needs to be trivial");
-static_assert(sizeof(timeval32) == 8, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<timeval32>);
+static_assert(sizeof(timeval32) == 8);
 
 /**
  * @name itimerval32
@@ -219,8 +219,8 @@ struct FEX_ANNOTATE("alias-x86_32-itimerval") FEX_ANNOTATE("fex-match") itimerva
 };
 /**  @} */
 
-static_assert(std::is_trivial<itimerval32>::value, "Needs to be trivial");
-static_assert(sizeof(itimerval32) == 16, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<itimerval32>);
+static_assert(sizeof(itimerval32) == 16);
 
 /**
  * @name iovec32
@@ -248,8 +248,8 @@ struct FEX_ANNOTATE("alias-x86_32-iovec") FEX_ANNOTATE("fex-match") iovec32 {
   }
 };
 
-static_assert(std::is_trivial<iovec32>::value, "Needs to be trivial");
-static_assert(sizeof(iovec32) == 8, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<iovec32>);
+static_assert(sizeof(iovec32) == 8);
 /**  @} */
 
 struct FEX_ANNOTATE("alias-x86_32-cmsghdr") FEX_ANNOTATE("fex-match") cmsghdr32 {
@@ -259,8 +259,8 @@ struct FEX_ANNOTATE("alias-x86_32-cmsghdr") FEX_ANNOTATE("fex-match") cmsghdr32 
   char cmsg_data[];
 };
 
-static_assert(std::is_trivial<cmsghdr32>::value, "Needs to be trivial");
-static_assert(sizeof(cmsghdr32) == 12, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<cmsghdr32>);
+static_assert(sizeof(cmsghdr32) == 12);
 
 struct FEX_ANNOTATE("alias-x86_32-msghdr") FEX_ANNOTATE("fex-match") msghdr32 {
   compat_ptr<void> msg_name;
@@ -274,16 +274,16 @@ struct FEX_ANNOTATE("alias-x86_32-msghdr") FEX_ANNOTATE("fex-match") msghdr32 {
   int32_t msg_flags;
 };
 
-static_assert(std::is_trivial<msghdr32>::value, "Needs to be trivial");
-static_assert(sizeof(msghdr32) == 28, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<msghdr32>);
+static_assert(sizeof(msghdr32) == 28);
 
 struct FEX_ANNOTATE("alias-x86_32-mmsghdr") FEX_ANNOTATE("fex-match") mmsghdr_32 {
   msghdr32 msg_hdr;
   uint32_t msg_len;
 };
 
-static_assert(std::is_trivial<mmsghdr_32>::value, "Needs to be trivial");
-static_assert(sizeof(mmsghdr_32) == 32, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<mmsghdr_32>);
+static_assert(sizeof(mmsghdr_32) == 32);
 
 struct FEX_ANNOTATE("alias-x86_32-stack_t") FEX_ANNOTATE("fex-match") stack_t32 {
   compat_ptr<void> ss_sp;
@@ -307,8 +307,8 @@ struct FEX_ANNOTATE("alias-x86_32-stack_t") FEX_ANNOTATE("fex-match") stack_t32 
   }
 };
 
-static_assert(std::is_trivial<stack_t32>::value, "Needs to be trivial");
-static_assert(sizeof(stack_t32) == 12, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<stack_t32>);
+static_assert(sizeof(stack_t32) == 12);
 
 struct
   // This does not match the glibc implementation of stat
@@ -356,8 +356,8 @@ struct
 #undef COPY
   }
 };
-static_assert(std::is_trivial<oldstat32>::value, "Needs to be trivial");
-static_assert(sizeof(oldstat32) == 32, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<oldstat32>);
+static_assert(sizeof(oldstat32) == 32);
 
 struct
   // This does not match the glibc implementation of stat
@@ -415,8 +415,8 @@ struct
     __pad1 = __pad2 = __unused4 = __unused5 = 0;
   }
 };
-static_assert(std::is_trivial<stat32>::value, "Needs to be trivial");
-static_assert(sizeof(stat32) == 64, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<stat32>);
+static_assert(sizeof(stat32) == 64);
 
 struct
   // This does not match the glibc implementation of stat
@@ -505,8 +505,8 @@ struct
   }
 #endif
 };
-static_assert(std::is_trivial<stat64_32>::value, "Needs to be trivial");
-static_assert(sizeof(stat64_32) == 96, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<stat64_32>);
+static_assert(sizeof(stat64_32) == 96);
 
 struct FEX_PACKED FEX_ALIGNED(4) FEX_ANNOTATE("alias-x86_32-statfs64") FEX_ANNOTATE("fex-match") statfs64_32 {
   uint32_t f_type;
@@ -560,8 +560,8 @@ struct FEX_PACKED FEX_ALIGNED(4) FEX_ANNOTATE("alias-x86_32-statfs64") FEX_ANNOT
   }
 #endif
 };
-static_assert(std::is_trivial<statfs64_32>::value, "Needs to be trivial");
-static_assert(sizeof(statfs64_32) == 84, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<statfs64_32>);
+static_assert(sizeof(statfs64_32) == 84);
 
 struct FEX_ANNOTATE("alias-x86_32-statfs") FEX_ANNOTATE("fex-match") statfs32_32 {
   int32_t f_type;
@@ -615,8 +615,8 @@ struct FEX_ANNOTATE("alias-x86_32-statfs") FEX_ANNOTATE("fex-match") statfs32_32
   }
 #endif
 };
-static_assert(std::is_trivial<statfs32_32>::value, "Needs to be trivial");
-static_assert(sizeof(statfs32_32) == 64, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<statfs32_32>);
+static_assert(sizeof(statfs32_32) == 64);
 
 struct FEX_ANNOTATE("alias-x86_32-flock") FEX_ANNOTATE("fex-match") flock_32 {
   int16_t l_type;
@@ -646,8 +646,8 @@ struct FEX_ANNOTATE("alias-x86_32-flock") FEX_ANNOTATE("fex-match") flock_32 {
   }
 };
 
-static_assert(std::is_trivial<flock_32>::value, "Needs to be trivial");
-static_assert(sizeof(flock_32) == 16, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<flock_32>);
+static_assert(sizeof(flock_32) == 16);
 
 // glibc doesn't pack flock64 while the kernel does
 // This does not match glibc flock64 definition
@@ -679,8 +679,8 @@ struct FEX_ANNOTATE("fex-match") FEX_PACKED flock64_32 {
     return res;
   }
 };
-static_assert(std::is_trivial<flock64_32>::value, "Needs to be trivial");
-static_assert(sizeof(flock64_32) == 24, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<flock64_32>);
+static_assert(sizeof(flock64_32) == 24);
 
 // There is no public definition of this struct
 // Matches the definition of `struct linux_dirent` in fs/readdir.c
@@ -691,8 +691,8 @@ struct FEX_ANNOTATE("fex-match") linux_dirent {
   uint8_t _pad[6];
   char d_name[];
 };
-static_assert(std::is_trivial<linux_dirent>::value, "Needs to be trivial");
-static_assert(sizeof(linux_dirent) == 24, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<linux_dirent>);
+static_assert(sizeof(linux_dirent) == 24);
 
 // There is no public definition of this struct
 // Matches the definition of `struct compat_linux_dirent` in fs/readdir.c
@@ -703,8 +703,8 @@ struct FEX_ANNOTATE("fex-match") linux_dirent_32 {
   char d_name[1];
   /* Has hidden null character and d_type */
 };
-static_assert(std::is_trivial<linux_dirent_32>::value, "Needs to be trivial");
-static_assert(sizeof(linux_dirent_32) == 12, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<linux_dirent_32>);
+static_assert(sizeof(linux_dirent_32) == 12);
 
 // There is no public definition of this struct
 // Matches the definition of `struct linux_dirent64` in include/linux/dirent.h
@@ -716,8 +716,8 @@ struct FEX_ANNOTATE("fex-match") linux_dirent_64 {
   uint8_t _pad[5];
   char d_name[];
 };
-static_assert(std::is_trivial<linux_dirent_64>::value, "Needs to be trivial");
-static_assert(sizeof(linux_dirent_64) == 24, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<linux_dirent_64>);
+static_assert(sizeof(linux_dirent_64) == 24);
 
 // There is no public definition of this struct
 // Matches `struct compat_sigset_argpack`
@@ -726,8 +726,8 @@ struct FEX_ANNOTATE("fex-match") sigset_argpack32 {
   compat_size_t size;
 };
 
-static_assert(std::is_trivial<sigset_argpack32>::value, "Needs to be trivial");
-static_assert(sizeof(sigset_argpack32) == 8, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<sigset_argpack32>);
+static_assert(sizeof(sigset_argpack32) == 8);
 
 struct FEX_ANNOTATE("alias-x86_32-rusage") FEX_ANNOTATE("fex-match") rusage_32 {
   timeval32 ru_utime;
@@ -832,8 +832,8 @@ struct FEX_ANNOTATE("alias-x86_32-rusage") FEX_ANNOTATE("fex-match") rusage_32 {
     return usage;
   }
 };
-static_assert(std::is_trivial<rusage_32>::value, "Needs to be trivial");
-static_assert(sizeof(rusage_32) == 72, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<rusage_32>);
+static_assert(sizeof(rusage_32) == 72);
 
 struct FEX_PACKED FEX_ANNOTATE("fex-match") OldGuestSigAction_32 {
   FEX::HLE::x32::compat_ptr<void> handler_32;
@@ -861,8 +861,8 @@ struct FEX_PACKED FEX_ANNOTATE("fex-match") OldGuestSigAction_32 {
   }
 };
 
-static_assert(std::is_trivial<OldGuestSigAction_32>::value, "Needs to be trivial");
-static_assert(sizeof(OldGuestSigAction_32) == 16, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<OldGuestSigAction_32>);
+static_assert(sizeof(OldGuestSigAction_32) == 16);
 
 // This definition isn't public
 // This is for rt_sigaction
@@ -894,8 +894,8 @@ struct FEX_PACKED FEX_ANNOTATE("fex-match") GuestSigAction_32 {
   }
 };
 
-static_assert(std::is_trivial<GuestSigAction_32>::value, "Needs to be trivial");
-static_assert(sizeof(GuestSigAction_32) == 20, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<GuestSigAction_32>);
+static_assert(sizeof(GuestSigAction_32) == 20);
 
 struct FEX_ANNOTATE("alias-x86_32-tms") FEX_ANNOTATE("fex-match") compat_tms {
   compat_clock_t tms_utime;
@@ -920,8 +920,8 @@ struct FEX_ANNOTATE("alias-x86_32-tms") FEX_ANNOTATE("fex-match") compat_tms {
   }
 };
 
-static_assert(std::is_trivial<compat_tms>::value, "Needs to be trivial");
-static_assert(sizeof(compat_tms) == 16, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<compat_tms>);
+static_assert(sizeof(compat_tms) == 16);
 
 struct FEX_ANNOTATE("alias-x86_32-utimbuf") FEX_ANNOTATE("fex-match") old_utimbuf32 {
   old_time32_t actime;
@@ -941,8 +941,8 @@ struct FEX_ANNOTATE("alias-x86_32-utimbuf") FEX_ANNOTATE("fex-match") old_utimbu
   }
 };
 
-static_assert(std::is_trivial<old_utimbuf32>::value, "Needs to be trivial");
-static_assert(sizeof(old_utimbuf32) == 8, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<old_utimbuf32>);
+static_assert(sizeof(old_utimbuf32) == 8);
 
 struct FEX_ANNOTATE("alias-x86_32-itimerspec") FEX_ANNOTATE("fex-match") old_itimerspec32 {
   timespec32 it_interval;
@@ -961,8 +961,8 @@ struct FEX_ANNOTATE("alias-x86_32-itimerspec") FEX_ANNOTATE("fex-match") old_iti
     , it_value {val.it_value} {}
 };
 
-static_assert(std::is_trivial<old_itimerspec32>::value, "Needs to be trivial");
-static_assert(sizeof(old_itimerspec32) == 16, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<old_itimerspec32>);
+static_assert(sizeof(old_itimerspec32) == 16);
 
 template<bool Signed>
 struct FEX_ANNOTATE("alias-x86_32-rlimit") FEX_ANNOTATE("fex-match") rlimit32 {
@@ -1003,8 +1003,8 @@ struct FEX_ANNOTATE("alias-x86_32-rlimit") FEX_ANNOTATE("fex-match") rlimit32 {
   }
 };
 
-static_assert(std::is_trivial<rlimit32<true>>::value, "Needs to be trivial");
-static_assert(sizeof(rlimit32<true>) == 8, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<rlimit32<true>>);
+static_assert(sizeof(rlimit32<true>) == 8);
 
 struct FEX_ANNOTATE("alias-x86_32-timex") FEX_ANNOTATE("fex-match") timex32 {
   uint32_t modes;
@@ -1093,8 +1093,8 @@ struct FEX_ANNOTATE("alias-x86_32-timex") FEX_ANNOTATE("fex-match") timex32 {
   }
 };
 
-static_assert(std::is_trivial<timex32>::value, "Needs to be trivial");
-static_assert(sizeof(timex32) == 128, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<timex32>);
+static_assert(sizeof(timex32) == 128);
 
 union FEX_ANNOTATE("alias-x86_32-sigval") FEX_ANNOTATE("fex-match") sigval32 {
   int sival_int;
@@ -1113,8 +1113,8 @@ union FEX_ANNOTATE("alias-x86_32-sigval") FEX_ANNOTATE("fex-match") sigval32 {
   }
 };
 
-static_assert(std::is_trivial<sigval32>::value, "Needs to be trivial");
-static_assert(sizeof(sigval32) == 4, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<sigval32>);
+static_assert(sizeof(sigval32) == 4);
 
 constexpr size_t FEX_SIGEV_MAX_SIZE = 64;
 constexpr size_t FEX_SIGEV_PAD_SIZE = (FEX_SIGEV_MAX_SIZE - (sizeof(int32_t) * 2 + sizeof(sigval32))) / sizeof(int32_t);
@@ -1168,8 +1168,8 @@ struct FEX_ANNOTATE("fex-match") sigevent32 {
   }
 };
 
-static_assert(std::is_trivial<sigval32>::value, "Needs to be trivial");
-static_assert(sizeof(sigval32) == 4, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<sigval32>);
+static_assert(sizeof(sigval32) == 4);
 
 struct FEX_ANNOTATE("alias-x86_32-mq_attr") FEX_ANNOTATE("fex-match") mq_attr32 {
   compat_long_t mq_flags;
@@ -1196,8 +1196,8 @@ struct FEX_ANNOTATE("alias-x86_32-mq_attr") FEX_ANNOTATE("fex-match") mq_attr32 
   }
 };
 
-static_assert(std::is_trivial<mq_attr32>::value, "Needs to be trivial");
-static_assert(sizeof(mq_attr32) == 32, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<mq_attr32>);
+static_assert(sizeof(mq_attr32) == 32);
 
 union FEX_ANNOTATE("alias-x86_32-epoll_data_t") FEX_ANNOTATE("fex-match") epoll_data32 {
   compat_ptr<void> ptr;
@@ -1224,8 +1224,8 @@ struct FEX_PACKED FEX_ANNOTATE("alias-x86_32-epoll_event") FEX_ANNOTATE("fex-mat
     events = event.events;
   }
 };
-static_assert(std::is_trivial<epoll_event32>::value, "Needs to be trivial");
-static_assert(sizeof(epoll_event32) == 12, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<epoll_event32>);
+static_assert(sizeof(epoll_event32) == 12);
 
 struct ipc_perm_32 {
   uint32_t key;
@@ -1261,8 +1261,8 @@ struct ipc_perm_32 {
   }
 };
 
-static_assert(std::is_trivial<ipc_perm_32>::value, "Needs to be trivial");
-static_assert(sizeof(ipc_perm_32) == 16, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<ipc_perm_32>);
+static_assert(sizeof(ipc_perm_32) == 16);
 
 struct ipc_perm_64 {
   uint32_t key;
@@ -1302,8 +1302,8 @@ struct ipc_perm_64 {
   }
 };
 
-static_assert(std::is_trivial<ipc_perm_64>::value, "Needs to be trivial");
-static_assert(sizeof(ipc_perm_64) == 36, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<ipc_perm_64>);
+static_assert(sizeof(ipc_perm_64) == 36);
 
 struct shmid_ds_32 {
   ipc_perm_32 shm_perm;
@@ -1349,8 +1349,8 @@ struct shmid_ds_32 {
   }
 };
 
-static_assert(std::is_trivial<shmid_ds_32>::value, "Needs to be trivial");
-static_assert(sizeof(shmid_ds_32) == 48, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<shmid_ds_32>);
+static_assert(sizeof(shmid_ds_32) == 48);
 
 struct shmid_ds_64 {
   ipc_perm_64 shm_perm;
@@ -1408,8 +1408,8 @@ struct shmid_ds_64 {
   }
 };
 
-static_assert(std::is_trivial<shmid_ds_64>::value, "Needs to be trivial");
-static_assert(sizeof(shmid_ds_64) == 84, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<shmid_ds_64>);
+static_assert(sizeof(shmid_ds_64) == 84);
 
 struct semid_ds_32 {
   struct ipc_perm_32 sem_perm;
@@ -1446,8 +1446,8 @@ struct semid_ds_32 {
   }
 };
 
-static_assert(std::is_trivial<semid_ds_32>::value, "Needs to be trivial");
-static_assert(sizeof(semid_ds_32) == 44, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<semid_ds_32>);
+static_assert(sizeof(semid_ds_32) == 44);
 
 struct semid_ds_64 {
   struct ipc_perm_64 sem_perm;
@@ -1487,8 +1487,8 @@ struct semid_ds_64 {
   }
 };
 
-static_assert(std::is_trivial<semid_ds_64>::value, "Needs to be trivial");
-static_assert(sizeof(semid_ds_64) == 64, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<semid_ds_64>);
+static_assert(sizeof(semid_ds_64) == 64);
 
 struct msqid_ds_32 {
   struct ipc_perm_32 msg_perm;
@@ -1552,8 +1552,8 @@ struct msqid_ds_32 {
     msg_first = msg_last = msg_qbytes = 0;
   }
 };
-static_assert(std::is_trivial<msqid_ds_32>::value, "Needs to be trivial");
-static_assert(sizeof(msqid_ds_32) == 56, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<msqid_ds_32>);
+static_assert(sizeof(msqid_ds_32) == 56);
 
 struct msqid_ds_64 {
   struct ipc_perm_64 msg_perm;
@@ -1610,8 +1610,8 @@ struct msqid_ds_64 {
   }
 };
 
-static_assert(std::is_trivial<msqid_ds_64>::value, "Needs to be trivial");
-static_assert(sizeof(msqid_ds_64) == 88, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<msqid_ds_64>);
+static_assert(sizeof(msqid_ds_64) == 88);
 
 struct FEX_ANNOTATE("fex-match") shminfo_32 {
   uint32_t shmmax;
@@ -1641,8 +1641,8 @@ struct FEX_ANNOTATE("fex-match") shminfo_32 {
   }
 };
 
-static_assert(std::is_trivial<shminfo_32>::value, "Needs to be trivial");
-static_assert(sizeof(shminfo_32) == 20, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<shminfo_32>);
+static_assert(sizeof(shminfo_32) == 20);
 
 struct FEX_ANNOTATE("alias-x86_32-shminfo64") FEX_ANNOTATE("fex-match") shminfo_64 {
   compat_ulong_t shmmax;
@@ -1677,8 +1677,8 @@ struct FEX_ANNOTATE("alias-x86_32-shminfo64") FEX_ANNOTATE("fex-match") shminfo_
   }
 };
 
-static_assert(std::is_trivial<shminfo_64>::value, "Needs to be trivial");
-static_assert(sizeof(shminfo_64) == 36, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<shminfo_64>);
+static_assert(sizeof(shminfo_64) == 36);
 
 struct FEX_ANNOTATE("alias-x86_32-shm_info") FEX_ANNOTATE("fex-match") shm_info_32 {
   int used_ids;
@@ -1700,8 +1700,8 @@ struct FEX_ANNOTATE("alias-x86_32-shm_info") FEX_ANNOTATE("fex-match") shm_info_
   }
 };
 
-static_assert(std::is_trivial<shm_info_32>::value, "Needs to be trivial");
-static_assert(sizeof(shm_info_32) == 24, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<shm_info_32>);
+static_assert(sizeof(shm_info_32) == 24);
 
 struct FEX_ANNOTATE("fex-match") compat_select_args {
   int nfds;
@@ -1713,7 +1713,7 @@ struct FEX_ANNOTATE("fex-match") compat_select_args {
   compat_select_args() = delete;
 };
 
-static_assert(std::is_trivial_v<compat_select_args>, "Needs to be trivial");
-static_assert(sizeof(compat_select_args) == 20, "Incorrect size");
+static_assert(std::is_trivially_copyable_v<compat_select_args>);
+static_assert(sizeof(compat_select_args) == 20);
 
 } // namespace FEX::HLE::x32
