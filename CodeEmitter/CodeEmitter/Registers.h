@@ -30,9 +30,9 @@ public:
 private:
   uint32_t Index;
 };
-static_assert(sizeof(Register) == sizeof(uint32_t), "Needs to be uint32_t");
-static_assert(std::is_trivial_v<Register>, "Needs to be trivial");
-static_assert(std::is_standard_layout_v<Register>, "Needs to be standard");
+static_assert(sizeof(Register) == sizeof(uint32_t));
+static_assert(std::is_trivially_copyable_v<Register>);
+static_assert(std::is_standard_layout_v<Register>);
 
 /* 32-bit GPR register class.
  * This class will imply a 32-bit register size being used.
@@ -58,9 +58,9 @@ public:
 private:
   uint32_t Index;
 };
-static_assert(sizeof(Register) == sizeof(uint32_t), "Needs to be uint32_t");
-static_assert(std::is_trivial_v<Register>, "Needs to be trivial");
-static_assert(std::is_standard_layout_v<Register>, "Needs to be standard");
+static_assert(sizeof(WRegister) == sizeof(uint32_t));
+static_assert(std::is_trivially_copyable_v<WRegister>);
+static_assert(std::is_standard_layout_v<WRegister>);
 
 /* 64-bit GPR register class.
  * This class will imply a 64-bit register size being used.
@@ -86,9 +86,9 @@ public:
 private:
   uint32_t Index;
 };
-static_assert(sizeof(Register) == sizeof(uint32_t), "Needs to be uint32_t");
-static_assert(std::is_trivial_v<Register>, "Needs to be trivial");
-static_assert(std::is_standard_layout_v<Register>, "Needs to be standard");
+static_assert(sizeof(XRegister) == sizeof(uint32_t));
+static_assert(std::is_trivially_copyable_v<XRegister>);
+static_assert(std::is_standard_layout_v<XRegister>);
 
 inline constexpr WRegister Register::W() const {
   return WRegister {Index};
@@ -283,9 +283,9 @@ public:
 private:
   uint32_t Index;
 };
-static_assert(sizeof(VRegister) == sizeof(uint32_t), "Needs to be uint32_t");
-static_assert(std::is_trivial_v<VRegister>, "Needs to be trivial");
-static_assert(std::is_standard_layout_v<VRegister>, "Needs to be standard");
+static_assert(sizeof(VRegister) == sizeof(uint32_t));
+static_assert(std::is_trivially_copyable_v<VRegister>);
+static_assert(std::is_standard_layout_v<VRegister>);
 
 /* 8-bit ASIMD register class
  * This class implies 8-bit scalar register.
@@ -315,9 +315,9 @@ public:
 private:
   uint32_t Index;
 };
-static_assert(sizeof(BRegister) == sizeof(uint32_t), "Needs to be uint32_t");
-static_assert(std::is_trivial_v<BRegister>, "Needs to be trivial");
-static_assert(std::is_standard_layout_v<BRegister>, "Needs to be standard");
+static_assert(sizeof(BRegister) == sizeof(uint32_t));
+static_assert(std::is_trivially_copyable_v<BRegister>);
+static_assert(std::is_standard_layout_v<BRegister>);
 
 /* 16-bit ASIMD register class
  * This class implies 16-bit scalar register.
@@ -347,9 +347,9 @@ public:
 private:
   uint32_t Index;
 };
-static_assert(sizeof(HRegister) == sizeof(uint32_t), "Needs to be uint32_t");
-static_assert(std::is_trivial_v<HRegister>, "Needs to be trivial");
-static_assert(std::is_standard_layout_v<HRegister>, "Needs to be standard");
+static_assert(sizeof(HRegister) == sizeof(uint32_t));
+static_assert(std::is_trivially_copyable_v<HRegister>);
+static_assert(std::is_standard_layout_v<HRegister>);
 
 /* 32-bit ASIMD register class
  * This class implies 32-bit scalar register.
@@ -379,9 +379,9 @@ public:
 private:
   uint32_t Index;
 };
-static_assert(sizeof(SRegister) == sizeof(uint32_t), "Needs to be uint32_t");
-static_assert(std::is_trivial_v<SRegister>, "Needs to be trivial");
-static_assert(std::is_standard_layout_v<SRegister>, "Needs to be standard");
+static_assert(sizeof(SRegister) == sizeof(uint32_t));
+static_assert(std::is_trivially_copyable_v<SRegister>);
+static_assert(std::is_standard_layout_v<SRegister>);
 
 /* 64-bit ASIMD register class
  * This class doesn't imply Vector or Scalar.
@@ -412,9 +412,9 @@ public:
 private:
   uint32_t Index;
 };
-static_assert(sizeof(DRegister) == sizeof(uint32_t), "Needs to be uint32_t");
-static_assert(std::is_trivial_v<DRegister>, "Needs to be trivial");
-static_assert(std::is_standard_layout_v<DRegister>, "Needs to be standard");
+static_assert(sizeof(DRegister) == sizeof(uint32_t));
+static_assert(std::is_trivially_copyable_v<DRegister>);
+static_assert(std::is_standard_layout_v<DRegister>);
 
 /* 128-bit ASIMD register class
  * This class doesn't imply Vector or Scalar.
@@ -445,9 +445,9 @@ public:
 private:
   uint32_t Index;
 };
-static_assert(sizeof(QRegister) == sizeof(uint32_t), "Needs to be uint32_t");
-static_assert(std::is_trivial_v<QRegister>, "Needs to be trivial");
-static_assert(std::is_standard_layout_v<QRegister>, "Needs to be standard");
+static_assert(sizeof(QRegister) == sizeof(uint32_t));
+static_assert(std::is_trivially_copyable_v<QRegister>);
+static_assert(std::is_standard_layout_v<QRegister>);
 
 /* Unsized SVE register class.
  * This class explicitly implies the instruction will operate using SVE.
@@ -474,9 +474,9 @@ public:
 private:
   uint32_t Index;
 };
-static_assert(sizeof(ZRegister) == sizeof(uint32_t), "Needs to be uint32_t");
-static_assert(std::is_trivial_v<ZRegister>, "Needs to be trivial");
-static_assert(std::is_standard_layout_v<ZRegister>, "Needs to be standard");
+static_assert(sizeof(ZRegister) == sizeof(uint32_t));
+static_assert(std::is_trivially_copyable_v<ZRegister>);
+static_assert(std::is_standard_layout_v<ZRegister>);
 
 // VRegister
 inline constexpr BRegister VRegister::B() const {
@@ -919,9 +919,9 @@ public:
 private:
   uint32_t Index;
 };
-static_assert(sizeof(PRegister) == sizeof(uint32_t), "Needs to be uint32_t");
-static_assert(std::is_trivial_v<PRegister>, "Needs to be trivial");
-static_assert(std::is_standard_layout_v<PRegister>, "Needs to be standard");
+static_assert(sizeof(PRegister) == sizeof(uint32_t));
+static_assert(std::is_trivially_copyable_v<PRegister>);
+static_assert(std::is_standard_layout_v<PRegister>);
 
 // Unsized predicate register for SVE with zeroing semantics.
 class PRegisterZero {
@@ -947,9 +947,9 @@ public:
 private:
   uint32_t Index;
 };
-static_assert(sizeof(PRegisterZero) == sizeof(uint32_t), "Needs to be uint32_t");
-static_assert(std::is_trivial_v<PRegisterZero>, "Needs to be trivial");
-static_assert(std::is_standard_layout_v<PRegisterZero>, "Needs to be standard");
+static_assert(sizeof(PRegisterZero) == sizeof(uint32_t));
+static_assert(std::is_trivially_copyable_v<PRegisterZero>);
+static_assert(std::is_standard_layout_v<PRegisterZero>);
 
 // Unsized predicate register for SVE with merging semantics.
 class PRegisterMerge {
@@ -975,9 +975,9 @@ public:
 private:
   uint32_t Index;
 };
-static_assert(sizeof(PRegisterZero) == sizeof(uint32_t), "Needs to be uint32_t");
-static_assert(std::is_trivial_v<PRegisterZero>, "Needs to be trivial");
-static_assert(std::is_standard_layout_v<PRegisterZero>, "Needs to be standard");
+static_assert(sizeof(PRegisterMerge) == sizeof(uint32_t));
+static_assert(std::is_trivially_copyable_v<PRegisterMerge>);
+static_assert(std::is_standard_layout_v<PRegisterMerge>);
 
 // PRegister
 inline constexpr PRegisterZero PRegister::Zeroing() const {

@@ -440,7 +440,7 @@ struct X86InstInfo {
   }
 };
 
-static_assert(std::is_trivial<X86InstInfo>::value, "X86InstInfo needs to be trivial");
+static_assert(std::is_trivially_copyable_v<X86InstInfo>);
 
 constexpr size_t MAX_PRIMARY_TABLE_SIZE = 256;
 constexpr size_t MAX_SECOND_TABLE_SIZE = 256;
