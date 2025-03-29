@@ -330,12 +330,12 @@ private:
 
   // Cache for Constants
   // ConstantPoll[i] has IREmit->_Constant(i);
-  std::array<Ref, 8> ConstantPool;
+  std::array<Ref, 8> ConstantPool {};
   Ref GetConstant(ssize_t Offset);
 
   // Cached value for Top
   // If slowpath is false, then TopCache is nullptr.
-  std::array<Ref, 8> TopOffsetCache;
+  std::array<Ref, 8> TopOffsetCache {};
   // Are we on the slow path?
   // Once we enter the slow path, we never come out.
   // This just simplifies the code atm. If there's a need to return to the fast path in the future
