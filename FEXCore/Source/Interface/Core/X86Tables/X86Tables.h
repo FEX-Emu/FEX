@@ -343,14 +343,14 @@ constexpr InstFlagType FLAGS_MODRM                 = (1ULL << 16);
 // x87
 constexpr InstFlagType FLAGS_POP                  = (1ULL << 20);
 
-// Whether or not the instruction has a VEX prefix for the first source operand
-constexpr InstFlagType FLAGS_VEX_1ST_SRC          = (1ULL << 21);
-// Whether or not the instruction has a VEX prefix for the second source operand
-constexpr InstFlagType FLAGS_VEX_2ND_SRC          = (1ULL << 22);
-// Whether or not the instruction has a VEX prefix for the destination
-constexpr InstFlagType FLAGS_VEX_DST              = (1ULL << 23);
+// Whether or not the instruction has a VEX prefix for the dest, first, or second source.
+constexpr InstFlagType FLAGS_VEX_SRC_MASK         = (0b11ULL << 21);
+constexpr InstFlagType FLAGS_VEX_NO_OPERAND       = (0b00ULL << 21);
+constexpr InstFlagType FLAGS_VEX_DST              = (0b01ULL << 21);
+constexpr InstFlagType FLAGS_VEX_1ST_SRC          = (0b10ULL << 21);
+constexpr InstFlagType FLAGS_VEX_2ND_SRC          = (0b11ULL << 21);
 // Whether or not the instruction has a VSIB byte
-constexpr InstFlagType FLAGS_VEX_VSIB             = (1ULL << 24);
+constexpr InstFlagType FLAGS_VEX_VSIB             = (1ULL << 23);
 
 constexpr InstFlagType FLAGS_SIZE_DST_OFF = 58;
 constexpr InstFlagType FLAGS_SIZE_SRC_OFF = FLAGS_SIZE_DST_OFF + 3;
