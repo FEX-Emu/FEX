@@ -88,8 +88,6 @@ public:
     return &NecessaryLibs;
   }
 
-  void PrintRelocationTable() const;
-
   using SymbolGetter = std::function<ELFSymbol*(const char*, uint8_t)>;
   void FixupRelocations(void* ELFBase, uint64_t GuestELFBase, SymbolGetter Getter);
 
@@ -145,14 +143,6 @@ private:
   void CalculateMemoryLayouts();
   void CalculateSymbols();
   void GetDynamicLibs();
-
-  // Information functions
-  void PrintHeader() const;
-  void PrintSectionHeaders() const;
-  void PrintProgramHeaders() const;
-  void PrintSymbolTable() const;
-  void PrintInitArray() const;
-  void PrintDynamicTable() const;
 
   fextl::vector<char> RawFile;
   union {
