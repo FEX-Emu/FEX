@@ -105,7 +105,7 @@ struct NodeID final {
  *  - Can be confusing if you're mixing OpNodeWrapper and OrderedNodeWrapper usage
  */
 template<typename Type>
-struct NodeWrapperBase final {
+struct FEX_PACKED NodeWrapperBase final {
   // On x86-64 using a uint64_t type is more efficient since RIP addressing gives you [<Base> + <Index> + <imm offset>]
   // On AArch64 using uint32_t is just more memory efficient. 32bit or 64bit offset doesn't matter
   // We use uint32_t to be more memory efficient (Cuts our node list size in half)
@@ -371,7 +371,7 @@ static_assert(sizeof(OrderedNode) == (sizeof(OrderedNodeHeader) + sizeof(uint32_
 //  };
 using Ref = OrderedNode*;
 
-struct RegisterClassType final {
+struct FEX_PACKED RegisterClassType final {
   using value_type = uint32_t;
 
   value_type Val;
@@ -383,7 +383,7 @@ struct RegisterClassType final {
   operator==(const RegisterClassType&, const RegisterClassType&) = default;
 };
 
-struct CondClassType final {
+struct FEX_PACKED CondClassType final {
   uint8_t Val;
   [[nodiscard]] constexpr operator uint8_t() const {
     return Val;
@@ -393,7 +393,7 @@ struct CondClassType final {
   operator==(const CondClassType&, const CondClassType&) = default;
 };
 
-struct MemOffsetType final {
+struct FEX_PACKED MemOffsetType final {
   uint8_t Val;
   [[nodiscard]] constexpr operator uint8_t() const {
     return Val;
@@ -403,7 +403,7 @@ struct MemOffsetType final {
   operator==(const MemOffsetType&, const MemOffsetType&) = default;
 };
 
-struct TypeDefinition final {
+struct FEX_PACKED TypeDefinition final {
   uint16_t Val;
 
   [[nodiscard]] constexpr operator uint16_t() const {
@@ -441,7 +441,7 @@ struct TypeDefinition final {
 
 static_assert(std::is_trivially_copyable_v<TypeDefinition>);
 
-struct FenceType final {
+struct FEX_PACKED FenceType final {
   using value_type = uint8_t;
 
   value_type Val;
@@ -453,7 +453,7 @@ struct FenceType final {
   operator==(const FenceType&, const FenceType&) = default;
 };
 
-struct RoundType final {
+struct FEX_PACKED RoundType final {
   uint8_t Val;
   [[nodiscard]] constexpr operator uint8_t() const {
     return Val;
