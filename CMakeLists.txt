@@ -440,6 +440,7 @@ if (BUILD_TESTS)
   set(TEST_JOB_FLAG "-j${TEST_JOB_COUNT}")
 endif()
 
+add_subdirectory(External/cephes/)
 add_subdirectory(FEXHeaderUtils/)
 add_subdirectory(CodeEmitter/)
 add_subdirectory(FEXCore/)

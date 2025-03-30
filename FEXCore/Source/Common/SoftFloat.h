@@ -5,6 +5,7 @@
 #include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXHeaderUtils/BitUtils.h>
+#include "cephes_128bit.h"
 
 #include <cmath>
 #include <cstring>
@@ -304,7 +305,7 @@ struct FEX_PACKED X80SoftFloat {
     }
     X80SoftFloat Int = FRNDINT(state, rhs, softfloat_round_minMag);
     LIBRARY_PRECISION Src2_d = Int.ToFMax(state);
-    Src2_d = exp2l(Src2_d);
+    Src2_d = FEXCore::cephes_128bit::exp2l(Src2_d);
     X80SoftFloat Src2_X80(state, Src2_d);
     X80SoftFloat Result = extF80_mul(state, lhs, Src2_X80);
     return Result;
@@ -328,7 +329,7 @@ struct FEX_PACKED X80SoftFloat {
     return Result;
 #else
     LIBRARY_PRECISION Src1_d = lhs.ToFMax(state);
-    LIBRARY_PRECISION Result = exp2l(Src1_d);
+    LIBRARY_PRECISION Result = FEXCore::cephes_128bit::exp2l(Src1_d);
     Result -= 1.0;
     return X80SoftFloat(state, Result);
 #endif
@@ -353,7 +354,7 @@ struct FEX_PACKED X80SoftFloat {
 #else
     LIBRARY_PRECISION Src1_d = lhs.ToFMax(state);
     LIBRARY_PRECISION Src2_d = rhs.ToFMax(state);
-    LIBRARY_PRECISION Tmp = Src2_d * log2l(Src1_d);
+    LIBRARY_PRECISION Tmp = Src2_d * FEXCore::cephes_128bit::log2l(Src1_d);
     return X80SoftFloat(state, Tmp);
 #endif
   }
@@ -377,7 +378,7 @@ struct FEX_PACKED X80SoftFloat {
 #else
     LIBRARY_PRECISION Src1_d = lhs.ToFMax(state);
     LIBRARY_PRECISION Src2_d = rhs.ToFMax(state);
-    LIBRARY_PRECISION Tmp = atan2l(Src1_d, Src2_d);
+    LIBRARY_PRECISION Tmp = FEXCore::cephes_128bit::atan2l(Src1_d, Src2_d);
     return X80SoftFloat(state, Tmp);
 #endif
   }
@@ -400,7 +401,7 @@ struct FEX_PACKED X80SoftFloat {
     return Result;
 #else
     LIBRARY_PRECISION Src_d = lhs.ToFMax(state);
-    Src_d = tanl(Src_d);
+    Src_d = FEXCore::cephes_128bit::tanl(Src_d);
     return X80SoftFloat(state, Src_d);
 #endif
   }
@@ -422,7 +423,7 @@ struct FEX_PACKED X80SoftFloat {
     return Result;
 #else
     LIBRARY_PRECISION Src_d = lhs.ToFMax(state);
-    Src_d = sinl(Src_d);
+    Src_d = FEXCore::cephes_128bit::sinl(Src_d);
     return X80SoftFloat(state, Src_d);
 #endif
   }
@@ -444,7 +445,7 @@ struct FEX_PACKED X80SoftFloat {
     return Result;
 #else
     LIBRARY_PRECISION Src_d = lhs.ToFMax(state);
-    Src_d = cosl(Src_d);
+    Src_d = FEXCore::cephes_128bit::cosl(Src_d);
     return X80SoftFloat(state, Src_d);
 #endif
   }
