@@ -1,0 +1,118 @@
+The cephes math library is BSD licensed.
+The source can be accessed from https://www.netlib.org/cephes/
+
+Original license from https://www.netlib.org/cephes/readme :
+>    Some software in this archive may be from the book _Methods and
+> Programs for Mathematical Functions_ (Prentice-Hall or Simon & Schuster
+> International, 1989) or from the Cephes Mathematical Library, a
+> commercial product. In either event, it is copyrighted by the author.
+> What you see here may be used freely but it comes with no support or
+> guarantee.
+>
+>    The two known misprints in the book are repaired here in the
+> source listings for the gamma function and the incomplete beta
+> integral.
+>
+>
+>    Stephen L. Moshier
+>    moshier@na-net.ornl.gov
+
+The author was e-mailed and they allowed it to be relicensed under BSD.
+Resources:
+https://bugs.gentoo.org/687276
+https://lists.debian.org/debian-legal/2004/12/msg00295.html
+https://github.com/deepmind/torch-cephes/blob/master/LICENSE.txt
+https://github.com/nearform/node-cephes/blob/master/LICENSE
+
+E-mail snippit from torch-cephes source:
+
+Return-Path: <steve@moshier.net>
+X-Original-To: julien@cornebise.com
+Delivered-To: julien@cornebise.com
+Received: from atl4mhob11.myregisteredsite.com (atl4mhob11.myregisteredsite.com [209.17.115.49])
+    by cornebise.com (Postfix) with ESMTP id D47B139FC0
+    for <julien@cornebise.com>; Fri, 25 Oct 2013 16:32:40 +0200 (CEST)
+Received: from mailpod1.hostingplatform.com ([10.30.71.116])
+    by atl4mhob11.myregisteredsite.com (8.14.4/8.14.4) with ESMTP id r9PEWcwQ003543
+    for <julien@cornebise.com>; Fri, 25 Oct 2013 10:32:38 -0400
+Received: (qmail 11948 invoked by uid 0); 25 Oct 2013 12:36:20 -0000
+X-TCPREMOTEIP: 76.24.25.74
+X-Authenticated-UID: steve@moshier.net
+Received: from unknown (HELO d510.local) (steve@moshier.net@76.24.25.74)
+  by 0 with ESMTPA; 25 Oct 2013 12:36:20 -0000
+Date: Fri, 25 Oct 2013 08:36:19 -0400 (EDT)
+From: Stephen Moshier <steve@moshier.net>
+X-X-Sender: steve@d510
+To: Julien Cornebise <julien@cornebise.com>
+Subject: Re: Cephes: permission to wrap+distribute for Lua
+In-Reply-To: <52653AD3.1010004@cornebise.com>
+Message-ID: <alpine.DEB.2.02.1310250827040.17646@d510>
+References: <52653AD3.1010004@cornebise.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+
+
+Julien, thank you for writing.
+BSD license is fine, modification is OK.
+There are more build scripts available in the web site distributions than
+there are on the Netlib.  I think there is an update to Planck's radiation
+function that I haven't sent to Netlib yet.  But Netlib is a more stable
+site, so it is better to cite that as a reference.
+
+
+On Mon, 21 Oct 2013, Julien Cornebise wrote:
+
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
+>
+> Dear Mr Moshier
+>
+> I am a researcher in mathematics and machine learning in London, and
+> am writing about your awesome Cephes library, whom I found at the
+> heart of Scipy.
+>
+> It is so useful that, with your permission, I would like to wrap it
+> for Lua and Torch (a machine learning overlay to Lua, specialized in
+> neural nets, see http://www.torch.ch). I would like to distribute it
+> as a package for Torch, including your source code along the wrapping
+> code.
+> This wouldbe a public package, distributed under BSD License. I have
+> put a first draft on github:
+> https://github.com/jucor/torch-cephes
+>
+> Hence my three questions, please:
+>
+> 1/ How would you like to be acknowledged, beyond the comments that are
+> already in your code? Do you have any standard header/disclaimer that
+> I could add to the documentation?
+>
+> 2/ At the moment, your code is left untouched. However, if I ever need
+> to modify bits of the code, what are the conditions/restrictions?
+> Nothing huge -- I definitely do not want to mess with it: I was
+> planning to use the natural completion of some functions on the
+> completed real line (e.g. CDF returing 1 when called with "infinity",
+> or quantiles returning -Infinity when called with 0), either natively
+> if supported, or by setting a specific flag  via mtherr().
+>
+> 3/ I am currently using the source from Netlib. Do you recommend using
+> the source from your website instead ?
+>
+> Thank you very much for your attention,
+> and, more importantly, for the time and effort your poured into Cephes.
+>
+> Best regards,
+>
+> Julien Cornebise, Ph.D.
+> London, UK
+> http://www.cornebise.com/julien
+> -----BEGIN PGP SIGNATURE-----
+> Version: GnuPG v1.4.14 (Darwin)
+> Comment: GPGTools - http://gpgtools.org
+> Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+>
+> iEYEARECAAYFAlJlOtEACgkQKYR3gC0rw/gIpQCfZKu6+iDh9ghhm6QfsLXnldKN
+> BuIAn2zZHu1c/IrRAevhjM7N7xGg0LHO
+> =WeP5
+> -----END PGP SIGNATURE-----
+
