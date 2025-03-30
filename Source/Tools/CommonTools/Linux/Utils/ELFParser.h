@@ -45,7 +45,9 @@ struct ELFParser {
     }
 
     // Reset to beginning
-    lseek(fd, 0, SEEK_SET);
+    if (lseek(fd, 0, SEEK_SET) == -1) {
+      return false;
+    }
 
     uint8_t header[5];
     if (pread(fd, header, sizeof(header), 0) == -1) {
@@ -143,6 +145,12 @@ struct ELFParser {
     // sanity check program header count
     if (ehdr.e_phnum < 1 || ehdr.e_phnum > 65536 / ehdr.e_phentsize) {
       LogMan::Msg::EFmt("Too many program headers '{}'", fd);
+      return false;
+    }
+
+    // sanity check program header offset size.
+    if (ehdr.e_phoff > Size || (ehdr.e_phentsize * ehdr.e_phnum) > (Size - ehdr.e_phoff)) {
+      LogMan::Msg::EFmt("Program headers exceeds size of program");
       return false;
     }
 
