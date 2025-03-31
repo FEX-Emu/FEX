@@ -260,6 +260,7 @@ auto BaseOpsLambda = []() consteval {
     {0xFE, 1, X86InstInfo{"PADDD",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
     {0xFF, 1, X86InstInfo{"UD0",      TYPE_INST, FLAGS_BLOCK_END,                                                                                           0, nullptr}},
 
+#ifndef _WIN32
     // FEX reserved instructions
     // Unused x86 encoding instruction.
 
@@ -267,6 +268,7 @@ auto BaseOpsLambda = []() consteval {
 
     // This was originally used by VIA to jump to its alternative instruction set. Used for OP_THUNK
     {0x3F, 1, X86InstInfo{"ALTINST",      TYPE_INST, FLAGS_BLOCK_END | FLAGS_NO_OVERLAY | FLAGS_SETS_RIP,                                                            0, nullptr}},
+#endif
   };
 
   GenerateTable(&Table.at(0), TwoByteOpTable, std::size(TwoByteOpTable));
