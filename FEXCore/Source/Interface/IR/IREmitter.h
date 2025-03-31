@@ -248,11 +248,11 @@ public:
    *
    * @return OrderedNode
    */
-  IRPair<IROp_CodeBlock> CreateCodeNode() {
+  IRPair<IROp_CodeBlock> CreateCodeNode(bool EntryPoint = false, uint32_t GuestEntryOffset = 0) {
     SetWriteCursor(nullptr); // Orphan from any previous nodes
 
     auto ID = ViewIR().GetHeader()->BlockCount++;
-    auto CodeNode = _CodeBlock(InvalidNode, InvalidNode, ID);
+    auto CodeNode = _CodeBlock(InvalidNode, InvalidNode, ID, EntryPoint, GuestEntryOffset);
 
     CodeBlocks.emplace_back(CodeNode);
 

@@ -750,7 +750,7 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
       auto CompiledCode = Thread->CPUBackend->RelocateJITObjectCode(GuestRIP, CodeCacheEntry);
       if (CompiledCode) {
         return {
-          .CompiledCode = CompiledCode,
+          .CompiledCode = {},
           .DebugData = nullptr, // nullptr here ensures that code serialization doesn't occur on from cache read
           .StartAddr = 0,       // Unused
           .Length = 0,          // Unused
@@ -769,7 +769,7 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
   // Generate IR + Meta Info
   auto [IRView, TotalInstructions, TotalInstructionsLength, StartAddr, Length] = GenerateIR(Thread, GuestRIP, Config.GDBSymbols(), MaxInst);
   if (!IRView) {
-    return {nullptr, nullptr, 0, 0};
+    return {{}, nullptr, 0, 0};
   }
 
   // Attempt to get the CPU backend to compile this code
@@ -780,7 +780,10 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
   if (MaxInst != 1) {
     if (auto Block = Thread->LookupCache->FindBlock(GuestRIP)) {
       Thread->OpDispatcher->DelayedDisownBuffer();
-      return {.CompiledCode = reinterpret_cast<uint8_t*>(Block), .DebugData = nullptr, .StartAddr = 0, .Length = 0};
+      return {.CompiledCode = {.BlockBegin = reinterpret_cast<uint8_t*>(Block), .EntryPoints = {{GuestRIP, reinterpret_cast<uint8_t*>(Block)}}},
+              .DebugData = nullptr,
+              .StartAddr = 0,
+              .Length = 0};
     }
   }
 
@@ -795,10 +798,7 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
   Thread->OpDispatcher->DelayedDisownBuffer();
 
   return {
-    // FEX currently throws away the CPUBackend::CompiledCode object other than the entrypoint
-    // In the future with code caching getting wired up, we will pass the rest of the data forward.
-    // TODO: Pass the data forward when code caching is wired up to this.
-    .CompiledCode = CompiledCode.BlockEntry,
+    .CompiledCode = std::move(CompiledCode),
     .DebugData = std::move(DebugData),
     .StartAddr = StartAddr,
     .Length = Length,
@@ -821,7 +821,8 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
     return HostCode;
   }
 
-  auto [CodePtr, DebugData, StartAddr, Length] = CompileCode(Thread, GuestRIP, MaxInst);
+  auto [CompiledCode, DebugData, StartAddr, Length] = CompileCode(Thread, GuestRIP, MaxInst);
+  auto CodePtr = CompiledCode.EntryPoints[GuestRIP];
   if (CodePtr == nullptr) {
     return 0;
   } else if (!DebugData) {
@@ -831,7 +832,7 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
 
   // The core managed to compile the code.
   if (Config.BlockJITNaming()) {
-    auto FragmentBasePtr = reinterpret_cast<uint8_t*>(CodePtr);
+    auto FragmentBasePtr = CompiledCode.BlockBegin;
 
     if (DebugData) {
       auto GuestRIPLookup = SyscallHandler->LookupAOTIRCacheEntry(Thread, GuestRIP);
@@ -840,7 +841,7 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
         for (auto& Subblock : DebugData->Subblocks) {
           auto BlockBasePtr = FragmentBasePtr + Subblock.HostCodeOffset;
           if (GuestRIPLookup.Entry) {
-            Symbols.Register(Thread->SymbolBuffer.get(), BlockBasePtr, DebugData->HostCodeSize, GuestRIPLookup.Entry->Filename,
+            Symbols.Register(Thread->SymbolBuffer.get(), BlockBasePtr, CompiledCode.Size, GuestRIPLookup.Entry->Filename,
                              GuestRIP - GuestRIPLookup.VAFileStart);
           } else {
             Symbols.Register(Thread->SymbolBuffer.get(), BlockBasePtr, GuestRIP, Subblock.HostCodeSize);
@@ -848,10 +849,10 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
         }
       } else {
         if (GuestRIPLookup.Entry) {
-          Symbols.Register(Thread->SymbolBuffer.get(), FragmentBasePtr, DebugData->HostCodeSize, GuestRIPLookup.Entry->Filename,
+          Symbols.Register(Thread->SymbolBuffer.get(), FragmentBasePtr, CompiledCode.Size, GuestRIPLookup.Entry->Filename,
                            GuestRIP - GuestRIPLookup.VAFileStart);
         } else {
-          Symbols.Register(Thread->SymbolBuffer.get(), FragmentBasePtr, GuestRIP, DebugData->HostCodeSize);
+          Symbols.Register(Thread->SymbolBuffer.get(), FragmentBasePtr, GuestRIP, CompiledCode.Size);
         }
       }
     }
@@ -864,8 +865,8 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
         .GuestRIP = GuestRIP,
         .GuestCodeLength = Length,
         .GuestCodeHash = 0,
-        .HostCodeBegin = CodePtr,
-        .HostCodeLength = DebugData->HostCodeSize,
+        .HostCodeBegin = CompiledCode.BlockBegin,
+        .HostCodeLength = CompiledCode.Size,
         .HostCodeHash = 0,
         .ThreadJobRefCount = &Thread->ObjectCacheRefCounter,
         .Relocations = std::move(*DebugData->Relocations),
@@ -875,14 +876,16 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
   // Clear any relocations that might have been generated
   Thread->CPUBackend->ClearRelocations();
 
-  if (IRCaptureCache.PostCompileCode(Thread, CodePtr, GuestRIP, StartAddr, Length, {}, DebugData.get(), false)) {
+  if (IRCaptureCache.PostCompileCode(Thread, CompiledCode.BlockBegin, GuestRIP, StartAddr, Length, {}, DebugData.get(), false)) {
     // Early exit
     return (uintptr_t)CodePtr;
   }
 
   // Insert to lookup cache
   // Pages containing this block are added via AddBlockExecutableRange before each page gets accessed in the frontend
-  Thread->LookupCache->AddBlockMapping(GuestRIP, CodePtr);
+  for (auto [GuestAddr, HostAddr] : CompiledCode.EntryPoints) {
+    Thread->LookupCache->AddBlockMapping(GuestAddr, HostAddr);
+  }
 
   return (uintptr_t)CodePtr;
 }
@@ -896,7 +899,8 @@ uintptr_t ContextImpl::CompileSingleStep(FEXCore::Core::CpuStateFrame* Frame, ui
   // Invalidate might take a unique lock on this, to guarantee that during invalidation no code gets compiled
   auto lk = GuardSignalDeferringSection<std::shared_lock>(CodeInvalidationMutex, Thread);
 
-  auto [CodePtr, DebugData, StartAddr, Length] = CompileCode(Thread, GuestRIP, 1);
+  auto [CompiledCode, DebugData, StartAddr, Length] = CompileCode(Thread, GuestRIP, 1);
+  auto CodePtr = CompiledCode.EntryPoints[GuestRIP];
   if (CodePtr == nullptr) {
     return 0;
   }
@@ -980,7 +984,7 @@ void ContextImpl::AddThunkTrampolineIRHandler(uintptr_t Entrypoint, uintptr_t Gu
     Entrypoint,
     [this, GuestThunkEntrypoint](uintptr_t Entrypoint, FEXCore::IR::IREmitter* emit) {
     auto IRHeader = emit->_IRHeader(emit->Invalid(), Entrypoint, 0, 0, 0, 0);
-    auto Block = emit->CreateCodeNode();
+    auto Block = emit->CreateCodeNode(true, 0);
     IRHeader.first->Blocks = emit->WrapNode(Block);
     emit->SetCurrentCodeBlock(Block);
 
