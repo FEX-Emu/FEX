@@ -3,7 +3,8 @@
     "Bitness": 64,
     "EnabledHostFeatures": [
       "FLAGM",
-      "FLAGM2"
+      "FLAGM2",
+      "FRINTTS"
     ],
     "DisabledHostFeatures": [
       "SVE128",

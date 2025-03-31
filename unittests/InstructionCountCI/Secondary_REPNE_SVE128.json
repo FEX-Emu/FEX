@@ -2,7 +2,8 @@
   "Features": {
     "Bitness": 64,
     "EnabledHostFeatures": [
-      "SVE128"
+      "SVE128",
+      "FRINTTS"
     ],
     "DisabledHostFeatures": [
       "SVE256",
