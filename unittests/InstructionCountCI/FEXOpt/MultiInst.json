@@ -1313,7 +1313,7 @@
     },
     "Control - random block using cvtss2si 1": {
       "x86InstructionCount": 7,
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 13,
       "x86Insts": [
         "mov    rcx,rdx",
         "cvttss2si rax,xmm1",
@@ -1325,11 +1325,8 @@
       ],
       "ExpectedArm64ASM": [
         "mov x7, x5",
-        "fcvtzs x20, s17",
-        "mov x21, #0x8000000000000000",
-        "ldr s2, [x28, #2848]",
-        "fcmp s2, s17",
-        "csel x4, x20, x21, gt",
+        "frint64z s2, s17",
+        "fcvtzs x4, s2",
         "add x4, x4, x7",
         "str x4, [x8]",
         "ldr s2, [x9]",
@@ -1344,7 +1341,7 @@
     },
     "Control - random block using cvtss2si 2": {
       "x86InstructionCount": 6,
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 9,
       "x86Insts": [
         "movss  xmm1,dword [rbp+0x40]",
         "roundss xmm1,xmm1,0x1",
@@ -1357,12 +1354,8 @@
         "ldr s17, [x9, #64]",
         "frintm s0, s17",
         "mov v17.s[0], v0.s[0]",
-        "frinti s2, s17",
-        "fcvtzs w20, s2",
-        "mov w21, #0x80000000",
-        "ldr s3, [x28, #2816]",
-        "fcmp s3, s2",
-        "csel w4, w20, w21, gt",
+        "frint32x s2, s17",
+        "fcvtzs w4, s2",
         "str w4, [x29, #180]",
         "mov w20, #0x3f800000",
         "str w20, [x9, #72]",

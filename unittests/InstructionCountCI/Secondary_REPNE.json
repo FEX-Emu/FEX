@@ -98,115 +98,71 @@
       ]
     },
     "cvttsd2si eax, xmm0": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 2,
       "Comment": "0xf2 0x0f 0x2c",
       "ExpectedArm64ASM": [
-        "fcvtzs w20, d16",
-        "mov w21, #0x80000000",
-        "ldr d2, [x28, #2864]",
-        "mrs x22, nzcv",
-        "fcmp d2, d16",
-        "csel w4, w20, w21, gt",
-        "msr nzcv, x22"
+        "frint32z d2, d16",
+        "fcvtzs w4, d2"
       ]
     },
     "cvttsd2si eax, qword [rbx]": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 3,
       "Comment": "0xf2 0x0f 0x2c",
       "ExpectedArm64ASM": [
         "ldr d2, [x6]",
-        "fcvtzs w20, d2",
-        "mov w21, #0x80000000",
-        "ldr d3, [x28, #2864]",
-        "mrs x22, nzcv",
-        "fcmp d3, d2",
-        "csel w4, w20, w21, gt",
-        "msr nzcv, x22"
+        "frint32z d2, d2",
+        "fcvtzs w4, d2"
       ]
     },
     "cvttsd2si rax, xmm0": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 2,
       "Comment": "0xf2 0x0f 0x2c",
       "ExpectedArm64ASM": [
-        "fcvtzs x20, d16",
-        "mov x21, #0x8000000000000000",
-        "ldr d2, [x28, #2896]",
-        "mrs x22, nzcv",
-        "fcmp d2, d16",
-        "csel x4, x20, x21, gt",
-        "msr nzcv, x22"
+        "frint64z d2, d16",
+        "fcvtzs x4, d2"
       ]
     },
     "cvttsd2si rax, qword [rbx]": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 3,
       "Comment": "0xf2 0x0f 0x2c",
       "ExpectedArm64ASM": [
         "ldr d2, [x6]",
-        "fcvtzs x20, d2",
-        "mov x21, #0x8000000000000000",
-        "ldr d3, [x28, #2896]",
-        "mrs x22, nzcv",
-        "fcmp d3, d2",
-        "csel x4, x20, x21, gt",
-        "msr nzcv, x22"
+        "frint64z d2, d2",
+        "fcvtzs x4, d2"
       ]
     },
     "cvtsd2si eax, xmm0": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 2,
       "Comment": "0xf2 0x0f 0x2d",
       "ExpectedArm64ASM": [
-        "frinti d2, d16",
-        "fcvtzs x20, d2",
-        "mov x21, #0x8000000000000000",
-        "ldr d3, [x28, #2896]",
-        "mrs x22, nzcv",
-        "fcmp d3, d2",
-        "csel x4, x20, x21, gt",
-        "msr nzcv, x22"
+        "frint64x d2, d16",
+        "fcvtzs x4, d2"
       ]
     },
     "cvtsd2si eax, qword [rbx]": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 3,
       "Comment": "0xf2 0x0f 0x2d",
       "ExpectedArm64ASM": [
         "ldr d2, [x6]",
-        "frinti d2, d2",
-        "fcvtzs x20, d2",
-        "mov x21, #0x8000000000000000",
-        "ldr d3, [x28, #2896]",
-        "mrs x22, nzcv",
-        "fcmp d3, d2",
-        "csel x4, x20, x21, gt",
-        "msr nzcv, x22"
+        "frint64x d2, d2",
+        "fcvtzs x4, d2"
       ]
     },
     "cvtsd2si rax, xmm0": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 2,
       "Comment": "0xf2 0x0f 0x2d",
       "ExpectedArm64ASM": [
-        "frinti d2, d16",
-        "fcvtzs x20, d2",
-        "mov x21, #0x8000000000000000",
-        "ldr d3, [x28, #2896]",
-        "mrs x22, nzcv",
-        "fcmp d3, d2",
-        "csel x4, x20, x21, gt",
-        "msr nzcv, x22"
+        "frint64x d2, d16",
+        "fcvtzs x4, d2"
       ]
     },
     "cvtsd2si rax, qword [rbx]": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 3,
       "Comment": "0xf2 0x0f 0x2d",
       "ExpectedArm64ASM": [
         "ldr d2, [x6]",
-        "frinti d2, d2",
-        "fcvtzs x20, d2",
-        "mov x21, #0x8000000000000000",
-        "ldr d3, [x28, #2896]",
-        "mrs x22, nzcv",
-        "fcmp d3, d2",
-        "csel x4, x20, x21, gt",
-        "msr nzcv, x22"
+        "frint64x d2, d2",
+        "fcvtzs x4, d2"
       ]
     },
     "sqrtsd xmm0, xmm1": {
@@ -518,19 +474,12 @@
       ]
     },
     "cvtpd2dq xmm0, xmm1": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 3,
       "Comment": "0xf2 0x0f 0xe6",
       "ExpectedArm64ASM": [
-        "frinti v2.2d, v17.2d",
-        "ldr d3, [x28, #2912]",
-        "ldr q4, [x28, #2864]",
-        "frintz v5.2d, v2.2d",
-        "fcvtn v5.2s, v5.2d",
-        "fcvtzs v5.2s, v5.2s",
-        "fcmgt v2.2d, v4.2d, v2.2d",
-        "shrn v2.2s, v2.2d, #32",
-        "mov v16.16b, v2.16b",
-        "bsl v16.16b, v5.16b, v3.16b"
+        "frint32x v2.2d, v17.2d",
+        "fcvtzs v2.2d, v2.2d",
+        "xtn v16.2s, v2.2d"
       ]
     },
     "lddqu xmm0, [rax]": {
