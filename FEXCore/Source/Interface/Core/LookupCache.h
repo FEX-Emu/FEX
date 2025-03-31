@@ -89,8 +89,8 @@ public:
   void AddBlockMapping(uint64_t Address, void* HostCode) {
     std::lock_guard<std::recursive_mutex> lk(WriteLock);
 
-    [[maybe_unused]] auto Inserted = BlockList.emplace(Address, (uintptr_t)HostCode).second;
-    LOGMAN_THROW_A_FMT(Inserted, "Duplicate block mapping added");
+    // This may replace an existing mapping
+    BlockList.emplace(Address, (uintptr_t)HostCode);
 
     // There is no need to update L1 or L2, they will get updated on first lookup
     // However, adding to L1 here increases performance
