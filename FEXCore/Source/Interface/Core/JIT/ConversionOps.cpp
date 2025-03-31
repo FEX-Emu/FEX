@@ -6,6 +6,7 @@ $end_info$
 */
 
 #include "Interface/Core/JIT/JITClass.h"
+#include "Interface/Context/Context.h"
 
 namespace FEXCore::CPU {
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::NodeID Node)
@@ -464,6 +465,61 @@ DEF_OP(Vector_FToI) {
       case FEXCore::IR::Round_Positive_Infinity.Val: frintp(SubEmitSize, Dst.Q(), Vector.Q()); break;
       case FEXCore::IR::Round_Towards_Zero.Val: frintz(SubEmitSize, Dst.Q(), Vector.Q()); break;
       case FEXCore::IR::Round_Host.Val: frinti(SubEmitSize, Dst.Q(), Vector.Q()); break;
+      }
+    }
+  }
+}
+
+DEF_OP(Vector_FToISized) {
+  const auto Op = IROp->C<IR::IROp_Vector_FToISized>();
+
+  const auto ElementSize = Op->Header.ElementSize;
+  const auto SubEmitSize = ConvertSubRegSize248(IROp);
+  const auto Is256Bit = IROp->Size == IR::OpSize::i256Bit;
+  LOGMAN_THROW_A_FMT(!Is256Bit, "256-bit not wired up, though we could change that");
+  LOGMAN_THROW_A_FMT(CTX->HostFeatures.SupportsFRINTTS, "Need FRINTTS for Vector_FToISized");
+
+  const auto Dst = GetVReg(Node);
+  const auto Vector = GetVReg(Op->Vector.ID());
+
+  if (ElementSize == IROp->Size) {
+// See above
+#define ROUNDING_FN(name)                         \
+  if (ElementSize == IR::OpSize::i32Bit) {        \
+    name(Dst.S(), Vector.S());                    \
+  } else if (ElementSize == IR::OpSize::i64Bit) { \
+    name(Dst.D(), Vector.D());                    \
+  } else {                                        \
+    FEX_UNREACHABLE;                              \
+  }
+
+    if (Op->IntSize == IR::OpSize::i64Bit) {
+      if (Op->HostRound) {
+        ROUNDING_FN(frint64x);
+      } else {
+        ROUNDING_FN(frint64z);
+      }
+    } else {
+      if (Op->HostRound) {
+        ROUNDING_FN(frint32x);
+      } else {
+        ROUNDING_FN(frint32z);
+      }
+    }
+
+#undef ROUNDING_FN
+  } else {
+    if (Op->IntSize == IR::OpSize::i64Bit) {
+      if (Op->HostRound) {
+        frint64x(SubEmitSize, Dst.Q(), Vector.Q());
+      } else {
+        frint64z(SubEmitSize, Dst.Q(), Vector.Q());
+      }
+    } else {
+      if (Op->HostRound) {
+        frint32x(SubEmitSize, Dst.Q(), Vector.Q());
+      } else {
+        frint32z(SubEmitSize, Dst.Q(), Vector.Q());
       }
     }
   }

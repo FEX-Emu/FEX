@@ -2697,6 +2697,14 @@
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize"
       },
+      "FPR = Vector_FToISized OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, i1:$HostRound, OpSize:$IntSize": {
+        "Desc": ["Vector op: Rounds float to sized integral",
+                 "Either host rounding or round-to-zero",
+                 "Rounding mode determined by argument"
+                ],
+        "DestSize": "RegisterSize",
+        "ElementSize": "ElementSize"
+      },
       "FPR = Vector_F64ToI32 OpSize:#RegisterSize, FPR:$Vector, RoundType:$Round, i1:$EnsureZeroUpperHalf": {
         "Desc": ["Vector op: Rounds 64-bit float to 32-bit integral with round mode",
                  "Matches CVTPD2DQ/CVTTPD2DQ behaviour"
