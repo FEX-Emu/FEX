@@ -380,7 +380,7 @@ bool ContextImpl::InitCore() {
   SignalDelegation->SetConfig(SignalConfig);
 
 #ifndef _WIN32
-#elif !defined(_M_ARM64EC)
+#elif !defined(_M_ARM_64EC)
   // WOW64 always needs the interrupt fault check to be enabled.
   Config.NeedsPendingInterruptFaultCheck = true;
 #endif
