@@ -61,17 +61,14 @@
       ]
     },
     "pf2id mm0, mm1": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "0x0f 0x0f 0x1d"
       ],
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #1056]",
-        "ldr d3, [x28, #2912]",
-        "ldr d4, [x28, #2816]",
-        "fcvtzs v5.2s, v2.2s",
-        "fcmgt v2.4s, v4.4s, v2.4s",
-        "bsl v2.8b, v5.8b, v3.8b",
+        "frint32z v2.4s, v2.4s",
+        "fcvtzs v2.2s, v2.2s",
         "str d2, [x28, #1040]",
         "mov w20, #0xffff",
         "strh w20, [x28, #1048]"
