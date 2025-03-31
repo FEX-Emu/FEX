@@ -36,6 +36,7 @@ struct HostFeatures {
   bool SupportsAES256 {};
   bool SupportsSVEBitPerm {};
   bool SupportsCPUIndexInTPIDRRO {};
+  bool SupportsFRINTTS {};
 
   // Float exception behaviour
   bool SupportsAFP {};

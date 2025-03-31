@@ -59,6 +59,8 @@
           "DISABLEFLAGM": "disableflagm",
           "ENABLEFLAGM2": "enableflagm2",
           "DISABLEFLAGM2": "disableflagm2",
+          "ENABLEFRINTTS": "enablefrintts",
+          "DISABLEFRINTTS": "disablefrintts",
           "ENABLECRYPTO": "enablecrypto",
           "DISABLECRYPTO": "disablecrypto",
           "ENABLERPRES": "enablerpres",

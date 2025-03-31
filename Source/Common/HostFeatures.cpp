@@ -430,6 +430,7 @@ static void OverrideFeatures(FEXCore::HostFeatures* Features, uint64_t ForceSVEW
   ENABLE_DISABLE_OPTION(SupportsFCMA, FCMA, FCMA);
   ENABLE_DISABLE_OPTION(SupportsFlagM, FlagM, FLAGM);
   ENABLE_DISABLE_OPTION(SupportsFlagM2, FlagM2, FLAGM2);
+  ENABLE_DISABLE_OPTION(SupportsFRINTTS, FRINTTS, FRINTTS);
   ENABLE_DISABLE_OPTION(SupportsRPRES, RPRES, RPRES);
   ENABLE_DISABLE_OPTION(SupportsSVEBitPerm, SVEBITPERM, SVEBITPERM);
   ENABLE_DISABLE_OPTION(SupportsPreserveAllABI, PRESERVEALLABI, PRESERVEALLABI);
@@ -479,6 +480,7 @@ FEXCore::HostFeatures FetchHostFeatures(FEX::CPUFeatures& Features, bool Support
   HostFeatures.SupportsFCMA = Features.Supports(CPUFeatures::Feature::FCMA);
   HostFeatures.SupportsFlagM = Features.Supports(CPUFeatures::Feature::FlagM);
   HostFeatures.SupportsFlagM2 = Features.Supports(CPUFeatures::Feature::FlagM2);
+  HostFeatures.SupportsFRINTTS = Features.Supports(CPUFeatures::Feature::FRINTTS);
   HostFeatures.SupportsRPRES = Features.Supports(CPUFeatures::Feature::RPRES);
   HostFeatures.SupportsSVEBitPerm = Features.Supports(CPUFeatures::Feature::SVE_BitPerm);
 
