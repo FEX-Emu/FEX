@@ -18,11 +18,7 @@ BigCoreIDs = {
         tuple([0x41, 0xd0b]): "cortex-a76",
         tuple([0x41, 0xd0d]): "cortex-a77",
         tuple([0x41, 0xd41]): "cortex-a78",
-        tuple([0x41, 0xd41]):
-            [ ["cortex-a78", "0.0"],
-              ["cortex-x1c", "14.0"],    # Claim to be x1c as an alternative if available.
-              ["cortex-a78c", "9999.0"], # Doesn't exist in clang as of version 15.0
-            ],
+        tuple([0x41, 0xd4b]): "cortex-a78c",
         tuple([0x41, 0xd44]): "cortex-x1",
         tuple([0x41, 0xd4c]):
             [ ["cortex-x1", "0.0"],
@@ -36,8 +32,44 @@ BigCoreIDs = {
             [ ["cortex-x1", "0.0"],
               ["cortex-x2", "14.0"],
             ],
+        tuple([0x41, 0xd4d]):
+            [ ["cortex-a78", "0.0"],
+              ["cortex-a715", "17.0"],
+            ],
+        tuple([0x41, 0xd81]):
+            [ ["cortex-a78", "0.0"],
+              ["cortex-a720", "18.0"],
+            ],
+        tuple([0x41, 0xd87]):
+            [ ["cortex-a78", "0.0"],
+              ["cortex-a725", "19.0"],
+            ],
+        tuple([0x41, 0xd85]):
+            [ ["cortex-a78", "0.0"],
+              ["cortex-x925", "19.0"],
+            ],
+        # Neoverse-N class
         tuple([0x41, 0xd0c]): "neoverse-n1",
         tuple([0x41, 0xd49]): "neoverse-n2",
+        tuple([0x41, 0xd8e]):
+            [ ["cortex-a78", "0.0"],
+              ["neoverse-n3", "19.0"],
+            ],
+
+        # Neoverse-V class
+        tuple([0x41, 0xd40]): "neoverse-v1",
+        tuple([0x41, 0xd4f]):
+            [ ["cortex-a78", "0.0"],
+              ["neoverse-v2", "16.0"],
+            ],
+        tuple([0x41, 0xd83]):
+            [ ["cortex-a78", "0.0"],
+              ["neoverse-v3ae", "19.0"],
+            ],
+        tuple([0x41, 0xd84]):
+            [ ["cortex-a78", "0.0"],
+              ["neoverse-v3", "19.0"],
+            ],
         ## Nvidia
         tuple([0x4e, 0x004]): "carmel", # Carmel
         # Qualcomm
@@ -60,7 +92,10 @@ LittleCoreIDs = {
             [ ["cortex-a55", "0.0"],
               ["cortex-a510", "14.0"],
             ],
-
+        tuple([0x41, 0xd80]):
+            [ ["cortex-a55", "0.0"],
+              ["cortex-a520", "18.0"],
+            ],
         # Qualcomm
         tuple([0x51, 0x801]): "cortex-a53", # Kryo 2xx Silver
         tuple([0x51, 0x803]): "cortex-a55", # Kryo 3xx Silver
