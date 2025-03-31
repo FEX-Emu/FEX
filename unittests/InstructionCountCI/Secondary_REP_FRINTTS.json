@@ -1,0 +1,142 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "FRINTTS"
+    ],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256",
+      "RPRES",
+      "AFP",
+      "FLAGM",
+      "FLAGM2"
+    ]
+  },
+  "Instructions": {
+    "cvttss2si eax, xmm0": {
+      "ExpectedInstructionCount": 7,
+      "Comment": "0xf3 0x0f 0x2c",
+      "ExpectedArm64ASM": [
+        "fcvtzs w20, s16",
+        "mov w21, #0x80000000",
+        "ldr s2, [x28, #2816]",
+        "mrs x22, nzcv",
+        "fcmp s2, s16",
+        "csel w4, w20, w21, gt",
+        "msr nzcv, x22"
+      ]
+    },
+    "cvttss2si eax, dword [rbx]": {
+      "ExpectedInstructionCount": 8,
+      "Comment": "0xf3 0x0f 0x2c",
+      "ExpectedArm64ASM": [
+        "ldr s2, [x6]",
+        "fcvtzs w20, s2",
+        "mov w21, #0x80000000",
+        "ldr s3, [x28, #2816]",
+        "mrs x22, nzcv",
+        "fcmp s3, s2",
+        "csel w4, w20, w21, gt",
+        "msr nzcv, x22"
+      ]
+    },
+    "cvttss2si rax, xmm0": {
+      "ExpectedInstructionCount": 7,
+      "Comment": "0xf3 0x0f 0x2c",
+      "ExpectedArm64ASM": [
+        "fcvtzs x20, s16",
+        "mov x21, #0x8000000000000000",
+        "ldr s2, [x28, #2848]",
+        "mrs x22, nzcv",
+        "fcmp s2, s16",
+        "csel x4, x20, x21, gt",
+        "msr nzcv, x22"
+      ]
+    },
+    "cvttss2si rax, dword [rbx]": {
+      "ExpectedInstructionCount": 8,
+      "Comment": "0xf3 0x0f 0x2c",
+      "ExpectedArm64ASM": [
+        "ldr d2, [x6]",
+        "fcvtzs x20, s2",
+        "mov x21, #0x8000000000000000",
+        "ldr s3, [x28, #2848]",
+        "mrs x22, nzcv",
+        "fcmp s3, s2",
+        "csel x4, x20, x21, gt",
+        "msr nzcv, x22"
+      ]
+    },
+    "cvtss2si eax, xmm0": {
+      "ExpectedInstructionCount": 8,
+      "Comment": "0xf3 0x0f 0x2d",
+      "ExpectedArm64ASM": [
+        "frinti s2, s16",
+        "fcvtzs w20, s2",
+        "mov w21, #0x80000000",
+        "ldr s3, [x28, #2816]",
+        "mrs x22, nzcv",
+        "fcmp s3, s2",
+        "csel w4, w20, w21, gt",
+        "msr nzcv, x22"
+      ]
+    },
+    "cvtss2si eax, dword [rbx]": {
+      "ExpectedInstructionCount": 9,
+      "Comment": "0xf3 0x0f 0x2d",
+      "ExpectedArm64ASM": [
+        "ldr s2, [x6]",
+        "frinti s2, s2",
+        "fcvtzs w20, s2",
+        "mov w21, #0x80000000",
+        "ldr s3, [x28, #2816]",
+        "mrs x22, nzcv",
+        "fcmp s3, s2",
+        "csel w4, w20, w21, gt",
+        "msr nzcv, x22"
+      ]
+    },
+    "cvtss2si rax, xmm0": {
+      "ExpectedInstructionCount": 8,
+      "Comment": "0xf3 0x0f 0x2d",
+      "ExpectedArm64ASM": [
+        "frinti s2, s16",
+        "fcvtzs x20, s2",
+        "mov x21, #0x8000000000000000",
+        "ldr s3, [x28, #2848]",
+        "mrs x22, nzcv",
+        "fcmp s3, s2",
+        "csel x4, x20, x21, gt",
+        "msr nzcv, x22"
+      ]
+    },
+    "cvtss2si rax, dword [rbx]": {
+      "ExpectedInstructionCount": 9,
+      "Comment": "0xf3 0x0f 0x2d",
+      "ExpectedArm64ASM": [
+        "ldr d2, [x6]",
+        "frinti s2, s2",
+        "fcvtzs x20, s2",
+        "mov x21, #0x8000000000000000",
+        "ldr s3, [x28, #2848]",
+        "mrs x22, nzcv",
+        "fcmp s3, s2",
+        "csel x4, x20, x21, gt",
+        "msr nzcv, x22"
+      ]
+    },
+    "cvttps2dq xmm0, xmm1": {
+      "ExpectedInstructionCount": 6,
+      "Comment": "0xf3 0x0f 0x5b",
+      "ExpectedArm64ASM": [
+        "ldr q2, [x28, #2912]",
+        "ldr q3, [x28, #2816]",
+        "fcvtzs v4.4s, v17.4s",
+        "fcmgt v3.4s, v3.4s, v17.4s",
+        "mov v16.16b, v3.16b",
+        "bsl v16.16b, v4.16b, v2.16b"
+      ]
+    }
+  }
+}
