@@ -557,9 +557,9 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
     bool HadDispatchError {false};
     bool HadInvalidInst {false};
 
-    Thread->FrontendDecoder->DecodeInstructionsAtEntry(GuestCode, GuestRIP, MaxInst,
-                                                       [Thread](uint64_t BlockEntry, uint64_t Start, uint64_t Length) {
-      if (Thread->LookupCache->AddBlockExecutableRange(BlockEntry, Start, Length)) {
+    Thread->FrontendDecoder->DecodeInstructionsAtEntry(
+      GuestCode, GuestRIP, MaxInst, [Thread](const fextl::set<uint64_t>& BlockEntryPoints, uint64_t Start, uint64_t Length) {
+      if (Thread->LookupCache->AddBlockExecutableRange(BlockEntryPoints, Start, Length)) {
         static_cast<ContextImpl*>(Thread->CTX)->SyscallHandler->MarkGuestExecutableRange(Thread, Start, Length);
       }
     });

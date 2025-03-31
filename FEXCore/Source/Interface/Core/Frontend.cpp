@@ -961,6 +961,13 @@ void Decoder::BranchTargetInMultiblockRange() {
   bool Conditional = true;
   const auto InstEnd = DecodeInst->PC + DecodeInst->InstSize;
 
+  if (DecodeInst->TableInfo->Flags & FEXCore::X86Tables::InstFlags::FLAGS_CALL) {
+    AddBranchTarget(InstEnd);
+    BlockEntryPoints.emplace(InstEnd);
+    return;
+  }
+
+  // Calls are handled above
   switch (DecodeInst->OP) {
   case 0x70 ... 0x7F:   // Conditional JUMP
   case 0x80 ... 0x8F: { // More conditional
@@ -976,11 +983,6 @@ void Decoder::BranchTargetInMultiblockRange() {
     TargetRIP = InstEnd + DecodeInst->Src[0].Literal();
     Conditional = false;
     break;
-  case 0xE8: // Call - Immediate target, We don't want to inline calls
-    if (ExternalBranches) {
-      ExternalBranches->insert(InstEnd);
-    }
-    [[fallthrough]];
   case 0xC2: // RET imm
   case 0xC3: // RET
   default: return; break;
@@ -1120,13 +1122,15 @@ const uint8_t* Decoder::AdjustAddrForSpecialRegion(const uint8_t* _InstStream, u
   return _InstStream - EntryPoint + RIP;
 }
 
-void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC, uint64_t MaxInst,
-                                        std::function<void(uint64_t BlockEntry, uint64_t Start, uint64_t Length)> AddContainedCodePage) {
+void Decoder::DecodeInstructionsAtEntry(
+  const uint8_t* _InstStream, uint64_t PC, uint64_t MaxInst,
+  std::function<void(const fextl::set<uint64_t> &BlockEntryPoints, uint64_t Start, uint64_t Length)> AddContainedCodePage) {
   FEXCORE_PROFILE_SCOPED("DecodeInstructions");
   BlockInfo.TotalInstructionCount = 0;
   BlockInfo.Blocks.clear();
   BlocksToDecode.clear();
   VisitedBlocks.clear();
+  BlockEntryPoints.clear();
   // Reset internal state management
   DecodedSize = 0;
   MaxCondBranchForward = 0;
@@ -1136,6 +1140,7 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
   // XXX: Load symbol data
   SymbolAvailable = false;
   EntryPoint = PC;
+  BlockEntryPoints.emplace(PC);
   InstStream = _InstStream;
 
   uint64_t TotalInstructions {};
@@ -1156,8 +1161,6 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
   uint64_t CurrentCodePage = PC & FEXCore::Utils::FEX_PAGE_MASK;
 
   fextl::set<uint64_t> CodePages = {CurrentCodePage};
-
-  AddContainedCodePage(PC, CurrentCodePage, FEXCore::Utils::FEX_PAGE_SIZE);
 
   if (MaxInst == 0) {
     MaxInst = CTX->Config.MaxInstPerBlock;
@@ -1192,6 +1195,7 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
 
     BlockIt->Entry = RIPToDecode;
     BlockIt->Size = 0;
+    BlockIt->IsEntryPoint = EntryBlock;
 
     uint64_t PCOffset = 0;
     uint64_t BlockStartOffset = DecodedSize;
@@ -1309,8 +1313,12 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
 
   BlockInfo.TotalInstructionCount = TotalInstructions;
 
+  for (auto& Block : BlockInfo.Blocks) {
+    Block.IsEntryPoint = BlockEntryPoints.contains(Block.Entry);
+  }
+
   for (auto CodePage : CodePages) {
-    AddContainedCodePage(PC, CodePage, FEXCore::Utils::FEX_PAGE_SIZE);
+    AddContainedCodePage(BlockEntryPoints, CodePage, FEXCore::Utils::FEX_PAGE_SIZE);
   }
 }
 

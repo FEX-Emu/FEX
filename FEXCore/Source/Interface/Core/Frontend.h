@@ -26,6 +26,7 @@ public:
     uint64_t NumInstructions {};
     FEXCore::X86Tables::DecodedInst* DecodedInstructions;
     bool HasInvalidInstruction {};
+    bool IsEntryPoint {};
   };
 
   struct DecodedBlockInformation final {
@@ -35,7 +36,7 @@ public:
 
   Decoder(FEXCore::Context::ContextImpl* ctx);
   void DecodeInstructionsAtEntry(const uint8_t* InstStream, uint64_t PC, uint64_t MaxInst,
-                                 std::function<void(uint64_t BlockEntry, uint64_t Start, uint64_t Length)> AddContainedCodePage);
+                                 std::function<void(const fextl::vector<uint64_t>& BlockEntryPoints, uint64_t Start, uint64_t Length)> AddContainedCodePage);
 
   const DecodedBlockInformation* GetDecodedBlockInfo() const {
     return &BlockInfo;
@@ -111,6 +112,7 @@ private:
   fextl::set<uint64_t> BlocksToDecode;
   fextl::set<uint64_t> VisitedBlocks;
   fextl::set<uint64_t>* ExternalBranches {nullptr};
+  fextl::set<uint64_t> BlockEntryPoints;
 
   // ModRM rm decoding
   using DecodeModRMPtr = void (FEXCore::Frontend::Decoder::*)(X86Tables::DecodedOperand* Operand, X86Tables::ModRMDecoded ModRM);
