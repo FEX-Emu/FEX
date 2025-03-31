@@ -472,32 +472,17 @@ DEF_OP(Vector_FToI) {
 
 DEF_OP(Vector_FToISized) {
   const auto Op = IROp->C<IR::IROp_Vector_FToISized>();
-  const auto OpSize = IROp->Size;
 
   const auto ElementSize = Op->Header.ElementSize;
   const auto SubEmitSize = ConvertSubRegSize248(IROp);
-  const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
-  LOGMAN_THROW_A_FMT(!Is256Bit || HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
+  const auto Is256Bit = IROp->Size == IR::OpSize::i256Bit;
+  LOGMAN_THROW_A_FMT(!Is256Bit, "256-bit not wired up, though we could change that");
   LOGMAN_THROW_A_FMT(CTX->HostFeatures.SupportsFRINTTS, "Need FRINTTS for Vector_FToISized");
 
   const auto Dst = GetVReg(Node);
   const auto Vector = GetVReg(Op->Vector.ID());
 
-  if (HostSupportsSVE256 && Is256Bit) {
-    const auto Mask = PRED_TMP_32B.Merging();
-
-#if 0
-    if (Op->HostRound) {
-      frint32x(SubEmitSize, Dst.Z(), Mask, Vector.Z());
-    } else {
-      frintz(SubEmitSize, Dst.Z(), Mask, Vector.Z());
-    }
-#endif
-    /* TODO */
-  } else {
-    const auto IsScalar = ElementSize == OpSize;
-
-    if (IsScalar) {
+  if (ElementSize == IROp->Size) {
 // See above
 #define ROUNDING_FN(name)                         \
   if (ElementSize == IR::OpSize::i32Bit) {        \
@@ -508,34 +493,33 @@ DEF_OP(Vector_FToISized) {
     FEX_UNREACHABLE;                              \
   }
 
-      if (Op->IntSize == IR::OpSize::i64Bit) {
-        if (Op->HostRound) {
-          ROUNDING_FN(frint64x);
-        } else {
-          ROUNDING_FN(frint64z);
-        }
+    if (Op->IntSize == IR::OpSize::i64Bit) {
+      if (Op->HostRound) {
+        ROUNDING_FN(frint64x);
       } else {
-        if (Op->HostRound) {
-          ROUNDING_FN(frint32x);
-        } else {
-          ROUNDING_FN(frint32z);
-        }
+        ROUNDING_FN(frint64z);
       }
+    } else {
+      if (Op->HostRound) {
+        ROUNDING_FN(frint32x);
+      } else {
+        ROUNDING_FN(frint32z);
+      }
+    }
 
 #undef ROUNDING_FN
-    } else {
-      if (Op->IntSize == IR::OpSize::i64Bit) {
-        if (Op->HostRound) {
-          frint64x(SubEmitSize, Dst.Q(), Vector.Q());
-        } else {
-          frint64z(SubEmitSize, Dst.Q(), Vector.Q());
-        }
+  } else {
+    if (Op->IntSize == IR::OpSize::i64Bit) {
+      if (Op->HostRound) {
+        frint64x(SubEmitSize, Dst.Q(), Vector.Q());
       } else {
-        if (Op->HostRound) {
-          frint32x(SubEmitSize, Dst.Q(), Vector.Q());
-        } else {
-          frint32z(SubEmitSize, Dst.Q(), Vector.Q());
-        }
+        frint64z(SubEmitSize, Dst.Q(), Vector.Q());
+      }
+    } else {
+      if (Op->HostRound) {
+        frint32x(SubEmitSize, Dst.Q(), Vector.Q());
+      } else {
+        frint32z(SubEmitSize, Dst.Q(), Vector.Q());
       }
     }
   }
