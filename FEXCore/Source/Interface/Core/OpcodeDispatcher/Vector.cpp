@@ -2104,17 +2104,28 @@ Ref OpDispatchBuilder::CVTFPR_To_GPRImpl(OpcodeArgs, Ref Src, IR::OpSize SrcElem
   // Source Element size is determined by instruction
   const auto GPRSize = OpSizeFromDst(Op);
 
-  if (HostRoundingMode) {
-    Src = _Vector_FToI(SrcElementSize, SrcElementSize, Src, Round_Host);
-  }
-  Ref Converted = _Float_ToGPR_ZS(GPRSize, SrcElementSize, Src);
+  if (CTX->HostFeatures.SupportsFRINTTS) {
+    // When we have FRINTTS, this is a two-step process. First, we round to the
+    // right integer (where _Vector_FToISized matches x86 semantics), then just
+    // convert that to a GPR.
+    Src = _Vector_FToISized(SrcElementSize, SrcElementSize, Src, HostRoundingMode, GPRSize);
+    return _Float_ToGPR_ZS(GPRSize, SrcElementSize, Src);
+  } else {
+    // When we lack hardware support, we need a bit of a convoluted sequence of
+    // fixups before before and after conversion to emulate x86 semantics.
+    if (HostRoundingMode) {
+      Src = _Vector_FToI(SrcElementSize, SrcElementSize, Src, Round_Host);
+    }
 
-  bool Dst32 = GPRSize == OpSize::i32Bit;
-  Ref MaxI = Dst32 ? _Constant(0x80000000) : _Constant(0x8000000000000000);
-  Ref MaxF = LoadAndCacheNamedVectorConstant(SrcElementSize, (SrcElementSize == OpSize::i32Bit) ?
-                                                               (Dst32 ? NAMED_VECTOR_CVTMAX_F32_I32 : NAMED_VECTOR_CVTMAX_F32_I64) :
-                                                               (Dst32 ? NAMED_VECTOR_CVTMAX_F64_I32 : NAMED_VECTOR_CVTMAX_F64_I64));
-  return _Select(GPRSize, SrcElementSize, CondClassType {FEXCore::IR::COND_FGT}, MaxF, Src, Converted, MaxI);
+    Ref Converted = _Float_ToGPR_ZS(GPRSize, SrcElementSize, Src);
+
+    bool Dst32 = GPRSize == OpSize::i32Bit;
+    Ref MaxI = Dst32 ? _Constant(0x80000000) : _Constant(0x8000000000000000);
+    Ref MaxF = LoadAndCacheNamedVectorConstant(SrcElementSize, (SrcElementSize == OpSize::i32Bit) ?
+                                                                 (Dst32 ? NAMED_VECTOR_CVTMAX_F32_I32 : NAMED_VECTOR_CVTMAX_F32_I64) :
+                                                                 (Dst32 ? NAMED_VECTOR_CVTMAX_F64_I32 : NAMED_VECTOR_CVTMAX_F64_I64));
+    return _Select(GPRSize, SrcElementSize, CondClassType {FEXCore::IR::COND_FGT}, MaxF, Src, Converted, MaxI);
+  }
 }
 
 template<IR::OpSize SrcElementSize, bool HostRoundingMode>
@@ -2169,25 +2180,39 @@ template void OpDispatchBuilder::Vector_CVT_Int_To_Float<OpSize::i32Bit, false>(
 
 Ref OpDispatchBuilder::Vector_CVT_Float_To_Int32Impl(OpcodeArgs, IR::OpSize DstSize, Ref Src, IR::OpSize SrcSize, IR::OpSize SrcElementSize,
                                                      bool HostRoundingMode, bool ZeroUpperHalf) {
-  if (HostRoundingMode) {
-    Src = _Vector_FToI(SrcSize, SrcElementSize, Src, Round_Host);
-  }
-
-  OpSize OverflowConstSize = ZeroUpperHalf && SrcElementSize == OpSize::i64Bit ? DstSize / 2 : DstSize;
-  Ref MaxI = LoadAndCacheNamedVectorConstant(OverflowConstSize, NAMED_VECTOR_CVTMAX_I32);
-  Ref Converted {}, Cmp {};
-  if (SrcElementSize == OpSize::i64Bit) {
-    Ref MaxF = LoadAndCacheNamedVectorConstant(SrcSize, NAMED_VECTOR_CVTMAX_F64_I32);
-    Converted = _Vector_F64ToI32(DstSize, Src, Round_Towards_Zero, ZeroUpperHalf);
-
-    Cmp = _VFCMPGT(SrcSize, OpSize::i64Bit, MaxF, Src);
-    Cmp = _VUShrNI(DstSize, OpSize::i64Bit, Cmp, 32);
+  if (CTX->HostFeatures.SupportsFRINTTS && SrcSize != OpSize::i256Bit) {
+    // If we have FRINTS, this is the usual 2-step
+    Src = _Vector_FToISized(SrcSize, SrcElementSize, Src, HostRoundingMode, OpSize::i32Bit);
+    Ref Dst = _Vector_FToZS(SrcSize, SrcElementSize, Src);
+    if (SrcElementSize == OpSize::i32Bit) {
+      // Return 32-bit result as-is
+      return Dst;
+    } else {
+      // Down step from 64-bit ints to 32-bit ints
+      return _VUShrNI(DstSize, SrcElementSize, Dst, 0);
+    }
   } else {
-    Ref MaxF = LoadAndCacheNamedVectorConstant(DstSize, NAMED_VECTOR_CVTMAX_F32_I32);
-    Converted = _Vector_FToZS(DstSize, OpSize::i32Bit, Src);
-    Cmp = _VFCMPGT(DstSize, OpSize::i32Bit, MaxF, Src);
+    // Otherwise, we have to do all the fixups, but vectorized.
+    if (HostRoundingMode) {
+      Src = _Vector_FToI(SrcSize, SrcElementSize, Src, Round_Host);
+    }
+
+    OpSize OverflowConstSize = ZeroUpperHalf && SrcElementSize == OpSize::i64Bit ? DstSize / 2 : DstSize;
+    Ref MaxI = LoadAndCacheNamedVectorConstant(OverflowConstSize, NAMED_VECTOR_CVTMAX_I32);
+    Ref Converted {}, Cmp {};
+    if (SrcElementSize == OpSize::i64Bit) {
+      Ref MaxF = LoadAndCacheNamedVectorConstant(SrcSize, NAMED_VECTOR_CVTMAX_F64_I32);
+      Converted = _Vector_F64ToI32(DstSize, Src, Round_Towards_Zero, ZeroUpperHalf);
+
+      Cmp = _VFCMPGT(SrcSize, OpSize::i64Bit, MaxF, Src);
+      Cmp = _VUShrNI(DstSize, OpSize::i64Bit, Cmp, 32);
+    } else {
+      Ref MaxF = LoadAndCacheNamedVectorConstant(DstSize, NAMED_VECTOR_CVTMAX_F32_I32);
+      Converted = _Vector_FToZS(DstSize, OpSize::i32Bit, Src);
+      Cmp = _VFCMPGT(DstSize, OpSize::i32Bit, MaxF, Src);
+    }
+    return _VBSL(DstSize, Cmp, Converted, MaxI);
   }
-  return _VBSL(DstSize, Cmp, Converted, MaxI);
 }
 
 template<IR::OpSize SrcElementSize, bool HostRoundingMode>
