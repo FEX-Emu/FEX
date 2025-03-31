@@ -298,7 +298,7 @@ namespace CPU {
     // Fill in telemetry values
     for (size_t i = 0; i < FEXCore::Telemetry::TYPE_LAST; ++i) {
       auto& Telem = FEXCore::Telemetry::GetTelemetryValue(static_cast<FEXCore::Telemetry::TelemetryType>(i));
-      Common.TelemetryValueAddresses[i] = reinterpret_cast<uint64_t>(Telem.GetAddr());
+      Common.TelemetryValueAddresses[i] = reinterpret_cast<uint64_t>(&Telem);
     }
 #endif
   }

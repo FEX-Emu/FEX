@@ -671,10 +671,10 @@ void SignalDelegator::HandleGuestSignal(FEX::HLE::ThreadStateObject* ThreadObjec
     // In the case of signals that cause coredump or terminate, save telemetry early.
     // FEX is hard crashing at this point and won't hit regular shutdown routines.
     // Add the signal to the crash mask.
-    CrashMask |= (1ULL << Signal);
+    FEXCORE_TELEMETRY_OR(TYPE_CRASH_MASK, (1ULL << Signal));
     if (Signal == SIGSEGV && reinterpret_cast<uint64_t>(SigInfo.si_addr) >= SyscallHandler::TASK_MAX_64BIT) {
       // Tried accessing invalid non-canonical x86-64 address.
-      UnhandledNonCanonical = true;
+      FEXCORE_TELEMETRY_SET(TYPE_UNHANDLED_NONCANONICAL_ADDRESS, 1);
     }
     SaveTelemetry();
 #endif

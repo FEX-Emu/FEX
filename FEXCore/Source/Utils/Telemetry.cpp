@@ -73,7 +73,7 @@ void Shutdown(const fextl::string& ApplicationName) {
     for (size_t i = 0; i < TelemetryType::TYPE_LAST; ++i) {
       auto& Name = TelemetryNames.at(i);
       auto& Data = TelemetryValues.at(i);
-      fextl::fmt::print(File, "{}: {}\n", Name, *Data);
+      fextl::fmt::print(File, "{}: {}\n", Name, Data.load());
     }
     File.Flush();
   }

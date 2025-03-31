@@ -692,7 +692,7 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
       return NormalOp(LocalInfo, Op, options);
     }
   } else if (Info->Type == FEXCore::X86Tables::TYPE_GROUP_EVEX) {
-    FEXCORE_TELEMETRY_SET(EVEXOpTelem, 1);
+    FEXCORE_TELEMETRY_SET(TYPE_USES_EVEX_OPS, 1);
     // EVEX unsupported
     return false;
   }
