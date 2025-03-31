@@ -2092,7 +2092,7 @@
         "ElementSize": "ElementSize >> 1",
         "EmitValidation": [
           "ElementSize >= FEXCore::IR::OpSize::i16Bit && ElementSize <= FEXCore::IR::OpSize::i64Bit",
-          "BitShift > 0 && BitShift <= IR::OpSizeAsBits(ElementSize)"
+          "BitShift <= IR::OpSizeAsBits(ElementSize)"
         ]
       },
 
