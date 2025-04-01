@@ -3274,7 +3274,11 @@ DEF_OP(VUShrNI) {
     shrnb(SubRegSize, Dst.Z(), Vector.Z(), BitShift);
     uzp1(SubRegSize, Dst.Z(), Dst.Z(), Dst.Z());
   } else {
-    shrn(SubRegSize, Dst.D(), Vector.D(), BitShift);
+    if (BitShift == 0) {
+      xtn(SubRegSize, Dst.D(), Vector.D());
+    } else {
+      shrn(SubRegSize, Dst.D(), Vector.D(), BitShift);
+    }
   }
 }
 

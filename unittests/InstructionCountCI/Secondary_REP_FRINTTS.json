@@ -1,0 +1,94 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "FRINTTS"
+    ],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256",
+      "RPRES",
+      "AFP",
+      "FLAGM",
+      "FLAGM2"
+    ]
+  },
+  "Instructions": {
+    "cvttss2si eax, xmm0": {
+      "ExpectedInstructionCount": 2,
+      "Comment": "0xf3 0x0f 0x2c",
+      "ExpectedArm64ASM": [
+        "frint32z s2, s16",
+        "fcvtzs w4, s2"
+      ]
+    },
+    "cvttss2si eax, dword [rbx]": {
+      "ExpectedInstructionCount": 3,
+      "Comment": "0xf3 0x0f 0x2c",
+      "ExpectedArm64ASM": [
+        "ldr s2, [x6]",
+        "frint32z s2, s2",
+        "fcvtzs w4, s2"
+      ]
+    },
+    "cvttss2si rax, xmm0": {
+      "ExpectedInstructionCount": 2,
+      "Comment": "0xf3 0x0f 0x2c",
+      "ExpectedArm64ASM": [
+        "frint64z s2, s16",
+        "fcvtzs x4, s2"
+      ]
+    },
+    "cvttss2si rax, dword [rbx]": {
+      "ExpectedInstructionCount": 3,
+      "Comment": "0xf3 0x0f 0x2c",
+      "ExpectedArm64ASM": [
+        "ldr d2, [x6]",
+        "frint64z s2, s2",
+        "fcvtzs x4, s2"
+      ]
+    },
+    "cvtss2si eax, xmm0": {
+      "ExpectedInstructionCount": 2,
+      "Comment": "0xf3 0x0f 0x2d",
+      "ExpectedArm64ASM": [
+        "frint32x s2, s16",
+        "fcvtzs w4, s2"
+      ]
+    },
+    "cvtss2si eax, dword [rbx]": {
+      "ExpectedInstructionCount": 3,
+      "Comment": "0xf3 0x0f 0x2d",
+      "ExpectedArm64ASM": [
+        "ldr s2, [x6]",
+        "frint32x s2, s2",
+        "fcvtzs w4, s2"
+      ]
+    },
+    "cvtss2si rax, xmm0": {
+      "ExpectedInstructionCount": 2,
+      "Comment": "0xf3 0x0f 0x2d",
+      "ExpectedArm64ASM": [
+        "frint64x s2, s16",
+        "fcvtzs x4, s2"
+      ]
+    },
+    "cvtss2si rax, dword [rbx]": {
+      "ExpectedInstructionCount": 3,
+      "Comment": "0xf3 0x0f 0x2d",
+      "ExpectedArm64ASM": [
+        "ldr d2, [x6]",
+        "frint64x s2, s2",
+        "fcvtzs x4, s2"
+      ]
+    },
+    "cvttps2dq xmm0, xmm1": {
+      "ExpectedInstructionCount": 2,
+      "Comment": "0xf3 0x0f 0x5b",
+      "ExpectedArm64ASM": [
+        "frint32z v2.4s, v17.4s",
+        "fcvtzs v16.4s, v2.4s"
+      ]
+    }
+  }
+}
