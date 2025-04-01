@@ -529,7 +529,7 @@ int main(int argc, char** argv, char** const envp) {
   auto VDSOMapping = FEX::VDSO::LoadVDSOThunks(Loader.Is64BitMode(), SyscallHandler.get());
 
   // Now that we have the syscall handler. Track some FDs that are FEX owned.
-  if (OutputFD != -1) {
+  if (OutputFD > 2) {
     SyscallHandler->FM.TrackFEXFD(OutputFD);
   }
   SyscallHandler->FM.TrackFEXFD(FEXServerClient::GetServerFD());
