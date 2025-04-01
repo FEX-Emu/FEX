@@ -20,7 +20,6 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   {0x32, 2, &OpDispatchBuilder::PermissionRestrictedOp},
   {0x34, 3, &OpDispatchBuilder::UnimplementedOp},
 
-  {0x3F, 1, &OpDispatchBuilder::ThunkOp},
   {0x40, 16, &OpDispatchBuilder::CMOVOp},
   {0x6E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVBetweenGPR_FPR, OpDispatchBuilder::VectorOpType::MMX>},
   {0x6F, 1, &OpDispatchBuilder::MOVQMMXOp},
@@ -144,8 +143,11 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   {0xFD, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADD, OpSize::i16Bit>},
   {0xFE, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADD, OpSize::i32Bit>},
 
+#ifndef _WIN32
   // FEX reserved instructions
   {0x37, 1, &OpDispatchBuilder::CallbackReturnOp},
+  {0x3F, 1, &OpDispatchBuilder::ThunkOp},
+#endif
 };
 
 constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDispatch_SecondaryRepModTables[] = {
