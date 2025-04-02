@@ -248,6 +248,46 @@ DEF_OP(VSha1SU1) {
   }
 }
 
+DEF_OP(VSha256H) {
+  auto Op = IROp->C<IR::IROp_VSha256H>();
+
+  const auto Dst = GetVReg(Node);
+  const auto Src1 = GetVReg(Op->Src1.ID());
+  const auto Src2 = GetVReg(Op->Src2.ID());
+  const auto Src3 = GetVReg(Op->Src3.ID());
+
+  if (Dst == Src1) {
+    sha256h(Dst, Src2, Src3);
+  } else if (Dst != Src2 && Dst != Src3) {
+    mov(Dst.Q(), Src1.Q());
+    sha256h(Dst, Src2, Src3);
+  } else {
+    mov(VTMP1.Q(), Src1.Q());
+    sha256h(VTMP1, Src2, Src3);
+    mov(Dst.Q(), VTMP1.Q());
+  }
+}
+
+DEF_OP(VSha256H2) {
+  auto Op = IROp->C<IR::IROp_VSha256H2>();
+
+  const auto Dst = GetVReg(Node);
+  const auto Src1 = GetVReg(Op->Src1.ID());
+  const auto Src2 = GetVReg(Op->Src2.ID());
+  const auto Src3 = GetVReg(Op->Src3.ID());
+
+  if (Dst == Src1) {
+    sha256h2(Dst, Src2, Src3);
+  } else if (Dst != Src2 && Dst != Src3) {
+    mov(Dst.Q(), Src1.Q());
+    sha256h2(Dst, Src2, Src3);
+  } else {
+    mov(VTMP1.Q(), Src1.Q());
+    sha256h2(VTMP1, Src2, Src3);
+    mov(Dst.Q(), VTMP1.Q());
+  }
+}
+
 DEF_OP(VSha256U0) {
   auto Op = IROp->C<IR::IROp_VSha256U0>();
 
