@@ -9,6 +9,7 @@ $end_info$
 #pragma once
 
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/Utils/SignalScopeGuards.h>
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
@@ -33,10 +34,14 @@ namespace CodeSerialize {
   struct CodeObjectFileSection;
 }
 
+struct GuestToHostMap;
+
 namespace CPU {
   struct CodeBuffer {
     uint8_t* Ptr;
     size_t Size;
+
+    fextl::unique_ptr<GuestToHostMap> LookupCache;
 
     CodeBuffer(size_t Size);
     CodeBuffer(const CodeBuffer&) = delete;
@@ -50,6 +55,18 @@ namespace CPU {
   class CodeBufferManager {
   public:
     fextl::shared_ptr<CodeBuffer> AllocateNewCodeBuffer(size_t Size);
+
+    size_t GetCurrentCodeBufferSize() {
+      return GetCurrentCodeBuffer()->Size;
+    }
+
+    std::shared_ptr<CodeBuffer> GetCurrentCodeBuffer();
+
+    std::shared_ptr<CodeBuffer> Latest;
+    std::size_t LatestOffset;
+
+    // Protects writes to the latest CodeBuffer
+    FEXCore::ForkableUniqueMutex CodeBufferWriteMutex;
   };
 
   class CPUBackend {
@@ -59,7 +76,7 @@ namespace CPU {
      * @param InitialCodeSize - Initial size for the code buffers
      * @param MaxCodeSize - Max size for the code buffers
      */
-    CPUBackend(FEXCore::Core::InternalThreadState*, size_t InitialCodeSize, size_t MaxCodeSize);
+    CPUBackend(CodeBufferManager&, FEXCore::Core::InternalThreadState*, size_t InitialCodeSize, size_t MaxCodeSize);
 
     virtual ~CPUBackend();
 
@@ -158,7 +175,13 @@ namespace CPU {
 
     bool IsAddressInCodeBuffer(uintptr_t Address) const;
 
+    // Updates the CodeBuffer if needed and returns a reference to the old one.
+    // The return reference should be kept alive carefully to avoid early deletion of resources.
+    [[nodiscard]]
+    fextl::shared_ptr<CodeBuffer> CheckCodeBufferUpdate();
+
   protected:
+  public:
     // Max spill slot size in bytes. We need at most 32 bytes
     // to be able to handle a 256-bit vector store to a slot.
     constexpr static uint32_t MaxSpillSlotSize = 32;
@@ -169,17 +192,14 @@ namespace CPU {
     [[nodiscard]]
     CodeBuffer* GetEmptyCodeBuffer();
 
-    // This is the size of the last code buffer we allocated
-    size_t CurrentCodeBufferSize = 0;
+    // This is the current code buffer that we are tracking
+    // TODO: Drop in favor of a plain uint32_t to track the current code buffer *size*
+    std::shared_ptr<CodeBuffer> CurrentCodeBuffer;
 
-    CodeBufferManager manager; // TODO: Rename
+    // Old CodeBuffer generations required to be valid until returning from signal handlers
+    fextl::vector<std::shared_ptr<CodeBuffer>> SignalHandlerCodeBuffers;
 
-  private:
-    void EmplaceNewCodeBuffer(fextl::shared_ptr<CodeBuffer> Buffer);
-
-    // This is the array of code buffers. Unless signals force us to keep more than
-    // buffer, there will be only one entry here
-    fextl::vector<fextl::shared_ptr<CodeBuffer>> CodeBuffers;
+    CodeBufferManager& manager; // TODO: Rename
   };
 
 } // namespace CPU

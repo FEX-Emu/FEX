@@ -428,6 +428,7 @@ void ContextImpl::InitializeCompiler(FEXCore::Core::InternalThreadState* Thread)
   // Create CPU backend
   Thread->PassManager->InsertRegisterAllocationPass();
   Thread->CPUBackend = FEXCore::CPU::CreateArm64JITCore(this, Thread);
+  Thread->LookupCache->Shared = Thread->CPUBackend->CurrentCodeBuffer->LookupCache.get();
 
   Thread->PassManager->Finalize();
 }
@@ -495,7 +496,7 @@ void ContextImpl::LockBeforeFork(FEXCore::Core::InternalThreadState* Thread) {
 }
 #endif
 
-void ContextImpl::ClearCodeCache(FEXCore::Core::InternalThreadState* Thread) {
+void ContextImpl::ClearCodeCache(FEXCore::Core::InternalThreadState* Thread, bool NewCodeBuffer) {
   FEXCORE_PROFILE_INSTANT("ClearCodeCache");
 
   if (CodeObjectCacheService) {
@@ -503,10 +504,19 @@ void ContextImpl::ClearCodeCache(FEXCore::Core::InternalThreadState* Thread) {
     // Use the thread's object cache ref counter for this
     CodeSerialize::CodeObjectSerializeService::WaitForEmptyJobQueue(&Thread->ObjectCacheRefCounter);
   }
-  auto lk = Thread->LookupCache->AcquireLock();
 
-  Thread->LookupCache->ClearCache();
-  Thread->CPUBackend->ClearCache();
+  if (NewCodeBuffer) {
+    // NOTE: Holding on to the reference here is required to ensure validity of the WriteLock mutex
+    std::shared_ptr PrevCodeBuffer = Thread->CPUBackend->CurrentCodeBuffer;
+    std::lock_guard lk(PrevCodeBuffer->LookupCache->WriteLock);
+
+    // Allocate new CodeBuffer + L3 LookupCache, then clear L1+L2 caches
+    Thread->CPUBackend->ClearCache();
+    Thread->LookupCache->ChangeGuestToHostMapping(*PrevCodeBuffer, *Thread->CPUBackend->CurrentCodeBuffer->LookupCache);
+  } else {
+    // Clear L1+L2 cache of this thread, and clear L3 cache across any threads using it
+    Thread->LookupCache->ClearCache();
+  }
 }
 
 static void IRDumper(FEXCore::Core::InternalThreadState* Thread, IR::IREmitter* IREmitter, uint64_t GuestRIP, IR::RegisterAllocationData* RA) {
@@ -747,6 +757,7 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
           .DebugData = nullptr, // nullptr here ensures that code serialization doesn't occur on from cache read
           .StartAddr = 0,       // Unused
           .Length = 0,          // Unused
+          .CodeBufferLock {}    // Unused
         };
       }
     }
@@ -772,6 +783,7 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
 
   // Attempt to get the CPU backend to compile this code
 
+  auto Lock = std::unique_lock {CodeBufferWriteMutex};
   auto CompiledCode = Thread->CPUBackend->CompileCode(GuestRIP, Length, TotalInstructions == 1, &*IRView, DebugData.get(), RAData, TFSet);
 
   // Release the IR
@@ -785,6 +797,7 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
     .DebugData = std::move(DebugData),
     .StartAddr = StartAddr,
     .Length = Length,
+    .CodeBufferLock = std::move(Lock),
   };
 }
 
@@ -804,7 +817,7 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
     return HostCode;
   }
 
-  auto [CodePtr, DebugData, StartAddr, Length] = CompileCode(Thread, GuestRIP, MaxInst);
+  auto [CodePtr, DebugData, StartAddr, Length, CodeBufferLock] = CompileCode(Thread, GuestRIP, MaxInst);
   if (CodePtr == nullptr) {
     return 0;
   }
@@ -876,7 +889,7 @@ uintptr_t ContextImpl::CompileSingleStep(FEXCore::Core::CpuStateFrame* Frame, ui
   // Invalidate might take a unique lock on this, to guarantee that during invalidation no code gets compiled
   auto lk = GuardSignalDeferringSection<std::shared_lock>(CodeInvalidationMutex, Thread);
 
-  auto [CodePtr, DebugData, StartAddr, Length] = CompileCode(Thread, GuestRIP, 1);
+  auto [CodePtr, DebugData, StartAddr, Length, CodeBufferLock] = CompileCode(Thread, GuestRIP, 1);
   if (CodePtr == nullptr) {
     return 0;
   }
@@ -916,6 +929,7 @@ void ContextImpl::MarkMemoryShared(FEXCore::Core::InternalThreadState* Thread) {
 
     if (Config.TSOAutoMigration) {
       // Only the lookup cache is cleared here, so that old code can keep running until next compilation
+      // TODO: Review if this will clear the old code *eventually*. It's probably safe to fully clear the GuestToHostMap?
       auto lk = Thread->LookupCache->AcquireLock();
       Thread->LookupCache->ClearCache();
     }
@@ -1006,6 +1020,8 @@ void ContextImpl::RemoveCustomIREntrypoint(uintptr_t Entrypoint) {
 
   std::scoped_lock lk(CustomIRMutex);
 
+  // TODO: Must invalidate L1/L2 caches for other threads...
+  ERROR_AND_DIE_FMT("TODO: Must ensure L1/L2 cache for other threads is invalidated");
   InvalidateGuestCodeRange(nullptr, Entrypoint, 1);
   CustomIRHandlers.erase(Entrypoint);
 

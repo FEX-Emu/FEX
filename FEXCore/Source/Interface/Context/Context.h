@@ -165,7 +165,7 @@ public:
     IRCaptureCache.WriteFilesWithCode(Writer);
   }
 
-  void ClearCodeCache(FEXCore::Core::InternalThreadState* Thread) override;
+  void ClearCodeCache(FEXCore::Core::InternalThreadState* Thread, bool NewCodeBuffer = true) override;
   void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) override;
   FEXCore::ForkableSharedMutex& GetCodeInvalidationMutex() override {
     return CodeInvalidationMutex;
@@ -261,6 +261,8 @@ public:
   // Wrapper which takes CpuStateFrame instead of InternalThreadState and unique_locks CodeInvalidationMutex
   // Must be called from owning thread
   static void ThreadRemoveCodeEntryFromJit(FEXCore::Core::CpuStateFrame* Frame, uint64_t GuestRIP) {
+    ERROR_AND_DIE_FMT("TODO: L1/L2 caches for other threads sharing the same GuestToHostMap must be invalidated, too");
+
     auto Thread = Frame->Thread;
     auto lk = GuardSignalDeferringSection(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
 
@@ -285,6 +287,7 @@ public:
     fextl::unique_ptr<FEXCore::Core::DebugData> DebugData;
     uint64_t StartAddr;
     uint64_t Length;
+    std::unique_lock<ForkableUniqueMutex> CodeBufferLock;
   };
   [[nodiscard]]
   CompileCodeResult CompileCode(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, uint64_t MaxInst = 0);
