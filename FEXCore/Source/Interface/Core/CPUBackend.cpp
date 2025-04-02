@@ -309,42 +309,34 @@ namespace CPU {
   auto CPUBackend::GetEmptyCodeBuffer() -> CodeBuffer* {
     if (ThreadState->CurrentFrame->SignalHandlerRefCounter == 0) {
       if (CodeBuffers.empty()) {
-        auto NewCodeBuffer = AllocateNewCodeBuffer(InitialCodeSize);
-        EmplaceNewCodeBuffer(NewCodeBuffer);
+        EmplaceNewCodeBuffer(manager.AllocateNewCodeBuffer(InitialCodeSize));
       } else {
         // If we have more than one code buffer we are tracking then walk them and delete
         // This is a cleanup step
         CodeBuffers.resize(1);
 
-        // Set the current code buffer to the initial
-        CurrentCodeBuffer = CodeBuffers[0];
-
-        if (CurrentCodeBuffer->Size != MaxCodeSize) {
-          auto Size = CurrentCodeBuffer->Size;
+        if (CurrentCodeBufferSize != MaxCodeSize) {
           CodeBuffers.clear();
-          CurrentCodeBuffer.reset();
 
           // Resize the code buffer and reallocate our code size
-          Size *= 1.5;
-          Size = std::min(Size, MaxCodeSize);
+          CurrentCodeBufferSize *= 1.5;
+          CurrentCodeBufferSize = std::min(CurrentCodeBufferSize, MaxCodeSize);
 
-          CurrentCodeBuffer = AllocateNewCodeBuffer(Size);
-          EmplaceNewCodeBuffer(CurrentCodeBuffer);
+          EmplaceNewCodeBuffer(manager.AllocateNewCodeBuffer(CurrentCodeBufferSize));
         }
       }
     } else {
       // We have signal handlers that have generated code
       // This means that we can not safely clear the code at this point in time
       // Allocate some new code buffers that we can switch over to instead
-      auto NewCodeBuffer = AllocateNewCodeBuffer(InitialCodeSize);
-      EmplaceNewCodeBuffer(NewCodeBuffer);
+      EmplaceNewCodeBuffer(manager.AllocateNewCodeBuffer(InitialCodeSize));
     }
 
-    return CurrentCodeBuffer.get();
+    return CodeBuffers.back().get();
   }
 
   void CPUBackend::EmplaceNewCodeBuffer(fextl::shared_ptr<CodeBuffer> Buffer) {
-    CurrentCodeBuffer = Buffer;
+    CurrentCodeBufferSize = Buffer->Size;
     CodeBuffers.emplace_back(Buffer);
   }
 
@@ -362,10 +354,11 @@ namespace CPU {
   }
 
   CodeBuffer::~CodeBuffer() {
+    // TODO: Assert that mutex is held?
     FEXCore::Allocator::VirtualFree(Ptr, Size);
   }
 
-  auto CPUBackend::AllocateNewCodeBuffer(size_t Size) -> fextl::shared_ptr<CodeBuffer> {
+  auto CodeBufferManager::AllocateNewCodeBuffer(size_t Size) -> fextl::shared_ptr<CodeBuffer> {
 #ifndef _WIN32
 // MDWE (Memory-Deny-Write-Execute) is a new Linux 6.3 feature.
 // It's equivalent to systemd's `MemoryDenyWriteExecute` but implemented entirely in the kernel.
@@ -393,9 +386,10 @@ namespace CPU {
 
     auto Buffer = fextl::make_shared<CodeBuffer>(Size);
 
-    if (static_cast<Context::ContextImpl*>(ThreadState->CTX)->Config.GlobalJITNaming()) {
-      static_cast<Context::ContextImpl*>(ThreadState->CTX)->Symbols.RegisterJITSpace(Buffer->Ptr, Buffer->Size);
-    }
+    // TODO: Re-enable
+    // if (static_cast<Context::ContextImpl*>(ThreadState->CTX)->Config.GlobalJITNaming()) {
+    //   static_cast<Context::ContextImpl*>(ThreadState->CTX)->Symbols.RegisterJITSpace(Buffer.Ptr, Buffer.Size);
+    // }
 
     return Buffer;
   }

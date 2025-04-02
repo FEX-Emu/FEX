@@ -47,6 +47,11 @@ namespace CPU {
     ~CodeBuffer();
   };
 
+  class CodeBufferManager {
+  public:
+    fextl::shared_ptr<CodeBuffer> AllocateNewCodeBuffer(size_t Size);
+  };
+
   class CPUBackend {
   public:
 
@@ -54,7 +59,7 @@ namespace CPU {
      * @param InitialCodeSize - Initial size for the code buffers
      * @param MaxCodeSize - Max size for the code buffers
      */
-    CPUBackend(FEXCore::Core::InternalThreadState* ThreadState, size_t InitialCodeSize, size_t MaxCodeSize);
+    CPUBackend(FEXCore::Core::InternalThreadState*, size_t InitialCodeSize, size_t MaxCodeSize);
 
     virtual ~CPUBackend();
 
@@ -164,12 +169,12 @@ namespace CPU {
     [[nodiscard]]
     CodeBuffer* GetEmptyCodeBuffer();
 
-    // This is the current code buffer that we are tracking
-    std::shared_ptr<CodeBuffer> CurrentCodeBuffer;
+    // This is the size of the last code buffer we allocated
+    size_t CurrentCodeBufferSize = 0;
+
+    CodeBufferManager manager; // TODO: Rename
 
   private:
-    fextl::shared_ptr<CodeBuffer> AllocateNewCodeBuffer(size_t Size);
-
     void EmplaceNewCodeBuffer(fextl::shared_ptr<CodeBuffer> Buffer);
 
     // This is the array of code buffers. Unless signals force us to keep more than
