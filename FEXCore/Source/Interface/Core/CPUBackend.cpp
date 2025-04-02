@@ -304,12 +304,7 @@ namespace CPU {
 #endif
   }
 
-  CPUBackend::~CPUBackend() {
-    for (auto CodeBuffer : CodeBuffers) {
-      FreeCodeBuffer(CodeBuffer);
-    }
-    CodeBuffers.clear();
-  }
+  CPUBackend::~CPUBackend() = default;
 
   auto CPUBackend::GetEmptyCodeBuffer() -> CodeBuffer* {
     if (ThreadState->CurrentFrame->SignalHandlerRefCounter == 0) {
@@ -317,25 +312,24 @@ namespace CPU {
         auto NewCodeBuffer = AllocateNewCodeBuffer(InitialCodeSize);
         EmplaceNewCodeBuffer(NewCodeBuffer);
       } else {
-        if (CodeBuffers.size() > 1) {
-          // If we have more than one code buffer we are tracking then walk them and delete
-          // This is a cleanup step
-          for (size_t i = 1; i < CodeBuffers.size(); i++) {
-            FreeCodeBuffer(CodeBuffers[i]);
-          }
-          CodeBuffers.resize(1);
-        }
+        // If we have more than one code buffer we are tracking then walk them and delete
+        // This is a cleanup step
+        CodeBuffers.resize(1);
+
         // Set the current code buffer to the initial
-        CurrentCodeBuffer = CodeBuffers.data();
+        CurrentCodeBuffer = CodeBuffers[0];
 
         if (CurrentCodeBuffer->Size != MaxCodeSize) {
-          FreeCodeBuffer(*CurrentCodeBuffer);
+          auto Size = CurrentCodeBuffer->Size;
+          CodeBuffers.clear();
+          CurrentCodeBuffer.reset();
 
           // Resize the code buffer and reallocate our code size
-          CurrentCodeBuffer->Size *= 1.5;
-          CurrentCodeBuffer->Size = std::min(CurrentCodeBuffer->Size, MaxCodeSize);
+          Size *= 1.5;
+          Size = std::min(Size, MaxCodeSize);
 
-          *CurrentCodeBuffer = AllocateNewCodeBuffer(CurrentCodeBuffer->Size);
+          CurrentCodeBuffer = AllocateNewCodeBuffer(Size);
+          EmplaceNewCodeBuffer(CurrentCodeBuffer);
         }
       }
     } else {
@@ -346,10 +340,32 @@ namespace CPU {
       EmplaceNewCodeBuffer(NewCodeBuffer);
     }
 
-    return CurrentCodeBuffer;
+    return CurrentCodeBuffer.get();
   }
 
-  auto CPUBackend::AllocateNewCodeBuffer(size_t Size) -> CodeBuffer {
+  void CPUBackend::EmplaceNewCodeBuffer(fextl::shared_ptr<CodeBuffer> Buffer) {
+    CurrentCodeBuffer = Buffer;
+    CodeBuffers.emplace_back(Buffer);
+  }
+
+  CodeBuffer::CodeBuffer(size_t Size)
+    : Size(Size) {
+    Ptr = static_cast<uint8_t*>(FEXCore::Allocator::VirtualAlloc(Size, true));
+    LOGMAN_THROW_A_FMT(!!Ptr, "Couldn't allocate code buffer");
+
+    // Protect the last page of the allocated buffer to trigger SIGSEGV on write access
+    uintptr_t LastPageAddr = AlignDown(reinterpret_cast<uintptr_t>(Ptr) + Size - 1, FEXCore::Utils::FEX_PAGE_SIZE);
+    if (!FEXCore::Allocator::VirtualProtect(reinterpret_cast<void*>(LastPageAddr), FEXCore::Utils::FEX_PAGE_SIZE,
+                                            FEXCore::Allocator::ProtectOptions::None)) {
+      LogMan::Msg::EFmt("Failed to mprotect last page of code buffer.");
+    }
+  }
+
+  CodeBuffer::~CodeBuffer() {
+    FEXCore::Allocator::VirtualFree(Ptr, Size);
+  }
+
+  auto CPUBackend::AllocateNewCodeBuffer(size_t Size) -> fextl::shared_ptr<CodeBuffer> {
 #ifndef _WIN32
 // MDWE (Memory-Deny-Write-Execute) is a new Linux 6.3 feature.
 // It's equivalent to systemd's `MemoryDenyWriteExecute` but implemented entirely in the kernel.
@@ -375,35 +391,21 @@ namespace CPU {
     }
 #endif
 
-    CodeBuffer Buffer;
-    Buffer.Size = Size;
-    Buffer.Ptr = static_cast<uint8_t*>(FEXCore::Allocator::VirtualAlloc(Buffer.Size, true));
-    LOGMAN_THROW_A_FMT(!!Buffer.Ptr, "Couldn't allocate code buffer");
+    auto Buffer = fextl::make_shared<CodeBuffer>(Size);
 
     if (static_cast<Context::ContextImpl*>(ThreadState->CTX)->Config.GlobalJITNaming()) {
-      static_cast<Context::ContextImpl*>(ThreadState->CTX)->Symbols.RegisterJITSpace(Buffer.Ptr, Buffer.Size);
-    }
-
-    // Protect the last page of the allocated buffer to trigger SIGSEGV on write access
-    uintptr_t LastPageAddr = AlignDown(reinterpret_cast<uintptr_t>(Buffer.Ptr) + Buffer.Size - 1, FEXCore::Utils::FEX_PAGE_SIZE);
-    if (!FEXCore::Allocator::VirtualProtect(reinterpret_cast<void*>(LastPageAddr), FEXCore::Utils::FEX_PAGE_SIZE,
-                                            FEXCore::Allocator::ProtectOptions::None)) {
-      LogMan::Msg::EFmt("Failed to mprotect last page of code buffer.");
+      static_cast<Context::ContextImpl*>(ThreadState->CTX)->Symbols.RegisterJITSpace(Buffer->Ptr, Buffer->Size);
     }
 
     return Buffer;
-  }
-
-  void CPUBackend::FreeCodeBuffer(CodeBuffer Buffer) {
-    FEXCore::Allocator::VirtualFree(Buffer.Ptr, Buffer.Size);
   }
 
   bool CPUBackend::IsAddressInCodeBuffer(uintptr_t Address) const {
     // The last page of the code buffer is protected, so we need to exclude it from the valid range
     // when checking if the address is in the code buffer.
     for (auto& Buffer : CodeBuffers) {
-      uintptr_t LastPageAddr = AlignDown(reinterpret_cast<uintptr_t>(Buffer.Ptr) + Buffer.Size - 1, FEXCore::Utils::FEX_PAGE_SIZE);
-      if (Address >= reinterpret_cast<uintptr_t>(Buffer.Ptr) && Address < LastPageAddr) {
+      uintptr_t LastPageAddr = AlignDown(reinterpret_cast<uintptr_t>(Buffer->Ptr) + Buffer->Size - 1, FEXCore::Utils::FEX_PAGE_SIZE);
+      if (Address >= reinterpret_cast<uintptr_t>(Buffer->Ptr) && Address < LastPageAddr) {
         return true;
       }
     }
