@@ -541,7 +541,7 @@ static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame* Fram
 void Arm64JITCore::Op_NoOp(const IR::IROp_Header* IROp, IR::NodeID Node) {}
 
 Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::InternalThreadState* Thread)
-  : CPUBackend(Thread, INITIAL_CODE_SIZE, MAX_CODE_SIZE)
+  : CPUBackend(*ctx, Thread, INITIAL_CODE_SIZE, MAX_CODE_SIZE)
   , Arm64Emitter(ctx)
   , HostSupportsSVE128 {ctx->HostFeatures.SupportsSVE128}
   , HostSupportsSVE256 {ctx->HostFeatures.SupportsSVE256}
@@ -599,7 +599,19 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::In
   }
 
   // Must be done after Dispatcher init
-  ClearCache();
+  {
+    auto lock = std::unique_lock {manager.CodeBufferWriteMutex};
+    // ClearCache();
+    // // Skip detection string
+    // manager.LatestOffset = GetCursorOffset();
+
+    CurrentCodeBuffer = manager.GetCurrentCodeBuffer();
+    SetBuffer(CurrentCodeBuffer->Ptr, CurrentCodeBuffer->Size);
+    SetCursorOffset(manager.LatestOffset);
+    // TODO: Emit detection string
+    // EmitDetectionString();
+    // manager.LatestOffset = GetCursorOffset();
+  }
 
   // Setup dynamic dispatch.
   if (ParanoidTSO()) {
@@ -751,7 +763,16 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
   // Fairly excessive buffer range to make sure we don't overflow
   uint32_t BufferRange = SSACount * 16;
-  if ((GetCursorOffset() + BufferRange) > CurrentCodeBufferSize) {
+
+  LOGMAN_THROW_A_FMT(CurrentCodeBuffer->LookupCache.get() == ThreadState->LookupCache->Shared, "INVARIANT VIOLATED: SharedLookupCache "
+                                                                                               "doesn't match up!\n");
+  if (auto Prev = CheckCodeBufferUpdate()) {
+    ThreadState->LookupCache->ChangeGuestToHostMapping(*Prev, *CurrentCodeBuffer->LookupCache);
+  }
+
+  SetBuffer(CurrentCodeBuffer->Ptr, CurrentCodeBuffer->Size);
+  SetCursorOffset(manager.LatestOffset);
+  if ((GetCursorOffset() + BufferRange) > CurrentCodeBuffer->Size) {
     CTX->ClearCodeCache(ThreadState);
   }
 
@@ -928,6 +949,8 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   CodeData.Size = GetCursorAddress<uint8_t*>() - CodeData.BlockBegin;
 
   JITBlockTail->Size = CodeData.Size;
+
+  manager.LatestOffset = GetCursorOffset();
 
   ClearICache(CodeData.BlockBegin, CodeOnlySize);
 
