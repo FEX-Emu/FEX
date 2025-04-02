@@ -16,6 +16,82 @@
 
 namespace FEXCore {
 
+struct GuestToHostMap {
+  std::recursive_mutex WriteLock;
+
+  struct LockToken {
+    std::lock_guard<std::recursive_mutex> Lock;
+  };
+
+  [[nodiscard]]
+  LockToken AcquireLock() {
+    return LockToken {std::lock_guard {WriteLock}};
+  }
+
+  struct BlockLinkTag {
+    uint64_t GuestDestination;
+    FEXCore::Context::ExitFunctionLinkData* HostLink;
+
+    bool operator<(const BlockLinkTag& other) const {
+      if (GuestDestination < other.GuestDestination) {
+        return true;
+      } else if (GuestDestination == other.GuestDestination) {
+        return HostLink < other.HostLink;
+      } else {
+        return false;
+      }
+    }
+  };
+
+  // Use a monotonic buffer resource to allocate both the std::pmr::map and its members.
+  // This allows us to quickly clear the block link map by clearing the monotonic allocator.
+  // If we had allocated the block link map without the MBR, then clearing the map would require slowly
+  // walking each block member and destructing objects.
+  //
+  // This makes `BlockLinks` look like a raw pointer that could memory leak, but since it is backed by the MBR, it won't.
+  std::pmr::monotonic_buffer_resource BlockLinks_mbr;
+  using BlockLinksMapType = std::pmr::map<BlockLinkTag, FEXCore::Context::BlockDelinkerFunc>;
+  fextl::unique_ptr<std::pmr::polymorphic_allocator<std::byte>> BlockLinks_pma;
+  BlockLinksMapType* BlockLinks;
+
+  fextl::robin_map<uint64_t, uint64_t> BlockList;
+
+  GuestToHostMap();
+
+  // Adds to Guest -> Host code mapping
+  void AddBlockMapping(uint64_t Address, void* HostCode, const LockToken&) {
+    // This may replace an existing mapping
+    BlockList[Address] = (uintptr_t)HostCode;
+  }
+
+  std::optional<uintptr_t> FindBlock(uint64_t Address, const LockToken&) {
+    auto HostCode = BlockList.find(Address);
+    if (HostCode == BlockList.end()) {
+      return std::nullopt;
+    }
+    return HostCode->second;
+  }
+
+  void Erase(FEXCore::Core::CpuStateFrame* Frame, uint64_t Address, const LockToken&) {
+    // Sever any links to this block
+    auto lower = BlockLinks->lower_bound({Address, nullptr});
+    auto upper = BlockLinks->upper_bound({Address, reinterpret_cast<FEXCore::Context::ExitFunctionLinkData*>(UINTPTR_MAX)});
+    for (auto it = lower; it != upper; it = BlockLinks->erase(it)) {
+      it->second(Frame, it->first.HostLink);
+    }
+
+    // Remove from BlockList
+    BlockList.erase(Address);
+  }
+
+  void AddBlockLink(uint64_t GuestDestination, FEXCore::Context::ExitFunctionLinkData* HostLink,
+                    const FEXCore::Context::BlockDelinkerFunc& delinker, const LockToken&) {
+    BlockLinks->insert({{GuestDestination, HostLink}, delinker});
+  }
+
+  void ClearCache(const LockToken&);
+};
+
 class LookupCache {
 public:
   struct LookupCacheEntry {
@@ -34,7 +110,7 @@ public:
     }
 
     // L2 and L3 need to be locked
-    std::lock_guard<std::recursive_mutex> lk(WriteLock);
+    auto lk = L3.AcquireLock();
 
     // Try L2
     const auto PageIndex = (Address & (VirtualMemSize - 1)) >> 12;
@@ -56,23 +132,25 @@ public:
     }
 
     // Try L3
-    auto HostCode = BlockList.find(Address);
-
-    if (HostCode != BlockList.end()) {
-      CacheBlockMapping(Address, HostCode->second);
-      return HostCode->second;
+    auto HostCode = L3.FindBlock(Address, lk);
+    if (HostCode) {
+      CacheBlockMapping(Address, HostCode.value());
+      return HostCode.value();
     }
 
     // Failed to find
     return 0;
   }
 
+  GuestToHostMap L3;
+
   fextl::map<uint64_t, fextl::vector<uint64_t>> CodePages;
 
   // Appends Block {Address} to CodePages [Start, Start + Length)
   // Returns true if new pages are marked as containing code
   bool AddBlockExecutableRange(uint64_t Address, uint64_t Start, uint64_t Length) {
-    std::lock_guard<std::recursive_mutex> lk(WriteLock);
+    auto lk = L3.AcquireLock();
+
 
     bool rv = false;
 
@@ -87,10 +165,9 @@ public:
 
   // Adds to Guest -> Host code mapping
   void AddBlockMapping(uint64_t Address, void* HostCode) {
-    std::lock_guard<std::recursive_mutex> lk(WriteLock);
+    auto lk = L3.AcquireLock();
 
-    [[maybe_unused]] auto Inserted = BlockList.emplace(Address, (uintptr_t)HostCode).second;
-    LOGMAN_THROW_A_FMT(Inserted, "Duplicate block mapping added");
+    L3.AddBlockMapping(Address, HostCode, lk);
 
     // There is no need to update L1 or L2, they will get updated on first lookup
     // However, adding to L1 here increases performance
@@ -100,18 +177,9 @@ public:
   }
 
   void Erase(FEXCore::Core::CpuStateFrame* Frame, uint64_t Address) {
+    auto lk = L3.AcquireLock();
 
-    std::lock_guard<std::recursive_mutex> lk(WriteLock);
-
-    // Sever any links to this block
-    auto lower = BlockLinks->lower_bound({Address, nullptr});
-    auto upper = BlockLinks->upper_bound({Address, reinterpret_cast<FEXCore::Context::ExitFunctionLinkData*>(UINTPTR_MAX)});
-    for (auto it = lower; it != upper; it = BlockLinks->erase(it)) {
-      it->second(Frame, it->first.HostLink);
-    }
-
-    // Remove from BlockList
-    BlockList.erase(Address);
+    L3.Erase(Frame, Address, lk);
 
     // Do L1
     auto& L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
@@ -141,9 +209,8 @@ public:
   }
 
   void AddBlockLink(uint64_t GuestDestination, FEXCore::Context::ExitFunctionLinkData* HostLink, const FEXCore::Context::BlockDelinkerFunc& delinker) {
-    std::lock_guard<std::recursive_mutex> lk(WriteLock);
-
-    BlockLinks->insert({{GuestDestination, HostLink}, delinker});
+    auto lk = L3.AcquireLock();
+    L3.AddBlockLink(GuestDestination, HostLink, delinker, lk);
   }
 
   void ClearCache();
@@ -169,7 +236,9 @@ public:
   // Some care is taken so that L1 lookups can be done without locks, and even tearing is unlikely to lead to a crash.
   // This approach has not been fully vetted yet.
   // Also note that L1 lookups might be inlined in the JIT Dispatcher and/or block ends.
-  std::recursive_mutex WriteLock;
+  auto AcquireLock() {
+    return L3.AcquireLock();
+  }
 
 private:
   void CacheBlockMapping(uint64_t Address, uintptr_t HostCode) {
@@ -225,34 +294,6 @@ private:
   uintptr_t PagePointer;
   uintptr_t PageMemory;
   uintptr_t L1Pointer;
-
-  struct BlockLinkTag {
-    uint64_t GuestDestination;
-    FEXCore::Context::ExitFunctionLinkData* HostLink;
-
-    bool operator<(const BlockLinkTag& other) const {
-      if (GuestDestination < other.GuestDestination) {
-        return true;
-      } else if (GuestDestination == other.GuestDestination) {
-        return HostLink < other.HostLink;
-      } else {
-        return false;
-      }
-    }
-  };
-
-  // Use a monotonic buffer resource to allocate both the std::pmr::map and its members.
-  // This allows us to quickly clear the block link map by clearing the monotonic allocator.
-  // If we had allocated the block link map without the MBR, then clearing the map would require slowly
-  // walking each block member and destructing objects.
-  //
-  // This makes `BlockLinks` look like a raw pointer that could memory leak, but since it is backed by the MBR, it won't.
-  std::pmr::monotonic_buffer_resource BlockLinks_mbr;
-  using BlockLinksMapType = std::pmr::map<BlockLinkTag, FEXCore::Context::BlockDelinkerFunc>;
-  fextl::unique_ptr<std::pmr::polymorphic_allocator<std::byte>> BlockLinks_pma;
-  BlockLinksMapType* BlockLinks;
-
-  fextl::robin_map<uint64_t, uint64_t> BlockList;
 
   size_t TotalCacheSize;
 
