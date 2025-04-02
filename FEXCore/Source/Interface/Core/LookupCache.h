@@ -78,7 +78,7 @@ public:
 
     for (auto CurrentPage = Start >> 12, EndPage = (Start + Length - 1) >> 12; CurrentPage <= EndPage; CurrentPage++) {
       auto& CodePage = CodePages[CurrentPage];
-      rv |= CodePage.size() == 0;
+      rv |= CodePage.empty();
       CodePage.push_back(Address);
     }
 
