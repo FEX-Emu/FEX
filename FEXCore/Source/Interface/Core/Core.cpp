@@ -503,7 +503,7 @@ void ContextImpl::ClearCodeCache(FEXCore::Core::InternalThreadState* Thread) {
     // Use the thread's object cache ref counter for this
     CodeSerialize::CodeObjectSerializeService::WaitForEmptyJobQueue(&Thread->ObjectCacheRefCounter);
   }
-  std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
+  auto lk = Thread->LookupCache->AcquireLock();
 
   Thread->LookupCache->ClearCache();
   Thread->CPUBackend->ClearCache();
@@ -888,7 +888,7 @@ uintptr_t ContextImpl::CompileSingleStep(FEXCore::Core::CpuStateFrame* Frame, ui
 }
 
 static void InvalidateGuestThreadCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) {
-  std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
+  auto lk = Thread->LookupCache->AcquireLock();
 
   auto lower = Thread->LookupCache->CodePages.lower_bound(Start >> 12);
   auto upper = Thread->LookupCache->CodePages.upper_bound((Start + Length - 1) >> 12);
@@ -916,7 +916,7 @@ void ContextImpl::MarkMemoryShared(FEXCore::Core::InternalThreadState* Thread) {
 
     if (Config.TSOAutoMigration) {
       // Only the lookup cache is cleared here, so that old code can keep running until next compilation
-      std::lock_guard<std::recursive_mutex> lkLookupCache(Thread->LookupCache->WriteLock);
+      auto lk = Thread->LookupCache->AcquireLock();
       Thread->LookupCache->ClearCache();
     }
   }
