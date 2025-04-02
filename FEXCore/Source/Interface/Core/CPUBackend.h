@@ -9,6 +9,7 @@ $end_info$
 #pragma once
 
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
@@ -33,12 +34,21 @@ namespace CodeSerialize {
 }
 
 namespace CPU {
+  struct CodeBuffer {
+    uint8_t* Ptr;
+    size_t Size;
+
+    CodeBuffer(size_t Size);
+    CodeBuffer(const CodeBuffer&) = delete;
+    CodeBuffer& operator=(const CodeBuffer&) = delete;
+    CodeBuffer(CodeBuffer&& oth) = delete;
+    CodeBuffer& operator=(CodeBuffer&&) = delete;
+
+    ~CodeBuffer();
+  };
+
   class CPUBackend {
   public:
-    struct CodeBuffer {
-      uint8_t* Ptr;
-      size_t Size;
-    };
 
     /**
      * @param InitialCodeSize - Initial size for the code buffers
@@ -155,19 +165,16 @@ namespace CPU {
     CodeBuffer* GetEmptyCodeBuffer();
 
     // This is the current code buffer that we are tracking
-    CodeBuffer* CurrentCodeBuffer {};
+    std::shared_ptr<CodeBuffer> CurrentCodeBuffer;
 
   private:
-    CodeBuffer AllocateNewCodeBuffer(size_t Size);
-    void FreeCodeBuffer(CodeBuffer Buffer);
+    fextl::shared_ptr<CodeBuffer> AllocateNewCodeBuffer(size_t Size);
 
-    void EmplaceNewCodeBuffer(CodeBuffer Buffer) {
-      CurrentCodeBuffer = &CodeBuffers.emplace_back(Buffer);
-    }
+    void EmplaceNewCodeBuffer(fextl::shared_ptr<CodeBuffer> Buffer);
 
     // This is the array of code buffers. Unless signals force us to keep more than
     // buffer, there will be only one entry here
-    fextl::vector<CodeBuffer> CodeBuffers {};
+    fextl::vector<fextl::shared_ptr<CodeBuffer>> CodeBuffers;
   };
 
 } // namespace CPU
