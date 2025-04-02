@@ -296,63 +296,88 @@ Ref OpDispatchBuilder::BitwiseAtLeastTwo(Ref A, Ref B, Ref C) {
 }
 
 void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
-  const auto Ch = [this](Ref E, Ref F, Ref G) -> Ref {
-    return _Xor(OpSize::i32Bit, _And(OpSize::i32Bit, E, F), _Andn(OpSize::i32Bit, G, E));
-  };
-  const auto Sigma0 = [this](Ref A) -> Ref {
-    return _XorShift(OpSize::i32Bit, _XorShift(OpSize::i32Bit, _Ror(OpSize::i32Bit, A, _Constant(OpSize::i32Bit, 2)), A, ShiftType::ROR, 13),
-                     A, ShiftType::ROR, 22);
-  };
-  const auto Sigma1 = [this](Ref E) -> Ref {
-    return _XorShift(OpSize::i32Bit, _XorShift(OpSize::i32Bit, _Ror(OpSize::i32Bit, E, _Constant(OpSize::i32Bit, 6)), E, ShiftType::ROR, 11),
-                     E, ShiftType::ROR, 25);
-  };
-
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   // Hardcoded to XMM0
   auto XMM0 = LoadXMMRegister(0);
 
-  auto E0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Src, 1);
-  auto F0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Src, 0);
-  auto G0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 1);
-  Ref Q0 = _Add(OpSize::i32Bit, Ch(E0, F0, G0), Sigma1(E0));
+  Ref Result;
+  if (CTX->HostFeatures.SupportsSHA) {
+    auto shuffle_abcd = [this](Ref Src1, Ref Src2) -> Ref {
+      // Generates a suitable SHA256 `abcd` configuration from x86 format.
+      auto Tmp = _VZip2(OpSize::i128Bit, OpSize::i64Bit, Src2, Src1);
+      return _VRev64(OpSize::i128Bit, OpSize::i32Bit, Tmp);
+    };
 
-  auto WK0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, XMM0, 0);
-  Q0 = _Add(OpSize::i32Bit, Q0, WK0);
+    auto shuffle_efgh = [this](Ref Src1, Ref Src2) -> Ref {
+      // Generates a suitable SHA256 `efgh` configuration from x86 format.
+      auto Tmp = _VZip(OpSize::i128Bit, OpSize::i64Bit, Src2, Src1);
+      return _VRev64(OpSize::i128Bit, OpSize::i32Bit, Tmp);
+    };
 
-  auto H0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 0);
-  Q0 = _Add(OpSize::i32Bit, Q0, H0);
+    auto ABCD = shuffle_abcd(Dest, Src);
+    auto EFGH = shuffle_efgh(Dest, Src);
 
-  auto A0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Src, 3);
-  auto B0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Src, 2);
-  auto C0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 3);
-  auto A1 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Q0, BitwiseAtLeastTwo(A0, B0, C0)), Sigma0(A0));
+    // x86 uses only the bottom 64-bits of the key, so duplicate to match ARM64 semantics.
+    auto Key = _VDupElement(OpSize::i128Bit, OpSize::i64Bit, XMM0, 0);
 
-  auto D0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 2);
-  auto E1 = _Add(OpSize::i32Bit, Q0, D0);
+    auto A = _VSha256H(ABCD, EFGH, Key);
+    auto B = _VSha256H2(EFGH, ABCD, Key);
+    Result = shuffle_abcd(A, B);
+  } else {
+    const auto Ch = [this](Ref E, Ref F, Ref G) -> Ref {
+      return _Xor(OpSize::i32Bit, _And(OpSize::i32Bit, E, F), _Andn(OpSize::i32Bit, G, E));
+    };
+    const auto Sigma0 = [this](Ref A) -> Ref {
+      return _XorShift(OpSize::i32Bit, _XorShift(OpSize::i32Bit, _Ror(OpSize::i32Bit, A, _Constant(OpSize::i32Bit, 2)), A, ShiftType::ROR, 13),
+                       A, ShiftType::ROR, 22);
+    };
+    const auto Sigma1 = [this](Ref E) -> Ref {
+      return _XorShift(OpSize::i32Bit, _XorShift(OpSize::i32Bit, _Ror(OpSize::i32Bit, E, _Constant(OpSize::i32Bit, 6)), E, ShiftType::ROR, 11),
+                       E, ShiftType::ROR, 25);
+    };
 
-  Ref Q1 = _Add(OpSize::i32Bit, Ch(E1, E0, F0), Sigma1(E1));
+    auto E0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Src, 1);
+    auto F0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Src, 0);
+    auto G0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 1);
+    Ref Q0 = _Add(OpSize::i32Bit, Ch(E0, F0, G0), Sigma1(E0));
 
-  auto WK1 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, XMM0, 1);
-  Q1 = _Add(OpSize::i32Bit, Q1, WK1);
+    auto WK0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, XMM0, 0);
+    Q0 = _Add(OpSize::i32Bit, Q0, WK0);
 
-  // Rematerialize G0. Costs a move but saves spilling, coming out ahead.
-  G0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 1);
-  Q1 = _Add(OpSize::i32Bit, Q1, G0);
+    auto H0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 0);
+    Q0 = _Add(OpSize::i32Bit, Q0, H0);
 
-  auto A2 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Q1, BitwiseAtLeastTwo(A1, A0, B0)), Sigma0(A1));
+    auto A0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Src, 3);
+    auto B0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Src, 2);
+    auto C0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 3);
+    auto A1 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Q0, BitwiseAtLeastTwo(A0, B0, C0)), Sigma0(A0));
 
-  // Rematerialize C0. As with G0.
-  C0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 3);
-  auto E2 = _Add(OpSize::i32Bit, Q1, C0);
+    auto D0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 2);
+    auto E1 = _Add(OpSize::i32Bit, Q0, D0);
 
-  auto Res3 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 3, Dest, A2);
-  auto Res2 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 2, Res3, A1);
-  auto Res1 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 1, Res2, E2);
-  auto Res0 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 0, Res1, E1);
+    Ref Q1 = _Add(OpSize::i32Bit, Ch(E1, E0, F0), Sigma1(E1));
 
-  StoreResult(FPRClass, Op, Res0, OpSize::iInvalid);
+    auto WK1 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, XMM0, 1);
+    Q1 = _Add(OpSize::i32Bit, Q1, WK1);
+
+    // Rematerialize G0. Costs a move but saves spilling, coming out ahead.
+    G0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 1);
+    Q1 = _Add(OpSize::i32Bit, Q1, G0);
+
+    auto A2 = _Add(OpSize::i32Bit, _Add(OpSize::i32Bit, Q1, BitwiseAtLeastTwo(A1, A0, B0)), Sigma0(A1));
+
+    // Rematerialize C0. As with G0.
+    C0 = _VExtractToGPR(OpSize::i128Bit, OpSize::i32Bit, Dest, 3);
+    auto E2 = _Add(OpSize::i32Bit, Q1, C0);
+
+    auto Res3 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 3, Dest, A2);
+    auto Res2 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 2, Res3, A1);
+    auto Res1 = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 1, Res2, E2);
+    Result = _VInsGPR(OpSize::i128Bit, OpSize::i32Bit, 0, Res1, E1);
+  }
+
+  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::AESImcOp(OpcodeArgs) {
