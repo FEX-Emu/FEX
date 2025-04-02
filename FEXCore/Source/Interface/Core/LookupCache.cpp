@@ -14,14 +14,17 @@ $end_info$
 #include "Interface/Core/LookupCache.h"
 
 namespace FEXCore {
-LookupCache::LookupCache(FEXCore::Context::ContextImpl* CTX)
-  : BlockLinks_mbr {fextl::pmr::get_default_resource()}
-  , ctx {CTX} {
-
-  TotalCacheSize = ctx->Config.VirtualMemSize / 4096 * 8 + CODE_SIZE + L1_SIZE;
+GuestToHostMap::GuestToHostMap()
+  : BlockLinks_mbr {fextl::pmr::get_default_resource()} {
   BlockLinks_pma = fextl::make_unique<std::pmr::polymorphic_allocator<std::byte>>(&BlockLinks_mbr);
   // Setup our PMR map.
   BlockLinks = BlockLinks_pma->new_object<BlockLinksMapType>();
+}
+
+LookupCache::LookupCache(FEXCore::Context::ContextImpl* CTX)
+  : ctx {CTX} {
+
+  TotalCacheSize = ctx->Config.VirtualMemSize / 4096 * 8 + CODE_SIZE + L1_SIZE;
 
   // Block cache ends up looking like this
   // PageMemoryMap[VirtualMemoryRegion >> 12]
@@ -62,7 +65,7 @@ LookupCache::~LookupCache() {
 }
 
 void LookupCache::ClearL2Cache() {
-  std::lock_guard<std::recursive_mutex> lk(WriteLock);
+  auto lk = L3.AcquireLock();
   // Clear out the page memory
   // PagePointer and PageMemory are sequential with each other. Clear both at once.
   FEXCore::Allocator::VirtualDontNeed(reinterpret_cast<void*>(PagePointer), ctx->Config.VirtualMemSize / 4096 * 8 + CODE_SIZE, false);
@@ -70,10 +73,15 @@ void LookupCache::ClearL2Cache() {
 }
 
 void LookupCache::ClearCache() {
-  std::lock_guard<std::recursive_mutex> lk(WriteLock);
+  auto lk = L3.AcquireLock();
 
   // Clear L1 and L2 by clearing the full cache.
   FEXCore::Allocator::VirtualDontNeed(reinterpret_cast<void*>(PagePointer), TotalCacheSize, false);
+
+  L3.ClearCache(lk);
+}
+
+void GuestToHostMap::ClearCache(const LockToken&) {
   // Allocate a new pointer from the BlockLinks pma again.
   BlockLinks = BlockLinks_pma->new_object<BlockLinksMapType>();
   // All code is gone, clear the block list
