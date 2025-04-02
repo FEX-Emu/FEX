@@ -914,12 +914,6 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
       }
     }
   }
-
-  if (DecodeInst->Dest.IsGPR()) {
-    LOGMAN_THROW_A_FMT(DecodeInst->Dest.Data.GPR.GPR != FEXCore::X86State::REG_INVALID, "Destination GPR was invalid");
-  }
-
-  return true;
 }
 
 void Decoder::BranchTargetInMultiblockRange() {
