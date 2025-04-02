@@ -75,7 +75,7 @@ struct CustomIRResult {
 using BlockDelinkerFunc = void (*)(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record);
 constexpr uint32_t TSC_SCALE_MAXIMUM = 1'000'000'000; ///< 1Ghz
 
-class ContextImpl final : public FEXCore::Context::Context {
+class ContextImpl final : public FEXCore::Context::Context, CPU::CodeBufferManager {
 public:
   // Context base class implementation.
   bool InitCore() override;

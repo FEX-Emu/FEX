@@ -693,7 +693,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
   // Fairly excessive buffer range to make sure we don't overflow
   uint32_t BufferRange = SSACount * 16;
-  if ((GetCursorOffset() + BufferRange) > (CurrentCodeBuffer->Size - Utils::FEX_PAGE_SIZE)) {
+  if ((GetCursorOffset() + BufferRange) > (CurrentCodeBufferSize - Utils::FEX_PAGE_SIZE)) {
     CTX->ClearCodeCache(ThreadState);
   }
 
