@@ -64,7 +64,7 @@ public:
   }
   void sha256h2(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn, ARMEmitter::VRegister rm) {
     constexpr uint32_t Op = 0b0101'1110'0000'0000'0000'00 << 10;
-    Crypto3RegSHA(Op, 0b100, rd, rn, rm);
+    Crypto3RegSHA(Op, 0b101, rd, rn, rm);
   }
   void sha256su1(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn, ARMEmitter::VRegister rm) {
     constexpr uint32_t Op = 0b0101'1110'0000'0000'0000'00 << 10;
