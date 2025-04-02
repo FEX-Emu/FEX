@@ -2771,6 +2771,16 @@
         "Desc": "Does vector scalar VSha256U1 instruction",
         "DestSize": "FEXCore::IR::OpSize::i128Bit"
       },
+      "FPR = VSha256H FPR:$Src1, FPR:$Src2, FPR:$Src3": {
+        "Desc": "Does vector scalar VSha256H instruction",
+        "DestSize": "FEXCore::IR::OpSize::i128Bit",
+        "TiedSource": 0
+      },
+      "FPR = VSha256H2 FPR:$Src1, FPR:$Src2, FPR:$Src3": {
+        "Desc": "Does vector scalar VSha256H2 instruction",
+        "DestSize": "FEXCore::IR::OpSize::i128Bit",
+        "TiedSource": 0
+      },
       "GPR = CRC32 GPR:$Src1, GPR:$Src2, OpSize:$SrcSize": {
         "Desc": ["CRC32 using polynomial 0x1EDC6F41"
                 ],
