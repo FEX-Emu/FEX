@@ -39,6 +39,24 @@
         "tbl v16.16b, {v3.16b}, v2.16b"
       ]
     },
+    "sha256rnds2 xmm0, xmm1": {
+      "ExpectedInstructionCount": 10,
+      "Comment": [
+        "0x66 0x0f 0x38 0xcb"
+      ],
+      "ExpectedArm64ASM": [
+        "zip2 v2.2d, v17.2d, v16.2d",
+        "rev64 v2.4s, v2.4s",
+        "zip1 v3.2d, v17.2d, v16.2d",
+        "rev64 v3.4s, v3.4s",
+        "dup v4.2d, v16.d[0]",
+        "mov v5.16b, v2.16b",
+        "sha256h q5, q3, v4.4s",
+        "sha256h2 q3, q2, v4.4s",
+        "zip2 v2.2d, v3.2d, v5.2d",
+        "rev64 v16.4s, v2.4s"
+      ]
+    },
     "sha256msg1 xmm0, xmm1": {
       "ExpectedInstructionCount": 1,
       "Comment": [

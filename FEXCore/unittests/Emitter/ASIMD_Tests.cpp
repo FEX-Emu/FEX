@@ -7,33 +7,24 @@
 using namespace ARMEmitter;
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Cryptographic AES") {
-  if (false) {
-    // vixl doesn't support these instructions.
-    TEST_SINGLE(aese(VReg::v30, VReg::v29), "aese v30, v29");
-    TEST_SINGLE(aesd(VReg::v30, VReg::v29), "aesd v30, v29");
-    TEST_SINGLE(aesmc(VReg::v30, VReg::v29), "aesmc v30, v29");
-    TEST_SINGLE(aesimc(VReg::v30, VReg::v29), "aesimc v30, v29");
-  }
+  TEST_SINGLE(aese(VReg::v30, VReg::v29), "aese v30.16b, v29.16b");
+  TEST_SINGLE(aesd(VReg::v30, VReg::v29), "aesd v30.16b, v29.16b");
+  TEST_SINGLE(aesmc(VReg::v30, VReg::v29), "aesmc v30.16b, v29.16b");
+  TEST_SINGLE(aesimc(VReg::v30, VReg::v29), "aesimc v30.16b, v29.16b");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Cryptographic three-register SHA") {
-  if (false) {
-    // vixl doesn't support these instructions.
-    TEST_SINGLE(sha1c(VReg::v30, SReg::s29, VReg::v28), "sha1c v30, s29, v28");
-    TEST_SINGLE(sha1p(VReg::v30, SReg::s29, VReg::v28), "sha1p v30, s29, v28");
-    TEST_SINGLE(sha1m(VReg::v30, SReg::s29, VReg::v28), "sha1m v30, s29, v28");
-    TEST_SINGLE(sha1su0(VReg::v30, VReg::v29, VReg::v28), "sha1su0 v30, v29, v28");
-    TEST_SINGLE(sha256h(VReg::v30, VReg::v29, VReg::v28), "sha256h v30, v29, v28");
-    TEST_SINGLE(sha256h2(VReg::v30, VReg::v29, VReg::v28), "sha256h2 v30, v29, v28");
-    TEST_SINGLE(sha256su1(VReg::v30, VReg::v29, VReg::v28), "sha256su1 v30, v29, v28");
-  }
+  TEST_SINGLE(sha1c(VReg::v30, SReg::s29, VReg::v28), "sha1c q30, s29, v28.4s");
+  TEST_SINGLE(sha1p(VReg::v30, SReg::s29, VReg::v28), "sha1p q30, s29, v28.4s");
+  TEST_SINGLE(sha1m(VReg::v30, SReg::s29, VReg::v28), "sha1m q30, s29, v28.4s");
+  TEST_SINGLE(sha1su0(VReg::v30, VReg::v29, VReg::v28), "sha1su0 v30.4s, v29.4s, v28.4s");
+  TEST_SINGLE(sha256h(VReg::v30, VReg::v29, VReg::v28), "sha256h q30, q29, v28.4s");
+  TEST_SINGLE(sha256h2(VReg::v30, VReg::v29, VReg::v28), "sha256h2 q30, q29, v28.4s");
+  TEST_SINGLE(sha256su1(VReg::v30, VReg::v29, VReg::v28), "sha256su1 v30.4s, v29.4s, v28.4s");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Cryptographic two-register SHA") {
-  if (false) {
-    // vixl doesn't support these instructions.
-    TEST_SINGLE(sha1h(SReg::s30, SReg::s29), "sha1h s30, s29");
-    TEST_SINGLE(sha1su1(VReg::v30, VReg::v29), "sha1su1 v30, v29");
-    TEST_SINGLE(sha256su0(VReg::v30, VReg::v29), "sha256su0 v30, v29");
-  }
+  TEST_SINGLE(sha1h(SReg::s30, SReg::s29), "sha1h s30, s29");
+  TEST_SINGLE(sha1su1(VReg::v30, VReg::v29), "sha1su1 v30.4s, v29.4s");
+  TEST_SINGLE(sha256su0(VReg::v30, VReg::v29), "sha256su0 v30.4s, v29.4s");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD table lookup") {
   TEST_SINGLE(tbl(QReg::q30, QReg::q26, QReg::q25), "tbl v30.16b, {v26.16b}, v25.16b");
