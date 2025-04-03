@@ -244,6 +244,9 @@ if (ENABLE_COVERAGE)
   link_libraries(-fprofile-instr-generate -fcoverage-mapping)
 endif()
 
+# Musl soft-float library for transcendental operations
+add_subdirectory(External/musl/)
+
 if (ENABLE_JEMALLOC_GLIBC_ALLOC)
   # The glibc jemalloc subproject which hooks the glibc allocator.
   # Required for thunks to work.
