@@ -1044,7 +1044,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
 
       case OP_INCSTACKTOP: {
         if (SlowPath) {
-          UpdateTopForPush_Slow();
+          UpdateTopForPop_Slow();
         } else {
           StackData.rotate(false);
         }
@@ -1053,7 +1053,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
 
       case OP_DECSTACKTOP: {
         if (SlowPath) {
-          UpdateTopForPop_Slow();
+          UpdateTopForPush_Slow();
         } else {
           StackData.rotate(true);
         }
