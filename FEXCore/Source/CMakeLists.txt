@@ -161,7 +161,7 @@ endif()
 # Some defines for the softfloat library
 list(APPEND DEFINES "-DSOFTFLOAT_BUILTIN_CLZ=1;-DINLINE=static inline;-DINLINE_LEVEL=4;-DSOFTFLOAT_FAST_INT64=1;-DSOFTFLOAT_FAST_DIV32TO16=1;-DSOFTFLOAT_FAST_DIV64TO32=1")
 
-set (LIBS fmt::fmt xxHash::xxhash FEXHeaderUtils CodeEmitter)
+set (LIBS fmt::fmt xxHash::xxhash FEXHeaderUtils CodeEmitter cephes_128bit)
 
 if (ENABLE_VIXL_DISASSEMBLER OR ENABLE_VIXL_SIMULATOR)
   list (APPEND LIBS vixl)
