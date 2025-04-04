@@ -2841,16 +2841,14 @@
       ]
     },
     "db 0x48, 0xa1; dq 0x00000000e0000008": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "mov rax, [0xe0000008]",
         "0xa1"
       ],
       "ExpectedArm64ASM": [
-        "mov x20, #0x6264",
-        "movk x20, #0x3020, lsl #16",
-        "movk x20, #0x3678, lsl #32",
-        "movk x20, #0x2c37, lsl #48",
+        "mov w20, #0x400",
+        "movk w20, #0xcb, lsl #16",
         "ldr x4, [x20]"
       ]
     },
@@ -2861,22 +2859,20 @@
         "0xa1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x6264",
-        "movk w20, #0x3020, lsl #16",
+        "mov w20, #0x400",
+        "movk w20, #0xcb, lsl #16",
         "ldr w4, [x20]"
       ]
     },
     "db 0x48, 0xa3; dq 0x00000000e0000008": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "mov [0xe0000008], rax",
         "0xa3"
       ],
       "ExpectedArm64ASM": [
-        "mov x20, #0x6264",
-        "movk x20, #0x3020, lsl #16",
-        "movk x20, #0x3678, lsl #32",
-        "movk x20, #0x2c37, lsl #48",
+        "mov w20, #0x400",
+        "movk w20, #0xcb, lsl #16",
         "str x4, [x20]"
       ]
     },
@@ -2887,8 +2883,8 @@
         "0xa3"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x6f6d",
-        "movk w20, #0x7376, lsl #16",
+        "mov w20, #0x400",
+        "movk w20, #0xcb, lsl #16",
         "str w4, [x20]"
       ]
     },
