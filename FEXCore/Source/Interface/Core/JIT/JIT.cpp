@@ -868,6 +868,10 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   auto JITBlockTail = GetCursorAddress<JITCodeTail*>();
   CursorIncrement(sizeof(JITCodeTail));
 
+  // Ensure SpinLockFutex is natively aligned
+  LOGMAN_THROW_A_FMT(reinterpret_cast<uintptr_t>(JITBlockTailLocation + offsetof(JITCodeTail, SpinLockFutex)) % alignof(uint32_t) == 0,
+                     "SpinLockFutex needs to be natively aligned!");
+
   // Entries that live after the JITCodeTail.
   // These entries correlate JIT code regions with guest RIP regions.
   // Using these entries FEX is able to reconstruct the guest RIP accurately when an instruction cause a signal fault.

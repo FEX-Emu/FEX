@@ -77,7 +77,7 @@ namespace CPU {
     // For any state reconstruction or other data, this is where it should live.
     // Any data that is explicitly tied to the JIT code and needs to be cached with it
     // should end up in this data structure.
-    struct JITCodeTail {
+    struct FEX_PACKED JITCodeTail {
       // The total size of the codeblock from [BlockBegin, BlockBegin+Size).
       size_t Size;
 
@@ -101,6 +101,7 @@ namespace CPU {
 
       uint8_t _Pad[3];
     };
+    static_assert(offsetof(JITCodeTail, SpinLockFutex) % alignof(uint32_t) == 0);
 
     /**
      * @brief Tells this CPUBackend to compile code for the provided IR and DebugData

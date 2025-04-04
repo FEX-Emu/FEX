@@ -711,10 +711,6 @@ public:
     uint64_t EnvpOffset = TotalArgumentMemSize;
     TotalArgumentMemSize += EnvironmentBackingSize;
 
-    // Random number location
-    uint64_t RandomNumberLocation = TotalArgumentMemSize;
-    TotalArgumentMemSize += 16;
-
     uint64_t PlatformNameLocation = TotalArgumentMemSize;
     TotalArgumentMemSize += platform_string_max_size;
 
@@ -723,6 +719,10 @@ public:
 
     // Align the argument block to 16 bytes to keep the stack aligned
     TotalArgumentMemSize = FEXCore::AlignUp(TotalArgumentMemSize, 16);
+
+    // Random number location
+    uint64_t RandomNumberLocation = TotalArgumentMemSize;
+    TotalArgumentMemSize += 16;
 
     // Offset the stack by how much memory we need
     StackPointer -= TotalArgumentMemSize;
