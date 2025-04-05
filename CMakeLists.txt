@@ -55,6 +55,15 @@ if (NOT MINGW_BUILD)
   endif()
 endif()
 
+# Setup library search paths to prefer static libraries if available.
+# Helps for when package maintainers try to replace our static libraries with system libraries.
+# See https://github.com/FEX-Emu/FEX/issues/4301 why we don't want dynamic libraries.
+if (MINGW_BUILD)
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ".lib;.dll")
+else()
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.so")
+endif()
+
 if (ENABLE_FEXCORE_PROFILER)
   add_definitions(-DENABLE_FEXCORE_PROFILER=1)
   string(TOUPPER "${FEXCORE_PROFILER_BACKEND}" FEXCORE_PROFILER_BACKEND)
