@@ -15,6 +15,19 @@
 namespace CodeSize {
 class CodeSizeValidation final {
 public:
+  CodeSizeValidation() {
+    constexpr uint64_t Code_start_page = 0x1'0000;
+
+    CodeStart = FEXCore::Allocator::mmap(reinterpret_cast<void*>(Code_start_page), MAX_CODE_SIZE, PROT_READ | PROT_WRITE,
+                                         MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (reinterpret_cast<uint64_t>(CodeStart) != Code_start_page) {
+      LogMan::Msg::AFmt("Couldn't allocate test region!");
+      FEXCore::Allocator::VirtualFree(CodeStart, MAX_CODE_SIZE);
+      CodeStart = nullptr;
+      return;
+    }
+  }
+
   struct InstructionStats {
     uint64_t GuestCodeInstructions {};
     uint64_t HostCodeInstructions {};
@@ -24,12 +37,34 @@ public:
   };
 
   using CodeLines = fextl::vector<fextl::string>;
-  using InstructionData = std::pair<InstructionStats, CodeLines>;
+  struct InstructionData {
+    InstructionStats first;
+    CodeLines second;
+  };
 
   bool ParseMessage(const char* Message);
 
-  InstructionData* GetDataForRIP(uint64_t RIP) {
-    return &RIPToStats[RIP];
+  InstructionData CompileAndGetStats(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState* Thread, const void* Data,
+                                     size_t SizeBytes, int32_t MaxInst = -1) {
+    if (SizeBytes > MAX_CODE_SIZE) {
+      LogMan::Msg::AFmt("x86 code too large!");
+    }
+
+    {
+      auto CodeInvalidationlk = FEXCore::GuardSignalDeferringSection(CTX->GetCodeInvalidationMutex(), Thread);
+      CTX->InvalidateGuestCodeRange(Thread, reinterpret_cast<uint64_t>(CodeStart), MAX_CODE_SIZE);
+    }
+
+    ClearStats();
+    memcpy(CodeStart, Data, SizeBytes);
+
+    if (MaxInst == -1) {
+      // Compile the NOP.
+      CTX->CompileRIP(Thread, reinterpret_cast<uint64_t>(CodeStart));
+    } else {
+      CTX->CompileRIPCount(Thread, reinterpret_cast<uint64_t>(CodeStart), MaxInst);
+    }
+    return CurrentStats;
   }
 
   bool InfoPrintingDisabled() const {
@@ -39,7 +74,7 @@ public:
   void CalculateBaseStats(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState* Thread);
 private:
   void ClearStats() {
-    RIPToStats.clear();
+    CurrentStats = {};
   }
 
   void SetBaseStats(const InstructionStats& NewBase) {
@@ -50,10 +85,12 @@ private:
 
   uint64_t CurrentRIPParse {};
   bool ConsumingDisassembly {};
-  InstructionData* CurrentStats {};
+  InstructionData CurrentStats {};
   InstructionStats BaseStats {};
 
-  fextl::unordered_map<uint64_t, InstructionData> RIPToStats;
+  void* CodeStart {};
+  constexpr static size_t MAX_CODE_SIZE = 512 * 1024 * 1024;
+
   bool SetupInfoDisabled {};
 };
 
@@ -81,20 +118,20 @@ bool CodeSizeValidation::ParseMessage(const char* Message) {
     // New RIP found
     std::string_view RIPView = std::string_view {Message + RIPMessage.size()};
     std::from_chars(RIPView.data(), RIPView.end(), CurrentRIPParse, 16);
-    CurrentStats = &RIPToStats[CurrentRIPParse];
+    ClearStats();
     return false;
   }
 
   if (MessageView.find(GuestCodeMessage) != MessageView.npos) {
     std::string_view CodeSizeView = std::string_view {Message + GuestCodeMessage.size()};
-    std::from_chars(CodeSizeView.data(), CodeSizeView.end(), CurrentStats->first.GuestCodeInstructions);
+    std::from_chars(CodeSizeView.data(), CodeSizeView.end(), CurrentStats.first.GuestCodeInstructions);
     return false;
   }
   if (MessageView.find(HostCodeMessage) != MessageView.npos) {
     std::string_view CodeSizeView = std::string_view {Message + HostCodeMessage.size()};
-    std::from_chars(CodeSizeView.data(), CodeSizeView.end(), CurrentStats->first.HostCodeInstructions);
+    std::from_chars(CodeSizeView.data(), CodeSizeView.end(), CurrentStats.first.HostCodeInstructions);
 
-    CurrentStats->first.HostCodeInstructions -= BaseStats.HostCodeInstructions;
+    CurrentStats.first.HostCodeInstructions -= BaseStats.HostCodeInstructions;
     return false;
   }
   if (MessageView.find(DisassembleBeginMessage) != MessageView.npos) {
@@ -108,10 +145,10 @@ bool CodeSizeValidation::ParseMessage(const char* Message) {
 
     // Remove the header and tails.
     if (BaseStats.HeaderSize) {
-      CurrentStats->second.erase(CurrentStats->second.begin(), CurrentStats->second.begin() + BaseStats.HeaderSize);
+      CurrentStats.second.erase(CurrentStats.second.begin(), CurrentStats.second.begin() + BaseStats.HeaderSize);
     }
     if (BaseStats.TailSize) {
-      CurrentStats->second.erase(CurrentStats->second.end() - BaseStats.TailSize, CurrentStats->second.end());
+      CurrentStats.second.erase(CurrentStats.second.end() - BaseStats.TailSize, CurrentStats.second.end());
     }
     return false;
   }
@@ -122,7 +159,7 @@ bool CodeSizeValidation::ParseMessage(const char* Message) {
 
   if (ConsumingDisassembly) {
     // Currently consuming disassembly. Each line will be a single line of disassembly.
-    CurrentStats->second.push_back(fextl::string(SanitizeDisassembly(Message)));
+    CurrentStats.second.push_back(fextl::string(SanitizeDisassembly(Message)));
     return false;
   }
 
@@ -186,27 +223,16 @@ void CodeSizeValidation::CalculateBaseStats(FEXCore::Context::Context* CTX, FEXC
   };
 
   // Compile the NOP.
-  CTX->CompileRIP(Thread, (uint64_t)NOP);
-  // Gather the stats for the NOP.
-  auto NOPStats = GetDataForRIP((uint64_t)NOP);
+  auto NOPStats = CompileAndGetStats(CTX, Thread, NOP, sizeof(NOP), 1);
 
   // Compile MFence
-  CTX->CompileRIP(Thread, (uint64_t)MFENCE);
-
-  // Get MFence stats.
-  auto MFENCEStats = GetDataForRIP((uint64_t)MFENCE);
+  auto MFENCEStats = CompileAndGetStats(CTX, Thread, MFENCE, sizeof(MFENCE), 1);
 
   // Now scan the difference in disasembly between NOP and MFENCE to remove the header and tail.
   // Just searching for first instruction change.
 
-  CalculateDifferenceBetweenStats(NOPStats, MFENCEStats);
-  // Now that the stats have been cleared. Clear our currentStats.
-  ClearStats();
+  CalculateDifferenceBetweenStats(&NOPStats, &MFENCEStats);
 
-  // Invalidate the code ranges to be safe.
-  auto CodeInvalidationlk = FEXCore::GuardSignalDeferringSection(CTX->GetCodeInvalidationMutex(), Thread);
-  CTX->InvalidateGuestCodeRange(Thread, (uint64_t)NOP, sizeof(NOP));
-  CTX->InvalidateGuestCodeRange(Thread, (uint64_t)MFENCE, sizeof(MFENCE));
   SetupInfoDisabled = false;
 }
 
@@ -265,12 +291,14 @@ static bool TestInstructions(FEXCore::Context::Context* CTX, FEXCore::Core::Inte
 
   // Tell FEXCore to compile all the instructions upfront.
   const TestInfo* CurrentTest = TestsStart;
+  fextl::vector<CodeSize::CodeSizeValidation::InstructionData> TestData {};
+  TestData.resize(TestHeaderData->NumTests);
   for (size_t i = 0; i < TestHeaderData->NumTests; ++i) {
     uint64_t CodeRIP = (uint64_t)&CurrentTest->Code[0];
     LogMan::Msg::IFmt("Compiling instruction '{}'", CurrentTest->TestInst);
 
-    // Compile the INST.
-    CTX->CompileRIPCount(Thread, CodeRIP, CurrentTest->x86InstCount);
+    TestData[i] =
+      CodeSize::Validation.CompileAndGetStats(CTX, Thread, reinterpret_cast<void*>(CodeRIP), CurrentTest->CodeSize, CurrentTest->x86InstCount);
 
     // Go to the next test.
     CurrentTest = reinterpret_cast<const TestInfo*>(&CurrentTest->Code[CurrentTest->CodeSize]);
@@ -281,9 +309,8 @@ static bool TestInstructions(FEXCore::Context::Context* CTX, FEXCore::Core::Inte
   // Get all the data for the instructions compiled.
   CurrentTest = TestsStart;
   for (size_t i = 0; i < TestHeaderData->NumTests; ++i) {
-    uint64_t CodeRIP = (uint64_t)CurrentTest->Code;
     // Get the instruction stats.
-    auto INSTStats = CodeSize::Validation.GetDataForRIP(CodeRIP);
+    const auto INSTStats = &TestData[i];
 
     LogMan::Msg::IFmt("Testing instruction '{}': {} host instructions", CurrentTest->TestInst, INSTStats->first.HostCodeInstructions);
 
@@ -326,9 +353,8 @@ static bool TestInstructions(FEXCore::Context::Context* CTX, FEXCore::Core::Inte
 
     CurrentTest = TestsStart;
     for (size_t i = 0; i < TestHeaderData->NumTests; ++i) {
-      uint64_t CodeRIP = (uint64_t)CurrentTest->Code;
       // Get the instruction stats.
-      auto INSTStats = CodeSize::Validation.GetDataForRIP(CodeRIP);
+      const auto INSTStats = &TestData[i];
 
       FD.Write(fextl::fmt::format("\t\"{}\": {{\n", CurrentTest->TestInst));
 
@@ -359,8 +385,6 @@ static bool TestInstructions(FEXCore::Context::Context* CTX, FEXCore::Core::Inte
 }
 
 bool LoadTests(const char* Path) {
-  constexpr uint64_t Code_start_page = 0x1'0000;
-
   int FD = open(Path, O_RDONLY | O_CLOEXEC);
   if (FD == -1) {
     return false;
@@ -373,14 +397,8 @@ bool LoadTests(const char* Path) {
   }
 
   TestDataSize = buf.st_size;
-  TestData = FEXCore::Allocator::mmap(reinterpret_cast<void*>(Code_start_page), TestDataSize, PROT_READ, MAP_PRIVATE, FD, 0);
+  TestData = FEXCore::Allocator::mmap(nullptr, TestDataSize, PROT_READ, MAP_PRIVATE, FD, 0);
   if (reinterpret_cast<uint64_t>(TestData) == ~0ULL) {
-    close(FD);
-    return false;
-  }
-
-  if (reinterpret_cast<uint64_t>(TestData) != Code_start_page) {
-    FEXCore::Allocator::VirtualFree(TestData, TestDataSize);
     close(FD);
     return false;
   }
