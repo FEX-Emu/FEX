@@ -30,13 +30,14 @@ public:
 
   struct DecodedBlockInformation final {
     uint64_t TotalInstructionCount;
+    fextl::set<uint64_t> EntryPoints;
     fextl::vector<DecodedBlocks> Blocks;
   };
 
   Decoder(FEXCore::Context::ContextImpl* ctx);
   ~Decoder();
   void DecodeInstructionsAtEntry(const uint8_t* InstStream, uint64_t PC, uint64_t MaxInst,
-                                 std::function<void(uint64_t BlockEntry, uint64_t Start, uint64_t Length)> AddContainedCodePage);
+                                 std::function<void(const fextl::set<uint64_t>& BlockEntryPoints, uint64_t Start, uint64_t Length)> AddContainedCodePage);
 
   const DecodedBlockInformation* GetDecodedBlockInfo() const {
     return &BlockInfo;
