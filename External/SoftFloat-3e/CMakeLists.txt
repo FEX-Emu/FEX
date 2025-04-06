@@ -1,5 +1,6 @@
 
 set (SRCS
+  # F80 support
   src/extF80_add.c
   src/extF80_div.c
   src/extF80_sub.c
@@ -15,6 +16,30 @@ set (SRCS
   src/ui64_to_extF80.c
   src/extF80_to_f128.c
   src/f128_to_extF80.c
+
+  # F128 support
+  src/f128_add.c
+  src/f128_div.c
+  src/f128_eq.c
+  src/f128_eq_signaling.c
+  src/f128_isSignalingNaN.c
+  src/f128_le.c
+  src/f128_le_quiet.c
+  src/f128_lt.c
+  src/f128_lt_quiet.c
+  src/f128_mulAdd.c
+  src/f128_mul.c
+  src/f128_rem.c
+  src/f128_sqrt.c
+  src/f128_sub.c
+  src/f128_to_f16.c
+  src/f128_to_f32.c
+  src/f128_to_f64.c
+  src/f128_to_i32.c
+  src/f128_to_i64.c
+  src/f128_to_ui32.c
+  src/f128_to_ui64.c
+
   src/s_roundToUI64.c
   src/s_f128UIToCommonNaN.c
   src/s_commonNaNToF128UI.c

@@ -284,33 +284,33 @@ bool extF80M_isSignalingNaN( const extFloat80_t * );
 | 128-bit (quadruple-precision) floating-point operations.
 *----------------------------------------------------------------------------*/
 #ifdef SOFTFLOAT_FAST_INT64
-uint_fast32_t f128_to_ui32( float128_t, uint_fast8_t, bool );
-uint_fast64_t f128_to_ui64( float128_t, uint_fast8_t, bool );
-int_fast32_t f128_to_i32( float128_t, uint_fast8_t, bool );
-int_fast64_t f128_to_i64( float128_t, uint_fast8_t, bool );
+uint_fast32_t f128_to_ui32( struct softfloat_state *, float128_t, uint_fast8_t, bool );
+uint_fast64_t f128_to_ui64( struct softfloat_state *, float128_t, uint_fast8_t, bool );
+int_fast32_t f128_to_i32( struct softfloat_state *, float128_t, uint_fast8_t, bool );
+int_fast64_t f128_to_i64( struct softfloat_state *, float128_t, uint_fast8_t, bool );
 uint_fast32_t f128_to_ui32_r_minMag( float128_t, bool );
 uint_fast64_t f128_to_ui64_r_minMag( float128_t, bool );
 int_fast32_t f128_to_i32_r_minMag( float128_t, bool );
 int_fast64_t f128_to_i64_r_minMag( float128_t, bool );
-float16_t f128_to_f16( float128_t );
-float32_t f128_to_f32( float128_t );
-float64_t f128_to_f64( float128_t );
+float16_t f128_to_f16( struct softfloat_state *, float128_t );
+float32_t f128_to_f32( struct softfloat_state *, float128_t );
+float64_t f128_to_f64( struct softfloat_state *, float128_t );
 FEXCORE_PRESERVE_ALL_ATTR
 extFloat80_t f128_to_extF80( struct softfloat_state *, float128_t );
 float128_t f128_roundToInt( float128_t, uint_fast8_t, bool );
-float128_t f128_add( float128_t, float128_t );
-float128_t f128_sub( float128_t, float128_t );
-float128_t f128_mul( float128_t, float128_t );
-float128_t f128_mulAdd( float128_t, float128_t, float128_t );
-float128_t f128_div( float128_t, float128_t );
-float128_t f128_rem( float128_t, float128_t );
-float128_t f128_sqrt( float128_t );
-bool f128_eq( float128_t, float128_t );
-bool f128_le( float128_t, float128_t );
-bool f128_lt( float128_t, float128_t );
-bool f128_eq_signaling( float128_t, float128_t );
-bool f128_le_quiet( float128_t, float128_t );
-bool f128_lt_quiet( float128_t, float128_t );
+float128_t f128_add( struct softfloat_state *, float128_t, float128_t );
+float128_t f128_sub( struct softfloat_state *, float128_t, float128_t );
+float128_t f128_mul( struct softfloat_state *, float128_t, float128_t );
+float128_t f128_mulAdd( struct softfloat_state *, float128_t, float128_t, float128_t );
+float128_t f128_div( struct softfloat_state *, float128_t, float128_t );
+float128_t f128_rem( struct softfloat_state *, float128_t, float128_t );
+float128_t f128_sqrt( struct softfloat_state *, float128_t );
+bool f128_eq( struct softfloat_state *, float128_t, float128_t );
+bool f128_le( struct softfloat_state *, float128_t, float128_t );
+bool f128_lt( struct softfloat_state *, float128_t, float128_t );
+bool f128_eq_signaling( struct softfloat_state *, float128_t, float128_t );
+bool f128_le_quiet( struct softfloat_state *, float128_t, float128_t );
+bool f128_lt_quiet( struct softfloat_state *, float128_t, float128_t );
 bool f128_isSignalingNaN( float128_t );
 #endif
 uint_fast32_t f128M_to_ui32( const float128_t *, uint_fast8_t, bool );
