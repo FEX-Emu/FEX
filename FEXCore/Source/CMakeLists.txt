@@ -18,54 +18,6 @@ endif()
 
 set (SRCS
   Common/JitSymbols.cpp
-  Common/SoftFloat-3e/extF80_add.c
-  Common/SoftFloat-3e/extF80_div.c
-  Common/SoftFloat-3e/extF80_sub.c
-  Common/SoftFloat-3e/extF80_mul.c
-  Common/SoftFloat-3e/extF80_rem.c
-  Common/SoftFloat-3e/extF80_sqrt.c
-  Common/SoftFloat-3e/extF80_to_i32.c
-  Common/SoftFloat-3e/extF80_to_i64.c
-  Common/SoftFloat-3e/extF80_to_ui64.c
-  Common/SoftFloat-3e/extF80_to_f32.c
-  Common/SoftFloat-3e/extF80_to_f64.c
-  Common/SoftFloat-3e/i32_to_extF80.c
-  Common/SoftFloat-3e/ui64_to_extF80.c
-  Common/SoftFloat-3e/extF80_to_f128.c
-  Common/SoftFloat-3e/f128_to_extF80.c
-  Common/SoftFloat-3e/s_roundToUI64.c
-  Common/SoftFloat-3e/s_f128UIToCommonNaN.c
-  Common/SoftFloat-3e/s_commonNaNToF128UI.c
-  Common/SoftFloat-3e/s_normSubnormalF128Sig.c
-  Common/SoftFloat-3e/s_roundToI32.c
-  Common/SoftFloat-3e/s_roundToI64.c
-  Common/SoftFloat-3e/s_roundPackToF32.c
-  Common/SoftFloat-3e/s_addMagsExtF80.c
-  Common/SoftFloat-3e/s_extF80UIToCommonNaN.c
-  Common/SoftFloat-3e/s_commonNaNToF32UI.c
-  Common/SoftFloat-3e/s_commonNaNToF64UI.c
-  Common/SoftFloat-3e/s_roundPackToF64.c
-  Common/SoftFloat-3e/s_propagateNaNExtF80UI.c
-  Common/SoftFloat-3e/s_roundPackToExtF80.c
-  Common/SoftFloat-3e/s_normSubnormalExtF80Sig.c
-  Common/SoftFloat-3e/s_subMagsExtF80.c
-  Common/SoftFloat-3e/s_shiftRightJam128.c
-  Common/SoftFloat-3e/s_shiftRightJam128Extra.c
-  Common/SoftFloat-3e/s_normRoundPackToExtF80.c
-  Common/SoftFloat-3e/s_approxRecip_1Ks.c
-  Common/SoftFloat-3e/s_approxRecipSqrt32_1.c
-  Common/SoftFloat-3e/s_approxRecipSqrt_1Ks.c
-  Common/SoftFloat-3e/softfloat_raiseFlags.c
-  Common/SoftFloat-3e/f64_to_extF80.c
-  Common/SoftFloat-3e/s_commonNaNToExtF80UI.c
-  Common/SoftFloat-3e/s_normSubnormalF64Sig.c
-  Common/SoftFloat-3e/s_f64UIToCommonNaN.c
-  Common/SoftFloat-3e/extF80_roundToInt.c
-  Common/SoftFloat-3e/extF80_eq.c
-  Common/SoftFloat-3e/extF80_lt.c
-  Common/SoftFloat-3e/f32_to_extF80.c
-  Common/SoftFloat-3e/s_normSubnormalF32Sig.c
-  Common/SoftFloat-3e/s_f32UIToCommonNaN.c
   Interface/Context/Context.cpp
   Interface/Core/LookupCache.cpp
   Interface/Core/Core.cpp
@@ -158,10 +110,7 @@ else()
   list(APPEND DEFINES "-DFEXCORE_PRESERVE_ALL_ATTR=;-DFEXCORE_HAS_PRESERVE_ALL_ATTR=0")
 endif()
 
-# Some defines for the softfloat library
-list(APPEND DEFINES "-DSOFTFLOAT_BUILTIN_CLZ=1;-DINLINE=static inline;-DINLINE_LEVEL=4;-DSOFTFLOAT_FAST_INT64=1;-DSOFTFLOAT_FAST_DIV32TO16=1;-DSOFTFLOAT_FAST_DIV64TO32=1")
-
-set (LIBS fmt::fmt xxHash::xxhash FEXHeaderUtils CodeEmitter cephes_128bit)
+set (LIBS fmt::fmt xxHash::xxhash FEXHeaderUtils CodeEmitter softfloat_3e cephes_128bit)
 
 if (ENABLE_VIXL_DISASSEMBLER OR ENABLE_VIXL_SIMULATOR)
   list (APPEND LIBS vixl)
