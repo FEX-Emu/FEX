@@ -196,16 +196,20 @@ struct exp32_sig128
 
 float128_t
  softfloat_roundPackToF128(
+     struct softfloat_state *,
      bool, int_fast32_t, uint_fast64_t, uint_fast64_t, uint_fast64_t );
 float128_t
  softfloat_normRoundPackToF128(
+     struct softfloat_state *,
      bool, int_fast32_t, uint_fast64_t, uint_fast64_t );
 
 float128_t
  softfloat_addMagsF128(
+     struct softfloat_state *,
      uint_fast64_t, uint_fast64_t, uint_fast64_t, uint_fast64_t, bool );
 float128_t
  softfloat_subMagsF128(
+     struct softfloat_state *,
      uint_fast64_t, uint_fast64_t, uint_fast64_t, uint_fast64_t, bool );
 float128_t
  softfloat_mulAddF128(

@@ -149,7 +149,7 @@ float64_t f32_to_f64( float32_t );
 #ifdef SOFTFLOAT_FAST_INT64
 FEXCORE_PRESERVE_ALL_ATTR
 extFloat80_t f32_to_extF80( struct softfloat_state *, float32_t );
-float128_t f32_to_f128( float32_t );
+float128_t f32_to_f128( struct softfloat_state *, float32_t );
 #endif
 void f32_to_extF80M( float32_t, extFloat80_t * );
 void f32_to_f128M( float32_t, float128_t * );
@@ -312,6 +312,10 @@ bool f128_eq_signaling( struct softfloat_state *, float128_t, float128_t );
 bool f128_le_quiet( struct softfloat_state *, float128_t, float128_t );
 bool f128_lt_quiet( struct softfloat_state *, float128_t, float128_t );
 bool f128_isSignalingNaN( float128_t );
+static inline float128_t f128_complement_sign(float128_t a) {
+  a.v[1] ^= 1ULL << 63;
+  return a;
+}
 #endif
 uint_fast32_t f128M_to_ui32( const float128_t *, uint_fast8_t, bool );
 uint_fast64_t f128M_to_ui64( const float128_t *, uint_fast8_t, bool );

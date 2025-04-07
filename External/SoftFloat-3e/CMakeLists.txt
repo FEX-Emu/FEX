@@ -39,6 +39,15 @@ set (SRCS
   src/f128_to_i64.c
   src/f128_to_ui32.c
   src/f128_to_ui64.c
+  src/s_addMagsF128.c
+  src/s_subMagsF128.c
+  src/s_normRoundPackToF128.c
+  src/s_roundPackToF128.c
+  src/s_propagateNaNF128UI.c
+
+  # Conversion
+  src/f32_to_f128.c
+  src/i32_to_f128.c
 
   src/s_roundToUI64.c
   src/s_f128UIToCommonNaN.c

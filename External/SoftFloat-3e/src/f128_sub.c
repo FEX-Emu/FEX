@@ -64,9 +64,9 @@ float128_t f128_sub( struct softfloat_state *state, float128_t a, float128_t b )
     signB = signF128UI64( uiB64 );
 #if defined INLINE_LEVEL && (2 <= INLINE_LEVEL)
     if ( signA == signB ) {
-        return softfloat_subMagsF128( uiA64, uiA0, uiB64, uiB0, signA );
+        return softfloat_subMagsF128( state, uiA64, uiA0, uiB64, uiB0, signA );
     } else {
-        return softfloat_addMagsF128( uiA64, uiA0, uiB64, uiB0, signA );
+        return softfloat_addMagsF128( state, uiA64, uiA0, uiB64, uiB0, signA );
     }
 #else
     magsFuncPtr =
