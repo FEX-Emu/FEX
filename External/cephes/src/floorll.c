@@ -13,8 +13,8 @@
  *
  * SYNOPSIS:
  *
- * long double x, y;
- * long double ceill(), floorl(), frexpl(), ldexpl(), fabsl();
+ * float128_t x, y;
+ * float128_t ceill(), floorl(), frexpl(), ldexpl(), fabsl();
  * int signbitl(), isnanl(), isfinitel();
  * int expnt, n;
  *
@@ -28,7 +28,7 @@
  *
  * DESCRIPTION:
  *
- * All four routines return a long double precision floating point
+ * All four routines return a float128_t precision floating point
  * result.
  *
  * floorl() returns the largest integer less than or equal to x.
@@ -65,7 +65,6 @@ Copyright 1984, 1987, 1988, 1992 by Stephen L. Moshier
 Direct inquiries to 30 Frost Street, Cambridge, MA 02140
 */
 
-
 #include "mconf.h"
 #define DENORMAL 1
 
@@ -86,34 +85,40 @@ char *unkmsg = "ceill(), floorl(), frexpl(), ldexpl() must be rewritten!\n";
 #define EXPOFS 0
 #endif
 
-extern long double MAXNUML;
+extern float128_t MAXNUML;
 
 
-long double fabsl(x)
-long double x;
+static const float128_t zero = {0, 0};
+static const float128_t f_0_p5 = {0, 0x3ffe000000000000ULL};
+static const float128_t one = {0, 0x3fff000000000000ULL};
+static const float128_t neg_one = {0, 0xbfff000000000000ULL};
+static const float128_t f_2_p0 = {0, 0x4000000000000000ULL};
+
+float128_t cephes_f128_fabsl(float128_t x)
 {
-if( x < 0 )
-        return( -x );
+struct softfloat_state state = {};
+
+if( f128_lt(&state, x, zero) )
+        return f128_sub(&state, zero, x );
 else
         return( x );
 }
 
 
 
-long double ceill(x)
-long double x;
+float128_t cephes_f128_ceill(float128_t x)
 {
-long double y;
-long double floorl();
+float128_t y;
 
 #ifdef UNK
 mtherr( "ceill", DOMAIN );
 return(0.0L);
 #endif
 
-y = floorl(x);
-if( y < x )
-        y += 1.0L;
+struct softfloat_state state = {};
+y = cephes_f128_floorl(x);
+if( f128_lt(&state, y, x) )
+        y = f128_add(&state, y, one);
 return(y);
 }
 
@@ -144,12 +149,11 @@ static unsigned short bmask[] = {
 
 
 
-long double floorl(x)
-long double x;
+float128_t cephes_f128_floorl(float128_t x)
 {
 union
   {
-    long double y;
+    float128_t y;
     unsigned short sh[8];
   } u;
 int e, j;
@@ -159,16 +163,17 @@ mtherr( "floor", DOMAIN );
 return(0.0L);
 #endif
 
+struct softfloat_state state = {};
 u.y = x;
 /* find the exponent (power of 2) */
 e = (u.sh[EXPOFS] & 0x7fff) - 0x3fff;
 
 if( e < 0 )
         {
-        if( u.y < 0 )
-                return( -1.0L );
+        if( f128_lt(&state, u.y, zero) )
+                return neg_one;
         else
-                return( 0.0L );
+                return zero;
         }
 
 #ifdef IBMPC
@@ -197,25 +202,24 @@ while( e >= 16 )
 if( e > 0 )
         u.sh[j] &= bmask[e];
 
-if( (x < 0.0L) && (u.y != x) )
-        u.y -= 1.0L;
+if( f128_lt(&state, x, zero) && !f128_eq(&state, u.y, x) )
+        u.y = f128_sub(&state, u.y, one);;
 
 return(u.y);
 }
 
 
 
-long double frexpl( x, pw2 )
-long double x;
-int *pw2;
+float128_t cephes_f128_frexpl( float128_t x, int *pw2 )
 {
 union
   {
-    long double y;
+    float128_t y;
     unsigned short sh[8];
   } u;
 int i, k;
 
+struct softfloat_state state = {};
 u.y = x;
 
 #ifdef UNK
@@ -228,17 +232,17 @@ i  = u.sh[EXPOFS] & 0x7fff;
 
 if( i == 0 )
         {
-        if( u.y == 0.0L )
+        if( f128_eq(&state, u.y, zero))
                 {
                 *pw2 = 0;
-                return(0.0L);
+                return zero;
                 }
 /* Number is denormal or zero */
 #if DENORMAL
 /* Handle denormal number. */
 do
         {
-        u.y *= 2.0L;
+        u.y = f128_mul(&state, u.y, f_2_p0);
         i -= 1;
         k  = u.sh[EXPOFS] & 0x7fff;
         }
@@ -256,51 +260,46 @@ return( u.y );
 }
 
 
-
-
-
-
-long double ldexpl( x, pw2 )
-long double x;
-int pw2;
+float128_t cephes_f128_ldexpl( float128_t x, int pw2 )
 {
 union
   {
-    long double y;
+    float128_t y;
     unsigned short sh[8];
   } u;
 long e;
 
 #ifdef UNK
 mtherr( "ldexp", DOMAIN );
-return(0.0L);
+return zero;
 #endif
 
+struct softfloat_state state = {};
 u.y = x;
 while( (e = (u.sh[EXPOFS] & 0x7fffL)) == 0 )
         {
 #if DENORMAL
-        if( u.y == 0.0L )
+        if( f128_eq(&state, u.y, zero))
                 {
-                return( 0.0L );
+                return zero;
                 }
 /* Input is denormal. */
         if( pw2 > 0 )
                 {
-                u.y *= 2.0L;
+                u.y = f128_mul(&state, u.y, f_2_p0);
                 pw2 -= 1;
                 }
         if( pw2 < 0 )
                 {
                 if( pw2 < -113 )
-                        return(0.0L);
-                u.y *= 0.5L;
+                        return zero;
+                u.y = f128_sub(&state, u.y, f_0_p5);
                 pw2 += 1;
                 }
         if( pw2 == 0 )
                 return(u.y);
 #else
-        return( 0.0L );
+        return zero;
 #endif
         }
 
@@ -310,7 +309,7 @@ e = e + pw2;
 if( e > 0x7ffeL )
         {
           e = u.sh[EXPOFS];
-          u.y = 0.0L;
+          u.y = zero;
           u.sh[EXPOFS] = e | 0x7fff;
           return( u.y );
         }
@@ -320,16 +319,16 @@ if( e < 1 )
         {
 #if DENORMAL
         if( e < -113 )
-                return(0.0L);
+                return zero;
         u.sh[EXPOFS] |= 1;
         while( e < 1 )
                 {
-                u.y *= 0.5L;
+                u.y = f128_sub(&state, u.y, f_0_p5);
                 e += 1;
                 }
         e = 0;
 #else
-        return(0.0L);
+        return zero;
 #endif
         }
 
@@ -339,13 +338,12 @@ return(u.y);
 
 /* Return 1 if x is a number that is Not a Number, else return 0.  */
 
-int isnanl(x)
-long double x;
+int cephes_f128_isnanl(float128_t x)
 {
 #ifdef NANS
 union
 	{
-	long double d;
+	float128_t d;
 	unsigned short s[8];
 	unsigned int i[4];
 	} u;
@@ -394,13 +392,12 @@ return(0);
 
 /* Return 1 if x is not infinite and is not a NaN.  */
 
-int isfinitel(x)
-long double x;
+int cephes_f128_isfinitel(float128_t x)
 {
 #ifdef INFINITIES
 union
 	{
-	long double d;
+	float128_t d;
 	unsigned short s[8];
 	unsigned int i[4];
 	} u;
@@ -440,12 +437,11 @@ return(1);
 
 /* Return 1 if the sign bit of x is 1, else 0.  */
 
-int signbitl(x)
-long double x;
+int cephes_f128_signbitl(float128_t x)
 {
 union
 	{
-	long double d;
+	float128_t d;
 	short s[8];
 	int i[4];
 	} u;

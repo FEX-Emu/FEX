@@ -1,10 +1,15 @@
 #pragma once
 
+extern "C" {
+#include "SoftFloat-3e/platform.h"
+#include "SoftFloat-3e/softfloat.h"
+}
+
 namespace FEXCore::cephes_128bit {
-  long double atan2l(long double y, long double x);
-  long double cosl(long double x);
-  long double exp2l(long double x);
-  long double log2l(long double x);
-  long double sinl(long double x);
-  long double tanl(long double x);
+  float128_t atan2l(float128_t y, float128_t x);
+  float128_t cosl(float128_t x);
+  float128_t exp2l(float128_t x);
+  float128_t log2l(float128_t x);
+  float128_t sinl(float128_t x);
+  float128_t tanl(float128_t x);
 }

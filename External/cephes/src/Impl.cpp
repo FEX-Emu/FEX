@@ -1,36 +1,32 @@
 #include "cephes_128bit.h"
 
-#if !LOW_PRECISION
 extern "C" {
 // cephes_128bit functions
-long double atan2l(long double y, long double x);
-long double cosl(long double x);
-long double exp2l(long double x);
-long double log2l(long double x);
-long double sinl(long double x);
-long double tanl(long double x);
+float128_t cephes_f128_atan2l(float128_t y, float128_t x);
+float128_t cephes_f128_cosl(float128_t x);
+float128_t cephes_f128_exp2l(float128_t x);
+float128_t cephes_f128_log2l(float128_t x);
+float128_t cephes_f128_sinl(float128_t x);
+float128_t cephes_f128_tanl(float128_t x);
 }
-#else
-#include <cmath>
-#endif
 
 namespace FEXCore::cephes_128bit {
-  long double atan2l(long double y, long double x) {
-    return ::atan2l(y, x);
+  float128_t atan2l(float128_t y, float128_t x) {
+    return cephes_f128_atan2l(y, x);
   }
-  long double cosl(long double x) {
-    return ::cosl(x);
+  float128_t cosl(float128_t x) {
+    return cephes_f128_cosl(x);
   }
-  long double exp2l(long double x) {
-    return ::exp2l(x);
+  float128_t exp2l(float128_t x) {
+    return cephes_f128_exp2l(x);
   }
-  long double log2l(long double x) {
-    return ::log2l(x);
+  float128_t log2l(float128_t x) {
+    return cephes_f128_log2l(x);
   }
-  long double sinl(long double x) {
-    return ::sinl(x);
+  float128_t sinl(float128_t x) {
+    return cephes_f128_sinl(x);
   }
-  long double tanl(long double x) {
-    return ::tanl(x);
+  float128_t tanl(float128_t x) {
+    return cephes_f128_tanl(x);
   }
 }
