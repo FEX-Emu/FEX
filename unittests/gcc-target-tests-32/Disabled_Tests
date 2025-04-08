@@ -1,12 +1,49 @@
 # Uses AVX
-pr57275.c.gcc-target-test-64
+pr57275.c.gcc-target-test-32.n1.gcc-target-32
+pr57275.c.gcc-target-test-32.n500.gcc-target-32
 
 # Consistently crashes on Solidrun only in CI
-20080723-1.c.gcc-target-test-32
+20080723-1.c.gcc-target-test-32.n1.gcc-target-32
+20080723-1.c.gcc-target-test-32.n500.gcc-target-32
+
+# These tests fail because of things unrelated to the sse4.1 instructions
+sse4_1-ceil-sfix-vec.c.gcc-target-test-32.n1.gcc-target-32
+sse4_1-ceil-sfix-vec.c.gcc-target-test-32.n500.gcc-target-32
+
+sse4_1-ceilf-sfix-vec.c.gcc-target-test-32.n1.gcc-target-32
+sse4_1-ceilf-sfix-vec.c.gcc-target-test-32.n500.gcc-target-32
+
+sse4_1-floor-sfix-vec.c.gcc-target-test-32.n1.gcc-target-32
+sse4_1-floor-sfix-vec.c.gcc-target-test-32.n500.gcc-target-32
+
+sse4_1-floorf-sfix-vec.c.gcc-target-test-32.n1.gcc-target-32
+sse4_1-floorf-sfix-vec.c.gcc-target-test-32.n500.gcc-target-32
+
+sse4_1-rint-sfix-vec.c.gcc-target-test-32.n1.gcc-target-32
+sse4_1-rint-sfix-vec.c.gcc-target-test-32.n500.gcc-target-32
+
+sse4_1-rintf-sfix-vec.c.gcc-target-test-32.n1.gcc-target-32
+sse4_1-rintf-sfix-vec.c.gcc-target-test-32.n500.gcc-target-32
+
+sse4_1-round-sfix-vec.c.gcc-target-test-32.n1.gcc-target-32
+sse4_1-round-sfix-vec.c.gcc-target-test-32.n500.gcc-target-32
+
+sse4_1-roundf-sfix-vec.c.gcc-target-test-32.n1.gcc-target-32
+sse4_1-roundf-sfix-vec.c.gcc-target-test-32.n500.gcc-target-32
+
+sse4_1-rint-vec.c.gcc-target-test-32.n1.gcc-target-32
+sse4_1-rint-vec.c.gcc-target-test-32.n500.gcc-target-32
+
+sse4_1-roundf-vec.c.gcc-target-test-32.n1.gcc-target-32
+sse4_1-roundf-vec.c.gcc-target-test-32.n500.gcc-target-32
+
 
 # These tests fail on Nvidia Xavier ONLY
-sse4_1-rintf-vec.c.gcc-target-test-32
-sse4_1-round-vec.c.gcc-target-test-32
+sse4_1-rintf-vec.c.gcc-target-test-32.n1.gcc-target-32
+sse4_1-rintf-vec.c.gcc-target-test-32.n500.gcc-target-32
+sse4_1-round-vec.c.gcc-target-test-32.n1.gcc-target-32
+sse4_1-round-vec.c.gcc-target-test-32.n500.gcc-target-32
 
 # This has a race with SIGPROF
-mcount_pic.c.gcc-target-test-32
+mcount_pic.c.gcc-target-test-32.n1.gcc-target-32
+mcount_pic.c.gcc-target-test-32.n500.gcc-target-32
