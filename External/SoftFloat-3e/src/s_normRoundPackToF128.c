@@ -4,8 +4,8 @@
 This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
 Package, Release 3e, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014 The Regents of the University of California.
-All rights reserved.
+Copyright 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the University of
+California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -38,41 +38,45 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdint.h>
 #include "platform.h"
 #include "internals.h"
-#include "softfloat.h"
 
-float128_t f128_add( struct softfloat_state *state, float128_t a, float128_t b )
+float128_t
+ softfloat_normRoundPackToF128(
+     struct softfloat_state *state,
+     bool sign, int_fast32_t exp, uint_fast64_t sig64, uint_fast64_t sig0 )
 {
-    union ui128_f128 uA;
-    uint_fast64_t uiA64, uiA0;
-    bool signA;
-    union ui128_f128 uB;
-    uint_fast64_t uiB64, uiB0;
-    bool signB;
-#if ! defined INLINE_LEVEL || (INLINE_LEVEL < 2)
-    float128_t
-        (*magsFuncPtr)(
-            uint_fast64_t, uint_fast64_t, uint_fast64_t, uint_fast64_t, bool );
-#endif
+    int_fast8_t shiftDist;
+    struct uint128 sig128;
+    union ui128_f128 uZ;
+    uint_fast64_t sigExtra;
+    struct uint128_extra sig128Extra;
 
-    uA.f = a;
-    uiA64 = uA.ui.v64;
-    uiA0  = uA.ui.v0;
-    signA = signF128UI64( uiA64 );
-    uB.f = b;
-    uiB64 = uB.ui.v64;
-    uiB0  = uB.ui.v0;
-    signB = signF128UI64( uiB64 );
-#if defined INLINE_LEVEL && (2 <= INLINE_LEVEL)
-    if ( signA == signB ) {
-        return softfloat_addMagsF128( state, uiA64, uiA0, uiB64, uiB0, signA );
-    } else {
-        return softfloat_subMagsF128( state, uiA64, uiA0, uiB64, uiB0, signA );
+    if ( ! sig64 ) {
+        exp -= 64;
+        sig64 = sig0;
+        sig0 = 0;
     }
-#else
-    magsFuncPtr =
-        (signA == signB) ? softfloat_addMagsF128 : softfloat_subMagsF128;
-    return (*magsFuncPtr)( uiA64, uiA0, uiB64, uiB0, signA );
-#endif
+    shiftDist = softfloat_countLeadingZeros64( sig64 ) - 15;
+    exp -= shiftDist;
+    if ( 0 <= shiftDist ) {
+        if ( shiftDist ) {
+            sig128 = softfloat_shortShiftLeft128( sig64, sig0, shiftDist );
+            sig64 = sig128.v64;
+            sig0  = sig128.v0;
+        }
+        if ( (uint32_t) exp < 0x7FFD ) {
+            uZ.ui.v64 = packToF128UI64( sign, sig64 | sig0 ? exp : 0, sig64 );
+            uZ.ui.v0  = sig0;
+            return uZ.f;
+        }
+        sigExtra = 0;
+    } else {
+        sig128Extra =
+            softfloat_shortShiftRightJam128Extra( sig64, sig0, 0, -shiftDist );
+        sig64 = sig128Extra.v.v64;
+        sig0  = sig128Extra.v.v0;
+        sigExtra = sig128Extra.extra;
+    }
+    return softfloat_roundPackToF128( state, sign, exp, sig64, sig0, sigExtra );
 
 }
 

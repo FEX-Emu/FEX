@@ -8,7 +8,7 @@
  * SYNOPSIS:
  *
  * int N;
- * long double x, y, coef[N+1], polevl[];
+ * float128_t x, y, coef[N+1], polevl[];
  *
  * y = polevll( x, coef, N );
  *
@@ -54,19 +54,18 @@ Direct inquiries to 30 Frost Street, Cambridge, MA 02140
 /* Polynomial evaluator:
  *  P[0] x^n  +  P[1] x^(n-1)  +  ...  +  P[n]
  */
-long double polevll( x, PP, n )
-long double x;
-void *PP;
-int n;
+float128_t cephes_f128_polevll( float128_t x, void *PP, int n )
 {
-register long double y;
-long double *P;
 
-P = (long double *) PP;
+struct softfloat_state state = {};
+register float128_t y;
+float128_t *P;
+
+P = (float128_t *) PP;
 y = *P++;
 do
 	{
-	y = y * x + *P++;
+	y = f128_add(&state, f128_mul(&state, y, x), *P++);
 	}
 while( --n );
 return(y);
@@ -77,20 +76,18 @@ return(y);
 /* Polynomial evaluator:
  *  x^n  +  P[0] x^(n-1)  +  P[1] x^(n-2)  +  ...  +  P[n]
  */
-long double p1evll( x, PP, n )
-long double x;
-void *PP;
-int n;
+float128_t cephes_f128_p1evll( float128_t x, void *PP, int n )
 {
-register long double y;
-long double *P;
+struct softfloat_state state = {};
+register float128_t y;
+float128_t *P;
 
-P = (long double *) PP;
+P = (float128_t *) PP;
 n -= 1;
-y = x + *P++;
+y = f128_add(&state, x, *P++);
 do
 	{
-	y = y * x + *P++;
+	y = f128_add(&state, f128_mul(&state, y, x), *P++);
 	}
 while( --n );
 return( y );

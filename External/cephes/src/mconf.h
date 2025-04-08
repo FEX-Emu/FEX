@@ -66,6 +66,9 @@ Copyright 1984, 1987, 1989, 1995 by Stephen L. Moshier
 /* Constant definitions for math error conditions
  */
 
+#include "SoftFloat-3e/platform.h"
+#include "SoftFloat-3e/softfloat.h"
+
 #define DOMAIN		1	/* argument domain error */
 #define SING		2	/* argument singularity */
 #define OVERFLOW	3	/* overflow range error */
@@ -93,8 +96,8 @@ typedef struct
 
 typedef struct
 	{
-	long double r;
-	long double i;
+	float128_t r;
+	float128_t i;
 	} cmplxl;
 
 
@@ -163,14 +166,35 @@ typedef struct
    See atan.c and clog.c. */
 #define ANSIC 1
 
-/* Get ANSI function prototypes, if you want them. */
-#ifdef __STDC__
-#define ANSIPROT
-/* #include "protos.h" */
-int mtherr (char *, int);
-#else
-int mtherr();
-#endif
-
 /* Variable for error reporting.  See mtherr.c.  */
 extern int merror;
+
+/* Forward declarations */
+extern float128_t MINLOGL;
+
+extern float128_t MAXNUML;
+extern float128_t PIL;
+extern float128_t PIO2L, PIO4L;
+
+float128_t cephes_f128_atanl(float128_t x);
+#if ANSIC
+float128_t cephes_f128_atan2l( float128_t y, float128_t x );
+#else
+float128_t cephes_f128_atan2l( float128_t x, float128_t y );
+#endif
+float128_t cephes_f128_ceill(float128_t x);
+float128_t cephes_f128_cosl(float128_t x);
+float128_t cephes_f128_fabsl(float128_t x);
+float128_t cephes_f128_floorl(float128_t x);
+float128_t cephes_f128_frexpl( float128_t x, int *pw2 );
+int cephes_f128_isfinitel(float128_t x);
+int cephes_f128_isnanl(float128_t x);
+float128_t cephes_f128_ldexpl( float128_t x, int pw2 );
+float128_t cephes_f128_polevll( float128_t x, void *PP, int n );
+float128_t cephes_f128_p1evll( float128_t x, void *PP, int n );
+int cephes_f128_signbitl(float128_t x);
+float128_t cephes_f128_sinl(float128_t x);
+int mtherr( char *name, int code );
+
+/* Public symbol declarations */
+float128_t cephes_f128_log2l(float128_t x);

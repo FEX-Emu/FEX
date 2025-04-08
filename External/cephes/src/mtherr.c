@@ -74,11 +74,9 @@ static char *ermsg[7] = {
 };
 
 
-int mtherr( name, code )
-char *name;
-int code;
+int mtherr( char *name, int code )
 {
-
+#if 0
 /* Display string passed by calling program,
  * which is supposed to be the name of the
  * function in which the error occurred:
@@ -95,6 +93,7 @@ if( (code <= 0) || (code >= 7) )
 	code = 0;
 printf( "%s error\n", ermsg[code] );
 
+#endif
 /* Return to calling
  * program
  */

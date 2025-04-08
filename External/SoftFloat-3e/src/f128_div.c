@@ -167,11 +167,11 @@ float128_t f128_div( struct softfloat_state *state, float128_t a, float128_t b )
             term.v64, term.v0
         );
     return
-        softfloat_roundPackToF128( signZ, expZ, sigZ.v64, sigZ.v0, sigZExtra );
+        softfloat_roundPackToF128( state, signZ, expZ, sigZ.v64, sigZ.v0, sigZExtra );
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
  propagateNaN:
-    uiZ = softfloat_propagateNaNF128UI( uiA64, uiA0, uiB64, uiB0 );
+    uiZ = softfloat_propagateNaNF128UI( state, uiA64, uiA0, uiB64, uiB0 );
     goto uiZ;
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/

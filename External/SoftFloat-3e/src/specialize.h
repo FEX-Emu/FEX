@@ -295,6 +295,7 @@ struct uint128 softfloat_commonNaNToF128UI( const struct commonNaN * );
 *----------------------------------------------------------------------------*/
 struct uint128
  softfloat_propagateNaNF128UI(
+     struct softfloat_state *,
      uint_fast64_t uiA64,
      uint_fast64_t uiA0,
      uint_fast64_t uiB64,

@@ -4,8 +4,8 @@
 This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
 Package, Release 3e, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014 The Regents of the University of California.
-All rights reserved.
+Copyright 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the University of
+California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -34,45 +34,31 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =============================================================================*/
 
-#include <stdbool.h>
 #include <stdint.h>
 #include "platform.h"
 #include "internals.h"
 #include "softfloat.h"
 
-float128_t f128_add( struct softfloat_state *state, float128_t a, float128_t b )
+float128_t i32_to_f128( int32_t a )
 {
-    union ui128_f128 uA;
-    uint_fast64_t uiA64, uiA0;
-    bool signA;
-    union ui128_f128 uB;
-    uint_fast64_t uiB64, uiB0;
-    bool signB;
-#if ! defined INLINE_LEVEL || (INLINE_LEVEL < 2)
-    float128_t
-        (*magsFuncPtr)(
-            uint_fast64_t, uint_fast64_t, uint_fast64_t, uint_fast64_t, bool );
-#endif
+    uint_fast64_t uiZ64;
+    bool sign;
+    uint_fast32_t absA;
+    int_fast8_t shiftDist;
+    union ui128_f128 uZ;
 
-    uA.f = a;
-    uiA64 = uA.ui.v64;
-    uiA0  = uA.ui.v0;
-    signA = signF128UI64( uiA64 );
-    uB.f = b;
-    uiB64 = uB.ui.v64;
-    uiB0  = uB.ui.v0;
-    signB = signF128UI64( uiB64 );
-#if defined INLINE_LEVEL && (2 <= INLINE_LEVEL)
-    if ( signA == signB ) {
-        return softfloat_addMagsF128( state, uiA64, uiA0, uiB64, uiB0, signA );
-    } else {
-        return softfloat_subMagsF128( state, uiA64, uiA0, uiB64, uiB0, signA );
+    uiZ64 = 0;
+    if ( a ) {
+        sign = (a < 0);
+        absA = sign ? -(uint_fast32_t) a : (uint_fast32_t) a;
+        shiftDist = softfloat_countLeadingZeros32( absA ) + 17;
+        uiZ64 =
+            packToF128UI64(
+                sign, 0x402E - shiftDist, (uint_fast64_t) absA<<shiftDist );
     }
-#else
-    magsFuncPtr =
-        (signA == signB) ? softfloat_addMagsF128 : softfloat_subMagsF128;
-    return (*magsFuncPtr)( uiA64, uiA0, uiB64, uiB0, signA );
-#endif
+    uZ.ui.v64 = uiZ64;
+    uZ.ui.v0  = 0;
+    return uZ.f;
 
 }
 

@@ -73,7 +73,7 @@ float128_t f128_sqrt( struct softfloat_state *state, float128_t a )
     *------------------------------------------------------------------------*/
     if ( expA == 0x7FFF ) {
         if ( sigA.v64 | sigA.v0 ) {
-            uiZ = softfloat_propagateNaNF128UI( uiA64, uiA0, 0, 0 );
+            uiZ = softfloat_propagateNaNF128UI( state, uiA64, uiA0, 0, 0 );
             goto uiZ;
         }
         if ( ! signA ) return a;
@@ -186,7 +186,7 @@ float128_t f128_sqrt( struct softfloat_state *state, float128_t a )
             }
         }
     }
-    return softfloat_roundPackToF128( 0, expZ, sigZ.v64, sigZ.v0, sigZExtra );
+    return softfloat_roundPackToF128( state, 0, expZ, sigZ.v64, sigZ.v0, sigZExtra );
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
  invalid:

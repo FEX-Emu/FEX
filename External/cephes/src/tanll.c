@@ -1,12 +1,12 @@
 /*							tanl.c
  *
- *	Circular tangent, 128-bit long double precision
+ *	Circular tangent, 128-bit float128_t precision
  *
  *
  *
  * SYNOPSIS:
  *
- * long double x, y, tanl();
+ * float128_t x, y, tanl();
  *
  * y = tanl( x );
  *
@@ -36,13 +36,13 @@
  */
 /*							cotl.c
  *
- *	Circular cotangent, long double precision
+ *	Circular cotangent, float128_t precision
  *
  *
  *
  * SYNOPSIS:
  *
- * long double x, y, cotl();
+ * float128_t x, y, cotl();
  *
  * y = cotl( x );
  *
@@ -86,70 +86,74 @@ Direct inquiries to 30 Frost Street, Cambridge, MA 02140
  * Theoretical peak relative error = 4.3e-38
  * relative peak error spread = 6.1e-11
  */
-static long double P[6] = {
--9.889929415807650724957118893791829849557E-1L,
- 1.272297782199996882828849455156962260810E3L,
--4.249691853501233575668486667664718192660E5L,
- 5.160188250214037865511600561074819366815E7L,
--2.307030822693734879744223131873392503321E9L,
- 2.883414728874239697964612246732416606301E10L
+static float128_t P[6] = {
+ {0x09978dc7ae2a2f4bULL, 0xbffefa5d486820e2ULL}, // -9.889929415807650724957118893791829849557E-1L,
+ {0x52a017b1ca7c4799ULL, 0x40093e130edd1294ULL}, // 1.272297782199996882828849455156962260810E3L,
+ {0x8857161b398b3c53ULL, 0xc0119f024bdcc6c3ULL}, // -4.249691853501233575668486667664718192660E5L,
+ {0xcc299261a6616b83ULL, 0x401889b0ed404622ULL}, // 5.160188250214037865511600561074819366815E7L,
+ {0x37d9311de4cdbf04ULL, 0xc01e1304fe4d6331ULL}, // -2.307030822693734879744223131873392503321E9L,
+ {0x6e9f0eac6b638a9aULL, 0x4021ada98af62f83ULL}, // 2.883414728874239697964612246732416606301E10L
 };
-static long double Q[6] = {
+static float128_t Q[6] = {
 /* 1.000000000000000000000000000000000000000E0L, */
--1.317243702830553658702531997959756728291E3L,
- 4.529422062441341616231663543669583527923E5L,
--5.733709132766856723608447733926138506824E7L,
- 2.758476078803232151774723646710890525496E9L,
--4.152206921457208101480801635640958361612E10L,
- 8.650244186622719093893836740197250197602E10L
+ {0xeb01d728f7d3bb04ULL, 0xc009494f98d3c1caULL}, // -1.317243702830553658702531997959756728291E3L,
+ {0xcdd312b4ac46a6cdULL, 0x4011ba538d331a98ULL}, // 4.529422062441341616231663543669583527923E5L,
+ {0x2a1a6372eebd73a1ULL, 0xc018b57281a9f10bULL}, // -5.733709132766856723608447733926138506824E7L,
+ {0x3e9defb0e348fbe5ULL, 0x401e48d6025d9b41ULL}, // 2.758476078803232151774723646710890525496E9L,
+ {0x7cd82869db5580d1ULL, 0xc022355d0fdbd24eULL}, // -4.152206921457208101480801635640958361612E10L,
+ {0x92f74b01508aa7f3ULL, 0x4023423f2838a3a2ULL}, // 8.650244186622719093893836740197250197602E10L
 };
 
-static long double DP1 =
- 7.853981633974483067550664827649598009884357452392578125E-1L;
-static long double DP2 =
- 2.8605943630549158983813312792950660807511260829685741796657E-18L;
-static long double DP3 =
- 2.1679525325309452561992610065108379921905808E-35L;
+static float128_t DP1 =
+{0x8400000000000000ULL, 0x3ffe921fb54442d1ULL};
+ //7.853981633974483067550664827649598009884357452392578125E-1L;
+static float128_t DP2 =
+{0xe000000000000000ULL, 0x3fc4a62633145c06ULL};
+ //2.8605943630549158983813312792950660807511260829685741796657E-18L;
+static float128_t DP3 =
+{0xa67cc74020bbea64ULL, 0x3f8bcd129024e088ULL};
+ // 2.1679525325309452561992610065108379921905808E-35L;
 
-static long double lossth =  3.6028797018963968E16L; /* 2^55 */
+static const float128_t lossth =  {0x0000000000000000ULL, 0x4036000000000000ULL}; // 3.6028797018963968E16L; /* 2^55 */
 
-extern long double PIO4L;
-extern long double MAXNUML;
-static long double tancotl();
+static const float128_t zero = {0, 0};
+static const float128_t one = {0, 0x3fff000000000000ULL};
+static const float128_t neg_one = {0, 0xbfff000000000000ULL};
 
-long double tanl(x)
-long double x;
+static const float128_t max_quad = {0x35d511e976394d7aULL, 0x3fbc79ca10c92422ULL};
+
+static float128_t tancotl( struct softfloat_state *state, float128_t xx, int cotflg );
+
+float128_t cephes_f128_tanl(float128_t x)
 {
-
-return( tancotl(x,0) );
+struct softfloat_state state = {};
+return( tancotl(&state, x,0) );
 }
 
 
-long double cotl(x)
-long double x;
+float128_t cotl(float128_t x)
 {
+struct softfloat_state state = {};
 
-if( x == 0.0L )
+if( f128_eq(&state, x, zero) )
 	{
 	mtherr( "cotl", SING );
 	return( MAXNUML );
 	}
-return( tancotl(x,1) );
+return( tancotl(&state, x,1) );
 }
 
 
-static long double tancotl( xx, cotflg )
-long double xx;
-int cotflg;
+static float128_t tancotl( struct softfloat_state *state, float128_t xx, int cotflg )
 {
-long double x, y, z, zz;
+float128_t x, y, z, zz;
 int j, sign;
-long double polevll(), p1evll(), floorl(), ldexpl();
 
 /* make argument positive but save the sign */
-if( xx < 0.0L )
+// if (xx < 0.0L)
+if( f128_lt(state, xx, zero) )
 	{
-	x = -xx;
+	x = f128_sub(state, zero, xx);
 	sign = -1;
 	}
 else
@@ -158,57 +162,63 @@ else
 	sign = 1;
 	}
 
-if( x > lossth )
+//if (x > lossth)
+if (f128_lt(state, lossth, x))
 	{
 	if( cotflg )
 		mtherr( "cotl", TLOSS );
 	else
 		mtherr( "tanl", TLOSS );
-	return(0.0L);
+	return zero;
 	}
 
 /* compute x mod PIO4 */
-y = floorl( x/PIO4L );
+y = cephes_f128_floorl( f128_div(state, x, PIO4L));
 
 /* strip high bits of integer part */
-z = ldexpl( y, -4 );
-z = floorl(z);		/* integer part of y/16 */
-z = y - ldexpl( z, 4 );  /* y - 16 * (y/16) */
+z = cephes_f128_ldexpl( y, -4 );
+z = cephes_f128_floorl(z);		/* integer part of y/16 */
+z = f128_sub(state, y, cephes_f128_ldexpl( z, 4 ));  /* y - 16 * (y/16) */
 
 /* integer and fractional part modulo one octant */
-j = z;
+j = f128_to_i32(state, z, softfloat_round_near_even, true);
 
 /* map zeros and singularities to origin */
 if( j & 1 )
 	{
 	j += 1;
-	y += 1.0L;
+	y = f128_add(state, y, one);
 	}
 
-z = ((x - y * DP1) - y * DP2) - y * DP3;
+z = f128_sub(state, f128_sub(state, f128_sub(state, x, f128_mul(state, y, DP1)), f128_mul(state, y, DP2)), f128_mul(state, y, DP3));
 
-zz = z * z;
+zz = f128_mul(state, z, z);
 
-if( zz > 1.0e-20L )
-	y = z  +  z * (zz * polevll( zz, P, 5 )/p1evll(zz, Q, 6));
+// if( zz > 1.0e-20L )
+if (f128_lt(state, max_quad, zz))
+{
+	y = f128_add(state, z, f128_mul(state, z, f128_div(state, f128_mul(state, zz, cephes_f128_polevll( zz, P, 5 )), cephes_f128_p1evll(zz, Q, 6))));
+}
 else
+{
 	y = z;
+}
 	
 if( j & 2 )
 	{
 	if( cotflg )
-		y = -y;
+    y = f128_complement_sign(y);
 	else
-		y = -1.0L/y;
+		y = f128_div(state, neg_one, y);
 	}
 else
 	{
 	if( cotflg )
-		y = 1.0L/y;
+		y = f128_div(state, one, y);
 	}
 
 if( sign < 0 )
-	y = -y;
+  y = f128_complement_sign(y);
 
 return( y );
 }

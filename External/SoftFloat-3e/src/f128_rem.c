@@ -170,11 +170,11 @@ float128_t f128_rem( struct softfloat_state *state, float128_t a, float128_t b )
         signRem = ! signRem;
         rem = softfloat_sub128( 0, 0, rem.v64, rem.v0 );
     }
-    return softfloat_normRoundPackToF128( signRem, expB - 1, rem.v64, rem.v0 );
+    return softfloat_normRoundPackToF128( state, signRem, expB - 1, rem.v64, rem.v0 );
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
  propagateNaN:
-    uiZ = softfloat_propagateNaNF128UI( uiA64, uiA0, uiB64, uiB0 );
+    uiZ = softfloat_propagateNaNF128UI( state, uiA64, uiA0, uiB64, uiB0 );
     goto uiZ;
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/

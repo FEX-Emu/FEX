@@ -38,41 +38,45 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdint.h>
 #include "platform.h"
 #include "internals.h"
+#include "specialize.h"
 #include "softfloat.h"
 
-float128_t f128_add( struct softfloat_state *state, float128_t a, float128_t b )
+/*----------------------------------------------------------------------------
+| Interpreting the unsigned integer formed from concatenating `uiA64' and
+| `uiA0' as a 128-bit floating-point value, and likewise interpreting the
+| unsigned integer formed from concatenating `uiB64' and `uiB0' as another
+| 128-bit floating-point value, and assuming at least on of these floating-
+| point values is a NaN, returns the bit pattern of the combined NaN result.
+| If either original floating-point value is a signaling NaN, the invalid
+| exception is raised.
+*----------------------------------------------------------------------------*/
+struct uint128
+ softfloat_propagateNaNF128UI(
+     struct softfloat_state *state,
+     uint_fast64_t uiA64,
+     uint_fast64_t uiA0,
+     uint_fast64_t uiB64,
+     uint_fast64_t uiB0
+ )
 {
-    union ui128_f128 uA;
-    uint_fast64_t uiA64, uiA0;
-    bool signA;
-    union ui128_f128 uB;
-    uint_fast64_t uiB64, uiB0;
-    bool signB;
-#if ! defined INLINE_LEVEL || (INLINE_LEVEL < 2)
-    float128_t
-        (*magsFuncPtr)(
-            uint_fast64_t, uint_fast64_t, uint_fast64_t, uint_fast64_t, bool );
-#endif
+    bool isSigNaNA;
+    struct uint128 uiZ;
 
-    uA.f = a;
-    uiA64 = uA.ui.v64;
-    uiA0  = uA.ui.v0;
-    signA = signF128UI64( uiA64 );
-    uB.f = b;
-    uiB64 = uB.ui.v64;
-    uiB0  = uB.ui.v0;
-    signB = signF128UI64( uiB64 );
-#if defined INLINE_LEVEL && (2 <= INLINE_LEVEL)
-    if ( signA == signB ) {
-        return softfloat_addMagsF128( state, uiA64, uiA0, uiB64, uiB0, signA );
-    } else {
-        return softfloat_subMagsF128( state, uiA64, uiA0, uiB64, uiB0, signA );
+    isSigNaNA = softfloat_isSigNaNF128UI( uiA64, uiA0 );
+    if ( isSigNaNA || softfloat_isSigNaNF128UI( uiB64, uiB0 ) ) {
+        softfloat_raiseFlags( state, softfloat_flag_invalid );
+        if ( isSigNaNA ) goto returnNonsigA;
     }
-#else
-    magsFuncPtr =
-        (signA == signB) ? softfloat_addMagsF128 : softfloat_subMagsF128;
-    return (*magsFuncPtr)( uiA64, uiA0, uiB64, uiB0, signA );
-#endif
+    if ( isNaNF128UI( uiA64, uiA0 ) ) {
+ returnNonsigA:
+        uiZ.v64 = uiA64;
+        uiZ.v0  = uiA0;
+    } else {
+        uiZ.v64 = uiB64;
+        uiZ.v0  = uiB0;
+    }
+    uiZ.v64 |= UINT64_C( 0x0000800000000000 );
+    return uiZ;
 
 }
 
