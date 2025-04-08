@@ -1,5 +1,8 @@
-pr72867.c.gcc-target-test-32
-sse2-mmx-pextrw.c.gcc-target-test-32
+pr72867.c.gcc-target-test-32.n500.gcc-target-32
+pr72867.c.gcc-target-test-32.n1.gcc-target-32
+
+sse2-mmx-pextrw.c.gcc-target-test-32.n500.gcc-target-32
+sse2-mmx-pextrw.c.gcc-target-test-32.n1.gcc-target-32
 
 # Consistently crashes on Solidrun only in CI
 20080723-1.c.gcc-target-test-32
@@ -22,3 +25,10 @@ sse4_1-round-vec.c.gcc-target-test-32
 
 # This has a race with SIGPROF
 mcount_pic.c.gcc-target-test-32
+
+# See https://github.com/FEX-Emu/FEX/issues/4436
+# Test has invalid asm. Fails on host as well.
+# It passes for -n 500 due to x87 stack optimization pass
+# not actually doing a fld/fst pair and instead doing the 
+# memory store directly.
+pr88240.c.gcc-target-test-32.n1.gcc-target-32
