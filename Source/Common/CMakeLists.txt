@@ -3,6 +3,7 @@ add_subdirectory(cpp-optparse/)
 set(NAME Common)
 set(SRCS
   Config.cpp
+  CPUInfo.cpp
   ArgumentLoader.cpp
   EnvironmentLoader.cpp
   HostFeatures.cpp

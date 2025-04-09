@@ -12,7 +12,7 @@
 #include <linux/limits.h>
 #endif
 
-namespace FEXCore::CPUInfo {
+namespace FEX::CPUInfo {
 #ifndef _WIN32
 uint32_t CalculateNumberOfCPUs() {
   constexpr auto parse_string = FMT_COMPILE("/sys/devices/system/cpu/cpu{}");
@@ -36,4 +36,4 @@ uint32_t CalculateNumberOfCPUs() {
   return std::thread::hardware_concurrency();
 }
 #endif
-} // namespace FEXCore::CPUInfo
+} // namespace FEX::CPUInfo

@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 
+#include "Common/CPUInfo.h"
+
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/HostFeatures.h>
-#include <FEXCore/Utils/CPUInfo.h>
 #include <FEXCore/fextl/fmt.h>
 
 #include <windows.h>

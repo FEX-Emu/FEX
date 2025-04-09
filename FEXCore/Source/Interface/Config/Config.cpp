@@ -4,7 +4,6 @@
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/Allocator.h>
-#include <FEXCore/Utils/CPUInfo.h>
 #include <FEXCore/Utils/FileLoading.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/StringUtils.h>
