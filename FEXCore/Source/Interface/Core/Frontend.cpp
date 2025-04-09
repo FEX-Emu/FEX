@@ -48,7 +48,7 @@ static uint32_t MapModRMToReg(uint8_t REX, uint8_t bits, bool HighBits, bool Has
   if (HasXMM) {
     return FEXCore::X86State::REG_XMM_0 + Offset;
   } else if (HasMM) {
-    return FEXCore::X86State::REG_MM_0 + Offset;
+    return FEXCore::X86State::REG_MM_0 + bits; // Ignore REX extension for MMX registers
   } else if (!(HighBits && !HasREX)) {
     return FEXCore::X86State::REG_RAX + Offset;
   }
