@@ -314,7 +314,7 @@ void OpDispatchBuilder::FSUBF64(OpcodeArgs, IR::OpSize Width, bool Integer, bool
 
 void OpDispatchBuilder::FTSTF64(OpcodeArgs) {
   // We are going to clobber NZCV, make sure it's in a GPR first.
-  GetNZCV();
+  SaveNZCV();
 
   // Now we do our comparison.
   _F80StackTest(0);
@@ -349,7 +349,7 @@ void OpDispatchBuilder::FCOMIF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpD
 
   if (WhichFlags == FCOMIFlags::FLAGS_X87) {
     // We are going to clobber NZCV, make sure it's in a GPR first.
-    GetNZCV();
+    SaveNZCV();
 
     _F80CmpValue(b);
     ConvertNZCVToX87();

@@ -2103,28 +2103,28 @@ private:
   // Set x87 comparison flags based on the result set by Arm FCMP. Clobbers
   // NZCV on flagm2 platforms.
   void ConvertNZCVToX87() {
-    Ref V = GetRFLAG(FEXCore::X86State::RFLAG_OF_RAW_LOC);
+    LOGMAN_THROW_A_FMT(NZCVDirty && CachedNZCV, "NZCV must be saved");
+
+    Ref V = _NZCVSelect(OpSize::i32Bit, CondForNZCVBit(FEXCore::X86State::RFLAG_OF_RAW_LOC, false), _Constant(1), _Constant(0));
 
     if (CTX->HostFeatures.SupportsFlagM2) {
-      LOGMAN_THROW_A_FMT(!NZCVDirty, "only expected after fcmp");
-
       // Convert to x86 flags, saves us from or'ing after.
       _AXFlag(Invalid());
-      CFInverted = true;
-
-      // Copy the values.
-      SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC));
-      SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC));
-    } else {
-      Ref Z = GetRFLAG(FEXCore::X86State::RFLAG_ZF_RAW_LOC);
-      Ref N = GetRFLAG(FEXCore::X86State::RFLAG_SF_RAW_LOC);
-
-      SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(_Or(OpSize::i32Bit, N, V));
-      SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(_Or(OpSize::i32Bit, Z, V));
     }
 
+    // CF is inverted after FCMP
+    Ref C = _NZCVSelect(OpSize::i32Bit, CondForNZCVBit(FEXCore::X86State::RFLAG_CF_RAW_LOC, true), _Constant(1), _Constant(0));
+    Ref Z = _NZCVSelect(OpSize::i32Bit, CondForNZCVBit(FEXCore::X86State::RFLAG_ZF_RAW_LOC, false), _Constant(1), _Constant(0));
+
+    if (!CTX->HostFeatures.SupportsFlagM2) {
+      C = _Or(OpSize::i32Bit, C, V);
+      Z = _Or(OpSize::i32Bit, Z, V);
+    }
+
+    SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(C);
     SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(_Constant(0));
     SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(V);
+    SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(Z);
   }
 
   // Helper to store a variable shift and calculate its flags for a variable
