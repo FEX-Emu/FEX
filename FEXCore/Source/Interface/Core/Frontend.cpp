@@ -439,6 +439,15 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
     FEXCore::X86Tables::ModRMDecoded ModRM;
     ModRM.Hex = DecodeInst->ModRM;
 
+
+    if (ModRM.mod == 0b11 && (Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SF_MOD_MEM_ONLY)) {
+      return false;
+    }
+
+    if (ModRM.mod != 0b11 && (Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SF_MOD_REG_ONLY)) {
+      return false;
+    }
+
     // Decode the GPR source first
     GPR.Type = DecodedOperand::OpType::GPR;
     GPR.Data.GPR.HighBits = (GPR8Bit && ModRM.reg >= 0b100 && !HasREX);
