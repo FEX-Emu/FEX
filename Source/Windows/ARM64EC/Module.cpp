@@ -559,6 +559,10 @@ public:
   void UnmarkOvercommitRange(uint64_t Start, uint64_t Length) override {
     OvercommitTracker->UnmarkRange(Start, Length);
   }
+
+  void PreCompile() override {
+    ProcessPendingCrossProcessEmulatorWork();
+  }
 };
 } // namespace Exception
 
