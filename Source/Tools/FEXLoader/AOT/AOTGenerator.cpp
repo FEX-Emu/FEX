@@ -104,7 +104,8 @@ void AOTGenSection(FEXCore::Context::Context* CTX, ELFCodeLoader::LoadedSection&
 
   // This code is tricky to refactor so it doesn't allocate memory through glibc.
   FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator glibc;
-  for (int i = 0; i < FEX::CPUInfo::CalculateNumberOfCPUs(); i++) {
+  const auto Cores = FEX::CPUInfo::CalculateNumberOfCPUs();
+  for (int i = 0; i < Cores; i++) {
     std::thread thd([&BranchTargets, CTX, &counter, &Compiled, &Section, &QueueMutex, SectionMaxAddress]() {
       // Set the priority of the thread so it doesn't overwhelm the system when running in the background
       setpriority(PRIO_PROCESS, FHU::Syscalls::gettid(), 19);
