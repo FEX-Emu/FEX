@@ -439,6 +439,9 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
     FEXCore::X86Tables::ModRMDecoded ModRM;
     ModRM.Hex = DecodeInst->ModRM;
 
+    if (ModRM.reg != 0b000 && (Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SF_MOD_ZERO_REG)) {
+      return false;
+    }
 
     if (ModRM.mod == 0b11 && (Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SF_MOD_MEM_ONLY)) {
       return false;
