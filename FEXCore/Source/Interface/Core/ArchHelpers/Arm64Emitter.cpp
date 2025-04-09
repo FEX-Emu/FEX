@@ -555,7 +555,7 @@ void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, ui
 void Arm64Emitter::PushCalleeSavedRegisters() {
   // We need to save pairs of registers
   // We save r19-r30
-  const fextl::vector<std::pair<ARMEmitter::XRegister, ARMEmitter::XRegister>> CalleeSaved = {{
+  constexpr static std::array<std::pair<ARMEmitter::XRegister, ARMEmitter::XRegister>, 6> CalleeSaved = {{
     {ARMEmitter::XReg::x19, ARMEmitter::XReg::x20},
     {ARMEmitter::XReg::x21, ARMEmitter::XReg::x22},
     {ARMEmitter::XReg::x23, ARMEmitter::XReg::x24},
@@ -571,7 +571,7 @@ void Arm64Emitter::PushCalleeSavedRegisters() {
   // Additionally we need to store the lower 64bits of v8-v15
   // Here's a fun thing, we can use two ST4 instructions to store everything
   // We just need a single sub to sp before that
-  const std::array< std::tuple<ARMEmitter::DRegister, ARMEmitter::DRegister, ARMEmitter::DRegister, ARMEmitter::DRegister>, 2> FPRs = {{
+  constexpr static std::array< std::tuple<ARMEmitter::DRegister, ARMEmitter::DRegister, ARMEmitter::DRegister, ARMEmitter::DRegister>, 2> FPRs = {{
     {ARMEmitter::DReg::d8, ARMEmitter::DReg::d9, ARMEmitter::DReg::d10, ARMEmitter::DReg::d11},
     {ARMEmitter::DReg::d12, ARMEmitter::DReg::d13, ARMEmitter::DReg::d14, ARMEmitter::DReg::d15},
   }};
@@ -589,7 +589,7 @@ void Arm64Emitter::PushCalleeSavedRegisters() {
 }
 
 void Arm64Emitter::PopCalleeSavedRegisters() {
-  const std::array< std::tuple<ARMEmitter::DRegister, ARMEmitter::DRegister, ARMEmitter::DRegister, ARMEmitter::DRegister>, 2> FPRs = {{
+  constexpr static std::array< std::tuple<ARMEmitter::DRegister, ARMEmitter::DRegister, ARMEmitter::DRegister, ARMEmitter::DRegister>, 2> FPRs = {{
     {ARMEmitter::DReg::d12, ARMEmitter::DReg::d13, ARMEmitter::DReg::d14, ARMEmitter::DReg::d15},
     {ARMEmitter::DReg::d8, ARMEmitter::DReg::d9, ARMEmitter::DReg::d10, ARMEmitter::DReg::d11},
   }};
@@ -599,7 +599,7 @@ void Arm64Emitter::PopCalleeSavedRegisters() {
         ARMEmitter::Reg::rsp, 32);
   }
 
-  const fextl::vector<std::pair<ARMEmitter::XRegister, ARMEmitter::XRegister>> CalleeSaved = {{
+  constexpr static std::array<std::pair<ARMEmitter::XRegister, ARMEmitter::XRegister>, 6> CalleeSaved = {{
     {ARMEmitter::XReg::x29, ARMEmitter::XReg::x30},
     {ARMEmitter::XReg::x27, ARMEmitter::XReg::x28},
     {ARMEmitter::XReg::x25, ARMEmitter::XReg::x26},
