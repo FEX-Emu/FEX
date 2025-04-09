@@ -183,9 +183,6 @@ private:
     return LiveIter;
   }
 
-  // 32-bit old kernel workarounds
-  fextl::vector<FEXCore::Allocator::MemoryRegion> Steal32BitIfOldKernel();
-
   void AllocateMemoryRegions(fextl::vector<FEXCore::Allocator::MemoryRegion>& Ranges);
   LiveVMARegion* FindLiveRegionForAddress(uintptr_t Addr, uintptr_t AddrEnd);
 };
@@ -490,37 +487,6 @@ int OSAllocator_64Bit::Munmap(void* addr, size_t length) {
   return 0;
 }
 
-fextl::vector<FEXCore::Allocator::MemoryRegion> OSAllocator_64Bit::Steal32BitIfOldKernel() {
-  // First calculate kernel version
-  struct utsname buf {};
-  if (uname(&buf) == -1) {
-    return {};
-  }
-
-  int32_t Major {};
-  int32_t Minor {};
-  int32_t Patch {};
-  char Tmp {};
-  fextl::istringstream ss {buf.release};
-  ss >> Major;
-  ss.read(&Tmp, 1);
-  ss >> Minor;
-  ss.read(&Tmp, 1);
-  ss >> Patch;
-  ss.read(&Tmp, 1);
-  uint32_t Version = (Major << 24) | (Minor << 16) | Patch;
-
-  if (Version >= ((4 << 24) | (17 << 16) | 0)) {
-    // If the kernel is >= 4.17 then it supports MAP_FIXED_NOREPLACE
-    return {};
-  }
-
-  constexpr size_t LOWER_BOUND_32 = 0x1'0000;
-  constexpr size_t UPPER_BOUND_32 = LOWER_BOUND;
-
-  return FEXCore::Allocator::StealMemoryRegion(LOWER_BOUND_32, UPPER_BOUND_32);
-}
-
 void OSAllocator_64Bit::AllocateMemoryRegions(fextl::vector<FEXCore::Allocator::MemoryRegion>& Ranges) {
   // Need to allocate the ObjectAlloc up front. Find a region that is larger than our minimum size first.
   const size_t ObjectAllocSize = 64 * 1024 * 1024;
@@ -570,13 +536,10 @@ void OSAllocator_64Bit::AllocateMemoryRegions(fextl::vector<FEXCore::Allocator::
 
 OSAllocator_64Bit::OSAllocator_64Bit() {
   DetermineVASize();
-  auto LowMem = Steal32BitIfOldKernel();
 
   auto Ranges = FEXCore::Allocator::StealMemoryRegion(LOWER_BOUND, UPPER_BOUND);
 
   AllocateMemoryRegions(Ranges);
-
-  FEXCore::Allocator::ReclaimMemoryRegion(LowMem);
 }
 
 OSAllocator_64Bit::OSAllocator_64Bit(fextl::vector<FEXCore::Allocator::MemoryRegion>& Regions) {
