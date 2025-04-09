@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include <FEXHeaderUtils/Filesystem.h>
 
+#include <fmt/compile.h>
 #include <fmt/format.h>
 
 #include <cstddef>
@@ -14,11 +15,13 @@
 namespace FEXCore::CPUInfo {
 #ifndef _WIN32
 uint32_t CalculateNumberOfCPUs() {
-  char Tmp[PATH_MAX];
+  constexpr auto parse_string = FMT_COMPILE("/sys/devices/system/cpu/cpu{}");
+  constexpr auto max_parse_size = ::fmt::formatted_size(parse_string, UINT32_MAX);
+  char Tmp[max_parse_size];
   size_t CPUs = 1;
 
   for (;; ++CPUs) {
-    auto Size = fmt::format_to_n(Tmp, sizeof(Tmp), "/sys/devices/system/cpu/cpu{}", CPUs);
+    auto Size = fmt::format_to_n(Tmp, max_parse_size, parse_string, CPUs);
     Tmp[Size.size] = 0;
     if (!FHU::Filesystem::Exists(Tmp)) {
       break;
