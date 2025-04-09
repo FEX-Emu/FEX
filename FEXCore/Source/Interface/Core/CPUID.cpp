@@ -13,7 +13,6 @@ $end_info$
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CPUID.h>
 #include <FEXCore/Core/HostFeatures.h>
-#include <FEXCore/Utils/CPUInfo.h>
 #include <FEXCore/Utils/FileLoading.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXHeaderUtils/Syscalls.h>

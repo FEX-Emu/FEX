@@ -26,7 +26,7 @@ Most C++ APIs allow you to replace their allocators, but some don't and we need 
 running might run out of memory. This isn't an all encompassing list and we will add to it as our CI captures more problems.
 
 ### `get_nprocs_conf`
-Use `FEXCore::CPUInfo::CalculateNumberOfCPUs` instead.
+Use `FEX::CPUInfo::CalculateNumberOfCPUs` instead.
 
 ### `getcwd`
 Don't use getcwd with a nullptr buffer. It will allocate memory behind our back and return a pointer that needs a free.

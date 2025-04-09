@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
+#include "Common/CPUInfo.h"
 #include "Common/HostFeatures.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/HostFeatures.h>
-#include <FEXCore/Utils/CPUInfo.h>
 #include <FEXCore/Utils/FileLoading.h>
 #include <FEXCore/Utils/StringUtils.h>
 
@@ -14,7 +14,7 @@
 namespace FEX {
 
 void FillMIDRInformationViaLinux(FEXCore::HostFeatures* Features) {
-  auto Cores = FEXCore::CPUInfo::CalculateNumberOfCPUs();
+  auto Cores = FEX::CPUInfo::CalculateNumberOfCPUs();
   Features->CPUMIDRs.resize(Cores);
 #ifdef _M_ARM_64
   for (size_t i = 0; i < Cores; ++i) {

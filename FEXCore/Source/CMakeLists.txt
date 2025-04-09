@@ -4,7 +4,6 @@ set (MAN_DIR share/man CACHE PATH "MAN_DIR")
 set (FEXCORE_BASE_SRCS
   Interface/Config/Config.cpp
   Utils/Allocator.cpp
-  Utils/CPUInfo.cpp
   Utils/FileLoading.cpp
   Utils/ForcedAssert.cpp
   Utils/LogManager.cpp

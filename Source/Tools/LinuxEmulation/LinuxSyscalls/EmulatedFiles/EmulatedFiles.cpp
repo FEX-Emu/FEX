@@ -8,6 +8,7 @@ $end_info$
 
 #include "CodeLoader.h"
 
+#include "Common/CPUInfo.h"
 #include "Common/FDUtils.h"
 #include "LinuxSyscalls/Syscalls.h"
 #include "LinuxSyscalls/EmulatedFiles/EmulatedFiles.h"
@@ -15,7 +16,6 @@ $end_info$
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CPUID.h>
-#include <FEXCore/Utils/CPUInfo.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/string.h>
@@ -490,7 +490,7 @@ fextl::string GenerateCPUInfo(FEXCore::Context::Context* ctx, uint32_t CPUCores)
 
 EmulatedFDManager::EmulatedFDManager(FEXCore::Context::Context* ctx)
   : CTX {ctx}
-  , ThreadsConfig {FEXCore::CPUInfo::CalculateNumberOfCPUs()} {
+  , ThreadsConfig {FEX::CPUInfo::CalculateNumberOfCPUs()} {
   FDReadCreators["/proc/cpuinfo"] = [&](FEXCore::Context::Context* ctx, int32_t fd, const char* pathname, int32_t flags, mode_t mode) -> int32_t {
     // Only allow a single thread to initialize the cpu_info.
     // Jit in-case multiple threads try to initialize at once.
