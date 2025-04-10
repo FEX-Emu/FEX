@@ -203,7 +203,7 @@ namespace CPU {
     // Old CodeBuffer generations required to be valid until returning from signal handlers
     fextl::vector<fextl::shared_ptr<CodeBuffer>> SignalHandlerCodeBuffers;
 
-    CodeBufferManager& manager; // TODO: Rename
+    CodeBufferManager& CodeBuffers;
 
   private:
     void RegisterForSignalHandler(fextl::shared_ptr<CodeBuffer>);

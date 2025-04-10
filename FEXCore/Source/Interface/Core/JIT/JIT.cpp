@@ -549,7 +549,7 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::In
     AArch64.LREM = reinterpret_cast<uint64_t>(LREM);
   }
 
-  CurrentCodeBuffer = manager.GetCurrentCodeBuffer();
+  CurrentCodeBuffer = CodeBuffers.GetCurrentCodeBuffer();
 
   // Setup dynamic dispatch.
   if (ParanoidTSO()) {
@@ -709,7 +709,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   }
 
   SetBuffer(CurrentCodeBuffer->Ptr, CurrentCodeBuffer->Size);
-  SetCursorOffset(manager.LatestOffset);
+  SetCursorOffset(CodeBuffers.LatestOffset);
   if ((GetCursorOffset() + BufferRange) > (CurrentCodeBuffer->Size - Utils::FEX_PAGE_SIZE)) {
     CTX->ClearCodeCache(ThreadState);
   }
@@ -885,7 +885,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
   JITBlockTail->Size = CodeData.Size;
 
-  manager.LatestOffset = GetCursorOffset();
+  CodeBuffers.LatestOffset = GetCursorOffset();
 
   ClearICache(CodeData.BlockBegin, CodeOnlySize);
 
