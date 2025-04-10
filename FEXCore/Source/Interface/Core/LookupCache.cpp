@@ -21,8 +21,7 @@ GuestToHostMap::GuestToHostMap()
   BlockLinks = BlockLinks_pma->new_object<BlockLinksMapType>();
 }
 
-GuestToHostMap::~GuestToHostMap() {
-}
+GuestToHostMap::~GuestToHostMap() {}
 LookupCache::LookupCache(FEXCore::Context::ContextImpl* CTX)
   : ctx {CTX} {
 
