@@ -261,12 +261,16 @@ public:
   // Wrapper which takes CpuStateFrame instead of InternalThreadState and unique_locks CodeInvalidationMutex
   // Must be called from owning thread
   static void ThreadRemoveCodeEntryFromJit(FEXCore::Core::CpuStateFrame* Frame, uint64_t GuestRIP) {
-    ERROR_AND_DIE_FMT("TODO: L1/L2 caches for other threads sharing the same GuestToHostMap must be invalidated, too");
-
     auto Thread = Frame->Thread;
     auto lk = GuardSignalDeferringSection(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
 
-    ThreadRemoveCodeEntry(Thread, GuestRIP);
+    // Other threads sharing the same CodeBuffer may reference invalidated data through their L1/L2 caches.
+    // Fork the CodeBuffer and invalidate it locally if needed, otherwise erase just the affected page.
+    if (Thread->CPUBackend->UsesSharedCodeBuffer()) {
+      Thread->CTX->ClearCodeCache(Thread, true);
+    } else {
+      ThreadRemoveCodeEntry(Thread, GuestRIP);
+    }
   }
 
   void RemoveCustomIREntrypoint(uintptr_t Entrypoint);

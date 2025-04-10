@@ -338,6 +338,10 @@ namespace CPU {
     return CurrentCodeBuffer.get();
   }
 
+  bool CPUBackend::UsesSharedCodeBuffer() const {
+    return !CurrentCodeBuffer.unique();
+  }
+
   fextl::shared_ptr<CodeBuffer> CPUBackend::CheckCodeBufferUpdate() {
     fextl::shared_ptr<CodeBuffer> OldCodeBuffer;
     auto NewCodeBuffer = manager.GetCurrentCodeBuffer();

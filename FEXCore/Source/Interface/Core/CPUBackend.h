@@ -175,6 +175,9 @@ namespace CPU {
 
     bool IsAddressInCodeBuffer(uintptr_t Address) const;
 
+    // Returns true if the active CodeBuffer is shared with any other threads
+    bool UsesSharedCodeBuffer() const;
+
     // Updates the CodeBuffer if needed and returns a reference to the old one.
     // The return reference should be kept alive carefully to avoid early deletion of resources.
     [[nodiscard]]
