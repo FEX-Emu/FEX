@@ -266,9 +266,8 @@ namespace CPU {
     return TotalLUT;
   }()};
 
-  CPUBackend::CPUBackend(CodeBufferManager& manager, FEXCore::Core::InternalThreadState* ThreadState, size_t InitialCodeSize, size_t MaxCodeSize)
+  CPUBackend::CPUBackend(CodeBufferManager& manager, FEXCore::Core::InternalThreadState* ThreadState, size_t MaxCodeSize)
     : ThreadState(ThreadState)
-    , InitialCodeSize(InitialCodeSize)
     , MaxCodeSize(MaxCodeSize)
     , manager(manager) {
 
@@ -313,8 +312,6 @@ namespace CPU {
     auto PrevCodeBuffer = CurrentCodeBuffer;
 
     // Resize the code buffer and reallocate our code size
-    // TODO: Reconsider whether we should apply a maximum here
-    // TODO: Handle the CodeBuffers.empty() case more cleanly
     if (!manager.Latest) {
       // Allocate initial CodeBuffer and return it
       CurrentCodeBuffer = manager.GetCurrentCodeBuffer();
@@ -324,18 +321,23 @@ namespace CPU {
       CurrentCodeBuffer = manager.AllocateNewCodeBuffer(NewCodeBufferSize);
     }
 
+    RegisterForSignalHandler(PrevCodeBuffer);
+    return CurrentCodeBuffer.get();
+  }
+
+  void CPUBackend::RegisterForSignalHandler(fextl::shared_ptr<CodeBuffer> CodeBuffer) {
     if (ThreadState->CurrentFrame->SignalHandlerRefCounter != 0) {
       // We have signal handlers that have generated code
       // This means that we can not safely clear the code at this point in time
       // Keep a reference to the old code buffer to delay deallocation
-      // TODO: Clear SignalHandlerCodeBuffers once SignalHandlerRefCounter reaches 0 again
-      // TODO: Actually, this should be added when entering the signal handler...
-      SignalHandlerCodeBuffers.push_back(PrevCodeBuffer);
+      SignalHandlerCodeBuffers.push_back(CodeBuffer);
     } else {
       SignalHandlerCodeBuffers.clear();
     }
+  }
 
-    return CurrentCodeBuffer.get();
+  fextl::shared_ptr<CodeBuffer> CPUBackend::GetThreadLocalCodeBuffer() const {
+    return CurrentCodeBuffer;
   }
 
   bool CPUBackend::UsesSharedCodeBuffer() const {
@@ -346,17 +348,7 @@ namespace CPU {
     fextl::shared_ptr<CodeBuffer> OldCodeBuffer;
     auto NewCodeBuffer = manager.GetCurrentCodeBuffer();
     if (CurrentCodeBuffer != NewCodeBuffer) {
-      if (ThreadState->CurrentFrame->SignalHandlerRefCounter != 0) {
-        // We have signal handlers that have generated code
-        // This means that we can not safely clear the code at this point in time
-        // Keep a reference to the old code buffer to delay deallocation
-        // TODO: Clear SignalHandlerCodeBuffers once SignalHandlerRefCounter reaches 0 again
-        // TODO: Actually, this should be added when entering the signal handler...
-        SignalHandlerCodeBuffers.push_back(CurrentCodeBuffer);
-      } else {
-        SignalHandlerCodeBuffers.clear();
-      }
-
+      RegisterForSignalHandler(CurrentCodeBuffer);
       return std::exchange(CurrentCodeBuffer, NewCodeBuffer);
     }
     return nullptr;
@@ -382,8 +374,6 @@ namespace CPU {
   }
 
   CodeBuffer::~CodeBuffer() {
-    // TODO: Verify refcounts get appropriately released on forks!
-
     FEXCore::Allocator::VirtualFree(Ptr, Size);
   }
 
@@ -415,20 +405,18 @@ namespace CPU {
 
     auto Buffer = fextl::make_shared<CodeBuffer>(Size);
 
-    // TODO: Re-enable
-    // if (static_cast<Context::ContextImpl*>(ThreadState->CTX)->Config.GlobalJITNaming()) {
-    //   static_cast<Context::ContextImpl*>(ThreadState->CTX)->Symbols.RegisterJITSpace(Buffer.Ptr, Buffer.Size);
-    // }
-
     Latest = Buffer;
     LatestOffset = 0;
+
+    OnCodeBufferAllocated(*Buffer);
 
     return Buffer;
   }
 
   fextl::shared_ptr<CodeBuffer> CodeBufferManager::GetCurrentCodeBuffer() {
     if (!Latest) {
-      AllocateNewCodeBuffer(1024 * 1024 * 16); // TODO: Use InitialCodeSize instead
+      static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
+      AllocateNewCodeBuffer(INITIAL_CODE_SIZE);
     }
     return Latest;
   }

@@ -165,6 +165,7 @@ public:
     IRCaptureCache.WriteFilesWithCode(Writer);
   }
 
+  void OnCodeBufferAllocated(CPU::CodeBuffer&) override;
   void ClearCodeCache(FEXCore::Core::InternalThreadState* Thread, bool NewCodeBuffer = true) override;
   void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) override;
   FEXCore::ForkableSharedMutex& GetCodeInvalidationMutex() override {
@@ -264,13 +265,11 @@ public:
     auto Thread = Frame->Thread;
     auto lk = GuardSignalDeferringSection(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
 
-    // Other threads sharing the same CodeBuffer may reference invalidated data through their L1/L2 caches.
-    // Fork the CodeBuffer and invalidate it locally if needed, otherwise erase just the affected page.
-    if (Thread->CPUBackend->UsesSharedCodeBuffer()) {
-      Thread->CTX->ClearCodeCache(Thread, true);
-    } else {
-      ThreadRemoveCodeEntry(Thread, GuestRIP);
-    }
+    // NOTE: Other threads sharing the same CodeBuffer may reference
+    //       invalidated data ranges through their L1/L2 caches. This is
+    //       not currently a problem since FEX does not repurpose the
+    //       invalidated CodeBuffer memory range currently.
+    ThreadRemoveCodeEntry(Thread, GuestRIP);
   }
 
   void RemoveCustomIREntrypoint(uintptr_t Entrypoint);

@@ -428,7 +428,7 @@ void ContextImpl::InitializeCompiler(FEXCore::Core::InternalThreadState* Thread)
   // Create CPU backend
   Thread->PassManager->InsertRegisterAllocationPass();
   Thread->CPUBackend = FEXCore::CPU::CreateArm64JITCore(this, Thread);
-  Thread->LookupCache->Shared = Thread->CPUBackend->CurrentCodeBuffer->LookupCache.get();
+  Thread->LookupCache->Shared = Thread->CPUBackend->GetThreadLocalCodeBuffer()->LookupCache.get();
 
   Thread->PassManager->Finalize();
 }
@@ -496,6 +496,12 @@ void ContextImpl::LockBeforeFork(FEXCore::Core::InternalThreadState* Thread) {
 }
 #endif
 
+void ContextImpl::OnCodeBufferAllocated(CPU::CodeBuffer& Buffer) {
+  if (Config.GlobalJITNaming()) {
+    Symbols.RegisterJITSpace(Buffer.Ptr, Buffer.Size);
+  }
+}
+
 void ContextImpl::ClearCodeCache(FEXCore::Core::InternalThreadState* Thread, bool NewCodeBuffer) {
   FEXCORE_PROFILE_INSTANT("ClearCodeCache");
 
@@ -507,12 +513,12 @@ void ContextImpl::ClearCodeCache(FEXCore::Core::InternalThreadState* Thread, boo
 
   if (NewCodeBuffer) {
     // NOTE: Holding on to the reference here is required to ensure validity of the WriteLock mutex
-    std::shared_ptr PrevCodeBuffer = Thread->CPUBackend->CurrentCodeBuffer;
+    std::shared_ptr PrevCodeBuffer = Thread->CPUBackend->GetThreadLocalCodeBuffer();
     std::lock_guard lk(PrevCodeBuffer->LookupCache->WriteLock);
 
     // Allocate new CodeBuffer + L3 LookupCache, then clear L1+L2 caches
     Thread->CPUBackend->ClearCache();
-    Thread->LookupCache->ChangeGuestToHostMapping(*PrevCodeBuffer, *Thread->CPUBackend->CurrentCodeBuffer->LookupCache);
+    Thread->LookupCache->ChangeGuestToHostMapping(*PrevCodeBuffer, *Thread->CPUBackend->GetThreadLocalCodeBuffer()->LookupCache);
   } else {
     // Clear L1+L2 cache of this thread, and clear L3 cache across any threads using it
     Thread->LookupCache->ClearCache();
@@ -1020,8 +1026,6 @@ void ContextImpl::RemoveCustomIREntrypoint(uintptr_t Entrypoint) {
 
   std::scoped_lock lk(CustomIRMutex);
 
-  // TODO: Must invalidate L1/L2 caches for other threads...
-  ERROR_AND_DIE_FMT("TODO: Must ensure L1/L2 cache for other threads is invalidated");
   InvalidateGuestCodeRange(nullptr, Entrypoint, 1);
   CustomIRHandlers.erase(Entrypoint);
 

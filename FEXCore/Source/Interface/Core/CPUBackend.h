@@ -67,16 +67,17 @@ namespace CPU {
 
     // Protects writes to the latest CodeBuffer
     FEXCore::ForkableUniqueMutex CodeBufferWriteMutex;
+
+    virtual void OnCodeBufferAllocated(CodeBuffer&) {};
   };
 
   class CPUBackend {
   public:
 
     /**
-     * @param InitialCodeSize - Initial size for the code buffers
      * @param MaxCodeSize - Max size for the code buffers
      */
-    CPUBackend(CodeBufferManager&, FEXCore::Core::InternalThreadState*, size_t InitialCodeSize, size_t MaxCodeSize);
+    CPUBackend(CodeBufferManager&, FEXCore::Core::InternalThreadState*, size_t MaxCodeSize);
 
     virtual ~CPUBackend();
 
@@ -175,34 +176,37 @@ namespace CPU {
 
     bool IsAddressInCodeBuffer(uintptr_t Address) const;
 
+    fextl::shared_ptr<CodeBuffer> GetThreadLocalCodeBuffer() const;
+
     // Returns true if the active CodeBuffer is shared with any other threads
     bool UsesSharedCodeBuffer() const;
 
     // Updates the CodeBuffer if needed and returns a reference to the old one.
-    // The return reference should be kept alive carefully to avoid early deletion of resources.
+    // The returned reference should be kept alive carefully to avoid early deletion of resources.
     [[nodiscard]]
     fextl::shared_ptr<CodeBuffer> CheckCodeBufferUpdate();
 
   protected:
-  public:
     // Max spill slot size in bytes. We need at most 32 bytes
     // to be able to handle a 256-bit vector store to a slot.
     constexpr static uint32_t MaxSpillSlotSize = 32;
 
     FEXCore::Core::InternalThreadState* ThreadState;
 
-    size_t InitialCodeSize, MaxCodeSize;
+    size_t MaxCodeSize;
     [[nodiscard]]
     CodeBuffer* GetEmptyCodeBuffer();
 
-    // This is the current code buffer that we are tracking
-    // TODO: Drop in favor of a plain uint32_t to track the current code buffer *size*
+    // This is the code buffer actively used by this thread
     fextl::shared_ptr<CodeBuffer> CurrentCodeBuffer;
 
     // Old CodeBuffer generations required to be valid until returning from signal handlers
     fextl::vector<fextl::shared_ptr<CodeBuffer>> SignalHandlerCodeBuffers;
 
     CodeBufferManager& manager; // TODO: Rename
+
+  private:
+    void RegisterForSignalHandler(fextl::shared_ptr<CodeBuffer>);
   };
 
 } // namespace CPU
