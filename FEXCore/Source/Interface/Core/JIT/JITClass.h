@@ -40,7 +40,7 @@ public:
   [[nodiscard]]
   CPUBackend::CompiledCode
   CompileCode(uint64_t Entry, uint64_t Size, bool SingleInst, const FEXCore::IR::IRListView* IR, FEXCore::Core::DebugData* DebugData,
-              const FEXCore::IR::RegisterAllocationData* RAData, bool CheckTF) override;
+              const FEXCore::IR::RegisterAllocationData* RAData, bool CheckTF, const fextl::set<uint64_t>& Entrypoints) override;
 
   void ClearCache() override;
 
@@ -340,6 +340,8 @@ private:
                            size_t DataElementOffsetStart, size_t IndexElementOffsetStart, uint8_t OffsetScale);
 
   void EmitInterruptChecks(bool CheckTF);
+
+  void EmitEntryPoint(ARMEmitter::BackwardLabel& HeaderLabel, bool CheckTF);
 
   // Runtime selection;
   // Load and store TSO memory style
