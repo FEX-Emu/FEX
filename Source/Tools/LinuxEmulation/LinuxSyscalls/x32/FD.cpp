@@ -293,6 +293,8 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
       if (Result != -1) {
         FaultSafeUserMemAccess::VerifyIsWritable(result, sizeof(*result));
         *result = Result;
+        // On non-error result, llseek returns zero (As the result is returned in pointer).
+        return 0;
       }
       SYSCALL_ERRNO();
     });
