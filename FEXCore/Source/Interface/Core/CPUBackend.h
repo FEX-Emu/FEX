@@ -60,9 +60,9 @@ namespace CPU {
       return GetCurrentCodeBuffer()->Size;
     }
 
-    std::shared_ptr<CodeBuffer> GetCurrentCodeBuffer();
+    fextl::shared_ptr<CodeBuffer> GetCurrentCodeBuffer();
 
-    std::shared_ptr<CodeBuffer> Latest;
+    fextl::shared_ptr<CodeBuffer> Latest;
     std::size_t LatestOffset;
 
     // Protects writes to the latest CodeBuffer
@@ -197,10 +197,10 @@ namespace CPU {
 
     // This is the current code buffer that we are tracking
     // TODO: Drop in favor of a plain uint32_t to track the current code buffer *size*
-    std::shared_ptr<CodeBuffer> CurrentCodeBuffer;
+    fextl::shared_ptr<CodeBuffer> CurrentCodeBuffer;
 
     // Old CodeBuffer generations required to be valid until returning from signal handlers
-    fextl::vector<std::shared_ptr<CodeBuffer>> SignalHandlerCodeBuffers;
+    fextl::vector<fextl::shared_ptr<CodeBuffer>> SignalHandlerCodeBuffers;
 
     CodeBufferManager& manager; // TODO: Rename
   };
