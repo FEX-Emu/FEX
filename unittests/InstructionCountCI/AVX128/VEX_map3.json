@@ -337,7 +337,7 @@
         "Map 3 0b01 0x02 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2592]",
+        "ldr q2, [x28, #2608]",
         "tbx v16.16b, {v17.16b}, v2.16b",
         "stp xzr, xzr, [x28, #32]"
       ]
@@ -348,7 +348,7 @@
         "Map 3 0b01 0x02 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2608]",
+        "ldr q2, [x28, #2624]",
         "tbx v16.16b, {v17.16b}, v2.16b",
         "stp xzr, xzr, [x28, #32]"
       ]
@@ -369,7 +369,7 @@
         "Map 3 0b01 0x02 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2624]",
+        "ldr q2, [x28, #2640]",
         "tbx v16.16b, {v17.16b}, v2.16b",
         "stp xzr, xzr, [x28, #32]"
       ]
@@ -391,7 +391,7 @@
         "Map 3 0b01 0x02 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2640]",
+        "ldr q2, [x28, #2656]",
         "tbx v16.16b, {v17.16b}, v2.16b",
         "stp xzr, xzr, [x28, #32]"
       ]
@@ -412,7 +412,7 @@
         "Map 3 0b01 0x02 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2656]",
+        "ldr q2, [x28, #2672]",
         "tbx v16.16b, {v17.16b}, v2.16b",
         "stp xzr, xzr, [x28, #32]"
       ]
@@ -423,7 +423,7 @@
         "Map 3 0b01 0x02 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2672]",
+        "ldr q2, [x28, #2688]",
         "tbx v16.16b, {v17.16b}, v2.16b",
         "stp xzr, xzr, [x28, #32]"
       ]
@@ -3488,7 +3488,7 @@
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
-        "ldr q3, [x28, #2576]",
+        "ldr q3, [x28, #2592]",
         "mov v16.16b, v17.16b",
         "aese v16.16b, v2.16b",
         "tbl v16.16b, {v16.16b}, v3.16b",
@@ -3502,7 +3502,7 @@
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
-        "ldr q3, [x28, #2576]",
+        "ldr q3, [x28, #2592]",
         "mov v16.16b, v17.16b",
         "aese v16.16b, v2.16b",
         "tbl v16.16b, {v16.16b}, v3.16b",

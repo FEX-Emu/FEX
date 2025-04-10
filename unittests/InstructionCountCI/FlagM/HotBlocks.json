@@ -920,7 +920,7 @@
         "mov v0.16b, v16.16b",
         "mov v1.16b, v17.16b",
         "mov w0, #0xd",
-        "ldr x1, [x28, #1760]",
+        "ldr x1, [x28, #1776]",
         "blr x1",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
