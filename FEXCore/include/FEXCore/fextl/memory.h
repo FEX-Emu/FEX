@@ -39,6 +39,6 @@ fextl::unique_ptr<T> make_unique(Args&&... args) {
 template<class T, class... Args>
 requires (!std::is_array_v<T>)
 fextl::shared_ptr<T> make_shared(Args&&... args) {
-  return std::allocate_shared<T>(fextl::FEXAlloc<T>{}, std::forward<Args>(args)...);
+  return std::allocate_shared<T>(fextl::FEXAlloc<T> {}, std::forward<Args>(args)...);
 }
 } // namespace fextl
