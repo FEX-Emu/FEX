@@ -54,7 +54,6 @@ struct GuestToHostMap {
   fextl::unique_ptr<std::pmr::polymorphic_allocator<std::byte>> BlockLinks_pma;
   BlockLinksMapType* BlockLinks;
 
-  // TODO: Should be shared across threads... Also BlockLinks, perhaps?
   fextl::robin_map<uint64_t, uint64_t> BlockList;
 
   GuestToHostMap();
@@ -191,8 +190,6 @@ public:
   //       L1/L2 caches will contain stale references to deallocated memory.
   void Erase(FEXCore::Core::CpuStateFrame* Frame, uint64_t Address) {
     auto lk = Shared->AcquireLock();
-
-    // TODO: Is there a hard requirement for L1 to be erased *after* BlockLinks but *before* PagePointer?
 
     Shared->Erase(Frame, Address, lk);
 

@@ -549,20 +549,7 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::In
     AArch64.LREM = reinterpret_cast<uint64_t>(LREM);
   }
 
-  // Must be done after Dispatcher init
-  {
-    auto lock = std::unique_lock {manager.CodeBufferWriteMutex};
-    // ClearCache();
-    // // Skip detection string
-    // manager.LatestOffset = GetCursorOffset();
-
-    CurrentCodeBuffer = manager.GetCurrentCodeBuffer();
-    SetBuffer(CurrentCodeBuffer->Ptr, CurrentCodeBuffer->Size);
-    SetCursorOffset(manager.LatestOffset);
-    // TODO: Emit detection string
-    // EmitDetectionString();
-    // manager.LatestOffset = GetCursorOffset();
-  }
+  CurrentCodeBuffer = manager.GetCurrentCodeBuffer();
 
   // Setup dynamic dispatch.
   if (ParanoidTSO()) {
