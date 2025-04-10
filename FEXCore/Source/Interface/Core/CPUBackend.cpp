@@ -341,7 +341,7 @@ namespace CPU {
   }
 
   bool CPUBackend::UsesSharedCodeBuffer() const {
-    return !CurrentCodeBuffer.unique();
+    return CurrentCodeBuffer.use_count() > 1;
   }
 
   fextl::shared_ptr<CodeBuffer> CPUBackend::CheckCodeBufferUpdate() {
