@@ -274,7 +274,10 @@ public:
     uintptr_t DataOffset = BaseConfig.OptionMemoryRegionOffset;
     for (unsigned i = 0; i < BaseConfig.OptionMemoryRegionCount; ++i) {
       MemoryRegionBase* Region = reinterpret_cast<MemoryRegionBase*>(RawConfigFile.data() + DataOffset);
-      regions[Region->Region] = Region->Size;
+      // Copy to aligned local variables first
+      uintptr_t RegionAddr = Region->Region;
+      size_t RegionSize = Region->Size;
+      regions[RegionAddr] = RegionSize;
 
       DataOffset += sizeof(MemoryRegionBase);
     }

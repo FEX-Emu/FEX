@@ -200,7 +200,7 @@
         "HasSideEffects": true
       },
 
-      "GPR = ValidateCode u64:$CodeOriginalLow, u64:$CodeOriginalhigh, i64:$Offset, u8:$CodeLength": {
+      "GPR = ValidateCode u64:$CodeOriginalLow, u64:$CodeOriginalHigh, i64:$Offset, u8:$CodeLength": {
         "HasSideEffects": true,
         "HasDest": true,
         "ImplicitFlagClobber": true,

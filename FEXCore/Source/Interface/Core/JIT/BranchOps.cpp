@@ -16,6 +16,7 @@ $end_info$
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Utils/MathUtils.h>
+#include <cstdint>
 
 namespace FEXCore::CPU {
 #define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::NodeID Node)
@@ -345,7 +346,9 @@ DEF_OP(ValidateCode) {
 
   while (len >= 8) {
     ldr(ARMEmitter::XReg::x2, TMP1, idx);
-    LoadConstant(ARMEmitter::Size::i64Bit, TMP4, *(const uint32_t*)(OldCode + idx));
+    uint64_t Tmp {};
+    memcpy(&Tmp, OldCode + idx, sizeof(uint64_t)); // Ensures proper 64bit alignment.
+    LoadConstant(ARMEmitter::Size::i64Bit, TMP4, Tmp);
     cmp(ARMEmitter::Size::i64Bit, TMP3, TMP4);
     csel(ARMEmitter::Size::i64Bit, Dst, Dst, TMP2, ARMEmitter::Condition::CC_EQ);
     len -= 8;
@@ -353,7 +356,9 @@ DEF_OP(ValidateCode) {
   }
   while (len >= 4) {
     ldr(ARMEmitter::WReg::w2, TMP1, idx);
-    LoadConstant(ARMEmitter::Size::i64Bit, TMP4, *(const uint32_t*)(OldCode + idx));
+    uint32_t Tmp {};
+    memcpy(&Tmp, OldCode + idx, sizeof(uint32_t)); // Ensures proper 32bit alignment.
+    LoadConstant(ARMEmitter::Size::i64Bit, TMP4, Tmp);
     cmp(ARMEmitter::Size::i32Bit, TMP3, TMP4);
     csel(ARMEmitter::Size::i64Bit, Dst, Dst, TMP2, ARMEmitter::Condition::CC_EQ);
     len -= 4;
@@ -361,7 +366,9 @@ DEF_OP(ValidateCode) {
   }
   while (len >= 2) {
     ldrh(TMP3, TMP1, idx);
-    LoadConstant(ARMEmitter::Size::i64Bit, TMP4, *(const uint16_t*)(OldCode + idx));
+    uint16_t Tmp {};
+    memcpy(&Tmp, OldCode + idx, sizeof(uint16_t)); // Ensures proper 16bit alignment.
+    LoadConstant(ARMEmitter::Size::i64Bit, TMP4, Tmp);
     cmp(ARMEmitter::Size::i32Bit, TMP3, TMP4);
     csel(ARMEmitter::Size::i64Bit, Dst, Dst, TMP2, ARMEmitter::Condition::CC_EQ);
     len -= 2;

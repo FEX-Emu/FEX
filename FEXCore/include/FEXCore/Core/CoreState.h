@@ -79,7 +79,8 @@ struct CPUState {
       uint64_t data[16][4];
     };
     struct SSE {
-      uint64_t data[16][2];
+      // Align to 128bits to avoid UB when casting field to uint128_t.
+      alignas(16) uint64_t data[16][2];
       uint64_t pad[16][2];
     };
 
