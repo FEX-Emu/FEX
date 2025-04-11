@@ -39,12 +39,12 @@ auto BaseOpsLambda = []() consteval {
 
     {0x10, 1, X86InstInfo{"MOVUPS",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                 0, nullptr}},
     {0x11, 1, X86InstInfo{"MOVUPS",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS,                                                 0, nullptr}},
-    {0x12, 1, X86InstInfo{"MOVLPS",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_MEM_ONLY | FLAGS_XMM_FLAGS,                              0, nullptr}},
+    {0x12, 1, X86InstInfo{"MOVLPS",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                              0, nullptr}},
     {0x13, 1, X86InstInfo{"MOVLPS",     TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_MEM_ONLY | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS,                              0, nullptr}},
     {0x14, 1, X86InstInfo{"UNPCKLPS",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                 0, nullptr}},
     {0x15, 1, X86InstInfo{"UNPCKHPS",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                 0, nullptr}},
     {0x16, 1, X86InstInfo{"MOVLHPS",    TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                                                 0, nullptr}},
-    {0x17, 1, X86InstInfo{"MOVHPS",     TYPE_INST, GenFlagsSizes(SIZE_64BIT, SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_MEM_ONLY | FLAGS_XMM_FLAGS, 0, nullptr}},
+    {0x17, 1, X86InstInfo{"MOVHPS",     TYPE_INST, GenFlagsSizes(SIZE_64BIT, SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS, 0, nullptr}},
     {0x18, 1, X86InstInfo{"",           TYPE_GROUP_16, FLAGS_NO_OVERLAY,                                                                                      0, nullptr}},
     {0x19, 7, X86InstInfo{"NOP",        TYPE_INST, FLAGS_MODRM | FLAGS_NO_OVERLAY,                                                                                     0, nullptr}},
 
@@ -250,7 +250,7 @@ auto BaseOpsLambda = []() consteval {
     {0xF4, 1, X86InstInfo{"PMULUDQ",  TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
     {0xF5, 1, X86InstInfo{"PMADDWD",  TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
     {0xF6, 1, X86InstInfo{"PSADBW",   TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
-    {0xF7, 1, X86InstInfo{"MASKMOVQ", TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
+    {0xF7, 1, X86InstInfo{"MASKMOVQ", TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_REG_ONLY | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
     {0xF8, 1, X86InstInfo{"PSUBB",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
     {0xF9, 1, X86InstInfo{"PSUBW",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
     {0xFA, 1, X86InstInfo{"PSUBD",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX,                                      0, nullptr}},
