@@ -59,7 +59,7 @@ namespace Validation {
 } // namespace FEXCore::IR
 
 namespace FEXCore::Context {
-struct ExitFunctionLinkData {
+struct FEX_PACKED ExitFunctionLinkData {
   uint64_t HostBranch;
   uint64_t GuestRIP;
 };
