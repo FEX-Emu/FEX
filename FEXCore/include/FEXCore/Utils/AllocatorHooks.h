@@ -58,7 +58,7 @@ inline void VirtualDontNeed(void* Ptr, size_t Size, bool Recommit = true) {
   ::VirtualQuery(Ptr, &Info, sizeof(Info));
   ::VirtualFree(Ptr, Size, MEM_DECOMMIT);
   if (Recommit) {
-    ::VirtualAlloc(Ptr, Size, MEM_COMMIT, Info.AllocationProtect);
+    ::VirtualAlloc(Ptr, Size, MEM_COMMIT, Info.Protect);
   }
 }
 
