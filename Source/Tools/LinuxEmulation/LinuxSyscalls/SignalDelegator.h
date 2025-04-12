@@ -277,6 +277,8 @@ private:
   bool HandleSignalPause(FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext);
   bool HandleSIGILL(FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext);
 
+  uint64_t GetNewSigMask(int Signal) const;
+
   std::mutex HostDelegatorMutex;
   std::mutex GuestDelegatorMutex;
   bool SupportsAVX;

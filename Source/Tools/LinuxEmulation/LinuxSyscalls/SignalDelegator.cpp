@@ -536,6 +536,27 @@ static bool IsAsyncSignal(const siginfo_t* Info, int Signal) {
   return true;
 }
 
+uint64_t SignalDelegator::GetNewSigMask(int Signal) const {
+  const SignalHandler& Handler = HostHandlers[Signal];
+  // Set up a new mask based on this signals signal mask
+  uint64_t NewMask = Handler.GuestAction.sa_mask.Val;
+
+  // If NODEFER then the new signal mask includes this signal
+  if (!(Handler.GuestAction.sa_flags & SA_NODEFER)) {
+    NewMask |= (1ULL << (Signal - 1));
+  }
+
+  // Walk our required signals and stop masking them if requested
+  for (size_t i = 0; i < MAX_SIGNALS; ++i) {
+    if (HostHandlers[i + 1].Required.load(std::memory_order_relaxed)) {
+      // Never mask our required signals
+      NewMask &= ~(1ULL << i);
+    }
+  }
+
+  return NewMask;
+}
+
 void SignalDelegator::HandleGuestSignal(FEX::HLE::ThreadStateObject* ThreadObject, int Signal, void* Info, void* UContext) {
   auto Thread = ThreadObject->Thread;
   ucontext_t* _context = (ucontext_t*)UContext;
@@ -561,6 +582,8 @@ void SignalDelegator::HandleGuestSignal(FEX::HLE::ThreadStateObject* ThreadObjec
         const auto& Top = ThreadObject->SignalInfo.DeferredSignalFrames.back();
         Signal = Top.Signal;
         SigInfo = Top.Info;
+        // sig mask has been updated at the defer time, recover the original mask
+        memcpy(&_context->uc_sigmask, &Top.SigMask, sizeof(uint64_t));
         ThreadObject->SignalInfo.DeferredSignalFrames.pop_back();
 
         // Until we re-protect the page to PROT_NONE, FEX will now *permanently* defer signals and /not/ check them.
@@ -594,10 +617,18 @@ void SignalDelegator::HandleGuestSignal(FEX::HLE::ThreadStateObject* ThreadObjec
                            "Deferred signals vector hit "
                            "capacity size. This will "
                            "likely crash! Asserting now!");
+
         ThreadObject->SignalInfo.DeferredSignalFrames.emplace_back(ThreadStateObject::DeferredSignalState {
           .Info = SigInfo,
           .Signal = Signal,
+          .SigMask = _context->uc_sigmask.__val[0],
         });
+
+        uint64_t NewMask = GetNewSigMask(Signal);
+
+        // Update our host signal mask so we don't hit race conditions with signals
+        // This allows us to maintain the expected signal mask through the guest signal handling and then all the way back again
+        memcpy(&_context->uc_sigmask, &NewMask, sizeof(uint64_t));
 
         // Now update the faulting page permissions so it will fault on write.
         mprotect(reinterpret_cast<void*>(&Thread->InterruptFaultPage), sizeof(Thread->InterruptFaultPage), PROT_NONE);
@@ -633,21 +664,7 @@ void SignalDelegator::HandleGuestSignal(FEX::HLE::ThreadStateObject* ThreadObjec
   } else {
     if (Handler.GuestHandler &&
         Handler.GuestHandler(Thread, Signal, &SigInfo, UContext, &Handler.GuestAction, &ThreadObject->SignalInfo.GuestAltStack)) {
-      // Set up a new mask based on this signals signal mask
-      uint64_t NewMask = Handler.GuestAction.sa_mask.Val;
-
-      // If NODEFER then the new signal mask includes this signal
-      if (!(Handler.GuestAction.sa_flags & SA_NODEFER)) {
-        NewMask |= (1ULL << (Signal - 1));
-      }
-
-      // Walk our required signals and stop masking them if requested
-      for (size_t i = 0; i < MAX_SIGNALS; ++i) {
-        if (HostHandlers[i + 1].Required.load(std::memory_order_relaxed)) {
-          // Never mask our required signals
-          NewMask &= ~(1ULL << i);
-        }
-      }
+      uint64_t NewMask = GetNewSigMask(Signal);
 
       // Update our host signal mask so we don't hit race conditions with signals
       // This allows us to maintain the expected signal mask through the guest signal handling and then all the way back again
