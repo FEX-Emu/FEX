@@ -230,9 +230,16 @@ if (NOT ENABLE_OFFLINE_TELEMETRY)
 endif()
 
 if (ENABLE_UBSAN)
+  # See https://github.com/FEX-Emu/FEX/pull/4494#issuecomment-2800608944
+  # and related discussion for the use of -fno-sanitize=alignment -fno-sanitize=function
+  # with UBSAN.
+  # alignment: we don't follow a strict alignment policy, for example IR uses packed structs
+  # that are regularly access unaligned.
+  # function: syscalls cast function pointers to void (*)(unsigned long...), causing warnings
+  # related to this access.
   add_definitions(-DENABLE_UBSAN=1)
-  add_compile_options(-fno-omit-frame-pointer -fsanitize=undefined -fno-sanitize-recover=undefined)
-  link_libraries(-fno-omit-frame-pointer -fsanitize=undefined -fno-sanitize-recover=undefined)
+  add_compile_options(-fno-omit-frame-pointer -fsanitize=undefined -fno-sanitize=alignment -fno-sanitize=function -fno-sanitize-recover=undefined)
+  link_libraries(-fno-omit-frame-pointer -fsanitize=undefined -fno-sanitize=alignment -fno-sanitize=function -fno-sanitize-recover=undefined)
 endif()
 
 if (ENABLE_ASAN)
