@@ -1,6 +1,7 @@
 <RCC>
   <qresource prefix="/">
     <file>main.qml</file>
+    <file>icon.png</file>
   </qresource>
   <qresource prefix="/dialogs">
     <file alias="FileDialog.qml">qt6/FileDialog.qml</file>
