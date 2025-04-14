@@ -48,7 +48,7 @@ static uint32_t MapModRMToReg(uint8_t REX, uint8_t bits, bool HighBits, bool Has
   if (HasXMM) {
     return FEXCore::X86State::REG_XMM_0 + Offset;
   } else if (HasMM) {
-    return FEXCore::X86State::REG_MM_0 + Offset;
+    return FEXCore::X86State::REG_MM_0 + bits; // Ignore REX extension for MMX registers
   } else if (!(HighBits && !HasREX)) {
     return FEXCore::X86State::REG_RAX + Offset;
   }
@@ -439,6 +439,18 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
     FEXCore::X86Tables::ModRMDecoded ModRM;
     ModRM.Hex = DecodeInst->ModRM;
 
+    if (ModRM.reg != 0b000 && (Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SF_MOD_ZERO_REG)) {
+      return false;
+    }
+
+    if (ModRM.mod == 0b11 && (Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SF_MOD_MEM_ONLY)) {
+      return false;
+    }
+
+    if (ModRM.mod != 0b11 && (Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_SF_MOD_REG_ONLY)) {
+      return false;
+    }
+
     // Decode the GPR source first
     GPR.Type = DecodedOperand::OpType::GPR;
     GPR.Data.GPR.HighBits = (GPR8Bit && ModRM.reg >= 0b100 && !HasREX);
@@ -615,7 +627,9 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
         255, 0, 1, 2, 255, 255, 255, 3,
       };
       uint8_t Field = RegToField[ModRM.reg];
-      LOGMAN_THROW_A_FMT(Field != 255, "Invalid field selected!");
+      if (Field == 255) {
+        return false;
+      }
 
       LocalOp = (Field << 3) | ModRM.rm;
       return NormalOp(&SecondModRMTableOps[LocalOp], LocalOp);
@@ -637,7 +651,10 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
     DecodedHeader options {};
 
     if ((Byte1 & 0b10000000) == 0) {
-      LOGMAN_THROW_A_FMT(CTX->Config.Is64BitMode, "VEX.R shouldn't be 0 in 32-bit mode!");
+      if (!CTX->Config.Is64BitMode) {
+        return false;
+      }
+
       DecodeInst->Flags |= DecodeFlags::FLAG_REX_XGPR_R;
     }
 
@@ -653,7 +670,9 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
       options.w = (Byte2 & 0b10000000) != 0;
       options.L = (Byte2 & 0b100) != 0;
       if ((Byte1 & 0b01000000) == 0) {
-        LOGMAN_THROW_A_FMT(CTX->Config.Is64BitMode, "VEX.X shouldn't be 0 in 32-bit mode!");
+        if (!CTX->Config.Is64BitMode) {
+          return false;
+        }
         DecodeInst->Flags |= DecodeFlags::FLAG_REX_XGPR_X;
       }
       if (CTX->Config.Is64BitMode && (Byte1 & 0b00100000) == 0) {
@@ -883,7 +902,9 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
         auto Info = &FEXCore::X86Tables::BaseOps[Op];
 
         if (Info->Type == FEXCore::X86Tables::TYPE_REX_PREFIX) {
-          LOGMAN_THROW_A_FMT(CTX->Config.Is64BitMode, "Got REX prefix in 32bit mode");
+          if (!CTX->Config.Is64BitMode) {
+            return false;
+          }
           DecodeInst->Flags |= DecodeFlags::FLAG_REX_PREFIX;
 
           // Widening displacement
