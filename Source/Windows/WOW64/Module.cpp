@@ -148,6 +148,10 @@ bool IsAddressInJit(uint64_t Address) {
   auto Thread = GetTLS().ThreadState();
   return Thread->CTX->IsAddressInCodeBuffer(Thread, Address);
 }
+
+void HandleImageMap(uint64_t Address) {
+  InvalidationTracker->HandleImageMap(Address);
+}
 } // namespace
 
 namespace Context {
@@ -446,6 +450,10 @@ public:
   void UnmarkOvercommitRange(uint64_t Start, uint64_t Length) override {
     OvercommitTracker->UnmarkRange(Start, Length);
   }
+
+  void PreCompile() override {
+    Wow64ProcessPendingCrossProcessItems();
+  }
 };
 
 void BTCpuProcessInit() {
@@ -484,7 +492,7 @@ void BTCpuProcessInit() {
   InvalidationTracker.emplace(*CTX, Threads);
 
   auto MainModule = reinterpret_cast<__TEB*>(NtCurrentTeb())->Peb->ImageBaseAddress;
-  InvalidationTracker->HandleImageMap(reinterpret_cast<uint64_t>(MainModule));
+  HandleImageMap(reinterpret_cast<uint64_t>(MainModule));
 
   CPUFeatures.emplace(*CTX);
 
@@ -819,6 +827,8 @@ void BTCpuNotifyMemoryFree(void* Address, SIZE_T Size, ULONG FreeType, BOOL Afte
 }
 
 NTSTATUS BTCpuNotifyMapViewOfSection(void* Unk1, void* Address, void* Unk2, SIZE_T Size, ULONG AllocType, ULONG Prot) {
+  std::scoped_lock Lock(ThreadCreationMutex);
+  HandleImageMap(reinterpret_cast<uint64_t>(Address));
   return STATUS_SUCCESS;
 }
 

@@ -559,6 +559,10 @@ public:
   void UnmarkOvercommitRange(uint64_t Start, uint64_t Length) override {
     OvercommitTracker->UnmarkRange(Start, Length);
   }
+
+  void PreCompile() override {
+    ProcessPendingCrossProcessEmulatorWork();
+  }
 };
 } // namespace Exception
 
@@ -663,11 +667,11 @@ bool ResetToConsistentStateImpl(EXCEPTION_RECORD* Exception, CONTEXT* GuestConte
   FEXCORE_PROFILE_ACCUMULATION(Thread, AccumulatedSignalTime);
   LogMan::Msg::DFmt("Exception: Code: {:X} Address: {:X}", Exception->ExceptionCode, reinterpret_cast<uintptr_t>(Exception->ExceptionAddress));
 
-  if (Exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION && Thread && InvalidationTracker) {
+  if (Exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
     const auto FaultAddress = static_cast<uint64_t>(Exception->ExceptionInformation[1]);
 
     std::scoped_lock Lock(ThreadCreationMutex);
-    if (InvalidationTracker->HandleRWXAccessViolation(FaultAddress)) {
+    if (InvalidationTracker && InvalidationTracker->HandleRWXAccessViolation(FaultAddress)) {
       FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedSMCCount, 1);
       if (CTX->IsAddressInCodeBuffer(Thread, NativeContext->Pc) && !CTX->IsCurrentBlockSingleInst(CPUArea.ThreadState()) &&
           CTX->IsAddressInCurrentBlock(Thread, FaultAddress, 8)) {
@@ -687,7 +691,7 @@ bool ResetToConsistentStateImpl(EXCEPTION_RECORD* Exception, CONTEXT* GuestConte
     }
   }
 
-  if (!CTX->IsAddressInCodeBuffer(CPUArea.ThreadState(), NativeContext->Pc) && !IsDispatcherAddress(NativeContext->Pc)) {
+  if (!CTX->IsAddressInCodeBuffer(Thread, NativeContext->Pc) && !IsDispatcherAddress(NativeContext->Pc)) {
     LogMan::Msg::DFmt("Passing through exception");
     return false;
   }
@@ -700,8 +704,8 @@ bool ResetToConsistentStateImpl(EXCEPTION_RECORD* Exception, CONTEXT* GuestConte
   // The JIT (in CompileBlock) emits code to check the suspend doorbell at the start of every block, and run the following instruction if it is set:
   static constexpr uint32_t SuspendTrapMagic {0xD4395FC0}; // brk #0xCAFE
   if (Exception->ExceptionCode == EXCEPTION_ILLEGAL_INSTRUCTION && *reinterpret_cast<uint32_t*>(NativeContext->Pc) == SuspendTrapMagic) {
-    Exception::ReconstructThreadState(CPUArea.ThreadState(), *NativeContext);
-    *NativeContext = Exception::StoreStateToPackedECContext(CPUArea.ThreadState(), NativeContext->Fpcr, NativeContext->Fpsr);
+    Exception::ReconstructThreadState(Thread, *NativeContext);
+    *NativeContext = Exception::StoreStateToPackedECContext(Thread, NativeContext->Fpcr, NativeContext->Fpsr);
     LogMan::Msg::DFmt("Suspending: RIP: {:X} SP: {:X}", NativeContext->Pc, NativeContext->Sp);
     CPUArea.Area->InSimulation = 0;
     *CPUArea.Area->SuspendDoorbell = 0;
