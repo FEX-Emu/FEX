@@ -4497,7 +4497,19 @@ public:
   }
 
   // Cryptographic three-register, imm2
-  // TODO
+  void sm3tt1a(VRegister rd, VRegister rn, VRegister rm, uint32_t index) {
+    Crypto3RegImm(index, 0b00, rm, rn, rd);
+  }
+  void sm3tt1b(VRegister rd, VRegister rn, VRegister rm, uint32_t index) {
+    Crypto3RegImm(index, 0b01, rm, rn, rd);
+  }
+  void sm3tt2a(VRegister rd, VRegister rn, VRegister rm, uint32_t index) {
+    Crypto3RegImm(index, 0b10, rm, rn, rd);
+  }
+   void sm3tt2b(VRegister rd, VRegister rn, VRegister rm, uint32_t index) {
+    Crypto3RegImm(index, 0b11, rm, rn, rd);
+  }
+
   // Cryptographic three-register SHA 512
   // TODO
   // Cryptographic four-register
@@ -4952,6 +4964,18 @@ private:
     Instr |= rm.Idx() << 16;
     Instr |= opcode << 12;
     Instr |= H << 11;
+    Instr |= rn.Idx() << 5;
+    Instr |= rd.Idx();
+    dc32(Instr);
+  }
+
+  void Crypto3RegImm(uint32_t index, uint32_t opcode, VRegister rm, VRegister rn, VRegister rd) {
+    LOGMAN_THROW_A_FMT(index <= 3, "index ({}) must be within [0-3]", index);
+
+    uint32_t Instr = 0b1100'1110'0100'0000'1000'0000'0000'0000;
+    Instr |= rm.Idx() << 16;
+    Instr |= index << 12;
+    Instr |= opcode << 10;
     Instr |= rn.Idx() << 5;
     Instr |= rd.Idx();
     dc32(Instr);

@@ -3107,7 +3107,25 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(sqrdmlsh(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d15, 3), "sqrdmlsh v30.2s, v29.2s, v15.s[3]");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Cryptographic three-register, imm2") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(sm3tt1a(VReg::v30, VReg::v29, VReg::v15, 0), "sm3tt1a v30.4s, v29.4s, v15.s[0]");
+  TEST_SINGLE(sm3tt1a(VReg::v30, VReg::v29, VReg::v15, 1), "sm3tt1a v30.4s, v29.4s, v15.s[1]");
+  TEST_SINGLE(sm3tt1a(VReg::v30, VReg::v29, VReg::v15, 2), "sm3tt1a v30.4s, v29.4s, v15.s[2]");
+  TEST_SINGLE(sm3tt1a(VReg::v30, VReg::v29, VReg::v15, 3), "sm3tt1a v30.4s, v29.4s, v15.s[3]");
+
+  TEST_SINGLE(sm3tt1b(VReg::v30, VReg::v29, VReg::v15, 0), "sm3tt1b v30.4s, v29.4s, v15.s[0]");
+  TEST_SINGLE(sm3tt1b(VReg::v30, VReg::v29, VReg::v15, 1), "sm3tt1b v30.4s, v29.4s, v15.s[1]");
+  TEST_SINGLE(sm3tt1b(VReg::v30, VReg::v29, VReg::v15, 2), "sm3tt1b v30.4s, v29.4s, v15.s[2]");
+  TEST_SINGLE(sm3tt1b(VReg::v30, VReg::v29, VReg::v15, 3), "sm3tt1b v30.4s, v29.4s, v15.s[3]");
+
+  TEST_SINGLE(sm3tt2a(VReg::v30, VReg::v29, VReg::v15, 0), "sm3tt2a v30.4s, v29.4s, v15.s[0]");
+  TEST_SINGLE(sm3tt2a(VReg::v30, VReg::v29, VReg::v15, 1), "sm3tt2a v30.4s, v29.4s, v15.s[1]");
+  TEST_SINGLE(sm3tt2a(VReg::v30, VReg::v29, VReg::v15, 2), "sm3tt2a v30.4s, v29.4s, v15.s[2]");
+  TEST_SINGLE(sm3tt2a(VReg::v30, VReg::v29, VReg::v15, 3), "sm3tt2a v30.4s, v29.4s, v15.s[3]");
+
+  TEST_SINGLE(sm3tt2b(VReg::v30, VReg::v29, VReg::v15, 0), "sm3tt2b v30.4s, v29.4s, v15.s[0]");
+  TEST_SINGLE(sm3tt2b(VReg::v30, VReg::v29, VReg::v15, 1), "sm3tt2b v30.4s, v29.4s, v15.s[1]");
+  TEST_SINGLE(sm3tt2b(VReg::v30, VReg::v29, VReg::v15, 2), "sm3tt2b v30.4s, v29.4s, v15.s[2]");
+  TEST_SINGLE(sm3tt2b(VReg::v30, VReg::v29, VReg::v15, 3), "sm3tt2b v30.4s, v29.4s, v15.s[3]");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Cryptographic three-register SHA 512") {
   // TODO: Implement in emitter.
