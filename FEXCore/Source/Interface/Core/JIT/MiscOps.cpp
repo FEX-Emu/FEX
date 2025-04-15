@@ -34,6 +34,7 @@ DEF_OP(Fence) {
   case IR::Fence_Load.Val: dmb(ARMEmitter::BarrierScope::LD); break;
   case IR::Fence_LoadStore.Val: dmb(ARMEmitter::BarrierScope::SY); break;
   case IR::Fence_Store.Val: dmb(ARMEmitter::BarrierScope::ST); break;
+  case IR::Fence_Inst.Val: isb(); break;
   default: LOGMAN_MSG_A_FMT("Unknown Fence: {}", Op->Fence); break;
   }
 }

@@ -1349,6 +1349,7 @@ void OpDispatchBuilder::CPUIDOp(OpcodeArgs) {
   Ref RCX = _AllocateGPR(false);
   Ref RDX = _AllocateGPR(false);
 
+  _Fence({FEXCore::IR::Fence_Inst});
   _CPUID(Src, Leaf, RAX, RBX, RCX, RDX);
 
   StoreGPRRegister(X86State::REG_RAX, RAX);
