@@ -4506,7 +4506,7 @@ public:
   void sm3tt2a(VRegister rd, VRegister rn, VRegister rm, uint32_t index) {
     Crypto3RegImm(index, 0b10, rm, rn, rd);
   }
-   void sm3tt2b(VRegister rd, VRegister rn, VRegister rm, uint32_t index) {
+  void sm3tt2b(VRegister rd, VRegister rn, VRegister rm, uint32_t index) {
     Crypto3RegImm(index, 0b11, rm, rn, rd);
   }
 
