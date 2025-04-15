@@ -4511,7 +4511,28 @@ public:
   }
 
   // Cryptographic three-register SHA 512
-  // TODO
+  void sha512h(VRegister rd, VRegister rn, VRegister rm) {
+    Crypto3RegSHA512(0, 0b00, rm, rn, rd);
+  }
+  void sha512h2(VRegister rd, VRegister rn, VRegister rm) {
+    Crypto3RegSHA512(0, 0b01, rm, rn, rd);
+  }
+  void sha512su1(VRegister rd, VRegister rn, VRegister rm) {
+    Crypto3RegSHA512(0, 0b10, rm, rn, rd);
+  }
+  void rax1(VRegister rd, VRegister rn, VRegister rm) {
+    Crypto3RegSHA512(0, 0b11, rm, rn, rd);
+  }
+  void sm3partw1(VRegister rd, VRegister rn, VRegister rm) {
+    Crypto3RegSHA512(1, 0b00, rm, rn, rd);
+  }
+  void sm3partw2(VRegister rd, VRegister rn, VRegister rm) {
+    Crypto3RegSHA512(1, 0b01, rm, rn, rd);
+  }
+  void sm4ekey(VRegister rd, VRegister rn, VRegister rm) {
+    Crypto3RegSHA512(1, 0b10, rm, rn, rd);
+  }
+
   // Cryptographic four-register
   // TODO
   // Cryptographic two-register SHA 512
@@ -4975,6 +4996,16 @@ private:
     uint32_t Instr = 0b1100'1110'0100'0000'1000'0000'0000'0000;
     Instr |= rm.Idx() << 16;
     Instr |= index << 12;
+    Instr |= opcode << 10;
+    Instr |= rn.Idx() << 5;
+    Instr |= rd.Idx();
+    dc32(Instr);
+  }
+
+  void Crypto3RegSHA512(uint32_t o, uint32_t opcode, VRegister rm, VRegister rn, VRegister rd) {
+    uint32_t Instr = 0b1100'1110'0110'0000'1000'0000'0000'0000;
+    Instr |= rm.Idx() << 16;
+    Instr |= o << 14;
     Instr |= opcode << 10;
     Instr |= rn.Idx() << 5;
     Instr |= rd.Idx();

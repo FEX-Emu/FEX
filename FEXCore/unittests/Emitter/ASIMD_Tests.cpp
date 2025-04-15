@@ -3128,7 +3128,13 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Cryptographic three-register
   TEST_SINGLE(sm3tt2b(VReg::v30, VReg::v29, VReg::v15, 3), "sm3tt2b v30.4s, v29.4s, v15.s[3]");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Cryptographic three-register SHA 512") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(sha512h(VReg::v30, VReg::v29, VReg::v15), "sha512h q30, q29, v15.2d");
+  TEST_SINGLE(sha512h2(VReg::v30, VReg::v29, VReg::v15), "sha512h2 q30, q29, v15.2d");
+  TEST_SINGLE(sha512su1(VReg::v30, VReg::v29, VReg::v15), "sha512su1 v30.2d, v29.2d, v15.2d");
+  TEST_SINGLE(rax1(VReg::v30, VReg::v29, VReg::v15), "rax1 v30.2d, v29.2d, v15.2d");
+  TEST_SINGLE(sm3partw1(VReg::v30, VReg::v29, VReg::v15), "sm3partw1 v30.4s, v29.4s, v15.4s");
+  TEST_SINGLE(sm3partw2(VReg::v30, VReg::v29, VReg::v15), "sm3partw2 v30.4s, v29.4s, v15.4s");
+  TEST_SINGLE(sm4ekey(VReg::v30, VReg::v29, VReg::v15), "sm4ekey v30.4s, v29.4s, v15.4s");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Cryptographic four-register") {
   // TODO: Implement in emitter.
