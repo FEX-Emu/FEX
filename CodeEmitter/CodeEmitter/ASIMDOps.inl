@@ -4497,13 +4497,61 @@ public:
   }
 
   // Cryptographic three-register, imm2
-  // TODO
+  void sm3tt1a(VRegister rd, VRegister rn, VRegister rm, uint32_t index) {
+    Crypto3RegImm(index, 0b00, rm, rn, rd);
+  }
+  void sm3tt1b(VRegister rd, VRegister rn, VRegister rm, uint32_t index) {
+    Crypto3RegImm(index, 0b01, rm, rn, rd);
+  }
+  void sm3tt2a(VRegister rd, VRegister rn, VRegister rm, uint32_t index) {
+    Crypto3RegImm(index, 0b10, rm, rn, rd);
+  }
+   void sm3tt2b(VRegister rd, VRegister rn, VRegister rm, uint32_t index) {
+    Crypto3RegImm(index, 0b11, rm, rn, rd);
+  }
+
   // Cryptographic three-register SHA 512
-  // TODO
+  void sha512h(VRegister rd, VRegister rn, VRegister rm) {
+    Crypto3RegSHA512(0, 0b00, rm, rn, rd);
+  }
+  void sha512h2(VRegister rd, VRegister rn, VRegister rm) {
+    Crypto3RegSHA512(0, 0b01, rm, rn, rd);
+  }
+  void sha512su1(VRegister rd, VRegister rn, VRegister rm) {
+    Crypto3RegSHA512(0, 0b10, rm, rn, rd);
+  }
+  void rax1(VRegister rd, VRegister rn, VRegister rm) {
+    Crypto3RegSHA512(0, 0b11, rm, rn, rd);
+  }
+  void sm3partw1(VRegister rd, VRegister rn, VRegister rm) {
+    Crypto3RegSHA512(1, 0b00, rm, rn, rd);
+  }
+  void sm3partw2(VRegister rd, VRegister rn, VRegister rm) {
+    Crypto3RegSHA512(1, 0b01, rm, rn, rd);
+  }
+  void sm4ekey(VRegister rd, VRegister rn, VRegister rm) {
+    Crypto3RegSHA512(1, 0b10, rm, rn, rd);
+  }
+
   // Cryptographic four-register
-  // TODO
+  void eor3(VRegister rd, VRegister rn, VRegister rm, VRegister ra) {
+    Crypto4Register(0b00, rm, ra, rn, rd);
+  }
+  void bcax(VRegister rd, VRegister rn, VRegister rm, VRegister ra) {
+    Crypto4Register(0b01, rm, ra, rn, rd);
+  }
+  void sm3ss1(VRegister rd, VRegister rn, VRegister rm, VRegister ra) {
+    Crypto4Register(0b10, rm, ra, rn, rd);
+  }
+
   // Cryptographic two-register SHA 512
-  // TODO
+  void sha512su0(VRegister rd, VRegister rn) {
+    Crypto2RegSHA512(0b00, rn, rd);
+  }
+  void sm4e(VRegister rd, VRegister rn) {
+    Crypto2RegSHA512(0b01, rn, rd);
+  }
+
   // Conversion between floating-point and fixed-point
   void scvtf(ARMEmitter::ScalarRegSize ScalarSize, ARMEmitter::VRegister rd, ARMEmitter::Size GPRSize, ARMEmitter::Register rn,
              uint32_t FractionalBits) {
@@ -4952,6 +5000,46 @@ private:
     Instr |= rm.Idx() << 16;
     Instr |= opcode << 12;
     Instr |= H << 11;
+    Instr |= rn.Idx() << 5;
+    Instr |= rd.Idx();
+    dc32(Instr);
+  }
+
+  void Crypto3RegImm(uint32_t index, uint32_t opcode, VRegister rm, VRegister rn, VRegister rd) {
+    LOGMAN_THROW_A_FMT(index <= 3, "index ({}) must be within [0-3]", index);
+
+    uint32_t Instr = 0b1100'1110'0100'0000'1000'0000'0000'0000;
+    Instr |= rm.Idx() << 16;
+    Instr |= index << 12;
+    Instr |= opcode << 10;
+    Instr |= rn.Idx() << 5;
+    Instr |= rd.Idx();
+    dc32(Instr);
+  }
+
+  void Crypto3RegSHA512(uint32_t o, uint32_t opcode, VRegister rm, VRegister rn, VRegister rd) {
+    uint32_t Instr = 0b1100'1110'0110'0000'1000'0000'0000'0000;
+    Instr |= rm.Idx() << 16;
+    Instr |= o << 14;
+    Instr |= opcode << 10;
+    Instr |= rn.Idx() << 5;
+    Instr |= rd.Idx();
+    dc32(Instr);
+  }
+
+  void Crypto4Register(uint32_t opcode, VRegister rm, VRegister ra, VRegister rn, VRegister rd) {
+    uint32_t Instr = 0b1100'1110'0000'0000'0000'0000'0000'0000;
+    Instr |= opcode << 21;
+    Instr |= rm.Idx() << 16;
+    Instr |= ra.Idx() << 10;
+    Instr |= rn.Idx() << 5;
+    Instr |= rd.Idx();
+    dc32(Instr);
+  }
+
+  void Crypto2RegSHA512(uint32_t opcode, VRegister rn, VRegister rd) {
+    uint32_t Instr = 0b1100'1110'1100'0000'1000'0000'0000'0000;
+    Instr |= opcode << 10;
     Instr |= rn.Idx() << 5;
     Instr |= rd.Idx();
     dc32(Instr);
