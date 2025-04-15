@@ -4534,7 +4534,16 @@ public:
   }
 
   // Cryptographic four-register
-  // TODO
+  void eor3(VRegister rd, VRegister rn, VRegister rm, VRegister ra) {
+    Crypto4Register(0b00, rm, ra, rn, rd);
+  }
+  void bcax(VRegister rd, VRegister rn, VRegister rm, VRegister ra) {
+    Crypto4Register(0b01, rm, ra, rn, rd);
+  }
+  void sm3ss1(VRegister rd, VRegister rn, VRegister rm, VRegister ra) {
+    Crypto4Register(0b10, rm, ra, rn, rd);
+  }
+
   // Cryptographic two-register SHA 512
   // TODO
   // Conversion between floating-point and fixed-point
@@ -5007,6 +5016,16 @@ private:
     Instr |= rm.Idx() << 16;
     Instr |= o << 14;
     Instr |= opcode << 10;
+    Instr |= rn.Idx() << 5;
+    Instr |= rd.Idx();
+    dc32(Instr);
+  }
+
+  void Crypto4Register(uint32_t opcode, VRegister rm, VRegister ra, VRegister rn, VRegister rd) {
+    uint32_t Instr = 0b1100'1110'0000'0000'0000'0000'0000'0000;
+    Instr |= opcode << 21;
+    Instr |= rm.Idx() << 16;
+    Instr |= ra.Idx() << 10;
     Instr |= rn.Idx() << 5;
     Instr |= rd.Idx();
     dc32(Instr);
