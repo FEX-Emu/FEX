@@ -345,7 +345,7 @@ DEF_OP(ValidateCode) {
 
   while (len >= 8) {
     ldr(ARMEmitter::XReg::x2, TMP1, idx);
-    LoadConstant(ARMEmitter::Size::i64Bit, TMP4, *(const uint32_t*)(OldCode + idx));
+    LoadConstant(ARMEmitter::Size::i64Bit, TMP4, *(const uint64_t*)(OldCode + idx));
     cmp(ARMEmitter::Size::i64Bit, TMP3, TMP4);
     csel(ARMEmitter::Size::i64Bit, Dst, Dst, TMP2, ARMEmitter::Condition::CC_EQ);
     len -= 8;
