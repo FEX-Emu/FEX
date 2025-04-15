@@ -355,6 +355,7 @@ enum class SystemRegister : uint32_t {
   TPIDRRO_EL0 = GenSystemReg<0b11, 0b011, 0b1101, 0b0000, 0b011>,
   CNTFRQ_EL0 = GenSystemReg<0b11, 0b011, 0b1110, 0b0000, 0b000>,
   CNTVCT_EL0 = GenSystemReg<0b11, 0b011, 0b1110, 0b0000, 0b010>,
+  CNTVCTSS_EL0 = GenSystemReg<0b11, 0b011, 0b1110, 0b0000, 0b110>,
 };
 
 template<uint32_t op1, uint32_t CRm, uint32_t op2>
