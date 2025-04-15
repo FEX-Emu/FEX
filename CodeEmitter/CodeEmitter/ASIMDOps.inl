@@ -4545,7 +4545,13 @@ public:
   }
 
   // Cryptographic two-register SHA 512
-  // TODO
+  void sha512su0(VRegister rd, VRegister rn) {
+    Crypto2RegSHA512(0b00, rn, rd);
+  }
+  void sm4e(VRegister rd, VRegister rn) {
+    Crypto2RegSHA512(0b01, rn, rd);
+  }
+
   // Conversion between floating-point and fixed-point
   void scvtf(ARMEmitter::ScalarRegSize ScalarSize, ARMEmitter::VRegister rd, ARMEmitter::Size GPRSize, ARMEmitter::Register rn,
              uint32_t FractionalBits) {
@@ -5026,6 +5032,14 @@ private:
     Instr |= opcode << 21;
     Instr |= rm.Idx() << 16;
     Instr |= ra.Idx() << 10;
+    Instr |= rn.Idx() << 5;
+    Instr |= rd.Idx();
+    dc32(Instr);
+  }
+
+  void Crypto2RegSHA512(uint32_t opcode, VRegister rn, VRegister rd) {
+    uint32_t Instr = 0b1100'1110'1100'0000'1000'0000'0000'0000;
+    Instr |= opcode << 10;
     Instr |= rn.Idx() << 5;
     Instr |= rd.Idx();
     dc32(Instr);

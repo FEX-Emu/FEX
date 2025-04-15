@@ -3142,7 +3142,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Cryptographic four-register"
   TEST_SINGLE(sm3ss1(VReg::v30, VReg::v29, VReg::v15, VReg::v7), "sm3ss1 v30.4s, v29.4s, v15.4s, v7.4s");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Cryptographic two-register SHA 512") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(sha512su0(VReg::v30, VReg::v29), "sha512su0 v30.2d, v29.2d");
+  TEST_SINGLE(sm4e(VReg::v30, VReg::v29), "sm4e v30.4s, v29.4s");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Conversion between floating-point and fixed-point") {
   TEST_SINGLE(scvtf(ScalarRegSize::i16Bit, VReg::v29, Size::i32Bit, Reg::r30, 1), "scvtf h29, w30, #1");
