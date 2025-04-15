@@ -385,7 +385,7 @@ public:
     Ref CounterLow;
     Ref CounterHigh;
   };
-  CycleCounterPair CycleCounter();
+  CycleCounterPair CycleCounter(bool SelfSynchronizingLoads);
   void RDTSCOp(OpcodeArgs);
   void INCOp(OpcodeArgs);
   void DECOp(OpcodeArgs);

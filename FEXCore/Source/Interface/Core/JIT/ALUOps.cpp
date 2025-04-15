@@ -71,11 +71,18 @@ DEF_OP(InlineEntrypointOffset) {
 }
 
 DEF_OP(CycleCounter) {
-#ifdef DEBUG_CYCLES
-  movz(ARMEmitter::Size::i64Bit, GetReg(Node), 0);
-#else
-  mrs(GetReg(Node), ARMEmitter::SystemRegister::CNTVCT_EL0);
-#endif
+  auto Op = IROp->C<IR::IROp_CycleCounter>();
+  if (CTX->HostFeatures.SupportsECV && Op->SelfSynchronizingLoads) {
+    // CNTVCTSS_EL0 is "self-synchronizing", which means loads can't speculate past this instruction.
+    // Stores still aren't synchronized although.
+    mrs(GetReg(Node), ARMEmitter::SystemRegister::CNTVCTSS_EL0);
+  } else {
+    if (Op->SelfSynchronizingLoads) {
+      // If ECV isn't supported then an ISB must be emitted to synchronize all instructions and loads before the cycle read.
+      isb();
+    }
+    mrs(GetReg(Node), ARMEmitter::SystemRegister::CNTVCT_EL0);
+  }
 }
 
 DEF_OP(AddShift) {
