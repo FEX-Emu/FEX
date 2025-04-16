@@ -153,6 +153,16 @@ FEXCore::HLE::AOTIRCacheEntryLookupResult SyscallHandler::LookupAOTIRCacheEntry(
   return {Entry->second.Resource ? Entry->second.Resource->AOTIRCacheEntry : nullptr, Entry->second.Base - Entry->second.Offset};
 }
 
+FEXCore::HLE::ExecutableRangeInfo SyscallHandler::QueryGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Address) {
+  auto lk = FEXCore::GuardSignalDeferringSection<std::shared_lock>(VMATracking.Mutex, Thread);
+
+  auto Entry = VMATracking.FindVMAEntry(Address);
+  if (Entry == VMATracking.VMAs.end() || !Entry->second.Prot.Executable) {
+    return {0, 0, false};
+  }
+  return {Entry->first, Entry->second.Length, Entry->second.Prot.Writable};
+}
+
 void* SyscallHandler::GuestMmap(bool Is64Bit, FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length, int prot, int flags,
                                 int fd, off_t offset) {
   LOGMAN_THROW_A_FMT(Is64Bit || (length >> 32) == 0, "values must fit to 32 bits");

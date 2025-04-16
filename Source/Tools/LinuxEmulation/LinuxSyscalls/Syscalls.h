@@ -292,6 +292,8 @@ public:
   // AOTIRCacheEntryLookupResult also includes a shared lock guard, so the pointed AOTIRCacheEntry return can be safely used
   FEXCore::HLE::AOTIRCacheEntryLookupResult LookupAOTIRCacheEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestAddr) final override;
 
+  FEXCore::HLE::ExecutableRangeInfo QueryGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Address) override;
+
   ///// FORK tracking /////
   void LockBeforeFork(FEXCore::Core::InternalThreadState* Thread);
   void UnlockAfterFork(FEXCore::Core::InternalThreadState* LiveThread, bool Child);
