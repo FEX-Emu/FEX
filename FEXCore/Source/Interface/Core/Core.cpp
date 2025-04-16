@@ -412,7 +412,7 @@ void ContextImpl::InitializeCompiler(FEXCore::Core::InternalThreadState* Thread)
   Thread->OpDispatcher = fextl::make_unique<FEXCore::IR::OpDispatchBuilder>(this);
   Thread->OpDispatcher->SetMultiblock(Config.Multiblock);
   Thread->LookupCache = fextl::make_unique<FEXCore::LookupCache>(this);
-  Thread->FrontendDecoder = fextl::make_unique<FEXCore::Frontend::Decoder>(this);
+  Thread->FrontendDecoder = fextl::make_unique<FEXCore::Frontend::Decoder>(Thread);
   Thread->PassManager = fextl::make_unique<FEXCore::IR::PassManager>();
 
   Thread->CurrentFrame->Pointers.Common.L1Pointer = Thread->LookupCache->GetL1Pointer();
@@ -557,12 +557,7 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
     bool HadDispatchError {false};
     bool HadInvalidInst {false};
 
-    Thread->FrontendDecoder->DecodeInstructionsAtEntry(
-      GuestCode, GuestRIP, MaxInst, [Thread](const fextl::set<uint64_t>& BlockEntryPoints, uint64_t Start, uint64_t Length) {
-      if (Thread->LookupCache->AddBlockExecutableRange(BlockEntryPoints, Start, Length)) {
-        static_cast<ContextImpl*>(Thread->CTX)->SyscallHandler->MarkGuestExecutableRange(Thread, Start, Length);
-      }
-    });
+    Thread->FrontendDecoder->DecodeInstructionsAtEntry(GuestCode, GuestRIP, MaxInst);
 
     auto BlockInfo = Thread->FrontendDecoder->GetDecodedBlockInfo();
     auto CodeBlocks = &BlockInfo->Blocks;

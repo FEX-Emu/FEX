@@ -9,6 +9,7 @@ $end_info$
 #include "Interface/Context/Context.h"
 #include "Interface/Core/Frontend.h"
 #include "Interface/Core/X86Tables/X86Tables.h"
+#include "Interface/Core/LookupCache.h"
 
 #include <array>
 #include <algorithm>
@@ -21,6 +22,7 @@ $end_info$
 #include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/Utils/Telemetry.h>
 #include <FEXCore/Utils/TypeDefines.h>
+#include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/fextl/set.h>
 
 namespace FEXCore::Frontend {
@@ -64,10 +66,11 @@ static uint32_t MapVEXToReg(uint8_t vvvv, bool HasXMM) {
   }
 }
 
-Decoder::Decoder(FEXCore::Context::ContextImpl* ctx)
-  : CTX {ctx}
-  , OSABI {ctx->SyscallHandler ? ctx->SyscallHandler->GetOSABI() : FEXCore::HLE::SyscallOSABI::OS_UNKNOWN}
-  , PoolObject {ctx->FrontendAllocator, sizeof(FEXCore::X86Tables::DecodedInst) * DefaultDecodedBufferSize} {}
+Decoder::Decoder(FEXCore::Core::InternalThreadState* Thread)
+  : Thread {Thread}
+  , CTX {static_cast<FEXCore::Context::ContextImpl*>(Thread->CTX)}
+  , OSABI {CTX->SyscallHandler ? CTX->SyscallHandler->GetOSABI() : FEXCore::HLE::SyscallOSABI::OS_UNKNOWN}
+  , PoolObject {CTX->FrontendAllocator, sizeof(FEXCore::X86Tables::DecodedInst) * DefaultDecodedBufferSize} {}
 
 uint8_t Decoder::ReadByte() {
   uint8_t Byte = InstStream[InstructionSize];
@@ -1122,9 +1125,7 @@ const uint8_t* Decoder::AdjustAddrForSpecialRegion(const uint8_t* _InstStream, u
   return _InstStream - EntryPoint + RIP;
 }
 
-void Decoder::DecodeInstructionsAtEntry(
-  const uint8_t* _InstStream, uint64_t PC, uint64_t MaxInst,
-  std::function<void(const fextl::set<uint64_t> &BlockEntryPoints, uint64_t Start, uint64_t Length)> AddContainedCodePage) {
+void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC, uint64_t MaxInst) {
   FEXCORE_PROFILE_SCOPED("DecodeInstructions");
   BlockInfo.TotalInstructionCount = 0;
   BlockInfo.Blocks.clear();
@@ -1318,7 +1319,9 @@ void Decoder::DecodeInstructionsAtEntry(
   }
 
   for (auto CodePage : CodePages) {
-    AddContainedCodePage(BlockEntryPoints, CodePage, FEXCore::Utils::FEX_PAGE_SIZE);
+    if (Thread->LookupCache->AddBlockExecutableRange(BlockEntryPoints, CodePage, FEXCore::Utils::FEX_PAGE_SIZE)) {
+      CTX->SyscallHandler->MarkGuestExecutableRange(Thread, CodePage, FEXCore::Utils::FEX_PAGE_SIZE);
+    }
   }
 }
 
