@@ -186,7 +186,7 @@ FEXCore::HLE::ExecutableRangeInfo SyscallHandler::QueryGuestExecutableRange(FEXC
   if (Entry == VMATracking.VMAs.end() || !Entry->second.Prot.Executable) {
     return {0, false};
   }
-  return {Entry->second.Length, Entry->second.Prot.Writable};
+  return {Entry->first + Entry->second.Length - Address, Entry->second.Prot.Writable};
 }
 
 // MMan Tracking
