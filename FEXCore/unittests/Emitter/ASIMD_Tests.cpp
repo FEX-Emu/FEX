@@ -2643,9 +2643,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(smlal(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 0), "smlal v30.4s, v29.4h, v15.h[0]");
   TEST_SINGLE(smlal(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 7), "smlal v30.4s, v29.4h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(smlal(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "smlal v30.2d, v29.2s, v28.s[0]");
-  // TEST_SINGLE(smlal(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "smlal v30.2d, v29.2s, v28.s[3]");
+  TEST_SINGLE(smlal(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "smlal v30.2d, v29.2s, v28.s[0]");
+  TEST_SINGLE(smlal(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "smlal v30.2d, v29.2s, v28.s[3]");
 
   TEST_SINGLE(smlal(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 0), "smlal v30.2d, v29.2s, v15.s[0]");
   TEST_SINGLE(smlal(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 3), "smlal v30.2d, v29.2s, v15.s[3]");
@@ -2653,9 +2652,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(smlal2(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 0), "smlal2 v30.4s, v29.8h, v15.h[0]");
   TEST_SINGLE(smlal2(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 7), "smlal2 v30.4s, v29.8h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(smlal2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "smlal2 v30.2d, v29.4s, v28.s[0]");
-  // TEST_SINGLE(smlal2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "smlal2 v30.2d, v29.4s, v28.s[3]");
+  TEST_SINGLE(smlal2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "smlal2 v30.2d, v29.4s, v28.s[0]");
+  TEST_SINGLE(smlal2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "smlal2 v30.2d, v29.4s, v28.s[3]");
 
   TEST_SINGLE(smlal2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 0), "smlal2 v30.2d, v29.4s, v15.s[0]");
   TEST_SINGLE(smlal2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 3), "smlal2 v30.2d, v29.4s, v15.s[3]");
@@ -2663,9 +2661,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(sqdmlal(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 0), "sqdmlal v30.4s, v29.4h, v15.h[0]");
   TEST_SINGLE(sqdmlal(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 7), "sqdmlal v30.4s, v29.4h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(sqdmlal(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "sqdmlal v30.2d, v29.2s, v28.s[0]");
-  // TEST_SINGLE(sqdmlal(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "sqdmlal v30.2d, v29.2s, v28.s[3]");
+  TEST_SINGLE(sqdmlal(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "sqdmlal v30.2d, v29.2s, v28.s[0]");
+  TEST_SINGLE(sqdmlal(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "sqdmlal v30.2d, v29.2s, v28.s[3]");
 
   TEST_SINGLE(sqdmlal(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 0), "sqdmlal v30.2d, v29.2s, v15.s[0]");
   TEST_SINGLE(sqdmlal(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 3), "sqdmlal v30.2d, v29.2s, v15.s[3]");
@@ -2673,9 +2670,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(sqdmlal2(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 0), "sqdmlal2 v30.4s, v29.8h, v15.h[0]");
   TEST_SINGLE(sqdmlal2(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 7), "sqdmlal2 v30.4s, v29.8h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(sqdmlal2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "sqdmlal2 v30.2d, v29.4s, v28.s[0]");
-  // TEST_SINGLE(sqdmlal2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "sqdmlal2 v30.2d, v29.4s, v28.s[3]");
+  TEST_SINGLE(sqdmlal2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "sqdmlal2 v30.2d, v29.4s, v28.s[0]");
+  TEST_SINGLE(sqdmlal2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "sqdmlal2 v30.2d, v29.4s, v28.s[3]");
 
   TEST_SINGLE(sqdmlal2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 0), "sqdmlal2 v30.2d, v29.4s, v15.s[0]");
   TEST_SINGLE(sqdmlal2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 3), "sqdmlal2 v30.2d, v29.4s, v15.s[3]");
@@ -2683,9 +2679,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(smlsl(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 0), "smlsl v30.4s, v29.4h, v15.h[0]");
   TEST_SINGLE(smlsl(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 7), "smlsl v30.4s, v29.4h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(smlsl(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "smlsl v30.2d, v29.2s, v28.s[0]");
-  // TEST_SINGLE(smlsl(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "smlsl v30.2d, v29.2s, v28.s[3]");
+  TEST_SINGLE(smlsl(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "smlsl v30.2d, v29.2s, v28.s[0]");
+  TEST_SINGLE(smlsl(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "smlsl v30.2d, v29.2s, v28.s[3]");
 
   TEST_SINGLE(smlsl(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 0), "smlsl v30.2d, v29.2s, v15.s[0]");
   TEST_SINGLE(smlsl(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 3), "smlsl v30.2d, v29.2s, v15.s[3]");
@@ -2693,9 +2688,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(smlsl2(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 0), "smlsl2 v30.4s, v29.8h, v15.h[0]");
   TEST_SINGLE(smlsl2(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 7), "smlsl2 v30.4s, v29.8h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(smlsl2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "smlsl2 v30.2d, v29.4s, v28.s[0]");
-  // TEST_SINGLE(smlsl2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "smlsl2 v30.2d, v29.4s, v28.s[3]");
+  TEST_SINGLE(smlsl2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "smlsl2 v30.2d, v29.4s, v28.s[0]");
+  TEST_SINGLE(smlsl2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "smlsl2 v30.2d, v29.4s, v28.s[3]");
 
   TEST_SINGLE(smlsl2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 0), "smlsl2 v30.2d, v29.4s, v15.s[0]");
   TEST_SINGLE(smlsl2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 3), "smlsl2 v30.2d, v29.4s, v15.s[3]");
@@ -2703,9 +2697,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(sqdmlsl(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 0), "sqdmlsl v30.4s, v29.4h, v15.h[0]");
   TEST_SINGLE(sqdmlsl(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 7), "sqdmlsl v30.4s, v29.4h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(sqdmlsl(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "sqdmlsl v30.2d, v29.2s, v28.s[0]");
-  // TEST_SINGLE(sqdmlsl(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "sqdmlsl v30.2d, v29.2s, v28.s[3]");
+  TEST_SINGLE(sqdmlsl(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "sqdmlsl v30.2d, v29.2s, v28.s[0]");
+  TEST_SINGLE(sqdmlsl(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "sqdmlsl v30.2d, v29.2s, v28.s[3]");
 
   TEST_SINGLE(sqdmlsl(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 0), "sqdmlsl v30.2d, v29.2s, v15.s[0]");
   TEST_SINGLE(sqdmlsl(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 3), "sqdmlsl v30.2d, v29.2s, v15.s[3]");
@@ -2713,9 +2706,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(sqdmlsl2(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 0), "sqdmlsl2 v30.4s, v29.8h, v15.h[0]");
   TEST_SINGLE(sqdmlsl2(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 7), "sqdmlsl2 v30.4s, v29.8h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(sqdmlsl2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "sqdmlsl2 v30.2d, v29.4s, v28.s[0]");
-  // TEST_SINGLE(sqdmlsl2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "sqdmlsl2 v30.2d, v29.4s, v28.s[3]");
+  TEST_SINGLE(sqdmlsl2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "sqdmlsl2 v30.2d, v29.4s, v28.s[0]");
+  TEST_SINGLE(sqdmlsl2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "sqdmlsl2 v30.2d, v29.4s, v28.s[3]");
 
   TEST_SINGLE(sqdmlsl2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 0), "sqdmlsl2 v30.2d, v29.4s, v15.s[0]");
   TEST_SINGLE(sqdmlsl2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 3), "sqdmlsl2 v30.2d, v29.4s, v15.s[3]");
@@ -2723,9 +2715,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(mul(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q15, 0), "mul v30.8h, v29.8h, v15.h[0]");
   TEST_SINGLE(mul(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q15, 7), "mul v30.8h, v29.8h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(mul(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 0), "mul v30.4s, v29.4s, v28.s[0]");
-  // TEST_SINGLE(mul(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 3), "mul v30.4s, v29.4s, v28.s[3]");
+  TEST_SINGLE(mul(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 0), "mul v30.4s, v29.4s, v28.s[0]");
+  TEST_SINGLE(mul(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 3), "mul v30.4s, v29.4s, v28.s[3]");
 
   TEST_SINGLE(mul(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q15, 0), "mul v30.4s, v29.4s, v15.s[0]");
   TEST_SINGLE(mul(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q15, 3), "mul v30.4s, v29.4s, v15.s[3]");
@@ -2733,9 +2724,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(mul(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d15, 0), "mul v30.4h, v29.4h, v15.h[0]");
   TEST_SINGLE(mul(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d15, 7), "mul v30.4h, v29.4h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(mul(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 0), "mul v30.2s, v29.2s, v28.s[0]");
-  // TEST_SINGLE(mul(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 3), "mul v30.2s, v29.2s, v28.s[3]");
+  TEST_SINGLE(mul(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 0), "mul v30.2s, v29.2s, v28.s[0]");
+  TEST_SINGLE(mul(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 3), "mul v30.2s, v29.2s, v28.s[3]");
 
   TEST_SINGLE(mul(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d15, 0), "mul v30.2s, v29.2s, v15.s[0]");
   TEST_SINGLE(mul(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d15, 3), "mul v30.2s, v29.2s, v15.s[3]");
@@ -2743,9 +2733,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(smull(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 0), "smull v30.4s, v29.4h, v15.h[0]");
   TEST_SINGLE(smull(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 7), "smull v30.4s, v29.4h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(smull(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "smull v30.2d, v29.2s, v28.s[0]");
-  // TEST_SINGLE(smull(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "smull v30.2d, v29.2s, v28.s[3]");
+  TEST_SINGLE(smull(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "smull v30.2d, v29.2s, v28.s[0]");
+  TEST_SINGLE(smull(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "smull v30.2d, v29.2s, v28.s[3]");
 
   TEST_SINGLE(smull(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 0), "smull v30.2d, v29.2s, v15.s[0]");
   TEST_SINGLE(smull(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 3), "smull v30.2d, v29.2s, v15.s[3]");
@@ -2753,9 +2742,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(smull2(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 0), "smull2 v30.4s, v29.8h, v15.h[0]");
   TEST_SINGLE(smull2(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 7), "smull2 v30.4s, v29.8h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(smull2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "smull2 v30.2d, v29.4s, v28.s[0]");
-  // TEST_SINGLE(smull2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "smull2 v30.2d, v29.4s, v28.s[3]");
+  TEST_SINGLE(smull2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "smull2 v30.2d, v29.4s, v28.s[0]");
+  TEST_SINGLE(smull2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "smull2 v30.2d, v29.4s, v28.s[3]");
 
   TEST_SINGLE(smull2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 0), "smull2 v30.2d, v29.4s, v15.s[0]");
   TEST_SINGLE(smull2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 3), "smull2 v30.2d, v29.4s, v15.s[3]");
@@ -2763,9 +2751,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(sqdmull(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 0), "sqdmull v30.4s, v29.4h, v15.h[0]");
   TEST_SINGLE(sqdmull(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 7), "sqdmull v30.4s, v29.4h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(sqdmull(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "sqdmull v30.2d, v29.2s, v28.s[0]");
-  // TEST_SINGLE(sqdmull(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "sqdmull v30.2d, v29.2s, v28.s[3]");
+  TEST_SINGLE(sqdmull(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "sqdmull v30.2d, v29.2s, v28.s[0]");
+  TEST_SINGLE(sqdmull(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "sqdmull v30.2d, v29.2s, v28.s[3]");
 
   TEST_SINGLE(sqdmull(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 0), "sqdmull v30.2d, v29.2s, v15.s[0]");
   TEST_SINGLE(sqdmull(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 3), "sqdmull v30.2d, v29.2s, v15.s[3]");
@@ -2773,9 +2760,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(sqdmull2(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 0), "sqdmull2 v30.4s, v29.8h, v15.h[0]");
   TEST_SINGLE(sqdmull2(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 7), "sqdmull2 v30.4s, v29.8h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(sqdmull2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "sqdmull2 v30.2d, v29.4s, v28.s[0]");
-  // TEST_SINGLE(sqdmull2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "sqdmull2 v30.2d, v29.4s, v28.s[3]");
+  TEST_SINGLE(sqdmull2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "sqdmull2 v30.2d, v29.4s, v28.s[0]");
+  TEST_SINGLE(sqdmull2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "sqdmull2 v30.2d, v29.4s, v28.s[3]");
 
   TEST_SINGLE(sqdmull2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 0), "sqdmull2 v30.2d, v29.4s, v15.s[0]");
   TEST_SINGLE(sqdmull2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 3), "sqdmull2 v30.2d, v29.4s, v15.s[3]");
@@ -2783,9 +2769,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(sqdmulh(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q15, 0), "sqdmulh v30.8h, v29.8h, v15.h[0]");
   TEST_SINGLE(sqdmulh(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q15, 7), "sqdmulh v30.8h, v29.8h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(sqdmulh(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 0), "sqdmulh v30.4s, v29.4s, v28.s[0]");
-  // TEST_SINGLE(sqdmulh(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 3), "sqdmulh v30.4s, v29.4s, v28.s[3]");
+  TEST_SINGLE(sqdmulh(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 0), "sqdmulh v30.4s, v29.4s, v28.s[0]");
+  TEST_SINGLE(sqdmulh(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 3), "sqdmulh v30.4s, v29.4s, v28.s[3]");
 
   TEST_SINGLE(sqdmulh(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q15, 0), "sqdmulh v30.4s, v29.4s, v15.s[0]");
   TEST_SINGLE(sqdmulh(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q15, 3), "sqdmulh v30.4s, v29.4s, v15.s[3]");
@@ -2793,9 +2778,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(sqdmulh(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d15, 0), "sqdmulh v30.4h, v29.4h, v15.h[0]");
   TEST_SINGLE(sqdmulh(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d15, 7), "sqdmulh v30.4h, v29.4h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(sqdmulh(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 0), "sqdmulh v30.2s, v29.2s, v28.s[0]");
-  // TEST_SINGLE(sqdmulh(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 3), "sqdmulh v30.2s, v29.2s, v28.s[3]");
+  TEST_SINGLE(sqdmulh(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 0), "sqdmulh v30.2s, v29.2s, v28.s[0]");
+  TEST_SINGLE(sqdmulh(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 3), "sqdmulh v30.2s, v29.2s, v28.s[3]");
 
   TEST_SINGLE(sqdmulh(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d15, 0), "sqdmulh v30.2s, v29.2s, v15.s[0]");
   TEST_SINGLE(sqdmulh(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d15, 3), "sqdmulh v30.2s, v29.2s, v15.s[3]");
@@ -2803,9 +2787,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(sqrdmulh(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q15, 0), "sqrdmulh v30.8h, v29.8h, v15.h[0]");
   TEST_SINGLE(sqrdmulh(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q15, 7), "sqrdmulh v30.8h, v29.8h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(sqrdmulh(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 0), "sqrdmulh v30.4s, v29.4s, v28.s[0]");
-  // TEST_SINGLE(sqrdmulh(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 3), "sqrdmulh v30.4s, v29.4s, v28.s[3]");
+  TEST_SINGLE(sqrdmulh(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 0), "sqrdmulh v30.4s, v29.4s, v28.s[0]");
+  TEST_SINGLE(sqrdmulh(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 3), "sqrdmulh v30.4s, v29.4s, v28.s[3]");
 
   TEST_SINGLE(sqrdmulh(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q15, 0), "sqrdmulh v30.4s, v29.4s, v15.s[0]");
   TEST_SINGLE(sqrdmulh(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q15, 3), "sqrdmulh v30.4s, v29.4s, v15.s[3]");
@@ -2813,9 +2796,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(sqrdmulh(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d15, 0), "sqrdmulh v30.4h, v29.4h, v15.h[0]");
   TEST_SINGLE(sqrdmulh(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d15, 7), "sqrdmulh v30.4h, v29.4h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(sqrdmulh(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 0), "sqrdmulh v30.2s, v29.2s, v28.s[0]");
-  // TEST_SINGLE(sqrdmulh(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 3), "sqrdmulh v30.2s, v29.2s, v28.s[3]");
+  TEST_SINGLE(sqrdmulh(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 0), "sqrdmulh v30.2s, v29.2s, v28.s[0]");
+  TEST_SINGLE(sqrdmulh(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 3), "sqrdmulh v30.2s, v29.2s, v28.s[3]");
 
   TEST_SINGLE(sqrdmulh(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d15, 0), "sqrdmulh v30.2s, v29.2s, v15.s[0]");
   TEST_SINGLE(sqrdmulh(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d15, 3), "sqrdmulh v30.2s, v29.2s, v15.s[3]");
@@ -2957,9 +2939,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(mla(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q15, 0), "mla v30.8h, v29.8h, v15.h[0]");
   TEST_SINGLE(mla(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q15, 7), "mla v30.8h, v29.8h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(mla(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 0), "mla v30.4s, v29.4s, v28.s[0]");
-  // TEST_SINGLE(mla(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 3), "mla v30.4s, v29.4s, v28.s[3]");
+  TEST_SINGLE(mla(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 0), "mla v30.4s, v29.4s, v28.s[0]");
+  TEST_SINGLE(mla(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 3), "mla v30.4s, v29.4s, v28.s[3]");
 
   TEST_SINGLE(mla(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q15, 0), "mla v30.4s, v29.4s, v15.s[0]");
   TEST_SINGLE(mla(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q15, 3), "mla v30.4s, v29.4s, v15.s[3]");
@@ -2967,9 +2948,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(mla(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d15, 0), "mla v30.4h, v29.4h, v15.h[0]");
   TEST_SINGLE(mla(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d15, 7), "mla v30.4h, v29.4h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(mla(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 0), "mla v30.2s, v29.2s, v28.s[0]");
-  // TEST_SINGLE(mla(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 3), "mla v30.2s, v29.2s, v28.s[3]");
+  TEST_SINGLE(mla(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 0), "mla v30.2s, v29.2s, v28.s[0]");
+  TEST_SINGLE(mla(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 3), "mla v30.2s, v29.2s, v28.s[3]");
 
   TEST_SINGLE(mla(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d15, 0), "mla v30.2s, v29.2s, v15.s[0]");
   TEST_SINGLE(mla(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d15, 3), "mla v30.2s, v29.2s, v15.s[3]");
@@ -2977,9 +2957,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(umlal(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 0), "umlal v30.4s, v29.4h, v15.h[0]");
   TEST_SINGLE(umlal(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 7), "umlal v30.4s, v29.4h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(umlal(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "umlal v30.2d, v29.2s, v28.s[0]");
-  // TEST_SINGLE(umlal(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "umlal v30.2d, v29.2s, v28.s[3]");
+  TEST_SINGLE(umlal(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "umlal v30.2d, v29.2s, v28.s[0]");
+  TEST_SINGLE(umlal(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "umlal v30.2d, v29.2s, v28.s[3]");
 
   TEST_SINGLE(umlal(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 0), "umlal v30.2d, v29.2s, v15.s[0]");
   TEST_SINGLE(umlal(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 3), "umlal v30.2d, v29.2s, v15.s[3]");
@@ -2987,9 +2966,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(umlal2(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 0), "umlal2 v30.4s, v29.8h, v15.h[0]");
   TEST_SINGLE(umlal2(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 7), "umlal2 v30.4s, v29.8h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(umlal2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "umlal2 v30.2d, v29.4s, v28.s[0]");
-  // TEST_SINGLE(umlal2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "umlal2 v30.2d, v29.4s, v28.s[3]");
+  TEST_SINGLE(umlal2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "umlal2 v30.2d, v29.4s, v28.s[0]");
+  TEST_SINGLE(umlal2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "umlal2 v30.2d, v29.4s, v28.s[3]");
 
   TEST_SINGLE(umlal2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 0), "umlal2 v30.2d, v29.4s, v15.s[0]");
   TEST_SINGLE(umlal2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 3), "umlal2 v30.2d, v29.4s, v15.s[3]");
@@ -2997,9 +2975,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(mls(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q15, 0), "mls v30.8h, v29.8h, v15.h[0]");
   TEST_SINGLE(mls(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q15, 7), "mls v30.8h, v29.8h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(mls(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 0), "mls v30.4s, v29.4s, v28.s[0]");
-  // TEST_SINGLE(mls(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 3), "mls v30.4s, v29.4s, v28.s[3]");
+  TEST_SINGLE(mls(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 0), "mls v30.4s, v29.4s, v28.s[0]");
+  TEST_SINGLE(mls(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 3), "mls v30.4s, v29.4s, v28.s[3]");
 
   TEST_SINGLE(mls(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q15, 0), "mls v30.4s, v29.4s, v15.s[0]");
   TEST_SINGLE(mls(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q15, 3), "mls v30.4s, v29.4s, v15.s[3]");
@@ -3007,9 +2984,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(mls(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d15, 0), "mls v30.4h, v29.4h, v15.h[0]");
   TEST_SINGLE(mls(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d15, 7), "mls v30.4h, v29.4h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(mls(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 0), "mls v30.2s, v29.2s, v28.s[0]");
-  // TEST_SINGLE(mls(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 3), "mls v30.2s, v29.2s, v28.s[3]");
+  TEST_SINGLE(mls(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 0), "mls v30.2s, v29.2s, v28.s[0]");
+  TEST_SINGLE(mls(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 3), "mls v30.2s, v29.2s, v28.s[3]");
 
   TEST_SINGLE(mls(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d15, 0), "mls v30.2s, v29.2s, v15.s[0]");
   TEST_SINGLE(mls(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d15, 3), "mls v30.2s, v29.2s, v15.s[3]");
@@ -3017,9 +2993,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(umlsl(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 0), "umlsl v30.4s, v29.4h, v15.h[0]");
   TEST_SINGLE(umlsl(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 7), "umlsl v30.4s, v29.4h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(umlsl(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "umlsl v30.2d, v29.2s, v28.s[0]");
-  // TEST_SINGLE(umlsl(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "umlsl v30.2d, v29.2s, v28.s[3]");
+  TEST_SINGLE(umlsl(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "umlsl v30.2d, v29.2s, v28.s[0]");
+  TEST_SINGLE(umlsl(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "umlsl v30.2d, v29.2s, v28.s[3]");
 
   TEST_SINGLE(umlsl(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 0), "umlsl v30.2d, v29.2s, v15.s[0]");
   TEST_SINGLE(umlsl(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 3), "umlsl v30.2d, v29.2s, v15.s[3]");
@@ -3027,9 +3002,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(umlsl2(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 0), "umlsl2 v30.4s, v29.8h, v15.h[0]");
   TEST_SINGLE(umlsl2(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 7), "umlsl2 v30.4s, v29.8h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(umlsl2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "umlsl2 v30.2d, v29.4s, v28.s[0]");
-  // TEST_SINGLE(umlsl2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "umlsl2 v30.2d, v29.4s, v28.s[3]");
+  TEST_SINGLE(umlsl2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "umlsl2 v30.2d, v29.4s, v28.s[0]");
+  TEST_SINGLE(umlsl2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "umlsl2 v30.2d, v29.4s, v28.s[3]");
 
   TEST_SINGLE(umlsl2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 0), "umlsl2 v30.2d, v29.4s, v15.s[0]");
   TEST_SINGLE(umlsl2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 3), "umlsl2 v30.2d, v29.4s, v15.s[3]");
@@ -3037,9 +3011,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(umull(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 0), "umull v30.4s, v29.4h, v15.h[0]");
   TEST_SINGLE(umull(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 7), "umull v30.4s, v29.4h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(umull(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "umull v30.2d, v29.2s, v28.s[0]");
-  // TEST_SINGLE(umull(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "umull v30.2d, v29.2s, v28.s[3]");
+  TEST_SINGLE(umull(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "umull v30.2d, v29.2s, v28.s[0]");
+  TEST_SINGLE(umull(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "umull v30.2d, v29.2s, v28.s[3]");
 
   TEST_SINGLE(umull(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 0), "umull v30.2d, v29.2s, v15.s[0]");
   TEST_SINGLE(umull(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 3), "umull v30.2d, v29.2s, v15.s[3]");
@@ -3047,9 +3020,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(umull2(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 0), "umull2 v30.4s, v29.8h, v15.h[0]");
   TEST_SINGLE(umull2(SubRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v15, 7), "umull2 v30.4s, v29.8h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(umull2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "umull2 v30.2d, v29.4s, v28.s[0]");
-  // TEST_SINGLE(umull2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "umull2 v30.2d, v29.4s, v28.s[3]");
+  TEST_SINGLE(umull2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 0), "umull2 v30.2d, v29.4s, v28.s[0]");
+  TEST_SINGLE(umull2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v28, 3), "umull2 v30.2d, v29.4s, v28.s[3]");
 
   TEST_SINGLE(umull2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 0), "umull2 v30.2d, v29.4s, v15.s[0]");
   TEST_SINGLE(umull2(SubRegSize::i64Bit, VReg::v30, VReg::v29, VReg::v15, 3), "umull2 v30.2d, v29.4s, v15.s[3]");
@@ -3057,9 +3029,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(sqrdmlah(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q15, 0), "sqrdmlah v30.8h, v29.8h, v15.h[0]");
   TEST_SINGLE(sqrdmlah(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q15, 7), "sqrdmlah v30.8h, v29.8h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(sqrdmlah(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 0), "sqrdmlah v30.4s, v29.4s, v28.s[0]");
-  // TEST_SINGLE(sqrdmlah(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 3), "sqrdmlah v30.4s, v29.4s, v28.s[3]");
+  TEST_SINGLE(sqrdmlah(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 0), "sqrdmlah v30.4s, v29.4s, v28.s[0]");
+  TEST_SINGLE(sqrdmlah(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 3), "sqrdmlah v30.4s, v29.4s, v28.s[3]");
 
   TEST_SINGLE(sqrdmlah(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q15, 0), "sqrdmlah v30.4s, v29.4s, v15.s[0]");
   TEST_SINGLE(sqrdmlah(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q15, 3), "sqrdmlah v30.4s, v29.4s, v15.s[3]");
@@ -3067,9 +3038,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(sqrdmlah(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d15, 0), "sqrdmlah v30.4h, v29.4h, v15.h[0]");
   TEST_SINGLE(sqrdmlah(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d15, 7), "sqrdmlah v30.4h, v29.4h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(sqrdmlah(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 0), "sqrdmlah v30.2s, v29.2s, v28.s[0]");
-  // TEST_SINGLE(sqrdmlah(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 3), "sqrdmlah v30.2s, v29.2s, v28.s[3]");
+  TEST_SINGLE(sqrdmlah(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 0), "sqrdmlah v30.2s, v29.2s, v28.s[0]");
+  TEST_SINGLE(sqrdmlah(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 3), "sqrdmlah v30.2s, v29.2s, v28.s[3]");
 
   TEST_SINGLE(sqrdmlah(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d15, 0), "sqrdmlah v30.2s, v29.2s, v15.s[0]");
   TEST_SINGLE(sqrdmlah(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d15, 3), "sqrdmlah v30.2s, v29.2s, v15.s[3]");
@@ -3089,9 +3059,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(sqrdmlsh(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q15, 0), "sqrdmlsh v30.8h, v29.8h, v15.h[0]");
   TEST_SINGLE(sqrdmlsh(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q15, 7), "sqrdmlsh v30.8h, v29.8h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(sqrdmlsh(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 0), "sqrdmlsh v30.4s, v29.4s, v28.s[0]");
-  // TEST_SINGLE(sqrdmlsh(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 3), "sqrdmlsh v30.4s, v29.4s, v28.s[3]");
+  TEST_SINGLE(sqrdmlsh(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 0), "sqrdmlsh v30.4s, v29.4s, v28.s[0]");
+  TEST_SINGLE(sqrdmlsh(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28, 3), "sqrdmlsh v30.4s, v29.4s, v28.s[3]");
 
   TEST_SINGLE(sqrdmlsh(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q15, 0), "sqrdmlsh v30.4s, v29.4s, v15.s[0]");
   TEST_SINGLE(sqrdmlsh(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q15, 3), "sqrdmlsh v30.4s, v29.4s, v15.s[3]");
@@ -3099,9 +3068,8 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD vector x index
   TEST_SINGLE(sqrdmlsh(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d15, 0), "sqrdmlsh v30.4h, v29.4h, v15.h[0]");
   TEST_SINGLE(sqrdmlsh(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d15, 7), "sqrdmlsh v30.4h, v29.4h, v15.h[7]");
 
-  // vixl has a disassembler bug where it doesn't decode rm correctly for registers >= 16
-  // TEST_SINGLE(sqrdmlsh(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 0), "sqrdmlsh v30.2s, v29.2s, v28.s[0]");
-  // TEST_SINGLE(sqrdmlsh(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 3), "sqrdmlsh v30.2s, v29.2s, v28.s[3]");
+  TEST_SINGLE(sqrdmlsh(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 0), "sqrdmlsh v30.2s, v29.2s, v28.s[0]");
+  TEST_SINGLE(sqrdmlsh(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28, 3), "sqrdmlsh v30.2s, v29.2s, v28.s[3]");
 
   TEST_SINGLE(sqrdmlsh(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d15, 0), "sqrdmlsh v30.2s, v29.2s, v15.s[0]");
   TEST_SINGLE(sqrdmlsh(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d15, 3), "sqrdmlsh v30.2s, v29.2s, v15.s[3]");
