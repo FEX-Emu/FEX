@@ -300,14 +300,27 @@ int main(int argc, char** argv, char** const envp) {
     auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get(), nullptr) :
                                                  FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), nullptr, std::move(Allocator));
 
+    auto DoMmap = [&](uint64_t Address, size_t Size) -> void* {
+      void* Result = SyscallHandler->GuestMmap(nullptr, (void*)Address, Size, PROT_READ | PROT_WRITE | PROT_EXEC,
+                                               MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
+      LOGMAN_THROW_A_FMT(Result == reinterpret_cast<void*>(Address), "Map Memory mmap failed");
+      return Result;
+    };
+
 #else
     auto SyscallHandler = FEX::WindowsHandlers::CreateSyscallHandler();
+
+    auto DoMMap = [](uint64_t Address, size_t Size) -> void* {
+      void* Result = FEXCore::Allocator::VirtualAlloc(reinterpret_cast<void*>(Address), Size, true);
+      LOGMAN_THROW_A_FMT(Result == reinterpret_cast<void*>(Address), "Map Memory mmap failed");
+      return Result;
+    };
 #endif
 
     LongJumpHandler::RegisterLongJumpHandler(SignalDelegation.get());
 
     // Run through FEX
-    if (!Loader.MapMemory()) {
+    if (!Loader.MapMemory(DoMmap)) {
       // failed to map
       LogMan::Msg::EFmt("Failed to map {}-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
       return -ENOEXEC;
@@ -359,7 +372,13 @@ int main(int argc, char** argv, char** const envp) {
     SupportsAVX = true;
     FEX::HLE::ThreadStateObject ThreadStateObject {};
     SignalDelegation->RegisterTLSState(&ThreadStateObject);
-    if (!Loader.MapMemory()) {
+
+    auto DoMmap = [&](uint64_t Address, size_t Size) -> void* {
+      void* Result = mmap((void*)Address, Size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
+      LOGMAN_THROW_A_FMT(Result == reinterpret_cast<void*>(Address), "Map Memory mmap failed");
+      return Result;
+    };
+    if (!Loader.MapMemory(DoMmap)) {
       // failed to map
       LogMan::Msg::EFmt("Failed to map {}-bit elf file.", Loader.Is64BitMode() ? 64 : 32);
       return -ENOEXEC;

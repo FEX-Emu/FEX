@@ -419,14 +419,8 @@ public:
     return RIP;
   }
 
-  bool MapMemory() {
+  bool MapMemory(const std::function<void*(uint64_t, size_t)>& DoMMap) {
     bool LimitedSize = true;
-    auto DoMMap = [](uint64_t Address, size_t Size) -> void* {
-      void* Result = FEXCore::Allocator::VirtualAlloc(reinterpret_cast<void*>(Address), Size, true);
-      LOGMAN_THROW_A_FMT(Result == reinterpret_cast<void*>(Address), "Map Memory mmap failed");
-      return Result;
-    };
-
     auto AllocPageSize = sysconf(_SC_PAGESIZE);
     if (AllocPageSize <= 0) {
       AllocPageSize = FEXCore::Utils::FEX_PAGE_SIZE;
@@ -451,10 +445,10 @@ public:
     // Map in the memory region for the test file
 #ifndef _WIN32
     size_t Length = FEXCore::AlignUp(RawASMFile.size(), FEXCore::Utils::FEX_PAGE_SIZE);
-    auto ASMPtr = FEXCore::Allocator::VirtualAlloc(reinterpret_cast<void*>(Code_start_page), Length, true);
+    auto ASMPtr = DoMMap(Code_start_page, Length);
 #else
     // Special magic DOS area that starts at 0x1'0000
-    auto ASMPtr = FEXCore::Allocator::VirtualAlloc(reinterpret_cast<void*>(1), 0x110000 - 1, true);
+    auto ASMPtr = DoMMap(1, 0x110000 - 1);
 #endif
     LOGMAN_THROW_A_FMT((uint64_t)ASMPtr == Code_start_page, "Couldn't allocate code at expected page: 0x{:x} != 0x{:x}", (uint64_t)ASMPtr,
                        Code_start_page);
