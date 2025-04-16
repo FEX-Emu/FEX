@@ -107,15 +107,15 @@ constexpr uint32_t DMB = 0b1101'0101'0000'0011'0011'0000'1011'1111 | 0b1011'0000
 
 constexpr uint32_t DMB_LD = 0b1101'0101'0000'0011'0011'0000'1011'1111 | 0b1101'0000'0000; // Inner shareable load
 
-inline uint32_t GetRdReg(uint32_t Instr) {
+static constexpr uint32_t GetRdReg(uint32_t Instr) {
   return (Instr >> RD_OFFSET) & REGISTER_MASK;
 }
 
-inline uint32_t GetRnReg(uint32_t Instr) {
+static constexpr uint32_t GetRnReg(uint32_t Instr) {
   return (Instr >> RN_OFFSET) & REGISTER_MASK;
 }
 
-inline uint32_t GetRmReg(uint32_t Instr) {
+static constexpr uint32_t GetRmReg(uint32_t Instr) {
   return (Instr >> RM_OFFSET) & REGISTER_MASK;
 }
 
@@ -173,7 +173,7 @@ static bool StoreCAS8(uint8_t& Expected, uint8_t Val, uint64_t Addr) {
   return Atom->compare_exchange_strong(Expected, Val);
 }
 
-uint16_t DoLoad16(uint64_t Addr) {
+static uint16_t DoLoad16(uint64_t Addr) {
   uint64_t AlignmentMask = 0b1111;
   if ((Addr & AlignmentMask) == 15) {
     // Address crosses over 16byte or 64byte threshold
@@ -235,7 +235,7 @@ uint16_t DoLoad16(uint64_t Addr) {
   }
 }
 
-uint32_t DoLoad32(uint64_t Addr) {
+static uint32_t DoLoad32(uint64_t Addr) {
   uint64_t AlignmentMask = 0b1111;
   if ((Addr & AlignmentMask) > 12) {
     // Address crosses over 16byte threshold
@@ -280,7 +280,7 @@ uint32_t DoLoad32(uint64_t Addr) {
   }
 }
 
-uint64_t DoLoad64(uint64_t Addr) {
+static uint64_t DoLoad64(uint64_t Addr) {
   uint64_t AlignmentMask = 0b1111;
   if ((Addr & AlignmentMask) > 8) {
     uint64_t Alignment = Addr & 0b111;
@@ -309,7 +309,7 @@ uint64_t DoLoad64(uint64_t Addr) {
   }
 }
 
-std::pair<uint64_t, uint64_t> DoLoad128(uint64_t Addr) {
+static std::pair<uint64_t, uint64_t> DoLoad128(uint64_t Addr) {
   // Any misalignment here means we cross a 16byte boundary
   // So we need two 128bit loads
   uint64_t Alignment = Addr & 0b1111;
@@ -521,7 +521,7 @@ static bool RunCASPAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg1, uint3
   return false;
 }
 
-bool HandleCASPAL(uint32_t Instr, uint64_t* GPRs, uint32_t* StrictSplitLockMutex) {
+static bool HandleCASPAL(uint32_t Instr, uint64_t* GPRs, uint32_t* StrictSplitLockMutex) {
   uint32_t Size = (Instr >> 30) & 1;
 
   uint32_t DesiredReg1 = Instr & 0b11111;
@@ -533,7 +533,7 @@ bool HandleCASPAL(uint32_t Instr, uint64_t* GPRs, uint32_t* StrictSplitLockMutex
   return RunCASPAL(GPRs, Size, DesiredReg1, DesiredReg2, ExpectedReg1, ExpectedReg2, AddressReg, StrictSplitLockMutex);
 }
 
-uint64_t HandleCASPAL_ARMv8(uint32_t Instr, uintptr_t ProgramCounter, uint64_t* GPRs, uint32_t* StrictSplitLockMutex) {
+static uint64_t HandleCASPAL_ARMv8(uint32_t Instr, uintptr_t ProgramCounter, uint64_t* GPRs, uint32_t* StrictSplitLockMutex) {
   // caspair
   // [1] ldaxp(TMP2.W(), TMP3.W(), MemOperand(MemSrc)); <-- DataReg & AddrReg
   // [2] cmp(TMP2.W(), Expected.first.W()); <-- ExpectedReg1
