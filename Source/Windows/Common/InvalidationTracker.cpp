@@ -12,7 +12,19 @@
 namespace FEX::Windows {
 InvalidationTracker::InvalidationTracker(FEXCore::Context::Context& CTX, const std::unordered_map<DWORD, FEXCore::Core::InternalThreadState*>& Threads)
   : CTX {CTX}
-  , Threads {Threads} {}
+  , Threads {Threads} {
+  MEMORY_BASIC_INFORMATION Info;
+  uint64_t Address = 0;
+
+  while (VirtualQuery(reinterpret_cast<LPCVOID>(Address), &Info, sizeof(Info))) {
+    uint64_t BaseAddress = reinterpret_cast<uint64_t>(Info.BaseAddress);
+    if (Info.State == MEM_COMMIT) {
+      HandleMemoryProtectionNotification(BaseAddress, Info.RegionSize, Info.Protect);
+    }
+
+    Address = BaseAddress + Info.RegionSize;
+  }
+}
 
 void InvalidationTracker::HandleMemoryProtectionNotification(uint64_t Address, uint64_t Size, ULONG Prot) {
   const auto AlignedBase = Address & FEXCore::Utils::FEX_PAGE_MASK;
