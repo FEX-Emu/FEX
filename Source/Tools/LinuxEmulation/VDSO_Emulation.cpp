@@ -654,7 +654,7 @@ void LoadGuestVDSOSymbols(bool Is64Bit, char* VDSOBase) {
   }
 }
 
-void LoadUnique32BitSigreturn(VDSOMapping* Mapping) {
+void LoadUnique32BitSigreturn(VDSOMapping* Mapping, FEX::HLE::SyscallHandler* const Handler) {
   // Hardcoded to one page for now
   const auto PageSize = sysconf(_SC_PAGESIZE);
   Mapping->OptionalMappingSize = PageSize > 0 ? PageSize : FEXCore::Utils::FEX_PAGE_SIZE;
@@ -714,7 +714,9 @@ void LoadUnique32BitSigreturn(VDSOMapping* Mapping) {
   memcpy(reinterpret_cast<void*>(VDSOPointers.VDSO_kernel_sigreturn), &sigreturn_32_code.at(0), sigreturn_32_code.size());
   memcpy(reinterpret_cast<void*>(VDSOPointers.VDSO_kernel_rt_sigreturn), &rt_sigreturn_32_code.at(0), rt_sigreturn_32_code.size());
 
-  mprotect(Mapping->OptionalSigReturnMapping, Mapping->OptionalMappingSize, PROT_READ);
+  mprotect(Mapping->OptionalSigReturnMapping, Mapping->OptionalMappingSize, PROT_READ | PROT_EXEC);
+  Handler->TrackMmap(nullptr, reinterpret_cast<uintptr_t>(Mapping->OptionalSigReturnMapping), Mapping->OptionalMappingSize,
+                     PROT_READ | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 }
 
 void UnloadVDSOMapping(const VDSOMapping& Mapping) {
@@ -762,7 +764,7 @@ VDSOMapping LoadVDSOThunks(bool Is64Bit, FEX::HLE::SyscallHandler* const Handler
 
   if (!Is64Bit && (!VDSOPointers.VDSO_kernel_sigreturn || !VDSOPointers.VDSO_kernel_rt_sigreturn)) {
     // If VDSO couldn't find sigreturn then FEX needs to provide unique implementations.
-    LoadUnique32BitSigreturn(&Mapping);
+    LoadUnique32BitSigreturn(&Mapping, Handler);
   }
 
   if (Is64Bit) {
