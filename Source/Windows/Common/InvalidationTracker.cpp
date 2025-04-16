@@ -177,4 +177,18 @@ bool InvalidationTracker::HandleRWXAccessViolation(uint64_t FaultAddress) {
   }
   return false;
 }
+
+FEXCore::HLE::ExecutableRangeInfo InvalidationTracker::QueryExecutableRange(uint64_t Address) {
+  std::shared_lock Lock(IntervalsLock);
+  const auto XResult = XIntervals.Query(Address);
+  if (!XResult.Enclosed) {
+    return {};
+  }
+  const auto RWXResult = RWXIntervals.Query(Address);
+  if (RWXResult.Enclosed || (RWXResult.Size && RWXResult.Size < XResult.Size)) {
+    return {RWXResult.Interval.Offset, RWXResult.Interval.End - RWXResult.Interval.Offset, RWXResult.Enclosed};
+  }
+  return {XResult.Interval.Offset, XResult.Interval.End - XResult.Interval.Offset, false};
+}
+
 } // namespace FEX::Windows

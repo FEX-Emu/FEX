@@ -578,6 +578,10 @@ public:
     OvercommitTracker->UnmarkRange(Start, Length);
   }
 
+  FEXCore::HLE::ExecutableRangeInfo QueryGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Address) override {
+    return InvalidationTracker->QueryExecutableRange(Address);
+  }
+
   void PreCompile() override {
     ProcessPendingCrossProcessEmulatorWork();
   }
