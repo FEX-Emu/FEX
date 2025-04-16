@@ -2,6 +2,7 @@
 #pragma once
 
 #include <FEXCore/Utils/IntervalList.h>
+#include <FEXCore/HLE/SyscallHandler.h>
 #include <mutex>
 #include <unordered_map>
 
@@ -30,6 +31,7 @@ public:
   void InvalidateAlignedInterval(uint64_t Address, uint64_t Size, bool Free);
   void ReprotectRWXIntervals(uint64_t Address, uint64_t Size);
   bool HandleRWXAccessViolation(uint64_t FaultAddress);
+  FEXCore::HLE::ExecutableRangeInfo QueryExecutableRange(uint64_t Address);
 
 private:
   FEXCore::IntervalList<uint64_t> XIntervals;
