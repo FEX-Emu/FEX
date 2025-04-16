@@ -30,20 +30,32 @@ void InvalidationTracker::HandleMemoryProtectionNotification(uint64_t Address, u
   const auto AlignedBase = Address & FEXCore::Utils::FEX_PAGE_MASK;
   const auto AlignedSize = (Address - AlignedBase + Size + FEXCore::Utils::FEX_PAGE_SIZE - 1) & FEXCore::Utils::FEX_PAGE_MASK;
 
-  if (Prot & (PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) {
+  const bool NeedsInvalidate = [&]() {
+    std::unique_lock Lock(IntervalsLock);
+
+    FEXCore::IntervalList<uint64_t>::Interval ProtInterval {AlignedBase, AlignedBase + AlignedSize};
+    if (Prot & (PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) {
+      XIntervals.Insert(ProtInterval);
+      if (Prot & (PAGE_EXECUTE_WRITECOPY | PAGE_EXECUTE_READWRITE)) {
+        LogMan::Msg::DFmt("Add SMC interval: {:X} - {:X}", AlignedBase, AlignedBase + AlignedSize);
+        RWXIntervals.Insert(ProtInterval);
+      }
+      return true;
+    } else if (XIntervals.Intersect(ProtInterval)) {
+      XIntervals.Remove(ProtInterval);
+      RWXIntervals.Remove(ProtInterval);
+      return true;
+    }
+
+    return false;
+  }();
+
+  if (NeedsInvalidate) {
+    // IntervalsLock cannot be held during invalidation
     std::scoped_lock Lock(CTX.GetCodeInvalidationMutex());
     for (auto Thread : Threads) {
       CTX.InvalidateGuestCodeRange(Thread.second, AlignedBase, AlignedSize);
     }
-  }
-
-  if (Prot & (PAGE_EXECUTE_WRITECOPY | PAGE_EXECUTE_READWRITE)) {
-    LogMan::Msg::DFmt("Add SMC interval: {:X} - {:X}", AlignedBase, AlignedBase + AlignedSize);
-    std::scoped_lock Lock(RWXIntervalsLock);
-    RWXIntervals.Insert({AlignedBase, AlignedBase + AlignedSize});
-  } else {
-    std::scoped_lock Lock(RWXIntervalsLock);
-    RWXIntervals.Remove({AlignedBase, AlignedBase + AlignedSize});
   }
 }
 
@@ -53,11 +65,15 @@ void InvalidationTracker::HandleImageMap(uint64_t Address) {
   auto* SectionsEnd = SectionsBegin + Nt->FileHeader.NumberOfSections;
 
   for (auto* Section = SectionsBegin; Section != SectionsEnd; Section++) {
-    if ((Section->Characteristics & IMAGE_SCN_MEM_EXECUTE) && (Section->Characteristics & IMAGE_SCN_MEM_WRITE)) {
+    if (Section->Characteristics & IMAGE_SCN_MEM_EXECUTE) {
+      std::unique_lock Lock(IntervalsLock);
+
       uint64_t SectionBase = Address + Section->VirtualAddress;
-      LogMan::Msg::DFmt("Add image SMC interval: {:X} - {:X}", SectionBase, SectionBase + Section->Misc.VirtualSize);
-      std::scoped_lock Lock(RWXIntervalsLock);
-      RWXIntervals.Insert({SectionBase, SectionBase + Section->Misc.VirtualSize});
+      XIntervals.Insert({SectionBase, SectionBase + Section->Misc.VirtualSize});
+      if (Section->Characteristics & IMAGE_SCN_MEM_WRITE) {
+        LogMan::Msg::DFmt("Add image SMC interval: {:X} - {:X}", SectionBase, SectionBase + Section->Misc.VirtualSize);
+        RWXIntervals.Insert({SectionBase, SectionBase + Section->Misc.VirtualSize});
+      }
     }
   }
 }
@@ -84,7 +100,8 @@ InvalidationTracker::InvalidateContainingSectionResult InvalidationTracker::Inva
   }
 
   if (Free) {
-    std::scoped_lock Lock(RWXIntervalsLock);
+    std::unique_lock Lock(IntervalsLock);
+    XIntervals.Remove({SectionBase, SectionBase + SectionSize});
     RWXIntervals.Remove({SectionBase, SectionBase + SectionSize});
   }
 
@@ -108,14 +125,15 @@ void InvalidationTracker::InvalidateAlignedInterval(uint64_t Address, uint64_t S
   }
 
   if (Free) {
-    std::scoped_lock Lock(RWXIntervalsLock);
+    std::unique_lock Lock(IntervalsLock);
+    XIntervals.Remove({AlignedBase, AlignedBase + AlignedSize});
     RWXIntervals.Remove({AlignedBase, AlignedBase + AlignedSize});
   }
 }
 
 void InvalidationTracker::ReprotectRWXIntervals(uint64_t Address, uint64_t Size) {
   const auto End = Address + Size;
-  std::scoped_lock Lock(RWXIntervalsLock);
+  std::shared_lock Lock(IntervalsLock);
 
   do {
     const auto Query = RWXIntervals.Query(Address);
@@ -135,7 +153,7 @@ void InvalidationTracker::ReprotectRWXIntervals(uint64_t Address, uint64_t Size)
 
 bool InvalidationTracker::HandleRWXAccessViolation(uint64_t FaultAddress) {
   const bool NeedsInvalidate = [&](uint64_t Address) {
-    std::unique_lock Lock(RWXIntervalsLock);
+    std::shared_lock Lock(IntervalsLock);
     const bool Enclosed = RWXIntervals.Query(Address).Enclosed;
     // Invalidate just the single faulting page
     if (!Enclosed) {
@@ -150,7 +168,7 @@ bool InvalidationTracker::HandleRWXAccessViolation(uint64_t FaultAddress) {
   }(FaultAddress);
 
   if (NeedsInvalidate) {
-    // RWXIntervalsLock cannot be held during invalidation
+    // IntervalsLock cannot be held during invalidation
     std::scoped_lock Lock(CTX.GetCodeInvalidationMutex());
     for (auto Thread : Threads) {
       CTX.InvalidateGuestCodeRange(Thread.second, FaultAddress & FEXCore::Utils::FEX_PAGE_MASK, FEXCore::Utils::FEX_PAGE_SIZE);

@@ -32,8 +32,9 @@ public:
   bool HandleRWXAccessViolation(uint64_t FaultAddress);
 
 private:
+  FEXCore::IntervalList<uint64_t> XIntervals;
   FEXCore::IntervalList<uint64_t> RWXIntervals;
-  std::mutex RWXIntervalsLock;
+  std::shared_mutex IntervalsLock;
   FEXCore::Context::Context& CTX;
   const std::unordered_map<DWORD, FEXCore::Core::InternalThreadState*>& Threads;
 };
