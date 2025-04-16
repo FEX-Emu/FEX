@@ -34,10 +34,9 @@ public:
     fextl::vector<DecodedBlocks> Blocks;
   };
 
-  Decoder(FEXCore::Context::ContextImpl* ctx);
+  Decoder(FEXCore::Core::InternalThreadState* Thread);
   ~Decoder();
-  void DecodeInstructionsAtEntry(const uint8_t* InstStream, uint64_t PC, uint64_t MaxInst,
-                                 std::function<void(const fextl::vector<uint64_t>& BlockEntryPoints, uint64_t Start, uint64_t Length)> AddContainedCodePage);
+  void DecodeInstructionsAtEntry(const uint8_t* InstStream, uint64_t PC, uint64_t MaxInst);
 
   const DecodedBlockInformation* GetDecodedBlockInfo() const {
     return &BlockInfo;
@@ -66,6 +65,7 @@ private:
     bool L;       // VEX.L bit (if set then 256 bit operation, if unset then scalar or 128-bit operation)
   };
 
+  FEXCore::Core::InternalThreadState* Thread;
   FEXCore::Context::ContextImpl* CTX;
   const FEXCore::HLE::SyscallOSABI OSABI {};
 
