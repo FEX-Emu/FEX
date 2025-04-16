@@ -55,6 +55,10 @@ public:
     PoolObject.DelayedDisownBuffer();
   }
 
+  void ResetExecutableRangeCache() {
+    ExecutableRangeBase = ExecutableRangeEnd = 0;
+  }
+
 private:
   // To pass any information from instruction prefixes
   // down into the actual instruction handling machinery.
@@ -68,6 +72,7 @@ private:
   FEXCore::Context::ContextImpl* CTX;
   const FEXCore::HLE::SyscallOSABI OSABI {};
 
+  bool DecodeInstructionImpl(uint64_t PC);
   bool DecodeInstruction(uint64_t PC);
 
   void BranchTargetInMultiblockRange();
@@ -75,8 +80,10 @@ private:
 
   void AddBranchTarget(uint64_t Target);
 
+  bool CheckRangeExecutable(uint64_t Address, uint64_t Size);
+
   uint8_t ReadByte();
-  uint8_t PeekByte(uint8_t Offset) const;
+  std::optional<uint8_t> PeekByte(uint8_t Offset);
   uint64_t ReadData(uint8_t Size);
   void SkipBytes(uint8_t Size) {
     InstructionSize += Size;
@@ -89,6 +96,10 @@ private:
   FEXCore::X86Tables::DecodedInst* DecodedBuffer {};
   Utils::PoolBufferWithTimedRetirement<FEXCore::X86Tables::DecodedInst*, 5000, 500> PoolObject;
   size_t DecodedSize {};
+
+  uint64_t ExecutableRangeBase {};
+  uint64_t ExecutableRangeEnd {};
+  bool HitNonExecutableRange {};
 
   const uint8_t* InstStream {};
 

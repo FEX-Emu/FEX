@@ -907,6 +907,10 @@ uintptr_t ContextImpl::CompileSingleStep(FEXCore::Core::CpuStateFrame* Frame, ui
 }
 
 static void InvalidateGuestThreadCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) {
+  // Ensures now-modified mappings aren't cached as being in their previous non-executable state.
+  // Accessing FrontendDecoder is safe as the thread's code invalidation mutex must be locked here.
+  Thread->FrontendDecoder->ResetExecutableRangeCache();
+
   auto lk = Thread->LookupCache->AcquireLock();
 
   auto lower = Thread->LookupCache->CodePages.lower_bound(Start >> 12);
