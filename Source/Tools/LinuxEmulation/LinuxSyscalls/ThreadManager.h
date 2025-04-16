@@ -18,6 +18,7 @@ $end_info$
 #include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
 
+#include <bits/types/sigset_t.h>
 #include <cstdint>
 #include <linux/seccomp.h>
 
@@ -37,6 +38,7 @@ struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
   struct DeferredSignalState {
     siginfo_t Info;
     int Signal;
+    uint64_t SigMask;
   };
 
   FEXCore::Core::InternalThreadState* Thread;
