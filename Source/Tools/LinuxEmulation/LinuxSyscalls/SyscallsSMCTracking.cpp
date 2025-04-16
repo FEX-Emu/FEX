@@ -179,6 +179,16 @@ FEXCore::HLE::AOTIRCacheEntryLookupResult SyscallHandler::LookupAOTIRCacheEntry(
   return {Entry->second.Resource ? Entry->second.Resource->AOTIRCacheEntry : nullptr, Entry->second.Base - Entry->second.Offset};
 }
 
+FEXCore::HLE::ExecutableRangeInfo SyscallHandler::QueryGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Address) {
+  auto lk = FEXCore::GuardSignalDeferringSection<std::shared_lock>(VMATracking.Mutex, Thread);
+
+  auto Entry = VMATracking.LookupVMAUnsafe(Address);
+  if (Entry == VMATracking.VMAs.end() || !Entry->second.Prot.Executable) {
+    return {0, false};
+  }
+  return {Entry->second.Length, Entry->second.Prot.Writable};
+}
+
 // MMan Tracking
 void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base, uintptr_t Size, int Prot, int Flags, int fd,
                                off_t Offset) {
