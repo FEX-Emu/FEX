@@ -616,6 +616,8 @@ NTSTATUS ProcessInit() {
   CTX->InitCore();
   InvalidationTracker.emplace(*CTX, Threads);
 
+  HandleImageMap(NtDllBase);
+
   auto MainModule = reinterpret_cast<__TEB*>(NtCurrentTeb())->Peb->ImageBaseAddress;
   HandleImageMap(reinterpret_cast<uint64_t>(MainModule));
 

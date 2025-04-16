@@ -491,6 +491,9 @@ void BTCpuProcessInit() {
   CTX->InitCore();
   InvalidationTracker.emplace(*CTX, Threads);
 
+  auto NtDllX86 = reinterpret_cast<SYSTEM_DLL_INIT_BLOCK*>(GetProcAddress(NtDll, "LdrSystemDllInitBlock"))->ntdll_handle;
+  HandleImageMap(NtDllX86);
+
   auto MainModule = reinterpret_cast<__TEB*>(NtCurrentTeb())->Peb->ImageBaseAddress;
   HandleImageMap(reinterpret_cast<uint64_t>(MainModule));
 
