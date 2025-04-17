@@ -61,7 +61,11 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Scalar: Advanced SIMD scalar two-re
   TEST_SINGLE(frsqrte(HReg::h30, HReg::h29), "frsqrte h30, h29");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: Scalar: Advanced SIMD scalar three same extra") {
-  // TODO: Implement in emitter
+  TEST_SINGLE(sqrdmlah(ScalarRegSize::i16Bit, VReg::v30, VReg::v29, VReg::v28), "sqrdmlah h30, h29, h28");
+  TEST_SINGLE(sqrdmlah(ScalarRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v28), "sqrdmlah s30, s29, s28");
+
+  TEST_SINGLE(sqrdmlsh(ScalarRegSize::i16Bit, VReg::v30, VReg::v29, VReg::v28), "sqrdmlsh h30, h29, h28");
+  TEST_SINGLE(sqrdmlsh(ScalarRegSize::i32Bit, VReg::v30, VReg::v29, VReg::v28), "sqrdmlsh s30, s29, s28");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: Scalar: Advanced SIMD scalar two-register miscellaneous") {
   // Commented out lines showcase unallocated encodings.

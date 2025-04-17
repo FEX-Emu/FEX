@@ -137,7 +137,15 @@ public:
   }
 
   // Advanced SIMD scalar three same extra
-  // XXX:
+  void sqrdmlah(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i16Bit || size == ScalarRegSize::i32Bit, "Only supports 16/32-bit");
+    ASIMDScalarThreeSameExtra(1, size, 0b0000, rm, rn, rd);
+  }
+  void sqrdmlsh(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i16Bit || size == ScalarRegSize::i32Bit, "Only supports 16/32-bit");
+    ASIMDScalarThreeSameExtra(1, size, 0b0001, rm, rn, rd);
+  }
+
   // Advanced SIMD scalar two-register miscellaneous
   void suqadd(ScalarRegSize size, VRegister rd, VRegister rn) {
     ASIMDScalar2RegMisc(0, 0, size, 0b00011, rd, rn);
@@ -1269,7 +1277,17 @@ private:
   }
 
   // Advanced SIMD scalar three same extra
-  // XXX:
+  void ASIMDScalarThreeSameExtra(uint32_t U, ScalarRegSize size, uint32_t opcode, VRegister rm, VRegister rn, VRegister rd) {
+    uint32_t Instr = 0b0101'1110'0000'0000'1000'0100'0000'0000;
+    Instr |= U << 29;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= rm.Idx() << 16;
+    Instr |= opcode << 11;
+    Instr |= rn.Idx() << 5;
+    Instr |= rd.Idx();
+    dc32(Instr);
+  }
+
   // Advanced SIMD scalar two-register miscellaneous
   void ASIMDScalar2RegMisc(uint32_t b20, uint32_t U, ScalarRegSize size, uint32_t opcode, VRegister rd, VRegister rn) {
     uint32_t Instr = 0b0101'1110'0010'0000'0000'1000'0000'0000;
