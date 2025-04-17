@@ -7,6 +7,10 @@
 #include <cstddef>
 #include <mutex>
 
+namespace FEXCore::Threads {
+class Thread;
+}
+
 namespace FEX::LinuxEmulation::Threads {
 /**
  * @brief Size of the stack that this interface creates.
@@ -61,6 +65,8 @@ void* AllocateStackObject();
  */
 [[noreturn]]
 void DeallocateStackObjectAndExit(void* Ptr, int Status);
+
+void* GetStackBase(FEXCore::Threads::Thread* ThreadObject);
 
 /**
  * @brief Registers thread creation handlers with FEXCore.

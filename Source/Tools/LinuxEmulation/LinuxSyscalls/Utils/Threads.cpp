@@ -105,9 +105,11 @@ void StackTracker::Shutdown() {
 
 [[noreturn]]
 void StackTracker::DeallocateStackObjectAndExit(void* Ptr, int Status) {
-  RemoveStackFromLivePool(Ptr);
-  auto ReadyToBeReaped = AddStackToDeadPool(Ptr);
-  *ReadyToBeReaped = true;
+  if (Ptr) {
+    RemoveStackFromLivePool(Ptr);
+    auto ReadyToBeReaped = AddStackToDeadPool(Ptr);
+    *ReadyToBeReaped = true;
+  }
 
 #ifdef _M_ARM_64
   __asm volatile("mov x8, %[SyscallNum];"
@@ -311,6 +313,12 @@ void* AllocateStackObject() {
 [[noreturn]]
 void DeallocateStackObjectAndExit(void* Ptr, int Status) {
   PThreads::STracker->DeallocateStackObjectAndExit(Ptr, Status);
+  FEX_UNREACHABLE;
+}
+
+void* GetStackBase(FEXCore::Threads::Thread* ThreadObject) {
+  auto ThreadObject_P = reinterpret_cast<PThreads::PThread*>(ThreadObject);
+  return ThreadObject_P->GetPivotStack();
 }
 
 void Shutdown(fextl::unique_ptr<StackTracker> STracker) {
