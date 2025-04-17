@@ -14,6 +14,7 @@ $end_info$
 #include "LinuxSyscalls/x64/Thread.h"
 #include "LinuxSyscalls/x32/Syscalls.h"
 #include "LinuxSyscalls/x32/Thread.h"
+#include "LinuxSyscalls/Utils/Threads.h"
 
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/X86Enums.h>
@@ -461,8 +462,14 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
                                 }
 
                                 ThreadObject->StatusCode = status;
+
+                                void* StackBase {};
+                                if (ThreadObject->ExecutionThread) {
+                                  StackBase = FEX::LinuxEmulation::Threads::GetStackBase(ThreadObject->ExecutionThread.get());
+                                }
+                                FEX::HLE::_SyscallHandler->UninstallTLSState(ThreadObject);
                                 FEX::HLE::_SyscallHandler->TM.DestroyThread(ThreadObject, true);
-                                syscall(SYSCALL_DEF(exit), status);
+                                FEX::LinuxEmulation::Threads::DeallocateStackObjectAndExit(StackBase, status);
                                 // This will never be reached
                                 std::terminate();
                               });
