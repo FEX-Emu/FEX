@@ -1301,8 +1301,6 @@ private:
     dc32(Instr);
   }
 
-  // Advanced SIMD scalar pairwise
-  // XXX:
   // Advanced SIMD scalar three different
   void ASIMD3RegDifferent(uint32_t U, ScalarRegSize size, uint32_t opcode, VRegister rd, VRegister rn, VRegister rm) {
     uint32_t Instr = 0b0101'1110'0010'0000'0000'0000'0000'0000;
