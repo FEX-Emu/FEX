@@ -453,6 +453,8 @@ static void DirectBlockDelinker(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Co
 
 static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record) {
   auto Thread = Frame->Thread;
+  auto Lock = Thread->LookupCache->AcquireLock();
+
   bool TFSet = Thread->CurrentFrame->State.flags[X86State::RFLAG_TF_RAW_LOC];
   uintptr_t HostCode {};
   auto GuestRip = Record->GuestRIP;
