@@ -1349,6 +1349,7 @@ void OpDispatchBuilder::CPUIDOp(OpcodeArgs) {
   Ref RCX = _AllocateGPR(false);
   Ref RDX = _AllocateGPR(false);
 
+  _Fence({FEXCore::IR::Fence_Inst});
   _CPUID(Src, Leaf, RAX, RBX, RCX, RDX);
 
   StoreGPRRegister(X86State::REG_RAX, RAX);
@@ -3076,10 +3077,10 @@ void OpDispatchBuilder::SMSWOp(OpcodeArgs) {
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Const, DstSize, OpSize::iInvalid);
 }
 
-OpDispatchBuilder::CycleCounterPair OpDispatchBuilder::CycleCounter() {
+OpDispatchBuilder::CycleCounterPair OpDispatchBuilder::CycleCounter(bool SelfSynchronizingLoads) {
   Ref CounterLow {};
   Ref CounterHigh {};
-  auto Counter = _CycleCounter();
+  auto Counter = _CycleCounter(SelfSynchronizingLoads);
   if (CTX->Config.TSCScale) {
     CounterLow = _Lshl(OpSize::i32Bit, Counter, _Constant(CTX->Config.TSCScale));
     CounterHigh = _Lshr(OpSize::i64Bit, Counter, _Constant(32 - CTX->Config.TSCScale));
@@ -3095,7 +3096,7 @@ OpDispatchBuilder::CycleCounterPair OpDispatchBuilder::CycleCounter() {
 }
 
 void OpDispatchBuilder::RDTSCOp(OpcodeArgs) {
-  auto Counter = CycleCounter();
+  auto Counter = CycleCounter(false);
   StoreGPRRegister(X86State::REG_RAX, Counter.CounterLow);
   StoreGPRRegister(X86State::REG_RDX, Counter.CounterHigh);
 }
@@ -4582,7 +4583,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
     // This is used when QueryPerformanceCounter is called on recent Windows versions, it causes CNTVCT to be written into RAX.
     constexpr uint8_t GET_CNTVCT_LITERAL = 0x81;
     if (Literal == GET_CNTVCT_LITERAL) {
-      StoreGPRRegister(X86State::REG_RAX, _CycleCounter());
+      StoreGPRRegister(X86State::REG_RAX, _CycleCounter(false));
       return;
     }
 #endif
@@ -4770,8 +4771,7 @@ void OpDispatchBuilder::RDTSCPOp(OpcodeArgs) {
   // This instruction is not an execution fence, so subsequent instructions can execute after this
   //  - Explicitly use an LFENCE after RDTSCP if you want to block this behaviour
 
-  _Fence({FEXCore::IR::Fence_Load});
-  auto Counter = CycleCounter();
+  auto Counter = CycleCounter(true);
 
   auto ID = _ProcessorID();
   StoreGPRRegister(X86State::REG_RAX, Counter.CounterLow);

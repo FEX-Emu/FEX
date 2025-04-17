@@ -429,12 +429,23 @@ fextl::string GenerateCPUInfo(FEXCore::Context::Context* ctx, uint32_t CPUCores)
   // Get the cycle counter frequency from CPUID function 15h.
   auto res_15 = ctx->RunCPUIDFunction(0x15, 0);
   // Frequency is calculated in Hz, we need to convert it to megahertz since FEX is guaranteed to return >= 1Ghz.
+  // x86 Bogomips is calculated as an equation based on the clock speed of the CPU (Or TSC) divided by 500k jiffies.
+  // A `jiffie` is an internal metric for the kernel's `HZ` frequency which is usually between 100 and 1000.
+  // Userspace can't query this HZ config option, so assume 1000Hz since that's common.
+  // This gives a 1Ghz ARMv9.2 CPU a Bogomips of 2Ghz.
   constexpr double HzInMhz = 1000000.0;
-  double Frequency = 1.0 / (static_cast<double>(res_15.eax) / (static_cast<double>(res_15.ebx) * static_cast<double>(res_15.ecx)));
-  Frequency /= HzInMhz;
+  constexpr double HzInKhz = 1000.0;
+  constexpr double BogomipsJiffyPrecision = 1'000.0;
+  constexpr double BogoMipsDivisor = 500'000.0 / BogomipsJiffyPrecision;
+
+  const double Frequency = 1.0 / (static_cast<double>(res_15.eax) / (static_cast<double>(res_15.ebx) * static_cast<double>(res_15.ecx)));
+  const double FrequencyMhz = Frequency / HzInMhz;
+  const double FrequencyKhz = Frequency / HzInKhz;
+  const double Bogomips = FrequencyKhz / BogoMipsDivisor;
   // Generate the cycle counter frequency string in the format expected by cpuinfo.
   // ex: `4000.000`
-  const auto FrequencyString = fextl::fmt::format("{:.3f}", Frequency);
+  const auto FrequencyString = fextl::fmt::format("{:.3f}", FrequencyMhz);
+  const auto BogomipsString = fextl::fmt::format("{:.2f}", Bogomips);
 
   for (int i = 0; i < CPUCores; ++i) {
     cpu_stream << "processor\t: " << i << std::endl; // Logical id
@@ -469,7 +480,7 @@ fextl::string GenerateCPUInfo(FEXCore::Context::Context* ctx, uint32_t CPUCores)
 
     // We don't have any bugs, don't question it
     cpu_stream << "bugs\t\t: " << std::endl;
-    cpu_stream << "bogomips\t: 8000.0" << std::endl;
+    cpu_stream << "bogomips\t: " << BogomipsString << std::endl;
     // These next four aren't necessarily correct
     cpu_stream << "TLB size\t: 2560 4K pages" << std::endl;
     cpu_stream << "clflush size\t: 64" << std::endl;

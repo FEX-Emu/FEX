@@ -110,6 +110,7 @@
     "constexpr FEXCore::IR::FenceType Fence_Load      {0}",
     "constexpr FEXCore::IR::FenceType Fence_Store     {1}",
     "constexpr FEXCore::IR::FenceType Fence_LoadStore {2}",
+    "constexpr FEXCore::IR::FenceType Fence_Inst      {3}",
 
     "constexpr uint8_t ROUND_MODE_NEAREST           = 0",
     "constexpr uint8_t ROUND_MODE_NEGATIVE_INFINITY = 1",
@@ -1019,7 +1020,7 @@
         "DestSize": "OpSize::i64Bit"
       },
 
-      "GPR = CycleCounter": {
+      "GPR = CycleCounter i1:$SelfSynchronizingLoads": {
         "Desc": ["Returns the host 64bit cycle counter",
                  "Useful when emulating rdtsc",
                  "Be careful, the frequency of this counter changes based on host",
@@ -1027,7 +1028,8 @@
                  "On x86-64 make sure to query CPUID fn8000_0008[EDX_8] for constant TSC",
                  "x86-64 constant frequency lives in MSR_PLATFORM_INFO. Which is only available to kernel",
                  "Part of the ART frequency equation can be pulled from CPUID fn0000_0015[EBX & EAX]",
-                 "But it's missing the ART multiplier still?"
+                 "But it's missing the ART multiplier still?",
+                 "If the self-synchronizing flag is toggled then all instructions and loads must be completed before the cycle counter read"
                 ],
         "DestSize": "OpSize::i64Bit"
       },

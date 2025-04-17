@@ -483,6 +483,7 @@ FEXCore::HostFeatures FetchHostFeatures(FEX::CPUFeatures& Features, bool Support
   HostFeatures.SupportsFRINTTS = Features.Supports(CPUFeatures::Feature::FRINTTS);
   HostFeatures.SupportsRPRES = Features.Supports(CPUFeatures::Feature::RPRES);
   HostFeatures.SupportsSVEBitPerm = Features.Supports(CPUFeatures::Feature::SVE_BitPerm);
+  HostFeatures.SupportsECV = Features.Supports(CPUFeatures::Feature::ECV);
 
 #ifdef VIXL_SIMULATOR
   // Hardcode enable SVE with 256-bit wide registers.
