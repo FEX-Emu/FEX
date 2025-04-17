@@ -137,7 +137,15 @@ public:
   }
 
   // Advanced SIMD scalar three same extra
-  // XXX:
+  void sqrdmlah(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i16Bit || size == ScalarRegSize::i32Bit, "Only supports 16/32-bit");
+    ASIMDScalarThreeSameExtra(1, size, 0b0000, rm, rn, rd);
+  }
+  void sqrdmlsh(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm) {
+    LOGMAN_THROW_A_FMT(size == ScalarRegSize::i16Bit || size == ScalarRegSize::i32Bit, "Only supports 16/32-bit");
+    ASIMDScalarThreeSameExtra(1, size, 0b0001, rm, rn, rd);
+  }
+
   // Advanced SIMD scalar two-register miscellaneous
   void suqadd(ScalarRegSize size, VRegister rd, VRegister rn) {
     ASIMDScalar2RegMisc(0, 0, size, 0b00011, rd, rn);
@@ -744,10 +752,51 @@ public:
     const uint32_t immb = InvertedShift & 0b111;
     ASIMDScalarShiftByImm(1, immh, immb, 0b10011, rd, rn);
   }
+
   // TODO: UCVTF, FCVTZU
+
   // Advanced SIMD scalar x indexed element
-  // XXX:
-  //
+  void sqdmlal(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm, uint32_t index) {
+    LOGMAN_THROW_A_FMT(size != ScalarRegSize::i64Bit, "Scalar size must not be 64-bit");
+    ASIMDScalarXIndexedElement(0, size, 0b0011, rm, rn, rd, index);
+  }
+  void sqdmlsl(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm, uint32_t index) {
+    LOGMAN_THROW_A_FMT(size != ScalarRegSize::i64Bit, "Scalar size must not be 64-bit");
+    ASIMDScalarXIndexedElement(0, size, 0b0111, rm, rn, rd, index);
+  }
+  void sqdmull(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm, uint32_t index) {
+    LOGMAN_THROW_A_FMT(size != ScalarRegSize::i64Bit, "Scalar size must not be 64-bit");
+    ASIMDScalarXIndexedElement(0, size, 0b1011, rm, rn, rd, index);
+  }
+  void sqdmulh(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm, uint32_t index) {
+    LOGMAN_THROW_A_FMT(size != ScalarRegSize::i64Bit, "Scalar size must not be 64-bit");
+    ASIMDScalarXIndexedElement(0, size, 0b1100, rm, rn, rd, index);
+  }
+  void sqrdmulh(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm, uint32_t index) {
+    LOGMAN_THROW_A_FMT(size != ScalarRegSize::i64Bit, "Scalar size must not be 64-bit");
+    ASIMDScalarXIndexedElement(0, size, 0b1101, rm, rn, rd, index);
+  }
+  void fmla(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm, uint32_t index) {
+    ASIMDScalarXIndexedElement(0, size, 0b0001, rm, rn, rd, index);
+  }
+  void fmls(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm, uint32_t index) {
+    ASIMDScalarXIndexedElement(0, size, 0b0101, rm, rn, rd, index);
+  }
+  void fmul(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm, uint32_t index) {
+    ASIMDScalarXIndexedElement(0, size, 0b1001, rm, rn, rd, index);
+  }
+  void sqrdmlah(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm, uint32_t index) {
+    LOGMAN_THROW_A_FMT(size != ScalarRegSize::i64Bit, "Scalar size must not be 64-bit");
+    ASIMDScalarXIndexedElement(1, size, 0b1101, rm, rn, rd, index);
+  }
+  void sqrdmlsh(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm, uint32_t index) {
+    LOGMAN_THROW_A_FMT(size != ScalarRegSize::i64Bit, "Scalar size must not be 64-bit");
+    ASIMDScalarXIndexedElement(1, size, 0b1111, rm, rn, rd, index);
+  }
+  void fmulx(ScalarRegSize size, VRegister rd, VRegister rn, VRegister rm, uint32_t index) {
+    ASIMDScalarXIndexedElement(1, size, 0b1001, rm, rn, rd, index);
+  }
+
   // Floating-point data-processing (1 source)
   void fmov(ScalarRegSize size, VRegister rd, VRegister rn) {
     Float1Source(size, 0, 0, 0b000000, rd, rn);
@@ -1269,7 +1318,17 @@ private:
   }
 
   // Advanced SIMD scalar three same extra
-  // XXX:
+  void ASIMDScalarThreeSameExtra(uint32_t U, ScalarRegSize size, uint32_t opcode, VRegister rm, VRegister rn, VRegister rd) {
+    uint32_t Instr = 0b0101'1110'0000'0000'1000'0100'0000'0000;
+    Instr |= U << 29;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= rm.Idx() << 16;
+    Instr |= opcode << 11;
+    Instr |= rn.Idx() << 5;
+    Instr |= rd.Idx();
+    dc32(Instr);
+  }
+
   // Advanced SIMD scalar two-register miscellaneous
   void ASIMDScalar2RegMisc(uint32_t b20, uint32_t U, ScalarRegSize size, uint32_t opcode, VRegister rd, VRegister rn) {
     uint32_t Instr = 0b0101'1110'0010'0000'0000'1000'0000'0000;
@@ -1283,8 +1342,6 @@ private:
     dc32(Instr);
   }
 
-  // Advanced SIMD scalar pairwise
-  // XXX:
   // Advanced SIMD scalar three different
   void ASIMD3RegDifferent(uint32_t U, ScalarRegSize size, uint32_t opcode, VRegister rd, VRegister rn, VRegister rm) {
     uint32_t Instr = 0b0101'1110'0010'0000'0000'0000'0000'0000;
@@ -1321,8 +1378,50 @@ private:
     Instr |= Encode_rd(rd);
     dc32(Instr);
   }
+
   // Advanced SIMD scalar x indexed element
-  // XXX:
+  void ASIMDScalarXIndexedElement(uint32_t U, ScalarRegSize size, uint32_t opcode, VRegister rm, VRegister rn, VRegister rd, uint32_t index) {
+    LOGMAN_THROW_A_FMT(size != ScalarRegSize::i8Bit, "Scalar size must not be 8-bit");
+
+    [[maybe_unused]] const auto invalid_bound = 16U >> FEXCore::ToUnderlying(size);
+    LOGMAN_THROW_A_FMT(index < invalid_bound, "Index ({}) must be within [0-{}]", index, invalid_bound - 1);
+
+    uint32_t Instr = 0b0101'1111'0000'0000'0000'0000'0000'0000;
+
+    // FMUL/FMLA/FMLS indexed variants deal with size differently.
+    if (opcode == 0b0001 || opcode == 0b0101 || opcode == 0b1001) {
+      // Unlike other instructions in the group, 16-bit is encoded as zero
+      // and 32/64-bit are encoded with the top bit always set to one.
+      if (size != ScalarRegSize::i16Bit) {
+        Instr |= (0b10 | (FEXCore::ToUnderlying(size) & 1)) << 22;
+      }
+    } else {
+      Instr |= FEXCore::ToUnderlying(size) << 22;
+    }
+
+    uint32_t H = 0;
+    uint32_t LM = 0;
+    if (size == ScalarRegSize::i16Bit) {
+      LOGMAN_THROW_A_FMT(rm <= VReg::v15, "rm ({}) must be within [v0-v15]", rm.Idx());
+      H = (index >> 2) & 1;
+      LM = index & 0b11;
+    } else if (size == ScalarRegSize::i32Bit) {
+      H = (index >> 1) & 1;
+      LM = (index & 0b01) << 1;
+    } else {
+      H = index & 1;
+    }
+
+    Instr |= U << 29;
+    Instr |= LM << 20;
+    Instr |= rm.Idx() << 16;
+    Instr |= opcode << 12;
+    Instr |= H << 11;
+    Instr |= rn.Idx() << 5;
+    Instr |= rd.Idx();
+    dc32(Instr);
+  }
+
   // Floating-point data-processing (1 source)
   void Float1Source(uint32_t M, uint32_t S, uint32_t ptype, uint32_t opcode, VRegister rd, VRegister rn) {
     uint32_t Instr = 0b0001'1110'0010'0000'0100'0000'0000'0000;
