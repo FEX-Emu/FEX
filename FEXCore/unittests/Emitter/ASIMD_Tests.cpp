@@ -1287,7 +1287,14 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD three differen
   TEST_SINGLE(usubw2(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28), "usubw2 v30.4s, v29.4s, v28.8h");
   TEST_SINGLE(usubw2(SubRegSize::i64Bit, QReg::q30, QReg::q29, QReg::q28), "usubw2 v30.2d, v29.2d, v28.4s");
 
-  //// XXX: RADDHN/2
+  TEST_SINGLE(raddhn(SubRegSize::i8Bit, DReg::d30, DReg::d29, DReg::d28), "raddhn v30.8b, v29.8h, v28.8h");
+  TEST_SINGLE(raddhn(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d28), "raddhn v30.4h, v29.4s, v28.4s");
+  TEST_SINGLE(raddhn(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28), "raddhn v30.2s, v29.2d, v28.2d");
+
+  TEST_SINGLE(raddhn2(SubRegSize::i8Bit, QReg::q30, QReg::q29, QReg::q28), "raddhn2 v30.16b, v29.8h, v28.8h");
+  TEST_SINGLE(raddhn2(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "raddhn2 v30.8h, v29.4s, v28.4s");
+  TEST_SINGLE(raddhn2(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28), "raddhn2 v30.4s, v29.2d, v28.2d");
+
   // TEST_SINGLE(uabal(SubRegSize::i8Bit, DReg::d30, DReg::d29, DReg::d28), "uabal v30.8b, v29.8b, v28.8b");
   TEST_SINGLE(uabal(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d28), "uabal v30.8h, v29.8b, v28.8b");
   TEST_SINGLE(uabal(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28), "uabal v30.4s, v29.4h, v28.4h");
@@ -1298,7 +1305,14 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD three differen
   TEST_SINGLE(uabal2(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28), "uabal2 v30.4s, v29.8h, v28.8h");
   TEST_SINGLE(uabal2(SubRegSize::i64Bit, QReg::q30, QReg::q29, QReg::q28), "uabal2 v30.2d, v29.4s, v28.4s");
 
-  //// XXX: RSUBHN/2
+  TEST_SINGLE(rsubhn(SubRegSize::i8Bit, DReg::d30, DReg::d29, DReg::d28), "rsubhn v30.8b, v29.8h, v28.8h");
+  TEST_SINGLE(rsubhn(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d28), "rsubhn v30.4h, v29.4s, v28.4s");
+  TEST_SINGLE(rsubhn(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28), "rsubhn v30.2s, v29.2d, v28.2d");
+
+  TEST_SINGLE(rsubhn2(SubRegSize::i8Bit, QReg::q30, QReg::q29, QReg::q28), "rsubhn2 v30.16b, v29.8h, v28.8h");
+  TEST_SINGLE(rsubhn2(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "rsubhn2 v30.8h, v29.4s, v28.4s");
+  TEST_SINGLE(rsubhn2(SubRegSize::i32Bit, QReg::q30, QReg::q29, QReg::q28), "rsubhn2 v30.4s, v29.2d, v28.2d");
+
   // TEST_SINGLE(uabdl(SubRegSize::i8Bit, DReg::d30, DReg::d29, DReg::d28), "uabdl v30.8b, v29.8b, v28.8b");
   TEST_SINGLE(uabdl(SubRegSize::i16Bit, DReg::d30, DReg::d29, DReg::d28), "uabdl v30.8h, v29.8b, v28.8b");
   TEST_SINGLE(uabdl(SubRegSize::i32Bit, DReg::d30, DReg::d29, DReg::d28), "uabdl v30.4s, v29.4h, v28.4h");
