@@ -61,11 +61,11 @@ struct GuestToHostMap {
 
   // Adds to Guest -> Host code mapping
   void AddBlockMapping(uint64_t Address, void* HostCode, const LockToken&) {
-    [[maybe_unused]] auto Inserted = BlockList.emplace(Address, (uintptr_t)HostCode).second;
-    // NOTE: If this was inserted twice, we've probably raced against another thread to compile this block. Just ignore this one
-    // TODO: Should reset CodeBuffer cursor in that case...
-
-    // LOGMAN_THROW_A_FMT(Inserted, "Duplicate block mapping added");
+    // NOTE: Generally no previous entry should exist, however there is one exception:
+    //       If the backend updates the active thread's CodeBuffer, the new associated LookupCache
+    //       may already contain the block address. Since is comparatively rare, we'll just leak
+    //       one of the two blocks in this case.
+    BlockList[Address] = (uintptr_t)HostCode;
   }
 
   std::optional<uintptr_t> FindBlock(uint64_t Address, const LockToken&) {
@@ -81,7 +81,6 @@ struct GuestToHostMap {
     auto lower = BlockLinks->lower_bound({Address, nullptr});
     auto upper = BlockLinks->upper_bound({Address, reinterpret_cast<FEXCore::Context::ExitFunctionLinkData*>(UINTPTR_MAX)});
     for (auto it = lower; it != upper; it = BlockLinks->erase(it)) {
-      // TODO: Is it okay that this will run only once shared cache?
       it->second(Frame, it->first.HostLink);
     }
 
