@@ -949,9 +949,8 @@ void ContextImpl::MarkMemoryShared(FEXCore::Core::InternalThreadState* Thread) {
     UpdateAtomicTSOEmulationConfig();
 
     if (Config.TSOAutoMigration) {
-      // Only the lookup cache is cleared here, so that old code can keep running until next compilation
-      // TODO: Review if this will clear the old code *eventually*. It's probably safe to fully clear the GuestToHostMap?
-      auto lk = Thread->LookupCache->AcquireLock();
+      // Only the lookup cache is cleared here, so that old code can keep running until next compilation.
+      // This will leak previously compiled blocks until the CodeBuffer is cleared for some other reason.
       Thread->LookupCache->ClearCache();
     }
   }
