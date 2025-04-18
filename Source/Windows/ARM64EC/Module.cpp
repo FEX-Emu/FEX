@@ -121,6 +121,11 @@ struct ThreadCPUArea {
   }
 };
 
+/* Reserved CPSR bits for emulated x86 flags */
+#define CPSR_X86_TF (1u << 25) /* Trap flag */
+#define CPSR_X86_DF (1u << 26) /* Direction flag */
+#define CPSR_X86_AF (1u << 27) /* Auxiliary carry flag */
+
 namespace {
 fextl::unique_ptr<FEXCore::Context::Context> CTX;
 fextl::unique_ptr<FEX::DummyHandlers::DummySignalDelegator> SignalDelegator;
@@ -499,8 +504,20 @@ static void RethrowGuestException(const EXCEPTION_RECORD& Rec, ARM64_NT_CONTEXT&
 
   // X64 Windows always clears TF, DF and AF when handling an exception, restoring after.
   // Current ARM64EC windows can only restore NZCV+SS when returning from an exception and other flags are left untouched from the handler context.
-  // TODO: Can extend wine to support this by mapping the remaining EFlags into reserved cpsr members.
   uint32_t EFlags = CTX->ReconstructCompactedEFLAGS(Thread, false, nullptr, 0);
+
+  // Ensure no CPSR Flag Overlapping
+  static_assert((CPSR_X86_TF & (CPSR_X86_DF | CPSR_X86_AF)) == 0, "CPSR flag overlap");
+  static_assert((CPSR_X86_DF & CPSR_X86_AF) == 0, "CPSR flag overlap");
+
+  // Store TF, DF, AF in reserved CPSR bits before clearing them
+  constexpr uint32_t CPSR_MASK = CPSR_X86_TF | CPSR_X86_DF | CPSR_X86_AF;
+  uint32_t SavedFlags = (((EFlags >> FEXCore::X86State::RFLAG_TF_RAW_LOC) & 1) << __builtin_ctz(CPSR_X86_TF)) |
+                        (((EFlags >> FEXCore::X86State::RFLAG_DF_RAW_LOC) & 1) << __builtin_ctz(CPSR_X86_DF)) |
+                        (((EFlags >> FEXCore::X86State::RFLAG_AF_RAW_LOC) & 1) << __builtin_ctz(CPSR_X86_AF));
+
+  Args->Context.Cpsr = (Args->Context.Cpsr & ~CPSR_MASK) | SavedFlags;
+
   EFlags &= ~(1 << FEXCore::X86State::RFLAG_TF_RAW_LOC);
   CTX->SetFlagsFromCompactedEFLAGS(Thread, EFlags);
 
