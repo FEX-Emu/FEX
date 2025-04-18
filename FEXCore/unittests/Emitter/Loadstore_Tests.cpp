@@ -1448,7 +1448,538 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Load register literal") 
   }
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Memory copy/set") {
-  // TODO: Implement in emitter.
+  // Note: Some of these aren't implemented in vixl at the moment, however
+  //       we supply the cases to change over to once they are. This is good,
+  //       because when we update, the unimplemented cases will naturally fail,
+  //       facilitating the switch.
+
+  TEST_SINGLE(cpyfp(XReg::x30, XReg::x28, XReg::x29), "cpyfp [x30]!, [x28]!, x29!");
+  TEST_SINGLE(cpyfp(XReg::x17, XReg::x20, XReg::x19), "cpyfp [x17]!, [x20]!, x19!");
+
+  TEST_SINGLE(cpyfm(XReg::x30, XReg::x28, XReg::x29), "cpyfm [x30]!, [x28]!, x29!");
+  TEST_SINGLE(cpyfm(XReg::x17, XReg::x20, XReg::x19), "cpyfm [x17]!, [x20]!, x19!");
+
+  TEST_SINGLE(cpyfe(XReg::x30, XReg::x28, XReg::x29), "cpyfe [x30]!, [x28]!, x29!");
+  TEST_SINGLE(cpyfe(XReg::x17, XReg::x20, XReg::x19), "cpyfe [x17]!, [x20]!, x19!");
+
+  // TEST_SINGLE(cpyfpwt(XReg::x30, XReg::x28, XReg::x29), "cpyfpwt [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfpwt(XReg::x17, XReg::x20, XReg::x19), "cpyfpwt [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfpwt(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfpwt(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfmwt(XReg::x30, XReg::x28, XReg::x29), "cpyfmwt [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfmwt(XReg::x17, XReg::x20, XReg::x19), "cpyfmwt [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfmwt(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfmwt(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfewt(XReg::x30, XReg::x28, XReg::x29), "cpyfewt [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfewt(XReg::x17, XReg::x20, XReg::x19), "cpyfewt [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfewt(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfewt(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfprt(XReg::x30, XReg::x28, XReg::x29), "cpyfprt [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfprt(XReg::x17, XReg::x20, XReg::x19), "cpyfprt [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfprt(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfprt(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfmrt(XReg::x30, XReg::x28, XReg::x29), "cpyfmrt [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfmrt(XReg::x17, XReg::x20, XReg::x19), "cpyfmrt [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfmrt(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfmrt(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfert(XReg::x30, XReg::x28, XReg::x29), "cpyfert [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfert(XReg::x17, XReg::x20, XReg::x19), "cpyfert [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfert(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfert(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfpt(XReg::x30, XReg::x28, XReg::x29), "cpyfpt [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfpt(XReg::x17, XReg::x20, XReg::x19), "cpyfpt [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfpt(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfpt(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfmt(XReg::x30, XReg::x28, XReg::x29), "cpyfmt [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfmt(XReg::x17, XReg::x20, XReg::x19), "cpyfmt [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfmt(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfmt(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfet(XReg::x30, XReg::x28, XReg::x29), "cpyfet [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfet(XReg::x17, XReg::x20, XReg::x19), "cpyfet [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfet(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfet(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  TEST_SINGLE(cpyfpwn(XReg::x30, XReg::x28, XReg::x29), "cpyfpwn [x30]!, [x28]!, x29!");
+  TEST_SINGLE(cpyfpwn(XReg::x17, XReg::x20, XReg::x19), "cpyfpwn [x17]!, [x20]!, x19!");
+
+  TEST_SINGLE(cpyfmwn(XReg::x30, XReg::x28, XReg::x29), "cpyfmwn [x30]!, [x28]!, x29!");
+  TEST_SINGLE(cpyfmwn(XReg::x17, XReg::x20, XReg::x19), "cpyfmwn [x17]!, [x20]!, x19!");
+
+  TEST_SINGLE(cpyfewn(XReg::x30, XReg::x28, XReg::x29), "cpyfewn [x30]!, [x28]!, x29!");
+  TEST_SINGLE(cpyfewn(XReg::x17, XReg::x20, XReg::x19), "cpyfewn [x17]!, [x20]!, x19!");
+
+  // TEST_SINGLE(cpyfpwtwn(XReg::x30, XReg::x28, XReg::x29), "cpyfpwtwn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfpwtwn(XReg::x17, XReg::x20, XReg::x19), "cpyfpwtwn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfpwtwn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfpwtwn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfmwtwn(XReg::x30, XReg::x28, XReg::x29), "cpyfmwtwn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfmwtwn(XReg::x17, XReg::x20, XReg::x19), "cpyfmwtwn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfmwtwn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfmwtwn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfewtwn(XReg::x30, XReg::x28, XReg::x29), "cpyfewtwn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfewtwn(XReg::x17, XReg::x20, XReg::x19), "cpyfewtwn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfewtwn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfewtwn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfprtwn(XReg::x30, XReg::x28, XReg::x29), "cpyfprtwn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfprtwn(XReg::x17, XReg::x20, XReg::x19), "cpyfprtwn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfprtwn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfprtwn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfmrtwn(XReg::x30, XReg::x28, XReg::x29), "cpyfmrtwn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfmrtwn(XReg::x17, XReg::x20, XReg::x19), "cpyfmrtwn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfmrtwn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfmrtwn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfertwn(XReg::x30, XReg::x28, XReg::x29), "cpyfertwn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfertwn(XReg::x17, XReg::x20, XReg::x19), "cpyfertwn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfertwn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfertwn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfptwn(XReg::x30, XReg::x28, XReg::x29), "cpyfptwn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfptwn(XReg::x17, XReg::x20, XReg::x19), "cpyfptwn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfptwn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfptwn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfmtwn(XReg::x30, XReg::x28, XReg::x29), "cpyfmtwn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfmtwn(XReg::x17, XReg::x20, XReg::x19), "cpyfmtwn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfmtwn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfmtwn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfetwn(XReg::x30, XReg::x28, XReg::x29), "cpyfetwn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfetwn(XReg::x17, XReg::x20, XReg::x19), "cpyfetwn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfetwn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfetwn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  TEST_SINGLE(cpyfprn(XReg::x30, XReg::x28, XReg::x29), "cpyfprn [x30]!, [x28]!, x29!");
+  TEST_SINGLE(cpyfprn(XReg::x17, XReg::x20, XReg::x19), "cpyfprn [x17]!, [x20]!, x19!");
+
+  TEST_SINGLE(cpyfmrn(XReg::x30, XReg::x28, XReg::x29), "cpyfmrn [x30]!, [x28]!, x29!");
+  TEST_SINGLE(cpyfmrn(XReg::x17, XReg::x20, XReg::x19), "cpyfmrn [x17]!, [x20]!, x19!");
+
+  TEST_SINGLE(cpyfern(XReg::x30, XReg::x28, XReg::x29), "cpyfern [x30]!, [x28]!, x29!");
+  TEST_SINGLE(cpyfern(XReg::x17, XReg::x20, XReg::x19), "cpyfern [x17]!, [x20]!, x19!");
+
+  // TEST_SINGLE(cpyfpwtrn(XReg::x30, XReg::x28, XReg::x29), "cpyfpwtrn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfpwtrn(XReg::x17, XReg::x20, XReg::x19), "cpyfpwtrn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfpwtrn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfpwtrn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfmwtrn(XReg::x30, XReg::x28, XReg::x29), "cpyfmwtrn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfmwtrn(XReg::x17, XReg::x20, XReg::x19), "cpyfmwtrn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfmwtrn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfmwtrn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfewtrn(XReg::x30, XReg::x28, XReg::x29), "cpyfewtrn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfewtrn(XReg::x17, XReg::x20, XReg::x19), "cpyfewtrn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfewtrn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfewtrn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfprtrn(XReg::x30, XReg::x28, XReg::x29), "cpyfprtrn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfprtrn(XReg::x17, XReg::x20, XReg::x19), "cpyfprtrn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfprtrn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfprtrn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfmrtrn(XReg::x30, XReg::x28, XReg::x29), "cpyfmrtrn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfmrtrn(XReg::x17, XReg::x20, XReg::x19), "cpyfmrtrn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfmrtrn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfmrtrn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfertrn(XReg::x30, XReg::x28, XReg::x29), "cpyfertrn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfertrn(XReg::x17, XReg::x20, XReg::x19), "cpyfertrn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfertrn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfertrn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfptrn(XReg::x30, XReg::x28, XReg::x29), "cpyfptrn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfptrn(XReg::x17, XReg::x20, XReg::x19), "cpyfptrn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfptrn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfptrn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfmtrn(XReg::x30, XReg::x28, XReg::x29), "cpyfmtrn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfmtrn(XReg::x17, XReg::x20, XReg::x19), "cpyfmtrn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfmtrn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfmtrn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfetrn(XReg::x30, XReg::x28, XReg::x29), "cpyfetrn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfetrn(XReg::x17, XReg::x20, XReg::x19), "cpyfetrn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfetrn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfetrn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  TEST_SINGLE(cpyfpn(XReg::x30, XReg::x28, XReg::x29), "cpyfpn [x30]!, [x28]!, x29!");
+  TEST_SINGLE(cpyfpn(XReg::x17, XReg::x20, XReg::x19), "cpyfpn [x17]!, [x20]!, x19!");
+
+  TEST_SINGLE(cpyfmn(XReg::x30, XReg::x28, XReg::x29), "cpyfmn [x30]!, [x28]!, x29!");
+  TEST_SINGLE(cpyfmn(XReg::x17, XReg::x20, XReg::x19), "cpyfmn [x17]!, [x20]!, x19!");
+
+  TEST_SINGLE(cpyfen(XReg::x30, XReg::x28, XReg::x29), "cpyfen [x30]!, [x28]!, x29!");
+  TEST_SINGLE(cpyfen(XReg::x17, XReg::x20, XReg::x19), "cpyfen [x17]!, [x20]!, x19!");
+
+  // TEST_SINGLE(cpyfpwtn(XReg::x30, XReg::x28, XReg::x29), "cpyfpwtn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfpwtn(XReg::x17, XReg::x20, XReg::x19), "cpyfpwtn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfpwtn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfpwtn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfmwtn(XReg::x30, XReg::x28, XReg::x29), "cpyfmwtn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfmwtn(XReg::x17, XReg::x20, XReg::x19), "cpyfmwtn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfmwtn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfmwtn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfewtn(XReg::x30, XReg::x28, XReg::x29), "cpyfewtn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfewtn(XReg::x17, XReg::x20, XReg::x19), "cpyfewtn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfewtn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfewtn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfprtn(XReg::x30, XReg::x28, XReg::x29), "cpyfprtn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfprtn(XReg::x17, XReg::x20, XReg::x19), "cpyfprtn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfprtn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfprtn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfmrtn(XReg::x30, XReg::x28, XReg::x29), "cpyfmrtn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfmrtn(XReg::x17, XReg::x20, XReg::x19), "cpyfmrtn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfmrtn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfmrtn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfertn(XReg::x30, XReg::x28, XReg::x29), "cpyfertn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfertn(XReg::x17, XReg::x20, XReg::x19), "cpyfertn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfertn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfertn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfptn(XReg::x30, XReg::x28, XReg::x29), "cpyfptn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfptn(XReg::x17, XReg::x20, XReg::x19), "cpyfptn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfptn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfptn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfmtn(XReg::x30, XReg::x28, XReg::x29), "cpyfmtn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfmtn(XReg::x17, XReg::x20, XReg::x19), "cpyfmtn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfmtn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfmtn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyfetn(XReg::x30, XReg::x28, XReg::x29), "cpyfetn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyfetn(XReg::x17, XReg::x20, XReg::x19), "cpyfetn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyfetn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyfetn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  TEST_SINGLE(setp(XReg::x30, XReg::x28, XReg::x29), "setp [x30]!, x28!, x29");
+  TEST_SINGLE(setp(XReg::x17, XReg::x20, XReg::x19), "setp [x17]!, x20!, x19");
+
+  TEST_SINGLE(setm(XReg::x30, XReg::x28, XReg::x29), "setm [x30]!, x28!, x29");
+  TEST_SINGLE(setm(XReg::x17, XReg::x20, XReg::x19), "setm [x17]!, x20!, x19");
+
+  TEST_SINGLE(sete(XReg::x30, XReg::x28, XReg::x29), "sete [x30]!, x28!, x29");
+  TEST_SINGLE(sete(XReg::x17, XReg::x20, XReg::x19), "sete [x17]!, x20!, x19");
+
+  // TEST_SINGLE(setpt(XReg::x30, XReg::x28, XReg::x29), "setpt [x30]!, x28!, x29");
+  // TEST_SINGLE(setpt(XReg::x17, XReg::x20, XReg::x19), "setpt [x17]!, x20!, x19");
+  TEST_SINGLE(setpt(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(setpt(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(setmt(XReg::x30, XReg::x28, XReg::x29), "setmt [x30]!, x28!, x29");
+  // TEST_SINGLE(setmt(XReg::x17, XReg::x20, XReg::x19), "setmt [x17]!, x20!, x19");
+  TEST_SINGLE(setmt(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(setmt(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(setet(XReg::x30, XReg::x28, XReg::x29), "setet [x30]!, x28!, x29");
+  // TEST_SINGLE(setet(XReg::x17, XReg::x20, XReg::x19), "setet [x17]!, x20!, x19");
+  TEST_SINGLE(setet(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(setet(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  TEST_SINGLE(setpn(XReg::x30, XReg::x28, XReg::x29), "setpn [x30]!, x28!, x29");
+  TEST_SINGLE(setpn(XReg::x17, XReg::x20, XReg::x19), "setpn [x17]!, x20!, x19");
+
+  TEST_SINGLE(setmn(XReg::x30, XReg::x28, XReg::x29), "setmn [x30]!, x28!, x29");
+  TEST_SINGLE(setmn(XReg::x17, XReg::x20, XReg::x19), "setmn [x17]!, x20!, x19");
+
+  TEST_SINGLE(seten(XReg::x30, XReg::x28, XReg::x29), "seten [x30]!, x28!, x29");
+  TEST_SINGLE(seten(XReg::x17, XReg::x20, XReg::x19), "seten [x17]!, x20!, x19");
+
+  // TEST_SINGLE(setptn(XReg::x30, XReg::x28, XReg::x29), "setptn [x30]!, x28!, x29");
+  // TEST_SINGLE(setptn(XReg::x17, XReg::x20, XReg::x19), "setptn [x17]!, x20!, x19");
+  TEST_SINGLE(setptn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(setptn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(setmtn(XReg::x30, XReg::x28, XReg::x29), "setmtn [x30]!, x28!, x29");
+  // TEST_SINGLE(setmtn(XReg::x17, XReg::x20, XReg::x19), "setmtn [x17]!, x20!, x19");
+  TEST_SINGLE(setmtn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(setmtn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(setetn(XReg::x30, XReg::x28, XReg::x29), "setetn [x30]!, x28!, x29");
+  // TEST_SINGLE(setetn(XReg::x17, XReg::x20, XReg::x19), "setetn [x17]!, x20!, x19");
+  TEST_SINGLE(setetn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(setetn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  TEST_SINGLE(cpyp(XReg::x30, XReg::x28, XReg::x29), "cpyp [x30]!, [x28]!, x29!");
+  TEST_SINGLE(cpyp(XReg::x17, XReg::x20, XReg::x19), "cpyp [x17]!, [x20]!, x19!");
+
+  TEST_SINGLE(cpym(XReg::x30, XReg::x28, XReg::x29), "cpym [x30]!, [x28]!, x29!");
+  TEST_SINGLE(cpym(XReg::x17, XReg::x20, XReg::x19), "cpym [x17]!, [x20]!, x19!");
+
+  TEST_SINGLE(cpye(XReg::x30, XReg::x28, XReg::x29), "cpye [x30]!, [x28]!, x29!");
+  TEST_SINGLE(cpye(XReg::x17, XReg::x20, XReg::x19), "cpye [x17]!, [x20]!, x19!");
+
+  // TEST_SINGLE(cpypwt(XReg::x30, XReg::x28, XReg::x29), "cpypwt [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpypwt(XReg::x17, XReg::x20, XReg::x19), "cpypwt [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpypwt(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpypwt(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpymwt(XReg::x30, XReg::x28, XReg::x29), "cpymwt [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpymwt(XReg::x17, XReg::x20, XReg::x19), "cpymwt [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpymwt(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpymwt(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyewt(XReg::x30, XReg::x28, XReg::x29), "cpyewt [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyewt(XReg::x17, XReg::x20, XReg::x19), "cpyewt [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyewt(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyewt(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyprt(XReg::x30, XReg::x28, XReg::x29), "cpyprt [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyprt(XReg::x17, XReg::x20, XReg::x19), "cpyprt [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyprt(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyprt(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpymrt(XReg::x30, XReg::x28, XReg::x29), "cpymrt [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpymrt(XReg::x17, XReg::x20, XReg::x19), "cpymrt [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpymrt(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpymrt(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyert(XReg::x30, XReg::x28, XReg::x29), "cpyert [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyert(XReg::x17, XReg::x20, XReg::x19), "cpyert [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyert(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyert(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpypt(XReg::x30, XReg::x28, XReg::x29), "cpypt [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpypt(XReg::x17, XReg::x20, XReg::x19), "cpypt [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpypt(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpypt(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpymt(XReg::x30, XReg::x28, XReg::x29), "cpymt [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpymt(XReg::x17, XReg::x20, XReg::x19), "cpymt [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpymt(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpymt(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyet(XReg::x30, XReg::x28, XReg::x29), "cpyet [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyet(XReg::x17, XReg::x20, XReg::x19), "cpyet [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyet(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyet(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  TEST_SINGLE(cpypwn(XReg::x30, XReg::x28, XReg::x29), "cpypwn [x30]!, [x28]!, x29!");
+  TEST_SINGLE(cpypwn(XReg::x17, XReg::x20, XReg::x19), "cpypwn [x17]!, [x20]!, x19!");
+
+  TEST_SINGLE(cpymwn(XReg::x30, XReg::x28, XReg::x29), "cpymwn [x30]!, [x28]!, x29!");
+  TEST_SINGLE(cpymwn(XReg::x17, XReg::x20, XReg::x19), "cpymwn [x17]!, [x20]!, x19!");
+
+  TEST_SINGLE(cpyewn(XReg::x30, XReg::x28, XReg::x29), "cpyewn [x30]!, [x28]!, x29!");
+  TEST_SINGLE(cpyewn(XReg::x17, XReg::x20, XReg::x19), "cpyewn [x17]!, [x20]!, x19!");
+
+  // TEST_SINGLE(cpypwtwn(XReg::x30, XReg::x28, XReg::x29), "cpypwtwn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpypwtwn(XReg::x17, XReg::x20, XReg::x19), "cpypwtwn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpypwtwn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpypwtwn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpymwtwn(XReg::x30, XReg::x28, XReg::x29), "cpymwtwn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpymwtwn(XReg::x17, XReg::x20, XReg::x19), "cpymwtwn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpymwtwn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpymwtwn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyewtwn(XReg::x30, XReg::x28, XReg::x29), "cpyewtwn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyewtwn(XReg::x17, XReg::x20, XReg::x19), "cpyewtwn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyewtwn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyewtwn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyprtwn(XReg::x30, XReg::x28, XReg::x29), "cpyprtwn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyprtwn(XReg::x17, XReg::x20, XReg::x19), "cpyprtwn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyprtwn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyprtwn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpymrtwn(XReg::x30, XReg::x28, XReg::x29), "cpymrtwn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpymrtwn(XReg::x17, XReg::x20, XReg::x19), "cpymrtwn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpymrtwn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpymrtwn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyertwn(XReg::x30, XReg::x28, XReg::x29), "cpyertwn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyertwn(XReg::x17, XReg::x20, XReg::x19), "cpyertwn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyertwn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyertwn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyptwn(XReg::x30, XReg::x28, XReg::x29), "cpyptwn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyptwn(XReg::x17, XReg::x20, XReg::x19), "cpyptwn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyptwn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyptwn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpymtwn(XReg::x30, XReg::x28, XReg::x29), "cpymtwn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpymtwn(XReg::x17, XReg::x20, XReg::x19), "cpymtwn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpymtwn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpymtwn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyetwn(XReg::x30, XReg::x28, XReg::x29), "cpyetwn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyetwn(XReg::x17, XReg::x20, XReg::x19), "cpyetwn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyetwn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyetwn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  TEST_SINGLE(cpyprn(XReg::x30, XReg::x28, XReg::x29), "cpyprn [x30]!, [x28]!, x29!");
+  TEST_SINGLE(cpyprn(XReg::x17, XReg::x20, XReg::x19), "cpyprn [x17]!, [x20]!, x19!");
+
+  TEST_SINGLE(cpymrn(XReg::x30, XReg::x28, XReg::x29), "cpymrn [x30]!, [x28]!, x29!");
+  TEST_SINGLE(cpymrn(XReg::x17, XReg::x20, XReg::x19), "cpymrn [x17]!, [x20]!, x19!");
+
+  TEST_SINGLE(cpyern(XReg::x30, XReg::x28, XReg::x29), "cpyern [x30]!, [x28]!, x29!");
+  TEST_SINGLE(cpyern(XReg::x17, XReg::x20, XReg::x19), "cpyern [x17]!, [x20]!, x19!");
+
+  // TEST_SINGLE(cpypwtrn(XReg::x30, XReg::x28, XReg::x29), "cpypwtrn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpypwtrn(XReg::x17, XReg::x20, XReg::x19), "cpypwtrn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpypwtrn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpypwtrn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpymwtrn(XReg::x30, XReg::x28, XReg::x29), "cpymwtrn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpymwtrn(XReg::x17, XReg::x20, XReg::x19), "cpymwtrn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpymwtrn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpymwtrn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyewtrn(XReg::x30, XReg::x28, XReg::x29), "cpyewtrn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyewtrn(XReg::x17, XReg::x20, XReg::x19), "cpyewtrn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyewtrn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyewtrn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyprtrn(XReg::x30, XReg::x28, XReg::x29), "cpyprtrn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyprtrn(XReg::x17, XReg::x20, XReg::x19), "cpyprtrn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyprtrn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyprtrn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpymrtrn(XReg::x30, XReg::x28, XReg::x29), "cpymrtrn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpymrtrn(XReg::x17, XReg::x20, XReg::x19), "cpymrtrn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpymrtrn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpymrtrn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyertrn(XReg::x30, XReg::x28, XReg::x29), "cpyertrn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyertrn(XReg::x17, XReg::x20, XReg::x19), "cpyertrn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyertrn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyertrn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyptrn(XReg::x30, XReg::x28, XReg::x29), "cpyptrn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyptrn(XReg::x17, XReg::x20, XReg::x19), "cpyptrn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyptrn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyptrn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpymtrn(XReg::x30, XReg::x28, XReg::x29), "cpymtrn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpymtrn(XReg::x17, XReg::x20, XReg::x19), "cpymtrn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpymtrn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpymtrn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyetrn(XReg::x30, XReg::x28, XReg::x29), "cpyetrn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyetrn(XReg::x17, XReg::x20, XReg::x19), "cpyetrn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyetrn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyetrn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  TEST_SINGLE(cpypn(XReg::x30, XReg::x28, XReg::x29), "cpypn [x30]!, [x28]!, x29!");
+  TEST_SINGLE(cpypn(XReg::x17, XReg::x20, XReg::x19), "cpypn [x17]!, [x20]!, x19!");
+
+  TEST_SINGLE(cpymn(XReg::x30, XReg::x28, XReg::x29), "cpymn [x30]!, [x28]!, x29!");
+  TEST_SINGLE(cpymn(XReg::x17, XReg::x20, XReg::x19), "cpymn [x17]!, [x20]!, x19!");
+
+  TEST_SINGLE(cpyen(XReg::x30, XReg::x28, XReg::x29), "cpyen [x30]!, [x28]!, x29!");
+  TEST_SINGLE(cpyen(XReg::x17, XReg::x20, XReg::x19), "cpyen [x17]!, [x20]!, x19!");
+
+  // TEST_SINGLE(cpypwtn(XReg::x30, XReg::x28, XReg::x29), "cpypwtn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpypwtn(XReg::x17, XReg::x20, XReg::x19), "cpypwtn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpypwtn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpypwtn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpymwtn(XReg::x30, XReg::x28, XReg::x29), "cpymwtn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpymwtn(XReg::x17, XReg::x20, XReg::x19), "cpymwtn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpymwtn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpymwtn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyewtn(XReg::x30, XReg::x28, XReg::x29), "cpyewtn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyewtn(XReg::x17, XReg::x20, XReg::x19), "cpyewtn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyewtn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyewtn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyprtn(XReg::x30, XReg::x28, XReg::x29), "cpyprtn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyprtn(XReg::x17, XReg::x20, XReg::x19), "cpyprtn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyprtn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyprtn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpymrtn(XReg::x30, XReg::x28, XReg::x29), "cpymrtn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpymrtn(XReg::x17, XReg::x20, XReg::x19), "cpymrtn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpymrtn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpymrtn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyertn(XReg::x30, XReg::x28, XReg::x29), "cpyertn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyertn(XReg::x17, XReg::x20, XReg::x19), "cpyertn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyertn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyertn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyptn(XReg::x30, XReg::x28, XReg::x29), "cpyptn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyptn(XReg::x17, XReg::x20, XReg::x19), "cpyptn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyptn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyptn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpymtn(XReg::x30, XReg::x28, XReg::x29), "cpymtn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpymtn(XReg::x17, XReg::x20, XReg::x19), "cpymtn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpymtn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpymtn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(cpyetn(XReg::x30, XReg::x28, XReg::x29), "cpyetn [x30]!, [x28]!, x29!");
+  // TEST_SINGLE(cpyetn(XReg::x17, XReg::x20, XReg::x19), "cpyetn [x17]!, [x20]!, x19!");
+  TEST_SINGLE(cpyetn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(cpyetn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  TEST_SINGLE(setgp(XReg::x30, XReg::x28, XReg::x29), "setgp [x30]!, x28!, x29");
+  TEST_SINGLE(setgp(XReg::x17, XReg::x20, XReg::x19), "setgp [x17]!, x20!, x19");
+
+  TEST_SINGLE(setgm(XReg::x30, XReg::x28, XReg::x29), "setgm [x30]!, x28!, x29");
+  TEST_SINGLE(setgm(XReg::x17, XReg::x20, XReg::x19), "setgm [x17]!, x20!, x19");
+
+  TEST_SINGLE(setge(XReg::x30, XReg::x28, XReg::x29), "setge [x30]!, x28!, x29");
+  TEST_SINGLE(setge(XReg::x17, XReg::x20, XReg::x19), "setge [x17]!, x20!, x19");
+
+  // TEST_SINGLE(setgpt(XReg::x30, XReg::x28, XReg::x29), "setgpt [x30]!, x28!, x29");
+  // TEST_SINGLE(setgpt(XReg::x17, XReg::x20, XReg::x19), "setgpt [x17]!, x20!, x19");
+  TEST_SINGLE(setgpt(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(setgpt(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(setgmt(XReg::x30, XReg::x28, XReg::x29), "setgmt [x30]!, x28!, x29");
+  // TEST_SINGLE(setgmt(XReg::x17, XReg::x20, XReg::x19), "setgmt [x17]!, x20!, x19");
+  TEST_SINGLE(setgmt(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(setgmt(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(setget(XReg::x30, XReg::x28, XReg::x29), "setget [x30]!, x28!, x29");
+  // TEST_SINGLE(setget(XReg::x17, XReg::x20, XReg::x19), "setget [x17]!, x20!, x19");
+  TEST_SINGLE(setget(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(setget(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  TEST_SINGLE(setgpn(XReg::x30, XReg::x28, XReg::x29), "setgpn [x30]!, x28!, x29");
+  TEST_SINGLE(setgpn(XReg::x17, XReg::x20, XReg::x19), "setgpn [x17]!, x20!, x19");
+
+  TEST_SINGLE(setgmn(XReg::x30, XReg::x28, XReg::x29), "setgmn [x30]!, x28!, x29");
+  TEST_SINGLE(setgmn(XReg::x17, XReg::x20, XReg::x19), "setgmn [x17]!, x20!, x19");
+
+  TEST_SINGLE(setgen(XReg::x30, XReg::x28, XReg::x29), "setgen [x30]!, x28!, x29");
+  TEST_SINGLE(setgen(XReg::x17, XReg::x20, XReg::x19), "setgen [x17]!, x20!, x19");
+
+  // TEST_SINGLE(setgptn(XReg::x30, XReg::x28, XReg::x29), "setgptn [x30]!, x28!, x29");
+  // TEST_SINGLE(setgptn(XReg::x17, XReg::x20, XReg::x19), "setgptn [x17]!, x20!, x19");
+  TEST_SINGLE(setgptn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(setgptn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(setgmtn(XReg::x30, XReg::x28, XReg::x29), "setgmtn [x30]!, x28!, x29");
+  // TEST_SINGLE(setgmtn(XReg::x17, XReg::x20, XReg::x19), "setgmtn [x17]!, x20!, x19");
+  TEST_SINGLE(setgmtn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(setgmtn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
+
+  // TEST_SINGLE(setgetn(XReg::x30, XReg::x28, XReg::x29), "setgetn [x30]!, x28!, x29");
+  // TEST_SINGLE(setgetn(XReg::x17, XReg::x20, XReg::x19), "setgetn [x17]!, x20!, x19");
+  TEST_SINGLE(setgetn(XReg::x30, XReg::x28, XReg::x29), "unimplemented (Unimplemented)");
+  TEST_SINGLE(setgetn(XReg::x17, XReg::x20, XReg::x19), "unimplemented (Unimplemented)");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Loadstore no-allocate pair") {
   TEST_SINGLE(stnp(WReg::w30, WReg::w28, Reg::r29, -256), "stnp w30, w28, [x29, #-256]");
