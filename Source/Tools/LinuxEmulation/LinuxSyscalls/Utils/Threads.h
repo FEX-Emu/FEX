@@ -11,6 +11,10 @@ namespace FEXCore::Threads {
 class Thread;
 }
 
+namespace FEX::HLE {
+struct ThreadStateObject;
+}
+
 namespace FEX::LinuxEmulation::Threads {
 /**
  * @brief Size of the stack that this interface creates.
@@ -34,6 +38,8 @@ public:
   bool* AddStackToDeadPool(void* Ptr);
   void AddStackToLivePool(void* Ptr);
   void RemoveStackFromLivePool(void* Ptr);
+
+  void DeallocateStackObjectImmediately(void* Ptr);
 
   [[noreturn]]
   void DeallocateStackObjectAndExit(void* Ptr, int Status);
@@ -67,6 +73,9 @@ void* AllocateStackObject();
 void DeallocateStackObjectAndExit(void* Ptr, int Status);
 
 void* GetStackBase(FEXCore::Threads::Thread* ThreadObject);
+
+[[noreturn]]
+void LongjumpDeallocateAndExit(FEX::HLE::ThreadStateObject* ThreadObject, int Status);
 
 /**
  * @brief Registers thread creation handlers with FEXCore.
