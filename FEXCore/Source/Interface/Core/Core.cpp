@@ -790,6 +790,18 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
   // Attempt to get the CPU backend to compile this code
 
   auto Lock = std::unique_lock {CodeBufferWriteMutex};
+
+  // Re-check if another thread raced us in compiling this block.
+  // We could lock CodeBufferWriteMutex earlier to prevent this from happening,
+  // but this would increase lock contention. Redundant frontend runs aren't
+  // as expensive and are easily reverted.
+  if (MaxInst != 1) {
+    if (auto Block = Thread->LookupCache->FindBlock(GuestRIP)) {
+      Thread->OpDispatcher->DelayedDisownBuffer();
+      return {.CompiledCode = reinterpret_cast<void*>(Block), .DebugData = nullptr, .StartAddr = 0, .Length = 0, .CodeBufferLock {}};
+    }
+  }
+
   auto CompiledCode = Thread->CPUBackend->CompileCode(GuestRIP, Length, TotalInstructions == 1, &*IRView, DebugData.get(), RAData, TFSet);
 
   // Release the IR
@@ -826,6 +838,9 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
   auto [CodePtr, DebugData, StartAddr, Length, CodeBufferLock] = CompileCode(Thread, GuestRIP, MaxInst);
   if (CodePtr == nullptr) {
     return 0;
+  } else if (!CodeBufferLock) {
+    // Lock was released, indicating another thread raced us for compiling this block
+    return reinterpret_cast<uintptr_t>(CodePtr);
   }
 
   // The core managed to compile the code.
