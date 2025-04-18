@@ -475,8 +475,7 @@ DEF_OP(Vector_FToISized) {
 
   const auto ElementSize = Op->Header.ElementSize;
   const auto SubEmitSize = ConvertSubRegSize248(IROp);
-  const auto Is256Bit = IROp->Size == IR::OpSize::i256Bit;
-  LOGMAN_THROW_A_FMT(!Is256Bit, "256-bit not wired up, though we could change that");
+  LOGMAN_THROW_A_FMT(IROp->Size != IR::OpSize::i256Bit, "256-bit not wired up, though we could change that");
   LOGMAN_THROW_A_FMT(CTX->HostFeatures.SupportsFRINTTS, "Need FRINTTS for Vector_FToISized");
 
   const auto Dst = GetVReg(Node);
