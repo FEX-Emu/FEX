@@ -67,7 +67,11 @@ configure_file(
 
 include_directories(${CMAKE_BINARY_DIR}/generated)
 
-add_compile_options(-fno-exceptions)
+# Disable strict aliasing for all build modes
+# See discussion in https://github.com/FEX-Emu/FEX/pull/4494#issuecomment-2800608944
+# for background context.
+add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-strict-aliasing> $<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>)
+
 add_subdirectory(Source/)
 
 install (DIRECTORY include/FEXCore ${CMAKE_BINARY_DIR}/include/FEXCore
