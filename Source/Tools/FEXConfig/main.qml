@@ -293,10 +293,7 @@ ApplicationWindow {
     }
 
     StackLayout {
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: tabBar.bottom
-        anchors.bottom: parent.bottom
+        anchors.fill: parent
 
         currentIndex: tabBar.currentIndex
 
