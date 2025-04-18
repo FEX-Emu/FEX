@@ -2151,7 +2151,24 @@ public:
 
     ASIMD3Different(Op, 1, 0b0011, ConvertedSize, rd, rn, rm);
   }
-  // XXX: RADDHN/2
+  ///< Size is dest size
+  void raddhn(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "No 64-bit dest support.");
+
+    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
+    const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size)};
+
+    ASIMD3Different(Op, 1, 0b0100, ConvertedSize, rd, rn, rm);
+  }
+  ///< Size is dest size
+  void raddhn2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "No 64-bit dest support.");
+
+    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
+    const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size)};
+
+    ASIMD3Different(Op, 1, 0b0100, ConvertedSize, rd, rn, rm);
+  }
   ///< Size is dest size
   void uabal(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
@@ -2170,7 +2187,24 @@ public:
 
     ASIMD3Different(Op, 1, 0b0101, ConvertedSize, rd, rn, rm);
   }
-  // XXX: RSUBHN/2
+  ///< Size is dest size
+  void rsubhn(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "No 64-bit dest support.");
+
+    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
+    const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size)};
+
+    ASIMD3Different(Op, 1, 0b0110, ConvertedSize, rd, rn, rm);
+  }
+  ///< Size is dest size
+  void rsubhn2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "No 64-bit dest support.");
+
+    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
+    const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size)};
+
+    ASIMD3Different(Op, 1, 0b0110, ConvertedSize, rd, rn, rm);
+  }
   ///< Size is dest size
   void uabdl(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
