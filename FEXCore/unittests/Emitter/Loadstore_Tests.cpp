@@ -2906,7 +2906,25 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Loadstore register-regis
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Loadstore PAC") {
-  // TODO: Implement in emitter.
+  TEST_SINGLE(ldraa(XReg::x30, XReg::x29, ARMEmitter::IndexType::OFFSET, 0), "ldraa x30, [x29]");
+  TEST_SINGLE(ldraa(XReg::x30, XReg::x29, ARMEmitter::IndexType::OFFSET, -4096), "ldraa x30, [x29, #-4096]");
+  TEST_SINGLE(ldraa(XReg::x30, XReg::x29, ARMEmitter::IndexType::OFFSET, 512), "ldraa x30, [x29, #512]");
+  TEST_SINGLE(ldraa(XReg::x30, XReg::x29, ARMEmitter::IndexType::OFFSET, 4088), "ldraa x30, [x29, #4088]");
+
+  TEST_SINGLE(ldraa(XReg::x30, XReg::x29, ARMEmitter::IndexType::PRE, 0), "ldraa x30, [x29]!");
+  TEST_SINGLE(ldraa(XReg::x30, XReg::x29, ARMEmitter::IndexType::PRE, -4096), "ldraa x30, [x29, #-4096]!");
+  TEST_SINGLE(ldraa(XReg::x30, XReg::x29, ARMEmitter::IndexType::PRE, 512), "ldraa x30, [x29, #512]!");
+  TEST_SINGLE(ldraa(XReg::x30, XReg::x29, ARMEmitter::IndexType::PRE, 4088), "ldraa x30, [x29, #4088]!");
+
+  TEST_SINGLE(ldrab(XReg::x30, XReg::x29, ARMEmitter::IndexType::OFFSET, 0), "ldrab x30, [x29]");
+  TEST_SINGLE(ldrab(XReg::x30, XReg::x29, ARMEmitter::IndexType::OFFSET, -4096), "ldrab x30, [x29, #-4096]");
+  TEST_SINGLE(ldrab(XReg::x30, XReg::x29, ARMEmitter::IndexType::OFFSET, 512), "ldrab x30, [x29, #512]");
+  TEST_SINGLE(ldrab(XReg::x30, XReg::x29, ARMEmitter::IndexType::OFFSET, 4088), "ldrab x30, [x29, #4088]");
+
+  TEST_SINGLE(ldrab(XReg::x30, XReg::x29, ARMEmitter::IndexType::PRE, 0), "ldrab x30, [x29]!");
+  TEST_SINGLE(ldrab(XReg::x30, XReg::x29, ARMEmitter::IndexType::PRE, -4096), "ldrab x30, [x29, #-4096]!");
+  TEST_SINGLE(ldrab(XReg::x30, XReg::x29, ARMEmitter::IndexType::PRE, 512), "ldrab x30, [x29, #512]!");
+  TEST_SINGLE(ldrab(XReg::x30, XReg::x29, ARMEmitter::IndexType::PRE, 4088), "ldrab x30, [x29, #4088]!");
 }
 
 TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Loadstore unsigned immediate") {

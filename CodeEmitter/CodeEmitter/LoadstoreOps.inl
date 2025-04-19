@@ -4182,7 +4182,12 @@ public:
   }
 
   // Loadstore PAC
-  // TODO
+  void ldraa(XRegister rt, XRegister rn, IndexType type, int32_t offset = 0) {
+    LoadStorePAC(0b11, 0, 0, offset, type, rn, rt);
+  }
+  void ldrab(XRegister rt, XRegister rn, IndexType type, int32_t offset = 0) {
+    LoadStorePAC(0b11, 0, 1, offset, type, rn, rt);
+  }
 
   // Loadstore unsigned immediate
   // Maximum values of unsigned immediate offsets for particular data sizes.
@@ -4408,6 +4413,30 @@ private:
     Instr |= Shift << 12;
     Instr |= Encode_rn(rn);
     Instr |= Encode_rm(rm);
+    dc32(Instr);
+  }
+
+  void LoadStorePAC(uint32_t size, uint32_t VR, uint32_t M, int32_t imm, IndexType type, Register rn, Register rt) {
+    LOGMAN_THROW_A_FMT((imm % 8) == 0, "Immediate ({}) must be divisible by 8", imm);
+    LOGMAN_THROW_A_FMT(imm >= -4096 && imm <= 4088, "Immediate ({}) must be within [-4096, 4088]", imm);
+    LOGMAN_THROW_A_FMT(type == IndexType::OFFSET || type == IndexType::PRE, "PAC may only use offset or pre-indexed values");
+
+    // The immediate is scaled down in order to fit within the available 10 immediate bits.
+    const auto scaled_imm = static_cast<uint32_t>(imm / 8);
+    const auto imm9 = scaled_imm & 0b1'1111'1111;
+    const auto S = (scaled_imm >> 9) & 1;
+
+    const auto W = type == IndexType::OFFSET ? 0U : 1U;
+
+    uint32_t Instr = 0b0011'1000'0010'0000'0000'0100'0000'0000;
+    Instr |= size << 30;
+    Instr |= VR << 26;
+    Instr |= M << 23;
+    Instr |= S << 22;
+    Instr |= imm9 << 12;
+    Instr |= W << 11;
+    Instr |= rn.Idx() << 5;
+    Instr |= rt.Idx();
     dc32(Instr);
   }
 
