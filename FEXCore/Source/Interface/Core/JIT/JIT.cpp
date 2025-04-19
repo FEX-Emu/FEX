@@ -39,7 +39,6 @@ $end_info$
 #include <string.h>
 #include <limits>
 
-static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
 // We don't want to move above 128MB atm because that means we will have to encode longer jumps
 static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 128;
 
@@ -501,6 +500,8 @@ static void IndirectBlockDelinker(FEXCore::Core::CpuStateFrame* Frame, FEXCore::
 
 static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record) {
   auto Thread = Frame->Thread;
+  auto Lock = Thread->LookupCache->AcquireLock();
+
   bool TFSet = Thread->CurrentFrame->State.flags[X86State::RFLAG_TF_RAW_LOC];
   uintptr_t HostCode {};
   auto GuestRip = Record->GuestRIP;
@@ -541,7 +542,7 @@ static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame* Fram
 void Arm64JITCore::Op_NoOp(const IR::IROp_Header* IROp, IR::NodeID Node) {}
 
 Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::InternalThreadState* Thread)
-  : CPUBackend(Thread, INITIAL_CODE_SIZE, MAX_CODE_SIZE)
+  : CPUBackend(*ctx, Thread, MAX_CODE_SIZE)
   , Arm64Emitter(ctx)
   , HostSupportsSVE128 {ctx->HostFeatures.SupportsSVE128}
   , HostSupportsSVE256 {ctx->HostFeatures.SupportsSVE256}
@@ -598,8 +599,7 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::In
     AArch64.LREM = reinterpret_cast<uint64_t>(LREM);
   }
 
-  // Must be done after Dispatcher init
-  ClearCache();
+  CurrentCodeBuffer = CodeBuffers.GetCurrentCodeBuffer();
 
   // Setup dynamic dispatch.
   if (ParanoidTSO()) {
@@ -751,6 +751,15 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
   // Fairly excessive buffer range to make sure we don't overflow
   uint32_t BufferRange = SSACount * 16;
+
+  LOGMAN_THROW_A_FMT(CurrentCodeBuffer->LookupCache.get() == ThreadState->LookupCache->Shared, "INVARIANT VIOLATED: SharedLookupCache "
+                                                                                               "doesn't match up!\n");
+  if (auto Prev = CheckCodeBufferUpdate()) {
+    ThreadState->LookupCache->ChangeGuestToHostMapping(*Prev, *CurrentCodeBuffer->LookupCache);
+  }
+
+  SetBuffer(CurrentCodeBuffer->Ptr, CurrentCodeBuffer->Size);
+  SetCursorOffset(CodeBuffers.LatestOffset);
   if ((GetCursorOffset() + BufferRange) > CurrentCodeBuffer->Size) {
     CTX->ClearCodeCache(ThreadState);
   }
@@ -928,6 +937,8 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   CodeData.Size = GetCursorAddress<uint8_t*>() - CodeData.BlockBegin;
 
   JITBlockTail->Size = CodeData.Size;
+
+  CodeBuffers.LatestOffset = GetCursorOffset();
 
   ClearICache(CodeData.BlockBegin, CodeOnlySize);
 
