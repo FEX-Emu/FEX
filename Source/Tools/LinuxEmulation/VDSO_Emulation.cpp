@@ -753,7 +753,7 @@ VDSOMapping LoadVDSOThunks(bool Is64Bit, FEX::HLE::SyscallHandler* const Handler
       Mapping.VDSOSize = FEXCore::AlignUp(Mapping.VDSOSize, 4096);
 
       // Map the VDSO file to memory
-      Mapping.VDSOBase = Handler->GuestMmap(nullptr, nullptr, Mapping.VDSOSize, PROT_READ, MAP_SHARED, VDSOFD, 0);
+      Mapping.VDSOBase = Handler->GuestMmap(nullptr, nullptr, Mapping.VDSOSize, PROT_READ | PROT_EXEC, MAP_SHARED, VDSOFD, 0);
 
       // Since we found our VDSO thunk library, find our host VDSO function implementations.
       LoadHostVDSO();
