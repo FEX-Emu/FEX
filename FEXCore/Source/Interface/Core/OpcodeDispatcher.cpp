@@ -3919,7 +3919,7 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
 void OpDispatchBuilder::CreateJumpBlocks(const fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks>* Blocks) {
   Ref PrevCodeBlock {};
   for (auto& Target : *Blocks) {
-    auto CodeNode = CreateCodeNode();
+    auto CodeNode = CreateCodeNode(Target.EntryPoint, Target.Entry - Entry);
 
     JumpTargets.try_emplace(Target.Entry, JumpTargetInfo {CodeNode, false});
 

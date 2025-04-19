@@ -560,6 +560,10 @@ public:
     OvercommitTracker->UnmarkRange(Start, Length);
   }
 
+  FEXCore::HLE::ExecutableRangeInfo QueryGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Address) override {
+    return InvalidationTracker->QueryExecutableRange(Address);
+  }
+
   void PreCompile() override {
     ProcessPendingCrossProcessEmulatorWork();
   }
@@ -616,12 +620,16 @@ NTSTATUS ProcessInit() {
   CTX->InitCore();
   InvalidationTracker.emplace(*CTX, Threads);
 
+  HandleImageMap(NtDllBase);
+
   auto MainModule = reinterpret_cast<__TEB*>(NtCurrentTeb())->Peb->ImageBaseAddress;
   HandleImageMap(reinterpret_cast<uint64_t>(MainModule));
 
   CPUFeatures.emplace(*CTX);
 
   X64ReturnInstr = ::VirtualAlloc(nullptr, FEXCore::Utils::FEX_PAGE_SIZE, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+  InvalidationTracker->HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(X64ReturnInstr), FEXCore::Utils::FEX_PAGE_SIZE,
+                                                          PAGE_EXECUTE_READ);
   *reinterpret_cast<uint8_t*>(X64ReturnInstr) = 0xc3;
 
   const uintptr_t KiUserExceptionDispatcherFFS = reinterpret_cast<uintptr_t>(GetProcAddress(NtDll, "KiUserExceptionDispatcher"));

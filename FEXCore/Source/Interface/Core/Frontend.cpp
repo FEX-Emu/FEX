@@ -9,6 +9,7 @@ $end_info$
 #include "Interface/Context/Context.h"
 #include "Interface/Core/Frontend.h"
 #include "Interface/Core/X86Tables/X86Tables.h"
+#include "Interface/Core/LookupCache.h"
 
 #include <array>
 #include <algorithm>
@@ -21,6 +22,7 @@ $end_info$
 #include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/Utils/Telemetry.h>
 #include <FEXCore/Utils/TypeDefines.h>
+#include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/fextl/set.h>
 
 namespace FEXCore::Frontend {
@@ -64,25 +66,54 @@ static uint32_t MapVEXToReg(uint8_t vvvv, bool HasXMM) {
   }
 }
 
-Decoder::Decoder(FEXCore::Context::ContextImpl* ctx)
-  : CTX {ctx}
-  , OSABI {ctx->SyscallHandler ? ctx->SyscallHandler->GetOSABI() : FEXCore::HLE::SyscallOSABI::OS_UNKNOWN}
-  , PoolObject {ctx->FrontendAllocator, sizeof(FEXCore::X86Tables::DecodedInst) * DefaultDecodedBufferSize} {}
+Decoder::Decoder(FEXCore::Core::InternalThreadState* Thread)
+  : Thread {Thread}
+  , CTX {static_cast<FEXCore::Context::ContextImpl*>(Thread->CTX)}
+  , OSABI {CTX->SyscallHandler ? CTX->SyscallHandler->GetOSABI() : FEXCore::HLE::SyscallOSABI::OS_UNKNOWN}
+  , PoolObject {CTX->FrontendAllocator, sizeof(FEXCore::X86Tables::DecodedInst) * DefaultDecodedBufferSize} {}
 
 Decoder::~Decoder() {
   PoolObject.UnclaimBuffer();
 }
 
+bool Decoder::CheckRangeExecutable(uint64_t Address, uint64_t Size) {
+  while (Address < ExecutableRangeBase || Address + Size > ExecutableRangeEnd) {
+    auto RangeInfo = CTX->SyscallHandler->QueryGuestExecutableRange(Thread, Address);
+    ExecutableRangeBase = Address;
+    ExecutableRangeEnd = Address + RangeInfo.Size;
+
+    if (RangeInfo.Size == 0) {
+      return false;
+    }
+
+    if (Size > RangeInfo.Size) {
+      Size -= RangeInfo.Size;
+      Address += RangeInfo.Size;
+    }
+  }
+
+  return true;
+}
+
 uint8_t Decoder::ReadByte() {
-  uint8_t Byte = InstStream[InstructionSize];
   LOGMAN_THROW_A_FMT(InstructionSize < MAX_INST_SIZE, "Max instruction size exceeded!");
+  uint8_t Byte = PeekByte(0);
   Instruction[InstructionSize] = Byte;
   InstructionSize++;
   return Byte;
 }
 
-uint8_t Decoder::PeekByte(uint8_t Offset) const {
-  uint8_t Byte = InstStream[InstructionSize + Offset];
+uint8_t Decoder::PeekByte(uint8_t Offset) {
+  uint8_t Byte = 0;
+  uint64_t ByteAddress = reinterpret_cast<uint64_t>(InstStream + InstructionSize + Offset);
+  if (CheckRangeExecutable(ByteAddress, 1)) {
+    Byte = InstStream[InstructionSize + Offset];
+  } else {
+    HitNonExecutableRange = true;
+    // Pretend we read 0, the main decode loop will see HitNonExecutableRange and rollback the instruction.
+    Byte = 0;
+  }
+
   return Byte;
 }
 
@@ -90,7 +121,15 @@ uint64_t Decoder::ReadData(uint8_t Size) {
   LOGMAN_THROW_A_FMT(Size != 0 && Size <= sizeof(uint64_t), "Unknown data size to read");
 
   uint64_t Res = 0;
-  std::memcpy(&Res, &InstStream[InstructionSize], Size);
+  uint64_t Address = reinterpret_cast<uint64_t>(InstStream + InstructionSize);
+  if (CheckRangeExecutable(Address, Size)) {
+    std::memcpy(&Res, &InstStream[InstructionSize], Size);
+  } else {
+    HitNonExecutableRange = true;
+    // See PeekByte, this specific case may cause some executable memory to read as 0 but it doesn't matter as the entire instruction will be rolled back anyway.
+    Res = 0;
+  }
+
 
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
   for (size_t i = 0; i < Size; ++i) {
@@ -720,7 +759,7 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
   FEX_UNREACHABLE;
 }
 
-bool Decoder::DecodeInstruction(uint64_t PC) {
+bool Decoder::DecodeInstructionImpl(uint64_t PC) {
   InstructionSize = 0;
   Instruction.fill(0);
 
@@ -935,6 +974,31 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
       }
     }
   }
+
+  if (DecodeInst->Dest.IsGPR()) {
+    return false;
+  }
+
+  return true;
+}
+
+bool Decoder::DecodeInstruction(uint64_t PC) {
+  // Will be set if DecodeInstructionImpl tries to read non-executable memory
+  HitNonExecutableRange = false;
+  bool ErrorDuringDecoding = !DecodeInstructionImpl(PC);
+
+  if (ErrorDuringDecoding || HitNonExecutableRange) [[unlikely]] {
+    // Put an invalid instruction in the stream so the core can raise SIGILL if hit
+    // Error while decoding instruction. We don't know the table or instruction size
+    DecodeInst->TableInfo = nullptr;
+    DecodeInst->InstSize = 0;
+    return false;
+  } else if (!DecodeInst->TableInfo || !DecodeInst->TableInfo->OpcodeDispatcher) {
+    // If there wasn't an error during decoding but we have no dispatcher for the instruction then claim invalid instruction.
+    return false;
+  }
+
+  return true;
 }
 
 void Decoder::BranchTargetInMultiblockRange() {
@@ -948,6 +1012,13 @@ void Decoder::BranchTargetInMultiblockRange() {
   bool Conditional = true;
   const auto InstEnd = DecodeInst->PC + DecodeInst->InstSize;
 
+  if (DecodeInst->TableInfo->Flags & FEXCore::X86Tables::InstFlags::FLAGS_CALL) {
+    AddBranchTarget(InstEnd);
+    BlockEntryPoints.emplace(InstEnd);
+    return;
+  }
+
+  // Calls are handled above
   switch (DecodeInst->OP) {
   case 0x70 ... 0x7F:   // Conditional JUMP
   case 0x80 ... 0x8F: { // More conditional
@@ -963,11 +1034,6 @@ void Decoder::BranchTargetInMultiblockRange() {
     TargetRIP = InstEnd + DecodeInst->Src[0].Literal();
     Conditional = false;
     break;
-  case 0xE8: // Call - Immediate target, We don't want to inline calls
-    if (ExternalBranches) {
-      ExternalBranches->insert(InstEnd);
-    }
-    [[fallthrough]];
   case 0xC2: // RET imm
   case 0xC3: // RET
   default: return; break;
@@ -1107,13 +1173,13 @@ const uint8_t* Decoder::AdjustAddrForSpecialRegion(const uint8_t* _InstStream, u
   return _InstStream - EntryPoint + RIP;
 }
 
-void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC, uint64_t MaxInst,
-                                        std::function<void(uint64_t BlockEntry, uint64_t Start, uint64_t Length)> AddContainedCodePage) {
+void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC, uint64_t MaxInst) {
   FEXCORE_PROFILE_SCOPED("DecodeInstructions");
   BlockInfo.TotalInstructionCount = 0;
   BlockInfo.Blocks.clear();
   BlocksToDecode.clear();
   VisitedBlocks.clear();
+  BlockEntryPoints.clear();
   // Reset internal state management
   DecodedSize = 0;
   MaxCondBranchForward = 0;
@@ -1123,6 +1189,7 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
   // XXX: Load symbol data
   SymbolAvailable = false;
   EntryPoint = PC;
+  BlockEntryPoints.emplace(PC);
   InstStream = _InstStream;
 
   uint64_t TotalInstructions {};
@@ -1143,8 +1210,6 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
   uint64_t CurrentCodePage = PC & FEXCore::Utils::FEX_PAGE_MASK;
 
   fextl::set<uint64_t> CodePages = {CurrentCodePage};
-
-  AddContainedCodePage(PC, CurrentCodePage, FEXCore::Utils::FEX_PAGE_SIZE);
 
   if (MaxInst == 0) {
     MaxInst = CTX->Config.MaxInstPerBlock;
@@ -1179,6 +1244,7 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
 
     BlockIt->Entry = RIPToDecode;
     BlockIt->Size = 0;
+    BlockIt->EntryPoint = EntryBlock;
 
     uint64_t PCOffset = 0;
     uint64_t BlockStartOffset = DecodedSize;
@@ -1216,22 +1282,8 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
         CodePages.insert(CurrentCodePage);
       }
 
-      bool ErrorDuringDecoding = !DecodeInstruction(OpAddress);
+      BlockIt->HasInvalidInstruction = !DecodeInstruction(OpAddress);
       uint64_t OpEndAddress = OpAddress + DecodeInst->InstSize;
-
-      if (ErrorDuringDecoding) [[unlikely]] {
-        // Put an invalid instruction in the stream so the core can raise SIGILL if hit
-        BlockIt->HasInvalidInstruction = true;
-        // Error while decoding instruction. We don't know the table or instruction size
-        DecodeInst->TableInfo = nullptr;
-        DecodeInst->InstSize = 0;
-      } else {
-        // If there wasn't an error during decoding but we have no dispatcher for the instruction then claim invalid instruction.
-        auto TableInfo = DecodeInst->TableInfo;
-        if (!TableInfo || !TableInfo->OpcodeDispatcher) {
-          BlockIt->HasInvalidInstruction = true;
-        }
-      }
 
       DecodedMinAddress = std::min(DecodedMinAddress, OpAddress);
       DecodedMaxAddress = std::max(DecodedMaxAddress, OpEndAddress);
@@ -1296,8 +1348,14 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
 
   BlockInfo.TotalInstructionCount = TotalInstructions;
 
+  for (auto& Block : BlockInfo.Blocks) {
+    Block.EntryPoint = BlockEntryPoints.contains(Block.Entry);
+  }
+
   for (auto CodePage : CodePages) {
-    AddContainedCodePage(PC, CodePage, FEXCore::Utils::FEX_PAGE_SIZE);
+    if (Thread->LookupCache->AddBlockExecutableRange(BlockEntryPoints, CodePage, FEXCore::Utils::FEX_PAGE_SIZE)) {
+      CTX->SyscallHandler->MarkGuestExecutableRange(Thread, CodePage, FEXCore::Utils::FEX_PAGE_SIZE);
+    }
   }
 }
 

@@ -451,6 +451,10 @@ public:
     OvercommitTracker->UnmarkRange(Start, Length);
   }
 
+  FEXCore::HLE::ExecutableRangeInfo QueryGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Address) override {
+    return InvalidationTracker->QueryExecutableRange(Address);
+  }
+
   void PreCompile() override {
     Wow64ProcessPendingCrossProcessItems();
   }
@@ -491,6 +495,9 @@ void BTCpuProcessInit() {
   CTX->InitCore();
   InvalidationTracker.emplace(*CTX, Threads);
 
+  auto NtDllX86 = reinterpret_cast<SYSTEM_DLL_INIT_BLOCK*>(GetProcAddress(NtDll, "LdrSystemDllInitBlock"))->ntdll_handle;
+  HandleImageMap(NtDllX86);
+
   auto MainModule = reinterpret_cast<__TEB*>(NtCurrentTeb())->Peb->ImageBaseAddress;
   HandleImageMap(reinterpret_cast<uint64_t>(MainModule));
 
@@ -500,6 +507,7 @@ void BTCpuProcessInit() {
   SIZE_T Size = 4;
   void* Addr = nullptr;
   NtAllocateVirtualMemory(NtCurrentProcess(), &Addr, (1U << 31) - 1, &Size, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+  InvalidationTracker->HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Addr), Size, PAGE_EXECUTE);
   *reinterpret_cast<uint32_t*>(Addr) = 0x2ecd2ecd;
   BridgeInstrs::Syscall = Addr;
   BridgeInstrs::UnixCall = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(Addr) + 2);

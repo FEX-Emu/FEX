@@ -267,10 +267,10 @@ public:
    *
    * @return OrderedNode
    */
-  IRPair<IROp_CodeBlock> CreateCodeNode() {
+  IRPair<IROp_CodeBlock> CreateCodeNode(bool EntryPoint = false, uint32_t GuestEntryOffset = 0) {
     SetWriteCursor(nullptr); // Orphan from any previous nodes
 
-    auto CodeNode = _CodeBlock(InvalidNode, InvalidNode);
+    auto CodeNode = _CodeBlock(InvalidNode, InvalidNode, EntryPoint, GuestEntryOffset);
 
     CodeBlocks.emplace_back(CodeNode);
 
