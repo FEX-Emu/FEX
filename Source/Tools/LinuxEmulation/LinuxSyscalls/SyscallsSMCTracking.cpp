@@ -36,7 +36,7 @@ auto SyscallHandler::VMAProt::fromSHM(int SHMFlg) -> VMAProt {
   return VMAProt {
     .Readable = true,
     .Writable = SHMFlg & SHM_RDONLY ? false : true,
-    .Executable = false,
+    .Executable = SHMFlg & SHM_EXEC ? true : false,
   };
 }
 
@@ -341,8 +341,7 @@ void SyscallHandler::TrackShmat(FEXCore::Core::InternalThreadState* Thread, int 
     if (ResourceInserted.second) {
       Resource->Iterator = ResourceInserted.first;
     }
-    VMATracking.SetUnsafe(CTX, Resource, Base, 0, Length, VMAFlags::fromFlags(MAP_SHARED),
-                          VMAProt::fromProt((shmflg & SHM_RDONLY) ? PROT_READ : (PROT_READ | PROT_WRITE)));
+    VMATracking.SetUnsafe(CTX, Resource, Base, 0, Length, VMAFlags::fromFlags(MAP_SHARED), VMAProt::fromSHM(shmflg));
   }
   if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
     _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, Base, Length);
