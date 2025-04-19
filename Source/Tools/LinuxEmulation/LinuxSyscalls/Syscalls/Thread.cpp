@@ -463,13 +463,16 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
 
                                 ThreadObject->StatusCode = status;
 
-                                void* StackBase {};
-                                if (ThreadObject->ExecutionThread) {
-                                  StackBase = FEX::LinuxEmulation::Threads::GetStackBase(ThreadObject->ExecutionThread.get());
-                                }
                                 FEX::HLE::_SyscallHandler->UninstallTLSState(ThreadObject);
-                                FEX::HLE::_SyscallHandler->TM.DestroyThread(ThreadObject, true);
-                                FEX::LinuxEmulation::Threads::DeallocateStackObjectAndExit(StackBase, status);
+
+                                if (ThreadObject->ExecutionThread) {
+                                  // If this is a pthread based execution thread, then there is more work to be done.
+                                  // Delegate final deletion and cleanup to the pthreads Thread management.
+                                  FEX::LinuxEmulation::Threads::LongjumpDeallocateAndExit(ThreadObject, status);
+                                } else {
+                                  FEX::HLE::_SyscallHandler->TM.DestroyThread(ThreadObject, true);
+                                  FEX::LinuxEmulation::Threads::DeallocateStackObjectAndExit(nullptr, status);
+                                }
                                 // This will never be reached
                                 std::terminate();
                               });

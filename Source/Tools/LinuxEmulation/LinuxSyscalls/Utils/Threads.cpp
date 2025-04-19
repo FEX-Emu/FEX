@@ -5,6 +5,8 @@
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Utils/Threads.h>
 
+#include <csetjmp>
+
 namespace FEX::LinuxEmulation::Threads {
 void* StackTracker::AllocateStackObject() {
   std::lock_guard lk {DeadStackPoolMutex};
@@ -103,6 +105,14 @@ void StackTracker::Shutdown() {
   LiveStackPool.clear();
 }
 
+void StackTracker::DeallocateStackObjectImmediately(void* Ptr) {
+  if (Ptr) {
+    RemoveStackFromLivePool(Ptr);
+    auto ReadyToBeReaped = AddStackToDeadPool(Ptr);
+    *ReadyToBeReaped = true;
+  }
+}
+
 [[noreturn]]
 void StackTracker::DeallocateStackObjectAndExit(void* Ptr, int Status) {
   if (Ptr) {
@@ -180,7 +190,6 @@ __attribute__((naked)) void StackPivotAndCall(void* Arg, FEXCore::Threads::Threa
 }
 #endif
 namespace PThreads {
-  [[noreturn]]
   void* InitializeThread(void* Ptr);
 
   class PThread final : public FEXCore::Threads::Thread {
@@ -251,35 +260,92 @@ namespace PThreads {
       return STracker;
     }
 
+    void SetupLongJump(std::jmp_buf* exit_resolver) {
+      _exit_resolver = exit_resolver;
+    }
+
+    [[noreturn]]
+    void LongJumpExit(FEX::HLE::ThreadStateObject* ThreadObject, uint32_t Status) {
+      this->Status = Status;
+      this->ThreadObject = ThreadObject;
+      std::longjmp(*_exit_resolver, 1);
+    }
+
+    uint32_t GetStatus() const {
+      return Status;
+    }
+
+    FEX::HLE::ThreadStateObject* GetThreadObject() const {
+      return ThreadObject;
+    }
+
   private:
     pthread_t Thread;
     StackTracker* STracker;
     FEXCore::Threads::ThreadFunc UserFunc;
     void* UserArg;
     void* Stack {};
+
+    std::jmp_buf* _exit_resolver {};
+    FEX::HLE::ThreadStateObject* ThreadObject {};
+    uint32_t Status {};
   };
 
-  [[noreturn]]
   void* InitializeThread(void* Ptr) {
     void* StackBase {};
     StackTracker* STracker {};
-    {
-      PThread* Thread {reinterpret_cast<PThread*>(Ptr)};
-      StackBase = Thread->GetPivotStack();
-      STracker = Thread->GetStackTracker();
+    PThread* Thread {reinterpret_cast<PThread*>(Ptr)};
+    StackBase = Thread->GetPivotStack();
+    STracker = Thread->GetStackTracker();
+    std::jmp_buf exit_resolver {};
 
+    bool LongJumpExit {};
+
+    if (setjmp(exit_resolver) == 0) {
+      Thread->SetupLongJump(&exit_resolver);
       // Run the user function.
       // `Thread` object is dead after this function returns.
       StackPivotAndCall(Thread->GetUserArg(), Thread->GetUserFunc(),
                         reinterpret_cast<uint64_t>(StackBase) + FEX::LinuxEmulation::Threads::STACK_SIZE);
+    } else {
+      LongJumpExit = true;
     }
 
+    const auto Status = Thread->GetStatus();
+    auto ThreadObject = Thread->GetThreadObject();
     // TLS/DTV teardown is something FEX can't control. Disable glibc checking when we leave a pthread.
     FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator::HardDisable();
 
-    STracker->DeallocateStackObjectAndExit(StackBase, 0);
+    // Detach to ensure thread teardown occurs.
+    Thread->detach();
 
-    FEX_UNREACHABLE;
+    if (LongJumpExit) {
+      // We have ownership of the thread object. Make sure to clean it up to prevent memory leaks.
+      FEX::HLE::_SyscallHandler->TM.DestroyThread(ThreadObject, true);
+      if (Status == 0) {
+        // If status is zero then we can safely deallocate this thread's pivot stack (Which is no longer used).
+        STracker->DeallocateStackObjectImmediately(StackBase);
+        StackBase = nullptr;
+      }
+    }
+
+    if (!LongJumpExit || Status != 0) {
+      // If we didn't have a long jump exit (So not a pthread thread) OR status wasn't zero then we need to terminate locally.
+      // There is an api limitation in glibc/pthreads where a function's return value is ignored and not passed to SYS_exit.
+      // In or to match error condition thread exits, we must call SYS_exit ourselves in this case.
+      //
+      // This is a memory leak if this is a pthread based thread! We can't work around this.
+      // - Leaks 128KB PTHREAD_STACK_MIN
+      // - Leaks some glibc internal dtv tracking data.
+      STracker->DeallocateStackObjectAndExit(StackBase, Status);
+      FEX_UNREACHABLE;
+    }
+
+    // Give control back to pthreads.
+    // This is required so glibc puts this thread's stack back in the stack cache, preventing a memory leak.
+    // We can't use pthread_exit since that requires libgcc_s.so unwinder support which might not be available.
+    // We are /expecting/ pthreads to return this status to the _exit syscall.
+    return (void*)(uint64_t)Status;
   }
 
   StackTracker* STracker {};
@@ -313,6 +379,13 @@ void* AllocateStackObject() {
 [[noreturn]]
 void DeallocateStackObjectAndExit(void* Ptr, int Status) {
   PThreads::STracker->DeallocateStackObjectAndExit(Ptr, Status);
+  FEX_UNREACHABLE;
+}
+
+[[noreturn]]
+void LongjumpDeallocateAndExit(FEX::HLE::ThreadStateObject* ThreadObject, int Status) {
+  auto ThreadObject_P = reinterpret_cast<PThreads::PThread*>(ThreadObject->ExecutionThread.get());
+  ThreadObject_P->LongJumpExit(ThreadObject, Status);
   FEX_UNREACHABLE;
 }
 
