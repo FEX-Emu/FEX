@@ -8,6 +8,7 @@
 #include <FEXCore/fextl/fmt.h>
 
 #include <sys/mman.h>
+#include <sys/personality.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <git_version.h>
@@ -171,6 +172,8 @@ FEX::HLE::ThreadStateObject* ThreadManager::CreateThread(uint64_t InitialRIP, ui
   if (InheritThread) {
     FEX::HLE::_SyscallHandler->SeccompEmulator.InheritSeccompFilters(InheritThread, ThreadStateObject);
     ThreadStateObject->persona = InheritThread->persona;
+  } else {
+    ThreadStateObject->persona = ::personality(0xffffffff);
   }
 
   ++IdleWaitRefCount;
