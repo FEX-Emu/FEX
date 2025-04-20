@@ -573,6 +573,10 @@ enum class Rotation : uint32_t {
 template<typename T>
 concept IsXOrWRegister = std::is_same_v<T, XRegister> || std::is_same_v<T, WRegister>;
 
+// Concept for contraining some instructions to accept only a QRegister or DRegister.
+template<typename T>
+concept IsQOrDRegister = std::is_same_v<T, QRegister> || std::is_same_v<T, DRegister>;
+
 // Whether or not a given set of vector registers are sequential
 // in increasing order as far as the register file is concerned (modulo its size)
 //

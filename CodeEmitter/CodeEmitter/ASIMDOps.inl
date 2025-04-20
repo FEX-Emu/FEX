@@ -302,8 +302,7 @@ public:
   }
 
   // Advanced SIMD copy
-  template<typename T>
-  requires (std::is_same_v<QRegister, T> || std::is_same_v<DRegister, T>)
+  template<IsQOrDRegister T>
   void dup(SubRegSize size, T rd, T rn, uint32_t Index) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit dup");
@@ -325,8 +324,7 @@ public:
   }
 
   // Advanced SIMD three same (FP16)
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void ASIMDThreeSameFP16(uint32_t U, uint32_t a, uint32_t opcode, T rm, T rn, T rd) {
     constexpr uint32_t Q = std::is_same_v<ARMEmitter::QRegister, T> ? 1U << 30 : 0;
     constexpr uint32_t Op = 0b0000'1110'0100'0000'0000'01 << 10;
@@ -343,8 +341,7 @@ public:
   }
 
   // Advanced SIMD two-register miscellaneous (FP16)
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void ASIMDTwoRegMiscFP16(uint32_t U, uint32_t a, uint32_t opcode, T rn, T rd) {
     constexpr uint32_t Q = std::is_same_v<ARMEmitter::QRegister, T> ? 1U << 30 : 0;
     constexpr uint32_t Op = 0b0000'1110'0111'1000'0000'10 << 10;
@@ -360,8 +357,7 @@ public:
   }
 
   // Advanced SIMD three-register extension
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void ASIMDThreeRegisterExt(uint32_t U, uint32_t opcode, ARMEmitter::SubRegSize size, T rm, T rn, T rd) {
     constexpr uint32_t Q = std::is_same_v<ARMEmitter::QRegister, T> ? 1U << 30 : 0;
     constexpr uint32_t Op = 0b0000'1110'0000'0000'1000'01 << 10;
@@ -377,8 +373,7 @@ public:
     dc32(Instr);
   }
 
-  template<typename T>
-  requires (std::is_same_v<QRegister, T> || std::is_same_v<DRegister, T>)
+  template<IsQOrDRegister T>
   void dup(SubRegSize size, T rd, Register rn) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit dup");
@@ -500,282 +495,281 @@ public:
   }
 
   // Advanced SIMD three same (FP16)
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fmaxnm(T rd, T rn, T rm) {
     ASIMDThreeSameFP16(0, 0, 0b000, rm, rn, rd);
   }
 
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fmla(T rd, T rn, T rm) {
     ASIMDThreeSameFP16(0, 0, 0b001, rm, rn, rd);
   }
 
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fadd(T rd, T rn, T rm) {
     ASIMDThreeSameFP16(0, 0, 0b010, rm, rn, rd);
   }
 
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fmulx(T rd, T rn, T rm) {
     ASIMDThreeSameFP16(0, 0, 0b011, rm, rn, rd);
   }
 
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fcmeq(T rd, T rn, T rm) {
     ASIMDThreeSameFP16(0, 0, 0b100, rm, rn, rd);
   }
 
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fmax(T rd, T rn, T rm) {
     ASIMDThreeSameFP16(0, 0, 0b110, rm, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void frecps(T rd, T rn, T rm) {
     ASIMDThreeSameFP16(0, 0, 0b111, rm, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fminnm(T rd, T rn, T rm) {
     ASIMDThreeSameFP16(0, 1, 0b000, rm, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fmls(T rd, T rn, T rm) {
     ASIMDThreeSameFP16(0, 1, 0b001, rm, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fsub(T rd, T rn, T rm) {
     ASIMDThreeSameFP16(0, 1, 0b010, rm, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fmin(T rd, T rn, T rm) {
     ASIMDThreeSameFP16(0, 1, 0b110, rm, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void frsqrts(T rd, T rn, T rm) {
     ASIMDThreeSameFP16(0, 1, 0b111, rm, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fmaxnmp(T rd, T rn, T rm) {
     ASIMDThreeSameFP16(1, 0, 0b000, rm, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void faddp(T rd, T rn, T rm) {
     ASIMDThreeSameFP16(1, 0, 0b010, rm, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fmul(T rd, T rn, T rm) {
     ASIMDThreeSameFP16(1, 0, 0b011, rm, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fcmge(T rd, T rn, T rm) {
     ASIMDThreeSameFP16(1, 0, 0b100, rm, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void facge(T rd, T rn, T rm) {
     ASIMDThreeSameFP16(1, 0, 0b101, rm, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fmaxp(T rd, T rn, T rm) {
     ASIMDThreeSameFP16(1, 0, 0b110, rm, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fdiv(T rd, T rn, T rm) {
     ASIMDThreeSameFP16(1, 0, 0b111, rm, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fminnmp(T rd, T rn, T rm) {
     ASIMDThreeSameFP16(1, 1, 0b000, rm, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fabd(T rd, T rn, T rm) {
     ASIMDThreeSameFP16(1, 1, 0b010, rm, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fcmgt(T rd, T rn, T rm) {
     ASIMDThreeSameFP16(1, 1, 0b100, rm, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void facgt(T rd, T rn, T rm) {
     ASIMDThreeSameFP16(1, 1, 0b101, rm, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fminp(T rd, T rn, T rm) {
     ASIMDThreeSameFP16(1, 1, 0b110, rm, rn, rd);
   }
 
   // Advanced SIMD two-register miscellaneous (FP16)
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void frintn(T rd, T rn) {
     ASIMDTwoRegMiscFP16(0, 0, 0b11000, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void frintm(T rd, T rn) {
     ASIMDTwoRegMiscFP16(0, 0, 0b11001, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fcvtns(T rd, T rn) {
     ASIMDTwoRegMiscFP16(0, 0, 0b11010, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fcvtms(T rd, T rn) {
     ASIMDTwoRegMiscFP16(0, 0, 0b11011, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fcvtas(T rd, T rn) {
     ASIMDTwoRegMiscFP16(0, 0, 0b11100, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void scvtf(T rd, T rn) {
     ASIMDTwoRegMiscFP16(0, 0, 0b11101, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fcmgt(T rd, T rn) {
     ASIMDTwoRegMiscFP16(0, 1, 0b01100, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fcmeq(T rd, T rn) {
     ASIMDTwoRegMiscFP16(0, 1, 0b01101, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fcmlt(T rd, T rn) {
     ASIMDTwoRegMiscFP16(0, 1, 0b01110, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fabs(T rd, T rn) {
     ASIMDTwoRegMiscFP16(0, 1, 0b01111, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void frintp(T rd, T rn) {
     ASIMDTwoRegMiscFP16(0, 1, 0b11000, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void frintz(T rd, T rn) {
     ASIMDTwoRegMiscFP16(0, 1, 0b11001, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fcvtps(T rd, T rn) {
     ASIMDTwoRegMiscFP16(0, 1, 0b11010, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fcvtzs(T rd, T rn) {
     ASIMDTwoRegMiscFP16(0, 1, 0b11011, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void frecpe(T rd, T rn) {
     ASIMDTwoRegMiscFP16(0, 1, 0b11101, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void frinta(T rd, T rn) {
     ASIMDTwoRegMiscFP16(1, 0, 0b11000, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void frintx(T rd, T rn) {
     ASIMDTwoRegMiscFP16(1, 0, 0b11001, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fcvtnu(T rd, T rn) {
     ASIMDTwoRegMiscFP16(1, 0, 0b11010, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fcvtmu(T rd, T rn) {
     ASIMDTwoRegMiscFP16(1, 0, 0b11011, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fcvtau(T rd, T rn) {
     ASIMDTwoRegMiscFP16(1, 0, 0b11100, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void ucvtf(T rd, T rn) {
     ASIMDTwoRegMiscFP16(1, 0, 0b11101, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fcmge(T rd, T rn) {
     ASIMDTwoRegMiscFP16(1, 1, 0b01100, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fcmle(T rd, T rn) {
     ASIMDTwoRegMiscFP16(1, 1, 0b01101, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fneg(T rd, T rn) {
     ASIMDTwoRegMiscFP16(1, 1, 0b01111, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void frinti(T rd, T rn) {
     ASIMDTwoRegMiscFP16(1, 1, 0b11001, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fcvtpu(T rd, T rn) {
     ASIMDTwoRegMiscFP16(1, 1, 0b11010, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fcvtzu(T rd, T rn) {
     ASIMDTwoRegMiscFP16(1, 1, 0b11011, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void frsqrte(T rd, T rn) {
     ASIMDTwoRegMiscFP16(1, 1, 0b11101, rn, rd);
   }
-  template<ARMEmitter::SubRegSize size, typename T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit && (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>))
+  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
+  requires (size == ARMEmitter::SubRegSize::i16Bit)
   void fsqrt(T rd, T rn) {
     ASIMDTwoRegMiscFP16(1, 1, 0b11111, rn, rd);
   }
 
   // Advanced SIMD three-register extension
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void sdot(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -783,30 +777,26 @@ public:
     ASIMDThreeRegisterExt(0, 0b0010, size, rm, rn, rd);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void usdot(T rd, T rn, T rm) {
     ASIMDThreeRegisterExt(0, 0b0011, ARMEmitter::SubRegSize::i32Bit, rm, rn, rd);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void sqrdmlah(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
     }
     ASIMDThreeRegisterExt(1, 0b0000, size, rm, rn, rd);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void sqrdmlsh(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
     }
     ASIMDThreeRegisterExt(1, 0b0001, size, rm, rn, rd);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void udot(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -814,8 +804,7 @@ public:
     ASIMDThreeRegisterExt(1, 0b0010, size, rm, rn, rd);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fcmla(ARMEmitter::SubRegSize size, T rd, T rn, T rm, ARMEmitter::Rotation Rot) {
     LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i8Bit, "8-bit subregsize not supported");
 
@@ -824,8 +813,7 @@ public:
     }
     ASIMDThreeRegisterExt(1, 0b1000 | FEXCore::ToUnderlying(Rot), size, rm, rn, rd);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fcadd(ARMEmitter::SubRegSize size, T rd, T rn, T rm, ARMEmitter::Rotation Rot) {
     LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i8Bit, "8-bit subregsize not supported");
 
@@ -836,8 +824,7 @@ public:
     const uint32_t ConvertedRotation = Rot == ARMEmitter::Rotation::ROTATE_90 ? 0b00 : 0b10;
     ASIMDThreeRegisterExt(1, 0b1100 | ConvertedRotation, size, rm, rn, rd);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void bfdot(T rd, T rn, T rm) {
     ASIMDThreeRegisterExt(1, 0b1111, ARMEmitter::SubRegSize::i16Bit, rm, rn, rd);
   }
@@ -861,16 +848,14 @@ public:
   }
 
   // Advanced SIMD two-register miscellaneous
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void rev64(ARMEmitter::SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
     ASIMD2RegMisc<T>(Op, 0, size, 0b00000, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void rev16(ARMEmitter::SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i8Bit, "Only 8-bit subregsize supported");
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
@@ -879,8 +864,7 @@ public:
 
   ///< size is the destination size.
   ///< source size is the next size up.
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void saddlp(ARMEmitter::SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i8Bit, "Destination 8-bit subregsize unsupported");
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
@@ -892,8 +876,7 @@ public:
     ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b00010, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void suqadd(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -902,15 +885,13 @@ public:
     ASIMD2RegMisc<T>(Op, 0, size, 0b00011, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void cls(ARMEmitter::SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
     ASIMD2RegMisc<T>(Op, 0, size, 0b00100, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void cnt(ARMEmitter::SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i8Bit, "Only 8-bit subregsize supported");
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
@@ -919,8 +900,7 @@ public:
 
   ///< size is the destination size.
   ///< source size is the next size up.
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void sadalp(ARMEmitter::SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i8Bit, "Destination 8-bit subregsize unsupported");
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
@@ -932,8 +912,7 @@ public:
     ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b00110, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void sqabs(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -942,8 +921,7 @@ public:
     ASIMD2RegMisc<T>(Op, 0, size, 0b00111, rd, rn);
   }
   // Comparison against zero
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void cmgt(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -952,8 +930,7 @@ public:
     ASIMD2RegMisc<T>(Op, 0, size, 0b01000, rd, rn);
   }
   // Comparison against zero
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void cmeq(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -962,8 +939,7 @@ public:
     ASIMD2RegMisc<T>(Op, 0, size, 0b01001, rd, rn);
   }
   // Comparison against zero
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void cmlt(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -971,8 +947,7 @@ public:
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
     ASIMD2RegMisc<T>(Op, 0, size, 0b01010, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void abs(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1053,8 +1028,7 @@ public:
     ASIMD2RegMisc(Op, 0, ConvertedSize, 0b10111, rd.Q(), rn.Q());
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void frintn(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1066,8 +1040,7 @@ public:
 
     ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b11000, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void frintm(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1080,8 +1053,7 @@ public:
     ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b11001, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fcvtns(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1093,8 +1065,7 @@ public:
 
     ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b11010, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fcvtms(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1106,8 +1077,7 @@ public:
 
     ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b11011, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fcvtas(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1119,8 +1089,7 @@ public:
 
     ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b11100, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void scvtf(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1132,8 +1101,7 @@ public:
 
     ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b11101, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void frint32z(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1145,8 +1113,7 @@ public:
 
     ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b11110, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void frint64z(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1159,8 +1126,7 @@ public:
     ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b11111, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fcmgt(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1171,8 +1137,7 @@ public:
     ASIMD2RegMisc<T>(Op, 0, size, 0b01100, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fcmeq(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1183,8 +1148,7 @@ public:
     ASIMD2RegMisc<T>(Op, 0, size, 0b01101, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fcmlt(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1195,8 +1159,7 @@ public:
     ASIMD2RegMisc<T>(Op, 0, size, 0b01110, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fabs(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1207,8 +1170,7 @@ public:
     ASIMD2RegMisc<T>(Op, 0, size, 0b01111, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void frintp(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1219,8 +1181,7 @@ public:
     ASIMD2RegMisc<T>(Op, 0, size, 0b11000, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void frintz(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1231,8 +1192,7 @@ public:
     ASIMD2RegMisc<T>(Op, 0, size, 0b11001, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fcvtps(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1243,8 +1203,7 @@ public:
     ASIMD2RegMisc<T>(Op, 0, size, 0b11010, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fcvtzs(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1255,16 +1214,14 @@ public:
     ASIMD2RegMisc<T>(Op, 0, size, 0b11011, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void urecpe(ARMEmitter::SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit subregsize supported");
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
     ASIMD2RegMisc<T>(Op, 0, size, 0b11100, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void frecpe(ARMEmitter::SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit & 64-bit subregsize "
                                                                                                          "supported");
@@ -1272,8 +1229,7 @@ public:
     ASIMD2RegMisc<T>(Op, 0, size, 0b11101, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void rev32(ARMEmitter::SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i8Bit || size == ARMEmitter::SubRegSize::i16Bit, "Only 8-bit & 16-bit subregsize "
                                                                                                         "supported");
@@ -1283,8 +1239,7 @@ public:
 
   ///< size is the destination size.
   ///< source size is the next size up.
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void uaddlp(ARMEmitter::SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i8Bit, "Destination 8-bit subregsize unsupported");
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
@@ -1296,8 +1251,7 @@ public:
     ASIMD2RegMisc<T>(Op, 1, ConvertedSize, 0b00010, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void usqadd(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1306,8 +1260,7 @@ public:
     ASIMD2RegMisc<T>(Op, 1, size, 0b00011, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void clz(ARMEmitter::SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
@@ -1316,8 +1269,7 @@ public:
 
   ///< size is the destination size.
   ///< source size is the next size up.
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void uadalp(ARMEmitter::SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i8Bit, "Destination 8-bit subregsize unsupported");
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
@@ -1329,8 +1281,7 @@ public:
     ASIMD2RegMisc<T>(Op, 1, ConvertedSize, 0b00110, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void sqneg(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1340,8 +1291,7 @@ public:
   }
 
   // Comparison against zero
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void cmge(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1350,8 +1300,7 @@ public:
     ASIMD2RegMisc<T>(Op, 1, size, 0b01000, rd, rn);
   }
   // Comparison against zero
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void cmle(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1359,8 +1308,7 @@ public:
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
     ASIMD2RegMisc<T>(Op, 1, size, 0b01001, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void neg(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1441,8 +1389,7 @@ public:
 
     ASIMD2RegMisc(Op, 1, ConvertedSize, 0b10110, rd.Q(), rn.Q());
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void frinta(ARMEmitter::SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit & 64-bit subregsize "
                                                                                                          "supported");
@@ -1453,8 +1400,7 @@ public:
 
     ASIMD2RegMisc<T>(Op, 1, ConvertedSize, 0b11000, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void frintx(ARMEmitter::SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit & 64-bit subregsize "
                                                                                                          "supported");
@@ -1466,8 +1412,7 @@ public:
     ASIMD2RegMisc<T>(Op, 1, ConvertedSize, 0b11001, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fcvtnu(ARMEmitter::SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit & 64-bit subregsize "
                                                                                                          "supported");
@@ -1478,8 +1423,7 @@ public:
 
     ASIMD2RegMisc<T>(Op, 1, ConvertedSize, 0b11010, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fcvtmu(ARMEmitter::SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit & 64-bit subregsize "
                                                                                                          "supported");
@@ -1490,8 +1434,7 @@ public:
 
     ASIMD2RegMisc<T>(Op, 1, ConvertedSize, 0b11011, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fcvtau(ARMEmitter::SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit & 64-bit subregsize "
                                                                                                          "supported");
@@ -1502,8 +1445,7 @@ public:
 
     ASIMD2RegMisc<T>(Op, 1, ConvertedSize, 0b11100, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void ucvtf(ARMEmitter::SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit & 64-bit subregsize "
                                                                                                          "supported");
@@ -1514,8 +1456,7 @@ public:
 
     ASIMD2RegMisc<T>(Op, 1, ConvertedSize, 0b11101, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void frint32x(ARMEmitter::SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit & 64-bit subregsize "
                                                                                                          "supported");
@@ -1526,8 +1467,7 @@ public:
 
     ASIMD2RegMisc<T>(Op, 1, ConvertedSize, 0b11110, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void frint64x(ARMEmitter::SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit & 64-bit subregsize "
                                                                                                          "supported");
@@ -1539,31 +1479,27 @@ public:
     ASIMD2RegMisc<T>(Op, 1, ConvertedSize, 0b11111, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void not_(ARMEmitter::SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i8Bit, "Only 8-bit subregsize supported");
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
     ASIMD2RegMisc<T>(Op, 1, ARMEmitter::SubRegSize::i8Bit, 0b00101, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void mvn(ARMEmitter::SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i8Bit, "Only 8-bit subregsize supported");
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
     ASIMD2RegMisc<T>(Op, 1, ARMEmitter::SubRegSize::i8Bit, 0b00101, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void rbit(ARMEmitter::SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i8Bit, "Only 8-bit subregsize supported");
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
     ASIMD2RegMisc<T>(Op, 1, ARMEmitter::SubRegSize::i16Bit, 0b00101, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fcmge(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1573,8 +1509,7 @@ public:
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
     ASIMD2RegMisc<T>(Op, 1, size, 0b01100, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fcmle(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1585,8 +1520,7 @@ public:
     ASIMD2RegMisc<T>(Op, 1, size, 0b01101, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fneg(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1597,8 +1531,7 @@ public:
     ASIMD2RegMisc<T>(Op, 1, size, 0b01111, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void frinti(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1609,8 +1542,7 @@ public:
     ASIMD2RegMisc<T>(Op, 1, size, 0b11001, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fcvtpu(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1620,8 +1552,7 @@ public:
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
     ASIMD2RegMisc<T>(Op, 1, size, 0b11010, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fcvtzu(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1632,15 +1563,13 @@ public:
     ASIMD2RegMisc<T>(Op, 1, size, 0b11011, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void ursqrte(ARMEmitter::SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit & 64-bit subregsize supported");
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
     ASIMD2RegMisc<T>(Op, 1, size, 0b11100, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void frsqrte(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1651,8 +1580,7 @@ public:
     ASIMD2RegMisc<T>(Op, 1, size, 0b11101, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fsqrt(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1666,8 +1594,7 @@ public:
   // Advanced SIMD across lanes
   ///< size is the destination size.
   ///< source size is the next size up.
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void saddlv(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1682,8 +1609,7 @@ public:
     ASIMDAcrossLanes<T>(Op, 0, ConvertedSize, 0b00011, rd, rn);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void smaxv(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i32Bit && size != ARMEmitter::SubRegSize::i64Bit, "32/64-bit subregsize not "
@@ -1693,8 +1619,7 @@ public:
     constexpr uint32_t Op = 0b0000'1110'0011'0000'0000'10 << 10;
     ASIMDAcrossLanes<T>(Op, 0, size, 0b01010, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void sminv(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i32Bit && size != ARMEmitter::SubRegSize::i64Bit, "32/64-bit subregsize not "
@@ -1704,8 +1629,7 @@ public:
     constexpr uint32_t Op = 0b0000'1110'0011'0000'0000'10 << 10;
     ASIMDAcrossLanes<T>(Op, 0, size, 0b11010, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void addv(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i32Bit && size != ARMEmitter::SubRegSize::i64Bit, "32/64-bit subregsize not "
@@ -1715,8 +1639,7 @@ public:
     constexpr uint32_t Op = 0b0000'1110'0011'0000'0000'10 << 10;
     ASIMDAcrossLanes<T>(Op, 0, size, 0b11011, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void uaddlv(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
@@ -1729,8 +1652,7 @@ public:
 
     ASIMDAcrossLanes<T>(Op, 1, ConvertedSize, 0b00011, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void umaxv(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i32Bit && size != ARMEmitter::SubRegSize::i64Bit, "32/64-bit subregsize not "
@@ -1740,8 +1662,7 @@ public:
     constexpr uint32_t Op = 0b0000'1110'0011'0000'0000'10 << 10;
     ASIMDAcrossLanes<T>(Op, 1, size, 0b01010, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void uminv(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i32Bit && size != ARMEmitter::SubRegSize::i64Bit, "32/64-bit subregsize not "
@@ -1751,8 +1672,7 @@ public:
     constexpr uint32_t Op = 0b0000'1110'0011'0000'0000'10 << 10;
     ASIMDAcrossLanes<T>(Op, 1, size, 0b11010, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fmaxnmv(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i32Bit, "32-bit subregsize not supported");
@@ -1769,8 +1689,7 @@ public:
 
     ASIMDAcrossLanes<T>(Op, U, ConvertedSize, 0b01100, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fmaxv(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i32Bit, "32-bit subregsize not supported");
@@ -1787,8 +1706,7 @@ public:
 
     ASIMDAcrossLanes<T>(Op, U, ConvertedSize, 0b01111, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fminnmv(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i32Bit, "32-bit subregsize not supported");
@@ -1805,8 +1723,7 @@ public:
 
     ASIMDAcrossLanes<T>(Op, U, ConvertedSize, 0b01100, rd, rn);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fminv(ARMEmitter::SubRegSize size, T rd, T rn) {
     if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i32Bit, "32-bit subregsize not supported");
@@ -3851,8 +3768,7 @@ public:
     }
     ASIMDVectorXIndexedElement(0b0, L, M, 0b0111, H, EncodedSubRegSize, rm.Q(), rn.Q(), rd.Q());
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void mul(ARMEmitter::SubRegSize size, T rd, T rn, T rm, uint32_t Index) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i16Bit || size == ARMEmitter::SubRegSize::i32Bit, "Invalid destination size");
 
@@ -3976,8 +3892,7 @@ public:
     }
     ASIMDVectorXIndexedElement(0b0, L, M, 0b1011, H, EncodedSubRegSize, rm.Q(), rn.Q(), rd.Q());
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void sqdmulh(ARMEmitter::SubRegSize size, T rd, T rn, T rm, uint32_t Index) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i16Bit || size == ARMEmitter::SubRegSize::i32Bit, "Invalid destination size");
 
@@ -4001,8 +3916,7 @@ public:
     }
     ASIMDVectorXIndexedElement(0b0, L, M, 0b1100, H, size, rm, rn, rd);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void sqrdmulh(ARMEmitter::SubRegSize size, T rd, T rn, T rm, uint32_t Index) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i16Bit || size == ARMEmitter::SubRegSize::i32Bit, "Invalid destination size");
 
@@ -4027,8 +3941,7 @@ public:
     ASIMDVectorXIndexedElement(0b0, L, M, 0b1101, H, size, rm, rn, rd);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void sdot(T rd, T rn, T rm, uint32_t Index) {
     LOGMAN_THROW_A_FMT(Index < 4, "Index must be less than the source register size");
 
@@ -4041,8 +3954,7 @@ public:
     ASIMDVectorXIndexedElement(0b0, L, M, 0b1110, H, ARMEmitter::SubRegSize::i32Bit, rm, rn, rd);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void sudot(T rd, T rn, T rm, uint32_t Index) {
     LOGMAN_THROW_A_FMT(Index < 4, "Index must be less than the source register size");
 
@@ -4055,8 +3967,7 @@ public:
     ASIMDVectorXIndexedElement(0b0, L, M, 0b1111, H, ARMEmitter::SubRegSize::i8Bit, rm, rn, rd);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void bfdot(T rd, T rn, T rm, uint32_t Index) {
     LOGMAN_THROW_A_FMT(Index < 4, "Index must be less than the source register size");
 
@@ -4069,8 +3980,7 @@ public:
     ASIMDVectorXIndexedElement(0b0, L, M, 0b1111, H, ARMEmitter::SubRegSize::i16Bit, rm, rn, rd);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fmla(ARMEmitter::SubRegSize size, T rd, T rn, T rm, uint32_t Index) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i16Bit || size == ARMEmitter::SubRegSize::i32Bit || size == ARMEmitter::SubRegSize::i64Bit,
                        "Invalid destination size");
@@ -4101,8 +4011,7 @@ public:
     ASIMDVectorXIndexedElement(0b0, L, M, 0b0001, H, EncodedSubRegSize, rm, rn, rd);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fmls(ARMEmitter::SubRegSize size, T rd, T rn, T rm, uint32_t Index) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i16Bit || size == ARMEmitter::SubRegSize::i32Bit || size == ARMEmitter::SubRegSize::i64Bit,
                        "Invalid destination size");
@@ -4133,8 +4042,7 @@ public:
     ASIMDVectorXIndexedElement(0b0, L, M, 0b0101, H, EncodedSubRegSize, rm, rn, rd);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fmul(ARMEmitter::SubRegSize size, T rd, T rn, T rm, uint32_t Index) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i16Bit || size == ARMEmitter::SubRegSize::i32Bit || size == ARMEmitter::SubRegSize::i64Bit,
                        "Invalid destination size");
@@ -4165,8 +4073,7 @@ public:
     ASIMDVectorXIndexedElement(0b0, L, M, 0b1001, H, EncodedSubRegSize, rm, rn, rd);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fmlal(T rd, T rn, T rm, uint32_t Index) {
     LOGMAN_THROW_A_FMT(Index < 8, "Index must be less than the source register size");
 
@@ -4179,8 +4086,7 @@ public:
     ASIMDVectorXIndexedElement(0b0, L, M, 0b0000, H, ARMEmitter::SubRegSize::i32Bit, rm, rn, rd);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fmlal2(T rd, T rn, T rm, uint32_t Index) {
     LOGMAN_THROW_A_FMT(Index < 8, "Index must be less than the source register size");
 
@@ -4193,8 +4099,7 @@ public:
     ASIMDVectorXIndexedElement(0b1, L, M, 0b1000, H, ARMEmitter::SubRegSize::i32Bit, rm, rn, rd);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fmlsl(T rd, T rn, T rm, uint32_t Index) {
     LOGMAN_THROW_A_FMT(Index < 8, "Index must be less than the source register size");
 
@@ -4207,8 +4112,7 @@ public:
     ASIMDVectorXIndexedElement(0b0, L, M, 0b0100, H, ARMEmitter::SubRegSize::i32Bit, rm, rn, rd);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void fmlsl2(T rd, T rn, T rm, uint32_t Index) {
     LOGMAN_THROW_A_FMT(Index < 8, "Index must be less than the source register size");
 
@@ -4221,8 +4125,7 @@ public:
     ASIMDVectorXIndexedElement(0b1, L, M, 0b1100, H, ARMEmitter::SubRegSize::i32Bit, rm, rn, rd);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void usdot(T rd, T rn, T rm, uint32_t Index) {
     LOGMAN_THROW_A_FMT(Index < 4, "Index must be less than the source register size");
 
@@ -4260,8 +4163,7 @@ public:
     ASIMDVectorXIndexedElement(0b0, L, M, 0b1111, H, ARMEmitter::SubRegSize::i64Bit, rm.Q(), rn.Q(), rd.Q());
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void mla(ARMEmitter::SubRegSize size, T rd, T rn, T rm, uint32_t Index) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i16Bit || size == ARMEmitter::SubRegSize::i32Bit, "Invalid destination size");
 
@@ -4337,8 +4239,7 @@ public:
     ASIMDVectorXIndexedElement(0b1, L, M, 0b0010, H, EncodedSubRegSize, rm.Q(), rn.Q(), rd.Q());
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void mls(ARMEmitter::SubRegSize size, T rd, T rn, T rm, uint32_t Index) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i16Bit || size == ARMEmitter::SubRegSize::i32Bit, "Invalid destination size");
 
@@ -4465,8 +4366,7 @@ public:
     ASIMDVectorXIndexedElement(0b1, L, M, 0b1010, H, EncodedSubRegSize, rm.Q(), rn.Q(), rd.Q());
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void sqrdmlah(ARMEmitter::SubRegSize size, T rd, T rn, T rm, uint32_t Index) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i16Bit || size == ARMEmitter::SubRegSize::i32Bit, "Invalid destination size");
 
@@ -4490,8 +4390,7 @@ public:
     }
     ASIMDVectorXIndexedElement(0b1, L, M, 0b1101, H, size, rm, rn, rd);
   }
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void udot(T rd, T rn, T rm, uint32_t Index) {
     LOGMAN_THROW_A_FMT(Index < 4, "Index must be less than the source register size");
 
@@ -4504,8 +4403,7 @@ public:
     ASIMDVectorXIndexedElement(0b1, L, M, 0b1110, H, ARMEmitter::SubRegSize::i32Bit, rm, rn, rd);
   }
 
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void sqrdmlsh(ARMEmitter::SubRegSize size, T rd, T rn, T rm, uint32_t Index) {
     LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i16Bit || size == ARMEmitter::SubRegSize::i32Bit, "Invalid destination size");
 
@@ -4907,8 +4805,7 @@ private:
   }
 
   // Advanced SIMD two-register miscellaneous
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void ASIMD2RegMisc(uint32_t Op, uint32_t U, ARMEmitter::SubRegSize size, uint32_t opcode, T rd, T rn) {
     constexpr uint32_t Q = std::is_same_v<ARMEmitter::QRegister, T> ? 1U << 30 : 0;
 
@@ -4923,8 +4820,7 @@ private:
   }
 
   // Advanced SIMD across lanes
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void ASIMDAcrossLanes(uint32_t Op, uint32_t U, ARMEmitter::SubRegSize size, uint32_t opcode, T rd, T rn) {
     constexpr uint32_t Q = std::is_same_v<ARMEmitter::QRegister, T> ? 1U << 30 : 0;
 
@@ -4939,8 +4835,7 @@ private:
   }
 
   // Advanced SIMD three different
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void ASIMD3Different(uint32_t Op, uint32_t U, uint32_t opcode, ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
     constexpr uint32_t Q = std::is_same_v<ARMEmitter::QRegister, T> ? 1U << 30 : 0;
 
@@ -4956,8 +4851,7 @@ private:
   }
 
   // Advanced SIMD three same
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void ASIMD3Same(uint32_t Op, uint32_t U, ARMEmitter::SubRegSize size, uint32_t opcode, T rd, T rn, T rm) {
     constexpr uint32_t Q = std::is_same_v<ARMEmitter::QRegister, T> ? 1U << 30 : 0;
 
@@ -4973,8 +4867,7 @@ private:
   }
 
   // Advanced SIMD modified immediate
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void ASIMDModifiedImm(uint32_t Op, uint32_t op, uint32_t cmode, uint32_t o2, uint32_t imm, T rd) {
     constexpr uint32_t Q = std::is_same_v<ARMEmitter::QRegister, T> ? 1U << 30 : 0;
 
@@ -4997,8 +4890,7 @@ private:
   }
 
   // Advanced SIMD shift by immediate
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void ASIMDShiftByImm(uint32_t Op, uint32_t U, uint32_t immh, uint32_t immb, uint32_t opcode, T rn, T rd) {
     constexpr uint32_t Q = std::is_same_v<ARMEmitter::QRegister, T> ? 1U << 30 : 0;
     LOGMAN_THROW_A_FMT(immh != 0, "ImmH needs to not be zero");
@@ -5016,8 +4908,7 @@ private:
   }
 
   // Advanced SIMD vector x indexed element
-  template<typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<IsQOrDRegister T>
   void ASIMDVectorXIndexedElement(uint32_t U, uint32_t L, uint32_t M, uint32_t opcode, uint32_t H, ARMEmitter::SubRegSize size, T rm, T rn, T rd) {
     constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'00 << 10;
     constexpr uint32_t Q = std::is_same_v<ARMEmitter::QRegister, T> ? 1U << 30 : 0;
@@ -5115,8 +5006,7 @@ private:
     dc32(Instr);
   }
 
-  template<ARMEmitter::SubRegSize size, bool Load, typename T>
-  requires (std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>)
+  template<ARMEmitter::SubRegSize size, bool Load, IsQOrDRegister T>
   void ASIMDLoadStoreMultipleStructure(uint32_t Op, uint32_t opcode, T rt, ARMEmitter::Register rn, ARMEmitter::Register rm) {
     constexpr uint32_t Q = std::is_same_v<ARMEmitter::QRegister, T> ? 1U << 30 : 0;
 
