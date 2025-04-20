@@ -323,56 +323,6 @@ public:
     ASIMDScalarCopy(Op, Q, imm5, 0b0000, rd.V(), rn.V());
   }
 
-  // Advanced SIMD three same (FP16)
-  template<IsQOrDRegister T>
-  void ASIMDThreeSameFP16(uint32_t U, uint32_t a, uint32_t opcode, T rm, T rn, T rd) {
-    constexpr uint32_t Q = std::is_same_v<ARMEmitter::QRegister, T> ? 1U << 30 : 0;
-    constexpr uint32_t Op = 0b0000'1110'0100'0000'0000'01 << 10;
-
-    uint32_t Instr = Op;
-    Instr |= Q;
-    Instr |= U << 29;
-    Instr |= a << 23;
-    Instr |= rm.Idx() << 16;
-    Instr |= opcode << 11;
-    Instr |= rn.Idx() << 5;
-    Instr |= rd.Idx();
-    dc32(Instr);
-  }
-
-  // Advanced SIMD two-register miscellaneous (FP16)
-  template<IsQOrDRegister T>
-  void ASIMDTwoRegMiscFP16(uint32_t U, uint32_t a, uint32_t opcode, T rn, T rd) {
-    constexpr uint32_t Q = std::is_same_v<ARMEmitter::QRegister, T> ? 1U << 30 : 0;
-    constexpr uint32_t Op = 0b0000'1110'0111'1000'0000'10 << 10;
-
-    uint32_t Instr = Op;
-    Instr |= Q;
-    Instr |= U << 29;
-    Instr |= a << 23;
-    Instr |= opcode << 12;
-    Instr |= rn.Idx() << 5;
-    Instr |= rd.Idx();
-    dc32(Instr);
-  }
-
-  // Advanced SIMD three-register extension
-  template<IsQOrDRegister T>
-  void ASIMDThreeRegisterExt(uint32_t U, uint32_t opcode, ARMEmitter::SubRegSize size, T rm, T rn, T rd) {
-    constexpr uint32_t Q = std::is_same_v<ARMEmitter::QRegister, T> ? 1U << 30 : 0;
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'1000'01 << 10;
-
-    uint32_t Instr = Op;
-    Instr |= Q;
-    Instr |= U << 29;
-    Instr |= FEXCore::ToUnderlying(size) << 22;
-    Instr |= rm.Idx() << 16;
-    Instr |= opcode << 11;
-    Instr |= rn.Idx() << 5;
-    Instr |= rd.Idx();
-    dc32(Instr);
-  }
-
   template<IsQOrDRegister T>
   void dup(SubRegSize size, T rd, Register rn) {
     if constexpr (std::is_same_v<DRegister, T>) {
@@ -4730,6 +4680,56 @@ public:
   }
 
 private:
+  // Advanced SIMD three same (FP16)
+  template<IsQOrDRegister T>
+  void ASIMDThreeSameFP16(uint32_t U, uint32_t a, uint32_t opcode, T rm, T rn, T rd) {
+    constexpr uint32_t Q = std::is_same_v<ARMEmitter::QRegister, T> ? 1U << 30 : 0;
+    constexpr uint32_t Op = 0b0000'1110'0100'0000'0000'01 << 10;
+
+    uint32_t Instr = Op;
+    Instr |= Q;
+    Instr |= U << 29;
+    Instr |= a << 23;
+    Instr |= rm.Idx() << 16;
+    Instr |= opcode << 11;
+    Instr |= rn.Idx() << 5;
+    Instr |= rd.Idx();
+    dc32(Instr);
+  }
+
+  // Advanced SIMD two-register miscellaneous (FP16)
+  template<IsQOrDRegister T>
+  void ASIMDTwoRegMiscFP16(uint32_t U, uint32_t a, uint32_t opcode, T rn, T rd) {
+    constexpr uint32_t Q = std::is_same_v<ARMEmitter::QRegister, T> ? 1U << 30 : 0;
+    constexpr uint32_t Op = 0b0000'1110'0111'1000'0000'10 << 10;
+
+    uint32_t Instr = Op;
+    Instr |= Q;
+    Instr |= U << 29;
+    Instr |= a << 23;
+    Instr |= opcode << 12;
+    Instr |= rn.Idx() << 5;
+    Instr |= rd.Idx();
+    dc32(Instr);
+  }
+
+  // Advanced SIMD three-register extension
+  template<IsQOrDRegister T>
+  void ASIMDThreeRegisterExt(uint32_t U, uint32_t opcode, ARMEmitter::SubRegSize size, T rm, T rn, T rd) {
+    constexpr uint32_t Q = std::is_same_v<ARMEmitter::QRegister, T> ? 1U << 30 : 0;
+    constexpr uint32_t Op = 0b0000'1110'0000'0000'1000'01 << 10;
+
+    uint32_t Instr = Op;
+    Instr |= Q;
+    Instr |= U << 29;
+    Instr |= FEXCore::ToUnderlying(size) << 22;
+    Instr |= rm.Idx() << 16;
+    Instr |= opcode << 11;
+    Instr |= rn.Idx() << 5;
+    Instr |= rd.Idx();
+    dc32(Instr);
+  }
+
   // Cryptographic AES
   void CryptoAES(uint32_t Op, uint32_t opcode, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
     uint32_t Instr = Op;
