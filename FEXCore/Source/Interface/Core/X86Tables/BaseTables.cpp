@@ -103,10 +103,10 @@ std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps = []() consteval {
     {0x6B, 1, X86InstInfo{"IMUL",   TYPE_INST, FLAGS_MODRM | FLAGS_SRC_SEXT ,                                    1, nullptr}},
 
     // This should just throw a GP
-    {0x6C, 1, X86InstInfo{"INSB",   TYPE_INST, FLAGS_NONE, 0, nullptr}},
-    {0x6D, 1, X86InstInfo{"INSW",   TYPE_INST, FLAGS_NONE, 0, nullptr}},
-    {0x6E, 1, X86InstInfo{"OUTS",   TYPE_INST, FLAGS_NONE, 0, nullptr}},
-    {0x6F, 1, X86InstInfo{"OUTS",   TYPE_INST, FLAGS_NONE, 0, nullptr}},
+    {0x6C, 1, X86InstInfo{"INSB",   TYPE_INST, FLAGS_BLOCK_END, 0, nullptr}},
+    {0x6D, 1, X86InstInfo{"INSW",   TYPE_INST, FLAGS_BLOCK_END, 0, nullptr}},
+    {0x6E, 1, X86InstInfo{"OUTS",   TYPE_INST, FLAGS_BLOCK_END, 0, nullptr}},
+    {0x6F, 1, X86InstInfo{"OUTS",   TYPE_INST, FLAGS_BLOCK_END, 0, nullptr}},
 
     {0x70, 1, X86InstInfo{"JO",     TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT , 1, nullptr}},
     {0x71, 1, X86InstInfo{"JNO",    TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT , 1, nullptr}},
@@ -172,7 +172,7 @@ std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps = []() consteval {
     {0xC8, 1, X86InstInfo{"ENTER",  TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_DEBUG_MEM_ACCESS ,                                      3, nullptr}},
     {0xC9, 1, X86InstInfo{"LEAVE",  TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_DEBUG_MEM_ACCESS ,                                                0, nullptr}},
     {0xCA, 2, X86InstInfo{"RETF",   TYPE_PRIV, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_BLOCK_END,                                                              0, nullptr}},
-    {0xCC, 1, X86InstInfo{"INT3",   TYPE_INST, FLAGS_NONE,                                                                                      0, nullptr}},
+    {0xCC, 1, X86InstInfo{"INT3",   TYPE_INST, FLAGS_BLOCK_END,                                                                                      0, nullptr}},
     {0xCD, 1, X86InstInfo{"INT",    TYPE_INST, DEFAULT_SYSCALL_FLAGS,                                                                  1, nullptr}},
     {0xCF, 1, X86InstInfo{"IRET",   TYPE_INST, FLAGS_SETS_RIP | FLAGS_BLOCK_END,                                                                                    0, nullptr}},
 
@@ -184,18 +184,18 @@ std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps = []() consteval {
     {0xE3, 1, X86InstInfo{"JrCXZ",  TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT ,                             1, nullptr}},
 
     // Should just throw GP
-    {0xE4, 2, X86InstInfo{"IN",     TYPE_INST, FLAGS_NONE,                                                                                                      1, nullptr}},
-    {0xE6, 2, X86InstInfo{"OUT",    TYPE_INST, FLAGS_NONE,                                                                                                      1, nullptr}},
+    {0xE4, 2, X86InstInfo{"IN",     TYPE_INST, FLAGS_BLOCK_END,                                                                                                      1, nullptr}},
+    {0xE6, 2, X86InstInfo{"OUT",    TYPE_INST, FLAGS_BLOCK_END,                                                                                                      1, nullptr}},
 
     {0xE8, 1, X86InstInfo{"CALL",   TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_BLOCK_END , 4, nullptr}},
     {0xE9, 1, X86InstInfo{"JMP",    TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_BLOCK_END , 4, nullptr}},
     {0xEB, 1, X86InstInfo{"JMP",    TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_BLOCK_END ,                             1, nullptr}},
 
     // Should just throw GP
-    {0xEC, 2, X86InstInfo{"IN",     TYPE_INST, FLAGS_NONE,             0, nullptr}},
-    {0xEE, 2, X86InstInfo{"OUT",    TYPE_INST, FLAGS_NONE,             0, nullptr}},
+    {0xEC, 2, X86InstInfo{"IN",     TYPE_INST, FLAGS_BLOCK_END,             0, nullptr}},
+    {0xEE, 2, X86InstInfo{"OUT",    TYPE_INST, FLAGS_BLOCK_END,             0, nullptr}},
 
-    {0xF1, 1, X86InstInfo{"INT1",   TYPE_INST, FLAGS_NONE,               0, nullptr}},
+    {0xF1, 1, X86InstInfo{"INT1",   TYPE_INST, FLAGS_BLOCK_END,               0, nullptr}},
     {0xF4, 1, X86InstInfo{"HLT",    TYPE_INST, FLAGS_BLOCK_END,               0, nullptr}},
     {0xF5, 1, X86InstInfo{"CMC",    TYPE_INST, FLAGS_NONE,                0, nullptr}},
     {0xF8, 1, X86InstInfo{"CLC",    TYPE_INST, FLAGS_NONE,                0, nullptr}},
