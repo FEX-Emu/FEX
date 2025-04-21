@@ -416,8 +416,7 @@ public:
         0;
     ASIMDSTLD<size, true, 1>(Op, Opcode, rt, Index, rn, Reg::r0);
   }
-  template<SubRegSize size, typename T>
-  requires (std::is_same_v<QRegister, T> || std::is_same_v<DRegister, T>)
+  template<SubRegSize size, IsQOrDRegister T>
   void ld1r(T rt, Register rn) {
     constexpr uint32_t Op = 0b0000'1101'000 << 21;
     constexpr uint32_t Opcode = 0b110;
@@ -435,8 +434,7 @@ public:
         0;
     ASIMDSTLD<size, true, 2>(Op, Opcode, rt, Index, rn, Reg::r0);
   }
-  template<SubRegSize size, typename T>
-  requires (std::is_same_v<QRegister, T> || std::is_same_v<DRegister, T>)
+  template<SubRegSize size, IsQOrDRegister T>
   void ld2r(T rt, T rt2, Register rn) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2), "rt and rt2 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'000 << 21;
@@ -455,8 +453,7 @@ public:
         0;
     ASIMDSTLD<size, true, 3>(Op, Opcode, rt, Index, rn, Reg::r0);
   }
-  template<SubRegSize size, typename T>
-  requires (std::is_same_v<QRegister, T> || std::is_same_v<DRegister, T>)
+  template<SubRegSize size, IsQOrDRegister T>
   void ld3r(T rt, T rt2, T rt3, Register rn) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3), "rt, rt2, and rt3 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'000 << 21;
@@ -475,8 +472,7 @@ public:
         0;
     ASIMDSTLD<size, true, 4>(Op, Opcode, rt, Index, rn, Reg::r0);
   }
-  template<SubRegSize size, typename T>
-  requires (std::is_same_v<QRegister, T> || std::is_same_v<DRegister, T>)
+  template<SubRegSize size, IsQOrDRegister T>
   void ld4r(T rt, T rt2, T rt3, T rt4, Register rn) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rt, rt2, rt3, rt4), "rt, rt2, rt3, and rt4 must be sequential");
     constexpr uint32_t Op = 0b0000'1101'000 << 21;
