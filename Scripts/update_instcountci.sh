@@ -11,4 +11,5 @@ ninja instcountci_tests || true
 ninja instcountci_update_tests
 
 # Commit the result in bulk.
-git commit -sam "InstCountCI: Update"
+git add -u :/unittests/InstructionCountCI/*.json
+git commit -sm "InstCountCI: Update"
