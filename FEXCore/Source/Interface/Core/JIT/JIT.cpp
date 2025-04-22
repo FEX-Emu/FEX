@@ -527,6 +527,10 @@ static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame* Fram
   } else {
     // fallback case - do a soft-er link by patching the pointer
     std::atomic_ref<uint64_t>(Record->HostBranch).store(HostCode, std::memory_order::seq_cst);
+#ifdef _M_ARM_64
+    // Make memory write visible to other threads reading the same location
+    asm volatile("dc cvau, %0; dsb ish" : : "r"(Record->HostBranch) :);
+#endif
   }
 
   // Add de-linking handler
