@@ -77,16 +77,11 @@ private:
     CurrentStats = {};
   }
 
-  void SetBaseStats(const InstructionStats& NewBase) {
-    BaseStats = NewBase;
-  }
-
-  void CalculateDifferenceBetweenStats(InstructionData* Nop, InstructionData* Fence);
-
   uint64_t CurrentRIPParse {};
   bool ConsumingDisassembly {};
   InstructionData CurrentStats {};
-  InstructionStats BaseStats {};
+
+  ssize_t HeaderSize {-1};
 
   void* CodeStart {};
   constexpr static size_t MAX_CODE_SIZE = 512 * 1024 * 1024;
@@ -96,7 +91,6 @@ private:
 
 constexpr std::string_view RIPMessage = "RIP: 0x";
 constexpr std::string_view GuestCodeMessage = "Guest Code instructions: ";
-constexpr std::string_view HostCodeMessage = "Host Code instructions: ";
 constexpr std::string_view DisassembleBeginMessage = "Disassemble Begin";
 constexpr std::string_view DisassembleEndMessage = "Disassemble End";
 constexpr std::string_view BlowUpMsg = "Blow-up Amt: ";
@@ -127,13 +121,6 @@ bool CodeSizeValidation::ParseMessage(const char* Message) {
     std::from_chars(CodeSizeView.data(), CodeSizeView.end(), CurrentStats.first.GuestCodeInstructions);
     return false;
   }
-  if (MessageView.find(HostCodeMessage) != MessageView.npos) {
-    std::string_view CodeSizeView = std::string_view {Message + HostCodeMessage.size()};
-    std::from_chars(CodeSizeView.data(), CodeSizeView.end(), CurrentStats.first.HostCodeInstructions);
-
-    CurrentStats.first.HostCodeInstructions -= BaseStats.HostCodeInstructions;
-    return false;
-  }
   if (MessageView.find(DisassembleBeginMessage) != MessageView.npos) {
     ConsumingDisassembly = true;
     // Just so the output isn't a mess.
@@ -144,12 +131,13 @@ bool CodeSizeValidation::ParseMessage(const char* Message) {
     // Just so the output isn't a mess.
 
     // Remove the header and tails.
-    if (BaseStats.HeaderSize) {
-      CurrentStats.second.erase(CurrentStats.second.begin(), CurrentStats.second.begin() + BaseStats.HeaderSize);
+    if (HeaderSize != -1) {
+      CurrentStats.second.erase(CurrentStats.second.begin(), CurrentStats.second.begin() + HeaderSize);
     }
-    if (BaseStats.TailSize) {
-      CurrentStats.second.erase(CurrentStats.second.end() - BaseStats.TailSize, CurrentStats.second.end());
-    }
+    // Find the first `udf #0x420f` and remove everything from that point onward.
+    auto EraseBegin = std::find(CurrentStats.second.begin(), CurrentStats.second.end(), "udf #0x420f");
+    CurrentStats.second.erase(EraseBegin, CurrentStats.second.end());
+    CurrentStats.first.HostCodeInstructions = CurrentStats.second.size();
     return false;
   }
 
@@ -166,46 +154,6 @@ bool CodeSizeValidation::ParseMessage(const char* Message) {
   return true;
 }
 
-void CodeSizeValidation::CalculateDifferenceBetweenStats(InstructionData* Nop, InstructionData* Fence) {
-  // Expected format.
-  // adr x0, #-0x4 (addr 0x7fffe9880054)
-  // str x0, [x28, #184]
-  // dmb sy
-  // ldr x0, pc+8 (addr 0x7fffe988006c)
-  // blr x0
-  // unallocated (Unallocated)
-  // udf #0x7fff
-  // unallocated (Unallocated)
-  // udf #0x0
-  //
-  // First two lines are the header.
-  // Next comes the implementation (0 instruction size for nop, 1 instruction for fence)
-  // After that is the tail.
-
-  const auto& NOPCode = Nop->second;
-  const auto& FENCECode = Fence->second;
-
-  LOGMAN_THROW_A_FMT(NOPCode.size() < FENCECode.size(), "NOP code must be smaller than fence!");
-  for (size_t i = 0; i < NOPCode.size(); ++i) {
-    const auto& NOPLine = NOPCode.at(i);
-    const auto& FENCELine = FENCECode.at(i);
-
-    const auto NOPmnemonic = std::string_view(NOPLine.data(), NOPLine.find(' '));
-    const auto FENCEmnemonic = std::string_view(FENCELine.data(), FENCELine.find(' '));
-
-    if (NOPmnemonic != FENCEmnemonic) {
-      // Headersize of a block is now `i` number of instructions.
-      Nop->first.HeaderSize = i;
-
-      // Tail size is going to be the remaining size
-      Nop->first.TailSize = NOPCode.size() - i;
-      break;
-    }
-  }
-
-  SetBaseStats(Nop->first);
-}
-
 void CodeSizeValidation::CalculateBaseStats(FEXCore::Context::Context* CTX, FEXCore::Core::InternalThreadState* Thread) {
   SetupInfoDisabled = true;
 
@@ -215,23 +163,25 @@ void CodeSizeValidation::CalculateBaseStats(FEXCore::Context::Context* CTX, FEXC
     0x90,
   };
 
-  // MFENCE will always generate a block with one instruction.
-  constexpr static uint8_t MFENCE[] = {
-    0x0f,
-    0xae,
-    0xf0,
-  };
-
   // Compile the NOP.
   auto NOPStats = CompileAndGetStats(CTX, Thread, NOP, sizeof(NOP), 1);
 
-  // Compile MFence
-  auto MFENCEStats = CompileAndGetStats(CTX, Thread, MFENCE, sizeof(MFENCE), 1);
-
-  // Now scan the difference in disasembly between NOP and MFENCE to remove the header and tail.
-  // Just searching for first instruction change.
-
-  CalculateDifferenceBetweenStats(&NOPStats, &MFENCEStats);
+  // Expected format.
+  // adr x0, #-0x4 (addr 0x7fffe9880054)
+  // str x0, [x28, #184]
+  // udf #0x420f
+  // ldr x0, pc+8 (addr 0x7fffe988006c)
+  // blr x0
+  // unallocated (Unallocated)
+  // udf #0x7fff
+  // unallocated (Unallocated)
+  // udf #0x0
+  //
+  // First two lines are the header.
+  // Next comes the implementation (0 instruction size for nop).
+  // Then comes the `udf #0x420f` which signifies the end of the function.
+  // After that is the tail.
+  HeaderSize = NOPStats.second.size();
 
   SetupInfoDisabled = false;
 }
@@ -665,6 +615,7 @@ int main(int argc, char** argv, char** const envp) {
   fextl::unique_ptr<FEXCore::Context::Context> CTX;
   {
     auto HostFeatures = FEX::FetchHostFeatures();
+    HostFeatures.IsInstCountCI = true;
     CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);
   }
 
