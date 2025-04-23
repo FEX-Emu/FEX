@@ -29550,7 +29550,7 @@
     },
     "Block3": {
       "x86InstructionCount": 702,
-      "ExpectedInstructionCount": 108,
+      "ExpectedInstructionCount": 104,
       "x86Insts": [
         "mov eax,dword [ebp + 0xffffff44]",
         "mov ecx,dword [eax + 0x4]",
@@ -30359,11 +30359,7 @@
         "movk w21, #0x819, lsl #16",
         "add w21, w20, w21",
         "str w20, [x8, #-4]!",
-        "cfinv",
-        "ldr x0, [x28, #2376]",
-        "ubfiz x3, x21, #4, #20",
-        "add x0, x0, x3",
-        "ldp x1, x0, [x0]"
+        "cfinv"
       ]
     },
     "Block4": {
@@ -54480,7 +54476,7 @@
     },
     "Block6": {
       "x86InstructionCount": 409,
-      "ExpectedInstructionCount": 7075,
+      "ExpectedInstructionCount": 7071,
       "x86Insts": [
         "mov eax,dword [ebp + 0x10]",
         "fld dword [eax + 0x30]",
@@ -61963,16 +61959,12 @@
         "movk w21, #0x818, lsl #16",
         "add w21, w20, w21",
         "str w20, [x8, #-4]!",
-        "strb wzr, [x28, #1298]",
-        "ldr x0, [x28, #2376]",
-        "ubfiz x3, x21, #4, #20",
-        "add x0, x0, x3",
-        "ldp x1, x0, [x0]"
+        "strb wzr, [x28, #1298]"
       ]
     },
     "Block7": {
       "x86InstructionCount": 418,
-      "ExpectedInstructionCount": 7082,
+      "ExpectedInstructionCount": 7078,
       "x86Insts": [
         "push ebp",
         "mov ebp,esp",
@@ -69471,11 +69463,7 @@
         "movk w21, #0x818, lsl #16",
         "add w21, w20, w21",
         "str w20, [x8, #-4]!",
-        "strb wzr, [x28, #1298]",
-        "ldr x0, [x28, #2376]",
-        "ubfiz x3, x21, #4, #20",
-        "add x0, x0, x3",
-        "ldp x1, x0, [x0]"
+        "strb wzr, [x28, #1298]"
       ]
     },
     "Block8": {
@@ -86021,7 +86009,7 @@
     },
     "Block10": {
       "x86InstructionCount": 420,
-      "ExpectedInstructionCount": 6065,
+      "ExpectedInstructionCount": 6061,
       "x86Insts": [
         "push ebp",
         "mov ebp,esp",
@@ -92505,11 +92493,7 @@
         "mov w23, #0x1",
         "lsl w20, w23, w20",
         "bic w20, w22, w20",
-        "strb w20, [x28, #1298]",
-        "ldr x0, [x28, #2376]",
-        "ubfiz x3, x21, #4, #20",
-        "add x0, x0, x3",
-        "ldp x1, x0, [x0]"
+        "strb w20, [x28, #1298]"
       ]
     }
   }

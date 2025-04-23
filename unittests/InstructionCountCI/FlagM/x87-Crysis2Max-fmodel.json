@@ -26853,14 +26853,10 @@
         "mov w23, #0x1",
         "lsl w21, w23, w21",
         "bic w21, w22, w21",
-        "strb w21, [x28, #1298]",
-        "ldr x0, [x28, #2376]",
-        "ubfiz x3, x20, #4, #20",
-        "add x0, x0, x3",
-        "ldp x1, x0, [x0]"
+        "strb w21, [x28, #1298]"
       ],
       "x86InstructionCount": 809,
-      "ExpectedInstructionCount": 26033
+      "ExpectedInstructionCount": 26029
     }
   }
 }

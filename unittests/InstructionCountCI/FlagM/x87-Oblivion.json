@@ -41475,7 +41475,7 @@
     },
     "Block3": {
       "x86InstructionCount": 649,
-      "ExpectedInstructionCount": 10841,
+      "ExpectedInstructionCount": 10837,
       "x86Insts": [
         "fld dword [esi + 0x64]",
         "mov eax,dword [esi + 0x88]",
@@ -52964,16 +52964,12 @@
         "ldrb w23, [x28, #1298]",
         "lsl w20, w22, w20",
         "bic w20, w23, w20",
-        "strb w20, [x28, #1298]",
-        "ldr x0, [x28, #2376]",
-        "ubfiz x3, x21, #4, #20",
-        "add x0, x0, x3",
-        "ldp x1, x0, [x0]"
+        "strb w20, [x28, #1298]"
       ]
     },
     "Block4": {
       "x86InstructionCount": 2050,
-      "ExpectedInstructionCount": 63,
+      "ExpectedInstructionCount": 59,
       "x86Insts": [
         "fldz",
         "push 0x0",
@@ -55085,16 +55081,12 @@
         "mov w23, #0x1",
         "lsl w20, w23, w20",
         "bic w20, w22, w20",
-        "strb w20, [x28, #1298]",
-        "ldr x0, [x28, #2376]",
-        "ubfiz x3, x21, #4, #20",
-        "add x0, x0, x3",
-        "ldp x1, x0, [x0]"
+        "strb w20, [x28, #1298]"
       ]
     },
     "Block5": {
       "x86InstructionCount": 368,
-      "ExpectedInstructionCount": 268,
+      "ExpectedInstructionCount": 264,
       "x86Insts": [
         "mov ebx,dword [eax + 0x68]",
         "fld dword [esi + 0x2c]",
@@ -55729,16 +55721,12 @@
         "mov w23, #0x1",
         "lsl w20, w23, w20",
         "bic w20, w22, w20",
-        "strb w20, [x28, #1298]",
-        "ldr x0, [x28, #2376]",
-        "ubfiz x3, x21, #4, #20",
-        "add x0, x0, x3",
-        "ldp x1, x0, [x0]"
+        "strb w20, [x28, #1298]"
       ]
     },
     "Block6": {
       "x86InstructionCount": 315,
-      "ExpectedInstructionCount": 58,
+      "ExpectedInstructionCount": 54,
       "x86Insts": [
         "mov eax,dword [esp + 0x110]",
         "fldz",
@@ -56110,11 +56098,7 @@
         "mov w23, #0x1",
         "lsl w20, w23, w20",
         "bic w20, w22, w20",
-        "strb w20, [x28, #1298]",
-        "ldr x0, [x28, #2376]",
-        "ubfiz x3, x21, #4, #20",
-        "add x0, x0, x3",
-        "ldp x1, x0, [x0]"
+        "strb w20, [x28, #1298]"
       ]
     },
     "Block7": {
@@ -69816,7 +69800,7 @@
     },
     "Block9": {
       "x86InstructionCount": 260,
-      "ExpectedInstructionCount": 239,
+      "ExpectedInstructionCount": 235,
       "x86Insts": [
         "fld dword [edi]",
         "fmul st0",
@@ -70314,16 +70298,12 @@
         "ldrb w23, [x28, #1298]",
         "lsl w20, w22, w20",
         "orr w20, w23, w20",
-        "strb w20, [x28, #1298]",
-        "ldr x0, [x28, #2376]",
-        "ubfiz x3, x21, #4, #20",
-        "add x0, x0, x3",
-        "ldp x1, x0, [x0]"
+        "strb w20, [x28, #1298]"
       ]
     },
     "Block10": {
       "x86InstructionCount": 206,
-      "ExpectedInstructionCount": 440,
+      "ExpectedInstructionCount": 436,
       "x86Insts": [
         "fld dword [0x00b42a74]",
         "push ecx",
@@ -70968,11 +70948,7 @@
         "mov w21, #0x39db",
         "movk w21, #0x79, lsl #16",
         "add w21, w20, w21",
-        "str w20, [x8, #-4]!",
-        "ldr x0, [x28, #2376]",
-        "ubfiz x3, x21, #4, #20",
-        "add x0, x0, x3",
-        "ldp x1, x0, [x0]"
+        "str w20, [x8, #-4]!"
       ]
     }
   }
