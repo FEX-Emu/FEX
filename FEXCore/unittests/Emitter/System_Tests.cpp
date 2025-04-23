@@ -6,6 +6,10 @@
 
 using namespace ARMEmitter;
 
+TEST_CASE_METHOD(TestDisassembler, "Emitter: Reserved") {
+  TEST_SINGLE(udf(0), "udf #0x0");
+  TEST_SINGLE(udf(0xFFFF), "udf #0xffff");
+}
 TEST_CASE_METHOD(TestDisassembler, "Emitter: System: System with result") {
   // TODO: Implement in emitter.
 }
