@@ -33,98 +33,114 @@
       ]
     },
     "psrlw mm0, mm1": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": "0x0f 0xd1",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #1040]",
         "ldr d3, [x28, #1056]",
         "lsr z2.h, p6/m, z2.h, z3.d",
-        "str d2, [x28, #1040]",
+        "strb wzr, [x28, #1019]",
         "mov w20, #0xffff",
+        "strb w20, [x28, #1298]",
+        "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
     },
     "psrld mm0, mm1": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": "0x0f 0xd2",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #1040]",
         "ldr d3, [x28, #1056]",
         "lsr z2.s, p6/m, z2.s, z3.d",
-        "str d2, [x28, #1040]",
+        "strb wzr, [x28, #1019]",
         "mov w20, #0xffff",
+        "strb w20, [x28, #1298]",
+        "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
     },
     "psrlq mm0, mm1": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": "0x0f 0xd3",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #1040]",
         "ldr d3, [x28, #1056]",
         "lsr z2.d, p6/m, z2.d, z3.d",
-        "str d2, [x28, #1040]",
+        "strb wzr, [x28, #1019]",
         "mov w20, #0xffff",
+        "strb w20, [x28, #1298]",
+        "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
     },
     "psraw mm0, mm1": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": "0x0f 0xe1",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #1040]",
         "ldr d3, [x28, #1056]",
         "asr z2.h, p6/m, z2.h, z3.d",
-        "str d2, [x28, #1040]",
+        "strb wzr, [x28, #1019]",
         "mov w20, #0xffff",
+        "strb w20, [x28, #1298]",
+        "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
     },
     "psrad mm0, mm1": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": "0x0f 0xe2",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #1040]",
         "ldr d3, [x28, #1056]",
         "asr z2.s, p6/m, z2.s, z3.d",
-        "str d2, [x28, #1040]",
+        "strb wzr, [x28, #1019]",
         "mov w20, #0xffff",
+        "strb w20, [x28, #1298]",
+        "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
     },
     "psllw mm0, mm1": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": "0x0f 0xf1",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #1040]",
         "ldr d3, [x28, #1056]",
         "lsl z2.h, p6/m, z2.h, z3.d",
-        "str d2, [x28, #1040]",
+        "strb wzr, [x28, #1019]",
         "mov w20, #0xffff",
+        "strb w20, [x28, #1298]",
+        "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
     },
     "pslld mm0, mm1": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": "0x0f 0xf2",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #1040]",
         "ldr d3, [x28, #1056]",
         "lsl z2.s, p6/m, z2.s, z3.d",
-        "str d2, [x28, #1040]",
+        "strb wzr, [x28, #1019]",
         "mov w20, #0xffff",
+        "strb w20, [x28, #1298]",
+        "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
     },
     "psllq mm0, mm1": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": "0x0f 0xf3",
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #1040]",
         "ldr d3, [x28, #1056]",
         "lsl z2.d, p6/m, z2.d, z3.d",
-        "str d2, [x28, #1040]",
+        "strb wzr, [x28, #1019]",
         "mov w20, #0xffff",
+        "strb w20, [x28, #1298]",
+        "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
     }
