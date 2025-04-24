@@ -47,13 +47,13 @@ public:
     CurrentOffset += StringLength;
   }
 
-  void Align() {
-    // Align the buffer to instruction size
-    auto CurrentAlignment = reinterpret_cast<uint64_t>(CurrentOffset) & 0b11;
+  void Align(size_t Size = 4) {
+    // Align the buffer to provided size.
+    auto CurrentAlignment = reinterpret_cast<uint64_t>(CurrentOffset) & (Size - 1);
     if (!CurrentAlignment) {
       return;
     }
-    CurrentOffset += 4 - CurrentAlignment;
+    CurrentOffset += Size - CurrentAlignment;
   }
 
   template<typename T>

@@ -867,6 +867,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   const uint64_t CodeOnlySize = GetCursorAddress<uint8_t*>() - CodeData.BlockBegin;
 
   // Add the JitCodeTail
+  Align(alignof(JITCodeTail));
   auto JITBlockTailLocation = GetCursorAddress<uint8_t*>();
   auto JITBlockTail = GetCursorAddress<JITCodeTail*>();
   CursorIncrement(sizeof(JITCodeTail));
