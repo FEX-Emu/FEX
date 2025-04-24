@@ -112,7 +112,15 @@ public:
     // Changes get stored out by CalculateDeferredFlags.
     CachedNZCV = nullptr;
     CFInverted = CFInvertedABI;
+
     FlushRegisterCache();
+
+    // Start block in X87 state.
+    // This is important to ensure that blocks always start with the same state independently of predecessors
+    // which allows independent compilation of blocks.
+    // Starting in the X87 state is better than starting in MMX state because
+    // MMX state is more work to initialize.
+    MMXState = MMXState_X87;
 
     // New block needs to reset segment telemetry.
     SegmentsNeedReadCheck = ~0U;
@@ -2341,6 +2349,9 @@ private:
 
   void ChgStateMMX_X87() override {
     LOGMAN_THROW_A_FMT(MMXState == MMXState_MMX, "Expected state to be MMX");
+    // We explicitly initialize to x87 state in StartNewBlock.
+    // So if we ever change this to do something else, we need to
+    // make sure that we consider if we need to explicitly set it there.
     FlushRegisterCache();
     MMXState = MMXState_X87;
   }
