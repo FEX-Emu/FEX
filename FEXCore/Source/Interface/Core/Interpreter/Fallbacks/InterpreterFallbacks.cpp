@@ -232,7 +232,7 @@ bool InterpreterOps::GetFallbackHandler(bool SupportsPreserveAllABI, const IR::I
 
   // SSE4.2 Fallbacks
   case IR::OP_VPCMPESTRX:
-    *Info = {FABI_I32_I64_I64_I128_I128_I16, (void*)&FEXCore::CPU::OpHandlers<IR::OP_VPCMPESTRX>::handle, Core::OPINDEX_VPCMPESTRX,
+    *Info = {FABI_I32_I64_I64_V128_V128_I16, (void*)&FEXCore::CPU::OpHandlers<IR::OP_VPCMPESTRX>::handle, Core::OPINDEX_VPCMPESTRX,
              SupportsPreserveAllABI};
     return true;
   case IR::OP_VPCMPISTRX:

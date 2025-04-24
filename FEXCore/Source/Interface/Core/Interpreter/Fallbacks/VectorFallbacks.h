@@ -36,7 +36,12 @@ struct OpHandlers<IR::OP_VPCMPESTRX> {
     NegativeMasked,
   };
 
-  FEXCORE_PRESERVE_ALL_ATTR static uint32_t handle(uint64_t RAX, uint64_t RDX, __uint128_t lhs, __uint128_t rhs, uint16_t control) {
+  FEXCORE_PRESERVE_ALL_ATTR static uint32_t handle(uint64_t RAX, uint64_t RDX, VectorRegType lhs_v, VectorRegType rhs_v, uint16_t control) {
+    __uint128_t lhs;
+    memcpy(&lhs, &lhs_v, sizeof(lhs));
+    __uint128_t rhs;
+    memcpy(&rhs, &rhs_v, sizeof(rhs));
+
     // Subtract by 1 in order to make validity limits 0-based
     const auto valid_lhs = GetExplicitLength(RAX, control) - 1;
     const auto valid_rhs = GetExplicitLength(RDX, control) - 1;
