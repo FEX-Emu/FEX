@@ -719,8 +719,8 @@ void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs, uint3
         const auto Reg = StaticFPRegisters[i];
 
         if (((1U << Reg.Idx()) & FPRSpillMask) != 0) {
-          mov(ARMEmitter::Size::i64Bit, TMP4.R(), offsetof(Core::CpuStateFrame, State.xmm.avx.data[i][0]));
-          st1b<ARMEmitter::SubRegSize::i8Bit>(Reg.Z(), PRED_TMP_32B, STATE.R(), TMP4.R());
+          mov(ARMEmitter::Size::i64Bit, TmpReg, offsetof(Core::CpuStateFrame, State.xmm.avx.data[i][0]));
+          st1b<ARMEmitter::SubRegSize::i8Bit>(Reg.Z(), PRED_TMP_32B, STATE.R(), TmpReg);
         }
       }
     } else {
@@ -801,8 +801,8 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
       for (size_t i = 0; i < StaticFPRegisters.size(); i++) {
         const auto Reg = StaticFPRegisters[i];
         if (((1U << Reg.Idx()) & FPRFillMask) != 0) {
-          mov(ARMEmitter::Size::i64Bit, TMP4.R(), offsetof(Core::CpuStateFrame, State.xmm.avx.data[i][0]));
-          ld1b<ARMEmitter::SubRegSize::i8Bit>(Reg.Z(), PRED_TMP_32B.Zeroing(), STATE.R(), TMP4.R());
+          mov(ARMEmitter::Size::i64Bit, TmpReg, offsetof(Core::CpuStateFrame, State.xmm.avx.data[i][0]));
+          ld1b<ARMEmitter::SubRegSize::i8Bit>(Reg.Z(), PRED_TMP_32B.Zeroing(), STATE.R(), TmpReg);
         }
       }
     } else {
@@ -960,7 +960,7 @@ void Arm64Emitter::PopGeneralRegisters(std::span<const ARMEmitter::Register> Reg
   }
 }
 
-void Arm64Emitter::PushDynamicRegs(ARMEmitter::Register TmpReg) {
+size_t Arm64Emitter::PushDynamicRegs(ARMEmitter::Register TmpReg) {
   const auto CanUseSVE256 = EmitterCTX->HostFeatures.SupportsSVE256;
   const auto GPRSize = GeneralRegistersNotPreserved.size() * Core::CPUState::GPR_REG_SIZE;
   const auto FPRRegSize = CanUseSVE256 ? 32 : 16;
@@ -979,6 +979,8 @@ void Arm64Emitter::PushDynamicRegs(ARMEmitter::Register TmpReg) {
 
   // Push the general registers.
   PushGeneralRegisters(TmpReg, GeneralRegistersNotPreserved);
+
+  return SPOffset;
 }
 
 void Arm64Emitter::PopDynamicRegs() {
@@ -991,7 +993,7 @@ void Arm64Emitter::PopDynamicRegs() {
   PopGeneralRegisters(GeneralRegistersNotPreserved);
 }
 
-void Arm64Emitter::SpillForPreserveAllABICall(ARMEmitter::Register TmpReg, bool FPRs) {
+size_t Arm64Emitter::SpillForPreserveAllABICall(ARMEmitter::Register TmpReg, bool FPRs) {
   const auto CanUseSVE256 = EmitterCTX->HostFeatures.SupportsSVE256;
   const auto FPRRegSize = CanUseSVE256 ? 32 : 16;
 
@@ -1038,6 +1040,8 @@ void Arm64Emitter::SpillForPreserveAllABICall(ARMEmitter::Register TmpReg, bool 
 
   // Push the general registers.
   PushGeneralRegisters(TmpReg, DynamicGPRs);
+
+  return SPOffset;
 }
 
 void Arm64Emitter::FillForPreserveAllABICall(bool FPRs) {
