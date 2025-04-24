@@ -13,6 +13,12 @@ struct EmitterOps : Emitter {
 #endif
 
 public:
+  // Reserved
+  void udf(uint32_t Imm) {
+    LOGMAN_THROW_A_FMT(Imm < 0x1'0000, "Immediate needs to be 16-bit");
+    dc32(Imm);
+  }
+
   // System with result
   // TODO: SYSL
   // System Instruction

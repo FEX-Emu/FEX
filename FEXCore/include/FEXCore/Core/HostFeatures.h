@@ -43,6 +43,9 @@ struct HostFeatures {
   bool SupportsAFP {};
   bool SupportsFloatExceptions {};
 
+  // Flag if this is InstCountCI
+  bool IsInstCountCI {};
+
   // MIDR information
   // Also used for determining number of CPU cores for CPUID
   fextl::vector<uint32_t> CPUMIDRs;

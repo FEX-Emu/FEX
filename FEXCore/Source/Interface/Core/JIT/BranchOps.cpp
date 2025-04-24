@@ -49,6 +49,11 @@ DEF_OP(ExitFunction) {
 
   ResetStack();
 
+  if (CTX->HostFeatures.IsInstCountCI) [[unlikely]] {
+    // Emit function end marker
+    udf(0x420F);
+  }
+
   uint64_t NewRIP;
 
   if (IsInlineConstant(Op->NewRIP, &NewRIP) || IsInlineEntrypointOffset(Op->NewRIP, &NewRIP)) {
