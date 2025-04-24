@@ -2460,40 +2460,40 @@ public:
   }
 
   void setgp(Register rd, Register rn, Register rs) {
-     MemoryCopyAndMemorySet(0, 1, 0b11, 0b0000, rs, rn, rd);
+    MemoryCopyAndMemorySet(0, 1, 0b11, 0b0000, rs, rn, rd);
   }
   void setgm(Register rd, Register rn, Register rs) {
-     MemoryCopyAndMemorySet(0, 1, 0b11, 0b0100, rs, rn, rd);
+    MemoryCopyAndMemorySet(0, 1, 0b11, 0b0100, rs, rn, rd);
   }
   void setge(Register rd, Register rn, Register rs) {
-     MemoryCopyAndMemorySet(0, 1, 0b11, 0b1000, rs, rn, rd);
+    MemoryCopyAndMemorySet(0, 1, 0b11, 0b1000, rs, rn, rd);
   }
   void setgpt(Register rd, Register rn, Register rs) {
-     MemoryCopyAndMemorySet(0, 1, 0b11, 0b0001, rs, rn, rd);
+    MemoryCopyAndMemorySet(0, 1, 0b11, 0b0001, rs, rn, rd);
   }
   void setgmt(Register rd, Register rn, Register rs) {
-     MemoryCopyAndMemorySet(0, 1, 0b11, 0b0101, rs, rn, rd);
+    MemoryCopyAndMemorySet(0, 1, 0b11, 0b0101, rs, rn, rd);
   }
   void setget(Register rd, Register rn, Register rs) {
-     MemoryCopyAndMemorySet(0, 1, 0b11, 0b1001, rs, rn, rd);
+    MemoryCopyAndMemorySet(0, 1, 0b11, 0b1001, rs, rn, rd);
   }
   void setgpn(Register rd, Register rn, Register rs) {
-     MemoryCopyAndMemorySet(0, 1, 0b11, 0b0010, rs, rn, rd);
+    MemoryCopyAndMemorySet(0, 1, 0b11, 0b0010, rs, rn, rd);
   }
   void setgmn(Register rd, Register rn, Register rs) {
-     MemoryCopyAndMemorySet(0, 1, 0b11, 0b0110, rs, rn, rd);
+    MemoryCopyAndMemorySet(0, 1, 0b11, 0b0110, rs, rn, rd);
   }
   void setgen(Register rd, Register rn, Register rs) {
-     MemoryCopyAndMemorySet(0, 1, 0b11, 0b1010, rs, rn, rd);
+    MemoryCopyAndMemorySet(0, 1, 0b11, 0b1010, rs, rn, rd);
   }
   void setgptn(Register rd, Register rn, Register rs) {
-     MemoryCopyAndMemorySet(0, 1, 0b11, 0b0011, rs, rn, rd);
+    MemoryCopyAndMemorySet(0, 1, 0b11, 0b0011, rs, rn, rd);
   }
   void setgmtn(Register rd, Register rn, Register rs) {
-     MemoryCopyAndMemorySet(0, 1, 0b11, 0b0111, rs, rn, rd);
+    MemoryCopyAndMemorySet(0, 1, 0b11, 0b0111, rs, rn, rd);
   }
   void setgetn(Register rd, Register rn, Register rs) {
-     MemoryCopyAndMemorySet(0, 1, 0b11, 0b1011, rs, rn, rd);
+    MemoryCopyAndMemorySet(0, 1, 0b11, 0b1011, rs, rn, rd);
   }
 
   // Loadstore no-allocate pair
