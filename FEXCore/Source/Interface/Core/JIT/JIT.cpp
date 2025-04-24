@@ -406,7 +406,7 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
 
       FillF80Result();
     } break;
-    case FABI_I32_I64_I64_I128_I128_I16: {
+    case FABI_I32_I64_I64_V128_V128_I16: {
       const auto Op = IROp->C<IR::IROp_VPCMPESTRX>();
       const auto SrcRAX = GetReg(Op->RAX.ID());
       const auto SrcRDX = GetReg(Op->RDX.ID());
@@ -426,19 +426,22 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
         mov(ARMEmitter::XReg::x1, TMP2);
       }
 
-      umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r2, Src1, 0);
-      umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r3, Src1, 1);
-
-      umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r4, Src2, 0);
-      umov<ARMEmitter::SubRegSize::i64Bit>(ARMEmitter::Reg::r5, Src2, 1);
-
-      movz(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r6, Control);
-
-      ldr(ARMEmitter::XReg::x7, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
-      if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-        GenerateIndirectRuntimeCall<uint32_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint16_t>(ARMEmitter::Reg::r7);
+      if (!TMP_ABIARGS) {
+        mov(VTMP1.Q(), Src1.Q());
+        mov(ARMEmitter::VReg::v1.Q(), Src2.Q());
+        mov(ARMEmitter::VReg::v0.Q(), VTMP1.Q());
       } else {
-        blr(ARMEmitter::Reg::r7);
+        mov(ARMEmitter::VReg::v0.Q(), Src1.Q());
+        mov(ARMEmitter::VReg::v1.Q(), Src2.Q());
+      }
+
+      movz(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r2, Control);
+
+      ldr(ARMEmitter::XReg::x3, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex]));
+      if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+        GenerateIndirectRuntimeCall<uint32_t, uint64_t, uint64_t, FEXCore::VectorRegType, FEXCore::VectorRegType, uint16_t>(ARMEmitter::Reg::r3);
+      } else {
+        blr(ARMEmitter::Reg::r3);
       }
 
       FillI32Result();
