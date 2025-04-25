@@ -486,20 +486,16 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
 }
 
 static void DirectBlockDelinker(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record) {
-  auto LinkerAddress = Frame->Pointers.Common.ExitFunctionLinker;
-  uintptr_t branch = (uintptr_t)(Record)-8;
-  ARMEmitter::Emitter emit((uint8_t*)(branch), 8);
-  ARMEmitter::ForwardLabel l_BranchHost;
-  emit.ldr(TMP1, &l_BranchHost);
+  // Emit new 16 bytes of code to a temporary patch, then atomically apply it
+  __uint128_t Patch;
+  ARMEmitter::Emitter emit((uint8_t*)&Patch, sizeof(Patch));
+  emit.ldr(TMP1, 8); // PC-relative value pointing to constant after blr
   emit.blr(TMP1);
-  emit.Bind(&l_BranchHost);
-  emit.dc64(LinkerAddress);
-  ARMEmitter::Emitter::ClearICache((void*)branch, 8);
-}
+  emit.dc64(Frame->Pointers.Common.ExitFunctionLinker);
 
-static void IndirectBlockDelinker(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record) {
-  auto LinkerAddress = Frame->Pointers.Common.ExitFunctionLinker;
-  Record->HostBranch = LinkerAddress;
+  auto branch = reinterpret_cast<__uint128_t*>((uintptr_t)Record - 8);
+  std::atomic_ref<__uint128_t>(*branch).store(Patch, std::memory_order::relaxed);
+  ARMEmitter::Emitter::ClearICache((void*)branch, sizeof(*branch));
 }
 
 static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record) {
@@ -519,24 +515,26 @@ static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame* Fram
   }
 
   uintptr_t branch = (uintptr_t)(Record)-8;
+  LOGMAN_THROW_A_FMT((branch % 16) == 0, "Incorrect alignment for block linking record");
 
   auto offset = HostCode / 4 - branch / 4;
   if (ARMEmitter::Emitter::IsInt26(offset)) {
-    // optimal case - can branch directly
-    // patch the code
-    ARMEmitter::Emitter emit((uint8_t*)(branch), 4);
-    emit.b(offset);
+    // This is the optimal case, where the target can be encoded in a single instruction.
+    // Atomically patch the code with a relative branch.
+    const uint32_t Patch = (0b0001'01 << 26) | (offset & ((1u << 26) - 1));
+    std::atomic_ref<uint32_t>(*reinterpret_cast<uint32_t*>(branch)).store(Patch, std::memory_order::relaxed);
     ARMEmitter::Emitter::ClearICache((void*)branch, 4);
-
-    // Add de-linking handler
-    Thread->LookupCache->AddBlockLink(GuestRip, Record, DirectBlockDelinker);
   } else {
     // fallback case - do a soft-er link by patching the pointer
-    Record->HostBranch = HostCode;
-
-    // Add de-linking handler
-    Thread->LookupCache->AddBlockLink(GuestRip, Record, IndirectBlockDelinker);
+    std::atomic_ref<uint64_t>(Record->HostBranch).store(HostCode, std::memory_order::seq_cst);
+#ifdef _M_ARM_64
+    // Make memory write visible to other threads reading the same location
+    asm volatile("dc cvau, %0; dsb ish" : : "r"(Record->HostBranch) :);
+#endif
   }
+
+  // Add de-linking handler
+  Thread->LookupCache->AddBlockLink(GuestRip, Record, DirectBlockDelinker);
 
   return HostCode;
 }

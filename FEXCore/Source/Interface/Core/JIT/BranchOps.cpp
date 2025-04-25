@@ -65,6 +65,10 @@ DEF_OP(ExitFunction) {
       br(TMP2);
     } else {
 #endif
+      // Align to 16 byte to allow atomic patching of the following 16 byte
+      // of code (excluding the RIP data) on platforms that support LSE2
+      Align16B();
+
       ARMEmitter::ForwardLabel l_BranchHost;
       ldr(TMP1, &l_BranchHost);
       blr(TMP1);
