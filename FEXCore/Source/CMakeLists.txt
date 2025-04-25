@@ -120,7 +120,7 @@ if (NOT MINGW_BUILD)
 else()
   list (APPEND LIBS synchronization)
   if (_M_ARM_64EC)
-    list (APPEND LIBS kernelbase)
+    list (APPEND LIBS mincore)
   endif()
 endif()
 
