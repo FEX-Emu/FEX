@@ -4,10 +4,7 @@
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/fextl/vector.h>
 
-#include <array>
 #include <cstdint>
-#include <functional>
-#include <utility>
 #include <signal.h>
 #include <stddef.h>
 
@@ -62,8 +59,8 @@ public:
     uint8_t SRAFPRMapping[16];
   };
 
-  void SetConfig(const SignalDelegatorConfig& _Config) {
-    Config = _Config;
+  void SetConfig(const SignalDelegatorConfig& Config) {
+    this->Config = Config;
   }
 
   const SignalDelegatorConfig& GetConfig() const {

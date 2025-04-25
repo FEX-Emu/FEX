@@ -26,7 +26,6 @@ $end_info$
 #include <string.h>
 
 #include <errno.h>
-#include <exception>
 #include <functional>
 #include <linux/futex.h>
 #include <signal.h>
