@@ -243,13 +243,17 @@ FEXCORE_PRESERVE_ALL_ATTR
 extFloat80_t extF80_sqrt( struct softfloat_state *, extFloat80_t );
 FEXCORE_PRESERVE_ALL_ATTR
 bool extF80_eq( struct softfloat_state *, extFloat80_t, extFloat80_t );
-bool extF80_le( extFloat80_t, extFloat80_t );
+bool extF80_le( struct softfloat_state *, extFloat80_t, extFloat80_t );
 FEXCORE_PRESERVE_ALL_ATTR
 bool extF80_lt( struct softfloat_state *, extFloat80_t, extFloat80_t );
 bool extF80_eq_signaling( extFloat80_t, extFloat80_t );
 bool extF80_le_quiet( extFloat80_t, extFloat80_t );
 bool extF80_lt_quiet( extFloat80_t, extFloat80_t );
 bool extF80_isSignalingNaN( extFloat80_t );
+static inline extFloat80_t extF80_complement_sign(extFloat80_t a) {
+  a.signExp ^= 1ULL << 15;
+  return a;
+}
 #endif
 uint_fast32_t extF80M_to_ui32( const extFloat80_t *, uint_fast8_t, bool );
 uint_fast64_t extF80M_to_ui64( const extFloat80_t *, uint_fast8_t, bool );
