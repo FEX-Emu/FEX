@@ -138,7 +138,7 @@ struct softfloat_state state = {};
 if( f128_eq(&state, x, zero) )
 	{
 	mtherr( "cotl", SING );
-	return( MAXNUML );
+	return( F128_MAXNUML );
 	}
 return( tancotl(&state, x,1) );
 }
@@ -173,7 +173,7 @@ if (f128_lt(state, lossth, x))
 	}
 
 /* compute x mod PIO4 */
-y = cephes_f128_floorl( f128_div(state, x, PIO4L));
+y = cephes_f128_floorl( f128_div(state, x, F128_PIO4L));
 
 /* strip high bits of integer part */
 z = cephes_f128_ldexpl( y, -4 );

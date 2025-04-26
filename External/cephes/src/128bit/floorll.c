@@ -85,7 +85,7 @@ char *unkmsg = "ceill(), floorl(), frexpl(), ldexpl() must be rewritten!\n";
 #define EXPOFS 0
 #endif
 
-extern float128_t MAXNUML;
+extern float128_t F128_MAXNUML;
 
 
 static const float128_t zero = {0, 0};

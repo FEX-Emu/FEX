@@ -7,6 +7,7 @@ set (SRCS
   src/extF80_mul.c
   src/extF80_rem.c
   src/extF80_sqrt.c
+  src/extF80_le.c
   src/extF80_to_i32.c
   src/extF80_to_i64.c
   src/extF80_to_ui64.c

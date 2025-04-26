@@ -170,11 +170,11 @@ typedef struct
 extern int merror;
 
 /* Forward declarations */
-extern float128_t MINLOGL;
+extern float128_t F128_MINLOGL;
 
-extern float128_t MAXNUML;
-extern float128_t PIL;
-extern float128_t PIO2L, PIO4L;
+extern float128_t F128_MAXNUML;
+extern float128_t F128_PIL;
+extern float128_t F128_PIO2L, F128_PIO4L;
 
 float128_t cephes_f128_atanl(float128_t x);
 #if ANSIC
