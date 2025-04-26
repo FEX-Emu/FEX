@@ -164,7 +164,7 @@ if( f128_lt(&state, lossth, x))
 	return zero;
 	}
 
-y = cephes_f128_floorl( f128_div(&state, x, PIO4L) ); /* integer part of x/PIO4 */
+y = cephes_f128_floorl( f128_div(&state, x, F128_PIO4L) ); /* integer part of x/PIO4 */
 
 /* strip high bits of integer part to prevent integer overflow */
 z = cephes_f128_ldexpl( y, -4 );
@@ -245,7 +245,7 @@ if( f128_lt(&state, lossth, x))
 	return zero;
 	}
 
-y = cephes_f128_floorl( f128_div(&state, x, PIO4L));
+y = cephes_f128_floorl( f128_div(&state, x, F128_PIO4L));
 z = cephes_f128_ldexpl( y, -4 );
 z = cephes_f128_floorl(z);		/* integer part of y/8 */
 z = f128_sub(&state, y, cephes_f128_ldexpl( z, 4 ));  /* y - 16 * (y/16) */

@@ -82,7 +82,7 @@ static const float128_t zero = {0, 0};
 static const float128_t f_0_p5 = {0, 0x3ffe000000000000ULL};
 static const float128_t one = {0, 0x3fff000000000000ULL};
 
-extern float128_t MAXNUML;
+extern float128_t F128_MAXNUML;
 
 float128_t cephes_f128_exp2l(float128_t x) {
 struct softfloat_state state = {};
@@ -92,7 +92,7 @@ int n;
 if( f128_le(&state, MAXL2, x))
 	{
 	mtherr( fname, OVERFLOW );
-	return( MAXNUML );
+	return( F128_MAXNUML );
 	}
 
 if(f128_lt(&state, x, MINL2) )

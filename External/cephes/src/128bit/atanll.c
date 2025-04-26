@@ -132,13 +132,13 @@ if( f128_lt(&state, x, zero) )
 
 if( f128_lt(&state, T3P8, x) )
 	{
-	y = PIO2L;
+	y = F128_PIO2L;
 	x = f128_complement_sign( f128_div(&state, one, x));
 	}
 
 else if( f128_lt(&state, TP8, x) )
 	{
-	y = PIO4L;
+	y = F128_PIO4L;
 	x = f128_div(&state, f128_sub(&state, x, one), f128_add(&state, x, one));
 	}
 else
@@ -182,20 +182,20 @@ if( f128_eq(&state, x, zero) )
 	if( code & 1 )
 		{
 #if ANSIC
-		return( f128_complement_sign(PIO2L) );
+		return( f128_complement_sign(F128_PIO2L) );
 #else
-		return( f128_mul(&state, f_3_p0, PIO2L) );
+		return( f128_mul(&state, f_3_p0, F128_PIO2L) );
 #endif
 		}
 	if( f128_eq(&state, y, zero) )
 		return zero;
-	return( PIO2L );
+	return( F128_PIO2L );
 	}
 
 if( f128_eq(&state, y, zero) )
 	{
 	if( code & 2 )
-		return( PIL );
+		return( F128_PIL );
 	return zero;
 	}
 
@@ -205,13 +205,13 @@ switch( code )
 #if ANSIC
 	case 0:
 	case 1: w = zero; break;
-	case 2: w = PIL; break;
-	case 3: w = f128_complement_sign(PIL); break;
+	case 2: w = F128_PIL; break;
+	case 3: w = f128_complement_sign(F128_PIL); break;
 #else
 	case 0: w = zero; break;
-	case 1: w = f128_mul(&state, f_2_p0, PIL); break;
+	case 1: w = f128_mul(&state, f_2_p0, F128_PIL); break;
 	case 2:
-	case 3: w = PIL; break;
+	case 3: w = F128_PIL; break;
 #endif
 	}
 
