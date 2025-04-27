@@ -17,7 +17,6 @@ $end_info$
 
 #include <array>
 #include <atomic>
-#include <signal.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <mutex>

@@ -4,6 +4,7 @@
 #include "Interface/Context/Context.h"
 #include "Interface/Core/CPUBackend.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
+#include <cstdint>
 
 #ifndef _WIN32
 #include <sys/prctl.h>
@@ -325,7 +326,7 @@ namespace CPU {
           CodeBuffers.resize(1);
         }
         // Set the current code buffer to the initial
-        CurrentCodeBuffer = &CodeBuffers[0];
+        CurrentCodeBuffer = CodeBuffers.data();
 
         if (CurrentCodeBuffer->Size != MaxCodeSize) {
           FreeCodeBuffer(*CurrentCodeBuffer);
@@ -382,6 +383,14 @@ namespace CPU {
     if (static_cast<Context::ContextImpl*>(ThreadState->CTX)->Config.GlobalJITNaming()) {
       static_cast<Context::ContextImpl*>(ThreadState->CTX)->Symbols.RegisterJITSpace(Buffer.Ptr, Buffer.Size);
     }
+
+    // Protect the last page of the allocated buffer to trigger SIGSEGV on write access
+    uintptr_t LastPageAddr = AlignDown(reinterpret_cast<uintptr_t>(Buffer.Ptr) + Buffer.Size - 1, FEXCore::Utils::FEX_PAGE_SIZE);
+    if (!FEXCore::Allocator::VirtualProtect(reinterpret_cast<void*>(LastPageAddr), FEXCore::Utils::FEX_PAGE_SIZE,
+                                            FEXCore::Allocator::ProtectOptions::None)) {
+      LogMan::Msg::EFmt("Failed to mprotect last page of code buffer.");
+    }
+
     return Buffer;
   }
 
@@ -390,11 +399,11 @@ namespace CPU {
   }
 
   bool CPUBackend::IsAddressInCodeBuffer(uintptr_t Address) const {
+    // The last page of the code buffer is protected, so we need to exclude it from the valid range
+    // when checking if the address is in the code buffer.
     for (auto& Buffer : CodeBuffers) {
-      auto start = (uintptr_t)Buffer.Ptr;
-      auto end = start + Buffer.Size;
-
-      if (Address >= start && Address < end) {
+      uintptr_t LastPageAddr = AlignDown(reinterpret_cast<uintptr_t>(Buffer.Ptr) + Buffer.Size - 1, FEXCore::Utils::FEX_PAGE_SIZE);
+      if (Address >= reinterpret_cast<uintptr_t>(Buffer.Ptr) && Address < LastPageAddr) {
         return true;
       }
     }

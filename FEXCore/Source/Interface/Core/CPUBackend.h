@@ -13,7 +13,6 @@ $end_info$
 #include <FEXCore/fextl/vector.h>
 
 #include <cstdint>
-#include <memory>
 
 namespace FEXCore {
 
@@ -131,7 +130,7 @@ namespace CPU {
      * @return An executable function pointer relocated from the cache object
      */
     [[nodiscard]]
-    virtual void* RelocateJITObjectCode(uint64_t Entry, const CodeSerialize::CodeObjectFileSection* SerializationData) {
+    virtual void* RelocateJITObjectCode(uint64_t /* Entry */, const CodeSerialize::CodeObjectFileSection* /* SerializationData */) {
       return nullptr;
     }
 
