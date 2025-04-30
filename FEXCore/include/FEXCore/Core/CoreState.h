@@ -244,6 +244,11 @@ enum FallbackHandlerIndex {
   OPINDEX_MAX,
 };
 
+struct FallbackABIInfo {
+  uint64_t ABIHandler;
+  uint64_t Func;
+};
+
 struct JITPointers {
 
   struct {
@@ -262,7 +267,7 @@ struct JITPointers {
     // Handles returning/calling ARM64EC code from the JIT, expects the target PC in TMP3
     uint64_t ExitFunctionEC {};
 
-    uint64_t FallbackHandlerPointers[FallbackHandlerIndex::OPINDEX_MAX];
+    FallbackABIInfo FallbackHandlerPointers[FallbackHandlerIndex::OPINDEX_MAX];
     uint64_t NamedVectorConstantPointers[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_CONST_POOL_MAX];
     uint64_t IndexedNamedVectorConstantPointers[FEXCore::IR::IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_MAX];
     uint64_t TelemetryValueAddresses[FEXCore::Telemetry::TYPE_LAST];

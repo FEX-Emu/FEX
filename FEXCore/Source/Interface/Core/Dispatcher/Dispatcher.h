@@ -3,7 +3,9 @@
 
 #include "Interface/Core/ArchHelpers/Arm64Emitter.h"
 #include "Interface/Core/CPUBackend.h"
+#include "Interface/Core/Interpreter/InterpreterOps.h"
 
+#include <FEXCore/Core/CoreState.h>
 #include <FEXCore/fextl/memory.h>
 
 #ifdef VIXL_SIMULATOR
@@ -60,6 +62,7 @@ public:
   uint64_t IntCallbackReturnAddress {};
 
   uint64_t PauseReturnInstruction {};
+  std::array<uint64_t, FallbackABI::FABI_UNKNOWN> ABIPointers {};
 
   /**  @} */
 
@@ -119,6 +122,7 @@ private:
   uint64_t LREMHandlerAddress {};
 
   void EmitDispatcher();
+  uint64_t GenerateABICall(FallbackABI ABI);
 };
 
 } // namespace FEXCore::CPU

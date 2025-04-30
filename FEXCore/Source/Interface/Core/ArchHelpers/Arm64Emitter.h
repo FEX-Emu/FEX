@@ -119,9 +119,6 @@ protected:
   // Returning REG_INVALID if there was no mapping.
   FEXCore::X86State::X86Reg GetX86RegRelationToARMReg(ARMEmitter::Register Reg);
 
-  // NOTE: These functions WILL clobber the register TMP4 if AVX support is enabled
-  //       and FPRs are being spilled or filled. If only GPRs are spilled/filled, then
-  //       TMP4 is left alone.
   void SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs = true, uint32_t GPRSpillMask = ~0U, uint32_t FPRSpillMask = ~0U);
   void FillStaticRegs(bool FPRs = true, uint32_t GPRFillMask = ~0U, uint32_t FPRFillMask = ~0U,
                       std::optional<ARMEmitter::Register> OptionalReg = std::nullopt,
@@ -141,7 +138,8 @@ protected:
   void PopVectorRegisters(bool SVERegs, std::span<const ARMEmitter::VRegister> VRegs);
   void PopGeneralRegisters(std::span<const ARMEmitter::Register> Regs);
 
-  void PushDynamicRegs(ARMEmitter::Register TmpReg);
+  // Returns stack size consumed for pushing dynamic registers.
+  size_t PushDynamicRegs(ARMEmitter::Register TmpReg);
   void PopDynamicRegs();
 
   void PushCalleeSavedRegisters();
@@ -157,15 +155,15 @@ protected:
   // Callee Saved:
   // - X9-X15, X19-X29, X31
   // - Low 128-bits of v8-v31
-  void SpillForPreserveAllABICall(ARMEmitter::Register TmpReg, bool FPRs = true);
+  size_t SpillForPreserveAllABICall(ARMEmitter::Register TmpReg, bool FPRs = true);
   void FillForPreserveAllABICall(bool FPRs = true);
 
-  void SpillForABICall(bool SupportsPreserveAllABI, ARMEmitter::Register TmpReg, bool FPRs = true) {
+  size_t SpillForABICall(bool SupportsPreserveAllABI, ARMEmitter::Register TmpReg, bool FPRs = true) {
     if (SupportsPreserveAllABI) {
-      SpillForPreserveAllABICall(TmpReg, FPRs);
+      return SpillForPreserveAllABICall(TmpReg, FPRs);
     } else {
       SpillStaticRegs(TmpReg, FPRs);
-      PushDynamicRegs(TmpReg);
+      return PushDynamicRegs(TmpReg);
     }
   }
 

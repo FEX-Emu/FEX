@@ -13,7 +13,6 @@ struct IROp_Header;
 
 namespace FEXCore::CPU {
 enum FallbackABI {
-  FABI_UNKNOWN,
   FABI_F80_I16_F32_PTR,
   FABI_F80_I16_F64_PTR,
   FABI_F80_I16_I16_PTR,
@@ -30,18 +29,17 @@ enum FallbackABI {
   FABI_F80_I16_F80_F80_PTR,
   FABI_I32_I64_I64_V128_V128_I16,
   FABI_I32_V128_V128_I16,
+  FABI_UNKNOWN,
 };
-
 struct FallbackInfo {
   FallbackABI ABI;
-  void* fn;
   FEXCore::Core::FallbackHandlerIndex HandlerIndex;
   bool SupportsPreserveAllABI;
 };
 
 class InterpreterOps {
 public:
-  static void FillFallbackIndexPointers(uint64_t* Info);
+  static void FillFallbackIndexPointers(Core::FallbackABIInfo* Info, uint64_t* ABIHandlers);
   static bool GetFallbackHandler(bool SupportsPreserveAllABI, const IR::IROp_Header* IROp, FallbackInfo* Info);
 };
 } // namespace FEXCore::CPU
