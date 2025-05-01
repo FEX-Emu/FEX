@@ -82,7 +82,7 @@ namespace FEXCore::CPU {
 
 void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
   FallbackInfo Info;
-  if (!InterpreterOps::GetFallbackHandler(CTX->HostFeatures.SupportsPreserveAllABI, IROp, &Info)) {
+  if (!InterpreterOps::GetFallbackHandler(IROp, &Info)) {
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
     LOGMAN_MSG_A_FMT("Unhandled IR Op: {}", FEXCore::IR::GetName(IROp->Op));
 #endif
@@ -144,7 +144,7 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
 
       const auto Src1 = GetVReg(IROp->Args[0].ID());
-      mov(VTMP1.D(), Src1.D());
+      fmov(VTMP1.D(), Src1.D());
 
       ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
       ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex].Func));
@@ -223,7 +223,7 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
 
       const auto Src1 = GetVReg(IROp->Args[0].ID());
-      mov(VTMP1.D(), Src1.D());
+      fmov(VTMP1.D(), Src1.D());
 
       ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
       ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex].Func));
@@ -244,8 +244,8 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       const auto Src1 = GetVReg(IROp->Args[0].ID());
       const auto Src2 = GetVReg(IROp->Args[1].ID());
 
-      mov(VTMP1.D(), Src1.D());
-      mov(VTMP2.D(), Src2.D());
+      fmov(VTMP1.D(), Src1.D());
+      fmov(VTMP2.D(), Src2.D());
 
       ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
       ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex].Func));
