@@ -235,7 +235,8 @@ int ConnectToAndStartServer(std::string_view InterpreterPath) {
     // We want to ignore the signal so that if FEXServer starts in daemon mode, it
     // doesn't leave a zombie process around waiting for something to get the result.
     struct sigaction action {};
-    action.sa_handler = SIG_IGN, sigaction(SIGCHLD, &action, &action);
+    action.sa_handler = SIG_IGN;
+    sigaction(SIGCHLD, &action, &action);
 
     pid_t pid = fork();
     if (pid == 0) {

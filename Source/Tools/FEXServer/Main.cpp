@@ -74,9 +74,9 @@ void SetupSignals() {
 
   // Ignore SIGPIPE, we will be checking for pipe closure which could send this signal
   signal(SIGPIPE, SIG_IGN);
-  // SIGCHLD if squashfuse exits early.
-  // Ignore it for now
-  signal(SIGCHLD, SIG_IGN);
+  // Reset SIGCHLD which is likely SIG_IGN if FEXInterpreter started the server.
+  // We now wait for child processes with waitpid, newer libfuse also requires SIGCHLD to not be ignored by child processes.
+  signal(SIGCHLD, SIG_DFL);
 }
 
 /**
