@@ -164,3 +164,236 @@ TEST_CASE("vl64 - in memory - encode/decode") {
   CHECK(Dec.Size == 9);
   CHECK(Dec.Integer == std::numeric_limits<int64_t>::max());
 }
+
+TEST_CASE("vl64pair-size") {
+  // Check 8-bit minimum and maximum.
+  CHECK(FEXCore::Utils::vl64pair::EncodedSize(4, 1) == 1);
+  CHECK(FEXCore::Utils::vl64pair::EncodedSize(64, 8) == 1);
+
+  // Interlaced 8-bit minimum and maximum
+  CHECK(FEXCore::Utils::vl64pair::EncodedSize(4, 8) == 1);
+  CHECK(FEXCore::Utils::vl64pair::EncodedSize(64, 1) == 1);
+
+  // Check 16-bit minimum and maximum.
+  CHECK(FEXCore::Utils::vl64pair::EncodedSize(-512, -32) == 2);
+  CHECK(FEXCore::Utils::vl64pair::EncodedSize(504, 31) == 2);
+
+  // Interlaced 16-bit minimum and maximum.
+  CHECK(FEXCore::Utils::vl64pair::EncodedSize(-512, 31) == 2);
+  CHECK(FEXCore::Utils::vl64pair::EncodedSize(504, -32) == 2);
+
+  // Check 32-bit minimum and maximum.
+  CHECK(FEXCore::Utils::vl64pair::EncodedSize(std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::min()) == 9);
+  CHECK(FEXCore::Utils::vl64pair::EncodedSize(std::numeric_limits<int32_t>::max(), std::numeric_limits<int32_t>::max()) == 9);
+
+  // Interlaced 32-bit minimum and maximum.
+  CHECK(FEXCore::Utils::vl64pair::EncodedSize(std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::max()) == 9);
+  CHECK(FEXCore::Utils::vl64pair::EncodedSize(std::numeric_limits<int32_t>::max(), std::numeric_limits<int32_t>::min()) == 9);
+
+  // Check 64-bit minimum and maximum.
+  CHECK(FEXCore::Utils::vl64pair::EncodedSize(std::numeric_limits<int64_t>::min(), std::numeric_limits<int64_t>::min()) == 17);
+  CHECK(FEXCore::Utils::vl64pair::EncodedSize(std::numeric_limits<int64_t>::max(), std::numeric_limits<int64_t>::max()) == 17);
+
+  // Interlaced 64-bit minimum and maximum.
+  CHECK(FEXCore::Utils::vl64pair::EncodedSize(std::numeric_limits<int64_t>::min(), std::numeric_limits<int64_t>::max()) == 17);
+  CHECK(FEXCore::Utils::vl64pair::EncodedSize(std::numeric_limits<int64_t>::max(), std::numeric_limits<int64_t>::min()) == 17);
+}
+
+TEST_CASE("vl8pair - in memory - encode/decode") {
+  uint8_t data[1];
+  // Minimum, Minimum
+  REQUIRE(FEXCore::Utils::vl64pair::Encode(data, (1 * 4), 1) == 1);
+  CHECK(data[0] == 0);
+  auto Dec = FEXCore::Utils::vl64pair::Decode(data);
+  CHECK(Dec.Size == 1);
+  CHECK(Dec.IntegerARMPC == (1 * 4));
+  CHECK(Dec.IntegerX86RIP == 1);
+
+  // Maximum, Maximum
+  REQUIRE(FEXCore::Utils::vl64pair::Encode(data, (16 * 4), 8) == 1);
+  CHECK(data[0] == 0b0111'1111);
+  Dec = FEXCore::Utils::vl64pair::Decode(data);
+  CHECK(Dec.Size == 1);
+  CHECK(Dec.IntegerARMPC == (16 * 4));
+  CHECK(Dec.IntegerX86RIP == 8);
+
+  // Minimum, Maximum
+  REQUIRE(FEXCore::Utils::vl64pair::Encode(data, (1 * 4), 8) == 1);
+  CHECK(data[0] == 0b0111'0000);
+  Dec = FEXCore::Utils::vl64pair::Decode(data);
+  CHECK(Dec.Size == 1);
+  CHECK(Dec.IntegerARMPC == (1 * 4));
+  CHECK(Dec.IntegerX86RIP == 8);
+
+  // Maximum, Minimum
+  REQUIRE(FEXCore::Utils::vl64pair::Encode(data, (16 * 4), 1) == 1);
+  CHECK(data[0] == 0b0000'1111);
+  Dec = FEXCore::Utils::vl64pair::Decode(data);
+  CHECK(Dec.Size == 1);
+  CHECK(Dec.IntegerARMPC == (16 * 4));
+  CHECK(Dec.IntegerX86RIP == 1);
+}
+
+TEST_CASE("vl16pair - in memory - encode/decode") {
+  uint8_t data[2];
+
+  // vl8pair Minimum - 1, Minimum - 1
+  REQUIRE(FEXCore::Utils::vl64pair::Encode(data, 0, 0) == 2);
+  CHECK((uint64_t)data[0] == 0b1000'0000);
+  CHECK((uint64_t)data[1] == 0b0000'0000);
+  auto Dec = FEXCore::Utils::vl64pair::Decode(data);
+  CHECK(Dec.Size == 2);
+  CHECK(Dec.IntegerARMPC == 0);
+  CHECK(Dec.IntegerX86RIP == 0);
+
+  // vl8pair Maximum + 1, Maximum + 1
+  REQUIRE(FEXCore::Utils::vl64pair::Encode(data, (17 * 4), 9) == 2);
+  CHECK((uint64_t)data[0] == 0b1000'1001);
+  CHECK((uint64_t)data[1] == 0b0001'0001);
+  Dec = FEXCore::Utils::vl64pair::Decode(data);
+  CHECK(Dec.Size == 2);
+  CHECK(Dec.IntegerARMPC == (17 * 4));
+  CHECK(Dec.IntegerX86RIP == 9);
+
+  // Minimum, Minimum
+  REQUIRE(FEXCore::Utils::vl64pair::Encode(data, (-128 * 4), -32) == 2);
+  CHECK((uint64_t)data[0] == 0b1010'0000);
+  CHECK((uint64_t)data[1] == 0b1000'0000);
+  Dec = FEXCore::Utils::vl64pair::Decode(data);
+  CHECK(Dec.Size == 2);
+  CHECK(Dec.IntegerARMPC == (-128 * 4));
+  CHECK(Dec.IntegerX86RIP == -32);
+
+  // Maximum, Maximum
+  REQUIRE(FEXCore::Utils::vl64pair::Encode(data, (127 * 4), 31) == 2);
+  CHECK((uint64_t)data[0] == 0b1001'1111);
+  CHECK((uint64_t)data[1] == 0b0111'1111);
+  Dec = FEXCore::Utils::vl64pair::Decode(data);
+  CHECK(Dec.Size == 2);
+  CHECK(Dec.IntegerARMPC == (127 * 4));
+  CHECK(Dec.IntegerX86RIP == 31);
+
+  // Interleaved Minimum, Maximum
+  REQUIRE(FEXCore::Utils::vl64pair::Encode(data, (-128 * 4), 31) == 2);
+  CHECK((uint64_t)data[0] == 0b1001'1111);
+  CHECK((uint64_t)data[1] == 0b1000'0000);
+  Dec = FEXCore::Utils::vl64pair::Decode(data);
+  CHECK(Dec.Size == 2);
+  CHECK(Dec.IntegerARMPC == (-128 * 4));
+  CHECK(Dec.IntegerX86RIP == 31);
+
+  // Interleaved Maximum, Minimum
+  REQUIRE(FEXCore::Utils::vl64pair::Encode(data, (127 * 4), -32) == 2);
+  CHECK((uint64_t)data[0] == 0b1010'0000);
+  CHECK((uint64_t)data[1] == 0b0111'1111);
+  Dec = FEXCore::Utils::vl64pair::Decode(data);
+  CHECK(Dec.Size == 2);
+  CHECK(Dec.IntegerARMPC == (127 * 4));
+  CHECK(Dec.IntegerX86RIP == -32);
+}
+
+TEST_CASE("vl32pair - in memory - encode/decode") {
+  uint8_t data[9];
+  int32_t result {};
+
+  // Minimum, Minimum
+  REQUIRE(FEXCore::Utils::vl64pair::Encode(data, std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::min()) == 9);
+  CHECK(data[0] == 0b1100'0000);
+  memcpy(&result, &data[1], sizeof(int32_t));
+  CHECK(result == std::numeric_limits<int32_t>::min());
+  memcpy(&result, &data[1 + sizeof(int32_t)], sizeof(int32_t));
+  CHECK(result == std::numeric_limits<int32_t>::min());
+  auto Dec = FEXCore::Utils::vl64pair::Decode(data);
+  CHECK(Dec.Size == 9);
+  CHECK(Dec.IntegerARMPC == std::numeric_limits<int32_t>::min());
+  CHECK(Dec.IntegerX86RIP == std::numeric_limits<int32_t>::min());
+
+  // Maximum, Maximum
+  REQUIRE(FEXCore::Utils::vl64pair::Encode(data, std::numeric_limits<int32_t>::max(), std::numeric_limits<int32_t>::max()) == 9);
+  CHECK(data[0] == 0b1100'0000);
+  memcpy(&result, &data[1], sizeof(int32_t));
+  CHECK(result == std::numeric_limits<int32_t>::max());
+  memcpy(&result, &data[1 + sizeof(int32_t)], sizeof(int32_t));
+  CHECK(result == std::numeric_limits<int32_t>::max());
+  Dec = FEXCore::Utils::vl64pair::Decode(data);
+  CHECK(Dec.Size == 9);
+  CHECK(Dec.IntegerARMPC == std::numeric_limits<int32_t>::max());
+  CHECK(Dec.IntegerX86RIP == std::numeric_limits<int32_t>::max());
+
+  // Interleaved Minimum, Maximum
+  REQUIRE(FEXCore::Utils::vl64pair::Encode(data, std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::max()) == 9);
+  CHECK(data[0] == 0b1100'0000);
+  memcpy(&result, &data[1], sizeof(int32_t));
+  CHECK(result == std::numeric_limits<int32_t>::min());
+  memcpy(&result, &data[1 + sizeof(int32_t)], sizeof(int32_t));
+  CHECK(result == std::numeric_limits<int32_t>::max());
+  Dec = FEXCore::Utils::vl64pair::Decode(data);
+  CHECK(Dec.Size == 9);
+  CHECK(Dec.IntegerARMPC == std::numeric_limits<int32_t>::min());
+  CHECK(Dec.IntegerX86RIP == std::numeric_limits<int32_t>::max());
+
+  // Interleaved Maximum, Minimum
+  REQUIRE(FEXCore::Utils::vl64pair::Encode(data, std::numeric_limits<int32_t>::max(), std::numeric_limits<int32_t>::min()) == 9);
+  CHECK(data[0] == 0b1100'0000);
+  memcpy(&result, &data[1], sizeof(int32_t));
+  CHECK(result == std::numeric_limits<int32_t>::max());
+  memcpy(&result, &data[1 + sizeof(int32_t)], sizeof(int32_t));
+  CHECK(result == std::numeric_limits<int32_t>::min());
+  Dec = FEXCore::Utils::vl64pair::Decode(data);
+  CHECK(Dec.Size == 9);
+  CHECK(Dec.IntegerARMPC == std::numeric_limits<int32_t>::max());
+  CHECK(Dec.IntegerX86RIP == std::numeric_limits<int32_t>::min());
+}
+
+TEST_CASE("vl64pair - in memory - encode/decode") {
+  uint8_t data[17];
+  int64_t result {};
+
+  // Minimum, Minimum
+  REQUIRE(FEXCore::Utils::vl64pair::Encode(data, std::numeric_limits<int64_t>::min(), std::numeric_limits<int64_t>::min()) == 17);
+  CHECK(data[0] == 0b1110'0000);
+  memcpy(&result, &data[1], sizeof(int64_t));
+  CHECK(result == std::numeric_limits<int64_t>::min());
+  memcpy(&result, &data[1 + sizeof(int64_t)], sizeof(int64_t));
+  CHECK(result == std::numeric_limits<int64_t>::min());
+  auto Dec = FEXCore::Utils::vl64pair::Decode(data);
+  CHECK(Dec.Size == 17);
+  CHECK(Dec.IntegerARMPC == std::numeric_limits<int64_t>::min());
+  CHECK(Dec.IntegerX86RIP == std::numeric_limits<int64_t>::min());
+
+  // Maximum, Maximum
+  REQUIRE(FEXCore::Utils::vl64pair::Encode(data, std::numeric_limits<int64_t>::max(), std::numeric_limits<int64_t>::max()) == 17);
+  CHECK(data[0] == 0b1110'0000);
+  memcpy(&result, &data[1], sizeof(int64_t));
+  CHECK(result == std::numeric_limits<int64_t>::max());
+  memcpy(&result, &data[1 + sizeof(int64_t)], sizeof(int64_t));
+  CHECK(result == std::numeric_limits<int64_t>::max());
+  Dec = FEXCore::Utils::vl64pair::Decode(data);
+  CHECK(Dec.Size == 17);
+  CHECK(Dec.IntegerARMPC == std::numeric_limits<int64_t>::max());
+  CHECK(Dec.IntegerX86RIP == std::numeric_limits<int64_t>::max());
+
+  // Interleaved Minimum, Maximum
+  REQUIRE(FEXCore::Utils::vl64pair::Encode(data, std::numeric_limits<int64_t>::min(), std::numeric_limits<int64_t>::max()) == 17);
+  CHECK(data[0] == 0b1110'0000);
+  memcpy(&result, &data[1], sizeof(int64_t));
+  CHECK(result == std::numeric_limits<int64_t>::min());
+  memcpy(&result, &data[1 + sizeof(int64_t)], sizeof(int64_t));
+  CHECK(result == std::numeric_limits<int64_t>::max());
+  Dec = FEXCore::Utils::vl64pair::Decode(data);
+  CHECK(Dec.Size == 17);
+  CHECK(Dec.IntegerARMPC == std::numeric_limits<int64_t>::min());
+  CHECK(Dec.IntegerX86RIP == std::numeric_limits<int64_t>::max());
+
+  // Interleaved Maximum, Minimum
+  REQUIRE(FEXCore::Utils::vl64pair::Encode(data, std::numeric_limits<int64_t>::max(), std::numeric_limits<int64_t>::min()) == 17);
+  CHECK(data[0] == 0b1110'0000);
+  memcpy(&result, &data[1], sizeof(int64_t));
+  CHECK(result == std::numeric_limits<int64_t>::max());
+  memcpy(&result, &data[1 + sizeof(int64_t)], sizeof(int64_t));
+  CHECK(result == std::numeric_limits<int64_t>::min());
+  Dec = FEXCore::Utils::vl64pair::Decode(data);
+  CHECK(Dec.Size == 17);
+  CHECK(Dec.IntegerARMPC == std::numeric_limits<int64_t>::max());
+  CHECK(Dec.IntegerX86RIP == std::numeric_limits<int64_t>::min());
+}

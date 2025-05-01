@@ -158,14 +158,12 @@ uint64_t ContextImpl::RestoreRIPFromHostPC(FEXCore::Core::InternalThreadState* T
       uint64_t StartingGuestRIP = InlineTail->RIP;
 
       for (uint32_t i = 0; i < InlineTail->NumberOfRIPEntries; ++i) {
-        auto HostPCOffset = FEXCore::Utils::vl64::Decode(RIPEntry);
-        RIPEntry += HostPCOffset.Size;
-        auto GuestRIPOffset = FEXCore::Utils::vl64::Decode(RIPEntry);
-        RIPEntry += GuestRIPOffset.Size;
-        if (HostPC >= (StartingHostPC + HostPCOffset.Integer)) {
+        auto Offset = FEXCore::Utils::vl64pair::Decode(RIPEntry);
+        RIPEntry += Offset.Size;
+        if (HostPC >= (StartingHostPC + Offset.IntegerARMPC)) {
           // We are beyond this entry, keep going forward.
-          StartingHostPC += HostPCOffset.Integer;
-          StartingGuestRIP += GuestRIPOffset.Integer;
+          StartingHostPC += Offset.IntegerARMPC;
+          StartingGuestRIP += Offset.IntegerX86RIP;
         } else {
           // Passed where the Host PC is at. Break now.
           break;

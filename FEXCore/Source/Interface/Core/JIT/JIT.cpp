@@ -862,11 +862,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
       int64_t HostPCOffset = GuestOpcode.HostEntryOffset - CurrentPCOffset;
       int64_t GuestRIPOffset = GuestOpcode.GuestEntryOffset - CurrentRIPOffset;
 
-      size_t Size = FEXCore::Utils::vl64::Encode(JITRIPEntriesLocation, HostPCOffset);
-      JITRIPEntriesLocation += Size;
-
-      Size = FEXCore::Utils::vl64::Encode(JITRIPEntriesLocation, GuestRIPOffset);
-      JITRIPEntriesLocation += Size;
+      JITRIPEntriesLocation += FEXCore::Utils::vl64pair::Encode(JITRIPEntriesLocation, HostPCOffset, GuestRIPOffset);
 
       CurrentPCOffset = GuestOpcode.HostEntryOffset;
       CurrentRIPOffset = GuestOpcode.GuestEntryOffset;
