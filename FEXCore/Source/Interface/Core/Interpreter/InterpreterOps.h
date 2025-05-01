@@ -34,12 +34,11 @@ enum FallbackABI {
 struct FallbackInfo {
   FallbackABI ABI;
   FEXCore::Core::FallbackHandlerIndex HandlerIndex;
-  bool SupportsPreserveAllABI;
 };
 
 class InterpreterOps {
 public:
   static void FillFallbackIndexPointers(Core::FallbackABIInfo* Info, uint64_t* ABIHandlers);
-  static bool GetFallbackHandler(bool SupportsPreserveAllABI, const IR::IROp_Header* IROp, FallbackInfo* Info);
+  static bool GetFallbackHandler(const IR::IROp_Header* IROp, FallbackInfo* Info);
 };
 } // namespace FEXCore::CPU

@@ -5541,7 +5541,7 @@
       "ExpectedArm64ASM": [
         "ldr d2, [x4]",
         "str x30, [sp, #-16]!",
-        "mov v0.8b, v2.8b",
+        "fmov d0, d2",
         "ldr x0, [x28, #1440]",
         "ldr x3, [x28, #1448]",
         "blr x0",
@@ -5570,7 +5570,7 @@
       "ExpectedArm64ASM": [
         "ldr d2, [x4]",
         "str x30, [sp, #-16]!",
-        "mov v0.8b, v2.8b",
+        "fmov d0, d2",
         "ldr x0, [x28, #1440]",
         "ldr x3, [x28, #1448]",
         "blr x0",
@@ -5599,7 +5599,7 @@
       "ExpectedArm64ASM": [
         "ldr d2, [x4]",
         "str x30, [sp, #-16]!",
-        "mov v0.8b, v2.8b",
+        "fmov d0, d2",
         "ldr x0, [x28, #1440]",
         "ldr x3, [x28, #1448]",
         "blr x0",
@@ -5635,7 +5635,7 @@
       "ExpectedArm64ASM": [
         "ldr d2, [x4]",
         "str x30, [sp, #-16]!",
-        "mov v0.8b, v2.8b",
+        "fmov d0, d2",
         "ldr x0, [x28, #1440]",
         "ldr x3, [x28, #1448]",
         "blr x0",
@@ -5679,7 +5679,7 @@
       "ExpectedArm64ASM": [
         "ldr d2, [x4]",
         "str x30, [sp, #-16]!",
-        "mov v0.8b, v2.8b",
+        "fmov d0, d2",
         "ldr x0, [x28, #1440]",
         "ldr x3, [x28, #1448]",
         "blr x0",
@@ -5708,7 +5708,7 @@
       "ExpectedArm64ASM": [
         "ldr d2, [x4]",
         "str x30, [sp, #-16]!",
-        "mov v0.8b, v2.8b",
+        "fmov d0, d2",
         "ldr x0, [x28, #1440]",
         "ldr x3, [x28, #1448]",
         "blr x0",
@@ -5737,7 +5737,7 @@
       "ExpectedArm64ASM": [
         "ldr d2, [x4]",
         "str x30, [sp, #-16]!",
-        "mov v0.8b, v2.8b",
+        "fmov d0, d2",
         "ldr x0, [x28, #1440]",
         "ldr x3, [x28, #1448]",
         "blr x0",
@@ -5766,7 +5766,7 @@
       "ExpectedArm64ASM": [
         "ldr d2, [x4]",
         "str x30, [sp, #-16]!",
-        "mov v0.8b, v2.8b",
+        "fmov d0, d2",
         "ldr x0, [x28, #1440]",
         "ldr x3, [x28, #1448]",
         "blr x0",
@@ -6995,7 +6995,7 @@
       "ExpectedArm64ASM": [
         "ldr d2, [x4]",
         "str x30, [sp, #-16]!",
-        "mov v0.8b, v2.8b",
+        "fmov d0, d2",
         "ldr x0, [x28, #1440]",
         "ldr x3, [x28, #1448]",
         "blr x0",

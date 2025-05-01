@@ -301,7 +301,7 @@ struct OpHandlers<IR::OP_F80SCALE> {
 
 template<>
 struct OpHandlers<IR::OP_F64SIN> {
-  static double handle(uint16_t FCW, double src, FEXCore::Core::CpuStateFrame* Frame) {
+  FEXCORE_PRESERVE_ALL_ATTR static double handle(uint16_t FCW, double src, FEXCore::Core::CpuStateFrame* Frame) {
     FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     return sin(src);
   }
@@ -309,7 +309,7 @@ struct OpHandlers<IR::OP_F64SIN> {
 
 template<>
 struct OpHandlers<IR::OP_F64COS> {
-  static double handle(uint16_t FCW, double src, FEXCore::Core::CpuStateFrame* Frame) {
+  FEXCORE_PRESERVE_ALL_ATTR static double handle(uint16_t FCW, double src, FEXCore::Core::CpuStateFrame* Frame) {
     FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     return cos(src);
   }
@@ -317,7 +317,7 @@ struct OpHandlers<IR::OP_F64COS> {
 
 template<>
 struct OpHandlers<IR::OP_F64TAN> {
-  static double handle(uint16_t FCW, double src, FEXCore::Core::CpuStateFrame* Frame) {
+  FEXCORE_PRESERVE_ALL_ATTR static double handle(uint16_t FCW, double src, FEXCore::Core::CpuStateFrame* Frame) {
     FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     return tan(src);
   }
@@ -325,7 +325,7 @@ struct OpHandlers<IR::OP_F64TAN> {
 
 template<>
 struct OpHandlers<IR::OP_F64F2XM1> {
-  static double handle(uint16_t FCW, double src, FEXCore::Core::CpuStateFrame* Frame) {
+  FEXCORE_PRESERVE_ALL_ATTR static double handle(uint16_t FCW, double src, FEXCore::Core::CpuStateFrame* Frame) {
     FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     return exp2(src) - 1.0;
   }
@@ -333,7 +333,7 @@ struct OpHandlers<IR::OP_F64F2XM1> {
 
 template<>
 struct OpHandlers<IR::OP_F64ATAN> {
-  static double handle(uint16_t FCW, double src1, double src2, FEXCore::Core::CpuStateFrame* Frame) {
+  FEXCORE_PRESERVE_ALL_ATTR static double handle(uint16_t FCW, double src1, double src2, FEXCore::Core::CpuStateFrame* Frame) {
     FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     return atan2(src1, src2);
   }
@@ -341,7 +341,7 @@ struct OpHandlers<IR::OP_F64ATAN> {
 
 template<>
 struct OpHandlers<IR::OP_F64FPREM> {
-  static double handle(uint16_t FCW, double src1, double src2, FEXCore::Core::CpuStateFrame* Frame) {
+  FEXCORE_PRESERVE_ALL_ATTR static double handle(uint16_t FCW, double src1, double src2, FEXCore::Core::CpuStateFrame* Frame) {
     FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     return fmod(src1, src2);
   }
@@ -349,7 +349,7 @@ struct OpHandlers<IR::OP_F64FPREM> {
 
 template<>
 struct OpHandlers<IR::OP_F64FPREM1> {
-  static double handle(uint16_t FCW, double src1, double src2, FEXCore::Core::CpuStateFrame* Frame) {
+  FEXCORE_PRESERVE_ALL_ATTR static double handle(uint16_t FCW, double src1, double src2, FEXCore::Core::CpuStateFrame* Frame) {
     FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     return remainder(src1, src2);
   }
@@ -357,7 +357,7 @@ struct OpHandlers<IR::OP_F64FPREM1> {
 
 template<>
 struct OpHandlers<IR::OP_F64FYL2X> {
-  static double handle(uint16_t FCW, double src1, double src2, FEXCore::Core::CpuStateFrame* Frame) {
+  FEXCORE_PRESERVE_ALL_ATTR static double handle(uint16_t FCW, double src1, double src2, FEXCore::Core::CpuStateFrame* Frame) {
     FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     return src2 * log2(src1);
   }
@@ -365,7 +365,7 @@ struct OpHandlers<IR::OP_F64FYL2X> {
 
 template<>
 struct OpHandlers<IR::OP_F64SCALE> {
-  static double handle(uint16_t FCW, double src1, double src2, FEXCore::Core::CpuStateFrame* Frame) {
+  FEXCORE_PRESERVE_ALL_ATTR static double handle(uint16_t FCW, double src1, double src2, FEXCore::Core::CpuStateFrame* Frame) {
     FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     if (src1 == 0.0) { // src1 might be +/- zero
       return src1;     // this will return negative or positive zero if when appropriate
