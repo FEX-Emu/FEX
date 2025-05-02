@@ -514,8 +514,20 @@ uint64_t MemAllocator32Bit::Shmdt(const void* shmaddr) {
     return -EINVAL;
   }
 
+  int shmid = it->second;
+  struct shmid_ds buf {};
+  if (shmctl(shmid, IPC_STAT, &buf) == 0) {
+    size_t PagesLength = FEXCore::AlignUp(buf.shm_segsz, FEXCore::Utils::FEX_PAGE_SIZE) >> FEXCore::Utils::FEX_PAGE_SHIFT;
+    SetFreePages(AddrPage, PagesLength);
+  } else {
+    LOGMAN_MSG_A_FMT("Failed to get shm size during shmdt");
+  }
+
   uint64_t Result = ::shmdt(shmaddr);
-  PageToShm.erase(it);
+
+  if (Result == 0) {
+    PageToShm.erase(it);
+  }
 
   SYSCALL_ERRNO();
 }
