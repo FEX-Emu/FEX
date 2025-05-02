@@ -317,7 +317,7 @@ namespace CPU {
       CurrentCodeBuffer = CodeBuffers.GetCurrentCodeBuffer();
     } else {
       auto NewCodeBufferSize = CodeBuffers.GetCurrentCodeBufferSize();
-      NewCodeBufferSize = std::min<size_t>(NewCodeBufferSize * 2.0, MaxCodeSize);
+      NewCodeBufferSize = std::min<size_t>(NewCodeBufferSize * 2, MaxCodeSize);
       CurrentCodeBuffer = CodeBuffers.AllocateNewCodeBuffer(NewCodeBufferSize);
     }
 
