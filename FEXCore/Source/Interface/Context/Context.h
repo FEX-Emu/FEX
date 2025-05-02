@@ -169,7 +169,6 @@ public:
 
   void ClearCodeCache(FEXCore::Core::InternalThreadState* Thread) override;
   void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) override;
-  void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length, CodeRangeInvalidationFn callback) override;
   FEXCore::ForkableSharedMutex& GetCodeInvalidationMutex() override {
     return CodeInvalidationMutex;
   }
