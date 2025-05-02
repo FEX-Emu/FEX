@@ -340,10 +340,6 @@ namespace CPU {
     return CurrentCodeBuffer;
   }
 
-  bool CPUBackend::UsesSharedCodeBuffer() const {
-    return CurrentCodeBuffer.use_count() > 1;
-  }
-
   fextl::shared_ptr<CodeBuffer> CPUBackend::CheckCodeBufferUpdate() {
     fextl::shared_ptr<CodeBuffer> OldCodeBuffer;
     auto NewCodeBuffer = CodeBuffers.GetCurrentCodeBuffer();
