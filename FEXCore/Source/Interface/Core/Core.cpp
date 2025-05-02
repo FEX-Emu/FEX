@@ -905,12 +905,6 @@ void ContextImpl::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* T
   InvalidateGuestThreadCodeRange(Thread, Start, Length);
 }
 
-void ContextImpl::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length,
-                                           CodeRangeInvalidationFn CallAfter) {
-  InvalidateGuestThreadCodeRange(Thread, Start, Length);
-  CallAfter(Start, Length);
-}
-
 void ContextImpl::MarkMemoryShared(FEXCore::Core::InternalThreadState* Thread) {
   if (!Thread) {
     return;
@@ -1012,7 +1006,8 @@ void ContextImpl::RemoveCustomIREntrypoint(uintptr_t Entrypoint) {
 
   std::scoped_lock lk(CustomIRMutex);
 
-  InvalidateGuestCodeRange(nullptr, Entrypoint, 1, [this](uint64_t Entrypoint, uint64_t) { CustomIRHandlers.erase(Entrypoint); });
+  InvalidateGuestCodeRange(nullptr, Entrypoint, 1);
+  CustomIRHandlers.erase(Entrypoint);
 
   HasCustomIRHandlers = !CustomIRHandlers.empty();
 }
