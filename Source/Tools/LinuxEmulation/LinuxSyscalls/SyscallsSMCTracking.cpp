@@ -66,6 +66,11 @@ bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState* Thread, 
 
     auto FaultBase = FEXCore::AlignDown(FaultAddress, FEXCore::Utils::FEX_PAGE_SIZE);
 
+    auto UnprotectRegionCallback = [](uintptr_t Start, uintptr_t Length) {
+      auto rv = mprotect((void*)Start, Length, PROT_READ | PROT_WRITE);
+      LogMan::Throw::AFmt(rv == 0, "mprotect({}, {}) failed", Start, Length);
+    };
+
     if (Entry->second.Flags.Shared) {
       LOGMAN_THROW_A_FMT(Entry->second.Resource, "VMA tracking error");
 
@@ -80,21 +85,14 @@ bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState* Thread, 
           auto FaultBaseMirrored = Offset - VMA->Offset + VMA->Base;
 
           if (VMA->Prot.Writable) {
-            _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, FaultBaseMirrored, FEXCore::Utils::FEX_PAGE_SIZE,
-                                                         [](uintptr_t Start, uintptr_t Length) {
-              auto rv = mprotect((void*)Start, Length, PROT_READ | PROT_WRITE);
-              LogMan::Throw::AFmt(rv == 0, "mprotect({}, {}) failed", Start, Length);
-            });
+            _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, FaultBaseMirrored, FEXCore::Utils::FEX_PAGE_SIZE, UnprotectRegionCallback);
           } else {
             _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, FaultBaseMirrored, FEXCore::Utils::FEX_PAGE_SIZE);
           }
         }
       } while ((VMA = VMA->ResourceNextVMA));
     } else {
-      _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, FaultBase, FEXCore::Utils::FEX_PAGE_SIZE, [](uintptr_t Start, uintptr_t Length) {
-        auto rv = mprotect((void*)Start, Length, PROT_READ | PROT_WRITE);
-        LogMan::Throw::AFmt(rv == 0, "mprotect({}, {}) failed", Start, Length);
-      });
+      _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, FaultBase, FEXCore::Utils::FEX_PAGE_SIZE, UnprotectRegionCallback);
     }
 
     FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedSMCCount, 1);
