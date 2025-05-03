@@ -149,6 +149,7 @@ void RegisterInfo(FEX::HLE::SyscallHandler* Handler) {
       }
 
       CopyShift(totalram);
+      CopyShift(freeram);
       CopyShift(sharedram);
       CopyShift(bufferram);
       CopyShift(totalswap);
