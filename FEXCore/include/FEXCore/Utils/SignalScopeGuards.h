@@ -35,6 +35,9 @@ public:
     [[maybe_unused]] const auto Result = pthread_mutex_lock(&Mutex);
     LOGMAN_THROW_A_FMT(Result == 0, "{} failed to lock with {}", __func__, Result);
   }
+  bool try_lock() {
+    return pthread_mutex_trylock(&Mutex) == 0;
+  }
   void unlock() {
     [[maybe_unused]] const auto Result = pthread_mutex_unlock(&Mutex);
     LOGMAN_THROW_A_FMT(Result == 0, "{} failed to unlock with {}", __func__, Result);

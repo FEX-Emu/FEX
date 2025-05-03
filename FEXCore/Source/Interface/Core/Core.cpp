@@ -757,7 +757,6 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
           .DebugData = nullptr, // nullptr here ensures that code serialization doesn't occur on from cache read
           .StartAddr = 0,       // Unused
           .Length = 0,          // Unused
-          .CodeBufferLock {}    // Unused
         };
       }
     }
@@ -783,16 +782,16 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
 
   // Attempt to get the CPU backend to compile this code
 
-  auto Lock = std::unique_lock {CodeBufferWriteMutex};
 
   // Re-check if another thread raced us in compiling this block.
   // We could lock CodeBufferWriteMutex earlier to prevent this from happening,
   // but this would increase lock contention. Redundant frontend runs aren't
   // as expensive and are easily reverted.
+  // TODO: Instead, consider having a work queue and checking that instead?
   if (MaxInst != 1) {
     if (auto Block = Thread->LookupCache->FindBlock(GuestRIP)) {
       Thread->OpDispatcher->DelayedDisownBuffer();
-      return {.CompiledCode = reinterpret_cast<void*>(Block), .DebugData = nullptr, .StartAddr = 0, .Length = 0, .CodeBufferLock {}};
+      return {.CompiledCode = { reinterpret_cast<uint8_t*>(Block), {{ GuestRIP, reinterpret_cast<uint8_t*>(Block) }} }, .DebugData = nullptr, .StartAddr = 0, .Length = 0 };
     }
   }
 
@@ -800,6 +799,13 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
 
   // Release the IR
   Thread->OpDispatcher->DelayedDisownBuffer();
+
+  // Post-processing huge multiblocks can still take a lot of time, so check *again* if we raced another thread for compilation
+  if (MaxInst != 1) {
+    if (auto Block = Thread->LookupCache->FindBlock(GuestRIP)) {
+      return {.CompiledCode = { reinterpret_cast<uint8_t*>(Block), {{ GuestRIP, reinterpret_cast<uint8_t*>(Block) }} }, .DebugData = nullptr, .StartAddr = 0, .Length = 0 };
+    }
+  }
 
   return {
     // FEX currently throws away the CPUBackend::CompiledCode object other than the entrypoint
@@ -880,8 +886,9 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
       }));
   }
 
-  // Clear any relocations that might have been generated
-  Thread->CPUBackend->ClearRelocations();
+  // TODO: Do we still need the CodeBufferWriteLock? Is it sufficient to trade it for the LookupCache lock?
+  auto lk2 = Thread->LookupCache->Shared->AcquireLock();
+  CompiledCode.CodeBufferLock = {};
 
   if (IRCaptureCache.PostCompileCode(Thread, CodePtr, GuestRIP, StartAddr, Length, {}, DebugData.get(), false)) {
     // Early exit
@@ -891,6 +898,9 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
   // Insert to lookup cache
   // Pages containing this block are added via AddBlockExecutableRange before each page gets accessed in the frontend
   Thread->LookupCache->AddBlockMapping(GuestRIP, CodePtr);
+
+  // Clear any relocations that might have been generated
+  Thread->CPUBackend->ClearRelocations();
 
   return (uintptr_t)CodePtr;
 }
