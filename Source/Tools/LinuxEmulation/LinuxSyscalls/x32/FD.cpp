@@ -735,14 +735,14 @@ void RegisterFD(FEX::HLE::SyscallHandler* Handler) {
                               SYSCALL_ERRNO();
                             });
 
-  REGISTER_SYSCALL_IMPL_X32(fadvise64,
-                            [](FEXCore::Core::CpuStateFrame* Frame, int32_t fd, uint32_t offset_low, uint32_t offset_high, uint32_t len, int advice) -> uint64_t {
-                              uint64_t Offset = offset_high;
-                              Offset <<= 32;
-                              Offset |= offset_low;
-                              uint64_t Result = ::posix_fadvise64(fd, Offset, len, advice);
-                              SYSCALL_ERRNO();
-                            });
+  REGISTER_SYSCALL_IMPL_X32(
+    fadvise64, [](FEXCore::Core::CpuStateFrame* Frame, int32_t fd, uint32_t offset_low, uint32_t offset_high, uint32_t len, int advice) -> uint64_t {
+      uint64_t Offset = offset_high;
+      Offset <<= 32;
+      Offset |= offset_low;
+      uint64_t Result = ::posix_fadvise64(fd, Offset, len, advice);
+      SYSCALL_ERRNO();
+    });
 
   REGISTER_SYSCALL_IMPL_X32(fadvise64_64,
                             [](FEXCore::Core::CpuStateFrame* Frame, int32_t fd, uint32_t offset_low, uint32_t offset_high, uint32_t len_low,
