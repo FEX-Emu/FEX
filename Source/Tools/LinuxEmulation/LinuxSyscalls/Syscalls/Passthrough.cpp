@@ -389,8 +389,6 @@ void RegisterCommon(FEX::HLE::SyscallHandler* Handler) {
                                    SyscallPassthrough3<SYSCALL_DEF(io_cancel)>);
   REGISTER_SYSCALL_IMPL_PASS_FLAGS(remap_file_pages, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
                                    SyscallPassthrough5<SYSCALL_DEF(remap_file_pages)>);
-  REGISTER_SYSCALL_IMPL_PASS_FLAGS(fadvise64, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                   SyscallPassthrough4<SYSCALL_DEF(fadvise64)>);
   REGISTER_SYSCALL_IMPL_PASS_FLAGS(timer_getoverrun, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
                                    SyscallPassthrough1<SYSCALL_DEF(timer_getoverrun)>);
   REGISTER_SYSCALL_IMPL_PASS_FLAGS(timer_delete, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
@@ -720,6 +718,8 @@ namespace x64 {
                                          SyscallPassthrough4<SYSCALL_DEF(pidfd_send_signal)>);
     REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(process_madvise, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
                                          SyscallPassthrough5<SYSCALL_DEF(process_madvise)>);
+    REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(fadvise64, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                         SyscallPassthrough4<SYSCALL_DEF(fadvise64)>);
     if (Handler->IsHostKernelVersionAtLeast(6, 5, 0)) {
       REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(cachestat, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
                                            SyscallPassthrough4<SYSCALL_DEF(cachestat)>);
