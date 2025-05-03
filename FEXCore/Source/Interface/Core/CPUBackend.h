@@ -176,8 +176,6 @@ namespace CPU {
 
     bool IsAddressInCodeBuffer(uintptr_t Address) const;
 
-    fextl::shared_ptr<CodeBuffer> GetThreadLocalCodeBuffer() const;
-
     // Updates the CodeBuffer if needed and returns a reference to the old one.
     // The returned reference should be kept alive carefully to avoid early deletion of resources.
     [[nodiscard]]

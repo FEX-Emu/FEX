@@ -428,7 +428,6 @@ void ContextImpl::InitializeCompiler(FEXCore::Core::InternalThreadState* Thread)
   // Create CPU backend
   Thread->PassManager->InsertRegisterAllocationPass();
   Thread->CPUBackend = FEXCore::CPU::CreateArm64JITCore(this, Thread);
-  Thread->LookupCache->Shared = Thread->CPUBackend->GetThreadLocalCodeBuffer()->LookupCache.get();
 
   Thread->PassManager->Finalize();
 }
@@ -512,13 +511,8 @@ void ContextImpl::ClearCodeCache(FEXCore::Core::InternalThreadState* Thread, boo
   }
 
   if (NewCodeBuffer) {
-    // NOTE: Holding on to the reference here is required to ensure validity of the WriteLock mutex
-    std::shared_ptr PrevCodeBuffer = Thread->CPUBackend->GetThreadLocalCodeBuffer();
-    std::lock_guard lk(PrevCodeBuffer->LookupCache->WriteLock);
-
-    // Allocate new CodeBuffer + L3 LookupCache, then clear L1+L2 caches
+    // Allocate new CodeBuffer + L3 LookupCache and clear L1+L2 caches
     Thread->CPUBackend->ClearCache();
-    Thread->LookupCache->ChangeGuestToHostMapping(*PrevCodeBuffer, *Thread->CPUBackend->GetThreadLocalCodeBuffer()->LookupCache);
   } else {
     // Clear L1+L2 cache of this thread, and clear L3 cache across any threads using it
     Thread->LookupCache->ClearCache();

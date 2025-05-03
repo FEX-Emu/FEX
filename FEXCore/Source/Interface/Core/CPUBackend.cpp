@@ -336,10 +336,6 @@ namespace CPU {
     }
   }
 
-  fextl::shared_ptr<CodeBuffer> CPUBackend::GetThreadLocalCodeBuffer() const {
-    return CurrentCodeBuffer;
-  }
-
   fextl::shared_ptr<CodeBuffer> CPUBackend::CheckCodeBufferUpdate() {
     fextl::shared_ptr<CodeBuffer> OldCodeBuffer;
     auto NewCodeBuffer = CodeBuffers.GetCurrentCodeBuffer();

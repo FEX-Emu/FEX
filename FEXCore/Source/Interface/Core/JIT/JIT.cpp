@@ -552,6 +552,7 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::In
   }
 
   CurrentCodeBuffer = CodeBuffers.GetCurrentCodeBuffer();
+  ThreadState->LookupCache->Shared = CurrentCodeBuffer->LookupCache.get();
 
   // Setup dynamic dispatch.
   if (ParanoidTSO()) {
@@ -570,11 +571,15 @@ void Arm64JITCore::EmitDetectionString() {
 }
 
 void Arm64JITCore::ClearCache() {
-  // Get the backing code buffer
+  // NOTE: Holding on to the reference here is required to ensure validity of the WriteLock mutex
+  std::shared_ptr PrevCodeBuffer = CurrentCodeBuffer;
+  std::lock_guard lk(PrevCodeBuffer->LookupCache->WriteLock);
 
   auto CodeBuffer = GetEmptyCodeBuffer();
   SetBuffer(CodeBuffer->Ptr, CodeBuffer->Size);
   EmitDetectionString();
+
+  ThreadState->LookupCache->ChangeGuestToHostMapping(*PrevCodeBuffer, *CurrentCodeBuffer->LookupCache);
 }
 
 Arm64JITCore::~Arm64JITCore() {}
