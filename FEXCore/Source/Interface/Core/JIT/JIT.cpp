@@ -699,17 +699,29 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   // Fairly excessive buffer range to make sure we don't overflow
   uint32_t BufferRange = SSACount * 16;
 
-  LOGMAN_THROW_A_FMT(CurrentCodeBuffer->LookupCache.get() == ThreadState->LookupCache->Shared, "INVARIANT VIOLATED: SharedLookupCache "
-                                                                                               "doesn't match up!\n");
-  if (auto Prev = CheckCodeBufferUpdate()) {
-    ThreadState->LookupCache->ChangeGuestToHostMapping(*Prev, *CurrentCodeBuffer->LookupCache);
-  }
+  auto RefreshCodeBuffer = [this, BufferRange](bool Align) {
+    LOGMAN_THROW_A_FMT(CurrentCodeBuffer->LookupCache.get() == ThreadState->LookupCache->Shared, "INVARIANT VIOLATED: SharedLookupCache "
+                                                                                                 "doesn't match up!\n");
+    if (auto Prev = CheckCodeBufferUpdate()) {
+      ThreadState->LookupCache->ChangeGuestToHostMapping(*Prev, *CurrentCodeBuffer->LookupCache);
+    }
 
-  SetBuffer(CurrentCodeBuffer->Ptr, CurrentCodeBuffer->Size);
-  SetCursorOffset(CodeBuffers.LatestOffset);
-  if ((GetCursorOffset() + BufferRange) > (CurrentCodeBuffer->Size - Utils::FEX_PAGE_SIZE)) {
-    CTX->ClearCodeCache(ThreadState);
-  }
+    SetBuffer(CurrentCodeBuffer->Ptr, CurrentCodeBuffer->Size);
+    SetCursorOffset(Align ? AlignUp(CodeBuffers.LatestOffset, 16) : CodeBuffers.LatestOffset);
+    if ((GetCursorOffset() + BufferRange) > (CurrentCodeBuffer->Size - Utils::FEX_PAGE_SIZE)) {
+      CTX->ClearCodeCache(ThreadState);
+    }
+
+    if (Align) {
+      Align16B();
+    }
+
+    CodeBuffers.LatestOffset = GetCursorOffset();
+  };
+
+  auto CodeBufferLock = std::unique_lock {CodeBuffers.CodeBufferWriteMutex};
+
+  RefreshCodeBuffer(false);
 
   CodeData.BlockBegin = GetCursorAddress<uint8_t*>();
 
@@ -882,6 +894,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   JITBlockTail->Size = CodeData.Size;
 
   CodeBuffers.LatestOffset = GetCursorOffset();
+  CodeBufferLock = {}; // Reset lock early to minimize contention
 
   ClearICache(CodeData.BlockBegin, CodeOnlySize);
 

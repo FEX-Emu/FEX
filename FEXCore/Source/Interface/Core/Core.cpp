@@ -754,7 +754,6 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
           .DebugData = nullptr, // nullptr here ensures that code serialization doesn't occur on from cache read
           .StartAddr = 0,       // Unused
           .Length = 0,          // Unused
-          .CodeBufferLock {}    // Unused
         };
       }
     }
@@ -779,7 +778,6 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
 
   // Attempt to get the CPU backend to compile this code
 
-  auto Lock = std::unique_lock {CodeBufferWriteMutex};
 
   // Re-check if another thread raced us in compiling this block.
   // We could lock CodeBufferWriteMutex earlier to prevent this from happening,
@@ -788,7 +786,7 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
   if (MaxInst != 1) {
     if (auto Block = Thread->LookupCache->FindBlock(GuestRIP)) {
       Thread->OpDispatcher->DelayedDisownBuffer();
-      return {.CompiledCode = reinterpret_cast<void*>(Block), .DebugData = nullptr, .StartAddr = 0, .Length = 0, .CodeBufferLock {}};
+      return {.CompiledCode = reinterpret_cast<uint8_t*>(Block), .DebugData = nullptr, .StartAddr = 0, .Length = 0};
     }
   }
 
@@ -805,7 +803,6 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
     .DebugData = std::move(DebugData),
     .StartAddr = StartAddr,
     .Length = Length,
-    .CodeBufferLock = std::move(Lock),
   };
 }
 
@@ -825,11 +822,11 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
     return HostCode;
   }
 
-  auto [CodePtr, DebugData, StartAddr, Length, CodeBufferLock] = CompileCode(Thread, GuestRIP, MaxInst);
+  auto [CodePtr, DebugData, StartAddr, Length] = CompileCode(Thread, GuestRIP, MaxInst);
   if (CodePtr == nullptr) {
     return 0;
-  } else if (!CodeBufferLock) {
-    // Lock was released, indicating another thread raced us for compiling this block
+  } else if (!DebugData) {
+    // DebugData wasn't populated, indicating another thread raced us for compiling this block
     return reinterpret_cast<uintptr_t>(CodePtr);
   }
 
@@ -900,7 +897,7 @@ uintptr_t ContextImpl::CompileSingleStep(FEXCore::Core::CpuStateFrame* Frame, ui
   // Invalidate might take a unique lock on this, to guarantee that during invalidation no code gets compiled
   auto lk = GuardSignalDeferringSection<std::shared_lock>(CodeInvalidationMutex, Thread);
 
-  auto [CodePtr, DebugData, StartAddr, Length, CodeBufferLock] = CompileCode(Thread, GuestRIP, 1);
+  auto [CodePtr, DebugData, StartAddr, Length] = CompileCode(Thread, GuestRIP, 1);
   if (CodePtr == nullptr) {
     return 0;
   }
