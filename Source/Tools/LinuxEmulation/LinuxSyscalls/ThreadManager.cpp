@@ -163,7 +163,7 @@ FEX::HLE::ThreadStateObject* ThreadManager::CreateThread(uint64_t InitialRIP, ui
 
   ThreadStateObject->ThreadInfo.TID = FHU::Syscalls::gettid();
 
-  ThreadStateObject->Thread = CTX->CreateThread(InitialRIP, StackPointer, NewThreadState, ParentTID);
+  ThreadStateObject->Thread = CTX->CreateThread(InitialRIP, StackPointer, NewThreadState);
   ThreadStateObject->Thread->FrontendPtr = ThreadStateObject;
   if (ProfileStats()) {
     ThreadStateObject->Thread->ThreadStats = Stat.AllocateSlot(ThreadStateObject->ThreadInfo.TID);
