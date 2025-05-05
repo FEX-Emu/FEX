@@ -65,7 +65,7 @@ namespace CPU {
     fextl::shared_ptr<CodeBuffer> Latest;
     std::size_t LatestOffset;
 
-    // Protects writes to the latest CodeBuffer
+    // Protects writes to the latest CodeBuffer and changes to LatestOffset
     FEXCore::ForkableUniqueMutex CodeBufferWriteMutex;
 
     virtual void OnCodeBufferAllocated(CodeBuffer&) {};
@@ -95,10 +95,6 @@ namespace CPU {
       uint8_t* BlockEntry;
       // The total size of the codeblock from [BlockBegin, BlockBegin+Size).
       size_t Size;
-
-      // Lock for further CodeBuffer and LookupCache operations.
-      // If empty, compilation was skipped since another thread already compiled the block.
-      std::unique_lock<ForkableUniqueMutex> CodeBufferLock;
     };
 
     // Header that can live at the start of a JIT block.

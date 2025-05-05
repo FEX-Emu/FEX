@@ -791,7 +791,7 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
   if (MaxInst != 1) {
     if (auto Block = Thread->LookupCache->FindBlock(GuestRIP)) {
       Thread->OpDispatcher->DelayedDisownBuffer();
-      return {.CompiledCode = { reinterpret_cast<uint8_t*>(Block), {{ GuestRIP, reinterpret_cast<uint8_t*>(Block) }} }, .DebugData = nullptr, .StartAddr = 0, .Length = 0 };
+      return {.CompiledCode = reinterpret_cast<uint8_t*>(Block), .DebugData = nullptr, .StartAddr = 0, .Length = 0 };
     }
   }
 
@@ -803,7 +803,7 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
   // Post-processing huge multiblocks can still take a lot of time, so check *again* if we raced another thread for compilation
   if (MaxInst != 1) {
     if (auto Block = Thread->LookupCache->FindBlock(GuestRIP)) {
-      return {.CompiledCode = { reinterpret_cast<uint8_t*>(Block), {{ GuestRIP, reinterpret_cast<uint8_t*>(Block) }} }, .DebugData = nullptr, .StartAddr = 0, .Length = 0 };
+      return {.CompiledCode = reinterpret_cast<uint8_t*>(Block), .DebugData = nullptr, .StartAddr = 0, .Length = 0 };
     }
   }
 
@@ -815,7 +815,6 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
     .DebugData = std::move(DebugData),
     .StartAddr = StartAddr,
     .Length = Length,
-    .CodeBufferLock = std::move(Lock),
   };
 }
 
@@ -835,11 +834,11 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
     return HostCode;
   }
 
-  auto [CodePtr, DebugData, StartAddr, Length, CodeBufferLock] = CompileCode(Thread, GuestRIP, MaxInst);
+  auto [CodePtr, DebugData, StartAddr, Length] = CompileCode(Thread, GuestRIP, MaxInst);
   if (CodePtr == nullptr) {
     return 0;
-  } else if (!CodeBufferLock) {
-    // Lock was released, indicating another thread raced us for compiling this block
+  } else if (!DebugData) {
+    // DebugData wasn't populated, indicating another thread raced us for compiling this block
     return reinterpret_cast<uintptr_t>(CodePtr);
   }
 
@@ -886,10 +885,6 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
       }));
   }
 
-  // TODO: Do we still need the CodeBufferWriteLock? Is it sufficient to trade it for the LookupCache lock?
-  auto lk2 = Thread->LookupCache->Shared->AcquireLock();
-  CompiledCode.CodeBufferLock = {};
-
   if (IRCaptureCache.PostCompileCode(Thread, CodePtr, GuestRIP, StartAddr, Length, {}, DebugData.get(), false)) {
     // Early exit
     return (uintptr_t)CodePtr;
@@ -914,7 +909,7 @@ uintptr_t ContextImpl::CompileSingleStep(FEXCore::Core::CpuStateFrame* Frame, ui
   // Invalidate might take a unique lock on this, to guarantee that during invalidation no code gets compiled
   auto lk = GuardSignalDeferringSection<std::shared_lock>(CodeInvalidationMutex, Thread);
 
-  auto [CodePtr, DebugData, StartAddr, Length, CodeBufferLock] = CompileCode(Thread, GuestRIP, 1);
+  auto [CodePtr, DebugData, StartAddr, Length] = CompileCode(Thread, GuestRIP, 1);
   if (CodePtr == nullptr) {
     return 0;
   }

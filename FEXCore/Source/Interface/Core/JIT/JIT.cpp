@@ -730,12 +730,12 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   };
 
   static thread_local std::unique_ptr<CodeBuffer> TempCodeBuffer;
+  std::unique_lock<ForkableUniqueMutex> CodeBufferLock;
   {
-    // FEXCORE_PROFILE_SCOPED("AcquireLock1");
-    // CodeData.CodeBufferLock = std::unique_lock { CodeBuffers.CodeBufferWriteMutex, std::try_to_lock };
-    CodeData.CodeBufferLock = {};
+    FEXCORE_PROFILE_SCOPED("AcquireLock1");
+    CodeBufferLock = std::unique_lock { CodeBuffers.CodeBufferWriteMutex, std::try_to_lock };
   }
-  if (CodeData.CodeBufferLock) {
+  if (CodeBufferLock) {
     RefreshCodeBuffer(false);
   } else {
     // Another thread is holding the mutex for compiling, so this thread will compile to a
@@ -920,12 +920,12 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
   JITBlockTail->Size = CodeData.Size;
 
-  if (!CodeData.CodeBufferLock) {
+  if (!CodeBufferLock) {
     // We failed locking this mutex before, so we compiled to TempCodeBuffer instead.
     // Migrate the compile output to the actual CodeBuffer.
     {
     FEXCORE_PROFILE_SCOPED("AcquireLock2");
-    CodeData.CodeBufferLock = std::unique_lock { CodeBuffers.CodeBufferWriteMutex };
+    CodeBufferLock = std::unique_lock { CodeBuffers.CodeBufferWriteMutex };
     }
 
     const auto TempSize = GetCursorOffset();
@@ -935,11 +935,8 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
     // Adjust host addresses
     const auto Delta = GetCursorAddress<uint8_t*>() - CodeData.BlockBegin;
-    CodeBegin += Delta;
     CodeData.BlockBegin += Delta;
-    for (auto& EntryPoint : CodeData.EntryPoints) {
-      EntryPoint.second += Delta;
-    }
+    CodeData.BlockEntry += Delta;
 
     // Copy over CodeBuffer contents
     memcpy(GetCursorAddress<uint8_t*>(), TempCodeBuffer->Ptr, TempSize);
@@ -947,6 +944,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   }
 
   CodeBuffers.LatestOffset = GetCursorOffset();
+  CodeBufferLock = {}; // Reset lock early to minimize contention
 
   ClearICache(CodeData.BlockBegin, CodeOnlySize);
 
