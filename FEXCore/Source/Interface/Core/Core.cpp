@@ -787,7 +787,6 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
   // We could lock CodeBufferWriteMutex earlier to prevent this from happening,
   // but this would increase lock contention. Redundant frontend runs aren't
   // as expensive and are easily reverted.
-  // TODO: Instead, consider having a work queue and checking that instead?
   if (MaxInst != 1) {
     if (auto Block = Thread->LookupCache->FindBlock(GuestRIP)) {
       Thread->OpDispatcher->DelayedDisownBuffer();
@@ -799,13 +798,6 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
 
   // Release the IR
   Thread->OpDispatcher->DelayedDisownBuffer();
-
-  // Post-processing huge multiblocks can still take a lot of time, so check *again* if we raced another thread for compilation
-  if (MaxInst != 1) {
-    if (auto Block = Thread->LookupCache->FindBlock(GuestRIP)) {
-      return {.CompiledCode = reinterpret_cast<uint8_t*>(Block), .DebugData = nullptr, .StartAddr = 0, .Length = 0 };
-    }
-  }
 
   return {
     // FEX currently throws away the CPUBackend::CompiledCode object other than the entrypoint

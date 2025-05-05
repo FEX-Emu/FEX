@@ -729,25 +729,9 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
     CodeBuffers.LatestOffset = GetCursorOffset();
   };
 
-  static thread_local std::unique_ptr<CodeBuffer> TempCodeBuffer;
-  std::unique_lock<ForkableUniqueMutex> CodeBufferLock;
-  {
-    FEXCORE_PROFILE_SCOPED("AcquireLock1");
-    CodeBufferLock = std::unique_lock { CodeBuffers.CodeBufferWriteMutex, std::try_to_lock };
-  }
-  if (CodeBufferLock) {
-    RefreshCodeBuffer(false);
-  } else {
-    // Another thread is holding the mutex for compiling, so this thread will compile to a
-    // temporary buffer instead. We'll still need to wait for the mutex later (to relocate to
-    // the main CodeBuffer), but we can do useful work in the meantime.
-    auto DesiredSize = AlignUp(BufferRange, Utils::FEX_PAGE_SIZE) + Utils::FEX_PAGE_SIZE /* Guard area */;
-    if (!TempCodeBuffer || TempCodeBuffer->Size < DesiredSize) {
-      // TODO: Don't use CodeBuffer, since that will also allocate a LookupCache...
-      TempCodeBuffer = std::make_unique<CodeBuffer>(DesiredSize);
-    }
-    SetBuffer(TempCodeBuffer->Ptr, TempCodeBuffer->Size);
-  }
+  auto CodeBufferLock = std::unique_lock { CodeBuffers.CodeBufferWriteMutex };
+
+  RefreshCodeBuffer(false);
 
   CodeData.BlockBegin = GetCursorAddress<uint8_t*>();
 
@@ -919,29 +903,6 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   CodeData.Size = GetCursorAddress<uint8_t*>() - CodeData.BlockBegin;
 
   JITBlockTail->Size = CodeData.Size;
-
-  if (!CodeBufferLock) {
-    // We failed locking this mutex before, so we compiled to TempCodeBuffer instead.
-    // Migrate the compile output to the actual CodeBuffer.
-    {
-    FEXCORE_PROFILE_SCOPED("AcquireLock2");
-    CodeBufferLock = std::unique_lock { CodeBuffers.CodeBufferWriteMutex };
-    }
-
-    const auto TempSize = GetCursorOffset();
-
-    // NOTE: 16-byte alignment for block linking records must be preserved here
-    RefreshCodeBuffer(true);
-
-    // Adjust host addresses
-    const auto Delta = GetCursorAddress<uint8_t*>() - CodeData.BlockBegin;
-    CodeData.BlockBegin += Delta;
-    CodeData.BlockEntry += Delta;
-
-    // Copy over CodeBuffer contents
-    memcpy(GetCursorAddress<uint8_t*>(), TempCodeBuffer->Ptr, TempSize);
-    SetCursorOffset(CodeBuffers.LatestOffset + TempSize);
-  }
 
   CodeBuffers.LatestOffset = GetCursorOffset();
   CodeBufferLock = {}; // Reset lock early to minimize contention
