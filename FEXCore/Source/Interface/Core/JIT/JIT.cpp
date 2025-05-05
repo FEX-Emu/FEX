@@ -729,7 +729,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
     CodeBuffers.LatestOffset = GetCursorOffset();
   };
 
-  auto CodeBufferLock = std::unique_lock { CodeBuffers.CodeBufferWriteMutex };
+  auto CodeBufferLock = std::unique_lock {CodeBuffers.CodeBufferWriteMutex};
 
   RefreshCodeBuffer(false);
 

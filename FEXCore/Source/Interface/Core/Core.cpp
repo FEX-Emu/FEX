@@ -790,7 +790,7 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
   if (MaxInst != 1) {
     if (auto Block = Thread->LookupCache->FindBlock(GuestRIP)) {
       Thread->OpDispatcher->DelayedDisownBuffer();
-      return {.CompiledCode = reinterpret_cast<uint8_t*>(Block), .DebugData = nullptr, .StartAddr = 0, .Length = 0 };
+      return {.CompiledCode = reinterpret_cast<uint8_t*>(Block), .DebugData = nullptr, .StartAddr = 0, .Length = 0};
     }
   }
 
