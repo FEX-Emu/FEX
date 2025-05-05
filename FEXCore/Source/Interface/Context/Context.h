@@ -104,7 +104,6 @@ public:
    * @param InitialRIP The starting RIP of this thread
    * @param StackPointer The starting RSP of this thread
    * @param NewThreadState The initial thread state to setup for our state, if inheriting.
-   * @param ParentTID The PID that was the parent thread that created this
    *
    * @return The InternalThreadState object that tracks all of the emulated thread's state
    *
@@ -125,8 +124,7 @@ public:
    *    - HandleCallback(Thread, RIP);
    */
 
-  FEXCore::Core::InternalThreadState*
-  CreateThread(uint64_t InitialRIP, uint64_t StackPointer, const FEXCore::Core::CPUState* NewThreadState, uint64_t ParentTID) override;
+  FEXCore::Core::InternalThreadState* CreateThread(uint64_t InitialRIP, uint64_t StackPointer, const FEXCore::Core::CPUState* NewThreadState) override;
 
   /**
    * @brief Destroys this FEX thread object and stops tracking it internally
