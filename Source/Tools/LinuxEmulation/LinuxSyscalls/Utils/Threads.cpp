@@ -5,8 +5,6 @@
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Utils/Threads.h>
 
-#include <csetjmp>
-
 namespace FEX::LinuxEmulation::Threads {
 void* StackTracker::AllocateStackObject() {
   std::lock_guard lk {DeadStackPoolMutex};
@@ -190,6 +188,143 @@ __attribute__((naked)) void StackPivotAndCall(void* Arg, FEXCore::Threads::Threa
 }
 #endif
 namespace PThreads {
+  namespace LongJump {
+    // This is a custom long jump implementation that avoids the glibc implementation.
+    // This is required behaviour because glibc's fortification checks don't understand stack pivots.
+    // FEX requires a stack pivot to work through a long jump, so these two features are at odds with each other.
+#ifdef _M_ARM_64
+    struct JumpBuf {
+      // All the registers that are required by AAPCS64 to save.
+      // GPRs
+      // X19, X20, X21, X22,
+      // X23, X24, X25, X26,
+      // X27, X28, X29, X30,
+      //
+      // Lower 64-bits:
+      //  V8,  V9, V10, V11,
+      // V12, V13, V14, V15,
+      //
+      // SP,
+      uint64_t Registers[21];
+    };
+    FEX_NAKED uint64_t SetJump(JumpBuf& Buffer) {
+      __asm volatile(R"(
+        // x0 contains the jumpbuffer
+        stp x19, x20, [x0, #( 0 * 8)];
+        stp x21, x22, [x0, #( 2 * 8)];
+        stp x23, x24, [x0, #( 4 * 8)];
+        stp x25, x26, [x0, #( 6 * 8)];
+        stp x27, x28, [x0, #( 8 * 8)];
+        stp x29, x30, [x0, #(10 * 8)];
+
+        // FPRs
+        stp d8,   d9, [x0, #(12 * 8)];
+        stp d10, d11, [x0, #(14 * 8)];
+        stp d12, d13, [x0, #(16 * 8)];
+        stp d14, d15, [x0, #(18 * 8)];
+
+        // Move SP in to a temporary to store.
+        mov x1, sp;
+        str x1,  [x0, #(19 * 8)];
+
+        // Return zero to signify this is the SetJump.
+        mov x0, #0;
+        ret;
+      )" ::
+                       : "memory");
+    }
+
+    [[noreturn]]
+    FEX_NAKED void LongJump(JumpBuf& Buffer, uint64_t Value) {
+      __asm volatile(R"(
+        // x0 contains the jumpbuffer
+        ldp x19, x20, [x0, #( 0 * 8)];
+        ldp x21, x22, [x0, #( 2 * 8)];
+        ldp x23, x24, [x0, #( 4 * 8)];
+        ldp x25, x26, [x0, #( 6 * 8)];
+        ldp x27, x28, [x0, #( 8 * 8)];
+        ldp x29, x30, [x0, #(10 * 8)];
+
+        // FPRs
+        ldp d8,   d9, [x0, #(12 * 8)];
+        ldp d10, d11, [x0, #(14 * 8)];
+        ldp d12, d13, [x0, #(16 * 8)];
+        ldp d14, d15, [x0, #(18 * 8)];
+
+        // Load SP in to temporary then move
+        ldr x0,  [x0, #(19 * 8)];
+        mov sp, x0;
+
+        // Move value in to result register
+        mov x0, x1;
+        ret;
+      )" ::
+                       : "memory");
+    }
+#else
+    struct JumpBuf {
+      // Registers to preserve
+      // RBX, RSP, RBP, R12, R13, R14, R15,
+      // <return address>
+      uint64_t Registers[8];
+    };
+
+    __attribute__((naked)) uint64_t SetJump(JumpBuf& Buffer) {
+      __asm volatile(R"(
+      .intel_syntax noprefix;
+      // rdi contains the jumpbuffer
+      mov [rdi + (0 * 8)], rbx;
+      mov [rdi + (1 * 8)], rsp;
+      mov [rdi + (2 * 8)], rbp;
+      mov [rdi + (3 * 8)], r12;
+      mov [rdi + (4 * 8)], r13;
+      mov [rdi + (5 * 8)], r14;
+      mov [rdi + (6 * 8)], r15;
+
+      // Return address is on the stack, load it and store
+      mov rsi, [rsp];
+      mov [rdi + (7 * 8)], rsi;
+
+      // Return zero to signify this is the SetJump.
+      mov rax, 0;
+      ret;
+
+      .att_syntax prefix;
+      )" ::
+                       : "memory");
+    }
+
+    [[noreturn]]
+    __attribute__((naked)) void LongJump(JumpBuf& Buffer, uint64_t Value) {
+      __asm volatile(R"(
+      .intel_syntax noprefix;
+      // rdi contains the jumpbuffer
+      mov rbx, [rdi + (0 * 8)];
+      mov rsp, [rdi + (1 * 8)];
+      mov rbp, [rdi + (2 * 8)];
+      mov r12, [rdi + (3 * 8)];
+      mov r13, [rdi + (4 * 8)];
+      mov r14, [rdi + (5 * 8)];
+      mov r15, [rdi + (6 * 8)];
+
+      // Move value in to result register
+      mov rax, rsi;
+
+      // Pop the dead return address off the stack
+      pop rsi;
+
+      // Load the original return address from the jumpbuffer
+      mov rsi, [rdi + (7 * 8)];
+
+      // Return using a jump
+      jmp rsi;
+
+      .att_syntax prefix;
+      )" ::
+                       : "memory");
+    }
+#endif
+  }; // namespace LongJump
   void* InitializeThread(void* Ptr);
 
   class PThread final : public FEXCore::Threads::Thread {
@@ -260,7 +395,7 @@ namespace PThreads {
       return STracker;
     }
 
-    void SetupLongJump(std::jmp_buf* exit_resolver) {
+    void SetupLongJump(LongJump::JumpBuf* exit_resolver) {
       _exit_resolver = exit_resolver;
     }
 
@@ -268,7 +403,8 @@ namespace PThreads {
     void LongJumpExit(FEX::HLE::ThreadStateObject* ThreadObject, uint32_t Status) {
       this->Status = Status;
       this->ThreadObject = ThreadObject;
-      std::longjmp(*_exit_resolver, 1);
+      LongJump::LongJump(*_exit_resolver, 1);
+      FEX_UNREACHABLE;
     }
 
     uint32_t GetStatus() const {
@@ -286,7 +422,7 @@ namespace PThreads {
     void* UserArg;
     void* Stack {};
 
-    std::jmp_buf* _exit_resolver {};
+    LongJump::JumpBuf* _exit_resolver {};
     FEX::HLE::ThreadStateObject* ThreadObject {};
     uint32_t Status {};
   };
@@ -297,11 +433,11 @@ namespace PThreads {
     PThread* Thread {reinterpret_cast<PThread*>(Ptr)};
     StackBase = Thread->GetPivotStack();
     STracker = Thread->GetStackTracker();
-    std::jmp_buf exit_resolver {};
+    LongJump::JumpBuf exit_resolver {};
 
     bool LongJumpExit {};
 
-    if (setjmp(exit_resolver) == 0) {
+    if (LongJump::SetJump(exit_resolver) == 0) {
       Thread->SetupLongJump(&exit_resolver);
       // Run the user function.
       // `Thread` object is dead after this function returns.
