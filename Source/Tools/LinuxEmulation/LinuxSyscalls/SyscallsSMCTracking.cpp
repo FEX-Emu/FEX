@@ -290,11 +290,11 @@ void SyscallHandler::TrackMremap(FEXCore::Core::InternalThreadState* Thread, uin
       VMATracking.SetUnsafe(CTX, OldResource, NewAddress, OldOffset, NewSize, OldFlags, OldProt);
     } else {
 
-// MREMAP_DONTUNMAP is kernel 5.7+
-#ifdef MREMAP_DONTUNMAP
-      if (!(flags & MREMAP_DONTUNMAP))
+#ifndef MREMAP_DONTUNMAP
+// MREMAP_DONTUNMAP is kernel 5.7+ and might not exist
+#define MREMAP_DONTUNMAP 4
 #endif
-      {
+      if (!(flags & MREMAP_DONTUNMAP)) {
         VMATracking.ClearUnsafe(CTX, OldAddress, OldSize, OldResource);
       }
 
