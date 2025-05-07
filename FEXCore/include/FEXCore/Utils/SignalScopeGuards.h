@@ -44,6 +44,15 @@ public:
   void StealAndDropActiveLocks() {
     Mutex = PTHREAD_MUTEX_INITIALIZER;
   }
+
+  // Checks and asserts if the mutex isn't owned by the calling thread.
+  void check_lock_owned_by_self() {
+    const auto Result = pthread_mutex_lock(&Mutex);
+    if (Result == 0) [[unlikely]] {
+      ERROR_AND_DIE_FMT("User of unique lock must have already locked mutex as write!");
+    }
+  }
+
 private:
   pthread_mutex_t Mutex;
 };
@@ -85,6 +94,15 @@ public:
     const auto Result = pthread_rwlock_tryrdlock(&Mutex);
     return Result == 0;
   }
+
+  // Checks and asserts if the rwlock isn't owned by the calling thread with write semantics.
+  void check_lock_owned_by_self_as_write() {
+    const auto Result = pthread_rwlock_wrlock(&Mutex);
+    if (Result == 0) [[unlikely]] {
+      ERROR_AND_DIE_FMT("User of rwlock must have already locked mutex as write!");
+    }
+  }
+
   // Initialize the internal pthread object to its default initializer state.
   // Should only ever be used in the child process when a Linux fork() has occured.
   void StealAndDropActiveLocks() {
