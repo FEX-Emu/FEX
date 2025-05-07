@@ -86,8 +86,6 @@ struct VMATracking {
 
   using VMACIterator = decltype(VMAs)::const_iterator;
 
-  MappedResource::ContainerType MappedResources;
-
   // Find a VMA entry associated with the memory address.
   // Used by `mremap`, and SIGSEGV handler to find previously mapped ranges, and `AOTIR` cache to find cache entries.
   // - Mutex must be at least shared_locked before calling
@@ -115,12 +113,21 @@ struct VMATracking {
   // - Mutex must be unique_locked before calling
   // Returns the Size of the Shm or 0 if not found
   uintptr_t DeleteSHMRegion(FEXCore::Context::Context* Ctx, uintptr_t Base);
+
+  // Emplaces a new `MappedResource` to track.
+  // Used for `mmap` and `shmat` resources; Anonymous, FD, and SHM depending on flags.
+  template<class... Args>
+  inline auto EmplaceMappedResource(Args&&... args) {
+    return MappedResources.emplace(args...);
+  }
 private:
   bool ListRemove(VMAEntry* Mapping);
   void ListReplace(VMAEntry* Mapping, VMAEntry* NewMapping);
   void ListInsertAfter(VMAEntry* Mapping, VMAEntry* NewMapping);
   void ListPrepend(MappedResource* Resource, VMAEntry* NewVMA);
   static void ListCheckVMALinks(VMAEntry* VMA);
+
+  MappedResource::ContainerType MappedResources;
 };
 
 

@@ -182,7 +182,7 @@ void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uintp
 
       if (PathLength != -1) {
         Tmp[PathLength] = '\0';
-        auto [Iter, Inserted] = VMATracking.MappedResources.emplace(mrid, VMATracking::MappedResource {nullptr, nullptr, 0});
+        auto [Iter, Inserted] = VMATracking.EmplaceMappedResource(mrid, VMATracking::MappedResource {nullptr, nullptr, 0});
         Resource = &Iter->second;
 
         if (Inserted) {
@@ -193,7 +193,7 @@ void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uintp
     } else if (Flags & MAP_SHARED) {
       VMATracking::MRID mrid {VMATracking::SpecialDev::Anon, AnonSharedId++};
 
-      auto [Iter, Inserted] = VMATracking.MappedResources.emplace(mrid, VMATracking::MappedResource {nullptr, nullptr, 0});
+      auto [Iter, Inserted] = VMATracking.EmplaceMappedResource(mrid, VMATracking::MappedResource {nullptr, nullptr, 0});
       LOGMAN_THROW_A_FMT(Inserted == true, "VMA tracking error");
       Resource = &Iter->second;
       Resource->Iterator = Iter;
@@ -310,10 +310,10 @@ void SyscallHandler::TrackShmat(FEXCore::Core::InternalThreadState* Thread, int 
     // TODO
     VMATracking::MRID mrid {VMATracking::SpecialDev::SHM, static_cast<uint64_t>(shmid)};
 
-    auto ResourceInserted = VMATracking.MappedResources.insert({mrid, {nullptr, nullptr, Length}});
-    auto Resource = &ResourceInserted.first->second;
-    if (ResourceInserted.second) {
-      Resource->Iterator = ResourceInserted.first;
+    auto [Iter, Inserted] = VMATracking.EmplaceMappedResource(mrid, VMATracking::MappedResource {nullptr, nullptr, Length});
+    auto Resource = &Iter->second;
+    if (Inserted) {
+      Resource->Iterator = Iter;
     }
     VMATracking.TrackVMARange(CTX, Resource, Base, 0, Length, VMATracking::VMAFlags::fromFlags(MAP_SHARED), VMATracking::VMAProt::fromSHM(shmflg));
   }
