@@ -351,6 +351,10 @@ DLLEXPORT_FUNC(void, GetSystemTimeAsFileTime, (LPFILETIME lpSystemTimeAsFileTime
   lpSystemTimeAsFileTime->dwHighDateTime = Time.HighPart;
 }
 
+DLLEXPORT_FUNC(void, GetSystemTimePreciseAsFileTime, (LPFILETIME lpSystemTimeAsFileTime)) {
+  GetSystemTimeAsFileTime(lpSystemTimeAsFileTime);
+}
+
 DLLEXPORT_FUNC(WINBOOL, SetCurrentDirectoryA, (LPCSTR lpPathName)) {
   UNIMPLEMENTED();
 }
