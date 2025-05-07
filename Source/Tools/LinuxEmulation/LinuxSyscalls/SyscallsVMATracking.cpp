@@ -8,11 +8,34 @@ $end_info$
 */
 
 #include "LinuxSyscalls/Syscalls.h"
+#include <sys/shm.h>
 
-namespace FEX::HLE {
+namespace FEX::HLE::VMATracking {
+/// Helpers ///
+auto VMAProt::fromProt(int Prot) -> VMAProt {
+  return VMAProt {
+    .Readable = (Prot & PROT_READ) != 0,
+    .Writable = (Prot & PROT_WRITE) != 0,
+    .Executable = (Prot & PROT_EXEC) != 0,
+  };
+}
+
+auto VMAProt::fromSHM(int SHMFlg) -> VMAProt {
+  return VMAProt {
+    .Readable = true,
+    .Writable = SHMFlg & SHM_RDONLY ? false : true,
+    .Executable = SHMFlg & SHM_EXEC ? true : false,
+  };
+}
+
+auto VMAFlags::fromFlags(int Flags) -> VMAFlags {
+  return VMAFlags {
+    .Shared = (Flags & MAP_SHARED) != 0, // also includes MAP_SHARED_VALIDATE
+  };
+}
+
 /// List Operations ///
-
-inline void SyscallHandler::VMATracking::ListCheckVMALinks(VMAEntry* VMA) {
+inline void VMATracking::ListCheckVMALinks(VMAEntry* VMA) {
   if (VMA) {
     LOGMAN_THROW_A_FMT(VMA->ResourceNextVMA != VMA, "VMA tracking error");
     LOGMAN_THROW_A_FMT(VMA->ResourcePrevVMA != VMA, "VMA tracking error");
@@ -21,7 +44,7 @@ inline void SyscallHandler::VMATracking::ListCheckVMALinks(VMAEntry* VMA) {
 
 // Removes a VMA from corresponding MappedResource list
 // Returns true if list is empty
-bool SyscallHandler::VMATracking::ListRemove(VMAEntry* VMA) {
+bool VMATracking::ListRemove(VMAEntry* VMA) {
   LOGMAN_THROW_A_FMT(VMA->Resource != nullptr, "VMA tracking error");
 
   // if it has prev, make prev to next
@@ -55,7 +78,7 @@ bool SyscallHandler::VMATracking::ListRemove(VMAEntry* VMA) {
 
 // Replaces a VMA in corresponding MappedResource list
 // Requires NewVMA->Resource, NewVMA->ResourcePrevVMA and NewVMA->ResourceNextVMA to be already setup
-void SyscallHandler::VMATracking::ListReplace(VMAEntry* VMA, VMAEntry* NewVMA) {
+void VMATracking::ListReplace(VMAEntry* VMA, VMAEntry* NewVMA) {
   LOGMAN_THROW_A_FMT(VMA->Resource != nullptr, "VMA tracking error");
 
   LOGMAN_THROW_A_FMT(VMA->Resource == NewVMA->Resource, "VMA tracking error");
@@ -84,7 +107,7 @@ void SyscallHandler::VMATracking::ListReplace(VMAEntry* VMA, VMAEntry* NewVMA) {
 
 // Inserts a VMA in corresponding MappedResource list
 // Requires NewVMA->Resource, NewVMA->ResourcePrevVMA and NewVMA->ResourceNextVMA to be already setup
-void SyscallHandler::VMATracking::ListInsertAfter(VMAEntry* AfterVMA, VMAEntry* NewVMA) {
+void VMATracking::ListInsertAfter(VMAEntry* AfterVMA, VMAEntry* NewVMA) {
   LOGMAN_THROW_A_FMT(NewVMA->Resource != nullptr, "VMA tracking error");
 
   LOGMAN_THROW_A_FMT(AfterVMA->Resource == NewVMA->Resource, "VMA tracking error");
@@ -105,7 +128,7 @@ void SyscallHandler::VMATracking::ListInsertAfter(VMAEntry* AfterVMA, VMAEntry* 
 
 // Prepends a VMA
 // Requires NewVMA->Resource, NewVMA->ResourcePrevVMA and NewVMA->ResourceNextVMA to be already setup
-void SyscallHandler::VMATracking::ListPrepend(MappedResource* Resource, VMAEntry* NewVMA) {
+void VMATracking::ListPrepend(MappedResource* Resource, VMAEntry* NewVMA) {
   LOGMAN_THROW_A_FMT(Resource != nullptr, "VMA tracking error");
 
   LOGMAN_THROW_A_FMT(NewVMA->Resource == Resource, "VMA tracking error");
@@ -127,7 +150,7 @@ void SyscallHandler::VMATracking::ListPrepend(MappedResource* Resource, VMAEntry
 /// VMA tracking ///
 
 // Lookup a VMA by address
-SyscallHandler::VMATracking::VMACIterator SyscallHandler::VMATracking::LookupVMAUnsafe(uint64_t GuestAddr) const {
+VMATracking::VMACIterator VMATracking::LookupVMAUnsafe(uint64_t GuestAddr) const {
   auto Entry = VMAs.upper_bound(GuestAddr);
 
   if (Entry != VMAs.begin()) {
@@ -142,8 +165,8 @@ SyscallHandler::VMATracking::VMACIterator SyscallHandler::VMATracking::LookupVMA
 }
 
 // Set or Replace mappings in a range with a new mapping
-void SyscallHandler::VMATracking::SetUnsafe(FEXCore::Context::Context* CTX, MappedResource* MappedResource, uintptr_t Base,
-                                            uintptr_t Offset, uintptr_t Length, VMAFlags Flags, VMAProt Prot) {
+void VMATracking::SetUnsafe(FEXCore::Context::Context* CTX, MappedResource* MappedResource, uintptr_t Base, uintptr_t Offset,
+                            uintptr_t Length, VMAFlags Flags, VMAProt Prot) {
   ClearUnsafe(CTX, Base, Length, MappedResource);
 
   auto PrevResVMA = MappedResource ? MappedResource->FirstVMA : nullptr;
@@ -170,8 +193,7 @@ void SyscallHandler::VMATracking::SetUnsafe(FEXCore::Context::Context* CTX, Mapp
 
 // Remove mappings in a range, possibly splitting them if needed and
 // freeing their associated MappedResource unless it is equal to PreservedMappedResource
-void SyscallHandler::VMATracking::ClearUnsafe(FEXCore::Context::Context* CTX, uintptr_t Base, uintptr_t Length,
-                                              MappedResource* PreservedMappedResource) {
+void VMATracking::ClearUnsafe(FEXCore::Context::Context* CTX, uintptr_t Base, uintptr_t Length, MappedResource* PreservedMappedResource) {
   const auto Top = Base + Length;
 
   // find the first Mapping at or after the Range ends, or ::end()
@@ -255,7 +277,7 @@ void SyscallHandler::VMATracking::ClearUnsafe(FEXCore::Context::Context* CTX, ui
 }
 
 // Change flags of mappings in a range and split the mappings if needed
-void SyscallHandler::VMATracking::ChangeUnsafe(uintptr_t Base, uintptr_t Length, VMAProt NewProt) {
+void VMATracking::ChangeUnsafe(uintptr_t Base, uintptr_t Length, VMAProt NewProt) {
   // This needs to handle multiple split-merge strategies:
   // 1) Exact overlap - No Split, no Merge. Only protection tracking changes.
   // 2) Exact base overlap - Single insert, can never fail.
@@ -485,7 +507,7 @@ void SyscallHandler::VMATracking::ChangeUnsafe(uintptr_t Base, uintptr_t Length,
 }
 
 // This matches the peculiarities algorithm used in linux ksys_shmdt (linux kernel 5.16, ipc/shm.c)
-uintptr_t SyscallHandler::VMATracking::ClearShmUnsafe(FEXCore::Context::Context* CTX, uintptr_t Base) {
+uintptr_t VMATracking::ClearShmUnsafe(FEXCore::Context::Context* CTX, uintptr_t Base) {
 
   // Find first VMA at or after Base
   // Iterate until first SHM VMA, with matching offset, get length
@@ -525,4 +547,4 @@ uintptr_t SyscallHandler::VMATracking::ClearShmUnsafe(FEXCore::Context::Context*
 
   return ShmLength;
 }
-} // namespace FEX::HLE
+} // namespace FEX::HLE::VMATracking
