@@ -24,6 +24,7 @@ constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
 int ServerLockFD {-1};
 std::optional<fasio::tcp_acceptor> ServerAcceptor;
 std::optional<fasio::tcp_acceptor> ServerFSAcceptor;
+int NumClients = 0;
 time_t RequestTimeout {10};
 bool Foreground {false};
 std::vector<struct pollfd> PollFDs {};
@@ -210,6 +211,7 @@ bool InitializeServerSocket(bool abstract) {
     }
 
     int FD = Socket->FD;
+    ++NumClients;
     Reactor.bind_handler(
       pollfd {
         .fd = FD,
@@ -219,6 +221,7 @@ bool InitializeServerSocket(bool abstract) {
       [Socket = std::move(Socket).value()](fasio::error ec) mutable {
       if (ec != fasio::error::success) {
         close(Socket.FD);
+        --NumClients;
         return fasio::post_callback::drop;
       }
       HandleSocketData(Socket);
@@ -389,7 +392,18 @@ void CloseConnections() {
 
 void WaitForRequests() {
   Reactor.enable_async_stop();
-  Reactor.run(Foreground ? std::nullopt : std::optional {std::chrono::seconds {RequestTimeout}});
+
+  while (true) {
+    std::optional Timeout = std::chrono::seconds {RequestTimeout};
+    if (Foreground || NumClients > 0) {
+      Timeout.reset();
+    }
+    auto Result = Reactor.run_one(Timeout);
+    if (Result != fasio::error::success || Reactor.stopped()) {
+      Reactor.cleanup();
+      break;
+    }
+  }
 
   LogMan::Msg::DFmt("[FEXServer] Shutting Down");
 

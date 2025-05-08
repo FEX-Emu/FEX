@@ -54,6 +54,7 @@ private:
   std::vector<pollfd> PollFDs;
   std::optional<int> CurrentFD; // FD that is currently being processed
 
+  bool is_stopped = false;
   int AsyncStopRequest[2] = {-1, -1};
 
   // Maps FD to callback
@@ -91,12 +92,22 @@ public:
     ::close(AsyncStopRequest[1]);
   }
 
-  error run(std::optional<std::chrono::nanoseconds> Timeout = std::nullopt) {
+  void cleanup() {
+    callbacks.clear();
+  }
+
+  [[nodiscard]]
+  bool stopped() const {
+    return is_stopped;
+  }
+
+  error run_one(std::optional<std::chrono::nanoseconds> Timeout = std::nullopt) {
     // Process events queued before entering wait loop
     update_fd_list();
 
     timespec ts = to_timespec(Timeout.value_or(std::chrono::nanoseconds {0}));
 
+    // ppoll may return EINTR/EAGAIN, so a loop is used here. Normally, we return in the first iteration.
     while (true) {
       int Result = ::ppoll(PollFDs.data(), PollFDs.size(), Timeout ? &ts : nullptr, nullptr);
 
@@ -104,14 +115,10 @@ public:
         if (errno == EINTR || errno == EAGAIN) {
           continue;
         }
-        callbacks.clear();
         return error::generic_errno;
       } else if (Result == 0) {
-        callbacks.clear();
         return error::timeout;
       } else {
-        bool exit_requested = false;
-
         // Walk the FDs and see if we got any results
         for (auto& ActiveFD : PollFDs) {
           if (ActiveFD.revents == 0) {
@@ -139,14 +146,14 @@ public:
                 ActiveFD.revents = 0;
               }
             } else if (Ret == post_callback::stop_reactor) {
-              exit_requested = true;
+              is_stopped = true;
             }
             CurrentFD.reset();
           }
           if (ActiveFD.revents & (POLLHUP | POLLERR | POLLNVAL | POLLRDHUP)) {
             auto Callback = std::move(callbacks[ActiveFD.fd]);
             if (Callback) {
-              exit_requested |= (Callback(error::eof) == post_callback::stop_reactor);
+              is_stopped |= (Callback(error::eof) == post_callback::stop_reactor);
             }
             // Error or hangup, erase the socket from our list
             QueuedEvents.push_back(Event {.FD = {.fd = ActiveFD.fd}, .Erase = true});
@@ -155,12 +162,23 @@ public:
           ActiveFD.revents = 0;
         }
 
-        if (exit_requested) {
-          callbacks.clear();
+        if (is_stopped) {
+          cleanup();
           return error::success;
         }
 
         update_fd_list();
+        return error::success;
+      }
+    }
+  }
+
+  error run(std::optional<std::chrono::nanoseconds> Timeout = std::nullopt) {
+    while (true) {
+      auto Result = run_one(Timeout);
+      if (Result != error::success || is_stopped) {
+        cleanup();
+        return Result;
       }
     }
   }
