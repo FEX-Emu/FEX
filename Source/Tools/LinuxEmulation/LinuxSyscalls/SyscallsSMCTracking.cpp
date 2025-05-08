@@ -22,30 +22,6 @@ $end_info$
 #include <FEXCore/Utils/TypeDefines.h>
 
 namespace FEX::HLE {
-
-/// Helpers ///
-auto SyscallHandler::VMAProt::fromProt(int Prot) -> VMAProt {
-  return VMAProt {
-    .Readable = (Prot & PROT_READ) != 0,
-    .Writable = (Prot & PROT_WRITE) != 0,
-    .Executable = (Prot & PROT_EXEC) != 0,
-  };
-}
-
-auto SyscallHandler::VMAProt::fromSHM(int SHMFlg) -> VMAProt {
-  return VMAProt {
-    .Readable = true,
-    .Writable = SHMFlg & SHM_RDONLY ? false : true,
-    .Executable = SHMFlg & SHM_EXEC ? true : false,
-  };
-}
-
-auto SyscallHandler::VMAFlags::fromFlags(int Flags) -> VMAFlags {
-  return VMAFlags {
-    .Shared = (Flags & MAP_SHARED) != 0, // also includes MAP_SHARED_VALIDATE
-  };
-}
-
 // SMC interactions
 bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext) {
   const auto FaultAddress = (uintptr_t)((siginfo_t*)info)->si_addr;
@@ -194,19 +170,19 @@ void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uintp
 
     static uint64_t AnonSharedId = 1;
 
-    MappedResource* Resource = nullptr;
+    VMATracking::MappedResource* Resource = nullptr;
 
     if (!(Flags & MAP_ANONYMOUS)) {
       struct stat64 buf;
       fstat64(fd, &buf);
-      MRID mrid {buf.st_dev, buf.st_ino};
+      VMATracking::MRID mrid {buf.st_dev, buf.st_ino};
 
       char Tmp[PATH_MAX];
       auto PathLength = FEX::get_fdpath(fd, Tmp);
 
       if (PathLength != -1) {
         Tmp[PathLength] = '\0';
-        auto [Iter, Inserted] = VMATracking.MappedResources.emplace(mrid, MappedResource {nullptr, nullptr, 0});
+        auto [Iter, Inserted] = VMATracking.MappedResources.emplace(mrid, VMATracking::MappedResource {nullptr, nullptr, 0});
         Resource = &Iter->second;
 
         if (Inserted) {
@@ -215,9 +191,9 @@ void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uintp
         }
       }
     } else if (Flags & MAP_SHARED) {
-      MRID mrid {SpecialDev::Anon, AnonSharedId++};
+      VMATracking::MRID mrid {VMATracking::SpecialDev::Anon, AnonSharedId++};
 
-      auto [Iter, Inserted] = VMATracking.MappedResources.emplace(mrid, MappedResource {nullptr, nullptr, 0});
+      auto [Iter, Inserted] = VMATracking.MappedResources.emplace(mrid, VMATracking::MappedResource {nullptr, nullptr, 0});
       LOGMAN_THROW_A_FMT(Inserted == true, "VMA tracking error");
       Resource = &Iter->second;
       Resource->Iterator = Iter;
@@ -225,7 +201,7 @@ void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uintp
       Resource = nullptr;
     }
 
-    VMATracking.SetUnsafe(CTX, Resource, Base, Offset, Size, VMAFlags::fromFlags(Flags), VMAProt::fromProt(Prot));
+    VMATracking.SetUnsafe(CTX, Resource, Base, Offset, Size, VMATracking::VMAFlags::fromFlags(Flags), VMATracking::VMAProt::fromProt(Prot));
   }
 
   if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
@@ -257,7 +233,7 @@ void SyscallHandler::TrackMprotect(FEXCore::Core::InternalThreadState* Thread, u
   {
     auto lk = FEXCore::GuardSignalDeferringSection(VMATracking.Mutex, Thread);
 
-    VMATracking.ChangeUnsafe(Base, Size, VMAProt::fromProt(Prot));
+    VMATracking.ChangeUnsafe(Base, Size, VMATracking::VMAProt::fromProt(Prot));
   }
 
   if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
@@ -332,14 +308,14 @@ void SyscallHandler::TrackShmat(FEXCore::Core::InternalThreadState* Thread, int 
     auto lk = FEXCore::GuardSignalDeferringSection(VMATracking.Mutex, Thread);
 
     // TODO
-    MRID mrid {SpecialDev::SHM, static_cast<uint64_t>(shmid)};
+    VMATracking::MRID mrid {VMATracking::SpecialDev::SHM, static_cast<uint64_t>(shmid)};
 
     auto ResourceInserted = VMATracking.MappedResources.insert({mrid, {nullptr, nullptr, Length}});
     auto Resource = &ResourceInserted.first->second;
     if (ResourceInserted.second) {
       Resource->Iterator = ResourceInserted.first;
     }
-    VMATracking.SetUnsafe(CTX, Resource, Base, 0, Length, VMAFlags::fromFlags(MAP_SHARED), VMAProt::fromSHM(shmflg));
+    VMATracking.SetUnsafe(CTX, Resource, Base, 0, Length, VMATracking::VMAFlags::fromFlags(MAP_SHARED), VMATracking::VMAProt::fromSHM(shmflg));
   }
   if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
     _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, Base, Length);
