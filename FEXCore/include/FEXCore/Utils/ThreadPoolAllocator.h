@@ -430,9 +430,17 @@ public:
    * The buffer is guaranteed to have at least `Size` bytes of data.
    * The initial data in the buffer is undefined, even when the buffer is just reowned.
    *
-   * @return object of type `Type` allocated with at least the size of `Size` from the constructor
+   * @param NewSize Optional new size for managed data
+   *
+   * @return object of type `Type` allocated within the selected buffer
    */
-  Type ReownOrClaimBuffer() {
+  Type ReownOrClaimBuffer(std::optional<size_t> NewSize = std::nullopt) {
+    Size = NewSize.value_or(Size);
+    if (NewSize && ClientOwnedFlag != FEXCore::Utils::IntrusivePooledAllocator::ClientFlags::FLAG_FREE && (*Info)->Size < NewSize.value()) {
+      // The current buffer is too small, so we must claim a new one
+      UnclaimBuffer();
+    }
+
     if (!FEXCore::Utils::IntrusivePooledAllocator::IsClientBufferOwned(ClientOwnedFlag)) {
       Info = ThreadAllocator.ReownOrClaimBuffer(Info, Size, &ClientOwnedFlag);
     }
