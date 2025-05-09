@@ -124,7 +124,7 @@ public:
    *
    * @param Buffer - The iterator that was previously given with ClaimBuffer
    */
-  void UnclaimBuffer(ContainerType::iterator Buffer, BufferOwnedFlag* ClientFlag) {
+  void UnclaimBuffer(const ContainerType::iterator& Buffer, BufferOwnedFlag* ClientFlag) {
     // Transition the buffer to free, unclaiming if it wasn't free prior.
     if (ClientFlag->exchange(ClientFlags::FLAG_FREE) != ClientFlags::FLAG_FREE) {
       std::unique_lock lk {AllocationMutex};
@@ -160,7 +160,7 @@ public:
    *
    * @return Either the original buffer passed in if we managed to reclaim, or a new buffer if we couldn't
    */
-  ContainerType::iterator ReownOrClaimBuffer(ContainerType::iterator Buffer, size_t Size, BufferOwnedFlag* CurrentClientFlag) {
+  ContainerType::iterator ReownOrClaimBuffer(const ContainerType::iterator& Buffer, size_t Size, BufferOwnedFlag* CurrentClientFlag) {
     ClientFlags Expected = ClientFlags::FLAG_DISOWNED;
     if (CurrentClientFlag->compare_exchange_strong(Expected, ClientFlags::FLAG_OWNED)) {
       // If we managed to change the flag from DISOWNED to OWNED then we have successfully reclaimed
