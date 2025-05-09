@@ -149,16 +149,16 @@ public:
   }
 
   /**
-   * @brief Try to reown a buffer that we have previous disowned, failing that, claim a new buffer
+   * @brief Try to reown a buffer that was previously disowned, failing that, claim a new buffer
    *
    * @param Buffer - The buffer we previously disowned
    * @param Size - The size of the buffer
    * @param CurrentClientFlag - The client tracked flag
    *
-   * Once a DisownBuffer has been called, it is unsafe to use the buffer until it has been reowned
-   * Always Reown a buffer after disowning it before use!
+   * Once DisownBuffer has been called, it is unsafe to use the buffer until it has been reowned
+   * Always reown a buffer before use!
    *
-   * @return Either the original buffer passed in if we managed to reclaim, or a new buffer if we couldn't
+   * @return The original buffer passed in on successful reown, otherwise a new buffer
    */
   ContainerType::iterator ReownOrClaimBuffer(const ContainerType::iterator& Buffer, size_t Size, BufferOwnedFlag* CurrentClientFlag) {
     ClientFlags Expected = ClientFlags::FLAG_DISOWNED;
@@ -427,11 +427,12 @@ public:
   /**
    * @brief Return the owned buffer or allocate another one from the `Allocator`
    *
-   * The buffer returned isn't guaranteed to be the exact size of `Size` but it will be at least `Size`.
-   * The contents of the memory returned isn't guaranteed to be zero initialized or not.
-   * Not even guaranteed to contain the previous data from the previous reowning if the pointer is the same.
+   * The buffer is guaranteed to have at least `Size` bytes of data.
+   * The initial data in the buffer is undefined, even when the buffer is just reowned.
    *
-   * @return object of type `Type` allocated with at least the size of `Size` from the constructor
+   * @param NewSize Optional new size for managed data
+   *
+   * @return object of type `Type` allocated within the selected buffer
    */
   Type ReownOrClaimBuffer() {
     if (!FEXCore::Utils::IntrusivePooledAllocator::IsClientBufferOwned(ClientOwnedFlag)) {
