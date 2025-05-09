@@ -455,10 +455,24 @@ public:
    *
    * @return object of type `Type` allocated within the selected buffer
    */
-  Type ReownOrClaimBuffer() {
-    if (!FEXCore::Utils::IntrusivePooledAllocator::IsClientBufferOwned(ClientOwnedFlag)) {
-      Info = ThreadAllocator.ReownOrClaimBuffer(Info, Size, &ClientOwnedFlag);
+  Type ReownOrClaimBuffer(std::optional<size_t> NewSize = std::nullopt) {
+    // Check if we can cheaply re-own a previous buffer
+    std::optional Buffer =
+      IntrusivePooledAllocator::IsClientBufferOwned(ClientOwnedFlag) ? Info : ThreadAllocator.TryToReownBuffer(Info, Size, &ClientOwnedFlag);
+
+    // Ensure the now owned buffer has enough space. If not, unclaim it and proceed to claim a new one
+    if (NewSize && Buffer && (**Buffer)->Size < NewSize.value()) {
+      UnclaimBuffer();
+      Buffer.reset();
     }
+
+    // Claim a new buffer if needed
+    Size = NewSize.value_or(Size);
+    if (!Buffer) {
+      Buffer = ThreadAllocator.ClaimBuffer(Size, &ClientOwnedFlag);
+    }
+
+    Info = *Buffer;
 
     // Putting a memset here is very handy for using thread sanitizer to find buffer usage races
     // Leaving this here for future excavation that will definitely occur here
