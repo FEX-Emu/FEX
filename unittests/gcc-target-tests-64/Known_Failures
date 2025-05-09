@@ -3,7 +3,8 @@
 # Passes the argument to bar in eax
 # 'bar' accepts the argument in edi
 # inline asm is incorrect, needs to use =d and d on the value
-asm-5.c.gcc-target-test-64
+asm-5.c.gcc-target-test-64.n500.gcc-target-64
+asm-5.c.gcc-target-test-64.n1.gcc-target-64
 
 # Fails even on host device
 # 'test_pextrw' does a zero extend to the gpr
@@ -11,4 +12,12 @@ asm-5.c.gcc-target-test-64
 # While the 'compute_correct_result' value does a sign extension
 # Which turns the value in to 0xfffff2f5
 # This causes its comparison to fail
-sse2-mmx-pextrw.c.gcc-target-test-64
+sse2-mmx-pextrw.c.gcc-target-test-64.n500.gcc-target-64
+sse2-mmx-pextrw.c.gcc-target-test-64.n1.gcc-target-64
+
+# See https://github.com/FEX-Emu/FEX/issues/4436
+# Test has invalid asm. Fails on host as well.
+# It passes for -n 500 due to x87 stack optimization pass
+# not actually doing a fld/fst pair and instead doing the 
+# memory store directly.
+pr88240.c.gcc-target-test-64.n1.gcc-target-64

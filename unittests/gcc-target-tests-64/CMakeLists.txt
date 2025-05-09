@@ -4,27 +4,33 @@
 file(GLOB_RECURSE TESTS CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/External/fex-gcc-target-tests-bins/64/*)
 
 foreach(TEST ${TESTS})
-
+  # Extract test file name
   string(REPLACE "/fex-gcc-target-tests-bins/64/" ";" TEST_NAME_LIST ${TEST})
-  list(GET TEST_NAME_LIST 1 TEST_NAME)
-  string(REPLACE "/" "-" TEST_NAME ${TEST_NAME})
+  list(GET TEST_NAME_LIST 1 TEST_FILE_NAME)
 
-  add_test(NAME "${TEST_NAME}.jit.gcc-target-64"
-    COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/guest_test_runner.py"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Known_Failures"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Expected_Output"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Disabled_Tests"
-    "${CMAKE_CURRENT_SOURCE_DIR}/Flake_Tests"
-    "${TEST_NAME}"
-    "guest"
-    "${CMAKE_BINARY_DIR}/Bin/FEXLoader"
-    "-o" "stderr" "--no-silentlog" "-n" "500" "--"
-    "${TEST}")
-  set_property(TEST "${TEST_NAME}.jit.gcc-target-64" APPEND PROPERTY SKIP_RETURN_CODE 125)
+  # Loop over block sizes
+  foreach(BLOCK_SIZE 500 1)
+    # Create TEST_NAME from TEST_FILE_NAME
+    string(REPLACE "/" "-" TEST_NAME ${TEST_FILE_NAME})
+    string(APPEND TEST_NAME ".n${BLOCK_SIZE}.gcc-target-64")
+
+    add_test(NAME "${TEST_NAME}"
+      COMMAND "python3" "${CMAKE_SOURCE_DIR}/Scripts/guest_test_runner.py"
+      "${CMAKE_CURRENT_SOURCE_DIR}/Known_Failures"
+      "${CMAKE_CURRENT_SOURCE_DIR}/Expected_Output"
+      "${CMAKE_CURRENT_SOURCE_DIR}/Disabled_Tests"
+      "${CMAKE_CURRENT_SOURCE_DIR}/Flake_Tests"
+      "${TEST_NAME}"
+      "guest"
+      "${CMAKE_BINARY_DIR}/Bin/FEXLoader"
+      "-o" "stderr" "--no-silentlog" "-n" "${BLOCK_SIZE}" "--"
+      "${TEST}")
+    set_property(TEST "${TEST_NAME}" APPEND PROPERTY SKIP_RETURN_CODE 125)
+  endforeach()
 endforeach()
 
 add_custom_target(
   gcc_target_tests_64
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
-  COMMAND "ctest" "--output-on-failure" "--timeout" "20" ${TEST_JOB_FLAG} "-R" "\.*.gcc-target-64$$")
+  COMMAND "ctest" "--output-on-failure" "--timeout" "40" ${TEST_JOB_FLAG} "-R" "\.*.gcc-target-64$$")
