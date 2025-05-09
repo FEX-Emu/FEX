@@ -427,9 +427,8 @@ public:
   /**
    * @brief Return the owned buffer or allocate another one from the `Allocator`
    *
-   * The buffer returned isn't guaranteed to be the exact size of `Size` but it will be at least `Size`.
-   * The contents of the memory returned isn't guaranteed to be zero initialized or not.
-   * Not even guaranteed to contain the previous data from the previous reowning if the pointer is the same.
+   * The buffer is guaranteed to have at least `Size` bytes of data.
+   * The initial data in the buffer is undefined, even when the buffer is just reowned.
    *
    * @return object of type `Type` allocated with at least the size of `Size` from the constructor
    */
