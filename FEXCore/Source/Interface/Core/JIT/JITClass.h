@@ -65,6 +65,8 @@ private:
 
   fextl::map<IR::NodeID, ARMEmitter::BiDirectionalLabel> JumpTargets;
 
+  Utils::FixedSizePooledAllocation<uint8_t*, 5000, 500> TempAllocator;
+
   [[nodiscard]]
   ARMEmitter::Register GetReg(IR::NodeID Node) const {
     const auto Reg = GetPhys(Node);
