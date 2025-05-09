@@ -504,7 +504,8 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::In
   , HostSupportsAVX256 {ctx->HostFeatures.SupportsAVX && ctx->HostFeatures.SupportsSVE256}
   , HostSupportsRPRES {ctx->HostFeatures.SupportsRPRES}
   , HostSupportsAFP {ctx->HostFeatures.SupportsAFP}
-  , CTX {ctx} {
+  , CTX {ctx}
+  , TempAllocator(ctx->CPUBackendAllocator, 0) {
 
   RAPass = Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA");
 
@@ -699,29 +700,10 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   // Fairly excessive buffer range to make sure we don't overflow
   uint32_t BufferRange = SSACount * 16;
 
-  auto RefreshCodeBuffer = [this, BufferRange](bool Align) {
-    LOGMAN_THROW_A_FMT(CurrentCodeBuffer->LookupCache.get() == ThreadState->LookupCache->Shared, "INVARIANT VIOLATED: SharedLookupCache "
-                                                                                                 "doesn't match up!\n");
-    if (auto Prev = CheckCodeBufferUpdate()) {
-      ThreadState->LookupCache->ChangeGuestToHostMapping(*Prev, *CurrentCodeBuffer->LookupCache);
-    }
-
-    SetBuffer(CurrentCodeBuffer->Ptr, CurrentCodeBuffer->Size);
-    SetCursorOffset(Align ? AlignUp(CodeBuffers.LatestOffset, 16) : CodeBuffers.LatestOffset);
-    if ((GetCursorOffset() + BufferRange) > (CurrentCodeBuffer->Size - Utils::FEX_PAGE_SIZE)) {
-      CTX->ClearCodeCache(ThreadState);
-    }
-
-    if (Align) {
-      Align16B();
-    }
-
-    CodeBuffers.LatestOffset = GetCursorOffset();
-  };
-
-  auto CodeBufferLock = std::unique_lock {CodeBuffers.CodeBufferWriteMutex};
-
-  RefreshCodeBuffer(false);
+  // JIT output is first written to a temporary buffer and later relocated to the CodeBuffer.
+  // This minimizes lock contention of CodeBufferWriteMutex.
+  auto TempCodeBuffer = TempAllocator.ReownOrClaimBuffer(BufferRange);
+  SetBuffer(TempCodeBuffer, BufferRange);
 
   CodeData.BlockBegin = GetCursorAddress<uint8_t*>();
 
@@ -893,8 +875,48 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
   JITBlockTail->Size = CodeData.Size;
 
-  CodeBuffers.LatestOffset = GetCursorOffset();
-  CodeBufferLock = {}; // Reset lock early to minimize contention
+  // Migrate the compile output from temporary storage to the actual CodeBuffer.
+  // This can block progress in other compiling threads, so the duration of the lock should be as small as possible.
+  {
+    auto CodeBufferLock = std::unique_lock {CodeBuffers.CodeBufferWriteMutex};
+
+    // Query size of generated code
+    const auto TempSize = GetCursorOffset();
+    LOGMAN_THROW_A_FMT(TempSize <= BufferRange, "Exceeded bounds of temporary buffer ({:#x} vs {:#x})", TempSize, BufferRange);
+
+    // Bring CodeBuffer up to date
+    {
+      LOGMAN_THROW_A_FMT(CurrentCodeBuffer->LookupCache.get() == ThreadState->LookupCache->Shared, "INVARIANT VIOLATED: SharedLookupCache "
+                                                                                                   "doesn't match up!\n");
+      if (auto Prev = CheckCodeBufferUpdate()) {
+        ThreadState->LookupCache->ChangeGuestToHostMapping(*Prev, *CurrentCodeBuffer->LookupCache);
+      }
+
+      // NOTE: 16-byte alignment of the new cursor offset must be preserved for block linking records
+      SetBuffer(CurrentCodeBuffer->Ptr, CurrentCodeBuffer->Size);
+      SetCursorOffset(AlignUp(CodeBuffers.LatestOffset, 16));
+      if ((GetCursorOffset() + TempSize) > (CurrentCodeBuffer->Size - Utils::FEX_PAGE_SIZE)) {
+        CTX->ClearCodeCache(ThreadState);
+      }
+
+      Align16B();
+
+      CodeBuffers.LatestOffset = GetCursorOffset();
+    }
+
+    // Adjust host addresses
+    const auto Delta = GetCursorAddress<uint8_t*>() - CodeData.BlockBegin;
+    CodeData.BlockBegin += Delta;
+    CodeData.BlockEntry += Delta;
+
+    // Copy over CodeBuffer contents
+    memcpy(GetCursorAddress<uint8_t*>(), TempCodeBuffer, TempSize);
+    SetCursorOffset(CodeBuffers.LatestOffset + TempSize);
+
+    CodeBuffers.LatestOffset = GetCursorOffset();
+  }
+
+  TempAllocator.DelayedDisownBuffer();
 
   ClearICache(CodeData.BlockBegin, CodeOnlySize);
 
