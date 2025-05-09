@@ -150,7 +150,7 @@ void VMATracking::ListPrepend(MappedResource* Resource, VMAEntry* NewVMA) {
 /// VMA tracking ///
 
 // Lookup a VMA by address
-VMATracking::VMACIterator VMATracking::LookupVMAUnsafe(uint64_t GuestAddr) const {
+VMATracking::VMACIterator VMATracking::FindVMAEntry(uint64_t GuestAddr) const {
   auto Entry = VMAs.upper_bound(GuestAddr);
 
   if (Entry != VMAs.begin()) {
@@ -165,9 +165,11 @@ VMATracking::VMACIterator VMATracking::LookupVMAUnsafe(uint64_t GuestAddr) const
 }
 
 // Set or Replace mappings in a range with a new mapping
-void VMATracking::SetUnsafe(FEXCore::Context::Context* CTX, MappedResource* MappedResource, uintptr_t Base, uintptr_t Offset,
-                            uintptr_t Length, VMAFlags Flags, VMAProt Prot) {
-  ClearUnsafe(CTX, Base, Length, MappedResource);
+void VMATracking::TrackVMARange(FEXCore::Context::Context* CTX, MappedResource* MappedResource, uintptr_t Base, uintptr_t Offset,
+                                uintptr_t Length, VMAFlags Flags, VMAProt Prot) {
+  Mutex.check_lock_owned_by_self_as_write();
+
+  DeleteVMARange(CTX, Base, Length, MappedResource);
 
   auto PrevResVMA = MappedResource ? MappedResource->FirstVMA : nullptr;
   auto NextResVMA = PrevResVMA ? PrevResVMA->ResourceNextVMA : nullptr;
@@ -193,7 +195,9 @@ void VMATracking::SetUnsafe(FEXCore::Context::Context* CTX, MappedResource* Mapp
 
 // Remove mappings in a range, possibly splitting them if needed and
 // freeing their associated MappedResource unless it is equal to PreservedMappedResource
-void VMATracking::ClearUnsafe(FEXCore::Context::Context* CTX, uintptr_t Base, uintptr_t Length, MappedResource* PreservedMappedResource) {
+void VMATracking::DeleteVMARange(FEXCore::Context::Context* CTX, uintptr_t Base, uintptr_t Length, MappedResource* PreservedMappedResource) {
+  Mutex.check_lock_owned_by_self_as_write();
+
   const auto Top = Base + Length;
 
   // find the first Mapping at or after the Range ends, or ::end()
@@ -277,7 +281,9 @@ void VMATracking::ClearUnsafe(FEXCore::Context::Context* CTX, uintptr_t Base, ui
 }
 
 // Change flags of mappings in a range and split the mappings if needed
-void VMATracking::ChangeUnsafe(uintptr_t Base, uintptr_t Length, VMAProt NewProt) {
+void VMATracking::ChangeProtectionFlags(uintptr_t Base, uintptr_t Length, VMAProt NewProt) {
+  Mutex.check_lock_owned_by_self_as_write();
+
   // This needs to handle multiple split-merge strategies:
   // 1) Exact overlap - No Split, no Merge. Only protection tracking changes.
   // 2) Exact base overlap - Single insert, can never fail.
@@ -507,7 +513,7 @@ void VMATracking::ChangeUnsafe(uintptr_t Base, uintptr_t Length, VMAProt NewProt
 }
 
 // This matches the peculiarities algorithm used in linux ksys_shmdt (linux kernel 5.16, ipc/shm.c)
-uintptr_t VMATracking::ClearShmUnsafe(FEXCore::Context::Context* CTX, uintptr_t Base) {
+uintptr_t VMATracking::DeleteSHMRegion(FEXCore::Context::Context* CTX, uintptr_t Base) {
 
   // Find first VMA at or after Base
   // Iterate until first SHM VMA, with matching offset, get length
