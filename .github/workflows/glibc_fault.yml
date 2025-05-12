@@ -1,4 +1,11 @@
-name: Build + Test
+name: GLIBC fault test
+# This workflow file is the same as the `Build + Test` with some key differences
+# - Runs on any x86 and ARM64 runner
+# - Disables the glibc jemalloc compile option
+# - Enables the glibc allocator fault option
+# - Disables gvisor tests to reduce stress on CI machines (tmp/shm tests overwhelm them)
+# - Disables thunk tests since they are incompatible with glibc fault allocator
+# - Disables ARMEmitter tests (We don't want to fault test vixl's disassembler)
 
 on:
   push:
@@ -15,11 +22,11 @@ env:
   CXX: clang++
 
 jobs:
-  build_plus_test:
+  glibc_fault_test:
     runs-on: ${{ matrix.arch }}
     strategy:
       matrix:
-        arch: [[self-hosted, ARMv8.0], [self-hosted, ARMv8.2], [self-hosted, ARMv8.4]]
+        arch: [[self-hosted, ARM64]]
       fail-fast: false
 
     steps:
@@ -63,7 +70,7 @@ jobs:
       # Note the current convention is to use the -S and -B options here to specify source
       # and build directories, but this is only available with CMake 3.13 and higher.
       # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DENABLE_LTO=False -DENABLE_ASSERTIONS=True -DENABLE_X86_HOST_DEBUG=True -DBUILD_FEX_LINUX_TESTS=True -DBUILD_THUNKS=True -DCMAKE_INSTALL_PREFIX=${{runner.workspace}}/build/install
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -G Ninja -DENABLE_LTO=False -DENABLE_ASSERTIONS=True -DENABLE_X86_HOST_DEBUG=True -DBUILD_FEX_LINUX_TESTS=True -DENABLE_GLIBC_ALLOCATOR_HOOK_FAULT=True -DENABLE_JEMALLOC_GLIBC_ALLOC=False -DCMAKE_INSTALL_PREFIX=${{runner.workspace}}/build/install
 
     - name: Build
       working-directory: ${{runner.workspace}}/build
@@ -122,17 +129,6 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_FEXCoreAPITests.log || true
 
-    - name: ARMEmitter tests
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      run: cmake --build . --config $BUILD_TYPE --target emitter_tests
-
-    - name: ARMEmitter Test Results move
-      if: ${{ always() }}
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ARMEmitterTests.log || true
-
     - name: FEXLinuxTests
       working-directory: ${{runner.workspace}}/build
       shell: bash
@@ -143,45 +139,6 @@ jobs:
       shell: bash
       working-directory: ${{runner.workspace}}/build
       run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_FEXLinuxTests.log || true
-
-    - name: Thunkgen tests
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      run: cmake --build . --config $BUILD_TYPE --target thunkgen_tests
-
-    - name: Thunkgen Results move
-      if: ${{ always() }}
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ThunkgenTests.log || true
-
-    - name: Test GL No-Thunks
-      if: matrix.arch[1] == 'x64'
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      env:
-        DISPLAY: ":0"
-      run: cmake --build . --config $BUILD_TYPE --target thunk_functional_tests_nothunks
-
-    - name: No thunks Results move
-      if: ${{ always() }}
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_NoThunkResults.log || true
-
-    - name: Test GL Thunks
-      if: matrix.arch[1] == 'x64'
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      env:
-        DISPLAY: ":0"
-      run: cmake --build . --config $BUILD_TYPE --target thunk_functional_tests_thunks
-
-    - name: Thunks Results move
-      if: ${{ always() }}
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_ThunkResults.log || true
 
     - name: ASM Tests
       working-directory: ${{runner.workspace}}/build
@@ -206,29 +163,6 @@ jobs:
       shell: bash
       working-directory: ${{runner.workspace}}/build
       run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_Posix.log || true
-
-    - name: gvisor tests
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      # Execute the gvisor tests
-      run: cmake --build . --config $BUILD_TYPE --target gvisor_tests
-
-    - name: GVisor Test Results move
-      if: ${{ always() }}
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_GVisor.log || true
-
-    - name: Struct verifier tests
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      run: cmake --build . --config $BUILD_TYPE --target struct_verifier
-
-    - name: Struct verifier Test Results move
-      if: ${{ always() }}
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: mv ${{runner.workspace}}/build/Testing/Temporary/LastTest.log ${{runner.workspace}}/build/Testing/Temporary/LastTest_StructVerifier.log || true
 
     - name: Truncate test results
       if: ${{ always() }}
@@ -256,3 +190,4 @@ jobs:
         name: Results-${{ env.runner_name }}
         path: ${{runner.workspace}}/build/Testing/Temporary/LastTest_*.log
         retention-days: 3
+
