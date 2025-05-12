@@ -501,7 +501,7 @@ void Arm64Emitter::LoadConstant(ARMEmitter::Size s, ARMEmitter::Register Reg, ui
 
   // If the aligned offset is within the 4GB window then we can use ADRP+ADD
   // and the number of move segments more than 1
-  if (RequiredMoveSegments > 1 && ARMEmitter::Emitter::IsInt32(AlignedOffset)) {
+  if (RequiredMoveSegments > 1 && ARMEmitter::Emitter::IsInt32(AlignedOffset) && false) {
     // If this is 4k page aligned then we only need ADRP
     if ((AlignedOffset & 0xFFF) == 0) {
       adrp(Reg, AlignedOffset >> 12);
