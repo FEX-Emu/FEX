@@ -27,4 +27,4 @@ add_custom_target(
   gcc_target_tests_64
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
-  COMMAND "ctest" "--output-on-failure" "--timeout" "20" ${TEST_JOB_FLAG} "-R" "\.*.gcc-target-64$$")
+  COMMAND "ctest" "--output-on-failure" "--timeout" "20" ${TEST_JOB_FLAG} "-R" "\.*.pr81128.c.gcc-target-test-64.jit.gcc-target-64$$")
