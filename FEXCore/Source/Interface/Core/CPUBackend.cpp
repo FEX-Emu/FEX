@@ -266,10 +266,10 @@ namespace CPU {
     return TotalLUT;
   }()};
 
-  CPUBackend::CPUBackend(CodeBufferManager& manager, FEXCore::Core::InternalThreadState* ThreadState, size_t MaxCodeSize)
+  CPUBackend::CPUBackend(CodeBufferManager& CodeBuffers, FEXCore::Core::InternalThreadState* ThreadState, size_t MaxCodeSize)
     : ThreadState(ThreadState)
     , MaxCodeSize(MaxCodeSize)
-    , manager(manager) {
+    , CodeBuffers(CodeBuffers) {
 
     auto& Common = ThreadState->CurrentFrame->Pointers.Common;
 
@@ -312,7 +312,7 @@ namespace CPU {
     auto PrevCodeBuffer = CurrentCodeBuffer;
 
     // Resize the code buffer and reallocate our code size
-    CurrentCodeBuffer = manager.StartLargerCodeBuffer(MaxCodeSize);
+    CurrentCodeBuffer = CodeBuffers.StartLargerCodeBuffer(MaxCodeSize);
 
     RegisterForSignalHandler(PrevCodeBuffer);
     return CurrentCodeBuffer.get();
@@ -331,7 +331,7 @@ namespace CPU {
 
   fextl::shared_ptr<CodeBuffer> CPUBackend::CheckCodeBufferUpdate() {
     fextl::shared_ptr<CodeBuffer> OldCodeBuffer;
-    auto NewCodeBuffer = manager.GetLatest();
+    auto NewCodeBuffer = CodeBuffers.GetLatest();
     if (CurrentCodeBuffer != NewCodeBuffer) {
       RegisterForSignalHandler(CurrentCodeBuffer);
       return std::exchange(CurrentCodeBuffer, NewCodeBuffer);
