@@ -66,9 +66,9 @@ namespace CPU {
     // This is the only CodeBuffer that data may be written to.
     fextl::shared_ptr<CodeBuffer> GetLatest();
 
-    // Allocate a new CodeBuffer with geometric growth.
+    // Allocate a new CodeBuffer with geometric growth up to an internal maximum.
     // Subsequent calls to GetLatest will point to the returned buffer.
-    fextl::shared_ptr<CodeBuffer> StartLargerCodeBuffer(size_t MaxCodeSize);
+    fextl::shared_ptr<CodeBuffer> StartLargerCodeBuffer();
 
     // Write offset into the latest CodeBuffer
     std::size_t LatestOffset;
@@ -87,10 +87,7 @@ namespace CPU {
   class CPUBackend {
   public:
 
-    /**
-     * @param MaxCodeSize - Max size for the code buffers
-     */
-    CPUBackend(CodeBufferManager&, FEXCore::Core::InternalThreadState*, size_t MaxCodeSize);
+    CPUBackend(CodeBufferManager&, FEXCore::Core::InternalThreadState*);
 
     virtual ~CPUBackend();
 
