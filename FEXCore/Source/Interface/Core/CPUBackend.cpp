@@ -15,6 +15,10 @@
 namespace FEXCore {
 namespace CPU {
 
+  static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
+  // We don't want to move above 128MB atm because that means we will have to encode longer jumps
+  static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 128;
+
   constexpr static uint64_t NamedVectorConstants[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_CONST_POOL_MAX][2] = {
     {0x0003'0002'0001'0000ULL, 0x0007'0006'0005'0004ULL}, // NAMED_VECTOR_INCREMENTAL_U16_INDEX
     {0x000B'000A'0009'0008ULL, 0x000F'000E'000D'000CULL}, // NAMED_VECTOR_INCREMENTAL_U16_INDEX_UPPER
@@ -266,9 +270,8 @@ namespace CPU {
     return TotalLUT;
   }()};
 
-  CPUBackend::CPUBackend(CodeBufferManager& CodeBuffers, FEXCore::Core::InternalThreadState* ThreadState, size_t MaxCodeSize)
+  CPUBackend::CPUBackend(CodeBufferManager& CodeBuffers, FEXCore::Core::InternalThreadState* ThreadState)
     : ThreadState(ThreadState)
-    , MaxCodeSize(MaxCodeSize)
     , CodeBuffers(CodeBuffers) {
 
     auto& Common = ThreadState->CurrentFrame->Pointers.Common;
@@ -312,7 +315,7 @@ namespace CPU {
     auto PrevCodeBuffer = CurrentCodeBuffer;
 
     // Resize the code buffer and reallocate our code size
-    CurrentCodeBuffer = CodeBuffers.StartLargerCodeBuffer(MaxCodeSize);
+    CurrentCodeBuffer = CodeBuffers.StartLargerCodeBuffer();
 
     RegisterForSignalHandler(PrevCodeBuffer);
     return CurrentCodeBuffer.get();
@@ -400,20 +403,19 @@ namespace CPU {
 
   fextl::shared_ptr<CodeBuffer> CodeBufferManager::GetLatest() {
     if (!Latest) {
-      static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
       AllocateNew(INITIAL_CODE_SIZE);
     }
     return Latest;
   }
 
-  fextl::shared_ptr<CodeBuffer> CodeBufferManager::StartLargerCodeBuffer(size_t MaxCodeSize) {
+  fextl::shared_ptr<CodeBuffer> CodeBufferManager::StartLargerCodeBuffer() {
     if (!Latest) {
       // Allocate initial CodeBuffer and return it
       return GetLatest();
     }
 
     auto NewCodeBufferSize = GetLatest()->Size;
-    NewCodeBufferSize = std::min<size_t>(NewCodeBufferSize * 2, MaxCodeSize);
+    NewCodeBufferSize = std::min<size_t>(NewCodeBufferSize * 2, MAX_CODE_SIZE);
     return AllocateNew(NewCodeBufferSize);
   }
 
