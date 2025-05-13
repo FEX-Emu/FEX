@@ -40,7 +40,6 @@ $end_info$
 #include <string.h>
 #include <limits>
 
-static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
 // We don't want to move above 128MB atm because that means we will have to encode longer jumps
 static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 128;
 
@@ -496,7 +495,7 @@ static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame* Fram
 void Arm64JITCore::Op_NoOp(const IR::IROp_Header* IROp, IR::Ref Node) {}
 
 Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::InternalThreadState* Thread)
-  : CPUBackend(Thread, INITIAL_CODE_SIZE, MAX_CODE_SIZE)
+  : CPUBackend(*ctx, Thread, MAX_CODE_SIZE)
   , Arm64Emitter(ctx)
   , HostSupportsSVE128 {ctx->HostFeatures.SupportsSVE128}
   , HostSupportsSVE256 {ctx->HostFeatures.SupportsSVE256}
@@ -550,8 +549,8 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::In
     AArch64.LREM = reinterpret_cast<uint64_t>(LREM);
   }
 
-  // Must be done after Dispatcher init
-  ClearCache();
+  CurrentCodeBuffer = manager.GetLatest();
+  ThreadState->LookupCache->Shared = CurrentCodeBuffer->LookupCache.get();
 
   // Setup dynamic dispatch.
   if (ParanoidTSO()) {
@@ -570,11 +569,15 @@ void Arm64JITCore::EmitDetectionString() {
 }
 
 void Arm64JITCore::ClearCache() {
-  // Get the backing code buffer
+  // NOTE: Holding on to the reference here is required to ensure validity of the WriteLock mutex
+  auto PrevCodeBuffer = CurrentCodeBuffer;
+  std::lock_guard lk(PrevCodeBuffer->LookupCache->WriteLock);
 
   auto CodeBuffer = GetEmptyCodeBuffer();
   SetBuffer(CodeBuffer->Ptr, CodeBuffer->Size);
   EmitDetectionString();
+
+  ThreadState->LookupCache->ChangeGuestToHostMapping(*PrevCodeBuffer, *CurrentCodeBuffer->LookupCache);
 }
 
 Arm64JITCore::~Arm64JITCore() {}
@@ -693,7 +696,16 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
   // Fairly excessive buffer range to make sure we don't overflow
   uint32_t BufferRange = SSACount * 16;
-  if ((GetCursorOffset() + BufferRange) > (CurrentCodeBufferSize - Utils::FEX_PAGE_SIZE)) {
+
+  LOGMAN_THROW_A_FMT(CurrentCodeBuffer->LookupCache.get() == ThreadState->LookupCache->Shared, "INVARIANT VIOLATED: SharedLookupCache "
+                                                                                               "doesn't match up!\n");
+  if (auto Prev = CheckCodeBufferUpdate()) {
+    ThreadState->LookupCache->ChangeGuestToHostMapping(*Prev, *CurrentCodeBuffer->LookupCache);
+  }
+
+  SetBuffer(CurrentCodeBuffer->Ptr, CurrentCodeBuffer->Size);
+  SetCursorOffset(manager.LatestOffset);
+  if ((GetCursorOffset() + BufferRange) > (CurrentCodeBuffer->Size - Utils::FEX_PAGE_SIZE)) {
     CTX->ClearCodeCache(ThreadState);
   }
 
@@ -866,6 +878,8 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   CodeData.Size = GetCursorAddress<uint8_t*>() - CodeData.BlockBegin;
 
   JITBlockTail->Size = CodeData.Size;
+
+  manager.LatestOffset = GetCursorOffset();
 
   ClearICache(CodeData.BlockBegin, CodeOnlySize);
 

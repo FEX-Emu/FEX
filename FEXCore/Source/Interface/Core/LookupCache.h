@@ -61,6 +61,10 @@ struct GuestToHostMap {
   // Adds to Guest -> Host code mapping
   void AddBlockMapping(uint64_t Address, void* HostCode, const LockToken&) {
     // This may replace an existing mapping
+    // NOTE: Generally no previous entry should exist, however there is one exception:
+    //       If the backend updates the active thread's CodeBuffer, the new associated LookupCache
+    //       may already contain the block address. Since is comparatively rare, we'll just leak
+    //       one of the two blocks in this case.
     BlockList[Address] = (uintptr_t)HostCode;
   }
 
@@ -102,6 +106,13 @@ public:
   LookupCache(FEXCore::Context::ContextImpl* CTX);
   ~LookupCache();
 
+  // Swaps out the underlying GuestToHostMap and clears all associated caches.
+  // This interface requires the previous CodeBuffer to be provided despite not using it. This ensures the shared write lock is still valid.
+  void ChangeGuestToHostMapping([[maybe_unused]] CPU::CodeBuffer& Prev, GuestToHostMap& NewMap) {
+    ClearThreadLocalCaches();
+    Shared = &NewMap;
+  }
+
   uintptr_t FindBlock(uint64_t Address) {
     // Try L1, no lock needed
     auto& L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
@@ -110,7 +121,7 @@ public:
     }
 
     // L2 and L3 need to be locked
-    auto lk = L3.AcquireLock();
+    auto lk = Shared->AcquireLock();
 
     // Try L2
     const auto PageIndex = (Address & (VirtualMemSize - 1)) >> 12;
@@ -132,7 +143,7 @@ public:
     }
 
     // Try L3
-    auto HostCode = L3.FindBlock(Address, lk);
+    auto HostCode = Shared->FindBlock(Address, lk);
     if (HostCode) {
       CacheBlockMapping(Address, HostCode.value());
       return HostCode.value();
@@ -142,15 +153,14 @@ public:
     return 0;
   }
 
-  GuestToHostMap L3;
+  GuestToHostMap* Shared = nullptr;
 
   fextl::map<uint64_t, fextl::vector<uint64_t>> CodePages;
 
   // Appends Block {Address} to CodePages [Start, Start + Length)
   // Returns true if new pages are marked as containing code
   bool AddBlockExecutableRange(uint64_t Address, uint64_t Start, uint64_t Length) {
-    auto lk = L3.AcquireLock();
-
+    auto lk = Shared->AcquireLock();
 
     bool rv = false;
 
@@ -165,9 +175,9 @@ public:
 
   // Adds to Guest -> Host code mapping
   void AddBlockMapping(uint64_t Address, void* HostCode) {
-    auto lk = L3.AcquireLock();
+    auto lk = Shared->AcquireLock();
 
-    L3.AddBlockMapping(Address, HostCode, lk);
+    Shared->AddBlockMapping(Address, HostCode, lk);
 
     // There is no need to update L1 or L2, they will get updated on first lookup
     // However, adding to L1 here increases performance
@@ -176,10 +186,13 @@ public:
     L1Entry.HostCode = (uintptr_t)HostCode;
   }
 
+  // NOTE: It's the caller's responsibility to call Erase() for all other
+  //       GuestToHostMaps that share the same LookupCache. Otherwise, the
+  //       L1/L2 caches will contain stale references to deallocated memory.
   void Erase(FEXCore::Core::CpuStateFrame* Frame, uint64_t Address) {
-    auto lk = L3.AcquireLock();
+    auto lk = Shared->AcquireLock();
 
-    L3.Erase(Frame, Address, lk);
+    Shared->Erase(Frame, Address, lk);
 
     // Do L1
     auto& L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
@@ -209,12 +222,13 @@ public:
   }
 
   void AddBlockLink(uint64_t GuestDestination, FEXCore::Context::ExitFunctionLinkData* HostLink, const FEXCore::Context::BlockDelinkerFunc& delinker) {
-    auto lk = L3.AcquireLock();
-    L3.AddBlockLink(GuestDestination, HostLink, delinker, lk);
+    auto lk = Shared->AcquireLock();
+    Shared->AddBlockLink(GuestDestination, HostLink, delinker, lk);
   }
 
   void ClearCache();
   void ClearL2Cache();
+  void ClearThreadLocalCaches();
 
   uintptr_t GetL1Pointer() const {
     return L1Pointer;
@@ -237,7 +251,7 @@ public:
   // This approach has not been fully vetted yet.
   // Also note that L1 lookups might be inlined in the JIT Dispatcher and/or block ends.
   auto AcquireLock() {
-    return L3.AcquireLock();
+    return Shared->AcquireLock();
   }
 
 private:

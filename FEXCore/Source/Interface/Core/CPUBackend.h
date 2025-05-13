@@ -9,6 +9,7 @@ $end_info$
 #pragma once
 
 #include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/Utils/SignalScopeGuards.h>
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
@@ -32,10 +33,14 @@ namespace CodeSerialize {
   struct CodeObjectFileSection;
 }
 
+struct GuestToHostMap;
+
 namespace CPU {
   struct CodeBuffer {
     uint8_t* Ptr;
     size_t Size;
+
+    fextl::unique_ptr<GuestToHostMap> LookupCache;
 
     CodeBuffer(size_t Size);
     CodeBuffer(const CodeBuffer&) = delete;
@@ -46,8 +51,36 @@ namespace CPU {
     ~CodeBuffer();
   };
 
+  /**
+   * A manager that coordinates access to the CodeBuffer used for compiling new code across threads.
+   *
+   * The CodeBuffer is managed as a partially persistent data structure:
+   * - Exactly one CodeBuffer is now designated as "active", which means data can be appended to it
+   * - Lossy modifications to the active CodeBuffer will not invalidate any data in use by other threads (which is what enables save CodeBuffer sharing across threads)
+   * - Instead, such lossy modifications trigger a new "version" of the data in the modifying thread. Old versions of the CodeBuffer persist as read-only data for use by the other threads.
+   * - The other threads can update their version of the CodeBuffer. This will decrease the reference count and eventually trigger deallocation of the old version
+   */
   class CodeBufferManager {
   public:
+    // Get the CodeBuffer that was most recently allocated.
+    // This is the only CodeBuffer that data may be written to.
+    fextl::shared_ptr<CodeBuffer> GetLatest();
+
+    // Allocate a new CodeBuffer with geometric growth.
+    // Subsequent calls to GetLatest will point to the returned buffer.
+    fextl::shared_ptr<CodeBuffer> StartLargerCodeBuffer(size_t MaxCodeSize);
+
+    // Write offset into the latest CodeBuffer
+    std::size_t LatestOffset;
+
+    // Protects writes to the latest CodeBuffer
+    FEXCore::ForkableUniqueMutex CodeBufferWriteMutex;
+
+    virtual void OnCodeBufferAllocated(CodeBuffer&) {};
+
+  private:
+    fextl::shared_ptr<CodeBuffer> Latest;
+
     fextl::shared_ptr<CodeBuffer> AllocateNew(size_t Size);
   };
 
@@ -55,10 +88,9 @@ namespace CPU {
   public:
 
     /**
-     * @param InitialCodeSize - Initial size for the code buffers
      * @param MaxCodeSize - Max size for the code buffers
      */
-    CPUBackend(FEXCore::Core::InternalThreadState*, size_t InitialCodeSize, size_t MaxCodeSize);
+    CPUBackend(CodeBufferManager&, FEXCore::Core::InternalThreadState*, size_t MaxCodeSize);
 
     virtual ~CPUBackend();
 
@@ -157,6 +189,11 @@ namespace CPU {
 
     bool IsAddressInCodeBuffer(uintptr_t Address) const;
 
+    // Updates the CodeBuffer if needed and returns a reference to the old one.
+    // The returned reference should be kept alive carefully to avoid early deletion of resources.
+    [[nodiscard]]
+    fextl::shared_ptr<CodeBuffer> CheckCodeBufferUpdate();
+
   protected:
     // Max spill slot size in bytes. We need at most 32 bytes
     // to be able to handle a 256-bit vector store to a slot.
@@ -164,21 +201,21 @@ namespace CPU {
 
     FEXCore::Core::InternalThreadState* ThreadState;
 
-    size_t InitialCodeSize, MaxCodeSize;
+    size_t MaxCodeSize;
     [[nodiscard]]
     CodeBuffer* GetEmptyCodeBuffer();
 
-    // This is the size of the last code buffer we allocated
-    size_t CurrentCodeBufferSize = 0;
+    // This is the code buffer containing the main code under execution by this thread.
+    // CheckCodeBufferUpdate must be used before compiling new code.
+    fextl::shared_ptr<CodeBuffer> CurrentCodeBuffer;
 
-    CodeBufferManager manager; // TODO: Rename
+    // Old CodeBuffer generations required to be valid until returning from signal handlers
+    fextl::vector<fextl::shared_ptr<CodeBuffer>> SignalHandlerCodeBuffers;
+
+    CodeBufferManager& manager; // TODO: Rename
 
   private:
-    void EmplaceNewCodeBuffer(fextl::shared_ptr<CodeBuffer> Buffer);
-
-    // This is the array of code buffers. Unless signals force us to keep more than
-    // buffer, there will be only one entry here
-    fextl::vector<fextl::shared_ptr<CodeBuffer>> CodeBuffers;
+    void RegisterForSignalHandler(fextl::shared_ptr<CodeBuffer>);
   };
 
 } // namespace CPU

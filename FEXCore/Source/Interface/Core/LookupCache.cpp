@@ -65,20 +65,27 @@ LookupCache::~LookupCache() {
 }
 
 void LookupCache::ClearL2Cache() {
-  auto lk = L3.AcquireLock();
+  auto lk = Shared->AcquireLock();
   // Clear out the page memory
   // PagePointer and PageMemory are sequential with each other. Clear both at once.
   FEXCore::Allocator::VirtualDontNeed(reinterpret_cast<void*>(PagePointer), ctx->Config.VirtualMemSize / 4096 * 8 + CODE_SIZE, false);
   AllocateOffset = 0;
 }
 
+void LookupCache::ClearThreadLocalCaches() {
+  auto lk = Shared->AcquireLock();
+
+  // Clear L1 and L2 by clearing the full cache.
+  FEXCore::Allocator::VirtualDontNeed(reinterpret_cast<void*>(PagePointer), TotalCacheSize, false);
+}
+
 void LookupCache::ClearCache() {
-  auto lk = L3.AcquireLock();
+  auto lk = Shared->AcquireLock();
 
   // Clear L1 and L2 by clearing the full cache.
   FEXCore::Allocator::VirtualDontNeed(reinterpret_cast<void*>(PagePointer), TotalCacheSize, false);
 
-  L3.ClearCache(lk);
+  Shared->ClearCache(lk);
 }
 
 void GuestToHostMap::ClearCache(const LockToken&) {
