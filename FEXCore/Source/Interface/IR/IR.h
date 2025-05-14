@@ -106,8 +106,7 @@ struct NodeID final {
  */
 template<typename Type>
 struct FEX_PACKED NodeWrapperBase final {
-  // On x86-64 using a uint64_t type is more efficient since RIP addressing gives you [<Base> + <Index> + <imm offset>]
-  // On AArch64 using uint32_t is just more memory efficient. 32bit or 64bit offset doesn't matter
+  // 32bit or 64bit offset doesn't matter for addressing.
   // We use uint32_t to be more memory efficient (Cuts our node list size in half)
   using NodeOffsetType = uint32_t;
   NodeOffsetType NodeOffset;

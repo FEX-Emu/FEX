@@ -82,7 +82,7 @@ DEF_OP(ExitFunction) {
   } else {
 
     ARMEmitter::ForwardLabel FullLookup;
-    auto RipReg = GetReg(Op->NewRIP.ID());
+    auto RipReg = GetReg(Op->NewRIP);
 
     // L1 Cache
     ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L1Pointer));
@@ -109,9 +109,9 @@ DEF_OP(ExitFunction) {
 
 DEF_OP(Jump) {
   const auto Op = IROp->C<IR::IROp_Jump>();
-  const auto Target = Op->TargetBlock.ID();
+  const auto Target = Op->TargetBlock;
 
-  PendingTargetLabel = &JumpTargets.try_emplace(Target).first->second;
+  PendingTargetLabel = &JumpTargets.try_emplace(Target.ID()).first->second;
 }
 
 DEF_OP(CondJump) {
@@ -125,10 +125,10 @@ DEF_OP(CondJump) {
     [[maybe_unused]] uint64_t Const;
     [[maybe_unused]] const bool isConst = IsInlineConstant(Op->Cmp2, &Const);
 
-    auto Reg = GetReg(Op->Cmp1.ID());
+    auto Reg = GetReg(Op->Cmp1);
     const auto Size = Op->CompareSize == IR::OpSize::i32Bit ? ARMEmitter::Size::i32Bit : ARMEmitter::Size::i64Bit;
 
-    LOGMAN_THROW_A_FMT(IsGPR(Op->Cmp1.ID()), "CondJump: Expected GPR");
+    LOGMAN_THROW_A_FMT(IsGPR(Op->Cmp1), "CondJump: Expected GPR");
     LOGMAN_THROW_A_FMT(isConst, "CondJump: Expected constant source");
 
     if (Op->Cond.Val == FEXCore::IR::COND_EQ) {
@@ -184,7 +184,7 @@ DEF_OP(Syscall) {
     if (Op->Header.Args[i].IsInvalid()) {
       continue;
     }
-    str(GetReg(Op->Header.Args[i].ID()).X(), ARMEmitter::Reg::rsp, i * 8);
+    str(GetReg(Op->Header.Args[i]).X(), ARMEmitter::Reg::rsp, i * 8);
   }
 
   ldr(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.SyscallHandlerObj));
@@ -244,7 +244,7 @@ DEF_OP(InlineSyscall) {
       break;
     }
 
-    auto Reg = GetReg(Op->Header.Args[i].ID());
+    auto Reg = GetReg(Op->Header.Args[i]);
     if (Reg == ARMEmitter::Reg::r8 || Reg == ARMEmitter::Reg::r4 || Reg == ARMEmitter::Reg::r5) {
 
       SpillMask |= (1U << Reg.Idx());
@@ -274,7 +274,7 @@ DEF_OP(InlineSyscall) {
         break;
       }
 
-      auto Reg = GetReg(Op->Header.Args[i].ID());
+      auto Reg = GetReg(Op->Header.Args[i]);
       if (SpillMask & (1U << Reg.Idx())) {
         // In the case of intersection with x4, x5, or x8 then these are currently SRA
         // for registers RAX, RDX, and RSP. Which have just been spilled
@@ -292,7 +292,7 @@ DEF_OP(InlineSyscall) {
         break;
       }
 
-      mov(EmitSize, RegArgs[i].R(), GetReg(Op->Header.Args[i].ID()));
+      mov(EmitSize, RegArgs[i].R(), GetReg(Op->Header.Args[i]));
     }
   }
 
@@ -325,7 +325,7 @@ DEF_OP(Thunk) {
 
   PushDynamicRegs(TMP1);
 
-  mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, GetReg(Op->ArgPtr.ID()));
+  mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, GetReg(Op->ArgPtr));
 
   auto thunkFn = static_cast<Context::ContextImpl*>(ThreadState->CTX)->ThunkHandler->LookupThunk(Op->ThunkNameHash);
   LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r2, (uintptr_t)thunkFn);
@@ -412,8 +412,8 @@ DEF_OP(ThreadRemoveCodeEntry) {
 DEF_OP(CPUID) {
   auto Op = IROp->C<IR::IROp_CPUID>();
 
-  mov(ARMEmitter::Size::i64Bit, TMP2, GetReg(Op->Function.ID()));
-  mov(ARMEmitter::Size::i64Bit, TMP3, GetReg(Op->Leaf.ID()));
+  mov(ARMEmitter::Size::i64Bit, TMP2, GetReg(Op->Function));
+  mov(ARMEmitter::Size::i64Bit, TMP3, GetReg(Op->Leaf));
 
   PushDynamicRegs(TMP4);
   SpillStaticRegs(TMP4);
@@ -446,10 +446,10 @@ DEF_OP(CPUID) {
 
   // Results are in x0, x1
   // Results want to be 4xi32 scalars
-  mov(ARMEmitter::Size::i32Bit, GetReg(Op->OutEAX.ID()), TMP1);
-  mov(ARMEmitter::Size::i32Bit, GetReg(Op->OutECX.ID()), TMP2);
-  ubfx(ARMEmitter::Size::i64Bit, GetReg(Op->OutEBX.ID()), TMP1, 32, 32);
-  ubfx(ARMEmitter::Size::i64Bit, GetReg(Op->OutEDX.ID()), TMP2, 32, 32);
+  mov(ARMEmitter::Size::i32Bit, GetReg(Op->OutEAX), TMP1);
+  mov(ARMEmitter::Size::i32Bit, GetReg(Op->OutECX), TMP2);
+  ubfx(ARMEmitter::Size::i64Bit, GetReg(Op->OutEBX), TMP1, 32, 32);
+  ubfx(ARMEmitter::Size::i64Bit, GetReg(Op->OutEDX), TMP2, 32, 32);
 }
 
 DEF_OP(XGetBV) {
@@ -458,7 +458,7 @@ DEF_OP(XGetBV) {
   PushDynamicRegs(TMP4);
   SpillStaticRegs(TMP4);
 
-  mov(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r1, GetReg(Op->Function.ID()));
+  mov(ARMEmitter::Size::i32Bit, ARMEmitter::Reg::r1, GetReg(Op->Function));
 
   // x0 = CPUID Handler
   // x1 = XCR Function
@@ -479,8 +479,8 @@ DEF_OP(XGetBV) {
   PopDynamicRegs();
 
   // Results are in x0, need to split into i32 parts
-  mov(ARMEmitter::Size::i32Bit, GetReg(Op->OutEAX.ID()), TMP1);
-  ubfx(ARMEmitter::Size::i64Bit, GetReg(Op->OutEDX.ID()), TMP1, 32, 32);
+  mov(ARMEmitter::Size::i32Bit, GetReg(Op->OutEAX), TMP1);
+  ubfx(ARMEmitter::Size::i64Bit, GetReg(Op->OutEDX), TMP1, 32, 32);
 }
 
 #undef DEF_OP

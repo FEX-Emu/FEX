@@ -102,8 +102,8 @@ DEF_OP(GetRoundingMode) {
 
 DEF_OP(SetRoundingMode) {
   auto Op = IROp->C<IR::IROp_SetRoundingMode>();
-  auto Src = GetReg(Op->RoundMode.ID());
-  auto MXCSR = GetReg(Op->MXCSR.ID());
+  auto Src = GetReg(Op->RoundMode);
+  auto MXCSR = GetReg(Op->MXCSR);
 
   // As above, setup the rounding flags in [31:30]
   rbit(ARMEmitter::Size::i32Bit, TMP2, Src);
@@ -161,7 +161,7 @@ DEF_OP(PushRoundingMode) {
 
 DEF_OP(PopRoundingMode) {
   auto Op = IROp->C<IR::IROp_PopRoundingMode>();
-  msr(ARMEmitter::SystemRegister::FPCR, GetReg(Op->FPCR.ID()));
+  msr(ARMEmitter::SystemRegister::FPCR, GetReg(Op->FPCR));
 }
 
 DEF_OP(Print) {
@@ -170,17 +170,17 @@ DEF_OP(Print) {
   PushDynamicRegs(TMP1);
   SpillStaticRegs(TMP1);
 
-  if (IsGPR(Op->Value.ID())) {
-    mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, GetReg(Op->Value.ID()));
+  if (IsGPR(Op->Value)) {
+    mov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, GetReg(Op->Value));
     ldr(ARMEmitter::XReg::x3, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.PrintValue));
   } else {
-    fmov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, GetVReg(Op->Value.ID()), false);
-    fmov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, GetVReg(Op->Value.ID()), true);
+    fmov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, GetVReg(Op->Value), false);
+    fmov(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r1, GetVReg(Op->Value), true);
     ldr(ARMEmitter::XReg::x3, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.PrintVectorValue));
   }
 
   if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-    if (IsGPR(Op->Value.ID())) {
+    if (IsGPR(Op->Value)) {
       GenerateIndirectRuntimeCall<void, uint64_t>(ARMEmitter::Reg::r3);
     } else {
       GenerateIndirectRuntimeCall<void, uint64_t, uint64_t>(ARMEmitter::Reg::r3);

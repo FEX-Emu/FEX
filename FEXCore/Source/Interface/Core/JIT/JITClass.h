@@ -81,6 +81,11 @@ private:
   }
 
   [[nodiscard]]
+  ARMEmitter::Register GetReg(IR::OrderedNodeWrapper Wrap) const {
+    return GetReg(Wrap.ID());
+  }
+
+  [[nodiscard]]
   ARMEmitter::VRegister GetVReg(IR::NodeID Node) const {
     const auto Reg = GetPhys(Node);
 
@@ -93,6 +98,11 @@ private:
     }
 
     FEX_UNREACHABLE;
+  }
+
+  [[nodiscard]]
+  ARMEmitter::VRegister GetVReg(IR::OrderedNodeWrapper Wrap) const {
+    return GetVReg(Wrap.ID());
   }
 
   [[nodiscard]]
@@ -114,7 +124,7 @@ private:
       LOGMAN_THROW_A_FMT(Const == 0, "Only valid constant");
       return ARMEmitter::Reg::zr;
     } else {
-      return GetReg(Src.ID());
+      return GetReg(Src);
     }
   }
 
@@ -227,6 +237,16 @@ private:
   bool IsFPR(IR::NodeID Node) const;
   [[nodiscard]]
   bool IsGPR(IR::NodeID Node) const;
+
+  [[nodiscard]]
+  bool IsGPR(IR::OrderedNodeWrapper Wrap) {
+    return IsGPR(Wrap.ID());
+  }
+
+  [[nodiscard]]
+  bool IsFPR(IR::OrderedNodeWrapper Wrap) {
+    return IsFPR(Wrap.ID());
+  }
 
   [[nodiscard]]
   ARMEmitter::ExtendedMemOperand GenerateMemOperand(IR::OpSize AccessSize, ARMEmitter::Register Base, IR::OrderedNodeWrapper Offset,

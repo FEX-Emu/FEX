@@ -125,7 +125,7 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       // vtmp1 (v0/v16): source
       str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
 
-      const auto Src1 = GetVReg(IROp->Args[0].ID());
+      const auto Src1 = GetVReg(IROp->Args[0]);
       fmov(VTMP1.S(), Src1.S());
 
       ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
@@ -143,7 +143,7 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       // vtmp1 (v0/v16): source
       str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
 
-      const auto Src1 = GetVReg(IROp->Args[0].ID());
+      const auto Src1 = GetVReg(IROp->Args[0]);
       fmov(VTMP1.D(), Src1.D());
 
       ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
@@ -162,7 +162,7 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       // tmp2 (x1/x11): source
       str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
 
-      const auto Src1 = GetReg(IROp->Args[0].ID());
+      const auto Src1 = GetReg(IROp->Args[0]);
 
       // Need to sign or zero extend this for the dispatcher handler.
       if (Info.ABI == FABI_F80_I16_I16_PTR) {
@@ -186,7 +186,7 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       // vtmp1 (v0/v16): source
       str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
 
-      const auto Src1 = GetVReg(IROp->Args[0].ID());
+      const auto Src1 = GetVReg(IROp->Args[0]);
       mov(VTMP1.Q(), Src1.Q());
 
       ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
@@ -204,7 +204,7 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       // vtmp1 (v0/v16): source
       str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
 
-      const auto Src1 = GetVReg(IROp->Args[0].ID());
+      const auto Src1 = GetVReg(IROp->Args[0]);
       mov(VTMP1.Q(), Src1.Q());
 
       ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
@@ -222,7 +222,7 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       // vtmp1 (v0/v16): vector source
       str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
 
-      const auto Src1 = GetVReg(IROp->Args[0].ID());
+      const auto Src1 = GetVReg(IROp->Args[0]);
       fmov(VTMP1.D(), Src1.D());
 
       ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
@@ -241,8 +241,8 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       // vtmp2 (v1/v17): vector source 2
       str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
 
-      const auto Src1 = GetVReg(IROp->Args[0].ID());
-      const auto Src2 = GetVReg(IROp->Args[1].ID());
+      const auto Src1 = GetVReg(IROp->Args[0]);
+      const auto Src2 = GetVReg(IROp->Args[1]);
 
       fmov(VTMP1.D(), Src1.D());
       fmov(VTMP2.D(), Src2.D());
@@ -262,7 +262,7 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       // vtmp1 (v0/v16): source
       str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
 
-      const auto Src1 = GetVReg(IROp->Args[0].ID());
+      const auto Src1 = GetVReg(IROp->Args[0]);
       mov(VTMP1.Q(), Src1.Q());
 
       ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
@@ -280,7 +280,7 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       // vtmp1 (v0/v16): source
       str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
 
-      const auto Src1 = GetVReg(IROp->Args[0].ID());
+      const auto Src1 = GetVReg(IROp->Args[0]);
       mov(VTMP1.Q(), Src1.Q());
 
       ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
@@ -298,7 +298,7 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       // vtmp1 (v0/v16): source
       str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
 
-      const auto Src1 = GetVReg(IROp->Args[0].ID());
+      const auto Src1 = GetVReg(IROp->Args[0]);
       mov(VTMP1.Q(), Src1.Q());
 
       ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
@@ -317,8 +317,8 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       // vtmp2 (v1/v17): vector source 2
       str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
 
-      const auto Src1 = GetVReg(IROp->Args[0].ID());
-      const auto Src2 = GetVReg(IROp->Args[1].ID());
+      const auto Src1 = GetVReg(IROp->Args[0]);
+      const auto Src2 = GetVReg(IROp->Args[1]);
       mov(VTMP1.Q(), Src1.Q());
       mov(VTMP2.Q(), Src2.Q());
 
@@ -337,7 +337,7 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       // vtmp1 (v0/v16): vector source 1
       str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
 
-      const auto Src1 = GetVReg(IROp->Args[0].ID());
+      const auto Src1 = GetVReg(IROp->Args[0]);
       mov(VTMP1.Q(), Src1.Q());
 
       ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
@@ -356,8 +356,8 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       // vtmp2 (v1/v17): vector source 2
       str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
 
-      const auto Src1 = GetVReg(IROp->Args[0].ID());
-      const auto Src2 = GetVReg(IROp->Args[1].ID());
+      const auto Src1 = GetVReg(IROp->Args[0]);
+      const auto Src2 = GetVReg(IROp->Args[1]);
 
       mov(VTMP1.Q(), Src1.Q());
       mov(VTMP2.Q(), Src2.Q());
@@ -385,16 +385,16 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
 
       stp<ARMEmitter::IndexType::PRE>(TMP1, ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
 
-      const auto SrcRAX = GetReg(Op->RAX.ID());
-      const auto SrcRDX = GetReg(Op->RDX.ID());
+      const auto SrcRAX = GetReg(Op->RAX);
+      const auto SrcRDX = GetReg(Op->RDX);
       const auto Control = Op->Control;
 
       mov(TMP1, SrcRAX.X());
       mov(TMP2, SrcRDX.X());
       movz(ARMEmitter::Size::i32Bit, TMP3, Control);
 
-      const auto Src1 = GetVReg(Op->LHS.ID());
-      const auto Src2 = GetVReg(Op->RHS.ID());
+      const auto Src1 = GetVReg(Op->LHS);
+      const auto Src2 = GetVReg(Op->RHS);
 
       mov(VTMP1.Q(), Src1.Q());
       mov(VTMP2.Q(), Src2.Q());
@@ -414,8 +414,8 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
       const auto Op = IROp->C<IR::IROp_VPCMPISTRX>();
       str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
 
-      const auto Src1 = GetVReg(Op->LHS.ID());
-      const auto Src2 = GetVReg(Op->RHS.ID());
+      const auto Src1 = GetVReg(Op->LHS);
+      const auto Src2 = GetVReg(Op->RHS);
       const auto Control = Op->Control;
 
       mov(VTMP1.Q(), Src1.Q());

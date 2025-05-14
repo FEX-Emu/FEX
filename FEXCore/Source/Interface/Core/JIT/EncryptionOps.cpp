@@ -12,7 +12,7 @@ namespace FEXCore::CPU {
 
 DEF_OP(VAESImc) {
   auto Op = IROp->C<IR::IROp_VAESImc>();
-  aesimc(GetVReg(Node), GetVReg(Op->Vector.ID()));
+  aesimc(GetVReg(Node), GetVReg(Op->Vector));
 }
 
 DEF_OP(VAESEnc) {
@@ -20,9 +20,9 @@ DEF_OP(VAESEnc) {
   [[maybe_unused]] const auto OpSize = IROp->Size;
 
   const auto Dst = GetVReg(Node);
-  const auto Key = GetVReg(Op->Key.ID());
-  const auto State = GetVReg(Op->State.ID());
-  const auto ZeroReg = GetVReg(Op->ZeroReg.ID());
+  const auto Key = GetVReg(Op->Key);
+  const auto State = GetVReg(Op->State);
+  const auto ZeroReg = GetVReg(Op->ZeroReg);
 
   LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i128Bit, "Currently only supports 128-bit operations.");
 
@@ -45,9 +45,9 @@ DEF_OP(VAESEncLast) {
   [[maybe_unused]] const auto OpSize = IROp->Size;
 
   const auto Dst = GetVReg(Node);
-  const auto Key = GetVReg(Op->Key.ID());
-  const auto State = GetVReg(Op->State.ID());
-  const auto ZeroReg = GetVReg(Op->ZeroReg.ID());
+  const auto Key = GetVReg(Op->Key);
+  const auto State = GetVReg(Op->State);
+  const auto ZeroReg = GetVReg(Op->ZeroReg);
 
   LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i128Bit, "Currently only supports 128-bit operations.");
 
@@ -68,9 +68,9 @@ DEF_OP(VAESDec) {
   [[maybe_unused]] const auto OpSize = IROp->Size;
 
   const auto Dst = GetVReg(Node);
-  const auto Key = GetVReg(Op->Key.ID());
-  const auto State = GetVReg(Op->State.ID());
-  const auto ZeroReg = GetVReg(Op->ZeroReg.ID());
+  const auto Key = GetVReg(Op->Key);
+  const auto State = GetVReg(Op->State);
+  const auto ZeroReg = GetVReg(Op->ZeroReg);
 
   LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i128Bit, "Currently only supports 128-bit operations.");
 
@@ -93,9 +93,9 @@ DEF_OP(VAESDecLast) {
   [[maybe_unused]] const auto OpSize = IROp->Size;
 
   const auto Dst = GetVReg(Node);
-  const auto Key = GetVReg(Op->Key.ID());
-  const auto State = GetVReg(Op->State.ID());
-  const auto ZeroReg = GetVReg(Op->ZeroReg.ID());
+  const auto Key = GetVReg(Op->Key);
+  const auto State = GetVReg(Op->State);
+  const auto ZeroReg = GetVReg(Op->ZeroReg);
 
   LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i128Bit, "Currently only supports 128-bit operations.");
 
@@ -114,9 +114,9 @@ DEF_OP(VAESDecLast) {
 DEF_OP(VAESKeyGenAssist) {
   auto Op = IROp->C<IR::IROp_VAESKeyGenAssist>();
   const auto Dst = GetVReg(Node);
-  const auto Src = GetVReg(Op->Src.ID());
-  const auto Swizzle = GetVReg(Op->KeyGenTBLSwizzle.ID());
-  auto ZeroReg = GetVReg(Op->ZeroReg.ID());
+  const auto Src = GetVReg(Op->Src);
+  const auto Swizzle = GetVReg(Op->KeyGenTBLSwizzle);
+  auto ZeroReg = GetVReg(Op->ZeroReg);
 
   if (Dst == ZeroReg) {
     // Seriously? ZeroReg ended up being the destination register?
@@ -148,8 +148,8 @@ DEF_OP(CRC32) {
   auto Op = IROp->C<IR::IROp_CRC32>();
 
   const auto Dst = GetReg(Node);
-  const auto Src1 = GetReg(Op->Src1.ID());
-  const auto Src2 = GetReg(Op->Src2.ID());
+  const auto Src1 = GetReg(Op->Src1);
+  const auto Src2 = GetReg(Op->Src2);
 
   switch (Op->SrcSize) {
   case IR::OpSize::i8Bit: crc32cb(Dst.W(), Src1.W(), Src2.W()); break;
@@ -164,7 +164,7 @@ DEF_OP(VSha1H) {
   auto Op = IROp->C<IR::IROp_VSha1H>();
 
   const auto Dst = GetVReg(Node);
-  const auto Src = GetVReg(Op->Src.ID());
+  const auto Src = GetVReg(Op->Src);
 
   sha1h(Dst.S(), Src.S());
 }
@@ -173,9 +173,9 @@ DEF_OP(VSha1C) {
   auto Op = IROp->C<IR::IROp_VSha1C>();
 
   const auto Dst = GetVReg(Node);
-  const auto Src1 = GetVReg(Op->Src1.ID());
-  const auto Src2 = GetVReg(Op->Src2.ID());
-  const auto Src3 = GetVReg(Op->Src3.ID());
+  const auto Src1 = GetVReg(Op->Src1);
+  const auto Src2 = GetVReg(Op->Src2);
+  const auto Src3 = GetVReg(Op->Src3);
 
   if (Dst == Src1) {
     sha1c(Dst, Src2.S(), Src3);
@@ -193,9 +193,9 @@ DEF_OP(VSha1M) {
   auto Op = IROp->C<IR::IROp_VSha1M>();
 
   const auto Dst = GetVReg(Node);
-  const auto Src1 = GetVReg(Op->Src1.ID());
-  const auto Src2 = GetVReg(Op->Src2.ID());
-  const auto Src3 = GetVReg(Op->Src3.ID());
+  const auto Src1 = GetVReg(Op->Src1);
+  const auto Src2 = GetVReg(Op->Src2);
+  const auto Src3 = GetVReg(Op->Src3);
 
   if (Dst == Src1) {
     sha1m(Dst, Src2.S(), Src3);
@@ -213,9 +213,9 @@ DEF_OP(VSha1P) {
   auto Op = IROp->C<IR::IROp_VSha1P>();
 
   const auto Dst = GetVReg(Node);
-  const auto Src1 = GetVReg(Op->Src1.ID());
-  const auto Src2 = GetVReg(Op->Src2.ID());
-  const auto Src3 = GetVReg(Op->Src3.ID());
+  const auto Src1 = GetVReg(Op->Src1);
+  const auto Src2 = GetVReg(Op->Src2);
+  const auto Src3 = GetVReg(Op->Src3);
 
   if (Dst == Src1) {
     sha1p(Dst, Src2.S(), Src3);
@@ -233,8 +233,8 @@ DEF_OP(VSha1SU1) {
   auto Op = IROp->C<IR::IROp_VSha1SU1>();
 
   const auto Dst = GetVReg(Node);
-  const auto Src1 = GetVReg(Op->Src1.ID());
-  const auto Src2 = GetVReg(Op->Src2.ID());
+  const auto Src1 = GetVReg(Op->Src1);
+  const auto Src2 = GetVReg(Op->Src2);
 
   if (Dst == Src1) {
     sha1su1(Dst, Src2);
@@ -252,9 +252,9 @@ DEF_OP(VSha256H) {
   auto Op = IROp->C<IR::IROp_VSha256H>();
 
   const auto Dst = GetVReg(Node);
-  const auto Src1 = GetVReg(Op->Src1.ID());
-  const auto Src2 = GetVReg(Op->Src2.ID());
-  const auto Src3 = GetVReg(Op->Src3.ID());
+  const auto Src1 = GetVReg(Op->Src1);
+  const auto Src2 = GetVReg(Op->Src2);
+  const auto Src3 = GetVReg(Op->Src3);
 
   if (Dst == Src1) {
     sha256h(Dst, Src2, Src3);
@@ -272,9 +272,9 @@ DEF_OP(VSha256H2) {
   auto Op = IROp->C<IR::IROp_VSha256H2>();
 
   const auto Dst = GetVReg(Node);
-  const auto Src1 = GetVReg(Op->Src1.ID());
-  const auto Src2 = GetVReg(Op->Src2.ID());
-  const auto Src3 = GetVReg(Op->Src3.ID());
+  const auto Src1 = GetVReg(Op->Src1);
+  const auto Src2 = GetVReg(Op->Src2);
+  const auto Src3 = GetVReg(Op->Src3);
 
   if (Dst == Src1) {
     sha256h2(Dst, Src2, Src3);
@@ -292,8 +292,8 @@ DEF_OP(VSha256U0) {
   auto Op = IROp->C<IR::IROp_VSha256U0>();
 
   const auto Dst = GetVReg(Node);
-  const auto Src1 = GetVReg(Op->Src1.ID());
-  const auto Src2 = GetVReg(Op->Src2.ID());
+  const auto Src1 = GetVReg(Op->Src1);
+  const auto Src2 = GetVReg(Op->Src2);
 
   if (Dst == Src1) {
     sha256su0(Dst, Src2);
@@ -308,8 +308,8 @@ DEF_OP(VSha256U1) {
   auto Op = IROp->C<IR::IROp_VSha256U1>();
 
   const auto Dst = GetVReg(Node);
-  const auto Src1 = GetVReg(Op->Src1.ID());
-  const auto Src2 = GetVReg(Op->Src2.ID());
+  const auto Src1 = GetVReg(Op->Src1);
+  const auto Src2 = GetVReg(Op->Src2);
 
   if (Dst != Src1 && Dst != Src2) {
     movi(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), 0);
@@ -326,8 +326,8 @@ DEF_OP(PCLMUL) {
   [[maybe_unused]] const auto OpSize = IROp->Size;
 
   const auto Dst = GetVReg(Node);
-  const auto Src1 = GetVReg(Op->Src1.ID());
-  const auto Src2 = GetVReg(Op->Src2.ID());
+  const auto Src1 = GetVReg(Op->Src1);
+  const auto Src2 = GetVReg(Op->Src2);
 
   LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i128Bit, "Currently only supports 128-bit operations.");
 
