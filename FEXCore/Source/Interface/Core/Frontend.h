@@ -87,7 +87,7 @@ private:
 
   static constexpr size_t DefaultDecodedBufferSize = 0x10000;
   FEXCore::X86Tables::DecodedInst* DecodedBuffer {};
-  Utils::FixedSizePooledAllocation<FEXCore::X86Tables::DecodedInst*, 5000, 500> PoolObject;
+  Utils::PoolBufferWithTimedRetirement<FEXCore::X86Tables::DecodedInst*, 5000, 500> PoolObject;
   size_t DecodedSize {};
 
   const uint8_t* InstStream {};

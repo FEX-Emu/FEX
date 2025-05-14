@@ -24,7 +24,7 @@ namespace FEXCore::Utils {
  *       - This is relatively cheap.
  *     - `Unclaim` when the buffer won't be used again for an extended period.
  *       - This is expensive and requires a mutex shared between threads
- *     - `FixedSizePooledAllocation` helper class provided to help with this.
+ *     - `PoolBufferWithTimedRetirement` helper class provided to help with this.
  *
  * Once the client has disowned a buffer then the allocator is free to reclaim the buffer when another thread is trying to `Claim` a new buffer.
  * The buffer getting claimed from a disowned client must have had its last use greater than the defined `DURATION` before it has a chance to get
@@ -431,7 +431,7 @@ private:
  *    - Frees stale buffers opportunistically
  */
 template<typename Type, size_t PeriodMS, size_t PeriodFrequency>
-class FixedSizePooledAllocation final {
+class PoolBufferWithTimedRetirement final {
   // If the delayed object reclaimer is more than the thread pool allocator's duration then the pool allocator would always need to reclaim
   // the buffer rather than giving it back.
   static_assert(std::chrono::duration(std::chrono::milliseconds(PeriodMS)) <= IntrusivePooledAllocator::DURATION, "DeplayedObjectReclaimer "
@@ -441,7 +441,7 @@ class FixedSizePooledAllocation final {
                                                                                                                   "duration");
 
 public:
-  FixedSizePooledAllocation(IntrusivePooledAllocator& Allocator, size_t Size)
+  PoolBufferWithTimedRetirement(IntrusivePooledAllocator& Allocator, size_t Size)
     : ThreadAllocator {Allocator}
     , Size {Size} {}
 
