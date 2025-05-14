@@ -149,6 +149,30 @@ public:
   }
 
   /**
+   * @brief Try to reown a buffer that was previously disowned
+   *
+   * @param Buffer - The buffer we previously disowned
+   * @param Size - The size of the buffer
+   * @param CurrentClientFlag - The client tracked flag
+   *
+   * Once DisownBuffer has been called, it is unsafe to use the buffer until it has been reowned
+   * Always reown a buffer before use!
+   *
+   * @return The original buffer passed in on successful reown, otherwise std::nullopt
+   */
+  std::optional<ContainerType::iterator> TryToReownBuffer(const ContainerType::iterator& Buffer, size_t Size, BufferOwnedFlag* CurrentClientFlag) {
+    ClientFlags Expected = ClientFlags::FLAG_DISOWNED;
+    if (!CurrentClientFlag->compare_exchange_strong(Expected, ClientFlags::FLAG_OWNED)) {
+      return std::nullopt;
+    }
+
+    // If we managed to change the flag from DISOWNED to OWNED then we have successfully reclaimed
+    // Finish setting up state
+    (*Buffer)->LastUsed.store(ClockType::now(), std::memory_order_relaxed);
+    return Buffer;
+  }
+
+  /**
    * @brief Try to reown a buffer that was previously disowned, failing that, claim a new buffer
    *
    * @param Buffer - The buffer we previously disowned
@@ -161,12 +185,9 @@ public:
    * @return The original buffer passed in on successful reown, otherwise a new buffer
    */
   ContainerType::iterator ReownOrClaimBuffer(const ContainerType::iterator& Buffer, size_t Size, BufferOwnedFlag* CurrentClientFlag) {
-    ClientFlags Expected = ClientFlags::FLAG_DISOWNED;
-    if (CurrentClientFlag->compare_exchange_strong(Expected, ClientFlags::FLAG_OWNED)) {
-      // If we managed to change the flag from DISOWNED to OWNED then we have successfully reclaimed
-      // Finish setting up state
-      (*Buffer)->LastUsed.store(ClockType::now(), std::memory_order_relaxed);
-      return Buffer;
+    auto Reowned = TryToReownBuffer(Buffer, Size, CurrentClientFlag);
+    if (Reowned) {
+      return Reowned.value();
     }
 
     // Couldn't reclaim, just get a new buffer
