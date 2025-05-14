@@ -88,7 +88,7 @@ DEF_OP(CycleCounter) {
 DEF_OP(AddShift) {
   auto Op = IROp->C<IR::IROp_AddShift>();
 
-  add(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src1), GetReg(Op->Src2.ID()), ConvertIRShiftType(Op->Shift), Op->ShiftAmount);
+  add(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src1), GetReg(Op->Src2), ConvertIRShiftType(Op->Shift), Op->ShiftAmount);
 }
 
 DEF_OP(AddNZCV) {
@@ -114,7 +114,7 @@ DEF_OP(AddNZCV) {
 DEF_OP(AdcNZCV) {
   auto Op = IROp->C<IR::IROp_AdcNZCV>();
 
-  adcs(ConvertSize48(IROp), ARMEmitter::Reg::zr, GetReg(Op->Src1), GetReg(Op->Src2.ID()));
+  adcs(ConvertSize48(IROp), ARMEmitter::Reg::zr, GetReg(Op->Src1), GetReg(Op->Src2));
 }
 
 DEF_OP(AdcWithFlags) {
@@ -147,13 +147,13 @@ DEF_OP(Adc) {
 DEF_OP(SbbWithFlags) {
   auto Op = IROp->C<IR::IROp_SbbWithFlags>();
 
-  sbcs(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src1), GetReg(Op->Src2.ID()));
+  sbcs(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src1), GetReg(Op->Src2));
 }
 
 DEF_OP(SbbNZCV) {
   auto Op = IROp->C<IR::IROp_SbbNZCV>();
 
-  sbcs(ConvertSize48(IROp), ARMEmitter::Reg::zr, GetReg(Op->Src1), GetReg(Op->Src2.ID()));
+  sbcs(ConvertSize48(IROp), ARMEmitter::Reg::zr, GetReg(Op->Src1), GetReg(Op->Src2));
 }
 
 DEF_OP(Sbb) {
@@ -225,7 +225,7 @@ DEF_OP(TestZ) {
 DEF_OP(SubShift) {
   auto Op = IROp->C<IR::IROp_SubShift>();
 
-  sub(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src1), GetReg(Op->Src2.ID()), ConvertIRShiftType(Op->Shift), Op->ShiftAmount);
+  sub(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src1), GetReg(Op->Src2), ConvertIRShiftType(Op->Shift), Op->ShiftAmount);
 }
 
 DEF_OP(SubNZCV) {
@@ -264,8 +264,8 @@ DEF_OP(CmpPairZ) {
   mrs(TMP1, ARMEmitter::SystemRegister::NZCV);
 
   // Compare, setting Z and clobbering NzCV
-  cmp(EmitSize, GetReg(Op->Src1Lo), GetReg(Op->Src2Lo.ID()));
-  ccmp(EmitSize, GetReg(Op->Src1Hi), GetReg(Op->Src2Hi.ID()), ARMEmitter::StatusFlags::None, ARMEmitter::Condition::CC_EQ);
+  cmp(EmitSize, GetReg(Op->Src1Lo), GetReg(Op->Src2Lo));
+  ccmp(EmitSize, GetReg(Op->Src1Hi), GetReg(Op->Src2Hi), ARMEmitter::StatusFlags::None, ARMEmitter::Condition::CC_EQ);
 
   // Restore NzCV
   if (CTX->HostFeatures.SupportsFlagM) {
@@ -384,23 +384,23 @@ DEF_OP(Neg) {
 DEF_OP(Mul) {
   auto Op = IROp->C<IR::IROp_Mul>();
 
-  mul(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src1), GetReg(Op->Src2.ID()));
+  mul(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src1), GetReg(Op->Src2));
 }
 
 DEF_OP(UMul) {
   auto Op = IROp->C<IR::IROp_UMul>();
 
-  mul(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src1), GetReg(Op->Src2.ID()));
+  mul(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src1), GetReg(Op->Src2));
 }
 
 DEF_OP(UMull) {
   auto Op = IROp->C<IR::IROp_UMull>();
-  umull(GetReg(Node).X(), GetReg(Op->Src1).W(), GetReg(Op->Src2.ID()).W());
+  umull(GetReg(Node).X(), GetReg(Op->Src1).W(), GetReg(Op->Src2).W());
 }
 
 DEF_OP(SMull) {
   auto Op = IROp->C<IR::IROp_SMull>();
-  smull(GetReg(Node).X(), GetReg(Op->Src1).W(), GetReg(Op->Src2.ID()).W());
+  smull(GetReg(Node).X(), GetReg(Op->Src1).W(), GetReg(Op->Src2).W());
 }
 
 DEF_OP(Div) {
@@ -636,13 +636,13 @@ DEF_OP(AndWithFlags) {
 DEF_OP(XorShift) {
   auto Op = IROp->C<IR::IROp_XorShift>();
 
-  eor(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src1), GetReg(Op->Src2.ID()), ConvertIRShiftType(Op->Shift), Op->ShiftAmount);
+  eor(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src1), GetReg(Op->Src2), ConvertIRShiftType(Op->Shift), Op->ShiftAmount);
 }
 
 DEF_OP(XornShift) {
   auto Op = IROp->C<IR::IROp_XornShift>();
 
-  eon(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src1), GetReg(Op->Src2.ID()), ConvertIRShiftType(Op->Shift), Op->ShiftAmount);
+  eon(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src1), GetReg(Op->Src2), ConvertIRShiftType(Op->Shift), Op->ShiftAmount);
 }
 
 DEF_OP(Ashr) {
@@ -1508,7 +1508,7 @@ DEF_OP(Select) {
       cset(EmitSize, Dst, cc);
     }
   } else {
-    csel(EmitSize, Dst, GetReg(Op->TrueVal), GetReg(Op->FalseVal.ID()), cc);
+    csel(EmitSize, Dst, GetReg(Op->TrueVal), GetReg(Op->FalseVal), cc);
   }
 }
 
@@ -1546,7 +1546,7 @@ DEF_OP(NZCVSelectV) {
 
   auto cc = MapCC(Op->Cond);
   const auto SubRegSize = ConvertSubRegSizePair248(IROp);
-  fcsel(SubRegSize.Scalar, GetVReg(Node), GetVReg(Op->TrueVal), GetVReg(Op->FalseVal.ID()), cc);
+  fcsel(SubRegSize.Scalar, GetVReg(Node), GetVReg(Op->TrueVal), GetVReg(Op->FalseVal), cc);
 }
 
 DEF_OP(NZCVSelectIncrement) {

@@ -27,7 +27,7 @@ DEF_OP(RMWHandle) {
 
 DEF_OP(Swap1) {
   auto Op = IROp->C<IR::IROp_Swap1>();
-  auto A = GetReg(Op->A), B = GetReg(Op->B.ID());
+  auto A = GetReg(Op->A), B = GetReg(Op->B);
   LOGMAN_THROW_A_FMT(B == GetReg(Node), "Invariant");
 
   mov(ARMEmitter::Size::i64Bit, TMP1, A);
