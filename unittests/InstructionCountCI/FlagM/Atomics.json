@@ -1241,8 +1241,8 @@
       "Comment": "GROUP1 0x81 /6",
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
-        "ldeoral w20, w21, [x4]",
-        "eor w26, w21, w20",
+        "ldeoral w20, w20, [x4]",
+        "mvn w26, w20",
         "cmp w26, #0x0 (0)"
       ]
     },
