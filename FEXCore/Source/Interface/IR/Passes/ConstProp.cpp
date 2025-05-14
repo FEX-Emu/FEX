@@ -334,19 +334,25 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
       IREmit->SetWriteCursor(CodeNode);
       IREmit->ReplaceAllUsesWith(CodeNode, IREmit->_Constant(0));
     } else {
-      // XOR with zero results in the nonzero source
       bool Replaced = false;
       for (unsigned i = 0; i < 2; ++i) {
         if (!IREmit->IsValueConstant(IROp->Args[i], &Constant1)) {
           continue;
         }
 
-        if (Constant1 != 0) {
+        if (Constant1 == 0) {
+          // XOR with zero results in the nonzero source
+          IREmit->SetWriteCursor(CodeNode);
+          ReplaceWithSource(IREmit, CurrentIR, CodeNode, IROp, 1 - i);
+        } else if ((Constant1 & getMask(IROp)) == getMask(IROp)) {
+          // XOR with all-one results in a bit flip of the other source
+          IREmit->SetWriteCursor(CodeNode);
+          auto Not = IREmit->_Not(IROp->Size, CurrentIR.GetNode(IROp->Args[1 - i]));
+          IREmit->ReplaceAllUsesWith(CodeNode, Not);
+        } else {
           continue;
         }
 
-        IREmit->SetWriteCursor(CodeNode);
-        ReplaceWithSource(IREmit, CurrentIR, CodeNode, IROp, 1 - i);
         Replaced = true;
         break;
       }
