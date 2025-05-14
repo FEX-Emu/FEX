@@ -1591,21 +1591,19 @@
       ]
     },
     "xor eax, -1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "0x35",
       "ExpectedArm64ASM": [
-        "mov w20, #0xffffffff",
-        "eor w26, w4, w20",
+        "mvn w26, w4",
         "cmp w26, #0x0 (0)",
         "mov x4, x26"
       ]
     },
     "xor rax, -1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 3,
       "Comment": "0x35",
       "ExpectedArm64ASM": [
-        "mov x20, #0xffffffffffffffff",
-        "eor x26, x4, x20",
+        "mvn x26, x4",
         "cmp x26, #0x0 (0)",
         "mov x4, x26"
       ]
