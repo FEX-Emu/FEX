@@ -24,7 +24,7 @@ namespace FEXCore::Utils {
  *       - This is relatively cheap.
  *     - `Unclaim` when the buffer won't be used again for an extended period.
  *       - This is expensive and requires a mutex shared between threads
- *     - `FixedSizePooledAllocation` helper class provided to help with this.
+ *     - `PoolBufferWithTimedRetirement` helper class provided to help with this.
  *
  * Once the client has disowned a buffer then the allocator is free to reclaim the buffer when another thread is trying to `Claim` a new buffer.
  * The buffer getting claimed from a disowned client must have had its last use greater than the defined `DURATION` before it has a chance to get
@@ -149,24 +149,45 @@ public:
   }
 
   /**
-   * @brief Try to reown a buffer that we have previous disowned, failing that, claim a new buffer
+   * @brief Try to reown a buffer that was previously disowned
    *
    * @param Buffer - The buffer we previously disowned
    * @param Size - The size of the buffer
    * @param CurrentClientFlag - The client tracked flag
    *
-   * Once a DisownBuffer has been called, it is unsafe to use the buffer until it has been reowned
-   * Always Reown a buffer after disowning it before use!
+   * Once DisownBuffer has been called, it is unsafe to use the buffer until it has been reowned
+   * Always reown a buffer before use!
    *
-   * @return Either the original buffer passed in if we managed to reclaim, or a new buffer if we couldn't
+   * @return The original buffer passed in on successful reown, otherwise std::nullopt
+   */
+  std::optional<ContainerType::iterator> TryToReownBuffer(const ContainerType::iterator& Buffer, size_t Size, BufferOwnedFlag* CurrentClientFlag) {
+    ClientFlags Expected = ClientFlags::FLAG_DISOWNED;
+    if (!CurrentClientFlag->compare_exchange_strong(Expected, ClientFlags::FLAG_OWNED)) {
+      return std::nullopt;
+    }
+
+    // If we managed to change the flag from DISOWNED to OWNED then we have successfully reclaimed
+    // Finish setting up state
+    (*Buffer)->LastUsed.store(ClockType::now(), std::memory_order_relaxed);
+    return Buffer;
+  }
+
+  /**
+   * @brief Try to reown a buffer that was previously disowned, failing that, claim a new buffer
+   *
+   * @param Buffer - The buffer we previously disowned
+   * @param Size - The size of the buffer
+   * @param CurrentClientFlag - The client tracked flag
+   *
+   * Once DisownBuffer has been called, it is unsafe to use the buffer until it has been reowned
+   * Always reown a buffer before use!
+   *
+   * @return The original buffer passed in on successful reown, otherwise a new buffer
    */
   ContainerType::iterator ReownOrClaimBuffer(const ContainerType::iterator& Buffer, size_t Size, BufferOwnedFlag* CurrentClientFlag) {
-    ClientFlags Expected = ClientFlags::FLAG_DISOWNED;
-    if (CurrentClientFlag->compare_exchange_strong(Expected, ClientFlags::FLAG_OWNED)) {
-      // If we managed to change the flag from DISOWNED to OWNED then we have successfully reclaimed
-      // Finish setting up state
-      (*Buffer)->LastUsed.store(ClockType::now(), std::memory_order_relaxed);
-      return Buffer;
+    auto Reowned = TryToReownBuffer(Buffer, Size, CurrentClientFlag);
+    if (Reowned) {
+      return Reowned.value();
     }
 
     // Couldn't reclaim, just get a new buffer
@@ -410,7 +431,7 @@ private:
  *    - Frees stale buffers opportunistically
  */
 template<typename Type, size_t PeriodMS, size_t PeriodFrequency>
-class FixedSizePooledAllocation final {
+class PoolBufferWithTimedRetirement final {
   // If the delayed object reclaimer is more than the thread pool allocator's duration then the pool allocator would always need to reclaim
   // the buffer rather than giving it back.
   static_assert(std::chrono::duration(std::chrono::milliseconds(PeriodMS)) <= IntrusivePooledAllocator::DURATION, "DeplayedObjectReclaimer "
@@ -420,23 +441,38 @@ class FixedSizePooledAllocation final {
                                                                                                                   "duration");
 
 public:
-  FixedSizePooledAllocation(IntrusivePooledAllocator& Allocator, size_t Size)
+  PoolBufferWithTimedRetirement(IntrusivePooledAllocator& Allocator, size_t Size)
     : ThreadAllocator {Allocator}
     , Size {Size} {}
 
   /**
    * @brief Return the owned buffer or allocate another one from the `Allocator`
    *
-   * The buffer returned isn't guaranteed to be the exact size of `Size` but it will be at least `Size`.
-   * The contents of the memory returned isn't guaranteed to be zero initialized or not.
-   * Not even guaranteed to contain the previous data from the previous reowning if the pointer is the same.
+   * The buffer is guaranteed to have at least `Size` bytes of data.
+   * The initial data in the buffer is undefined, even when the buffer is just reowned.
    *
-   * @return object of type `Type` allocated with at least the size of `Size` from the constructor
+   * @param NewSize Optional new size for managed data
+   *
+   * @return object of type `Type` allocated within the selected buffer
    */
-  Type ReownOrClaimBuffer() {
-    if (!FEXCore::Utils::IntrusivePooledAllocator::IsClientBufferOwned(ClientOwnedFlag)) {
-      Info = ThreadAllocator.ReownOrClaimBuffer(Info, Size, &ClientOwnedFlag);
+  Type ReownOrClaimBuffer(std::optional<size_t> NewSize = std::nullopt) {
+    // Check if we can cheaply re-own a previous buffer
+    std::optional Buffer =
+      IntrusivePooledAllocator::IsClientBufferOwned(ClientOwnedFlag) ? Info : ThreadAllocator.TryToReownBuffer(Info, Size, &ClientOwnedFlag);
+
+    // Ensure the now owned buffer has enough space. If not, unclaim it and proceed to claim a new one
+    if (NewSize && Buffer && (**Buffer)->Size < NewSize.value()) {
+      UnclaimBuffer();
+      Buffer.reset();
     }
+
+    // Claim a new buffer if needed
+    Size = NewSize.value_or(Size);
+    if (!Buffer) {
+      Buffer = ThreadAllocator.ClaimBuffer(Size, &ClientOwnedFlag);
+    }
+
+    Info = *Buffer;
 
     // Putting a memset here is very handy for using thread sanitizer to find buffer usage races
     // Leaving this here for future excavation that will definitely occur here
