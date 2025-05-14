@@ -124,7 +124,7 @@ private:
       LOGMAN_THROW_A_FMT(Const == 0, "Only valid constant");
       return ARMEmitter::Reg::zr;
     } else {
-      return GetReg(Src.ID());
+      return GetReg(Src);
     }
   }
 

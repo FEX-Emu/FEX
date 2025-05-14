@@ -15,13 +15,13 @@ DEF_OP(CASPair) {
   auto Op = IROp->C<IR::IROp_CASPair>();
   LOGMAN_THROW_A_FMT(IROp->ElementSize == IR::OpSize::i32Bit || IROp->ElementSize == IR::OpSize::i64Bit, "Wrong element size");
   // Size is the size of each pair element
-  auto Dst0 = GetReg(Op->OutLo.ID());
-  auto Dst1 = GetReg(Op->OutHi.ID());
-  auto Expected0 = GetReg(Op->ExpectedLo.ID());
-  auto Expected1 = GetReg(Op->ExpectedHi.ID());
-  auto Desired0 = GetReg(Op->DesiredLo.ID());
-  auto Desired1 = GetReg(Op->DesiredHi.ID());
-  auto MemSrc = GetReg(Op->Addr.ID());
+  auto Dst0 = GetReg(Op->OutLo);
+  auto Dst1 = GetReg(Op->OutHi);
+  auto Expected0 = GetReg(Op->ExpectedLo);
+  auto Expected1 = GetReg(Op->ExpectedHi);
+  auto Desired0 = GetReg(Op->DesiredLo);
+  auto Desired1 = GetReg(Op->DesiredHi);
+  auto MemSrc = GetReg(Op->Addr);
 
   const auto EmitSize = IROp->ElementSize == IR::OpSize::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
   if (CTX->HostFeatures.SupportsAtomics) {
@@ -98,9 +98,9 @@ DEF_OP(CAS) {
   // if (DataSrc == Src3) { *Src1 == Src2; } Src2 = DataSrc
   // This will write to memory! Careful!
 
-  auto Expected = GetReg(Op->Expected.ID());
-  auto Desired = GetReg(Op->Desired.ID());
-  auto MemSrc = GetReg(Op->Addr.ID());
+  auto Expected = GetReg(Op->Expected);
+  auto Desired = GetReg(Op->Desired);
+  auto MemSrc = GetReg(Op->Addr);
   auto Dst = GetReg(Node);
 
   if (CTX->HostFeatures.SupportsAtomics) {
@@ -144,8 +144,8 @@ DEF_OP(AtomicAdd) {
   const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
-  auto MemSrc = GetReg(Op->Addr.ID());
-  auto Src = GetReg(Op->Value.ID());
+  auto MemSrc = GetReg(Op->Addr);
+  auto Src = GetReg(Op->Value);
 
   if (CTX->HostFeatures.SupportsAtomics) {
     staddl(SubEmitSize, Src, MemSrc);
@@ -164,8 +164,8 @@ DEF_OP(AtomicSub) {
   const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
-  auto MemSrc = GetReg(Op->Addr.ID());
-  auto Src = GetReg(Op->Value.ID());
+  auto MemSrc = GetReg(Op->Addr);
+  auto Src = GetReg(Op->Value);
 
   if (CTX->HostFeatures.SupportsAtomics) {
     neg(EmitSize, TMP2, Src);
@@ -185,8 +185,8 @@ DEF_OP(AtomicAnd) {
   const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
-  auto MemSrc = GetReg(Op->Addr.ID());
-  auto Src = GetReg(Op->Value.ID());
+  auto MemSrc = GetReg(Op->Addr);
+  auto Src = GetReg(Op->Value);
 
   if (CTX->HostFeatures.SupportsAtomics) {
     mvn(EmitSize, TMP2, Src);
@@ -206,8 +206,8 @@ DEF_OP(AtomicCLR) {
   const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
-  auto MemSrc = GetReg(Op->Addr.ID());
-  auto Src = GetReg(Op->Value.ID());
+  auto MemSrc = GetReg(Op->Addr);
+  auto Src = GetReg(Op->Value);
 
   if (CTX->HostFeatures.SupportsAtomics) {
     stclrl(SubEmitSize, Src, MemSrc);
@@ -226,8 +226,8 @@ DEF_OP(AtomicOr) {
   const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
-  auto MemSrc = GetReg(Op->Addr.ID());
-  auto Src = GetReg(Op->Value.ID());
+  auto MemSrc = GetReg(Op->Addr);
+  auto Src = GetReg(Op->Value);
 
   if (CTX->HostFeatures.SupportsAtomics) {
     stsetl(SubEmitSize, Src, MemSrc);
@@ -246,8 +246,8 @@ DEF_OP(AtomicXor) {
   const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
-  auto MemSrc = GetReg(Op->Addr.ID());
-  auto Src = GetReg(Op->Value.ID());
+  auto MemSrc = GetReg(Op->Addr);
+  auto Src = GetReg(Op->Value);
 
   if (CTX->HostFeatures.SupportsAtomics) {
     steorl(SubEmitSize, Src, MemSrc);
@@ -266,7 +266,7 @@ DEF_OP(AtomicNeg) {
   const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
-  auto MemSrc = GetReg(Op->Addr.ID());
+  auto MemSrc = GetReg(Op->Addr);
 
   ARMEmitter::BackwardLabel LoopTop;
   Bind(&LoopTop);
@@ -284,8 +284,8 @@ DEF_OP(AtomicSwap) {
                                                                                                                                  "d CAS "
                                                                                                                                  "size");
 
-  auto MemSrc = GetReg(Op->Addr.ID());
-  auto Src = GetReg(Op->Value.ID());
+  auto MemSrc = GetReg(Op->Addr);
+  auto Src = GetReg(Op->Value);
 
   const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = OpSize == IR::OpSize::i64Bit ? ARMEmitter::SubRegSize::i64Bit :
@@ -310,8 +310,8 @@ DEF_OP(AtomicFetchAdd) {
   const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
-  auto MemSrc = GetReg(Op->Addr.ID());
-  auto Src = GetReg(Op->Value.ID());
+  auto MemSrc = GetReg(Op->Addr);
+  auto Src = GetReg(Op->Value);
 
   if (CTX->HostFeatures.SupportsAtomics) {
     ldaddal(SubEmitSize, Src, GetReg(Node), MemSrc);
@@ -331,8 +331,8 @@ DEF_OP(AtomicFetchSub) {
   const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
-  auto MemSrc = GetReg(Op->Addr.ID());
-  auto Src = GetReg(Op->Value.ID());
+  auto MemSrc = GetReg(Op->Addr);
+  auto Src = GetReg(Op->Value);
 
   if (CTX->HostFeatures.SupportsAtomics) {
     neg(EmitSize, TMP2, Src);
@@ -353,8 +353,8 @@ DEF_OP(AtomicFetchAnd) {
   const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
-  auto MemSrc = GetReg(Op->Addr.ID());
-  auto Src = GetReg(Op->Value.ID());
+  auto MemSrc = GetReg(Op->Addr);
+  auto Src = GetReg(Op->Value);
 
   if (CTX->HostFeatures.SupportsAtomics) {
     mvn(EmitSize, TMP2, Src);
@@ -375,8 +375,8 @@ DEF_OP(AtomicFetchCLR) {
   const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
-  auto MemSrc = GetReg(Op->Addr.ID());
-  auto Src = GetReg(Op->Value.ID());
+  auto MemSrc = GetReg(Op->Addr);
+  auto Src = GetReg(Op->Value);
 
   if (CTX->HostFeatures.SupportsAtomics) {
     ldclral(SubEmitSize, Src, GetReg(Node), MemSrc);
@@ -396,8 +396,8 @@ DEF_OP(AtomicFetchOr) {
   const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
-  auto MemSrc = GetReg(Op->Addr.ID());
-  auto Src = GetReg(Op->Value.ID());
+  auto MemSrc = GetReg(Op->Addr);
+  auto Src = GetReg(Op->Value);
 
   if (CTX->HostFeatures.SupportsAtomics) {
     ldsetal(SubEmitSize, Src, GetReg(Node), MemSrc);
@@ -417,8 +417,8 @@ DEF_OP(AtomicFetchXor) {
   const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
-  auto MemSrc = GetReg(Op->Addr.ID());
-  auto Src = GetReg(Op->Value.ID());
+  auto MemSrc = GetReg(Op->Addr);
+  auto Src = GetReg(Op->Value);
 
   if (CTX->HostFeatures.SupportsAtomics) {
     ldeoral(SubEmitSize, Src, GetReg(Node), MemSrc);
@@ -438,7 +438,7 @@ DEF_OP(AtomicFetchNeg) {
   const auto EmitSize = ConvertSize(IROp);
   const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
 
-  auto MemSrc = GetReg(Op->Addr.ID());
+  auto MemSrc = GetReg(Op->Addr);
 
   ARMEmitter::BackwardLabel LoopTop;
   Bind(&LoopTop);
@@ -452,7 +452,7 @@ DEF_OP(AtomicFetchNeg) {
 DEF_OP(TelemetrySetValue) {
 #ifndef FEX_DISABLE_TELEMETRY
   auto Op = IROp->C<IR::IROp_TelemetrySetValue>();
-  auto Src = GetReg(Op->Value.ID());
+  auto Src = GetReg(Op->Value);
 
   ldr(TMP2, STATE_PTR(CpuStateFrame, Pointers.Common.TelemetryValueAddresses[Op->TelemetryValueIndex]));
 

@@ -12,13 +12,13 @@ namespace FEXCore::CPU {
 DEF_OP(Copy) {
   auto Op = IROp->C<IR::IROp_Copy>();
 
-  mov(ARMEmitter::Size::i64Bit, GetReg(Node), GetReg(Op->Source.ID()));
+  mov(ARMEmitter::Size::i64Bit, GetReg(Node), GetReg(Op->Source));
 }
 
 DEF_OP(RMWHandle) {
   auto Op = IROp->C<IR::IROp_RMWHandle>();
   auto Dest = GetReg(Node);
-  auto Src = GetReg(Op->Value.ID());
+  auto Src = GetReg(Op->Value);
 
   if (Dest != Src) {
     mov(ARMEmitter::Size::i64Bit, Dest, Src);
@@ -27,7 +27,7 @@ DEF_OP(RMWHandle) {
 
 DEF_OP(Swap1) {
   auto Op = IROp->C<IR::IROp_Swap1>();
-  auto A = GetReg(Op->A.ID()), B = GetReg(Op->B.ID());
+  auto A = GetReg(Op->A), B = GetReg(Op->B.ID());
   LOGMAN_THROW_A_FMT(B == GetReg(Node), "Invariant");
 
   mov(ARMEmitter::Size::i64Bit, TMP1, A);
