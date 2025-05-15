@@ -679,6 +679,7 @@
           "This is a special move that indicates the result will be poisoned by a non-SSA instruction writing to its result.",
           "In effect, it serves to prevent invalid optimizations with non-SSA instructions."
         ],
+        "DestSize": "OpSize::i64Bit",
         "HasSideEffects": true,
         "TiedSource": 0
       },
