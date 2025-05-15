@@ -294,11 +294,11 @@
         "HasSideEffects": true,
         "RAOverride": "2"
       },
-      "ExitFunction GPR:$NewRIP": {
+      "ExitFunction OpSize:#Size, GPR:$NewRIP": {
         "Desc": ["Exits the current JIT function with a target RIP"
                 ],
         "HasSideEffects": true,
-        "DestSize": "GetOpSize(NewRIP)"
+        "DestSize": "Size"
       },
       "Break BreakDefinition:$Reason": {
         "HasSideEffects": true
