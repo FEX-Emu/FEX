@@ -154,186 +154,102 @@ FEXCore::HLE::AOTIRCacheEntryLookupResult SyscallHandler::LookupAOTIRCacheEntry(
 }
 
 // MMan Tracking
-void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base, uintptr_t Size, int Prot, int Flags, int fd,
-                               off_t Offset) {
-  Size = FEXCore::AlignUp(Size, FEXCore::Utils::FEX_PAGE_SIZE);
+void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t addr, size_t length, int prot, int flags, int fd, off_t offset) {
+  size_t Size = FEXCore::AlignUp(length, FEXCore::Utils::FEX_PAGE_SIZE);
 
-  if (Flags & MAP_SHARED) {
-    CTX->MarkMemoryShared(Thread);
-  }
+  VMATracking::MappedResource* Resource = nullptr;
 
-  {
-    // NOTE: Frontend calls this with a nullptr Thread during initialization, but
-    //       providing this code with a valid Thread object earlier would allow
-    //       us to be more optimal by using GuardSignalDeferringSection instead
-    auto lk = FEXCore::GuardSignalDeferringSectionWithFallback(VMATracking.Mutex, Thread);
+  if (!(flags & MAP_ANONYMOUS)) {
+    struct stat64 buf;
+    fstat64(fd, &buf);
+    VMATracking::MRID mrid {buf.st_dev, buf.st_ino};
 
-    static uint64_t AnonSharedId = 1;
+    char Tmp[PATH_MAX];
+    auto PathLength = FEX::get_fdpath(fd, Tmp);
 
-    VMATracking::MappedResource* Resource = nullptr;
-
-    if (!(Flags & MAP_ANONYMOUS)) {
-      struct stat64 buf;
-      fstat64(fd, &buf);
-      VMATracking::MRID mrid {buf.st_dev, buf.st_ino};
-
-      char Tmp[PATH_MAX];
-      auto PathLength = FEX::get_fdpath(fd, Tmp);
-
-      if (PathLength != -1) {
-        Tmp[PathLength] = '\0';
-        auto [Iter, Inserted] = VMATracking.EmplaceMappedResource(mrid, VMATracking::MappedResource {nullptr, nullptr, 0});
-        Resource = &Iter->second;
-
-        if (Inserted) {
-          Resource->AOTIRCacheEntry = CTX->LoadAOTIRCacheEntry(fextl::string(Tmp, PathLength));
-          Resource->Iterator = Iter;
-        }
-      }
-    } else if (Flags & MAP_SHARED) {
-      VMATracking::MRID mrid {VMATracking::SpecialDev::Anon, AnonSharedId++};
-
+    if (PathLength != -1) {
+      Tmp[PathLength] = '\0';
       auto [Iter, Inserted] = VMATracking.EmplaceMappedResource(mrid, VMATracking::MappedResource {nullptr, nullptr, 0});
-      LOGMAN_THROW_A_FMT(Inserted == true, "VMA tracking error");
       Resource = &Iter->second;
-      Resource->Iterator = Iter;
-    } else {
-      Resource = nullptr;
+
+      if (Inserted) {
+        Resource->AOTIRCacheEntry = CTX->LoadAOTIRCacheEntry(fextl::string(Tmp, PathLength));
+        Resource->Iterator = Iter;
+      }
     }
+  } else if (flags & MAP_SHARED) {
+    VMATracking::MRID mrid {VMATracking::SpecialDev::Anon, AnonSharedId++};
 
-    VMATracking.TrackVMARange(CTX, Resource, Base, Offset, Size, VMATracking::VMAFlags::fromFlags(Flags), VMATracking::VMAProt::fromProt(Prot));
+    auto [Iter, Inserted] = VMATracking.EmplaceMappedResource(mrid, VMATracking::MappedResource {nullptr, nullptr, 0});
+    LOGMAN_THROW_A_FMT(Inserted == true, "VMA tracking error");
+    Resource = &Iter->second;
+    Resource->Iterator = Iter;
+  } else {
+    Resource = nullptr;
   }
 
-  if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
-    // VMATracking.Mutex can't be held while executing this, otherwise it hangs if the JIT is in the process of looking up code in the AOT JIT.
-    _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, (uintptr_t)Base, Size);
-  }
+  VMATracking.TrackVMARange(CTX, Resource, addr, offset, Size, VMATracking::VMAFlags::fromFlags(flags), VMATracking::VMAProt::fromProt(prot));
 }
 
-void SyscallHandler::TrackMunmap(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base, uintptr_t Size) {
-  Size = FEXCore::AlignUp(Size, FEXCore::Utils::FEX_PAGE_SIZE);
-
-  {
-    // Frontend calls this with nullptr Thread during initialization.
-    // This is why `GuardSignalDeferringSectionWithFallback` is used here.
-    // To be more optimal the frontend should provide this code with a valid Thread object earlier.
-    auto lk = FEXCore::GuardSignalDeferringSectionWithFallback(VMATracking.Mutex, Thread);
-
-    VMATracking.DeleteVMARange(CTX, Base, Size);
-  }
-
-  if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
-    _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, (uintptr_t)Base, Size);
-  }
+void SyscallHandler::TrackMunmap(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length) {
+  uint64_t Size = FEXCore::AlignUp(length, FEXCore::Utils::FEX_PAGE_SIZE);
+  VMATracking.DeleteVMARange(CTX, reinterpret_cast<uintptr_t>(addr), Size);
 }
 
-void SyscallHandler::TrackMprotect(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base, uintptr_t Size, int Prot) {
-  Size = FEXCore::AlignUp(Size, FEXCore::Utils::FEX_PAGE_SIZE);
+void SyscallHandler::TrackMprotect(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t len, int prot) {
+  uint64_t Size = FEXCore::AlignUp(len, FEXCore::Utils::FEX_PAGE_SIZE);
 
-  {
-    auto lk = FEXCore::GuardSignalDeferringSection(VMATracking.Mutex, Thread);
-
-    VMATracking.ChangeProtectionFlags(Base, Size, VMATracking::VMAProt::fromProt(Prot));
-  }
-
-  if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
-    _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, Base, Size);
-  }
+  VMATracking.ChangeProtectionFlags(reinterpret_cast<uintptr_t>(addr), Size, VMATracking::VMAProt::fromProt(prot));
 }
 
-void SyscallHandler::TrackMremap(FEXCore::Core::InternalThreadState* Thread, uintptr_t OldAddress, size_t OldSize, size_t NewSize,
-                                 int flags, uintptr_t NewAddress) {
+void SyscallHandler::TrackMremap(FEXCore::Core::InternalThreadState* Thread, uint64_t OldAddress, size_t OldSize, size_t NewSize, int flags,
+                                 uint64_t NewAddress) {
   OldSize = FEXCore::AlignUp(OldSize, FEXCore::Utils::FEX_PAGE_SIZE);
   NewSize = FEXCore::AlignUp(NewSize, FEXCore::Utils::FEX_PAGE_SIZE);
 
-  {
-    auto lk = FEXCore::GuardSignalDeferringSection(VMATracking.Mutex, Thread);
+  const auto OldVMA = VMATracking.FindVMAEntry(OldAddress);
 
-    const auto OldVMA = VMATracking.FindVMAEntry(OldAddress);
+  const auto OldResource = OldVMA->second.Resource;
+  const auto OldOffset = OldVMA->second.Offset + OldAddress - OldVMA->first;
+  const auto OldFlags = OldVMA->second.Flags;
+  const auto OldProt = OldVMA->second.Prot;
 
-    const auto OldResource = OldVMA->second.Resource;
-    const auto OldOffset = OldVMA->second.Offset + OldAddress - OldVMA->first;
-    const auto OldFlags = OldVMA->second.Flags;
-    const auto OldProt = OldVMA->second.Prot;
+  LOGMAN_THROW_A_FMT(OldVMA != VMATracking.VMAs.end(), "VMA Tracking corruption");
 
-    LOGMAN_THROW_A_FMT(OldVMA != VMATracking.VMAs.end(), "VMA Tracking corruption");
-
-    if (OldSize == 0) {
-      // Mirror existing mapping
-      // must be a shared mapping
-      LOGMAN_THROW_A_FMT(OldResource != nullptr, "VMA Tracking error");
-      LOGMAN_THROW_A_FMT(OldFlags.Shared, "VMA Tracking error");
-      VMATracking.TrackVMARange(CTX, OldResource, NewAddress, OldOffset, NewSize, OldFlags, OldProt);
-    } else {
+  if (OldSize == 0) {
+    // Mirror existing mapping
+    // must be a shared mapping
+    LOGMAN_THROW_A_FMT(OldResource != nullptr, "VMA Tracking error");
+    LOGMAN_THROW_A_FMT(OldFlags.Shared, "VMA Tracking error");
+    VMATracking.TrackVMARange(CTX, OldResource, NewAddress, OldOffset, NewSize, OldFlags, OldProt);
+  } else {
 
 #ifndef MREMAP_DONTUNMAP
 // MREMAP_DONTUNMAP is kernel 5.7+ and might not exist
 #define MREMAP_DONTUNMAP 4
 #endif
-      if (!(flags & MREMAP_DONTUNMAP)) {
-        VMATracking.DeleteVMARange(CTX, OldAddress, OldSize, OldResource);
-      }
-
-      // Make anonymous mapping
-      VMATracking.TrackVMARange(CTX, OldResource, NewAddress, OldOffset, NewSize, OldFlags, OldProt);
+    if (!(flags & MREMAP_DONTUNMAP)) {
+      VMATracking.DeleteVMARange(CTX, OldAddress, OldSize, OldResource);
     }
-  }
 
-  if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
-    if (OldAddress != NewAddress) {
-      if (OldSize != 0) {
-        // This also handles the MREMAP_DONTUNMAP case
-        _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, OldAddress, OldSize);
-      }
-    } else {
-      // If mapping shrunk, flush the unmapped region
-      if (OldSize > NewSize) {
-        _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, OldAddress + NewSize, OldSize - NewSize);
-      }
-    }
+    // Make anonymous mapping
+    VMATracking.TrackVMARange(CTX, OldResource, NewAddress, OldOffset, NewSize, OldFlags, OldProt);
   }
 }
 
-void SyscallHandler::TrackShmat(FEXCore::Core::InternalThreadState* Thread, int shmid, uintptr_t Base, int shmflg) {
-  CTX->MarkMemoryShared(Thread);
+void SyscallHandler::TrackShmat(FEXCore::Core::InternalThreadState* Thread, int shmid, uint64_t shmaddr, int shmflg, uint64_t Length) {
+  VMATracking::MRID mrid {VMATracking::SpecialDev::SHM, static_cast<uint64_t>(shmid)};
 
-  shmid_ds stat;
-
-  [[maybe_unused]] auto res = shmctl(shmid, IPC_STAT, &stat);
-  LOGMAN_THROW_A_FMT(res != -1, "shmctl IPC_STAT failed");
-
-  uint64_t Length = stat.shm_segsz;
-
-  {
-    auto lk = FEXCore::GuardSignalDeferringSection(VMATracking.Mutex, Thread);
-
-    // TODO
-    VMATracking::MRID mrid {VMATracking::SpecialDev::SHM, static_cast<uint64_t>(shmid)};
-
-    auto [Iter, Inserted] = VMATracking.EmplaceMappedResource(mrid, VMATracking::MappedResource {nullptr, nullptr, Length});
-    auto Resource = &Iter->second;
-    if (Inserted) {
-      Resource->Iterator = Iter;
-    }
-    VMATracking.TrackVMARange(CTX, Resource, Base, 0, Length, VMATracking::VMAFlags::fromFlags(MAP_SHARED), VMATracking::VMAProt::fromSHM(shmflg));
+  auto [Iter, Inserted] = VMATracking.EmplaceMappedResource(mrid, VMATracking::MappedResource {nullptr, nullptr, Length});
+  auto Resource = &Iter->second;
+  if (Inserted) {
+    Resource->Iterator = Iter;
   }
-  if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
-    _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, Base, Length);
-  }
+  VMATracking.TrackVMARange(CTX, Resource, shmaddr, 0, Length, VMATracking::VMAFlags::fromFlags(MAP_SHARED), VMATracking::VMAProt::fromSHM(shmflg));
 }
 
-void SyscallHandler::TrackShmdt(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base) {
-  uintptr_t Length = 0;
-  {
-    auto lk = FEXCore::GuardSignalDeferringSection(VMATracking.Mutex, Thread);
-
-    Length = VMATracking.DeleteSHMRegion(CTX, Base);
-  }
-
-  if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
-    // This might over flush if the shm has holes in it
-    _SyscallHandler->TM.InvalidateGuestCodeRange(Thread, Base, Length);
-  }
+uint64_t SyscallHandler::TrackShmdt(FEXCore::Core::InternalThreadState* Thread, uint64_t shmaddr) {
+  return VMATracking.DeleteSHMRegion(CTX, reinterpret_cast<uintptr_t>(shmaddr));
 }
 
 void SyscallHandler::TrackMadvise(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base, uintptr_t Size, int advice) {

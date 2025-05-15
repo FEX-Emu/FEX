@@ -42,7 +42,7 @@ public:
     return AllocHandler.get();
   }
   void* GuestMmap(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length, int prot, int flags, int fd, off_t offset) override;
-  int GuestMunmap(FEXCore::Core::InternalThreadState* Thread, void* addr, uint64_t length) override;
+  uint64_t GuestMunmap(FEXCore::Core::InternalThreadState* Thread, void* addr, uint64_t length) override;
 
   void RegisterSyscall_32(int SyscallNumber, int32_t HostSyscallNumber, FEXCore::IR::SyscallFlags Flags,
 #ifdef DEBUG_STRACE
