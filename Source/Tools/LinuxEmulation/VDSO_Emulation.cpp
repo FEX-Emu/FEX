@@ -715,8 +715,12 @@ void LoadUnique32BitSigreturn(VDSOMapping* Mapping, FEX::HLE::SyscallHandler* co
   memcpy(reinterpret_cast<void*>(VDSOPointers.VDSO_kernel_rt_sigreturn), &rt_sigreturn_32_code.at(0), rt_sigreturn_32_code.size());
 
   mprotect(Mapping->OptionalSigReturnMapping, Mapping->OptionalMappingSize, PROT_READ | PROT_EXEC);
-  Handler->TrackMmap(nullptr, reinterpret_cast<uintptr_t>(Mapping->OptionalSigReturnMapping), Mapping->OptionalMappingSize,
-                     PROT_READ | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  Handler->EmulateMmap(nullptr, Mapping->OptionalSigReturnMapping, Mapping->OptionalMappingSize, PROT_READ | PROT_EXEC,
+                       MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0,
+                       [](void* addr, size_t length, int prot, int flags, int fd, off_t offset) -> uint64_t {
+                         // Address has already been allocated, just return it.
+                         return reinterpret_cast<uint64_t>(addr);
+                       });
 }
 
 void UnloadVDSOMapping(const VDSOMapping& Mapping) {

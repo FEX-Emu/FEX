@@ -294,21 +294,28 @@ uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first
       return -EINVAL;
     }
     // also implemented in memory:shmat
-    Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)
-               ->GetAllocator()
-               ->Shmat(first, reinterpret_cast<const void*>(ptr), second, reinterpret_cast<uint32_t*>(third));
+    uint64_t Result = FEX::HLE::_SyscallHandler->EmulateShmat(
+      Frame->Thread, first, reinterpret_cast<const void*>(ptr), second, [](int shmid, const void* shmaddr, int shmflg) -> uint64_t {
+        uint32_t ResultAddr {};
+        uint64_t Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)
+                            ->GetAllocator()
+                            ->Shmat(shmid, reinterpret_cast<const void*>(shmaddr), shmflg, &ResultAddr);
+        if (!FEX::HLE::HasSyscallError(Result)) {
+          return ResultAddr;
+        }
+        return Result;
+      });
+
     if (!FEX::HLE::HasSyscallError(Result)) {
-      FEX::HLE::_SyscallHandler->TrackShmat(Frame->Thread, first, *reinterpret_cast<uint32_t*>(third), second);
+      *reinterpret_cast<uint32_t*>(third) = Result;
     }
-    break;
+    return Result;
   }
   case OP_SHMDT: {
     // also implemented in memory:shmdt
-    Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->Shmdt(reinterpret_cast<void*>(ptr));
-    if (!FEX::HLE::HasSyscallError(Result)) {
-      FEX::HLE::_SyscallHandler->TrackShmdt(Frame->Thread, ptr);
-    }
-    break;
+    return FEX::HLE::_SyscallHandler->EmulateShmdt(Frame->Thread, reinterpret_cast<const void*>(ptr), [](const void* shmaddr) -> uint64_t {
+      return static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->Shmdt(shmaddr);
+    });
   }
   case OP_SHMGET: {
     Result = ::shmget(first, second, third);

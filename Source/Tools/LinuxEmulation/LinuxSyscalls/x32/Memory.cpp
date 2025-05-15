@@ -22,34 +22,25 @@ $end_info$
 namespace FEX::HLE::x32 {
 
 void* x32SyscallHandler::GuestMmap(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length, int prot, int flags, int fd, off_t offset) {
-  LOGMAN_THROW_A_FMT((length >> 32) == 0, "values must fit to 32 bits");
+  return reinterpret_cast<void*>(EmulateMmap(
+    Thread, addr, length, prot, flags, fd, offset, [](void* addr, size_t length, int prot, int flags, int fd, off_t offset) -> uint64_t {
+      LOGMAN_THROW_A_FMT((length >> 32) == 0, "values must fit to 32 bits");
 
-  auto Result = (uint64_t)GetAllocator()->Mmap((void*)addr, length, prot, flags, fd, offset);
+      uint64_t Result =
+        (uint64_t) static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->Mmap((void*)addr, length, prot, flags, fd, offset);
 
-  LOGMAN_THROW_A_FMT((Result >> 32) == 0 || (Result >> 32) == 0xFFFFFFFF, "values must fit to 32 bits");
+      LOGMAN_THROW_A_FMT((Result >> 32) == 0 || (Result >> 32) == 0xFFFFFFFF, "values must fit to 32 bits");
 
-  if (!FEX::HLE::HasSyscallError(Result)) {
-    FEX::HLE::_SyscallHandler->TrackMmap(Thread, Result, length, prot, flags, fd, offset);
-    return (void*)Result;
-  } else {
-    errno = -Result;
-    return MAP_FAILED;
-  }
+      return Result;
+    }));
 }
 
-int x32SyscallHandler::GuestMunmap(FEXCore::Core::InternalThreadState* Thread, void* addr, uint64_t length) {
-  LOGMAN_THROW_A_FMT((uintptr_t(addr) >> 32) == 0, "values must fit to 32 bits");
-  LOGMAN_THROW_A_FMT((length >> 32) == 0, "values must fit to 32 bits");
-
-  auto Result = GetAllocator()->Munmap(addr, length);
-
-  if (Result == 0) {
-    FEX::HLE::_SyscallHandler->TrackMunmap(Thread, (uintptr_t)addr, length);
-    return Result;
-  } else {
-    errno = -Result;
-    return -1;
-  }
+uint64_t x32SyscallHandler::GuestMunmap(FEXCore::Core::InternalThreadState* Thread, void* addr, uint64_t length) {
+  return EmulateMunmap(Thread, addr, length, [](void* addr, uint64_t length) -> uint64_t {
+    LOGMAN_THROW_A_FMT((reinterpret_cast<uintptr_t>(addr) >> 32) == 0, "values must fit to 32 bits");
+    LOGMAN_THROW_A_FMT((length >> 32) == 0, "values must fit to 32 bits");
+    return static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->Munmap(addr, length);
+  });
 }
 
 void RegisterMemory(FEX::HLE::SyscallHandler* Handler) {
@@ -77,31 +68,21 @@ void RegisterMemory(FEX::HLE::SyscallHandler* Handler) {
     });
 
   REGISTER_SYSCALL_IMPL_X32(munmap, [](FEXCore::Core::CpuStateFrame* Frame, void* addr, size_t length) -> uint64_t {
-    uint64_t Result =
-      (uint64_t) static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GuestMunmap(Frame->Thread, addr, length);
-
-    SYSCALL_ERRNO();
+    return static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GuestMunmap(Frame->Thread, addr, length);
   });
 
   REGISTER_SYSCALL_IMPL_X32(mprotect, [](FEXCore::Core::CpuStateFrame* Frame, void* addr, uint32_t len, int prot) -> uint64_t {
-    uint64_t Result = ::mprotect(addr, len, prot);
-    if (Result != -1) {
-      FEX::HLE::_SyscallHandler->TrackMprotect(Frame->Thread, (uintptr_t)addr, len, prot);
-    }
-
-    SYSCALL_ERRNO();
+    return FEX::HLE::_SyscallHandler->EmulateMprotect(Frame->Thread, addr, len, prot);
   });
 
   REGISTER_SYSCALL_IMPL_X32(
     mremap, [](FEXCore::Core::CpuStateFrame* Frame, void* old_address, size_t old_size, size_t new_size, int flags, void* new_address) -> uint64_t {
-      uint64_t Result = reinterpret_cast<uint64_t>(
-        static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->Mremap(old_address, old_size, new_size, flags, new_address));
-
-      if (!FEX::HLE::HasSyscallError(Result)) {
-        FEX::HLE::_SyscallHandler->TrackMremap(Frame->Thread, (uintptr_t)old_address, old_size, new_size, flags, Result);
-      }
-
-      return Result;
+      return FEX::HLE::_SyscallHandler->EmulateMremap(
+        Frame->Thread, old_address, old_size, new_size, flags, new_address,
+        [](void* old_address, size_t old_size, size_t new_size, int flags, void* new_address) -> uint64_t {
+          return reinterpret_cast<uint64_t>(
+            static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->Mremap(old_address, old_size, new_size, flags, new_address));
+        });
     });
 
   REGISTER_SYSCALL_IMPL_X32(mlockall, [](FEXCore::Core::CpuStateFrame* Frame, int flags) -> uint64_t {
@@ -116,28 +97,23 @@ void RegisterMemory(FEX::HLE::SyscallHandler* Handler) {
 
   REGISTER_SYSCALL_IMPL_X32(shmat, [](FEXCore::Core::CpuStateFrame* Frame, int shmid, const void* shmaddr, int shmflg) -> uint64_t {
     // also implemented in ipc:OP_SHMAT
-    uint32_t ResultAddr {};
-    uint64_t Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)
-                        ->GetAllocator()
-                        ->Shmat(shmid, reinterpret_cast<const void*>(shmaddr), shmflg, &ResultAddr);
-
-    if (!FEX::HLE::HasSyscallError(Result)) {
-      FEX::HLE::_SyscallHandler->TrackShmat(Frame->Thread, shmid, ResultAddr, shmflg);
-      return ResultAddr;
-    } else {
+    return FEX::HLE::_SyscallHandler->EmulateShmat(Frame->Thread, shmid, shmaddr, shmflg, [](int shmid, const void* shmaddr, int shmflg) -> uint64_t {
+      uint32_t ResultAddr {};
+      uint64_t Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)
+                          ->GetAllocator()
+                          ->Shmat(shmid, reinterpret_cast<const void*>(shmaddr), shmflg, &ResultAddr);
+      if (!FEX::HLE::HasSyscallError(Result)) {
+        return ResultAddr;
+      }
       return Result;
-    }
+    });
   });
 
   REGISTER_SYSCALL_IMPL_X32(shmdt, [](FEXCore::Core::CpuStateFrame* Frame, const void* shmaddr) -> uint64_t {
     // also implemented in ipc:OP_SHMDT
-    uint64_t Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->Shmdt(shmaddr);
-
-    if (!FEX::HLE::HasSyscallError(Result)) {
-      FEX::HLE::_SyscallHandler->TrackShmdt(Frame->Thread, (uintptr_t)shmaddr);
-    }
-
-    return Result;
+    return FEX::HLE::_SyscallHandler->EmulateShmdt(Frame->Thread, shmaddr, [](const void* shmaddr) -> uint64_t {
+      return static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->Shmdt(shmaddr);
+    });
   });
 }
 

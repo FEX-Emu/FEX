@@ -23,6 +23,7 @@ $end_info$
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
 #include <FEXCore/fextl/fmt.h>
+#include <FEXCore/fextl/functional.h>
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
@@ -242,15 +243,24 @@ public:
   virtual void* GuestMmap(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length, int prot, int flags, int fd, off_t offset) = 0;
 
   // does a guest munmap as if done via a guest syscall
-  virtual int GuestMunmap(FEXCore::Core::InternalThreadState* Thread, void* addr, uint64_t length) = 0;
+  virtual uint64_t GuestMunmap(FEXCore::Core::InternalThreadState* Thread, void* addr, uint64_t length) = 0;
 
   ///// Memory Manager tracking /////
-  void TrackMmap(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base, uintptr_t Size, int Prot, int Flags, int fd, off_t Offset);
-  void TrackMunmap(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base, uintptr_t Size);
-  void TrackMprotect(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base, uintptr_t Size, int Prot);
-  void TrackMremap(FEXCore::Core::InternalThreadState* Thread, uintptr_t OldAddress, size_t OldSize, size_t NewSize, int flags, uintptr_t NewAddress);
-  void TrackShmat(FEXCore::Core::InternalThreadState* Thread, int shmid, uintptr_t Base, int shmflg);
-  void TrackShmdt(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base);
+  // - Emulate* handlers always return syscall/errno combined data.
+  // - Callbacks to the actual operation while under lock, returning syscall/errno combined data.
+  uint64_t EmulateMmap(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length, int prot, int flags, int fd, off_t offset,
+                       fextl::move_only_function<uint64_t(void* addr, size_t length, int prot, int flags, int fd, off_t offset)> Callback);
+  uint64_t EmulateMunmap(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length,
+                         fextl::move_only_function<uint64_t(void* addr, size_t length)> Callback);
+  uint64_t EmulateMremap(
+    FEXCore::Core::InternalThreadState* Thread, void* old_address, size_t old_size, size_t new_size, int flags, void* new_address,
+    fextl::move_only_function<uint64_t(void* old_address, size_t old_size, size_t new_size, int flags, void* new_address)> Callback);
+  uint64_t EmulateShmat(FEXCore::Core::InternalThreadState* Thread, int shmid, const void* shmaddr, int shmflg,
+                        fextl::move_only_function<uint64_t(int shmid, const void* shmaddr, int shmflg)> Callback);
+  uint64_t EmulateShmdt(FEXCore::Core::InternalThreadState* Thread, const void* shmaddr,
+                        fextl::move_only_function<uint64_t(const void* shmaddr)> Callback);
+  // Callback unnecessary.
+  uint64_t EmulateMprotect(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t len, int prot);
   void TrackMadvise(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base, uintptr_t Size, int advice);
 
   ///// VMA (Virtual Memory Area) tracking /////
@@ -324,6 +334,7 @@ private:
   fextl::unique_ptr<FEXCore::HLE::SourcecodeMap>
   GenerateMap(const std::string_view& GuestBinaryFile, const std::string_view& GuestBinaryFileId) override;
 
+  std::atomic<uint64_t> AnonSharedId {1};
   VMATracking::VMATracking VMATracking;
 };
 
