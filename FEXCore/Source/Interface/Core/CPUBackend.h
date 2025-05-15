@@ -18,7 +18,6 @@ namespace FEXCore {
 
 namespace IR {
   class IRListView;
-  class RegisterAllocationData;
 } // namespace IR
 
 namespace Core {
@@ -119,7 +118,7 @@ namespace CPU {
      */
     [[nodiscard]]
     virtual CompiledCode CompileCode(uint64_t Entry, uint64_t Size, bool SingleInst, const FEXCore::IR::IRListView* IR,
-                                     FEXCore::Core::DebugData* DebugData, const FEXCore::IR::RegisterAllocationData* RAData, bool CheckTF) = 0;
+                                     FEXCore::Core::DebugData* DebugData, bool CheckTF) = 0;
 
     /**
      * @brief Relocates a block of code from the JIT code object cache

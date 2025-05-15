@@ -18,7 +18,7 @@ $end_info$
 #include <FEXCore/Utils/MathUtils.h>
 
 namespace FEXCore::CPU {
-#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::NodeID Node)
+#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::Ref Node)
 
 DEF_OP(CallbackReturn) {
   // spill back to CTX

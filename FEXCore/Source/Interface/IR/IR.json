@@ -169,7 +169,7 @@
         "SwitchGen": false,
         "JITDispatchOverride": "NoOp"
       },
-      "IRHeader SSA:$Blocks, u64:$OriginalRIP, u32:$BlockCount, u32:$NumHostInstructions, i1:$HasX87{false}, i1:$ReadsParity{false}": {
+      "IRHeader SSA:$Blocks, u64:$OriginalRIP, u32:$BlockCount, u32:$NumHostInstructions, u32:$SpillSlots, i1:$PostRA{false}, i1:$HasX87{false}, i1:$ReadsParity{false}": {
         "SwitchGen": false,
         "JITDispatchOverride": "NoOp"
       },
@@ -500,7 +500,7 @@
         ]
       },
 
-      "SSA = FillRegister OpSize:#Size, OpSize:#ElementSize, SSA:$OriginalValue, u32:$Slot, RegisterClass:$Class": {
+      "SSA = FillRegister OpSize:#Size, OpSize:#ElementSize, u32:$Slot, RegisterClass:$Class": {
         "Desc": ["Fills a register from a spill slot",
                  "Spill slots are register allocated and has live ranges calculated to handle slot calculation",
                  "```diff\n- !Don't use this op. It is for RA to handle spilling and filling!\n```",
@@ -509,10 +509,7 @@
                  "RA validation purposes"
                 ],
         "DestSize": "Size",
-        "ElementSize": "ElementSize",
-        "EmitValidation": [
-          "WalkFindRegClass($OriginalValue) == $Class"
-        ]
+        "ElementSize": "ElementSize"
       },
 
       "GPR = LoadNZCV": {

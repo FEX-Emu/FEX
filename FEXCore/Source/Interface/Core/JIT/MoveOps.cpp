@@ -8,7 +8,7 @@ $end_info$
 #include "Interface/Core/JIT/JITClass.h"
 
 namespace FEXCore::CPU {
-#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::NodeID Node)
+#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::Ref Node)
 DEF_OP(Copy) {
   auto Op = IROp->C<IR::IROp_Copy>();
 

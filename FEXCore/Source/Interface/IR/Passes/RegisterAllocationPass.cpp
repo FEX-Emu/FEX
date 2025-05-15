@@ -28,9 +28,9 @@ namespace {
     uint32_t Available;
     uint32_t Count;
 
-    // If bit R of Available is 0, then RegToSSA[R] is the Old node
-    // currently allocated to R. Else, RegToSSA[R] is UNDEFINED, no need to
-    // clear this when freeing registers.
+    // If bit R of Available is 0, then RegToSSA[R] is the node currently
+    // allocated to R. Else, RegToSSA[R] is UNDEFINED, no need to clear this
+    // when freeing registers.
     Ref RegToSSA[32];
   };
 
@@ -58,99 +58,27 @@ public:
   void Run(IREmitter* IREmit) override;
   void AddRegisters(IR::RegisterClassType Class, uint32_t RegisterCount) override;
 
-  RegisterAllocationData* GetAllocationData() override;
-  RegisterAllocationData::UniquePtr PullAllocationData() override;
-
 private:
-  IR::RegisterAllocationData::UniquePtr AllocData;
   RegisterClass Classes[INVALID_CLASS];
 
   IREmitter* IREmit;
   IRListView* IR;
 
-  // Map of Old nodes to their preferred register, to coalesce load/store reg.
+  // Map of nodes to their preferred register, to coalesce load/store reg.
   fextl::vector<PhysicalRegister> PreferredReg;
 
-  // FEX's original RA could only assign a single register to a given def for
-  // its entire live range, and this limitation is baked deep into the IR.
-  // However, we split live ranges to implement register pairs and spilling.
-  //
-  // To reconcile, we generate new SSA nodes when we split live ranges, and
-  // remap SSA sources accordingly. This means SSAToReg can grow.
-  //
-  // We define "Old" nodes as nodes present in the original IR, and "New" nodes
-  // as nodes added to split live ranges. Helpful properties:
-  //
-  // - A node is Old <===> it is not New
-  // - A node is Old <===> its ID < IR.GetSSACount() at the start
-  // - All sources are Old before remapping an instruction
-  //
-  // SSAToNewSSA tracks the current remapping. nullptr indicates no remapping.
-  //
-  // Since its indexed by Old nodes, SSAToNewSSA does not grow after allocation.
-  fextl::vector<Ref> SSAToNewSSA;
-
-  // Inverse of SSAToNewSSA. Since it's indexed by new nodes, it grows.
-  fextl::vector<Ref> NewSSAToSSA;
-
-  // Map of assigned registers. Grows.
+  // Map of assigned registers. Does not grow beyond the initial set.
   fextl::vector<PhysicalRegister> SSAToReg;
 
-  bool IsOld(Ref Node) {
-    return IR->GetID(Node).Value < PreferredReg.size();
-  };
-
-  // Return the New node (if it exists) for an Old node, else the Old node.
-  Ref Map(Ref Old) {
-    LOGMAN_THROW_A_FMT(IsOld(Old), "Pre-condition");
-
-    if (SSAToNewSSA.empty()) {
-      return Old;
-    } else {
-      return SSAToNewSSA[IR->GetID(Old).Value] ?: Old;
-    }
-  };
-
-  // Return the Old node for a possibly-remapped node.
-  Ref Unmap(Ref Node) {
-    if (NewSSAToSSA.empty()) {
-      return Node;
-    } else {
-      return NewSSAToSSA[IR->GetID(Node).Value] ?: Node;
-    }
-  };
-
-  // Record a remapping of Old to New.
-  void Remap(Ref Old, Ref New) {
-    LOGMAN_THROW_A_FMT(IsOld(Old) && !IsOld(New), "Pre-condition");
-
-    uint32_t OldID = IR->GetID(Old).Value;
-    uint32_t NewID = IR->GetID(New).Value;
-
-    LOGMAN_THROW_A_FMT(NewID >= NewSSAToSSA.size(), "Brand new SSA def");
-    NewSSAToSSA.resize(NewID + 1, 0);
-
-    if (SSAToNewSSA.empty()) {
-      SSAToNewSSA.resize(PreferredReg.size(), nullptr);
-    }
-
-    SSAToNewSSA[OldID] = New;
-    NewSSAToSSA[NewID] = Old;
-
-    LOGMAN_THROW_A_FMT(Map(Old) == New && Unmap(New) == Old, "Post-condition");
-    LOGMAN_THROW_A_FMT(Unmap(Old) == Old, "Invariant1");
-  };
-
-  // Maps Old defs to their assigned spill slot + 1, or 0 if not spilled.
+  // Maps defs to their assigned spill slot + 1, or 0 if not spilled.
   fextl::vector<unsigned> SpillSlots;
 
   bool Rematerializable(IROp_Header* IROp) {
     return IROp->Op == OP_CONSTANT;
   }
 
-  Ref InsertFill(Ref Old) {
-    LOGMAN_THROW_A_FMT(IsOld(Old), "Precondition");
-    IROp_Header* IROp = IR->GetOp<IROp_Header>(Old);
+  Ref InsertFill(Ref Node) {
+    IROp_Header* IROp = IR->GetOp<IROp_Header>(Node);
 
     // Remat if we can
     if (Rematerializable(IROp)) {
@@ -159,18 +87,17 @@ private:
     }
 
     // Otherwise fill from stack
-    uint32_t SlotPlusOne = SpillSlots[IR->GetID(Old).Value];
-    LOGMAN_THROW_A_FMT(SlotPlusOne >= 1, "Old must have been spilled");
+    uint32_t SlotPlusOne = SpillSlots[IR->GetID(Node).Value];
+    LOGMAN_THROW_A_FMT(SlotPlusOne >= 1, "Node must have been spilled");
 
     RegisterClassType RegClass = GetRegClassFromNode(IR, IROp);
-    return IREmit->_FillRegister(IROp->Size, IROp->ElementSize, Old, SlotPlusOne - 1, RegClass);
+    return IREmit->_FillRegister(IROp->Size, IROp->ElementSize, SlotPlusOne - 1, RegClass);
   };
 
-  // IP of next-use of each Old source. IPs are measured from the end of the
+  // IP of next-use of each source. IPs are measured from the end of the
   // block, so we don't need to size the block up-front.
   fextl::vector<uint32_t> NextUses;
 
-  unsigned SpillSlotCount;
   bool AnySpilled;
 
   bool IsValidArg(OrderedNodeWrapper Arg) {
@@ -197,13 +124,14 @@ private:
     return 1 << Reg.Reg;
   };
 
-  bool IsInRegisterFile(Ref Old) {
-    LOGMAN_THROW_A_FMT(IsOld(Old), "Precondition");
+  bool IsInRegisterFile(Ref Node) {
+    auto ID = IR->GetID(Node).Value;
+    LOGMAN_THROW_A_FMT(ID < SSAToReg.size(), "Only old nodes looked up");
 
-    PhysicalRegister Reg = SSAToReg[IR->GetID(Map(Old)).Value];
+    PhysicalRegister Reg = SSAToReg[ID];
     RegisterClass* Class = GetClass(Reg);
 
-    return (Class->Available & GetRegBits(Reg)) == 0 && Class->RegToSSA[Reg.Reg] == Old;
+    return (Class->Available & GetRegBits(Reg)) == 0 && Class->RegToSSA[Reg.Reg] == Node;
   };
 
   void FreeReg(PhysicalRegister Reg) {
@@ -215,14 +143,9 @@ private:
     Class->Available |= RegBits;
   };
 
-  bool HasSource(IROp_Header* I, Ref Old) {
-    LOGMAN_THROW_A_FMT(IsOld(Old), "Invariant2");
-
+  bool HasSource(IROp_Header* I, PhysicalRegister Reg) {
     for (auto s = 0; s < IR::GetRAArgs(I->Op); ++s) {
-      Ref Node = IR->GetNode(I->Args[s]);
-      LOGMAN_THROW_A_FMT(IsOld(Node), "not yet mapped");
-
-      if (Node == Old) {
+      if (I->Args[s].IsImmediate() && PhysicalRegister(I->Args[s]) == Reg) {
         return true;
       }
     }
@@ -288,33 +211,33 @@ private:
     uint32_t Allocated = ((1u << Class->Count) - 1) & ~Class->Available;
 
     foreach_bit(i, Allocated) {
-      Ref Old = Class->RegToSSA[i];
+      Ref Node = Class->RegToSSA[i];
+      auto Reg = SSAToReg[IR->GetID(Node).Value];
 
-      LOGMAN_THROW_A_FMT(Old != nullptr, "Invariant3");
-      LOGMAN_THROW_A_FMT(SSAToReg[IR->GetID(Map(Old)).Value].Reg == i, "Invariant4");
+      LOGMAN_THROW_A_FMT(Node != nullptr, "Invariant3");
+      LOGMAN_THROW_A_FMT(Reg.Reg == i, "Invariant4");
 
       // Skip any source used by the current instruction, it is unspillable.
-      if (!HasSource(Exclude, Old)) {
-        uint32_t NextUse = NextUses[IR->GetID(Old).Value];
+      if (!HasSource(Exclude, Reg)) {
+        uint32_t NextUse = NextUses[IR->GetID(Node).Value];
 
         // Prioritize remat over spilling. It is typically cheaper to remat a
         // constant multiple times than to spill a single value.
-        if (!Rematerializable(IR->GetOp<IROp_Header>(Old))) {
+        if (!Rematerializable(IR->GetOp<IROp_Header>(Node))) {
           NextUse += 100000;
         }
 
         if (NextUse < BestDistance) {
           BestDistance = NextUse;
           BestReg = i;
-          Candidate = Old;
+          Candidate = Node;
         }
       }
     }
 
     LOGMAN_THROW_A_FMT(Candidate != nullptr, "must've found something..");
-    LOGMAN_THROW_A_FMT(IsOld(Candidate), "Invariant5");
 
-    PhysicalRegister Reg = SSAToReg[IR->GetID(Map(Candidate)).Value];
+    PhysicalRegister Reg = SSAToReg[IR->GetID(Candidate).Value];
     LOGMAN_THROW_A_FMT(Reg.Reg == BestReg, "Invariant6");
 
     IROp_Header* Header = IR->GetOp<IROp_Header>(Candidate);
@@ -332,10 +255,10 @@ private:
       }
 
       // TODO: we should colour spill slots
-      uint32_t Slot = SpillSlotCount++;
+      uint32_t Slot = IR->GetHeader()->SpillSlots++;
 
       // We must map here in case we're spilling something we shuffled.
-      auto SpillOp = IREmit->_SpillRegister(Map(Candidate), Slot, RegisterClassType {Reg.Class});
+      auto SpillOp = IREmit->_SpillRegister(OrderedNodeWrapper::FromImmediate(Reg.Raw), Slot, RegisterClassType {Reg.Class});
       SpillOp.first->Header.Size = Header->Size;
       SpillOp.first->Header.ElementSize = Header->ElementSize;
       SpillSlots[Value] = Slot + 1;
@@ -346,22 +269,27 @@ private:
     AnySpilled = true;
   };
 
+  void RemapReg(Ref Node, PhysicalRegister Reg) {
+    RegisterClass* Class = GetClass(Reg);
+    Class->RegToSSA[Reg.Reg] = Node;
+
+    uint32_t Index = IR->GetID(Node).Value;
+    if (Index < SSAToReg.size()) {
+      SSAToReg[Index] = Reg;
+    }
+  };
+
   // Record a given assignment of register Reg to Node.
   void SetReg(Ref Node, PhysicalRegister Reg) {
-    uint32_t Index = IR->GetID(Node).Value;
     RegisterClass* Class = GetClass(Reg);
     uint32_t RegBits = GetRegBits(Reg);
 
     LOGMAN_THROW_A_FMT((Class->Available & RegBits) == RegBits, "Precondition");
 
     Class->Available &= ~RegBits;
-    Class->RegToSSA[Reg.Reg] = Unmap(Node);
 
-    if (Index >= SSAToReg.size()) {
-      SSAToReg.resize(Index + 1, PhysicalRegister::Invalid());
-    }
-
-    SSAToReg[Index] = Reg;
+    RemapReg(Node, Reg);
+    Node->Reg = Reg.Raw;
   };
 
   // Assign a register for a given Node, spilling if necessary.
@@ -383,7 +311,7 @@ private:
 
     // Try to handle tied registers. This can fail, the JIT will insert moves.
     if (int TiedIdx = IR::TiedSource(IROp->Op); TiedIdx >= 0) {
-      PhysicalRegister Reg = SSAToReg[IROp->Args[TiedIdx].ID().Value];
+      auto Reg = PhysicalRegister(IROp->Args[TiedIdx]);
       RegisterClass* Class = GetClass(Reg);
       uint32_t RegBits = GetRegBits(Reg);
 
@@ -413,7 +341,7 @@ private:
       }
     } else if (IROp->Op == OP_ALLOCATEGPRAFTER) {
       uint32_t Available = Classes[GPRClass].Available;
-      auto After = SSAToReg[IR->GetID(IR->GetNode(IROp->Args[0])).Value];
+      auto After = PhysicalRegister(IROp->Args[0]);
       if ((After.Reg & 1) == 0 && Available & (1ull << (After.Reg + 1))) {
         SetReg(CodeNode, PhysicalRegister(GPRClass, After.Reg + 1));
         return;
@@ -446,14 +374,6 @@ void ConstrainedRAPass::AddRegisters(IR::RegisterClassType Class, uint32_t Regis
   Classes[Class].Count = RegisterCount;
 }
 
-RegisterAllocationData* ConstrainedRAPass::GetAllocationData() {
-  return AllocData.get();
-}
-
-RegisterAllocationData::UniquePtr ConstrainedRAPass::PullAllocationData() {
-  return std::move(AllocData);
-}
-
 void ConstrainedRAPass::Run(IREmitter* IREmit_) {
   FEXCORE_PROFILE_SCOPED("PassManager::RA");
 
@@ -461,11 +381,9 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
   auto IR_ = IREmit->ViewIR();
   IR = &IR_;
 
-  // SSAToNewSSA, NewSSAToSSA allocated on first-use
   PreferredReg.resize(IR->GetSSACount(), PhysicalRegister::Invalid());
   SSAToReg.resize(IR->GetSSACount(), PhysicalRegister::Invalid());
   NextUses.resize(IR->GetSSACount(), 0);
-  SpillSlotCount = 0;
   AnySpilled = false;
 
   // Next-use distance relative to the block end of each source, last first.
@@ -568,23 +486,20 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         if (!(Class->Available & (1u << Reg.Reg))) {
           Ref Old = Class->RegToSSA[Reg.Reg];
 
-          LOGMAN_THROW_A_FMT(IsOld(Old), "RegToSSA invariant");
-          LOGMAN_THROW_A_FMT(IsOld(Node), "Haven't remapped this instruction");
-
           if (Old != Node) {
             IREmit->SetWriteCursorBefore(CodeNode);
             Ref Copy;
 
             if (Reg.Class == FPRFixedClass) {
               IROp_Header* Header = IR->GetOp<IROp_Header>(Old);
-              Copy = IREmit->_VMov(Header->Size, Map(Old));
+              Copy = IREmit->_VMov(Header->Size, OrderedNodeWrapper::FromImmediate(Reg.Raw));
             } else {
-              Copy = IREmit->_Copy(Map(Old));
+              Copy = IREmit->_Copy(OrderedNodeWrapper::FromImmediate(Reg.Raw));
             }
 
-            Remap(Old, Copy);
             FreeReg(Reg);
             AssignReg(IR->GetOp<IROp_Header>(Copy), Copy, IROp);
+            RemapReg(Old, PhysicalRegister(Copy));
           }
         }
       }
@@ -600,14 +515,13 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
           }
 
           Ref Old = IR->GetNode(IROp->Args[s]);
-          LOGMAN_THROW_A_FMT(IsOld(Old), "before remapping");
 
           if (!IsInRegisterFile(Old)) {
             IREmit->SetWriteCursorBefore(CodeNode);
             Ref Fill = InsertFill(Old);
 
-            Remap(Old, Fill);
             AssignReg(IR->GetOp<IROp_Header>(Fill), Fill, IROp);
+            RemapReg(Old, PhysicalRegister(Fill));
           }
         }
       }
@@ -617,36 +531,28 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
           continue;
         }
 
+        Ref Node = IR->GetNode(IROp->Args[s]);
+        auto ID = IR->GetID(Node).Value;
+        auto Reg = SSAToReg[ID];
+
         SourceIndex--;
         LOGMAN_THROW_A_FMT(SourceIndex >= 0, "Consistent source count");
 
-        if (!SourcesNextUses[SourceIndex]) {
-          Ref Old = IR->GetNode(IROp->Args[s]);
-          auto Reg = SSAToReg[IR->GetID(Map(Old)).Value];
+        if (!Reg.IsInvalid()) {
+          IROp->Args[s].SetImmediate(Reg.Raw);
 
-          if (!Reg.IsInvalid()) {
-            LOGMAN_THROW_A_FMT(IsInRegisterFile(Old), "sources in file");
+          if (!SourcesNextUses[SourceIndex]) {
+            LOGMAN_THROW_A_FMT(IsInRegisterFile(Node), "sources in file");
             FreeReg(Reg);
           }
         }
 
-        NextUses[IROp->Args[s].ID().Value] = SourcesNextUses[SourceIndex];
+        NextUses[ID] = SourcesNextUses[SourceIndex];
       }
 
       // Assign destinations.
       if (GetHasDest(IROp->Op)) {
         AssignReg(IROp, CodeNode, IROp);
-      }
-
-      // Remap sources last, since AssignReg can shuffle.
-      if (!SSAToNewSSA.empty()) {
-        for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
-          Ref Remapped = SSAToNewSSA[IROp->Args[s].ID().Value];
-
-          if (Remapped != nullptr) {
-            IREmit->ReplaceNodeArgument(CodeNode, s, Remapped);
-          }
-        }
       }
 
       LOGMAN_THROW_A_FMT(IP >= 1, "IP relative to end of block, iterating forward");
@@ -656,20 +562,12 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
     LOGMAN_THROW_A_FMT(SourceIndex == 0, "Consistent source count in block");
   }
 
-  /* Now that we're done growing things, we can finalize our results.
-   *
-   * TODO: Rework RegisterAllocationData to remove this memcpy, it's pointless.
-   */
-  AllocData = RegisterAllocationData::Create(SSAToReg.size());
-  AllocData->SpillSlotCount = SpillSlotCount;
-  memcpy(AllocData->Map, SSAToReg.data(), sizeof(PhysicalRegister) * SSAToReg.size());
-
   PreferredReg.clear();
-  SSAToNewSSA.clear();
-  NewSSAToSSA.clear();
   SSAToReg.clear();
   SpillSlots.clear();
   NextUses.clear();
+
+  IR->GetHeader()->PostRA = true;
 }
 
 fextl::unique_ptr<IR::RegisterAllocationPass> CreateRegisterAllocationPass() {
