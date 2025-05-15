@@ -86,30 +86,48 @@ struct VMATracking {
 
   using VMACIterator = decltype(VMAs)::const_iterator;
 
-  MappedResource::ContainerType MappedResources;
+  // Find a VMA entry associated with the memory address.
+  // Used by `mremap`, and SIGSEGV handler to find previously mapped ranges, and `AOTIR` cache to find cache entries.
+  // - Mutex must be at least shared_locked before calling
+  VMACIterator FindVMAEntry(uint64_t GuestAddr) const;
 
-  // Mutex must be at least shared_locked before calling
-  VMACIterator LookupVMAUnsafe(uint64_t GuestAddr) const;
+  // Adds a new VMA Range to be tracked, along with a `MappedResource` associated with that VMA range.
+  // Primarily matches `mmap` semantics, but also used by `mremap`, and `shmat`, as they all can add new VMA ranges to be tracked.
+  // - Mutex must be unique_locked before calling
+  void TrackVMARange(FEXCore::Context::Context* Ctx, MappedResource* MappedResource, uintptr_t Base, uintptr_t Offset, uintptr_t Length,
+                     VMAFlags Flags, VMAProt Prot);
 
-  // Mutex must be unique_locked before calling
-  void SetUnsafe(FEXCore::Context::Context* Ctx, MappedResource* MappedResource, uintptr_t Base, uintptr_t Offset, uintptr_t Length,
-                 VMAFlags Flags, VMAProt Prot);
+  // Deletes a VMA range provided from tracking.
+  // Matches `munmap` semantics, and `mremap` with `MREMAP_DONTUNMAP` flag set.
+  // Deletes internal `MappedResource` that correlates with the range **unless** it matches `PreservedMappedResource`
+  // - Mutex must be unique_locked before calling
+  void DeleteVMARange(FEXCore::Context::Context* Ctx, uintptr_t Base, uintptr_t Length, MappedResource* PreservedMappedResource = nullptr);
 
-  // Mutex must be unique_locked before calling
-  void ClearUnsafe(FEXCore::Context::Context* Ctx, uintptr_t Base, uintptr_t Length, MappedResource* PreservedMappedResource = nullptr);
+  // Changes the protections tracking for the VMA range provided.
+  // Matches `mprotect` semantics.
+  // - Mutex must be unique_locked before calling
+  void ChangeProtectionFlags(uintptr_t Base, uintptr_t Length, VMAProt Prot);
 
-  // Mutex must be unique_locked before calling
-  void ChangeUnsafe(uintptr_t Base, uintptr_t Length, VMAProt Prot);
+  // Deletes the SHM region mapped at Base from tracking.
+  // Matches `shmdt` semantics.
+  // - Mutex must be unique_locked before calling
+  // Returns the Size of the Shm or 0 if not found
+  uintptr_t DeleteSHMRegion(FEXCore::Context::Context* Ctx, uintptr_t Base);
 
-  // Mutex must be unique_locked before calling
-  // Returns the Size fo the Shm or 0 if not found
-  uintptr_t ClearShmUnsafe(FEXCore::Context::Context* Ctx, uintptr_t Base);
+  // Emplaces a new `MappedResource` to track.
+  // Used for `mmap` and `shmat` resources; Anonymous, FD, and SHM depending on flags.
+  template<class... Args>
+  inline auto EmplaceMappedResource(Args&&... args) {
+    return MappedResources.emplace(args...);
+  }
 private:
   bool ListRemove(VMAEntry* Mapping);
   void ListReplace(VMAEntry* Mapping, VMAEntry* NewMapping);
   void ListInsertAfter(VMAEntry* Mapping, VMAEntry* NewMapping);
   void ListPrepend(MappedResource* Resource, VMAEntry* NewVMA);
   static void ListCheckVMALinks(VMAEntry* VMA);
+
+  MappedResource::ContainerType MappedResources;
 };
 
 
