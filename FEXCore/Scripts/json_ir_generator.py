@@ -723,20 +723,7 @@ def print_ir_allocator_helpers():
                     if not arg.Temporary and not arg.IsSSA:
                         output_file.write("\t\t_Op.first->{} = {};\n".format(arg.Name, arg.Name))
 
-            if (op.HasDest):
-                # We can only infer a size if we have arguments
-                if op.DestSize == None:
-                    # We need to infer destination size
-                    output_file.write("\t\tIR::OpSize InferSize = OpSize::iUnsized;\n")
-                    if len(op.Arguments) != 0:
-                        for arg in op.Arguments:
-                            if arg.IsSSA:
-                                output_file.write("\t\tauto Size{} = GetOpSize({});\n".format(arg.Name, arg.Name))
-                        for arg in op.Arguments:
-                            if arg.IsSSA:
-                                output_file.write("\t\tInferSize = std::max(InferSize, Size{});\n".format(arg.Name))
-
-                    output_file.write("\t\t_Op.first->Header.Size = InferSize;\n")
+            assert not (op.HasDest and op.DestSize is None)
 
             # Some ops without a destination still need an operating size
             # Effectively reusing the destination size value for operation size
