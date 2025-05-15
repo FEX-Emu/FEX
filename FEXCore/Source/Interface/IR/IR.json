@@ -500,7 +500,7 @@
         ]
       },
 
-      "SSA = FillRegister SSA:$OriginalValue, u32:$Slot, RegisterClass:$Class": {
+      "SSA = FillRegister OpSize:#Size, OpSize:#ElementSize, SSA:$OriginalValue, u32:$Slot, RegisterClass:$Class": {
         "Desc": ["Fills a register from a spill slot",
                  "Spill slots are register allocated and has live ranges calculated to handle slot calculation",
                  "```diff\n- !Don't use this op. It is for RA to handle spilling and filling!\n```",
@@ -508,6 +508,8 @@
                  "The OriginalValue SSA arg points at the original SSA value spilled, and only exists for",
                  "RA validation purposes"
                 ],
+        "DestSize": "Size",
+        "ElementSize": "ElementSize",
         "EmitValidation": [
           "WalkFindRegClass($OriginalValue) == $Class"
         ]
