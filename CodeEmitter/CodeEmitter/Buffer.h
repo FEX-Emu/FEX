@@ -53,6 +53,7 @@ public:
     if (!CurrentAlignment) {
       return;
     }
+    std::memset(CurrentOffset, 0, Size - CurrentAlignment);
     CurrentOffset += Size - CurrentAlignment;
   }
 
