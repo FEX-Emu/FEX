@@ -23,7 +23,8 @@ target_link_libraries(wow64fex
   ntdll_ex
 )
 
-target_link_options(wow64fex PRIVATE -static -nostdlib -nostartfiles -nodefaultlibs -lc++ -lc++abi -lunwind -lclang_rt.builtins-aarch64)
+target_link_options(wow64fex PRIVATE -static -nostdlib -nostartfiles -nodefaultlibs -lc++ -lc++abi -lunwind)
+target_link_libraries(wow64fex PRIVATE ${LIBGCC_PATH})
 install(TARGETS wow64fex
   RUNTIME
   DESTINATION ${CMAKE_INSTALL_LIBDIR}

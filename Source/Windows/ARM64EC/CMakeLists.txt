@@ -23,7 +23,8 @@ target_link_libraries(arm64ecfex
   ntdll_ex
 )
 
-target_link_options(arm64ecfex PRIVATE -static -nostdlib -nostartfiles -nodefaultlibs -lc++ -lc++abi -lunwind -lclang_rt.builtins-arm64ec)
+target_link_options(arm64ecfex PRIVATE -static -nostdlib -nostartfiles -nodefaultlibs -lc++ -lc++abi -lunwind)
+target_link_libraries(arm64ecfex PRIVATE ${LIBGCC_PATH})
 install(TARGETS arm64ecfex
   RUNTIME
   DESTINATION ${CMAKE_INSTALL_LIBDIR}
