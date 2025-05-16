@@ -163,7 +163,7 @@ private:
     LOGMAN_THROW_A_FMT(SlotPlusOne >= 1, "Old must have been spilled");
 
     RegisterClassType RegClass = GetRegClassFromNode(IR, IROp);
-    return IREmit->_FillRegister(IROp->Size, IROp->ElementSize, Old, SlotPlusOne - 1, RegClass);
+    return IREmit->_FillRegister(IROp->Size, IROp->ElementSize, SlotPlusOne - 1, RegClass);
   };
 
   // IP of next-use of each Old source. IPs are measured from the end of the
