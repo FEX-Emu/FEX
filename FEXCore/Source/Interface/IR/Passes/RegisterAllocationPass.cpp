@@ -170,7 +170,6 @@ private:
   // block, so we don't need to size the block up-front.
   fextl::vector<uint32_t> NextUses;
 
-  unsigned SpillSlotCount;
   bool AnySpilled;
 
   bool IsValidArg(OrderedNodeWrapper Arg) {
@@ -332,7 +331,7 @@ private:
       }
 
       // TODO: we should colour spill slots
-      uint32_t Slot = SpillSlotCount++;
+      uint32_t Slot = IR->GetHeader()->SpillSlots++;
 
       // We must map here in case we're spilling something we shuffled.
       auto SpillOp = IREmit->_SpillRegister(Map(Candidate), Slot, RegisterClassType {Reg.Class});
@@ -465,7 +464,6 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
   PreferredReg.resize(IR->GetSSACount(), PhysicalRegister::Invalid());
   SSAToReg.resize(IR->GetSSACount(), PhysicalRegister::Invalid());
   NextUses.resize(IR->GetSSACount(), 0);
-  SpillSlotCount = 0;
   AnySpilled = false;
 
   // Next-use distance relative to the block end of each source, last first.
@@ -661,7 +659,6 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
    * TODO: Rework RegisterAllocationData to remove this memcpy, it's pointless.
    */
   AllocData = RegisterAllocationData::Create(SSAToReg.size());
-  AllocData->SpillSlotCount = SpillSlotCount;
   memcpy(AllocData->Map, SSAToReg.data(), sizeof(PhysicalRegister) * SSAToReg.size());
 
   PreferredReg.clear();
