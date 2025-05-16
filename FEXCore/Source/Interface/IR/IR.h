@@ -141,21 +141,53 @@ struct FEX_PACKED NodeWrapperBase final {
   }
 
   [[nodiscard]]
+  bool IsImmediate() const {
+    return NodeOffset & (1u << 31);
+  }
+
+  [[nodiscard]]
+  bool IsPointer() const {
+    return !IsImmediate();
+  }
+
+  [[nodiscard]]
   Type* GetNode(uintptr_t Base) {
+    LOGMAN_THROW_A_FMT(IsPointer(), "Precondition");
     return reinterpret_cast<Type*>(Base + NodeOffset);
   }
   [[nodiscard]]
   const Type* GetNode(uintptr_t Base) const {
+    LOGMAN_THROW_A_FMT(IsPointer(), "Precondition");
     return reinterpret_cast<const Type*>(Base + NodeOffset);
   }
 
   void SetOffset(uintptr_t Base, uintptr_t Value) {
     NodeOffset = Value - Base;
+    LOGMAN_THROW_A_FMT(IsPointer(), "Offsets are within 2GiB range");
+  }
+
+  void SetImmediate(uint32_t Immediate) {
+    LOGMAN_THROW_A_FMT(Immediate < (1u << 31), "Bounded");
+    NodeOffset = Immediate | (1u << 31);
+    LOGMAN_THROW_A_FMT(IsImmediate(), "Encoded above");
+  }
+
+  [[nodiscard]]
+  uint32_t GetImmediate() const {
+    LOGMAN_THROW_A_FMT(IsImmediate(), "Precondition: must be an immediate");
+    return NodeOffset & ~(1u << 31);
   }
 
   [[nodiscard]]
   friend constexpr bool
   operator==(const NodeWrapperBase<Type>&, const NodeWrapperBase<Type>&) = default;
+
+  [[nodiscard]]
+  static NodeWrapperBase<Type> FromImmediate(uint32_t Immediate) {
+    NodeWrapperBase<Type> A;
+    A.SetImmediate(Immediate);
+    return A;
+  }
 };
 
 static_assert(std::is_trivially_copyable_v<NodeWrapperBase<OrderedNode>>);
