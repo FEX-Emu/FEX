@@ -187,7 +187,7 @@ std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps = []() consteval {
     {0xE4, 2, X86InstInfo{"IN",     TYPE_INST, FLAGS_BLOCK_END,                                                                                                      1, nullptr}},
     {0xE6, 2, X86InstInfo{"OUT",    TYPE_INST, FLAGS_BLOCK_END,                                                                                                      1, nullptr}},
 
-    {0xE8, 1, X86InstInfo{"CALL",   TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_BLOCK_END , 4, nullptr}},
+    {0xE8, 1, X86InstInfo{"CALL",   TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_BLOCK_END | FLAGS_CALL , 4, nullptr}},
     {0xE9, 1, X86InstInfo{"JMP",    TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_BLOCK_END , 4, nullptr}},
     {0xEB, 1, X86InstInfo{"JMP",    TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_BLOCK_END ,                             1, nullptr}},
 
