@@ -748,7 +748,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
   EmitInterruptChecks(CheckTF);
 
-  SpillSlots = RAData->SpillSlots();
+  SpillSlots = IR->SpillSlots();
 
   if (SpillSlots) {
     const auto TotalSpillSlotsSize = SpillSlots * MaxSpillSlotSize;
