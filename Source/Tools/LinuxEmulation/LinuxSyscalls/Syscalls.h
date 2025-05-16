@@ -246,22 +246,37 @@ public:
   virtual uint64_t GuestMunmap(FEXCore::Core::InternalThreadState* Thread, void* addr, uint64_t length) = 0;
 
   ///// Memory Manager tracking /////
-  // - Emulate* handlers always return syscall/errno combined data.
-  // - Callbacks to the actual operation while under lock, returning syscall/errno combined data.
-  uint64_t EmulateMmap(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length, int prot, int flags, int fd, off_t offset,
-                       fextl::move_only_function<uint64_t(void* addr, size_t length, int prot, int flags, int fd, off_t offset)> Callback);
-  uint64_t EmulateMunmap(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length,
-                         fextl::move_only_function<uint64_t(void* addr, size_t length)> Callback);
-  uint64_t EmulateMremap(
-    FEXCore::Core::InternalThreadState* Thread, void* old_address, size_t old_size, size_t new_size, int flags, void* new_address,
-    fextl::move_only_function<uint64_t(void* old_address, size_t old_size, size_t new_size, int flags, void* new_address)> Callback);
-  uint64_t EmulateShmat(FEXCore::Core::InternalThreadState* Thread, int shmid, const void* shmaddr, int shmflg,
-                        fextl::move_only_function<uint64_t(int shmid, const void* shmaddr, int shmflg)> Callback);
-  uint64_t EmulateShmdt(FEXCore::Core::InternalThreadState* Thread, const void* shmaddr,
-                        fextl::move_only_function<uint64_t(const void* shmaddr)> Callback);
-  // Callback unnecessary.
-  uint64_t EmulateMprotect(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t len, int prot);
+  void TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t addr, size_t length, int prot, int flags, int fd, off_t offset);
+  void TrackMunmap(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length);
+  void TrackMremap(FEXCore::Core::InternalThreadState* Thread, uint64_t OldAddress, size_t OldSize, size_t NewSize, int flags, uint64_t NewAddress);
+  void TrackShmat(FEXCore::Core::InternalThreadState* Thread, int shmid, uint64_t shmaddr, int shmflg, uint64_t Length);
+  uint64_t TrackShmdt(FEXCore::Core::InternalThreadState* Thread, uint64_t shmaddr);
+  void TrackMprotect(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t len, int prot);
   void TrackMadvise(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base, uintptr_t Size, int advice);
+
+  void InvalidateCodeRangeIfNecessary(FEXCore::Core::InternalThreadState* Thread, uint64_t Base, uint64_t Length) {
+    if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
+      TM.InvalidateGuestCodeRange(Thread, Base, Length);
+    }
+  }
+
+  void InvalidateCodeRangeIfNecessaryOnRemap(FEXCore::Core::InternalThreadState* Thread, uint64_t OldAddress, uint64_t NewAddress,
+                                             size_t OldSize, size_t NewSize) {
+    if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
+      if (OldAddress != NewAddress) {
+        if (OldSize != 0) {
+          // This also handles the MREMAP_DONTUNMAP case
+          TM.InvalidateGuestCodeRange(Thread, OldAddress, OldSize);
+        }
+      } else {
+        // If mapping shrunk, flush the unmapped region
+        if (OldSize > NewSize) {
+          TM.InvalidateGuestCodeRange(Thread, OldAddress + NewSize, OldSize - NewSize);
+        }
+      }
+    }
+  }
+
 
   ///// VMA (Virtual Memory Area) tracking /////
   static bool HandleSegfault(FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext);
@@ -293,6 +308,8 @@ public:
 
   constexpr static uint64_t TASK_MAX_64BIT = (1ULL << 48);
 
+  VMATracking::VMATracking VMATracking;
+
 protected:
   SyscallHandler(FEXCore::Context::Context* _CTX, FEX::HLE::SignalDelegator* _SignalDelegation, FEX::HLE::ThunkHandler* ThunkHandler);
 
@@ -314,7 +331,6 @@ protected:
   uint32_t GuestKernelVersion {};
 
   FEXCore::Context::Context* CTX;
-
 private:
 
   FEX::HLE::SignalDelegator* SignalDelegation;
@@ -335,7 +351,6 @@ private:
   GenerateMap(const std::string_view& GuestBinaryFile, const std::string_view& GuestBinaryFileId) override;
 
   std::atomic<uint64_t> AnonSharedId {1};
-  VMATracking::VMATracking VMATracking;
 };
 
 uint64_t HandleSyscall(SyscallHandler* Handler, FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args);
