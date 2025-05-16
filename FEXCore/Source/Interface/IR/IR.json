@@ -294,11 +294,11 @@
         "HasSideEffects": true,
         "RAOverride": "2"
       },
-      "ExitFunction GPR:$NewRIP": {
+      "ExitFunction OpSize:#Size, GPR:$NewRIP": {
         "Desc": ["Exits the current JIT function with a target RIP"
                 ],
         "HasSideEffects": true,
-        "DestSize": "GetOpSize(NewRIP)"
+        "DestSize": "Size"
       },
       "Break BreakDefinition:$Reason": {
         "HasSideEffects": true
@@ -500,7 +500,7 @@
         ]
       },
 
-      "SSA = FillRegister SSA:$OriginalValue, u32:$Slot, RegisterClass:$Class": {
+      "SSA = FillRegister OpSize:#Size, OpSize:#ElementSize, SSA:$OriginalValue, u32:$Slot, RegisterClass:$Class": {
         "Desc": ["Fills a register from a spill slot",
                  "Spill slots are register allocated and has live ranges calculated to handle slot calculation",
                  "```diff\n- !Don't use this op. It is for RA to handle spilling and filling!\n```",
@@ -508,6 +508,8 @@
                  "The OriginalValue SSA arg points at the original SSA value spilled, and only exists for",
                  "RA validation purposes"
                 ],
+        "DestSize": "Size",
+        "ElementSize": "ElementSize",
         "EmitValidation": [
           "WalkFindRegClass($OriginalValue) == $Class"
         ]
@@ -677,6 +679,7 @@
           "This is a special move that indicates the result will be poisoned by a non-SSA instruction writing to its result.",
           "In effect, it serves to prevent invalid optimizations with non-SSA instructions."
         ],
+        "DestSize": "OpSize::i64Bit",
         "HasSideEffects": true,
         "TiedSource": 0
       },

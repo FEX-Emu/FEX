@@ -161,7 +161,7 @@ public:
   }
   IRPair<IROp_ExitFunction> ExitFunction(Ref NewRIP) {
     FlushRegisterCache();
-    return _ExitFunction(NewRIP);
+    return _ExitFunction(GetOpSize(NewRIP), NewRIP);
   }
   IRPair<IROp_Break> Break(BreakDefinition Reason) {
     FlushRegisterCache();
