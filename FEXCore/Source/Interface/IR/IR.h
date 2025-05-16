@@ -225,7 +225,16 @@ class OrderedNode final {
 public:
   // These three values are laid out very specifically to make it fast to access the NodeWrappers specifically
   OrderedNodeHeader Header;
-  uint32_t NumUses;
+  uint16_t NumUses;
+
+  // After RA, the register allocated for the node. This is the register for the
+  // node at the time it is written, even if it is shuffled into other registers
+  // later. In other words, it is the register destination of the instruction
+  // represented by this OrderedNode.
+  //
+  // This is the raw value of a PhysicalRegister data structure.
+  uint8_t Reg;
+  uint8_t Pad;
 
   using value_type = OrderedNodeWrapper;
 
@@ -350,6 +359,7 @@ public:
   }
 
   void AddUse() {
+    LOGMAN_THROW_A_FMT(NumUses < 65535, "never exceeded in practice");
     ++NumUses;
   }
   void RemoveUse() {
