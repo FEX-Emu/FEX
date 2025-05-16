@@ -24,6 +24,12 @@ union PhysicalRegister {
     : Reg(Reg)
     , Class(Class.Val) {}
 
+  PhysicalRegister(OrderedNodeWrapper Arg)
+    : Raw(Arg.GetImmediate()) {}
+
+  PhysicalRegister(Ref Node)
+    : Raw(Node->Reg) {}
+
   static const PhysicalRegister Invalid() {
     return PhysicalRegister(InvalidClass, InvalidReg);
   }
