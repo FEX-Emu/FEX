@@ -57,7 +57,7 @@ void IRDumper::Run(IREmitter* IREmit) {
 
   // DumpIRStr might be no if not dumping but ShouldDump is set in OpDisp
   if (DumpToFile) {
-    const auto fileName = fextl::fmt::format("{}/{:x}{}", DumpIR(), HeaderOp->OriginalRIP, RA ? "-post.ir" : "-pre.ir");
+    const auto fileName = fextl::fmt::format("{}/{:x}{}", DumpIR(), HeaderOp->OriginalRIP, IR.PostRA() ? "-post.ir" : "-pre.ir");
     FD = FEXCore::File::File(fileName.c_str(),
                              FEXCore::File::FileModes::WRITE | FEXCore::File::FileModes::CREATE | FEXCore::File::FileModes::TRUNCATE);
   }
@@ -66,9 +66,9 @@ void IRDumper::Run(IREmitter* IREmit) {
     fextl::stringstream out;
     FEXCore::IR::Dump(&out, &IR, RA);
     if (FD.IsValid()) {
-      fextl::fmt::print(FD, "IR-{} 0x{:x}:\n{}\n@@@@@\n", RA ? "post" : "pre", HeaderOp->OriginalRIP, out.str());
+      fextl::fmt::print(FD, "IR-{} 0x{:x}:\n{}\n@@@@@\n", IR.PostRA() ? "post" : "pre", HeaderOp->OriginalRIP, out.str());
     } else {
-      LogMan::Msg::IFmt("IR-{} 0x{:x}:\n{}\n@@@@@\n", RA ? "post" : "pre", HeaderOp->OriginalRIP, out.str());
+      LogMan::Msg::IFmt("IR-{} 0x{:x}:\n{}\n@@@@@\n", IR.PostRA() ? "post" : "pre", HeaderOp->OriginalRIP, out.str());
     }
   }
 }
