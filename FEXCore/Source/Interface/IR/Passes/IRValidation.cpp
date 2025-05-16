@@ -58,11 +58,6 @@ void IRValidation::Run(IREmitter* IREmit) {
   LOGMAN_THROW_A_FMT(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
 #endif
 
-  IR::RegisterAllocationData* RAData {};
-  if (Manager->HasPass("RA")) {
-    RAData = Manager->GetPass<IR::RegisterAllocationPass>("RA")->GetAllocationData();
-  }
-
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
     auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
     LOGMAN_THROW_A_FMT(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
@@ -257,7 +252,7 @@ void IRValidation::Run(IREmitter* IREmit) {
   HadWarning = false;
   if (HadError || HadWarning) {
     fextl::stringstream Out;
-    FEXCore::IR::Dump(&Out, &CurrentIR, RAData);
+    FEXCore::IR::Dump(&Out, &CurrentIR);
 
     if (HadError) {
       Out << "Errors:" << std::endl << Errors.str() << std::endl;

@@ -419,9 +419,6 @@ class IRStorageBase {
 public:
   virtual ~IRStorageBase() = default;
 
-  // Optional RA data. Returns nullptr if none present
-  virtual const RegisterAllocationData* RAData() = 0;
-
   virtual IRListView GetIRView() = 0;
 };
 

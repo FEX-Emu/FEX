@@ -681,15 +681,13 @@ void Arm64JITCore::EmitInterruptChecks(bool CheckTF) {
 }
 
 CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size, bool SingleInst, const FEXCore::IR::IRListView* IR,
-                                                   FEXCore::Core::DebugData* DebugData, const FEXCore::IR::RegisterAllocationData* RAData,
-                                                   bool CheckTF) {
+                                                   FEXCore::Core::DebugData* DebugData, bool CheckTF) {
   FEXCORE_PROFILE_SCOPED("Arm64::CompileCode");
 
   JumpTargets.clear();
   uint32_t SSACount = IR->GetSSACount();
 
   this->Entry = Entry;
-  this->RAData = RAData;
   this->DebugData = DebugData;
   this->IR = IR;
 

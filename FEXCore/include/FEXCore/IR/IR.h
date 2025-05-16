@@ -17,7 +17,6 @@ namespace FEXCore::IR {
 
 class OrderedNode;
 class RegisterAllocationPass;
-class RegisterAllocationData;
 
 enum class SyscallFlags : uint8_t {
   DEFAULT = 0,
