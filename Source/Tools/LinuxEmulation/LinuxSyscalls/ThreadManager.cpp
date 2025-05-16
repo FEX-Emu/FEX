@@ -297,7 +297,7 @@ void ThreadManager::Step() {
     // Walk the threads and tell them to clear their caches
     // Useful when our block size is set to a large number and we need to step a single instruction
     for (auto& Thread : Threads) {
-      CTX->ClearCodeCache(Thread->Thread);
+      CTX->ClearCodeCache(Thread->Thread, false);
     }
   }
 
