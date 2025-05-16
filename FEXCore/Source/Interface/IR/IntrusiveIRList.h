@@ -234,6 +234,16 @@ public:
     return GetOp<IROp_IRHeader>(GetHeaderNode());
   }
 
+  [[nodiscard]]
+  unsigned PostRA() const {
+    return GetHeader()->PostRA;
+  }
+
+  [[nodiscard]]
+  unsigned SpillSlots() const {
+    return GetHeader()->SpillSlots;
+  }
+
   template<typename T>
   [[nodiscard]]
   T* GetOp(Ref Node) const {
