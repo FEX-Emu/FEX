@@ -19,6 +19,10 @@ function(patch_library_wine target)
   )
 endfunction()
 
+execute_process(COMMAND ${CMAKE_CXX_COMPILER} ${CMAKE_CXX_FLAGS} -print-libgcc-file-name
+                OUTPUT_VARIABLE LIBGCC_PATH
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
+
 build_implib(ntdll)
 build_implib(wow64)
 
