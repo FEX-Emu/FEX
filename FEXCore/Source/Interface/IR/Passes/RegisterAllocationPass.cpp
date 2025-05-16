@@ -670,6 +670,8 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
   SSAToReg.clear();
   SpillSlots.clear();
   NextUses.clear();
+
+  IR->GetHeader()->PostRA = true;
 }
 
 fextl::unique_ptr<IR::RegisterAllocationPass> CreateRegisterAllocationPass() {
