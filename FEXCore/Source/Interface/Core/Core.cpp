@@ -514,7 +514,7 @@ static void IRDumper(FEXCore::Core::InternalThreadState* Thread, IR::IREmitter* 
   fextl::stringstream out;
   auto NewIR = IREmitter->ViewIR();
   FEXCore::IR::Dump(&out, &NewIR, RA);
-  fextl::fmt::print(FD, "IR-ShouldDump-{} 0x{:x}:\n{}\n@@@@@\n", RA ? "post" : "pre", GuestRIP, out.str());
+  fextl::fmt::print(FD, "IR-ShouldDump-{} 0x{:x}:\n{}\n@@@@@\n", NewIR.PostRA() ? "post" : "pre", GuestRIP, out.str());
 };
 
 ContextImpl::GenerateIRResult
