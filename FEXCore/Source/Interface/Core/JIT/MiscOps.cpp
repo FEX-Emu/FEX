@@ -16,7 +16,6 @@ $end_info$
 #include <FEXCore/Core/SignalDelegator.h>
 
 namespace FEXCore::CPU {
-#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::NodeID Node)
 
 DEF_OP(AllocateGPR) {}
 DEF_OP(AllocateGPRAfter) {}
@@ -271,5 +270,4 @@ DEF_OP(Yield) {
   yield();
 }
 
-#undef DEF_OP
 } // namespace FEXCore::CPU

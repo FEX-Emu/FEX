@@ -18,7 +18,6 @@ $end_info$
 #include <FEXCore/Utils/MathUtils.h>
 
 namespace FEXCore::CPU {
-#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::NodeID Node)
 
 DEF_OP(CallbackReturn) {
   // spill back to CTX
@@ -483,5 +482,4 @@ DEF_OP(XGetBV) {
   ubfx(ARMEmitter::Size::i64Bit, GetReg(Op->OutEDX), TMP1, 32, 32);
 }
 
-#undef DEF_OP
 } // namespace FEXCore::CPU
