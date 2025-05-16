@@ -652,6 +652,25 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
     }
 
     LOGMAN_THROW_A_FMT(SourceIndex == 0, "Consistent source count in block");
+
+    // Finalize results for the block. This will go away.
+    for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
+      for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
+        if (IROp->Args[s].IsInvalid()) {
+          continue;
+        }
+
+        auto Reg = SSAToReg[IROp->Args[s].ID().Value];
+
+        if (!Reg.IsInvalid()) {
+          IROp->Args[s].SetImmediate(Reg.Raw);
+        }
+      }
+
+      if (GetHasDest(IROp->Op)) {
+        CodeNode->Reg = SSAToReg[IR->GetID(CodeNode).Value].Raw;
+      }
+    }
   }
 
   /* Now that we're done growing things, we can finalize our results.
