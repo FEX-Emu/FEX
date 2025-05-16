@@ -50,7 +50,6 @@ namespace HLE {
 } // namespace FEXCore
 
 namespace FEXCore::IR {
-class RegisterAllocationData;
 struct IRListCopy;
 class IRListView;
 namespace Validation {
@@ -271,7 +270,6 @@ public:
 
   struct GenerateIRResult {
     std::optional<IR::IRListView> IRView;
-    IR::RegisterAllocationData* RAData;
     uint64_t TotalInstructions;
     uint64_t TotalInstructionsLength;
     uint64_t StartAddr;

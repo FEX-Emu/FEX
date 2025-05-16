@@ -15,7 +15,6 @@ class IntrusivePooledAllocator;
 namespace FEXCore::IR {
 class Pass;
 class RegisterAllocationPass;
-class RegisterAllocationData;
 
 fextl::unique_ptr<FEXCore::IR::Pass> CreateConstProp(bool SupportsTSOImm9, const FEXCore::CPUIDEmu* CPUID);
 fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadFlagCalculationEliminination();

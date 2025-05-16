@@ -58,11 +58,7 @@ public:
   void Run(IREmitter* IREmit) override;
   void AddRegisters(IR::RegisterClassType Class, uint32_t RegisterCount) override;
 
-  RegisterAllocationData* GetAllocationData() override;
-  RegisterAllocationData::UniquePtr PullAllocationData() override;
-
 private:
-  IR::RegisterAllocationData::UniquePtr AllocData;
   RegisterClass Classes[INVALID_CLASS];
 
   IREmitter* IREmit;
@@ -445,14 +441,6 @@ void ConstrainedRAPass::AddRegisters(IR::RegisterClassType Class, uint32_t Regis
   Classes[Class].Count = RegisterCount;
 }
 
-RegisterAllocationData* ConstrainedRAPass::GetAllocationData() {
-  return AllocData.get();
-}
-
-RegisterAllocationData::UniquePtr ConstrainedRAPass::PullAllocationData() {
-  return std::move(AllocData);
-}
-
 void ConstrainedRAPass::Run(IREmitter* IREmit_) {
   FEXCORE_PROFILE_SCOPED("PassManager::RA");
 
@@ -672,13 +660,6 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
       }
     }
   }
-
-  /* Now that we're done growing things, we can finalize our results.
-   *
-   * TODO: Rework RegisterAllocationData to remove this memcpy, it's pointless.
-   */
-  AllocData = RegisterAllocationData::Create(SSAToReg.size());
-  memcpy(AllocData->Map, SSAToReg.data(), sizeof(PhysicalRegister) * SSAToReg.size());
 
   PreferredReg.clear();
   SSAToNewSSA.clear();

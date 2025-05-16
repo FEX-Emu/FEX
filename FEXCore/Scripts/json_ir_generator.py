@@ -575,7 +575,7 @@ def print_ir_arg_printer():
 
                 if arg.IsSSA:
                     # SSA value
-                    output_file.write("\tPrintArg(out, IR, Op->Header.Args[{}], RAData);\n".format(SSAArgNum))
+                    output_file.write("\tPrintArg(out, IR, Op->Header.Args[{}]);\n".format(SSAArgNum))
                     SSAArgNum = SSAArgNum + 1
                 else:
                     # User defined op that is stored

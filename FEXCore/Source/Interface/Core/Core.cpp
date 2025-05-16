@@ -509,11 +509,11 @@ void ContextImpl::ClearCodeCache(FEXCore::Core::InternalThreadState* Thread) {
   Thread->CPUBackend->ClearCache();
 }
 
-static void IRDumper(FEXCore::Core::InternalThreadState* Thread, IR::IREmitter* IREmitter, uint64_t GuestRIP, IR::RegisterAllocationData* RA) {
+static void IRDumper(FEXCore::Core::InternalThreadState* Thread, IR::IREmitter* IREmitter, uint64_t GuestRIP) {
   FEXCore::File::File FD = FEXCore::File::File::GetStdERR();
   fextl::stringstream out;
   auto NewIR = IREmitter->ViewIR();
-  FEXCore::IR::Dump(&out, &NewIR, RA);
+  FEXCore::IR::Dump(&out, &NewIR);
   fextl::fmt::print(FD, "IR-ShouldDump-{} 0x{:x}:\n{}\n@@@@@\n", NewIR.PostRA() ? "post" : "pre", GuestRIP, out.str());
 };
 
@@ -686,7 +686,7 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
         if (HadDispatchError && TotalInstructions == 0) {
           // Couldn't handle any instruction in op dispatcher
           Thread->OpDispatcher->ResetWorkingList();
-          return {{}, nullptr, 0, 0, 0, 0};
+          return {{}, 0, 0, 0, 0};
         }
 
         if (NeedsBlockEnd) {
@@ -712,22 +712,19 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
   auto ShouldDump = Thread->OpDispatcher->ShouldDumpIR();
   // Debug
   if (ShouldDump) {
-    IRDumper(Thread, IREmitter, GuestRIP, nullptr);
+    IRDumper(Thread, IREmitter, GuestRIP);
   }
 
   // Run the passmanager over the IR from the dispatcher
   Thread->PassManager->Run(IREmitter);
 
-  auto RAData = Thread->PassManager->HasPass("RA") ? Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA")->GetAllocationData() : nullptr;
-
   // Debug
   if (ShouldDump) {
-    IRDumper(Thread, IREmitter, GuestRIP, RAData);
+    IRDumper(Thread, IREmitter, GuestRIP);
   }
 
   return {
     .IRView = IREmitter->ViewIR(),
-    .RAData = RAData,
     .TotalInstructions = TotalInstructions,
     .TotalInstructionsLength = TotalInstructionsLength,
     .StartAddr = Thread->FrontendDecoder->DecodedMinAddress,
@@ -760,8 +757,7 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
   }
 
   // Generate IR + Meta Info
-  auto [IRView, RAData, TotalInstructions, TotalInstructionsLength, StartAddr, Length] =
-    GenerateIR(Thread, GuestRIP, Config.GDBSymbols(), MaxInst);
+  auto [IRView, TotalInstructions, TotalInstructionsLength, StartAddr, Length] = GenerateIR(Thread, GuestRIP, Config.GDBSymbols(), MaxInst);
   if (!IRView) {
     return {nullptr, nullptr, 0, 0};
   }
@@ -772,7 +768,7 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
 
   // Attempt to get the CPU backend to compile this code
 
-  auto CompiledCode = Thread->CPUBackend->CompileCode(GuestRIP, Length, TotalInstructions == 1, &*IRView, DebugData.get(), RAData, TFSet);
+  auto CompiledCode = Thread->CPUBackend->CompileCode(GuestRIP, Length, TotalInstructions == 1, &*IRView, DebugData.get(), TFSet);
 
   // Release the IR
   Thread->OpDispatcher->DelayedDisownBuffer();

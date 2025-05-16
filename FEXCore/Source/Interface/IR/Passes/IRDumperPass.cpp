@@ -38,12 +38,6 @@ IRDumper::IRDumper() {
 }
 
 void IRDumper::Run(IREmitter* IREmit) {
-  auto RAPass = Manager->GetPass<IR::RegisterAllocationPass>("RA");
-  IR::RegisterAllocationData* RA {};
-  if (RAPass) {
-    RA = RAPass->GetAllocationData();
-  }
-
   FEXCore::File::File FD {};
   if (DumpIR() == "stderr") {
     FD = FEXCore::File::File::GetStdERR();
@@ -64,7 +58,7 @@ void IRDumper::Run(IREmitter* IREmit) {
 
   if (FD.IsValid() || DumpToLog) {
     fextl::stringstream out;
-    FEXCore::IR::Dump(&out, &IR, RA);
+    FEXCore::IR::Dump(&out, &IR);
     if (FD.IsValid()) {
       fextl::fmt::print(FD, "IR-{} 0x{:x}:\n{}\n@@@@@\n", IR.PostRA() ? "post" : "pre", HeaderOp->OriginalRIP, out.str());
     } else {
