@@ -24,7 +24,6 @@ fextl::unique_ptr<FEXCore::IR::Pass> CreateX87StackOptimizationPass(const FEXCor
 
 namespace Validation {
   fextl::unique_ptr<FEXCore::IR::Pass> CreateIRValidation();
-  fextl::unique_ptr<FEXCore::IR::Pass> CreateRAValidation();
 } // namespace Validation
 
 namespace Debug {

@@ -16,8 +16,6 @@ struct BlockInfo {
   fextl::vector<OrderedNode*> Successors;
 };
 
-class RAValidation;
-
 class IRValidation final : public FEXCore::IR::Pass {
 public:
   ~IRValidation();
@@ -29,7 +27,5 @@ private:
   OrderedNode* EntryBlock {};
   fextl::unordered_map<IR::NodeID, BlockInfo> OffsetToBlockMap;
   size_t MaxNodes {};
-
-  friend class RAValidation;
 };
 } // namespace FEXCore::IR::Validation
