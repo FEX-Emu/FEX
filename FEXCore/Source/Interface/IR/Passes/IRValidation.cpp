@@ -94,9 +94,9 @@ void IRValidation::Run(IREmitter* IREmit) {
           Warnings << "%" << ID << ": Destination created but had no uses" << std::endl;
         }
 
-        if (RAData) {
-          // If we have a register allocator then the destination needs to be assigned a register and class
-          auto PhyReg = RAData->GetNodeRegister(ID);
+        if (CurrentIR.PostRA()) {
+          // After RA, the destination needs to be assigned a register and class
+          auto PhyReg = PhysicalRegister(CodeNode);
 
           FEXCore::IR::RegisterClassType ExpectedClass = IR::GetRegClass(IROp->Op);
           FEXCore::IR::RegisterClassType AssignedClass = FEXCore::IR::RegisterClassType {PhyReg.Class};
@@ -127,6 +127,10 @@ void IRValidation::Run(IREmitter* IREmit) {
       for (uint32_t i = 0; i < NumArgs; ++i) {
         OrderedNodeWrapper Arg = IROp->Args[i];
         const auto ArgID = Arg.ID();
+        if (Arg.IsImmediate()) {
+          continue;
+        }
+
         IROps Op = CurrentIR.GetOp<IROp_Header>(Arg)->Op;
 
         if (ArgID.IsValid()) {
@@ -239,11 +243,14 @@ void IRValidation::Run(IREmitter* IREmit) {
     }
   }
 
-  for (uint32_t i = 0; i < CurrentIR.GetSSACount(); i++) {
-    auto [Node, IROp] = CurrentIR.at(IR::NodeID {i})();
-    if (Node->NumUses != Uses[i] && IROp->Op != OP_CODEBLOCK && IROp->Op != OP_IRHEADER) {
-      HadError |= true;
-      Errors << "%" << i << " Has " << Uses[i] << " Uses, but reports " << Node->NumUses << std::endl;
+  // Use counts are only relevant pre-RA.
+  if (!CurrentIR.PostRA()) {
+    for (uint32_t i = 0; i < CurrentIR.GetSSACount(); i++) {
+      auto [Node, IROp] = CurrentIR.at(IR::NodeID {i})();
+      if (Node->NumUses != Uses[i] && IROp->Op != OP_CODEBLOCK && IROp->Op != OP_IRHEADER) {
+        HadError |= true;
+        Errors << "%" << i << " Has " << Uses[i] << " Uses, but reports " << Node->NumUses << std::endl;
+      }
     }
   }
 

@@ -66,9 +66,7 @@ private:
   fextl::map<IR::NodeID, ARMEmitter::BiDirectionalLabel> JumpTargets;
 
   [[nodiscard]]
-  ARMEmitter::Register GetReg(IR::NodeID Node) const {
-    const auto Reg = GetPhys(Node);
-
+  ARMEmitter::Register GetReg(IR::PhysicalRegister Reg) const {
     LOGMAN_THROW_A_FMT(Reg.Class == IR::GPRFixedClass.Val || Reg.Class == IR::GPRClass.Val, "Unexpected Class: {}", Reg.Class);
 
     if (Reg.Class == IR::GPRFixedClass.Val) {
@@ -81,14 +79,17 @@ private:
   }
 
   [[nodiscard]]
-  ARMEmitter::Register GetReg(IR::OrderedNodeWrapper Wrap) const {
-    return GetReg(Wrap.ID());
+  ARMEmitter::Register GetReg(IR::Ref Node) const {
+    return GetReg(IR::PhysicalRegister(Node));
   }
 
   [[nodiscard]]
-  ARMEmitter::VRegister GetVReg(IR::NodeID Node) const {
-    const auto Reg = GetPhys(Node);
+  ARMEmitter::Register GetReg(IR::OrderedNodeWrapper Wrap) const {
+    return GetReg(IR::PhysicalRegister(Wrap));
+  }
 
+  [[nodiscard]]
+  ARMEmitter::VRegister GetVReg(IR::PhysicalRegister Reg) const {
     LOGMAN_THROW_A_FMT(Reg.Class == IR::FPRFixedClass.Val || Reg.Class == IR::FPRClass.Val, "Unexpected Class: {}", Reg.Class);
 
     if (Reg.Class == IR::FPRFixedClass.Val) {
@@ -101,20 +102,18 @@ private:
   }
 
   [[nodiscard]]
-  ARMEmitter::VRegister GetVReg(IR::OrderedNodeWrapper Wrap) const {
-    return GetVReg(Wrap.ID());
+  ARMEmitter::VRegister GetVReg(IR::Ref Node) const {
+    return GetVReg(IR::PhysicalRegister(Node));
   }
 
   [[nodiscard]]
-  FEXCore::IR::RegisterClassType GetRegClass(IR::NodeID Node) const;
+  ARMEmitter::VRegister GetVReg(IR::OrderedNodeWrapper Wrap) const {
+    return GetVReg(IR::PhysicalRegister(Wrap));
+  }
 
   [[nodiscard]]
-  IR::PhysicalRegister GetPhys(IR::NodeID Node) const {
-    auto PhyReg = RAData->GetNodeRegister(Node);
-
-    LOGMAN_THROW_A_FMT(!PhyReg.IsInvalid(), "Couldn't Allocate register for node: ssa{}. Class: {}", Node, PhyReg.Class);
-
-    return PhyReg;
+  FEXCore::IR::RegisterClassType GetRegClass(IR::Ref Node) const {
+    return FEXCore::IR::RegisterClassType {IR::PhysicalRegister(Node).Class};
   }
 
   [[nodiscard]]
@@ -234,18 +233,33 @@ private:
   }
 
   [[nodiscard]]
-  bool IsFPR(IR::NodeID Node) const;
+  bool IsFPR(IR::RegisterClassType Class) const {
+    return Class == IR::FPRClass || Class == IR::FPRFixedClass;
+  }
+
   [[nodiscard]]
-  bool IsGPR(IR::NodeID Node) const;
+  bool IsGPR(IR::RegisterClassType Class) const {
+    return Class == IR::GPRClass || Class == IR::GPRFixedClass;
+  }
+
+  [[nodiscard]]
+  bool IsGPR(IR::Ref Node) {
+    return IsGPR(GetRegClass(Node));
+  }
+
+  [[nodiscard]]
+  bool IsFPR(IR::Ref Node) {
+    return IsFPR(GetRegClass(Node));
+  }
 
   [[nodiscard]]
   bool IsGPR(IR::OrderedNodeWrapper Wrap) {
-    return IsGPR(Wrap.ID());
+    return IsGPR(IR::RegisterClassType {IR::PhysicalRegister(Wrap).Class});
   }
 
   [[nodiscard]]
   bool IsFPR(IR::OrderedNodeWrapper Wrap) {
-    return IsFPR(Wrap.ID());
+    return IsFPR(IR::RegisterClassType {IR::PhysicalRegister(Wrap).Class});
   }
 
   [[nodiscard]]
@@ -339,7 +353,7 @@ private:
   /**  @} */
 
   uint32_t SpillSlots {};
-  using OpType = void (Arm64JITCore::*)(const IR::IROp_Header* IROp, IR::NodeID Node);
+  using OpType = void (Arm64JITCore::*)(const IR::IROp_Header* IROp, IR::Ref Node);
 
   using ScalarFMAOpCaller =
     std::function<void(ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2, ARMEmitter::VRegister Src3)>;
@@ -366,7 +380,7 @@ private:
   OpType RT_LoadMemTSO;
   OpType RT_StoreMemTSO;
 
-#define DEF_OP(x) void Op_##x(IR::IROp_Header const* IROp, IR::NodeID Node)
+#define DEF_OP(x) void Op_##x(IR::IROp_Header const* IROp, IR::Ref Node)
 
   // Dynamic Dispatcher supporting operations
   DEF_OP(ParanoidLoadMemTSO);
@@ -383,7 +397,7 @@ private:
 #undef DEF_OP
 };
 
-#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::NodeID Node)
+#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::Ref Node)
 
 [[nodiscard]]
 fextl::unique_ptr<CPUBackend> CreateArm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::InternalThreadState* Thread);
