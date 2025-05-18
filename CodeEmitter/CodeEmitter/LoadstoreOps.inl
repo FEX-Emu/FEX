@@ -1648,8 +1648,8 @@ public:
   template<typename T>
   void ASIMDLoadStoreSinglePost(uint32_t Op, uint32_t Q, uint32_t L, uint32_t R, uint32_t opcode, uint32_t S, uint32_t size,
                                 ARMEmitter::Register rm, ARMEmitter::Register rn, T rt) {
-    LOGMAN_THROW_A_FMT(std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>, "Only supports 128-bit and "
-                                                                                                             "64-bit vector registers.");
+    LOGMAN_THROW_A_FMT((std::is_same_v<ARMEmitter::QRegister, T> || std::is_same_v<ARMEmitter::DRegister, T>), "Only supports 128-bit and "
+                                                                                                               "64-bit vector registers.");
     uint32_t Instr = Op;
 
     Instr |= Q << 30;
