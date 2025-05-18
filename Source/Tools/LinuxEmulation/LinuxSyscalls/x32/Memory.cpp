@@ -21,37 +21,6 @@ $end_info$
 
 namespace FEX::HLE::x32 {
 
-void* x32SyscallHandler::GuestMmap(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length, int prot, int flags, int fd, off_t offset) {
-  LOGMAN_THROW_A_FMT((length >> 32) == 0, "values must fit to 32 bits");
-
-  auto Result = (uint64_t)GetAllocator()->Mmap((void*)addr, length, prot, flags, fd, offset);
-
-  LOGMAN_THROW_A_FMT((Result >> 32) == 0 || (Result >> 32) == 0xFFFFFFFF, "values must fit to 32 bits");
-
-  if (!FEX::HLE::HasSyscallError(Result)) {
-    FEX::HLE::_SyscallHandler->TrackMmap(Thread, Result, length, prot, flags, fd, offset);
-    return (void*)Result;
-  } else {
-    errno = -Result;
-    return MAP_FAILED;
-  }
-}
-
-int x32SyscallHandler::GuestMunmap(FEXCore::Core::InternalThreadState* Thread, void* addr, uint64_t length) {
-  LOGMAN_THROW_A_FMT((uintptr_t(addr) >> 32) == 0, "values must fit to 32 bits");
-  LOGMAN_THROW_A_FMT((length >> 32) == 0, "values must fit to 32 bits");
-
-  auto Result = GetAllocator()->Munmap(addr, length);
-
-  if (Result == 0) {
-    FEX::HLE::_SyscallHandler->TrackMunmap(Thread, (uintptr_t)addr, length);
-    return Result;
-  } else {
-    errno = -Result;
-    return -1;
-  }
-}
-
 void RegisterMemory(FEX::HLE::SyscallHandler* Handler) {
   struct old_mmap_struct {
     uint32_t addr;
@@ -62,23 +31,20 @@ void RegisterMemory(FEX::HLE::SyscallHandler* Handler) {
     uint32_t offset;
   };
   REGISTER_SYSCALL_IMPL_X32(mmap, [](FEXCore::Core::CpuStateFrame* Frame, const old_mmap_struct* arg) -> uint64_t {
-    uint64_t Result = (uint64_t) static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)
-                        ->GuestMmap(Frame->Thread, reinterpret_cast<void*>(arg->addr), arg->len, arg->prot, arg->flags, arg->fd, arg->offset);
+    auto Result = reinterpret_cast<uint64_t>(FEX::HLE::_SyscallHandler->GuestMmap(false, Frame->Thread, reinterpret_cast<void*>(arg->addr), arg->len, arg->prot, arg->flags, arg->fd, arg->offset));
 
     SYSCALL_ERRNO();
   });
 
   REGISTER_SYSCALL_IMPL_X32(
     mmap2, [](FEXCore::Core::CpuStateFrame* Frame, uint32_t addr, uint32_t length, int prot, int flags, int fd, uint32_t pgoffset) -> uint64_t {
-      uint64_t Result = (uint64_t) static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)
-                          ->GuestMmap(Frame->Thread, reinterpret_cast<void*>(addr), length, prot, flags, fd, (uint64_t)pgoffset * 0x1000);
+      auto Result = reinterpret_cast<uint64_t>(FEX::HLE::_SyscallHandler->GuestMmap(false, Frame->Thread, reinterpret_cast<void*>(addr), length, prot, flags, fd, (uint64_t)pgoffset * 0x1000));
 
       SYSCALL_ERRNO();
     });
 
   REGISTER_SYSCALL_IMPL_X32(munmap, [](FEXCore::Core::CpuStateFrame* Frame, void* addr, size_t length) -> uint64_t {
-    uint64_t Result =
-      (uint64_t) static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GuestMunmap(Frame->Thread, addr, length);
+    uint64_t Result = FEX::HLE::_SyscallHandler->GuestMunmap(false, Frame->Thread, addr, length);
 
     SYSCALL_ERRNO();
   });
