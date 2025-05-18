@@ -94,8 +94,7 @@ void RegisterMemory(FEX::HLE::SyscallHandler* Handler) {
 
   REGISTER_SYSCALL_IMPL_X32(
     mremap, [](FEXCore::Core::CpuStateFrame* Frame, void* old_address, size_t old_size, size_t new_size, int flags, void* new_address) -> uint64_t {
-      uint64_t Result = reinterpret_cast<uint64_t>(
-        static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->Mremap(old_address, old_size, new_size, flags, new_address));
+      uint64_t Result = reinterpret_cast<uint64_t>(FEX::HLE::_SyscallHandler->Get32BitAllocator()->Mremap(old_address, old_size, new_size, flags, new_address));
 
       if (!FEX::HLE::HasSyscallError(Result)) {
         FEX::HLE::_SyscallHandler->TrackMremap(Frame->Thread, (uintptr_t)old_address, old_size, new_size, flags, Result);
@@ -117,9 +116,7 @@ void RegisterMemory(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_IMPL_X32(shmat, [](FEXCore::Core::CpuStateFrame* Frame, int shmid, const void* shmaddr, int shmflg) -> uint64_t {
     // also implemented in ipc:OP_SHMAT
     uint32_t ResultAddr {};
-    uint64_t Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)
-                        ->GetAllocator()
-                        ->Shmat(shmid, reinterpret_cast<const void*>(shmaddr), shmflg, &ResultAddr);
+    uint64_t Result = FEX::HLE::_SyscallHandler->Get32BitAllocator()->Shmat(shmid, reinterpret_cast<const void*>(shmaddr), shmflg, &ResultAddr);
 
     if (!FEX::HLE::HasSyscallError(Result)) {
       FEX::HLE::_SyscallHandler->TrackShmat(Frame->Thread, shmid, ResultAddr, shmflg);
@@ -131,7 +128,7 @@ void RegisterMemory(FEX::HLE::SyscallHandler* Handler) {
 
   REGISTER_SYSCALL_IMPL_X32(shmdt, [](FEXCore::Core::CpuStateFrame* Frame, const void* shmaddr) -> uint64_t {
     // also implemented in ipc:OP_SHMDT
-    uint64_t Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->Shmdt(shmaddr);
+    uint64_t Result = FEX::HLE::_SyscallHandler->Get32BitAllocator()->Shmdt(shmaddr);
 
     if (!FEX::HLE::HasSyscallError(Result)) {
       FEX::HLE::_SyscallHandler->TrackShmdt(Frame->Thread, (uintptr_t)shmaddr);
