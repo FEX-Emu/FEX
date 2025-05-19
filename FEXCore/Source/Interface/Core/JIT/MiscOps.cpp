@@ -17,10 +17,6 @@ $end_info$
 
 namespace FEXCore::CPU {
 
-DEF_OP(AllocateGPR) {}
-DEF_OP(AllocateGPRAfter) {}
-DEF_OP(AllocateFPR) {}
-
 DEF_OP(GuestOpcode) {
   auto Op = IROp->C<IR::IROp_GuestOpcode>();
   // metadata

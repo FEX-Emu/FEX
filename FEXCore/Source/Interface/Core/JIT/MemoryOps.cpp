@@ -136,11 +136,8 @@ DEF_OP(LoadRegister) {
 
   if (Op->Class == IR::GPRClass) {
     LOGMAN_THROW_A_FMT(Op->Reg < StaticRegisters.size(), "out of range reg");
-    const auto reg = StaticRegisters[Op->Reg];
 
-    if (GetReg(Node).Idx() != reg.Idx()) {
-      mov(GetReg(Node).X(), reg.X());
-    }
+    mov(GetReg(Node).X(), StaticRegisters[Op->Reg].X());
   } else if (Op->Class == IR::FPRClass) {
     [[maybe_unused]] const auto regSize = HostSupportsAVX256 ? IR::OpSize::i256Bit : IR::OpSize::i128Bit;
     LOGMAN_THROW_A_FMT(Op->Reg < StaticFPRegisters.size(), "out of range reg");
@@ -149,12 +146,10 @@ DEF_OP(LoadRegister) {
     const auto guest = StaticFPRegisters[Op->Reg];
     const auto host = GetVReg(Node);
 
-    if (host.Idx() != guest.Idx()) {
-      if (HostSupportsAVX256) {
-        mov(ARMEmitter::SubRegSize::i64Bit, host.Z(), PRED_TMP_32B.Merging(), guest.Z());
-      } else {
-        mov(host.Q(), guest.Q());
-      }
+    if (HostSupportsAVX256) {
+      mov(ARMEmitter::SubRegSize::i64Bit, host.Z(), PRED_TMP_32B.Merging(), guest.Z());
+    } else {
+      mov(host.Q(), guest.Q());
     }
   } else {
     LOGMAN_THROW_A_FMT(false, "Unhandled Op->Class {}", Op->Class);
@@ -187,12 +182,9 @@ DEF_OP(StoreRegister) {
 
     LOGMAN_THROW_A_FMT(Reg < StaticRegisters.size(), "out of range reg");
     const auto reg = StaticRegisters[Reg];
-    const auto Src = GetReg(Op->Value);
 
-    if (Src.Idx() != reg.Idx()) {
-      // Always use 64-bit, it's faster. Upper bits ignored for 32-bit mode.
-      mov(ARMEmitter::Size::i64Bit, reg, Src);
-    }
+    // Always use 64-bit, it's faster. Upper bits ignored for 32-bit mode.
+    mov(ARMEmitter::Size::i64Bit, reg, GetReg(Op->Value));
   } else if (Op->Class == IR::FPRClass) {
     [[maybe_unused]] const auto regSize = HostSupportsAVX256 ? IR::OpSize::i256Bit : IR::OpSize::i128Bit;
     LOGMAN_THROW_A_FMT(Op->Reg < StaticFPRegisters.size(), "reg out of range");
@@ -201,12 +193,10 @@ DEF_OP(StoreRegister) {
     const auto guest = StaticFPRegisters[Op->Reg];
     const auto host = GetVReg(Op->Value);
 
-    if (guest.Idx() != host.Idx()) {
-      if (HostSupportsAVX256) {
-        mov(ARMEmitter::SubRegSize::i64Bit, guest.Z(), PRED_TMP_32B.Merging(), host.Z());
-      } else {
-        mov(guest.Q(), host.Q());
-      }
+    if (HostSupportsAVX256) {
+      mov(ARMEmitter::SubRegSize::i64Bit, guest.Z(), PRED_TMP_32B.Merging(), host.Z());
+    } else {
+      mov(guest.Q(), host.Q());
     }
   } else {
     LOGMAN_THROW_A_FMT(false, "Unhandled Op->Class {}", Op->Class);

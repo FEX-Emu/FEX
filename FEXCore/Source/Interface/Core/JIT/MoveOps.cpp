@@ -15,13 +15,7 @@ DEF_OP(Copy) {
 }
 
 DEF_OP(RMWHandle) {
-  auto Op = IROp->C<IR::IROp_RMWHandle>();
-  auto Dest = GetReg(Node);
-  auto Src = GetReg(Op->Value);
-
-  if (Dest != Src) {
-    mov(ARMEmitter::Size::i64Bit, Dest, Src);
-  }
+  mov(ARMEmitter::Size::i64Bit, GetReg(Node), GetReg(IROp->Args[0]));
 }
 
 DEF_OP(Swap1) {
