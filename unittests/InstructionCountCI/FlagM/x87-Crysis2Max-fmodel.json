@@ -8585,8 +8585,7 @@
         "fmov s2, s0",
         "str s2, [x7, #960]",
         "mov x8, x9",
-        "ldr w9, [x8], #4",
-        "ldr w20, [x8], #4",
+        "ldp w9, w20, [x8], #8",
         "ldrb w21, [x28, #1019]",
         "add w21, w21, #0x3 (3)",
         "and w21, w21, #0x7",
@@ -8597,7 +8596,7 @@
         "strb w21, [x28, #1298]"
       ],
       "x86InstructionCount": 809,
-      "ExpectedInstructionCount": 7770
+      "ExpectedInstructionCount": 7769
     }
   }
 }
