@@ -227,6 +227,15 @@ public:
   OrderedNodeHeader Header;
   uint32_t NumUses;
 
+  // After RA, the register allocated for the node. This is the register for the
+  // node at the time it is written, even if it is shuffled into other registers
+  // later. In other words, it is the register destination of the instruction
+  // represented by this OrderedNode.
+  //
+  // This is the raw value of a PhysicalRegister data structure.
+  uint8_t Reg;
+  uint8_t Pad[3];
+
   using value_type = OrderedNodeWrapper;
 
   OrderedNode() = default;
@@ -389,7 +398,7 @@ private:
 static_assert(std::is_trivially_constructible_v<OrderedNode>);
 static_assert(std::is_trivially_copyable_v<OrderedNode>);
 static_assert(offsetof(OrderedNode, Header) == 0);
-static_assert(sizeof(OrderedNode) == (sizeof(OrderedNodeHeader) + sizeof(uint32_t)));
+static_assert(sizeof(OrderedNode) == (sizeof(OrderedNodeHeader) + 2 * sizeof(uint32_t)));
 
 // This is temporary. We are transitioning away from OrderedNode's in favour of
 // flat Ref words. To ease porting, we have this typedef. Eventually OrderedNode
