@@ -197,6 +197,18 @@ private:
     }
   };
 
+  bool IsTrivial(Ref Node, const IROp_Header* Header) {
+    switch (Header->Op) {
+    case OP_ALLOCATEGPR: return true;
+    case OP_ALLOCATEGPRAFTER: return true;
+    case OP_ALLOCATEFPR: return true;
+    case OP_RMWHANDLE: return PhysicalRegister(Node) == PhysicalRegister(Header->Args[0]);
+    case OP_LOADREGISTER: return PhysicalRegister(Node) == DecodeSRAReg(Header);
+    case OP_STOREREGISTER: return PhysicalRegister(Header->Args[0]) == DecodeSRAReg(Header);
+    default: return false;
+    }
+  }
+
   // Helper macro to walk the set bits b in a 32-bit word x, using ffs to get
   // the next set bit and then clearing on each iteration.
 #define foreach_bit(b, x) for (uint32_t __x = (x), b; ((b) = __builtin_ffs(__x) - 1, __x); __x &= ~(1 << (b)))
@@ -551,6 +563,11 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
 
       LOGMAN_THROW_A_FMT(IP >= 1, "IP relative to end of block, iterating forward");
       --IP;
+
+      // Delete instructions that only exist for RA
+      if (IsTrivial(CodeNode, IROp)) {
+        IREmit->RemovePostRA(CodeNode);
+      }
     }
 
     LOGMAN_THROW_A_FMT(SourceIndex == 0, "Consistent source count in block");

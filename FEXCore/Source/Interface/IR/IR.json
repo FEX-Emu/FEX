@@ -254,19 +254,22 @@
                  "it cannot use a regular destination too. This ensures RA correctness.",
                  "This is a kludge to deal with the IR's lack of multiple destinations",
                  "If ForPair is set, RA will try to allocate the base of a register pair"],
-        "DestSize": "OpSize::i64Bit"
+        "DestSize": "OpSize::i64Bit",
+        "JITDispatch": false
       },
       "FPR = AllocateFPR OpSize:#RegisterSize, OpSize:#ElementSize": {
         "Desc": ["Like AllocateGPR, but for FPR"],
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "JITDispatch": false
       },
       "GPR = AllocateGPRAfter GPR:$After": {
         "Desc": ["Silly pseudo-instruction to allocate a register for a future destination",
                  "This is a kludge to deal with the IR's lack of multiple destinations",
                  "RA will attempt to allocate to the register after $After.",
                  "It may not succeed."],
-        "DestSize": "OpSize::i64Bit"
+        "DestSize": "OpSize::i64Bit",
+        "JITDispatch": false
       },
       "GPR = RDRAND i1:$GetReseeded": {
         "Desc": ["Uses the hardware random number generator to generate a 64bit number",
