@@ -57,6 +57,7 @@ class ConstrainedRAPass final : public RegisterAllocationPass {
 public:
   void Run(IREmitter* IREmit) override;
   void AddRegisters(IR::RegisterClassType Class, uint32_t RegisterCount) override;
+  bool TryPostRAMerge(Ref LastNode, Ref CodeNode, IROp_Header* IROp);
 
 private:
   RegisterClass Classes[INVALID_CLASS];
@@ -382,6 +383,37 @@ void ConstrainedRAPass::AddRegisters(IR::RegisterClassType Class, uint32_t Regis
   Classes[Class].Count = RegisterCount;
 }
 
+bool ConstrainedRAPass::TryPostRAMerge(Ref LastNode, Ref CodeNode, IROp_Header* IROp) {
+  if (IROp->Op == OP_PUSH) {
+    auto LastOp = IR->GetOp<IROp_Header>(LastNode);
+    if (LastOp->Op == OP_PUSH) {
+      auto SP = PhysicalRegister(CodeNode);
+      auto Push = IR->GetOp<IROp_Push>(CodeNode);
+      auto LastPush = IR->GetOp<IROp_Push>(LastNode);
+
+      if (LastOp->Size == IROp->Size && LastPush->ValueSize == Push->ValueSize && SP == PhysicalRegister(LastNode) &&
+          SP == PhysicalRegister(IROp->Args[1]) && SP == PhysicalRegister(LastOp->Args[1]) && SP != PhysicalRegister(IROp->Args[0]) &&
+          SP != PhysicalRegister(LastOp->Args[0]) && Push->ValueSize >= OpSize::i32Bit) {
+
+        IREmit->SetWriteCursorBefore(LastNode);
+        IREmit->_PushTwo(IROp->Size, Push->ValueSize, IROp->Args[0], LastOp->Args[0], IROp->Args[1]);
+        return true;
+      }
+    }
+  } else if (IROp->Op == OP_POP) {
+    auto LastOp = IR->GetOp<IROp_Header>(LastNode);
+    auto SP = PhysicalRegister(IROp->Args[0]);
+
+    if (LastOp->Op == OP_POP && LastOp->Size == IROp->Size && IROp->Size >= OpSize::i32Bit && SP == PhysicalRegister(LastOp->Args[0])) {
+      IREmit->SetWriteCursorBefore(LastNode);
+      IREmit->_PopTwo(IROp->Size, IROp->Args[0], LastOp->Args[1], IROp->Args[1]);
+      return true;
+    }
+  }
+
+  return false;
+}
+
 void ConstrainedRAPass::Run(IREmitter* IREmit_) {
   FEXCORE_PROFILE_SCOPED("PassManager::RA");
 
@@ -482,8 +514,18 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
     // SourcesNextUses is read backwards, this tracks the index
     int64_t SourceIndex = SourcesNextUses.size();
 
-    // Forward pass: Assign registers, spilling as we go.
+    // Last nontrivial instruction, for merging as we go.
+    Ref LastNode = nullptr;
+
+    // Forward pass: Assign registers, spilling & optimizing as we go.
     for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
+      // GuestOpcode does not read or write registers, and must be skipped for
+      // push/pop merging. Since we'd be doing this check anyway for merging, do
+      // the check now so we can skip the rest of the logic too.
+      if (IROp->Op == OP_GUESTOPCODE) {
+        continue;
+      }
+
       // Static registers must be consistent at SRA load/store. Evict to ensure.
       if (auto Node = DecodeSRANode(IROp, CodeNode); Node != nullptr) {
         auto Reg = DecodeSRAReg(IROp);
@@ -561,9 +603,16 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         AssignReg(IROp, CodeNode, IROp);
       }
 
-      // Delete instructions that only exist for RA
       if (IsTrivial(CodeNode, IROp)) {
+        // Delete instructions that only exist for RA
         IREmit->RemovePostRA(CodeNode);
+      } else if (LastNode && TryPostRAMerge(LastNode, CodeNode, IROp)) {
+        // Merge adjacent instructions
+        IREmit->RemovePostRA(CodeNode);
+        IREmit->RemovePostRA(LastNode);
+        LastNode = nullptr;
+      } else {
+        LastNode = CodeNode;
       }
     }
 
