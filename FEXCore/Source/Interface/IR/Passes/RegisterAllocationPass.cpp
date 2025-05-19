@@ -577,6 +577,52 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
     }
 
     LOGMAN_THROW_A_FMT(SourceIndex == 0, "Consistent source count in block");
+
+    // Post-RA peephole optimization.
+    Ref LastNode = nullptr;
+
+    for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
+      // This doesn't affect anything we care about here
+      if (IROp->Op == OP_GUESTOPCODE) {
+        continue;
+      }
+
+      // Merge adjacent instructions
+      if (LastNode && IROp->Op == OP_PUSH) {
+        auto Header = IR->GetOp<IROp_Header>(LastNode);
+        auto SP = PhysicalRegister(CodeNode);
+        if (Header->Op == OP_PUSH) {
+          auto Push = IR->GetOp<IROp_Push>(CodeNode);
+          auto LastPush = IR->GetOp<IROp_Push>(LastNode);
+
+          if (Header->Size == IROp->Size && LastPush->ValueSize == Push->ValueSize && SP == PhysicalRegister(LastNode) &&
+              SP == PhysicalRegister(IROp->Args[1]) && SP == PhysicalRegister(Header->Args[1]) && SP != PhysicalRegister(IROp->Args[0]) &&
+              SP != PhysicalRegister(Header->Args[0]) && LastPush->ValueSize >= OpSize::i32Bit) {
+
+            IREmit->SetWriteCursor(CodeNode);
+            IREmit->_PushTwo(Header->Size, LastPush->ValueSize, IROp->Args[0], Header->Args[0], IROp->Args[1]);
+            IREmit->RemovePostRA(CodeNode);
+            IREmit->RemovePostRA(LastNode);
+            LastNode = nullptr;
+            continue;
+          }
+        }
+      } else if (LastNode && IROp->Op == OP_POP) {
+        auto Header = IR->GetOp<IROp_Header>(LastNode);
+        auto SP = PhysicalRegister(IROp->Args[0]);
+
+        if (Header->Op == OP_POP && Header->Size == IROp->Size && IROp->Size >= OpSize::i32Bit && SP == PhysicalRegister(Header->Args[0])) {
+          IREmit->SetWriteCursor(CodeNode);
+          IREmit->_PopTwo(Header->Size, IROp->Args[0], Header->Args[1], IROp->Args[1]);
+          IREmit->RemovePostRA(CodeNode);
+          IREmit->RemovePostRA(LastNode);
+          LastNode = nullptr;
+          continue;
+        }
+      }
+
+      LastNode = CodeNode;
+    }
   }
 
   PreferredReg.clear();
