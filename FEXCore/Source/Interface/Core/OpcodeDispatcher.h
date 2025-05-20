@@ -2507,6 +2507,108 @@ private:
     FlushRegisterCache();
   }
 
+  struct ArithRef {
+    IREmitter* E;
+    bool IsConstant;
+    union {
+      Ref R;
+      uint64_t C;
+    };
+
+    ArithRef() {}
+
+    ArithRef(IREmitter* IREmit, Ref Reference)
+      : E(IREmit)
+      , IsConstant(false)
+      , R(Reference) {}
+
+    ArithRef(IREmitter* IREmit, uint64_t K)
+      : E(IREmit)
+      , IsConstant(true)
+      , C(K) {}
+
+    ArithRef Neg() {
+      return IsConstant ? ArithRef(E, -C) : ArithRef(E, E->_Neg(OpSize::i64Bit, R));
+    }
+
+    ArithRef And(uint64_t K) {
+      return IsConstant ? ArithRef(E, C & K) : ArithRef(E, E->_And(OpSize::i64Bit, R, E->_Constant(K)));
+    }
+
+    ArithRef Presub(uint64_t K) {
+      return IsConstant ? ArithRef(E, K - C) : ArithRef(E, E->_Sub(OpSize::i64Bit, E->_Constant(K), R));
+    }
+
+    ArithRef Lshl(uint64_t Shift) {
+      if (Shift == 0) {
+        return *this;
+      } else if (IsConstant) {
+        return ArithRef(E, C << Shift);
+      } else {
+        return ArithRef(E, E->_Lshl(OpSize::i64Bit, R, E->_Constant(Shift)));
+      }
+    }
+
+    ArithRef Bfe(unsigned Start, unsigned Size) {
+      if (IsConstant) {
+        return ArithRef(E, (C >> Start) & ((1ull << Size) - 1));
+      } else {
+        return ArithRef(E, E->_Bfe(OpSize::i64Bit, Size, Start, R));
+      }
+    }
+
+    ArithRef Sbfe(unsigned Start, unsigned Size) {
+      if (IsConstant) {
+        uint64_t SourceMask = Size == 64 ? ~0ULL : ((1ULL << Size) - 1);
+        SourceMask <<= Start;
+
+        int64_t NewConstant = (C & SourceMask) >> Start;
+        NewConstant <<= 64 - Size;
+        NewConstant >>= 64 - Size;
+
+        return ArithRef(E, NewConstant);
+      } else {
+        return ArithRef(E, E->_Sbfe(OpSize::i64Bit, Size, Start, R));
+      }
+    }
+
+    ArithRef MaskBit(OpSize Size) {
+      if (IsConstant) {
+        uint64_t ShiftMask = Size == OpSize::i64Bit ? 63 : 31;
+        uint64_t Result = 1ull << (C & ShiftMask);
+        if (ShiftMask == 31) {
+          Result &= ((1ull << 32) - 1);
+        }
+
+        return ArithRef(E, Result);
+      } else {
+        return ArithRef(E, E->_Lshl(Size, E->_Constant(1), R));
+      }
+    }
+
+    Ref Ref() {
+      return IsConstant ? E->_Constant(C) : R;
+    }
+
+    bool IsDefinitelyZero() {
+      return IsConstant && C == 0;
+    }
+  };
+
+  ArithRef ARef(Ref R) {
+    uint64_t C;
+
+    if (IsValueConstant(WrapNode(R), &C)) {
+      return ARef(C);
+    } else {
+      return ArithRef(this, R);
+    }
+  }
+
+  ArithRef ARef(uint64_t K) {
+    return ArithRef(this, K);
+  }
+
   void InstallHostSpecificOpcodeHandlers();
 
   ///< Segment telemetry tracking
