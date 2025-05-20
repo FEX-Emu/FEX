@@ -182,11 +182,6 @@ public:
     return NodeIterator(DualListData.ListBegin(), DualListData.DataBegin(), wrapper);
   }
 
-  // Overwrite a node with a constant
-  // Depending on what node has been overwritten, there might be some unallocated space around the node
-  // Because we are overwriting the node, we don't have to worry about update all the arguments which use it
-  void ReplaceWithConstant(Ref Node, uint64_t Value);
-
   void ReplaceAllUsesWithRange(Ref Node, Ref NewNode, AllNodesIterator Begin, AllNodesIterator End);
 
   void ReplaceUsesWithAfter(Ref Node, Ref NewNode, AllNodesIterator After) {
@@ -199,21 +194,6 @@ public:
     AllNodesIterator It = AllNodesIterator(DualListData.ListBegin(), DualListData.DataBegin(), Wrapped);
 
     ReplaceUsesWithAfter(Node, NewNode, It);
-  }
-
-  void ReplaceAllUsesWith(Ref Node, Ref NewNode) {
-    auto Start = AllNodesIterator(DualListData.ListBegin(), DualListData.DataBegin(), Node->Wrapped(DualListData.ListBegin()));
-
-    ReplaceAllUsesWithRange(Node, NewNode, Start, AllNodesIterator(DualListData.ListBegin(), DualListData.DataBegin()));
-
-    LOGMAN_THROW_A_FMT(Node->NumUses == 0, "Node still used");
-
-    auto IROp = Node->Op(DualListData.DataBegin())->CW<FEXCore::IR::IROp_Header>();
-    // We can not remove the op if there are side-effects
-    if (!IR::HasSideEffects(IROp->Op)) {
-      // Since we have deleted ALL uses, we can safely delete the node.
-      Remove(Node);
-    }
   }
 
   void ReplaceNodeArgument(Ref Node, uint8_t Arg, Ref NewArg);

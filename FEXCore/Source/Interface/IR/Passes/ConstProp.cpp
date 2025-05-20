@@ -22,23 +22,6 @@ $end_info$
 
 namespace FEXCore::IR {
 
-uint64_t getMask(IROp_Header* Op) {
-  LOGMAN_THROW_A_FMT(Op->Size >= IR::OpSize::i8Bit && Op->Size <= IR::OpSize::i64Bit, "Invalid mask size");
-  uint64_t NumBits = IR::OpSizeAsBits(Op->Size);
-  return (~0ULL) >> (64 - NumBits);
-}
-
-// Returns true if the number bits from [0:width) contain the same bit.
-// Ensuring that the consecutive bits in the range are entirely 0 or 1.
-static bool HasConsecutiveBits(uint64_t imm, unsigned width) {
-  if (width == 0) {
-    return true;
-  }
-
-  // Credit to https://github.com/dougallj for this implementation.
-  return ((imm ^ (imm >> 1)) & ((1ULL << (width - 1)) - 1)) == 0;
-}
-
 // aarch64 heuristics
 static bool IsImmLogical(uint64_t imm, unsigned width) {
   if (width < 32) {
@@ -184,35 +167,6 @@ void ConstProp::HandleConstantPools(IREmitter* IREmit, const IRListView& Current
   }
 }
 
-// Helper to replace the destination of an instruction with one of its sources,
-// to implement algebraic identities. This is surprisingly tricky due to
-// implicit masking in our IR.
-//
-// FEX's IR uses sized opcodes, matching arm64 semantics. 64-bit opcodes do not
-// mask, whereas smaller opcodes mask/zero-extend from 32-bits. Therefore, if
-// the instruction is 32-bit, we need to mask the source for a sound
-// replacement, in case there was garbage in the upper bits.
-//
-// However, if that source is in turn written by a 32-bit instruction, it is
-// guaranteed to have already been masked, so we know there's no garbage and we
-// can avoid the zero-extension. This is the case 99% of the time, but the
-// masking here is correctness-bearing nevertheless (and new versions of Denuvo
-// break if you get this wrong!)
-static inline void ReplaceWithSource(IREmitter* IREmit, const IRListView& CurrentIR, Ref CodeNode, IROp_Header* IROp, unsigned Idx) {
-  Ref Arg = CurrentIR.GetNode(IROp->Args[Idx]);
-
-  if (IROp->Size < OpSize::i64Bit) {
-    LOGMAN_THROW_A_FMT(IROp->Size == OpSize::i32Bit, "other sizes not here");
-
-    auto Header = IREmit->GetOpHeader(IROp->Args[Idx]);
-    if (Header->Size > OpSize::i32Bit) {
-      Arg = IREmit->_Bfe(OpSize::i32Bit, 32, 0, Arg);
-    }
-  }
-
-  IREmit->ReplaceAllUsesWith(CodeNode, Arg);
-}
-
 // constprop + some more per instruction logic
 void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& CurrentIR, Ref CodeNode, IROp_Header* IROp) {
   switch (IROp->Op) {
@@ -223,7 +177,6 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     auto Op = IROp->C<IR::IROp_Add>();
     uint64_t Constant1 {};
     uint64_t Constant2 {};
-    bool IsConstant1 = IREmit->IsValueConstant(IROp->Args[0], &Constant1);
     bool IsConstant2 = IREmit->IsValueConstant(IROp->Args[1], &Constant2);
 
     /* IsImmAddSub assumes the constants are sign-extended, take care of that
@@ -232,16 +185,6 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     if (Op->Header.Size == OpSize::i32Bit) {
       Constant1 = (int64_t)(int32_t)Constant1;
       Constant2 = (int64_t)(int32_t)Constant2;
-    }
-
-    if (IsConstant1 && IsConstant2 && IROp->Op == OP_ADD) {
-      uint64_t NewConstant = (Constant1 + Constant2) & getMask(IROp);
-      IREmit->ReplaceWithConstant(CodeNode, NewConstant);
-      break;
-    } else if (IsConstant1 && IsConstant2 && IROp->Op == OP_SUB) {
-      uint64_t NewConstant = (Constant1 - Constant2) & getMask(IROp);
-      IREmit->ReplaceWithConstant(CodeNode, NewConstant);
-      break;
     }
 
     if (IsConstant2 && !ARMEmitter::IsImmAddSub(Constant2) && ARMEmitter::IsImmAddSub(-Constant2)) {
@@ -284,80 +227,10 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     }
     break;
   }
-  case OP_SUBSHIFT: {
-    auto Op = IROp->C<IR::IROp_SubShift>();
-
-    uint64_t Constant1, Constant2;
-    if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) && IREmit->IsValueConstant(IROp->Args[1], &Constant2) &&
-        Op->Shift == IR::ShiftType::LSL) {
-      // Optimize the LSL case when we know both sources are constant.
-      // This is a pattern that shows up with direction flag calculations if DF was set just before the operation.
-      uint64_t NewConstant = (Constant1 - (Constant2 << Op->ShiftAmount)) & getMask(IROp);
-      IREmit->ReplaceWithConstant(CodeNode, NewConstant);
-    }
-    break;
-  }
-  case OP_AND: {
-    uint64_t Constant1 {};
-    uint64_t Constant2 {};
-
-    bool Replaced = false;
-
-    // Order matter for short circuit evaluation, subsequent ifs read constant2.
-    if (IREmit->IsValueConstant(IROp->Args[1], &Constant2) && IREmit->IsValueConstant(IROp->Args[0], &Constant1)) {
-      uint64_t NewConstant = (Constant1 & Constant2) & getMask(IROp);
-      IREmit->ReplaceWithConstant(CodeNode, NewConstant);
-      Replaced = true;
-    } else if (IROp->Args[0].ID() == IROp->Args[1].ID() || (Constant2 & getMask(IROp)) == getMask(IROp)) {
-      // AND with same value results in original value
-      ReplaceWithSource(IREmit, CurrentIR, CodeNode, IROp, 0);
-      Replaced = true;
-    }
-
-    if (!Replaced) {
-      InlineIf(IREmit, CurrentIR, CodeNode, IROp, 1, [&IROp](uint64_t X) { return IsImmLogical(X, IR::OpSizeAsBits(IROp->Size)); });
-    }
-    break;
-  }
-  case OP_OR: {
-    InlineIf(IREmit, CurrentIR, CodeNode, IROp, 1, [&IROp](uint64_t X) { return IsImmLogical(X, IR::OpSizeAsBits(IROp->Size)); });
-    break;
-  }
+  case OP_AND:
+  case OP_OR:
   case OP_XOR: {
-    uint64_t Constant1 {};
-
-    if (IROp->Args[0].ID() == IROp->Args[1].ID()) {
-      // XOR with same value results to zero
-      IREmit->SetWriteCursor(CodeNode);
-      IREmit->ReplaceAllUsesWith(CodeNode, IREmit->_Constant(0));
-    } else {
-      bool Replaced = false;
-      for (unsigned i = 0; i < 2; ++i) {
-        if (!IREmit->IsValueConstant(IROp->Args[i], &Constant1)) {
-          continue;
-        }
-
-        if (Constant1 == 0) {
-          // XOR with zero results in the nonzero source
-          IREmit->SetWriteCursor(CodeNode);
-          ReplaceWithSource(IREmit, CurrentIR, CodeNode, IROp, 1 - i);
-        } else if ((Constant1 & getMask(IROp)) == getMask(IROp)) {
-          // XOR with all-one results in a bit flip of the other source
-          IREmit->SetWriteCursor(CodeNode);
-          auto Not = IREmit->_Not(IROp->Size, CurrentIR.GetNode(IROp->Args[1 - i]));
-          IREmit->ReplaceAllUsesWith(CodeNode, Not);
-        } else {
-          continue;
-        }
-
-        Replaced = true;
-        break;
-      }
-
-      if (!Replaced) {
-        InlineIf(IREmit, CurrentIR, CodeNode, IROp, 1, [&IROp](uint64_t X) { return IsImmLogical(X, IR::OpSizeAsBits(IROp->Size)); });
-      }
-    }
+    InlineIf(IREmit, CurrentIR, CodeNode, IROp, 1, [&IROp](uint64_t X) { return IsImmLogical(X, IR::OpSizeAsBits(IROp->Size)); });
     break;
   }
   case OP_ANDWITHFLAGS:
@@ -366,101 +239,17 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     InlineIf(IREmit, CurrentIR, CodeNode, IROp, 1, [&IROp](uint64_t X) { return IsImmLogical(X, IR::OpSizeAsBits(IROp->Size)); });
     break;
   }
-  case OP_NEG: {
-    uint64_t Constant {};
-
-    if (IREmit->IsValueConstant(IROp->Args[0], &Constant)) {
-      uint64_t NewConstant = -Constant;
-      IREmit->ReplaceWithConstant(CodeNode, NewConstant);
-    }
-    break;
-  }
   case OP_ASHR:
   case OP_ROR: {
     Inline(IREmit, CurrentIR, CodeNode, IROp, 1);
     break;
   }
   case OP_LSHL: {
-    uint64_t Constant1 {};
-    uint64_t Constant2 {};
-
-    if (IREmit->IsValueConstant(IROp->Args[0], &Constant1) && IREmit->IsValueConstant(IROp->Args[1], &Constant2)) {
-      // Shifts mask the shift amount by 63 or 31 depending on operating size;
-      uint64_t ShiftMask = IROp->Size == OpSize::i64Bit ? 63 : 31;
-      uint64_t NewConstant = (Constant1 << (Constant2 & ShiftMask)) & getMask(IROp);
-      IREmit->ReplaceWithConstant(CodeNode, NewConstant);
-    } else if (IREmit->IsValueConstant(IROp->Args[1], &Constant2) && Constant2 == 0) {
-      IREmit->SetWriteCursor(CodeNode);
-      ReplaceWithSource(IREmit, CurrentIR, CodeNode, IROp, 0);
-    } else {
-      Inline(IREmit, CurrentIR, CodeNode, IROp, 1);
-    }
+    Inline(IREmit, CurrentIR, CodeNode, IROp, 1);
     break;
   }
   case OP_LSHR: {
-    uint64_t Constant2 {};
-
-    if (IREmit->IsValueConstant(IROp->Args[1], &Constant2) && Constant2 == 0) {
-      IREmit->SetWriteCursor(CodeNode);
-      ReplaceWithSource(IREmit, CurrentIR, CodeNode, IROp, 0);
-    } else {
-      Inline(IREmit, CurrentIR, CodeNode, IROp, 1);
-    }
-    break;
-  }
-  case OP_BFE: {
-    auto Op = IROp->C<IR::IROp_Bfe>();
-    uint64_t Constant;
-
-    if (IROp->Size <= OpSize::i64Bit && IREmit->IsValueConstant(Op->Src, &Constant)) {
-      uint64_t SourceMask = Op->Width == 64 ? ~0ULL : ((1ULL << Op->Width) - 1);
-      SourceMask <<= Op->lsb;
-
-      uint64_t NewConstant = (Constant & SourceMask) >> Op->lsb;
-      IREmit->ReplaceWithConstant(CodeNode, NewConstant);
-    }
-
-    break;
-  }
-  case OP_SBFE: {
-    auto Op = IROp->C<IR::IROp_Bfe>();
-    uint64_t Constant;
-    if (IREmit->IsValueConstant(Op->Src, &Constant)) {
-      LOGMAN_THROW_A_FMT(IROp->Size >= IR::OpSize::i8Bit && IROp->Size <= IR::OpSize::i64Bit, "Invalid size");
-      // SBFE of a constant can be converted to a constant.
-      uint64_t SourceMask = Op->Width == 64 ? ~0ULL : ((1ULL << Op->Width) - 1);
-      uint64_t DestSizeInBits = IR::OpSizeAsBits(IROp->Size);
-      uint64_t DestMask = DestSizeInBits == 64 ? ~0ULL : ((1ULL << DestSizeInBits) - 1);
-      SourceMask <<= Op->lsb;
-
-      int64_t NewConstant = (Constant & SourceMask) >> Op->lsb;
-      NewConstant <<= 64 - Op->Width;
-      NewConstant >>= 64 - Op->Width;
-      NewConstant &= DestMask;
-      IREmit->ReplaceWithConstant(CodeNode, NewConstant);
-    }
-    break;
-  }
-  case OP_BFI: {
-    auto Op = IROp->C<IR::IROp_Bfi>();
-    uint64_t ConstantSrc {};
-    bool SrcIsConstant = IREmit->IsValueConstant(IROp->Args[1], &ConstantSrc);
-
-    if (SrcIsConstant && HasConsecutiveBits(ConstantSrc, Op->Width)) {
-      // We are trying to insert constant, if it is a bitfield of only set bits then we can orr or and it.
-      IREmit->SetWriteCursor(CodeNode);
-      uint64_t SourceMask = Op->Width == 64 ? ~0ULL : ((1ULL << Op->Width) - 1);
-      uint64_t NewConstant = SourceMask << Op->lsb;
-
-      if (ConstantSrc & 1) {
-        auto orr = IREmit->_Or(IROp->Size, CurrentIR.GetNode(IROp->Args[0]), IREmit->_Constant(NewConstant));
-        IREmit->ReplaceAllUsesWith(CodeNode, orr);
-      } else {
-        // We are wanting to clear the bitfield.
-        auto andn = IREmit->_Andn(IROp->Size, CurrentIR.GetNode(IROp->Args[0]), IREmit->_Constant(NewConstant));
-        IREmit->ReplaceAllUsesWith(CodeNode, andn);
-      }
-    }
+    Inline(IREmit, CurrentIR, CodeNode, IROp, 1);
     break;
   }
   case OP_ADC:
