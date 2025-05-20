@@ -2025,14 +2025,7 @@ private:
 
   // Returns (DF ? -Size : Size)
   Ref LoadDir(const unsigned Size) {
-    auto Dir = LoadDF();
-    auto Shift = FEXCore::ilog2(Size);
-
-    if (Shift) {
-      return _Lshl(CTX->GetGPROpSize(), Dir, _Constant(Shift));
-    } else {
-      return Dir;
-    }
+    return ARef(LoadDF()).Lshl(FEXCore::ilog2(Size)).Ref();
   }
 
   // Returns DF ? (X - Size) : (X + Size)
