@@ -466,18 +466,6 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     }
     break;
   }
-  case OP_VMOV: {
-    // elim from load mem
-    auto source = IROp->Args[0];
-    auto sourceHeader = IREmit->GetOpHeader(source);
-
-    if (IROp->Size >= sourceHeader->Size &&
-        (sourceHeader->Op == OP_LOADMEM || sourceHeader->Op == OP_LOADMEMTSO || sourceHeader->Op == OP_LOADCONTEXT)) {
-      //  Load mem / load ctx zexts, no need to vmem
-      IREmit->ReplaceAllUsesWith(CodeNode, CurrentIR.GetNode(source));
-    }
-    break;
-  }
 
   case OP_SYSCALL: {
     auto Op = IROp->CW<IR::IROp_Syscall>();

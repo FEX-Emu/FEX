@@ -2493,6 +2493,13 @@ private:
     return Value;
   }
 
+  Ref VZeroExtendOperand(OpSize Size, X86Tables::DecodedOperand Op, Ref Value) {
+    bool IsMMX = Op.IsGPR() && Op.Data.GPR.GPR >= X86State::REG_MM_0;
+    bool AlreadyExtended = Op.IsGPRDirect() || Op.IsGPRIndirect() || IsMMX;
+
+    return AlreadyExtended ? Value : _VMov(Size, Value);
+  }
+
   void Push(IR::OpSize Size, Ref Value) {
     auto OldSP = LoadGPRRegister(X86State::REG_RSP);
     auto NewSP = _Push(CTX->GetGPROpSize(), Size, Value, OldSP);
