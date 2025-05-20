@@ -1568,15 +1568,14 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool I
   // things tighter for 8-bit later in the function.
   uint64_t Mask = Size == 8 ? 7 : (Size == 64 ? 0x3F : 0x1F);
 
-  Ref Src, UnmaskedSrc;
+  ArithRef UnmaskedSrc;
   if (Is1Bit || IsImmediate) {
     UnmaskedConst = LoadConstantShift(Op, Is1Bit);
-    UnmaskedSrc = _Constant(UnmaskedConst);
-    Src = _Constant(UnmaskedConst & Mask);
+    UnmaskedSrc = ARef(UnmaskedConst);
   } else {
-    UnmaskedSrc = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
-    Src = _And(OpSize::i64Bit, UnmaskedSrc, _InlineConstant(Mask));
+    UnmaskedSrc = ARef(LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
   }
+  auto Src = UnmaskedSrc.And(Mask);
 
   // We fill the upper bits so we allow garbage on load.
   auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
@@ -1588,18 +1587,18 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool I
   }
 
   // To rotate 64-bits left, right-rotate by (64 - Shift) = -Shift mod 64.
-  auto Res = _Ror(OpSize, Dest, Left ? _Neg(OpSize, Src) : Src);
+  auto Res = _Ror(OpSize, Dest, (Left ? Src.Neg() : Src).Ref());
   StoreResult(GPRClass, Op, Res, OpSize::iInvalid);
 
   if (Is1Bit || IsImmediate) {
-    if (UnmaskedConst) {
+    if (UnmaskedSrc.C) {
       // Extract the last bit shifted in to CF
       SetCFDirect(Res, Left ? 0 : Size - 1, true);
 
       // For ROR, OF is the XOR of the new CF bit and the most significant bit of the result.
       // For ROL, OF is the LSB and MSB XOR'd together.
       // OF is architecturally only defined for 1-bit rotate.
-      if (UnmaskedConst == 1) {
+      if (UnmaskedSrc.C == 1) {
         auto NewOF = _XorShift(OpSize, Res, Res, ShiftType::LSR, Left ? Size - 1 : 1);
         SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, Left ? 0 : Size - 2, true);
       }
@@ -1610,10 +1609,10 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool I
 
     // We deferred the masking for 8-bit to the flag section, do it here.
     if (Size == 8) {
-      Src = _And(OpSize::i64Bit, UnmaskedSrc, _InlineConstant(0x1F));
+      Src = UnmaskedSrc.And(0x1F);
     }
 
-    _RotateFlags(OpSizeFromSrc(Op), Res, Src, Left);
+    _RotateFlags(OpSizeFromSrc(Op), Res, Src.Ref(), Left);
   }
 }
 
