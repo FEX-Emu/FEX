@@ -4309,7 +4309,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
       if (GPRSize == OpSize::i64Bit && OpSize == OpSize::i32Bit) {
         // If the Source IR op is 64 bits, we need to zext the upper bits
         // For all other sizes, the upper bits are guaranteed to already be zero
-        Ref Value = GetOpSize(Src) == OpSize::i64Bit ? _Bfe(OpSize::i32Bit, 32, 0, Src) : Src;
+        Ref Value = GetOpSize(Src) == OpSize::i64Bit ? ARef(Src).Bfe(0, 32).Ref() : Src;
         StoreGPRRegister(gpr, Value, GPRSize);
 
         LOGMAN_THROW_A_FMT(!Operand.Data.GPR.HighBits, "Can't handle 32bit store to high 8bit register");
