@@ -1146,10 +1146,11 @@ void OpDispatchBuilder::FLAGControlOp(OpcodeArgs) {
     SetCFInverted(_Constant(0));
     break;
   case 0xFC: // CLD
-    SetRFLAG(_Constant(0), FEXCore::X86State::RFLAG_DF_RAW_LOC);
+    // Transformed
+    StoreDF(_Constant(1));
     break;
   case 0xFD: // STD
-    SetRFLAG(_Constant(1), FEXCore::X86State::RFLAG_DF_RAW_LOC);
+    StoreDF(_Constant(-1));
     break;
   }
 }
