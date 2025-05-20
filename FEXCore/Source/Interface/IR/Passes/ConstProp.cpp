@@ -9,7 +9,6 @@ $end_info$
 
 #include "Interface/IR/IREmitter.h"
 #include "Interface/IR/PassManager.h"
-#include "Interface/Core/CPUID.h"
 
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/HLE/SyscallHandler.h>
@@ -50,9 +49,8 @@ static bool IsImmLogical(uint64_t imm, unsigned width) {
 
 class ConstProp final : public FEXCore::IR::Pass {
 public:
-  explicit ConstProp(bool SupportsTSOImm9, const FEXCore::CPUIDEmu* CPUID)
-    : SupportsTSOImm9 {SupportsTSOImm9}
-    , CPUID {CPUID} {}
+  explicit ConstProp(bool SupportsTSOImm9)
+    : SupportsTSOImm9 {SupportsTSOImm9} {}
 
   void Run(IREmitter* IREmit) override;
 
@@ -61,7 +59,6 @@ private:
   void ConstantPropagation(IREmitter* IREmit, const IRListView& CurrentIR, Ref CodeNode, IROp_Header* IROp);
 
   bool SupportsTSOImm9 {};
-  const FEXCore::CPUIDEmu* CPUID;
 
   template<class F>
   bool InlineIf(IREmitter* IREmit, const IRListView& CurrentIR, Ref CodeNode, IROp_Header* IROp, unsigned Index, F Filter) {
@@ -466,140 +463,6 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     }
     break;
   }
-
-  case OP_SYSCALL: {
-    auto Op = IROp->CW<IR::IROp_Syscall>();
-
-    // Is the first argument a constant?
-    uint64_t Constant;
-    if (IREmit->IsValueConstant(Op->SyscallID, &Constant)) {
-      auto SyscallDef = Manager->SyscallHandler->GetSyscallABI(Constant);
-      auto SyscallFlags = Manager->SyscallHandler->GetSyscallFlags(Constant);
-
-      // Update the syscall flags
-      Op->Flags = SyscallFlags;
-
-      // XXX: Once we have the ability to do real function calls then we can call directly in to the syscall handler
-      if (SyscallDef.NumArgs < FEXCore::HLE::SyscallArguments::MAX_ARGS) {
-        // If the number of args are less than what the IR op supports then we can remove arg usage
-        // We need +1 since we are still passing in syscall number here
-        for (uint8_t Arg = (SyscallDef.NumArgs + 1); Arg < FEXCore::HLE::SyscallArguments::MAX_ARGS; ++Arg) {
-          IREmit->ReplaceNodeArgument(CodeNode, Arg, IREmit->Invalid());
-        }
-        // Replace syscall with inline passthrough syscall if we can
-        if (SyscallDef.HostSyscallNumber != -1) {
-          IREmit->SetWriteCursor(CodeNode);
-          // Skip Args[0] since that is the syscallid
-          auto InlineSyscall =
-            IREmit->_InlineSyscall(CurrentIR.GetNode(IROp->Args[1]), CurrentIR.GetNode(IROp->Args[2]), CurrentIR.GetNode(IROp->Args[3]),
-                                   CurrentIR.GetNode(IROp->Args[4]), CurrentIR.GetNode(IROp->Args[5]), CurrentIR.GetNode(IROp->Args[6]),
-                                   SyscallDef.HostSyscallNumber, Op->Flags);
-
-          // Replace all syscall uses with this inline one
-          IREmit->ReplaceAllUsesWith(CodeNode, InlineSyscall);
-
-          // We must remove here since DCE can't remove a IROp with sideeffects
-          IREmit->Remove(CodeNode);
-        }
-      }
-    }
-    break;
-  }
-
-  case OP_CPUID: {
-    auto Op = IROp->CW<IR::IROp_CPUID>();
-
-    uint64_t ConstantFunction {}, ConstantLeaf {};
-    bool IsConstantFunction = IREmit->IsValueConstant(Op->Function, &ConstantFunction);
-    bool IsConstantLeaf = IREmit->IsValueConstant(Op->Leaf, &ConstantLeaf);
-    // If the CPUID function is constant then we can try and optimize.
-    if (IsConstantFunction) { // && ConstantFunction != 1) {
-      // Check if it supports constant data reporting for this function.
-      const auto SupportsConstant = CPUID->DoesFunctionReportConstantData(ConstantFunction);
-      if (SupportsConstant.SupportsConstantFunction == CPUIDEmu::SupportsConstant::CONSTANT) {
-        // If the CPUID needs a constant leaf to be optimized then this can't work if we didn't const-prop the leaf register.
-        if (!(SupportsConstant.NeedsLeaf == CPUIDEmu::NeedsLeafConstant::NEEDSLEAFCONSTANT && !IsConstantLeaf)) {
-          // Calculate the constant data and replace all uses.
-          const auto Result = CPUID->RunFunction(ConstantFunction, ConstantLeaf);
-
-          IREmit->SetWriteCursor(CodeNode);
-          IREmit->ReplaceAllUsesWith(CurrentIR.GetNode(Op->OutEAX), IREmit->_Constant(Result.eax));
-          IREmit->ReplaceAllUsesWith(CurrentIR.GetNode(Op->OutEBX), IREmit->_Constant(Result.ebx));
-          IREmit->ReplaceAllUsesWith(CurrentIR.GetNode(Op->OutECX), IREmit->_Constant(Result.ecx));
-          IREmit->ReplaceAllUsesWith(CurrentIR.GetNode(Op->OutEDX), IREmit->_Constant(Result.edx));
-          IREmit->Remove(CodeNode);
-        }
-      }
-    }
-    break;
-  }
-
-  case OP_XGETBV: {
-    auto Op = IROp->CW<IR::IROp_XGetBV>();
-
-    uint64_t ConstantFunction {};
-    if (IREmit->IsValueConstant(Op->Function, &ConstantFunction) && CPUID->DoesXCRFunctionReportConstantData(ConstantFunction)) {
-      const auto Result = CPUID->RunXCRFunction(ConstantFunction);
-      IREmit->SetWriteCursor(CodeNode);
-      IREmit->ReplaceAllUsesWith(CurrentIR.GetNode(Op->OutEAX), IREmit->_Constant(Result.eax));
-      IREmit->ReplaceAllUsesWith(CurrentIR.GetNode(Op->OutEDX), IREmit->_Constant(Result.edx));
-      IREmit->Remove(CodeNode);
-    }
-    break;
-  }
-
-  case OP_LDIV:
-  case OP_LREM: {
-    auto Op = IROp->C<IR::IROp_LDiv>();
-    auto UpperIROp = IREmit->GetOpHeader(Op->Upper);
-
-    // Check upper Op to see if it came from a sign-extension
-    if (UpperIROp->Op != OP_SBFE) {
-      break;
-    }
-
-    auto Sbfe = UpperIROp->C<IR::IROp_Sbfe>();
-    if (Sbfe->Width != 1 || Sbfe->lsb != 63 || Sbfe->Header.Args[0] != Op->Lower) {
-      break;
-    }
-
-    // If it does then it we only need a 64bit SDIV
-    IREmit->SetWriteCursor(CodeNode);
-    Ref Lower = CurrentIR.GetNode(Op->Lower);
-    Ref Divisor = CurrentIR.GetNode(Op->Divisor);
-    Ref SDivOp {};
-    if (IROp->Op == OP_LDIV) {
-      SDivOp = IREmit->_Div(OpSize::i64Bit, Lower, Divisor);
-    } else {
-      SDivOp = IREmit->_Rem(OpSize::i64Bit, Lower, Divisor);
-    }
-    IREmit->ReplaceAllUsesWith(CodeNode, SDivOp);
-    break;
-  }
-
-  case OP_LUDIV:
-  case OP_LUREM: {
-    auto Op = IROp->C<IR::IROp_LUDiv>();
-    // Check upper Op to see if it came from a zeroing op
-    // If it does then it we only need a 64bit UDIV
-    uint64_t Value;
-    if (!IREmit->IsValueConstant(Op->Upper, &Value) || Value != 0) {
-      break;
-    }
-
-    IREmit->SetWriteCursor(CodeNode);
-    Ref Lower = CurrentIR.GetNode(Op->Lower);
-    Ref Divisor = CurrentIR.GetNode(Op->Divisor);
-    Ref UDivOp {};
-    if (IROp->Op == OP_LUDIV) {
-      UDivOp = IREmit->_UDiv(OpSize::i64Bit, Lower, Divisor);
-    } else {
-      UDivOp = IREmit->_URem(OpSize::i64Bit, Lower, Divisor);
-    }
-    IREmit->ReplaceAllUsesWith(CodeNode, UDivOp);
-    break;
-  }
-
   case OP_ADC:
   case OP_ADCWITHFLAGS:
   case OP_RMIFNZCV: {
@@ -749,7 +612,7 @@ void ConstProp::Run(IREmitter* IREmit) {
   HandleConstantPools(IREmit, IREmit->ViewIR());
 }
 
-fextl::unique_ptr<FEXCore::IR::Pass> CreateConstProp(bool SupportsTSOImm9, const FEXCore::CPUIDEmu* CPUID) {
-  return fextl::make_unique<ConstProp>(SupportsTSOImm9, CPUID);
+fextl::unique_ptr<FEXCore::IR::Pass> CreateConstProp(bool SupportsTSOImm9) {
+  return fextl::make_unique<ConstProp>(SupportsTSOImm9);
 }
 } // namespace FEXCore::IR
