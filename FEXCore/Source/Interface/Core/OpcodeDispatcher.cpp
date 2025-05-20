@@ -1443,10 +1443,10 @@ void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
     Ref Res {};
     if (Size < 32) {
       Ref ShiftLeft = _Constant(Shift);
-      auto ShiftRight = _Constant(Size - Shift);
+      auto ShiftRight = Size - Shift;
 
       auto Tmp1 = _Lshl(OpSize::i64Bit, Dest, ShiftLeft);
-      auto Tmp2 = _Lshr(OpSize::i32Bit, Src, ShiftRight);
+      Ref Tmp2 = ShiftRight ? _Lshr(OpSize::i32Bit, Src, _Constant(ShiftRight)) : Src;
 
       Res = _Or(OpSize::i64Bit, Tmp1, Tmp2);
     } else {
