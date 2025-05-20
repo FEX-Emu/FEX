@@ -38,7 +38,7 @@
       ]
     },
     "adc al, 1": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 14,
       "Comment": "GROUP1 0x80 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -49,9 +49,7 @@
         "cset x20, hs",
         "cmn wzr, w26, lsl #24",
         "rmif x20, #63, #nzCv",
-        "eor w20, w4, #0x1",
-        "eor w21, w26, w4",
-        "bic w20, w21, w20",
+        "bic w20, w26, w4",
         "rmif x20, #7, #nzcV",
         "mov x20, x4",
         "bfxil x20, x26, #0, #8",
@@ -60,7 +58,7 @@
       ]
     },
     "sbb al, 1": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 15,
       "Comment": "GROUP1 0x80 /3",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
@@ -72,9 +70,7 @@
         "cset x20, hs",
         "cmn wzr, w26, lsl #24",
         "rmif x20, #63, #nzCv",
-        "eor w20, w21, #0x1",
-        "eor w21, w26, w21",
-        "and w20, w21, w20",
+        "bic w20, w21, w26",
         "rmif x20, #7, #nzcV",
         "mov x20, x4",
         "bfxil x20, x26, #0, #8",
@@ -151,7 +147,7 @@
       ]
     },
     "adc al, -1": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 12,
       "Comment": "GROUP1 0x80 /2",
       "ExpectedArm64ASM": [
         "mov w20, #0xff",
@@ -163,15 +159,13 @@
         "cset x20, hs",
         "cmn wzr, w26, lsl #24",
         "rmif x20, #63, #nzCv",
-        "eor w20, w4, #0xff",
-        "eor w21, w26, w4",
-        "bic w20, w21, w20",
+        "bic w20, w4, w26",
         "rmif x20, #7, #nzcV",
         "bfxil x4, x26, #0, #8"
       ]
     },
     "sbb al, -1": {
-      "ExpectedInstructionCount": 15,
+      "ExpectedInstructionCount": 13,
       "Comment": "GROUP1 0x80 /3",
       "ExpectedArm64ASM": [
         "mov w20, #0xff",
@@ -184,9 +178,7 @@
         "cset x20, hs",
         "cmn wzr, w26, lsl #24",
         "rmif x20, #63, #nzCv",
-        "eor w20, w21, #0xff",
-        "eor w21, w26, w21",
-        "and w20, w21, w20",
+        "bic w20, w26, w21",
         "rmif x20, #7, #nzcV",
         "bfxil x4, x26, #0, #8"
       ]
