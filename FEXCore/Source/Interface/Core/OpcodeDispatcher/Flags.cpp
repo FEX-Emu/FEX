@@ -276,7 +276,7 @@ Ref OpDispatchBuilder::CalculateFlags_ADC(IR::OpSize SrcSize, Ref Src1, Ref Src2
     CFInverted = false;
   } else {
     // Need to zero-extend for correct comparisons below
-    Src2 = _Bfe(OpSize, IR::OpSizeAsBits(SrcSize), 0, Src2);
+    Src2 = ARef(Src2).Bfe(0, IR::OpSizeAsBits(SrcSize)).Ref();
 
     // Note that we do not extend Src2PlusCF, since we depend on proper
     // 32-bit arithmetic to correctly handle the Src2 = 0xffff case.
@@ -316,7 +316,7 @@ Ref OpDispatchBuilder::CalculateFlags_SBB(IR::OpSize SrcSize, Ref Src1, Ref Src2
   } else {
     // Zero extend for correct comparison behaviour with Src1 = 0xffff.
     Src1 = _Bfe(OpSize, IR::OpSizeAsBits(SrcSize), 0, Src1);
-    Src2 = _Bfe(OpSize, IR::OpSizeAsBits(SrcSize), 0, Src2);
+    Src2 = ARef(Src2).Bfe(0, IR::OpSizeAsBits(SrcSize)).Ref();
 
     auto Src2PlusCF = IncrementByCarry(OpSize, Src2);
 
