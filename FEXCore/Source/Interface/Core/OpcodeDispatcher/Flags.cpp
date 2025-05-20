@@ -228,15 +228,20 @@ void OpDispatchBuilder::CalculateAF(Ref Src1, Ref Src2) {
   // We only care about bit 4 in the subsequent XOR. If we'll XOR with 0,
   // there's no sense XOR'ing at all. If we'll XOR with 1, that's just
   // inverting.
-  uint64_t Const;
-  if (IsValueConstant(WrapNode(Src2), &Const)) {
-    if (Const & (1u << 4)) {
-      SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(_Not(OpSize::i32Bit, Src1));
-    } else {
-      SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(Src1);
-    }
+  for (unsigned i = 0; i < 2; ++i) {
+    Ref SrcA = i ? Src1 : Src2;
+    Ref SrcB = i ? Src2 : Src1;
 
-    return;
+    uint64_t Const;
+    if (IsValueConstant(WrapNode(SrcA), &Const)) {
+      if (Const & (1u << 4)) {
+        SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(_Not(OpSize::i32Bit, SrcB));
+      } else {
+        SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(SrcB);
+      }
+
+      return;
+    }
   }
 
   // We store the XOR of the arguments. At read time, we XOR with the
