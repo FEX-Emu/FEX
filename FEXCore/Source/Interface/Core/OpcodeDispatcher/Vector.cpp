@@ -762,11 +762,12 @@ void OpDispatchBuilder::MOVMSKOp(OpcodeArgs, IR::OpSize ElementSize) {
       Ref Tmp = _VExtractToGPR(Size, ElementSize, Src, i);
       Tmp = _Bfe(ElementSize, 1, IR::OpSizeAsBits(ElementSize) - 1, Tmp);
 
-      // Shift it to the correct location
-      Tmp = _Lshl(ElementSize, Tmp, _Constant(i));
-
-      // Or it with the current value
-      CurrentVal = _Or(OpSize::i64Bit, CurrentVal, Tmp);
+      // Shift it to the correct location and or it with the current value
+      if (i != 0) {
+        CurrentVal = _Orlshl(OpSize::i64Bit, CurrentVal, Tmp, i);
+      } else {
+        CurrentVal = Tmp;
+      }
     }
     StoreResult(GPRClass, Op, CurrentVal, OpSize::iInvalid);
   }
