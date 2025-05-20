@@ -2543,7 +2543,7 @@ void OpDispatchBuilder::IMUL2SrcOp(OpcodeArgs) {
   case OpSize::i8Bit:
   case OpSize::i16Bit: {
     Src1 = _Sbfe(OpSize::i64Bit, SizeBits, 0, Src1);
-    Src2 = _Sbfe(OpSize::i64Bit, SizeBits, 0, Src2);
+    Src2 = ARef(Src2).Sbfe(0, SizeBits).Ref();
     Dest = _Mul(OpSize::i64Bit, Src1, Src2);
     ResultHigh = _Sbfe(OpSize::i64Bit, SizeBits, SizeBits, Dest);
     break;
