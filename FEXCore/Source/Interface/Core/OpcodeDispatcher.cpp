@@ -2343,21 +2343,19 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
 
 void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
   Ref Value;
-  Ref Src {};
+  ArithRef Src;
   bool IsNonconstant = Op->Src[SrcIndex].IsGPR();
-  uint8_t ConstantShift = 0;
 
   const uint32_t Size = GetDstBitSize(Op);
   const uint32_t Mask = Size - 1;
 
   if (IsNonconstant) {
     // Because we mask explicitly with And/Bfe/Sbfe after, we can allow garbage here.
-    Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = true});
+    Src = ARef(LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = true}));
   } else {
     // Can only be an immediate
     // Masked by operand size
-    ConstantShift = Op->Src[SrcIndex].Data.Literal.Value & Mask;
-    Src = _Constant(ConstantShift);
+    Src = ARef(Op->Src[SrcIndex].Data.Literal.Value & Mask);
   }
 
   if (Op->Dest.IsGPR()) {
@@ -2369,7 +2367,8 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
     // Get the bit selection from the src. We need to mask for 8/16-bit, but
     // rely on the implicit masking of Lshr for native sizes.
     unsigned LshrSize = std::max<uint8_t>(IR::OpSizeToSize(OpSize::i32Bit), Size / 8);
-    auto BitSelect = (Size == (LshrSize * 8)) ? Src : _And(OpSize::i64Bit, Src, _Constant(Mask));
+    auto BitSelect = (Size == (LshrSize * 8)) ? Src : Src.And(Mask);
+    auto LshrOpSize = IR::SizeToOpSize(LshrSize);
 
     // OF/SF/AF/PF undefined. ZF must be preserved. We choose to preserve OF/SF
     // too since we just use an rmif to insert into CF directly. We could
@@ -2379,10 +2378,10 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
     // can reuse the invert.
     if (Action != BTAction::BTComplement) {
       if (IsNonconstant) {
-        Value = _Lshr(IR::SizeToOpSize(LshrSize), Value, BitSelect);
+        Value = _Lshr(IR::SizeToOpSize(LshrSize), Value, BitSelect.Ref());
       }
 
-      SetRFLAG(Value, X86State::RFLAG_CF_RAW_LOC, ConstantShift, true);
+      SetRFLAG(Value, X86State::RFLAG_CF_RAW_LOC, Src.IsConstant ? Src.C : 0, true);
       CFInverted = false;
     }
 
@@ -2393,30 +2392,27 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
     }
 
     case BTAction::BTClear: {
-      Ref BitMask = _Lshl(IR::SizeToOpSize(LshrSize), _Constant(1), BitSelect);
-      Dest = _Andn(IR::SizeToOpSize(LshrSize), Dest, BitMask);
+      Dest = _Andn(LshrOpSize, Dest, BitSelect.MaskBit(LshrOpSize).Ref());
       StoreResult(GPRClass, Op, Dest, OpSize::iInvalid);
       break;
     }
 
     case BTAction::BTSet: {
-      Ref BitMask = _Lshl(IR::SizeToOpSize(LshrSize), _Constant(1), BitSelect);
-      Dest = _Or(IR::SizeToOpSize(LshrSize), Dest, BitMask);
+      Dest = _Or(LshrOpSize, Dest, BitSelect.MaskBit(LshrOpSize).Ref());
       StoreResult(GPRClass, Op, Dest, OpSize::iInvalid);
       break;
     }
 
     case BTAction::BTComplement: {
-      Ref BitMask = _Lshl(IR::SizeToOpSize(LshrSize), _Constant(1), BitSelect);
-      Dest = _Xor(IR::SizeToOpSize(LshrSize), Dest, BitMask);
+      Dest = _Xor(LshrOpSize, Dest, BitSelect.MaskBit(LshrOpSize).Ref());
 
       if (IsNonconstant) {
-        Value = _Lshr(IR::SizeToOpSize(LshrSize), Dest, BitSelect);
+        Value = _Lshr(LshrOpSize, Dest, BitSelect.Ref());
       } else {
         Value = Dest;
       }
 
-      SetRFLAG(Value, X86State::RFLAG_CF_RAW_LOC, ConstantShift, true);
+      SetRFLAG(Value, X86State::RFLAG_CF_RAW_LOC, Src.IsConstant ? Src.C : 0, true);
       CFInverted = true;
 
       StoreResult(GPRClass, Op, Dest, OpSize::iInvalid);
@@ -2427,17 +2423,15 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
     // Load the address to the memory location
     Ref Dest = MakeSegmentAddress(Op, Op->Dest);
     // Get the bit selection from the src
-    Ref BitSelect = _Bfe(std::max(OpSize::i32Bit, GetOpSize(Src)), 3, 0, Src);
+    auto BitSelect = Src.Bfe(0, 3);
 
     // Address is provided as bits we want BYTE offsets
     // Extract Signed offset
-    Src = _Sbfe(OpSize::i64Bit, Size - 3, 3, Src);
+    Src = Src.Sbfe(3, Size - 3);
 
     // Get the address offset by shifting out the size of the op (To shift out the bit selection)
     // Then use that to index in to the memory location by size of op
-    AddressMode Address = {.Base = Dest, .Index = Src, .AddrSize = OpSize::i64Bit};
-
-    ConstantShift = 0;
+    AddressMode Address = {.Base = Dest, .Index = Src.Ref(), .AddrSize = OpSize::i64Bit};
 
     switch (Action) {
     case BTAction::BTNone: {
@@ -2446,7 +2440,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
     }
 
     case BTAction::BTClear: {
-      Ref BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
+      Ref BitMask = BitSelect.MaskBit(OpSize::i64Bit).Ref();
 
       if (DestIsLockedMem(Op)) {
         HandledLock = true;
@@ -2461,7 +2455,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
     }
 
     case BTAction::BTSet: {
-      Ref BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
+      Ref BitMask = BitSelect.MaskBit(OpSize::i64Bit).Ref();
 
       if (DestIsLockedMem(Op)) {
         HandledLock = true;
@@ -2476,7 +2470,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
     }
 
     case BTAction::BTComplement: {
-      Ref BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
+      Ref BitMask = BitSelect.MaskBit(OpSize::i64Bit).Ref();
 
       if (DestIsLockedMem(Op)) {
         HandledLock = true;
@@ -2492,10 +2486,12 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
     }
 
     // Now shift in to the correct bit location
-    Value = _Lshr(std::max(OpSize::i32Bit, GetOpSize(Value)), Value, BitSelect);
+    if (!BitSelect.IsDefinitelyZero()) {
+      Value = _Lshr(std::max(OpSize::i32Bit, GetOpSize(Value)), Value, BitSelect.Ref());
+    }
 
     // OF/SF/ZF/AF/PF undefined.
-    SetCFDirect(Value, ConstantShift, true);
+    SetCFDirect(Value, 0, true);
   }
 }
 
