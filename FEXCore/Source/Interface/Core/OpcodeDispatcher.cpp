@@ -2070,15 +2070,15 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
   const auto Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  Ref Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
-  Src = AndConst(OpSize::i32Bit, Src, 0x1F);
+  auto Src = ARef(LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
+  Src = Src.And(0x1F);
 
   // CF only changes if we actually shifted. OF undefined if we didn't shift.
   // The result is unchanged if we didn't shift. So branch over the whole thing.
-  Calculate_ShiftVariable(Op, Src, [this, Op, Size]() {
+  Calculate_ShiftVariable(Op, Src.Ref(), [this, Op, Size]() {
     // Rematerialized to avoid crossblock liveness
-    Ref Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
-    Src = AndConst(OpSize::i32Bit, Src, 0x1F);
+    auto Src = ARef(LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
+    Src = Src.And(0x1F);
 
     auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
@@ -2143,27 +2143,23 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
     // Entire bitfield has been setup. Just extract the 8 or 16bits we need.
     // 64-bit shift used because we want to rotate in our cascaded upper bits
     // rather than zeroes.
-    Ref Res = _Lshr(OpSize::i64Bit, Tmp, Src);
+    Ref Res = _Lshr(OpSize::i64Bit, Tmp, Src.Ref());
 
     StoreResult(GPRClass, Op, Res, OpSize::iInvalid);
 
-    uint64_t SrcConst = 0;
-    bool IsSrcConst = IsValueConstant(WrapNode(Src), &SrcConst);
-    SrcConst &= 0x1f;
-
     // Our new CF will be bit (Shift - 1) of the source. 32-bit Lshr masks the
     // same as x86, but if we constant fold we must mask ourselves.
-    if (IsSrcConst) {
-      SetCFDirect(Tmp, SrcConst - 1, true);
+    if (Src.IsConstant) {
+      SetCFDirect(Tmp, (Src.C & 0x1f) - 1, true);
     } else {
       auto One = _Constant(OpSizeFromSrc(Op), 1);
-      auto NewCF = _Lshr(OpSize::i32Bit, Tmp, _Sub(OpSize::i32Bit, Src, One));
+      auto NewCF = _Lshr(OpSize::i32Bit, Tmp, _Sub(OpSize::i32Bit, Src.Ref(), One));
       SetCFDirect(NewCF, 0, true);
     }
 
     // OF is the top two MSBs XOR'd together
     // Only when Shift == 1, it is undefined otherwise
-    if (!IsSrcConst || SrcConst == 1) {
+    if (!Src.IsConstant || Src.C == 1) {
       auto NewOF = _XorShift(OpSize::i32Bit, Res, Res, ShiftType::LSR, 1);
       SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, Size - 2, true);
     }
@@ -2290,15 +2286,15 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
   const auto Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  Ref Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
-  Src = AndConst(OpSize::i32Bit, Src, 0x1F);
+  auto Src = ARef(LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
+  Src = Src.And(0x1F);
 
   // CF only changes if we actually shifted. OF undefined if we didn't shift.
   // The result is unchanged if we didn't shift. So branch over the whole thing.
-  Calculate_ShiftVariable(Op, Src, [this, Op, Size]() {
+  Calculate_ShiftVariable(Op, Src.Ref(), [this, Op, Size]() {
     // Rematerialized to avoid crossblock liveness
-    Ref Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
-    Src = AndConst(OpSize::i32Bit, Src, 0x1F);
+    auto Src = ARef(LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
+    Src = Src.And(0x1F);
     Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
     auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
@@ -2321,20 +2317,19 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
     // Shift 1 more bit that expected to get our result
     // Shifting to the right will now behave like a rotate to the left
     // Which we emulate with a _Ror
-    Ref Res = _Ror(OpSize::i64Bit, Tmp, _Neg(OpSize::i32Bit, Src));
+    Ref Res = _Ror(OpSize::i64Bit, Tmp, Src.Neg().Ref());
 
     StoreResult(GPRClass, Op, Res, OpSize::iInvalid);
 
     // Our new CF is now at the bit position that we are shifting
     // Either 0 if CF hasn't changed (CF is living in bit 0)
     // or higher
-    auto NewCF = _Ror(OpSize::i64Bit, Tmp, _Sub(OpSize::i64Bit, _Constant(63), Src));
+    auto NewCF = _Ror(OpSize::i64Bit, Tmp, Src.Presub(63).Ref());
     SetCFDirect(NewCF, 0, true);
 
     // OF is the XOR of the NewCF and the MSB of the result
     // Only defined for 1-bit rotates.
-    uint64_t SrcConst;
-    if (!IsValueConstant(WrapNode(Src), &SrcConst) || SrcConst == 1) {
+    if (!Src.IsConstant || Src.C == 1) {
       auto NewOF = _XorShift(OpSize::i64Bit, NewCF, Res, ShiftType::LSR, Size - 1);
       SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, 0, true);
     }

@@ -2314,18 +2314,6 @@ private:
   void CalculateFlags_ZCNT(IR::OpSize SrcSize, Ref Result);
   /**  @} */
 
-  Ref AndConst(FEXCore::IR::OpSize Size, Ref Node, uint64_t Const) {
-    uint64_t NodeConst;
-
-    if (IsValueConstant(WrapNode(Node), &NodeConst)) {
-      return _Constant(NodeConst & Const);
-    } else {
-      return _And(Size, Node, _Constant(Const));
-    }
-  }
-
-  /**  @} */
-
   Ref GetX87Top();
   void SetX87FTW(Ref FTW);
   Ref GetX87FTW_Helper();
