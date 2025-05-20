@@ -2315,7 +2315,6 @@ private:
   /**  @} */
 
   Ref GetX87Top();
-  Ref GetX87Tag(Ref Value, Ref AbridgedFTW);
   void SetX87FTW(Ref FTW);
   Ref GetX87FTW_Helper();
   void SetX87Top(Ref Value);
