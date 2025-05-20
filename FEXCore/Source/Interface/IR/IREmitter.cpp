@@ -189,27 +189,4 @@ void IREmitter::SetCurrentCodeBlock(Ref Node) {
   SetWriteCursor(Node->Op(DualListData.DataBegin())->CW<IROp_CodeBlock>()->Begin.GetNode(DualListData.ListBegin()));
 }
 
-void IREmitter::ReplaceWithConstant(Ref Node, uint64_t Value) {
-  auto Header = Node->Op(DualListData.DataBegin());
-
-  if (IRSizes[Header->Op] >= sizeof(IROp_Constant)) {
-    // Unlink any arguments the node currently has
-    RemoveArgUses(Node);
-
-    // Overwrite data with the new constant op
-    Header->Op = OP_CONSTANT;
-    auto Const = Header->CW<IROp_Constant>();
-    Const->Constant = Value;
-  } else {
-    // Fallback path for when the node to overwrite is too small
-    auto cursor = GetWriteCursor();
-    SetWriteCursor(Node);
-
-    auto NewNode = _Constant(Value);
-    ReplaceAllUsesWith(Node, NewNode);
-
-    SetWriteCursor(cursor);
-  }
-}
-
 } // namespace FEXCore::IR
