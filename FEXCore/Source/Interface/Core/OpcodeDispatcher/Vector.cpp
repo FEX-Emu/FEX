@@ -78,7 +78,7 @@ void OpDispatchBuilder::VMOVAPS_VMOVAPDOp(OpcodeArgs) {
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
   if (Is128Bit && Op->Dest.IsGPR()) {
-    Src = _VMov(OpSize::i128Bit, Src);
+    Src = VZeroExtendOperand(OpSize::i128Bit, Op->Src[0], Src);
   }
   StoreResult(FPRClass, Op, Src, OpSize::iInvalid);
 }
@@ -90,7 +90,7 @@ void OpDispatchBuilder::VMOVUPS_VMOVUPDOp(OpcodeArgs) {
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags, {.Align = OpSize::i8Bit});
 
   if (Is128Bit && Op->Dest.IsGPR()) {
-    Src = _VMov(OpSize::i128Bit, Src);
+    Src = VZeroExtendOperand(OpSize::i128Bit, Op->Src[0], Src);
   }
   StoreResult(FPRClass, Op, Src, OpSize::i8Bit);
 }
@@ -706,7 +706,7 @@ void OpDispatchBuilder::MOVQOp(OpcodeArgs, VectorOpType VectorType) {
     const auto gpr = Op->Dest.Data.GPR.GPR;
     const auto gprIndex = gpr - X86State::REG_XMM_0;
 
-    auto Reg = _VMov(OpSize::i64Bit, Src);
+    auto Reg = VZeroExtendOperand(OpSize::i64Bit, Op->Src[0], Src);
     StoreXMMRegister_WithAVXInsert(VectorType, gprIndex, Reg);
   } else {
     // This is simple, just store the result
@@ -3006,7 +3006,7 @@ void OpDispatchBuilder::MOVQ2DQ(OpcodeArgs) {
   if constexpr (ToXMM) {
     const auto Index = Op->Dest.Data.GPR.GPR - FEXCore::X86State::REG_XMM_0;
 
-    Src = _VMov(OpSize::i128Bit, Src);
+    Src = VZeroExtendOperand(OpSize::i128Bit, Op->Src[0], Src);
     StoreXMMRegister(Index, Src);
   } else {
     // This is simple, just store the result

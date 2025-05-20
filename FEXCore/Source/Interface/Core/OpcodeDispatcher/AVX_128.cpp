@@ -845,7 +845,7 @@ void OpDispatchBuilder::AVX128_MOVQ(OpcodeArgs) {
   // This instruction is a bit special that if the destination is a register then it'll ZEXT the 64bit source to 256bit
   if (Op->Dest.IsGPR()) {
     // Zero bits [127:64] as well.
-    Src.Low = _VMov(OpSize::i64Bit, Src.Low);
+    Src.Low = VZeroExtendOperand(OpSize::i64Bit, Op->Src[0], Src.Low);
     Ref ZeroVector = LoadZeroVector(OpSize::i128Bit);
     Src.High = ZeroVector;
     AVX128_StoreResult_WithOpSize(Op, Op->Dest, Src);
