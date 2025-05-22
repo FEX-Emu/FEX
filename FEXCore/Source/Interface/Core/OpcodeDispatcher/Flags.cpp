@@ -247,7 +247,7 @@ void OpDispatchBuilder::CalculateAF(Ref Src1, Ref Src2) {
   // We store the XOR of the arguments. At read time, we XOR with the
   // appropriate bit of the result (available as the PF flag) and extract the
   // appropriate bit. Again 64-bit to avoid masking.
-  Ref XorRes = _Xor(OpSize::i64Bit, Src1, Src2);
+  Ref XorRes = Src1 == Src2 ? _Constant(0) : _Xor(OpSize::i64Bit, Src1, Src2);
   SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(XorRes);
 }
 
