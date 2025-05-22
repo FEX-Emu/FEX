@@ -4440,7 +4440,8 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
   // Try to eliminate the masking after 8/16-bit operations with constants, by
   // promoting to a full size operation that preserves the upper bits.
   uint64_t Const;
-  if (Size < OpSize::i32Bit && !DestIsLockedMem(Op) && Op->Dest.IsGPR() && !Op->Dest.Data.GPR.HighBits && IsValueConstant(WrapNode(Src), &Const) &&
+  bool IsConst = IsValueConstant(WrapNode(Src), &Const);
+  if (Size < OpSize::i32Bit && !DestIsLockedMem(Op) && Op->Dest.IsGPR() && !Op->Dest.Data.GPR.HighBits && IsConst &&
       (ALUIROp == IR::IROps::OP_XOR || ALUIROp == IR::IROps::OP_OR || ALUIROp == IR::IROps::OP_ANDWITHFLAGS)) {
 
     RoundedSize = ResultSize = CTX->GetGPROpSize();
@@ -4474,8 +4475,15 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
   }
 
   const auto OpSize = RoundedSize;
-  DeriveOp(ALUOp, ALUIROp, _AndWithFlags(OpSize, Dest, Src));
-  Result = ALUOp;
+  uint64_t Mask = Size == OpSize::i64Bit ? ~0ull : ((1ull << IR::OpSizeAsBits(Size)) - 1);
+  if (IsConst && Const == Mask && !DestIsLockedMem(Op) && ALUIROp == IR::IROps::OP_XOR && Size >= OpSize::i32Bit) {
+    Result = _Not(OpSize, Dest);
+  } else if (IsConst && Const == Mask && !DestIsLockedMem(Op) && ALUIROp == IR::IROps::OP_AND) {
+    Result = Dest;
+  } else {
+    DeriveOp(ALUOp, ALUIROp, _AndWithFlags(OpSize, Dest, Src));
+    Result = ALUOp;
+  }
 
   // Flags set
   switch (ALUIROp) {
