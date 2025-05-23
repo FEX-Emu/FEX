@@ -590,8 +590,8 @@ void Arm64Emitter::PushCalleeSavedRegisters() {
 
 void Arm64Emitter::PopCalleeSavedRegisters() {
   constexpr static std::array< std::tuple<ARMEmitter::DRegister, ARMEmitter::DRegister, ARMEmitter::DRegister, ARMEmitter::DRegister>, 2> FPRs = {{
-    {ARMEmitter::DReg::d12, ARMEmitter::DReg::d13, ARMEmitter::DReg::d14, ARMEmitter::DReg::d15},
     {ARMEmitter::DReg::d8, ARMEmitter::DReg::d9, ARMEmitter::DReg::d10, ARMEmitter::DReg::d11},
+    {ARMEmitter::DReg::d12, ARMEmitter::DReg::d13, ARMEmitter::DReg::d14, ARMEmitter::DReg::d15},
   }};
 
   for (auto& RegQuad : FPRs) {
