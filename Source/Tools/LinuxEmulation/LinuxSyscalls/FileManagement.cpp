@@ -279,7 +279,7 @@ FileManager::FileManager(FEXCore::Context::Context* ctx)
     // Using a local struct for this is slightly less ugly than using self-capturing lambdas
     struct {
       decltype(FileManager::ThunkOverlays)& ThunkOverlays;
-      decltype(ThunkDB)& ThunkDB;
+      decltype(ThunkDB)& DB;
       const fextl::string& ThunkGuestPath;
       bool Is64BitMode;
 
@@ -301,7 +301,7 @@ FileManager::FileManager(FEXCore::Context::Context* ctx)
 
       void InsertDependencies(const fextl::unordered_set<fextl::string>& Depends) {
         for (const auto& Depend : Depends) {
-          auto& DBDepend = ThunkDB.at(Depend);
+          auto& DBDepend = DB.at(Depend);
           if (DBDepend.Enabled) {
             continue;
           }
