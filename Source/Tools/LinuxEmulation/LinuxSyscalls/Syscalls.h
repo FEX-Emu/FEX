@@ -23,6 +23,7 @@ $end_info$
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
 #include <FEXCore/fextl/fmt.h>
+#include <FEXCore/fextl/functional.h>
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
@@ -242,16 +243,40 @@ public:
   virtual void* GuestMmap(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length, int prot, int flags, int fd, off_t offset) = 0;
 
   // does a guest munmap as if done via a guest syscall
-  virtual int GuestMunmap(FEXCore::Core::InternalThreadState* Thread, void* addr, uint64_t length) = 0;
+  virtual uint64_t GuestMunmap(FEXCore::Core::InternalThreadState* Thread, void* addr, uint64_t length) = 0;
 
   ///// Memory Manager tracking /////
-  void TrackMmap(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base, uintptr_t Size, int Prot, int Flags, int fd, off_t Offset);
-  void TrackMunmap(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base, uintptr_t Size);
-  void TrackMprotect(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base, uintptr_t Size, int Prot);
-  void TrackMremap(FEXCore::Core::InternalThreadState* Thread, uintptr_t OldAddress, size_t OldSize, size_t NewSize, int flags, uintptr_t NewAddress);
-  void TrackShmat(FEXCore::Core::InternalThreadState* Thread, int shmid, uintptr_t Base, int shmflg);
-  void TrackShmdt(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base);
+  void TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t addr, size_t length, int prot, int flags, int fd, off_t offset);
+  void TrackMunmap(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length);
+  void TrackMremap(FEXCore::Core::InternalThreadState* Thread, uint64_t OldAddress, size_t OldSize, size_t NewSize, int flags, uint64_t NewAddress);
+  void TrackShmat(FEXCore::Core::InternalThreadState* Thread, int shmid, uint64_t shmaddr, int shmflg, uint64_t Length);
+  uint64_t TrackShmdt(FEXCore::Core::InternalThreadState* Thread, uint64_t shmaddr);
+  void TrackMprotect(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t len, int prot);
   void TrackMadvise(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base, uintptr_t Size, int advice);
+
+  void InvalidateCodeRangeIfNecessary(FEXCore::Core::InternalThreadState* Thread, uint64_t Base, uint64_t Length) {
+    if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
+      TM.InvalidateGuestCodeRange(Thread, Base, Length);
+    }
+  }
+
+  void InvalidateCodeRangeIfNecessaryOnRemap(FEXCore::Core::InternalThreadState* Thread, uint64_t OldAddress, uint64_t NewAddress,
+                                             size_t OldSize, size_t NewSize) {
+    if (SMCChecks != FEXCore::Config::CONFIG_SMC_NONE) {
+      if (OldAddress != NewAddress) {
+        if (OldSize != 0) {
+          // This also handles the MREMAP_DONTUNMAP case
+          TM.InvalidateGuestCodeRange(Thread, OldAddress, OldSize);
+        }
+      } else {
+        // If mapping shrunk, flush the unmapped region
+        if (OldSize > NewSize) {
+          TM.InvalidateGuestCodeRange(Thread, OldAddress + NewSize, OldSize - NewSize);
+        }
+      }
+    }
+  }
+
 
   ///// VMA (Virtual Memory Area) tracking /////
   static bool HandleSegfault(FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext);
@@ -283,6 +308,8 @@ public:
 
   constexpr static uint64_t TASK_MAX_64BIT = (1ULL << 48);
 
+  VMATracking::VMATracking VMATracking;
+
 protected:
   SyscallHandler(FEXCore::Context::Context* _CTX, FEX::HLE::SignalDelegator* _SignalDelegation, FEX::HLE::ThunkHandler* ThunkHandler);
 
@@ -304,7 +331,6 @@ protected:
   uint32_t GuestKernelVersion {};
 
   FEXCore::Context::Context* CTX;
-
 private:
 
   FEX::HLE::SignalDelegator* SignalDelegation;
@@ -324,7 +350,7 @@ private:
   fextl::unique_ptr<FEXCore::HLE::SourcecodeMap>
   GenerateMap(const std::string_view& GuestBinaryFile, const std::string_view& GuestBinaryFileId) override;
 
-  VMATracking::VMATracking VMATracking;
+  std::atomic<uint64_t> AnonSharedId {1};
 };
 
 uint64_t HandleSyscall(SyscallHandler* Handler, FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args);

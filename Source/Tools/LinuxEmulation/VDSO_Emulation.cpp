@@ -715,8 +715,14 @@ void LoadUnique32BitSigreturn(VDSOMapping* Mapping, FEX::HLE::SyscallHandler* co
   memcpy(reinterpret_cast<void*>(VDSOPointers.VDSO_kernel_rt_sigreturn), &rt_sigreturn_32_code.at(0), rt_sigreturn_32_code.size());
 
   mprotect(Mapping->OptionalSigReturnMapping, Mapping->OptionalMappingSize, PROT_READ | PROT_EXEC);
-  Handler->TrackMmap(nullptr, reinterpret_cast<uintptr_t>(Mapping->OptionalSigReturnMapping), Mapping->OptionalMappingSize,
-                     PROT_READ | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  {
+    auto lk = FEXCore::GuardSignalDeferringSectionWithFallback(Handler->VMATracking.Mutex, nullptr);
+    FEX::HLE::_SyscallHandler->TrackMmap(nullptr, reinterpret_cast<uint64_t>(Mapping->OptionalSigReturnMapping),
+                                         Mapping->OptionalMappingSize, PROT_READ | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+  }
+
+  FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(nullptr, reinterpret_cast<uint64_t>(Mapping->OptionalSigReturnMapping),
+                                                            Mapping->OptionalMappingSize);
 }
 
 void UnloadVDSOMapping(const VDSOMapping& Mapping) {
