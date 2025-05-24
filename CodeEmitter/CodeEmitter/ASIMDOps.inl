@@ -3952,7 +3952,7 @@ public:
       L = (Index >> 0) & 1;
       M = 0;
     } else {
-      LOGMAN_THROW_A_FMT(std::is_same_v<ARMEmitter::QRegister, T>, "Can't encode DRegister with i64Bit");
+      LOGMAN_THROW_A_FMT((std::is_same_v<ARMEmitter::QRegister, T>), "Can't encode DRegister with i64Bit");
       // Index encoded in H
       H = Index;
       L = 0;
@@ -3983,7 +3983,7 @@ public:
       L = (Index >> 0) & 1;
       M = 0;
     } else {
-      LOGMAN_THROW_A_FMT(std::is_same_v<ARMEmitter::QRegister, T>, "Can't encode DRegister with i64Bit");
+      LOGMAN_THROW_A_FMT((std::is_same_v<ARMEmitter::QRegister, T>), "Can't encode DRegister with i64Bit");
       // Index encoded in H
       H = Index;
       L = 0;
@@ -4014,7 +4014,7 @@ public:
       L = (Index >> 0) & 1;
       M = 0;
     } else {
-      LOGMAN_THROW_A_FMT(std::is_same_v<ARMEmitter::QRegister, T>, "Can't encode DRegister with i64Bit");
+      LOGMAN_THROW_A_FMT((std::is_same_v<ARMEmitter::QRegister, T>), "Can't encode DRegister with i64Bit");
       // Index encoded in H
       H = Index;
       L = 0;

@@ -53,9 +53,9 @@ namespace Throw {
     MFmt(fmt, fmt::make_format_args(args...));
   }
 
-#define LOGMAN_THROW_A_FMT(pred, ...)       \
-  do {                                      \
-    LogMan::Throw::AFmt(pred, __VA_ARGS__); \
+#define LOGMAN_THROW_A_FMT(pred, format, ...)                                                                            \
+  do {                                                                                                                   \
+    LogMan::Throw::AFmt((pred), "{}:{}, {}: " format, __FILE_NAME__, __LINE__, __FUNCTION__ __VA_OPT__(, ) __VA_ARGS__); \
   } while (0)
 #else
   static inline void AFmt(bool, const char*, ...) {}
