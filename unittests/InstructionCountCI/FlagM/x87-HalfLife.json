@@ -1063,7 +1063,7 @@
     },
     "Block4": {
       "x86InstructionCount": 54,
-      "ExpectedInstructionCount": 80,
+      "ExpectedInstructionCount": 78,
       "x86Insts": [
         "push ebp",
         "push edi",
@@ -1121,10 +1121,8 @@
         "fld dword [esp + 0x2c]"
       ],
       "ExpectedArm64ASM": [
-        "str w9, [x8, #-4]!",
-        "str w11, [x8, #-4]!",
-        "str w10, [x8, #-4]!",
-        "str w6, [x8, #-4]!",
+        "stp w11, w9, [x8, #-8]!",
+        "stp w6, w10, [x8, #-8]!",
         "subs w26, w8, #0x4c (76)",
         "mov x27, x8",
         "mov x8, x26",
@@ -1564,7 +1562,7 @@
     },
     "Block6": {
       "x86InstructionCount": 39,
-      "ExpectedInstructionCount": 297,
+      "ExpectedInstructionCount": 295,
       "x86Insts": [
         "push ebp",
         "push edi",
@@ -1607,10 +1605,8 @@
         "fstp st1"
       ],
       "ExpectedArm64ASM": [
-        "str w9, [x8, #-4]!",
-        "str w11, [x8, #-4]!",
-        "str w10, [x8, #-4]!",
-        "str w6, [x8, #-4]!",
+        "stp w11, w9, [x8, #-8]!",
+        "stp w6, w10, [x8, #-8]!",
         "subs w20, w8, #0x4 (4)",
         "mov x27, x8",
         "mov x8, x20",
@@ -2611,7 +2607,7 @@
     },
     "Block10": {
       "x86InstructionCount": 125,
-      "ExpectedInstructionCount": 22,
+      "ExpectedInstructionCount": 21,
       "x86Insts": [
         "push esi",
         "push ebx",
@@ -2740,8 +2736,7 @@
         "xor eax,dword gs:[0x14]"
       ],
       "ExpectedArm64ASM": [
-        "str w10, [x8, #-4]!",
-        "str w6, [x8, #-4]!",
+        "stp w6, w10, [x8, #-8]!",
         "sub w8, w8, #0xa4 (164)",
         "ldr w6, [x8, #176]",
         "add w10, w8, #0x18 (24)",

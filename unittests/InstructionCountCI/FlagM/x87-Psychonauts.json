@@ -26756,7 +26756,7 @@
     },
     "Block8": {
       "x86InstructionCount": 231,
-      "ExpectedInstructionCount": 3724,
+      "ExpectedInstructionCount": 3723,
       "x86Insts": [
         "fadd dword [esp + 0x40]",
         "lea edx,[ecx + ecx*0x2]",
@@ -30693,8 +30693,7 @@
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "strb w20, [x28, #1019]",
-        "ldr w11, [x8], #4",
-        "ldr w10, [x8], #4",
+        "ldp w11, w10, [x8], #8",
         "ldrb w22, [x28, #1298]",
         "lsl w23, w21, w20",
         "bic w22, w22, w23",
@@ -30719,7 +30718,7 @@
     },
     "Block9": {
       "x86InstructionCount": 222,
-      "ExpectedInstructionCount": 3646,
+      "ExpectedInstructionCount": 3645,
       "x86Insts": [
         "fadd dword [esp + 0x40]",
         "lea edx,[ecx + ecx*0x2]",
@@ -34569,8 +34568,7 @@
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
         "strb w20, [x28, #1019]",
-        "ldr w11, [x8], #4",
-        "ldr w10, [x8], #4",
+        "ldp w11, w10, [x8], #8",
         "ldrb w22, [x28, #1298]",
         "lsl w23, w21, w20",
         "bic w22, w22, w23",

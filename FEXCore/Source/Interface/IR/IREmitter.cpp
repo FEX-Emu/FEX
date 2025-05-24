@@ -146,6 +146,10 @@ void IREmitter::RemoveArgUses(Ref Node) {
   }
 }
 
+void IREmitter::RemovePostRA(Ref Node) {
+  Node->Unlink(DualListData.ListBegin());
+}
+
 void IREmitter::Remove(Ref Node) {
   RemoveArgUses(Node);
 

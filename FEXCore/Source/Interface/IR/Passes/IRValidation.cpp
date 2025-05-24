@@ -58,11 +58,6 @@ void IRValidation::Run(IREmitter* IREmit) {
   LOGMAN_THROW_A_FMT(HeaderOp->Header.Op == OP_IRHEADER, "First op wasn't IRHeader");
 #endif
 
-  IR::RegisterAllocationData* RAData {};
-  if (Manager->HasPass("RA")) {
-    RAData = Manager->GetPass<IR::RegisterAllocationPass>("RA")->GetAllocationData();
-  }
-
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
     auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
     LOGMAN_THROW_A_FMT(BlockIROp->Header.Op == OP_CODEBLOCK, "IR type failed to be a code block");
@@ -94,9 +89,9 @@ void IRValidation::Run(IREmitter* IREmit) {
           Warnings << "%" << ID << ": Destination created but had no uses" << std::endl;
         }
 
-        if (RAData) {
-          // If we have a register allocator then the destination needs to be assigned a register and class
-          auto PhyReg = RAData->GetNodeRegister(ID);
+        if (CurrentIR.PostRA()) {
+          // After RA, the destination needs to be assigned a register and class
+          auto PhyReg = PhysicalRegister(CodeNode);
 
           FEXCore::IR::RegisterClassType ExpectedClass = IR::GetRegClass(IROp->Op);
           FEXCore::IR::RegisterClassType AssignedClass = FEXCore::IR::RegisterClassType {PhyReg.Class};
@@ -127,6 +122,10 @@ void IRValidation::Run(IREmitter* IREmit) {
       for (uint32_t i = 0; i < NumArgs; ++i) {
         OrderedNodeWrapper Arg = IROp->Args[i];
         const auto ArgID = Arg.ID();
+        if (Arg.IsImmediate()) {
+          continue;
+        }
+
         IROps Op = CurrentIR.GetOp<IROp_Header>(Arg)->Op;
 
         if (ArgID.IsValid()) {
@@ -239,18 +238,21 @@ void IRValidation::Run(IREmitter* IREmit) {
     }
   }
 
-  for (uint32_t i = 0; i < CurrentIR.GetSSACount(); i++) {
-    auto [Node, IROp] = CurrentIR.at(IR::NodeID {i})();
-    if (Node->NumUses != Uses[i] && IROp->Op != OP_CODEBLOCK && IROp->Op != OP_IRHEADER) {
-      HadError |= true;
-      Errors << "%" << i << " Has " << Uses[i] << " Uses, but reports " << Node->NumUses << std::endl;
+  // Use counts are only relevant pre-RA.
+  if (!CurrentIR.PostRA()) {
+    for (uint32_t i = 0; i < CurrentIR.GetSSACount(); i++) {
+      auto [Node, IROp] = CurrentIR.at(IR::NodeID {i})();
+      if (Node->NumUses != Uses[i] && IROp->Op != OP_CODEBLOCK && IROp->Op != OP_IRHEADER) {
+        HadError |= true;
+        Errors << "%" << i << " Has " << Uses[i] << " Uses, but reports " << Node->NumUses << std::endl;
+      }
     }
   }
 
   HadWarning = false;
   if (HadError || HadWarning) {
     fextl::stringstream Out;
-    FEXCore::IR::Dump(&Out, &CurrentIR, RAData);
+    FEXCore::IR::Dump(&Out, &CurrentIR);
 
     if (HadError) {
       Out << "Errors:" << std::endl << Errors.str() << std::endl;

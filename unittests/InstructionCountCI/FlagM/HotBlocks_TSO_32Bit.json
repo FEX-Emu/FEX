@@ -17,7 +17,7 @@
   "Instructions": {
     "The Sims 1 hot block": {
       "x86InstructionCount": 47,
-      "ExpectedInstructionCount": 98,
+      "ExpectedInstructionCount": 97,
       "Comment": [
         "Hottest in-game block from The Sims 1, Legacy Collection",
         "Consumed 6.13% of a CPU core on Oryon-1",
@@ -92,8 +92,7 @@
         "stlur w4, [x9, #-4]",
         "ldapur w5, [x9, #8]",
         "nop",
-        "str w6, [x8, #-4]!",
-        "str w10, [x8, #-4]!",
+        "stp w10, w6, [x8, #-8]!",
         "ldapur w10, [x9, #24]",
         "nop",
         "str w11, [x8, #-4]!",

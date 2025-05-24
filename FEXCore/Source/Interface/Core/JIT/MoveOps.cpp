@@ -8,7 +8,6 @@ $end_info$
 #include "Interface/Core/JIT/JITClass.h"
 
 namespace FEXCore::CPU {
-#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::NodeID Node)
 DEF_OP(Copy) {
   auto Op = IROp->C<IR::IROp_Copy>();
 
@@ -16,13 +15,7 @@ DEF_OP(Copy) {
 }
 
 DEF_OP(RMWHandle) {
-  auto Op = IROp->C<IR::IROp_RMWHandle>();
-  auto Dest = GetReg(Node);
-  auto Src = GetReg(Op->Value);
-
-  if (Dest != Src) {
-    mov(ARMEmitter::Size::i64Bit, Dest, Src);
-  }
+  mov(ARMEmitter::Size::i64Bit, GetReg(Node), GetReg(IROp->Args[0]));
 }
 
 DEF_OP(Swap1) {
@@ -39,5 +32,4 @@ DEF_OP(Swap2) {
   // Implemented above
 }
 
-#undef DEF_OP
 } // namespace FEXCore::CPU
