@@ -133,8 +133,8 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
       const auto Src1 = GetVReg(IROp->Args[0]);
       fmov(VTMP1.S(), Src1.S());
 
-      ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
-      ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].Func));
+      ldr(TMP1, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, ABIHandler));
+      ldr(TMP4, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, Func));
       blr(TMP1);
 
       ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
@@ -151,8 +151,8 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
       const auto Src1 = GetVReg(IROp->Args[0]);
       fmov(VTMP1.D(), Src1.D());
 
-      ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
-      ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].Func));
+      ldr(TMP1, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, ABIHandler));
+      ldr(TMP4, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, Func));
       blr(TMP1);
 
       ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
@@ -176,8 +176,8 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
         mov(ARMEmitter::Size::i32Bit, TMP2, Src1);
       }
 
-      ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
-      ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].Func));
+      ldr(TMP1, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, ABIHandler));
+      ldr(TMP4, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, Func));
       blr(TMP1);
 
       ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
@@ -194,8 +194,8 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
       const auto Src1 = GetVReg(IROp->Args[0]);
       mov(VTMP1.Q(), Src1.Q());
 
-      ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
-      ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].Func));
+      ldr(TMP1, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, ABIHandler));
+      ldr(TMP4, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, Func));
       blr(TMP1);
 
       ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
@@ -212,8 +212,8 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
       const auto Src1 = GetVReg(IROp->Args[0]);
       mov(VTMP1.Q(), Src1.Q());
 
-      ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
-      ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].Func));
+      ldr(TMP1, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, ABIHandler));
+      ldr(TMP4, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, Func));
       blr(TMP1);
 
       ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
@@ -230,8 +230,8 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
       const auto Src1 = GetVReg(IROp->Args[0]);
       fmov(VTMP1.D(), Src1.D());
 
-      ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
-      ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].Func));
+      ldr(TMP1, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, ABIHandler));
+      ldr(TMP4, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, Func));
       blr(TMP1);
 
       ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
@@ -254,8 +254,8 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
 
       fmov(VTMP1.D(), Src1.D());
 
-      ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
-      ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].Func));
+      ldr(TMP1, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, ABIHandler));
+      ldr(TMP4, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, Func));
       blr(TMP1);
 
       ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
@@ -276,8 +276,8 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
       fmov(VTMP1.D(), Src1.D());
       fmov(VTMP2.D(), Src2.D());
 
-      ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
-      ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].Func));
+      ldr(TMP1, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, ABIHandler));
+      ldr(TMP4, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, Func));
       blr(TMP1);
 
       ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
@@ -294,8 +294,8 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
       const auto Src1 = GetVReg(IROp->Args[0]);
       mov(VTMP1.Q(), Src1.Q());
 
-      ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
-      ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].Func));
+      ldr(TMP1, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, ABIHandler));
+      ldr(TMP4, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, Func));
       blr(TMP1);
 
       ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
@@ -312,8 +312,8 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
       const auto Src1 = GetVReg(IROp->Args[0]);
       mov(VTMP1.Q(), Src1.Q());
 
-      ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
-      ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].Func));
+      ldr(TMP1, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, ABIHandler));
+      ldr(TMP4, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, Func));
       blr(TMP1);
 
       ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
@@ -330,8 +330,8 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
       const auto Src1 = GetVReg(IROp->Args[0]);
       mov(VTMP1.Q(), Src1.Q());
 
-      ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
-      ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].Func));
+      ldr(TMP1, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, ABIHandler));
+      ldr(TMP4, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, Func));
       blr(TMP1);
 
       ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
@@ -351,8 +351,8 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
       mov(VTMP1.Q(), Src1.Q());
       mov(VTMP2.Q(), Src2.Q());
 
-      ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
-      ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].Func));
+      ldr(TMP1, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, ABIHandler));
+      ldr(TMP4, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, Func));
       blr(TMP1);
 
       ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
@@ -369,8 +369,8 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
       const auto Src1 = GetVReg(IROp->Args[0]);
       mov(VTMP1.Q(), Src1.Q());
 
-      ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
-      ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].Func));
+      ldr(TMP1, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, ABIHandler));
+      ldr(TMP4, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, Func));
       blr(TMP1);
 
       ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
@@ -394,8 +394,8 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
 
       mov(VTMP1.Q(), Src1.Q());
 
-      ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
-      ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].Func));
+      ldr(TMP1, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, ABIHandler));
+      ldr(TMP4, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, Func));
       blr(TMP1);
 
       ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
@@ -416,8 +416,8 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
       mov(VTMP1.Q(), Src1.Q());
       mov(VTMP2.Q(), Src2.Q());
 
-      ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
-      ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].Func));
+      ldr(TMP1, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, ABIHandler));
+      ldr(TMP4, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, Func));
       blr(TMP1);
 
       ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
@@ -434,8 +434,8 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
       // tmp2 (x1/x11): source 2
       // tmp3 (x2/x12): source 3
       const auto Op = IROp->C<IR::IROp_VPCMPESTRX>();
-      ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
-      ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].Func));
+      ldr(TMP4, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, ABIHandler));
+      ldr(TMP1, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, Func));
 
       stp<ARMEmitter::IndexType::PRE>(TMP1, ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
 
@@ -476,8 +476,8 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
       mov(VTMP2.Q(), Src2.Q());
       movz(ARMEmitter::Size::i32Bit, TMP1, Control);
 
-      ldr(TMP2, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
-      ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.FallbackHandlerPointers[Info.HandlerIndex].Func));
+      ldr(TMP2, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, ABIHandler));
+      ldr(TMP4, FALLBACK_HANDLER_OFFSET(Info.HandlerIndex, Func));
       blr(TMP2);
 
       ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);

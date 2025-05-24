@@ -90,7 +90,7 @@ uint64_t BPFEmitter::HandleLoad(uint32_t BPFIP, const sock_filter* Inst) {
     // Must be smaller than scratch space size.
     VALIDATE(Inst->k < 16);
 
-    EMIT_INST(ldr(DestReg, REG_SECCOMP_DATA, offsetof(WorkingBuffer, ScratchMemory[Inst->k])));
+    EMIT_INST(ldr(DestReg, REG_SECCOMP_DATA, ARRAY_OFFSETOF(WorkingBuffer, ScratchMemory, Inst->k)));
     break;
   case BPF_LEN:
     // Just returns the length of seccomp_data.
@@ -114,7 +114,7 @@ uint64_t BPFEmitter::HandleStore(uint32_t BPFIP, const sock_filter* Inst) {
   // Must be smaller than scratch space size.
   VALIDATE(Inst->k < 16);
 
-  EMIT_INST(str(SrcReg, REG_SECCOMP_DATA, offsetof(WorkingBuffer, ScratchMemory[Inst->k])));
+  EMIT_INST(str(SrcReg, REG_SECCOMP_DATA, ARRAY_OFFSETOF(WorkingBuffer, ScratchMemory, Inst->k)));
 
   RETURN_SUCCESS();
 }
