@@ -174,7 +174,7 @@ private:
 
   FEXCore::ArchHelpers::Arm64::UnalignedHandlerType UnalignedHandlerType {FEXCore::ArchHelpers::Arm64::UnalignedHandlerType::HalfBarrier};
 
-  enum DefaultBehaviour {
+  enum DefaultBehaviourType {
     DEFAULT_TERM,
     // Core dump based signals are supposed to have a coredump appear
     // For FEX's behaviour we don't really care right now
@@ -201,7 +201,7 @@ private:
     kernel_sigaction OldAction {};
     FEX::HLE::HostSignalDelegatorFunctionForGuest GuestHandler {};
     GuestSigAction GuestAction {};
-    DefaultBehaviour DefaultBehaviour {DEFAULT_TERM};
+    DefaultBehaviourType DefaultBehaviour {DEFAULT_TERM};
 
     // Callbacks
     fextl::vector<HostSignalDelegatorFunction> Handlers {};

@@ -894,7 +894,7 @@ SignalDelegator::SignalDelegator(FEXCore::Context::Context* _CTX, const std::str
 
   // Most signals default to termination
   // These ones are slightly different
-  static constexpr std::array<std::pair<int, SignalDelegator::DefaultBehaviour>, 14> SignalDefaultBehaviours = {{
+  static constexpr std::array<std::pair<int, SignalDelegator::DefaultBehaviourType>, 14> SignalDefaultBehaviours = {{
     {SIGQUIT, DEFAULT_COREDUMP},
     {SIGILL, DEFAULT_COREDUMP},
     {SIGTRAP, DEFAULT_COREDUMP},
