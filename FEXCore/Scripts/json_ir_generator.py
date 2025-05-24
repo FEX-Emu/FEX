@@ -575,7 +575,7 @@ def print_ir_arg_printer():
 
                 if arg.IsSSA:
                     # SSA value
-                    output_file.write("\tPrintArg(out, IR, Op->Header.Args[{}], RAData);\n".format(SSAArgNum))
+                    output_file.write("\tPrintArg(out, IR, Op->Header.Args[{}]);\n".format(SSAArgNum))
                     SSAArgNum = SSAArgNum + 1
                 else:
                     # User defined op that is stored
@@ -586,6 +586,15 @@ def print_ir_arg_printer():
 
     output_file.write("#undef IROP_ARGPRINTER_HELPER\n")
     output_file.write("#endif\n")
+
+def print_validation(op):
+    if op.EmitValidation != None:
+        output_file.write("\t\t#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED\n")
+
+        for Validation in op.EmitValidation:
+            Sanitized = Validation.replace("\"", "\\\"")
+            output_file.write("\tLOGMAN_THROW_A_FMT({}, \"{}\");\n".format(Validation, Sanitized))
+        output_file.write("\t\t#endif\n")
 
 # Print out IR allocator helpers
 def print_ir_allocator_helpers():
@@ -678,7 +687,7 @@ def print_ir_allocator_helpers():
                     output_file.write("{} {}".format(CType, arg.Name));
                 elif arg.IsSSA:
                     # SSA value
-                    output_file.write("OrderedNode *{}".format(arg.Name))
+                    output_file.write("OrderedNodeWrapper {}".format(arg.Name))
                 else:
                     # User defined op that is stored
                     CType = IRTypesToCXX[arg.Type].CXXName
@@ -708,15 +717,9 @@ def print_ir_allocator_helpers():
             output_file.write("\t\tauto _Op = AllocateOp<IROp_{}, IROps::OP_{}>();\n".format(op.Name, op.Name.upper()))
 
             if op.SSAArgNum != 0:
-                output_file.write("\t\tauto ListDataBegin = DualListData.ListBegin();\n")
                 for arg in op.Arguments:
                     if arg.IsSSA:
-                        output_file.write("\t\t_Op.first->{} = {}->Wrapped(ListDataBegin);\n".format(arg.Name, arg.Name))
-
-            if op.SSAArgNum != 0:
-                for arg in op.Arguments:
-                    if arg.IsSSA:
-                        output_file.write("\t\t{}->AddUse();\n".format(arg.Name))
+                        output_file.write("\t\t_Op.first->{} = {};\n".format(arg.Name, arg.Name))
 
             if len(op.Arguments) != 0:
                 for arg in op.Arguments:
@@ -735,17 +738,63 @@ def print_ir_allocator_helpers():
             else:
                 output_file.write("\t\t_Op.first->Header.ElementSize = {};\n".format(op.ElementSize))
 
-            # Insert validation here
-            if op.EmitValidation != None:
-                output_file.write("\t\t#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED\n")
 
-                for Validation in op.EmitValidation:
-                    Sanitized = Validation.replace("\"", "\\\"")
-                    output_file.write("\tLOGMAN_THROW_A_FMT({}, \"{}\");\n".format(Validation, Sanitized))
-                output_file.write("\t\t#endif\n")
+            # Only validate here if there's no OrderedNode * version. Else
+            # validation is in that version, see the comment below.
+            if op.SSAArgNum == 0:
+                print_validation(op)
 
             output_file.write("\t\treturn _Op;\n")
             output_file.write("\t}\n\n")
+
+            # Now do the OrderedNode * version if necessary
+            if op.SSAArgNum:
+                output_file.write("\tIRPair<IROp_{}> _{}(" .format(op.Name, op.Name))
+
+                for i in range(0, len(op.Arguments)):
+                    arg = op.Arguments[i]
+                    LastArg = len(op.Arguments) - i - 1 == 0
+
+                    if arg.Temporary:
+                        CType = IRTypesToCXX[arg.Type].CXXName
+                        output_file.write("{} {}".format(CType, arg.Name));
+                    elif arg.IsSSA:
+                        output_file.write("OrderedNode *{}".format(arg.Name))
+                    else:
+                        CType = IRTypesToCXX[arg.Type].CXXName
+                        output_file.write("{} {}".format(CType, arg.Name));
+
+                    if arg.DefaultInitializer != None:
+                        output_file.write(" = {}".format(arg.DefaultInitializer))
+
+                    if not LastArg:
+                        output_file.write(", ")
+
+                output_file.write(") {\n")
+                output_file.write("\t\tauto ListDataBegin = DualListData.ListBegin();\n")
+
+                for arg in op.Arguments:
+                    if arg.IsSSA:
+                        output_file.write("\t\t{}->AddUse();\n".format(arg.Name))
+
+                # Insert validation here. This is skipped for the
+                # OrderedNodeWrapper version because validation can depend on
+                # the OrderedNode, but that's ok in practice. Everything pre-RA
+                # uses the OrderedNode version, and anything RA-onwards is
+                # dubious to validate.
+                print_validation(op)
+
+                output_file.write(f"\t\treturn _{op.Name}(")
+                for i in range(0, len(op.Arguments)):
+                    arg = op.Arguments[i]
+                    LastArg = len(op.Arguments) - i - 1 == 0
+                    output_file.write(arg.Name)
+                    if arg.IsSSA:
+                        output_file.write("->Wrapped(ListDataBegin)")
+                    if not LastArg:
+                        output_file.write(", ")
+                output_file.write(");\n");
+                output_file.write("\t}\n\n");
 
     output_file.write("#undef IROP_ALLOCATE_HELPERS\n")
     output_file.write("#endif\n")

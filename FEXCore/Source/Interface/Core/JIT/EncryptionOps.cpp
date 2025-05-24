@@ -8,7 +8,6 @@ $end_info$
 #include "Interface/Core/JIT/JITClass.h"
 
 namespace FEXCore::CPU {
-#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::NodeID Node)
 
 DEF_OP(VAESImc) {
   auto Op = IROp->C<IR::IROp_VAESImc>();
@@ -346,5 +345,4 @@ DEF_OP(PCLMUL) {
   }
 }
 
-#undef DEF_OP
 } // namespace FEXCore::CPU

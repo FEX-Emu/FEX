@@ -47,19 +47,12 @@ AOTIRInlineEntry* AOTIRInlineIndex::Find(uint64_t GuestStart) {
   return nullptr;
 }
 
-IR::RegisterAllocationData* AOTIRInlineEntry::GetRAData() {
-  return (IR::RegisterAllocationData*)InlineData;
-}
-
 IR::IRListView* AOTIRInlineEntry::GetIRData() {
-  auto RAData = GetRAData();
-  auto Offset = RAData->Size(RAData->MapCount);
-
-  return (IR::IRListView*)&InlineData[Offset];
+  return (IR::IRListView*)InlineData;
 }
 
 void AOTIRCaptureCacheEntry::AppendAOTIRCaptureCache(uint64_t GuestRIP, uint64_t Start, uint64_t Length, uint64_t Hash,
-                                                     const FEXCore::IR::IRListView& IRList, const FEXCore::IR::RegisterAllocationData* RAData) {
+                                                     const FEXCore::IR::IRListView& IRList) {
   auto Inserted = Index.emplace(GuestRIP, Stream->Offset());
 
   if (Inserted.second) {
@@ -68,8 +61,6 @@ void AOTIRCaptureCacheEntry::AppendAOTIRCaptureCache(uint64_t GuestRIP, uint64_t
       .GuestLength = Length,
     };
     Stream->Write((const char*)&entry, sizeof(entry));
-
-    RAData->Serialize(*Stream);
 
     // IRData (inline)
     IRList.Serialize(*Stream);
@@ -265,9 +256,6 @@ class IRInlineStorage : public IRStorageBase {
 public:
   IRInlineStorage(AOTIRInlineEntry& entry)
     : entry(entry) {}
-  const RegisterAllocationData* RAData() override {
-    return entry.GetRAData();
-  }
   IRListView GetIRView() override {
     return entry.GetIRData();
   }
@@ -332,7 +320,7 @@ bool AOTIRCaptureCache::PostCompileCode(FEXCore::Core::InternalThreadState* Thre
       }
 
       // Add to AOT cache if aot generation is enabled
-      if (GeneratedIR && IR->RAData() && (CTX->Config.AOTIRCapture() || CTX->Config.AOTIRGenerate())) {
+      if (GeneratedIR && (CTX->Config.AOTIRCapture() || CTX->Config.AOTIRGenerate())) {
 
         auto hash = XXH3_64bits((void*)StartAddr, Length);
 
@@ -356,7 +344,7 @@ bool AOTIRCaptureCache::PostCompileCode(FEXCore::Core::InternalThreadState* Thre
             uint64_t tag = FEXCore::IR::AOTIR_COOKIE;
             AotFile->Stream->Write(&tag, sizeof(tag));
           }
-          AotFile->AppendAOTIRCaptureCache(LocalRIP, LocalStartAddr, Length, hash, IR->GetIRView(), IR->RAData());
+          AotFile->AppendAOTIRCaptureCache(LocalRIP, LocalStartAddr, Length, hash, IR->GetIRView());
         });
 
         if (CTX->Config.AOTIRGenerate()) {
