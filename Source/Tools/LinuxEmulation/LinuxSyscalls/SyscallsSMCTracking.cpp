@@ -153,6 +153,53 @@ FEXCore::HLE::AOTIRCacheEntryLookupResult SyscallHandler::LookupAOTIRCacheEntry(
   return {Entry->second.Resource ? Entry->second.Resource->AOTIRCacheEntry : nullptr, Entry->second.Base - Entry->second.Offset};
 }
 
+void* SyscallHandler::GuestMmap(bool Is64Bit, FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length, int prot, int flags, int fd, off_t offset) {
+  LOGMAN_THROW_A_FMT(Is64Bit || (length >> 32) == 0, "values must fit to 32 bits {:#x}", length);
+
+  void* Result;
+
+  bool Map32Bit = !Is64Bit || (flags & FEX::HLE::X86_64_MAP_32BIT);
+  if (Map32Bit) {
+    Result = Get32BitAllocator()->Mmap(addr, length, prot, flags, fd, offset);
+    LOGMAN_THROW_A_FMT(Is64Bit || (reinterpret_cast<uintptr_t>(Result) >> 32) == 0 || (reinterpret_cast<uintptr_t>(Result) >> 32) == 0xFFFFFFFF, "values must fit to 32 bits");
+    if (FEX::HLE::HasSyscallError(Result)) {
+      errno = -reinterpret_cast<uint64_t>(Result);
+      return MAP_FAILED;
+    }
+  } else {
+    Result = ::mmap(reinterpret_cast<void*>(addr), length, prot, flags, fd, offset);
+  }
+
+  if (Result != MAP_FAILED) {
+    FEX::HLE::_SyscallHandler->TrackMmap(Thread, (uintptr_t)Result, length, prot, flags, fd, offset);
+  }
+
+  return reinterpret_cast<void*>(Result);
+}
+
+int SyscallHandler::GuestMunmap(bool Is64Bit, FEXCore::Core::InternalThreadState* Thread, void* addr, uint64_t length) {
+  LOGMAN_THROW_A_FMT(Is64Bit || (reinterpret_cast<uintptr_t>(addr) >> 32) == 0, "values must fit to 32 bits: {}", fmt::ptr(addr));
+  LOGMAN_THROW_A_FMT(Is64Bit || (length >> 32) == 0, "values must fit to 32 bits");
+
+  uint64_t Result {};
+  if (reinterpret_cast<uintptr_t>(addr) < 0x1'0000'0000ULL) {
+    Result = Get32BitAllocator()->Munmap(addr, length);
+
+    if ((!Is64Bit && Result != 0) || (Is64Bit && FEX::HLE::HasSyscallError(Result))) {
+      errno = -Result;
+      return -1;
+    }
+  } else {
+    Result = ::munmap(addr, length);
+  }
+
+  if (Result != -1) {
+    FEX::HLE::_SyscallHandler->TrackMunmap(Thread, reinterpret_cast<uintptr_t>(addr), length);
+  }
+
+  return Result;
+}
+
 // MMan Tracking
 void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base, uintptr_t Size, int Prot, int Flags, int fd,
                                off_t Offset) {

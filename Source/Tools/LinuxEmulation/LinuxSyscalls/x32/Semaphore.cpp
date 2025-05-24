@@ -294,9 +294,7 @@ uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first
       return -EINVAL;
     }
     // also implemented in memory:shmat
-    Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)
-               ->GetAllocator()
-               ->Shmat(first, reinterpret_cast<const void*>(ptr), second, reinterpret_cast<uint32_t*>(third));
+    Result = FEX::HLE::_SyscallHandler->Get32BitAllocator()->Shmat(first, reinterpret_cast<const void*>(ptr), second, reinterpret_cast<uint32_t*>(third));
     if (!FEX::HLE::HasSyscallError(Result)) {
       FEX::HLE::_SyscallHandler->TrackShmat(Frame->Thread, first, *reinterpret_cast<uint32_t*>(third), second);
     }
@@ -304,7 +302,7 @@ uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first
   }
   case OP_SHMDT: {
     // also implemented in memory:shmdt
-    Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->Shmdt(reinterpret_cast<void*>(ptr));
+    Result = FEX::HLE::_SyscallHandler->Get32BitAllocator()->Shmdt(reinterpret_cast<void*>(ptr));
     if (!FEX::HLE::HasSyscallError(Result)) {
       FEX::HLE::_SyscallHandler->TrackShmdt(Frame->Thread, ptr);
     }

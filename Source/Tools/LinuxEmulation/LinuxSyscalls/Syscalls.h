@@ -234,15 +234,18 @@ public:
     return Version & 0xFFFF;
   }
 
-  FEX::HLE::MemAllocator* Get32BitAllocator() {
+  virtual FEX::HLE::MemAllocator* Get32BitAllocator() {
     return Alloc32Handler.get();
   }
 
   // does a mmap as if done via a guest syscall
   virtual void* GuestMmap(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length, int prot, int flags, int fd, off_t offset) = 0;
+  void* GuestMmap(bool Is64Bit, FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length, int prot, int flags, int fd, off_t offset);
 
   // does a guest munmap as if done via a guest syscall
   virtual int GuestMunmap(FEXCore::Core::InternalThreadState* Thread, void* addr, uint64_t length) = 0;
+  int GuestMunmap(bool Is64Bit, FEXCore::Core::InternalThreadState* Thread, void* addr, uint64_t length);
+
 
   ///// Memory Manager tracking /////
   void TrackMmap(FEXCore::Core::InternalThreadState* Thread, uintptr_t Base, uintptr_t Size, int Prot, int Flags, int fd, off_t Offset);
