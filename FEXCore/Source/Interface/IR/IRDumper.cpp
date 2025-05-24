@@ -82,7 +82,27 @@ static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView
   }
 }
 
-static void PrintArg(fextl::stringstream* out, const IRListView* IR, OrderedNodeWrapper Arg, const IR::RegisterAllocationData* RAData) {
+static void PrintArg(fextl::stringstream* out, const IRListView* IR, OrderedNodeWrapper Arg) {
+  if (Arg.IsImmediate()) {
+    auto PhyReg = PhysicalRegister(Arg);
+
+    switch (PhyReg.Class) {
+    case FEXCore::IR::GPRClass.Val: *out << "r"; break;
+    case FEXCore::IR::GPRFixedClass.Val: *out << "R"; break;
+    case FEXCore::IR::FPRClass.Val: *out << "v"; break;
+    case FEXCore::IR::FPRFixedClass.Val: *out << "V"; break;
+    case FEXCore::IR::ComplexClass.Val: *out << "c"; break;
+    case FEXCore::IR::InvalidClass.Val: *out << "invalid"; break;
+    default: *out << "unknown"; break;
+    }
+
+    if (PhyReg.Class != FEXCore::IR::InvalidClass.Val) {
+      *out << std::dec << (uint32_t)PhyReg.Reg;
+    }
+
+    return;
+  }
+
   auto [CodeNode, IROp] = IR->at(Arg)();
   const auto ArgID = Arg.ID();
 
@@ -90,25 +110,6 @@ static void PrintArg(fextl::stringstream* out, const IRListView* IR, OrderedNode
     *out << "%Invalid";
   } else {
     *out << "%" << std::dec << ArgID;
-    if (RAData) {
-      auto PhyReg = RAData->GetNodeRegister(ArgID);
-
-      switch (PhyReg.Class) {
-      case FEXCore::IR::GPRClass.Val: *out << "(GPR"; break;
-      case FEXCore::IR::GPRFixedClass.Val: *out << "(GPRFixed"; break;
-      case FEXCore::IR::FPRClass.Val: *out << "(FPR"; break;
-      case FEXCore::IR::FPRFixedClass.Val: *out << "(FPRFixed"; break;
-      case FEXCore::IR::ComplexClass.Val: *out << "(Complex"; break;
-      case FEXCore::IR::InvalidClass.Val: *out << "(Invalid"; break;
-      default: *out << "(Unknown"; break;
-      }
-
-      if (PhyReg.Class != FEXCore::IR::InvalidClass.Val) {
-        *out << std::dec << (uint32_t)PhyReg.Reg << ")";
-      } else {
-        *out << ")";
-      }
-    }
   }
 
   if (GetHasDest(IROp->Op)) {
@@ -271,7 +272,7 @@ static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView
   }
 }
 
-void Dump(fextl::stringstream* out, const IRListView* IR, const IR::RegisterAllocationData* RAData) {
+void Dump(fextl::stringstream* out, const IRListView* IR) {
   auto HeaderOp = IR->GetHeader();
 
   int8_t CurrentIndent = 0;
@@ -323,16 +324,16 @@ void Dump(fextl::stringstream* out, const IRListView* IR, const IR::RegisterAllo
 
           *out << "%" << std::dec << ID;
 
-          if (RAData) {
-            auto PhyReg = RAData->GetNodeRegister(ID);
+          auto PhyReg = PhysicalRegister(CodeNode);
+          if (!PhyReg.IsInvalid()) {
             switch (PhyReg.Class) {
-            case FEXCore::IR::GPRClass.Val: *out << "(GPR"; break;
-            case FEXCore::IR::GPRFixedClass.Val: *out << "(GPRFixed"; break;
-            case FEXCore::IR::FPRClass.Val: *out << "(FPR"; break;
-            case FEXCore::IR::FPRFixedClass.Val: *out << "(FPRFixed"; break;
-            case FEXCore::IR::ComplexClass.Val: *out << "(Complex"; break;
-            case FEXCore::IR::InvalidClass.Val: *out << "(Invalid"; break;
-            default: *out << "(Unknown"; break;
+            case FEXCore::IR::GPRClass.Val: *out << "(r"; break;
+            case FEXCore::IR::GPRFixedClass.Val: *out << "(R"; break;
+            case FEXCore::IR::FPRClass.Val: *out << "(v"; break;
+            case FEXCore::IR::FPRFixedClass.Val: *out << "(V"; break;
+            case FEXCore::IR::ComplexClass.Val: *out << "(complex"; break;
+            case FEXCore::IR::InvalidClass.Val: *out << "(invalid"; break;
+            default: *out << "(unknown"; break;
             }
             if (PhyReg.Class != FEXCore::IR::InvalidClass.Val) {
               *out << std::dec << (uint32_t)PhyReg.Reg << ")";

@@ -15,7 +15,6 @@ $end_info$
 #include <FEXCore/Utils/MathUtils.h>
 
 namespace FEXCore::CPU {
-#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::NodeID Node)
 
 DEF_OP(LoadContext) {
   const auto Op = IROp->C<IR::IROp_LoadContext>();
@@ -2587,5 +2586,4 @@ DEF_OP(VLoadNonTemporal) {
   }
 }
 
-#undef DEF_OP
 } // namespace FEXCore::CPU

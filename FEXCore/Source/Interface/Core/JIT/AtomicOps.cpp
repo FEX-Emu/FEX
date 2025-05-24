@@ -10,7 +10,6 @@ $end_info$
 #include "Interface/Core/JIT/JITClass.h"
 
 namespace FEXCore::CPU {
-#define DEF_OP(x) void Arm64JITCore::Op_##x(IR::IROp_Header const* IROp, IR::NodeID Node)
 DEF_OP(CASPair) {
   auto Op = IROp->C<IR::IROp_CASPair>();
   LOGMAN_THROW_A_FMT(IROp->ElementSize == IR::OpSize::i32Bit || IROp->ElementSize == IR::OpSize::i64Bit, "Wrong element size");
@@ -473,5 +472,4 @@ DEF_OP(TelemetrySetValue) {
 #endif
 }
 
-#undef DEF_OP
 } // namespace FEXCore::CPU

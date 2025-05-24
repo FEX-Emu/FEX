@@ -50,7 +50,6 @@ class ContextImpl;
 }
 
 namespace FEXCore::IR {
-class RegisterAllocationData;
 class IRListView;
 
 constexpr auto COOKIE_VERSION = [](const char CookieText[4], uint32_t Version) {
@@ -75,10 +74,9 @@ struct AOTIRInlineEntry {
   uint64_t GuestHash;
   uint64_t GuestLength;
 
-  /* RAData followed by IRData */
+  /* IRData */
   uint8_t InlineData[0];
 
-  IR::RegisterAllocationData* GetRAData();
   IR::IRListView* GetIRData();
 };
 
@@ -100,8 +98,7 @@ struct AOTIRCaptureCacheEntry {
   fextl::unique_ptr<FEXCore::Context::AOTIRWriter> Stream;
   fextl::map<uint64_t, uint64_t> Index;
 
-  void AppendAOTIRCaptureCache(uint64_t GuestRIP, uint64_t Start, uint64_t Length, uint64_t Hash, const FEXCore::IR::IRListView& IRList,
-                               const FEXCore::IR::RegisterAllocationData* RAData);
+  void AppendAOTIRCaptureCache(uint64_t GuestRIP, uint64_t Start, uint64_t Length, uint64_t Hash, const FEXCore::IR::IRListView& IRList);
 };
 
 struct AOTIRCacheEntry {
