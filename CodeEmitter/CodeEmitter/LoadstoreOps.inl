@@ -3627,8 +3627,8 @@ public:
 
   void strb(ARMEmitter::Register rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      strb(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
+        MemSrc.MetaType.Extended.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
+      strb(rt, MemSrc.rn, MemSrc.MetaType.Extended.rm, MemSrc.MetaType.Extended.Option, MemSrc.MetaType.Extended.Shift);
     } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       strb(rt, MemSrc.rn);
     } else {
@@ -3650,8 +3650,8 @@ public:
   }
   void ldrb(ARMEmitter::Register rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      ldrb(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
+        MemSrc.MetaType.Extended.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
+      ldrb(rt, MemSrc.rn, MemSrc.MetaType.Extended.rm, MemSrc.MetaType.Extended.Option, MemSrc.MetaType.Extended.Shift);
     } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrb(rt, MemSrc.rn);
     } else {
@@ -3673,8 +3673,8 @@ public:
   }
   void ldrsb(ARMEmitter::XRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      ldrsb(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
+        MemSrc.MetaType.Extended.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
+      ldrsb(rt, MemSrc.rn, MemSrc.MetaType.Extended.rm, MemSrc.MetaType.Extended.Option, MemSrc.MetaType.Extended.Shift);
     } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrsb(rt, MemSrc.rn);
     } else {
@@ -3696,8 +3696,8 @@ public:
   }
   void ldrsb(ARMEmitter::WRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      ldrsb(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
+        MemSrc.MetaType.Extended.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
+      ldrsb(rt, MemSrc.rn, MemSrc.MetaType.Extended.rm, MemSrc.MetaType.Extended.Option, MemSrc.MetaType.Extended.Shift);
     } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrsb(rt, MemSrc.rn);
     } else {
@@ -3719,8 +3719,8 @@ public:
   }
   void strh(ARMEmitter::Register rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      strh(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
+        MemSrc.MetaType.Extended.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
+      strh(rt, MemSrc.rn, MemSrc.MetaType.Extended.rm, MemSrc.MetaType.Extended.Option, MemSrc.MetaType.Extended.Shift);
     } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       strh(rt, MemSrc.rn);
     } else {
@@ -3742,8 +3742,8 @@ public:
   }
   void ldrh(ARMEmitter::Register rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      ldrh(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
+        MemSrc.MetaType.Extended.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
+      ldrh(rt, MemSrc.rn, MemSrc.MetaType.Extended.rm, MemSrc.MetaType.Extended.Option, MemSrc.MetaType.Extended.Shift);
     } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrh(rt, MemSrc.rn);
     } else {
@@ -3765,8 +3765,8 @@ public:
   }
   void ldrsh(ARMEmitter::XRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      ldrsh(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
+        MemSrc.MetaType.Extended.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
+      ldrsh(rt, MemSrc.rn, MemSrc.MetaType.Extended.rm, MemSrc.MetaType.Extended.Option, MemSrc.MetaType.Extended.Shift);
     } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrsh(rt, MemSrc.rn);
     } else {
@@ -3788,8 +3788,8 @@ public:
   }
   void ldrsh(ARMEmitter::WRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      ldrsh(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
+        MemSrc.MetaType.Extended.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
+      ldrsh(rt, MemSrc.rn, MemSrc.MetaType.Extended.rm, MemSrc.MetaType.Extended.Option, MemSrc.MetaType.Extended.Shift);
     } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrsh(rt, MemSrc.rn);
     } else {
@@ -3811,8 +3811,8 @@ public:
   }
   void str(ARMEmitter::WRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      str(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
+        MemSrc.MetaType.Extended.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
+      str(rt, MemSrc.rn, MemSrc.MetaType.Extended.rm, MemSrc.MetaType.Extended.Option, MemSrc.MetaType.Extended.Shift);
     } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       str(rt, MemSrc.rn);
     } else {
@@ -3834,8 +3834,8 @@ public:
   }
   void ldr(ARMEmitter::WRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      ldr(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
+        MemSrc.MetaType.Extended.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
+      ldr(rt, MemSrc.rn, MemSrc.MetaType.Extended.rm, MemSrc.MetaType.Extended.Option, MemSrc.MetaType.Extended.Shift);
     } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldr(rt, MemSrc.rn);
     } else {
@@ -3857,8 +3857,8 @@ public:
   }
   void ldrsw(ARMEmitter::XRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      ldrsw(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
+        MemSrc.MetaType.Extended.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
+      ldrsw(rt, MemSrc.rn, MemSrc.MetaType.Extended.rm, MemSrc.MetaType.Extended.Option, MemSrc.MetaType.Extended.Shift);
     } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrsw(rt, MemSrc.rn);
     } else {
@@ -3880,8 +3880,8 @@ public:
   }
   void str(ARMEmitter::XRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      str(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
+        MemSrc.MetaType.Extended.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
+      str(rt, MemSrc.rn, MemSrc.MetaType.Extended.rm, MemSrc.MetaType.Extended.Option, MemSrc.MetaType.Extended.Shift);
     } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       str(rt, MemSrc.rn);
     } else {
@@ -3903,8 +3903,8 @@ public:
   }
   void ldr(ARMEmitter::XRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      ldr(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
+        MemSrc.MetaType.Extended.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
+      ldr(rt, MemSrc.rn, MemSrc.MetaType.Extended.rm, MemSrc.MetaType.Extended.Option, MemSrc.MetaType.Extended.Shift);
     } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldr(rt, MemSrc.rn);
     } else {
@@ -3926,8 +3926,8 @@ public:
   }
   void prfm(ARMEmitter::Prefetch prfop, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      prfm(prfop, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
+        MemSrc.MetaType.Extended.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
+      prfm(prfop, MemSrc.rn, MemSrc.MetaType.Extended.rm, MemSrc.MetaType.Extended.Option, MemSrc.MetaType.Extended.Shift);
     } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       prfm(prfop, MemSrc.rn);
     } else {
@@ -3946,9 +3946,9 @@ public:
 
   void strb(ARMEmitter::VRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      LOGMAN_THROW_A_FMT(MemSrc.MetaType.ExtendedType.Shift == false, "Can't shift byte");
-      strb(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option);
+        MemSrc.MetaType.Extended.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
+      LOGMAN_THROW_A_FMT(MemSrc.MetaType.Extended.Shift == false, "Can't shift byte");
+      strb(rt, MemSrc.rn, MemSrc.MetaType.Extended.rm, MemSrc.MetaType.Extended.Option);
     } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       strb(rt, MemSrc.rn);
     } else {
@@ -3970,9 +3970,9 @@ public:
   }
   void ldrb(ARMEmitter::VRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      LOGMAN_THROW_A_FMT(MemSrc.MetaType.ExtendedType.Shift == false, "Can't shift byte");
-      ldrb(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option);
+        MemSrc.MetaType.Extended.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
+      LOGMAN_THROW_A_FMT(MemSrc.MetaType.Extended.Shift == false, "Can't shift byte");
+      ldrb(rt, MemSrc.rn, MemSrc.MetaType.Extended.rm, MemSrc.MetaType.Extended.Option);
     } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrb(rt, MemSrc.rn);
     } else {
@@ -3994,8 +3994,8 @@ public:
   }
   void strh(ARMEmitter::VRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      strh(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
+        MemSrc.MetaType.Extended.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
+      strh(rt, MemSrc.rn, MemSrc.MetaType.Extended.rm, MemSrc.MetaType.Extended.Option, MemSrc.MetaType.Extended.Shift);
     } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       strh(rt, MemSrc.rn);
     } else {
@@ -4017,8 +4017,8 @@ public:
   }
   void ldrh(ARMEmitter::VRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      ldrh(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
+        MemSrc.MetaType.Extended.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
+      ldrh(rt, MemSrc.rn, MemSrc.MetaType.Extended.rm, MemSrc.MetaType.Extended.Option, MemSrc.MetaType.Extended.Shift);
     } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldrh(rt, MemSrc.rn);
     } else {
@@ -4040,8 +4040,8 @@ public:
   }
   void str(ARMEmitter::SRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      str(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
+        MemSrc.MetaType.Extended.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
+      str(rt, MemSrc.rn, MemSrc.MetaType.Extended.rm, MemSrc.MetaType.Extended.Option, MemSrc.MetaType.Extended.Shift);
     } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       str(rt, MemSrc.rn);
     } else {
@@ -4063,8 +4063,8 @@ public:
   }
   void ldr(ARMEmitter::SRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      ldr(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
+        MemSrc.MetaType.Extended.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
+      ldr(rt, MemSrc.rn, MemSrc.MetaType.Extended.rm, MemSrc.MetaType.Extended.Option, MemSrc.MetaType.Extended.Shift);
     } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldr(rt, MemSrc.rn);
     } else {
@@ -4086,8 +4086,8 @@ public:
   }
   void str(ARMEmitter::DRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      str(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
+        MemSrc.MetaType.Extended.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
+      str(rt, MemSrc.rn, MemSrc.MetaType.Extended.rm, MemSrc.MetaType.Extended.Option, MemSrc.MetaType.Extended.Shift);
     } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       str(rt, MemSrc.rn);
     } else {
@@ -4109,8 +4109,8 @@ public:
   }
   void ldr(ARMEmitter::DRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      ldr(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
+        MemSrc.MetaType.Extended.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
+      ldr(rt, MemSrc.rn, MemSrc.MetaType.Extended.rm, MemSrc.MetaType.Extended.Option, MemSrc.MetaType.Extended.Shift);
     } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldr(rt, MemSrc.rn);
     } else {
@@ -4132,8 +4132,8 @@ public:
   }
   void str(ARMEmitter::QRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      str(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
+        MemSrc.MetaType.Extended.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
+      str(rt, MemSrc.rn, MemSrc.MetaType.Extended.rm, MemSrc.MetaType.Extended.Option, MemSrc.MetaType.Extended.Shift);
     } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       str(rt, MemSrc.rn);
     } else {
@@ -4155,8 +4155,8 @@ public:
   }
   void ldr(ARMEmitter::QRegister rt, ARMEmitter::ExtendedMemOperand MemSrc) {
     if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED &&
-        MemSrc.MetaType.ExtendedType.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
-      ldr(rt, MemSrc.rn, MemSrc.MetaType.ExtendedType.rm, MemSrc.MetaType.ExtendedType.Option, MemSrc.MetaType.ExtendedType.Shift);
+        MemSrc.MetaType.Extended.rm.Idx() != ARMEmitter::Reg::r31.Idx()) {
+      ldr(rt, MemSrc.rn, MemSrc.MetaType.Extended.rm, MemSrc.MetaType.Extended.Option, MemSrc.MetaType.Extended.Shift);
     } else if (MemSrc.MetaType.Header.MemType == ARMEmitter::ExtendedMemOperand::Type::TYPE_EXTENDED) {
       ldr(rt, MemSrc.rn);
     } else {

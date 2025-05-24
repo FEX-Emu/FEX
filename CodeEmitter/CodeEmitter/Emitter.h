@@ -311,7 +311,7 @@ class ExtendedMemOperand final {
 public:
   ExtendedMemOperand(XRegister rn, XRegister rm = XReg::zr, ExtendedType Option = ExtendedType::LSL_64, uint32_t Shift = 0)
     : rn {rn}
-    , MetaType {.ExtendedType {
+    , MetaType {.Extended {
         .Header = {.MemType = TYPE_EXTENDED},
         .rm = rm,
         .Option = Option,
@@ -340,7 +340,7 @@ public:
       Register rm;
       ExtendedType Option;
       uint32_t Shift;
-    } ExtendedType;
+    } Extended;
     struct {
       HeaderStruct Header;
       IndexType Index;
