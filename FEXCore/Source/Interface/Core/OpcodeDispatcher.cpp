@@ -2643,7 +2643,10 @@ void OpDispatchBuilder::IMULOp(OpcodeArgs) {
   }
 
   // 64-bit special cased to save a move
-  Ref Result = Size < OpSize::i64Bit ? _Mul(OpSize::i64Bit, Src1, Src2) : nullptr;
+  Ref Result {};
+  if (Size < OpSize::i64Bit) {
+    Result = _Mul(OpSize::i64Bit, Src1, Src2);
+  }
   Ref ResultHigh {};
   if (Size == OpSize::i8Bit) {
     // Result is stored in AX
