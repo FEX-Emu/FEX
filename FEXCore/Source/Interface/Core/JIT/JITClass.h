@@ -361,6 +361,8 @@ private:
 
   void EmitInterruptChecks(bool CheckTF);
 
+  void EmitEntryPoint(ARMEmitter::BackwardLabel& HeaderLabel, bool CheckTF);
+
   // Runtime selection;
   // Load and store TSO memory style
   OpType RT_LoadMemTSO;

@@ -26,6 +26,7 @@ public:
     uint64_t NumInstructions {};
     FEXCore::X86Tables::DecodedInst* DecodedInstructions;
     bool HasInvalidInstruction {};
+    bool EntryPoint {};
   };
 
   struct DecodedBlockInformation final {
@@ -33,10 +34,9 @@ public:
     fextl::vector<DecodedBlocks> Blocks;
   };
 
-  Decoder(FEXCore::Context::ContextImpl* ctx);
+  Decoder(FEXCore::Core::InternalThreadState* Thread);
   ~Decoder();
-  void DecodeInstructionsAtEntry(const uint8_t* InstStream, uint64_t PC, uint64_t MaxInst,
-                                 std::function<void(uint64_t BlockEntry, uint64_t Start, uint64_t Length)> AddContainedCodePage);
+  void DecodeInstructionsAtEntry(const uint8_t* InstStream, uint64_t PC, uint64_t MaxInst);
 
   const DecodedBlockInformation* GetDecodedBlockInfo() const {
     return &BlockInfo;
@@ -65,9 +65,11 @@ private:
     bool L;       // VEX.L bit (if set then 256 bit operation, if unset then scalar or 128-bit operation)
   };
 
+  FEXCore::Core::InternalThreadState* Thread;
   FEXCore::Context::ContextImpl* CTX;
   const FEXCore::HLE::SyscallOSABI OSABI {};
 
+  bool DecodeInstructionImpl(uint64_t PC);
   bool DecodeInstruction(uint64_t PC);
 
   void BranchTargetInMultiblockRange();
@@ -75,8 +77,10 @@ private:
 
   void AddBranchTarget(uint64_t Target);
 
+  bool CheckRangeExecutable(uint64_t Address, uint64_t Size);
+
   uint8_t ReadByte();
-  uint8_t PeekByte(uint8_t Offset) const;
+  uint8_t PeekByte(uint8_t Offset);
   uint64_t ReadData(uint8_t Size);
   void SkipBytes(uint8_t Size) {
     InstructionSize += Size;
@@ -89,6 +93,10 @@ private:
   FEXCore::X86Tables::DecodedInst* DecodedBuffer {};
   Utils::PoolBufferWithTimedRetirement<FEXCore::X86Tables::DecodedInst*, 5000, 500> PoolObject;
   size_t DecodedSize {};
+
+  uint64_t ExecutableRangeBase {};
+  uint64_t ExecutableRangeEnd {};
+  bool HitNonExecutableRange {};
 
   const uint8_t* InstStream {};
 
@@ -112,6 +120,7 @@ private:
   fextl::set<uint64_t> BlocksToDecode;
   fextl::set<uint64_t> VisitedBlocks;
   fextl::set<uint64_t>* ExternalBranches {nullptr};
+  fextl::set<uint64_t> BlockEntryPoints;
 
   // ModRM rm decoding
   using DecodeModRMPtr = void (FEXCore::Frontend::Decoder::*)(X86Tables::DecodedOperand* Operand, X86Tables::ModRMDecoded ModRM);

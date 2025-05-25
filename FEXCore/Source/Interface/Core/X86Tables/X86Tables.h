@@ -354,6 +354,8 @@ constexpr InstFlagType FLAGS_VEX_2ND_SRC          = (0b11ULL << 22);
 // Whether or not the instruction has a VSIB byte
 constexpr InstFlagType FLAGS_VEX_VSIB             = (1ULL << 24);
 
+constexpr InstFlagType FLAGS_CALL             = (1ULL << 25);
+
 constexpr InstFlagType FLAGS_SIZE_DST_OFF = 58;
 constexpr InstFlagType FLAGS_SIZE_SRC_OFF = FLAGS_SIZE_DST_OFF + 3;
 
