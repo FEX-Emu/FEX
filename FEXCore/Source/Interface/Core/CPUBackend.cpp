@@ -6,12 +6,18 @@
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include <cstdint>
 
+#include "LookupCache.h"
+
 #ifndef _WIN32
 #include <sys/prctl.h>
 #endif
 
 namespace FEXCore {
 namespace CPU {
+
+  static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
+  // We don't want to move above 128MB atm because that means we will have to encode longer jumps
+  static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 128;
 
   constexpr static uint64_t NamedVectorConstants[FEXCore::IR::NamedVectorConstant::NAMED_VECTOR_CONST_POOL_MAX][2] = {
     {0x0003'0002'0001'0000ULL, 0x0007'0006'0005'0004ULL}, // NAMED_VECTOR_INCREMENTAL_U16_INDEX
@@ -264,10 +270,9 @@ namespace CPU {
     return TotalLUT;
   }()};
 
-  CPUBackend::CPUBackend(FEXCore::Core::InternalThreadState* ThreadState, size_t InitialCodeSize, size_t MaxCodeSize)
+  CPUBackend::CPUBackend(CodeBufferManager& CodeBuffers, FEXCore::Core::InternalThreadState* ThreadState)
     : ThreadState(ThreadState)
-    , InitialCodeSize(InitialCodeSize)
-    , MaxCodeSize(MaxCodeSize) {
+    , CodeBuffers(CodeBuffers) {
 
     auto& Common = ThreadState->CurrentFrame->Pointers.Common;
 
@@ -304,52 +309,63 @@ namespace CPU {
 #endif
   }
 
-  CPUBackend::~CPUBackend() {
-    for (auto CodeBuffer : CodeBuffers) {
-      FreeCodeBuffer(CodeBuffer);
-    }
-    CodeBuffers.clear();
-  }
+  CPUBackend::~CPUBackend() = default;
 
   auto CPUBackend::GetEmptyCodeBuffer() -> CodeBuffer* {
-    if (ThreadState->CurrentFrame->SignalHandlerRefCounter == 0) {
-      if (CodeBuffers.empty()) {
-        auto NewCodeBuffer = AllocateNewCodeBuffer(InitialCodeSize);
-        EmplaceNewCodeBuffer(NewCodeBuffer);
-      } else {
-        if (CodeBuffers.size() > 1) {
-          // If we have more than one code buffer we are tracking then walk them and delete
-          // This is a cleanup step
-          for (size_t i = 1; i < CodeBuffers.size(); i++) {
-            FreeCodeBuffer(CodeBuffers[i]);
-          }
-          CodeBuffers.resize(1);
-        }
-        // Set the current code buffer to the initial
-        CurrentCodeBuffer = CodeBuffers.data();
+    auto PrevCodeBuffer = CurrentCodeBuffer;
 
-        if (CurrentCodeBuffer->Size != MaxCodeSize) {
-          FreeCodeBuffer(*CurrentCodeBuffer);
+    // Resize the code buffer and reallocate our code size
+    CurrentCodeBuffer = CodeBuffers.StartLargerCodeBuffer();
 
-          // Resize the code buffer and reallocate our code size
-          CurrentCodeBuffer->Size *= 1.5;
-          CurrentCodeBuffer->Size = std::min(CurrentCodeBuffer->Size, MaxCodeSize);
-
-          *CurrentCodeBuffer = AllocateNewCodeBuffer(CurrentCodeBuffer->Size);
-        }
-      }
-    } else {
-      // We have signal handlers that have generated code
-      // This means that we can not safely clear the code at this point in time
-      // Allocate some new code buffers that we can switch over to instead
-      auto NewCodeBuffer = AllocateNewCodeBuffer(InitialCodeSize);
-      EmplaceNewCodeBuffer(NewCodeBuffer);
-    }
-
-    return CurrentCodeBuffer;
+    RegisterForSignalHandler(PrevCodeBuffer);
+    return CurrentCodeBuffer.get();
   }
 
-  auto CPUBackend::AllocateNewCodeBuffer(size_t Size) -> CodeBuffer {
+  void CPUBackend::RegisterForSignalHandler(fextl::shared_ptr<CodeBuffer> CodeBuffer) {
+    if (ThreadState->CurrentFrame->SignalHandlerRefCounter != 0) {
+      // We have signal handlers that have generated code
+      // This means that we can not safely clear the code at this point in time
+      // Keep a reference to the old code buffer to delay deallocation
+      SignalHandlerCodeBuffers.push_back(CodeBuffer);
+    } else {
+      SignalHandlerCodeBuffers.clear();
+    }
+  }
+
+  fextl::shared_ptr<CodeBuffer> CPUBackend::CheckCodeBufferUpdate() {
+    fextl::shared_ptr<CodeBuffer> OldCodeBuffer;
+    auto NewCodeBuffer = CodeBuffers.GetLatest();
+    if (CurrentCodeBuffer != NewCodeBuffer) {
+      RegisterForSignalHandler(CurrentCodeBuffer);
+      return std::exchange(CurrentCodeBuffer, NewCodeBuffer);
+    }
+    return nullptr;
+  }
+
+  GuestToHostMap& GetLookupCache(const CodeBuffer& Buffer) {
+    return *Buffer.LookupCache;
+  }
+
+  CodeBuffer::CodeBuffer(size_t Size)
+    : Size(Size) {
+    Ptr = static_cast<uint8_t*>(FEXCore::Allocator::VirtualAlloc(Size, true));
+    LOGMAN_THROW_A_FMT(!!Ptr, "Couldn't allocate code buffer");
+
+    // Protect the last page of the allocated buffer to trigger SIGSEGV on write access
+    uintptr_t LastPageAddr = AlignDown(reinterpret_cast<uintptr_t>(Ptr) + Size - 1, FEXCore::Utils::FEX_PAGE_SIZE);
+    if (!FEXCore::Allocator::VirtualProtect(reinterpret_cast<void*>(LastPageAddr), FEXCore::Utils::FEX_PAGE_SIZE,
+                                            FEXCore::Allocator::ProtectOptions::None)) {
+      LogMan::Msg::EFmt("Failed to mprotect last page of code buffer.");
+    }
+
+    LookupCache = fextl::make_unique<GuestToHostMap>();
+  }
+
+  CodeBuffer::~CodeBuffer() {
+    FEXCore::Allocator::VirtualFree(Ptr, Size);
+  }
+
+  auto CodeBufferManager::AllocateNew(size_t Size) -> fextl::shared_ptr<CodeBuffer> {
 #ifndef _WIN32
 // MDWE (Memory-Deny-Write-Execute) is a new Linux 6.3 feature.
 // It's equivalent to systemd's `MemoryDenyWriteExecute` but implemented entirely in the kernel.
@@ -375,39 +391,51 @@ namespace CPU {
     }
 #endif
 
-    CodeBuffer Buffer;
-    Buffer.Size = Size;
-    Buffer.Ptr = static_cast<uint8_t*>(FEXCore::Allocator::VirtualAlloc(Buffer.Size, true));
-    LOGMAN_THROW_A_FMT(!!Buffer.Ptr, "Couldn't allocate code buffer");
+    auto Buffer = fextl::make_shared<CodeBuffer>(Size);
 
-    if (static_cast<Context::ContextImpl*>(ThreadState->CTX)->Config.GlobalJITNaming()) {
-      static_cast<Context::ContextImpl*>(ThreadState->CTX)->Symbols.RegisterJITSpace(Buffer.Ptr, Buffer.Size);
-    }
+    Latest = Buffer;
+    LatestOffset = 0;
 
-    // Protect the last page of the allocated buffer to trigger SIGSEGV on write access
-    uintptr_t LastPageAddr = AlignDown(reinterpret_cast<uintptr_t>(Buffer.Ptr) + Buffer.Size - 1, FEXCore::Utils::FEX_PAGE_SIZE);
-    if (!FEXCore::Allocator::VirtualProtect(reinterpret_cast<void*>(LastPageAddr), FEXCore::Utils::FEX_PAGE_SIZE,
-                                            FEXCore::Allocator::ProtectOptions::None)) {
-      LogMan::Msg::EFmt("Failed to mprotect last page of code buffer.");
-    }
+    OnCodeBufferAllocated(*Buffer);
 
     return Buffer;
   }
 
-  void CPUBackend::FreeCodeBuffer(CodeBuffer Buffer) {
-    FEXCore::Allocator::VirtualFree(Buffer.Ptr, Buffer.Size);
+  fextl::shared_ptr<CodeBuffer> CodeBufferManager::GetLatest() {
+    if (!Latest) {
+      AllocateNew(INITIAL_CODE_SIZE);
+    }
+    return Latest;
   }
 
+  fextl::shared_ptr<CodeBuffer> CodeBufferManager::StartLargerCodeBuffer() {
+    if (!Latest) {
+      // Allocate initial CodeBuffer and return it
+      return GetLatest();
+    }
+
+    auto NewCodeBufferSize = GetLatest()->Size;
+    NewCodeBufferSize = std::min<size_t>(NewCodeBufferSize * 2, MAX_CODE_SIZE);
+    return AllocateNew(NewCodeBufferSize);
+  }
+
+
   bool CPUBackend::IsAddressInCodeBuffer(uintptr_t Address) const {
-    // The last page of the code buffer is protected, so we need to exclude it from the valid range
-    // when checking if the address is in the code buffer.
-    for (auto& Buffer : CodeBuffers) {
+    auto CheckCodeBuffer = [](CodeBuffer& Buffer, uintptr_t Address) {
+      // The last page of the code buffer is protected, so we need to exclude it from the valid range
+      // when checking if the address is in the code buffer.
       uintptr_t LastPageAddr = AlignDown(reinterpret_cast<uintptr_t>(Buffer.Ptr) + Buffer.Size - 1, FEXCore::Utils::FEX_PAGE_SIZE);
-      if (Address >= reinterpret_cast<uintptr_t>(Buffer.Ptr) && Address < LastPageAddr) {
+      return (Address >= reinterpret_cast<uintptr_t>(Buffer.Ptr) && Address < LastPageAddr);
+    };
+
+    if (CheckCodeBuffer(*CurrentCodeBuffer, Address)) {
+      return true;
+    }
+    for (auto& Buffer : SignalHandlerCodeBuffers) {
+      if (CheckCodeBuffer(*Buffer, Address)) {
         return true;
       }
     }
-
     return false;
   }
 
