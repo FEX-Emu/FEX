@@ -406,13 +406,8 @@ public:
   }
 
   uint64_t GetStackPointer() override {
-    if (Config.Is64BitMode()) {
-      return reinterpret_cast<uint64_t>(FEXCore::Allocator::VirtualAlloc(StackSize())) + StackSize();
-    } else {
-      uint64_t Result = reinterpret_cast<uint64_t>(FEXCore::Allocator::VirtualAlloc(reinterpret_cast<void*>(STACK_OFFSET), StackSize()));
-      LOGMAN_THROW_A_FMT(Result != ~0ULL, "Stack Pointer mmap failed");
-      return Result + StackSize();
-    }
+    LOGMAN_MSG_A_FMT("This should be unused.");
+    FEX_UNREACHABLE;
   }
 
   uint64_t DefaultRIP() const override {
@@ -458,6 +453,11 @@ public:
     // Map the memory regions the test file asks for
     for (auto& [region, size] : Config.GetMemoryRegions()) {
       DoMMap(region, size);
+    }
+
+    if (!Config.Is64BitMode()) {
+      // 32-bit gets a fixed page allocated for stack.
+      DoMMap(STACK_OFFSET, StackSize());
     }
 
     LoadMemory();
