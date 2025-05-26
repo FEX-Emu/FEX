@@ -3933,7 +3933,7 @@ void OpDispatchBuilder::CreateJumpBlocks(const fextl::vector<FEXCore::Frontend::
 
 void OpDispatchBuilder::BeginFunction(uint64_t RIP, const fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks>* Blocks, uint32_t NumInstructions) {
   Entry = RIP;
-  auto IRHeader = _IRHeader(InvalidNode, RIP, 0, NumInstructions);
+  auto IRHeader = _IRHeader(InvalidNode, RIP, 0, NumInstructions, 0, 0);
   CreateJumpBlocks(Blocks);
 
   auto Block = GetNewJumpBlock(RIP);

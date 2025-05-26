@@ -80,7 +80,7 @@ static void PrintVectorValue(uint64_t Value, uint64_t ValueUpper) {
 
 namespace FEXCore::CPU {
 
-void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::NodeID Node) {
+void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
   FallbackInfo Info;
   if (!InterpreterOps::GetFallbackHandler(IROp, &Info)) {
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
@@ -493,7 +493,7 @@ static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame* Fram
   return HostCode;
 }
 
-void Arm64JITCore::Op_NoOp(const IR::IROp_Header* IROp, IR::NodeID Node) {}
+void Arm64JITCore::Op_NoOp(const IR::IROp_Header* IROp, IR::Ref Node) {}
 
 Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::InternalThreadState* Thread)
   : CPUBackend(Thread, INITIAL_CODE_SIZE, MAX_CODE_SIZE)
@@ -580,6 +580,10 @@ void Arm64JITCore::ClearCache() {
 Arm64JITCore::~Arm64JITCore() {}
 
 bool Arm64JITCore::IsInlineConstant(const IR::OrderedNodeWrapper& WNode, uint64_t* Value) const {
+  if (WNode.IsImmediate()) {
+    return false;
+  }
+
   auto OpHeader = IR->GetOp<IR::IROp_Header>(WNode);
 
   if (OpHeader->Op == IR::IROps::OP_INLINECONSTANT) {
@@ -594,6 +598,10 @@ bool Arm64JITCore::IsInlineConstant(const IR::OrderedNodeWrapper& WNode, uint64_
 }
 
 bool Arm64JITCore::IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode, uint64_t* Value) const {
+  if (WNode.IsImmediate()) {
+    return false;
+  }
+
   auto OpHeader = IR->GetOp<IR::IROp_Header>(WNode);
 
   if (OpHeader->Op == IR::IROps::OP_INLINEENTRYPOINTOFFSET) {
@@ -610,22 +618,6 @@ bool Arm64JITCore::IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode,
   } else {
     return false;
   }
-}
-
-FEXCore::IR::RegisterClassType Arm64JITCore::GetRegClass(IR::NodeID Node) const {
-  return FEXCore::IR::RegisterClassType {GetPhys(Node).Class};
-}
-
-bool Arm64JITCore::IsFPR(IR::NodeID Node) const {
-  auto Class = GetRegClass(Node);
-
-  return Class == IR::FPRClass || Class == IR::FPRFixedClass;
-}
-
-bool Arm64JITCore::IsGPR(IR::NodeID Node) const {
-  auto Class = GetRegClass(Node);
-
-  return Class == IR::GPRClass || Class == IR::GPRFixedClass;
 }
 
 void Arm64JITCore::EmitInterruptChecks(bool CheckTF) {
@@ -689,15 +681,13 @@ void Arm64JITCore::EmitInterruptChecks(bool CheckTF) {
 }
 
 CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size, bool SingleInst, const FEXCore::IR::IRListView* IR,
-                                                   FEXCore::Core::DebugData* DebugData, const FEXCore::IR::RegisterAllocationData* RAData,
-                                                   bool CheckTF) {
+                                                   FEXCore::Core::DebugData* DebugData, bool CheckTF) {
   FEXCORE_PROFILE_SCOPED("Arm64::CompileCode");
 
   JumpTargets.clear();
   uint32_t SSACount = IR->GetSSACount();
 
   this->Entry = Entry;
-  this->RAData = RAData;
   this->DebugData = DebugData;
   this->IR = IR;
 
@@ -748,7 +738,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
   EmitInterruptChecks(CheckTF);
 
-  SpillSlots = RAData->SpillSlots();
+  SpillSlots = IR->SpillSlots();
 
   if (SpillSlots) {
     const auto TotalSpillSlotsSize = SpillSlots * MaxSpillSlotSize;
@@ -785,18 +775,17 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
     }
 
     for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
-      const auto ID = IR->GetID(CodeNode);
       switch (IROp->Op) {
 #define REGISTER_OP_RT(op, x) \
-  case FEXCore::IR::IROps::OP_##op: std::invoke(RT_##x, this, IROp, ID); break
+  case FEXCore::IR::IROps::OP_##op: std::invoke(RT_##x, this, IROp, CodeNode); break
 #define REGISTER_OP(op, x) \
-  case FEXCore::IR::IROps::OP_##op: Op_##x(IROp, ID); break
+  case FEXCore::IR::IROps::OP_##op: Op_##x(IROp, CodeNode); break
 
 #define IROP_DISPATCH_DISPATCH
 #include <FEXCore/IR/IRDefines_Dispatch.inc>
 #undef REGISTER_OP
 
-      default: Op_Unhandled(IROp, ID); break;
+      default: Op_Unhandled(IROp, CodeNode); break;
       }
     }
 

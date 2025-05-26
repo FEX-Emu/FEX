@@ -11,7 +11,6 @@ namespace FEXCore::IR {
 
 class OrderedNode;
 class RegisterAllocationPass;
-class RegisterAllocationData;
 
 /**
  * @brief The IROp_Header is an dynamically sized array
@@ -141,21 +140,53 @@ struct FEX_PACKED NodeWrapperBase final {
   }
 
   [[nodiscard]]
+  bool IsImmediate() const {
+    return NodeOffset & (1u << 31);
+  }
+
+  [[nodiscard]]
+  bool IsPointer() const {
+    return !IsImmediate();
+  }
+
+  [[nodiscard]]
   Type* GetNode(uintptr_t Base) {
+    LOGMAN_THROW_A_FMT(IsPointer(), "Precondition");
     return reinterpret_cast<Type*>(Base + NodeOffset);
   }
   [[nodiscard]]
   const Type* GetNode(uintptr_t Base) const {
+    LOGMAN_THROW_A_FMT(IsPointer(), "Precondition");
     return reinterpret_cast<const Type*>(Base + NodeOffset);
   }
 
   void SetOffset(uintptr_t Base, uintptr_t Value) {
     NodeOffset = Value - Base;
+    LOGMAN_THROW_A_FMT(IsPointer(), "Offsets are within 2GiB range");
+  }
+
+  void SetImmediate(uint32_t Immediate) {
+    LOGMAN_THROW_A_FMT(Immediate < (1u << 31), "Bounded");
+    NodeOffset = Immediate | (1u << 31);
+    LOGMAN_THROW_A_FMT(IsImmediate(), "Encoded above");
+  }
+
+  [[nodiscard]]
+  uint32_t GetImmediate() const {
+    LOGMAN_THROW_A_FMT(IsImmediate(), "Precondition: must be an immediate");
+    return NodeOffset & ~(1u << 31);
   }
 
   [[nodiscard]]
   friend constexpr bool
   operator==(const NodeWrapperBase<Type>&, const NodeWrapperBase<Type>&) = default;
+
+  [[nodiscard]]
+  static NodeWrapperBase<Type> FromImmediate(uint32_t Immediate) {
+    NodeWrapperBase<Type> A;
+    A.SetImmediate(Immediate);
+    return A;
+  }
 };
 
 static_assert(std::is_trivially_copyable_v<NodeWrapperBase<OrderedNode>>);
@@ -194,6 +225,15 @@ public:
   // These three values are laid out very specifically to make it fast to access the NodeWrappers specifically
   OrderedNodeHeader Header;
   uint32_t NumUses;
+
+  // After RA, the register allocated for the node. This is the register for the
+  // node at the time it is written, even if it is shuffled into other registers
+  // later. In other words, it is the register destination of the instruction
+  // represented by this OrderedNode.
+  //
+  // This is the raw value of a PhysicalRegister data structure.
+  uint8_t Reg;
+  uint8_t Pad[3];
 
   using value_type = OrderedNodeWrapper;
 
@@ -357,7 +397,7 @@ private:
 static_assert(std::is_trivially_constructible_v<OrderedNode>);
 static_assert(std::is_trivially_copyable_v<OrderedNode>);
 static_assert(offsetof(OrderedNode, Header) == 0);
-static_assert(sizeof(OrderedNode) == (sizeof(OrderedNodeHeader) + sizeof(uint32_t)));
+static_assert(sizeof(OrderedNode) == (sizeof(OrderedNodeHeader) + 2 * sizeof(uint32_t)));
 
 // This is temporary. We are transitioning away from OrderedNode's in favour of
 // flat Ref words. To ease porting, we have this typedef. Eventually OrderedNode
@@ -725,7 +765,7 @@ inline NodeID NodeWrapperBase<Type>::ID() const {
 bool IsFragmentExit(FEXCore::IR::IROps Op);
 bool IsBlockExit(FEXCore::IR::IROps Op);
 
-void Dump(fextl::stringstream* out, const IRListView* IR, const IR::RegisterAllocationData* RAData);
+void Dump(fextl::stringstream* out, const IRListView* IR);
 } // namespace FEXCore::IR
 
 template<>
