@@ -2498,6 +2498,7 @@ private:
     auto OldSP = LoadGPRRegister(X86State::REG_RSP);
     auto NewSP = _Push(CTX->GetGPROpSize(), Size, Value, OldSP);
     StoreGPRRegister(X86State::REG_RSP, NewSP);
+    FlushRegisterCache();
   }
 
   void InstallHostSpecificOpcodeHandlers();

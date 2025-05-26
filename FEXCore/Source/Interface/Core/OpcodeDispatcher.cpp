@@ -355,68 +355,29 @@ void OpDispatchBuilder::SALCOp(OpcodeArgs) {
 void OpDispatchBuilder::PUSHOp(OpcodeArgs) {
   const auto Size = OpSizeFromSrc(Op);
 
-  Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  Push(Size, Src);
-  FlushRegisterCache();
+  Push(Size, LoadSource(GPRClass, Op, Op->Src[0], Op->Flags));
 }
 
 void OpDispatchBuilder::PUSHREGOp(OpcodeArgs) {
   const auto Size = OpSizeFromSrc(Op);
 
-  Ref Src = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
-
-  Push(Size, Src);
-  FlushRegisterCache();
+  Push(Size, LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true}));
 }
 
 void OpDispatchBuilder::PUSHAOp(OpcodeArgs) {
   // 32bit only
   const auto Size = OpSizeFromSrc(Op);
 
-  auto OldSP = LoadGPRRegister(X86State::REG_RSP);
+  Ref OldSP = _Copy(LoadGPRRegister(X86State::REG_RSP));
 
-  // PUSHA order:
-  // Tmp = SP
-  // push EAX
-  // push ECX
-  // push EDX
-  // push EBX
-  // push Tmp
-  // push EBP
-  // push ESI
-  // push EDI
-
-  Ref Src {};
-  Ref NewSP = OldSP;
-  const auto GPRSize = CTX->GetGPROpSize();
-
-  Src = LoadGPRRegister(X86State::REG_RAX);
-  NewSP = _Push(GPRSize, Size, Src, NewSP);
-
-  Src = LoadGPRRegister(X86State::REG_RCX);
-  NewSP = _Push(GPRSize, Size, Src, NewSP);
-
-  Src = LoadGPRRegister(X86State::REG_RDX);
-  NewSP = _Push(GPRSize, Size, Src, NewSP);
-
-  Src = LoadGPRRegister(X86State::REG_RBX);
-  NewSP = _Push(GPRSize, Size, Src, NewSP);
-
-  // Push old-sp
-  NewSP = _Push(GPRSize, Size, OldSP, NewSP);
-
-  Src = LoadGPRRegister(X86State::REG_RBP);
-  NewSP = _Push(GPRSize, Size, Src, NewSP);
-
-  Src = LoadGPRRegister(X86State::REG_RSI);
-  NewSP = _Push(GPRSize, Size, Src, NewSP);
-
-  Src = LoadGPRRegister(X86State::REG_RDI);
-  NewSP = _Push(GPRSize, Size, Src, NewSP);
-
-  // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, NewSP, OpSize::i32Bit);
-  FlushRegisterCache();
+  Push(Size, LoadGPRRegister(X86State::REG_RAX));
+  Push(Size, LoadGPRRegister(X86State::REG_RCX));
+  Push(Size, LoadGPRRegister(X86State::REG_RDX));
+  Push(Size, LoadGPRRegister(X86State::REG_RBX));
+  Push(Size, OldSP);
+  Push(Size, LoadGPRRegister(X86State::REG_RBP));
+  Push(Size, LoadGPRRegister(X86State::REG_RSI));
+  Push(Size, LoadGPRRegister(X86State::REG_RDI));
 }
 
 void OpDispatchBuilder::PUSHSegmentOp(OpcodeArgs, uint32_t SegmentReg) {
@@ -3594,8 +3555,7 @@ void OpDispatchBuilder::BSWAPOp(OpcodeArgs) {
 void OpDispatchBuilder::PUSHFOp(OpcodeArgs) {
   const auto Size = OpSizeFromSrc(Op);
 
-  Ref Src = GetPackedRFLAG();
-  Push(Size, Src);
+  Push(Size, GetPackedRFLAG());
 }
 
 void OpDispatchBuilder::POPFOp(OpcodeArgs) {
