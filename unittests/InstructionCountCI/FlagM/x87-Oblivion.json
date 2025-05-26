@@ -17705,7 +17705,7 @@
     },
     "Block4": {
       "x86InstructionCount": 2050,
-      "ExpectedInstructionCount": 40,
+      "ExpectedInstructionCount": 39,
       "x86Insts": [
         "fldz",
         "push 0x0",
@@ -19768,8 +19768,7 @@
         "movk w21, #0x100, lsl #16",
         "str w21, [x8, #-4]!",
         "mov w21, #0x37",
-        "str w21, [x8, #-4]!",
-        "str w7, [x8, #-4]!",
+        "stp w7, w21, [x8, #-8]!",
         "str x30, [sp, #-16]!",
         "mov v0.16b, v2.16b",
         "ldr x0, [x28, #1456]",
