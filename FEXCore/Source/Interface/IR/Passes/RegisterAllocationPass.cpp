@@ -362,10 +362,6 @@ private:
     unsigned Reg = std::countr_zero(Class->Available);
     SetReg(CodeNode, PhysicalRegister(ClassType, Reg));
   };
-
-  bool IsRAOp(IROps Op) {
-    return Op == OP_SPILLREGISTER || Op == OP_FILLREGISTER || Op == OP_COPY;
-  };
 };
 
 void ConstrainedRAPass::AddRegisters(IR::RegisterClassType Class, uint32_t RegisterCount) {
@@ -476,8 +472,6 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
 
     // Forward pass: Assign registers, spilling as we go.
     for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
-      LOGMAN_THROW_A_FMT(!IsRAOp(IROp->Op), "RA ops inserted before, so not seen iterating forward");
-
       // Static registers must be consistent at SRA load/store. Evict to ensure.
       if (auto Node = DecodeSRANode(IROp, CodeNode); Node != nullptr) {
         auto Reg = DecodeSRAReg(IROp);
