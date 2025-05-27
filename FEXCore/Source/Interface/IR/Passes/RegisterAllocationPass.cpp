@@ -561,9 +561,6 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         AssignReg(IROp, CodeNode, IROp);
       }
 
-      LOGMAN_THROW_A_FMT(IP >= 1, "IP relative to end of block, iterating forward");
-      --IP;
-
       // Delete instructions that only exist for RA
       if (IsTrivial(CodeNode, IROp)) {
         IREmit->RemovePostRA(CodeNode);
