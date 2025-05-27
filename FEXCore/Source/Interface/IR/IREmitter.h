@@ -219,6 +219,7 @@ public:
   void ReplaceNodeArgument(Ref Node, uint8_t Arg, Ref NewArg);
 
   void Remove(Ref Node);
+  void RemovePostRA(Ref Node);
 
   void SetPackedRFLAG(bool Lower8, Ref Src);
   Ref GetPackedRFLAG(bool Lower8);

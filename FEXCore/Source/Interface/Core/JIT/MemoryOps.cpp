@@ -136,11 +136,8 @@ DEF_OP(LoadRegister) {
 
   if (Op->Class == IR::GPRClass) {
     LOGMAN_THROW_A_FMT(Op->Reg < StaticRegisters.size(), "out of range reg");
-    const auto reg = StaticRegisters[Op->Reg];
 
-    if (GetReg(Node).Idx() != reg.Idx()) {
-      mov(GetReg(Node).X(), reg.X());
-    }
+    mov(GetReg(Node).X(), StaticRegisters[Op->Reg].X());
   } else if (Op->Class == IR::FPRClass) {
     [[maybe_unused]] const auto regSize = HostSupportsAVX256 ? IR::OpSize::i256Bit : IR::OpSize::i128Bit;
     LOGMAN_THROW_A_FMT(Op->Reg < StaticFPRegisters.size(), "out of range reg");
@@ -149,12 +146,10 @@ DEF_OP(LoadRegister) {
     const auto guest = StaticFPRegisters[Op->Reg];
     const auto host = GetVReg(Node);
 
-    if (host.Idx() != guest.Idx()) {
-      if (HostSupportsAVX256) {
-        mov(ARMEmitter::SubRegSize::i64Bit, host.Z(), PRED_TMP_32B.Merging(), guest.Z());
-      } else {
-        mov(host.Q(), guest.Q());
-      }
+    if (HostSupportsAVX256) {
+      mov(ARMEmitter::SubRegSize::i64Bit, host.Z(), PRED_TMP_32B.Merging(), guest.Z());
+    } else {
+      mov(host.Q(), guest.Q());
     }
   } else {
     LOGMAN_THROW_A_FMT(false, "Unhandled Op->Class {}", Op->Class);
@@ -187,12 +182,9 @@ DEF_OP(StoreRegister) {
 
     LOGMAN_THROW_A_FMT(Reg < StaticRegisters.size(), "out of range reg");
     const auto reg = StaticRegisters[Reg];
-    const auto Src = GetReg(Op->Value);
 
-    if (Src.Idx() != reg.Idx()) {
-      // Always use 64-bit, it's faster. Upper bits ignored for 32-bit mode.
-      mov(ARMEmitter::Size::i64Bit, reg, Src);
-    }
+    // Always use 64-bit, it's faster. Upper bits ignored for 32-bit mode.
+    mov(ARMEmitter::Size::i64Bit, reg, GetReg(Op->Value));
   } else if (Op->Class == IR::FPRClass) {
     [[maybe_unused]] const auto regSize = HostSupportsAVX256 ? IR::OpSize::i256Bit : IR::OpSize::i128Bit;
     LOGMAN_THROW_A_FMT(Op->Reg < StaticFPRegisters.size(), "reg out of range");
@@ -201,12 +193,10 @@ DEF_OP(StoreRegister) {
     const auto guest = StaticFPRegisters[Op->Reg];
     const auto host = GetVReg(Op->Value);
 
-    if (guest.Idx() != host.Idx()) {
-      if (HostSupportsAVX256) {
-        mov(ARMEmitter::SubRegSize::i64Bit, guest.Z(), PRED_TMP_32B.Merging(), host.Z());
-      } else {
-        mov(guest.Q(), host.Q());
-      }
+    if (HostSupportsAVX256) {
+      mov(ARMEmitter::SubRegSize::i64Bit, guest.Z(), PRED_TMP_32B.Merging(), host.Z());
+    } else {
+      mov(guest.Q(), host.Q());
     }
   } else {
     LOGMAN_THROW_A_FMT(false, "Unhandled Op->Class {}", Op->Class);
@@ -1525,6 +1515,29 @@ DEF_OP(Push) {
   }
 }
 
+DEF_OP(PushTwo) {
+  const auto Op = IROp->C<IR::IROp_PushTwo>();
+  const auto ValueSize = IR::OpSizeToSize(Op->ValueSize);
+  auto Src1 = GetReg(Op->Value1);
+  auto Src2 = GetReg(Op->Value2);
+  const auto Dst = GetReg(Op->Addr);
+
+  switch (ValueSize) {
+  case 4: {
+    stp<ARMEmitter::IndexType::PRE>(Src1.W(), Src2.W(), Dst, -2 * ValueSize);
+    break;
+  }
+  case 8: {
+    stp<ARMEmitter::IndexType::PRE>(Src1.X(), Src2.X(), Dst, -2 * ValueSize);
+    break;
+  }
+  default: {
+    LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, ValueSize);
+    break;
+  }
+  }
+}
+
 DEF_OP(Pop) {
   const auto Op = IROp->C<IR::IROp_Pop>();
   const auto Size = IR::OpSizeToSize(Op->Size);
@@ -1548,6 +1561,37 @@ DEF_OP(Pop) {
   }
   case 8: {
     ldr<ARMEmitter::IndexType::POST>(Dst.X(), Addr, Size);
+    break;
+  }
+  default: {
+    LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, Op->Size);
+    break;
+  }
+  }
+}
+
+DEF_OP(PopTwo) {
+  const auto Op = IROp->C<IR::IROp_PopTwo>();
+  const auto Size = IR::OpSizeToSize(Op->Size);
+  const auto Addr = GetReg(Op->InoutAddr);
+  auto Dst1 = GetReg(Op->OutValue1);
+  const auto Dst2 = GetReg(Op->OutValue2);
+
+  // ldp x, x is invalid. Explicitly discard the first destination to encode.
+  if (Dst1 == Dst2) {
+    Dst1 = ARMEmitter::Reg::zr;
+  }
+
+  LOGMAN_THROW_A_FMT(Dst1 != Addr && Dst2 != Addr, "Invalid");
+  LOGMAN_THROW_A_FMT(Dst1 != Dst2, "Invalid");
+
+  switch (Size) {
+  case 4: {
+    ldp<ARMEmitter::IndexType::POST>(Dst1.W(), Dst2.W(), Addr, 2 * Size);
+    break;
+  }
+  case 8: {
+    ldp<ARMEmitter::IndexType::POST>(Dst1.X(), Dst2.X(), Addr, 2 * Size);
     break;
   }
   default: {

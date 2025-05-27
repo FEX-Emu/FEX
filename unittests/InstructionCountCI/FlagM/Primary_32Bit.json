@@ -247,67 +247,51 @@
       ]
     },
     "pusha": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 5,
       "Comment": "0x60",
       "ExpectedArm64ASM": [
-        "mov w20, w8",
-        "str w4, [x20, #-4]!",
-        "str w7, [x20, #-4]!",
-        "str w5, [x20, #-4]!",
-        "str w6, [x20, #-4]!",
-        "str w8, [x20, #-4]!",
-        "str w9, [x20, #-4]!",
-        "str w10, [x20, #-4]!",
-        "mov w8, w20",
-        "str w11, [x8, #-4]!"
+        "mov x20, x8",
+        "stp w7, w4, [x8, #-8]!",
+        "stp w6, w5, [x8, #-8]!",
+        "stp w9, w20, [x8, #-8]!",
+        "stp w11, w10, [x8, #-8]!"
       ]
     },
     "pushad": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 5,
       "Comment": "0x60",
       "ExpectedArm64ASM": [
-        "mov w20, w8",
-        "str w4, [x20, #-4]!",
-        "str w7, [x20, #-4]!",
-        "str w5, [x20, #-4]!",
-        "str w6, [x20, #-4]!",
-        "str w8, [x20, #-4]!",
-        "str w9, [x20, #-4]!",
-        "str w10, [x20, #-4]!",
-        "mov w8, w20",
-        "str w11, [x8, #-4]!"
+        "mov x20, x8",
+        "stp w7, w4, [x8, #-8]!",
+        "stp w6, w5, [x8, #-8]!",
+        "stp w9, w20, [x8, #-8]!",
+        "stp w11, w10, [x8, #-8]!"
       ]
     },
     "popa": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 7,
       "Comment": "0x61",
       "ExpectedArm64ASM": [
         "mov x20, x8",
-        "ldr w11, [x20], #4",
-        "ldr w10, [x20], #4",
+        "ldp w11, w10, [x20], #8",
         "ldr w9, [x20], #4",
         "add x20, x20, #0x4 (4)",
         "mov x8, x20",
-        "ldr w6, [x8], #4",
-        "ldr w5, [x8], #4",
-        "ldr w7, [x8], #4",
-        "ldr w4, [x8], #4"
+        "ldp w6, w5, [x8], #8",
+        "ldp w7, w4, [x8], #8"
       ]
     },
     "popad": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 7,
       "Comment": "0x61",
       "ExpectedArm64ASM": [
         "mov x20, x8",
-        "ldr w11, [x20], #4",
-        "ldr w10, [x20], #4",
+        "ldp w11, w10, [x20], #8",
         "ldr w9, [x20], #4",
         "add x20, x20, #0x4 (4)",
         "mov x8, x20",
-        "ldr w6, [x8], #4",
-        "ldr w5, [x8], #4",
-        "ldr w7, [x8], #4",
-        "ldr w4, [x8], #4"
+        "ldp w6, w5, [x8], #8",
+        "ldp w7, w4, [x8], #8"
       ]
     },
     "o16 pushf": {
