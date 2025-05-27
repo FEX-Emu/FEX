@@ -282,8 +282,7 @@ private:
   }
 };
 
-void RunAsHost(fextl::unique_ptr<FEX::HLE::SignalDelegator>& SignalDelegation, uintptr_t InitialRip, uintptr_t StackPointer,
-               FEXCore::Core::CPUState* OutputState) {
+void RunAsHost(fextl::unique_ptr<FEX::HLE::SignalDelegator>& SignalDelegation, uintptr_t InitialRip, FEXCore::Core::CPUState* OutputState) {
   x86HostRunner runner;
   SignalDelegation->RegisterHostSignalHandler(
     SIGSEGV,
@@ -295,8 +294,7 @@ void RunAsHost(fextl::unique_ptr<FEX::HLE::SignalDelegator>& SignalDelegation, u
   runner.Dispatch(InitialRip);
 }
 #else
-void RunAsHost(fextl::unique_ptr<FEX::HLE::SignalDelegator>& SignalDelegation, uintptr_t InitialRip, uintptr_t StackPointer,
-               FEXCore::Core::CPUState* OutputState) {
+void RunAsHost(fextl::unique_ptr<FEX::HLE::SignalDelegator>& SignalDelegation, uintptr_t InitialRip, FEXCore::Core::CPUState* OutputState) {
   LOGMAN_MSG_A_FMT("RunAsHost doesn't exist for this host");
 }
 #endif

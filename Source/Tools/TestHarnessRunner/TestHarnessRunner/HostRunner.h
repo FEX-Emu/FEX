@@ -18,5 +18,4 @@ namespace FEX::HLE {
 class SignalDelegator;
 }
 
-void RunAsHost(fextl::unique_ptr<FEX::HLE::SignalDelegator>& SignalDelegation, uintptr_t InitialRip, uintptr_t StackPointer,
-               FEXCore::Core::CPUState* OutputState);
+void RunAsHost(fextl::unique_ptr<FEX::HLE::SignalDelegator>& SignalDelegation, uintptr_t InitialRip, FEXCore::Core::CPUState* OutputState);

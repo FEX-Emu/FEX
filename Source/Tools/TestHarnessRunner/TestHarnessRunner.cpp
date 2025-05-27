@@ -332,7 +332,7 @@ int main(int argc, char** argv, char** const envp) {
     if (!CTX->InitCore()) {
       return 1;
     }
-    auto ParentThread = SyscallHandler->TM.CreateThread(Loader.DefaultRIP(), Loader.GetStackPointer());
+    auto ParentThread = SyscallHandler->TM.CreateThread(Loader.DefaultRIP(), 0);
     SyscallHandler->TM.TrackThread(ParentThread);
     SignalDelegation->RegisterTLSState(ParentThread);
 
@@ -384,7 +384,7 @@ int main(int argc, char** argv, char** const envp) {
       return -ENOEXEC;
     }
 
-    RunAsHost(SignalDelegation, Loader.DefaultRIP(), Loader.GetStackPointer(), &State);
+    RunAsHost(SignalDelegation, Loader.DefaultRIP(), &State);
     SignalDelegation->UninstallTLSState(&ThreadStateObject);
   }
 #endif
