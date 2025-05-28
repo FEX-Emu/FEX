@@ -74,7 +74,7 @@ class ELFCodeLoader final : public FEX::CodeLoader {
 
     void* rv = Handler->GuestMmap(nullptr, (void*)addr, size, prot, flags, file.fd, off);
 
-    if (rv == MAP_FAILED) {
+    if (FEX::HLE::HasSyscallError(rv)) {
       // uhoh, something went wrong
       LogMan::Msg::EFmt("MapFile: Some elf mapping failed, {}, fd: {}\n", errno, file.fd);
       return false;
@@ -120,7 +120,7 @@ class ELFCodeLoader final : public FEX::CodeLoader {
       auto TotalSize = CalculateTotalElfSize(Elf.phdrs) + (BrkBase ? BRK_SIZE : 0);
       LoadBase =
         (uintptr_t)Handler->GuestMmap(nullptr, reinterpret_cast<void*>(LoadHint), TotalSize, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-      if ((void*)LoadBase == MAP_FAILED) {
+      if (FEX::HLE::HasSyscallError(LoadBase)) {
         return {};
       }
 
@@ -155,7 +155,7 @@ class ELFCodeLoader final : public FEX::CodeLoader {
 
         if (BSSPageStart != BSSPageEnd) {
           auto bss = Handler->GuestMmap(nullptr, (void*)BSSPageStart, BSSPageEnd - BSSPageStart, MapProt, MapType | MAP_ANONYMOUS, -1, 0);
-          if ((void*)bss == MAP_FAILED) {
+          if (FEX::HLE::HasSyscallError(bss)) {
             LogMan::Msg::EFmt("Failed to allocate BSS @ {}, {}\n", fmt::ptr(bss), errno);
             return {};
           }
@@ -409,7 +409,8 @@ public:
     StackPointerBase = Handler->GuestMmap(nullptr, reinterpret_cast<void*>(StackHint), FULL_STACK_SIZE, PROT_NONE,
                                           MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN | MAP_NORESERVE, -1, 0);
 
-    if (StackPointerBase == reinterpret_cast<void*>(~0ULL)) {
+
+    if (FEX::HLE::HasSyscallError(StackPointerBase)) {
       LogMan::Msg::EFmt("Allocating stack failed");
       return false;
     }
@@ -419,7 +420,7 @@ public:
       Handler->GuestMmap(nullptr, reinterpret_cast<void*>(reinterpret_cast<uint64_t>(StackPointerBase) + FULL_STACK_SIZE - StackSize()),
                          StackSize(), PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK | MAP_GROWSDOWN, -1, 0));
 
-    if (StackPointer == ~0ULL) {
+    if (FEX::HLE::HasSyscallError(StackPointer)) {
       LogMan::Msg::EFmt("Allocating stack failed");
       return false;
     }
@@ -542,7 +543,7 @@ public:
     BrkStart =
       (uint64_t)Handler->GuestMmap(nullptr, (void*)BrkBase, BRK_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
 
-    if ((void*)BrkStart == MAP_FAILED) {
+    if (FEX::HLE::HasSyscallError(BrkStart)) {
       LogMan::Msg::EFmt("Failed to allocate BRK @ {:x}, {}\n", BrkBase, errno);
       return false;
     }
