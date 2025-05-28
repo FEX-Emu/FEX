@@ -80,8 +80,8 @@
       "Comment": "0x09",
       "ExpectedArm64ASM": [
         "ldsetal w7, w20, [x4]",
-        "orr w26, w20, w7",
-        "cmp w26, #0x0 (0)"
+        "orr w20, w20, w7",
+        "subs w26, w20, #0x0 (0)"
       ]
     },
     "lock adc byte [rax], cl": {
@@ -312,8 +312,8 @@
       "Comment": "0x31",
       "ExpectedArm64ASM": [
         "ldeoral w7, w20, [x4]",
-        "eor w26, w20, w7",
-        "cmp w26, #0x0 (0)"
+        "eor w20, w20, w7",
+        "subs w26, w20, #0x0 (0)"
       ]
     },
     "lock add qword [rax], rcx": {
@@ -619,8 +619,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
         "ldsetal w20, w20, [x4]",
-        "orr w26, w20, #0x100",
-        "cmp w26, #0x0 (0)"
+        "orr w20, w20, #0x100",
+        "subs w26, w20, #0x0 (0)"
       ]
     },
     "lock or dword [rax], 0xFFFFFFFF": {
@@ -629,8 +629,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
         "ldsetal w20, w21, [x4]",
-        "orr w26, w21, w20",
-        "cmp w26, #0x0 (0)"
+        "orr w20, w21, w20",
+        "subs w26, w20, #0x0 (0)"
       ]
     },
     "lock or qword [rax], 0x100": {
@@ -639,8 +639,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
         "ldsetal x20, x20, [x4]",
-        "orr x26, x20, #0x100",
-        "cmp x26, #0x0 (0)"
+        "orr x20, x20, #0x100",
+        "subs x26, x20, #0x0 (0)"
       ]
     },
     "lock or qword [rax], -2147483647": {
@@ -649,8 +649,8 @@
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffff80000001",
         "ldsetal x20, x20, [x4]",
-        "orr x26, x20, #0xffffffff80000001",
-        "cmp x26, #0x0 (0)"
+        "orr x20, x20, #0xffffffff80000001",
+        "subs x26, x20, #0x0 (0)"
       ]
     },
     "lock or word [rax], 1": {
@@ -672,8 +672,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "ldsetal w20, w20, [x4]",
-        "orr w26, w20, #0x1",
-        "cmp w26, #0x0 (0)"
+        "orr w20, w20, #0x1",
+        "subs w26, w20, #0x0 (0)"
       ]
     },
     "lock or qword [rax], 1": {
@@ -682,8 +682,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "ldsetal x20, x20, [x4]",
-        "orr x26, x20, #0x1",
-        "cmp x26, #0x0 (0)"
+        "orr x20, x20, #0x1",
+        "subs x26, x20, #0x0 (0)"
       ]
     },
     "lock adc byte [rax], 1": {
@@ -1423,8 +1423,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
         "ldeoral w20, w20, [x4]",
-        "eor w26, w20, #0x100",
-        "cmp w26, #0x0 (0)"
+        "eor w20, w20, #0x100",
+        "subs w26, w20, #0x0 (0)"
       ]
     },
     "lock xor dword [rax], 0xFFFFFFFF": {
@@ -1433,8 +1433,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
         "ldeoral w20, w20, [x4]",
-        "mvn w26, w20",
-        "cmp w26, #0x0 (0)"
+        "mvn w20, w20",
+        "subs w26, w20, #0x0 (0)"
       ]
     },
     "lock xor qword [rax], 0x100": {
@@ -1443,8 +1443,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x100",
         "ldeoral x20, x20, [x4]",
-        "eor x26, x20, #0x100",
-        "cmp x26, #0x0 (0)"
+        "eor x20, x20, #0x100",
+        "subs x26, x20, #0x0 (0)"
       ]
     },
     "lock xor qword [rax], -2147483647": {
@@ -1453,8 +1453,8 @@
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffff80000001",
         "ldeoral x20, x20, [x4]",
-        "eor x26, x20, #0xffffffff80000001",
-        "cmp x26, #0x0 (0)"
+        "eor x20, x20, #0xffffffff80000001",
+        "subs x26, x20, #0x0 (0)"
       ]
     },
     "lock xor word [rax], 1": {
@@ -1476,8 +1476,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "ldeoral w20, w20, [x4]",
-        "eor w26, w20, #0x1",
-        "cmp w26, #0x0 (0)"
+        "eor w20, w20, #0x1",
+        "subs w26, w20, #0x0 (0)"
       ]
     },
     "lock xor qword [rax], 1": {
@@ -1486,8 +1486,8 @@
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
         "ldeoral x20, x20, [x4]",
-        "eor x26, x20, #0x1",
-        "cmp x26, #0x0 (0)"
+        "eor x20, x20, #0x1",
+        "subs x26, x20, #0x0 (0)"
       ]
     },
     "lock dec byte [rax]": {
