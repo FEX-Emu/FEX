@@ -422,6 +422,9 @@ struct posix_descriptor {
     , FD(std::exchange(Other.FD, -1)) {}
 
   posix_descriptor& operator=(posix_descriptor&& Other) {
+    if (&Other == this) {
+      return *this;
+    }
     posix_descriptor::~posix_descriptor();
     Reactor = Other.Reactor;
     FD = std::exchange(Other.FD, -1);
