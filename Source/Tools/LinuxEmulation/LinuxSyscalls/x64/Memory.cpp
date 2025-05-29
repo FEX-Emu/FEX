@@ -57,10 +57,10 @@ void RegisterMemory(FEX::HLE::SyscallHandler* Handler) {
                                     SYSCALL_ERRNO();
                                   }));
 
-  REGISTER_SYSCALL_IMPL_X64_FLAGS(
-    shmdt, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY, [](FEXCore::Core::CpuStateFrame* Frame, const void* shmaddr) -> uint64_t {
-      auto Result = FEX::HLE::_SyscallHandler->GuestShmdt(true, Frame->Thread, shmaddr);
-      SYSCALL_ERRNO();
-    });
+  REGISTER_SYSCALL_IMPL_X64_FLAGS(shmdt, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
+                                  [](FEXCore::Core::CpuStateFrame* Frame, const void* shmaddr) -> uint64_t {
+                                    auto Result = FEX::HLE::_SyscallHandler->GuestShmdt(true, Frame->Thread, shmaddr);
+                                    SYSCALL_ERRNO();
+                                  });
 }
 } // namespace FEX::HLE::x64
