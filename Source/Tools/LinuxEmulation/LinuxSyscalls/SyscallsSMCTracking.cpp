@@ -274,6 +274,30 @@ uint64_t SyscallHandler::GuestShmat(bool Is64Bit, FEXCore::Core::InternalThreadS
   return Result;
 }
 
+uint64_t SyscallHandler::GuestShmdt(bool Is64Bit, FEXCore::Core::InternalThreadState* Thread, const void* shmaddr) {
+  uint64_t Result {};
+  uint64_t Length {};
+  {
+    auto lk = FEXCore::GuardSignalDeferringSection(FEX::HLE::_SyscallHandler->VMATracking.Mutex, Thread);
+    if (Is64Bit) {
+      Result = ::shmdt(shmaddr);
+      if (Result == -1) {
+        return Result;
+      }
+    } else {
+      Result = FEX::HLE::_SyscallHandler->Get32BitAllocator()->Shmdt(shmaddr);
+      if (FEX::HLE::HasSyscallError(Result)) {
+        return Result;
+      }
+    }
+
+    Length = FEX::HLE::_SyscallHandler->TrackShmdt(Thread, reinterpret_cast<uintptr_t>(shmaddr));
+  }
+
+  FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uintptr_t>(shmaddr), Length);
+  return Result;
+}
+
 // MMan Tracking
 void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t addr, size_t length, int prot, int flags, int fd, off_t offset) {
   size_t Size = FEXCore::AlignUp(length, FEXCore::Utils::FEX_PAGE_SIZE);

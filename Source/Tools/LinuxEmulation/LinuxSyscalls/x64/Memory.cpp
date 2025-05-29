@@ -73,22 +73,7 @@ void RegisterMemory(FEX::HLE::SyscallHandler* Handler) {
 
   REGISTER_SYSCALL_IMPL_X64_FLAGS(
     shmdt, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY, [](FEXCore::Core::CpuStateFrame* Frame, const void* shmaddr) -> uint64_t {
-      auto Thread = Frame->Thread;
-      uint64_t Result {};
-      uint64_t Length {};
-      {
-        auto lk = FEXCore::GuardSignalDeferringSection(FEX::HLE::_SyscallHandler->VMATracking.Mutex, Thread);
-        Result = ::shmdt(shmaddr);
-
-        if (Result == -1) {
-          SYSCALL_ERRNO();
-          return Result;
-        }
-
-        Length = FEX::HLE::_SyscallHandler->TrackShmdt(Thread, reinterpret_cast<uintptr_t>(shmaddr));
-      }
-
-      FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uintptr_t>(shmaddr), Length);
+      auto Result = FEX::HLE::_SyscallHandler->GuestShmdt(true, Frame->Thread, shmaddr);
       SYSCALL_ERRNO();
     });
 }
