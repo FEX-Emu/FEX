@@ -41,22 +41,8 @@ void RegisterMemory(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_IMPL_X64_FLAGS(
     mremap, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
     [](FEXCore::Core::CpuStateFrame* Frame, void* old_address, size_t old_size, size_t new_size, int flags, void* new_address) -> uint64_t {
-      auto Thread = Frame->Thread;
-      uint64_t Result {};
-
-      {
-        auto lk = FEXCore::GuardSignalDeferringSection(FEX::HLE::_SyscallHandler->VMATracking.Mutex, Thread);
-        Result = reinterpret_cast<uint64_t>(::mremap(old_address, old_size, new_size, flags, new_address));
-
-        if (Result == -1) {
-          SYSCALL_ERRNO();
-        }
-        FEX::HLE::_SyscallHandler->TrackMremap(Thread, reinterpret_cast<uint64_t>(old_address), old_size, new_size, flags, Result);
-      }
-
-      FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessaryOnRemap(Thread, reinterpret_cast<uint64_t>(old_address), Result, old_size, new_size);
-
-      return Result;
+      auto Result = FEX::HLE::_SyscallHandler->GuestMremap(true, Frame->Thread, old_address, old_size, new_size, flags, new_address);
+      SYSCALL_ERRNO();
     });
 
   REGISTER_SYSCALL_IMPL_X64_FLAGS(mprotect, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
