@@ -41,6 +41,10 @@ public:
   FEX::HLE::MemAllocator* GetAllocator() {
     return AllocHandler.get();
   }
+  FEX::HLE::MemAllocator* Get32BitAllocator() override {
+    return GetAllocator();
+  }
+
   void* GuestMmap(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length, int prot, int flags, int fd, off_t offset) override;
   uint64_t GuestMunmap(FEXCore::Core::InternalThreadState* Thread, void* addr, uint64_t length) override;
 

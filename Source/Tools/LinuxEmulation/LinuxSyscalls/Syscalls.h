@@ -235,7 +235,7 @@ public:
     return Version & 0xFFFF;
   }
 
-  FEX::HLE::MemAllocator* Get32BitAllocator() {
+  virtual FEX::HLE::MemAllocator* Get32BitAllocator() {
     return Alloc32Handler.get();
   }
 
