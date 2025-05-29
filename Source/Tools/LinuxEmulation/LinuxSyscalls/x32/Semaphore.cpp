@@ -300,23 +300,7 @@ uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first
     return Result;
   }
   case OP_SHMDT: {
-    // also implemented in memory:shmdt
-    auto Thread = Frame->Thread;
-    uint64_t Result {};
-    uint64_t Length {};
-    {
-      auto lk = FEXCore::GuardSignalDeferringSection(FEX::HLE::_SyscallHandler->VMATracking.Mutex, Thread);
-      Result = FEX::HLE::_SyscallHandler->Get32BitAllocator()->Shmdt(reinterpret_cast<const void*>(ptr));
-
-      if (FEX::HLE::HasSyscallError(Result)) {
-        return Result;
-      }
-
-      Length = FEX::HLE::_SyscallHandler->TrackShmdt(Thread, static_cast<uint64_t>(ptr));
-    }
-
-    FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(Thread, static_cast<uint64_t>(ptr), Length);
-    return Result;
+    return FEX::HLE::_SyscallHandler->GuestShmdt(false, Frame->Thread, reinterpret_cast<const void*>(ptr));
   }
   case OP_SHMGET: {
     Result = ::shmget(first, second, third);

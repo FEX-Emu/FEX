@@ -86,23 +86,7 @@ void RegisterMemory(FEX::HLE::SyscallHandler* Handler) {
   });
 
   REGISTER_SYSCALL_IMPL_X32(shmdt, [](FEXCore::Core::CpuStateFrame* Frame, const void* shmaddr) -> uint64_t {
-    // also implemented in ipc:OP_SHMDT
-    auto Thread = Frame->Thread;
-    uint64_t Result {};
-    uint64_t Length {};
-    {
-      auto lk = FEXCore::GuardSignalDeferringSection(FEX::HLE::_SyscallHandler->VMATracking.Mutex, Thread);
-      Result = FEX::HLE::_SyscallHandler->Get32BitAllocator()->Shmdt(shmaddr);
-
-      if (FEX::HLE::HasSyscallError(Result)) {
-        return Result;
-      }
-
-      Length = FEX::HLE::_SyscallHandler->TrackShmdt(Thread, reinterpret_cast<uintptr_t>(shmaddr));
-    }
-
-    FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uintptr_t>(shmaddr), Length);
-    return Result;
+    return FEX::HLE::_SyscallHandler->GuestShmdt(false, Frame->Thread, shmaddr);
   });
 }
 
