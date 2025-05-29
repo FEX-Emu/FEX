@@ -221,6 +221,24 @@ uint64_t SyscallHandler::GuestMunmap(bool Is64Bit, FEXCore::Core::InternalThread
   return Result;
 }
 
+uint64_t SyscallHandler::GuestMprotect(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t len, int prot) {
+  uint64_t Result {};
+
+  {
+    auto lk = FEXCore::GuardSignalDeferringSection(FEX::HLE::_SyscallHandler->VMATracking.Mutex, Thread);
+    Result = ::mprotect(addr, len, prot);
+    if (Result == -1) {
+      return Result;
+    }
+
+    FEX::HLE::_SyscallHandler->TrackMprotect(Thread, addr, len, prot);
+  }
+
+
+  FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uint64_t>(addr), len);
+  return Result;
+}
+
 // MMan Tracking
 void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t addr, size_t length, int prot, int flags, int fd, off_t offset) {
   size_t Size = FEXCore::AlignUp(length, FEXCore::Utils::FEX_PAGE_SIZE);

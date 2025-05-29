@@ -46,22 +46,7 @@ void RegisterMemory(FEX::HLE::SyscallHandler* Handler) {
   });
 
   REGISTER_SYSCALL_IMPL_X32(mprotect, [](FEXCore::Core::CpuStateFrame* Frame, void* addr, uint32_t len, int prot) -> uint64_t {
-    auto Thread = Frame->Thread;
-    uint64_t Result {};
-
-    {
-      auto lk = FEXCore::GuardSignalDeferringSection(FEX::HLE::_SyscallHandler->VMATracking.Mutex, Thread);
-      Result = ::mprotect(addr, len, prot);
-      if (Result == -1) {
-        SYSCALL_ERRNO();
-      }
-
-      FEX::HLE::_SyscallHandler->TrackMprotect(Thread, addr, len, prot);
-    }
-
-
-    FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uint64_t>(addr), len);
-
+    auto Result = FEX::HLE::_SyscallHandler->GuestMprotect(Frame->Thread, addr, len, prot);
     SYSCALL_ERRNO();
   });
 
