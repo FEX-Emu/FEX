@@ -265,34 +265,29 @@ public:
     return ValueData;
   }
 
-  template<typename TT = T>
-  requires (std::is_fundamental_v<TT>)
-  T operator()() const {
+  T operator()() const requires (std::is_fundamental_v<T>)
+  {
     return ValueData;
   }
 
-  template<typename TT = T>
-  requires (std::is_same_v<TT, fextl::string>)
-  const T& operator()() const {
+  const fextl::string& operator()() const requires (std::is_same_v<T, fextl::string>)
+  {
     return ValueData;
   }
 
-  template<typename TT = T>
-  requires (!std::is_same_v<TT, DefaultValues::Type::StringArrayType>)
-  Value<T>(T Value) {
+  Value(T Value) requires (!std::is_same_v<T, DefaultValues::Type::StringArrayType>)
+  {
     ValueData = std::move(Value);
   }
 
   // Array value types.
-  template<typename TT = T>
-  requires (std::is_same_v<TT, DefaultValues::Type::StringArrayType>)
-  Value(FEXCore::Config::ConfigOption Option, std::string_view) {
+  Value(FEXCore::Config::ConfigOption Option, std::string_view) requires (std::is_same_v<T, DefaultValues::Type::StringArrayType>)
+  {
     GetListIfExists(Option, &ValueData);
   }
 
-  template<typename TT = T>
-  requires (std::is_same_v<TT, DefaultValues::Type::StringArrayType>)
-  DefaultValues::Type::StringArrayType& All() {
+  DefaultValues::Type::StringArrayType& All() requires (std::is_same_v<T, DefaultValues::Type::StringArrayType>)
+  {
     return ValueData;
   }
 
