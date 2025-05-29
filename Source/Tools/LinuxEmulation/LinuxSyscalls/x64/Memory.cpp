@@ -24,68 +24,6 @@ $end_info$
 
 namespace FEX::HLE::x64 {
 
-void* x64SyscallHandler::GuestMmap(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length, int prot, int flags, int fd, off_t offset) {
-  uint64_t Result {};
-  size_t Size = FEXCore::AlignUp(length, FEXCore::Utils::FEX_PAGE_SIZE);
-
-  if (flags & MAP_SHARED) {
-    CTX->MarkMemoryShared(Thread);
-  }
-
-  {
-    // NOTE: Frontend calls this with a nullptr Thread during initialization, but
-    //       providing this code with a valid Thread object earlier would allow
-    //       us to be more optimal by using GuardSignalDeferringSection instead
-    auto lk = FEXCore::GuardSignalDeferringSectionWithFallback(VMATracking.Mutex, Thread);
-
-    bool Map32Bit = flags & FEX::HLE::X86_64_MAP_32BIT;
-    if (Map32Bit) {
-      Result = (uint64_t)Get32BitAllocator()->Mmap(addr, length, prot, flags, fd, offset);
-      if (FEX::HLE::HasSyscallError(Result)) {
-        return reinterpret_cast<void*>(Result);
-      }
-    } else {
-      Result = reinterpret_cast<uint64_t>(::mmap(reinterpret_cast<void*>(addr), length, prot, flags, fd, offset));
-      if (Result == ~0ULL) {
-        return reinterpret_cast<void*>(-errno);
-      }
-    }
-
-    FEX::HLE::_SyscallHandler->TrackMmap(Thread, Result, length, prot, flags, fd, offset);
-  }
-
-  FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(Thread, Result, Size);
-  return reinterpret_cast<void*>(Result);
-}
-
-uint64_t x64SyscallHandler::GuestMunmap(FEXCore::Core::InternalThreadState* Thread, void* addr, uint64_t length) {
-  uint64_t Result {};
-  uint64_t Size = FEXCore::AlignUp(length, FEXCore::Utils::FEX_PAGE_SIZE);
-
-  {
-    // Frontend calls this with nullptr Thread during initialization.
-    // This is why `GuardSignalDeferringSectionWithFallback` is used here.
-    // To be more optimal the frontend should provide this code with a valid Thread object earlier.
-    auto lk = FEXCore::GuardSignalDeferringSectionWithFallback(VMATracking.Mutex, Thread);
-
-    if (reinterpret_cast<uintptr_t>(addr) < 0x1'0000'0000ULL) {
-      Result = FEX::HLE::_SyscallHandler->Get32BitAllocator()->Munmap(addr, length);
-      if (FEX::HLE::HasSyscallError(Result)) {
-        return Result;
-      }
-    } else {
-      Result = ::munmap(addr, length);
-      if (Result == -1) {
-        return -errno;
-      }
-    }
-    FEX::HLE::_SyscallHandler->TrackMunmap(Thread, addr, length);
-  }
-  FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uint64_t>(addr), Size);
-
-  return Result;
-}
-
 void RegisterMemory(FEX::HLE::SyscallHandler* Handler) {
   using namespace FEXCore::IR;
 

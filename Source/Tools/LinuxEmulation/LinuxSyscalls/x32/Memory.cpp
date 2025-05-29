@@ -23,61 +23,6 @@ $end_info$
 
 namespace FEX::HLE::x32 {
 
-void* x32SyscallHandler::GuestMmap(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length, int prot, int flags, int fd, off_t offset) {
-  LOGMAN_THROW_A_FMT((length >> 32) == 0, "values must fit to 32 bits");
-
-  uint64_t Result {};
-  size_t Size = FEXCore::AlignUp(length, FEXCore::Utils::FEX_PAGE_SIZE);
-
-  if (flags & MAP_SHARED) {
-    CTX->MarkMemoryShared(Thread);
-  }
-
-  {
-    // NOTE: Frontend calls this with a nullptr Thread during initialization, but
-    //       providing this code with a valid Thread object earlier would allow
-    //       us to be more optimal by using GuardSignalDeferringSection instead
-    auto lk = FEXCore::GuardSignalDeferringSectionWithFallback(VMATracking.Mutex, Thread);
-
-    Result =
-      (uint64_t) static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->Mmap((void*)addr, length, prot, flags, fd, offset);
-
-    if (FEX::HLE::HasSyscallError(Result)) {
-      return reinterpret_cast<void*>(Result);
-    }
-
-    LOGMAN_THROW_A_FMT((Result >> 32) == 0 || (Result >> 32) == 0xFFFFFFFF, "values must fit to 32 bits");
-
-    FEX::HLE::_SyscallHandler->TrackMmap(Thread, Result, length, prot, flags, fd, offset);
-  }
-
-  FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(Thread, Result, Size);
-  return reinterpret_cast<void*>(Result);
-}
-
-uint64_t x32SyscallHandler::GuestMunmap(FEXCore::Core::InternalThreadState* Thread, void* addr, uint64_t length) {
-  LOGMAN_THROW_A_FMT((uintptr_t(addr) >> 32) == 0, "values must fit to 32 bits");
-  LOGMAN_THROW_A_FMT((length >> 32) == 0, "values must fit to 32 bits");
-  uint64_t Result {};
-  uint64_t Size = FEXCore::AlignUp(length, FEXCore::Utils::FEX_PAGE_SIZE);
-
-  {
-    // Frontend calls this with nullptr Thread during initialization.
-    // This is why `GuardSignalDeferringSectionWithFallback` is used here.
-    // To be more optimal the frontend should provide this code with a valid Thread object earlier.
-    auto lk = FEXCore::GuardSignalDeferringSectionWithFallback(VMATracking.Mutex, Thread);
-
-    Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->Munmap(addr, length);
-    if (FEX::HLE::HasSyscallError(Result)) {
-      return Result;
-    }
-    FEX::HLE::_SyscallHandler->TrackMunmap(Thread, addr, length);
-  }
-  FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uint64_t>(addr), Size);
-
-  return Result;
-}
-
 void RegisterMemory(FEX::HLE::SyscallHandler* Handler) {
   struct old_mmap_struct {
     uint32_t addr;
@@ -88,18 +33,16 @@ void RegisterMemory(FEX::HLE::SyscallHandler* Handler) {
     uint32_t offset;
   };
   REGISTER_SYSCALL_IMPL_X32(mmap, [](FEXCore::Core::CpuStateFrame* Frame, const old_mmap_struct* arg) -> uint64_t {
-    return (uint64_t) static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)
-      ->GuestMmap(Frame->Thread, reinterpret_cast<void*>(arg->addr), arg->len, arg->prot, arg->flags, arg->fd, arg->offset);
+    return reinterpret_cast<uint64_t>(FEX::HLE::_SyscallHandler->GuestMmap(false, Frame->Thread, reinterpret_cast<void*>(arg->addr), arg->len, arg->prot, arg->flags, arg->fd, arg->offset));
   });
 
   REGISTER_SYSCALL_IMPL_X32(
     mmap2, [](FEXCore::Core::CpuStateFrame* Frame, uint32_t addr, uint32_t length, int prot, int flags, int fd, uint32_t pgoffset) -> uint64_t {
-      return (uint64_t) static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)
-        ->GuestMmap(Frame->Thread, reinterpret_cast<void*>(addr), length, prot, flags, fd, (uint64_t)pgoffset * 0x1000);
+      return reinterpret_cast<uint64_t>(FEX::HLE::_SyscallHandler->GuestMmap(false, Frame->Thread, reinterpret_cast<void*>(addr), length, prot, flags, fd, (uint64_t)pgoffset * 0x1000));
     });
 
   REGISTER_SYSCALL_IMPL_X32(munmap, [](FEXCore::Core::CpuStateFrame* Frame, void* addr, size_t length) -> uint64_t {
-    return static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GuestMunmap(Frame->Thread, addr, length);
+    return FEX::HLE::_SyscallHandler->GuestMunmap(Frame->Thread, addr, length);
   });
 
   REGISTER_SYSCALL_IMPL_X32(mprotect, [](FEXCore::Core::CpuStateFrame* Frame, void* addr, uint32_t len, int prot) -> uint64_t {
