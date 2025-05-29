@@ -4895,25 +4895,23 @@
       ]
     },
     "andn eax, ebx, ecx": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "Map 2 0b00 0xf2 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "bic w26, w7, w6",
-        "cmp w26, #0x0 (0)",
-        "mov x4, x26"
+        "bic w4, w7, w6",
+        "subs w26, w4, #0x0 (0)"
       ]
     },
     "andn rax, rbx, rcx": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": [
         "Map 2 0b00 0xf2 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "bic x26, x7, x6",
-        "cmp x26, #0x0 (0)",
-        "mov x4, x26"
+        "bic x4, x7, x6",
+        "subs x26, x4, #0x0 (0)"
       ]
     },
     "bzhi eax, ebx, ecx": {

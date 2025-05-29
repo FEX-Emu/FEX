@@ -1623,7 +1623,7 @@ void OpDispatchBuilder::ANDNBMIOp(OpcodeArgs) {
   auto Dest = _Andn(OpSizeFromSrc(Op), Src2, Src1);
 
   StoreResult(GPRClass, Op, Dest, OpSize::iInvalid);
-  CalculateFlags_Logical(OpSizeFromSrc(Op), Dest, Src1, Src2);
+  CalculateFlags_Logical(OpSizeFromSrc(Op), Dest);
 }
 
 void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
@@ -4416,18 +4416,22 @@ void OpDispatchBuilder::MOVGPRNTOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::IR::IROps AtomicFetchOp, unsigned SrcIdx) {
-  /* On x86, the canonical way to zero a register is XOR with itself...  because
-   * modern x86 detects this pattern in hardware. arm64 does not detect this
-   * pattern, we should do it like the x86 hardware would. On arm64, "mov x0,
-   * #0" is faster than "eor x0, x0, x0". Additionally this lets more constant
-   * folding kick in for flags.
-   */
+  // On x86, the canonical way to zero a register is XOR with itself. Detect and
+  // emit optimal arm64 assembly.
   if (!DestIsLockedMem(Op) && ALUIROp == FEXCore::IR::IROps::OP_XOR && Op->Dest.IsGPR() && Op->Src[SrcIdx].IsGPR() &&
       Op->Dest.Data.GPR == Op->Src[SrcIdx].Data.GPR) {
 
-    auto Result = _Constant(0);
-    StoreResult(GPRClass, Op, Result, OpSize::iInvalid);
-    CalculateFlags_Logical(OpSizeFromSrc(Op), Result, Result, Result);
+    // Move 0 into the register
+    StoreResult(GPRClass, Op, _Constant(0), OpSize::iInvalid);
+
+    // Set flags for zero result with inverted carry. We subtract an arbitrary
+    // register from itself to get the zero, since `subs wzr, #0` is not
+    // encodable. This is optimal and works regardless of the opsize.
+    auto Zero = LoadGPR(Op->Dest.Data.GPR.GPR);
+    HandleNZ00Write();
+    InvalidateAF();
+    CalculatePF(_SubWithFlags(OpSize::i32Bit, Zero, Zero));
+    CFInverted = true;
     return;
   }
 
@@ -4489,7 +4493,7 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
   case FEXCore::IR::IROps::OP_XOR:
   case FEXCore::IR::IROps::OP_AND:
   case FEXCore::IR::IROps::OP_OR: {
-    CalculateFlags_Logical(Size, Result, Dest, Src);
+    CalculateFlags_Logical(Size, Result);
     break;
   }
   case FEXCore::IR::IROps::OP_ANDWITHFLAGS: {

@@ -2607,7 +2607,7 @@
     },
     "Block10": {
       "x86InstructionCount": 125,
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 20,
       "x86Insts": [
         "push esi",
         "push ebx",
@@ -2743,9 +2743,8 @@
         "ldr w20, [x28, #960]",
         "ldr w4, [x20, #20]",
         "str w4, [x8, #156]",
-        "mov w26, #0x0",
-        "cmp w26, #0x0 (0)",
-        "mov x4, x26",
+        "mov w4, #0x0",
+        "subs w26, w4, #0x0 (0)",
         "mov w20, #0x869c",
         "movk w20, #0x5, lsl #16",
         "add w20, w6, w20",

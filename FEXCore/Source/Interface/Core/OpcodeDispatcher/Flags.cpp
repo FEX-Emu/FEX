@@ -426,13 +426,9 @@ void OpDispatchBuilder::CalculateFlags_UMUL(Ref High) {
   CFInverted = true;
 }
 
-void OpDispatchBuilder::CalculateFlags_Logical(IR::OpSize SrcSize, Ref Res, Ref Src1, Ref Src2) {
+void OpDispatchBuilder::CalculateFlags_Logical(IR::OpSize SrcSize, Ref Res) {
   InvalidateAF();
-
-  CalculatePF(Res);
-
-  // SF/ZF/CF/OF
-  SetNZ_ZeroCV(SrcSize, Res);
+  SetNZP_ZeroCV(SrcSize, Res);
 }
 
 void OpDispatchBuilder::CalculateFlags_ShiftLeftImmediate(IR::OpSize SrcSize, Ref UnmaskedRes, Ref Src1, uint64_t Shift) {

@@ -2310,7 +2310,7 @@ private:
   Ref CalculateFlags_ADD(IR::OpSize SrcSize, Ref Src1, Ref Src2, bool UpdateCF = true);
   void CalculateFlags_MUL(IR::OpSize SrcSize, Ref Res, Ref High);
   void CalculateFlags_UMUL(Ref High);
-  void CalculateFlags_Logical(IR::OpSize SrcSize, Ref Res, Ref Src1, Ref Src2);
+  void CalculateFlags_Logical(IR::OpSize SrcSize, Ref Res);
   void CalculateFlags_ShiftLeft(IR::OpSize SrcSize, Ref Res, Ref Src1, Ref Src2);
   void CalculateFlags_ShiftLeftImmediate(IR::OpSize SrcSize, Ref Res, Ref Src1, uint64_t Shift);
   void CalculateFlags_ShiftRight(IR::OpSize SrcSize, Ref Res, Ref Src1, Ref Src2);
