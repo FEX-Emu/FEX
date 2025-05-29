@@ -304,9 +304,7 @@ uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first
     {
       auto lk = FEXCore::GuardSignalDeferringSection(FEX::HLE::_SyscallHandler->VMATracking.Mutex, Thread);
 
-      Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)
-                 ->GetAllocator()
-                 ->Shmat(first, reinterpret_cast<const void*>(ptr), second, &ResultAddr);
+      Result = FEX::HLE::_SyscallHandler->Get32BitAllocator()->Shmat(first, reinterpret_cast<const void*>(ptr), second, &ResultAddr);
 
       if (FEX::HLE::HasSyscallError(Result)) {
         return Result;
@@ -333,8 +331,7 @@ uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first
     uint64_t Length {};
     {
       auto lk = FEXCore::GuardSignalDeferringSection(FEX::HLE::_SyscallHandler->VMATracking.Mutex, Thread);
-      Result =
-        static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->Shmdt(reinterpret_cast<const void*>(ptr));
+      Result = FEX::HLE::_SyscallHandler->Get32BitAllocator()->Shmdt(reinterpret_cast<const void*>(ptr));
 
       if (FEX::HLE::HasSyscallError(Result)) {
         return Result;

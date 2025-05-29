@@ -129,8 +129,7 @@ void RegisterMemory(FEX::HLE::SyscallHandler* Handler) {
 
       {
         auto lk = FEXCore::GuardSignalDeferringSection(FEX::HLE::_SyscallHandler->VMATracking.Mutex, Thread);
-        Result = reinterpret_cast<uint64_t>(
-          static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->Mremap(old_address, old_size, new_size, flags, new_address));
+        Result = reinterpret_cast<uint64_t>(FEX::HLE::_SyscallHandler->Get32BitAllocator()->Mremap(old_address, old_size, new_size, flags, new_address));
 
         if (FEX::HLE::HasSyscallError(Result)) {
           return Result;
@@ -166,9 +165,7 @@ void RegisterMemory(FEX::HLE::SyscallHandler* Handler) {
     {
       auto lk = FEXCore::GuardSignalDeferringSection(FEX::HLE::_SyscallHandler->VMATracking.Mutex, Thread);
 
-      Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)
-                 ->GetAllocator()
-                 ->Shmat(shmid, reinterpret_cast<const void*>(shmaddr), shmflg, &ResultAddr);
+      Result = FEX::HLE::_SyscallHandler->Get32BitAllocator()->Shmat(shmid, reinterpret_cast<const void*>(shmaddr), shmflg, &ResultAddr);
 
       if (FEX::HLE::HasSyscallError(Result)) {
         return Result;
@@ -194,7 +191,7 @@ void RegisterMemory(FEX::HLE::SyscallHandler* Handler) {
     uint64_t Length {};
     {
       auto lk = FEXCore::GuardSignalDeferringSection(FEX::HLE::_SyscallHandler->VMATracking.Mutex, Thread);
-      Result = static_cast<FEX::HLE::x32::x32SyscallHandler*>(FEX::HLE::_SyscallHandler)->GetAllocator()->Shmdt(shmaddr);
+      Result = FEX::HLE::_SyscallHandler->Get32BitAllocator()->Shmdt(shmaddr);
 
       if (FEX::HLE::HasSyscallError(Result)) {
         return Result;
