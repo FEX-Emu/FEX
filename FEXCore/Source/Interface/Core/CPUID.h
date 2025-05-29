@@ -115,7 +115,7 @@ public:
 
 private:
   const FEXCore::Context::ContextImpl* CTX;
-  bool SupportsCPUIndexInTPIDRRO {};
+  [[maybe_unused]] bool SupportsCPUIndexInTPIDRRO {};
   bool Hybrid {};
   uint32_t Cores {};
   FEX_CONFIG_OPT(HideHypervisorBit, HIDEHYPERVISORBIT);
