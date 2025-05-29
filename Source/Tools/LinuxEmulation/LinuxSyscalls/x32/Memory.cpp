@@ -82,34 +82,7 @@ void RegisterMemory(FEX::HLE::SyscallHandler* Handler) {
   });
 
   REGISTER_SYSCALL_IMPL_X32(shmat, [](FEXCore::Core::CpuStateFrame* Frame, int shmid, const void* shmaddr, int shmflg) -> uint64_t {
-    // also implemented in ipc:OP_SHMAT
-    auto Thread = Frame->Thread;
-    auto CTX = Thread->CTX;
-    uint64_t Result {};
-    uint32_t ResultAddr {};
-    uint64_t Length {};
-    CTX->MarkMemoryShared(Thread);
-
-    {
-      auto lk = FEXCore::GuardSignalDeferringSection(FEX::HLE::_SyscallHandler->VMATracking.Mutex, Thread);
-
-      Result = FEX::HLE::_SyscallHandler->Get32BitAllocator()->Shmat(shmid, reinterpret_cast<const void*>(shmaddr), shmflg, &ResultAddr);
-
-      if (FEX::HLE::HasSyscallError(Result)) {
-        return Result;
-      }
-
-      shmid_ds stat;
-
-      [[maybe_unused]] auto res = shmctl(shmid, IPC_STAT, &stat);
-      LOGMAN_THROW_A_FMT(res != -1, "shmctl IPC_STAT failed");
-
-      Length = stat.shm_segsz;
-      FEX::HLE::_SyscallHandler->TrackShmat(Thread, shmid, ResultAddr, shmflg, Length);
-    }
-
-    FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(Thread, ResultAddr, Length);
-    return ResultAddr;
+    return FEX::HLE::_SyscallHandler->GuestShmat(false, Frame->Thread, shmid, shmaddr, shmflg);
   });
 
   REGISTER_SYSCALL_IMPL_X32(shmdt, [](FEXCore::Core::CpuStateFrame* Frame, const void* shmaddr) -> uint64_t {

@@ -293,35 +293,10 @@ uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first
       // shmat explicitly doesn't support version 1.
       return -EINVAL;
     }
-    // also implemented in memory:shmat
-    auto Thread = Frame->Thread;
-    auto CTX = Thread->CTX;
-    uint64_t Result {};
-    uint32_t ResultAddr {};
-    uint64_t Length {};
-    CTX->MarkMemoryShared(Thread);
-
-    {
-      auto lk = FEXCore::GuardSignalDeferringSection(FEX::HLE::_SyscallHandler->VMATracking.Mutex, Thread);
-
-      Result = FEX::HLE::_SyscallHandler->Get32BitAllocator()->Shmat(first, reinterpret_cast<const void*>(ptr), second, &ResultAddr);
-
-      if (FEX::HLE::HasSyscallError(Result)) {
-        return Result;
-      }
-
-      shmid_ds stat;
-
-      [[maybe_unused]] auto res = shmctl(first, IPC_STAT, &stat);
-      LOGMAN_THROW_A_FMT(res != -1, "shmctl IPC_STAT failed");
-
-      Length = stat.shm_segsz;
-      FEX::HLE::_SyscallHandler->TrackShmat(Thread, first, ResultAddr, second, Length);
+    auto Result = FEX::HLE::_SyscallHandler->GuestShmat(false, Frame->Thread, first, reinterpret_cast<const void*>(ptr), second);
+    if (!FEX::HLE::HasSyscallError(Result)) {
+      *reinterpret_cast<uint32_t*>(third) = Result;
     }
-
-    FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(Thread, ResultAddr, Length);
-
-    *reinterpret_cast<uint32_t*>(third) = ResultAddr;
     return Result;
   }
   case OP_SHMDT: {
