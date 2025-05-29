@@ -31,14 +31,6 @@ Ref OpDispatchBuilder::GetX87Top() {
   return _LoadContext(OpSize::i8Bit, GPRClass, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC);
 }
 
-Ref OpDispatchBuilder::GetX87Tag(Ref Value, Ref AbridgedFTW) {
-  Ref RegValid = _And(OpSize::i32Bit, _Lshr(OpSize::i32Bit, AbridgedFTW, Value), _Constant(1));
-  Ref X87Empty = _Constant(static_cast<uint8_t>(FPState::X87Tag::Empty));
-  Ref X87Valid = _Constant(static_cast<uint8_t>(FPState::X87Tag::Valid));
-
-  return _Select(FEXCore::IR::COND_EQ, RegValid, _Constant(0), X87Empty, X87Valid);
-}
-
 void OpDispatchBuilder::SetX87FTW(Ref FTW) {
   Ref X87Empty = _Constant(static_cast<uint8_t>(FPState::X87Tag::Empty));
   Ref NewAbridgedFTW {};
@@ -312,14 +304,25 @@ void OpDispatchBuilder::FSUB(OpcodeArgs, IR::OpSize Width, bool Integer, bool Re
 }
 
 Ref OpDispatchBuilder::GetX87FTW_Helper() {
-  Ref FTW = _Constant(0);
+  // AbridgedFTWIndex has 1-bit per slot (8 slots). Duplicate each bit to get
+  // 2-bits per slot (16-bit result). Duplicating bits is equivalent to
+  // Morton interleaving a number with itself. To interleave efficiently two
+  // bytes, we use the well-known bit twiddling algorithm:
+  //
+  // https://graphics.stanford.edu/~seander/bithacks.html#InterleaveBMN
+  Ref X = LoadContext(AbridgedFTWIndex);
+  X = _Orlshl(OpSize::i32Bit, X, X, 4);
+  X = _And(OpSize::i32Bit, X, _Constant(0x0f0f0f0f));
+  X = _Orlshl(OpSize::i32Bit, X, X, 2);
+  X = _And(OpSize::i32Bit, X, _Constant(0x33333333));
+  X = _Orlshl(OpSize::i32Bit, X, X, 1);
+  X = _And(OpSize::i32Bit, X, _Constant(0x55555555));
+  X = _Orlshl(OpSize::i32Bit, X, X, 1);
 
-  for (int i = 0; i < 8; i++) {
-    Ref RegTag = GetX87Tag(_Constant(i), LoadContext(AbridgedFTWIndex));
-    FTW = _Orlshl(OpSize::i32Bit, FTW, RegTag, i * 2);
-  }
-
-  return FTW;
+  // The above sequence sets valid to 11 and empty to 00, so invert to finalize.
+  static_assert(static_cast<uint8_t>(FPState::X87Tag::Valid) == 0b00);
+  static_assert(static_cast<uint8_t>(FPState::X87Tag::Empty) == 0b11);
+  return _Xor(OpSize::i32Bit, X, _Constant(0xffff));
 }
 
 void OpDispatchBuilder::X87FNSTENV(OpcodeArgs) {
