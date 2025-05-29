@@ -239,6 +239,41 @@ uint64_t SyscallHandler::GuestMprotect(FEXCore::Core::InternalThreadState* Threa
   return Result;
 }
 
+uint64_t SyscallHandler::GuestShmat(bool Is64Bit, FEXCore::Core::InternalThreadState* Thread, int shmid, const void* shmaddr, int shmflg) {
+  auto CTX = Thread->CTX;
+  uint64_t Result {};
+  uint64_t Length {};
+  CTX->MarkMemoryShared(Thread);
+
+  {
+    auto lk = FEXCore::GuardSignalDeferringSection(FEX::HLE::_SyscallHandler->VMATracking.Mutex, Thread);
+    if (Is64Bit) {
+      Result = reinterpret_cast<uint64_t>(::shmat(shmid, shmaddr, shmflg));
+      if (Result == -1) {
+        return Result;
+      }
+    } else {
+      uint32_t Addr;
+      Result = FEX::HLE::_SyscallHandler->Get32BitAllocator()->Shmat(shmid, shmaddr, shmflg, &Addr);
+      if (FEX::HLE::HasSyscallError(Result)) {
+        return Result;
+      }
+      Result = Addr;
+    }
+
+    shmid_ds stat;
+
+    [[maybe_unused]] auto res = shmctl(shmid, IPC_STAT, &stat);
+    LOGMAN_THROW_A_FMT(res != -1, "shmctl IPC_STAT failed");
+
+    Length = stat.shm_segsz;
+    FEX::HLE::_SyscallHandler->TrackShmat(Thread, shmid, Result, shmflg, Length);
+  }
+
+  FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(Thread, Result, Length);
+  return Result;
+}
+
 // MMan Tracking
 void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t addr, size_t length, int prot, int flags, int fd, off_t offset) {
   size_t Size = FEXCore::AlignUp(length, FEXCore::Utils::FEX_PAGE_SIZE);
