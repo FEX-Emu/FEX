@@ -34,7 +34,15 @@ Ref LoadEffectiveAddress(IREmitter* IREmit, AddressMode A, IR::OpSize GPRSize, b
   //
   // If the AddrSize is not the GPRSize then we need to clear the upper bits.
   if ((A.AddrSize < GPRSize) && !AllowUpperGarbage && Tmp) {
-    Tmp = IREmit->_Bfe(GPRSize, IR::OpSizeAsBits(A.AddrSize), 0, Tmp);
+    uint32_t Bits = IR::OpSizeAsBits(A.AddrSize);
+
+    if (A.Base || A.Index) {
+      Tmp = IREmit->_Bfe(GPRSize, Bits, 0, Tmp);
+    } else if (A.Offset) {
+      uint64_t X = A.Offset;
+      X &= (1ull << Bits) - 1;
+      Tmp = IREmit->_Constant(X);
+    }
   }
 
   if (A.Segment && AddSegmentBase) {

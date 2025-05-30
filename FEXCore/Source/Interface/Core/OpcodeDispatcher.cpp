@@ -1146,10 +1146,11 @@ void OpDispatchBuilder::FLAGControlOp(OpcodeArgs) {
     SetCFInverted(_Constant(0));
     break;
   case 0xFC: // CLD
-    SetRFLAG(_Constant(0), FEXCore::X86State::RFLAG_DF_RAW_LOC);
+    // Transformed
+    StoreDF(_Constant(1));
     break;
   case 0xFD: // STD
-    SetRFLAG(_Constant(1), FEXCore::X86State::RFLAG_DF_RAW_LOC);
+    StoreDF(_Constant(-1));
     break;
   }
 }
@@ -1442,10 +1443,10 @@ void OpDispatchBuilder::SHLDImmediateOp(OpcodeArgs) {
     Ref Res {};
     if (Size < 32) {
       Ref ShiftLeft = _Constant(Shift);
-      auto ShiftRight = _Constant(Size - Shift);
+      auto ShiftRight = Size - Shift;
 
       auto Tmp1 = _Lshl(OpSize::i64Bit, Dest, ShiftLeft);
-      auto Tmp2 = _Lshr(OpSize::i32Bit, Src, ShiftRight);
+      Ref Tmp2 = ShiftRight ? _Lshr(OpSize::i32Bit, Src, _Constant(ShiftRight)) : Src;
 
       Res = _Or(OpSize::i64Bit, Tmp1, Tmp2);
     } else {
@@ -1567,15 +1568,14 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool I
   // things tighter for 8-bit later in the function.
   uint64_t Mask = Size == 8 ? 7 : (Size == 64 ? 0x3F : 0x1F);
 
-  Ref Src, UnmaskedSrc;
+  ArithRef UnmaskedSrc;
   if (Is1Bit || IsImmediate) {
     UnmaskedConst = LoadConstantShift(Op, Is1Bit);
-    UnmaskedSrc = _Constant(UnmaskedConst);
-    Src = _Constant(UnmaskedConst & Mask);
+    UnmaskedSrc = ARef(UnmaskedConst);
   } else {
-    UnmaskedSrc = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
-    Src = _And(OpSize::i64Bit, UnmaskedSrc, _InlineConstant(Mask));
+    UnmaskedSrc = ARef(LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
   }
+  auto Src = UnmaskedSrc.And(Mask);
 
   // We fill the upper bits so we allow garbage on load.
   auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
@@ -1587,18 +1587,18 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool I
   }
 
   // To rotate 64-bits left, right-rotate by (64 - Shift) = -Shift mod 64.
-  auto Res = _Ror(OpSize, Dest, Left ? _Neg(OpSize, Src) : Src);
+  auto Res = _Ror(OpSize, Dest, (Left ? Src.Neg() : Src).Ref());
   StoreResult(GPRClass, Op, Res, OpSize::iInvalid);
 
   if (Is1Bit || IsImmediate) {
-    if (UnmaskedConst) {
+    if (UnmaskedSrc.C) {
       // Extract the last bit shifted in to CF
       SetCFDirect(Res, Left ? 0 : Size - 1, true);
 
       // For ROR, OF is the XOR of the new CF bit and the most significant bit of the result.
       // For ROL, OF is the LSB and MSB XOR'd together.
       // OF is architecturally only defined for 1-bit rotate.
-      if (UnmaskedConst == 1) {
+      if (UnmaskedSrc.C == 1) {
         auto NewOF = _XorShift(OpSize, Res, Res, ShiftType::LSR, Left ? Size - 1 : 1);
         SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, Left ? 0 : Size - 2, true);
       }
@@ -1609,10 +1609,10 @@ void OpDispatchBuilder::RotateOp(OpcodeArgs, bool Left, bool IsImmediate, bool I
 
     // We deferred the masking for 8-bit to the flag section, do it here.
     if (Size == 8) {
-      Src = _And(OpSize::i64Bit, UnmaskedSrc, _InlineConstant(0x1F));
+      Src = UnmaskedSrc.And(0x1F);
     }
 
-    _RotateFlags(OpSizeFromSrc(Op), Res, Src, Left);
+    _RotateFlags(OpSizeFromSrc(Op), Res, Src.Ref(), Left);
   }
 }
 
@@ -2070,15 +2070,15 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
   const auto Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  Ref Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
-  Src = AndConst(OpSize::i32Bit, Src, 0x1F);
+  auto Src = ARef(LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
+  Src = Src.And(0x1F);
 
   // CF only changes if we actually shifted. OF undefined if we didn't shift.
   // The result is unchanged if we didn't shift. So branch over the whole thing.
-  Calculate_ShiftVariable(Op, Src, [this, Op, Size]() {
+  Calculate_ShiftVariable(Op, Src.Ref(), [this, Op, Size]() {
     // Rematerialized to avoid crossblock liveness
-    Ref Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
-    Src = AndConst(OpSize::i32Bit, Src, 0x1F);
+    auto Src = ARef(LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
+    Src = Src.And(0x1F);
 
     auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
@@ -2143,27 +2143,23 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
     // Entire bitfield has been setup. Just extract the 8 or 16bits we need.
     // 64-bit shift used because we want to rotate in our cascaded upper bits
     // rather than zeroes.
-    Ref Res = _Lshr(OpSize::i64Bit, Tmp, Src);
+    Ref Res = _Lshr(OpSize::i64Bit, Tmp, Src.Ref());
 
     StoreResult(GPRClass, Op, Res, OpSize::iInvalid);
 
-    uint64_t SrcConst = 0;
-    bool IsSrcConst = IsValueConstant(WrapNode(Src), &SrcConst);
-    SrcConst &= 0x1f;
-
     // Our new CF will be bit (Shift - 1) of the source. 32-bit Lshr masks the
     // same as x86, but if we constant fold we must mask ourselves.
-    if (IsSrcConst) {
-      SetCFDirect(Tmp, SrcConst - 1, true);
+    if (Src.IsConstant) {
+      SetCFDirect(Tmp, (Src.C & 0x1f) - 1, true);
     } else {
       auto One = _Constant(OpSizeFromSrc(Op), 1);
-      auto NewCF = _Lshr(OpSize::i32Bit, Tmp, _Sub(OpSize::i32Bit, Src, One));
+      auto NewCF = _Lshr(OpSize::i32Bit, Tmp, _Sub(OpSize::i32Bit, Src.Ref(), One));
       SetCFDirect(NewCF, 0, true);
     }
 
     // OF is the top two MSBs XOR'd together
     // Only when Shift == 1, it is undefined otherwise
-    if (!IsSrcConst || SrcConst == 1) {
+    if (!Src.IsConstant || Src.C == 1) {
       auto NewOF = _XorShift(OpSize::i32Bit, Res, Res, ShiftType::LSR, 1);
       SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, Size - 2, true);
     }
@@ -2290,15 +2286,15 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
   const auto Size = GetSrcBitSize(Op);
 
   // x86 masks the shift by 0x3F or 0x1F depending on size of op
-  Ref Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
-  Src = AndConst(OpSize::i32Bit, Src, 0x1F);
+  auto Src = ARef(LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
+  Src = Src.And(0x1F);
 
   // CF only changes if we actually shifted. OF undefined if we didn't shift.
   // The result is unchanged if we didn't shift. So branch over the whole thing.
-  Calculate_ShiftVariable(Op, Src, [this, Op, Size]() {
+  Calculate_ShiftVariable(Op, Src.Ref(), [this, Op, Size]() {
     // Rematerialized to avoid crossblock liveness
-    Ref Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
-    Src = AndConst(OpSize::i32Bit, Src, 0x1F);
+    auto Src = ARef(LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true}));
+    Src = Src.And(0x1F);
     Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
 
     auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
@@ -2321,20 +2317,19 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
     // Shift 1 more bit that expected to get our result
     // Shifting to the right will now behave like a rotate to the left
     // Which we emulate with a _Ror
-    Ref Res = _Ror(OpSize::i64Bit, Tmp, _Neg(OpSize::i32Bit, Src));
+    Ref Res = _Ror(OpSize::i64Bit, Tmp, Src.Neg().Ref());
 
     StoreResult(GPRClass, Op, Res, OpSize::iInvalid);
 
     // Our new CF is now at the bit position that we are shifting
     // Either 0 if CF hasn't changed (CF is living in bit 0)
     // or higher
-    auto NewCF = _Ror(OpSize::i64Bit, Tmp, _Sub(OpSize::i64Bit, _Constant(63), Src));
+    auto NewCF = _Ror(OpSize::i64Bit, Tmp, Src.Presub(63).Ref());
     SetCFDirect(NewCF, 0, true);
 
     // OF is the XOR of the NewCF and the MSB of the result
     // Only defined for 1-bit rotates.
-    uint64_t SrcConst;
-    if (!IsValueConstant(WrapNode(Src), &SrcConst) || SrcConst == 1) {
+    if (!Src.IsConstant || Src.C == 1) {
       auto NewOF = _XorShift(OpSize::i64Bit, NewCF, Res, ShiftType::LSR, Size - 1);
       SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, 0, true);
     }
@@ -2343,21 +2338,19 @@ void OpDispatchBuilder::RCLSmallerOp(OpcodeArgs) {
 
 void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
   Ref Value;
-  Ref Src {};
+  ArithRef Src;
   bool IsNonconstant = Op->Src[SrcIndex].IsGPR();
-  uint8_t ConstantShift = 0;
 
   const uint32_t Size = GetDstBitSize(Op);
   const uint32_t Mask = Size - 1;
 
   if (IsNonconstant) {
     // Because we mask explicitly with And/Bfe/Sbfe after, we can allow garbage here.
-    Src = LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = true});
+    Src = ARef(LoadSource(GPRClass, Op, Op->Src[SrcIndex], Op->Flags, {.AllowUpperGarbage = true}));
   } else {
     // Can only be an immediate
     // Masked by operand size
-    ConstantShift = Op->Src[SrcIndex].Data.Literal.Value & Mask;
-    Src = _Constant(ConstantShift);
+    Src = ARef(Op->Src[SrcIndex].Data.Literal.Value & Mask);
   }
 
   if (Op->Dest.IsGPR()) {
@@ -2369,7 +2362,8 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
     // Get the bit selection from the src. We need to mask for 8/16-bit, but
     // rely on the implicit masking of Lshr for native sizes.
     unsigned LshrSize = std::max<uint8_t>(IR::OpSizeToSize(OpSize::i32Bit), Size / 8);
-    auto BitSelect = (Size == (LshrSize * 8)) ? Src : _And(OpSize::i64Bit, Src, _Constant(Mask));
+    auto BitSelect = (Size == (LshrSize * 8)) ? Src : Src.And(Mask);
+    auto LshrOpSize = IR::SizeToOpSize(LshrSize);
 
     // OF/SF/AF/PF undefined. ZF must be preserved. We choose to preserve OF/SF
     // too since we just use an rmif to insert into CF directly. We could
@@ -2379,10 +2373,10 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
     // can reuse the invert.
     if (Action != BTAction::BTComplement) {
       if (IsNonconstant) {
-        Value = _Lshr(IR::SizeToOpSize(LshrSize), Value, BitSelect);
+        Value = _Lshr(IR::SizeToOpSize(LshrSize), Value, BitSelect.Ref());
       }
 
-      SetRFLAG(Value, X86State::RFLAG_CF_RAW_LOC, ConstantShift, true);
+      SetRFLAG(Value, X86State::RFLAG_CF_RAW_LOC, Src.IsConstant ? Src.C : 0, true);
       CFInverted = false;
     }
 
@@ -2393,30 +2387,27 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
     }
 
     case BTAction::BTClear: {
-      Ref BitMask = _Lshl(IR::SizeToOpSize(LshrSize), _Constant(1), BitSelect);
-      Dest = _Andn(IR::SizeToOpSize(LshrSize), Dest, BitMask);
+      Dest = _Andn(LshrOpSize, Dest, BitSelect.MaskBit(LshrOpSize).Ref());
       StoreResult(GPRClass, Op, Dest, OpSize::iInvalid);
       break;
     }
 
     case BTAction::BTSet: {
-      Ref BitMask = _Lshl(IR::SizeToOpSize(LshrSize), _Constant(1), BitSelect);
-      Dest = _Or(IR::SizeToOpSize(LshrSize), Dest, BitMask);
+      Dest = _Or(LshrOpSize, Dest, BitSelect.MaskBit(LshrOpSize).Ref());
       StoreResult(GPRClass, Op, Dest, OpSize::iInvalid);
       break;
     }
 
     case BTAction::BTComplement: {
-      Ref BitMask = _Lshl(IR::SizeToOpSize(LshrSize), _Constant(1), BitSelect);
-      Dest = _Xor(IR::SizeToOpSize(LshrSize), Dest, BitMask);
+      Dest = _Xor(LshrOpSize, Dest, BitSelect.MaskBit(LshrOpSize).Ref());
 
       if (IsNonconstant) {
-        Value = _Lshr(IR::SizeToOpSize(LshrSize), Dest, BitSelect);
+        Value = _Lshr(LshrOpSize, Dest, BitSelect.Ref());
       } else {
         Value = Dest;
       }
 
-      SetRFLAG(Value, X86State::RFLAG_CF_RAW_LOC, ConstantShift, true);
+      SetRFLAG(Value, X86State::RFLAG_CF_RAW_LOC, Src.IsConstant ? Src.C : 0, true);
       CFInverted = true;
 
       StoreResult(GPRClass, Op, Dest, OpSize::iInvalid);
@@ -2427,17 +2418,15 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
     // Load the address to the memory location
     Ref Dest = MakeSegmentAddress(Op, Op->Dest);
     // Get the bit selection from the src
-    Ref BitSelect = _Bfe(std::max(OpSize::i32Bit, GetOpSize(Src)), 3, 0, Src);
+    auto BitSelect = Src.Bfe(0, 3);
 
     // Address is provided as bits we want BYTE offsets
     // Extract Signed offset
-    Src = _Sbfe(OpSize::i64Bit, Size - 3, 3, Src);
+    Src = Src.Sbfe(3, Size - 3);
 
     // Get the address offset by shifting out the size of the op (To shift out the bit selection)
     // Then use that to index in to the memory location by size of op
-    AddressMode Address = {.Base = Dest, .Index = Src, .AddrSize = OpSize::i64Bit};
-
-    ConstantShift = 0;
+    AddressMode Address = {.Base = Dest, .Index = Src.Ref(), .AddrSize = OpSize::i64Bit};
 
     switch (Action) {
     case BTAction::BTNone: {
@@ -2446,7 +2435,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
     }
 
     case BTAction::BTClear: {
-      Ref BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
+      Ref BitMask = BitSelect.MaskBit(OpSize::i64Bit).Ref();
 
       if (DestIsLockedMem(Op)) {
         HandledLock = true;
@@ -2461,7 +2450,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
     }
 
     case BTAction::BTSet: {
-      Ref BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
+      Ref BitMask = BitSelect.MaskBit(OpSize::i64Bit).Ref();
 
       if (DestIsLockedMem(Op)) {
         HandledLock = true;
@@ -2476,7 +2465,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
     }
 
     case BTAction::BTComplement: {
-      Ref BitMask = _Lshl(OpSize::i64Bit, _Constant(1), BitSelect);
+      Ref BitMask = BitSelect.MaskBit(OpSize::i64Bit).Ref();
 
       if (DestIsLockedMem(Op)) {
         HandledLock = true;
@@ -2492,10 +2481,12 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
     }
 
     // Now shift in to the correct bit location
-    Value = _Lshr(std::max(OpSize::i32Bit, GetOpSize(Value)), Value, BitSelect);
+    if (!BitSelect.IsDefinitelyZero()) {
+      Value = _Lshr(std::max(OpSize::i32Bit, GetOpSize(Value)), Value, BitSelect.Ref());
+    }
 
     // OF/SF/ZF/AF/PF undefined.
-    SetCFDirect(Value, ConstantShift, true);
+    SetCFDirect(Value, 0, true);
   }
 }
 
@@ -2552,7 +2543,7 @@ void OpDispatchBuilder::IMUL2SrcOp(OpcodeArgs) {
   case OpSize::i8Bit:
   case OpSize::i16Bit: {
     Src1 = _Sbfe(OpSize::i64Bit, SizeBits, 0, Src1);
-    Src2 = _Sbfe(OpSize::i64Bit, SizeBits, 0, Src2);
+    Src2 = ARef(Src2).Sbfe(0, SizeBits).Ref();
     Dest = _Mul(OpSize::i64Bit, Src1, Src2);
     ResultHigh = _Sbfe(OpSize::i64Bit, SizeBits, SizeBits, Dest);
     break;
@@ -4259,7 +4250,7 @@ void OpDispatchBuilder::StoreGPRRegister(uint32_t GPR, const Ref Src, IR::OpSize
   Ref Reg = Src;
   if (Size != GPRSize || Offset != 0) {
     // Need to do an insert if not automatic size or zero offset.
-    Reg = _Bfi(GPRSize, IR::OpSizeAsBits(Size), Offset, LoadGPRRegister(GPR), Src);
+    Reg = ARef(Reg).BfiInto(LoadGPRRegister(GPR), Offset, IR::OpSizeAsBits(Size));
   }
 
   StoreRegister(GPR, false, Reg);
@@ -4318,7 +4309,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
       if (GPRSize == OpSize::i64Bit && OpSize == OpSize::i32Bit) {
         // If the Source IR op is 64 bits, we need to zext the upper bits
         // For all other sizes, the upper bits are guaranteed to already be zero
-        Ref Value = GetOpSize(Src) == OpSize::i64Bit ? _Bfe(OpSize::i32Bit, 32, 0, Src) : Src;
+        Ref Value = GetOpSize(Src) == OpSize::i64Bit ? ARef(Src).Bfe(0, 32).Ref() : Src;
         StoreGPRRegister(gpr, Value, GPRSize);
 
         LOGMAN_THROW_A_FMT(!Operand.Data.GPR.HighBits, "Can't handle 32bit store to high 8bit register");
@@ -4449,7 +4440,8 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
   // Try to eliminate the masking after 8/16-bit operations with constants, by
   // promoting to a full size operation that preserves the upper bits.
   uint64_t Const;
-  if (Size < OpSize::i32Bit && !DestIsLockedMem(Op) && Op->Dest.IsGPR() && !Op->Dest.Data.GPR.HighBits && IsValueConstant(WrapNode(Src), &Const) &&
+  bool IsConst = IsValueConstant(WrapNode(Src), &Const);
+  if (Size < OpSize::i32Bit && !DestIsLockedMem(Op) && Op->Dest.IsGPR() && !Op->Dest.Data.GPR.HighBits && IsConst &&
       (ALUIROp == IR::IROps::OP_XOR || ALUIROp == IR::IROps::OP_OR || ALUIROp == IR::IROps::OP_ANDWITHFLAGS)) {
 
     RoundedSize = ResultSize = CTX->GetGPROpSize();
@@ -4483,8 +4475,15 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
   }
 
   const auto OpSize = RoundedSize;
-  DeriveOp(ALUOp, ALUIROp, _AndWithFlags(OpSize, Dest, Src));
-  Result = ALUOp;
+  uint64_t Mask = Size == OpSize::i64Bit ? ~0ull : ((1ull << IR::OpSizeAsBits(Size)) - 1);
+  if (IsConst && Const == Mask && !DestIsLockedMem(Op) && ALUIROp == IR::IROps::OP_XOR && Size >= OpSize::i32Bit) {
+    Result = _Not(OpSize, Dest);
+  } else if (IsConst && Const == Mask && !DestIsLockedMem(Op) && ALUIROp == IR::IROps::OP_AND) {
+    Result = Dest;
+  } else {
+    DeriveOp(ALUOp, ALUIROp, _AndWithFlags(OpSize, Dest, Src));
+    Result = ALUOp;
+  }
 
   // Flags set
   switch (ALUIROp) {

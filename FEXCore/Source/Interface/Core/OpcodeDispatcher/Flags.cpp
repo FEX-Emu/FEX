@@ -228,21 +228,26 @@ void OpDispatchBuilder::CalculateAF(Ref Src1, Ref Src2) {
   // We only care about bit 4 in the subsequent XOR. If we'll XOR with 0,
   // there's no sense XOR'ing at all. If we'll XOR with 1, that's just
   // inverting.
-  uint64_t Const;
-  if (IsValueConstant(WrapNode(Src2), &Const)) {
-    if (Const & (1u << 4)) {
-      SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(_Not(OpSize::i32Bit, Src1));
-    } else {
-      SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(Src1);
-    }
+  for (unsigned i = 0; i < 2; ++i) {
+    Ref SrcA = i ? Src1 : Src2;
+    Ref SrcB = i ? Src2 : Src1;
 
-    return;
+    uint64_t Const;
+    if (IsValueConstant(WrapNode(SrcA), &Const)) {
+      if (Const & (1u << 4)) {
+        SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(_Not(OpSize::i32Bit, SrcB));
+      } else {
+        SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(SrcB);
+      }
+
+      return;
+    }
   }
 
   // We store the XOR of the arguments. At read time, we XOR with the
   // appropriate bit of the result (available as the PF flag) and extract the
   // appropriate bit. Again 64-bit to avoid masking.
-  Ref XorRes = _Xor(OpSize::i64Bit, Src1, Src2);
+  Ref XorRes = Src1 == Src2 ? _Constant(0) : _Xor(OpSize::i64Bit, Src1, Src2);
   SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(XorRes);
 }
 
@@ -276,7 +281,7 @@ Ref OpDispatchBuilder::CalculateFlags_ADC(IR::OpSize SrcSize, Ref Src1, Ref Src2
     CFInverted = false;
   } else {
     // Need to zero-extend for correct comparisons below
-    Src2 = _Bfe(OpSize, IR::OpSizeAsBits(SrcSize), 0, Src2);
+    Src2 = ARef(Src2).Bfe(0, IR::OpSizeAsBits(SrcSize)).Ref();
 
     // Note that we do not extend Src2PlusCF, since we depend on proper
     // 32-bit arithmetic to correctly handle the Src2 = 0xffff case.
@@ -316,7 +321,7 @@ Ref OpDispatchBuilder::CalculateFlags_SBB(IR::OpSize SrcSize, Ref Src1, Ref Src2
   } else {
     // Zero extend for correct comparison behaviour with Src1 = 0xffff.
     Src1 = _Bfe(OpSize, IR::OpSizeAsBits(SrcSize), 0, Src1);
-    Src2 = _Bfe(OpSize, IR::OpSizeAsBits(SrcSize), 0, Src2);
+    Src2 = ARef(Src2).Bfe(0, IR::OpSizeAsBits(SrcSize)).Ref();
 
     auto Src2PlusCF = IncrementByCarry(OpSize, Src2);
 
