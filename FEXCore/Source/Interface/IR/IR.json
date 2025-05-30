@@ -173,7 +173,7 @@
         "SwitchGen": false,
         "JITDispatchOverride": "NoOp"
       },
-      "CodeBlock SSA:$Begin, SSA:$Last": {
+      "CodeBlock SSA:$Begin, SSA:$Last, u32:$ID": {
         "SwitchGen": false,
         "RAOverride": "0",
         "JITDispatchOverride": "NoOp"
