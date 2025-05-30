@@ -110,7 +110,7 @@
         "add x23, x20, #0x60 (96)",
         "cmp x21, #0x0 (0)",
         "csel x26, x23, x20, eq",
-        "bfxil w4, w26, #0, #8",
+        "bfxil x4, x26, #0, #8",
         "cmn wzr, w26, lsl #24",
         "mrs x20, nzcv",
         "bfi w20, w21, #29, #1",
@@ -142,7 +142,7 @@
         "sub x24, x20, #0x60 (96)",
         "cmp x21, #0x0 (0)",
         "csel x26, x24, x20, ne",
-        "bfxil w4, w26, #0, #8",
+        "bfxil x4, x26, #0, #8",
         "cmn wzr, w26, lsl #24",
         "eor x20, x23, #0x1",
         "mrs x21, nzcv",
@@ -167,7 +167,7 @@
         "csel w20, w20, w4, lo",
         "mov w21, #0xff0f",
         "and w20, w20, w21",
-        "bfxil w4, w20, #0, #16"
+        "bfxil x4, x20, #0, #16"
       ]
     },
     "aas": {
@@ -186,7 +186,7 @@
         "csel w20, w20, w4, lo",
         "mov w21, #0xff0f",
         "and w20, w20, w21",
-        "bfxil w4, w20, #0, #16"
+        "bfxil x4, x20, #0, #16"
       ]
     },
     "inc ax": {
@@ -201,7 +201,7 @@
         "add w26, w27, #0x1 (1)",
         "mrs x20, nzcv",
         "bfi w20, w21, #29, #1",
-        "bfxil w4, w26, #0, #16",
+        "bfxil x4, x26, #0, #16",
         "msr nzcv, x20"
       ]
     },
@@ -230,7 +230,7 @@
         "sub w26, w27, #0x1 (1)",
         "mrs x20, nzcv",
         "bfi w20, w21, #29, #1",
-        "bfxil w4, w26, #0, #16",
+        "bfxil x4, x26, #0, #16",
         "msr nzcv, x20"
       ]
     },
@@ -319,7 +319,7 @@
         "udiv x2, x20, x21",
         "msub x20, x2, x21, x20",
         "add x26, x20, x22, lsl #8",
-        "bfxil w4, w26, #0, #16",
+        "bfxil x4, x26, #0, #16",
         "cmn wzr, w26, lsl #24",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
@@ -335,7 +335,7 @@
         "mul x20, x20, x21",
         "add x20, x4, x20",
         "and x26, x20, #0xff",
-        "bfxil w4, w26, #0, #16",
+        "bfxil x4, x26, #0, #16",
         "cmn wzr, w26, lsl #24",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
@@ -355,7 +355,7 @@
         "udiv x2, x20, x21",
         "msub x20, x2, x21, x20",
         "add x26, x20, x22, lsl #8",
-        "bfxil w4, w26, #0, #16",
+        "bfxil x4, x26, #0, #16",
         "cmn wzr, w26, lsl #24",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
@@ -374,7 +374,7 @@
         "mul x20, x20, x21",
         "add x20, x4, x20",
         "and x26, x20, #0xff",
-        "bfxil w4, w26, #0, #16",
+        "bfxil x4, x26, #0, #16",
         "cmn wzr, w26, lsl #24",
         "mrs x20, nzcv",
         "eor w20, w20, #0x20000000",
@@ -386,7 +386,7 @@
       "Comment": "0xd6",
       "ExpectedArm64ASM": [
         "csetm w20, lo",
-        "bfxil w4, w20, #0, #8"
+        "bfxil x4, x20, #0, #8"
       ]
     }
   }
