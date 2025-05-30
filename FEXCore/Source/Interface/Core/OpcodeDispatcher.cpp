@@ -4250,7 +4250,7 @@ void OpDispatchBuilder::StoreGPRRegister(uint32_t GPR, const Ref Src, IR::OpSize
   Ref Reg = Src;
   if (Size != GPRSize || Offset != 0) {
     // Need to do an insert if not automatic size or zero offset.
-    Reg = _Bfi(GPRSize, IR::OpSizeAsBits(Size), Offset, LoadGPRRegister(GPR), Src);
+    Reg = ARef(Reg).BfiInto(LoadGPRRegister(GPR), Offset, IR::OpSizeAsBits(Size));
   }
 
   StoreRegister(GPR, false, Reg);

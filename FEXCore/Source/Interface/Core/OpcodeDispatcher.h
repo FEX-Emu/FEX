@@ -2553,6 +2553,24 @@ private:
       }
     }
 
+    Ref BfiInto(Ref Bitfield, unsigned Start, unsigned Size) {
+      if (IsConstant && (Size > 0 && Size < 64)) {
+        uint64_t SourceMask = (1ULL << Size) - 1;
+
+        if (C == 0) {
+          return E->_And(OpSize::i64Bit, Bitfield, E->_InlineConstant(~SourceMask));
+        } else if (C == SourceMask) {
+          return E->_Or(OpSize::i64Bit, Bitfield, E->_InlineConstant(C << Start));
+        }
+      }
+
+      if (IsConstant) {
+        return E->_Bfi(OpSize::i64Bit, Size, Start, Bitfield, E->_Constant(C));
+      } else {
+        return E->_Bfi(OpSize::i64Bit, Size, Start, Bitfield, R);
+      }
+    }
+
     ArithRef MaskBit(OpSize Size) {
       if (IsConstant) {
         uint64_t ShiftMask = Size == OpSize::i64Bit ? 63 : 31;
