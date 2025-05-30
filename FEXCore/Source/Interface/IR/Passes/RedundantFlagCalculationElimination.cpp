@@ -97,46 +97,49 @@ private:
 };
 
 struct BlockInfo {
-  fextl::vector<Ref> Predecessors;
+  fextl::vector<uint32_t> Predecessors;
+  Ref Node;
   uint8_t Flags;
   bool InWorklist;
 };
 
 struct ControlFlowGraph {
-  fextl::unordered_map<uint32_t, BlockInfo> BlockMap;
+  fextl::vector<BlockInfo> BlockMap;
   IRListView& IR;
 
-  void AddBlock(fextl::deque<Ref>& Worklist, Ref Block) {
-    uint32_t ID = IR.GetID(Block).Value;
+  void Init(fextl::deque<uint32_t>& Worklist, uint32_t BlockCount) {
+    BlockMap.resize(BlockCount);
 
-    // Add the block with conservative flags and already in the worklist.
-    auto Info = &BlockMap.emplace(ID, BlockInfo {{}, FLAG_ALL, true}).first->second;
+    for (unsigned ID = 0; ID < BlockCount; ++ID) {
+      // Add the block with conservative flags and already in the worklist.
+      auto Info = BlockInfo {{}, nullptr, FLAG_ALL, true};
 
-    // Add some initial capacity
-    Info->Predecessors.reserve(2);
+      // Add some initial capacity
+      Info.Predecessors.reserve(2);
 
-    // Add to worklist
-    Worklist.push_back(Block);
+      BlockMap[ID] = Info;
+      Worklist.push_back(ID);
+    }
   }
 
   BlockInfo* Get(uint32_t Block) {
-    return &BlockMap.try_emplace(Block).first->second;
+    return &BlockMap[Block];
   }
 
-  BlockInfo* Get(Ref Block) {
-    return Get(IR.GetID(Block).Value);
+  BlockInfo* Get(IROp_CodeBlock* Block) {
+    return &BlockMap[Block->ID];
   }
 
   BlockInfo* Get(OrderedNodeWrapper Block) {
-    return Get(Block.ID().Value);
+    return Get(IR.GetOp<IR::IROp_CodeBlock>(Block));
   }
 
-  void RecordEdge(Ref From, Ref To) {
+  void RecordEdge(uint32_t From, OrderedNodeWrapper To) {
     auto Info = Get(To);
     Info->Predecessors.push_back(From);
   }
 
-  void AddWorklist(fextl::deque<Ref>& Worklist, Ref Block) {
+  void AddWorklist(fextl::deque<uint32_t>& Worklist, uint32_t Block) {
     auto Info = Get(Block);
     if (!Info->InWorklist) {
       Info->InWorklist = true;
@@ -637,8 +640,8 @@ bool DeadFlagCalculationEliminination::ProcessBlock(IREmitter* IREmit, IRListVie
   // For the purposes of global propagation, the content of our progress doesn't
   // matter -- only the difference in our final FlagsRead contributes to changes
   // in the predecessors.
-  uint32_t OldFlagsRead = CFG.Get(Block)->Flags;
-  CFG.Get(Block)->Flags = FlagsRead;
+  uint32_t OldFlagsRead = CFG.Get(BlockIROp->ID)->Flags;
+  CFG.Get(BlockIROp->ID)->Flags = FlagsRead;
   return (OldFlagsRead != FlagsRead);
 }
 
@@ -650,12 +653,14 @@ void DeadFlagCalculationEliminination::OptimizeParity(IREmitter* IREmit, IRListV
   // Initialize conservatively: all blocks need full parity. This initialization
   // matters for proper handling of backedges.
   for (auto [Block, BlockHeader] : CurrentIR.GetBlocks()) {
-    CFG.Get(Block)->Flags = FULL;
+    auto ID = BlockHeader->C<IROp_CodeBlock>()->ID;
+    CFG.Get(ID)->Flags = FULL;
   }
 
   for (auto [Block, BlockHeader] : CurrentIR.GetBlocks()) {
+    auto ID = BlockHeader->C<IROp_CodeBlock>()->ID;
     bool Full = false;
-    auto Predecessors = CFG.Get(Block)->Predecessors;
+    auto Predecessors = CFG.Get(ID)->Predecessors;
 
     if (Predecessors.empty()) {
       // Conservatively assume there was full parity before the start block
@@ -701,7 +706,7 @@ void DeadFlagCalculationEliminination::OptimizeParity(IREmitter* IREmit, IRListV
     }
 
     // Record our final state for our successors to read.
-    CFG.Get(Block)->Flags = Full ? FULL : PARTIAL;
+    CFG.Get(ID)->Flags = Full ? FULL : PARTIAL;
   }
 }
 
@@ -709,28 +714,28 @@ void DeadFlagCalculationEliminination::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::DFE");
 
   auto CurrentIR = IREmit->ViewIR();
-  fextl::deque<Ref> Worklist;
+  fextl::deque<uint32_t> Worklist;
 
+  // Initialize CFG
   ControlFlowGraph CFG {.IR = CurrentIR};
-
-  // Gather blocks
-  for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
-    CFG.AddBlock(Worklist, BlockNode);
-  }
+  CFG.Init(Worklist, CurrentIR.GetHeader()->BlockCount);
 
   // Gather CFG
   for (auto [BlockNode, BlockHeader] : CurrentIR.GetBlocks()) {
-    auto CodeLast = CurrentIR.at(BlockHeader->C<IROp_CodeBlock>()->Last);
+    auto Block = BlockHeader->C<IROp_CodeBlock>();
+    auto CodeLast = CurrentIR.at(Block->Last);
     --CodeLast;
     auto [ExitNode, ExitOp] = CodeLast();
     if (ExitOp->Op == IR::OP_CONDJUMP) {
       auto Op = ExitOp->CW<IR::IROp_CondJump>();
 
-      CFG.RecordEdge(BlockNode, CurrentIR.GetNode(Op->TrueBlock));
-      CFG.RecordEdge(BlockNode, CurrentIR.GetNode(Op->FalseBlock));
+      CFG.RecordEdge(Block->ID, Op->TrueBlock);
+      CFG.RecordEdge(Block->ID, Op->FalseBlock);
     } else if (ExitOp->Op == IR::OP_JUMP) {
-      CFG.RecordEdge(BlockNode, CurrentIR.GetNode(ExitOp->Args[0]));
+      CFG.RecordEdge(Block->ID, ExitOp->Args[0]);
     }
+
+    CFG.Get(Block->ID)->Node = BlockNode;
   }
 
   // After processing a block, if we made progress, we must process its
@@ -741,7 +746,7 @@ void DeadFlagCalculationEliminination::Run(IREmitter* IREmit) {
     auto Info = CFG.Get(Block);
     Info->InWorklist = false;
 
-    if (ProcessBlock(IREmit, CurrentIR, Block, CFG)) {
+    if (ProcessBlock(IREmit, CurrentIR, Info->Node, CFG)) {
       for (auto Pred : Info->Predecessors) {
         CFG.AddWorklist(Worklist, Pred);
       }
