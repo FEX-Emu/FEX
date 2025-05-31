@@ -10,8 +10,6 @@ target_link_libraries(FEXBash
     FEXCore
     Common
     JemallocLibs
-    LinuxEmulation
-    ${PTHREAD_LIB}
 )
 
 if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
