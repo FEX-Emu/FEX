@@ -2025,14 +2025,7 @@ private:
 
   // Returns (DF ? -Size : Size)
   Ref LoadDir(const unsigned Size) {
-    auto Dir = LoadDF();
-    auto Shift = FEXCore::ilog2(Size);
-
-    if (Shift) {
-      return _Lshl(CTX->GetGPROpSize(), Dir, _Constant(Shift));
-    } else {
-      return Dir;
-    }
+    return ARef(LoadDF()).Lshl(FEXCore::ilog2(Size)).Ref();
   }
 
   // Returns DF ? (X - Size) : (X + Size)
@@ -2321,18 +2314,6 @@ private:
   void CalculateFlags_ZCNT(IR::OpSize SrcSize, Ref Result);
   /**  @} */
 
-  Ref AndConst(FEXCore::IR::OpSize Size, Ref Node, uint64_t Const) {
-    uint64_t NodeConst;
-
-    if (IsValueConstant(WrapNode(Node), &NodeConst)) {
-      return _Constant(NodeConst & Const);
-    } else {
-      return _And(Size, Node, _Constant(Const));
-    }
-  }
-
-  /**  @} */
-
   Ref GetX87Top();
   void SetX87FTW(Ref FTW);
   Ref GetX87FTW_Helper();
@@ -2493,11 +2474,139 @@ private:
     return Value;
   }
 
+  Ref VZeroExtendOperand(OpSize Size, X86Tables::DecodedOperand Op, Ref Value) {
+    bool IsMMX = Op.IsGPR() && Op.Data.GPR.GPR >= X86State::REG_MM_0;
+    bool AlreadyExtended = Op.IsGPRDirect() || Op.IsGPRIndirect() || IsMMX;
+
+    return AlreadyExtended ? Value : _VMov(Size, Value);
+  }
+
   void Push(IR::OpSize Size, Ref Value) {
     auto OldSP = LoadGPRRegister(X86State::REG_RSP);
     auto NewSP = _Push(CTX->GetGPROpSize(), Size, Value, OldSP);
     StoreGPRRegister(X86State::REG_RSP, NewSP);
     FlushRegisterCache();
+  }
+
+  struct ArithRef {
+    IREmitter* E;
+    bool IsConstant;
+    union {
+      Ref R;
+      uint64_t C;
+    };
+
+    ArithRef() {}
+
+    ArithRef(IREmitter* IREmit, Ref Reference)
+      : E(IREmit)
+      , IsConstant(false)
+      , R(Reference) {}
+
+    ArithRef(IREmitter* IREmit, uint64_t K)
+      : E(IREmit)
+      , IsConstant(true)
+      , C(K) {}
+
+    ArithRef Neg() {
+      return IsConstant ? ArithRef(E, -C) : ArithRef(E, E->_Neg(OpSize::i64Bit, R));
+    }
+
+    ArithRef And(uint64_t K) {
+      return IsConstant ? ArithRef(E, C & K) : ArithRef(E, E->_And(OpSize::i64Bit, R, E->_Constant(K)));
+    }
+
+    ArithRef Presub(uint64_t K) {
+      return IsConstant ? ArithRef(E, K - C) : ArithRef(E, E->_Sub(OpSize::i64Bit, E->_Constant(K), R));
+    }
+
+    ArithRef Lshl(uint64_t Shift) {
+      if (Shift == 0) {
+        return *this;
+      } else if (IsConstant) {
+        return ArithRef(E, C << Shift);
+      } else {
+        return ArithRef(E, E->_Lshl(OpSize::i64Bit, R, E->_Constant(Shift)));
+      }
+    }
+
+    ArithRef Bfe(unsigned Start, unsigned Size) {
+      if (IsConstant) {
+        return ArithRef(E, (C >> Start) & ((1ull << Size) - 1));
+      } else {
+        return ArithRef(E, E->_Bfe(OpSize::i64Bit, Size, Start, R));
+      }
+    }
+
+    ArithRef Sbfe(unsigned Start, unsigned Size) {
+      if (IsConstant) {
+        uint64_t SourceMask = Size == 64 ? ~0ULL : ((1ULL << Size) - 1);
+        SourceMask <<= Start;
+
+        int64_t NewConstant = (C & SourceMask) >> Start;
+        NewConstant <<= 64 - Size;
+        NewConstant >>= 64 - Size;
+
+        return ArithRef(E, NewConstant);
+      } else {
+        return ArithRef(E, E->_Sbfe(OpSize::i64Bit, Size, Start, R));
+      }
+    }
+
+    Ref BfiInto(Ref Bitfield, unsigned Start, unsigned Size) {
+      if (IsConstant && (Size > 0 && Size < 64)) {
+        uint64_t SourceMask = (1ULL << Size) - 1;
+        uint64_t SourceMaskShifted = SourceMask << Start;
+
+        if (C == 0) {
+          return E->_And(OpSize::i64Bit, Bitfield, E->_InlineConstant(~SourceMaskShifted));
+        } else if (C == SourceMask) {
+          return E->_Or(OpSize::i64Bit, Bitfield, E->_InlineConstant(SourceMaskShifted));
+        }
+      }
+
+      if (IsConstant) {
+        return E->_Bfi(OpSize::i64Bit, Size, Start, Bitfield, E->_Constant(C));
+      } else {
+        return E->_Bfi(OpSize::i64Bit, Size, Start, Bitfield, R);
+      }
+    }
+
+    ArithRef MaskBit(OpSize Size) {
+      if (IsConstant) {
+        uint64_t ShiftMask = Size == OpSize::i64Bit ? 63 : 31;
+        uint64_t Result = 1ull << (C & ShiftMask);
+        if (ShiftMask == 31) {
+          Result &= ((1ull << 32) - 1);
+        }
+
+        return ArithRef(E, Result);
+      } else {
+        return ArithRef(E, E->_Lshl(Size, E->_Constant(1), R));
+      }
+    }
+
+    Ref Ref() {
+      return IsConstant ? E->_Constant(C) : R;
+    }
+
+    bool IsDefinitelyZero() {
+      return IsConstant && C == 0;
+    }
+  };
+
+  ArithRef ARef(Ref R) {
+    uint64_t C;
+
+    if (IsValueConstant(WrapNode(R), &C)) {
+      return ARef(C);
+    } else {
+      return ArithRef(this, R);
+    }
+  }
+
+  ArithRef ARef(uint64_t K) {
+    return ArithRef(this, K);
   }
 
   void InstallHostSpecificOpcodeHandlers();
