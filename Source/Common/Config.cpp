@@ -152,6 +152,10 @@ public:
 
 protected:
   void MapNameToOption(const char* ConfigName, const char* ConfigString);
+  void SetCurrentConfigFile(const fextl::string& Filename) {
+    CurrentConfigFile = Filename;
+  }
+  fextl::string CurrentConfigFile;
 };
 
 class MainLoader final : public OptionMapper {
@@ -199,6 +203,7 @@ void OptionMapper::MapNameToOption(const char* ConfigName, const char* ConfigStr
   }
 
   if (!KeyOptionValue.has_value()) {
+    LogMan::Msg::IFmt("Unknown configuration option '{}' in JSON config file '{}'", ConfigName, CurrentConfigFile);
     return;
   }
 
@@ -223,6 +228,7 @@ MainLoader::MainLoader(FEXCore::Config::LayerType Type, std::string_view ConfigF
   , Config {ConfigFile} {}
 
 void MainLoader::Load() {
+  SetCurrentConfigFile(Config);
   JSON::LoadJSonConfig(Config, [this](const char* Name, const char* ConfigString) { MapNameToOption(Name, ConfigString); });
 }
 
@@ -236,6 +242,7 @@ AppLoader::AppLoader(const fextl::string& Filename, FEXCore::Config::LayerType T
 }
 
 void AppLoader::Load() {
+  SetCurrentConfigFile(Config);
   JSON::LoadJSonConfig(Config, [this](const char* Name, const char* ConfigString) { MapNameToOption(Name, ConfigString); });
 }
 
