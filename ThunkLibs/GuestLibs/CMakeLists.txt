@@ -71,10 +71,10 @@ function(generate NAME SOURCE_FILE)
 
   if (BITNESS EQUAL 32)
     set(BITNESS_FLAGS "-for-32bit-guest")
-    set(BITNESS_FLAGS2 "-m32" "--target=i686-linux-unknown" "-isystem" "/usr/i686-linux-gnu/include/")
+    set(BITNESS_FLAGS2 "-m32" "--target=i686-linux-gnu" "-isystem" "/usr/i686-linux-gnu/include/")
   else()
     set(BITNESS_FLAGS "")
-    set(BITNESS_FLAGS2 "--target=x86_64-linux-unknown" "-isystem" "/usr/x86_64-linux-gnu/include/")
+    set(BITNESS_FLAGS2 "--target=x86_64-linux-gnu" "-isystem" "/usr/x86_64-linux-gnu/include/")
   endif()
 
   add_custom_command(
