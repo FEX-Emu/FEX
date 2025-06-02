@@ -64,6 +64,8 @@ private:
 
   fextl::map<IR::NodeID, ARMEmitter::BiDirectionalLabel> JumpTargets;
 
+  Utils::PoolBufferWithTimedRetirement<uint8_t*, 5000, 500> TempAllocator;
+
   [[nodiscard]]
   ARMEmitter::Register GetReg(IR::PhysicalRegister Reg) const {
     LOGMAN_THROW_A_FMT(Reg.Class == IR::GPRFixedClass.Val || Reg.Class == IR::GPRClass.Val, "Unexpected Class: {}", Reg.Class);

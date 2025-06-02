@@ -40,10 +40,6 @@ $end_info$
 #include <string.h>
 #include <limits>
 
-static constexpr size_t INITIAL_CODE_SIZE = 1024 * 1024 * 16;
-// We don't want to move above 128MB atm because that means we will have to encode longer jumps
-static constexpr size_t MAX_CODE_SIZE = 1024 * 1024 * 128;
-
 namespace {
 static uint64_t LUDIV(uint64_t SrcHigh, uint64_t SrcLow, uint64_t Divisor) {
   __uint128_t Source = (static_cast<__uint128_t>(SrcHigh) << 64) | SrcLow;
@@ -454,6 +450,8 @@ static void DirectBlockDelinker(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Co
 
 static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record) {
   auto Thread = Frame->Thread;
+  auto Lock = Thread->LookupCache->AcquireLock();
+
   bool TFSet = Thread->CurrentFrame->State.flags[X86State::RFLAG_TF_RAW_LOC];
   uintptr_t HostCode {};
   auto GuestRip = Record->GuestRIP;
@@ -496,14 +494,15 @@ static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame* Fram
 void Arm64JITCore::Op_NoOp(const IR::IROp_Header* IROp, IR::Ref Node) {}
 
 Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::InternalThreadState* Thread)
-  : CPUBackend(Thread, INITIAL_CODE_SIZE, MAX_CODE_SIZE)
+  : CPUBackend(*ctx, Thread)
   , Arm64Emitter(ctx)
   , HostSupportsSVE128 {ctx->HostFeatures.SupportsSVE128}
   , HostSupportsSVE256 {ctx->HostFeatures.SupportsSVE256}
   , HostSupportsAVX256 {ctx->HostFeatures.SupportsAVX && ctx->HostFeatures.SupportsSVE256}
   , HostSupportsRPRES {ctx->HostFeatures.SupportsRPRES}
   , HostSupportsAFP {ctx->HostFeatures.SupportsAFP}
-  , CTX {ctx} {
+  , CTX {ctx}
+  , TempAllocator(ctx->CPUBackendAllocator, 0) {
 
   RAPass = Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA");
 
@@ -550,8 +549,8 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::In
     AArch64.LREM = reinterpret_cast<uint64_t>(LREM);
   }
 
-  // Must be done after Dispatcher init
-  ClearCache();
+  CurrentCodeBuffer = CodeBuffers.GetLatest();
+  ThreadState->LookupCache->Shared = CurrentCodeBuffer->LookupCache.get();
 
   // Setup dynamic dispatch.
   if (ParanoidTSO()) {
@@ -570,11 +569,15 @@ void Arm64JITCore::EmitDetectionString() {
 }
 
 void Arm64JITCore::ClearCache() {
-  // Get the backing code buffer
+  // NOTE: Holding on to the reference here is required to ensure validity of the WriteLock mutex
+  auto PrevCodeBuffer = CurrentCodeBuffer;
+  std::lock_guard lk(PrevCodeBuffer->LookupCache->WriteLock);
 
   auto CodeBuffer = GetEmptyCodeBuffer();
   SetBuffer(CodeBuffer->Ptr, CodeBuffer->Size);
   EmitDetectionString();
+
+  ThreadState->LookupCache->ChangeGuestToHostMapping(*PrevCodeBuffer, *CurrentCodeBuffer->LookupCache);
 }
 
 Arm64JITCore::~Arm64JITCore() {}
@@ -692,10 +695,12 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   this->IR = IR;
 
   // Fairly excessive buffer range to make sure we don't overflow
-  uint32_t BufferRange = SSACount * 16;
-  if ((GetCursorOffset() + BufferRange) > (CurrentCodeBuffer->Size - Utils::FEX_PAGE_SIZE)) {
-    CTX->ClearCodeCache(ThreadState);
-  }
+  uint32_t BufferRange = 0x100 + SSACount * 24;
+
+  // JIT output is first written to a temporary buffer and later relocated to the CodeBuffer.
+  // This minimizes lock contention of CodeBufferWriteMutex.
+  auto TempCodeBuffer = TempAllocator.ReownOrClaimBuffer(BufferRange);
+  SetBuffer(TempCodeBuffer, BufferRange);
 
   CodeData.BlockBegin = GetCursorAddress<uint8_t*>();
 
@@ -866,6 +871,49 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   CodeData.Size = GetCursorAddress<uint8_t*>() - CodeData.BlockBegin;
 
   JITBlockTail->Size = CodeData.Size;
+
+  // Migrate the compile output from temporary storage to the actual CodeBuffer.
+  // This can block progress in other compiling threads, so the duration of the lock should be as small as possible.
+  {
+    auto CodeBufferLock = std::unique_lock {CodeBuffers.CodeBufferWriteMutex};
+
+    // Query size of generated code
+    const auto TempSize = GetCursorOffset();
+    LOGMAN_THROW_A_FMT(TempSize <= BufferRange, "Exceeded bounds of temporary buffer ({:#x} vs {:#x})", TempSize, BufferRange);
+
+    // Bring CodeBuffer up to date
+    {
+      LOGMAN_THROW_A_FMT(CurrentCodeBuffer->LookupCache.get() == ThreadState->LookupCache->Shared, "INVARIANT VIOLATED: SharedLookupCache "
+                                                                                                   "doesn't match up!\n");
+      if (auto Prev = CheckCodeBufferUpdate()) {
+        ThreadState->LookupCache->ChangeGuestToHostMapping(*Prev, *CurrentCodeBuffer->LookupCache);
+      }
+
+      // NOTE: 16-byte alignment of the new cursor offset must be preserved for block linking records
+      SetBuffer(CurrentCodeBuffer->Ptr, CurrentCodeBuffer->Size);
+      SetCursorOffset(AlignUp(CodeBuffers.LatestOffset, 16));
+      if ((GetCursorOffset() + TempSize) > (CurrentCodeBuffer->Size - Utils::FEX_PAGE_SIZE)) {
+        CTX->ClearCodeCache(ThreadState);
+      }
+
+      Align16B();
+
+      CodeBuffers.LatestOffset = GetCursorOffset();
+    }
+
+    // Adjust host addresses
+    const auto Delta = GetCursorAddress<uint8_t*>() - CodeData.BlockBegin;
+    CodeData.BlockBegin += Delta;
+    CodeData.BlockEntry += Delta;
+
+    // Copy over CodeBuffer contents
+    memcpy(GetCursorAddress<uint8_t*>(), TempCodeBuffer, TempSize);
+    SetCursorOffset(CodeBuffers.LatestOffset + TempSize);
+
+    CodeBuffers.LatestOffset = GetCursorOffset();
+  }
+
+  TempAllocator.DelayedDisownBuffer();
 
   ClearICache(CodeData.BlockBegin, CodeOnlySize);
 

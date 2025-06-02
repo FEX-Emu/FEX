@@ -495,7 +495,13 @@ void ContextImpl::LockBeforeFork(FEXCore::Core::InternalThreadState* Thread) {
 }
 #endif
 
-void ContextImpl::ClearCodeCache(FEXCore::Core::InternalThreadState* Thread) {
+void ContextImpl::OnCodeBufferAllocated(CPU::CodeBuffer& Buffer) {
+  if (Config.GlobalJITNaming()) {
+    Symbols.RegisterJITSpace(Buffer.Ptr, Buffer.Size);
+  }
+}
+
+void ContextImpl::ClearCodeCache(FEXCore::Core::InternalThreadState* Thread, bool NewCodeBuffer) {
   FEXCORE_PROFILE_INSTANT("ClearCodeCache");
 
   if (CodeObjectCacheService) {
@@ -503,10 +509,14 @@ void ContextImpl::ClearCodeCache(FEXCore::Core::InternalThreadState* Thread) {
     // Use the thread's object cache ref counter for this
     CodeSerialize::CodeObjectSerializeService::WaitForEmptyJobQueue(&Thread->ObjectCacheRefCounter);
   }
-  std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
 
-  Thread->LookupCache->ClearCache();
-  Thread->CPUBackend->ClearCache();
+  if (NewCodeBuffer) {
+    // Allocate new CodeBuffer + L3 LookupCache and clear L1+L2 caches
+    Thread->CPUBackend->ClearCache();
+  } else {
+    // Clear L1+L2 cache of this thread, and clear L3 cache across any threads using it
+    Thread->LookupCache->ClearCache();
+  }
 }
 
 static void IRDumper(FEXCore::Core::InternalThreadState* Thread, IR::IREmitter* IREmitter, uint64_t GuestRIP) {
@@ -768,6 +778,18 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
 
   // Attempt to get the CPU backend to compile this code
 
+
+  // Re-check if another thread raced us in compiling this block.
+  // We could lock CodeBufferWriteMutex earlier to prevent this from happening,
+  // but this would increase lock contention. Redundant frontend runs aren't
+  // as expensive and are easily reverted.
+  if (MaxInst != 1) {
+    if (auto Block = Thread->LookupCache->FindBlock(GuestRIP)) {
+      Thread->OpDispatcher->DelayedDisownBuffer();
+      return {.CompiledCode = reinterpret_cast<uint8_t*>(Block), .DebugData = nullptr, .StartAddr = 0, .Length = 0};
+    }
+  }
+
   auto CompiledCode = Thread->CPUBackend->CompileCode(GuestRIP, Length, TotalInstructions == 1, &*IRView, DebugData.get(), TFSet);
 
   // Release the IR
@@ -803,6 +825,9 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
   auto [CodePtr, DebugData, StartAddr, Length] = CompileCode(Thread, GuestRIP, MaxInst);
   if (CodePtr == nullptr) {
     return 0;
+  } else if (!DebugData) {
+    // DebugData wasn't populated, indicating another thread raced us for compiling this block
+    return reinterpret_cast<uintptr_t>(CodePtr);
   }
 
   // The core managed to compile the code.
@@ -884,7 +909,7 @@ uintptr_t ContextImpl::CompileSingleStep(FEXCore::Core::CpuStateFrame* Frame, ui
 }
 
 static void InvalidateGuestThreadCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) {
-  std::lock_guard<std::recursive_mutex> lk(Thread->LookupCache->WriteLock);
+  auto lk = Thread->LookupCache->AcquireLock();
 
   auto lower = Thread->LookupCache->CodePages.lower_bound(Start >> 12);
   auto upper = Thread->LookupCache->CodePages.upper_bound((Start + Length - 1) >> 12);
@@ -911,8 +936,8 @@ void ContextImpl::MarkMemoryShared(FEXCore::Core::InternalThreadState* Thread) {
     UpdateAtomicTSOEmulationConfig();
 
     if (Config.TSOAutoMigration) {
-      // Only the lookup cache is cleared here, so that old code can keep running until next compilation
-      std::lock_guard<std::recursive_mutex> lkLookupCache(Thread->LookupCache->WriteLock);
+      // Only the lookup cache is cleared here, so that old code can keep running until next compilation.
+      // This will leak previously compiled blocks until the CodeBuffer is cleared for some other reason.
       Thread->LookupCache->ClearCache();
     }
   }

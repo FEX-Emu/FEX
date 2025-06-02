@@ -171,7 +171,7 @@ public:
   FEX_DEFAULT_VISIBILITY virtual void FinalizeAOTIRCache() = 0;
   FEX_DEFAULT_VISIBILITY virtual void WriteFilesWithCode(AOTIRCodeFileWriterFn Writer) = 0;
 
-  FEX_DEFAULT_VISIBILITY virtual void ClearCodeCache(FEXCore::Core::InternalThreadState* Thread) = 0;
+  FEX_DEFAULT_VISIBILITY virtual void ClearCodeCache(FEXCore::Core::InternalThreadState* Thread, bool NewCodeBuffer = true) = 0;
   FEX_DEFAULT_VISIBILITY virtual void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) = 0;
   FEX_DEFAULT_VISIBILITY virtual FEXCore::ForkableSharedMutex& GetCodeInvalidationMutex() = 0;
 
@@ -181,7 +181,7 @@ public:
   ConfigureAOTGen(FEXCore::Core::InternalThreadState* Thread, fextl::set<uint64_t>* ExternalBranches, uint64_t SectionMaxAddress) = 0;
 
   /**
-   * @brief Checks if a PC is inside of a thread's JIT code buffer.
+   * @brief Checks if a PC is inside any code buffer used by the thread's JIT.
    *
    * @param Thread Which thread's code buffers to check inside of.
    * @param Address The PC to check against.
