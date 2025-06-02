@@ -59,6 +59,9 @@ TEST_CASE("futimesat - valid - null") {
   timespec time {};
   REQUIRE(clock_gettime(CLOCK_REALTIME, &time) == 0);
 
+  // Remove the nanoseconds to ensure consistent time setting.
+  time.tv_nsec = 0;
+
   // Sets the time to "Now".
   REQUIRE(compat_futimesat(fd, nullptr, nullptr) == 0);
   REQUIRE(unlinkat(AT_FDCWD, file, 0) != -1);
