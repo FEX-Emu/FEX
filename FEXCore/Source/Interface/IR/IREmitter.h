@@ -271,7 +271,8 @@ public:
   IRPair<IROp_CodeBlock> CreateCodeNode() {
     SetWriteCursor(nullptr); // Orphan from any previous nodes
 
-    auto CodeNode = _CodeBlock(InvalidNode, InvalidNode);
+    auto ID = ViewIR().GetHeader()->BlockCount++;
+    auto CodeNode = _CodeBlock(InvalidNode, InvalidNode, ID);
 
     CodeBlocks.emplace_back(CodeNode);
 
