@@ -21,9 +21,6 @@ using namespace FEXCore;
 
 namespace FEXCore::IR {
 namespace {
-  [[maybe_unused]] constexpr uint32_t INVALID_REG = IR::InvalidReg;
-  constexpr uint32_t INVALID_CLASS = IR::InvalidClass.Val;
-
   struct RegisterClass {
     uint32_t Available;
     uint32_t Count;
@@ -60,7 +57,7 @@ public:
   bool TryPostRAMerge(Ref LastNode, Ref CodeNode, IROp_Header* IROp);
 
 private:
-  RegisterClass Classes[INVALID_CLASS];
+  RegisterClass Classes[IR::NumClasses];
 
   IREmitter* IREmit;
   IRListView* IR;
@@ -371,7 +368,7 @@ private:
 };
 
 void ConstrainedRAPass::AddRegisters(IR::RegisterClassType Class, uint32_t RegisterCount) {
-  LOGMAN_THROW_A_FMT(RegisterCount <= INVALID_REG, "Up to {} regs supported", INVALID_REG);
+  LOGMAN_THROW_A_FMT(RegisterCount <= 31, "Up to 31 regs supported");
 
   Classes[Class].Count = RegisterCount;
 }
