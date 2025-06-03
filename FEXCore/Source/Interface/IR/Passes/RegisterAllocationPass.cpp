@@ -103,15 +103,8 @@ private:
       return false;
     }
 
-    switch (IR->GetOp<IROp_Header>(Arg)->Op) {
-    case OP_INLINECONSTANT:
-    case OP_INLINEENTRYPOINTOFFSET:
-    case OP_IRHEADER: return false;
-
-    case OP_SPILLREGISTER: LOGMAN_MSG_A_FMT("should not be seen"); return false;
-
-    default: return true;
-    }
+    auto Op = IR->GetOp<IROp_Header>(Arg)->Op;
+    return Op != OP_INLINECONSTANT && Op != OP_INLINEENTRYPOINTOFFSET;
   };
 
   RegisterClass* GetClass(PhysicalRegister Reg) {
