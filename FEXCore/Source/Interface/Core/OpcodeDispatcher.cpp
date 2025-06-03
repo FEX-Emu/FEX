@@ -1044,9 +1044,9 @@ void OpDispatchBuilder::CMPOp(OpcodeArgs, uint32_t SrcIndex) {
 }
 
 void OpDispatchBuilder::CQOOp(OpcodeArgs) {
-  Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  auto Size = GetSrcSize(Op);
-  Ref Upper = _Sbfe(OpSize::i64Bit, 1, Size * 8 - 1, Src);
+  Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+  auto Size = OpSizeFromSrc(Op);
+  Ref Upper = _Sbfe(std::max(OpSize::i32Bit, Size), 1, GetSrcBitSize(Op) - 1, Src);
 
   StoreResult(GPRClass, Op, Upper, OpSize::iInvalid);
 }

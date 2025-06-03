@@ -2598,21 +2598,18 @@
       ]
     },
     "cwd": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 2,
       "Comment": "0x98",
       "ExpectedArm64ASM": [
-        "uxth w20, w4",
-        "sbfx x20, x20, #15, #1",
+        "sbfx w20, w4, #15, #1",
         "bfxil x5, x20, #0, #16"
       ]
     },
     "cdq": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 1,
       "Comment": "0x99",
       "ExpectedArm64ASM": [
-        "mov w20, w4",
-        "sbfx x20, x20, #31, #1",
-        "mov w5, w20"
+        "asr w5, w4, #31"
       ]
     },
     "cqo": {
