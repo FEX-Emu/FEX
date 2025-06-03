@@ -41,26 +41,22 @@ void RegisterMemory(FEX::HLE::SyscallHandler* Handler) {
   REGISTER_SYSCALL_IMPL_X64_FLAGS(
     mremap, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
     [](FEXCore::Core::CpuStateFrame* Frame, void* old_address, size_t old_size, size_t new_size, int flags, void* new_address) -> uint64_t {
-      auto Result = FEX::HLE::_SyscallHandler->GuestMremap(true, Frame->Thread, old_address, old_size, new_size, flags, new_address);
-      SYSCALL_ERRNO();
+      return FEX::HLE::_SyscallHandler->GuestMremap(true, Frame->Thread, old_address, old_size, new_size, flags, new_address);
     });
 
   REGISTER_SYSCALL_IMPL_X64_FLAGS(mprotect, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
                                   [](FEXCore::Core::CpuStateFrame* Frame, void* addr, size_t len, int prot) -> uint64_t {
-                                    auto Result = FEX::HLE::_SyscallHandler->GuestMprotect(Frame->Thread, addr, len, prot);
-                                    SYSCALL_ERRNO();
+                                    return FEX::HLE::_SyscallHandler->GuestMprotect(Frame->Thread, addr, len, prot);
                                   });
 
   REGISTER_SYSCALL_IMPL_X64_FLAGS(shmat, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
                                   ([](FEXCore::Core::CpuStateFrame* Frame, int shmid, const void* shmaddr, int shmflg) -> uint64_t {
-                                    auto Result = FEX::HLE::_SyscallHandler->GuestShmat(true, Frame->Thread, shmid, shmaddr, shmflg);
-                                    SYSCALL_ERRNO();
+                                    return FEX::HLE::_SyscallHandler->GuestShmat(true, Frame->Thread, shmid, shmaddr, shmflg);
                                   }));
 
   REGISTER_SYSCALL_IMPL_X64_FLAGS(shmdt, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
                                   [](FEXCore::Core::CpuStateFrame* Frame, const void* shmaddr) -> uint64_t {
-                                    auto Result = FEX::HLE::_SyscallHandler->GuestShmdt(true, Frame->Thread, shmaddr);
-                                    SYSCALL_ERRNO();
+                                    return FEX::HLE::_SyscallHandler->GuestShmdt(true, Frame->Thread, shmaddr);
                                   });
 }
 } // namespace FEX::HLE::x64

@@ -48,8 +48,7 @@ void RegisterMemory(FEX::HLE::SyscallHandler* Handler) {
   });
 
   REGISTER_SYSCALL_IMPL_X32(mprotect, [](FEXCore::Core::CpuStateFrame* Frame, void* addr, uint32_t len, int prot) -> uint64_t {
-    auto Result = FEX::HLE::_SyscallHandler->GuestMprotect(Frame->Thread, addr, len, prot);
-    SYSCALL_ERRNO();
+    return FEX::HLE::_SyscallHandler->GuestMprotect(Frame->Thread, addr, len, prot);
   });
 
   REGISTER_SYSCALL_IMPL_X32(

@@ -231,7 +231,7 @@ uint64_t SyscallHandler::GuestMremap(bool Is64Bit, FEXCore::Core::InternalThread
     if (Is64Bit) {
       Result = reinterpret_cast<uint64_t>(::mremap(old_address, old_size, new_size, flags, new_address));
       if (Result == -1) {
-        return Result;
+        return -errno;
       }
     } else {
       Result =
@@ -254,7 +254,7 @@ uint64_t SyscallHandler::GuestMprotect(FEXCore::Core::InternalThreadState* Threa
     auto lk = FEXCore::GuardSignalDeferringSection(FEX::HLE::_SyscallHandler->VMATracking.Mutex, Thread);
     Result = ::mprotect(addr, len, prot);
     if (Result == -1) {
-      return Result;
+      return -errno;
     }
 
     FEX::HLE::_SyscallHandler->TrackMprotect(Thread, addr, len, prot);
@@ -276,7 +276,7 @@ uint64_t SyscallHandler::GuestShmat(bool Is64Bit, FEXCore::Core::InternalThreadS
     if (Is64Bit) {
       Result = reinterpret_cast<uint64_t>(::shmat(shmid, shmaddr, shmflg));
       if (Result == -1) {
-        return Result;
+        return -errno;
       }
     } else {
       uint32_t Addr;
@@ -308,7 +308,7 @@ uint64_t SyscallHandler::GuestShmdt(bool Is64Bit, FEXCore::Core::InternalThreadS
     if (Is64Bit) {
       Result = ::shmdt(shmaddr);
       if (Result == -1) {
-        return Result;
+        return -errno;
       }
     } else {
       Result = FEX::HLE::_SyscallHandler->Get32BitAllocator()->Shmdt(shmaddr);
