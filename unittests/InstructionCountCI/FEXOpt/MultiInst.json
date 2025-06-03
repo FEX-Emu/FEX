@@ -159,11 +159,11 @@
         "dividend in rdx:rax"
       ],
       "x86Insts": [
-        "cdq",
+        "cqo",
         "idiv rcx"
       ],
       "ExpectedArm64ASM": [
-        "asr w5, w4, #31",
+        "asr x5, x4, #63",
         "asr x0, x4, #63",
         "eor x0, x0, x5",
         "cbz x0, #+0x28",
