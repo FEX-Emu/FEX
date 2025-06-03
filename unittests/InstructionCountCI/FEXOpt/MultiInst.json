@@ -153,7 +153,7 @@
     },
     "signed div narrow": {
       "x86InstructionCount": 2,
-      "ExpectedInstructionCount": 31,
+      "ExpectedInstructionCount": 29,
       "Comment": [
         "div narrowing with known smaller sources",
         "dividend in rdx:rax"
@@ -163,9 +163,7 @@
         "idiv rcx"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, w4",
-        "sbfx x20, x20, #31, #1",
-        "mov w5, w20",
+        "asr w5, w4, #31",
         "asr x0, x4, #63",
         "eor x0, x0, x5",
         "cbz x0, #+0x28",
