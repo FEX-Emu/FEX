@@ -378,14 +378,11 @@
         "DestSize": "Size"
       },
 
-      "StoreRegister SSA:$Value, u32:$Reg, RegisterClass:$Class, OpSize:#Size": {
+      "SSA = StoreRegister SSA:$Value, OpSize:#Size": {
          "HasSideEffects": true,
         "Desc": ["Stores a value to a given register.",
                  "Size must match the execution mode."],
-        "DestSize": "Size",
-        "EmitValidation": [
-          "WalkFindRegClass($Value) == $Class"
-        ]
+        "DestSize": "Size"
       },
 
       "StorePF GPR:$Value, OpSize:#Size": {
