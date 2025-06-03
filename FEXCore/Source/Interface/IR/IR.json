@@ -1630,7 +1630,7 @@
         ]
       },
 
-      "GPR = LDiv OpSize:#Size, GPR:$Lower, GPR:$Upper, GPR:$Divisor": {
+      "GPR = LDiv OpSize:#Size, GPR:$Lower, GPR:$Divisor, GPR:$Upper": {
         "Desc": ["Integer long unsigned division returning lower bits",
                  "The Lower and Upper registers will be concated together to generate a dividend twice the size",
                  "Then the divisor divides the temporary dividend and returns the results in the original sized register"
@@ -1640,7 +1640,7 @@
           "Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "GPR = LUDiv OpSize:#Size, GPR:$Lower, GPR:$Upper, GPR:$Divisor": {
+      "GPR = LUDiv OpSize:#Size, GPR:$Lower, GPR:$Divisor, GPR:$Upper": {
         "Desc": ["Integer long unsigned division returning lower bits",
                  "The Lower and Upper registers will be concated together to generate a dividend twice the size",
                  "Then the divisor divides the temporary dividend and returns the results in the original sized register"
@@ -1650,7 +1650,7 @@
           "Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "GPR = LRem OpSize:#Size, GPR:$Lower, GPR:$Upper, GPR:$Divisor": {
+      "GPR = LRem OpSize:#Size, GPR:$Lower, GPR:$Divisor, GPR:$Upper": {
         "Desc": ["Integer long signed remainder returning lower bits",
                  "The Lower and Upper registers will be concated together to generate a dividend twice the size",
                  "Then the divisor divides the temporary dividend and returns the remainder results in the original sized register"
@@ -1660,7 +1660,7 @@
           "Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "GPR = LURem OpSize:#Size, GPR:$Lower, GPR:$Upper, GPR:$Divisor": {
+      "GPR = LURem OpSize:#Size, GPR:$Lower, GPR:$Divisor, GPR:$Upper": {
         "Desc": ["Integer long unsigned remainder returning lower bits",
                  "The Lower and Upper registers will be concated together to generate a dividend twice the size",
                  "Then the divisor divides the temporary dividend and returns the remainder results in the original sized register"

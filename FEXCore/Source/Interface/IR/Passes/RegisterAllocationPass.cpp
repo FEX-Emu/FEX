@@ -57,6 +57,7 @@ public:
   bool TryPostRAMerge(Ref LastNode, Ref CodeNode, IROp_Header* IROp);
 
 private:
+  void OptimizePostRA(Ref BlockNode);
   RegisterClass Classes[IR::NumClasses];
 
   IREmitter* IREmit;
@@ -364,6 +365,38 @@ void ConstrainedRAPass::AddRegisters(IR::RegisterClassType Class, uint32_t Regis
   Classes[Class].Count = RegisterCount;
 }
 
+void ConstrainedRAPass::OptimizePostRA(Ref BlockNode) {
+  IROp_Header* Regs[32 * IR::NumClasses] = {{}};
+
+  for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
+    if (IROp->Op == OP_LUDIV || IROp->Op == OP_LUREM) {
+      // Check upper Op to see if it came from a zeroing op
+      // If it does then it we only need a 64bit UDIV
+      auto Op = IROp->C<IR::IROp_LUDiv>();
+      auto Upper = Regs[PhysicalRegister(Op->Upper).Raw];
+      if (Upper != nullptr && Upper->Op == OP_CONSTANT && Upper->C<IROp_Constant>()->Constant == 0) {
+        IROp->Op = IROp->Op == OP_LUDIV ? OP_UDIV : OP_UREM;
+      }
+    } else if (IROp->Op == OP_LDIV || IROp->Op == OP_LREM) {
+      // Check upper Op to see if it came from a sign-extension
+      auto Op = IROp->C<IR::IROp_LDiv>();
+      // If it does then it we only need a 64bit DIV
+      auto Upper = Regs[PhysicalRegister(Op->Upper).Raw];
+      if (Upper && Upper->Op == OP_SBFE) {
+        auto Sbfe = Upper->C<IR::IROp_Sbfe>();
+        if (Sbfe->Width == 1 && Sbfe->lsb == 63 && Upper->Args[0] == Op->Lower) {
+          IROp->Op = IROp->Op == OP_LDIV ? OP_DIV : OP_REM;
+        }
+      }
+    }
+
+    if (GetHasDest(IROp->Op)) {
+      auto Reg = PhysicalRegister(CodeNode);
+      Regs[Reg.Raw] = IROp;
+    }
+  }
+}
+
 bool ConstrainedRAPass::TryPostRAMerge(Ref LastNode, Ref CodeNode, IROp_Header* IROp) {
   if (IROp->Op == OP_PUSH) {
     auto LastOp = IR->GetOp<IROp_Header>(LastNode);
@@ -598,6 +631,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
     }
 
     LOGMAN_THROW_A_FMT(SourceIndex == 0, "Consistent source count in block");
+    OptimizePostRA(BlockNode);
   }
 
   PreferredReg.clear();
