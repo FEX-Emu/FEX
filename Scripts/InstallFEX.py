@@ -84,7 +84,8 @@ def IsSupportedDistro():
         # We only support what is available in ppa:fex-emu/fex
         return Distro[1] == "22.04" or \
             Distro[1] == "24.04" or \
-            Distro[1] == "24.10"
+            Distro[1] == "24.10" or \
+            Distro[1] == "25.04"
 
     return False
 
