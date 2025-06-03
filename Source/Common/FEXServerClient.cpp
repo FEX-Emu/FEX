@@ -11,6 +11,7 @@
 #include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Filesystem.h>
 
+#include <cstdlib>
 #include <fcntl.h>
 #include <linux/limits.h>
 #include <unistd.h>
@@ -23,6 +24,7 @@
 #include <sys/un.h>
 #include <sys/uio.h>
 #include <thread>
+#include <cstring>
 
 namespace FEXServerClient {
 int RequestPIDFDPacket(int ServerSocket, PacketType Type) {
@@ -222,7 +224,14 @@ int ConnectToAndStartServer(std::string_view InterpreterPath) {
       return -1;
     }
 
-    fextl::string FEXServerPath = fextl::fmt::format("{}/FEXServer", InterpreterPath);
+    // Extract directory from InterpreterPath
+    fextl::string InterpreterDir {InterpreterPath};
+    size_t LastSlash = InterpreterDir.rfind('/');
+    if (LastSlash != fextl::string::npos) {
+      InterpreterDir = InterpreterDir.substr(0, LastSlash);
+    }
+
+    fextl::string FEXServerPath = fextl::fmt::format("{}/FEXServer", InterpreterDir);
     // Check if a local FEXServer next to FEXInterpreter exists
     // If it does then it takes priority over the installed one
     if (!FHU::Filesystem::Exists(FEXServerPath)) {

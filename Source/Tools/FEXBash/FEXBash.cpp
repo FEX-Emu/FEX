@@ -8,44 +8,22 @@ $end_info$
 
 #include "ConfigDefines.h"
 #include "Common/ArgumentLoader.h"
-#include "Common/Config.h"
-#include "Common/FEXServerClient.h"
 
 #include <FEXCore/Config/Config.h>
-#include <FEXCore/Utils/LogManager.h>
-#include <FEXCore/fextl/string.h>
 
 #include <filesystem>
-#include <iterator>
-#include <memory>
-#include <stddef.h>
 #include <string>
 #include <unistd.h>
 #include <vector>
 
 int main(int argc, char** argv, char** const envp) {
-  FEXCore::Config::Initialize();
-  FEXCore::Config::AddLayer(FEX::Config::CreateGlobalMainLayer());
-  FEXCore::Config::AddLayer(FEX::Config::CreateMainLayer());
   FEX::ArgLoader::ArgLoader ArgsLoader(FEX::ArgLoader::ArgLoader::LoadType::WITHOUT_FEXLOADER_PARSER, argc, argv);
-  FEXCore::Config::AddLayer(FEX::Config::CreateEnvironmentLayer(envp));
-  FEXCore::Config::Load();
-
-  // Reload the meta layer
-  FEXCore::Config::ReloadMetaLayer();
-
   auto Args = ArgsLoader.Get();
 
-  // Ensure FEXServer is setup before config options try to pull CONFIG_ROOTFS
-  if (!FEXServerClient::SetupClient(argv[0])) {
-    LogMan::Msg::EFmt("FEXServerClient: Failure to setup client");
-    return -1;
-  }
-
-  FEX_CONFIG_OPT(RootFSPath, ROOTFS);
   std::vector<const char*> Argv;
-  fextl::string BinShPath = RootFSPath() + "/bin/sh";
-  fextl::string BinBashPath = RootFSPath() + "/bin/bash";
+  // FEXInterpreter will handle finding bash in the rootfs
+  // Use /bin/sh for -c commands and /bin/bash for interactive mode
+  const char* BashPath = Args.empty() ? "/bin/bash" : "/bin/sh";
 
   std::string FEXInterpreterPath = std::filesystem::path(argv[0]).parent_path().string() + "FEXInterpreter";
   // Check if a local FEXInterpreter to FEXBash exists
@@ -55,7 +33,7 @@ int main(int argc, char** argv, char** const envp) {
   }
   const char* FEXArgs[] = {
     FEXInterpreterPath.c_str(),
-    Args.empty() ? BinBashPath.c_str() : BinShPath.c_str(),
+    BashPath,
     "-c",
   };
 
