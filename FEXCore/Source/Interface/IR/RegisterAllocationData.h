@@ -31,11 +31,12 @@ union PhysicalRegister {
     : Raw(Node->Reg) {}
 
   static const PhysicalRegister Invalid() {
-    return PhysicalRegister(InvalidClass, InvalidReg);
+    return PhysicalRegister(InvalidClass, 0);
   }
 
   bool IsInvalid() const {
-    return *this == Invalid();
+    static_assert(InvalidClass == 0);
+    return Raw == 0;
   }
 };
 
