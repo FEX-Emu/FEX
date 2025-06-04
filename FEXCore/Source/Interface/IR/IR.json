@@ -79,15 +79,13 @@
 
     "constexpr uint8_t COND_AL   = 32 /* always */",
 
-    "constexpr FEXCore::IR::RegisterClassType GPRClass {0}",
-    "constexpr FEXCore::IR::RegisterClassType GPRFixedClass {1}",
-    "constexpr FEXCore::IR::RegisterClassType FPRClass {2}",
-    "constexpr FEXCore::IR::RegisterClassType FPRFixedClass {3}",
+    "constexpr FEXCore::IR::RegisterClassType InvalidClass {0}",
+    "constexpr FEXCore::IR::RegisterClassType GPRClass {1}",
+    "constexpr FEXCore::IR::RegisterClassType GPRFixedClass {2}",
+    "constexpr FEXCore::IR::RegisterClassType FPRClass {3}",
+    "constexpr FEXCore::IR::RegisterClassType FPRFixedClass {4}",
     "constexpr FEXCore::IR::RegisterClassType ComplexClass {5}",
-    "constexpr FEXCore::IR::RegisterClassType InvalidClass {7}",
-    "",
-    "// Only up to 30 registers per register class",
-    "constexpr uint8_t InvalidReg {31}",
+    "constexpr uint8_t NumClasses {6}",
     "",
     "constexpr FEXCore::IR::TypeDefinition i8    {TypeDefinition::Create(1, 0)}",
     "constexpr FEXCore::IR::TypeDefinition i16   {TypeDefinition::Create(2, 0)}",
@@ -380,14 +378,11 @@
         "DestSize": "Size"
       },
 
-      "StoreRegister SSA:$Value, u32:$Reg, RegisterClass:$Class, OpSize:#Size": {
+      "SSA = StoreRegister SSA:$Value, OpSize:#Size": {
          "HasSideEffects": true,
         "Desc": ["Stores a value to a given register.",
                  "Size must match the execution mode."],
-        "DestSize": "Size",
-        "EmitValidation": [
-          "WalkFindRegClass($Value) == $Class"
-        ]
+        "DestSize": "Size"
       },
 
       "StorePF GPR:$Value, OpSize:#Size": {
@@ -1635,7 +1630,7 @@
         ]
       },
 
-      "GPR = LDiv OpSize:#Size, GPR:$Lower, GPR:$Upper, GPR:$Divisor": {
+      "GPR = LDiv OpSize:#Size, GPR:$Lower, GPR:$Divisor, GPR:$Upper": {
         "Desc": ["Integer long unsigned division returning lower bits",
                  "The Lower and Upper registers will be concated together to generate a dividend twice the size",
                  "Then the divisor divides the temporary dividend and returns the results in the original sized register"
@@ -1645,7 +1640,7 @@
           "Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "GPR = LUDiv OpSize:#Size, GPR:$Lower, GPR:$Upper, GPR:$Divisor": {
+      "GPR = LUDiv OpSize:#Size, GPR:$Lower, GPR:$Divisor, GPR:$Upper": {
         "Desc": ["Integer long unsigned division returning lower bits",
                  "The Lower and Upper registers will be concated together to generate a dividend twice the size",
                  "Then the divisor divides the temporary dividend and returns the results in the original sized register"
@@ -1655,7 +1650,7 @@
           "Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "GPR = LRem OpSize:#Size, GPR:$Lower, GPR:$Upper, GPR:$Divisor": {
+      "GPR = LRem OpSize:#Size, GPR:$Lower, GPR:$Divisor, GPR:$Upper": {
         "Desc": ["Integer long signed remainder returning lower bits",
                  "The Lower and Upper registers will be concated together to generate a dividend twice the size",
                  "Then the divisor divides the temporary dividend and returns the remainder results in the original sized register"
@@ -1665,7 +1660,7 @@
           "Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "GPR = LURem OpSize:#Size, GPR:$Lower, GPR:$Upper, GPR:$Divisor": {
+      "GPR = LURem OpSize:#Size, GPR:$Lower, GPR:$Divisor, GPR:$Upper": {
         "Desc": ["Integer long unsigned remainder returning lower bits",
                  "The Lower and Upper registers will be concated together to generate a dividend twice the size",
                  "Then the divisor divides the temporary dividend and returns the remainder results in the original sized register"

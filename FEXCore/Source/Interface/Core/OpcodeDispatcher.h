@@ -7,6 +7,7 @@
 #include "Interface/Context/Context.h"
 #include "Interface/IR/IR.h"
 #include "Interface/IR/IREmitter.h"
+#include "Interface/IR/RegisterAllocationData.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
@@ -1208,13 +1209,15 @@ public:
       Ref Value = RegCache.Value[Index];
 
       if (Index >= GPR0Index && Index <= GPR15Index) {
-        _StoreRegister(Value, Index - GPR0Index, GPRClass, GPRSize);
+        Ref R = _StoreRegister(Value, GPRSize);
+        R->Reg = PhysicalRegister(GPRFixedClass, Index - GPR0Index).Raw;
       } else if (Index == PFIndex) {
         _StorePF(Value, GPRSize);
       } else if (Index == AFIndex) {
         _StoreAF(Value, GPRSize);
       } else if (Index >= FPR0Index && Index <= FPR15Index) {
-        _StoreRegister(Value, Index - FPR0Index, FPRClass, VectorSize);
+        Ref R = _StoreRegister(Value, VectorSize);
+        R->Reg = PhysicalRegister(FPRFixedClass, Index - FPR0Index).Raw;
       } else if (Index == DFIndex) {
         _StoreContext(OpSize::i8Bit, GPRClass, Value, offsetof(Core::CPUState, flags[X86State::RFLAG_DF_RAW_LOC]));
       } else {

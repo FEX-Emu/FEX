@@ -988,7 +988,8 @@ void ContextImpl::AddThunkTrampolineIRHandler(uintptr_t Entrypoint, uintptr_t Gu
     const auto GPRSize = GetGPROpSize();
 
     if (GPRSize == IR::OpSize::i64Bit) {
-      emit->_StoreRegister(emit->_Constant(Entrypoint), X86State::REG_R11, IR::GPRClass, GPRSize);
+      IR::Ref R = emit->_StoreRegister(emit->_Constant(Entrypoint), GPRSize);
+      R->Reg = IR::PhysicalRegister(IR::GPRClass, X86State::REG_R11).Raw;
     } else {
       emit->_StoreContext(GPRSize, IR::FPRClass, emit->_VCastFromGPR(IR::OpSize::i64Bit, IR::OpSize::i64Bit, emit->_Constant(Entrypoint)),
                           offsetof(Core::CPUState, mm[0][0]));
