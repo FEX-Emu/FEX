@@ -27,13 +27,6 @@ struct CpuStateFrame;
 
 namespace FEX::HLE {
 void RegisterStubs(FEX::HLE::SyscallHandler* Handler) {
-
-  REGISTER_SYSCALL_IMPL(
-    ptrace, [](FEXCore::Core::CpuStateFrame* Frame, int /*enum __ptrace_request*/ request, pid_t pid, void* addr, void* data) -> uint64_t {
-      // We don't support this
-      return -EPERM;
-    });
-
   REGISTER_SYSCALL_IMPL(modify_ldt, [](FEXCore::Core::CpuStateFrame* Frame, int func, void* ptr, unsigned long bytecount) -> uint64_t {
     SYSCALL_STUB(modify_ldt);
   });

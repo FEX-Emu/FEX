@@ -25,6 +25,7 @@ $end_info$
 #include <sys/utsname.h>
 #include <sys/klog.h>
 #include <sys/personality.h>
+#include <sys/ptrace.h>
 #include <unistd.h>
 
 #include <git_version.h>
@@ -98,5 +99,24 @@ void RegisterInfo(FEX::HLE::SyscallHandler* Handler) {
                               [](FEXCore::Core::CpuStateFrame* Frame, unsigned int operation, unsigned int flags, void* args) -> uint64_t {
                                 return FEX::HLE::_SyscallHandler->SeccompEmulator.Handle(Frame, operation, flags, args);
                               });
+  REGISTER_SYSCALL_IMPL(
+    ptrace, [](FEXCore::Core::CpuStateFrame* Frame, int /*enum __ptrace_request*/ request, pid_t pid, void* addr, void* data) -> uint64_t {
+      uint64_t Result {};
+
+      switch (request) {
+      case PTRACE_PEEKTEXT:
+      case PTRACE_PEEKDATA:
+      case PTRACE_POKETEXT:
+      case PTRACE_POKEDATA:
+      case PTRACE_ATTACH:
+      case PTRACE_DETACH:
+        // Passthrough these requests. Allows Wine to run the Ubisoft launcher.
+        Result = ::syscall(SYSCALL_DEF(ptrace), request, pid, addr, data);
+        SYSCALL_ERRNO();
+      default: break;
+      }
+      // We don't support this
+      return -EPERM;
+    });
 }
 } // namespace FEX::HLE
