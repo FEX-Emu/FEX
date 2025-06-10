@@ -437,27 +437,13 @@ DEF_OP(UDiv) {
 
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
-  const auto OpSize = IROp->Size;
+  // Sources have already been zero extended.
   const auto EmitSize = ConvertSize(IROp);
 
   const auto Quotient = GetReg(Op->OutQuotient);
   const auto Remainder = GetReg(Op->OutRemainder);
   auto Src1 = GetReg(Op->Src1);
   auto Src2 = GetReg(Op->Src2);
-
-  if (OpSize == IR::OpSize::i8Bit) {
-    uxtb(EmitSize, TMP1, Src1);
-    uxtb(EmitSize, TMP2, Src2);
-
-    Src1 = TMP1;
-    Src2 = TMP2;
-  } else if (OpSize == IR::OpSize::i16Bit) {
-    uxth(EmitSize, TMP1, Src1);
-    uxth(EmitSize, TMP2, Src2);
-
-    Src1 = TMP1;
-    Src2 = TMP2;
-  }
 
   udiv(EmitSize, Quotient, Src1, Src2);
   msub(EmitSize, Remainder, Quotient, Src2, Src1);
