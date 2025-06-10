@@ -1459,34 +1459,20 @@
                 ],
         "DestSize": "FEXCore::IR::OpSize::i64Bit"
       },
-      "GPR = Div OpSize:#Size, GPR:$Src1, GPR:$Src2": {
-        "Desc": ["Integer signed division"
-                ],
-        "DestSize": "Size",
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
-      },
-      "GPR = UDiv OpSize:#Size, GPR:$Src1, GPR:$Src2": {
+      "GPR:$Quotient, GPR:$Remainder = UDiv OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer unsigned division"
                 ],
         "DestSize": "Size",
+        "HasSideEffects": true,
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "GPR = Rem OpSize:#Size, GPR:$Src1, GPR:$Src2": {
-        "Desc": ["Integer signed remainder"
+      "GPR:$Quotient, GPR:$Remainder = Div OpSize:#Size, GPR:$Src1, GPR:$Src2": {
+        "Desc": ["Integer signed division"
                 ],
         "DestSize": "Size",
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
-      },
-      "GPR = URem OpSize:#Size, GPR:$Src1, GPR:$Src2": {
-        "Desc": ["Integer unsigned remainder"
-                ],
-        "DestSize": "Size",
+        "HasSideEffects": true,
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
@@ -1635,42 +1621,24 @@
         ]
       },
 
-      "GPR = LDiv OpSize:#Size, GPR:$Lower, GPR:$Upper, GPR:$Divisor": {
+      "GPR:$Quotient, GPR:$Remainder = LDiv OpSize:#Size, GPR:$Lower, GPR:$Upper, GPR:$Divisor": {
+        "Desc": ["Integer long signed division returning lower bits",
+                 "The Lower and Upper registers will be concated together to generate a dividend twice the size",
+                 "Then the divisor divides the temporary dividend and returns the results in the original sized register"
+                ],
+        "DestSize": "Size",
+        "HasSideEffects": true,
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
+      },
+      "GPR:$Quotient, GPR:$Remainder = LUDiv OpSize:#Size, GPR:$Lower, GPR:$Upper, GPR:$Divisor": {
         "Desc": ["Integer long unsigned division returning lower bits",
                  "The Lower and Upper registers will be concated together to generate a dividend twice the size",
                  "Then the divisor divides the temporary dividend and returns the results in the original sized register"
                 ],
         "DestSize": "Size",
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
-      },
-      "GPR = LUDiv OpSize:#Size, GPR:$Lower, GPR:$Upper, GPR:$Divisor": {
-        "Desc": ["Integer long unsigned division returning lower bits",
-                 "The Lower and Upper registers will be concated together to generate a dividend twice the size",
-                 "Then the divisor divides the temporary dividend and returns the results in the original sized register"
-                ],
-        "DestSize": "Size",
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
-      },
-      "GPR = LRem OpSize:#Size, GPR:$Lower, GPR:$Upper, GPR:$Divisor": {
-        "Desc": ["Integer long signed remainder returning lower bits",
-                 "The Lower and Upper registers will be concated together to generate a dividend twice the size",
-                 "Then the divisor divides the temporary dividend and returns the remainder results in the original sized register"
-                ],
-        "DestSize": "Size",
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
-      },
-      "GPR = LURem OpSize:#Size, GPR:$Lower, GPR:$Upper, GPR:$Divisor": {
-        "Desc": ["Integer long unsigned remainder returning lower bits",
-                 "The Lower and Upper registers will be concated together to generate a dividend twice the size",
-                 "Then the divisor divides the temporary dividend and returns the remainder results in the original sized register"
-                ],
-        "DestSize": "Size",
+        "HasSideEffects": true,
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
