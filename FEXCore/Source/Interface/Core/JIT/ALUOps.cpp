@@ -956,18 +956,9 @@ DEF_OP(LDiv) {
       blr(TMP4);
       ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
 
-      // Move result to its destination register
+      // Move results to the destination registers
       mov(EmitSize, Quotient, TMP1);
-
-      // TODO: Merge division/remainder
-      mov(EmitSize, TMP1, Upper);
-      mov(EmitSize, TMP2, Lower);
-      mov(EmitSize, TMP3, Divisor);
-      ldr(TMP4, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LREMHandler));
-      str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
-      blr(TMP4);
-      ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
-      mov(EmitSize, Remainder, TMP1);
+      mov(EmitSize, Remainder, TMP2);
 
       // Skip 64-bit path
       b(&LongDIVRet);
@@ -1036,18 +1027,9 @@ DEF_OP(LUDiv) {
       blr(TMP4);
       ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
 
-      // Move result to its destination register
+      // Move results to the destination registers
       mov(EmitSize, Quotient, TMP1);
-
-      // TODO: Merge remainder with the division
-      mov(EmitSize, TMP1, Upper);
-      mov(EmitSize, TMP2, Lower);
-      mov(EmitSize, TMP3, Divisor);
-      ldr(TMP4, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LUREMHandler));
-      str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
-      blr(TMP4);
-      ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
-      mov(EmitSize, Remainder, TMP1);
+      mov(EmitSize, Remainder, TMP2);
 
       // Skip 64-bit path
       b(&LongDIVRet);

@@ -118,8 +118,6 @@ private:
   // Long division helpers
   uint64_t LUDIVHandlerAddress {};
   uint64_t LDIVHandlerAddress {};
-  uint64_t LUREMHandlerAddress {};
-  uint64_t LREMHandlerAddress {};
 
   void EmitDispatcher();
   uint64_t GenerateABICall(FallbackABI ABI);
