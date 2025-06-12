@@ -369,8 +369,13 @@ inline bool KillMove(IROp_Header* LastOp, IROp_Header* IROp, Ref LastNode, Ref C
   if (LastOp->Op == OP_BFE && LastOp->C<IR::IROp_Bfe>()->lsb == 0 && LastOp->C<IR::IROp_Bfe>()->Width == 32) {
     auto Op = IROp->Op;
 
-    if (IROp->Size == OpSize::i32Bit) {
-      return Op == OP_AND || Op == OP_OR || Op == OP_XOR || Op == OP_AND || Op == OP_SUB || Op == OP_LSHL || Op == OP_LSHR || Op == OP_ASHR;
+    if (Op == OP_AND) {
+      // Rewrite "mov wA, wB; and xA, xA, xC" into "and wA, wB, wC", since
+      // ((b & 0xffffffff) & c) == (b & c) & 0xffffffff.
+      IROp->Size = OpSize::i32Bit;
+      return true;
+    } else if (IROp->Size == OpSize::i32Bit) {
+      return Op == OP_OR || Op == OP_XOR || Op == OP_AND || Op == OP_SUB || Op == OP_LSHL || Op == OP_LSHR || Op == OP_ASHR;
     }
   }
 
