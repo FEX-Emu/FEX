@@ -392,6 +392,20 @@ bool ConstrainedRAPass::TryPostRAMerge(Ref LastNode, Ref CodeNode, IROp_Header* 
     }
   }
 
+  // Merge moves that are immediately consumed.
+  //
+  // x86 code inserts such moves to workaround x86's 2-address code. Because
+  // arm64 is 3-address code, we can optimize these out.
+  if (LastOp->Op == OP_STOREREGISTER && PhysicalRegister(LastNode) == PhysicalRegister(CodeNode)) {
+    for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
+      if (IROp->Args[s].IsImmediate() && PhysicalRegister(IROp->Args[s]) == PhysicalRegister(LastNode)) {
+        IROp->Args[s].SetImmediate(PhysicalRegister(LastOp->Args[0]).Raw);
+      }
+    }
+
+    return true;
+  }
+
   return false;
 }
 
