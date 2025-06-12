@@ -364,6 +364,19 @@ void ConstrainedRAPass::AddRegisters(IR::RegisterClassType Class, uint32_t Regis
   Classes[Class].Count = RegisterCount;
 }
 
+inline bool KillMove(IROp_Header* LastOp, IROp_Header* IROp, Ref LastNode, Ref CodeNode) {
+  // 32-bit moves in x86_64 are represented as a Bfe, detect them.
+  if (LastOp->Op == OP_BFE && LastOp->C<IR::IROp_Bfe>()->lsb == 0 && LastOp->C<IR::IROp_Bfe>()->Width == 32) {
+    auto Op = IROp->Op;
+
+    if (IROp->Size == OpSize::i32Bit) {
+      return Op == OP_AND || Op == OP_OR || Op == OP_XOR || Op == OP_AND || Op == OP_SUB || Op == OP_LSHL || Op == OP_LSHR || Op == OP_ASHR;
+    }
+  }
+
+  return LastOp->Op == OP_STOREREGISTER;
+}
+
 bool ConstrainedRAPass::TryPostRAMerge(Ref LastNode, Ref CodeNode, IROp_Header* IROp) {
   auto LastOp = IR->GetOp<IROp_Header>(LastNode);
 
@@ -396,7 +409,9 @@ bool ConstrainedRAPass::TryPostRAMerge(Ref LastNode, Ref CodeNode, IROp_Header* 
   //
   // x86 code inserts such moves to workaround x86's 2-address code. Because
   // arm64 is 3-address code, we can optimize these out.
-  if (LastOp->Op == OP_STOREREGISTER && PhysicalRegister(LastNode) == PhysicalRegister(CodeNode)) {
+  //
+  // Note we rely on the short-circuiting here.
+  if (PhysicalRegister(LastNode) == PhysicalRegister(CodeNode) && KillMove(LastOp, IROp, LastNode, CodeNode)) {
     for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
       if (IROp->Args[s].IsImmediate() && PhysicalRegister(IROp->Args[s]) == PhysicalRegister(LastNode)) {
         IROp->Args[s].SetImmediate(PhysicalRegister(LastOp->Args[0]).Raw);
