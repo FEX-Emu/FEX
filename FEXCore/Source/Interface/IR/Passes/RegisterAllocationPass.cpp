@@ -500,10 +500,10 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
 
     // Forward pass: Assign registers, spilling & optimizing as we go.
     for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
-      // GuestOpcode does not read or write registers, and must be skipped for
-      // push/pop merging. Since we'd be doing this check anyway for merging, do
-      // the check now so we can skip the rest of the logic too.
-      if (IROp->Op == OP_GUESTOPCODE) {
+      // These do not read or write registers, and must be skipped for merging.
+      // Since we'd be doing this check anyway for merging, do the check now so
+      // we can skip the rest of the logic too.
+      if (IROp->Op == OP_GUESTOPCODE || IROp->Op == OP_INLINECONSTANT) {
         continue;
       }
 
