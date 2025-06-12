@@ -3595,9 +3595,9 @@ void OpDispatchBuilder::DIVOp(OpcodeArgs) {
   }
 
   Ref Quotient = _AllocateGPR(true);
-  Ref Remainder = _AllocateGPR(true);
 
   if (Size == OpSize::i8Bit) {
+    Ref Remainder = _AllocateGPR(true);
     Ref Src1 = LoadGPRRegister(X86State::REG_RAX, OpSize::i16Bit);
 
     _UDiv(OpSize::i16Bit, Src1, Invalid(), Divisor, Quotient, Remainder);
@@ -3609,16 +3609,16 @@ void OpDispatchBuilder::DIVOp(OpcodeArgs) {
     Ref Src1 = LoadGPRRegister(X86State::REG_RAX);
     Ref Src2 = LoadGPRRegister(X86State::REG_RDX);
 
-    _UDiv(Size, Src1, Src2, Divisor, Quotient, Remainder);
+    _UDiv(Size, Src1, Src2, Divisor, Quotient, Src2);
 
     if (Size == OpSize::i32Bit) {
       Quotient = _Bfe(OpSize::i32Bit, IR::OpSizeAsBits(Size), 0, Quotient);
-      Remainder = _Bfe(OpSize::i32Bit, IR::OpSizeAsBits(Size), 0, Remainder);
+      Src2 = _Bfe(OpSize::i32Bit, IR::OpSizeAsBits(Size), 0, Src2);
       Size = OpSize::iInvalid;
     }
 
     StoreGPRRegister(X86State::REG_RAX, Quotient, Size);
-    StoreGPRRegister(X86State::REG_RDX, Remainder, Size);
+    StoreGPRRegister(X86State::REG_RDX, Src2, Size);
   }
 }
 
@@ -3636,9 +3636,9 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
   }
 
   Ref Quotient = _AllocateGPR(true);
-  Ref Remainder = _AllocateGPR(true);
 
   if (Size == OpSize::i8Bit) {
+    Ref Remainder = _AllocateGPR(true);
     Ref Src1 = LoadGPRRegister(X86State::REG_RAX);
     Src1 = _Sbfe(OpSize::i64Bit, 16, 0, Src1);
     Divisor = _Sbfe(OpSize::i64Bit, 8, 0, Divisor);
@@ -3652,16 +3652,16 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
     Ref Src1 = LoadGPRRegister(X86State::REG_RAX);
     Ref Src2 = LoadGPRRegister(X86State::REG_RDX);
 
-    _Div(Size, Src1, Src2, Divisor, Quotient, Remainder);
+    _Div(Size, Src1, Src2, Divisor, Quotient, Src2);
 
     if (Size == OpSize::i32Bit) {
       Quotient = _Bfe(OpSize::i32Bit, IR::OpSizeAsBits(Size), 0, Quotient);
-      Remainder = _Bfe(OpSize::i32Bit, IR::OpSizeAsBits(Size), 0, Remainder);
+      Src2 = _Bfe(OpSize::i32Bit, IR::OpSizeAsBits(Size), 0, Src2);
       Size = OpSize::iInvalid;
     }
 
     StoreGPRRegister(X86State::REG_RAX, Quotient, Size);
-    StoreGPRRegister(X86State::REG_RDX, Remainder, Size);
+    StoreGPRRegister(X86State::REG_RDX, Src2, Size);
   }
 }
 
