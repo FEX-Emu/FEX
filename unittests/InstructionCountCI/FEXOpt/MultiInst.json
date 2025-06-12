@@ -1384,7 +1384,7 @@
     },
     "Sekiro spill block": {
       "x86InstructionCount": 119,
-      "ExpectedInstructionCount": 118,
+      "ExpectedInstructionCount": 115,
       "Comment": [
         "This block of code came from the settings screen when it loaded",
         "It was originally at RIP: 0x14232cca0 and has been deobfuscated"
@@ -1555,8 +1555,7 @@
         "asr w4, w4, #25",
         "mul w4, w4, w20",
         "add w10, w10, w4",
-        "mov w4, w10",
-        "asr w4, w4, #26",
+        "asr w4, w10, #26",
         "add w9, w9, w4",
         "lsl w4, w4, #26",
         "sub w10, w10, w4",
@@ -1583,8 +1582,7 @@
         "add w17, w17, w13",
         "str w19, [x4, #8]",
         "lsl w13, w13, #26",
-        "mov w14, w17",
-        "asr w14, w14, #25",
+        "asr w14, w17, #25",
         "sub w16, w16, w13",
         "add w15, w15, w14",
         "str w29, [x4, #12]",
@@ -1617,8 +1615,7 @@
         "ldr w4, [x8]",
         "sub w4, w4, w11",
         "str w4, [x10, #32]",
-        "mov w4, w7",
-        "and w4, w4, #0xfe000000",
+        "and w4, w7, #0xfe000000",
         "sub w7, w7, w4",
         "str w7, [x10, #36]",
         "mvn w27, w8",
