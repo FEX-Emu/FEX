@@ -365,29 +365,29 @@ void ConstrainedRAPass::AddRegisters(IR::RegisterClassType Class, uint32_t Regis
 }
 
 bool ConstrainedRAPass::TryPostRAMerge(Ref LastNode, Ref CodeNode, IROp_Header* IROp) {
-  if (IROp->Op == OP_PUSH) {
-    auto LastOp = IR->GetOp<IROp_Header>(LastNode);
-    if (LastOp->Op == OP_PUSH) {
-      auto SP = PhysicalRegister(CodeNode);
-      auto Push = IR->GetOp<IROp_Push>(CodeNode);
-      auto LastPush = IR->GetOp<IROp_Push>(LastNode);
+  auto LastOp = IR->GetOp<IROp_Header>(LastNode);
 
-      if (LastOp->Size == IROp->Size && LastPush->ValueSize == Push->ValueSize && SP == PhysicalRegister(LastNode) &&
-          SP == PhysicalRegister(IROp->Args[1]) && SP == PhysicalRegister(LastOp->Args[1]) && SP != PhysicalRegister(IROp->Args[0]) &&
-          SP != PhysicalRegister(LastOp->Args[0]) && Push->ValueSize >= OpSize::i32Bit) {
+  if (IROp->Op == OP_PUSH && LastOp->Op == OP_PUSH) {
+    auto SP = PhysicalRegister(CodeNode);
+    auto Push = IR->GetOp<IROp_Push>(CodeNode);
+    auto LastPush = IR->GetOp<IROp_Push>(LastNode);
 
-        IREmit->SetWriteCursorBefore(LastNode);
-        IREmit->_PushTwo(IROp->Size, Push->ValueSize, IROp->Args[0], LastOp->Args[0], IROp->Args[1]);
-        return true;
-      }
+    if (LastOp->Size == IROp->Size && LastPush->ValueSize == Push->ValueSize && SP == PhysicalRegister(LastNode) &&
+        SP == PhysicalRegister(IROp->Args[1]) && SP == PhysicalRegister(LastOp->Args[1]) && SP != PhysicalRegister(IROp->Args[0]) &&
+        SP != PhysicalRegister(LastOp->Args[0]) && Push->ValueSize >= OpSize::i32Bit) {
+
+      IREmit->SetWriteCursorBefore(LastNode);
+      IREmit->_PushTwo(IROp->Size, Push->ValueSize, IROp->Args[0], LastOp->Args[0], IROp->Args[1]);
+      IREmit->RemovePostRA(CodeNode);
+      return true;
     }
   } else if (IROp->Op == OP_POP) {
-    auto LastOp = IR->GetOp<IROp_Header>(LastNode);
     auto SP = PhysicalRegister(IROp->Args[0]);
 
     if (LastOp->Op == OP_POP && LastOp->Size == IROp->Size && IROp->Size >= OpSize::i32Bit && SP == PhysicalRegister(LastOp->Args[0])) {
       IREmit->SetWriteCursorBefore(LastNode);
       IREmit->_PopTwo(IROp->Size, IROp->Args[0], LastOp->Args[1], IROp->Args[1]);
+      IREmit->RemovePostRA(CodeNode);
       return true;
     }
   }
@@ -589,7 +589,6 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         IREmit->RemovePostRA(CodeNode);
       } else if (LastNode && TryPostRAMerge(LastNode, CodeNode, IROp)) {
         // Merge adjacent instructions
-        IREmit->RemovePostRA(CodeNode);
         IREmit->RemovePostRA(LastNode);
         LastNode = nullptr;
       } else {
