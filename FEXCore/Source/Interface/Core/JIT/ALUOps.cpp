@@ -409,7 +409,8 @@ DEF_OP(Div) {
   const auto OpSize = IROp->Size;
   const auto EmitSize = ConvertSize(IROp);
 
-  const auto Dst = GetReg(Node);
+  const auto Quotient = GetReg(Op->OutQuotient);
+  const auto Remainder = GetReg(Op->OutRemainder);
   auto Src1 = GetReg(Op->Src1);
   auto Src2 = GetReg(Op->Src2);
 
@@ -427,7 +428,8 @@ DEF_OP(Div) {
     Src2 = TMP2;
   }
 
-  sdiv(EmitSize, Dst, Src1, Src2);
+  sdiv(EmitSize, Quotient, Src1, Src2);
+  msub(EmitSize, Remainder, Quotient, Src2, Src1);
 }
 
 DEF_OP(UDiv) {
@@ -435,86 +437,16 @@ DEF_OP(UDiv) {
 
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
-  const auto OpSize = IROp->Size;
+  // Sources have already been zero extended.
   const auto EmitSize = ConvertSize(IROp);
 
-  const auto Dst = GetReg(Node);
+  const auto Quotient = GetReg(Op->OutQuotient);
+  const auto Remainder = GetReg(Op->OutRemainder);
   auto Src1 = GetReg(Op->Src1);
   auto Src2 = GetReg(Op->Src2);
 
-  if (OpSize == IR::OpSize::i8Bit) {
-    uxtb(EmitSize, TMP1, Src1);
-    uxtb(EmitSize, TMP2, Src2);
-
-    Src1 = TMP1;
-    Src2 = TMP2;
-  } else if (OpSize == IR::OpSize::i16Bit) {
-    uxth(EmitSize, TMP1, Src1);
-    uxth(EmitSize, TMP2, Src2);
-
-    Src1 = TMP1;
-    Src2 = TMP2;
-  }
-
-  udiv(EmitSize, Dst, Src1, Src2);
-}
-
-DEF_OP(Rem) {
-  auto Op = IROp->C<IR::IROp_Rem>();
-  // Each source is OpSize in size
-  // So you can have up to a 128bit divide from x86-64
-  const auto OpSize = IROp->Size;
-  const auto EmitSize = ConvertSize(IROp);
-
-  const auto Dst = GetReg(Node);
-  auto Src1 = GetReg(Op->Src1);
-  auto Src2 = GetReg(Op->Src2);
-
-  if (OpSize == IR::OpSize::i8Bit) {
-    sxtb(EmitSize, TMP1, Src1);
-    sxtb(EmitSize, TMP2, Src2);
-
-    Src1 = TMP1;
-    Src2 = TMP2;
-  } else if (OpSize == IR::OpSize::i16Bit) {
-    sxth(EmitSize, TMP1, Src1);
-    sxth(EmitSize, TMP2, Src2);
-
-    Src1 = TMP1;
-    Src2 = TMP2;
-  }
-
-  sdiv(EmitSize, TMP1, Src1, Src2);
-  msub(EmitSize, Dst, TMP1, Src2, Src1);
-}
-
-DEF_OP(URem) {
-  auto Op = IROp->C<IR::IROp_URem>();
-  // Each source is OpSize in size
-  // So you can have up to a 128bit divide from x86-64
-  const auto OpSize = IROp->Size;
-  const auto EmitSize = ConvertSize(IROp);
-
-  const auto Dst = GetReg(Node);
-  auto Src1 = GetReg(Op->Src1);
-  auto Src2 = GetReg(Op->Src2);
-
-  if (OpSize == IR::OpSize::i8Bit) {
-    uxtb(EmitSize, TMP1, Src1);
-    uxtb(EmitSize, TMP2, Src2);
-
-    Src1 = TMP1;
-    Src2 = TMP2;
-  } else if (OpSize == IR::OpSize::i16Bit) {
-    uxth(EmitSize, TMP1, Src1);
-    uxth(EmitSize, TMP2, Src2);
-
-    Src1 = TMP1;
-    Src2 = TMP2;
-  }
-
-  udiv(EmitSize, TMP3, Src1, Src2);
-  msub(EmitSize, Dst, TMP3, Src2, Src1);
+  udiv(EmitSize, Quotient, Src1, Src2);
+  msub(EmitSize, Remainder, Quotient, Src2, Src1);
 }
 
 DEF_OP(MulH) {
@@ -960,7 +892,8 @@ DEF_OP(LDiv) {
   const auto OpSize = IROp->Size;
   const auto EmitSize = OpSize >= IR::OpSize::i32Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
-  const auto Dst = GetReg(Node);
+  const auto Quotient = GetReg(Op->OutQuotient);
+  const auto Remainder = GetReg(Op->OutRemainder);
   const auto Upper = GetReg(Op->Upper);
   const auto Lower = GetReg(Op->Lower);
   const auto Divisor = GetReg(Op->Divisor);
@@ -972,7 +905,8 @@ DEF_OP(LDiv) {
     uxth(EmitSize, TMP1, Lower);
     bfi(EmitSize, TMP1, Upper, 16, 16);
     sxth(EmitSize, TMP2, Divisor);
-    sdiv(EmitSize, Dst, TMP1, TMP2);
+    sdiv(EmitSize, Quotient, TMP1, TMP2);
+    msub(EmitSize, Remainder, Quotient, TMP2, TMP1);
     break;
   }
   case IR::OpSize::i32Bit: {
@@ -980,7 +914,8 @@ DEF_OP(LDiv) {
     mov(EmitSize, TMP1, Lower);
     bfi(EmitSize, TMP1, Upper, 32, 32);
     sxtw(TMP2, Divisor.W());
-    sdiv(EmitSize, Dst, TMP1, TMP2);
+    sdiv(EmitSize, Quotient, TMP1, TMP2);
+    msub(EmitSize, Remainder, Quotient, TMP2, TMP1);
     break;
   }
   case IR::OpSize::i64Bit: {
@@ -1007,8 +942,9 @@ DEF_OP(LDiv) {
       blr(TMP4);
       ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
 
-      // Move result to its destination register
-      mov(EmitSize, Dst, TMP1);
+      // Move results to the destination registers
+      mov(EmitSize, Quotient, TMP1);
+      mov(EmitSize, Remainder, TMP2);
 
       // Skip 64-bit path
       b(&LongDIVRet);
@@ -1016,7 +952,10 @@ DEF_OP(LDiv) {
 
     Bind(&Only64Bit);
     // 64-Bit only
-    { sdiv(EmitSize, Dst, Lower, Divisor); }
+    {
+      sdiv(EmitSize, Quotient, Lower, Divisor);
+      msub(EmitSize, Remainder, Quotient, Divisor, Lower);
+    }
 
     Bind(&LongDIVRet);
     break;
@@ -1030,7 +969,8 @@ DEF_OP(LUDiv) {
   const auto OpSize = IROp->Size;
   const auto EmitSize = OpSize >= IR::OpSize::i32Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
-  const auto Dst = GetReg(Node);
+  const auto Quotient = GetReg(Op->OutQuotient);
+  const auto Remainder = GetReg(Op->OutRemainder);
   const auto Upper = GetReg(Op->Upper);
   const auto Lower = GetReg(Op->Lower);
   const auto Divisor = GetReg(Op->Divisor);
@@ -1041,14 +981,16 @@ DEF_OP(LUDiv) {
   case IR::OpSize::i16Bit: {
     uxth(EmitSize, TMP1, Lower);
     bfi(EmitSize, TMP1, Upper, 16, 16);
-    udiv(EmitSize, Dst, TMP1, Divisor);
+    udiv(EmitSize, Quotient, TMP1, Divisor);
+    msub(EmitSize, Remainder, Quotient, Divisor, TMP1);
     break;
   }
   case IR::OpSize::i32Bit: {
     // TODO: 32-bit operation should be guaranteed not to leave garbage in the upper bits.
     mov(EmitSize, TMP1, Lower);
     bfi(EmitSize, TMP1, Upper, 32, 32);
-    udiv(EmitSize, Dst, TMP1, Divisor);
+    udiv(EmitSize, Quotient, TMP1, Divisor);
+    msub(EmitSize, Remainder, Quotient, Divisor, TMP1);
     break;
   }
   case IR::OpSize::i64Bit: {
@@ -1071,8 +1013,9 @@ DEF_OP(LUDiv) {
       blr(TMP4);
       ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
 
-      // Move result to its destination register
-      mov(EmitSize, Dst, TMP1);
+      // Move results to the destination registers
+      mov(EmitSize, Quotient, TMP1);
+      mov(EmitSize, Remainder, TMP2);
 
       // Skip 64-bit path
       b(&LongDIVRet);
@@ -1080,155 +1023,15 @@ DEF_OP(LUDiv) {
 
     Bind(&Only64Bit);
     // 64-Bit only
-    { udiv(EmitSize, Dst, Lower, Divisor); }
+    {
+      udiv(EmitSize, Quotient, Lower, Divisor);
+      msub(EmitSize, Remainder, Quotient, Divisor, Lower);
+    }
 
     Bind(&LongDIVRet);
     break;
   }
   default: LOGMAN_MSG_A_FMT("Unknown LUDIV Size: {}", OpSize); break;
-  }
-}
-
-DEF_OP(LRem) {
-  auto Op = IROp->C<IR::IROp_LRem>();
-  const auto OpSize = IROp->Size;
-  const auto EmitSize = OpSize >= IR::OpSize::i32Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-
-  const auto Dst = GetReg(Node);
-  const auto Upper = GetReg(Op->Upper);
-  const auto Lower = GetReg(Op->Lower);
-  const auto Divisor = GetReg(Op->Divisor);
-
-  // Each source is OpSize in size
-  // So you can have up to a 128bit divide from x86-64
-  switch (OpSize) {
-  case IR::OpSize::i16Bit: {
-    uxth(EmitSize, TMP1, Lower);
-    bfi(EmitSize, TMP1, Upper, 16, 16);
-    sxth(EmitSize, TMP2, Divisor);
-    sdiv(EmitSize, TMP3, TMP1, TMP2);
-    msub(EmitSize, Dst, TMP3, TMP2, TMP1);
-    break;
-  }
-  case IR::OpSize::i32Bit: {
-    // TODO: 32-bit operation should be guaranteed not to leave garbage in the upper bits.
-    mov(EmitSize, TMP1, Lower);
-    bfi(EmitSize, TMP1, Upper, 32, 32);
-    sxtw(TMP3, Divisor.W());
-    sdiv(EmitSize, TMP2, TMP1, TMP3);
-    msub(EmitSize, Dst, TMP2, TMP3, TMP1);
-    break;
-  }
-  case IR::OpSize::i64Bit: {
-    ARMEmitter::ForwardLabel Only64Bit {};
-    ARMEmitter::ForwardLabel LongDIVRet {};
-
-    // Check if the upper bits match the top bit of the lower 64-bits
-    // Sign extend the top bit of lower bits
-    sbfx(EmitSize, TMP1, Lower, 63, 1);
-    eor(EmitSize, TMP1, TMP1, Upper);
-
-    // If the sign bit matches then the result is zero
-    cbz(EmitSize, TMP1, &Only64Bit);
-
-    // Long divide
-    {
-      mov(EmitSize, TMP1, Upper);
-      mov(EmitSize, TMP2, Lower);
-      mov(EmitSize, TMP3, Divisor);
-
-      ldr(TMP4, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LREMHandler));
-
-      str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
-      blr(TMP4);
-      ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
-
-      // Move result to its destination register
-      mov(EmitSize, Dst, TMP1);
-
-      // Skip 64-bit path
-      b(&LongDIVRet);
-    }
-
-    Bind(&Only64Bit);
-    // 64-Bit only
-    {
-      sdiv(EmitSize, TMP1, Lower, Divisor);
-      msub(EmitSize, Dst, TMP1, Divisor, Lower);
-    }
-    Bind(&LongDIVRet);
-    break;
-  }
-  default: LOGMAN_MSG_A_FMT("Unknown LREM Size: {}", OpSize); break;
-  }
-}
-
-DEF_OP(LURem) {
-  auto Op = IROp->C<IR::IROp_LURem>();
-  const auto OpSize = IROp->Size;
-  const auto EmitSize = OpSize >= IR::OpSize::i32Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-
-  const auto Dst = GetReg(Node);
-  const auto Upper = GetReg(Op->Upper);
-  const auto Lower = GetReg(Op->Lower);
-  const auto Divisor = GetReg(Op->Divisor);
-
-  // Each source is OpSize in size
-  // So you can have up to a 128bit divide from x86-64
-  switch (OpSize) {
-  case IR::OpSize::i16Bit: {
-    uxth(EmitSize, TMP1, Lower);
-    bfi(EmitSize, TMP1, Upper, 16, 16);
-    udiv(EmitSize, TMP2, TMP1, Divisor);
-    msub(EmitSize, Dst, TMP2, Divisor, TMP1);
-    break;
-  }
-  case IR::OpSize::i32Bit: {
-    // TODO: 32-bit operation should be guaranteed not to leave garbage in the upper bits.
-    mov(EmitSize, TMP1, Lower);
-    bfi(EmitSize, TMP1, Upper, 32, 32);
-    udiv(EmitSize, TMP2, TMP1, Divisor);
-    msub(EmitSize, Dst, TMP2, Divisor, TMP1);
-    break;
-  }
-  case IR::OpSize::i64Bit: {
-    ARMEmitter::ForwardLabel Only64Bit {};
-    ARMEmitter::ForwardLabel LongDIVRet {};
-
-    // Check the upper bits for zero
-    // If the upper bits are zero then we can do a 64-bit divide
-    cbz(EmitSize, Upper, &Only64Bit);
-
-    // Long divide
-    {
-      mov(EmitSize, TMP1, Upper);
-      mov(EmitSize, TMP2, Lower);
-      mov(EmitSize, TMP3, Divisor);
-
-      ldr(TMP4, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.AArch64.LUREMHandler));
-
-      str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
-      blr(TMP4);
-      ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
-
-      // Move result to its destination register
-      mov(EmitSize, Dst, TMP1);
-
-      // Skip 64-bit path
-      b(&LongDIVRet);
-    }
-
-    Bind(&Only64Bit);
-    // 64-Bit only
-    {
-      udiv(EmitSize, TMP1, Lower, Divisor);
-      msub(EmitSize, Dst, TMP1, Divisor, Lower);
-    }
-
-    Bind(&LongDIVRet);
-    break;
-  }
-  default: LOGMAN_MSG_A_FMT("Unknown LUREM Size: {}", OpSize); break;
   }
 }
 

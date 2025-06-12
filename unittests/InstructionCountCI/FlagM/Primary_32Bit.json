@@ -385,15 +385,14 @@
       ]
     },
     "aam": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Comment": "0xd4",
       "ExpectedArm64ASM": [
         "uxtb w20, w4",
         "mov w21, #0xa",
         "udiv x22, x20, x21",
-        "udiv x2, x20, x21",
-        "msub x20, x2, x21, x20",
-        "add x26, x20, x22, lsl #8",
+        "msub x24, x22, x21, x20",
+        "add x26, x24, x22, lsl #8",
         "bfxil x4, x26, #0, #16",
         "cmn wzr, w26, lsl #24",
         "cfinv"
@@ -414,7 +413,7 @@
       ]
     },
     "db 0xd4, 0x40": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "aam with a different immediate byte base",
         "0xd4"
@@ -423,9 +422,8 @@
         "uxtb w20, w4",
         "mov w21, #0x40",
         "udiv x22, x20, x21",
-        "udiv x2, x20, x21",
-        "msub x20, x2, x21, x20",
-        "add x26, x20, x22, lsl #8",
+        "msub x24, x22, x21, x20",
+        "add x26, x24, x22, lsl #8",
         "bfxil x4, x26, #0, #16",
         "cmn wzr, w26, lsl #24",
         "cfinv"

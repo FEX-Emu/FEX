@@ -2545,33 +2545,27 @@
       ]
     },
     "div bl": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 6,
       "Comment": "GROUP2 0xf6 /6",
       "ExpectedArm64ASM": [
         "uxtb w20, w6",
         "uxth w21, w4",
-        "uxth w0, w21",
-        "uxth w1, w20",
-        "udiv w22, w0, w1",
-        "uxth w0, w21",
-        "uxth w1, w20",
-        "udiv w2, w0, w1",
-        "msub w20, w2, w1, w0",
-        "bfi x22, x20, #8, #8",
+        "udiv w22, w21, w20",
+        "msub w24, w22, w20, w21",
+        "bfi x22, x24, #8, #8",
         "bfxil x4, x22, #0, #16"
       ]
     },
     "idiv bl": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 7,
       "Comment": "GROUP2 0xf6 /7",
       "ExpectedArm64ASM": [
         "uxtb w20, w6",
         "sxth x21, w4",
         "sxtb x20, w20",
         "sdiv x22, x21, x20",
-        "sdiv x0, x21, x20",
-        "msub x20, x0, x20, x21",
-        "bfi x22, x20, #8, #8",
+        "msub x24, x22, x20, x21",
+        "bfi x22, x24, #8, #8",
         "bfxil x4, x22, #0, #16"
       ]
     },
@@ -2759,43 +2753,36 @@
       ]
     },
     "div bx": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 7,
       "Comment": "GROUP2 0xf7 /6",
       "ExpectedArm64ASM": [
         "uxth w20, w6",
         "uxth w0, w4",
         "bfi w0, w5, #16, #16",
-        "udiv w21, w0, w20",
-        "uxth w0, w4",
-        "bfi w0, w5, #16, #16",
-        "udiv w1, w0, w20",
-        "msub w20, w1, w20, w0",
-        "bfxil x4, x21, #0, #16",
-        "bfxil x5, x20, #0, #16"
+        "udiv w22, w0, w20",
+        "msub w24, w22, w20, w0",
+        "bfxil x4, x22, #0, #16",
+        "bfxil x5, x24, #0, #16"
       ]
     },
     "div ebx": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 7,
       "Comment": "GROUP2 0xf7 /6",
       "ExpectedArm64ASM": [
         "mov w20, w6",
         "mov x0, x4",
         "bfi x0, x5, #32, #32",
-        "udiv x21, x0, x20",
-        "mov w21, w21",
-        "mov x0, x4",
-        "bfi x0, x5, #32, #32",
-        "udiv x1, x0, x20",
-        "msub x20, x1, x20, x0",
-        "mov w5, w20",
-        "mov x4, x21"
+        "udiv x22, x0, x20",
+        "msub x24, x22, x20, x0",
+        "mov w4, w22",
+        "mov w5, w24"
       ]
     },
     "div rbx": {
-      "ExpectedInstructionCount": 24,
+      "ExpectedInstructionCount": 15,
       "Comment": "GROUP2 0xf7 /6",
       "ExpectedArm64ASM": [
-        "cbz x5, #+0x28",
+        "cbz x5, #+0x2c",
         "mov x0, x5",
         "mov x1, x4",
         "mov x2, x6",
@@ -2804,67 +2791,49 @@
         "blr x3",
         "ldr x30, [sp], #16",
         "mov x20, x0",
-        "b #+0x8",
-        "udiv x20, x4, x6",
-        "cbz x5, #+0x28",
-        "mov x0, x5",
-        "mov x1, x4",
-        "mov x2, x6",
-        "ldr x3, [x28, #3408]",
-        "str x30, [sp, #-16]!",
-        "blr x3",
-        "ldr x30, [sp], #16",
-        "mov x5, x0",
+        "mov x22, x1",
         "b #+0xc",
-        "udiv x0, x4, x6",
-        "msub x5, x0, x6, x4",
+        "udiv x20, x4, x6",
+        "msub x22, x20, x6, x4",
+        "mov x5, x22",
         "mov x4, x20"
       ]
     },
     "idiv bx": {
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP2 0xf7 /7",
       "ExpectedArm64ASM": [
         "uxth w20, w6",
         "uxth w0, w4",
         "bfi w0, w5, #16, #16",
         "sxth w1, w20",
-        "sdiv w21, w0, w1",
-        "uxth w0, w4",
-        "bfi w0, w5, #16, #16",
-        "sxth w1, w20",
-        "sdiv w2, w0, w1",
-        "msub w20, w2, w1, w0",
-        "bfxil x4, x21, #0, #16",
-        "bfxil x5, x20, #0, #16"
+        "sdiv w22, w0, w1",
+        "msub w24, w22, w1, w0",
+        "bfxil x4, x22, #0, #16",
+        "bfxil x5, x24, #0, #16"
       ]
     },
     "idiv ebx": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP2 0xf7 /7",
       "ExpectedArm64ASM": [
         "mov w20, w6",
         "mov x0, x4",
         "bfi x0, x5, #32, #32",
         "sxtw x1, w20",
-        "sdiv x21, x0, x1",
-        "mov w21, w21",
-        "mov x0, x4",
-        "bfi x0, x5, #32, #32",
-        "sxtw x2, w20",
-        "sdiv x1, x0, x2",
-        "msub x20, x1, x2, x0",
-        "mov w5, w20",
-        "mov x4, x21"
+        "sdiv x22, x0, x1",
+        "msub x24, x22, x1, x0",
+        "mov w4, w22",
+        "mov w5, w24"
       ]
     },
     "idiv rbx": {
-      "ExpectedInstructionCount": 28,
+      "ExpectedInstructionCount": 17,
       "Comment": "GROUP2 0xf7 /7",
       "ExpectedArm64ASM": [
         "asr x0, x4, #63",
         "eor x0, x0, x5",
-        "cbz x0, #+0x28",
+        "cbz x0, #+0x2c",
         "mov x0, x5",
         "mov x1, x4",
         "mov x2, x6",
@@ -2873,22 +2842,11 @@
         "blr x3",
         "ldr x30, [sp], #16",
         "mov x20, x0",
-        "b #+0x8",
-        "sdiv x20, x4, x6",
-        "asr x0, x4, #63",
-        "eor x0, x0, x5",
-        "cbz x0, #+0x28",
-        "mov x0, x5",
-        "mov x1, x4",
-        "mov x2, x6",
-        "ldr x3, [x28, #3416]",
-        "str x30, [sp, #-16]!",
-        "blr x3",
-        "ldr x30, [sp], #16",
-        "mov x5, x0",
+        "mov x22, x1",
         "b #+0xc",
-        "sdiv x0, x4, x6",
-        "msub x5, x0, x6, x4",
+        "sdiv x20, x4, x6",
+        "msub x22, x20, x6, x4",
+        "mov x5, x22",
         "mov x4, x20"
       ]
     },

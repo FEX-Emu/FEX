@@ -517,14 +517,15 @@ void Dispatcher::EmitDispatcher() {
 
     ldr(ARMEmitter::XReg::x3, R, Offset);
     if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-      GenerateIndirectRuntimeCall<uint64_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
+      GenerateIndirectRuntimeCall<__uint128_t, uint64_t, uint64_t, uint64_t>(ARMEmitter::Reg::r3);
     } else {
       blr(ARMEmitter::Reg::r3);
     }
-    // Result is now in x0
 
+    // Result is now in x0, x1
     if (!TMP_ABIARGS) {
       mov(TMP1, ARMEmitter::XReg::x0);
+      mov(TMP2, ARMEmitter::XReg::x1);
     }
 
     FillStaticRegs();
@@ -539,8 +540,6 @@ void Dispatcher::EmitDispatcher() {
 
   LUDIVHandlerAddress = EmitLongALUOpHandler(STATE_PTR(CpuStateFrame, Pointers.AArch64.LUDIV));
   LDIVHandlerAddress = EmitLongALUOpHandler(STATE_PTR(CpuStateFrame, Pointers.AArch64.LDIV));
-  LUREMHandlerAddress = EmitLongALUOpHandler(STATE_PTR(CpuStateFrame, Pointers.AArch64.LUREM));
-  LREMHandlerAddress = EmitLongALUOpHandler(STATE_PTR(CpuStateFrame, Pointers.AArch64.LREM));
 
   // Interpreter fallbacks
   {
@@ -1036,8 +1035,6 @@ void Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState* Thread) 
     auto& AArch64 = Thread->CurrentFrame->Pointers.AArch64;
     AArch64.LUDIVHandler = LUDIVHandlerAddress;
     AArch64.LDIVHandler = LDIVHandlerAddress;
-    AArch64.LUREMHandler = LUREMHandlerAddress;
-    AArch64.LREMHandler = LREMHandlerAddress;
 
     // Fill in the fallback handlers
     InterpreterOps::FillFallbackIndexPointers(Common.FallbackHandlerPointers, &ABIPointers[0]);

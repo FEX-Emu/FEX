@@ -41,31 +41,32 @@ $end_info$
 #include <limits>
 
 namespace {
-static uint64_t LUDIV(uint64_t SrcHigh, uint64_t SrcLow, uint64_t Divisor) {
+struct DivRem {
+  uint64_t Quotient;
+  uint64_t Remainder;
+};
+
+static struct DivRem LUDIV(uint64_t SrcHigh, uint64_t SrcLow, uint64_t Divisor) {
   __uint128_t Source = (static_cast<__uint128_t>(SrcHigh) << 64) | SrcLow;
-  __uint128_t Res = Source / Divisor;
-  return Res;
+
+  return {
+    .Quotient = (uint64_t)(Source / Divisor),
+    .Remainder = (uint64_t)(Source % Divisor),
+  };
 }
 
-static int64_t LDIV(uint64_t SrcHigh, uint64_t SrcLow, int64_t Divisor) {
+static struct DivRem
+LDIV(uint64_t SrcHigh, uint64_t SrcLow, int64_t Divisor) {
   __int128_t Source = (static_cast<__uint128_t>(SrcHigh) << 64) | SrcLow;
-  __int128_t Res = Source / Divisor;
-  return Res;
+
+  return {
+    .Quotient = (uint64_t)(Source / Divisor),
+    .Remainder = (uint64_t)(Source % Divisor),
+  };
 }
 
-static uint64_t LUREM(uint64_t SrcHigh, uint64_t SrcLow, uint64_t Divisor) {
-  __uint128_t Source = (static_cast<__uint128_t>(SrcHigh) << 64) | SrcLow;
-  __uint128_t Res = Source % Divisor;
-  return Res;
-}
-
-static int64_t LREM(uint64_t SrcHigh, uint64_t SrcLow, int64_t Divisor) {
-  __int128_t Source = (static_cast<__uint128_t>(SrcHigh) << 64) | SrcLow;
-  __int128_t Res = Source % Divisor;
-  return Res;
-}
-
-static void PrintValue(uint64_t Value) {
+static void
+PrintValue(uint64_t Value) {
   LogMan::Msg::DFmt("Value: 0x{:x}", Value);
 }
 
@@ -545,8 +546,6 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::In
 
     AArch64.LUDIV = reinterpret_cast<uint64_t>(LUDIV);
     AArch64.LDIV = reinterpret_cast<uint64_t>(LDIV);
-    AArch64.LUREM = reinterpret_cast<uint64_t>(LUREM);
-    AArch64.LREM = reinterpret_cast<uint64_t>(LREM);
   }
 
   CurrentCodeBuffer = CodeBuffers.GetLatest();
