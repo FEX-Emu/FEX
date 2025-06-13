@@ -103,7 +103,7 @@ void IRValidation::Run(IREmitter* IREmit) {
           }
 
           // If no physical register was assigned
-          if (PhyReg.Reg == IR::InvalidReg) {
+          if (PhyReg.IsInvalid()) {
             HadError |= true;
             Errors << "%" << ID << ": Had destination but with no register assigned" << std::endl;
           }
