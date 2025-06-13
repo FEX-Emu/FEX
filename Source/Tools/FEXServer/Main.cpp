@@ -9,6 +9,8 @@
 #include "Common/Config.h"
 #include "Common/FEXServerClient.h"
 
+#include <fmt/color.h>
+
 #include <chrono>
 #include <dirent.h>
 #include <fcntl.h>
@@ -23,23 +25,38 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <sys/wait.h>
+#include <termios.h>
 #include <thread>
 #include <unistd.h>
 
+static timespec StartTime {};
+
+// Set an empty style to disable coloring when FEXServer output is e.g. piped to a file
+static std::optional<fmt::text_style> DisableColors = isatty(STDOUT_FILENO) ? std::nullopt : std::optional {fmt::text_style {}};
+
 namespace Logging {
 void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
-  const auto Output = fmt::format("[{}] {}\n", LogMan::DebugLevelStr(Level), Message);
+  const auto Output = fmt::format("{} {}\n", fmt::styled(LogMan::DebugLevelStr(Level), DisableColors.value_or(DebugLevelStyle(Level))), Message);
   write(STDOUT_FILENO, Output.c_str(), Output.size());
 }
 
 void AssertHandler(const char* Message) {
-  const auto Output = fmt::format("[ASSERT] {}\n", Message);
-  write(STDOUT_FILENO, Output.c_str(), Output.size());
+  return MsgHandler(LogMan::ASSERT, Message);
 }
 
 void ClientMsgHandler(int FD, FEXServerClient::Logging::PacketMsg* const Msg, const char* MsgStr) {
-  const auto Output = fmt::format("[{}][{}.{}][{}.{}] {}\n", LogMan::DebugLevelStr(Msg->Level), Msg->Header.Timestamp.tv_sec,
-                                  Msg->Header.Timestamp.tv_nsec, Msg->Header.PID, Msg->Header.TID, MsgStr);
+  if (!StartTime.tv_sec && !StartTime.tv_nsec) {
+    StartTime = Msg->Header.Timestamp;
+  }
+  auto seconds = Msg->Header.Timestamp.tv_sec - StartTime.tv_sec - (Msg->Header.Timestamp.tv_nsec < StartTime.tv_nsec);
+  auto nanos = (1'000'000'000 + Msg->Header.Timestamp.tv_nsec - StartTime.tv_nsec) % 1'000'000'000;
+  char Metadata[128];
+  auto Cursor =
+    fmt::format_to(&Metadata[0], DisableColors.value_or(LogMan::DebugLevelStyle(Msg->Level)), "{}", LogMan::DebugLevelStr(Msg->Level));
+  Cursor = fmt::format_to(Cursor, DisableColors.value_or(fmt::fg(fmt::color::light_gray)), " {}|{} ", Msg->Header.PID, Msg->Header.TID);
+  Cursor = fmt::format_to(Cursor, DisableColors.value_or(fmt::fg(fmt::color::gray)), "{}.{:03}", seconds, nanos / 1000000);
+  *Cursor = 0;
+  auto Output = fmt::format("{} {}\n", Metadata, MsgStr);
   write(STDERR_FILENO, Output.c_str(), Output.size());
 }
 } // namespace Logging
@@ -50,6 +67,9 @@ void ActionHandler(int sig, siginfo_t* info, void* context) {
   if (sig == SIGINT) {
     // Someone trying to kill us. Shutdown.
     ProcessPipe::Shutdown();
+
+    // Clear "^C" string that most terminals print when pressing Ctrl+C.
+    fprintf(stderr, "\r");
     return;
   }
   _exit(1);

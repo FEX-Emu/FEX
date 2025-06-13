@@ -6,6 +6,7 @@
 #include <cstdarg>
 
 #include <fmt/format.h>
+#include <fmt/color.h>
 
 namespace LogMan {
 enum DebugLevels {
@@ -21,13 +22,23 @@ enum DebugLevels {
 static inline const char* DebugLevelStr(uint32_t Level) {
   switch (Level) {
   case NONE: return "NONE";
-  case ASSERT: return "ASSERT";
-  case ERROR: return "ERROR";
-  case DEBUG: return "DEBUG";
-  case INFO: return "INFO";
+  case ASSERT: return "A";
+  case ERROR: return "E";
+  case DEBUG: return "D";
+  case INFO: return "I";
   case STDOUT: return "STDOUT";
   case STDERR: return "STDERR";
   default: return "???"; break;
+  }
+}
+
+static inline fmt::text_style DebugLevelStyle(uint32_t Level) {
+  switch (Level) {
+  case LogMan::ASSERT: return fmt::bg(fmt::color::red) | fmt::emphasis::bold | fmt::fg(fmt::color::white);
+  case LogMan::ERROR: return fmt::fg(fmt::color::red);
+  case LogMan::DEBUG: return fmt::fg(fmt::color::gray);
+  case LogMan::INFO: return fmt::fg(fmt::color::green);
+  default: return {}; break;
   }
 }
 
