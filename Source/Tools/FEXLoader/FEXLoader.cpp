@@ -68,24 +68,22 @@ namespace {
 static bool SilentLog {};
 static int OutputFD {STDERR_FILENO};
 
+// Set an empty style to disable coloring when FEXServer output is e.g. piped to a file
+static bool DisableOutputColors {};
+
 void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
   if (SilentLog) {
     return;
   }
 
-  const auto Output = fextl::fmt::format("[{}] {}\n", LogMan::DebugLevelStr(Level), Message);
+  const auto Style = DisableOutputColors ? fmt::text_style {} : LogMan::DebugLevelStyle(Level);
+  const auto Output = fextl::fmt::format("{} {}\n", fmt::styled(LogMan::DebugLevelStr(Level), Style), Message);
   write(OutputFD, Output.c_str(), Output.size());
   fsync(OutputFD);
 }
 
 void AssertHandler(const char* Message) {
-  if (SilentLog) {
-    return;
-  }
-
-  const auto Output = fextl::fmt::format("[ASSERT] {}\n", Message);
-  write(OutputFD, Output.c_str(), Output.size());
-  fsync(OutputFD);
+  return MsgHandler(LogMan::ASSERT, Message);
 }
 
 } // Anonymous namespace
@@ -383,6 +381,7 @@ int main(int argc, char** argv, char** const envp) {
       OutputFD = open(LogFile.c_str(), O_CREAT | O_CLOEXEC | O_WRONLY, USER_PERMS);
     }
   }
+  DisableOutputColors = !isatty(OutputFD);
 
   if (StartupSleep() && (StartupSleepProcName().empty() || Program.ProgramName == StartupSleepProcName())) {
     LogMan::Msg::IFmt("[{}][{}] Sleeping for {} seconds", ::getpid(), Program.ProgramName, StartupSleep());
