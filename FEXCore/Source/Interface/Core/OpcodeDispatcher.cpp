@@ -4395,9 +4395,6 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
   if (!DestIsLockedMem(Op) && ALUIROp == FEXCore::IR::IROps::OP_XOR && Op->Dest.IsGPR() && Op->Src[SrcIdx].IsGPR() &&
       Op->Dest.Data.GPR == Op->Src[SrcIdx].Data.GPR) {
 
-    // Move 0 into the register
-    StoreResult(GPRClass, Op, _Constant(0), OpSize::iInvalid);
-
     // Set flags for zero result with inverted carry. We subtract an arbitrary
     // register from itself to get the zero, since `subs wzr, #0` is not
     // encodable. This is optimal and works regardless of the opsize.
@@ -4406,6 +4403,10 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
     InvalidateAF();
     CalculatePF(_SubWithFlags(OpSize::i32Bit, Zero, Zero));
     CFInverted = true;
+    FlushRegisterCache();
+
+    // Move 0 into the register
+    StoreResult(GPRClass, Op, _Constant(0), OpSize::iInvalid);
     return;
   }
 
