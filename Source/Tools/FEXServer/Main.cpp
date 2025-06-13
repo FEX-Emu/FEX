@@ -26,6 +26,8 @@
 #include <thread>
 #include <unistd.h>
 
+static timespec StartTime {};
+
 namespace Logging {
 void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
   const auto Output = fmt::format("[{}] {}\n", LogMan::DebugLevelStr(Level), Message);
@@ -38,7 +40,12 @@ void AssertHandler(const char* Message) {
 }
 
 void ClientMsgHandler(int FD, FEXServerClient::Logging::PacketMsg* const Msg, const char* MsgStr) {
-  const auto Output = fmt::format("[{}][{}.{}][{}.{}] {}\n", LogMan::DebugLevelStr(Msg->Level), Msg->Header.Timestamp.tv_sec,
+  if (!StartTime.tv_sec && !StartTime.tv_nsec) {
+    StartTime = Msg->Header.Timestamp;
+  }
+  auto seconds = Msg->Header.Timestamp.tv_sec - StartTime.tv_sec - (Msg->Header.Timestamp.tv_nsec < StartTime.tv_nsec);
+  auto nanos = (1'000'000'000 + Msg->Header.Timestamp.tv_nsec - StartTime.tv_nsec) % 1'000'000'000;
+  const auto Output = fmt::format("[{}][{}.{:03}][{}.{}] {}\n", LogMan::DebugLevelStr(Msg->Level), Msg->Header.Timestamp.tv_sec,
                                   Msg->Header.Timestamp.tv_nsec, Msg->Header.PID, Msg->Header.TID, MsgStr);
   write(STDERR_FILENO, Output.c_str(), Output.size());
 }
