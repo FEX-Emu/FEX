@@ -50,6 +50,9 @@ void ActionHandler(int sig, siginfo_t* info, void* context) {
   if (sig == SIGINT) {
     // Someone trying to kill us. Shutdown.
     ProcessPipe::Shutdown();
+
+    // Clear "^C" string that most terminals print when pressing Ctrl+C.
+    fprintf(stderr, "\r");
     return;
   }
   _exit(1);
