@@ -45,7 +45,7 @@ void ClientMsgHandler(int FD, FEXServerClient::Logging::PacketMsg* const Msg, co
   }
   auto seconds = Msg->Header.Timestamp.tv_sec - StartTime.tv_sec - (Msg->Header.Timestamp.tv_nsec < StartTime.tv_nsec);
   auto nanos = (1'000'000'000 + Msg->Header.Timestamp.tv_nsec - StartTime.tv_nsec) % 1'000'000'000;
-  const auto Output = fmt::format("[{}][{}.{:03}][{}.{}] {}\n", LogMan::DebugLevelStr(Msg->Level), Msg->Header.Timestamp.tv_sec,
+  const auto Output = fmt::format("[{}][{}.{:03}][{}|{}] {}\n", LogMan::DebugLevelStr(Msg->Level), Msg->Header.Timestamp.tv_sec,
                                   Msg->Header.Timestamp.tv_nsec, Msg->Header.PID, Msg->Header.TID, MsgStr);
   write(STDERR_FILENO, Output.c_str(), Output.size());
 }
