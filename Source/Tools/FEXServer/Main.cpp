@@ -33,7 +33,7 @@ void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
 }
 
 void AssertHandler(const char* Message) {
-  const auto Output = fmt::format("[ASSERT] {}\n", Message);
+  const auto Output = fmt::format("[A] {}\n", Message);
   write(STDOUT_FILENO, Output.c_str(), Output.size());
 }
 

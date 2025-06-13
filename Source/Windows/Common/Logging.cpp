@@ -23,7 +23,7 @@ static void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
 }
 
 static void AssertHandler(const char* Message) {
-  const auto Output = fextl::fmt::format("[ASSERT] {}\n", Message);
+  const auto Output = fextl::fmt::format("[A] {}\n", Message);
   if (WineDbgOut) {
     WineDbgOut(Output.c_str());
   } else if (LogFile) {

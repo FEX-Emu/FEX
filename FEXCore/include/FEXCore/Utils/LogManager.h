@@ -21,10 +21,10 @@ enum DebugLevels {
 static inline const char* DebugLevelStr(uint32_t Level) {
   switch (Level) {
   case NONE: return "NONE";
-  case ASSERT: return "ASSERT";
-  case ERROR: return "ERROR";
-  case DEBUG: return "DEBUG";
-  case INFO: return "INFO";
+  case ASSERT: return "A";
+  case ERROR: return "E";
+  case DEBUG: return "D";
+  case INFO: return "I";
   case STDOUT: return "STDOUT";
   case STDERR: return "STDERR";
   default: return "???"; break;
