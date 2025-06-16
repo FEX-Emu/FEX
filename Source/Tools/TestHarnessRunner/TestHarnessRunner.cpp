@@ -49,11 +49,11 @@ $end_info$
 #endif
 
 void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
-  fextl::fmt::print("[{}] {}\n", LogMan::DebugLevelStr(Level), Message);
+  fextl::fmt::print("{} {}\n", LogMan::DebugLevelStr(Level), Message);
 }
 
 void AssertHandler(const char* Message) {
-  fextl::fmt::print("[ASSERT] {}\n", Message);
+  fextl::fmt::print("A {}\n", Message);
 
   // make sure buffers are flushed
   fflush(nullptr);

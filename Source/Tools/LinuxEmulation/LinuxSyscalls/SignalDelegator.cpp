@@ -82,7 +82,7 @@ uint64_t SetSignal(GuestSAMask* Set, int Signal) {
 void SignalDelegator::HandleSignal(FEX::HLE::ThreadStateObject* Thread, int Signal, void* Info, void* UContext) {
   // Let the host take first stab at handling the signal
   if (!Thread) {
-    LogMan::Msg::AFmt("[{}] Thread has received a signal and hasn't registered itself with the delegate! Programming error!",
+    LogMan::Msg::AFmt("Thread {} has received a signal and hasn't registered itself with the delegate! Programming error!",
                       FHU::Syscalls::gettid());
   } else {
     SignalHandler& Handler = HostHandlers[Signal];

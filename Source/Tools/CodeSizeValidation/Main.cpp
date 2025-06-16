@@ -202,11 +202,11 @@ void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
     }
   }
 
-  fextl::fmt::print("[{}] {}\n", CharLevel, Message);
+  fextl::fmt::print("{} {}\n", CharLevel, Message);
 }
 
 void AssertHandler(const char* Message) {
-  fextl::fmt::print("[ASSERT] {}\n", Message);
+  fextl::fmt::print("A {}\n", Message);
 
   // make sure buffers are flushed
   fflush(nullptr);
