@@ -15,8 +15,6 @@ enum DebugLevels {
   ERROR = 2,  ///< Only Errors printed
   DEBUG = 3,  ///< Debug messages added
   INFO = 4,   ///< Info messages added
-  STDOUT = 5, ///< Meant to go to STDOUT
-  STDERR = 6, ///< Meant to go to STDERR
 };
 
 static inline const char* DebugLevelStr(uint32_t Level) {
@@ -26,8 +24,6 @@ static inline const char* DebugLevelStr(uint32_t Level) {
   case ERROR: return "E";
   case DEBUG: return "D";
   case INFO: return "I";
-  case STDOUT: return "STDOUT";
-  case STDERR: return "STDERR";
   default: return "???"; break;
   }
 }
@@ -113,16 +109,6 @@ namespace Msg {
       return;
     }
     MFmtImpl(INFO, fmt, fmt::make_format_args(args...));
-  }
-
-  template<typename... Args>
-  static inline void OutFmt(const char* fmt, const Args&... args) {
-    MFmtImpl(STDOUT, fmt, fmt::make_format_args(args...));
-  }
-
-  template<typename... Args>
-  static inline void ErrFmt(const char* fmt, const Args&... args) {
-    MFmtImpl(STDERR, fmt, fmt::make_format_args(args...));
   }
 
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
