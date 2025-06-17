@@ -1,45 +1,36 @@
 [中文](https://github.com/FEX-Emu/FEX/blob/main/docs/Readme_CN.md)
-# FEX - Fast x86 emulation frontend
-FEX allows you to run x86 and x86-64 binaries on an AArch64 host, similar to qemu-user and box86.
-It has native support for a rootfs overlay, so you don't need to chroot, as well as some thunklibs so it can forward things like GL to the host.
-FEX presents a Linux 5.15+ interface to the guest, and supports only AArch64 as a host.
-FEX is very much work in progress, so expect things to change.
+# FEX: Emulate x86 Programs on ARM64
+FEX allows you to run x86 applications on ARM64 Linux devices, similar to qemu-user and box64.
+It offers broad compatibility with both 32-bit and 64-bit binaries, and it can be used alongside Wine/Proton to play Windows games.
 
+It supports forwarding API calls to host system libraries like OpenGL or Vulkan to reduce emulation overhead.
+An experimental code cache helps minimize in-game stuttering as much as possible.
+Furthermore, a per-app configuration system allows tweaking performance per game, e.g. by skipping costly memory model emulation.
+We also provide a user-friendly FEXConfig GUI to explore and change these settings.
 
-## Quick start guide
+## Prerequisites
+FEX requires ARMv8.0+ hardware. It has been tested with the following Linux distributions, though others are likely to work as well:
+
+- Arch Linux
+- Fedora Linux
+- openSUSE
+- Ubuntu 22.04/24.04/24.10
+
+An x86-64 RootFS is required and can be downloaded using our `FEXRootFSFetcher` tool for many distributions.
+For other distributions you will need to generate your own RootFS (our [wiki page](https://wiki.fex-emu.com/index.php/Development:Setting_up_RootFS) might help).
+
+## Quick Start
 ### For Ubuntu 22.04, 24.04 and 24.10
 Execute the following command in the terminal to install FEX through a PPA.
 
-`curl --silent https://raw.githubusercontent.com/FEX-Emu/FEX/main/Scripts/InstallFEX.py --output /tmp/InstallFEX.py && python3 /tmp/InstallFEX.py && rm /tmp/InstallFEX.py`
+```sh
+curl --silent https://raw.githubusercontent.com/FEX-Emu/FEX/main/Scripts/InstallFEX.py | python3
+```
 
 This command will walk you through installing FEX through a PPA, and downloading a RootFS for use with FEX.
 
-Ubuntu PPA is updated with our monthly releases.
-
-### For everyone else
-Please see [Building FEX](#building-fex).
-
-## Getting Started
-FEX has been tested to build and run on ARMv8.0+ hardware.
-ARMv7 hardware will not work.
-Expected operating system usage is Linux. FEX has been tested with the following Linux OSes:
-
-- Ubuntu 22.04
-- Ubuntu 24.04
-- Ubuntu 24.10
-- Arch Linux
-
-On AArch64 hosts the user **MUST** have an x86-64 RootFS [Creating a RootFS](#RootFS-Generation).
+### For other Distributions
+Follow the guide on the official FEX-Emu Wiki [here](https://wiki.fex-emu.com/index.php/Development:Setting_up_FEX).
 
 ### Navigating the Source
 See the [Source Outline](docs/SourceOutline.md) for more information.
-
-### Building FEX
-Follow the guide on the official FEX-Emu Wiki [here](https://wiki.fex-emu.com/index.php/Development:Setting_up_FEX).
-
-### RootFS generation
-AArch64 hosts require a rootfs for running applications.
-Follow the guide on the wiki page for seeing how to set up the rootfs from scratch
-https://wiki.fex-emu.com/index.php/Development:Setting_up_RootFS
-
-![FEX diagram](docs/Diagram.svg)
