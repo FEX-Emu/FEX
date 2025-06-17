@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 project(host-thunks)
-include(${FEX_PROJECT_SOURCE_DIR}/CMakeFiles/version_to_variables.cmake)
+include(${FEX_PROJECT_SOURCE_DIR}/Data/CMake/version_to_variables.cmake)
 include(GNUInstallDirs)
 
 set(CMAKE_CXX_STANDARD 20)

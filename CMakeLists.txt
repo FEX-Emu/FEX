@@ -97,7 +97,7 @@ endif()
 # uninstall target
 if(NOT TARGET uninstall)
   configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/CMakeFiles/cmake_uninstall.cmake.in"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Data/CMake/cmake_uninstall.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake_uninstall.cmake"
     IMMEDIATE @ONLY)
 
