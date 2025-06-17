@@ -45,7 +45,7 @@ function(AddTests Tests BinDirectory Bitness)
         continue()
       endif()
 
-      set(THUNK_ARGS "-k" "${CMAKE_SOURCE_DIR}/CI/FEXLinuxTestsThunks.json")
+      set(THUNK_ARGS "-k" "${CMAKE_SOURCE_DIR}/Data/CI/FEXLinuxTestsThunks.json")
     endif()
 
     # Add jit test case

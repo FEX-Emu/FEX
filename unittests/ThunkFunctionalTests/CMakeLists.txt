@@ -11,7 +11,7 @@ function(AddThunksTest Bin ThunksFile)
   else()
     set (TEST_NAME ThunkFunctionalTest-Thunks-${Bin})
     list (APPEND ARGS
-      "-k" "${CMAKE_SOURCE_DIR}/CI/${ThunksFile}")
+      "-k" "${CMAKE_SOURCE_DIR}/Data/CI/${ThunksFile}")
   endif()
 
   add_test(NAME ${TEST_NAME}
