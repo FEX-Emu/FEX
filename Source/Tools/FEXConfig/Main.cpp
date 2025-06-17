@@ -105,6 +105,16 @@ void ConfigModel::setBool(const QString& Name, bool Value) {
 
 void ConfigModel::setString(const QString& Name, const QString& Value) {
   LoadedConfig->Set(NameToConfigLookup.at(Name.toStdString()), Value.toStdString());
+
+  if (Name == "ThunkHostLibs" || Name == "ThunkGuestLibs") {
+    // Infer folders for 32-bit wrappers automatically by appending "_32"
+    auto StrValue = Value.toStdString();
+    if (StrValue.back() == '/') {
+      StrValue.pop_back();
+    }
+    LoadedConfig->Set(NameToConfigLookup.at(Name.toStdString() + "32"), StrValue + "_32");
+  }
+
   Reload();
 }
 
