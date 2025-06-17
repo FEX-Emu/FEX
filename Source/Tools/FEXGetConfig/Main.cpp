@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-#include "ConfigDefines.h"
 #include "Common/cpp-optparse/OptionParser.h"
 #include "Common/Config.h"
 #include "Common/FEXServerClient.h"
@@ -155,7 +154,13 @@ int main(int argc, char** argv, char** envp) {
   }
 
   if (Options.is_set_by_user("install_prefix")) {
-    fprintf(stdout, FEX_INSTALL_PREFIX "\n");
+    char SelfPath[PATH_MAX];
+    auto Result = readlink("/proc/self/exe", SelfPath, PATH_MAX);
+    if (Result == -1) {
+      Result = 0;
+    }
+    auto InstallPrefix = std::filesystem::path(&SelfPath[0], &SelfPath[Result]).parent_path().parent_path().string();
+    fprintf(stdout, "%s\n", InstallPrefix.c_str());
   }
 
   if (Options.is_set_by_user("current_rootfs")) {
