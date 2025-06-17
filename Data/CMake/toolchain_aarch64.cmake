@@ -1,6 +1,6 @@
 # This is a reference AArch64 cross compile script
 # Pass in to cmake when building:
-# eg: cmake -DCMAKE_TOOLCHAIN_FILE=../CMakeToolchains/AArch64.cmake ..
+# eg: cmake --toolchain ../Data/CMake/toolchain_aarch64.cmake ..
 if (NOT DEFINED ENV{SYSROOT})
   message(FATAL_ERROR "Need to have SYSROOT environment variable set")
 endif()
