@@ -446,6 +446,6 @@ int main(int Argc, char** Argv) {
   }
 
   ConfigRuntime Runtime(ConfigFilename.c_str());
-
+  App.setWindowIcon(QIcon(":/icon.png"));
   return App.exec();
 }
