@@ -78,7 +78,7 @@ jobs:
       # Note the current convention is to use the -S and -B options here to specify source
       # and build directories, but this is only available with CMake 3.13 and higher.
       # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=$GITHUB_WORKSPACE/toolchain_mingw.cmake -DMINGW_TRIPLE=$MINGW_TRIPLE -G Ninja -DENABLE_LTO=False -DENABLE_ASSERTIONS=True -DENABLE_X86_HOST_DEBUG=True -DBUILD_TESTS=False -DCMAKE_INSTALL_PREFIX=${{runner.workspace}}/build/install
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=$GITHUB_WORKSPACE/Data/CMake/toolchain_mingw.cmake -DMINGW_TRIPLE=$MINGW_TRIPLE -G Ninja -DENABLE_LTO=False -DENABLE_ASSERTIONS=True -DENABLE_X86_HOST_DEBUG=True -DBUILD_TESTS=False -DCMAKE_INSTALL_PREFIX=${{runner.workspace}}/build/install
 
     - name: Build
       working-directory: ${{runner.workspace}}/build

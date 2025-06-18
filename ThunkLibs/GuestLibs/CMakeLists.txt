@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 project(guest-thunks)
-include(${FEX_PROJECT_SOURCE_DIR}/CMakeFiles/version_to_variables.cmake)
+include(${FEX_PROJECT_SOURCE_DIR}/Data/CMake/version_to_variables.cmake)
 
 option(ENABLE_CLANG_THUNKS "Enable building thunks with clang" FALSE)
 
@@ -35,7 +35,7 @@ if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   # uninstall target
   if(NOT TARGET uninstall)
     configure_file(
-      "${FEX_PROJECT_SOURCE_DIR}/CMakeFiles/cmake_uninstall.cmake.in"
+      "${FEX_PROJECT_SOURCE_DIR}/Data/CMake/cmake_uninstall.cmake.in"
       "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake_uninstall.cmake"
       IMMEDIATE @ONLY)
 

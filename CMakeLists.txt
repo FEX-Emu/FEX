@@ -35,8 +35,8 @@ set (FEXCORE_PROFILER_BACKEND "gpuvis" CACHE STRING "Set which backend to use fo
 option(ENABLE_GLIBC_ALLOCATOR_HOOK_FAULT "Enables glibc memory allocation hooking with fault for CI testing")
 option(USE_PDB_DEBUGINFO "Builds debug info in PDB format" FALSE)
 
-set (X86_32_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/toolchain_x86_32.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting i686")
-set (X86_64_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/toolchain_x86_64.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting x86_64")
+set (X86_32_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Data/CMake/toolchain_x86_32.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting i686")
+set (X86_64_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Data/CMake/toolchain_x86_64.cmake" CACHE FILEPATH "Toolchain file for the (cross-)compiler targeting x86_64")
 set (X86_DEV_ROOTFS "/" CACHE FILEPATH "Path to the sysroot used for cross-compiling for i686 and x86_64")
 set (DATA_DIRECTORY "" CACHE PATH "Global data directory (override)")
 if (NOT DATA_DIRECTORY)
@@ -97,7 +97,7 @@ endif()
 # uninstall target
 if(NOT TARGET uninstall)
   configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/CMakeFiles/cmake_uninstall.cmake.in"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Data/CMake/cmake_uninstall.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/cmake_uninstall.cmake"
     IMMEDIATE @ONLY)
 
@@ -622,12 +622,12 @@ set (CPACK_PACKAGE_CONTACT "FEX-Emu Maintainers <team@fex-emu.com>")
 set (CPACK_PACKAGE_VERSION_MAJOR "${FEX_VERSION_MAJOR}")
 set (CPACK_PACKAGE_VERSION_MINOR "${FEX_VERSION_MINOR}")
 set (CPACK_PACKAGE_VERSION_PATCH "${FEX_VERSION_PATCH}")
-set (CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/CPack/Description.txt")
+set (CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/Data/CMake/CPack/Description.txt")
 
 # Debian defines
 set (CPACK_DEBIAN_PACKAGE_DEPENDS "libc6, libstdc++6, libepoxy0, libsdl2-2.0-0, libegl1, libx11-6, squashfuse")
 set (CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
-  "${CMAKE_CURRENT_SOURCE_DIR}/CPack/postinst;${CMAKE_CURRENT_SOURCE_DIR}/CPack/prerm;${CMAKE_CURRENT_SOURCE_DIR}/CPack/triggers")
+  "${CMAKE_CURRENT_SOURCE_DIR}/Data/CMake/CPack/postinst;${CMAKE_CURRENT_SOURCE_DIR}/Data/CMake/CPack/prerm;${CMAKE_CURRENT_SOURCE_DIR}/Data/CMake/CPack/triggers")
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
   # binfmt_misc conflicts with qemu-user-static
   # We also only install binfmt_misc on aarch64 hosts
