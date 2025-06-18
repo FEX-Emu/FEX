@@ -207,11 +207,14 @@ private:
 
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
   FEX_CONFIG_OPT(ThunkHostLibsPath, THUNKHOSTLIBS);
-  FEX_CONFIG_OPT(ThunkHostLibsPath32, THUNKHOSTLIBS32);
 };
 
 void ThunkHandler_impl::LoadLib(std::string_view Name) {
-  auto SOName = (Is64BitMode() ? ThunkHostLibsPath() : ThunkHostLibsPath32()) + "/" + Name.data() + "-host.so";
+  auto SOName = ThunkHostLibsPath();
+  while (SOName.ends_with('/')) {
+    SOName.pop_back();
+  }
+  SOName = fmt::format("{}{}/{}-host.so", SOName, (Is64BitMode() ? "" : "_32"), Name);
 
   LogMan::Msg::DFmt("LoadLib: {} -> {}", Name, SOName);
 

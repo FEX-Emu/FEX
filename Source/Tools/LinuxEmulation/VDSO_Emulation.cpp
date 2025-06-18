@@ -738,14 +738,11 @@ void UnloadVDSOMapping(const VDSOMapping& Mapping) {
 VDSOMapping LoadVDSOThunks(bool Is64Bit, FEX::HLE::SyscallHandler* const Handler) {
   VDSOMapping Mapping {};
   FEX_CONFIG_OPT(ThunkGuestLibs, THUNKGUESTLIBS);
-  FEX_CONFIG_OPT(ThunkGuestLibs32, THUNKGUESTLIBS32);
-
-  fextl::string ThunkGuestPath {};
-  if (Is64Bit) {
-    ThunkGuestPath = fextl::fmt::format("{}/libVDSO-guest.so", ThunkGuestLibs());
-  } else {
-    ThunkGuestPath = fextl::fmt::format("{}/libVDSO-guest.so", ThunkGuestLibs32());
+  fextl::string ThunkGuestPath = ThunkGuestLibs();
+  while (ThunkGuestPath.ends_with('/')) {
+    ThunkGuestPath.pop_back();
   }
+  ThunkGuestPath = fextl::fmt::format("{}{}/libVDSO-guest.so", ThunkGuestPath, Is64Bit ? "" : "_32");
   // Load VDSO if we can
   int VDSOFD = ::open(ThunkGuestPath.c_str(), O_RDONLY);
 
