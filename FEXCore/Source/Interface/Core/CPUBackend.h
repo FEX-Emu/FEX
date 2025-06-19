@@ -71,7 +71,7 @@ namespace CPU {
     fextl::shared_ptr<CodeBuffer> StartLargerCodeBuffer();
 
     // Write offset into the latest CodeBuffer
-    std::size_t LatestOffset;
+    std::size_t LatestOffset {};
 
     // Protects writes to the latest CodeBuffer and changes to LatestOffset
     FEXCore::ForkableUniqueMutex CodeBufferWriteMutex;
