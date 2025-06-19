@@ -436,10 +436,6 @@ endif()
 
 add_compile_options(-Wall)
 
-configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/Config.h.in
-  ${CMAKE_BINARY_DIR}/generated/ConfigDefines.h)
-
 include(CTest)
 if (BUILD_TESTS)
   message(STATUS "Unit tests are enabled")

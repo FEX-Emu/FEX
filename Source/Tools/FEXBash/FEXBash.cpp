@@ -6,7 +6,6 @@ desc: Launches bash under FEX and passes arguments via -c to it
 $end_info$
 */
 
-#include "ConfigDefines.h"
 #include "Common/ArgumentLoader.h"
 
 #include <FEXCore/Config/Config.h>
@@ -25,11 +24,21 @@ int main(int argc, char** argv, char** const envp) {
   // Use /bin/sh for -c commands and /bin/bash for interactive mode
   const char* BashPath = Args.empty() ? "/bin/bash" : "/bin/sh";
 
-  std::string FEXInterpreterPath = std::filesystem::path(argv[0]).parent_path().string() + "FEXInterpreter";
+  std::string FEXInterpreterPath = std::filesystem::path(argv[0]).parent_path().string() + "/FEXInterpreter";
+
   // Check if a local FEXInterpreter to FEXBash exists
   // If it does then it takes priority over the installed one
   if (!std::filesystem::exists(FEXInterpreterPath)) {
-    FEXInterpreterPath = FEXCore::Config::FindContainerPrefix() + FEXINTERPRETER_PATH;
+    char FEXBashPath[PATH_MAX];
+    auto Result = readlink("/proc/self/exe", FEXBashPath, PATH_MAX);
+    if (Result != -1) {
+      FEXInterpreterPath = std::filesystem::path(&FEXBashPath[0], &FEXBashPath[Result]).parent_path().string() + "/FEXInterpreter";
+    }
+
+    if (!std::filesystem::exists(FEXInterpreterPath)) {
+      fmt::print(stderr, "Could not locate FEXInterpreter executable\n");
+      std::abort();
+    }
   }
   const char* FEXArgs[] = {
     FEXInterpreterPath.c_str(),
