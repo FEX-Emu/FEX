@@ -21,9 +21,6 @@ using namespace FEXCore;
 
 namespace FEXCore::IR {
 namespace {
-  [[maybe_unused]] constexpr uint32_t INVALID_REG = IR::InvalidReg;
-  constexpr uint32_t INVALID_CLASS = IR::InvalidClass.Val;
-
   struct RegisterClass {
     uint32_t Available;
     uint32_t Count;
@@ -60,7 +57,7 @@ public:
   bool TryPostRAMerge(Ref LastNode, Ref CodeNode, IROp_Header* IROp);
 
 private:
-  RegisterClass Classes[INVALID_CLASS];
+  RegisterClass Classes[IR::NumClasses];
 
   IREmitter* IREmit;
   IRListView* IR;
@@ -106,15 +103,8 @@ private:
       return false;
     }
 
-    switch (IR->GetOp<IROp_Header>(Arg)->Op) {
-    case OP_INLINECONSTANT:
-    case OP_INLINEENTRYPOINTOFFSET:
-    case OP_IRHEADER: return false;
-
-    case OP_SPILLREGISTER: LOGMAN_MSG_A_FMT("should not be seen"); return false;
-
-    default: return true;
-    }
+    auto Op = IR->GetOp<IROp_Header>(Arg)->Op;
+    return Op != OP_INLINECONSTANT && Op != OP_INLINEENTRYPOINTOFFSET;
   };
 
   RegisterClass* GetClass(PhysicalRegister Reg) {
@@ -168,33 +158,24 @@ private:
     return nullptr;
   };
 
-  PhysicalRegister DecodeSRAReg(const IROp_Header* IROp) {
-    RegisterClassType Class {};
-    uint8_t Reg {};
-
+  PhysicalRegister DecodeSRAReg(const IROp_Header* IROp, Ref Node) {
     uint8_t FlagOffset = Classes[GPRFixedClass.Val].Count - 2;
 
-    if (IROp->Op == OP_LOADREGISTER) {
-      const IROp_LoadRegister* Op = IROp->C<IR::IROp_LoadRegister>();
-
-      Class = Op->Class;
-      Reg = Op->Reg;
-    } else if (IROp->Op == OP_STOREREGISTER) {
-      const IROp_StoreRegister* Op = IROp->C<IR::IROp_StoreRegister>();
-
-      Class = Op->Class;
-      Reg = Op->Reg;
+    if (IROp->Op == OP_STOREREGISTER) {
+      return PhysicalRegister(Node);
     } else if (IROp->Op == OP_LOADPF || IROp->Op == OP_STOREPF) {
       return PhysicalRegister {GPRFixedClass, FlagOffset};
     } else if (IROp->Op == OP_LOADAF || IROp->Op == OP_STOREAF) {
       return PhysicalRegister {GPRFixedClass, (uint8_t)(FlagOffset + 1)};
-    }
-
-    LOGMAN_THROW_A_FMT(Class == GPRClass || Class == FPRClass, "SRA classes");
-    if (Class == FPRClass) {
-      return PhysicalRegister {FPRFixedClass, Reg};
     } else {
-      return PhysicalRegister {GPRFixedClass, Reg};
+      const IROp_LoadRegister* Op = IROp->C<IR::IROp_LoadRegister>();
+
+      LOGMAN_THROW_A_FMT(Op->Class == GPRClass || Op->Class == FPRClass, "SRA classes");
+      if (Op->Class == FPRClass) {
+        return PhysicalRegister {FPRFixedClass, (uint8_t)Op->Reg};
+      } else {
+        return PhysicalRegister {GPRFixedClass, (uint8_t)Op->Reg};
+      }
     }
   };
 
@@ -204,8 +185,8 @@ private:
     case OP_ALLOCATEGPRAFTER: return true;
     case OP_ALLOCATEFPR: return true;
     case OP_RMWHANDLE: return PhysicalRegister(Node) == PhysicalRegister(Header->Args[0]);
-    case OP_LOADREGISTER: return PhysicalRegister(Node) == DecodeSRAReg(Header);
-    case OP_STOREREGISTER: return PhysicalRegister(Header->Args[0]) == DecodeSRAReg(Header);
+    case OP_LOADREGISTER: return PhysicalRegister(Node) == DecodeSRAReg(Header, Node);
+    case OP_STOREREGISTER: return PhysicalRegister(Header->Args[0]) == DecodeSRAReg(Header, Node);
     default: return false;
     }
   }
@@ -378,37 +359,71 @@ private:
 };
 
 void ConstrainedRAPass::AddRegisters(IR::RegisterClassType Class, uint32_t RegisterCount) {
-  LOGMAN_THROW_A_FMT(RegisterCount <= INVALID_REG, "Up to {} regs supported", INVALID_REG);
+  LOGMAN_THROW_A_FMT(RegisterCount <= 31, "Up to 31 regs supported");
 
   Classes[Class].Count = RegisterCount;
 }
 
+inline bool KillMove(IROp_Header* LastOp, IROp_Header* IROp, Ref LastNode, Ref CodeNode) {
+  // 32-bit moves in x86_64 are represented as a Bfe, detect them.
+  if (LastOp->Op == OP_BFE && LastOp->C<IR::IROp_Bfe>()->lsb == 0 && LastOp->C<IR::IROp_Bfe>()->Width == 32) {
+    auto Op = IROp->Op;
+
+    if (Op == OP_AND) {
+      // Rewrite "mov wA, wB; and xA, xA, xC" into "and wA, wB, wC", since
+      // ((b & 0xffffffff) & c) == (b & c) & 0xffffffff.
+      IROp->Size = OpSize::i32Bit;
+      return true;
+    } else if (IROp->Size == OpSize::i32Bit) {
+      return Op == OP_OR || Op == OP_XOR || Op == OP_AND || Op == OP_SUB || Op == OP_LSHL || Op == OP_LSHR || Op == OP_ASHR;
+    }
+  }
+
+  return LastOp->Op == OP_STOREREGISTER;
+}
+
 bool ConstrainedRAPass::TryPostRAMerge(Ref LastNode, Ref CodeNode, IROp_Header* IROp) {
-  if (IROp->Op == OP_PUSH) {
-    auto LastOp = IR->GetOp<IROp_Header>(LastNode);
-    if (LastOp->Op == OP_PUSH) {
-      auto SP = PhysicalRegister(CodeNode);
-      auto Push = IR->GetOp<IROp_Push>(CodeNode);
-      auto LastPush = IR->GetOp<IROp_Push>(LastNode);
+  auto LastOp = IR->GetOp<IROp_Header>(LastNode);
 
-      if (LastOp->Size == IROp->Size && LastPush->ValueSize == Push->ValueSize && SP == PhysicalRegister(LastNode) &&
-          SP == PhysicalRegister(IROp->Args[1]) && SP == PhysicalRegister(LastOp->Args[1]) && SP != PhysicalRegister(IROp->Args[0]) &&
-          SP != PhysicalRegister(LastOp->Args[0]) && Push->ValueSize >= OpSize::i32Bit) {
+  if (IROp->Op == OP_PUSH && LastOp->Op == OP_PUSH) {
+    auto SP = PhysicalRegister(CodeNode);
+    auto Push = IR->GetOp<IROp_Push>(CodeNode);
+    auto LastPush = IR->GetOp<IROp_Push>(LastNode);
 
-        IREmit->SetWriteCursorBefore(LastNode);
-        IREmit->_PushTwo(IROp->Size, Push->ValueSize, IROp->Args[0], LastOp->Args[0], IROp->Args[1]);
-        return true;
-      }
+    if (LastOp->Size == IROp->Size && LastPush->ValueSize == Push->ValueSize && SP == PhysicalRegister(LastNode) &&
+        SP == PhysicalRegister(IROp->Args[1]) && SP == PhysicalRegister(LastOp->Args[1]) && SP != PhysicalRegister(IROp->Args[0]) &&
+        SP != PhysicalRegister(LastOp->Args[0]) && Push->ValueSize >= OpSize::i32Bit) {
+
+      IREmit->SetWriteCursorBefore(LastNode);
+      IREmit->_PushTwo(IROp->Size, Push->ValueSize, IROp->Args[0], LastOp->Args[0], IROp->Args[1]);
+      IREmit->RemovePostRA(CodeNode);
+      return true;
     }
   } else if (IROp->Op == OP_POP) {
-    auto LastOp = IR->GetOp<IROp_Header>(LastNode);
     auto SP = PhysicalRegister(IROp->Args[0]);
 
     if (LastOp->Op == OP_POP && LastOp->Size == IROp->Size && IROp->Size >= OpSize::i32Bit && SP == PhysicalRegister(LastOp->Args[0])) {
       IREmit->SetWriteCursorBefore(LastNode);
       IREmit->_PopTwo(IROp->Size, IROp->Args[0], LastOp->Args[1], IROp->Args[1]);
+      IREmit->RemovePostRA(CodeNode);
       return true;
     }
+  }
+
+  // Merge moves that are immediately consumed.
+  //
+  // x86 code inserts such moves to workaround x86's 2-address code. Because
+  // arm64 is 3-address code, we can optimize these out.
+  //
+  // Note we rely on the short-circuiting here.
+  if (PhysicalRegister(LastNode) == PhysicalRegister(CodeNode) && KillMove(LastOp, IROp, LastNode, CodeNode)) {
+    for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
+      if (IROp->Args[s].IsImmediate() && PhysicalRegister(IROp->Args[s]) == PhysicalRegister(LastNode)) {
+        IROp->Args[s].SetImmediate(PhysicalRegister(LastOp->Args[0]).Raw);
+      }
+    }
+
+    return true;
   }
 
   return false;
@@ -473,7 +488,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         // each register, used below. Since we initialized Class->Available,
         // RegToSSA is otherwise undefined so we can stash our temps there.
         if (auto Node = DecodeSRANode(IROp, CodeNode); Node != nullptr) {
-          auto Reg = DecodeSRAReg(IROp);
+          auto Reg = DecodeSRAReg(IROp, CodeNode);
 
           PreferredReg[IR->GetID(Node).Value] = Reg;
           GetClass(Reg)->RegToSSA[Reg.Reg] = CodeNode;
@@ -519,16 +534,16 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
 
     // Forward pass: Assign registers, spilling & optimizing as we go.
     for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
-      // GuestOpcode does not read or write registers, and must be skipped for
-      // push/pop merging. Since we'd be doing this check anyway for merging, do
-      // the check now so we can skip the rest of the logic too.
-      if (IROp->Op == OP_GUESTOPCODE) {
+      // These do not read or write registers, and must be skipped for merging.
+      // Since we'd be doing this check anyway for merging, do the check now so
+      // we can skip the rest of the logic too.
+      if (IROp->Op == OP_GUESTOPCODE || IROp->Op == OP_INLINECONSTANT) {
         continue;
       }
 
       // Static registers must be consistent at SRA load/store. Evict to ensure.
       if (auto Node = DecodeSRANode(IROp, CodeNode); Node != nullptr) {
-        auto Reg = DecodeSRAReg(IROp);
+        auto Reg = DecodeSRAReg(IROp, CodeNode);
         RegisterClass* Class = &Classes[Reg.Class];
 
         if (!(Class->Available & (1u << Reg.Reg))) {
@@ -599,7 +614,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
       }
 
       // Assign destinations.
-      if (GetHasDest(IROp->Op)) {
+      if (GetHasDest(IROp->Op) && PhysicalRegister(CodeNode).IsInvalid()) {
         AssignReg(IROp, CodeNode, IROp);
       }
 
@@ -608,7 +623,6 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         IREmit->RemovePostRA(CodeNode);
       } else if (LastNode && TryPostRAMerge(LastNode, CodeNode, IROp)) {
         // Merge adjacent instructions
-        IREmit->RemovePostRA(CodeNode);
         IREmit->RemovePostRA(LastNode);
         LastNode = nullptr;
       } else {

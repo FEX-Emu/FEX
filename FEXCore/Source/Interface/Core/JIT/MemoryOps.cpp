@@ -11,6 +11,7 @@ $end_info$
 #include "Interface/Core/ArchHelpers/Arm64Emitter.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/JIT/JITClass.h"
+#include "Interface/IR/RegisterAllocationData.h"
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/MathUtils.h>
 
@@ -174,23 +175,16 @@ DEF_OP(LoadAF) {
 
 DEF_OP(StoreRegister) {
   const auto Op = IROp->C<IR::IROp_StoreRegister>();
+  auto Reg = IR::PhysicalRegister(Node);
 
-  if (Op->Class == IR::GPRClass) {
-    unsigned Reg = Op->Reg == Core::CPUState::PF_AS_GREG ? (StaticRegisters.size() - 2) :
-                   Op->Reg == Core::CPUState::AF_AS_GREG ? (StaticRegisters.size() - 1) :
-                                                           Op->Reg;
-
-    LOGMAN_THROW_A_FMT(Reg < StaticRegisters.size(), "out of range reg");
-    const auto reg = StaticRegisters[Reg];
-
+  if (Reg.Class == IR::GPRFixedClass) {
     // Always use 64-bit, it's faster. Upper bits ignored for 32-bit mode.
-    mov(ARMEmitter::Size::i64Bit, reg, GetReg(Op->Value));
-  } else if (Op->Class == IR::FPRClass) {
+    mov(ARMEmitter::Size::i64Bit, GetReg(Reg), GetReg(Op->Value));
+  } else if (Reg.Class == IR::FPRFixedClass) {
     [[maybe_unused]] const auto regSize = HostSupportsAVX256 ? IR::OpSize::i256Bit : IR::OpSize::i128Bit;
-    LOGMAN_THROW_A_FMT(Op->Reg < StaticFPRegisters.size(), "reg out of range");
     LOGMAN_THROW_A_FMT(IROp->Size == regSize, "expected sized");
 
-    const auto guest = StaticFPRegisters[Op->Reg];
+    const auto guest = GetVReg(Reg);
     const auto host = GetVReg(Op->Value);
 
     if (HostSupportsAVX256) {
@@ -199,7 +193,7 @@ DEF_OP(StoreRegister) {
       mov(guest.Q(), host.Q());
     }
   } else {
-    LOGMAN_THROW_A_FMT(false, "Unhandled Op->Class {}", Op->Class);
+    LOGMAN_THROW_A_FMT(false, "Unhandled Op->Class {}", Reg.Class);
   }
 }
 
