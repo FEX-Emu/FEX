@@ -2492,10 +2492,10 @@ private:
   }
 
   struct ArithRef {
-    IREmitter* E;
-    bool IsConstant;
+    IREmitter* E {};
+    bool IsConstant {};
     union {
-      Ref R;
+      Ref R {};
       uint64_t C;
     };
 
