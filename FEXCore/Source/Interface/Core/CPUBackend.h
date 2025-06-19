@@ -198,7 +198,6 @@ namespace CPU {
 
     FEXCore::Core::InternalThreadState* ThreadState;
 
-    size_t MaxCodeSize;
     [[nodiscard]]
     CodeBuffer* GetEmptyCodeBuffer();
 
