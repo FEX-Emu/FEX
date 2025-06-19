@@ -117,7 +117,7 @@ struct ControlFlowGraph {
       // Add some initial capacity
       Info.Predecessors.reserve(2);
 
-      BlockMap[ID] = Info;
+      BlockMap[ID] = std::move(Info);
       Worklist.push_back(ID);
     }
   }
