@@ -438,14 +438,14 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
 
 static void DirectBlockDelinker(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record) {
   // Emit new 16 bytes of code to a temporary patch, then atomically apply it
-  __uint128_t Patch;
-  ARMEmitter::Emitter emit((uint8_t*)&Patch, sizeof(Patch));
+  auto Patch = reinterpret_cast<__uint128_t*>(alloca(sizeof(__uint128_t)));
+  ARMEmitter::Emitter emit((uint8_t*)Patch, sizeof(*Patch));
   emit.ldr(TMP1, 8); // PC-relative value pointing to constant after blr
   emit.blr(TMP1);
   emit.dc64(Frame->Pointers.Common.ExitFunctionLinker);
 
   auto branch = reinterpret_cast<__uint128_t*>((uintptr_t)Record - 8);
-  std::atomic_ref<__uint128_t>(*branch).store(Patch, std::memory_order::relaxed);
+  std::atomic_ref<__uint128_t>(*branch).store(*Patch, std::memory_order::relaxed);
   ARMEmitter::Emitter::ClearICache((void*)branch, sizeof(*branch));
 }
 
@@ -793,10 +793,8 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
       }
     }
 
-    if (DebugData) {
-      DebugData->Subblocks.push_back({static_cast<uint32_t>(BlockStartHostCode - CodeData.BlockEntry),
-                                      static_cast<uint32_t>(GetCursorAddress<uint8_t*>() - BlockStartHostCode)});
-    }
+    DebugData->Subblocks.push_back({static_cast<uint32_t>(BlockStartHostCode - CodeData.BlockEntry),
+                                    static_cast<uint32_t>(GetCursorAddress<uint8_t*>() - BlockStartHostCode)});
   }
 
   // Make sure last branch is generated. It certainly can't be eliminated here.
@@ -939,10 +937,8 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   }
 #endif
 
-  if (DebugData) {
-    DebugData->HostCodeSize = CodeData.Size;
-    DebugData->Relocations = &Relocations;
-  }
+  DebugData->HostCodeSize = CodeData.Size;
+  DebugData->Relocations = &Relocations;
 
   this->IR = nullptr;
 

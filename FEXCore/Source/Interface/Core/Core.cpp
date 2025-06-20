@@ -771,14 +771,8 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
   if (!IRView) {
     return {nullptr, nullptr, 0, 0};
   }
-  auto DebugData = fextl::make_unique<FEXCore::Core::DebugData>();
-
-  // If the trap flag is set we generate single instruction blocks that each check to generate a single step exception.
-  bool TFSet = Thread->CurrentFrame->State.flags[X86State::RFLAG_TF_RAW_LOC];
 
   // Attempt to get the CPU backend to compile this code
-
-
   // Re-check if another thread raced us in compiling this block.
   // We could lock CodeBufferWriteMutex earlier to prevent this from happening,
   // but this would increase lock contention. Redundant frontend runs aren't
@@ -789,6 +783,11 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
       return {.CompiledCode = reinterpret_cast<uint8_t*>(Block), .DebugData = nullptr, .StartAddr = 0, .Length = 0};
     }
   }
+
+  auto DebugData = fextl::make_unique<FEXCore::Core::DebugData>();
+
+  // If the trap flag is set we generate single instruction blocks that each check to generate a single step exception.
+  bool TFSet = Thread->CurrentFrame->State.flags[X86State::RFLAG_TF_RAW_LOC];
 
   auto CompiledCode = Thread->CPUBackend->CompileCode(GuestRIP, Length, TotalInstructions == 1, &*IRView, DebugData.get(), TFSet);
 

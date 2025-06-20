@@ -186,7 +186,7 @@ void CodeSizeValidation::CalculateBaseStats(FEXCore::Context::Context* CTX, FEXC
   SetupInfoDisabled = false;
 }
 
-static CodeSizeValidation Validation {};
+static CodeSizeValidation* Validation {};
 } // namespace CodeSize
 
 void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
@@ -194,10 +194,10 @@ void MsgHandler(LogMan::DebugLevels Level, const char* Message) {
 
   if (Level == LogMan::INFO) {
     // Disassemble information is sent through the Info log level.
-    if (!CodeSize::Validation.ParseMessage(Message)) {
+    if (!CodeSize::Validation->ParseMessage(Message)) {
       return;
     }
-    if (CodeSize::Validation.InfoPrintingDisabled()) {
+    if (CodeSize::Validation->InfoPrintingDisabled()) {
       return;
     }
   }
@@ -248,7 +248,7 @@ static bool TestInstructions(FEXCore::Context::Context* CTX, FEXCore::Core::Inte
     LogMan::Msg::IFmt("Compiling instruction '{}'", CurrentTest->TestInst);
 
     TestData[i] =
-      CodeSize::Validation.CompileAndGetStats(CTX, Thread, reinterpret_cast<void*>(CodeRIP), CurrentTest->CodeSize, CurrentTest->x86InstCount);
+      CodeSize::Validation->CompileAndGetStats(CTX, Thread, reinterpret_cast<void*>(CodeRIP), CurrentTest->CodeSize, CurrentTest->x86InstCount);
 
     // Go to the next test.
     CurrentTest = reinterpret_cast<const TestInfo*>(&CurrentTest->Code[CurrentTest->CodeSize]);
@@ -467,6 +467,11 @@ public:
 
 int main(int argc, char** argv, char** const envp) {
   FEXCore::Allocator::GLIBCScopedFault GLIBFaultScope;
+
+  // Initialize early as the message handlers use it.
+  CodeSize::CodeSizeValidation Validation {};
+  CodeSize::Validation = &Validation;
+
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
   FEXCore::Config::Initialize();
@@ -659,7 +664,7 @@ int main(int argc, char** argv, char** const envp) {
   auto ParentThread = CTX->CreateThread(0, 0);
 
   // Calculate the base stats for instruction testing.
-  CodeSize::Validation.CalculateBaseStats(CTX.get(), ParentThread);
+  CodeSize::Validation->CalculateBaseStats(CTX.get(), ParentThread);
 
   // Test all the instructions.
   auto Result = TestInstructions(CTX.get(), ParentThread, argc >= 2 ? argv[2] : nullptr) ? 0 : 1;
