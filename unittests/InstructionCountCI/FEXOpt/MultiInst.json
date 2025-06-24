@@ -213,6 +213,37 @@
         "mov x4, x20"
       ]
     },
+    "unsigned div narrow with flags": {
+      "x86InstructionCount": 2,
+      "ExpectedInstructionCount": 17,
+      "Comment": [
+        "div narrowing with known smaller sources",
+        "dividend in rdx:rax"
+      ],
+      "x86Insts": [
+        "xor rdx, rdx",
+        "div rcx"
+      ],
+      "ExpectedArm64ASM": [
+        "mov w5, #0x0",
+        "subs w26, w5, #0x0 (0)",
+        "cbz x5, #+0x2c",
+        "mov x0, x5",
+        "mov x1, x4",
+        "mov x2, x7",
+        "ldr x3, [x28, #3392]",
+        "str x30, [sp, #-16]!",
+        "blr x3",
+        "ldr x30, [sp], #16",
+        "mov x20, x0",
+        "mov x22, x1",
+        "b #+0xc",
+        "udiv x20, x4, x7",
+        "msub x22, x20, x7, x4",
+        "mov x5, x22",
+        "mov x4, x20"
+      ]
+    },
     "signed div narrow 32-bit": {
       "x86InstructionCount": 3,
       "ExpectedInstructionCount": 10,
