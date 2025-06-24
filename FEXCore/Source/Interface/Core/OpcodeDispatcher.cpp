@@ -3582,11 +3582,11 @@ void OpDispatchBuilder::NEGOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::DIVOp(OpcodeArgs) {
-  // This loads the divisor
-  Ref Divisor = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
-
   const auto GPRSize = CTX->GetGPROpSize();
   auto Size = OpSizeFromSrc(Op);
+
+  // This loads the divisor. 32-bit/64-bit paths mask inside the JIT, 8/16 do not.
+  Ref Divisor = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= OpSize::i32Bit});
 
   if (Size == OpSize::i64Bit && !CTX->Config.Is64BitMode) {
     LogMan::Msg::EFmt("Doesn't exist in 32bit mode");
