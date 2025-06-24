@@ -2760,26 +2760,25 @@
         "uxth w0, w4",
         "bfi w0, w5, #16, #16",
         "udiv w22, w0, w20",
-        "msub w24, w22, w20, w0",
+        "msub w5, w22, w20, w0",
         "bfxil x4, x22, #0, #16",
-        "bfxil x5, x24, #0, #16"
+        "bfxil x5, x5, #0, #16"
       ]
     },
     "div ebx": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Comment": "GROUP2 0xf7 /6",
       "ExpectedArm64ASM": [
-        "mov w20, w6",
         "mov x0, x4",
         "bfi x0, x5, #32, #32",
-        "udiv x22, x0, x20",
-        "msub x24, x22, x20, x0",
-        "mov w4, w22",
-        "mov w5, w24"
+        "udiv x20, x0, x6",
+        "msub x5, x20, x6, x0",
+        "mov w4, w20",
+        "mov w5, w5"
       ]
     },
     "div rbx": {
-      "ExpectedInstructionCount": 15,
+      "ExpectedInstructionCount": 14,
       "Comment": "GROUP2 0xf7 /6",
       "ExpectedArm64ASM": [
         "cbz x5, #+0x2c",
@@ -2791,11 +2790,10 @@
         "blr x3",
         "ldr x30, [sp], #16",
         "mov x20, x0",
-        "mov x22, x1",
+        "mov x5, x1",
         "b #+0xc",
         "udiv x20, x4, x6",
-        "msub x22, x20, x6, x4",
-        "mov x5, x22",
+        "msub x5, x20, x6, x4",
         "mov x4, x20"
       ]
     },
@@ -2808,9 +2806,9 @@
         "bfi w0, w5, #16, #16",
         "sxth w1, w20",
         "sdiv w22, w0, w1",
-        "msub w24, w22, w1, w0",
+        "msub w5, w22, w1, w0",
         "bfxil x4, x22, #0, #16",
-        "bfxil x5, x24, #0, #16"
+        "bfxil x5, x5, #0, #16"
       ]
     },
     "idiv ebx": {
@@ -2822,13 +2820,13 @@
         "bfi x0, x5, #32, #32",
         "sxtw x1, w20",
         "sdiv x22, x0, x1",
-        "msub x24, x22, x1, x0",
+        "msub x5, x22, x1, x0",
         "mov w4, w22",
-        "mov w5, w24"
+        "mov w5, w5"
       ]
     },
     "idiv rbx": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 16,
       "Comment": "GROUP2 0xf7 /7",
       "ExpectedArm64ASM": [
         "asr x0, x4, #63",
@@ -2842,11 +2840,10 @@
         "blr x3",
         "ldr x30, [sp], #16",
         "mov x20, x0",
-        "mov x22, x1",
+        "mov x5, x1",
         "b #+0xc",
         "sdiv x20, x4, x6",
-        "msub x22, x20, x6, x4",
-        "mov x5, x22",
+        "msub x5, x20, x6, x4",
         "mov x4, x20"
       ]
     },

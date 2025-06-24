@@ -2341,9 +2341,9 @@
         "uxth w0, w4",
         "bfi w0, w5, #16, #16",
         "udiv w22, w0, w20",
-        "msub w24, w22, w20, w0",
+        "msub w5, w22, w20, w0",
         "bfxil x4, x22, #0, #16",
-        "bfxil x5, x24, #0, #16"
+        "bfxil x5, x5, #0, #16"
       ]
     },
     "inc al": {
