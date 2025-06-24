@@ -2766,16 +2766,15 @@
       ]
     },
     "div ebx": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Comment": "GROUP2 0xf7 /6",
       "ExpectedArm64ASM": [
-        "mov w20, w6",
         "mov x0, x4",
         "bfi x0, x5, #32, #32",
-        "udiv x22, x0, x20",
-        "msub x24, x22, x20, x0",
-        "mov w4, w22",
-        "mov w5, w24"
+        "udiv x20, x0, x6",
+        "msub x22, x20, x6, x0",
+        "mov w4, w20",
+        "mov w5, w22"
       ]
     },
     "div rbx": {
