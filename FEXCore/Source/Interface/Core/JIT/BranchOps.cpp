@@ -411,6 +411,7 @@ DEF_OP(ThreadRemoveCodeEntry) {
 DEF_OP(CPUID) {
   auto Op = IROp->C<IR::IROp_CPUID>();
 
+  isb();
   mov(ARMEmitter::Size::i64Bit, TMP2, GetReg(Op->Function));
   mov(ARMEmitter::Size::i64Bit, TMP3, GetReg(Op->Leaf));
 
