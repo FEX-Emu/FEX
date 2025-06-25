@@ -446,6 +446,27 @@ bool ConstrainedRAPass::TryPostRAMerge(Ref LastNode, Ref CodeNode, IROp_Header* 
       IREmit->RemovePostRA(CodeNode);
       return false;
     }
+  } else if (IROp->Op == OP_CPUID && PhysicalRegister(IROp->Args[0]) == PhysicalRegister(LastNode) && LastOp->Op == OP_CONSTANT) {
+    // Try to constant fold. As a limitation of merging only 2 instructions, we
+    // can only handle constant functions, not constant leafs. This could be
+    // lifted if we generalized at a (significant) complexity cost.
+    uint64_t ConstantFunction = LastOp->C<IROp_Constant>()->Constant;
+    auto Op = IROp->CW<IR::IROp_CPUID>();
+
+    const auto SupportsConstant = CPUID->DoesFunctionReportConstantData(ConstantFunction);
+    if (SupportsConstant.SupportsConstantFunction == CPUIDEmu::SupportsConstant::CONSTANT &&
+        SupportsConstant.NeedsLeaf != CPUIDEmu::NeedsLeafConstant::NEEDSLEAFCONSTANT) {
+      const auto Result = CPUID->RunFunction(ConstantFunction, 0 /* leaf */);
+
+      IREmit->SetWriteCursorBefore(CodeNode);
+      IREmit->_Fence({FEXCore::IR::Fence_Inst});
+      IREmit->_Constant(Result.eax).Node->Reg = PhysicalRegister(Op->OutEAX).Raw;
+      IREmit->_Constant(Result.ebx).Node->Reg = PhysicalRegister(Op->OutEBX).Raw;
+      IREmit->_Constant(Result.ecx).Node->Reg = PhysicalRegister(Op->OutECX).Raw;
+      IREmit->_Constant(Result.edx).Node->Reg = PhysicalRegister(Op->OutEDX).Raw;
+      IREmit->RemovePostRA(CodeNode);
+      return false;
+    }
   }
 
   // Merge moves that are immediately consumed.
