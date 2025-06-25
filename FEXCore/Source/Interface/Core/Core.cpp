@@ -426,7 +426,7 @@ void ContextImpl::InitializeCompiler(FEXCore::Core::InternalThreadState* Thread)
   Thread->PassManager->RegisterSyscallHandler(SyscallHandler);
 
   // Create CPU backend
-  Thread->PassManager->InsertRegisterAllocationPass();
+  Thread->PassManager->InsertRegisterAllocationPass(this);
   Thread->CPUBackend = FEXCore::CPU::CreateArm64JITCore(this, Thread);
 
   Thread->PassManager->Finalize();
