@@ -434,6 +434,18 @@ bool ConstrainedRAPass::TryPostRAMerge(Ref LastNode, Ref CodeNode, IROp_Header* 
         return PhysicalRegister(LastNode) == PhysicalRegister(Op->OutRemainder);
       }
     }
+  } else if (IROp->Op == OP_XGETBV && PhysicalRegister(IROp->Args[0]) == PhysicalRegister(LastNode) && LastOp->Op == OP_CONSTANT) {
+    // Try to constant fold
+    uint64_t ConstantFunction = LastOp->C<IROp_Constant>()->Constant;
+    auto Op = IROp->CW<IR::IROp_XGetBV>();
+    if (CPUID->DoesXCRFunctionReportConstantData(ConstantFunction)) {
+      const auto Result = CPUID->RunXCRFunction(ConstantFunction);
+      IREmit->SetWriteCursorBefore(CodeNode);
+      IREmit->_Constant(Result.eax).Node->Reg = PhysicalRegister(Op->OutEAX).Raw;
+      IREmit->_Constant(Result.edx).Node->Reg = PhysicalRegister(Op->OutEDX).Raw;
+      IREmit->RemovePostRA(CodeNode);
+      return false;
+    }
   }
 
   // Merge moves that are immediately consumed.
