@@ -10,6 +10,7 @@ $end_info$
 #include "Interface/IR/IREmitter.h"
 #include "Interface/IR/RegisterAllocationData.h"
 #include "Interface/IR/Passes.h"
+#include "Interface/Core/CPUID.h"
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
@@ -52,6 +53,8 @@ namespace {
 
 class ConstrainedRAPass final : public RegisterAllocationPass {
 public:
+  explicit ConstrainedRAPass(const FEXCore::CPUIDEmu* CPUID)
+    : CPUID {CPUID} {}
   void Run(IREmitter* IREmit) override;
   void AddRegisters(IR::RegisterClassType Class, uint32_t RegisterCount) override;
   bool TryPostRAMerge(Ref LastNode, Ref CodeNode, IROp_Header* IROp);
@@ -61,6 +64,7 @@ private:
 
   IREmitter* IREmit;
   IRListView* IR;
+  const FEXCore::CPUIDEmu* CPUID;
 
   // Map of nodes to their preferred register, to coalesce load/store reg.
   fextl::vector<PhysicalRegister> PreferredReg;
@@ -663,7 +667,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
   IR->GetHeader()->PostRA = true;
 }
 
-fextl::unique_ptr<IR::RegisterAllocationPass> CreateRegisterAllocationPass() {
-  return fextl::make_unique<ConstrainedRAPass>();
+fextl::unique_ptr<IR::RegisterAllocationPass> CreateRegisterAllocationPass(const FEXCore::CPUIDEmu* CPUID) {
+  return fextl::make_unique<ConstrainedRAPass>(CPUID);
 }
 } // namespace FEXCore::IR
