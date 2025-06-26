@@ -213,7 +213,7 @@ static wl_proxy* fex_wl_proxy_marshal_array(wl_proxy* proxy, uint32_t opcode, gu
 #endif
   } else if (constructor && version && !flags) {
     return fexldr_ptr_libwayland_client_wl_proxy_marshal_array_constructor_versioned(proxy, opcode, host_args.data(), interface, version.value());
-  } else if (constructor && version && !flags) {
+  } else if (constructor && !version && !flags) {
     return fexldr_ptr_libwayland_client_wl_proxy_marshal_array_constructor(proxy, opcode, host_args.data(), interface);
   } else {
     fprintf(stderr, "Invalid configuration\n");
