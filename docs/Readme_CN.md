@@ -69,5 +69,3 @@ https://wiki.fex-emu.com/index.php/Development:Setting_up_FEX
 ### 创建RootFS
 AArch64 host端需要一个rootfs去运行guest程序。参考以下维基页面从头开始创建一个rootfs
 https://wiki.fex-emu.com/index.php/Development:Setting_up_RootFS
-
-![FEX diagram](Diagram.svg)
