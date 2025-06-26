@@ -352,6 +352,8 @@ fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_proxy* proxy, guest
     } else if (signature == "ii") {
       // E.g. xdg_toplevel::configure_bounds
       WaylandFinalizeHostTrampolineForGuestListener<'i', 'i'>(callback);
+    } else if (signature == "iu") {
+      WaylandFinalizeHostTrampolineForGuestListener<'i', 'u'>(callback);
     } else if (signature == "iia") {
       // E.g. xdg_toplevel::configure
       FEX::HLE::FinalizeHostTrampolineForGuestFunction((FEX::HLE::HostToGuestTrampolinePtr*)callback,
@@ -371,6 +373,8 @@ fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_proxy* proxy, guest
     } else if (signature == "uff") {
       // E.g. wl_pointer_listener::motion
       WaylandFinalizeHostTrampolineForGuestListener<'u', 'f', 'f'>(callback);
+    } else if (signature == "uffff") {
+      WaylandFinalizeHostTrampolineForGuestListener<'u', 'f', 'f', 'f', 'f'>(callback);
     } else if (signature == "uhu") {
       // E.g. wl_keyboard_listener::keymap
       WaylandFinalizeHostTrampolineForGuestListener<'u', 'h', 'u'>(callback);
@@ -383,6 +387,8 @@ fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_proxy* proxy, guest
     } else if (signature == "uiii") {
       // E.g. wl_output_listener::mode
       WaylandFinalizeHostTrampolineForGuestListener<'u', 'i', 'i', 'i'>(callback);
+    } else if (signature == "uiiii") {
+      WaylandFinalizeHostTrampolineForGuestListener<'u', 'i', 'i', 'i', 'i'>(callback);
     } else if (signature == "uo") {
       // E.g. wl_pointer_listener::leave
       WaylandFinalizeHostTrampolineForGuestListener<'u', 'o'>(callback);
@@ -396,6 +402,10 @@ fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_proxy* proxy, guest
     } else if (signature == "uoffo") {
       // E.g. wl_data_device_listener::enter
       WaylandFinalizeHostTrampolineForGuestListener<'u', 'o', 'f', 'f', 'o'>(callback);
+    } else if (signature == "us") {
+      WaylandFinalizeHostTrampolineForGuestListener<'u', 's'>(callback);
+    } else if (signature == "uss") {
+      WaylandFinalizeHostTrampolineForGuestListener<'u', 's', 's'>(callback);
     } else if (signature == "usu") {
       // E.g. wl_registry::global
       WaylandFinalizeHostTrampolineForGuestListener<'u', 's', 'u'>(callback);
@@ -411,6 +421,8 @@ fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_proxy* proxy, guest
     } else if (signature == "uuoiff") {
       // E.g. wl_touch_listener::down
       WaylandFinalizeHostTrampolineForGuestListener<'u', 'u', 'o', 'i', 'f', 'f'>(callback);
+    } else if (signature == "uuou") {
+      WaylandFinalizeHostTrampolineForGuestListener<'u', 'u', 'o', 'u'>(callback);
     } else if (signature == "uuu") {
       // E.g. zwp_linux_dmabuf_v1::modifier
       WaylandFinalizeHostTrampolineForGuestListener<'u', 'u', 'u'>(callback);
@@ -426,6 +438,8 @@ fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_proxy* proxy, guest
     } else if (signature == "sii") {
       // E.g. zwp_text_input_v3::preedit_string
       WaylandFinalizeHostTrampolineForGuestListener<'s', 'i', 'i'>(callback);
+    } else if (signature == "ss") {
+      WaylandFinalizeHostTrampolineForGuestListener<'s', 's'>(callback);
     } else {
       fprintf(stderr, "TODO: Unknown wayland event signature descriptor %s\n", signature.data());
       std::abort();
