@@ -382,6 +382,19 @@ inline bool KillMove(IROp_Header* LastOp, IROp_Header* IROp, Ref LastNode, Ref C
   return LastOp->Op == OP_STOREREGISTER;
 }
 
+inline bool IsSignext(const IROp_Header* IROp, OrderedNodeWrapper Src, OpSize Size) {
+  if (IROp->Op == OP_SBFE) {
+    auto Sbfe = IROp->C<IR::IROp_Sbfe>();
+    return Sbfe->Width == 1 && Sbfe->lsb == (IR::OpSizeAsBits(Size) - 1) && Sbfe->Src == Src;
+  } else {
+    return false;
+  }
+}
+
+inline bool IsZero(const IROp_Header* IROp) {
+  return IROp->Op == OP_CONSTANT && IROp->C<IROp_Constant>()->Constant == 0;
+}
+
 bool ConstrainedRAPass::TryPostRAMerge(Ref LastNode, Ref CodeNode, IROp_Header* IROp) {
   auto LastOp = IR->GetOp<IROp_Header>(LastNode);
 
@@ -407,6 +420,15 @@ bool ConstrainedRAPass::TryPostRAMerge(Ref LastNode, Ref CodeNode, IROp_Header* 
       IREmit->_PopTwo(IROp->Size, IROp->Args[0], LastOp->Args[1], IROp->Args[1]);
       IREmit->RemovePostRA(CodeNode);
       return true;
+    }
+  } else if ((IROp->Op == OP_DIV || IROp->Op == OP_UDIV) && IROp->Size >= OpSize::i32Bit) {
+    // If Upper came from a sign/zero extension, we only need a 64-bit division.
+    auto Op = IROp->CW<IR::IROp_Div>();
+    if (!Op->Upper.IsInvalid() && PhysicalRegister(Op->Upper) == PhysicalRegister(LastNode)) {
+      if (IROp->Op == OP_DIV ? IsSignext(LastOp, Op->Lower, IROp->Size) : IsZero(LastOp)) {
+        Op->Upper.SetInvalid();
+        return PhysicalRegister(LastNode) == PhysicalRegister(Op->OutRemainder);
+      }
     }
   }
 
