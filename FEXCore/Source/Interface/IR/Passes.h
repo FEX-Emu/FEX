@@ -4,6 +4,7 @@
 #include <FEXCore/fextl/memory.h>
 
 namespace FEXCore {
+class CPUIDEmu;
 struct HostFeatures;
 } // namespace FEXCore
 
@@ -17,7 +18,7 @@ class RegisterAllocationPass;
 
 fextl::unique_ptr<FEXCore::IR::Pass> CreateConstProp(bool SupportsTSOImm9);
 fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadFlagCalculationEliminination();
-fextl::unique_ptr<FEXCore::IR::RegisterAllocationPass> CreateRegisterAllocationPass();
+fextl::unique_ptr<FEXCore::IR::RegisterAllocationPass> CreateRegisterAllocationPass(const FEXCore::CPUIDEmu* CPUID);
 fextl::unique_ptr<FEXCore::IR::Pass> CreateX87StackOptimizationPass(const FEXCore::HostFeatures&, OpSize GPROpSize);
 
 namespace Validation {

@@ -401,54 +401,6 @@ DEF_OP(SMull) {
   smull(GetReg(Node).X(), GetReg(Op->Src1).W(), GetReg(Op->Src2).W());
 }
 
-DEF_OP(Div) {
-  auto Op = IROp->C<IR::IROp_Div>();
-
-  // Each source is OpSize in size
-  // So you can have up to a 128bit divide from x86-64
-  const auto OpSize = IROp->Size;
-  const auto EmitSize = ConvertSize(IROp);
-
-  const auto Quotient = GetReg(Op->OutQuotient);
-  const auto Remainder = GetReg(Op->OutRemainder);
-  auto Src1 = GetReg(Op->Src1);
-  auto Src2 = GetReg(Op->Src2);
-
-  if (OpSize == IR::OpSize::i8Bit) {
-    sxtb(EmitSize, TMP1, Src1);
-    sxtb(EmitSize, TMP2, Src2);
-
-    Src1 = TMP1;
-    Src2 = TMP2;
-  } else if (OpSize == IR::OpSize::i16Bit) {
-    sxth(EmitSize, TMP1, Src1);
-    sxth(EmitSize, TMP2, Src2);
-
-    Src1 = TMP1;
-    Src2 = TMP2;
-  }
-
-  sdiv(EmitSize, Quotient, Src1, Src2);
-  msub(EmitSize, Remainder, Quotient, Src2, Src1);
-}
-
-DEF_OP(UDiv) {
-  auto Op = IROp->C<IR::IROp_UDiv>();
-
-  // Each source is OpSize in size
-  // So you can have up to a 128bit divide from x86-64
-  // Sources have already been zero extended.
-  const auto EmitSize = ConvertSize(IROp);
-
-  const auto Quotient = GetReg(Op->OutQuotient);
-  const auto Remainder = GetReg(Op->OutRemainder);
-  auto Src1 = GetReg(Op->Src1);
-  auto Src2 = GetReg(Op->Src2);
-
-  udiv(EmitSize, Quotient, Src1, Src2);
-  msub(EmitSize, Remainder, Quotient, Src2, Src1);
-}
-
 DEF_OP(MulH) {
   auto Op = IROp->C<IR::IROp_MulH>();
   const auto OpSize = IROp->Size;
@@ -887,16 +839,39 @@ DEF_OP(PExt) {
   }
 }
 
-DEF_OP(LDiv) {
-  auto Op = IROp->C<IR::IROp_LDiv>();
+DEF_OP(Div) {
+  auto Op = IROp->C<IR::IROp_Div>();
   const auto OpSize = IROp->Size;
-  const auto EmitSize = OpSize >= IR::OpSize::i32Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
   const auto Quotient = GetReg(Op->OutQuotient);
   const auto Remainder = GetReg(Op->OutRemainder);
+  auto Lower = GetReg(Op->Lower);
+  auto Divisor = GetReg(Op->Divisor);
+
+  if (Op->Upper.IsInvalid()) {
+    const auto EmitSize = ConvertSize(IROp);
+
+    if (OpSize == IR::OpSize::i8Bit) {
+      sxtb(EmitSize, TMP1, Lower);
+      sxtb(EmitSize, TMP2, Divisor);
+
+      Lower = TMP1;
+      Divisor = TMP2;
+    } else if (OpSize == IR::OpSize::i16Bit) {
+      sxth(EmitSize, TMP1, Lower);
+      sxth(EmitSize, TMP2, Divisor);
+
+      Lower = TMP1;
+      Divisor = TMP2;
+    }
+
+    sdiv(EmitSize, Quotient, Lower, Divisor);
+    msub(EmitSize, Remainder, Quotient, Divisor, Lower);
+    return;
+  }
+
+  const auto EmitSize = OpSize >= IR::OpSize::i32Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
   const auto Upper = GetReg(Op->Upper);
-  const auto Lower = GetReg(Op->Lower);
-  const auto Divisor = GetReg(Op->Divisor);
 
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64
@@ -960,23 +935,31 @@ DEF_OP(LDiv) {
     Bind(&LongDIVRet);
     break;
   }
-  default: LOGMAN_MSG_A_FMT("Unknown LDIV Size: {}", OpSize); break;
+  default: LOGMAN_MSG_A_FMT("Unknown DIV Size: {}", OpSize); break;
   }
 }
 
-DEF_OP(LUDiv) {
-  auto Op = IROp->C<IR::IROp_LUDiv>();
+DEF_OP(UDiv) {
+  auto Op = IROp->C<IR::IROp_UDiv>();
   const auto OpSize = IROp->Size;
-  const auto EmitSize = OpSize >= IR::OpSize::i32Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
 
   const auto Quotient = GetReg(Op->OutQuotient);
   const auto Remainder = GetReg(Op->OutRemainder);
-  const auto Upper = GetReg(Op->Upper);
   const auto Lower = GetReg(Op->Lower);
   const auto Divisor = GetReg(Op->Divisor);
 
   // Each source is OpSize in size
   // So you can have up to a 128bit divide from x86-64=
+  if (Op->Upper.IsInvalid()) {
+    const auto EmitSize = ConvertSize(IROp);
+    udiv(EmitSize, Quotient, Lower, Divisor);
+    msub(EmitSize, Remainder, Quotient, Divisor, Lower);
+    return;
+  }
+
+  const auto EmitSize = OpSize >= IR::OpSize::i32Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  const auto Upper = GetReg(Op->Upper);
+
   switch (OpSize) {
   case IR::OpSize::i16Bit: {
     uxth(EmitSize, TMP1, Lower);

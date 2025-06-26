@@ -56,7 +56,7 @@ public:
     return PassPtr;
   }
 
-  void InsertRegisterAllocationPass();
+  void InsertRegisterAllocationPass(FEXCore::Context::ContextImpl* ctx);
 
   void Run(IREmitter* IREmit);
 
