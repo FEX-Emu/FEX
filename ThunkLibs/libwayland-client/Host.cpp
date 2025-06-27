@@ -449,8 +449,11 @@ void fexfn_impl_libwayland_client_fex_wl_exchange_interface_pointer(guest_layout
   // them into the rodata section of the application itself instead of the
   // library. To copy the host information to them on startup, we must
   // temporarily disable write-protection on this data hence.
-  auto page_begin = reinterpret_cast<uintptr_t>(guest_interface_raw.force_get_host_pointer()) & ~uintptr_t {0xfff};
-  if (0 != mprotect((void*)page_begin, 0x1000, PROT_READ | PROT_WRITE)) {
+  // NOTE: This may span page boundaries, so up to 2 pages may need to be changed
+  const auto source_addr = reinterpret_cast<uintptr_t>(guest_interface_raw.force_get_host_pointer());
+  const auto page_begin = source_addr & ~uintptr_t {0xfff};
+  const auto remap_size = ((source_addr & 0xfff) + sizeof(*guest_interface_raw.force_get_host_pointer()) > 0x1000) ? 0x2000 : 0x1000;
+  if (0 != mprotect((void*)page_begin, remap_size, PROT_READ | PROT_WRITE)) {
     fprintf(stderr, "ERROR: %s\n", strerror(errno));
     std::abort();
   }
@@ -476,7 +479,7 @@ void fexfn_impl_libwayland_client_fex_wl_exchange_interface_pointer(guest_layout
 #endif
 
   // TODO: Disabled until we ensure the interface data is indeed stored in rodata
-  //  mprotect((void*)page_begin, 0x1000, PROT_READ);
+  //  mprotect((void*)page_begin, remap_size, PROT_READ);
 }
 
 void fexfn_impl_libwayland_client_fex_wl_get_method_signature(wl_proxy* proxy, uint32_t opcode, char* out) {
