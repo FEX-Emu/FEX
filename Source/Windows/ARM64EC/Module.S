@@ -94,30 +94,29 @@ ret_sp_misaligned:
 
   // Makes a wrapper for calling a system call directly, skipping the usual ntdll thunks
 #define HASH #
-#define DIRECT_SYSCALL_WRAPPER(Name, WineIdName, WindowsId) \
+#define DIRECT_SYSCALL_WRAPPER(Name, WinId) \
   .global Name; \
   Name:; \
     adrp x16, WineSyscallDispatcher; \
     ldr x16, [x16, HASH:lo12:WineSyscallDispatcher]; \
     cbz x16, 1f; \
     mov x9, x30; \
-    adrp x8, WineIdName; \
-    ldr x8, [x8, HASH:lo12:WineIdName]; \
+    mov x8, WinId; \
     blr x16; \
     ret; \
   1:; \
-    svc HASH WindowsId; \
+    svc HASH WinId; \
     ret
 
   // Allows for continuing from a full native context, as the NTDLL NtContinue export takes in an x64 context with EC and
   // the conversion to that loses the ARM64EC ABI-disallowed registers that FEX uses.
-DIRECT_SYSCALL_WRAPPER("#NtContinueNative", WineNtContinueSyscallId, 0x43)
+DIRECT_SYSCALL_WRAPPER("#NtContinueNative", 0x43)
 
   // Both of these are wrapped as FEX needs them to setup its call checker at startup time and their NTDLL thunks could
   // already be patched by then (and because the call checker isn't installed, their patched x86 versions would be invoked
   // when called by FEX).
-DIRECT_SYSCALL_WRAPPER("#NtAllocateVirtualMemoryNative", WineNtAllocateVirtualMemorySyscallId, 0x18)
-DIRECT_SYSCALL_WRAPPER("#NtProtectVirtualMemoryNative", WineNtProtectVirtualMemorySyscallId, 0x50)
+DIRECT_SYSCALL_WRAPPER("#NtAllocateVirtualMemoryNative", 0x18)
+DIRECT_SYSCALL_WRAPPER("#NtProtectVirtualMemoryNative", 0x50)
 
   // A replacement for the standard ARM64EC call checker that ignores any FFS patches and always redirects to a function's
   // native implementation. As the only library FEX calls into is NTDLL, this is done using a LUT generated at init time.
