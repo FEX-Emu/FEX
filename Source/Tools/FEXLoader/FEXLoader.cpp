@@ -366,10 +366,11 @@ int main(int argc, char** argv, char** const envp) {
     //
     // We want to maintain the original output location otherwise we
     // can run in to problems of writing to some file
+    auto LogFD = OutputFD;
     if (LogFile == "stderr") {
-      OutputFD = dup(STDERR_FILENO);
+      LogFD = dup(STDERR_FILENO);
     } else if (LogFile == "stdout") {
-      OutputFD = dup(STDOUT_FILENO);
+      LogFD = dup(STDOUT_FILENO);
     } else if (LogFile == "server") {
       FEXServerLogging::FEXServerFD = FEXServerClient::RequestLogFD(FEXServerClient::GetServerFD());
       if (FEXServerLogging::FEXServerFD != -1) {
@@ -378,7 +379,14 @@ int main(int argc, char** argv, char** const envp) {
       }
     } else if (!LogFile.empty()) {
       constexpr int USER_PERMS = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
-      OutputFD = open(LogFile.c_str(), O_CREAT | O_CLOEXEC | O_WRONLY, USER_PERMS);
+      LogFD = open(LogFile.c_str(), O_CREAT | O_CLOEXEC | O_WRONLY, USER_PERMS);
+    }
+
+    if (LogFD == -1) {
+      LogMan::Msg::EFmt("Couldn't open log file. Going Silent.");
+      SilentLog = true;
+    } else {
+      OutputFD = LogFD;
     }
   }
   DisableOutputColors = !isatty(OutputFD);

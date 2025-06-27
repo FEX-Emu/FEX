@@ -793,10 +793,8 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
       }
     }
 
-    if (DebugData) {
-      DebugData->Subblocks.push_back({static_cast<uint32_t>(BlockStartHostCode - CodeData.BlockEntry),
-                                      static_cast<uint32_t>(GetCursorAddress<uint8_t*>() - BlockStartHostCode)});
-    }
+    DebugData->Subblocks.push_back({static_cast<uint32_t>(BlockStartHostCode - CodeData.BlockEntry),
+                                    static_cast<uint32_t>(GetCursorAddress<uint8_t*>() - BlockStartHostCode)});
   }
 
   // Make sure last branch is generated. It certainly can't be eliminated here.
@@ -939,10 +937,8 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   }
 #endif
 
-  if (DebugData) {
-    DebugData->HostCodeSize = CodeData.Size;
-    DebugData->Relocations = &Relocations;
-  }
+  DebugData->HostCodeSize = CodeData.Size;
+  DebugData->Relocations = &Relocations;
 
   this->IR = nullptr;
 
