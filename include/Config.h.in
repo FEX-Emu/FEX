@@ -1,4 +1,0 @@
-#pragma once
-
-#define FEX_INSTALL_PREFIX "@CMAKE_INSTALL_PREFIX@"
-#define FEXINTERPRETER_PATH FEX_INSTALL_PREFIX "/bin/FEXInterpreter"
