@@ -153,7 +153,7 @@
     },
     "signed div narrow": {
       "x86InstructionCount": 2,
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "div narrowing with known smaller sources",
         "dividend in rdx:rax"
@@ -164,19 +164,6 @@
       ],
       "ExpectedArm64ASM": [
         "asr x5, x4, #63",
-        "asr x0, x4, #63",
-        "eor x0, x0, x5",
-        "cbz x0, #+0x2c",
-        "mov x0, x5",
-        "mov x1, x4",
-        "mov x2, x7",
-        "ldr x3, [x28, #3400]",
-        "str x30, [sp, #-16]!",
-        "blr x3",
-        "ldr x30, [sp], #16",
-        "mov x20, x0",
-        "mov x22, x1",
-        "b #+0xc",
         "sdiv x20, x4, x7",
         "msub x22, x20, x7, x4",
         "mov x5, x22",
@@ -185,7 +172,7 @@
     },
     "unsigned div narrow": {
       "x86InstructionCount": 2,
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "div narrowing with known smaller sources",
         "dividend in rdx:rax"
@@ -196,17 +183,26 @@
       ],
       "ExpectedArm64ASM": [
         "mov w5, #0x0",
-        "cbz x5, #+0x2c",
-        "mov x0, x5",
-        "mov x1, x4",
-        "mov x2, x7",
-        "ldr x3, [x28, #3392]",
-        "str x30, [sp, #-16]!",
-        "blr x3",
-        "ldr x30, [sp], #16",
-        "mov x20, x0",
-        "mov x22, x1",
-        "b #+0xc",
+        "udiv x20, x4, x7",
+        "msub x22, x20, x7, x4",
+        "mov x5, x22",
+        "mov x4, x20"
+      ]
+    },
+    "unsigned div narrow with flags": {
+      "x86InstructionCount": 2,
+      "ExpectedInstructionCount": 6,
+      "Comment": [
+        "div narrowing with known smaller sources",
+        "dividend in rdx:rax"
+      ],
+      "x86Insts": [
+        "xor rdx, rdx",
+        "div rcx"
+      ],
+      "ExpectedArm64ASM": [
+        "subs w26, w5, w5",
+        "mov w5, #0x0",
         "udiv x20, x4, x7",
         "msub x22, x20, x7, x4",
         "mov x5, x22",
@@ -236,7 +232,7 @@
     },
     "unsigned div narrow 32-bit": {
       "x86InstructionCount": 3,
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 7,
       "x86Insts": [
         "mov    eax, edi",
         "xor    edx, edx",
@@ -244,15 +240,12 @@
       ],
       "ExpectedArm64ASM": [
         "mov w4, w11",
+        "subs w26, w5, w5",
         "mov w5, #0x0",
-        "subs w26, w5, #0x0 (0)",
-        "mov w20, w10",
-        "mov x0, x4",
-        "bfi x0, x5, #32, #32",
-        "udiv x22, x0, x20",
-        "msub x24, x22, x20, x0",
-        "mov w4, w22",
-        "mov w5, w24"
+        "udiv w20, w4, w10",
+        "msub w22, w20, w10, w4",
+        "mov w4, w20",
+        "mov w5, w22"
       ]
     },
     "inline syscall": {

@@ -165,6 +165,11 @@ struct FEX_PACKED NodeWrapperBase final {
     LOGMAN_THROW_A_FMT(IsPointer(), "Offsets are within 2GiB range");
   }
 
+  void SetInvalid() {
+    NodeOffset = 0;
+    LOGMAN_THROW_A_FMT(IsInvalid(), "Zero state");
+  }
+
   void SetImmediate(uint32_t Immediate) {
     LOGMAN_THROW_A_FMT(Immediate < (1u << 31), "Bounded");
     NodeOffset = Immediate | (1u << 31);

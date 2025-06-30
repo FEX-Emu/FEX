@@ -4323,8 +4323,8 @@
     "xor al, al": {
       "ExpectedInstructionCount": 2,
       "ExpectedArm64ASM": [
-        "and x4, x4, #0xffffffffffffff00",
-        "subs w26, w4, w4"
+        "subs w26, w4, w4",
+        "and x4, x4, #0xffffffffffffff00"
       ]
     },
     "mov ah, 0x0": {
@@ -4336,8 +4336,8 @@
     "xor ah, ah": {
       "ExpectedInstructionCount": 2,
       "ExpectedArm64ASM": [
-        "and x4, x4, #0xffffffffffff00ff",
-        "subs w26, w4, w4"
+        "subs w26, w4, w4",
+        "and x4, x4, #0xffffffffffff00ff"
       ]
     },
     "mov al, 0xff": {
@@ -4385,8 +4385,8 @@
     "xor ax, ax": {
       "ExpectedInstructionCount": 2,
       "ExpectedArm64ASM": [
-        "and x4, x4, #0xffffffffffff0000",
-        "subs w26, w4, w4"
+        "subs w26, w4, w4",
+        "and x4, x4, #0xffffffffffff0000"
       ]
     },
     "mov eax, 0x0": {
@@ -4398,8 +4398,8 @@
     "xor eax, eax": {
       "ExpectedInstructionCount": 2,
       "ExpectedArm64ASM": [
-        "mov w4, #0x0",
-        "subs w26, w4, #0x0 (0)"
+        "subs w26, w4, w4",
+        "mov w4, #0x0"
       ]
     },
     "mov eax, 0xffffffff": {
@@ -4431,8 +4431,8 @@
       "ExpectedInstructionCount": 2,
       "Comment": "0xb0",
       "ExpectedArm64ASM": [
-        "mov w4, #0x0",
-        "subs w26, w4, #0x0 (0)"
+        "subs w26, w4, w4",
+        "mov w4, #0x0"
       ]
     },
     "mov rax, 0xffffffffffffffff": {

@@ -2854,7 +2854,7 @@ void OpDispatchBuilder::AAMOp(OpcodeArgs) {
   auto Imm8 = _Constant(Op->Src[0].Data.Literal.Value & 0xFF);
   Ref Quotient = _AllocateGPR(true);
   Ref Remainder = _AllocateGPR(true);
-  _UDiv(OpSize::i64Bit, AL, Imm8, Quotient, Remainder);
+  _UDiv(OpSize::i64Bit, AL, Invalid(), Imm8, Quotient, Remainder);
   auto Res = _AddShift(OpSize::i64Bit, Remainder, Quotient, ShiftType::LSL, 8);
   StoreGPRRegister(X86State::REG_RAX, Res, OpSize::i16Bit);
 
@@ -3582,11 +3582,11 @@ void OpDispatchBuilder::NEGOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::DIVOp(OpcodeArgs) {
-  // This loads the divisor
-  Ref Divisor = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
-
   const auto GPRSize = CTX->GetGPROpSize();
   auto Size = OpSizeFromSrc(Op);
+
+  // This loads the divisor. 32-bit/64-bit paths mask inside the JIT, 8/16 do not.
+  Ref Divisor = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = Size >= OpSize::i32Bit});
 
   if (Size == OpSize::i64Bit && !CTX->Config.Is64BitMode) {
     LogMan::Msg::EFmt("Doesn't exist in 32bit mode");
@@ -3600,7 +3600,7 @@ void OpDispatchBuilder::DIVOp(OpcodeArgs) {
   if (Size == OpSize::i8Bit) {
     Ref Src1 = LoadGPRRegister(X86State::REG_RAX, OpSize::i16Bit);
 
-    _UDiv(OpSize::i16Bit, Src1, Divisor, Quotient, Remainder);
+    _UDiv(OpSize::i16Bit, Src1, Invalid(), Divisor, Quotient, Remainder);
 
     // AX[15:0] = concat<URem[7:0]:UDiv[7:0]>
     auto ResultAX = _Bfi(GPRSize, 8, 8, Quotient, Remainder);
@@ -3609,7 +3609,7 @@ void OpDispatchBuilder::DIVOp(OpcodeArgs) {
     Ref Src1 = LoadGPRRegister(X86State::REG_RAX);
     Ref Src2 = LoadGPRRegister(X86State::REG_RDX);
 
-    _LUDiv(Size, Src1, Src2, Divisor, Quotient, Remainder);
+    _UDiv(Size, Src1, Src2, Divisor, Quotient, Remainder);
 
     if (Size == OpSize::i32Bit) {
       Quotient = _Bfe(OpSize::i32Bit, IR::OpSizeAsBits(Size), 0, Quotient);
@@ -3643,7 +3643,7 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
     Src1 = _Sbfe(OpSize::i64Bit, 16, 0, Src1);
     Divisor = _Sbfe(OpSize::i64Bit, 8, 0, Divisor);
 
-    _Div(OpSize::i64Bit, Src1, Divisor, Quotient, Remainder);
+    _Div(OpSize::i64Bit, Src1, Invalid(), Divisor, Quotient, Remainder);
 
     // AX[15:0] = concat<URem[7:0]:UDiv[7:0]>
     auto ResultAX = _Bfi(GPRSize, 8, 8, Quotient, Remainder);
@@ -3652,7 +3652,7 @@ void OpDispatchBuilder::IDIVOp(OpcodeArgs) {
     Ref Src1 = LoadGPRRegister(X86State::REG_RAX);
     Ref Src2 = LoadGPRRegister(X86State::REG_RDX);
 
-    _LDiv(Size, Src1, Src2, Divisor, Quotient, Remainder);
+    _Div(Size, Src1, Src2, Divisor, Quotient, Remainder);
 
     if (Size == OpSize::i32Bit) {
       Quotient = _Bfe(OpSize::i32Bit, IR::OpSizeAsBits(Size), 0, Quotient);
@@ -4395,9 +4395,6 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
   if (!DestIsLockedMem(Op) && ALUIROp == FEXCore::IR::IROps::OP_XOR && Op->Dest.IsGPR() && Op->Src[SrcIdx].IsGPR() &&
       Op->Dest.Data.GPR == Op->Src[SrcIdx].Data.GPR) {
 
-    // Move 0 into the register
-    StoreResult(GPRClass, Op, _Constant(0), OpSize::iInvalid);
-
     // Set flags for zero result with inverted carry. We subtract an arbitrary
     // register from itself to get the zero, since `subs wzr, #0` is not
     // encodable. This is optimal and works regardless of the opsize.
@@ -4406,6 +4403,10 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
     InvalidateAF();
     CalculatePF(_SubWithFlags(OpSize::i32Bit, Zero, Zero));
     CFInverted = true;
+    FlushRegisterCache();
+
+    // Move 0 into the register
+    StoreResult(GPRClass, Op, _Constant(0), OpSize::iInvalid);
     return;
   }
 
