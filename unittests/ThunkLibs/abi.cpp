@@ -99,12 +99,21 @@ public:
   bool runInvocation(std::shared_ptr<clang::CompilerInvocation> invocation, clang::FileManager* files,
                      std::shared_ptr<clang::PCHContainerOperations> pch, clang::DiagnosticConsumer* diag_consumer) override {
 
+#if LLVM_VERSION_MAJOR >= 20
+    auto diagnostics =
+      clang::CompilerInstance::createDiagnostics(files->getVirtualFileSystem(), &invocation->getDiagnosticOpts(), diag_consumer, false);
+#else
     auto diagnostics = clang::CompilerInstance::createDiagnostics(&invocation->getDiagnosticOpts(), diag_consumer, false);
+#endif
 
     clang::CompilerInstance Compiler(std::move(pch));
     Compiler.setInvocation(std::move(invocation));
     Compiler.setFileManager(files);
+#if LLVM_VERSION_MAJOR >= 20
+    Compiler.createDiagnostics(Compiler.getVirtualFileSystem(), diag_consumer, false);
+#else
     Compiler.createDiagnostics(diag_consumer, false);
+#endif
     if (!Compiler.hasDiagnostics()) {
       return false;
     }
