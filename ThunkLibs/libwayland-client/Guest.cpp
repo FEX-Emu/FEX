@@ -25,6 +25,17 @@ extern "C" const wl_interface wl_seat_interface {};
 extern "C" const wl_interface wl_surface_interface {};
 extern "C" const wl_interface wl_keyboard_interface {};
 extern "C" const wl_interface wl_callback_interface {};
+extern "C" const wl_interface wl_display_interface {};
+extern "C" const wl_interface wl_data_offer_interface {};
+extern "C" const wl_interface wl_data_source_interface {};
+extern "C" const wl_interface wl_data_device_interface {};
+extern "C" const wl_interface wl_data_device_manager_interface {};
+extern "C" const wl_interface wl_shell_interface {};
+extern "C" const wl_interface wl_shell_surface_interface {};
+extern "C" const wl_interface wl_touch_interface {};
+extern "C" const wl_interface wl_region_interface {};
+extern "C" const wl_interface wl_subcompositor_interface {};
+extern "C" const wl_interface wl_subsurface_interface {};
 
 #include <algorithm>
 #include <array>
@@ -349,6 +360,17 @@ void OnInit() {
   fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_surface_interface), "wl_surface_interface");
   fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_keyboard_interface), "wl_keyboard_interface");
   fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_callback_interface), "wl_callback_interface");
+  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_display_interface), "wl_display_interface");
+  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_data_offer_interface), "wl_data_offer_interface");
+  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_data_source_interface), "wl_data_source_interface");
+  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_data_device_interface), "wl_data_device_interface");
+  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_data_device_manager_interface), "wl_data_device_manager_interface");
+  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_shell_interface), "wl_shell_interface");
+  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_shell_surface_interface), "wl_shell_surface_interface");
+  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_touch_interface), "wl_touch_interface");
+  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_region_interface), "wl_region_interface");
+  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_subcompositor_interface), "wl_subcompositor_interface");
+  fex_wl_exchange_interface_pointer(const_cast<wl_interface*>(&wl_subsurface_interface), "wl_subsurface_interface");
 }
 
 // Would insert spaces around -
