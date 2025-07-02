@@ -10,6 +10,7 @@ $end_info$
 #include "Interface/IR/IREmitter.h"
 #include "Interface/IR/RegisterAllocationData.h"
 #include "Interface/IR/Passes.h"
+#include "Interface/Core/CPUID.h"
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
@@ -52,6 +53,8 @@ namespace {
 
 class ConstrainedRAPass final : public RegisterAllocationPass {
 public:
+  explicit ConstrainedRAPass(const FEXCore::CPUIDEmu* CPUID)
+    : CPUID {CPUID} {}
   void Run(IREmitter* IREmit) override;
   void AddRegisters(IR::RegisterClassType Class, uint32_t RegisterCount) override;
   bool TryPostRAMerge(Ref LastNode, Ref CodeNode, IROp_Header* IROp);
@@ -61,6 +64,7 @@ private:
 
   IREmitter* IREmit;
   IRListView* IR;
+  const FEXCore::CPUIDEmu* CPUID;
 
   // Map of nodes to their preferred register, to coalesce load/store reg.
   fextl::vector<PhysicalRegister> PreferredReg;
@@ -430,6 +434,39 @@ bool ConstrainedRAPass::TryPostRAMerge(Ref LastNode, Ref CodeNode, IROp_Header* 
         return PhysicalRegister(LastNode) == PhysicalRegister(Op->OutRemainder);
       }
     }
+  } else if (IROp->Op == OP_XGETBV && PhysicalRegister(IROp->Args[0]) == PhysicalRegister(LastNode) && LastOp->Op == OP_CONSTANT) {
+    // Try to constant fold
+    uint64_t ConstantFunction = LastOp->C<IROp_Constant>()->Constant;
+    auto Op = IROp->CW<IR::IROp_XGetBV>();
+    if (CPUID->DoesXCRFunctionReportConstantData(ConstantFunction)) {
+      const auto Result = CPUID->RunXCRFunction(ConstantFunction);
+      IREmit->SetWriteCursorBefore(CodeNode);
+      IREmit->_Constant(Result.eax).Node->Reg = PhysicalRegister(Op->OutEAX).Raw;
+      IREmit->_Constant(Result.edx).Node->Reg = PhysicalRegister(Op->OutEDX).Raw;
+      IREmit->RemovePostRA(CodeNode);
+      return false;
+    }
+  } else if (IROp->Op == OP_CPUID && PhysicalRegister(IROp->Args[0]) == PhysicalRegister(LastNode) && LastOp->Op == OP_CONSTANT) {
+    // Try to constant fold. As a limitation of merging only 2 instructions, we
+    // can only handle constant functions, not constant leafs. This could be
+    // lifted if we generalized at a (significant) complexity cost.
+    uint64_t ConstantFunction = LastOp->C<IROp_Constant>()->Constant;
+    auto Op = IROp->CW<IR::IROp_CPUID>();
+
+    const auto SupportsConstant = CPUID->DoesFunctionReportConstantData(ConstantFunction);
+    if (SupportsConstant.SupportsConstantFunction == CPUIDEmu::SupportsConstant::CONSTANT &&
+        SupportsConstant.NeedsLeaf != CPUIDEmu::NeedsLeafConstant::NEEDSLEAFCONSTANT) {
+      const auto Result = CPUID->RunFunction(ConstantFunction, 0 /* leaf */);
+
+      IREmit->SetWriteCursorBefore(CodeNode);
+      IREmit->_Fence({FEXCore::IR::Fence_Inst});
+      IREmit->_Constant(Result.eax).Node->Reg = PhysicalRegister(Op->OutEAX).Raw;
+      IREmit->_Constant(Result.ebx).Node->Reg = PhysicalRegister(Op->OutEBX).Raw;
+      IREmit->_Constant(Result.ecx).Node->Reg = PhysicalRegister(Op->OutECX).Raw;
+      IREmit->_Constant(Result.edx).Node->Reg = PhysicalRegister(Op->OutEDX).Raw;
+      IREmit->RemovePostRA(CodeNode);
+      return false;
+    }
   }
 
   // Merge moves that are immediately consumed.
@@ -663,7 +700,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
   IR->GetHeader()->PostRA = true;
 }
 
-fextl::unique_ptr<IR::RegisterAllocationPass> CreateRegisterAllocationPass() {
-  return fextl::make_unique<ConstrainedRAPass>();
+fextl::unique_ptr<IR::RegisterAllocationPass> CreateRegisterAllocationPass(const FEXCore::CPUIDEmu* CPUID) {
+  return fextl::make_unique<ConstrainedRAPass>(CPUID);
 }
 } // namespace FEXCore::IR
