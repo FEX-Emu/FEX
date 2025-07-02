@@ -439,6 +439,8 @@ bool ConstrainedRAPass::TryPostRAMerge(Ref LastNode, Ref CodeNode, IROp_Header* 
   //
   // Note we rely on the short-circuiting here.
   if (PhysicalRegister(LastNode) == PhysicalRegister(CodeNode) && KillMove(LastOp, IROp, LastNode, CodeNode)) {
+    LOGMAN_THROW_A_FMT(!PhysicalRegister(CodeNode).IsInvalid(), "invariant");
+
     for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
       if (IROp->Args[s].IsImmediate() && PhysicalRegister(IROp->Args[s]) == PhysicalRegister(LastNode)) {
         IROp->Args[s].SetImmediate(PhysicalRegister(LastOp->Args[0]).Raw);
