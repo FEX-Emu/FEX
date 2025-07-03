@@ -10,6 +10,7 @@ $end_info$
 #include "Interface/IR/RegisterAllocationData.h"
 
 #include <FEXCore/IR/IR.h>
+#include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/sstream.h>
 
 #include <algorithm>
@@ -30,14 +31,11 @@ namespace FEXCore::IR {
 #include <FEXCore/IR/IRDefines.inc>
 
 static void PrintArg(fextl::stringstream* out, const IRListView*, const SHA256Sum& Arg) {
-  *out << "sha256:";
-  for (auto byte : Arg.data) {
-    *out << std::hex << std::setfill('0') << std::setw(2) << (unsigned int)byte;
-  }
+  *out << fextl::fmt::format("sha256:{:02x}", fmt::join(Arg.data, ""));
 }
 
 static void PrintArg(fextl::stringstream* out, const IRListView*, uint64_t Arg) {
-  *out << "#0x" << std::hex << Arg << std::dec;
+  *out << fextl::fmt::format("#{:#x}", Arg);
 }
 
 static void PrintArg(fextl::stringstream* out, const IRListView*, CondClassType Arg) {
@@ -288,12 +286,7 @@ void Dump(fextl::stringstream* out, const IRListView* IR) {
 
   ++CurrentIndent;
   AddIndent();
-  *out << "(%0) "
-       << "IRHeader ";
-  *out << "%" << HeaderOp->Blocks.ID() << ", ";
-  *out << "#" << std::dec << HeaderOp->OriginalRIP << ", ";
-  *out << "#" << std::dec << HeaderOp->BlockCount << ", ";
-  *out << "#" << std::dec << HeaderOp->NumHostInstructions << std::endl;
+  *out << fextl::fmt::format("(%0) IRHeader %{}, #{:#x}, #{}, #{}\n", HeaderOp->Blocks.ID(), HeaderOp->OriginalRIP, HeaderOp->BlockCount, HeaderOp->NumHostInstructions);
 
   for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
     {
