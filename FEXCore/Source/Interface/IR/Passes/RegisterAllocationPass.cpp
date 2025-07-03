@@ -611,7 +611,13 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
           Ref Old = Class->RegToSSA[Reg.Reg];
 
           if (Old != Node) {
+            // Before inserting instructions, we need to set the cursor and
+            // reset LastNode so we don't merge across an inserted copy.
+            // Otherwise, we would erroneously miss the copy when determining if
+            // we can merge, and end up unsoundly merging a mov+xchg sequence.
             IREmit->SetWriteCursorBefore(CodeNode);
+            LastNode = nullptr;
+
             Ref Copy;
 
             if (Reg.Class == FPRFixedClass) {
@@ -642,6 +648,8 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
 
           if (!IsInRegisterFile(Old)) {
             IREmit->SetWriteCursorBefore(CodeNode);
+            LastNode = nullptr;
+
             Ref Fill = InsertFill(Old);
 
             AssignReg(IR->GetOp<IROp_Header>(Fill), Fill, IROp);
