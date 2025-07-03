@@ -475,16 +475,19 @@ bool ConstrainedRAPass::TryPostRAMerge(Ref LastNode, Ref CodeNode, IROp_Header* 
   // arm64 is 3-address code, we can optimize these out.
   //
   // Note we rely on the short-circuiting here.
-  if (PhysicalRegister(LastNode) == PhysicalRegister(CodeNode) && KillMove(LastOp, IROp, LastNode, CodeNode)) {
-    LOGMAN_THROW_A_FMT(!PhysicalRegister(CodeNode).IsInvalid(), "invariant");
+  // TODO: This optimization breaks Hades from executing, causing it to sleep forever in a futex.
+  if (false) {
+    if (PhysicalRegister(LastNode) == PhysicalRegister(CodeNode) && KillMove(LastOp, IROp, LastNode, CodeNode)) {
+      LOGMAN_THROW_A_FMT(!PhysicalRegister(CodeNode).IsInvalid(), "invariant");
 
-    for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
-      if (IROp->Args[s].IsImmediate() && PhysicalRegister(IROp->Args[s]) == PhysicalRegister(LastNode)) {
-        IROp->Args[s].SetImmediate(PhysicalRegister(LastOp->Args[0]).Raw);
+      for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
+        if (IROp->Args[s].IsImmediate() && PhysicalRegister(IROp->Args[s]) == PhysicalRegister(LastNode)) {
+          IROp->Args[s].SetImmediate(PhysicalRegister(LastOp->Args[0]).Raw);
+        }
       }
-    }
 
-    return true;
+      return true;
+    }
   }
 
   return false;
