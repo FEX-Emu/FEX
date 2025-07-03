@@ -2788,6 +2788,11 @@
       "FPR = F64COS FPR:$Src": {
         "DestSize": "OpSize::i64Bit",
         "JITDispatch": false
+      },
+      "FPR:$Sin, FPR:$Cos = F64SINCOS FPR:$Src": {
+        "DestSize": "OpSize::i64Bit",
+        "HasSideEffects": true,
+        "JITDispatch": false
       }
     },
     "F80": {
@@ -3125,6 +3130,11 @@
       },
       "FPR = F80COS FPR:$X80Src": {
         "DestSize": "OpSize::i128Bit",
+        "JITDispatch": false
+      },
+      "FPR:$Sin, FPR:$Cos = F80SINCOS FPR:$X80Src": {
+        "DestSize": "OpSize::i128Bit",
+        "HasSideEffects": true,
         "JITDispatch": false
       },
       "F80SINCOSStack": {

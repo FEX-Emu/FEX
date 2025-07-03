@@ -558,6 +558,8 @@ void Dispatcher::EmitDispatcher() {
       FABI_I64_I16_F80_F80_PTR,
       FABI_F80_I16_F80_PTR,
       FABI_F80_I16_F80_F80_PTR,
+      FABI_F80x2_I16_F80_PTR,
+      FABI_F64x2_I16_F64_PTR,
       FABI_I32_I64_I64_V128_V128_I16,
       FABI_I32_V128_V128_I16,
     }};
@@ -625,6 +627,22 @@ uint64_t Dispatcher::GenerateABICall(FallbackABI ABI) {
 
   constexpr static auto VABI1 = ARMEmitter::VReg::v0;
   constexpr static auto VABI2 = ARMEmitter::VReg::v1;
+
+  auto FillF80x2Result = [&]() {
+    if (!TMP_ABIARGS) {
+      mov(VTMP1.Q(), VABI1.Q());
+      mov(VTMP2.Q(), VABI2.Q());
+    }
+    FillForABICall(CTX->HostFeatures.SupportsPreserveAllABI, true);
+  };
+
+  auto FillF64x2Result = [&]() {
+    if (!TMP_ABIARGS) {
+      fmov(VTMP1.D(), VABI1.D());
+      fmov(VTMP2.D(), VABI2.D());
+    }
+    FillForABICall(CTX->HostFeatures.SupportsPreserveAllABI, true);
+  };
 
   auto FillF80Result = [&]() {
     if (VTMP1 != VABI1) {
@@ -945,6 +963,52 @@ uint64_t Dispatcher::GenerateABICall(FallbackABI ABI) {
     }
 
     FillF80Result();
+  } break;
+  case FABI_F80x2_I16_F80_PTR: {
+    // Linux Reg/Win32 Reg:
+    // tmp4 (x4/x13): FallbackHandler
+    // x30: return
+    // vtmp1 (v0/v16): vector source 1
+    // vtmp2 (v1/v16): vector source 2
+
+    SpillForABICall(CTX->HostFeatures.SupportsPreserveAllABI, TMP3, true);
+
+    ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
+    mov(ARMEmitter::XReg::x1, STATE);
+    if (!TMP_ABIARGS) {
+      mov(VABI1.Q(), VTMP1.Q());
+    }
+
+    if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+      // GenerateIndirectRuntimeCall<FEXCore::VectorRegPairType, uint16_t, FEXCore::VectorRegType, uint64_t>(FallbackPointerReg);
+    } else {
+      blr(FallbackPointerReg);
+    }
+
+    FillF80x2Result();
+  } break;
+  case FABI_F64x2_I16_F64_PTR: {
+    // Linux Reg/Win32 Reg:
+    // tmp4 (x4/x13): FallbackHandler
+    // x30: return
+    // vtmp1 (v0/v16): vector source 1
+    // vtmp2 (v1/v16): vector source 2
+
+    SpillForABICall(CTX->HostFeatures.SupportsPreserveAllABI, TMP3, true);
+
+    ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
+    mov(ARMEmitter::XReg::x1, STATE);
+    if (!TMP_ABIARGS) {
+      fmov(VABI1.D(), VTMP1.D());
+    }
+
+    if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
+      // GenerateIndirectRuntimeCall<FEXCore::VectorScalarF64Pair, uint16_t, FEXCore::VectorRegType, uint64_t>(FallbackPointerReg);
+    } else {
+      blr(FallbackPointerReg);
+    }
+
+    FillF64x2Result();
   } break;
   case FABI_I32_I64_I64_V128_V128_I16: {
     // Linux Reg/Win32 Reg:

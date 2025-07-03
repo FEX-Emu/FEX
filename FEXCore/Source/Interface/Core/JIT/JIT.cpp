@@ -84,6 +84,16 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
     LOGMAN_MSG_A_FMT("Unhandled IR Op: {}", FEXCore::IR::GetName(IROp->Op));
 #endif
   } else {
+    auto FillF80x2Result = [&](auto DstLo, auto DstHi) {
+      mov(DstLo.Q(), VTMP1.Q());
+      mov(DstHi.Q(), VTMP2.Q());
+    };
+
+    auto FillF64x2Result = [&](auto DstLo, auto DstHi) {
+      fmov(DstLo.D(), VTMP1.D());
+      fmov(DstHi.D(), VTMP2.D());
+    };
+
     auto FillF80Result = [&]() {
       const auto Dst = GetVReg(Node);
       mov(Dst.Q(), VTMP1.Q());
@@ -229,6 +239,30 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
       ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
       FillF64Result();
     } break;
+    case FABI_F64x2_I16_F64_PTR: {
+      // Linux Reg/Win32 Reg:
+      // tmp4 (x4/x13): FallbackHandler
+      // x30: return
+      // vtmp1 (v0/v16): vector source
+      // vtmp2 (v1/v16): vector source
+#ifdef VIXL_SIMULATOR
+      LOGMAN_THROW_A_FMT(CTX->Config.DisableVixlIndirectCalls, "Vector register pairs unsupported by simulator currently");
+#endif
+      str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
+
+      const auto Src1 = GetVReg(IROp->Args[0]);
+      const auto DstLo = GetVReg(IROp->Args[1]);
+      const auto DstHi = GetVReg(IROp->Args[2]);
+
+      fmov(VTMP1.D(), Src1.D());
+
+      ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
+      ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex].Func));
+      blr(TMP1);
+
+      ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+      FillF64x2Result(DstLo, DstHi);
+    } break;
 
     case FABI_F64_I16_F64_F64_PTR: {
       // Linux Reg/Win32 Reg:
@@ -343,6 +377,31 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
 
       ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
       FillF80Result();
+    } break;
+
+    case FABI_F80x2_I16_F80_PTR: {
+      // Linux Reg/Win32 Reg:
+      // tmp4 (x4/x13): FallbackHandler
+      // x30: return
+      // vtmp1 (v0/v16): vector source 1
+      // vtmp2 (v1/v16): vector source 2
+#ifdef VIXL_SIMULATOR
+      LOGMAN_THROW_A_FMT(CTX->Config.DisableVixlIndirectCalls, "Vector register pairs unsupported by simulator currently");
+#endif
+      str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
+
+      const auto Src1 = GetVReg(IROp->Args[0]);
+      const auto DstLo = GetVReg(IROp->Args[1]);
+      const auto DstHi = GetVReg(IROp->Args[2]);
+
+      mov(VTMP1.Q(), Src1.Q());
+
+      ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
+      ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex].Func));
+      blr(TMP1);
+
+      ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+      FillF80x2Result(DstLo, DstHi);
     } break;
 
     case FABI_F80_I16_F80_F80_PTR: {

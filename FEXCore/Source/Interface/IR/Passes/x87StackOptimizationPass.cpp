@@ -161,6 +161,7 @@ private:
   const FEXCore::HostFeatures& Features;
   const OpSize GPROpSize;
   bool ReducedPrecisionMode;
+  FEX_CONFIG_OPT(DisableVixlIndirectCalls, DISABLE_VIXL_INDIRECT_RUNTIME_CALLS);
 
   // Helpers
   Ref RotateRight8(uint32_t V, Ref Amount);
@@ -774,12 +775,26 @@ void X87StackOptimization::Run(IREmitter* Emit) {
 
         Ref SinValue {};
         Ref CosValue {};
-        if (ReducedPrecisionMode) {
-          SinValue = IREmit->_F64SIN(St0);
-          CosValue = IREmit->_F64COS(St0);
-        } else {
-          SinValue = IREmit->_F80SIN(St0);
-          CosValue = IREmit->_F80COS(St0);
+
+#ifdef VIXL_SIMULATOR
+        if (DisableVixlIndirectCalls() == 0) {
+          if (ReducedPrecisionMode) {
+            SinValue = IREmit->_F64SIN(St0);
+            CosValue = IREmit->_F64COS(St0);
+          } else {
+            SinValue = IREmit->_F80SIN(St0);
+            CosValue = IREmit->_F80COS(St0);
+          }
+        } else
+#endif
+        {
+          SinValue = IREmit->_AllocateFPR(OpSize::i128Bit, OpSize::i128Bit);
+          CosValue = IREmit->_AllocateFPR(OpSize::i128Bit, OpSize::i128Bit);
+          if (ReducedPrecisionMode) {
+            IREmit->_F64SINCOS(St0, SinValue, CosValue);
+          } else {
+            IREmit->_F80SINCOS(St0, SinValue, CosValue);
+          }
         }
 
         // Push values
