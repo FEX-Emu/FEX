@@ -63,7 +63,7 @@ void ClientMsgHandler(int FD, FEXServerClient::Logging::PacketMsg* const Msg, co
 
 namespace {
 void ActionHandler(int sig, siginfo_t* info, void* context) {
-  // FEX_TODO("Fix this");
+  // TODO: Fix this
   if (sig == SIGINT) {
     // Someone trying to kill us. Shutdown.
     ProcessPipe::Shutdown();
