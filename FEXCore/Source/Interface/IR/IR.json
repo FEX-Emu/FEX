@@ -225,6 +225,21 @@
                 ],
         "DestSize": "OpSize::i32Bit"
       },
+      "GPR = ReadFPSR": {
+        "Desc": ["Reads the ARM64 FPSR register for floating-point exception flags"
+                ],
+        "DestSize": "OpSize::i32Bit",
+        "HasSideEffects": false
+      },
+      "WriteFPSR OpSize:#Size, GPR:$FPSR": {
+        "Desc": [
+          "Writes to the ARM64 FPSR register for floating-point exception flags"
+        ],
+        "EmitValidation": [
+          "Size == OpSize::i32Bit"
+        ],
+        "HasSideEffects": true
+      },
 
       "SetRoundingMode GPR:$RoundMode, i1:$SetDAZ, GPR:$MXCSR": {
         "Desc": ["Sets the current rounding mode options for the thread"
@@ -1622,7 +1637,8 @@
         "DestSize": "DestElementSize",
         "EmitValidation": [
           "DestElementSize == FEXCore::IR::OpSize::i32Bit || DestElementSize == FEXCore::IR::OpSize::i64Bit"
-        ]
+        ],
+        "SetsIOC": true
       },
 
       "GPR = Float_ToGPR_ZS OpSize:#DestElementSize, OpSize:$SrcElementSize, FPR:$Scalar": {
@@ -1632,7 +1648,8 @@
         "DestSize": "DestElementSize",
         "EmitValidation": [
           "DestElementSize == FEXCore::IR::OpSize::i32Bit || DestElementSize == FEXCore::IR::OpSize::i64Bit"
-        ]
+        ],
+        "SetsIOC": true
       },
 
       "FCmp OpSize:$ElementSize, FPR:$Scalar1, FPR:$Scalar2": {
@@ -1640,7 +1657,8 @@
                  "NZCV follows Arm conventions, a separate AXFLAG instruction is required for x86",
                  "Ordering flag result is true if either float input is NaN"
                 ],
-        "HasSideEffects": true
+        "HasSideEffects": true,
+        "SetsIOC": true
       }
     },
     "VectorScalar": {
@@ -1652,7 +1670,8 @@
                  "For 256-bit operation with ZeroUpperBits, this matches AVX insert semantics."
                 ],
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = VFSubScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar 'sub' between Vector1 and Vector2.",
@@ -1662,7 +1681,8 @@
                  "For 256-bit operation with ZeroUpperBits, this matches AVX insert semantics."
                 ],
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = VFMulScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar 'mul' between Vector1 and Vector2.",
@@ -1672,7 +1692,8 @@
                  "For 256-bit operation with ZeroUpperBits, this matches AVX insert semantics."
                 ],
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = VFDivScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar 'div' between Vector1 and Vector2.",
@@ -1682,7 +1703,8 @@
                  "For 256-bit operation with ZeroUpperBits, this matches AVX insert semantics."
                 ],
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = VFMinScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar 'min' between Vector1 and Vector2.",
@@ -1696,7 +1718,8 @@
                 ],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize",
-        "ImplicitFlagClobber": true
+        "ImplicitFlagClobber": true,
+        "SetsIOC": true
       },
       "FPR = VFMaxScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar 'max' between Vector1 and Vector2.",
@@ -1710,7 +1733,8 @@
                 ],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize",
-        "ImplicitFlagClobber": true
+        "ImplicitFlagClobber": true,
+        "SetsIOC": true
       },
       "FPR = VFSqrtScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar 'sqrt' on Vector2, inserting in to Vector1 and storing in to the destination.",
@@ -1720,7 +1744,8 @@
                  "For 256-bit operation with ZeroUpperBits, this matches AVX insert semantics."
                 ],
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = VFRSqrtScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar 'rsqrt' on Vector2, inserting in to Vector1 and storing in to the destination.",
@@ -1730,7 +1755,8 @@
                  "For 256-bit operation with ZeroUpperBits, this matches AVX insert semantics."
                 ],
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = VFRecpScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar 'recip' on Vector2, inserting in to Vector1 and storing in to the destination.",
@@ -1740,7 +1766,8 @@
                  "For 256-bit operation with ZeroUpperBits, this matches AVX insert semantics."
                 ],
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = VFToFScalarInsert OpSize:#RegisterSize, OpSize:#DstElementSize, OpSize:$SrcElementSize, FPR:$Vector1, FPR:$Vector2, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar 'cvt' between Vector1 and Vector2.",
@@ -1750,7 +1777,8 @@
                  "For 256-bit operation with ZeroUpperBits, this matches AVX insert semantics."
                 ],
         "DestSize": "RegisterSize",
-        "ElementSize": "DstElementSize"
+        "ElementSize": "DstElementSize",
+        "SetsIOC": true
       },
       "FPR = VSToFVectorInsert OpSize:#RegisterSize, OpSize:#DstElementSize, OpSize:$SrcElementSize, FPR:$Vector1, FPR:$Vector2, i8:$HasTwoElements, i1:$ZeroUpperBits": {
         "Desc": ["Does a Vector 'scvt' between Vector1 and Vector2.",
@@ -1762,7 +1790,8 @@
                  "Handles the edge case of cvtpi2ps xmm0, mm0 which is two elements in the lower 64-bits"
                 ],
         "DestSize": "RegisterSize",
-        "ElementSize": "DstElementSize"
+        "ElementSize": "DstElementSize",
+        "SetsIOC": true
       },
       "FPR = VSToFGPRInsert OpSize:#RegisterSize, OpSize:#DstElementSize, OpSize:$SrcElementSize, FPR:$Vector, GPR:$Src, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar 'cvt' between Vector1 and GPR.",
@@ -1772,7 +1801,8 @@
                  "For 256-bit operation with ZeroUpperBits, this matches AVX insert semantics."
                 ],
         "DestSize": "RegisterSize",
-        "ElementSize": "DstElementSize"
+        "ElementSize": "DstElementSize",
+        "SetsIOC": true
       },
       "FPR = VFToIScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, RoundType:$Round, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar round float to integral on Vector2, inserting in to Vector1 and storing in to the destination.",
@@ -1783,7 +1813,8 @@
                  "For 256-bit operation with ZeroUpperBits, this matches AVX insert semantics."
                 ],
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = VFCMPScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, FloatCompareOp:$Op, i1:$ZeroUpperBits": {
         "Desc": ["Does a scalar 'cmp' between Vector1 and Vecto2, inserting in to Vector1 and storing in to the destination.",
@@ -1794,7 +1825,8 @@
                  "For 256-bit operation with ZeroUpperBits, this matches AVX insert semantics."
                 ],
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = VFMLAScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Upper, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
         "Desc": [
@@ -1804,7 +1836,8 @@
         ],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize",
-        "TiedSource": 0
+        "TiedSource": 0,
+        "SetsIOC": true
       },
       "FPR = VFMLSScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Upper, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
         "Desc": [
@@ -1814,7 +1847,8 @@
         ],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize",
-        "TiedSource": 0
+        "TiedSource": 0,
+        "SetsIOC": true
       },
       "FPR = VFNMLAScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Upper, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
         "Desc": [
@@ -1824,7 +1858,8 @@
         ],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize",
-        "TiedSource": 0
+        "TiedSource": 0,
+        "SetsIOC": true
       },
       "FPR = VFNMLSScalarInsert OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Upper, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
         "Desc": [
@@ -1834,7 +1869,8 @@
         ],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize",
-        "TiedSource": 0
+        "TiedSource": 0,
+        "SetsIOC": true
       },
       "FPR = VFCopySign OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1,  FPR:$Vector2": {
         "Desc": ["Returns a vector where each element has has the magniture of each corresponding element in vector1 and the sign of vector 2."],
@@ -1932,7 +1968,8 @@
           "It has a relative error of at most 1.5 * 2^-12"
         ],
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = VFRecpPrecision OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": [
@@ -1944,12 +1981,14 @@
         "EmitValidation": [
           "RegisterSize == FEXCore::IR::OpSize::i64Bit || RegisterSize == FEXCore::IR::OpSize::i32Bit",
           "ElementSize == FEXCore::IR::OpSize::i32Bit"
-        ]
+        ],
+        "SetsIOC": true
       },
 
       "FPR = VFSqrt OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
 
       "FPR = VFRSqrt OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
@@ -1958,7 +1997,8 @@
           "It has a relative error of at most 1.5 * 2^-12"
         ],
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = VFRSqrtPrecision OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": [
@@ -1970,7 +2010,8 @@
         "EmitValidation": [
           "RegisterSize == FEXCore::IR::OpSize::i64Bit || RegisterSize == FEXCore::IR::OpSize::i32Bit",
           "ElementSize == FEXCore::IR::OpSize::i32Bit"
-        ]
+        ],
+        "SetsIOC": true
       },
 
       "FPR = VCMPEQZ OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
@@ -2260,42 +2301,50 @@
 
       "FPR = VFAdd OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = VFAddP OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
         "Desc": "Does a horizontal pairwise add of elements across the two source vectors with float element types",
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = VFAddV OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": ["Does a horizontal float vector add of elements across the source vector",
                  "Result is a zero extended scalar"
                 ],
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = VFSub OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = VFMul OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = VFDiv OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
 
       "FPR = VFMin OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize",
-        "TiedSource": 0
+        "TiedSource": 0,
+        "SetsIOC": true
       },
       "FPR = VFMax OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize",
-        "TiedSource": 0
+        "TiedSource": 0,
+        "SetsIOC": true
       },
       "FPR = VMul OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
@@ -2429,31 +2478,38 @@
       },
       "FPR = VFCMPEQ OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = VFCMPNEQ OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = VFCMPLT OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = VFCMPGT OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = VFCMPLE OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = VFCMPORD OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = VFCMPUNO OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2": {
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = VTBL1 OpSize:#RegisterSize, FPR:$VectorTable, FPR:$VectorIndices": {
         "Desc": ["Does a vector table lookup from one register in to the destination",
@@ -2528,7 +2584,8 @@
         ],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize",
-        "TiedSource": 2
+        "TiedSource": 2,
+        "SetsIOC": true
       },
       "FPR = VFMLS OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
         "Desc": [
@@ -2537,7 +2594,8 @@
         ],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize",
-        "TiedSource": 2
+        "TiedSource": 2,
+        "SetsIOC": true
       },
       "FPR = VFNMLA OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
         "Desc": [
@@ -2546,7 +2604,8 @@
         ],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize",
-        "TiedSource": 2
+        "TiedSource": 2,
+        "SetsIOC": true
       },
       "FPR = VFNMLS OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector1, FPR:$Vector2, FPR:$Addend": {
         "Desc": [
@@ -2555,7 +2614,8 @@
         ],
         "DestSize": "RegisterSize",
         "ElementSize": "ElementSize",
-        "TiedSource": 2
+        "TiedSource": 2,
+        "SetsIOC": true
       }
     },
     "Conv": {
@@ -2583,36 +2643,42 @@
         "Desc": ["Scalar op: Converts signed GPR to Scalar float",
                  "Zeroes the upper bits of the vector register"
                 ],
-        "DestSize": "DstElementSize"
+        "DestSize": "DstElementSize",
+        "SetsIOC": true
       },
       "FPR = Float_FToF OpSize:#DstElementSize, OpSize:$SrcElementSize, FPR:$Scalar": {
         "Desc": ["Scalar op: Converts float from one size to another",
                  "Zeroes the upper bits of the vector register"
                 ],
-        "DestSize": "DstElementSize"
+        "DestSize": "DstElementSize",
+        "SetsIOC": true
       },
 
       "FPR = Vector_SToF OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": "Vector op: Converts signed integer to same size float",
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = Vector_FToS OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": ["Vector op: Converts float to signed integer, rounding towards zero",
                  "Rounding mode determined by host rounding mode"
                 ],
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = Vector_FToZS OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
         "Desc": "Vector op: Converts float to signed integer, rounding towards zero",
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = Vector_FToF OpSize:#RegisterSize, OpSize:#DestElementSize, FPR:$Vector, OpSize:$SrcElementSize": {
         "Desc": "Vector op: Converts float from source element size to destination size (fp32<->fp64)",
         "DestSize": "RegisterSize",
-        "ElementSize": "DestElementSize"
+        "ElementSize": "DestElementSize",
+        "SetsIOC": true
       },
 
       "FPR = VFCVTL2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector": {
@@ -2624,7 +2690,8 @@
         "ElementSize": "ElementSize << 1",
         "EmitValidation": [
           "RegisterSize != FEXCore::IR::OpSize::i256Bit && \"What does 256-bit mean in this context?\""
-        ]
+        ],
+        "SetsIOC": true
       },
       "FPR = VFCVTN2 OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$VectorLower, FPR:$VectorUpper": {
         "TiedSource": 0,
@@ -2638,14 +2705,16 @@
         "ElementSize": "ElementSize >> 1",
         "EmitValidation": [
           "RegisterSize != FEXCore::IR::OpSize::i256Bit && \"What does 256-bit mean in this context?\""
-        ]
+        ],
+        "SetsIOC": true
       },
       "FPR = Vector_FToI OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, RoundType:$Round": {
         "Desc": ["Vector op: Rounds float to integral",
                  "Rounding mode determined by argument"
                 ],
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = Vector_FToISized OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Vector, i1:$HostRound, OpSize:$IntSize": {
         "Desc": ["Vector op: Rounds float to sized integral",
@@ -2653,14 +2722,16 @@
                  "Rounding mode determined by argument"
                 ],
         "DestSize": "RegisterSize",
-        "ElementSize": "ElementSize"
+        "ElementSize": "ElementSize",
+        "SetsIOC": true
       },
       "FPR = Vector_F64ToI32 OpSize:#RegisterSize, FPR:$Vector, RoundType:$Round, i1:$EnsureZeroUpperHalf": {
         "Desc": ["Vector op: Rounds 64-bit float to 32-bit integral with round mode",
                  "Matches CVTPD2DQ/CVTTPD2DQ behaviour"
                 ],
         "DestSize": "RegisterSize",
-        "ElementSize": "FEXCore::IR::OpSize::i32Bit"
+        "ElementSize": "FEXCore::IR::OpSize::i32Bit",
+        "SetsIOC": true
       }
     },
     "Crypto": {

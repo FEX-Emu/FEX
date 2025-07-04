@@ -107,12 +107,40 @@ void OpDispatchBuilder::FISTF64(OpcodeArgs, bool Truncate) {
   const auto Size = OpSizeFromSrc(Op);
 
   Ref data = _ReadStackValue(0);
+
+  // This operation is invalid if:
+  // * Operand is NaN
+  // * Operand is (+/-) infinity
+  // * Operand is too large for the destination type
+  //
+  // We need to deal 16bits as a special case since _Float_ToGPR_S/ZS
+  // do not handle 16bit conversions. So we convert to 32bits instead.
+  // Then if it's invalid for 32bits, we mark it as invalid for 16bit but in addition
+  // check the bounds for 16bit.
+  // Conversion will work for 16bit even if cast to 32 because we checked already it fits within 16bit.
   if (Truncate) {
-    data = _Float_ToGPR_ZS(Size == OpSize::i32Bit ? OpSize::i32Bit : OpSize::i64Bit, OpSize::i64Bit, data);
+    data = _Float_ToGPR_ZS(Size == OpSize::i16Bit ? OpSize::i32Bit : Size, OpSize::i64Bit, data);
   } else {
-    data = _Float_ToGPR_S(Size == OpSize::i32Bit ? OpSize::i32Bit : OpSize::i64Bit, OpSize::i64Bit, data);
+    data = _Float_ToGPR_S(Size == OpSize::i16Bit ? OpSize::i32Bit : Size, OpSize::i64Bit, data);
   }
+
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, data, Size, OpSize::i8Bit);
+
+  // Additional check for 16-bit range overflow
+  if (Size == OpSize::i16Bit) {
+    // Use sign extension approach: if value fits in 16-bit signed range,
+    // then sign-extending it should give the same value
+    Ref SignExtended = _Sbfe(OpSize::i32Bit, 16, 0, data);
+
+    // Test if they're different (indicating overflow)
+    _SubNZCV(OpSize::i32Bit, data, SignExtended);
+
+    // Set invalid operation bit conditionally
+    Ref Bit = _NZCVSelect(OpSize::i32Bit, {COND_NEQ}, _Constant(1), _Constant(0));
+    CheckFPSRIOCAndSetIOBit(Bit);
+  } else {
+    CheckFPSRIOCAndSetIOBit();
+  }
 
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
     _PopStackDestroy();

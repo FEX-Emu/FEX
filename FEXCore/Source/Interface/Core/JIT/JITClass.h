@@ -54,6 +54,7 @@ public:
 
 private:
   FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
+  FEX_CONFIG_OPT(ReducedPrecisionMode, X87REDUCEDPRECISION);
 
   const bool HostSupportsSVE128 {};
   const bool HostSupportsSVE256 {};
@@ -413,6 +414,8 @@ private:
   void EmitSuspendInterruptCheck();
 
   void EmitEntryPoint(ARMEmitter::BackwardLabel& HeaderLabel, bool CheckTF);
+
+  void ClearFPSRIOC();
 
   // Runtime selection;
   // Load and store TSO memory style

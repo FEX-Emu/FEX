@@ -116,6 +116,19 @@ DEF_OP(GetRoundingMode) {
   bfi(ARMEmitter::Size::i64Bit, Dst, TMP1, 30, 2);
 }
 
+DEF_OP(ReadFPSR) {
+  auto Dst = GetReg(Node);
+  mrs(Dst, ARMEmitter::SystemRegister::FPSR);
+}
+
+DEF_OP(WriteFPSR) {
+  auto Op = IROp->C<IR::IROp_WriteFPSR>();
+  auto Val = GetReg(Op->FPSR);
+
+  // Write FPSR register
+  msr(ARMEmitter::SystemRegister::FPSR, Val.X());
+}
+
 DEF_OP(SetRoundingMode) {
   auto Op = IROp->C<IR::IROp_SetRoundingMode>();
   auto Src = GetReg(Op->RoundMode);
