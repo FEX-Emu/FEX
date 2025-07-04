@@ -426,6 +426,48 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
       ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
       FillI32Result();
     } break;
+
+    case FABI_I16_I16_F64_PTR: {
+      str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
+
+      const auto Src1 = GetVReg(IROp->Args[0]);
+      fmov(VTMP1.D(), Src1.D());
+
+      ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
+      ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex].Func));
+      blr(TMP1);
+
+      ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+      FillI16Result();
+    } break;
+
+    case FABI_I32_I16_F64_PTR: {
+      str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
+
+      const auto Src1 = GetVReg(IROp->Args[0]);
+      fmov(VTMP1.D(), Src1.D());
+
+      ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
+      ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex].Func));
+      blr(TMP1);
+
+      ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+      FillI32Result();
+    } break;
+
+    case FABI_I64_I16_F64_PTR: {
+      str<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, -16);
+
+      const auto Src1 = GetVReg(IROp->Args[0]);
+      fmov(VTMP1.D(), Src1.D());
+
+      ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex].ABIHandler));
+      ldr(TMP4, STATE_PTR(CpuStateFrame, Pointers.Common.FallbackHandlerPointers[Info.HandlerIndex].Func));
+      blr(TMP1);
+
+      ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
+      FillI64Result();
+    } break;
     case FABI_UNKNOWN:
     default:
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
