@@ -199,32 +199,6 @@ void PatchCallChecker() {
   WriteModuleRVA(Module, CHPEMetadata->__os_arm64x_dispatch_icall_cfg, &CheckCall);
 }
 
-// Fills in the syscall numbers necessary to call *Native variants of syscalls from FEX under wine.
-void ParseWineSyscallNumbers(HMODULE NtDll) {
-  ULONG Size;
-  const auto* Exports = reinterpret_cast<IMAGE_EXPORT_DIRECTORY*>(RtlImageDirectoryEntryToData(NtDll, true, IMAGE_DIRECTORY_ENTRY_EXPORT, &Size));
-  const auto* NameTable = reinterpret_cast<uint32_t*>(NtDllBase + Exports->AddressOfNames);
-
-  // Wine orders syscalls alphabetically, take advantage of that to find the syscall indices for those which we need to
-  // manually issue. Note that all functions starting with Nt besides NtGetTickCount are syscalls and the syscall ID must
-  // be incremented by 1 for each.
-  uint32_t CurSyscallId = 0;
-  for (uint32_t Idx = 0; Idx < Exports->NumberOfNames; Idx++) {
-    const char* Name = reinterpret_cast<const char*>(NtDllBase + NameTable[Idx]);
-    if (Name[0] == 'N' && Name[1] == 't' && strcmp(Name, "NtGetTickCount") != 0) {
-      if (strcmp(Name, "NtContinue") == 0) {
-        WineNtContinueSyscallId = CurSyscallId;
-      } else if (strcmp(Name, "NtAllocateVirtualMemory") == 0) {
-        WineNtAllocateVirtualMemorySyscallId = CurSyscallId;
-      } else if (strcmp(Name, "NtProtectVirtualMemory") == 0) {
-        WineNtProtectVirtualMemorySyscallId = CurSyscallId;
-      }
-
-      CurSyscallId++;
-    }
-  }
-}
-
 // Syscall thunks may have been patched before FEX has loaded, the default call checker installed by ntdll into FEX will
 // try to invoke the JIT when calling such patched syscalls but this obviously doesn't work before FEX is initalised.
 // This function parses ntdll and sets up a custom call checker to prevent this, as such it must avoid using any syscall
@@ -238,7 +212,6 @@ void InitSyscalls() {
   const auto WineSyscallDispatcherPtr = reinterpret_cast<void**>(GetProcAddress(NtDll, "__wine_syscall_dispatcher"));
   if (WineSyscallDispatcherPtr) {
     WineSyscallDispatcher = *WineSyscallDispatcherPtr;
-    ParseWineSyscallNumbers(NtDll);
   }
 
   FillNtDllLUTs(NtDll);
