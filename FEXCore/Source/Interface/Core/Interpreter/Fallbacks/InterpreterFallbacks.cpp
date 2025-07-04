@@ -103,6 +103,20 @@ void InterpreterOps::FillFallbackIndexPointers(Core::FallbackABIInfo* Info, uint
                                     reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_VPCMPESTRX>::handle)};
   Info[Core::OPINDEX_VPCMPISTRX] = {ABIHandlers[FABI_I32_V128_V128_I16],
                                     reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_VPCMPISTRX>::handle)};
+
+  // Float to GPR conversion fallbacks
+  Info[Core::OPINDEX_FLOAT_TOGPR_S_2] = {ABIHandlers[FABI_I16_I16_F64_PTR],
+                                         reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_FLOAT_TOGPR_S>::handle2)};
+  Info[Core::OPINDEX_FLOAT_TOGPR_S_4] = {ABIHandlers[FABI_I32_I16_F64_PTR],
+                                         reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_FLOAT_TOGPR_S>::handle4)};
+  Info[Core::OPINDEX_FLOAT_TOGPR_S_8] = {ABIHandlers[FABI_I64_I16_F64_PTR],
+                                         reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_FLOAT_TOGPR_S>::handle8)};
+  Info[Core::OPINDEX_FLOAT_TOGPR_ZS_2] = {ABIHandlers[FABI_I16_I16_F64_PTR],
+                                          reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_FLOAT_TOGPR_ZS>::handle2)};
+  Info[Core::OPINDEX_FLOAT_TOGPR_ZS_4] = {ABIHandlers[FABI_I32_I16_F64_PTR],
+                                          reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_FLOAT_TOGPR_ZS>::handle4)};
+  Info[Core::OPINDEX_FLOAT_TOGPR_ZS_8] = {ABIHandlers[FABI_I64_I16_F64_PTR],
+                                          reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_FLOAT_TOGPR_ZS>::handle8)};
 }
 
 bool InterpreterOps::GetFallbackHandler(const IR::IROp_Header* IROp, FallbackInfo* Info) {
@@ -260,6 +274,44 @@ bool InterpreterOps::GetFallbackHandler(const IR::IROp_Header* IROp, FallbackInf
   // SSE4.2 Fallbacks
   case IR::OP_VPCMPESTRX: *Info = {FABI_I32_I64_I64_V128_V128_I16, Core::OPINDEX_VPCMPESTRX}; return true;
   case IR::OP_VPCMPISTRX: *Info = {FABI_I32_V128_V128_I16, Core::OPINDEX_VPCMPISTRX}; return true;
+
+  // Float to GPR conversion fallbacks
+  case IR::OP_FLOAT_TOGPR_S: {
+    switch (OpSize) {
+    case IR::OpSize::i16Bit: {
+      *Info = {FABI_I16_I16_F64_PTR, Core::OPINDEX_FLOAT_TOGPR_S_2};
+      return true;
+    }
+    case IR::OpSize::i32Bit: {
+      *Info = {FABI_I32_I16_F64_PTR, Core::OPINDEX_FLOAT_TOGPR_S_4};
+      return true;
+    }
+    case IR::OpSize::i64Bit: {
+      *Info = {FABI_I64_I16_F64_PTR, Core::OPINDEX_FLOAT_TOGPR_S_8};
+      return true;
+    }
+    default: LogMan::Msg::DFmt("Unhandled size: {}", OpSize);
+    }
+    break;
+  }
+  case IR::OP_FLOAT_TOGPR_ZS: {
+    switch (OpSize) {
+    case IR::OpSize::i16Bit: {
+      *Info = {FABI_I16_I16_F64_PTR, Core::OPINDEX_FLOAT_TOGPR_ZS_2};
+      return true;
+    }
+    case IR::OpSize::i32Bit: {
+      *Info = {FABI_I32_I16_F64_PTR, Core::OPINDEX_FLOAT_TOGPR_ZS_4};
+      return true;
+    }
+    case IR::OpSize::i64Bit: {
+      *Info = {FABI_I64_I16_F64_PTR, Core::OPINDEX_FLOAT_TOGPR_ZS_8};
+      return true;
+    }
+    default: LogMan::Msg::DFmt("Unhandled size: {}", OpSize);
+    }
+    break;
+  }
 
   default: break;
   }

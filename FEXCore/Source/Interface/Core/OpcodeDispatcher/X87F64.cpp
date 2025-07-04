@@ -107,6 +107,63 @@ void OpDispatchBuilder::FISTF64(OpcodeArgs, bool Truncate) {
   const auto Size = OpSizeFromSrc(Op);
 
   Ref data = _ReadStackValue(0);
+
+  // Need to check for overflow/NaN and set Invalid Operation flag
+  // The _Float_ToGPR_S/ZS operations don't set x87 exception flags in F64 mode
+  // So we need to do it manually here
+
+  // Extract the float value as GPR to check for special values
+  Ref DataGPR = _VExtractToGPR(OpSize::i64Bit, OpSize::i64Bit, data, 0);
+
+  // Check for NaN: exponent = 0x7ff and mantissa != 0
+  Ref Exponent = _Lshr(OpSize::i64Bit, DataGPR, _Constant(52));
+  Ref ExpMask = _And(OpSize::i64Bit, Exponent, _Constant(0x7ff));
+  Ref Mantissa = _And(OpSize::i64Bit, DataGPR, _Constant(0xfffffffffffffULL));
+
+  SaveNZCV();
+  _TestNZ(OpSize::i64Bit, ExpMask, _Constant(0x7ff));
+  Ref IsInfOrNaN = _NZCVSelect(OpSize::i64Bit, {COND_EQ}, _Constant(1), _Constant(0));
+
+  _TestNZ(OpSize::i64Bit, Mantissa, Mantissa);
+  Ref IsNaN = _NZCVSelect(OpSize::i64Bit, {COND_NEQ}, IsInfOrNaN, _Constant(0));
+
+  // For overflow detection, check if the exponent indicates a value too large for the target type
+  // Extract biased exponent (bits 52-62)
+  Ref BiasedExp = _And(OpSize::i64Bit, Exponent, _Constant(0x7ff));
+
+  Ref InvalidFlag = IsNaN;
+
+  if (Size == OpSize::i16Bit) {
+    // For 16-bit integers, values with exponent >= 1038 (0x40e) will overflow
+    // This corresponds to values >= 2^15 = 32768
+    // Do subtraction: BiasedExp - 0x40e, and check if result is non-negative (no borrow)
+    _SubWithFlags(OpSize::i64Bit, BiasedExp, _Constant(0x40e));
+    Ref Overflow = _NZCVSelect(OpSize::i64Bit, {COND_UGE}, _Constant(1), _Constant(0));
+    InvalidFlag = _Or(OpSize::i64Bit, InvalidFlag, Overflow);
+  } else if (Size == OpSize::i32Bit) {
+    // For 32-bit integers, values with exponent >= 1054 (0x41e) will overflow
+    // This corresponds to values >= 2^31
+    // Do subtraction: BiasedExp - 0x41e, and check if result is non-negative (no borrow)
+    _SubWithFlags(OpSize::i64Bit, BiasedExp, _Constant(0x41e));
+    Ref Overflow = _NZCVSelect(OpSize::i64Bit, {COND_UGE}, _Constant(1), _Constant(0));
+    InvalidFlag = _Or(OpSize::i64Bit, InvalidFlag, Overflow);
+  } else if (Size == OpSize::i64Bit) {
+    // For 64-bit integers, values with exponent >= 1086 (0x43e) will overflow
+    // This corresponds to values >= 2^63
+    _SubWithFlags(OpSize::i64Bit, BiasedExp, _Constant(0x43e));
+    Ref Overflow = _NZCVSelect(OpSize::i64Bit, {COND_UGE}, _Constant(1), _Constant(0));
+    InvalidFlag = _Or(OpSize::i64Bit, InvalidFlag, Overflow);
+  }
+
+  // Also check for infinity (exponent = 0x7ff, mantissa = 0)
+  _TestNZ(OpSize::i64Bit, Mantissa, Mantissa);
+  Ref IsInf = _NZCVSelect(OpSize::i64Bit, {COND_EQ}, IsInfOrNaN, _Constant(0));
+  InvalidFlag = _Or(OpSize::i64Bit, InvalidFlag, IsInf);
+
+  // Set the Invalid Operation flag
+  SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(InvalidFlag);
+
+  // Perform the conversion (even if overflow, x87 still converts to indefinite value)
   if (Truncate) {
     data = _Float_ToGPR_ZS(Size == OpSize::i32Bit ? OpSize::i32Bit : OpSize::i64Bit, OpSize::i64Bit, data);
   } else {

@@ -157,7 +157,39 @@ struct FEX_PACKED X80SoftFloat {
     return Result;
 #else
     /*
-     * FPREM is not an IEEE-754 remainder.  From the spec:
+     * Check for invalid operation cases first - Intel FPREM sets Invalid Operation
+     * for several cases including infinity dividend and zero divisor.
+     */
+    if (lhs.Exponent == 0x7FFF) {
+      if (lhs.Significand == 0x8000000000000000ULL) {
+        // Infinity dividend -> Invalid Operation
+        state->exceptionFlags |= softfloat_flag_invalid;
+        // Return indefinite value (QNaN)
+        X80SoftFloat result;
+        result.Sign = 0;
+        result.Exponent = 0x7FFF;
+        result.Significand = 0xC000000000000000ULL;
+        return result;
+      } else if (lhs.Significand & 0x7FFFFFFFFFFFFFFFULL) {
+        // NaN case - propagate the NaN
+        state->exceptionFlags |= softfloat_flag_invalid;
+        return lhs;
+      }
+    }
+
+    // Check for zero divisor - fprem(x, 0) is invalid operation
+    if (rhs.Exponent == 0 && rhs.Significand == 0) {
+      state->exceptionFlags |= softfloat_flag_invalid;
+      // Return indefinite value (QNaN)
+      X80SoftFloat result;
+      result.Sign = 0;
+      result.Exponent = 0x7FFF;
+      result.Significand = 0xC000000000000000ULL;
+      return result;
+    }
+
+    /*
+     * FPREM is not an IEEE-754 remainder.  From the Intel spec:
      *
      *    Computes the remainder obtained from dividing the value in the ST(0)
      *    register (the dividend) by the value in the ST(1) register (the divisor
