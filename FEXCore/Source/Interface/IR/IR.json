@@ -225,6 +225,12 @@
                 ],
         "DestSize": "OpSize::i32Bit"
       },
+      "GPR = ReadFPSR": {
+        "Desc": ["Reads the ARM64 FPSR register for floating-point exception flags"
+                ],
+        "DestSize": "OpSize::i32Bit",
+        "HasSideEffects": false
+      },
 
       "SetRoundingMode GPR:$RoundMode, i1:$SetDAZ, GPR:$MXCSR": {
         "Desc": ["Sets the current rounding mode options for the thread"
