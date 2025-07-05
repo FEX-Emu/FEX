@@ -806,8 +806,12 @@ void GenerateThunkLibsAction::OnAnalysisComplete(clang::ASTContext& context) {
 bool GenerateThunkLibsActionFactory::runInvocation(std::shared_ptr<clang::CompilerInvocation> Invocation, clang::FileManager* Files,
                                                    std::shared_ptr<clang::PCHContainerOperations> PCHContainerOps,
                                                    clang::DiagnosticConsumer* DiagConsumer) {
+#if LLVM_VERSION_MAJOR >= 21
+  clang::CompilerInstance Compiler(std::move(Invocation), std::move(PCHContainerOps));
+#else
   clang::CompilerInstance Compiler(std::move(PCHContainerOps));
   Compiler.setInvocation(std::move(Invocation));
+#endif
   Compiler.setFileManager(Files);
 
   GenerateThunkLibsAction Action(libname, output_filenames, abi);
