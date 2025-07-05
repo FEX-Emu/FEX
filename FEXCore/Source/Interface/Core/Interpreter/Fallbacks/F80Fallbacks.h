@@ -203,6 +203,15 @@ struct OpHandlers<IR::OP_F80COS> {
 };
 
 template<>
+struct OpHandlers<IR::OP_F80SINCOS> {
+  FEXCORE_PRESERVE_ALL_ATTR static VectorRegPairType handle(uint16_t FCW, VectorRegType Src1, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
+    softfloat_state State = SoftFloatStateFromFCW(FCW, true);
+    return FEXCore::MakeVectorRegPair(X80SoftFloat::FSIN(&State, Src1), X80SoftFloat::FCOS(&State, Src1));
+  }
+};
+
+template<>
 struct OpHandlers<IR::OP_F80XTRACT_EXP> {
   FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle(uint16_t FCW, VectorRegType Src1, FEXCore::Core::CpuStateFrame* Frame) {
     FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
@@ -312,6 +321,21 @@ struct OpHandlers<IR::OP_F64COS> {
   FEXCORE_PRESERVE_ALL_ATTR static double handle(uint16_t FCW, double src, FEXCore::Core::CpuStateFrame* Frame) {
     FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     return cos(src);
+  }
+};
+
+template<>
+struct OpHandlers<IR::OP_F64SINCOS> {
+  FEXCORE_PRESERVE_ALL_ATTR static VectorScalarF64Pair handle(uint16_t FCW, double src, FEXCore::Core::CpuStateFrame* Frame) {
+    FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
+    double sin, cos;
+#ifdef _WIN32
+    sin = ::sin(src);
+    cos = ::cos(src);
+#else
+    sincos(src, &sin, &cos);
+#endif
+    return VectorScalarF64Pair {sin, cos};
   }
 };
 

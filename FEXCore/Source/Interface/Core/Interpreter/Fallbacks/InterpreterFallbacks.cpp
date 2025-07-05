@@ -50,6 +50,8 @@ void InterpreterOps::FillFallbackIndexPointers(Core::FallbackABIInfo* Info, uint
   Info[Core::OPINDEX_F80SQRT] = {ABIHandlers[FABI_F80_I16_F80_PTR], reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80SQRT>::handle)};
   Info[Core::OPINDEX_F80SIN] = {ABIHandlers[FABI_F80_I16_F80_PTR], reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80SIN>::handle)};
   Info[Core::OPINDEX_F80COS] = {ABIHandlers[FABI_F80_I16_F80_PTR], reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80COS>::handle)};
+  Info[Core::OPINDEX_F80SINCOS] = {ABIHandlers[FABI_F80x2_I16_F80_PTR],
+                                   reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80SINCOS>::handle)};
   Info[Core::OPINDEX_F80XTRACT_EXP] = {ABIHandlers[FABI_F80_I16_F80_PTR],
                                        reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F80XTRACT_EXP>::handle)};
   Info[Core::OPINDEX_F80XTRACT_SIG] = {ABIHandlers[FABI_F80_I16_F80_PTR],
@@ -82,6 +84,8 @@ void InterpreterOps::FillFallbackIndexPointers(Core::FallbackABIInfo* Info, uint
   // Double Precision Unary
   Info[Core::OPINDEX_F64SIN] = {ABIHandlers[FABI_F64_I16_F64_PTR], reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F64SIN>::handle)};
   Info[Core::OPINDEX_F64COS] = {ABIHandlers[FABI_F64_I16_F64_PTR], reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F64COS>::handle)};
+  Info[Core::OPINDEX_F64SINCOS] = {ABIHandlers[FABI_F64x2_I16_F64_PTR],
+                                   reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F64SINCOS>::handle)};
   Info[Core::OPINDEX_F64TAN] = {ABIHandlers[FABI_F64_I16_F64_PTR], reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F64TAN>::handle)};
   Info[Core::OPINDEX_F64F2XM1] = {ABIHandlers[FABI_F64_I16_F64_PTR],
                                   reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F64F2XM1>::handle)};
@@ -198,6 +202,12 @@ bool InterpreterOps::GetFallbackHandler(const IR::IROp_Header* IROp, FallbackInf
     return true;                                           \
   }
 
+#define COMMON_UNARYPAIR_X87_OP(OP)                          \
+  case IR::OP_F80##OP: {                                     \
+    *Info = {FABI_F80x2_I16_F80_PTR, Core::OPINDEX_F80##OP}; \
+    return true;                                             \
+  }
+
 #define COMMON_BINARY_X87_OP(OP)                               \
   case IR::OP_F80##OP: {                                       \
     *Info = {FABI_F80_I16_F80_F80_PTR, Core::OPINDEX_F80##OP}; \
@@ -215,6 +225,12 @@ bool InterpreterOps::GetFallbackHandler(const IR::IROp_Header* IROp, FallbackInf
     *Info = {FABI_F64_I16_F64_PTR, Core::OPINDEX_F64##OP}; \
     return true;                                           \
   }
+#define COMMON_UNARYPAIR_F64_OP(OP)                          \
+  case IR::OP_F64##OP: {                                     \
+    *Info = {FABI_F64x2_I16_F64_PTR, Core::OPINDEX_F64##OP}; \
+    return true;                                             \
+  }
+
 #define COMMON_BINARY_F64_OP(OP)                               \
   case IR::OP_F64##OP: {                                       \
     *Info = {FABI_F64_I16_F64_F64_PTR, Core::OPINDEX_F64##OP}; \
@@ -228,6 +244,7 @@ bool InterpreterOps::GetFallbackHandler(const IR::IROp_Header* IROp, FallbackInf
     COMMON_UNARY_X87_OP(SQRT)
     COMMON_UNARY_X87_OP(SIN)
     COMMON_UNARY_X87_OP(COS)
+    COMMON_UNARYPAIR_X87_OP(SINCOS)
     COMMON_UNARY_X87_OP(XTRACT_EXP)
     COMMON_UNARY_X87_OP(XTRACT_SIG)
     COMMON_UNARY_X87_OP(BCDSTORE)
@@ -249,6 +266,7 @@ bool InterpreterOps::GetFallbackHandler(const IR::IROp_Header* IROp, FallbackInf
     COMMON_UNARY_F64_OP(TAN)
     COMMON_UNARY_F64_OP(SIN)
     COMMON_UNARY_F64_OP(COS)
+    COMMON_UNARYPAIR_F64_OP(SINCOS)
 
     // Double Precision Binary
     COMMON_BINARY_F64_OP(FYL2X)
