@@ -106,8 +106,12 @@ public:
     auto diagnostics = clang::CompilerInstance::createDiagnostics(&invocation->getDiagnosticOpts(), diag_consumer, false);
 #endif
 
+#if LLVM_VERSION_MAJOR >= 21
+    clang::CompilerInstance Compiler(std::move(invocation), std::move(pch));
+#else
     clang::CompilerInstance Compiler(std::move(pch));
     Compiler.setInvocation(std::move(invocation));
+#endif
     Compiler.setFileManager(files);
 #if LLVM_VERSION_MAJOR >= 20
     Compiler.createDiagnostics(Compiler.getVirtualFileSystem(), diag_consumer, false);
