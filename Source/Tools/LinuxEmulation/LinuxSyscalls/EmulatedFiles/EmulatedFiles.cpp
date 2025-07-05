@@ -545,6 +545,19 @@ EmulatedFDManager::EmulatedFDManager(FEXCore::Context::Context* ctx)
     return FD;
   };
 
+  // Wine reads this to ensure TSC is trusted by the kernel. Otherwise it falls back to maximum clock speed of the CPU cores.
+  // Without this, games like Horizon Zero Dawn would run their physics in slow-motion.
+  FDReadCreators["/sys/devices/system/clocksource/clocksource0/current_clocksource"] =
+    [&](FEXCore::Context::Context* ctx, int32_t fd, const char* pathname, int32_t flags, mode_t mode) -> int32_t {
+    int FD = GenTmpFD(pathname, flags);
+    const char source[] = "tsc\n";
+    // + 1 to ensure null at the end
+    write(FD, source, strlen(source) + 1);
+    lseek(FD, 0, SEEK_SET);
+    SealTmpFD(FD);
+    return FD;
+  };
+
   auto NumCPUCores = [&](FEXCore::Context::Context* ctx, int32_t fd, const char* pathname, int32_t flags, mode_t mode) -> int32_t {
     int FD = GenTmpFD(pathname, flags);
     write(FD, (void*)&cpus_online.at(0), cpus_online.size());
