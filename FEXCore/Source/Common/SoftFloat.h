@@ -157,7 +157,30 @@ struct FEX_PACKED X80SoftFloat {
     return Result;
 #else
     /*
-     * FPREM is not an IEEE-754 remainder.  From the spec:
+     * Check for invalid operation cases first - Intel FPREM sets Invalid Operation
+     * for several cases including infinity dividend and zero divisor.
+     */
+    X80SoftFloat result = 0;
+    if (HandleInfinityOp(state, lhs, result)) {
+      return result;
+    } else if (lhs.Exponent == 0x7FFF && (lhs.Significand & 0x7FFFFFFFFFFFFFFFULL)) { // NaN
+      // propagate NaN
+      state->exceptionFlags |= softfloat_flag_invalid;
+      return lhs;
+    }
+
+    // Check for zero divisor - fprem(x, 0) is invalid operation
+    if (rhs.Exponent == 0 && rhs.Significand == 0) {
+      state->exceptionFlags |= softfloat_flag_invalid;
+      // Return QNaN
+      result.Sign = 0;
+      result.Exponent = 0x7FFF;
+      result.Significand = 0xC000000000000000ULL;
+      return result;
+    }
+
+    /*
+     * FPREM is not an IEEE-754 remainder.  From the Intel spec:
      *
      *    Computes the remainder obtained from dividing the value in the ST(0)
      *    register (the dividend) by the value in the ST(1) register (the divisor
@@ -390,6 +413,11 @@ struct FEX_PACKED X80SoftFloat {
 
     return Result;
 #else
+    X80SoftFloat result;
+    if (HandleInfinityOp(state, lhs, result)) {
+      return result;
+    }
+
     BIGFLOAT Src_d = lhs.ToFMax(state);
     Src_d = FEXCore::cephes_128bit::tanl(Src_d);
     return X80SoftFloat(state, Src_d);
@@ -411,6 +439,11 @@ struct FEX_PACKED X80SoftFloat {
 
     return Result;
 #else
+    X80SoftFloat result;
+    if (HandleInfinityOp(state, lhs, result)) {
+      return result;
+    }
+
     BIGFLOAT Src_d = lhs.ToFMax(state);
     Src_d = FEXCore::cephes_128bit::sinl(Src_d);
     return X80SoftFloat(state, Src_d);
@@ -432,6 +465,11 @@ struct FEX_PACKED X80SoftFloat {
 
     return Result;
 #else
+    X80SoftFloat result;
+    if (HandleInfinityOp(state, lhs, result)) {
+      return result;
+    }
+
     BIGFLOAT Src_d = lhs.ToFMax(state);
     Src_d = FEXCore::cephes_128bit::cosl(Src_d);
     return X80SoftFloat(state, Src_d);
@@ -591,6 +629,20 @@ private:
   static constexpr uint64_t IntegerBit = (1ULL << 63);
   static constexpr uint64_t Bottom62Significand = ((1ULL << 62) - 1);
   static constexpr uint32_t ExponentBias = 16383;
+
+  // Helper function to check for infinity and set invalid operation flag.
+  // Returns true if infinity is dealt with, false otherwise.
+  FEXCORE_PRESERVE_ALL_ATTR static bool HandleInfinityOp(softfloat_state* state, const X80SoftFloat& arg, X80SoftFloat& result) {
+    if (arg.Exponent == 0x7FFF && arg.Significand == 0x8000000000000000ULL) {
+      state->exceptionFlags |= softfloat_flag_invalid;
+      // Return QNaN.
+      result.Sign = 0;
+      result.Exponent = 0x7FFF;
+      result.Significand = 0xC000000000000000ULL;
+      return true;
+    }
+    return false;
+  }
 };
 
 #ifndef _WIN32
