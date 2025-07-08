@@ -1330,6 +1330,8 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
           DecodedSize = BlockStartOffset;
           InstStream -= PCOffset;
           EraseBlock = true;
+        } else {
+          LogMan::Msg::EFmt("Invalid instruction in entry block: {:X}", OpAddress);
         }
         break;
       }
