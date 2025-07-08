@@ -1054,7 +1054,7 @@ void OpDispatchBuilder::AVX128_CVTFPR_To_GPR(OpcodeArgs) {
   if (Op->Src[0].IsGPR()) {
     Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
   } else {
-    Src.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], OpSizeFromSrc(Op), Op->Flags);
+    Src.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcElementSize, Op->Flags);
   }
 
   Ref Result = CVTFPR_To_GPRImpl(Op, Src.Low, SrcElementSize, HostRoundingMode);

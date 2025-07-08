@@ -2134,7 +2134,7 @@ void OpDispatchBuilder::CVTFPR_To_GPR(OpcodeArgs) {
   // If loading a vector, use the full size, so we don't
   // unnecessarily zero extend the vector. Otherwise, if
   // memory, then we want to load the element size exactly.
-  const auto SrcSize = Op->Src[0].IsGPR() ? OpSize::i128Bit : OpSizeFromSrc(Op);
+  const auto SrcSize = Op->Src[0].IsGPR() ? OpSize::i128Bit : SrcElementSize;
   Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
   Ref Result = CVTFPR_To_GPRImpl(Op, Src, SrcElementSize, HostRoundingMode);
   StoreResult(GPRClass, Op, Result, OpSize::iInvalid);
