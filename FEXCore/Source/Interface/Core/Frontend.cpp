@@ -69,10 +69,6 @@ Decoder::Decoder(FEXCore::Context::ContextImpl* ctx)
   , OSABI {ctx->SyscallHandler ? ctx->SyscallHandler->GetOSABI() : FEXCore::HLE::SyscallOSABI::OS_UNKNOWN}
   , PoolObject {ctx->FrontendAllocator, sizeof(FEXCore::X86Tables::DecodedInst) * DefaultDecodedBufferSize} {}
 
-Decoder::~Decoder() {
-  PoolObject.UnclaimBuffer();
-}
-
 uint8_t Decoder::ReadByte() {
   uint8_t Byte = InstStream[InstructionSize];
   LOGMAN_THROW_A_FMT(InstructionSize < MAX_INST_SIZE, "Max instruction size exceeded!");
