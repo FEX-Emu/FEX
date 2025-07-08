@@ -4947,9 +4947,14 @@ void OpDispatchBuilder::VFMAImpl(OpcodeArgs, IROps IROp, bool Scalar, uint8_t Sr
 
   const OpSize ElementSize = Op->Flags & X86Tables::DecodeFlags::FLAG_OPTION_AVX_W ? OpSize::i64Bit : OpSize::i32Bit;
 
-  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, Size, Op->Flags);
+  Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], Size, Op->Flags);
+  Ref Src2 {};
+  if (Op->Src[1].IsGPR()) {
+    Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], Size, Op->Flags);
+  } else {
+    Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  }
 
   Ref Sources[3] = {
     Dest,
