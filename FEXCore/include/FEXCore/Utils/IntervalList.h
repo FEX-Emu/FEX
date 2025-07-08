@@ -31,6 +31,7 @@ public:
     bool Enclosed;       ///< If the given offset was enclosed by an interval
     DifferenceType Size; ///< Size of the interval starting from the query offset, or distance to the next interval if
                          /// `Enclosed` is false (if there is no next interval, size is 0)
+    Interval Interval;   ///< The interval that the query offset is enclosed by, or the next interval if `Enclosed` is false
   };
 
   void Clear() {
@@ -134,11 +135,11 @@ public:
     }); // Lowest offset interval that (maybe) overlaps with the query offset
 
     if (It == Intervals.end()) { // No overlaps past offset
-      return {false, {}};
+      return {false, 0, {}};
     } else if (It->Offset > Offset) { // No overlap, return the distance to the next possible overlap
-      return {false, It->Offset - Offset};
+      return {false, It->Offset - Offset, *It};
     } else { // Overlap, return the distance to the end of the overlap
-      return {true, It->End - Offset};
+      return {true, It->End - Offset, *It};
     }
   }
 
