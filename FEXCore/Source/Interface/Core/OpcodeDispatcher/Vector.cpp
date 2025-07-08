@@ -2888,12 +2888,12 @@ template void OpDispatchBuilder::UCOMISxOp<OpSize::i32Bit>(OpcodeArgs);
 template void OpDispatchBuilder::UCOMISxOp<OpSize::i64Bit>(OpcodeArgs);
 
 void OpDispatchBuilder::LDMXCSR(OpcodeArgs) {
-  Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+  Ref Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, OpSize::i32Bit, Op->Flags);
   RestoreMXCSRState(Dest);
 }
 
 void OpDispatchBuilder::STMXCSR(OpcodeArgs) {
-  StoreResult(GPRClass, Op, GetMXCSR(), OpSize::iInvalid);
+  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, GetMXCSR(), OpSize::i32Bit, OpSize::iInvalid);
 }
 
 template<IR::OpSize ElementSize>
