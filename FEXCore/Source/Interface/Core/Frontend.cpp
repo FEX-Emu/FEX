@@ -310,6 +310,14 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
   const bool HasREX = !!(DecodeInst->Flags & DecodeFlags::FLAG_REX_PREFIX);
   const bool Has16BitAddressing = !CTX->Config.Is64BitMode && DecodeInst->Flags & DecodeFlags::FLAG_ADDRESS_SIZE;
 
+  if (Options.L && (Info->Flags & InstFlags::FLAGS_VEX_L_0)) {
+    return false;
+  } else if (!Options.L && (Info->Flags & InstFlags::FLAGS_VEX_L_1)) {
+    return false;
+  }
+
+  const bool UseVEXL = Options.L && !(Info->Flags & InstFlags::FLAGS_VEX_L_IGNORE);
+
   // This is used for ModRM register modification
   // For both modrm.reg and modrm.rm(when mod == 0b11) when value is >= 0b100
   // then it changes from expected registers to the high 8bits of the lower registers
@@ -339,7 +347,7 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
       DecodeInst->Flags |= DecodeFlags::GenSizeDstSize(DecodeFlags::SIZE_16BIT);
       DestSize = 2;
     } else if (DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_128BIT) {
-      if (Options.L) {
+      if (UseVEXL) {
         DecodeInst->Flags |= DecodeFlags::GenSizeDstSize(DecodeFlags::SIZE_256BIT);
         DestSize = 32;
       } else {
@@ -372,7 +380,7 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
     } else if (SrcSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_16BIT) {
       DecodeInst->Flags |= DecodeFlags::GenSizeSrcSize(DecodeFlags::SIZE_16BIT);
     } else if (SrcSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_128BIT) {
-      if (Options.L) {
+      if (UseVEXL) {
         DecodeInst->Flags |= DecodeFlags::GenSizeSrcSize(DecodeFlags::SIZE_256BIT);
       } else {
         DecodeInst->Flags |= DecodeFlags::GenSizeSrcSize(DecodeFlags::SIZE_128BIT);
