@@ -3362,12 +3362,12 @@
       ],
       "ExpectedArm64ASM": [
         "frinti d2, d16",
-        "fcvtzs x20, d2",
-        "mov x21, #0x8000000000000000",
-        "ldr d3, [x28, #3264]",
+        "fcvtzs w20, d2",
+        "mov w21, #0x80000000",
+        "ldr d3, [x28, #3232]",
         "mrs x22, nzcv",
         "fcmp d3, d2",
-        "csel x4, x20, x21, gt",
+        "csel w4, w20, w21, gt",
         "msr nzcv, x22"
       ]
     },

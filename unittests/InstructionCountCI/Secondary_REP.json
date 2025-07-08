@@ -155,7 +155,7 @@
       "ExpectedInstructionCount": 8,
       "Comment": "0xf3 0x0f 0x2c",
       "ExpectedArm64ASM": [
-        "ldr d2, [x6]",
+        "ldr s2, [x6]",
         "fcvtzs x20, s2",
         "mov x21, #0x8000000000000000",
         "ldr s3, [x28, #3216]",
@@ -212,7 +212,7 @@
       "ExpectedInstructionCount": 9,
       "Comment": "0xf3 0x0f 0x2d",
       "ExpectedArm64ASM": [
-        "ldr d2, [x6]",
+        "ldr s2, [x6]",
         "frinti s2, s2",
         "fcvtzs x20, s2",
         "mov x21, #0x8000000000000000",

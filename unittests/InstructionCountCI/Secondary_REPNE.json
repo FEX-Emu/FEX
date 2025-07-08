@@ -135,8 +135,8 @@
       "ExpectedInstructionCount": 2,
       "Comment": "0xf2 0x0f 0x2d",
       "ExpectedArm64ASM": [
-        "frint64x d2, d16",
-        "fcvtzs x4, d2"
+        "frint32x d2, d16",
+        "fcvtzs w4, d2"
       ]
     },
     "cvtsd2si eax, qword [rbx]": {
@@ -144,8 +144,8 @@
       "Comment": "0xf2 0x0f 0x2d",
       "ExpectedArm64ASM": [
         "ldr d2, [x6]",
-        "frint64x d2, d2",
-        "fcvtzs x4, d2"
+        "frint32x d2, d2",
+        "fcvtzs w4, d2"
       ]
     },
     "cvtsd2si rax, xmm0": {
