@@ -1094,7 +1094,7 @@ void OpDispatchBuilder::AVX128_VPSIGN(OpcodeArgs) {
 
 template<IR::OpSize ElementSize>
 void OpDispatchBuilder::AVX128_UCOMISx(OpcodeArgs) {
-  const auto SrcSize = Op->Src[0].IsGPR() ? GetGuestVectorLength() : OpSizeFromSrc(Op);
+  const auto SrcSize = Op->Src[0].IsGPR() ? GetGuestVectorLength() : ElementSize;
 
   auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Dest, Op->Flags, false);
 
