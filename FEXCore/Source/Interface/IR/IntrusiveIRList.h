@@ -127,10 +127,6 @@ public:
     PoolObject.ReownOrClaimBuffer();
   }
 
-  ~DualIntrusiveAllocatorThreadPool() {
-    PoolObject.UnclaimBuffer();
-  }
-
   void ReownOrClaimBuffer() {
     Data = PoolObject.ReownOrClaimBuffer();
     List = Data + MemorySize;

@@ -445,6 +445,10 @@ public:
     : ThreadAllocator {Allocator}
     , Size {Size} {}
 
+  ~PoolBufferWithTimedRetirement() {
+    UnclaimBuffer();
+  }
+
   /**
    * @brief Return the owned buffer or allocate another one from the `Allocator`
    *
