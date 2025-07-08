@@ -498,6 +498,9 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
   size_t CurrentSrc = 0;
 
   const auto VEXOperand = Info->Flags & FEXCore::X86Tables::InstFlags::FLAGS_VEX_SRC_MASK;
+  if (VEXOperand == FEXCore::X86Tables::InstFlags::FLAGS_VEX_NO_OPERAND && Options.vvvv) {
+    return false;
+  }
 
   if (VEXOperand == FEXCore::X86Tables::InstFlags::FLAGS_VEX_1ST_SRC) {
     DecodeInst->Src[CurrentSrc].Type = DecodedOperand::OpType::GPR;
