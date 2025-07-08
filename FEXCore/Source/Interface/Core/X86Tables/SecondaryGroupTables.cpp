@@ -223,11 +223,11 @@ std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> SecondInstGroupOps = [
     // GROUP 12
     {OPD(TYPE_GROUP_12, PF_NONE, 0), 1, X86InstInfo{"",      TYPE_INVALID, FLAGS_NONE,                                      0, nullptr}},
     {OPD(TYPE_GROUP_12, PF_NONE, 1), 1, X86InstInfo{"",      TYPE_INVALID, FLAGS_NONE,                                      0, nullptr}},
-    {OPD(TYPE_GROUP_12, PF_NONE, 2), 1, X86InstInfo{"PSRLW", TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 1, nullptr}},
+    {OPD(TYPE_GROUP_12, PF_NONE, 2), 1, X86InstInfo{"PSRLW", TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_REG_ONLY | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 1, nullptr}},
     {OPD(TYPE_GROUP_12, PF_NONE, 3), 1, X86InstInfo{"",      TYPE_INVALID, FLAGS_NONE,                                      0, nullptr}},
-    {OPD(TYPE_GROUP_12, PF_NONE, 4), 1, X86InstInfo{"PSRAW", TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 1, nullptr}},
+    {OPD(TYPE_GROUP_12, PF_NONE, 4), 1, X86InstInfo{"PSRAW", TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_REG_ONLY | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 1, nullptr}},
     {OPD(TYPE_GROUP_12, PF_NONE, 5), 1, X86InstInfo{"",      TYPE_INVALID, FLAGS_NONE,                                      0, nullptr}},
-    {OPD(TYPE_GROUP_12, PF_NONE, 6), 1, X86InstInfo{"PSLLW", TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 1, nullptr}},
+    {OPD(TYPE_GROUP_12, PF_NONE, 6), 1, X86InstInfo{"PSLLW", TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_REG_ONLY | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 1, nullptr}},
     {OPD(TYPE_GROUP_12, PF_NONE, 7), 1, X86InstInfo{"",      TYPE_INVALID, FLAGS_NONE,                                      0, nullptr}},
 
     {OPD(TYPE_GROUP_12, PF_66, 0), 1, X86InstInfo{"",      TYPE_INVALID, FLAGS_NONE,                                        0, nullptr}},
@@ -260,11 +260,11 @@ std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> SecondInstGroupOps = [
     // GROUP 13
     {OPD(TYPE_GROUP_13, PF_NONE, 0), 1, X86InstInfo{"",      TYPE_INVALID, FLAGS_NONE,                                      0, nullptr}},
     {OPD(TYPE_GROUP_13, PF_NONE, 1), 1, X86InstInfo{"",      TYPE_INVALID, FLAGS_NONE,                                      0, nullptr}},
-    {OPD(TYPE_GROUP_13, PF_NONE, 2), 1, X86InstInfo{"PSRLD", TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 1, nullptr}},
+    {OPD(TYPE_GROUP_13, PF_NONE, 2), 1, X86InstInfo{"PSRLD", TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_REG_ONLY | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 1, nullptr}},
     {OPD(TYPE_GROUP_13, PF_NONE, 3), 1, X86InstInfo{"",      TYPE_INVALID, FLAGS_NONE,                                      0, nullptr}},
-    {OPD(TYPE_GROUP_13, PF_NONE, 4), 1, X86InstInfo{"PSRAD", TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 1, nullptr}},
+    {OPD(TYPE_GROUP_13, PF_NONE, 4), 1, X86InstInfo{"PSRAD", TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_REG_ONLY | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 1, nullptr}},
     {OPD(TYPE_GROUP_13, PF_NONE, 5), 1, X86InstInfo{"",      TYPE_INVALID, FLAGS_NONE,                                      0, nullptr}},
-    {OPD(TYPE_GROUP_13, PF_NONE, 6), 1, X86InstInfo{"PSLLD", TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 1, nullptr}},
+    {OPD(TYPE_GROUP_13, PF_NONE, 6), 1, X86InstInfo{"PSLLD", TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_REG_ONLY | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 1, nullptr}},
     {OPD(TYPE_GROUP_13, PF_NONE, 7), 1, X86InstInfo{"",      TYPE_INVALID, FLAGS_NONE,                                      0, nullptr}},
 
     {OPD(TYPE_GROUP_13, PF_66, 0), 1, X86InstInfo{"",      TYPE_INVALID, FLAGS_NONE,                                        0, nullptr}},
@@ -297,11 +297,11 @@ std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> SecondInstGroupOps = [
     // GROUP 14
     {OPD(TYPE_GROUP_14, PF_NONE, 0), 1, X86InstInfo{"",      TYPE_INVALID, FLAGS_NONE,                                      0, nullptr}},
     {OPD(TYPE_GROUP_14, PF_NONE, 1), 1, X86InstInfo{"",      TYPE_INVALID, FLAGS_NONE,                                      0, nullptr}},
-    {OPD(TYPE_GROUP_14, PF_NONE, 2), 1, X86InstInfo{"PSRLQ", TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 1, nullptr}},
+    {OPD(TYPE_GROUP_14, PF_NONE, 2), 1, X86InstInfo{"PSRLQ", TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_REG_ONLY | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 1, nullptr}},
     {OPD(TYPE_GROUP_14, PF_NONE, 3), 1, X86InstInfo{"",      TYPE_INVALID, FLAGS_NONE,                                      0, nullptr}},
     {OPD(TYPE_GROUP_14, PF_NONE, 4), 1, X86InstInfo{"",      TYPE_INVALID, FLAGS_NONE,                                      0, nullptr}},
     {OPD(TYPE_GROUP_14, PF_NONE, 5), 1, X86InstInfo{"",      TYPE_INVALID, FLAGS_NONE,                                      0, nullptr}},
-    {OPD(TYPE_GROUP_14, PF_NONE, 6), 1, X86InstInfo{"PSLLQ", TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 1, nullptr}},
+    {OPD(TYPE_GROUP_14, PF_NONE, 6), 1, X86InstInfo{"PSLLQ", TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_REG_ONLY | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 1, nullptr}},
     {OPD(TYPE_GROUP_14, PF_NONE, 7), 1, X86InstInfo{"",      TYPE_INVALID, FLAGS_NONE,                                      0, nullptr}},
 
     {OPD(TYPE_GROUP_14, PF_66, 0), 1, X86InstInfo{"",      TYPE_INVALID, FLAGS_NONE,                                        0, nullptr}},
