@@ -310,6 +310,12 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
   const bool HasREX = !!(DecodeInst->Flags & DecodeFlags::FLAG_REX_PREFIX);
   const bool Has16BitAddressing = !CTX->Config.Is64BitMode && DecodeInst->Flags & DecodeFlags::FLAG_ADDRESS_SIZE;
 
+  if (Options.w && (Info->Flags & InstFlags::FLAGS_REX_W_0)) {
+    return false;
+  } else if (!Options.w && (Info->Flags & InstFlags::FLAGS_REX_W_1)) {
+    return false;
+  }
+
   if (Options.L && (Info->Flags & InstFlags::FLAGS_VEX_L_0)) {
     return false;
   } else if (!Options.L && (Info->Flags & InstFlags::FLAGS_VEX_L_1)) {

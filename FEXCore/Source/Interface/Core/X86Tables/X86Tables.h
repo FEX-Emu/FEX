@@ -357,6 +357,9 @@ constexpr InstFlagType FLAGS_VEX_L_IGNORE         = (1ULL << 25);
 constexpr InstFlagType FLAGS_VEX_L_0             = (1ULL << 26);
 constexpr InstFlagType FLAGS_VEX_L_1             = (1ULL << 27);
 
+constexpr InstFlagType FLAGS_REX_W_0             = (1ULL << 28);
+constexpr InstFlagType FLAGS_REX_W_1             = (1ULL << 29);
+
 constexpr InstFlagType FLAGS_SIZE_DST_OFF = 58;
 constexpr InstFlagType FLAGS_SIZE_SRC_OFF = FLAGS_SIZE_DST_OFF + 3;
 
