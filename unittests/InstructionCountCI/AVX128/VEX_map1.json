@@ -2681,8 +2681,8 @@
         "Map 1 0b11 0x2d 128-bit"
       ],
       "ExpectedArm64ASM": [
-        "frint64x d2, d16",
-        "fcvtzs x4, d2"
+        "frint32x d2, d16",
+        "fcvtzs w4, d2"
       ]
     },
     "vcvtsd2si rax, xmm0": {

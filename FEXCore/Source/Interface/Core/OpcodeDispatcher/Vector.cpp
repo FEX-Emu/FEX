@@ -2134,7 +2134,7 @@ void OpDispatchBuilder::CVTFPR_To_GPR(OpcodeArgs) {
   // If loading a vector, use the full size, so we don't
   // unnecessarily zero extend the vector. Otherwise, if
   // memory, then we want to load the element size exactly.
-  const auto SrcSize = Op->Src[0].IsGPR() ? OpSize::i128Bit : OpSizeFromSrc(Op);
+  const auto SrcSize = Op->Src[0].IsGPR() ? OpSize::i128Bit : SrcElementSize;
   Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
   Ref Result = CVTFPR_To_GPRImpl(Op, Src, SrcElementSize, HostRoundingMode);
   StoreResult(GPRClass, Op, Result, OpSize::iInvalid);
@@ -2877,7 +2877,7 @@ void OpDispatchBuilder::VPALIGNROp(OpcodeArgs) {
 
 template<IR::OpSize ElementSize>
 void OpDispatchBuilder::UCOMISxOp(OpcodeArgs) {
-  const auto SrcSize = Op->Src[0].IsGPR() ? GetGuestVectorLength() : OpSizeFromSrc(Op);
+  const auto SrcSize = Op->Src[0].IsGPR() ? GetGuestVectorLength() : ElementSize;
   Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, GetGuestVectorLength(), Op->Flags);
   Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
 
@@ -2888,12 +2888,12 @@ template void OpDispatchBuilder::UCOMISxOp<OpSize::i32Bit>(OpcodeArgs);
 template void OpDispatchBuilder::UCOMISxOp<OpSize::i64Bit>(OpcodeArgs);
 
 void OpDispatchBuilder::LDMXCSR(OpcodeArgs) {
-  Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
+  Ref Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, OpSize::i32Bit, Op->Flags);
   RestoreMXCSRState(Dest);
 }
 
 void OpDispatchBuilder::STMXCSR(OpcodeArgs) {
-  StoreResult(GPRClass, Op, GetMXCSR(), OpSize::iInvalid);
+  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, GetMXCSR(), OpSize::i32Bit, OpSize::iInvalid);
 }
 
 template<IR::OpSize ElementSize>
@@ -4947,9 +4947,14 @@ void OpDispatchBuilder::VFMAImpl(OpcodeArgs, IROps IROp, bool Scalar, uint8_t Sr
 
   const OpSize ElementSize = Op->Flags & X86Tables::DecodeFlags::FLAG_OPTION_AVX_W ? OpSize::i64Bit : OpSize::i32Bit;
 
-  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref Dest = LoadSource_WithOpSize(FPRClass, Op, Op->Dest, Size, Op->Flags);
+  Ref Src1 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], Size, Op->Flags);
+  Ref Src2 {};
+  if (Op->Src[1].IsGPR()) {
+    Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], Size, Op->Flags);
+  } else {
+    Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  }
 
   Ref Sources[3] = {
     Dest,
