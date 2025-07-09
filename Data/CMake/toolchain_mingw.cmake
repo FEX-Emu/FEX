@@ -4,6 +4,7 @@ set(CMAKE_RC_COMPILER ${MINGW_TRIPLE}-windres)
 set(CMAKE_C_COMPILER ${MINGW_TRIPLE}-clang)
 set(CMAKE_CXX_COMPILER ${MINGW_TRIPLE}-clang++)
 set(CMAKE_DLLTOOL ${MINGW_TRIPLE}-dlltool)
+set(CMAKE_AR ${MINGW_TRIPLE}-ar)
 
 # Compile everything as static to avoid requiring the MinGW runtime libraries, force page aligned sections so that
 # debug symbols work correctly, and disable loop alignment to workaround an LLVM bug
