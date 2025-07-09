@@ -138,7 +138,7 @@
     },
     "unsigned div narrow 32-bit": {
       "x86InstructionCount": 3,
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 10,
       "x86Insts": [
         "mov    eax, edi",
         "xor    edx, edx",
@@ -148,10 +148,13 @@
         "mov w4, w11",
         "subs w26, w5, w5",
         "mov w5, #0x0",
-        "udiv w20, w4, w10",
-        "msub w22, w20, w10, w4",
-        "mov w4, w20",
-        "mov w5, w22"
+        "mov w20, w10",
+        "mov x0, x4",
+        "bfi x0, x5, #32, #32",
+        "udiv x22, x0, x20",
+        "msub x24, x22, x20, x0",
+        "mov w4, w22",
+        "mov w5, w24"
       ]
     },
     "inline syscall": {
