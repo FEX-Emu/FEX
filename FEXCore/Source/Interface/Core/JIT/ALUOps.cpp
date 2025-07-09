@@ -969,11 +969,15 @@ DEF_OP(UDiv) {
     break;
   }
   case IR::OpSize::i32Bit: {
+    // We need to mask divisor if we have Upper bits, since the frontend does
+    // not on the hope that we can optimize to use the path above.
+    mov(ARMEmitter::Size::i32Bit, TMP2, Divisor);
+
     // TODO: 32-bit operation should be guaranteed not to leave garbage in the upper bits.
     mov(EmitSize, TMP1, Lower);
     bfi(EmitSize, TMP1, Upper, 32, 32);
-    udiv(EmitSize, Quotient, TMP1, Divisor);
-    msub(EmitSize, Remainder, Quotient, Divisor, TMP1);
+    udiv(EmitSize, Quotient, TMP1, TMP2);
+    msub(EmitSize, Remainder, Quotient, TMP2, TMP1);
     break;
   }
   case IR::OpSize::i64Bit: {
