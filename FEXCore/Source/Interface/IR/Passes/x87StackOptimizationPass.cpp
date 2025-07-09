@@ -262,11 +262,26 @@ private:
     return Const->Constant == 0;
   }
 
+  // Helper to check if a floating point value is infinity and set invalid operation bit
+  Ref IsInfinity_F80(Ref Value) {
+    Ref ValueHi = IREmit->_VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, Value, 1);
+    Ref ValueExp = IREmit->_Lshr(OpSize::i64Bit, IREmit->_And(OpSize::i64Bit, ValueHi, IREmit->_Constant(0x7FFF)), IREmit->_Constant(0));
+    return IREmit->_Select(IR::COND_EQ, ValueExp, IREmit->_Constant(0x7FFF), IREmit->_Constant(1), IREmit->_Constant(0));
+  }
+
+  void SetIOBitIfInf(Ref ValueIsInf) {
+    // Set invalid operation bit
+    Ref CurrentIE = IREmit->_LoadContext(OpSize::i8Bit, GPRClass, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_IE_LOC);
+    Ref CurrentIE32 = IREmit->_Bfe(OpSize::i32Bit, 8, 0, CurrentIE);
+    Ref NewIE32 = IREmit->_Or(OpSize::i32Bit, CurrentIE32, ValueIsInf);
+    IREmit->_StoreContext(OpSize::i8Bit, GPRClass, NewIE32, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_IE_LOC);
+  }
+
   // Handles a Unary operation.
   // Takes the op we are handling, the Node for the reduced precision case and the node for the normal case.
   // Depending on the type of Op64, we might need to pass a couple of extra constant arguments, this happens
   // when VFOp64 is true.
-  void HandleUnop(IROps Op64, bool VFOp64, IROps Op80);
+  void HandleUnop(IROps Op64, bool VFOp64, IROps Op80, Ref MaybeSt0 = nullptr);
   void HandleBinopValue(IROps Op64, bool VFOp64, IROps Op80, uint8_t DestStackOffset, bool MarkDestValid, uint8_t StackOffset,
                         Ref ValueNode, bool Reverse = false);
   void HandleBinopStack(IROps Op64, bool VFOp64, IROps Op80, uint8_t DestStackOffset, uint8_t StackOffset1, uint8_t StackOffset2,
@@ -479,8 +494,8 @@ inline void X87StackOptimization::StackPop() {
 }
 
 
-void X87StackOptimization::HandleUnop(IROps Op64, bool VFOp64, IROps Op80) {
-  Ref St0 = LoadStackValue();
+void X87StackOptimization::HandleUnop(IROps Op64, bool VFOp64, IROps Op80, Ref MaybeSt0) {
+  Ref St0 = MaybeSt0 ? MaybeSt0 : LoadStackValue();
   Ref Value {};
 
   if (ReducedPrecisionMode) {
@@ -737,12 +752,22 @@ void X87StackOptimization::Run(IREmitter* Emit) {
       }
 
       case OP_F80SINSTACK: {
-        HandleUnop(OP_F64SIN, false, OP_F80SIN);
+        Ref St0 = LoadStackValue();
+        if (!ReducedPrecisionMode) {
+          Ref MaybeInf = IsInfinity_F80(St0);
+          SetIOBitIfInf(MaybeInf);
+        }
+        HandleUnop(OP_F64SIN, false, OP_F80SIN, St0);
         break;
       }
 
       case OP_F80COSSTACK: {
-        HandleUnop(OP_F64COS, false, OP_F80COS);
+        Ref St0 = LoadStackValue();
+        if (!ReducedPrecisionMode) {
+          Ref MaybeInf = IsInfinity_F80(St0);
+          SetIOBitIfInf(MaybeInf);
+        }
+        HandleUnop(OP_F64COS, false, OP_F80COS, St0);
         break;
       }
 
@@ -753,7 +778,12 @@ void X87StackOptimization::Run(IREmitter* Emit) {
 
 
       case OP_F80PTANSTACK: {
-        HandleUnop(OP_F64TAN, false, OP_F80TAN);
+        Ref St0 = LoadStackValue();
+        if (!ReducedPrecisionMode) {
+          Ref MaybeInf = IsInfinity_F80(St0);
+          SetIOBitIfInf(MaybeInf);
+        }
+        HandleUnop(OP_F64TAN, false, OP_F80TAN, St0);
         Ref OneConst {};
         if (ReducedPrecisionMode) {
           OneConst = IREmit->_VCastFromGPR(OpSize::i64Bit, OpSize::i64Bit, GetConstant(0x3FF0000000000000));
@@ -772,6 +802,10 @@ void X87StackOptimization::Run(IREmitter* Emit) {
 
       case OP_F80SINCOSSTACK: {
         Ref St0 = LoadStackValue();
+        if (!ReducedPrecisionMode) {
+          Ref MaybeInf = IsInfinity_F80(St0);
+          SetIOBitIfInf(MaybeInf);
+        }
 
         Ref SinValue {};
         Ref CosValue {};

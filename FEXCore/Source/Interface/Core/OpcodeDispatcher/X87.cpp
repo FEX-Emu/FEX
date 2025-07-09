@@ -148,6 +148,30 @@ void OpDispatchBuilder::FSTToStack(OpcodeArgs) {
 void OpDispatchBuilder::FIST(OpcodeArgs, bool Truncate) {
   const auto Size = OpSizeFromSrc(Op);
   Ref Data = _ReadStackValue(0);
+
+  // For 16-bit integers, we need to manually check for overflow
+  // since _F80CVTInt doesn't handle 16-bit overflow detection properly
+  if (Size == OpSize::i16Bit) {
+    // Extract the 80-bit float value to check for special cases
+    // Get the upper 64 bits which contain sign and exponent and then the exponent from upper.
+    Ref Upper = _VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, Data, 1);
+    Ref Exponent = _And(OpSize::i64Bit, Upper, _Constant(0x7fff));
+
+    // Check for NaN/Infinity: exponent = 0x7fff
+    SaveNZCV();
+    _TestNZ(OpSize::i64Bit, Exponent, _Constant(0x7fff));
+    Ref IsSpecial = _NZCVSelect(OpSize::i64Bit, {COND_EQ}, _Constant(1), _Constant(0));
+
+    // For overflow detection, check if exponent indicates a value >= 2^15
+    // Biased exponent for 2^15 is 0x3fff + 15 = 0x400e
+    _SubWithFlags(OpSize::i64Bit, Exponent, _Constant(0x400e));
+    Ref IsOverflow = _NZCVSelect(OpSize::i64Bit, {COND_UGE}, _Constant(1), _Constant(0));
+
+    // Set Invalid Operation flag if overflow or special value
+    Ref InvalidFlag = _Or(OpSize::i64Bit, IsSpecial, IsOverflow);
+    SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(InvalidFlag);
+  }
+
   Data = _F80CVTInt(Size, Data, Truncate);
 
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Data, Size, OpSize::i8Bit);
@@ -719,6 +743,9 @@ Ref OpDispatchBuilder::ReconstructFSW_Helper(Ref T) {
 
   auto C3 = GetRFLAG(FEXCore::X86State::X87FLAG_C3_LOC);
   FSW = _Orlshl(OpSize::i64Bit, FSW, C3, 14);
+
+  auto IE = GetRFLAG(FEXCore::X86State::X87FLAG_IE_LOC);
+  FSW = _Or(OpSize::i64Bit, FSW, IE);
 
   return FSW;
 }
