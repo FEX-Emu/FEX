@@ -224,9 +224,13 @@ static bool IsImmLogical(uint64_t value, unsigned width, unsigned* n = nullptr, 
   //    11110s     2    UInt(s)
   //
   // So we 'or' (2 * -d) with our computed s to form imms.
-  if ((n != NULL) || (imm_s != NULL) || (imm_r != NULL)) {
+  if (n != nullptr) {
     *n = out_n;
+  }
+  if (imm_s != nullptr) {
     *imm_s = ((2 * -d) | (s - 1)) & 0x3f;
+  }
+  if (imm_r != nullptr) {
     *imm_r = r;
   }
 
