@@ -10,5 +10,5 @@ fi
 
 # Reformat whole tree.
 # This is run by the reformat target.
-git ls-files -z '*.cpp' '*.h' '*.inl' | xargs -0 -n 1 -P $(nproc) clang-format-19 -i
+git ls-files -z '*.cpp' '*.h' '*.inl' ':(exclude)External/*' | xargs -0 -n 1 -P $(nproc) clang-format-19 -i
 cd $DIR
