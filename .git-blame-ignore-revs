@@ -16,3 +16,6 @@
 
 # Reformat of CodeEmitter inl files
 8760c593ece92d7e9fa94c40da0368fd367c9cad
+
+# Upgrade to clang-format-19
+b802dc81474fd892c85e918b07da04368e848107
