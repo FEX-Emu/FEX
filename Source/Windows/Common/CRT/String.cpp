@@ -171,7 +171,7 @@ size_t wcrtomb(char* __restrict__ _Dest, wchar_t _Source, mbstate_t* __restrict_
   UNIMPLEMENTED();
 }
 
-DLLEXPORT_FUNC(errno_t, wcrtomb_s, (size_t * _Retval, char* _Dst, size_t _SizeInBytes, wchar_t _Ch, mbstate_t* _State)) {
+DLLEXPORT_FUNC(errno_t, wcrtomb_s, (size_t* _Retval, char* _Dst, size_t _SizeInBytes, wchar_t _Ch, mbstate_t* _State)) {
   UNIMPLEMENTED();
 }
 

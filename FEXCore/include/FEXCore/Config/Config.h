@@ -75,7 +75,7 @@ enum class LayerType {
 };
 
 template<typename PairTypes, typename ArrayPairType>
-static inline std::optional<fextl::string> EnumParser(const ArrayPairType& EnumPairs, std::string_view const View) {
+static inline std::optional<fextl::string> EnumParser(const ArrayPairType& EnumPairs, const std::string_view View) {
   uint64_t EnumMask {};
   auto Results = std::from_chars(View.data(), View.data() + View.size(), EnumMask);
   if (Results.ec == std::errc()) {

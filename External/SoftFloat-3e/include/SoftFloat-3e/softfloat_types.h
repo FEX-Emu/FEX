@@ -47,10 +47,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 | the types below may, if desired, be defined as aliases for the native types
 | (typically 'float' and 'double', and possibly 'long double').
 *----------------------------------------------------------------------------*/
-typedef struct { uint16_t v; } float16_t;
-typedef struct { uint32_t v; } float32_t;
-typedef struct { uint64_t v; } float64_t;
-typedef struct { uint64_t v[2]; } float128_t;
+typedef struct {
+  uint16_t v;
+} float16_t;
+typedef struct {
+  uint32_t v;
+} float32_t;
+typedef struct {
+  uint64_t v;
+} float64_t;
+typedef struct {
+  uint64_t v[2];
+} float128_t;
 
 /*----------------------------------------------------------------------------
 | The format of an 80-bit extended floating-point number in memory.  This
@@ -58,9 +66,15 @@ typedef struct { uint64_t v[2]; } float128_t;
 | named 'signif'.
 *----------------------------------------------------------------------------*/
 #ifdef LITTLEENDIAN
-struct extFloat80M { uint64_t signif; uint16_t signExp; };
+struct extFloat80M {
+  uint64_t signif;
+  uint16_t signExp;
+};
 #else
-struct extFloat80M { uint16_t signExp; uint64_t signif; };
+struct extFloat80M {
+  uint16_t signExp;
+  uint64_t signif;
+};
 #endif
 
 /*----------------------------------------------------------------------------
@@ -77,50 +91,46 @@ struct extFloat80M { uint16_t signExp; uint64_t signif; };
 *----------------------------------------------------------------------------*/
 typedef struct extFloat80M extFloat80_t;
 
+enum { softfloat_tininess_beforeRounding = 0, softfloat_tininess_afterRounding = 1 };
+
 enum {
-    softfloat_tininess_beforeRounding = 0,
-    softfloat_tininess_afterRounding  = 1
+  softfloat_round_near_even = 0,
+  softfloat_round_minMag = 1,
+  softfloat_round_min = 2,
+  softfloat_round_max = 3,
+  softfloat_round_near_maxMag = 4,
+  softfloat_round_odd = 6
 };
 
 enum {
-    softfloat_round_near_even   = 0,
-    softfloat_round_minMag      = 1,
-    softfloat_round_min         = 2,
-    softfloat_round_max         = 3,
-    softfloat_round_near_maxMag = 4,
-    softfloat_round_odd         = 6
-};
-
-enum {
-    softfloat_flag_inexact   =  1,
-    softfloat_flag_underflow =  2,
-    softfloat_flag_overflow  =  4,
-    softfloat_flag_infinite  =  8,
-    softfloat_flag_invalid   = 16
+  softfloat_flag_inexact = 1,
+  softfloat_flag_underflow = 2,
+  softfloat_flag_overflow = 4,
+  softfloat_flag_infinite = 8,
+  softfloat_flag_invalid = 16
 };
 
 struct softfloat_state {
-/*----------------------------------------------------------------------------
-| Software floating-point underflow tininess-detection mode.
-*----------------------------------------------------------------------------*/
-uint8_t detectTininess; /* = init_detectTininess */
-/*----------------------------------------------------------------------------
-| Software floating-point rounding mode.  (Mode "odd" is supported only if
-| SoftFloat is compiled with macro 'SOFTFLOAT_ROUND_ODD' defined.)
-*----------------------------------------------------------------------------*/
-uint8_t roundingMode; /* = softfloat_round_near_even */
+  /*----------------------------------------------------------------------------
+  | Software floating-point underflow tininess-detection mode.
+  *----------------------------------------------------------------------------*/
+  uint8_t detectTininess; /* = init_detectTininess */
+  /*----------------------------------------------------------------------------
+  | Software floating-point rounding mode.  (Mode "odd" is supported only if
+  | SoftFloat is compiled with macro 'SOFTFLOAT_ROUND_ODD' defined.)
+  *----------------------------------------------------------------------------*/
+  uint8_t roundingMode; /* = softfloat_round_near_even */
 
-/*----------------------------------------------------------------------------
-| Software floating-point exception flags.
-*----------------------------------------------------------------------------*/
-uint8_t exceptionFlags; /* = 0 */
+  /*----------------------------------------------------------------------------
+  | Software floating-point exception flags.
+  *----------------------------------------------------------------------------*/
+  uint8_t exceptionFlags; /* = 0 */
 
-/*----------------------------------------------------------------------------
-| Rounding precision for 80-bit extended double-precision floating-point.
-| Valid values are 32, 64, and 80.
-*----------------------------------------------------------------------------*/
-uint8_t roundingPrecision; /* = 80 */
+  /*----------------------------------------------------------------------------
+  | Rounding precision for 80-bit extended double-precision floating-point.
+  | Valid values are 32, 64, and 80.
+  *----------------------------------------------------------------------------*/
+  uint8_t roundingPrecision; /* = 80 */
 };
 
 #endif
-

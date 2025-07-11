@@ -2539,8 +2539,7 @@ void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
 
   // We need to save MXCSR and MXCSR_MASK if either SSE or AVX are requested to be saved
   {
-    StoreIfFlagSet(
-      1, [this, Op] { SaveMXCSRState(XSaveBase(Op)); }, 2);
+    StoreIfFlagSet(1, [this, Op] { SaveMXCSRState(XSaveBase(Op)); }, 2);
   }
 
   // Update XSTATE_BV region of the XSAVE header
@@ -2715,13 +2714,11 @@ void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
 
   // x87
   {
-    RestoreIfFlagSetOrDefault(
-      0, [this, Op] { RestoreX87State(XSaveBase(Op)); }, [this, Op] { DefaultX87State(Op); });
+    RestoreIfFlagSetOrDefault(0, [this, Op] { RestoreX87State(XSaveBase(Op)); }, [this, Op] { DefaultX87State(Op); });
   }
   // SSE
   {
-    RestoreIfFlagSetOrDefault(
-      1, [this, Op] { RestoreSSEState(XSaveBase(Op)); }, [this] { DefaultSSEState(); });
+    RestoreIfFlagSetOrDefault(1, [this, Op] { RestoreSSEState(XSaveBase(Op)); }, [this] { DefaultSSEState(); });
   }
   // AVX
   if (CTX->HostFeatures.SupportsAVX) {
@@ -2734,9 +2731,9 @@ void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
     RestoreIfFlagSetOrDefault(
       1,
       [this, Op] {
-      Ref Base = XSaveBase(Op);
-      Ref MXCSR = _LoadMem(GPRClass, OpSize::i32Bit, Base, _Constant(24), OpSize::i32Bit, MEM_OFFSET_SXTX, 1);
-      RestoreMXCSRState(MXCSR);
+        Ref Base = XSaveBase(Op);
+        Ref MXCSR = _LoadMem(GPRClass, OpSize::i32Bit, Base, _Constant(24), OpSize::i32Bit, MEM_OFFSET_SXTX, 1);
+        RestoreMXCSRState(MXCSR);
       },
       [] { /* Intentionally do nothing*/ }, 2);
   }

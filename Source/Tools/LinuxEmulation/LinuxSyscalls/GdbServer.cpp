@@ -99,28 +99,28 @@ GdbServer::GdbServer(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* 
     SignalDelegation->RegisterHostSignalHandler(
       Signal,
       [this](FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext) {
-      if (PassSignals[Signal]) {
-        // Pass signal to the guest
-        return false;
-      }
+        if (PassSignals[Signal]) {
+          // Pass signal to the guest
+          return false;
+        }
 
-      auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread);
-      ThreadObject->GdbInfo = {};
-      ThreadObject->GdbInfo->Signal = Signal;
+        auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread);
+        ThreadObject->GdbInfo = {};
+        ThreadObject->GdbInfo->Signal = Signal;
 
-      ThreadObject->GdbInfo->SignalPC = ArchHelpers::Context::GetPc(ucontext);
-      this->SignalDelegation->SpillSRA(Thread, ucontext, Thread->CurrentFrame->InSyscallInfo);
+        ThreadObject->GdbInfo->SignalPC = ArchHelpers::Context::GetPc(ucontext);
+        this->SignalDelegation->SpillSRA(Thread, ucontext, Thread->CurrentFrame->InSyscallInfo);
 
-      memcpy(ThreadObject->GdbInfo->GPRs, ArchHelpers::Context::GetArmGPRs(ucontext), sizeof(ThreadObject->GdbInfo->GPRs));
-      ThreadObject->GdbInfo->PState = ArchHelpers::Context::GetArmPState(ucontext);
+        memcpy(ThreadObject->GdbInfo->GPRs, ArchHelpers::Context::GetArmGPRs(ucontext), sizeof(ThreadObject->GdbInfo->GPRs));
+        ThreadObject->GdbInfo->PState = ArchHelpers::Context::GetArmPState(ucontext);
 
-      // Let GDB know that we have a signal
-      this->Break(Thread, Signal);
+        // Let GDB know that we have a signal
+        this->Break(Thread, Signal);
 
-      WaitForThreadWakeup();
-      ThreadObject->GdbInfo.reset();
+        WaitForThreadWakeup();
+        ThreadObject->GdbInfo.reset();
 
-      return true;
+        return true;
       },
       true);
   }

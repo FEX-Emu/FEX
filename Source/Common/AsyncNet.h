@@ -257,21 +257,21 @@ struct tcp_acceptor {
         .revents = 0,
       },
       [ServerFD = FD, &Reactor = Reactor, OnAccept = std::move(OnAccept)](error ec) mutable {
-      if (ec != error::success) {
-        return post_callback::drop;
-      }
+        if (ec != error::success) {
+          return post_callback::drop;
+        }
 
-      sockaddr_storage Addr {};
-      socklen_t AddrSize {};
-      int NewFD;
-      do {
-        NewFD = ::accept(ServerFD, reinterpret_cast<sockaddr*>(&Addr), &AddrSize);
-      } while (NewFD < 0 && (errno == EINTR || errno == EAGAIN));
-      if (NewFD < 0) {
-        return OnAccept(error::generic_errno, std::nullopt);
-      }
+        sockaddr_storage Addr {};
+        socklen_t AddrSize {};
+        int NewFD;
+        do {
+          NewFD = ::accept(ServerFD, reinterpret_cast<sockaddr*>(&Addr), &AddrSize);
+        } while (NewFD < 0 && (errno == EINTR || errno == EAGAIN));
+        if (NewFD < 0) {
+          return OnAccept(error::generic_errno, std::nullopt);
+        }
 
-      return OnAccept(error::success, tcp_socket {Reactor, NewFD});
+        return OnAccept(error::success, tcp_socket {Reactor, NewFD});
       });
   }
 

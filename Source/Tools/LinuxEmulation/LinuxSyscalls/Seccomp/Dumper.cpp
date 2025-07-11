@@ -14,7 +14,7 @@ $end_info$
 namespace FEX::HLE {
 void SeccompEmulator::DumpProgram(const sock_fprog* prog) {
   auto Parse_Class_LD = [](uint32_t BPFIP, const sock_filter* Inst) {
-    auto DestName = [](sock_filter const* Inst) {
+    auto DestName = [](const sock_filter* Inst) {
       if (BPF_CLASS(Inst->code) == BPF_LD) {
         return "A";
       } else {
@@ -22,7 +22,7 @@ void SeccompEmulator::DumpProgram(const sock_fprog* prog) {
       }
     };
 
-    auto AccessSize = [](sock_filter const* Inst) {
+    auto AccessSize = [](const sock_filter* Inst) {
       switch (BPF_SIZE(Inst->code)) {
       case BPF_W: return 32;
       case BPF_H: return 16;
@@ -32,7 +32,7 @@ void SeccompEmulator::DumpProgram(const sock_fprog* prog) {
       return 0;
     };
 
-    auto ModeType = [](sock_filter const* Inst) {
+    auto ModeType = [](const sock_filter* Inst) {
       switch (BPF_MODE(Inst->code)) {
       case BPF_IMM: return "IMM";
       case BPF_ABS: return "ABS";
@@ -44,7 +44,7 @@ void SeccompEmulator::DumpProgram(const sock_fprog* prog) {
       return "Unknown";
     };
 
-    auto LoadName = [](sock_filter const* Inst) {
+    auto LoadName = [](const sock_filter* Inst) {
       using namespace std::string_view_literals;
       switch (BPF_MODE(Inst->code)) {
       case BPF_IMM: return fextl::fmt::format("#{}", Inst->k);
@@ -61,7 +61,7 @@ void SeccompEmulator::DumpProgram(const sock_fprog* prog) {
   };
 
   auto Parse_Class_ST = [](uint32_t BPFIP, const sock_filter* Inst) {
-    auto DestName = [](sock_filter const* Inst) {
+    auto DestName = [](const sock_filter* Inst) {
       if (BPF_CLASS(Inst->code) == BPF_ST) {
         return "A";
       } else {
@@ -73,7 +73,7 @@ void SeccompEmulator::DumpProgram(const sock_fprog* prog) {
   };
 
   auto Parse_Class_ALU = [](uint32_t BPFIP, const sock_filter* Inst) {
-    auto GetOp = [](sock_filter const* Inst) {
+    auto GetOp = [](const sock_filter* Inst) {
       const auto Op = BPF_OP(Inst->code);
 
       switch (Op) {
@@ -92,7 +92,7 @@ void SeccompEmulator::DumpProgram(const sock_fprog* prog) {
       }
     };
 
-    auto GetSrc = [](sock_filter const* Inst) {
+    auto GetSrc = [](const sock_filter* Inst) {
       switch (BPF_SRC(Inst->code)) {
       case BPF_K: return fextl::fmt::format("0x{:x}", Inst->k);
       case BPF_X: return fextl::fmt::format("<X>");
@@ -104,7 +104,7 @@ void SeccompEmulator::DumpProgram(const sock_fprog* prog) {
   };
 
   auto Parse_Class_JMP = [](uint32_t BPFIP, const sock_filter* Inst) {
-    auto GetOp = [](sock_filter const* Inst) {
+    auto GetOp = [](const sock_filter* Inst) {
       switch (BPF_OP(Inst->code)) {
       case BPF_JA: return "a";
       case BPF_JEQ: return "eq";
@@ -115,7 +115,7 @@ void SeccompEmulator::DumpProgram(const sock_fprog* prog) {
       return "Unknown";
     };
 
-    auto GetSrc = [](sock_filter const* Inst) {
+    auto GetSrc = [](const sock_filter* Inst) {
       switch (BPF_SRC(Inst->code)) {
       case BPF_K: return fextl::fmt::format("0x{:x}", Inst->k);
       case BPF_X: return fextl::fmt::format("<X>");
@@ -128,7 +128,7 @@ void SeccompEmulator::DumpProgram(const sock_fprog* prog) {
   };
 
   auto Parse_Class_RET = [](uint32_t BPFIP, const sock_filter* Inst) {
-    auto GetRetValue = [](sock_filter const* Inst) {
+    auto GetRetValue = [](const sock_filter* Inst) {
       switch (BPF_RVAL(Inst->code)) {
       case BPF_K: {
         uint32_t RetData = Inst->k & SECCOMP_RET_DATA;

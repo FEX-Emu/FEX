@@ -32,7 +32,7 @@
 #include <sys/random.h>
 
 #define PAGE_START(x) ((x) & ~(uintptr_t)(4095))
-#define PAGE_OFFSET(x) ((x)&4095)
+#define PAGE_OFFSET(x) ((x) & 4095)
 #define PAGE_ALIGN(x) (((x) + 4095) & ~(uintptr_t)(4095))
 
 class ELFCodeLoader final : public FEX::CodeLoader {
