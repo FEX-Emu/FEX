@@ -143,7 +143,7 @@ namespace Msg {
 
 #define ERROR_AND_DIE_FMT(...)      \
   do {                              \
-    LogMan::Msg::EFmt(__VA_ARGS__); \
+    LogMan::Msg::MFmt(LogMan::ASSERT, __VA_ARGS__); \
     FEX_TRAP_EXECUTION;             \
   } while (0)
 
