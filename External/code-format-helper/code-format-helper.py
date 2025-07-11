@@ -169,14 +169,9 @@ View the diff from {self.name} here.
 
 
 class ClangFormatHelper(FormatHelper):
-    name = "clang-format"
+    name = "git-clang-format"
     friendly_name = "C/C++ code formatter"
 
-    @property
-    def cformat_wrapper_path(self) -> str:
-        relpath = "../../Scripts/clang-format.py"
-        curpath = os.path.dirname(os.path.abspath(__file__))
-        return os.path.abspath(os.path.normpath(os.path.join(curpath, relpath)))
 
     @property
     def instructions(self) -> str:
@@ -199,7 +194,7 @@ class ClangFormatHelper(FormatHelper):
     def clang_fmt_path(self) -> str:
         if "CLANG_FORMAT_PATH" in os.environ:
             return os.environ["CLANG_FORMAT_PATH"]
-        return "git-clang-format"
+        return "git-clang-format-19"
 
     def has_tool(self) -> bool:
         cmd = [self.clang_fmt_path, "-h"]
@@ -217,8 +212,8 @@ class ClangFormatHelper(FormatHelper):
 
         cf_cmd = [
             self.clang_fmt_path,
-            f"--binary={self.cformat_wrapper_path}",
             "--diff",
+            "--diff_from_common_commit",
         ]
 
         if args.start_rev and args.end_rev:

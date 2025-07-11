@@ -40,11 +40,8 @@ jobs:
           echo "Formatting files:"
           echo "$CHANGED_FILES"
 
-      - name: Check for correct clang-format version
-        run: clang-format --version | grep -qF '16.0.6'
-
-      - name: Check git-clang-format-16 exists
-        run: which git-clang-format-16
+      - name: Check git-clang-format-19 exists
+        run: which git-clang-format-19
 
       - name: Setup Python env
         uses: actions/setup-python@v4
@@ -58,19 +55,16 @@ jobs:
 
       - name: Run code formatter
         env:
-          CLANG_FORMAT_PATH: 'git-clang-format-16'
+          CLANG_FORMAT_PATH: 'git-clang-format-19'
           GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
           START_REV: ${{ github.event.pull_request.base.sha }}
           END_REV: ${{ github.event.pull_request.head.sha }}
           CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
-        # TODO(pmatos): Once we adopt v18, we should be able
-        # to take advantage of the new --diff_from_common_commit option
-        # explicitly in code-format-helper.py and not have to diff starting at
-        # the merge base.
+        # Using --diff_from_common_commit option available in clang-format-19
         run: |
           python ./External/code-format-helper/code-format-helper.py \
             --repo "FEX-emu/FEX" \
             --issue-number $GITHUB_PR_NUMBER \
-            --start-rev $(git merge-base $START_REV $END_REV) \
+            --start-rev $START_REV \
             --end-rev $END_REV \
             --changed-files "$CHANGED_FILES"
