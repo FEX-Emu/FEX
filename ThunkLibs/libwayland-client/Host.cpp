@@ -479,13 +479,13 @@ void fexfn_impl_libwayland_client_fex_wl_exchange_interface_pointer(guest_layout
 
   // NOTE: These arrays are complements to global symbols in the guest, so we
   //       never explicitly free this memory
-  guest_interface.data.methods.data = (uintptr_t) new guest_layout<wl_message>[host_interface->method_count];
+  guest_interface.data.methods.data = (uintptr_t)new guest_layout<wl_message>[host_interface->method_count];
   for (int i = 0; i < host_interface->method_count; ++i) {
     guest_interface.data.methods.get_pointer()[i] = to_guest(to_host_layout(host_interface->methods[i]));
     guest_interface.data.methods.get_pointer()[i].data.types = to_guest(to_host_layout(host_interface->methods[i].types));
   }
 
-  guest_interface.data.events.data = (uintptr_t) new guest_layout<wl_message>[host_interface->event_count];
+  guest_interface.data.events.data = (uintptr_t)new guest_layout<wl_message>[host_interface->event_count];
   for (int i = 0; i < host_interface->event_count; ++i) {
     guest_interface.data.events.get_pointer()[i] = to_guest(to_host_layout(host_interface->events[i]));
     guest_interface.data.events.get_pointer()[i].data.types = to_guest(to_host_layout(host_interface->events[i].types));

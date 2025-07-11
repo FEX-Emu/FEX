@@ -15,11 +15,11 @@
 
 // Add macros which are missing in some versions of <elf.h>
 #ifndef ELF32_ST_VISIBILITY
-#define ELF32_ST_VISIBILITY(o) ((o)&0x3)
+#define ELF32_ST_VISIBILITY(o) ((o) & 0x3)
 #endif
 
 #ifndef ELF64_ST_VISIBILITY
-#define ELF64_ST_VISIBILITY(o) ((o)&0x3)
+#define ELF64_ST_VISIBILITY(o) ((o) & 0x3)
 #endif
 
 namespace ELFLoader {

@@ -193,29 +193,29 @@ namespace FEXCore::CPU {
     VFScalarOperation(IROp->Size, ElementSize, Op->ZeroUpperBits, ScalarEmit, Dst, Vector1, Vector2);                         \
   }
 
-#define DEF_FMAOP_SCALAR_INSERT(FEXOp, ARMOp)                                                                                              \
-  DEF_OP(FEXOp) {                                                                                                                          \
-    const auto Op = IROp->C<IR::IROp_##FEXOp>();                                                                                           \
-    const auto ElementSize = Op->Header.ElementSize;                                                                                       \
-                                                                                                                                           \
-    auto ScalarEmit =                                                                                                                      \
-      [this, ElementSize](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2, ARMEmitter::VRegister Src3) { \
-      if (ElementSize == IR::OpSize::i16Bit) {                                                                                             \
-        ARMOp(Dst.H(), Src1.H(), Src2.H(), Src3.H());                                                                                      \
-      } else if (ElementSize == IR::OpSize::i32Bit) {                                                                                      \
-        ARMOp(Dst.S(), Src1.S(), Src2.S(), Src3.S());                                                                                      \
-      } else if (ElementSize == IR::OpSize::i64Bit) {                                                                                      \
-        ARMOp(Dst.D(), Src1.D(), Src2.D(), Src3.D());                                                                                      \
-      }                                                                                                                                    \
-    };                                                                                                                                     \
-                                                                                                                                           \
-    const auto Dst = GetVReg(Node);                                                                                                        \
-    const auto Upper = GetVReg(Op->Upper);                                                                                                 \
-    const auto Vector1 = GetVReg(Op->Vector1);                                                                                             \
-    const auto Vector2 = GetVReg(Op->Vector2);                                                                                             \
-    const auto Addend = GetVReg(Op->Addend);                                                                                               \
-                                                                                                                                           \
-    VFScalarFMAOperation(IROp->Size, ElementSize, ScalarEmit, Dst, Upper, Vector1, Vector2, Addend);                                       \
+#define DEF_FMAOP_SCALAR_INSERT(FEXOp, ARMOp)                                                                                \
+  DEF_OP(FEXOp) {                                                                                                            \
+    const auto Op = IROp->C<IR::IROp_##FEXOp>();                                                                             \
+    const auto ElementSize = Op->Header.ElementSize;                                                                         \
+                                                                                                                             \
+    auto ScalarEmit = [this, ElementSize](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2, \
+                                          ARMEmitter::VRegister Src3) {                                                      \
+      if (ElementSize == IR::OpSize::i16Bit) {                                                                               \
+        ARMOp(Dst.H(), Src1.H(), Src2.H(), Src3.H());                                                                        \
+      } else if (ElementSize == IR::OpSize::i32Bit) {                                                                        \
+        ARMOp(Dst.S(), Src1.S(), Src2.S(), Src3.S());                                                                        \
+      } else if (ElementSize == IR::OpSize::i64Bit) {                                                                        \
+        ARMOp(Dst.D(), Src1.D(), Src2.D(), Src3.D());                                                                        \
+      }                                                                                                                      \
+    };                                                                                                                       \
+                                                                                                                             \
+    const auto Dst = GetVReg(Node);                                                                                          \
+    const auto Upper = GetVReg(Op->Upper);                                                                                   \
+    const auto Vector1 = GetVReg(Op->Vector1);                                                                               \
+    const auto Vector2 = GetVReg(Op->Vector2);                                                                               \
+    const auto Addend = GetVReg(Op->Addend);                                                                                 \
+                                                                                                                             \
+    VFScalarFMAOperation(IROp->Size, ElementSize, ScalarEmit, Dst, Upper, Vector1, Vector2, Addend);                         \
   }
 
 DEF_UNOP(VAbs, abs, true)
@@ -803,8 +803,8 @@ DEF_OP(VFCMPScalarInsert) {
     default: break;
     }
   };
-  auto ScalarEmitUNO =
-    [this, SubRegSize, ZeroUpperBits, Is256Bit](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2) {
+  auto ScalarEmitUNO = [this, SubRegSize, ZeroUpperBits, Is256Bit](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1,
+                                                                   ARMEmitter::VRegister Src2) {
     switch (SubRegSize.Scalar) {
     case ARMEmitter::ScalarRegSize::i16Bit: {
       fcmge(VTMP1.H(), Src1.H(), Src2.H());
@@ -838,8 +838,8 @@ DEF_OP(VFCMPScalarInsert) {
       }
     }
   };
-  auto ScalarEmitNEQ =
-    [this, SubRegSize, ZeroUpperBits, Is256Bit](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2) {
+  auto ScalarEmitNEQ = [this, SubRegSize, ZeroUpperBits, Is256Bit](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1,
+                                                                   ARMEmitter::VRegister Src2) {
     switch (SubRegSize.Scalar) {
     case ARMEmitter::ScalarRegSize::i16Bit: {
       fcmeq(VTMP1.H(), Src2.H(), Src1.H());
@@ -868,8 +868,8 @@ DEF_OP(VFCMPScalarInsert) {
       }
     }
   };
-  auto ScalarEmitORD =
-    [this, SubRegSize, ZeroUpperBits, Is256Bit](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1, ARMEmitter::VRegister Src2) {
+  auto ScalarEmitORD = [this, SubRegSize, ZeroUpperBits, Is256Bit](ARMEmitter::VRegister Dst, ARMEmitter::VRegister Src1,
+                                                                   ARMEmitter::VRegister Src2) {
     switch (SubRegSize.Scalar) {
     case ARMEmitter::ScalarRegSize::i16Bit: {
       fcmge(VTMP1.H(), Src1.H(), Src2.H());

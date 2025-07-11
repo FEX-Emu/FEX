@@ -121,14 +121,14 @@ void RegisterLongJumpHandler(FEX::HLE::SignalDelegator* Handler) {
   Handler->RegisterFrontendHostSignalHandler(
     SIGSEGV,
     [](FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext) {
-    constexpr uint8_t HLT = 0xF4;
-    if (reinterpret_cast<uint8_t*>(Thread->CurrentFrame->State.rip)[0] != HLT) {
-      DidFault = true;
-      return false;
-    }
+      constexpr uint8_t HLT = 0xF4;
+      if (reinterpret_cast<uint8_t*>(Thread->CurrentFrame->State.rip)[0] != HLT) {
+        DidFault = true;
+        return false;
+      }
 
-    longjmp(LongJumpHandler::LongJump, 1);
-    return false;
+      longjmp(LongJumpHandler::LongJump, 1);
+      return false;
     },
     true);
 }

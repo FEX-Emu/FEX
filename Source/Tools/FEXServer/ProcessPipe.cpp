@@ -219,14 +219,14 @@ bool InitializeServerSocket(bool abstract) {
         .revents = 0,
       },
       [Socket = std::move(Socket).value()](fasio::error ec) mutable {
-      if (ec != fasio::error::success) {
-        close(Socket.FD);
-        --NumClients;
-        return fasio::post_callback::drop;
-      }
-      HandleSocketData(Socket);
-      // Wait for next data
-      return fasio::post_callback::repeat;
+        if (ec != fasio::error::success) {
+          close(Socket.FD);
+          --NumClients;
+          return fasio::post_callback::drop;
+        }
+        HandleSocketData(Socket);
+        // Wait for next data
+        return fasio::post_callback::repeat;
       });
 
     // Wait for next connection

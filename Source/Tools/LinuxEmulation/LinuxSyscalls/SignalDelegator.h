@@ -159,7 +159,7 @@ private:
   }
 
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
-  fextl::string const ApplicationName;
+  const fextl::string ApplicationName;
   FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
   FEX_CONFIG_OPT(HalfBarrierTSOEnabled, HALFBARRIERTSOENABLED);
 

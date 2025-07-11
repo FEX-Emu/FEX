@@ -19,7 +19,7 @@
  * The file also includes a conditional assembly definition
  * for the type of computer arithmetic (IEEE, DEC, Motorola
  * IEEE, or UNKnown).
- * 
+ *
  * For Digital Equipment PDP-11 and VAX computers, certain
  * IBM systems, and others that use numbers with a 56-bit
  * significand, the symbol DEC should be defined.  In this
@@ -56,7 +56,7 @@
  * may fail on many systems.  Verify that they are supposed
  * to work on your computer.
  */
-
+
 /*
 Cephes Math Library Release 2.3:  June, 1995
 Copyright 1984, 1987, 1989, 1995 by Stephen L. Moshier
@@ -69,36 +69,33 @@ Copyright 1984, 1987, 1989, 1995 by Stephen L. Moshier
 #include "SoftFloat-3e/platform.h"
 #include "SoftFloat-3e/softfloat.h"
 
-#define DOMAIN		1	/* argument domain error */
-#define SING		2	/* argument singularity */
-#define OVERFLOW	3	/* overflow range error */
-#define UNDERFLOW	4	/* underflow range error */
-#define TLOSS		5	/* total loss of precision */
-#define PLOSS		6	/* partial loss of precision */
+#define DOMAIN 1    /* argument domain error */
+#define SING 2      /* argument singularity */
+#define OVERFLOW 3  /* overflow range error */
+#define UNDERFLOW 4 /* underflow range error */
+#define TLOSS 5     /* total loss of precision */
+#define PLOSS 6     /* partial loss of precision */
 
-#define EDOM		33
-#define ERANGE		34
+#define EDOM 33
+#define ERANGE 34
 
 /* Complex numeral.  */
-typedef struct
-	{
-	double r;
-	double i;
-	} cmplx;
+typedef struct {
+  double r;
+  double i;
+} cmplx;
 
-typedef struct
-	{
-	float r;
-	float i;
-	} cmplxf;
+typedef struct {
+  float r;
+  float i;
+} cmplxf;
 
 /* Long double complex numeral.  */
 
-typedef struct
-	{
-	float128_t r;
-	float128_t i;
-	} cmplxl;
+typedef struct {
+  float128_t r;
+  float128_t i;
+} cmplxl;
 
 
 /* Type of computer arithmetic */
@@ -178,23 +175,23 @@ extern float128_t F128_PIO2L, F128_PIO4L;
 
 float128_t cephes_f128_atanl(float128_t x);
 #if ANSIC
-float128_t cephes_f128_atan2l( float128_t y, float128_t x );
+float128_t cephes_f128_atan2l(float128_t y, float128_t x);
 #else
-float128_t cephes_f128_atan2l( float128_t x, float128_t y );
+float128_t cephes_f128_atan2l(float128_t x, float128_t y);
 #endif
 float128_t cephes_f128_ceill(float128_t x);
 float128_t cephes_f128_cosl(float128_t x);
 float128_t cephes_f128_fabsl(float128_t x);
 float128_t cephes_f128_floorl(float128_t x);
-float128_t cephes_f128_frexpl( float128_t x, int *pw2 );
+float128_t cephes_f128_frexpl(float128_t x, int* pw2);
 int cephes_f128_isfinitel(float128_t x);
 int cephes_f128_isnanl(float128_t x);
-float128_t cephes_f128_ldexpl( float128_t x, int pw2 );
-float128_t cephes_f128_polevll( float128_t x, void *PP, int n );
-float128_t cephes_f128_p1evll( float128_t x, void *PP, int n );
+float128_t cephes_f128_ldexpl(float128_t x, int pw2);
+float128_t cephes_f128_polevll(float128_t x, void* PP, int n);
+float128_t cephes_f128_p1evll(float128_t x, void* PP, int n);
 int cephes_f128_signbitl(float128_t x);
 float128_t cephes_f128_sinl(float128_t x);
-int mtherr( char *name, int code );
+int mtherr(char* name, int code);
 
 /* Public symbol declarations */
 float128_t cephes_f128_log2l(float128_t x);
