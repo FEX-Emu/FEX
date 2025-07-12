@@ -204,23 +204,41 @@ void ParseWineSyscallNumbers(HMODULE NtDll) {
   ULONG Size;
   const auto* Exports = reinterpret_cast<IMAGE_EXPORT_DIRECTORY*>(RtlImageDirectoryEntryToData(NtDll, true, IMAGE_DIRECTORY_ENTRY_EXPORT, &Size));
   const auto* NameTable = reinterpret_cast<uint32_t*>(NtDllBase + Exports->AddressOfNames);
+  const auto* FunctionTable = reinterpret_cast<uint32_t*>(NtDllBase + Exports->AddressOfFunctions);
+  const auto* OrdinalTable = reinterpret_cast<uint16_t*>(NtDllBase + Exports->AddressOfNameOrdinals);
+  struct SyscallEntry {
+    const char* Name;
+    uint32_t RVA;
 
-  // Wine orders syscalls alphabetically, take advantage of that to find the syscall indices for those which we need to
-  // manually issue. Note that all functions starting with Nt besides NtGetTickCount are syscalls and the syscall ID must
-  // be incremented by 1 for each.
-  uint32_t CurSyscallId = 0;
+    bool operator<(const SyscallEntry& Other) const {
+      return RVA < Other.RVA;
+    }
+  };
+
+  // Cannot use any syscalls at this stage, so rely on a stack-allocated array
+  std::array<SyscallEntry, 0x200> SyscallTable;
+  auto SyscallTableEnd = SyscallTable.begin();
+
+  // Windows/Wine orders syscalls in memory by their ID, take advantage of that to find the syscall indices for those
+  // which we need to manually issue. Note that all functions starting with Nt besides NtGetTickCount are syscalls.
   for (uint32_t Idx = 0; Idx < Exports->NumberOfNames; Idx++) {
     const char* Name = reinterpret_cast<const char*>(NtDllBase + NameTable[Idx]);
     if (Name[0] == 'N' && Name[1] == 't' && strcmp(Name, "NtGetTickCount") != 0) {
-      if (strcmp(Name, "NtContinue") == 0) {
-        WineNtContinueSyscallId = CurSyscallId;
-      } else if (strcmp(Name, "NtAllocateVirtualMemory") == 0) {
-        WineNtAllocateVirtualMemorySyscallId = CurSyscallId;
-      } else if (strcmp(Name, "NtProtectVirtualMemory") == 0) {
-        WineNtProtectVirtualMemorySyscallId = CurSyscallId;
-      }
+      *SyscallTableEnd++ = {Name, FunctionTable[OrdinalTable[Idx]]};
+    }
+  }
 
-      CurSyscallId++;
+  // Sort such that index 0 is now syscall 0, etc
+  std::sort(SyscallTable.begin(), SyscallTableEnd);
+
+  for (auto it = SyscallTable.begin(); it != SyscallTableEnd; it++) {
+    uint32_t CurSyscallId = static_cast<uint32_t>(std::distance(SyscallTable.begin(), it));
+    if (strcmp(it->Name, "NtContinue") == 0) {
+      WineNtContinueSyscallId = CurSyscallId;
+    } else if (strcmp(it->Name, "NtAllocateVirtualMemory") == 0) {
+      WineNtAllocateVirtualMemorySyscallId = CurSyscallId;
+    } else if (strcmp(it->Name, "NtProtectVirtualMemory") == 0) {
+      WineNtProtectVirtualMemorySyscallId = CurSyscallId;
     }
   }
 }
