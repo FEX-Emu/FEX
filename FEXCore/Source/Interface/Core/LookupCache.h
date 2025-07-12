@@ -157,9 +157,9 @@ public:
 
   fextl::map<uint64_t, fextl::vector<uint64_t>> CodePages;
 
-  // Appends Block {Address} to CodePages [Start, Start + Length)
+  // Appends a list of Block {Address} to CodePages [Start, Start + Length)
   // Returns true if new pages are marked as containing code
-  bool AddBlockExecutableRange(uint64_t Address, uint64_t Start, uint64_t Length) {
+  bool AddBlockExecutableRange(const fextl::set<uint64_t>& Addresses, uint64_t Start, uint64_t Length) {
     auto lk = Shared->AcquireLock();
 
     bool rv = false;
@@ -167,7 +167,7 @@ public:
     for (auto CurrentPage = Start >> 12, EndPage = (Start + Length - 1) >> 12; CurrentPage <= EndPage; CurrentPage++) {
       auto& CodePage = CodePages[CurrentPage];
       rv |= CodePage.empty();
-      CodePage.push_back(Address);
+      CodePage.insert(CodePage.end(), Addresses.begin(), Addresses.end());
     }
 
     return rv;

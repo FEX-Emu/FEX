@@ -13,6 +13,7 @@ $end_info$
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
+#include <FEXCore/fextl/map.h>
 
 #include <cstdint>
 
@@ -94,15 +95,7 @@ namespace CPU {
     struct CompiledCode {
       // Where this code block begins.
       uint8_t* BlockBegin;
-      /**
-       * The function entrypoint to this codeblock.
-       *
-       * This may or may not equal `BlockBegin` above. Depending on the CPU backend, it may stick data
-       * prior to the BlockEntry.
-       *
-       * Is actually a function pointer of type `void (FEXCore::Core::ThreadState *Thread)`
-       */
-      uint8_t* BlockEntry;
+      fextl::map<uint64_t, uint8_t*> EntryPoints;
       // The total size of the codeblock from [BlockBegin, BlockBegin+Size).
       size_t Size;
     };

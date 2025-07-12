@@ -42,6 +42,12 @@ enum class SyscallOSABI {
   OS_GENERIC, // No JIT-side argument handling, spill/fill all regs.
 };
 
+struct ExecutableRangeInfo {
+  uint64_t Base;
+  uint64_t Size;
+  bool Writable;
+};
+
 class SyscallHandler;
 class SourcecodeResolver;
 
@@ -74,6 +80,7 @@ public:
   virtual void MarkGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) {}
   virtual void MarkOvercommitRange(uint64_t Start, uint64_t Length) {}
   virtual void UnmarkOvercommitRange(uint64_t Start, uint64_t Length) {}
+  virtual ExecutableRangeInfo QueryGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Address) = 0;
   virtual AOTIRCacheEntryLookupResult LookupAOTIRCacheEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestAddr) = 0;
 
   virtual void PreCompile() {}

@@ -284,7 +284,7 @@ public:
   GenerateIRResult GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, bool ExtendedDebugInfo, uint64_t MaxInst);
 
   struct CompileCodeResult {
-    void* CompiledCode;
+    CPU::CPUBackend::CompiledCode CompiledCode;
     fextl::unique_ptr<FEXCore::Core::DebugData> DebugData;
     uint64_t StartAddr;
     uint64_t Length;

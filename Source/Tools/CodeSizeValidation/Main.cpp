@@ -462,6 +462,10 @@ public:
   FEXCore::HLE::AOTIRCacheEntryLookupResult LookupAOTIRCacheEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestAddr) override {
     return {0, 0};
   }
+
+  FEXCore::HLE::ExecutableRangeInfo QueryGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Address) override {
+    return {0, UINT64_MAX, true};
+  }
 };
 } // namespace
 

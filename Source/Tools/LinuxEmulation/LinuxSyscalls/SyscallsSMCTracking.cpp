@@ -12,6 +12,7 @@ $end_info$
 #include <filesystem>
 #include <sys/shm.h>
 #include <sys/mman.h>
+#include <sys/personality.h>
 
 #include "LinuxSyscalls/Syscalls.h"
 
@@ -151,6 +152,18 @@ FEXCore::HLE::AOTIRCacheEntryLookupResult SyscallHandler::LookupAOTIRCacheEntry(
   }
 
   return {Entry->second.Resource ? Entry->second.Resource->AOTIRCacheEntry : nullptr, Entry->second.Base - Entry->second.Offset};
+}
+
+FEXCore::HLE::ExecutableRangeInfo SyscallHandler::QueryGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Address) {
+  auto lk = FEXCore::GuardSignalDeferringSection<std::shared_lock>(VMATracking.Mutex, Thread);
+  auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread);
+
+  auto Entry = VMATracking.FindVMAEntry(Address);
+  if (Entry == VMATracking.VMAs.end() ||
+      (!Entry->second.Prot.Executable && (!(ThreadObject->persona & READ_IMPLIES_EXEC) || !Entry->second.Prot.Readable))) {
+    return {0, 0, false};
+  }
+  return {Entry->first, Entry->second.Length, Entry->second.Prot.Writable};
 }
 
 void* SyscallHandler::GuestMmap(bool Is64Bit, FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length, int prot, int flags,

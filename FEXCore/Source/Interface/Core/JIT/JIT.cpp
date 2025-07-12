@@ -741,6 +741,26 @@ void Arm64JITCore::EmitInterruptChecks(bool CheckTF) {
 #endif
 }
 
+void Arm64JITCore::EmitEntryPoint(ARMEmitter::BackwardLabel& HeaderLabel, bool CheckTF) {
+  // Get the address of the JITCodeHeader and store in to the core state.
+  // Two instruction cost, each 1 cycle.
+  adr(TMP1, &HeaderLabel);
+  str(TMP1, STATE, offsetof(FEXCore::Core::CPUState, InlineJITBlockHeader));
+
+  EmitInterruptChecks(CheckTF);
+
+  if (SpillSlots) {
+    const auto TotalSpillSlotsSize = SpillSlots * MaxSpillSlotSize;
+
+    if (ARMEmitter::IsImmAddSub(TotalSpillSlotsSize)) {
+      sub(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, TotalSpillSlotsSize);
+    } else {
+      LoadConstant(ARMEmitter::Size::i64Bit, TMP1, TotalSpillSlotsSize);
+      sub(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::rsp, ARMEmitter::XReg::rsp, TMP1, ARMEmitter::ExtendedType::LSL_64, 0);
+    }
+  }
+}
+
 CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size, bool SingleInst, const FEXCore::IR::IRListView* IR,
                                                    FEXCore::Core::DebugData* DebugData, bool CheckTF) {
   FEXCORE_PROFILE_SCOPED("Arm64::CompileCode");
@@ -751,6 +771,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   this->Entry = Entry;
   this->DebugData = DebugData;
   this->IR = IR;
+  CodeData.EntryPoints.clear();
 
   // Fairly excessive buffer range to make sure we don't overflow
   uint32_t BufferRange = 0x100 + SSACount * 24;
@@ -768,9 +789,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   JITCodeHeader* CodeHeader = GetCursorAddress<JITCodeHeader*>();
   CursorIncrement(sizeof(JITCodeHeader));
 
-#ifdef VIXL_DISASSEMBLER
-  const auto DisasmBegin = GetCursorAddress<const vixl::aarch64::Instruction*>();
-#endif
+  auto CodeBegin = GetCursorAddress<uint8_t*>();
 
   // AAPCS64
   // r30      = LR
@@ -792,34 +811,15 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   // X1-X3 = Temp
   // X4-r18 = RA
 
-  CodeData.BlockEntry = GetCursorAddress<uint8_t*>();
-
-  // Get the address of the JITCodeHeader and store in to the core state.
-  // Two instruction cost, each 1 cycle.
-  adr(TMP1, &JITCodeHeaderLabel);
-  str(TMP1, STATE, offsetof(FEXCore::Core::CPUState, InlineJITBlockHeader));
-
-  EmitInterruptChecks(CheckTF);
-
   SpillSlots = IR->SpillSlots();
 
-  if (SpillSlots) {
-    const auto TotalSpillSlotsSize = SpillSlots * MaxSpillSlotSize;
-
-    if (ARMEmitter::IsImmAddSub(TotalSpillSlotsSize)) {
-      sub(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, TotalSpillSlotsSize);
-    } else {
-      LoadConstant(ARMEmitter::Size::i64Bit, TMP1, TotalSpillSlotsSize);
-      sub(ARMEmitter::Size::i64Bit, ARMEmitter::XReg::rsp, ARMEmitter::XReg::rsp, TMP1, ARMEmitter::ExtendedType::LSL_64, 0);
-    }
-  }
-
+  bool EmittedEntry = false;
   PendingTargetLabel = nullptr;
 
   for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
     using namespace FEXCore::IR;
-#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
     auto BlockIROp = BlockHeader->CW<FEXCore::IR::IROp_CodeBlock>();
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
     LOGMAN_THROW_A_FMT(BlockIROp->Header.Op == IR::OP_CODEBLOCK, "IR type failed to be a code block");
 #endif
 
@@ -832,6 +832,21 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
       if (PendingTargetLabel && PendingTargetLabel != &IsTarget->second) {
         b(PendingTargetLabel);
       }
+
+      if (BlockIROp->EntryPoint) {
+        uint64_t BlockStartRIP = Entry + BlockIROp->GuestEntryOffset;
+        if (EmittedEntry) {
+          b(&IsTarget->second);
+        } else {
+          EmittedEntry = true;
+        }
+
+        CodeData.EntryPoints.emplace(BlockStartRIP, GetCursorAddress<uint8_t*>());
+        DebugData->GuestOpcodes.push_back({BlockIROp->GuestEntryOffset, GetCursorAddress<uint8_t*>() - CodeData.BlockBegin});
+
+        EmitEntryPoint(JITCodeHeaderLabel, CheckTF);
+      }
+
       PendingTargetLabel = nullptr;
 
       Bind(&IsTarget->second);
@@ -852,7 +867,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
       }
     }
 
-    DebugData->Subblocks.push_back({static_cast<uint32_t>(BlockStartHostCode - CodeData.BlockEntry),
+    DebugData->Subblocks.push_back({static_cast<uint32_t>(BlockStartHostCode - CodeData.BlockBegin),
                                     static_cast<uint32_t>(GetCursorAddress<uint8_t*>() - BlockStartHostCode)});
   }
 
@@ -862,8 +877,8 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   }
   PendingTargetLabel = nullptr;
 
-  // CodeSize not including the tail data.
-  const uint64_t CodeOnlySize = GetCursorAddress<uint8_t*>() - CodeData.BlockBegin;
+  // CodeSize not including the header or tail data.
+  const uint64_t CodeOnlySize = GetCursorAddress<uint8_t*>() - CodeBegin;
 
   // Add the JitCodeTail
   Align(alignof(JITCodeTail));
@@ -960,7 +975,10 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
     // Adjust host addresses
     const auto Delta = GetCursorAddress<uint8_t*>() - CodeData.BlockBegin;
     CodeData.BlockBegin += Delta;
-    CodeData.BlockEntry += Delta;
+    for (auto& EntryPoint : CodeData.EntryPoints) {
+      EntryPoint.second += Delta;
+    }
+    CodeBegin += Delta;
 
     // Copy over CodeBuffer contents
     memcpy(GetCursorAddress<uint8_t*>(), TempCodeBuffer, TempSize);
@@ -971,7 +989,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
   TempAllocator.DelayedDisownBuffer();
 
-  ClearICache(CodeData.BlockBegin, CodeOnlySize);
+  ClearICache(CodeBegin, CodeOnlySize);
 
 #ifdef VIXL_DISASSEMBLER
   if (Disassemble() & FEXCore::Config::Disassemble::STATS) {
@@ -985,7 +1003,8 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   }
 
   if (Disassemble() & FEXCore::Config::Disassemble::BLOCKS) {
-    const auto DisasmEnd = reinterpret_cast<const vixl::aarch64::Instruction*>(JITBlockTailLocation);
+    const auto DisasmBegin = reinterpret_cast<const vixl::aarch64::Instruction*>(CodeBegin);
+    const auto DisasmEnd = reinterpret_cast<const vixl::aarch64::Instruction*>(CodeBegin + CodeOnlySize);
     LogMan::Msg::IFmt("Disassemble Begin");
     for (auto PCToDecode = DisasmBegin; PCToDecode < DisasmEnd; PCToDecode += 4) {
       DisasmDecoder->Decode(PCToDecode);
@@ -1001,7 +1020,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
   this->IR = nullptr;
 
-  return CodeData;
+  return std::move(CodeData);
 }
 
 void Arm64JITCore::ResetStack() {
