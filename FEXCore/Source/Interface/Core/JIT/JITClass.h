@@ -57,12 +57,14 @@ private:
   const bool HostSupportsAFP {};
 
   ARMEmitter::BiDirectionalLabel* PendingTargetLabel {};
+  ARMEmitter::BiDirectionalLabel* PendingCallReturnTargetLabel {};
   FEXCore::Context::ContextImpl* CTX {};
   const FEXCore::IR::IRListView* IR {};
   uint64_t Entry {};
   CPUBackend::CompiledCode CodeData {};
 
   fextl::map<IR::NodeID, ARMEmitter::BiDirectionalLabel> JumpTargets;
+  fextl::map<IR::NodeID, ARMEmitter::BiDirectionalLabel> CallReturnTargets;
 
   Utils::PoolBufferWithTimedRetirement<uint8_t*, 5000, 500> TempAllocator;
 
