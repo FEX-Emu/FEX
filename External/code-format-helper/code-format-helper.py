@@ -212,6 +212,7 @@ class ClangFormatHelper(FormatHelper):
 
         cf_cmd = [
             self.clang_fmt_path,
+	    "--binary=clang-format-19",
             "--diff",
             "--diff_from_common_commit",
         ]
