@@ -59,8 +59,9 @@ namespace Validation {
 
 namespace FEXCore::Context {
 struct FEX_PACKED ExitFunctionLinkData {
-  uint64_t HostBranch;
+  uint64_t HostCode;
   uint64_t GuestRIP;
+  int64_t CallerOffset;
 };
 
 struct CustomIRResult {

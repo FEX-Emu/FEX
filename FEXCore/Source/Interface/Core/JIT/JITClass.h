@@ -66,6 +66,13 @@ private:
   fextl::map<IR::NodeID, ARMEmitter::BiDirectionalLabel> JumpTargets;
   fextl::map<IR::NodeID, ARMEmitter::BiDirectionalLabel> CallReturnTargets;
 
+  struct PendingJumpThunk {
+    uint64_t CallerAddress;
+    uint64_t GuestRIP;
+    ARMEmitter::ForwardLabel Label;
+  };
+  fextl::vector<PendingJumpThunk> PendingJumpThunks;
+
   Utils::PoolBufferWithTimedRetirement<uint8_t*, 5000, 500> TempAllocator;
 
   [[nodiscard]]
@@ -291,6 +298,17 @@ private:
     uint32_t Begin;
     uint32_t End;
   };
+
+  void EmitLinkedBranch(uint64_t GuestRIP, bool Call) {
+    PendingJumpThunks.push_back({GetCursorAddress<uint64_t>(), GuestRIP, {}});
+    auto& Thunk = PendingJumpThunks.back();
+    Bind(&Thunk.Label);
+    if (Call) {
+      bl(&Thunk.Label);
+    } else {
+      b(&Thunk.Label);
+    }
+  }
 
   // This is purely a debugging aid for developers to see if they are in JIT code space when inspecting raw memory
   void EmitDetectionString();
