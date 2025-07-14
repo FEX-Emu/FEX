@@ -73,13 +73,13 @@ namespace x64 {
     ARMEmitter::Reg::r8, ARMEmitter::Reg::r16, ARMEmitter::Reg::r17,
   };
 
-  constexpr std::array<ARMEmitter::Register, 8> RA = {
+  constexpr std::array<ARMEmitter::Register, 7> RA = {
     // All these callee saved
     ARMEmitter::Reg::r20, ARMEmitter::Reg::r21, ARMEmitter::Reg::r22, ARMEmitter::Reg::r23,
-    ARMEmitter::Reg::r24, ARMEmitter::Reg::r25, ARMEmitter::Reg::r30, ARMEmitter::Reg::r18,
+    ARMEmitter::Reg::r24, ARMEmitter::Reg::r30, ARMEmitter::Reg::r18,
   };
 
-  constexpr unsigned RAPairs = 6;
+  constexpr unsigned RAPairs = 4;
 
   // Dynamic GPRs
   constexpr std::array<ARMEmitter::Register, 2> PreserveAll_Dynamic = {
@@ -143,18 +143,18 @@ namespace x64 {
     ARMEmitter::Reg::r4, ARMEmitter::Reg::r5, ARMEmitter::Reg::r8,
   };
 
-  constexpr std::array<ARMEmitter::Register, 7> RA = {
-    ARMEmitter::Reg::r6,  ARMEmitter::Reg::r7,  ARMEmitter::Reg::r14, ARMEmitter::Reg::r15,
-    ARMEmitter::Reg::r16, ARMEmitter::Reg::r17, ARMEmitter::Reg::r30,
+  constexpr std::array<ARMEmitter::Register, 6> RA = {
+    ARMEmitter::Reg::r6, ARMEmitter::Reg::r7, ARMEmitter::Reg::r14, ARMEmitter::Reg::r15, ARMEmitter::Reg::r16, ARMEmitter::Reg::r30,
   };
 
-  constexpr std::array<ARMEmitter::Register, 5> PreserveAll_Dynamic = {
-    ARMEmitter::Reg::r6, ARMEmitter::Reg::r7, ARMEmitter::Reg::r16, ARMEmitter::Reg::r17, ARMEmitter::Reg::r30,
-  };
+  constexpr std::array<ARMEmitter::Register, 5> PreserveAll_Dynamic = {ARMEmitter::Reg::r6, ARMEmitter::Reg::r7, ARMEmitter::Reg::r16,
+                                                                       ARMEmitter::Reg::r17, ARMEmitter::Reg::r30};
 
-  constexpr std::array<ARMEmitter::Register, 7> NotPreserved_Dynamic = RA;
+  constexpr std::array<ARMEmitter::Register, 7> NotPreserved_Dynamic = {ARMEmitter::Reg::r6,  ARMEmitter::Reg::r7,  ARMEmitter::Reg::r14,
+                                                                        ARMEmitter::Reg::r15, ARMEmitter::Reg::r16, ARMEmitter::Reg::r17,
+                                                                        ARMEmitter::Reg::r30};
 
-  constexpr unsigned RAPairs = 6;
+  constexpr unsigned RAPairs = 4;
 
   constexpr std::array<ARMEmitter::VRegister, 16> SRAFPR = {
     ARMEmitter::VReg::v0,  ARMEmitter::VReg::v1,  ARMEmitter::VReg::v2,  ARMEmitter::VReg::v3,
@@ -245,14 +245,12 @@ namespace x32 {
     REG_AF,
   };
 
-  constexpr std::array<ARMEmitter::Register, 15> RA = {
+  constexpr std::array<ARMEmitter::Register, 14> RA = {
     // All these callee saved
     ARMEmitter::Reg::r20,
     ARMEmitter::Reg::r21,
     ARMEmitter::Reg::r22,
     ARMEmitter::Reg::r23,
-    ARMEmitter::Reg::r24,
-    ARMEmitter::Reg::r25,
 
     // Registers only available on 32-bit
     // All these are caller saved (except for r19).
@@ -265,6 +263,7 @@ namespace x32 {
     ARMEmitter::Reg::r29,
     ARMEmitter::Reg::r30,
 
+    ARMEmitter::Reg::r24,
     ARMEmitter::Reg::r19,
   };
 
@@ -273,7 +272,7 @@ namespace x32 {
     ARMEmitter::Reg::r16, ARMEmitter::Reg::r17, ARMEmitter::Reg::r30,
   };
 
-  constexpr unsigned RAPairs = 12;
+  constexpr unsigned RAPairs = 10;
 
   // All are caller saved
   constexpr std::array<ARMEmitter::VRegister, 8> SRAFPR = {
