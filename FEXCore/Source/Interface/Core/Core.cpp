@@ -1029,7 +1029,7 @@ void ContextImpl::AddThunkTrampolineIRHandler(uintptr_t Entrypoint, uintptr_t Gu
         emit->_StoreContext(GPRSize, IR::FPRClass, emit->_VCastFromGPR(IR::OpSize::i64Bit, IR::OpSize::i64Bit, emit->_Constant(Entrypoint)),
                             offsetof(Core::CPUState, mm[0][0]));
       }
-      emit->_ExitFunction(IR::OpSize::i64Bit, emit->_Constant(GuestThunkEntrypoint));
+      emit->_ExitFunction(IR::OpSize::i64Bit, emit->_Constant(GuestThunkEntrypoint), IR::BranchHint::None, emit->Invalid(), emit->Invalid());
     },
     ThunkHandler, (void*)GuestThunkEntrypoint);
 
