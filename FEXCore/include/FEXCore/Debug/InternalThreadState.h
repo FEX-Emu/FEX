@@ -105,6 +105,11 @@ struct InternalThreadState : public FEXCore::Allocator::FEXAllocOperators {
   ///< Data pointer for exclusive use by the frontend
   void* FrontendPtr;
 
+  static constexpr size_t CALLRET_STACK_SIZE {0x400000};
+
+  // The low address of the call-ret stack allocation (not including guard pages)
+  void* CallRetStackBase {};
+
   // BaseFrameState should always be at the end, directly before the interrupt fault page
   alignas(16) FEXCore::Core::CpuStateFrame BaseFrameState {};
 

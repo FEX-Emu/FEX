@@ -516,6 +516,7 @@ void ContextImpl::ClearCodeCache(FEXCore::Core::InternalThreadState* Thread, boo
     // Clear L1+L2 cache of this thread, and clear L3 cache across any threads using it
     Thread->LookupCache->ClearCache();
   }
+  Allocator::VirtualDontNeed(Thread->CallRetStackBase, FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE);
 }
 
 static void IRDumper(FEXCore::Core::InternalThreadState* Thread, IR::IREmitter* IREmitter, uint64_t GuestRIP) {
@@ -940,10 +941,18 @@ static void InvalidateGuestThreadCodeRange(FEXCore::Core::InternalThreadState* T
     Accumulator.emplace_back(std::move(it->second));
   }
 
+  bool InvalidatedAnyEntries = false;
   for (const auto& PageEntries : Accumulator) {
     for (const auto& Entry : PageEntries) {
-      ContextImpl::ThreadRemoveCodeEntry(Thread, Entry);
+      if (ContextImpl::ThreadRemoveCodeEntry(Thread, Entry)) {
+        InvalidatedAnyEntries = true;
+      }
     }
+  }
+
+  if (InvalidatedAnyEntries) {
+    // This may cause access violations in the thread on Windows as zeroing is not atomic, this is handled by the frontend
+    Allocator::VirtualDontNeed(Thread->CallRetStackBase, FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE);
   }
 }
 
