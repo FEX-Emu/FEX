@@ -116,8 +116,8 @@ struct CPUState {
   uint64_t gs_cached {};
   uint64_t fs_cached {};
   uint8_t flags[48] {};
+  uint64_t callret_sp {};
   uint64_t _pad1 {};
-  uint64_t _pad2 {};
   uint64_t mm[8][2] {};
 
   // 32bit x86 state
@@ -127,7 +127,7 @@ struct CPUState {
   uint16_t FCW {0x37F};
   uint8_t AbridgedFTW {};
 
-  uint8_t _pad3[5];
+  uint8_t _pad2[5];
   // PF/AF are statically mapped as-if they were r16/r17 (which do not exist in
   // x86 otherwise). This allows a straightforward mapping for SRA.
   static constexpr uint8_t PF_AS_GREG = 16;
