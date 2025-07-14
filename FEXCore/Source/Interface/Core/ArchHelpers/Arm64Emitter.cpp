@@ -695,6 +695,8 @@ void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs, uint3
   unsigned PFAFSpillMask = GPRSpillMask & PFAFMask;
   GPRSpillMask &= ~PFAFSpillMask;
 
+  str(REG_CALLRET_SP, STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.callret_sp));
+
   for (size_t i = 0; i < StaticRegisters.size(); i += 2) {
     auto Reg1 = StaticRegisters[i];
     auto Reg2 = StaticRegisters[i + 1];
@@ -789,6 +791,8 @@ void Arm64Emitter::FillStaticRegs(bool FPRs, uint32_t GPRFillMask, uint32_t FPRF
   ldr(TmpReg.X(), ARMEmitter::Reg::r18, TEB_CPU_AREA_OFFSET);
   ldr(STATE, TmpReg, CPU_AREA_EMULATOR_DATA_OFFSET);
 #endif
+
+  ldr(REG_CALLRET_SP, STATE.R(), offsetof(FEXCore::Core::CpuStateFrame, State.callret_sp));
 
   // Regardless of what GPRs/FPRs we're filling, we need to fill NZCV since it
   // is always static and was almost certainly clobbered.
