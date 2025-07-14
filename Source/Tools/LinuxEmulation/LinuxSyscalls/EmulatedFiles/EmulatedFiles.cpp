@@ -226,6 +226,7 @@ fextl::string GenerateCPUInfo(FEXCore::Context::Context* ctx, uint32_t CPUCores)
     add_flag_if(res_1.ecx & (1 << 7), "est");
     add_flag_if(res_1.ecx & (1 << 8), "tm2");
     add_flag_if(res_1.ecx & (1 << 9), "ssse3");
+    add_flag_if(res_1.ecx & (1 << 10), "cid");
     add_flag_if(res_1.ecx & (1 << 11), "sdbg");
     add_flag_if(res_1.ecx & (1 << 12), "fma");
     add_flag_if(res_1.ecx & (1 << 13), "cx16");
@@ -241,6 +242,7 @@ fextl::string GenerateCPUInfo(FEXCore::Context::Context* ctx, uint32_t CPUCores)
     add_flag_if(res_1.ecx & (1 << 24), "tsc_deadline_timer");
     add_flag_if(res_1.ecx & (1 << 25), "aes");
     add_flag_if(res_1.ecx & (1 << 26), "xsave");
+    add_flag_if(res_1.ecx & (1 << 27), "oxsave");
     add_flag_if(res_1.ecx & (1 << 28), "avx");
     add_flag_if(res_1.ecx & (1 << 29), "f16c");
     add_flag_if(res_1.ecx & (1 << 30), "rdrand");
@@ -270,7 +272,6 @@ fextl::string GenerateCPUInfo(FEXCore::Context::Context* ctx, uint32_t CPUCores)
     add_flag_if(res_8000_0001.ecx & (1 << 24), "perfctr_nb");
     add_flag_if(res_8000_0001.ecx & (1 << 26), "bpext");
     add_flag_if(res_8000_0001.ecx & (1 << 27), "ptsc");
-
     add_flag_if(res_8000_0001.ecx & (1 << 28), "perfctr_llc");
     add_flag_if(res_8000_0001.ecx & (1 << 29), "mwaitx");
 
@@ -323,9 +324,11 @@ fextl::string GenerateCPUInfo(FEXCore::Context::Context* ctx, uint32_t CPUCores)
     add_flag_if(false, "ept_ad");
     add_flag_if(res_7.ebx & (1 << 0), "fsgsbase");
     add_flag_if(res_7.ebx & (1 << 1), "tsc_adjust");
+    add_flag_if(res_7.ebx & (1 << 2), "sgx");
     add_flag_if(res_7.ebx & (1 << 3), "bmi1");
     add_flag_if(res_7.ebx & (1 << 4), "hle");
     add_flag_if(res_7.ebx & (1 << 5), "avx2");
+    add_flag_if(res_7.ebx & (1 << 6), "fdp_excptn_only");
     add_flag_if(res_7.ebx & (1 << 7), "smep");
     add_flag_if(res_7.ebx & (1 << 8), "bmi2");
     add_flag_if(res_7.ebx & (1 << 9), "erms");
@@ -354,6 +357,7 @@ fextl::string GenerateCPUInfo(FEXCore::Context::Context* ctx, uint32_t CPUCores)
     add_flag_if(res_d_1.eax & (1 << 1), "xsavec");
     add_flag_if(res_d_1.eax & (1 << 2), "xgetbv1");
     add_flag_if(res_d_1.eax & (1 << 3), "xsaves");
+    add_flag_if(res_d_1.eax & (1 << 4), "xfd");
 
     add_flag_if(res_7_1.eax & (1 << 5), "avx512_bf16");
     add_flag_if(res_8000_0008.ebx & (1 << 0), "clzero");
@@ -406,9 +410,12 @@ fextl::string GenerateCPUInfo(FEXCore::Context::Context* ctx, uint32_t CPUCores)
     add_flag_if(res_7.ecx & (1 << 14), "avx512_vpopcntdq");
     add_flag_if(res_7.ecx & (1 << 16), "la57");
     add_flag_if(res_7.ecx & (1 << 22), "rdpid");
+    add_flag_if(res_7.ecx & (1 << 24), "bus_lock_detect");
     add_flag_if(res_7.ecx & (1 << 25), "cldemote");
     add_flag_if(res_7.ecx & (1 << 27), "movdiri");
     add_flag_if(res_7.ecx & (1 << 28), "movdir64b");
+    add_flag_if(res_7.ecx & (1 << 29), "enqcmd");
+    add_flag_if(res_7.ecx & (1 << 30), "sqx_lc");
 
     add_flag_if(res_8000_0007.ebx & (1 << 0), "overflow_recov");
     add_flag_if(res_8000_0007.ebx & (1 << 1), "succor");
@@ -422,6 +429,11 @@ fextl::string GenerateCPUInfo(FEXCore::Context::Context* ctx, uint32_t CPUCores)
     add_flag_if(res_7.edx & (1 << 14), "serialize");
     add_flag_if(res_7.edx & (1 << 18), "pconfig");
     add_flag_if(res_7.edx & (1 << 19), "arch_lbr");
+    add_flag_if(res_7.edx & (1 << 20), "ibt");
+    add_flag_if(res_7.edx & (1 << 22), "amx_bf16");
+    add_flag_if(res_7.edx & (1 << 23), "avx512_fp16");
+    add_flag_if(res_7.edx & (1 << 24), "amx_tile");
+    add_flag_if(res_7.edx & (1 << 25), "amx_int8");
     add_flag_if(res_7.edx & (1 << 28), "flush_l1d");
     add_flag_if(res_7.edx & (1 << 29), "arch_capabilities");
   }
