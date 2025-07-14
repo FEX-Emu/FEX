@@ -495,58 +495,109 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
   }
 }
 
-static void DirectBlockDelinker(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record) {
-  // Emit new 16 bytes of code to a temporary patch, then atomically apply it
-  __uint128_t Patch;
-  ARMEmitter::Emitter emit((uint8_t*)&Patch, sizeof(Patch));
-  emit.ldr(TMP1, 8); // PC-relative value pointing to constant after blr
-  emit.blr(TMP1);
-  emit.dc64(Frame->Pointers.Common.ExitFunctionLinker);
+static void DirectBlockDelinker(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record, bool Call) {
+  uintptr_t JumpThunkStartAddress = reinterpret_cast<uintptr_t>(Record) - 0x10;
+  uintptr_t CallerAddress = JumpThunkStartAddress + Record->CallerOffset;
+  auto BranchOffset = JumpThunkStartAddress / 4 - CallerAddress / 4;
 
-  auto branch = reinterpret_cast<__uint128_t*>((uintptr_t)Record - 8);
-  std::atomic_ref<__uint128_t>(*branch).store(Patch, std::memory_order::relaxed);
-  ARMEmitter::Emitter::ClearICache((void*)branch, sizeof(*branch));
+  // Replace the patched callsite with a branch to the jump thunk.
+  uint32_t BranchInst = 0;
+  ARMEmitter::Emitter BranchEmit(reinterpret_cast<uint8_t*>(&BranchInst), 4);
+  if (Call) {
+    BranchEmit.bl(BranchOffset);
+  } else {
+    BranchEmit.b(BranchOffset);
+  }
+
+  std::atomic_ref<uint32_t>(*reinterpret_cast<uint32_t*>(CallerAddress)).store(BranchInst, std::memory_order::relaxed);
+  ARMEmitter::Emitter::ClearICache(reinterpret_cast<void*>(CallerAddress), 4);
 }
 
-static uint64_t Arm64JITCore_ExitFunctionLink(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record) {
-  auto Thread = Frame->Thread;
-  auto Lock = Thread->LookupCache->AcquireLock();
+static void IndirectBlockDelinker(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record) {
+  uintptr_t JumpThunkStartAddress = reinterpret_cast<uintptr_t>(Record) - 0x10;
+  uint32_t BranchInst = 0;
+  ARMEmitter::Emitter BranchEmit(reinterpret_cast<uint8_t*>(&BranchInst), 4);
+  BranchEmit.b(0x8);
 
+  std::atomic_ref<uint32_t>(*reinterpret_cast<uint32_t*>(JumpThunkStartAddress)).store(BranchInst, std::memory_order::relaxed);
+  ARMEmitter::Emitter::ClearICache(reinterpret_cast<void*>(JumpThunkStartAddress), 4);
+
+  // No need to reset HostCode here as the exit linker pointer is stored separately, and if the block is relinked it will be updated.
+}
+
+uint64_t Arm64JITCore::ExitFunctionLink(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record) {
+  auto Thread = Frame->Thread;
   bool TFSet = Thread->CurrentFrame->State.flags[X86State::RFLAG_TF_RAW_LOC];
   uintptr_t HostCode {};
   auto GuestRip = Record->GuestRIP;
 
-  if (!TFSet) {
-    HostCode = Thread->LookupCache->FindBlock(GuestRip);
-  }
-
-  if (TFSet || !HostCode) {
+  if (TFSet) {
     // If TF is set, the cache must be skipped as different code needs to be generated.
     Frame->State.rip = GuestRip;
     return Frame->Pointers.Common.DispatcherLoopTop;
+  } else {
+    HostCode = Thread->LookupCache->FindBlock(GuestRip);
+    if (!HostCode) {
+      // Hold a reference to the code buffer, to avoid linking unmapped code if compilation triggers a recreation.
+      auto CodeBuffer = static_cast<Arm64JITCore*>(Thread->CPUBackend.get())->CurrentCodeBuffer;
+      HostCode = static_cast<Context::ContextImpl*>(Thread->CTX)->CompileBlock(Frame, GuestRip, 0);
+      if (Thread->LookupCache->Shared != CodeBuffer->LookupCache.get()) {
+        return HostCode;
+      }
+    }
   }
 
-  uintptr_t branch = (uintptr_t)(Record)-8;
-  LOGMAN_THROW_A_FMT((branch % 16) == 0, "Incorrect alignment for block linking record");
+  // See ExitFunction in BranchOps.cpp for an assembly level view of the handled cases.
+  uintptr_t JumpThunkStartAddress = reinterpret_cast<uintptr_t>(Record) - 0x10;
+  uintptr_t CallerAddress = JumpThunkStartAddress + Record->CallerOffset;
+  auto BranchOffset = HostCode / 4 - CallerAddress / 4;
 
-  auto offset = HostCode / 4 - branch / 4;
-  if (ARMEmitter::Emitter::IsInt26(offset)) {
-    // This is the optimal case, where the target can be encoded in a single instruction.
-    // Atomically patch the code with a relative branch.
-    const uint32_t Patch = (0b0001'01 << 26) | (offset & ((1u << 26) - 1));
-    std::atomic_ref<uint32_t>(*reinterpret_cast<uint32_t*>(branch)).store(Patch, std::memory_order::relaxed);
-    ARMEmitter::Emitter::ClearICache((void*)branch, 4);
+  uint32_t ExpectedKnownCallMarkerInst = 0;
+  ARMEmitter::Emitter ExpectedKnownCallMarkerEmit(reinterpret_cast<uint8_t*>(&ExpectedKnownCallMarkerInst), 4);
+  ExpectedKnownCallMarkerEmit.adr(TMP1, 0xC);
+
+  // Lock here is necessary to prevent simultaneous linking and delinking
+  auto lk = Thread->LookupCache->AcquireLock();
+
+  // For non-calls, this would extend into the block's code, however that's fine as an out-of-range adr would never
+  // be generated avoiding any false positives.
+  uintptr_t KnownCallMarkerAddr = CallerAddress - 0x8;
+  uint32_t KnownCallMarkerInst = *reinterpret_cast<uint32_t*>(KnownCallMarkerAddr);
+  if (ARMEmitter::Emitter::IsInt26(BranchOffset)) {
+    // Directly patch the callsite with the appropriate branch instruction.
+    uint32_t BranchInst = 0;
+    ARMEmitter::Emitter BranchEmit(reinterpret_cast<uint8_t*>(&BranchInst), 4);
+
+    if (KnownCallMarkerInst == ExpectedKnownCallMarkerInst) {
+      BranchEmit.bl(BranchOffset);
+      Thread->LookupCache->AddBlockLink(GuestRip, Record, [](FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record) {
+        DirectBlockDelinker(Frame, Record, true);
+      });
+    } else {
+      BranchEmit.b(BranchOffset);
+      Thread->LookupCache->AddBlockLink(GuestRip, Record, [](FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record) {
+        DirectBlockDelinker(Frame, Record, false);
+      });
+    }
+
+    std::atomic_ref<uint32_t>(*reinterpret_cast<uint32_t*>(CallerAddress)).store(BranchInst, std::memory_order::relaxed);
+    ARMEmitter::Emitter::ClearICache(reinterpret_cast<void*>(CallerAddress), 4);
   } else {
-    // fallback case - do a soft-er link by patching the pointer
-    std::atomic_ref<uint64_t>(Record->HostBranch).store(HostCode, std::memory_order::seq_cst);
+    // This case is common between calls and jumps as the thunk callsite can be left untouched.
+    std::atomic_ref<uint64_t>(Record->HostCode).store(HostCode, std::memory_order::seq_cst);
 #ifdef _M_ARM_64
     // Make memory write visible to other threads reading the same location
-    asm volatile("dc cvau, %0; dsb ish" : : "r"(Record->HostBranch) :);
+    asm volatile("dc cvau, %0; dsb ish" : : "r"(Record->HostCode) :);
 #endif
-  }
 
-  // Add de-linking handler
-  Thread->LookupCache->AddBlockLink(GuestRip, Record, DirectBlockDelinker);
+    uint32_t LdrInst = 0;
+    ARMEmitter::Emitter LdrEmit(reinterpret_cast<uint8_t*>(&LdrInst), 4);
+    LdrEmit.ldr(TMP1, reinterpret_cast<uint64_t>(&Record->HostCode) - JumpThunkStartAddress);
+    std::atomic_ref<uint32_t>(*reinterpret_cast<uint32_t*>(JumpThunkStartAddress)).store(LdrInst, std::memory_order::relaxed);
+    ARMEmitter::Emitter::ClearICache(reinterpret_cast<void*>(JumpThunkStartAddress), 4);
+
+    Thread->LookupCache->AddBlockLink(GuestRip, Record, IndirectBlockDelinker);
+  }
 
   return HostCode;
 }
@@ -598,7 +649,7 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::In
       Common.SyscallHandlerObj = reinterpret_cast<uint64_t>(CTX->SyscallHandler);
       Common.SyscallHandlerFunc = PMF.GetVTableEntry(CTX->SyscallHandler);
     }
-    Common.ExitFunctionLink = reinterpret_cast<uintptr_t>(&Context::ContextImpl::ThreadExitFunctionLink<Arm64JITCore_ExitFunctionLink>);
+    Common.ExitFunctionLink = reinterpret_cast<uintptr_t>(&Arm64JITCore::ExitFunctionLink);
 
     // Platform Specific
     auto& AArch64 = ThreadState->CurrentFrame->Pointers.AArch64;
@@ -767,6 +818,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
   JumpTargets.clear();
   CallReturnTargets.clear();
+  PendingJumpThunks.clear();
   uint32_t SSACount = IR->GetSSACount();
 
   this->Entry = Entry;
@@ -889,6 +941,30 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
     b(PendingTargetLabel);
   }
   PendingTargetLabel = nullptr;
+
+  ARMEmitter::ForwardLabel l_ExitLink;
+  for (auto& PendingJumpThunk : PendingJumpThunks) {
+    // Align as 64-bit atomics are used on the HostCode field.
+    Align(8);
+
+    ARMEmitter::ForwardLabel l_DoLink;
+    uint64_t ThunkAddress = GetCursorAddress<uint64_t>();
+    Bind(&PendingJumpThunk.Label);
+    b(&l_DoLink);
+    br(TMP1);
+    Bind(&l_DoLink);
+    ldr(TMP1, &l_ExitLink);
+    blr(TMP1);
+
+    // This is a ExitFunctionLinkData struct
+    Bind(&l_ExitLink);
+    dc64(0);                                             // HostCode
+    dc64(PendingJumpThunk.GuestRIP);                     // GuestRIP
+    dc64(PendingJumpThunk.CallerAddress - ThunkAddress); // CallerOffset
+  }
+
+  Bind(&l_ExitLink);
+  dc64(ThreadState->CurrentFrame->Pointers.Common.ExitFunctionLinker);
 
   // CodeSize not including the header or tail data.
   const uint64_t CodeOnlySize = GetCursorAddress<uint8_t*>() - CodeBegin;

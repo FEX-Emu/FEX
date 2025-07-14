@@ -59,8 +59,9 @@ namespace Validation {
 
 namespace FEXCore::Context {
 struct FEX_PACKED ExitFunctionLinkData {
-  uint64_t HostBranch;
+  uint64_t HostCode;
   uint64_t GuestRIP;
+  int64_t CallerOffset;
 };
 
 struct CustomIRResult {
@@ -250,14 +251,6 @@ public:
   ~ContextImpl();
 
   static bool ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP);
-
-  template<auto Fn>
-  static uint64_t ThreadExitFunctionLink(FEXCore::Core::CpuStateFrame* Frame, ExitFunctionLinkData* Record) {
-    auto Thread = Frame->Thread;
-    auto lk = GuardSignalDeferringSection<std::shared_lock>(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
-
-    return Fn(Frame, Record);
-  }
 
   // Wrapper which takes CpuStateFrame instead of InternalThreadState and unique_locks CodeInvalidationMutex
   // Must be called from owning thread

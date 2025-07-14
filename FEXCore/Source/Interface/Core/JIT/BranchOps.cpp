@@ -65,17 +65,91 @@ DEF_OP(ExitFunction) {
       br(TMP2);
     } else {
 #endif
-      // Align to 16 byte to allow atomic patching of the following 16 byte
-      // of code (excluding the RIP data) on platforms that support LSE2
-      Align16B();
+      // In order to support direct branches without constantly hitting the L1 cache, we emit a call to a block linker,
+      // this will compile the branch target block when it is hit and replace the branch to the linker at the callsite
+      // with a direct branch to the destination block. Upon invalidation of the target block the backpatch is undone.
+      //
+      // In addition, to avoid needing to lookup in the cache for returns and any indirect branch prediction penalty,
+      // a shadow stack of <GuestReturnRIP, HostReturnPC> pairs is maintained, acting as a first level cache for any
+      // return operations. As the guest may not balance calls and returns exactly, an exception handler is expected to
+      // be installed by the frontend, to reset the shadow stack to the middle of its valid bounds on overflow/underflow.
+      // This shadow stack is also cleared on block invalidation operations or codebuffer switches, to ensure all pointed-to
+      // host code is always valid.
+
+      // This code will be backpatched by Arm64JITCore_ExitFunctionLink, below is an enumeration of all the possible cases.
+      // Jump thunks are emitted in JIT.cpp after compilation of the entire multiblock.
+      //
+      // Call with known return block - unlinked
+      //    00: adr TMP1, 0xC
+      //    04: stp RetReg, TMP1, [SpReg, -0x10]!
+      //    08: bl JmpThunk00
+      //    JmpThunk00:
+      //    00: b 0x8
+      //    04: br TMP1
+      //    08: ldr TMP1, <Shared exit linker>
+      //    0c: blr TMP1
+      //    10: HostCode
+      //    18: GuestRIP
+      //    20: CallerOffset
+      //
+      // Call with known return block after backpatching - linked in branch immediate range
+      //    00: adr TMP1, 0xC
+      //    04: stp RetReg, TMP1, [SpReg, -0x10]!
+      //    08: bl HostCode                                        - MODIFIED
+      //
+      // Call with known return block after backpatching - linked out of range
+      //    00: adr TMP1, 0xC
+      //    04: stp RetReg, TMP1, [SpReg, -0x10]!
+      //    08: bl JmpThunk00
+      //    JmpThunk00:
+      //    00: ldr TMP1, 0x10                                     - MODIFIED 2nd
+      //    04: br TMP1
+      //    08: ldr TMP1, <Shared exit linker>
+      //    0c: blr TMP1
+      //    10: HostCode                                           - MODIFIED 1st
+      //    18: GuestRIP
+      //    20: CallerOffset
+      //
+      // Jump - unlinked
+      //    00: b JmpThunk00
+      //    JmpThunk00:
+      //    00: b 0x8
+      //    04: br TMP1
+      //    08: ldr TMP1, <Shared exit linker>
+      //    0c: blr TMP1
+      //    10: HostCode
+      //    18: GuestRIP
+      //    20: CallerOffset
+      //
+      // Jump after backpatching - linked in branch immediate range
+      //    00: b HostCode                                         - MODIFIED
+      //
+      // Jump after backpatching - linked out of range
+      //    00: b JmpThunk00
+      //    JmpThunk00:
+      //    00: ldr TMP1, 0x10                                     - MODIFIED 2nd
+      //    04: br TMP1
+      //    08: ldr TMP1, <Shared exit linker>
+      //    0c: blr TMP1
+      //    10: HostCode                                           - MODIFIED 1st
+      //    18: GuestRIP
+      //    20: CallerOffset
 
       ARMEmitter::ForwardLabel l_BranchHost;
-      ldr(TMP1, &l_BranchHost);
-      blr(TMP1);
+      ARMEmitter::ForwardLabel l_CallReturn;
+      if (Op->Hint == IR::BranchHint::Call) {
+        if (!Op->CallReturnBlock.IsInvalid()) {
+          auto CallReturnAddressReg = GetReg(Op->CallReturnAddress).X();
+          PendingCallReturnTargetLabel = &CallReturnTargets.try_emplace(Op->CallReturnBlock.ID()).first->second;
+          adr(TMP1, &l_CallReturn);
+          stp<ARMEmitter::IndexType::PRE>(CallReturnAddressReg, TMP1, REG_CALLRET_SP, -0x10);
+        } else {
+          stp<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::zr, ARMEmitter::XReg::zr, REG_CALLRET_SP, -0x10);
+        }
+      }
 
-      Bind(&l_BranchHost);
-      dc64(ThreadState->CurrentFrame->Pointers.Common.ExitFunctionLinker);
-      dc64(NewRIP);
+      EmitLinkedBranch(NewRIP, Op->Hint == IR::BranchHint::Call);
+      Bind(&l_CallReturn);
 #ifdef _M_ARM_64EC
     }
 #endif
