@@ -19,13 +19,19 @@ class ContextImpl;
 namespace FEXCore::Frontend {
 class Decoder final {
 public:
+  enum class DecodedBlockStatus {
+    SUCCESS,
+    INVALID_INST,
+    NOEXEC_INST,
+  };
+
   // New Frontend decoding
   struct DecodedBlocks final {
     uint64_t Entry {};
     uint64_t Size {};
     uint64_t NumInstructions {};
     FEXCore::X86Tables::DecodedInst* DecodedInstructions;
-    bool HasInvalidInstruction {};
+    DecodedBlockStatus BlockStatus;
     bool IsEntryPoint {};
   };
 
@@ -73,7 +79,7 @@ private:
   const FEXCore::HLE::SyscallOSABI OSABI {};
 
   bool DecodeInstructionImpl(uint64_t PC);
-  bool DecodeInstruction(uint64_t PC);
+  DecodedBlockStatus DecodeInstruction(uint64_t PC);
 
   void BranchTargetInMultiblockRange();
   bool InstCanContinue() const;

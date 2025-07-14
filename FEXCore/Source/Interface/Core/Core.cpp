@@ -677,7 +677,11 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
               LogMan::Msg::EFmt("Invalid or Unknown instruction: {} 0x{:x}", TableInfo->Name ?: "UND", Block.Entry - GuestRIP);
             }
 
-            Thread->OpDispatcher->InvalidOp(DecodedInfo);
+            if (Block.BlockStatus == Frontend::Decoder::DecodedBlockStatus::NOEXEC_INST) {
+              Thread->OpDispatcher->NoExecOp(DecodedInfo);
+            } else {
+              Thread->OpDispatcher->InvalidOp(DecodedInfo);
+            }
           }
 
           HadInvalidInst = true;

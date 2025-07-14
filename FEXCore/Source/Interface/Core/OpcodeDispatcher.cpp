@@ -4812,6 +4812,15 @@ void OpDispatchBuilder::InvalidOp(OpcodeArgs) {
               });
 }
 
+void OpDispatchBuilder::NoExecOp(OpcodeArgs) {
+  BreakOp(Op, FEXCore::IR::BreakDefinition {
+                .ErrorRegister = 0,
+                .Signal = Core::FAULT_SIGSEGV,
+                .TrapNumber = 0,
+                .si_code = 2, // SEGV_ACCERR
+              });
+}
+
 #undef OpcodeArgs
 
 
