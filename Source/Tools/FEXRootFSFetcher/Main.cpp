@@ -749,13 +749,13 @@ bool ValidateCheckExists(const WebFileFetcher::FileTargets& Target) {
 
     auto Res = XXFileHash::HashFile(PathName);
     if (Result == 0) {
-      if (Res.first == true && Res.second == ExpectedHash) {
+      if (Res.value_or(0) == ExpectedHash) {
         fextl::string Text = fextl::fmt::format("{} matches expected hash. Skipping download", filename);
         ExecWithInfo(Text);
         return false;
       }
     } else if (Result == 1) {
-      if (Res.first == false || Res.second != ExpectedHash) {
+      if (Res.value_or(0) != ExpectedHash) {
         return AskForConfirmation("RootFS doesn't match hash!\nDo you want to redownload?");
       } else {
         fextl::string Text = fextl::fmt::format("{} matches expected hash", filename);
@@ -907,12 +907,12 @@ bool ValidateCheckExists(const WebFileFetcher::FileTargets& Target) {
     fmt::print("Validating RootFS hash...\n");
     auto Res = XXFileHash::HashFile(PathName);
     if (Result == 0) {
-      if (Res.first == true && Res.second == ExpectedHash) {
+      if (Res.value_or(0) == ExpectedHash) {
         fmt::print("{} matches expected hash. Skipping downloading\n", filename);
         return false;
       }
     } else if (Result == 1) {
-      if (Res.first == false || Res.second != ExpectedHash) {
+      if (Res.value_or(0) != ExpectedHash) {
         fmt::print("RootFS doesn't match hash!\n");
         return AskForConfirmation("Do you want to redownload?");
       } else {
@@ -1118,8 +1118,8 @@ int main(int argc, char** argv, char** const envp) {
 
   if (ArgOptions::RemainingArgs.size()) {
     auto Res = XXFileHash::HashFile(ArgOptions::RemainingArgs[0]);
-    if (Res.first) {
-      fmt::print("{} has hash: {:x}\n", ArgOptions::RemainingArgs[0], Res.second);
+    if (Res.has_value()) {
+      fmt::print("{} has hash: {:x}\n", ArgOptions::RemainingArgs[0], Res.value());
     } else {
       fmt::print("Couldn't generate hash for {}\n", ArgOptions::RemainingArgs[0]);
     }
@@ -1178,9 +1178,9 @@ int main(int argc, char** argv, char** const envp) {
 
             if (std::filesystem::exists(PathName, ec)) {
               auto Res = XXFileHash::HashFile(PathName);
-              if (Res.first == false || Res.second != ExpectedHash) {
+              if (Res.value_or(0) != ExpectedHash) {
                 fextl::string Text = fextl::fmt::format("Couldn't hash the rootfs or hash didn't match\n");
-                Text += fmt::format("Hash {:x} != Expected Hash {:x}\n", Res.second, ExpectedHash);
+                Text += fmt::format("Hash {:x} != Expected Hash {:x}\n", Res.value_or(0), ExpectedHash);
                 ExecWithInfo(Text);
                 return std::make_pair(-1, true);
               }

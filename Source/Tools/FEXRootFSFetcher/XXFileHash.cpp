@@ -11,19 +11,19 @@
 namespace XXFileHash {
 // 32MB blocks
 constexpr static size_t BLOCK_SIZE = 32 * 1024 * 1024;
-std::pair<bool, uint64_t> HashFile(const fextl::string& Filepath) {
+std::optional<uint64_t> HashFile(const fextl::string& Filepath) {
   int fd = open(Filepath.c_str(), O_RDONLY);
   if (fd == -1) {
-    return {false, 0};
+    return std::nullopt;
   }
 
   XXH3_state_t* State {};
-  auto HadError = [fd, &State]() -> std::pair<bool, uint64_t> {
+  auto HadError = [fd, &State]() {
     close(fd);
     if (State) {
       XXH3_freeState(State);
     }
-    return {false, 0};
+    return std::nullopt;
   };
   // Get file size
   off_t Size = lseek(fd, 0, SEEK_END);
@@ -78,6 +78,6 @@ std::pair<bool, uint64_t> HashFile(const fextl::string& Filepath) {
   XXH3_freeState(State);
 
   close(fd);
-  return {true, Hash};
+  return Hash;
 }
 } // namespace XXFileHash
