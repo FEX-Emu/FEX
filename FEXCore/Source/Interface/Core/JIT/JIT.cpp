@@ -766,6 +766,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   FEXCORE_PROFILE_SCOPED("Arm64::CompileCode");
 
   JumpTargets.clear();
+  CallReturnTargets.clear();
   uint32_t SSACount = IR->GetSSACount();
 
   this->Entry = Entry;
@@ -813,8 +814,8 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
   SpillSlots = IR->SpillSlots();
 
-  bool EmittedEntry = false;
   PendingTargetLabel = nullptr;
+  PendingCallReturnTargetLabel = nullptr;
 
   for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
     using namespace FEXCore::IR;
@@ -831,22 +832,34 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
       // if there's a pending branch, and it is not fall-through
       if (PendingTargetLabel && PendingTargetLabel != &IsTarget->second) {
         b(PendingTargetLabel);
+        PendingTargetLabel = nullptr;
       }
 
       if (BlockIROp->EntryPoint) {
         uint64_t BlockStartRIP = Entry + BlockIROp->GuestEntryOffset;
-        if (EmittedEntry) {
-          b(&IsTarget->second);
-        } else {
-          EmittedEntry = true;
-        }
 
+        const auto IsReturnTarget = CallReturnTargets.try_emplace(Node).first;
+        if (PendingTargetLabel) {
+          // If there is a fallthrough branch to this block, skip over the entrypoint code.
+          b(&IsTarget->second);
+        } else if (PendingCallReturnTargetLabel && PendingCallReturnTargetLabel != &IsReturnTarget->second) {
+          // If we just emitted a call, but the block we're now emitting is not the return block so don't fallthrough.
+          b(PendingCallReturnTargetLabel);
+        }
+        PendingCallReturnTargetLabel = nullptr;
+
+        Bind(&IsReturnTarget->second);
         CodeData.EntryPoints.emplace(BlockStartRIP, GetCursorAddress<uint8_t*>());
         DebugData->GuestOpcodes.push_back({BlockIROp->GuestEntryOffset, GetCursorAddress<uint8_t*>() - CodeData.BlockBegin});
 
         EmitEntryPoint(JITCodeHeaderLabel, CheckTF);
       }
 
+      if (PendingCallReturnTargetLabel) {
+        // If there is still a pending call return target, then the block we're emitting is not the return block so don't fallthrough.
+        b(PendingCallReturnTargetLabel);
+        PendingCallReturnTargetLabel = nullptr;
+      }
       PendingTargetLabel = nullptr;
 
       Bind(&IsTarget->second);
