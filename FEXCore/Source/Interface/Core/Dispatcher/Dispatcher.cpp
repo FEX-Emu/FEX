@@ -118,6 +118,17 @@ void Dispatcher::EmitDispatcher() {
 
   FillSpecialRegs(TMP1, TMP2, false, true);
 
+  // As ARM64EC uses this as an entrypoint for both guest calls and host returns, opportunistically try to return
+  // using the call-ret stack to avoid unbalancing it.
+  ldp<ARMEmitter::IndexType::OFFSET>(TMP1, TMP2, REG_CALLRET_SP);
+  // EC_CALL_CHECKER_PC_REG is REG_PF which isn't touched by any of the above
+  sub(ARMEmitter::Size::i64Bit, TMP1, EC_CALL_CHECKER_PC_REG, TMP1);
+  cbnz(ARMEmitter::Size::i64Bit, TMP1, &LoopTop);
+
+  // If the entry at the TOS is for the target address, pop it and return to the JIT code
+  add(ARMEmitter::Size::i64Bit, REG_CALLRET_SP, REG_CALLRET_SP, 0x10);
+  ret(TMP2);
+
   // Enter JIT
 #endif
 
