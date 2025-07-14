@@ -43,6 +43,8 @@ constexpr bool TMP_ABIARGS = true;
 constexpr auto REG_PF = ARMEmitter::Reg::r26;
 constexpr auto REG_AF = ARMEmitter::Reg::r27;
 
+constexpr auto REG_CALLRET_SP = ARMEmitter::XReg::x25;
+
 // Vector temporaries
 constexpr auto VTMP1 = ARMEmitter::VReg::v0;
 constexpr auto VTMP2 = ARMEmitter::VReg::v1;
@@ -60,6 +62,8 @@ constexpr bool TMP_ABIARGS = false;
 // We pin r11/r12 as PF/AF respectively for arm64ec, as r26/r27 are used for SRA.
 constexpr auto REG_PF = ARMEmitter::Reg::r9;
 constexpr auto REG_AF = ARMEmitter::Reg::r24;
+
+constexpr auto REG_CALLRET_SP = ARMEmitter::XReg::x17;
 
 // Vector temporaries
 constexpr auto VTMP1 = ARMEmitter::VReg::v16;
