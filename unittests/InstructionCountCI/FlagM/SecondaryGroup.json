@@ -1275,7 +1275,7 @@
       ]
     },
     "fxsave [rax]": {
-      "ExpectedInstructionCount": 39,
+      "ExpectedInstructionCount": 41,
       "Comment": "GROUP15 0x0F 0xAE /0",
       "ExpectedArm64ASM": [
         "ldrh w20, [x28, #1296]",
@@ -1290,6 +1290,8 @@
         "orr x20, x20, x21, lsl #10",
         "ldrb w21, [x28, #1022]",
         "orr x20, x20, x21, lsl #14",
+        "ldrb w21, [x28, #1008]",
+        "orr x20, x20, x21",
         "strh w20, [x4, #2]",
         "ldrb w20, [x28, #1298]",
         "strb w20, [x4, #4]",
@@ -1456,12 +1458,12 @@
       ]
     },
     "xsave [rax]": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 71,
       "Comment": "GROUP15 0x0F 0xAE /4",
       "ExpectedArm64ASM": [
         "ubfx x20, x4, #0, #1",
         "cbnz x20, #+0x8",
-        "b #+0x70",
+        "b #+0x78",
         "ldrh w20, [x28, #1296]",
         "strh w20, [x4]",
         "ldrb w20, [x28, #1019]",
@@ -1474,6 +1476,8 @@
         "orr x20, x20, x21, lsl #10",
         "ldrb w21, [x28, #1022]",
         "orr x20, x20, x21, lsl #14",
+        "ldrb w21, [x28, #1008]",
+        "orr x20, x20, x21",
         "strh w20, [x4, #2]",
         "ldrb w20, [x28, #1298]",
         "strb w20, [x4, #4]",
@@ -1531,12 +1535,12 @@
       ]
     },
     "xsaveopt [rax]": {
-      "ExpectedInstructionCount": 69,
+      "ExpectedInstructionCount": 71,
       "Comment": "GROUP15 0x0F 0xAE /6",
       "ExpectedArm64ASM": [
         "ubfx x20, x4, #0, #1",
         "cbnz x20, #+0x8",
-        "b #+0x70",
+        "b #+0x78",
         "ldrh w20, [x28, #1296]",
         "strh w20, [x4]",
         "ldrb w20, [x28, #1019]",
@@ -1549,6 +1553,8 @@
         "orr x20, x20, x21, lsl #10",
         "ldrb w21, [x28, #1022]",
         "orr x20, x20, x21, lsl #14",
+        "ldrb w21, [x28, #1008]",
+        "orr x20, x20, x21",
         "strh w20, [x4, #2]",
         "ldrb w20, [x28, #1298]",
         "strb w20, [x4, #4]",
