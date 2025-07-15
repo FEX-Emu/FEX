@@ -106,7 +106,7 @@ void EvaluateReturnAddress(void* Return) {
   // We don't know where we are when allocating. Make sure to be safe and generate the string on the stack.
   // Print an error message to let a developer know that an allocation faulted.
   char Tmp[512];
-  auto Res = fmt::format_to_n(Tmp, 512, "Allocation from 0x{:x}\n", reinterpret_cast<uint64_t>(Return));
+  auto Res = fmt::format_to_n(Tmp, 512, "ERROR: Requested memory using non-FEX allocator at 0x{:x}\n", reinterpret_cast<uint64_t>(Return));
   Tmp[Res.size] = 0;
   write(STDERR_FILENO, Tmp, Res.size);
 

@@ -66,7 +66,7 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs, bool IsSyscallInst) {
     GPRIndexes = nullptr;
     DefaultSyscallFlags = FEXCore::IR::SyscallFlags::NORETURNEDRESULT;
   } else {
-    LogMan::Msg::DFmt("Unhandled OSABI syscall");
+    ERROR_AND_DIE_FMT("Unhandled OSABI syscall");
   }
 
   // Calculate flags early.
