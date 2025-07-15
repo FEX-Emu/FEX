@@ -68,7 +68,9 @@
           "ENABLESVEBITPERM": "enablesvebitperm",
           "DISABLESVEBITPERM": "disablesvebitperm",
           "ENABLEPRESERVEALLABI": "enablepreserveallabi",
-          "DISABLEPRESERVEALLABI": "disablepreserveallabi"
+          "DISABLEPRESERVEALLABI": "disablepreserveallabi",
+          "ENABLEWFXT": "enablewfxt",
+          "DISABLEWFXT": "disablewfxt"
         },
         "Desc": [
           "Allows controlling of the CPU features in the JIT.",
@@ -89,7 +91,8 @@
           "\t{enable,disable}crypto: Will force enable or disable crypto extensions even if the host doesn't support it",
           "\t{enable,disable}rpres: Will force enable or disable rpres even if the host doesn't support it",
           "\t{enable,disable}svebitperm: Will force enable or disable svebitperm even if the host doesn't support it",
-          "\t{enable,disable}preserveallabi: Will force enable or disable preserve_all abi even if the host doesn't support it"
+          "\t{enable,disable}preserveallabi: Will force enable or disable preserve_all abi even if the host doesn't support it",
+          "\t{enable,disable}wfxt: Will force enable or disable wfxt even if the host doesn't support it"
         ]
       },
       "SmallTSCScale": {
