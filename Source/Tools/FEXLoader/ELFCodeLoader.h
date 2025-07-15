@@ -225,9 +225,9 @@ public:
 
   fextl::vector<LoadedSection> Sections;
 
-  ELFCodeLoader(const fextl::string& Filename, int ProgramFDFromEnv, const fextl::string& RootFS,
-                [[maybe_unused]] const fextl::vector<fextl::string>& args, const fextl::vector<fextl::string>& ParsedArgs,
-                char** const envp = nullptr, FEXCore::Config::Value<FEXCore::Config::DefaultValues::Type::StringArrayType>* AdditionalEnvp = nullptr)
+  ELFCodeLoader(const fextl::string& Filename, int ProgramFDFromEnv, const fextl::string& RootFS, const fextl::vector<fextl::string>& args,
+                const fextl::vector<fextl::string>& ParsedArgs, char** const envp = nullptr,
+                FEXCore::Config::Value<FEXCore::Config::DefaultValues::Type::StringArrayType>* AdditionalEnvp = nullptr)
     : Args {args} {
 
     bool LoadedWithFD = false;

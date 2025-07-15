@@ -113,8 +113,7 @@ void GDBJITRegister(FEXCore::IR::AOTIRCacheEntry* Entry, uintptr_t VAFileStart, 
 } // namespace FEXCore
 #else
 namespace FEXCore {
-void GDBJITRegister([[maybe_unused]] FEXCore::IR::AOTIRCacheEntry* Entry, [[maybe_unused]] uintptr_t VAFileStart, [[maybe_unused]] uint64_t GuestRIP,
-                    [[maybe_unused]] uintptr_t HostEntry, [[maybe_unused]] FEXCore::Core::DebugData* DebugData) {
+void GDBJITRegister(FEXCore::IR::AOTIRCacheEntry*, uintptr_t, uint64_t, uintptr_t, FEXCore::Core::DebugData*) {
   ERROR_AND_DIE_FMT("GDBSymbols support not compiled in");
 }
 } // namespace FEXCore
