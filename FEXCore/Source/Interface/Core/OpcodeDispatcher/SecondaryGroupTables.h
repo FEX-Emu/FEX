@@ -8,7 +8,7 @@ constexpr uint16_t PF_NONE = 0;
 constexpr uint16_t PF_F3 = 1;
 constexpr uint16_t PF_66 = 2;
 constexpr uint16_t PF_F2 = 3;
-constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDispatch_SecondaryGroupTables[] = {
+constexpr DispatchTableEntry OpDispatch_SecondaryGroupTables[] = {
   // GROUP 6
   {OPD(FEXCore::X86Tables::TYPE_GROUP_6, PF_NONE, 3), 1, &OpDispatchBuilder::PermissionRestrictedOp},
   {OPD(FEXCore::X86Tables::TYPE_GROUP_6, PF_F3, 3), 1, &OpDispatchBuilder::PermissionRestrictedOp},
@@ -154,7 +154,7 @@ constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDis
   {OPD(FEXCore::X86Tables::TYPE_GROUP_P, PF_F2, 0), 8, &OpDispatchBuilder::NOPOp},
 };
 
-constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDispatch_SecondaryGroupTables_64[] = {
+constexpr DispatchTableEntry OpDispatch_SecondaryGroupTables_64[] = {
   // GROUP 15
   {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 0), 1,
    &OpDispatchBuilder::Bind<&OpDispatchBuilder::ReadSegmentReg, OpDispatchBuilder::Segment::FS>},

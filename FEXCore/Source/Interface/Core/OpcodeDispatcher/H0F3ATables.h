@@ -8,7 +8,7 @@ namespace FEXCore::IR {
 #define PF_3A_66 1
 constexpr auto OpDispatchTableGenH0F3A = []() consteval {
   constexpr auto OpDispatchTableGenH0F3AREX = []<uint16_t REX>() consteval {
-    constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> Table[] = {
+    constexpr DispatchTableEntry Table[] = {
       {OPD(REX, PF_3A_66, 0x08), 1, &OpDispatchBuilder::VectorRound<OpSize::i32Bit>},
       {OPD(REX, PF_3A_66, 0x09), 1, &OpDispatchBuilder::VectorRound<OpSize::i64Bit>},
       {OPD(REX, PF_3A_66, 0x0A), 1, &OpDispatchBuilder::InsertScalarRound<OpSize::i32Bit>},
@@ -60,12 +60,12 @@ constexpr auto OpDispatchTableGenH0F3A = []() consteval {
 
 constexpr auto OpDispatch_H0F3ATableIgnoreREX = OpDispatchTableGenH0F3A();
 
-constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDispatch_H0F3ATableNeedsREX0[] = {
+constexpr DispatchTableEntry OpDispatch_H0F3ATableNeedsREX0[] = {
   {OPD(0, PF_3A_66, 0x16), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, OpSize::i32Bit>},
   {OPD(0, PF_3A_66, 0x22), 1, &OpDispatchBuilder::PINSROp<OpSize::i32Bit>},
 };
 
-constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDispatch_H0F3ATable_64[] = {
+constexpr DispatchTableEntry OpDispatch_H0F3ATable_64[] = {
   {OPD(1, PF_3A_66, 0x16), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, OpSize::i64Bit>},
   {OPD(1, PF_3A_66, 0x22), 1, &OpDispatchBuilder::PINSROp<OpSize::i64Bit>},
 };

@@ -4834,18 +4834,18 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
   constexpr uint16_t PF_38_66 = (1U << 0);
   constexpr uint16_t PF_38_F2 = (1U << 1);
 
-  constexpr static std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F38_SHA[] = {
+  constexpr static DispatchTableEntry H0F38_SHA[] = {
     {OPD(PF_38_NONE, 0xC8), 1, &OpDispatchBuilder::SHA1NEXTEOp},  {OPD(PF_38_NONE, 0xC9), 1, &OpDispatchBuilder::SHA1MSG1Op},
     {OPD(PF_38_NONE, 0xCA), 1, &OpDispatchBuilder::SHA1MSG2Op},   {OPD(PF_38_NONE, 0xCB), 1, &OpDispatchBuilder::SHA256RNDS2Op},
     {OPD(PF_38_NONE, 0xCC), 1, &OpDispatchBuilder::SHA256MSG1Op}, {OPD(PF_38_NONE, 0xCD), 1, &OpDispatchBuilder::SHA256MSG2Op},
   };
 
-  constexpr static std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F38_AES[] = {
+  constexpr static DispatchTableEntry H0F38_AES[] = {
     {OPD(PF_38_66, 0xDB), 1, &OpDispatchBuilder::AESImcOp},     {OPD(PF_38_66, 0xDC), 1, &OpDispatchBuilder::AESEncOp},
     {OPD(PF_38_66, 0xDD), 1, &OpDispatchBuilder::AESEncLastOp}, {OPD(PF_38_66, 0xDE), 1, &OpDispatchBuilder::AESDecOp},
     {OPD(PF_38_66, 0xDF), 1, &OpDispatchBuilder::AESDecLastOp},
   };
-  constexpr static std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F38_CRC[] = {
+  constexpr static DispatchTableEntry H0F38_CRC[] = {
     {OPD(PF_38_F2, 0xF0), 1, &OpDispatchBuilder::CRC32},
     {OPD(PF_38_F2, 0xF1), 1, &OpDispatchBuilder::CRC32},
 
@@ -4857,11 +4857,11 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 #define OPD(REX, prefix, opcode) ((REX << 9) | (prefix << 8) | opcode)
 #define PF_3A_NONE 0
 #define PF_3A_66 1
-  constexpr static std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F3A_AES[] = {
+  constexpr static DispatchTableEntry H0F3A_AES[] = {
     {OPD(0, PF_3A_66, 0xDF), 1, &OpDispatchBuilder::AESKeyGenAssist},
     {OPD(1, PF_3A_66, 0xDF), 1, &OpDispatchBuilder::AESKeyGenAssist},
   };
-  constexpr static std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> H0F3A_PCLMUL[] = {
+  constexpr static DispatchTableEntry H0F3A_PCLMUL[] = {
     {OPD(0, PF_3A_66, 0x44), 1, &OpDispatchBuilder::PCLMULQDQOp},
     {OPD(1, PF_3A_66, 0x44), 1, &OpDispatchBuilder::PCLMULQDQOp},
   };
@@ -4871,7 +4871,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 #undef OPD
 
 #define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
-  constexpr static std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> VEX_PCLMUL[] = {
+  constexpr static DispatchTableEntry VEX_PCLMUL[] = {
     {OPD(3, 0b01, 0x44), 1, &OpDispatchBuilder::VPCLMULQDQOp},
   };
 #undef OPD
@@ -4880,7 +4880,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
   constexpr uint16_t PF_NONE = 0;
   constexpr uint16_t PF_66 = 2;
 
-  constexpr static std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> SecondaryExtensionOp_RDRAND[] = {
+  constexpr static DispatchTableEntry SecondaryExtensionOp_RDRAND[] = {
     // GROUP 9
     {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_NONE, 6), 1, &OpDispatchBuilder::RDRANDOp<false>},
     {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_NONE, 7), 1, &OpDispatchBuilder::RDRANDOp<true>},
@@ -4890,12 +4890,12 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
   };
 #undef OPD
 
-  constexpr static std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> SecondaryModRMExtensionOp_CLZero[] = {
+  constexpr static DispatchTableEntry SecondaryModRMExtensionOp_CLZero[] = {
     {((3 << 3) | 4), 1, &OpDispatchBuilder::CLZeroOp},
   };
 
 #define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
-  static constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> AVXTable[] = {
+  static constexpr DispatchTableEntry AVXTable[] = {
     {OPD(1, 0b00, 0x10), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPDOp},
     {OPD(1, 0b01, 0x10), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPDOp},
     {OPD(1, 0b10, 0x10), 1, &OpDispatchBuilder::VMOVSSOp},
@@ -5297,7 +5297,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 #undef OPD
 
 #define OPD(group, pp, opcode) (((group - X86Tables::TYPE_VEX_GROUP_12) << 4) | (pp << 3) | (opcode))
-  static constexpr std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> VEXTableGroupOps[] {
+  static constexpr DispatchTableEntry VEXTableGroupOps[] {
     {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b010), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRLIOp, OpSize::i16Bit>},
     {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b110), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLIOp, OpSize::i16Bit>},
     {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b100), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRAIOp, OpSize::i16Bit>},
@@ -5356,7 +5356,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 // All OPDReg versions need it
 #define OPDReg(op, reg) ((1 << 15) | ((op - 0xD8) << 8) | (reg << 3))
 #define OPD(op, modrmop) (((op - 0xD8) << 8) | modrmop)
-  constexpr static std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> X87F64OpTable[] = {
+  constexpr static DispatchTableEntry X87F64OpTable[] = {
     {OPDReg(0xD8, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADDF64, OpSize::i32Bit, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPDReg(0xD8, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMULF64, OpSize::i32Bit, false, OpDispatchBuilder::OpResult::RES_ST0>},
@@ -5620,7 +5620,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
      &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
   };
 
-  constexpr static std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> X87OpTable[] = {
+  constexpr static DispatchTableEntry X87OpTable[] = {
     {OPDReg(0xD8, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADD, OpSize::i32Bit, false, OpDispatchBuilder::OpResult::RES_ST0>},
 
     {OPDReg(0xD8, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMUL, OpSize::i32Bit, false, OpDispatchBuilder::OpResult::RES_ST0>},
@@ -5878,11 +5878,11 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
 
   auto InstallToX87Table = [](auto& FinalTable, auto& LocalTable) {
     for (auto Op : LocalTable) {
-      auto OpNum = std::get<0>(Op);
+      auto OpNum = Op.Op;
       bool Repeat = (OpNum & 0x8000) != 0;
       OpNum = OpNum & 0x7FF;
-      auto Dispatcher = std::get<2>(Op);
-      for (uint8_t i = 0; i < std::get<1>(Op); ++i) {
+      auto Dispatcher = Op.Ptr;
+      for (uint8_t i = 0; i < Op.Count; ++i) {
         LOGMAN_THROW_A_FMT(FinalTable[OpNum + i].OpcodeDispatcher == nullptr, "Duplicate Entry");
         FinalTable[OpNum + i].OpcodeDispatcher = Dispatcher;
 

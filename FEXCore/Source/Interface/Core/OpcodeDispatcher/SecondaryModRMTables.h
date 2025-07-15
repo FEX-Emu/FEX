@@ -3,7 +3,7 @@
 #include "Interface/Core/OpcodeDispatcher.h"
 
 namespace FEXCore::IR {
-constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDispatch_SecondaryModRMTables[] = {
+constexpr DispatchTableEntry OpDispatch_SecondaryModRMTables[] = {
   // REG /1
   {((0 << 3) | 0), 1, &OpDispatchBuilder::UnimplementedOp},
   {((0 << 3) | 1), 1, &OpDispatchBuilder::UnimplementedOp},

@@ -3,7 +3,7 @@
 #include "Interface/Core/OpcodeDispatcher.h"
 
 namespace FEXCore::IR {
-constexpr inline std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> OpDispatch_BaseOpTable[] = {
+constexpr inline DispatchTableEntry OpDispatch_BaseOpTable[] = {
   // Instructions
   {0x00, 6, &OpDispatchBuilder::Bind<&OpDispatchBuilder::ALUOp, FEXCore::IR::IROps::OP_ADD, FEXCore::IR::IROps::OP_ATOMICFETCHADD, 0>},
 
@@ -76,12 +76,12 @@ constexpr inline std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> OpDispat
   {0xFC, 2, &OpDispatchBuilder::FLAGControlOp},
 };
 
-constexpr inline std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> OpDispatch_BaseOpTable_64[] = {
+constexpr inline DispatchTableEntry OpDispatch_BaseOpTable_64[] = {
   {0x63, 1, &OpDispatchBuilder::MOVSXDOp},
   {0xA0, 4, &OpDispatchBuilder::MOVOffsetOp},
 };
 
-constexpr inline std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> OpDispatch_BaseOpTable_32[] = {
+constexpr inline DispatchTableEntry OpDispatch_BaseOpTable_32[] = {
   {0x06, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX>},
   {0x07, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX>},
   {0x0E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_CS_PREFIX>},
