@@ -4682,8 +4682,7 @@ void OpDispatchBuilder::MemFenceOrXSAVEOPT(OpcodeArgs) {
     // 0xF0 is MFENCE
     _Fence(FEXCore::IR::Fence_LoadStore);
   } else {
-    LogMan::Msg::EFmt("Application tried using XSAVEOPT");
-    UnimplementedOp(Op);
+    XSaveOp(Op);
   }
 }
 

@@ -754,7 +754,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_0Dh(uint32_t Leaf) const {
     // XFeatureSupportedMask[63:32]
     Res.edx = 0; // Upper 32-bits of XFeatureSupportedMask
   } else if (Leaf == 1) {
-    Res.eax = (0 << 0) | // XSAVEOPT
+    Res.eax = (1 << 0) | // XSAVEOPT
               (0 << 1) | // XSAVEC (and XRSTOR)
               (0 << 2) | // XGETBV - XGETBV with ECX=1 supported
               (0 << 3);  // XSAVES - XSAVES, XRSTORS, and IA32_XSS supported
