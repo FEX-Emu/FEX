@@ -1115,7 +1115,7 @@ DEF_OP(VAddP) {
 }
 
 DEF_OP(VFAddV) {
-  const auto Op = IROp->C<IR::IROp_VAddV>();
+  const auto Op = IROp->C<IR::IROp_VFAddV>();
   const auto OpSize = IROp->Size;
   const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
   LOGMAN_THROW_A_FMT(!Is256Bit || HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
