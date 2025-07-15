@@ -4658,9 +4658,27 @@ void OpDispatchBuilder::MOVBEOp(OpcodeArgs) {
   }
 }
 
-void OpDispatchBuilder::CLWB(OpcodeArgs) {
-  Ref DestMem = MakeSegmentAddress(Op, Op->Dest);
-  _CacheLineClean(DestMem);
+void OpDispatchBuilder::CLWBOrTPause(OpcodeArgs) {
+  if (DestIsMem(Op)) {
+    Ref DestMem = MakeSegmentAddress(Op, Op->Dest);
+    _CacheLineClean(DestMem);
+  }
+  else {
+    if (!CTX->HostFeatures.SupportsWFXT) {
+      UnimplementedOp(Op);
+    } else {
+      auto RAX = LoadGPRRegister(X86State::REG_RAX);
+      auto RDX = LoadGPRRegister(X86State::REG_RDX);
+
+      // Incoming source register is unused.
+      _WFET(RDX, RAX);
+
+      // OF, SF, ZF, AF, PF, CF all zero.
+      // CF is used if the OS deadline is set, which we don't do anything with.
+      ZeroPF_AF();
+      ZeroNZCV();
+    }
+  }
 }
 
 void OpDispatchBuilder::CLFLUSHOPT(OpcodeArgs) {
@@ -4694,6 +4712,30 @@ void OpDispatchBuilder::StoreFenceOrCLFlush(OpcodeArgs) {
     // This is a CLFlush
     Ref DestMem = MakeSegmentAddress(Op, Op->Dest);
     _CacheLineClear(DestMem, true);
+  }
+}
+
+void OpDispatchBuilder::UMonitorOrCLRSSBSY(OpcodeArgs) {
+  if (DestIsMem(Op) || !CTX->HostFeatures.SupportsWFXT) {
+    // CLRSSBSY
+    UnimplementedOp(Op);
+  }
+  else {
+    // Explicit NOP implementation of umonitor.
+  }
+}
+
+void OpDispatchBuilder::UMWaitOp(OpcodeArgs) {
+  if (DestIsMem(Op) || !CTX->HostFeatures.SupportsWFXT) {
+    UnimplementedOp(Op);
+  }
+  else {
+    // Explicit NOP implementation of umwait.
+    // Still zero flags.
+    //
+    // OF, SF, ZF, AF, PF, CF all zero.
+    ZeroPF_AF();
+    ZeroNZCV();
   }
 }
 

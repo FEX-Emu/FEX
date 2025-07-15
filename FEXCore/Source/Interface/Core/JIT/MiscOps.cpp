@@ -17,6 +17,26 @@ $end_info$
 
 namespace FEXCore::CPU {
 
+DEF_OP(WFET) {
+  auto Op = IROp->C<IR::IROp_WFET>();
+  const auto Lower = GetReg(Op->Lower);
+  const auto Upper = GetReg(Op->Upper);
+
+  // Combine registers.
+  mov(ARMEmitter::Size::i64Bit, TMP1, Lower);
+  bfi(ARMEmitter::Size::i64Bit, TMP1, Upper, 32, 32);
+  if (CTX->Config.TSCScale) {
+    // Scale back to ARM64 TSC scale if necessary
+    lsr(ARMEmitter::Size::i64Bit, TMP1, TMP1, CTX->Config.TSCScale);
+  }
+
+  // Clear the exclusive monitor so it can't spuriously wake up with that event.
+  clrex();
+
+  // Execute wfet to wait until the TSC.
+  wfet(TMP1);
+}
+
 DEF_OP(GuestOpcode) {
   auto Op = IROp->C<IR::IROp_GuestOpcode>();
   // metadata

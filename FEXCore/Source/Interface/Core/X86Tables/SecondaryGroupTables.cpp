@@ -347,7 +347,7 @@ std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> SecondInstGroupOps = [
     {OPD(TYPE_GROUP_15, PF_F3, 3), 1, X86InstInfo{"WRGSBASE", TYPE_INST, GenFlagsDstSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_REG_ONLY,          0, nullptr}},
     {OPD(TYPE_GROUP_15, PF_F3, 4), 1, X86InstInfo{"", TYPE_INVALID, FLAGS_NONE,                    0, nullptr}},
     {OPD(TYPE_GROUP_15, PF_F3, 5), 1, X86InstInfo{"INCSSPQ", TYPE_INST, FLAGS_MODRM,                    0, nullptr}},
-    {OPD(TYPE_GROUP_15, PF_F3, 6), 1, X86InstInfo{"CLRSSBSY", TYPE_INST, FLAGS_NONE,                    0, nullptr}},
+    {OPD(TYPE_GROUP_15, PF_F3, 6), 1, X86InstInfo{"UMONITOR/CLRSSBSY", TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST,       0, nullptr}},
     {OPD(TYPE_GROUP_15, PF_F3, 7), 1, X86InstInfo{"", TYPE_INVALID, FLAGS_NONE,                    0, nullptr}},
 
     {OPD(TYPE_GROUP_15, PF_66, 0), 1, X86InstInfo{"", TYPE_INVALID, FLAGS_NONE,                    0, nullptr}},
@@ -365,7 +365,7 @@ std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> SecondInstGroupOps = [
     {OPD(TYPE_GROUP_15, PF_F2, 3), 1, X86InstInfo{"", TYPE_INVALID, FLAGS_NONE,                    0, nullptr}},
     {OPD(TYPE_GROUP_15, PF_F2, 4), 1, X86InstInfo{"", TYPE_INVALID, FLAGS_NONE,                    0, nullptr}},
     {OPD(TYPE_GROUP_15, PF_F2, 5), 1, X86InstInfo{"", TYPE_INVALID, FLAGS_NONE,                    0, nullptr}},
-    {OPD(TYPE_GROUP_15, PF_F2, 6), 1, X86InstInfo{"", TYPE_INVALID, FLAGS_NONE,                    0, nullptr}},
+    {OPD(TYPE_GROUP_15, PF_F2, 6), 1, X86InstInfo{"UMWAIT", TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST,       0, nullptr}},
     {OPD(TYPE_GROUP_15, PF_F2, 7), 1, X86InstInfo{"", TYPE_INVALID, FLAGS_NONE,                    0, nullptr}},
 
     // GROUP 16
