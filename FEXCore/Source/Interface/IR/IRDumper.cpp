@@ -29,23 +29,18 @@ namespace FEXCore::IR {
 
 #include <FEXCore/IR/IRDefines.inc>
 
-static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView* IR, const SHA256Sum& Arg) {
+static void PrintArg(fextl::stringstream* out, const IRListView*, const SHA256Sum& Arg) {
   *out << "sha256:";
   for (auto byte : Arg.data) {
     *out << std::hex << std::setfill('0') << std::setw(2) << (unsigned int)byte;
   }
 }
 
-static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView* IR, uint64_t Arg) {
+static void PrintArg(fextl::stringstream* out, const IRListView*, uint64_t Arg) {
   *out << "#0x" << std::hex << Arg << std::dec;
 }
 
-[[maybe_unused]]
-static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView* IR, const char* Arg) {
-  *out << Arg;
-}
-
-static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView* IR, CondClassType Arg) {
+static void PrintArg(fextl::stringstream* out, const IRListView*, CondClassType Arg) {
   if (Arg == COND_AL) {
     *out << "ALWAYS";
     return;
@@ -58,7 +53,7 @@ static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView
   *out << CondNames[Arg];
 }
 
-static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView* IR, MemOffsetType Arg) {
+static void PrintArg(fextl::stringstream* out, const IRListView*, MemOffsetType Arg) {
   static constexpr std::array<std::string_view, 3> Names = {
     "SXTX",
     "UXTW",
@@ -68,7 +63,7 @@ static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView
   *out << Names[Arg];
 }
 
-static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView* IR, RegisterClassType Arg) {
+static void PrintArg(fextl::stringstream* out, const IRListView*, RegisterClassType Arg) {
   if (Arg == GPRClass.Val) {
     *out << "GPR";
   } else if (Arg == GPRFixedClass.Val) {
@@ -131,7 +126,7 @@ static void PrintArg(fextl::stringstream* out, const IRListView* IR, OrderedNode
   }
 }
 
-static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView* IR, FEXCore::IR::FenceType Arg) {
+static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::FenceType Arg) {
   if (Arg == IR::Fence_Load) {
     *out << "Loads";
   } else if (Arg == IR::Fence_Store) {
@@ -143,7 +138,7 @@ static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView
   }
 }
 
-static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView* IR, FEXCore::IR::RoundType Arg) {
+static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::RoundType Arg) {
   switch (Arg) {
   case FEXCore::IR::Round_Nearest: *out << "Nearest"; break;
   case FEXCore::IR::Round_Negative_Infinity: *out << "-Inf"; break;
@@ -154,7 +149,7 @@ static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView
   }
 }
 
-static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView* IR, FEXCore::IR::SyscallFlags Arg) {
+static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::SyscallFlags Arg) {
   switch (Arg) {
   case FEXCore::IR::SyscallFlags::DEFAULT: *out << "Default"; break;
   case FEXCore::IR::SyscallFlags::OPTIMIZETHROUGH: *out << "Optimize Through"; break;
@@ -165,7 +160,7 @@ static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView
   }
 }
 
-static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView* IR, FEXCore::IR::NamedVectorConstant Arg) {
+static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::NamedVectorConstant Arg) {
   *out << [Arg] {
     // clang-format off
     switch (Arg) {
@@ -230,7 +225,7 @@ static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView
   }();
 }
 
-static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView* IR, FEXCore::IR::OpSize Arg) {
+static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::OpSize Arg) {
   switch (Arg) {
   case OpSize::i8Bit: *out << "i8"; break;
   case OpSize::i16Bit: *out << "i16"; break;
@@ -243,7 +238,7 @@ static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView
   }
 }
 
-static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView* IR, FEXCore::IR::FloatCompareOp Arg) {
+static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::FloatCompareOp Arg) {
   switch (Arg) {
   case FloatCompareOp::EQ: *out << "FEQ"; break;
   case FloatCompareOp::LT: *out << "FLT"; break;
@@ -255,14 +250,14 @@ static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView
   }
 }
 
-static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView* IR, FEXCore::IR::BreakDefinition Arg) {
+static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::BreakDefinition Arg) {
   *out << "{" << Arg.ErrorRegister << ".";
   *out << static_cast<uint32_t>(Arg.Signal) << ".";
   *out << static_cast<uint32_t>(Arg.TrapNumber) << ".";
   *out << static_cast<uint32_t>(Arg.si_code) << "}";
 }
 
-static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView* IR, FEXCore::IR::ShiftType Arg) {
+static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::ShiftType Arg) {
   switch (Arg) {
   case ShiftType::LSL: *out << "LSL"; break;
   case ShiftType::LSR: *out << "LSR"; break;
