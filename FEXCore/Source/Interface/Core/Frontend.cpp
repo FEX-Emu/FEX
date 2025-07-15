@@ -1003,7 +1003,7 @@ bool Decoder::DecodeInstructionImpl(uint64_t PC) {
   return true;
 }
 
-bool Decoder::DecodeInstruction(uint64_t PC) {
+Decoder::DecodedBlockStatus Decoder::DecodeInstruction(uint64_t PC) {
   // Will be set if DecodeInstructionImpl tries to read non-executable memory
   HitNonExecutableRange = false;
   bool ErrorDuringDecoding = !DecodeInstructionImpl(PC);
@@ -1013,13 +1013,13 @@ bool Decoder::DecodeInstruction(uint64_t PC) {
     // Error while decoding instruction. We don't know the table or instruction size
     DecodeInst->TableInfo = nullptr;
     DecodeInst->InstSize = 0;
-    return false;
+    return ErrorDuringDecoding ? DecodedBlockStatus::INVALID_INST : DecodedBlockStatus::NOEXEC_INST;
   } else if (!DecodeInst->TableInfo || !DecodeInst->TableInfo->OpcodeDispatcher) {
     // If there wasn't an error during decoding but we have no dispatcher for the instruction then claim invalid instruction.
-    return false;
+    return DecodedBlockStatus::INVALID_INST;
   }
 
-  return true;
+  return DecodedBlockStatus::SUCCESS;
 }
 
 void Decoder::BranchTargetInMultiblockRange() {
@@ -1154,7 +1154,7 @@ void Decoder::AddBranchTarget(uint64_t Target) {
           .Size = BlockIt->Size - SplitOffset,
           .NumInstructions = BlockIt->NumInstructions - SplitIdx,
           .DecodedInstructions = BlockIt->DecodedInstructions + SplitIdx,
-          .HasInvalidInstruction = BlockIt->HasInvalidInstruction,
+          .BlockStatus = BlockIt->BlockStatus,
         };
 
         BlockIt->Size = SplitOffset;
@@ -1303,7 +1303,7 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
         CodePages.insert(CurrentCodePage);
       }
 
-      BlockIt->HasInvalidInstruction = !DecodeInstruction(OpAddress);
+      BlockIt->BlockStatus = DecodeInstruction(OpAddress);
       uint64_t OpEndAddress = OpAddress + DecodeInst->InstSize;
 
       DecodedMinAddress = std::min(DecodedMinAddress, OpAddress);
@@ -1321,7 +1321,7 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
       BlockIt->Size += DecodeInst->InstSize;
 
       // Can not continue this block at all on invalid instruction
-      if (BlockIt->HasInvalidInstruction) [[unlikely]] {
+      if (BlockIt->BlockStatus != DecodedBlockStatus::SUCCESS) [[unlikely]] {
         if (!EntryBlock) {
           // In multiblock configurations, we can early terminate any non-entrypoint blocks with the expectation that this won't get hit.
           // Improves compile-times.
@@ -1331,7 +1331,7 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
           InstStream -= PCOffset;
           EraseBlock = true;
         } else {
-          LogMan::Msg::EFmt("Invalid instruction in entry block: {:X}", OpAddress);
+          LogMan::Msg::EFmt("{} instruction in entry block: {:X}", BlockIt->BlockStatus == DecodedBlockStatus::INVALID_INST ? "Invalid" : "NoExec", OpAddress);
         }
         break;
       }
