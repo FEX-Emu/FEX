@@ -520,6 +520,15 @@ void BTCpuProcessInit() {
   // wow64.dll will only initialise the cross-process queue if this is set
   GetTLS().Wow64Info().CpuFlags = WOW64_CPUFLAGS_SOFTWARE;
 
+  FEX_CONFIG_OPT(TSOEnabled, TSOENABLED);
+  if (TSOEnabled()) {
+    BOOL Enable = TRUE;
+    NTSTATUS Status = NtSetInformationProcess(NtCurrentProcess(), ProcessFexHardwareTso, &Enable, sizeof(Enable));
+    if (Status == STATUS_SUCCESS) {
+      CTX->SetHardwareTSOSupport(true);
+    }
+  }
+
   FEX_CONFIG_OPT(ProfileStats, PROFILESTATS);
   FEX_CONFIG_OPT(StartupSleep, STARTUPSLEEP);
   FEX_CONFIG_OPT(StartupSleepProcName, STARTUPSLEEPPROCNAME);

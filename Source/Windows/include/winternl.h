@@ -452,6 +452,8 @@ typedef enum _MEMORY_INFORMATION_CLASS {
   MemoryFexStatsShm = 2000,
 } MEMORY_INFORMATION_CLASS;
 
+#define ProcessFexHardwareTso (PROCESSINFOCLASS)2000
+
 typedef enum _KEY_VALUE_INFORMATION_CLASS {
   KeyValueBasicInformation,
   KeyValueFullInformation,
