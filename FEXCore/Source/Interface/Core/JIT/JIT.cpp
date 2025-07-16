@@ -774,7 +774,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   CodeData.EntryPoints.clear();
 
   // Fairly excessive buffer range to make sure we don't overflow
-  uint32_t BufferRange = 0x100 + SSACount * 24;
+  uint32_t BufferRange = 0x1000 + SSACount * 24;
 
   // JIT output is first written to a temporary buffer and later relocated to the CodeBuffer.
   // This minimizes lock contention of CodeBufferWriteMutex.
