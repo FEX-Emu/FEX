@@ -370,6 +370,8 @@ Arm64Emitter::Arm64Emitter(FEXCore::Context::ContextImpl* ctx, void* EmissionPtr
   // Hardcode a 256-bit vector width if we are running in the simulator.
   // Allow the user to override this.
   Simulator.SetVectorLengthInBits(ForceSVEWidth() ? ForceSVEWidth() : 256);
+  // FEX doesn't support GCS.
+  Simulator.DisableGCSCheck();
 #endif
 #ifdef VIXL_DISASSEMBLER
   // Only setup the disassembler if enabled.
