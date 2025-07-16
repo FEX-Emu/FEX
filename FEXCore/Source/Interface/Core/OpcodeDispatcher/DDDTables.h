@@ -3,7 +3,7 @@
 #include "Interface/Core/OpcodeDispatcher.h"
 
 namespace FEXCore::IR {
-constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDispatch_DDDTable[] = {
+constexpr DispatchTableEntry OpDispatch_DDDTable[] = {
   {0x0C, 1, &OpDispatchBuilder::PI2FWOp},
   {0x0D, 1, &OpDispatchBuilder::Vector_CVT_Int_To_Float<OpSize::i32Bit, false>},
   {0x1C, 1, &OpDispatchBuilder::PF2IWOp},

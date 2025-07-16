@@ -80,6 +80,12 @@ struct LoadSourceOptions {
   bool AllowUpperGarbage = false;
 };
 
+struct DispatchTableEntry {
+  uint16_t Op;
+  uint8_t Count;
+  X86Tables::OpDispatchPtr Ptr;
+};
+
 class OpDispatchBuilder final : public IREmitter {
   friend class FEXCore::IR::Pass;
   friend class FEXCore::IR::PassManager;
@@ -2625,9 +2631,9 @@ private:
 
 constexpr inline void InstallToTable(auto& FinalTable, const auto& LocalTable) {
   for (const auto& Op : LocalTable) {
-    auto OpNum = std::get<0>(Op);
-    auto Dispatcher = std::get<2>(Op);
-    for (uint8_t i = 0; i < std::get<1>(Op); ++i) {
+    auto OpNum = Op.Op;
+    auto Dispatcher = Op.Ptr;
+    for (uint8_t i = 0; i < Op.Count; ++i) {
       auto& TableOp = FinalTable[OpNum + i];
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
       if (TableOp.OpcodeDispatcher) {

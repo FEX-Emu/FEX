@@ -23,7 +23,7 @@ class OrderedNode;
 
 void OpDispatchBuilder::InstallAVX128Handlers() {
 #define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
-  static constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> AVX128Table[] = {
+  static constexpr DispatchTableEntry AVX128Table[] = {
     {OPD(1, 0b00, 0x10), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
     {OPD(1, 0b01, 0x10), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
     {OPD(1, 0b10, 0x10), 1, &OpDispatchBuilder::AVX128_VMOVSS},
@@ -426,7 +426,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
 #undef OPD
 
 #define OPD(group, pp, opcode) (((group - X86Tables::TYPE_VEX_GROUP_12) << 4) | (pp << 3) | (opcode))
-  static constexpr std::tuple<uint8_t, uint8_t, X86Tables::OpDispatchPtr> VEX128TableGroupOps[] {
+  static constexpr DispatchTableEntry VEX128TableGroupOps[] {
     // VPSRLI
     {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b010), 1,
      &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftImmImpl, OpSize::i16Bit, IROps::OP_VUSHRI>},
@@ -465,7 +465,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
 #undef OPD
 
 #define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
-  constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> VEX128_PCLMUL[] = {
+  constexpr DispatchTableEntry VEX128_PCLMUL[] = {
     {OPD(3, 0b01, 0x44), 1, &OpDispatchBuilder::AVX128_VPCLMULQDQ},
   };
 #undef OPD

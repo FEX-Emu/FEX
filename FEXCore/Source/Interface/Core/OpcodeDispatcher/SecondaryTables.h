@@ -3,7 +3,7 @@
 #include "Interface/Core/OpcodeDispatcher.h"
 
 namespace FEXCore::IR {
-constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDispatch_TwoByteOpTable[] = {
+constexpr DispatchTableEntry OpDispatch_TwoByteOpTable[] = {
   // Instructions
   {0x03, 1, &OpDispatchBuilder::LSLOp},
   {0x06, 1, &OpDispatchBuilder::PermissionRestrictedOp},
@@ -150,7 +150,7 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
 #endif
 };
 
-constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDispatch_SecondaryRepModTables[] = {
+constexpr DispatchTableEntry OpDispatch_SecondaryRepModTables[] = {
   {0x10, 2, &OpDispatchBuilder::MOVSSOp},
   {0x12, 1, &OpDispatchBuilder::VMOVSLDUPOp},
   {0x16, 1, &OpDispatchBuilder::VMOVSHDUPOp},
@@ -181,7 +181,7 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   {0xE6, 1, &OpDispatchBuilder::Vector_CVT_Int_To_Float<OpSize::i32Bit, true>},
 };
 
-constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDispatch_SecondaryRepNEModTables[] = {
+constexpr DispatchTableEntry OpDispatch_SecondaryRepNEModTables[] = {
   {0x10, 2, &OpDispatchBuilder::MOVSDOp},
   {0x12, 1, &OpDispatchBuilder::MOVDDUPOp},
   {0x2A, 1, &OpDispatchBuilder::InsertCVTGPR_To_FPR<OpSize::i64Bit>},
@@ -207,7 +207,7 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   {0xF0, 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
 };
 
-constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDispatch_SecondaryOpSizeModTables[] = {
+constexpr DispatchTableEntry OpDispatch_SecondaryOpSizeModTables[] = {
   {0x10, 2, &OpDispatchBuilder::MOVVectorUnalignedOp},
   {0x12, 2, &OpDispatchBuilder::MOVLPOp},
   {0x14, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUNPCKLOp, OpSize::i64Bit>},
@@ -314,7 +314,7 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   {0xFE, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADD, OpSize::i32Bit>},
 };
 
-constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDispatch_TwoByteOpTable_64[] = {
+constexpr DispatchTableEntry OpDispatch_TwoByteOpTable_64[] = {
   {0x05, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SyscallOp, true>},
   {0xA0, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX>},
   {0xA1, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX>},
@@ -322,7 +322,7 @@ constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDisp
   {0xA9, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX>},
 };
 
-constexpr std::tuple<uint8_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDispatch_TwoByteOpTable_32[] = {
+constexpr DispatchTableEntry OpDispatch_TwoByteOpTable_32[] = {
   {0x05, 1, &OpDispatchBuilder::NOPOp},
   {0xA0, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX>},
   {0xA1, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX>},

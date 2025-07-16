@@ -8,7 +8,7 @@ constexpr uint16_t PF_38_NONE = 0;
 constexpr uint16_t PF_38_66 = (1U << 0);
 constexpr uint16_t PF_38_F3 = (1U << 2);
 
-constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDispatch_H0F38Table[] = {
+constexpr DispatchTableEntry OpDispatch_H0F38Table[] = {
   {OPD(PF_38_NONE, 0x00), 1, &OpDispatchBuilder::PSHUFBOp},
   {OPD(PF_38_66, 0x00), 1, &OpDispatchBuilder::PSHUFBOp},
   {OPD(PF_38_NONE, 0x01), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADDP, OpSize::i16Bit>},
