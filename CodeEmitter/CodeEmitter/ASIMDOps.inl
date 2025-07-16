@@ -444,133 +444,6 @@ public:
     ASIMDScalarCopy(Op, 1, imm5, imm4, rd, rn);
   }
 
-  // Advanced SIMD three same (FP16)
-  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit)
-  void fmaxnm(T rd, T rn, T rm) {
-    ASIMDThreeSameFP16(0, 0, 0b000, rm, rn, rd);
-  }
-
-  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit)
-  void fmla(T rd, T rn, T rm) {
-    ASIMDThreeSameFP16(0, 0, 0b001, rm, rn, rd);
-  }
-
-  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit)
-  void fadd(T rd, T rn, T rm) {
-    ASIMDThreeSameFP16(0, 0, 0b010, rm, rn, rd);
-  }
-
-  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit)
-  void fmulx(T rd, T rn, T rm) {
-    ASIMDThreeSameFP16(0, 0, 0b011, rm, rn, rd);
-  }
-
-  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit)
-  void fcmeq(T rd, T rn, T rm) {
-    ASIMDThreeSameFP16(0, 0, 0b100, rm, rn, rd);
-  }
-
-  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit)
-  void fmax(T rd, T rn, T rm) {
-    ASIMDThreeSameFP16(0, 0, 0b110, rm, rn, rd);
-  }
-  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit)
-  void frecps(T rd, T rn, T rm) {
-    ASIMDThreeSameFP16(0, 0, 0b111, rm, rn, rd);
-  }
-  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit)
-  void fminnm(T rd, T rn, T rm) {
-    ASIMDThreeSameFP16(0, 1, 0b000, rm, rn, rd);
-  }
-  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit)
-  void fmls(T rd, T rn, T rm) {
-    ASIMDThreeSameFP16(0, 1, 0b001, rm, rn, rd);
-  }
-  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit)
-  void fsub(T rd, T rn, T rm) {
-    ASIMDThreeSameFP16(0, 1, 0b010, rm, rn, rd);
-  }
-  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit)
-  void fmin(T rd, T rn, T rm) {
-    ASIMDThreeSameFP16(0, 1, 0b110, rm, rn, rd);
-  }
-  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit)
-  void frsqrts(T rd, T rn, T rm) {
-    ASIMDThreeSameFP16(0, 1, 0b111, rm, rn, rd);
-  }
-  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit)
-  void fmaxnmp(T rd, T rn, T rm) {
-    ASIMDThreeSameFP16(1, 0, 0b000, rm, rn, rd);
-  }
-  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit)
-  void faddp(T rd, T rn, T rm) {
-    ASIMDThreeSameFP16(1, 0, 0b010, rm, rn, rd);
-  }
-  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit)
-  void fmul(T rd, T rn, T rm) {
-    ASIMDThreeSameFP16(1, 0, 0b011, rm, rn, rd);
-  }
-  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit)
-  void fcmge(T rd, T rn, T rm) {
-    ASIMDThreeSameFP16(1, 0, 0b100, rm, rn, rd);
-  }
-  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit)
-  void facge(T rd, T rn, T rm) {
-    ASIMDThreeSameFP16(1, 0, 0b101, rm, rn, rd);
-  }
-  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit)
-  void fmaxp(T rd, T rn, T rm) {
-    ASIMDThreeSameFP16(1, 0, 0b110, rm, rn, rd);
-  }
-  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit)
-  void fdiv(T rd, T rn, T rm) {
-    ASIMDThreeSameFP16(1, 0, 0b111, rm, rn, rd);
-  }
-  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit)
-  void fminnmp(T rd, T rn, T rm) {
-    ASIMDThreeSameFP16(1, 1, 0b000, rm, rn, rd);
-  }
-  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit)
-  void fabd(T rd, T rn, T rm) {
-    ASIMDThreeSameFP16(1, 1, 0b010, rm, rn, rd);
-  }
-  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit)
-  void fcmgt(T rd, T rn, T rm) {
-    ASIMDThreeSameFP16(1, 1, 0b100, rm, rn, rd);
-  }
-  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit)
-  void facgt(T rd, T rn, T rm) {
-    ASIMDThreeSameFP16(1, 1, 0b101, rm, rn, rd);
-  }
-  template<ARMEmitter::SubRegSize size, IsQOrDRegister T>
-  requires (size == ARMEmitter::SubRegSize::i16Bit)
-  void fminp(T rd, T rn, T rm) {
-    ASIMDThreeSameFP16(1, 1, 0b110, rm, rn, rd);
-  }
-
   // Advanced SIMD three-register extension
   template<IsQOrDRegister T>
   void sdot(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
@@ -2240,103 +2113,117 @@ public:
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
     ASIMD3Same<T>(Op, 0, size, 0b10111, rd, rn, rm);
   }
-  template<typename T>
-  void fmaxnm(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  template<IsQOrDRegister T>
+  void fmaxnm(SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit and 64-bit "
-                                                                                                         "subregsize supported");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Only 16/32/64-bit subregsize supported");
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
-    const ARMEmitter::SubRegSize ConvertedSize =
-      size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i8Bit;
+    if (size == SubRegSize::i16Bit) {
+      ASIMDThreeSameFP16(0, 0, 0b000, rm, rn, rd);
+    } else {
+      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
+      const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
 
-    ASIMD3Same<T>(Op, 0, ConvertedSize, 0b11000, rd, rn, rm);
+      ASIMD3Same<T>(Op, 0, ConvertedSize, 0b11000, rd, rn, rm);
+    }
   }
-  template<typename T>
-  void fmla(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  template<IsQOrDRegister T>
+  void fmla(SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit and 64-bit "
-                                                                                                         "subregsize supported");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Only 16/32/64-bit subregsize supported");
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
-    const ARMEmitter::SubRegSize ConvertedSize =
-      size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i8Bit;
+    if (size == SubRegSize::i16Bit) {
+      ASIMDThreeSameFP16(0, 0, 0b001, rm, rn, rd);
+    } else {
+      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
+      const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
 
-    ASIMD3Same<T>(Op, 0, ConvertedSize, 0b11001, rd, rn, rm);
+      ASIMD3Same<T>(Op, 0, ConvertedSize, 0b11001, rd, rn, rm);
+    }
   }
-  template<typename T>
-  void fadd(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  template<IsQOrDRegister T>
+  void fadd(SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit and 64-bit "
-                                                                                                         "subregsize supported");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Only 16/32/64-bit subregsize supported");
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
-    const ARMEmitter::SubRegSize ConvertedSize =
-      size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i8Bit;
+    if (size == SubRegSize::i16Bit) {
+      ASIMDThreeSameFP16(0, 0, 0b010, rm, rn, rd);
+    } else {
+      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
+      const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
 
-    ASIMD3Same<T>(Op, 0, ConvertedSize, 0b11010, rd, rn, rm);
+      ASIMD3Same<T>(Op, 0, ConvertedSize, 0b11010, rd, rn, rm);
+    }
   }
-  template<typename T>
-  void fmulx(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  template<IsQOrDRegister T>
+  void fmulx(SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit and 64-bit "
-                                                                                                         "subregsize supported");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Only 16/32/64-bit subregsize supported");
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
-    const ARMEmitter::SubRegSize ConvertedSize =
-      size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i8Bit;
+    if (size == SubRegSize::i16Bit) {
+      ASIMDThreeSameFP16(0, 0, 0b011, rm, rn, rd);
+    } else {
+      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
+      const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
 
-    ASIMD3Same<T>(Op, 0, ConvertedSize, 0b11011, rd, rn, rm);
+      ASIMD3Same<T>(Op, 0, ConvertedSize, 0b11011, rd, rn, rm);
+    }
   }
-  template<typename T>
-  void fcmeq(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  template<IsQOrDRegister T>
+  void fcmeq(SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit and 64-bit "
-                                                                                                         "subregsize supported");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Only 16/32/64-bit subregsize supported");
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
-    const ARMEmitter::SubRegSize ConvertedSize =
-      size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i8Bit;
+    if (size == SubRegSize::i16Bit) {
+      ASIMDThreeSameFP16(0, 0, 0b100, rm, rn, rd);
+    } else {
+      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
+      const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
 
-    ASIMD3Same<T>(Op, 0, ConvertedSize, 0b11100, rd, rn, rm);
+      ASIMD3Same<T>(Op, 0, ConvertedSize, 0b11100, rd, rn, rm);
+    }
   }
-  template<typename T>
-  void fmax(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  template<IsQOrDRegister T>
+  void fmax(SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit and 64-bit "
-                                                                                                         "subregsize supported");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Only 16/32/64-bit subregsize supported");
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
-    const ARMEmitter::SubRegSize ConvertedSize =
-      size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i8Bit;
+    if (size == SubRegSize::i16Bit) {
+      ASIMDThreeSameFP16(0, 0, 0b110, rm, rn, rd);
+    } else {
+      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
+      const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
 
-    ASIMD3Same<T>(Op, 0, ConvertedSize, 0b11110, rd, rn, rm);
+      ASIMD3Same<T>(Op, 0, ConvertedSize, 0b11110, rd, rn, rm);
+    }
   }
-  template<typename T>
-  void frecps(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  template<IsQOrDRegister T>
+  void frecps(SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit and 64-bit "
-                                                                                                         "subregsize supported");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Only 16/32/64-bit subregsize supported");
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
-    const ARMEmitter::SubRegSize ConvertedSize =
-      size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i8Bit;
+    if (size == SubRegSize::i16Bit) {
+      ASIMDThreeSameFP16(0, 0, 0b111, rm, rn, rd);
+    } else {
+      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
+      const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
 
-    ASIMD3Same<T>(Op, 0, ConvertedSize, 0b11111, rd, rn, rm);
+      ASIMD3Same<T>(Op, 0, ConvertedSize, 0b11111, rd, rn, rm);
+    }
   }
   template<typename T>
   void and_(T rd, T rn, T rm) {
@@ -2358,60 +2245,75 @@ public:
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
     ASIMD3Same<T>(Op, 0, ARMEmitter::SubRegSize::i16Bit, 0b00011, rd, rn, rm);
   }
-  template<typename T>
-  void fminnm(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  template<IsQOrDRegister T>
+  void fminnm(SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit and 64-bit "
-                                                                                                         "subregsize supported");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Only 16/32/64-bit subregsize supported");
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
-    ASIMD3Same<T>(Op, 0, size, 0b11000, rd, rn, rm);
+    if (size == SubRegSize::i16Bit) {
+      ASIMDThreeSameFP16(0, 1, 0b000, rm, rn, rd);
+    } else {
+      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
+      ASIMD3Same<T>(Op, 0, size, 0b11000, rd, rn, rm);
+    }
   }
-  template<typename T>
-  void fmls(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  template<IsQOrDRegister T>
+  void fmls(SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit and 64-bit "
-                                                                                                         "subregsize supported");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Only 16/32/64-bit subregsize supported");
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
-    ASIMD3Same<T>(Op, 0, size, 0b11001, rd, rn, rm);
+    if (size == SubRegSize::i16Bit) {
+      ASIMDThreeSameFP16(0, 1, 0b001, rm, rn, rd);
+    } else {
+      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
+      ASIMD3Same<T>(Op, 0, size, 0b11001, rd, rn, rm);
+    }
   }
-  template<typename T>
-  void fsub(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  template<IsQOrDRegister T>
+  void fsub(SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit and 64-bit "
-                                                                                                         "subregsize supported");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Only 16/32/64-bit subregsize supported");
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
-    ASIMD3Same<T>(Op, 0, size, 0b11010, rd, rn, rm);
+    if (size == SubRegSize::i16Bit) {
+      ASIMDThreeSameFP16(0, 1, 0b010, rm, rn, rd);
+    } else {
+      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
+      ASIMD3Same<T>(Op, 0, size, 0b11010, rd, rn, rm);
+    }
   }
-  template<typename T>
-  void fmin(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  template<IsQOrDRegister T>
+  void fmin(SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit and 64-bit "
-                                                                                                         "subregsize supported");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Only 16/32/64-bit subregsize supported");
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
-    ASIMD3Same<T>(Op, 0, size, 0b11110, rd, rn, rm);
+    if (size == SubRegSize::i16Bit) {
+      ASIMDThreeSameFP16(0, 1, 0b110, rm, rn, rd);
+    } else {
+      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
+      ASIMD3Same<T>(Op, 0, size, 0b11110, rd, rn, rm);
+    }
   }
-  template<typename T>
-  void frsqrts(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  template<IsQOrDRegister T>
+  void frsqrts(SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit and 64-bit "
-                                                                                                         "subregsize supported");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Only 16/32/64-bit subregsize supported");
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
-    ASIMD3Same<T>(Op, 0, size, 0b11111, rd, rn, rm);
+    if (size == SubRegSize::i16Bit) {
+      ASIMDThreeSameFP16(0, 1, 0b111, rm, rn, rd);
+    } else {
+      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
+      ASIMD3Same<T>(Op, 0, size, 0b11111, rd, rn, rm);
+    }
   }
   template<typename T>
   void orr(T rd, T rn, T rm) {
@@ -2581,103 +2483,117 @@ public:
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
     ASIMD3Same<T>(Op, 1, size, 0b10110, rd, rn, rm);
   }
-  template<typename T>
-  void fmaxnmp(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  template<IsQOrDRegister T>
+  void fmaxnmp(SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit and 64-bit "
-                                                                                                         "subregsize supported");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Only 16/32/64-bit subregsize supported");
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
-    const ARMEmitter::SubRegSize ConvertedSize =
-      size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i8Bit;
+    if (size == SubRegSize::i16Bit) {
+      ASIMDThreeSameFP16(1, 0, 0b000, rm, rn, rd);
+    } else {
+      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
+      const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
 
-    ASIMD3Same<T>(Op, 1, ConvertedSize, 0b11000, rd, rn, rm);
+      ASIMD3Same<T>(Op, 1, ConvertedSize, 0b11000, rd, rn, rm);
+    }
   }
-  template<typename T>
-  void faddp(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  template<IsQOrDRegister T>
+  void faddp(SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit and 64-bit "
-                                                                                                         "subregsize supported");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Only 16/32/64-bit subregsize supported");
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
-    const ARMEmitter::SubRegSize ConvertedSize =
-      size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i8Bit;
+    if (size == SubRegSize::i16Bit) {
+      ASIMDThreeSameFP16(1, 0, 0b010, rm, rn, rd);
+    } else {
+      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
+      const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
 
-    ASIMD3Same<T>(Op, 1, ConvertedSize, 0b11010, rd, rn, rm);
+      ASIMD3Same<T>(Op, 1, ConvertedSize, 0b11010, rd, rn, rm);
+    }
   }
-  template<typename T>
-  void fmul(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  template<IsQOrDRegister T>
+  void fmul(SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit and 64-bit "
-                                                                                                         "subregsize supported");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Only 16/32/64-bit subregsize supported");
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
-    const ARMEmitter::SubRegSize ConvertedSize =
-      size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i8Bit;
+    if (size == SubRegSize::i16Bit) {
+      ASIMDThreeSameFP16(1, 0, 0b011, rm, rn, rd);
+    } else {
+      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
+      const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
 
-    ASIMD3Same<T>(Op, 1, ConvertedSize, 0b11011, rd, rn, rm);
+      ASIMD3Same<T>(Op, 1, ConvertedSize, 0b11011, rd, rn, rm);
+    }
   }
-  template<typename T>
-  void fcmge(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  template<IsQOrDRegister T>
+  void fcmge(SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit and 64-bit "
-                                                                                                         "subregsize supported");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Only 16/32/64-bit subregsize supported");
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
-    const ARMEmitter::SubRegSize ConvertedSize =
-      size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i8Bit;
+    if (size == SubRegSize::i16Bit) {
+      ASIMDThreeSameFP16(1, 0, 0b100, rm, rn, rd);
+    } else {
+      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
+      const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
 
-    ASIMD3Same<T>(Op, 1, ConvertedSize, 0b11100, rd, rn, rm);
+      ASIMD3Same<T>(Op, 1, ConvertedSize, 0b11100, rd, rn, rm);
+    }
   }
-  template<typename T>
-  void facge(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  template<IsQOrDRegister T>
+  void facge(SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit and 64-bit "
-                                                                                                         "subregsize supported");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Only 16/32/64-bit subregsize supported");
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
-    const ARMEmitter::SubRegSize ConvertedSize =
-      size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i8Bit;
+    if (size == SubRegSize::i16Bit) {
+      ASIMDThreeSameFP16(1, 0, 0b101, rm, rn, rd);
+    } else {
+      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
+      const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
 
-    ASIMD3Same<T>(Op, 1, ConvertedSize, 0b11101, rd, rn, rm);
+      ASIMD3Same<T>(Op, 1, ConvertedSize, 0b11101, rd, rn, rm);
+    }
   }
-  template<typename T>
-  void fmaxp(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  template<IsQOrDRegister T>
+  void fmaxp(SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit and 64-bit "
-                                                                                                         "subregsize supported");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Only 16/32/64-bit subregsize supported");
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
-    const ARMEmitter::SubRegSize ConvertedSize =
-      size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i8Bit;
+    if (size == SubRegSize::i16Bit) {
+      ASIMDThreeSameFP16(1, 0, 0b110, rm, rn, rd);
+    } else {
+      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
+      const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
 
-    ASIMD3Same<T>(Op, 1, ConvertedSize, 0b11110, rd, rn, rm);
+      ASIMD3Same<T>(Op, 1, ConvertedSize, 0b11110, rd, rn, rm);
+    }
   }
-  template<typename T>
-  void fdiv(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  template<IsQOrDRegister T>
+  void fdiv(SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit and 64-bit "
-                                                                                                         "subregsize supported");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Only 16/32/64-bit subregsize supported");
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
-    const ARMEmitter::SubRegSize ConvertedSize =
-      size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i8Bit;
+    if (size == SubRegSize::i16Bit) {
+      ASIMDThreeSameFP16(1, 0, 0b111, rm, rn, rd);
+    } else {
+      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
+      const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
 
-    ASIMD3Same<T>(Op, 1, ConvertedSize, 0b11111, rd, rn, rm);
+      ASIMD3Same<T>(Op, 1, ConvertedSize, 0b11111, rd, rn, rm);
+    }
   }
   template<typename T>
   void eor(T rd, T rn, T rm) {
@@ -2689,60 +2605,75 @@ public:
     constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
     ASIMD3Same<T>(Op, 1, ARMEmitter::SubRegSize::i16Bit, 0b00011, rd, rn, rm);
   }
-  template<typename T>
-  void fminnmp(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  template<IsQOrDRegister T>
+  void fminnmp(SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit and 64-bit "
-                                                                                                         "subregsize supported");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Only 16/32/64-bit subregsize supported");
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
-    ASIMD3Same<T>(Op, 1, size, 0b11000, rd, rn, rm);
+    if (size == SubRegSize::i16Bit) {
+      ASIMDThreeSameFP16(1, 1, 0b000, rm, rn, rd);
+    } else {
+      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
+      ASIMD3Same<T>(Op, 1, size, 0b11000, rd, rn, rm);
+    }
   }
-  template<typename T>
-  void fabd(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  template<IsQOrDRegister T>
+  void fabd(SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit and 64-bit "
-                                                                                                         "subregsize supported");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Only 16/32/64-bit subregsize supported");
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
-    ASIMD3Same<T>(Op, 1, size, 0b11010, rd, rn, rm);
+    if (size == SubRegSize::i16Bit) {
+      ASIMDThreeSameFP16(1, 1, 0b010, rm, rn, rd);
+    } else {
+      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
+      ASIMD3Same<T>(Op, 1, size, 0b11010, rd, rn, rm);
+    }
   }
-  template<typename T>
-  void fcmgt(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  template<IsQOrDRegister T>
+  void fcmgt(SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit and 64-bit "
-                                                                                                         "subregsize supported");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Only 16/32/64-bit subregsize supported");
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
-    ASIMD3Same<T>(Op, 1, size, 0b11100, rd, rn, rm);
+    if (size == SubRegSize::i16Bit) {
+      ASIMDThreeSameFP16(1, 1, 0b100, rm, rn, rd);
+    } else {
+      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
+      ASIMD3Same<T>(Op, 1, size, 0b11100, rd, rn, rm);
+    }
   }
-  template<typename T>
-  void facgt(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  template<IsQOrDRegister T>
+  void facgt(SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit and 64-bit "
-                                                                                                         "subregsize supported");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Only 16/32/64-bit subregsize supported");
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
-    ASIMD3Same<T>(Op, 1, size, 0b11101, rd, rn, rm);
+    if (size == SubRegSize::i16Bit) {
+      ASIMDThreeSameFP16(1, 1, 0b101, rm, rn, rd);
+    } else {
+      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
+      ASIMD3Same<T>(Op, 1, size, 0b11101, rd, rn, rm);
+    }
   }
-  template<typename T>
-  void fminp(ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  template<IsQOrDRegister T>
+  void fminp(SubRegSize size, T rd, T rn, T rm) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit and 64-bit "
-                                                                                                         "subregsize supported");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Only 16/32/64-bit subregsize supported");
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
-    ASIMD3Same<T>(Op, 1, size, 0b11110, rd, rn, rm);
+    if (size == SubRegSize::i16Bit) {
+      ASIMDThreeSameFP16(1, 1, 0b110, rm, rn, rd);
+    } else {
+      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'01 << 10;
+      ASIMD3Same<T>(Op, 1, size, 0b11110, rd, rn, rm);
+    }
   }
   template<typename T>
   void bit(T rd, T rn, T rm) {

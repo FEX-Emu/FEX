@@ -262,30 +262,30 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD copy") {
   TEST_SINGLE(ins(SubRegSize::i64Bit, VReg::v30, 1, VReg::v29, 0), "mov v30.d[1], v29.d[0]");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD three same (FP16)") {
-  TEST_SINGLE(fmaxnm<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fmaxnm v30.8h, v29.8h, v28.8h");
-  TEST_SINGLE(fmla<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fmla v30.8h, v29.8h, v28.8h");
-  TEST_SINGLE(fadd<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fadd v30.8h, v29.8h, v28.8h");
-  TEST_SINGLE(fmulx<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fmulx v30.8h, v29.8h, v28.8h");
-  TEST_SINGLE(fcmeq<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fcmeq v30.8h, v29.8h, v28.8h");
-  TEST_SINGLE(fmax<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fmax v30.8h, v29.8h, v28.8h");
-  TEST_SINGLE(frecps<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "frecps v30.8h, v29.8h, v28.8h");
-  TEST_SINGLE(fminnm<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fminnm v30.8h, v29.8h, v28.8h");
-  TEST_SINGLE(fmls<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fmls v30.8h, v29.8h, v28.8h");
-  TEST_SINGLE(fsub<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fsub v30.8h, v29.8h, v28.8h");
-  TEST_SINGLE(fmin<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fmin v30.8h, v29.8h, v28.8h");
-  TEST_SINGLE(frsqrts<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "frsqrts v30.8h, v29.8h, v28.8h");
-  TEST_SINGLE(fmaxnmp<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fmaxnmp v30.8h, v29.8h, v28.8h");
-  TEST_SINGLE(faddp<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "faddp v30.8h, v29.8h, v28.8h");
-  TEST_SINGLE(fmul<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fmul v30.8h, v29.8h, v28.8h");
-  TEST_SINGLE(fcmge<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fcmge v30.8h, v29.8h, v28.8h");
-  TEST_SINGLE(facge<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "facge v30.8h, v29.8h, v28.8h");
-  TEST_SINGLE(fmaxp<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fmaxp v30.8h, v29.8h, v28.8h");
-  TEST_SINGLE(fdiv<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fdiv v30.8h, v29.8h, v28.8h");
-  TEST_SINGLE(fminnmp<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fminnmp v30.8h, v29.8h, v28.8h");
-  TEST_SINGLE(fabd<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fabd v30.8h, v29.8h, v28.8h");
-  TEST_SINGLE(fcmgt<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fcmgt v30.8h, v29.8h, v28.8h");
-  TEST_SINGLE(facgt<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "facgt v30.8h, v29.8h, v28.8h");
-  TEST_SINGLE(fminp<SubRegSize::i16Bit>(QReg::q30, QReg::q29, QReg::q28), "fminp v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fmaxnm(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "fmaxnm v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fmla(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "fmla v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fadd(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "fadd v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fmulx(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "fmulx v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fcmeq(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "fcmeq v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fmax(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "fmax v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(frecps(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "frecps v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fminnm(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "fminnm v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fmls(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "fmls v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fsub(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "fsub v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fmin(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "fmin v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(frsqrts(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "frsqrts v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fmaxnmp(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "fmaxnmp v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(faddp(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "faddp v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fmul(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "fmul v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fcmge(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "fcmge v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(facge(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "facge v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fmaxp(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "fmaxp v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fdiv(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "fdiv v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fminnmp(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "fminnmp v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fabd(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "fabd v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fcmgt(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "fcmgt v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(facgt(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "facgt v30.8h, v29.8h, v28.8h");
+  TEST_SINGLE(fminp(SubRegSize::i16Bit, QReg::q30, QReg::q29, QReg::q28), "fminp v30.8h, v29.8h, v28.8h");
 }
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD two-register miscellaneous (FP16)") {
   TEST_SINGLE(frintn(SubRegSize::i16Bit, QReg::q30, QReg::q29), "frintn v30.8h, v29.8h");
