@@ -1,8 +1,4 @@
 # This file is used to ignore files and directories from clang-format
-
-# Ignore all files in the External directory
-External/*
-
 Source/Common/cpp-optparse/*
 
 # Files with human-indented tables for readability - don't mess with these
