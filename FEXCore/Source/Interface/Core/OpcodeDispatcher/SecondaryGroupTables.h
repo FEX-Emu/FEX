@@ -113,10 +113,12 @@ constexpr std::tuple<uint16_t, uint8_t, FEXCore::X86Tables::OpDispatchPtr> OpDis
   {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_NONE, 7), 1, &OpDispatchBuilder::StoreFenceOrCLFlush}, // SFENCE (or CLFLUSH)
 
   {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 5), 1, &OpDispatchBuilder::UnimplementedOp},
-  {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 6), 1, &OpDispatchBuilder::UnimplementedOp},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F3, 6), 1, &OpDispatchBuilder::UMonitorOrCLRSSBSY},
 
-  {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_66, 6), 1, &OpDispatchBuilder::CLWB},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_66, 6), 1, &OpDispatchBuilder::CLWBOrTPause},
   {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_66, 7), 1, &OpDispatchBuilder::CLFLUSHOPT},
+
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_15, PF_F2, 6), 1, &OpDispatchBuilder::UMWaitOp},
 
   // GROUP 16
   {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_NONE, 0), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Prefetch, false, true, 1>},

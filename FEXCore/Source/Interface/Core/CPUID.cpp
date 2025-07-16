@@ -626,6 +626,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) const {
     // Only enable EnhancedREPMOVS if atomic memcpy tso emulation isn't enabled.
     const uint32_t SupportsEnhancedREPMOVS = CTX->IsMemcpyAtomicTSOEnabled() == false;
     const uint32_t SupportsVPCLMULQDQ = CTX->HostFeatures.SupportsPMULL_128Bit && SupportsAVX();
+    const uint32_t SupportsWFXT = CTX->HostFeatures.SupportsWFXT;
 
     // Number of subfunctions
     Res.eax = 0x0;
@@ -667,7 +668,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) const {
               (0 << 2) |                                // Usermode instruction prevention
               (0 << 3) |                                // Protection keys for user mode pages
               (0 << 4) |                                // OS protection keys
-              (0 << 5) |                                // waitpkg
+              (SupportsWFXT << 5) |                     // waitpkg
               (0 << 6) |                                // AVX512_VBMI2
               (0 << 7) |                                // CET shadow stack
               (0 << 8) |                                // GFNI

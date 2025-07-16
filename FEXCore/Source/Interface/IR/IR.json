@@ -284,6 +284,13 @@
         "HasSideEffects": true,
         "Desc": ["This is a hint instruction that the CPU is likely to do a spin so it might want to pause to help out SMP",
                  "Can be implemented as a NOP if necessary"]
+      },
+      "WFET GPR:$Upper, GPR:$Lower": {
+        "HasSideEffects": true,
+        "Desc": [
+          "Implement a low power wait attempting to sleep until RDTSC >= Upper:Lower.",
+          "Will spuriously wake up."
+        ]
       }
     },
     "Branch": {

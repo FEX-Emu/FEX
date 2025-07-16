@@ -38,6 +38,7 @@ struct HostFeatures {
   bool SupportsCPUIndexInTPIDRRO {};
   bool SupportsFRINTTS {};
   bool SupportsECV {};
+  bool SupportsWFXT {};
 
   // Float exception behaviour
   bool SupportsAFP {};

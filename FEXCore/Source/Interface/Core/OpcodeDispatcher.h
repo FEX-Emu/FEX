@@ -824,11 +824,13 @@ public:
   void PHADDS(OpcodeArgs);
   void PHSUBS(OpcodeArgs);
 
-  void CLWB(OpcodeArgs);
+  void CLWBOrTPause(OpcodeArgs);
   void CLFLUSHOPT(OpcodeArgs);
   void LoadFenceOrXRSTOR(OpcodeArgs);
   void MemFenceOrXSAVEOPT(OpcodeArgs);
   void StoreFenceOrCLFlush(OpcodeArgs);
+  void UMonitorOrCLRSSBSY(OpcodeArgs);
+  void UMWaitOp(OpcodeArgs);
   void CLZeroOp(OpcodeArgs);
   void RDTSCPOp(OpcodeArgs);
   void RDPIDOp(OpcodeArgs);
