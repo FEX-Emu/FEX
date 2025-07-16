@@ -4510,7 +4510,9 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
     constexpr uint8_t SYSCALL_LITERAL = 0x80;
     if (Literal == SYSCALL_LITERAL) {
       if (CTX->Config.Is64BitMode()) [[unlikely]] {
-        ERROR_AND_DIE_FMT("[Unsupported] Trying to execute 32-bit syscall from a 64-bit process.");
+        LogMan::Msg::EFmt("[Unsupported] Trying to execute 32-bit syscall from a 64-bit process.");
+        UnhandledOp(Op);
+        return;
       }
       // Syscall on linux
       SyscallOp(Op, false);
