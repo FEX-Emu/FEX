@@ -86,6 +86,14 @@ constexpr size_t SubRegSizeInBits(SubRegSize size) {
   return size_t {8} << FEXCore::ToUnderlying(size);
 }
 
+// Many floating point operations constrain their element sizes to the
+// main three float sizes half, single, and double precision. This just
+// combines all the checks together for brevity.
+[[nodiscard]]
+constexpr bool IsStandardFloatSize(SubRegSize size) {
+  return size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit;
+}
+
 /* This `ScalarRegSize` enum is used for most scalar float
  * operations.
  *
