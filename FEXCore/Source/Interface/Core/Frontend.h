@@ -33,6 +33,7 @@ public:
     FEXCore::X86Tables::DecodedInst* DecodedInstructions;
     DecodedBlockStatus BlockStatus;
     bool IsEntryPoint {};
+    bool ForceFullSMCDetection {};
   };
 
   struct DecodedBlockInformation final {
