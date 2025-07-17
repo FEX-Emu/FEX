@@ -126,7 +126,7 @@ void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
   auto NewRIP = Pop(GPRSize);
 
   // Store the new RIP
-  ExitFunction(NewRIP);
+  ExitFunction(NewRIP, BranchHint::Return);
   BlockSetRIP = true;
 }
 
