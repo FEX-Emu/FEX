@@ -194,6 +194,8 @@ public:
     MonoDetected = true;
   }
 
+  void MarkMonoBackpatcherBlock(uint64_t BlockEntry) override;
+
 public:
   friend class FEXCore::HLE::SyscallHandler;
 #ifdef JIT_ARM64
@@ -383,5 +385,6 @@ private:
   fextl::set<uint64_t> ForceTSOInstructions;
 
   bool MonoDetected = false;
+  std::atomic<uint64_t> MonoBackpatcherBlock;
 };
 } // namespace FEXCore::Context
