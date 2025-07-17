@@ -291,6 +291,14 @@
         "Desc": [
           "Implement a low power wait attempting to sleep until RDTSC >= Upper:Lower.",
           "Will spuriously wake up."
+	]
+      },
+      "MonoBackpatcherWrite OpSize:$Size, GPR:$Value, GPR:$Addr": {
+        "HasSideEffects": true,
+        "Desc": [ "Writes and invalidates the target address with the invalidation mutex locked. This is a fault-avoiding",
+                  "replacement for the atomic SMC writes used in the mono callsite backpatcher." ],
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       }
     },
