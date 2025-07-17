@@ -567,7 +567,8 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
     auto BlockInfo = Thread->FrontendDecoder->GetDecodedBlockInfo();
     auto CodeBlocks = &BlockInfo->Blocks;
 
-    Thread->OpDispatcher->BeginFunction(GuestRIP, CodeBlocks, BlockInfo->TotalInstructionCount);
+    Thread->OpDispatcher->BeginFunction(GuestRIP, CodeBlocks, BlockInfo->TotalInstructionCount,
+                                        AreMonoHacksActive() && MonoBackpatcherBlock.load(std::memory_order_relaxed) == GuestRIP);
 
     const auto GPRSize = GetGPROpSize();
 
@@ -1065,6 +1066,10 @@ void ContextImpl::RemoveForceTSOInformation(uint64_t Address, uint64_t Size) {
 
   ForceTSOValidRanges.Remove({Address, Address + Size});
   ForceTSOInstructions.erase(ForceTSOInstructions.lower_bound(Address), ForceTSOInstructions.upper_bound(Address + Size));
+}
+
+void ContextImpl::MarkMonoBackpatcherBlock(uint64_t BlockEntry) {
+  MonoBackpatcherBlock.store(BlockEntry, std::memory_order_relaxed);
 }
 
 void ContextImpl::RemoveCustomIREntrypoint(uintptr_t Entrypoint) {

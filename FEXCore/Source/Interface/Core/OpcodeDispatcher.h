@@ -300,7 +300,7 @@ public:
     return ShouldDump;
   }
 
-  void BeginFunction(uint64_t RIP, const fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks>* Blocks, uint32_t NumInstructions);
+  void BeginFunction(uint64_t RIP, const fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks>* Blocks, uint32_t NumInstructions, bool MonoBackpatcherBlock);
   void Finalize();
 
   // Dispatch builder functions
@@ -2372,6 +2372,11 @@ private:
 
   bool Multiblock {};
   uint64_t Entry {};
+
+  // Set if mono hacks are enabled and the current block is the mono callsite backpatcher, in which case the
+  // XCHG ops that would patch code are replaced with a hook that performs the write and manually invalidates
+  // the target address.
+  bool IsMonoBackpatcherBlock {false};
   IROp_IRHeader* CurrentHeader {};
 
   [[nodiscard]]

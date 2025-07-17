@@ -230,6 +230,8 @@ public:
   FEX_DEFAULT_VISIBILITY virtual void RemoveForceTSOInformation(uint64_t Address, uint64_t Size) = 0;
 
   FEX_DEFAULT_VISIBILITY virtual void MarkMonoDetected() = 0;
+
+  FEX_DEFAULT_VISIBILITY virtual void MarkMonoBackpatcherBlock(uint64_t BlockEntry) = 0;
 private:
 };
 
