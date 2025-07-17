@@ -78,6 +78,7 @@ public:
     return OSABI;
   }
   virtual void MarkGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) {}
+  virtual void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) {}
   virtual void MarkOvercommitRange(uint64_t Start, uint64_t Length) {}
   virtual void UnmarkOvercommitRange(uint64_t Start, uint64_t Length) {}
   virtual ExecutableRangeInfo QueryGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Address) = 0;
