@@ -81,8 +81,8 @@ FEX_DEFAULT_VISIBILITY void Init(std::string_view ProgramName, std::string_view 
 FEX_DEFAULT_VISIBILITY void PostForkAction(bool IsChild);
 FEX_DEFAULT_VISIBILITY bool IsActive();
 FEX_DEFAULT_VISIBILITY void Shutdown();
-FEX_DEFAULT_VISIBILITY void TraceObject(std::string_view const Format);
-FEX_DEFAULT_VISIBILITY void TraceObject(std::string_view const Format, uint64_t Duration);
+FEX_DEFAULT_VISIBILITY void TraceObject(const std::string_view Format);
+FEX_DEFAULT_VISIBILITY void TraceObject(const std::string_view Format, uint64_t Duration);
 
 #define UniqueScopeName2(name, line) name##line
 #define UniqueScopeName(name, line) UniqueScopeName2(name, line)
@@ -97,13 +97,13 @@ FEX_DEFAULT_VISIBILITY void TraceObject(std::string_view const Format, uint64_t 
 // A class that follows scoping rules to generate a profile duration block
 class ProfilerBlock final {
 public:
-  ProfilerBlock(std::string_view const Format);
+  ProfilerBlock(const std::string_view Format);
 
   ~ProfilerBlock();
 
 private:
   uint64_t DurationBegin;
-  std::string_view const Format;
+  const std::string_view Format;
 };
 
 // Declare a scoped profile block variable with a fixed name.
@@ -148,9 +148,9 @@ static void PostForkAction(bool IsChild) {}
 [[maybe_unused]]
 static void Shutdown() {}
 [[maybe_unused]]
-static void TraceObject(std::string_view const Format) {}
+static void TraceObject(const std::string_view Format) {}
 [[maybe_unused]]
-static void TraceObject(std::string_view const, uint64_t) {}
+static void TraceObject(const std::string_view, uint64_t) {}
 
 #define FEXCORE_PROFILE_INSTANT(...) \
   do {                               \

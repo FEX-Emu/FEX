@@ -12,20 +12,17 @@ namespace FEXCore {
 // boilerplate.
 #define FEX_DECLARE_ENUM_FLAG_OPERATORS(type)                        \
   [[nodiscard]]                                                      \
-  constexpr type                                                     \
-  operator|(type a, type b) noexcept {                               \
+  constexpr type operator|(type a, type b) noexcept {                \
     using T = std::underlying_type_t<type>;                          \
     return static_cast<type>(static_cast<T>(a) | static_cast<T>(b)); \
   }                                                                  \
   [[nodiscard]]                                                      \
-  constexpr type                                                     \
-  operator&(type a, type b) noexcept {                               \
+  constexpr type operator&(type a, type b) noexcept {                \
     using T = std::underlying_type_t<type>;                          \
     return static_cast<type>(static_cast<T>(a) & static_cast<T>(b)); \
   }                                                                  \
   [[nodiscard]]                                                      \
-  constexpr type                                                     \
-  operator^(type a, type b) noexcept {                               \
+  constexpr type operator^(type a, type b) noexcept {                \
     using T = std::underlying_type_t<type>;                          \
     return static_cast<type>(static_cast<T>(a) ^ static_cast<T>(b)); \
   }                                                                  \
@@ -42,8 +39,7 @@ namespace FEXCore {
     return a;                                                        \
   }                                                                  \
   [[nodiscard]]                                                      \
-  constexpr type                                                     \
-  operator~(type key) noexcept {                                     \
+  constexpr type operator~(type key) noexcept {                      \
     using T = std::underlying_type_t<type>;                          \
     return static_cast<type>(~static_cast<T>(key));                  \
   }                                                                  \

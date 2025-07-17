@@ -17,7 +17,7 @@ namespace FEX::HLE::VMATracking {
 namespace SpecialDev {
   static constexpr uint64_t Anon = 0x1'0000'0000; // Anonymous shared mapping, id is incrementing allocation number
   static constexpr uint64_t SHM = 0x2'0000'0000;  // sys-v shm, id is shmid
-};                                                // namespace SpecialDev
+}; // namespace SpecialDev
 
 // Memory Resource ID
 // An id that can be used to identify when shared mappings actually have the same backing storage

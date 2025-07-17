@@ -48,7 +48,7 @@ static inline uint64_t GetTime() {
 #endif
 
 namespace FEXCore::Profiler {
-ProfilerBlock::ProfilerBlock(std::string_view const Format)
+ProfilerBlock::ProfilerBlock(const std::string_view Format)
   : DurationBegin {GetTime()}
   , Format {Format} {}
 
@@ -92,7 +92,7 @@ void Shutdown() {
   }
 }
 
-void TraceObject(std::string_view const Format, uint64_t Duration) {
+void TraceObject(const std::string_view Format, uint64_t Duration) {
   if (TraceFD != -1) {
     // Print the duration as something that began negative duration ago
     const auto StringSize = Format.size() + strlen(" (lduration=-)\n") + 22;
@@ -102,7 +102,7 @@ void TraceObject(std::string_view const Format, uint64_t Duration) {
   }
 }
 
-void TraceObject(std::string_view const Format) {
+void TraceObject(const std::string_view Format) {
   if (TraceFD != -1) {
     const auto StringSize = Format.size() + 1;
     auto Event = reinterpret_cast<char*>(alloca(StringSize));
@@ -164,9 +164,9 @@ void Shutdown() {
   }
 }
 
-void TraceObject(std::string_view const Format, uint64_t Duration) {}
+void TraceObject(const std::string_view Format, uint64_t Duration) {}
 
-void TraceObject(std::string_view const Format) {
+void TraceObject(const std::string_view Format) {
   if (Tracy::Enable) {
     TracyMessage(Format.data(), Format.size());
   }
@@ -212,7 +212,7 @@ void Shutdown() {
 #endif
 }
 
-void TraceObject(std::string_view const Format, uint64_t Duration) {
+void TraceObject(const std::string_view Format, uint64_t Duration) {
 #if FEXCORE_PROFILER_BACKEND == FEXCORE_PROFILER_BACKEND_GPUVIS
   GPUVis::TraceObject(Format, Duration);
 #elif FEXCORE_PROFILER_BACKEND == FEXCORE_PROFILER_BACKEND_TRACY
@@ -220,7 +220,7 @@ void TraceObject(std::string_view const Format, uint64_t Duration) {
 #endif
 }
 
-void TraceObject(std::string_view const Format) {
+void TraceObject(const std::string_view Format) {
 #if FEXCORE_PROFILER_BACKEND == FEXCORE_PROFILER_BACKEND_GPUVIS
   GPUVis::TraceObject(Format);
 #elif FEXCORE_PROFILER_BACKEND == FEXCORE_PROFILER_BACKEND_TRACY

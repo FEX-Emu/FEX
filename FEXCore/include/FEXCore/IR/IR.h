@@ -107,14 +107,12 @@ enum IndexNamedVectorConstant : uint8_t {
 struct SHA256Sum final {
   uint8_t data[32];
   [[nodiscard]]
-  bool
-  operator<(const SHA256Sum& rhs) const {
+  bool operator<(const SHA256Sum& rhs) const {
     return memcmp(data, rhs.data, sizeof(data)) < 0;
   }
 
   [[nodiscard]]
-  bool
-  operator==(const SHA256Sum& rhs) const {
+  bool operator==(const SHA256Sum& rhs) const {
     return memcmp(data, rhs.data, sizeof(data)) == 0;
   }
 };

@@ -434,12 +434,10 @@ TEST_CASE_METHOD(Fixture, "VersionedLibrary") {
 
 #if CLANG_VERSION_MAJOR >= 17
   CHECK_THAT(output, matches(callExpr(callee(functionDecl(hasName("dlopen"))), hasArgument(0, stringLiteral().bind("libname"))))
-                       .check_binding(
-                         "libname", +[](const clang::StringLiteral* lit) { return lit->getString().ends_with(".so.123"); }));
+                       .check_binding("libname", +[](const clang::StringLiteral* lit) { return lit->getString().ends_with(".so.123"); }));
 #else
   CHECK_THAT(output, matches(callExpr(callee(functionDecl(hasName("dlopen"))), hasArgument(0, stringLiteral().bind("libname"))))
-                       .check_binding(
-                         "libname", +[](const clang::StringLiteral* lit) { return lit->getString().endswith(".so.123"); }));
+                       .check_binding("libname", +[](const clang::StringLiteral* lit) { return lit->getString().endswith(".so.123"); }));
 #endif
 }
 
@@ -577,8 +575,7 @@ TEST_CASE_METHOD(Fixture, "LayoutWrappers") {
                                             has(fieldDecl(hasName("data"), hasType(hasCanonicalType(asString("struct A")))))));
   const auto layout_undefined = [](const char* type) {
     return matches(classTemplateSpecializationDecl(hasName(type), hasAnyTemplateArgument(refersToType(asString("struct A")))).bind("layout"))
-      .check_binding(
-        "layout", +[](const clang::ClassTemplateSpecializationDecl* decl) { return !decl->isCompleteDefinition(); });
+      .check_binding("layout", +[](const clang::ClassTemplateSpecializationDecl* decl) { return !decl->isCompleteDefinition(); });
   };
   const auto guest_converter_defined = matches(functionDecl(
     hasName("to_guest"),

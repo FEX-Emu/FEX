@@ -141,10 +141,10 @@ namespace Msg {
     }                                 \
   } while (0);
 
-#define ERROR_AND_DIE_FMT(...)      \
-  do {                              \
+#define ERROR_AND_DIE_FMT(...)                      \
+  do {                                              \
     LogMan::Msg::MFmt(LogMan::ASSERT, __VA_ARGS__); \
-    FEX_TRAP_EXECUTION;             \
+    FEX_TRAP_EXECUTION;                             \
   } while (0)
 
 } // namespace Msg

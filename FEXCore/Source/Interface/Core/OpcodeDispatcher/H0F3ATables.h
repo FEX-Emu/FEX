@@ -42,8 +42,8 @@ constexpr auto OpDispatchTableGenH0F3A = []() consteval {
 
   auto REX0 = OpDispatchTableGenH0F3AREX.template operator()<0>();
   auto REX1 = OpDispatchTableGenH0F3AREX.template operator()<1>();
-  auto concat = []<typename T, size_t N1, size_t N2>(std::array<T, N1> const& lhs,
-                                                     std::array<T, N2> const& rhs) consteval -> std::array<T, N1 + N2> {
+  auto concat = []<typename T, size_t N1, size_t N2>(const std::array<T, N1>& lhs,
+                                                     const std::array<T, N2>& rhs) consteval -> std::array<T, N1 + N2> {
     std::array<T, N1 + N2> Table {};
     for (size_t i = 0; i < N1; ++i) {
       Table[i] = lhs[i];

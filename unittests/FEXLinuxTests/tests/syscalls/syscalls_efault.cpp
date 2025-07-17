@@ -34,7 +34,9 @@ TEST_CASE("ppoll") {
 
   SECTION("invalid timespec") {
     struct pollfd valid_fds {
-      .fd = STDOUT_FILENO, .events = 0, .revents = 0,
+      .fd = STDOUT_FILENO,
+      .events = 0,
+      .revents = 0,
     };
     auto ret = ::syscall(SYS_ppoll, &valid_fds, 1, invalid_timespec, nullptr, sizeof(uint64_t));
     REQUIRE(ret == -1);
@@ -43,7 +45,9 @@ TEST_CASE("ppoll") {
 
   SECTION("invalid sigset") {
     struct pollfd valid_fds {
-      .fd = STDOUT_FILENO, .events = 0, .revents = 0,
+      .fd = STDOUT_FILENO,
+      .events = 0,
+      .revents = 0,
     };
 
     struct timespec valid_ts {};
@@ -54,7 +58,9 @@ TEST_CASE("ppoll") {
 
   SECTION("valid configuration") {
     struct pollfd valid_fds {
-      .fd = STDOUT_FILENO, .events = 0, .revents = 0,
+      .fd = STDOUT_FILENO,
+      .events = 0,
+      .revents = 0,
     };
 
     struct timespec valid_ts {};
@@ -66,7 +72,9 @@ TEST_CASE("ppoll") {
 
   SECTION("invalid timespec write-back") {
     struct pollfd valid_fds {
-      .fd = STDOUT_FILENO, .events = 0, .revents = 0,
+      .fd = STDOUT_FILENO,
+      .events = 0,
+      .revents = 0,
     };
 
     // Kernel will read timespec, but it then can't write the result back.
@@ -112,7 +120,9 @@ TEST_CASE("ppoll_64") {
 
   SECTION("invalid timespec") {
     struct pollfd valid_fds {
-      .fd = STDOUT_FILENO, .events = 0, .revents = 0,
+      .fd = STDOUT_FILENO,
+      .events = 0,
+      .revents = 0,
     };
     auto ret = ::syscall(SYS_ppoll_time64, &valid_fds, 1, invalid_timespec, nullptr, sizeof(uint64_t));
     REQUIRE(ret == -1);
@@ -121,7 +131,9 @@ TEST_CASE("ppoll_64") {
 
   SECTION("invalid sigset") {
     struct pollfd valid_fds {
-      .fd = STDOUT_FILENO, .events = 0, .revents = 0,
+      .fd = STDOUT_FILENO,
+      .events = 0,
+      .revents = 0,
     };
 
     timespec64 valid_ts {};
@@ -132,7 +144,9 @@ TEST_CASE("ppoll_64") {
 
   SECTION("valid configuration") {
     struct pollfd valid_fds {
-      .fd = STDOUT_FILENO, .events = 0, .revents = 0,
+      .fd = STDOUT_FILENO,
+      .events = 0,
+      .revents = 0,
     };
 
     timespec64 valid_ts {};
@@ -144,7 +158,9 @@ TEST_CASE("ppoll_64") {
 
   SECTION("invalid timespec write-back") {
     struct pollfd valid_fds {
-      .fd = STDOUT_FILENO, .events = 0, .revents = 0,
+      .fd = STDOUT_FILENO,
+      .events = 0,
+      .revents = 0,
     };
 
     // Kernel will read timespec, but it then can't write the result back.

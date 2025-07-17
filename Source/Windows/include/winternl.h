@@ -178,7 +178,7 @@ typedef struct __PEB {                    /* win32/win64 */
 #ifdef _WIN64
   ULONG GdiHandleBuffer[60]; /*    /140 */
 #else
-  ULONG GdiHandleBuffer[34];               /* 0c4/    */
+  ULONG GdiHandleBuffer[34]; /* 0c4/    */
 #endif
   PVOID PostProcessInitRoutine;      /* 14c/230 */
   PRTL_BITMAP TlsExpansionBitmap;    /* 150/238 */
@@ -259,7 +259,7 @@ typedef struct __TEB {                          /* win32/win64 */
 #ifdef _WIN64
   PVOID SystemReserved1[30]; /*    /0190 */
 #else
-  PVOID SystemReserved1[26];               /* 10c/     used for krnl386 private data in Wine */
+  PVOID SystemReserved1[26]; /* 10c/     used for krnl386 private data in Wine */
 #endif
   char PlaceholderCompatibilityMode;                       /* 174/0280 */
   BOOLEAN PlaceholderHydrationAlwaysExplicit;              /* 175/0281 */
@@ -309,7 +309,7 @@ typedef struct __TEB {                          /* win32/win64 */
 #ifdef _WIN64
   PVOID Instrumentation[11]; /*    /16b8 */
 #else
-  PVOID Instrumentation[9];                /* f2c/ */
+  PVOID Instrumentation[9]; /* f2c/ */
 #endif
   GUID ActivityId;                   /* f50/1710 */
   PVOID SubProcessTag;               /* f60/1720 */
