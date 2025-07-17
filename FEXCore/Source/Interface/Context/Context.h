@@ -190,6 +190,10 @@ public:
 
   void RemoveForceTSOInformation(uint64_t Address, uint64_t Size) override;
 
+  void MarkMonoDetected() override {
+    MonoDetected = true;
+  }
+
 public:
   friend class FEXCore::HLE::SyscallHandler;
 #ifdef JIT_ARM64
@@ -231,6 +235,7 @@ public:
     FEX_CONFIG_OPT(DisableVixlIndirectCalls, DISABLE_VIXL_INDIRECT_RUNTIME_CALLS);
     FEX_CONFIG_OPT(SmallTSCScale, SMALLTSCSCALE);
     FEX_CONFIG_OPT(StrictInProcessSplitLocks, STRICTINPROCESSSPLITLOCKS);
+    FEX_CONFIG_OPT(MonoHacks, MONOHACKS);
   } Config;
 
   FEXCore::ForkableSharedMutex CodeInvalidationMutex;
@@ -319,6 +324,10 @@ public:
     return ExitOnHLT;
   }
 
+  bool AreMonoHacksActive() const {
+    return Config.MonoHacks && MonoDetected;
+  }
+
 protected:
   void UpdateAtomicTSOEmulationConfig() {
     if (SupportsHardwareTSO) {
@@ -372,5 +381,7 @@ private:
   fextl::unordered_map<uint64_t, CustomIRHandlerEntry> CustomIRHandlers;
   IntervalList<uint64_t> ForceTSOValidRanges; // The ranges for which ForceTSOInstructions has populated data
   fextl::set<uint64_t> ForceTSOInstructions;
+
+  bool MonoDetected = false;
 };
 } // namespace FEXCore::Context

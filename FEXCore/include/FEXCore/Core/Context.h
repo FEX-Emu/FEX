@@ -228,6 +228,8 @@ public:
   FEX_DEFAULT_VISIBILITY virtual void AddForceTSOInformation(const IntervalList<uint64_t>& ValidRanges, fextl::set<uint64_t>&& Instructions) = 0;
 
   FEX_DEFAULT_VISIBILITY virtual void RemoveForceTSOInformation(uint64_t Address, uint64_t Size) = 0;
+
+  FEX_DEFAULT_VISIBILITY virtual void MarkMonoDetected() = 0;
 private:
 };
 
