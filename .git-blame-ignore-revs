@@ -16,3 +16,7 @@
 
 # Reformat of CodeEmitter inl files
 8760c593ece92d7e9fa94c40da0368fd367c9cad
+
+# Whole-tree reformat with clang-format-19
+5267cde60e7642852d18f20ae8568643bb5293d5
+
