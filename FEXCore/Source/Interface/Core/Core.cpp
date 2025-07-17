@@ -1007,6 +1007,10 @@ bool ContextImpl::ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState* Thre
   return Thread->LookupCache->Erase(Thread->CurrentFrame, GuestRIP);
 }
 
+void ContextImpl::ThreadRemoveCodeEntryFromJit(FEXCore::Core::CpuStateFrame* Frame, uint64_t GuestRIP) {
+  static_cast<ContextImpl*>(Frame->Thread->CTX)->SyscallHandler->InvalidateGuestCodeRange(Frame->Thread, GuestRIP, 1);
+}
+
 std::optional<CustomIRResult>
 ContextImpl::AddCustomIREntrypoint(uintptr_t Entrypoint, CustomIREntrypointHandler Handler, void* Creator, void* Data) {
   LOGMAN_THROW_A_FMT(Config.Is64BitMode || !(Entrypoint >> 32), "64-bit Entrypoint in 32-bit mode {:x}", Entrypoint);

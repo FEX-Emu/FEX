@@ -253,18 +253,8 @@ public:
 
   static bool ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP);
 
-  // Wrapper which takes CpuStateFrame instead of InternalThreadState and unique_locks CodeInvalidationMutex
-  // Must be called from owning thread
-  static void ThreadRemoveCodeEntryFromJit(FEXCore::Core::CpuStateFrame* Frame, uint64_t GuestRIP) {
-    auto Thread = Frame->Thread;
-    auto lk = GuardSignalDeferringSection(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
+  static void ThreadRemoveCodeEntryFromJit(FEXCore::Core::CpuStateFrame* Frame, uint64_t GuestRIP);
 
-    // NOTE: Other threads sharing the same CodeBuffer may reference
-    //       invalidated data ranges through their L1/L2 caches. This is
-    //       not currently a problem since FEX does not repurpose the
-    //       invalidated CodeBuffer memory range currently.
-    ThreadRemoveCodeEntry(Thread, GuestRIP);
-  }
 
   void RemoveCustomIREntrypoint(uintptr_t Entrypoint);
 
