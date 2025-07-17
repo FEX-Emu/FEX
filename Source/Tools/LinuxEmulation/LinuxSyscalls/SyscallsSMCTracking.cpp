@@ -163,6 +163,10 @@ void SyscallHandler::MarkGuestExecutableRange(FEXCore::Core::InternalThreadState
   }
 }
 
+void SyscallHandler::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) {
+  FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(Thread, Start, Length);
+}
+
 // Used for AOT
 FEXCore::HLE::AOTIRCacheEntryLookupResult SyscallHandler::LookupAOTIRCacheEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestAddr) {
   auto lk = FEXCore::GuardSignalDeferringSection<std::shared_lock>(VMATracking.Mutex, Thread);
