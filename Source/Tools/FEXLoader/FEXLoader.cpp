@@ -270,6 +270,33 @@ void SetupCompatInput(bool enable) {
 }
 } // namespace FEX::CompatInput
 
+namespace FEX::GCS {
+  void CheckForGCS() {
+#ifndef PR_GET_SHADOW_STACK_STATUS
+#define PR_GET_SHADOW_STACK_STATUS 74
+#endif
+#ifndef PR_LOCK_SHADOW_STACK_STATUS
+#define PR_LOCK_SHADOW_STACK_STATUS 76
+#endif
+#ifndef PR_SHADOW_STACK_ENABLE
+#define PR_SHADOW_STACK_ENABLE (1ULL << 0)
+#endif
+    uint64_t ShadowStackWord {};
+    if (prctl(PR_GET_SHADOW_STACK_STATUS, &ShadowStackWord, 0, 0, 0) == -1) {
+      return;
+    }
+
+    // Kernel supports shadow stack.
+    if (ShadowStackWord & PR_SHADOW_STACK_ENABLE) {
+      // Welp.
+      ERROR_AND_DIE_FMT("Shadow stack is enabled which FEX is incompatible with!");
+    }
+
+    // Disable if we've gotten this far, to ensure guest can't try.
+    prctl(PR_LOCK_SHADOW_STACK_STATUS, ~0ULL, 0, 0, 0);
+  }
+}
+
 /**
  * @brief Get an FD from an environment variable and then unset the environment variable.
  *
@@ -313,6 +340,8 @@ int main(int argc, char** argv, char** const envp) {
     // Early exit if we weren't passed an argument
     return 0;
   }
+
+  FEX::GCS::CheckForGCS();
 
   FEX::Config::LoadConfig(std::move(ArgsLoader), Program.ProgramName, envp, PortableInfo);
 
