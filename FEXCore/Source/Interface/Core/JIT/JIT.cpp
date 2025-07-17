@@ -639,6 +639,7 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::In
     Common.PrintValue = reinterpret_cast<uint64_t>(PrintValue);
     Common.PrintVectorValue = reinterpret_cast<uint64_t>(PrintVectorValue);
     Common.ThreadRemoveCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::ContextImpl::ThreadRemoveCodeEntryFromJit);
+    Common.MonoBackpatcherWrite = reinterpret_cast<uint64_t>(&Context::ContextImpl::MonoBackpatcherWrite);
     Common.CPUIDObj = reinterpret_cast<uint64_t>(&CTX->CPUID);
 
     {

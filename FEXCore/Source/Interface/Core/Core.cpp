@@ -1096,6 +1096,24 @@ void ContextImpl::RemoveCustomIREntrypoint(uintptr_t Entrypoint) {
   HasCustomIRHandlers = !CustomIRHandlers.empty();
 }
 
+void ContextImpl::MonoBackpatcherWrite(FEXCore::Core::CpuStateFrame* Frame, uint8_t Size, uint64_t Address, uint64_t Value) {
+  auto Thread = Frame->Thread;
+  auto CTX = static_cast<ContextImpl*>(Thread->CTX);
+  {
+    auto lk = GuardSignalDeferringSection(CTX->CodeInvalidationMutex, Thread);
+
+    if (Size == 8) {
+      *reinterpret_cast<uint64_t *>(Address) = Value;
+    } else if (Size == 4) {
+      *reinterpret_cast<uint32_t *>(Address) = Value;
+    } else {
+      ERROR_AND_DIE_FMT("Unexpected write size for backpatcher: {}", Size);
+    }
+  }
+
+  CTX->SyscallHandler->InvalidateGuestCodeRange(Thread, Address, Size);
+}
+
 IR::AOTIRCacheEntry* ContextImpl::LoadAOTIRCacheEntry(const fextl::string& filename) {
   auto rv = IRCaptureCache.LoadAOTIRCacheEntry(filename);
   return rv;

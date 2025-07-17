@@ -305,6 +305,7 @@ struct JITPointers {
     uint64_t SyscallHandlerObj {};
     uint64_t SyscallHandlerFunc {};
     uint64_t ExitFunctionLink {};
+    uint64_t MonoBackpatcherWrite {};
 
     // Handles returning/calling ARM64EC code from the JIT, expects the target PC in TMP3
     uint64_t ExitFunctionEC {};

@@ -260,6 +260,10 @@ public:
 
   static void ThreadRemoveCodeEntryFromJit(FEXCore::Core::CpuStateFrame* Frame, uint64_t GuestRIP);
 
+  // This is used as a replacement for the SMC writes in the mono callsite backpatcher that avoids atomic operations
+  // (safe as the invalidation mutex is locked) and manually invalidates the modified range. Allowing SMC to be detected
+  // even if faulting is disabled.
+  static void MonoBackpatcherWrite(FEXCore::Core::CpuStateFrame* Frame, uint8_t Size, uint64_t Address, uint64_t Value);
 
   void RemoveCustomIREntrypoint(uintptr_t Entrypoint);
 
