@@ -2747,7 +2747,7 @@ void OpDispatchBuilder::XADDOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::PopcountOp(OpcodeArgs) {
-  Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = GetSrcSize(Op) >= 4});
+  Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = CTX->HostFeatures.SupportsCSSC || GetSrcSize(Op) >= 4});
   Src = _Popcount(OpSizeFromSrc(Op), Src);
   StoreResult(GPRClass, Op, Src, OpSize::iInvalid);
 
