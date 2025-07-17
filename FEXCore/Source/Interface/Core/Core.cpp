@@ -139,6 +139,11 @@ bool ContextImpl::IsCurrentBlockSingleInst(FEXCore::Core::InternalThreadState* T
   return InlineTail && InlineTail->SingleInst;
 }
 
+uint64_t ContextImpl::GetGuestBlockEntry(FEXCore::Core::InternalThreadState* Thread) {
+  auto [_, InlineTail] = GetFrameBlockInfo(Thread->CurrentFrame);
+  return InlineTail ? InlineTail->RIP : 0;
+}
+
 uint64_t ContextImpl::RestoreRIPFromHostPC(FEXCore::Core::InternalThreadState* Thread, uint64_t HostPC) {
   const auto Frame = Thread->CurrentFrame;
   const uint64_t BlockBegin = Frame->State.InlineJITBlockHeader;
