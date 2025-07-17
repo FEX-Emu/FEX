@@ -19,5 +19,8 @@ target_link_libraries(thunkgenlib PRIVATE OpenSSL::Crypto)
 target_link_libraries(thunkgenlib PRIVATE fmt::fmt)
 target_compile_definitions(thunkgenlib INTERFACE -DCLANG_RESOURCE_DIR="${CLANG_RESOURCE_DIR}")
 
+# Clang's libtooling won't compile with libstdc++'s debug mode
+target_compile_options(thunkgenlib PUBLIC "-U_GLIBCXX_DEBUG")
+
 add_executable(thunkgen main.cpp)
 target_link_libraries(thunkgen PRIVATE thunkgenlib)
