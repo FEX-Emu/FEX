@@ -83,6 +83,7 @@ bool Decoder::CheckRangeExecutable(uint64_t Address, uint64_t Size) {
     auto RangeInfo = CTX->SyscallHandler->QueryGuestExecutableRange(Thread, Address);
     ExecutableRangeBase = RangeInfo.Base;
     ExecutableRangeEnd = RangeInfo.Base + RangeInfo.Size;
+    ExecutableRangeWritable = RangeInfo.Writable;
 
     if (RangeInfo.Size == 0) {
       return false;
@@ -1084,6 +1085,60 @@ void Decoder::BranchTargetInMultiblockRange() {
   }
 }
 
+bool Decoder::IsBranchMonoTailcall(uint64_t NumInstructions) const {
+  // While the mono call backpatching block can easily be detected due it being the only one to contain SMC-faulting
+  // atomics, that can't be said for the tailcall jump backpatcher which has changed several times across versions and
+  // can be partially inlined. To work around this, instead detect the tailcall site itself and force full non-signal-based
+  // SMC detection for that single block.
+  if (!ExecutableRangeWritable) {
+    // We only care about jitted code
+    return false;
+  }
+
+  // See mini-{amd64,x86}.c in the mono codebase, specifically where METHOD_JUMP patches are emitted.
+  if (GetGPROpSize() == IR::OpSize::i32Bit) {
+    // Matches:
+    // LEAVE
+    // <none> / NOP / MOV EAX, EAX / LEA EBP, [EBP+0]
+    // JMP imm32
+    if (DecodeInst->OP != 0xE9 || NumInstructions < 2) {
+      return false;
+    }
+
+    auto PrevInst = std::prev(DecodeInst);
+    if (PrevInst->OP == 0xC9) {
+      return true;
+    }
+
+    if (NumInstructions < 3 || std::prev(PrevInst)->OP != 0xC9) {
+      return false;
+    }
+
+    return PrevInst->OP == 0x90 || (PrevInst->OP == 0x8B && PrevInst->ModRM == 0xC0) ||
+           (PrevInst->OP == 0x8D && PrevInst->ModRM == 0x6D && PrevInst->Src[1].IsLiteral() && PrevInst->Src[1].Literal() == 0);
+  } else {
+    FEXCore::X86Tables::ModRMDecoded ModRM;
+    ModRM.Hex = DecodeInst->ModRM;
+    if (DecodeInst->OP == 0xFF && ModRM.reg == 4 && DecodeInst->Src[0].IsGPR()) {
+      if (DecodeInst->Src[0].Data.GPR.GPR == FEXCore::X86State::REG_RAX) {
+        // Found in versions of mono from 2024 onwards - matches:
+        // REX.W JMP rax
+        return (DecodeInst->Flags & (DecodeFlags::FLAG_REX_PREFIX | DecodeFlags::FLAG_REX_WIDENING | DecodeFlags::FLAG_REX_XGPR_B |
+                                     DecodeFlags::FLAG_REX_XGPR_X | DecodeFlags::FLAG_REX_XGPR_R)) ==
+               (DecodeFlags::FLAG_REX_PREFIX | DecodeFlags::FLAG_REX_WIDENING);
+      } else if (NumInstructions > 1 && DecodeInst->Src[0].Data.GPR.GPR == FEXCore::X86State::REG_R11) {
+        // Found in older versions of mono - match:
+        // MOV r11, imm64
+        // JMP r11
+        auto PrevInst = std::prev(DecodeInst);
+        return PrevInst->OP == 0xBB && PrevInst->Dest.IsGPR() && PrevInst->Dest.Data.GPR.GPR == FEXCore::X86State::REG_R11;
+      }
+    }
+  }
+
+  return false;
+}
+
 bool Decoder::InstCanContinue() const {
   if (DecodeInst->PC + DecodeInst->InstSize == NextBlockStartAddress) {
     return false;
@@ -1344,6 +1399,7 @@ void Decoder::DecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState *Thre
           // If the branch target is within our multiblock range then we can keep going on
           // We don't want to short circuit this since we want to calculate our ranges still
           // NOTE: This will invalidate BlockIt, this is fine as we immediately break from the loop and EraseBlock cannot be true
+          BlockIt->ForceFullSMCDetection = CTX->AreMonoHacksActive() && IsBranchMonoTailcall(BlockIt->NumInstructions);
           BranchTargetInMultiblockRange();
         }
 
