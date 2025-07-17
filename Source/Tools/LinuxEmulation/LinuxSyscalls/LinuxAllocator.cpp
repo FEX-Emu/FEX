@@ -176,7 +176,7 @@ void* MemAllocator32Bit::Mmap(void* addr, size_t length, int prot, int flags, in
   auto AllocateNoHint = [&]() -> void* {
     bool Wrapped = false;
     uint64_t BottomPage = Map32Bit && (LastScanLocation >= LastKeyLocation32Bit) ? LastKeyLocation32Bit : LastScanLocation;
-restart : {
+restart: {
   // Linear range scan
   uint64_t LowerPage = (this->*FindPageRangePtr)(BottomPage, PagesLength);
   if (LowerPage == 0) {
@@ -452,7 +452,7 @@ uint64_t MemAllocator32Bit::Shmat(int shmid, const void* shmaddr, int shmflg, ui
 
     bool Wrapped = false;
     uint64_t BottomPage = LastScanLocation;
-restart : {
+restart: {
   // Linear range scan
   uint64_t LowerPage = (this->*FindPageRangePtr)(BottomPage, PagesLength);
   if (LowerPage == 0) {

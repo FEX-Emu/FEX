@@ -82,7 +82,7 @@ public:
 #endif
   }
 
-  ssize_t Write(std::string_view const Data) {
+  ssize_t Write(const std::string_view Data) {
     return Write(Data.data(), Data.size());
   }
 

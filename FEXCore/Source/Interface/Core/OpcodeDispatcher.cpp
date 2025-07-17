@@ -2024,41 +2024,41 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
   Calculate_ShiftVariable(
     Op, SrcMasked,
     [this, Op, Size, OpSize]() {
-    // Rematerialize loads to avoid crossblock liveness
-    Ref Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
-    Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
+      // Rematerialize loads to avoid crossblock liveness
+      Ref Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+      Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
 
-    // Res = Src >> Shift
-    Ref Res = _Lshr(OpSize, Dest, Src);
-    auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
+      // Res = Src >> Shift
+      Ref Res = _Lshr(OpSize, Dest, Src);
+      auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
-    auto One = _Constant(OpSizeFromSrc(Op), 1);
+      auto One = _Constant(OpSizeFromSrc(Op), 1);
 
-    // Res |= (Dest << (Size - Shift + 1));
-    // Expressed as Res | ((Src << (Size - Shift)) << 1) to get correct
-    // behaviour for Shift without clobbering NZCV. Then observe that modulo
-    // Size, Size - Shift = -Shift so we can use a simple Neg.
-    //
-    // The masking of Lshl means we don't need mask the source, since:
-    //
-    //  -(x & Mask) & Mask = (-x) & Mask
-    Ref NegSrc = _Neg(OpSize, Src);
-    Res = _Orlshl(OpSize, Res, _Lshl(OpSize, Dest, NegSrc), 1);
+      // Res |= (Dest << (Size - Shift + 1));
+      // Expressed as Res | ((Src << (Size - Shift)) << 1) to get correct
+      // behaviour for Shift without clobbering NZCV. Then observe that modulo
+      // Size, Size - Shift = -Shift so we can use a simple Neg.
+      //
+      // The masking of Lshl means we don't need mask the source, since:
+      //
+      //  -(x & Mask) & Mask = (-x) & Mask
+      Ref NegSrc = _Neg(OpSize, Src);
+      Res = _Orlshl(OpSize, Res, _Lshl(OpSize, Dest, NegSrc), 1);
 
-    // Our new CF will be bit (Shift - 1) of the source. this is hoisted up to
-    // avoid the need to copy the source. Again, the Lshr absorbs the masking.
-    auto NewCF = _Lshr(OpSize, Dest, _Sub(OpSize, Src, One));
-    SetCFDirect(NewCF, 0, true);
+      // Our new CF will be bit (Shift - 1) of the source. this is hoisted up to
+      // avoid the need to copy the source. Again, the Lshr absorbs the masking.
+      auto NewCF = _Lshr(OpSize, Dest, _Sub(OpSize, Src, One));
+      SetCFDirect(NewCF, 0, true);
 
-    // Since shift != 0 we can inject the CF
-    Res = _Or(OpSize, Res, _Lshl(OpSize, CF, NegSrc));
+      // Since shift != 0 we can inject the CF
+      Res = _Or(OpSize, Res, _Lshl(OpSize, CF, NegSrc));
 
-    // OF is the top two MSBs XOR'd together
-    // Only when Shift == 1, it is undefined otherwise
-    auto Xor = _XorShift(OpSize, Res, Res, ShiftType::LSR, 1);
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(Xor, Size - 2, true);
+      // OF is the top two MSBs XOR'd together
+      // Only when Shift == 1, it is undefined otherwise
+      auto Xor = _XorShift(OpSize, Res, Res, ShiftType::LSR, 1);
+      SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(Xor, Size - 2, true);
 
-    StoreResult(GPRClass, Op, Res, OpSize::iInvalid);
+      StoreResult(GPRClass, Op, Res, OpSize::iInvalid);
     },
     OpSizeFromSrc(Op) == OpSize::i32Bit ? std::make_optional(&OpDispatchBuilder::ZeroShiftResult) : std::nullopt);
 }
@@ -2243,38 +2243,38 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
   Calculate_ShiftVariable(
     Op, SrcMasked,
     [this, Op, Size, OpSize]() {
-    // Rematerialized to avoid crossblock liveness
-    Ref Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
+      // Rematerialized to avoid crossblock liveness
+      Ref Src = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags, {.AllowUpperGarbage = true});
 
-    // Res = Src << Shift
-    Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
-    Ref Res = _Lshl(OpSize, Dest, Src);
-    auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
+      // Res = Src << Shift
+      Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
+      Ref Res = _Lshl(OpSize, Dest, Src);
+      auto CF = GetRFLAG(FEXCore::X86State::RFLAG_CF_RAW_LOC);
 
-    // Res |= (Dest >> (Size - Shift + 1)), expressed as
-    // Res | ((Dest >> (-Shift)) >> 1), since Size - Shift = -Shift mod
-    // Size. The shift aborbs the masking.
-    auto NegSrc = _Neg(OpSize, Src);
-    Res = _Orlshr(OpSize, Res, _Lshr(OpSize, Dest, NegSrc), 1);
+      // Res |= (Dest >> (Size - Shift + 1)), expressed as
+      // Res | ((Dest >> (-Shift)) >> 1), since Size - Shift = -Shift mod
+      // Size. The shift aborbs the masking.
+      auto NegSrc = _Neg(OpSize, Src);
+      Res = _Orlshr(OpSize, Res, _Lshr(OpSize, Dest, NegSrc), 1);
 
-    // Our new CF will be bit (Shift - 1) of the source
-    auto NewCF = _Lshr(OpSize, Dest, NegSrc);
-    SetCFDirect(NewCF, 0, true);
+      // Our new CF will be bit (Shift - 1) of the source
+      auto NewCF = _Lshr(OpSize, Dest, NegSrc);
+      SetCFDirect(NewCF, 0, true);
 
-    // Since Shift != 0 we can inject the CF. Shift absorbs the masking.
-    Ref CFShl = _Sub(OpSize, Src, _InlineConstant(1));
-    auto TmpCF = _Lshl(OpSize, CF, CFShl);
-    Res = _Or(OpSize, Res, TmpCF);
+      // Since Shift != 0 we can inject the CF. Shift absorbs the masking.
+      Ref CFShl = _Sub(OpSize, Src, _InlineConstant(1));
+      auto TmpCF = _Lshl(OpSize, CF, CFShl);
+      Res = _Or(OpSize, Res, TmpCF);
 
-    // OF is the top two MSBs XOR'd together
-    // Only when Shift == 1, it is undefined otherwise
-    //
-    // Note that NewCF has garbage in the upper bits, but we ignore them here
-    // and mask as part of the set after.
-    auto NewOF = _XorShift(OpSize, Res, NewCF, ShiftType::LSL, Size - 1);
-    SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, Size - 1, true);
+      // OF is the top two MSBs XOR'd together
+      // Only when Shift == 1, it is undefined otherwise
+      //
+      // Note that NewCF has garbage in the upper bits, but we ignore them here
+      // and mask as part of the set after.
+      auto NewOF = _XorShift(OpSize, Res, NewCF, ShiftType::LSL, Size - 1);
+      SetRFLAG<FEXCore::X86State::RFLAG_OF_RAW_LOC>(NewOF, Size - 1, true);
 
-    StoreResult(GPRClass, Op, Res, OpSize::iInvalid);
+      StoreResult(GPRClass, Op, Res, OpSize::iInvalid);
     },
     OpSizeFromSrc(Op) == OpSize::i32Bit ? std::make_optional(&OpDispatchBuilder::ZeroShiftResult) : std::nullopt);
 }
@@ -4664,8 +4664,7 @@ void OpDispatchBuilder::CLWBOrTPause(OpcodeArgs) {
   if (DestIsMem(Op)) {
     Ref DestMem = MakeSegmentAddress(Op, Op->Dest);
     _CacheLineClean(DestMem);
-  }
-  else {
+  } else {
     if (!CTX->HostFeatures.SupportsWFXT) {
       UnimplementedOp(Op);
     } else {
@@ -4721,8 +4720,7 @@ void OpDispatchBuilder::UMonitorOrCLRSSBSY(OpcodeArgs) {
   if (DestIsMem(Op) || !CTX->HostFeatures.SupportsWFXT) {
     // CLRSSBSY
     UnimplementedOp(Op);
-  }
-  else {
+  } else {
     // Explicit NOP implementation of umonitor.
   }
 }
@@ -4730,8 +4728,7 @@ void OpDispatchBuilder::UMonitorOrCLRSSBSY(OpcodeArgs) {
 void OpDispatchBuilder::UMWaitOp(OpcodeArgs) {
   if (DestIsMem(Op) || !CTX->HostFeatures.SupportsWFXT) {
     UnimplementedOp(Op);
-  }
-  else {
+  } else {
     // Explicit NOP implementation of umwait.
     // Still zero flags.
     //

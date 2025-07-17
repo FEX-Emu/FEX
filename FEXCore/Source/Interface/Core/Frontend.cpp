@@ -1331,7 +1331,8 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
           InstStream -= PCOffset;
           EraseBlock = true;
         } else {
-          LogMan::Msg::EFmt("{} instruction in entry block: {:X}", BlockIt->BlockStatus == DecodedBlockStatus::INVALID_INST ? "Invalid" : "NoExec", OpAddress);
+          LogMan::Msg::EFmt("{} instruction in entry block: {:X}",
+                            BlockIt->BlockStatus == DecodedBlockStatus::INVALID_INST ? "Invalid" : "NoExec", OpAddress);
         }
         break;
       }

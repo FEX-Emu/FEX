@@ -54,23 +54,19 @@ struct NodeID final {
   [[nodiscard]] friend constexpr bool operator==(NodeID, NodeID) noexcept = default;
 
   [[nodiscard]]
-  friend constexpr bool
-  operator<(NodeID lhs, NodeID rhs) noexcept {
+  friend constexpr bool operator<(NodeID lhs, NodeID rhs) noexcept {
     return lhs.Value < rhs.Value;
   }
   [[nodiscard]]
-  friend constexpr bool
-  operator>(NodeID lhs, NodeID rhs) noexcept {
+  friend constexpr bool operator>(NodeID lhs, NodeID rhs) noexcept {
     return operator<(rhs, lhs);
   }
   [[nodiscard]]
-  friend constexpr bool
-  operator<=(NodeID lhs, NodeID rhs) noexcept {
+  friend constexpr bool operator<=(NodeID lhs, NodeID rhs) noexcept {
     return !operator>(lhs, rhs);
   }
   [[nodiscard]]
-  friend constexpr bool
-  operator>=(NodeID lhs, NodeID rhs) noexcept {
+  friend constexpr bool operator>=(NodeID lhs, NodeID rhs) noexcept {
     return !operator<(lhs, rhs);
   }
 
@@ -183,8 +179,7 @@ struct FEX_PACKED NodeWrapperBase final {
   }
 
   [[nodiscard]]
-  friend constexpr bool
-  operator==(const NodeWrapperBase<Type>&, const NodeWrapperBase<Type>&) = default;
+  friend constexpr bool operator==(const NodeWrapperBase<Type>&, const NodeWrapperBase<Type>&) = default;
 
   [[nodiscard]]
   static NodeWrapperBase<Type> FromImmediate(uint32_t Immediate) {
@@ -423,8 +418,7 @@ struct FEX_PACKED RegisterClassType final {
     return Val;
   }
   [[nodiscard]]
-  friend constexpr bool
-  operator==(const RegisterClassType&, const RegisterClassType&) = default;
+  friend constexpr bool operator==(const RegisterClassType&, const RegisterClassType&) = default;
 };
 
 struct FEX_PACKED CondClassType final {
@@ -433,8 +427,7 @@ struct FEX_PACKED CondClassType final {
     return Val;
   }
   [[nodiscard]]
-  friend constexpr bool
-  operator==(const CondClassType&, const CondClassType&) = default;
+  friend constexpr bool operator==(const CondClassType&, const CondClassType&) = default;
 };
 
 struct FEX_PACKED MemOffsetType final {
@@ -443,8 +436,7 @@ struct FEX_PACKED MemOffsetType final {
     return Val;
   }
   [[nodiscard]]
-  friend constexpr bool
-  operator==(const MemOffsetType&, const MemOffsetType&) = default;
+  friend constexpr bool operator==(const MemOffsetType&, const MemOffsetType&) = default;
 };
 
 struct FEX_PACKED TypeDefinition final {
@@ -479,8 +471,7 @@ struct FEX_PACKED TypeDefinition final {
   }
 
   [[nodiscard]]
-  friend constexpr bool
-  operator==(const TypeDefinition&, const TypeDefinition&) = default;
+  friend constexpr bool operator==(const TypeDefinition&, const TypeDefinition&) = default;
 };
 
 static_assert(std::is_trivially_copyable_v<TypeDefinition>);
@@ -493,8 +484,7 @@ struct FEX_PACKED FenceType final {
     return Val;
   }
   [[nodiscard]]
-  friend constexpr bool
-  operator==(const FenceType&, const FenceType&) = default;
+  friend constexpr bool operator==(const FenceType&, const FenceType&) = default;
 };
 
 struct FEX_PACKED RoundType final {
@@ -503,8 +493,7 @@ struct FEX_PACKED RoundType final {
     return Val;
   }
   [[nodiscard]]
-  friend constexpr bool
-  operator==(const RoundType&, const RoundType&) = default;
+  friend constexpr bool operator==(const RoundType&, const RoundType&) = default;
 };
 
 class NodeIterator;
@@ -537,14 +526,12 @@ public:
     , Node {Ptr} {}
 
   [[nodiscard]]
-  bool
-  operator==(const NodeIterator& rhs) const {
+  bool operator==(const NodeIterator& rhs) const {
     return Node.NodeOffset == rhs.Node.NodeOffset;
   }
 
   [[nodiscard]]
-  bool
-  operator!=(const NodeIterator& rhs) const {
+  bool operator!=(const NodeIterator& rhs) const {
     return !operator==(rhs);
   }
 
@@ -561,15 +548,13 @@ public:
   }
 
   [[nodiscard]]
-  value_type
-  operator*() {
+  value_type operator*() {
     OrderedNode* RealNode = Node.GetNode(BaseList);
     return {RealNode, RealNode->Op(IRList)};
   }
 
   [[nodiscard]]
-  value_type
-  operator()() {
+  value_type operator()() {
     OrderedNode* RealNode = Node.GetNode(BaseList);
     return {RealNode, RealNode->Op(IRList)};
   }

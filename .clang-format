@@ -32,7 +32,7 @@ AttributeMacros:
 BinPackArguments: true
 BinPackParameters: true
 BitFieldColonSpacing: Both
-BreakAfterAttributes: Always # clang 16 required
+BreakAfterAttributes: Leave
 BreakBeforeBraces: Attach
 BreakBeforeBinaryOperators: None
 BreakBeforeInlineASMColon: OnlyMultiline # clang 16 required
@@ -60,7 +60,7 @@ IndentRequires: false
 IndentWidth: 2
 InsertBraces: true
 KeepEmptyLinesAtTheStartOfBlocks: true
-LambdaBodyIndentation: OuterScope
+LambdaBodyIndentation: Signature
 LineEnding: LF # clang 16 required
 MaxEmptyLinesToKeep: 2
 NamespaceIndentation: Inner

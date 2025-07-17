@@ -985,21 +985,21 @@ void ContextImpl::AddThunkTrampolineIRHandler(uintptr_t Entrypoint, uintptr_t Gu
   auto Result = AddCustomIREntrypoint(
     Entrypoint,
     [this, GuestThunkEntrypoint](uintptr_t Entrypoint, FEXCore::IR::IREmitter* emit) {
-    auto IRHeader = emit->_IRHeader(emit->Invalid(), Entrypoint, 0, 0, 0, 0);
-    auto Block = emit->CreateCodeNode(true, 0);
-    IRHeader.first->Blocks = emit->WrapNode(Block);
-    emit->SetCurrentCodeBlock(Block);
+      auto IRHeader = emit->_IRHeader(emit->Invalid(), Entrypoint, 0, 0, 0, 0);
+      auto Block = emit->CreateCodeNode(true, 0);
+      IRHeader.first->Blocks = emit->WrapNode(Block);
+      emit->SetCurrentCodeBlock(Block);
 
-    const auto GPRSize = GetGPROpSize();
+      const auto GPRSize = GetGPROpSize();
 
-    if (GPRSize == IR::OpSize::i64Bit) {
-      IR::Ref R = emit->_StoreRegister(emit->_Constant(Entrypoint), GPRSize);
-      R->Reg = IR::PhysicalRegister(IR::GPRFixedClass, X86State::REG_R11).Raw;
-    } else {
-      emit->_StoreContext(GPRSize, IR::FPRClass, emit->_VCastFromGPR(IR::OpSize::i64Bit, IR::OpSize::i64Bit, emit->_Constant(Entrypoint)),
-                          offsetof(Core::CPUState, mm[0][0]));
-    }
-    emit->_ExitFunction(IR::OpSize::i64Bit, emit->_Constant(GuestThunkEntrypoint));
+      if (GPRSize == IR::OpSize::i64Bit) {
+        IR::Ref R = emit->_StoreRegister(emit->_Constant(Entrypoint), GPRSize);
+        R->Reg = IR::PhysicalRegister(IR::GPRFixedClass, X86State::REG_R11).Raw;
+      } else {
+        emit->_StoreContext(GPRSize, IR::FPRClass, emit->_VCastFromGPR(IR::OpSize::i64Bit, IR::OpSize::i64Bit, emit->_Constant(Entrypoint)),
+                            offsetof(Core::CPUState, mm[0][0]));
+      }
+      emit->_ExitFunction(IR::OpSize::i64Bit, emit->_Constant(GuestThunkEntrypoint));
     },
     ThunkHandler, (void*)GuestThunkEntrypoint);
 
