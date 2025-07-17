@@ -572,6 +572,10 @@ public:
     InvalidationTracker->ReprotectRWXIntervals(Start, Length);
   }
 
+  void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) override {
+    InvalidationTracker->InvalidateAlignedInterval(Start, Length, false);
+  }
+
   void MarkOvercommitRange(uint64_t Start, uint64_t Length) override {
     OvercommitTracker->MarkRange(Start, Length);
   }
