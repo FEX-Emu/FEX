@@ -1,0 +1,50 @@
+{
+  "Features": {
+    "Bitness": 64,
+    "EnabledHostFeatures": [
+      "FLAGM",
+      "FLAGM2",
+      "CSSC"
+    ],
+    "DisabledHostFeatures": [
+      "SVE128",
+      "SVE256",
+      "RPRES",
+      "AFP"
+    ]
+  },
+  "Instructions": {
+    "popcnt ax, bx": {
+      "ExpectedInstructionCount": 6,
+      "Comment": "0xf3 0x0f 0xb8",
+      "ExpectedArm64ASM": [
+        "uxth w20, w6",
+        "cnt w20, w20",
+        "bfxil x4, x20, #0, #16",
+        "mov w27, #0x0",
+        "cmp w20, #0x0 (0)",
+        "mov w26, #0x1"
+      ]
+    },
+    "popcnt eax, ebx": {
+      "ExpectedInstructionCount": 4,
+      "Comment": "0xf3 0x0f 0xb8",
+      "ExpectedArm64ASM": [
+        "cnt w4, w6",
+        "mov w27, #0x0",
+        "cmp w4, #0x0 (0)",
+        "mov w26, #0x1"
+      ]
+    },
+    "popcnt rax, rbx": {
+      "ExpectedInstructionCount": 4,
+      "Comment": "0xf3 0x0f 0xb8",
+      "ExpectedArm64ASM": [
+        "cnt x4, x6",
+        "mov w27, #0x0",
+        "cmp w4, #0x0 (0)",
+        "mov w26, #0x1"
+      ]
+    }
+  }
+}
