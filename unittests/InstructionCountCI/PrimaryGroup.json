@@ -2549,10 +2549,10 @@
       "Comment": "GROUP2 0xf6 /6",
       "ExpectedArm64ASM": [
         "uxtb w20, w6",
-        "uxth w21, w4",
-        "udiv w22, w21, w20",
-        "msub w24, w22, w20, w21",
-        "bfi x22, x24, #8, #8",
+        "uxth w23, w4",
+        "udiv w22, w23, w20",
+        "msub w21, w22, w20, w23",
+        "bfi x22, x21, #8, #8",
         "bfxil x4, x22, #0, #16"
       ]
     },
@@ -2561,11 +2561,11 @@
       "Comment": "GROUP2 0xf6 /7",
       "ExpectedArm64ASM": [
         "uxtb w20, w6",
-        "sxth x21, w4",
+        "sxth x23, w4",
         "sxtb x20, w20",
-        "sdiv x22, x21, x20",
-        "msub x24, x22, x20, x21",
-        "bfi x22, x24, #8, #8",
+        "sdiv x22, x23, x20",
+        "msub x21, x22, x20, x23",
+        "bfi x22, x21, #8, #8",
         "bfxil x4, x22, #0, #16"
       ]
     },
@@ -2760,9 +2760,9 @@
         "uxth w0, w4",
         "bfi w0, w5, #16, #16",
         "udiv w22, w0, w20",
-        "msub w24, w22, w20, w0",
+        "msub w21, w22, w20, w0",
         "bfxil x4, x22, #0, #16",
-        "bfxil x5, x24, #0, #16"
+        "bfxil x5, x21, #0, #16"
       ]
     },
     "div ebx": {
@@ -2808,9 +2808,9 @@
         "bfi w0, w5, #16, #16",
         "sxth w1, w20",
         "sdiv w22, w0, w1",
-        "msub w24, w22, w1, w0",
+        "msub w21, w22, w1, w0",
         "bfxil x4, x22, #0, #16",
-        "bfxil x5, x24, #0, #16"
+        "bfxil x5, x21, #0, #16"
       ]
     },
     "idiv ebx": {
@@ -2822,9 +2822,9 @@
         "bfi x0, x5, #32, #32",
         "sxtw x1, w20",
         "sdiv x22, x0, x1",
-        "msub x24, x22, x1, x0",
+        "msub x21, x22, x1, x0",
         "mov w4, w22",
-        "mov w5, w24"
+        "mov w5, w21"
       ]
     },
     "idiv rbx": {

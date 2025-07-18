@@ -166,9 +166,13 @@ public:
     auto InlineConst = _InlineConstant(Bit);
     return _CondJump(Src, InlineConst, InvalidNode, InvalidNode, {Set ? COND_TSTNZ : COND_TSTZ}, OpSize::iInvalid, false);
   }
-  IRPair<IROp_ExitFunction> ExitFunction(Ref NewRIP) {
+  IRPair<IROp_ExitFunction> ExitFunction(Ref NewRIP, BranchHint Hint = BranchHint::None) {
     FlushRegisterCache();
-    return _ExitFunction(GetOpSize(NewRIP), NewRIP);
+    return _ExitFunction(GetOpSize(NewRIP), NewRIP, Hint, InvalidNode, InvalidNode);
+  }
+  IRPair<IROp_ExitFunction> ExitFunction(Ref NewRIP, BranchHint Hint, Ref CallReturnAddress, Ref CallReturnBlock) {
+    FlushRegisterCache();
+    return _ExitFunction(GetOpSize(NewRIP), NewRIP, Hint, CallReturnAddress, CallReturnBlock);
   }
   IRPair<IROp_Break> Break(BreakDefinition Reason) {
     FlushRegisterCache();
@@ -1319,6 +1323,7 @@ private:
   struct JumpTargetInfo {
     Ref BlockEntry;
     bool HaveEmitted;
+    bool IsEntryPoint;
   };
 
   FEXCore::Context::ContextImpl* CTX {};

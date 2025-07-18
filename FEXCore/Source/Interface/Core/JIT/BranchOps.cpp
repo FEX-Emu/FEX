@@ -58,30 +58,104 @@ DEF_OP(ExitFunction) {
   if (IsInlineConstant(Op->NewRIP, &NewRIP) || IsInlineEntrypointOffset(Op->NewRIP, &NewRIP)) {
 #ifdef _M_ARM_64EC
     if (NewRIP < EC_CODE_BITMAP_MAX_ADDRESS && RtlIsEcCode(NewRIP)) {
+      str(REG_CALLRET_SP, STATE_PTR(CpuStateFrame, State.callret_sp));
       add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, StaticRegisters[X86State::REG_RSP], 0);
       LoadConstant(ARMEmitter::Size::i64Bit, EC_CALL_CHECKER_PC_REG, NewRIP);
       ldr(TMP2, STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionEC));
       br(TMP2);
     } else {
 #endif
-      // Align to 16 byte to allow atomic patching of the following 16 byte
-      // of code (excluding the RIP data) on platforms that support LSE2
-      Align16B();
+      // This code will be backpatched by Arm64JITCore_ExitFunctionLink, below is an enumeration of all the possible cases.
+      //
+      // Call with known return block - unlinked
+      // 00: adr TMP1, 0xC
+      // 04: stp RetReg, TMP1, [SpReg, -0x10]!
+      // 08: bl JmpThunk00
+      // JmpThunk00:
+      // 00: b 0x8
+      // 04: br TMP1
+      // 08: ldr TMP1, <Shared exit linker>
+      // 0c: blr TMP1
+      // 10: HostCode
+      // 18: GuestRIP
+      // 20: CallerOffset
+      //
+      //
+      // Call with known return block - linked in range
+      // 00: adr TMP1, 0xC
+      // 04: stp RetReg, TMP1, [SpReg, -0x10]!
+      // 08: bl HostCode                                        - MODIFIED
+      //
+      //
+      // Call with known return block - linked out of range
+      // 00: adr TMP1, 0xC
+      // 04: stp RetReg, TMP1, [SpReg, -0x10]!
+      // 08: bl JmpThunk00
+      // JmpThunk00:
+      // 00: ldr TMP1, 0x10                                     - MODIFIED 2nd
+      // 04: br TMP1
+      // 08: ldr TMP1, <Shared exit linker>
+      // 0c: blr TMP1
+      // 10: HostCode                                           - MODIFIED 1st
+      // 18: GuestRIP
+      // 20: CallerOffset
+      //
+      //
+      // Jump - unlinked
+      // 00: b JmpThunk00
+      // JmpThunk00:
+      // 00: b 0x8
+      // 04: br TMP1
+      // 08: ldr TMP1, <Shared exit linker>
+      // 0c: blr TMP1
+      // 10: HostCode
+      // 18: GuestRIP
+      // 20: CallerOffset
+      //
+      //
+      // Jump - linked in range
+      // 00: b HostCode                                         - MODIFIED
+      //
+      //
+      // Jump - linked out of range
+      // 00: b JmpThunk00
+      // JmpThunk00:
+      // 00: ldr TMP1, 0x10                                     - MODIFIED 2nd
+      // 04: br TMP1
+      // 08: ldr TMP1, <Shared exit linker>
+      // 0c: blr TMP1
+      // 10: HostCode                                           - MODIFIED 1st
+      // 18: GuestRIP
+      // 20: CallerOffset
 
       ARMEmitter::ForwardLabel l_BranchHost;
-      ldr(TMP1, &l_BranchHost);
-      blr(TMP1);
+      ARMEmitter::ForwardLabel l_CallReturn;
+      if (Op->Hint == IR::BranchHint::Call) {
+        if (!Op->CallReturnBlock.IsInvalid()) {
+          auto CallReturnAddressReg = GetReg(Op->CallReturnAddress).X();
+          PendingCallReturnTargetLabel = &CallReturnTargets.try_emplace(Op->CallReturnBlock.ID()).first->second;
+          adr(TMP1, &l_CallReturn);
+          stp<ARMEmitter::IndexType::PRE>(CallReturnAddressReg, TMP1, REG_CALLRET_SP, -0x10);
+        } else {
+          stp<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::zr, ARMEmitter::XReg::zr, REG_CALLRET_SP, -0x10);
+        }
+      }
 
-      Bind(&l_BranchHost);
-      dc64(ThreadState->CurrentFrame->Pointers.Common.ExitFunctionLinker);
-      dc64(NewRIP);
+      EmitLinkedBranch(NewRIP, Op->Hint == IR::BranchHint::Call);
+      Bind(&l_CallReturn);
 #ifdef _M_ARM_64EC
     }
 #endif
   } else {
-
-    ARMEmitter::ForwardLabel FullLookup;
+    ARMEmitter::ForwardLabel SkipFullLookup;
     auto RipReg = GetReg(Op->NewRIP);
+
+    if (Op->Hint == IR::BranchHint::Return) {
+      // First try to pop from the call-ret stack, otherwise follow the normal path (but ending in a ret)
+      ldp<ARMEmitter::IndexType::POST>(TMP1, TMP2, REG_CALLRET_SP, 0x10);
+      sub(TMP1, TMP1, RipReg.X());
+      cbz(ARMEmitter::Size::i64Bit, TMP1, &SkipFullLookup);
+    }
 
     // L1 Cache
     ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L1Pointer));
@@ -93,16 +167,32 @@ DEF_OP(ExitFunction) {
     ubfiz(ARMEmitter::Size::i64Bit, TMP4, RipReg, 4, 20);
     add(TMP1, TMP1, TMP4);
 
-    // Note: sub+cbnz used over cmp+br to preserve flags.
     ldp<ARMEmitter::IndexType::OFFSET>(TMP2, TMP1, TMP1, 0);
-    sub(TMP1, TMP1, RipReg.X());
-    cbnz(ARMEmitter::Size::i64Bit, TMP1, &FullLookup);
-    br(TMP2);
 
-    Bind(&FullLookup);
-    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.DispatcherLoopTop));
+    // Note: sub+cbnz used over cmp+br to preserve flags.
+    sub(TMP1, TMP1, RipReg.X());
+    cbz(ARMEmitter::Size::i64Bit, TMP1, &SkipFullLookup);
+    ldr(TMP2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.DispatcherLoopTop));
     str(RipReg.X(), STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip));
-    br(TMP1);
+
+    Bind(&SkipFullLookup);
+    if (Op->Hint == IR::BranchHint::Call) {
+      ARMEmitter::ForwardLabel l_CallReturn;
+      if (!Op->CallReturnBlock.IsInvalid()) {
+        auto CallReturnAddressReg = GetReg(Op->CallReturnAddress).X();
+        PendingCallReturnTargetLabel = &CallReturnTargets.try_emplace(Op->CallReturnBlock.ID()).first->second;
+        adr(TMP1, &l_CallReturn);
+        stp<ARMEmitter::IndexType::PRE>(CallReturnAddressReg, TMP1, REG_CALLRET_SP, -0x10);
+      } else {
+        stp<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::zr, ARMEmitter::XReg::zr, REG_CALLRET_SP, -0x10);
+      }
+      blr(TMP2);
+      Bind(&l_CallReturn);
+    } else if (Op->Hint == IR::BranchHint::Return) {
+      ret(TMP2);
+    } else {
+      br(TMP2);
+    }
   }
 }
 

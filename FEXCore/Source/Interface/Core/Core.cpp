@@ -516,6 +516,7 @@ void ContextImpl::ClearCodeCache(FEXCore::Core::InternalThreadState* Thread, boo
     // Clear L1+L2 cache of this thread, and clear L3 cache across any threads using it
     Thread->LookupCache->ClearCache();
   }
+  Allocator::VirtualDontNeed(Thread->CallRetStackBase, FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE);
 }
 
 static void IRDumper(FEXCore::Core::InternalThreadState* Thread, IR::IREmitter* IREmitter, uint64_t GuestRIP) {
@@ -918,12 +919,18 @@ static void InvalidateGuestThreadCodeRange(FEXCore::Core::InternalThreadState* T
 
   auto lower = Thread->LookupCache->CodePages.lower_bound(Start >> 12);
   auto upper = Thread->LookupCache->CodePages.upper_bound((Start + Length - 1) >> 12);
-
+  bool InvalidatedAnyEntries = false;
   for (auto it = lower; it != upper; it++) {
     for (auto Address : it->second) {
+      InvalidatedAnyEntries = true;
       ContextImpl::ThreadRemoveCodeEntry(Thread, Address);
     }
     it->second.clear();
+  }
+
+  if (InvalidatedAnyEntries) {
+    // This may cause access violations in the thread on Windows as zeroing is not atomic, this is handled by the frontend
+    Allocator::VirtualDontNeed(Thread->CallRetStackBase, FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE);
   }
 }
 
@@ -999,7 +1006,7 @@ void ContextImpl::AddThunkTrampolineIRHandler(uintptr_t Entrypoint, uintptr_t Gu
         emit->_StoreContext(GPRSize, IR::FPRClass, emit->_VCastFromGPR(IR::OpSize::i64Bit, IR::OpSize::i64Bit, emit->_Constant(Entrypoint)),
                             offsetof(Core::CPUState, mm[0][0]));
       }
-      emit->_ExitFunction(IR::OpSize::i64Bit, emit->_Constant(GuestThunkEntrypoint));
+      emit->_ExitFunction(IR::OpSize::i64Bit, emit->_Constant(GuestThunkEntrypoint), IR::BranchHint::None, emit->Invalid(), emit->Invalid());
     },
     ThunkHandler, (void*)GuestThunkEntrypoint);
 
