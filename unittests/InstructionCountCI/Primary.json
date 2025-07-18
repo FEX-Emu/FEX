@@ -2803,51 +2803,45 @@
         "bfi x4, x20, #8, #8"
       ]
     },
-    "db 0x48, 0xa1; dq 0x00000000e0000008": {
+    "mov rax, [qword 0xe0000008]": {
       "ExpectedInstructionCount": 3,
       "Comment": [
-        "mov rax, [0xe0000008]",
         "0xa1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x400",
-        "movk w20, #0xcb, lsl #16",
+        "mov w20, #0x8",
+        "movk w20, #0xe000, lsl #16",
         "ldr x4, [x20]"
       ]
     },
-    "db 0x67, 0xa1; dd 0xe0000000": {
-      "ExpectedInstructionCount": 3,
+    "mov eax, [qword 0xe0000000]": {
+      "ExpectedInstructionCount": 2,
       "Comment": [
-        "mov eax, [0xe0000000]",
         "0xa1"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x400",
-        "movk w20, #0xcb, lsl #16",
+        "mov w20, #0xe0000000",
         "ldr w4, [x20]"
       ]
     },
-    "db 0x48, 0xa3; dq 0x00000000e0000008": {
+    "mov [qword 0xe0000008], rax": {
       "ExpectedInstructionCount": 3,
       "Comment": [
-        "mov [0xe0000008], rax",
         "0xa3"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x400",
-        "movk w20, #0xcb, lsl #16",
+        "mov w20, #0x8",
+        "movk w20, #0xe000, lsl #16",
         "str x4, [x20]"
       ]
     },
-    "db 0x67, 0xa3; dd 0xe0000000": {
-      "ExpectedInstructionCount": 3,
+    "mov [qword 0xe0000000], eax": {
+      "ExpectedInstructionCount": 2,
       "Comment": [
-        "mov [0xe0000000], eax",
         "0xa3"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0x400",
-        "movk w20, #0xcb, lsl #16",
+        "mov w20, #0xe0000000",
         "str w4, [x20]"
       ]
     },
