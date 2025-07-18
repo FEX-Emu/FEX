@@ -516,6 +516,7 @@ void Dispatcher::EmitDispatcher() {
 
     // load static regs
     FillStaticRegs();
+    stp<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::zr, ARMEmitter::XReg::zr, REG_CALLRET_SP, -0x10);
 
     // Now go back to the regular dispatcher loop
     b(&LoopTop);
