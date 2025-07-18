@@ -337,6 +337,8 @@ fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_proxy* proxy, guest
       // E.g. xdg_toplevel::wm_capabilities
       FEX::HLE::FinalizeHostTrampolineForGuestFunction((FEX::HLE::HostToGuestTrampolinePtr*)callback,
                                                        (void*)CallGuestPtrWithWaylandArray<void, void*, wl_proxy*>);
+    } else if (signature == "f") {
+      WaylandFinalizeHostTrampolineForGuestListener<'f'>(callback);
     } else if (signature == "hu") {
       // E.g. zwp_linux_dmabuf_feedback_v1::format_table
       WaylandFinalizeHostTrampolineForGuestListener<'h', 'u'>(callback);
@@ -358,6 +360,8 @@ fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_proxy* proxy, guest
       // E.g. xdg_toplevel::configure
       FEX::HLE::FinalizeHostTrampolineForGuestFunction((FEX::HLE::HostToGuestTrampolinePtr*)callback,
                                                        (void*)CallGuestPtrWithWaylandArray<void, void*, wl_proxy*, int32_t, int32_t>);
+    } else if (signature == "iiii") {
+      WaylandFinalizeHostTrampolineForGuestListener<'i', 'i', 'i', 'i'>(callback);
     } else if (signature == "iiiiissi") {
       // E.g. wl_output_listener::geometry
       WaylandFinalizeHostTrampolineForGuestListener<'i', 'i', 'i', 'i', 'i', 's', 's', 'i'>(callback);
@@ -402,6 +406,8 @@ fexfn_impl_libwayland_client_wl_proxy_add_listener(struct wl_proxy* proxy, guest
     } else if (signature == "uoffo") {
       // E.g. wl_data_device_listener::enter
       WaylandFinalizeHostTrampolineForGuestListener<'u', 'o', 'f', 'f', 'o'>(callback);
+    } else if (signature == "uoo") {
+      WaylandFinalizeHostTrampolineForGuestListener<'u', 'o', 'o'>(callback);
     } else if (signature == "us") {
       WaylandFinalizeHostTrampolineForGuestListener<'u', 's'>(callback);
     } else if (signature == "uss") {
