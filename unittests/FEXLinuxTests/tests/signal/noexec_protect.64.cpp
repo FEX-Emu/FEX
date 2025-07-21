@@ -10,8 +10,12 @@ bool Caught = false;
 static jmp_buf LongJump {};
 
 static void SIGSEGV_Handler(int signal, siginfo_t* siginfo, void* context) {
+  ucontext_t* _context = (ucontext_t*)context;
   // Needs to be an access error.
   REQUIRE(siginfo->si_code == SEGV_ACCERR);
+
+  // Page fault
+  REQUIRE(_context->uc_mcontext.gregs[REG_TRAPNO] == 14);
   Caught = true;
   longjmp(LongJump, 1);
 }
