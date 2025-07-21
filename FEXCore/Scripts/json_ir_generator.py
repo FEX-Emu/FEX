@@ -596,12 +596,12 @@ def print_ir_arg_printer():
 
 def print_validation(op):
     if len(op.EmitValidation) != 0:
-        output_file.write("\t\t#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED\n")
+        output_file.write("#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED\n")
 
         for Validation in op.EmitValidation:
             Sanitized = Validation.replace("\"", "\\\"")
-            output_file.write("\tLOGMAN_THROW_A_FMT({}, \"{}\");\n".format(Validation, Sanitized))
-        output_file.write("\t\t#endif\n")
+            output_file.write("\t\tLOGMAN_THROW_A_FMT({}, \"{}\");\n".format(Validation, Sanitized))
+        output_file.write("#endif\n")
 
 # Print out IR allocator helpers
 def print_ir_allocator_helpers():
