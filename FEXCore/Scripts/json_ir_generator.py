@@ -595,7 +595,7 @@ def print_ir_arg_printer():
     output_file.write("#endif\n")
 
 def print_validation(op):
-    if op.EmitValidation != None:
+    if len(op.EmitValidation) != 0:
         output_file.write("\t\t#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED\n")
 
         for Validation in op.EmitValidation:
