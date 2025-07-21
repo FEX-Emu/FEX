@@ -939,16 +939,8 @@ void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
       StartNewBlock();
       ExitFunction(GetRelocatedPC(Op, TargetOffset));
     }
-    return;
-  }
-
-  // Fallback
-  {
-    auto RIPTargetConst = GetRelocatedPC(Op);
-    auto NewRIP = _Add(OpSize::i64Bit, _Constant(TargetOffset), RIPTargetConst);
-
-    // Store the new RIP
-    ExitFunction(NewRIP);
+  } else {
+    ExitFunction(GetRelocatedPC(Op, TargetOffset));
   }
 }
 
