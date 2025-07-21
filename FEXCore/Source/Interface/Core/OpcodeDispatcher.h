@@ -1514,12 +1514,14 @@ private:
 
   Ref GetRelocatedPC(const FEXCore::X86Tables::DecodedOp& Op, int64_t Offset = 0);
 
-  bool IsOperandMem(const X86Tables::DecodedOperand& Operand, bool Load) {
+  [[nodiscard]]
+  static bool IsOperandMem(const X86Tables::DecodedOperand& Operand, bool Load) {
     // Literals are immediates as sources but memory addresses as destinations.
     return !(Load && Operand.IsLiteral()) && !Operand.IsGPR();
   }
 
-  bool IsNonTSOReg(MemoryAccessType Access, uint8_t Reg) {
+  [[nodiscard]]
+  static bool IsNonTSOReg(MemoryAccessType Access, uint8_t Reg) {
     return Access == MemoryAccessType::DEFAULT && Reg == X86State::REG_RSP;
   }
 
@@ -1809,7 +1811,8 @@ private:
     InvalidateReg(Core::CPUState::AF_AS_GREG);
   }
 
-  CondClassType CondForNZCVBit(unsigned BitOffset, bool Invert) {
+  [[nodiscard]]
+  static CondClassType CondForNZCVBit(unsigned BitOffset, bool Invert) {
     switch (BitOffset) {
     case X86State::RFLAG_SF_RAW_LOC: return {Invert ? COND_PL : COND_MI};
     case X86State::RFLAG_ZF_RAW_LOC: return {Invert ? COND_NEQ : COND_EQ};
@@ -1835,7 +1838,8 @@ private:
   static const int AVXHigh0Index = 48;
   static const int AVXHigh15Index = 63;
 
-  uint32_t CacheIndexToContextOffset(int Index) {
+  [[nodiscard]]
+  static uint32_t CacheIndexToContextOffset(int Index) {
     switch (Index) {
     case MM0Index ... MM7Index: return offsetof(FEXCore::Core::CPUState, mm[Index - MM0Index]);
     case AVXHigh0Index ... AVXHigh15Index: return offsetof(FEXCore::Core::CPUState, avx_high[Index - AVXHigh0Index][0]);
@@ -1844,7 +1848,8 @@ private:
     }
   }
 
-  RegisterClassType CacheIndexClass(int Index) {
+  [[nodiscard]]
+  static RegisterClassType CacheIndexClass(int Index) {
     if ((Index >= MM0Index && Index <= MM7Index) || Index >= FPR0Index) {
       return FPRClass;
     } else {
@@ -1852,7 +1857,8 @@ private:
     }
   }
 
-  IR::OpSize CacheIndexToOpSize(int Index) {
+  [[nodiscard]]
+  static IR::OpSize CacheIndexToOpSize(int Index) {
     // MMX registers are rounded up to 128-bit since they are shared with 80-bit
     // x87 registers, even though MMX is logically only 64-bit.
     if (Index >= AVXHigh0Index || ((Index >= MM0Index && Index <= MM7Index))) {
@@ -2363,7 +2369,8 @@ private:
   uint64_t Entry {};
   IROp_IRHeader* CurrentHeader {};
 
-  bool IsTSOEnabled(FEXCore::IR::RegisterClassType Class) {
+  [[nodiscard]]
+  bool IsTSOEnabled(FEXCore::IR::RegisterClassType Class) const {
     if (ForceTSO == ForceTSOMode::ForceEnabled) {
       return true;
     } else if (ForceTSO == ForceTSOMode::ForceDisabled) {
@@ -2602,7 +2609,7 @@ private:
       return IsConstant ? E->_Constant(C) : R;
     }
 
-    bool IsDefinitelyZero() {
+    bool IsDefinitelyZero() const {
       return IsConstant && C == 0;
     }
   };
