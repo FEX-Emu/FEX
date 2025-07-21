@@ -60,8 +60,7 @@ public:
   }
 
   void fcmla(SubRegSize size, ZRegister zda, PRegisterMerge pv, ZRegister zn, ZRegister zm, Rotation rot) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "SubRegSize must be 16-bit, "
-                                                                                                               "32-bit, or 64-bit");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "SubRegSize must be 16-bit, 32-bit, or 64-bit");
     LOGMAN_THROW_A_FMT(pv <= PReg::p7.Merging(), "fcmla can only use p0 to p7");
 
     uint32_t Op = 0b0110'0100'0000'0000'0000'0000'0000'0000;
@@ -76,8 +75,7 @@ public:
   }
 
   void fcadd(SubRegSize size, ZRegister zd, PRegisterMerge pv, ZRegister zn, ZRegister zm, Rotation rot) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "SubRegSize must be 16-bit, "
-                                                                                                               "32-bit, or 64-bit");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "SubRegSize must be 16-bit, 32-bit, or 64-bit");
     LOGMAN_THROW_A_FMT(pv <= PReg::p7.Merging(), "fcadd can only use p0 to p7");
     LOGMAN_THROW_A_FMT(rot == Rotation::ROTATE_90 || rot == Rotation::ROTATE_270, "fcadd rotation may only be 90 or 270 degrees");
     LOGMAN_THROW_A_FMT(zd == zn, "fcadd zd and zn must be the same register");
@@ -815,16 +813,12 @@ public:
   // SVE Integer Misc - Unpredicated
   // SVE floating-point trig select coefficient
   void ftssel(SubRegSize size, ZRegister zd, ZRegister zn, ZRegister zm) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "ftssel may only have "
-                                                                                                               "16-bit, 32-bit, or 64-bit "
-                                                                                                               "element sizes");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "ftssel may only use 16/32/64-bit element sizes");
     SVEIntegerMiscUnpredicated(0b00, zm.Idx(), FEXCore::ToUnderlying(size), zd, zn);
   }
   // SVE floating-point exponential accelerator
   void fexpa(SubRegSize size, ZRegister zd, ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "fexpa may only have "
-                                                                                                               "16-bit, 32-bit, or 64-bit "
-                                                                                                               "element sizes");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "fexpa may only use 16/32/64-bit element sizes");
     SVEIntegerMiscUnpredicated(0b10, 0b00000, FEXCore::ToUnderlying(size), zd, zn);
   }
   // SVE constructive prefix (unpredicated)
@@ -3401,8 +3395,8 @@ private:
   }
 
   void SVEBroadcastFloatImmPredicated(SubRegSize size, ZRegister zd, PRegister pg, float value) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Unsupported fcpy/fmov "
-                                                                                                               "size");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Unsupported fcpy/fmov size");
+
     uint32_t imm {};
     if (size == SubRegSize::i16Bit) {
       LOGMAN_MSG_A_FMT("Unsupported");
@@ -3578,7 +3572,7 @@ private:
   // SVE2 floating-point pairwise operations
   void SVEFloatPairwiseArithmetic(uint32_t opc, SubRegSize size, PRegister pg, ZRegister zd, ZRegister zn, ZRegister zm) {
     LOGMAN_THROW_A_FMT(zd == zn, "zd needs to equal zn");
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid float size");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Invalid float size");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = 0b0110'0100'0001'0000'1000'0000'0000'0000;
@@ -3592,7 +3586,7 @@ private:
 
   // SVE floating-point arithmetic (unpredicated)
   void SVEFloatArithmeticUnpredicated(uint32_t opc, SubRegSize size, ZRegister zm, ZRegister zn, ZRegister zd) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid float size");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Invalid float size");
 
     uint32_t Instr = 0b0110'0101'0000'0000'0000'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
@@ -3700,7 +3694,7 @@ private:
   // SVE floating-point arithmetic (predicated)
   void SVEFloatArithmeticPredicated(uint32_t opc, SubRegSize size, PRegister pg, ZRegister zd, ZRegister zn, ZRegister zm) {
     LOGMAN_THROW_A_FMT(zd == zn, "zn needs to equal zd");
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Invalid float size");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Invalid float size");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = 0b0110'0101'0000'0000'1000'0000'0000'0000;
@@ -3728,9 +3722,7 @@ private:
   }
 
   void SVEFPRecursiveReduction(uint32_t opc, SubRegSize size, VRegister vd, PRegister pg, ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "FP reduction operation can "
-                                                                                                               "only use 16-bit, 32-bit, "
-                                                                                                               "or 64-bit element sizes");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "FP reduction operation can only use 16/32/64-bit element sizes");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "FP reduction operation can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = 0b0110'0101'0000'0000'0010'0000'0000'0000;
@@ -4112,7 +4104,7 @@ private:
     // 0b111 - I - Current
 
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Unsupported size in {}", __func__);
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Unsupported size in {}", __func__);
 
     uint32_t Instr = 0b0110'0101'0000'0000'1010'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
@@ -4721,7 +4713,7 @@ private:
 
   void SVEFloatUnary(uint32_t opc, SubRegSize size, PRegister pg, ZRegister zn, ZRegister zd) {
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "Unsupported size in {}", __func__);
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Unsupported size in {}", __func__);
 
     uint32_t Instr = 0b0110'0101'0000'1100'1010'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
@@ -4809,8 +4801,7 @@ private:
   }
 
   void SVEFPUnaryOpsUnpredicated(uint32_t opc, SubRegSize size, ZRegister zd, ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "SubRegSize must be 16-bit, "
-                                                                                                               "32-bit, or 64-bit");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "SubRegSize must be 16-bit, 32-bit, or 64-bit");
 
     uint32_t Instr = 0b0110'0101'0000'1000'0011'0000'0000'0000;
     Instr |= FEXCore::ToUnderlying(size) << 22;
@@ -4821,8 +4812,7 @@ private:
   }
 
   void SVEFPSerialReductionPredicated(uint32_t opc, SubRegSize size, VRegister vd, PRegister pg, VRegister vn, ZRegister zm) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "SubRegSize must be 16-bit, "
-                                                                                                               "32-bit, or 64-bit");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "SubRegSize must be 16-bit, 32-bit, or 64-bit");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
     LOGMAN_THROW_A_FMT(vd == vn, "vn must be the same as vd");
 
@@ -4836,8 +4826,7 @@ private:
   }
 
   void SVEFPCompareWithZero(uint32_t eqlt, uint32_t ne, SubRegSize size, PRegister pd, PRegister pg, ZRegister zn) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "SubRegSize must be 16-bit, "
-                                                                                                               "32-bit, or 64-bit");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "SubRegSize must be 16-bit, 32-bit, or 64-bit");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = 0b0110'0101'0001'0000'0010'0000'0000'0000;
@@ -4852,8 +4841,7 @@ private:
 
   void SVEFPMultiplyAdd(uint32_t opc, SubRegSize size, ZRegister zd, PRegister pg, ZRegister zn, ZRegister zm) {
     // NOTE: opc also includes the op0 bit (bit 15) like op0:opc, since the fields are adjacent
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "SubRegSize must be 16-bit, "
-                                                                                                               "32-bit, or 64-bit");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "SubRegSize must be 16-bit, 32-bit, or 64-bit");
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
     uint32_t Instr = 0b0110'0101'0010'0000'0000'0000'0000'0000;
@@ -4867,8 +4855,7 @@ private:
   }
 
   void SVEFPMultiplyAddIndexed(uint32_t op, SubRegSize size, ZRegister zda, ZRegister zn, ZRegister zm, uint32_t index) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit, "SubRegSize must be 16-bit, "
-                                                                                                               "32-bit, or 64-bit");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "SubRegSize must be 16-bit, 32-bit, or 64-bit");
     LOGMAN_THROW_A_FMT((size <= SubRegSize::i32Bit && zm <= ZReg::z7) || (size == SubRegSize::i64Bit && zm <= ZReg::z15),
                        "16-bit and 32-bit indexed variants may only use Zm between z0-z7\n"
                        "64-bit variants may only use Zm between z0-z15");
