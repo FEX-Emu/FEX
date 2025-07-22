@@ -361,6 +361,7 @@ bool HandleSuspendInterrupt(CONTEXT* Context, uint64_t FaultAddress) {
   // Adjust context to return to the dispatcher, reloading SRA from thread state
   const auto& Config = SignalDelegator->GetConfig();
   Context->Pc = Config.AbsoluteLoopTopAddressFillSRA;
+  Context->X1 = 0; // Set ENTRY_FILL_SRA_SINGLE_INST_REG
   return true;
 }
 } // namespace Context
