@@ -58,6 +58,12 @@ HandleGuestException(FEXCore::Core::CpuStateFrame::SynchronousFaultDataStruct& F
       }
       break;
     case FEXCore::X86State::X86_TRAPNO_OF: Dst.ExceptionCode = EXCEPTION_INT_OVERFLOW; return Dst;
+    case FEXCore::X86State::X86_TRAPNO_PF:
+      // A page-fault raised by an explicit break in JIT code is always an execute fault
+      Dst.NumberParameters = 2;
+      Dst.ExceptionInformation[0] = EXCEPTION_EXECUTE_FAULT;
+      Dst.ExceptionInformation[1] = Rip;
+      return Dst;
     default: LogMan::Msg::EFmt("Unknown SIGSEGV trap: {}", Fault.TrapNo); break;
     }
     break;
