@@ -69,7 +69,7 @@ DLLEXPORT_FUNC(void, GetSystemInfo, (LPSYSTEM_INFO lpSystemInfo)) {
     .lpMinimumApplicationAddress = reinterpret_cast<void*>(Info.LowestUserAddress),
     .lpMaximumApplicationAddress = reinterpret_cast<void*>(Info.HighestUserAddress),
     .dwActiveProcessorMask = Info.ActiveProcessors,
-    .dwNumberOfProcessors = static_cast<DWORD>(Info.NumberOfProcessors),
+    .dwNumberOfProcessors = static_cast<BYTE>(Info.NumberOfProcessors),
     .dwProcessorType = 0,
     .dwAllocationGranularity = Info.AllocationGranularity,
     .wProcessorLevel = 0,
