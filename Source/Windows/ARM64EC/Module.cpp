@@ -716,7 +716,7 @@ bool ResetToConsistentStateImpl(EXCEPTION_RECORD* Exception, CONTEXT* GuestConte
                           Thread->CurrentFrame->State.rip, FaultAddress);
         NativeContext->Pc = CPUArea.DispatcherLoopTopEnterECFillSRA();
         NativeContext->Sp = CPUArea.EmulatorStackBase();
-        NativeContext->X10 = 1;                                        // Set ENTRY_FILL_SRA_SINGLE_INST_REG to force a single step
+        NativeContext->X11 = 1;                                        // Set ENTRY_FILL_SRA_SINGLE_INST_REG to force a single step
         NativeContext->X17 = reinterpret_cast<uint64_t>(CPUArea.Area); // Set EC_ENTRY_CPUAREA_REG
       } else {
         LogMan::Msg::DFmt("Handled self-modifying code: pc: {:X} fault: {:X}", NativeContext->Pc, FaultAddress);

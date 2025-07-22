@@ -84,7 +84,8 @@ constexpr uint64_t EC_CODE_BITMAP_MAX_ADDRESS = 1ULL << 47;
 #endif
 
 // Will force one single instruction block to be generated first if set when entering the JIT filling SRA.
-constexpr auto ENTRY_FILL_SRA_SINGLE_INST_REG = TMP1;
+// FillStaticRegs must preserve this
+constexpr auto ENTRY_FILL_SRA_SINGLE_INST_REG = TMP2;
 
 // Predicate to use in the X87 SVE optimization
 constexpr ARMEmitter::PRegister PRED_X87_SVEOPT = ARMEmitter::PReg::p2;
