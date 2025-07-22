@@ -1497,9 +1497,9 @@ public:
   }
 
   // SVE broadcast floating-point immediate (unpredicated)
-  void fdup(ARMEmitter::SubRegSize size, ARMEmitter::ZRegister zd, float Value) {
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i16Bit || size == ARMEmitter::SubRegSize::i32Bit || size == ARMEmitter::SubRegSize::i64Bit,
-                       "Unsupported fmov size");
+  void fdup(SubRegSize size, ZRegister zd, float Value) {
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Unsupported fmov size");
+
     uint32_t Imm {};
     if (size == SubRegSize::i16Bit) {
       LOGMAN_MSG_A_FMT("Unsupported");
@@ -1512,7 +1512,7 @@ public:
 
     SVEBroadcastFloatImmUnpredicated(0b00, 0, Imm, size, zd);
   }
-  void fmov(ARMEmitter::SubRegSize size, ARMEmitter::ZRegister zd, float Value) {
+  void fmov(SubRegSize size, ZRegister zd, float Value) {
     fdup(size, zd, Value);
   }
 

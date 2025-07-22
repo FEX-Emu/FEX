@@ -2690,12 +2690,11 @@ public:
   // XXX: ORR - 32-bit/16-bit
   // XXX: MOVI - Shifting ones
   template<typename T>
-  void fmov(ARMEmitter::SubRegSize size, T rd, float Value) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  void fmov(SubRegSize size, T rd, float Value) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i16Bit || size == ARMEmitter::SubRegSize::i32Bit || size == ARMEmitter::SubRegSize::i64Bit,
-                       "Unsupported fmov size");
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Unsupported fmov size");
 
     constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
     uint32_t op;
@@ -3793,28 +3792,27 @@ public:
   }
 
   template<IsQOrDRegister T>
-  void fmla(ARMEmitter::SubRegSize size, T rd, T rn, T rm, uint32_t Index) {
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i16Bit || size == ARMEmitter::SubRegSize::i32Bit || size == ARMEmitter::SubRegSize::i64Bit,
-                       "Invalid destination size");
+  void fmla(SubRegSize size, T rd, T rn, T rm, uint32_t Index) {
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Invalid destination size");
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(size), "Index must be less than the source register size");
 
     uint32_t H, L, M;
     auto EncodedSubRegSize = size;
 
-    if (size == ARMEmitter::SubRegSize::i16Bit) {
+    if (size == SubRegSize::i16Bit) {
       // Index encoded in H:L:M
       H = (Index >> 2) & 1;
       L = (Index >> 1) & 1;
       M = (Index >> 0) & 1;
       // ARM in their infinite wisdom decided to encode 16-bit as an 8-bit operation even though 16-bit was unallocated.
-      EncodedSubRegSize = ARMEmitter::SubRegSize::i8Bit;
-    } else if (size == ARMEmitter::SubRegSize::i32Bit) {
+      EncodedSubRegSize = SubRegSize::i8Bit;
+    } else if (size == SubRegSize::i32Bit) {
       // Index encoded in H:L
       H = (Index >> 1) & 1;
       L = (Index >> 0) & 1;
       M = 0;
     } else {
-      LOGMAN_THROW_A_FMT((std::is_same_v<ARMEmitter::QRegister, T>), "Can't encode DRegister with i64Bit");
+      LOGMAN_THROW_A_FMT((std::is_same_v<QRegister, T>), "Can't encode DRegister with i64Bit");
       // Index encoded in H
       H = Index;
       L = 0;
@@ -3824,28 +3822,27 @@ public:
   }
 
   template<IsQOrDRegister T>
-  void fmls(ARMEmitter::SubRegSize size, T rd, T rn, T rm, uint32_t Index) {
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i16Bit || size == ARMEmitter::SubRegSize::i32Bit || size == ARMEmitter::SubRegSize::i64Bit,
-                       "Invalid destination size");
+  void fmls(SubRegSize size, T rd, T rn, T rm, uint32_t Index) {
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Invalid destination size");
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(size), "Index must be less than the source register size");
 
     uint32_t H, L, M;
     auto EncodedSubRegSize = size;
 
-    if (size == ARMEmitter::SubRegSize::i16Bit) {
+    if (size == SubRegSize::i16Bit) {
       // Index encoded in H:L:M
       H = (Index >> 2) & 1;
       L = (Index >> 1) & 1;
       M = (Index >> 0) & 1;
       // ARM in their infinite wisdom decided to encode 16-bit as an 8-bit operation even though 16-bit was unallocated.
-      EncodedSubRegSize = ARMEmitter::SubRegSize::i8Bit;
-    } else if (size == ARMEmitter::SubRegSize::i32Bit) {
+      EncodedSubRegSize = SubRegSize::i8Bit;
+    } else if (size == SubRegSize::i32Bit) {
       // Index encoded in H:L
       H = (Index >> 1) & 1;
       L = (Index >> 0) & 1;
       M = 0;
     } else {
-      LOGMAN_THROW_A_FMT((std::is_same_v<ARMEmitter::QRegister, T>), "Can't encode DRegister with i64Bit");
+      LOGMAN_THROW_A_FMT((std::is_same_v<QRegister, T>), "Can't encode DRegister with i64Bit");
       // Index encoded in H
       H = Index;
       L = 0;
@@ -3855,28 +3852,27 @@ public:
   }
 
   template<IsQOrDRegister T>
-  void fmul(ARMEmitter::SubRegSize size, T rd, T rn, T rm, uint32_t Index) {
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i16Bit || size == ARMEmitter::SubRegSize::i32Bit || size == ARMEmitter::SubRegSize::i64Bit,
-                       "Invalid destination size");
+  void fmul(SubRegSize size, T rd, T rn, T rm, uint32_t Index) {
+    LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Invalid destination size");
     LOGMAN_THROW_A_FMT(Index < SubRegSizeInBits(size), "Index must be less than the source register size");
 
     uint32_t H, L, M;
     auto EncodedSubRegSize = size;
 
-    if (size == ARMEmitter::SubRegSize::i16Bit) {
+    if (size == SubRegSize::i16Bit) {
       // Index encoded in H:L:M
       H = (Index >> 2) & 1;
       L = (Index >> 1) & 1;
       M = (Index >> 0) & 1;
       // ARM in their infinite wisdom decided to encode 16-bit as an 8-bit operation even though 16-bit was unallocated.
-      EncodedSubRegSize = ARMEmitter::SubRegSize::i8Bit;
-    } else if (size == ARMEmitter::SubRegSize::i32Bit) {
+      EncodedSubRegSize = SubRegSize::i8Bit;
+    } else if (size == SubRegSize::i32Bit) {
       // Index encoded in H:L
       H = (Index >> 1) & 1;
       L = (Index >> 0) & 1;
       M = 0;
     } else {
-      LOGMAN_THROW_A_FMT((std::is_same_v<ARMEmitter::QRegister, T>), "Can't encode DRegister with i64Bit");
+      LOGMAN_THROW_A_FMT((std::is_same_v<QRegister, T>), "Can't encode DRegister with i64Bit");
       // Index encoded in H
       H = Index;
       L = 0;
