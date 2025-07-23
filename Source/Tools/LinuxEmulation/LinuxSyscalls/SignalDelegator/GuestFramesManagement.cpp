@@ -122,6 +122,7 @@ void SignalDelegator::RestoreFrame_x64(FEXCore::Core::InternalThreadState* Threa
     // Hack! Go back to the top of the dispatcher top
     // This is only safe inside the JIT rather than anything outside of it
     ArchHelpers::Context::SetPc(ucontext, Config.AbsoluteLoopTopAddressFillSRA);
+    ArchHelpers::Context::SetFillSRASingleInst(ucontext, false);
     // Set our state register to point to our guest thread data
     ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(Frame));
 
@@ -183,6 +184,7 @@ void SignalDelegator::RestoreFrame_ia32(FEXCore::Core::InternalThreadState* Thre
     // Hack! Go back to the top of the dispatcher top
     // This is only safe inside the JIT rather than anything outside of it
     ArchHelpers::Context::SetPc(ucontext, Config.AbsoluteLoopTopAddressFillSRA);
+    ArchHelpers::Context::SetFillSRASingleInst(ucontext, false);
     // Set our state register to point to our guest thread data
     ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(Frame));
 
@@ -255,6 +257,7 @@ void SignalDelegator::RestoreRTFrame_ia32(FEXCore::Core::InternalThreadState* Th
     // Hack! Go back to the top of the dispatcher top
     // This is only safe inside the JIT rather than anything outside of it
     ArchHelpers::Context::SetPc(ucontext, Config.AbsoluteLoopTopAddressFillSRA);
+    ArchHelpers::Context::SetFillSRASingleInst(ucontext, false);
     // Set our state register to point to our guest thread data
     ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(Frame));
 

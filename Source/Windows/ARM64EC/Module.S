@@ -49,7 +49,7 @@ BeginSimulation:
   bl "#SyncThreadContext"
   ldr x17, [x18, #0x1788] // TEB->ChpeV2CpuAreaInfo
   ldr x16, [x17, #0x48] // ChpeV2CpuAreaInfo->EmulatorData[3] - DispatcherLoopTopEnterECFillSRA
-  mov x10, #0 // Zero ENTRY_FILL_SRA_SINGLE_INST_REG to avoid single step
+  mov x11, #0 // Zero ENTRY_FILL_SRA_SINGLE_INST_REG to avoid single step
   br x16 // DispatcherLoopTopEnterECFillSRA(SingleInst:x10, CPUArea:x17)
 
   // Called into by FEXCore

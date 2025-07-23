@@ -76,7 +76,7 @@ public:
   void ExecuteJITCallback(FEXCore::Core::CpuStateFrame* Frame, uint64_t RIP);
 #else
   void ExecuteDispatch(FEXCore::Core::CpuStateFrame* Frame) {
-    DispatchPtr(Frame);
+    DispatchPtr(Frame, false);
   }
 
   void ExecuteJITCallback(FEXCore::Core::CpuStateFrame* Frame, uint64_t RIP) {
@@ -109,7 +109,7 @@ public:
 protected:
   FEXCore::Context::ContextImpl* CTX;
 
-  using AsmDispatch = void (*)(FEXCore::Core::CpuStateFrame* Frame);
+  using AsmDispatch = void (*)(FEXCore::Core::CpuStateFrame* Frame, bool SingleInst);
   using JITCallback = void (*)(FEXCore::Core::CpuStateFrame* Frame, uint64_t RIP);
 
   AsmDispatch DispatchPtr;

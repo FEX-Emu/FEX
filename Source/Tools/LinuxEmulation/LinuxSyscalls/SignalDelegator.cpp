@@ -389,6 +389,7 @@ bool SignalDelegator::HandleDispatcherGuestSignal(FEXCore::Core::InternalThreadS
 
   // Set the new PC
   ArchHelpers::Context::SetPc(ucontext, Config.AbsoluteLoopTopAddressFillSRA);
+  ArchHelpers::Context::SetFillSRASingleInst(ucontext, false);
   // Set our state register to point to our guest thread data
   ArchHelpers::Context::SetState(ucontext, reinterpret_cast<uint64_t>(Frame));
 

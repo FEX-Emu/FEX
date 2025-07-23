@@ -81,11 +81,14 @@ void Dispatcher::EmitDispatcher() {
   add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, ARMEmitter::Reg::rsp, 0);
   str(ARMEmitter::XReg::x0, STATE_PTR(CpuStateFrame, ReturningStackLocation));
 
+  ARMEmitter::ForwardLabel CompileSingleStep;
   AbsoluteLoopTopAddressFillSRA = GetCursorAddress<uint64_t>();
 
   FillStaticRegs();
+  ldr(RipReg, STATE_PTR(CpuStateFrame, State.rip));
+  cbnz(ARMEmitter::Size::i32Bit, ENTRY_FILL_SRA_SINGLE_INST_REG, &CompileSingleStep);
+
   ARMEmitter::BiDirectionalLabel LoopTop {};
-  ARMEmitter::ForwardLabel CompileSingleStep;
 
 #ifdef _M_ARM_64EC
   b(&LoopTop);
@@ -607,6 +610,7 @@ void Dispatcher::EmitDispatcher() {
 #ifdef VIXL_SIMULATOR
 void Dispatcher::ExecuteDispatch(FEXCore::Core::CpuStateFrame* Frame) {
   Simulator.WriteXRegister(0, reinterpret_cast<int64_t>(Frame));
+  Simulator.WriteXRegister(1, 0);
   Simulator.RunFrom(reinterpret_cast< const vixl::aarch64::Instruction*>(DispatchPtr));
 }
 
