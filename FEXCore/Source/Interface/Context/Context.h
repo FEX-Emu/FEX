@@ -249,7 +249,7 @@ public:
   ContextImpl(const FEXCore::HostFeatures& Features);
   ~ContextImpl();
 
-  static void ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP);
+  static bool ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP);
 
   template<auto Fn>
   static uint64_t ThreadExitFunctionLink(FEXCore::Core::CpuStateFrame* Frame, ExitFunctionLinkData* Record) {

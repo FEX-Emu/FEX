@@ -969,11 +969,11 @@ void ContextImpl::MarkMemoryShared(FEXCore::Core::InternalThreadState* Thread) {
   }
 }
 
-void ContextImpl::ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP) {
+bool ContextImpl::ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP) {
   LogMan::Throw::AFmt(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex.try_lock() == false, "CodeInvalidationMutex needs to "
                                                                                                          "be unique_locked here");
 
-  Thread->LookupCache->Erase(Thread->CurrentFrame, GuestRIP);
+  return Thread->LookupCache->Erase(Thread->CurrentFrame, GuestRIP);
 }
 
 std::optional<CustomIRResult>

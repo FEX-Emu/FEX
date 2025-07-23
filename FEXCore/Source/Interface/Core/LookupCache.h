@@ -78,7 +78,7 @@ struct GuestToHostMap {
     return HostCode->second;
   }
 
-  void Erase(FEXCore::Core::CpuStateFrame* Frame, uint64_t Address, const LockToken&) {
+  bool Erase(FEXCore::Core::CpuStateFrame* Frame, uint64_t Address, const LockToken&) {
     // Sever any links to this block
     auto lower = BlockLinks->lower_bound({Address, nullptr});
     auto upper = BlockLinks->upper_bound({Address, reinterpret_cast<FEXCore::Context::ExitFunctionLinkData*>(UINTPTR_MAX)});
@@ -87,7 +87,7 @@ struct GuestToHostMap {
     }
 
     // Remove from BlockList
-    BlockList.erase(Address);
+    return BlockList.erase(Address) != 0;
   }
 
   void AddBlockLink(uint64_t GuestDestination, FEXCore::Context::ExitFunctionLinkData* HostLink,
@@ -192,15 +192,16 @@ public:
   // NOTE: It's the caller's responsibility to call Erase() for all other
   //       GuestToHostMaps that share the same LookupCache. Otherwise, the
   //       L1/L2 caches will contain stale references to deallocated memory.
-  void Erase(FEXCore::Core::CpuStateFrame* Frame, uint64_t Address) {
+  bool Erase(FEXCore::Core::CpuStateFrame* Frame, uint64_t Address) {
     auto lk = Shared->AcquireLock();
 
-    Shared->Erase(Frame, Address, lk);
+    bool ErasedAny = Shared->Erase(Frame, Address, lk);
 
     // Do L1
     auto& L1Entry = reinterpret_cast<LookupCacheEntry*>(L1Pointer)[Address & L1_ENTRIES_MASK];
     if (L1Entry.GuestCode == Address) {
       L1Entry.GuestCode = 0;
+      ErasedAny = true;
       // Leave L1Entry.HostCode as is, so that concurrent lookups won't read a null pointer
       // This is a soft guarantee for cross thread invalidation, as atomics are not used
       // and it hasn't been thoroughly tested
@@ -215,13 +216,14 @@ public:
     uint64_t LocalPagePointer = Pointers[Address];
     if (!LocalPagePointer) {
       // Page for this code didn't even exist, nothing to do
-      return;
+      return ErasedAny;
     }
 
     // Page exists, just set the offset to zero
     auto BlockPointers = reinterpret_cast<LookupCacheEntry*>(LocalPagePointer);
     BlockPointers[PageOffset].GuestCode = 0;
     BlockPointers[PageOffset].HostCode = 0;
+    return true;
   }
 
   void AddBlockLink(uint64_t GuestDestination, FEXCore::Context::ExitFunctionLinkData* HostLink, const FEXCore::Context::BlockDelinkerFunc& delinker) {
