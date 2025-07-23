@@ -280,6 +280,7 @@ public:
     uint64_t TotalInstructionsLength;
     uint64_t StartAddr;
     uint64_t Length;
+    bool NeedsAddGuestCodeRanges;
   };
   [[nodiscard]]
   GenerateIRResult GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, bool ExtendedDebugInfo, uint64_t MaxInst);
@@ -289,6 +290,7 @@ public:
     fextl::unique_ptr<FEXCore::Core::DebugData> DebugData;
     uint64_t StartAddr;
     uint64_t Length;
+    bool NeedsAddGuestCodeRanges;
   };
   [[nodiscard]]
   CompileCodeResult CompileCode(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, uint64_t MaxInst = 0);

@@ -737,6 +737,7 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
     .TotalInstructionsLength = TotalInstructionsLength,
     .StartAddr = Thread->FrontendDecoder->DecodedMinAddress,
     .Length = Thread->FrontendDecoder->DecodedMaxAddress - Thread->FrontendDecoder->DecodedMinAddress,
+    .NeedsAddGuestCodeRanges = !HasCustomIR,
   };
 }
 
@@ -752,6 +753,7 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
           .DebugData = nullptr, // nullptr here ensures that code serialization doesn't occur on from cache read
           .StartAddr = 0,       // Unused
           .Length = 0,          // Unused
+          .NeedsAddGuestCodeRanges = false,
         };
       }
     }
@@ -765,9 +767,10 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
   }
 
   // Generate IR + Meta Info
-  auto [IRView, TotalInstructions, TotalInstructionsLength, StartAddr, Length] = GenerateIR(Thread, GuestRIP, Config.GDBSymbols(), MaxInst);
+  auto [IRView, TotalInstructions, TotalInstructionsLength, StartAddr, Length, NeedsAddGuestCodeRanges] =
+    GenerateIR(Thread, GuestRIP, Config.GDBSymbols(), MaxInst);
   if (!IRView) {
-    return {{}, nullptr, 0, 0};
+    return {{}, nullptr, 0, 0, false};
   }
 
   // Attempt to get the CPU backend to compile this code
@@ -781,7 +784,8 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
       return {.CompiledCode = {.BlockBegin = reinterpret_cast<uint8_t*>(Block), .EntryPoints = {{GuestRIP, reinterpret_cast<uint8_t*>(Block)}}},
               .DebugData = nullptr,
               .StartAddr = 0,
-              .Length = 0};
+              .Length = 0,
+              .NeedsAddGuestCodeRanges = false};
     }
   }
 
@@ -800,6 +804,7 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
     .DebugData = std::move(DebugData),
     .StartAddr = StartAddr,
     .Length = Length,
+    .NeedsAddGuestCodeRanges = NeedsAddGuestCodeRanges,
   };
 }
 
@@ -819,7 +824,7 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
     return HostCode;
   }
 
-  auto [CompiledCode, DebugData, StartAddr, Length] = CompileCode(Thread, GuestRIP, MaxInst);
+  auto [CompiledCode, DebugData, StartAddr, Length, NeedsAddGuestCodeRanges] = CompileCode(Thread, GuestRIP, MaxInst);
   auto CodePtr = CompiledCode.EntryPoints[GuestRIP];
   if (CodePtr == nullptr) {
     return 0;
@@ -879,8 +884,18 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
     return (uintptr_t)CodePtr;
   }
 
+  if (NeedsAddGuestCodeRanges) {
+    // Track in the guest to host map all entrypoints for all pages the compiled block touches, if any page didn't previously
+    // contain code, inform the frontend so it can setup SMC detection.
+    auto BlockInfo = Thread->FrontendDecoder->GetDecodedBlockInfo();
+    for (auto CodePage : BlockInfo->CodePages) {
+      if (Thread->LookupCache->AddBlockExecutableRange(BlockInfo->EntryPoints, CodePage, FEXCore::Utils::FEX_PAGE_SIZE)) {
+        SyscallHandler->MarkGuestExecutableRange(Thread, CodePage, FEXCore::Utils::FEX_PAGE_SIZE);
+      }
+    }
+  }
+
   // Insert to lookup cache
-  // Pages containing this block are added via AddBlockExecutableRange before each page gets accessed in the frontend
   for (auto [GuestAddr, HostAddr] : CompiledCode.EntryPoints) {
     Thread->LookupCache->AddBlockMapping(GuestAddr, HostAddr);
   }
@@ -897,7 +912,7 @@ uintptr_t ContextImpl::CompileSingleStep(FEXCore::Core::CpuStateFrame* Frame, ui
   // Invalidate might take a unique lock on this, to guarantee that during invalidation no code gets compiled
   auto lk = GuardSignalDeferringSection<std::shared_lock>(CodeInvalidationMutex, Thread);
 
-  auto [CompiledCode, DebugData, StartAddr, Length] = CompileCode(Thread, GuestRIP, 1);
+  auto [CompiledCode, DebugData, StartAddr, Length, _] = CompileCode(Thread, GuestRIP, 1);
   auto CodePtr = CompiledCode.EntryPoints[GuestRIP];
   if (CodePtr == nullptr) {
     return 0;

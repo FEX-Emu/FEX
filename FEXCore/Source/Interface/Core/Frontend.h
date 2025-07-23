@@ -38,6 +38,8 @@ public:
   struct DecodedBlockInformation final {
     uint64_t TotalInstructionCount;
     fextl::vector<DecodedBlocks> Blocks;
+    fextl::set<uint64_t> EntryPoints;
+    fextl::set<uint64_t> CodePages; // Start addresses of all pages touching the block
   };
 
   Decoder(FEXCore::Core::InternalThreadState* Thread);
@@ -129,7 +131,6 @@ private:
   fextl::set<uint64_t> BlocksToDecode;
   fextl::set<uint64_t> VisitedBlocks;
   fextl::set<uint64_t>* ExternalBranches {nullptr};
-  fextl::set<uint64_t> BlockEntryPoints;
 
   // ModRM rm decoding
   using DecodeModRMPtr = void (FEXCore::Frontend::Decoder::*)(X86Tables::DecodedOperand* Operand, X86Tables::ModRMDecoded ModRM);
