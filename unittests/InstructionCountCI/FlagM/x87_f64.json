@@ -1633,7 +1633,7 @@
       ]
     },
     "fnstenv [rax]": {
-      "ExpectedInstructionCount": 27,
+      "ExpectedInstructionCount": 29,
       "Comment": [
         "0xd9 !11b /6"
       ],
@@ -1650,6 +1650,8 @@
         "orr x20, x20, x21, lsl #10",
         "ldrb w21, [x28, #1022]",
         "orr x20, x20, x21, lsl #14",
+        "ldrb w21, [x28, #1008]",
+        "orr x20, x20, x21",
         "str w20, [x4, #4]",
         "ldrb w20, [x28, #1298]",
         "orr w20, w20, w20, lsl #4",
@@ -5859,7 +5861,7 @@
       ]
     },
     "fnsave [rax]": {
-      "ExpectedInstructionCount": 140,
+      "ExpectedInstructionCount": 142,
       "Comment": [
         "0xdd !11b /6"
       ],
@@ -5877,6 +5879,8 @@
         "orr x21, x21, x22, lsl #10",
         "ldrb w22, [x28, #1022]",
         "orr x21, x21, x22, lsl #14",
+        "ldrb w22, [x28, #1008]",
+        "orr x21, x21, x22",
         "str w21, [x4, #4]",
         "mov w21, #0x0",
         "ldrb w22, [x28, #1298]",
@@ -6007,7 +6011,7 @@
       ]
     },
     "fnstsw [rax]": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xdd !11b /7"
       ],
@@ -6022,6 +6026,8 @@
         "orr x20, x20, x21, lsl #10",
         "ldrb w21, [x28, #1022]",
         "orr x20, x20, x21, lsl #14",
+        "ldrb w21, [x28, #1008]",
+        "orr x20, x20, x21",
         "strh w20, [x4]"
       ]
     },
@@ -8673,7 +8679,7 @@
       ]
     },
     "fnstsw ax": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xdf 11b 0xe0 /4"
       ],
@@ -8688,6 +8694,8 @@
         "orr x20, x20, x21, lsl #10",
         "ldrb w21, [x28, #1022]",
         "orr x20, x20, x21, lsl #14",
+        "ldrb w21, [x28, #1008]",
+        "orr x20, x20, x21",
         "bfxil x4, x20, #0, #16"
       ]
     },
