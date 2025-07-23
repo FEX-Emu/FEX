@@ -14,7 +14,7 @@
   },
   "Instructions": {
     "xgetbv": {
-      "ExpectedInstructionCount": 50,
+      "ExpectedInstructionCount": 52,
       "Comment": "0xF 0x01 /2 RM-0",
       "ExpectedArm64ASM": [
         "sub sp, sp, #0xf0 (240)",
@@ -26,6 +26,7 @@
         "stp x18, x30, [x3], #16",
         "mrs x3, nzcv",
         "str w3, [x28, #1000]",
+        "str x25, [x28, #1024]",
         "stp x4, x7, [x28, #288]",
         "stp x5, x6, [x28, #304]",
         "stp x8, x9, [x28, #320]",
@@ -44,6 +45,7 @@
         "ldr x0, [x28, #1368]",
         "ldr x2, [x28, #1384]",
         "blr x2",
+        "ldr x25, [x28, #1024]",
         "ldr w4, [x28, #1000]",
         "msr nzcv, x4",
         "add x4, x28, #0x1a0 (416)",
