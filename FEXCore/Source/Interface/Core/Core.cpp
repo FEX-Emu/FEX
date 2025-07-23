@@ -909,26 +909,32 @@ uintptr_t ContextImpl::CompileSingleStep(FEXCore::Core::CpuStateFrame* Frame, ui
   return (uintptr_t)CodePtr;
 }
 
-static void InvalidateGuestThreadCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) {
+static void InvalidateGuestThreadCodeRange(FEXCore::Core::InternalThreadState* Thread, InvalidatedEntryAccumulator& Accumulator,
+                                           uint64_t Start, uint64_t Length) {
   // Ensures now-modified mappings aren't cached as being in their previous non-executable state.
   // Accessing FrontendDecoder is safe as the thread's code invalidation mutex must be locked here.
   Thread->FrontendDecoder->ResetExecutableRangeCache();
 
   auto lk = Thread->LookupCache->AcquireLock();
+  auto& CodePages = Thread->LookupCache->Shared->CodePages;
 
-  auto lower = Thread->LookupCache->CodePages.lower_bound(Start >> 12);
-  auto upper = Thread->LookupCache->CodePages.upper_bound((Start + Length - 1) >> 12);
+  auto lower = CodePages.lower_bound(Start >> 12);
+  auto upper = CodePages.upper_bound((Start + Length - 1) >> 12);
 
   for (auto it = lower; it != upper; it++) {
-    for (auto Address : it->second) {
-      ContextImpl::ThreadRemoveCodeEntry(Thread, Address);
+    Accumulator.emplace_back(std::move(it->second));
+  }
+
+  for (const auto& PageEntries : Accumulator) {
+    for (const auto& Entry : PageEntries) {
+      ContextImpl::ThreadRemoveCodeEntry(Thread, Entry);
     }
-    it->second.clear();
   }
 }
 
-void ContextImpl::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) {
-  InvalidateGuestThreadCodeRange(Thread, Start, Length);
+void ContextImpl::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, InvalidatedEntryAccumulator& Accumulator,
+                                           uint64_t Start, uint64_t Length) {
+  InvalidateGuestThreadCodeRange(Thread, Accumulator, Start, Length);
 }
 
 void ContextImpl::MarkMemoryShared(FEXCore::Core::InternalThreadState* Thread) {
@@ -1033,7 +1039,8 @@ void ContextImpl::RemoveCustomIREntrypoint(uintptr_t Entrypoint) {
 
   std::scoped_lock lk(CustomIRMutex);
 
-  InvalidateGuestCodeRange(nullptr, Entrypoint, 1);
+  InvalidatedEntryAccumulator Accumulator;
+  InvalidateGuestCodeRange(nullptr, Accumulator, Entrypoint, 1);
   CustomIRHandlers.erase(Entrypoint);
 
   HasCustomIRHandlers = !CustomIRHandlers.empty();

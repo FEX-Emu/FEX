@@ -56,6 +56,8 @@ struct GuestToHostMap {
 
   fextl::robin_map<uint64_t, uint64_t> BlockList;
 
+  fextl::map<uint64_t, fextl::vector<uint64_t>> CodePages;
+
   GuestToHostMap();
 
   // Adds to Guest -> Host code mapping
@@ -91,6 +93,18 @@ struct GuestToHostMap {
   void AddBlockLink(uint64_t GuestDestination, FEXCore::Context::ExitFunctionLinkData* HostLink,
                     const FEXCore::Context::BlockDelinkerFunc& delinker, const LockToken&) {
     BlockLinks->insert({{GuestDestination, HostLink}, delinker});
+  }
+
+  bool AddBlockExecutableRange(const fextl::set<uint64_t>& Addresses, uint64_t Start, uint64_t Length, const LockToken&) {
+    bool rv = false;
+
+    for (auto CurrentPage = Start >> 12, EndPage = (Start + Length - 1) >> 12; CurrentPage <= EndPage; CurrentPage++) {
+      auto& CodePage = CodePages[CurrentPage];
+      rv |= CodePage.empty();
+      CodePage.insert(CodePage.end(), Addresses.begin(), Addresses.end());
+    }
+
+    return rv;
   }
 
   void ClearCache(const LockToken&);
@@ -155,22 +169,11 @@ public:
 
   GuestToHostMap* Shared = nullptr;
 
-  fextl::map<uint64_t, fextl::vector<uint64_t>> CodePages;
-
   // Appends a list of Block {Address} to CodePages [Start, Start + Length)
   // Returns true if new pages are marked as containing code
   bool AddBlockExecutableRange(const fextl::set<uint64_t>& Addresses, uint64_t Start, uint64_t Length) {
     auto lk = Shared->AcquireLock();
-
-    bool rv = false;
-
-    for (auto CurrentPage = Start >> 12, EndPage = (Start + Length - 1) >> 12; CurrentPage <= EndPage; CurrentPage++) {
-      auto& CodePage = CodePages[CurrentPage];
-      rv |= CodePage.empty();
-      CodePage.insert(CodePage.end(), Addresses.begin(), Addresses.end());
-    }
-
-    return rv;
+    return Shared->AddBlockExecutableRange(Addresses, Start, Length, lk);
   }
 
   // Adds to Guest -> Host code mapping
