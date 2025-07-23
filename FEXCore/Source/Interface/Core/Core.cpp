@@ -1089,16 +1089,14 @@ void ContextImpl::MarkMonoBackpatcherBlock(uint64_t BlockEntry) {
   MonoBackpatcherBlock.store(BlockEntry, std::memory_order_relaxed);
 }
 
-void ContextImpl::RemoveCustomIREntrypoint(uintptr_t Entrypoint) {
+void ContextImpl::RemoveCustomIREntrypoint(FEXCore::Core::InternalThreadState* Thread, uintptr_t Entrypoint) {
   LOGMAN_THROW_A_FMT(Config.Is64BitMode || !(Entrypoint >> 32), "64-bit Entrypoint in 32-bit mode {:x}", Entrypoint);
 
   std::scoped_lock lk(CustomIRMutex);
 
-  InvalidatedEntryAccumulator Accumulator;
-  InvalidateGuestCodeRange(nullptr, Accumulator, Entrypoint, 1);
   CustomIRHandlers.erase(Entrypoint);
-
   HasCustomIRHandlers = !CustomIRHandlers.empty();
+  SyscallHandler->InvalidateGuestCodeRange(Thread, Entrypoint, 1);
 }
 
 void ContextImpl::MonoBackpatcherWrite(FEXCore::Core::CpuStateFrame* Frame, uint8_t Size, uint64_t Address, uint64_t Value) {

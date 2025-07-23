@@ -267,7 +267,7 @@ public:
   // even if faulting is disabled.
   static void MonoBackpatcherWrite(FEXCore::Core::CpuStateFrame* Frame, uint8_t Size, uint64_t Address, uint64_t Value);
 
-  void RemoveCustomIREntrypoint(uintptr_t Entrypoint);
+  void RemoveCustomIREntrypoint(FEXCore::Core::InternalThreadState* Thread, uintptr_t Entrypoint);
 
   struct GenerateIRResult {
     std::optional<IR::IRListView> IRView;
