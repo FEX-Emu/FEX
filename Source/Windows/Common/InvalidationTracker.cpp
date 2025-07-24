@@ -4,6 +4,7 @@
 #include <FEXCore/Utils/TypeDefines.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
 #include <FEXCore/Core/Context.h>
+#include <FEXCore/Config/Config.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include "InvalidationTracker.h"
 #include <windef.h>
@@ -13,6 +14,9 @@ namespace FEX::Windows {
 InvalidationTracker::InvalidationTracker(FEXCore::Context::Context& CTX, const std::unordered_map<DWORD, FEXCore::Core::InternalThreadState*>& Threads)
   : CTX {CTX}
   , Threads {Threads} {
+  FEX_CONFIG_OPT(SMCChecks, SMCCHECKS);
+  SMCDetectionDisabled = (SMCChecks == FEXCore::Config::CONFIG_SMC_NONE);
+
   MEMORY_BASIC_INFORMATION Info;
   uint64_t Address = 0;
 
@@ -138,6 +142,10 @@ void InvalidationTracker::ReprotectRWXIntervals(uint64_t Address, uint64_t Size)
   const auto End = Address + Size;
   std::shared_lock Lock(IntervalsLock);
 
+  if (SMCDetectionDisabled) {
+    return;
+  }
+
   do {
     const auto Query = RWXIntervals.Query(Address);
     if (Query.Enclosed) {
@@ -195,6 +203,25 @@ FEXCore::HLE::ExecutableRangeInfo InvalidationTracker::QueryExecutableRange(uint
     return {XResult.Interval.Offset, RWXResult.Interval.Offset - XResult.Interval.Offset, false};
   }
   return {XResult.Interval.Offset, XResult.Interval.End - XResult.Interval.Offset, false};
+}
+
+void InvalidationTracker::DisableSMCDetection() {
+  std::unique_lock Lock(IntervalsLock);
+  SMCDetectionDisabled = true;
+  uint64_t Address = 0;
+
+  // Reprotect all RWX intervals as RWX
+  FEXCore::IntervalList<uint64_t>::QueryResult Query;
+  do {
+    Query = RWXIntervals.Query(Address);
+    if (Query.Enclosed) {
+      void* TmpAddress = reinterpret_cast<void*>(Address);
+      SIZE_T TmpSize = static_cast<SIZE_T>(Query.Size);
+      ULONG TmpProt;
+      NtProtectVirtualMemory(NtCurrentProcess(), &TmpAddress, &TmpSize, PAGE_EXECUTE_READWRITE, &TmpProt);
+    }
+    Address += Query.Size;
+  } while (Query.Size);
 }
 
 } // namespace FEX::Windows
