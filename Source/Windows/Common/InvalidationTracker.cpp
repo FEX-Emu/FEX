@@ -189,8 +189,10 @@ FEXCore::HLE::ExecutableRangeInfo InvalidationTracker::QueryExecutableRange(uint
     return {};
   }
   const auto RWXResult = RWXIntervals.Query(Address);
-  if (RWXResult.Enclosed || (RWXResult.Size && RWXResult.Size < XResult.Size)) {
-    return {RWXResult.Interval.Offset, RWXResult.Interval.End - RWXResult.Interval.Offset, RWXResult.Enclosed};
+  if (RWXResult.Enclosed) {
+    return {RWXResult.Interval.Offset, RWXResult.Interval.End - RWXResult.Interval.Offset, true};
+  } else if (RWXResult.Size && RWXResult.Size < XResult.Size) {
+    return {XResult.Interval.Offset, RWXResult.Interval.Offset - XResult.Interval.Offset, false};
   }
   return {XResult.Interval.Offset, XResult.Interval.End - XResult.Interval.Offset, false};
 }
