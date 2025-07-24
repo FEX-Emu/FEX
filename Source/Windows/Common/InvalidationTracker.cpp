@@ -64,22 +64,33 @@ void InvalidationTracker::HandleMemoryProtectionNotification(uint64_t Address, u
   }
 }
 
-void InvalidationTracker::HandleImageMap(uint64_t Address) {
+void InvalidationTracker::HandleImageMap(std::string_view Name, uint64_t Address) {
   auto* Nt = RtlImageNtHeader(reinterpret_cast<HMODULE>(Address));
   auto* SectionsBegin = IMAGE_FIRST_SECTION(Nt);
   auto* SectionsEnd = SectionsBegin + Nt->FileHeader.NumberOfSections;
+  uint64_t LastExecutableSectionEnd = 0;
 
   for (auto* Section = SectionsBegin; Section != SectionsEnd; Section++) {
     if (Section->Characteristics & IMAGE_SCN_MEM_EXECUTE) {
       std::unique_lock Lock(IntervalsLock);
 
       uint64_t SectionBase = Address + Section->VirtualAddress;
-      XIntervals.Insert({SectionBase, SectionBase + Section->Misc.VirtualSize});
+      uint64_t SectionEnd = SectionBase + Section->Misc.VirtualSize;
+      XIntervals.Insert({SectionBase, SectionEnd});
+      LastExecutableSectionEnd = std::max(LastExecutableSectionEnd, SectionEnd);
       if (Section->Characteristics & IMAGE_SCN_MEM_WRITE) {
         LogMan::Msg::DFmt("Add image SMC interval: {:X} - {:X}", SectionBase, SectionBase + Section->Misc.VirtualSize);
         RWXIntervals.Insert({SectionBase, SectionBase + Section->Misc.VirtualSize});
       }
     }
+  }
+
+  FEX_CONFIG_OPT(MonoHacks, MONOHACKS);
+  if (MonoHacks && (Name == "mono-2.0-bdwgc.dll" || Name == "mono.dll")) {
+    CTX.MarkMonoDetected();
+    MonoBackpatcherDetectionPending = true;
+    MonoBase = Address;
+    MonoEnd = LastExecutableSectionEnd;
   }
 }
 
@@ -162,7 +173,7 @@ void InvalidationTracker::ReprotectRWXIntervals(uint64_t Address, uint64_t Size)
   } while (Address < End);
 }
 
-bool InvalidationTracker::HandleRWXAccessViolation(uint64_t FaultAddress) {
+bool InvalidationTracker::HandleRWXAccessViolation(FEXCore::Core::InternalThreadState* Thread, uint64_t HostPc, uint64_t FaultAddress) {
   const bool NeedsInvalidate = [&](uint64_t Address) {
     std::shared_lock Lock(IntervalsLock);
     const bool Enclosed = RWXIntervals.Query(Address).Enclosed;
@@ -179,12 +190,15 @@ bool InvalidationTracker::HandleRWXAccessViolation(uint64_t FaultAddress) {
   }(FaultAddress);
 
   if (NeedsInvalidate) {
-    // IntervalsLock cannot be held during invalidation
-    std::scoped_lock Lock(CTX.GetCodeInvalidationMutex());
-    FEXCore::Context::InvalidatedEntryAccumulator Accumulator;
-    for (auto Thread : Threads) {
-      CTX.InvalidateGuestCodeRange(Thread.second, Accumulator, FaultAddress & FEXCore::Utils::FEX_PAGE_MASK, FEXCore::Utils::FEX_PAGE_SIZE);
+    {
+      // IntervalsLock cannot be held during invalidation
+      std::scoped_lock Lock(CTX.GetCodeInvalidationMutex());
+      FEXCore::Context::InvalidatedEntryAccumulator Accumulator;
+      for (auto Thread : Threads) {
+        CTX.InvalidateGuestCodeRange(Thread.second, Accumulator, FaultAddress & FEXCore::Utils::FEX_PAGE_MASK, FEXCore::Utils::FEX_PAGE_SIZE);
+      }
     }
+    DetectMonoBackpatcherBlock(Thread, HostPc);
     return true;
   }
   return false;
@@ -203,6 +217,35 @@ FEXCore::HLE::ExecutableRangeInfo InvalidationTracker::QueryExecutableRange(uint
     return {XResult.Interval.Offset, RWXResult.Interval.Offset - XResult.Interval.Offset, false};
   }
   return {XResult.Interval.Offset, XResult.Interval.End - XResult.Interval.Offset, false};
+}
+
+void InvalidationTracker::DetectMonoBackpatcherBlock(FEXCore::Core::InternalThreadState* Thread, uint64_t HostPc) {
+  if (!MonoBackpatcherDetectionPending) {
+    return;
+  }
+
+  if (!CTX.IsAddressInCodeBuffer(Thread, HostPc)) {
+    return;
+  }
+
+  uint64_t RIP = CTX.RestoreRIPFromHostPC(Thread, HostPc);
+  if (!RIP || RIP < MonoBase || RIP >= MonoEnd) {
+    return;
+  }
+
+  static constexpr uint8_t XChgOp = 0x87;
+  if (*reinterpret_cast<uint8_t*>(RIP) != XChgOp && *reinterpret_cast<uint8_t*>(RIP + 1) != XChgOp) {
+    return;
+  }
+
+  uint64_t BlockEntry = CTX.GetGuestBlockEntry(Thread);
+  LogMan::Msg::DFmt("Detected mono backpatcher at: {:X}", BlockEntry);
+  DisableSMCDetection();
+  {
+    std::scoped_lock CodeLock(CTX.GetCodeInvalidationMutex());
+    CTX.MarkMonoBackpatcherBlock(BlockEntry);
+  }
+  InvalidateAlignedInterval(BlockEntry, FEXCore::Utils::FEX_PAGE_SIZE, false);
 }
 
 void InvalidationTracker::DisableSMCDetection() {
