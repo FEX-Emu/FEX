@@ -536,7 +536,11 @@ uint64_t Arm64JITCore::ExitFunctionLink(FEXCore::Core::CpuStateFrame* Frame, FEX
     Frame->State.rip = GuestRip;
     return Frame->Pointers.Common.DispatcherLoopTop;
   } else {
-    HostCode = Thread->LookupCache->FindBlock(GuestRip);
+    {
+      // Guard the LookupCache lock with the code invalidation mutex, to avoid issues with forking
+      auto lk_inval = GuardSignalDeferringSection<std::shared_lock>(static_cast<Context::ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
+      HostCode = Thread->LookupCache->FindBlock(GuestRip);
+    }
     if (!HostCode) {
       // Hold a reference to the code buffer, to avoid linking unmapped code if compilation triggers a recreation.
       auto CodeBuffer = static_cast<Arm64JITCore*>(Thread->CPUBackend.get())->CurrentCodeBuffer;
@@ -555,6 +559,9 @@ uint64_t Arm64JITCore::ExitFunctionLink(FEXCore::Core::CpuStateFrame* Frame, FEX
   uint32_t ExpectedKnownCallMarkerInst = 0;
   ARMEmitter::Emitter ExpectedKnownCallMarkerEmit(reinterpret_cast<uint8_t*>(&ExpectedKnownCallMarkerInst), 4);
   ExpectedKnownCallMarkerEmit.adr(TMP1, 0xC);
+
+  // Guard the LookupCache lock with the code invalidation mutex, to avoid issues with forking
+  auto lk_inval = GuardSignalDeferringSection<std::shared_lock>(static_cast<Context::ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
 
   // Lock here is necessary to prevent simultaneous linking and delinking
   auto lk = Thread->LookupCache->AcquireLock();
