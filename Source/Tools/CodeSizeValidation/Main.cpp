@@ -52,7 +52,8 @@ public:
 
     {
       auto CodeInvalidationlk = FEXCore::GuardSignalDeferringSection(CTX->GetCodeInvalidationMutex(), Thread);
-      CTX->InvalidateGuestCodeRange(Thread, reinterpret_cast<uint64_t>(CodeStart), MAX_CODE_SIZE);
+      FEXCore::Context::InvalidatedEntryAccumulator Accumulator;
+      CTX->InvalidateGuestCodeRange(Thread, Accumulator, reinterpret_cast<uint64_t>(CodeStart), MAX_CODE_SIZE);
     }
 
     ClearStats();

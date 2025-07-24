@@ -154,6 +154,8 @@ void ThreadManager::StatAlloc::UnlockAfterFork(FEXCore::Core::InternalThreadStat
   ThreadObject->Thread->ThreadStats = AllocateSlot(ThreadObject->ThreadInfo.TID);
 }
 
+constexpr size_t CALLRET_STACK_ALLOC_SIZE = FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE + 2 * FEXCore::Utils::FEX_PAGE_SIZE;
+
 FEX::HLE::ThreadStateObject* ThreadManager::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, const FEXCore::Core::CPUState* NewThreadState,
                                                          uint64_t ParentTID, FEX::HLE::ThreadStateObject* InheritThread) {
   auto ThreadStateObject = new FEX::HLE::ThreadStateObject;
@@ -164,6 +166,14 @@ FEX::HLE::ThreadStateObject* ThreadManager::CreateThread(uint64_t InitialRIP, ui
   ThreadStateObject->ThreadInfo.TID = FHU::Syscalls::gettid();
 
   ThreadStateObject->Thread = CTX->CreateThread(InitialRIP, StackPointer, NewThreadState);
+
+  // Allocate the call-ret stack with guard pages on both sides
+  auto AllocBase = reinterpret_cast<uint64_t>(::mmap(nullptr, CALLRET_STACK_ALLOC_SIZE, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+  // Set the base used for invalidation to the start past the guard pages
+  ThreadStateObject->Thread->CallRetStackBase = reinterpret_cast<void*>(AllocBase + FEXCore::Utils::FEX_PAGE_SIZE);
+  ::mprotect(ThreadStateObject->Thread->CallRetStackBase, FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE, PROT_READ | PROT_WRITE);
+  ThreadStateObject->Thread->CurrentFrame->State.callret_sp = ThreadStateObject->GetCallRetStackInfo().DefaultLocation;
+
   ThreadStateObject->Thread->FrontendPtr = ThreadStateObject;
   if (ProfileStats()) {
     ThreadStateObject->Thread->ThreadStats = Stat.AllocateSlot(ThreadStateObject->ThreadInfo.TID);
@@ -219,6 +229,9 @@ void ThreadManager::HandleThreadDeletion(FEX::HLE::ThreadStateObject* Thread, bo
 #endif
     FEXCore::Allocator::UninstallTLSData(Thread->Thread);
   }
+
+  // Free the call-ret stack
+  ::munmap(reinterpret_cast<void*>(Thread->GetCallRetStackInfo().AllocationBase), CALLRET_STACK_ALLOC_SIZE);
 
   CTX->DestroyThread(Thread->Thread);
   FEX::HLE::_SyscallHandler->SeccompEmulator.FreeSeccompFilters(Thread);

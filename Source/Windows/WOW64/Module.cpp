@@ -27,6 +27,7 @@ $end_info$
 #include <FEXCore/Utils/TypeDefines.h>
 
 #include "Common/ArgumentLoader.h"
+#include "Common/CallRetStack.h"
 #include "Common/Config.h"
 #include "Common/Exception.h"
 #include "Common/TSOHandlerConfig.h"
@@ -70,6 +71,7 @@ struct TLS {
     ENTRY_CONTEXT = WOW64_TLS_MAX_NUMBER - 1,
     CONTROL_WORD = WOW64_TLS_MAX_NUMBER - 2,
     THREAD_STATE = WOW64_TLS_MAX_NUMBER - 3,
+    CACHED_CALLRET_SP = WOW64_TLS_MAX_NUMBER - 4,
   };
 
   _TEB* TEB;
@@ -92,6 +94,12 @@ struct TLS {
 
   FEXCore::Core::InternalThreadState*& ThreadState() const {
     return reinterpret_cast<FEXCore::Core::InternalThreadState*&>(TEB->TlsSlots[FEXCore::ToUnderlying(Slot::THREAD_STATE)]);
+  }
+
+  // This is used to work around user callback handling (see Wow64KiUserCallbackDispatcher in wine) unbalancing the
+  // call-ret stace since user callbacks are returned from using a syscall that we can't really intercept.
+  uint64_t& CachedCallRetSp() const {
+    return reinterpret_cast<uint64_t&>(TEB->TlsSlots[FEXCore::ToUnderlying(Slot::CACHED_CALLRET_SP)]);
   }
 };
 
@@ -549,6 +557,9 @@ void BTCpuProcessTerm(HANDLE Handle, BOOL After, ULONG Status) {}
 void BTCpuThreadInit() {
   FEX::Windows::InitCRTThread();
   auto* Thread = CTX->CreateThread(0, 0);
+
+  FEX::Windows::CallRetStack::InitializeThread(Thread);
+
   GetTLS().ThreadState() = Thread;
   GetTLS().ControlWord().fetch_or(ControlBits::WOW_CPU_AREA_DIRTY, std::memory_order::relaxed);
 
@@ -582,6 +593,7 @@ void BTCpuThreadTerm(HANDLE Thread, LONG ExitCode) {
     }
   }
 
+  FEX::Windows::CallRetStack::DestroyThread(ThreadState);
   CTX->DestroyThread(ThreadState);
   if (ThreadTID == GetCurrentThreadId()) {
     FEX::Windows::DeinitCRTThread();
@@ -638,17 +650,23 @@ NTSTATUS BTCpuSetContext(HANDLE Thread, HANDLE Process, void* Unknown, WOW64_CON
     return Err;
   }
 
+  if (Thread == GetCurrentThread() && TLS.CachedCallRetSp()) {
+    TLS.ThreadState()->CurrentFrame->State.callret_sp = TLS.CachedCallRetSp();
+  }
+
   Context::LoadStateFromWowContext(TLS.ThreadState(), GetWowTEB(TLS.TEB), &TmpContext);
   return STATUS_SUCCESS;
 }
 
 void BTCpuSimulate() {
+  auto TLS = GetTLS();
   CONTEXT entry_context;
   RtlCaptureContext(&entry_context);
-  GetTLS().EntryContext() = &entry_context;
+  TLS.EntryContext() = &entry_context;
+  TLS.CachedCallRetSp() = TLS.ThreadState()->CurrentFrame->State.callret_sp;
 
   Context::LockJITContext();
-  CTX->ExecuteThread(GetTLS().ThreadState());
+  CTX->ExecuteThread(TLS.ThreadState());
   Context::UnlockJITContext();
 }
 
@@ -742,6 +760,10 @@ bool BTCpuResetToConsistentStateImpl(EXCEPTION_POINTERS* Ptrs) {
 
   if (Exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
     const auto FaultAddress = static_cast<uint64_t>(Exception->ExceptionInformation[1]);
+
+    if (FEX::Windows::CallRetStack::HandleAccessViolation(Thread, FaultAddress, Context->X25)) {
+      return true;
+    }
 
     if (OvercommitTracker && OvercommitTracker->HandleAccessViolation(FaultAddress)) {
       return true;

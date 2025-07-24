@@ -27,6 +27,14 @@ namespace FEX::HLE {
 bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext) {
   const auto FaultAddress = (uintptr_t)((siginfo_t*)info)->si_addr;
 
+  auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread);
+  auto CallRetStackInfo = ThreadObject->GetCallRetStackInfo();
+  if (FaultAddress >= CallRetStackInfo.AllocationBase && FaultAddress < CallRetStackInfo.AllocationEnd) {
+    // Reset REG_CALLRET_SP to the default location to allow for underflows/overflows
+    ArchHelpers::Context::SetArmReg(ucontext, 25, CallRetStackInfo.DefaultLocation);
+    return true;
+  }
+
   {
     // Can't use the deferred signal lock in the SIGSEGV handler.
     auto lk = FEXCore::MaskSignalsAndLockMutex<std::shared_lock>(_SyscallHandler->VMATracking.Mutex);

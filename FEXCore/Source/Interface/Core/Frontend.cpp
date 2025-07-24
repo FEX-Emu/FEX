@@ -1035,7 +1035,7 @@ void Decoder::BranchTargetInMultiblockRange() {
 
   if (DecodeInst->TableInfo->Flags & FEXCore::X86Tables::InstFlags::FLAGS_CALL) {
     AddBranchTarget(InstEnd);
-    BlockEntryPoints.emplace(InstEnd);
+    BlockInfo.EntryPoints.emplace(InstEnd);
     return;
   }
 
@@ -1198,9 +1198,7 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
   FEXCORE_PROFILE_SCOPED("DecodeInstructions");
   BlockInfo.TotalInstructionCount = 0;
   BlockInfo.Blocks.clear();
-  BlocksToDecode.clear();
   VisitedBlocks.clear();
-  BlockEntryPoints.clear();
   // Reset internal state management
   DecodedSize = 0;
   MaxCondBranchForward = 0;
@@ -1210,7 +1208,7 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
   // XXX: Load symbol data
   SymbolAvailable = false;
   EntryPoint = PC;
-  BlockEntryPoints.emplace(PC);
+  BlockInfo.EntryPoints = {PC};
   InstStream = _InstStream;
 
   uint64_t TotalInstructions {};
@@ -1226,11 +1224,11 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
   DecodedMaxAddress = EntryPoint;
 
   // Entry is a jump target
-  BlocksToDecode.emplace(PC);
+  BlocksToDecode = {PC};
 
   uint64_t CurrentCodePage = PC & FEXCore::Utils::FEX_PAGE_MASK;
 
-  fextl::set<uint64_t> CodePages = {CurrentCodePage};
+  BlockInfo.CodePages = {CurrentCodePage};
 
   if (MaxInst == 0) {
     MaxInst = CTX->Config.MaxInstPerBlock;
@@ -1295,12 +1293,12 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
 
       if (OpMinPage != CurrentCodePage) {
         CurrentCodePage = OpMinPage;
-        CodePages.insert(CurrentCodePage);
+        BlockInfo.CodePages.insert(CurrentCodePage);
       }
 
       if (OpMaxPage != CurrentCodePage) {
         CurrentCodePage = OpMaxPage;
-        CodePages.insert(CurrentCodePage);
+        BlockInfo.CodePages.insert(CurrentCodePage);
       }
 
       BlockIt->BlockStatus = DecodeInstruction(OpAddress);
@@ -1373,13 +1371,7 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
   BlockInfo.TotalInstructionCount = TotalInstructions;
 
   for (auto& Block : BlockInfo.Blocks) {
-    Block.IsEntryPoint = BlockEntryPoints.contains(Block.Entry);
-  }
-
-  for (auto CodePage : CodePages) {
-    if (Thread->LookupCache->AddBlockExecutableRange(BlockEntryPoints, CodePage, FEXCore::Utils::FEX_PAGE_SIZE)) {
-      CTX->SyscallHandler->MarkGuestExecutableRange(Thread, CodePage, FEXCore::Utils::FEX_PAGE_SIZE);
-    }
+    Block.IsEntryPoint = BlockInfo.EntryPoints.contains(Block.Entry);
   }
 }
 

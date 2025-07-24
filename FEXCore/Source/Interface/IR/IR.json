@@ -158,7 +158,8 @@
     "FloatCompareOp": "FloatCompareOp",
     "NamedVectorConstant": "FEXCore::IR::NamedVectorConstant",
     "IndexNamedVectorConstant": "FEXCore::IR::IndexNamedVectorConstant",
-    "ShiftType": "FEXCore::IR::ShiftType"
+    "ShiftType": "FEXCore::IR::ShiftType",
+    "BranchHint": "FEXCore::IR::BranchHint"
   },
   "Ops": {
     "Misc": {
@@ -302,11 +303,12 @@
         "HasSideEffects": true,
         "RAOverride": "2"
       },
-      "ExitFunction OpSize:#Size, GPR:$NewRIP": {
+      "ExitFunction OpSize:#Size, GPR:$NewRIP, BranchHint:$Hint, GPR:$CallReturnAddress, SSA:$CallReturnBlock": {
         "Desc": ["Exits the current JIT function with a target RIP"
                 ],
         "HasSideEffects": true,
-        "DestSize": "Size"
+        "DestSize": "Size",
+        "RAOverride": "2"
       },
       "Break BreakDefinition:$Reason": {
         "HasSideEffects": true

@@ -131,9 +131,9 @@
         "bfi x0, x5, #32, #32",
         "sxtw x1, w20",
         "sdiv x22, x0, x1",
-        "msub x24, x22, x1, x0",
+        "msub x21, x22, x1, x0",
         "mov w4, w22",
-        "mov w5, w24"
+        "mov w5, w21"
       ]
     },
     "unsigned div narrow 32-bit": {
@@ -156,7 +156,7 @@
     },
     "inline syscall": {
       "x86InstructionCount": 2,
-      "ExpectedInstructionCount": 106,
+      "ExpectedInstructionCount": 108,
       "Comment": [
         "Simple inline syscall check",
         "When the syscall number is a known constant that matches host semantics then it can be inlined",
@@ -220,6 +220,7 @@
         "stp x18, x30, [x0], #16",
         "mrs x0, nzcv",
         "str w0, [x28, #1000]",
+        "str x25, [x28, #1024]",
         "stp x4, x7, [x28, #288]",
         "stp x5, x6, [x28, #304]",
         "stp x8, x9, [x28, #320]",
@@ -250,6 +251,7 @@
         "mov x2, sp",
         "blr x3",
         "add sp, sp, #0x40 (64)",
+        "ldr x25, [x28, #1024]",
         "ldr w1, [x28, #1000]",
         "msr nzcv, x1",
         "add x1, x28, #0x1a0 (416)",

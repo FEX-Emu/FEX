@@ -1024,11 +1024,12 @@
       ]
     },
     "rdpid eax": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 20,
       "Comment": "GROUP9 0xF3 0x0F 0xC7 /7",
       "ExpectedArm64ASM": [
         "mrs x0, nzcv",
         "str w0, [x28, #1000]",
+        "str x25, [x28, #1024]",
         "str x8, [x28, #320]",
         "mov w0, #0x100",
         "str x0, [x28, #1312]",
@@ -1039,6 +1040,7 @@
         "svc #0x0",
         "ldp w0, w1, [sp]",
         "sub sp, sp, #0x10 (16)",
+        "ldr x25, [x28, #1024]",
         "ldr w8, [x28, #1000]",
         "msr nzcv, x8",
         "ldr x8, [x28, #320]",
@@ -1048,11 +1050,12 @@
       ]
     },
     "rdpid rax": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 20,
       "Comment": "GROUP9 0xF3 0x0F 0xC7 /7",
       "ExpectedArm64ASM": [
         "mrs x0, nzcv",
         "str w0, [x28, #1000]",
+        "str x25, [x28, #1024]",
         "str x8, [x28, #320]",
         "mov w0, #0x100",
         "str x0, [x28, #1312]",
@@ -1063,6 +1066,7 @@
         "svc #0x0",
         "ldp w0, w1, [sp]",
         "sub sp, sp, #0x10 (16)",
+        "ldr x25, [x28, #1024]",
         "ldr w8, [x28, #1000]",
         "msr nzcv, x8",
         "ldr x8, [x28, #320]",

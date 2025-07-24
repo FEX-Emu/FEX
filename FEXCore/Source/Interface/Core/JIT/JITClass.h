@@ -31,6 +31,10 @@ namespace FEXCore::Core {
 struct InternalThreadState;
 }
 
+namespace FEXCore::Context {
+struct ExitFunctionLinkData;
+}
+
 namespace FEXCore::CPU {
 class Arm64JITCore final : public CPUBackend, public Arm64Emitter {
 public:
@@ -57,14 +61,25 @@ private:
   const bool HostSupportsAFP {};
 
   ARMEmitter::BiDirectionalLabel* PendingTargetLabel {};
+  ARMEmitter::BiDirectionalLabel* PendingCallReturnTargetLabel {};
   FEXCore::Context::ContextImpl* CTX {};
   const FEXCore::IR::IRListView* IR {};
   uint64_t Entry {};
   CPUBackend::CompiledCode CodeData {};
 
   fextl::map<IR::NodeID, ARMEmitter::BiDirectionalLabel> JumpTargets;
+  fextl::map<IR::NodeID, ARMEmitter::BiDirectionalLabel> CallReturnTargets;
+
+  struct PendingJumpThunk {
+    uint64_t CallerAddress;
+    uint64_t GuestRIP;
+    ARMEmitter::ForwardLabel Label;
+  };
+  fextl::vector<PendingJumpThunk> PendingJumpThunks;
 
   Utils::PoolBufferWithTimedRetirement<uint8_t*, 5000, 500> TempAllocator;
+
+  static uint64_t ExitFunctionLink(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record);
 
   [[nodiscard]]
   ARMEmitter::Register GetReg(IR::PhysicalRegister Reg) const {
@@ -289,6 +304,17 @@ private:
     uint32_t Begin;
     uint32_t End;
   };
+
+  void EmitLinkedBranch(uint64_t GuestRIP, bool Call) {
+    PendingJumpThunks.push_back({GetCursorAddress<uint64_t>(), GuestRIP, {}});
+    auto& Thunk = PendingJumpThunks.back();
+    Bind(&Thunk.Label);
+    if (Call) {
+      bl(&Thunk.Label);
+    } else {
+      b(&Thunk.Label);
+    }
+  }
 
   // This is purely a debugging aid for developers to see if they are in JIT code space when inspecting raw memory
   void EmitDetectionString();

@@ -59,8 +59,9 @@ namespace Validation {
 
 namespace FEXCore::Context {
 struct FEX_PACKED ExitFunctionLinkData {
-  uint64_t HostBranch;
+  uint64_t HostCode;
   uint64_t GuestRIP;
+  int64_t CallerOffset;
 };
 
 struct CustomIRResult {
@@ -166,7 +167,8 @@ public:
 
   void OnCodeBufferAllocated(CPU::CodeBuffer&) override;
   void ClearCodeCache(FEXCore::Core::InternalThreadState* Thread, bool NewCodeBuffer = true) override;
-  void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) override;
+  void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, InvalidatedEntryAccumulator& Accumulator, uint64_t Start,
+                                uint64_t Length) override;
   FEXCore::ForkableSharedMutex& GetCodeInvalidationMutex() override {
     return CodeInvalidationMutex;
   }
@@ -248,15 +250,7 @@ public:
   ContextImpl(const FEXCore::HostFeatures& Features);
   ~ContextImpl();
 
-  static void ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP);
-
-  template<auto Fn>
-  static uint64_t ThreadExitFunctionLink(FEXCore::Core::CpuStateFrame* Frame, ExitFunctionLinkData* Record) {
-    auto Thread = Frame->Thread;
-    auto lk = GuardSignalDeferringSection<std::shared_lock>(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
-
-    return Fn(Frame, Record);
-  }
+  static bool ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP);
 
   // Wrapper which takes CpuStateFrame instead of InternalThreadState and unique_locks CodeInvalidationMutex
   // Must be called from owning thread
@@ -279,6 +273,7 @@ public:
     uint64_t TotalInstructionsLength;
     uint64_t StartAddr;
     uint64_t Length;
+    bool NeedsAddGuestCodeRanges;
   };
   [[nodiscard]]
   GenerateIRResult GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, bool ExtendedDebugInfo, uint64_t MaxInst);
@@ -288,6 +283,7 @@ public:
     fextl::unique_ptr<FEXCore::Core::DebugData> DebugData;
     uint64_t StartAddr;
     uint64_t Length;
+    bool NeedsAddGuestCodeRanges;
   };
   [[nodiscard]]
   CompileCodeResult CompileCode(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, uint64_t MaxInst = 0);

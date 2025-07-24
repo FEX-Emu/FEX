@@ -126,7 +126,7 @@ void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
   auto NewRIP = Pop(GPRSize);
 
   // Store the new RIP
-  ExitFunction(NewRIP);
+  ExitFunction(NewRIP, BranchHint::Return);
   BlockSetRIP = true;
 }
 
@@ -173,7 +173,7 @@ void OpDispatchBuilder::RETOp(OpcodeArgs) {
   StoreGPRRegister(X86State::REG_RSP, SP);
 
   // Store the new RIP
-  ExitFunction(NewRIP);
+  ExitFunction(NewRIP, BranchHint::Return);
   BlockSetRIP = true;
 }
 
@@ -520,22 +520,27 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
     InvalidatePF_AF();
   }
 
-  auto ConstantPC = GetRelocatedPC(Op);
   // Call instruction only uses up to 32-bit signed displacement
   int64_t TargetOffset = Op->Src[0].Literal();
-  uint64_t InstRIP = Op->PC + Op->InstSize;
-  uint64_t TargetRIP = InstRIP + TargetOffset;
 
-  Ref NewRIP = _Add(GPRSize, ConstantPC, _Constant(TargetOffset));
+  auto NewRIP = GetRelocatedPC(Op, TargetOffset);
+  auto ConstantPC = _Sub(GPRSize, NewRIP, _Constant(TargetOffset));
 
   // Push the return address.
   Push(GPRSize, ConstantPC);
 
   const uint64_t NextRIP = Op->PC + Op->InstSize;
+  uint64_t TargetRIP = NextRIP + TargetOffset;
 
   if (NextRIP != TargetRIP) {
     // Store the RIP
-    ExitFunction(NewRIP); // If we get here then leave the function now
+    ExitFunction(NewRIP, BranchHint::Call, ConstantPC, [&]() {
+      auto CallReturnJumpTarget = JumpTargets.find(NextRIP);
+      if (CallReturnJumpTarget != JumpTargets.end() && CallReturnJumpTarget->second.IsEntryPoint) {
+        return CallReturnJumpTarget->second.BlockEntry;
+      }
+      return InvalidNode;
+    }());
   } else {
     NeedsBlockEnd = true;
   }
@@ -548,10 +553,18 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   Ref JMPPCOffset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
 
   // Push the return address.
-  Push(Size, GetRelocatedPC(Op));
+  auto ConstantPC = GetRelocatedPC(Op);
+  Push(Size, ConstantPC);
 
   // Store the RIP
-  ExitFunction(JMPPCOffset); // If we get here then leave the function now
+  const uint64_t NextRIP = Op->PC + Op->InstSize;
+  ExitFunction(JMPPCOffset, BranchHint::Call, ConstantPC, [&]() {
+    auto CallReturnJumpTarget = JumpTargets.find(NextRIP);
+    if (CallReturnJumpTarget != JumpTargets.end() && CallReturnJumpTarget->second.IsEntryPoint) {
+      return CallReturnJumpTarget->second.BlockEntry;
+    }
+    return InvalidNode;
+  }());
 }
 
 Ref OpDispatchBuilder::SelectPF(bool Invert, IR::OpSize ResultSize, Ref TrueValue, Ref FalseValue) {
@@ -926,16 +939,8 @@ void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
       StartNewBlock();
       ExitFunction(GetRelocatedPC(Op, TargetOffset));
     }
-    return;
-  }
-
-  // Fallback
-  {
-    auto RIPTargetConst = GetRelocatedPC(Op);
-    auto NewRIP = _Add(OpSize::i64Bit, _Constant(TargetOffset), RIPTargetConst);
-
-    // Store the new RIP
-    ExitFunction(NewRIP);
+  } else {
+    ExitFunction(GetRelocatedPC(Op, TargetOffset));
   }
 }
 
@@ -3854,7 +3859,7 @@ void OpDispatchBuilder::CreateJumpBlocks(const fextl::vector<FEXCore::Frontend::
   for (auto& Target : *Blocks) {
     auto CodeNode = CreateCodeNode(Target.IsEntryPoint, Target.Entry - Entry);
 
-    JumpTargets.try_emplace(Target.Entry, JumpTargetInfo {CodeNode, false});
+    JumpTargets.try_emplace(Target.Entry, JumpTargetInfo {CodeNode, false, Target.IsEntryPoint});
 
     if (PrevCodeBlock) {
       LinkCodeBlocks(PrevCodeBlock, CodeNode);

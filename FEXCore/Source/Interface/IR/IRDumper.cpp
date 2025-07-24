@@ -267,6 +267,15 @@ static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::S
   }
 }
 
+static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView* IR, FEXCore::IR::BranchHint Arg) {
+  switch (Arg) {
+  case BranchHint::None: *out << "None"; break;
+  case BranchHint::Call: *out << "Call"; break;
+  case BranchHint::Return: *out << "Return"; break;
+  default: *out << "<Unknown Branch Hint>"; break;
+  }
+}
+
 void Dump(fextl::stringstream* out, const IRListView* IR) {
   auto HeaderOp = IR->GetHeader();
 

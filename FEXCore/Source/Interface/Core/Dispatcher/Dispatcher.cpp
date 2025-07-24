@@ -114,7 +114,20 @@ void Dispatcher::EmitDispatcher() {
   add(ARMEmitter::Size::i64Bit, StaticRegisters[X86State::REG_RSP], ARMEmitter::Reg::rsp, 0);
   add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, TMP1, 0);
 
+  ldr(REG_CALLRET_SP, STATE_PTR(CpuStateFrame, State.callret_sp));
+
   FillSpecialRegs(TMP1, TMP2, false, true);
+
+  // As ARM64EC uses this as an entrypoint for both guest calls and host returns, opportunistically try to return
+  // using the call-ret stack to avoid unbalancing it.
+  ldp<ARMEmitter::IndexType::OFFSET>(TMP1, TMP2, REG_CALLRET_SP);
+  // EC_CALL_CHECKER_PC_REG is REG_PF which isn't touched by any of the above
+  sub(ARMEmitter::Size::i64Bit, TMP1, EC_CALL_CHECKER_PC_REG, TMP1);
+  cbnz(ARMEmitter::Size::i64Bit, TMP1, &LoopTop);
+
+  // If the entry at the TOS is for the target address, pop it and return to the JIT code
+  add(ARMEmitter::Size::i64Bit, REG_CALLRET_SP, REG_CALLRET_SP, 0x10);
+  ret(TMP2);
 
   // Enter JIT
 #endif
@@ -288,6 +301,8 @@ void Dispatcher::EmitDispatcher() {
     lsr(ARMEmitter::Size::i64Bit, TMP2, RipReg, 12);
     lsrv(ARMEmitter::Size::i64Bit, TMP1, TMP1, TMP2);
     tbz(TMP1, 0, &l_NotECCode);
+
+    str(REG_CALLRET_SP, STATE_PTR(CpuStateFrame, State.callret_sp));
 
     add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, StaticRegisters[X86State::REG_RSP], 0);
     mov(EC_CALL_CHECKER_PC_REG, RipReg);
@@ -501,6 +516,7 @@ void Dispatcher::EmitDispatcher() {
 
     // load static regs
     FillStaticRegs();
+    stp<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::zr, ARMEmitter::XReg::zr, REG_CALLRET_SP, -0x10);
 
     // Now go back to the regular dispatcher loop
     b(&LoopTop);

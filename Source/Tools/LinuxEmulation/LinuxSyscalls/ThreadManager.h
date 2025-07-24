@@ -99,6 +99,19 @@ struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
   std::optional<GdbInfoStruct> GdbInfo;
 
   int StatusCode {};
+
+  struct CallRetStackInfo {
+    uint64_t AllocationBase;
+    uint64_t AllocationEnd;
+    uint64_t DefaultLocation;
+  };
+
+  CallRetStackInfo GetCallRetStackInfo() {
+    uint64_t Base = reinterpret_cast<uint64_t>(Thread->CallRetStackBase);
+    // Leave some room from the base for the default location to allow for underflows without constant exceptions
+    return {Base - FEXCore::Utils::FEX_PAGE_SIZE, Base + FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE + FEXCore::Utils::FEX_PAGE_SIZE,
+            Base + FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE / 4};
+  }
 };
 
 class ThreadManager final {
@@ -184,9 +197,10 @@ public:
     // Thread object isn't valid very early in frontend's initialization.
     // To be more optimal the frontend should provide this code with a valid Thread object earlier.
     auto CodeInvalidationlk = GuardSignalDeferringSectionWithFallback(CTX->GetCodeInvalidationMutex(), CallingThread);
+    FEXCore::Context::InvalidatedEntryAccumulator Accumulator;
 
     for (auto& Thread : Threads) {
-      CTX->InvalidateGuestCodeRange(Thread->Thread, Start, Length);
+      CTX->InvalidateGuestCodeRange(Thread->Thread, Accumulator, Start, Length);
     }
   }
 
@@ -198,9 +212,10 @@ public:
     // Thread object isn't valid very early in frontend's initialization.
     // To be more optimal the frontend should provide this code with a valid Thread object earlier.
     auto CodeInvalidationlk = GuardSignalDeferringSectionWithFallback(CTX->GetCodeInvalidationMutex(), CallingThread);
+    FEXCore::Context::InvalidatedEntryAccumulator Accumulator;
 
     for (auto& Thread : Threads) {
-      CTX->InvalidateGuestCodeRange(Thread->Thread, Start, Length);
+      CTX->InvalidateGuestCodeRange(Thread->Thread, Accumulator, Start, Length);
     }
 
     // Callback while holding the locks.
