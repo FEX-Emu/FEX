@@ -1198,10 +1198,7 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
   FEXCORE_PROFILE_SCOPED("DecodeInstructions");
   BlockInfo.TotalInstructionCount = 0;
   BlockInfo.Blocks.clear();
-  BlockInfo.CodePages.clear();
-  BlocksToDecode.clear();
   VisitedBlocks.clear();
-  BlockInfo.EntryPoints.clear();
   // Reset internal state management
   DecodedSize = 0;
   MaxCondBranchForward = 0;
@@ -1211,7 +1208,7 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
   // XXX: Load symbol data
   SymbolAvailable = false;
   EntryPoint = PC;
-  BlockInfo.EntryPoints.emplace(PC);
+  BlockInfo.EntryPoints = {PC};
   InstStream = _InstStream;
 
   uint64_t TotalInstructions {};
@@ -1227,11 +1224,11 @@ void Decoder::DecodeInstructionsAtEntry(const uint8_t* _InstStream, uint64_t PC,
   DecodedMaxAddress = EntryPoint;
 
   // Entry is a jump target
-  BlocksToDecode.emplace(PC);
+  BlocksToDecode = {PC};
 
   uint64_t CurrentCodePage = PC & FEXCore::Utils::FEX_PAGE_MASK;
 
-  BlockInfo.CodePages.insert(CurrentCodePage);
+  BlockInfo.CodePages = {CurrentCodePage};
 
   if (MaxInst == 0) {
     MaxInst = CTX->Config.MaxInstPerBlock;
