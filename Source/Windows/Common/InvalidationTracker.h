@@ -34,10 +34,13 @@ public:
   FEXCore::HLE::ExecutableRangeInfo QueryExecutableRange(uint64_t Address);
 
 private:
+  void DisableSMCDetection();
+
   FEXCore::IntervalList<uint64_t> XIntervals;
   FEXCore::IntervalList<uint64_t> RWXIntervals;
   std::shared_mutex IntervalsLock;
   FEXCore::Context::Context& CTX;
   const std::unordered_map<DWORD, FEXCore::Core::InternalThreadState*>& Threads;
+  bool SMCDetectionDisabled {false}; // Protected by IntervalsLock
 };
 } // namespace FEX::Windows
