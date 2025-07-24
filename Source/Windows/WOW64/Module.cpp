@@ -161,7 +161,7 @@ bool IsAddressInJit(uint64_t Address) {
 void HandleImageMap(uint64_t Address) {
   fextl::string ModuleName = FEX::Windows::GetSectionFilePath(Address);
   LogMan::Msg::DFmt("Load module {}: {:X}", ModuleName, Address);
-  InvalidationTracker->HandleImageMap(Address);
+  InvalidationTracker->HandleImageMap(ModuleName, Address);
 }
 } // namespace
 
@@ -799,7 +799,7 @@ bool BTCpuResetToConsistentStateImpl(EXCEPTION_POINTERS* Ptrs) {
     if (Thread) {
       std::scoped_lock Lock(ThreadCreationMutex);
       FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedSMCCount, 1);
-      if (InvalidationTracker->HandleRWXAccessViolation(FaultAddress)) {
+      if (InvalidationTracker->HandleRWXAccessViolation(Thread, Context->Pc, FaultAddress)) {
         if (CTX->IsAddressInCodeBuffer(Thread, Context->Pc) && !CTX->IsCurrentBlockSingleInst(Thread) &&
             CTX->IsAddressInCurrentBlock(Thread, FaultAddress & FEXCore::Utils::FEX_PAGE_MASK, FEXCore::Utils::FEX_PAGE_SIZE)) {
           Context::ReconstructThreadState(Context);

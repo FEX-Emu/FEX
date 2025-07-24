@@ -314,7 +314,7 @@ void HandleImageMap(uint64_t Address) {
   if (VolatileMetadata) {
     LoadImageVolatileMetadata(Address);
   }
-  InvalidationTracker->HandleImageMap(Address);
+  InvalidationTracker->HandleImageMap(ModuleName, Address);
 }
 } // namespace
 
@@ -716,7 +716,7 @@ bool ResetToConsistentStateImpl(EXCEPTION_RECORD* Exception, CONTEXT* GuestConte
     }
 
     std::scoped_lock Lock(ThreadCreationMutex);
-    if (InvalidationTracker && InvalidationTracker->HandleRWXAccessViolation(FaultAddress)) {
+    if (InvalidationTracker && InvalidationTracker->HandleRWXAccessViolation(Thread, NativeContext->Pc, FaultAddress)) {
       FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedSMCCount, 1);
       if (CTX->IsAddressInCodeBuffer(Thread, NativeContext->Pc) && !CTX->IsCurrentBlockSingleInst(CPUArea.ThreadState()) &&
           CTX->IsAddressInCurrentBlock(Thread, FaultAddress & FEXCore::Utils::FEX_PAGE_MASK, FEXCore::Utils::FEX_PAGE_SIZE)) {
