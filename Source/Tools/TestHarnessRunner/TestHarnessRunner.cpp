@@ -153,8 +153,8 @@ LONG WINAPI VectoredExceptionHandler(struct _EXCEPTION_POINTERS* ExceptionInfo) 
     }
 
     const auto Result = FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(true, PC, FEX::ArchHelpers::Context::GetArmGPRs(Context));
-    FEX::ArchHelpers::Context::SetPc(Context, PC + Result.second);
-    return Result.first ? EXCEPTION_CONTINUE_EXECUTION : EXCEPTION_CONTINUE_SEARCH;
+    FEX::ArchHelpers::Context::SetPc(Context, PC + Result.value_or(0));
+    return Result ? EXCEPTION_CONTINUE_EXECUTION : EXCEPTION_CONTINUE_SEARCH;
   }
   case STATUS_ACCESS_VIOLATION: {
     constexpr uint8_t HLT = 0xF4;

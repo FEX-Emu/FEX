@@ -4,7 +4,7 @@
 #include <FEXCore/Utils/CompilerDefs.h>
 
 #include <stdint.h>
-#include <utility>
+#include <optional>
 
 namespace FEXCore::Core {
 struct InternalThreadState;
@@ -30,10 +30,10 @@ enum class UnalignedHandlerType {
  * @param ProgramCounter The location in memory for the instruction that did the access
  * @param GPRs The array of GPRs from the signal context. This will be modified and the host context needs to be updated on signal return.
  *
- * @return A pair where the first element is if the unaligned access has been handle and the second element is how many bytes to modify the host PC
+ * @return Returns a value if the unaligned access has been handled with how many bytes to modify the host PC
  * by. FEXCore will return a positive or negative offset depending on internal handling.
  */
 [[nodiscard]]
-FEX_DEFAULT_VISIBILITY std::pair<bool, int32_t>
+FEX_DEFAULT_VISIBILITY std::optional<int32_t>
 HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandlerType HandleType, uintptr_t ProgramCounter, uint64_t* GPRs);
 } // namespace FEXCore::ArchHelpers::Arm64

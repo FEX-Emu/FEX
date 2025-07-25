@@ -1953,7 +1953,7 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
 }
 
 [[nodiscard]]
-std::pair<bool, int32_t>
+std::optional<int32_t>
 HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandlerType HandleType, uintptr_t ProgramCounter, uint64_t* GPRs) {
 #ifdef _M_ARM_64
   constexpr bool is_arm64 = true;
@@ -1961,9 +1961,8 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
   constexpr bool is_arm64 = false;
 #endif
 
-  constexpr auto NotHandled = std::make_pair(false, 0);
   if constexpr (!is_arm64) {
-    return NotHandled;
+    return std::nullopt;
   }
 
   uint32_t* PC = (uint32_t*)ProgramCounter;
@@ -1985,38 +1984,38 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
         (Instr & LDAXR_MASK) == LDAPR_INST) { // LDAPR*
       if (ArchHelpers::Arm64::HandleAtomicLoad(Instr, GPRs, 0)) {
         // Skip this instruction now
-        return std::make_pair(true, 4);
+        return 4;
       } else {
         LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAR*: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
-        return NotHandled;
+        return std::nullopt;
       }
     } else if ((Instr & LDAXR_MASK) == STLR_INST) { // STLR*
       if (ArchHelpers::Arm64::HandleAtomicStore(Instr, GPRs, 0, StrictSplitLockMutex)) {
         // Skip this instruction now
-        return std::make_pair(true, 4);
+        return 4;
       } else {
         LogMan::Msg::EFmt("Unhandled JIT SIGBUS STLR*: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
-        return NotHandled;
+        return std::nullopt;
       }
     } else if ((Instr & RCPC2_MASK) == LDAPUR_INST) { // LDAPUR*
       // Extract the 9-bit offset from the instruction
       int32_t Offset = static_cast<int32_t>(Instr) << 11 >> 23;
       if (ArchHelpers::Arm64::HandleAtomicLoad(Instr, GPRs, Offset)) {
         // Skip this instruction now
-        return std::make_pair(true, 4);
+        return 4;
       } else {
         LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAPUR*: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
-        return NotHandled;
+        return std::nullopt;
       }
     } else if ((Instr & RCPC2_MASK) == STLUR_INST) { // STLUR*
       // Extract the 9-bit offset from the instruction
       int32_t Offset = static_cast<int32_t>(Instr) << 11 >> 23;
       if (ArchHelpers::Arm64::HandleAtomicStore(Instr, GPRs, Offset, StrictSplitLockMutex)) {
         // Skip this instruction now
-        return std::make_pair(true, 4);
+        return 4;
       } else {
         LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDLUR*: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
-        return NotHandled;
+        return std::nullopt;
       }
     }
   }
@@ -2030,18 +2029,18 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
   if ((Instr & ArchHelpers::Arm64::CASPAL_MASK) == ArchHelpers::Arm64::CASPAL_INST) { // CASPAL
     if (ArchHelpers::Arm64::HandleCASPAL(Instr, GPRs, StrictSplitLockMutex)) {
       // Skip this instruction now
-      return std::make_pair(true, 4);
+      return 4;
     } else {
       LogMan::Msg::EFmt("Unhandled JIT SIGBUS CASPAL: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
-      return NotHandled;
+      return std::nullopt;
     }
   } else if ((Instr & ArchHelpers::Arm64::CASAL_MASK) == ArchHelpers::Arm64::CASAL_INST) { // CASAL
     if (ArchHelpers::Arm64::HandleCASAL(GPRs, Instr, StrictSplitLockMutex)) {
       // Skip this instruction now
-      return std::make_pair(true, 4);
+      return 4;
     } else {
       LogMan::Msg::EFmt("Unhandled JIT SIGBUS CASAL: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
-      return NotHandled;
+      return std::nullopt;
     }
   } else if ((Instr & LDAXR_MASK) == LDAR_INST ||  // LDAR*
              (Instr & LDAXR_MASK) == LDAPR_INST || // LDAPR*
@@ -2051,17 +2050,17 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
   } else if ((Instr & ArchHelpers::Arm64::ATOMIC_MEM_MASK) == ArchHelpers::Arm64::ATOMIC_MEM_INST) { // Atomic memory op
     if (ArchHelpers::Arm64::HandleAtomicMemOp(Instr, GPRs, StrictSplitLockMutex)) {
       // Skip this instruction now
-      return std::make_pair(true, 4);
+      return 4;
     } else {
       uint8_t Op = (PC[0] >> 12) & 0xF;
       LogMan::Msg::EFmt("Unhandled JIT SIGBUS Atomic mem op 0x{:02x}: PC: 0x{:x} Instruction: 0x{:08x}\n", Op, ProgramCounter, PC[0]);
-      return NotHandled;
+      return std::nullopt;
     }
   } else if ((Instr & ArchHelpers::Arm64::LDAXR_MASK) == ArchHelpers::Arm64::LDAXR_INST) { // LDAXR*
     uint64_t BytesToSkip = ArchHelpers::Arm64::HandleAtomicLoadstoreExclusive(ProgramCounter, GPRs, StrictSplitLockMutex);
     if (BytesToSkip) {
       // Skip this instruction now
-      return std::make_pair(true, BytesToSkip);
+      return BytesToSkip;
     }
     // Explicit fallthrough to the backpatch handler below!
   } else if ((Instr & ArchHelpers::Arm64::LDAXP_MASK) == ArchHelpers::Arm64::LDAXP_INST) { // LDAXP
@@ -2069,7 +2068,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
     uint64_t BytesToSkip = ArchHelpers::Arm64::HandleCASPAL_ARMv8(Instr, ProgramCounter, GPRs, StrictSplitLockMutex);
     if (BytesToSkip) {
       // Skip this instruction now
-      return std::make_pair(true, BytesToSkip);
+      return BytesToSkip;
     }
   }
 
@@ -2091,7 +2090,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
     std::atomic_ref<uint32_t>(PC[0]).store(LDR, std::memory_order_release);
     ClearICache(&PC[0], 8);
     // With the instruction modified, now execute again.
-    return std::make_pair(true, 0);
+    return 0;
   } else if ((Instr & LDAXR_MASK) == STLR_INST) { // STLR*
     uint32_t STR = STR_INST;
     STR |= Size << 30;
@@ -2103,7 +2102,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
     std::atomic_ref<uint32_t>(PC[0]).store(STR, std::memory_order_release);
     ClearICache(&PC[-1], 8);
     // Back up one instruction and have another go
-    return std::make_pair(true, -4);
+    return -4;
   } else if ((Instr & RCPC2_MASK) == LDAPUR_INST) { // LDAPUR*
     // Extract the 9-bit offset from the instruction
     uint32_t LDUR = LDUR_INST;
@@ -2118,7 +2117,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
     std::atomic_ref<uint32_t>(PC[0]).store(LDUR, std::memory_order_release);
     ClearICache(&PC[0], 8);
     // With the instruction modified, now execute again.
-    return std::make_pair(true, 0);
+    return 0;
   } else if ((Instr & RCPC2_MASK) == STLUR_INST) { // STLUR*
     uint32_t STUR = STUR_INST;
     STUR |= Size << 30;
@@ -2132,20 +2131,20 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
 
     ClearICache(&PC[-1], 8);
     // Back up one instruction and have another go
-    return std::make_pair(true, -4);
+    return -4;
   } else if ((Instr & ArchHelpers::Arm64::LDAXP_MASK) == ArchHelpers::Arm64::LDAXP_INST) { // LDAXP
     /// This is handling the case of paranoid ARMv8.0-a atomic stores.
     /// This backpatches the ldaxp+stlxp+cbnz if the previous `HandleCASPAL_ARMv8` didn't handle the case.
     if (ArchHelpers::Arm64::HandleAtomicVectorStore(Instr, ProgramCounter)) {
-      return std::make_pair(true, 0);
+      return 0;
     } else {
       LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDAXP: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
-      return NotHandled;
+      return std::nullopt;
     }
   } else if ((Instr & ArchHelpers::Arm64::STLXP_MASK) == ArchHelpers::Arm64::STLXP_INST) { // STLXP
     // Should not trigger - middle of an LDAXP/STAXP pair.
     LogMan::Msg::EFmt("Unhandled JIT SIGBUS STLXP: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
-    return NotHandled;
+    return std::nullopt;
   }
 
   // Check if another thread backpatched this instruction before this thread got here
@@ -2159,11 +2158,11 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
       // Check if the next instruction is a DMB.
       auto DMBInst = std::atomic_ref<uint32_t>(PC[1]).load(std::memory_order_acquire);
       if (DMBInst == DMB_LD) {
-        return std::make_pair(true, 0);
+        return 0;
       }
     } else {
       // No DMB instruction with this HandleType.
-      return std::make_pair(true, 0);
+      return 0;
     }
   } else if ((AtomicInst & LDSTREGISTER_MASK) == STR_INST || (AtomicInst & LDSTUNSCALED_MASK) == STUR_INST) {
     if (HandleType != UnalignedHandlerType::NonAtomic) {
@@ -2171,11 +2170,11 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
       auto DMBInst = std::atomic_ref<uint32_t>(PC[-1]).load(std::memory_order_acquire);
       if (DMBInst == DMB) {
         // Return handled, make sure to adjust PC so we run the DMB.
-        return std::make_pair(true, -4);
+        return -4;
       }
     } else {
       // No DMB instruction with this HandleType.
-      return std::make_pair(true, 0);
+      return 0;
     }
   } else if (AtomicInst == DMB) {
     // ARMv8.0-a LDAXP backpatch handling. Will have turned in to the following:
@@ -2186,12 +2185,12 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
     auto DMBInst = std::atomic_ref<uint32_t>(PC[2]).load(std::memory_order_acquire);
     if ((STPInst & LDSTP_MASK) == STP_INST && DMBInst == DMB) {
       // Code that was backpatched is what was expected for ARMv8.0-a LDAXP.
-      return std::make_pair(true, 0);
+      return 0;
     }
   }
 
   LogMan::Msg::EFmt("Unhandled JIT SIGBUS: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
-  return NotHandled;
+  return std::nullopt;
 }
 
 
