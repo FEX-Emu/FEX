@@ -52,8 +52,6 @@ struct ThreadStats {
   uint64_t AccumulatedFloatFallbackCount;
 };
 
-#ifdef ENABLE_FEXCORE_PROFILER
-
 #ifdef _M_ARM_64
 /**
  * @brief Get the raw cycle counter with synchronizing isb.
@@ -77,15 +75,17 @@ static inline uint64_t GetCycleCounter() {
 }
 #endif
 
+#define UniqueScopeName2(name, line) name##line
+#define UniqueScopeName(name, line) UniqueScopeName2(name, line)
+
+#ifdef ENABLE_FEXCORE_PROFILER
+
 FEX_DEFAULT_VISIBILITY void Init(std::string_view ProgramName, std::string_view ProgramPath);
 FEX_DEFAULT_VISIBILITY void PostForkAction(bool IsChild);
 FEX_DEFAULT_VISIBILITY bool IsActive();
 FEX_DEFAULT_VISIBILITY void Shutdown();
 FEX_DEFAULT_VISIBILITY void TraceObject(const std::string_view Format);
 FEX_DEFAULT_VISIBILITY void TraceObject(const std::string_view Format, uint64_t Duration);
-
-#define UniqueScopeName2(name, line) name##line
-#define UniqueScopeName(name, line) UniqueScopeName2(name, line)
 
 // Declare an instantaneous profiler event.
 #define FEXCORE_PROFILE_INSTANT(name) FEXCore::Profiler::TraceObject(name)
@@ -108,6 +108,27 @@ private:
 
 // Declare a scoped profile block variable with a fixed name.
 #define FEXCORE_PROFILE_SCOPED(name) FEXCore::Profiler::ProfilerBlock UniqueScopeName(ScopedBlock_, __LINE__)(name)
+#endif
+
+#else
+[[maybe_unused]]
+static void Init(std::string_view ProgramName, std::string_view ProgramPath) {}
+[[maybe_unused]]
+static void PostForkAction(bool IsChild) {}
+[[maybe_unused]]
+static void Shutdown() {}
+[[maybe_unused]]
+static void TraceObject(const std::string_view Format) {}
+[[maybe_unused]]
+static void TraceObject(const std::string_view, uint64_t) {}
+
+#define FEXCORE_PROFILE_INSTANT(...) \
+  do {                               \
+  } while (0)
+#define FEXCORE_PROFILE_SCOPED(...) \
+  do {                              \
+  } while (0)
+
 #endif
 
 template<typename T, size_t FlatOffset = 0>
@@ -139,31 +160,4 @@ private:
       ThreadState->ThreadStats->Stat += value;                      \
     }                                                               \
   } while (0)
-
-#else
-[[maybe_unused]]
-static void Init(std::string_view ProgramName, std::string_view ProgramPath) {}
-[[maybe_unused]]
-static void PostForkAction(bool IsChild) {}
-[[maybe_unused]]
-static void Shutdown() {}
-[[maybe_unused]]
-static void TraceObject(const std::string_view Format) {}
-[[maybe_unused]]
-static void TraceObject(const std::string_view, uint64_t) {}
-
-#define FEXCORE_PROFILE_INSTANT(...) \
-  do {                               \
-  } while (0)
-#define FEXCORE_PROFILE_SCOPED(...) \
-  do {                              \
-  } while (0)
-#define FEXCORE_PROFILE_ACCUMULATION(...) \
-  do {                                    \
-  } while (0)
-#define FEXCORE_PROFILE_INSTANT_INCREMENT(...) \
-  do {                                         \
-  } while (0)
-
-#endif
 } // namespace FEXCore::Profiler
