@@ -373,7 +373,12 @@ private:
 
   std::shared_mutex CustomIRMutex;
   std::atomic<bool> HasCustomIRHandlers {};
-  fextl::unordered_map<uint64_t, std::tuple<CustomIREntrypointHandler, void*, void*>> CustomIRHandlers;
+  struct CustomIRHandlerEntry final {
+    CustomIREntrypointHandler Handler;
+    void *Creator;
+    void *Data;
+  };
+  fextl::unordered_map<uint64_t, CustomIRHandlerEntry> CustomIRHandlers;
   IntervalList<uint64_t> ForceTSOValidRanges; // The ranges for which ForceTSOInstructions has populated data
   fextl::set<uint64_t> ForceTSOInstructions;
 };
