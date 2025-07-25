@@ -573,14 +573,14 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
     bool HadDispatchError {false};
     bool HadInvalidInst {false};
 
-    Thread->FrontendDecoder->DecodeInstructionsAtEntry(GuestCode, GuestRIP, MaxInst);
+    Thread->FrontendDecoder->DecodeInstructionsAtEntry(Thread, GuestCode, GuestRIP, MaxInst);
 
     auto BlockInfo = Thread->FrontendDecoder->GetDecodedBlockInfo();
     auto CodeBlocks = &BlockInfo->Blocks;
 
-    Thread->OpDispatcher->BeginFunction(GuestRIP, CodeBlocks, BlockInfo->TotalInstructionCount);
+    Thread->OpDispatcher->BeginFunction(GuestRIP, CodeBlocks, BlockInfo->TotalInstructionCount, BlockInfo->Is64BitMode);
 
-    const auto GPRSize = GetGPROpSize();
+    const auto GPRSize = Thread->OpDispatcher->GetGPROpSize();
 
     for (size_t j = 0; j < CodeBlocks->size(); ++j) {
       const FEXCore::Frontend::Decoder::DecodedBlocks& Block = CodeBlocks->at(j);
@@ -1036,7 +1036,7 @@ void ContextImpl::AddThunkTrampolineIRHandler(uintptr_t Entrypoint, uintptr_t Gu
       IRHeader.first->Blocks = emit->WrapNode(Block);
       emit->SetCurrentCodeBlock(Block);
 
-      const auto GPRSize = GetGPROpSize();
+      const auto GPRSize = this->Config.Is64BitMode ? IR::OpSize::i64Bit : IR::OpSize::i32Bit;
 
       if (GPRSize == IR::OpSize::i64Bit) {
         IR::Ref R = emit->_StoreRegister(emit->Constant(Entrypoint), GPRSize);
