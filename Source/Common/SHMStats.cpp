@@ -1,24 +1,24 @@
 // SPDX-License-Identifier: MIT
-#include "Common/Profiler.h"
+#include "Common/SHMStats.h"
 #include "git_version.h"
 
 #include <FEXCore/Debug/InternalThreadState.h>
 
-namespace FEX::Profiler {
-void StatAllocBase::SaveHeader(FEXCore::Profiler::AppType AppType) {
+namespace FEX::SHMStats {
+void StatAllocBase::SaveHeader(FEXCore::SHMStats::AppType AppType) {
   if (!Base) {
     return;
   }
 
-  Head = reinterpret_cast<FEXCore::Profiler::ThreadStatsHeader*>(Base);
+  Head = reinterpret_cast<FEXCore::SHMStats::ThreadStatsHeader*>(Base);
   Head->Size.store(CurrentSize, std::memory_order_relaxed);
-  Head->Version = FEXCore::Profiler::STATS_VERSION;
+  Head->Version = FEXCore::SHMStats::STATS_VERSION;
 
   std::string_view GitString = GIT_DESCRIBE_STRING;
   strncpy(Head->fex_version, GitString.data(), std::min(GitString.size(), sizeof(Head->fex_version)));
   Head->app_type = AppType;
 
-  Stats = reinterpret_cast<FEXCore::Profiler::ThreadStats*>(reinterpret_cast<uint64_t>(Base) + sizeof(FEXCore::Profiler::ThreadStatsHeader));
+  Stats = reinterpret_cast<FEXCore::SHMStats::ThreadStats*>(reinterpret_cast<uint64_t>(Base) + sizeof(FEXCore::SHMStats::ThreadStatsHeader));
 
   RemainingSlots = TotalSlotsFromSize();
 }
@@ -39,7 +39,7 @@ bool StatAllocBase::AllocateMoreSlots() {
   return true;
 }
 
-FEXCore::Profiler::ThreadStats* StatAllocBase::AllocateSlot(uint32_t TID) {
+FEXCore::SHMStats::ThreadStats* StatAllocBase::AllocateSlot(uint32_t TID) {
   if (!RemainingSlots) {
     if (!AllocateMoreSlots()) {
       return nullptr;
@@ -48,7 +48,7 @@ FEXCore::Profiler::ThreadStats* StatAllocBase::AllocateSlot(uint32_t TID) {
 
   // Find a free slot
   store_memory_barrier();
-  FEXCore::Profiler::ThreadStats* AllocatedSlot {};
+  FEXCore::SHMStats::ThreadStats* AllocatedSlot {};
   for (size_t i = 0; i < TotalSlotsFromSize(); ++i) {
     AllocatedSlot = &Stats[i];
     if (AllocatedSlot->TID.load(std::memory_order_relaxed) == 0) {
@@ -76,7 +76,7 @@ FEXCore::Profiler::ThreadStats* StatAllocBase::AllocateSlot(uint32_t TID) {
   return AllocatedSlot;
 }
 
-void StatAllocBase::DeallocateSlot(FEXCore::Profiler::ThreadStats* AllocatedSlot) {
+void StatAllocBase::DeallocateSlot(FEXCore::SHMStats::ThreadStats* AllocatedSlot) {
   if (!AllocatedSlot) {
     return;
   }
@@ -117,4 +117,4 @@ void StatAllocBase::DeallocateSlot(FEXCore::Profiler::ThreadStats* AllocatedSlot
   ++RemainingSlots;
 }
 
-} // namespace FEX::Profiler
+} // namespace FEX::SHMStats

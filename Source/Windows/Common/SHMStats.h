@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include "Common/Profiler.h"
+#include "Common/SHMStats.h"
 
 namespace FEX::Windows {
-class StatAlloc final : public FEX::Profiler::StatAllocBase {
+class StatAlloc final : public FEX::SHMStats::StatAllocBase {
 public:
-  StatAlloc(FEXCore::Profiler::AppType AppType);
+  StatAlloc(FEXCore::SHMStats::AppType AppType);
   virtual ~StatAlloc();
 
-  FEXCore::Profiler::ThreadStats* AllocateSlot(uint32_t TID) {
+  FEXCore::SHMStats::ThreadStats* AllocateSlot(uint32_t TID) {
     return StatAllocBase::AllocateSlot(TID);
   }
 
-  void DeallocateSlot(FEXCore::Profiler::ThreadStats* AllocatedSlot) {
+  void DeallocateSlot(FEXCore::SHMStats::ThreadStats* AllocatedSlot) {
     if (!AllocatedSlot) {
       return;
     }
