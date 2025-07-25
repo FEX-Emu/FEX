@@ -378,7 +378,8 @@ static void LoadStateFromECContext(FEXCore::Core::InternalThreadState* Thread, C
 
     // The TEB is the only populated GDT entry by default
     const auto TEB = reinterpret_cast<uint64_t>(NtCurrentTeb());
-    State.gdt[(Context.SegGs & 0xffff) >> 3].base = TEB;
+    State.SetGDTBase(&State.gdt[(Context.SegGs & 0xffff) >> 3], TEB);
+    State.SetGDTLimit(&State.gdt[(Context.SegGs & 0xffff) >> 3], 0xF'FFFFU);
     State.gs_cached = TEB;
     State.fs_cached = 0;
     State.es_cached = 0;
