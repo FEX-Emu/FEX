@@ -10,7 +10,6 @@
 #include <elf.h>
 #include <functional>
 #include <stddef.h>
-#include <tuple>
 #include <utility>
 
 // Add macros which are missing in some versions of <elf.h>
@@ -46,10 +45,14 @@ public:
     }
   }
 
-  using MemoryLayout = std::tuple<uint64_t, uint64_t, uint64_t>;
+  struct MemoryLayout final {
+    uint64_t MinPhysicalMemoryLocation;
+    uint64_t MaxPhysicalMemoryLocation;
+    uint64_t PhysicalMemorySize;
+  };
 
   MemoryLayout GetLayout() const {
-    return std::make_tuple(MinPhysicalMemoryLocation, MaxPhysicalMemoryLocation, PhysicalMemorySize);
+    return {MinPhysicalMemoryLocation, MaxPhysicalMemoryLocation, PhysicalMemorySize};
   }
 
   struct BRKInfo {
