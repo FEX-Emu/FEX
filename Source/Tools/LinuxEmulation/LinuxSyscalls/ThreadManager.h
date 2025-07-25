@@ -132,8 +132,8 @@ public:
 
     void CleanupForExit();
 
-    FEXCore::Profiler::ThreadStats* AllocateSlot(uint32_t TID);
-    void DeallocateSlot(FEXCore::Profiler::ThreadStats* AllocatedSlot);
+    FEXCore::SHMStats::ThreadStats* AllocateSlot(uint32_t TID);
+    void DeallocateSlot(FEXCore::SHMStats::ThreadStats* AllocatedSlot);
 
   private:
     void Initialize();

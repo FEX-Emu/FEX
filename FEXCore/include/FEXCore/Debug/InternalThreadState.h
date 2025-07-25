@@ -36,7 +36,7 @@ class OpDispatchBuilder;
 class PassManager;
 } // namespace FEXCore::IR
 
-namespace FEXCore::Profiler {
+namespace FEXCore::SHMStats {
 struct ThreadStats;
 };
 
@@ -100,7 +100,7 @@ struct InternalThreadState : public FEXCore::Allocator::FEXAllocOperators {
   std::shared_mutex ObjectCacheRefCounter {};
 
   // This pointer is owned by the frontend.
-  FEXCore::Profiler::ThreadStats* ThreadStats {};
+  FEXCore::SHMStats::ThreadStats* ThreadStats {};
 
   ///< Data pointer for exclusive use by the frontend
   void* FrontendPtr;

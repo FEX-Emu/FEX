@@ -17,7 +17,7 @@ namespace FEX::HLE {
 
 ThreadManager::StatAlloc::StatAlloc() {
   Initialize();
-  SaveHeader(Is64BitMode() ? FEXCore::Profiler::AppType::LINUX_64 : FEXCore::Profiler::AppType::LINUX_32);
+  SaveHeader(Is64BitMode() ? FEXCore::SHMStats::AppType::LINUX_64 : FEXCore::SHMStats::AppType::LINUX_32);
 }
 
 void ThreadManager::StatAlloc::Initialize() {
@@ -97,12 +97,12 @@ err:
   return NewSize;
 }
 
-FEXCore::Profiler::ThreadStats* ThreadManager::StatAlloc::AllocateSlot(uint32_t TID) {
+FEXCore::SHMStats::ThreadStats* ThreadManager::StatAlloc::AllocateSlot(uint32_t TID) {
   std::scoped_lock lk(StatMutex);
   return StatAllocBase::AllocateSlot(TID);
 }
 
-void ThreadManager::StatAlloc::DeallocateSlot(FEXCore::Profiler::ThreadStats* AllocatedSlot) {
+void ThreadManager::StatAlloc::DeallocateSlot(FEXCore::SHMStats::ThreadStats* AllocatedSlot) {
   if (!AllocatedSlot) {
     return;
   }
@@ -147,7 +147,7 @@ void ThreadManager::StatAlloc::UnlockAfterFork(FEXCore::Core::InternalThreadStat
   Thread->ThreadStats = nullptr;
 
   Initialize();
-  SaveHeader(Is64BitMode() ? FEXCore::Profiler::AppType::LINUX_64 : FEXCore::Profiler::AppType::LINUX_32);
+  SaveHeader(Is64BitMode() ? FEXCore::SHMStats::AppType::LINUX_64 : FEXCore::SHMStats::AppType::LINUX_32);
 
   // Update this thread's ThreadStats object
   auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread);

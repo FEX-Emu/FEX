@@ -40,7 +40,7 @@ uint32_t StatAlloc::FrontendAllocateSlots(uint32_t NewSize) {
   return CurrentSize;
 }
 
-StatAlloc::StatAlloc(FEXCore::Profiler::AppType AppType) {
+StatAlloc::StatAlloc(FEXCore::SHMStats::AppType AppType) {
   // Try wine+fex magic path.
 
   {
