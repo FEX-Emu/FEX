@@ -295,7 +295,6 @@ int main(int argc, char** argv, char** const envp) {
     return 0;
   }
 
-  if (!IsHostRunner) {
 #ifndef _WIN32
     auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get(), nullptr) :
                                                  FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), nullptr, std::move(Allocator));
@@ -317,6 +316,14 @@ int main(int argc, char** argv, char** const envp) {
     };
 #endif
 
+  CTX->SetSignalDelegator(SignalDelegation.get());
+  CTX->SetSyscallHandler(SyscallHandler.get());
+
+  if (!CTX->InitCore()) {
+    return 1;
+  }
+
+  if (!IsHostRunner) {
     LongJumpHandler::RegisterLongJumpHandler(SignalDelegation.get());
 
     // Run through FEX
@@ -326,12 +333,6 @@ int main(int argc, char** argv, char** const envp) {
       return -ENOEXEC;
     }
 
-    CTX->SetSignalDelegator(SignalDelegation.get());
-    CTX->SetSyscallHandler(SyscallHandler.get());
-
-    if (!CTX->InitCore()) {
-      return 1;
-    }
     auto ParentThread = SyscallHandler->TM.CreateThread(Loader.DefaultRIP(), 0);
     SyscallHandler->TM.TrackThread(ParentThread);
     SignalDelegation->RegisterTLSState(ParentThread);
@@ -363,15 +364,14 @@ int main(int argc, char** argv, char** const envp) {
 
     SignalDelegation->UninstallTLSState(ParentThread);
     FEX::HLE::_SyscallHandler->TM.DestroyThread(ParentThread, true);
-
-    SyscallHandler.reset();
   }
 #ifndef _WIN32
   else {
     // Run as host
     SupportsAVX = true;
-    FEX::HLE::ThreadStateObject ThreadStateObject {};
-    SignalDelegation->RegisterTLSState(&ThreadStateObject);
+    auto ParentThread = SyscallHandler->TM.CreateThread(Loader.DefaultRIP(), 0);
+    SyscallHandler->TM.TrackThread(ParentThread);
+    SignalDelegation->RegisterTLSState(ParentThread);
 
     auto DoMmap = [&](uint64_t Address, size_t Size) -> void* {
       void* Result = mmap((void*)Address, Size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
@@ -385,9 +385,12 @@ int main(int argc, char** argv, char** const envp) {
     }
 
     RunAsHost(SignalDelegation, Loader.DefaultRIP(), &State);
-    SignalDelegation->UninstallTLSState(&ThreadStateObject);
+    SignalDelegation->UninstallTLSState(ParentThread);
+    FEX::HLE::_SyscallHandler->TM.DestroyThread(ParentThread, true);
   }
 #endif
+
+  SyscallHandler.reset();
 
   bool Passed = !LongJumpHandler::DidFault && Loader.CompareStates(&State, nullptr, SupportsAVX);
 
