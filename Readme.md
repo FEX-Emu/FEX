@@ -14,13 +14,13 @@ FEX requires ARMv8.0+ hardware. It has been tested with the following Linux dist
 - Arch Linux
 - Fedora Linux
 - openSUSE
-- Ubuntu 22.04/24.04/24.10
+- Ubuntu 22.04/24.04/24.10/25.04
 
 An x86-64 RootFS is required and can be downloaded using our `FEXRootFSFetcher` tool for many distributions.
 For other distributions you will need to generate your own RootFS (our [wiki page](https://wiki.fex-emu.com/index.php/Development:Setting_up_RootFS) might help).
 
 ## Quick Start
-### For Ubuntu 22.04, 24.04 and 24.10
+### For Ubuntu 22.04, 24.04, 24.10 and 25.04
 Execute the following command in the terminal to install FEX through a PPA.
 
 ```sh
