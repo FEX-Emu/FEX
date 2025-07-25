@@ -121,9 +121,48 @@ struct CPUState {
   uint64_t mm[8][2] {};
 
   // 32bit x86 state
-  struct {
-    uint32_t base;
+  struct gdt_segment {
+    uint16_t Limit0;
+    uint16_t Base0;
+    uint16_t Base1  : 8;
+    uint16_t Type   : 4;
+    uint16_t S      : 1;
+    uint16_t DPL    : 2;
+    uint16_t P      : 1;
+    uint16_t Limit1 : 4;
+    uint16_t AVL    : 1;
+    uint16_t L      : 1;
+    uint16_t D      : 1;
+    uint16_t G      : 1;
+    uint16_t Base2  : 8;
   } gdt[32] {};
+
+  static uint32_t CalculateGDTBase(gdt_segment GDT) {
+    uint32_t Base{};
+    Base |= GDT.Base2 << 24;
+    Base |= GDT.Base1 << 16;
+    Base |= GDT.Base0;
+    return Base;
+  }
+
+  static uint32_t CalculateGDTLimit(gdt_segment GDT) {
+    uint32_t Limit{};
+    Limit |= GDT.Limit1 << 16;
+    Limit |= GDT.Limit0;
+    return Limit;
+  }
+
+  static void SetGDTBase(gdt_segment *GDT, uint32_t Base) {
+    GDT->Base0 = Base;
+    GDT->Base1 = Base >> 16;
+    GDT->Base2 = Base >> 24;
+  }
+
+  static void SetGDTLimit(gdt_segment *GDT, uint32_t Limit) {
+    GDT->Limit0 = Limit;
+    GDT->Limit1 = Limit >> 16;
+  }
+
   uint16_t FCW {0x37F};
   uint8_t AbridgedFTW {};
 
@@ -135,6 +174,7 @@ struct CPUState {
 
   static constexpr size_t FLAG_SIZE = sizeof(flags[0]);
   static constexpr size_t GDT_SIZE = sizeof(gdt[0]);
+  static_assert(GDT_SIZE == sizeof(uint64_t), "Segments required to be 8-byte in size.");
   static constexpr size_t GPR_REG_SIZE = sizeof(gregs[0]);
   static constexpr size_t XMM_AVX_REG_SIZE = sizeof(xmm.avx.data[0]);
   static constexpr size_t XMM_SSE_REG_SIZE = XMM_AVX_REG_SIZE / 2;

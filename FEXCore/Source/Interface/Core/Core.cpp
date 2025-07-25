@@ -440,6 +440,22 @@ ContextImpl::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, const FEXC
   Thread->CurrentFrame->State.gregs[X86State::REG_RSP] = StackPointer;
   Thread->CurrentFrame->State.rip = InitialRIP;
 
+  // Set up default code segment.
+  // Default code segment indexes match the numbers that the Linux kernel uses.
+  Thread->CurrentFrame->State.cs_idx = 6 << 3;
+  auto &GDT = Thread->CurrentFrame->State.gdt[Thread->CurrentFrame->State.cs_idx >> 3];
+  Thread->CurrentFrame->State.SetGDTBase(&GDT, 0);
+  Thread->CurrentFrame->State.SetGDTLimit(&GDT, 0xF'FFFFU);
+
+  if (Config.Is64BitMode) {
+    GDT.L = 1; // L = Long Mode = 64-bit
+    GDT.D = 0; // D = Default Operand SIze = Reserved
+  }
+  else {
+    GDT.L = 0; // L = Long Mode = 32-bit
+    GDT.D = 1; // D = Default Operand Size = 32-bit
+  }
+
   // Copy over the new thread state to the new object
   if (NewThreadState) {
     memcpy(&Thread->CurrentFrame->State, NewThreadState, sizeof(FEXCore::Core::CPUState));
