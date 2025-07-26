@@ -58,15 +58,6 @@ public:
 #define IROP_ALLOCATE_HELPERS
 #define IROP_DISPATCH_HELPERS
 #include <FEXCore/IR/IRDefines.inc>
-  IRPair<IROp_Constant> _Constant(IR::OpSize Size, uint64_t Constant) {
-    auto Op = AllocateOp<IROp_Constant, IROps::OP_CONSTANT>();
-    LOGMAN_THROW_A_FMT(Size >= IR::OpSize::i8Bit && Size <= IR::OpSize::i64Bit, "Invalid size");
-    uint64_t Mask = ~0ULL >> (64 - IR::OpSizeAsBits(Size));
-    Op.first->Constant = (Constant & Mask);
-    Op.first->Header.Size = Size;
-    Op.first->Header.ElementSize = Size;
-    return Op;
-  }
   IRPair<IROp_Jump> _Jump() {
     return _Jump(InvalidNode);
   }

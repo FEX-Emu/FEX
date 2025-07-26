@@ -4920,7 +4920,7 @@
         "Map 2 0b00 0xf5 32-bit"
       ],
       "ExpectedArm64ASM": [
-        "mov w20, #0xffffffff",
+        "mov x20, #0xffffffffffffffff",
         "lsl w20, w20, w7",
         "bic w20, w6, w20",
         "tst x7, #0xe0",
