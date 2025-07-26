@@ -945,8 +945,8 @@ SignalDelegator::SignalDelegator(FEXCore::Context::Context* _CTX, const std::str
     const auto Delegator = FEX::HLE::ThreadManager::GetStateObjectFromFEXCoreThread(Thread)->SignalInfo.Delegator;
     const auto Result = FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(Thread, Delegator->GetUnalignedHandlerType(), PC,
                                                                            ArchHelpers::Context::GetArmGPRs(ucontext));
-    ArchHelpers::Context::SetPc(ucontext, PC + Result.second);
-    return Result.first;
+    ArchHelpers::Context::SetPc(ucontext, PC + Result.value_or(0));
+    return Result.has_value();
   };
 
   RegisterHostSignalHandler(SIGBUS, SigbusHandler, true);

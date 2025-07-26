@@ -11,7 +11,7 @@ namespace FEXCore::ArchHelpers::Arm64 {
 
 // Obvously such a configuration can't do the actual arm64-specific stuff
 
-std::pair<bool, int32_t>
+std::optional<int32_t>
 HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandlerType HandleType, uintptr_t ProgramCounter, uint64_t* GPRs) {
   ERROR_AND_DIE_FMT("HandleAtomicMemOp Not Implemented");
 }

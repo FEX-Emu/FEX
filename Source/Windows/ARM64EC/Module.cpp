@@ -335,12 +335,8 @@ static bool HandleUnalignedAccess(ARM64_NT_CONTEXT& Context) {
   FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedSIGBUSCount, 1);
   const auto Result =
     FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(Thread, HandlerConfig->GetUnalignedHandlerType(), Context.Pc, &Context.X0);
-  if (!Result.first) {
-    return false;
-  }
-
-  Context.Pc += Result.second;
-  return true;
+  Context.Pc += Result.value_or(0);
+  return Result.has_value();
 }
 
 static void LoadStateFromECContext(FEXCore::Core::InternalThreadState* Thread, CONTEXT& Context) {

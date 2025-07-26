@@ -318,12 +318,8 @@ bool HandleUnalignedAccess(CONTEXT* Context) {
 
   const auto Result =
     FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(Thread, HandlerConfig->GetUnalignedHandlerType(), Context->Pc, &Context->X0);
-  if (!Result.first) {
-    return false;
-  }
-
-  Context->Pc += Result.second;
-  return true;
+  Context->Pc += Result.value_or(0);
+  return Result.has_value();
 }
 
 void LockJITContext() {
