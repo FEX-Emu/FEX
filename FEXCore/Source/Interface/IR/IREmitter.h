@@ -82,8 +82,26 @@ public:
     return _StoreMem(Class, Size, Value, Addr, Invalid(), Align, MEM_OFFSET_SXTX, 1);
   }
 
-  IRPair<IROp_Constant> Constant(int64_t Constant) {
-    return _Constant(Constant);
+  struct ConstantEntry {
+    int64_t Value;
+    Ref R;
+  };
+
+  fextl::vector<ConstantEntry> ConstantPool {};
+
+  Ref Constant(int64_t Value) {
+    // Search for the constant in the pool. This is O(n^2) but n is small since
+    // it's local. In practice, it ends up faster than a hash table.
+    for (auto Entry : ConstantPool) {
+      if (Entry.Value == Value) {
+        return Entry.R;
+      }
+    }
+
+    // Otherwise, materialize a fresh constant and pool it.
+    Ref R = _Constant(Value);
+    ConstantPool.push_back({.Value = Value, .R = R});
+    return R;
   }
 
   Ref Invalid() {
