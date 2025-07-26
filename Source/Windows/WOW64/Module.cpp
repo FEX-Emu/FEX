@@ -20,6 +20,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/Utils/SHMStats.h>
 #include <FEXCore/Utils/EnumOperators.h>
 #include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/FPState.h>
@@ -543,7 +544,7 @@ void BTCpuProcessInit() {
   FEX_CONFIG_OPT(StartupSleepProcName, STARTUPSLEEPPROCNAME);
 
   if (IsWine && ProfileStats()) {
-    StatAllocHandler = fextl::make_unique<FEX::Windows::StatAlloc>(FEXCore::Profiler::AppType::WIN_WOW64);
+    StatAllocHandler = fextl::make_unique<FEX::Windows::StatAlloc>(FEXCore::SHMStats::AppType::WIN_WOW64);
   }
 
   if (StartupSleep() && (StartupSleepProcName().empty() || ExecutablePath == StartupSleepProcName())) {

@@ -6,7 +6,7 @@ desc: Frontend profiler common code
 $end_info$
 */
 #pragma once
-#include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/Utils/SHMStats.h>
 
 namespace FEXCore::Core {
 struct InternalThreadState;
@@ -27,30 +27,30 @@ static inline void store_memory_barrier() {
 namespace FEX::Profiler {
 class StatAllocBase {
 protected:
-  FEXCore::Profiler::ThreadStats* AllocateSlot(uint32_t TID);
-  void DeallocateSlot(FEXCore::Profiler::ThreadStats* AllocatedSlot);
+  FEXCore::SHMStats::ThreadStats* AllocateSlot(uint32_t TID);
+  void DeallocateSlot(FEXCore::SHMStats::ThreadStats* AllocatedSlot);
 
-  uint32_t OffsetFromStat(FEXCore::Profiler::ThreadStats* Stat) const {
+  uint32_t OffsetFromStat(FEXCore::SHMStats::ThreadStats* Stat) const {
     return reinterpret_cast<uint64_t>(Stat) - reinterpret_cast<uint64_t>(Base);
   }
   uint32_t TotalSlotsFromSize() const {
-    return (CurrentSize - sizeof(FEXCore::Profiler::ThreadStatsHeader)) / sizeof(FEXCore::Profiler::ThreadStats) - 1;
+    return (CurrentSize - sizeof(FEXCore::SHMStats::ThreadStatsHeader)) / sizeof(FEXCore::SHMStats::ThreadStats) - 1;
   }
   static uint32_t TotalSlotsFromSize(uint32_t Size) {
-    return (Size - sizeof(FEXCore::Profiler::ThreadStatsHeader)) / sizeof(FEXCore::Profiler::ThreadStats) - 1;
+    return (Size - sizeof(FEXCore::SHMStats::ThreadStatsHeader)) / sizeof(FEXCore::SHMStats::ThreadStats) - 1;
   }
 
   static uint32_t SlotIndexFromOffset(uint32_t Offset) {
-    return (Offset - sizeof(FEXCore::Profiler::ThreadStatsHeader)) / sizeof(FEXCore::Profiler::ThreadStats);
+    return (Offset - sizeof(FEXCore::SHMStats::ThreadStatsHeader)) / sizeof(FEXCore::SHMStats::ThreadStats);
   }
 
-  void SaveHeader(FEXCore::Profiler::AppType AppType);
+  void SaveHeader(FEXCore::SHMStats::AppType AppType);
 
   void* Base {};
   uint32_t CurrentSize {};
-  FEXCore::Profiler::ThreadStatsHeader* Head {};
-  FEXCore::Profiler::ThreadStats* Stats {};
-  FEXCore::Profiler::ThreadStats* StatTail {};
+  FEXCore::SHMStats::ThreadStatsHeader* Head {};
+  FEXCore::SHMStats::ThreadStats* Stats {};
+  FEXCore::SHMStats::ThreadStats* StatTail {};
   uint32_t RemainingSlots {};
 
   // Limited to 4MB which should be a few hundred threads of tracking capability.

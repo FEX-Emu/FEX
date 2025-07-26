@@ -18,6 +18,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/Utils/SHMStats.h>
 #include <FEXCore/Utils/EnumOperators.h>
 #include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/FPState.h>
@@ -668,7 +669,7 @@ NTSTATUS ProcessInit() {
   FEX_CONFIG_OPT(StartupSleepProcName, STARTUPSLEEPPROCNAME);
 
   if (IsWine && ProfileStats()) {
-    StatAllocHandler = fextl::make_unique<FEX::Windows::StatAlloc>(FEXCore::Profiler::AppType::WIN_ARM64EC);
+    StatAllocHandler = fextl::make_unique<FEX::Windows::StatAlloc>(FEXCore::SHMStats::AppType::WIN_ARM64EC);
   }
 
   if (StartupSleep() && (StartupSleepProcName().empty() || ExecutablePath == StartupSleepProcName())) {

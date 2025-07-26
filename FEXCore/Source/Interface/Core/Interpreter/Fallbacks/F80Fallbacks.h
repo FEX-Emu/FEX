@@ -6,7 +6,7 @@
 #include "Interface/IR/IR.h"
 
 #include <FEXCore/Debug/InternalThreadState.h>
-#include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/Utils/SHMStats.h>
 
 namespace FEXCore::CPU {
 FEXCORE_PRESERVE_ALL_ATTR static softfloat_state SoftFloatStateFromFCW(uint16_t FCW, bool Force80BitPrecision = false) {
