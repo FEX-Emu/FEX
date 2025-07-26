@@ -545,7 +545,7 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
     if (Handler != CustomIRHandlers.end()) {
       TotalInstructions = 1;
       TotalInstructionsLength = 1;
-      std::get<0>(Handler->second)(GuestRIP, Thread->OpDispatcher.get());
+      Handler->second.Handler(GuestRIP, Thread->OpDispatcher.get());
       HasCustomIR = true;
     }
   }
@@ -991,7 +991,7 @@ ContextImpl::AddCustomIREntrypoint(uintptr_t Entrypoint, CustomIREntrypointHandl
 
   std::unique_lock lk(CustomIRMutex);
 
-  auto InsertedIterator = CustomIRHandlers.emplace(Entrypoint, std::tuple(Handler, Creator, Data));
+  auto InsertedIterator = CustomIRHandlers.emplace(Entrypoint, CustomIRHandlerEntry {Handler, Creator, Data});
   HasCustomIRHandlers = true;
 
   if (!InsertedIterator.second) {
