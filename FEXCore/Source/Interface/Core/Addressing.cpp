@@ -11,7 +11,7 @@ Ref LoadEffectiveAddress(IREmitter* IREmit, AddressMode A, IR::OpSize GPRSize, b
   Ref Tmp = A.Base;
 
   if (A.Offset) {
-    Ref Offset = IREmit->_Constant(A.Offset);
+    Ref Offset = IREmit->Constant(A.Offset);
     Tmp = Tmp ? IREmit->_Add(GPRSize, Tmp, Offset) : Offset;
   }
 
@@ -22,7 +22,7 @@ Ref LoadEffectiveAddress(IREmitter* IREmit, AddressMode A, IR::OpSize GPRSize, b
       if (Tmp) {
         Tmp = IREmit->_AddShift(GPRSize, Tmp, A.Index, ShiftType::LSL, Log2);
       } else {
-        Tmp = IREmit->_Lshl(GPRSize, A.Index, IREmit->_Constant(Log2));
+        Tmp = IREmit->_Lshl(GPRSize, A.Index, IREmit->Constant(Log2));
       }
     } else {
       Tmp = Tmp ? IREmit->_Add(GPRSize, Tmp, A.Index) : A.Index;
@@ -41,7 +41,7 @@ Ref LoadEffectiveAddress(IREmitter* IREmit, AddressMode A, IR::OpSize GPRSize, b
     } else if (A.Offset) {
       uint64_t X = A.Offset;
       X &= (1ull << Bits) - 1;
-      Tmp = IREmit->_Constant(X);
+      Tmp = IREmit->Constant(X);
     }
   }
 
@@ -49,7 +49,7 @@ Ref LoadEffectiveAddress(IREmitter* IREmit, AddressMode A, IR::OpSize GPRSize, b
     Tmp = Tmp ? IREmit->_Add(GPRSize, Tmp, A.Segment) : A.Segment;
   }
 
-  return Tmp ?: IREmit->_Constant(0);
+  return Tmp ?: IREmit->Constant(0);
 }
 
 AddressMode SelectAddressMode(IREmitter* IREmit, AddressMode A, IR::OpSize GPRSize, bool HostSupportsTSOImm9, bool AtomicTSO, bool Vector,
@@ -107,7 +107,7 @@ AddressMode SelectAddressMode(IREmitter* IREmit, AddressMode A, IR::OpSize GPRSi
 
     return {
       .Base = LoadEffectiveAddress(IREmit, B, GPRSize, true /* AddSegmentBase */, false),
-      .Index = IREmit->_Constant(A.Offset),
+      .Index = IREmit->Constant(A.Offset),
       .IndexType = MEM_OFFSET_SXTX,
       .IndexScale = 1,
     };
@@ -150,7 +150,7 @@ AddressMode SelectAddressMode(IREmitter* IREmit, AddressMode A, IR::OpSize GPRSi
 
         return {
           .Base = LoadEffectiveAddress(IREmit, B, GPRSize, true /* AddSegmentBase */, false),
-          .Index = IREmit->_Constant(A.Offset),
+          .Index = IREmit->Constant(A.Offset),
           .IndexType = MEM_OFFSET_SXTX,
           .IndexScale = 1,
         };

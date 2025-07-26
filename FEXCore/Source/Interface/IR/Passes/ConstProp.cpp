@@ -327,70 +327,10 @@ void ConstProp::Run(IREmitter* IREmit) {
   FEXCORE_PROFILE_SCOPED("PassManager::ConstProp");
 
   auto CurrentIR = IREmit->ViewIR();
-  const uint32_t SSACount = CurrentIR.GetSSACount();
-
-  // Allocation/initialization deferred until first use, since many multiblocks
-  // don't have constants leftover after all inlining.
-  fextl::vector<Ref> Remap {};
-
-  struct Entry {
-    int64_t Value;
-    Ref R;
-  };
-
-  fextl::vector<Entry> Pool {};
 
   for (auto [BlockNode, BlockIROp] : CurrentIR.GetBlocks()) {
-    Pool.clear();
-
     for (auto [CodeNode, IROp] : CurrentIR.GetCode(BlockNode)) {
-      if (IROp->Op == OP_CONSTANT) {
-        auto Op = IROp->C<IR::IROp_Constant>();
-        bool Found = false;
-
-        // Search for the constant. This is O(n^2) but n is small since it's
-        // local and most constants are inlined. In practice, it ends up much
-        // faster than a hash table.
-        for (auto K : Pool) {
-          if (K.Value == Op->Constant) {
-            uint32_t Value = CurrentIR.GetID(CodeNode).Value;
-            if (Value < SSACount) {
-              if (Remap.empty()) {
-                Remap.resize(SSACount, nullptr);
-              }
-
-              Remap[Value] = K.R;
-            }
-            Found = true;
-            break;
-          }
-        }
-
-        if (!Found) {
-          Pool.push_back({.Value = Op->Constant, .R = CodeNode});
-        }
-
-        continue;
-      }
-
       ConstantPropagation(IREmit, CurrentIR, CodeNode, IROp);
-
-      if (!Remap.empty()) {
-        const uint8_t NumArgs = IR::GetArgs(IROp->Op);
-        for (uint8_t i = 0; i < NumArgs; ++i) {
-          if (IROp->Args[i].IsInvalid()) {
-            continue;
-          }
-
-          uint32_t Value = IROp->Args[i].ID().Value;
-          if (Value < SSACount) {
-            Ref New = Remap[Value];
-            if (New) {
-              IREmit->ReplaceNodeArgument(CodeNode, i, New);
-            }
-          }
-        }
-      }
     }
   }
 }

@@ -58,15 +58,6 @@ public:
 #define IROP_ALLOCATE_HELPERS
 #define IROP_DISPATCH_HELPERS
 #include <FEXCore/IR/IRDefines.inc>
-  IRPair<IROp_Constant> _Constant(IR::OpSize Size, uint64_t Constant) {
-    auto Op = AllocateOp<IROp_Constant, IROps::OP_CONSTANT>();
-    LOGMAN_THROW_A_FMT(Size >= IR::OpSize::i8Bit && Size <= IR::OpSize::i64Bit, "Invalid size");
-    uint64_t Mask = ~0ULL >> (64 - IR::OpSizeAsBits(Size));
-    Op.first->Constant = (Constant & Mask);
-    Op.first->Header.Size = Size;
-    Op.first->Header.ElementSize = Size;
-    return Op;
-  }
   IRPair<IROp_Jump> _Jump() {
     return _Jump(InvalidNode);
   }
@@ -87,16 +78,30 @@ public:
   IRPair<IROp_LoadMem> _LoadMem(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, Ref ssa0, IR::OpSize Align = OpSize::i8Bit) {
     return _LoadMem(Class, Size, ssa0, Invalid(), Align, MEM_OFFSET_SXTX, 1);
   }
-  IRPair<IROp_LoadMemTSO> _LoadMemTSO(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, Ref ssa0, IR::OpSize Align = OpSize::i8Bit) {
-    return _LoadMemTSO(Class, Size, ssa0, Invalid(), Align, MEM_OFFSET_SXTX, 1);
-  }
   IRPair<IROp_StoreMem> _StoreMem(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, Ref Addr, Ref Value, IR::OpSize Align = OpSize::i8Bit) {
     return _StoreMem(Class, Size, Value, Addr, Invalid(), Align, MEM_OFFSET_SXTX, 1);
   }
-  IRPair<IROp_StoreMemTSO>
-  _StoreMemTSO(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, Ref Addr, Ref Value, IR::OpSize Align = OpSize::i8Bit) {
-    return _StoreMemTSO(Class, Size, Value, Addr, Invalid(), Align, MEM_OFFSET_SXTX, 1);
+
+  int64_t Constants[32];
+  Ref ConstantRefs[32];
+  uint32_t NrConstants;
+
+  Ref Constant(int64_t Value) {
+    // Search for the constant in the pool.
+    for (unsigned i = 0; i < std::min(NrConstants, 32u); ++i) {
+      if (Constants[i] == Value) {
+        return ConstantRefs[i];
+      }
+    }
+
+    // Otherwise, materialize a fresh constant and pool it.
+    Ref R = _Constant(Value);
+    unsigned i = (NrConstants++) & 31;
+    Constants[i] = Value;
+    ConstantRefs[i] = R;
+    return R;
   }
+
   Ref Invalid() {
     return InvalidNode;
   }

@@ -1309,7 +1309,7 @@ void OpDispatchBuilder::AVX128_MOVMSK(OpcodeArgs) {
     // Inserting the full lower 32-bits offset 31 so the sign bit ends up at offset 63.
     GPR = _Bfi(OpSize::i64Bit, 32, 31, GPR, GPR);
     // Shift right to only get the two sign bits we care about.
-    return _Lshr(OpSize::i64Bit, GPR, _Constant(62));
+    return _Lshr(OpSize::i64Bit, GPR, Constant(62));
   };
 
   auto Mask4Byte = [this](Ref Src) {
@@ -2212,8 +2212,8 @@ void OpDispatchBuilder::AVX128_VTESTP(OpcodeArgs) {
   // For 256-bit, we need to split up the operation. This is nontrivial.
   // Let's go the simple route here.
   Ref ZF, CFInv;
-  Ref ZeroConst = _Constant(0);
-  Ref OneConst = _Constant(1);
+  Ref ZeroConst = Constant(0);
+  Ref OneConst = Constant(1);
 
   const auto ElementSizeInBits = IR::OpSizeAsBits(ElementSize);
 
@@ -2294,8 +2294,8 @@ void OpDispatchBuilder::AVX128_PTest(OpcodeArgs) {
   Test1 = _VExtractToGPR(OpSize::i128Bit, OpSize::i16Bit, Test1, 0);
   Test2 = _VExtractToGPR(OpSize::i128Bit, OpSize::i16Bit, Test2, 0);
 
-  auto ZeroConst = _Constant(0);
-  auto OneConst = _Constant(1);
+  auto ZeroConst = Constant(0);
+  auto OneConst = Constant(1);
 
   Test2 = _Select(FEXCore::IR::COND_NEQ, Test2, ZeroConst, OneConst, ZeroConst);
 
@@ -2328,7 +2328,7 @@ void OpDispatchBuilder::AVX128_VPERMD(OpcodeArgs) {
   RefPair Result {};
 
   Ref IndexMask = _VectorImm(OpSize::i128Bit, OpSize::i32Bit, 0b111);
-  Ref AddConst = _Constant(0x03020100);
+  Ref AddConst = Constant(0x03020100);
   Ref Repeating3210 = _VDupFromGPR(OpSize::i128Bit, OpSize::i32Bit, AddConst);
 
   Result.Low = DoPerm(Src, Indices.Low, IndexMask, Repeating3210);
@@ -2518,9 +2518,9 @@ OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_VPGatherImpl(OpSize Size, O
   ///< BaseAddr doesn't need to exist, calculate that here.
   Ref BaseAddr = VSIB.BaseAddr;
   if (BaseAddr && VSIB.Displacement) {
-    BaseAddr = _Add(OpSize::i64Bit, BaseAddr, _Constant(VSIB.Displacement));
+    BaseAddr = _Add(OpSize::i64Bit, BaseAddr, Constant(VSIB.Displacement));
   } else if (VSIB.Displacement) {
-    BaseAddr = _Constant(VSIB.Displacement);
+    BaseAddr = Constant(VSIB.Displacement);
   } else if (!BaseAddr) {
     BaseAddr = Invalid();
   }
@@ -2613,9 +2613,9 @@ OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_VPGatherQPSImpl(Ref Dest, R
   ///< BaseAddr doesn't need to exist, calculate that here.
   Ref BaseAddr = VSIB.BaseAddr;
   if (BaseAddr && VSIB.Displacement) {
-    BaseAddr = _Add(OpSize::i64Bit, BaseAddr, _Constant(VSIB.Displacement));
+    BaseAddr = _Add(OpSize::i64Bit, BaseAddr, Constant(VSIB.Displacement));
   } else if (VSIB.Displacement) {
-    BaseAddr = _Constant(VSIB.Displacement);
+    BaseAddr = Constant(VSIB.Displacement);
   } else if (!BaseAddr) {
     BaseAddr = Invalid();
   }
