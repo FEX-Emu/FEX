@@ -406,6 +406,13 @@ if (TUNE_CPU STREQUAL "native")
 
       string(STRIP ${AARCH64_CPU} AARCH64_CPU)
 
+      execute_process(COMMAND python3 "${PROJECT_SOURCE_DIR}/Scripts/NeedDisabledSVE.py"
+        RESULT_VARIABLE NEEDS_SVE_DISABLED)
+      if (NEEDS_SVE_DISABLED)
+        message(STATUS "Platform has bugged SVE. Disabling")
+        set(AARCH64_CPU "cortex-a78")
+      endif()
+
       check_cxx_compiler_flag("-mcpu=${AARCH64_CPU}" COMPILER_SUPPORTS_CPU_TYPE)
       if(COMPILER_SUPPORTS_CPU_TYPE)
         list(APPEND FEX_TUNE_COMPILE_FLAGS "-mcpu=${AARCH64_CPU}")
