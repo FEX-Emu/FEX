@@ -84,9 +84,9 @@ void OpDispatchBuilder::FBSTP(OpcodeArgs) {
   _PopStackDestroy();
 }
 
-void OpDispatchBuilder::FLD_Const(OpcodeArgs, NamedVectorConstant Constant) {
+void OpDispatchBuilder::FLD_Const(OpcodeArgs, NamedVectorConstant K) {
   // Update TOP
-  Ref Data = LoadAndCacheNamedVectorConstant(OpSize::i128Bit, Constant);
+  Ref Data = LoadAndCacheNamedVectorConstant(OpSize::i128Bit, K);
   _PushStack(Data, Data, OpSize::i128Bit, true);
 }
 

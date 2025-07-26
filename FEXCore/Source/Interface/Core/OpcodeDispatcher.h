@@ -712,7 +712,7 @@ public:
   Ref ReconstructX87StateFromFSW_Helper(Ref FSW);
   void FLD(OpcodeArgs, IR::OpSize Width);
   void FLDFromStack(OpcodeArgs);
-  void FLD_Const(OpcodeArgs, NamedVectorConstant Constant);
+  void FLD_Const(OpcodeArgs, NamedVectorConstant K);
 
   void FBLD(OpcodeArgs);
   void FBSTP(OpcodeArgs);
@@ -1795,12 +1795,12 @@ private:
     }
   }
 
-  void SetAF(unsigned Constant) {
+  void SetAF(unsigned K) {
     // AF is stored in bit 4 of the AF flag byte, with garbage in the other
     // bits. This allows us to defer the extract in the usual case. When it is
     // read, bit 4 is extracted.  In order to write a constant value of AF, that
     // means we need to left-shift here to compensate.
-    SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(_Constant(Constant << 4));
+    SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(_Constant(K << 4));
   }
 
   void ZeroPF_AF();
@@ -2196,9 +2196,9 @@ private:
       return CachedNamedVectorConstants[NamedConstant][log2_size_bytes];
     }
 
-    auto Constant = _LoadNamedVectorConstant(Size, NamedConstant);
-    CachedNamedVectorConstants[NamedConstant][log2_size_bytes] = Constant;
-    return Constant;
+    auto K = _LoadNamedVectorConstant(Size, NamedConstant);
+    CachedNamedVectorConstants[NamedConstant][log2_size_bytes] = K;
+    return K;
   }
   Ref LoadAndCacheIndexedNamedVectorConstant(IR::OpSize Size, FEXCore::IR::IndexNamedVectorConstant NamedIndexedConstant, uint32_t Index) {
     IndexNamedVectorMapKey Key {
@@ -2212,9 +2212,9 @@ private:
       return it->second;
     }
 
-    auto Constant = _LoadNamedVectorIndexedConstant(Size, NamedIndexedConstant, Index);
-    CachedIndexedNamedVectorConstants.insert_or_assign(Key, Constant);
-    return Constant;
+    auto K = _LoadNamedVectorIndexedConstant(Size, NamedIndexedConstant, Index);
+    CachedIndexedNamedVectorConstants.insert_or_assign(Key, K);
+    return K;
   }
 
   Ref LoadUncachedZeroVector(IR::OpSize Size) {
