@@ -81,6 +81,11 @@ public:
   IRPair<IROp_StoreMem> _StoreMem(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, Ref Addr, Ref Value, IR::OpSize Align = OpSize::i8Bit) {
     return _StoreMem(Class, Size, Value, Addr, Invalid(), Align, MEM_OFFSET_SXTX, 1);
   }
+
+  IRPair<IROp_Constant> Constant(int64_t Constant) {
+    return _Constant(Constant);
+  }
+
   Ref Invalid() {
     return InvalidNode;
   }
