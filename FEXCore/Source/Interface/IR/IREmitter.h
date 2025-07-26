@@ -228,7 +228,7 @@ public:
     auto Before = IR.at(Node);
     --Before;
 
-    SetWriteCursor(std::get<0>(*Before));
+    SetWriteCursor((*Before).Node);
   }
 
   Ref GetWriteCursor() {

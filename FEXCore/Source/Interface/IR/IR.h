@@ -504,7 +504,10 @@ class NodeIterator;
  */
 class NodeIterator {
 public:
-  using value_type = std::tuple<OrderedNode*, IROp_Header*>;
+  struct value_type final {
+    OrderedNode *Node;
+    IROp_Header *Header;
+  };
   using size_type = std::size_t;
   using difference_type = std::ptrdiff_t;
   using reference = value_type&;
