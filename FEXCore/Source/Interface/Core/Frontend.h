@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Interface/Core/X86Tables/X86Tables.h"
+#include "Interface/IR/IR.h"
 
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/Utils/Telemetry.h>
@@ -37,13 +38,14 @@ public:
 
   struct DecodedBlockInformation final {
     uint64_t TotalInstructionCount;
+    bool Is64BitMode {};
     fextl::vector<DecodedBlocks> Blocks;
     fextl::set<uint64_t> EntryPoints;
     fextl::set<uint64_t> CodePages; // Start addresses of all pages touching the block
   };
 
   Decoder(FEXCore::Core::InternalThreadState* Thread);
-  void DecodeInstructionsAtEntry(const uint8_t* InstStream, uint64_t PC, uint64_t MaxInst);
+  void DecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState *Thread, const uint8_t* InstStream, uint64_t PC, uint64_t MaxInst);
 
   const DecodedBlockInformation* GetDecodedBlockInfo() const {
     return &BlockInfo;
@@ -110,6 +112,9 @@ private:
   bool HitNonExecutableRange {};
 
   const uint8_t* InstStream {};
+  IR::OpSize GetGPROpSize() const {
+    return BlockInfo.Is64BitMode ? IR::OpSize::i64Bit : IR::OpSize::i32Bit;
+  }
 
   static constexpr size_t MAX_INST_SIZE = 15;
   uint8_t InstructionSize {};

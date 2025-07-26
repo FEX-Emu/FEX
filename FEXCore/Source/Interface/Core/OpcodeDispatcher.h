@@ -198,7 +198,7 @@ public:
       auto it = JumpTargets.find(NextRIP);
       if (it == JumpTargets.end()) {
 
-        const auto GPRSize = CTX->GetGPROpSize();
+        const auto GPRSize = GetGPROpSize();
         // If we don't have a jump target to a new block then we have to leave
         // Set the RIP to the next instruction and leave
         auto RelocatedNextRIP = _EntrypointOffset(GPRSize, NextRIP - Entry);
@@ -300,7 +300,7 @@ public:
     return ShouldDump;
   }
 
-  void BeginFunction(uint64_t RIP, const fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks>* Blocks, uint32_t NumInstructions);
+  void BeginFunction(uint64_t RIP, const fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks>* Blocks, uint32_t NumInstructions, bool Is64BitMode);
   void Finalize();
 
   // Dispatch builder functions
@@ -1197,7 +1197,7 @@ public:
 
     CalculateDeferredFlags();
 
-    const auto GPRSize = CTX->GetGPROpSize();
+    const auto GPRSize = GetGPROpSize();
     const auto VectorSize = GetGuestVectorLength();
 
     // Write backwards. This is a heuristic to improve coalescing, since we
@@ -1268,6 +1268,10 @@ public:
     RegCache.Written &= ~Mask;
     RegCache.Cached &= ~Mask;
     RegCache.Partial &= ~Mask;
+  }
+
+  IR::OpSize GetGPROpSize() const {
+    return Is64BitMode ? IR::OpSize::i64Bit : IR::OpSize::i32Bit;
   }
 
 protected:
@@ -1971,7 +1975,7 @@ private:
   }
 
   Ref LoadGPR(uint8_t Reg) {
-    return LoadRegCache(Reg, GPR0Index + Reg, GPRClass, CTX->GetGPROpSize());
+    return LoadRegCache(Reg, GPR0Index + Reg, GPRClass, GetGPROpSize());
   }
 
   Ref LoadContext(IR::OpSize Size, uint8_t Index) {
@@ -2371,6 +2375,7 @@ private:
   bool BlockSetRIP {false};
 
   bool Multiblock {};
+  bool Is64BitMode {};
   uint64_t Entry {};
   IROp_IRHeader* CurrentHeader {};
 
@@ -2405,7 +2410,7 @@ private:
 
   Ref _LoadMemAutoTSO(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, AddressMode A, IR::OpSize Align = IR::OpSize::i8Bit) {
     bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
-    A = SelectAddressMode(this, A, CTX->GetGPROpSize(), CTX->HostFeatures.SupportsTSOImm9, AtomicTSO, Class != GPRClass, Size);
+    A = SelectAddressMode(this, A, GetGPROpSize(), CTX->HostFeatures.SupportsTSOImm9, AtomicTSO, Class != GPRClass, Size);
 
     if (AtomicTSO) {
       return _LoadMemTSO(Class, Size, A.Base, A.Index, Align, A.IndexType, A.IndexScale);
@@ -2425,7 +2430,7 @@ private:
       A.Offset = 0;
     }
 
-    Out.Base = LoadEffectiveAddress(this, A, CTX->GetGPROpSize(), true, false);
+    Out.Base = LoadEffectiveAddress(this, A, GetGPROpSize(), true, false);
     return Out;
   }
 
@@ -2456,7 +2461,7 @@ private:
 
   Ref _StoreMemAutoTSO(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, AddressMode A, Ref Value, IR::OpSize Align = IR::OpSize::i8Bit) {
     bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
-    A = SelectAddressMode(this, A, CTX->GetGPROpSize(), CTX->HostFeatures.SupportsTSOImm9, AtomicTSO, Class != GPRClass, Size);
+    A = SelectAddressMode(this, A, GetGPROpSize(), CTX->HostFeatures.SupportsTSOImm9, AtomicTSO, Class != GPRClass, Size);
 
     if (AtomicTSO) {
       return _StoreMemTSO(Class, Size, Value, A.Base, A.Index, Align, A.IndexType, A.IndexScale);
@@ -2507,7 +2512,7 @@ private:
 
   void Push(IR::OpSize Size, Ref Value) {
     auto OldSP = LoadGPRRegister(X86State::REG_RSP);
-    auto NewSP = _Push(CTX->GetGPROpSize(), Size, Value, OldSP);
+    auto NewSP = _Push(GetGPROpSize(), Size, Value, OldSP);
     StoreGPRRegister(X86State::REG_RSP, NewSP);
     FlushRegisterCache();
   }
