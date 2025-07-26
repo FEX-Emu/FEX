@@ -82,25 +82,23 @@ public:
     return _StoreMem(Class, Size, Value, Addr, Invalid(), Align, MEM_OFFSET_SXTX, 1);
   }
 
-  struct ConstantEntry {
-    int64_t Value;
-    Ref R;
-  };
-
-  fextl::vector<ConstantEntry> ConstantPool {};
+  int64_t Constants[32];
+  Ref ConstantRefs[32];
+  uint32_t NrConstants;
 
   Ref Constant(int64_t Value) {
-    // Search for the constant in the pool. This is O(n^2) but n is small since
-    // it's local. In practice, it ends up faster than a hash table.
-    for (auto Entry : ConstantPool) {
-      if (Entry.Value == Value) {
-        return Entry.R;
+    // Search for the constant in the pool.
+    for (unsigned i = 0; i < std::min(NrConstants, 32u); ++i) {
+      if (Constants[i] == Value) {
+        return ConstantRefs[i];
       }
     }
 
     // Otherwise, materialize a fresh constant and pool it.
     Ref R = _Constant(Value);
-    ConstantPool.push_back({.Value = Value, .R = R});
+    unsigned i = (NrConstants++) & 31;
+    Constants[i] = Value;
+    ConstantRefs[i] = R;
     return R;
   }
 

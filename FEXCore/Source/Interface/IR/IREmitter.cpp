@@ -189,7 +189,7 @@ void IREmitter::SetCurrentCodeBlock(Ref Node) {
   SetWriteCursor(Node->Op(DualListData.DataBegin())->CW<IROp_CodeBlock>()->Begin.GetNode(DualListData.ListBegin()));
 
   // Constants are pooled only within a single block.
-  ConstantPool.clear();
+  NrConstants = 0;
 }
 
 } // namespace FEXCore::IR
