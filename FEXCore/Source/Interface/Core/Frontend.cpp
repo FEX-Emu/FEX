@@ -1035,6 +1035,13 @@ void Decoder::BranchTargetInMultiblockRange() {
   const auto InstEnd = DecodeInst->PC + DecodeInst->InstSize;
 
   if (DecodeInst->TableInfo->Flags & FEXCore::X86Tables::InstFlags::FLAGS_CALL) {
+    if (ExecutableRangeWritable && CTX->AreMonoHacksActive()) {
+      // Mono generated code often contains noreturn calls with garbage following them, and calls are always backpatched
+      // after CIL compilation leading to n recompiles for a multiblock with n calls. Choose to minimize stutters over
+      // raw performance and disable tracking past calls for mono generated code.
+      return;
+    }
+
     AddBranchTarget(InstEnd);
     BlockInfo.EntryPoints.emplace(InstEnd);
     return;
