@@ -68,79 +68,55 @@ if (_M_ARM_64)
 
     find_program(UPDATE_BINFMTS_PROGRAM update-binfmts)
     if (UPDATE_BINFMTS_PROGRAM)
-      add_custom_target(binfmt_misc_32
-        echo "Attempting to install FEX-x86 misc now."
+      add_custom_target(binfmt_misc
+        echo "Attempting to install FEX binfmt_misc now."
         COMMAND "${CMAKE_SOURCE_DIR}/Scripts/CheckBinfmtNotInstall.sh" ${CONFLICTING_BINFMTS_32}
-        COMMAND "update-binfmts" "--importdir=${CMAKE_INSTALL_PREFIX}/share/binfmts/" "--import" "FEX-x86"
-        COMMAND ${CMAKE_COMMAND} -E
-        echo "binfmt_misc FEX-x86 installed"
-      )
-
-      add_custom_target(binfmt_misc_64
-        COMMAND ${CMAKE_COMMAND} -E
-        echo "Attempting to install FEX-x86_64 misc now."
         COMMAND "${CMAKE_SOURCE_DIR}/Scripts/CheckBinfmtNotInstall.sh" ${CONFLICTING_BINFMTS_64}
+        COMMAND "update-binfmts" "--importdir=${CMAKE_INSTALL_PREFIX}/share/binfmts/" "--import" "FEX-x86"
         COMMAND "update-binfmts" "--importdir=${CMAKE_INSTALL_PREFIX}/share/binfmts/" "--import" "FEX-x86_64"
         COMMAND ${CMAKE_COMMAND} -E
-        echo "binfmt_misc FEX-x86_64 installed"
+        echo "FEX binfmt_misc installed"
       )
+
       if(TARGET uninstall)
-        add_custom_target(uninstall_binfmt_misc_32
+        add_custom_target(uninstall_binfmt_misc
           COMMAND update-binfmts --unimport FEX-x86 || (exit 0)
-        )
-        add_custom_target(uninstall_binfmt_misc_64
           COMMAND update-binfmts --unimport FEX-x86_64 || (exit 0)
         )
 
-        add_dependencies(uninstall uninstall_binfmt_misc_32)
-        add_dependencies(uninstall uninstall_binfmt_misc_64)
+        add_dependencies(uninstall uninstall_binfmt_misc)
       endif()
     else()
       # In the case of update-binfmts not being available (Arch for example) then we need to install manually
-      add_custom_target(binfmt_misc_32
+      add_custom_target(binfmt_misc
         COMMAND ${CMAKE_COMMAND} -E
-          echo "Attempting to remove FEX-x86 misc prior to install. Ignore permission denied"
+          echo "Attempting to remove FEX misc prior to install. Ignore permission denied"
         COMMAND ${CMAKE_COMMAND} -E
           echo -1 > /proc/sys/fs/binfmt_misc/FEX-x86 || (exit 0)
         COMMAND ${CMAKE_COMMAND} -E
-          echo "Attempting to install FEX-x86 misc now."
+          echo -1 > /proc/sys/fs/binfmt_misc/FEX-x86_64 || (exit 0)
+        COMMAND ${CMAKE_COMMAND} -E
+          echo "Attempting to install FEX misc now."
         COMMAND ${CMAKE_COMMAND} -E
           echo
           ':FEX-x86:M:0:\\x7fELF\\x01\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x03\\x00:\\xff\\xff\\xff\\xff\\xff\\xfe\\xfe\\x00\\x00\\x00\\x00\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff\\xff:${CMAKE_INSTALL_PREFIX}/bin/FEXInterpreter:POCF' > /proc/sys/fs/binfmt_misc/register
         COMMAND ${CMAKE_COMMAND} -E
-          echo "binfmt_misc FEX-x86 installed"
-        )
-      add_custom_target(binfmt_misc_64
-        COMMAND ${CMAKE_COMMAND} -E
-          echo "Attempting to remove FEX-x86_64 misc prior to install. Ignore permission denied"
-        COMMAND ${CMAKE_COMMAND} -E
-          echo -1 > /proc/sys/fs/binfmt_misc/FEX-x86_64 || (exit 0)
-        COMMAND ${CMAKE_COMMAND} -E
-          echo "Attempting to install FEX-x86_64 misc now."
-        COMMAND ${CMAKE_COMMAND} -E
           echo
           ':FEX-x86_64:M:0:\\x7fELF\\x02\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x3e\\x00:\\xff\\xff\\xff\\xff\\xff\\xfe\\xfe\\x00\\x00\\x00\\x00\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff\\xff:${CMAKE_INSTALL_PREFIX}/bin/FEXInterpreter:POCF' > /proc/sys/fs/binfmt_misc/register
         COMMAND ${CMAKE_COMMAND} -E
-          echo "binfmt_misc FEX-x86_64 installed"
+          echo "binfmt_misc FEX installed"
         )
 
       if(TARGET uninstall)
-        add_custom_target(uninstall_binfmt_misc_32
+        add_custom_target(uninstall_binfmt_misc
           COMMAND ${CMAKE_COMMAND} -E
             echo -1 > /proc/sys/fs/binfmt_misc/FEX-x86 || (exit 0)
-        )
-        add_custom_target(uninstall_binfmt_misc_64
           COMMAND ${CMAKE_COMMAND} -E
             echo -1 > /proc/sys/fs/binfmt_misc/FEX-x86_64 || (exit 0)
         )
 
-        add_dependencies(uninstall uninstall_binfmt_misc_32)
-        add_dependencies(uninstall uninstall_binfmt_misc_64)
+        add_dependencies(uninstall uninstall_binfmt_misc)
       endif()
     endif()
-    add_custom_target(binfmt_misc
-      DEPENDS binfmt_misc_32
-      DEPENDS binfmt_misc_64
-    )
   endif()
 endif()
