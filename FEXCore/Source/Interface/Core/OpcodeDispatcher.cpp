@@ -588,66 +588,66 @@ Ref OpDispatchBuilder::SelectPF(bool Invert, IR::OpSize ResultSize, Ref TrueValu
   return _NZCVSelect(ResultSize, {COND_NEQ}, TrueValue, FalseValue);
 }
 
-std::pair<bool, CondClassType> OpDispatchBuilder::DecodeNZCVCondition(uint8_t OP) {
+std::optional<CondClassType> OpDispatchBuilder::DecodeNZCVCondition(uint8_t OP) {
   switch (OP) {
   case 0x0: { // JO - Jump if OF == 1
-    return {false, CondClassType {COND_FU}};
+    return CondClassType {COND_FU};
   }
   case 0x1: { // JNO - Jump if OF == 0
-    return {false, CondClassType {COND_FNU}};
+    return CondClassType {COND_FNU};
   }
   case 0x2: { // JC - Jump if CF == 1
-    return {false, CondClassType {CFInverted ? COND_ULT : COND_UGE}};
+    return CondClassType {CFInverted ? COND_ULT : COND_UGE};
   }
   case 0x3: { // JNC - Jump if CF == 0
-    return {false, CondClassType {CFInverted ? COND_UGE : COND_ULT}};
+    return CondClassType {CFInverted ? COND_UGE : COND_ULT};
   }
   case 0x4: { // JE - Jump if ZF == 1
-    return {false, CondClassType {COND_EQ}};
+    return CondClassType {COND_EQ};
   }
   case 0x5: { // JNE - Jump if ZF == 0
-    return {false, CondClassType {COND_NEQ}};
+    return CondClassType {COND_NEQ};
   }
   case 0x6: { // JNA - Jump if CF == 1 || ZF == 1
     // With CF, we want (C == 0 || Z == 1). By De Morgan's, that's
     // equivalent to !(C == 1 && Z == 0). That's .ls
     RectifyCarryInvert(true);
-    return {false, CondClassType {COND_ULE}};
+    return CondClassType {COND_ULE};
   }
   case 0x7: { // JA - Jump if CF == 0 && ZF == 0
     // With CF inverted, we want (C == 1 && Z == 0). That's .hi
     RectifyCarryInvert(true);
-    return {false, CondClassType {COND_UGT}};
+    return CondClassType {COND_UGT};
   }
   case 0x8: { // JS - Jump if SF == 1
-    return {false, CondClassType {COND_MI}};
+    return CondClassType {COND_MI};
   }
   case 0x9: { // JNS - Jump if SF == 0
-    return {false, CondClassType {COND_PL}};
+    return CondClassType {COND_PL};
   }
   case 0xC: { // SF <> OF
-    return {false, CondClassType {COND_SLT}};
+    return CondClassType {COND_SLT};
   }
   case 0xD: { // SF = OF
-    return {false, CondClassType {COND_SGE}};
+    return CondClassType {COND_SGE};
   }
   case 0xE: { // ZF = 1 || SF <> OF
-    return {false, CondClassType {COND_SLE}};
+    return CondClassType {COND_SLE};
   }
   case 0xF: { // ZF = 0 && SF = OF
-    return {false, CondClassType {COND_SGT}};
+    return CondClassType {COND_SGT};
   }
   default:
     // Other conditions do not map directly, caller gets to deal with it.
-    return {true, CondClassType {0}};
+    return std::nullopt;
   }
 }
 
 Ref OpDispatchBuilder::SelectCC(uint8_t OP, IR::OpSize ResultSize, Ref TrueValue, Ref FalseValue) {
-  auto [Complex, Cond] = DecodeNZCVCondition(OP);
-  if (!Complex) {
+  auto Cond = DecodeNZCVCondition(OP);
+  if (Cond) {
     // Use raw select since DecodeNZCVCondition handles the carry invert
-    return _NZCVSelect(ResultSize, Cond, TrueValue, FalseValue);
+    return _NZCVSelect(ResultSize, *Cond, TrueValue, FalseValue);
   }
 
   switch (OP) {
@@ -724,12 +724,12 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
   {
     IRPair<IR::IROp_CondJump> CondJump_;
     auto OP = Op->OP & 0xF;
-    auto [Complex, SimpleCond] = DecodeNZCVCondition(OP);
-    if (Complex) {
+    auto Cond = DecodeNZCVCondition(OP);
+    if (Cond) {
+      CondJump_ = CondJumpNZCV(*Cond);
+    } else {
       LOGMAN_THROW_A_FMT(OP == 0xA || OP == 0xB, "only PF left");
       CondJump_ = CondJumpBit(LoadPFRaw(false, false), 0, OP == 0xB);
-    } else {
-      CondJump_ = CondJumpNZCV(SimpleCond);
     }
 
     // Taking branch block
