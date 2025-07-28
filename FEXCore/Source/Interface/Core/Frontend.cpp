@@ -1066,9 +1066,10 @@ void Decoder::BranchTargetInMultiblockRange() {
   }
 
   // If the target RIP is x86 code within the symbol ranges then we are golden
-  // Forbid cross-page branches to both avoid massive (range-wise) code blocks in highly fragmented code and trying to decode unmapped branch targets
-  bool ValidMultiblockMember =
-    TargetRIP >= SymbolMinAddress && TargetRIP < std::min(FEXCore::AlignUp(InstEnd, FEXCore::Utils::FEX_PAGE_SIZE), SymbolMaxAddress);
+  // Forbid distant branches to have the cost code better match the guest code layout, avoiding massive (range-wise) code
+  // blocks in highly fragmented guest code. Such branches are often not-taken branches to garbage in obfuscated code.
+  constexpr uint64_t MAX_FORWARD_BRANCH_DIST = FEXCore::Utils::FEX_PAGE_SIZE * 4;
+  bool ValidMultiblockMember = TargetRIP >= SymbolMinAddress && TargetRIP < std::min(InstEnd + MAX_FORWARD_BRANCH_DIST, SymbolMaxAddress);
 
 #ifdef _M_ARM_64EC
   ValidMultiblockMember = ValidMultiblockMember && !RtlIsEcCode(TargetRIP);
