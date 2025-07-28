@@ -32,12 +32,12 @@ Ref OpDispatchBuilder::GetX87Top() {
 }
 
 void OpDispatchBuilder::SetX87FTW(Ref FTW) {
-  Ref X87Empty = _Constant(static_cast<uint8_t>(FPState::X87Tag::Empty));
+  Ref X87Empty = Constant(static_cast<uint8_t>(FPState::X87Tag::Empty));
   Ref NewAbridgedFTW {};
 
   for (int i = 0; i < 8; i++) {
     Ref RegTag = _Bfe(OpSize::i32Bit, 2, i * 2, FTW);
-    Ref RegValid = _Select(FEXCore::IR::COND_NEQ, RegTag, X87Empty, _Constant(1), _Constant(0));
+    Ref RegValid = _Select(FEXCore::IR::COND_NEQ, RegTag, X87Empty, Constant(1), Constant(0));
 
     if (i) {
       NewAbridgedFTW = _Orlshl(OpSize::i32Bit, NewAbridgedFTW, RegValid, i);
@@ -84,9 +84,9 @@ void OpDispatchBuilder::FBSTP(OpcodeArgs) {
   _PopStackDestroy();
 }
 
-void OpDispatchBuilder::FLD_Const(OpcodeArgs, NamedVectorConstant Constant) {
+void OpDispatchBuilder::FLD_Const(OpcodeArgs, NamedVectorConstant K) {
   // Update TOP
-  Ref Data = LoadAndCacheNamedVectorConstant(OpSize::i128Bit, Constant);
+  Ref Data = LoadAndCacheNamedVectorConstant(OpSize::i128Bit, K);
   _PushStack(Data, Data, OpSize::i128Bit, true);
 }
 
@@ -104,16 +104,16 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
   SaveNZCV();
 
   // Extract sign and make integer absolute
-  auto zero = _Constant(0);
+  auto zero = Constant(0);
   _SubNZCV(OpSize::i64Bit, Data, zero);
-  auto sign = _NZCVSelect(OpSize::i64Bit, CondClassType {COND_SLT}, _Constant(0x8000), zero);
+  auto sign = _NZCVSelect(OpSize::i64Bit, CondClassType {COND_SLT}, Constant(0x8000), zero);
   auto absolute = _Neg(OpSize::i64Bit, Data, CondClassType {COND_MI});
 
   // left justify the absolute integer
-  auto shift = _Sub(OpSize::i64Bit, _Constant(63), _FindMSB(IR::OpSize::i64Bit, absolute));
+  auto shift = _Sub(OpSize::i64Bit, Constant(63), _FindMSB(IR::OpSize::i64Bit, absolute));
   auto shifted = _Lshl(OpSize::i64Bit, absolute, shift);
 
-  auto adjusted_exponent = _Sub(OpSize::i64Bit, _Constant(0x3fff + 63), shift);
+  auto adjusted_exponent = _Sub(OpSize::i64Bit, Constant(0x3fff + 63), shift);
   auto zeroed_exponent = _Select(COND_EQ, absolute, zero, zero, adjusted_exponent);
   auto upper = _Or(OpSize::i64Bit, sign, zeroed_exponent);
 
@@ -155,17 +155,17 @@ void OpDispatchBuilder::FIST(OpcodeArgs, bool Truncate) {
     // Extract the 80-bit float value to check for special cases
     // Get the upper 64 bits which contain sign and exponent and then the exponent from upper.
     Ref Upper = _VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, Data, 1);
-    Ref Exponent = _And(OpSize::i64Bit, Upper, _Constant(0x7fff));
+    Ref Exponent = _And(OpSize::i64Bit, Upper, Constant(0x7fff));
 
     // Check for NaN/Infinity: exponent = 0x7fff
     SaveNZCV();
-    _TestNZ(OpSize::i64Bit, Exponent, _Constant(0x7fff));
-    Ref IsSpecial = _NZCVSelect(OpSize::i64Bit, {COND_EQ}, _Constant(1), _Constant(0));
+    _TestNZ(OpSize::i64Bit, Exponent, Constant(0x7fff));
+    Ref IsSpecial = _NZCVSelect(OpSize::i64Bit, {COND_EQ}, Constant(1), Constant(0));
 
     // For overflow detection, check if exponent indicates a value >= 2^15
     // Biased exponent for 2^15 is 0x3fff + 15 = 0x400e
-    _SubWithFlags(OpSize::i64Bit, Exponent, _Constant(0x400e));
-    Ref IsOverflow = _NZCVSelect(OpSize::i64Bit, {COND_UGE}, _Constant(1), _Constant(0));
+    _SubWithFlags(OpSize::i64Bit, Exponent, Constant(0x400e));
+    Ref IsOverflow = _NZCVSelect(OpSize::i64Bit, {COND_UGE}, Constant(1), Constant(0));
 
     // Set Invalid Operation flag if overflow or special value
     Ref InvalidFlag = _Or(OpSize::i64Bit, IsSpecial, IsOverflow);
@@ -336,17 +336,17 @@ Ref OpDispatchBuilder::GetX87FTW_Helper() {
   // https://graphics.stanford.edu/~seander/bithacks.html#InterleaveBMN
   Ref X = LoadContext(AbridgedFTWIndex);
   X = _Orlshl(OpSize::i32Bit, X, X, 4);
-  X = _And(OpSize::i32Bit, X, _Constant(0x0f0f0f0f));
+  X = _And(OpSize::i32Bit, X, Constant(0x0f0f0f0f));
   X = _Orlshl(OpSize::i32Bit, X, X, 2);
-  X = _And(OpSize::i32Bit, X, _Constant(0x33333333));
+  X = _And(OpSize::i32Bit, X, Constant(0x33333333));
   X = _Orlshl(OpSize::i32Bit, X, X, 1);
-  X = _And(OpSize::i32Bit, X, _Constant(0x55555555));
+  X = _And(OpSize::i32Bit, X, Constant(0x55555555));
   X = _Orlshl(OpSize::i32Bit, X, X, 1);
 
   // The above sequence sets valid to 11 and empty to 00, so invert to finalize.
   static_assert(static_cast<uint8_t>(FPState::X87Tag::Valid) == 0b00);
   static_assert(static_cast<uint8_t>(FPState::X87Tag::Empty) == 0b11);
-  return _Xor(OpSize::i32Bit, X, _Constant(0xffff));
+  return _Xor(OpSize::i32Bit, X, Constant(0xffff));
 }
 
 void OpDispatchBuilder::X87FNSTENV(OpcodeArgs) {
@@ -383,33 +383,33 @@ void OpDispatchBuilder::X87FNSTENV(OpcodeArgs) {
     _StoreMem(GPRClass, Size, Mem, FCW, Size);
   }
 
-  { _StoreMem(GPRClass, Size, ReconstructFSW_Helper(), Mem, _Constant(IR::OpSizeToSize(Size) * 1), Size, MEM_OFFSET_SXTX, 1); }
+  { _StoreMem(GPRClass, Size, ReconstructFSW_Helper(), Mem, Constant(IR::OpSizeToSize(Size) * 1), Size, MEM_OFFSET_SXTX, 1); }
 
-  auto ZeroConst = _Constant(0);
+  auto ZeroConst = Constant(0);
 
   {
     // FTW
-    _StoreMem(GPRClass, Size, GetX87FTW_Helper(), Mem, _Constant(IR::OpSizeToSize(Size) * 2), Size, MEM_OFFSET_SXTX, 1);
+    _StoreMem(GPRClass, Size, GetX87FTW_Helper(), Mem, Constant(IR::OpSizeToSize(Size) * 2), Size, MEM_OFFSET_SXTX, 1);
   }
 
   {
     // Instruction Offset
-    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(IR::OpSizeToSize(Size) * 3), Size, MEM_OFFSET_SXTX, 1);
+    _StoreMem(GPRClass, Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 3), Size, MEM_OFFSET_SXTX, 1);
   }
 
   {
     // Instruction CS selector (+ Opcode)
-    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(IR::OpSizeToSize(Size) * 4), Size, MEM_OFFSET_SXTX, 1);
+    _StoreMem(GPRClass, Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 4), Size, MEM_OFFSET_SXTX, 1);
   }
 
   {
     // Data pointer offset
-    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(IR::OpSizeToSize(Size) * 5), Size, MEM_OFFSET_SXTX, 1);
+    _StoreMem(GPRClass, Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 5), Size, MEM_OFFSET_SXTX, 1);
   }
 
   {
     // Data pointer selector
-    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(IR::OpSizeToSize(Size) * 6), Size, MEM_OFFSET_SXTX, 1);
+    _StoreMem(GPRClass, Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 6), Size, MEM_OFFSET_SXTX, 1);
   }
 }
 
@@ -439,13 +439,13 @@ void OpDispatchBuilder::X87LDENV(OpcodeArgs) {
   auto NewFCW = _LoadMem(GPRClass, OpSize::i16Bit, Mem, OpSize::i16Bit);
   _StoreContext(OpSize::i16Bit, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
-  Ref MemLocation = _Add(OpSize::i64Bit, Mem, _Constant(IR::OpSizeToSize(Size) * 1));
+  Ref MemLocation = _Add(OpSize::i64Bit, Mem, Constant(IR::OpSizeToSize(Size) * 1));
   auto NewFSW = _LoadMem(GPRClass, Size, MemLocation, Size);
   ReconstructX87StateFromFSW_Helper(NewFSW);
 
   {
     // FTW
-    Ref MemLocation = _Add(OpSize::i64Bit, Mem, _Constant(IR::OpSizeToSize(Size) * 2));
+    Ref MemLocation = _Add(OpSize::i64Bit, Mem, Constant(IR::OpSizeToSize(Size) * 2));
     SetX87FTW(_LoadMem(GPRClass, Size, MemLocation, Size));
   }
 }
@@ -479,44 +479,44 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
     _StoreMem(GPRClass, Size, Mem, FCW, Size);
   }
 
-  { _StoreMem(GPRClass, Size, ReconstructFSW_Helper(), Mem, _Constant(IR::OpSizeToSize(Size) * 1), Size, MEM_OFFSET_SXTX, 1); }
+  { _StoreMem(GPRClass, Size, ReconstructFSW_Helper(), Mem, Constant(IR::OpSizeToSize(Size) * 1), Size, MEM_OFFSET_SXTX, 1); }
 
-  auto ZeroConst = _Constant(0);
+  auto ZeroConst = Constant(0);
 
   {
     // FTW
-    _StoreMem(GPRClass, Size, GetX87FTW_Helper(), Mem, _Constant(IR::OpSizeToSize(Size) * 2), Size, MEM_OFFSET_SXTX, 1);
+    _StoreMem(GPRClass, Size, GetX87FTW_Helper(), Mem, Constant(IR::OpSizeToSize(Size) * 2), Size, MEM_OFFSET_SXTX, 1);
   }
 
   {
     // Instruction Offset
-    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(IR::OpSizeToSize(Size) * 3), Size, MEM_OFFSET_SXTX, 1);
+    _StoreMem(GPRClass, Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 3), Size, MEM_OFFSET_SXTX, 1);
   }
 
   {
     // Instruction CS selector (+ Opcode)
-    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(IR::OpSizeToSize(Size) * 4), Size, MEM_OFFSET_SXTX, 1);
+    _StoreMem(GPRClass, Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 4), Size, MEM_OFFSET_SXTX, 1);
   }
 
   {
     // Data pointer offset
-    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(IR::OpSizeToSize(Size) * 5), Size, MEM_OFFSET_SXTX, 1);
+    _StoreMem(GPRClass, Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 5), Size, MEM_OFFSET_SXTX, 1);
   }
 
   {
     // Data pointer selector
-    _StoreMem(GPRClass, Size, ZeroConst, Mem, _Constant(IR::OpSizeToSize(Size) * 6), Size, MEM_OFFSET_SXTX, 1);
+    _StoreMem(GPRClass, Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 6), Size, MEM_OFFSET_SXTX, 1);
   }
 
-  auto OneConst = _Constant(1);
-  auto SevenConst = _Constant(7);
+  auto OneConst = Constant(1);
+  auto SevenConst = Constant(7);
   const auto LoadSize = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
   for (int i = 0; i < 7; ++i) {
     Ref data = _LoadContextIndexed(Top, LoadSize, MMBaseOffset(), IR::OpSizeToSize(OpSize::i128Bit), FPRClass);
     if (ReducedPrecisionMode) {
       data = _F80CVTTo(data, OpSize::i64Bit);
     }
-    _StoreMem(FPRClass, OpSize::i128Bit, data, Mem, _Constant((IR::OpSizeToSize(Size) * 7) + (10 * i)), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
+    _StoreMem(FPRClass, OpSize::i128Bit, data, Mem, Constant((IR::OpSizeToSize(Size) * 7) + (10 * i)), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
     Top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, Top, OneConst), SevenConst);
   }
 
@@ -528,9 +528,9 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
   // ST7 broken in to two parts
   // Lower 64bits [63:0]
   // upper 16 bits [79:64]
-  _StoreMem(FPRClass, OpSize::i64Bit, data, Mem, _Constant((IR::OpSizeToSize(Size) * 7) + (7 * 10)), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
+  _StoreMem(FPRClass, OpSize::i64Bit, data, Mem, Constant((IR::OpSizeToSize(Size) * 7) + (7 * 10)), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
   auto topBytes = _VDupElement(OpSize::i128Bit, OpSize::i16Bit, data, 4);
-  _StoreMem(FPRClass, OpSize::i16Bit, topBytes, Mem, _Constant((IR::OpSizeToSize(Size) * 7) + (7 * 10) + 8), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
+  _StoreMem(FPRClass, OpSize::i16Bit, topBytes, Mem, Constant((IR::OpSizeToSize(Size) * 7) + (7 * 10) + 8), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
 
   // reset to default
   FNINIT(Op);
@@ -547,29 +547,29 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
     // ignore the rounding precision, we're always 64-bit in F64.
     // extract rounding mode
     Ref roundingMode = NewFCW;
-    auto roundShift = _Constant(10);
-    auto roundMask = _Constant(3);
+    auto roundShift = Constant(10);
+    auto roundMask = Constant(3);
     roundingMode = _Lshr(OpSize::i32Bit, roundingMode, roundShift);
     roundingMode = _And(OpSize::i32Bit, roundingMode, roundMask);
     _SetRoundingMode(roundingMode, false, roundingMode);
   }
 
-  auto NewFSW = _LoadMem(GPRClass, Size, Mem, _Constant(IR::OpSizeToSize(Size) * 1), Size, MEM_OFFSET_SXTX, 1);
+  auto NewFSW = _LoadMem(GPRClass, Size, Mem, Constant(IR::OpSizeToSize(Size) * 1), Size, MEM_OFFSET_SXTX, 1);
   Ref Top = ReconstructX87StateFromFSW_Helper(NewFSW);
   {
     // FTW
-    SetX87FTW(_LoadMem(GPRClass, Size, Mem, _Constant(IR::OpSizeToSize(Size) * 2), Size, MEM_OFFSET_SXTX, 1));
+    SetX87FTW(_LoadMem(GPRClass, Size, Mem, Constant(IR::OpSizeToSize(Size) * 2), Size, MEM_OFFSET_SXTX, 1));
   }
 
-  auto OneConst = _Constant(1);
-  auto SevenConst = _Constant(7);
+  auto OneConst = Constant(1);
+  auto SevenConst = Constant(7);
 
-  auto low = _Constant(~0ULL);
-  auto high = _Constant(0xFFFF);
+  auto low = Constant(~0ULL);
+  auto high = Constant(0xFFFF);
   Ref Mask = _VLoadTwoGPRs(low, high);
   const auto StoreSize = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
   for (int i = 0; i < 7; ++i) {
-    Ref Reg = _LoadMem(FPRClass, OpSize::i128Bit, Mem, _Constant((IR::OpSizeToSize(Size) * 7) + (10 * i)), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
+    Ref Reg = _LoadMem(FPRClass, OpSize::i128Bit, Mem, Constant((IR::OpSizeToSize(Size) * 7) + (10 * i)), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
     // Mask off the top bits
     Reg = _VAnd(OpSize::i128Bit, OpSize::i128Bit, Reg, Mask);
     if (ReducedPrecisionMode) {
@@ -585,9 +585,9 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
   // ST7 broken in to two parts
   // Lower 64bits [63:0]
   // upper 16 bits [79:64]
-  Ref Reg = _LoadMem(FPRClass, OpSize::i64Bit, Mem, _Constant((IR::OpSizeToSize(Size) * 7) + (10 * 7)), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
+  Ref Reg = _LoadMem(FPRClass, OpSize::i64Bit, Mem, Constant((IR::OpSizeToSize(Size) * 7) + (10 * 7)), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
   Ref RegHigh =
-    _LoadMem(FPRClass, OpSize::i16Bit, Mem, _Constant((IR::OpSizeToSize(Size) * 7) + (10 * 7) + 8), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
+    _LoadMem(FPRClass, OpSize::i16Bit, Mem, Constant((IR::OpSizeToSize(Size) * 7) + (10 * 7) + 8), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
   Reg = _VInsElement(OpSize::i128Bit, OpSize::i16Bit, 4, 0, Reg, RegHigh);
   if (ReducedPrecisionMode) {
     Reg = _F80CVT(OpSize::i64Bit, Reg); // Convert to double precision
@@ -616,13 +616,13 @@ void OpDispatchBuilder::FXCH(OpcodeArgs) {
   if (Offset != 0) {
     _F80StackXchange(Offset);
   }
-  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(_Constant(0));
+  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(Constant(0));
 }
 
 void OpDispatchBuilder::X87FYL2X(OpcodeArgs, bool IsFYL2XP1) {
   if (IsFYL2XP1) {
     // create an add between top of stack and 1.
-    Ref One = ReducedPrecisionMode ? _VCastFromGPR(OpSize::i64Bit, OpSize::i64Bit, _Constant(0x3FF0000000000000)) :
+    Ref One = ReducedPrecisionMode ? _VCastFromGPR(OpSize::i64Bit, OpSize::i64Bit, Constant(0x3FF0000000000000)) :
                                      LoadAndCacheNamedVectorConstant(OpSize::i128Bit, NamedVectorConstant::NAMED_VECTOR_X87_ONE);
     _F80AddValue(0, One);
   }
@@ -663,7 +663,7 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs, IR::OpSize Width, bool Integer, OpDisp
 
   if (WhichFlags == FCOMIFlags::FLAGS_X87) {
     SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(HostFlag_CF);
-    SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(_Constant(0));
+    SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(Constant(0));
     SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(HostFlag_Unordered);
     SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(HostFlag_ZF);
   } else {
@@ -673,7 +673,7 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs, IR::OpSize Width, bool Integer, OpDisp
 
     // PF is stored inverted, so invert from the host flag.
     // TODO: This could perhaps be optimized?
-    auto PF = _Xor(OpSize::i32Bit, HostFlag_Unordered, _Constant(1));
+    auto PF = _Xor(OpSize::i32Bit, HostFlag_Unordered, Constant(1));
     SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(PF);
   }
 
@@ -695,7 +695,7 @@ void OpDispatchBuilder::FTST(OpcodeArgs) {
   HostFlag_ZF = _Or(OpSize::i32Bit, HostFlag_ZF, HostFlag_Unordered);
 
   SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(HostFlag_CF);
-  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(_Constant(0));
+  SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(Constant(0));
   SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(HostFlag_Unordered);
   SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(HostFlag_ZF);
 }
@@ -703,7 +703,7 @@ void OpDispatchBuilder::FTST(OpcodeArgs) {
 void OpDispatchBuilder::X87OpHelper(OpcodeArgs, FEXCore::IR::IROps IROp, bool ZeroC2) {
   DeriveOp(Result, IROp, _F80SCALEStack());
   if (ZeroC2) {
-    SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(_Constant(0));
+    SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(Constant(0));
   }
 }
 
@@ -729,7 +729,7 @@ void OpDispatchBuilder::X87ModifySTP(OpcodeArgs, bool Inc) {
 Ref OpDispatchBuilder::ReconstructFSW_Helper(Ref T) {
   // Start with the top value
   auto Top = T ? T : GetX87Top();
-  Ref FSW = _Lshl(OpSize::i64Bit, Top, _Constant(11));
+  Ref FSW = _Lshl(OpSize::i64Bit, Top, Constant(11));
 
   // We must construct the FSW from our various bits
   auto C0 = GetRFLAG(FEXCore::X86State::X87FLAG_C0_LOC);
@@ -760,14 +760,14 @@ void OpDispatchBuilder::X87FNSTSW(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FNINIT(OpcodeArgs) {
-  auto Zero = _Constant(0);
+  auto Zero = Constant(0);
 
   if (ReducedPrecisionMode) {
     _SetRoundingMode(Zero, false, Zero);
   }
 
   // Init FCW to 0x037F
-  auto NewFCW = _Constant(OpSize::i16Bit, 0x037F);
+  auto NewFCW = Constant(0x037F);
   _StoreContext(OpSize::i16Bit, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
   // Set top to zero
@@ -827,8 +827,8 @@ void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {
   default: LOGMAN_MSG_A_FMT("Unhandled FCMOV op: 0x{:x}", Opcode); break;
   }
 
-  auto ZeroConst = _Constant(0);
-  auto AllOneConst = _Constant(0xffff'ffff'ffff'ffffull);
+  auto ZeroConst = Constant(0);
+  auto AllOneConst = Constant(0xffff'ffff'ffff'ffffull);
 
   Ref SrcCond = SelectCC(CC, OpSize::i64Bit, AllOneConst, ZeroConst);
   Ref VecCond = _VDupFromGPR(OpSize::i128Bit, OpSize::i64Bit, SrcCond);
@@ -847,8 +847,8 @@ void OpDispatchBuilder::X87FXAM(OpcodeArgs) {
   // Claim this is a normal number
   // We don't support anything else
   auto TopValid = _StackValidTag(0);
-  auto ZeroConst = _Constant(0);
-  auto OneConst = _Constant(1);
+  auto ZeroConst = Constant(0);
+  auto OneConst = Constant(1);
 
   // In the case of top being invalid then C3:C2:C0 is 0b101
   auto C3 = _Select(FEXCore::IR::COND_NEQ, TopValid, OneConst, OneConst, ZeroConst);

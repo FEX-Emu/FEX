@@ -187,6 +187,9 @@ void IREmitter::SetCurrentCodeBlock(Ref Node) {
   LOGMAN_THROW_A_FMT(Node->Op(DualListData.DataBegin())->Op == OP_CODEBLOCK, "Node wasn't codeblock. It was '{}'",
                      IR::GetName(Node->Op(DualListData.DataBegin())->Op));
   SetWriteCursor(Node->Op(DualListData.DataBegin())->CW<IROp_CodeBlock>()->Begin.GetNode(DualListData.ListBegin()));
+
+  // Constants are pooled only within a single block.
+  NrConstants = 0;
 }
 
 } // namespace FEXCore::IR

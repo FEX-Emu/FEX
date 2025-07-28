@@ -1045,7 +1045,7 @@ void Decoder::BranchTargetInMultiblockRange() {
   case 0x80 ... 0x8F: { // More conditional
     // Source is a literal
     // auto RIPOffset = LoadSource(Op, Op->Src[0], Op->Flags);
-    // auto RIPTargetConst = _Constant(Op->PC + Op->InstSize);
+    // auto RIPTargetConst = Constant(Op->PC + Op->InstSize);
     // Target offset is PC + InstSize + Literal
     TargetRIP = InstEnd + DecodeInst->Src[0].Literal();
     break;
