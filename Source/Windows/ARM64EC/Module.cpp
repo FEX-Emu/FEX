@@ -792,12 +792,15 @@ void NotifyMemoryAlloc(void* Address, SIZE_T Size, ULONG Type, ULONG Prot, BOOL 
     return;
   }
 
-  if (!After || Status) {
-    return;
+  if (!After) {
+    ThreadCreationMutex.lock();
+  } else {
+    if (!Status) {
+      std::scoped_lock Lock(ThreadCreationMutex);
+      InvalidationTracker->HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), Prot);
+    }
+    ThreadCreationMutex.unlock();
   }
-
-  std::scoped_lock Lock(ThreadCreationMutex);
-  InvalidationTracker->HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), Prot);
 }
 
 void NotifyMemoryFree(void* Address, SIZE_T Size, ULONG FreeType, BOOL After, NTSTATUS Status) {
@@ -805,15 +808,15 @@ void NotifyMemoryFree(void* Address, SIZE_T Size, ULONG FreeType, BOOL After, NT
     return;
   }
 
-  if (After) {
-    return;
-  }
-
-  std::scoped_lock Lock(ThreadCreationMutex);
-  if (FreeType & MEM_DECOMMIT) {
-    InvalidationTracker->InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), true);
-  } else if (FreeType & MEM_RELEASE) {
-    InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
+  if (!After) {
+    ThreadCreationMutex.lock();
+    if (FreeType & MEM_DECOMMIT) {
+      InvalidationTracker->InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), true);
+    } else if (FreeType & MEM_RELEASE) {
+      InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
+    }
+  } else {
+    ThreadCreationMutex.unlock();
   }
 }
 
@@ -822,12 +825,15 @@ void NotifyMemoryProtect(void* Address, SIZE_T Size, ULONG NewProt, BOOL After, 
     return;
   }
 
-  if (!After || Status) {
-    return;
+  if (!After) {
+    ThreadCreationMutex.lock();
+  } else {
+    if (!Status) {
+      std::scoped_lock Lock(ThreadCreationMutex);
+      InvalidationTracker->HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), NewProt);
+    }
+    ThreadCreationMutex.unlock();
   }
-
-  std::scoped_lock Lock(ThreadCreationMutex);
-  InvalidationTracker->HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), NewProt);
 }
 
 NTSTATUS NotifyMapViewOfSection(void* Unk1, void* Address, void* Unk2, SIZE_T Size, ULONG AllocType, ULONG Prot) {
@@ -849,15 +855,16 @@ void NotifyUnmapViewOfSection(void* Address, BOOL After, NTSTATUS Status) {
     return;
   }
 
-  if (After) {
-    return;
-  }
-
-  std::scoped_lock Lock(ThreadCreationMutex);
-  auto [Start, Size] = InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
-  if (Size) {
-    std::scoped_lock Lock(CTX->GetCodeInvalidationMutex());
-    CTX->RemoveForceTSOInformation(Start, Size);
+  if (!After) {
+    ThreadCreationMutex.lock();
+    std::scoped_lock Lock(ThreadCreationMutex);
+    auto [Start, Size] = InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
+    if (Size) {
+      std::scoped_lock Lock(CTX->GetCodeInvalidationMutex());
+      CTX->RemoveForceTSOInformation(Start, Size);
+    }
+  } else {
+    ThreadCreationMutex.unlock();
   }
 }
 

@@ -865,30 +865,37 @@ void BTCpuNotifyMemoryDirty(void* Address, SIZE_T Size) {
 }
 
 void BTCpuNotifyMemoryAlloc(void* Address, SIZE_T Size, ULONG Type, ULONG Prot, BOOL After, ULONG Status) {
-  if (!After || Status) {
-    return;
+  if (!After) {
+    ThreadCreationMutex.lock();
+  } else {
+    if (!Status) {
+      InvalidationTracker->HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), Prot);
+    }
+    ThreadCreationMutex.unlock();
   }
-  std::scoped_lock Lock(ThreadCreationMutex);
-  InvalidationTracker->HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), Prot);
 }
 
 void BTCpuNotifyMemoryProtect(void* Address, SIZE_T Size, ULONG NewProt, BOOL After, ULONG Status) {
-  if (!After || Status) {
-    return;
+  if (!After) {
+    ThreadCreationMutex.lock();
+  } else {
+    if (!Status) {
+      InvalidationTracker->HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), NewProt);
+    }
+    ThreadCreationMutex.unlock();
   }
-  std::scoped_lock Lock(ThreadCreationMutex);
-  InvalidationTracker->HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), NewProt);
 }
 
 void BTCpuNotifyMemoryFree(void* Address, SIZE_T Size, ULONG FreeType, BOOL After, ULONG Status) {
-  if (After) {
-    return;
-  }
-  std::scoped_lock Lock(ThreadCreationMutex);
-  if (!Size) {
-    InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
-  } else if (FreeType & MEM_DECOMMIT) {
-    InvalidationTracker->InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), true);
+  if (!After) {
+    ThreadCreationMutex.lock();
+    if (!Size) {
+      InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
+    } else if (FreeType & MEM_DECOMMIT) {
+      InvalidationTracker->InvalidateAlignedInterval(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), true);
+    }
+  } else {
+    ThreadCreationMutex.unlock();
   }
 }
 
@@ -899,12 +906,12 @@ NTSTATUS BTCpuNotifyMapViewOfSection(void* Unk1, void* Address, void* Unk2, SIZE
 }
 
 void BTCpuNotifyUnmapViewOfSection(void* Address, BOOL After, ULONG Status) {
-  if (After) {
-    return;
+  if (!After) {
+    ThreadCreationMutex.lock();
+    InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
+  } else {
+    ThreadCreationMutex.unlock();
   }
-
-  std::scoped_lock Lock(ThreadCreationMutex);
-  InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
 }
 
 void BTCpuNotifyReadFile(HANDLE Handle, void* Address, SIZE_T Size, BOOL After, NTSTATUS Status) {}
