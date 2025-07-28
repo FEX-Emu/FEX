@@ -654,11 +654,29 @@ NTSTATUS BTCpuSetContext(HANDLE Thread, HANDLE Process, void* Unknown, WOW64_CON
   return STATUS_SUCCESS;
 }
 
-void BTCpuSimulate() {
+// .seh_pushframe doesn't restore the frame pointer, so if when unwinding from RtlCaptureContext an operation is used
+// that sets SP from FP, the unwound SP value will be incorrect. Wrap RtlCaptureContext so the correct FP is immediately
+// restored from the stack to prevent this.
+__attribute__((naked)) void BTCpuSimulate() {
+  asm(".seh_proc BTCpuSimulate;"
+      "sub sp, sp, #0x390;"
+      ".seh_stackalloc 0x390;"
+      "stp x29, x30, [sp, #-0x10]!;"
+      ".seh_save_fplr_x 16;"
+      ".seh_endprologue;"
+      "add x0, sp, #0x10;"
+      "bl RtlCaptureContext;"
+      "add x0, sp, #0x10;"
+      "bl BTCpuSimulateImpl;"
+      "ldp x29, x30, [sp], 0x10;"
+      "add sp, sp, #0x390;"
+      "ret;"
+      ".seh_endproc;");
+}
+
+extern "C" void BTCpuSimulateImpl(CONTEXT *entry_context) {
   auto TLS = GetTLS();
-  CONTEXT entry_context;
-  RtlCaptureContext(&entry_context);
-  TLS.EntryContext() = &entry_context;
+  TLS.EntryContext() = entry_context;
   TLS.CachedCallRetSp() = TLS.ThreadState()->CurrentFrame->State.callret_sp;
 
   Context::LockJITContext();
