@@ -98,7 +98,11 @@ public:
   fextl::string GetEmulatedPath(const char* pathname, bool FollowSymlink = false);
   fextl::string GetHostPath(fextl::string& Path, bool AliasedOnly);
   using FDPathTmpData = std::array<char[PATH_MAX], 2>;
-  std::pair<int, const char*> GetEmulatedFDPath(int dirfd, const char* pathname, bool FollowSymlink, FDPathTmpData& TmpFilename);
+  struct EmulatedFDPathResult final {
+    int FD;
+    const char *Path;
+  };
+  EmulatedFDPathResult GetEmulatedFDPath(int dirfd, const char* pathname, bool FollowSymlink, FDPathTmpData& TmpFilename);
 
   bool ReplaceEmuFd(int fd, int flags, uint32_t mode);
 
