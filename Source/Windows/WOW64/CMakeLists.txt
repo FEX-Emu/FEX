@@ -1,5 +1,3 @@
-include(GNUInstallDirs)
-
 add_library(wow64fex SHARED
   Module.cpp
   libwow64fex.def

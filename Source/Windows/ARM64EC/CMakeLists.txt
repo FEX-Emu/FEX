@@ -1,5 +1,3 @@
-include(GNUInstallDirs)
-
 add_library(arm64ecfex SHARED
   Module.cpp
   Module.S

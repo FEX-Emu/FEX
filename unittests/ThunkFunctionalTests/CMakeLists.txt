@@ -2,7 +2,7 @@ set(FUNCTIONAL_DEPENDS "")
 
 function(AddThunksTest Bin ThunksFile)
   set (ARGS
-    "-t" "${CMAKE_INSTALL_PREFIX}/lib/fex-emu/HostThunks"
+    "-t" "${HOSTLIBS_DATA_DIRECTORY}/HostThunks"
     "-j" "${CMAKE_INSTALL_PREFIX}/share/fex-emu/GuestThunks"
     "-o" "stderr" "--no-silentlog" "-n" "500"
     )
