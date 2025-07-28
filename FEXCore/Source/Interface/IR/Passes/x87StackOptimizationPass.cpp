@@ -52,6 +52,11 @@ enum class StackSlot { UNUSED, INVALID, VALID };
 template<typename T>
 class FixedSizeStack {
 public:
+  struct StackSlotEntry final {
+    StackSlot Type;
+    T Value;
+  };
+
   static constexpr uint8_t size = 8;
 
   // Real top as an offset from stored top value (or the one at the beginning of the block)
@@ -84,7 +89,7 @@ public:
     rotate(false);
   }
 
-  const std::pair<StackSlot, T>& top(size_t Offset = 0) const {
+  const StackSlotEntry& top(size_t Offset = 0) const {
     return buffer[Offset];
   }
 
@@ -118,14 +123,14 @@ public:
   }
 
   void setTagInvalid(size_t Index) {
-    buffer[Index].first = StackSlot::INVALID;
+    buffer[Index].Type = StackSlot::INVALID;
   }
 
   // Returns a mask to set in AbridgedTagWord
   uint8_t getValidMask() {
     uint8_t Mask = 0;
     for (size_t i = 0; i < buffer.size(); i++) {
-      if (buffer[i].first == StackSlot::VALID) {
+      if (buffer[i].Type == StackSlot::VALID) {
         Mask |= 1U << i;
       }
     }
@@ -136,7 +141,7 @@ public:
   uint8_t getInvalidMask() {
     uint8_t Mask = 0;
     for (size_t i = 0; i < buffer.size(); i++) {
-      if (buffer[i].first == StackSlot::INVALID) {
+      if (buffer[i].Type == StackSlot::INVALID) {
         Mask |= 1U << i;
       }
     }
@@ -144,7 +149,7 @@ public:
   }
 
 private:
-  fextl::vector<std::pair<StackSlot, T>> buffer;
+  fextl::vector<StackSlotEntry> buffer;
 };
 
 class X87StackOptimization final : public Pass {
@@ -305,9 +310,13 @@ private:
       , InterpretAsFloat(Float) {}
     Ref StackDataNode {}; // Reference to the data in the Stack.
                           // This is the source data node in the stack format, possibly converted to 64/80 bits.
+    struct StackMemberData final {
+      OpSize Size;
+      Ref Node;
+    };
     // Tuple is only valid if we have information about the Source of the Stack Data Node.
     // In it's valid then OpSize is the original source size and Ref is the original source node.
-    std::optional<std::pair<OpSize, Ref>> Source {};
+    std::optional<StackMemberData> Source {};
     bool InterpretAsFloat {false}; // True if this is a floating point value, false if integer
   };
 
@@ -916,8 +925,8 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         // str w2, [x1]
         // or similar. As long as the source size and dest size are one and the same.
         // This will avoid any conversions between source and stack element size and conversion back.
-        if (!SlowPath && Value->Source && Value->Source->first == Op->StoreSize && Value->InterpretAsFloat) {
-          IREmit->_StoreMem(Value->InterpretAsFloat ? FPRClass : GPRClass, Op->StoreSize, Value->Source->second, AddrNode, Offset, Align,
+        if (!SlowPath && Value->Source && Value->Source->Size == Op->StoreSize && Value->InterpretAsFloat) {
+          IREmit->_StoreMem(Value->InterpretAsFloat ? FPRClass : GPRClass, Op->StoreSize, Value->Source->Node, AddrNode, Offset, Align,
                             OffsetType, OffsetScale);
           break;
         }
