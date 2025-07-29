@@ -275,8 +275,13 @@ void* OSAllocator_64Bit::Mmap(void* addr, size_t length, int prot, int flags, in
 
 again:
 
+  struct RangeResult final {
+    LiveVMARegion *RegionInsertedInto;
+    void *Ptr;
+  };
+
   auto CheckIfRangeFits = [&AllocatedOffset](LiveVMARegion* Region, uint64_t length, int prot, int flags, int fd, off_t offset,
-                                             uint64_t StartingPosition = 0) -> std::pair<LiveVMARegion*, void*> {
+                                             uint64_t StartingPosition = 0) -> RangeResult {
     uint64_t AllocatedPage {~0ULL};
     uint64_t NumberOfPages = length >> FEXCore::Utils::FEX_PAGE_SHIFT;
 
@@ -314,13 +319,13 @@ again:
         void* MMapResult = ::mmap(reinterpret_cast<void*>(AllocatedOffset), length, prot, (flags & ~MAP_FIXED_NOREPLACE) | MAP_FIXED, fd, offset);
 
         if (MMapResult == MAP_FAILED) {
-          return std::make_pair(Region, reinterpret_cast<void*>(-errno));
+          return RangeResult {Region, reinterpret_cast<void*>(-errno)};
         }
-        return std::make_pair(Region, MMapResult);
+        return RangeResult {Region, MMapResult};
       }
     }
 
-    return std::make_pair(nullptr, nullptr);
+    return {};
   };
 
   if (Fixed) {
@@ -329,7 +334,7 @@ again:
       // Found a slab that fits this
       if (flags & MAP_FIXED_NOREPLACE) {
         auto Fits = CheckIfRangeFits(LiveRegion, length, prot, flags, fd, offset, Addr);
-        if (Fits.first && Fits.second == reinterpret_cast<void*>(Addr)) {
+        if (Fits.RegionInsertedInto && Fits.Ptr == reinterpret_cast<void*>(Addr)) {
           // We fit correctly
           AllocatedOffset = Addr;
         } else {
@@ -355,7 +360,7 @@ again:
       // We found a LiveRegion that could hold this address. Let's try to place it
       // Check if this area is free
       auto Fits = CheckIfRangeFits(LiveRegion, length, prot, flags, fd, offset, Addr);
-      if (Fits.first && Fits.second == reinterpret_cast<void*>(Addr)) {
+      if (Fits.RegionInsertedInto && Fits.Ptr == reinterpret_cast<void*>(Addr)) {
         // We fit correctly
         AllocatedOffset = Addr;
       } else {
@@ -368,15 +373,15 @@ again:
     if (!LiveRegion) {
       for (auto it = LiveRegions->begin(); it != LiveRegions->end(); ++it) {
         auto Fits = CheckIfRangeFits(*it, length, prot, flags, fd, offset);
-        if (Fits.first && Fits.second == reinterpret_cast<void*>(AllocatedOffset)) {
+        if (Fits.RegionInsertedInto && Fits.Ptr == reinterpret_cast<void*>(AllocatedOffset)) {
           // We fit correctly
-          LiveRegion = Fits.first;
+          LiveRegion = Fits.RegionInsertedInto;
           break;
         }
 
         // Couldn't fit but mmap gave us an error
-        if (!Fits.first && Fits.second) {
-          return Fits.second;
+        if (!Fits.RegionInsertedInto && Fits.Ptr) {
+          return Fits.Ptr;
         }
 
         // nullptr on both means no error and couldn't fit
