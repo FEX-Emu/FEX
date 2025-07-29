@@ -309,7 +309,7 @@ static uint64_t DoLoad64(uint64_t Addr) {
   }
 }
 
-static std::pair<uint64_t, uint64_t> DoLoad128(uint64_t Addr) {
+static __uint128_t DoLoad128(uint64_t Addr) {
   // Any misalignment here means we cross a 16byte boundary
   // So we need two 128bit loads
   uint64_t Alignment = Addr & 0b1111;
@@ -330,10 +330,9 @@ static std::pair<uint64_t, uint64_t> DoLoad128(uint64_t Addr) {
   Data->Large.Upper = LoadAcquire128(AddrUpper);
   Data->Large.Lower = LoadAcquire128(Addr);
 
-  uint64_t ResultLower {}, ResultUpper {};
-  memcpy(&ResultLower, &Data->Bytes.Data[Alignment], sizeof(uint64_t));
-  memcpy(&ResultUpper, &Data->Bytes.Data[Alignment + sizeof(uint64_t)], sizeof(uint64_t));
-  return {ResultLower, ResultUpper};
+  __uint128_t Result {};
+  memcpy(&Result, &Data->Bytes.Data[Alignment], sizeof(Result));
+  return Result;
 }
 
 static bool RunCASPAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg1, uint32_t DesiredReg2, uint32_t ExpectedReg1,
@@ -580,10 +579,10 @@ static uint64_t HandleCASPAL_ARMv8(uint32_t Instr, uintptr_t ProgramCounter, uin
         auto Res = DoLoad128(Addr);
         // We set the result register if it isn't a zero register
         if (DataReg != 31) {
-          GPRs[DataReg] = std::get<0>(Res);
+          GPRs[DataReg] = Res;
         }
         if (DataReg2 != 31) {
-          GPRs[DataReg2] = std::get<1>(Res);
+          GPRs[DataReg2] = Res >> 64;
         }
 
         // Skip ldaxp and clrex
