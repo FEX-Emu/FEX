@@ -108,11 +108,7 @@ GdbServer::GdbServer(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* 
         ThreadObject->GdbInfo = {};
         ThreadObject->GdbInfo->Signal = Signal;
 
-        ThreadObject->GdbInfo->SignalPC = ArchHelpers::Context::GetPc(ucontext);
         this->SignalDelegation->SpillSRA(Thread, ucontext, Thread->CurrentFrame->InSyscallInfo);
-
-        memcpy(ThreadObject->GdbInfo->GPRs, ArchHelpers::Context::GetArmGPRs(ucontext), sizeof(ThreadObject->GdbInfo->GPRs));
-        ThreadObject->GdbInfo->PState = ArchHelpers::Context::GetArmPState(ucontext);
 
         // Let GDB know that we have a signal
         this->Break(Thread, Signal);
@@ -304,16 +300,8 @@ GdbServer::GDBContextDefinition GdbServer::GenerateContextDefinition(const FEX::
 
   // Encode the GDB context definition
   memcpy(&GDB.gregs[0], &state.gregs[0], sizeof(GDB.gregs));
-  if (ThreadObject->GdbInfo.has_value()) {
-    GDB.rip = CTX->RestoreRIPFromHostPC(ThreadObject->Thread, ThreadObject->GdbInfo->SignalPC);
-
-    const bool WasInJIT = CTX->IsAddressInCodeBuffer(ThreadObject->Thread, ThreadObject->GdbInfo->SignalPC);
-    GDB.eflags = CTX->ReconstructCompactedEFLAGS(ThreadObject->Thread, WasInJIT, const_cast<uint64_t*>(ThreadObject->GdbInfo->GPRs),
-                                                 ThreadObject->GdbInfo->PState);
-  } else {
-    GDB.rip = ThreadObject->Thread->CurrentFrame->State.rip;
-    GDB.eflags = CTX->ReconstructCompactedEFLAGS(ThreadObject->Thread, false, nullptr, 0);
-  }
+  GDB.rip = ThreadObject->Thread->CurrentFrame->State.rip;
+  GDB.eflags = CTX->ReconstructCompactedEFLAGS(ThreadObject->Thread, false, nullptr, 0);
 
   for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_MMS; ++i) {
     memcpy(&GDB.mm[i], &state.mm[i], sizeof(GDB.mm[i]));
