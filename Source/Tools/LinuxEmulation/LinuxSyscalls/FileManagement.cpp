@@ -476,8 +476,8 @@ fextl::string FileManager::GetEmulatedPath(const char* pathname, bool FollowSyml
   return Path;
 }
 
-std::pair<int, const char*> FileManager::GetEmulatedFDPath(int dirfd, const char* pathname, bool FollowSymlink, FDPathTmpData& TmpFilename) {
-  constexpr auto NoEntry = std::make_pair(-1, nullptr);
+FileManager::EmulatedFDPathResult FileManager::GetEmulatedFDPath(int dirfd, const char* pathname, bool FollowSymlink, FDPathTmpData& TmpFilename) {
+  constexpr auto NoEntry = EmulatedFDPathResult {-1, nullptr};
 
   if (!pathname) {
     // No pathname.
@@ -497,7 +497,7 @@ std::pair<int, const char*> FileManager::GetEmulatedFDPath(int dirfd, const char
 
   auto thunkOverlay = ThunkOverlays.find(pathname);
   if (thunkOverlay != ThunkOverlays.end()) {
-    return std::make_pair(AT_FDCWD, thunkOverlay->second.c_str());
+    return EmulatedFDPathResult {AT_FDCWD, thunkOverlay->second.c_str()};
   }
 
   if (RootFSFD == AT_FDCWD) {
@@ -567,7 +567,7 @@ std::pair<int, const char*> FileManager::GetEmulatedFDPath(int dirfd, const char
   }
 
   // Return the pair of rootfs FD plus relative subpath by stripping off the front '/'
-  return std::make_pair(RootFSFD, &SubPath[1]);
+  return EmulatedFDPathResult {RootFSFD, &SubPath[1]};
 }
 
 ///< Returns true if the pathname is self and symlink flags are set NOFOLLOW.
@@ -656,18 +656,18 @@ uint64_t FileManager::Open(const char* pathname, int flags, uint32_t mode) {
   if (!ShouldSkipOpenInEmu(flags)) {
     FDPathTmpData TmpFilename;
     auto Path = GetEmulatedFDPath(AT_FDCWD, SelfPath, false, TmpFilename);
-    if (Path.first != -1) {
+    if (Path.FD != -1) {
       FEX::HLE::open_how how = {
         .flags = (uint64_t)flags,
         .mode = (flags & (O_CREAT | O_TMPFILE)) ? mode & 07777 : 0, // openat2() is stricter about this
-        .resolve = (Path.first == AT_FDCWD) ? 0u : RESOLVE_IN_ROOT, // AT_FDCWD means it's a thunk and not via RootFS
+        .resolve = (Path.FD == AT_FDCWD) ? 0u : RESOLVE_IN_ROOT, // AT_FDCWD means it's a thunk and not via RootFS
       };
-      fd = ::syscall(SYSCALL_DEF(openat2), Path.first, Path.second, &how, sizeof(how));
+      fd = ::syscall(SYSCALL_DEF(openat2), Path.FD, Path.Path, &how, sizeof(how));
 
       if (fd == -1 && errno == EXDEV) {
         // This means a magic symlink (/proc/foo) was involved. In this case we
         // just punt and do the access without RESOLVE_IN_ROOT.
-        fd = ::syscall(SYSCALL_DEF(openat), Path.first, Path.second, flags, mode);
+        fd = ::syscall(SYSCALL_DEF(openat), Path.FD, Path.Path, flags, mode);
       }
     }
 
@@ -716,8 +716,8 @@ uint64_t FileManager::Stat(const char* pathname, void* buf) {
   // Stat follows symlinks
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(AT_FDCWD, SelfPath, true, TmpFilename);
-  if (Path.first != -1) {
-    uint64_t Result = ::fstatat(Path.first, Path.second, reinterpret_cast<struct stat*>(buf), 0);
+  if (Path.FD != -1) {
+    uint64_t Result = ::fstatat(Path.FD, Path.Path, reinterpret_cast<struct stat*>(buf), 0);
     if (Result != -1) {
       return Result;
     }
@@ -732,8 +732,8 @@ uint64_t FileManager::Lstat(const char* pathname, void* buf) {
   // lstat does not follow symlinks
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(AT_FDCWD, SelfPath, false, TmpFilename);
-  if (Path.first != -1) {
-    uint64_t Result = ::fstatat(Path.first, Path.second, reinterpret_cast<struct stat*>(buf), AT_SYMLINK_NOFOLLOW);
+  if (Path.FD != -1) {
+    uint64_t Result = ::fstatat(Path.FD, Path.Path, reinterpret_cast<struct stat*>(buf), AT_SYMLINK_NOFOLLOW);
     if (Result != -1) {
       return Result;
     }
@@ -749,8 +749,8 @@ uint64_t FileManager::Access(const char* pathname, [[maybe_unused]] int mode) {
   // Access follows symlinks
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(AT_FDCWD, SelfPath, true, TmpFilename);
-  if (Path.first != -1) {
-    uint64_t Result = ::faccessat(Path.first, Path.second, mode, 0);
+  if (Path.FD != -1) {
+    uint64_t Result = ::faccessat(Path.FD, Path.Path, mode, 0);
     if (Result != -1) {
       return Result;
     }
@@ -764,8 +764,8 @@ uint64_t FileManager::FAccessat(int dirfd, const char* pathname, int mode) {
 
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(dirfd, SelfPath, true, TmpFilename);
-  if (Path.first != -1) {
-    uint64_t Result = ::syscall(SYSCALL_DEF(faccessat), Path.first, Path.second, mode);
+  if (Path.FD != -1) {
+    uint64_t Result = ::syscall(SYSCALL_DEF(faccessat), Path.FD, Path.Path, mode);
     if (Result != -1) {
       return Result;
     }
@@ -780,8 +780,8 @@ uint64_t FileManager::FAccessat2(int dirfd, const char* pathname, int mode, int 
 
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(dirfd, SelfPath, (flags & AT_SYMLINK_NOFOLLOW) == 0, TmpFilename);
-  if (Path.first != -1) {
-    uint64_t Result = ::syscall(SYSCALL_DEF(faccessat2), Path.first, Path.second, mode, flags);
+  if (Path.FD != -1) {
+    uint64_t Result = ::syscall(SYSCALL_DEF(faccessat2), Path.FD, Path.Path, mode, flags);
     if (Result != -1) {
       return Result;
     }
@@ -805,8 +805,8 @@ uint64_t FileManager::Readlink(const char* pathname, char* buf, size_t bufsiz) {
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(AT_FDCWD, pathname, false, TmpFilename);
   uint64_t Result = -1;
-  if (Path.first != -1) {
-    Result = ::readlinkat(Path.first, Path.second, buf, bufsiz);
+  if (Path.FD != -1) {
+    Result = ::readlinkat(Path.FD, Path.Path, buf, bufsiz);
 
     if (Result == -1 && errno == EINVAL) {
       // This means that the file wasn't a symlink
@@ -828,8 +828,8 @@ uint64_t FileManager::Chmod(const char* pathname, mode_t mode) {
 
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(AT_FDCWD, SelfPath, false, TmpFilename);
-  if (Path.first != -1) {
-    uint64_t Result = ::fchmodat(Path.first, Path.second, mode, 0);
+  if (Path.FD != -1) {
+    uint64_t Result = ::fchmodat(Path.FD, Path.Path, mode, 0);
     if (Result != -1) {
       return Result;
     }
@@ -883,8 +883,8 @@ uint64_t FileManager::Readlinkat(int dirfd, const char* pathname, char* buf, siz
   auto NewPath = GetEmulatedFDPath(dirfd, pathname, false, TmpFilename);
   uint64_t Result = -1;
 
-  if (NewPath.first != -1) {
-    Result = ::readlinkat(NewPath.first, NewPath.second, buf, bufsiz);
+  if (NewPath.FD != -1) {
+    Result = ::readlinkat(NewPath.FD, NewPath.Path, buf, bufsiz);
 
     if (Result == -1 && errno == EINVAL) {
       // This means that the file wasn't a symlink
@@ -910,17 +910,17 @@ uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char* pathname, i
   if (!ShouldSkipOpenInEmu(flags)) {
     FDPathTmpData TmpFilename;
     auto Path = GetEmulatedFDPath(dirfs, SelfPath, false, TmpFilename);
-    if (Path.first != -1) {
+    if (Path.FD != -1) {
       FEX::HLE::open_how how = {
         .flags = (uint64_t)flags,
         .mode = (flags & (O_CREAT | O_TMPFILE)) ? mode & 07777 : 0, // openat2() is stricter about this,
-        .resolve = (Path.first == AT_FDCWD) ? 0u : RESOLVE_IN_ROOT, // AT_FDCWD means it's a thunk and not via RootFS
+        .resolve = (Path.FD == AT_FDCWD) ? 0u : RESOLVE_IN_ROOT, // AT_FDCWD means it's a thunk and not via RootFS
       };
-      fd = ::syscall(SYSCALL_DEF(openat2), Path.first, Path.second, &how, sizeof(how));
+      fd = ::syscall(SYSCALL_DEF(openat2), Path.FD, Path.Path, &how, sizeof(how));
       if (fd == -1 && errno == EXDEV) {
         // This means a magic symlink (/proc/foo) was involved. In this case we
         // just punt and do the access without RESOLVE_IN_ROOT.
-        fd = ::syscall(SYSCALL_DEF(openat), Path.first, Path.second, flags, mode);
+        fd = ::syscall(SYSCALL_DEF(openat), Path.FD, Path.Path, flags, mode);
       }
     }
 
@@ -946,17 +946,17 @@ uint64_t FileManager::Openat2(int dirfs, const char* pathname, FEX::HLE::open_ho
   if (!ShouldSkipOpenInEmu(how->flags)) {
     FDPathTmpData TmpFilename;
     auto Path = GetEmulatedFDPath(dirfs, SelfPath, false, TmpFilename);
-    if (Path.first != -1 && !(how->resolve & RESOLVE_IN_ROOT)) {
+    if (Path.FD != -1 && !(how->resolve & RESOLVE_IN_ROOT)) {
       // AT_FDCWD means it's a thunk and not via RootFS
-      if (Path.first != AT_FDCWD) {
+      if (Path.FD != AT_FDCWD) {
         how->resolve |= RESOLVE_IN_ROOT;
       }
-      fd = ::syscall(SYSCALL_DEF(openat2), Path.first, Path.second, how, usize);
+      fd = ::syscall(SYSCALL_DEF(openat2), Path.FD, Path.Path, how, usize);
       how->resolve &= ~RESOLVE_IN_ROOT;
       if (fd == -1 && errno == EXDEV) {
         // This means a magic symlink (/proc/foo) was involved. In this case we
         // just punt and do the access without RESOLVE_IN_ROOT.
-        fd = ::syscall(SYSCALL_DEF(openat2), Path.first, Path.second, how, usize);
+        fd = ::syscall(SYSCALL_DEF(openat2), Path.FD, Path.Path, how, usize);
       }
     }
 
@@ -985,8 +985,8 @@ uint64_t FileManager::Statx(int dirfd, const char* pathname, int flags, uint32_t
 
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(dirfd, SelfPath, (flags & AT_SYMLINK_NOFOLLOW) == 0, TmpFilename);
-  if (Path.first != -1) {
-    uint64_t Result = FHU::Syscalls::statx(Path.first, Path.second, flags, mask, statxbuf);
+  if (Path.FD != -1) {
+    uint64_t Result = FHU::Syscalls::statx(Path.FD, Path.Path, flags, mask, statxbuf);
     if (Result != -1) {
       return Result;
     }
@@ -1000,8 +1000,8 @@ uint64_t FileManager::Mknod(const char* pathname, mode_t mode, dev_t dev) {
 
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(AT_FDCWD, SelfPath, false, TmpFilename);
-  if (Path.first != -1) {
-    uint64_t Result = ::mknodat(Path.first, Path.second, mode, dev);
+  if (Path.FD != -1) {
+    uint64_t Result = ::mknodat(Path.FD, Path.Path, mode, dev);
     if (Result != -1) {
       return Result;
     }
@@ -1031,8 +1031,8 @@ uint64_t FileManager::NewFSStatAt(int dirfd, const char* pathname, struct stat* 
 
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(dirfd, SelfPath, (flag & AT_SYMLINK_NOFOLLOW) == 0, TmpFilename);
-  if (Path.first != -1) {
-    uint64_t Result = ::fstatat(Path.first, Path.second, buf, flag);
+  if (Path.FD != -1) {
+    uint64_t Result = ::fstatat(Path.FD, Path.Path, buf, flag);
     if (Result != -1) {
       return Result;
     }
@@ -1051,8 +1051,8 @@ uint64_t FileManager::NewFSStatAt64(int dirfd, const char* pathname, struct stat
 
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(dirfd, SelfPath, (flag & AT_SYMLINK_NOFOLLOW) == 0, TmpFilename);
-  if (Path.first != -1) {
-    uint64_t Result = ::fstatat64(Path.first, Path.second, buf, flag);
+  if (Path.FD != -1) {
+    uint64_t Result = ::fstatat64(Path.FD, Path.Path, buf, flag);
     if (Result != -1) {
       return Result;
     }
@@ -1191,8 +1191,8 @@ uint64_t FileManager::SetxattrAt(int dfd, const char* pathname, uint32_t at_flag
 
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(dfd, SelfPath, (at_flags & AT_SYMLINK_NOFOLLOW) == 0, TmpFilename);
-  if (Path.first != -1) {
-    uint64_t Result = syscall(SYSCALL_DEF(setxattrat), Path.first, Path.second, at_flags, name, uargs, usize);
+  if (Path.FD != -1) {
+    uint64_t Result = syscall(SYSCALL_DEF(setxattrat), Path.FD, Path.Path, at_flags, name, uargs, usize);
     if (Result != -1) {
       return Result;
     }
@@ -1211,8 +1211,8 @@ uint64_t FileManager::GetxattrAt(int dfd, const char* pathname, uint32_t at_flag
 
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(dfd, SelfPath, (at_flags & AT_SYMLINK_NOFOLLOW) == 0, TmpFilename);
-  if (Path.first != -1) {
-    uint64_t Result = syscall(SYSCALL_DEF(getxattrat), Path.first, Path.second, at_flags, name, uargs, usize);
+  if (Path.FD != -1) {
+    uint64_t Result = syscall(SYSCALL_DEF(getxattrat), Path.FD, Path.Path, at_flags, name, uargs, usize);
     if (Result != -1) {
       return Result;
     }
@@ -1231,8 +1231,8 @@ uint64_t FileManager::ListxattrAt(int dfd, const char* pathname, uint32_t at_fla
 
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(dfd, SelfPath, (at_flags & AT_SYMLINK_NOFOLLOW) == 0, TmpFilename);
-  if (Path.first != -1) {
-    uint64_t Result = syscall(SYSCALL_DEF(listxattrat), Path.first, Path.second, at_flags, list, size);
+  if (Path.FD != -1) {
+    uint64_t Result = syscall(SYSCALL_DEF(listxattrat), Path.FD, Path.Path, at_flags, list, size);
     if (Result != -1) {
       return Result;
     }
@@ -1251,8 +1251,8 @@ uint64_t FileManager::RemovexattrAt(int dfd, const char* pathname, uint32_t at_f
 
   FDPathTmpData TmpFilename;
   auto Path = GetEmulatedFDPath(dfd, SelfPath, (at_flags & AT_SYMLINK_NOFOLLOW) == 0, TmpFilename);
-  if (Path.first != -1) {
-    uint64_t Result = syscall(SYSCALL_DEF(removexattrat), Path.first, Path.second, at_flags, name);
+  if (Path.FD != -1) {
+    uint64_t Result = syscall(SYSCALL_DEF(removexattrat), Path.FD, Path.Path, at_flags, name);
     if (Result != -1) {
       return Result;
     }
