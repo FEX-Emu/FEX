@@ -782,6 +782,7 @@ void OpDispatchBuilder::FNINIT(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(Zero);
   SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(Zero);
   SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(Zero);
+  SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(Zero);
 }
 
 void OpDispatchBuilder::X87FFREE(OpcodeArgs) {
