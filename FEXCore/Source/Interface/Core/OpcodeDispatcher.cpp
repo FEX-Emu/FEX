@@ -1092,8 +1092,12 @@ void OpDispatchBuilder::XCHGOp(OpcodeArgs) {
     HandledLock = (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_LOCK) != 0;
 
     Ref Dest = MakeSegmentAddress(Op, Op->Dest);
-    auto Result = _AtomicSwap(OpSizeFromSrc(Op), Src, Dest);
-    StoreResult(GPRClass, Op, Op->Src[0], Result, OpSize::iInvalid);
+    if (IsMonoBackpatcherBlock) {
+      _MonoBackpatcherWrite(OpSizeFromSrc(Op), Src, Dest);
+    } else {
+      auto Result = _AtomicSwap(OpSizeFromSrc(Op), Src, Dest);
+      StoreResult(GPRClass, Op, Op->Src[0], Result, OpSize::iInvalid);
+    }
   } else {
     // AllowUpperGarbage: OK to allow as it will be overwritten by StoreResult.
     Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.AllowUpperGarbage = true});
@@ -3858,8 +3862,9 @@ void OpDispatchBuilder::CreateJumpBlocks(const fextl::vector<FEXCore::Frontend::
   }
 }
 
-void OpDispatchBuilder::BeginFunction(uint64_t RIP, const fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks>* Blocks, uint32_t NumInstructions) {
+void OpDispatchBuilder::BeginFunction(uint64_t RIP, const fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks>* Blocks, uint32_t NumInstructions, bool MonoBackpatcherBlock) {
   Entry = RIP;
+  IsMonoBackpatcherBlock = MonoBackpatcherBlock;
   auto IRHeader = _IRHeader(InvalidNode, RIP, 0, NumInstructions, 0, 0);
   CreateJumpBlocks(Blocks);
 
