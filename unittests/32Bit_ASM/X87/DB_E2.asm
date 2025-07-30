@@ -10,7 +10,7 @@
 
 finit ; IOC is 0
 fldz
-fld1 
+fldz
 fdiv st0, st1 ; IOC is 1
 
 fnstsw ax
