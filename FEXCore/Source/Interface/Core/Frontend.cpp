@@ -962,9 +962,6 @@ bool Decoder::DecodeInstructionImpl(uint64_t PC) {
         auto Info = &FEXCore::X86Tables::BaseOps[Op];
 
         if (Info->Type == FEXCore::X86Tables::TYPE_REX_PREFIX) {
-          if (!BlockInfo.Is64BitMode) {
-            return false;
-          }
           DecodeInst->Flags |= DecodeFlags::FLAG_REX_PREFIX;
 
           // Widening displacement
