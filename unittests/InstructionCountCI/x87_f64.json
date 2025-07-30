@@ -15,7 +15,7 @@
   },
   "Instructions": {
     "fadd dword [rax]": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xd8 !11b /0"
       ],
@@ -27,11 +27,16 @@
         "ldr d3, [x0, #1040]",
         "fadd d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fmul dword [rax]": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xd8 !11b /1"
       ],
@@ -43,7 +48,12 @@
         "ldr d3, [x0, #1040]",
         "fmul d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fcom dword [rax]": {
@@ -105,7 +115,7 @@
       ]
     },
     "fsub dword [rax]": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xd8 !11b /4"
       ],
@@ -117,11 +127,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsubr dword [rax]": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xd8 !11b /5"
       ],
@@ -133,11 +148,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d2, d3",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdiv dword [rax]": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xd8 !11b /6"
       ],
@@ -149,11 +169,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdivr dword [rax]": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xd8 !11b /7"
       ],
@@ -165,11 +190,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d2, d3",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fadd st0, st0": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xd8 11b 0xc0 /0"
       ],
@@ -181,11 +211,16 @@
         "ldr d3, [x0, #1040]",
         "fadd d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fadd st0, st1": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xc1 /0"
       ],
@@ -199,11 +234,16 @@
         "ldr d3, [x0, #1040]",
         "fadd d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fadd st0, st2": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xc2 /0"
       ],
@@ -217,11 +257,16 @@
         "ldr d3, [x0, #1040]",
         "fadd d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fadd st0, st3": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xc3 /0"
       ],
@@ -235,11 +280,16 @@
         "ldr d3, [x0, #1040]",
         "fadd d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fadd st0, st4": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xc4 /0"
       ],
@@ -253,11 +303,16 @@
         "ldr d3, [x0, #1040]",
         "fadd d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fadd st0, st5": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xc5 /0"
       ],
@@ -271,11 +326,16 @@
         "ldr d3, [x0, #1040]",
         "fadd d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fadd st0, st6": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xc6 /0"
       ],
@@ -289,11 +349,16 @@
         "ldr d3, [x0, #1040]",
         "fadd d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fadd st0, st7": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xc7 /0"
       ],
@@ -307,11 +372,16 @@
         "ldr d3, [x0, #1040]",
         "fadd d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fmul st0, st0": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xd8 11b 0xc8 /1"
       ],
@@ -323,11 +393,16 @@
         "ldr d3, [x0, #1040]",
         "fmul d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fmul st0, st1": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xc9 /1"
       ],
@@ -341,11 +416,16 @@
         "ldr d3, [x0, #1040]",
         "fmul d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fmul st0, st2": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xca /1"
       ],
@@ -359,11 +439,16 @@
         "ldr d3, [x0, #1040]",
         "fmul d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fmul st0, st3": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xcb /1"
       ],
@@ -377,11 +462,16 @@
         "ldr d3, [x0, #1040]",
         "fmul d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fmul st0, st4": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xcc /1"
       ],
@@ -395,11 +485,16 @@
         "ldr d3, [x0, #1040]",
         "fmul d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fmul st0, st5": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xcd /1"
       ],
@@ -413,11 +508,16 @@
         "ldr d3, [x0, #1040]",
         "fmul d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fmul st0, st6": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xce /1"
       ],
@@ -431,11 +531,16 @@
         "ldr d3, [x0, #1040]",
         "fmul d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fmul st0, st7": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xcf /1"
       ],
@@ -449,7 +554,12 @@
         "ldr d3, [x0, #1040]",
         "fmul d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fcom st0, st0": {
@@ -945,7 +1055,7 @@
       ]
     },
     "fsub st0, st0": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xd8 11b 0xe0 /4"
       ],
@@ -957,11 +1067,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsub st0, st1": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xe1 /4"
       ],
@@ -975,11 +1090,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsub st0, st2": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xe2 /4"
       ],
@@ -993,11 +1113,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsub st0, st3": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xe3 /4"
       ],
@@ -1011,11 +1136,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsub st0, st4": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xe4 /4"
       ],
@@ -1029,11 +1159,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsub st0, st5": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xe5 /4"
       ],
@@ -1047,11 +1182,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsub st0, st6": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xe6 /4"
       ],
@@ -1065,11 +1205,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsub st0, st7": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xe7 /4"
       ],
@@ -1083,11 +1228,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsubr st0, st0": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xd8 11b 0xe8 /5"
       ],
@@ -1099,11 +1249,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsubr st0, st1": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xe9 /5"
       ],
@@ -1117,11 +1272,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsubr st0, st2": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xea /5"
       ],
@@ -1135,11 +1295,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsubr st0, st3": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xeb /5"
       ],
@@ -1153,11 +1318,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsubr st0, st4": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xec /5"
       ],
@@ -1171,11 +1341,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsubr st0, st5": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xed /5"
       ],
@@ -1189,11 +1364,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsubr st0, st6": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xee /5"
       ],
@@ -1207,11 +1387,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsubr st0, st7": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xef /5"
       ],
@@ -1225,11 +1410,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdiv st0, st0": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xd8 11b 0xf0 /6"
       ],
@@ -1241,11 +1431,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdiv st0, st1": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xf1 /6"
       ],
@@ -1259,11 +1454,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdiv st0, st2": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xf2 /6"
       ],
@@ -1277,11 +1477,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdiv st0, st3": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xf3 /6"
       ],
@@ -1295,11 +1500,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdiv st0, st4": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xf4 /6"
       ],
@@ -1313,11 +1523,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdiv st0, st5": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xf5 /6"
       ],
@@ -1331,11 +1546,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdiv st0, st6": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xf6 /6"
       ],
@@ -1349,11 +1569,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdiv st0, st7": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xf7 /6"
       ],
@@ -1367,11 +1592,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdivr st0, st0": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xd8 11b 0xf8 /7"
       ],
@@ -1383,11 +1613,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdivr st0, st1": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xf9 /7"
       ],
@@ -1401,11 +1636,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdivr st0, st2": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xfa /7"
       ],
@@ -1419,11 +1659,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdivr st0, st3": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xfb /7"
       ],
@@ -1437,11 +1682,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdivr st0, st4": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xfc /7"
       ],
@@ -1455,11 +1705,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdivr st0, st5": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xfd /7"
       ],
@@ -1473,11 +1728,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdivr st0, st6": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xfe /7"
       ],
@@ -1491,11 +1751,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdivr st0, st7": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xd8 11b 0xff /7"
       ],
@@ -1509,7 +1774,12 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fld dword [rax]": {
@@ -2510,7 +2780,7 @@
       ]
     },
     "fyl2xp1": {
-      "ExpectedInstructionCount": 27,
+      "ExpectedInstructionCount": 32,
       "Comment": [
         "0xd9 11b 0xf9 /7"
       ],
@@ -2523,6 +2793,11 @@
         "fadd d2, d3, d2",
         "add x0, x28, x20, lsl #4",
         "str d2, [x0, #1040]",
+        "mrs x21, S3_3_c4_c4_1",
+        "and w21, w21, #0x1",
+        "ldr w22, [x28, #1008]",
+        "orr w21, w22, w21",
+        "strb w21, [x28, #1008]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
         "add x0, x28, x21, lsl #4",
@@ -2545,7 +2820,7 @@
       ]
     },
     "fsqrt": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "0xd9 11b 0xfa /7"
       ],
@@ -2555,7 +2830,12 @@
         "ldr d2, [x0, #1040]",
         "fsqrt d2, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsincos": {
@@ -2672,7 +2952,7 @@
       ]
     },
     "fiadd dword [rax]": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xda !11b /0"
       ],
@@ -2684,11 +2964,16 @@
         "ldr d3, [x0, #1040]",
         "fadd d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fimul dword [rax]": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xda !11b /1"
       ],
@@ -2700,7 +2985,12 @@
         "ldr d3, [x0, #1040]",
         "fmul d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "ficom dword [rax]": {
@@ -2762,7 +3052,7 @@
       ]
     },
     "fisub dword [rax]": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xda !11b /4"
       ],
@@ -2774,11 +3064,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fisubr dword [rax]": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xda !11b /5"
       ],
@@ -2790,11 +3085,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d2, d3",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fidiv dword [rax]": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xda !11b /6"
       ],
@@ -2806,11 +3106,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fidivr dword [rax]": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0xda !11b /7"
       ],
@@ -2822,7 +3127,12 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d2, d3",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fcmovb st0, st0": {
@@ -3545,7 +3855,7 @@
       ]
     },
     "fisttp dword [rax]": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 18,
       "Comment": [
         "0xdb !11b /1"
       ],
@@ -3555,8 +3865,13 @@
         "ldr d2, [x0, #1040]",
         "fcvtzs w21, d2",
         "str w21, [x4]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -3566,7 +3881,7 @@
       ]
     },
     "fist dword [rax]": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "0xdb !11b /2"
       ],
@@ -3576,11 +3891,16 @@
         "ldr d2, [x0, #1040]",
         "frinti d0, d2",
         "fcvtzs w20, d0",
-        "str w20, [x4]"
+        "str w20, [x4]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fistp dword [rax]": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 19,
       "Comment": [
         "0xdf !11b /7"
       ],
@@ -3591,8 +3911,13 @@
         "frinti d0, d2",
         "fcvtzs w21, d0",
         "str w21, [x4]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -4645,7 +4970,7 @@
       ]
     },
     "fadd qword [rax]": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdc !11b /0"
       ],
@@ -4656,11 +4981,16 @@
         "ldr d3, [x0, #1040]",
         "fadd d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fmul qword [rax]": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdc !11b /1"
       ],
@@ -4671,7 +5001,12 @@
         "ldr d3, [x0, #1040]",
         "fmul d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fcom qword [rax]": {
@@ -4731,7 +5066,7 @@
       ]
     },
     "fsub qword [rax]": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdc !11b /4"
       ],
@@ -4742,11 +5077,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsubr qword [rax]": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdc !11b /5"
       ],
@@ -4757,11 +5097,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d2, d3",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdiv qword [rax]": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdc !11b /6"
       ],
@@ -4772,11 +5117,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdivr qword [rax]": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0xdc !11b /7"
       ],
@@ -4787,11 +5137,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d2, d3",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "db 0xdc, 0xc0": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "fadd st0, st0",
         "Needs manual encoding since otherwise nasm will emit the 0xd8 variant.",
@@ -4805,11 +5160,16 @@
         "ldr d3, [x0, #1040]",
         "fadd d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fadd st1, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xc1 /0"
       ],
@@ -4823,11 +5183,16 @@
         "ldr d3, [x0, #1040]",
         "fadd d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fadd st2, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xc2 /0"
       ],
@@ -4841,11 +5206,16 @@
         "ldr d3, [x0, #1040]",
         "fadd d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fadd st3, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xc3 /0"
       ],
@@ -4859,11 +5229,16 @@
         "ldr d3, [x0, #1040]",
         "fadd d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fadd st4, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xc4 /0"
       ],
@@ -4877,11 +5252,16 @@
         "ldr d3, [x0, #1040]",
         "fadd d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fadd st5, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xc5 /0"
       ],
@@ -4895,11 +5275,16 @@
         "ldr d3, [x0, #1040]",
         "fadd d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fadd st6, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xc6 /0"
       ],
@@ -4913,11 +5298,16 @@
         "ldr d3, [x0, #1040]",
         "fadd d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fadd st7, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xc7 /0"
       ],
@@ -4931,11 +5321,16 @@
         "ldr d3, [x0, #1040]",
         "fadd d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "db 0xdc, 0xc8": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "fmul st0, st0",
         "Needs manual encoding since otherwise nasm will emit the 0xd8 variant.",
@@ -4949,11 +5344,16 @@
         "ldr d3, [x0, #1040]",
         "fmul d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fmul st1, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xc9 /1"
       ],
@@ -4967,11 +5367,16 @@
         "ldr d3, [x0, #1040]",
         "fmul d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fmul st2, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xca /1"
       ],
@@ -4985,11 +5390,16 @@
         "ldr d3, [x0, #1040]",
         "fmul d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fmul st3, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xcb /1"
       ],
@@ -5003,11 +5413,16 @@
         "ldr d3, [x0, #1040]",
         "fmul d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fmul st4, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xcc /1"
       ],
@@ -5021,11 +5436,16 @@
         "ldr d3, [x0, #1040]",
         "fmul d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fmul st5, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xcd /1"
       ],
@@ -5039,11 +5459,16 @@
         "ldr d3, [x0, #1040]",
         "fmul d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fmul st6, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xce /1"
       ],
@@ -5057,11 +5482,16 @@
         "ldr d3, [x0, #1040]",
         "fmul d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fmul st7, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xcf /1"
       ],
@@ -5075,11 +5505,16 @@
         "ldr d3, [x0, #1040]",
         "fmul d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "db 0xdc, 0xe0": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "fsubr st0, st0",
         "Needs manual encoding since otherwise nasm will emit the 0xd8 variant.",
@@ -5093,11 +5528,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsubr st1, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xe1 /4"
       ],
@@ -5111,11 +5551,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x21, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsubr st2, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xe2 /4"
       ],
@@ -5129,11 +5574,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x21, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsubr st3, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xe3 /4"
       ],
@@ -5147,11 +5597,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x21, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsubr st4, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xe4 /4"
       ],
@@ -5165,11 +5620,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x21, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsubr st5, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xe5 /4"
       ],
@@ -5183,11 +5643,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x21, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsubr st6, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xe6 /4"
       ],
@@ -5201,11 +5666,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x21, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsubr st7, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xe7 /4"
       ],
@@ -5219,11 +5689,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x21, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "db 0xdc, 0xe8": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "fsub st0, st0",
         "Needs manual encoding since otherwise nasm will emit the 0xd8 variant.",
@@ -5237,11 +5712,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsub st1, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xe9 /5"
       ],
@@ -5255,11 +5735,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsub st2, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xea /5"
       ],
@@ -5273,11 +5758,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsub st3, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xeb /5"
       ],
@@ -5291,11 +5781,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsub st4, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xec /5"
       ],
@@ -5309,11 +5804,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsub st5, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xed /5"
       ],
@@ -5327,11 +5827,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsub st6, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xee /5"
       ],
@@ -5345,11 +5850,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fsub st7, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xef /5"
       ],
@@ -5363,11 +5873,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "db 0xdc, 0xf0": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "fdivr st0, st0",
         "Needs manual encoding since otherwise nasm will emit the 0xd8 variant.",
@@ -5381,11 +5896,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdivr st1, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xf1 /6"
       ],
@@ -5399,11 +5919,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x21, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdivr st2, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xf2 /6"
       ],
@@ -5417,11 +5942,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x21, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdivr st3, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xf3 /6"
       ],
@@ -5435,11 +5965,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x21, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdivr st4, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xf4 /6"
       ],
@@ -5453,11 +5988,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x21, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdivr st5, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xf5 /6"
       ],
@@ -5471,11 +6011,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x21, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdivr st6, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xf6 /6"
       ],
@@ -5489,11 +6034,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x21, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdivr st7, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xf7 /6"
       ],
@@ -5507,11 +6057,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x21, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "db 0xdc, 0xf8": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "fdiv st0, st0",
         "Needs manual encoding since otherwise nasm will emit the 0xd8 variant.",
@@ -5525,11 +6080,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdiv st1, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xf9 /7"
       ],
@@ -5543,11 +6103,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdiv st2, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xfa /7"
       ],
@@ -5561,11 +6126,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdiv st3, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xfb /7"
       ],
@@ -5579,11 +6149,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdiv st4, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xfc /7"
       ],
@@ -5597,11 +6172,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdiv st5, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xfd /7"
       ],
@@ -5615,11 +6195,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdiv st6, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xfe /7"
       ],
@@ -5633,11 +6218,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fdiv st7, st0": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdc 11b 0xff /7"
       ],
@@ -5651,7 +6241,12 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fld qword [rax]": {
@@ -5675,7 +6270,7 @@
       ]
     },
     "fisttp qword [rax]": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 18,
       "Comment": [
         "0xdd !11b /1"
       ],
@@ -5685,8 +6280,13 @@
         "ldr d2, [x0, #1040]",
         "fcvtzs x21, d2",
         "str x21, [x4]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -7044,7 +7644,7 @@
       ]
     },
     "fiadd word [rax]": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 14,
       "Comment": [
         "0xde !11b /0"
       ],
@@ -7057,11 +7657,16 @@
         "ldr d3, [x0, #1040]",
         "fadd d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fimul word [rax]": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 14,
       "Comment": [
         "0xde !11b /1"
       ],
@@ -7074,7 +7679,12 @@
         "ldr d3, [x0, #1040]",
         "fmul d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "ficom word [rax]": {
@@ -7138,7 +7748,7 @@
       ]
     },
     "fisub word [rax]": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 14,
       "Comment": [
         "0xde !11b /4"
       ],
@@ -7151,11 +7761,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fisubr word [rax]": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 14,
       "Comment": [
         "0xde !11b /5"
       ],
@@ -7168,11 +7783,16 @@
         "ldr d3, [x0, #1040]",
         "fsub d2, d2, d3",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fidiv word [rax]": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 14,
       "Comment": [
         "0xde !11b /6"
       ],
@@ -7185,11 +7805,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fidivr word [rax]": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 14,
       "Comment": [
         "0xde !11b /7"
       ],
@@ -7202,11 +7827,16 @@
         "ldr d3, [x0, #1040]",
         "fdiv d2, d2, d3",
         "add x0, x28, x20, lsl #4",
-        "str d2, [x0, #1040]"
+        "str d2, [x0, #1040]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and w20, w20, #0x1",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "faddp st0": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 21,
       "Comment": [
         "0xd8 11b 0xc0 /0"
       ],
@@ -7219,8 +7849,13 @@
         "fadd d2, d3, d2",
         "add x0, x28, x20, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -7230,7 +7865,7 @@
       ]
     },
     "faddp st1": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xc1 /0"
       ],
@@ -7246,6 +7881,11 @@
         "fadd d2, d3, d2",
         "add x0, x28, x22, lsl #4",
         "str d2, [x0, #1040]",
+        "mrs x22, S3_3_c4_c4_1",
+        "and w22, w22, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w22, w23, w22",
+        "strb w22, [x28, #1008]",
         "ldrb w22, [x28, #1298]",
         "lsl w21, w21, w20",
         "bic w21, w22, w21",
@@ -7256,7 +7896,7 @@
       ]
     },
     "faddp st2": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xc2 /0"
       ],
@@ -7271,8 +7911,13 @@
         "fadd d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -7282,7 +7927,7 @@
       ]
     },
     "faddp st3": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xc3 /0"
       ],
@@ -7297,8 +7942,13 @@
         "fadd d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -7308,7 +7958,7 @@
       ]
     },
     "faddp st4": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xc4 /0"
       ],
@@ -7323,8 +7973,13 @@
         "fadd d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -7334,7 +7989,7 @@
       ]
     },
     "faddp st5": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xc5 /0"
       ],
@@ -7349,8 +8004,13 @@
         "fadd d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -7360,7 +8020,7 @@
       ]
     },
     "faddp st6": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xc6 /0"
       ],
@@ -7375,8 +8035,13 @@
         "fadd d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -7386,7 +8051,7 @@
       ]
     },
     "faddp st7": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xc7 /0"
       ],
@@ -7401,8 +8066,13 @@
         "fadd d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -7412,7 +8082,7 @@
       ]
     },
     "fmulp st0": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 21,
       "Comment": [
         "0xde 11b 0xc8 /1"
       ],
@@ -7425,8 +8095,13 @@
         "fmul d2, d3, d2",
         "add x0, x28, x20, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -7436,7 +8111,7 @@
       ]
     },
     "fmulp st1": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xc9 /1"
       ],
@@ -7452,6 +8127,11 @@
         "fmul d2, d3, d2",
         "add x0, x28, x22, lsl #4",
         "str d2, [x0, #1040]",
+        "mrs x22, S3_3_c4_c4_1",
+        "and w22, w22, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w22, w23, w22",
+        "strb w22, [x28, #1008]",
         "ldrb w22, [x28, #1298]",
         "lsl w21, w21, w20",
         "bic w21, w22, w21",
@@ -7462,7 +8142,7 @@
       ]
     },
     "fmulp st2": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xca /1"
       ],
@@ -7477,8 +8157,13 @@
         "fmul d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -7488,7 +8173,7 @@
       ]
     },
     "fmulp st3": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xcb /1"
       ],
@@ -7503,8 +8188,13 @@
         "fmul d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -7514,7 +8204,7 @@
       ]
     },
     "fmulp st4": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xcc /1"
       ],
@@ -7529,8 +8219,13 @@
         "fmul d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -7540,7 +8235,7 @@
       ]
     },
     "fmulp st5": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xcd /1"
       ],
@@ -7555,8 +8250,13 @@
         "fmul d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -7566,7 +8266,7 @@
       ]
     },
     "fmulp st6": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xce /1"
       ],
@@ -7581,8 +8281,13 @@
         "fmul d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -7592,7 +8297,7 @@
       ]
     },
     "fmulp st7": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xcf /1"
       ],
@@ -7607,8 +8312,13 @@
         "fmul d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -7660,7 +8370,7 @@
       ]
     },
     "db 0xde, 0xe0": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 21,
       "Comment": [
         "fsubrp st0, st0",
         "Needs manual encoding since otherwise nasm will emit the 0xd8 variant.",
@@ -7675,8 +8385,13 @@
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -7686,7 +8401,7 @@
       ]
     },
     "fsubrp st1, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xe1 /4"
       ],
@@ -7702,6 +8417,11 @@
         "fsub d2, d3, d2",
         "add x0, x28, x22, lsl #4",
         "str d2, [x0, #1040]",
+        "mrs x22, S3_3_c4_c4_1",
+        "and w22, w22, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w22, w23, w22",
+        "strb w22, [x28, #1008]",
         "ldrb w22, [x28, #1298]",
         "lsl w21, w21, w20",
         "bic w21, w22, w21",
@@ -7712,7 +8432,7 @@
       ]
     },
     "fsubrp st2, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xe2 /4"
       ],
@@ -7727,8 +8447,13 @@
         "fsub d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -7738,7 +8463,7 @@
       ]
     },
     "fsubrp st3, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xe3 /4"
       ],
@@ -7753,8 +8478,13 @@
         "fsub d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -7764,7 +8494,7 @@
       ]
     },
     "fsubrp st4, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xe4 /4"
       ],
@@ -7779,8 +8509,13 @@
         "fsub d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -7790,7 +8525,7 @@
       ]
     },
     "fsubrp st5, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xe5 /4"
       ],
@@ -7805,8 +8540,13 @@
         "fsub d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -7816,7 +8556,7 @@
       ]
     },
     "fsubrp st6, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xe6 /4"
       ],
@@ -7831,8 +8571,13 @@
         "fsub d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -7842,7 +8587,7 @@
       ]
     },
     "fsubrp st7, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xe7 /4"
       ],
@@ -7857,8 +8602,13 @@
         "fsub d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -7868,7 +8618,7 @@
       ]
     },
     "db 0xde, 0xe8": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 21,
       "Comment": [
         "fsubp st0, st0",
         "Needs manual encoding since otherwise nasm will emit the 0xd8 variant.",
@@ -7883,8 +8633,13 @@
         "fsub d2, d3, d2",
         "add x0, x28, x20, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -7894,7 +8649,7 @@
       ]
     },
     "fsubp st1, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xe9 /5"
       ],
@@ -7910,6 +8665,11 @@
         "fsub d2, d3, d2",
         "add x0, x28, x22, lsl #4",
         "str d2, [x0, #1040]",
+        "mrs x22, S3_3_c4_c4_1",
+        "and w22, w22, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w22, w23, w22",
+        "strb w22, [x28, #1008]",
         "ldrb w22, [x28, #1298]",
         "lsl w21, w21, w20",
         "bic w21, w22, w21",
@@ -7920,7 +8680,7 @@
       ]
     },
     "fsubp st2, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xea /5"
       ],
@@ -7935,8 +8695,13 @@
         "fsub d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -7946,7 +8711,7 @@
       ]
     },
     "fsubp st3, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xeb /5"
       ],
@@ -7961,8 +8726,13 @@
         "fsub d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -7972,7 +8742,7 @@
       ]
     },
     "fsubp st4, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xec /5"
       ],
@@ -7987,8 +8757,13 @@
         "fsub d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -7998,7 +8773,7 @@
       ]
     },
     "fsubp st5, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xed /5"
       ],
@@ -8013,8 +8788,13 @@
         "fsub d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -8024,7 +8804,7 @@
       ]
     },
     "fsubp st6, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xee /5"
       ],
@@ -8039,8 +8819,13 @@
         "fsub d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -8050,7 +8835,7 @@
       ]
     },
     "fsubp st7, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xef /5"
       ],
@@ -8065,8 +8850,13 @@
         "fsub d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -8076,7 +8866,7 @@
       ]
     },
     "db 0xde, 0xf0": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 21,
       "Comment": [
         "fdivrp st0, st0",
         "Needs manual encoding since otherwise nasm will emit the 0xd8 variant.",
@@ -8091,8 +8881,13 @@
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -8102,7 +8897,7 @@
       ]
     },
     "fdivrp st1, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xf1 /6"
       ],
@@ -8118,6 +8913,11 @@
         "fdiv d2, d3, d2",
         "add x0, x28, x22, lsl #4",
         "str d2, [x0, #1040]",
+        "mrs x22, S3_3_c4_c4_1",
+        "and w22, w22, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w22, w23, w22",
+        "strb w22, [x28, #1008]",
         "ldrb w22, [x28, #1298]",
         "lsl w21, w21, w20",
         "bic w21, w22, w21",
@@ -8128,7 +8928,7 @@
       ]
     },
     "fdivrp st2, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xf2 /6"
       ],
@@ -8143,8 +8943,13 @@
         "fdiv d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -8154,7 +8959,7 @@
       ]
     },
     "fdivrp st3, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xf3 /6"
       ],
@@ -8169,8 +8974,13 @@
         "fdiv d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -8180,7 +8990,7 @@
       ]
     },
     "fdivrp st4, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xf4 /6"
       ],
@@ -8195,8 +9005,13 @@
         "fdiv d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -8206,7 +9021,7 @@
       ]
     },
     "fdivrp st5, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xf5 /6"
       ],
@@ -8221,8 +9036,13 @@
         "fdiv d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -8232,7 +9052,7 @@
       ]
     },
     "fdivrp st6, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xf6 /6"
       ],
@@ -8247,8 +9067,13 @@
         "fdiv d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -8258,7 +9083,7 @@
       ]
     },
     "fdivrp st7, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xf7 /6"
       ],
@@ -8273,8 +9098,13 @@
         "fdiv d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -8284,7 +9114,7 @@
       ]
     },
     "db 0xde, 0xf8": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 21,
       "Comment": [
         "fdivp st0, st0",
         "Needs manual encoding since otherwise nasm will emit the 0xd8 variant.",
@@ -8299,8 +9129,13 @@
         "fdiv d2, d3, d2",
         "add x0, x28, x20, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -8310,7 +9145,7 @@
       ]
     },
     "fdivp st1, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xf9 /7"
       ],
@@ -8326,6 +9161,11 @@
         "fdiv d2, d3, d2",
         "add x0, x28, x22, lsl #4",
         "str d2, [x0, #1040]",
+        "mrs x22, S3_3_c4_c4_1",
+        "and w22, w22, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w22, w23, w22",
+        "strb w22, [x28, #1008]",
         "ldrb w22, [x28, #1298]",
         "lsl w21, w21, w20",
         "bic w21, w22, w21",
@@ -8336,7 +9176,7 @@
       ]
     },
     "fdivp st2, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xfa /7"
       ],
@@ -8351,8 +9191,13 @@
         "fdiv d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -8362,7 +9207,7 @@
       ]
     },
     "fdivp st3, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xfb /7"
       ],
@@ -8377,8 +9222,13 @@
         "fdiv d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -8388,7 +9238,7 @@
       ]
     },
     "fdivp st4, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xfc /7"
       ],
@@ -8403,8 +9253,13 @@
         "fdiv d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -8414,7 +9269,7 @@
       ]
     },
     "fdivp st5, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xfd /7"
       ],
@@ -8429,8 +9284,13 @@
         "fdiv d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -8440,7 +9300,7 @@
       ]
     },
     "fdivp st6, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xfe /7"
       ],
@@ -8455,8 +9315,13 @@
         "fdiv d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -8466,7 +9331,7 @@
       ]
     },
     "fdivp st7, st0": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xde 11b 0xff /7"
       ],
@@ -8481,8 +9346,13 @@
         "fdiv d2, d3, d2",
         "add x0, x28, x21, lsl #4",
         "str d2, [x0, #1040]",
-        "ldrb w21, [x28, #1298]",
+        "mrs x21, S3_3_c4_c4_1",
         "mov w22, #0x1",
+        "and w21, w21, #0x1",
+        "ldr w23, [x28, #1008]",
+        "orr w21, w23, w21",
+        "strb w21, [x28, #1008]",
+        "ldrb w21, [x28, #1298]",
         "lsl w22, w22, w20",
         "bic w21, w21, w22",
         "strb w21, [x28, #1298]",
@@ -8514,7 +9384,7 @@
       ]
     },
     "fisttp word [rax]": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 22,
       "Comment": [
         "0xdf !11b /1"
       ],
@@ -8522,12 +9392,21 @@
         "ldrb w20, [x28, #1019]",
         "add x0, x28, x20, lsl #4",
         "ldr d2, [x0, #1040]",
-        "fcvtzs x21, d2",
+        "fcvtzs w21, d2",
         "strh w21, [x4]",
-        "ldrb w21, [x28, #1298]",
-        "mov w22, #0x1",
-        "lsl w22, w22, w20",
-        "bic w21, w21, w22",
+        "sxth w22, w21",
+        "cmp w21, w22",
+        "mov w21, #0x1",
+        "cset w22, ne",
+        "mrs x23, S3_3_c4_c4_1",
+        "and w23, w23, #0x1",
+        "orr w22, w23, w22",
+        "ldr w23, [x28, #1008]",
+        "orr w22, w23, w22",
+        "strb w22, [x28, #1008]",
+        "ldrb w22, [x28, #1298]",
+        "lsl w21, w21, w20",
+        "bic w21, w22, w21",
         "strb w21, [x28, #1298]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
@@ -8535,7 +9414,7 @@
       ]
     },
     "fist word [rax]": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdf !11b /2"
       ],
@@ -8544,12 +9423,21 @@
         "add x0, x28, x20, lsl #4",
         "ldr d2, [x0, #1040]",
         "frinti d0, d2",
-        "fcvtzs x20, d0",
-        "strh w20, [x4]"
+        "fcvtzs w20, d0",
+        "strh w20, [x4]",
+        "sxth w21, w20",
+        "cmp w20, w21",
+        "cset w20, ne",
+        "mrs x21, S3_3_c4_c4_1",
+        "and w21, w21, #0x1",
+        "orr w20, w21, w20",
+        "ldr w21, [x28, #1008]",
+        "orr w20, w21, w20",
+        "strb w20, [x28, #1008]"
       ]
     },
     "fistp word [rax]": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 23,
       "Comment": [
         "0xdf !11b /3"
       ],
@@ -8558,12 +9446,21 @@
         "add x0, x28, x20, lsl #4",
         "ldr d2, [x0, #1040]",
         "frinti d0, d2",
-        "fcvtzs x21, d0",
+        "fcvtzs w21, d0",
         "strh w21, [x4]",
-        "ldrb w21, [x28, #1298]",
-        "mov w22, #0x1",
-        "lsl w22, w22, w20",
-        "bic w21, w21, w22",
+        "sxth w22, w21",
+        "cmp w21, w22",
+        "mov w21, #0x1",
+        "cset w22, ne",
+        "mrs x23, S3_3_c4_c4_1",
+        "and w23, w23, #0x1",
+        "orr w22, w23, w22",
+        "ldr w23, [x28, #1008]",
+        "orr w22, w23, w22",
+        "strb w22, [x28, #1008]",
+        "ldrb w22, [x28, #1298]",
+        "lsl w21, w21, w20",
+        "bic w21, w22, w21",
         "strb w21, [x28, #1298]",
         "add w20, w20, #0x1 (1)",
         "and w20, w20, #0x7",
