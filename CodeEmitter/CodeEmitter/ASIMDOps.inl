@@ -525,181 +525,153 @@ public:
 
   // Advanced SIMD two-register miscellaneous
   template<IsQOrDRegister T>
-  void rev64(ARMEmitter::SubRegSize size, T rd, T rn) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc<T>(Op, 0, size, 0b00000, rd, rn);
+  void rev64(SubRegSize size, T rd, T rn) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
+    ASIMD2RegMisc(0, size, 0b00000, rd, rn);
   }
 
   template<IsQOrDRegister T>
-  void rev16(ARMEmitter::SubRegSize size, T rd, T rn) {
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i8Bit, "Only 8-bit subregsize supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc<T>(Op, 0, size, 0b00001, rd, rn);
-  }
-
-  ///< size is the destination size.
-  ///< source size is the next size up.
-  template<IsQOrDRegister T>
-  void saddlp(ARMEmitter::SubRegSize size, T rd, T rn) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i8Bit, "Destination 8-bit subregsize unsupported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    const auto ConvertedSize = size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i32Bit :
-                               size == ARMEmitter::SubRegSize::i32Bit ? ARMEmitter::SubRegSize::i16Bit :
-                                                                        ARMEmitter::SubRegSize::i8Bit;
-
-    ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b00010, rd, rn);
-  }
-
-  template<IsQOrDRegister T>
-  void suqadd(ARMEmitter::SubRegSize size, T rd, T rn) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
-    }
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc<T>(Op, 0, size, 0b00011, rd, rn);
-  }
-
-  template<IsQOrDRegister T>
-  void cls(ARMEmitter::SubRegSize size, T rd, T rn) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc<T>(Op, 0, size, 0b00100, rd, rn);
-  }
-  template<IsQOrDRegister T>
-  void cnt(ARMEmitter::SubRegSize size, T rd, T rn) {
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i8Bit, "Only 8-bit subregsize supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc<T>(Op, 0, size, 0b00101, rd, rn);
+  void rev16(SubRegSize size, T rd, T rn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit, "Only 8-bit subregsize supported");
+    ASIMD2RegMisc(0, size, 0b00001, rd, rn);
   }
 
   ///< size is the destination size.
   ///< source size is the next size up.
   template<IsQOrDRegister T>
-  void sadalp(ARMEmitter::SubRegSize size, T rd, T rn) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i8Bit, "Destination 8-bit subregsize unsupported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    const auto ConvertedSize = size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i32Bit :
-                               size == ARMEmitter::SubRegSize::i32Bit ? ARMEmitter::SubRegSize::i16Bit :
-                                                                        ARMEmitter::SubRegSize::i8Bit;
+  void saddlp(SubRegSize size, T rd, T rn) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Destination 8-bit subregsize unsupported");
+    const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b00110, rd, rn);
+    ASIMD2RegMisc(0, ConvertedSize, 0b00010, rd, rn);
   }
 
   template<IsQOrDRegister T>
-  void sqabs(ARMEmitter::SubRegSize size, T rd, T rn) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
+  void suqadd(SubRegSize size, T rd, T rn) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     }
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc<T>(Op, 0, size, 0b00111, rd, rn);
+    ASIMD2RegMisc(0, size, 0b00011, rd, rn);
+  }
+
+  template<IsQOrDRegister T>
+  void cls(SubRegSize size, T rd, T rn) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
+    ASIMD2RegMisc(0, size, 0b00100, rd, rn);
+  }
+  template<IsQOrDRegister T>
+  void cnt(SubRegSize size, T rd, T rn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit, "Only 8-bit subregsize supported");
+    ASIMD2RegMisc(0, size, 0b00101, rd, rn);
+  }
+
+  ///< size is the destination size.
+  ///< source size is the next size up.
+  template<IsQOrDRegister T>
+  void sadalp(SubRegSize size, T rd, T rn) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Destination 8-bit subregsize unsupported");
+    const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
+
+    ASIMD2RegMisc(0, ConvertedSize, 0b00110, rd, rn);
+  }
+
+  template<IsQOrDRegister T>
+  void sqabs(SubRegSize size, T rd, T rn) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
+    }
+    ASIMD2RegMisc(0, size, 0b00111, rd, rn);
   }
   // Comparison against zero
   template<IsQOrDRegister T>
-  void cmgt(ARMEmitter::SubRegSize size, T rd, T rn) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
+  void cmgt(SubRegSize size, T rd, T rn) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     }
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc<T>(Op, 0, size, 0b01000, rd, rn);
+    ASIMD2RegMisc(0, size, 0b01000, rd, rn);
   }
   // Comparison against zero
   template<IsQOrDRegister T>
-  void cmeq(ARMEmitter::SubRegSize size, T rd, T rn) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
+  void cmeq(SubRegSize size, T rd, T rn) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     }
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc<T>(Op, 0, size, 0b01001, rd, rn);
+    ASIMD2RegMisc(0, size, 0b01001, rd, rn);
   }
   // Comparison against zero
   template<IsQOrDRegister T>
-  void cmlt(ARMEmitter::SubRegSize size, T rd, T rn) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
+  void cmlt(SubRegSize size, T rd, T rn) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     }
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc<T>(Op, 0, size, 0b01010, rd, rn);
+    ASIMD2RegMisc(0, size, 0b01010, rd, rn);
   }
   template<IsQOrDRegister T>
-  void abs(ARMEmitter::SubRegSize size, T rd, T rn) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
+  void abs(SubRegSize size, T rd, T rn) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     }
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc<T>(Op, 0, size, 0b01011, rd, rn);
+    ASIMD2RegMisc(0, size, 0b01011, rd, rn);
   }
 
   ///< size is the destination size.
   ///< source size is the next size up.
-  void xtn(ARMEmitter::SubRegSize size, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit destination subregsize not supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc(Op, 0, size, 0b10010, rd.D(), rn.D());
+  void xtn(SubRegSize size, VRegister rd, VRegister rn) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit destination subregsize not supported");
+    ASIMD2RegMisc(0, size, 0b10010, rd.D(), rn.D());
   }
   ///< size is the destination size.
   ///< source size is the next size up.
-  void xtn2(ARMEmitter::SubRegSize size, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit destination subregsize not supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc(Op, 0, size, 0b10010, rd.Q(), rn.Q());
+  void xtn2(SubRegSize size, VRegister rd, VRegister rn) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit destination subregsize not supported");
+    ASIMD2RegMisc(0, size, 0b10010, rd.Q(), rn.Q());
   }
 
   ///< size is the destination size.
   ///< source size is the next size up.
-  void sqxtn(ARMEmitter::SubRegSize size, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit destination subregsize not supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc(Op, 0, size, 0b10100, rd.D(), rn.D());
+  void sqxtn(SubRegSize size, VRegister rd, VRegister rn) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit destination subregsize not supported");
+    ASIMD2RegMisc(0, size, 0b10100, rd.D(), rn.D());
   }
   ///< size is the destination size.
   ///< source size is the next size up.
-  void sqxtn2(ARMEmitter::SubRegSize size, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit destination subregsize not supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc(Op, 0, size, 0b10100, rd.Q(), rn.Q());
+  void sqxtn2(SubRegSize size, VRegister rd, VRegister rn) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit destination subregsize not supported");
+    ASIMD2RegMisc(0, size, 0b10100, rd.Q(), rn.Q());
   }
 
   ///< size is the destination size.
   ///< source size is the next size up.
-  void fcvtn(ARMEmitter::SubRegSize size, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i32Bit || size == ARMEmitter::SubRegSize::i16Bit, "Only 16-bit & 32-bit subregsize "
-                                                                                                         "supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    const auto ConvertedSize = size == ARMEmitter::SubRegSize::i32Bit ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i8Bit;
+  void fcvtn(SubRegSize size, VRegister rd, VRegister rn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i16Bit, "Only 16-bit & 32-bit subregsize supported");
+    const auto ConvertedSize = size == SubRegSize::i32Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
 
-    ASIMD2RegMisc(Op, 0, ConvertedSize, 0b10110, rd.D(), rn.D());
+    ASIMD2RegMisc(0, ConvertedSize, 0b10110, rd.D(), rn.D());
   }
   ///< size is the destination size.
   ///< source size is the next size up.
-  void fcvtn2(ARMEmitter::SubRegSize size, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i32Bit || size == ARMEmitter::SubRegSize::i16Bit, "Only 16-bit & 32-bit subregsize "
-                                                                                                         "supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    const auto ConvertedSize = size == ARMEmitter::SubRegSize::i32Bit ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i8Bit;
+  void fcvtn2(SubRegSize size, VRegister rd, VRegister rn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit || size == SubRegSize::i16Bit, "Only 16-bit & 32-bit subregsize supported");
+    const auto ConvertedSize = size == SubRegSize::i32Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
 
-    ASIMD2RegMisc(Op, 0, ConvertedSize, 0b10110, rd.Q(), rn.Q());
+    ASIMD2RegMisc(0, ConvertedSize, 0b10110, rd.Q(), rn.Q());
   }
 
   ///< size is the destination size.
   ///< source size is the next size up.
-  void fcvtl(ARMEmitter::SubRegSize size, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit & 64-bit subregsize "
-                                                                                                         "supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    const auto ConvertedSize = size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i8Bit;
+  void fcvtl(SubRegSize size, VRegister rd, VRegister rn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i64Bit || size == SubRegSize::i32Bit, "Only 32-bit & 64-bit subregsize supported");
+    const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
 
-    ASIMD2RegMisc(Op, 0, ConvertedSize, 0b10111, rd.D(), rn.D());
+    ASIMD2RegMisc(0, ConvertedSize, 0b10111, rd.D(), rn.D());
   }
   ///< size is the destination size.
   ///< source size is the next size up.
-  void fcvtl2(ARMEmitter::SubRegSize size, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit & 64-bit subregsize "
-                                                                                                         "supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    const auto ConvertedSize = size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i8Bit;
+  void fcvtl2(SubRegSize size, VRegister rd, VRegister rn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i64Bit || size == SubRegSize::i32Bit, "Only 32-bit & 64-bit subregsize supported");
+    const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
 
-    ASIMD2RegMisc(Op, 0, ConvertedSize, 0b10111, rd.Q(), rn.Q());
+    ASIMD2RegMisc(0, ConvertedSize, 0b10111, rd.Q(), rn.Q());
   }
 
   template<IsQOrDRegister T>
@@ -712,10 +684,8 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(0, 0, 0b11000, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
       const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
-
-      ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b11000, rd, rn);
+      ASIMD2RegMisc(0, ConvertedSize, 0b11000, rd, rn);
     }
   }
   template<IsQOrDRegister T>
@@ -728,10 +698,8 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(0, 0, 0b11001, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
       const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
-
-      ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b11001, rd, rn);
+      ASIMD2RegMisc(0, ConvertedSize, 0b11001, rd, rn);
     }
   }
 
@@ -745,10 +713,8 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(0, 0, 0b11010, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
       const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
-
-      ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b11010, rd, rn);
+      ASIMD2RegMisc(0, ConvertedSize, 0b11010, rd, rn);
     }
   }
   template<IsQOrDRegister T>
@@ -761,10 +727,8 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(0, 0, 0b11011, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
       const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
-
-      ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b11011, rd, rn);
+      ASIMD2RegMisc(0, ConvertedSize, 0b11011, rd, rn);
     }
   }
   template<IsQOrDRegister T>
@@ -777,10 +741,8 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(0, 0, 0b11100, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
       const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
-
-      ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b11100, rd, rn);
+      ASIMD2RegMisc(0, ConvertedSize, 0b11100, rd, rn);
     }
   }
   template<IsQOrDRegister T>
@@ -793,35 +755,29 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(0, 0, 0b11101, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
       const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
-
-      ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b11101, rd, rn);
+      ASIMD2RegMisc(0, ConvertedSize, 0b11101, rd, rn);
     }
   }
   template<IsQOrDRegister T>
-  void frint32z(ARMEmitter::SubRegSize size, T rd, T rn) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
+  void frint32z(SubRegSize size, T rd, T rn) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit & 64-bit subregsize "
-                                                                                                         "supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    const auto ConvertedSize = size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i8Bit;
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i64Bit || size == SubRegSize::i32Bit, "Only 32-bit & 64-bit subregsize supported");
+    const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
 
-    ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b11110, rd, rn);
+    ASIMD2RegMisc(0, ConvertedSize, 0b11110, rd, rn);
   }
   template<IsQOrDRegister T>
-  void frint64z(ARMEmitter::SubRegSize size, T rd, T rn) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
+  void frint64z(SubRegSize size, T rd, T rn) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     }
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit & 64-bit subregsize "
-                                                                                                         "supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    const auto ConvertedSize = size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i8Bit;
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i64Bit || size == SubRegSize::i32Bit, "Only 32-bit & 64-bit subregsize supported");
+    const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
 
-    ASIMD2RegMisc<T>(Op, 0, ConvertedSize, 0b11111, rd, rn);
+    ASIMD2RegMisc(0, ConvertedSize, 0b11111, rd, rn);
   }
 
   template<IsQOrDRegister T>
@@ -834,8 +790,7 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(0, 1, 0b01100, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-      ASIMD2RegMisc<T>(Op, 0, size, 0b01100, rd, rn);
+      ASIMD2RegMisc(0, size, 0b01100, rd, rn);
     }
   }
 
@@ -849,8 +804,7 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(0, 1, 0b01101, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-      ASIMD2RegMisc<T>(Op, 0, size, 0b01101, rd, rn);
+      ASIMD2RegMisc(0, size, 0b01101, rd, rn);
     }
   }
 
@@ -864,8 +818,7 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(0, 1, 0b01110, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-      ASIMD2RegMisc<T>(Op, 0, size, 0b01110, rd, rn);
+      ASIMD2RegMisc(0, size, 0b01110, rd, rn);
     }
   }
 
@@ -879,8 +832,7 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(0, 1, 0b01111, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-      ASIMD2RegMisc<T>(Op, 0, size, 0b01111, rd, rn);
+      ASIMD2RegMisc(0, size, 0b01111, rd, rn);
     }
   }
 
@@ -894,8 +846,7 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(0, 1, 0b11000, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-      ASIMD2RegMisc<T>(Op, 0, size, 0b11000, rd, rn);
+      ASIMD2RegMisc(0, size, 0b11000, rd, rn);
     }
   }
 
@@ -909,8 +860,7 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(0, 1, 0b11001, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-      ASIMD2RegMisc<T>(Op, 0, size, 0b11001, rd, rn);
+      ASIMD2RegMisc(0, size, 0b11001, rd, rn);
     }
   }
 
@@ -924,8 +874,7 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(0, 1, 0b11010, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-      ASIMD2RegMisc<T>(Op, 0, size, 0b11010, rd, rn);
+      ASIMD2RegMisc(0, size, 0b11010, rd, rn);
     }
   }
 
@@ -939,16 +888,14 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(0, 1, 0b11011, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-      ASIMD2RegMisc<T>(Op, 0, size, 0b11011, rd, rn);
+      ASIMD2RegMisc(0, size, 0b11011, rd, rn);
     }
   }
 
   template<IsQOrDRegister T>
-  void urecpe(ARMEmitter::SubRegSize size, T rd, T rn) {
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit subregsize supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc<T>(Op, 0, size, 0b11100, rd, rn);
+  void urecpe(SubRegSize size, T rd, T rn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit, "Only 32-bit subregsize supported");
+    ASIMD2RegMisc(0, size, 0b11100, rd, rn);
   }
 
   template<IsQOrDRegister T>
@@ -958,164 +905,135 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(0, 1, 0b11101, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-      ASIMD2RegMisc<T>(Op, 0, size, 0b11101, rd, rn);
+      ASIMD2RegMisc(0, size, 0b11101, rd, rn);
     }
   }
 
   template<IsQOrDRegister T>
-  void rev32(ARMEmitter::SubRegSize size, T rd, T rn) {
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i8Bit || size == ARMEmitter::SubRegSize::i16Bit, "Only 8-bit & 16-bit subregsize "
-                                                                                                        "supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc<T>(Op, 1, size, 0b00000, rd, rn);
+  void rev32(SubRegSize size, T rd, T rn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit, "Only 8-bit & 16-bit subregsize supported");
+    ASIMD2RegMisc(1, size, 0b00000, rd, rn);
   }
 
   ///< size is the destination size.
   ///< source size is the next size up.
   template<IsQOrDRegister T>
-  void uaddlp(ARMEmitter::SubRegSize size, T rd, T rn) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i8Bit, "Destination 8-bit subregsize unsupported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    const auto ConvertedSize = size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i32Bit :
-                               size == ARMEmitter::SubRegSize::i32Bit ? ARMEmitter::SubRegSize::i16Bit :
-                                                                        ARMEmitter::SubRegSize::i8Bit;
+  void uaddlp(SubRegSize size, T rd, T rn) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Destination 8-bit subregsize unsupported");
+    const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD2RegMisc<T>(Op, 1, ConvertedSize, 0b00010, rd, rn);
+    ASIMD2RegMisc(1, ConvertedSize, 0b00010, rd, rn);
   }
 
   template<IsQOrDRegister T>
-  void usqadd(ARMEmitter::SubRegSize size, T rd, T rn) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
+  void usqadd(SubRegSize size, T rd, T rn) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     }
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc<T>(Op, 1, size, 0b00011, rd, rn);
+    ASIMD2RegMisc(1, size, 0b00011, rd, rn);
   }
 
   template<IsQOrDRegister T>
-  void clz(ARMEmitter::SubRegSize size, T rd, T rn) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc<T>(Op, 1, size, 0b00100, rd, rn);
+  void clz(SubRegSize size, T rd, T rn) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
+    ASIMD2RegMisc(1, size, 0b00100, rd, rn);
   }
 
   ///< size is the destination size.
   ///< source size is the next size up.
   template<IsQOrDRegister T>
-  void uadalp(ARMEmitter::SubRegSize size, T rd, T rn) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i8Bit, "Destination 8-bit subregsize unsupported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    const auto ConvertedSize = size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i32Bit :
-                               size == ARMEmitter::SubRegSize::i32Bit ? ARMEmitter::SubRegSize::i16Bit :
-                                                                        ARMEmitter::SubRegSize::i8Bit;
+  void uadalp(SubRegSize size, T rd, T rn) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Destination 8-bit subregsize unsupported");
+    const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD2RegMisc<T>(Op, 1, ConvertedSize, 0b00110, rd, rn);
+    ASIMD2RegMisc(1, ConvertedSize, 0b00110, rd, rn);
   }
 
   template<IsQOrDRegister T>
-  void sqneg(ARMEmitter::SubRegSize size, T rd, T rn) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
+  void sqneg(SubRegSize size, T rd, T rn) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     }
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc<T>(Op, 1, size, 0b00111, rd, rn);
+    ASIMD2RegMisc(1, size, 0b00111, rd, rn);
   }
 
   // Comparison against zero
   template<IsQOrDRegister T>
-  void cmge(ARMEmitter::SubRegSize size, T rd, T rn) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
+  void cmge(SubRegSize size, T rd, T rn) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     }
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc<T>(Op, 1, size, 0b01000, rd, rn);
+    ASIMD2RegMisc(1, size, 0b01000, rd, rn);
   }
   // Comparison against zero
   template<IsQOrDRegister T>
-  void cmle(ARMEmitter::SubRegSize size, T rd, T rn) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
+  void cmle(SubRegSize size, T rd, T rn) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     }
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc<T>(Op, 1, size, 0b01001, rd, rn);
+    ASIMD2RegMisc(1, size, 0b01001, rd, rn);
   }
   template<IsQOrDRegister T>
-  void neg(ARMEmitter::SubRegSize size, T rd, T rn) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit subregsize not supported");
+  void neg(SubRegSize size, T rd, T rn) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     }
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc<T>(Op, 1, size, 0b01011, rd, rn);
+    ASIMD2RegMisc(1, size, 0b01011, rd, rn);
   }
   ///< size is the destination size.
   ///< source size is the next size up.
-  void sqxtun(ARMEmitter::SubRegSize size, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit destination subregsize not supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc(Op, 1, size, 0b10010, rd.D(), rn.D());
+  void sqxtun(SubRegSize size, VRegister rd, VRegister rn) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit destination subregsize not supported");
+    ASIMD2RegMisc(1, size, 0b10010, rd.D(), rn.D());
   }
   ///< size is the destination size.
   ///< source size is the next size up.
-  void sqxtun2(ARMEmitter::SubRegSize size, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "64-bit destination subregsize not supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc(Op, 1, size, 0b10010, rd.Q(), rn.Q());
+  void sqxtun2(SubRegSize size, VRegister rd, VRegister rn) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit destination subregsize not supported");
+    ASIMD2RegMisc(1, size, 0b10010, rd.Q(), rn.Q());
   }
 
   ///< size is the destination size.
   ///< source size is the next size up.
-  void shll(ARMEmitter::SubRegSize size, ARMEmitter::DRegister rd, ARMEmitter::DRegister rn) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i8Bit, "Destination 8-bit subregsize unsupported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    const auto ConvertedSize = size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i32Bit :
-                               size == ARMEmitter::SubRegSize::i32Bit ? ARMEmitter::SubRegSize::i16Bit :
-                               size == ARMEmitter::SubRegSize::i16Bit ? ARMEmitter::SubRegSize::i8Bit :
-                                                                        ARMEmitter::SubRegSize::i8Bit;
+  void shll(SubRegSize size, DRegister rd, DRegister rn) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Destination 8-bit subregsize unsupported");
+    const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD2RegMisc(Op, 1, ConvertedSize, 0b10011, rd, rn);
+    ASIMD2RegMisc(1, ConvertedSize, 0b10011, rd, rn);
   }
   ///< size is the destination size.
   ///< source size is the next size up.
-  void shll2(ARMEmitter::SubRegSize size, ARMEmitter::QRegister rd, ARMEmitter::QRegister rn) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i8Bit, "Destination 8-bit subregsize unsupported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    const auto ConvertedSize = size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i32Bit :
-                               size == ARMEmitter::SubRegSize::i32Bit ? ARMEmitter::SubRegSize::i16Bit :
-                               size == ARMEmitter::SubRegSize::i16Bit ? ARMEmitter::SubRegSize::i8Bit :
-                                                                        ARMEmitter::SubRegSize::i8Bit;
+  void shll2(SubRegSize size, QRegister rd, QRegister rn) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Destination 8-bit subregsize unsupported");
+    const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD2RegMisc(Op, 1, ConvertedSize, 0b10011, rd, rn);
+    ASIMD2RegMisc(1, ConvertedSize, 0b10011, rd, rn);
   }
   ///< size is the destination size.
   ///< source size is the next size up.
-  void uqxtn(ARMEmitter::SubRegSize size, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc(Op, 1, size, 0b10100, rd.D(), rn.D());
+  void uqxtn(SubRegSize size, VRegister rd, VRegister rn) {
+    ASIMD2RegMisc(1, size, 0b10100, rd.D(), rn.D());
   }
   ///< size is the destination size.
   ///< source size is the next size up.
-  void uqxtn2(ARMEmitter::SubRegSize size, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc(Op, 1, size, 0b10100, rd.Q(), rn.Q());
+  void uqxtn2(SubRegSize size, VRegister rd, VRegister rn) {
+    ASIMD2RegMisc(1, size, 0b10100, rd.Q(), rn.Q());
   }
   ///< size is the destination size.
   ///< source size is the next size up.
-  void fcvtxn(ARMEmitter::SubRegSize size, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit subregsize supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    const auto ConvertedSize = size == ARMEmitter::SubRegSize::i32Bit ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i8Bit;
+  void fcvtxn(SubRegSize size, VRegister rd, VRegister rn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit, "Only 32-bit subregsize supported");
+    const auto ConvertedSize = size == SubRegSize::i32Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
 
-    ASIMD2RegMisc(Op, 1, ConvertedSize, 0b10110, rd.D(), rn.D());
+    ASIMD2RegMisc(1, ConvertedSize, 0b10110, rd.D(), rn.D());
   }
   ///< size is the destination size.
   ///< source size is the next size up.
-  void fcvtxn2(ARMEmitter::SubRegSize size, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit subregsize supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    const auto ConvertedSize = size == ARMEmitter::SubRegSize::i32Bit ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i8Bit;
+  void fcvtxn2(SubRegSize size, VRegister rd, VRegister rn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit, "Only 32-bit subregsize supported");
+    const auto ConvertedSize = size == SubRegSize::i32Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
 
-    ASIMD2RegMisc(Op, 1, ConvertedSize, 0b10110, rd.Q(), rn.Q());
+    ASIMD2RegMisc(1, ConvertedSize, 0b10110, rd.Q(), rn.Q());
   }
   template<IsQOrDRegister T>
   void frinta(SubRegSize size, T rd, T rn) {
@@ -1124,10 +1042,8 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(1, 0, 0b11000, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
       const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
-
-      ASIMD2RegMisc<T>(Op, 1, ConvertedSize, 0b11000, rd, rn);
+      ASIMD2RegMisc(1, ConvertedSize, 0b11000, rd, rn);
     }
   }
   template<IsQOrDRegister T>
@@ -1137,10 +1053,8 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(1, 0, 0b11001, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
       const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
-
-      ASIMD2RegMisc<T>(Op, 1, ConvertedSize, 0b11001, rd, rn);
+      ASIMD2RegMisc(1, ConvertedSize, 0b11001, rd, rn);
     }
   }
 
@@ -1151,10 +1065,8 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(1, 0, 0b11010, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
       const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
-
-      ASIMD2RegMisc<T>(Op, 1, ConvertedSize, 0b11010, rd, rn);
+      ASIMD2RegMisc(1, ConvertedSize, 0b11010, rd, rn);
     }
   }
   template<IsQOrDRegister T>
@@ -1164,10 +1076,8 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(1, 0, 0b11011, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
       const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
-
-      ASIMD2RegMisc<T>(Op, 1, ConvertedSize, 0b11011, rd, rn);
+      ASIMD2RegMisc(1, ConvertedSize, 0b11011, rd, rn);
     }
   }
   template<IsQOrDRegister T>
@@ -1177,10 +1087,8 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(1, 0, 0b11100, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
       const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
-
-      ASIMD2RegMisc<T>(Op, 1, ConvertedSize, 0b11100, rd, rn);
+      ASIMD2RegMisc(1, ConvertedSize, 0b11100, rd, rn);
     }
   }
   template<IsQOrDRegister T>
@@ -1190,49 +1098,40 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(1, 0, 0b11101, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
       const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
-
-      ASIMD2RegMisc<T>(Op, 1, ConvertedSize, 0b11101, rd, rn);
+      ASIMD2RegMisc(1, ConvertedSize, 0b11101, rd, rn);
     }
   }
   template<IsQOrDRegister T>
-  void frint32x(ARMEmitter::SubRegSize size, T rd, T rn) {
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit & 64-bit subregsize "
-                                                                                                         "supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    const auto ConvertedSize = size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i8Bit;
+  void frint32x(SubRegSize size, T rd, T rn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i64Bit || size == SubRegSize::i32Bit, "Only 32-bit & 64-bit subregsize supported");
+    const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
 
-    ASIMD2RegMisc<T>(Op, 1, ConvertedSize, 0b11110, rd, rn);
+    ASIMD2RegMisc(1, ConvertedSize, 0b11110, rd, rn);
   }
   template<IsQOrDRegister T>
-  void frint64x(ARMEmitter::SubRegSize size, T rd, T rn) {
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i64Bit || size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit & 64-bit subregsize "
-                                                                                                         "supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    const auto ConvertedSize = size == ARMEmitter::SubRegSize::i64Bit ? ARMEmitter::SubRegSize::i16Bit : ARMEmitter::SubRegSize::i8Bit;
+  void frint64x(SubRegSize size, T rd, T rn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i64Bit || size == SubRegSize::i32Bit, "Only 32-bit & 64-bit subregsize supported");
+    const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i16Bit : SubRegSize::i8Bit;
 
-    ASIMD2RegMisc<T>(Op, 1, ConvertedSize, 0b11111, rd, rn);
+    ASIMD2RegMisc(1, ConvertedSize, 0b11111, rd, rn);
   }
 
   template<IsQOrDRegister T>
-  void not_(ARMEmitter::SubRegSize size, T rd, T rn) {
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i8Bit, "Only 8-bit subregsize supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc<T>(Op, 1, ARMEmitter::SubRegSize::i8Bit, 0b00101, rd, rn);
+  void not_(SubRegSize size, T rd, T rn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit, "Only 8-bit subregsize supported");
+    ASIMD2RegMisc(1, SubRegSize::i8Bit, 0b00101, rd, rn);
   }
   template<IsQOrDRegister T>
-  void mvn(ARMEmitter::SubRegSize size, T rd, T rn) {
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i8Bit, "Only 8-bit subregsize supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc<T>(Op, 1, ARMEmitter::SubRegSize::i8Bit, 0b00101, rd, rn);
+  void mvn(SubRegSize size, T rd, T rn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit, "Only 8-bit subregsize supported");
+    ASIMD2RegMisc(1, SubRegSize::i8Bit, 0b00101, rd, rn);
   }
 
   template<IsQOrDRegister T>
-  void rbit(ARMEmitter::SubRegSize size, T rd, T rn) {
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i8Bit, "Only 8-bit subregsize supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc<T>(Op, 1, ARMEmitter::SubRegSize::i16Bit, 0b00101, rd, rn);
+  void rbit(SubRegSize size, T rd, T rn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit, "Only 8-bit subregsize supported");
+    ASIMD2RegMisc(1, SubRegSize::i16Bit, 0b00101, rd, rn);
   }
 
   template<IsQOrDRegister T>
@@ -1245,8 +1144,7 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(1, 1, 0b01100, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-      ASIMD2RegMisc<T>(Op, 1, size, 0b01100, rd, rn);
+      ASIMD2RegMisc(1, size, 0b01100, rd, rn);
     }
   }
   template<IsQOrDRegister T>
@@ -1259,8 +1157,7 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(1, 1, 0b01101, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-      ASIMD2RegMisc<T>(Op, 1, size, 0b01101, rd, rn);
+      ASIMD2RegMisc(1, size, 0b01101, rd, rn);
     }
   }
 
@@ -1274,8 +1171,7 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(1, 1, 0b01111, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-      ASIMD2RegMisc<T>(Op, 1, size, 0b01111, rd, rn);
+      ASIMD2RegMisc(1, size, 0b01111, rd, rn);
     }
   }
 
@@ -1289,8 +1185,7 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(1, 1, 0b11001, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-      ASIMD2RegMisc<T>(Op, 1, size, 0b11001, rd, rn);
+      ASIMD2RegMisc(1, size, 0b11001, rd, rn);
     }
   }
 
@@ -1304,8 +1199,7 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(1, 1, 0b11010, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-      ASIMD2RegMisc<T>(Op, 1, size, 0b11010, rd, rn);
+      ASIMD2RegMisc(1, size, 0b11010, rd, rn);
     }
   }
   template<IsQOrDRegister T>
@@ -1318,16 +1212,14 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(1, 1, 0b11011, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-      ASIMD2RegMisc<T>(Op, 1, size, 0b11011, rd, rn);
+      ASIMD2RegMisc(1, size, 0b11011, rd, rn);
     }
   }
 
   template<IsQOrDRegister T>
-  void ursqrte(ARMEmitter::SubRegSize size, T rd, T rn) {
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i32Bit, "Only 32-bit & 64-bit subregsize supported");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-    ASIMD2RegMisc<T>(Op, 1, size, 0b11100, rd, rn);
+  void ursqrte(SubRegSize size, T rd, T rn) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i32Bit, "Only 32-bit & 64-bit subregsize supported");
+    ASIMD2RegMisc(1, size, 0b11100, rd, rn);
   }
   template<IsQOrDRegister T>
   void frsqrte(SubRegSize size, T rd, T rn) {
@@ -1339,8 +1231,7 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(1, 1, 0b11101, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-      ASIMD2RegMisc<T>(Op, 1, size, 0b11101, rd, rn);
+      ASIMD2RegMisc(1, size, 0b11101, rd, rn);
     }
   }
 
@@ -1354,8 +1245,7 @@ public:
     if (size == SubRegSize::i16Bit) {
       ASIMDTwoRegMiscFP16(1, 1, 0b11111, rn, rd);
     } else {
-      constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'10 << 10;
-      ASIMD2RegMisc<T>(Op, 1, size, 0b11111, rd, rn);
+      ASIMD2RegMisc(1, size, 0b11111, rd, rn);
     }
   }
 
@@ -4434,10 +4324,10 @@ private:
 
   // Advanced SIMD two-register miscellaneous
   template<IsQOrDRegister T>
-  void ASIMD2RegMisc(uint32_t Op, uint32_t U, ARMEmitter::SubRegSize size, uint32_t opcode, T rd, T rn) {
-    constexpr uint32_t Q = std::is_same_v<ARMEmitter::QRegister, T> ? 1U << 30 : 0;
+  void ASIMD2RegMisc(uint32_t U, SubRegSize size, uint32_t opcode, T rd, T rn) {
+    constexpr uint32_t Q = std::is_same_v<QRegister, T> ? 1U << 30 : 0;
 
-    uint32_t Instr = Op;
+    uint32_t Instr = 0b0000'1110'0010'0000'0000'10U << 10;
     Instr |= Q;
     Instr |= U << 29;
     Instr |= FEXCore::ToUnderlying(size) << 22;
