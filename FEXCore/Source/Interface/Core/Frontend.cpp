@@ -918,27 +918,23 @@ bool Decoder::DecodeInstructionImpl(uint64_t PC) {
       break;
     case 0x26: // ES legacy prefix
       if (!BlockInfo.Is64BitMode) {
-        DecodeInst->Flags |= DecodeFlags::FLAG_ES_PREFIX;
+        DecodeInst->Flags = (DecodeInst->Flags & ~FEXCore::X86Tables::DecodeFlags::FLAG_SEGMENTS) | DecodeFlags::FLAG_ES_PREFIX;
       }
       break;
     case 0x2E: // CS legacy prefix
       if (!BlockInfo.Is64BitMode) {
-        DecodeInst->Flags |= DecodeFlags::FLAG_CS_PREFIX;
+        DecodeInst->Flags = (DecodeInst->Flags & ~FEXCore::X86Tables::DecodeFlags::FLAG_SEGMENTS) | DecodeFlags::FLAG_CS_PREFIX;
       }
       break;
     case 0x36: // SS legacy prefix
       if (!BlockInfo.Is64BitMode) {
-        DecodeInst->Flags |= DecodeFlags::FLAG_SS_PREFIX;
+        DecodeInst->Flags = (DecodeInst->Flags & ~FEXCore::X86Tables::DecodeFlags::FLAG_SEGMENTS) | DecodeFlags::FLAG_SS_PREFIX;
       }
       break;
     case 0x3E: // DS legacy prefix
-      // Annoyingly GCC generates NOP ops with these prefixes
-      // Just ignore them for now
-      // eg. 66 2e 0f 1f 84 00 00 00 00 00 nop    WORD PTR cs:[rax+rax*1+0x0]
       if (!BlockInfo.Is64BitMode) {
-        DecodeInst->Flags |= DecodeFlags::FLAG_DS_PREFIX;
+        DecodeInst->Flags = (DecodeInst->Flags & ~FEXCore::X86Tables::DecodeFlags::FLAG_SEGMENTS) | DecodeFlags::FLAG_DS_PREFIX;
       }
-      break;
       break;
     case 0xF0: // LOCK prefix
       DecodeInst->Flags |= DecodeFlags::FLAG_LOCK;
@@ -952,10 +948,10 @@ bool Decoder::DecodeInstructionImpl(uint64_t PC) {
       DecodeInst->LastEscapePrefix = Op;
       break;
     case 0x64: // FS prefix
-      DecodeInst->Flags |= DecodeFlags::FLAG_FS_PREFIX;
+      DecodeInst->Flags = (DecodeInst->Flags & ~FEXCore::X86Tables::DecodeFlags::FLAG_SEGMENTS) | DecodeFlags::FLAG_FS_PREFIX;
       break;
     case 0x65: // GS prefix
-      DecodeInst->Flags |= DecodeFlags::FLAG_GS_PREFIX;
+      DecodeInst->Flags = (DecodeInst->Flags & ~FEXCore::X86Tables::DecodeFlags::FLAG_SEGMENTS) | DecodeFlags::FLAG_GS_PREFIX;
       break;
     default:
       [[likely]] { // Default base table
