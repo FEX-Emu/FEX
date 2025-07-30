@@ -1501,452 +1501,346 @@ public:
   ///< Size is dest size
   void saddl(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 0, 0b0000, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(0, 0b0000, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void saddl2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 0, 0b0000, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(0, 0b0000, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void saddw(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 0, 0b0001, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(0, 0b0001, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void saddw2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 0, 0b0001, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(0, 0b0001, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void ssubl(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 0, 0b0010, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(0, 0b0010, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void ssubl2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 0, 0b0010, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(0, 0b0010, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void ssubw(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 0, 0b0011, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(0, 0b0011, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void ssubw2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 0, 0b0011, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(0, 0b0011, ConvertedSize, rd, rn, rm);
   }
   void addhn(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "No 64-bit dest support.");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    ASIMD3Different(Op, 0, 0b0100, size, rd, rn, rm);
+    ASIMD3Different(0, 0b0100, size, rd, rn, rm);
   }
   void addhn2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "No 64-bit dest support.");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    ASIMD3Different(Op, 0, 0b0100, size, rd, rn, rm);
+    ASIMD3Different(0, 0b0100, size, rd, rn, rm);
   }
   ///< Size is dest size
   void sabal(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 0, 0b0101, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(0, 0b0101, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void sabal2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
-
-    ASIMD3Different(Op, 0, 0b0101, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(0, 0b0101, ConvertedSize, rd, rn, rm);
   }
   void subhn(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "No 64-bit dest support.");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    ASIMD3Different(Op, 0, 0b0110, size, rd, rn, rm);
+    ASIMD3Different(0, 0b0110, size, rd, rn, rm);
   }
   void subhn2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "No 64-bit dest support.");
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    ASIMD3Different(Op, 0, 0b0110, size, rd, rn, rm);
+    ASIMD3Different(0, 0b0110, size, rd, rn, rm);
   }
   ///< Size is dest size
   void sabdl(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 0, 0b0111, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(0, 0b0111, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void sabdl2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 0, 0b0111, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(0, 0b0111, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void smlal(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 0, 0b1000, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(0, 0b1000, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void smlal2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 0, 0b1000, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(0, 0b1000, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void sqdmlal(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i16Bit, "No 8/16-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 0, 0b1001, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(0, 0b1001, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void sqdmlal2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i16Bit, "No 8/16-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 0, 0b1001, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(0, 0b1001, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void smlsl(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 0, 0b1010, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(0, 0b1010, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void smlsl2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 0, 0b1010, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(0, 0b1010, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void sqdmlsl(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i16Bit, "No 8/16-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 0, 0b1011, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(0, 0b1011, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void sqdmlsl2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i16Bit, "No 8/16-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 0, 0b1011, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(0, 0b1011, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void smull(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 0, 0b1100, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(0, 0b1100, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void smull2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 0, 0b1100, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(0, 0b1100, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void sqdmull(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i16Bit, "No 8/16-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 0, 0b1101, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(0, 0b1101, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void sqdmull2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit && size != SubRegSize::i16Bit, "No 8/16-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 0, 0b1101, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(0, 0b1101, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void pmull(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i128Bit, "Only 16-bit and 128-bit destination supported");
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    ASIMD3Different(Op, 0, 0b1110, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(0, 0b1110, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void pmull2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_A_FMT(size == SubRegSize::i16Bit || size == SubRegSize::i128Bit, "Only 16-bit and 128-bit destination supported");
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    ASIMD3Different(Op, 0, 0b1110, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(0, 0b1110, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void uaddl(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 1, 0b0000, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(1, 0b0000, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void uaddl2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 1, 0b0000, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(1, 0b0000, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void uaddw(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 1, 0b0001, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(1, 0b0001, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void uaddw2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 1, 0b0001, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(1, 0b0001, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void usubl(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 1, 0b0010, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(1, 0b0010, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void usubl2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 1, 0b0010, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(1, 0b0010, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void usubw(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 1, 0b0011, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(1, 0b0011, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void usubw2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 1, 0b0011, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(1, 0b0011, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void raddhn(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "No 64-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size)};
-
-    ASIMD3Different(Op, 1, 0b0100, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(1, 0b0100, size, rd, rn, rm);
   }
   ///< Size is dest size
   void raddhn2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "No 64-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size)};
-
-    ASIMD3Different(Op, 1, 0b0100, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(1, 0b0100, size, rd, rn, rm);
   }
   ///< Size is dest size
   void uabal(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 1, 0b0101, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(1, 0b0101, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void uabal2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 1, 0b0101, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(1, 0b0101, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void rsubhn(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "No 64-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size)};
-
-    ASIMD3Different(Op, 1, 0b0110, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(1, 0b0110, size, rd, rn, rm);
   }
   ///< Size is dest size
   void rsubhn2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "No 64-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
-    const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size)};
-
-    ASIMD3Different(Op, 1, 0b0110, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(1, 0b0110, size, rd, rn, rm);
   }
   ///< Size is dest size
   void uabdl(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 1, 0b0111, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(1, 0b0111, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void uabdl2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 1, 0b0111, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(1, 0b0111, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void umlal(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 1, 0b1000, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(1, 0b1000, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void umlal2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 1, 0b1000, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(1, 0b1000, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void umlsl(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 1, 0b1010, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(1, 0b1010, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void umlsl2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 1, 0b1010, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(1, 0b1010, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void umull(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 1, 0b1100, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(1, 0b1100, ConvertedSize, rd, rn, rm);
   }
   ///< Size is dest size
   void umull2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
-
-    constexpr uint32_t Op = 0b0000'1110'0010'0000'0000'00 << 10;
     const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
-    ASIMD3Different(Op, 1, 0b1100, ConvertedSize, rd, rn, rm);
+    ASIMD3Different(1, 0b1100, ConvertedSize, rd, rn, rm);
   }
 
   // Advanced SIMD three same
@@ -4597,10 +4491,10 @@ private:
 
   // Advanced SIMD three different
   template<IsQOrDRegister T>
-  void ASIMD3Different(uint32_t Op, uint32_t U, uint32_t opcode, ARMEmitter::SubRegSize size, T rd, T rn, T rm) {
-    constexpr uint32_t Q = std::is_same_v<ARMEmitter::QRegister, T> ? 1U << 30 : 0;
+  void ASIMD3Different(uint32_t U, uint32_t opcode, SubRegSize size, T rd, T rn, T rm) {
+    constexpr uint32_t Q = std::is_same_v<QRegister, T> ? 1U << 30 : 0;
 
-    uint32_t Instr = Op;
+    uint32_t Instr = 0b0000'1110'0010'0000'0000'00U << 10;
     Instr |= Q;
     Instr |= U << 29;
     Instr |= FEXCore::ToUnderlying(size) << 22;
