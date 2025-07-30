@@ -434,7 +434,7 @@ Ref OpDispatchBuilder::InsertCVTGPR_To_FPRImpl(OpcodeArgs, IR::OpSize DstSize, I
 
   if (Src2Op.IsGPR()) {
     // If the source is a GPR then convert directly from the GPR.
-    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, CTX->GetGPROpSize(), Op->Flags);
+    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, GetGPROpSize(), Op->Flags);
     return _VSToFGPRInsert(DstSize, DstElementSize, SrcSize, Src1, Src2, ZeroUpperBits);
   } else if (SrcSize != DstElementSize) {
     // If the source is from memory but the Source size and destination size aren't the same,
@@ -741,7 +741,7 @@ void OpDispatchBuilder::MOVMSKOp(OpcodeArgs, IR::OpSize ElementSize) {
     GPR = _Bfi(OpSize::i64Bit, 32, 31, GPR, GPR);
     // Shift right to only get the two sign bits we care about.
     GPR = _Lshr(OpSize::i64Bit, GPR, Constant(62));
-    StoreResult_WithOpSize(GPRClass, Op, Op->Dest, GPR, CTX->GetGPROpSize(), OpSize::iInvalid);
+    StoreResult_WithOpSize(GPRClass, Op, Op->Dest, GPR, GetGPROpSize(), OpSize::iInvalid);
   } else if (Size == OpSize::i128Bit && ElementSize == OpSize::i32Bit) {
     // Shift all the sign bits to the bottom of their respective elements.
     Src = _VUShrI(Size, OpSize::i32Bit, Src, 31);
@@ -753,7 +753,7 @@ void OpDispatchBuilder::MOVMSKOp(OpcodeArgs, IR::OpSize ElementSize) {
     Src = _VAddV(Size, OpSize::i32Bit, Src);
     // Extract to a GPR.
     Ref GPR = _VExtractToGPR(Size, OpSize::i32Bit, Src, 0);
-    StoreResult_WithOpSize(GPRClass, Op, Op->Dest, GPR, CTX->GetGPROpSize(), OpSize::iInvalid);
+    StoreResult_WithOpSize(GPRClass, Op, Op->Dest, GPR, GetGPROpSize(), OpSize::iInvalid);
   } else {
     Ref CurrentVal = Constant(0);
 
@@ -1504,7 +1504,7 @@ void OpDispatchBuilder::VBROADCASTOp(OpcodeArgs, IR::OpSize ElementSize) {
     Result = _VDupElement(DstSize, ElementSize, Src, 0);
   } else {
     // Get the address to broadcast from into a GPR.
-    Ref Address = MakeSegmentAddress(Op, Op->Src[0], CTX->GetGPROpSize());
+    Ref Address = MakeSegmentAddress(Op, Op->Src[0], GetGPROpSize());
     Result = _VBroadcastFromMem(DstSize, ElementSize, Address);
   }
 
@@ -1523,7 +1523,7 @@ Ref OpDispatchBuilder::PINSROpImpl(OpcodeArgs, IR::OpSize ElementSize, const X86
 
   if (Src2Op.IsGPR()) {
     // If the source is a GPR then convert directly from the GPR.
-    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, CTX->GetGPROpSize(), Op->Flags);
+    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, GetGPROpSize(), Op->Flags);
     return _VInsGPR(Size, ElementSize, Index, Src1, Src2);
   }
 
@@ -1644,7 +1644,7 @@ void OpDispatchBuilder::PExtrOp(OpcodeArgs, IR::OpSize ElementSize) {
   Index &= NumElements - 1;
 
   if (Op->Dest.IsGPR()) {
-    const auto GPRSize = CTX->GetGPROpSize();
+    const auto GPRSize = GetGPROpSize();
     // Extract already zero extends the result.
     Ref Result = _VExtractToGPR(OpSize::i128Bit, OverridenElementSize, Src, Index);
     StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, GPRSize, OpSize::iInvalid);
@@ -2065,7 +2065,7 @@ Ref OpDispatchBuilder::CVTGPR_To_FPRImpl(OpcodeArgs, IR::OpSize DstElementSize, 
   Ref Converted {};
   if (Src2Op.IsGPR()) {
     // If the source is a GPR then convert directly from the GPR.
-    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, CTX->GetGPROpSize(), Op->Flags);
+    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, GetGPROpSize(), Op->Flags);
     Converted = _Float_FromGPR_S(DstElementSize, SrcSize, Src2);
   } else if (SrcSize != DstElementSize) {
     // If the source is from memory but the Source size and destination size aren't the same,
@@ -2355,7 +2355,7 @@ void OpDispatchBuilder::VMASKMOVOpImpl(OpcodeArgs, IR::OpSize ElementSize, IR::O
                                        const X86Tables::DecodedOperand& MaskOp, const X86Tables::DecodedOperand& DataOp) {
 
   const auto MakeAddress = [this, Op](const X86Tables::DecodedOperand& Data) {
-    return MakeSegmentAddress(Op, Data, CTX->GetGPROpSize());
+    return MakeSegmentAddress(Op, Data, GetGPROpSize());
   };
 
   Ref Mask = LoadSource_WithOpSize(FPRClass, Op, MaskOp, DataSize, Op->Flags);
@@ -2398,7 +2398,7 @@ void OpDispatchBuilder::MOVBetweenGPR_FPR(OpcodeArgs, VectorOpType VectorType) {
     Ref Result {};
     if (Op->Src[0].IsGPR()) {
       // Loading from GPR and moving to Vector.
-      Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], CTX->GetGPROpSize(), Op->Flags);
+      Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], GetGPROpSize(), Op->Flags);
       // zext to 128bit
       Result = _VCastFromGPR(OpSize::i128Bit, OpSizeFromSrc(Op), Src);
     } else {
@@ -2504,7 +2504,7 @@ Ref OpDispatchBuilder::XSaveBase(X86Tables::DecodedOp Op) {
 void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
   // NOTE: Mask should be EAX and EDX concatenated, but we only need to test
   //       for features that are in the lower 32 bits, so EAX only is sufficient.
-  const auto OpSize = CTX->GetGPROpSize();
+  const auto OpSize = GetGPROpSize();
 
   const auto StoreIfFlagSet = [this, OpSize](uint32_t BitIndex, auto fn, uint32_t FieldSize = 1) {
     Ref Mask = LoadGPRRegister(X86State::REG_RAX);
@@ -2634,7 +2634,7 @@ void OpDispatchBuilder::SaveX87State(OpcodeArgs, Ref MemBase) {
 }
 
 void OpDispatchBuilder::SaveSSEState(Ref MemBase) {
-  const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
+  const auto NumRegs = Is64BitMode ? 16U : 8U;
 
   for (uint32_t i = 0; i < NumRegs; i += 2) {
     _StoreMemPair(FPRClass, OpSize::i128Bit, LoadXMMRegister(i), LoadXMMRegister(i + 1), MemBase, i * 16 + 160);
@@ -2647,7 +2647,7 @@ void OpDispatchBuilder::SaveMXCSRState(Ref MemBase) {
 }
 
 void OpDispatchBuilder::SaveAVXState(Ref MemBase) {
-  const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
+  const auto NumRegs = Is64BitMode ? 16U : 8U;
 
   for (uint32_t i = 0; i < NumRegs; i += 2) {
     Ref Upper0 = _VDupElement(OpSize::i256Bit, OpSize::i128Bit, LoadXMMRegister(i + 0), 1);
@@ -2676,7 +2676,7 @@ void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
-  const auto OpSize = CTX->GetGPROpSize();
+  const auto OpSize = GetGPROpSize();
 
   // If a bit in our XSTATE_BV is set, then we restore from that region of the XSAVE area,
   // otherwise, if not set, then we need to set the relevant data the bit corresponds to
@@ -2762,7 +2762,7 @@ void OpDispatchBuilder::RestoreX87State(Ref MemBase) {
 }
 
 void OpDispatchBuilder::RestoreSSEState(Ref MemBase) {
-  const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
+  const auto NumRegs = Is64BitMode ? 16U : 8U;
 
   for (uint32_t i = 0; i < NumRegs; i += 2) {
     auto XMMRegs = LoadMemPair(FPRClass, OpSize::i128Bit, MemBase, i * 16 + 160);
@@ -2783,7 +2783,7 @@ void OpDispatchBuilder::RestoreMXCSRState(Ref MXCSR) {
 }
 
 void OpDispatchBuilder::RestoreAVXState(Ref MemBase) {
-  const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
+  const auto NumRegs = Is64BitMode ? 16U : 8U;
 
   for (uint32_t i = 0; i < NumRegs; i += 2) {
     Ref XMMReg0 = LoadXMMRegister(i + 0);
@@ -2808,7 +2808,7 @@ void OpDispatchBuilder::DefaultX87State(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::DefaultSSEState() {
-  const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
+  const auto NumRegs = Is64BitMode ? 16U : 8U;
 
   Ref ZeroVector = LoadZeroVector(OpSize::i128Bit);
   for (uint32_t i = 0; i < NumRegs; ++i) {
@@ -2817,7 +2817,7 @@ void OpDispatchBuilder::DefaultSSEState() {
 }
 
 void OpDispatchBuilder::DefaultAVXState() {
-  const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
+  const auto NumRegs = Is64BitMode ? 16U : 8U;
 
   for (uint32_t i = 0; i < NumRegs; i++) {
     Ref Reg = LoadXMMRegister(i);
@@ -4729,7 +4729,7 @@ void OpDispatchBuilder::VPBLENDWOp(OpcodeArgs) {
 void OpDispatchBuilder::VZEROOp(OpcodeArgs) {
   const auto DstSize = OpSizeFromDst(Op);
   const auto IsVZEROALL = DstSize == OpSize::i256Bit;
-  const auto NumRegs = CTX->Config.Is64BitMode ? 16U : 8U;
+  const auto NumRegs = Is64BitMode ? 16U : 8U;
 
   if (IsVZEROALL) {
     // NOTE: Despite the name being VZEROALL, this will still only ever

@@ -133,7 +133,7 @@
         "frint32z v2.2d, v16.2d",
         "fcvtzs v2.2d, v2.2d",
         "xtn v2.2s, v2.2d",
-        "strb w20, [x28, #1298]",
+        "strb w20, [x28, #1426]",
         "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
@@ -147,7 +147,7 @@
         "frint32x v2.2d, v16.2d",
         "fcvtzs v2.2d, v2.2d",
         "xtn v2.2s, v2.2d",
-        "strb w20, [x28, #1298]",
+        "strb w20, [x28, #1426]",
         "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
@@ -522,7 +522,7 @@
         "0x66 0x0f 0x70"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2472]",
+        "ldr x0, [x28, #2600]",
         "ldr q2, [x0, #16]",
         "tbl v16.16b, {v17.16b}, v2.16b"
       ]
@@ -536,7 +536,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x4]",
-        "ldr x0, [x28, #2472]",
+        "ldr x0, [x28, #2600]",
         "ldr q3, [x0, #16]",
         "tbl v16.16b, {v2.16b}, v3.16b"
       ]
@@ -674,7 +674,7 @@
       ],
       "ExpectedArm64ASM": [
         "ldr q2, [x4]",
-        "ldr x0, [x28, #2472]",
+        "ldr x0, [x28, #2600]",
         "ldr q3, [x0, #2480]",
         "tbl v16.16b, {v2.16b}, v3.16b"
       ]
@@ -1226,7 +1226,7 @@
       "ExpectedInstructionCount": 3,
       "Comment": "0x66 0x0f 0xd0",
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #2832]",
+        "ldr q2, [x28, #2960]",
         "eor v2.16b, v17.16b, v2.16b",
         "fadd v16.2d, v16.2d, v2.2d"
       ]
@@ -1282,7 +1282,7 @@
       "ExpectedInstructionCount": 7,
       "Comment": "0x66 0x0f 0xd7",
       "ExpectedArm64ASM": [
-        "ldr q2, [x28, #3056]",
+        "ldr q2, [x28, #3184]",
         "cmlt v3.16b, v16.16b, #0",
         "and v2.16b, v3.16b, v2.16b",
         "addp v2.16b, v2.16b, v2.16b",
