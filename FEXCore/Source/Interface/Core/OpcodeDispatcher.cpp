@@ -3916,17 +3916,17 @@ uint32_t OpDispatchBuilder::GetDstBitSize(X86Tables::DecodedOp Op) const {
 
 Ref OpDispatchBuilder::GetSegment(uint32_t Flags, uint32_t DefaultPrefix, bool Override) {
   const auto GPRSize = GetGPROpSize();
+  uint32_t Prefix = Flags & FEXCore::X86Tables::DecodeFlags::FLAG_SEGMENTS;
 
   if (Is64BitMode) {
-    if (Flags & FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX) {
+    if (Prefix == FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX) {
       return _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, fs_cached));
-    } else if (Flags & FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX) {
+    } else if (Prefix == FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX) {
       return _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, gs_cached));
     }
     // If there was any other segment in 64bit then it is ignored
   } else {
-    uint32_t Prefix = Flags & FEXCore::X86Tables::DecodeFlags::FLAG_SEGMENTS;
-    if (!Prefix || Override) {
+    if (Prefix == FEXCore::X86Tables::DecodeFlags::FLAG_NO_PREFIX || Override) {
       // If there was no prefix then use the default one if available
       // Or the argument only uses a specific prefix (with override set)
       Prefix = DefaultPrefix;
@@ -3934,6 +3934,7 @@ Ref OpDispatchBuilder::GetSegment(uint32_t Flags, uint32_t DefaultPrefix, bool O
     // With the segment register optimization we store the GDT bases directly in the segment register to remove indexed loads
     Ref SegmentResult {};
     switch (Prefix) {
+    [[likely]] case FEXCore::X86Tables::DecodeFlags::FLAG_NO_PREFIX: return nullptr;
     case FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX:
       SegmentResult = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, es_cached));
       break;
@@ -3952,7 +3953,7 @@ Ref OpDispatchBuilder::GetSegment(uint32_t Flags, uint32_t DefaultPrefix, bool O
     case FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX:
       SegmentResult = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, gs_cached));
       break;
-    default: return nullptr;
+    default: FEX_UNREACHABLE;
     }
 
     CheckLegacySegmentRead(SegmentResult, Prefix);

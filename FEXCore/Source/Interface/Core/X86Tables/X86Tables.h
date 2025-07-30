@@ -32,13 +32,15 @@ constexpr uint32_t FLAG_REX_WIDENING  = (1 << 7);
 constexpr uint32_t FLAG_REX_XGPR_B    = (1 << 8);
 constexpr uint32_t FLAG_REX_XGPR_X    = (1 << 9);
 constexpr uint32_t FLAG_REX_XGPR_R    = (1 << 10);
-constexpr uint32_t FLAG_ES_PREFIX     = (1 << 11);
-constexpr uint32_t FLAG_CS_PREFIX     = (1 << 12);
-constexpr uint32_t FLAG_SS_PREFIX     = (1 << 13);
-constexpr uint32_t FLAG_DS_PREFIX     = (1 << 14);
-constexpr uint32_t FLAG_FS_PREFIX     = (1 << 15);
-constexpr uint32_t FLAG_GS_PREFIX     = (1 << 16);
-constexpr uint32_t FLAG_SEGMENTS      = (0b11'1111 << 11);
+constexpr uint32_t FLAG_NO_PREFIX     = (0b000 << 11);
+constexpr uint32_t FLAG_ES_PREFIX     = (0b001 << 11);
+constexpr uint32_t FLAG_CS_PREFIX     = (0b010 << 11);
+constexpr uint32_t FLAG_SS_PREFIX     = (0b011 << 11);
+constexpr uint32_t FLAG_DS_PREFIX     = (0b100 << 11);
+constexpr uint32_t FLAG_FS_PREFIX     = (0b101 << 11);
+constexpr uint32_t FLAG_GS_PREFIX     = (0b110 << 11);
+constexpr uint32_t FLAG_SEGMENTS      = (0b111 << 11);
+// Bits 14, 15, 16 - Unused
 
 constexpr uint32_t FLAG_REP_PREFIX    = (1 << 17);
 constexpr uint32_t FLAG_REPNE_PREFIX  = (1 << 18);

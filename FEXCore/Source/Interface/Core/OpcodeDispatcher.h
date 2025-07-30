@@ -1513,7 +1513,7 @@ private:
 #undef OpcodeArgs
 
   Ref AppendSegmentOffset(Ref Value, uint32_t Flags, uint32_t DefaultPrefix = 0, bool Override = false);
-  Ref GetSegment(uint32_t Flags, uint32_t DefaultPrefix = 0, bool Override = false);
+  Ref GetSegment(uint32_t Flags, uint32_t DefaultPrefix = FEXCore::X86Tables::DecodeFlags::FLAG_NO_PREFIX, bool Override = false);
 
   void UpdatePrefixFromSegment(Ref Segment, uint32_t SegmentReg);
 
