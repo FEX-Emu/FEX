@@ -300,9 +300,11 @@ int main(int argc, char** argv, char** const envp) {
                                                  FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), nullptr, std::move(Allocator));
 
     auto DoMmap = [&](uint64_t Address, size_t Size) -> void* {
-      void* Result = SyscallHandler->GuestMmap(nullptr, (void*)Address, Size, PROT_READ | PROT_WRITE | PROT_EXEC,
-                                               MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
+      // Map as R-X, then protect as RWX without informing the frontend to avoid unwanted SMC detection
+      void* Result =
+        SyscallHandler->GuestMmap(nullptr, (void*)Address, Size, PROT_READ | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
       LOGMAN_THROW_A_FMT(Result == reinterpret_cast<void*>(Address), "Map Memory mmap failed");
+      ::mprotect(Result, Size, PROT_READ | PROT_WRITE | PROT_EXEC);
       return Result;
     };
 

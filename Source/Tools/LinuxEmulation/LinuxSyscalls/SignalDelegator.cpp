@@ -110,6 +110,8 @@ void SignalDelegator::RegisterHostSignalHandler(int Signal, HostSignalDelegatorF
 
 void SignalDelegator::SpillSRA(FEXCore::Core::InternalThreadState* Thread, void* ucontext, uint32_t IgnoreMask) {
 #ifdef _M_ARM_64
+  Thread->CurrentFrame->State.rip = CTX->RestoreRIPFromHostPC(Thread, ArchHelpers::Context::GetPc(ucontext));
+
   for (size_t i = 0; i < Config.SRAGPRCount; i++) {
     const uint8_t SRAIdxMap = Config.SRAGPRMapping[i];
     if (IgnoreMask & (1U << SRAIdxMap)) {
@@ -132,6 +134,10 @@ void SignalDelegator::SpillSRA(FEXCore::Core::InternalThreadState* Thread, void*
       memcpy(&Thread->CurrentFrame->State.xmm.sse.data[i][0], &FPR, sizeof(__uint128_t));
     }
   }
+
+  uint32_t EFlags =
+    CTX->ReconstructCompactedEFLAGS(Thread, true, ArchHelpers::Context::GetArmGPRs(ucontext), ArchHelpers::Context::GetArmPState(ucontext));
+  CTX->SetFlagsFromCompactedEFLAGS(Thread, EFlags);
 #endif
 }
 
@@ -354,11 +360,8 @@ bool SignalDelegator::HandleDispatcherGuestSignal(FEXCore::Core::InternalThreadS
   // siginfo_t
   siginfo_t* HostSigInfo = reinterpret_cast<siginfo_t*>(info);
 
-  // Backup where we think the RIP currently is
-  ContextBackup->OriginalRIP = CTX->RestoreRIPFromHostPC(Thread, ArchHelpers::Context::GetPc(ucontext));
-  // Calculate eflags upfront.
-  uint32_t eflags = CTX->ReconstructCompactedEFLAGS(Thread, WasInJIT, ArchHelpers::Context::GetArmGPRs(ucontext),
-                                                    ArchHelpers::Context::GetArmPState(ucontext));
+  ContextBackup->OriginalRIP = Thread->CurrentFrame->State.rip;
+  uint32_t eflags = CTX->ReconstructCompactedEFLAGS(Thread, false, nullptr, 0);
 
   if (Is64BitMode) {
     NewGuestSP = SetupFrame_x64(Thread, ContextBackup, Frame, Signal, HostSigInfo, ucontext, GuestAction, GuestStack, NewGuestSP, eflags);

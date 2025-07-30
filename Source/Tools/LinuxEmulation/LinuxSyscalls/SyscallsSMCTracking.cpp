@@ -15,6 +15,7 @@ $end_info$
 #include <sys/personality.h>
 
 #include "LinuxSyscalls/Syscalls.h"
+#include "LinuxSyscalls/SignalDelegator.h"
 
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/LogManager.h>
@@ -81,6 +82,21 @@ bool SyscallHandler::HandleSegfault(FEXCore::Core::InternalThreadState* Thread, 
     }
 
     FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedSMCCount, 1);
+
+    auto CTX = Thread->CTX;
+    if (CTX->IsAddressInCodeBuffer(Thread, ArchHelpers::Context::GetPc(ucontext)) && !CTX->IsCurrentBlockSingleInst(Thread) &&
+        CTX->IsAddressInCurrentBlock(Thread, FaultAddress & FEXCore::Utils::FEX_PAGE_MASK, FEXCore::Utils::FEX_PAGE_SIZE)) {
+      // If we are not in a single-instruction block, and the SMC write address could intersect with the current block,
+      // reconstruct the context and repeat the faulting instruction as a single-instruction block so any SMC it performs
+      // is immediately picked up.
+      ThreadObject->SignalInfo.Delegator->SpillSRA(Thread, ucontext, Thread->CurrentFrame->InSyscallInfo & 0xFFFF);
+
+      // Adjust context to return to the dispatcher, reloading SRA from thread state
+      const auto& Config = ThreadObject->SignalInfo.Delegator->GetConfig();
+      ArchHelpers::Context::SetPc(ucontext, Config.AbsoluteLoopTopAddressFillSRA);
+      ArchHelpers::Context::SetArmReg(ucontext, 1, 1); // Set ENTRY_FILL_SRA_SINGLE_INST_REG to force a single step
+    }
+
     return true;
   }
 }
