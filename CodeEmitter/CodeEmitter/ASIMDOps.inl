@@ -541,9 +541,7 @@ public:
   template<IsQOrDRegister T>
   void saddlp(SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Destination 8-bit subregsize unsupported");
-    const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i32Bit :
-                               size == SubRegSize::i32Bit ? SubRegSize::i16Bit :
-                                                            SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
     ASIMD2RegMisc(0, ConvertedSize, 0b00010, rd, rn);
   }
@@ -572,9 +570,7 @@ public:
   template<IsQOrDRegister T>
   void sadalp(SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Destination 8-bit subregsize unsupported");
-    const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i32Bit :
-                               size == SubRegSize::i32Bit ? SubRegSize::i16Bit :
-                                                            SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
     ASIMD2RegMisc(0, ConvertedSize, 0b00110, rd, rn);
   }
@@ -924,9 +920,7 @@ public:
   template<IsQOrDRegister T>
   void uaddlp(SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Destination 8-bit subregsize unsupported");
-    const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i32Bit :
-                               size == SubRegSize::i32Bit ? SubRegSize::i16Bit :
-                                                            SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
     ASIMD2RegMisc(1, ConvertedSize, 0b00010, rd, rn);
   }
@@ -950,9 +944,7 @@ public:
   template<IsQOrDRegister T>
   void uadalp(SubRegSize size, T rd, T rn) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Destination 8-bit subregsize unsupported");
-    const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i32Bit :
-                               size == SubRegSize::i32Bit ? SubRegSize::i16Bit :
-                                                            SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
     ASIMD2RegMisc(1, ConvertedSize, 0b00110, rd, rn);
   }
@@ -1005,10 +997,7 @@ public:
   ///< source size is the next size up.
   void shll(SubRegSize size, DRegister rd, DRegister rn) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Destination 8-bit subregsize unsupported");
-    const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i32Bit :
-                               size == SubRegSize::i32Bit ? SubRegSize::i16Bit :
-                               size == SubRegSize::i16Bit ? SubRegSize::i8Bit :
-                                                            SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
     ASIMD2RegMisc(1, ConvertedSize, 0b10011, rd, rn);
   }
@@ -1016,10 +1005,7 @@ public:
   ///< source size is the next size up.
   void shll2(SubRegSize size, QRegister rd, QRegister rn) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Destination 8-bit subregsize unsupported");
-    const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i32Bit :
-                               size == SubRegSize::i32Bit ? SubRegSize::i16Bit :
-                               size == SubRegSize::i16Bit ? SubRegSize::i8Bit :
-                                                            SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
     ASIMD2RegMisc(1, ConvertedSize, 0b10011, rd, rn);
   }
