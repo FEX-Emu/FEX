@@ -1707,13 +1707,13 @@ public:
   }
 
   // Advanced SIMD three same
-  template<typename T>
+  template<IsQOrDRegister T>
   void shadd(SubRegSize size, T rd, T rn, T rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     ASIMD3Same<T>(0, size, 0b00000, rd, rn, rm);
   }
 
-  template<typename T>
+  template<IsQOrDRegister T>
   void sqadd(SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit sqadd");
@@ -1721,126 +1721,126 @@ public:
     ASIMD3Same<T>(0, size, 0b00001, rd, rn, rm);
   }
 
-  template<typename T>
+  template<IsQOrDRegister T>
   void srhadd(SubRegSize size, T rd, T rn, T rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     ASIMD3Same<T>(0, size, 0b00010, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void shsub(SubRegSize size, T rd, T rn, T rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     ASIMD3Same<T>(0, size, 0b00100, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void sqsub(SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit sqsub");
     }
     ASIMD3Same<T>(0, size, 0b00101, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void cmgt(SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit cmgt");
     }
     ASIMD3Same<T>(0, size, 0b00110, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void cmge(SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit cmge");
     }
     ASIMD3Same<T>(0, size, 0b00111, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void sshl(SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit sshl");
     }
     ASIMD3Same<T>(0, size, 0b01000, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void sqshl(SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit sqshl");
     }
     ASIMD3Same<T>(0, size, 0b01001, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void srshl(SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit srshl");
     }
     ASIMD3Same<T>(0, size, 0b01010, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void sqrshl(SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit sqrshl");
     }
     ASIMD3Same<T>(0, size, 0b01011, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void smax(SubRegSize size, T rd, T rn, T rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     ASIMD3Same<T>(0, size, 0b01100, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void smin(SubRegSize size, T rd, T rn, T rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     ASIMD3Same<T>(0, size, 0b01101, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void sabd(SubRegSize size, T rd, T rn, T rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     ASIMD3Same<T>(0, size, 0b01110, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void saba(SubRegSize size, T rd, T rn, T rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     ASIMD3Same<T>(0, size, 0b01111, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void add(SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit add");
     }
     ASIMD3Same<T>(0, size, 0b10000, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void cmtst(SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit cmtst");
     }
     ASIMD3Same<T>(0, size, 0b10001, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void mla(SubRegSize size, T rd, T rn, T rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     ASIMD3Same<T>(0, size, 0b10010, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void mul(SubRegSize size, T rd, T rn, T rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     ASIMD3Same<T>(0, size, 0b10011, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void smaxp(SubRegSize size, T rd, T rn, T rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     ASIMD3Same<T>(0, size, 0b10100, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void sminp(SubRegSize size, T rd, T rn, T rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     ASIMD3Same<T>(0, size, 0b10101, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void sqdmulh(SubRegSize size, T rd, T rn, T rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "No 8-bit dest support.");
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     ASIMD3Same<T>(0, size, 0b10110, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void addp(SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
@@ -1945,19 +1945,19 @@ public:
       ASIMD3Same<T>(0, ConvertedSize, 0b11111, rd, rn, rm);
     }
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void and_(T rd, T rn, T rm) {
     ASIMD3Same<T>(0, SubRegSize::i8Bit, 0b00011, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void fmlal(T rd, T rn, T rm) {
     ASIMD3Same<T>(0, SubRegSize::i8Bit, 0b11101, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void fmlal2(T rd, T rn, T rm) {
     ASIMD3Same<T>(1, SubRegSize::i8Bit, 0b11001, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void bic(T rd, T rn, T rm) {
     ASIMD3Same<T>(0, SubRegSize::i16Bit, 0b00011, rd, rn, rm);
   }
@@ -2026,142 +2026,142 @@ public:
       ASIMD3Same<T>(0, size, 0b11111, rd, rn, rm);
     }
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void orr(T rd, T rn, T rm) {
     ASIMD3Same<T>(0, SubRegSize::i32Bit, 0b00011, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void mov(T rd, T rn) {
     orr<T>(rd, rn, rn);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void fmlsl(T rd, T rn, T rm) {
     ASIMD3Same<T>(0, SubRegSize::i32Bit, 0b11101, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void fmlsl2(T rd, T rn, T rm) {
     ASIMD3Same<T>(1, SubRegSize::i32Bit, 0b11001, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void orn(T rd, T rn, T rm) {
     ASIMD3Same<T>(0, SubRegSize::i64Bit, 0b00011, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void uhadd(SubRegSize size, T rd, T rn, T rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     ASIMD3Same<T>(1, size, 0b00000, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void uqadd(SubRegSize size, T rd, T rn, T rm) {
     ASIMD3Same<T>(1, size, 0b00001, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void urhadd(SubRegSize size, T rd, T rn, T rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     ASIMD3Same<T>(1, size, 0b00010, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void uhsub(SubRegSize size, T rd, T rn, T rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     ASIMD3Same<T>(1, size, 0b00100, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void uqsub(SubRegSize size, T rd, T rn, T rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     ASIMD3Same<T>(1, size, 0b00101, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void cmhi(SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
     ASIMD3Same<T>(1, size, 0b00110, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void cmhs(SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
     ASIMD3Same<T>(1, size, 0b00111, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void ushl(SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
     ASIMD3Same<T>(1, size, 0b01000, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void uqshl(SubRegSize size, T rd, T rn, T rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     ASIMD3Same<T>(1, size, 0b01001, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void urshl(SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
     ASIMD3Same<T>(1, size, 0b01010, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void uqrshl(SubRegSize size, T rd, T rn, T rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     ASIMD3Same<T>(1, size, 0b01011, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void umax(SubRegSize size, T rd, T rn, T rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     ASIMD3Same<T>(1, size, 0b01100, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void umin(SubRegSize size, T rd, T rn, T rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     ASIMD3Same<T>(1, size, 0b01101, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void uabd(SubRegSize size, T rd, T rn, T rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     ASIMD3Same<T>(1, size, 0b01110, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void uaba(SubRegSize size, T rd, T rn, T rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     ASIMD3Same<T>(1, size, 0b01111, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void sub(SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
     ASIMD3Same<T>(1, size, 0b10000, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void cmeq(SubRegSize size, T rd, T rn, T rm) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
     ASIMD3Same<T>(1, size, 0b10001, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void mls(SubRegSize size, T rd, T rn, T rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     ASIMD3Same<T>(1, size, 0b10010, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void pmul(T rd, T rn, T rm) {
     ASIMD3Same<T>(1, SubRegSize::i8Bit, 0b10011, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void umaxp(SubRegSize size, T rd, T rn, T rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     ASIMD3Same<T>(1, size, 0b10100, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void uminp(SubRegSize size, T rd, T rn, T rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     ASIMD3Same<T>(1, size, 0b10101, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void sqrdmulh(SubRegSize size, T rd, T rn, T rm) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit && size != SubRegSize::i8Bit, "8/64-bit subregsize not supported");
     ASIMD3Same<T>(1, size, 0b10110, rd, rn, rm);
@@ -2264,11 +2264,11 @@ public:
       ASIMD3Same<T>(1, ConvertedSize, 0b11111, rd, rn, rm);
     }
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void eor(T rd, T rn, T rm) {
     ASIMD3Same<T>(1, SubRegSize::i8Bit, 0b00011, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void bsl(T rd, T rn, T rm) {
     ASIMD3Same<T>(1, SubRegSize::i16Bit, 0b00011, rd, rn, rm);
   }
@@ -2337,11 +2337,11 @@ public:
       ASIMD3Same<T>(1, size, 0b11110, rd, rn, rm);
     }
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void bit(T rd, T rn, T rm) {
     ASIMD3Same<T>(1, SubRegSize::i32Bit, 0b00011, rd, rn, rm);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void bif(T rd, T rn, T rm) {
     ASIMD3Same<T>(1, SubRegSize::i64Bit, 0b00011, rd, rn, rm);
   }
@@ -2349,7 +2349,7 @@ public:
   // Advanced SIMD modified immediate
   // XXX: ORR - 32-bit/16-bit
   // XXX: MOVI - Shifting ones
-  template<typename T>
+  template<IsQOrDRegister T>
   void fmov(SubRegSize size, T rd, float Value) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
@@ -2382,7 +2382,7 @@ public:
   // XXX: BIC
   // void ASIMDModifiedImm(uint32_t Op, uint32_t op, uint32_t cmode, uint32_t o2, uint32_t imm, T rd) {
 
-  template<typename T>
+  template<IsQOrDRegister T>
   void movi(SubRegSize size, T rd, uint64_t Imm, uint16_t Shift = 0) {
     LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit ||
                         size == SubRegSize::i64Bit,
@@ -2432,7 +2432,7 @@ public:
   }
 
   // Advanced SIMD shift by immediate
-  template<typename T>
+  template<IsQOrDRegister T>
   void sshr(SubRegSize size, T rd, T rn, uint32_t Shift) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
@@ -2447,7 +2447,7 @@ public:
 
     ASIMDShiftByImm(0, immh, immb, 0b00000, rn, rd);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void ssra(SubRegSize size, T rd, T rn, uint32_t Shift) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
@@ -2462,7 +2462,7 @@ public:
 
     ASIMDShiftByImm(0, immh, immb, 0b00010, rn, rd);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void srshr(SubRegSize size, T rd, T rn, uint32_t Shift) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
@@ -2477,7 +2477,7 @@ public:
 
     ASIMDShiftByImm(0, immh, immb, 0b00100, rn, rd);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void srsra(SubRegSize size, T rd, T rn, uint32_t Shift) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
@@ -2492,7 +2492,7 @@ public:
 
     ASIMDShiftByImm(0, immh, immb, 0b00110, rn, rd);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void shl(SubRegSize size, T rd, T rn, uint32_t Shift) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
@@ -2507,7 +2507,7 @@ public:
 
     ASIMDShiftByImm(0, immh, immb, 0b01010, rn, rd);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void sqshl(SubRegSize size, T rd, T rn, uint32_t Shift) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
@@ -2668,7 +2668,7 @@ public:
     sshll2(size, rd.Q(), rn.Q(), 0);
   }
 
-  template<typename T>
+  template<IsQOrDRegister T>
   void scvtf(SubRegSize size, T rd, T rn, uint32_t FractionalBits) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Invalid size");
     if constexpr (std::is_same_v<DRegister, T>) {
@@ -2687,7 +2687,7 @@ public:
     ASIMDShiftByImm(0, immh, immb, 0b11100, rn, rd);
   }
 
-  template<typename T>
+  template<IsQOrDRegister T>
   void fcvtzs(SubRegSize size, T rd, T rn, uint32_t FractionalBits) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Invalid size");
     if constexpr (std::is_same_v<DRegister, T>) {
@@ -2706,7 +2706,7 @@ public:
     ASIMDShiftByImm(0, immh, immb, 0b11111, rn, rd);
   }
 
-  template<typename T>
+  template<IsQOrDRegister T>
   void ushr(SubRegSize size, T rd, T rn, uint32_t Shift) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
@@ -2721,7 +2721,7 @@ public:
 
     ASIMDShiftByImm(1, immh, immb, 0b00000, rn, rd);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void usra(SubRegSize size, T rd, T rn, uint32_t Shift) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
@@ -2736,7 +2736,7 @@ public:
 
     ASIMDShiftByImm(1, immh, immb, 0b00010, rn, rd);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void urshr(SubRegSize size, T rd, T rn, uint32_t Shift) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
@@ -2751,7 +2751,7 @@ public:
 
     ASIMDShiftByImm(1, immh, immb, 0b00100, rn, rd);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void ursra(SubRegSize size, T rd, T rn, uint32_t Shift) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
@@ -2766,7 +2766,7 @@ public:
 
     ASIMDShiftByImm(1, immh, immb, 0b00110, rn, rd);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void sri(SubRegSize size, T rd, T rn, uint32_t Shift) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
@@ -2781,7 +2781,7 @@ public:
 
     ASIMDShiftByImm(1, immh, immb, 0b01000, rn, rd);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void sli(SubRegSize size, T rd, T rn, uint32_t Shift) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
@@ -2796,7 +2796,7 @@ public:
 
     ASIMDShiftByImm(1, immh, immb, 0b01010, rn, rd);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void sqshlu(SubRegSize size, T rd, T rn, uint32_t Shift) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
@@ -2812,7 +2812,7 @@ public:
     ASIMDShiftByImm(1, immh, immb, 0b01100, rn, rd);
   }
   ///< size is destination size
-  template<typename T>
+  template<IsQOrDRegister T>
   void uqshl(SubRegSize size, T rd, T rn, uint32_t Shift) {
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
@@ -2960,7 +2960,7 @@ public:
   void uxtl2(SubRegSize size, QRegister rd, QRegister rn) {
     ushll2(size, rd, rn, 0);
   }
-  template<typename T>
+  template<IsQOrDRegister T>
   void ucvtf(SubRegSize size, T rd, T rn, uint32_t FractionalBits) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Invalid size");
     if constexpr (std::is_same_v<DRegister, T>) {
@@ -2979,7 +2979,7 @@ public:
     ASIMDShiftByImm(1, immh, immb, 0b11100, rn, rd);
   }
 
-  template<typename T>
+  template<IsQOrDRegister T>
   void fcvtzu(SubRegSize size, T rd, T rn, uint32_t FractionalBits) {
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Invalid size");
     if constexpr (std::is_same_v<DRegister, T>) {
