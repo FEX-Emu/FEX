@@ -1,4 +1,3 @@
-include(GNUInstallDirs)
 set(NAME FEXGDBReader)
 set(SRCS FEXGDBReader.cpp)
 

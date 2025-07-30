@@ -1,4 +1,3 @@
-include(GNUInstallDirs)
 set (MAN_DIR share/man CACHE PATH "MAN_DIR")
 
 set (FEXCORE_BASE_SRCS
