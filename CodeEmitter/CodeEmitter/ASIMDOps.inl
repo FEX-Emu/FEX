@@ -1368,10 +1368,7 @@ public:
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     }
     LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Destination 8-bit subregsize unsupported");
-
-    const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i32Bit :
-                               size == SubRegSize::i32Bit ? SubRegSize::i16Bit :
-                                                            SubRegSize::i8Bit;
+    const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
     ASIMDAcrossLanes<T>(0, ConvertedSize, 0b00011, rd, rn);
   }
@@ -1405,9 +1402,8 @@ public:
     if constexpr (std::is_same_v<DRegister, T>) {
       LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "64-bit subregsize not supported");
     }
-    const auto ConvertedSize = size == SubRegSize::i64Bit ? SubRegSize::i32Bit :
-                               size == SubRegSize::i32Bit ? SubRegSize::i16Bit :
-                                                            SubRegSize::i8Bit;
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Destination 8-bit subregsize unsupported");
+    const auto ConvertedSize = SubRegSize {FEXCore::ToUnderlying(size) - 1};
 
     ASIMDAcrossLanes<T>(1, ConvertedSize, 0b00011, rd, rn);
   }
