@@ -646,22 +646,22 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) const {
               (1 << 13) |                              // Deprecates FPU CS and DS
               (0 << 14) |                              // Intel MPX
               (0 << 15) |                              // Intel Resource Directory Technology Allocation
-              (0 << 16) |                              // Reserved
-              (0 << 17) |                              // Reserved
+              (0 << 16) |                              // AVX512-F
+              (0 << 17) |                              // AVX512-DQ
               (CTX->HostFeatures.SupportsRAND << 18) | // RDSEED
               (1 << 19) |                              // ADCX and ADOX instructions
               (0 << 20) |                              // SMAP Supervisor mode access prevention and CLAC/STAC instructions
-              (0 << 21) |                              // Reserved
-              (0 << 22) |                              // Reserved
+              (0 << 21) |                              // AVX512-IFMA
+              (0 << 22) |                              // PCOMMIT (deprecated?)
               (1 << 23) |                              // CLFLUSHOPT instruction
               (1 << 24) |                              // CLWB instruction
               (0 << 25) |                              // Intel processor trace
-              (0 << 26) |                              // Reserved
-              (0 << 27) |                              // Reserved
-              (0 << 28) |                              // Reserved
+              (0 << 26) |                              // AVX512-PF
+              (0 << 27) |                              // AVX512-ER
+              (0 << 28) |                              // AVX512-CD
               (Features.SHA << 29) |                   // SHA instructions
-              (0 << 30) |                              // Reserved
-              (0 << 31);                               // Reserved
+              (0 << 30) |                              // AVX512-BW
+              (0 << 31);                               // AVX512-VL
 
     Res.ecx = (1 << 0) |                                // PREFETCHWT1
               (0 << 1) |                                // AVX512VBMI
@@ -669,16 +669,16 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) const {
               (0 << 3) |                                // Protection keys for user mode pages
               (0 << 4) |                                // OS protection keys
               (SupportsWFXT << 5) |                     // waitpkg
-              (0 << 6) |                                // AVX512_VBMI2
+              (0 << 6) |                                // AVX512-VBMI2
               (0 << 7) |                                // CET shadow stack
               (0 << 8) |                                // GFNI
               (CTX->HostFeatures.SupportsAES256 << 9) | // VAES
               (SupportsVPCLMULQDQ << 10) |              // VPCLMULQDQ
-              (0 << 11) |                               // AVX512_VNNI
-              (0 << 12) |                               // AVX512_BITALG
+              (0 << 11) |                               // AVX512-VNNI
+              (0 << 12) |                               // AVX512-BITALG
               (0 << 13) |                               // Intel Total Memory Encryption
-              (0 << 14) |                               // AVX512_VPOPCNTDQ
-              (0 << 15) |                               // Reserved
+              (0 << 14) |                               // AVX512-VPOPCNTDQ
+              (0 << 15) |                               // FZM (TDX)
               (0 << 16) |                               // 5 Level page tables
               (0 << 17) |                               // MPX MAWAU
               (0 << 18) |                               // MPX MAWAU
@@ -686,28 +686,28 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) const {
               (0 << 20) |                               // MPX MAWAU
               (0 << 21) |                               // MPX MAWAU
               (1 << 22) |                               // RDPID Read Processor ID
-              (0 << 23) |                               // Reserved
-              (0 << 24) |                               // Reserved
+              (0 << 23) |                               // AES Key Locker
+              (1 << 24) |                               // bus-lock-detect
               (0 << 25) |                               // CLDEMOTE
-              (0 << 26) |                               // Reserved
+              (0 << 26) |                               // MPRR (TDX)
               (0 << 27) |                               // MOVDIRI
               (0 << 28) |                               // MOVDIR64B
-              (0 << 29) |                               // Reserved
+              (0 << 29) |                               // ENQCMD
               (0 << 30) |                               // SGX Launch configuration
-              (0 << 31);                                // Reserved
+              (0 << 31);                                // PKS
 
-    Res.edx = (0 << 0) |                   // Reserved
-              (0 << 1) |                   // Reserved
-              (0 << 2) |                   // AVX512_4VNNIW
-              (0 << 3) |                   // AVX512_4FMAPS
+    Res.edx = (0 << 0) |                   // SGX-TEM (TDX)
+              (0 << 1) |                   // SGX-KEYS
+              (0 << 2) |                   // AVX512-4VNNIW
+              (0 << 3) |                   // AVX512-4FMAPS
               (1 << 4) |                   // Fast Short Rep Mov
-              (0 << 5) |                   // Reserved
+              (0 << 5) |                   // UINTR
               (0 << 6) |                   // Reserved
               (0 << 7) |                   // Reserved
-              (0 << 8) |                   // AVX512_VP2INTERSECT
+              (0 << 8) |                   // AVX512-VP2INTERSECT
               (0 << 9) |                   // SRBDS_CTRL (Special Register Buffer Data Sampling Mitigations)
               (0 << 10) |                  // VERW clears CPU buffers
-              (0 << 11) |                  // Reserved
+              (0 << 11) |                  // rtm-always-abort
               (0 << 12) |                  // Reserved
               (0 << 13) |                  // TSX Force Abort (TSX will force abort if attempted)
               (0 << 14) |                  // SERIALIZE instruction
@@ -719,7 +719,7 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_07h(uint32_t Leaf) const {
               (0 << 20) |                  // Intel CET
               (0 << 21) |                  // Reserved
               (0 << 22) |                  // AMX-BF16 - Tile computation on bfloat16
-              (0 << 23) |                  // AVX512_FP16 - FP16 AVX512 instructions
+              (0 << 23) |                  // AVX512-FP16 - FP16 AVX512 instructions
               (0 << 24) |                  // AMX-tile - If AMX is implemented
               (0 << 25) |                  // AMX-int8 - AMX on 8-bit integers
               (0 << 26) |                  // IBRS_IBPB - Speculation control
