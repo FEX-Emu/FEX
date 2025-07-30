@@ -46,6 +46,7 @@ $end_info$
 #include "FEXCore/Utils/SignalScopeGuards.h"
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/Utils/SHMStats.h>
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/set.h>

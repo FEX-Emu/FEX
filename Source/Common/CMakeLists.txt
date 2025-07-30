@@ -9,7 +9,7 @@ set(SRCS
   HostFeatures.cpp
   JSONPool.cpp
   StringUtil.cpp
-  Profiler.cpp)
+  SHMStats.cpp)
 
 if (NOT MINGW_BUILD)
   list (APPEND SRCS
