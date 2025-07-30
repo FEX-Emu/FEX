@@ -759,6 +759,11 @@ void OpDispatchBuilder::X87FNSTSW(OpcodeArgs) {
   StoreResult(GPRClass, Op, StatusWord, OpSize::iInvalid);
 }
 
+void OpDispatchBuilder::FNCLEX(OpcodeArgs) {
+  // Clear the exception flag bit
+  SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(_Constant(0));
+}
+
 void OpDispatchBuilder::FNINIT(OpcodeArgs) {
   auto Zero = _Constant(0);
 
