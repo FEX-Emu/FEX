@@ -4300,7 +4300,7 @@
       "ExpectedArm64ASM": []
     },
     "fninit": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 17,
       "Comment": [
         "0xdb 11b 0xe3 /4"
       ],
@@ -4320,6 +4320,7 @@
         "strb wzr, [x28, #1017]",
         "strb wzr, [x28, #1018]",
         "strb wzr, [x28, #1022]",
+        "strb wzr, [x28, #1008]",
         "strb wzr, [x28, #1298]"
       ]
     },
@@ -5861,7 +5862,7 @@
       ]
     },
     "fnsave [rax]": {
-      "ExpectedInstructionCount": 142,
+      "ExpectedInstructionCount": 143,
       "Comment": [
         "0xdd !11b /6"
       ],
@@ -6007,6 +6008,7 @@
         "strb wzr, [x28, #1017]",
         "strb wzr, [x28, #1018]",
         "strb wzr, [x28, #1022]",
+        "strb wzr, [x28, #1008]",
         "strb wzr, [x28, #1298]"
       ]
     },

@@ -1814,7 +1814,7 @@
       ]
     },
     "xrstor [rax]": {
-      "ExpectedInstructionCount": 130,
+      "ExpectedInstructionCount": 131,
       "Comment": "GROUP15 0x0F 0xAE /5",
       "ExpectedArm64ASM": [
         "sub sp, sp, #0x40 (64)",
@@ -1849,7 +1849,7 @@
         "str q4, [x28, #1072]",
         "str q3, [x28, #1056]",
         "str q2, [x28, #1040]",
-        "b #+0x48",
+        "b #+0x4c",
         "mov w20, #0x37f",
         "strh w20, [x28, #1296]",
         "strb wzr, [x28, #1019]",
@@ -1857,6 +1857,7 @@
         "strb wzr, [x28, #1017]",
         "strb wzr, [x28, #1018]",
         "strb wzr, [x28, #1022]",
+        "strb wzr, [x28, #1008]",
         "movi v2.2d, #0x0",
         "strb wzr, [x28, #1298]",
         "str q2, [x28, #1152]",
