@@ -314,6 +314,7 @@ GdbServer::GDBContextDefinition GdbServer::GenerateContextDefinition(const FEX::
   GDB.fstat |= static_cast<uint32_t>(state.flags[FEXCore::X86State::X87FLAG_C1_LOC]) << 9;
   GDB.fstat |= static_cast<uint32_t>(state.flags[FEXCore::X86State::X87FLAG_C2_LOC]) << 10;
   GDB.fstat |= static_cast<uint32_t>(state.flags[FEXCore::X86State::X87FLAG_C3_LOC]) << 14;
+  GDB.fstat |= static_cast<uint32_t>(state.flags[FEXCore::X86State::X87FLAG_IE_LOC]);
 
   __uint128_t XMM_Low[FEXCore::Core::CPUState::NUM_XMMS];
   __uint128_t YMM_High[FEXCore::Core::CPUState::NUM_XMMS];
