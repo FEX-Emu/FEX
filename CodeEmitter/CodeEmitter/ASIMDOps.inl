@@ -2356,7 +2356,6 @@ public:
     }
     LOGMAN_THROW_A_FMT(IsStandardFloatSize(size), "Unsupported fmov size");
 
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
     uint32_t op;
     uint32_t cmode = 0b1111;
     uint32_t o2;
@@ -2377,19 +2376,18 @@ public:
       FEX_UNREACHABLE;
     }
 
-    ASIMDModifiedImm(Op, op, cmode, o2, Imm, rd);
+    ASIMDModifiedImm(op, cmode, o2, Imm, rd);
   }
   // XXX: MVNI - Shifted immediate
   // XXX: BIC
   // void ASIMDModifiedImm(uint32_t Op, uint32_t op, uint32_t cmode, uint32_t o2, uint32_t imm, T rd) {
 
   template<typename T>
-  void movi(ARMEmitter::SubRegSize size, T rd, uint64_t Imm, uint16_t Shift = 0) {
-    LOGMAN_THROW_A_FMT(size == ARMEmitter::SubRegSize::i8Bit || size == ARMEmitter::SubRegSize::i16Bit ||
-                         size == ARMEmitter::SubRegSize::i32Bit || size == ARMEmitter::SubRegSize::i64Bit,
-                       "Unsupported smov size");
+  void movi(SubRegSize size, T rd, uint64_t Imm, uint16_t Shift = 0) {
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit ||
+                        size == SubRegSize::i64Bit,
+                       "Unsupported movi size");
 
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
     uint32_t cmode;
     uint32_t op;
     if (size == SubRegSize::i8Bit) {
@@ -2430,7 +2428,7 @@ public:
       FEX_UNREACHABLE;
     }
 
-    ASIMDModifiedImm(Op, op, cmode, 0, Imm, rd);
+    ASIMDModifiedImm(op, cmode, 0, Imm, rd);
   }
 
   // Advanced SIMD shift by immediate
@@ -4348,10 +4346,10 @@ private:
 
   // Advanced SIMD modified immediate
   template<IsQOrDRegister T>
-  void ASIMDModifiedImm(uint32_t Op, uint32_t op, uint32_t cmode, uint32_t o2, uint32_t imm, T rd) {
-    constexpr uint32_t Q = std::is_same_v<ARMEmitter::QRegister, T> ? 1U << 30 : 0;
+  void ASIMDModifiedImm(uint32_t op, uint32_t cmode, uint32_t o2, uint32_t imm, T rd) {
+    constexpr uint32_t Q = std::is_same_v<QRegister, T> ? 1U << 30 : 0;
 
-    uint32_t Instr = Op;
+    uint32_t Instr = 0b0000'1111'0000'0000'0000'01U << 10;
     Instr |= Q;
     Instr |= op << 29;
     Instr |= ((imm >> 7) & 1) << 18;
