@@ -2435,11 +2435,10 @@ public:
 
   // Advanced SIMD shift by immediate
   template<typename T>
-  void sshr(ARMEmitter::SubRegSize size, T rd, T rn, uint32_t Shift) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  void sshr(SubRegSize size, T rd, T rn, uint32_t Shift) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2448,14 +2447,13 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm<T>(Op, 0, immh, immb, 0b00000, rn, rd);
+    ASIMDShiftByImm(0, immh, immb, 0b00000, rn, rd);
   }
   template<typename T>
-  void ssra(ARMEmitter::SubRegSize size, T rd, T rn, uint32_t Shift) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  void ssra(SubRegSize size, T rd, T rn, uint32_t Shift) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2464,14 +2462,13 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm<T>(Op, 0, immh, immb, 0b00010, rn, rd);
+    ASIMDShiftByImm(0, immh, immb, 0b00010, rn, rd);
   }
   template<typename T>
-  void srshr(ARMEmitter::SubRegSize size, T rd, T rn, uint32_t Shift) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  void srshr(SubRegSize size, T rd, T rn, uint32_t Shift) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2480,14 +2477,13 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm<T>(Op, 0, immh, immb, 0b00100, rn, rd);
+    ASIMDShiftByImm(0, immh, immb, 0b00100, rn, rd);
   }
   template<typename T>
-  void srsra(ARMEmitter::SubRegSize size, T rd, T rn, uint32_t Shift) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  void srsra(SubRegSize size, T rd, T rn, uint32_t Shift) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2496,14 +2492,13 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm<T>(Op, 0, immh, immb, 0b00110, rn, rd);
+    ASIMDShiftByImm(0, immh, immb, 0b00110, rn, rd);
   }
   template<typename T>
-  void shl(ARMEmitter::SubRegSize size, T rd, T rn, uint32_t Shift) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  void shl(SubRegSize size, T rd, T rn, uint32_t Shift) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2512,14 +2507,13 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm<T>(Op, 0, immh, immb, 0b01010, rn, rd);
+    ASIMDShiftByImm(0, immh, immb, 0b01010, rn, rd);
   }
   template<typename T>
-  void sqshl(ARMEmitter::SubRegSize size, T rd, T rn, uint32_t Shift) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  void sqshl(SubRegSize size, T rd, T rn, uint32_t Shift) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2528,12 +2522,11 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm<T>(Op, 0, immh, immb, 0b01110, rn, rd);
+    ASIMDShiftByImm(0, immh, immb, 0b01110, rn, rd);
   }
   ///< size is destination size
-  void shrn(ARMEmitter::SubRegSize size, ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, uint32_t Shift) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
+  void shrn(SubRegSize size, DRegister rd, DRegister rn, uint32_t Shift) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2542,12 +2535,11 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm(Op, 0, immh, immb, 0b10000, rn, rd);
+    ASIMDShiftByImm(0, immh, immb, 0b10000, rn, rd);
   }
   ///< size is destination size
-  void shrn2(ARMEmitter::SubRegSize size, ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, uint32_t Shift) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
+  void shrn2(SubRegSize size, QRegister rd, QRegister rn, uint32_t Shift) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2556,12 +2548,11 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm(Op, 0, immh, immb, 0b10000, rn, rd);
+    ASIMDShiftByImm(0, immh, immb, 0b10000, rn, rd);
   }
   ///< size is destination size
-  void rshrn(ARMEmitter::SubRegSize size, ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, uint32_t Shift) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
+  void rshrn(SubRegSize size, DRegister rd, DRegister rn, uint32_t Shift) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2570,12 +2561,11 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm(Op, 0, immh, immb, 0b10001, rn, rd);
+    ASIMDShiftByImm(0, immh, immb, 0b10001, rn, rd);
   }
   ///< size is destination size
-  void rshrn2(ARMEmitter::SubRegSize size, ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, uint32_t Shift) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
+  void rshrn2(SubRegSize size, QRegister rd, QRegister rn, uint32_t Shift) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2584,12 +2574,11 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm(Op, 0, immh, immb, 0b10001, rn, rd);
+    ASIMDShiftByImm(0, immh, immb, 0b10001, rn, rd);
   }
   ///< size is destination size
-  void sqshrn(ARMEmitter::SubRegSize size, ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, uint32_t Shift) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
+  void sqshrn(SubRegSize size, DRegister rd, DRegister rn, uint32_t Shift) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2598,12 +2587,11 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm(Op, 0, immh, immb, 0b10010, rn, rd);
+    ASIMDShiftByImm(0, immh, immb, 0b10010, rn, rd);
   }
   ///< size is destination size
-  void sqshrn2(ARMEmitter::SubRegSize size, ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, uint32_t Shift) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
+  void sqshrn2(SubRegSize size, QRegister rd, QRegister rn, uint32_t Shift) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2612,12 +2600,11 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm(Op, 0, immh, immb, 0b10010, rn, rd);
+    ASIMDShiftByImm(0, immh, immb, 0b10010, rn, rd);
   }
   ///< size is destination size
-  void sqrshrn(ARMEmitter::SubRegSize size, ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, uint32_t Shift) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
+  void sqrshrn(SubRegSize size, DRegister rd, DRegister rn, uint32_t Shift) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2626,12 +2613,11 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm(Op, 0, immh, immb, 0b10011, rn, rd);
+    ASIMDShiftByImm(0, immh, immb, 0b10011, rn, rd);
   }
   ///< size is destination size
-  void sqrshrn2(ARMEmitter::SubRegSize size, ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, uint32_t Shift) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
+  void sqrshrn2(SubRegSize size, QRegister rd, QRegister rn, uint32_t Shift) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2640,14 +2626,13 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm(Op, 0, immh, immb, 0b10011, rn, rd);
+    ASIMDShiftByImm(0, immh, immb, 0b10011, rn, rd);
   }
   ///< size is destination size
-  void sshll(ARMEmitter::SubRegSize size, ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, uint32_t Shift) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i8Bit, "Invalid size");
-    size = ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
+  void sshll(SubRegSize size, DRegister rd, DRegister rn, uint32_t Shift) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Invalid size");
+    size = SubRegSize(FEXCore::ToUnderlying(size) - 1);
 
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
     LOGMAN_THROW_A_FMT(Shift < SubregSizeInBits, "Shift must not be larger than incoming element size");
 
@@ -2657,15 +2642,14 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm(Op, 0, immh, immb, 0b10100, rn, rd);
+    ASIMDShiftByImm(0, immh, immb, 0b10100, rn, rd);
   }
 
   ///< size is destination size
-  void sshll2(ARMEmitter::SubRegSize size, ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, uint32_t Shift) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i8Bit, "Invalid size");
-    size = ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
+  void sshll2(SubRegSize size, QRegister rd, QRegister rn, uint32_t Shift) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Invalid size");
+    size = SubRegSize(FEXCore::ToUnderlying(size) - 1);
 
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
     LOGMAN_THROW_A_FMT(Shift < SubregSizeInBits, "Shift must not be larger than incoming element size");
 
@@ -2675,25 +2659,24 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm(Op, 0, immh, immb, 0b10100, rn, rd);
+    ASIMDShiftByImm(0, immh, immb, 0b10100, rn, rd);
   }
   ///< size is destination size
-  void sxtl(ARMEmitter::SubRegSize size, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
+  void sxtl(SubRegSize size, VRegister rd, VRegister rn) {
     sshll(size, rd.D(), rn.D(), 0);
   }
   ///< size is destination size
-  void sxtl2(ARMEmitter::SubRegSize size, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
+  void sxtl2(SubRegSize size, VRegister rd, VRegister rn) {
     sshll2(size, rd.Q(), rn.Q(), 0);
   }
 
   template<typename T>
-  void scvtf(ARMEmitter::SubRegSize size, T rd, T rn, uint32_t FractionalBits) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i8Bit, "Invalid size");
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  void scvtf(SubRegSize size, T rd, T rn, uint32_t FractionalBits) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Invalid size");
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
 
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
     LOGMAN_THROW_A_FMT(FractionalBits < SubregSizeInBits, "FractionalBits must not be larger than incoming element size");
 
@@ -2703,17 +2686,16 @@ public:
     const uint32_t immh = InvertedFractionalBits >> 3;
     const uint32_t immb = InvertedFractionalBits & 0b111;
 
-    ASIMDShiftByImm(Op, 0, immh, immb, 0b11100, rn, rd);
+    ASIMDShiftByImm(0, immh, immb, 0b11100, rn, rd);
   }
 
   template<typename T>
-  void fcvtzs(ARMEmitter::SubRegSize size, T rd, T rn, uint32_t FractionalBits) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i8Bit, "Invalid size");
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  void fcvtzs(SubRegSize size, T rd, T rn, uint32_t FractionalBits) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Invalid size");
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
 
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
     LOGMAN_THROW_A_FMT(FractionalBits < SubregSizeInBits, "FractionalBits must not be larger than incoming element size");
 
@@ -2723,15 +2705,14 @@ public:
     const uint32_t immh = InvertedFractionalBits >> 3;
     const uint32_t immb = InvertedFractionalBits & 0b111;
 
-    ASIMDShiftByImm(Op, 0, immh, immb, 0b11111, rn, rd);
+    ASIMDShiftByImm(0, immh, immb, 0b11111, rn, rd);
   }
 
   template<typename T>
-  void ushr(ARMEmitter::SubRegSize size, T rd, T rn, uint32_t Shift) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  void ushr(SubRegSize size, T rd, T rn, uint32_t Shift) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2740,14 +2721,13 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm<T>(Op, 1, immh, immb, 0b00000, rn, rd);
+    ASIMDShiftByImm(1, immh, immb, 0b00000, rn, rd);
   }
   template<typename T>
-  void usra(ARMEmitter::SubRegSize size, T rd, T rn, uint32_t Shift) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  void usra(SubRegSize size, T rd, T rn, uint32_t Shift) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2756,14 +2736,13 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm<T>(Op, 1, immh, immb, 0b00010, rn, rd);
+    ASIMDShiftByImm(1, immh, immb, 0b00010, rn, rd);
   }
   template<typename T>
-  void urshr(ARMEmitter::SubRegSize size, T rd, T rn, uint32_t Shift) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  void urshr(SubRegSize size, T rd, T rn, uint32_t Shift) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2772,14 +2751,13 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm<T>(Op, 1, immh, immb, 0b00100, rn, rd);
+    ASIMDShiftByImm(1, immh, immb, 0b00100, rn, rd);
   }
   template<typename T>
-  void ursra(ARMEmitter::SubRegSize size, T rd, T rn, uint32_t Shift) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  void ursra(SubRegSize size, T rd, T rn, uint32_t Shift) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2788,14 +2766,13 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm<T>(Op, 1, immh, immb, 0b00110, rn, rd);
+    ASIMDShiftByImm(1, immh, immb, 0b00110, rn, rd);
   }
   template<typename T>
-  void sri(ARMEmitter::SubRegSize size, T rd, T rn, uint32_t Shift) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  void sri(SubRegSize size, T rd, T rn, uint32_t Shift) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2804,14 +2781,13 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm<T>(Op, 1, immh, immb, 0b01000, rn, rd);
+    ASIMDShiftByImm(1, immh, immb, 0b01000, rn, rd);
   }
   template<typename T>
-  void sli(ARMEmitter::SubRegSize size, T rd, T rn, uint32_t Shift) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  void sli(SubRegSize size, T rd, T rn, uint32_t Shift) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2820,14 +2796,13 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm<T>(Op, 1, immh, immb, 0b01010, rn, rd);
+    ASIMDShiftByImm(1, immh, immb, 0b01010, rn, rd);
   }
   template<typename T>
-  void sqshlu(ARMEmitter::SubRegSize size, T rd, T rn, uint32_t Shift) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  void sqshlu(SubRegSize size, T rd, T rn, uint32_t Shift) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2836,15 +2811,14 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm<T>(Op, 1, immh, immb, 0b01100, rn, rd);
+    ASIMDShiftByImm(1, immh, immb, 0b01100, rn, rd);
   }
   ///< size is destination size
   template<typename T>
-  void uqshl(ARMEmitter::SubRegSize size, T rd, T rn, uint32_t Shift) {
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  void uqshl(SubRegSize size, T rd, T rn, uint32_t Shift) {
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2853,12 +2827,11 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm<T>(Op, 1, immh, immb, 0b01110, rn, rd);
+    ASIMDShiftByImm(1, immh, immb, 0b01110, rn, rd);
   }
   ///< size is destination size
-  void sqshrun(ARMEmitter::SubRegSize size, ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, uint32_t Shift) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
+  void sqshrun(SubRegSize size, DRegister rd, DRegister rn, uint32_t Shift) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2867,12 +2840,11 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm(Op, 1, immh, immb, 0b10000, rn, rd);
+    ASIMDShiftByImm(1, immh, immb, 0b10000, rn, rd);
   }
   ///< size is destination size
-  void sqshrun2(ARMEmitter::SubRegSize size, ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, uint32_t Shift) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
+  void sqshrun2(SubRegSize size, QRegister rd, QRegister rn, uint32_t Shift) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2881,12 +2853,11 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm(Op, 1, immh, immb, 0b10000, rn, rd);
+    ASIMDShiftByImm(1, immh, immb, 0b10000, rn, rd);
   }
   ///< size is destination size
-  void sqrshrun(ARMEmitter::SubRegSize size, ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, uint32_t Shift) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
+  void sqrshrun(SubRegSize size, DRegister rd, DRegister rn, uint32_t Shift) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2895,12 +2866,11 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm(Op, 1, immh, immb, 0b10001, rn, rd);
+    ASIMDShiftByImm(1, immh, immb, 0b10001, rn, rd);
   }
   ///< size is destination size
-  void sqrshrun2(ARMEmitter::SubRegSize size, ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, uint32_t Shift) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
+  void sqrshrun2(SubRegSize size, QRegister rd, QRegister rn, uint32_t Shift) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2909,11 +2879,10 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm(Op, 1, immh, immb, 0b10001, rn, rd);
+    ASIMDShiftByImm(1, immh, immb, 0b10001, rn, rd);
   }
   ///< size is destination size
-  void uqshrn(ARMEmitter::SubRegSize size, ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, uint32_t Shift) {
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
+  void uqshrn(SubRegSize size, DRegister rd, DRegister rn, uint32_t Shift) {
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2922,11 +2891,10 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm(Op, 1, immh, immb, 0b10010, rn, rd);
+    ASIMDShiftByImm(1, immh, immb, 0b10010, rn, rd);
   }
   ///< size is destination size
-  void uqshrn2(ARMEmitter::SubRegSize size, ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, uint32_t Shift) {
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
+  void uqshrn2(SubRegSize size, QRegister rd, QRegister rn, uint32_t Shift) {
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2935,11 +2903,10 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm(Op, 1, immh, immb, 0b10010, rn, rd);
+    ASIMDShiftByImm(1, immh, immb, 0b10010, rn, rd);
   }
   ///< size is destination size
-  void uqrshrn(ARMEmitter::SubRegSize size, ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, uint32_t Shift) {
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
+  void uqrshrn(SubRegSize size, DRegister rd, DRegister rn, uint32_t Shift) {
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2948,11 +2915,10 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm(Op, 1, immh, immb, 0b10011, rn, rd);
+    ASIMDShiftByImm(1, immh, immb, 0b10011, rn, rd);
   }
   ///< size is destination size
-  void uqrshrn2(ARMEmitter::SubRegSize size, ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, uint32_t Shift) {
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
+  void uqrshrn2(SubRegSize size, QRegister rd, QRegister rn, uint32_t Shift) {
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2961,12 +2927,11 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm(Op, 1, immh, immb, 0b10011, rn, rd);
+    ASIMDShiftByImm(1, immh, immb, 0b10011, rn, rd);
   }
   ///< size is destination size
-  void ushll(ARMEmitter::SubRegSize size, ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, uint32_t Shift) {
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
-    size = ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
+  void ushll(SubRegSize size, DRegister rd, DRegister rn, uint32_t Shift) {
+    size = SubRegSize(FEXCore::ToUnderlying(size) - 1);
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2975,12 +2940,11 @@ public:
     const uint32_t immh = InvertedShift >> 3;
     const uint32_t immb = InvertedShift & 0b111;
 
-    ASIMDShiftByImm(Op, 1, immh, immb, 0b10100, rn, rd);
+    ASIMDShiftByImm(1, immh, immb, 0b10100, rn, rd);
   }
   ///< size is destination size
-  void ushll2(ARMEmitter::SubRegSize size, ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, uint32_t Shift) {
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
-    size = ARMEmitter::SubRegSize(FEXCore::ToUnderlying(size) - 1);
+  void ushll2(SubRegSize size, QRegister rd, QRegister rn, uint32_t Shift) {
+    size = SubRegSize(FEXCore::ToUnderlying(size) - 1);
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
 
     // Shift encoded a bit weirdly.
@@ -2990,22 +2954,21 @@ public:
     const uint32_t immb = InvertedShift & 0b111;
 
 
-    ASIMDShiftByImm(Op, 1, immh, immb, 0b10100, rn, rd);
+    ASIMDShiftByImm(1, immh, immb, 0b10100, rn, rd);
   }
-  void uxtl(ARMEmitter::SubRegSize size, ARMEmitter::DRegister rd, ARMEmitter::DRegister rn) {
+  void uxtl(SubRegSize size, DRegister rd, DRegister rn) {
     ushll(size, rd, rn, 0);
   }
-  void uxtl2(ARMEmitter::SubRegSize size, ARMEmitter::QRegister rd, ARMEmitter::QRegister rn) {
+  void uxtl2(SubRegSize size, QRegister rd, QRegister rn) {
     ushll2(size, rd, rn, 0);
   }
   template<typename T>
-  void ucvtf(ARMEmitter::SubRegSize size, T rd, T rn, uint32_t FractionalBits) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i8Bit, "Invalid size");
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  void ucvtf(SubRegSize size, T rd, T rn, uint32_t FractionalBits) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Invalid size");
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
 
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
     LOGMAN_THROW_A_FMT(FractionalBits < SubregSizeInBits, "FractionalBits must not be larger than incoming element size");
 
@@ -3015,17 +2978,16 @@ public:
     const uint32_t immh = InvertedFractionalBits >> 3;
     const uint32_t immb = InvertedFractionalBits & 0b111;
 
-    ASIMDShiftByImm(Op, 1, immh, immb, 0b11100, rn, rd);
+    ASIMDShiftByImm(1, immh, immb, 0b11100, rn, rd);
   }
 
   template<typename T>
-  void fcvtzu(ARMEmitter::SubRegSize size, T rd, T rn, uint32_t FractionalBits) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i8Bit, "Invalid size");
-    if constexpr (std::is_same_v<ARMEmitter::DRegister, T>) {
-      LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
+  void fcvtzu(SubRegSize size, T rd, T rn, uint32_t FractionalBits) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i8Bit, "Invalid size");
+    if constexpr (std::is_same_v<DRegister, T>) {
+      LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid element size with 64-bit {}", __func__);
     }
 
-    constexpr uint32_t Op = 0b0000'1111'0000'0000'0000'01 << 10;
     const size_t SubregSizeInBits = SubRegSizeInBits(size);
     LOGMAN_THROW_A_FMT(FractionalBits < SubregSizeInBits, "FractionalBits must not be larger than incoming element size");
 
@@ -3035,7 +2997,7 @@ public:
     const uint32_t immh = InvertedFractionalBits >> 3;
     const uint32_t immb = InvertedFractionalBits & 0b111;
 
-    ASIMDShiftByImm(Op, 1, immh, immb, 0b11111, rn, rd);
+    ASIMDShiftByImm(1, immh, immb, 0b11111, rn, rd);
   }
 
   // Advanced SIMD vector x indexed element
@@ -4409,11 +4371,11 @@ private:
 
   // Advanced SIMD shift by immediate
   template<IsQOrDRegister T>
-  void ASIMDShiftByImm(uint32_t Op, uint32_t U, uint32_t immh, uint32_t immb, uint32_t opcode, T rn, T rd) {
-    constexpr uint32_t Q = std::is_same_v<ARMEmitter::QRegister, T> ? 1U << 30 : 0;
+  void ASIMDShiftByImm(uint32_t U, uint32_t immh, uint32_t immb, uint32_t opcode, T rn, T rd) {
+    constexpr uint32_t Q = std::is_same_v<QRegister, T> ? 1U << 30 : 0;
     LOGMAN_THROW_A_FMT(immh != 0, "ImmH needs to not be zero");
 
-    uint32_t Instr = Op;
+    uint32_t Instr = 0b0000'1111'0000'0000'0000'01U << 10;
 
     Instr |= Q;
     Instr |= U << 29;
