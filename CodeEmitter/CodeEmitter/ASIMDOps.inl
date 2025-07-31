@@ -85,84 +85,68 @@ public:
     Crypto2RegSHA(Op, 0b00010, rd, rn);
   }
   // Advanced SIMD table lookup
-  void tbl(ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 1, 0b00, 0b00, 0b0, rd.V(), rn.V(), rm.V());
+  void tbl(QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDTable(1, 0b00, 0b00, 0b0, rd.V(), rn.V(), rm.V());
   }
-  void tbl(ARMEmitter::DRegister rd, ARMEmitter::QRegister rn, ARMEmitter::DRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 0, 0b00, 0b00, 0b0, rd.V(), rn.V(), rm.V());
+  void tbl(DRegister rd, QRegister rn, DRegister rm) {
+    ASIMDTable(0, 0b00, 0b00, 0b0, rd.V(), rn.V(), rm.V());
   }
-  void tbx(ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 1, 0b00, 0b00, 0b1, rd.V(), rn.V(), rm.V());
+  void tbx(QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDTable(1, 0b00, 0b00, 0b1, rd.V(), rn.V(), rm.V());
   }
-  void tbx(ARMEmitter::DRegister rd, ARMEmitter::QRegister rn, ARMEmitter::DRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 0, 0b00, 0b00, 0b1, rd.V(), rn.V(), rm.V());
+  void tbx(DRegister rd, QRegister rn, DRegister rm) {
+    ASIMDTable(0, 0b00, 0b00, 0b1, rd.V(), rn.V(), rm.V());
   }
 
   void tbl(QRegister rd, QRegister rn, QRegister rn2, QRegister rm) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2), "rn and rn2 must be sequential");
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 1, 0b00, 0b01, 0b0, rd.V(), rn.V(), rm.V());
+    ASIMDTable(1, 0b00, 0b01, 0b0, rd.V(), rn.V(), rm.V());
   }
   void tbl(DRegister rd, QRegister rn, QRegister rn2, DRegister rm) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2), "rn and rn2 must be sequential");
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 0, 0b00, 0b01, 0b0, rd.V(), rn.V(), rm.V());
+    ASIMDTable(0, 0b00, 0b01, 0b0, rd.V(), rn.V(), rm.V());
   }
   void tbx(QRegister rd, QRegister rn, QRegister rn2, QRegister rm) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2), "rn and rn2 must be sequential");
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 1, 0b00, 0b01, 0b1, rd.V(), rn.V(), rm.V());
+    ASIMDTable(1, 0b00, 0b01, 0b1, rd.V(), rn.V(), rm.V());
   }
   void tbx(DRegister rd, QRegister rn, QRegister rn2, DRegister rm) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2), "rn and rn2 must be sequential");
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 0, 0b00, 0b01, 0b1, rd.V(), rn.V(), rm.V());
+    ASIMDTable(0, 0b00, 0b01, 0b1, rd.V(), rn.V(), rm.V());
   }
 
   void tbl(QRegister rd, QRegister rn, QRegister rn2, QRegister rn3, QRegister rm) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2, rn3), "rn, rn2, and rn3 must be sequential");
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 1, 0b00, 0b10, 0b0, rd.V(), rn.V(), rm.V());
+    ASIMDTable(1, 0b00, 0b10, 0b0, rd.V(), rn.V(), rm.V());
   }
   void tbl(DRegister rd, QRegister rn, QRegister rn2, QRegister rn3, DRegister rm) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2, rn3), "rn, rn2, and rn3 must be sequential");
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 0, 0b00, 0b10, 0b0, rd.V(), rn.V(), rm.V());
+    ASIMDTable(0, 0b00, 0b10, 0b0, rd.V(), rn.V(), rm.V());
   }
   void tbx(QRegister rd, QRegister rn, QRegister rn2, QRegister rn3, QRegister rm) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2, rn3), "rn, rn2, and rn3 must be sequential");
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 1, 0b00, 0b10, 0b1, rd.V(), rn.V(), rm.V());
+    ASIMDTable(1, 0b00, 0b10, 0b1, rd.V(), rn.V(), rm.V());
   }
   void tbx(DRegister rd, QRegister rn, QRegister rn2, QRegister rn3, DRegister rm) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2, rn3), "rn, rn2, and rn3 must be sequential");
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 0, 0b00, 0b10, 0b1, rd.V(), rn.V(), rm.V());
+    ASIMDTable(0, 0b00, 0b10, 0b1, rd.V(), rn.V(), rm.V());
   }
 
   void tbl(QRegister rd, QRegister rn, QRegister rn2, QRegister rn3, QRegister rn4, QRegister rm) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2, rn3, rn4), "rn, rn2, rn3, and rn4 must be sequential");
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 1, 0b00, 0b11, 0b0, rd.V(), rn.V(), rm.V());
+    ASIMDTable(1, 0b00, 0b11, 0b0, rd.V(), rn.V(), rm.V());
   }
   void tbl(DRegister rd, QRegister rn, QRegister rn2, QRegister rn3, QRegister rn4, DRegister rm) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2, rn3, rn4), "rn, rn2, rn3, and rn4 must be sequential");
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 0, 0b00, 0b11, 0b0, rd.V(), rn.V(), rm.V());
+    ASIMDTable(0, 0b00, 0b11, 0b0, rd.V(), rn.V(), rm.V());
   }
   void tbx(QRegister rd, QRegister rn, QRegister rn2, QRegister rn3, QRegister rn4, QRegister rm) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2, rn3, rn4), "rn, rn2, rn3, and rn4 must be sequential");
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 1, 0b00, 0b11, 0b1, rd.V(), rn.V(), rm.V());
+    ASIMDTable(1, 0b00, 0b11, 0b1, rd.V(), rn.V(), rm.V());
   }
   void tbx(DRegister rd, QRegister rn, QRegister rn2, QRegister rn3, QRegister rn4, DRegister rm) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2, rn3, rn4), "rn, rn2, rn3, and rn4 must be sequential");
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 0, 0b00, 0b11, 0b1, rd.V(), rn.V(), rm.V());
+    ASIMDTable(0, 0b00, 0b11, 0b1, rd.V(), rn.V(), rm.V());
   }
 
   // Advanced SIMD permute
@@ -4240,10 +4224,8 @@ private:
   }
 
   // Advanced SIMD table lookup
-  void ASIMDTable(uint32_t Op, uint32_t Q, uint32_t op2, uint32_t len, uint32_t op, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn,
-                  ARMEmitter::VRegister rm) {
-    uint32_t Instr = Op;
-
+  void ASIMDTable(uint32_t Q, uint32_t op2, uint32_t len, uint32_t op, VRegister rd, VRegister rn, VRegister rm) {
+    uint32_t Instr = 0b0000'1110'000U << 21;
     Instr |= Q << 30;
     Instr |= op2 << 22;
     Instr |= Encode_rm(rm);
