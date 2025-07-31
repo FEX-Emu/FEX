@@ -24,281 +24,225 @@ struct EmitterOps : Emitter {
 public:
   // Data Processing -- Scalar Floating-Point and Advanced SIMD
   // Cryptographic AES
-  void aese(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    constexpr uint32_t Op = 0b0100'1110'0010'1000'0000'10 << 10;
-    CryptoAES(Op, 0b00100, rd, rn);
+  void aese(VRegister rd, VRegister rn) {
+    CryptoAES(0b00100, rd, rn);
   }
-  void aesd(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    constexpr uint32_t Op = 0b0100'1110'0010'1000'0000'10 << 10;
-    CryptoAES(Op, 0b00101, rd, rn);
+  void aesd(VRegister rd, VRegister rn) {
+    CryptoAES(0b00101, rd, rn);
   }
-  void aesmc(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    constexpr uint32_t Op = 0b0100'1110'0010'1000'0000'10 << 10;
-    CryptoAES(Op, 0b00110, rd, rn);
+  void aesmc(VRegister rd, VRegister rn) {
+    CryptoAES(0b00110, rd, rn);
   }
-  void aesimc(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    constexpr uint32_t Op = 0b0100'1110'0010'1000'0000'10 << 10;
-    CryptoAES(Op, 0b00111, rd, rn);
+  void aesimc(VRegister rd, VRegister rn) {
+    CryptoAES(0b00111, rd, rn);
   }
 
   // Cryptographic three-register SHA
-  void sha1c(ARMEmitter::VRegister rd, ARMEmitter::SRegister rn, ARMEmitter::VRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0000'0000'0000'00 << 10;
-    Crypto3RegSHA(Op, 0b000, rd, rn.V(), rm);
+  void sha1c(VRegister rd, SRegister rn, VRegister rm) {
+    Crypto3RegSHA(0b000, rd, rn.V(), rm);
   }
-  void sha1p(ARMEmitter::VRegister rd, ARMEmitter::SRegister rn, ARMEmitter::VRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0000'0000'0000'00 << 10;
-    Crypto3RegSHA(Op, 0b001, rd, rn.V(), rm);
+  void sha1p(VRegister rd, SRegister rn, VRegister rm) {
+    Crypto3RegSHA(0b001, rd, rn.V(), rm);
   }
-  void sha1m(ARMEmitter::VRegister rd, ARMEmitter::SRegister rn, ARMEmitter::VRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0000'0000'0000'00 << 10;
-    Crypto3RegSHA(Op, 0b010, rd, rn.V(), rm);
+  void sha1m(VRegister rd, SRegister rn, VRegister rm) {
+    Crypto3RegSHA(0b010, rd, rn.V(), rm);
   }
-  void sha1su0(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn, ARMEmitter::VRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0000'0000'0000'00 << 10;
-    Crypto3RegSHA(Op, 0b011, rd, rn, rm);
+  void sha1su0(VRegister rd, VRegister rn, VRegister rm) {
+    Crypto3RegSHA(0b011, rd, rn, rm);
   }
-  void sha256h(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn, ARMEmitter::VRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0000'0000'0000'00 << 10;
-    Crypto3RegSHA(Op, 0b100, rd, rn, rm);
+  void sha256h(VRegister rd, VRegister rn, VRegister rm) {
+    Crypto3RegSHA(0b100, rd, rn, rm);
   }
-  void sha256h2(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn, ARMEmitter::VRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0000'0000'0000'00 << 10;
-    Crypto3RegSHA(Op, 0b101, rd, rn, rm);
+  void sha256h2(VRegister rd, VRegister rn, VRegister rm) {
+    Crypto3RegSHA(0b101, rd, rn, rm);
   }
-  void sha256su1(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn, ARMEmitter::VRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0000'0000'0000'00 << 10;
-    Crypto3RegSHA(Op, 0b110, rd, rn, rm);
+  void sha256su1(VRegister rd, VRegister rn, VRegister rm) {
+    Crypto3RegSHA(0b110, rd, rn, rm);
   }
 
   // Cryptographic two-register SHA
-  void sha1h(ARMEmitter::SRegister rd, ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0101'1110'0010'1000'0000'10 << 10;
-    Crypto2RegSHA(Op, 0b00000, rd.V(), rn.V());
+  void sha1h(SRegister rd, SRegister rn) {
+    Crypto2RegSHA(0b00000, rd.V(), rn.V());
   }
-  void sha1su1(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    constexpr uint32_t Op = 0b0101'1110'0010'1000'0000'10 << 10;
-    Crypto2RegSHA(Op, 0b00001, rd, rn);
+  void sha1su1(VRegister rd, VRegister rn) {
+    Crypto2RegSHA(0b00001, rd, rn);
   }
-  void sha256su0(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    constexpr uint32_t Op = 0b0101'1110'0010'1000'0000'10 << 10;
-    Crypto2RegSHA(Op, 0b00010, rd, rn);
+  void sha256su0(VRegister rd, VRegister rn) {
+    Crypto2RegSHA(0b00010, rd, rn);
   }
   // Advanced SIMD table lookup
-  void tbl(ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 1, 0b00, 0b00, 0b0, rd.V(), rn.V(), rm.V());
+  void tbl(QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDTable(1, 0b00, 0b00, 0b0, rd.V(), rn.V(), rm.V());
   }
-  void tbl(ARMEmitter::DRegister rd, ARMEmitter::QRegister rn, ARMEmitter::DRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 0, 0b00, 0b00, 0b0, rd.V(), rn.V(), rm.V());
+  void tbl(DRegister rd, QRegister rn, DRegister rm) {
+    ASIMDTable(0, 0b00, 0b00, 0b0, rd.V(), rn.V(), rm.V());
   }
-  void tbx(ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 1, 0b00, 0b00, 0b1, rd.V(), rn.V(), rm.V());
+  void tbx(QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDTable(1, 0b00, 0b00, 0b1, rd.V(), rn.V(), rm.V());
   }
-  void tbx(ARMEmitter::DRegister rd, ARMEmitter::QRegister rn, ARMEmitter::DRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 0, 0b00, 0b00, 0b1, rd.V(), rn.V(), rm.V());
+  void tbx(DRegister rd, QRegister rn, DRegister rm) {
+    ASIMDTable(0, 0b00, 0b00, 0b1, rd.V(), rn.V(), rm.V());
   }
 
   void tbl(QRegister rd, QRegister rn, QRegister rn2, QRegister rm) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2), "rn and rn2 must be sequential");
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 1, 0b00, 0b01, 0b0, rd.V(), rn.V(), rm.V());
+    ASIMDTable(1, 0b00, 0b01, 0b0, rd.V(), rn.V(), rm.V());
   }
   void tbl(DRegister rd, QRegister rn, QRegister rn2, DRegister rm) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2), "rn and rn2 must be sequential");
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 0, 0b00, 0b01, 0b0, rd.V(), rn.V(), rm.V());
+    ASIMDTable(0, 0b00, 0b01, 0b0, rd.V(), rn.V(), rm.V());
   }
   void tbx(QRegister rd, QRegister rn, QRegister rn2, QRegister rm) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2), "rn and rn2 must be sequential");
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 1, 0b00, 0b01, 0b1, rd.V(), rn.V(), rm.V());
+    ASIMDTable(1, 0b00, 0b01, 0b1, rd.V(), rn.V(), rm.V());
   }
   void tbx(DRegister rd, QRegister rn, QRegister rn2, DRegister rm) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2), "rn and rn2 must be sequential");
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 0, 0b00, 0b01, 0b1, rd.V(), rn.V(), rm.V());
+    ASIMDTable(0, 0b00, 0b01, 0b1, rd.V(), rn.V(), rm.V());
   }
 
   void tbl(QRegister rd, QRegister rn, QRegister rn2, QRegister rn3, QRegister rm) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2, rn3), "rn, rn2, and rn3 must be sequential");
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 1, 0b00, 0b10, 0b0, rd.V(), rn.V(), rm.V());
+    ASIMDTable(1, 0b00, 0b10, 0b0, rd.V(), rn.V(), rm.V());
   }
   void tbl(DRegister rd, QRegister rn, QRegister rn2, QRegister rn3, DRegister rm) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2, rn3), "rn, rn2, and rn3 must be sequential");
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 0, 0b00, 0b10, 0b0, rd.V(), rn.V(), rm.V());
+    ASIMDTable(0, 0b00, 0b10, 0b0, rd.V(), rn.V(), rm.V());
   }
   void tbx(QRegister rd, QRegister rn, QRegister rn2, QRegister rn3, QRegister rm) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2, rn3), "rn, rn2, and rn3 must be sequential");
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 1, 0b00, 0b10, 0b1, rd.V(), rn.V(), rm.V());
+    ASIMDTable(1, 0b00, 0b10, 0b1, rd.V(), rn.V(), rm.V());
   }
   void tbx(DRegister rd, QRegister rn, QRegister rn2, QRegister rn3, DRegister rm) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2, rn3), "rn, rn2, and rn3 must be sequential");
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 0, 0b00, 0b10, 0b1, rd.V(), rn.V(), rm.V());
+    ASIMDTable(0, 0b00, 0b10, 0b1, rd.V(), rn.V(), rm.V());
   }
 
   void tbl(QRegister rd, QRegister rn, QRegister rn2, QRegister rn3, QRegister rn4, QRegister rm) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2, rn3, rn4), "rn, rn2, rn3, and rn4 must be sequential");
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 1, 0b00, 0b11, 0b0, rd.V(), rn.V(), rm.V());
+    ASIMDTable(1, 0b00, 0b11, 0b0, rd.V(), rn.V(), rm.V());
   }
   void tbl(DRegister rd, QRegister rn, QRegister rn2, QRegister rn3, QRegister rn4, DRegister rm) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2, rn3, rn4), "rn, rn2, rn3, and rn4 must be sequential");
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 0, 0b00, 0b11, 0b0, rd.V(), rn.V(), rm.V());
+    ASIMDTable(0, 0b00, 0b11, 0b0, rd.V(), rn.V(), rm.V());
   }
   void tbx(QRegister rd, QRegister rn, QRegister rn2, QRegister rn3, QRegister rn4, QRegister rm) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2, rn3, rn4), "rn, rn2, rn3, and rn4 must be sequential");
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 1, 0b00, 0b11, 0b1, rd.V(), rn.V(), rm.V());
+    ASIMDTable(1, 0b00, 0b11, 0b1, rd.V(), rn.V(), rm.V());
   }
   void tbx(DRegister rd, QRegister rn, QRegister rn2, QRegister rn3, QRegister rn4, DRegister rm) {
     LOGMAN_THROW_A_FMT(AreVectorsSequential(rn, rn2, rn3, rn4), "rn, rn2, rn3, and rn4 must be sequential");
-    constexpr uint32_t Op = 0b0000'1110'000 << 21;
-    ASIMDTable(Op, 0, 0b00, 0b11, 0b1, rd.V(), rn.V(), rm.V());
+    ASIMDTable(0, 0b00, 0b11, 0b1, rd.V(), rn.V(), rm.V());
   }
 
   // Advanced SIMD permute
-  template<ARMEmitter::SubRegSize size>
-  void uzp1(ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 1, size, 0b001, rd.V(), rn.V(), rm.V());
+  template<SubRegSize size>
+  void uzp1(QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDPermute(1, size, 0b001, rd.V(), rn.V(), rm.V());
   }
-  template<ARMEmitter::SubRegSize size>
-  requires (size != ARMEmitter::SubRegSize::i64Bit)
-  void uzp1(ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, ARMEmitter::DRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 0, size, 0b001, rd.V(), rn.V(), rm.V());
+  template<SubRegSize size>
+  requires (size != SubRegSize::i64Bit)
+  void uzp1(DRegister rd, DRegister rn, DRegister rm) {
+    ASIMDPermute(0, size, 0b001, rd.V(), rn.V(), rm.V());
   }
-  template<ARMEmitter::SubRegSize size>
-  void trn1(ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 1, size, 0b010, rd.V(), rn.V(), rm.V());
+  template<SubRegSize size>
+  void trn1(QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDPermute(1, size, 0b010, rd.V(), rn.V(), rm.V());
   }
-  template<ARMEmitter::SubRegSize size>
-  requires (size != ARMEmitter::SubRegSize::i64Bit)
-  void trn1(ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, ARMEmitter::DRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 0, size, 0b010, rd.V(), rn.V(), rm.V());
+  template<SubRegSize size>
+  requires (size != SubRegSize::i64Bit)
+  void trn1(DRegister rd, DRegister rn, DRegister rm) {
+    ASIMDPermute(0, size, 0b010, rd.V(), rn.V(), rm.V());
   }
-  template<ARMEmitter::SubRegSize size>
-  void zip1(ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 1, size, 0b011, rd.V(), rn.V(), rm.V());
+  template<SubRegSize size>
+  void zip1(QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDPermute(1, size, 0b011, rd.V(), rn.V(), rm.V());
   }
-  template<ARMEmitter::SubRegSize size>
-  requires (size != ARMEmitter::SubRegSize::i64Bit)
-  void zip1(ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, ARMEmitter::DRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 0, size, 0b011, rd.V(), rn.V(), rm.V());
+  template<SubRegSize size>
+  requires (size != SubRegSize::i64Bit)
+  void zip1(DRegister rd, DRegister rn, DRegister rm) {
+    ASIMDPermute(0, size, 0b011, rd.V(), rn.V(), rm.V());
   }
-  template<ARMEmitter::SubRegSize size>
-  void uzp2(ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 1, size, 0b101, rd.V(), rn.V(), rm.V());
+  template<SubRegSize size>
+  void uzp2(QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDPermute(1, size, 0b101, rd.V(), rn.V(), rm.V());
   }
-  template<ARMEmitter::SubRegSize size>
-  requires (size != ARMEmitter::SubRegSize::i64Bit)
-  void uzp2(ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, ARMEmitter::DRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 0, size, 0b101, rd.V(), rn.V(), rm.V());
+  template<SubRegSize size>
+  requires (size != SubRegSize::i64Bit)
+  void uzp2(DRegister rd, DRegister rn, DRegister rm) {
+    ASIMDPermute(0, size, 0b101, rd.V(), rn.V(), rm.V());
   }
-  template<ARMEmitter::SubRegSize size>
-  void trn2(ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 1, size, 0b110, rd.V(), rn.V(), rm.V());
+  template<SubRegSize size>
+  void trn2(QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDPermute(1, size, 0b110, rd.V(), rn.V(), rm.V());
   }
-  template<ARMEmitter::SubRegSize size>
-  requires (size != ARMEmitter::SubRegSize::i64Bit)
-  void trn2(ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, ARMEmitter::DRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 0, size, 0b110, rd.V(), rn.V(), rm.V());
+  template<SubRegSize size>
+  requires (size != SubRegSize::i64Bit)
+  void trn2(DRegister rd, DRegister rn, DRegister rm) {
+    ASIMDPermute(0, size, 0b110, rd.V(), rn.V(), rm.V());
   }
-  template<ARMEmitter::SubRegSize size>
-  void zip2(ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 1, size, 0b111, rd.V(), rn.V(), rm.V());
+  template<SubRegSize size>
+  void zip2(QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDPermute(1, size, 0b111, rd.V(), rn.V(), rm.V());
   }
-  template<ARMEmitter::SubRegSize size>
-  requires (size != ARMEmitter::SubRegSize::i64Bit)
-  void zip2(ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, ARMEmitter::DRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 0, size, 0b111, rd.V(), rn.V(), rm.V());
+  template<SubRegSize size>
+  requires (size != SubRegSize::i64Bit)
+  void zip2(DRegister rd, DRegister rn, DRegister rm) {
+    ASIMDPermute(0, size, 0b111, rd.V(), rn.V(), rm.V());
   }
 
 
-  void uzp1(ARMEmitter::SubRegSize size, ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 1, size, 0b001, rd.V(), rn.V(), rm.V());
+  void uzp1(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDPermute(1, size, 0b001, rd.V(), rn.V(), rm.V());
   }
-  void uzp1(ARMEmitter::SubRegSize size, ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, ARMEmitter::DRegister rm) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid 64-bit size on 64-bit permute");
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 0, size, 0b001, rd.V(), rn.V(), rm.V());
+  void uzp1(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid 64-bit size on 64-bit permute");
+    ASIMDPermute(0, size, 0b001, rd.V(), rn.V(), rm.V());
   }
-  void trn1(ARMEmitter::SubRegSize size, ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 1, size, 0b010, rd.V(), rn.V(), rm.V());
+  void trn1(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDPermute(1, size, 0b010, rd.V(), rn.V(), rm.V());
   }
-  void trn1(ARMEmitter::SubRegSize size, ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, ARMEmitter::DRegister rm) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid 64-bit size on 64-bit permute");
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 0, size, 0b010, rd.V(), rn.V(), rm.V());
+  void trn1(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid 64-bit size on 64-bit permute");
+    ASIMDPermute(0, size, 0b010, rd.V(), rn.V(), rm.V());
   }
-  void zip1(ARMEmitter::SubRegSize size, ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 1, size, 0b011, rd.V(), rn.V(), rm.V());
+  void zip1(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDPermute(1, size, 0b011, rd.V(), rn.V(), rm.V());
   }
-  void zip1(ARMEmitter::SubRegSize size, ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, ARMEmitter::DRegister rm) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid 64-bit size on 64-bit permute");
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 0, size, 0b011, rd.V(), rn.V(), rm.V());
+  void zip1(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid 64-bit size on 64-bit permute");
+    ASIMDPermute(0, size, 0b011, rd.V(), rn.V(), rm.V());
   }
-  void uzp2(ARMEmitter::SubRegSize size, ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 1, size, 0b101, rd.V(), rn.V(), rm.V());
+  void uzp2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDPermute(1, size, 0b101, rd.V(), rn.V(), rm.V());
   }
-  void uzp2(ARMEmitter::SubRegSize size, ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, ARMEmitter::DRegister rm) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid 64-bit size on 64-bit permute");
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 0, size, 0b101, rd.V(), rn.V(), rm.V());
+  void uzp2(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid 64-bit size on 64-bit permute");
+    ASIMDPermute(0, size, 0b101, rd.V(), rn.V(), rm.V());
   }
-  void trn2(ARMEmitter::SubRegSize size, ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 1, size, 0b110, rd.V(), rn.V(), rm.V());
+  void trn2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDPermute(1, size, 0b110, rd.V(), rn.V(), rm.V());
   }
-  void trn2(ARMEmitter::SubRegSize size, ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, ARMEmitter::DRegister rm) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid 64-bit size on 64-bit permute");
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 0, size, 0b110, rd.V(), rn.V(), rm.V());
+  void trn2(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid 64-bit size on 64-bit permute");
+    ASIMDPermute(0, size, 0b110, rd.V(), rn.V(), rm.V());
   }
-  void zip2(ARMEmitter::SubRegSize size, ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 1, size, 0b111, rd.V(), rn.V(), rm.V());
+  void zip2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDPermute(1, size, 0b111, rd.V(), rn.V(), rm.V());
   }
-  void zip2(ARMEmitter::SubRegSize size, ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, ARMEmitter::DRegister rm) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid 64-bit size on 64-bit permute");
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 0, size, 0b111, rd.V(), rn.V(), rm.V());
+  void zip2(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid 64-bit size on 64-bit permute");
+    ASIMDPermute(0, size, 0b111, rd.V(), rn.V(), rm.V());
   }
 
   // Advanced SIMD extract
-  void ext(ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm, uint32_t Index) {
+  void ext(QRegister rd, QRegister rn, QRegister rm, uint32_t Index) {
     LOGMAN_THROW_A_FMT(Index < 16, "Index can't be more than 15");
-    constexpr uint32_t Op = 0b0010'1110'000 << 21;
-    ASIMDExtract(Op, 1, 0b00, Index, rd.V(), rn.V(), rm.V());
+    ASIMDExtract(1, 0b00, Index, rd.V(), rn.V(), rm.V());
   }
-  void ext(ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, ARMEmitter::DRegister rm, uint32_t Index) {
+  void ext(DRegister rd, DRegister rn, DRegister rm, uint32_t Index) {
     LOGMAN_THROW_A_FMT(Index < 8, "Index can't be more than 7");
-    constexpr uint32_t Op = 0b0010'1110'000 << 21;
-    ASIMDExtract(Op, 0, 0b00, Index, rd.V(), rn.V(), rm.V());
+    ASIMDExtract(0, 0b00, Index, rd.V(), rn.V(), rm.V());
   }
 
   // Advanced SIMD copy
@@ -4209,9 +4153,8 @@ private:
   }
 
   // Cryptographic AES
-  void CryptoAES(uint32_t Op, uint32_t opcode, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    uint32_t Instr = Op;
-
+  void CryptoAES(uint32_t opcode, VRegister rd, VRegister rn) {
+    uint32_t Instr = 0b0100'1110'0010'1000'0000'10U << 10;
     Instr |= opcode << 12;
     Instr |= Encode_rn(rn);
     Instr |= Encode_rd(rd);
@@ -4219,9 +4162,8 @@ private:
   }
 
   // Cryptographic three-register SHA
-  void Crypto3RegSHA(uint32_t Op, uint32_t opcode, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn, ARMEmitter::VRegister rm) {
-    uint32_t Instr = Op;
-
+  void Crypto3RegSHA(uint32_t opcode, VRegister rd, VRegister rn, VRegister rm) {
+    uint32_t Instr = 0b0101'1110'0000'0000'0000'00U << 10;
     Instr |= Encode_rm(rm);
     Instr |= opcode << 12;
     Instr |= Encode_rn(rn);
@@ -4230,9 +4172,8 @@ private:
   }
 
   // Cryptographic two-register SHA
-  void Crypto2RegSHA(uint32_t Op, uint32_t opcode, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    uint32_t Instr = Op;
-
+  void Crypto2RegSHA(uint32_t opcode, VRegister rd, VRegister rn) {
+    uint32_t Instr = 0b0101'1110'0010'1000'0000'10U << 10;
     Instr |= opcode << 12;
     Instr |= Encode_rn(rn);
     Instr |= Encode_rd(rd);
@@ -4240,10 +4181,8 @@ private:
   }
 
   // Advanced SIMD table lookup
-  void ASIMDTable(uint32_t Op, uint32_t Q, uint32_t op2, uint32_t len, uint32_t op, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn,
-                  ARMEmitter::VRegister rm) {
-    uint32_t Instr = Op;
-
+  void ASIMDTable(uint32_t Q, uint32_t op2, uint32_t len, uint32_t op, VRegister rd, VRegister rn, VRegister rm) {
+    uint32_t Instr = 0b0000'1110'000U << 21;
     Instr |= Q << 30;
     Instr |= op2 << 22;
     Instr |= Encode_rm(rm);
@@ -4255,10 +4194,8 @@ private:
   }
 
   // Advanced SIMD permute
-  void ASIMDPermute(uint32_t Op, uint32_t Q, ARMEmitter::SubRegSize size, uint32_t opcode, ARMEmitter::VRegister rd,
-                    ARMEmitter::VRegister rn, ARMEmitter::VRegister rm) {
-    uint32_t Instr = Op;
-
+  void ASIMDPermute(uint32_t Q, SubRegSize size, uint32_t opcode, VRegister rd, VRegister rn, VRegister rm) {
+    uint32_t Instr = 0b0000'1110'0000'0000'0000'10U << 10;
     Instr |= Q << 30;
     Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= Encode_rm(rm);
@@ -4269,10 +4206,8 @@ private:
   }
 
   // Advanced SIMD extract
-  void ASIMDExtract(uint32_t Op, uint32_t Q, uint32_t op2, uint32_t imm4, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn,
-                    ARMEmitter::VRegister rm) {
-    uint32_t Instr = Op;
-
+  void ASIMDExtract(uint32_t Q, uint32_t op2, uint32_t imm4, VRegister rd, VRegister rn, VRegister rm) {
+    uint32_t Instr = 0b0010'1110'000U << 21;
     Instr |= Q << 30;
     Instr |= op2 << 22;
     Instr |= Encode_rm(rm);
