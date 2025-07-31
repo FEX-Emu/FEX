@@ -38,47 +38,37 @@ public:
   }
 
   // Cryptographic three-register SHA
-  void sha1c(ARMEmitter::VRegister rd, ARMEmitter::SRegister rn, ARMEmitter::VRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0000'0000'0000'00 << 10;
-    Crypto3RegSHA(Op, 0b000, rd, rn.V(), rm);
+  void sha1c(VRegister rd, SRegister rn, VRegister rm) {
+    Crypto3RegSHA(0b000, rd, rn.V(), rm);
   }
-  void sha1p(ARMEmitter::VRegister rd, ARMEmitter::SRegister rn, ARMEmitter::VRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0000'0000'0000'00 << 10;
-    Crypto3RegSHA(Op, 0b001, rd, rn.V(), rm);
+  void sha1p(VRegister rd, SRegister rn, VRegister rm) {
+    Crypto3RegSHA(0b001, rd, rn.V(), rm);
   }
-  void sha1m(ARMEmitter::VRegister rd, ARMEmitter::SRegister rn, ARMEmitter::VRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0000'0000'0000'00 << 10;
-    Crypto3RegSHA(Op, 0b010, rd, rn.V(), rm);
+  void sha1m(VRegister rd, SRegister rn, VRegister rm) {
+    Crypto3RegSHA(0b010, rd, rn.V(), rm);
   }
-  void sha1su0(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn, ARMEmitter::VRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0000'0000'0000'00 << 10;
-    Crypto3RegSHA(Op, 0b011, rd, rn, rm);
+  void sha1su0(VRegister rd, VRegister rn, VRegister rm) {
+    Crypto3RegSHA(0b011, rd, rn, rm);
   }
-  void sha256h(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn, ARMEmitter::VRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0000'0000'0000'00 << 10;
-    Crypto3RegSHA(Op, 0b100, rd, rn, rm);
+  void sha256h(VRegister rd, VRegister rn, VRegister rm) {
+    Crypto3RegSHA(0b100, rd, rn, rm);
   }
-  void sha256h2(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn, ARMEmitter::VRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0000'0000'0000'00 << 10;
-    Crypto3RegSHA(Op, 0b101, rd, rn, rm);
+  void sha256h2(VRegister rd, VRegister rn, VRegister rm) {
+    Crypto3RegSHA(0b101, rd, rn, rm);
   }
-  void sha256su1(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn, ARMEmitter::VRegister rm) {
-    constexpr uint32_t Op = 0b0101'1110'0000'0000'0000'00 << 10;
-    Crypto3RegSHA(Op, 0b110, rd, rn, rm);
+  void sha256su1(VRegister rd, VRegister rn, VRegister rm) {
+    Crypto3RegSHA(0b110, rd, rn, rm);
   }
 
   // Cryptographic two-register SHA
-  void sha1h(ARMEmitter::SRegister rd, ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0101'1110'0010'1000'0000'10 << 10;
-    Crypto2RegSHA(Op, 0b00000, rd.V(), rn.V());
+  void sha1h(SRegister rd, SRegister rn) {
+    Crypto2RegSHA(0b00000, rd.V(), rn.V());
   }
-  void sha1su1(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    constexpr uint32_t Op = 0b0101'1110'0010'1000'0000'10 << 10;
-    Crypto2RegSHA(Op, 0b00001, rd, rn);
+  void sha1su1(VRegister rd, VRegister rn) {
+    Crypto2RegSHA(0b00001, rd, rn);
   }
-  void sha256su0(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    constexpr uint32_t Op = 0b0101'1110'0010'1000'0000'10 << 10;
-    Crypto2RegSHA(Op, 0b00010, rd, rn);
+  void sha256su0(VRegister rd, VRegister rn) {
+    Crypto2RegSHA(0b00010, rd, rn);
   }
   // Advanced SIMD table lookup
   void tbl(QRegister rd, QRegister rn, QRegister rm) {
@@ -4198,9 +4188,8 @@ private:
   }
 
   // Cryptographic three-register SHA
-  void Crypto3RegSHA(uint32_t Op, uint32_t opcode, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn, ARMEmitter::VRegister rm) {
-    uint32_t Instr = Op;
-
+  void Crypto3RegSHA(uint32_t opcode, VRegister rd, VRegister rn, VRegister rm) {
+    uint32_t Instr = 0b0101'1110'0000'0000'0000'00U << 10;
     Instr |= Encode_rm(rm);
     Instr |= opcode << 12;
     Instr |= Encode_rn(rn);
@@ -4209,9 +4198,8 @@ private:
   }
 
   // Cryptographic two-register SHA
-  void Crypto2RegSHA(uint32_t Op, uint32_t opcode, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    uint32_t Instr = Op;
-
+  void Crypto2RegSHA(uint32_t opcode, VRegister rd, VRegister rn) {
+    uint32_t Instr = 0b0101'1110'0010'1000'0000'10U << 10;
     Instr |= opcode << 12;
     Instr |= Encode_rn(rn);
     Instr |= Encode_rd(rd);
