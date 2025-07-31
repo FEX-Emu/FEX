@@ -136,127 +136,103 @@ public:
   }
 
   // Advanced SIMD permute
-  template<ARMEmitter::SubRegSize size>
-  void uzp1(ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 1, size, 0b001, rd.V(), rn.V(), rm.V());
+  template<SubRegSize size>
+  void uzp1(QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDPermute(1, size, 0b001, rd.V(), rn.V(), rm.V());
   }
-  template<ARMEmitter::SubRegSize size>
-  requires (size != ARMEmitter::SubRegSize::i64Bit)
-  void uzp1(ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, ARMEmitter::DRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 0, size, 0b001, rd.V(), rn.V(), rm.V());
+  template<SubRegSize size>
+  requires (size != SubRegSize::i64Bit)
+  void uzp1(DRegister rd, DRegister rn, DRegister rm) {
+    ASIMDPermute(0, size, 0b001, rd.V(), rn.V(), rm.V());
   }
-  template<ARMEmitter::SubRegSize size>
-  void trn1(ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 1, size, 0b010, rd.V(), rn.V(), rm.V());
+  template<SubRegSize size>
+  void trn1(QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDPermute(1, size, 0b010, rd.V(), rn.V(), rm.V());
   }
-  template<ARMEmitter::SubRegSize size>
-  requires (size != ARMEmitter::SubRegSize::i64Bit)
-  void trn1(ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, ARMEmitter::DRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 0, size, 0b010, rd.V(), rn.V(), rm.V());
+  template<SubRegSize size>
+  requires (size != SubRegSize::i64Bit)
+  void trn1(DRegister rd, DRegister rn, DRegister rm) {
+    ASIMDPermute(0, size, 0b010, rd.V(), rn.V(), rm.V());
   }
-  template<ARMEmitter::SubRegSize size>
-  void zip1(ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 1, size, 0b011, rd.V(), rn.V(), rm.V());
+  template<SubRegSize size>
+  void zip1(QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDPermute(1, size, 0b011, rd.V(), rn.V(), rm.V());
   }
-  template<ARMEmitter::SubRegSize size>
-  requires (size != ARMEmitter::SubRegSize::i64Bit)
-  void zip1(ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, ARMEmitter::DRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 0, size, 0b011, rd.V(), rn.V(), rm.V());
+  template<SubRegSize size>
+  requires (size != SubRegSize::i64Bit)
+  void zip1(DRegister rd, DRegister rn, DRegister rm) {
+    ASIMDPermute(0, size, 0b011, rd.V(), rn.V(), rm.V());
   }
-  template<ARMEmitter::SubRegSize size>
-  void uzp2(ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 1, size, 0b101, rd.V(), rn.V(), rm.V());
+  template<SubRegSize size>
+  void uzp2(QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDPermute(1, size, 0b101, rd.V(), rn.V(), rm.V());
   }
-  template<ARMEmitter::SubRegSize size>
-  requires (size != ARMEmitter::SubRegSize::i64Bit)
-  void uzp2(ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, ARMEmitter::DRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 0, size, 0b101, rd.V(), rn.V(), rm.V());
+  template<SubRegSize size>
+  requires (size != SubRegSize::i64Bit)
+  void uzp2(DRegister rd, DRegister rn, DRegister rm) {
+    ASIMDPermute(0, size, 0b101, rd.V(), rn.V(), rm.V());
   }
-  template<ARMEmitter::SubRegSize size>
-  void trn2(ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 1, size, 0b110, rd.V(), rn.V(), rm.V());
+  template<SubRegSize size>
+  void trn2(QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDPermute(1, size, 0b110, rd.V(), rn.V(), rm.V());
   }
-  template<ARMEmitter::SubRegSize size>
-  requires (size != ARMEmitter::SubRegSize::i64Bit)
-  void trn2(ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, ARMEmitter::DRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 0, size, 0b110, rd.V(), rn.V(), rm.V());
+  template<SubRegSize size>
+  requires (size != SubRegSize::i64Bit)
+  void trn2(DRegister rd, DRegister rn, DRegister rm) {
+    ASIMDPermute(0, size, 0b110, rd.V(), rn.V(), rm.V());
   }
-  template<ARMEmitter::SubRegSize size>
-  void zip2(ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 1, size, 0b111, rd.V(), rn.V(), rm.V());
+  template<SubRegSize size>
+  void zip2(QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDPermute(1, size, 0b111, rd.V(), rn.V(), rm.V());
   }
-  template<ARMEmitter::SubRegSize size>
-  requires (size != ARMEmitter::SubRegSize::i64Bit)
-  void zip2(ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, ARMEmitter::DRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 0, size, 0b111, rd.V(), rn.V(), rm.V());
+  template<SubRegSize size>
+  requires (size != SubRegSize::i64Bit)
+  void zip2(DRegister rd, DRegister rn, DRegister rm) {
+    ASIMDPermute(0, size, 0b111, rd.V(), rn.V(), rm.V());
   }
 
 
-  void uzp1(ARMEmitter::SubRegSize size, ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 1, size, 0b001, rd.V(), rn.V(), rm.V());
+  void uzp1(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDPermute(1, size, 0b001, rd.V(), rn.V(), rm.V());
   }
-  void uzp1(ARMEmitter::SubRegSize size, ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, ARMEmitter::DRegister rm) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid 64-bit size on 64-bit permute");
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 0, size, 0b001, rd.V(), rn.V(), rm.V());
+  void uzp1(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid 64-bit size on 64-bit permute");
+    ASIMDPermute(0, size, 0b001, rd.V(), rn.V(), rm.V());
   }
-  void trn1(ARMEmitter::SubRegSize size, ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 1, size, 0b010, rd.V(), rn.V(), rm.V());
+  void trn1(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDPermute(1, size, 0b010, rd.V(), rn.V(), rm.V());
   }
-  void trn1(ARMEmitter::SubRegSize size, ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, ARMEmitter::DRegister rm) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid 64-bit size on 64-bit permute");
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 0, size, 0b010, rd.V(), rn.V(), rm.V());
+  void trn1(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid 64-bit size on 64-bit permute");
+    ASIMDPermute(0, size, 0b010, rd.V(), rn.V(), rm.V());
   }
-  void zip1(ARMEmitter::SubRegSize size, ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 1, size, 0b011, rd.V(), rn.V(), rm.V());
+  void zip1(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDPermute(1, size, 0b011, rd.V(), rn.V(), rm.V());
   }
-  void zip1(ARMEmitter::SubRegSize size, ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, ARMEmitter::DRegister rm) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid 64-bit size on 64-bit permute");
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 0, size, 0b011, rd.V(), rn.V(), rm.V());
+  void zip1(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid 64-bit size on 64-bit permute");
+    ASIMDPermute(0, size, 0b011, rd.V(), rn.V(), rm.V());
   }
-  void uzp2(ARMEmitter::SubRegSize size, ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 1, size, 0b101, rd.V(), rn.V(), rm.V());
+  void uzp2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDPermute(1, size, 0b101, rd.V(), rn.V(), rm.V());
   }
-  void uzp2(ARMEmitter::SubRegSize size, ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, ARMEmitter::DRegister rm) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid 64-bit size on 64-bit permute");
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 0, size, 0b101, rd.V(), rn.V(), rm.V());
+  void uzp2(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid 64-bit size on 64-bit permute");
+    ASIMDPermute(0, size, 0b101, rd.V(), rn.V(), rm.V());
   }
-  void trn2(ARMEmitter::SubRegSize size, ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 1, size, 0b110, rd.V(), rn.V(), rm.V());
+  void trn2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDPermute(1, size, 0b110, rd.V(), rn.V(), rm.V());
   }
-  void trn2(ARMEmitter::SubRegSize size, ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, ARMEmitter::DRegister rm) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid 64-bit size on 64-bit permute");
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 0, size, 0b110, rd.V(), rn.V(), rm.V());
+  void trn2(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid 64-bit size on 64-bit permute");
+    ASIMDPermute(0, size, 0b110, rd.V(), rn.V(), rm.V());
   }
-  void zip2(ARMEmitter::SubRegSize size, ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 1, size, 0b111, rd.V(), rn.V(), rm.V());
+  void zip2(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
+    ASIMDPermute(1, size, 0b111, rd.V(), rn.V(), rm.V());
   }
-  void zip2(ARMEmitter::SubRegSize size, ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, ARMEmitter::DRegister rm) {
-    LOGMAN_THROW_A_FMT(size != ARMEmitter::SubRegSize::i64Bit, "Invalid 64-bit size on 64-bit permute");
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'10 << 10;
-    ASIMDPermute(Op, 0, size, 0b111, rd.V(), rn.V(), rm.V());
+  void zip2(SubRegSize size, DRegister rd, DRegister rn, DRegister rm) {
+    LOGMAN_THROW_A_FMT(size != SubRegSize::i64Bit, "Invalid 64-bit size on 64-bit permute");
+    ASIMDPermute(0, size, 0b111, rd.V(), rn.V(), rm.V());
   }
 
   // Advanced SIMD extract
@@ -4220,10 +4196,8 @@ private:
   }
 
   // Advanced SIMD permute
-  void ASIMDPermute(uint32_t Op, uint32_t Q, ARMEmitter::SubRegSize size, uint32_t opcode, ARMEmitter::VRegister rd,
-                    ARMEmitter::VRegister rn, ARMEmitter::VRegister rm) {
-    uint32_t Instr = Op;
-
+  void ASIMDPermute(uint32_t Q, SubRegSize size, uint32_t opcode, VRegister rd, VRegister rn, VRegister rm) {
+    uint32_t Instr = 0b0000'1110'0000'0000'0000'10U << 10;
     Instr |= Q << 30;
     Instr |= FEXCore::ToUnderlying(size) << 22;
     Instr |= Encode_rm(rm);
