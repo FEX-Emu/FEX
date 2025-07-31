@@ -24,21 +24,17 @@ struct EmitterOps : Emitter {
 public:
   // Data Processing -- Scalar Floating-Point and Advanced SIMD
   // Cryptographic AES
-  void aese(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    constexpr uint32_t Op = 0b0100'1110'0010'1000'0000'10 << 10;
-    CryptoAES(Op, 0b00100, rd, rn);
+  void aese(VRegister rd, VRegister rn) {
+    CryptoAES(0b00100, rd, rn);
   }
-  void aesd(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    constexpr uint32_t Op = 0b0100'1110'0010'1000'0000'10 << 10;
-    CryptoAES(Op, 0b00101, rd, rn);
+  void aesd(VRegister rd, VRegister rn) {
+    CryptoAES(0b00101, rd, rn);
   }
-  void aesmc(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    constexpr uint32_t Op = 0b0100'1110'0010'1000'0000'10 << 10;
-    CryptoAES(Op, 0b00110, rd, rn);
+  void aesmc(VRegister rd, VRegister rn) {
+    CryptoAES(0b00110, rd, rn);
   }
-  void aesimc(ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    constexpr uint32_t Op = 0b0100'1110'0010'1000'0000'10 << 10;
-    CryptoAES(Op, 0b00111, rd, rn);
+  void aesimc(VRegister rd, VRegister rn) {
+    CryptoAES(0b00111, rd, rn);
   }
 
   // Cryptographic three-register SHA
@@ -4193,9 +4189,8 @@ private:
   }
 
   // Cryptographic AES
-  void CryptoAES(uint32_t Op, uint32_t opcode, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    uint32_t Instr = Op;
-
+  void CryptoAES(uint32_t opcode, VRegister rd, VRegister rn) {
+    uint32_t Instr = 0b0100'1110'0010'1000'0000'10U << 10;
     Instr |= opcode << 12;
     Instr |= Encode_rn(rn);
     Instr |= Encode_rd(rd);
