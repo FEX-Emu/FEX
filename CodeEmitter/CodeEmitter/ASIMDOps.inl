@@ -236,15 +236,13 @@ public:
   }
 
   // Advanced SIMD extract
-  void ext(ARMEmitter::QRegister rd, ARMEmitter::QRegister rn, ARMEmitter::QRegister rm, uint32_t Index) {
+  void ext(QRegister rd, QRegister rn, QRegister rm, uint32_t Index) {
     LOGMAN_THROW_A_FMT(Index < 16, "Index can't be more than 15");
-    constexpr uint32_t Op = 0b0010'1110'000 << 21;
-    ASIMDExtract(Op, 1, 0b00, Index, rd.V(), rn.V(), rm.V());
+    ASIMDExtract(1, 0b00, Index, rd.V(), rn.V(), rm.V());
   }
-  void ext(ARMEmitter::DRegister rd, ARMEmitter::DRegister rn, ARMEmitter::DRegister rm, uint32_t Index) {
+  void ext(DRegister rd, DRegister rn, DRegister rm, uint32_t Index) {
     LOGMAN_THROW_A_FMT(Index < 8, "Index can't be more than 7");
-    constexpr uint32_t Op = 0b0010'1110'000 << 21;
-    ASIMDExtract(Op, 0, 0b00, Index, rd.V(), rn.V(), rm.V());
+    ASIMDExtract(0, 0b00, Index, rd.V(), rn.V(), rm.V());
   }
 
   // Advanced SIMD copy
@@ -4208,10 +4206,8 @@ private:
   }
 
   // Advanced SIMD extract
-  void ASIMDExtract(uint32_t Op, uint32_t Q, uint32_t op2, uint32_t imm4, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn,
-                    ARMEmitter::VRegister rm) {
-    uint32_t Instr = Op;
-
+  void ASIMDExtract(uint32_t Q, uint32_t op2, uint32_t imm4, VRegister rd, VRegister rn, VRegister rm) {
+    uint32_t Instr = 0b0010'1110'000U << 21;
     Instr |= Q << 30;
     Instr |= op2 << 22;
     Instr |= Encode_rm(rm);
