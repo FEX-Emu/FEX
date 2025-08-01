@@ -500,12 +500,14 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
   PreferredReg.resize(IR->GetSSACount(), PhysicalRegister::Invalid());
   SSAToReg.resize(IR->GetSSACount(), PhysicalRegister::Invalid());
   NextUses.resize(IR->GetSSACount(), 0);
-  AnySpilled = false;
 
   // Next-use distance relative to the block end of each source, last first.
   fextl::vector<uint32_t> SourcesNextUses;
 
   for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
+    // Spilling is local, so reset this per-block
+    AnySpilled = false;
+
     // At the start of each block, all registers are available.
     for (auto& Class : Classes) {
       Class.Available = (1u << Class.Count) - 1;
