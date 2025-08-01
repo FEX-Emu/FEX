@@ -234,15 +234,6 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ASIMD: Advanced SIMD copy") {
   TEST_SINGLE(umov<SubRegSize::i64Bit>(Reg::r29, VReg::v30, 0), "mov x29, v30.d[0]");
   TEST_SINGLE(umov<SubRegSize::i64Bit>(Reg::r29, VReg::v30, 1), "mov x29, v30.d[1]");
 
-  TEST_SINGLE(ins<SubRegSize::i8Bit>(VReg::v30, 0, Reg::r29), "mov v30.b[0], w29");
-  TEST_SINGLE(ins<SubRegSize::i16Bit>(VReg::v30, 0, Reg::r29), "mov v30.h[0], w29");
-  TEST_SINGLE(ins<SubRegSize::i32Bit>(VReg::v30, 0, Reg::r29), "mov v30.s[0], w29");
-  TEST_SINGLE(ins<SubRegSize::i64Bit>(VReg::v30, 0, Reg::r29), "mov v30.d[0], x29");
-  TEST_SINGLE(ins<SubRegSize::i8Bit>(VReg::v30, 15, Reg::r29), "mov v30.b[15], w29");
-  TEST_SINGLE(ins<SubRegSize::i16Bit>(VReg::v30, 7, Reg::r29), "mov v30.h[7], w29");
-  TEST_SINGLE(ins<SubRegSize::i32Bit>(VReg::v30, 3, Reg::r29), "mov v30.s[3], w29");
-  TEST_SINGLE(ins<SubRegSize::i64Bit>(VReg::v30, 1, Reg::r29), "mov v30.d[1], x29");
-
   TEST_SINGLE(ins(SubRegSize::i8Bit, VReg::v30, 0, Reg::r29), "mov v30.b[0], w29");
   TEST_SINGLE(ins(SubRegSize::i16Bit, VReg::v30, 0, Reg::r29), "mov v30.h[0], w29");
   TEST_SINGLE(ins(SubRegSize::i32Bit, VReg::v30, 0, Reg::r29), "mov v30.s[0], w29");

@@ -332,20 +332,6 @@ public:
     ASIMDScalarCopy(Q, 0, imm5, 0b0111, ToVReg(rd), rn);
   }
 
-  template<SubRegSize size>
-  void ins(VRegister rd, uint32_t Index, Register rn) {
-    constexpr uint32_t SizeImm = FEXCore::ToUnderlying(size);
-    constexpr uint32_t IndexShift = SizeImm + 1;
-    constexpr uint32_t ElementSize = 1U << SizeImm;
-    [[maybe_unused]] constexpr uint32_t MaxIndex = 128U / (ElementSize * 8);
-
-    LOGMAN_THROW_A_FMT(Index < MaxIndex, "Index too large. Index={}, Max Index: {}", Index, MaxIndex);
-
-    const uint32_t imm5 = (Index << IndexShift) | ElementSize;
-
-    ASIMDScalarCopy(1, 0, imm5, 0b0011, rd, ToVReg(rn));
-  }
-
   void ins(SubRegSize size, VRegister rd, uint32_t Index, Register rn) {
     const uint32_t SizeImm = FEXCore::ToUnderlying(size);
     const uint32_t IndexShift = SizeImm + 1;
