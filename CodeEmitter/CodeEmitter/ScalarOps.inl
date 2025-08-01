@@ -27,8 +27,6 @@ struct EmitterOps : Emitter {
 public:
   // Advanced SIMD scalar copy
   void dup(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Index) {
-    constexpr uint32_t Op = 0b0101'1110'0000'0000'0000'01 << 10;
-
     const uint32_t SizeImm = FEXCore::ToUnderlying(size);
     const uint32_t IndexShift = SizeImm + 1;
     const uint32_t ElementSize = 1U << SizeImm;
@@ -38,10 +36,10 @@ public:
 
     const uint32_t imm5 = (Index << IndexShift) | ElementSize;
 
-    ASIMDScalarCopy(Op, 1, imm5, 0b0000, rd, rn);
+    ASIMDScalarCopy(1, 1, imm5, 0b0000, rd, rn);
   }
 
-  void mov(ARMEmitter::ScalarRegSize size, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn, uint32_t Index) {
+  void mov(ScalarRegSize size, VRegister rd, VRegister rn, uint32_t Index) {
     dup(size, rd, rn, Index);
   }
 
@@ -1282,10 +1280,10 @@ public:
 
 private:
   // Advanced SIMD scalar copy
-  void ASIMDScalarCopy(uint32_t Op, uint32_t Q, uint32_t imm5, uint32_t imm4, ARMEmitter::VRegister rd, ARMEmitter::VRegister rn) {
-    uint32_t Instr = Op;
-
+  void ASIMDScalarCopy(uint32_t Q, uint32_t b28, uint32_t imm5, uint32_t imm4, VRegister rd, VRegister rn) {
+    uint32_t Instr = 0b0000'1110'0000'0000'0000'01U << 10;
     Instr |= Q << 30;
+    Instr |= b28 << 28;
     Instr |= imm5 << 16;
     Instr |= imm4 << 11;
     Instr |= Encode_rn(rn);

@@ -253,7 +253,6 @@ public:
     }
 
     constexpr uint32_t Q = std::is_same_v<QRegister, T> ? 1 : 0;
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'01 << 10;
 
     const uint32_t SizeImm = FEXCore::ToUnderlying(size);
     const uint32_t IndexShift = SizeImm + 1;
@@ -264,7 +263,7 @@ public:
 
     const uint32_t imm5 = (Index << IndexShift) | ElementSize;
 
-    ASIMDScalarCopy(Op, Q, imm5, 0b0000, rd.V(), rn.V());
+    ASIMDScalarCopy(Q, 0, imm5, 0b0000, rd.V(), rn.V());
   }
 
   template<IsQOrDRegister T>
@@ -274,12 +273,11 @@ public:
     }
 
     constexpr uint32_t Q = std::is_same_v<QRegister, T> ? 1 : 0;
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'01 << 10;
 
     // Upper bits of imm5 are ignored for GPR dup
     const uint32_t imm5 = 1U << FEXCore::ToUnderlying(size);
 
-    ASIMDScalarCopy(Op, Q, imm5, 0b0001, rd, ToVReg(rn));
+    ASIMDScalarCopy(Q, 0, imm5, 0b0001, rd, ToVReg(rn));
   }
 
   template<SubRegSize size>
@@ -287,8 +285,6 @@ public:
   void smov(XRegister rd, VRegister rn, uint32_t Index) {
     static_assert(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit, "Unsupported smov size");
 
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'01 << 10;
-
     constexpr uint32_t SizeImm = FEXCore::ToUnderlying(size);
     constexpr uint32_t IndexShift = SizeImm + 1;
     constexpr uint32_t ElementSize = 1U << SizeImm;
@@ -298,15 +294,13 @@ public:
 
     const uint32_t imm5 = (Index << IndexShift) | ElementSize;
 
-    ASIMDScalarCopy(Op, 1, imm5, 0b0101, ToVReg(rd), rn);
+    ASIMDScalarCopy(1, 0, imm5, 0b0101, ToVReg(rd), rn);
   }
   template<SubRegSize size>
   requires (size == SubRegSize::i8Bit || size == SubRegSize::i16Bit)
   void smov(WRegister rd, VRegister rn, uint32_t Index) {
     static_assert(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit, "Unsupported smov size");
 
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'01 << 10;
-
     constexpr uint32_t SizeImm = FEXCore::ToUnderlying(size);
     constexpr uint32_t IndexShift = SizeImm + 1;
     constexpr uint32_t ElementSize = 1U << SizeImm;
@@ -316,7 +310,7 @@ public:
 
     const uint32_t imm5 = (Index << IndexShift) | ElementSize;
 
-    ASIMDScalarCopy(Op, 0, imm5, 0b0101, ToVReg(rd), rn);
+    ASIMDScalarCopy(0, 0, imm5, 0b0101, ToVReg(rd), rn);
   }
 
   template<SubRegSize size>
@@ -324,8 +318,6 @@ public:
     static_assert(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                   "Unsupported umov size");
 
-
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'01 << 10;
     constexpr uint32_t Q = size == SubRegSize::i64Bit ? 1 : 0;
 
     constexpr uint32_t SizeImm = FEXCore::ToUnderlying(size);
@@ -337,13 +329,11 @@ public:
 
     const uint32_t imm5 = (Index << IndexShift) | ElementSize;
 
-    ASIMDScalarCopy(Op, Q, imm5, 0b0111, ToVReg(rd), rn);
+    ASIMDScalarCopy(Q, 0, imm5, 0b0111, ToVReg(rd), rn);
   }
 
   template<SubRegSize size>
   void ins(VRegister rd, uint32_t Index, Register rn) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'01 << 10;
-
     constexpr uint32_t SizeImm = FEXCore::ToUnderlying(size);
     constexpr uint32_t IndexShift = SizeImm + 1;
     constexpr uint32_t ElementSize = 1U << SizeImm;
@@ -353,12 +343,10 @@ public:
 
     const uint32_t imm5 = (Index << IndexShift) | ElementSize;
 
-    ASIMDScalarCopy(Op, 1, imm5, 0b0011, rd, ToVReg(rn));
+    ASIMDScalarCopy(1, 0, imm5, 0b0011, rd, ToVReg(rn));
   }
 
   void ins(SubRegSize size, VRegister rd, uint32_t Index, Register rn) {
-    constexpr uint32_t Op = 0b0000'1110'0000'0000'0000'01 << 10;
-
     const uint32_t SizeImm = FEXCore::ToUnderlying(size);
     const uint32_t IndexShift = SizeImm + 1;
     const uint32_t ElementSize = 1U << SizeImm;
@@ -368,12 +356,10 @@ public:
 
     const uint32_t imm5 = (Index << IndexShift) | ElementSize;
 
-    ASIMDScalarCopy(Op, 1, imm5, 0b0011, rd, ToVReg(rn));
+    ASIMDScalarCopy(1, 0, imm5, 0b0011, rd, ToVReg(rn));
   }
 
   void ins(SubRegSize size, VRegister rd, uint32_t Index, VRegister rn, uint32_t Index2) {
-    constexpr uint32_t Op = 0b0110'1110'0000'0000'0000'01 << 10;
-
     const uint32_t SizeImm = FEXCore::ToUnderlying(size);
     const uint32_t IndexShift = SizeImm + 1;
     const uint32_t ElementSize = 1U << SizeImm;
@@ -385,7 +371,7 @@ public:
     const uint32_t imm5 = (Index << IndexShift) | ElementSize;
     const uint32_t imm4 = Index2 << SizeImm;
 
-    ASIMDScalarCopy(Op, 1, imm5, imm4, rd, rn);
+    ASIMDScalarCopy(1, 0b10, imm5, imm4, rd, rn);
   }
 
   // Advanced SIMD three-register extension
