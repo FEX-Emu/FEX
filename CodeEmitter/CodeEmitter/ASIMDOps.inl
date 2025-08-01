@@ -3910,195 +3910,150 @@ public:
   }
 
   // Conversion between floating-point and integer
-  void fcvtns(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b11, 0b00, 0b000, rd, ARMEmitter::ToReg(rn));
+  void fcvtns(ARMEmitter::Size size, Register rd, HRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b11, 0b00, 0b000, rd, ToReg(rn));
   }
-  void fcvtns(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b00, 0b00, 0b000, rd, ARMEmitter::ToReg(rn));
+  void fcvtns(ARMEmitter::Size size, Register rd, SRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b00, 0b00, 0b000, rd, ToReg(rn));
   }
-  void fcvtns(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b01, 0b00, 0b000, rd, ARMEmitter::ToReg(rn));
+  void fcvtns(ARMEmitter::Size size, Register rd, DRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b01, 0b00, 0b000, rd, ToReg(rn));
   }
-  void fcvtnu(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b11, 0b00, 0b001, rd, ARMEmitter::ToReg(rn));
+  void fcvtnu(ARMEmitter::Size size, Register rd, HRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b11, 0b00, 0b001, rd, ToReg(rn));
   }
-  void fcvtnu(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b00, 0b00, 0b001, rd, ARMEmitter::ToReg(rn));
+  void fcvtnu(ARMEmitter::Size size, Register rd, SRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b00, 0b00, 0b001, rd, ToReg(rn));
   }
-  void fcvtnu(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b01, 0b00, 0b001, rd, ARMEmitter::ToReg(rn));
+  void fcvtnu(ARMEmitter::Size size, Register rd, DRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b01, 0b00, 0b001, rd, ToReg(rn));
   }
-  void scvtf(ARMEmitter::Size size, ARMEmitter::HRegister rd, ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b11, 0b00, 0b010, ARMEmitter::ToReg(rd), rn);
+  void scvtf(ARMEmitter::Size size, HRegister rd, Register rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b11, 0b00, 0b010, ToReg(rd), rn);
   }
-  void scvtf(ARMEmitter::Size size, ARMEmitter::SRegister rd, ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b00, 0b00, 0b010, ARMEmitter::ToReg(rd), rn);
+  void scvtf(ARMEmitter::Size size, SRegister rd, Register rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b00, 0b00, 0b010, ToReg(rd), rn);
   }
-  void scvtf(ARMEmitter::Size size, ARMEmitter::DRegister rd, ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b01, 0b00, 0b010, ARMEmitter::ToReg(rd), rn);
+  void scvtf(ARMEmitter::Size size, DRegister rd, Register rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b01, 0b00, 0b010, ToReg(rd), rn);
   }
-  void ucvtf(ARMEmitter::Size size, ARMEmitter::HRegister rd, ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b11, 0b00, 0b011, ARMEmitter::ToReg(rd), rn);
+  void ucvtf(ARMEmitter::Size size, HRegister rd, Register rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b11, 0b00, 0b011, ToReg(rd), rn);
   }
-  void ucvtf(ARMEmitter::Size size, ARMEmitter::SRegister rd, ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b00, 0b00, 0b011, ARMEmitter::ToReg(rd), rn);
+  void ucvtf(ARMEmitter::Size size, SRegister rd, Register rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b00, 0b00, 0b011, ToReg(rd), rn);
   }
-  void ucvtf(ARMEmitter::Size size, ARMEmitter::DRegister rd, ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b01, 0b00, 0b011, ARMEmitter::ToReg(rd), rn);
+  void ucvtf(ARMEmitter::Size size, DRegister rd, Register rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b01, 0b00, 0b011, ToReg(rd), rn);
   }
-  void fcvtas(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b11, 0b00, 0b100, rd, ARMEmitter::ToReg(rn));
+  void fcvtas(ARMEmitter::Size size, Register rd, HRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b11, 0b00, 0b100, rd, ToReg(rn));
   }
-  void fcvtas(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b00, 0b00, 0b100, rd, ARMEmitter::ToReg(rn));
+  void fcvtas(ARMEmitter::Size size, Register rd, SRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b00, 0b00, 0b100, rd, ToReg(rn));
   }
-  void fcvtas(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b01, 0b00, 0b100, rd, ARMEmitter::ToReg(rn));
+  void fcvtas(ARMEmitter::Size size, Register rd, DRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b01, 0b00, 0b100, rd, ToReg(rn));
   }
-  void fcvtau(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b11, 0b00, 0b101, rd, ARMEmitter::ToReg(rn));
+  void fcvtau(ARMEmitter::Size size, Register rd, HRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b11, 0b00, 0b101, rd, ToReg(rn));
   }
-  void fcvtau(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b00, 0b00, 0b101, rd, ARMEmitter::ToReg(rn));
+  void fcvtau(ARMEmitter::Size size, Register rd, SRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b00, 0b00, 0b101, rd, ToReg(rn));
   }
-  void fcvtau(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b01, 0b00, 0b101, rd, ARMEmitter::ToReg(rn));
+  void fcvtau(ARMEmitter::Size size, Register rd, DRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b01, 0b00, 0b101, rd, ToReg(rn));
   }
-  void fmov(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b11, 0b00, 0b110, rd, ARMEmitter::ToReg(rn));
+  void fmov(ARMEmitter::Size size, Register rd, HRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b11, 0b00, 0b110, rd, ToReg(rn));
   }
-  void fmov(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::SRegister rn) {
+  void fmov(ARMEmitter::Size size, Register rd, SRegister rn) {
     LOGMAN_THROW_A_FMT(size != ARMEmitter::Size::i64Bit, "Can't move SReg to 64-bit");
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b00, 0b00, 0b110, rd, ARMEmitter::ToReg(rn));
+    ASIMDFloatConvBetweenInt(size, 0, 0b00, 0b00, 0b110, rd, ToReg(rn));
   }
-  void fmov(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::DRegister rn) {
+  void fmov(ARMEmitter::Size size, Register rd, DRegister rn) {
     LOGMAN_THROW_A_FMT(size != ARMEmitter::Size::i32Bit, "Can't move DReg to 32-bit");
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b01, 0b00, 0b110, rd, ARMEmitter::ToReg(rn));
+    ASIMDFloatConvBetweenInt(size, 0, 0b01, 0b00, 0b110, rd, ToReg(rn));
   }
-  void fmov(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::VRegister rn, bool Upper) {
+  void fmov(ARMEmitter::Size size, Register rd, VRegister rn, bool Upper) {
     if (Upper) {
       LOGMAN_THROW_A_FMT(size == ARMEmitter::Size::i64Bit, "Can only move upper with 64-bit elements");
     }
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, Upper ? 0b10 : 0b01, Upper ? 0b01 : 0b00, 0b110, rd, ARMEmitter::ToReg(rn));
+    ASIMDFloatConvBetweenInt(size, 0, Upper ? 0b10 : 0b01, Upper ? 0b01 : 0b00, 0b110, rd, ToReg(rn));
   }
-  void fmov(ARMEmitter::Size size, ARMEmitter::HRegister rd, ARMEmitter::Register rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b11, 0b00, 0b111, ARMEmitter::ToReg(rd), rn);
+  void fmov(ARMEmitter::Size size, HRegister rd, Register rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b11, 0b00, 0b111, ToReg(rd), rn);
   }
-  void fmov(ARMEmitter::Size size, ARMEmitter::SRegister rd, ARMEmitter::Register rn) {
+  void fmov(ARMEmitter::Size size, SRegister rd, Register rn) {
     LOGMAN_THROW_A_FMT(size != ARMEmitter::Size::i64Bit, "Can't move SReg to 64-bit");
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b00, 0b00, 0b111, ARMEmitter::ToReg(rd), rn);
+    ASIMDFloatConvBetweenInt(size, 0, 0b00, 0b00, 0b111, ToReg(rd), rn);
   }
-  void fmov(ARMEmitter::Size size, ARMEmitter::DRegister rd, ARMEmitter::Register rn) {
+  void fmov(ARMEmitter::Size size, DRegister rd, Register rn) {
     LOGMAN_THROW_A_FMT(size != ARMEmitter::Size::i32Bit, "Can't move DReg to 32-bit");
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b01, 0b00, 0b111, ARMEmitter::ToReg(rd), rn);
+    ASIMDFloatConvBetweenInt(size, 0, 0b01, 0b00, 0b111, ToReg(rd), rn);
   }
-  void fmov(ARMEmitter::Size size, ARMEmitter::VRegister rd, ARMEmitter::Register rn, bool Upper) {
+  void fmov(ARMEmitter::Size size, VRegister rd, Register rn, bool Upper) {
     if (Upper) {
       LOGMAN_THROW_A_FMT(size == ARMEmitter::Size::i64Bit, "Can only move upper with 64-bit elements");
     }
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, Upper ? 0b10 : 0b01, Upper ? 0b01 : 0b00, 0b111, ARMEmitter::ToReg(rd), rn);
+    ASIMDFloatConvBetweenInt(size, 0, Upper ? 0b10 : 0b01, Upper ? 0b01 : 0b00, 0b111, ToReg(rd), rn);
   }
-  void fcvtps(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b11, 0b01, 0b000, rd, ARMEmitter::ToReg(rn));
+  void fcvtps(ARMEmitter::Size size, Register rd, HRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b11, 0b01, 0b000, rd, ToReg(rn));
   }
-  void fcvtps(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b00, 0b01, 0b000, rd, ARMEmitter::ToReg(rn));
+  void fcvtps(ARMEmitter::Size size, Register rd, SRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b00, 0b01, 0b000, rd, ToReg(rn));
   }
-  void fcvtps(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b01, 0b01, 0b000, rd, ARMEmitter::ToReg(rn));
+  void fcvtps(ARMEmitter::Size size, Register rd, DRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b01, 0b01, 0b000, rd, ToReg(rn));
   }
-  void fcvtpu(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b11, 0b01, 0b001, rd, ARMEmitter::ToReg(rn));
+  void fcvtpu(ARMEmitter::Size size, Register rd, HRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b11, 0b01, 0b001, rd, ToReg(rn));
   }
-  void fcvtpu(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b00, 0b01, 0b001, rd, ARMEmitter::ToReg(rn));
+  void fcvtpu(ARMEmitter::Size size, Register rd, SRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b00, 0b01, 0b001, rd, ToReg(rn));
   }
-  void fcvtpu(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b01, 0b01, 0b001, rd, ARMEmitter::ToReg(rn));
+  void fcvtpu(ARMEmitter::Size size, Register rd, DRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b01, 0b01, 0b001, rd, ToReg(rn));
   }
-  void fcvtms(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b11, 0b10, 0b000, rd, ARMEmitter::ToReg(rn));
+  void fcvtms(ARMEmitter::Size size, Register rd, HRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b11, 0b10, 0b000, rd, ToReg(rn));
   }
-  void fcvtms(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b00, 0b10, 0b000, rd, ARMEmitter::ToReg(rn));
+  void fcvtms(ARMEmitter::Size size, Register rd, SRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b00, 0b10, 0b000, rd, ToReg(rn));
   }
-  void fcvtms(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b01, 0b10, 0b000, rd, ARMEmitter::ToReg(rn));
+  void fcvtms(ARMEmitter::Size size, Register rd, DRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b01, 0b10, 0b000, rd, ToReg(rn));
   }
-  void fcvtmu(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b11, 0b10, 0b001, rd, ARMEmitter::ToReg(rn));
+  void fcvtmu(ARMEmitter::Size size, Register rd, HRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b11, 0b10, 0b001, rd, ToReg(rn));
   }
-  void fcvtmu(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b00, 0b10, 0b001, rd, ARMEmitter::ToReg(rn));
+  void fcvtmu(ARMEmitter::Size size, Register rd, SRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b00, 0b10, 0b001, rd, ToReg(rn));
   }
-  void fcvtmu(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b01, 0b10, 0b001, rd, ARMEmitter::ToReg(rn));
+  void fcvtmu(ARMEmitter::Size size, Register rd, DRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b01, 0b10, 0b001, rd, ToReg(rn));
   }
-  void fcvtzs(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b11, 0b11, 0b000, rd, ARMEmitter::ToReg(rn));
+  void fcvtzs(ARMEmitter::Size size, Register rd, HRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b11, 0b11, 0b000, rd, ToReg(rn));
   }
-  void fcvtzs(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b00, 0b11, 0b000, rd, ARMEmitter::ToReg(rn));
+  void fcvtzs(ARMEmitter::Size size, Register rd, SRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b00, 0b11, 0b000, rd, ToReg(rn));
   }
-  void fcvtzs(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b01, 0b11, 0b000, rd, ARMEmitter::ToReg(rn));
+  void fcvtzs(ARMEmitter::Size size, Register rd, DRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b01, 0b11, 0b000, rd, ToReg(rn));
   }
-  void fcvtzs(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::VRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b01, 0b11, 0b000, rd, ARMEmitter::ToReg(rn));
+  void fcvtzs(ARMEmitter::Size size, Register rd, VRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b01, 0b11, 0b000, rd, ToReg(rn));
   }
-  void fcvtzu(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::HRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b11, 0b11, 0b001, rd, ARMEmitter::ToReg(rn));
+  void fcvtzu(ARMEmitter::Size size, Register rd, HRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b11, 0b11, 0b001, rd, ToReg(rn));
   }
-  void fcvtzu(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::SRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b00, 0b11, 0b001, rd, ARMEmitter::ToReg(rn));
+  void fcvtzu(ARMEmitter::Size size, Register rd, SRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b00, 0b11, 0b001, rd, ToReg(rn));
   }
-  void fcvtzu(ARMEmitter::Size size, ARMEmitter::Register rd, ARMEmitter::DRegister rn) {
-    constexpr uint32_t Op = 0b0001'1110'001 << 21;
-    ASIMDFloatConvBetweenInt(Op, size, 0, 0b01, 0b11, 0b001, rd, ARMEmitter::ToReg(rn));
+  void fcvtzu(ARMEmitter::Size size, Register rd, DRegister rn) {
+    ASIMDFloatConvBetweenInt(size, 0, 0b01, 0b11, 0b001, rd, ToReg(rn));
   }
 
 private:
@@ -4403,12 +4358,10 @@ private:
   }
 
   // Conversion between floating-point and integer
-  void ASIMDFloatConvBetweenInt(uint32_t Op, ARMEmitter::Size s, uint32_t S, uint32_t ptype, uint32_t rmode, uint32_t opcode,
-                                ARMEmitter::Register rd, ARMEmitter::Register rn) {
+  void ASIMDFloatConvBetweenInt(ARMEmitter::Size s, uint32_t S, uint32_t ptype, uint32_t rmode, uint32_t opcode, Register rd, Register rn) {
     const uint32_t SF = s == ARMEmitter::Size::i64Bit ? (1U << 31) : 0;
 
-    uint32_t Instr = Op;
-
+    uint32_t Instr = 0b0001'1110'001U << 21;
     Instr |= SF;
     Instr |= S << 29;
     Instr |= ptype << 22;
