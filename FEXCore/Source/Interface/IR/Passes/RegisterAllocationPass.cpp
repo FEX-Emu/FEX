@@ -599,6 +599,8 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
 
     // Forward pass: Assign registers, spilling & optimizing as we go.
     for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
+      bool AnySpilledBeforeThisInstruction = AnySpilled;
+
       // These do not read or write registers, and must be skipped for merging.
       // Since we'd be doing this check anyway for merging, do the check now so
       // we can skip the rest of the logic too.
@@ -642,7 +644,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
       //
       // This happens before freeing killed sources, since we need all sources in
       // the register file simultaneously.
-      if (AnySpilled) {
+      if (AnySpilledBeforeThisInstruction) {
         for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
           if (!IsValidArg(IROp->Args[s])) {
             continue;
