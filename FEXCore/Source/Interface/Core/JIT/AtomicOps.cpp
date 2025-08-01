@@ -138,108 +138,6 @@ DEF_OP(CAS) {
   }
 }
 
-DEF_OP(AtomicAdd) {
-  auto Op = IROp->C<IR::IROp_AtomicAdd>();
-  const auto EmitSize = ConvertSize(IROp);
-  const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
-
-  auto MemSrc = GetReg(Op->Addr);
-  auto Src = GetReg(Op->Value);
-
-  if (CTX->HostFeatures.SupportsAtomics) {
-    staddl(SubEmitSize, Src, MemSrc);
-  } else {
-    ARMEmitter::BackwardLabel LoopTop;
-    Bind(&LoopTop);
-    ldaxr(SubEmitSize, TMP2, MemSrc);
-    add(EmitSize, TMP2, TMP2, Src);
-    stlxr(SubEmitSize, TMP2, TMP2, MemSrc);
-    cbnz(EmitSize, TMP2, &LoopTop);
-  }
-}
-
-DEF_OP(AtomicSub) {
-  auto Op = IROp->C<IR::IROp_AtomicSub>();
-  const auto EmitSize = ConvertSize(IROp);
-  const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
-
-  auto MemSrc = GetReg(Op->Addr);
-  auto Src = GetReg(Op->Value);
-
-  if (CTX->HostFeatures.SupportsAtomics) {
-    neg(EmitSize, TMP2, Src);
-    staddl(SubEmitSize, TMP2, MemSrc);
-  } else {
-    ARMEmitter::BackwardLabel LoopTop;
-    Bind(&LoopTop);
-    ldaxr(SubEmitSize, TMP2, MemSrc);
-    sub(EmitSize, TMP2, TMP2, Src);
-    stlxr(SubEmitSize, TMP2, TMP2, MemSrc);
-    cbnz(EmitSize, TMP2, &LoopTop);
-  }
-}
-
-DEF_OP(AtomicAnd) {
-  auto Op = IROp->C<IR::IROp_AtomicAnd>();
-  const auto EmitSize = ConvertSize(IROp);
-  const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
-
-  auto MemSrc = GetReg(Op->Addr);
-  auto Src = GetReg(Op->Value);
-
-  if (CTX->HostFeatures.SupportsAtomics) {
-    mvn(EmitSize, TMP2, Src);
-    stclrl(SubEmitSize, TMP2, MemSrc);
-  } else {
-    ARMEmitter::BackwardLabel LoopTop;
-    Bind(&LoopTop);
-    ldaxr(SubEmitSize, TMP2, MemSrc);
-    and_(EmitSize, TMP2, TMP2, Src);
-    stlxr(SubEmitSize, TMP2, TMP2, MemSrc);
-    cbnz(EmitSize, TMP2, &LoopTop);
-  }
-}
-
-DEF_OP(AtomicCLR) {
-  auto Op = IROp->C<IR::IROp_AtomicCLR>();
-  const auto EmitSize = ConvertSize(IROp);
-  const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
-
-  auto MemSrc = GetReg(Op->Addr);
-  auto Src = GetReg(Op->Value);
-
-  if (CTX->HostFeatures.SupportsAtomics) {
-    stclrl(SubEmitSize, Src, MemSrc);
-  } else {
-    ARMEmitter::BackwardLabel LoopTop;
-    Bind(&LoopTop);
-    ldaxr(SubEmitSize, TMP2, MemSrc);
-    bic(EmitSize, TMP2, TMP2, Src);
-    stlxr(SubEmitSize, TMP2, TMP2, MemSrc);
-    cbnz(EmitSize, TMP2, &LoopTop);
-  }
-}
-
-DEF_OP(AtomicOr) {
-  auto Op = IROp->C<IR::IROp_AtomicOr>();
-  const auto EmitSize = ConvertSize(IROp);
-  const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
-
-  auto MemSrc = GetReg(Op->Addr);
-  auto Src = GetReg(Op->Value);
-
-  if (CTX->HostFeatures.SupportsAtomics) {
-    stsetl(SubEmitSize, Src, MemSrc);
-  } else {
-    ARMEmitter::BackwardLabel LoopTop;
-    Bind(&LoopTop);
-    ldaxr(SubEmitSize, TMP2, MemSrc);
-    orr(EmitSize, TMP2, TMP2, Src);
-    stlxr(SubEmitSize, TMP2, TMP2, MemSrc);
-    cbnz(EmitSize, TMP2, &LoopTop);
-  }
-}
-
 DEF_OP(AtomicXor) {
   auto Op = IROp->C<IR::IROp_AtomicXor>();
   const auto EmitSize = ConvertSize(IROp);
@@ -258,21 +156,6 @@ DEF_OP(AtomicXor) {
     stlxr(SubEmitSize, TMP2, TMP2, MemSrc);
     cbnz(EmitSize, TMP2, &LoopTop);
   }
-}
-
-DEF_OP(AtomicNeg) {
-  auto Op = IROp->C<IR::IROp_AtomicNeg>();
-  const auto EmitSize = ConvertSize(IROp);
-  const auto SubEmitSize = ConvertSubRegSize8(IROp->Size);
-
-  auto MemSrc = GetReg(Op->Addr);
-
-  ARMEmitter::BackwardLabel LoopTop;
-  Bind(&LoopTop);
-  ldaxr(SubEmitSize, TMP2, MemSrc);
-  neg(EmitSize, TMP3, TMP2);
-  stlxr(SubEmitSize, TMP4, TMP3, MemSrc);
-  cbnz(EmitSize, TMP4, &LoopTop);
 }
 
 DEF_OP(AtomicSwap) {

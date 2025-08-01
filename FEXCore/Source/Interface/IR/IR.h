@@ -141,8 +141,21 @@ struct FEX_PACKED NodeWrapperBase final {
   }
 
   [[nodiscard]]
+  bool HasKill() const {
+    return NodeOffset & (1u << 30);
+  }
+
+  void ClearKill() {
+    NodeOffset &= ~(1u << 30);
+  }
+
+  void SetKill() {
+    NodeOffset |= (1u << 30);
+  }
+
+  [[nodiscard]]
   bool IsPointer() const {
-    return !IsImmediate();
+    return !IsImmediate() && !HasKill();
   }
 
   [[nodiscard]]

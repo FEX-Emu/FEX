@@ -826,69 +826,9 @@
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
-      "AtomicAdd OpSize:#Size, GPR:$Value, GPR:$Addr": {
-        "HasSideEffects": true,
-        "Desc": ["Atomic integer add",
-                 "IR layout must match Fetch-variant, otherwise DCE IR optimization breaks!"
-                ],
-        "DestSize": "Size",
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
-      },
-      "AtomicSub OpSize:#Size, GPR:$Value, GPR:$Addr": {
-        "HasSideEffects": true,
-        "Desc": ["Atomic integer sub",
-                 "IR layout must match Fetch-variant, otherwise DCE IR optimization breaks!"
-                ],
-        "DestSize": "Size",
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
-      },
-      "AtomicAnd OpSize:#Size, GPR:$Value, GPR:$Addr": {
-        "HasSideEffects": true,
-        "Desc": ["Atomic integer and",
-                 "IR layout must match Fetch-variant, otherwise DCE IR optimization breaks!"
-                ],
-        "DestSize": "Size",
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
-      },
-      "AtomicCLR OpSize:#Size, GPR:$Value, GPR:$Addr": {
-        "HasSideEffects": true,
-        "Desc": ["Atomic integer binary clear",
-                 "IR layout must match Fetch-variant, otherwise DCE IR optimization breaks!"
-                ],
-        "DestSize": "Size",
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
-      },
-      "AtomicOr OpSize:#Size, GPR:$Value, GPR:$Addr": {
-        "HasSideEffects": true,
-        "Desc": ["Atomic integer or",
-                 "IR layout must match Fetch-variant, otherwise DCE IR optimization breaks!"
-                ],
-        "DestSize": "Size",
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
-      },
       "AtomicXor OpSize:#Size, GPR:$Value, GPR:$Addr": {
         "HasSideEffects": true,
         "Desc": ["Atomic integer xor",
-                 "IR layout must match Fetch-variant, otherwise DCE IR optimization breaks!"
-                ],
-        "DestSize": "Size",
-        "EmitValidation": [
-          "Size == FEXCore::IR::OpSize::i8Bit || Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
-        ]
-      },
-      "AtomicNeg OpSize:#Size, GPR:$Addr": {
-        "HasSideEffects": true,
-        "Desc": ["Atomic integer two's complement negate",
                  "IR layout must match Fetch-variant, otherwise DCE IR optimization breaks!"
                 ],
         "DestSize": "Size",
