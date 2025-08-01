@@ -136,62 +136,6 @@ public:
   }
 
   // Advanced SIMD permute
-  template<SubRegSize size>
-  void uzp1(QRegister rd, QRegister rn, QRegister rm) {
-    ASIMDPermute(1, size, 0b001, rd.V(), rn.V(), rm.V());
-  }
-  template<SubRegSize size>
-  requires (size != SubRegSize::i64Bit)
-  void uzp1(DRegister rd, DRegister rn, DRegister rm) {
-    ASIMDPermute(0, size, 0b001, rd.V(), rn.V(), rm.V());
-  }
-  template<SubRegSize size>
-  void trn1(QRegister rd, QRegister rn, QRegister rm) {
-    ASIMDPermute(1, size, 0b010, rd.V(), rn.V(), rm.V());
-  }
-  template<SubRegSize size>
-  requires (size != SubRegSize::i64Bit)
-  void trn1(DRegister rd, DRegister rn, DRegister rm) {
-    ASIMDPermute(0, size, 0b010, rd.V(), rn.V(), rm.V());
-  }
-  template<SubRegSize size>
-  void zip1(QRegister rd, QRegister rn, QRegister rm) {
-    ASIMDPermute(1, size, 0b011, rd.V(), rn.V(), rm.V());
-  }
-  template<SubRegSize size>
-  requires (size != SubRegSize::i64Bit)
-  void zip1(DRegister rd, DRegister rn, DRegister rm) {
-    ASIMDPermute(0, size, 0b011, rd.V(), rn.V(), rm.V());
-  }
-  template<SubRegSize size>
-  void uzp2(QRegister rd, QRegister rn, QRegister rm) {
-    ASIMDPermute(1, size, 0b101, rd.V(), rn.V(), rm.V());
-  }
-  template<SubRegSize size>
-  requires (size != SubRegSize::i64Bit)
-  void uzp2(DRegister rd, DRegister rn, DRegister rm) {
-    ASIMDPermute(0, size, 0b101, rd.V(), rn.V(), rm.V());
-  }
-  template<SubRegSize size>
-  void trn2(QRegister rd, QRegister rn, QRegister rm) {
-    ASIMDPermute(1, size, 0b110, rd.V(), rn.V(), rm.V());
-  }
-  template<SubRegSize size>
-  requires (size != SubRegSize::i64Bit)
-  void trn2(DRegister rd, DRegister rn, DRegister rm) {
-    ASIMDPermute(0, size, 0b110, rd.V(), rn.V(), rm.V());
-  }
-  template<SubRegSize size>
-  void zip2(QRegister rd, QRegister rn, QRegister rm) {
-    ASIMDPermute(1, size, 0b111, rd.V(), rn.V(), rm.V());
-  }
-  template<SubRegSize size>
-  requires (size != SubRegSize::i64Bit)
-  void zip2(DRegister rd, DRegister rn, DRegister rm) {
-    ASIMDPermute(0, size, 0b111, rd.V(), rn.V(), rm.V());
-  }
-
-
   void uzp1(SubRegSize size, QRegister rd, QRegister rn, QRegister rm) {
     ASIMDPermute(1, size, 0b001, rd.V(), rn.V(), rm.V());
   }
