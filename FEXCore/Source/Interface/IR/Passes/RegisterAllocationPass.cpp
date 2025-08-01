@@ -152,11 +152,13 @@ private:
     if (IROp->Op == OP_LOADREGISTER || IROp->Op == OP_LOADPF || IROp->Op == OP_LOADAF) {
       return Node;
     } else if (IROp->Op == OP_STOREREGISTER) {
-      const IROp_StoreRegister* Op = IROp->C<IR::IROp_StoreRegister>();
-      return IR->GetNode(Op->Value);
+      auto V = IROp->C<IR::IROp_StorePF>()->Value;
+      V.ClearKill();
+      return IR->GetNode(V);
     } else if (IROp->Op == OP_STOREPF || IROp->Op == OP_STOREAF) {
-      const IROp_StorePF* Op = IROp->C<IR::IROp_StorePF>();
-      return IR->GetNode(Op->Value);
+      auto V = IROp->C<IR::IROp_StorePF>()->Value;
+      V.ClearKill();
+      return IR->GetNode(V);
     }
 
     return nullptr;
