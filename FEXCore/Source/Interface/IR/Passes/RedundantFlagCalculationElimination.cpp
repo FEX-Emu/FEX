@@ -452,35 +452,6 @@ bool DeadFlagCalculationEliminination::EliminateDeadCode(IREmitter* IREmit, Ref 
     return false;
   }
 
-  switch (IROp->Op) {
-  case OP_SYSCALL: {
-    auto Op = IROp->C<IR::IROp_Syscall>();
-    if ((Op->Flags & IR::SyscallFlags::NOSIDEEFFECTS) != IR::SyscallFlags::NOSIDEEFFECTS) {
-      return false;
-    }
-
-    break;
-  }
-  case OP_INLINESYSCALL: {
-    auto Op = IROp->C<IR::IROp_Syscall>();
-    if ((Op->Flags & IR::SyscallFlags::NOSIDEEFFECTS) != IR::SyscallFlags::NOSIDEEFFECTS) {
-      return false;
-    }
-
-    break;
-  }
-
-  // If the result of the atomic fetch is completely unused, convert it to a non-fetching atomic operation.
-  case OP_ATOMICFETCHADD: IROp->Op = OP_ATOMICADD; return true;
-  case OP_ATOMICFETCHSUB: IROp->Op = OP_ATOMICSUB; return true;
-  case OP_ATOMICFETCHAND: IROp->Op = OP_ATOMICAND; return true;
-  case OP_ATOMICFETCHCLR: IROp->Op = OP_ATOMICCLR; return true;
-  case OP_ATOMICFETCHOR: IROp->Op = OP_ATOMICOR; return true;
-  case OP_ATOMICFETCHXOR: IROp->Op = OP_ATOMICXOR; return true;
-  case OP_ATOMICFETCHNEG: IROp->Op = OP_ATOMICNEG; return true;
-  default: break;
-  }
-
   IREmit->Remove(CodeNode);
   return true;
 }
