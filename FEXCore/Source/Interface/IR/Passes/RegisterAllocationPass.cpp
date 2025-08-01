@@ -75,6 +75,9 @@ private:
   // Maps defs to their assigned spill slot + 1, or 0 if not spilled.
   fextl::vector<unsigned> SpillSlots;
 
+  // Sources that have been seen
+  fextl::vector<bool> Seen;
+
   bool Rematerializable(IROp_Header* IROp) {
     return IROp->Op == OP_CONSTANT;
   }
@@ -505,6 +508,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
 
   // Next-use distance relative to the block end of each source, last first.
   fextl::vector<uint32_t> SourcesNextUses;
+  Seen.resize(IR->GetSSACount(), false);
 
   for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
     // Spilling is local, so reset this per-block
@@ -580,6 +584,17 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         // IP is relative to block end and we iterate backwards, so increment.
         ++IP;
 
+        for (int i = NumArgs - 1; i >= 0; --i) {
+          const auto& Arg = IROp->Args[i];
+          if (!Arg.IsInvalid()) {
+            const uint32_t Index = Arg.ID().Value;
+            if (!Seen[Index]) {
+              Seen[Index] = true;
+              IROp->Args[i].SetKill();
+            }
+          }
+        }
+
         // Rest is iteration gunk
         if (CodeLast == CodeBegin) {
           break;
@@ -646,11 +661,14 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
       // the register file simultaneously.
       if (AnySpilledBeforeThisInstruction) {
         for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
-          if (!IsValidArg(IROp->Args[s])) {
+          auto V = IROp->Args[s];
+          V.ClearKill();
+
+          if (!IsValidArg(V)) {
             continue;
           }
 
-          Ref Old = IR->GetNode(IROp->Args[s]);
+          Ref Old = IR->GetNode(V);
 
           if (!IsInRegisterFile(Old)) {
             IREmit->SetWriteCursorBefore(CodeNode);
@@ -669,7 +687,10 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
           continue;
         }
 
-        Ref Node = IR->GetNode(IROp->Args[s]);
+        bool Killed = IROp->Args[s].HasKill();
+        IROp->Args[s].ClearKill();
+        auto V = IROp->Args[s];
+        Ref Node = IR->GetNode(V);
         auto ID = IR->GetID(Node).Value;
         auto Reg = SSAToReg[ID];
 
@@ -679,7 +700,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         if (!Reg.IsInvalid()) {
           IROp->Args[s].SetImmediate(Reg.Raw);
 
-          if (!SourcesNextUses[SourceIndex]) {
+          if (Killed) {
             LOGMAN_THROW_A_FMT(IsInRegisterFile(Node), "sources in file");
             FreeReg(Reg);
           }
@@ -712,6 +733,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
   SSAToReg.clear();
   SpillSlots.clear();
   NextUses.clear();
+  Seen.clear();
 
   IR->GetHeader()->PostRA = true;
 }
