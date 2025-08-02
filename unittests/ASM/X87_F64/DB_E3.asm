@@ -3,7 +3,7 @@
   "RegData": {
     "RAX": "0x037F"
   },
-  "Mode": "32BIT"
+  "Env": { "FEX_X87REDUCEDPRECISION" : "1" }
 }
 %endif
 

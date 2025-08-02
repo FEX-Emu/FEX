@@ -2,8 +2,7 @@
 {
   "RegData": {
     "RAX": "0x037F"
-  },
-  "Mode": "32BIT"
+  }
 }
 %endif
 
