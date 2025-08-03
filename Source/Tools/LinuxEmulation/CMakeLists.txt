@@ -105,6 +105,7 @@ set(HEADERS_TO_VERIFY
   LinuxSyscalls/x32/Ioctl/input.h    x86_32 # This needs to match structs to 32bit structs
   LinuxSyscalls/x32/Ioctl/sockios.h  x86_32 # This needs to match structs to 32bit structs
   LinuxSyscalls/x32/Ioctl/joystick.h x86_32 # This needs to match structs to 32bit structs
+  LinuxSyscalls/x32/Ioctl/v4l2.h     x86_32 # This needs to match structs to 32bit structs
   LinuxSyscalls/x64/Types.h          x86_64 # This needs to match structs to 64bit structs
 )
 

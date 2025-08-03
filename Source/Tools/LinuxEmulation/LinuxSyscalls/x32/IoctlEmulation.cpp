@@ -10,6 +10,7 @@
 #include "LinuxSyscalls/x32/Ioctl/input.h"
 #include "LinuxSyscalls/x32/Ioctl/joystick.h"
 #include "LinuxSyscalls/x32/Ioctl/wireless.h"
+#include "LinuxSyscalls/x32/Ioctl/v4l2.h"
 #undef _BASIC_META
 #undef _BASIC_META_VAR
 #undef _CUSTOM_META
@@ -41,6 +42,74 @@ namespace BasicHandler {
     SYSCALL_ERRNO();
   }
 } // namespace BasicHandler
+
+namespace V4l2 {
+  uint32_t V4l2Handler(int fd, uint32_t cmd, uint32_t args) {
+    switch (_IOC_NR(cmd)) {
+    case _IOC_NR(FEX_VIDIOC_G_FMT): {
+      fex_v4l2_format* format = reinterpret_cast<fex_v4l2_format*>(args);
+      v4l2_format Host_format {.type = format->type};
+      if (Host_format.type == V4L2_BUF_TYPE_VIDEO_OVERLAY || Host_format.type == V4L2_BUF_TYPE_VIDEO_OUTPUT_OVERLAY) {
+        uint64_t Result = ::ioctl(fd, cmd, args);
+        SYSCALL_ERRNO();
+      }
+      uint64_t Result = ::ioctl(fd, VIDIOC_G_FMT, &Host_format);
+      if (Result != -1) {
+        *format = Host_format;
+      }
+      SYSCALL_ERRNO();
+      break;
+    }
+    case _IOC_NR(FEX_VIDIOC_S_FMT): {
+      fex_v4l2_format* format = reinterpret_cast<fex_v4l2_format*>(args);
+      v4l2_format Host_format = *format;
+      if (Host_format.type == V4L2_BUF_TYPE_VIDEO_OVERLAY || Host_format.type == V4L2_BUF_TYPE_VIDEO_OUTPUT_OVERLAY) {
+        uint64_t Result = ::ioctl(fd, cmd, args);
+        SYSCALL_ERRNO();
+      }
+      uint64_t Result = ::ioctl(fd, VIDIOC_S_FMT, &Host_format);
+      if (Result != -1) {
+        *format = Host_format;
+      }
+      SYSCALL_ERRNO();
+      break;
+    }
+    case _IOC_NR(FEX_VIDIOC_TRY_FMT): {
+      fex_v4l2_format* format = reinterpret_cast<fex_v4l2_format*>(args);
+      v4l2_format Host_format = *format;
+      if (Host_format.type == V4L2_BUF_TYPE_VIDEO_OVERLAY || Host_format.type == V4L2_BUF_TYPE_VIDEO_OUTPUT_OVERLAY) {
+        uint64_t Result = ::ioctl(fd, cmd, args);
+        SYSCALL_ERRNO();
+      }
+      uint64_t Result = ::ioctl(fd, VIDIOC_TRY_FMT, &Host_format);
+      if (Result != -1) {
+        *format = Host_format;
+      }
+      SYSCALL_ERRNO();
+      break;
+    }
+#define _BASIC_META(x) case _IOC_NR(x):
+#define _BASIC_META_VAR(x, args...) case _IOC_NR(x):
+#define _CUSTOM_META(name, ioctl_num)
+#define _CUSTOM_META_OFFSET(name, ioctl_num, offset)
+#include "LinuxSyscalls/x32/Ioctl/v4l2.inl"
+      {
+        uint64_t Result = ::ioctl(fd, cmd, args);
+        SYSCALL_ERRNO();
+        break;
+      }
+    default:
+      UnhandledIoctl("V4L2", fd, cmd, args);
+      return -EPERM;
+      break;
+    }
+#undef _BASIC_META
+#undef _BASIC_META_VAR
+#undef _CUSTOM_META
+#undef _CUSTOM_META_OFFSET
+    return -EPERM;
+  }
+} // namespace V4l2
 
 namespace DRM {
   uint32_t AddAndRunHandler(int fd, uint32_t cmd, uint32_t args);
@@ -715,12 +784,25 @@ using HandlerType = uint32_t (*)(int fd, uint32_t cmd, uint32_t args);
 std::array<HandlerType, 1U << _IOC_TYPEBITS> Handlers = []() consteval {
   using namespace DRM;
   using namespace sockios;
+  using namespace V4l2;
   std::array<HandlerType, 1U << _IOC_TYPEBITS> Handlers {};
 
   ///< Default fill handlers with BasicHandler.
   for (auto& Handler : Handlers) {
     Handler = FEX::HLE::x32::BasicHandler::BasicHandler;
   }
+
+#define _BASIC_META(x) Handlers[_IOC_TYPE(x)] = FEX::HLE::x32::V4l2::V4l2Handler;
+#define _BASIC_META_VAR(x, args...) Handlers[_IOC_TYPE(x(args))] = FEX::HLE::x32::V4l2::V4l2Handler;
+#define _CUSTOM_META(name, ioctl_num) Handlers[_IOC_TYPE(FEX_##name)] = FEX::HLE::x32::V4l2::V4l2Handler;
+#define _CUSTOM_META_OFFSET(name, ioctl_num, offset) Handlers[_IOC_TYPE(FEX_##name)] = FEX::HLE::x32::V4l2::V4l2Handler;
+  // V4L2
+#include "LinuxSyscalls/x32/Ioctl/v4l2.inl"
+
+#undef _BASIC_META
+#undef _BASIC_META_VAR
+#undef _CUSTOM_META
+#undef _CUSTOM_META_OFFSET
 
 #define _BASIC_META(x) Handlers[_IOC_TYPE(x)] = FEX::HLE::x32::DRM::Handler;
 #define _BASIC_META_VAR(x, args...) Handlers[_IOC_TYPE(x(args))] = FEX::HLE::x32::DRM::Handler;
