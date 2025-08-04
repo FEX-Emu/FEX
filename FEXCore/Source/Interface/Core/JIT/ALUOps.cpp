@@ -515,6 +515,12 @@ DEF_OP(AndWithFlags) {
   }
 }
 
+DEF_OP(AndShift) {
+  auto Op = IROp->C<IR::IROp_XorShift>();
+
+  and_(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src1), GetReg(Op->Src2), ConvertIRShiftType(Op->Shift), Op->ShiftAmount);
+}
+
 DEF_OP(XorShift) {
   auto Op = IROp->C<IR::IROp_XorShift>();
 

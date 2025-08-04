@@ -380,22 +380,20 @@ private:
     }
 
     // Try to coalesce reserved pairs. Just a heuristic to remove some moves.
-    if (IROp->Op == OP_ALLOCATEGPR) {
-      if (IROp->C<IROp_AllocateGPR>()->ForPair) {
-        uint32_t Available = Classes[GPRClass].Available;
+    if (IROp->Op == OP_ALLOCATEGPR && IROp->C<IROp_AllocateGPR>()->ForPair) {
+      uint32_t Available = Classes[GPRClass].Available;
 
-        // Only choose base register R if R and R + 1 are both free
-        Available &= (Available >> 1);
+      // Only choose base register R if R and R + 1 are both free
+      Available &= (Available >> 1);
 
-        // Only consider aligned registers in the pair region
-        constexpr uint32_t EVEN_BITS = 0x55555555;
-        Available &= (EVEN_BITS & ((1u << PairRegs) - 1));
+      // Only consider aligned registers in the pair region
+      constexpr uint32_t EVEN_BITS = 0x55555555;
+      Available &= (EVEN_BITS & ((1u << PairRegs) - 1));
 
-        if (Available) {
-          unsigned Reg = std::countr_zero(Available);
-          SetReg(CodeNode, PhysicalRegister(GPRClass, Reg));
-          return;
-        }
+      if (Available) {
+        unsigned Reg = std::countr_zero(Available);
+        SetReg(CodeNode, PhysicalRegister(GPRClass, Reg));
+        return;
       }
     } else if (IROp->Op == OP_ALLOCATEGPRAFTER) {
       uint32_t Available = Classes[GPRClass].Available;
