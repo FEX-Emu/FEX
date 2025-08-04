@@ -742,7 +742,6 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
         DecodeInst->Flags |= DecodeFlags::FLAG_OPTION_AVX_W;
       }
       if (!(map_select >= 1 && map_select <= 3)) {
-        LogMan::Msg::EFmt("We don't understand a map_select of: {}", map_select);
         return false;
       }
     }
