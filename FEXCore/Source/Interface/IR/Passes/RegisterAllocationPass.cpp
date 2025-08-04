@@ -230,11 +230,11 @@ private:
 
       const uint8_t NumArgs = IR::GetRAArgs(IROp->Op);
       for (int i = NumArgs - 1; i >= 0; --i) {
-        auto& Arg = IROp->Args[i];
-        Arg.ClearKill();
+        auto V = IROp->Args[i];
+        V.ClearKill();
 
-        if (!Arg.IsInvalid()) {
-          const uint32_t Index = Arg.ID().Value;
+        if (IsValidArg(V)) {
+          const uint32_t Index = V.ID().Value;
 
           SourcesNextUses.push_back(NextUses[Index]);
           NextUses[Index] = IP;
@@ -684,13 +684,22 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
       //
       // This happens before freeing killed sources, since we need all sources in
       // the register file simultaneously.
+      //
+      // Also update next-use info, again only relevant if we've spilled.
       if (AnySpilledBeforeThisInstruction) {
         for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
-          if (!IsValidArg(IROp->Args[s])) {
+          auto V = IROp->Args[s];
+          V.ClearKill();
+
+          if (!IsValidArg(V)) {
             continue;
           }
 
-          Ref Old = IR->GetNode(IROp->Args[s]);
+          Ref Old = IR->GetNode(V);
+
+          SourceIndex--;
+          LOGMAN_THROW_A_FMT(SourceIndex >= 0, "Consistent source count");
+          NextUses[V.ID().Value] = SourcesNextUses[SourceIndex];
 
           if (!IsInRegisterFile(Old)) {
             IREmit->SetWriteCursorBefore(CodeNode);
@@ -702,50 +711,26 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
             RemapReg(Old, PhysicalRegister(Fill));
           }
         }
+      }
 
-        for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
-          if (IROp->Args[s].IsInvalid()) {
-            continue;
-          }
-
-          Ref Node = IR->GetNode(IROp->Args[s]);
-          auto ID = IR->GetID(Node).Value;
-          auto Reg = SSAToReg[ID];
-
-          SourceIndex--;
-          LOGMAN_THROW_A_FMT(SourceIndex >= 0, "Consistent source count");
-
-          if (!Reg.IsInvalid()) {
-            IROp->Args[s].SetImmediate(Reg.Raw);
-
-            if (!SourcesNextUses[SourceIndex]) {
-              LOGMAN_THROW_A_FMT(IsInRegisterFile(Node), "sources in file");
-              FreeReg(Reg);
-            }
-          }
-
-          NextUses[ID] = SourcesNextUses[SourceIndex];
+      for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
+        if (IROp->Args[s].IsInvalid()) {
+          continue;
         }
-      } else {
-        for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
-          if (IROp->Args[s].IsInvalid()) {
-            continue;
+
+        bool Kill = IROp->Args[s].HasKill();
+        IROp->Args[s].ClearKill();
+        Ref Node = IR->GetNode(IROp->Args[s]);
+        auto ID = IR->GetID(Node).Value;
+        auto Reg = SSAToReg[ID];
+
+        if (!Reg.IsInvalid()) {
+          if (Kill) {
+            LOGMAN_THROW_A_FMT(IsInRegisterFile(Node), "sources in file");
+            FreeReg(Reg);
           }
 
-          bool Kill = IROp->Args[s].HasKill();
-          IROp->Args[s].ClearKill();
-          Ref Node = IR->GetNode(IROp->Args[s]);
-          auto ID = IR->GetID(Node).Value;
-          auto Reg = SSAToReg[ID];
-
-          if (!Reg.IsInvalid()) {
-            if (Kill) {
-              LOGMAN_THROW_A_FMT(IsInRegisterFile(Node), "sources in file");
-              FreeReg(Reg);
-            }
-
-            IROp->Args[s].SetImmediate(Reg.Raw);
-          }
+          IROp->Args[s].SetImmediate(Reg.Raw);
         }
       }
 
