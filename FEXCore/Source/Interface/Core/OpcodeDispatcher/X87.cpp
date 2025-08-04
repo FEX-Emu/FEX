@@ -32,21 +32,25 @@ Ref OpDispatchBuilder::GetX87Top() {
 }
 
 void OpDispatchBuilder::SetX87FTW(Ref FTW) {
-  Ref X87Empty = Constant(static_cast<uint8_t>(FPState::X87Tag::Empty));
-  Ref NewAbridgedFTW {};
+  // For the output, we want a 1-bit for each pair not equal to 11 (Empty).
+  static_assert(static_cast<uint8_t>(FPState::X87Tag::Empty) == 0b11);
 
-  for (int i = 0; i < 8; i++) {
-    Ref RegTag = _Bfe(OpSize::i32Bit, 2, i * 2, FTW);
-    Ref RegValid = _Select(FEXCore::IR::COND_NEQ, RegTag, X87Empty, Constant(1), Constant(0));
+  // Make even bits 1 if the pair is equal to 11, and 0 otherwise.
+  FTW = _AndShift(OpSize::i32Bit, FTW, FTW, ShiftType::LSR, 1);
 
-    if (i) {
-      NewAbridgedFTW = _Orlshl(OpSize::i32Bit, NewAbridgedFTW, RegValid, i);
-    } else {
-      NewAbridgedFTW = RegValid;
-    }
-  }
+  // Invert FTW and clear the odd bits. Even bits are 1 if the pair
+  // is not equal to 11, and odd bits are 0.
+  FTW = _Andn(OpSize::i32Bit, Constant(0x55555555), FTW);
 
-  StoreContext(AbridgedFTWIndex, NewAbridgedFTW);
+  // All that's left is to compact away the odd bits. That is a Morton
+  // deinterleave operation, which has a standard solution. See
+  // https://stackoverflow.com/questions/3137266/how-to-de-interleave-bits-unmortonizing
+  FTW = _And(OpSize::i32Bit, _Orlshr(OpSize::i32Bit, FTW, FTW, 1), Constant(0x33333333));
+  FTW = _And(OpSize::i32Bit, _Orlshr(OpSize::i32Bit, FTW, FTW, 2), Constant(0x0f0f0f0f));
+  FTW = _Orlshr(OpSize::i32Bit, FTW, FTW, 4);
+
+  // ...and that's it. StoreContext implicitly does the final masking.
+  StoreContext(AbridgedFTWIndex, FTW);
 }
 
 void OpDispatchBuilder::SetX87Top(Ref Value) {
