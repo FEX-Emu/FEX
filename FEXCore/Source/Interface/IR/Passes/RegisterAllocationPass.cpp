@@ -149,8 +149,20 @@ private:
 
   bool HasSource(IROp_Header* I, PhysicalRegister Reg) {
     for (auto s = 0; s < IR::GetRAArgs(I->Op); ++s) {
-      if (I->Args[s].IsImmediate() && PhysicalRegister(I->Args[s]) == Reg) {
-        return true;
+      if (I->Args[s].IsImmediate()) {
+        // When spilling for a destination, we'll see register sources
+        if (PhysicalRegister(I->Args[s]) == Reg) {
+          return true;
+        }
+      } else {
+        // When spilling for SRA correctness, we'll see SSA sources. This is
+        // pretty obscure.
+        auto V = I->Args[s];
+        V.ClearKill();
+
+        if (IsValidArg(V) && SSAToReg[V.ID().Value] == Reg) {
+          return true;
+        }
       }
     }
 
