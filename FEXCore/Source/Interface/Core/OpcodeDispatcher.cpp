@@ -453,7 +453,7 @@ void OpDispatchBuilder::POPAOp(OpcodeArgs) {
   StoreGPRRegister(X86State::REG_RBP, Pop(Size, SP), Size);
 
   // Skip loading RSP because it'll be correct at the end
-  SP = _RMWHandle(_Add(OpSize::i64Bit, SP, _InlineConstant(IR::OpSizeToSize(Size))));
+  SP = _RMWHandle(Add(OpSize::i64Bit, SP, IR::OpSizeToSize(Size)));
 
   StoreGPRRegister(X86State::REG_RBX, Pop(Size, SP), Size);
   StoreGPRRegister(X86State::REG_RDX, Pop(Size, SP), Size);
@@ -524,7 +524,7 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
   int64_t TargetOffset = Op->Src[0].Literal();
 
   auto NewRIP = GetRelocatedPC(Op, TargetOffset);
-  auto ConstantPC = _Sub(GPRSize, NewRIP, Constant(TargetOffset));
+  auto ConstantPC = Sub(GPRSize, NewRIP, TargetOffset);
 
   // Push the return address.
   Push(GPRSize, ConstantPC);
@@ -826,7 +826,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
   uint64_t Target = Op->PC + Op->InstSize + Op->Src[1].Literal();
 
   Ref CondReg = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
-  CondReg = _Sub(OpSize, CondReg, _InlineConstant(1));
+  CondReg = Sub(OpSize, CondReg, 1);
   StoreResult(GPRClass, Op, Op->Src[0], CondReg, OpSize::iInvalid);
 
   // If LOOPE then jumps to target if RCX != 0 && ZF == 1
@@ -1678,7 +1678,7 @@ void OpDispatchBuilder::BLSMSKBMIOp(OpcodeArgs) {
   const auto Size = OpSizeFromSrc(Op);
 
   auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
-  auto Result = _Xor(Size, _Sub(Size, Src, _InlineConstant(1)), Src);
+  auto Result = _Xor(Size, Sub(Size, Src, 1), Src);
 
   StoreResult(GPRClass, Op, Result, OpSize::iInvalid);
   InvalidatePF_AF();
@@ -1698,7 +1698,7 @@ void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
   const auto Size = OpSizeFromSrc(Op);
 
   auto* Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
-  auto Result = _And(Size, _Sub(Size, Src, _InlineConstant(1)), Src);
+  auto Result = _And(Size, Sub(Size, Src, 1), Src);
 
   StoreResult(GPRClass, Op, Result, OpSize::iInvalid);
 
@@ -2021,7 +2021,7 @@ void OpDispatchBuilder::RCROp(OpcodeArgs) {
 
       // Our new CF will be bit (Shift - 1) of the source. this is hoisted up to
       // avoid the need to copy the source. Again, the Lshr absorbs the masking.
-      auto NewCF = _Lshr(OpSize, Dest, _Sub(OpSize, Src, _InlineConstant(1)));
+      auto NewCF = _Lshr(OpSize, Dest, Sub(OpSize, Src, 1));
       SetCFDirect(NewCF, 0, true);
 
       // Since shift != 0 we can inject the CF
@@ -2125,7 +2125,7 @@ void OpDispatchBuilder::RCRSmallerOp(OpcodeArgs) {
     if (Src.IsConstant) {
       SetCFDirect(Tmp, (Src.C & 0x1f) - 1, true);
     } else {
-      auto NewCF = _Lshr(OpSize::i32Bit, Tmp, _Sub(OpSize::i32Bit, Src.Ref(), _InlineConstant(1)));
+      auto NewCF = _Lshr(OpSize::i32Bit, Tmp, Sub(OpSize::i32Bit, Src.Ref(), 1));
       SetCFDirect(NewCF, 0, true);
     }
 
@@ -2235,7 +2235,7 @@ void OpDispatchBuilder::RCLOp(OpcodeArgs) {
       SetCFDirect(NewCF, 0, true);
 
       // Since Shift != 0 we can inject the CF. Shift absorbs the masking.
-      Ref CFShl = _Sub(OpSize, Src, _InlineConstant(1));
+      Ref CFShl = Sub(OpSize, Src, 1);
       auto TmpCF = _Lshl(OpSize, CF, CFShl);
       Res = _Or(OpSize, Res, TmpCF);
 
@@ -2748,10 +2748,10 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   CFInv = _And(OpSize::i64Bit, CFInv, Select01(OpSize::i64Bit, CondClassType {COND_ULE}, AL, Constant(0x99)));
 
   // AL = AF ? (AL + 0x6) : AL;
-  AL = _Select(FEXCore::IR::COND_NEQ, AF, Constant(0), _Add(OpSize::i64Bit, AL, Constant(0x6)), AL);
+  AL = _Select(FEXCore::IR::COND_NEQ, AF, Constant(0), Add(OpSize::i64Bit, AL, 0x6), AL);
 
   // AL = CF ? (AL + 0x60) : AL;
-  AL = _Select(FEXCore::IR::COND_EQ, CFInv, Constant(0), _Add(OpSize::i64Bit, AL, Constant(0x60)), AL);
+  AL = _Select(FEXCore::IR::COND_EQ, CFInv, Constant(0), Add(OpSize::i64Bit, AL, 0x60), AL);
 
   // SF, ZF, PF set according to result. CF set per above. OF undefined.
   StoreGPRRegister(X86State::REG_RAX, AL, OpSize::i8Bit);
@@ -2774,10 +2774,10 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
   auto NewCF = _Or(OpSize::i32Bit, CF, _Select(FEXCore::IR::COND_ULT, AL, Constant(6), AF, CF));
 
   // AL = AF ? (AL - 0x6) : AL;
-  AL = _Select(FEXCore::IR::COND_NEQ, AF, Constant(0), _Sub(OpSize::i64Bit, AL, Constant(0x6)), AL);
+  AL = _Select(FEXCore::IR::COND_NEQ, AF, Constant(0), Sub(OpSize::i64Bit, AL, 0x6), AL);
 
   // AL = CF ? (AL - 0x60) : AL;
-  AL = _Select(FEXCore::IR::COND_NEQ, CF, Constant(0), _Sub(OpSize::i64Bit, AL, Constant(0x60)), AL);
+  AL = _Select(FEXCore::IR::COND_NEQ, CF, Constant(0), Sub(OpSize::i64Bit, AL, 0x60), AL);
 
   // SF, ZF, PF set according to result. CF set per above. OF undefined.
   StoreGPRRegister(X86State::REG_RAX, AL, OpSize::i8Bit);
@@ -2797,7 +2797,7 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
   CalculateDeferredFlags();
 
   // AX = CF ? (AX + 0x106) : 0
-  A = NZCVSelect(OpSize::i32Bit, {COND_UGE} /* CF = 1 */, _Add(OpSize::i32Bit, A, Constant(0x106)), A);
+  A = NZCVSelect(OpSize::i32Bit, {COND_UGE} /* CF = 1 */, Add(OpSize::i32Bit, A, 0x106), A);
 
   // AL = AL & 0x0F
   A = _And(OpSize::i32Bit, A, Constant(0xFF0F));
@@ -2814,7 +2814,7 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
   CalculateDeferredFlags();
 
   // AX = CF ? (AX - 0x106) : 0
-  A = NZCVSelect(OpSize::i32Bit, {COND_UGE} /* CF = 1 */, _Sub(OpSize::i32Bit, A, Constant(0x106)), A);
+  A = NZCVSelect(OpSize::i32Bit, {COND_UGE} /* CF = 1 */, Sub(OpSize::i32Bit, A, 0x106), A);
 
   // AL = AL & 0x0F
   A = _And(OpSize::i32Bit, A, Constant(0xFF0F));
@@ -2908,14 +2908,13 @@ void OpDispatchBuilder::EnterOp(OpcodeArgs) {
 
   if (Level > 0) {
     for (uint8_t i = 1; i < Level; ++i) {
-      auto Offset = Constant(i * IR::OpSizeToSize(GPRSize));
-      auto MemLoc = _Sub(GPRSize, OldBP, Offset);
+      auto MemLoc = Sub(GPRSize, OldBP, i * IR::OpSizeToSize(GPRSize));
       auto Mem = _LoadMem(GPRClass, GPRSize, MemLoc, GPRSize);
       NewSP = PushValue(GPRSize, Mem);
     }
     NewSP = PushValue(GPRSize, temp_RBP);
   }
-  NewSP = _Sub(GPRSize, NewSP, Constant(AllocSpace));
+  NewSP = Sub(GPRSize, NewSP, AllocSpace);
   StoreGPRRegister(X86State::REG_RSP, NewSP);
   StoreGPRRegister(X86State::REG_RBP, temp_RBP);
 }
@@ -3045,7 +3044,7 @@ void OpDispatchBuilder::INCOp(OpcodeArgs) {
 
   if (Size < 32 && CTX->HostFeatures.SupportsFlagM) {
     // Addition producing upper garbage
-    Result = _Add(OpSize::i32Bit, Dest, _InlineConstant(1));
+    Result = Add(OpSize::i32Bit, Dest, 1);
     CalculatePF(Result);
     CalculateAF(Dest, Constant(1));
 
@@ -3086,7 +3085,7 @@ void OpDispatchBuilder::DECOp(OpcodeArgs) {
 
   if (Size < 32 && CTX->HostFeatures.SupportsFlagM) {
     // Subtraction producing upper garbage
-    Result = _Sub(OpSize::i32Bit, Dest, _InlineConstant(1));
+    Result = Sub(OpSize::i32Bit, Dest, 1);
     CalculatePF(Result);
     CalculateAF(Dest, Constant(1));
 
@@ -3278,17 +3277,17 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
         Ref TailCounter = LoadGPRRegister(X86State::REG_RCX);
 
         // Decrement counter
-        TailCounter = _SubWithFlags(OpSize::i64Bit, TailCounter, Constant(1));
+        TailCounter = SubWithFlags(OpSize::i64Bit, TailCounter, 1);
 
         // Store the counter since we don't have phis
         StoreGPRRegister(X86State::REG_RCX, TailCounter);
 
         // Offset the pointer
-        Dest_RDI = _Add(OpSize::i64Bit, Dest_RDI, Constant(PtrDir * static_cast<int32_t>(IR::OpSizeToSize(Size))));
+        Dest_RDI = Add(OpSize::i64Bit, Dest_RDI, PtrDir * static_cast<int32_t>(IR::OpSizeToSize(Size)));
         StoreGPRRegister(X86State::REG_RDI, Dest_RDI);
 
         // Offset second pointer
-        Dest_RSI = _Add(OpSize::i64Bit, Dest_RSI, Constant(PtrDir * static_cast<int32_t>(IR::OpSizeToSize(Size))));
+        Dest_RSI = Add(OpSize::i64Bit, Dest_RSI, PtrDir * static_cast<int32_t>(IR::OpSizeToSize(Size)));
         StoreGPRRegister(X86State::REG_RSI, Dest_RSI);
 
         // If TailCounter != 0, compare sources.
@@ -3388,13 +3387,13 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
         Ref TailDest_RSI = LoadGPRRegister(X86State::REG_RSI);
 
         // Decrement counter
-        TailCounter = _Sub(OpSize::i64Bit, TailCounter, Constant(1));
+        TailCounter = Sub(OpSize::i64Bit, TailCounter, 1);
 
         // Store the counter since we don't have phis
         StoreGPRRegister(X86State::REG_RCX, TailCounter);
 
         // Offset the pointer
-        TailDest_RSI = _Add(OpSize::i64Bit, TailDest_RSI, Constant(PtrDir * static_cast<int32_t>(IR::OpSizeToSize(Size))));
+        TailDest_RSI = Add(OpSize::i64Bit, TailDest_RSI, PtrDir * static_cast<int32_t>(IR::OpSizeToSize(Size)));
         StoreGPRRegister(X86State::REG_RSI, TailDest_RSI);
 
         // Jump back to the start, we have more work to do
@@ -3472,13 +3471,13 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
         Ref TailDest_RDI = LoadGPRRegister(X86State::REG_RDI);
 
         // Decrement counter
-        TailCounter = _Sub(OpSize::i64Bit, TailCounter, Constant(1));
+        TailCounter = Sub(OpSize::i64Bit, TailCounter, 1);
 
         // Store the counter since we don't have phis
         StoreGPRRegister(X86State::REG_RCX, TailCounter);
 
         // Offset the pointer
-        TailDest_RDI = _Add(OpSize::i64Bit, TailDest_RDI, Constant(Dir * static_cast<int32_t>(IR::OpSizeToSize(Size))));
+        TailDest_RDI = Add(OpSize::i64Bit, TailDest_RDI, Dir * static_cast<int32_t>(IR::OpSizeToSize(Size)));
         StoreGPRRegister(X86State::REG_RDI, TailDest_RDI);
 
         CalculateDeferredFlags();
@@ -4169,7 +4168,7 @@ Ref OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, const X86T
       } else {
         // For X87 extended doubles, Split the load.
         auto Res = _LoadMem(Class, OpSize::i64Bit, MemSrc, Align == OpSize::iInvalid ? OpSize : Align);
-        return _VLoadVectorElement(OpSize::i128Bit, OpSize::i16Bit, Res, 4, _Add(OpSize::i64Bit, MemSrc, _InlineConstant(8)));
+        return _VLoadVectorElement(OpSize::i128Bit, OpSize::i16Bit, Res, 4, Add(OpSize::i64Bit, MemSrc, 8));
       }
     }
 

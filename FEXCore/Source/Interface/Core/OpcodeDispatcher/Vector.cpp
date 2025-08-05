@@ -5078,7 +5078,7 @@ void OpDispatchBuilder::VPGATHER(OpcodeArgs) {
     ///< BaseAddr doesn't need to exist, calculate that here.
     Ref BaseAddr = VSIB.BaseAddr;
     if (BaseAddr && VSIB.Displacement) {
-      BaseAddr = _Add(OpSize::i64Bit, BaseAddr, Constant(VSIB.Displacement));
+      BaseAddr = Add(OpSize::i64Bit, BaseAddr, VSIB.Displacement);
     } else if (VSIB.Displacement) {
       BaseAddr = Constant(VSIB.Displacement);
     } else if (!BaseAddr) {
