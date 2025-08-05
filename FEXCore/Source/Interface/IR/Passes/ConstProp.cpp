@@ -185,38 +185,9 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
   }
   case OP_ADC:
   case OP_ADCWITHFLAGS:
+  case OP_STORECONTEXT:
   case OP_RMIFNZCV: {
     InlineIfZero(IREmit, CurrentIR, CodeNode, IROp, 0);
-    break;
-  }
-  case OP_STORECONTEXT: {
-    // For i128Bit, we won't see a normal Constant to inline, but as a special
-    // case we can replace with a 2x64-bit store which can use inline zeroes.
-    if (IROp->Size == OpSize::i128Bit) {
-      auto Op = IROp->C<IR::IROp_StoreContext>();
-      auto Header = IREmit->GetOpHeader(IROp->Args[0]);
-      const auto MAX_STP_OFFSET = (252 * 4);
-
-      if (Op->Offset <= MAX_STP_OFFSET && Header->Op == OP_LOADNAMEDVECTORCONSTANT) {
-        auto Const = Header->C<IR::IROp_LoadNamedVectorConstant>();
-
-        if (Const->Constant == IR::NamedVectorConstant::NAMED_VECTOR_ZERO) {
-          IREmit->SetWriteCursor(CodeNode);
-          Ref Zero = IREmit->_Constant(0);
-          Ref STP = IREmit->_StoreContextPair(IR::OpSize::i64Bit, GPRClass, Zero, Zero, Op->Offset);
-          IREmit->Remove(CodeNode);
-
-          // XXX: This works around InlineConstant not having an associated
-          // register class, else we'd just do InlineConstant above.
-          Ref InlineZero = IREmit->_InlineConstant(0);
-          IREmit->ReplaceNodeArgument(STP, 0, InlineZero);
-          IREmit->ReplaceNodeArgument(STP, 1, InlineZero);
-        }
-      }
-    } else {
-      InlineIfZero(IREmit, CurrentIR, CodeNode, IROp, 0);
-    }
-
     break;
   }
 
