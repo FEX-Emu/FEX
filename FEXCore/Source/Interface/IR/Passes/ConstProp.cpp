@@ -109,7 +109,6 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
   case OP_ADDWITHFLAGS:
   case OP_SUBWITHFLAGS: {
     auto Op = IROp->C<IR::IROp_Add>();
-    uint64_t Constant1 {};
     uint64_t Constant2 {};
     bool IsConstant2 = IREmit->IsValueConstant(IROp->Args[1], &Constant2);
 
@@ -117,13 +116,11 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
      * here so we get the optimization for 32-bit adds too.
      */
     if (Op->Header.Size == OpSize::i32Bit) {
-      Constant1 = (int64_t)(int32_t)Constant1;
       Constant2 = (int64_t)(int32_t)Constant2;
     }
 
-    if (IsConstant2 && !ARMEmitter::IsImmAddSub(Constant2) && ARMEmitter::IsImmAddSub(-Constant2)) {
-      // If the second argument is constant, the immediate is not ImmAddSub, but when negated is.
-      // So, negate the operation to negate (and inline) the constant.
+    if (IsConstant2 && Constant2 & (1ull << 63) && ARMEmitter::IsImmAddSub(-Constant2)) {
+      // Negative constants need to be negated to inline.
       if (IROp->Op == OP_ADD) {
         IROp->Op = OP_SUB;
       } else if (IROp->Op == OP_SUB) {
