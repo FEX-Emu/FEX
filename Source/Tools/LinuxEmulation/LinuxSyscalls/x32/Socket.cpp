@@ -21,9 +21,9 @@ $end_info$
 #include <sys/socket.h>
 #include <unistd.h>
 
-ARG_TO_STR(FEX::HLE::x32::compat_ptr<FEX::HLE::x32::mmsghdr_32>, "%lx")
-ARG_TO_STR(FEX::HLE::x32::compat_ptr<void>, "%lx")
-ARG_TO_STR(FEX::HLE::x32::compat_ptr<uint32_t>, "%lx")
+ARG_TO_STR(FEX::HLE::x32::auto_compat_ptr<FEX::HLE::x32::mmsghdr_32>, "%lx")
+ARG_TO_STR(FEX::HLE::x32::auto_compat_ptr<void>, "%lx")
+ARG_TO_STR(FEX::HLE::x32::auto_compat_ptr<uint32_t>, "%lx")
 
 namespace FEXCore::Core {
 struct CpuStateFrame;
