@@ -114,10 +114,10 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
   auto absolute = _Neg(OpSize::i64Bit, Data, CondClassType {COND_MI});
 
   // left justify the absolute integer
-  auto shift = _Sub(OpSize::i64Bit, Constant(63), _FindMSB(IR::OpSize::i64Bit, absolute));
+  auto shift = Sub(OpSize::i64Bit, Constant(63), _FindMSB(IR::OpSize::i64Bit, absolute));
   auto shifted = _Lshl(OpSize::i64Bit, absolute, shift);
 
-  auto adjusted_exponent = _Sub(OpSize::i64Bit, Constant(0x3fff + 63), shift);
+  auto adjusted_exponent = Sub(OpSize::i64Bit, Constant(0x3fff + 63), shift);
   auto zeroed_exponent = _Select(COND_EQ, absolute, zero, zero, adjusted_exponent);
   auto upper = _Or(OpSize::i64Bit, sign, zeroed_exponent);
 

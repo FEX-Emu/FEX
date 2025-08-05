@@ -286,7 +286,7 @@ Ref OpDispatchBuilder::CalculateFlags_ADC(IR::OpSize SrcSize, Ref Src1, Ref Src2
     Ref Src2PlusCF = IncrementByCarry(OpSize, Src2);
 
     // Need to zero-extend for the comparison.
-    Res = _Add(OpSize, Src1, Src2PlusCF);
+    Res = Add(OpSize, Src1, Src2PlusCF);
     Res = _Bfe(OpSize, IR::OpSizeAsBits(SrcSize), 0, Res);
 
     // TODO: We can fold that second Bfe in (cmp uxth).
@@ -321,7 +321,7 @@ Ref OpDispatchBuilder::CalculateFlags_SBB(IR::OpSize SrcSize, Ref Src1, Ref Src2
 
     auto Src2PlusCF = IncrementByCarry(OpSize, Src2);
 
-    Res = _Sub(OpSize, Src1, Src2PlusCF);
+    Res = Sub(OpSize, Src1, Src2PlusCF);
     Res = _Bfe(OpSize, IR::OpSizeAsBits(SrcSize), 0, Res);
 
     auto SelectCFInv = Select01(OpSize, CondClassType {COND_UGE}, Src1, Src2PlusCF);
@@ -345,10 +345,10 @@ Ref OpDispatchBuilder::CalculateFlags_SUB(IR::OpSize SrcSize, Ref Src1, Ref Src2
 
   Ref Res;
   if (SrcSize >= OpSize::i32Bit) {
-    Res = _SubWithFlags(SrcSize, Src1, Src2);
+    Res = SubWithFlags(SrcSize, Src1, Src2);
   } else {
     _SubNZCV(SrcSize, Src1, Src2);
-    Res = _Sub(OpSize::i32Bit, Src1, Src2);
+    Res = Sub(OpSize::i32Bit, Src1, Src2);
   }
 
   CalculatePF(Res);
@@ -375,10 +375,10 @@ Ref OpDispatchBuilder::CalculateFlags_ADD(IR::OpSize SrcSize, Ref Src1, Ref Src2
 
   Ref Res;
   if (SrcSize >= OpSize::i32Bit) {
-    Res = _AddWithFlags(SrcSize, Src1, Src2);
+    Res = AddWithFlags(SrcSize, Src1, Src2);
   } else {
     _AddNZCV(SrcSize, Src1, Src2);
-    Res = _Add(OpSize::i32Bit, Src1, Src2);
+    Res = Add(OpSize::i32Bit, Src1, Src2);
   }
 
   CalculatePF(Res);

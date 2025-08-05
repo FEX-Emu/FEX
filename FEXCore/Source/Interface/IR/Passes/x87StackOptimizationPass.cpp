@@ -410,7 +410,7 @@ inline Ref X87StackOptimization::GetOffsetTopWithCache_Slow(uint8_t Offset) {
 
   auto* OffsetTop = GetTopWithCache_Slow();
   if (Offset != 0) {
-    OffsetTop = IREmit->_And(OpSize::i32Bit, IREmit->_Add(OpSize::i32Bit, OffsetTop, GetConstant(Offset)), GetConstant(7));
+    OffsetTop = IREmit->_And(OpSize::i32Bit, IREmit->Add(OpSize::i32Bit, OffsetTop, Offset), GetConstant(7));
     // GetTopWithCache_Slow already sets the cache so we don't need to set it here for offset == 0
     TopOffsetCache[Offset] = OffsetTop;
   }
@@ -542,7 +542,7 @@ void X87StackOptimization::HandleBinopStack(IROps Op64, bool VFOp64, IROps Op80,
 inline void X87StackOptimization::UpdateTopForPop_Slow() {
   // Pop the top of the x87 stack
   auto* TopOffset = GetTopWithCache_Slow();
-  TopOffset = IREmit->_Add(OpSize::i32Bit, TopOffset, GetConstant(1));
+  TopOffset = IREmit->Add(OpSize::i32Bit, TopOffset, 1);
   TopOffset = IREmit->_And(OpSize::i32Bit, TopOffset, GetConstant(7));
   SetTopWithCache_Slow(TopOffset);
 }
@@ -550,7 +550,7 @@ inline void X87StackOptimization::UpdateTopForPop_Slow() {
 inline void X87StackOptimization::UpdateTopForPush_Slow() {
   // Pop the top of the x87 stack
   auto* TopOffset = GetTopWithCache_Slow();
-  TopOffset = IREmit->_Sub(OpSize::i32Bit, TopOffset, GetConstant(1));
+  TopOffset = IREmit->Sub(OpSize::i32Bit, TopOffset, 1);
   TopOffset = IREmit->_And(OpSize::i32Bit, TopOffset, GetConstant(7));
   SetTopWithCache_Slow(TopOffset);
 }
@@ -569,12 +569,7 @@ Ref X87StackOptimization::SynchronizeStackValues() {
 
   if (TopOffset != 0) {
     auto* OrigTop = GetTopWithCache_Slow();
-    Ref NewTop {};
-    if (TopOffset > 0) {
-      NewTop = IREmit->_And(OpSize::i32Bit, IREmit->_Sub(OpSize::i32Bit, OrigTop, GetConstant(TopOffset)), GetConstant(0x7));
-    } else {
-      NewTop = IREmit->_And(OpSize::i32Bit, IREmit->_Add(OpSize::i32Bit, OrigTop, GetConstant(-TopOffset)), GetConstant(0x7));
-    }
+    Ref NewTop = IREmit->_And(OpSize::i32Bit, IREmit->Sub(OpSize::i32Bit, OrigTop, TopOffset), GetConstant(0x7));
     SetTopWithCache_Slow(NewTop);
   }
   StackData.TopOffset = 0;
@@ -832,7 +827,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
             auto* TopValue = GetTopWithCache_Slow();
             if (Offset != 0) {
               auto* Mask = GetConstant(7);
-              TopValue = IREmit->_And(OpSize::i32Bit, IREmit->_Add(OpSize::i32Bit, TopValue, GetConstant(Offset)), Mask);
+              TopValue = IREmit->_And(OpSize::i32Bit, IREmit->Add(OpSize::i32Bit, TopValue, Offset), Mask);
             }
             SetX87ValidTag(TopValue, false);
           } else {

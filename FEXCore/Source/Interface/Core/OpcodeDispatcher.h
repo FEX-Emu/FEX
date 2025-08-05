@@ -1691,7 +1691,7 @@ private:
     // This is currently worse for 8/16-bit, but that should be optimized. TODO
     if (SrcSize >= OpSize::i32Bit) {
       if (SetPF) {
-        CalculatePF(SubWithFlags(SrcSize, Res, 0));
+        CalculatePF(SubWithFlags(SrcSize, Res, (uint64_t)0));
       } else {
         _SubNZCV(SrcSize, Res, Constant(0));
       }
@@ -2591,7 +2591,7 @@ private:
     }
 
     ArithRef Presub(uint64_t K) {
-      return IsConstant ? ArithRef(E, K - C) : ArithRef(E, E->_Sub(OpSize::i64Bit, E->Constant(K), R));
+      return IsConstant ? ArithRef(E, K - C) : ArithRef(E, E->Sub(OpSize::i64Bit, E->Constant(K), R));
     }
 
     ArithRef Lshl(uint64_t Shift) {

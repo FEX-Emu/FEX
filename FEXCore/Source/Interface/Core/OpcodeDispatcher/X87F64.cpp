@@ -382,7 +382,7 @@ void OpDispatchBuilder::X87FXTRACTF64(OpcodeArgs) {
 
   // non zero case
   Ref ExpNZ = _Bfe(OpSize::i64Bit, 11, 52, Gpr);
-  ExpNZ = _Sub(OpSize::i64Bit, ExpNZ, Constant(1023));
+  ExpNZ = Sub(OpSize::i64Bit, ExpNZ, Constant(1023));
   Ref ExpNZV = _Float_FromGPR_S(OpSize::i64Bit, OpSize::i64Bit, ExpNZ);
 
   Ref SigNZ = _And(OpSize::i64Bit, Gpr, Constant(0x800f'ffff'ffff'ffffLL));
