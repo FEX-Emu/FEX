@@ -1769,9 +1769,7 @@ void OpDispatchBuilder::BZHI(OpcodeArgs) {
   auto Result = _NZCVSelect(Size, {COND_NEQ}, Src, MaskResult);
   StoreResult(GPRClass, Op, Result, OpSize::iInvalid);
 
-  auto Zero = _InlineConstant(0);
-  auto One = _InlineConstant(1);
-  auto CFInv = _NZCVSelect(OpSize::i32Bit, {COND_EQ}, One, Zero);
+  auto CFInv = _NZCVSelect01({COND_EQ});
 
   InvalidatePF_AF();
   SetNZ_ZeroCV(Size, Result);

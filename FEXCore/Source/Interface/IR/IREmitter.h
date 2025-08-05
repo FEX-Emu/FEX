@@ -90,6 +90,10 @@ public:
     return Select01(CompareSize, CondClassType {COND_NEQ}, Cmp1, Constant(0));
   }
 
+  IRPair<IROp_NZCVSelect> _NZCVSelect01(CondClassType Cond) {
+    return _NZCVSelect(OpSize::i64Bit, Cond, _InlineConstant(1), _InlineConstant(0));
+  }
+
   int64_t Constants[32];
   Ref ConstantRefs[32];
   uint32_t NrConstants;
