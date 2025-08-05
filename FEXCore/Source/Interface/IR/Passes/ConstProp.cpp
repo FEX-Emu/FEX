@@ -105,52 +105,14 @@ private:
 void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& CurrentIR, Ref CodeNode, IROp_Header* IROp) {
   switch (IROp->Op) {
   case OP_ADD:
-  case OP_SUB:
   case OP_ADDWITHFLAGS:
-  case OP_SUBWITHFLAGS: {
-    auto Op = IROp->C<IR::IROp_Add>();
-    uint64_t Constant2 {};
-    bool IsConstant2 = IREmit->IsValueConstant(IROp->Args[1], &Constant2);
-
-    /* IsImmAddSub assumes the constants are sign-extended, take care of that
-     * here so we get the optimization for 32-bit adds too.
-     */
-    if (Op->Header.Size == OpSize::i32Bit) {
-      Constant2 = (int64_t)(int32_t)Constant2;
-    }
-
-    if (IsConstant2 && Constant2 & (1ull << 63) && ARMEmitter::IsImmAddSub(-Constant2)) {
-      // Negative constants need to be negated to inline.
-      if (IROp->Op == OP_ADD) {
-        IROp->Op = OP_SUB;
-      } else if (IROp->Op == OP_SUB) {
-        IROp->Op = OP_ADD;
-      } else if (IROp->Op == OP_ADDWITHFLAGS) {
-        IROp->Op = OP_SUBWITHFLAGS;
-      } else if (IROp->Op == OP_SUBWITHFLAGS) {
-        IROp->Op = OP_ADDWITHFLAGS;
-      }
-
-      IREmit->SetWriteCursorBefore(CodeNode);
-
-      // Negate the constant.
-      auto NegConstant = IREmit->_Constant(-Constant2);
-
-      // Replace the second source with the negated constant.
-      IREmit->ReplaceNodeArgument(CodeNode, Op->Src2_Index, NegConstant);
-    }
-
-    if (!InlineIfLargeAddSub(IREmit, CurrentIR, CodeNode, IROp, 1) && (IROp->Op == OP_SUB || IROp->Op == OP_SUBWITHFLAGS)) {
-      // TODO: Generalize this
-      InlineIfZero(IREmit, CurrentIR, CodeNode, IROp, 0);
-    }
-
-    break;
-  }
   case OP_ADDNZCV: {
     InlineIfLargeAddSub(IREmit, CurrentIR, CodeNode, IROp, 1);
     break;
   }
+
+  case OP_SUB:
+  case OP_SUBWITHFLAGS:
   case OP_SUBNZCV: {
     if (!InlineIfLargeAddSub(IREmit, CurrentIR, CodeNode, IROp, 1)) {
       // TODO: Generalize this
