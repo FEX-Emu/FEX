@@ -229,23 +229,6 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     InlineIf(IREmit, CurrentIR, CodeNode, IROp, 1, ARMEmitter::IsImmAddSub);
     break;
   }
-  case OP_SELECT: {
-    InlineIf(IREmit, CurrentIR, CodeNode, IROp, 1, ARMEmitter::IsImmAddSub);
-
-    uint64_t AllOnes = IROp->Size == OpSize::i64Bit ? 0xffff'ffff'ffff'ffffull : 0xffff'ffffull;
-
-    uint64_t Constant2 {};
-    uint64_t Constant3 {};
-    if (IREmit->IsValueConstant(IROp->Args[2], &Constant2) && IREmit->IsValueConstant(IROp->Args[3], &Constant3) &&
-        (Constant2 == 1 || Constant2 == AllOnes) && Constant3 == 0) {
-      IREmit->SetWriteCursor(CurrentIR.GetNode(IROp->Args[2]));
-
-      IREmit->ReplaceNodeArgument(CodeNode, 2, IREmit->_InlineConstant(Constant2));
-      IREmit->ReplaceNodeArgument(CodeNode, 3, IREmit->_InlineConstant(Constant3));
-    }
-
-    break;
-  }
   case OP_NZCVSELECT: {
     // We always allow source 1 to be zero, but source 0 can only be a
     // special 1/~0 constant if source 1 is 0.
@@ -255,6 +238,7 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
     }
     break;
   }
+  case OP_SELECT:
   case OP_CONDJUMP: {
     InlineIf(IREmit, CurrentIR, CodeNode, IROp, 1, ARMEmitter::IsImmAddSub);
     break;

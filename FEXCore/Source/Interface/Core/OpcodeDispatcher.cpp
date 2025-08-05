@@ -1703,9 +1703,7 @@ void OpDispatchBuilder::BLSMSKBMIOp(OpcodeArgs) {
   InvalidatePF_AF();
 
   // CF set according to the Src
-  auto Zero = Constant(0);
-  auto One = Constant(1);
-  auto CFInv = _Select(IR::COND_NEQ, Src, Zero, One, Zero);
+  auto CFInv = To01(OpSize::i64Bit, Src);
 
   // The output of BLSMSK is always nonzero, so TST will clear Z (along with C
   // and O) while setting S.
@@ -1723,9 +1721,7 @@ void OpDispatchBuilder::BLSRBMIOp(OpcodeArgs) {
 
   StoreResult(GPRClass, Op, Result, OpSize::iInvalid);
 
-  auto Zero = Constant(0);
-  auto One = Constant(1);
-  auto CFInv = _Select(IR::COND_NEQ, Src, Zero, One, Zero);
+  auto CFInv = To01(OpSize::i64Bit, Src);
 
   SetNZ_ZeroCV(Size, Result);
   SetCFInverted(CFInv);
@@ -2758,7 +2754,7 @@ void OpDispatchBuilder::PopcountOp(OpcodeArgs) {
 
 Ref OpDispatchBuilder::CalculateAFForDecimal(Ref A) {
   auto Nibble = _And(OpSize::i64Bit, A, Constant(0xF));
-  auto Greater = _Select(FEXCore::IR::COND_UGT, Nibble, Constant(9), Constant(1), Constant(0));
+  auto Greater = Select01(OpSize::i64Bit, CondClassType {COND_UGT}, Nibble, Constant(9));
 
   return _Or(OpSize::i64Bit, LoadAF(), Greater);
 }
@@ -2770,7 +2766,7 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   auto AF = CalculateAFForDecimal(AL);
 
   // CF |= (AL > 0x99);
-  CFInv = _And(OpSize::i64Bit, CFInv, _Select(FEXCore::IR::COND_ULE, AL, Constant(0x99), Constant(1), Constant(0)));
+  CFInv = _And(OpSize::i64Bit, CFInv, Select01(OpSize::i64Bit, CondClassType {COND_ULE}, AL, Constant(0x99)));
 
   // AL = AF ? (AL + 0x6) : AL;
   AL = _Select(FEXCore::IR::COND_NEQ, AF, Constant(0), _Add(OpSize::i64Bit, AL, Constant(0x6)), AL);
@@ -2793,7 +2789,7 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
   auto AF = CalculateAFForDecimal(AL);
 
   // CF |= (AL > 0x99);
-  CF = _Or(OpSize::i64Bit, CF, _Select(FEXCore::IR::COND_UGT, AL, Constant(0x99), Constant(1), Constant(0)));
+  CF = _Or(OpSize::i64Bit, CF, Select01(OpSize::i64Bit, CondClassType {COND_UGT}, AL, Constant(0x99)));
 
   // NewCF = CF | (AF && (Borrow from AL - 6))
   auto NewCF = _Or(OpSize::i32Bit, CF, _Select(FEXCore::IR::COND_ULT, AL, Constant(6), AF, CF));

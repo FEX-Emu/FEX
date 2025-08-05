@@ -851,11 +851,9 @@ void OpDispatchBuilder::X87FXAM(OpcodeArgs) {
   // Claim this is a normal number
   // We don't support anything else
   auto TopValid = _StackValidTag(0);
-  auto ZeroConst = Constant(0);
-  auto OneConst = Constant(1);
 
   // In the case of top being invalid then C3:C2:C0 is 0b101
-  auto C3 = _Select(FEXCore::IR::COND_NEQ, TopValid, OneConst, OneConst, ZeroConst);
+  auto C3 = Select01(OpSize::i32Bit, CondClassType {COND_NEQ}, TopValid, Constant(1));
 
   auto C2 = TopValid;
   auto C0 = C3; // Mirror C3 until something other than zero is supported

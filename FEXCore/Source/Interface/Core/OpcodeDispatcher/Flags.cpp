@@ -267,8 +267,6 @@ Ref OpDispatchBuilder::IncrementByCarry(OpSize OpSize, Ref Src) {
 }
 
 Ref OpDispatchBuilder::CalculateFlags_ADC(IR::OpSize SrcSize, Ref Src1, Ref Src2) {
-  auto Zero = _InlineConstant(0);
-  auto One = _InlineConstant(1);
   auto OpSize = SrcSize == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit;
   Ref Res;
 
@@ -292,7 +290,7 @@ Ref OpDispatchBuilder::CalculateFlags_ADC(IR::OpSize SrcSize, Ref Src1, Ref Src2
     Res = _Bfe(OpSize, IR::OpSizeAsBits(SrcSize), 0, Res);
 
     // TODO: We can fold that second Bfe in (cmp uxth).
-    auto SelectCFInv = _Select(FEXCore::IR::COND_UGE, Res, Src2PlusCF, One, Zero);
+    auto SelectCFInv = Select01(OpSize, CondClassType {COND_UGE}, Res, Src2PlusCF);
 
     SetNZ_ZeroCV(SrcSize, Res);
     SetCFInverted(SelectCFInv);
@@ -304,8 +302,6 @@ Ref OpDispatchBuilder::CalculateFlags_ADC(IR::OpSize SrcSize, Ref Src1, Ref Src2
 }
 
 Ref OpDispatchBuilder::CalculateFlags_SBB(IR::OpSize SrcSize, Ref Src1, Ref Src2) {
-  auto Zero = _InlineConstant(0);
-  auto One = _InlineConstant(1);
   auto OpSize = SrcSize == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit;
 
   CalculateAF(Src1, Src2);
@@ -328,7 +324,7 @@ Ref OpDispatchBuilder::CalculateFlags_SBB(IR::OpSize SrcSize, Ref Src1, Ref Src2
     Res = _Sub(OpSize, Src1, Src2PlusCF);
     Res = _Bfe(OpSize, IR::OpSizeAsBits(SrcSize), 0, Res);
 
-    auto SelectCFInv = _Select(FEXCore::IR::COND_UGE, Src1, Src2PlusCF, One, Zero);
+    auto SelectCFInv = Select01(OpSize, CondClassType {COND_UGE}, Src1, Src2PlusCF);
 
     SetNZ_ZeroCV(SrcSize, Res);
     SetCFInverted(SelectCFInv);

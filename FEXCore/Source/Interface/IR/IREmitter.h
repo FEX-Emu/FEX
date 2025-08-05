@@ -82,6 +82,14 @@ public:
     return _StoreMem(Class, Size, Value, Addr, Invalid(), Align, MEM_OFFSET_SXTX, 1);
   }
 
+  IRPair<IROp_Select> Select01(FEXCore::IR::OpSize CompareSize, CondClassType Cond, OrderedNode* Cmp1, OrderedNode* Cmp2) {
+    return _Select(OpSize::i64Bit, CompareSize, Cond, Cmp1, Cmp2, _InlineConstant(1), _InlineConstant(0));
+  }
+
+  IRPair<IROp_Select> To01(FEXCore::IR::OpSize CompareSize, OrderedNode* Cmp1) {
+    return Select01(CompareSize, CondClassType {COND_NEQ}, Cmp1, Constant(0));
+  }
+
   int64_t Constants[32];
   Ref ConstantRefs[32];
   uint32_t NrConstants;
