@@ -166,7 +166,7 @@ void OpDispatchBuilder::RETOp(OpcodeArgs) {
 
   if (Op->OP == 0xC2) {
     auto Offset = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-    SP = _Add(GPRSize, SP, Offset);
+    SP = Add(GPRSize, SP, Offset);
   }
 
   // Store the new stack pointer
@@ -1404,7 +1404,7 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
 
   // a64 masks the bottom bits, so if we're using a native 32/64-bit shift, we
   // can negate to do the subtract (it's congruent), which saves a constant.
-  auto ShiftRight = Size >= 32 ? _Neg(OpSize::i64Bit, Shift) : _Sub(OpSize::i64Bit, Constant(Size), Shift);
+  auto ShiftRight = Size >= 32 ? _Neg(OpSize::i64Bit, Shift) : Sub(OpSize::i64Bit, Constant(Size), Shift);
 
   auto Tmp1 = _Lshl(OpSize::i64Bit, Dest, Shift);
   auto Tmp2 = _Lshr(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Src, ShiftRight);
@@ -1475,7 +1475,7 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
     Shift = _And(OpSize::i64Bit, Shift, _InlineConstant(0x1F));
   }
 
-  auto ShiftLeft = _Sub(OpSize::i64Bit, Constant(Size), Shift);
+  auto ShiftLeft = Sub(OpSize::i64Bit, Constant(Size), Shift);
 
   auto Tmp1 = _Lshr(Size == 64 ? OpSize::i64Bit : OpSize::i32Bit, Dest, Shift);
   auto Tmp2 = _Lshl(OpSize::i64Bit, Src, ShiftLeft);
@@ -2850,7 +2850,7 @@ void OpDispatchBuilder::AADOp(OpcodeArgs) {
   auto A = LoadGPRRegister(X86State::REG_RAX);
   auto AH = _Lshr(OpSize::i32Bit, A, Constant(8));
   auto Imm8 = Constant(Op->Src[0].Data.Literal.Value & 0xFF);
-  auto NewAL = _Add(OpSize::i64Bit, A, _Mul(OpSize::i64Bit, AH, Imm8));
+  auto NewAL = Add(OpSize::i64Bit, A, _Mul(OpSize::i64Bit, AH, Imm8));
   auto Result = _And(OpSize::i64Bit, NewAL, Constant(0xFF));
   StoreGPRRegister(X86State::REG_RAX, Result, OpSize::i16Bit);
 
@@ -3176,11 +3176,11 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
     auto SrcSegment = GetSegment(Op->Flags, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
     if (DstSegment) {
-      DstAddr = _Add(OpSize::i64Bit, DstAddr, DstSegment);
+      DstAddr = Add(OpSize::i64Bit, DstAddr, DstSegment);
     }
 
     if (SrcSegment) {
-      SrcAddr = _Add(OpSize::i64Bit, SrcAddr, SrcSegment);
+      SrcAddr = Add(OpSize::i64Bit, SrcAddr, SrcSegment);
     }
 
     Ref Result_Src = _AllocateGPR(false);
@@ -3188,11 +3188,11 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
     _MemCpy(CTX->IsAtomicTSOEnabled(), Size, DstAddr, SrcAddr, Counter, LoadDir(1), Result_Dst, Result_Src);
 
     if (DstSegment) {
-      Result_Dst = _Sub(OpSize::i64Bit, Result_Dst, DstSegment);
+      Result_Dst = Sub(OpSize::i64Bit, Result_Dst, DstSegment);
     }
 
     if (SrcSegment) {
-      Result_Src = _Sub(OpSize::i64Bit, Result_Src, SrcSegment);
+      Result_Src = Sub(OpSize::i64Bit, Result_Src, SrcSegment);
     }
 
     StoreGPRRegister(X86State::REG_RCX, Constant(0));
@@ -3208,8 +3208,8 @@ void OpDispatchBuilder::MOVSOp(OpcodeArgs) {
     _StoreMemAutoTSO(GPRClass, Size, RDI, Src, Size);
 
     auto PtrDir = LoadDir(IR::OpSizeToSize(Size));
-    RSI = _Add(OpSize::i64Bit, RSI, PtrDir);
-    RDI = _Add(OpSize::i64Bit, RDI, PtrDir);
+    RSI = Add(OpSize::i64Bit, RSI, PtrDir);
+    RDI = Add(OpSize::i64Bit, RDI, PtrDir);
 
     StoreGPRRegister(X86State::REG_RSI, RSI);
     StoreGPRRegister(X86State::REG_RDI, RDI);
@@ -3240,11 +3240,11 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
     auto PtrDir = LoadDir(IR::OpSizeToSize(Size));
 
     // Offset the pointer
-    Dest_RDI = _Add(OpSize::i64Bit, Dest_RDI, PtrDir);
+    Dest_RDI = Add(OpSize::i64Bit, Dest_RDI, PtrDir);
     StoreGPRRegister(X86State::REG_RDI, Dest_RDI);
 
     // Offset second pointer
-    Dest_RSI = _Add(OpSize::i64Bit, Dest_RSI, PtrDir);
+    Dest_RSI = Add(OpSize::i64Bit, Dest_RSI, PtrDir);
     StoreGPRRegister(X86State::REG_RSI, Dest_RSI);
   } else {
     // Calculate flags early.
@@ -3950,7 +3950,7 @@ Ref OpDispatchBuilder::GetSegment(uint32_t Flags, uint32_t DefaultPrefix, bool O
 Ref OpDispatchBuilder::AppendSegmentOffset(Ref Value, uint32_t Flags, uint32_t DefaultPrefix, bool Override) {
   auto Segment = GetSegment(Flags, DefaultPrefix, Override);
   if (Segment) {
-    Value = _Add(std::max(OpSize::i32Bit, std::max(GetOpSize(Value), GetOpSize(Segment))), Value, Segment);
+    Value = Add(std::max(OpSize::i32Bit, std::max(GetOpSize(Value), GetOpSize(Segment))), Value, Segment);
   }
 
   return Value;
@@ -4389,7 +4389,7 @@ void OpDispatchBuilder::ALUOp(OpcodeArgs, FEXCore::IR::IROps ALUIROp, FEXCore::I
     auto Zero = LoadGPR(Op->Dest.Data.GPR.GPR);
     HandleNZ00Write();
     InvalidateAF();
-    CalculatePF(_SubWithFlags(OpSize::i32Bit, Zero, Zero));
+    CalculatePF(SubWithFlags(OpSize::i32Bit, Zero, Zero));
     CFInverted = true;
     FlushRegisterCache();
 

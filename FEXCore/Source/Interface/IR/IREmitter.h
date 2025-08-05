@@ -120,9 +120,28 @@ public:
     return Addsub(Size, OP_SUB, OP_ADD, Src1, Src2);
   }
 
+  Ref AddWithFlags(IR::OpSize Size, Ref Src1, uint64_t Src2) {
+    return Addsub(Size, OP_ADDWITHFLAGS, OP_SUBWITHFLAGS, Src1, Src2);
+  }
+
   Ref SubWithFlags(IR::OpSize Size, Ref Src1, uint64_t Src2) {
     return Addsub(Size, OP_SUBWITHFLAGS, OP_ADDWITHFLAGS, Src1, Src2);
   }
+
+#define DEF_ADDSUB(Op)                                \
+  Ref Op(IR::OpSize Size, Ref Src1, Ref Src2) {       \
+    uint64_t Constant;                                \
+    if (IsValueConstant(WrapNode(Src2), &Constant)) { \
+      return Op(Size, Src1, Constant);                \
+    } else {                                          \
+      return _##Op(Size, Src1, Src2);                 \
+    }                                                 \
+  }
+
+  DEF_ADDSUB(Add)
+  DEF_ADDSUB(Sub)
+  DEF_ADDSUB(AddWithFlags)
+  DEF_ADDSUB(SubWithFlags)
 
   int64_t Constants[32];
   Ref ConstantRefs[32];
