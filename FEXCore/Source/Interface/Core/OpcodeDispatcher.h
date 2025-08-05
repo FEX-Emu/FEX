@@ -2036,7 +2036,7 @@ private:
       } else {
         // Because we explicitly inverted for CF above, we use the unsafe
         // _NZCVSelect rather than the safe CF-aware version.
-        return _NZCVSelect(OpSize::i32Bit, CondForNZCVBit(BitOffset, Invert), Constant(1), Constant(0));
+        return _NZCVSelect01(CondForNZCVBit(BitOffset, Invert));
       }
     } else if (BitOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC) {
       return LoadGPR(Core::CPUState::PF_AS_GREG);
@@ -2133,7 +2133,7 @@ private:
   void ConvertNZCVToX87() {
     LOGMAN_THROW_A_FMT(NZCVDirty && CachedNZCV, "NZCV must be saved");
 
-    Ref V = _NZCVSelect(OpSize::i32Bit, CondForNZCVBit(FEXCore::X86State::RFLAG_OF_RAW_LOC, false), Constant(1), Constant(0));
+    Ref V = _NZCVSelect01(CondForNZCVBit(FEXCore::X86State::RFLAG_OF_RAW_LOC, false));
 
     if (CTX->HostFeatures.SupportsFlagM2) {
       // Convert to x86 flags, saves us from or'ing after.
@@ -2141,8 +2141,8 @@ private:
     }
 
     // CF is inverted after FCMP
-    Ref C = _NZCVSelect(OpSize::i32Bit, CondForNZCVBit(FEXCore::X86State::RFLAG_CF_RAW_LOC, true), Constant(1), Constant(0));
-    Ref Z = _NZCVSelect(OpSize::i32Bit, CondForNZCVBit(FEXCore::X86State::RFLAG_ZF_RAW_LOC, false), Constant(1), Constant(0));
+    Ref C = _NZCVSelect01(CondForNZCVBit(FEXCore::X86State::RFLAG_CF_RAW_LOC, true));
+    Ref Z = _NZCVSelect01(CondForNZCVBit(FEXCore::X86State::RFLAG_ZF_RAW_LOC, false));
 
     if (!CTX->HostFeatures.SupportsFlagM2) {
       C = _Or(OpSize::i32Bit, C, V);

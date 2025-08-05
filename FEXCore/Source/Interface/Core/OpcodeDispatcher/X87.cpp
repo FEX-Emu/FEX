@@ -164,12 +164,12 @@ void OpDispatchBuilder::FIST(OpcodeArgs, bool Truncate) {
     // Check for NaN/Infinity: exponent = 0x7fff
     SaveNZCV();
     _TestNZ(OpSize::i64Bit, Exponent, Constant(0x7fff));
-    Ref IsSpecial = _NZCVSelect(OpSize::i64Bit, {COND_EQ}, Constant(1), Constant(0));
+    Ref IsSpecial = _NZCVSelect01({COND_EQ});
 
     // For overflow detection, check if exponent indicates a value >= 2^15
     // Biased exponent for 2^15 is 0x3fff + 15 = 0x400e
     _SubWithFlags(OpSize::i64Bit, Exponent, Constant(0x400e));
-    Ref IsOverflow = _NZCVSelect(OpSize::i64Bit, {COND_UGE}, Constant(1), Constant(0));
+    Ref IsOverflow = _NZCVSelect01({COND_UGE});
 
     // Set Invalid Operation flag if overflow or special value
     Ref InvalidFlag = _Or(OpSize::i64Bit, IsSpecial, IsOverflow);
