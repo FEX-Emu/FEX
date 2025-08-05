@@ -855,17 +855,17 @@ uint64_t SyscallHandler::HandleSyscall(FEXCore::Core::CpuStateFrame* Frame, FEXC
 void SyscallHandler::Strace(FEXCore::HLE::SyscallArguments* Args, uint64_t Ret) {
   auto& Def = Definitions[Args->Argument[0]];
   switch (Def.NumArgs) {
-  case 0: LogMan::Msg::D(Def.StraceFmt.c_str(), Ret); break;
-  case 1: LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Ret); break;
-  case 2: LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Ret); break;
-  case 3: LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret); break;
-  case 4: LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Ret); break;
+  case 0: LogMan::Msg::DFmt(Def.StraceFmt.c_str(), Ret); break;
+  case 1: LogMan::Msg::DFmt(Def.StraceFmt.c_str(), Args->Argument[1], Ret); break;
+  case 2: LogMan::Msg::DFmt(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Ret); break;
+  case 3: LogMan::Msg::DFmt(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Ret); break;
+  case 4: LogMan::Msg::DFmt(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Ret); break;
   case 5:
-    LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5], Ret);
+    LogMan::Msg::DFmt(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5], Ret);
     break;
   case 6:
-    LogMan::Msg::D(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5],
-                   Args->Argument[6], Ret);
+    LogMan::Msg::DFmt(Def.StraceFmt.c_str(), Args->Argument[1], Args->Argument[2], Args->Argument[3], Args->Argument[4], Args->Argument[5],
+                      Args->Argument[6], Ret);
     break;
   default: break;
   }

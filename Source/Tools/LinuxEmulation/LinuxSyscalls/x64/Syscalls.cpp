@@ -66,7 +66,7 @@ void x64SyscallHandler::RegisterSyscallHandlers() {
     .NumArgs = 0, .Flags = FEXCore::IR::SyscallFlags::DEFAULT, .Ptr = reinterpret_cast<void*>(&UnimplementedSyscall),
     .HostSyscallNumber = SYSCALL_DEF(MAX),
 #ifdef DEBUG_STRACE
-    .StraceFmt = "Invalid";
+    .StraceFmt = "Invalid",
 #endif
   };
   std::fill(Definitions.begin() + SYSCALL_GAP_BEGIN, Definitions.begin() + SYSCALL_GAP_END, InvalidSyscall);
