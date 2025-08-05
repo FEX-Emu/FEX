@@ -739,9 +739,9 @@
       "ExpectedArm64ASM": [
         "mrs x20, rndr",
         "bfxil x4, x20, #0, #16",
+        "cset x20, eq",
         "mov w26, #0x1",
         "mov w27, #0x0",
-        "cset w20, eq",
         "rmif x20, #63, #NZCV"
       ]
     },
@@ -751,9 +751,9 @@
       "ExpectedArm64ASM": [
         "mrs x20, rndr",
         "mov w4, w20",
+        "cset x20, eq",
         "mov w26, #0x1",
         "mov w27, #0x0",
-        "cset w20, eq",
         "rmif x20, #63, #NZCV"
       ]
     },
@@ -762,9 +762,9 @@
       "Comment": "GROUP9 0x0F 0xC7 /6",
       "ExpectedArm64ASM": [
         "mrs x4, rndr",
+        "cset x20, eq",
         "mov w26, #0x1",
         "mov w27, #0x0",
-        "cset w20, eq",
         "rmif x20, #63, #NZCV"
       ]
     },
@@ -774,9 +774,9 @@
       "ExpectedArm64ASM": [
         "mrs x20, rndrrs",
         "bfxil x4, x20, #0, #16",
+        "cset x20, eq",
         "mov w26, #0x1",
         "mov w27, #0x0",
-        "cset w20, eq",
         "rmif x20, #63, #NZCV"
       ]
     },
@@ -786,9 +786,9 @@
       "ExpectedArm64ASM": [
         "mrs x20, rndrrs",
         "mov w4, w20",
+        "cset x20, eq",
         "mov w26, #0x1",
         "mov w27, #0x0",
-        "cset w20, eq",
         "rmif x20, #63, #NZCV"
       ]
     },
@@ -797,9 +797,9 @@
       "Comment": "GROUP9 0x0F 0xC7 /7",
       "ExpectedArm64ASM": [
         "mrs x4, rndrrs",
+        "cset x20, eq",
         "mov w26, #0x1",
         "mov w27, #0x0",
-        "cset w20, eq",
         "rmif x20, #63, #NZCV"
       ]
     },

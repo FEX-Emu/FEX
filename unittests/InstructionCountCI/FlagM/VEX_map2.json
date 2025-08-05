@@ -375,7 +375,7 @@
         "bic w20, w6, w20",
         "tst x7, #0xe0",
         "csel w4, w6, w20, ne",
-        "cset w20, eq",
+        "cset x20, eq",
         "cmp w4, #0x0 (0)",
         "rmif x20, #63, #nzCv"
       ]
@@ -391,7 +391,7 @@
         "bic x20, x6, x20",
         "tst x7, #0xc0",
         "csel x4, x6, x20, ne",
-        "cset w20, eq",
+        "cset x20, eq",
         "cmp x4, #0x0 (0)",
         "rmif x20, #63, #nzCv"
       ]

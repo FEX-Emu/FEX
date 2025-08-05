@@ -734,7 +734,7 @@
         "eor w21, w20, #0x20000000",
         "msr nzcv, x21",
         "adcs w4, w6, w4",
-        "cset w21, lo",
+        "cset x21, lo",
         "bfi w20, w21, #29, #1",
         "msr nzcv, x20"
       ]
@@ -749,7 +749,7 @@
         "eor w21, w20, #0x20000000",
         "msr nzcv, x21",
         "adcs x4, x6, x4",
-        "cset w21, lo",
+        "cset x21, lo",
         "bfi w20, w21, #29, #1",
         "msr nzcv, x20"
       ]
@@ -763,7 +763,7 @@
         "mrs x20, nzcv",
         "ccmp wzr, #0, #nzcv, vs",
         "adcs w4, w6, w4",
-        "cset w21, hs",
+        "cset x21, hs",
         "bfi w20, w21, #28, #1",
         "msr nzcv, x20"
       ]
@@ -777,7 +777,7 @@
         "mrs x20, nzcv",
         "ccmp wzr, #0, #nzcv, vs",
         "adcs x4, x6, x4",
-        "cset w21, hs",
+        "cset x21, hs",
         "bfi w20, w21, #28, #1",
         "msr nzcv, x20"
       ]
