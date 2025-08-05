@@ -2078,7 +2078,7 @@
         "lsr w20, w21, w20",
         "and w20, w20, #0x1",
         "mrs x21, nzcv",
-        "cmp x20, #0x1 (1)",
+        "cmp w20, #0x1 (1)",
         "cset x22, ne",
         "strb w22, [x28, #1016]",
         "strb w20, [x28, #1018]",

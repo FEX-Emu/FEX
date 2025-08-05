@@ -30,11 +30,11 @@
         "umov w20, v3.h[0]",
         "umov w21, v2.h[0]",
         "mov w27, #0x0",
-        "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
         "cset x21, ne",
         "cmp w20, #0x0 (0)",
-        "rmif x21, #63, #nzCv"
+        "rmif x21, #63, #nzCv",
+        "mov w26, #0x1"
       ]
     },
     "vtestps ymm0, ymm1": {
@@ -45,8 +45,6 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #48]",
-        "mov w27, #0x0",
-        "mov w26, #0x1",
         "and v4.16b, v17.16b, v16.16b",
         "and v5.16b, v3.16b, v2.16b",
         "ushr v4.4s, v4.4s, #31",
@@ -61,10 +59,12 @@
         "add v2.4s, v2.4s, v4.4s",
         "addv s2, v2.4s",
         "mov w21, v2.s[0]",
+        "mov w27, #0x0",
         "cmp x21, #0x0 (0)",
         "cset x21, ne",
         "cmp w20, #0x0 (0)",
-        "rmif x21, #63, #nzCv"
+        "rmif x21, #63, #nzCv",
+        "mov w26, #0x1"
       ]
     },
     "vtestpd xmm0, xmm1": {
@@ -84,11 +84,11 @@
         "umov w20, v3.h[0]",
         "umov w21, v2.h[0]",
         "mov w27, #0x0",
-        "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
         "cset x21, ne",
         "cmp w20, #0x0 (0)",
-        "rmif x21, #63, #nzCv"
+        "rmif x21, #63, #nzCv",
+        "mov w26, #0x1"
       ]
     },
     "vtestpd ymm0, ymm1": {
@@ -99,8 +99,6 @@
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #32]",
         "ldr q3, [x28, #48]",
-        "mov w27, #0x0",
-        "mov w26, #0x1",
         "and v4.16b, v17.16b, v16.16b",
         "and v5.16b, v3.16b, v2.16b",
         "ushr v4.2d, v4.2d, #63",
@@ -115,10 +113,12 @@
         "add v2.2d, v2.2d, v4.2d",
         "addp v2.2d, v2.2d, v2.2d",
         "mov x21, v2.d[0]",
+        "mov w27, #0x0",
         "cmp x21, #0x0 (0)",
         "cset x21, ne",
         "cmp w20, #0x0 (0)",
-        "rmif x21, #63, #nzCv"
+        "rmif x21, #63, #nzCv",
+        "mov w26, #0x1"
       ]
     },
     "vptest xmm0, xmm1": {
@@ -134,11 +134,11 @@
         "umov w20, v2.h[0]",
         "umov w21, v3.h[0]",
         "mov w27, #0x0",
-        "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
         "cset x21, ne",
         "cmp w20, #0x0 (0)",
-        "rmif x21, #63, #nzCv"
+        "rmif x21, #63, #nzCv",
+        "mov w26, #0x1"
       ]
     },
     "vptest ymm0, ymm1": {
@@ -160,11 +160,11 @@
         "umov w20, v3.h[0]",
         "umov w21, v2.h[0]",
         "mov w27, #0x0",
-        "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
         "cset x21, ne",
         "cmp w20, #0x0 (0)",
-        "rmif x21, #63, #nzCv"
+        "rmif x21, #63, #nzCv",
+        "mov w26, #0x1"
       ]
     },
     "vmaskmovps xmm0, xmm1, [rax]": {

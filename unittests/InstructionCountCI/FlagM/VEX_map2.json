@@ -29,11 +29,11 @@
         "umov w20, v3.h[0]",
         "umov w21, v2.h[0]",
         "mov w27, #0x0",
-        "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
         "cset x21, ne",
         "cmp w20, #0x0 (0)",
-        "rmif x21, #63, #nzCv"
+        "rmif x21, #63, #nzCv",
+        "mov w26, #0x1"
       ]
     },
     "vtestps ymm0, ymm1": {
@@ -53,11 +53,11 @@
         "umov w20, v3.h[0]",
         "umov w21, v2.h[0]",
         "mov w27, #0x0",
-        "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
         "cset x21, ne",
         "cmp w20, #0x0 (0)",
-        "rmif x21, #63, #nzCv"
+        "rmif x21, #63, #nzCv",
+        "mov w26, #0x1"
       ]
     },
     "vtestpd xmm0, xmm1": {
@@ -77,11 +77,11 @@
         "umov w20, v3.h[0]",
         "umov w21, v2.h[0]",
         "mov w27, #0x0",
-        "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
         "cset x21, ne",
         "cmp w20, #0x0 (0)",
-        "rmif x21, #63, #nzCv"
+        "rmif x21, #63, #nzCv",
+        "mov w26, #0x1"
       ]
     },
     "vtestpd ymm0, ymm1": {
@@ -101,11 +101,11 @@
         "umov w20, v3.h[0]",
         "umov w21, v2.h[0]",
         "mov w27, #0x0",
-        "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
         "cset x21, ne",
         "cmp w20, #0x0 (0)",
-        "rmif x21, #63, #nzCv"
+        "rmif x21, #63, #nzCv",
+        "mov w26, #0x1"
       ]
     },
     "vptest xmm0, xmm1": {
@@ -121,11 +121,11 @@
         "umov w20, v2.h[0]",
         "umov w21, v3.h[0]",
         "mov w27, #0x0",
-        "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
         "cset x21, ne",
         "cmp w20, #0x0 (0)",
-        "rmif x21, #63, #nzCv"
+        "rmif x21, #63, #nzCv",
+        "mov w26, #0x1"
       ]
     },
     "vptest ymm0, ymm1": {
@@ -141,11 +141,11 @@
         "umov w20, v2.h[0]",
         "umov w21, v3.h[0]",
         "mov w27, #0x0",
-        "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
         "cset x21, ne",
         "cmp w20, #0x0 (0)",
-        "rmif x21, #63, #nzCv"
+        "rmif x21, #63, #nzCv",
+        "mov w26, #0x1"
       ]
     },
     "vmaskmovps xmm0, xmm1, [rax]": {

@@ -517,12 +517,12 @@
         "umov w20, v3.h[0]",
         "umov w21, v2.h[0]",
         "mov w27, #0x0",
-        "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
         "cset x21, ne",
         "cmp w20, #0x0 (0)",
         "mrs x20, nzcv",
         "bfi w20, w21, #29, #1",
+        "mov w26, #0x1",
         "msr nzcv, x20"
       ]
     },
@@ -543,12 +543,12 @@
         "umov w20, v3.h[0]",
         "umov w21, v2.h[0]",
         "mov w27, #0x0",
-        "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
         "cset x21, ne",
         "cmp w20, #0x0 (0)",
         "mrs x20, nzcv",
         "bfi w20, w21, #29, #1",
+        "mov w26, #0x1",
         "msr nzcv, x20"
       ]
     },
@@ -569,12 +569,12 @@
         "umov w20, v3.h[0]",
         "umov w21, v2.h[0]",
         "mov w27, #0x0",
-        "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
         "cset x21, ne",
         "cmp w20, #0x0 (0)",
         "mrs x20, nzcv",
         "bfi w20, w21, #29, #1",
+        "mov w26, #0x1",
         "msr nzcv, x20"
       ]
     },
@@ -595,12 +595,12 @@
         "umov w20, v3.h[0]",
         "umov w21, v2.h[0]",
         "mov w27, #0x0",
-        "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
         "cset x21, ne",
         "cmp w20, #0x0 (0)",
         "mrs x20, nzcv",
         "bfi w20, w21, #29, #1",
+        "mov w26, #0x1",
         "msr nzcv, x20"
       ]
     },
@@ -675,12 +675,12 @@
         "umov w20, v2.h[0]",
         "umov w21, v3.h[0]",
         "mov w27, #0x0",
-        "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
         "cset x21, ne",
         "cmp w20, #0x0 (0)",
         "mrs x20, nzcv",
         "bfi w20, w21, #29, #1",
+        "mov w26, #0x1",
         "msr nzcv, x20"
       ]
     },
@@ -697,12 +697,12 @@
         "umov w20, v2.h[0]",
         "umov w21, v3.h[0]",
         "mov w27, #0x0",
-        "mov w26, #0x1",
         "cmp x21, #0x0 (0)",
         "cset x21, ne",
         "cmp w20, #0x0 (0)",
         "mrs x20, nzcv",
         "bfi w20, w21, #29, #1",
+        "mov w26, #0x1",
         "msr nzcv, x20"
       ]
     },
