@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "CodeEmitter/Emitter.h"
 #include "Interface/IR/IR.h"
 #include "Interface/IR/IntrusiveIRList.h"
 
@@ -92,6 +93,35 @@ public:
 
   IRPair<IROp_NZCVSelect> _NZCVSelect01(CondClassType Cond) {
     return _NZCVSelect(OpSize::i64Bit, Cond, _InlineConstant(1), _InlineConstant(0));
+  }
+
+  Ref Addsub(IR::OpSize Size, IROps Op, IROps NegatedOp, Ref Src1, uint64_t Src2) {
+    // Sign-extend the constant
+    if (Size == OpSize::i32Bit) {
+      Src2 = (int64_t)(int32_t)Src2;
+    }
+
+    // Negative constants need to be negated to inline.
+    if (Src2 & (1ull << 63) && ARMEmitter::IsImmAddSub(-Src2)) {
+      Op = NegatedOp;
+      Src2 = -Src2;
+    }
+
+    auto Dest = _Add(Size, Src1, Constant(Src2));
+    Dest.first->Header.Op = Op;
+    return Dest;
+  }
+
+  Ref Add(IR::OpSize Size, Ref Src1, uint64_t Src2) {
+    return Addsub(Size, OP_ADD, OP_SUB, Src1, Src2);
+  }
+
+  Ref Sub(IR::OpSize Size, Ref Src1, uint64_t Src2) {
+    return Addsub(Size, OP_SUB, OP_ADD, Src1, Src2);
+  }
+
+  Ref SubWithFlags(IR::OpSize Size, Ref Src1, uint64_t Src2) {
+    return Addsub(Size, OP_SUBWITHFLAGS, OP_ADDWITHFLAGS, Src1, Src2);
   }
 
   int64_t Constants[32];

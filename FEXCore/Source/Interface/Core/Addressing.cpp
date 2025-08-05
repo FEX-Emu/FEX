@@ -11,8 +11,7 @@ Ref LoadEffectiveAddress(IREmitter* IREmit, AddressMode A, IR::OpSize GPRSize, b
   Ref Tmp = A.Base;
 
   if (A.Offset) {
-    Ref Offset = IREmit->Constant(A.Offset);
-    Tmp = Tmp ? IREmit->_Add(GPRSize, Tmp, Offset) : Offset;
+    Tmp = Tmp ? IREmit->Add(GPRSize, Tmp, A.Offset) : IREmit->Constant(A.Offset);
   }
 
   if (A.Index) {

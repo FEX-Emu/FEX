@@ -1677,7 +1677,7 @@ private:
     // This is currently worse for 8/16-bit, but that should be optimized. TODO
     if (SrcSize >= OpSize::i32Bit) {
       if (SetPF) {
-        CalculatePF(_SubWithFlags(SrcSize, Res, Constant(0)));
+        CalculatePF(SubWithFlags(SrcSize, Res, 0));
       } else {
         _SubNZCV(SrcSize, Res, Constant(0));
       }

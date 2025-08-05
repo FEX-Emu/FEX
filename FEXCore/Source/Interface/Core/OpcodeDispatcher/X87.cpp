@@ -168,7 +168,7 @@ void OpDispatchBuilder::FIST(OpcodeArgs, bool Truncate) {
 
     // For overflow detection, check if exponent indicates a value >= 2^15
     // Biased exponent for 2^15 is 0x3fff + 15 = 0x400e
-    _SubWithFlags(OpSize::i64Bit, Exponent, Constant(0x400e));
+    SubWithFlags(OpSize::i64Bit, Exponent, 0x400e);
     Ref IsOverflow = _NZCVSelect01({COND_UGE});
 
     // Set Invalid Operation flag if overflow or special value
@@ -443,13 +443,13 @@ void OpDispatchBuilder::X87LDENV(OpcodeArgs) {
   auto NewFCW = _LoadMem(GPRClass, OpSize::i16Bit, Mem, OpSize::i16Bit);
   _StoreContext(OpSize::i16Bit, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
-  Ref MemLocation = _Add(OpSize::i64Bit, Mem, Constant(IR::OpSizeToSize(Size) * 1));
+  Ref MemLocation = Add(OpSize::i64Bit, Mem, IR::OpSizeToSize(Size) * 1);
   auto NewFSW = _LoadMem(GPRClass, Size, MemLocation, Size);
   ReconstructX87StateFromFSW_Helper(NewFSW);
 
   {
     // FTW
-    Ref MemLocation = _Add(OpSize::i64Bit, Mem, Constant(IR::OpSizeToSize(Size) * 2));
+    Ref MemLocation = Add(OpSize::i64Bit, Mem, IR::OpSizeToSize(Size) * 2);
     SetX87FTW(_LoadMem(GPRClass, Size, MemLocation, Size));
   }
 }
@@ -512,7 +512,6 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
     _StoreMem(GPRClass, Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 6), Size, MEM_OFFSET_SXTX, 1);
   }
 
-  auto OneConst = Constant(1);
   auto SevenConst = Constant(7);
   const auto LoadSize = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
   for (int i = 0; i < 7; ++i) {
@@ -521,7 +520,7 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
       data = _F80CVTTo(data, OpSize::i64Bit);
     }
     _StoreMem(FPRClass, OpSize::i128Bit, data, Mem, Constant((IR::OpSizeToSize(Size) * 7) + (10 * i)), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
-    Top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, Top, OneConst), SevenConst);
+    Top = _And(OpSize::i32Bit, Add(OpSize::i32Bit, Top, 1), SevenConst);
   }
 
   // The final st(7) needs a bit of special handling here
@@ -565,9 +564,7 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
     SetX87FTW(_LoadMem(GPRClass, Size, Mem, Constant(IR::OpSizeToSize(Size) * 2), Size, MEM_OFFSET_SXTX, 1));
   }
 
-  auto OneConst = Constant(1);
   auto SevenConst = Constant(7);
-
   auto low = Constant(~0ULL);
   auto high = Constant(0xFFFF);
   Ref Mask = _VLoadTwoGPRs(low, high);
@@ -582,7 +579,7 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
     }
     _StoreContextIndexed(Reg, Top, StoreSize, MMBaseOffset(), IR::OpSizeToSize(OpSize::i128Bit), FPRClass);
 
-    Top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, Top, OneConst), SevenConst);
+    Top = _And(OpSize::i32Bit, Add(OpSize::i32Bit, Top, 1), SevenConst);
   }
 
   // The final st(7) needs a bit of special handling here
