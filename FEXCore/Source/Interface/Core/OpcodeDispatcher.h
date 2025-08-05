@@ -2252,7 +2252,7 @@ private:
 
   std::optional<CondClassType> DecodeNZCVCondition(uint8_t OP);
   Ref SelectBit(Ref Cmp, IR::OpSize ResultSize, Ref TrueValue, Ref FalseValue);
-  Ref SelectCC(uint8_t OP, IR::OpSize ResultSize, Ref TrueValue, Ref FalseValue);
+  Ref SelectCC0All1(uint8_t OP);
 
   /**
    * @brief Flushes NZCV. Mostly vestigial.
@@ -2327,7 +2327,6 @@ private:
    * @name These functions are used by the deferred flag handling while it is calculating and storing flags in to RFLAGs.
    * @{ */
   Ref LoadPFRaw(bool Mask, bool Invert);
-  Ref SelectPF(bool Invert, IR::OpSize ResultSize, Ref TrueValue, Ref FalseValue);
   Ref LoadAF();
   void FixupAF();
   void SetAFAndFixup(Ref AF);

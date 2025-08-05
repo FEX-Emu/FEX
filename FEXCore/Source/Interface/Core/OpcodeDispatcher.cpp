@@ -567,27 +567,6 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   }());
 }
 
-Ref OpDispatchBuilder::SelectPF(bool Invert, IR::OpSize ResultSize, Ref TrueValue, Ref FalseValue) {
-  uint64_t TrueConst, FalseConst;
-  if (IsValueConstant(WrapNode(TrueValue), &TrueConst) && IsValueConstant(WrapNode(FalseValue), &FalseConst) && FalseConst == 0) {
-    if (TrueConst == 1) {
-      return LoadPFRaw(true, Invert);
-    } else if (TrueConst == 0xffffffff) {
-      return _Sbfe(OpSize::i32Bit, 1, 0, LoadPFRaw(false, Invert));
-    } else if (TrueConst == 0xffffffffffffffffull) {
-      return _Sbfe(OpSize::i64Bit, 1, 0, LoadPFRaw(false, Invert));
-    }
-  }
-
-  Ref Cmp = LoadPFRaw(false, Invert);
-  SaveNZCV();
-
-  // Because we're only clobbering NZCV internally, we ignore all carry flag
-  // shenanigans and just use the raw test and raw select.
-  _TestNZ(OpSize::i32Bit, Cmp, _InlineConstant(1));
-  return _NZCVSelect(ResultSize, {COND_NEQ}, TrueValue, FalseValue);
-}
-
 std::optional<CondClassType> OpDispatchBuilder::DecodeNZCVCondition(uint8_t OP) {
   switch (OP) {
   case 0x0: { // JO - Jump if OF == 1
@@ -643,51 +622,64 @@ std::optional<CondClassType> OpDispatchBuilder::DecodeNZCVCondition(uint8_t OP) 
   }
 }
 
-Ref OpDispatchBuilder::SelectCC(uint8_t OP, IR::OpSize ResultSize, Ref TrueValue, Ref FalseValue) {
-  auto Cond = DecodeNZCVCondition(OP);
-  if (Cond) {
-    // Use raw select since DecodeNZCVCondition handles the carry invert
-    return _NZCVSelect(ResultSize, *Cond, TrueValue, FalseValue);
-  }
+static bool ParityJumpIsJP(uint8_t OP) {
+  LOGMAN_THROW_A_FMT(OP == 0xA || OP == 0xB, "JP or JNP");
+  return OP == 0xA;
+}
 
-  switch (OP) {
-  case 0xA:   // JP - Jump if PF == 1
-  case 0xB: { // JNP - Jump if PF == 0
+Ref OpDispatchBuilder::SelectCC0All1(uint8_t OP) {
+  if (auto Cond = DecodeNZCVCondition(OP); Cond) {
+    // Use raw select since DecodeNZCVCondition handles the carry invert
+    return _NZCVSelect(OpSize::i64Bit, *Cond, _InlineConstant(~0ULL), _InlineConstant(0));
+  } else {
     // Raw value contains inverted PF in bottom bit
-    return SelectPF(OP == 0xA, ResultSize, TrueValue, FalseValue);
-  }
-  default: LOGMAN_MSG_A_FMT("Unknown CC Op: 0x{:x}\n", OP); return nullptr;
+    return _Sbfe(OpSize::i64Bit, 1, 0, LoadPFRaw(false, ParityJumpIsJP(OP)));
   }
 }
 
 void OpDispatchBuilder::SETccOp(OpcodeArgs) {
-  // Calculate flags early.
   CalculateDeferredFlags();
 
-  auto ZeroConst = Constant(0);
-  auto OneConst = Constant(1);
-
-  auto SrcCond = SelectCC(Op->OP & 0xF, OpSize::i64Bit, OneConst, ZeroConst);
+  Ref SrcCond;
+  if (auto Cond = DecodeNZCVCondition(Op->OP & 0xf); Cond) {
+    // Use raw select since DecodeNZCVCondition handles the carry invert
+    SrcCond = _NZCVSelect01(*Cond);
+  } else {
+    SrcCond = LoadPFRaw(true, ParityJumpIsJP(Op->OP & 0xf));
+  }
 
   StoreResult(GPRClass, Op, SrcCond, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::CMOVOp(OpcodeArgs) {
   const auto GPRSize = GetGPROpSize();
+  const auto OP = Op->OP & 0xF;
+  const auto ResultSize = std::max(OpSize::i32Bit, OpSizeFromSrc(Op));
 
-  // Calculate flags early.
   CalculateDeferredFlags();
 
   // Destination is always a GPR.
   Ref Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, GPRSize, Op->Flags);
-  Ref Src {};
+  Ref Src {}, SrcCond {};
   if (Op->Src[0].IsGPR()) {
     Src = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], GPRSize, Op->Flags);
   } else {
     Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
   }
 
-  auto SrcCond = SelectCC(Op->OP & 0xF, std::max(OpSize::i32Bit, OpSizeFromSrc(Op)), Src, Dest);
+  if (auto Cond = DecodeNZCVCondition(OP); Cond) {
+    // Use raw select since DecodeNZCVCondition handles the carry invert
+    SrcCond = _NZCVSelect(ResultSize, *Cond, Src, Dest);
+  } else {
+    // Raw value contains inverted PF in bottom bit
+    Ref Cmp = LoadPFRaw(false, ParityJumpIsJP(OP));
+    SaveNZCV();
+
+    // Because we're only clobbering NZCV internally, we ignore all carry flag
+    // shenanigans and just use the raw test and raw select.
+    _TestNZ(OpSize::i32Bit, Cmp, _InlineConstant(1));
+    SrcCond = _NZCVSelect(ResultSize, {COND_NEQ}, Src, Dest);
+  }
 
   StoreResult(GPRClass, Op, SrcCond, OpSize::iInvalid);
 }

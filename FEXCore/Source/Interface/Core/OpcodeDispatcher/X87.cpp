@@ -831,11 +831,7 @@ void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {
   default: LOGMAN_MSG_A_FMT("Unhandled FCMOV op: 0x{:x}", Opcode); break;
   }
 
-  auto ZeroConst = Constant(0);
-  auto AllOneConst = Constant(0xffff'ffff'ffff'ffffull);
-
-  Ref SrcCond = SelectCC(CC, OpSize::i64Bit, AllOneConst, ZeroConst);
-  Ref VecCond = _VDupFromGPR(OpSize::i128Bit, OpSize::i64Bit, SrcCond);
+  Ref VecCond = _VDupFromGPR(OpSize::i128Bit, OpSize::i64Bit, SelectCC0All1(CC));
   _F80VBSLStack(OpSize::i128Bit, VecCond, Op->OP & 7, 0);
 }
 
