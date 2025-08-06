@@ -639,7 +639,6 @@ NTSTATUS ProcessInit() {
 
   SignalDelegator = fextl::make_unique<FEX::DummyHandlers::DummySignalDelegator>();
   SyscallHandler = fextl::make_unique<Exception::ECSyscallHandler>();
-  Exception::HandlerConfig.emplace();
 
   const auto NtDll = GetModuleHandle("ntdll.dll");
   const bool IsWine = !!GetProcAddress(NtDll, "wine_get_version");
@@ -653,7 +652,7 @@ NTSTATUS ProcessInit() {
   CTX->SetSignalDelegator(SignalDelegator.get());
   CTX->SetSyscallHandler(SyscallHandler.get());
   CTX->InitCore();
-
+  Exception::HandlerConfig.emplace(*CTX);
   InvalidationTracker.emplace(*CTX, Threads);
 
   HandleImageMap(NtDllBase);
