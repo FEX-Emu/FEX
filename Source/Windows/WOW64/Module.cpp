@@ -523,7 +523,6 @@ void BTCpuProcessInit() {
 
   SignalDelegator = fextl::make_unique<FEX::DummyHandlers::DummySignalDelegator>();
   SyscallHandler = fextl::make_unique<WowSyscallHandler>();
-  Context::HandlerConfig.emplace();
   const auto NtDll = GetModuleHandle("ntdll.dll");
   const bool IsWine = !!GetProcAddress(NtDll, "wine_get_version");
   OvercommitTracker.emplace(IsWine);
@@ -538,7 +537,7 @@ void BTCpuProcessInit() {
   CTX->SetSignalDelegator(SignalDelegator.get());
   CTX->SetSyscallHandler(SyscallHandler.get());
   CTX->InitCore();
-
+  Context::HandlerConfig.emplace(*CTX);
   InvalidationTracker.emplace(*CTX, Threads);
 
   auto NtDllX86 = reinterpret_cast<SYSTEM_DLL_INIT_BLOCK*>(GetProcAddress(NtDll, "LdrSystemDllInitBlock"))->ntdll_handle;
