@@ -24,8 +24,9 @@ class IREmitter {
   friend class FEXCore::IR::PassManager;
 
 public:
-  IREmitter(FEXCore::Utils::IntrusivePooledAllocator& ThreadAllocator)
-    : DualListData {ThreadAllocator, 8 * 1024 * 1024} {
+  IREmitter(FEXCore::Utils::IntrusivePooledAllocator& ThreadAllocator, bool SupportsTSOImm9)
+    : DualListData {ThreadAllocator, 8 * 1024 * 1024}
+    , SupportsTSOImm9(SupportsTSOImm9) {
     ReownOrClaimBuffer();
     ResetWorkingList();
   }
@@ -51,6 +52,56 @@ public:
    * @{ */
 
   FEXCore::IR::RegisterClassType WalkFindRegClass(Ref Node);
+
+  // These inlining helpers are used by IRDefines.inc so define first.
+  Ref InlineMem(OpSize Size, Ref Offset, MemOffsetType OffsetType, uint8_t& OffsetScale, bool TSO = false) {
+    uint64_t Imm {};
+    if (OffsetType != MEM_OFFSET_SXTX || !IsValueConstant(WrapNode(Offset), &Imm)) {
+      return Offset;
+    }
+
+    // The immediate may be scaled in the IR, we need to correct for that.
+    Imm *= OffsetScale;
+
+    // Signed immediate unscaled 9-bit range for both regular and LRCPC2 ops.
+    bool IsSIMM9 = ((int64_t)Imm >= -256) && ((int64_t)Imm <= 255);
+    IsSIMM9 &= (SupportsTSOImm9 || !TSO);
+
+    // Extended offsets for regular loadstore only.
+    LOGMAN_THROW_A_FMT(Size >= IR::OpSize::i8Bit && Size <= IR::OpSize::i256Bit, "Must be sized");
+
+    bool IsExtended = (Imm & (IR::OpSizeToSize(Size) - 1)) == 0 && Imm / IR::OpSizeToSize(Size) <= 4095;
+    IsExtended &= !TSO;
+
+    if (IsSIMM9 || IsExtended) {
+      OffsetScale = 1;
+      return _InlineConstant(Imm);
+    } else {
+      return Offset;
+    }
+  }
+
+#define DEF_INLINE(Type, Variable, Filter)                          \
+  Ref Inline##Type(OpSize Size, Ref Source) {                       \
+    uint64_t Variable;                                              \
+    if (IsValueConstant(WrapNode(Source), &Variable) && (Filter)) { \
+      return _InlineConstant(Variable);                             \
+    } else {                                                        \
+      return Source;                                                \
+    }                                                               \
+  }
+
+  DEF_INLINE(Any, _, true)
+  DEF_INLINE(Zero, X, X == 0)
+  DEF_INLINE(AddSub, X, ARMEmitter::IsImmAddSub(X))
+  DEF_INLINE(LargeAddSub, X, ARMEmitter::IsImmAddSub(X) && Size >= OpSize::i32Bit);
+  DEF_INLINE(Logical, X, ARMEmitter::Emitter::IsImmLogical(X, std::max((int)IR::OpSizeAsBits(Size), 32)));
+
+  Ref InlineSubtractZero(OpSize Size, Ref Src1, Ref Src2) {
+    // Only inline a zero if we won't inline the other source.
+    return IsValueConstant(WrapNode(Src2)) ? Src1 : InlineZero(Size, Src1);
+  }
+#undef DEF_INLINE
 
 // These handlers add cost to the constructor and destructor
 // If it becomes an issue then blow them away
@@ -409,6 +460,7 @@ protected:
   Ref CurrentCodeBlock {};
   fextl::vector<Ref> CodeBlocks;
   uint64_t Entry {};
+  bool SupportsTSOImm9 {};
 };
 
 } // namespace FEXCore::IR

@@ -58,6 +58,7 @@ class OpDefinition:
     JITDispatch: bool
     JITDispatchOverride: str
     TiedSource: int
+    Inline: list
     Arguments: list
     EmitValidation: list
     Desc: list
@@ -277,6 +278,12 @@ def parse_ops(ops):
 
             if "TiedSource" in op_val:
                 OpDef.TiedSource = op_val["TiedSource"]
+
+            # Pad Inline out to the argument count
+            OpDef.Inline = [''] * len(OpDef.Arguments)
+            if "Inline" in op_val:
+                Value = op_val["Inline"]
+                OpDef.Inline[0:len(Value)] = Value
 
             # Do some fixups of the data here
             if len(OpDef.EmitValidation) != 0:
@@ -773,9 +780,29 @@ def print_ir_allocator_helpers():
                 output_file.write(") {\n")
                 output_file.write("\t\tauto ListDataBegin = DualListData.ListBegin();\n")
 
+                idx = 0
                 for arg in op.Arguments:
                     if arg.IsSSA:
-                        output_file.write("\t\t{}->AddUse();\n".format(arg.Name))
+                        # Inline an immediate if we can
+                        inline = op.Inline[idx]
+                        idx += 1
+
+                        if inline != '':
+                            Sized = "Size" in [x.Name for x in op.Arguments]
+                            P = ["Size" if Sized else "OpSize::i64Bit", arg.Name]
+
+                            # A few cases need extra info plumbed.
+                            if inline == "SubtractZero":
+                                P += ["Src2"]
+                            elif inline == "Mem":
+                                P += ["OffsetType", "OffsetScale"]
+                            elif inline == "Memtso":
+                                P += ["OffsetType", "OffsetScale", "true /* TSO */"]
+                                inline = "Mem"
+
+                            output_file.write(f"\t\t{arg.Name} = Inline{inline}({', '.join(P)});\n")
+
+                        output_file.write(f"\t\t{arg.Name}->AddUse();\n")
 
                 # Insert validation here. This is skipped for the
                 # OrderedNodeWrapper version because validation can depend on
