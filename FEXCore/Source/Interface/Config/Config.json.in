@@ -70,7 +70,9 @@
           "ENABLEPRESERVEALLABI": "enablepreserveallabi",
           "DISABLEPRESERVEALLABI": "disablepreserveallabi",
           "ENABLEWFXT": "enablewfxt",
-          "DISABLEWFXT": "disablewfxt"
+          "DISABLEWFXT": "disablewfxt",
+          "ENABLE3DNOW": "enable3dnow",
+          "DISABLE3DNOW": "disable3dnow"
         },
         "Desc": [
           "Allows controlling of the CPU features in the JIT.",
@@ -92,7 +94,8 @@
           "\t{enable,disable}rpres: Will force enable or disable rpres even if the host doesn't support it",
           "\t{enable,disable}svebitperm: Will force enable or disable svebitperm even if the host doesn't support it",
           "\t{enable,disable}preserveallabi: Will force enable or disable preserve_all abi even if the host doesn't support it",
-          "\t{enable,disable}wfxt: Will force enable or disable wfxt even if the host doesn't support it"
+          "\t{enable,disable}wfxt: Will force enable or disable wfxt even if the host doesn't support it",
+          "\t{enable,disable}3dnow: Will force enable or disable 3DNow even if the host doesn't support it"
         ]
       },
       "SmallTSCScale": {
