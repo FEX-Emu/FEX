@@ -166,19 +166,9 @@ void ConstProp::ConstantPropagation(IREmitter* IREmit, const IRListView& Current
   }
   case OP_EXITFUNCTION: {
     auto Op = IROp->C<IR::IROp_ExitFunction>();
-
-    if (!Inline(IREmit, CurrentIR, CodeNode, IROp, Op->NewRIP_Index)) {
-      auto NewRIP = IREmit->GetOpHeader(Op->NewRIP);
-      if (NewRIP->Op == OP_ENTRYPOINTOFFSET) {
-        auto EO = NewRIP->C<IR::IROp_EntrypointOffset>();
-        IREmit->SetWriteCursor(CurrentIR.GetNode(Op->NewRIP));
-
-        IREmit->ReplaceNodeArgument(CodeNode, 0, IREmit->_InlineEntrypointOffset(EO->Header.Size, EO->Offset));
-      }
-    }
+    Inline(IREmit, CurrentIR, CodeNode, IROp, Op->NewRIP_Index);
     break;
   }
-
   case OP_LOADMEM: {
     auto Op = IROp->CW<IR::IROp_LoadMem>();
     InlineMemImmediate(IREmit, CurrentIR, CodeNode, Op->Class, IROp, Op->Offset, Op->OffsetType, Op->Offset_Index, Op->OffsetScale, false);
