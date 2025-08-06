@@ -71,7 +71,6 @@ void PassManager::AddDefaultPasses(FEXCore::Context::ContextImpl* ctx) {
 
   if (!DisablePasses()) {
     InsertPass(CreateX87StackOptimizationPass(ctx->HostFeatures, ctx->Config.Is64BitMode ? IR::OpSize::i64Bit : IR::OpSize::i32Bit));
-    InsertPass(CreateConstProp(ctx->HostFeatures.SupportsTSOImm9));
     InsertPass(CreateDeadFlagCalculationEliminination());
   }
 }

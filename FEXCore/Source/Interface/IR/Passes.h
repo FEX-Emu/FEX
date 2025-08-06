@@ -16,7 +16,6 @@ namespace FEXCore::IR {
 class Pass;
 class RegisterAllocationPass;
 
-fextl::unique_ptr<FEXCore::IR::Pass> CreateConstProp(bool SupportsTSOImm9);
 fextl::unique_ptr<FEXCore::IR::Pass> CreateDeadFlagCalculationEliminination();
 fextl::unique_ptr<FEXCore::IR::RegisterAllocationPass> CreateRegisterAllocationPass(const FEXCore::CPUIDEmu* CPUID);
 fextl::unique_ptr<FEXCore::IR::Pass> CreateX87StackOptimizationPass(const FEXCore::HostFeatures&, OpSize GPROpSize);

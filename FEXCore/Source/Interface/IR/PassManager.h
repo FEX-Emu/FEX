@@ -43,7 +43,6 @@ protected:
 };
 
 class PassManager final {
-  friend class ConstProp;
 public:
   void AddDefaultPasses(FEXCore::Context::ContextImpl* ctx);
   void AddDefaultValidationPasses();

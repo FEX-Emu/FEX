@@ -201,7 +201,7 @@ void OpDispatchBuilder::FixupAF() {
   auto PFRaw = GetRFLAG(FEXCore::X86State::RFLAG_PF_RAW_LOC);
   auto AFRaw = GetRFLAG(FEXCore::X86State::RFLAG_AF_RAW_LOC);
 
-  // Again 64-bit as masking is more expensive given our ConstProp design.
+  // Again 64-bit as masking is more expensive.
   Ref XorRes = _Xor(OpSize::i64Bit, AFRaw, PFRaw);
   SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(XorRes);
 }
