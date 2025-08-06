@@ -209,7 +209,7 @@ public:
 
 private:
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
-  int GlobalCodeSegmentEntry {};
+  uint64_t GlobalCodeSegmentEntry {};
   int CodeSegmentEntry {};
   uint64_t ReturningStackLocation;
 
