@@ -1187,6 +1187,33 @@ public:
     }
   }
 
+  void StoreContextHelper(IR::OpSize Size, RegisterClassType Class, Ref Value, uint32_t Offset) {
+    // For i128Bit, we won't see a normal Constant to inline, but as a special
+    // case we can replace with a 2x64-bit store which can use inline zeroes.
+    if (Size == OpSize::i128Bit) {
+      auto Header = GetOpHeader(WrapNode(Value));
+      const auto MAX_STP_OFFSET = (252 * 4);
+
+      if (Offset <= MAX_STP_OFFSET && Header->Op == OP_LOADNAMEDVECTORCONSTANT) {
+        auto Const = Header->C<IR::IROp_LoadNamedVectorConstant>();
+
+        if (Const->Constant == IR::NamedVectorConstant::NAMED_VECTOR_ZERO) {
+          Ref Zero = _Constant(0);
+          Ref STP = _StoreContextPair(IR::OpSize::i64Bit, GPRClass, Zero, Zero, Offset);
+
+          // XXX: This works around InlineConstant not having an associated
+          // register class, else we'd just do InlineConstant above.
+          Ref InlineZero = _InlineConstant(0);
+          ReplaceNodeArgument(STP, 0, InlineZero);
+          ReplaceNodeArgument(STP, 1, InlineZero);
+          return;
+        }
+      }
+    }
+
+    _StoreContext(Size, Class, Value, Offset);
+  }
+
   void FlushRegisterCache(bool SRAOnly = false) {
     // At block boundaries, fix up the carry flag.
     if (!SRAOnly) {
@@ -1252,7 +1279,7 @@ public:
           _StoreContextPair(Size, Class, ValueNext, Value, Offset - SizeInt);
           Bits &= ~NextBit;
         } else {
-          _StoreContext(Size, Class, Value, Offset);
+          StoreContextHelper(Size, Class, Value, Offset);
           // If Partial and MMX register, then we need to store all 1s in bits 64-80
           if (Partial && Index >= MM0Index && Index <= MM7Index) {
             _StoreContext(OpSize::i16Bit, IR::GPRClass, Constant(0xFFFF), Offset + 8);
