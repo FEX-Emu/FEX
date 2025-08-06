@@ -159,7 +159,9 @@ bool IsAddressInJit(uint64_t Address) {
 }
 
 void HandleImageMap(uint64_t Address) {
-  InvalidationTracker->HandleImageMap(Address);
+  fextl::string ModuleName = FEX::Windows::GetSectionFilePath(Address);
+  LogMan::Msg::DFmt("Load module {}: {:X}", ModuleName, Address);
+  InvalidationTracker->HandleImageMap(ModuleName, Address);
 }
 } // namespace
 
@@ -448,6 +450,10 @@ public:
 
   void MarkGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) override {
     InvalidationTracker->ReprotectRWXIntervals(Start, Length);
+  }
+
+  void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) override {
+    InvalidationTracker->InvalidateAlignedInterval(Start, Length, false);
   }
 
   void MarkOvercommitRange(uint64_t Start, uint64_t Length) override {
@@ -793,7 +799,7 @@ bool BTCpuResetToConsistentStateImpl(EXCEPTION_POINTERS* Ptrs) {
     if (Thread) {
       std::scoped_lock Lock(ThreadCreationMutex);
       FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedSMCCount, 1);
-      if (InvalidationTracker->HandleRWXAccessViolation(FaultAddress)) {
+      if (InvalidationTracker->HandleRWXAccessViolation(Thread, Context->Pc, FaultAddress)) {
         if (CTX->IsAddressInCodeBuffer(Thread, Context->Pc) && !CTX->IsCurrentBlockSingleInst(Thread) &&
             CTX->IsAddressInCurrentBlock(Thread, FaultAddress & FEXCore::Utils::FEX_PAGE_MASK, FEXCore::Utils::FEX_PAGE_SIZE)) {
           Context::ReconstructThreadState(Context);

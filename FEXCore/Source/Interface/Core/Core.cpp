@@ -139,6 +139,11 @@ bool ContextImpl::IsCurrentBlockSingleInst(FEXCore::Core::InternalThreadState* T
   return InlineTail && InlineTail->SingleInst;
 }
 
+uint64_t ContextImpl::GetGuestBlockEntry(FEXCore::Core::InternalThreadState* Thread) {
+  auto [_, InlineTail] = GetFrameBlockInfo(Thread->CurrentFrame);
+  return InlineTail ? InlineTail->RIP : 0;
+}
+
 uint64_t ContextImpl::RestoreRIPFromHostPC(FEXCore::Core::InternalThreadState* Thread, uint64_t HostPC) {
   const auto Frame = Thread->CurrentFrame;
   const uint64_t BlockBegin = Frame->State.InlineJITBlockHeader;
@@ -579,7 +584,8 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
     auto BlockInfo = Thread->FrontendDecoder->GetDecodedBlockInfo();
     auto CodeBlocks = &BlockInfo->Blocks;
 
-    Thread->OpDispatcher->BeginFunction(GuestRIP, CodeBlocks, BlockInfo->TotalInstructionCount, BlockInfo->Is64BitMode);
+    Thread->OpDispatcher->BeginFunction(GuestRIP, CodeBlocks, BlockInfo->TotalInstructionCount, BlockInfo->Is64BitMode,
+                                        AreMonoHacksActive() && MonoBackpatcherBlock.load(std::memory_order_relaxed) == GuestRIP);
 
     const auto GPRSize = Thread->OpDispatcher->GetGPROpSize();
 
@@ -637,7 +643,7 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
           Thread->OpDispatcher->_GuestOpcode(InstAddress - GuestRIP);
         }
 
-        if (Config.SMCChecks == FEXCore::Config::CONFIG_SMC_FULL) {
+        if (Config.SMCChecks == FEXCore::Config::CONFIG_SMC_FULL || Block.ForceFullSMCDetection) {
           auto ExistingCodePtr = reinterpret_cast<uint64_t*>(Block.Entry + BlockInstructionsLength);
 
           auto CodeChanged = Thread->OpDispatcher->_ValidateCode(ExistingCodePtr[0], ExistingCodePtr[1],
@@ -1002,6 +1008,10 @@ bool ContextImpl::ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState* Thre
   return Thread->LookupCache->Erase(Thread->CurrentFrame, GuestRIP);
 }
 
+void ContextImpl::ThreadRemoveCodeEntryFromJit(FEXCore::Core::CpuStateFrame* Frame, uint64_t GuestRIP) {
+  static_cast<ContextImpl*>(Frame->Thread->CTX)->SyscallHandler->InvalidateGuestCodeRange(Frame->Thread, GuestRIP, 1);
+}
+
 std::optional<CustomIRResult>
 ContextImpl::AddCustomIREntrypoint(uintptr_t Entrypoint, CustomIREntrypointHandler Handler, void* Creator, void* Data) {
   LOGMAN_THROW_A_FMT(Config.Is64BitMode || !(Entrypoint >> 32), "64-bit Entrypoint in 32-bit mode {:x}", Entrypoint);
@@ -1075,16 +1085,36 @@ void ContextImpl::RemoveForceTSOInformation(uint64_t Address, uint64_t Size) {
   ForceTSOInstructions.erase(ForceTSOInstructions.lower_bound(Address), ForceTSOInstructions.upper_bound(Address + Size));
 }
 
-void ContextImpl::RemoveCustomIREntrypoint(uintptr_t Entrypoint) {
+void ContextImpl::MarkMonoBackpatcherBlock(uint64_t BlockEntry) {
+  MonoBackpatcherBlock.store(BlockEntry, std::memory_order_relaxed);
+}
+
+void ContextImpl::RemoveCustomIREntrypoint(FEXCore::Core::InternalThreadState* Thread, uintptr_t Entrypoint) {
   LOGMAN_THROW_A_FMT(Config.Is64BitMode || !(Entrypoint >> 32), "64-bit Entrypoint in 32-bit mode {:x}", Entrypoint);
 
   std::scoped_lock lk(CustomIRMutex);
 
-  InvalidatedEntryAccumulator Accumulator;
-  InvalidateGuestCodeRange(nullptr, Accumulator, Entrypoint, 1);
   CustomIRHandlers.erase(Entrypoint);
-
   HasCustomIRHandlers = !CustomIRHandlers.empty();
+  SyscallHandler->InvalidateGuestCodeRange(Thread, Entrypoint, 1);
+}
+
+void ContextImpl::MonoBackpatcherWrite(FEXCore::Core::CpuStateFrame* Frame, uint8_t Size, uint64_t Address, uint64_t Value) {
+  auto Thread = Frame->Thread;
+  auto CTX = static_cast<ContextImpl*>(Thread->CTX);
+  {
+    auto lk = GuardSignalDeferringSection(CTX->CodeInvalidationMutex, Thread);
+
+    if (Size == 8) {
+      *reinterpret_cast<uint64_t *>(Address) = Value;
+    } else if (Size == 4) {
+      *reinterpret_cast<uint32_t *>(Address) = Value;
+    } else {
+      ERROR_AND_DIE_FMT("Unexpected write size for backpatcher: {}", Size);
+    }
+  }
+
+  CTX->SyscallHandler->InvalidateGuestCodeRange(Thread, Address, Size);
 }
 
 IR::AOTIRCacheEntry* ContextImpl::LoadAOTIRCacheEntry(const fextl::string& filename) {

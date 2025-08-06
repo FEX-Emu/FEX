@@ -476,6 +476,13 @@
         "Desc": [
           "Contrains the startup sleep to only apply to processes that match this name."
         ]
+      },
+      "MonoHacks": {
+        "Type": "bool",
+        "Default": "true",
+        "Desc": [
+          "Permits a hook-based SMC approach and smaller JIT blocks when mono is detected."
+        ]
       }
     },
     "Misc": {

@@ -34,6 +34,7 @@ public:
     FEXCore::X86Tables::DecodedInst* DecodedInstructions;
     DecodedBlockStatus BlockStatus;
     bool IsEntryPoint {};
+    bool ForceFullSMCDetection {};
   };
 
   struct DecodedBlockInformation final {
@@ -86,6 +87,7 @@ private:
   DecodedBlockStatus DecodeInstruction(uint64_t PC);
 
   void BranchTargetInMultiblockRange();
+  bool IsBranchMonoTailcall(uint64_t NumInstructions) const;
   bool InstCanContinue() const;
 
   void AddBranchTarget(uint64_t Target);
@@ -109,6 +111,7 @@ private:
 
   uint64_t ExecutableRangeBase {};
   uint64_t ExecutableRangeEnd {};
+  bool ExecutableRangeWritable {};
   bool HitNonExecutableRange {};
 
   const uint8_t* InstStream {};

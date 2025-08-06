@@ -90,6 +90,7 @@ public:
 
   bool IsAddressInCurrentBlock(FEXCore::Core::InternalThreadState* Thread, uint64_t Address, uint64_t Size) override;
   bool IsCurrentBlockSingleInst(FEXCore::Core::InternalThreadState* Thread) override;
+  uint64_t GetGuestBlockEntry(FEXCore::Core::InternalThreadState* Thread) override;
 
   uint64_t RestoreRIPFromHostPC(FEXCore::Core::InternalThreadState* Thread, uint64_t HostPC) override;
   uint32_t ReconstructCompactedEFLAGS(FEXCore::Core::InternalThreadState* Thread, bool WasInJIT, const uint64_t* HostGPRs, uint64_t PSTATE) override;
@@ -189,6 +190,12 @@ public:
 
   void RemoveForceTSOInformation(uint64_t Address, uint64_t Size) override;
 
+  void MarkMonoDetected() override {
+    MonoDetected = true;
+  }
+
+  void MarkMonoBackpatcherBlock(uint64_t BlockEntry) override;
+
 public:
   friend class FEXCore::HLE::SyscallHandler;
 #ifdef JIT_ARM64
@@ -230,6 +237,7 @@ public:
     FEX_CONFIG_OPT(DisableVixlIndirectCalls, DISABLE_VIXL_INDIRECT_RUNTIME_CALLS);
     FEX_CONFIG_OPT(SmallTSCScale, SMALLTSCSCALE);
     FEX_CONFIG_OPT(StrictInProcessSplitLocks, STRICTINPROCESSSPLITLOCKS);
+    FEX_CONFIG_OPT(MonoHacks, MONOHACKS);
   } Config;
 
   FEXCore::ForkableSharedMutex CodeInvalidationMutex;
@@ -252,20 +260,14 @@ public:
 
   static bool ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP);
 
-  // Wrapper which takes CpuStateFrame instead of InternalThreadState and unique_locks CodeInvalidationMutex
-  // Must be called from owning thread
-  static void ThreadRemoveCodeEntryFromJit(FEXCore::Core::CpuStateFrame* Frame, uint64_t GuestRIP) {
-    auto Thread = Frame->Thread;
-    auto lk = GuardSignalDeferringSection(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
+  static void ThreadRemoveCodeEntryFromJit(FEXCore::Core::CpuStateFrame* Frame, uint64_t GuestRIP);
 
-    // NOTE: Other threads sharing the same CodeBuffer may reference
-    //       invalidated data ranges through their L1/L2 caches. This is
-    //       not currently a problem since FEX does not repurpose the
-    //       invalidated CodeBuffer memory range currently.
-    ThreadRemoveCodeEntry(Thread, GuestRIP);
-  }
+  // This is used as a replacement for the SMC writes in the mono callsite backpatcher that avoids atomic operations
+  // (safe as the invalidation mutex is locked) and manually invalidates the modified range. Allowing SMC to be detected
+  // even if faulting is disabled.
+  static void MonoBackpatcherWrite(FEXCore::Core::CpuStateFrame* Frame, uint8_t Size, uint64_t Address, uint64_t Value);
 
-  void RemoveCustomIREntrypoint(uintptr_t Entrypoint);
+  void RemoveCustomIREntrypoint(FEXCore::Core::InternalThreadState* Thread, uintptr_t Entrypoint);
 
   struct GenerateIRResult {
     std::optional<IR::IRListView> IRView;
@@ -324,6 +326,10 @@ public:
     return ExitOnHLT;
   }
 
+  bool AreMonoHacksActive() const {
+    return Config.MonoHacks && MonoDetected;
+  }
+
 protected:
   void UpdateAtomicTSOEmulationConfig() {
     if (SupportsHardwareTSO) {
@@ -377,5 +383,8 @@ private:
   fextl::unordered_map<uint64_t, CustomIRHandlerEntry> CustomIRHandlers;
   IntervalList<uint64_t> ForceTSOValidRanges; // The ranges for which ForceTSOInstructions has populated data
   fextl::set<uint64_t> ForceTSOInstructions;
+
+  bool MonoDetected = false;
+  std::atomic<uint64_t> MonoBackpatcherBlock;
 };
 } // namespace FEXCore::Context

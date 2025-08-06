@@ -302,16 +302,19 @@ void LoadImageVolatileMetadata(uint64_t Address) {
     VolatileValidRanges.Insert({Address + It->Rva, Address + It->Rva + It->Size});
   }
 
+  LogMan::Msg::DFmt("Loaded volatile metadata for {:X}: {} entries", Address, VolatileInstructions.size());
   std::scoped_lock Lock(CTX->GetCodeInvalidationMutex());
   CTX->AddForceTSOInformation(VolatileValidRanges, std::move(VolatileInstructions));
 }
 
 void HandleImageMap(uint64_t Address) {
+  fextl::string ModuleName = FEX::Windows::GetSectionFilePath(Address);
+  LogMan::Msg::DFmt("Load module {}: {:X}", ModuleName, Address);
   FEX_CONFIG_OPT(VolatileMetadata, VOLATILEMETADATA);
   if (VolatileMetadata) {
     LoadImageVolatileMetadata(Address);
   }
-  InvalidationTracker->HandleImageMap(Address);
+  InvalidationTracker->HandleImageMap(ModuleName, Address);
 }
 } // namespace
 
@@ -569,6 +572,10 @@ public:
     InvalidationTracker->ReprotectRWXIntervals(Start, Length);
   }
 
+  void InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Start, uint64_t Length) override {
+    InvalidationTracker->InvalidateAlignedInterval(Start, Length, false);
+  }
+
   void MarkOvercommitRange(uint64_t Start, uint64_t Length) override {
     OvercommitTracker->MarkRange(Start, Length);
   }
@@ -709,7 +716,7 @@ bool ResetToConsistentStateImpl(EXCEPTION_RECORD* Exception, CONTEXT* GuestConte
     }
 
     std::scoped_lock Lock(ThreadCreationMutex);
-    if (InvalidationTracker && InvalidationTracker->HandleRWXAccessViolation(FaultAddress)) {
+    if (InvalidationTracker && InvalidationTracker->HandleRWXAccessViolation(Thread, NativeContext->Pc, FaultAddress)) {
       FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedSMCCount, 1);
       if (CTX->IsAddressInCodeBuffer(Thread, NativeContext->Pc) && !CTX->IsCurrentBlockSingleInst(CPUArea.ThreadState()) &&
           CTX->IsAddressInCurrentBlock(Thread, FaultAddress & FEXCore::Utils::FEX_PAGE_MASK, FEXCore::Utils::FEX_PAGE_SIZE)) {
