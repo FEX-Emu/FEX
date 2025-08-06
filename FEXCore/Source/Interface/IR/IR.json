@@ -300,12 +300,14 @@
         "RAOverride": "0"
       },
       "CondJump SSA:$Cmp1, SSA:$Cmp2, SSA:$TrueBlock, SSA:$FalseBlock, CondClass:$Cond{{COND_NEQ}}, OpSize:$CompareSize{OpSize::iInvalid}, i1:$FromNZCV{false}": {
+        "Inline": ["", "AddSub"],
         "HasSideEffects": true,
         "RAOverride": "2"
       },
       "ExitFunction OpSize:#Size, GPR:$NewRIP, BranchHint:$Hint, GPR:$CallReturnAddress, SSA:$CallReturnBlock": {
         "Desc": ["Exits the current JIT function with a target RIP"
                 ],
+        "Inline": ["Any"],
         "HasSideEffects": true,
         "DestSize": "Size",
         "RAOverride": "2"
@@ -440,10 +442,10 @@
                  "Zero Extends if value's type is too small",
                  "Truncates if value's type is too large"
                 ],
+        "Inline": ["Zero", ""],
         "HasSideEffects": true,
         "DestSize": "ByteSize",
         "EmitValidation": [
-          "WalkFindRegClass($Value) == $Class",
           "($Class == GPRClass && (#ByteSize == IR::OpSize::i8Bit || #ByteSize == IR::OpSize::i16Bit || #ByteSize == IR::OpSize::i32Bit || #ByteSize == IR::OpSize::i64Bit)) || $Class == FPRClass",
           "($Class == FPRClass && (#ByteSize == IR::OpSize::i8Bit || #ByteSize == IR::OpSize::i16Bit || #ByteSize == IR::OpSize::i32Bit || #ByteSize == IR::OpSize::i64Bit || #ByteSize == IR::OpSize::i128Bit || #ByteSize == IR::OpSize::i256Bit)) || $Class == GPRClass",
           "!($Offset >= offsetof(Core::CPUState, gregs[0]) && $Offset < offsetof(Core::CPUState, gregs[16])) && \"Can't StoreContext to GPR\"",
@@ -535,6 +537,7 @@
       },
 
       "SSA = LoadMem RegisterClass:$Class, OpSize:#Size, GPR:$Addr, GPR:$Offset, OpSize:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale": {
+        "Inline": ["", "Mem"],
         "DestSize": "Size"
       },
 
@@ -549,11 +552,9 @@
                   "Zero Extends if value's type is too small",
                   "Truncates if value's type is too large"
                 ],
+        "Inline": ["Zero", "", "Mem"],
         "HasSideEffects": true,
-        "DestSize": "Size",
-        "EmitValidation": [
-          "WalkFindRegClass($Value) == $Class"
-        ]
+        "DestSize": "Size"
       },
 
       "StoreMemPair RegisterClass:$Class, OpSize:#Size, SSA:$Value1, SSA:$Value2, GPR:$Addr, u32:$Offset": {
@@ -561,11 +562,9 @@
                   "Zero Extends if value's type is too small",
                   "Truncates if value's type is too large"
                 ],
+        "Inline": ["Zero", "Zero"],
         "HasSideEffects": true,
-        "DestSize": "Size",
-        "EmitValidation": [
-          "WalkFindRegClass($Value1) == $Class"
-        ]
+        "DestSize": "Size"
       },
 
       "StoreMemX87SVEOptPredicate OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Value, GPR:$Addr": {
@@ -585,6 +584,7 @@
       "SSA = LoadMemTSO RegisterClass:$Class, OpSize:#Size, GPR:$Addr, GPR:$Offset, OpSize:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale": {
         "Desc": ["Does a x86 TSO compatible load from memory. Offset must be Invalid()."
                 ],
+        "Inline": ["", "Memtso"],
         "DestSize": "Size",
         "DynamicDispatch": true
       },
@@ -592,12 +592,10 @@
       "StoreMemTSO RegisterClass:$Class, OpSize:#Size, SSA:$Value, GPR:$Addr, GPR:$Offset, OpSize:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale": {
         "Desc": ["Does a x86 TSO compatible store to memory. Offset must be Invalid()."
                 ],
+        "Inline": ["Zero", "", "Memtso"],
         "HasSideEffects": true,
         "DestSize": "Size",
-        "DynamicDispatch": true,
-        "EmitValidation": [
-          "WalkFindRegClass($Value) == $Class"
-        ]
+        "DynamicDispatch": true
       },
 
       "FPR = VLoadVectorMasked OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Mask, GPR:$Addr, GPR:$Offset, MemOffsetType:$OffsetType, u8:$OffsetScale": {
@@ -708,6 +706,7 @@
         "Desc": ["Duplicates behaviour of x86 STOS repeat",
                  "Returns the final address that gets generated without the prefix appended."
                 ],
+        "Inline": ["", "", "Zero", "", "Any"],
         "HasSideEffects": true,
         "DestSize": "OpSize::i64Bit"
       },
@@ -715,6 +714,7 @@
         "Desc": ["Duplicates behaviour of x86 MOVS repeat",
                  "Returns the final addresses after they have been incremented or decremented"
                 ],
+        "Inline": ["", "", "", "Any"],
         "HasSideEffects": true,
         "DestSize": "OpSize::i64Bit"
       },
@@ -752,9 +752,8 @@
       "Prefetch i1:$ForStore, i1:$Stream, i8:$CacheLevel, GPR:$Addr, GPR:$Offset, MemOffsetType:$OffsetType, u8:$OffsetScale": {
         "Desc": ["Does a cacheline prefetch operation"
                 ],
-        "EmitValidation": [
-          "CacheLevel > 0 && CacheLevel < 4"
-        ],
+        "Inline": ["", "Mem"],
+        "EmitValidation": ["CacheLevel > 0 && CacheLevel < 4"],
         "HasSideEffects": true,
         "DestSize": "OpSize::i64Bit"
       },
@@ -1072,6 +1071,7 @@
         "Desc": [ "Integer Add",
                   "Will truncate to 64 or 32bits"
                 ],
+        "Inline": ["", "LargeAddSub"],
         "DestSize": "Size",
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
@@ -1081,6 +1081,7 @@
         "Desc": [ "Integer Add with carry",
                   "Will truncate to 64 or 32bits"
                 ],
+        "Inline": ["Zero", ""],
         "DestSize": "Size",
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
@@ -1108,6 +1109,7 @@
       },
       "GPR = AddWithFlags OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": [ "Integer add. Truncates and sets NZCV per AddNZCV"],
+        "Inline": ["", "LargeAddSub"],
         "DestSize": "Size",
         "HasSideEffects": true,
         "EmitValidation": [
@@ -1116,6 +1118,7 @@
       },
       "AddNZCV OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Set NZCV for the sum of two GPRs"],
+        "Inline": ["", "LargeAddSub"],
         "HasSideEffects": true,
         "DestSize": "Size"
       },
@@ -1142,10 +1145,12 @@
       },
       "RmifNZCV GPR:$Src, u8:$Rotate, u8:$Mask": {
         "Desc": ["Rotate, mask, and insert into NZCV on FlagM platforms"],
+        "Inline": ["Zero", ""],
         "HasSideEffects": true
       },
       "CondAddNZCV OpSize:#Size, GPR:$Src1, GPR:$Src2, CondClass:$Cond, u8:$FalseNZCV": {
         "Desc": ["If condition is true, set NZCV per sum of GPRs, else force NZCV to a constant."],
+        "Inline": ["Zero", "AddSub"],
         "HasSideEffects": true,
         "DestSize": "Size",
         "EmitValidation": [
@@ -1154,6 +1159,7 @@
       },
       "CondSubNZCV OpSize:#Size, GPR:$Src1, GPR:$Src2, CondClass:$Cond, u8:$FalseNZCV": {
         "Desc": ["If condition is true, set NZCV per difference of GPRs, else force NZCV to a constant."],
+        "Inline": ["Zero", "AddSub"],
         "HasSideEffects": true,
         "DestSize": "Size",
         "EmitValidation": [
@@ -1162,6 +1168,7 @@
       },
       "GPR = AdcWithFlags OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Adds and set NZCV for the sum of two GPRs and carry-in given as NZCV"],
+        "Inline": ["Zero", ""],
         "HasSideEffects": true,
         "DestSize": "Size",
         "EmitValidation": [
@@ -1211,6 +1218,7 @@
         "Desc": [ "Integer Sub",
                   "Will truncate to 64 or 32bits"
                 ],
+        "Inline": ["SubtractZero", "LargeAddSub"],
         "DestSize": "Size",
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
@@ -1228,6 +1236,7 @@
       },
       "GPR = SubWithFlags OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": [ "Integer Sub. Truncates and sets NZCV per SubNZCV"],
+        "Inline": ["SubtractZero", "LargeAddSub"],
         "DestSize": "Size",
         "HasSideEffects": true,
         "EmitValidation": [
@@ -1244,6 +1253,7 @@
         "Desc": ["Set NZCV for the difference of two GPRs. ",
                  "Carry flag uses arm64 definition, inverted x86.",
                  ""],
+        "Inline": ["Zero", "LargeAddSub"],
         "DestSize": "Size",
         "HasSideEffects": true
       },
@@ -1251,6 +1261,7 @@
         "Desc": ["Integer binary or"
                 ],
         "DestSize": "Size",
+        "Inline": ["", "Logical"],
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
@@ -1280,8 +1291,8 @@
         ]
       },
       "GPR = Xor OpSize:#Size, GPR:$Src1, GPR:$Src2": {
-        "Desc": ["Integer binary exclusive or"
-                ],
+        "Desc": ["Integer binary exclusive or"],
+        "Inline": ["", "Logical"],
         "DestSize": "Size",
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
@@ -1302,8 +1313,8 @@
         ]
       },
       "GPR = And OpSize:#Size, GPR:$Src1, GPR:$Src2": {
-        "Desc": ["Integer binary and"
-                ],
+        "Desc": ["Integer binary and"],
+        "Inline": ["", "Logical"],
         "DestSize": "Size",
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
@@ -1319,6 +1330,7 @@
       "GPR = AndWithFlags OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer binary and"
                 ],
+        "Inline": ["", "Logical"],
         "DestSize": "Size",
         "TiedSource": 0,
         "HasSideEffects": true
@@ -1326,12 +1338,14 @@
       "GPR = Andn OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Integer binary AND NOT. Performs the equivalent of Src1 & ~Src2"],
         "DestSize": "Size",
+        "Inline": ["", "Logical"],
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
       "TestNZ OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": ["Set NZCV for the binary AND of two GPRs, setting N and Z accordingly and zeroing C and V"],
+        "Inline": ["", "Logical"],
         "DestSize": "Size",
         "HasSideEffects": true
       },
@@ -1341,24 +1355,24 @@
         "HasSideEffects": true
       },
       "GPR = Lshl OpSize:#Size, GPR:$Src1, GPR:$Src2": {
-        "Desc": ["Integer logical shift left"
-                ],
+        "Desc": ["Integer logical shift left"],
+        "Inline": ["", "Any"],
         "DestSize": "Size",
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
       "GPR = Lshr OpSize:#Size, GPR:$Src1, GPR:$Src2": {
-        "Desc": ["Integer logical shift right"
-                ],
+        "Desc": ["Integer logical shift right"],
+        "Inline": ["", "Any"],
         "DestSize": "Size",
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
       "GPR = Ashr OpSize:#Size, GPR:$Src1, GPR:$Src2": {
-        "Desc": ["Integer arithmetic shift right"
-                ],
+        "Desc": ["Integer arithmetic shift right"],
+        "Inline": ["", "Any"],
         "DestSize": "Size",
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
@@ -1375,8 +1389,8 @@
         "HasSideEffects": true
       },
       "GPR = Ror OpSize:#Size, GPR:$Src1, GPR:$Src2": {
-        "Desc": ["Integer rotate right"
-                ],
+        "Desc": ["Integer rotate right"],
+        "Inline": ["", "Any"],
         "DestSize": "Size",
         "EmitValidation": [
           "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
@@ -1512,12 +1526,12 @@
                  "op:",
                  "Dest = Cmp1 <Cond> Cmp2 ? TrueVal : FalseVal"
                 ],
+        "Inline": ["", "AddSub", "", ""],
         "DestSize": "ResultSize",
         "ImplicitFlagClobber": true,
         "EmitValidation": [
           "CompareSize == FEXCore::IR::OpSize::i32Bit || CompareSize == FEXCore::IR::OpSize::i64Bit || CompareSize == FEXCore::IR::OpSize::i128Bit",
-          "ResultSize == FEXCore::IR::OpSize::i32Bit || ResultSize == FEXCore::IR::OpSize::i64Bit",
-          "WalkFindRegClass($Cmp1) == WalkFindRegClass($Cmp2)"
+          "ResultSize == FEXCore::IR::OpSize::i32Bit || ResultSize == FEXCore::IR::OpSize::i64Bit"
         ]
       },
       "GPR = Extr OpSize:#Size, GPR:$Upper, GPR:$Lower, u8:$LSB": {
