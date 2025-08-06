@@ -613,7 +613,7 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
 
       if (InstsInBlock == 0) {
         // Special case for an empty instruction block.
-        Thread->OpDispatcher->ExitFunction(Thread->OpDispatcher->_EntrypointOffset(GPRSize, Block.Entry - GuestRIP));
+        Thread->OpDispatcher->ExitFunction(Thread->OpDispatcher->_InlineEntrypointOffset(GPRSize, Block.Entry - GuestRIP));
       }
 
       for (size_t i = 0; i < InstsInBlock; ++i) {
@@ -657,7 +657,7 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
 
           Thread->OpDispatcher->SetCurrentCodeBlock(CodeWasChangedBlock);
           Thread->OpDispatcher->_ThreadRemoveCodeEntry();
-          Thread->OpDispatcher->ExitFunction(Thread->OpDispatcher->_EntrypointOffset(GPRSize, InstAddress - GuestRIP));
+          Thread->OpDispatcher->ExitFunction(Thread->OpDispatcher->_InlineEntrypointOffset(GPRSize, InstAddress - GuestRIP));
 
           auto NextOpBlock = Thread->OpDispatcher->CreateNewCodeBlockAfter(CurrentBlock);
 
@@ -723,7 +723,8 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
 
         if (NeedsBlockEnd) {
           // We had some instructions. Early exit
-          Thread->OpDispatcher->ExitFunction(Thread->OpDispatcher->_EntrypointOffset(GPRSize, Block.Entry + BlockInstructionsLength - GuestRIP));
+          Thread->OpDispatcher->ExitFunction(
+            Thread->OpDispatcher->_InlineEntrypointOffset(GPRSize, Block.Entry + BlockInstructionsLength - GuestRIP));
           break;
         }
 

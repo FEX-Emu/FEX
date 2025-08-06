@@ -534,7 +534,7 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
 
   if (NextRIP != TargetRIP) {
     // Store the RIP
-    ExitFunction(NewRIP, BranchHint::Call, ConstantPC, [&]() {
+    ExitRelocatedPC(Op, TargetOffset, BranchHint::Call, ConstantPC, [&]() {
       auto CallReturnJumpTarget = JumpTargets.find(NextRIP);
       if (CallReturnJumpTarget != JumpTargets.end() && CallReturnJumpTarget->second.IsEntryPoint) {
         return CallReturnJumpTarget->second.BlockEntry;
@@ -742,10 +742,8 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
       SetCurrentCodeBlock(JumpTarget);
       StartNewBlock();
 
-      auto NewRIP = GetRelocatedPC(Op, TargetOffset);
-
       // Store the new RIP
-      ExitFunction(NewRIP);
+      ExitRelocatedPC(Op, TargetOffset);
     }
 
     // Failure to take branch
@@ -759,11 +757,8 @@ void OpDispatchBuilder::CondJUMPOp(OpcodeArgs) {
       SetCurrentCodeBlock(JumpTarget);
       StartNewBlock();
 
-      // Leave block
-      auto RIPTargetConst = GetRelocatedPC(Op);
-
-      // Store the new RIP
-      ExitFunction(RIPTargetConst);
+      // Leave block & store the new RIP
+      ExitRelocatedPC(Op);
     }
   }
 }
@@ -798,10 +793,8 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
       SetCurrentCodeBlock(JumpTarget);
       StartNewBlock();
 
-      auto NewRIP = GetRelocatedPC(Op, Op->Src[0].Data.Literal.Value);
-
       // Store the new RIP
-      ExitFunction(NewRIP);
+      ExitRelocatedPC(Op, Op->Src[0].Data.Literal.Value);
     }
 
     // Failure to take branch
@@ -815,11 +808,8 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
       SetCurrentCodeBlock(JumpTarget);
       StartNewBlock();
 
-      // Leave block
-      auto RIPTargetConst = GetRelocatedPC(Op);
-
-      // Store the new RIP
-      ExitFunction(RIPTargetConst);
+      // Leave block & store the new RIP
+      ExitRelocatedPC(Op);
     }
   }
 }
@@ -872,10 +862,8 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
       SetCurrentCodeBlock(JumpTarget);
       StartNewBlock();
 
-      auto NewRIP = GetRelocatedPC(Op, Op->Src[1].Data.Literal.Value);
-
       // Store the new RIP
-      ExitFunction(NewRIP);
+      ExitRelocatedPC(Op, Op->Src[1].Data.Literal.Value);
     }
 
     // Failure to take branch
@@ -889,11 +877,8 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
       SetCurrentCodeBlock(JumpTarget);
       StartNewBlock();
 
-      // Leave block
-      auto RIPTargetConst = GetRelocatedPC(Op);
-
-      // Store the new RIP
-      ExitFunction(RIPTargetConst);
+      // Leave block & store the new RIP
+      ExitRelocatedPC(Op);
     }
   }
 }
@@ -937,10 +922,10 @@ void OpDispatchBuilder::JUMPOp(OpcodeArgs) {
       SetJumpTarget(Jump_, JumpTarget);
       SetCurrentCodeBlock(JumpTarget);
       StartNewBlock();
-      ExitFunction(GetRelocatedPC(Op, TargetOffset));
+      ExitRelocatedPC(Op, TargetOffset);
     }
   } else {
-    ExitFunction(GetRelocatedPC(Op, TargetOffset));
+    ExitRelocatedPC(Op, TargetOffset);
   }
 }
 
@@ -3895,7 +3880,7 @@ void OpDispatchBuilder::Finalize() {
 
     // We haven't emitted. Dump out to the dispatcher
     SetCurrentCodeBlock(Handler.second.BlockEntry);
-    ExitFunction(_EntrypointOffset(GPRSize, Handler.first - Entry));
+    ExitFunction(_InlineEntrypointOffset(GPRSize, Handler.first - Entry));
   }
 }
 
@@ -4206,11 +4191,6 @@ Ref OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, const X86T
   } else {
     return LoadEffectiveAddress(this, A, GetGPROpSize(), false, AllowUpperGarbage);
   }
-}
-
-Ref OpDispatchBuilder::GetRelocatedPC(const FEXCore::X86Tables::DecodedOp& Op, int64_t Offset) {
-  const auto GPRSize = GetGPROpSize();
-  return _EntrypointOffset(GPRSize, Op->PC + Op->InstSize + Offset - Entry);
 }
 
 Ref OpDispatchBuilder::LoadGPRRegister(uint32_t GPR, IR::OpSize Size, uint8_t Offset, bool AllowUpperGarbage) {

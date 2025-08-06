@@ -201,8 +201,7 @@ public:
         const auto GPRSize = GetGPROpSize();
         // If we don't have a jump target to a new block then we have to leave
         // Set the RIP to the next instruction and leave
-        auto RelocatedNextRIP = _EntrypointOffset(GPRSize, NextRIP - Entry);
-        ExitFunction(RelocatedNextRIP);
+        ExitFunction(_InlineEntrypointOffset(GPRSize, NextRIP - Entry));
       } else if (it != JumpTargets.end()) {
         Jump(it->second.BlockEntry);
         return true;
@@ -1520,7 +1519,23 @@ private:
   void StoreGPRRegister(uint32_t GPR, const Ref Src, IR::OpSize Size = OpSize::iInvalid, uint8_t Offset = 0);
   void StoreXMMRegister(uint32_t XMM, const Ref Src);
 
-  Ref GetRelocatedPC(const FEXCore::X86Tables::DecodedOp& Op, int64_t Offset = 0);
+  Ref _GetRelocatedPC(const FEXCore::X86Tables::DecodedOp& Op, int64_t Offset, bool Inline) {
+    const auto GPRSize = GetGPROpSize();
+    const auto Offs = Op->PC + Op->InstSize + Offset - Entry;
+    return Inline ? _InlineEntrypointOffset(GPRSize, Offs) : _EntrypointOffset(GPRSize, Offs);
+  }
+
+  Ref GetRelocatedPC(const FEXCore::X86Tables::DecodedOp& Op, int64_t Offset = 0) {
+    return _GetRelocatedPC(Op, Offset, false);
+  }
+
+  void ExitRelocatedPC(const FEXCore::X86Tables::DecodedOp& Op, int64_t Offset = 0) {
+    ExitFunction(_GetRelocatedPC(Op, Offset, true /* Inline */));
+  }
+
+  void ExitRelocatedPC(const FEXCore::X86Tables::DecodedOp& Op, int64_t Offset, BranchHint Hint, Ref CallReturnAddress, Ref CallReturnBlock) {
+    ExitFunction(_GetRelocatedPC(Op, Offset, true /* Inline */), Hint, CallReturnAddress, CallReturnBlock);
+  }
 
   [[nodiscard]]
   static bool IsOperandMem(const X86Tables::DecodedOperand& Operand, bool Load) {
