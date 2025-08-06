@@ -53,6 +53,7 @@ public:
 
 private:
   FEX_CONFIG_OPT(ParanoidTSO, PARANOIDTSO);
+  FEX_CONFIG_OPT(HalfBarrierTSOEnabled, HALFBARRIERTSOENABLED);
 
   const bool HostSupportsSVE128 {};
   const bool HostSupportsSVE256 {};
@@ -403,16 +404,7 @@ private:
 
   void EmitEntryPoint(ARMEmitter::BackwardLabel& HeaderLabel, bool CheckTF);
 
-  // Runtime selection;
-  // Load and store TSO memory style
-  OpType RT_LoadMemTSO;
-  OpType RT_StoreMemTSO;
-
 #define DEF_OP(x) void Op_##x(IR::IROp_Header const* IROp, IR::Ref Node)
-
-  // Dynamic Dispatcher supporting operations
-  DEF_OP(ParanoidLoadMemTSO);
-  DEF_OP(ParanoidStoreMemTSO);
 
   ///< Unhandled handler
   DEF_OP(Unhandled);
