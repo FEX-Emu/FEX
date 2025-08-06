@@ -435,6 +435,7 @@ static void OverrideFeatures(FEXCore::HostFeatures* Features, uint64_t ForceSVEW
   ENABLE_DISABLE_OPTION(SupportsSVEBitPerm, SVEBITPERM, SVEBITPERM);
   ENABLE_DISABLE_OPTION(SupportsPreserveAllABI, PRESERVEALLABI, PRESERVEALLABI);
   ENABLE_DISABLE_OPTION(SupportsWFXT, WFXT, WFXT);
+  ENABLE_DISABLE_OPTION(Supports3DNow, 3DNOW, 3DNOW);
   GET_SINGLE_OPTION(Crypto, CRYPTO);
 
 #undef ENABLE_DISABLE_OPTION
@@ -496,6 +497,14 @@ FEXCore::HostFeatures FetchHostFeatures(FEX::CPUFeatures& Features, bool Support
   HostFeatures.SupportsSVE256 = Features.Supports(CPUFeatures::Feature::SVE2) && ReadSVEVectorLengthInBits() >= 256;
 #endif
   HostFeatures.SupportsAVX = true;
+
+#ifdef _WIN32
+  // Disable 3DNow! by default to better match the set of extensions exposed on modern CPUs
+  // Works around a bug breaking some uses of 3DNow in WOW64 FEX
+  HostFeatures.Supports3DNow = false;
+#else
+  HostFeatures.Supports3DNow = true;
+#endif
 
   HostFeatures.SupportsAES256 = HostFeatures.SupportsAVX && HostFeatures.SupportsAES;
 

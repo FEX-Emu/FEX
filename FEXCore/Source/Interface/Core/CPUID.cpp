@@ -925,38 +925,38 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0001h(uint32_t Leaf) con
             (0 << 30) | // Reserved
             (0 << 31);  // Reserved
 
-  Res.edx = (1 << 0) |                // FPU
-            (1 << 1) |                // Virtual mode extensions
-            (1 << 2) |                // Debugging extensions
-            (1 << 3) |                // Page size extensions
-            (1 << 4) |                // TSC
-            (1 << 5) |                // MSR support
-            (1 << 6) |                // PAE
-            (1 << 7) |                // Machine Check Exception
-            (1 << 8) |                // CMPXCHG8B
-            (1 << 9) |                // APIC
-            (0 << 10) |               // Reserved
-            (1 << 11) |               // SYSCALL/SYSRET
-            (1 << 12) |               // MTRR
-            (1 << 13) |               // Page global extension
-            (1 << 14) |               // Machine Check architecture
-            (1 << 15) |               // CMOV
-            (1 << 16) |               // Page attribute table
-            (1 << 17) |               // Page-size extensions
-            (0 << 18) |               // Reserved
-            (0 << 19) |               // Reserved
-            (1 << 20) |               // NX
-            (0 << 21) |               // Reserved
-            (1 << 22) |               // MMXExt
-            (1 << 23) |               // MMX
-            (1 << 24) |               // FXSAVE/FXRSTOR
-            (1 << 25) |               // FXSAVE/FXRSTOR Optimizations
-            (0 << 26) |               // 1 gigabit pages
-            (SUPPORTS_RDTSCP << 27) | // RDTSCP
-            (0 << 28) |               // Reserved
-            (1 << 29) |               // Long Mode
-            (1 << 30) |               // 3DNow! Extensions
-            (1 << 31);                // 3DNow!
+  Res.edx = (1 << 0) |                                // FPU
+            (1 << 1) |                                // Virtual mode extensions
+            (1 << 2) |                                // Debugging extensions
+            (1 << 3) |                                // Page size extensions
+            (1 << 4) |                                // TSC
+            (1 << 5) |                                // MSR support
+            (1 << 6) |                                // PAE
+            (1 << 7) |                                // Machine Check Exception
+            (1 << 8) |                                // CMPXCHG8B
+            (1 << 9) |                                // APIC
+            (0 << 10) |                               // Reserved
+            (1 << 11) |                               // SYSCALL/SYSRET
+            (1 << 12) |                               // MTRR
+            (1 << 13) |                               // Page global extension
+            (1 << 14) |                               // Machine Check architecture
+            (1 << 15) |                               // CMOV
+            (1 << 16) |                               // Page attribute table
+            (1 << 17) |                               // Page-size extensions
+            (0 << 18) |                               // Reserved
+            (0 << 19) |                               // Reserved
+            (1 << 20) |                               // NX
+            (0 << 21) |                               // Reserved
+            (1 << 22) |                               // MMXExt
+            (1 << 23) |                               // MMX
+            (1 << 24) |                               // FXSAVE/FXRSTOR
+            (1 << 25) |                               // FXSAVE/FXRSTOR Optimizations
+            (0 << 26) |                               // 1 gigabit pages
+            (SUPPORTS_RDTSCP << 27) |                 // RDTSCP
+            (0 << 28) |                               // Reserved
+            (1 << 29) |                               // Long Mode
+            (CTX->HostFeatures.Supports3DNow << 30) | // 3DNow! Extensions
+            (CTX->HostFeatures.Supports3DNow << 31);  // 3DNow!
   return Res;
 }
 
