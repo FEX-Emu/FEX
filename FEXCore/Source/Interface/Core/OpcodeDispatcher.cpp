@@ -4311,7 +4311,7 @@ void OpDispatchBuilder::StoreResult(FEXCore::IR::RegisterClassType Class, FEXCor
 }
 
 OpDispatchBuilder::OpDispatchBuilder(FEXCore::Context::ContextImpl* ctx)
-  : IREmitter {ctx->OpDispatcherAllocator}
+  : IREmitter {ctx->OpDispatcherAllocator, ctx->HostFeatures.SupportsTSOImm9}
   , CTX {ctx} {
   ResetWorkingList();
   InstallHostSpecificOpcodeHandlers();
