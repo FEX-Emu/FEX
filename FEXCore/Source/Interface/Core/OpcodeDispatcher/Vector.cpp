@@ -3950,10 +3950,7 @@ void OpDispatchBuilder::PTestOpImpl(OpSize Size, Ref Dest, Ref Src) {
   Test1 = _VExtractToGPR(Size, OpSize::i16Bit, Test1, 0);
   Test2 = _VExtractToGPR(Size, OpSize::i16Bit, Test2, 0);
 
-  auto ZeroConst = Constant(0);
-  auto OneConst = Constant(1);
-
-  Test2 = _Select(FEXCore::IR::COND_NEQ, Test2, ZeroConst, OneConst, ZeroConst);
+  Test2 = To01(OpSize::i64Bit, Test2);
 
   // Careful, these flags are different between {V,}PTEST and VTESTP{S,D}
   // Set ZF according to Test1. SF will be zeroed since we do a 32-bit test on
@@ -3990,10 +3987,7 @@ void OpDispatchBuilder::VTESTOpImpl(OpSize SrcSize, IR::OpSize ElementSize, Ref 
   Ref AndGPR = _VExtractToGPR(SrcSize, OpSize::i16Bit, MaxAnd, 0);
   Ref AndNotGPR = _VExtractToGPR(SrcSize, OpSize::i16Bit, MaxAndNot, 0);
 
-  Ref ZeroConst = Constant(0);
-  Ref OneConst = Constant(1);
-
-  Ref CFInv = _Select(IR::COND_NEQ, AndNotGPR, ZeroConst, OneConst, ZeroConst);
+  Ref CFInv = To01(OpSize::i64Bit, AndNotGPR);
 
   // As in PTest, this sets Z appropriately while zeroing the rest of NZCV.
   SetNZ_ZeroCV(OpSize::i32Bit, AndGPR);
