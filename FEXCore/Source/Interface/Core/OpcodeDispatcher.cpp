@@ -4366,9 +4366,6 @@ OpDispatchBuilder::OpDispatchBuilder(FEXCore::Context::ContextImpl* ctx)
     DefaultAVXStateFunc = &OpDispatchBuilder::AVX128_DefaultAVXState;
   }
 }
-OpDispatchBuilder::OpDispatchBuilder(FEXCore::Utils::IntrusivePooledAllocator& Allocator)
-  : IREmitter {Allocator}
-  , CTX {nullptr} {}
 
 void OpDispatchBuilder::ResetWorkingList() {
   IREmitter::ResetWorkingList();
