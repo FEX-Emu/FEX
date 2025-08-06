@@ -667,15 +667,6 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::In
 
   CurrentCodeBuffer = CodeBuffers.GetLatest();
   ThreadState->LookupCache->Shared = CurrentCodeBuffer->LookupCache.get();
-
-  // Setup dynamic dispatch.
-  if (ParanoidTSO()) {
-    RT_LoadMemTSO = &Arm64JITCore::Op_ParanoidLoadMemTSO;
-    RT_StoreMemTSO = &Arm64JITCore::Op_ParanoidStoreMemTSO;
-  } else {
-    RT_LoadMemTSO = &Arm64JITCore::Op_LoadMemTSO;
-    RT_StoreMemTSO = &Arm64JITCore::Op_StoreMemTSO;
-  }
 }
 
 void Arm64JITCore::EmitDetectionString() {
