@@ -211,7 +211,7 @@
         "0xf2 0x0f 0x5a"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x4]",
+        "ldr d2, [x4]",
         "fcvt s0, d2",
         "mov v16.s[0], v0.s[0]"
       ]
