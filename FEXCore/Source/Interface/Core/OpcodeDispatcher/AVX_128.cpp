@@ -1033,9 +1033,9 @@ void OpDispatchBuilder::AVX128_InsertCVTGPR_To_FPR(OpcodeArgs) {
   } else {
     // In the case of cvtsi2s{s,d} where the source and destination are the same size,
     // then it is more optimal to load in to the FPR register directly and convert there.
-    auto Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, false);
+    auto Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
     // Always signed
-    Result.Low = _VSToFVectorInsert(DstSize, DstElementSize, DstElementSize, Src1.Low, Src2.Low, false, false);
+    Result.Low = _VSToFVectorInsert(DstSize, DstElementSize, DstElementSize, Src1.Low, Src2, false, false);
   }
 
   [[maybe_unused]] const auto Is128Bit = DstSize == OpSize::i128Bit;
