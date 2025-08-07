@@ -4268,11 +4268,13 @@
       ]
     },
     "fnclex": {
-      "ExpectedInstructionCount": 0,
+      "ExpectedInstructionCount": 1,
       "Comment": [
         "0xdb 11b 0xe2 /4"
       ],
-      "ExpectedArm64ASM": []
+      "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1008]"
+      ]
     },
     "fninit": {
       "ExpectedInstructionCount": 16,
