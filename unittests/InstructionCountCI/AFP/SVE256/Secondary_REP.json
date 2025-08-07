@@ -101,7 +101,7 @@
       "ExpectedInstructionCount": 2,
       "Comment": "0xf3 0x0f 0x5a",
       "ExpectedArm64ASM": [
-        "ldr d2, [x4]",
+        "ldr s2, [x4]",
         "fcvt d16, s2"
       ]
     },

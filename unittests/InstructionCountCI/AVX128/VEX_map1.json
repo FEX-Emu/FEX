@@ -2553,6 +2553,32 @@
         "stp xzr, xzr, [x28, #32]"
       ]
     },
+    "vcvtsi2ss xmm0, xmm1, dword [rax]": {
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "Map 1 0b10 0x2A 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr s2, [x4]",
+        "mov v16.16b, v17.16b",
+        "scvtf s0, s2",
+        "mov v16.s[0], v0.s[0]",
+        "stp xzr, xzr, [x28, #32]"
+      ]
+    },
+    "vcvtsi2ss xmm0, xmm1, qword [rax]": {
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "Map 1 0b10 0x2A 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr x20, [x4]",
+        "mov v16.16b, v17.16b",
+        "scvtf s0, x20",
+        "mov v16.s[0], v0.s[0]",
+        "stp xzr, xzr, [x28, #32]"
+      ]
+    },
     "vcvtsi2sd xmm0, xmm1, eax": {
       "ExpectedInstructionCount": 4,
       "Comment": [
@@ -2573,6 +2599,32 @@
       "ExpectedArm64ASM": [
         "mov v16.16b, v17.16b",
         "scvtf d0, x4",
+        "mov v16.d[0], v0.d[0]",
+        "stp xzr, xzr, [x28, #32]"
+      ]
+    },
+    "vcvtsi2sd xmm0, xmm1, dword [rax]": {
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "Map 1 0b11 0x2A 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr w20, [x4]",
+        "mov v16.16b, v17.16b",
+        "scvtf d0, w20",
+        "mov v16.d[0], v0.d[0]",
+        "stp xzr, xzr, [x28, #32]"
+      ]
+    },
+    "vcvtsi2sd xmm0, xmm1, qword [rax]": {
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "Map 1 0b11 0x2A 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr d2, [x4]",
+        "mov v16.16b, v17.16b",
+        "scvtf d0, d2",
         "mov v16.d[0], v0.d[0]",
         "stp xzr, xzr, [x28, #32]"
       ]
@@ -2635,6 +2687,17 @@
         "fcvtzs x4, s2"
       ]
     },
+    "vcvttss2si rax, [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 1 0b10 0x2c 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr s2, [x4]",
+        "frint64z s2, s2",
+        "fcvtzs x4, s2"
+      ]
+    },
     "vcvttsd2si eax, xmm0": {
       "ExpectedInstructionCount": 2,
       "Comment": [
@@ -2652,6 +2715,17 @@
       ],
       "ExpectedArm64ASM": [
         "frint64z d2, d16",
+        "fcvtzs x4, d2"
+      ]
+    },
+    "vcvttsd2si rax, [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 1 0b11 0x2c 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr d2, [x4]",
+        "frint64z d2, d2",
         "fcvtzs x4, d2"
       ]
     },
@@ -2675,6 +2749,17 @@
         "fcvtzs x4, s2"
       ]
     },
+    "vcvtss2si rax, [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 1 0b10 0x2d 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr s2, [x4]",
+        "frint64x s2, s2",
+        "fcvtzs x4, s2"
+      ]
+    },
     "vcvtsd2si eax, xmm0": {
       "ExpectedInstructionCount": 2,
       "Comment": [
@@ -2692,6 +2777,17 @@
       ],
       "ExpectedArm64ASM": [
         "frint64x d2, d16",
+        "fcvtzs x4, d2"
+      ]
+    },
+    "vcvtsd2si rax, [rax]": {
+      "ExpectedInstructionCount": 3,
+      "Comment": [
+        "Map 1 0b11 0x2d 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr d2, [x4]",
+        "frint64x d2, d2",
         "fcvtzs x4, d2"
       ]
     },
@@ -2944,6 +3040,19 @@
         "stp xzr, xzr, [x28, #32]"
       ]
     },
+    "vcvtss2sd xmm0, xmm1, [rax]": {
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "Map 1 0b10 0x5a 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr s2, [x4]",
+        "mov v16.16b, v17.16b",
+        "fcvt d0, s2",
+        "mov v16.d[0], v0.d[0]",
+        "stp xzr, xzr, [x28, #32]"
+      ]
+    },
     "vcvtsd2ss xmm0, xmm1, xmm2": {
       "ExpectedInstructionCount": 4,
       "Comment": [
@@ -2952,6 +3061,19 @@
       "ExpectedArm64ASM": [
         "mov v16.16b, v17.16b",
         "fcvt s0, d18",
+        "mov v16.s[0], v0.s[0]",
+        "stp xzr, xzr, [x28, #32]"
+      ]
+    },
+    "vcvtsd2ss xmm0, xmm1, [rax]": {
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "Map 1 0b11 0x5a 128-bit"
+      ],
+      "ExpectedArm64ASM": [
+        "ldr d2, [x4]",
+        "mov v16.16b, v17.16b",
+        "fcvt s0, d2",
         "mov v16.s[0], v0.s[0]",
         "stp xzr, xzr, [x28, #32]"
       ]
