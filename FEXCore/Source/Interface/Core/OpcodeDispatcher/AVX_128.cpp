@@ -1523,7 +1523,7 @@ void OpDispatchBuilder::AVX128_InsertScalar_CVT_Float_To_Float(OpcodeArgs) {
   // Gotta be careful with this operation.
   // It inserts in to the lowest element, retaining the remainder of the lower 128-bits.
   // Then zero extends the top 128-bit.
-  const auto SrcSize = OpSizeFromSrc(Op);
+  const auto SrcSize = Op->Src[1].IsGPR() ? OpSize::i128Bit : SrcElementSize;
   auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
   Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], SrcSize, Op->Flags, {.AllowUpperGarbage = true});
 
