@@ -804,8 +804,6 @@ void NotifyMemoryAlloc(void* Address, SIZE_T Size, ULONG Type, ULONG Prot, BOOL 
   if (!After) {
     ThreadCreationMutex.lock();
   } else {
-    if (!Status) {
-      std::scoped_lock Lock(ThreadCreationMutex);
       InvalidationTracker->HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), Prot);
     }
     ThreadCreationMutex.unlock();
@@ -838,7 +836,6 @@ void NotifyMemoryProtect(void* Address, SIZE_T Size, ULONG NewProt, BOOL After, 
     ThreadCreationMutex.lock();
   } else {
     if (!Status) {
-      std::scoped_lock Lock(ThreadCreationMutex);
       InvalidationTracker->HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), NewProt);
     }
     ThreadCreationMutex.unlock();
@@ -866,7 +863,6 @@ void NotifyUnmapViewOfSection(void* Address, BOOL After, NTSTATUS Status) {
 
   if (!After) {
     ThreadCreationMutex.lock();
-    std::scoped_lock Lock(ThreadCreationMutex);
     auto [Start, Size] = InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
     if (Size) {
       std::scoped_lock Lock(CTX->GetCodeInvalidationMutex());
