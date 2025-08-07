@@ -804,6 +804,8 @@ void NotifyMemoryAlloc(void* Address, SIZE_T Size, ULONG Type, ULONG Prot, BOOL 
   if (!After) {
     ThreadCreationMutex.lock();
   } else {
+    // MEM_RESET(_UNDO) ignores the passed permissions
+    if (!Status && !(Type & (MEM_RESET | MEM_RESET_UNDO))) {
       InvalidationTracker->HandleMemoryProtectionNotification(reinterpret_cast<uint64_t>(Address), static_cast<uint64_t>(Size), Prot);
     }
     ThreadCreationMutex.unlock();
