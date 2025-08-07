@@ -201,8 +201,7 @@ public:
         const auto GPRSize = GetGPROpSize();
         // If we don't have a jump target to a new block then we have to leave
         // Set the RIP to the next instruction and leave
-        auto RelocatedNextRIP = _EntrypointOffset(GPRSize, NextRIP - Entry);
-        ExitFunction(RelocatedNextRIP);
+        ExitFunction(_InlineEntrypointOffset(GPRSize, NextRIP - Entry));
       } else if (it != JumpTargets.end()) {
         Jump(it->second.BlockEntry);
         return true;
@@ -266,7 +265,6 @@ public:
   }
 
   OpDispatchBuilder(FEXCore::Context::ContextImpl* ctx);
-  OpDispatchBuilder(FEXCore::Utils::IntrusivePooledAllocator& Allocator);
 
   void ResetWorkingList();
   void ResetDecodeFailure() {
@@ -1189,6 +1187,33 @@ public:
     }
   }
 
+  void StoreContextHelper(IR::OpSize Size, RegisterClassType Class, Ref Value, uint32_t Offset) {
+    // For i128Bit, we won't see a normal Constant to inline, but as a special
+    // case we can replace with a 2x64-bit store which can use inline zeroes.
+    if (Size == OpSize::i128Bit) {
+      auto Header = GetOpHeader(WrapNode(Value));
+      const auto MAX_STP_OFFSET = (252 * 4);
+
+      if (Offset <= MAX_STP_OFFSET && Header->Op == OP_LOADNAMEDVECTORCONSTANT) {
+        auto Const = Header->C<IR::IROp_LoadNamedVectorConstant>();
+
+        if (Const->Constant == IR::NamedVectorConstant::NAMED_VECTOR_ZERO) {
+          Ref Zero = _Constant(0);
+          Ref STP = _StoreContextPair(IR::OpSize::i64Bit, GPRClass, Zero, Zero, Offset);
+
+          // XXX: This works around InlineConstant not having an associated
+          // register class, else we'd just do InlineConstant above.
+          Ref InlineZero = _InlineConstant(0);
+          ReplaceNodeArgument(STP, 0, InlineZero);
+          ReplaceNodeArgument(STP, 1, InlineZero);
+          return;
+        }
+      }
+    }
+
+    _StoreContext(Size, Class, Value, Offset);
+  }
+
   void FlushRegisterCache(bool SRAOnly = false) {
     // At block boundaries, fix up the carry flag.
     if (!SRAOnly) {
@@ -1254,7 +1279,7 @@ public:
           _StoreContextPair(Size, Class, ValueNext, Value, Offset - SizeInt);
           Bits &= ~NextBit;
         } else {
-          _StoreContext(Size, Class, Value, Offset);
+          StoreContextHelper(Size, Class, Value, Offset);
           // If Partial and MMX register, then we need to store all 1s in bits 64-80
           if (Partial && Index >= MM0Index && Index <= MM7Index) {
             _StoreContext(OpSize::i16Bit, IR::GPRClass, Constant(0xFFFF), Offset + 8);
@@ -1521,7 +1546,23 @@ private:
   void StoreGPRRegister(uint32_t GPR, const Ref Src, IR::OpSize Size = OpSize::iInvalid, uint8_t Offset = 0);
   void StoreXMMRegister(uint32_t XMM, const Ref Src);
 
-  Ref GetRelocatedPC(const FEXCore::X86Tables::DecodedOp& Op, int64_t Offset = 0);
+  Ref _GetRelocatedPC(const FEXCore::X86Tables::DecodedOp& Op, int64_t Offset, bool Inline) {
+    const auto GPRSize = GetGPROpSize();
+    const auto Offs = Op->PC + Op->InstSize + Offset - Entry;
+    return Inline ? _InlineEntrypointOffset(GPRSize, Offs) : _EntrypointOffset(GPRSize, Offs);
+  }
+
+  Ref GetRelocatedPC(const FEXCore::X86Tables::DecodedOp& Op, int64_t Offset = 0) {
+    return _GetRelocatedPC(Op, Offset, false);
+  }
+
+  void ExitRelocatedPC(const FEXCore::X86Tables::DecodedOp& Op, int64_t Offset = 0) {
+    ExitFunction(_GetRelocatedPC(Op, Offset, true /* Inline */));
+  }
+
+  void ExitRelocatedPC(const FEXCore::X86Tables::DecodedOp& Op, int64_t Offset, BranchHint Hint, Ref CallReturnAddress, Ref CallReturnBlock) {
+    ExitFunction(_GetRelocatedPC(Op, Offset, true /* Inline */), Hint, CallReturnAddress, CallReturnBlock);
+  }
 
   [[nodiscard]]
   static bool IsOperandMem(const X86Tables::DecodedOperand& Operand, bool Load) {
@@ -1650,7 +1691,7 @@ private:
     // This is currently worse for 8/16-bit, but that should be optimized. TODO
     if (SrcSize >= OpSize::i32Bit) {
       if (SetPF) {
-        CalculatePF(_SubWithFlags(SrcSize, Res, Constant(0)));
+        CalculatePF(SubWithFlags(SrcSize, Res, (uint64_t)0));
       } else {
         _SubNZCV(SrcSize, Res, Constant(0));
       }
@@ -2036,7 +2077,7 @@ private:
       } else {
         // Because we explicitly inverted for CF above, we use the unsafe
         // _NZCVSelect rather than the safe CF-aware version.
-        return _NZCVSelect(OpSize::i32Bit, CondForNZCVBit(BitOffset, Invert), Constant(1), Constant(0));
+        return _NZCVSelect01(CondForNZCVBit(BitOffset, Invert));
       }
     } else if (BitOffset == FEXCore::X86State::RFLAG_PF_RAW_LOC) {
       return LoadGPR(Core::CPUState::PF_AS_GREG);
@@ -2133,7 +2174,7 @@ private:
   void ConvertNZCVToX87() {
     LOGMAN_THROW_A_FMT(NZCVDirty && CachedNZCV, "NZCV must be saved");
 
-    Ref V = _NZCVSelect(OpSize::i32Bit, CondForNZCVBit(FEXCore::X86State::RFLAG_OF_RAW_LOC, false), Constant(1), Constant(0));
+    Ref V = _NZCVSelect01(CondForNZCVBit(FEXCore::X86State::RFLAG_OF_RAW_LOC, false));
 
     if (CTX->HostFeatures.SupportsFlagM2) {
       // Convert to x86 flags, saves us from or'ing after.
@@ -2141,8 +2182,8 @@ private:
     }
 
     // CF is inverted after FCMP
-    Ref C = _NZCVSelect(OpSize::i32Bit, CondForNZCVBit(FEXCore::X86State::RFLAG_CF_RAW_LOC, true), Constant(1), Constant(0));
-    Ref Z = _NZCVSelect(OpSize::i32Bit, CondForNZCVBit(FEXCore::X86State::RFLAG_ZF_RAW_LOC, false), Constant(1), Constant(0));
+    Ref C = _NZCVSelect01(CondForNZCVBit(FEXCore::X86State::RFLAG_CF_RAW_LOC, true));
+    Ref Z = _NZCVSelect01(CondForNZCVBit(FEXCore::X86State::RFLAG_ZF_RAW_LOC, false));
 
     if (!CTX->HostFeatures.SupportsFlagM2) {
       C = _Or(OpSize::i32Bit, C, V);
@@ -2238,7 +2279,7 @@ private:
 
   std::optional<CondClassType> DecodeNZCVCondition(uint8_t OP);
   Ref SelectBit(Ref Cmp, IR::OpSize ResultSize, Ref TrueValue, Ref FalseValue);
-  Ref SelectCC(uint8_t OP, IR::OpSize ResultSize, Ref TrueValue, Ref FalseValue);
+  Ref SelectCC0All1(uint8_t OP);
 
   /**
    * @brief Flushes NZCV. Mostly vestigial.
@@ -2313,7 +2354,6 @@ private:
    * @name These functions are used by the deferred flag handling while it is calculating and storing flags in to RFLAGs.
    * @{ */
   Ref LoadPFRaw(bool Mask, bool Invert);
-  Ref SelectPF(bool Invert, IR::OpSize ResultSize, Ref TrueValue, Ref FalseValue);
   Ref LoadAF();
   void FixupAF();
   void SetAFAndFixup(Ref AF);
@@ -2551,7 +2591,7 @@ private:
     }
 
     ArithRef Presub(uint64_t K) {
-      return IsConstant ? ArithRef(E, K - C) : ArithRef(E, E->_Sub(OpSize::i64Bit, E->Constant(K), R));
+      return IsConstant ? ArithRef(E, K - C) : ArithRef(E, E->Sub(OpSize::i64Bit, E->Constant(K), R));
     }
 
     ArithRef Lshl(uint64_t Shift) {

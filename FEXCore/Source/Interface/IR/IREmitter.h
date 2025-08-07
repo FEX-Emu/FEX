@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include "CodeEmitter/Emitter.h"
 #include "Interface/IR/IR.h"
 #include "Interface/IR/IntrusiveIRList.h"
 
@@ -23,8 +24,9 @@ class IREmitter {
   friend class FEXCore::IR::PassManager;
 
 public:
-  IREmitter(FEXCore::Utils::IntrusivePooledAllocator& ThreadAllocator)
-    : DualListData {ThreadAllocator, 8 * 1024 * 1024} {
+  IREmitter(FEXCore::Utils::IntrusivePooledAllocator& ThreadAllocator, bool SupportsTSOImm9)
+    : DualListData {ThreadAllocator, 8 * 1024 * 1024}
+    , SupportsTSOImm9(SupportsTSOImm9) {
     ReownOrClaimBuffer();
     ResetWorkingList();
   }
@@ -50,6 +52,56 @@ public:
    * @{ */
 
   FEXCore::IR::RegisterClassType WalkFindRegClass(Ref Node);
+
+  // These inlining helpers are used by IRDefines.inc so define first.
+  Ref InlineMem(OpSize Size, Ref Offset, MemOffsetType OffsetType, uint8_t& OffsetScale, bool TSO = false) {
+    uint64_t Imm {};
+    if (OffsetType != MEM_OFFSET_SXTX || !IsValueConstant(WrapNode(Offset), &Imm)) {
+      return Offset;
+    }
+
+    // The immediate may be scaled in the IR, we need to correct for that.
+    Imm *= OffsetScale;
+
+    // Signed immediate unscaled 9-bit range for both regular and LRCPC2 ops.
+    bool IsSIMM9 = ((int64_t)Imm >= -256) && ((int64_t)Imm <= 255);
+    IsSIMM9 &= (SupportsTSOImm9 || !TSO);
+
+    // Extended offsets for regular loadstore only.
+    LOGMAN_THROW_A_FMT(Size >= IR::OpSize::i8Bit && Size <= IR::OpSize::i256Bit, "Must be sized");
+
+    bool IsExtended = (Imm & (IR::OpSizeToSize(Size) - 1)) == 0 && Imm / IR::OpSizeToSize(Size) <= 4095;
+    IsExtended &= !TSO;
+
+    if (IsSIMM9 || IsExtended) {
+      OffsetScale = 1;
+      return _InlineConstant(Imm);
+    } else {
+      return Offset;
+    }
+  }
+
+#define DEF_INLINE(Type, Variable, Filter)                          \
+  Ref Inline##Type(OpSize Size, Ref Source) {                       \
+    uint64_t Variable;                                              \
+    if (IsValueConstant(WrapNode(Source), &Variable) && (Filter)) { \
+      return _InlineConstant(Variable);                             \
+    } else {                                                        \
+      return Source;                                                \
+    }                                                               \
+  }
+
+  DEF_INLINE(Any, _, true)
+  DEF_INLINE(Zero, X, X == 0)
+  DEF_INLINE(AddSub, X, ARMEmitter::IsImmAddSub(X))
+  DEF_INLINE(LargeAddSub, X, ARMEmitter::IsImmAddSub(X) && Size >= OpSize::i32Bit);
+  DEF_INLINE(Logical, X, ARMEmitter::Emitter::IsImmLogical(X, std::max((int)IR::OpSizeAsBits(Size), 32)));
+
+  Ref InlineSubtractZero(OpSize Size, Ref Src1, Ref Src2) {
+    // Only inline a zero if we won't inline the other source.
+    return IsValueConstant(WrapNode(Src2)) ? Src1 : InlineZero(Size, Src1);
+  }
+#undef DEF_INLINE
 
 // These handlers add cost to the constructor and destructor
 // If it becomes an issue then blow them away
@@ -81,6 +133,66 @@ public:
   IRPair<IROp_StoreMem> _StoreMem(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, Ref Addr, Ref Value, IR::OpSize Align = OpSize::i8Bit) {
     return _StoreMem(Class, Size, Value, Addr, Invalid(), Align, MEM_OFFSET_SXTX, 1);
   }
+
+  IRPair<IROp_Select> Select01(FEXCore::IR::OpSize CompareSize, CondClassType Cond, OrderedNode* Cmp1, OrderedNode* Cmp2) {
+    return _Select(OpSize::i64Bit, CompareSize, Cond, Cmp1, Cmp2, _InlineConstant(1), _InlineConstant(0));
+  }
+
+  IRPair<IROp_Select> To01(FEXCore::IR::OpSize CompareSize, OrderedNode* Cmp1) {
+    return Select01(CompareSize, CondClassType {COND_NEQ}, Cmp1, Constant(0));
+  }
+
+  IRPair<IROp_NZCVSelect> _NZCVSelect01(CondClassType Cond) {
+    return _NZCVSelect(OpSize::i64Bit, Cond, _InlineConstant(1), _InlineConstant(0));
+  }
+
+  Ref Addsub(IR::OpSize Size, IROps Op, IROps NegatedOp, Ref Src1, uint64_t Src2) {
+    // Sign-extend the constant
+    if (Size == OpSize::i32Bit) {
+      Src2 = (int64_t)(int32_t)Src2;
+    }
+
+    // Negative constants need to be negated to inline.
+    if (Src2 & (1ull << 63) && ARMEmitter::IsImmAddSub(-Src2)) {
+      Op = NegatedOp;
+      Src2 = -Src2;
+    }
+
+    auto Dest = _Add(Size, Src1, Constant(Src2));
+    Dest.first->Header.Op = Op;
+    return Dest;
+  }
+
+  Ref Add(IR::OpSize Size, Ref Src1, uint64_t Src2) {
+    return Addsub(Size, OP_ADD, OP_SUB, Src1, Src2);
+  }
+
+  Ref Sub(IR::OpSize Size, Ref Src1, uint64_t Src2) {
+    return Addsub(Size, OP_SUB, OP_ADD, Src1, Src2);
+  }
+
+  Ref AddWithFlags(IR::OpSize Size, Ref Src1, uint64_t Src2) {
+    return Addsub(Size, OP_ADDWITHFLAGS, OP_SUBWITHFLAGS, Src1, Src2);
+  }
+
+  Ref SubWithFlags(IR::OpSize Size, Ref Src1, uint64_t Src2) {
+    return Addsub(Size, OP_SUBWITHFLAGS, OP_ADDWITHFLAGS, Src1, Src2);
+  }
+
+#define DEF_ADDSUB(Op)                                \
+  Ref Op(IR::OpSize Size, Ref Src1, Ref Src2) {       \
+    uint64_t Constant;                                \
+    if (IsValueConstant(WrapNode(Src2), &Constant)) { \
+      return Op(Size, Src1, Constant);                \
+    } else {                                          \
+      return _##Op(Size, Src1, Src2);                 \
+    }                                                 \
+  }
+
+  DEF_ADDSUB(Add)
+  DEF_ADDSUB(Sub)
+  DEF_ADDSUB(AddWithFlags)
+  DEF_ADDSUB(SubWithFlags)
 
   int64_t Constants[32];
   Ref ConstantRefs[32];
@@ -348,6 +460,7 @@ protected:
   Ref CurrentCodeBlock {};
   fextl::vector<Ref> CodeBlocks;
   uint64_t Entry {};
+  bool SupportsTSOImm9 {};
 };
 
 } // namespace FEXCore::IR

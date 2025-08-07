@@ -201,7 +201,7 @@ void OpDispatchBuilder::FixupAF() {
   auto PFRaw = GetRFLAG(FEXCore::X86State::RFLAG_PF_RAW_LOC);
   auto AFRaw = GetRFLAG(FEXCore::X86State::RFLAG_AF_RAW_LOC);
 
-  // Again 64-bit as masking is more expensive given our ConstProp design.
+  // Again 64-bit as masking is more expensive.
   Ref XorRes = _Xor(OpSize::i64Bit, AFRaw, PFRaw);
   SetRFLAG<FEXCore::X86State::RFLAG_AF_RAW_LOC>(XorRes);
 }
@@ -267,8 +267,6 @@ Ref OpDispatchBuilder::IncrementByCarry(OpSize OpSize, Ref Src) {
 }
 
 Ref OpDispatchBuilder::CalculateFlags_ADC(IR::OpSize SrcSize, Ref Src1, Ref Src2) {
-  auto Zero = _InlineConstant(0);
-  auto One = _InlineConstant(1);
   auto OpSize = SrcSize == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit;
   Ref Res;
 
@@ -288,11 +286,11 @@ Ref OpDispatchBuilder::CalculateFlags_ADC(IR::OpSize SrcSize, Ref Src1, Ref Src2
     Ref Src2PlusCF = IncrementByCarry(OpSize, Src2);
 
     // Need to zero-extend for the comparison.
-    Res = _Add(OpSize, Src1, Src2PlusCF);
+    Res = Add(OpSize, Src1, Src2PlusCF);
     Res = _Bfe(OpSize, IR::OpSizeAsBits(SrcSize), 0, Res);
 
     // TODO: We can fold that second Bfe in (cmp uxth).
-    auto SelectCFInv = _Select(FEXCore::IR::COND_UGE, Res, Src2PlusCF, One, Zero);
+    auto SelectCFInv = Select01(OpSize, CondClassType {COND_UGE}, Res, Src2PlusCF);
 
     SetNZ_ZeroCV(SrcSize, Res);
     SetCFInverted(SelectCFInv);
@@ -304,8 +302,6 @@ Ref OpDispatchBuilder::CalculateFlags_ADC(IR::OpSize SrcSize, Ref Src1, Ref Src2
 }
 
 Ref OpDispatchBuilder::CalculateFlags_SBB(IR::OpSize SrcSize, Ref Src1, Ref Src2) {
-  auto Zero = _InlineConstant(0);
-  auto One = _InlineConstant(1);
   auto OpSize = SrcSize == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit;
 
   CalculateAF(Src1, Src2);
@@ -325,10 +321,10 @@ Ref OpDispatchBuilder::CalculateFlags_SBB(IR::OpSize SrcSize, Ref Src1, Ref Src2
 
     auto Src2PlusCF = IncrementByCarry(OpSize, Src2);
 
-    Res = _Sub(OpSize, Src1, Src2PlusCF);
+    Res = Sub(OpSize, Src1, Src2PlusCF);
     Res = _Bfe(OpSize, IR::OpSizeAsBits(SrcSize), 0, Res);
 
-    auto SelectCFInv = _Select(FEXCore::IR::COND_UGE, Src1, Src2PlusCF, One, Zero);
+    auto SelectCFInv = Select01(OpSize, CondClassType {COND_UGE}, Src1, Src2PlusCF);
 
     SetNZ_ZeroCV(SrcSize, Res);
     SetCFInverted(SelectCFInv);
@@ -349,10 +345,10 @@ Ref OpDispatchBuilder::CalculateFlags_SUB(IR::OpSize SrcSize, Ref Src1, Ref Src2
 
   Ref Res;
   if (SrcSize >= OpSize::i32Bit) {
-    Res = _SubWithFlags(SrcSize, Src1, Src2);
+    Res = SubWithFlags(SrcSize, Src1, Src2);
   } else {
     _SubNZCV(SrcSize, Src1, Src2);
-    Res = _Sub(OpSize::i32Bit, Src1, Src2);
+    Res = Sub(OpSize::i32Bit, Src1, Src2);
   }
 
   CalculatePF(Res);
@@ -379,10 +375,10 @@ Ref OpDispatchBuilder::CalculateFlags_ADD(IR::OpSize SrcSize, Ref Src1, Ref Src2
 
   Ref Res;
   if (SrcSize >= OpSize::i32Bit) {
-    Res = _AddWithFlags(SrcSize, Src1, Src2);
+    Res = AddWithFlags(SrcSize, Src1, Src2);
   } else {
     _AddNZCV(SrcSize, Src1, Src2);
-    Res = _Add(OpSize::i32Bit, Src1, Src2);
+    Res = Add(OpSize::i32Bit, Src1, Src2);
   }
 
   CalculatePF(Res);

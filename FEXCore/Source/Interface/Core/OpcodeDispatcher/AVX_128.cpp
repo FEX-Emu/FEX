@@ -2212,8 +2212,6 @@ void OpDispatchBuilder::AVX128_VTESTP(OpcodeArgs) {
   // For 256-bit, we need to split up the operation. This is nontrivial.
   // Let's go the simple route here.
   Ref ZF, CFInv;
-  Ref ZeroConst = Constant(0);
-  Ref OneConst = Constant(1);
 
   const auto ElementSizeInBits = IR::OpSizeAsBits(ElementSize);
 
@@ -2255,7 +2253,7 @@ void OpDispatchBuilder::AVX128_VTESTP(OpcodeArgs) {
 
     // ExtGPR will either be [0, 8] or [0, 16] If 0 then set Flag.
     auto ExtGPR = _VExtractToGPR(OpSize::i128Bit, ElementSize, AddWide, 0);
-    CFInv = _Select(IR::COND_NEQ, ExtGPR, ZeroConst, OneConst, ZeroConst);
+    CFInv = To01(OpSize::i64Bit, ExtGPR);
   }
 
   // As in PTest, this sets Z appropriately while zeroing the rest of NZCV.
@@ -2294,10 +2292,7 @@ void OpDispatchBuilder::AVX128_PTest(OpcodeArgs) {
   Test1 = _VExtractToGPR(OpSize::i128Bit, OpSize::i16Bit, Test1, 0);
   Test2 = _VExtractToGPR(OpSize::i128Bit, OpSize::i16Bit, Test2, 0);
 
-  auto ZeroConst = Constant(0);
-  auto OneConst = Constant(1);
-
-  Test2 = _Select(FEXCore::IR::COND_NEQ, Test2, ZeroConst, OneConst, ZeroConst);
+  Test2 = To01(OpSize::i64Bit, Test2);
 
   // Careful, these flags are different between {V,}PTEST and VTESTP{S,D}
   // Set ZF according to Test1. SF will be zeroed since we do a 32-bit test on
@@ -2518,7 +2513,7 @@ OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_VPGatherImpl(OpSize Size, O
   ///< BaseAddr doesn't need to exist, calculate that here.
   Ref BaseAddr = VSIB.BaseAddr;
   if (BaseAddr && VSIB.Displacement) {
-    BaseAddr = _Add(OpSize::i64Bit, BaseAddr, Constant(VSIB.Displacement));
+    BaseAddr = Add(OpSize::i64Bit, BaseAddr, VSIB.Displacement);
   } else if (VSIB.Displacement) {
     BaseAddr = Constant(VSIB.Displacement);
   } else if (!BaseAddr) {
@@ -2613,7 +2608,7 @@ OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_VPGatherQPSImpl(Ref Dest, R
   ///< BaseAddr doesn't need to exist, calculate that here.
   Ref BaseAddr = VSIB.BaseAddr;
   if (BaseAddr && VSIB.Displacement) {
-    BaseAddr = _Add(OpSize::i64Bit, BaseAddr, Constant(VSIB.Displacement));
+    BaseAddr = Add(OpSize::i64Bit, BaseAddr, VSIB.Displacement);
   } else if (VSIB.Displacement) {
     BaseAddr = Constant(VSIB.Displacement);
   } else if (!BaseAddr) {

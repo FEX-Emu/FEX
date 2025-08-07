@@ -106,7 +106,7 @@
       "Comment": "0x27",
       "ExpectedArm64ASM": [
         "uxtb w20, w4",
-        "cset w21, hs",
+        "cset x21, hs",
         "and x22, x20, #0xf",
         "cmp x22, #0x9 (9)",
         "cset x22, hi",
@@ -135,7 +135,7 @@
       "Comment": "0x2f",
       "ExpectedArm64ASM": [
         "uxtb w20, w4",
-        "cset w21, lo",
+        "cset x21, lo",
         "and x22, x20, #0xf",
         "cmp x22, #0x9 (9)",
         "cset x22, hi",
@@ -207,7 +207,7 @@
       "ExpectedArm64ASM": [
         "uxth w27, w4",
         "mov w20, #0x1",
-        "cset w21, hs",
+        "cset x21, hs",
         "lsl w0, w27, #16",
         "cmn w0, w20, lsl #16",
         "add w26, w27, #0x1 (1)",
@@ -221,7 +221,7 @@
       "ExpectedInstructionCount": 7,
       "Comment": "0x40",
       "ExpectedArm64ASM": [
-        "cset w20, hs",
+        "cset x20, hs",
         "adds w26, w4, #0x1 (1)",
         "mrs x21, nzcv",
         "bfi w21, w20, #29, #1",
@@ -236,7 +236,7 @@
       "ExpectedArm64ASM": [
         "uxth w27, w4",
         "mov w20, #0x1",
-        "cset w21, hs",
+        "cset x21, hs",
         "lsl w0, w27, #16",
         "cmp w0, w20, lsl #16",
         "sub w26, w27, #0x1 (1)",
@@ -264,7 +264,7 @@
       "ExpectedInstructionCount": 7,
       "Comment": "0x48",
       "ExpectedArm64ASM": [
-        "cset w20, hs",
+        "cset x20, hs",
         "subs w26, w4, #0x1 (1)",
         "mrs x21, nzcv",
         "bfi w21, w20, #29, #1",

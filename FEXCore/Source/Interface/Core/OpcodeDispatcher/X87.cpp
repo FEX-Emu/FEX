@@ -114,10 +114,10 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
   auto absolute = _Neg(OpSize::i64Bit, Data, CondClassType {COND_MI});
 
   // left justify the absolute integer
-  auto shift = _Sub(OpSize::i64Bit, Constant(63), _FindMSB(IR::OpSize::i64Bit, absolute));
+  auto shift = Sub(OpSize::i64Bit, Constant(63), _FindMSB(IR::OpSize::i64Bit, absolute));
   auto shifted = _Lshl(OpSize::i64Bit, absolute, shift);
 
-  auto adjusted_exponent = _Sub(OpSize::i64Bit, Constant(0x3fff + 63), shift);
+  auto adjusted_exponent = Sub(OpSize::i64Bit, Constant(0x3fff + 63), shift);
   auto zeroed_exponent = _Select(COND_EQ, absolute, zero, zero, adjusted_exponent);
   auto upper = _Or(OpSize::i64Bit, sign, zeroed_exponent);
 
@@ -164,12 +164,12 @@ void OpDispatchBuilder::FIST(OpcodeArgs, bool Truncate) {
     // Check for NaN/Infinity: exponent = 0x7fff
     SaveNZCV();
     _TestNZ(OpSize::i64Bit, Exponent, Constant(0x7fff));
-    Ref IsSpecial = _NZCVSelect(OpSize::i64Bit, {COND_EQ}, Constant(1), Constant(0));
+    Ref IsSpecial = _NZCVSelect01({COND_EQ});
 
     // For overflow detection, check if exponent indicates a value >= 2^15
     // Biased exponent for 2^15 is 0x3fff + 15 = 0x400e
-    _SubWithFlags(OpSize::i64Bit, Exponent, Constant(0x400e));
-    Ref IsOverflow = _NZCVSelect(OpSize::i64Bit, {COND_UGE}, Constant(1), Constant(0));
+    SubWithFlags(OpSize::i64Bit, Exponent, 0x400e);
+    Ref IsOverflow = _NZCVSelect01({COND_UGE});
 
     // Set Invalid Operation flag if overflow or special value
     Ref InvalidFlag = _Or(OpSize::i64Bit, IsSpecial, IsOverflow);
@@ -443,13 +443,13 @@ void OpDispatchBuilder::X87LDENV(OpcodeArgs) {
   auto NewFCW = _LoadMem(GPRClass, OpSize::i16Bit, Mem, OpSize::i16Bit);
   _StoreContext(OpSize::i16Bit, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
-  Ref MemLocation = _Add(OpSize::i64Bit, Mem, Constant(IR::OpSizeToSize(Size) * 1));
+  Ref MemLocation = Add(OpSize::i64Bit, Mem, IR::OpSizeToSize(Size) * 1);
   auto NewFSW = _LoadMem(GPRClass, Size, MemLocation, Size);
   ReconstructX87StateFromFSW_Helper(NewFSW);
 
   {
     // FTW
-    Ref MemLocation = _Add(OpSize::i64Bit, Mem, Constant(IR::OpSizeToSize(Size) * 2));
+    Ref MemLocation = Add(OpSize::i64Bit, Mem, IR::OpSizeToSize(Size) * 2);
     SetX87FTW(_LoadMem(GPRClass, Size, MemLocation, Size));
   }
 }
@@ -512,7 +512,6 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
     _StoreMem(GPRClass, Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 6), Size, MEM_OFFSET_SXTX, 1);
   }
 
-  auto OneConst = Constant(1);
   auto SevenConst = Constant(7);
   const auto LoadSize = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
   for (int i = 0; i < 7; ++i) {
@@ -521,7 +520,7 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
       data = _F80CVTTo(data, OpSize::i64Bit);
     }
     _StoreMem(FPRClass, OpSize::i128Bit, data, Mem, Constant((IR::OpSizeToSize(Size) * 7) + (10 * i)), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
-    Top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, Top, OneConst), SevenConst);
+    Top = _And(OpSize::i32Bit, Add(OpSize::i32Bit, Top, 1), SevenConst);
   }
 
   // The final st(7) needs a bit of special handling here
@@ -565,9 +564,7 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
     SetX87FTW(_LoadMem(GPRClass, Size, Mem, Constant(IR::OpSizeToSize(Size) * 2), Size, MEM_OFFSET_SXTX, 1));
   }
 
-  auto OneConst = Constant(1);
   auto SevenConst = Constant(7);
-
   auto low = Constant(~0ULL);
   auto high = Constant(0xFFFF);
   Ref Mask = _VLoadTwoGPRs(low, high);
@@ -582,7 +579,7 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
     }
     _StoreContextIndexed(Reg, Top, StoreSize, MMBaseOffset(), IR::OpSizeToSize(OpSize::i128Bit), FPRClass);
 
-    Top = _And(OpSize::i32Bit, _Add(OpSize::i32Bit, Top, OneConst), SevenConst);
+    Top = _And(OpSize::i32Bit, Add(OpSize::i32Bit, Top, 1), SevenConst);
   }
 
   // The final st(7) needs a bit of special handling here
@@ -831,11 +828,7 @@ void OpDispatchBuilder::X87FCMOV(OpcodeArgs) {
   default: LOGMAN_MSG_A_FMT("Unhandled FCMOV op: 0x{:x}", Opcode); break;
   }
 
-  auto ZeroConst = Constant(0);
-  auto AllOneConst = Constant(0xffff'ffff'ffff'ffffull);
-
-  Ref SrcCond = SelectCC(CC, OpSize::i64Bit, AllOneConst, ZeroConst);
-  Ref VecCond = _VDupFromGPR(OpSize::i128Bit, OpSize::i64Bit, SrcCond);
+  Ref VecCond = _VDupFromGPR(OpSize::i128Bit, OpSize::i64Bit, SelectCC0All1(CC));
   _F80VBSLStack(OpSize::i128Bit, VecCond, Op->OP & 7, 0);
 }
 
@@ -851,11 +844,9 @@ void OpDispatchBuilder::X87FXAM(OpcodeArgs) {
   // Claim this is a normal number
   // We don't support anything else
   auto TopValid = _StackValidTag(0);
-  auto ZeroConst = Constant(0);
-  auto OneConst = Constant(1);
 
   // In the case of top being invalid then C3:C2:C0 is 0b101
-  auto C3 = _Select(FEXCore::IR::COND_NEQ, TopValid, OneConst, OneConst, ZeroConst);
+  auto C3 = Select01(OpSize::i32Bit, CondClassType {COND_NEQ}, TopValid, Constant(1));
 
   auto C2 = TopValid;
   auto C0 = C3; // Mirror C3 until something other than zero is supported

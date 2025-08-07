@@ -680,7 +680,7 @@
         "neg w20, w6",
         "and w4, w6, w20",
         "cmp w4, #0x0 (0)",
-        "cset w20, eq",
+        "cset x20, eq",
         "mrs x21, nzcv",
         "bfi w21, w20, #29, #1",
         "msr nzcv, x21"
@@ -695,7 +695,7 @@
         "neg x20, x6",
         "and x4, x6, x20",
         "cmp x4, #0x0 (0)",
-        "cset w20, eq",
+        "cset x20, eq",
         "mrs x21, nzcv",
         "bfi w21, w20, #29, #1",
         "msr nzcv, x21"

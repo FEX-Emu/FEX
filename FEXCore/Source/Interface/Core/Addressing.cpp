@@ -11,8 +11,7 @@ Ref LoadEffectiveAddress(IREmitter* IREmit, AddressMode A, IR::OpSize GPRSize, b
   Ref Tmp = A.Base;
 
   if (A.Offset) {
-    Ref Offset = IREmit->Constant(A.Offset);
-    Tmp = Tmp ? IREmit->_Add(GPRSize, Tmp, Offset) : Offset;
+    Tmp = Tmp ? IREmit->Add(GPRSize, Tmp, A.Offset) : IREmit->Constant(A.Offset);
   }
 
   if (A.Index) {
@@ -25,7 +24,7 @@ Ref LoadEffectiveAddress(IREmitter* IREmit, AddressMode A, IR::OpSize GPRSize, b
         Tmp = IREmit->_Lshl(GPRSize, A.Index, IREmit->Constant(Log2));
       }
     } else {
-      Tmp = Tmp ? IREmit->_Add(GPRSize, Tmp, A.Index) : A.Index;
+      Tmp = Tmp ? IREmit->Add(GPRSize, Tmp, A.Index) : A.Index;
     }
   }
 
@@ -46,7 +45,7 @@ Ref LoadEffectiveAddress(IREmitter* IREmit, AddressMode A, IR::OpSize GPRSize, b
   }
 
   if (A.Segment && AddSegmentBase) {
-    Tmp = Tmp ? IREmit->_Add(GPRSize, Tmp, A.Segment) : A.Segment;
+    Tmp = Tmp ? IREmit->Add(GPRSize, Tmp, A.Segment) : A.Segment;
   }
 
   return Tmp ?: IREmit->Constant(0);
@@ -115,7 +114,7 @@ AddressMode SelectAddressMode(IREmitter* IREmit, AddressMode A, IR::OpSize GPRSi
 
   auto ScaledRegisterLoadstore = [IREmit, GPRSize](AddressMode A) -> AddressMode {
     if (A.Index && A.Segment) {
-      A.Base = IREmit->_Add(GPRSize, A.Base, A.Segment);
+      A.Base = IREmit->Add(GPRSize, A.Base, A.Segment);
     } else if (A.Segment) {
       A.Index = A.Segment;
       A.IndexScale = 1;
