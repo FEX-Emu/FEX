@@ -87,10 +87,17 @@ void InvalidationTracker::HandleImageMap(std::string_view Name, uint64_t Address
 
   FEX_CONFIG_OPT(MonoHacks, MONOHACKS);
   if (MonoHacks && (Name == "mono-2.0-bdwgc.dll" || Name == "mono.dll")) {
-    CTX.MarkMonoDetected();
-    MonoBackpatcherDetectionPending = true;
-    MonoBase = Address;
-    MonoEnd = LastExecutableSectionEnd;
+    FEX_CONFIG_OPT(MaxInst, MAXINST);
+    FEX_CONFIG_OPT(Multiblock, MULTIBLOCK);
+    if (Multiblock && MaxInst() >= 500) {
+      // Require these settings to ensure we can safely hook all SMC sites in a single block
+      CTX.MarkMonoDetected();
+      MonoBackpatcherDetectionPending = true;
+      MonoBase = Address;
+      MonoEnd = LastExecutableSectionEnd;
+    } else {
+      LogMan::Msg::IFmt("Not applying mono hacks, Multiblock with MaxInst >= 500 required");
+    }
   }
 }
 
