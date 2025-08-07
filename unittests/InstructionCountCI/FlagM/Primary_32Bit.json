@@ -107,7 +107,7 @@
       "Comment": "0x27",
       "ExpectedArm64ASM": [
         "uxtb w20, w4",
-        "cset w21, hs",
+        "cset x21, hs",
         "and x22, x20, #0xf",
         "cmp x22, #0x9 (9)",
         "cset x22, hi",
@@ -134,7 +134,7 @@
       "Comment": "0x2f",
       "ExpectedArm64ASM": [
         "uxtb w20, w4",
-        "cset w21, lo",
+        "cset x21, lo",
         "and x22, x20, #0xf",
         "cmp x22, #0x9 (9)",
         "cset x22, hi",
@@ -214,7 +214,7 @@
       "ExpectedInstructionCount": 5,
       "Comment": "0x40",
       "ExpectedArm64ASM": [
-        "cset w20, hs",
+        "cset x20, hs",
         "adds w26, w4, #0x1 (1)",
         "rmif x20, #63, #nzCv",
         "mov x27, x4",
@@ -251,7 +251,7 @@
       "ExpectedInstructionCount": 5,
       "Comment": "0x48",
       "ExpectedArm64ASM": [
-        "cset w20, hs",
+        "cset x20, hs",
         "subs w26, w4, #0x1 (1)",
         "rmif x20, #63, #nzCv",
         "mov x27, x4",
@@ -310,7 +310,7 @@
       "ExpectedInstructionCount": 39,
       "Comment": "0x9c",
       "ExpectedArm64ASM": [
-        "cset w20, lo",
+        "cset x20, lo",
         "eor x21, x27, x26",
         "ubfx w21, w21, #4, #1",
         "orr x20, x20, x21, lsl #4",
@@ -321,7 +321,7 @@
         "ldrsb x21, [x28, #986]",
         "lsr x21, x21, #63",
         "orr x20, x20, x21, lsl #10",
-        "cset w21, vs",
+        "cset x21, vs",
         "orr x20, x20, x21, lsl #11",
         "ldrb w21, [x28, #988]",
         "orr x20, x20, x21, lsl #12",
@@ -355,7 +355,7 @@
       "ExpectedInstructionCount": 39,
       "Comment": "0x9c",
       "ExpectedArm64ASM": [
-        "cset w20, lo",
+        "cset x20, lo",
         "eor x21, x27, x26",
         "ubfx w21, w21, #4, #1",
         "orr x20, x20, x21, lsl #4",
@@ -366,7 +366,7 @@
         "ldrsb x21, [x28, #986]",
         "lsr x21, x21, #63",
         "orr x20, x20, x21, lsl #10",
-        "cset w21, vs",
+        "cset x21, vs",
         "orr x20, x20, x21, lsl #11",
         "ldrb w21, [x28, #988]",
         "orr x20, x20, x21, lsl #12",

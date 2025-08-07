@@ -171,7 +171,7 @@
         "mov w20, #0x5",
         "movk w20, #0x1, lsl #16",
         "str x20, [x28, #24]",
-        "cset w20, lo",
+        "cset x20, lo",
         "eor x21, x27, x26",
         "ubfx w21, w21, #4, #1",
         "orr x20, x20, x21, lsl #4",
@@ -182,7 +182,7 @@
         "ldrsb x21, [x28, #986]",
         "lsr x21, x21, #63",
         "orr x20, x20, x21, lsl #10",
-        "cset w21, vs",
+        "cset x21, vs",
         "orr x20, x20, x21, lsl #11",
         "ldrb w21, [x28, #988]",
         "orr x20, x20, x21, lsl #12",
@@ -1574,7 +1574,7 @@
         "mov v16.s[0], v0.s[0]",
         "mov w7, #0x0",
         "fcmp s16, s18",
-        "cset w26, vc",
+        "cset x26, vc",
         "axflag",
         "mov x27, x7"
       ]

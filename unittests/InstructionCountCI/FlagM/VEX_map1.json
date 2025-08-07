@@ -21,8 +21,8 @@
       ],
       "ExpectedArm64ASM": [
         "fcmp s16, s17",
+        "cset x26, vc",
         "mov w27, #0x0",
-        "cset w26, vc",
         "axflag"
       ]
     },
@@ -33,8 +33,8 @@
       ],
       "ExpectedArm64ASM": [
         "fcmp d16, d17",
+        "cset x26, vc",
         "mov w27, #0x0",
-        "cset w26, vc",
         "axflag"
       ]
     },
@@ -45,8 +45,8 @@
       ],
       "ExpectedArm64ASM": [
         "fcmp s16, s17",
+        "cset x26, vc",
         "mov w27, #0x0",
-        "cset w26, vc",
         "axflag"
       ]
     },
@@ -57,8 +57,8 @@
       ],
       "ExpectedArm64ASM": [
         "fcmp d16, d17",
+        "cset x26, vc",
         "mov w27, #0x0",
-        "cset w26, vc",
         "axflag"
       ]
     },
