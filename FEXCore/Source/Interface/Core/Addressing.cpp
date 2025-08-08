@@ -53,19 +53,15 @@ Ref LoadEffectiveAddress(IREmitter* IREmit, AddressMode A, IR::OpSize GPRSize, b
 
 AddressMode SelectAddressMode(IREmitter* IREmit, AddressMode A, IR::OpSize GPRSize, bool HostSupportsTSOImm9, bool AtomicTSO, bool Vector,
                               IR::OpSize AccessSize) {
-  auto SoftwareAddressCalculation = [IREmit, &A, GPRSize]() -> AddressMode {
-    return {
-      .Base = LoadEffectiveAddress(IREmit, A, GPRSize, true),
-      .Index = IREmit->Invalid(),
-    };
-  };
-
   const auto Is32Bit = GPRSize == OpSize::i32Bit;
   const auto GPRSizeMatchesAddrSize = A.AddrSize == GPRSize;
   const auto OffsetIndexToLargeFor32Bit = Is32Bit && (A.Offset <= -16384 || A.Offset >= 16384);
   if (!GPRSizeMatchesAddrSize || OffsetIndexToLargeFor32Bit) {
     // If address size doesn't match GPR size then no optimizations can occur.
-    return SoftwareAddressCalculation();
+    return {
+      .Base = LoadEffectiveAddress(IREmit, A, GPRSize, true),
+      .Index = IREmit->Invalid(),
+    };
   }
 
   // Loadstore rules:
@@ -99,7 +95,7 @@ AddressMode SelectAddressMode(IREmitter* IREmit, AddressMode A, IR::OpSize GPRSi
   const bool OffsetIsSIMM9 = A.Offset && A.Offset >= -256 && A.Offset <= 255;
   const bool OffsetIsUnsignedScaled = A.Offset > 0 && (A.Offset & (AccessSizeAsImm - 1)) == 0 && (A.Offset / AccessSizeAsImm) <= 4095;
 
-  auto InlineImmOffsetLoadstore = [IREmit, &GPRSize](AddressMode A) -> AddressMode {
+  if ((AtomicTSO && !Vector && HostSupportsTSOImm9 && OffsetIsSIMM9) || (!AtomicTSO && (OffsetIsSIMM9 || OffsetIsUnsignedScaled))) {
     // Peel off the offset
     AddressMode B = A;
     B.Offset = 0;
@@ -110,32 +106,20 @@ AddressMode SelectAddressMode(IREmitter* IREmit, AddressMode A, IR::OpSize GPRSi
       .IndexType = MEM_OFFSET_SXTX,
       .IndexScale = 1,
     };
-  };
+  }
 
-  auto ScaledRegisterLoadstore = [IREmit, GPRSize](AddressMode A) -> AddressMode {
+  if (AtomicTSO) {
+    // TODO: LRCPC3 support for vector Imm9.
+  } else if (!Is32Bit && A.Base && (A.Index || A.Segment) && !A.Offset && (A.IndexScale == 1 || A.IndexScale == AccessSizeAsImm)) {
+    // ScaledRegisterLoadstore
     if (A.Index && A.Segment) {
       A.Base = IREmit->Add(GPRSize, A.Base, A.Segment);
     } else if (A.Segment) {
       A.Index = A.Segment;
       A.IndexScale = 1;
     }
-    return A;
-  };
 
-  if (AtomicTSO) {
-    if (!Vector) {
-      if (HostSupportsTSOImm9 && OffsetIsSIMM9) {
-        return InlineImmOffsetLoadstore(A);
-      }
-    } else {
-      // TODO: LRCPC3 support for vector Imm9.
-    }
-  } else {
-    if (OffsetIsSIMM9 || OffsetIsUnsignedScaled) {
-      return InlineImmOffsetLoadstore(A);
-    } else if (!Is32Bit && A.Base && (A.Index || A.Segment) && !A.Offset && (A.IndexScale == 1 || A.IndexScale == AccessSizeAsImm)) {
-      return ScaledRegisterLoadstore(A);
-    }
+    return A;
   }
 
   if (Vector || !AtomicTSO) {
@@ -158,7 +142,10 @@ AddressMode SelectAddressMode(IREmitter* IREmit, AddressMode A, IR::OpSize GPRSi
   }
 
   // Fallback on software address calculation
-  return SoftwareAddressCalculation();
+  return {
+    .Base = LoadEffectiveAddress(IREmit, A, GPRSize, true),
+    .Index = IREmit->Invalid(),
+  };
 }
 
 
