@@ -67,7 +67,13 @@ private:
   uint64_t Entry {};
   CPUBackend::CompiledCode CodeData {};
 
-  fextl::map<IR::NodeID, ARMEmitter::BiDirectionalLabel> JumpTargets;
+  fextl::vector<ARMEmitter::BiDirectionalLabel> JumpTargets;
+
+  ARMEmitter::BiDirectionalLabel* JumpTarget(IR::OrderedNodeWrapper Node) {
+    auto Block = IR->GetOp<IR::IROp_CodeBlock>(Node);
+    return &JumpTargets[Block->ID];
+  }
+
   fextl::map<IR::NodeID, ARMEmitter::BiDirectionalLabel> CallReturnTargets;
 
   struct PendingJumpThunk {
