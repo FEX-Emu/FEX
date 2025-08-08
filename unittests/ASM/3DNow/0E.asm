@@ -23,6 +23,7 @@ femms
 mov rdx, 0xe0000000
 o32 fstenv [rdx]
 
-mov eax, dword [rdx + 8] ; Offset 8 in the structure has FTW
+mov eax, 0
+mov ax, word [rdx + 8] ; Offset 8 in the structure has FTW
 
 hlt
