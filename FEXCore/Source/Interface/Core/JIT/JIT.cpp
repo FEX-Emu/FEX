@@ -828,6 +828,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   CallReturnTargets.clear();
   PendingJumpThunks.clear();
   uint32_t SSACount = IR->GetSSACount();
+  JumpTargets.resize(IR->GetHeader()->BlockCount, {});
 
   this->Entry = Entry;
   this->DebugData = DebugData;
@@ -887,10 +888,10 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
     auto BlockStartHostCode = GetCursorAddress<uint8_t*>();
     {
       const auto Node = IR->GetID(BlockNode);
-      const auto IsTarget = JumpTargets.try_emplace(Node).first;
+      const auto Target = &JumpTargets[BlockIROp->ID];
 
       // if there's a pending branch, and it is not fall-through
-      if (PendingTargetLabel && PendingTargetLabel != &IsTarget->second) {
+      if (PendingTargetLabel && PendingTargetLabel != Target) {
         b(PendingTargetLabel);
         PendingTargetLabel = nullptr;
       }
@@ -901,7 +902,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
         const auto IsReturnTarget = CallReturnTargets.try_emplace(Node).first;
         if (PendingTargetLabel) {
           // If there is a fallthrough branch to this block, skip over the entrypoint code.
-          b(&IsTarget->second);
+          b(Target);
         } else if (PendingCallReturnTargetLabel && PendingCallReturnTargetLabel != &IsReturnTarget->second) {
           // If we just emitted a call, but the block we're now emitting is not the return block so don't fallthrough.
           b(PendingCallReturnTargetLabel);
@@ -922,7 +923,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
       }
       PendingTargetLabel = nullptr;
 
-      Bind(&IsTarget->second);
+      Bind(Target);
     }
 
     for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {

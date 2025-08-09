@@ -148,7 +148,8 @@ private:
   };
 
   bool HasSource(IROp_Header* I, PhysicalRegister Reg) {
-    for (auto s = 0; s < IR::GetRAArgs(I->Op); ++s) {
+    int NumArgs = IR::GetRAArgs(I->Op);
+    for (int s = 0; s < NumArgs; ++s) {
       if (I->Args[s].IsImmediate()) {
         // When spilling for a destination, we'll see register sources
         if (PhysicalRegister(I->Args[s]) == Reg) {
@@ -240,7 +241,7 @@ private:
       }
       // End of iteration gunk
 
-      const uint8_t NumArgs = IR::GetRAArgs(IROp->Op);
+      const int NumArgs = IR::GetRAArgs(IROp->Op);
       for (int i = NumArgs - 1; i >= 0; --i) {
         auto V = IROp->Args[i];
         V.ClearKill();
@@ -548,7 +549,8 @@ bool ConstrainedRAPass::TryPostRAMerge(Ref LastNode, Ref CodeNode, IROp_Header* 
   if (PhysicalRegister(LastNode) == PhysicalRegister(CodeNode) && KillMove(LastOp, IROp, LastNode, CodeNode)) {
     LOGMAN_THROW_A_FMT(!PhysicalRegister(CodeNode).IsInvalid(), "invariant");
 
-    for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
+    int NumArgs = IR::GetRAArgs(IROp->Op);
+    for (int s = 0; s < NumArgs; ++s) {
       if (IROp->Args[s].IsImmediate() && PhysicalRegister(IROp->Args[s]) == PhysicalRegister(LastNode)) {
         IROp->Args[s].SetImmediate(PhysicalRegister(LastOp->Args[0]).Raw);
       }
@@ -621,7 +623,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
           }
         }
 
-        const uint8_t NumArgs = IR::GetRAArgs(IROp->Op);
+        const int NumArgs = IR::GetRAArgs(IROp->Op);
         for (int i = NumArgs - 1; i >= 0; --i) {
           const auto& Arg = IROp->Args[i];
           if (!Arg.IsInvalid()) {
@@ -696,8 +698,10 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
       // the register file simultaneously.
       //
       // Also update next-use info, again only relevant if we've spilled.
+      int NumArgs = IR::GetRAArgs(IROp->Op);
+
       if (AnySpilledBeforeThisInstruction) {
-        for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
+        for (int s = 0; s < NumArgs; ++s) {
           auto V = IROp->Args[s];
           V.ClearKill();
 
@@ -723,7 +727,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
         }
       }
 
-      for (auto s = 0; s < IR::GetRAArgs(IROp->Op); ++s) {
+      for (int s = 0; s < NumArgs; ++s) {
         if (IROp->Args[s].IsInvalid()) {
           continue;
         }

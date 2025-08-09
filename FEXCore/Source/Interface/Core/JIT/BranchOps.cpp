@@ -205,15 +205,14 @@ DEF_OP(ExitFunction) {
 
 DEF_OP(Jump) {
   const auto Op = IROp->C<IR::IROp_Jump>();
-  const auto Target = Op->TargetBlock;
 
-  PendingTargetLabel = &JumpTargets.try_emplace(Target.ID()).first->second;
+  PendingTargetLabel = JumpTarget(Op->TargetBlock);
 }
 
 DEF_OP(CondJump) {
   auto Op = IROp->C<IR::IROp_CondJump>();
 
-  auto TrueTargetLabel = &JumpTargets.try_emplace(Op->TrueBlock.ID()).first->second;
+  auto TrueTargetLabel = JumpTarget(Op->TrueBlock);
 
   if (Op->FromNZCV) {
     b(MapCC(Op->Cond), TrueTargetLabel);
@@ -244,7 +243,7 @@ DEF_OP(CondJump) {
     }
   }
 
-  PendingTargetLabel = &JumpTargets.try_emplace(Op->FalseBlock.ID()).first->second;
+  PendingTargetLabel = JumpTarget(Op->FalseBlock);
 }
 
 DEF_OP(Syscall) {
