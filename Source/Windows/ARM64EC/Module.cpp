@@ -768,11 +768,18 @@ bool ResetToConsistentStateImpl(EXCEPTION_RECORD* Exception, CONTEXT* GuestConte
 }
 
 NTSTATUS ResetToConsistentState(EXCEPTION_RECORD* Exception, CONTEXT* GuestContext, ARM64_NT_CONTEXT* NativeContext) {
+  bool Cont {};
   if (Exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
     const auto FaultAddress = static_cast<uint64_t>(Exception->ExceptionInformation[1]);
 
-    if (OvercommitTracker && OvercommitTracker->HandleAccessViolation(FaultAddress)) {
-      NtContinueNative(NativeContext, false);
+    if (OvercommitTracker) {
+      {
+        ScopedCallbackDisable guard;
+        Cont = OvercommitTracker->HandleAccessViolation(FaultAddress);
+      }
+      if (Cont) {
+        NtContinueNative(NativeContext, false);
+      }
     }
   }
 
@@ -780,7 +787,6 @@ NTSTATUS ResetToConsistentState(EXCEPTION_RECORD* Exception, CONTEXT* GuestConte
     return STATUS_SUCCESS;
   }
 
-  bool Cont {};
   {
 
     ScopedCallbackDisable guard;
