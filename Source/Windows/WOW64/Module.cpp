@@ -583,6 +583,10 @@ void BTCpuThreadTerm(HANDLE Thread, LONG ExitCode) {
 
   const auto ThreadTID = reinterpret_cast<uint64_t>(Info.ClientId.UniqueThread);
   bool Self = ThreadTID == GetCurrentThreadId();
+  if (!Self) {
+    // If we are suspending a thread that isn't ourselves, try to suspend it first so we know internal JIT locks aren't being held.
+    RtlWow64SuspendThread(Thread, NULL);
+  }
 
   auto [Err, TLS] = GetThreadTLS(Thread);
   if (Err) {

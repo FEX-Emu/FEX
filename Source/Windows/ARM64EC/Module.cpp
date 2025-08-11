@@ -966,6 +966,13 @@ NTSTATUS ThreadTerm(HANDLE Thread, LONG ExitCode) {
 
   const auto ThreadTID = reinterpret_cast<uint64_t>(Info.ClientId.UniqueThread);
   bool Self = ThreadTID == GetCurrentThreadId();
+  if (!Self) {
+    CONTEXT TmpContext;
+    // If we are suspending a thread that isn't ourselves, try to suspend it first so we know internal JIT locks aren't being held.
+    NtSuspendThread(Thread, NULL);
+    // This will wait for the thread to be suspended
+    NtGetContextThread(Thread, &TmpContext);
+  }
 
   const auto [Err, CPUArea] = GetThreadCPUArea(Thread);
   if (Err) {
