@@ -2886,14 +2886,13 @@ void OpDispatchBuilder::WriteSegmentReg(OpcodeArgs, OpDispatchBuilder::Segment S
 
 void OpDispatchBuilder::EnterOp(OpcodeArgs) {
   const auto GPRSize = GetGPROpSize();
+  const auto OperandSize = (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_OPERAND_SIZE) ? OpSize::i16Bit : GPRSize;
   const uint64_t Value = Op->Src[0].Literal();
 
   const uint16_t AllocSpace = Value & 0xFFFF;
   const uint8_t Level = (Value >> 16) & 0x1F;
 
   const auto PushValue = [&](IR::OpSize Size, Ref Src) -> Ref {
-    const auto GPRSize = GetGPROpSize();
-
     auto OldSP = LoadGPRRegister(X86State::REG_RSP);
     auto NewSP = _Push(GPRSize, Size, Src, OldSP);
 
@@ -2903,16 +2902,16 @@ void OpDispatchBuilder::EnterOp(OpcodeArgs) {
   };
 
   auto OldBP = LoadGPRRegister(X86State::REG_RBP);
-  auto NewSP = PushValue(GPRSize, OldBP);
+  auto NewSP = PushValue(OperandSize, OldBP);
   auto temp_RBP = NewSP;
 
   if (Level > 0) {
     for (uint8_t i = 1; i < Level; ++i) {
-      auto MemLoc = Sub(GPRSize, OldBP, i * IR::OpSizeToSize(GPRSize));
-      auto Mem = _LoadMem(GPRClass, GPRSize, MemLoc, GPRSize);
-      NewSP = PushValue(GPRSize, Mem);
+      auto MemLoc = Sub(GPRSize, OldBP, i * IR::OpSizeToSize(OperandSize));
+      auto Mem = _LoadMem(GPRClass, OperandSize, MemLoc, OperandSize);
+      NewSP = PushValue(OperandSize, Mem);
     }
-    NewSP = PushValue(GPRSize, temp_RBP);
+    NewSP = PushValue(OperandSize, temp_RBP);
   }
   NewSP = Sub(GPRSize, NewSP, AllocSpace);
   StoreGPRRegister(X86State::REG_RSP, NewSP);
