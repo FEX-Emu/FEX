@@ -559,6 +559,7 @@ void BTCpuProcessInit() {
 void BTCpuProcessTerm(HANDLE Handle, BOOL After, ULONG Status) {}
 
 void BTCpuThreadInit() {
+  std::scoped_lock Lock(ThreadCreationMutex);
   FEX::Windows::InitCRTThread();
   auto* Thread = CTX->CreateThread(0, 0);
 
@@ -567,7 +568,6 @@ void BTCpuThreadInit() {
   GetTLS().ThreadState() = Thread;
   GetTLS().ControlWord().fetch_or(ControlBits::WOW_CPU_AREA_DIRTY, std::memory_order::relaxed);
 
-  std::scoped_lock Lock(ThreadCreationMutex);
   auto ThreadTID = GetCurrentThreadId();
   Threads.emplace(ThreadTID, Thread);
   if (StatAllocHandler) {
@@ -576,30 +576,30 @@ void BTCpuThreadInit() {
 }
 
 void BTCpuThreadTerm(HANDLE Thread, LONG ExitCode) {
-  const auto [Err, TLS] = GetThreadTLS(Thread);
-  if (Err) {
-    return;
-  }
-
-  auto* ThreadState = TLS.ThreadState();
-
   THREAD_BASIC_INFORMATION Info;
-  if (NTSTATUS Err = NtQueryInformationThread(Thread, ThreadBasicInformation, &Info, sizeof(Info), nullptr); Err) {
+  if (auto Err = NtQueryInformationThread(Thread, ThreadBasicInformation, &Info, sizeof(Info), nullptr); Err) {
     return;
   }
 
   const auto ThreadTID = reinterpret_cast<uint64_t>(Info.ClientId.UniqueThread);
+  bool Self = ThreadTID == GetCurrentThreadId();
+
+  auto [Err, TLS] = GetThreadTLS(Thread);
+  if (Err) {
+    return;
+  }
+
   {
     std::scoped_lock Lock(ThreadCreationMutex);
     Threads.erase(ThreadTID);
     if (StatAllocHandler) {
-      StatAllocHandler->DeallocateSlot(ThreadState->ThreadStats);
+      StatAllocHandler->DeallocateSlot(TLS.ThreadState()->ThreadStats);
     }
   }
 
-  FEX::Windows::CallRetStack::DestroyThread(ThreadState);
-  CTX->DestroyThread(ThreadState);
-  if (ThreadTID == GetCurrentThreadId()) {
+  FEX::Windows::CallRetStack::DestroyThread(TLS.ThreadState());
+  CTX->DestroyThread(TLS.ThreadState());
+  if (Self) {
     FEX::Windows::DeinitCRTThread();
   }
 }
