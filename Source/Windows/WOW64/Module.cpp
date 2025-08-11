@@ -39,6 +39,7 @@ $end_info$
 #include "Common/Module.h"
 #include "Common/CRT/CRT.h"
 #include "Common/PortabilityInfo.h"
+#include "Common/Handle.h"
 #include "DummyHandlers.h"
 #include "BTInterface.h"
 #include "Windows/Common/SHMStats.h"
@@ -576,6 +577,10 @@ void BTCpuThreadInit() {
 }
 
 void BTCpuThreadTerm(HANDLE Thread, LONG ExitCode) {
+  if (!FEX::Windows::ValidateHandleAccess(Thread, THREAD_TERMINATE)) {
+    return;
+  }
+
   THREAD_BASIC_INFORMATION Info;
   if (auto Err = NtQueryInformationThread(Thread, ThreadBasicInformation, &Info, sizeof(Info), nullptr); Err) {
     return;
@@ -703,6 +708,10 @@ extern "C" void BTCpuSimulateImpl(CONTEXT *entry_context) {
 }
 
 NTSTATUS BTCpuSuspendLocalThread(HANDLE Thread, ULONG* Count) {
+  if (!FEX::Windows::ValidateHandleAccess(Thread, THREAD_SUSPEND_RESUME)) {
+    return STATUS_ACCESS_DENIED;
+  }
+
   THREAD_BASIC_INFORMATION Info;
   if (NTSTATUS Err = NtQueryInformationThread(Thread, ThreadBasicInformation, &Info, sizeof(Info), nullptr); Err) {
     return Err;

@@ -537,7 +537,7 @@ NTSTATUS WINAPI RtlWow64GetThreadContext(HANDLE, WOW64_CONTEXT*);
 NTSTATUS WINAPI RtlWow64SetThreadContext(HANDLE, const WOW64_CONTEXT*);
 void WINAPI Wow64ProcessPendingCrossProcessItems(void);
 NTSTATUS WINAPI Wow64SystemServiceEx(UINT, UINT*);
-NTSTATUS WINAPI RtlWow64SuspendThread(HANDLE,ULONG*);
+NTSTATUS WINAPI RtlWow64SuspendThread(HANDLE, ULONG*);
 
 #ifdef __cplusplus
 }
