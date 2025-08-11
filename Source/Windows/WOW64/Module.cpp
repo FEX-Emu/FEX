@@ -581,8 +581,10 @@ void BTCpuThreadTerm(HANDLE Thread, LONG ExitCode) {
     return;
   }
 
+  auto ThreadDup = FEX::Windows::DupHandle(Thread, THREAD_QUERY_INFORMATION | THREAD_SUSPEND_RESUME);
+
   THREAD_BASIC_INFORMATION Info;
-  if (auto Err = NtQueryInformationThread(Thread, ThreadBasicInformation, &Info, sizeof(Info), nullptr); Err) {
+  if (auto Err = NtQueryInformationThread(*ThreadDup, ThreadBasicInformation, &Info, sizeof(Info), nullptr); Err) {
     return;
   }
 
@@ -590,10 +592,10 @@ void BTCpuThreadTerm(HANDLE Thread, LONG ExitCode) {
   bool Self = ThreadTID == GetCurrentThreadId();
   if (!Self) {
     // If we are suspending a thread that isn't ourselves, try to suspend it first so we know internal JIT locks aren't being held.
-    RtlWow64SuspendThread(Thread, NULL);
+    RtlWow64SuspendThread(*ThreadDup, NULL);
   }
 
-  auto [Err, TLS] = GetThreadTLS(Thread);
+  auto [Err, TLS] = GetThreadTLS(*ThreadDup);
   if (Err) {
     return;
   }
@@ -628,44 +630,53 @@ void* __wine_get_unix_opcode() {
 }
 
 NTSTATUS BTCpuGetContext(HANDLE Thread, HANDLE Process, void* Unknown, WOW64_CONTEXT* Context) {
-  auto [Err, TLS] = GetThreadTLS(Thread);
+  if (!FEX::Windows::ValidateHandleAccess(Thread, THREAD_GET_CONTEXT)) {
+    return STATUS_ACCESS_DENIED;
+  }
+
+  auto ThreadDup = FEX::Windows::DupHandle(Thread, THREAD_QUERY_INFORMATION | THREAD_GET_CONTEXT | THREAD_SET_CONTEXT);
+  auto [Err, TLS] = GetThreadTLS(*ThreadDup);
   if (Err) {
     return Err;
   }
 
   if (!(TLS.ControlWord().load(std::memory_order::relaxed) & ControlBits::WOW_CPU_AREA_DIRTY)) {
-    if (Err = Context::FlushThreadStateContext(Thread); Err) {
+    if (Err = Context::FlushThreadStateContext(*ThreadDup); Err) {
       return Err;
     }
   }
 
-  return RtlWow64GetThreadContext(Thread, Context);
+  return RtlWow64GetThreadContext(*ThreadDup, Context);
 }
 
 NTSTATUS BTCpuSetContext(HANDLE Thread, HANDLE Process, void* Unknown, WOW64_CONTEXT* Context) {
-  auto [Err, TLS] = GetThreadTLS(Thread);
+  if (!FEX::Windows::ValidateHandleAccess(Thread, THREAD_SET_CONTEXT)) {
+    return STATUS_ACCESS_DENIED;
+  }
+
+  auto ThreadDup = FEX::Windows::DupHandle(Thread, THREAD_QUERY_INFORMATION | THREAD_GET_CONTEXT | THREAD_SET_CONTEXT);
+  auto [Err, TLS] = GetThreadTLS(*ThreadDup);
   if (Err) {
     return Err;
   }
-
 
   // Back-up the input context incase we've been passed the CPU area (the flush below would wipe it out otherwise)
   WOW64_CONTEXT TmpContext = *Context;
 
   if (!(TLS.ControlWord().load(std::memory_order::relaxed) & ControlBits::WOW_CPU_AREA_DIRTY)) {
-    if (Err = Context::FlushThreadStateContext(Thread); Err) {
+    if (Err = Context::FlushThreadStateContext(*ThreadDup); Err) {
       return Err;
     }
   }
 
   // Merge the input context into the CPU area then pass the full context into the JIT
-  if (Err = RtlWow64SetThreadContext(Thread, &TmpContext); Err) {
+  if (Err = RtlWow64SetThreadContext(*ThreadDup, &TmpContext); Err) {
     return Err;
   }
 
   TmpContext.ContextFlags = WOW64_CONTEXT_FULL | WOW64_CONTEXT_EXTENDED_REGISTERS;
 
-  if (Err = RtlWow64GetThreadContext(Thread, &TmpContext); Err) {
+  if (Err = RtlWow64GetThreadContext(*ThreadDup, &TmpContext); Err) {
     return Err;
   }
 
@@ -712,8 +723,9 @@ NTSTATUS BTCpuSuspendLocalThread(HANDLE Thread, ULONG* Count) {
     return STATUS_ACCESS_DENIED;
   }
 
+  auto ThreadDup = FEX::Windows::DupHandle(Thread, THREAD_QUERY_INFORMATION | THREAD_SUSPEND_RESUME | THREAD_GET_CONTEXT | THREAD_SET_CONTEXT);
   THREAD_BASIC_INFORMATION Info;
-  if (NTSTATUS Err = NtQueryInformationThread(Thread, ThreadBasicInformation, &Info, sizeof(Info), nullptr); Err) {
+  if (NTSTATUS Err = NtQueryInformationThread(*ThreadDup, ThreadBasicInformation, &Info, sizeof(Info), nullptr); Err) {
     return Err;
   }
 
@@ -723,17 +735,17 @@ NTSTATUS BTCpuSuspendLocalThread(HANDLE Thread, ULONG* Count) {
     // Mark the CPU area as dirty, to force the JIT context to be restored from it on entry as it may be changed using
     // SetThreadContext (which doesn't use the BTCpu API)
     if (!(GetTLS().ControlWord().fetch_or(ControlBits::WOW_CPU_AREA_DIRTY, std::memory_order::relaxed) & ControlBits::WOW_CPU_AREA_DIRTY)) {
-      if (NTSTATUS Err = Context::FlushThreadStateContext(Thread); Err) {
+      if (NTSTATUS Err = Context::FlushThreadStateContext(*ThreadDup); Err) {
         return Err;
       }
     }
 
-    return NtSuspendThread(Thread, Count);
+    return NtSuspendThread(*ThreadDup, Count);
   }
 
   LogMan::Msg::DFmt("Suspending thread: {:X}", ThreadTID);
 
-  auto [Err, TLS] = GetThreadTLS(Thread);
+  auto [Err, TLS] = GetThreadTLS(*ThreadDup);
   if (Err) {
     return Err;
   }
@@ -742,7 +754,8 @@ NTSTATUS BTCpuSuspendLocalThread(HANDLE Thread, ULONG* Count) {
 
   // If the thread hasn't yet been initialized, suspend it without special handling as it wont yet have entered the JIT
   if (!Threads.contains(ThreadTID)) {
-    return NtSuspendThread(Thread, Count);
+    LogMan::Msg::DFmt("Thread suspended: {:X}", ThreadTID);
+    return NtSuspendThread(*ThreadDup, Count);
   }
 
   // If CONTROL_IN_JIT is unset at this point, then it can never be set (and thus the JIT cannot be reentered) as
@@ -762,7 +775,7 @@ NTSTATUS BTCpuSuspendLocalThread(HANDLE Thread, ULONG* Count) {
     ;
 
   // The JIT has now been interrupted and the context stored in the thread's CPU area is up-to-date
-  if (Err = NtSuspendThread(Thread, Count); Err) {
+  if (Err = NtSuspendThread(*ThreadDup, Count); Err) {
     TLS.ControlWord().fetch_and(~ControlBits::PAUSED, std::memory_order::relaxed);
     return Err;
   }
@@ -773,12 +786,12 @@ NTSTATUS BTCpuSuspendLocalThread(HANDLE Thread, ULONG* Count) {
 
   // NtSuspendThread may return before the thread is actually suspended, so a sync operation like NtGetContextThread
   // needs to be called to ensure it is before we unset CONTROL_PAUSED
-  std::ignore = NtGetContextThread(Thread, &TmpContext);
+  std::ignore = NtGetContextThread(*ThreadDup, &TmpContext);
 
   // Mark the CPU area as dirty, to force the JIT context to be restored from it on entry as it may be changed using
   // SetThreadContext (which doesn't use the BTCpu API)
   if (!(TLS.ControlWord().fetch_or(ControlBits::WOW_CPU_AREA_DIRTY, std::memory_order::relaxed) & ControlBits::WOW_CPU_AREA_DIRTY)) {
-    if (Err = Context::FlushThreadStateContext(Thread); Err) {
+    if (Err = Context::FlushThreadStateContext(*ThreadDup); Err) {
       return Err;
     }
   }

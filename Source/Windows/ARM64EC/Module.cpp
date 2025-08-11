@@ -964,8 +964,10 @@ NTSTATUS ThreadTerm(HANDLE Thread, LONG ExitCode) {
     return STATUS_ACCESS_DENIED;
   }
 
+  auto ThreadDup = FEX::Windows::DupHandle(Thread, THREAD_QUERY_INFORMATION | THREAD_SUSPEND_RESUME);
+
   THREAD_BASIC_INFORMATION Info;
-  if (auto Err = NtQueryInformationThread(Thread, ThreadBasicInformation, &Info, sizeof(Info), nullptr); Err) {
+  if (auto Err = NtQueryInformationThread(*ThreadDup, ThreadBasicInformation, &Info, sizeof(Info), nullptr); Err) {
     return Err;
   }
 
@@ -974,12 +976,12 @@ NTSTATUS ThreadTerm(HANDLE Thread, LONG ExitCode) {
   if (!Self) {
     CONTEXT TmpContext;
     // If we are suspending a thread that isn't ourselves, try to suspend it first so we know internal JIT locks aren't being held.
-    NtSuspendThread(Thread, NULL);
+    NtSuspendThread(*ThreadDup, NULL);
     // This will wait for the thread to be suspended
-    NtGetContextThread(Thread, &TmpContext);
+    NtGetContextThread(*ThreadDup, &TmpContext);
   }
 
-  const auto [Err, CPUArea] = GetThreadCPUArea(Thread);
+  const auto [Err, CPUArea] = GetThreadCPUArea(*ThreadDup);
   if (Err) {
     return Err;
   }
