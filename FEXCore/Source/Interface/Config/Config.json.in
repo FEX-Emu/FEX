@@ -522,6 +522,27 @@
         "Desc": [
           "Disables inline syscalls in order to support seccomp handling"
         ]
+      },
+      "ExtendedVolatileMetadata": {
+        "Type": "str",
+        "Default": "",
+        "Desc": [
+          "Configuration provided volatile metadata. Only implemented for WoW64/arm64ec.",
+          "Limited in its use but can be handy.",
+          "Extends on top of what Microsoft has for volatile metadata, but also supported for WoW64.",
+          "Colon delimited modules, then semi-colon delimited instructions, then comma delimited ranges",
+          "Default disables TSO in the module, unless instructions overlap the range",
+          "<module>;<offset begin>-<offset-end>,...;<instruction offset to force TSO>,...:<another>",
+          "examples:",
+          "  * Disable TSO for a full module: Just provide the module name:",
+          "      `hl2_linux`",
+          "  * Disable TSO for a part of the module:",
+          "      `hl2_linux;<offset begin>-<offset-end>`",
+          "  * Disable TSO for a part of the module, but enable TSO for some instructions within the module",
+          "      `hl2_linux;<offset begin>-<offset-end>;<instruction offset>,<instruction offset>`",
+          "  * Disable TSO for multiple modules",
+          "      `hl2_linux:libsdl2.so`"
+        ]
       }
     }
   },

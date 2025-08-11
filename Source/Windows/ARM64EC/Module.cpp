@@ -43,6 +43,7 @@ $end_info$
 #include "DummyHandlers.h"
 #include "BTInterface.h"
 #include "Windows/Common/SHMStats.h"
+#include "Windows/Common/VolatileMetadata.h"
 
 #include <cstdint>
 #include <cstdio>
@@ -79,6 +80,7 @@ void* WineSyscallDispatcher;
 uint64_t WineNtContinueSyscallId;
 uint64_t WineNtAllocateVirtualMemorySyscallId;
 uint64_t WineNtProtectVirtualMemorySyscallId;
+static fextl::unordered_map<fextl::string, FEX::VolatileMetadata::ExtendedVolatileMetadata> ExtendedMetaData {};
 
 NTSTATUS NtContinueNative(ARM64_NT_CONTEXT* NativeContext, BOOLEAN Alert);
 NTSTATUS NtAllocateVirtualMemoryNative(HANDLE, PVOID*, ULONG_PTR, SIZE_T*, ULONG, ULONG);
@@ -266,11 +268,9 @@ void InitSyscalls() {
   PatchCallChecker();
 }
 
-void LoadImageVolatileMetadata(uint64_t Address) {
-  const auto Module = reinterpret_cast<HMODULE>(Address);
-  IMAGE_NT_HEADERS* Nt = RtlImageNtHeader(Module);
-  uint64_t EndAddress = Address + Nt->OptionalHeader.SizeOfImage;
+void LoadImageVolatileMetadata(fextl::set<uint64_t>& VolatileInstructions, FEXCore::IntervalList<uint64_t>& VolatileValidRanges, HMODULE Module, IMAGE_NT_HEADERS* Nt, uint64_t Address, uint64_t EndAddress) {
   ULONG Size;
+
   const auto* LoadConfig =
     reinterpret_cast<_IMAGE_LOAD_CONFIG_DIRECTORY64*>(RtlImageDirectoryEntryToData(Module, true, IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG, &Size));
   if (!LoadConfig || LoadConfig->Size <= offsetof(_IMAGE_LOAD_CONFIG_DIRECTORY64, VolatileMetadataPointer)) {
@@ -287,7 +287,6 @@ void LoadImageVolatileMetadata(uint64_t Address) {
     return;
   }
 
-  fextl::set<uint64_t> VolatileInstructions;
   const auto* VolatileAccessTableBegin = reinterpret_cast<IMAGE_VOLATILE_RVA_METADATA*>(Address + VolatileMetadata->VolatileAccessTable);
   const auto* VolatileAccessTableEnd =
     VolatileAccessTableBegin + (VolatileMetadata->VolatileAccessTableSize / sizeof(IMAGE_VOLATILE_RVA_METADATA));
@@ -295,13 +294,29 @@ void LoadImageVolatileMetadata(uint64_t Address) {
     VolatileInstructions.emplace(Address + It->Rva);
   }
 
-  FEXCore::IntervalList<uint64_t> VolatileValidRanges;
   const auto* VolatileInfoRangeTableBegin = reinterpret_cast<IMAGE_VOLATILE_RANGE_METADATA*>(Address + VolatileMetadata->VolatileInfoRangeTable);
   const auto* VolatileInfoRangeTableEnd =
     VolatileInfoRangeTableBegin + (VolatileMetadata->VolatileInfoRangeTableSize / sizeof(IMAGE_VOLATILE_RANGE_METADATA));
   for (auto It = VolatileInfoRangeTableBegin; It != VolatileInfoRangeTableEnd; It++) {
     VolatileValidRanges.Insert({Address + It->Rva, Address + It->Rva + It->Size});
   }
+}
+
+void LoadImageVolatileMetadata(const fextl::string &ModuleName, uint64_t Address) {
+  const auto Module = reinterpret_cast<HMODULE>(Address);
+  IMAGE_NT_HEADERS* Nt = RtlImageNtHeader(Module);
+  uint64_t EndAddress = Address + Nt->OptionalHeader.SizeOfImage;
+
+  fextl::set<uint64_t> VolatileInstructions {};
+  FEXCore::IntervalList<uint64_t> VolatileValidRanges {};
+  LoadImageVolatileMetadata(VolatileInstructions, VolatileValidRanges, Module, Nt, Address, EndAddress);
+
+  auto it = ExtendedMetaData.find(ModuleName);
+  if (it != ExtendedMetaData.end()) {
+    FEX::Windows::ApplyFEXExtendedVolatileMetadata(it->second, VolatileInstructions, VolatileValidRanges, Address, EndAddress);
+  }
+
+  if (VolatileInstructions.empty() && VolatileValidRanges.Empty()) return;
 
   LogMan::Msg::DFmt("Loaded volatile metadata for {:X}: {} entries", Address, VolatileInstructions.size());
   std::scoped_lock Lock(CTX->GetCodeInvalidationMutex());
@@ -313,7 +328,7 @@ void HandleImageMap(uint64_t Address) {
   LogMan::Msg::DFmt("Load module {}: {:X}", ModuleName, Address);
   FEX_CONFIG_OPT(VolatileMetadata, VOLATILEMETADATA);
   if (VolatileMetadata) {
-    LoadImageVolatileMetadata(Address);
+    LoadImageVolatileMetadata(ModuleName, Address);
   }
   InvalidationTracker->HandleImageMap(ModuleName, Address);
 }
@@ -626,6 +641,9 @@ NTSTATUS ProcessInit() {
   FEXCore::Profiler::Init("", "");
 
   FEXCore::Context::InitializeStaticTables(FEXCore::Context::MODE_64BIT);
+
+  FEX_CONFIG_OPT(ExtendedVolatileMetadataConfig, EXTENDEDVOLATILEMETADATA);
+  ExtendedMetaData = FEX::VolatileMetadata::ParseExtendedVolatileMetadata(ExtendedVolatileMetadataConfig());
 
   SignalDelegator = fextl::make_unique<FEX::DummyHandlers::DummySignalDelegator>();
   SyscallHandler = fextl::make_unique<Exception::ECSyscallHandler>();
