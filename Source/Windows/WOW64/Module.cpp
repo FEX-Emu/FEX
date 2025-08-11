@@ -591,7 +591,13 @@ void BTCpuThreadTerm(HANDLE Thread, LONG ExitCode) {
 
   {
     std::scoped_lock Lock(ThreadCreationMutex);
-    Threads.erase(ThreadTID);
+    auto it = Threads.find(ThreadTID);
+    if (it == Threads.end()) {
+      // Thread already terminated
+      return;
+    }
+
+    Threads.erase(it);
     if (StatAllocHandler) {
       StatAllocHandler->DeallocateSlot(TLS.ThreadState()->ThreadStats);
     }

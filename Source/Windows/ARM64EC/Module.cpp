@@ -974,7 +974,13 @@ NTSTATUS ThreadTerm(HANDLE Thread, LONG ExitCode) {
 
   {
     std::scoped_lock Lock(ThreadCreationMutex);
-    Threads.erase(ThreadTID);
+    auto it = Threads.find(ThreadTID);
+    if (it == Threads.end()) {
+      // Thread already terminated
+      return STATUS_SUCCESS;
+    }
+
+    Threads.erase(it);
     if (StatAllocHandler) {
       StatAllocHandler->DeallocateSlot(CPUArea.ThreadState()->ThreadStats);
     }
