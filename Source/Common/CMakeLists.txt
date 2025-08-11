@@ -9,7 +9,9 @@ set(SRCS
   HostFeatures.cpp
   JSONPool.cpp
   StringUtil.cpp
-  SHMStats.cpp)
+  SHMStats.cpp
+  VolatileMetadata.cpp
+  )
 
 if (NOT MINGW_BUILD)
   list (APPEND SRCS
