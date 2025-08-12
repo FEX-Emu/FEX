@@ -1054,13 +1054,14 @@
       ]
     },
     "cmpxchg ecx, ebx": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 6,
       "ExpectedArm64ASM": [
         "mov w20, w7",
         "eor x27, x4, x20",
         "subs w26, w4, w20",
         "csel x4, x4, x20, eq",
-        "csel x7, x6, x7, eq"
+        "mov w20, w6",
+        "csel x7, x20, x7, eq"
       ]
     },
     "cmpxchg rcx, rbx": {
