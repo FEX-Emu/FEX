@@ -2474,14 +2474,16 @@
       "Comment": "0x8e"
     },
     "mov es, ax": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 12,
       "Comment": "0x8e",
       "ExpectedArm64ASM": [
         "uxth w20, w4",
         "strh w20, [x28, #928]",
-        "ubfx w20, w20, #3, #13",
-        "add x0, x28, x20, lsl #3",
-        "ldr x20, [x0, #1168]",
+        "ubfx w21, w20, #2, #1",
+        "and w20, w20, #0xfff8",
+        "add x0, x28, x21, lsl #3",
+        "ldr x21, [x0, #1168]",
+        "ldr x20, [x21, w20, uxtw]",
         "lsr x21, x20, #32",
         "and w22, w21, #0xff000000",
         "orr w20, w22, w20, lsr #16",
@@ -2490,14 +2492,16 @@
       ]
     },
     "mov ss, ax": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 12,
       "Comment": "0x8e",
       "ExpectedArm64ASM": [
         "uxth w20, w4",
         "strh w20, [x28, #932]",
-        "ubfx w20, w20, #3, #13",
-        "add x0, x28, x20, lsl #3",
-        "ldr x20, [x0, #1168]",
+        "ubfx w21, w20, #2, #1",
+        "and w20, w20, #0xfff8",
+        "add x0, x28, x21, lsl #3",
+        "ldr x21, [x0, #1168]",
+        "ldr x20, [x21, w20, uxtw]",
         "lsr x21, x20, #32",
         "and w22, w21, #0xff000000",
         "orr w20, w22, w20, lsr #16",
@@ -2506,14 +2510,16 @@
       ]
     },
     "mov ds, ax": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 12,
       "Comment": "0x8e",
       "ExpectedArm64ASM": [
         "uxth w20, w4",
         "strh w20, [x28, #934]",
-        "ubfx w20, w20, #3, #13",
-        "add x0, x28, x20, lsl #3",
-        "ldr x20, [x0, #1168]",
+        "ubfx w21, w20, #2, #1",
+        "and w20, w20, #0xfff8",
+        "add x0, x28, x21, lsl #3",
+        "ldr x21, [x0, #1168]",
+        "ldr x20, [x21, w20, uxtw]",
         "lsr x21, x20, #32",
         "and w22, w21, #0xff000000",
         "orr w20, w22, w20, lsr #16",

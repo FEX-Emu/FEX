@@ -41,7 +41,7 @@
         "lsr z2.h, p6/m, z2.h, z3.d",
         "strb wzr, [x28, #1019]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1426]",
+        "strb w20, [x28, #1186]",
         "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
@@ -55,7 +55,7 @@
         "lsr z2.s, p6/m, z2.s, z3.d",
         "strb wzr, [x28, #1019]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1426]",
+        "strb w20, [x28, #1186]",
         "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
@@ -69,7 +69,7 @@
         "lsr z2.d, p6/m, z2.d, z3.d",
         "strb wzr, [x28, #1019]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1426]",
+        "strb w20, [x28, #1186]",
         "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
@@ -83,7 +83,7 @@
         "asr z2.h, p6/m, z2.h, z3.d",
         "strb wzr, [x28, #1019]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1426]",
+        "strb w20, [x28, #1186]",
         "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
@@ -97,7 +97,7 @@
         "asr z2.s, p6/m, z2.s, z3.d",
         "strb wzr, [x28, #1019]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1426]",
+        "strb w20, [x28, #1186]",
         "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
@@ -111,7 +111,7 @@
         "lsl z2.h, p6/m, z2.h, z3.d",
         "strb wzr, [x28, #1019]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1426]",
+        "strb w20, [x28, #1186]",
         "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
@@ -125,7 +125,7 @@
         "lsl z2.s, p6/m, z2.s, z3.d",
         "strb wzr, [x28, #1019]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1426]",
+        "strb w20, [x28, #1186]",
         "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
@@ -139,7 +139,7 @@
         "lsl z2.d, p6/m, z2.d, z3.d",
         "strb wzr, [x28, #1019]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1426]",
+        "strb w20, [x28, #1186]",
         "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
