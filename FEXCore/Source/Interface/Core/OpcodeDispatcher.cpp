@@ -3733,7 +3733,11 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     // Op1 = RAX == Op1 ? Op2 : Op1
     // If they match then set the rm operand to the input
     // else don't set the rm operand
-    Ref DestResult = Trivial ? Src2 : NZCVSelect(OpSize::i64Bit, CondClassType {COND_EQ}, Src2, Src1);
+    Ref Src2Lower = Src2;
+    if (GPRSize == OpSize::i64Bit && Size == OpSize::i32Bit) {
+      Src2Lower = _Bfe(GPRSize, IR::OpSizeAsBits(Size), 0, Src2);
+    }
+    Ref DestResult = Trivial ? Src2 : NZCVSelect(OpSize::i64Bit, CondClassType {COND_EQ}, Src2Lower, Src1);
 
     // Store in to GPR Dest
     if (GPRSize == OpSize::i64Bit && Size == OpSize::i32Bit) {
