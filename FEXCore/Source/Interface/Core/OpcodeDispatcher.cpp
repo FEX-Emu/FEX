@@ -498,15 +498,18 @@ void OpDispatchBuilder::POPSegmentOp(OpcodeArgs, uint32_t SegmentReg) {
 }
 
 void OpDispatchBuilder::LEAVEOp(OpcodeArgs) {
+  const auto GPRSize = GetGPROpSize();
+  const auto OperandSize = (Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_OPERAND_SIZE) ? OpSize::i16Bit : GPRSize;
+
   // First we move RBP in to RSP and then behave effectively like a pop
   auto SP = _RMWHandle(LoadGPRRegister(X86State::REG_RBP));
-  auto NewGPR = Pop(OpSizeFromSrc(Op), SP);
+  auto NewGPR = Pop(OperandSize, SP);
 
   // Store the new stack pointer
-  StoreGPRRegister(X86State::REG_RSP, SP);
+  StoreGPRRegister(X86State::REG_RSP, SP, OperandSize);
 
   // Store what we loaded to RBP
-  StoreGPRRegister(X86State::REG_RBP, NewGPR);
+  StoreGPRRegister(X86State::REG_RBP, NewGPR, OperandSize);
 }
 
 void OpDispatchBuilder::CALLOp(OpcodeArgs) {
