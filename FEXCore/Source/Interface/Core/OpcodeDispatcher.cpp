@@ -5517,7 +5517,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(0xDB, 0xD0), 8, &OpDispatchBuilder::X87FCMOV},
     {OPD(0xDB, 0xD8), 8, &OpDispatchBuilder::X87FCMOV},
     // E0 = Invalid
-    {OPD(0xDB, 0xE2), 1, &OpDispatchBuilder::NOPOp}, // FNCLEX
+    {OPD(0xDB, 0xE2), 1, &OpDispatchBuilder::FNCLEX},
     {OPD(0xDB, 0xE3), 1, &OpDispatchBuilder::FNINIT},
     // E4 = Invalid
     {OPD(0xDB, 0xE8), 8,
@@ -5776,7 +5776,7 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
     {OPD(0xDB, 0xD0), 8, &OpDispatchBuilder::X87FCMOV},
     {OPD(0xDB, 0xD8), 8, &OpDispatchBuilder::X87FCMOV},
     // E0 = Invalid
-    {OPD(0xDB, 0xE2), 1, &OpDispatchBuilder::NOPOp}, // FNCLEX
+    {OPD(0xDB, 0xE2), 1, &OpDispatchBuilder::FNCLEX},
     {OPD(0xDB, 0xE3), 1, &OpDispatchBuilder::FNINIT},
     // E4 = Invalid
     {OPD(0xDB, 0xE8), 8,

@@ -733,6 +733,7 @@ public:
   void FADD(OpcodeArgs, IR::OpSize Width, bool Integer, OpResult ResInST0);
   void FDIV(OpcodeArgs, IR::OpSize Width, bool Integer, bool Reverse, OpResult ResInST0);
   void FMUL(OpcodeArgs, IR::OpSize Width, bool Integer, OpResult ResInST0);
+  void FNCLEX(OpcodeArgs);
   void FNINIT(OpcodeArgs);
   void FSUB(OpcodeArgs, IR::OpSize Width, bool Integer, bool Reverse, OpResult ResInST0);
   void FTST(OpcodeArgs);
