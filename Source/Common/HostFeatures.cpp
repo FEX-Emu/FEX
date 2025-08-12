@@ -499,8 +499,9 @@ FEXCore::HostFeatures FetchHostFeatures(FEX::CPUFeatures& Features, bool Support
   HostFeatures.SupportsAVX = true;
 
 #ifdef _WIN32
-  // Disable 3DNow! by default to better match the set of extensions exposed on modern CPUs
-  // Works around a bug breaking some uses of 3DNow in WOW64 FEX
+  // Disable 3DNow! by default to better match the set of extensions exposed on modern CPUs.
+  // This works around a bug that manifests in some games using native d3dx9 DLLs (most easily reproduced in WoW64 builds).
+  // For example, Fallout: New Vegas and some old EA games will run with a blackscreen.
   HostFeatures.Supports3DNow = false;
 #else
   HostFeatures.Supports3DNow = true;
