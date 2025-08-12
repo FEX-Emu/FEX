@@ -53,7 +53,7 @@ uint64_t SetThreadArea(FEXCore::Core::CpuStateFrame* Frame, void* tls) {
 
   if (u_info->entry_number == -1) {
     for (uint32_t i = TLS_NextEntry; i < TLS_MaxEntry; ++i) {
-      auto GDT = &Frame->State.gdt[i];
+      auto GDT = &Frame->State.segment_arrays[0][i];
       if (Frame->State.CalculateGDTLimit(*GDT) == 0) {
         // If the limit is zero then it isn't present with our setup
         u_info->entry_number = i;
@@ -68,7 +68,7 @@ uint64_t SetThreadArea(FEXCore::Core::CpuStateFrame* Frame, void* tls) {
   }
 
   // Now we need to update the thread's GDT to handle this change
-  auto GDT = &Frame->State.gdt[u_info->entry_number];
+  auto GDT = &Frame->State.segment_arrays[0][u_info->entry_number];
   Frame->State.SetGDTBase(GDT, u_info->base_addr);
   Frame->State.SetGDTLimit(GDT, 0xF'FFFFU);
 
@@ -160,7 +160,7 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
 
     FaultSafeUserMemAccess::VerifyIsWritable(u_info, sizeof(*u_info));
 
-    const auto& GDT = &Frame->State.gdt[Entry];
+    const auto& GDT = &Frame->State.segment_arrays[0][Entry];
 
     memset(u_info, 0, sizeof(*u_info));
 
