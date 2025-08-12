@@ -39,6 +39,7 @@ $end_info$
 #include "Common/Module.h"
 #include "Common/CRT/CRT.h"
 #include "Common/PortabilityInfo.h"
+#include "Common/Handle.h"
 #include "DummyHandlers.h"
 #include "BTInterface.h"
 #include "Windows/Common/SHMStats.h"
@@ -768,11 +769,18 @@ bool ResetToConsistentStateImpl(EXCEPTION_RECORD* Exception, CONTEXT* GuestConte
 }
 
 NTSTATUS ResetToConsistentState(EXCEPTION_RECORD* Exception, CONTEXT* GuestContext, ARM64_NT_CONTEXT* NativeContext) {
+  bool Cont {};
   if (Exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
     const auto FaultAddress = static_cast<uint64_t>(Exception->ExceptionInformation[1]);
 
-    if (OvercommitTracker && OvercommitTracker->HandleAccessViolation(FaultAddress)) {
-      NtContinueNative(NativeContext, false);
+    if (OvercommitTracker) {
+      {
+        ScopedCallbackDisable guard;
+        Cont = OvercommitTracker->HandleAccessViolation(FaultAddress);
+      }
+      if (Cont) {
+        NtContinueNative(NativeContext, false);
+      }
     }
   }
 
@@ -780,7 +788,6 @@ NTSTATUS ResetToConsistentState(EXCEPTION_RECORD* Exception, CONTEXT* GuestConte
     return STATUS_SUCCESS;
   }
 
-  bool Cont {};
   {
 
     ScopedCallbackDisable guard;
@@ -905,6 +912,7 @@ void BTCpu64NotifyMemoryDirty(void* Address, SIZE_T Size) {
 void BTCpu64NotifyReadFile(HANDLE Handle, void* Address, SIZE_T Size, BOOL After, NTSTATUS Status) {}
 
 NTSTATUS ThreadInit() {
+  std::scoped_lock Lock(ThreadCreationMutex);
   FEX::Windows::InitCRTThread();
   static constexpr size_t EmulatorStackSize = 0x40000;
   const uint64_t EmulatorStack = reinterpret_cast<uint64_t>(::VirtualAlloc(nullptr, EmulatorStackSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
@@ -939,7 +947,6 @@ NTSTATUS ThreadInit() {
   Exception::LoadStateFromECContext(Thread, CPUArea.ContextAmd64().AMD64_Context);
 
   {
-    std::scoped_lock Lock(ThreadCreationMutex);
     auto ThreadTID = GetCurrentThreadId();
     Threads.emplace(ThreadTID, Thread);
     if (StatAllocHandler) {
@@ -953,29 +960,48 @@ NTSTATUS ThreadInit() {
 }
 
 NTSTATUS ThreadTerm(HANDLE Thread, LONG ExitCode) {
-  const auto [Err, CPUArea] = GetThreadCPUArea(Thread);
-  if (Err) {
-    return Err;
+  if (!FEX::Windows::ValidateHandleAccess(Thread, THREAD_TERMINATE)) {
+    return STATUS_ACCESS_DENIED;
   }
-  auto* OldThreadState = CPUArea.ThreadState();
-  CPUArea.ThreadState() = nullptr;
+
+  auto ThreadDup = FEX::Windows::DupHandle(Thread, THREAD_QUERY_INFORMATION | THREAD_SUSPEND_RESUME);
 
   THREAD_BASIC_INFORMATION Info;
-  if (NTSTATUS Err = NtQueryInformationThread(Thread, ThreadBasicInformation, &Info, sizeof(Info), nullptr); Err) {
+  if (auto Err = NtQueryInformationThread(*ThreadDup, ThreadBasicInformation, &Info, sizeof(Info), nullptr); Err) {
     return Err;
   }
 
   const auto ThreadTID = reinterpret_cast<uint64_t>(Info.ClientId.UniqueThread);
+  bool Self = ThreadTID == GetCurrentThreadId();
+  if (!Self) {
+    CONTEXT TmpContext;
+    // If we are suspending a thread that isn't ourselves, try to suspend it first so we know internal JIT locks aren't being held.
+    NtSuspendThread(*ThreadDup, NULL);
+    // This will wait for the thread to be suspended
+    NtGetContextThread(*ThreadDup, &TmpContext);
+  }
+
+  const auto [Err, CPUArea] = GetThreadCPUArea(*ThreadDup);
+  if (Err) {
+    return Err;
+  }
+
   {
     std::scoped_lock Lock(ThreadCreationMutex);
-    Threads.erase(ThreadTID);
+    auto it = Threads.find(ThreadTID);
+    if (it == Threads.end()) {
+      // Thread already terminated
+      return STATUS_SUCCESS;
+    }
+
+    Threads.erase(it);
     if (StatAllocHandler) {
-      StatAllocHandler->DeallocateSlot(OldThreadState->ThreadStats);
+      StatAllocHandler->DeallocateSlot(CPUArea.ThreadState()->ThreadStats);
     }
   }
 
-  FEX::Windows::CallRetStack::DestroyThread(OldThreadState);
-  CTX->DestroyThread(OldThreadState);
+  FEX::Windows::CallRetStack::DestroyThread(CPUArea.ThreadState());
+  CTX->DestroyThread(CPUArea.ThreadState());
   ::VirtualFree(reinterpret_cast<void*>(CPUArea.EmulatorStackLimit()), 0, MEM_RELEASE);
   if (ThreadTID == GetCurrentThreadId()) {
     FEX::Windows::DeinitCRTThread();
