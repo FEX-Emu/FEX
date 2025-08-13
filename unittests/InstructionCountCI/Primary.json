@@ -4473,6 +4473,45 @@
         "bfxil x4, x20, #0, #8"
       ]
     },
+    "retf 0x1234": {
+      "ExpectedInstructionCount": 15,
+      "Comment": "0xca",
+      "ExpectedArm64ASM": [
+        "mov x20, x8",
+        "ldp w21, w22, [x20], #8",
+        "mov w23, #0x1234",
+        "add x8, x20, x23",
+        "strh w22, [x28, #930]",
+        "ubfx w20, w22, #2, #1",
+        "and w22, w22, #0xfff8",
+        "add x0, x28, x20, lsl #3",
+        "ldr x20, [x0, #1168]",
+        "ldr x20, [x20, w22, uxtw]",
+        "lsr x22, x20, #32",
+        "and w23, w22, #0xff000000",
+        "orr w20, w23, w20, lsr #16",
+        "bfi w20, w22, #16, #8",
+        "str w20, [x28, #948]"
+      ]
+    },
+    "retf": {
+      "ExpectedInstructionCount": 12,
+      "Comment": "0xcb",
+      "ExpectedArm64ASM": [
+        "ldp w20, w21, [x8], #8",
+        "strh w21, [x28, #930]",
+        "ubfx w22, w21, #2, #1",
+        "and w21, w21, #0xfff8",
+        "add x0, x28, x22, lsl #3",
+        "ldr x22, [x0, #1168]",
+        "ldr x21, [x22, w21, uxtw]",
+        "lsr x22, x21, #32",
+        "and w23, w22, #0xff000000",
+        "orr w21, w23, w21, lsr #16",
+        "bfi w21, w22, #16, #8",
+        "str w21, [x28, #948]"
+      ]
+    },
     "cmc": {
       "ExpectedInstructionCount": 3,
       "Comment": "0xf5",
