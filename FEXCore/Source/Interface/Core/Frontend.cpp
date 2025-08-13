@@ -1261,8 +1261,8 @@ void Decoder::DecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState *Thre
   DecodedBuffer = PoolObject.ReownOrClaimBuffer();
 
   // Decode operating mode from thread's CS segment.
-  const auto CSSegment = Thread->CurrentFrame->State.gdt[Thread->CurrentFrame->State.cs_idx >> 3];
-  BlockInfo.Is64BitMode = CSSegment.L == 1;
+  const auto CSSegment = Core::CPUState::GetSegmentFromIndex(Thread->CurrentFrame->State, Thread->CurrentFrame->State.cs_idx);
+  BlockInfo.Is64BitMode = CSSegment->L == 1;
   LOGMAN_THROW_A_FMT(BlockInfo.Is64BitMode == CTX->Config.Is64BitMode, "Expected operating mode to not change at runtime!");
 
   // XXX: Load symbol data

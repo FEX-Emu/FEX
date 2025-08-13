@@ -135,7 +135,23 @@ struct CPUState {
     uint16_t D      : 1;
     uint16_t G      : 1;
     uint16_t Base2  : 8;
-  } gdt[32] {};
+  };
+
+  // Array of segments (Access offset matches segment selector TI bit)
+  // 0 : GDT
+  // 1 : LDT
+  // Segments are global to the process.
+  // GDT segments are only 32-objects in size.
+  //   - Kernel allocates a handful of these for various things.
+  //   - Three are reserved for user-space to setup TLS segments in
+  // LDT segments are entirely controlled by userspace.
+  //   - Kernel allocates up to 8192 ldt segments.
+  gdt_segment *segment_arrays[2] {};
+
+  static gdt_segment* GetSegmentFromIndex(CPUState &State, uint16_t Selector) {
+    auto base = State.segment_arrays[(Selector >> 2) & 1];
+    return &base[Selector >> 3];
+  }
 
   static uint32_t CalculateGDTBase(gdt_segment GDT) {
     uint32_t Base{};
@@ -173,7 +189,7 @@ struct CPUState {
   static constexpr uint8_t AF_AS_GREG = 17;
 
   static constexpr size_t FLAG_SIZE = sizeof(flags[0]);
-  static constexpr size_t GDT_SIZE = sizeof(gdt[0]);
+  static constexpr size_t GDT_SIZE = sizeof(gdt_segment);
   static_assert(GDT_SIZE == sizeof(uint64_t), "Segments required to be 8-byte in size.");
   static constexpr size_t GPR_REG_SIZE = sizeof(gregs[0]);
   static constexpr size_t XMM_AVX_REG_SIZE = sizeof(xmm.avx.data[0]);
@@ -183,7 +199,6 @@ struct CPUState {
   // Only the first 32 bits are defined.
   static constexpr size_t NUM_EFLAG_BITS = 32;
   static constexpr size_t NUM_FLAGS = sizeof(flags) / FLAG_SIZE;
-  static constexpr size_t NUM_GDTS = sizeof(gdt) / GDT_SIZE;
   static constexpr size_t NUM_GPRS = sizeof(gregs) / GPR_REG_SIZE;
   static constexpr size_t NUM_XMMS = sizeof(xmm) / XMM_AVX_REG_SIZE;
   static constexpr size_t NUM_MMS = sizeof(mm) / MM_REG_SIZE;
@@ -216,6 +231,10 @@ struct CPUState {
     // All exception masks enabled.
     mxcsr = 0x1F80;
   }
+
+  // TODO: This should be moved to the frontend.
+  constexpr static uint32_t DEFAULT_USER_CS = 6;
+  Core::CPUState::gdt_segment private_gdt[32] {};
 };
 static_assert(std::is_trivially_copyable_v<CPUState>, "Needs to be trivial");
 static_assert(std::is_standard_layout_v<CPUState>, "This needs to be standard layout");

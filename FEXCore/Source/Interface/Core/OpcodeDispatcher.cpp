@@ -4038,8 +4038,11 @@ void OpDispatchBuilder::CheckLegacySegmentWrite(Ref NewNode, uint32_t SegmentReg
 void OpDispatchBuilder::UpdatePrefixFromSegment(Ref Segment, uint32_t SegmentReg) {
   // Use BFE to extract the selector index in bits [15,3] of the segment register.
   // In some cases the upper 16-bits of the 32-bit GPR contain garbage to ignore.
-  Segment = _Bfe(OpSize::i32Bit, 16 - 3, 3, Segment);
-  Ref NewSegment = _LoadContextIndexed(Segment, OpSize::i64Bit, offsetof(FEXCore::Core::CPUState, gdt[0]), 8, GPRClass);
+  auto GDT = _Bfe(OpSize::i32Bit, 1, 2, Segment);
+  // Fun quirk, if we mask the selector then it is premultiplied by 8 which we need to do for accessing anyway.
+  auto SegmentOffset = _And(OpSize::i32Bit, Segment, _Constant(0xfff8));
+  Ref SegmentBase = _LoadContextIndexed(GDT, OpSize::i64Bit, offsetof(FEXCore::Core::CPUState, segment_arrays[0]), 8, GPRClass);
+  Ref NewSegment = _LoadMem(GPRClass, OpSize::i64Bit, SegmentBase, SegmentOffset, OpSize::i8Bit, MEM_OFFSET_UXTW, 1);
   CheckLegacySegmentWrite(NewSegment, SegmentReg);
 
   // Extract the 32-bit base from the GDT segment.

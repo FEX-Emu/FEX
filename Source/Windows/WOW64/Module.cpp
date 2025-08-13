@@ -192,8 +192,9 @@ void LoadStateFromWowContext(FEXCore::Core::InternalThreadState* Thread, uint64_
   State.gs_idx = Context->SegGs & 0xffff;
 
   // The TEB is the only populated GDT entry by default
-  State.SetGDTBase(&State.gdt[(Context->SegFs & 0xffff) >> 3], WowTEB);
-  State.SetGDTLimit(&State.gdt[(Context->SegFs & 0xffff) >> 3], 0xF'FFFFU);
+  auto GDT = State.GetSegmentFromIndex(State, (Context->SegFs & 0xffff));
+  State.SetGDTBase(GDT, WowTEB);
+  State.SetGDTLimit(GDT, 0xF'FFFFU);
   State.fs_cached = WowTEB;
   State.es_cached = 0;
   State.cs_cached = 0;
