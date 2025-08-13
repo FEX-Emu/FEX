@@ -131,7 +131,7 @@ std::array<X86InstInfo, MAX_INST_GROUP_TABLE_SIZE> PrimaryInstGroupOps = []() co
     {OPD(TYPE_GROUP_5, OpToIndex(0xFF), 2), 1, X86InstInfo{"CALL",  TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_MODRM | FLAGS_BLOCK_END | FLAGS_CALL , 0, nullptr}},
     {OPD(TYPE_GROUP_5, OpToIndex(0xFF), 3), 1, X86InstInfo{"CALLF", TYPE_INST, FLAGS_SETS_RIP | FLAGS_MODRM | FLAGS_BLOCK_END,                  0, nullptr}},
     {OPD(TYPE_GROUP_5, OpToIndex(0xFF), 4), 1, X86InstInfo{"JMP",   TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_MODRM | FLAGS_BLOCK_END , 0, nullptr}},
-    {OPD(TYPE_GROUP_5, OpToIndex(0xFF), 5), 1, X86InstInfo{"JMPF",  TYPE_INST, FLAGS_SETS_RIP | FLAGS_MODRM | FLAGS_BLOCK_END,                  0, nullptr}},
+    {OPD(TYPE_GROUP_5, OpToIndex(0xFF), 5), 1, X86InstInfo{"JMPF",  TYPE_INST, FLAGS_SETS_RIP | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_MEM_ONLY | FLAGS_BLOCK_END,                  0, nullptr}},
     {OPD(TYPE_GROUP_5, OpToIndex(0xFF), 6), 1, X86InstInfo{"PUSH",  TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_MODRM,                                                     0, nullptr}},
     {OPD(TYPE_GROUP_5, OpToIndex(0xFF), 7), 1, X86InstInfo{"",      TYPE_INVALID, FLAGS_NONE,                                                       0, nullptr}},
 

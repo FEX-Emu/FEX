@@ -348,6 +348,7 @@ public:
   void LoopOp(OpcodeArgs);
   void JUMPOp(OpcodeArgs);
   void JUMPAbsoluteOp(OpcodeArgs);
+  void JUMPFARIndirectOp(OpcodeArgs);
   void TESTOp(OpcodeArgs, uint32_t SrcIndex);
   void MOVSXDOp(OpcodeArgs);
   void MOVSXOp(OpcodeArgs);

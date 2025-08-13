@@ -938,6 +938,27 @@ void OpDispatchBuilder::JUMPAbsoluteOp(OpcodeArgs) {
   ExitFunction(RIPOffset);
 }
 
+void OpDispatchBuilder::JUMPFARIndirectOp(OpcodeArgs) {
+  // Calculate flags early.
+  CalculateDeferredFlags();
+
+  BlockSetRIP = true;
+  // This is just an unconditional jump
+  // This uses ModRM to determine its location
+  // No way to use this effectively in multiblock
+  Ref Src = MakeSegmentAddress(Op, Op->Dest);
+  AddressMode SrcCS  = {.Base = Src, .Offset = 4, .AddrSize = OpSize::i64Bit};
+  auto RIPOffset = _LoadMemAutoTSO(GPRClass, OpSize::i32Bit, Src, OpSize::i8Bit);
+  auto NewSegmentCS = _LoadMemAutoTSO(GPRClass, OpSize::i16Bit, SrcCS, OpSize::i8Bit);
+
+  // Set up the new CSSegment.
+  _StoreContext(OpSize::i16Bit, GPRClass, NewSegmentCS, offsetof(FEXCore::Core::CPUState, cs_idx));
+  UpdatePrefixFromSegment(NewSegmentCS, FEXCore::X86Tables::DecodeFlags::FLAG_CS_PREFIX);
+
+  // Store the new RIP
+  ExitFunction(RIPOffset);
+}
+
 void OpDispatchBuilder::TESTOp(OpcodeArgs, uint32_t SrcIndex) {
   // TEST is an instruction that does an AND between the sources
   // Result isn't stored in result, only writes to flags
