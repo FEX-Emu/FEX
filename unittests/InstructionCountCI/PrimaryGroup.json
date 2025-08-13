@@ -2980,6 +2980,25 @@
         "str x4, [x8, #-8]!"
       ]
     },
+    "jmp far [rsp]": {
+      "ExpectedInstructionCount": 13,
+      "Comment": "GROUP5 0xff /5",
+      "ExpectedArm64ASM": [
+        "ldr w20, [x8]",
+        "ldrh w21, [x8, #4]",
+        "strh w21, [x28, #930]",
+        "ubfx w22, w21, #2, #1",
+        "and w21, w21, #0xfff8",
+        "add x0, x28, x22, lsl #3",
+        "ldr x22, [x0, #1168]",
+        "ldr x21, [x22, w21, uxtw]",
+        "lsr x22, x21, #32",
+        "and w23, w22, #0xff000000",
+        "orr w21, w23, w21, lsr #16",
+        "bfi w21, w22, #16, #8",
+        "str w21, [x28, #948]"
+      ]
+    },
     "mov byte [rax], 0": {
       "ExpectedInstructionCount": 1,
       "Comment": "GROUP11 0xc6 /0",

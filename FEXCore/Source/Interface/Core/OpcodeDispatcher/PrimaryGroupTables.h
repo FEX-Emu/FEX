@@ -118,6 +118,7 @@ constexpr DispatchTableEntry OpDispatch_PrimaryGroupTables[] = {
   {OPD(FEXCore::X86Tables::TYPE_GROUP_5, OpToIndex(0xFF), 1), 1, &OpDispatchBuilder::DECOp}, // DEC
   {OPD(FEXCore::X86Tables::TYPE_GROUP_5, OpToIndex(0xFF), 2), 1, &OpDispatchBuilder::CALLAbsoluteOp},
   {OPD(FEXCore::X86Tables::TYPE_GROUP_5, OpToIndex(0xFF), 4), 1, &OpDispatchBuilder::JUMPAbsoluteOp},
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_5, OpToIndex(0xFF), 5), 1, &OpDispatchBuilder::JUMPFARIndirectOp},
   {OPD(FEXCore::X86Tables::TYPE_GROUP_5, OpToIndex(0xFF), 6), 1, &OpDispatchBuilder::PUSHOp},
 
   // GROUP 11
