@@ -959,6 +959,60 @@ void OpDispatchBuilder::JUMPFARIndirectOp(OpcodeArgs) {
   ExitFunction(RIPOffset);
 }
 
+void OpDispatchBuilder::CALLFARIndirectOp(OpcodeArgs) {
+  const auto SrcSize = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REX_WIDENING ? OpSize::i64Bit : OpSize::i32Bit;
+
+  // Calculate flags early.
+  CalculateDeferredFlags();
+
+  BlockSetRIP = true;
+
+  Ref Src = MakeSegmentAddress(Op, Op->Dest);
+  AddressMode SrcCS  = {.Base = Src, .Offset = 4, .AddrSize = OpSize::i64Bit};
+  auto RIPOffset = _LoadMemAutoTSO(GPRClass, OpSize::i32Bit, Src, OpSize::i8Bit);
+  auto NewSegmentCS = _LoadMemAutoTSO(GPRClass, OpSize::i16Bit, SrcCS, OpSize::i8Bit);
+  auto CurrentCS = _LoadContext(OpSize::i16Bit, GPRClass, offsetof(FEXCore::Core::CPUState, cs_idx));
+
+  auto NewRIP = GetRelocatedPC(Op);
+
+  // Push the current CS
+  Push(SrcSize, CurrentCS);
+
+  // Push the return address.
+  Push(SrcSize, NewRIP);
+
+  // Set up the new CSSegment.
+  _StoreContext(OpSize::i16Bit, GPRClass, NewSegmentCS, offsetof(FEXCore::Core::CPUState, cs_idx));
+  UpdatePrefixFromSegment(NewSegmentCS, FEXCore::X86Tables::DecodeFlags::FLAG_CS_PREFIX);
+
+  // Store the new RIP
+  ExitFunction(RIPOffset);
+}
+
+void OpDispatchBuilder::RETFARIndirectOp(OpcodeArgs) {
+  const auto GPRSize = GetGPROpSize();
+  const auto SrcSize = Op->Flags & FEXCore::X86Tables::DecodeFlags::FLAG_REX_WIDENING ? OpSize::i64Bit : OpSize::i32Bit;
+
+  Ref SP = _RMWHandle(LoadGPRRegister(X86State::REG_RSP));
+  Ref NewRIP = Pop(SrcSize, SP);
+  Ref NewSegmentCS = Pop(SrcSize, SP);
+
+  // Optional SP offset.
+  if (Op->Src[0].IsLiteral()) {
+    SP = Add(GPRSize, SP, Op->Src[0].Literal());
+  }
+
+  // Store the new stack pointer
+  StoreGPRRegister(X86State::REG_RSP, SP);
+
+  _StoreContext(OpSize::i16Bit, GPRClass, NewSegmentCS, offsetof(FEXCore::Core::CPUState, cs_idx));
+  UpdatePrefixFromSegment(NewSegmentCS, FEXCore::X86Tables::DecodeFlags::FLAG_CS_PREFIX);
+
+  // Store the new RIP
+  ExitFunction(NewRIP);
+  BlockSetRIP = true;
+}
+
 void OpDispatchBuilder::TESTOp(OpcodeArgs, uint32_t SrcIndex) {
   // TEST is an instruction that does an AND between the sources
   // Result isn't stored in result, only writes to flags
