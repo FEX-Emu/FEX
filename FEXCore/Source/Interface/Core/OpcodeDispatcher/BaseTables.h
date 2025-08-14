@@ -57,6 +57,7 @@ constexpr inline DispatchTableEntry OpDispatch_BaseOpTable[] = {
   {0xC2, 2, &OpDispatchBuilder::RETOp},
   {0xC8, 1, &OpDispatchBuilder::EnterOp},
   {0xC9, 1, &OpDispatchBuilder::LEAVEOp},
+  {0xCA, 2, &OpDispatchBuilder::RETFARIndirectOp},
   {0xCC, 2, &OpDispatchBuilder::INTOp},
   {0xCF, 1, &OpDispatchBuilder::IRETOp},
   {0xD7, 2, &OpDispatchBuilder::XLATOp},
