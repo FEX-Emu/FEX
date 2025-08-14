@@ -614,7 +614,7 @@ NTSTATUS ProcessInit() {
 
   FEX::Windows::InitCRTProcess();
   const auto ExecutablePath = FEX::Windows::GetExecutableFilePath();
-  FEX::Config::LoadConfig(nullptr, ExecutablePath, nullptr, FEX::ReadPortabilityInformation());
+  FEX::Config::LoadConfig(nullptr, ExecutablePath, _environ, FEX::ReadPortabilityInformation());
   FEXCore::Config::ReloadMetaLayer();
   FEX::Windows::Logging::Init();
 
