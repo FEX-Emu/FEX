@@ -593,8 +593,7 @@
         "Desc": ["Does a x86 TSO compatible load from memory. Offset must be Invalid()."
                 ],
         "Inline": ["", "Memtso"],
-        "DestSize": "Size",
-        "DynamicDispatch": true
+        "DestSize": "Size"
       },
 
       "StoreMemTSO RegisterClass:$Class, OpSize:#Size, SSA:$Value, GPR:$Addr, GPR:$Offset, OpSize:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale": {
@@ -602,8 +601,7 @@
                 ],
         "Inline": ["Zero", "", "Memtso"],
         "HasSideEffects": true,
-        "DestSize": "Size",
-        "DynamicDispatch": true
+        "DestSize": "Size"
       },
 
       "FPR = VLoadVectorMasked OpSize:#RegisterSize, OpSize:#ElementSize, FPR:$Mask, GPR:$Addr, GPR:$Offset, MemOffsetType:$OffsetType, u8:$OffsetScale": {

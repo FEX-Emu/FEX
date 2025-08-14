@@ -453,6 +453,12 @@ typedef enum _MEMORY_INFORMATION_CLASS {
 } MEMORY_INFORMATION_CLASS;
 
 #define ProcessFexHardwareTso (PROCESSINFOCLASS)2000
+#define ProcessFexUnalignAtomic (PROCESSINFOCLASS)2001
+
+// These match the prctl flag values
+#define FEX_UNALIGN_ATOMIC_EMULATE (1ULL << 0)
+#define FEX_UNALIGN_ATOMIC_BACKPATCH (1ULL << 1)
+#define FEX_UNALIGN_ATOMIC_STRICT_SPLIT_LOCKS (1ULL << 2)
 
 typedef enum _KEY_VALUE_INFORMATION_CLASS {
   KeyValueBasicInformation,

@@ -322,13 +322,26 @@ DEF_OP(AtomicFetchNeg) {
 
   auto MemSrc = GetReg(Op->Addr);
 
-  ARMEmitter::BackwardLabel LoopTop;
-  Bind(&LoopTop);
-  ldaxr(SubEmitSize, TMP2, MemSrc);
-  neg(EmitSize, TMP3, TMP2);
-  stlxr(SubEmitSize, TMP4, TMP3, MemSrc);
-  cbnz(EmitSize, TMP4, &LoopTop);
-  mov(EmitSize, GetReg(Node), TMP2.R());
+  if (CTX->HostFeatures.SupportsAtomics) {
+    // Use a CAS loop to avoid needing to emulate unaligned LLSC atomics
+    ldr(SubEmitSize, TMP2, MemSrc);
+    ARMEmitter::BackwardLabel LoopTop;
+    Bind(&LoopTop);
+    mov(EmitSize, TMP4, TMP2);
+    neg(EmitSize, TMP3, TMP2);
+    casal(SubEmitSize, TMP2, TMP3, MemSrc);
+    sub(EmitSize, TMP3, TMP2, TMP4);
+    cbnz(EmitSize, TMP3, &LoopTop);
+    mov(EmitSize, GetReg(Node), TMP2.R());
+  } else {
+    ARMEmitter::BackwardLabel LoopTop;
+    Bind(&LoopTop);
+    ldaxr(SubEmitSize, TMP2, MemSrc);
+    neg(EmitSize, TMP3, TMP2);
+    stlxr(SubEmitSize, TMP4, TMP3, MemSrc);
+    cbnz(EmitSize, TMP4, &LoopTop);
+    mov(EmitSize, GetReg(Node), TMP2.R());
+  }
 }
 
 DEF_OP(TelemetrySetValue) {
