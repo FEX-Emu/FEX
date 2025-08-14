@@ -12,7 +12,10 @@
 
 namespace {
 char* Env;
+char** EnvArray;
+} // namespace
 
+namespace {
 void InitEnv() {
   RtlAcquirePebLock();
   auto ProcessParams = reinterpret_cast<RTL_USER_PROCESS_PARAMETERS64*>(NtCurrentTeb()->ProcessEnvironmentBlock->ProcessParameters);
@@ -25,11 +28,32 @@ void InitEnv() {
   RtlUnicodeToMultiByteSize(&Size, EnvW, SizeW);
   Env = reinterpret_cast<char*>(RtlAllocateHeap(GetProcessHeap(), 0, Size + 1));
   RtlUnicodeToMultiByteN(Env, Size + 1, nullptr, EnvW, SizeW);
+
+  size_t EnvCount = 0;
+  char* It = Env;
+  while (*It) {
+    EnvCount++;
+    It += strlen(It) + 1;
+  }
+
+  EnvArray = reinterpret_cast<char**>(RtlAllocateHeap(GetProcessHeap(), 0, (EnvCount + 1) * sizeof(char*)));
+
+  It = Env;
+  for (size_t i = 0; i < EnvCount; i++) {
+    EnvArray[i] = It;
+    It += strlen(It) + 1;
+  }
+  EnvArray[EnvCount] = nullptr;
+
   RtlReleasePebLock();
 }
 
 __attribute__((used, section(".CRT$FEXB"))) void (*_InitEnv)(void) = InitEnv;
 } // namespace
+
+char*** __p__environ() {
+  return &EnvArray;
+}
 
 char* getenv(const char* VarName) {
   size_t VarNameLen = strlen(VarName);
