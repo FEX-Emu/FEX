@@ -382,6 +382,15 @@ bool SignalDelegator::HandleDispatcherGuestSignal(FEXCore::Core::InternalThreadS
   Frame->State.flags[FEXCore::X86State::RFLAG_RF_LOC] = 0;
   Frame->State.flags[FEXCore::X86State::RFLAG_TF_RAW_LOC] = 0;
 
+  // Linux resets the CS and SS registers on signal handler.
+  // This way signal handlers always go back to their original operating mode.
+  // Doesn't matter for 32-bit processes as they can only be 32-bit, but does
+  // matter for 64-bit processes as they could have potentially installed a 32-bit code segment.
+  Frame->State.cs_idx = FEXCore::Core::CPUState::DEFAULT_USER_CS << 3;
+  Frame->State.ss_idx = 0;
+  Frame->State.cs_cached = Frame->State.CalculateGDTBase(*Frame->State.GetSegmentFromIndex(Frame->State, Frame->State.cs_idx));
+  Frame->State.ss_cached = Frame->State.CalculateGDTBase(*Frame->State.GetSegmentFromIndex(Frame->State, Frame->State.ss_idx));
+
   // The guest starts its signal frame with a zero initialized FPU
   // Set that up now. Little bit costly but it's a requirement
   // This state will be restored on rt_sigreturn
