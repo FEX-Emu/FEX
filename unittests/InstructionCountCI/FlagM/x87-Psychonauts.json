@@ -9486,7 +9486,7 @@
     },
     "Block3": {
       "x86InstructionCount": 702,
-      "ExpectedInstructionCount": 95,
+      "ExpectedInstructionCount": 92,
       "x86Insts": [
         "mov eax,dword [ebp + 0xffffff44]",
         "mov ecx,dword [eax + 0x4]",
@@ -10280,11 +10280,8 @@
         "stur w4, [x9, #-92]",
         "sub w4, w9, #0xfc (252)",
         "str w4, [x8]",
-        "mov w20, #0xba1a",
-        "movk w20, #0x81a, lsl #16",
-        "mov w21, #0xb8da",
-        "movk w21, #0x819, lsl #16",
-        "sub w20, w20, w21",
+        "mov w20, #0x140",
+        "movk w20, #0x1, lsl #16",
         "str w20, [x8, #-4]!",
         "cfinv"
       ]
@@ -21483,7 +21480,7 @@
     },
     "Block6": {
       "x86InstructionCount": 409,
-      "ExpectedInstructionCount": 2207,
+      "ExpectedInstructionCount": 2204,
       "x86Insts": [
         "mov eax,dword [ebp + 0x10]",
         "fld dword [eax + 0x30]",
@@ -24096,18 +24093,15 @@
         "fmov s2, s0",
         "str s2, [x8, #4]",
         "str w6, [x8]",
-        "mov w20, #0xd57a",
-        "movk w20, #0x819, lsl #16",
-        "mov w21, #0xd118",
-        "movk w21, #0x818, lsl #16",
-        "sub w20, w20, w21",
+        "mov w20, #0x462",
+        "movk w20, #0x1, lsl #16",
         "str w20, [x8, #-4]!",
         "strb wzr, [x28, #1186]"
       ]
     },
     "Block7": {
       "x86InstructionCount": 418,
-      "ExpectedInstructionCount": 2214,
+      "ExpectedInstructionCount": 2211,
       "x86Insts": [
         "push ebp",
         "mov ebp,esp",
@@ -26736,11 +26730,8 @@
         "fmov s2, s0",
         "str s2, [x8, #4]",
         "str w6, [x8]",
-        "mov w20, #0xd57a",
-        "movk w20, #0x819, lsl #16",
-        "mov w21, #0xd10b",
-        "movk w21, #0x818, lsl #16",
-        "sub w20, w20, w21",
+        "mov w20, #0x46f",
+        "movk w20, #0x1, lsl #16",
         "str w20, [x8, #-4]!",
         "strb wzr, [x28, #1186]"
       ]
@@ -34584,7 +34575,7 @@
     },
     "Block10": {
       "x86InstructionCount": 420,
-      "ExpectedInstructionCount": 1957,
+      "ExpectedInstructionCount": 1954,
       "x86Insts": [
         "push ebp",
         "mov ebp,esp",
@@ -36950,11 +36941,8 @@
         "str s2, [x4]",
         "ldr w4, [x9, #8]",
         "str w4, [x8]",
-        "mov w20, #0xde98",
-        "movk w20, #0x817, lsl #16",
-        "mov w21, #0xda1c",
-        "movk w21, #0x816, lsl #16",
-        "sub w20, w20, w21",
+        "mov w20, #0x47c",
+        "movk w20, #0x1, lsl #16",
         "str w20, [x8, #-4]!",
         "cfinv",
         "ldrb w21, [x28, #1019]",
