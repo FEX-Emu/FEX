@@ -526,8 +526,7 @@ void OpDispatchBuilder::CALLOp(OpcodeArgs) {
   // Call instruction only uses up to 32-bit signed displacement
   int64_t TargetOffset = Op->Src[0].Literal();
 
-  auto NewRIP = GetRelocatedPC(Op, TargetOffset);
-  auto ConstantPC = Sub(GPRSize, NewRIP, TargetOffset);
+  auto ConstantPC = GetRelocatedPC(Op);
 
   // Push the return address.
   Push(GPRSize, ConstantPC);
