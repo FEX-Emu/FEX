@@ -451,28 +451,6 @@ ContextImpl::CreateThread(uint64_t InitialRIP, uint64_t StackPointer, const FEXC
     memcpy(&Thread->CurrentFrame->State, NewThreadState, sizeof(FEXCore::Core::CPUState));
   }
 
-  Thread->CurrentFrame->State.segment_arrays[0] = &Thread->CurrentFrame->State.private_gdt[0];
-  // TODO: LDTs are currently unsupported, mirror them to GDT.
-  Thread->CurrentFrame->State.segment_arrays[1] = &Thread->CurrentFrame->State.private_gdt[0];
-
-  // Set up default code segment.
-  // Default code segment indexes match the numbers that the Linux kernel uses.
-  Thread->CurrentFrame->State.cs_idx = Core::CPUState::DEFAULT_USER_CS << 3;
-
-  // TODO: Segment management should be moved to the frontend.
-  auto GDT = Thread->CurrentFrame->State.GetSegmentFromIndex(Thread->CurrentFrame->State, Thread->CurrentFrame->State.cs_idx);
-  Core::CPUState::SetGDTBase(GDT, 0);
-  Core::CPUState::SetGDTLimit(GDT, 0xF'FFFFU);
-
-  if (Config.Is64BitMode) {
-    GDT->L = 1; // L = Long Mode = 64-bit
-    GDT->D = 0; // D = Default Operand SIze = Reserved
-  }
-  else {
-    GDT->L = 0; // L = Long Mode = 32-bit
-    GDT->D = 1; // D = Default Operand Size = 32-bit
-  }
-
   // Set up the thread manager state
   Thread->CurrentFrame->Thread = Thread;
 

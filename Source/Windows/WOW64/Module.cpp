@@ -126,6 +126,7 @@ std::optional<FEX::Windows::OvercommitTracker> OvercommitTracker;
 std::mutex ThreadCreationMutex;
 // Map of TIDs to their FEX thread state, `ThreadCreationMutex` must be locked when accessing
 std::unordered_map<DWORD, FEXCore::Core::InternalThreadState*> Threads;
+static FEXCore::Core::CPUState::gdt_segment gdt_segments [32] {};
 
 decltype(__wine_unix_call_dispatcher) WineUnixCall;
 
@@ -508,6 +509,14 @@ void BTCpuProcessInit() {
   CTX->SetSignalDelegator(SignalDelegator.get());
   CTX->SetSyscallHandler(SyscallHandler.get());
   CTX->InitCore();
+
+  // Setup initial code-segment GDT
+  auto &GDT = gdt_segments[FEXCore::Core::CPUState::DEFAULT_USER_CS];
+  FEXCore::Core::CPUState::SetGDTBase(&GDT, 0);
+  FEXCore::Core::CPUState::SetGDTLimit(&GDT, 0xF'FFFFU);
+  GDT.L = 0; // L = Long Mode = 32-bit
+  GDT.D = 1; // D = Default Operand Size = 32-bit
+
   InvalidationTracker.emplace(*CTX, Threads);
 
   auto NtDllX86 = reinterpret_cast<SYSTEM_DLL_INIT_BLOCK*>(GetProcAddress(NtDll, "LdrSystemDllInitBlock"))->ntdll_handle;
@@ -564,6 +573,17 @@ void BTCpuThreadInit() {
   std::scoped_lock Lock(ThreadCreationMutex);
   FEX::Windows::InitCRTThread();
   auto* Thread = CTX->CreateThread(0, 0);
+
+  // Default segment setup.
+  auto Frame = Thread->CurrentFrame;
+  // GDT and LDT should be tracked per thread, but Windows doesn't currently support modifying gdt/ldt per thread.
+  Frame->State.segment_arrays[FEXCore::Core::CPUState::SEGMENT_ARRAY_INDEX_GDT] = &gdt_segments[0];
+  // TODO: LDTs are currently unsupported, mirror them to GDT.
+  Frame->State.segment_arrays[FEXCore::Core::CPUState::SEGMENT_ARRAY_INDEX_LDT] = &gdt_segments[0];
+
+  Frame->State.cs_idx = FEXCore::Core::CPUState::DEFAULT_USER_CS << 3;
+  auto GDT = FEXCore::Core::CPUState::GetSegmentFromIndex(Frame->State, Frame->State.cs_idx);
+  Frame->State.cs_cached = FEXCore::Core::CPUState::CalculateGDTBase(*FEXCore::Core::CPUState::GetSegmentFromIndex(Frame->State, Frame->State.cs_idx));
 
   FEX::Windows::CallRetStack::InitializeThread(Thread);
 

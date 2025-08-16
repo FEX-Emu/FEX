@@ -136,6 +136,7 @@ std::optional<FEX::Windows::OvercommitTracker> OvercommitTracker;
 std::recursive_mutex ThreadCreationMutex;
 // Map of TIDs to their FEX thread state, `ThreadCreationMutex` must be locked when accessing
 std::unordered_map<DWORD, FEXCore::Core::InternalThreadState*> Threads;
+static FEXCore::Core::CPUState::gdt_segment gdt_segments [32] {};
 
 std::pair<NTSTATUS, ThreadCPUArea> GetThreadCPUArea(HANDLE Thread) {
   THREAD_BASIC_INFORMATION Info;
@@ -644,6 +645,14 @@ NTSTATUS ProcessInit() {
   CTX->SetSignalDelegator(SignalDelegator.get());
   CTX->SetSyscallHandler(SyscallHandler.get());
   CTX->InitCore();
+
+  // Setup initial code-segment GDT
+  auto &GDT = gdt_segments[FEXCore::Core::CPUState::DEFAULT_USER_CS];
+  FEXCore::Core::CPUState::SetGDTBase(&GDT, 0);
+  FEXCore::Core::CPUState::SetGDTLimit(&GDT, 0xF'FFFFU);
+  GDT.L = 1; // L = Long Mode = 64-bit
+  GDT.D = 0; // D = Default Operand SIze = Reserved
+
   InvalidationTracker.emplace(*CTX, Threads);
 
   HandleImageMap(NtDllBase);
@@ -924,6 +933,17 @@ NTSTATUS ThreadInit() {
 
   auto* Thread = CTX->CreateThread(0, 0);
 
+  // Default segment setup.
+  auto Frame = Thread->CurrentFrame;
+  // GDT and LDT should be tracked per thread, but Windows doesn't currently support modifying gdt/ldt per thread.
+  Frame->State.segment_arrays[FEXCore::Core::CPUState::SEGMENT_ARRAY_INDEX_GDT] = &gdt_segments[0];
+  // TODO: LDTs are currently unsupported, mirror them to GDT.
+  Frame->State.segment_arrays[FEXCore::Core::CPUState::SEGMENT_ARRAY_INDEX_LDT] = &gdt_segments[0];
+
+  Frame->State.cs_idx = FEXCore::Core::CPUState::DEFAULT_USER_CS << 3;
+  auto GDT = FEXCore::Core::CPUState::GetSegmentFromIndex(Frame->State, Frame->State.cs_idx);
+  Frame->State.cs_cached = FEXCore::Core::CPUState::CalculateGDTBase(*FEXCore::Core::CPUState::GetSegmentFromIndex(Frame->State, Frame->State.cs_idx));
+
   FEX::Windows::CallRetStack::InitializeThread(Thread);
   Thread->CurrentFrame->Pointers.Common.ExitFunctionEC = reinterpret_cast<uintptr_t>(&ExitFunctionEC);
   CPUArea.StateFrame() = Thread->CurrentFrame;
@@ -935,7 +955,7 @@ NTSTATUS ThreadInit() {
   CPUArea.DispatcherLoopTopEnterECFillSRA() = EnterECFillSRA;
 
   CPUArea.ContextAmd64() = {.ContextFlags = CONTEXT_CONTROL | CONTEXT_SEGMENTS | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT,
-                            .AMD64_SegCs = 0x33,
+                            .AMD64_SegCs = (FEXCore::Core::CPUState::DEFAULT_USER_CS << 3) | 3,
                             .AMD64_SegDs = 0x2b,
                             .AMD64_SegEs = 0x2b,
                             .AMD64_SegFs = 0x53,
