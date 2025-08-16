@@ -166,17 +166,49 @@ FEX::HLE::ThreadStateObject* ThreadManager::CreateThread(uint64_t InitialRIP, ui
   ThreadStateObject->ThreadInfo.TID = FHU::Syscalls::gettid();
 
   ThreadStateObject->Thread = CTX->CreateThread(InitialRIP, StackPointer, NewThreadState);
+  auto Frame = ThreadStateObject->Thread->CurrentFrame;
 
   // Allocate the call-ret stack with guard pages on both sides
   auto AllocBase = reinterpret_cast<uint64_t>(::mmap(nullptr, CALLRET_STACK_ALLOC_SIZE, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
   // Set the base used for invalidation to the start past the guard pages
   ThreadStateObject->Thread->CallRetStackBase = reinterpret_cast<void*>(AllocBase + FEXCore::Utils::FEX_PAGE_SIZE);
   ::mprotect(ThreadStateObject->Thread->CallRetStackBase, FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE, PROT_READ | PROT_WRITE);
-  ThreadStateObject->Thread->CurrentFrame->State.callret_sp = ThreadStateObject->GetCallRetStackInfo().DefaultLocation;
+  Frame->State.callret_sp = ThreadStateObject->GetCallRetStackInfo().DefaultLocation;
 
   ThreadStateObject->Thread->FrontendPtr = ThreadStateObject;
   if (ProfileStats()) {
     ThreadStateObject->Thread->ThreadStats = Stat.AllocateSlot(ThreadStateObject->ThreadInfo.TID);
+  }
+
+  // GDT and LDT are tracked per thread.
+  Frame->State.segment_arrays[FEXCore::Core::CPUState::SEGMENT_ARRAY_INDEX_GDT] = &ThreadStateObject->gdt[0];
+  // TODO: LDTs are currently unsupported, mirror them to GDT.
+  Frame->State.segment_arrays[FEXCore::Core::CPUState::SEGMENT_ARRAY_INDEX_LDT] = &ThreadStateObject->gdt[0];
+
+  if (InheritThread) {
+    // If we are inheriting thread data then we inherit both the gdt and ldt arrays.
+    // They are then forked from the parent thread.
+    static_assert(sizeof(ThreadStateObject->gdt) == (8 * 32));
+    memcpy(ThreadStateObject->gdt, InheritThread->gdt, sizeof(ThreadStateObject->gdt));
+    // TODO: Inherit LDT once supported.
+  }
+  else {
+    // Without any thread data to inherit, setup the default gdt.
+    // Default code segment indexes match the numbers that the Linux kernel uses.
+    Frame->State.cs_idx = FEXCore::Core::CPUState::DEFAULT_USER_CS << 3;
+    auto GDT = FEXCore::Core::CPUState::GetSegmentFromIndex(Frame->State, Frame->State.cs_idx);
+    FEXCore::Core::CPUState::SetGDTBase(GDT, 0);
+    FEXCore::Core::CPUState::SetGDTLimit(GDT, 0xF'FFFFU);
+    Frame->State.cs_cached = FEXCore::Core::CPUState::CalculateGDTBase(*FEXCore::Core::CPUState::GetSegmentFromIndex(Frame->State, Frame->State.cs_idx));
+
+    if (Is64BitMode()) {
+      GDT->L = 1; // L = Long Mode = 64-bit
+      GDT->D = 0; // D = Default Operand SIze = Reserved
+    }
+    else {
+      GDT->L = 0; // L = Long Mode = 32-bit
+      GDT->D = 1; // D = Default Operand Size = 32-bit
+    }
   }
 
   if (InheritThread) {
