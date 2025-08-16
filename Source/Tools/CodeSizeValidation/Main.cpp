@@ -668,6 +668,33 @@ int main(int argc, char** argv, char** const envp) {
   }
   auto ParentThread = CTX->CreateThread(0, 0);
 
+  // GDT data
+  FEXCore::Core::CPUState::gdt_segment gdt[32] {};
+
+  {
+    auto Frame = ParentThread->CurrentFrame;
+    // GDT and LDT are tracked per thread.
+    Frame->State.segment_arrays[FEXCore::Core::CPUState::SEGMENT_ARRAY_INDEX_GDT] = &gdt[0];
+    // TODO: LDTs are currently unsupported, mirror them to GDT.
+    Frame->State.segment_arrays[FEXCore::Core::CPUState::SEGMENT_ARRAY_INDEX_LDT] = &gdt[0];
+
+    // Default code segment indexes match the numbers that the Linux kernel uses.
+    Frame->State.cs_idx = FEXCore::Core::CPUState::DEFAULT_USER_CS << 3;
+    auto GDT = FEXCore::Core::CPUState::GetSegmentFromIndex(Frame->State, Frame->State.cs_idx);
+    FEXCore::Core::CPUState::SetGDTBase(GDT, 0);
+    FEXCore::Core::CPUState::SetGDTLimit(GDT, 0xF'FFFFU);
+    Frame->State.cs_cached = FEXCore::Core::CPUState::CalculateGDTBase(*FEXCore::Core::CPUState::GetSegmentFromIndex(Frame->State, Frame->State.cs_idx));
+
+    if (TestHeaderData->Bitness == 64) {
+      GDT->L = 1; // L = Long Mode = 64-bit
+      GDT->D = 0; // D = Default Operand SIze = Reserved
+    }
+    else {
+      GDT->L = 0; // L = Long Mode = 32-bit
+      GDT->D = 1; // D = Default Operand Size = 32-bit
+    }
+  }
+
   // Calculate the base stats for instruction testing.
   CodeSize::Validation->CalculateBaseStats(CTX.get(), ParentThread);
 
