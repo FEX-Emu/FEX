@@ -27,10 +27,6 @@ struct CpuStateFrame;
 
 namespace FEX::HLE {
 void RegisterStubs(FEX::HLE::SyscallHandler* Handler) {
-  REGISTER_SYSCALL_IMPL(modify_ldt, [](FEXCore::Core::CpuStateFrame* Frame, int func, void* ptr, unsigned long bytecount) -> uint64_t {
-    SYSCALL_STUB(modify_ldt);
-  });
-
   REGISTER_SYSCALL_IMPL(restart_syscall, [](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t { SYSCALL_STUB(restart_syscall); });
 
   REGISTER_SYSCALL_IMPL(rseq, [](FEXCore::Core::CpuStateFrame* Frame, struct rseq* rseq, uint32_t rseq_len, int flags, uint32_t sig) -> uint64_t {

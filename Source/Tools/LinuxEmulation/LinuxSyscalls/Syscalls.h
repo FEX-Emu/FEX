@@ -318,8 +318,13 @@ public:
   }
 
   constexpr static uint64_t TASK_MAX_64BIT = (1ULL << 48);
+  constexpr static size_t MAX_LDT_ENTRIES = 8192;
+  constexpr static size_t LDT_ENTRY_SIZE = sizeof(FEXCore::Core::CPUState::gdt_segment);
 
   VMATracking::VMATracking VMATracking;
+
+  uint64_t read_ldt(FEXCore::Core::CpuStateFrame* Frame, void* ptr, unsigned long bytecount);
+  uint64_t write_ldt(FEXCore::Core::CpuStateFrame* Frame, void* ptr, unsigned long bytecount, bool legacy);
 
 protected:
   SyscallHandler(FEXCore::Context::Context* _CTX, FEX::HLE::SignalDelegator* _SignalDelegation, FEX::HLE::ThunkHandler* ThunkHandler);
