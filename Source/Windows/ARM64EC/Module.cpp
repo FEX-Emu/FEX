@@ -406,6 +406,7 @@ static void LoadStateFromECContext(FEXCore::Core::InternalThreadState* Thread, C
     memcpy(State.mm, Context.FltSave.FloatRegisters, sizeof(State.mm));
 
     State.FCW = Context.FltSave.ControlWord;
+    State.flags[FEXCore::X86State::X87FLAG_IE_LOC] = Context.FltSave.StatusWord & 1;
     State.flags[FEXCore::X86State::X87FLAG_C0_LOC] = (Context.FltSave.StatusWord >> 8) & 1;
     State.flags[FEXCore::X86State::X87FLAG_C1_LOC] = (Context.FltSave.StatusWord >> 9) & 1;
     State.flags[FEXCore::X86State::X87FLAG_C2_LOC] = (Context.FltSave.StatusWord >> 10) & 1;

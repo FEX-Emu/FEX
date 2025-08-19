@@ -1568,7 +1568,7 @@
       ]
     },
     "fldenv [rax]": {
-      "ExpectedInstructionCount": 31,
+      "ExpectedInstructionCount": 33,
       "Comment": [
         "0xd9 !11b /4"
       ],
@@ -1589,11 +1589,13 @@
         "ubfx w21, w20, #8, #1",
         "ubfx w22, w20, #9, #1",
         "ubfx w23, w20, #10, #1",
-        "ubfx w20, w20, #14, #1",
+        "ubfx w24, w20, #14, #1",
+        "ubfx w20, w20, #0, #1",
         "strb w21, [x28, #1016]",
         "strb w22, [x28, #1017]",
         "strb w23, [x28, #1018]",
-        "strb w20, [x28, #1022]",
+        "strb w24, [x28, #1022]",
+        "strb w20, [x28, #1008]",
         "ldr w20, [x4, #8]",
         "and w20, w20, w20, lsr #1",
         "mov w21, #0x55555555",
@@ -4298,7 +4300,7 @@
       ]
     },
     "fninit": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 17,
       "Comment": [
         "0xdb 11b 0xe3 /4"
       ],
@@ -4318,6 +4320,7 @@
         "strb wzr, [x28, #1017]",
         "strb wzr, [x28, #1018]",
         "strb wzr, [x28, #1022]",
+        "strb wzr, [x28, #1008]",
         "strb wzr, [x28, #1186]"
       ]
     },
@@ -5705,7 +5708,7 @@
       ]
     },
     "frstor [rax]": {
-      "ExpectedInstructionCount": 139,
+      "ExpectedInstructionCount": 141,
       "Comment": [
         "0xdd !11b /4"
       ],
@@ -5727,11 +5730,13 @@
         "ubfx w22, w20, #8, #1",
         "ubfx w23, w20, #9, #1",
         "ubfx w24, w20, #10, #1",
-        "ubfx w20, w20, #14, #1",
+        "ubfx w30, w20, #14, #1",
+        "ubfx w20, w20, #0, #1",
         "strb w22, [x28, #1016]",
         "strb w23, [x28, #1017]",
         "strb w24, [x28, #1018]",
-        "strb w20, [x28, #1022]",
+        "strb w30, [x28, #1022]",
+        "strb w20, [x28, #1008]",
         "ldr w20, [x4, #8]",
         "and w20, w20, w20, lsr #1",
         "mov w22, #0x55555555",
@@ -5852,7 +5857,7 @@
       ]
     },
     "fnsave [rax]": {
-      "ExpectedInstructionCount": 142,
+      "ExpectedInstructionCount": 143,
       "Comment": [
         "0xdd !11b /6"
       ],
@@ -5998,6 +6003,7 @@
         "strb wzr, [x28, #1017]",
         "strb wzr, [x28, #1018]",
         "strb wzr, [x28, #1022]",
+        "strb wzr, [x28, #1008]",
         "strb wzr, [x28, #1186]"
       ]
     },

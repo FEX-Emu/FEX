@@ -174,6 +174,7 @@ void SignalDelegator::RestoreFrame_x64(FEXCore::Core::InternalThreadState* Threa
     Frame->State.AbridgedFTW = fpstate->ftw;
 
     // Deconstruct FSW
+    Frame->State.flags[FEXCore::X86State::X87FLAG_IE_LOC] = fpstate->fsw & 1;
     Frame->State.flags[FEXCore::X86State::X87FLAG_C0_LOC] = (fpstate->fsw >> 8) & 1;
     Frame->State.flags[FEXCore::X86State::X87FLAG_C1_LOC] = (fpstate->fsw >> 9) & 1;
     Frame->State.flags[FEXCore::X86State::X87FLAG_C2_LOC] = (fpstate->fsw >> 10) & 1;
@@ -246,6 +247,7 @@ void SignalDelegator::RestoreFrame_ia32(FEXCore::Core::InternalThreadState* Thre
     Frame->State.AbridgedFTW = FEXCore::FPState::ConvertToAbridgedFTW(fpstate->ftw);
 
     // Deconstruct FSW
+    Frame->State.flags[FEXCore::X86State::X87FLAG_IE_LOC] = fpstate->fsw & 1;
     Frame->State.flags[FEXCore::X86State::X87FLAG_C0_LOC] = (fpstate->fsw >> 8) & 1;
     Frame->State.flags[FEXCore::X86State::X87FLAG_C1_LOC] = (fpstate->fsw >> 9) & 1;
     Frame->State.flags[FEXCore::X86State::X87FLAG_C2_LOC] = (fpstate->fsw >> 10) & 1;
@@ -319,6 +321,7 @@ void SignalDelegator::RestoreRTFrame_ia32(FEXCore::Core::InternalThreadState* Th
     Frame->State.AbridgedFTW = FEXCore::FPState::ConvertToAbridgedFTW(fpstate->ftw);
 
     // Deconstruct FSW
+    Frame->State.flags[FEXCore::X86State::X87FLAG_IE_LOC] = fpstate->fsw & 1;
     Frame->State.flags[FEXCore::X86State::X87FLAG_C0_LOC] = (fpstate->fsw >> 8) & 1;
     Frame->State.flags[FEXCore::X86State::X87FLAG_C1_LOC] = (fpstate->fsw >> 9) & 1;
     Frame->State.flags[FEXCore::X86State::X87FLAG_C2_LOC] = (fpstate->fsw >> 10) & 1;
@@ -448,9 +451,9 @@ uint64_t SignalDelegator::SetupFrame_x64(FEXCore::Core::InternalThreadState* Thr
   fpstate->ftw = Frame->State.AbridgedFTW;
 
   // Reconstruct FSW
-  fpstate->fsw = (Frame->State.flags[FEXCore::X86State::X87FLAG_TOP_LOC] << 11) |
-                 (Frame->State.flags[FEXCore::X86State::X87FLAG_C0_LOC] << 8) | (Frame->State.flags[FEXCore::X86State::X87FLAG_C1_LOC] << 9) |
-                 (Frame->State.flags[FEXCore::X86State::X87FLAG_C2_LOC] << 10) | (Frame->State.flags[FEXCore::X86State::X87FLAG_C3_LOC] << 14);
+  fpstate->fsw = (Frame->State.flags[FEXCore::X86State::X87FLAG_TOP_LOC] << 11) | (Frame->State.flags[FEXCore::X86State::X87FLAG_C0_LOC] << 8) |
+                 (Frame->State.flags[FEXCore::X86State::X87FLAG_C1_LOC] << 9) | (Frame->State.flags[FEXCore::X86State::X87FLAG_C2_LOC] << 10) |
+                 (Frame->State.flags[FEXCore::X86State::X87FLAG_C3_LOC] << 14) | Frame->State.flags[FEXCore::X86State::X87FLAG_IE_LOC];
 
   // Copy over signal stack information
   guest_uctx->uc_stack.ss_flags = GuestStack->ss_flags;
@@ -567,9 +570,9 @@ uint64_t SignalDelegator::SetupFrame_ia32(FEXCore::Core::InternalThreadState* Th
   // FCW store default
   fpstate->fcw = Frame->State.FCW;
   // Reconstruct FSW
-  fpstate->fsw = (Frame->State.flags[FEXCore::X86State::X87FLAG_TOP_LOC] << 11) |
-                 (Frame->State.flags[FEXCore::X86State::X87FLAG_C0_LOC] << 8) | (Frame->State.flags[FEXCore::X86State::X87FLAG_C1_LOC] << 9) |
-                 (Frame->State.flags[FEXCore::X86State::X87FLAG_C2_LOC] << 10) | (Frame->State.flags[FEXCore::X86State::X87FLAG_C3_LOC] << 14);
+  fpstate->fsw = (Frame->State.flags[FEXCore::X86State::X87FLAG_TOP_LOC] << 11) | (Frame->State.flags[FEXCore::X86State::X87FLAG_C0_LOC] << 8) |
+                 (Frame->State.flags[FEXCore::X86State::X87FLAG_C1_LOC] << 9) | (Frame->State.flags[FEXCore::X86State::X87FLAG_C2_LOC] << 10) |
+                 (Frame->State.flags[FEXCore::X86State::X87FLAG_C3_LOC] << 14) | Frame->State.flags[FEXCore::X86State::X87FLAG_IE_LOC];
   fpstate->ftw = FEXCore::FPState::ConvertFromAbridgedFTW(fpstate->fsw, Frame->State.mm, Frame->State.AbridgedFTW);
 
   // Curiously non-rt signals don't support altstack. So that state doesn't exist here.
@@ -701,9 +704,9 @@ uint64_t SignalDelegator::SetupRTFrame_ia32(FEXCore::Core::InternalThreadState* 
   // FCW store default
   fpstate->fcw = Frame->State.FCW;
   // Reconstruct FSW
-  fpstate->fsw = (Frame->State.flags[FEXCore::X86State::X87FLAG_TOP_LOC] << 11) |
-                 (Frame->State.flags[FEXCore::X86State::X87FLAG_C0_LOC] << 8) | (Frame->State.flags[FEXCore::X86State::X87FLAG_C1_LOC] << 9) |
-                 (Frame->State.flags[FEXCore::X86State::X87FLAG_C2_LOC] << 10) | (Frame->State.flags[FEXCore::X86State::X87FLAG_C3_LOC] << 14);
+  fpstate->fsw = (Frame->State.flags[FEXCore::X86State::X87FLAG_TOP_LOC] << 11) | (Frame->State.flags[FEXCore::X86State::X87FLAG_C0_LOC] << 8) |
+                 (Frame->State.flags[FEXCore::X86State::X87FLAG_C1_LOC] << 9) | (Frame->State.flags[FEXCore::X86State::X87FLAG_C2_LOC] << 10) |
+                 (Frame->State.flags[FEXCore::X86State::X87FLAG_C3_LOC] << 14) | Frame->State.flags[FEXCore::X86State::X87FLAG_IE_LOC];
   fpstate->ftw = FEXCore::FPState::ConvertFromAbridgedFTW(fpstate->fsw, Frame->State.mm, Frame->State.AbridgedFTW);
 
   // Copy over signal stack information

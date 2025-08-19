@@ -425,11 +425,13 @@ Ref OpDispatchBuilder::ReconstructX87StateFromFSW_Helper(Ref FSW) {
   auto C1 = _Bfe(OpSize::i32Bit, 1, 9, FSW);
   auto C2 = _Bfe(OpSize::i32Bit, 1, 10, FSW);
   auto C3 = _Bfe(OpSize::i32Bit, 1, 14, FSW);
+  auto IE = _Bfe(OpSize::i32Bit, 1, 0, FSW);
 
   SetRFLAG<FEXCore::X86State::X87FLAG_C0_LOC>(C0);
   SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(C1);
   SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(C2);
   SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(C3);
+  SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(IE);
   return Top;
 }
 
@@ -788,6 +790,7 @@ void OpDispatchBuilder::FNINIT(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(Zero);
   SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(Zero);
   SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(Zero);
+  SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(Zero);
 }
 
 void OpDispatchBuilder::X87FFREE(OpcodeArgs) {
