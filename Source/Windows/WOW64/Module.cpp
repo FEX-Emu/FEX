@@ -509,6 +509,7 @@ void BTCpuProcessInit() {
   CTX->SetSignalDelegator(SignalDelegator.get());
   CTX->SetSyscallHandler(SyscallHandler.get());
   CTX->InitCore();
+
   InvalidationTracker.emplace(*CTX, Threads);
 
   auto NtDllX86 = reinterpret_cast<SYSTEM_DLL_INIT_BLOCK*>(GetProcAddress(NtDll, "LdrSystemDllInitBlock"))->ntdll_handle;
@@ -566,10 +567,29 @@ void BTCpuThreadInit() {
   FEX::Windows::InitCRTThread();
   auto* Thread = CTX->CreateThread(0, 0);
 
+  // Default segment setup.
+  auto Frame = Thread->CurrentFrame;
+  auto NewSegments = new FEXCore::Core::CPUState::gdt_segment[32];
+
+  // Setup initial code-segment GDT
+  auto &GDT = NewSegments[FEXCore::Core::CPUState::DEFAULT_USER_CS];
+  FEXCore::Core::CPUState::SetGDTBase(&GDT, 0);
+  FEXCore::Core::CPUState::SetGDTLimit(&GDT, 0xF'FFFFU);
+  GDT.L = 0; // L = Long Mode = 32-bit
+  GDT.D = 1; // D = Default Operand Size = 32-bit
+
+  Frame->State.segment_arrays[FEXCore::Core::CPUState::SEGMENT_ARRAY_INDEX_GDT] = &NewSegments[0];
+  // TODO: LDTs are currently unsupported, mirror them to GDT.
+  Frame->State.segment_arrays[FEXCore::Core::CPUState::SEGMENT_ARRAY_INDEX_LDT] = &NewSegments[0];
+
+  Frame->State.cs_idx = FEXCore::Core::CPUState::DEFAULT_USER_CS << 3;
+  Frame->State.cs_cached = FEXCore::Core::CPUState::CalculateGDTBase(GDT);
+
   FEX::Windows::CallRetStack::InitializeThread(Thread);
 
-  GetTLS().ThreadState() = Thread;
-  GetTLS().ControlWord().fetch_or(ControlBits::WOW_CPU_AREA_DIRTY, std::memory_order::relaxed);
+  auto TLS = GetTLS();
+  TLS.ThreadState() = Thread;
+  TLS.ControlWord().fetch_or(ControlBits::WOW_CPU_AREA_DIRTY, std::memory_order::relaxed);
 
   auto ThreadTID = GetCurrentThreadId();
   Threads.emplace(ThreadTID, Thread);
@@ -615,9 +635,13 @@ void BTCpuThreadTerm(HANDLE Thread, LONG ExitCode) {
       StatAllocHandler->DeallocateSlot(TLS.ThreadState()->ThreadStats);
     }
   }
+  auto ThreadState = TLS.ThreadState();
 
-  FEX::Windows::CallRetStack::DestroyThread(TLS.ThreadState());
-  CTX->DestroyThread(TLS.ThreadState());
+  // GDT and LDT are mirrored, only free one.
+  delete [] ThreadState->CurrentFrame->State.segment_arrays[FEXCore::Core::CPUState::SEGMENT_ARRAY_INDEX_GDT];
+
+  FEX::Windows::CallRetStack::DestroyThread(ThreadState);
+  CTX->DestroyThread(ThreadState);
   if (Self) {
     FEX::Windows::DeinitCRTThread();
   }

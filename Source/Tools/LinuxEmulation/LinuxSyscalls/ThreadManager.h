@@ -109,6 +109,9 @@ struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
     return {Base - FEXCore::Utils::FEX_PAGE_SIZE, Base + FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE + FEXCore::Utils::FEX_PAGE_SIZE,
             Base + FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE / 4};
   }
+
+  // GDT and LDT tracking
+  FEXCore::Core::CPUState::gdt_segment gdt[32] {};
 };
 
 class ThreadManager final {
@@ -239,6 +242,7 @@ private:
   void HandleThreadDeletion(FEX::HLE::ThreadStateObject* Thread, bool NeedsTLSUninstall = false);
   void NotifyPause();
   FEX_CONFIG_OPT(ProfileStats, PROFILESTATS);
+  FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
 };
 
 } // namespace FEX::HLE
