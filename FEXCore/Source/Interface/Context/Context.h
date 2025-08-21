@@ -4,9 +4,9 @@
 #include "Common/JitSymbols.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/X86HelperGen.h"
-#include "Interface/Core/ObjectCache/ObjectCacheService.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/IR/AOTIR.h"
+#include <Interface/IR/IntrusiveIRList.h>
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
@@ -33,10 +33,6 @@ namespace FEXCore {
 class CodeLoader;
 class ThunkHandler;
 
-namespace CodeSerialize {
-  class CodeObjectSerializeService;
-}
-
 namespace CPU {
   class Arm64JITCore;
   class Dispatcher;
@@ -50,8 +46,6 @@ namespace HLE {
 } // namespace FEXCore
 
 namespace FEXCore::IR {
-struct IRListCopy;
-class IRListView;
 namespace Validation {
   class IRValidation;
 }
@@ -149,22 +143,7 @@ public:
   FEXCore::IR::AOTIRCacheEntry* LoadAOTIRCacheEntry(const fextl::string& Name) override;
   void UnloadAOTIRCacheEntry(FEXCore::IR::AOTIRCacheEntry* Entry) override;
 
-  void SetAOTIRLoader(AOTIRLoaderCBFn CacheReader) override {
-    IRCaptureCache.SetAOTIRLoader(std::move(CacheReader));
-  }
-  void SetAOTIRWriter(AOTIRWriterCBFn CacheWriter) override {
-    IRCaptureCache.SetAOTIRWriter(std::move(CacheWriter));
-  }
-  void SetAOTIRRenamer(AOTIRRenamerCBFn CacheRenamer) override {
-    IRCaptureCache.SetAOTIRRenamer(std::move(CacheRenamer));
-  }
-
-  void FinalizeAOTIRCache() override {
-    IRCaptureCache.FinalizeAOTIRCache();
-  }
-  void WriteFilesWithCode(AOTIRCodeFileWriterFn Writer) override {
-    IRCaptureCache.WriteFilesWithCode(Writer);
-  }
+  void FinalizeAOTIRCache() override {}
 
   void OnCodeBufferAllocated(CPU::CodeBuffer&) override;
   void ClearCodeCache(FEXCore::Core::InternalThreadState* Thread, bool NewCodeBuffer = true) override;
@@ -256,7 +235,6 @@ public:
   X86GeneratedCode X86CodeGen;
 
   ContextImpl(const FEXCore::HostFeatures& Features);
-  ~ContextImpl();
 
   static bool ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP);
 
@@ -362,7 +340,6 @@ private:
   void InitializeCompiler(FEXCore::Core::InternalThreadState* Thread);
 
   IR::AOTIRCaptureCache IRCaptureCache;
-  fextl::unique_ptr<FEXCore::CodeSerialize::CodeObjectSerializeService> CodeObjectCacheService;
 
   bool IsMemoryShared = false;
   bool SupportsHardwareTSO = false;
