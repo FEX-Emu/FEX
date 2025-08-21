@@ -33,7 +33,7 @@ void Arm64JITCore::InsertNamedThunkRelocation(ARMEmitter::Register Reg, const IR
 
   uint64_t Pointer = reinterpret_cast<uint64_t>(EmitterCTX->ThunkHandler->LookupThunk(Sum));
 
-  LoadConstant(ARMEmitter::Size::i64Bit, Reg, Pointer, EmitterCTX->Config.CacheObjectCodeCompilation());
+  LoadConstant(ARMEmitter::Size::i64Bit, Reg, Pointer, false);
   Relocations.emplace_back(MoveABI);
 }
 
@@ -77,7 +77,7 @@ void Arm64JITCore::InsertGuestRIPMove(ARMEmitter::Register Reg, uint64_t Constan
   MoveABI.GuestRIPMove.GuestRIP = Constant;
   MoveABI.GuestRIPMove.RegisterIndex = Reg.Idx();
 
-  LoadConstant(ARMEmitter::Size::i64Bit, Reg, Constant, EmitterCTX->Config.CacheObjectCodeCompilation());
+  LoadConstant(ARMEmitter::Size::i64Bit, Reg, Constant, false);
   Relocations.emplace_back(MoveABI);
 }
 

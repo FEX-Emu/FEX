@@ -6,7 +6,6 @@ desc: Glues the ELF loader, FEXCore and LinuxSyscalls to launch an elf under fex
 $end_info$
 */
 
-#include "AOT/AOTGenerator.h"
 #include "Common/ArgumentLoader.h"
 #include "Common/FEXServerClient.h"
 #include "Common/Config.h"
@@ -338,9 +337,6 @@ int main(int argc, char** argv, char** const envp) {
   }
 
   FEX_CONFIG_OPT(SilentLog, SILENTLOG);
-  FEX_CONFIG_OPT(AOTIRCapture, AOTIRCAPTURE);
-  FEX_CONFIG_OPT(AOTIRGenerate, AOTIRGENERATE);
-  FEX_CONFIG_OPT(AOTIRLoad, AOTIRLOAD);
   FEX_CONFIG_OPT(OutputLog, OUTPUTLOG);
   FEX_CONFIG_OPT(LDPath, ROOTFS);
   FEX_CONFIG_OPT(Environment, ENV);

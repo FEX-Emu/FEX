@@ -720,64 +720,6 @@ ApplicationWindow {
                 }
             }
 
-            GroupBox {
-                title: qsTr("JIT caches:")
-                width: parent.width - parent.padding * 2
-
-                ColumnLayout {
-                    anchors.left: parent ? parent.left : undefined
-                    anchors.right: parent ? parent.right : undefined
-
-                    ConfigCheckBox {
-                        text: qsTr("Generate AOT")
-                        config: "AOTIRGenerate"
-                    }
-                    ConfigCheckBox {
-                        text: qsTr("Capture AOT")
-                        config: "AOTIRCapture"
-                    }
-                    ConfigCheckBox {
-                        text: qsTr("Load AOT")
-                        config: "AOTIRLoad"
-                    }
-
-                    RowLayout {
-                        Label { text: qsTr("Cache object code:") }
-
-                        ButtonGroup {
-                            buttons: cacheObjCodeRadios.children
-
-                            checkedButton: ConfigModel.has("CacheObjectCodeCompilation", refreshCache)
-                                            ? cacheObjCodeRadios.children[ConfigModel.getInt("CacheObjectCodeCompilation", refreshCache)]
-                                            : null
-
-                            onClicked: (button) => {
-                                configDirty = true
-                                for (var idx in buttons) {
-                                    if (button === buttons[idx]) {
-                                        ConfigModel.setInt("CacheObjectCodeCompilation", idx)
-                                        return
-                                    }
-                                }
-                            }
-                        }
-
-                        RowLayout {
-                            id: cacheObjCodeRadios
-                            RadioButton {
-                                text: qsTr("Off")
-                            }
-                            RadioButton {
-                                text: qsTr("Read-only")
-                            }
-                            RadioButton {
-                                text: qsTr("Read & write")
-                            }
-                        }
-                    }
-                }
-            }
-
             ConfigCheckBox {
                 text: qsTr("Reduced x87 precision")
                 config: "X87ReducedPrecision"

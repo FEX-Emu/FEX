@@ -18,17 +18,6 @@
           "Maximum number of instruction to store in a block"
         ]
       },
-      "CacheObjectCodeCompilation": {
-        "Type": "uint32",
-        "Default": "FEXCore::Config::ConfigObjectCodeHandler::CONFIG_NONE",
-        "TextDefault": "none",
-        "Choices": [ "none", "read", "readwrite" ],
-        "ArgumentHandler": "CacheObjectCodeHandler",
-        "Desc": [
-          "Cache JIT object code to drive.",
-          "Allows JIT code to be shared between applications"
-        ]
-      },
       "HostFeatures": {
         "Type": "strenum",
         "Default": "FEXCore::Config::HostFeatures::OFF",
@@ -486,29 +475,6 @@
       }
     },
     "Misc": {
-      "AOTIRCapture": {
-        "Type": "bool",
-        "Default": "false",
-        "Desc": [
-          "Captures IR and generates an AOT IR cache.",
-          "Captures both the loaded executable and libraries it loads."
-        ]
-      },
-      "AOTIRGenerate": {
-        "Type": "bool",
-        "Default": "false",
-        "Desc": [
-          "Scans file for executable code and generates an AOT IR cache.",
-          "Does not run the executable."
-        ]
-      },
-      "AOTIRLoad": {
-        "Type": "bool",
-        "Default": "false",
-        "Desc": [
-          "Loads an AOT IR cache for the loaded executable."
-        ]
-      },
       "ServerSocketPath": {
         "Type": "str",
         "Default": "",
