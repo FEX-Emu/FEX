@@ -5,6 +5,7 @@ set (TESTS
   Filesystem
   StringUtils
   fextl_function
+  ExtendedVolatileMetadata
   )
 
 list(APPEND LIBS Common FEXCore JemallocLibs)

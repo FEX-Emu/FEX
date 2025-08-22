@@ -34,8 +34,21 @@ public:
     Interval Interval;   ///< The interval that the query offset is enclosed by, or the next interval if `Enclosed` is false
   };
 
+  using const_iterator = typename fextl::vector<Interval>::const_iterator;
+
+  const_iterator begin() const {
+    return Intervals.begin();
+  }
+  const_iterator end() const {
+    return Intervals.end();
+  }
+
   void Clear() {
     Intervals.clear();
+  }
+
+  bool Empty() const {
+    return Intervals.empty();
   }
 
   void Insert(Interval Entry) {

@@ -26,6 +26,7 @@ $end_info$
 #include <FEXCore/Utils/FPState.h>
 #include <FEXCore/Utils/ArchHelpers/Arm64.h>
 #include <FEXCore/Utils/TypeDefines.h>
+#include <FEXCore/Utils/SignalScopeGuards.h>
 
 #include "Common/ArgumentLoader.h"
 #include "Common/CallRetStack.h"
@@ -43,6 +44,7 @@ $end_info$
 #include "DummyHandlers.h"
 #include "BTInterface.h"
 #include "Windows/Common/SHMStats.h"
+#include "Windows/Common/VolatileMetadata.h"
 
 #include <cstdint>
 #include <type_traits>
@@ -127,6 +129,8 @@ std::mutex ThreadCreationMutex;
 // Map of TIDs to their FEX thread state, `ThreadCreationMutex` must be locked when accessing
 std::unordered_map<DWORD, FEXCore::Core::InternalThreadState*> Threads;
 
+static fextl::unordered_map<fextl::string, FEX::VolatileMetadata::ExtendedVolatileMetadata> ExtendedMetaData {};
+
 decltype(__wine_unix_call_dispatcher) WineUnixCall;
 
 std::pair<NTSTATUS, TLS> GetThreadTLS(HANDLE Thread) {
@@ -159,9 +163,36 @@ bool IsAddressInJit(uint64_t Address) {
   return Thread->CTX->IsAddressInCodeBuffer(Thread, Address);
 }
 
+void LoadImageVolatileMetadata(const fextl::string& ModuleName, uint64_t Address) {
+  const auto Module = reinterpret_cast<HMODULE>(Address);
+  IMAGE_NT_HEADERS* Nt = RtlImageNtHeader(Module);
+  uint64_t EndAddress = Address + Nt->OptionalHeader.SizeOfImage;
+
+  fextl::set<uint64_t> VolatileInstructions;
+  FEXCore::IntervalList<uint64_t> VolatileValidRanges;
+
+  // Load FEX extended volatile metadata.
+  auto it = ExtendedMetaData.find(ModuleName);
+  if (it != ExtendedMetaData.end()) {
+    FEX::Windows::ApplyFEXExtendedVolatileMetadata(it->second, VolatileInstructions, VolatileValidRanges, Address, EndAddress);
+  }
+
+  if (VolatileInstructions.empty() && VolatileValidRanges.Empty()) {
+    return;
+  }
+
+  LogMan::Msg::DFmt("Loaded volatile metadata for {:X}: {} entries", Address, VolatileInstructions.size());
+  std::scoped_lock Lock(CTX->GetCodeInvalidationMutex());
+  CTX->AddForceTSOInformation(VolatileValidRanges, std::move(VolatileInstructions));
+}
+
 void HandleImageMap(uint64_t Address) {
   fextl::string ModuleName = FEX::Windows::GetSectionFilePath(Address);
   LogMan::Msg::DFmt("Load module {}: {:X}", ModuleName, Address);
+  FEX_CONFIG_OPT(VolatileMetadata, VOLATILEMETADATA);
+  if (VolatileMetadata) {
+    LoadImageVolatileMetadata(ModuleName, Address);
+  }
   InvalidationTracker->HandleImageMap(ModuleName, Address);
 }
 } // namespace
@@ -494,6 +525,9 @@ void BTCpuProcessInit() {
 
   FEXCore::Context::InitializeStaticTables(FEXCore::Context::MODE_32BIT);
 
+  FEX_CONFIG_OPT(ExtendedVolatileMetadataConfig, EXTENDEDVOLATILEMETADATA);
+  ExtendedMetaData = FEX::VolatileMetadata::ParseExtendedVolatileMetadata(ExtendedVolatileMetadataConfig());
+
   SignalDelegator = fextl::make_unique<FEX::DummyHandlers::DummySignalDelegator>();
   SyscallHandler = fextl::make_unique<WowSyscallHandler>();
   Context::HandlerConfig.emplace();
@@ -572,7 +606,7 @@ void BTCpuThreadInit() {
   auto NewSegments = new FEXCore::Core::CPUState::gdt_segment[32];
 
   // Setup initial code-segment GDT
-  auto &GDT = NewSegments[FEXCore::Core::CPUState::DEFAULT_USER_CS];
+  auto& GDT = NewSegments[FEXCore::Core::CPUState::DEFAULT_USER_CS];
   FEXCore::Core::CPUState::SetGDTBase(&GDT, 0);
   FEXCore::Core::CPUState::SetGDTLimit(&GDT, 0xF'FFFFU);
   GDT.L = 0; // L = Long Mode = 32-bit
@@ -638,7 +672,7 @@ void BTCpuThreadTerm(HANDLE Thread, LONG ExitCode) {
   auto ThreadState = TLS.ThreadState();
 
   // GDT and LDT are mirrored, only free one.
-  delete [] ThreadState->CurrentFrame->State.segment_arrays[FEXCore::Core::CPUState::SEGMENT_ARRAY_INDEX_GDT];
+  delete[] ThreadState->CurrentFrame->State.segment_arrays[FEXCore::Core::CPUState::SEGMENT_ARRAY_INDEX_GDT];
 
   FEX::Windows::CallRetStack::DestroyThread(ThreadState);
   CTX->DestroyThread(ThreadState);
@@ -734,7 +768,7 @@ __attribute__((naked)) void BTCpuSimulate() {
       ".seh_endproc;");
 }
 
-extern "C" void BTCpuSimulateImpl(CONTEXT *entry_context) {
+extern "C" void BTCpuSimulateImpl(CONTEXT* entry_context) {
   auto TLS = GetTLS();
   TLS.EntryContext() = entry_context;
   TLS.CachedCallRetSp() = TLS.ThreadState()->CurrentFrame->State.callret_sp;
