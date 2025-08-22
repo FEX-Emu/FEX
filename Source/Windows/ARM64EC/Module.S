@@ -62,7 +62,14 @@ ExitFunctionEC:
   msr fpcr, x17
   ldr x17, [x18, #0x1788] // TEB->ChpeV2CpuAreaInfo
   strb wzr, [x17, #0x0] // ChpeV2CpuAreaInfo->InSimulation
-
+  ldr x17, [x17, #0x20] // ChpeV2CpuAreaInfo->SuspendDoorbell
+  ldr w17, [x17]
+  cbz w17, no_suspend
+.global ExitFunctionSuspendPoint
+ExitFunctionSuspendPoint:
+  brk #0xCAFE
+  // Will resume here
+no_suspend:
   // Either return to an exit thunk (return to ARM64EC function) or call an entry thunk (call to ARM64EC function).
   // It is assumed that a 'blr x16' instruction is only ever used to call into x86 code from an exit thunk, and that all
   // exported ARM64EC functions have a 4-byte offset to their entry thunk immediately before their first instruction.

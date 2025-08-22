@@ -66,6 +66,7 @@ extern IMAGE_DOS_HEADER __ImageBase; // Provided by the linker
 
 extern void* ExitFunctionEC;
 extern void* CheckCall;
+extern void* ExitFunctionSuspendPoint;
 
 void* X64ReturnInstr; // See Module.S
 uintptr_t NtDllBase;
@@ -711,6 +712,15 @@ bool ResetToConsistentStateImpl(EXCEPTION_RECORD* Exception, CONTEXT* GuestConte
   auto Thread = CPUArea.ThreadState();
   FEXCORE_PROFILE_ACCUMULATION(Thread, AccumulatedSignalTime);
   LogMan::Msg::DFmt("Exception: Code: {:X} Address: {:X}", Exception->ExceptionCode, reinterpret_cast<uintptr_t>(Exception->ExceptionAddress));
+
+  if (NativeContext->Pc == reinterpret_cast<uint64_t>(&ExitFunctionSuspendPoint)) {
+    // A suspend interrupt can occur in ExitFunctionEC before InSimulation is unset and set SuspendDoorbell. If this
+    // occurs then it is still our duty to cooperatively suspend with an appropriate context. To support this, after
+    // unsetting InSimulation a brk #0xCAFE instruction will be raised that we can handle here.
+    NativeContext->Pc += 4; // Skip over the brk instruction when we resume
+    *CPUArea.Area->SuspendDoorbell = 0;
+    return true;
+  }
 
   if (Exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
     const auto FaultAddress = static_cast<uint64_t>(Exception->ExceptionInformation[1]);
