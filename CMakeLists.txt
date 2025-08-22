@@ -354,6 +354,12 @@ if (NOT fmt_FOUND)
   add_subdirectory(External/fmt/)
 endif()
 
+find_package(range-v3 QUIET)
+if (NOT range-v3_FOUND)
+  add_subdirectory(External/range-v3/)
+  target_compile_definitions(range-v3 INTERFACE RANGES_DISABLE_DEPRECATED_WARNINGS)
+endif()
+
 add_subdirectory(External/tiny-json/)
 include_directories(External/tiny-json/)
 
