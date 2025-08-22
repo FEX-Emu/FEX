@@ -12,8 +12,42 @@
 #include <processenv.h>
 #include "../Priv.h"
 
+#ifndef _M_ARM64EC
+namespace {
+SYSTEM_BASIC_INFORMATION BasicInfo;
+
+void InitBasicInfo() {
+  NtQuerySystemInformation(SystemEmulationBasicInformation, &BasicInfo, sizeof(BasicInfo), nullptr);
+}
+
+__attribute__((used, section(".CRT$FEXH"))) void (*_InitBasicInfo)(void) = InitBasicInfo;
+
+MEM_ADDRESS_REQUIREMENTS MakeWOW64AddressReqs() {
+  MEM_ADDRESS_REQUIREMENTS Reqs{};
+  Reqs.LowestStartingAddress = reinterpret_cast<void*>(BasicInfo.HighestUserAddress & ~(BasicInfo.AllocationGranularity - 1));
+  return Reqs;
+}
+} // namespace
+#endif
+
 DLLEXPORT_FUNC(void*, VirtualAlloc, (void* lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect)) {
-  NTSTATUS Status = NtAllocateVirtualMemory(NtCurrentProcess(), &lpAddress, 0, &dwSize, flAllocationType, flProtect);
+  NTSTATUS Status;
+#ifndef _M_ARM64EC
+  if (!lpAddress) {
+    // Add address requirements for WOW64 to limit allocations to outside the 32-bit user address space
+    MEM_EXTENDED_PARAMETER ExtParam {};
+    MEM_ADDRESS_REQUIREMENTS AddrReq = MakeWOW64AddressReqs();
+
+    ExtParam.Type = MemExtendedParameterAddressRequirements;
+    ExtParam.Pointer = &AddrReq;
+
+    Status = NtAllocateVirtualMemoryEx(NtCurrentProcess(), &lpAddress, &dwSize, flAllocationType, flProtect, &ExtParam, 1);
+  } else {
+#endif
+    Status = NtAllocateVirtualMemory(NtCurrentProcess(), &lpAddress, 0, &dwSize, flAllocationType, flProtect);
+#ifndef _M_ARM64EC
+  }
+#endif
   if (Status) {
     SetLastError(RtlNtStatusToDosError(Status));
     return nullptr;
@@ -39,8 +73,29 @@ DLLEXPORT_FUNC(WINBOOL, VirtualProtect, (void* lpAddress, SIZE_T dwSize, DWORD f
 DLLEXPORT_FUNC(void*, VirtualAlloc2,
                (HANDLE Process, void* BaseAddress, SIZE_T Size, ULONG AllocationType, ULONG PageProtection,
                 MEM_EXTENDED_PARAMETER* ExtendedParameters, ULONG ParameterCount)) {
-  NTSTATUS Status = NtAllocateVirtualMemoryEx(Process ? Process : NtCurrentProcess(), &BaseAddress, &Size, AllocationType, PageProtection,
-                                              ExtendedParameters, ParameterCount);
+  NTSTATUS Status;
+#ifndef _M_ARM64EC
+  if (!BaseAddress) {
+    // Add address requirements for WOW64 to limit allocations to outside the 32-bit user address space
+    auto* NewExtParams = reinterpret_cast<MEM_EXTENDED_PARAMETER*>(alloca((ParameterCount + 1) * sizeof(MEM_EXTENDED_PARAMETER)));
+    if (ExtendedParameters && ParameterCount > 0) {
+      memcpy(NewExtParams, ExtendedParameters, ParameterCount * sizeof(MEM_EXTENDED_PARAMETER));
+    }
+
+    MEM_ADDRESS_REQUIREMENTS AddrReq = MakeWOW64AddressReqs();
+
+    NewExtParams[ParameterCount].Type = MemExtendedParameterAddressRequirements;
+    NewExtParams[ParameterCount].Pointer = &AddrReq;
+
+    Status = NtAllocateVirtualMemoryEx(Process ? Process : NtCurrentProcess(), &BaseAddress, &Size, AllocationType, PageProtection,
+                                       NewExtParams, ParameterCount + 1);
+  } else {
+#endif
+    Status = NtAllocateVirtualMemoryEx(Process ? Process : NtCurrentProcess(), &BaseAddress, &Size, AllocationType, PageProtection,
+                                       ExtendedParameters, ParameterCount);
+#ifndef _M_ARM64EC
+  }
+#endif
   if (Status) {
     SetLastError(RtlNtStatusToDosError(Status));
     return nullptr;
