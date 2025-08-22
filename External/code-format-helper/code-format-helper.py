@@ -214,7 +214,6 @@ class ClangFormatHelper(FormatHelper):
             self.clang_fmt_path,
             "--binary=clang-format-19",
             "--diff",
-            "--diff_from_common_commit",
         ]
 
         if args.start_rev and args.end_rev:
