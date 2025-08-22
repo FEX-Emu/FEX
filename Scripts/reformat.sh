@@ -38,13 +38,13 @@ if [ "$CHANGED_ONLY" = true ]; then
 
     CHANGED_FILES=$(git ls-files -m '*.cpp' '*.h' '*.inl')
     if [ -n "$CHANGED_FILES" ]; then
-        echo "$CHANGED_FILES" | xargs -d '\n' -n 1 -P $(nproc) python3 "$SCRIPT_DIR/clang-format.py" -i
+        echo "$CHANGED_FILES" | xargs -d '\n' -n 1 -P $(nproc) clang-format-19 -i
     else
         echo "No changed files to format."
     fi
 else
     # Reformat whole tree (original behavior)
-    git ls-files -z '*.cpp' '*.h' '*.inl' | xargs -0 -n 1 -P $(nproc) python3 "$SCRIPT_DIR/clang-format.py" -i
+    git ls-files -z '*.cpp' '*.h' '*.inl' | xargs -0 -n 1 -P $(nproc) clang-format-19 -i
 fi
 
 cd $DIR
