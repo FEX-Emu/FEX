@@ -26,6 +26,8 @@ struct CpuStateFrame;
 
 namespace FEX::HLE::x32 {
 void RegisterStubs(FEX::HLE::SyscallHandler* Handler) {
+  REGISTER_SYSCALL_IMPL_X32(modify_ldt, [](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t { SYSCALL_STUB(readdir); });
+
   REGISTER_SYSCALL_IMPL_X32(readdir, [](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t { SYSCALL_STUB(readdir); });
 
   REGISTER_SYSCALL_IMPL_X32(vm86old, [](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t { return -ENOSYS; });

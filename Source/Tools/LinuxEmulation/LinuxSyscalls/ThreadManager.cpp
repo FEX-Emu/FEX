@@ -182,7 +182,7 @@ FEX::HLE::ThreadStateObject* ThreadManager::CreateThread(uint64_t InitialRIP, ui
 
   // GDT and LDT are tracked per thread.
   Frame->State.segment_arrays[FEXCore::Core::CPUState::SEGMENT_ARRAY_INDEX_GDT] = &ThreadStateObject->gdt[0];
-  // TODO: LDTs are currently unsupported, mirror them to GDT.
+  // Mirror LDT to the GDT by default. Not technically correctly, but fixes crashes in unittests.
   Frame->State.segment_arrays[FEXCore::Core::CPUState::SEGMENT_ARRAY_INDEX_LDT] = &ThreadStateObject->gdt[0];
 
   if (InheritThread) {
@@ -190,7 +190,13 @@ FEX::HLE::ThreadStateObject* ThreadManager::CreateThread(uint64_t InitialRIP, ui
     // They are then forked from the parent thread.
     static_assert(sizeof(ThreadStateObject->gdt) == (8 * 32));
     memcpy(ThreadStateObject->gdt, InheritThread->gdt, sizeof(ThreadStateObject->gdt));
-    // TODO: Inherit LDT once supported.
+    if (InheritThread->ldt_entry_count) {
+      const auto new_ldt_size = InheritThread->ldt_entry_count * FEX::HLE::SyscallHandler::LDT_ENTRY_SIZE;
+      ThreadStateObject->ldt_entries = reinterpret_cast<FEXCore::Core::CPUState::gdt_segment*>(FEXCore::Allocator::mmap(nullptr, new_ldt_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+
+      ThreadStateObject->ldt_entry_count = InheritThread->ldt_entry_count;
+      memcpy(ThreadStateObject->ldt_entries, InheritThread->ldt_entries, new_ldt_size);
+    }
   }
   else {
     // Without any thread data to inherit, setup the default gdt.
@@ -264,6 +270,11 @@ void ThreadManager::HandleThreadDeletion(FEX::HLE::ThreadStateObject* Thread, bo
 
   // Free the call-ret stack
   ::munmap(reinterpret_cast<void*>(Thread->GetCallRetStackInfo().AllocationBase), CALLRET_STACK_ALLOC_SIZE);
+
+  // If the LDT segment exists then deallocate it.
+  if (Thread->ldt_entry_count) {
+    FEXCore::Allocator::munmap(Thread->ldt_entries, Thread->ldt_entry_count * FEX::HLE::SyscallHandler::LDT_ENTRY_SIZE);
+  }
 
   CTX->DestroyThread(Thread->Thread);
   FEX::HLE::_SyscallHandler->SeccompEmulator.FreeSeccompFilters(Thread);
