@@ -222,7 +222,7 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
       FillF64Result();
     } break;
 
-    case FABI_F64_I16_F64_PTR: {
+    case FABI_F64_F64_PTR: {
       // Linux Reg/Win32 Reg:
       // tmp4 (x4/x13): FallbackHandler
       // x30: return
@@ -239,7 +239,7 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
       ldr<ARMEmitter::IndexType::POST>(ARMEmitter::XReg::lr, ARMEmitter::Reg::rsp, 16);
       FillF64Result();
     } break;
-    case FABI_F64x2_I16_F64_PTR: {
+    case FABI_F64x2_F64_PTR: {
       // Linux Reg/Win32 Reg:
       // tmp4 (x4/x13): FallbackHandler
       // x30: return
@@ -264,7 +264,7 @@ void Arm64JITCore::Op_Unhandled(const IR::IROp_Header* IROp, IR::Ref Node) {
       FillF64x2Result(DstLo, DstHi);
     } break;
 
-    case FABI_F64_I16_F64_F64_PTR: {
+    case FABI_F64_F64_F64_PTR: {
       // Linux Reg/Win32 Reg:
       // tmp4 (x4/x13): FallbackHandler
       // x30: return

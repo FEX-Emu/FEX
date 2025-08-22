@@ -569,8 +569,8 @@ void Dispatcher::EmitDispatcher() {
       FABI_F80_I16_I32_PTR,
       FABI_F32_I16_F80_PTR,
       FABI_F64_I16_F80_PTR,
-      FABI_F64_I16_F64_PTR,
-      FABI_F64_I16_F64_F64_PTR,
+      FABI_F64_F64_PTR,
+      FABI_F64_F64_F64_PTR,
       FABI_I16_I16_F80_PTR,
       FABI_I32_I16_F80_PTR,
       FABI_I64_I16_F80_PTR,
@@ -578,7 +578,7 @@ void Dispatcher::EmitDispatcher() {
       FABI_F80_I16_F80_PTR,
       FABI_F80_I16_F80_F80_PTR,
       FABI_F80x2_I16_F80_PTR,
-      FABI_F64x2_I16_F64_PTR,
+      FABI_F64x2_F64_PTR,
       FABI_I32_I64_I64_V128_V128_I16,
       FABI_I32_V128_V128_I16,
     }};
@@ -810,7 +810,7 @@ uint64_t Dispatcher::GenerateABICall(FallbackABI ABI) {
 
     FillF64Result();
   } break;
-  case FABI_F64_I16_F64_PTR: {
+  case FABI_F64_F64_PTR: {
     // Linux Reg/Win32 Reg:
     // tmp4 (x4/x13): FallbackHandler
     // x30: return
@@ -820,18 +820,17 @@ uint64_t Dispatcher::GenerateABICall(FallbackABI ABI) {
     if (!TMP_ABIARGS) {
       fmov(VABI1.D(), VTMP1.D());
     }
-    ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
-    mov(ARMEmitter::XReg::x1, STATE);
+    mov(ARMEmitter::XReg::x0, STATE);
 
     if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-      GenerateIndirectRuntimeCall<double, uint16_t, double, uint64_t>(FallbackPointerReg);
+      GenerateIndirectRuntimeCall<double, double, uint64_t>(FallbackPointerReg);
     } else {
       blr(FallbackPointerReg);
     }
 
     FillF64Result();
   } break;
-  case FABI_F64_I16_F64_F64_PTR: {
+  case FABI_F64_F64_F64_PTR: {
     // Linux Reg/Win32 Reg:
     // tmp4 (x4/x13): FallbackHandler
     // x30: return
@@ -844,10 +843,9 @@ uint64_t Dispatcher::GenerateABICall(FallbackABI ABI) {
       fmov(VABI2.D(), VTMP2.D());
     }
 
-    ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
-    mov(ARMEmitter::XReg::x1, STATE);
+    mov(ARMEmitter::XReg::x0, STATE);
     if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-      GenerateIndirectRuntimeCall<double, uint16_t, double, double, uint64_t>(FallbackPointerReg);
+      GenerateIndirectRuntimeCall<double, double, double, uint64_t>(FallbackPointerReg);
     } else {
       blr(FallbackPointerReg);
     }
@@ -1007,7 +1005,7 @@ uint64_t Dispatcher::GenerateABICall(FallbackABI ABI) {
 
     FillF80x2Result();
   } break;
-  case FABI_F64x2_I16_F64_PTR: {
+  case FABI_F64x2_F64_PTR: {
     // Linux Reg/Win32 Reg:
     // tmp4 (x4/x13): FallbackHandler
     // x30: return
@@ -1016,14 +1014,13 @@ uint64_t Dispatcher::GenerateABICall(FallbackABI ABI) {
 
     SpillForABICall(CTX->HostFeatures.SupportsPreserveAllABI, TMP3, true);
 
-    ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
-    mov(ARMEmitter::XReg::x1, STATE);
+    mov(ARMEmitter::XReg::x0, STATE);
     if (!TMP_ABIARGS) {
       fmov(VABI1.D(), VTMP1.D());
     }
 
     if (!CTX->Config.DisableVixlIndirectCalls) [[unlikely]] {
-      // GenerateIndirectRuntimeCall<FEXCore::VectorScalarF64Pair, uint16_t, FEXCore::VectorRegType, uint64_t>(FallbackPointerReg);
+      // GenerateIndirectRuntimeCall<FEXCore::VectorScalarF64Pair, FEXCore::VectorRegType, uint64_t>(FallbackPointerReg);
     } else {
       blr(FallbackPointerReg);
     }
