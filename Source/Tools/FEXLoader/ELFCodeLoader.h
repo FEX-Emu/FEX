@@ -48,15 +48,29 @@ class ELFCodeLoader final : public FEX::CodeLoader {
   uintptr_t BrkStart {};
   uintptr_t StackPointer {};
 
-  size_t CalculateTotalElfSize(const fextl::vector<Elf64_Phdr>& headers) {
-    auto first = std::find_if(headers.begin(), headers.end(), [](const Elf64_Phdr& Header) { return Header.p_type == PT_LOAD; });
-    auto last = std::find_if(headers.rbegin(), headers.rend(), [](const Elf64_Phdr& Header) { return Header.p_type == PT_LOAD; });
+  // This calculates the map size for ET_DYN type ELF files.
+  // Can't be used for ET_EXEC ELF files because they can have large virtual mapping holes.
+  static size_t CalculateDYNELFSize(const fextl::vector<Elf64_Phdr>& headers) {
+    bool had_pt_load = false;
+    size_t min_map_address = ~0ULL;
+    size_t max_map_address = 0;
+    for (const auto& it : headers) {
+      if (it.p_type != PT_LOAD) {
+        // Skip everything but PT_LOAD.
+        continue;
+      }
 
-    if (first == headers.end()) {
+      had_pt_load = true;
+      min_map_address = std::min(min_map_address, PAGE_START(it.p_vaddr));
+      max_map_address = std::max(max_map_address, it.p_vaddr + it.p_memsz);
+    }
+
+    if (!had_pt_load) {
+      // No load segments, so need to be safe and return zero.
       return 0;
     }
 
-    return PAGE_ALIGN(last->p_vaddr + last->p_memsz);
+    return FEXCore::AlignUp(max_map_address - min_map_address, FEXCore::Utils::FEX_PAGE_SIZE);
   }
 
   bool MapFile(const ELFParser& file, uintptr_t Base, const Elf64_Phdr& Header, int prot, int flags, FEX::HLE::SyscallHandler* const Handler) {
@@ -110,14 +124,13 @@ class ELFCodeLoader final : public FEX::CodeLoader {
   std::optional<uintptr_t> LoadElfFile(ELFParser& Elf, uintptr_t* BrkBase, FEX::HLE::SyscallHandler* const Handler, uint64_t LoadHint = 0) {
 
     uintptr_t LoadBase = 0;
+    uintptr_t BrkLoadBase = 0;
+    const bool DynELF = Elf.ehdr.e_type == ET_DYN;
+    const bool NeedsLateBRKMap = BrkBase && !DynELF;
 
-    if (BrkBase) {
-      *BrkBase = 0;
-    }
-
-    if (Elf.ehdr.e_type == ET_DYN) {
-      // needs base address
-      auto TotalSize = CalculateTotalElfSize(Elf.phdrs) + (BrkBase ? BRK_SIZE : 0);
+    if (DynELF) {
+      // Allocate a base address plus BRK padding.
+      auto TotalSize = CalculateDYNELFSize(Elf.phdrs) + (BrkBase ? BRK_SIZE : 0);
       LoadBase =
         (uintptr_t)Handler->GuestMmap(nullptr, reinterpret_cast<void*>(LoadHint), TotalSize, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
       if (FEX::HLE::HasSyscallError(LoadBase)) {
@@ -126,7 +139,7 @@ class ELFCodeLoader final : public FEX::CodeLoader {
 
       // fprintf(stderr, "elf %d: %lx-%lx\n", Elf.fd, LoadBase, LoadBase + TotalSize);
       if (BrkBase) {
-        *BrkBase = LoadBase + (TotalSize - BRK_SIZE);
+        BrkLoadBase = LoadBase + (TotalSize - BRK_SIZE);
       }
     }
 
@@ -162,15 +175,29 @@ class ELFCodeLoader final : public FEX::CodeLoader {
         }
       }
 
-      if (BrkBase) {
-        // Keep track of highest address for BRK
+      if (NeedsLateBRKMap) {
+        // Keep track of highest address for BRK in the case of non-dynamic ELF files.
         auto memend = LoadBase + Header.p_vaddr + Header.p_memsz;
 
         // track elf_brk
-        if (memend > *BrkBase) {
-          *BrkBase = PAGE_ALIGN(memend);
+        if (memend > BrkLoadBase) {
+          BrkLoadBase = FEXCore::AlignUp(memend, FEXCore::Utils::FEX_PAGE_SIZE);
         }
       }
+    }
+
+    if (NeedsLateBRKMap) {
+      // Map the BRK after ELF if possible.
+      BrkLoadBase =
+        (uintptr_t)Handler->GuestMmap(nullptr, reinterpret_cast<void*>(BrkLoadBase), BRK_SIZE, PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+      if (FEX::HLE::HasSyscallError(BrkLoadBase)) {
+        // This isn't a catastrophic failure. This just means the BRK conflicted with the ELF.
+        BrkLoadBase = 0;
+      }
+    }
+
+    if (BrkBase) {
+      *BrkBase = BrkLoadBase;
     }
 
     return LoadBase;
@@ -524,11 +551,9 @@ public:
 
     // load the main elf
 
-    uintptr_t BrkBase = 0;
-
     uintptr_t LoadBase = 0;
 
-    if (auto elf = LoadElfFile(MainElf, &BrkBase, Handler, ELFLoadHint)) {
+    if (auto elf = LoadElfFile(MainElf, &BrkStart, Handler, ELFLoadHint)) {
       LoadBase = *elf;
       if (MainElf.ehdr.e_type == ET_DYN) {
         BaseOffset = LoadBase;
@@ -538,14 +563,15 @@ public:
       return false;
     }
 
-    // XXX Randomise brk?
-
-    BrkStart =
-      (uint64_t)Handler->GuestMmap(nullptr, (void*)BrkBase, BRK_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
-
-    if (FEX::HLE::HasSyscallError(BrkStart)) {
-      LogMan::Msg::EFmt("Failed to allocate BRK @ {:x}, {}\n", BrkBase, errno);
-      return false;
+    if (BrkStart) {
+      // BRK usually comes directly after where the ELF is loaded.
+      // If a value was returned then we have mapped the entire `BRK_SIZE` and need to change protections.
+      BrkStart = (uint64_t)Handler->GuestMmap(nullptr, (void*)BrkStart, BRK_SIZE, PROT_READ | PROT_WRITE,
+                                              MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
+      if (FEX::HLE::HasSyscallError(BrkStart)) {
+        LogMan::Msg::EFmt("Failed to allocate BRK @ {:x}, {}\n", BrkStart, errno);
+        return false;
+      }
     }
 
     MainElfBase = LoadBase + MainElf.phdrs.front().p_vaddr - MainElf.phdrs.front().p_offset;
