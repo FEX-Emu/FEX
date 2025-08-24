@@ -730,8 +730,7 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::CpuStateFrame* Frame, void* Ad
 
         DataSpaceMappedSize = NewSizeAligned;
       } else if (NewSize > DataSpaceMappedSize) {
-        constexpr static uint64_t SizeAlignment = 8 * 1024 * 1024;
-        uint64_t AllocateNewSize = FEXCore::AlignUp(NewSize, SizeAlignment) - DataSpaceMappedSize;
+        uint64_t AllocateNewSize = FEXCore::AlignUp(NewSize, 4096) - DataSpaceMappedSize;
         if (!Is64BitMode() && (DataSpace + DataSpaceMappedSize + AllocateNewSize > 0x1'0000'0000ULL)) {
           // If we are 32bit and we tried going about the 32bit limit then out of memory
           return DataSpace + DataSpaceSize;
@@ -767,7 +766,13 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::CpuStateFrame* Frame, void* Ad
 
 void SyscallHandler::DefaultProgramBreak(uint64_t Base, uint64_t Size) {
   DataSpace = Base;
-  DataSpaceMappedSize = Size;
+
+  // The frontend passes this a full 8MB of SBRK space that is mapped PROT_READ | PROT_WRITE.
+  // This ensures there is some free space in front of brk, but isn't required to be reserved.
+  // Unmap it now to ensure other allocations can be put in the intersecting range.
+  [[maybe_unused]] auto ok = GuestMunmap(nullptr, reinterpret_cast<void*>(DataSpace), Size);
+  LOGMAN_THROW_A_FMT(ok != -1, "Munmap failed");
+  DataSpaceMappedSize = 0;
 }
 
 SyscallHandler::SyscallHandler(FEXCore::Context::Context* _CTX, FEX::HLE::SignalDelegator* _SignalDelegation, FEX::HLE::ThunkHandler* ThunkHandler)
