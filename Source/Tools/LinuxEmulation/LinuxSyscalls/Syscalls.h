@@ -340,7 +340,6 @@ protected:
   uint64_t DataSpace {};
   uint64_t DataSpaceSize {};
   uint64_t DataSpaceMaxSize {};
-  uint64_t DataSpaceStartingSize {};
 
   // (Major << 24) | (Minor << 16) | Patch
   uint32_t HostKernelVersion {};
