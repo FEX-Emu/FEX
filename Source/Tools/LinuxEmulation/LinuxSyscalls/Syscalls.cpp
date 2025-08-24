@@ -763,7 +763,6 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::CpuStateFrame* Frame, void* Ad
 void SyscallHandler::DefaultProgramBreak(uint64_t Base, uint64_t Size) {
   DataSpace = Base;
   DataSpaceMaxSize = Size;
-  DataSpaceStartingSize = Size;
 }
 
 SyscallHandler::SyscallHandler(FEXCore::Context::Context* _CTX, FEX::HLE::SignalDelegator* _SignalDelegation, FEX::HLE::ThunkHandler* ThunkHandler)
