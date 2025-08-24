@@ -740,14 +740,6 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::CpuStateFrame* Frame, void* Ad
         NewBRK = (uint64_t)GuestMmap(Frame->Thread, (void*)(DataSpace + DataSpaceMappedSize), AllocateNewSize, PROT_READ | PROT_WRITE,
                                      MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
-        if (!FEX::HLE::HasSyscallError(NewBRK) && NewBRK != (DataSpace + DataSpaceMappedSize)) {
-          // Couldn't allocate that the region we wanted
-          // Can happen if MAP_FIXED_NOREPLACE isn't understood by the kernel
-          int ok = GuestMunmap(Frame->Thread, reinterpret_cast<void*>(NewBRK), AllocateNewSize);
-          LOGMAN_THROW_A_FMT(ok != -1, "Munmap failed");
-          NewBRK = ~0ULL;
-        }
-
         if (FEX::HLE::HasSyscallError(NewBRK)) {
           // If we couldn't allocate a new region then out of memory
           return DataSpace + DataSpaceSize;
