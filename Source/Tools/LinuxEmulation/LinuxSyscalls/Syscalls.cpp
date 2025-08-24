@@ -709,6 +709,11 @@ uint64_t SyscallHandler::HandleBRK(FEXCore::Core::CpuStateFrame* Frame, void* Ad
       // Not allowed to move brk end below original start
       // Set the size to zero
       DataSpaceSize = 0;
+
+      // Munmap the whole space.
+      [[maybe_unused]] auto ok = GuestMunmap(Frame->Thread, reinterpret_cast<void*>(DataSpace), DataSpaceMappedSize);
+      LOGMAN_THROW_A_FMT(ok != -1, "Munmap failed");
+      DataSpaceMappedSize = 0;
     } else {
       uint64_t NewSize = NewEnd - DataSpace;
       uint64_t NewSizeAligned = FEXCore::AlignUp(NewSize, 4096);
