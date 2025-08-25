@@ -60,7 +60,6 @@ jobs:
           START_REV: ${{ github.event.pull_request.base.sha }}
           END_REV: ${{ github.event.pull_request.head.sha }}
           CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
-        # Using --diff_from_common_commit option available in clang-format-19
         run: |
           python ./External/code-format-helper/code-format-helper.py \
             --repo "FEX-emu/FEX" \
