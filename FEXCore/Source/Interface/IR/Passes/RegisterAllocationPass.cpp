@@ -278,7 +278,7 @@ private:
     // next-use has the /smallest/ unsigned IP.
     Ref Candidate = nullptr;
     uint32_t BestDistance = UINT32_MAX;
-    [[maybe_unused]] uint8_t BestReg = ~0;
+    uint8_t BestReg = ~0;
     uint32_t Allocated = ((1u << Class->Count) - 1) & ~Class->Available;
 
     foreach_bit(i, Allocated) {

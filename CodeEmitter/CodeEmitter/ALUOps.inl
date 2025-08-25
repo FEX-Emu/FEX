@@ -174,7 +174,7 @@ public:
   // Logical immediate
   void and_(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, uint64_t Imm) {
     uint32_t n, immr, imms;
-    [[maybe_unused]] const auto IsImm = IsImmLogical(Imm, RegSizeInBits(s), &n, &imms, &immr);
+    const auto IsImm = IsImmLogical(Imm, RegSizeInBits(s), &n, &imms, &immr);
     LOGMAN_THROW_A_FMT(IsImm, "Couldn't encode immediate to logical op");
     and_(s, rd, rn, n, immr, imms);
   }
@@ -185,7 +185,7 @@ public:
 
   void ands(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, uint64_t Imm) {
     uint32_t n, immr, imms;
-    [[maybe_unused]] const auto IsImm = IsImmLogical(Imm, RegSizeInBits(s), &n, &imms, &immr);
+    const auto IsImm = IsImmLogical(Imm, RegSizeInBits(s), &n, &imms, &immr);
     LOGMAN_THROW_A_FMT(IsImm, "Couldn't encode immediate to logical op");
     ands(s, rd, rn, n, immr, imms);
   }
@@ -196,14 +196,14 @@ public:
 
   void orr(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, uint64_t Imm) {
     uint32_t n, immr, imms;
-    [[maybe_unused]] const auto IsImm = IsImmLogical(Imm, RegSizeInBits(s), &n, &imms, &immr);
+    const auto IsImm = IsImmLogical(Imm, RegSizeInBits(s), &n, &imms, &immr);
     LOGMAN_THROW_A_FMT(IsImm, "Couldn't encode immediate to logical op");
     orr(s, rd, rn, n, immr, imms);
   }
 
   void eor(ARMEmitter::Size s, ARMEmitter::Register rd, ARMEmitter::Register rn, uint64_t Imm) {
     uint32_t n, immr, imms;
-    [[maybe_unused]] const auto IsImm = IsImmLogical(Imm, RegSizeInBits(s), &n, &imms, &immr);
+    const auto IsImm = IsImmLogical(Imm, RegSizeInBits(s), &n, &imms, &immr);
     LOGMAN_THROW_A_FMT(IsImm, "Couldn't encode immediate to logical op");
     eor(s, rd, rn, n, immr, imms);
   }
@@ -333,7 +333,7 @@ public:
     bfi(s, rd, Reg::zr, lsb, width);
   }
   void bfxil(ARMEmitter::Size s, Register rd, Register rn, uint32_t lsb, uint32_t width) {
-    [[maybe_unused]] const auto reg_size_bits = RegSizeInBits(s);
+    const auto reg_size_bits = RegSizeInBits(s);
     const auto lsb_p_width = lsb + width;
 
     LOGMAN_THROW_A_FMT(width >= 1, "bfxil needs width >= 1");
@@ -977,7 +977,7 @@ private:
   }
 
   void xbfiz_helper(bool is_signed, ARMEmitter::Size s, Register rd, Register rn, uint32_t lsb, uint32_t width) {
-    [[maybe_unused]] const auto lsb_p_width = lsb + width;
+    const auto lsb_p_width = lsb + width;
     const auto reg_size_bits = RegSizeInBits(s);
 
     LOGMAN_THROW_A_FMT(lsb_p_width <= reg_size_bits, "lsb + width ({}) must be <= {}. lsb={}, width={}", lsb_p_width, reg_size_bits, lsb, width);

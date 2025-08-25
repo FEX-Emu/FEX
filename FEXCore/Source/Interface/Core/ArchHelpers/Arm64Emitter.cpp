@@ -712,7 +712,7 @@ void Arm64Emitter::SpillStaticRegs(ARMEmitter::Register TmpReg, bool FPRs, uint3
   // Now handle PF/AF
   if (PFAFSpillMask) {
     auto PFOffset = offsetof(FEXCore::Core::CpuStateFrame, State.pf_raw);
-    [[maybe_unused]] auto AFOffset = offsetof(FEXCore::Core::CpuStateFrame, State.af_raw);
+    auto AFOffset = offsetof(FEXCore::Core::CpuStateFrame, State.af_raw);
     LOGMAN_THROW_A_FMT(PFAFSpillMask == PFAFMask, "PF/AF not spilled together");
     LOGMAN_THROW_A_FMT(AFOffset == PFOffset + 4, "PF/AF are together");
 

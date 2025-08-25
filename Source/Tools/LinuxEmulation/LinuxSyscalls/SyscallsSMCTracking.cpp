@@ -330,7 +330,7 @@ uint64_t SyscallHandler::GuestShmat(bool Is64Bit, FEXCore::Core::InternalThreadS
 
     shmid_ds stat;
 
-    [[maybe_unused]] auto res = shmctl(shmid, IPC_STAT, &stat);
+    auto res = shmctl(shmid, IPC_STAT, &stat);
     LOGMAN_THROW_A_FMT(res != -1, "shmctl IPC_STAT failed");
 
     Length = stat.shm_segsz;

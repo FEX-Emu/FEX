@@ -164,11 +164,8 @@ private:
       FEXCore::AlignUp(LiveVMARegion::GetFEXManagedVMARegionSize(ReservedRegion->RegionSize), FEXCore::Utils::FEX_PAGE_SIZE);
     size_t SizePlusManagedData = UsedSize + SizeOfLiveRegion;
 
-    [[maybe_unused]] auto Res = mprotect(reinterpret_cast<void*>(ReservedRegion->Base), SizePlusManagedData, PROT_READ | PROT_WRITE);
-
-    if (Res == -1) {
-      LOGMAN_MSG_A_FMT("Couldn't mprotect region: {} '{}' Likely occurs when running out of memory or Maximum VMAs", errno, strerror(errno));
-    }
+    auto Res = mprotect(reinterpret_cast<void*>(ReservedRegion->Base), SizePlusManagedData, PROT_READ | PROT_WRITE);
+    LOGMAN_THROW_A_FMT(Res != -1, "Couldn't mprotect region: {} '{}' Likely occurs when running out of memory or Maximum VMAs", errno, strerror(errno));
 
     LiveVMARegion* LiveRange = new (reinterpret_cast<void*>(ReservedRegion->Base)) LiveVMARegion();
 

@@ -140,7 +140,7 @@ DEF_OP(LoadRegister) {
 
     mov(GetReg(Node).X(), StaticRegisters[Op->Reg].X());
   } else if (Op->Class == IR::FPRClass) {
-    [[maybe_unused]] const auto regSize = HostSupportsAVX256 ? IR::OpSize::i256Bit : IR::OpSize::i128Bit;
+    const auto regSize = HostSupportsAVX256 ? IR::OpSize::i256Bit : IR::OpSize::i128Bit;
     LOGMAN_THROW_A_FMT(Op->Reg < StaticFPRegisters.size(), "out of range reg");
     LOGMAN_THROW_A_FMT(IROp->Size == regSize, "expected sized");
 
@@ -181,7 +181,7 @@ DEF_OP(StoreRegister) {
     // Always use 64-bit, it's faster. Upper bits ignored for 32-bit mode.
     mov(ARMEmitter::Size::i64Bit, GetReg(Reg), GetReg(Op->Value));
   } else if (Reg.Class == IR::FPRFixedClass) {
-    [[maybe_unused]] const auto regSize = HostSupportsAVX256 ? IR::OpSize::i256Bit : IR::OpSize::i128Bit;
+    const auto regSize = HostSupportsAVX256 ? IR::OpSize::i256Bit : IR::OpSize::i128Bit;
     LOGMAN_THROW_A_FMT(IROp->Size == regSize, "expected sized");
 
     const auto guest = GetVReg(Reg);
@@ -742,7 +742,7 @@ DEF_OP(LoadMemTSO) {
     const auto Dst = GetReg(Node);
     uint64_t Offset = 0;
     if (!Op->Offset.IsInvalid()) {
-      [[maybe_unused]] bool IsInline = IsInlineConstant(Op->Offset, &Offset);
+      bool IsInline = IsInlineConstant(Op->Offset, &Offset);
       LOGMAN_THROW_A_FMT(IsInline, "expected immediate");
     }
 
@@ -1750,7 +1750,7 @@ DEF_OP(StoreMemTSO) {
     const auto Src = GetZeroableReg(Op->Value);
     uint64_t Offset = 0;
     if (!Op->Offset.IsInvalid()) {
-      [[maybe_unused]] bool IsInline = IsInlineConstant(Op->Offset, &Offset);
+      bool IsInline = IsInlineConstant(Op->Offset, &Offset);
       LOGMAN_THROW_A_FMT(IsInline, "expected immediate");
     }
 
@@ -2586,7 +2586,7 @@ DEF_OP(VStoreNonTemporalPair) {
   const auto Op = IROp->C<IR::IROp_VStoreNonTemporalPair>();
   const auto OpSize = IROp->Size;
 
-  [[maybe_unused]] const auto Is128Bit = OpSize == IR::OpSize::i128Bit;
+  const auto Is128Bit = OpSize == IR::OpSize::i128Bit;
   LOGMAN_THROW_A_FMT(Is128Bit, "This IR operation only operates at 128-bit wide");
 
   const auto ValueLow = GetVReg(Op->ValueLow);

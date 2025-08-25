@@ -256,7 +256,9 @@ static inline void BackupContext(void* ucontext, T* Backup) {
 template<typename T>
 static inline void RestoreContext(void* ucontext, T* Backup) {
   if constexpr (std::is_same<T, ArmContextBackup>::value) {
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
     LOGMAN_THROW_A_FMT(Backup->StackCookie == STACK_COOKIE_MAGIC, "Stack cookie didn't match! 0x{:x}", Backup->StackCookie);
+#endif
 
     auto _ucontext = GetUContext(ucontext);
     auto _mcontext = GetMContext(ucontext);
@@ -365,7 +367,9 @@ static inline void BackupContext(void* ucontext, T* Backup) {
 template<typename T>
 static inline void RestoreContext(void* ucontext, T* Backup) {
   if constexpr (std::is_same<T, X86ContextBackup>::value) {
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
     LOGMAN_THROW_A_FMT(Backup->StackCookie == STACK_COOKIE_MAGIC, "Stack cookie didn't match! 0x{:x}", Backup->StackCookie);
+#endif
 
     auto _ucontext = GetUContext(ucontext);
     auto _mcontext = GetMContext(ucontext);
