@@ -109,5 +109,5 @@ Test_TwoByte/0F_31.asm
 Test_Secondary/09_F3_07.asm
 
 # Simulator doesn't support FPSR
-Test_64Bit_X87_F64/DB_E2_F64.asm
-Test_64Bit_X87_F64/cumulative_ioc_test_F64.asm
+Test_X87_F64/DB_E2_F64.asm
+Test_X87_F64/cumulative_ioc_test_F64.asm
