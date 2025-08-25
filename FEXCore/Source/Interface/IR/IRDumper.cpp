@@ -267,7 +267,7 @@ static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::S
   }
 }
 
-static void PrintArg(fextl::stringstream* out, [[maybe_unused]] const IRListView* IR, FEXCore::IR::BranchHint Arg) {
+static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::BranchHint Arg) {
   switch (Arg) {
   case BranchHint::None: *out << "None"; break;
   case BranchHint::Call: *out << "Call"; break;

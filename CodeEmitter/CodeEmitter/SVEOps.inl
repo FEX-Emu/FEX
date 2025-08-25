@@ -1541,7 +1541,7 @@ public:
   void sqincp(SubRegSize size, XRegister rdn, PRegister pm) {
     SVEIncDecPredicateCountScalar(0, 1, 0b10, 0b00, size, rdn, pm);
   }
-  void sqincp(SubRegSize size, XRegister rdn, PRegister pm, [[maybe_unused]] WRegister wn) {
+  void sqincp(SubRegSize size, XRegister rdn, PRegister pm, WRegister wn) {
     LOGMAN_THROW_A_FMT(rdn.Idx() == wn.Idx(), "rdn and wn must be the same");
     SVEIncDecPredicateCountScalar(0, 1, 0b00, 0b00, size, rdn, pm);
   }
@@ -1554,7 +1554,7 @@ public:
   void sqdecp(SubRegSize size, XRegister rdn, PRegister pm) {
     SVEIncDecPredicateCountScalar(0, 1, 0b10, 0b10, size, rdn, pm);
   }
-  void sqdecp(SubRegSize size, XRegister rdn, PRegister pm, [[maybe_unused]] WRegister wn) {
+  void sqdecp(SubRegSize size, XRegister rdn, PRegister pm, WRegister wn) {
     LOGMAN_THROW_A_FMT(rdn.Idx() == wn.Idx(), "rdn and wn must be the same");
     SVEIncDecPredicateCountScalar(0, 1, 0b00, 0b10, size, rdn, pm);
   }
@@ -3296,7 +3296,7 @@ private:
     const auto log2_size_bytes = FEXCore::ilog2(size_bytes);
 
     // We can index up to 512-bit registers with dup
-    [[maybe_unused]] const auto max_index = (64U >> log2_size_bytes) - 1;
+    const auto max_index = (64U >> log2_size_bytes) - 1;
     LOGMAN_THROW_A_FMT(Index <= max_index, "dup index ({}) too large. Must be within [0, {}].", Index, max_index);
 
     // imm2:tsz make up a 7 bit wide field, with each increasing element size
@@ -3326,7 +3326,7 @@ private:
 
     uint32_t shift = 0;
     if (!is_uint8_imm) {
-      [[maybe_unused]] const bool is_uint16_imm = (imm >> 16) == 0;
+      const bool is_uint16_imm = (imm >> 16) == 0;
 
       LOGMAN_THROW_A_FMT(is_uint16_imm, "Immediate ({}) must be a 16-bit value within [256, 65280]", imm);
       LOGMAN_THROW_A_FMT((imm % 256) == 0, "Immediate ({}) must be a multiple of 256", imm);
@@ -4152,7 +4152,7 @@ private:
 
     const auto& op_data = mem_op.MetaType.ScalarVectorType;
     const bool is_scaled = op_data.scale != 0;
-    [[maybe_unused]] const auto msize_value = FEXCore::ToUnderlying(msize);
+    const auto msize_value = FEXCore::ToUnderlying(msize);
 
     LOGMAN_THROW_A_FMT(op_data.scale == 0 || op_data.scale == msize_value, "scale may only be 0 or {}", msize_value);
 
@@ -4266,7 +4266,7 @@ private:
     const auto msize_value = FEXCore::ToUnderlying(msize);
     const auto msize_bytes = 1U << msize_value;
 
-    [[maybe_unused]] const auto imm_limit = (32U << msize_value) - msize_bytes;
+    const auto imm_limit = (32U << msize_value) - msize_bytes;
     const auto imm = mem_op.MetaType.VectorImmType.Imm;
     const auto imm_to_encode = imm >> msize_value;
 
@@ -4332,8 +4332,8 @@ private:
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
     LOGMAN_THROW_A_FMT((imm % num_regs) == 0, "Offset must be a multiple of {}", num_regs);
 
-    [[maybe_unused]] const auto min_offset = -8 * num_regs;
-    [[maybe_unused]] const auto max_offset = 7 * num_regs;
+    const auto min_offset = -8 * num_regs;
+    const auto max_offset = 7 * num_regs;
     LOGMAN_THROW_A_FMT(imm >= min_offset && imm <= max_offset,
                        "Invalid load/store offset ({}). Offset must be a multiple of {} and be within [{}, {}]", imm, num_regs, min_offset,
                        max_offset);
@@ -4440,8 +4440,8 @@ private:
     LOGMAN_THROW_A_FMT(pg <= PReg::p7, "Can only use p0-p7 as a governing predicate");
 
     const auto esize = static_cast<int>(16 << ssz);
-    [[maybe_unused]] const auto max_imm = (esize << 3) - esize;
-    [[maybe_unused]] const auto min_imm = -(max_imm + esize);
+    const auto max_imm = (esize << 3) - esize;
+    const auto min_imm = -(max_imm + esize);
 
     LOGMAN_THROW_A_FMT((imm % esize) == 0, "imm ({}) must be a multiple of {}", imm, esize);
     LOGMAN_THROW_A_FMT(imm >= min_imm && imm <= max_imm, "imm ({}) must be within [{}, {}]", imm, min_imm, max_imm);
@@ -4485,7 +4485,7 @@ private:
     const auto msize_value = FEXCore::ToUnderlying(msize);
 
     const auto data_size_bytes = 1U << msize_value;
-    [[maybe_unused]] const auto max_imm = (64U << msize_value) - data_size_bytes;
+    const auto max_imm = (64U << msize_value) - data_size_bytes;
     LOGMAN_THROW_A_FMT((imm % data_size_bytes) == 0 && imm <= max_imm, "imm must be a multiple of {} and be within [0, {}]",
                        data_size_bytes, max_imm);
 
@@ -4861,7 +4861,7 @@ private:
                        "64-bit variants may only use Zm between z0-z15");
 
     const auto Underlying = FEXCore::ToUnderlying(size);
-    [[maybe_unused]] const uint32_t IndexMax = (16 / (1U << Underlying)) - 1;
+    const uint32_t IndexMax = (16 / (1U << Underlying)) - 1;
     LOGMAN_THROW_A_FMT(index <= IndexMax, "Index must be within 0-{}", IndexMax);
 
     // Can be bit 20 or 19 depending on whether or not the element size is 64-bit.
@@ -5117,12 +5117,13 @@ private:
   requires (std::is_same_v<T, float> || std::is_same_v<T, double>)
   using FloatToEquivalentUInt = std::conditional_t<std::is_same_v<T, float>, uint32_t, uint64_t>;
 
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
   // Determines if a floating-point value is capable of being converted
   // into an 8-bit immediate. See pseudocode definition of VFPExpandImm
   // in ARM A-profile reference manual for a general overview of how this was derived.
   template<typename T>
   requires (std::is_same_v<T, float> || std::is_same_v<T, double>)
-  [[nodiscard, maybe_unused]]
+  [[nodiscard]]
   static bool IsValidFPValueForImm8(T value) {
     const uint64_t bits = FEXCore::BitCast<FloatToEquivalentUInt<T>>(value);
     const uint64_t datasize_idx = FEXCore::ilog2(sizeof(T)) - 1;
@@ -5162,10 +5163,13 @@ private:
 
     return true;
   }
+#endif
 
 protected:
   static uint32_t FP32ToImm8(float value) {
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
     LOGMAN_THROW_A_FMT(IsValidFPValueForImm8(value), "Value ({}) cannot be encoded into an 8-bit immediate", value);
+#endif
 
     const auto bits = FEXCore::BitCast<uint32_t>(value);
     const auto sign = (bits & 0x80000000) >> 24;
@@ -5176,7 +5180,9 @@ protected:
   }
 
   static uint32_t FP64ToImm8(double value) {
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
     LOGMAN_THROW_A_FMT(IsValidFPValueForImm8(value), "Value ({}) cannot be encoded into an 8-bit immediate", value);
+#endif
 
     const auto bits = FEXCore::BitCast<uint64_t>(value);
     const auto sign = (bits & 0x80000000'00000000) >> 56;
@@ -5202,7 +5208,7 @@ private:
     uint32_t shift = 0;
     if (!is_int8_imm) {
       const int32_t imm16_limit = 32768;
-      [[maybe_unused]] const bool is_int16_imm = -imm16_limit <= imm && imm < imm16_limit;
+      const bool is_int16_imm = -imm16_limit <= imm && imm < imm16_limit;
 
       LOGMAN_THROW_A_FMT(is_int16_imm, "Immediate ({}) must be a 16-bit value within [-32768, 32512]", imm);
       LOGMAN_THROW_A_FMT((imm % 256) == 0, "Immediate ({}) must be a multiple of 256", imm);

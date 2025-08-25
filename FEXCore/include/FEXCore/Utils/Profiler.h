@@ -50,16 +50,11 @@ private:
 #endif
 
 #else
-[[maybe_unused]]
-static void Init(std::string_view ProgramName, std::string_view ProgramPath) {}
-[[maybe_unused]]
-static void PostForkAction(bool IsChild) {}
-[[maybe_unused]]
-static void Shutdown() {}
-[[maybe_unused]]
-static void TraceObject(const std::string_view Format) {}
-[[maybe_unused]]
-static void TraceObject(const std::string_view, uint64_t) {}
+inline void Init(std::string_view ProgramName, std::string_view ProgramPath) {}
+inline void PostForkAction(bool IsChild) {}
+inline void Shutdown() {}
+inline void TraceObject(const std::string_view Format) {}
+inline void TraceObject(const std::string_view, uint64_t) {}
 
 #define FEXCORE_PROFILE_INSTANT(...) \
   do {                               \

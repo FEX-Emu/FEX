@@ -3934,7 +3934,7 @@ void OpDispatchBuilder::Finalize() {
   // Node 0 is invalid node
   Ref RealNode = reinterpret_cast<Ref>(GetNode(1));
 
-  [[maybe_unused]] const FEXCore::IR::IROp_Header* IROp = RealNode->Op(DualListData.DataBegin());
+  const FEXCore::IR::IROp_Header* IROp = RealNode->Op(DualListData.DataBegin());
   LOGMAN_THROW_A_FMT(IROp->Op == OP_IRHEADER, "First op in function must be our header");
 
   // Let's walk the jump blocks and see if we have handled every block target

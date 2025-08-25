@@ -30,7 +30,7 @@ public:
     const uint32_t SizeImm = FEXCore::ToUnderlying(size);
     const uint32_t IndexShift = SizeImm + 1;
     const uint32_t ElementSize = 1U << SizeImm;
-    [[maybe_unused]] const uint32_t MaxIndex = 128U / (ElementSize * 8);
+    const uint32_t MaxIndex = 128U / (ElementSize * 8);
 
     LOGMAN_THROW_A_FMT(Index < MaxIndex, "Index too large. Index={}, Max Index: {}", Index, MaxIndex);
 
@@ -1381,7 +1381,7 @@ private:
   void ASIMDScalarXIndexedElement(uint32_t U, ScalarRegSize size, uint32_t opcode, VRegister rm, VRegister rn, VRegister rd, uint32_t index) {
     LOGMAN_THROW_A_FMT(size != ScalarRegSize::i8Bit, "Scalar size must not be 8-bit");
 
-    [[maybe_unused]] const auto invalid_bound = 16U >> FEXCore::ToUnderlying(size);
+    const auto invalid_bound = 16U >> FEXCore::ToUnderlying(size);
     LOGMAN_THROW_A_FMT(index < invalid_bound, "Index ({}) must be within [0-{}]", index, invalid_bound - 1);
 
     uint32_t Instr = 0b0101'1111'0000'0000'0000'0000'0000'0000;

@@ -501,7 +501,7 @@ OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_LoadSource_WithOpSize(
     HighA.Offset += 16;
 
     if (Operand.IsSIB()) {
-      [[maybe_unused]] const bool IsVSIB = (Op->Flags & X86Tables::DecodeFlags::FLAG_VSIB_BYTE) != 0;
+      const bool IsVSIB = (Op->Flags & X86Tables::DecodeFlags::FLAG_VSIB_BYTE) != 0;
       LOGMAN_THROW_A_FMT(!IsVSIB, "VSIB uses LoadVSIB instead");
     }
 
@@ -515,7 +515,7 @@ OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_LoadSource_WithOpSize(
 
 OpDispatchBuilder::RefVSIB
 OpDispatchBuilder::AVX128_LoadVSIB(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags, bool NeedsHigh) {
-  [[maybe_unused]] const bool IsVSIB = (Op->Flags & X86Tables::DecodeFlags::FLAG_VSIB_BYTE) != 0;
+  const bool IsVSIB = (Op->Flags & X86Tables::DecodeFlags::FLAG_VSIB_BYTE) != 0;
   LOGMAN_THROW_A_FMT(Operand.IsSIB() && IsVSIB, "Trying to load VSIB for something that isn't the correct type!");
 
   // VSIB is a very special case which has a ton of encoded data.
@@ -1038,7 +1038,7 @@ void OpDispatchBuilder::AVX128_InsertCVTGPR_To_FPR(OpcodeArgs) {
     Result.Low = _VSToFVectorInsert(DstSize, DstElementSize, DstElementSize, Src1.Low, Src2, false, false);
   }
 
-  [[maybe_unused]] const auto Is128Bit = DstSize == OpSize::i128Bit;
+  const auto Is128Bit = DstSize == OpSize::i128Bit;
   LOGMAN_THROW_A_FMT(Is128Bit, "Programming Error: This should never occur!");
   Result.High = LoadZeroVector(OpSize::i128Bit);
 

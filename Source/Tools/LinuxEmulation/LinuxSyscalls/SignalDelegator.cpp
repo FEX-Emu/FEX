@@ -455,8 +455,10 @@ bool SignalDelegator::HandleSignalPause(FEXCore::Core::InternalThreadState* Thre
       ArchHelpers::Context::SetPc(ucontext, Config.ThreadPauseHandlerAddressSpillSRA);
     } else {
       // We are in non-jit, SRA is already spilled
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
       LOGMAN_THROW_A_FMT(!IsAddressInDispatcher(ArchHelpers::Context::GetPc(ucontext)), "Signals in dispatcher have unsynchronized "
                                                                                         "context");
+#endif
       ArchHelpers::Context::SetPc(ucontext, Config.ThreadPauseHandlerAddress);
     }
 
@@ -486,8 +488,10 @@ bool SignalDelegator::HandleSignalPause(FEXCore::Core::InternalThreadState* Thre
       ArchHelpers::Context::SetPc(ucontext, Config.ThreadStopHandlerAddressSpillSRA);
     } else {
       // We are in non-jit, SRA is already spilled
+#if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
       LOGMAN_THROW_A_FMT(!IsAddressInDispatcher(ArchHelpers::Context::GetPc(ucontext)), "Signals in dispatcher have unsynchronized "
                                                                                         "context");
+#endif
       ArchHelpers::Context::SetPc(ucontext, Config.ThreadStopHandlerAddress);
     }
 

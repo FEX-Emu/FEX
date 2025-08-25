@@ -1352,7 +1352,7 @@ DEF_OP(VFMin) {
 
   const auto ElementSize = Op->Header.ElementSize;
   const auto SubRegSize = ConvertSubRegSize248(IROp);
-  [[maybe_unused]] const auto IsScalar = ElementSize == OpSize;
+  const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
   LOGMAN_THROW_A_FMT(!Is256Bit || HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
 
@@ -1425,7 +1425,7 @@ DEF_OP(VFMax) {
 
   const auto ElementSize = Op->Header.ElementSize;
   const auto SubRegSize = ConvertSubRegSize248(IROp);
-  [[maybe_unused]] const auto IsScalar = ElementSize == OpSize;
+  const auto IsScalar = ElementSize == OpSize;
   const auto Is256Bit = OpSize == IR::OpSize::i256Bit;
   LOGMAN_THROW_A_FMT(!Is256Bit || HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__);
 

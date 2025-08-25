@@ -32,11 +32,11 @@ public:
   ForkableUniqueMutex& operator=(ForkableUniqueMutex&&) = default;
 
   void lock() {
-    [[maybe_unused]] const auto Result = pthread_mutex_lock(&Mutex);
+    const auto Result = pthread_mutex_lock(&Mutex);
     LOGMAN_THROW_A_FMT(Result == 0, "{} failed to lock with {}", __func__, Result);
   }
   void unlock() {
-    [[maybe_unused]] const auto Result = pthread_mutex_unlock(&Mutex);
+    const auto Result = pthread_mutex_unlock(&Mutex);
     LOGMAN_THROW_A_FMT(Result == 0, "{} failed to unlock with {}", __func__, Result);
   }
   // Initialize the internal pthread object to its default initializer state.
@@ -47,7 +47,7 @@ public:
 
   // Asserts that the mutex isn't exclusively owned by the calling thread.
   void check_lock_owned_by_self() {
-    [[maybe_unused]] const auto Result = pthread_mutex_lock(&Mutex);
+    const auto Result = pthread_mutex_lock(&Mutex);
     LOGMAN_THROW_A_FMT(Result == EDEADLK, "User of unique lock must have already locked mutex as write!");
   }
 
@@ -67,15 +67,15 @@ public:
   ForkableSharedMutex& operator=(ForkableSharedMutex&&) = default;
 
   void lock() {
-    [[maybe_unused]] const auto Result = pthread_rwlock_wrlock(&Mutex);
+    const auto Result = pthread_rwlock_wrlock(&Mutex);
     LOGMAN_THROW_A_FMT(Result == 0, "{} failed to lock with {}", __func__, Result);
   }
   void unlock() {
-    [[maybe_unused]] const auto Result = pthread_rwlock_unlock(&Mutex);
+    const auto Result = pthread_rwlock_unlock(&Mutex);
     LOGMAN_THROW_A_FMT(Result == 0, "{} failed to unlock with {}", __func__, Result);
   }
   void lock_shared() {
-    [[maybe_unused]] const auto Result = pthread_rwlock_rdlock(&Mutex);
+    const auto Result = pthread_rwlock_rdlock(&Mutex);
     LOGMAN_THROW_A_FMT(Result == 0, "{} failed to lock with {}", __func__, Result);
   }
 
@@ -95,7 +95,7 @@ public:
 
   // Asserts that the rwlock isn't exclusively owned by the calling thread.
   void check_lock_owned_by_self_as_write() {
-    [[maybe_unused]] const auto Result = pthread_rwlock_wrlock(&Mutex);
+    const auto Result = pthread_rwlock_wrlock(&Mutex);
     LOGMAN_THROW_A_FMT(Result == EDEADLK, "User of rwlock must have already locked mutex as write!");
   }
 

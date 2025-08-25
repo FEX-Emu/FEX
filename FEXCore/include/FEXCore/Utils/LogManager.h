@@ -70,6 +70,7 @@ namespace Throw {
   static inline void AFmt(bool, const char*, ...) {}
 #define LOGMAN_THROW_A_FMT(pred, ...) \
   do {                                \
+    (void)(pred);                     \
   } while (0)
 #endif
 

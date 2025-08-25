@@ -396,12 +396,10 @@ public:
    * @{ */
   /**  @} */
   void LinkCodeBlocks(Ref CodeNode, Ref Next) {
+    [[maybe_unused]] auto CurrentIROp = CodeNode->Op(DualListData.DataBegin())->CW<FEXCore::IR::IROp_CodeBlock>();
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-    FEXCore::IR::IROp_CodeBlock* CurrentIROp =
-#endif
-      CodeNode->Op(DualListData.DataBegin())->CW<FEXCore::IR::IROp_CodeBlock>();
-
     LOGMAN_THROW_A_FMT(CurrentIROp->Header.Op == IROps::OP_CODEBLOCK, "Invalid");
+#endif
 
     CodeNode->append(DualListData.ListBegin(), Next);
   }
