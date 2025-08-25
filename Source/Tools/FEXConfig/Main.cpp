@@ -406,6 +406,12 @@ ConfigRuntime::ConfigRuntime(const QString& ConfigFilename) {
 }
 
 void ConfigRuntime::onSave(const QUrl& Filename) {
+  // If no RootFS is selected, assume another Config layer is setting it up and drop it from the local configuration
+  auto RootFS = LoadedConfig->Get(FEXCore::Config::ConfigOption::CONFIG_ROOTFS).value_or(nullptr);
+  if (RootFS && RootFS->empty()) {
+    LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_ROOTFS);
+  }
+
   qInfo() << "Saving to" << Filename.toLocalFile().toStdString().c_str();
   FEX::Config::SaveLayerToJSON(Filename.toLocalFile().toStdString().c_str(), LoadedConfig.get(), HostLibs.HostLibsDB);
 }
