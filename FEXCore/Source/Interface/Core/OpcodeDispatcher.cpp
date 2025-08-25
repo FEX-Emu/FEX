@@ -5978,13 +5978,14 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
       OpNum = OpNum & 0x7FF;
       auto Dispatcher = Op.Ptr;
       for (uint8_t i = 0; i < Op.Count; ++i) {
-        LOGMAN_THROW_A_FMT(FinalTable[OpNum + i].OpcodeDispatcher == nullptr, "Duplicate Entry");
-        FinalTable[OpNum + i].OpcodeDispatcher = Dispatcher;
+        LOGMAN_THROW_A_FMT(FinalTable[OpNum + i].OpcodeDispatcher.OpDispatch == nullptr, "Duplicate Entry");
+
+        FinalTable[OpNum + i].OpcodeDispatcher.OpDispatch = Dispatcher;
 
         // Flag to indicate if we need to repeat this op in {0x40, 0x80} ranges
         if (Repeat) {
-          FinalTable[(OpNum | 0x40) + i].OpcodeDispatcher = Dispatcher;
-          FinalTable[(OpNum | 0x80) + i].OpcodeDispatcher = Dispatcher;
+          FinalTable[(OpNum | 0x40) + i].OpcodeDispatcher.OpDispatch = Dispatcher;
+          FinalTable[(OpNum | 0x80) + i].OpcodeDispatcher.OpDispatch = Dispatcher;
         }
       }
     }
