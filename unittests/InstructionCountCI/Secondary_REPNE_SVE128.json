@@ -13,10 +13,16 @@
   },
   "Instructions": {
     "cvtpd2dq xmm0, xmm1": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 9,
       "Comment": "0xf2 0x0f 0xe6",
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frint32x v2.2d, v17.2d",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fcvtzs v2.2d, v2.2d",
         "xtn v16.2s, v2.2d"
       ]

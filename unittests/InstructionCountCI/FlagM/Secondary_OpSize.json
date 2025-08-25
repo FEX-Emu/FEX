@@ -14,9 +14,12 @@
   },
   "Instructions": {
     "ucomisd xmm0, xmm1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 7,
       "Comment": "0x66 0x0f 0x2e",
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fcmp d16, d17",
         "cset x26, vc",
         "mov w27, #0x0",
@@ -24,9 +27,12 @@
       ]
     },
     "comisd xmm0, xmm1": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 7,
       "Comment": "0x66 0x0f 0x2f",
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fcmp d16, d17",
         "cset x26, vc",
         "mov w27, #0x0",
