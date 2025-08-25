@@ -430,12 +430,17 @@ constexpr uint8_t OpToIndex(uint8_t Op) {
 using DecodedOp = DecodedInst const*;
 using OpDispatchPtr = void (IR::OpDispatchBuilder::*)(DecodedOp);
 
+union OpDispatchPtrWrapper {
+  OpDispatchPtr OpDispatch;
+  struct X86InstInfo *Indirect;
+};
+
 struct X86InstInfo {
   char const *Name;
   InstType Type;
   InstFlags::InstFlagType Flags; ///< Must be larger than InstFlags enum
   uint8_t MoreBytes;
-  OpDispatchPtr OpcodeDispatcher;
+  OpDispatchPtrWrapper OpcodeDispatcher;
 
   bool operator==(const X86InstInfo &b) const {
     if (strcmp(Name, b.Name) != 0 ||
@@ -514,7 +519,7 @@ constexpr static inline void GenerateTable(X86InstInfo *FinalTable, X86TablesInf
       if (FinalTable[OpNum + i].Type != TYPE_UNKNOWN) {
         LOGMAN_MSG_A_FMT("Duplicate Entry {}->{}", FinalTable[OpNum + i].Name, Info.Name);
       }
-      if (FinalTable[OpNum + i].OpcodeDispatcher) {
+      if (FinalTable[OpNum + i].OpcodeDispatcher.OpDispatch) {
         LOGMAN_MSG_A_FMT("Already installed an OpcodeDispatcher for 0x{:x}", OpNum + i);
       }
       FinalTable[OpNum + i] = Info;

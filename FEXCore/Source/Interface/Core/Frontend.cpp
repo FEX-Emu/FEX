@@ -1007,7 +1007,7 @@ Decoder::DecodedBlockStatus Decoder::DecodeInstruction(uint64_t PC) {
     DecodeInst->TableInfo = nullptr;
     DecodeInst->InstSize = 0;
     return ErrorDuringDecoding ? DecodedBlockStatus::INVALID_INST : DecodedBlockStatus::NOEXEC_INST;
-  } else if (!DecodeInst->TableInfo || !DecodeInst->TableInfo->OpcodeDispatcher) {
+  } else if (!DecodeInst->TableInfo || (DecodeInst->TableInfo->Type == TYPE_INST && !DecodeInst->TableInfo->OpcodeDispatcher.OpDispatch)) {
     // If there wasn't an error during decoding but we have no dispatcher for the instruction then claim invalid instruction.
     return DecodedBlockStatus::INVALID_INST;
   }

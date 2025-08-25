@@ -2702,12 +2702,12 @@ constexpr inline void InstallToTable(auto& FinalTable, const auto& LocalTable) {
     for (uint8_t i = 0; i < Op.Count; ++i) {
       auto& TableOp = FinalTable[OpNum + i];
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-      if (TableOp.OpcodeDispatcher) {
+      if (TableOp.OpcodeDispatcher.OpDispatch) {
         ERROR_AND_DIE_FMT("Duplicate Entry {}", TableOp.Name);
       }
 #endif
 
-      TableOp.OpcodeDispatcher = Dispatcher;
+      TableOp.OpcodeDispatcher.OpDispatch = Dispatcher;
     }
   }
 }
