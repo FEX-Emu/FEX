@@ -19,6 +19,11 @@ class OrderedNode;
 #define OpcodeArgs [[maybe_unused]] FEXCore::X86Tables::DecodedOp Op
 
 void OpDispatchBuilder::SHA1NEXTEOp(OpcodeArgs) {
+  if (!CTX->HostFeatures.SupportsSHA) {
+    InvalidOp(Op);
+    return;
+  }
+
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
@@ -36,6 +41,11 @@ void OpDispatchBuilder::SHA1NEXTEOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SHA1MSG1Op(OpcodeArgs) {
+  if (!CTX->HostFeatures.SupportsSHA) {
+    InvalidOp(Op);
+    return;
+  }
+
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
@@ -48,6 +58,11 @@ void OpDispatchBuilder::SHA1MSG1Op(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SHA1MSG2Op(OpcodeArgs) {
+  if (!CTX->HostFeatures.SupportsSHA) {
+    InvalidOp(Op);
+    return;
+  }
+
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
@@ -62,6 +77,11 @@ void OpDispatchBuilder::SHA1MSG2Op(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
+  if (!CTX->HostFeatures.SupportsSHA) {
+    InvalidOp(Op);
+    return;
+  }
+
   const uint64_t Imm8 = Op->Src[1].Literal() & 0b11;
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
@@ -100,6 +120,11 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SHA256MSG1Op(OpcodeArgs) {
+  if (!CTX->HostFeatures.SupportsSHA) {
+    InvalidOp(Op);
+    return;
+  }
+
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
@@ -109,6 +134,11 @@ void OpDispatchBuilder::SHA256MSG1Op(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SHA256MSG2Op(OpcodeArgs) {
+  if (!CTX->HostFeatures.SupportsSHA) {
+    InvalidOp(Op);
+    return;
+  }
+
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
 
@@ -121,17 +151,12 @@ void OpDispatchBuilder::SHA256MSG2Op(OpcodeArgs) {
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
-Ref OpDispatchBuilder::BitwiseAtLeastTwo(Ref A, Ref B, Ref C) {
-  // Returns whether at least 2/3 of A/B/C is true.
-  // Expressed as (A & (B | C)) | (B & C)
-  //
-  // Equivalent to expression in SHA calculations: (A & B) ^ (A & C) ^ (B & C)
-  auto And = _And(OpSize::i32Bit, B, C);
-  auto Or = _Or(OpSize::i32Bit, B, C);
-  return _Or(OpSize::i32Bit, _And(OpSize::i32Bit, A, Or), And);
-}
-
 void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
+  if (!CTX->HostFeatures.SupportsSHA) {
+    InvalidOp(Op);
+    return;
+  }
+
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   // Hardcoded to XMM0
@@ -163,12 +188,22 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AESImcOp(OpcodeArgs) {
+  if (!CTX->HostFeatures.SupportsAES) {
+    InvalidOp(Op);
+    return;
+  }
+
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Result = _VAESImc(Src);
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::AESEncOp(OpcodeArgs) {
+  if (!CTX->HostFeatures.SupportsAES) {
+    InvalidOp(Op);
+    return;
+  }
+
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Result = _VAESEnc(OpSize::i128Bit, Dest, Src, LoadZeroVector(OpSize::i128Bit));
@@ -190,6 +225,11 @@ void OpDispatchBuilder::VAESEncOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AESEncLastOp(OpcodeArgs) {
+  if (!CTX->HostFeatures.SupportsAES) {
+    InvalidOp(Op);
+    return;
+  }
+
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Result = _VAESEncLast(OpSize::i128Bit, Dest, Src, LoadZeroVector(OpSize::i128Bit));
@@ -211,6 +251,11 @@ void OpDispatchBuilder::VAESEncLastOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AESDecOp(OpcodeArgs) {
+  if (!CTX->HostFeatures.SupportsAES) {
+    InvalidOp(Op);
+    return;
+  }
+
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Result = _VAESDec(OpSize::i128Bit, Dest, Src, LoadZeroVector(OpSize::i128Bit));
@@ -232,6 +277,11 @@ void OpDispatchBuilder::VAESDecOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AESDecLastOp(OpcodeArgs) {
+  if (!CTX->HostFeatures.SupportsAES) {
+    InvalidOp(Op);
+    return;
+  }
+
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   Ref Result = _VAESDecLast(OpSize::i128Bit, Dest, Src, LoadZeroVector(OpSize::i128Bit));
@@ -261,6 +311,11 @@ Ref OpDispatchBuilder::AESKeyGenAssistImpl(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AESKeyGenAssist(OpcodeArgs) {
+  if (!CTX->HostFeatures.SupportsAES) {
+    InvalidOp(Op);
+    return;
+  }
+
   Ref Result = AESKeyGenAssistImpl(Op);
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }

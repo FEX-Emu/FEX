@@ -162,6 +162,20 @@ add_custom_target(IR_INC
   DEPENDS "${OUTPUT_NAME}"
   DEPENDS "${OUTPUT_IR_DOC}")
 
+# Generate x86 instruction tables
+set(OUTPUT_X86_TABLE_FOLDER "${CMAKE_BINARY_DIR}/gen/include/FEXCore/")
+file(MAKE_DIRECTORY "${OUTPUT_X86_TABLE_FOLDER}")
+
+add_custom_command(
+  OUTPUT "${OUTPUT_X86_TABLE_FOLDER}/DDDTables.inl" "${OUTPUT_X86_TABLE_FOLDER}/H0F38Tables.inl"
+  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/Generate_X86.py"
+  COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../Scripts/Generate_X86.py" "${OUTPUT_X86_TABLE_FOLDER}"
+  )
+
+add_custom_target(X86_TABLE_INC
+  DEPENDS "${OUTPUT_X86_TABLE_FOLDER}/DDDTables.inl"
+  DEPENDS "${OUTPUT_X86_TABLE_FOLDER}/H0F38Tables.inl")
+
 # Generate the configuration include file
 set(OUTPUT_CONFIG_FOLDER "${CMAKE_BINARY_DIR}/include/FEXCore/Config")
 set(OUTPUT_CONFIG_NAME "${OUTPUT_CONFIG_FOLDER}/ConfigValues.inl")
@@ -224,9 +238,10 @@ function(AddDefaultOptionsToTarget Name)
 
   target_include_directories(${Name} PUBLIC "${PROJECT_SOURCE_DIR}/include/")
   target_include_directories(${Name} PUBLIC "${CMAKE_BINARY_DIR}/include/")
+  target_include_directories(${Name} PRIVATE "${CMAKE_BINARY_DIR}/gen/include/")
 
   target_compile_definitions(${Name} PRIVATE ${DEFINES})
-  add_dependencies(${Name} CONFIG_INC IR_INC)
+  add_dependencies(${Name} CONFIG_INC IR_INC X86_TABLE_INC)
 
   target_compile_options(${Name}
     PRIVATE

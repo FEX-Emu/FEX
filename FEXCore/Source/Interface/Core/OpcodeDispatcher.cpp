@@ -4824,6 +4824,11 @@ void OpDispatchBuilder::RDPIDOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CRC32(OpcodeArgs) {
+  if (!CTX->HostFeatures.SupportsCRC) {
+    InvalidOp(Op);
+    return;
+  }
+
   const auto GPRSize = GetGPROpSize();
 
   // Destination GPR size is always 4 or 8 bytes depending on widening
@@ -4924,30 +4929,6 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
   if (!CTX || Initialized) {
     return;
   }
-#define OPD(prefix, opcode) (((prefix) << 8) | opcode)
-  constexpr uint16_t PF_38_NONE = 0;
-  constexpr uint16_t PF_38_66 = (1U << 0);
-  constexpr uint16_t PF_38_F2 = (1U << 1);
-
-  constexpr static DispatchTableEntry H0F38_SHA[] = {
-    {OPD(PF_38_NONE, 0xC8), 1, &OpDispatchBuilder::SHA1NEXTEOp},  {OPD(PF_38_NONE, 0xC9), 1, &OpDispatchBuilder::SHA1MSG1Op},
-    {OPD(PF_38_NONE, 0xCA), 1, &OpDispatchBuilder::SHA1MSG2Op},   {OPD(PF_38_NONE, 0xCB), 1, &OpDispatchBuilder::SHA256RNDS2Op},
-    {OPD(PF_38_NONE, 0xCC), 1, &OpDispatchBuilder::SHA256MSG1Op}, {OPD(PF_38_NONE, 0xCD), 1, &OpDispatchBuilder::SHA256MSG2Op},
-  };
-
-  constexpr static DispatchTableEntry H0F38_AES[] = {
-    {OPD(PF_38_66, 0xDB), 1, &OpDispatchBuilder::AESImcOp},     {OPD(PF_38_66, 0xDC), 1, &OpDispatchBuilder::AESEncOp},
-    {OPD(PF_38_66, 0xDD), 1, &OpDispatchBuilder::AESEncLastOp}, {OPD(PF_38_66, 0xDE), 1, &OpDispatchBuilder::AESDecOp},
-    {OPD(PF_38_66, 0xDF), 1, &OpDispatchBuilder::AESDecLastOp},
-  };
-  constexpr static DispatchTableEntry H0F38_CRC[] = {
-    {OPD(PF_38_F2, 0xF0), 1, &OpDispatchBuilder::CRC32},
-    {OPD(PF_38_F2, 0xF1), 1, &OpDispatchBuilder::CRC32},
-
-    {OPD(PF_38_66 | PF_38_F2, 0xF0), 1, &OpDispatchBuilder::CRC32},
-    {OPD(PF_38_66 | PF_38_F2, 0xF1), 1, &OpDispatchBuilder::CRC32},
-  };
-#undef OPD
 
 #define OPD(REX, prefix, opcode) ((REX << 9) | (prefix << 8) | opcode)
 #define PF_3A_NONE 0
@@ -5411,14 +5392,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
   };
 #undef OPD
 
-  if (CTX->HostFeatures.SupportsCRC) {
-    InstallToTable(FEXCore::X86Tables::H0F38TableOps, H0F38_CRC);
-  }
-
-  InstallToTable(FEXCore::X86Tables::H0F38TableOps, H0F38_SHA);
-
   if (CTX->HostFeatures.SupportsAES) {
-    InstallToTable(FEXCore::X86Tables::H0F38TableOps, H0F38_AES);
     InstallToTable(FEXCore::X86Tables::H0F3ATableOps, H0F3A_AES);
   }
 
@@ -5978,13 +5952,14 @@ void InstallOpcodeHandlers(Context::OperatingMode Mode) {
       OpNum = OpNum & 0x7FF;
       auto Dispatcher = Op.Ptr;
       for (uint8_t i = 0; i < Op.Count; ++i) {
-        LOGMAN_THROW_A_FMT(FinalTable[OpNum + i].OpcodeDispatcher == nullptr, "Duplicate Entry");
-        FinalTable[OpNum + i].OpcodeDispatcher = Dispatcher;
+        LOGMAN_THROW_A_FMT(FinalTable[OpNum + i].OpcodeDispatcher.OpDispatch == nullptr, "Duplicate Entry");
+
+        FinalTable[OpNum + i].OpcodeDispatcher.OpDispatch = Dispatcher;
 
         // Flag to indicate if we need to repeat this op in {0x40, 0x80} ranges
         if (Repeat) {
-          FinalTable[(OpNum | 0x40) + i].OpcodeDispatcher = Dispatcher;
-          FinalTable[(OpNum | 0x80) + i].OpcodeDispatcher = Dispatcher;
+          FinalTable[(OpNum | 0x40) + i].OpcodeDispatcher.OpDispatch = Dispatcher;
+          FinalTable[(OpNum | 0x80) + i].OpcodeDispatcher.OpDispatch = Dispatcher;
         }
       }
     }

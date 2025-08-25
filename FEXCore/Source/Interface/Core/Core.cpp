@@ -649,8 +649,8 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
           Thread->OpDispatcher->SetCurrentCodeBlock(NextOpBlock);
         }
 
-        if (TableInfo && TableInfo->OpcodeDispatcher) {
-          auto Fn = TableInfo->OpcodeDispatcher;
+        if (TableInfo && TableInfo->OpcodeDispatcher.OpDispatch) {
+          auto Fn = TableInfo->OpcodeDispatcher.OpDispatch;
           Thread->OpDispatcher->ResetHandledLock();
           Thread->OpDispatcher->ResetDecodeFailure();
           IR::ForceTSOMode ForceTSO =
