@@ -49,43 +49,55 @@
       ]
     },
     "cvtsi2sd xmm0, eax": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "0xf2 0x0f 0x2a"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "scvtf d0, w4",
         "mov v16.d[0], v0.d[0]"
       ]
     },
     "cvtsi2sd xmm0, dword [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "0xf2 0x0f 0x2a"
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x4]",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "scvtf d0, w20",
         "mov v16.d[0], v0.d[0]"
       ]
     },
     "cvtsi2sd xmm0, rax": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "0xf2 0x0f 0x2a"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "scvtf d0, x4",
         "mov v16.d[0], v0.d[0]"
       ]
     },
     "cvtsi2sd xmm0, qword [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "0xf2 0x0f 0x2a"
       ],
       "ExpectedArm64ASM": [
         "ldr d2, [x4]",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "scvtf d0, d2",
         "mov v16.d[0], v0.d[0]"
       ]
@@ -98,141 +110,210 @@
       ]
     },
     "cvttsd2si eax, xmm0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 8,
       "Comment": "0xf2 0x0f 0x2c",
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frint32z d2, d16",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fcvtzs w4, d2"
       ]
     },
     "cvttsd2si eax, qword [rbx]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 9,
       "Comment": "0xf2 0x0f 0x2c",
       "ExpectedArm64ASM": [
         "ldr d2, [x6]",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frint32z d2, d2",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fcvtzs w4, d2"
       ]
     },
     "cvttsd2si rax, xmm0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 8,
       "Comment": "0xf2 0x0f 0x2c",
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frint64z d2, d16",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fcvtzs x4, d2"
       ]
     },
     "cvttsd2si rax, qword [rbx]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 9,
       "Comment": "0xf2 0x0f 0x2c",
       "ExpectedArm64ASM": [
         "ldr d2, [x6]",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frint64z d2, d2",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fcvtzs x4, d2"
       ]
     },
     "cvtsd2si eax, xmm0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 8,
       "Comment": "0xf2 0x0f 0x2d",
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frint32x d2, d16",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fcvtzs w4, d2"
       ]
     },
     "cvtsd2si eax, qword [rbx]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 9,
       "Comment": "0xf2 0x0f 0x2d",
       "ExpectedArm64ASM": [
         "ldr d2, [x6]",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frint32x d2, d2",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fcvtzs w4, d2"
       ]
     },
     "cvtsd2si rax, xmm0": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 8,
       "Comment": "0xf2 0x0f 0x2d",
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frint64x d2, d16",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fcvtzs x4, d2"
       ]
     },
     "cvtsd2si rax, qword [rbx]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 9,
       "Comment": "0xf2 0x0f 0x2d",
       "ExpectedArm64ASM": [
         "ldr d2, [x6]",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frint64x d2, d2",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fcvtzs x4, d2"
       ]
     },
     "sqrtsd xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "0xf2 0x0f 0x51"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fsqrt d0, d17",
         "mov v16.d[0], v0.d[0]"
       ]
     },
     "addsd xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "0xf2 0x0f 0x58"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fadd d0, d16, d17",
         "mov v16.d[0], v0.d[0]"
       ]
     },
     "mulsd xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "0xf2 0x0f 0x59"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fmul d0, d16, d17",
         "mov v16.d[0], v0.d[0]"
       ]
     },
     "cvtsd2ss xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "0xf2 0x0f 0x5a"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fcvt s0, d17",
         "mov v16.s[0], v0.s[0]"
       ]
     },
     "cvtsd2ss xmm0, [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "0xf2 0x0f 0x5a"
       ],
       "ExpectedArm64ASM": [
         "ldr d2, [x4]",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fcvt s0, d2",
         "mov v16.s[0], v0.s[0]"
       ]
     },
     "subsd xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "0xf2 0x0f 0x5c"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fsub d0, d16, d17",
         "mov v16.d[0], v0.d[0]"
       ]
     },
     "minsd xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "0xf2 0x0f 0x5d"
       ],
       "ExpectedArm64ASM": [
         "mrs x20, nzcv",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fcmp d16, d17",
         "fcsel d0, d16, d17, mi",
         "mov v16.d[0], v0.d[0]",
@@ -240,22 +321,28 @@
       ]
     },
     "divsd xmm0, xmm1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "0xf2 0x0f 0x5e"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fdiv d0, d16, d17",
         "mov v16.d[0], v0.d[0]"
       ]
     },
     "maxsd xmm0, xmm1": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "0xf2 0x0f 0x5f"
       ],
       "ExpectedArm64ASM": [
         "mrs x20, nzcv",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fcmp d16, d17",
         "fcsel d0, d16, d17, gt",
         "mov v16.d[0], v0.d[0]",
@@ -352,57 +439,75 @@
       ]
     },
     "haddps xmm0, xmm1": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 4,
       "Comment": "0xf2 0x0f 0x7c",
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "faddp v16.4s, v16.4s, v17.4s"
       ]
     },
     "hsubps xmm0, xmm1": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 6,
       "Comment": "0xf2 0x0f 0x7d",
       "ExpectedArm64ASM": [
         "uzp1 v2.4s, v16.4s, v17.4s",
         "uzp2 v3.4s, v16.4s, v17.4s",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fsub v16.4s, v2.4s, v3.4s"
       ]
     },
     "cmpsd xmm0, xmm1, 0": {
-      "ExpectedInstructionCount": 2,
-      "Comment": [
-        "0xf2 0x0f 0xc2"
-      ],
-      "ExpectedArm64ASM": [
-        "fcmeq d0, d17, d16",
-        "mov v16.d[0], v0.d[0]"
-      ]
-    },
-    "cmpsd xmm0, xmm1, 1": {
-      "ExpectedInstructionCount": 2,
-      "Comment": [
-        "0xf2 0x0f 0xc2"
-      ],
-      "ExpectedArm64ASM": [
-        "fcmgt d0, d17, d16",
-        "mov v16.d[0], v0.d[0]"
-      ]
-    },
-    "cmpsd xmm0, xmm1, 2": {
-      "ExpectedInstructionCount": 2,
-      "Comment": [
-        "0xf2 0x0f 0xc2"
-      ],
-      "ExpectedArm64ASM": [
-        "fcmge d0, d17, d16",
-        "mov v16.d[0], v0.d[0]"
-      ]
-    },
-    "cmpsd xmm0, xmm1, 3": {
       "ExpectedInstructionCount": 5,
       "Comment": [
         "0xf2 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
+        "fcmeq d0, d17, d16",
+        "mov v16.d[0], v0.d[0]"
+      ]
+    },
+    "cmpsd xmm0, xmm1, 1": {
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "0xf2 0x0f 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
+        "fcmgt d0, d17, d16",
+        "mov v16.d[0], v0.d[0]"
+      ]
+    },
+    "cmpsd xmm0, xmm1, 2": {
+      "ExpectedInstructionCount": 5,
+      "Comment": [
+        "0xf2 0x0f 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
+        "fcmge d0, d17, d16",
+        "mov v16.d[0], v0.d[0]"
+      ]
+    },
+    "cmpsd xmm0, xmm1, 3": {
+      "ExpectedInstructionCount": 8,
+      "Comment": [
+        "0xf2 0x0f 0xc2"
+      ],
+      "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fcmge d0, d16, d17",
         "fcmgt d1, d17, d16",
         "orr v0.8b, v0.8b, v1.8b",
@@ -411,44 +516,56 @@
       ]
     },
     "cmpsd xmm0, xmm1, 4": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "0xf2 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fcmeq d0, d17, d16",
         "mvn v0.8b, v0.8b",
         "mov v16.d[0], v0.d[0]"
       ]
     },
     "cmpsd xmm0, xmm1, 5": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "0xf2 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fcmgt d2, d17, d16",
         "mvn v2.16b, v2.16b",
         "mov v16.d[0], v2.d[0]"
       ]
     },
     "cmpsd xmm0, xmm1, 6": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "0xf2 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fcmge d2, d17, d16",
         "mvn v2.16b, v2.16b",
         "mov v16.d[0], v2.d[0]"
       ]
     },
     "cmpsd xmm0, xmm1, 7": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "0xf2 0x0f 0xc2"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fcmge d0, d16, d17",
         "fcmgt d1, d17, d16",
         "orr v0.8b, v0.8b, v1.8b",
@@ -456,11 +573,14 @@
       ]
     },
     "addsubps xmm0, xmm1": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 6,
       "Comment": "0xf2 0x0f 0xd0",
       "ExpectedArm64ASM": [
         "ldr q2, [x28, #2960]",
         "eor v2.16b, v17.16b, v2.16b",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fadd v16.4s, v16.4s, v2.4s"
       ]
     },
@@ -476,10 +596,16 @@
       ]
     },
     "cvtpd2dq xmm0, xmm1": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 9,
       "Comment": "0xf2 0x0f 0xe6",
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frint32x v2.2d, v17.2d",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fcvtzs v2.2d, v2.2d",
         "xtn v16.2s, v2.2d"
       ]
