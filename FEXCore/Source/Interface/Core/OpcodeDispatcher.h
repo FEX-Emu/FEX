@@ -851,8 +851,6 @@ public:
 
   void PSADBW(OpcodeArgs);
 
-  Ref BitwiseAtLeastTwo(Ref A, Ref B, Ref C);
-
   void SHA1NEXTEOp(OpcodeArgs);
   void SHA1MSG1Op(OpcodeArgs);
   void SHA1MSG2Op(OpcodeArgs);
