@@ -404,7 +404,7 @@ def print_ir_sizes():
     // Make sure our array maps directly to the IROps enum
     static_assert(IRSizes[IROps::OP_LAST] == -1ULL);
 
-    [[maybe_unused, nodiscard]] static size_t GetSize(IROps Op) { return IRSizes[Op]; }
+    [[nodiscard]] inline size_t GetSize(IROps Op) { return IRSizes[Op]; }
     [[nodiscard, gnu::const, gnu::visibility("default")]] std::string_view const& GetName(IROps Op);
     [[nodiscard, gnu::const, gnu::visibility("default")]] uint8_t GetArgs(IROps Op);
     [[nodiscard, gnu::const, gnu::visibility("default")]] uint8_t GetRAArgs(IROps Op);

@@ -3,20 +3,20 @@
 #include <type_traits>
 
 #define FEX_DEF_ENUM_CLASS_BIN_OP(Enum, Op)                                        \
-  [[maybe_unused]] static constexpr Enum operator Op(Enum lhs, Enum rhs) {         \
+  inline constexpr Enum operator Op(Enum lhs, Enum rhs) {         \
     using Type = std::underlying_type_t<Enum>;                                     \
     Type _lhs = static_cast<Type>(lhs);                                            \
     Type _rhs = static_cast<Type>(rhs);                                            \
     return static_cast<Enum>(_lhs Op _rhs);                                        \
   }                                                                                \
-  [[maybe_unused]] static constexpr uint64_t operator Op(uint64_t lhs, Enum rhs) { \
+  inline constexpr uint64_t operator Op(uint64_t lhs, Enum rhs) { \
     using Type = std::underlying_type_t<Enum>;                                     \
     Type _rhs = static_cast<Type>(rhs);                                            \
     return lhs Op _rhs;                                                            \
   }
 
 #define FEX_DEF_ENUM_CLASS_UNARY_OP(Enum, Op)                    \
-  [[maybe_unused]] static constexpr Enum operator Op(Enum rhs) { \
+  inline constexpr Enum operator Op(Enum rhs) { \
     using Type = std::underlying_type_t<Enum>;                   \
     Type _rhs = static_cast<Type>(rhs);                          \
     return static_cast<Enum>(Op _rhs);                           \
