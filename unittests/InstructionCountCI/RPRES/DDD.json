@@ -12,12 +12,15 @@
   },
   "Instructions": {
     "pfrcpv mm0, mm1": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0x0f 0x0f 0x86"
       ],
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #1056]",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frecpe v0.2s, v2.2s",
         "frecps v1.2s, v0.2s, v2.2s",
         "fmul v2.2s, v0.2s, v1.2s",
@@ -29,13 +32,16 @@
       ]
     },
     "pfrsqrtv mm0, mm1": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 16,
       "Comment": [
         "0x0f 0x0f 0x87"
       ],
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #1056]",
         "fabs v3.4s, v2.4s",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frsqrte v0.2s, v3.2s",
         "fmul v1.2s, v0.2s, v0.2s",
         "frsqrts v1.2s, v1.2s, v3.2s",
@@ -50,12 +56,15 @@
       ]
     },
     "pfrcp mm0, mm1": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0x0f 0x0f 0x96"
       ],
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #1056]",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frecpe s0, s2",
         "frecps s1, s0, s2",
         "fmul s2, s0, s1",
@@ -68,13 +77,16 @@
       ]
     },
     "pfrsqrt mm0, mm1": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 17,
       "Comment": [
         "0x0f 0x0f 0x97"
       ],
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #1056]",
         "fabs v3.4s, v2.4s",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frsqrte v0.2s, v3.2s",
         "fmul v1.2s, v0.2s, v0.2s",
         "frsqrts v1.2s, v1.2s, v3.2s",

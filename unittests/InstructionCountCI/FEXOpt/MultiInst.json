@@ -308,7 +308,7 @@
     },
     "adds xmm0, xmm1, xmm2": {
       "x86InstructionCount": 2,
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 10,
       "Comment": [
         "Redundant scalar adds that can get eliminated without AFP."
       ],
@@ -317,8 +317,14 @@
         "addss xmm0, xmm2"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fadd s0, s16, s17",
         "mov v16.s[0], v0.s[0]",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fadd s0, s16, s18",
         "mov v16.s[0], v0.s[0]"
       ]
@@ -1553,7 +1559,7 @@
     },
     "Control - random block using cvtss2si 1": {
       "x86InstructionCount": 7,
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 25,
       "x86Insts": [
         "mov    rcx,rdx",
         "cvttss2si rax,xmm1",
@@ -1565,14 +1571,26 @@
       ],
       "ExpectedArm64ASM": [
         "mov x7, x5",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frint64z s2, s17",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fcvtzs x4, s2",
         "add x4, x4, x7",
         "str x4, [x8]",
         "ldr s2, [x9]",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fmul s0, s16, s2",
         "mov v16.s[0], v0.s[0]",
         "mov w7, #0x0",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fcmp s16, s18",
         "cset x26, vc",
         "axflag",
@@ -1581,7 +1599,7 @@
     },
     "Control - random block using cvtss2si 2": {
       "x86InstructionCount": 6,
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 18,
       "x86Insts": [
         "movss  xmm1,dword [rbp+0x40]",
         "roundss xmm1,xmm1,0x1",
@@ -1592,9 +1610,18 @@
       ],
       "ExpectedArm64ASM": [
         "ldr s17, [x9, #64]",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frintm s0, s17",
         "mov v17.s[0], v0.s[0]",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frint32x s2, s17",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fcvtzs w4, s2",
         "str w4, [x29, #180]",
         "mov w20, #0x3f800000",

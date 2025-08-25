@@ -296,13 +296,16 @@
     },
     "UCOMISS use only PF": {
       "x86InstructionCount": 3,
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 7,
       "x86Insts": [
         "ucomiss xmm0, xmm1",
         "setnp cl",
         "test rax, rax"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fcmp s16, s17",
         "cset x26, vc",
         "bfxil x7, x26, #0, #8",

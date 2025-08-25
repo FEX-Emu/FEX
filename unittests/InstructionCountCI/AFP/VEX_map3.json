@@ -10,111 +10,141 @@
   },
   "Instructions": {
     "vroundss xmm0, xmm1, 00000000b": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "nearest rounding",
         "Map 3 0b01 0x0a 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "mov v16.16b, v16.16b",
         "frintn s16, s16"
       ]
     },
     "vroundss xmm0, xmm1, 00000001b": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "-inf rounding",
         "Map 3 0b01 0x0a 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "mov v16.16b, v16.16b",
         "frintm s16, s16"
       ]
     },
     "vroundss xmm0, xmm1, 00000010b": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "+inf rounding",
         "Map 3 0b01 0x0a 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "mov v16.16b, v16.16b",
         "frintp s16, s16"
       ]
     },
     "vroundss xmm0, xmm1, 00000011b": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "truncate rounding",
         "Map 3 0b01 0x0a 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "mov v16.16b, v16.16b",
         "frintz s16, s16"
       ]
     },
     "vroundss xmm0, xmm1, 00000100b": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "host mode rounding",
         "Map 3 0b01 0x0a 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "mov v16.16b, v16.16b",
         "frinti s16, s16"
       ]
     },
     "vroundsd xmm0, xmm1, 00000000b": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "nearest rounding",
         "Map 3 0b01 0x0b 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "mov v16.16b, v16.16b",
         "frintn d16, d16"
       ]
     },
     "vroundsd xmm0, xmm1, 00000001b": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "-inf rounding",
         "Map 3 0b01 0x0b 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "mov v16.16b, v16.16b",
         "frintm d16, d16"
       ]
     },
     "vroundsd xmm0, xmm1, 00000010b": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "+inf rounding",
         "Map 3 0b01 0x0b 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "mov v16.16b, v16.16b",
         "frintp d16, d16"
       ]
     },
     "vroundsd xmm0, xmm1, 00000011b": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "truncate rounding",
         "Map 3 0b01 0x0b 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "mov v16.16b, v16.16b",
         "frintz d16, d16"
       ]
     },
     "vroundsd xmm0, xmm1, 00000100b": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "host mode rounding",
         "Map 3 0b01 0x0b 128-bit"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "mov v16.16b, v16.16b",
         "frinti d16, d16"
       ]

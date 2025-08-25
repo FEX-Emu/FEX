@@ -11,23 +11,29 @@
   },
   "Instructions": {
     "cvtpi2ps xmm0, [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "0x0f 0x2a"
       ],
       "ExpectedArm64ASM": [
         "ldr d2, [x4]",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "scvtf v0.2s, v2.2s",
         "mov v16.d[0], v0.d[0]"
       ]
     },
     "cvtpi2ps xmm0, mm0": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "0x0f 0x2a"
       ],
       "ExpectedArm64ASM": [
         "ldr d2, [x28, #1040]",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "scvtf v0.2s, v2.2s",
         "mov v16.d[0], v0.d[0]"
       ]

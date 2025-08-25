@@ -59,211 +59,271 @@
       ]
     },
     "roundps xmm0, xmm1, 00000000b": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Nearest rounding",
         "0x66 0x0f 0x3a 0x08"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frintn v16.4s, v17.4s"
       ]
     },
     "roundps xmm0, xmm1, 00000001b": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "-inf rounding",
         "0x66 0x0f 0x3a 0x08"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frintm v16.4s, v17.4s"
       ]
     },
     "roundps xmm0, xmm1, 00000010b": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "+inf rounding",
         "0x66 0x0f 0x3a 0x08"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frintp v16.4s, v17.4s"
       ]
     },
     "roundps xmm0, xmm1, 00000011b": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "truncate rounding",
         "0x66 0x0f 0x3a 0x08"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frintz v16.4s, v17.4s"
       ]
     },
     "roundps xmm0, xmm1, 00000100b": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "host rounding mode rounding",
         "0x66 0x0f 0x3a 0x08"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frinti v16.4s, v17.4s"
       ]
     },
     "roundpd xmm0, xmm1, 00000000b": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Nearest rounding",
         "0x66 0x0f 0x3a 0x09"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frintn v16.2d, v17.2d"
       ]
     },
     "roundpd xmm0, xmm1, 00000001b": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "-inf rounding",
         "0x66 0x0f 0x3a 0x09"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frintm v16.2d, v17.2d"
       ]
     },
     "roundpd xmm0, xmm1, 00000010b": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "+inf rounding",
         "0x66 0x0f 0x3a 0x09"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frintp v16.2d, v17.2d"
       ]
     },
     "roundpd xmm0, xmm1, 00000011b": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "truncate rounding",
         "0x66 0x0f 0x3a 0x09"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frintz v16.2d, v17.2d"
       ]
     },
     "roundpd xmm0, xmm1, 00000100b": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "host rounding mode rounding",
         "0x66 0x0f 0x3a 0x09"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frinti v16.2d, v17.2d"
       ]
     },
     "roundss xmm0, xmm1, 00000000b": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "Nearest rounding",
         "0x66 0x0f 0x3a 0x0a"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frintn s0, s17",
         "mov v16.s[0], v0.s[0]"
       ]
     },
     "roundss xmm0, xmm1, 00000001b": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "-inf rounding",
         "0x66 0x0f 0x3a 0x0a"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frintm s0, s17",
         "mov v16.s[0], v0.s[0]"
       ]
     },
     "roundss xmm0, xmm1, 00000010b": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "+inf rounding",
         "0x66 0x0f 0x3a 0x0a"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frintp s0, s17",
         "mov v16.s[0], v0.s[0]"
       ]
     },
     "roundss xmm0, xmm1, 00000011b": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "truncate rounding",
         "0x66 0x0f 0x3a 0x0a"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frintz s0, s17",
         "mov v16.s[0], v0.s[0]"
       ]
     },
     "roundss xmm0, xmm1, 00000100b": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "host rounding mode rounding",
         "0x66 0x0f 0x3a 0x0a"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frinti s0, s17",
         "mov v16.s[0], v0.s[0]"
       ]
     },
     "roundsd xmm0, xmm1, 00000000b": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "Nearest rounding",
         "0x66 0x0f 0x3a 0x0b"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frintn d0, d17",
         "mov v16.d[0], v0.d[0]"
       ]
     },
     "roundsd xmm0, xmm1, 00000001b": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "-inf rounding",
         "0x66 0x0f 0x3a 0x0b"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frintm d0, d17",
         "mov v16.d[0], v0.d[0]"
       ]
     },
     "roundsd xmm0, xmm1, 00000010b": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "+inf rounding",
         "0x66 0x0f 0x3a 0x0b"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frintp d0, d17",
         "mov v16.d[0], v0.d[0]"
       ]
     },
     "roundsd xmm0, xmm1, 00000011b": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "truncate rounding",
         "0x66 0x0f 0x3a 0x0b"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frintz d0, d17",
         "mov v16.d[0], v0.d[0]"
       ]
     },
     "roundsd xmm0, xmm1, 00000100b": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "host rounding mode rounding",
         "0x66 0x0f 0x3a 0x0b"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "frinti d0, d17",
         "mov v16.d[0], v0.d[0]"
       ]
@@ -930,76 +990,112 @@
       ]
     },
     "dpps xmm0, xmm1, 11110001b": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fmul v3.4s, v16.4s, v17.4s",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "faddp v3.4s, v3.4s, v3.4s",
         "faddp s3, v3.2s",
         "zip1 v16.4s, v3.4s, v2.4s"
       ]
     },
     "dpps xmm0, xmm1, 11110010b": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fmul v3.4s, v16.4s, v17.4s",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "faddp v3.4s, v3.4s, v3.4s",
         "faddp s3, v3.2s",
         "zip1 v16.2s, v2.2s, v3.2s"
       ]
     },
     "dpps xmm0, xmm1, 11110011b": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 10,
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fmul v2.4s, v16.4s, v17.4s",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "faddp v2.4s, v2.4s, v2.4s",
         "faddp s2, v2.2s",
         "dup v16.2s, v2.s[0]"
       ]
     },
     "dpps xmm0, xmm1, 11110100b": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fmul v3.4s, v16.4s, v17.4s",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "faddp v3.4s, v3.4s, v3.4s",
         "faddp s3, v3.2s",
         "zip1 v16.2d, v2.2d, v3.2d"
       ]
     },
     "dpps xmm0, xmm1, 11110101b": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 10,
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fmul v2.4s, v16.4s, v17.4s",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "faddp v2.4s, v2.4s, v2.4s",
         "faddp s2, v2.2s",
         "zip1 v16.2d, v2.2d, v2.2d"
       ]
     },
     "dpps xmm0, xmm1, 11110110b": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fmul v3.4s, v16.4s, v17.4s",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "faddp v3.4s, v3.4s, v3.4s",
         "faddp s3, v3.2s",
         "mov v2.s[1], v3.s[0]",
@@ -1008,13 +1104,19 @@
       ]
     },
     "dpps xmm0, xmm1, 11110111b": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fmul v3.4s, v16.4s, v17.4s",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "faddp v3.4s, v3.4s, v3.4s",
         "faddp s3, v3.2s",
         "dup v3.4s, v3.s[0]",
@@ -1023,26 +1125,38 @@
       ]
     },
     "dpps xmm0, xmm1, 11111000b": {
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fmul v3.4s, v16.4s, v17.4s",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "faddp v3.4s, v3.4s, v3.4s",
         "faddp s3, v3.2s",
         "ext v16.16b, v2.16b, v3.16b, #4"
       ]
     },
     "dpps xmm0, xmm1, 11111001b": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fmul v3.4s, v16.4s, v17.4s",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "faddp v3.4s, v3.4s, v3.4s",
         "faddp s3, v3.2s",
         "mov v2.s[0], v3.s[0]",
@@ -1051,13 +1165,19 @@
       ]
     },
     "dpps xmm0, xmm1, 11111010b": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fmul v3.4s, v16.4s, v17.4s",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "faddp v3.4s, v3.4s, v3.4s",
         "faddp s3, v3.2s",
         "dup v3.4s, v3.s[0]",
@@ -1065,13 +1185,19 @@
       ]
     },
     "dpps xmm0, xmm1, 11111011b": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fmul v3.4s, v16.4s, v17.4s",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "faddp v3.4s, v3.4s, v3.4s",
         "faddp s3, v3.2s",
         "dup v3.4s, v3.s[0]",
@@ -1080,13 +1206,19 @@
       ]
     },
     "dpps xmm0, xmm1, 11111100b": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fmul v3.4s, v16.4s, v17.4s",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "faddp v3.4s, v3.4s, v3.4s",
         "faddp s3, v3.2s",
         "dup v3.4s, v3.s[0]",
@@ -1094,13 +1226,19 @@
       ]
     },
     "dpps xmm0, xmm1, 11111101b": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fmul v3.4s, v16.4s, v17.4s",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "faddp v3.4s, v3.4s, v3.4s",
         "faddp s3, v3.2s",
         "dup v3.4s, v3.s[0]",
@@ -1109,13 +1247,19 @@
       ]
     },
     "dpps xmm0, xmm1, 11111110b": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 13,
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
       "ExpectedArm64ASM": [
         "movi v2.2d, #0x0",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fmul v3.4s, v16.4s, v17.4s",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "faddp v3.4s, v3.4s, v3.4s",
         "faddp s3, v3.2s",
         "dup v3.4s, v3.s[0]",
@@ -1124,12 +1268,18 @@
       ]
     },
     "dpps xmm0, xmm1, 11111111b": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 10,
       "Comment": [
         "0x66 0x0f 0x3a 0x40"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fmul v2.4s, v16.4s, v17.4s",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "faddp v2.4s, v2.4s, v2.4s",
         "faddp s2, v2.2s",
         "dup v16.4s, v2.s[0]"
@@ -1163,12 +1313,18 @@
       ]
     },
     "dppd xmm0, xmm1, 11111111b": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 9,
       "Comment": [
         "0x66 0x0f 0x3a 0x41"
       ],
       "ExpectedArm64ASM": [
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fmul v2.2d, v16.2d, v17.2d",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "faddp d2, v2.2d",
         "dup v16.2d, v2.d[0]"
       ]
