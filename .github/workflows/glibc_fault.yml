@@ -20,6 +20,7 @@ env:
   BUILD_TYPE: Release
   CC: clang
   CXX: clang++
+  FEX_PORTABLE: 1
 
 jobs:
   glibc_fault_test:
