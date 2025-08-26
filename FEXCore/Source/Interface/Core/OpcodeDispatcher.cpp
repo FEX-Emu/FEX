@@ -4843,6 +4843,11 @@ void OpDispatchBuilder::CRC32(OpcodeArgs) {
 
 template<bool Reseed>
 void OpDispatchBuilder::RDRANDOp(OpcodeArgs) {
+  if (!CTX->HostFeatures.SupportsRAND) {
+    UnimplementedOp(Op);
+    return;
+  }
+
   StoreResult(GPRClass, Op, _RDRAND(Reseed), OpSize::iInvalid);
 
   // If the rng number is valid then NZCV is 0b0000, otherwise NZCV is 0b0100
@@ -4861,6 +4866,9 @@ void OpDispatchBuilder::RDRANDOp(OpcodeArgs) {
     CFInverted = true;
   }
 }
+
+template void OpDispatchBuilder::RDRANDOp<true>(OpcodeArgs);
+template void OpDispatchBuilder::RDRANDOp<false>(OpcodeArgs);
 
 void OpDispatchBuilder::BreakOp(OpcodeArgs, FEXCore::IR::BreakDefinition BreakDefinition) {
   const auto GPRSize = GetGPROpSize();
@@ -4968,20 +4976,6 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 #define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
   constexpr static DispatchTableEntry VEX_PCLMUL[] = {
     {OPD(3, 0b01, 0x44), 1, &OpDispatchBuilder::VPCLMULQDQOp},
-  };
-#undef OPD
-
-#define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_6) << 5) | (prefix) << 3 | (Reg))
-  constexpr uint16_t PF_NONE = 0;
-  constexpr uint16_t PF_66 = 2;
-
-  constexpr static DispatchTableEntry SecondaryExtensionOp_RDRAND[] = {
-    // GROUP 9
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_NONE, 6), 1, &OpDispatchBuilder::RDRANDOp<false>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_NONE, 7), 1, &OpDispatchBuilder::RDRANDOp<true>},
-
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_66, 6), 1, &OpDispatchBuilder::RDRANDOp<false>},
-    {OPD(FEXCore::X86Tables::TYPE_GROUP_9, PF_66, 7), 1, &OpDispatchBuilder::RDRANDOp<true>},
   };
 #undef OPD
 
@@ -5424,10 +5418,6 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
 
   if (CTX->HostFeatures.SupportsCLZERO) {
     InstallToTable(FEXCore::X86Tables::SecondModRMTableOps, SecondaryModRMExtensionOp_CLZero);
-  }
-
-  if (CTX->HostFeatures.SupportsRAND) {
-    InstallToTable(FEXCore::X86Tables::SecondInstGroupOps, SecondaryExtensionOp_RDRAND);
   }
 
   if (CTX->HostFeatures.SupportsAVX && CTX->HostFeatures.SupportsSVE256) {

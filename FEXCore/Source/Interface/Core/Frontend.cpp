@@ -315,6 +315,13 @@ void Decoder::DecodeModRM_64(X86Tables::DecodedOperand* Operand, X86Tables::ModR
 }
 
 bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op, DecodedHeader Options) {
+  if (Info->Type == FEXCore::X86Tables::TYPE_ARCH_DISPATCHER) [[unlikely]] {
+    // Dispatcher Op.
+    // TODO: Move this in to `NormalOpHeader`, Dispatch tables have a bug currently where some subtables don't inherit flags correctly.
+    // Can be seen by running FEX asm tests if this is removed.
+    return NormalOp(&Info->OpcodeDispatcher.Indirect[BlockInfo.Is64BitMode ? 1 : 0], Op);
+  }
+
   DecodeInst->OP = Op;
   DecodeInst->TableInfo = Info;
 
@@ -680,7 +687,7 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
     ModRM.Hex = DecodeInst->ModRM;
 
     uint16_t LocalOp = OPD(Info->Type, PrefixType, ModRM.reg);
-    FEXCore::X86Tables::X86InstInfo* LocalInfo = &SecondInstGroupOps[LocalOp];
+    const FEXCore::X86Tables::X86InstInfo* LocalInfo = &SecondInstGroupOps[LocalOp];
 #undef OPD
     if (LocalInfo->Type == FEXCore::X86Tables::TYPE_SECOND_GROUP_MODRM && ModRM.mod == 0b11) {
       // Everything in this group is privileged instructions aside from XGETBV

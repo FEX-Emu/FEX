@@ -231,6 +231,9 @@ enum InstType {
   TYPE_X87 = TYPE_INST,
   TYPE_INVALID,
   TYPE_COPY_OTHER,
+  // Changes `X86InstInfo::OpcodeDispatcher` member to use the `Indirect` version.
+  // Points to a 2 member array of X86InstInfo to choose instruction description based on executing bitness.
+  TYPE_ARCH_DISPATCHER,
 
   // Must be in order
   // Groups 1, 1a, 2, 3, 4, 5, 11 are for the primary op table
@@ -432,7 +435,7 @@ using OpDispatchPtr = void (IR::OpDispatchBuilder::*)(DecodedOp);
 
 union OpDispatchPtrWrapper {
   OpDispatchPtr OpDispatch;
-  struct X86InstInfo *Indirect;
+  const struct X86InstInfo *Indirect;
 };
 
 struct X86InstInfo {
@@ -489,7 +492,7 @@ extern std::array<X86InstInfo, MAX_REPNE_MOD_TABLE_SIZE> RepNEModOps;
 extern std::array<X86InstInfo, MAX_OPSIZE_MOD_TABLE_SIZE> OpSizeModOps;
 
 extern std::array<X86InstInfo, MAX_INST_GROUP_TABLE_SIZE> PrimaryInstGroupOps;
-extern std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> SecondInstGroupOps;
+extern const std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> SecondInstGroupOps;
 extern std::array<X86InstInfo, MAX_SECOND_MODRM_TABLE_SIZE> SecondModRMTableOps;
 extern std::array<X86InstInfo, MAX_X87_TABLE_SIZE> X87Ops;
 extern std::array<X86InstInfo, MAX_3DNOW_TABLE_SIZE> DDDNowOps;

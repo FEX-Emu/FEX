@@ -13,14 +13,45 @@ $end_info$
 
 namespace FEXCore::X86Tables {
 using namespace InstFlags;
-std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> SecondInstGroupOps = []() consteval {
-  std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> Table{};
+constexpr uint16_t PF_NONE = 0;
+constexpr uint16_t PF_F3   = 1;
+constexpr uint16_t PF_66   = 2;
+constexpr uint16_t PF_F2   = 3;
 #define OPD(group, prefix, Reg) (((group - FEXCore::X86Tables::TYPE_GROUP_6) << 5) | (prefix) << 3 | (Reg))
-  constexpr uint16_t PF_NONE = 0;
-  constexpr uint16_t PF_F3   = 1;
-  constexpr uint16_t PF_66   = 2;
-  constexpr uint16_t PF_F2   = 3;
 
+enum SecondGroup_LUT {
+  ENTRY_15_F3_0,
+  ENTRY_15_F3_1,
+  ENTRY_15_F3_2,
+  ENTRY_15_F3_3,
+  ENTRY_MAX,
+};
+
+constexpr std::array<X86InstInfo[2], ENTRY_MAX> SecondGroup_ArchSelect_LUT = {{
+  // ENTRY_15_F3_0
+  {
+    {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+    {"RDFSBASE", TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_REG_ONLY, 0, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::ReadSegmentReg, IR::OpDispatchBuilder::Segment::FS> } },
+  },
+  // ENTRY_15_F3_1
+  {
+    {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+    {"RDGSBASE", TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_REG_ONLY, 0, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::ReadSegmentReg, IR::OpDispatchBuilder::Segment::GS> } },
+  },
+  // ENTRY_15_F3_2
+  {
+    {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+    {"WRFSBASE", TYPE_INST, GenFlagsDstSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_REG_ONLY, 0, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::WriteSegmentReg, IR::OpDispatchBuilder::Segment::FS> } },
+  },
+  // ENTRY_15_F3_3
+  {
+    {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+    {"WRGSBASE", TYPE_INST, GenFlagsDstSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_REG_ONLY, 0, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::WriteSegmentReg, IR::OpDispatchBuilder::Segment::GS> } },
+  },
+}};
+
+constexpr auto SecondInstGroupOps = []() consteval {
+  std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> Table{};
   constexpr U16U8InfoStruct SecondaryExtensionOpTable[] = {
     // GROUP 1
     // GROUP 2
@@ -341,10 +372,10 @@ std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> SecondInstGroupOps = [
     {OPD(TYPE_GROUP_15, PF_NONE, 6), 1, X86InstInfo{"MFENCE/XSAVEOPT", TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST,      0}},
     {OPD(TYPE_GROUP_15, PF_NONE, 7), 1, X86InstInfo{"SFENCE/CLFLUSH",  TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST,      0}},
 
-    {OPD(TYPE_GROUP_15, PF_F3, 0), 1, X86InstInfo{"RDFSBASE", TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_REG_ONLY,          0}},
-    {OPD(TYPE_GROUP_15, PF_F3, 1), 1, X86InstInfo{"RDGSBASE", TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_MOD_REG_ONLY,          0}},
-    {OPD(TYPE_GROUP_15, PF_F3, 2), 1, X86InstInfo{"WRFSBASE", TYPE_INST, GenFlagsDstSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_REG_ONLY,          0}},
-    {OPD(TYPE_GROUP_15, PF_F3, 3), 1, X86InstInfo{"WRGSBASE", TYPE_INST, GenFlagsDstSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_REG_ONLY,          0}},
+    {OPD(TYPE_GROUP_15, PF_F3, 0), 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = SecondGroup_ArchSelect_LUT[ENTRY_15_F3_0] }}},
+    {OPD(TYPE_GROUP_15, PF_F3, 1), 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = SecondGroup_ArchSelect_LUT[ENTRY_15_F3_1] }}},
+    {OPD(TYPE_GROUP_15, PF_F3, 2), 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = SecondGroup_ArchSelect_LUT[ENTRY_15_F3_2] }}},
+    {OPD(TYPE_GROUP_15, PF_F3, 3), 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = SecondGroup_ArchSelect_LUT[ENTRY_15_F3_3] }}},
     {OPD(TYPE_GROUP_15, PF_F3, 4), 1, X86InstInfo{"", TYPE_INVALID, FLAGS_NONE,                    0}},
     {OPD(TYPE_GROUP_15, PF_F3, 5), 1, X86InstInfo{"INCSSPQ", TYPE_INST, FLAGS_MODRM,                    0}},
     {OPD(TYPE_GROUP_15, PF_F3, 6), 1, X86InstInfo{"UMONITOR/CLRSSBSY", TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST,       0}},
@@ -493,11 +524,5 @@ std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> SecondInstGroupOps = [
   IR::InstallToTable(Table, IR::OpDispatch_SecondaryGroupTables);
   return Table;
 }();
-
-void InitializeSecondaryGroupTables(Context::OperatingMode Mode) {
-  if (Mode == Context::MODE_64BIT) {
-    IR::InstallToTable(SecondInstGroupOps, IR::OpDispatch_SecondaryGroupTables_64);
-  }
-}
 
 }
