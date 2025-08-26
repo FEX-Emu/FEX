@@ -299,11 +299,20 @@ Ref OpDispatchBuilder::AESKeyGenAssistImpl(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AESKeyGenAssist(OpcodeArgs) {
+  if (!CTX->HostFeatures.SupportsAES) {
+    UnimplementedOp(Op);
+    return;
+  }
+
   Ref Result = AESKeyGenAssistImpl(Op);
   StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::PCLMULQDQOp(OpcodeArgs) {
+  if (!CTX->HostFeatures.SupportsPMULL_128Bit) {
+    UnimplementedOp(Op);
+    return;
+  }
   Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
   Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
   const auto Selector = static_cast<uint8_t>(Op->Src[1].Literal());

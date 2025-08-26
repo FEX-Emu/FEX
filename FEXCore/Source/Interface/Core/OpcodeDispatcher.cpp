@@ -4937,22 +4937,6 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     return;
   }
 
-#define OPD(REX, prefix, opcode) ((REX << 9) | (prefix << 8) | opcode)
-#define PF_3A_NONE 0
-#define PF_3A_66 1
-  constexpr static DispatchTableEntry H0F3A_AES[] = {
-    {OPD(0, PF_3A_66, 0xDF), 1, &OpDispatchBuilder::AESKeyGenAssist},
-    {OPD(1, PF_3A_66, 0xDF), 1, &OpDispatchBuilder::AESKeyGenAssist},
-  };
-  constexpr static DispatchTableEntry H0F3A_PCLMUL[] = {
-    {OPD(0, PF_3A_66, 0x44), 1, &OpDispatchBuilder::PCLMULQDQOp},
-    {OPD(1, PF_3A_66, 0x44), 1, &OpDispatchBuilder::PCLMULQDQOp},
-  };
-
-#undef PF_3A_NONE
-#undef PF_3A_66
-#undef OPD
-
 #define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
   constexpr static DispatchTableEntry VEX_PCLMUL[] = {
     {OPD(3, 0b01, 0x44), 1, &OpDispatchBuilder::VPCLMULQDQOp},
@@ -5385,10 +5369,6 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
   };
 #undef OPD
 
-  if (CTX->HostFeatures.SupportsAES) {
-    InstallToTable(FEXCore::X86Tables::H0F3ATableOps, H0F3A_AES);
-  }
-
   if (CTX->HostFeatures.SupportsCLZERO) {
     InstallToTable(FEXCore::X86Tables::SecondModRMTableOps, SecondaryModRMExtensionOp_CLZero);
   }
@@ -5403,9 +5383,6 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     InstallAVX128Handlers();
   }
 
-  if (CTX->HostFeatures.SupportsPMULL_128Bit) {
-    InstallToTable(FEXCore::X86Tables::H0F3ATableOps, H0F3A_PCLMUL);
-  }
   Initialized = true;
 }
 

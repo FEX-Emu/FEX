@@ -650,6 +650,9 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
   // A normal instruction is the most likely.
   if (Info->Type == FEXCore::X86Tables::TYPE_INST) [[likely]] {
     return NormalOp(Info, Op);
+  } else if (Info->Type == FEXCore::X86Tables::TYPE_ARCH_DISPATCHER) [[unlikely]] {
+    // Dispatcher Op.
+    return NormalOp(&Info->OpcodeDispatcher.Indirect[BlockInfo.Is64BitMode ? 1 : 0], Op);
   } else if (Info->Type >= FEXCore::X86Tables::TYPE_GROUP_1 && Info->Type <= FEXCore::X86Tables::TYPE_GROUP_11) {
     uint8_t ModRMByte = ReadByte();
     DecodeInst->ModRM = ModRMByte;
