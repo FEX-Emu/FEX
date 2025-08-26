@@ -13,7 +13,7 @@ $end_info$
 namespace FEXCore::X86Tables {
 using namespace InstFlags;
 
-std::array<X86InstInfo, MAX_3DNOW_TABLE_SIZE> DDDNowOps = []() consteval {
+constexpr std::array<X86InstInfo, MAX_3DNOW_TABLE_SIZE> DDDNowOps = []() consteval {
   std::array<X86InstInfo, MAX_3DNOW_TABLE_SIZE> Table{};
   constexpr U8U8InfoStruct DDDNowOpTable[] = {
     {0x0C, 1, X86InstInfo{"PI2FW",    TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 0}},
