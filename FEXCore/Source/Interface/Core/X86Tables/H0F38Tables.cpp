@@ -13,7 +13,7 @@ $end_info$
 
 namespace FEXCore::X86Tables {
 using namespace InstFlags;
-std::array<X86InstInfo, MAX_0F_38_TABLE_SIZE> H0F38TableOps = []() consteval {
+constexpr std::array<X86InstInfo, MAX_0F_38_TABLE_SIZE> H0F38TableOps = []() consteval {
   std::array<X86InstInfo, MAX_0F_38_TABLE_SIZE> Table{};
 
 #define OPD(prefix, opcode) (((prefix) << 8) | opcode)

@@ -496,7 +496,7 @@ extern const std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> SecondIns
 extern std::array<X86InstInfo, MAX_SECOND_MODRM_TABLE_SIZE> SecondModRMTableOps;
 extern std::array<X86InstInfo, MAX_X87_TABLE_SIZE> X87Ops;
 extern const std::array<X86InstInfo, MAX_3DNOW_TABLE_SIZE> DDDNowOps;
-extern std::array<X86InstInfo, MAX_0F_38_TABLE_SIZE> H0F38TableOps;
+extern const std::array<X86InstInfo, MAX_0F_38_TABLE_SIZE> H0F38TableOps;
 extern std::array<X86InstInfo, MAX_0F_3A_TABLE_SIZE> H0F3ATableOps;
 
 // VEX
