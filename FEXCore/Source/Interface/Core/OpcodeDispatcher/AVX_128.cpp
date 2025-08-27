@@ -467,10 +467,6 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
 
   InstallToTable(FEXCore::X86Tables::VEXTableOps, AVX128Table);
   InstallToTable(FEXCore::X86Tables::VEXTableGroupOps, VEX128TableGroupOps);
-
-  SaveAVXStateFunc = &OpDispatchBuilder::AVX128_SaveAVXState;
-  RestoreAVXStateFunc = &OpDispatchBuilder::AVX128_RestoreAVXState;
-  DefaultAVXStateFunc = &OpDispatchBuilder::AVX128_DefaultAVXState;
 }
 
 OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_LoadSource_WithOpSize(
