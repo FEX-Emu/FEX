@@ -13,7 +13,12 @@ function(GenerateInterpreter NAME AsInterpreter)
   target_compile_definitions(${NAME} PRIVATE ${DEFINES})
 
   # Enable FEX APIs to be used by targets that use target_link_libraries on FEXLoader
-  set_target_properties(${NAME} PROPERTIES ENABLE_EXPORTS 1)
+  set_target_properties(${NAME} PROPERTIES
+    ENABLE_EXPORTS 1
+    C_VISIBILITY_PRESET hidden
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN TRUE
+  )
 
   target_include_directories(${NAME}
     PRIVATE
