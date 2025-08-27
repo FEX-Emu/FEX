@@ -4942,12 +4942,6 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
   }
 
 #define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
-  constexpr static DispatchTableEntry VEX_PCLMUL[] = {
-    {OPD(3, 0b01, 0x44), 1, &OpDispatchBuilder::VPCLMULQDQOp},
-  };
-#undef OPD
-
-#define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
   static constexpr DispatchTableEntry AVXTable[] = {
     {OPD(1, 0b00, 0x10), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPDOp},
     {OPD(1, 0b01, 0x10), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPDOp},
@@ -5333,6 +5327,7 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(3, 0b01, 0x40), 1, &OpDispatchBuilder::VDPPOp<OpSize::i32Bit>},
     {OPD(3, 0b01, 0x41), 1, &OpDispatchBuilder::VDPPOp<OpSize::i64Bit>},
     {OPD(3, 0b01, 0x42), 1, &OpDispatchBuilder::VMPSADBWOp},
+    {OPD(3, 0b01, 0x44), 1, &OpDispatchBuilder::VPCLMULQDQOp},
 
     {OPD(3, 0b01, 0x46), 1, &OpDispatchBuilder::VPERM2Op},
 
@@ -5372,9 +5367,6 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
   if (CTX->HostFeatures.SupportsAVX && CTX->HostFeatures.SupportsSVE256) {
     InstallToTable(FEXCore::X86Tables::VEXTableOps, AVXTable);
     InstallToTable(FEXCore::X86Tables::VEXTableGroupOps, VEXTableGroupOps);
-    if (CTX->HostFeatures.SupportsPMULL_128Bit) {
-      InstallToTable(FEXCore::X86Tables::VEXTableOps, VEX_PCLMUL);
-    }
   } else if (CTX->HostFeatures.SupportsAVX) {
     InstallAVX128Handlers();
   }
