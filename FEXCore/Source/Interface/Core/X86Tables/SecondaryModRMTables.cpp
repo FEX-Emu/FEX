@@ -12,7 +12,7 @@ $end_info$
 
 namespace FEXCore::X86Tables {
 using namespace InstFlags;
-std::array<X86InstInfo, MAX_SECOND_MODRM_TABLE_SIZE> SecondModRMTableOps = []() consteval {
+constexpr std::array<X86InstInfo, MAX_SECOND_MODRM_TABLE_SIZE> SecondModRMTableOps = []() consteval {
   std::array<X86InstInfo, MAX_SECOND_MODRM_TABLE_SIZE> Table{};
   constexpr U8U8InfoStruct SecondaryModRMExtensionOpTable[] = {
     // REG /1

@@ -493,7 +493,7 @@ extern const std::array<X86InstInfo, MAX_OPSIZE_MOD_TABLE_SIZE> OpSizeModOps;
 
 extern const std::array<X86InstInfo, MAX_INST_GROUP_TABLE_SIZE> PrimaryInstGroupOps;
 extern const std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> SecondInstGroupOps;
-extern std::array<X86InstInfo, MAX_SECOND_MODRM_TABLE_SIZE> SecondModRMTableOps;
+extern const std::array<X86InstInfo, MAX_SECOND_MODRM_TABLE_SIZE> SecondModRMTableOps;
 extern std::array<X86InstInfo, MAX_X87_TABLE_SIZE> X87Ops;
 extern const std::array<X86InstInfo, MAX_3DNOW_TABLE_SIZE> DDDNowOps;
 extern const std::array<X86InstInfo, MAX_0F_38_TABLE_SIZE> H0F38TableOps;

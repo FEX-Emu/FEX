@@ -4793,6 +4793,10 @@ void OpDispatchBuilder::UMWaitOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::CLZeroOp(OpcodeArgs) {
+  if (!CTX->HostFeatures.SupportsCLZERO) {
+    UnimplementedOp(Op);
+    return;
+  }
   Ref DestMem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.LoadData = false});
   _CacheLineZero(DestMem);
 }
@@ -4942,10 +4946,6 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(3, 0b01, 0x44), 1, &OpDispatchBuilder::VPCLMULQDQOp},
   };
 #undef OPD
-
-  constexpr static DispatchTableEntry SecondaryModRMExtensionOp_CLZero[] = {
-    {((3 << 3) | 4), 1, &OpDispatchBuilder::CLZeroOp},
-  };
 
 #define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
   static constexpr DispatchTableEntry AVXTable[] = {
@@ -5368,10 +5368,6 @@ void OpDispatchBuilder::InstallHostSpecificOpcodeHandlers() {
     {OPD(X86Tables::TYPE_VEX_GROUP_15, 0, 0b011), 1, &OpDispatchBuilder::STMXCSR},
   };
 #undef OPD
-
-  if (CTX->HostFeatures.SupportsCLZERO) {
-    InstallToTable(FEXCore::X86Tables::SecondModRMTableOps, SecondaryModRMExtensionOp_CLZero);
-  }
 
   if (CTX->HostFeatures.SupportsAVX && CTX->HostFeatures.SupportsSVE256) {
     InstallToTable(FEXCore::X86Tables::VEXTableOps, AVXTable);
