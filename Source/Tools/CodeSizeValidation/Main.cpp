@@ -647,9 +647,6 @@ int main(int argc, char** argv, char** const envp) {
   FEXCore::Config::Set(FEXCore::Config::CONFIG_HOSTFEATURES, fextl::fmt::format("{}", HostFeatureControl));
   FEXCore::Config::Set(FEXCore::Config::CONFIG_FORCESVEWIDTH, fextl::fmt::format("{}", SVEWidth));
 
-  // Initialize static tables.
-  FEXCore::Context::InitializeStaticTables(TestHeaderData->Bitness == 64 ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
-
   // Create FEXCore context.
   fextl::unique_ptr<FEXCore::Context::Context> CTX;
   {

@@ -71,7 +71,15 @@ Decoder::Decoder(FEXCore::Core::InternalThreadState* Thread)
   : Thread {Thread}
   , CTX {static_cast<FEXCore::Context::ContextImpl*>(Thread->CTX)}
   , OSABI {CTX->SyscallHandler ? CTX->SyscallHandler->GetOSABI() : FEXCore::HLE::SyscallOSABI::OS_UNKNOWN}
-  , PoolObject {CTX->FrontendAllocator, sizeof(FEXCore::X86Tables::DecodedInst) * DefaultDecodedBufferSize} {}
+  , PoolObject {CTX->FrontendAllocator, sizeof(FEXCore::X86Tables::DecodedInst) * DefaultDecodedBufferSize} {
+
+  FEX_CONFIG_OPT(ReducedPrecision, X87REDUCEDPRECISION);
+  if (ReducedPrecision) {
+    X87Table = &FEXCore::X86Tables::X87F64Ops;
+  } else {
+    X87Table = &FEXCore::X86Tables::X87F80Ops;
+  }
+}
 
 bool Decoder::CheckRangeExecutable(uint64_t Address, uint64_t Size) {
   // Treat FEX-internal X86 callbacks as always executable
@@ -315,6 +323,13 @@ void Decoder::DecodeModRM_64(X86Tables::DecodedOperand* Operand, X86Tables::ModR
 }
 
 bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op, DecodedHeader Options) {
+  if (Info->Type == FEXCore::X86Tables::TYPE_ARCH_DISPATCHER) [[unlikely]] {
+    // Dispatcher Op.
+    // TODO: Move this in to `NormalOpHeader`, Dispatch tables have a bug currently where some subtables don't inherit flags correctly.
+    // Can be seen by running FEX asm tests if this is removed.
+    return NormalOp(&Info->OpcodeDispatcher.Indirect[BlockInfo.Is64BitMode ? 1 : 0], Op);
+  }
+
   DecodeInst->OP = Op;
   DecodeInst->TableInfo = Info;
 
@@ -643,6 +658,9 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
   // A normal instruction is the most likely.
   if (Info->Type == FEXCore::X86Tables::TYPE_INST) [[likely]] {
     return NormalOp(Info, Op);
+  } else if (Info->Type == FEXCore::X86Tables::TYPE_ARCH_DISPATCHER) [[unlikely]] {
+    // Dispatcher Op.
+    return NormalOp(&Info->OpcodeDispatcher.Indirect[BlockInfo.Is64BitMode ? 1 : 0], Op);
   } else if (Info->Type >= FEXCore::X86Tables::TYPE_GROUP_1 && Info->Type <= FEXCore::X86Tables::TYPE_GROUP_11) {
     uint8_t ModRMByte = ReadByte();
     DecodeInst->ModRM = ModRMByte;
@@ -680,7 +698,7 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
     ModRM.Hex = DecodeInst->ModRM;
 
     uint16_t LocalOp = OPD(Info->Type, PrefixType, ModRM.reg);
-    FEXCore::X86Tables::X86InstInfo* LocalInfo = &SecondInstGroupOps[LocalOp];
+    const FEXCore::X86Tables::X86InstInfo* LocalInfo = &SecondInstGroupOps[LocalOp];
 #undef OPD
     if (LocalInfo->Type == FEXCore::X86Tables::TYPE_SECOND_GROUP_MODRM && ModRM.mod == 0b11) {
       // Everything in this group is privileged instructions aside from XGETBV
@@ -704,7 +722,7 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
     DecodeInst->DecodedModRM = true;
 
     uint16_t X87Op = ((Op - 0xD8) << 8) | ModRMByte;
-    return NormalOp(&X87Ops[X87Op], X87Op);
+    return NormalOp(&(*X87Table)[X87Op], X87Op);
   } else if (Info->Type == FEXCore::X86Tables::TYPE_VEX_TABLE_PREFIX) {
     uint16_t map_select = 1;
     uint16_t pp = 0;
@@ -955,7 +973,10 @@ bool Decoder::DecodeInstructionImpl(uint64_t PC) {
       break;
     default:
       [[likely]] { // Default base table
-        auto Info = &FEXCore::X86Tables::BaseOps[Op];
+        const X86InstInfo* Info = &FEXCore::X86Tables::BaseOps[Op];
+        if (Info->Type == FEXCore::X86Tables::TYPE_ARCH_DISPATCHER) {
+          Info = &Info->OpcodeDispatcher.Indirect[BlockInfo.Is64BitMode ? 1 : 0];
+        }
 
         if (Info->Type == FEXCore::X86Tables::TYPE_REX_PREFIX) {
           DecodeInst->Flags |= DecodeFlags::FLAG_REX_PREFIX;
@@ -1007,7 +1028,7 @@ Decoder::DecodedBlockStatus Decoder::DecodeInstruction(uint64_t PC) {
     DecodeInst->TableInfo = nullptr;
     DecodeInst->InstSize = 0;
     return ErrorDuringDecoding ? DecodedBlockStatus::INVALID_INST : DecodedBlockStatus::NOEXEC_INST;
-  } else if (!DecodeInst->TableInfo || !DecodeInst->TableInfo->OpcodeDispatcher) {
+  } else if (!DecodeInst->TableInfo || (DecodeInst->TableInfo->Type == TYPE_INST && !DecodeInst->TableInfo->OpcodeDispatcher.OpDispatch)) {
     // If there wasn't an error during decoding but we have no dispatcher for the instruction then claim invalid instruction.
     return DecodedBlockStatus::INVALID_INST;
   }

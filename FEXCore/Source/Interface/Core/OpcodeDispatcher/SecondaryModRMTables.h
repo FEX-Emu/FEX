@@ -17,6 +17,7 @@ constexpr DispatchTableEntry OpDispatch_SecondaryModRMTables[] = {
   // REG /7
   {((3 << 3) | 0), 1, &OpDispatchBuilder::PermissionRestrictedOp},
   {((3 << 3) | 1), 1, &OpDispatchBuilder::RDTSCPOp},
+  {((3 << 3) | 4), 1, &OpDispatchBuilder::CLZeroOp},
 };
 
 } // namespace FEXCore::IR

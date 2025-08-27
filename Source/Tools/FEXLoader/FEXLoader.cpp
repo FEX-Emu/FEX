@@ -530,9 +530,6 @@ int main(int argc, char** argv, char** const envp) {
 
   FEXCore::Profiler::Init(Program.ProgramName, Program.ProgramPath);
 
-  // System allocator is now system allocator or FEX
-  FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
-
   bool SupportsAVX {};
   fextl::unique_ptr<FEXCore::Context::Context> CTX;
   {

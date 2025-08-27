@@ -523,8 +523,6 @@ void BTCpuProcessInit() {
 
   FEXCore::Profiler::Init("", "");
 
-  FEXCore::Context::InitializeStaticTables(FEXCore::Context::MODE_32BIT);
-
   FEX_CONFIG_OPT(ExtendedVolatileMetadataConfig, EXTENDEDVOLATILEMETADATA);
   ExtendedMetaData = FEX::VolatileMetadata::ParseExtendedVolatileMetadata(ExtendedVolatileMetadataConfig());
 

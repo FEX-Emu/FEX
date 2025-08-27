@@ -150,6 +150,8 @@ private:
     &FEXCore::Frontend::Decoder::DecodeModRM_16,
   };
 
+  const std::array<X86Tables::X86InstInfo, X86Tables::MAX_X87_TABLE_SIZE>* X87Table;
+
   const uint8_t* AdjustAddrForSpecialRegion(const uint8_t* _InstStream, uint64_t EntryPoint, uint64_t RIP);
 };
 } // namespace FEXCore::Frontend

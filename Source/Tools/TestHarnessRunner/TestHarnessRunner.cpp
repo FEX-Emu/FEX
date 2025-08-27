@@ -248,8 +248,6 @@ int main(int argc, char** argv, char** const envp) {
   bool SupportsAVX = false;
   FEXCore::Core::CPUState State;
 
-  FEXCore::Context::InitializeStaticTables(Loader.Is64BitMode() ? FEXCore::Context::MODE_64BIT : FEXCore::Context::MODE_32BIT);
-
   auto HostFeatures = FEX::FetchHostFeatures();
   auto CTX = FEXCore::Context::Context::CreateNewContext(HostFeatures);
 

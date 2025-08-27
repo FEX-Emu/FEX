@@ -11,15 +11,7 @@
 #include <FEXCore/Core/Thunks.h>
 #include "FEXCore/Debug/InternalThreadState.h"
 
-#include <string.h>
-#include <utility>
-
 namespace FEXCore::Context {
-void InitializeStaticTables(OperatingMode Mode) {
-  X86Tables::InitializeInfoTables(Mode);
-  IR::InstallOpcodeHandlers(Mode);
-}
-
 fextl::unique_ptr<FEXCore::Context::Context> FEXCore::Context::Context::CreateNewContext(const FEXCore::HostFeatures& Features) {
   return fextl::make_unique<FEXCore::Context::ContextImpl>(Features);
 }

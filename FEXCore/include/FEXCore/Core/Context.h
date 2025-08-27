@@ -234,9 +234,4 @@ public:
   FEX_DEFAULT_VISIBILITY virtual void MarkMonoBackpatcherBlock(uint64_t BlockEntry) = 0;
 private:
 };
-
-/**
- * @brief This initializes internal FEXCore state that is shared between contexts and requires overhead to setup
- */
-FEX_DEFAULT_VISIBILITY void InitializeStaticTables(OperatingMode Mode = MODE_64BIT);
 } // namespace FEXCore::Context

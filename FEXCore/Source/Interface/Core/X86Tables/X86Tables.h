@@ -231,6 +231,9 @@ enum InstType {
   TYPE_X87 = TYPE_INST,
   TYPE_INVALID,
   TYPE_COPY_OTHER,
+  // Changes `X86InstInfo::OpcodeDispatcher` member to use the `Indirect` version.
+  // Points to a 2 member array of X86InstInfo to choose instruction description based on executing bitness.
+  TYPE_ARCH_DISPATCHER,
 
   // Must be in order
   // Groups 1, 1a, 2, 3, 4, 5, 11 are for the primary op table
@@ -430,12 +433,17 @@ constexpr uint8_t OpToIndex(uint8_t Op) {
 using DecodedOp = DecodedInst const*;
 using OpDispatchPtr = void (IR::OpDispatchBuilder::*)(DecodedOp);
 
+union OpDispatchPtrWrapper {
+  OpDispatchPtr OpDispatch;
+  const struct X86InstInfo *Indirect;
+};
+
 struct X86InstInfo {
   char const *Name;
   InstType Type;
   InstFlags::InstFlagType Flags; ///< Must be larger than InstFlags enum
   uint8_t MoreBytes;
-  OpDispatchPtr OpcodeDispatcher;
+  OpDispatchPtrWrapper OpcodeDispatcher;
 
   bool operator==(const X86InstInfo &b) const {
     if (strcmp(Name, b.Name) != 0 ||
@@ -477,19 +485,20 @@ constexpr size_t MAX_VEX_TABLE_SIZE = (1 << 13);
 // group select (3 bits for now) | ModRM opcode (3 bits)
 constexpr size_t MAX_VEX_GROUP_TABLE_SIZE = (1 << 7);
 
-extern std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps;
-extern std::array<X86InstInfo, MAX_SECOND_TABLE_SIZE> SecondBaseOps;
-extern std::array<X86InstInfo, MAX_REP_MOD_TABLE_SIZE> RepModOps;
-extern std::array<X86InstInfo, MAX_REPNE_MOD_TABLE_SIZE> RepNEModOps;
-extern std::array<X86InstInfo, MAX_OPSIZE_MOD_TABLE_SIZE> OpSizeModOps;
+extern const std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps;
+extern const std::array<X86InstInfo, MAX_SECOND_TABLE_SIZE> SecondBaseOps;
+extern const std::array<X86InstInfo, MAX_REP_MOD_TABLE_SIZE> RepModOps;
+extern const std::array<X86InstInfo, MAX_REPNE_MOD_TABLE_SIZE> RepNEModOps;
+extern const std::array<X86InstInfo, MAX_OPSIZE_MOD_TABLE_SIZE> OpSizeModOps;
 
-extern std::array<X86InstInfo, MAX_INST_GROUP_TABLE_SIZE> PrimaryInstGroupOps;
-extern std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> SecondInstGroupOps;
-extern std::array<X86InstInfo, MAX_SECOND_MODRM_TABLE_SIZE> SecondModRMTableOps;
-extern std::array<X86InstInfo, MAX_X87_TABLE_SIZE> X87Ops;
-extern std::array<X86InstInfo, MAX_3DNOW_TABLE_SIZE> DDDNowOps;
-extern std::array<X86InstInfo, MAX_0F_38_TABLE_SIZE> H0F38TableOps;
-extern std::array<X86InstInfo, MAX_0F_3A_TABLE_SIZE> H0F3ATableOps;
+extern const std::array<X86InstInfo, MAX_INST_GROUP_TABLE_SIZE> PrimaryInstGroupOps;
+extern const std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> SecondInstGroupOps;
+extern const std::array<X86InstInfo, MAX_SECOND_MODRM_TABLE_SIZE> SecondModRMTableOps;
+extern const std::array<X86InstInfo, MAX_X87_TABLE_SIZE> X87F80Ops;
+extern const std::array<X86InstInfo, MAX_X87_TABLE_SIZE> X87F64Ops;
+extern const std::array<X86InstInfo, MAX_3DNOW_TABLE_SIZE> DDDNowOps;
+extern const std::array<X86InstInfo, MAX_0F_38_TABLE_SIZE> H0F38TableOps;
+extern const std::array<X86InstInfo, MAX_0F_3A_TABLE_SIZE> H0F3ATableOps;
 
 // VEX
 extern std::array<X86InstInfo, MAX_VEX_TABLE_SIZE> VEXTableOps;
@@ -514,7 +523,7 @@ constexpr static inline void GenerateTable(X86InstInfo *FinalTable, X86TablesInf
       if (FinalTable[OpNum + i].Type != TYPE_UNKNOWN) {
         LOGMAN_MSG_A_FMT("Duplicate Entry {}->{}", FinalTable[OpNum + i].Name, Info.Name);
       }
-      if (FinalTable[OpNum + i].OpcodeDispatcher) {
+      if (FinalTable[OpNum + i].OpcodeDispatcher.OpDispatch) {
         LOGMAN_MSG_A_FMT("Already installed an OpcodeDispatcher for 0x{:x}", OpNum + i);
       }
       FinalTable[OpNum + i] = Info;
@@ -523,7 +532,7 @@ constexpr static inline void GenerateTable(X86InstInfo *FinalTable, X86TablesInf
 };
 
 template<typename OpcodeType>
-constexpr static inline void GenerateTableWithCopy(X86InstInfo *FinalTable, X86TablesInfoStruct<OpcodeType> const *LocalTable, size_t TableSize, X86InstInfo *OtherLocal) {
+constexpr static inline void GenerateTableWithCopy(X86InstInfo *FinalTable, X86TablesInfoStruct<OpcodeType> const *LocalTable, size_t TableSize, const X86InstInfo *OtherLocal) {
   for (size_t j = 0; j < TableSize; ++j) {
     X86TablesInfoStruct<OpcodeType> const &Op = LocalTable[j];
     auto OpNum = Op.first;
@@ -586,8 +595,6 @@ constexpr static inline void GenerateX87Table(X86InstInfo *FinalTable, X86Tables
     }
   }
 };
-
-void InitializeInfoTables(Context::OperatingMode Mode);
 
 }
 

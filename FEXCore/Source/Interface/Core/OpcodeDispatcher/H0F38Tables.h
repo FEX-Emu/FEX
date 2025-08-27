@@ -6,6 +6,7 @@ namespace FEXCore::IR {
 #define OPD(prefix, opcode) (((prefix) << 8) | opcode)
 constexpr uint16_t PF_38_NONE = 0;
 constexpr uint16_t PF_38_66 = (1U << 0);
+constexpr uint16_t PF_38_F2 = (1U << 1);
 constexpr uint16_t PF_38_F3 = (1U << 2);
 
 constexpr DispatchTableEntry OpDispatch_H0F38Table[] = {
@@ -71,8 +72,27 @@ constexpr DispatchTableEntry OpDispatch_H0F38Table[] = {
   {OPD(PF_38_66, 0x40), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VMUL, OpSize::i32Bit>},
   {OPD(PF_38_66, 0x41), 1, &OpDispatchBuilder::PHMINPOSUWOp},
 
+  {OPD(PF_38_NONE, 0xC8), 1, &OpDispatchBuilder::SHA1NEXTEOp},
+  {OPD(PF_38_NONE, 0xC9), 1, &OpDispatchBuilder::SHA1MSG1Op},
+  {OPD(PF_38_NONE, 0xCA), 1, &OpDispatchBuilder::SHA1MSG2Op},
+  {OPD(PF_38_NONE, 0xCB), 1, &OpDispatchBuilder::SHA256RNDS2Op},
+  {OPD(PF_38_NONE, 0xCC), 1, &OpDispatchBuilder::SHA256MSG1Op},
+  {OPD(PF_38_NONE, 0xCD), 1, &OpDispatchBuilder::SHA256MSG2Op},
+
+  {OPD(PF_38_66, 0xDB), 1, &OpDispatchBuilder::AESImcOp},
+  {OPD(PF_38_66, 0xDC), 1, &OpDispatchBuilder::AESEncOp},
+  {OPD(PF_38_66, 0xDD), 1, &OpDispatchBuilder::AESEncLastOp},
+  {OPD(PF_38_66, 0xDE), 1, &OpDispatchBuilder::AESDecOp},
+  {OPD(PF_38_66, 0xDF), 1, &OpDispatchBuilder::AESDecLastOp},
+
   {OPD(PF_38_NONE, 0xF0), 2, &OpDispatchBuilder::MOVBEOp},
   {OPD(PF_38_66, 0xF0), 2, &OpDispatchBuilder::MOVBEOp},
+
+  {OPD(PF_38_F2, 0xF0), 1, &OpDispatchBuilder::CRC32},
+  {OPD(PF_38_F2, 0xF1), 1, &OpDispatchBuilder::CRC32},
+
+  {OPD(PF_38_66 | PF_38_F2, 0xF0), 1, &OpDispatchBuilder::CRC32},
+  {OPD(PF_38_66 | PF_38_F2, 0xF1), 1, &OpDispatchBuilder::CRC32},
 
   {OPD(PF_38_66, 0xF6), 1, &OpDispatchBuilder::ADXOp},
   {OPD(PF_38_F3, 0xF6), 1, &OpDispatchBuilder::ADXOp},

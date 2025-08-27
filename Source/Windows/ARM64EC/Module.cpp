@@ -646,8 +646,6 @@ NTSTATUS ProcessInit() {
 
   FEXCore::Profiler::Init("", "");
 
-  FEXCore::Context::InitializeStaticTables(FEXCore::Context::MODE_64BIT);
-
   FEX_CONFIG_OPT(ExtendedVolatileMetadataConfig, EXTENDEDVOLATILEMETADATA);
   ExtendedMetaData = FEX::VolatileMetadata::ParseExtendedVolatileMetadata(ExtendedVolatileMetadataConfig());
 
