@@ -76,33 +76,4 @@ constexpr inline DispatchTableEntry OpDispatch_BaseOpTable[] = {
   {0xFA, 2, &OpDispatchBuilder::PermissionRestrictedOp},
   {0xFC, 2, &OpDispatchBuilder::FLAGControlOp},
 };
-
-constexpr inline DispatchTableEntry OpDispatch_BaseOpTable_64[] = {
-  {0x63, 1, &OpDispatchBuilder::MOVSXDOp},
-  {0xA0, 4, &OpDispatchBuilder::MOVOffsetOp},
-};
-
-constexpr inline DispatchTableEntry OpDispatch_BaseOpTable_32[] = {
-  {0x06, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX>},
-  {0x07, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX>},
-  {0x0E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_CS_PREFIX>},
-  {0x16, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX>},
-  {0x17, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX>},
-  {0x1E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX>},
-  {0x1F, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX>},
-  {0x27, 1, &OpDispatchBuilder::DAAOp},
-  {0x2F, 1, &OpDispatchBuilder::DASOp},
-  {0x37, 1, &OpDispatchBuilder::AAAOp},
-  {0x3F, 1, &OpDispatchBuilder::AASOp},
-  {0x40, 8, &OpDispatchBuilder::INCOp},
-  {0x48, 8, &OpDispatchBuilder::DECOp},
-
-  {0x60, 1, &OpDispatchBuilder::PUSHAOp},
-  {0x61, 1, &OpDispatchBuilder::POPAOp},
-  {0xA0, 4, &OpDispatchBuilder::MOVOffsetOp},
-  {0xCE, 1, &OpDispatchBuilder::INTOp},
-  {0xD4, 1, &OpDispatchBuilder::AAMOp},
-  {0xD5, 1, &OpDispatchBuilder::AADOp},
-  {0xD6, 1, &OpDispatchBuilder::SALCOp},
-};
 } // namespace FEXCore::IR

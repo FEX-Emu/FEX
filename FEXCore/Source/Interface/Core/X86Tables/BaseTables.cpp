@@ -15,7 +15,171 @@ $end_info$
 namespace FEXCore::X86Tables {
 using namespace InstFlags;
 
-std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps = []() consteval {
+enum Primary_LUT {
+  ENTRY_06,
+  ENTRY_07,
+  ENTRY_0E,
+  ENTRY_16,
+  ENTRY_17,
+  ENTRY_1E,
+  ENTRY_1F,
+  ENTRY_27,
+  ENTRY_2F,
+  ENTRY_37,
+  ENTRY_3F,
+  ENTRY_40,
+  ENTRY_48,
+  ENTRY_60,
+  ENTRY_61,
+  ENTRY_63,
+  ENTRY_9A,
+  ENTRY_A0,
+  ENTRY_A1,
+  ENTRY_A2,
+  ENTRY_A3,
+  ENTRY_CE,
+  ENTRY_D4,
+  ENTRY_D5,
+  ENTRY_D6,
+  ENTRY_EA,
+  ENTRY_MAX,
+};
+
+constexpr std::array<X86InstInfo[2], ENTRY_MAX> Primary_ArchSelect_LUT = {{
+  // ENTRY_06
+  {
+    {"PUSH ES",  TYPE_INST, GenFlagsSrcSize(SIZE_16BIT) | FLAGS_DEBUG_MEM_ACCESS, 0, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX> } },
+    {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+  },
+  // ENTRY_07
+  {
+    {"POP ES",   TYPE_INST, GenFlagsSizes(SIZE_16BIT, SIZE_DEF) | FLAGS_DEBUG_MEM_ACCESS, 0, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX> } },
+    {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+  },
+  // ENTRY_0E
+  {
+    {"PUSH CS",  TYPE_INST, GenFlagsSrcSize(SIZE_16BIT) | FLAGS_DEBUG_MEM_ACCESS, 0, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_CS_PREFIX> } },
+    {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+  },
+  // ENTRY_16
+  {
+    {"PUSH SS",  TYPE_INST, GenFlagsSrcSize(SIZE_16BIT) | FLAGS_DEBUG_MEM_ACCESS, 0, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX> } },
+    {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+  },
+  // ENTRY_17
+  {
+    {"POP SS",   TYPE_INST, GenFlagsSizes(SIZE_16BIT, SIZE_DEF) | FLAGS_DEBUG_MEM_ACCESS, 0, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX> } },
+    {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+  },
+  // ENTRY_1E
+  {
+    {"PUSH DS",  TYPE_INST, GenFlagsSrcSize(SIZE_16BIT) | FLAGS_DEBUG_MEM_ACCESS, 0, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX> } },
+    {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+  },
+  // ENTRY_1F
+  {
+    {"POP DS",   TYPE_INST, GenFlagsSizes(SIZE_16BIT, SIZE_DEF) | FLAGS_DEBUG_MEM_ACCESS, 0, { .OpDispatch = &IR::OpDispatchBuilder::Bind<&IR::OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX> } },
+    {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+  },
+  // ENTRY_27
+  {
+    {"DAA",      TYPE_INST, GenFlagsDstSize(SIZE_8BIT) | FLAGS_SF_DST_RAX, 0, { .OpDispatch = &IR::OpDispatchBuilder::DAAOp } },
+    {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+  },
+  // ENTRY_2F
+  {
+    {"DAS",      TYPE_INST, GenFlagsDstSize(SIZE_8BIT) | FLAGS_SF_DST_RAX, 0, { .OpDispatch = &IR::OpDispatchBuilder::DASOp } },
+    {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+  },
+  // ENTRY_37
+  {
+    {"AAA",      TYPE_INST, GenFlagsDstSize(SIZE_16BIT) | FLAGS_SF_DST_RAX, 0, { .OpDispatch = &IR::OpDispatchBuilder::AAAOp } },
+    {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+  },
+  // ENTRY_3F
+  {
+    {"AAS",      TYPE_INST, GenFlagsDstSize(SIZE_16BIT) | FLAGS_SF_DST_RAX, 0, { .OpDispatch = &IR::OpDispatchBuilder::AASOp } },
+    {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+  },
+  // ENTRY_40
+  {
+    {"INC",    TYPE_INST, FLAGS_SF_REX_IN_BYTE, 0, { .OpDispatch = &IR::OpDispatchBuilder::INCOp } },
+    // REX
+    {"", TYPE_REX_PREFIX, FLAGS_NONE, 0},
+  },
+  // ENTRY_48
+  {
+    {"DEC",    TYPE_INST, FLAGS_SF_REX_IN_BYTE, 0, { .OpDispatch = &IR::OpDispatchBuilder::DECOp } },
+    {"", TYPE_REX_PREFIX, FLAGS_NONE, 0},
+  },
+  // ENTRY_60
+  {
+    {"PUSHA",  TYPE_INST, FLAGS_DEBUG_MEM_ACCESS, 0, { .OpDispatch = &IR::OpDispatchBuilder::PUSHAOp } },
+    {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+  },
+  // ENTRY_61
+  {
+    {"POPA",   TYPE_INST, FLAGS_DEBUG_MEM_ACCESS, 0, { .OpDispatch = &IR::OpDispatchBuilder::POPAOp } },
+    {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+  },
+  // ENTRY_63
+  {
+    {"ARPL",   TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+    {"MOVSXD", TYPE_INST, GenFlagsDstSize(SIZE_64BIT) | FLAGS_MODRM, 0, { .OpDispatch = &IR::OpDispatchBuilder::MOVSXDOp } },
+  },
+  // ENTRY_9A
+  {
+    {"CALLF",  TYPE_INST, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+    {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+  },
+  // ENTRY_A0
+  {
+    {"MOV",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX | FLAGS_MEM_OFFSET, 4, { .OpDispatch = &IR::OpDispatchBuilder::MOVOffsetOp } },
+    {"MOV",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX | FLAGS_MEM_OFFSET, 8, { .OpDispatch = &IR::OpDispatchBuilder::MOVOffsetOp } },
+  },
+  // ENTRY_A1
+  {
+    {"MOV",    TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_MEM_OFFSET, 4, { .OpDispatch = &IR::OpDispatchBuilder::MOVOffsetOp } },
+    {"MOV",    TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_MEM_OFFSET, 8, { .OpDispatch = &IR::OpDispatchBuilder::MOVOffsetOp } },
+  },
+  // ENTRY_A2
+  {
+    {"MOV",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_SRC_RAX | FLAGS_MEM_OFFSET, 4, { .OpDispatch = &IR::OpDispatchBuilder::MOVOffsetOp } },
+    {"MOV",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_SRC_RAX | FLAGS_MEM_OFFSET, 8, { .OpDispatch = &IR::OpDispatchBuilder::MOVOffsetOp } },
+  },
+  // ENTRY_A3
+  {
+    {"MOV",    TYPE_INST, FLAGS_SF_SRC_RAX | FLAGS_MEM_OFFSET, 4, { .OpDispatch = &IR::OpDispatchBuilder::MOVOffsetOp } },
+    {"MOV",    TYPE_INST, FLAGS_SF_SRC_RAX | FLAGS_MEM_OFFSET, 8, { .OpDispatch = &IR::OpDispatchBuilder::MOVOffsetOp } },
+  },
+  // ENTRY_CE
+  {
+    {"INTO",   TYPE_INST, FLAGS_NONE, 0, { .OpDispatch = &IR::OpDispatchBuilder::INTOp } },
+    {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+  },
+  // ENTRY_D4
+  {
+    {"AAM",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX, 1, { .OpDispatch = &IR::OpDispatchBuilder::AAMOp } },
+    {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+  },
+  // ENTRY_D5
+  {
+    {"AAD",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX, 1, { .OpDispatch = &IR::OpDispatchBuilder::AADOp } },
+    {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+  },
+  // ENTRY_D6
+  {
+    {"SALC",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX | FLAGS_SF_SRC_RAX, 0, { .OpDispatch = &IR::OpDispatchBuilder::SALCOp } },
+    {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+  },
+  // ENTRY_EA
+  {
+    {"JMPF",   TYPE_INST, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+    {"", TYPE_INVALID, FLAGS_NONE, 0, { .OpDispatch = nullptr } },
+  },
+}};
+
+const std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps = []() consteval {
   std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> Table{};
 
   constexpr U8U8InfoStruct BaseOpTable[] = {
@@ -43,12 +207,16 @@ std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps = []() consteval {
     {0x04, 1, X86InstInfo{"ADD",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX  ,                              1}},
     {0x05, 1, X86InstInfo{"ADD",    TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2, 4}},
 
+    {0x06, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_06] }}},
+    {0x07, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_07] }}},
+
     {0x08, 1, X86InstInfo{"OR",     TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST,                                                   0}},
     {0x09, 1, X86InstInfo{"OR",     TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST,                                                                   0}},
     {0x0A, 1, X86InstInfo{"OR",     TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM,                                                   0}},
     {0x0B, 1, X86InstInfo{"OR",     TYPE_INST, FLAGS_MODRM,                                                                   0}},
     {0x0C, 1, X86InstInfo{"OR",     TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX ,                              1}},
     {0x0D, 1, X86InstInfo{"OR",     TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2, 4}},
+    {0x0E, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_0E] }}},
 
     {0x10, 1, X86InstInfo{"ADC",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST,                                                   0}},
     {0x11, 1, X86InstInfo{"ADC",    TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_DISPLACE_SIZE_DIV_2,                                       0}},
@@ -56,6 +224,8 @@ std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps = []() consteval {
     {0x13, 1, X86InstInfo{"ADC",    TYPE_INST, FLAGS_MODRM,                                                                   0}},
     {0x14, 1, X86InstInfo{"ADC",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX  ,                              1}},
     {0x15, 1, X86InstInfo{"ADC",    TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2, 4}},
+    {0x16, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_16] }}},
+    {0x17, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_17] }}},
 
     {0x18, 1, X86InstInfo{"SBB",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST,                                                   0}},
     {0x19, 1, X86InstInfo{"SBB",    TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_DISPLACE_SIZE_DIV_2,                                       0}},
@@ -63,6 +233,8 @@ std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps = []() consteval {
     {0x1B, 1, X86InstInfo{"SBB",    TYPE_INST, FLAGS_MODRM,                                                                   0}},
     {0x1C, 1, X86InstInfo{"SBB",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX  ,                              1}},
     {0x1D, 1, X86InstInfo{"SBB",    TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2, 4}},
+    {0x1E, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_1E] }}},
+    {0x1F, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_1F] }}},
 
     {0x20, 1, X86InstInfo{"AND",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST,                                                   0}},
     {0x21, 1, X86InstInfo{"AND",    TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST,                                                                   0}},
@@ -71,12 +243,14 @@ std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps = []() consteval {
     {0x24, 1, X86InstInfo{"AND",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX  ,                              1}},
     {0x25, 1, X86InstInfo{"AND",    TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2, 4}},
 
+    {0x27, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_27] }}},
     {0x28, 1, X86InstInfo{"SUB",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST,                                                   0}},
     {0x29, 1, X86InstInfo{"SUB",    TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST,                                                                   0}},
     {0x2A, 1, X86InstInfo{"SUB",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM,                                                   0}},
     {0x2B, 1, X86InstInfo{"SUB",    TYPE_INST, FLAGS_MODRM,                                                                   0}},
     {0x2C, 1, X86InstInfo{"SUB",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX ,                              1}},
     {0x2D, 1, X86InstInfo{"SUB",    TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2, 4}},
+    {0x2F, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_2F] }}},
 
     {0x30, 1, X86InstInfo{"XOR",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST,                                                   0}},
     {0x31, 1, X86InstInfo{"XOR",    TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST,                                                                   0}},
@@ -85,17 +259,26 @@ std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps = []() consteval {
     {0x34, 1, X86InstInfo{"XOR",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX  ,                              1}},
     {0x35, 1, X86InstInfo{"XOR",    TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2, 4}},
 
+    {0x37, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_37] }}},
     {0x38, 1, X86InstInfo{"CMP",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST,                                                   0}},
     {0x39, 1, X86InstInfo{"CMP",    TYPE_INST, FLAGS_MODRM | FLAGS_SF_MOD_DST,                                                                   0}},
     {0x3A, 1, X86InstInfo{"CMP",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_MODRM,                                                   0}},
     {0x3B, 1, X86InstInfo{"CMP",    TYPE_INST, FLAGS_MODRM,                                                                   0}},
     {0x3C, 1, X86InstInfo{"CMP",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX  ,                              1}},
     {0x3D, 1, X86InstInfo{"CMP",    TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2, 4}},
+    {0x3F, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_3F] }}},
+
+    {0x40, 8, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_40] }}},
+    {0x48, 8, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_48] }}},
 
     {0x50, 8, X86InstInfo{"PUSH",   TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SF_REX_IN_BYTE | FLAGS_DEBUG_MEM_ACCESS ,                    0}},
     {0x58, 8, X86InstInfo{"POP",    TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SF_REX_IN_BYTE | FLAGS_DEBUG_MEM_ACCESS ,                    0}},
 
+
+    {0x60, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_60] }}},
+    {0x61, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_61] }}},
     {0x62, 1, X86InstInfo{"",       TYPE_GROUP_EVEX, FLAGS_NONE,                                                                           0}},
+    {0x63, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_63] }}},
 
     {0x68, 1, X86InstInfo{"PUSH",   TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_DEBUG_MEM_ACCESS | FLAGS_DISPLACE_SIZE_DIV_2 | FLAGS_SRC_SEXT, 4}},
     {0x69, 1, X86InstInfo{"IMUL",   TYPE_INST, FLAGS_MODRM | FLAGS_SRC_SEXT | FLAGS_DISPLACE_SIZE_DIV_2,        4}},
@@ -150,6 +333,11 @@ std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps = []() consteval {
     {0x9E, 1, X86InstInfo{"SAHF",   TYPE_INST, FLAGS_NONE,                              0}},
     {0x9F, 1, X86InstInfo{"LAHF",   TYPE_INST, FLAGS_NONE,                              0}},
 
+    {0xA0, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_A0] }}},
+    {0xA1, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_A1] }}},
+    {0xA2, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_A2] }}},
+    {0xA3, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_A3] }}},
+
     {0xA4, 1, X86InstInfo{"MOVSB",  TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_DEBUG_MEM_ACCESS,                                            0}},
     {0xA5, 1, X86InstInfo{"MOVS",   TYPE_INST, FLAGS_DEBUG_MEM_ACCESS,                                                            0}},
     {0xA6, 1, X86InstInfo{"CMPSB",  TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_DEBUG_MEM_ACCESS,                                            0}},
@@ -175,8 +363,12 @@ std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps = []() consteval {
     {0xCB, 1, X86InstInfo{"RETF",   TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_BLOCK_END,                                                              0}},
     {0xCC, 1, X86InstInfo{"INT3",   TYPE_INST, FLAGS_BLOCK_END,                                                                                      0}},
     {0xCD, 1, X86InstInfo{"INT",    TYPE_INST, DEFAULT_SYSCALL_FLAGS,                                                                  1}},
+    {0xCE, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_CE] }}},
     {0xCF, 1, X86InstInfo{"IRET",   TYPE_INST, FLAGS_SETS_RIP | FLAGS_BLOCK_END,                                                                                    0}},
 
+    {0xD4, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_D4] }}},
+    {0xD5, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_D5] }}},
+    {0xD6, 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = Primary_ArchSelect_LUT[ENTRY_D6] }}},
     {0xD7, 1, X86InstInfo{"XLAT",   TYPE_INST, FLAGS_DEBUG_MEM_ACCESS,                                                                           0}},
 
     {0xE0, 1, X86InstInfo{"LOOPNE", TYPE_INST, GenFlagsSameSize(SIZE_64BITDEF) | FLAGS_SETS_RIP | FLAGS_SRC_SEXT | FLAGS_SF_SRC_RCX,                             1}},
@@ -243,73 +435,5 @@ std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps = []() consteval {
   return Table;
 }();
 
-void InitializeBaseTables(Context::OperatingMode Mode) {
-  static constexpr U8U8InfoStruct BaseOpTable_64[] = {
-    {0x06, 2, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                     0}},
-    {0x0E, 1, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                     0}},
-    {0x16, 2, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                     0}},
-    {0x1E, 2, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                     0}},
-    {0x27, 1, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                     0}},
-    {0x2F, 1, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                     0}},
-    {0x37, 1, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                     0}},
-    {0x3F, 1, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                     0}},
-
-    // REX
-    {0x40, 16, X86InstInfo{"", TYPE_REX_PREFIX, FLAGS_NONE,        0}},
-    {0x60, 2, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                           0}},
-    {0x63, 1, X86InstInfo{"MOVSXD", TYPE_INST, GenFlagsDstSize(SIZE_64BIT) | FLAGS_MODRM,                                                                         0}},
-    {0x9A, 1, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                           0}},
-    {0xA0, 1, X86InstInfo{"MOV",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX | FLAGS_MEM_OFFSET, 8}},
-    {0xA2, 1, X86InstInfo{"MOV",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_SRC_RAX | FLAGS_MEM_OFFSET, 8}},
-    {0xA1, 1, X86InstInfo{"MOV",    TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_MEM_OFFSET, 8}},
-    {0xA3, 1, X86InstInfo{"MOV",    TYPE_INST, FLAGS_SF_SRC_RAX | FLAGS_MEM_OFFSET, 8}},
-    {0xCE, 1, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                                    0}},
-    {0xD4, 2, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                                    0}},
-    // `L1OM` Larrabee instructions used this as an escape byte.
-    // FEX will never support this.
-    {0xD6, 1, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                                    0}},
-    {0xEA, 1, X86InstInfo{"[INV]",  TYPE_INVALID, FLAGS_NONE,                                                                                                      0}},
-  };
-
-  static constexpr U8U8InfoStruct BaseOpTable_32[] = {
-    {0x06, 1, X86InstInfo{"PUSH ES",  TYPE_INST, GenFlagsSrcSize(SIZE_16BIT) | FLAGS_DEBUG_MEM_ACCESS,            0}},
-    {0x07, 1, X86InstInfo{"POP ES",   TYPE_INST, GenFlagsSizes(SIZE_16BIT, SIZE_DEF) | FLAGS_DEBUG_MEM_ACCESS,    0}},
-    {0x0E, 1, X86InstInfo{"PUSH CS",  TYPE_INST, GenFlagsSrcSize(SIZE_16BIT) | FLAGS_DEBUG_MEM_ACCESS,            0}},
-    {0x16, 1, X86InstInfo{"PUSH SS",  TYPE_INST, GenFlagsSrcSize(SIZE_16BIT) | FLAGS_DEBUG_MEM_ACCESS,            0}},
-    {0x17, 1, X86InstInfo{"POP SS",   TYPE_INST, GenFlagsSizes(SIZE_16BIT, SIZE_DEF) | FLAGS_DEBUG_MEM_ACCESS,    0}},
-    {0x1E, 1, X86InstInfo{"PUSH DS",  TYPE_INST, GenFlagsSrcSize(SIZE_16BIT) | FLAGS_DEBUG_MEM_ACCESS,            0}},
-    {0x1F, 1, X86InstInfo{"POP DS",   TYPE_INST, GenFlagsSizes(SIZE_16BIT, SIZE_DEF) | FLAGS_DEBUG_MEM_ACCESS,    0}},
-    {0x27, 1, X86InstInfo{"DAA",      TYPE_INST, GenFlagsDstSize(SIZE_8BIT) | FLAGS_SF_DST_RAX,                   0}},
-    {0x2F, 1, X86InstInfo{"DAS",      TYPE_INST, GenFlagsDstSize(SIZE_8BIT) | FLAGS_SF_DST_RAX,                   0}},
-    {0x37, 1, X86InstInfo{"AAA",      TYPE_INST, GenFlagsDstSize(SIZE_16BIT) | FLAGS_SF_DST_RAX,                  0}},
-    {0x3F, 1, X86InstInfo{"AAS",      TYPE_INST, GenFlagsDstSize(SIZE_16BIT) | FLAGS_SF_DST_RAX,                  0}},
-
-    {0x40, 8, X86InstInfo{"INC",    TYPE_INST, FLAGS_SF_REX_IN_BYTE,                                              0}},
-    {0x48, 8, X86InstInfo{"DEC",    TYPE_INST, FLAGS_SF_REX_IN_BYTE,                                              0}},
-    {0x60, 1, X86InstInfo{"PUSHA",  TYPE_INST, FLAGS_DEBUG_MEM_ACCESS,                                            0}},
-    {0x61, 1, X86InstInfo{"POPA",   TYPE_INST, FLAGS_DEBUG_MEM_ACCESS,                                            0}},
-    {0x63, 1, X86InstInfo{"ARPL",   TYPE_INVALID, FLAGS_NONE,                                                     0}},
-
-    {0x9A, 1, X86InstInfo{"CALLF",  TYPE_INST, FLAGS_NONE,                                                        0}},
-    {0xA0, 1, X86InstInfo{"MOV",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX | FLAGS_MEM_OFFSET, 4}},
-    {0xA2, 1, X86InstInfo{"MOV",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_SRC_RAX | FLAGS_MEM_OFFSET, 4}},
-    {0xA1, 1, X86InstInfo{"MOV",    TYPE_INST, FLAGS_SF_DST_RAX | FLAGS_MEM_OFFSET,                               4}},
-    {0xA3, 1, X86InstInfo{"MOV",    TYPE_INST, FLAGS_SF_SRC_RAX | FLAGS_MEM_OFFSET,                               4}},
-    {0xCE, 1, X86InstInfo{"INTO",   TYPE_INST, FLAGS_NONE,                                                        0}},
-    {0xD4, 1, X86InstInfo{"AAM",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX,                    1}},
-    {0xD5, 1, X86InstInfo{"AAD",    TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX,                    1}},
-    {0xD6, 1, X86InstInfo{"SALC",   TYPE_INST, GenFlagsSameSize(SIZE_8BIT) | FLAGS_SF_DST_RAX | FLAGS_SF_SRC_RAX, 0}},
-    {0xEA, 1, X86InstInfo{"JMPF",   TYPE_INST, FLAGS_NONE,                                                        0}},
-  };
-
-  if (Mode == Context::MODE_64BIT) {
-    GenerateTable(&BaseOps.at(0), BaseOpTable_64, std::size(BaseOpTable_64));
-    IR::InstallToTable(BaseOps, IR::OpDispatch_BaseOpTable_64);
-  }
-  else {
-    GenerateTable(&BaseOps.at(0), BaseOpTable_32, std::size(BaseOpTable_32));
-    IR::InstallToTable(BaseOps, IR::OpDispatch_BaseOpTable_32);
-  }
-}
 }
 

@@ -965,7 +965,10 @@ bool Decoder::DecodeInstructionImpl(uint64_t PC) {
       break;
     default:
       [[likely]] { // Default base table
-        auto Info = &FEXCore::X86Tables::BaseOps[Op];
+        const X86InstInfo* Info = &FEXCore::X86Tables::BaseOps[Op];
+        if (Info->Type == FEXCore::X86Tables::TYPE_ARCH_DISPATCHER) {
+          Info = &Info->OpcodeDispatcher.Indirect[BlockInfo.Is64BitMode ? 1 : 0];
+        }
 
         if (Info->Type == FEXCore::X86Tables::TYPE_REX_PREFIX) {
           DecodeInst->Flags |= DecodeFlags::FLAG_REX_PREFIX;

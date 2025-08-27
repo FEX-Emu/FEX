@@ -16,7 +16,6 @@
 
 namespace FEXCore::Context {
 void InitializeStaticTables(OperatingMode Mode) {
-  X86Tables::InitializeInfoTables(Mode);
   IR::InstallOpcodeHandlers(Mode);
 }
 

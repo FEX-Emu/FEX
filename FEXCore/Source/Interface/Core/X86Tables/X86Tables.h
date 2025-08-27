@@ -485,7 +485,7 @@ constexpr size_t MAX_VEX_TABLE_SIZE = (1 << 13);
 // group select (3 bits for now) | ModRM opcode (3 bits)
 constexpr size_t MAX_VEX_GROUP_TABLE_SIZE = (1 << 7);
 
-extern std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps;
+extern const std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps;
 extern const std::array<X86InstInfo, MAX_SECOND_TABLE_SIZE> SecondBaseOps;
 extern const std::array<X86InstInfo, MAX_REP_MOD_TABLE_SIZE> RepModOps;
 extern const std::array<X86InstInfo, MAX_REPNE_MOD_TABLE_SIZE> RepNEModOps;
@@ -594,8 +594,6 @@ constexpr static inline void GenerateX87Table(X86InstInfo *FinalTable, X86Tables
     }
   }
 };
-
-void InitializeInfoTables(Context::OperatingMode Mode);
 
 }
 
