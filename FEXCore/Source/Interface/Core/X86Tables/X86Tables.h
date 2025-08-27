@@ -491,7 +491,7 @@ extern std::array<X86InstInfo, MAX_REP_MOD_TABLE_SIZE> RepModOps;
 extern std::array<X86InstInfo, MAX_REPNE_MOD_TABLE_SIZE> RepNEModOps;
 extern std::array<X86InstInfo, MAX_OPSIZE_MOD_TABLE_SIZE> OpSizeModOps;
 
-extern std::array<X86InstInfo, MAX_INST_GROUP_TABLE_SIZE> PrimaryInstGroupOps;
+extern const std::array<X86InstInfo, MAX_INST_GROUP_TABLE_SIZE> PrimaryInstGroupOps;
 extern const std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> SecondInstGroupOps;
 extern std::array<X86InstInfo, MAX_SECOND_MODRM_TABLE_SIZE> SecondModRMTableOps;
 extern std::array<X86InstInfo, MAX_X87_TABLE_SIZE> X87Ops;
