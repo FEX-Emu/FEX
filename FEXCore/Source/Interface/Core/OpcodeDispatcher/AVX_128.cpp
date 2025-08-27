@@ -409,6 +409,7 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
     {OPD(3, 0b01, 0x40), 1, &OpDispatchBuilder::AVX128_VDPP<OpSize::i32Bit>},
     {OPD(3, 0b01, 0x41), 1, &OpDispatchBuilder::AVX128_VDPP<OpSize::i64Bit>},
     {OPD(3, 0b01, 0x42), 1, &OpDispatchBuilder::AVX128_VMPSADBW},
+    {OPD(3, 0b01, 0x44), 1, &OpDispatchBuilder::AVX128_VPCLMULQDQ},
 
     {OPD(3, 0b01, 0x46), 1, &OpDispatchBuilder::AVX128_VPERM2},
 
@@ -464,17 +465,8 @@ void OpDispatchBuilder::InstallAVX128Handlers() {
   };
 #undef OPD
 
-#define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
-  constexpr DispatchTableEntry VEX128_PCLMUL[] = {
-    {OPD(3, 0b01, 0x44), 1, &OpDispatchBuilder::AVX128_VPCLMULQDQ},
-  };
-#undef OPD
-
   InstallToTable(FEXCore::X86Tables::VEXTableOps, AVX128Table);
   InstallToTable(FEXCore::X86Tables::VEXTableGroupOps, VEX128TableGroupOps);
-  if (CTX->HostFeatures.SupportsPMULL_128Bit) {
-    InstallToTable(FEXCore::X86Tables::VEXTableOps, VEX128_PCLMUL);
-  }
 
   SaveAVXStateFunc = &OpDispatchBuilder::AVX128_SaveAVXState;
   RestoreAVXStateFunc = &OpDispatchBuilder::AVX128_RestoreAVXState;
@@ -2333,6 +2325,11 @@ void OpDispatchBuilder::AVX128_VPERMD(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::AVX128_VPCLMULQDQ(OpcodeArgs) {
+  if (!CTX->HostFeatures.SupportsPMULL_128Bit) {
+    UnimplementedOp(Op);
+    return;
+  }
+
   const auto Selector = static_cast<uint8_t>(Op->Src[2].Literal());
 
   AVX128_VectorBinaryImpl(Op, OpSizeFromSrc(Op), OpSize::iInvalid, [this, Selector](IR::OpSize, Ref Src1, Ref Src2) {
