@@ -12,7 +12,880 @@ $end_info$
 
 namespace FEXCore::X86Tables {
 using namespace InstFlags;
-std::array<X86InstInfo, MAX_VEX_TABLE_SIZE> VEXTableOps = []() consteval {
+
+namespace AVX128 {
+  using namespace IR;
+#define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
+  constexpr DispatchTableEntry BaseTable[] = {
+    {OPD(1, 0b00, 0x10), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
+    {OPD(1, 0b01, 0x10), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
+    {OPD(1, 0b10, 0x10), 1, &OpDispatchBuilder::AVX128_VMOVSS},
+    {OPD(1, 0b11, 0x10), 1, &OpDispatchBuilder::AVX128_VMOVSD},
+    {OPD(1, 0b00, 0x11), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
+    {OPD(1, 0b01, 0x11), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
+    {OPD(1, 0b10, 0x11), 1, &OpDispatchBuilder::AVX128_VMOVSS},
+    {OPD(1, 0b11, 0x11), 1, &OpDispatchBuilder::AVX128_VMOVSD},
+
+    {OPD(1, 0b00, 0x12), 1, &OpDispatchBuilder::AVX128_VMOVLP},
+    {OPD(1, 0b01, 0x12), 1, &OpDispatchBuilder::AVX128_VMOVLP},
+    {OPD(1, 0b10, 0x12), 1, &OpDispatchBuilder::AVX128_VMOVSLDUP},
+    {OPD(1, 0b11, 0x12), 1, &OpDispatchBuilder::AVX128_VMOVDDUP},
+    {OPD(1, 0b00, 0x13), 1, &OpDispatchBuilder::AVX128_VMOVLP},
+    {OPD(1, 0b01, 0x13), 1, &OpDispatchBuilder::AVX128_VMOVLP},
+
+    {OPD(1, 0b00, 0x14), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPUNPCKL, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x14), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPUNPCKL, OpSize::i64Bit>},
+
+    {OPD(1, 0b00, 0x15), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPUNPCKH, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x15), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPUNPCKH, OpSize::i64Bit>},
+
+    {OPD(1, 0b00, 0x16), 1, &OpDispatchBuilder::AVX128_VMOVHP},
+    {OPD(1, 0b01, 0x16), 1, &OpDispatchBuilder::AVX128_VMOVHP},
+    {OPD(1, 0b10, 0x16), 1, &OpDispatchBuilder::AVX128_VMOVSHDUP},
+    {OPD(1, 0b00, 0x17), 1, &OpDispatchBuilder::AVX128_VMOVHP},
+    {OPD(1, 0b01, 0x17), 1, &OpDispatchBuilder::AVX128_VMOVHP},
+
+    {OPD(1, 0b00, 0x28), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
+    {OPD(1, 0b01, 0x28), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
+    {OPD(1, 0b00, 0x29), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
+    {OPD(1, 0b01, 0x29), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
+
+    {OPD(1, 0b10, 0x2A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_InsertCVTGPR_To_FPR, OpSize::i32Bit>},
+    {OPD(1, 0b11, 0x2A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_InsertCVTGPR_To_FPR, OpSize::i64Bit>},
+
+    {OPD(1, 0b00, 0x2B), 1, &OpDispatchBuilder::AVX128_MOVVectorNT},
+    {OPD(1, 0b01, 0x2B), 1, &OpDispatchBuilder::AVX128_MOVVectorNT},
+
+    {OPD(1, 0b10, 0x2C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_CVTFPR_To_GPR, OpSize::i32Bit, false>},
+    {OPD(1, 0b11, 0x2C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_CVTFPR_To_GPR, OpSize::i64Bit, false>},
+
+    {OPD(1, 0b10, 0x2D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_CVTFPR_To_GPR, OpSize::i32Bit, true>},
+    {OPD(1, 0b11, 0x2D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_CVTFPR_To_GPR, OpSize::i64Bit, true>},
+
+    {OPD(1, 0b00, 0x2E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_UCOMISx, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x2E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_UCOMISx, OpSize::i64Bit>},
+    {OPD(1, 0b00, 0x2F), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_UCOMISx, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x2F), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_UCOMISx, OpSize::i64Bit>},
+
+    {OPD(1, 0b00, 0x50), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_MOVMSK, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x50), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_MOVMSK, OpSize::i64Bit>},
+
+    {OPD(1, 0b00, 0x51), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorUnary, IR::OP_VFSQRT, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x51), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorUnary, IR::OP_VFSQRT, OpSize::i64Bit>},
+    {OPD(1, 0b10, 0x51), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorScalarInsertALU, IR::OP_VFSQRTSCALARINSERT, OpSize::i32Bit>},
+    {OPD(1, 0b11, 0x51), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorScalarInsertALU, IR::OP_VFSQRTSCALARINSERT, OpSize::i64Bit>},
+
+    {OPD(1, 0b00, 0x52), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorUnary, IR::OP_VFRSQRT, OpSize::i32Bit>},
+    {OPD(1, 0b10, 0x52), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorScalarInsertALU, IR::OP_VFRSQRTSCALARINSERT, OpSize::i32Bit>},
+
+    {OPD(1, 0b00, 0x53), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorUnary, IR::OP_VFRECP, OpSize::i32Bit>},
+    {OPD(1, 0b10, 0x53), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorScalarInsertALU, IR::OP_VFRECPSCALARINSERT, OpSize::i32Bit>},
+
+    {OPD(1, 0b00, 0x54), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VAND, OpSize::i128Bit>},
+    {OPD(1, 0b01, 0x54), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VAND, OpSize::i128Bit>},
+
+    {OPD(1, 0b00, 0x55), 1, &OpDispatchBuilder::AVX128_VANDN},
+    {OPD(1, 0b01, 0x55), 1, &OpDispatchBuilder::AVX128_VANDN},
+
+    {OPD(1, 0b00, 0x56), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VOR, OpSize::i128Bit>},
+    {OPD(1, 0b01, 0x56), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VOR, OpSize::i128Bit>},
+
+    {OPD(1, 0b00, 0x57), 1, &OpDispatchBuilder::AVX128_VectorXOR},
+    {OPD(1, 0b01, 0x57), 1, &OpDispatchBuilder::AVX128_VectorXOR},
+
+    {OPD(1, 0b00, 0x58), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VFADD, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x58), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VFADD, OpSize::i64Bit>},
+    {OPD(1, 0b10, 0x58), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorScalarInsertALU, IR::OP_VFADDSCALARINSERT, OpSize::i32Bit>},
+    {OPD(1, 0b11, 0x58), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorScalarInsertALU, IR::OP_VFADDSCALARINSERT, OpSize::i64Bit>},
+
+    {OPD(1, 0b00, 0x59), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VFMUL, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x59), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VFMUL, OpSize::i64Bit>},
+    {OPD(1, 0b10, 0x59), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorScalarInsertALU, IR::OP_VFMULSCALARINSERT, OpSize::i32Bit>},
+    {OPD(1, 0b11, 0x59), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorScalarInsertALU, IR::OP_VFMULSCALARINSERT, OpSize::i64Bit>},
+
+    {OPD(1, 0b00, 0x5A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Float, OpSize::i64Bit, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x5A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Float, OpSize::i32Bit, OpSize::i64Bit>},
+    {OPD(1, 0b10, 0x5A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_InsertScalar_CVT_Float_To_Float, OpSize::i64Bit, OpSize::i32Bit>},
+    {OPD(1, 0b11, 0x5A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_InsertScalar_CVT_Float_To_Float, OpSize::i32Bit, OpSize::i64Bit>},
+
+    {OPD(1, 0b00, 0x5B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_Vector_CVT_Int_To_Float, OpSize::i32Bit, false>},
+    {OPD(1, 0b01, 0x5B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int, OpSize::i32Bit, true>},
+    {OPD(1, 0b10, 0x5B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int, OpSize::i32Bit, false>},
+
+    {OPD(1, 0b00, 0x5C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VFSUB, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x5C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VFSUB, OpSize::i64Bit>},
+    {OPD(1, 0b10, 0x5C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorScalarInsertALU, IR::OP_VFSUBSCALARINSERT, OpSize::i32Bit>},
+    {OPD(1, 0b11, 0x5C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorScalarInsertALU, IR::OP_VFSUBSCALARINSERT, OpSize::i64Bit>},
+
+    {OPD(1, 0b00, 0x5D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VFMIN, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x5D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VFMIN, OpSize::i64Bit>},
+    {OPD(1, 0b10, 0x5D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorScalarInsertALU, IR::OP_VFMINSCALARINSERT, OpSize::i32Bit>},
+    {OPD(1, 0b11, 0x5D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorScalarInsertALU, IR::OP_VFMINSCALARINSERT, OpSize::i64Bit>},
+
+    {OPD(1, 0b00, 0x5E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VFDIV, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x5E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VFDIV, OpSize::i64Bit>},
+    {OPD(1, 0b10, 0x5E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorScalarInsertALU, IR::OP_VFDIVSCALARINSERT, OpSize::i32Bit>},
+    {OPD(1, 0b11, 0x5E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorScalarInsertALU, IR::OP_VFDIVSCALARINSERT, OpSize::i64Bit>},
+
+    {OPD(1, 0b00, 0x5F), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VFMAX, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x5F), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VFMAX, OpSize::i64Bit>},
+    {OPD(1, 0b10, 0x5F), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorScalarInsertALU, IR::OP_VFMAXSCALARINSERT, OpSize::i32Bit>},
+    {OPD(1, 0b11, 0x5F), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorScalarInsertALU, IR::OP_VFMAXSCALARINSERT, OpSize::i64Bit>},
+
+    {OPD(1, 0b01, 0x60), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPUNPCKL, OpSize::i8Bit>},
+    {OPD(1, 0b01, 0x61), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPUNPCKL, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0x62), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPUNPCKL, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x63), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPACKSS, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0x64), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VCMPGT, OpSize::i8Bit>},
+    {OPD(1, 0b01, 0x65), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VCMPGT, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0x66), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VCMPGT, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x67), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPACKUS, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0x68), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPUNPCKH, OpSize::i8Bit>},
+    {OPD(1, 0b01, 0x69), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPUNPCKH, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0x6A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPUNPCKH, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x6B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPACKSS, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x6C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPUNPCKL, OpSize::i64Bit>},
+    {OPD(1, 0b01, 0x6D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPUNPCKH, OpSize::i64Bit>},
+    {OPD(1, 0b01, 0x6E), 1, &OpDispatchBuilder::AVX128_MOVBetweenGPR_FPR},
+
+    {OPD(1, 0b01, 0x6F), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
+    {OPD(1, 0b10, 0x6F), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
+
+    {OPD(1, 0b01, 0x70), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPERMILImm, OpSize::i32Bit>},
+    {OPD(1, 0b10, 0x70), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPSHUFW, false>},
+    {OPD(1, 0b11, 0x70), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPSHUFW, true>},
+
+    {OPD(1, 0b01, 0x74), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VCMPEQ, OpSize::i8Bit>},
+    {OPD(1, 0b01, 0x75), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VCMPEQ, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0x76), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VCMPEQ, OpSize::i32Bit>},
+
+    {OPD(1, 0b00, 0x77), 1, &OpDispatchBuilder::AVX128_VZERO},
+
+    {OPD(1, 0b01, 0x7C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VHADDP, IR::OP_VFADDP, OpSize::i64Bit>},
+    {OPD(1, 0b11, 0x7C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VHADDP, IR::OP_VFADDP, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x7D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VHSUBP, OpSize::i64Bit>},
+    {OPD(1, 0b11, 0x7D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VHSUBP, OpSize::i32Bit>},
+
+    {OPD(1, 0b01, 0x7E), 1, &OpDispatchBuilder::AVX128_MOVBetweenGPR_FPR},
+    {OPD(1, 0b10, 0x7E), 1, &OpDispatchBuilder::AVX128_MOVQ},
+
+    {OPD(1, 0b01, 0x7F), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
+    {OPD(1, 0b10, 0x7F), 1, &OpDispatchBuilder::AVX128_VMOVAPS},
+
+    {OPD(1, 0b00, 0xC2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFCMP, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0xC2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFCMP, OpSize::i64Bit>},
+    {OPD(1, 0b10, 0xC2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_InsertScalarFCMP, OpSize::i32Bit>},
+    {OPD(1, 0b11, 0xC2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_InsertScalarFCMP, OpSize::i64Bit>},
+
+    {OPD(1, 0b01, 0xC4), 1, &OpDispatchBuilder::AVX128_VPINSRW},
+    {OPD(1, 0b01, 0xC5), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_PExtr, OpSize::i16Bit>},
+
+    {OPD(1, 0b00, 0xC6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VSHUF, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0xC6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VSHUF, OpSize::i64Bit>},
+
+    {OPD(1, 0b01, 0xD0), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VADDSUBP, OpSize::i64Bit>},
+    {OPD(1, 0b11, 0xD0), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VADDSUBP, OpSize::i32Bit>},
+
+    {OPD(1, 0b01, 0xD1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftWideImpl, OpSize::i16Bit, IROps::OP_VUSHRSWIDE>}, // VPSRL
+    {OPD(1, 0b01, 0xD2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftWideImpl, OpSize::i32Bit, IROps::OP_VUSHRSWIDE>}, // VPSRL
+    {OPD(1, 0b01, 0xD3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftWideImpl, OpSize::i64Bit, IROps::OP_VUSHRSWIDE>}, // VPSRL
+    {OPD(1, 0b01, 0xD4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VADD, OpSize::i64Bit>},
+    {OPD(1, 0b01, 0xD5), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VMUL, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0xD6), 1, &OpDispatchBuilder::AVX128_MOVQ},
+    {OPD(1, 0b01, 0xD7), 1, &OpDispatchBuilder::AVX128_MOVMSKB},
+
+    {OPD(1, 0b01, 0xD8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VUQSUB, OpSize::i8Bit>},
+    {OPD(1, 0b01, 0xD9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VUQSUB, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0xDA), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VUMIN, OpSize::i8Bit>},
+    {OPD(1, 0b01, 0xDB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VAND, OpSize::i128Bit>},
+    {OPD(1, 0b01, 0xDC), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VUQADD, OpSize::i8Bit>},
+    {OPD(1, 0b01, 0xDD), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VUQADD, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0xDE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VUMAX, OpSize::i8Bit>},
+    {OPD(1, 0b01, 0xDF), 1, &OpDispatchBuilder::AVX128_VANDN},
+
+    {OPD(1, 0b01, 0xE0), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VURAVG, OpSize::i8Bit>},
+    {OPD(1, 0b01, 0xE1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftWideImpl, OpSize::i16Bit, IROps::OP_VSSHRSWIDE>}, // VPSRA
+    {OPD(1, 0b01, 0xE2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftWideImpl, OpSize::i32Bit, IROps::OP_VSSHRSWIDE>}, // VPSRA
+    {OPD(1, 0b01, 0xE3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VURAVG, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0xE4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPMULHW, false>},
+    {OPD(1, 0b01, 0xE5), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPMULHW, true>},
+
+    {OPD(1, 0b01, 0xE6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int, OpSize::i64Bit, false>},
+    {OPD(1, 0b10, 0xE6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_Vector_CVT_Int_To_Float, OpSize::i32Bit, true>},
+    {OPD(1, 0b11, 0xE6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Int, OpSize::i64Bit, true>},
+
+    {OPD(1, 0b01, 0xE7), 1, &OpDispatchBuilder::AVX128_MOVVectorNT},
+
+    {OPD(1, 0b01, 0xE8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VSQSUB, OpSize::i8Bit>},
+    {OPD(1, 0b01, 0xE9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VSQSUB, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0xEA), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VSMIN, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0xEB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VOR, OpSize::i128Bit>},
+    {OPD(1, 0b01, 0xEC), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VSQADD, OpSize::i8Bit>},
+    {OPD(1, 0b01, 0xED), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VSQADD, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0xEE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VSMAX, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0xEF), 1, &OpDispatchBuilder::AVX128_VectorXOR},
+
+    {OPD(1, 0b11, 0xF0), 1, &OpDispatchBuilder::AVX128_MOVVectorUnaligned},
+    {OPD(1, 0b01, 0xF1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftWideImpl, OpSize::i16Bit, IROps::OP_VUSHLSWIDE>}, // VPSLL
+    {OPD(1, 0b01, 0xF2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftWideImpl, OpSize::i32Bit, IROps::OP_VUSHLSWIDE>}, // VPSLL
+    {OPD(1, 0b01, 0xF3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftWideImpl, OpSize::i64Bit, IROps::OP_VUSHLSWIDE>}, // VPSLL
+    {OPD(1, 0b01, 0xF4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPMULL, OpSize::i32Bit, false>},
+    {OPD(1, 0b01, 0xF5), 1, &OpDispatchBuilder::AVX128_VPMADDWD},
+    {OPD(1, 0b01, 0xF6), 1, &OpDispatchBuilder::AVX128_VPSADBW},
+    {OPD(1, 0b01, 0xF7), 1, &OpDispatchBuilder::AVX128_MASKMOV},
+
+    {OPD(1, 0b01, 0xF8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VSUB, OpSize::i8Bit>},
+    {OPD(1, 0b01, 0xF9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VSUB, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0xFA), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VSUB, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0xFB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VSUB, OpSize::i64Bit>},
+    {OPD(1, 0b01, 0xFC), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VADD, OpSize::i8Bit>},
+    {OPD(1, 0b01, 0xFD), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VADD, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0xFE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VADD, OpSize::i32Bit>},
+
+    {OPD(2, 0b01, 0x00), 1, &OpDispatchBuilder::AVX128_VPSHUFB},
+    {OPD(2, 0b01, 0x01), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VHADDP, IR::OP_VADDP, OpSize::i16Bit>},
+    {OPD(2, 0b01, 0x02), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VHADDP, IR::OP_VADDP, OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x03), 1, &OpDispatchBuilder::AVX128_VPHADDSW},
+    {OPD(2, 0b01, 0x04), 1, &OpDispatchBuilder::AVX128_VPMADDUBSW},
+
+    {OPD(2, 0b01, 0x05), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPHSUB, OpSize::i16Bit>},
+    {OPD(2, 0b01, 0x06), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPHSUB, OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x07), 1, &OpDispatchBuilder::AVX128_VPHSUBSW},
+
+    {OPD(2, 0b01, 0x08), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPSIGN, OpSize::i8Bit>},
+    {OPD(2, 0b01, 0x09), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPSIGN, OpSize::i16Bit>},
+    {OPD(2, 0b01, 0x0A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPSIGN, OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x0B), 1, &OpDispatchBuilder::AVX128_VPMULHRSW},
+    {OPD(2, 0b01, 0x0C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPERMILReg, OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x0D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPERMILReg, OpSize::i64Bit>},
+    {OPD(2, 0b01, 0x0E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VTESTP, OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x0F), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VTESTP, OpSize::i64Bit>},
+
+
+    {OPD(2, 0b01, 0x13), 1, &OpDispatchBuilder::AVX128_VCVTPH2PS},
+    {OPD(2, 0b01, 0x16), 1, &OpDispatchBuilder::AVX128_VPERMD},
+    {OPD(2, 0b01, 0x17), 1, &OpDispatchBuilder::AVX128_PTest},
+    {OPD(2, 0b01, 0x18), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VBROADCAST, OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x19), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VBROADCAST, OpSize::i64Bit>},
+    {OPD(2, 0b01, 0x1A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VBROADCAST, OpSize::i128Bit>},
+    {OPD(2, 0b01, 0x1C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorUnary, IR::OP_VABS, OpSize::i8Bit>},
+    {OPD(2, 0b01, 0x1D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorUnary, IR::OP_VABS, OpSize::i16Bit>},
+    {OPD(2, 0b01, 0x1E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorUnary, IR::OP_VABS, OpSize::i32Bit>},
+
+    {OPD(2, 0b01, 0x20), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_ExtendVectorElements, OpSize::i8Bit, OpSize::i16Bit, true>},
+    {OPD(2, 0b01, 0x21), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_ExtendVectorElements, OpSize::i8Bit, OpSize::i32Bit, true>},
+    {OPD(2, 0b01, 0x22), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_ExtendVectorElements, OpSize::i8Bit, OpSize::i64Bit, true>},
+    {OPD(2, 0b01, 0x23), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_ExtendVectorElements, OpSize::i16Bit, OpSize::i32Bit, true>},
+    {OPD(2, 0b01, 0x24), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_ExtendVectorElements, OpSize::i16Bit, OpSize::i64Bit, true>},
+    {OPD(2, 0b01, 0x25), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_ExtendVectorElements, OpSize::i32Bit, OpSize::i64Bit, true>},
+
+    {OPD(2, 0b01, 0x28), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPMULL, OpSize::i32Bit, true>},
+    {OPD(2, 0b01, 0x29), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VCMPEQ, OpSize::i64Bit>},
+    {OPD(2, 0b01, 0x2A), 1, &OpDispatchBuilder::AVX128_MOVVectorNT},
+    {OPD(2, 0b01, 0x2B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPACKUS, OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x2C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VMASKMOV, OpSize::i32Bit, false>},
+    {OPD(2, 0b01, 0x2D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VMASKMOV, OpSize::i64Bit, false>},
+    {OPD(2, 0b01, 0x2E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VMASKMOV, OpSize::i32Bit, true>},
+    {OPD(2, 0b01, 0x2F), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VMASKMOV, OpSize::i64Bit, true>},
+
+    {OPD(2, 0b01, 0x30), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_ExtendVectorElements, OpSize::i8Bit, OpSize::i16Bit, false>},
+    {OPD(2, 0b01, 0x31), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_ExtendVectorElements, OpSize::i8Bit, OpSize::i32Bit, false>},
+    {OPD(2, 0b01, 0x32), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_ExtendVectorElements, OpSize::i8Bit, OpSize::i64Bit, false>},
+    {OPD(2, 0b01, 0x33), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_ExtendVectorElements, OpSize::i16Bit, OpSize::i32Bit, false>},
+    {OPD(2, 0b01, 0x34), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_ExtendVectorElements, OpSize::i16Bit, OpSize::i64Bit, false>},
+    {OPD(2, 0b01, 0x35), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_ExtendVectorElements, OpSize::i32Bit, OpSize::i64Bit, false>},
+    {OPD(2, 0b01, 0x36), 1, &OpDispatchBuilder::AVX128_VPERMD},
+
+    {OPD(2, 0b01, 0x37), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VCMPGT, OpSize::i64Bit>},
+    {OPD(2, 0b01, 0x38), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VSMIN, OpSize::i8Bit>},
+    {OPD(2, 0b01, 0x39), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VSMIN, OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x3A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VUMIN, OpSize::i16Bit>},
+    {OPD(2, 0b01, 0x3B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VUMIN, OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x3C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VSMAX, OpSize::i8Bit>},
+    {OPD(2, 0b01, 0x3D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VSMAX, OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x3E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VUMAX, OpSize::i16Bit>},
+    {OPD(2, 0b01, 0x3F), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VUMAX, OpSize::i32Bit>},
+
+    {OPD(2, 0b01, 0x40), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorALU, IR::OP_VMUL, OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x41), 1, &OpDispatchBuilder::AVX128_PHMINPOSUW},
+    {OPD(2, 0b01, 0x45), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VariableShiftImpl, IROps::OP_VUSHR>}, // VPSRLV
+    {OPD(2, 0b01, 0x46), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VariableShiftImpl, IROps::OP_VSSHR>}, // VPSRAVD
+    {OPD(2, 0b01, 0x47), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VariableShiftImpl, IROps::OP_VUSHL>}, // VPSLLV
+
+    {OPD(2, 0b01, 0x58), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VBROADCAST, OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x59), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VBROADCAST, OpSize::i64Bit>},
+    {OPD(2, 0b01, 0x5A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VBROADCAST, OpSize::i128Bit>},
+
+    {OPD(2, 0b01, 0x78), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VBROADCAST, OpSize::i8Bit>},
+    {OPD(2, 0b01, 0x79), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VBROADCAST, OpSize::i16Bit>},
+
+    {OPD(2, 0b01, 0x8C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPMASKMOV, false>},
+    {OPD(2, 0b01, 0x8E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPMASKMOV, true>},
+
+    {OPD(2, 0b01, 0x90), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPGATHER, OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x91), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPGATHER, OpSize::i64Bit>},
+    {OPD(2, 0b01, 0x92), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPGATHER, OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x93), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPGATHER, OpSize::i64Bit>},
+
+    {OPD(2, 0b01, 0x96), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAddSubImpl, true, 1, 3, 2>},  // VFMADDSUB
+    {OPD(2, 0b01, 0x97), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAddSubImpl, false, 1, 3, 2>}, // VFMSUBADD
+
+    {OPD(2, 0b01, 0x98), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFMLA, 1, 3, 2>}, // VFMADD
+    {OPD(2, 0b01, 0x99), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAScalarImpl, IR::OP_VFMLASCALARINSERT, 1, 3, 2>}, // VFMADD
+    {OPD(2, 0b01, 0x9A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFMLS, 1, 3, 2>}, // VFMSUB
+    {OPD(2, 0b01, 0x9B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAScalarImpl, IR::OP_VFMLSSCALARINSERT, 1, 3, 2>}, // VFMSUB
+    {OPD(2, 0b01, 0x9C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFNMLA, 1, 3, 2>}, // VFNMADD
+    {OPD(2, 0b01, 0x9D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAScalarImpl, IR::OP_VFNMLASCALARINSERT, 1, 3, 2>}, // VFNMADD
+    {OPD(2, 0b01, 0x9E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFNMLS, 1, 3, 2>}, // VFNMSUB
+    {OPD(2, 0b01, 0x9F), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAScalarImpl, IR::OP_VFNMLSSCALARINSERT, 1, 3, 2>}, // VFNMSUB
+
+    {OPD(2, 0b01, 0xA8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFMLA, 2, 1, 3>}, // VFMADD
+    {OPD(2, 0b01, 0xA9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAScalarImpl, IR::OP_VFMLASCALARINSERT, 2, 1, 3>}, // VFMADD
+    {OPD(2, 0b01, 0xAA), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFMLS, 2, 1, 3>}, // VFMSUB
+    {OPD(2, 0b01, 0xAB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAScalarImpl, IR::OP_VFMLSSCALARINSERT, 2, 1, 3>}, // VFMSUB
+    {OPD(2, 0b01, 0xAC), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFNMLA, 2, 1, 3>}, // VFNMADD
+    {OPD(2, 0b01, 0xAD), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAScalarImpl, IR::OP_VFNMLASCALARINSERT, 2, 1, 3>}, // VFNMADD
+    {OPD(2, 0b01, 0xAE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFNMLS, 2, 1, 3>}, // VFNMSUB
+    {OPD(2, 0b01, 0xAF), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAScalarImpl, IR::OP_VFNMLSSCALARINSERT, 2, 1, 3>}, // VFNMSUB
+
+    {OPD(2, 0b01, 0xB8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFMLA, 2, 3, 1>}, // VFMADD
+    {OPD(2, 0b01, 0xB9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAScalarImpl, IR::OP_VFMLASCALARINSERT, 2, 3, 1>}, // VFMADD
+    {OPD(2, 0b01, 0xBA), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFMLS, 2, 3, 1>}, // VFMSUB
+    {OPD(2, 0b01, 0xBB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAScalarImpl, IR::OP_VFMLSSCALARINSERT, 2, 3, 1>}, // VFMSUB
+    {OPD(2, 0b01, 0xBC), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFNMLA, 2, 3, 1>}, // VFNMADD
+    {OPD(2, 0b01, 0xBD), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAScalarImpl, IR::OP_VFNMLASCALARINSERT, 2, 3, 1>}, // VFNMADD
+    {OPD(2, 0b01, 0xBE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAImpl, IR::OP_VFNMLS, 2, 3, 1>}, // VFNMSUB
+    {OPD(2, 0b01, 0xBF), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAScalarImpl, IR::OP_VFNMLSSCALARINSERT, 2, 3, 1>}, // VFNMSUB
+
+    {OPD(2, 0b01, 0xA6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAddSubImpl, true, 2, 1, 3>},  // VFMADDSUB
+    {OPD(2, 0b01, 0xA7), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAddSubImpl, false, 2, 1, 3>}, // VFMSUBADD
+
+    {OPD(2, 0b01, 0xB6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAddSubImpl, true, 2, 3, 1>},  // VFMADDSUB
+    {OPD(2, 0b01, 0xB7), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VFMAddSubImpl, false, 2, 3, 1>}, // VFMSUBADD
+
+    {OPD(2, 0b01, 0xDB), 1, &OpDispatchBuilder::AVX128_VAESImc},
+    {OPD(2, 0b01, 0xDC), 1, &OpDispatchBuilder::AVX128_VAESEnc},
+    {OPD(2, 0b01, 0xDD), 1, &OpDispatchBuilder::AVX128_VAESEncLast},
+    {OPD(2, 0b01, 0xDE), 1, &OpDispatchBuilder::AVX128_VAESDec},
+    {OPD(2, 0b01, 0xDF), 1, &OpDispatchBuilder::AVX128_VAESDecLast},
+
+    {OPD(3, 0b01, 0x00), 1, &OpDispatchBuilder::AVX128_VPERMQ},
+    {OPD(3, 0b01, 0x01), 1, &OpDispatchBuilder::AVX128_VPERMQ},
+    {OPD(3, 0b01, 0x02), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VBLEND, OpSize::i32Bit>},
+    {OPD(3, 0b01, 0x04), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPERMILImm, OpSize::i32Bit>},
+    {OPD(3, 0b01, 0x05), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VPERMILImm, OpSize::i64Bit>},
+    {OPD(3, 0b01, 0x06), 1, &OpDispatchBuilder::AVX128_VPERM2},
+    {OPD(3, 0b01, 0x08), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorRound, OpSize::i32Bit>},
+    {OPD(3, 0b01, 0x09), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorRound, OpSize::i64Bit>},
+    {OPD(3, 0b01, 0x0A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_InsertScalarRound, OpSize::i32Bit>},
+    {OPD(3, 0b01, 0x0B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_InsertScalarRound, OpSize::i64Bit>},
+    {OPD(3, 0b01, 0x0C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VBLEND, OpSize::i32Bit>},
+    {OPD(3, 0b01, 0x0D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VBLEND, OpSize::i64Bit>},
+    {OPD(3, 0b01, 0x0E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VBLEND, OpSize::i16Bit>},
+    {OPD(3, 0b01, 0x0F), 1, &OpDispatchBuilder::AVX128_VPALIGNR},
+
+    {OPD(3, 0b01, 0x14), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_PExtr, OpSize::i8Bit>},
+    {OPD(3, 0b01, 0x15), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_PExtr, OpSize::i16Bit>},
+    {OPD(3, 0b01, 0x16), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_PExtr, OpSize::i32Bit>},
+    {OPD(3, 0b01, 0x17), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_PExtr, OpSize::i32Bit>},
+
+    {OPD(3, 0b01, 0x18), 1, &OpDispatchBuilder::AVX128_VINSERT},
+    {OPD(3, 0b01, 0x19), 1, &OpDispatchBuilder::AVX128_VEXTRACT128},
+    {OPD(3, 0b01, 0x1D), 1, &OpDispatchBuilder::AVX128_VCVTPS2PH},
+    {OPD(3, 0b01, 0x20), 1, &OpDispatchBuilder::AVX128_VPINSRB},
+    {OPD(3, 0b01, 0x21), 1, &OpDispatchBuilder::AVX128_VINSERTPS},
+    {OPD(3, 0b01, 0x22), 1, &OpDispatchBuilder::AVX128_VPINSRDQ},
+
+    {OPD(3, 0b01, 0x38), 1, &OpDispatchBuilder::AVX128_VINSERT},
+    {OPD(3, 0b01, 0x39), 1, &OpDispatchBuilder::AVX128_VEXTRACT128},
+
+    {OPD(3, 0b01, 0x40), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VDPP, OpSize::i32Bit>},
+    {OPD(3, 0b01, 0x41), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VDPP, OpSize::i64Bit>},
+    {OPD(3, 0b01, 0x42), 1, &OpDispatchBuilder::AVX128_VMPSADBW},
+    {OPD(3, 0b01, 0x44), 1, &OpDispatchBuilder::AVX128_VPCLMULQDQ},
+
+    {OPD(3, 0b01, 0x46), 1, &OpDispatchBuilder::AVX128_VPERM2},
+
+    {OPD(3, 0b01, 0x4A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorVariableBlend, OpSize::i32Bit>},
+    {OPD(3, 0b01, 0x4B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorVariableBlend, OpSize::i64Bit>},
+    {OPD(3, 0b01, 0x4C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorVariableBlend, OpSize::i8Bit>},
+
+    {OPD(3, 0b01, 0x60), 1, &OpDispatchBuilder::AVX128_VPCMPESTRM},
+    {OPD(3, 0b01, 0x61), 1, &OpDispatchBuilder::AVX128_VPCMPESTRI},
+    {OPD(3, 0b01, 0x62), 1, &OpDispatchBuilder::AVX128_VPCMPISTRM},
+    {OPD(3, 0b01, 0x63), 1, &OpDispatchBuilder::AVX128_VPCMPISTRI},
+
+    {OPD(3, 0b01, 0xDF), 1, &OpDispatchBuilder::AVX128_VAESKeyGenAssist},
+  };
+#undef OPD
+
+#define OPD(group, pp, opcode) (((group - X86Tables::TYPE_VEX_GROUP_12) << 4) | (pp << 3) | (opcode))
+  constexpr DispatchTableEntry TableGroupOps[] {
+    // VPSRLI
+    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b010), 1,
+     &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftImmImpl, OpSize::i16Bit, IROps::OP_VUSHRI>},
+    // VPSLLI
+    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b110), 1,
+     &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftImmImpl, OpSize::i16Bit, IROps::OP_VSHLI>},
+    // VPSRAI
+    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b100), 1,
+     &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftImmImpl, OpSize::i16Bit, IROps::OP_VSSHRI>},
+
+    // VPSRLI
+    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b010), 1,
+     &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftImmImpl, OpSize::i32Bit, IROps::OP_VUSHRI>},
+    // VPSLLI
+    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b110), 1,
+     &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftImmImpl, OpSize::i32Bit, IROps::OP_VSHLI>},
+    // VPSRAI
+    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b100), 1,
+     &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftImmImpl, OpSize::i32Bit, IROps::OP_VSSHRI>},
+
+    // VPSRLI
+    {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b010), 1,
+     &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftImmImpl, OpSize::i64Bit, IROps::OP_VUSHRI>},
+    // VPSRLDQ
+    {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b011), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_ShiftDoubleImm, OpDispatchBuilder::ShiftDirection::RIGHT>},
+    // VPSLLI
+    {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b110), 1,
+     &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_VectorShiftImmImpl, OpSize::i64Bit, IROps::OP_VSHLI>},
+    // VPSLLDQ
+    {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b111), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVX128_ShiftDoubleImm, OpDispatchBuilder::ShiftDirection::LEFT>},
+
+    ///< Use the regular implementation. It just happens to be in the VEX table.
+    {OPD(X86Tables::TYPE_VEX_GROUP_15, 0, 0b010), 1, &OpDispatchBuilder::LDMXCSR},
+    {OPD(X86Tables::TYPE_VEX_GROUP_15, 0, 0b011), 1, &OpDispatchBuilder::STMXCSR},
+  };
+#undef OPD
+}
+
+namespace AVX256 {
+  using namespace IR;
+#define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
+  constexpr DispatchTableEntry BaseTable[] = {
+    {OPD(1, 0b00, 0x10), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPDOp},
+    {OPD(1, 0b01, 0x10), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPDOp},
+    {OPD(1, 0b10, 0x10), 1, &OpDispatchBuilder::VMOVSSOp},
+    {OPD(1, 0b11, 0x10), 1, &OpDispatchBuilder::VMOVSDOp},
+    {OPD(1, 0b00, 0x11), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPDOp},
+    {OPD(1, 0b01, 0x11), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPDOp},
+    {OPD(1, 0b10, 0x11), 1, &OpDispatchBuilder::VMOVSSOp},
+    {OPD(1, 0b11, 0x11), 1, &OpDispatchBuilder::VMOVSDOp},
+
+    {OPD(1, 0b00, 0x12), 1, &OpDispatchBuilder::VMOVLPOp},
+    {OPD(1, 0b01, 0x12), 1, &OpDispatchBuilder::VMOVLPOp},
+    {OPD(1, 0b10, 0x12), 1, &OpDispatchBuilder::VMOVSLDUPOp},
+    {OPD(1, 0b11, 0x12), 1, &OpDispatchBuilder::VMOVDDUPOp},
+    {OPD(1, 0b00, 0x13), 1, &OpDispatchBuilder::VMOVLPOp},
+    {OPD(1, 0b01, 0x13), 1, &OpDispatchBuilder::VMOVLPOp},
+
+    {OPD(1, 0b00, 0x14), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPUNPCKLOp, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x14), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPUNPCKLOp, OpSize::i64Bit>},
+
+    {OPD(1, 0b00, 0x15), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPUNPCKHOp, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x15), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPUNPCKHOp, OpSize::i64Bit>},
+
+    {OPD(1, 0b00, 0x16), 1, &OpDispatchBuilder::VMOVHPOp},
+    {OPD(1, 0b01, 0x16), 1, &OpDispatchBuilder::VMOVHPOp},
+    {OPD(1, 0b10, 0x16), 1, &OpDispatchBuilder::VMOVSHDUPOp},
+    {OPD(1, 0b00, 0x17), 1, &OpDispatchBuilder::VMOVHPOp},
+    {OPD(1, 0b01, 0x17), 1, &OpDispatchBuilder::VMOVHPOp},
+
+    {OPD(1, 0b00, 0x28), 1, &OpDispatchBuilder::VMOVAPS_VMOVAPDOp},
+    {OPD(1, 0b01, 0x28), 1, &OpDispatchBuilder::VMOVAPS_VMOVAPDOp},
+    {OPD(1, 0b00, 0x29), 1, &OpDispatchBuilder::VMOVAPS_VMOVAPDOp},
+    {OPD(1, 0b01, 0x29), 1, &OpDispatchBuilder::VMOVAPS_VMOVAPDOp},
+
+    {OPD(1, 0b10, 0x2A), 1, &OpDispatchBuilder::AVXInsertCVTGPR_To_FPR<OpSize::i32Bit>},
+    {OPD(1, 0b11, 0x2A), 1, &OpDispatchBuilder::AVXInsertCVTGPR_To_FPR<OpSize::i64Bit>},
+
+    {OPD(1, 0b00, 0x2B), 1, &OpDispatchBuilder::MOVVectorNTOp},
+    {OPD(1, 0b01, 0x2B), 1, &OpDispatchBuilder::MOVVectorNTOp},
+
+    {OPD(1, 0b10, 0x2C), 1, &OpDispatchBuilder::CVTFPR_To_GPR<OpSize::i32Bit, false>},
+    {OPD(1, 0b11, 0x2C), 1, &OpDispatchBuilder::CVTFPR_To_GPR<OpSize::i64Bit, false>},
+
+    {OPD(1, 0b10, 0x2D), 1, &OpDispatchBuilder::CVTFPR_To_GPR<OpSize::i32Bit, true>},
+    {OPD(1, 0b11, 0x2D), 1, &OpDispatchBuilder::CVTFPR_To_GPR<OpSize::i64Bit, true>},
+
+    {OPD(1, 0b00, 0x2E), 1, &OpDispatchBuilder::UCOMISxOp<OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x2E), 1, &OpDispatchBuilder::UCOMISxOp<OpSize::i64Bit>},
+    {OPD(1, 0b00, 0x2F), 1, &OpDispatchBuilder::UCOMISxOp<OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x2F), 1, &OpDispatchBuilder::UCOMISxOp<OpSize::i64Bit>},
+
+    {OPD(1, 0b00, 0x50), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVMSKOp, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x50), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVMSKOp, OpSize::i64Bit>},
+
+    {OPD(1, 0b00, 0x51), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorUnaryOp, IR::OP_VFSQRT, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x51), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorUnaryOp, IR::OP_VFSQRT, OpSize::i64Bit>},
+    {OPD(1, 0b10, 0x51), 1, &OpDispatchBuilder::AVXVectorScalarUnaryInsertALUOp<IR::OP_VFSQRTSCALARINSERT, OpSize::i32Bit>},
+    {OPD(1, 0b11, 0x51), 1, &OpDispatchBuilder::AVXVectorScalarUnaryInsertALUOp<IR::OP_VFSQRTSCALARINSERT, OpSize::i64Bit>},
+
+    {OPD(1, 0b00, 0x52), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorUnaryOp, IR::OP_VFRSQRT, OpSize::i32Bit>},
+    {OPD(1, 0b10, 0x52), 1, &OpDispatchBuilder::AVXVectorScalarUnaryInsertALUOp<IR::OP_VFRSQRTSCALARINSERT, OpSize::i32Bit>},
+
+    {OPD(1, 0b00, 0x53), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorUnaryOp, IR::OP_VFRECP, OpSize::i32Bit>},
+    {OPD(1, 0b10, 0x53), 1, &OpDispatchBuilder::AVXVectorScalarUnaryInsertALUOp<IR::OP_VFRECPSCALARINSERT, OpSize::i32Bit>},
+
+    {OPD(1, 0b00, 0x54), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VAND, OpSize::i128Bit>},
+    {OPD(1, 0b01, 0x54), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VAND, OpSize::i128Bit>},
+
+    {OPD(1, 0b00, 0x55), 1, &OpDispatchBuilder::VANDNOp},
+    {OPD(1, 0b01, 0x55), 1, &OpDispatchBuilder::VANDNOp},
+
+    {OPD(1, 0b00, 0x56), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VOR, OpSize::i128Bit>},
+    {OPD(1, 0b01, 0x56), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VOR, OpSize::i128Bit>},
+
+    {OPD(1, 0b00, 0x57), 1, &OpDispatchBuilder::AVXVectorXOROp},
+    {OPD(1, 0b01, 0x57), 1, &OpDispatchBuilder::AVXVectorXOROp},
+
+    {OPD(1, 0b00, 0x58), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VFADD, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x58), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VFADD, OpSize::i64Bit>},
+    {OPD(1, 0b10, 0x58), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFADDSCALARINSERT, OpSize::i32Bit>},
+    {OPD(1, 0b11, 0x58), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFADDSCALARINSERT, OpSize::i64Bit>},
+
+    {OPD(1, 0b00, 0x59), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VFMUL, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x59), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VFMUL, OpSize::i64Bit>},
+    {OPD(1, 0b10, 0x59), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMULSCALARINSERT, OpSize::i32Bit>},
+    {OPD(1, 0b11, 0x59), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMULSCALARINSERT, OpSize::i64Bit>},
+
+    {OPD(1, 0b00, 0x5A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Float_To_Float, OpSize::i64Bit, OpSize::i32Bit, true>},
+    {OPD(1, 0b01, 0x5A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Vector_CVT_Float_To_Float, OpSize::i32Bit, OpSize::i64Bit, true>},
+    {OPD(1, 0b10, 0x5A), 1, &OpDispatchBuilder::AVXInsertScalar_CVT_Float_To_Float<OpSize::i64Bit, OpSize::i32Bit>},
+    {OPD(1, 0b11, 0x5A), 1, &OpDispatchBuilder::AVXInsertScalar_CVT_Float_To_Float<OpSize::i32Bit, OpSize::i64Bit>},
+
+    {OPD(1, 0b00, 0x5B), 1, &OpDispatchBuilder::Vector_CVT_Int_To_Float<OpSize::i32Bit, false>},
+    {OPD(1, 0b01, 0x5B), 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<OpSize::i32Bit, true>},
+    {OPD(1, 0b10, 0x5B), 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<OpSize::i32Bit, false>},
+
+    {OPD(1, 0b00, 0x5C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VFSUB, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x5C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VFSUB, OpSize::i64Bit>},
+    {OPD(1, 0b10, 0x5C), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFSUBSCALARINSERT, OpSize::i32Bit>},
+    {OPD(1, 0b11, 0x5C), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFSUBSCALARINSERT, OpSize::i64Bit>},
+
+    {OPD(1, 0b00, 0x5D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VFMIN, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x5D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VFMIN, OpSize::i64Bit>},
+    {OPD(1, 0b10, 0x5D), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMINSCALARINSERT, OpSize::i32Bit>},
+    {OPD(1, 0b11, 0x5D), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMINSCALARINSERT, OpSize::i64Bit>},
+
+    {OPD(1, 0b00, 0x5E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VFDIV, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x5E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VFDIV, OpSize::i64Bit>},
+    {OPD(1, 0b10, 0x5E), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFDIVSCALARINSERT, OpSize::i32Bit>},
+    {OPD(1, 0b11, 0x5E), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFDIVSCALARINSERT, OpSize::i64Bit>},
+
+    {OPD(1, 0b00, 0x5F), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VFMAX, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x5F), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VFMAX, OpSize::i64Bit>},
+    {OPD(1, 0b10, 0x5F), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMAXSCALARINSERT, OpSize::i32Bit>},
+    {OPD(1, 0b11, 0x5F), 1, &OpDispatchBuilder::AVXVectorScalarInsertALUOp<IR::OP_VFMAXSCALARINSERT, OpSize::i64Bit>},
+
+    {OPD(1, 0b01, 0x60), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPUNPCKLOp, OpSize::i8Bit>},
+    {OPD(1, 0b01, 0x61), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPUNPCKLOp, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0x62), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPUNPCKLOp, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x63), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPACKSSOp, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0x64), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VCMPGT, OpSize::i8Bit>},
+    {OPD(1, 0b01, 0x65), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VCMPGT, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0x66), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VCMPGT, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x67), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPACKUSOp, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0x68), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPUNPCKHOp, OpSize::i8Bit>},
+    {OPD(1, 0b01, 0x69), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPUNPCKHOp, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0x6A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPUNPCKHOp, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x6B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPACKSSOp, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x6C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPUNPCKLOp, OpSize::i64Bit>},
+    {OPD(1, 0b01, 0x6D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPUNPCKHOp, OpSize::i64Bit>},
+    {OPD(1, 0b01, 0x6E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVBetweenGPR_FPR, OpDispatchBuilder::VectorOpType::AVX>},
+
+    {OPD(1, 0b01, 0x6F), 1, &OpDispatchBuilder::VMOVAPS_VMOVAPDOp},
+    {OPD(1, 0b10, 0x6F), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPDOp},
+
+    {OPD(1, 0b01, 0x70), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSHUFWOp, OpSize::i32Bit, true>},
+    {OPD(1, 0b10, 0x70), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSHUFWOp, OpSize::i16Bit, false>},
+    {OPD(1, 0b11, 0x70), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSHUFWOp, OpSize::i16Bit, true>},
+
+    {OPD(1, 0b01, 0x74), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VCMPEQ, OpSize::i8Bit>},
+    {OPD(1, 0b01, 0x75), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VCMPEQ, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0x76), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VCMPEQ, OpSize::i32Bit>},
+
+    {OPD(1, 0b00, 0x77), 1, &OpDispatchBuilder::VZEROOp},
+
+    {OPD(1, 0b01, 0x7C), 1, &OpDispatchBuilder::VHADDPOp<IR::OP_VFADDP, OpSize::i64Bit>},
+    {OPD(1, 0b11, 0x7C), 1, &OpDispatchBuilder::VHADDPOp<IR::OP_VFADDP, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0x7D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VHSUBPOp, OpSize::i64Bit>},
+    {OPD(1, 0b11, 0x7D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VHSUBPOp, OpSize::i32Bit>},
+
+    {OPD(1, 0b01, 0x7E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVBetweenGPR_FPR, OpDispatchBuilder::VectorOpType::AVX>},
+    {OPD(1, 0b10, 0x7E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVQOp, OpDispatchBuilder::VectorOpType::AVX>},
+
+    {OPD(1, 0b01, 0x7F), 1, &OpDispatchBuilder::VMOVAPS_VMOVAPDOp},
+    {OPD(1, 0b10, 0x7F), 1, &OpDispatchBuilder::VMOVUPS_VMOVUPDOp},
+
+    {OPD(1, 0b00, 0xC2), 1, &OpDispatchBuilder::AVXVFCMPOp<OpSize::i32Bit>},
+    {OPD(1, 0b01, 0xC2), 1, &OpDispatchBuilder::AVXVFCMPOp<OpSize::i64Bit>},
+    {OPD(1, 0b10, 0xC2), 1, &OpDispatchBuilder::AVXInsertScalarFCMPOp<OpSize::i32Bit>},
+    {OPD(1, 0b11, 0xC2), 1, &OpDispatchBuilder::AVXInsertScalarFCMPOp<OpSize::i64Bit>},
+
+    {OPD(1, 0b01, 0xC4), 1, &OpDispatchBuilder::VPINSRWOp},
+    {OPD(1, 0b01, 0xC5), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, OpSize::i16Bit>},
+
+    {OPD(1, 0b00, 0xC6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VSHUFOp, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0xC6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VSHUFOp, OpSize::i64Bit>},
+
+    {OPD(1, 0b01, 0xD0), 1, &OpDispatchBuilder::VADDSUBPOp<OpSize::i64Bit>},
+    {OPD(1, 0b11, 0xD0), 1, &OpDispatchBuilder::VADDSUBPOp<OpSize::i32Bit>},
+
+    {OPD(1, 0b01, 0xD1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRLDOp, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0xD2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRLDOp, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0xD3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRLDOp, OpSize::i64Bit>},
+    {OPD(1, 0b01, 0xD4), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VADD, OpSize::i64Bit>},
+    {OPD(1, 0b01, 0xD5), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VMUL, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0xD6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVQOp, OpDispatchBuilder::VectorOpType::AVX>},
+    {OPD(1, 0b01, 0xD7), 1, &OpDispatchBuilder::MOVMSKOpOne},
+
+    {OPD(1, 0b01, 0xD8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VUQSUB, OpSize::i8Bit>},
+    {OPD(1, 0b01, 0xD9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VUQSUB, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0xDA), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VUMIN, OpSize::i8Bit>},
+    {OPD(1, 0b01, 0xDB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VAND, OpSize::i128Bit>},
+    {OPD(1, 0b01, 0xDC), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VUQADD, OpSize::i8Bit>},
+    {OPD(1, 0b01, 0xDD), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VUQADD, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0xDE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VUMAX, OpSize::i8Bit>},
+    {OPD(1, 0b01, 0xDF), 1, &OpDispatchBuilder::VANDNOp},
+
+    {OPD(1, 0b01, 0xE0), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VURAVG, OpSize::i8Bit>},
+    {OPD(1, 0b01, 0xE1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRAOp, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0xE2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRAOp, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0xE3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VURAVG, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0xE4), 1, &OpDispatchBuilder::VPMULHWOp<false>},
+    {OPD(1, 0b01, 0xE5), 1, &OpDispatchBuilder::VPMULHWOp<true>},
+
+    {OPD(1, 0b01, 0xE6), 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<OpSize::i64Bit, false>},
+    {OPD(1, 0b10, 0xE6), 1, &OpDispatchBuilder::Vector_CVT_Int_To_Float<OpSize::i32Bit, true>},
+    {OPD(1, 0b11, 0xE6), 1, &OpDispatchBuilder::Vector_CVT_Float_To_Int<OpSize::i64Bit, true>},
+
+    {OPD(1, 0b01, 0xE7), 1, &OpDispatchBuilder::MOVVectorNTOp},
+
+    {OPD(1, 0b01, 0xE8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSQSUB, OpSize::i8Bit>},
+    {OPD(1, 0b01, 0xE9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSQSUB, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0xEA), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSMIN, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0xEB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VOR, OpSize::i128Bit>},
+    {OPD(1, 0b01, 0xEC), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSQADD, OpSize::i8Bit>},
+    {OPD(1, 0b01, 0xED), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSQADD, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0xEE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSMAX, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0xEF), 1, &OpDispatchBuilder::AVXVectorXOROp},
+
+    {OPD(1, 0b11, 0xF0), 1, &OpDispatchBuilder::MOVVectorUnalignedOp},
+    {OPD(1, 0b01, 0xF1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLOp, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0xF2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLOp, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0xF3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLOp, OpSize::i64Bit>},
+    {OPD(1, 0b01, 0xF4), 1, &OpDispatchBuilder::VPMULLOp<OpSize::i32Bit, false>},
+    {OPD(1, 0b01, 0xF5), 1, &OpDispatchBuilder::VPMADDWDOp},
+    {OPD(1, 0b01, 0xF6), 1, &OpDispatchBuilder::VPSADBWOp},
+    {OPD(1, 0b01, 0xF7), 1, &OpDispatchBuilder::MASKMOVOp},
+
+    {OPD(1, 0b01, 0xF8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSUB, OpSize::i8Bit>},
+    {OPD(1, 0b01, 0xF9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSUB, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0xFA), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSUB, OpSize::i32Bit>},
+    {OPD(1, 0b01, 0xFB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSUB, OpSize::i64Bit>},
+    {OPD(1, 0b01, 0xFC), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VADD, OpSize::i8Bit>},
+    {OPD(1, 0b01, 0xFD), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VADD, OpSize::i16Bit>},
+    {OPD(1, 0b01, 0xFE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VADD, OpSize::i32Bit>},
+
+    {OPD(2, 0b01, 0x00), 1, &OpDispatchBuilder::VPSHUFBOp},
+    {OPD(2, 0b01, 0x01), 1, &OpDispatchBuilder::VHADDPOp<IR::OP_VADDP, OpSize::i16Bit>},
+    {OPD(2, 0b01, 0x02), 1, &OpDispatchBuilder::VHADDPOp<IR::OP_VADDP, OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x03), 1, &OpDispatchBuilder::VPHADDSWOp},
+    {OPD(2, 0b01, 0x04), 1, &OpDispatchBuilder::VPMADDUBSWOp},
+
+    {OPD(2, 0b01, 0x05), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPHSUBOp, OpSize::i16Bit>},
+    {OPD(2, 0b01, 0x06), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPHSUBOp, OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x07), 1, &OpDispatchBuilder::VPHSUBSWOp},
+
+    {OPD(2, 0b01, 0x08), 1, &OpDispatchBuilder::VPSIGN<OpSize::i8Bit>},
+    {OPD(2, 0b01, 0x09), 1, &OpDispatchBuilder::VPSIGN<OpSize::i16Bit>},
+    {OPD(2, 0b01, 0x0A), 1, &OpDispatchBuilder::VPSIGN<OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x0B), 1, &OpDispatchBuilder::VPMULHRSWOp},
+    {OPD(2, 0b01, 0x0C), 1, &OpDispatchBuilder::VPERMILRegOp<OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x0D), 1, &OpDispatchBuilder::VPERMILRegOp<OpSize::i64Bit>},
+    {OPD(2, 0b01, 0x0E), 1, &OpDispatchBuilder::VTESTPOp<OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x0F), 1, &OpDispatchBuilder::VTESTPOp<OpSize::i64Bit>},
+
+    {OPD(2, 0b01, 0x13), 1, &OpDispatchBuilder::VCVTPH2PSOp},
+    {OPD(2, 0b01, 0x16), 1, &OpDispatchBuilder::VPERMDOp},
+    {OPD(2, 0b01, 0x17), 1, &OpDispatchBuilder::PTestOp},
+    {OPD(2, 0b01, 0x18), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VBROADCASTOp, OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x19), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VBROADCASTOp, OpSize::i64Bit>},
+    {OPD(2, 0b01, 0x1A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VBROADCASTOp, OpSize::i128Bit>},
+    {OPD(2, 0b01, 0x1C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorUnaryOp, IR::OP_VABS, OpSize::i8Bit>},
+    {OPD(2, 0b01, 0x1D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorUnaryOp, IR::OP_VABS, OpSize::i16Bit>},
+    {OPD(2, 0b01, 0x1E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorUnaryOp, IR::OP_VABS, OpSize::i32Bit>},
+
+    {OPD(2, 0b01, 0x20), 1, &OpDispatchBuilder::ExtendVectorElements<OpSize::i8Bit, OpSize::i16Bit, true>},
+    {OPD(2, 0b01, 0x21), 1, &OpDispatchBuilder::ExtendVectorElements<OpSize::i8Bit, OpSize::i32Bit, true>},
+    {OPD(2, 0b01, 0x22), 1, &OpDispatchBuilder::ExtendVectorElements<OpSize::i8Bit, OpSize::i64Bit, true>},
+    {OPD(2, 0b01, 0x23), 1, &OpDispatchBuilder::ExtendVectorElements<OpSize::i16Bit, OpSize::i32Bit, true>},
+    {OPD(2, 0b01, 0x24), 1, &OpDispatchBuilder::ExtendVectorElements<OpSize::i16Bit, OpSize::i64Bit, true>},
+    {OPD(2, 0b01, 0x25), 1, &OpDispatchBuilder::ExtendVectorElements<OpSize::i32Bit, OpSize::i64Bit, true>},
+
+    {OPD(2, 0b01, 0x28), 1, &OpDispatchBuilder::VPMULLOp<OpSize::i32Bit, true>},
+    {OPD(2, 0b01, 0x29), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VCMPEQ, OpSize::i64Bit>},
+    {OPD(2, 0b01, 0x2A), 1, &OpDispatchBuilder::MOVVectorNTOp},
+    {OPD(2, 0b01, 0x2B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPACKUSOp, OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x2C), 1, &OpDispatchBuilder::VMASKMOVOp<OpSize::i32Bit, false>},
+    {OPD(2, 0b01, 0x2D), 1, &OpDispatchBuilder::VMASKMOVOp<OpSize::i64Bit, false>},
+    {OPD(2, 0b01, 0x2E), 1, &OpDispatchBuilder::VMASKMOVOp<OpSize::i32Bit, true>},
+    {OPD(2, 0b01, 0x2F), 1, &OpDispatchBuilder::VMASKMOVOp<OpSize::i64Bit, true>},
+
+    {OPD(2, 0b01, 0x30), 1, &OpDispatchBuilder::ExtendVectorElements<OpSize::i8Bit, OpSize::i16Bit, false>},
+    {OPD(2, 0b01, 0x31), 1, &OpDispatchBuilder::ExtendVectorElements<OpSize::i8Bit, OpSize::i32Bit, false>},
+    {OPD(2, 0b01, 0x32), 1, &OpDispatchBuilder::ExtendVectorElements<OpSize::i8Bit, OpSize::i64Bit, false>},
+    {OPD(2, 0b01, 0x33), 1, &OpDispatchBuilder::ExtendVectorElements<OpSize::i16Bit, OpSize::i32Bit, false>},
+    {OPD(2, 0b01, 0x34), 1, &OpDispatchBuilder::ExtendVectorElements<OpSize::i16Bit, OpSize::i64Bit, false>},
+    {OPD(2, 0b01, 0x35), 1, &OpDispatchBuilder::ExtendVectorElements<OpSize::i32Bit, OpSize::i64Bit, false>},
+    {OPD(2, 0b01, 0x36), 1, &OpDispatchBuilder::VPERMDOp},
+
+    {OPD(2, 0b01, 0x37), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VCMPGT, OpSize::i64Bit>},
+    {OPD(2, 0b01, 0x38), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSMIN, OpSize::i8Bit>},
+    {OPD(2, 0b01, 0x39), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSMIN, OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x3A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VUMIN, OpSize::i16Bit>},
+    {OPD(2, 0b01, 0x3B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VUMIN, OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x3C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSMAX, OpSize::i8Bit>},
+    {OPD(2, 0b01, 0x3D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VSMAX, OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x3E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VUMAX, OpSize::i16Bit>},
+    {OPD(2, 0b01, 0x3F), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VUMAX, OpSize::i32Bit>},
+
+    {OPD(2, 0b01, 0x40), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorALUOp, IR::OP_VMUL, OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x41), 1, &OpDispatchBuilder::PHMINPOSUWOp},
+    {OPD(2, 0b01, 0x45), 1, &OpDispatchBuilder::VPSRLVOp},
+    {OPD(2, 0b01, 0x46), 1, &OpDispatchBuilder::VPSRAVDOp},
+    {OPD(2, 0b01, 0x47), 1, &OpDispatchBuilder::VPSLLVOp},
+
+    {OPD(2, 0b01, 0x58), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VBROADCASTOp, OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x59), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VBROADCASTOp, OpSize::i64Bit>},
+    {OPD(2, 0b01, 0x5A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VBROADCASTOp, OpSize::i128Bit>},
+
+    {OPD(2, 0b01, 0x78), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VBROADCASTOp, OpSize::i8Bit>},
+    {OPD(2, 0b01, 0x79), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VBROADCASTOp, OpSize::i16Bit>},
+
+    {OPD(2, 0b01, 0x8C), 1, &OpDispatchBuilder::VPMASKMOVOp<false>},
+    {OPD(2, 0b01, 0x8E), 1, &OpDispatchBuilder::VPMASKMOVOp<true>},
+
+    {OPD(2, 0b01, 0x90), 1, &OpDispatchBuilder::VPGATHER<OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x91), 1, &OpDispatchBuilder::VPGATHER<OpSize::i64Bit>},
+    {OPD(2, 0b01, 0x92), 1, &OpDispatchBuilder::VPGATHER<OpSize::i32Bit>},
+    {OPD(2, 0b01, 0x93), 1, &OpDispatchBuilder::VPGATHER<OpSize::i64Bit>},
+
+    {OPD(2, 0b01, 0x96), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAddSubImpl, true, 1, 3, 2>},  // VFMADDSUB
+    {OPD(2, 0b01, 0x97), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAddSubImpl, false, 1, 3, 2>}, // VFMSUBADD
+
+    {OPD(2, 0b01, 0x98), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFMLA, false, 1, 3, 2>},  // VFMADD
+    {OPD(2, 0b01, 0x99), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFMLA, true, 1, 3, 2>},   // VFMADD
+    {OPD(2, 0b01, 0x9A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFMLS, false, 1, 3, 2>},  // VFMSUB
+    {OPD(2, 0b01, 0x9B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFMLS, true, 1, 3, 2>},   // VFMSUB
+    {OPD(2, 0b01, 0x9C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFNMLA, false, 1, 3, 2>}, // VFNMADD
+    {OPD(2, 0b01, 0x9D), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFNMLA, true, 1, 3, 2>},  // VFNMADD
+    {OPD(2, 0b01, 0x9E), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFNMLS, false, 1, 3, 2>}, // VFNMSUB
+    {OPD(2, 0b01, 0x9F), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFNMLS, true, 1, 3, 2>},  // VFNMSUB
+
+    {OPD(2, 0b01, 0xA8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFMLA, false, 2, 1, 3>},  // VFMADD
+    {OPD(2, 0b01, 0xA9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFMLA, true, 2, 1, 3>},   // VFMADD
+    {OPD(2, 0b01, 0xAA), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFMLS, false, 2, 1, 3>},  // VFMSUB
+    {OPD(2, 0b01, 0xAB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFMLS, true, 2, 1, 3>},   // VFMSUB
+    {OPD(2, 0b01, 0xAC), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFNMLA, false, 2, 1, 3>}, // VFNMADD
+    {OPD(2, 0b01, 0xAD), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFNMLA, true, 2, 1, 3>},  // VFNMADD
+    {OPD(2, 0b01, 0xAE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFNMLS, false, 2, 1, 3>}, // VFNMSUB
+    {OPD(2, 0b01, 0xAF), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFNMLS, true, 2, 1, 3>},  // VFNMSUB
+
+    {OPD(2, 0b01, 0xB8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFMLA, false, 2, 3, 1>},  // VFMADD
+    {OPD(2, 0b01, 0xB9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFMLA, true, 2, 3, 1>},   // VFMADD
+    {OPD(2, 0b01, 0xBA), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFMLS, false, 2, 3, 1>},  // VFMSUB
+    {OPD(2, 0b01, 0xBB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFMLS, true, 2, 3, 1>},   // VFMSUB
+    {OPD(2, 0b01, 0xBC), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFNMLA, false, 2, 3, 1>}, // VFNMADD
+    {OPD(2, 0b01, 0xBD), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFNMLA, true, 2, 3, 1>},  // VFNMADD
+    {OPD(2, 0b01, 0xBE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFNMLS, false, 2, 3, 1>}, // VFNMSUB
+    {OPD(2, 0b01, 0xBF), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAImpl, IR::OP_VFNMLS, true, 2, 3, 1>},  // VFNMSUB
+
+    {OPD(2, 0b01, 0xA6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAddSubImpl, true, 2, 1, 3>},  // VFMADDSUB
+    {OPD(2, 0b01, 0xA7), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAddSubImpl, false, 2, 1, 3>}, // VFMSUBADD
+
+    {OPD(2, 0b01, 0xB6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAddSubImpl, true, 2, 3, 1>},  // VFMADDSUB
+    {OPD(2, 0b01, 0xB7), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VFMAddSubImpl, false, 2, 3, 1>}, // VFMSUBADD
+
+    {OPD(2, 0b01, 0xDB), 1, &OpDispatchBuilder::AESImcOp},
+    {OPD(2, 0b01, 0xDC), 1, &OpDispatchBuilder::VAESEncOp},
+    {OPD(2, 0b01, 0xDD), 1, &OpDispatchBuilder::VAESEncLastOp},
+    {OPD(2, 0b01, 0xDE), 1, &OpDispatchBuilder::VAESDecOp},
+    {OPD(2, 0b01, 0xDF), 1, &OpDispatchBuilder::VAESDecLastOp},
+
+    {OPD(3, 0b01, 0x00), 1, &OpDispatchBuilder::VPERMQOp},
+    {OPD(3, 0b01, 0x01), 1, &OpDispatchBuilder::VPERMQOp},
+    {OPD(3, 0b01, 0x02), 1, &OpDispatchBuilder::VPBLENDDOp},
+    {OPD(3, 0b01, 0x04), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPERMILImmOp, OpSize::i32Bit>},
+    {OPD(3, 0b01, 0x05), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPERMILImmOp, OpSize::i64Bit>},
+    {OPD(3, 0b01, 0x06), 1, &OpDispatchBuilder::VPERM2Op},
+    {OPD(3, 0b01, 0x08), 1, &OpDispatchBuilder::AVXVectorRound<OpSize::i32Bit>},
+    {OPD(3, 0b01, 0x09), 1, &OpDispatchBuilder::AVXVectorRound<OpSize::i64Bit>},
+    {OPD(3, 0b01, 0x0A), 1, &OpDispatchBuilder::AVXInsertScalarRound<OpSize::i32Bit>},
+    {OPD(3, 0b01, 0x0B), 1, &OpDispatchBuilder::AVXInsertScalarRound<OpSize::i64Bit>},
+    {OPD(3, 0b01, 0x0C), 1, &OpDispatchBuilder::VPBLENDDOp},
+    {OPD(3, 0b01, 0x0D), 1, &OpDispatchBuilder::VBLENDPDOp},
+    {OPD(3, 0b01, 0x0E), 1, &OpDispatchBuilder::VPBLENDWOp},
+    {OPD(3, 0b01, 0x0F), 1, &OpDispatchBuilder::VPALIGNROp},
+
+    {OPD(3, 0b01, 0x14), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, OpSize::i8Bit>},
+    {OPD(3, 0b01, 0x15), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, OpSize::i16Bit>},
+    {OPD(3, 0b01, 0x16), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, OpSize::i32Bit>},
+    {OPD(3, 0b01, 0x17), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PExtrOp, OpSize::i32Bit>},
+
+    {OPD(3, 0b01, 0x18), 1, &OpDispatchBuilder::VINSERTOp},
+    {OPD(3, 0b01, 0x19), 1, &OpDispatchBuilder::VEXTRACT128Op},
+    {OPD(3, 0b01, 0x1D), 1, &OpDispatchBuilder::VCVTPS2PHOp},
+    {OPD(3, 0b01, 0x20), 1, &OpDispatchBuilder::VPINSRBOp},
+    {OPD(3, 0b01, 0x21), 1, &OpDispatchBuilder::VINSERTPSOp},
+    {OPD(3, 0b01, 0x22), 1, &OpDispatchBuilder::VPINSRDQOp},
+
+    {OPD(3, 0b01, 0x38), 1, &OpDispatchBuilder::VINSERTOp},
+    {OPD(3, 0b01, 0x39), 1, &OpDispatchBuilder::VEXTRACT128Op},
+
+    {OPD(3, 0b01, 0x40), 1, &OpDispatchBuilder::VDPPOp<OpSize::i32Bit>},
+    {OPD(3, 0b01, 0x41), 1, &OpDispatchBuilder::VDPPOp<OpSize::i64Bit>},
+    {OPD(3, 0b01, 0x42), 1, &OpDispatchBuilder::VMPSADBWOp},
+    {OPD(3, 0b01, 0x44), 1, &OpDispatchBuilder::VPCLMULQDQOp},
+
+    {OPD(3, 0b01, 0x46), 1, &OpDispatchBuilder::VPERM2Op},
+
+    {OPD(3, 0b01, 0x4A), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorVariableBlend, OpSize::i32Bit>},
+    {OPD(3, 0b01, 0x4B), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorVariableBlend, OpSize::i64Bit>},
+    {OPD(3, 0b01, 0x4C), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::AVXVectorVariableBlend, OpSize::i8Bit>},
+
+    {OPD(3, 0b01, 0x60), 1, &OpDispatchBuilder::VPCMPESTRMOp},
+    {OPD(3, 0b01, 0x61), 1, &OpDispatchBuilder::VPCMPESTRIOp},
+    {OPD(3, 0b01, 0x62), 1, &OpDispatchBuilder::VPCMPISTRMOp},
+    {OPD(3, 0b01, 0x63), 1, &OpDispatchBuilder::VPCMPISTRIOp},
+
+    {OPD(3, 0b01, 0xDF), 1, &OpDispatchBuilder::AESKeyGenAssist},
+  };
+#undef OPD
+
+#define OPD(group, pp, opcode) (((group - X86Tables::TYPE_VEX_GROUP_12) << 4) | (pp << 3) | (opcode))
+  constexpr DispatchTableEntry TableGroupOps[] {
+    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b010), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRLIOp, OpSize::i16Bit>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b110), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLIOp, OpSize::i16Bit>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_12, 1, 0b100), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRAIOp, OpSize::i16Bit>},
+
+    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b010), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRLIOp, OpSize::i32Bit>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b110), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLIOp, OpSize::i32Bit>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_13, 1, 0b100), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRAIOp, OpSize::i32Bit>},
+
+    {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b010), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSRLIOp, OpSize::i64Bit>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b011), 1, &OpDispatchBuilder::VPSRLDQOp},
+    {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b110), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VPSLLIOp, OpSize::i64Bit>},
+    {OPD(X86Tables::TYPE_VEX_GROUP_14, 1, 0b111), 1, &OpDispatchBuilder::VPSLLDQOp},
+
+    {OPD(X86Tables::TYPE_VEX_GROUP_15, 0, 0b010), 1, &OpDispatchBuilder::LDMXCSR},
+    {OPD(X86Tables::TYPE_VEX_GROUP_15, 0, 0b011), 1, &OpDispatchBuilder::STMXCSR},
+  };
+#undef OPD
+}
+
+auto BaseTableLambda = [](const auto RuntimeTable) consteval {
   std::array<X86InstInfo, MAX_VEX_TABLE_SIZE> Table{};
 #define OPD(map_select, pp, opcode) (((map_select - 1) << 10) | (pp << 8) | (opcode))
   constexpr U16U8InfoStruct VEXTable[] = {
@@ -492,10 +1365,11 @@ std::array<X86InstInfo, MAX_VEX_TABLE_SIZE> VEXTableOps = []() consteval {
   GenerateTable(&Table.at(0), VEXTable, std::size(VEXTable));
 
   IR::InstallToTable(Table, IR::OpDispatch_VEXTable);
+  IR::InstallToTable(Table, RuntimeTable);
   return Table;
-}();
+};
 
-std::array<X86InstInfo, MAX_VEX_GROUP_TABLE_SIZE> VEXTableGroupOps = []() consteval {
+auto GroupTableLambda = [](const auto RuntimeTable) consteval {
   std::array<X86InstInfo, MAX_VEX_GROUP_TABLE_SIZE> Table{};
 
 #define OPD(group, pp, opcode) (((group - TYPE_VEX_GROUP_12) << 4) | (pp << 3) | (opcode))
@@ -525,6 +1399,13 @@ std::array<X86InstInfo, MAX_VEX_GROUP_TABLE_SIZE> VEXTableGroupOps = []() conste
   GenerateTable(&Table.at(0), VEXGroupTable, std::size(VEXGroupTable));
 
   IR::InstallToTable(Table, IR::OpDispatch_VEXGroupTable);
+  IR::InstallToTable(Table, RuntimeTable);
   return Table;
-}();
+};
+
+const std::array<X86InstInfo, MAX_VEX_TABLE_SIZE> VEXTableOps = BaseTableLambda(std::to_array(AVX256::BaseTable));
+const std::array<X86InstInfo, MAX_VEX_GROUP_TABLE_SIZE> VEXTableGroupOps = GroupTableLambda(std::to_array(AVX256::TableGroupOps));
+
+const std::array<X86InstInfo, MAX_VEX_TABLE_SIZE> VEXTableOps_AVX128 = BaseTableLambda(std::to_array(AVX128::BaseTable));
+const std::array<X86InstInfo, MAX_VEX_GROUP_TABLE_SIZE> VEXTableGroupOps_AVX128 = GroupTableLambda(std::to_array(AVX128::TableGroupOps));
 }

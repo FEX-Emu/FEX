@@ -940,7 +940,6 @@ public:
   RefVSIB AVX128_LoadVSIB(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags, bool NeedsHigh);
   void AVX128_StoreResult_WithOpSize(FEXCore::X86Tables::DecodedOp Op, const FEXCore::X86Tables::DecodedOperand& Operand, const RefPair Src,
                                      MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
-  void InstallAVX128Handlers();
   void AVX128_VMOVScalarImpl(OpcodeArgs, IR::OpSize ElementSize);
   void AVX128_VectorALU(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
   void AVX128_VectorUnary(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
@@ -969,39 +968,26 @@ public:
   void AVX128_VMOVDDUP(OpcodeArgs);
   void AVX128_VMOVSLDUP(OpcodeArgs);
   void AVX128_VMOVSHDUP(OpcodeArgs);
-  template<IR::OpSize ElementSize>
-  void AVX128_VBROADCAST(OpcodeArgs);
-  template<IR::OpSize ElementSize>
-  void AVX128_VPUNPCKL(OpcodeArgs);
-  template<IR::OpSize ElementSize>
-  void AVX128_VPUNPCKH(OpcodeArgs);
+  void AVX128_VBROADCAST(OpcodeArgs, IR::OpSize ElementSize);
+  void AVX128_VPUNPCKL(OpcodeArgs, IR::OpSize ElementSize);
+  void AVX128_VPUNPCKH(OpcodeArgs, IR::OpSize ElementSize);
   void AVX128_MOVVectorUnaligned(OpcodeArgs);
-  template<IR::OpSize DstElementSize>
-  void AVX128_InsertCVTGPR_To_FPR(OpcodeArgs);
-  template<IR::OpSize SrcElementSize, bool HostRoundingMode>
-  void AVX128_CVTFPR_To_GPR(OpcodeArgs);
+  void AVX128_InsertCVTGPR_To_FPR(OpcodeArgs, IR::OpSize DstElementSize);
+  void AVX128_CVTFPR_To_GPR(OpcodeArgs, IR::OpSize SrcElementSize, bool HostRoundingMode);
   void AVX128_VANDN(OpcodeArgs);
-  template<IR::OpSize ElementSize>
-  void AVX128_VPACKSS(OpcodeArgs);
-  template<IR::OpSize ElementSize>
-  void AVX128_VPACKUS(OpcodeArgs);
+  void AVX128_VPACKSS(OpcodeArgs, IR::OpSize ElementSize);
+  void AVX128_VPACKUS(OpcodeArgs, IR::OpSize ElementSize);
   Ref AVX128_PSIGNImpl(IR::OpSize ElementSize, Ref Src1, Ref Src2);
-  template<IR::OpSize ElementSize>
-  void AVX128_VPSIGN(OpcodeArgs);
-  template<IR::OpSize ElementSize>
-  void AVX128_UCOMISx(OpcodeArgs);
+  void AVX128_VPSIGN(OpcodeArgs, IR::OpSize ElementSize);
+  void AVX128_UCOMISx(OpcodeArgs, IR::OpSize ElementSize);
   void AVX128_VectorScalarInsertALU(OpcodeArgs, FEXCore::IR::IROps IROp, IR::OpSize ElementSize);
   Ref AVX128_VFCMPImpl(IR::OpSize ElementSize, Ref Src1, Ref Src2, uint8_t CompType);
-  template<IR::OpSize ElementSize>
-  void AVX128_VFCMP(OpcodeArgs);
-  template<IR::OpSize ElementSize>
-  void AVX128_InsertScalarFCMP(OpcodeArgs);
+  void AVX128_VFCMP(OpcodeArgs, IR::OpSize ElementSize);
+  void AVX128_InsertScalarFCMP(OpcodeArgs, IR::OpSize ElementSize);
   void AVX128_MOVBetweenGPR_FPR(OpcodeArgs);
-  template<IR::OpSize ElementSize>
-  void AVX128_PExtr(OpcodeArgs);
+  void AVX128_PExtr(OpcodeArgs, IR::OpSize ElementSize);
   void AVX128_ExtendVectorElements(OpcodeArgs, IR::OpSize ElementSize, IR::OpSize DstElementSize, bool Signed);
-  template<IR::OpSize ElementSize>
-  void AVX128_MOVMSK(OpcodeArgs);
+  void AVX128_MOVMSK(OpcodeArgs, IR::OpSize ElementSize);
   void AVX128_MOVMSKB(OpcodeArgs);
   void AVX128_PINSRImpl(OpcodeArgs, IR::OpSize ElementSize, const X86Tables::DecodedOperand& Src1Op,
                         const X86Tables::DecodedOperand& Src2Op, const X86Tables::DecodedOperand& Imm);
@@ -1015,33 +1001,25 @@ public:
   void AVX128_VINSERTPS(OpcodeArgs);
 
   Ref AVX128_PHSUBImpl(Ref Src1, Ref Src2, size_t ElementSize);
-  template<IR::OpSize ElementSize>
-  void AVX128_VPHSUB(OpcodeArgs);
+  void AVX128_VPHSUB(OpcodeArgs, IR::OpSize ElementSize);
 
   void AVX128_VPHSUBSW(OpcodeArgs);
 
-  template<IR::OpSize ElementSize>
-  void AVX128_VADDSUBP(OpcodeArgs);
+  void AVX128_VADDSUBP(OpcodeArgs, IR::OpSize ElementSize);
 
-  template<IR::OpSize ElementSize, bool Signed>
-  void AVX128_VPMULL(OpcodeArgs);
+  void AVX128_VPMULL(OpcodeArgs, IR::OpSize ElementSize, bool Signed);
 
   void AVX128_VPMULHRSW(OpcodeArgs);
 
-  template<bool Signed>
-  void AVX128_VPMULHW(OpcodeArgs);
+  void AVX128_VPMULHW(OpcodeArgs, bool Signed);
 
-  template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
-  void AVX128_InsertScalar_CVT_Float_To_Float(OpcodeArgs);
+  void AVX128_InsertScalar_CVT_Float_To_Float(OpcodeArgs, IR::OpSize DstElementSize, IR::OpSize SrcElementSize);
 
-  template<IR::OpSize DstElementSize, IR::OpSize SrcElementSize>
-  void AVX128_Vector_CVT_Float_To_Float(OpcodeArgs);
+  void AVX128_Vector_CVT_Float_To_Float(OpcodeArgs, IR::OpSize DstElementSize, IR::OpSize SrcElementSize);
 
-  template<IR::OpSize SrcElementSize, bool HostRoundingMode>
-  void AVX128_Vector_CVT_Float_To_Int(OpcodeArgs);
+  void AVX128_Vector_CVT_Float_To_Int(OpcodeArgs, IR::OpSize SrcElementSize, bool HostRoundingMode);
 
-  template<IR::OpSize SrcElementSize, bool Widen>
-  void AVX128_Vector_CVT_Int_To_Float(OpcodeArgs);
+  void AVX128_Vector_CVT_Int_To_Float(OpcodeArgs, IR::OpSize SrcElementSize, bool Widen);
 
   void AVX128_VEXTRACT128(OpcodeArgs);
   void AVX128_VAESImc(OpcodeArgs);
@@ -1058,36 +1036,28 @@ public:
 
   void AVX128_PHMINPOSUW(OpcodeArgs);
 
-  template<IR::OpSize ElementSize>
-  void AVX128_VectorRound(OpcodeArgs);
-  template<IR::OpSize ElementSize>
-  void AVX128_InsertScalarRound(OpcodeArgs);
+  void AVX128_VectorRound(OpcodeArgs, IR::OpSize ElementSize);
+  void AVX128_InsertScalarRound(OpcodeArgs, IR::OpSize ElementSize);
 
-  template<IR::OpSize ElementSize>
-  void AVX128_VDPP(OpcodeArgs);
+  void AVX128_VDPP(OpcodeArgs, IR::OpSize ElementSize);
   void AVX128_VPERMQ(OpcodeArgs);
 
   void AVX128_VPSHUFW(OpcodeArgs, bool Low);
 
-  template<IR::OpSize ElementSize>
-  void AVX128_VSHUF(OpcodeArgs);
+  void AVX128_VSHUF(OpcodeArgs, IR::OpSize ElementSize);
 
-  template<IR::OpSize ElementSize>
-  void AVX128_VPERMILImm(OpcodeArgs);
+  void AVX128_VPERMILImm(OpcodeArgs, IR::OpSize ElementSize);
 
-  template<IROps IROp, IR::OpSize ElementSize>
-  void AVX128_VHADDP(OpcodeArgs);
+  void AVX128_VHADDP(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
 
   void AVX128_VPHADDSW(OpcodeArgs);
 
   void AVX128_VPMADDUBSW(OpcodeArgs);
   void AVX128_VPMADDWD(OpcodeArgs);
 
-  template<IR::OpSize ElementSize>
-  void AVX128_VBLEND(OpcodeArgs);
+  void AVX128_VBLEND(OpcodeArgs, IR::OpSize ElementSize);
 
-  template<IR::OpSize ElementSize>
-  void AVX128_VHSUBP(OpcodeArgs);
+  void AVX128_VHSUBP(OpcodeArgs, IR::OpSize ElementSize);
 
   void AVX128_VPSHUFB(OpcodeArgs);
   void AVX128_VPSADBW(OpcodeArgs);
@@ -1098,28 +1068,23 @@ public:
   void AVX128_VMASKMOVImpl(OpcodeArgs, IR::OpSize ElementSize, IR::OpSize DstSize, bool IsStore, const X86Tables::DecodedOperand& MaskOp,
                            const X86Tables::DecodedOperand& DataOp);
 
-  template<bool IsStore>
-  void AVX128_VPMASKMOV(OpcodeArgs);
+  void AVX128_VPMASKMOV(OpcodeArgs, bool IsStore);
 
-  template<IR::OpSize ElementSize, bool IsStore>
-  void AVX128_VMASKMOV(OpcodeArgs);
+  void AVX128_VMASKMOV(OpcodeArgs, IR::OpSize ElementSize, bool IsStore);
 
   void AVX128_MASKMOV(OpcodeArgs);
 
-  template<IR::OpSize ElementSize>
-  void AVX128_VectorVariableBlend(OpcodeArgs);
+  void AVX128_VectorVariableBlend(OpcodeArgs, IR::OpSize ElementSize);
 
   void AVX128_SaveAVXState(Ref MemBase);
   void AVX128_RestoreAVXState(Ref MemBase);
   void AVX128_DefaultAVXState();
 
   void AVX128_VPERM2(OpcodeArgs);
-  template<IR::OpSize ElementSize>
-  void AVX128_VTESTP(OpcodeArgs);
+  void AVX128_VTESTP(OpcodeArgs, IR::OpSize ElementSize);
   void AVX128_PTest(OpcodeArgs);
 
-  template<IR::OpSize ElementSize>
-  void AVX128_VPERMILReg(OpcodeArgs);
+  void AVX128_VPERMILReg(OpcodeArgs, IR::OpSize ElementSize);
 
   void AVX128_VPERMD(OpcodeArgs);
 
@@ -1132,8 +1097,7 @@ public:
   RefPair AVX128_VPGatherQPSImpl(Ref Dest, Ref Mask, RefVSIB VSIB);
   RefPair AVX128_VPGatherImpl(OpSize Size, OpSize ElementLoadSize, OpSize AddrElementSize, RefPair Dest, RefPair Mask, RefVSIB VSIB);
 
-  template<OpSize AddrElementSize>
-  void AVX128_VPGATHER(OpcodeArgs);
+  void AVX128_VPGATHER(OpcodeArgs, OpSize AddrElementSize);
 
   void AVX128_VCVTPH2PS(OpcodeArgs);
   void AVX128_VCVTPS2PH(OpcodeArgs);
@@ -1166,6 +1130,10 @@ public:
     }
     StoreXMMRegister(XMM, Value);
   }
+
+  void AVXVectorALUOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
+  void AVXVectorUnaryOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
+  void AVXVectorVariableBlend(OpcodeArgs, IR::OpSize ElementSize);
 
   // End of AVX 256-bit implementation
 
@@ -1402,11 +1370,6 @@ private:
   // Opcode helpers for generalizing behavior across VEX and non-VEX variants.
 
   Ref ADDSUBPOpImpl(OpSize Size, IR::OpSize ElementSize, Ref Src1, Ref Src2);
-
-  void AVXVectorALUOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
-  void AVXVectorUnaryOp(OpcodeArgs, IROps IROp, IR::OpSize ElementSize);
-
-  void AVXVectorVariableBlend(OpcodeArgs, IR::OpSize ElementSize);
 
   void AVXVariableShiftImpl(OpcodeArgs, IROps IROp);
 
@@ -2684,8 +2647,6 @@ private:
   ArithRef ARef(uint64_t K) {
     return ArithRef(this, K);
   }
-
-  void InstallHostSpecificOpcodeHandlers();
 
   ///< Segment telemetry tracking
   uint32_t SegmentsNeedReadCheck {~0U};
