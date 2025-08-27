@@ -2710,6 +2710,4 @@ constexpr inline void InstallToTable(auto& FinalTable, const auto& LocalTable) {
   }
 }
 
-void InstallOpcodeHandlers(Context::OperatingMode Mode);
-
 } // namespace FEXCore::IR

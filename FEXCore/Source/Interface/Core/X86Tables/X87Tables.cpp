@@ -6,15 +6,541 @@ $end_info$
 */
 
 #include "Interface/Core/X86Tables/X86Tables.h"
+#include "Interface/Core/OpcodeDispatcher.h"
 
 #include <iterator>
 
 namespace FEXCore::X86Tables {
 using namespace InstFlags;
-std::array<X86InstInfo, MAX_X87_TABLE_SIZE> X87Ops = []() consteval {
-  std::array<X86InstInfo, MAX_X87_TABLE_SIZE> Table{};
+using namespace IR;
+// Top bit indicating if it needs to be repeated with {0x40, 0x80} or'd in
+// All OPDReg versions need it
+#define OPDReg(op, reg) ((1 << 15) | ((op - 0xD8) << 8) | (reg << 3))
+#define OPD(op, modrmop) (((op - 0xD8) << 8) | modrmop)
+constexpr std::array<DispatchTableEntry, 133> X87F64OpTable = {{
+  {OPDReg(0xD8, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADDF64, OpSize::i32Bit, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xD8, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMULF64, OpSize::i32Bit, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xD8, 2) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, OpSize::i32Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+
+  {OPDReg(0xD8, 3) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, OpSize::i32Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+
+  {OPDReg(0xD8, 4) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, OpSize::i32Bit, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xD8, 5) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, OpSize::i32Bit, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xD8, 6) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, OpSize::i32Bit, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xD8, 7) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, OpSize::i32Bit, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPD(0xD8, 0xC0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADDF64, OpSize::f80Bit, false, OpDispatchBuilder::OpResult::RES_ST0>},
+  {OPD(0xD8, 0xC8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMULF64, OpSize::f80Bit, false, OpDispatchBuilder::OpResult::RES_ST0>},
+  {OPD(0xD8, 0xD0), 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+  {OPD(0xD8, 0xD8), 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+  {OPD(0xD8, 0xE0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, OpSize::f80Bit, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+  {OPD(0xD8, 0xE8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, OpSize::f80Bit, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+  {OPD(0xD8, 0xF0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, OpSize::f80Bit, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+  {OPD(0xD8, 0xF8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, OpSize::f80Bit, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xD9, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLDF64, OpSize::i32Bit>},
+
+  // 1 = Invalid
+
+  {OPDReg(0xD9, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FST, OpSize::i32Bit>},
+
+  {OPDReg(0xD9, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FST, OpSize::i32Bit>},
+
+  {OPDReg(0xD9, 4) | 0x00, 8, &OpDispatchBuilder::X87LDENVF64},
+
+  {OPDReg(0xD9, 5) | 0x00, 8, &OpDispatchBuilder::X87FLDCWF64},
+
+  {OPDReg(0xD9, 6) | 0x00, 8, &OpDispatchBuilder::X87FNSTENV},
+
+  {OPDReg(0xD9, 7) | 0x00, 8, &OpDispatchBuilder::X87FSTCW},
+
+  {OPD(0xD9, 0xC0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLDFromStack>},
+  {OPD(0xD9, 0xC8), 8, &OpDispatchBuilder::FXCH},
+  {OPD(0xD9, 0xD0), 1, &OpDispatchBuilder::NOPOp}, // FNOP
+  // D1 = Invalid
+  // D8 = Invalid
+  {OPD(0xD9, 0xE0), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80STACKCHANGESIGN, false>},
+  {OPD(0xD9, 0xE1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80STACKABS, false>},
+  // E2 = Invalid
+  {OPD(0xD9, 0xE4), 1, &OpDispatchBuilder::FTSTF64},
+  {OPD(0xD9, 0xE5), 1, &OpDispatchBuilder::X87FXAM},
+  // E6 = Invalid
+  {OPD(0xD9, 0xE8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLDF64_Const, 0x3FF0000000000000>}, // 1.0
+  {OPD(0xD9, 0xE9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLDF64_Const, 0x400A934F0979A372>}, // log2l(10)
+  {OPD(0xD9, 0xEA), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLDF64_Const, 0x3FF71547652B82FE>}, // log2l(e)
+  {OPD(0xD9, 0xEB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLDF64_Const, 0x400921FB54442D18>}, // pi
+  {OPD(0xD9, 0xEC), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLDF64_Const, 0x3FD34413509F79FF>}, // log10l(2)
+  {OPD(0xD9, 0xED), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLDF64_Const, 0x3FE62E42FEFA39EF>}, // log(2)
+  {OPD(0xD9, 0xEE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLDF64_Const, 0>},                  // 0.0
+
+  // EF = Invalid
+  {OPD(0xD9, 0xF0), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80F2XM1STACK, false>},
+  {OPD(0xD9, 0xF1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87FYL2X, false>},
+  {OPD(0xD9, 0xF2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80PTANSTACK, true>},
+  {OPD(0xD9, 0xF3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80ATANSTACK, false>},
+  {OPD(0xD9, 0xF4), 1, &OpDispatchBuilder::X87FXTRACTF64},
+  {OPD(0xD9, 0xF5), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80FPREM1STACK, true>},
+  {OPD(0xD9, 0xF6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87ModifySTP, false>},
+  {OPD(0xD9, 0xF7), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87ModifySTP, true>},
+  {OPD(0xD9, 0xF8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80FPREMSTACK, true>},
+  {OPD(0xD9, 0xF9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87FYL2X, true>},
+  {OPD(0xD9, 0xFA), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80SQRTSTACK, false>},
+  {OPD(0xD9, 0xFB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80SINCOSSTACK, true>},
+  {OPD(0xD9, 0xFC), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80ROUNDSTACK, false>},
+  {OPD(0xD9, 0xFD), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80SCALESTACK, false>},
+  {OPD(0xD9, 0xFE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80SINSTACK, true>},
+  {OPD(0xD9, 0xFF), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80COSSTACK, true>},
+
+  {OPDReg(0xDA, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADDF64, OpSize::i32Bit, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDA, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMULF64, OpSize::i32Bit, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDA, 2) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, OpSize::i32Bit, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+
+  {OPDReg(0xDA, 3) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, OpSize::i32Bit, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+
+  {OPDReg(0xDA, 4) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, OpSize::i32Bit, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDA, 5) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, OpSize::i32Bit, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDA, 6) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, OpSize::i32Bit, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDA, 7) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, OpSize::i32Bit, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPD(0xDA, 0xC0), 8, &OpDispatchBuilder::X87FCMOV},
+  {OPD(0xDA, 0xC8), 8, &OpDispatchBuilder::X87FCMOV},
+  {OPD(0xDA, 0xD0), 8, &OpDispatchBuilder::X87FCMOV},
+  {OPD(0xDA, 0xD8), 8, &OpDispatchBuilder::X87FCMOV},
+  // E0 = Invalid
+  // E8 = Invalid
+  {OPD(0xDA, 0xE9), 1,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
+  // EA = Invalid
+  // F0 = Invalid
+  // F8 = Invalid
+
+  {OPDReg(0xDB, 0) | 0x00, 8, &OpDispatchBuilder::FILDF64},
+
+  {OPDReg(0xDB, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FISTF64, true>},
+
+  {OPDReg(0xDB, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FISTF64, false>},
+
+  {OPDReg(0xDB, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FISTF64, false>},
+
+  // 4 = Invalid
+
+  {OPDReg(0xDB, 5) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLDF64, OpSize::f80Bit>},
+
+  // 6 = Invalid
+
+  {OPDReg(0xDB, 7) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FST, OpSize::f80Bit>},
+
+
+  {OPD(0xDB, 0xC0), 8, &OpDispatchBuilder::X87FCMOV},
+  {OPD(0xDB, 0xC8), 8, &OpDispatchBuilder::X87FCMOV},
+  {OPD(0xDB, 0xD0), 8, &OpDispatchBuilder::X87FCMOV},
+  {OPD(0xDB, 0xD8), 8, &OpDispatchBuilder::X87FCMOV},
+  // E0 = Invalid
+  {OPD(0xDB, 0xE2), 1, &OpDispatchBuilder::FNCLEX},
+  {OPD(0xDB, 0xE3), 1, &OpDispatchBuilder::FNINIT},
+  // E4 = Invalid
+  {OPD(0xDB, 0xE8), 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
+  {OPD(0xDB, 0xF0), 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
+
+  // F8 = Invalid
+
+  {OPDReg(0xDC, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADDF64, OpSize::i64Bit, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDC, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMULF64, OpSize::i64Bit, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDC, 2) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, OpSize::i64Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+
+  {OPDReg(0xDC, 3) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, OpSize::i64Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+
+  {OPDReg(0xDC, 4) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, OpSize::i64Bit, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDC, 5) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, OpSize::i64Bit, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDC, 6) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, OpSize::i64Bit, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDC, 7) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, OpSize::i64Bit, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPD(0xDC, 0xC0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADDF64, OpSize::f80Bit, false, OpDispatchBuilder::OpResult::RES_STI>},
+  {OPD(0xDC, 0xC8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMULF64, OpSize::f80Bit, false, OpDispatchBuilder::OpResult::RES_STI>},
+  {OPD(0xDC, 0xE0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, OpSize::f80Bit, false, true, OpDispatchBuilder::OpResult::RES_STI>},
+  {OPD(0xDC, 0xE8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, OpSize::f80Bit, false, false, OpDispatchBuilder::OpResult::RES_STI>},
+  {OPD(0xDC, 0xF0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, OpSize::f80Bit, false, true, OpDispatchBuilder::OpResult::RES_STI>},
+  {OPD(0xDC, 0xF8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, OpSize::f80Bit, false, false, OpDispatchBuilder::OpResult::RES_STI>},
+
+  {OPDReg(0xDD, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLDF64, OpSize::i64Bit>},
+
+  {OPDReg(0xDD, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FISTF64, true>},
+
+  {OPDReg(0xDD, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FST, OpSize::i64Bit>},
+
+  {OPDReg(0xDD, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FST, OpSize::i64Bit>},
+
+  {OPDReg(0xDD, 4) | 0x00, 8, &OpDispatchBuilder::X87FRSTOR},
+
+  // 5 = Invalid
+  {OPDReg(0xDD, 6) | 0x00, 8, &OpDispatchBuilder::X87FNSAVE},
+
+  {OPDReg(0xDD, 7) | 0x00, 8, &OpDispatchBuilder::X87FNSTSW},
+
+  {OPD(0xDD, 0xC0), 8, &OpDispatchBuilder::X87FFREE},
+  {OPD(0xDD, 0xD0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTToStack>}, // register-register from regular X87
+  {OPD(0xDD, 0xD8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTToStack>}, //^
+
+  {OPD(0xDD, 0xE0), 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+  {OPD(0xDD, 0xE8), 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+
+  {OPDReg(0xDE, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADDF64, OpSize::i16Bit, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDE, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMULF64, OpSize::i16Bit, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDE, 2) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, OpSize::i16Bit, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+
+  {OPDReg(0xDE, 3) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, OpSize::i16Bit, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+
+  {OPDReg(0xDE, 4) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, OpSize::i16Bit, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDE, 5) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, OpSize::i16Bit, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDE, 6) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, OpSize::i16Bit, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDE, 7) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, OpSize::i16Bit, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPD(0xDE, 0xC0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADDF64, OpSize::f80Bit, false, OpDispatchBuilder::OpResult::RES_STI>},
+  {OPD(0xDE, 0xC8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMULF64, OpSize::f80Bit, false, OpDispatchBuilder::OpResult::RES_STI>},
+  {OPD(0xDE, 0xD9), 1,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
+  {OPD(0xDE, 0xE0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, OpSize::f80Bit, false, true, OpDispatchBuilder::OpResult::RES_STI>},
+  {OPD(0xDE, 0xE8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUBF64, OpSize::f80Bit, false, false, OpDispatchBuilder::OpResult::RES_STI>},
+  {OPD(0xDE, 0xF0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, OpSize::f80Bit, false, true, OpDispatchBuilder::OpResult::RES_STI>},
+  {OPD(0xDE, 0xF8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIVF64, OpSize::f80Bit, false, false, OpDispatchBuilder::OpResult::RES_STI>},
+
+  {OPDReg(0xDF, 0) | 0x00, 8, &OpDispatchBuilder::FILDF64},
+
+  {OPDReg(0xDF, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FISTF64, true>},
+
+  {OPDReg(0xDF, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FISTF64, false>},
+
+  {OPDReg(0xDF, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FISTF64, false>},
+
+  {OPDReg(0xDF, 4) | 0x00, 8, &OpDispatchBuilder::FBLDF64},
+
+  {OPDReg(0xDF, 5) | 0x00, 8, &OpDispatchBuilder::FILDF64},
+
+  {OPDReg(0xDF, 6) | 0x00, 8, &OpDispatchBuilder::FBSTPF64},
+
+  {OPDReg(0xDF, 7) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FISTF64, false>},
+
+  // XXX: This should also set the x87 tag bits to empty
+  // We don't support this currently, so just pop the stack
+  {OPD(0xDF, 0xC0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87ModifySTP, true>},
+
+  {OPD(0xDF, 0xE0), 8, &OpDispatchBuilder::X87FNSTSW},
+  {OPD(0xDF, 0xE8), 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
+  {OPD(0xDF, 0xF0), 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMIF64, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
+}};
+
+constexpr std::array<DispatchTableEntry, 133> X87F80OpTable = {{
+  {OPDReg(0xD8, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADD, OpSize::i32Bit, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xD8, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMUL, OpSize::i32Bit, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xD8, 2) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, OpSize::i32Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+
+  {OPDReg(0xD8, 3) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, OpSize::i32Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+
+  {OPDReg(0xD8, 4) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, OpSize::i32Bit, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xD8, 5) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, OpSize::i32Bit, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xD8, 6) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, OpSize::i32Bit, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xD8, 7) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, OpSize::i32Bit, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPD(0xD8, 0xC0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADD, OpSize::f80Bit, false, OpDispatchBuilder::OpResult::RES_ST0>},
+  {OPD(0xD8, 0xC8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMUL, OpSize::f80Bit, false, OpDispatchBuilder::OpResult::RES_ST0>},
+  {OPD(0xD8, 0xD0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+  {OPD(0xD8, 0xD8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+  {OPD(0xD8, 0xE0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, OpSize::f80Bit, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+  {OPD(0xD8, 0xE8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, OpSize::f80Bit, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+  {OPD(0xD8, 0xF0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, OpSize::f80Bit, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+  {OPD(0xD8, 0xF8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, OpSize::f80Bit, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xD9, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLD, OpSize::i32Bit>},
+
+  // 1 = Invalid
+
+  {OPDReg(0xD9, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FST, OpSize::i32Bit>},
+
+  {OPDReg(0xD9, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FST, OpSize::i32Bit>},
+
+  {OPDReg(0xD9, 4) | 0x00, 8, &OpDispatchBuilder::X87LDENV},
+
+  {OPDReg(0xD9, 5) | 0x00, 8, &OpDispatchBuilder::X87FLDCW}, // XXX: stubbed FLDCW
+
+  {OPDReg(0xD9, 6) | 0x00, 8, &OpDispatchBuilder::X87FNSTENV},
+
+  {OPDReg(0xD9, 7) | 0x00, 8, &OpDispatchBuilder::X87FSTCW},
+
+  {OPD(0xD9, 0xC0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLDFromStack>},
+  {OPD(0xD9, 0xC8), 8, &OpDispatchBuilder::FXCH},
+  {OPD(0xD9, 0xD0), 1, &OpDispatchBuilder::NOPOp}, // FNOP
+  // D1 = Invalid
+  // D8 = Invalid
+  {OPD(0xD9, 0xE0), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80STACKCHANGESIGN, false>},
+  {OPD(0xD9, 0xE1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80STACKABS, false>},
+  // E2 = Invalid
+  {OPD(0xD9, 0xE4), 1, &OpDispatchBuilder::FTST},
+  {OPD(0xD9, 0xE5), 1, &OpDispatchBuilder::X87FXAM},
+  // E6 = Invalid
+  {OPD(0xD9, 0xE8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLD_Const, NamedVectorConstant::NAMED_VECTOR_X87_ONE>},     // 1.0
+  {OPD(0xD9, 0xE9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLD_Const, NamedVectorConstant::NAMED_VECTOR_X87_LOG2_10>}, // log2l(10)
+  {OPD(0xD9, 0xEA), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLD_Const, NamedVectorConstant::NAMED_VECTOR_X87_LOG2_E>}, // log2l(e)
+  {OPD(0xD9, 0xEB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLD_Const, NamedVectorConstant::NAMED_VECTOR_X87_PI>},     // pi
+  {OPD(0xD9, 0xEC), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLD_Const, NamedVectorConstant::NAMED_VECTOR_X87_LOG10_2>}, // log10l(2)
+  {OPD(0xD9, 0xED), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLD_Const, NamedVectorConstant::NAMED_VECTOR_X87_LOG_2>},   // log(2)
+  {OPD(0xD9, 0xEE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLD_Const, NamedVectorConstant::NAMED_VECTOR_ZERO>},        // 0.0
+
+  // EF = Invalid
+  {OPD(0xD9, 0xF0), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80F2XM1STACK, false>},
+  {OPD(0xD9, 0xF1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87FYL2X, false>},
+  {OPD(0xD9, 0xF2), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80PTANSTACK, true>},
+  {OPD(0xD9, 0xF3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80ATANSTACK, false>},
+  {OPD(0xD9, 0xF4), 1, &OpDispatchBuilder::X87FXTRACT},
+  {OPD(0xD9, 0xF5), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80FPREM1STACK, true>},
+  {OPD(0xD9, 0xF6), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87ModifySTP, false>},
+  {OPD(0xD9, 0xF7), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87ModifySTP, true>},
+  {OPD(0xD9, 0xF8), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80FPREMSTACK, true>},
+  {OPD(0xD9, 0xF9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87FYL2X, true>},
+  {OPD(0xD9, 0xFA), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80SQRTSTACK, false>},
+  {OPD(0xD9, 0xFB), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80SINCOSSTACK, true>},
+  {OPD(0xD9, 0xFC), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80ROUNDSTACK, false>},
+  {OPD(0xD9, 0xFD), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80SCALESTACK, false>},
+  {OPD(0xD9, 0xFE), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80SINSTACK, true>},
+  {OPD(0xD9, 0xFF), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87OpHelper, OP_F80COSSTACK, true>},
+
+  {OPDReg(0xDA, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADD, OpSize::i32Bit, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDA, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMUL, OpSize::i32Bit, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDA, 2) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, OpSize::i32Bit, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+
+  {OPDReg(0xDA, 3) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, OpSize::i32Bit, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+
+  {OPDReg(0xDA, 4) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, OpSize::i32Bit, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDA, 5) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, OpSize::i32Bit, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDA, 6) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, OpSize::i32Bit, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDA, 7) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, OpSize::i32Bit, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPD(0xDA, 0xC0), 8, &OpDispatchBuilder::X87FCMOV},
+  {OPD(0xDA, 0xC8), 8, &OpDispatchBuilder::X87FCMOV},
+  {OPD(0xDA, 0xD0), 8, &OpDispatchBuilder::X87FCMOV},
+  {OPD(0xDA, 0xD8), 8, &OpDispatchBuilder::X87FCMOV},
+  // E0 = Invalid
+  // E8 = Invalid
+  {OPD(0xDA, 0xE9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
+  // EA = Invalid
+  // F0 = Invalid
+  // F8 = Invalid
+
+  {OPDReg(0xDB, 0) | 0x00, 8, &OpDispatchBuilder::FILD},
+
+  {OPDReg(0xDB, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FIST, true>},
+
+  {OPDReg(0xDB, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FIST, false>},
+
+  {OPDReg(0xDB, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FIST, false>},
+
+  // 4 = Invalid
+
+  {OPDReg(0xDB, 5) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLD, OpSize::f80Bit>},
+
+  // 6 = Invalid
+
+  {OPDReg(0xDB, 7) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FST, OpSize::f80Bit>},
+
+
+  {OPD(0xDB, 0xC0), 8, &OpDispatchBuilder::X87FCMOV},
+  {OPD(0xDB, 0xC8), 8, &OpDispatchBuilder::X87FCMOV},
+  {OPD(0xDB, 0xD0), 8, &OpDispatchBuilder::X87FCMOV},
+  {OPD(0xDB, 0xD8), 8, &OpDispatchBuilder::X87FCMOV},
+  // E0 = Invalid
+  {OPD(0xDB, 0xE2), 1, &OpDispatchBuilder::FNCLEX},
+  {OPD(0xDB, 0xE3), 1, &OpDispatchBuilder::FNINIT},
+  // E4 = Invalid
+  {OPD(0xDB, 0xE8), 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
+  {OPD(0xDB, 0xF0), 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
+
+  // F8 = Invalid
+
+  {OPDReg(0xDC, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADD, OpSize::i64Bit, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDC, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMUL, OpSize::i64Bit, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDC, 2) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, OpSize::i64Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+
+  {OPDReg(0xDC, 3) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, OpSize::i64Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+
+  {OPDReg(0xDC, 4) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, OpSize::i64Bit, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDC, 5) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, OpSize::i64Bit, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDC, 6) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, OpSize::i64Bit, false, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDC, 7) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, OpSize::i64Bit, false, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPD(0xDC, 0xC0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADD, OpSize::f80Bit, false, OpDispatchBuilder::OpResult::RES_STI>},
+  {OPD(0xDC, 0xC8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMUL, OpSize::f80Bit, false, OpDispatchBuilder::OpResult::RES_STI>},
+  {OPD(0xDC, 0xE0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, OpSize::f80Bit, false, true, OpDispatchBuilder::OpResult::RES_STI>},
+  {OPD(0xDC, 0xE8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, OpSize::f80Bit, false, false, OpDispatchBuilder::OpResult::RES_STI>},
+  {OPD(0xDC, 0xF0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, OpSize::f80Bit, false, true, OpDispatchBuilder::OpResult::RES_STI>},
+  {OPD(0xDC, 0xF8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, OpSize::f80Bit, false, false, OpDispatchBuilder::OpResult::RES_STI>},
+
+  {OPDReg(0xDD, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLD, OpSize::i64Bit>},
+
+  {OPDReg(0xDD, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FIST, true>},
+
+  {OPDReg(0xDD, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FST, OpSize::i64Bit>},
+
+  {OPDReg(0xDD, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FST, OpSize::i64Bit>},
+
+  {OPDReg(0xDD, 4) | 0x00, 8, &OpDispatchBuilder::X87FRSTOR},
+
+  // 5 = Invalid
+  {OPDReg(0xDD, 6) | 0x00, 8, &OpDispatchBuilder::X87FNSAVE},
+
+  {OPDReg(0xDD, 7) | 0x00, 8, &OpDispatchBuilder::X87FNSTSW},
+
+  {OPD(0xDD, 0xC0), 8, &OpDispatchBuilder::X87FFREE},
+  {OPD(0xDD, 0xD0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTToStack>},
+  {OPD(0xDD, 0xD8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSTToStack>},
+
+  {OPD(0xDD, 0xE0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+  {OPD(0xDD, 0xE8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+
+  {OPDReg(0xDE, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADD, OpSize::i16Bit, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDE, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMUL, OpSize::i16Bit, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDE, 2) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, OpSize::i16Bit, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+
+  {OPDReg(0xDE, 3) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, OpSize::i16Bit, true, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, false>},
+
+  {OPDReg(0xDE, 4) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, OpSize::i16Bit, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDE, 5) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, OpSize::i16Bit, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDE, 6) | 0x00, 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, OpSize::i16Bit, true, false, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPDReg(0xDE, 7) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, OpSize::i16Bit, true, true, OpDispatchBuilder::OpResult::RES_ST0>},
+
+  {OPD(0xDE, 0xC0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FADD, OpSize::f80Bit, false, OpDispatchBuilder::OpResult::RES_STI>},
+  {OPD(0xDE, 0xC8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FMUL, OpSize::f80Bit, false, OpDispatchBuilder::OpResult::RES_STI>},
+  {OPD(0xDE, 0xD9), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_X87, true>},
+  {OPD(0xDE, 0xE0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, OpSize::f80Bit, false, true, OpDispatchBuilder::OpResult::RES_STI>},
+  {OPD(0xDE, 0xE8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FSUB, OpSize::f80Bit, false, false, OpDispatchBuilder::OpResult::RES_STI>},
+  {OPD(0xDE, 0xF0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, OpSize::f80Bit, false, true, OpDispatchBuilder::OpResult::RES_STI>},
+  {OPD(0xDE, 0xF8), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FDIV, OpSize::f80Bit, false, false, OpDispatchBuilder::OpResult::RES_STI>},
+
+  {OPDReg(0xDF, 0) | 0x00, 8, &OpDispatchBuilder::FILD},
+
+  {OPDReg(0xDF, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FIST, true>},
+
+  {OPDReg(0xDF, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FIST, false>},
+
+  {OPDReg(0xDF, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FIST, false>},
+
+  {OPDReg(0xDF, 4) | 0x00, 8, &OpDispatchBuilder::FBLD},
+
+  {OPDReg(0xDF, 5) | 0x00, 8, &OpDispatchBuilder::FILD},
+
+  {OPDReg(0xDF, 6) | 0x00, 8, &OpDispatchBuilder::FBSTP},
+
+  {OPDReg(0xDF, 7) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FIST, false>},
+
+  // XXX: This should also set the x87 tag bits to empty
+  // We don't support this currently, so just pop the stack
+  {OPD(0xDF, 0xC0), 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::X87ModifySTP, true>},
+
+  {OPD(0xDF, 0xE0), 8, &OpDispatchBuilder::X87FNSTSW},
+  {OPD(0xDF, 0xE8), 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
+  {OPD(0xDF, 0xF0), 8,
+   &OpDispatchBuilder::Bind<&OpDispatchBuilder::FCOMI, OpSize::f80Bit, false, OpDispatchBuilder::FCOMIFlags::FLAGS_RFLAGS, false>},
+}};
+#undef OPD
+#undef OPDReg
+
+auto GenerateX87TableLambda = [](const auto DispatchTable) consteval {
 #define OPD(op, modrmop) (((op - 0xD8) << 8) | modrmop)
 #define OPDReg(op, reg) (((op - 0xD8) << 8) | (reg << 3))
+ std::array<X86InstInfo, MAX_X87_TABLE_SIZE> Table{};
   constexpr U16U8InfoStruct X87OpTable[] = {
     // 0xD8
     {OPDReg(0xD8, 0), 1, X86InstInfo{"FADD",  TYPE_X87, FLAGS_MODRM, 0}},
@@ -263,8 +789,32 @@ std::array<X86InstInfo, MAX_X87_TABLE_SIZE> X87Ops = []() consteval {
 #undef OPD
 #undef OPDReg
 
+  auto InstallToX87Table = [](auto& FinalTable, auto& LocalTable) {
+    for (auto Op : LocalTable) {
+      auto OpNum = Op.Op;
+      bool Repeat = (OpNum & 0x8000) != 0;
+      OpNum = OpNum & 0x7FF;
+      auto Dispatcher = Op.Ptr;
+      for (uint8_t i = 0; i < Op.Count; ++i) {
+        LOGMAN_THROW_A_FMT(FinalTable[OpNum + i].OpcodeDispatcher.OpDispatch == nullptr, "Duplicate Entry");
+
+        FinalTable[OpNum + i].OpcodeDispatcher.OpDispatch = Dispatcher;
+
+        // Flag to indicate if we need to repeat this op in {0x40, 0x80} ranges
+        if (Repeat) {
+          FinalTable[(OpNum | 0x40) + i].OpcodeDispatcher.OpDispatch = Dispatcher;
+          FinalTable[(OpNum | 0x80) + i].OpcodeDispatcher.OpDispatch = Dispatcher;
+        }
+      }
+    }
+  };
+
   GenerateX87Table(&Table.at(0), X87OpTable, std::size(X87OpTable));
+  InstallToX87Table(Table, DispatchTable);
   return Table;
-}();
+};
+
+constexpr std::array<X86InstInfo, MAX_X87_TABLE_SIZE> X87F80Ops = GenerateX87TableLambda(X87F80OpTable);
+constexpr std::array<X86InstInfo, MAX_X87_TABLE_SIZE> X87F64Ops = GenerateX87TableLambda(X87F64OpTable);
 
 }
