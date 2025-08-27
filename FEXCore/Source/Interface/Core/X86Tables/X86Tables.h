@@ -486,10 +486,10 @@ constexpr size_t MAX_VEX_TABLE_SIZE = (1 << 13);
 constexpr size_t MAX_VEX_GROUP_TABLE_SIZE = (1 << 7);
 
 extern std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps;
-extern std::array<X86InstInfo, MAX_SECOND_TABLE_SIZE> SecondBaseOps;
-extern std::array<X86InstInfo, MAX_REP_MOD_TABLE_SIZE> RepModOps;
-extern std::array<X86InstInfo, MAX_REPNE_MOD_TABLE_SIZE> RepNEModOps;
-extern std::array<X86InstInfo, MAX_OPSIZE_MOD_TABLE_SIZE> OpSizeModOps;
+extern const std::array<X86InstInfo, MAX_SECOND_TABLE_SIZE> SecondBaseOps;
+extern const std::array<X86InstInfo, MAX_REP_MOD_TABLE_SIZE> RepModOps;
+extern const std::array<X86InstInfo, MAX_REPNE_MOD_TABLE_SIZE> RepNEModOps;
+extern const std::array<X86InstInfo, MAX_OPSIZE_MOD_TABLE_SIZE> OpSizeModOps;
 
 extern const std::array<X86InstInfo, MAX_INST_GROUP_TABLE_SIZE> PrimaryInstGroupOps;
 extern const std::array<X86InstInfo, MAX_INST_SECOND_GROUP_TABLE_SIZE> SecondInstGroupOps;
@@ -531,7 +531,7 @@ constexpr static inline void GenerateTable(X86InstInfo *FinalTable, X86TablesInf
 };
 
 template<typename OpcodeType>
-constexpr static inline void GenerateTableWithCopy(X86InstInfo *FinalTable, X86TablesInfoStruct<OpcodeType> const *LocalTable, size_t TableSize, X86InstInfo *OtherLocal) {
+constexpr static inline void GenerateTableWithCopy(X86InstInfo *FinalTable, X86TablesInfoStruct<OpcodeType> const *LocalTable, size_t TableSize, const X86InstInfo *OtherLocal) {
   for (size_t j = 0; j < TableSize; ++j) {
     X86TablesInfoStruct<OpcodeType> const &Op = LocalTable[j];
     auto OpNum = Op.first;

@@ -13,11 +13,9 @@ $end_info$
 namespace FEXCore::X86Tables {
 
 void InitializeBaseTables(Context::OperatingMode Mode);
-void InitializeSecondaryTables(Context::OperatingMode Mode);
 
 void InitializeInfoTables(Context::OperatingMode Mode) {
   InitializeBaseTables(Mode);
-  InitializeSecondaryTables(Mode);
 }
 
 } // namespace FEXCore::X86Tables

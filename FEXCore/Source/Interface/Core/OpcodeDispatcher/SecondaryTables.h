@@ -313,20 +313,4 @@ constexpr DispatchTableEntry OpDispatch_SecondaryOpSizeModTables[] = {
   {0xFD, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADD, OpSize::i16Bit>},
   {0xFE, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VADD, OpSize::i32Bit>},
 };
-
-constexpr DispatchTableEntry OpDispatch_TwoByteOpTable_64[] = {
-  {0x05, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::SyscallOp, true>},
-  {0xA0, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX>},
-  {0xA1, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX>},
-  {0xA8, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX>},
-  {0xA9, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX>},
-};
-
-constexpr DispatchTableEntry OpDispatch_TwoByteOpTable_32[] = {
-  {0x05, 1, &OpDispatchBuilder::NOPOp},
-  {0xA0, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX>},
-  {0xA1, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_FS_PREFIX>},
-  {0xA8, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PUSHSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX>},
-  {0xA9, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::POPSegmentOp, FEXCore::X86Tables::DecodeFlags::FLAG_GS_PREFIX>},
-};
 } // namespace FEXCore::IR
