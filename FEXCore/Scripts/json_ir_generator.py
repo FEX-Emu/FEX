@@ -405,15 +405,15 @@ def print_ir_sizes():
     static_assert(IRSizes[IROps::OP_LAST] == -1ULL);
 
     [[nodiscard]] inline size_t GetSize(IROps Op) { return IRSizes[Op]; }
-    [[nodiscard, gnu::const, gnu::visibility("default")]] std::string_view const& GetName(IROps Op);
-    [[nodiscard, gnu::const, gnu::visibility("default")]] uint8_t GetArgs(IROps Op);
-    [[nodiscard, gnu::const, gnu::visibility("default")]] uint8_t GetRAArgs(IROps Op);
-    [[nodiscard, gnu::const, gnu::visibility("default")]] FEXCore::IR::RegisterClassType GetRegClass(IROps Op);
-    [[nodiscard, gnu::const, gnu::visibility("default")]] bool HasSideEffects(IROps Op);
-    [[nodiscard, gnu::const, gnu::visibility("default")]] bool ImplicitFlagClobber(IROps Op);
-    [[nodiscard, gnu::const, gnu::visibility("default")]] bool GetHasDest(IROps Op);
-    [[nodiscard, gnu::const, gnu::visibility("default")]] bool LoweredX87(IROps Op);
-    [[nodiscard, gnu::const, gnu::visibility("default")]] int8_t TiedSource(IROps Op);
+    [[nodiscard, gnu::const]] std::string_view const& GetName(IROps Op);
+    [[nodiscard, gnu::const]] uint8_t GetArgs(IROps Op);
+    [[nodiscard, gnu::const]] uint8_t GetRAArgs(IROps Op);
+    [[nodiscard, gnu::const]] FEXCore::IR::RegisterClassType GetRegClass(IROps Op);
+    [[nodiscard, gnu::const]] bool HasSideEffects(IROps Op);
+    [[nodiscard, gnu::const]] bool ImplicitFlagClobber(IROps Op);
+    [[nodiscard, gnu::const]] bool GetHasDest(IROps Op);
+    [[nodiscard, gnu::const]] bool LoweredX87(IROps Op);
+    [[nodiscard, gnu::const]] int8_t TiedSource(IROps Op);
 
     #undef IROP_SIZES
     #endif
