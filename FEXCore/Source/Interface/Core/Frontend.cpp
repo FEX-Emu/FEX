@@ -79,6 +79,14 @@ Decoder::Decoder(FEXCore::Core::InternalThreadState* Thread)
   } else {
     X87Table = &FEXCore::X86Tables::X87F80Ops;
   }
+
+  if (CTX->HostFeatures.SupportsAVX && CTX->HostFeatures.SupportsSVE256) {
+    VEXTable = &FEXCore::X86Tables::VEXTableOps;
+    VEXTableGroup = &FEXCore::X86Tables::VEXTableGroupOps;
+  } else if (CTX->HostFeatures.SupportsAVX) {
+    VEXTable = &FEXCore::X86Tables::VEXTableOps_AVX128;
+    VEXTableGroup = &FEXCore::X86Tables::VEXTableGroupOps_AVX128;
+  }
 }
 
 bool Decoder::CheckRangeExecutable(uint64_t Address, uint64_t Size) {
@@ -724,6 +732,11 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
     uint16_t X87Op = ((Op - 0xD8) << 8) | ModRMByte;
     return NormalOp(&(*X87Table)[X87Op], X87Op);
   } else if (Info->Type == FEXCore::X86Tables::TYPE_VEX_TABLE_PREFIX) {
+    if (!VEXTable) {
+      // AVX not enabled.
+      return false;
+    }
+
     uint16_t map_select = 1;
     uint16_t pp = 0;
     const uint8_t Byte1 = ReadByte();
@@ -770,7 +783,7 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
     Op = OPD(map_select, pp, VEXOp);
 #undef OPD
 
-    FEXCore::X86Tables::X86InstInfo* LocalInfo = &VEXTableOps[Op];
+    const FEXCore::X86Tables::X86InstInfo* LocalInfo = &(*VEXTable)[Op];
 
     if (LocalInfo->Type >= FEXCore::X86Tables::TYPE_VEX_GROUP_12 && LocalInfo->Type <= FEXCore::X86Tables::TYPE_VEX_GROUP_17) {
       // We have ModRM
@@ -784,7 +797,7 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
 #define OPD(group, pp, opcode) (((group - TYPE_VEX_GROUP_12) << 4) | (pp << 3) | (opcode))
       Op = OPD(LocalInfo->Type, pp, ModRM.reg);
 #undef OPD
-      return NormalOp(&VEXTableGroupOps[Op], Op, options);
+      return NormalOp(&(*VEXTableGroup)[Op], Op, options);
     } else {
       return NormalOp(LocalInfo, Op, options);
     }

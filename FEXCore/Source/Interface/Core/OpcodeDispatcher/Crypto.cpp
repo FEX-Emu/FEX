@@ -322,6 +322,10 @@ void OpDispatchBuilder::PCLMULQDQOp(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::VPCLMULQDQOp(OpcodeArgs) {
+  if (!CTX->HostFeatures.SupportsPMULL_128Bit) {
+    UnimplementedOp(Op);
+    return;
+  }
   const auto DstSize = OpSizeFromDst(Op);
 
   Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);

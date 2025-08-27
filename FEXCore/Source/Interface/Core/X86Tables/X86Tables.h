@@ -501,8 +501,11 @@ extern const std::array<X86InstInfo, MAX_0F_38_TABLE_SIZE> H0F38TableOps;
 extern const std::array<X86InstInfo, MAX_0F_3A_TABLE_SIZE> H0F3ATableOps;
 
 // VEX
-extern std::array<X86InstInfo, MAX_VEX_TABLE_SIZE> VEXTableOps;
-extern std::array<X86InstInfo, MAX_VEX_GROUP_TABLE_SIZE> VEXTableGroupOps;
+extern const std::array<X86InstInfo, MAX_VEX_TABLE_SIZE> VEXTableOps;
+extern const std::array<X86InstInfo, MAX_VEX_GROUP_TABLE_SIZE> VEXTableGroupOps;
+
+extern const std::array<X86InstInfo, MAX_VEX_TABLE_SIZE> VEXTableOps_AVX128;
+extern const std::array<X86InstInfo, MAX_VEX_GROUP_TABLE_SIZE> VEXTableGroupOps_AVX128;
 
 template <typename OpcodeType>
 struct X86TablesInfoStruct {

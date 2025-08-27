@@ -152,6 +152,9 @@ private:
 
   const std::array<X86Tables::X86InstInfo, X86Tables::MAX_X87_TABLE_SIZE>* X87Table;
 
+  const std::array<X86Tables::X86InstInfo, X86Tables::MAX_VEX_TABLE_SIZE>* VEXTable {};
+  const std::array<X86Tables::X86InstInfo, X86Tables::MAX_VEX_GROUP_TABLE_SIZE>* VEXTableGroup {};
+
   const uint8_t* AdjustAddrForSpecialRegion(const uint8_t* _InstStream, uint64_t EntryPoint, uint64_t RIP);
 };
 } // namespace FEXCore::Frontend
