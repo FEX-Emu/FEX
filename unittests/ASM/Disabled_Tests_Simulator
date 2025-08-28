@@ -107,3 +107,13 @@ Test_TwoByte/0F_31.asm
 
 # Simulator doesn't support executing a syscall
 Test_Secondary/09_F3_07.asm
+
+# Simulator doesn't support FPSR
+Test_X87_F64/DB_E2_F64.asm
+Test_X87_F64/cumulative_ioc_test_F64.asm
+Test_X87_F64/invalid_div_zero_F64.asm
+Test_X87_F64/invalid_infinity_fsub_memory_F64.asm
+Test_X87_F64/invalid_sqrt_negative_F64.asm
+Test_X87_F64/valid_operation_F64.asm
+Test_X87_F64/fpsr_ioc_not_cleared_F64.asm
+Test_X87_F64/invalid_fist_nan_F64.asm

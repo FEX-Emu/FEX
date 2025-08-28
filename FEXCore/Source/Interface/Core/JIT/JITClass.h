@@ -409,6 +409,8 @@ private:
 
   void EmitEntryPoint(ARMEmitter::BackwardLabel& HeaderLabel, bool CheckTF);
 
+  void ClearFPSRIOC();
+
   // Runtime selection;
   // Load and store TSO memory style
   OpType RT_LoadMemTSO;
