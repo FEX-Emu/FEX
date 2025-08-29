@@ -774,7 +774,7 @@ inline NodeID NodeWrapperBase<Type>::ID() const {
   return NodeID(NodeOffset / sizeof(IR::OrderedNode));
 }
 
-bool IsFragmentExit(FEXCore::IR::IROps Op);
+[[nodiscard]]
 bool IsBlockExit(FEXCore::IR::IROps Op);
 
 void Dump(fextl::stringstream* out, const IRListView* IR);

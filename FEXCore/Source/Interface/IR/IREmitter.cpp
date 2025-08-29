@@ -18,7 +18,7 @@ $end_info$
 
 namespace FEXCore::IR {
 
-bool IsFragmentExit(FEXCore::IR::IROps Op) {
+static bool IsFragmentExit(FEXCore::IR::IROps Op) {
   switch (Op) {
   case OP_EXITFUNCTION:
   case OP_BREAK: return true;
