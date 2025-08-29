@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <csignal>
 
@@ -22,6 +23,8 @@ namespace Core {
 } // namespace Core
 
 struct SignalDelegatorConfig {
+  using SRAIndexMapping = std::array<uint8_t, 16>;
+
   // Dispatcher information
   uint64_t DispatcherBegin;
   uint64_t DispatcherEnd;
@@ -48,8 +51,8 @@ struct SignalDelegatorConfig {
   uint16_t SRAFPRCount;
 
   // SRA index mapping.
-  uint8_t SRAGPRMapping[16];
-  uint8_t SRAFPRMapping[16];
+  SRAIndexMapping SRAGPRMapping;
+  SRAIndexMapping SRAFPRMapping;
 };
 
 class SignalDelegator {

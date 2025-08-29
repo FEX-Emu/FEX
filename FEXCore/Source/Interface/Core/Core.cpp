@@ -354,33 +354,7 @@ bool ContextImpl::InitCore() {
   Dispatcher = FEXCore::CPU::Dispatcher::Create(this);
 
   // Set up the SignalDelegator config since core is initialized.
-  FEXCore::SignalDelegatorConfig SignalConfig {
-    .DispatcherBegin = Dispatcher->Start,
-    .DispatcherEnd = Dispatcher->End,
-
-    .AbsoluteLoopTopAddress = Dispatcher->AbsoluteLoopTopAddress,
-    .AbsoluteLoopTopAddressFillSRA = Dispatcher->AbsoluteLoopTopAddressFillSRA,
-    .SignalHandlerReturnAddress = Dispatcher->SignalHandlerReturnAddress,
-    .SignalHandlerReturnAddressRT = Dispatcher->SignalHandlerReturnAddressRT,
-
-    .PauseReturnInstruction = Dispatcher->PauseReturnInstruction,
-    .ThreadPauseHandlerAddressSpillSRA = Dispatcher->ThreadPauseHandlerAddressSpillSRA,
-    .ThreadPauseHandlerAddress = Dispatcher->ThreadPauseHandlerAddress,
-
-    // Stop handlers.
-    .ThreadStopHandlerAddressSpillSRA = Dispatcher->ThreadStopHandlerAddressSpillSRA,
-    .ThreadStopHandlerAddress = Dispatcher->ThreadStopHandlerAddress,
-
-    // SRA information.
-    .SRAGPRCount = Dispatcher->GetSRAGPRCount(),
-    .SRAFPRCount = Dispatcher->GetSRAFPRCount(),
-  };
-
-  Dispatcher->GetSRAGPRMapping(SignalConfig.SRAGPRMapping);
-  Dispatcher->GetSRAFPRMapping(SignalConfig.SRAFPRMapping);
-
-  // Give this configuration to the SignalDelegator.
-  SignalDelegation->SetConfig(SignalConfig);
+  SignalDelegation->SetConfig(Dispatcher->MakeSignalDelegatorConfig());
 
 #ifndef _WIN32
 #elif !defined(_M_ARM_64EC)

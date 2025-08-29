@@ -20,7 +20,8 @@
 
 namespace FEXCore {
 struct GuestSigAction;
-}
+struct SignalDelegatorConfig;
+} // namespace FEXCore
 
 namespace FEXCore::Core {
 struct CpuStateFrame;
@@ -42,6 +43,32 @@ public:
   Dispatcher(FEXCore::Context::ContextImpl* ctx);
   ~Dispatcher();
 
+  void InitThreadPointers(FEXCore::Core::InternalThreadState* Thread);
+
+#ifdef VIXL_SIMULATOR
+  void ExecuteDispatch(FEXCore::Core::CpuStateFrame* Frame);
+  void ExecuteJITCallback(FEXCore::Core::CpuStateFrame* Frame, uint64_t RIP);
+#else
+  void ExecuteDispatch(FEXCore::Core::CpuStateFrame* Frame) {
+    DispatchPtr(Frame, false);
+  }
+
+  void ExecuteJITCallback(FEXCore::Core::CpuStateFrame* Frame, uint64_t RIP) {
+    CallbackPtr(Frame, RIP);
+  }
+#endif
+
+  SignalDelegatorConfig MakeSignalDelegatorConfig() const;
+
+protected:
+  FEXCore::Context::ContextImpl* CTX;
+
+  using AsmDispatch = void (*)(FEXCore::Core::CpuStateFrame* Frame, bool SingleInst);
+  using JITCallback = void (*)(FEXCore::Core::CpuStateFrame* Frame, uint64_t RIP);
+
+  AsmDispatch DispatchPtr;
+  JITCallback CallbackPtr;
+private:
   /**
    * @name Dispatch Helper functions
    * @{ */
@@ -63,58 +90,11 @@ public:
 
   uint64_t PauseReturnInstruction {};
   std::array<uint64_t, FallbackABI::FABI_UNKNOWN> ABIPointers {};
-
   /**  @} */
 
   uint64_t Start {};
   uint64_t End {};
 
-  void InitThreadPointers(FEXCore::Core::InternalThreadState* Thread);
-
-#ifdef VIXL_SIMULATOR
-  void ExecuteDispatch(FEXCore::Core::CpuStateFrame* Frame);
-  void ExecuteJITCallback(FEXCore::Core::CpuStateFrame* Frame, uint64_t RIP);
-#else
-  void ExecuteDispatch(FEXCore::Core::CpuStateFrame* Frame) {
-    DispatchPtr(Frame, false);
-  }
-
-  void ExecuteJITCallback(FEXCore::Core::CpuStateFrame* Frame, uint64_t RIP) {
-    CallbackPtr(Frame, RIP);
-  }
-#endif
-
-  uint16_t GetSRAGPRCount() const {
-    // PF/AF are the final two SRA registers.
-    // Only return the SRA for GPRs.
-    return StaticRegisters.size() - 2;
-  }
-
-  uint16_t GetSRAFPRCount() const {
-    return StaticFPRegisters.size();
-  }
-
-  void GetSRAGPRMapping(uint8_t Mapping[16]) const {
-    for (size_t i = 0; i < StaticRegisters.size() - 2; ++i) {
-      Mapping[i] = StaticRegisters[i].Idx();
-    }
-  }
-
-  void GetSRAFPRMapping(uint8_t Mapping[16]) const {
-    for (size_t i = 0; i < StaticFPRegisters.size(); ++i) {
-      Mapping[i] = StaticFPRegisters[i].Idx();
-    }
-  }
-
-protected:
-  FEXCore::Context::ContextImpl* CTX;
-
-  using AsmDispatch = void (*)(FEXCore::Core::CpuStateFrame* Frame, bool SingleInst);
-  using JITCallback = void (*)(FEXCore::Core::CpuStateFrame* Frame, uint64_t RIP);
-
-  AsmDispatch DispatchPtr;
-  JITCallback CallbackPtr;
-private:
   // Long division helpers
   uint64_t LUDIVHandlerAddress {};
   uint64_t LDIVHandlerAddress {};
