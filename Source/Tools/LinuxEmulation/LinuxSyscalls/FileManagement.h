@@ -8,16 +8,20 @@ $end_info$
 #pragma once
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/fextl/map.h>
+#include <FEXCore/fextl/set.h>
 #include <FEXCore/fextl/string.h>
+#include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/unordered_set.h>
+#include <FEXCore/fextl/vector.h>
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <fcntl.h>
 #include <functional>
 #include <mutex>
 #include <linux/limits.h>
 #include <optional>
-#include <stddef.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
