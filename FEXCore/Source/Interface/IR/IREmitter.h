@@ -318,9 +318,6 @@ public:
   void Remove(Ref Node);
   void RemovePostRA(Ref Node);
 
-  void SetPackedRFLAG(bool Lower8, Ref Src);
-  Ref GetPackedRFLAG(bool Lower8);
-
   void CopyData(const IREmitter& rhs) {
     LOGMAN_THROW_A_FMT(rhs.DualListData.DataBackingSize() <= DualListData.DataBackingSize(), "Trying to take ownership of data that is too "
                                                                                              "large");
