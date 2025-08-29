@@ -89,20 +89,11 @@ public:
   // vfs
   uint64_t Statfs(const char* path, void* buf);
 
-  std::optional<std::string_view> GetSelf(const char* Pathname);
-  bool IsSelfNoFollow(const char* Pathname, int flags) const;
-
   void UpdatePID(uint32_t PID);
-  bool IsRootFSFD(int dirfd, uint64_t inode);
+  bool IsRootFSFD(int dirfd, uint64_t inode) const;
 
-  fextl::string GetEmulatedPath(const char* pathname, bool FollowSymlink = false);
-  fextl::string GetHostPath(fextl::string& Path, bool AliasedOnly);
-  using FDPathTmpData = std::array<char[PATH_MAX], 2>;
-  struct EmulatedFDPathResult final {
-    int FD;
-    const char *Path;
-  };
-  EmulatedFDPathResult GetEmulatedFDPath(int dirfd, const char* pathname, bool FollowSymlink, FDPathTmpData& TmpFilename);
+  fextl::string GetEmulatedPath(const char* pathname, bool FollowSymlink = false) const;
+  fextl::string GetHostPath(fextl::string& Path, bool AliasedOnly) const;
 
   bool ReplaceEmuFd(int fd, int flags, uint32_t mode);
 
@@ -123,12 +114,12 @@ public:
     std::erase_if(FEXTrackingFDs, [begin, end](int FD) { return FD >= begin && (FD <= end || end == -1); });
   }
 
-  bool CheckIfFDInTrackedSet(int FD) noexcept {
+  bool CheckIfFDInTrackedSet(int FD) const noexcept {
     std::lock_guard lk(FEXTrackingFDMutex);
     return FEXTrackingFDs.contains(FD);
   }
 
-  bool CheckIfFDRangeInTrackedSet(int begin, int end) noexcept {
+  bool CheckIfFDRangeInTrackedSet(int begin, int end) const noexcept {
     std::lock_guard lk(FEXTrackingFDMutex);
     // Just linear scan since the number of tracking FDs is low.
     for (auto it : FEXTrackingFDs) {
@@ -153,13 +144,23 @@ public:
 
 private:
 #if defined(ASSERTIONS_ENABLED) && ASSERTIONS_ENABLED
-  std::mutex FEXTrackingFDMutex;
+  mutable std::mutex FEXTrackingFDMutex;
   fextl::set<int> FEXTrackingFDs;
 #endif
 
-  bool RootFSPathExists(const char* Filepath);
-  size_t GetRootFSPrefixLen(const char* pathname, size_t len, bool AliasedOnly);
-  ssize_t StripRootFSPrefix(char* pathname, ssize_t len, bool leaky);
+  using FDPathTmpData = std::array<char[PATH_MAX], 2>;
+  struct EmulatedFDPathResult final {
+    int FD;
+    const char* Path;
+  };
+  EmulatedFDPathResult GetEmulatedFDPath(int dirfd, const char* pathname, bool FollowSymlink, FDPathTmpData& TmpFilename) const;
+
+  std::optional<std::string_view> GetSelf(const char* Pathname) const;
+  bool IsSelfNoFollow(const char* Pathname, int flags) const;
+
+  bool RootFSPathExists(const char* Filepath) const;
+  size_t GetRootFSPrefixLen(const char* pathname, size_t len, bool AliasedOnly) const;
+  ssize_t StripRootFSPrefix(char* pathname, ssize_t len, bool leaky) const;
 
   struct ThunkDBObject {
     fextl::string LibraryName;
