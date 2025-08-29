@@ -354,7 +354,7 @@ bool ContextImpl::InitCore() {
   Dispatcher = FEXCore::CPU::Dispatcher::Create(this);
 
   // Set up the SignalDelegator config since core is initialized.
-  FEXCore::SignalDelegator::SignalDelegatorConfig SignalConfig {
+  FEXCore::SignalDelegatorConfig SignalConfig {
     .DispatcherBegin = Dispatcher->Start,
     .DispatcherEnd = Dispatcher->End,
 
