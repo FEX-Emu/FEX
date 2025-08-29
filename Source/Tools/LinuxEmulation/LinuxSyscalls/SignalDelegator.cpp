@@ -15,6 +15,7 @@ $end_info$
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/Allocator.h>
+#include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/FPState.h>
@@ -23,12 +24,12 @@ $end_info$
 #include <FEXHeaderUtils/Syscalls.h>
 
 #include <atomic>
-#include <string.h>
-
-#include <errno.h>
+#include <cerrno>
+#include <csignal>
+#include <cstddef>
+#include <cstring>
 #include <functional>
 #include <linux/futex.h>
-#include <signal.h>
 #include <syscall.h>
 #include <sys/mman.h>
 #include <sys/signalfd.h>
