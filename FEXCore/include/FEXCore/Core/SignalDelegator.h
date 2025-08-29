@@ -1,12 +1,8 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include <FEXCore/Utils/CompilerDefs.h>
-#include <FEXCore/fextl/vector.h>
-
 #include <cstdint>
-#include <signal.h>
-#include <stddef.h>
+#include <csignal>
 
 namespace FEXCore {
 namespace Core {
