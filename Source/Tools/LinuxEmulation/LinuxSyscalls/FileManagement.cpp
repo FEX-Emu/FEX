@@ -45,7 +45,7 @@ $end_info$
 #include <tiny-json.h>
 
 namespace FEX::HLE {
-bool FileManager::RootFSPathExists(const char* Filepath) {
+bool FileManager::RootFSPathExists(const char* Filepath) const {
   LOGMAN_THROW_A_FMT(Filepath && Filepath[0] == '/', "Filepath needs to be absolute");
   return FHU::Filesystem::ExistsAt(RootFSFD, Filepath + 1);
 }
@@ -349,7 +349,7 @@ FileManager::~FileManager() {
   close(RootFSFD);
 }
 
-size_t FileManager::GetRootFSPrefixLen(const char* pathname, size_t len, bool AliasedOnly) {
+size_t FileManager::GetRootFSPrefixLen(const char* pathname, size_t len, bool AliasedOnly) const {
   if (len < 2 ||            // If no pathname or root
       pathname[0] != '/') { // If we are getting root
     return 0;
@@ -400,7 +400,7 @@ size_t FileManager::GetRootFSPrefixLen(const char* pathname, size_t len, bool Al
   return RootFSLen;
 }
 
-ssize_t FileManager::StripRootFSPrefix(char* pathname, ssize_t len, bool leaky) {
+ssize_t FileManager::StripRootFSPrefix(char* pathname, ssize_t len, bool leaky) const {
   if (len < 0) {
     return len;
   }
@@ -428,7 +428,7 @@ ssize_t FileManager::StripRootFSPrefix(char* pathname, ssize_t len, bool leaky) 
   return len - Prefix;
 }
 
-fextl::string FileManager::GetHostPath(fextl::string& Path, bool AliasedOnly) {
+fextl::string FileManager::GetHostPath(fextl::string& Path, bool AliasedOnly) const {
   auto Prefix = GetRootFSPrefixLen(Path.c_str(), Path.length(), AliasedOnly);
 
   if (Prefix == 0) {
@@ -443,7 +443,7 @@ fextl::string FileManager::GetHostPath(fextl::string& Path, bool AliasedOnly) {
   return ret;
 }
 
-fextl::string FileManager::GetEmulatedPath(const char* pathname, bool FollowSymlink) {
+fextl::string FileManager::GetEmulatedPath(const char* pathname, bool FollowSymlink) const {
   if (!pathname ||                  // If no pathname
       pathname[0] != '/' ||         // If relative
       strcmp(pathname, "/") == 0) { // If we are getting root
@@ -476,7 +476,8 @@ fextl::string FileManager::GetEmulatedPath(const char* pathname, bool FollowSyml
   return Path;
 }
 
-FileManager::EmulatedFDPathResult FileManager::GetEmulatedFDPath(int dirfd, const char* pathname, bool FollowSymlink, FDPathTmpData& TmpFilename) {
+FileManager::EmulatedFDPathResult
+FileManager::GetEmulatedFDPath(int dirfd, const char* pathname, bool FollowSymlink, FDPathTmpData& TmpFilename) const {
   constexpr auto NoEntry = EmulatedFDPathResult {-1, nullptr};
 
   if (!pathname) {
@@ -588,7 +589,7 @@ bool FileManager::IsSelfNoFollow(const char* Pathname, int flags) const {
   return strcmp(Pathname, "/proc/self/exe") == 0 || strcmp(Pathname, "/proc/thread-self/exe") == 0 || strcmp(Pathname, PidSelfPath) == 0;
 }
 
-std::optional<std::string_view> FileManager::GetSelf(const char* Pathname) {
+std::optional<std::string_view> FileManager::GetSelf(const char* Pathname) const {
   if (!Pathname) {
     return std::nullopt;
   }
@@ -1288,8 +1289,7 @@ void FileManager::UpdatePID(uint32_t PID) {
   }
 }
 
-bool FileManager::IsRootFSFD(int dirfd, uint64_t inode) {
-
+bool FileManager::IsRootFSFD(int dirfd, uint64_t inode) const {
   // Check if we have to hide this entry
   if (inode == RootFSFDInode || inode == ProcFDInode) {
     struct stat Buffer;
