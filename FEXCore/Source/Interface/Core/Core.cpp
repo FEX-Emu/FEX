@@ -356,8 +356,7 @@ bool ContextImpl::InitCore() {
   // Set up the SignalDelegator config since core is initialized.
   SignalDelegation->SetConfig(Dispatcher->MakeSignalDelegatorConfig());
 
-#ifndef _WIN32
-#elif !defined(_M_ARM_64EC)
+#if defined(_WIN32) && !defined(_M_ARM_64EC)
   // WOW64 always needs the interrupt fault check to be enabled.
   Config.NeedsPendingInterruptFaultCheck = true;
 #endif
