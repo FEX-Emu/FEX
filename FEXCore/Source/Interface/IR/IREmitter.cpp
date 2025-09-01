@@ -12,13 +12,12 @@ $end_info$
 #include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/LogManager.h>
 
-#include <array>
-#include <stdint.h>
-#include <string.h>
+#include <cstdint>
+#include <cstring>
 
 namespace FEXCore::IR {
 
-bool IsFragmentExit(FEXCore::IR::IROps Op) {
+static bool IsFragmentExit(FEXCore::IR::IROps Op) {
   switch (Op) {
   case OP_EXITFUNCTION:
   case OP_BREAK: return true;
