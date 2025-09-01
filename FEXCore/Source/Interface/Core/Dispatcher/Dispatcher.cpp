@@ -19,6 +19,7 @@
 
 #include <CodeEmitter/Emitter.h>
 
+#include <array>
 #include <atomic>
 #include <condition_variable>
 #include <csignal>
@@ -1120,6 +1121,53 @@ void Dispatcher::InitThreadPointers(FEXCore::Core::InternalThreadState* Thread) 
     // Fill in the fallback handlers
     InterpreterOps::FillFallbackIndexPointers(Common.FallbackHandlerPointers, &ABIPointers[0]);
   }
+}
+
+SignalDelegatorConfig Dispatcher::MakeSignalDelegatorConfig() const {
+  // PF/AF are the final two SRA registers. We only want GPRs
+  const auto GPRCount = uint16_t(StaticRegisters.size() - 2);
+  const auto FPRCount = uint16_t(StaticFPRegisters.size());
+
+  const auto GetSRAGPRMapping = [GPRCount, this] {
+    SignalDelegatorConfig::SRAIndexMapping Mapping {};
+    for (size_t i = 0; i < GPRCount; ++i) {
+      Mapping[i] = StaticRegisters[i].Idx();
+    }
+    return Mapping;
+  };
+
+  const auto GetSRAFPRMapping = [FPRCount, this] {
+    SignalDelegatorConfig::SRAIndexMapping Mapping {};
+    for (size_t i = 0; i < FPRCount; ++i) {
+      Mapping[i] = StaticFPRegisters[i].Idx();
+    }
+    return Mapping;
+  };
+
+  return FEXCore::SignalDelegatorConfig {
+    .DispatcherBegin = Start,
+    .DispatcherEnd = End,
+
+    .AbsoluteLoopTopAddress = AbsoluteLoopTopAddress,
+    .AbsoluteLoopTopAddressFillSRA = AbsoluteLoopTopAddressFillSRA,
+    .SignalHandlerReturnAddress = SignalHandlerReturnAddress,
+    .SignalHandlerReturnAddressRT = SignalHandlerReturnAddressRT,
+
+    .PauseReturnInstruction = PauseReturnInstruction,
+    .ThreadPauseHandlerAddressSpillSRA = ThreadPauseHandlerAddressSpillSRA,
+    .ThreadPauseHandlerAddress = ThreadPauseHandlerAddress,
+
+    // Stop handlers.
+    .ThreadStopHandlerAddressSpillSRA = ThreadStopHandlerAddressSpillSRA,
+    .ThreadStopHandlerAddress = ThreadStopHandlerAddress,
+
+    // SRA information.
+    .SRAGPRCount = GPRCount,
+    .SRAFPRCount = FPRCount,
+
+    .SRAGPRMapping = GetSRAGPRMapping(),
+    .SRAFPRMapping = GetSRAFPRMapping(),
+  };
 }
 
 fextl::unique_ptr<Dispatcher> Dispatcher::Create(FEXCore::Context::ContextImpl* CTX) {

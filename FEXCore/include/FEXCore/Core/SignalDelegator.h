@@ -1,12 +1,9 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include <FEXCore/Utils/CompilerDefs.h>
-#include <FEXCore/fextl/vector.h>
-
+#include <array>
 #include <cstdint>
-#include <signal.h>
-#include <stddef.h>
+#include <csignal>
 
 namespace FEXCore {
 namespace Core {
@@ -24,40 +21,43 @@ namespace Core {
 #endif
   };
 } // namespace Core
+
+struct SignalDelegatorConfig {
+  using SRAIndexMapping = std::array<uint8_t, 16>;
+
+  // Dispatcher information
+  uint64_t DispatcherBegin;
+  uint64_t DispatcherEnd;
+
+  // Dispatcher entrypoint.
+  uint64_t AbsoluteLoopTopAddress {};
+  uint64_t AbsoluteLoopTopAddressFillSRA {};
+
+  // Signal return pointers.
+  uint64_t SignalHandlerReturnAddress {};
+  uint64_t SignalHandlerReturnAddressRT {};
+
+  // Pause handlers.
+  uint64_t PauseReturnInstruction {};
+  uint64_t ThreadPauseHandlerAddressSpillSRA {};
+  uint64_t ThreadPauseHandlerAddress {};
+
+  // Stop handlers.
+  uint64_t ThreadStopHandlerAddressSpillSRA;
+  uint64_t ThreadStopHandlerAddress {};
+
+  // SRA information.
+  uint16_t SRAGPRCount;
+  uint16_t SRAFPRCount;
+
+  // SRA index mapping.
+  SRAIndexMapping SRAGPRMapping;
+  SRAIndexMapping SRAFPRMapping;
+};
+
 class SignalDelegator {
 public:
   virtual ~SignalDelegator() = default;
-
-  struct SignalDelegatorConfig {
-    // Dispatcher information
-    uint64_t DispatcherBegin;
-    uint64_t DispatcherEnd;
-
-    // Dispatcher entrypoint.
-    uint64_t AbsoluteLoopTopAddress {};
-    uint64_t AbsoluteLoopTopAddressFillSRA {};
-
-    // Signal return pointers.
-    uint64_t SignalHandlerReturnAddress {};
-    uint64_t SignalHandlerReturnAddressRT {};
-
-    // Pause handlers.
-    uint64_t PauseReturnInstruction {};
-    uint64_t ThreadPauseHandlerAddressSpillSRA {};
-    uint64_t ThreadPauseHandlerAddress {};
-
-    // Stop handlers.
-    uint64_t ThreadStopHandlerAddressSpillSRA;
-    uint64_t ThreadStopHandlerAddress {};
-
-    // SRA information.
-    uint16_t SRAGPRCount;
-    uint16_t SRAFPRCount;
-
-    // SRA index mapping.
-    uint8_t SRAGPRMapping[16];
-    uint8_t SRAFPRMapping[16];
-  };
 
   void SetConfig(const SignalDelegatorConfig& Config) {
     this->Config = Config;
