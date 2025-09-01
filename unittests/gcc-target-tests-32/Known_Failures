@@ -1,6 +1,3 @@
-pr72867.c.gcc-target-test-32.n500.gcc-target-32
-pr72867.c.gcc-target-test-32.n1.gcc-target-32
-
 sse2-mmx-pextrw.c.gcc-target-test-32.n500.gcc-target-32
 sse2-mmx-pextrw.c.gcc-target-test-32.n1.gcc-target-32
 
