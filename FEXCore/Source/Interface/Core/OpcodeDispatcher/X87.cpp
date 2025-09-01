@@ -680,6 +680,9 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs, IR::OpSize Width, bool Integer, OpDisp
     SetRFLAG<FEXCore::X86State::RFLAG_PF_RAW_LOC>(PF);
   }
 
+  // Set Invalid Operation flag when unordered (NaN comparison)
+  SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(HostFlag_Unordered);
+
   if (PopTwice) {
     _PopStackDestroy();
     _PopStackDestroy();
@@ -701,6 +704,9 @@ void OpDispatchBuilder::FTST(OpcodeArgs) {
   SetRFLAG<FEXCore::X86State::X87FLAG_C1_LOC>(Constant(0));
   SetRFLAG<FEXCore::X86State::X87FLAG_C2_LOC>(HostFlag_Unordered);
   SetRFLAG<FEXCore::X86State::X87FLAG_C3_LOC>(HostFlag_ZF);
+
+  // Set Invalid Operation flag when unordered (NaN comparison)
+  SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(HostFlag_Unordered);
 }
 
 void OpDispatchBuilder::X87OpHelper(OpcodeArgs, FEXCore::IR::IROps IROp, bool ZeroC2) {

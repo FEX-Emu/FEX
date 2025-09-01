@@ -294,7 +294,11 @@ struct FEX_PACKED X80SoftFloat {
   FCMP(softfloat_state* state, const X80SoftFloat& lhs, const X80SoftFloat& rhs, bool* eq, bool* lt, bool* nan) {
     *eq = extF80_eq(state, lhs, rhs);
     *lt = extF80_lt(state, lhs, rhs);
-    *nan = IsNan(lhs) || IsNan(rhs);
+
+    // Use IEEE 754 semantics: unordered if neither <, =, nor > is true
+    // This is more reliable than custom NaN detection
+    bool gt = !(*eq) && !(*lt) && extF80_le(state, rhs, lhs);
+    *nan = !(*eq) && !(*lt) && !gt;
   }
 
   FEXCORE_PRESERVE_ALL_ATTR static X80SoftFloat FSCALE(softfloat_state* state, const X80SoftFloat& lhs, const X80SoftFloat& rhs) {
