@@ -213,3 +213,19 @@ timerfd_test
 # - Tries to map it with MAP_SHARED and PROT_READ - Expects failure
 # - Older Linux kernel versions accidentally allowed PROT_READ mappings through.
 memfd_test
+
+# Subtest `TestInvalidFlag` tests expected invalid flag 0x80.
+# With a new enough kernel this is now RWF_NOAPPEND
+preadv2_test
+pwritev2_test
+
+# Tries to set a bunch of socket options that used to work on older kernels, but now the get rejected with EOPNOTSUPP
+socket_abstract_test
+socket_domain_test
+socket_filesystem_test
+socket_ip_tcp_loopback_test
+socket_ip_udp_loopback_test
+
+# Does some tricky signal masking and signal timer setup to try and ensure `sigtimedwait` still sends a timedwait signal when signals are blocked
+# With a new enough kernel it seems `sigtimedwait` now immediately return in this situation.
+timers_test
