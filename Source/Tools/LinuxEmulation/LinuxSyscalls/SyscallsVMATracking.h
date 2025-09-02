@@ -114,11 +114,9 @@ struct VMATracking {
   // Returns the Size of the Shm or 0 if not found
   uintptr_t DeleteSHMRegion(FEXCore::Context::Context* Ctx, uintptr_t Base);
 
-  // Emplaces a new `MappedResource` to track.
-  // Used for `mmap` and `shmat` resources; Anonymous, FD, and SHM depending on flags.
-  template<class... Args>
-  inline auto EmplaceMappedResource(Args&&... args) {
-    return MappedResources.emplace(args...);
+  // Adds a new `MappedResource` to track.
+  inline auto InsertMappedResource(const MRID& mrid, MappedResource Resource) {
+    return MappedResources.emplace(mrid, std::move(Resource));
   }
 private:
   bool ListRemove(VMAEntry* Mapping);
