@@ -1,60 +1,61 @@
 // SPDX-License-Identifier: MIT
-#include "FEXHeaderUtils/Filesystem.h"
-#include "Interface/Context/Context.h"
-#include "Interface/Core/JIT/DebugData.h"
+#include <FEXHeaderUtils/Filesystem.h>
+#include <Interface/Context/Context.h>
 
-#include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/HLE/SyscallHandler.h>
-#include <FEXCore/fextl/fmt.h>
+#include <FEXCore/HLE/SourcecodeResolver.h>
 
-#include <Interface/Core/LookupCache.h>
 #include <Interface/GDBJIT/GDBJIT.h>
 
 #include <xxhash.h>
 
-namespace FEXCore::IR {
+namespace FEXCore {
 
-bool AOTIRCaptureCache::PostCompileCode(FEXCore::Core::InternalThreadState* Thread, void* CodePtr, uint64_t GuestRIP, uint64_t StartAddr,
-                                        uint64_t Length, FEXCore::Core::DebugData* DebugData) {
+ExecutableFileInfo::~ExecutableFileInfo() = default;
 
-  // Both generated ir and LibraryJITName need a named region lookup
-  if (CTX->Config.LibraryJITNaming() || CTX->Config.GDBSymbols()) {
+} // namespace FEXCore
 
-    auto AOTIRCacheEntry = CTX->SyscallHandler->LookupAOTIRCacheEntry(Thread, GuestRIP);
+namespace FEXCore::Context {
 
-    if (AOTIRCacheEntry.Entry) {
-      if (DebugData && CTX->Config.LibraryJITNaming()) {
-        CTX->Symbols.RegisterNamedRegion(Thread->SymbolBuffer.get(), CodePtr, DebugData->HostCodeSize, AOTIRCacheEntry.Entry->Filename);
+CodeCache::CodeCache(ContextImpl& CTX_)
+  : CTX(CTX_) {}
+CodeCache::~CodeCache() = default;
+
+void CodeCache::LoadData(Core::InternalThreadState& Thread, std::byte* MappedCacheFile, const ExecutableFileSectionInfo& GuestRIPLookup) {
+  // TODO
+}
+
+bool CodeCache::SaveData(Core::InternalThreadState& Thread, int fd, const ExecutableFileSectionInfo& SourceBinary, uint64_t SerializedBaseAddress) {
+  // TODO
+  return true;
+}
+
+void CodeCache::PostCompileCode(FEXCore::Core::InternalThreadState& Thread, void* CodePtr, uint64_t GuestRIP, FEXCore::Core::DebugData& DebugData) {
+  if (CTX.Config.LibraryJITNaming() || CTX.Config.GDBSymbols()) {
+    auto MappedSection = CTX.SyscallHandler->LookupExecutableFileSection(Thread, GuestRIP);
+    if (MappedSection) {
+      if (CTX.Config.LibraryJITNaming()) {
+        CTX.Symbols.RegisterNamedRegion(Thread.SymbolBuffer.get(), CodePtr, DebugData.HostCodeSize, MappedSection->FileInfo.Filename);
       }
 
-      if (CTX->Config.GDBSymbols()) {
-        GDBJITRegister(AOTIRCacheEntry.Entry, AOTIRCacheEntry.VAFileStart, GuestRIP, (uintptr_t)CodePtr, DebugData);
+      if (CTX.Config.GDBSymbols()) {
+        GDBJITRegister(MappedSection->FileInfo, MappedSection->FileStartVA, GuestRIP, (uintptr_t)CodePtr, DebugData);
       }
     }
   }
-
-  return false;
 }
 
-AOTIRCacheEntry* AOTIRCaptureCache::LoadAOTIRCacheEntry(const fextl::string& filename) {
-  fextl::string base_filename = FHU::Filesystem::GetFilename(filename);
-
+fextl::string CodeCache::ComputeCodeMapId(std::string_view Filename) {
+  auto base_filename = FHU::Filesystem::GetFilename(Filename);
   if (!base_filename.empty()) {
-    auto filename_hash = XXH3_64bits(filename.c_str(), filename.size());
+    auto filename_hash = XXH3_64bits(Filename.data(), Filename.size());
 
-    auto fileid = fextl::fmt::format("{}-{}-{}{}{}", base_filename, filename_hash,
-                                     (CTX->Config.SMCChecks == FEXCore::Config::CONFIG_SMC_FULL) ? 'S' : 's',
-                                     CTX->Config.TSOEnabled ? 'T' : 't', CTX->Config.ABILocalFlags ? 'L' : 'l');
-
-    std::unique_lock lk(AOTIRCacheLock);
-
-    auto Inserted = AOTIRCache.insert({fileid, AOTIRCacheEntry {.FileId = fileid, .Filename = filename}});
-    auto Entry = &(Inserted.first->second);
-
-    return Entry;
+    return fextl::fmt::format("{}-{:016x}-{}{}{}", base_filename, filename_hash,
+                              (CTX.Config.SMCChecks == FEXCore::Config::CONFIG_SMC_FULL) ? 'S' : 's', CTX.Config.TSOEnabled ? 'T' : 't',
+                              CTX.Config.ABILocalFlags ? 'L' : 'l');
   }
 
   return nullptr;
 }
 
-} // namespace FEXCore::IR
+} // namespace FEXCore::Context

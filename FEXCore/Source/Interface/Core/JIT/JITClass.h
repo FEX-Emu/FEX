@@ -381,7 +381,9 @@ private:
   fextl::vector<FEXCore::CPU::Relocation> Relocations;
 
   ///< Relocation code loading
-  bool ApplyRelocations(uint64_t GuestEntry, uint64_t CodeEntry, uint64_t CursorEntry, size_t NumRelocations, const char* EntryRelocations);
+  bool ApplyRelocations(uint64_t GuestEntry, std::span<std::byte> Code, std::span<const FEXCore::CPU::Relocation>);
+
+  fextl::vector<FEXCore::CPU::Relocation> TakeRelocations() override;
 
   /**  @} */
 

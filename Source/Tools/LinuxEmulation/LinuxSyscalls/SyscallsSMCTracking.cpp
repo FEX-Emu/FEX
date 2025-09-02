@@ -167,19 +167,19 @@ void SyscallHandler::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState
   FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(Thread, Start, Length);
 }
 
-// Used for AOT
-FEXCore::HLE::AOTIRCacheEntryLookupResult SyscallHandler::LookupAOTIRCacheEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestAddr) {
-  auto lk = FEXCore::GuardSignalDeferringSection<std::shared_lock>(VMATracking.Mutex, Thread);
+std::optional<FEXCore::ExecutableFileSectionInfo>
+SyscallHandler::LookupExecutableFileSection(FEXCore::Core::InternalThreadState& Thread, uint64_t GuestAddr) {
+  auto lk = FEXCore::GuardSignalDeferringSection<std::shared_lock>(VMATracking.Mutex, &Thread);
 
   // Get the first mapping after GuestAddr, or end
   // GuestAddr is inclusive
   // If the write spans two pages, they will be flushed one at a time (generating two faults)
   auto Entry = VMATracking.FindVMAEntry(GuestAddr);
-  if (Entry == VMATracking.VMAs.end()) {
-    return {nullptr, 0};
+  if (Entry == VMATracking.VMAs.end() || !Entry->second.Resource) {
+    return std::nullopt;
   }
 
-  return {Entry->second.Resource ? Entry->second.Resource->AOTIRCacheEntry : nullptr, Entry->second.Base - Entry->second.Offset};
+  return FEXCore::ExecutableFileSectionInfo {*Entry->second.Resource->MappedFile, Entry->second.Base - Entry->second.Offset};
 }
 
 FEXCore::HLE::ExecutableRangeInfo SyscallHandler::QueryGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Address) {
@@ -374,12 +374,13 @@ void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint6
     auto PathLength = FEX::get_fdpath(fd, Tmp);
 
     if (PathLength != -1) {
-      Tmp[PathLength] = '\0';
       auto [Iter, Inserted] = VMATracking.InsertMappedResource(mrid, {nullptr, nullptr, 0});
       Resource = &Iter->second;
 
       if (Inserted) {
-        Resource->AOTIRCacheEntry = CTX->LoadAOTIRCacheEntry(fextl::string(Tmp, PathLength));
+        Resource->MappedFile = fextl::make_unique<FEXCore::ExecutableFileInfo>();
+        Resource->MappedFile->Filename = fextl::string(Tmp, PathLength);
+        Resource->MappedFile->FileId = CTX->GetCodeCache().ComputeCodeMapId(Resource->MappedFile->Filename);
         Resource->Iterator = Iter;
       }
     }

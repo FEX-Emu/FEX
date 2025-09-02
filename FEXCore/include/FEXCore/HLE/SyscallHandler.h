@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #include <cstdint>
-#include <shared_mutex>
+#include <optional>
 
+#include <FEXCore/Core/CodeCache.h>
 #include <FEXCore/IR/IR.h>
-
-namespace FEXCore::IR {
-struct AOTIRCacheEntry;
-}
+#include <FEXCore/fextl/string.h>
 
 namespace FEXCore::Context {
 class Context;
@@ -51,19 +49,6 @@ struct ExecutableRangeInfo {
 class SyscallHandler;
 class SourcecodeResolver;
 
-struct AOTIRCacheEntryLookupResult {
-  AOTIRCacheEntryLookupResult(FEXCore::IR::AOTIRCacheEntry* Entry, uintptr_t VAFileStart)
-    : Entry(Entry)
-    , VAFileStart(VAFileStart) {}
-
-  AOTIRCacheEntryLookupResult(AOTIRCacheEntryLookupResult&&) = default;
-
-  FEXCore::IR::AOTIRCacheEntry* Entry;
-  uintptr_t VAFileStart;
-
-  friend class SyscallHandler;
-};
-
 class SyscallHandler {
 public:
   virtual ~SyscallHandler() = default;
@@ -82,7 +67,7 @@ public:
   virtual void MarkOvercommitRange(uint64_t Start, uint64_t Length) {}
   virtual void UnmarkOvercommitRange(uint64_t Start, uint64_t Length) {}
   virtual ExecutableRangeInfo QueryGuestExecutableRange(FEXCore::Core::InternalThreadState* Thread, uint64_t Address) = 0;
-  virtual AOTIRCacheEntryLookupResult LookupAOTIRCacheEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestAddr) = 0;
+  virtual std::optional<ExecutableFileSectionInfo> LookupExecutableFileSection(Core::InternalThreadState& Thread, uint64_t GuestAddr) = 0;
 
   virtual void PreCompile() {}
 
