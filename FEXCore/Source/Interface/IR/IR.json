@@ -159,7 +159,8 @@
     "NamedVectorConstant": "FEXCore::IR::NamedVectorConstant",
     "IndexNamedVectorConstant": "FEXCore::IR::IndexNamedVectorConstant",
     "ShiftType": "FEXCore::IR::ShiftType",
-    "BranchHint": "FEXCore::IR::BranchHint"
+    "BranchHint": "FEXCore::IR::BranchHint",
+    "Array16": "std::array<uint8_t, 16>"
   },
   "Ops": {
     "Misc": {
@@ -200,10 +201,9 @@
         "HasSideEffects": true
       },
 
-      "GPR = ValidateCode u64:$CodeOriginalLow, u64:$CodeOriginalhigh, i64:$Offset, u8:$CodeLength": {
+      "GPR = ValidateCode Array16:$CodeOriginal, GPR:$Address, u8:$CodeLength": {
         "HasSideEffects": true,
         "HasDest": true,
-        "ImplicitFlagClobber": true,
         "DestSize": "OpSize::i64Bit"
       },
 

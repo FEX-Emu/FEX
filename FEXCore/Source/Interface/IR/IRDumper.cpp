@@ -274,6 +274,10 @@ static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::B
   }
 }
 
+static void PrintArg(fextl::stringstream* out, const IRListView*, const std::array<uint8_t, 0x10>& Arg) {
+  *out << fextl::fmt::format("{:02x}", fmt::join(Arg, ""));
+}
+
 void Dump(fextl::stringstream* out, const IRListView* IR) {
   auto HeaderOp = IR->GetHeader();
 
