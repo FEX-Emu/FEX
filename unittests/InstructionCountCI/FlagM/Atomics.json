@@ -1322,51 +1322,59 @@
       ]
     },
     "lock neg byte [rax]": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP2 0xf6 /3",
       "ExpectedArm64ASM": [
-        "ldaxrb w1, [x4]",
+        "ldrb w1, [x4]",
+        "mov w3, w1",
         "neg w2, w1",
-        "stlxrb w3, w2, [x4]",
-        "cbnz w3, #-0xc",
+        "casalb w1, w2, [x4]",
+        "sub w2, w1, w3",
+        "cbnz w2, #-0x10",
         "mov w27, w1",
         "cmp wzr, w27, lsl #24",
         "neg w26, w27"
       ]
     },
     "lock neg word [rax]": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 9,
       "Comment": "GROUP2 0xf7 /3",
       "ExpectedArm64ASM": [
-        "ldaxrh w1, [x4]",
+        "ldrh w1, [x4]",
+        "mov w3, w1",
         "neg w2, w1",
-        "stlxrh w3, w2, [x4]",
-        "cbnz w3, #-0xc",
+        "casalh w1, w2, [x4]",
+        "sub w2, w1, w3",
+        "cbnz w2, #-0x10",
         "mov w27, w1",
         "cmp wzr, w27, lsl #16",
         "neg w26, w27"
       ]
     },
     "lock neg dword [rax]": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP2 0xf7 /3",
       "ExpectedArm64ASM": [
-        "ldaxr w1, [x4]",
+        "ldr w1, [x4]",
+        "mov w3, w1",
         "neg w2, w1",
-        "stlxr w3, w2, [x4]",
-        "cbnz w3, #-0xc",
+        "casal w1, w2, [x4]",
+        "sub w2, w1, w3",
+        "cbnz w2, #-0x10",
         "mov w27, w1",
         "negs w26, w27"
       ]
     },
     "lock neg qword [rax]": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP2 0xf7 /3",
       "ExpectedArm64ASM": [
-        "ldaxr x1, [x4]",
+        "ldr x1, [x4]",
+        "mov x3, x1",
         "neg x2, x1",
-        "stlxr w3, x2, [x4]",
-        "cbnz x3, #-0xc",
+        "casal x1, x2, [x4]",
+        "sub x2, x1, x3",
+        "cbnz x2, #-0x10",
         "mov x27, x1",
         "negs x26, x27"
       ]
