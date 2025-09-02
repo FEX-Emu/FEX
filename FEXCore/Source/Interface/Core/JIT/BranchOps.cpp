@@ -146,6 +146,15 @@ DEF_OP(ExitFunction) {
         } else {
           stp<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::zr, ARMEmitter::XReg::zr, REG_CALLRET_SP, -0x10);
         }
+      } else if (Op->Hint == IR::BranchHint::CheckTF) {
+        ARMEmitter::ForwardLabel TFUnset;
+        ldrb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
+        cbz(ARMEmitter::Size::i32Bit, TMP1, &TFUnset);
+        LoadConstant(ARMEmitter::Size::i64Bit, TMP1, NewRIP);
+        str(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip));
+        ldr(TMP2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.DispatcherLoopTop));
+        blr(TMP2);
+        Bind(&TFUnset);
       }
 
       EmitLinkedBranch(NewRIP, Op->Hint == IR::BranchHint::Call);
