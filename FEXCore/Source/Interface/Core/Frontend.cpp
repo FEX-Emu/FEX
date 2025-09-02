@@ -1099,6 +1099,11 @@ void Decoder::BranchTargetInMultiblockRange() {
     TargetRIP &= 0xFFFFFFFFU;
   }
 
+  if (Conditional) {
+    // If we are conditional then a target can be the instruction past the conditional instruction
+    AddBranchTarget(InstEnd);
+  }
+
   // If the target RIP is x86 code within the symbol ranges then we are golden
   // Forbid distant branches to have the cost code better match the guest code layout, avoiding massive (range-wise) code
   // blocks in highly fragmented guest code. Such branches are often not-taken branches to garbage in obfuscated code.
@@ -1114,9 +1119,6 @@ void Decoder::BranchTargetInMultiblockRange() {
     if (Conditional) {
       MaxCondBranchForward = std::max(MaxCondBranchForward, TargetRIP);
       MaxCondBranchBackwards = std::min(MaxCondBranchBackwards, TargetRIP);
-
-      // If we are conditional then a target can be the instruction past the conditional instruction
-      AddBranchTarget(InstEnd);
     }
 
     AddBranchTarget(TargetRIP);
