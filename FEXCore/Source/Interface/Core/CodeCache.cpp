@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "FEXHeaderUtils/Filesystem.h"
 #include "Interface/Context/Context.h"
-#include "Interface/IR/AOTIR.h"
+#include "Interface/Core/JIT/DebugData.h"
 
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/HLE/SyscallHandler.h>
