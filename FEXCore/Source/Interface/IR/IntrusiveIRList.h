@@ -156,44 +156,6 @@ public:
     , DataSize(DataSize_)
     , ListSize(ListSize_) {}
 
-  void Serialize(FEXCore::Context::AOTIRWriter& stream) const {
-    void* nul = nullptr;
-    // void *IRDataInternal;
-    stream.Write((const char*)&nul, sizeof(nul));
-    // void *ListDataInternal;
-    stream.Write((const char*)&nul, sizeof(nul));
-    // size_t DataSize;
-    stream.Write((const char*)&DataSize, sizeof(DataSize));
-    // size_t ListSize;
-    stream.Write((const char*)&ListSize, sizeof(ListSize));
-
-    // inline data
-    stream.Write((const char*)GetData(), DataSize);
-    stream.Write((const char*)GetListData(), ListSize);
-  }
-
-  void Serialize(uint8_t* ptr) const {
-    void* nul = nullptr;
-    // void *IRDataInternal;
-    memcpy(ptr, &nul, sizeof(nul));
-    ptr += sizeof(nul);
-    // void *ListDataInternal;
-    memcpy(ptr, &nul, sizeof(nul));
-    ptr += sizeof(nul);
-    // size_t DataSize;
-    memcpy(ptr, &DataSize, sizeof(DataSize));
-    ptr += sizeof(DataSize);
-    // size_t ListSize;
-    memcpy(ptr, &ListSize, sizeof(ListSize));
-    ptr += sizeof(ListSize);
-
-    // inline data
-    memcpy(ptr, (const void*)GetData(), DataSize);
-    ptr += DataSize;
-    memcpy(ptr, (const void*)GetListData(), ListSize);
-    ptr += ListSize;
-  }
-
   [[nodiscard]]
   size_t GetInlineSize() const {
     static_assert(sizeof(*this) == 32);
@@ -409,13 +371,6 @@ private:
   size_t DataSize;
   size_t ListSize;
   uint8_t InlineData[0];
-};
-
-class IRStorageBase {
-public:
-  virtual ~IRStorageBase() = default;
-
-  virtual IRListView GetIRView() = 0;
 };
 
 } // namespace FEXCore::IR

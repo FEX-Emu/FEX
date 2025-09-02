@@ -14,7 +14,6 @@ $end_info$
 #include "Interface/Core/CPUBackend.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/Frontend.h"
-#include "Interface/Core/ObjectCache/ObjectCacheService.h"
 #include "Interface/Core/OpcodeDispatcher.h"
 #include "Interface/Core/JIT/JITClass.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
@@ -79,9 +78,6 @@ ContextImpl::ContextImpl(const FEXCore::HostFeatures& Features)
   : HostFeatures {Features}
   , CPUID {this}
   , IRCaptureCache {this} {
-  if (Config.CacheObjectCodeCompilation() != FEXCore::Config::ConfigObjectCodeHandler::CONFIG_NONE) {
-    CodeObjectCacheService = fextl::make_unique<FEXCore::CodeSerialize::CodeObjectSerializeService>(this);
-  }
   if (!Config.Is64BitMode()) {
     // When operating in 32-bit mode, the virtual memory we care about is only the lower 32-bits.
     Config.VirtualMemSize = 1ULL << 32;
@@ -103,14 +99,6 @@ ContextImpl::ContextImpl(const FEXCore::HostFeatures& Features)
 
   // Track atomic TSO emulation configuration.
   UpdateAtomicTSOEmulationConfig();
-}
-
-ContextImpl::~ContextImpl() {
-  {
-    if (CodeObjectCacheService) {
-      CodeObjectCacheService->Shutdown();
-    }
-  }
 }
 
 struct GetFrameBlockInfoResult {
@@ -376,12 +364,6 @@ void ContextImpl::HandleCallback(FEXCore::Core::InternalThreadState* Thread, uin
 void ContextImpl::ExecuteThread(FEXCore::Core::InternalThreadState* Thread) {
   Dispatcher->ExecuteDispatch(Thread->CurrentFrame);
 
-  if (CodeObjectCacheService) {
-    // Ensure the Code Object Serialization service has fully serialized this thread's data before clearing the cache
-    // Use the thread's object cache ref counter for this
-    CodeSerialize::CodeObjectSerializeService::WaitForEmptyJobQueue(&Thread->ObjectCacheRefCounter);
-  }
-
   // If it is the parent thread that died then just leave
   // TODO: This doesn't make sense when the parent thread doesn't outlive its children
 }
@@ -481,12 +463,6 @@ void ContextImpl::OnCodeBufferAllocated(CPU::CodeBuffer& Buffer) {
 
 void ContextImpl::ClearCodeCache(FEXCore::Core::InternalThreadState* Thread, bool NewCodeBuffer) {
   FEXCORE_PROFILE_INSTANT("ClearCodeCache");
-
-  if (CodeObjectCacheService) {
-    // Ensure the Code Object Serialization service has fully serialized this thread's data before clearing the cache
-    // Use the thread's object cache ref counter for this
-    CodeSerialize::CodeObjectSerializeService::WaitForEmptyJobQueue(&Thread->ObjectCacheRefCounter);
-  }
 
   if (NewCodeBuffer) {
     // Allocate new CodeBuffer + L3 LookupCache and clear L1+L2 caches
@@ -724,26 +700,9 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
 }
 
 ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, uint64_t MaxInst) {
-  // JIT Code object cache lookup
-  if (CodeObjectCacheService) {
-    auto CodeCacheEntry = CodeObjectCacheService->FetchCodeObjectFromCache(GuestRIP);
-    if (CodeCacheEntry) {
-      auto CompiledCode = Thread->CPUBackend->RelocateJITObjectCode(GuestRIP, CodeCacheEntry);
-      if (CompiledCode) {
-        return {
-          .CompiledCode = {},
-          .DebugData = nullptr, // nullptr here ensures that code serialization doesn't occur on from cache read
-          .StartAddr = 0,       // Unused
-          .Length = 0,          // Unused
-          .NeedsAddGuestCodeRanges = false,
-        };
-      }
-    }
-  }
-
   if (SourcecodeResolver && Config.GDBSymbols()) {
     auto AOTIRCacheEntry = SyscallHandler->LookupAOTIRCacheEntry(Thread, GuestRIP);
-    if (AOTIRCacheEntry.Entry && !AOTIRCacheEntry.Entry->ContainsCode) {
+    if (AOTIRCacheEntry.Entry) {
       AOTIRCacheEntry.Entry->SourcecodeMap = SourcecodeResolver->GenerateMap(AOTIRCacheEntry.Entry->Filename, AOTIRCacheEntry.Entry->FileId);
     }
   }
@@ -843,25 +802,10 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
     }
   }
 
-  // Tell the object cache service to serialize the code if enabled
-  if (CodeObjectCacheService && Config.CacheObjectCodeCompilation == FEXCore::Config::ConfigObjectCodeHandler::CONFIG_READWRITE && DebugData) {
-    CodeObjectCacheService->AsyncAddSerializationJob(
-      fextl::make_unique<CodeSerialize::AsyncJobHandler::SerializationJobData>(CodeSerialize::AsyncJobHandler::SerializationJobData {
-        .GuestRIP = GuestRIP,
-        .GuestCodeLength = Length,
-        .GuestCodeHash = 0,
-        .HostCodeBegin = CompiledCode.BlockBegin,
-        .HostCodeLength = CompiledCode.Size,
-        .HostCodeHash = 0,
-        .ThreadJobRefCount = &Thread->ObjectCacheRefCounter,
-        .Relocations = std::move(*DebugData->Relocations),
-      }));
-  }
-
   // Clear any relocations that might have been generated
   Thread->CPUBackend->ClearRelocations();
 
-  if (IRCaptureCache.PostCompileCode(Thread, CompiledCode.BlockBegin, GuestRIP, StartAddr, Length, {}, DebugData.get(), false)) {
+  if (IRCaptureCache.PostCompileCode(Thread, CompiledCode.BlockBegin, GuestRIP, StartAddr, Length, DebugData.get())) {
     // Early exit
     return (uintptr_t)CodePtr;
   }
@@ -1080,9 +1024,7 @@ IR::AOTIRCacheEntry* ContextImpl::LoadAOTIRCacheEntry(const fextl::string& filen
   return rv;
 }
 
-void ContextImpl::UnloadAOTIRCacheEntry(IR::AOTIRCacheEntry* Entry) {
-  IRCaptureCache.UnloadAOTIRCacheEntry(Entry);
-}
+void ContextImpl::UnloadAOTIRCacheEntry(IR::AOTIRCacheEntry* Entry) {}
 
 void ContextImpl::ConfigureAOTGen(FEXCore::Core::InternalThreadState* Thread, fextl::set<uint64_t>* ExternalBranches, uint64_t SectionMaxAddress) {
   Thread->FrontendDecoder->SetExternalBranches(ExternalBranches);

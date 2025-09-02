@@ -2,7 +2,7 @@
 #pragma once
 
 #include "FEXCore/Utils/EnumUtils.h"
-#include "Interface/Core/ObjectCache/Relocations.h"
+#include "Interface/Core/JIT/Relocations.h"
 
 #ifdef VIXL_DISASSEMBLER
 #include <aarch64/disasm-aarch64.h>

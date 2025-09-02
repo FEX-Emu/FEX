@@ -44,22 +44,10 @@ class IREmitter;
 } // namespace FEXCore::IR
 
 namespace FEXCore::Context {
-class Context;
 
 enum OperatingMode {
   MODE_32BIT,
   MODE_64BIT,
-};
-
-/**
- * @brief IR Serialization handler class.
- */
-class AOTIRWriter {
-public:
-  virtual ~AOTIRWriter() = default;
-  virtual void Write(const void* Data, size_t Size) = 0;
-  virtual size_t Offset() = 0;
-  virtual void Close() = 0;
 };
 
 using CodeRangeInvalidationFn = std::function<void(uint64_t start, uint64_t Length)>;
@@ -70,11 +58,6 @@ using InvalidatedEntryAccumulator = fextl::vector<fextl::vector<uint64_t>>;
 using CustomIREntrypointHandler = std::function<void(uintptr_t Entrypoint, IR::IREmitter*)>;
 
 using ExitHandler = std::function<void(Core::InternalThreadState* Thread)>;
-
-using AOTIRCodeFileWriterFn = std::function<void(const fextl::string& fileid, const fextl::string& filename)>;
-using AOTIRLoaderCBFn = std::function<int(const fextl::string&)>;
-using AOTIRRenamerCBFn = std::function<void(const fextl::string&)>;
-using AOTIRWriterCBFn = std::function<fextl::unique_ptr<AOTIRWriter>(const fextl::string&)>;
 
 class Context {
 public:
@@ -168,12 +151,7 @@ public:
   FEX_DEFAULT_VISIBILITY virtual FEXCore::IR::AOTIRCacheEntry* LoadAOTIRCacheEntry(const fextl::string& Name) = 0;
   FEX_DEFAULT_VISIBILITY virtual void UnloadAOTIRCacheEntry(FEXCore::IR::AOTIRCacheEntry* Entry) = 0;
 
-  FEX_DEFAULT_VISIBILITY virtual void SetAOTIRLoader(AOTIRLoaderCBFn CacheReader) = 0;
-  FEX_DEFAULT_VISIBILITY virtual void SetAOTIRWriter(AOTIRWriterCBFn CacheWriter) = 0;
-  FEX_DEFAULT_VISIBILITY virtual void SetAOTIRRenamer(AOTIRRenamerCBFn CacheRenamer) = 0;
-
   FEX_DEFAULT_VISIBILITY virtual void FinalizeAOTIRCache() = 0;
-  FEX_DEFAULT_VISIBILITY virtual void WriteFilesWithCode(AOTIRCodeFileWriterFn Writer) = 0;
 
   FEX_DEFAULT_VISIBILITY virtual void ClearCodeCache(FEXCore::Core::InternalThreadState* Thread, bool NewCodeBuffer = true) = 0;
   FEX_DEFAULT_VISIBILITY virtual void InvalidateGuestCodeRange(

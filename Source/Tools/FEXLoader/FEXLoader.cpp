@@ -6,7 +6,6 @@ desc: Glues the ELF loader, FEXCore and LinuxSyscalls to launch an elf under fex
 $end_info$
 */
 
-#include "AOT/AOTGenerator.h"
 #include "Common/ArgumentLoader.h"
 #include "Common/FEXServerClient.h"
 #include "Common/Config.h"
@@ -98,42 +97,6 @@ void AssertHandler(const char* Message) {
   FEXServerClient::AssertHandler(FEXServerFD, Message);
 }
 } // namespace FEXServerLogging
-
-namespace AOTIR {
-class AOTIRWriterFD final : public FEXCore::Context::AOTIRWriter {
-public:
-  AOTIRWriterFD(const fextl::string& Path) {
-    // Create and truncate if exists.
-    constexpr int USER_PERMS = S_IRWXU | S_IRWXG | S_IRWXO;
-    FD = open(Path.c_str(), O_CREAT | O_WRONLY | O_TRUNC | O_CLOEXEC, USER_PERMS);
-  }
-
-  operator bool() const {
-    return FD != -1;
-  }
-
-  void Write(const void* Data, size_t Size) override {
-    write(FD, Data, Size);
-  }
-
-  size_t Offset() override {
-    return lseek(FD, 0, SEEK_CUR);
-  }
-
-  void Close() override {
-    if (FD != -1) {
-      close(FD);
-      FD = -1;
-    }
-  }
-
-  virtual ~AOTIRWriterFD() {
-    Close();
-  }
-private:
-  int FD {-1};
-};
-} // namespace AOTIR
 
 bool InterpreterHandler(fextl::string* Filename, const fextl::string& RootFS, fextl::vector<fextl::string>* args) {
   int FD {-1};
@@ -374,9 +337,6 @@ int main(int argc, char** argv, char** const envp) {
   }
 
   FEX_CONFIG_OPT(SilentLog, SILENTLOG);
-  FEX_CONFIG_OPT(AOTIRCapture, AOTIRCAPTURE);
-  FEX_CONFIG_OPT(AOTIRGenerate, AOTIRGENERATE);
-  FEX_CONFIG_OPT(AOTIRLoad, AOTIRLOAD);
   FEX_CONFIG_OPT(OutputLog, OUTPUTLOG);
   FEX_CONFIG_OPT(LDPath, ROOTFS);
   FEX_CONFIG_OPT(Environment, ENV);
@@ -612,66 +572,10 @@ int main(int argc, char** argv, char** const envp) {
 
   SyscallHandler->DeserializeSeccompFD(ParentThread, FEXSeccompFD);
 
-  const bool AOTEnabled = AOTIRLoad() || AOTIRCapture() || AOTIRGenerate();
-  if (AOTEnabled) {
-    LogMan::Msg::IFmt("Warning: AOTIR is experimental, and might lead to crashes. "
-                      "Capture doesn't work with programs that fork.");
-
-    CTX->SetAOTIRLoader([](const fextl::string& fileid) -> int {
-      const auto filepath = fextl::fmt::format("{}/aotir/{}.aotir", FEXCore::Config::GetDataDirectory(), fileid);
-      return open(filepath.c_str(), O_RDONLY);
-    });
-
-    CTX->SetAOTIRWriter([](const fextl::string& fileid) -> fextl::unique_ptr<AOTIR::AOTIRWriterFD> {
-      const auto filepath = fextl::fmt::format("{}/aotir/{}.aotir.tmp", FEXCore::Config::GetDataDirectory(), fileid);
-      auto AOTWrite = fextl::make_unique<AOTIR::AOTIRWriterFD>(filepath);
-      if (*AOTWrite) {
-        LogMan::Msg::IFmt("AOTIR: Storing {}", fileid);
-      } else {
-        LogMan::Msg::IFmt("AOTIR: Failed to store {}", fileid);
-      }
-      return AOTWrite;
-    });
-
-    CTX->SetAOTIRRenamer([](const fextl::string& fileid) -> void {
-      const auto TmpFilepath = fextl::fmt::format("{}/aotir/{}.aotir.tmp", FEXCore::Config::GetDataDirectory(), fileid);
-      const auto NewFilepath = fextl::fmt::format("{}/aotir/{}.aotir", FEXCore::Config::GetDataDirectory(), fileid);
-
-      // Rename the temporary file to atomically update the file
-      if (!FHU::Filesystem::RenameFile(TmpFilepath, NewFilepath)) {
-        LogMan::Msg::IFmt("Couldn't rename aotir");
-      }
-    });
-  }
-
-  if (AOTIRGenerate()) {
-    for (auto& Section : Loader.Sections) {
-      FEX::AOT::AOTGenSection(CTX.get(), Section);
-    }
-  } else {
-    CTX->ExecuteThread(ParentThread->Thread);
-  }
+  CTX->ExecuteThread(ParentThread->Thread);
 
   DebugServer.reset();
   SyscallHandler->TM.Stop();
-
-  if (AOTEnabled) {
-    if (FHU::Filesystem::CreateDirectories(fextl::fmt::format("{}/aotir", FEXCore::Config::GetDataDirectory()))) {
-      CTX->WriteFilesWithCode([](const fextl::string& fileid, const fextl::string& filename) {
-        const auto filepath = fextl::fmt::format("{}/aotir/{}.path", FEXCore::Config::GetDataDirectory(), fileid);
-        int fd = open(filepath.c_str(), O_CREAT | O_EXCL | O_WRONLY, 0644);
-        if (fd != -1) {
-          write(fd, filename.c_str(), filename.size());
-          close(fd);
-        }
-      });
-    }
-
-    if (AOTIRCapture() || AOTIRGenerate()) {
-      CTX->FinalizeAOTIRCache();
-      LogMan::Msg::IFmt("AOTIR Cache Stored");
-    }
-  }
 
   auto ProgramStatus = ParentThread->StatusCode;
 

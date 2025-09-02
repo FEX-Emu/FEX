@@ -55,12 +55,6 @@ enum ConfigSMCChecks {
   CONFIG_SMC_FULL,
 };
 
-enum ConfigObjectCodeHandler {
-  CONFIG_NONE,
-  CONFIG_READ,
-  CONFIG_READWRITE,
-};
-
 enum class LayerType {
   LAYER_GLOBAL_MAIN, ///< /usr/share/fex-emu/Config.json by default
   LAYER_MAIN,
