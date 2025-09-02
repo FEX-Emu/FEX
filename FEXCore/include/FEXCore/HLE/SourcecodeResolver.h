@@ -9,10 +9,6 @@
 #include <memory>
 #include <filesystem>
 
-namespace FEXCore::IR {
-struct AOTIRCacheEntry;
-}
-
 namespace FEXCore::HLE {
 
 struct SourcecodeLineMapping {
