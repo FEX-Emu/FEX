@@ -2,6 +2,7 @@
 
 #include "Common/SoftFloat.h"
 #include "Interface/Context/Context.h"
+#include "Interface/Core/CPUBackend.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/LookupCache.h"
 #include "Interface/Core/X86HelperGen.h"
@@ -19,12 +20,16 @@
 
 #include <CodeEmitter/Emitter.h>
 
+#ifdef VIXL_SIMULATOR
+#include <aarch64/simulator-aarch64.h>
+#endif
+
 #include <array>
 #include <atomic>
+#include <bit>
 #include <condition_variable>
 #include <csignal>
 #include <cstring>
-#include <signal.h>
 
 namespace FEXCore::CPU {
 
