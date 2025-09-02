@@ -445,7 +445,6 @@ struct OpHandlers<IR::OP_F80BCDSTORE> {
     uint64_t Tmp = Src1.ToI64(&State.State);
     X80SoftFloat Rv;
     uint8_t* BCD = reinterpret_cast<uint8_t*>(&Rv);
-    memset(BCD, 0, 10);
 
     for (size_t i = 0; i < 9; ++i) {
       if (Tmp == 0) {
