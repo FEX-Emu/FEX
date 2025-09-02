@@ -6,7 +6,7 @@
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/X86HelperGen.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
-#include "Interface/IR/AOTIR.h"
+#include <Interface/Core/JIT/DebugData.h>
 #include <Interface/IR/IntrusiveIRList.h>
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
