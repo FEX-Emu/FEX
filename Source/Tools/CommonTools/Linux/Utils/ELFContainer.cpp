@@ -81,13 +81,13 @@ ELFContainer::ELFType ELFContainer::GetELFType(int FD) {
 
   // Read the header so we can tell if it is a supported ELF file.
   // Can't adjust file offset, so use pread.
-  if (pread(FD, &RawFile.at(0), RawFile.size(), 0) != RawFile.size()) {
+  if (pread(FD, RawFile.data(), RawFile.size(), 0) != RawFile.size()) {
     // Couldn't read
     LogMan::Msg::EFmt("Couldn't read potential ELF FD");
     return ELFType::TYPE_NONE;
   }
 
-  return CheckELFType(reinterpret_cast<uint8_t*>(&RawFile.at(0)));
+  return CheckELFType(reinterpret_cast<uint8_t*>(RawFile.data()));
 }
 
 ELFContainer::ELFContainer(const fextl::string& Filename, const fextl::string& RootFS, bool CustomInterpreter) {
@@ -159,7 +159,7 @@ bool ELFContainer::LoadELF(const fextl::string& Filename) {
   SectionHeaders.clear();
   ProgramHeaders.clear();
 
-  uint8_t* Ident = reinterpret_cast<uint8_t*>(&RawFile.at(0));
+  uint8_t* Ident = reinterpret_cast<uint8_t*>(RawFile.data());
 
   if (Ident[EI_MAG0] != ELFMAG0 || Ident[EI_MAG1] != ELFMAG1 || Ident[EI_MAG2] != ELFMAG2 || Ident[EI_MAG3] != ELFMAG3) {
     LogMan::Msg::EFmt("ELF missing magic cookie");
@@ -179,7 +179,7 @@ bool ELFContainer::LoadELF(const fextl::string& Filename) {
 bool ELFContainer::LoadELF_32() {
   Mode = MODE_32BIT;
 
-  memcpy(&Header, reinterpret_cast<Elf32_Ehdr*>(&RawFile.at(0)), sizeof(Elf32_Ehdr));
+  memcpy(&Header, reinterpret_cast<Elf32_Ehdr*>(RawFile.data()), sizeof(Elf32_Ehdr));
   LOGMAN_THROW_A_FMT(Header._32.e_phentsize == sizeof(Elf32_Phdr), "PH Entry size wasn't correct size");
   LOGMAN_THROW_A_FMT(Header._32.e_shentsize == sizeof(Elf32_Shdr), "PH Entry size wasn't correct size");
 
@@ -217,7 +217,7 @@ bool ELFContainer::LoadELF_32() {
 bool ELFContainer::LoadELF_64() {
   Mode = MODE_64BIT;
 
-  memcpy(&Header, reinterpret_cast<Elf64_Ehdr*>(&RawFile.at(0)), sizeof(Elf64_Ehdr));
+  memcpy(&Header, reinterpret_cast<Elf64_Ehdr*>(RawFile.data()), sizeof(Elf64_Ehdr));
   LOGMAN_THROW_A_FMT(Header._64.e_phentsize == 56, "PH Entry size wasn't 56");
   LOGMAN_THROW_A_FMT(Header._64.e_shentsize == 64, "PH Entry size wasn't 64");
 

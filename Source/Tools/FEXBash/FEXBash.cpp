@@ -95,5 +95,5 @@ int main(int argc, char** argv, char** const envp) {
   Envp.emplace_back(PS1.c_str());
   Envp.emplace_back(nullptr);
 
-  return execve(Argv[0], const_cast<char* const*>(&Argv.at(0)), const_cast<char* const*>(&Envp[0]));
+  return execve(Argv[0], const_cast<char* const*>(Argv.data()), const_cast<char* const*>(&Envp[0]));
 }

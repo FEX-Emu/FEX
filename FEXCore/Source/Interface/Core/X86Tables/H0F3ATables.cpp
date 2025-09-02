@@ -77,20 +77,20 @@ constexpr std::array<X86InstInfo, MAX_0F_3A_TABLE_SIZE> H0F3ATableOps = []() con
   constexpr auto H0F3ATable_IgnoresREX0 = TableGen.template operator()<0>();
   constexpr auto H0F3ATable_IgnoresREX1 = TableGen.template operator()<1>();
 
-  GenerateTable(&Table.at(0), &H0F3ATable_IgnoresREX0.at(0), H0F3ATable_IgnoresREX0.size());
-  GenerateTable(&Table.at(0), &H0F3ATable_IgnoresREX1.at(0), H0F3ATable_IgnoresREX1.size());
+  GenerateTable(Table.data(), H0F3ATable_IgnoresREX0.data(), H0F3ATable_IgnoresREX0.size());
+  GenerateTable(Table.data(), H0F3ATable_IgnoresREX1.data(), H0F3ATable_IgnoresREX1.size());
 
   constexpr U16U8InfoStruct TableNeedsREX0[] = {
     {OPD(0, PF_3A_66,   0x16), 1, X86InstInfo{"PEXTRD",          TYPE_INST, GenFlagsSizes(SIZE_32BIT, SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_DST | FLAGS_SF_DST_GPR | FLAGS_XMM_FLAGS, 1}},
     {OPD(0, PF_3A_66,   0x22), 1, X86InstInfo{"PINSRD",          TYPE_INST, GenFlagsSizes(SIZE_128BIT, SIZE_32BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_SRC_GPR,           1}},
   };
-  GenerateTable(&Table.at(0), TableNeedsREX0, std::size(TableNeedsREX0));
+  GenerateTable(Table.data(), TableNeedsREX0, std::size(TableNeedsREX0));
 
   constexpr U16U8InfoStruct TableNeedsREX1[] = {
     {OPD(1, PF_3A_66,   0x16), 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = H0F3A_ArchSelect_LUT[ENTRY_1_3A_66_16] }}},
     {OPD(1, PF_3A_66,   0x22), 1, X86InstInfo{"", TYPE_ARCH_DISPATCHER, FLAGS_NONE, 0, { .Indirect = H0F3A_ArchSelect_LUT[ENTRY_1_3A_66_22] }}},
   };
-  GenerateTable(&Table.at(0), TableNeedsREX1, std::size(TableNeedsREX1));
+  GenerateTable(Table.data(), TableNeedsREX1, std::size(TableNeedsREX1));
 
   IR::InstallToTable(Table, IR::OpDispatch_H0F3ATableIgnoreREX);
   IR::InstallToTable(Table, IR::OpDispatch_H0F3ATableNeedsREX0);

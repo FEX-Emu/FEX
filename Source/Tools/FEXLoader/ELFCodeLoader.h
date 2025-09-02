@@ -672,7 +672,7 @@ public:
       ArgumentPointers[i] = ArgumentBackingBaseGuest + CurrentOffset;
       if (ArgSize > 0) {
         // Copy the string in to the final location
-        memcpy(reinterpret_cast<void*>(ArgumentBackingBase + CurrentOffset), &Args[i].at(0), ArgSize);
+        memcpy(reinterpret_cast<void*>(ArgumentBackingBase + CurrentOffset), Args[i].data(), ArgSize);
       }
 
       // Set the null terminator for the string
@@ -689,7 +689,7 @@ public:
 
       // Copy the string in to the final location
       if (EnvpSize) {
-        memcpy(reinterpret_cast<void*>(EnvpBackingBase + CurrentOffset), &EnvironmentVariables[i].at(0), EnvpSize);
+        memcpy(reinterpret_cast<void*>(EnvpBackingBase + CurrentOffset), EnvironmentVariables[i].data(), EnvpSize);
       }
 
       // Set the null terminator for the string

@@ -1362,7 +1362,7 @@ auto BaseTableLambda = [](const auto RuntimeTable) consteval {
   };
 #undef OPD
 
-  GenerateTable(&Table.at(0), VEXTable, std::size(VEXTable));
+  GenerateTable(Table.data(), VEXTable, std::size(VEXTable));
 
   IR::InstallToTable(Table, IR::OpDispatch_VEXTable);
   IR::InstallToTable(Table, RuntimeTable);
@@ -1396,7 +1396,7 @@ auto GroupTableLambda = [](const auto RuntimeTable) consteval {
   };
 #undef OPD
 
-  GenerateTable(&Table.at(0), VEXGroupTable, std::size(VEXGroupTable));
+  GenerateTable(Table.data(), VEXGroupTable, std::size(VEXGroupTable));
 
   IR::InstallToTable(Table, IR::OpDispatch_VEXGroupTable);
   IR::InstallToTable(Table, RuntimeTable);

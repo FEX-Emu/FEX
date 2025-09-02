@@ -201,7 +201,7 @@ constexpr std::array<X86InstInfo, MAX_INST_GROUP_TABLE_SIZE> PrimaryInstGroupOps
     {OPD(TYPE_GROUP_11, OpToIndex(0xC7), 7), 1, X86InstInfo{"XBEGIN", TYPE_INST, FLAGS_MODRM | FLAGS_SRC_SEXT | FLAGS_SETS_RIP | FLAGS_DISPLACE_SIZE_DIV_2,                                                       4}},
   };
 
-  GenerateTable(&Table.at(0), PrimaryGroupOpTable, std::size(PrimaryGroupOpTable));
+  GenerateTable(Table.data(), PrimaryGroupOpTable, std::size(PrimaryGroupOpTable));
 
   IR::InstallToTable(Table, IR::OpDispatch_PrimaryGroupTables);
   return Table;

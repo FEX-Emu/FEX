@@ -113,7 +113,7 @@ bool InterpreterHandler(fextl::string* Filename, const fextl::string& RootFS, fe
 
   std::array<char, 257> Header;
   const auto ChunkSize = 257l;
-  const auto ReadSize = pread(FD, &Header.at(0), ChunkSize, 0);
+  const auto ReadSize = pread(FD, Header.data(), ChunkSize, 0);
   close(FD);
 
   const auto Data = std::span<char>(Header.data(), ReadSize);

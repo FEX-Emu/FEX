@@ -54,7 +54,7 @@ constexpr std::array<X86InstInfo, MAX_3DNOW_TABLE_SIZE> DDDNowOps = []() constev
     {0xBF, 1, X86InstInfo{"PAVGUSB",  TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS | FLAGS_SF_MMX, 0}},
   };
 
-  GenerateTable(&Table.at(0), DDDNowOpTable, std::size(DDDNowOpTable));
+  GenerateTable(Table.data(), DDDNowOpTable, std::size(DDDNowOpTable));
 
   IR::InstallToTable(Table, IR::OpDispatch_DDDTable);
   return Table;
