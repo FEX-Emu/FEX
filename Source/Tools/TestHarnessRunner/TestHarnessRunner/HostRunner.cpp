@@ -12,6 +12,7 @@
 #include <FEXCore/Utils/LogManager.h>
 
 #ifdef _M_X86_64
+#include "Common/X86Features.h"
 #include <asm/ldt.h>
 #include <sys/syscall.h>
 #endif
@@ -27,10 +28,11 @@ static inline int modify_ldt(int func, void* ldt) {
   return ::syscall(SYS_modify_ldt, func, ldt, sizeof(struct user_desc));
 }
 
-__attribute__((naked)) void Dispatcher(uintptr_t BranchTarget, void* ReturningStackLocation, int CodeSegment) {
+__attribute__((naked)) void Dispatcher(uintptr_t BranchTarget, void* ReturningStackLocation, int CodeSegment, int SupportsFSGSBase) {
   // BranchTarget: rdi
   // ReturningStackLocation: rsi
   // CodeSegment: rdx
+  // SupportsFSGSBase: rcx
   __asm volatile(R"(
   .intel_syntax noprefix;
     // x86-64 ABI has the stack aligned when /call/ happens
@@ -41,11 +43,16 @@ __attribute__((naked)) void Dispatcher(uintptr_t BranchTarget, void* ReturningSt
     push r13;
     push r14;
     push r15;
+
+    test ecx, ecx;
+    je 1f;
     rdfsbase rbx;
     push rbx;
     rdgsbase rbx;
     push rbx;
-    sub rsp, 8;
+    1:
+
+    push rcx;
 
     // Save this stack pointer so we can cleanly shutdown the emulation with a long jump
     // regardless of where we were in the stack
@@ -100,11 +107,15 @@ __attribute__((naked)) void Dispatcher(uintptr_t BranchTarget, void* ReturningSt
 
     ThreadStopHandlerAddress:
 
-    add rsp, 8;
+    pop rcx
+    test ecx, ecx;
+    je 1f;
     pop rbx;
     wrgsbase rbx;
     pop rbx;
     wrfsbase rbx;
+    1:
+
     pop r15;
     pop r14;
     pop r13;
@@ -204,7 +215,8 @@ public:
   }
 
   void Dispatch(uint64_t InitialRip) {
-    Dispatcher(InitialRip, &ReturningStackLocation, CodeSegmentEntry);
+    FEX::X86::Features Feature {};
+    Dispatcher(InitialRip, &ReturningStackLocation, CodeSegmentEntry, Feature.Feat_fsgsbase);
   }
 
 private:
