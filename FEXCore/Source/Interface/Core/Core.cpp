@@ -76,7 +76,6 @@ $end_info$
 namespace FEXCore::Context {
 ContextImpl::ContextImpl(const FEXCore::HostFeatures& Features)
   : HostFeatures {Features}
-  , CPUID {this}
   , IRCaptureCache {this} {
   if (!Config.Is64BitMode()) {
     // When operating in 32-bit mode, the virtual memory we care about is only the lower 32-bits.
@@ -99,6 +98,13 @@ ContextImpl::ContextImpl(const FEXCore::HostFeatures& Features)
 
   // Track atomic TSO emulation configuration.
   UpdateAtomicTSOEmulationConfig();
+  FEX_CONFIG_OPT(SpoofCPUID, SPOOFCPUID);
+  if (SpoofCPUID) {
+    CPUID = fextl::make_unique<SirSpoofingtonTheThird>();
+  }
+  else {
+    CPUID = fextl::make_unique<CPUIDEmu>(this);
+  }
 }
 
 struct GetFrameBlockInfoResult {

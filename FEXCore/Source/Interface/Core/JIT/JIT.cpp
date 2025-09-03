@@ -640,16 +640,16 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::In
     Common.PrintVectorValue = reinterpret_cast<uint64_t>(PrintVectorValue);
     Common.ThreadRemoveCodeEntryFromJIT = reinterpret_cast<uintptr_t>(&Context::ContextImpl::ThreadRemoveCodeEntryFromJit);
     Common.MonoBackpatcherWrite = reinterpret_cast<uint64_t>(&Context::ContextImpl::MonoBackpatcherWrite);
-    Common.CPUIDObj = reinterpret_cast<uint64_t>(&CTX->CPUID);
+    Common.CPUIDObj = reinterpret_cast<uint64_t>(CTX->CPUID.get());
 
     {
       FEXCore::Utils::MemberFunctionToPointerCast PMF(&FEXCore::CPUIDEmu::RunFunction);
-      Common.CPUIDFunction = PMF.GetConvertedPointer();
+      Common.CPUIDFunction = PMF.GetVTableEntry(CTX->CPUID.get());
     }
 
     {
       FEXCore::Utils::MemberFunctionToPointerCast PMF(&FEXCore::CPUIDEmu::RunXCRFunction);
-      Common.XCRFunction = PMF.GetConvertedPointer();
+      Common.XCRFunction = PMF.GetVTableEntry(CTX->CPUID.get());
     }
 
     {

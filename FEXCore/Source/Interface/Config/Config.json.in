@@ -509,6 +509,13 @@
           "  * Disable TSO for multiple modules",
           "      `hl2_linux:libsdl2.so`"
         ]
+      },
+      "SpoofCPUID": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "Spoof to hardcoded list in program"
+        ]
       }
     }
   },

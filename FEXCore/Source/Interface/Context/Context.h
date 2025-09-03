@@ -221,7 +221,7 @@ public:
 
   FEXCore::HostFeatures HostFeatures;
   // CPUID depends on HostFeatures so needs to be initialized after that.
-  FEXCore::CPUIDEmu CPUID;
+  fextl::unique_ptr<FEXCore::CPUIDBase> CPUID;
   FEXCore::HLE::SyscallHandler* SyscallHandler {};
   FEXCore::HLE::SourcecodeResolver* SourcecodeResolver {};
   FEXCore::ThunkHandler* ThunkHandler {};

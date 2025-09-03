@@ -38,15 +38,15 @@ void FEXCore::Context::ContextImpl::SetThunkHandler(FEXCore::ThunkHandler* Handl
 }
 
 FEXCore::CPUID::FunctionResults FEXCore::Context::ContextImpl::RunCPUIDFunction(uint32_t Function, uint32_t Leaf) {
-  return CPUID.RunFunction(Function, Leaf);
+  return CPUID->RunFunction(Function, Leaf);
 }
 
 FEXCore::CPUID::XCRResults FEXCore::Context::ContextImpl::RunXCRFunction(uint32_t Function) {
-  return CPUID.RunXCRFunction(Function);
+  return CPUID->RunXCRFunction(Function);
 }
 
 FEXCore::CPUID::FunctionResults FEXCore::Context::ContextImpl::RunCPUIDFunctionName(uint32_t Function, uint32_t Leaf, uint32_t CPU) {
-  return CPUID.RunFunctionName(Function, Leaf, CPU);
+  return CPUID->RunFunctionName(Function, Leaf, CPU);
 }
 
 bool FEXCore::Context::ContextImpl::IsAddressInCodeBuffer(FEXCore::Core::InternalThreadState* Thread, uintptr_t Address) const {

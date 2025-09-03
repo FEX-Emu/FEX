@@ -53,7 +53,7 @@ namespace {
 
 class ConstrainedRAPass final : public RegisterAllocationPass {
 public:
-  explicit ConstrainedRAPass(const FEXCore::CPUIDEmu* CPUID)
+  explicit ConstrainedRAPass(const FEXCore::CPUIDBase* CPUID)
     : CPUID {CPUID} {}
   void Run(IREmitter* IREmit) override;
   void AddRegisters(IR::RegisterClassType Class, uint32_t RegisterCount) override;
@@ -64,7 +64,7 @@ private:
 
   IREmitter* IREmit;
   IRListView* IR;
-  const FEXCore::CPUIDEmu* CPUID;
+  const FEXCore::CPUIDBase* CPUID;
 
   // Map of nodes to their preferred register, to coalesce load/store reg.
   fextl::vector<PhysicalRegister> PreferredReg;
@@ -779,7 +779,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
   IR->GetHeader()->PostRA = true;
 }
 
-fextl::unique_ptr<IR::RegisterAllocationPass> CreateRegisterAllocationPass(const FEXCore::CPUIDEmu* CPUID) {
+fextl::unique_ptr<IR::RegisterAllocationPass> CreateRegisterAllocationPass(const FEXCore::CPUIDBase* CPUID) {
   return fextl::make_unique<ConstrainedRAPass>(CPUID);
 }
 } // namespace FEXCore::IR
