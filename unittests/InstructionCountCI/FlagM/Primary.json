@@ -1752,7 +1752,7 @@
       ]
     },
     "popf": {
-      "ExpectedInstructionCount": 39,
+      "ExpectedInstructionCount": 40,
       "Comment": "0x9d",
       "ExpectedArm64ASM": [
         "ldr x20, [x8], #8",
@@ -1793,6 +1793,7 @@
         "strb w21, [x28, #996]",
         "ubfx w21, w27, #21, #1",
         "strb w21, [x28, #997]",
+        "mov w21, #0x10001",
         "strb w20, [x28, #986]"
       ]
     },

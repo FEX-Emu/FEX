@@ -621,11 +621,7 @@ enum class ShiftType : uint8_t {
   ROR,
 };
 
-enum class BranchHint : uint8_t {
-  None = 0,
-  Call,
-  Return,
-};
+enum class BranchHint : uint8_t { None = 0, Call, Return, CheckTF };
 
 
 // Converts a size stored as an integer in to an OpSize enum.

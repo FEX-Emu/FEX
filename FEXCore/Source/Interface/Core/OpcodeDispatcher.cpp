@@ -3604,6 +3604,10 @@ void OpDispatchBuilder::POPFOp(OpcodeArgs) {
   Src = _Or(OpSize::i64Bit, Src, Constant(0x202));
 
   SetPackedRFLAG(false, Src);
+
+  auto NewRIP = GetRelocatedPC(Op);
+  ExitFunction(NewRIP, BranchHint::CheckTF);
+  BlockSetRIP = true;
 }
 
 void OpDispatchBuilder::NEGOp(OpcodeArgs) {
