@@ -140,8 +140,6 @@ void Dispatcher::EmitDispatcher() {
 
   // We want to ensure that we are 16 byte aligned at the top of this loop
   Align16B();
-  ARMEmitter::BiDirectionalLabel FullLookup {};
-  ARMEmitter::BiDirectionalLabel CallBlock {};
 
   Bind(&LoopTop);
   AbsoluteLoopTopAddress = GetCursorAddress<uint64_t>();
@@ -175,20 +173,6 @@ void Dispatcher::EmitDispatcher() {
 
   ldrb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
   cbnz(ARMEmitter::Size::i32Bit, TMP1, &CompileSingleStep);
-
-  // L1 Cache
-  ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.L1Pointer));
-
-  and_(ARMEmitter::Size::i64Bit, TMP4, RipReg.R(), LookupCache::L1_ENTRIES_MASK);
-  add(ARMEmitter::Size::i64Bit, TMP1, TMP1, TMP4, ARMEmitter::ShiftType::LSL, 4);
-  ldp<ARMEmitter::IndexType::OFFSET>(TMP4, TMP1, TMP1, 0);
-  sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, RipReg);
-  cbnz(ARMEmitter::Size::i64Bit, TMP1, &FullLookup);
-
-  br(TMP4);
-
-  // L1C check failed, do a full lookup
-  Bind(&FullLookup);
 
   // This is the block cache lookup routine
   // It matches what is going on it LookupCache.h::FindBlock
