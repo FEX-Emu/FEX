@@ -620,10 +620,6 @@ uint64_t CloneHandler(FEXCore::Core::CpuStateFrame* Frame, FEX::HLE::clone3_args
     return false;
   };
 
-  if (flags & CLONE_VM) {
-    Frame->Thread->CTX->MarkMemoryShared(Frame->Thread);
-  }
-
   // If there are flags that can't be handled regularly then we need to hand off to the true clone handler
   if (HasUnhandledFlags(args)) {
     if (!AnyFlagsSet(flags, CLONE_THREAD)) {

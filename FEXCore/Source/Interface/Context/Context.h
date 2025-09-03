@@ -154,8 +154,6 @@ public:
     return CodeInvalidationMutex;
   }
 
-  void MarkMemoryShared(FEXCore::Core::InternalThreadState* Thread) override;
-
   void ConfigureAOTGen(FEXCore::Core::InternalThreadState* Thread, fextl::set<uint64_t>* ExternalBranches, uint64_t SectionMaxAddress) override;
 
   bool IsAddressInCodeBuffer(FEXCore::Core::InternalThreadState* Thread, uintptr_t Address) const override;
@@ -196,7 +194,6 @@ public:
     FEX_CONFIG_OPT(GdbServer, GDBSERVER);
     FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
     FEX_CONFIG_OPT(TSOEnabled, TSOENABLED);
-    FEX_CONFIG_OPT(TSOAutoMigration, TSOAUTOMIGRATION);
     FEX_CONFIG_OPT(VectorTSOEnabled, VECTORTSOENABLED);
     FEX_CONFIG_OPT(MemcpySetTSOEnabled, MEMCPYSETTSOENABLED);
     FEX_CONFIG_OPT(ABILocalFlags, ABILOCALFLAGS);
@@ -317,12 +314,9 @@ protected:
       VectorAtomicTSOEmulationEnabled = true;
       MemcpyAtomicTSOEmulationEnabled = true;
     } else {
-      // Atomic TSO emulation only enabled if the config option is enabled.
-      AtomicTSOEmulationEnabled = (IsMemoryShared || !Config.TSOAutoMigration) && Config.TSOEnabled;
-      // Atomic vector TSO emulation only enabled if TSO emulation is enabled and also vector TSO is enabled.
-      VectorAtomicTSOEmulationEnabled = (IsMemoryShared || !Config.TSOAutoMigration) && Config.TSOEnabled && Config.VectorTSOEnabled;
-      // Atomic memcpy TSO emulation only enabled if TSO emulation is enabled and also memcpy TSO is enabled.
-      MemcpyAtomicTSOEmulationEnabled = (IsMemoryShared || !Config.TSOAutoMigration) && Config.TSOEnabled && Config.MemcpySetTSOEnabled;
+      AtomicTSOEmulationEnabled = Config.TSOEnabled;
+      VectorAtomicTSOEmulationEnabled = Config.TSOEnabled && Config.VectorTSOEnabled;
+      MemcpyAtomicTSOEmulationEnabled = Config.TSOEnabled && Config.MemcpySetTSOEnabled;
     }
   }
 
@@ -338,7 +332,6 @@ private:
 
   IR::AOTIRCaptureCache IRCaptureCache;
 
-  bool IsMemoryShared = false;
   bool SupportsHardwareTSO = false;
   bool AtomicTSOEmulationEnabled = true;
   bool VectorAtomicTSOEmulationEnabled = false;
@@ -351,8 +344,8 @@ private:
   std::atomic<bool> HasCustomIRHandlers {};
   struct CustomIRHandlerEntry final {
     CustomIREntrypointHandler Handler;
-    void *Creator;
-    void *Data;
+    void* Creator;
+    void* Data;
   };
   fextl::unordered_map<uint64_t, CustomIRHandlerEntry> CustomIRHandlers;
   IntervalList<uint64_t> ForceTSOValidRanges; // The ranges for which ForceTSOInstructions has populated data

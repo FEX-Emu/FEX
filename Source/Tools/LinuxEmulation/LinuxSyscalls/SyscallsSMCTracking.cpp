@@ -201,10 +201,6 @@ void* SyscallHandler::GuestMmap(bool Is64Bit, FEXCore::Core::InternalThreadState
   uint64_t Result {};
   size_t Size = FEXCore::AlignUp(length, FEXCore::Utils::FEX_PAGE_SIZE);
 
-  if (flags & MAP_SHARED) {
-    CTX->MarkMemoryShared(Thread);
-  }
-
   {
     // NOTE: Frontend calls this with a nullptr Thread during initialization, but
     //       providing this code with a valid Thread object earlier would allow
@@ -307,10 +303,8 @@ uint64_t SyscallHandler::GuestMprotect(FEXCore::Core::InternalThreadState* Threa
 }
 
 uint64_t SyscallHandler::GuestShmat(bool Is64Bit, FEXCore::Core::InternalThreadState* Thread, int shmid, const void* shmaddr, int shmflg) {
-  auto CTX = Thread->CTX;
   uint64_t Result {};
   uint64_t Length {};
-  CTX->MarkMemoryShared(Thread);
 
   {
     auto lk = FEXCore::GuardSignalDeferringSection(FEX::HLE::_SyscallHandler->VMATracking.Mutex, Thread);
