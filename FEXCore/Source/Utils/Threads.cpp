@@ -3,7 +3,6 @@
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/fextl/memory.h>
 
-#include <cstring>
 #include <pthread.h>
 #include <unistd.h>
 #ifndef _WIN32
@@ -34,7 +33,7 @@ void FEXCore::Threads::Thread::CleanupAfterFork() {
 }
 
 void FEXCore::Threads::Thread::SetInternalPointers(const Pointers& _Ptrs) {
-  memcpy(&Ptrs, &_Ptrs, sizeof(FEXCore::Threads::Pointers));
+  Ptrs = _Ptrs;
 }
 
 uint64_t SetSignalMask(uint64_t Mask) {
