@@ -4,7 +4,7 @@
     "RBX": "1",
     "MM3": "0xff8000007f800000"
   },
-  "HostFeatures": ["3DNOW"]
+  "HostFeatures": ["3DNOW", "EMMI"]
 }
 %endif
 

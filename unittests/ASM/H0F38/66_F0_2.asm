@@ -4,7 +4,8 @@
     "RAX": "0x00000000E330A81A",
     "RBX": "0x00000000BE2DA0A5",
     "RCX": "0x00000000ADBE9F64"
-  }
+  },
+  "HostFeatures": ["SSE4.2"]
 }
 %endif
 

@@ -9,7 +9,8 @@
     "RDI": "0x6d78590ca1418bd1",
     "RSP": "0x20bfe50ddcfce881",
     "RBP": "0x56c870e2dcbf6522"
-  }
+  },
+  "HostFeatures": ["ADX"]
 }
 %endif
 

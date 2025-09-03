@@ -7,7 +7,8 @@
     "RDX": "0x00000000ADBE9F64",
     "RSI": "0x00000000ADBE9F64",
     "RDI": "0x00000000ADBE9F64"
-  }
+  },
+  "HostFeatures": ["SSE4.2"]
 }
 %endif
 

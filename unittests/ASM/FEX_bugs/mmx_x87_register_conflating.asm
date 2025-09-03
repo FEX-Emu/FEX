@@ -10,7 +10,8 @@
     "XMM6": ["0x755ae99230a898c3", "0x3d209d2dd4bad59f"],
     "XMM7": ["0x3a670269bb42b2f8", "0x05173dbeda9e86ab"],
     "XMM8": ["0x275bf419e2f3b099", "0x276d21a284ab2912"]
-  }
+  },
+  "HostFeatures": ["XSAVE"]
 }
 %endif
 

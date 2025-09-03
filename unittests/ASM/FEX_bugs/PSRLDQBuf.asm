@@ -2,7 +2,8 @@
 {
   "RegData": {
     "XMM0": ["0", "0", "0", "0"]
-  }
+  },
+  "HostFeatures": ["AVX"]
 }
 %endif
 

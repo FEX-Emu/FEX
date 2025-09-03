@@ -1,5 +1,7 @@
 %ifdef CONFIG
-{}
+{
+  "HostFeatures": ["AES", "SHA", "SSE4.2", "SSE4.1", "PCLMUL", "SSSE3"]
+}
 %endif
 
 ; FEX-Emu had a bug in decoding the H0F3A instruction table.

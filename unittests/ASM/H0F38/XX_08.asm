@@ -5,7 +5,8 @@
     "MM5": "0xFEFEFEFEFEFEFEFE",
     "MM6": "0x0202020202020202",
     "MM7": "0xFE000200FE02FE00"
-  }
+  },
+  "HostFeatures": ["SSSE3"]
 }
 %endif
 

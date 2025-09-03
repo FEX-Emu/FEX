@@ -7,7 +7,8 @@
     "RDX": "0x8a6789f2d415a567",
     "RDI": "0x8996f88178236612",
     "RSP": "0xc97d9d031ed21972"
-  }
+  },
+  "HostFeatures": ["SSE4.1"]
 }
 %endif
 

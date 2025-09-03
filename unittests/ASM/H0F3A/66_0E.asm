@@ -11,7 +11,8 @@
     "XMM7": ["0x944c0a76f8f69004", "0xb29bfeda8b8db7bc"],
     "XMM8": ["0x10c41fa17837c17f", "0x099224327e5e296c"],
     "XMM9": ["0x48510f254d2fa47f", "0x2b5774313a974886"]
-  }
+  },
+  "HostFeatures": ["SSE4.1"]
 }
 %endif
 

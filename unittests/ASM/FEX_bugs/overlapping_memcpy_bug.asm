@@ -8,7 +8,8 @@
   },
   "MemoryRegions": {
     "0xf0000000": "4096"
-  }
+  },
+  "HostFeatures": ["SSE4.1"]
 }
 %endif
 

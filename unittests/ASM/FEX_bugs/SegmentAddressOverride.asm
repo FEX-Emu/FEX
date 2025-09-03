@@ -16,7 +16,8 @@
   },
   "MemoryRegions": {
     "0x500000000": "0x100000000"
-  }
+  },
+  "HostFeatures": ["FSGSBASE"]
 }
 %endif
 

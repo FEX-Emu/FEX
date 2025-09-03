@@ -3,7 +3,7 @@
   "RegData": {
     "RBX": "1"
   },
-  "HostFeatures": ["3DNOW"]
+  "HostFeatures": ["3DNOW", "EMMI"]
 }
 %endif
 

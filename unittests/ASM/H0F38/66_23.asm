@@ -2,7 +2,8 @@
 {
   "RegData": {
     "XMM0": ["0xffff8586ffff8788", "0x0000414200004344"]
-  }
+  },
+  "HostFeatures": ["SSE4.1"]
 }
 %endif
 

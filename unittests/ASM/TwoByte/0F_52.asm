@@ -3,7 +3,8 @@
   "RegData": {
     "R8": "1",
     "R9": "1"
-  }
+  },
+  "HostFeatures": ["SSE4.1"]
 }
 %endif
 

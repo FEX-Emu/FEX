@@ -1,5 +1,6 @@
 %ifdef CONFIG
 {
+  "HostFeatures": ["AVX"]
 }
 %endif
 

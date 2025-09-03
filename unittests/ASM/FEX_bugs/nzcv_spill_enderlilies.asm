@@ -3,7 +3,8 @@
   "RegData": {
     "RAX": "0",
     "XMM0": ["0", "0"]
-  }
+  },
+  "HostFeatures": ["SHA"]
 }
 %endif
 

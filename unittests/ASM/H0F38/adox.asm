@@ -7,7 +7,8 @@
       "RDX": "0",
       "RSI": "0xFFFFFFFF",
       "RDI": "1"
-  }
+  },
+  "HostFeatures": ["ADX"]
 }
 %endif
 

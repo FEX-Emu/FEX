@@ -9,7 +9,8 @@
     "MM5": "0x2D132E5F2FB93099",
     "MM6": "0x483B48E649914A3C",
     "MM7": "0x283B28E629912A3C"
-  }
+  },
+  "HostFeatures": ["SSSE3"]
 }
 %endif
 

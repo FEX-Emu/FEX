@@ -5,7 +5,8 @@
     "RBP": "0x47",
     "RSI": "0x46",
     "RDI": "0x45"
-  }
+  },
+  "HostFeatures": ["SSE4.1"]
 }
 %endif
 

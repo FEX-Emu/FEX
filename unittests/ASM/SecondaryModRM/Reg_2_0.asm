@@ -3,7 +3,8 @@
   "RegData": {
     "RAX": "0x3",
     "RDX": "0x0"
-  }
+  },
+  "HostFeatures": ["XSAVE"]
 }
 %endif
 
