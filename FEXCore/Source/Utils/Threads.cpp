@@ -12,11 +12,11 @@
 #endif
 
 namespace FEXCore::Threads {
-fextl::unique_ptr<FEXCore::Threads::Thread> CreateThread_Default(ThreadFunc Func, void* Arg) {
+static fextl::unique_ptr<FEXCore::Threads::Thread> CreateThread_Default(ThreadFunc Func, void* Arg) {
   ERROR_AND_DIE_FMT("Frontend didn't setup thread creation!");
 }
 
-void CleanupAfterFork_Default() {
+static void CleanupAfterFork_Default() {
   ERROR_AND_DIE_FMT("Frontend didn't setup thread creation!");
 }
 
