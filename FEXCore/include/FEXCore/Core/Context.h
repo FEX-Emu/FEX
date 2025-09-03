@@ -13,10 +13,6 @@
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
-#include <istream>
-#include <ostream>
-#include <span>
-
 namespace FEXCore {
 class CodeLoader;
 struct HostFeatures;
