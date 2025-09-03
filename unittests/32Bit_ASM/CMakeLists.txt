@@ -51,9 +51,9 @@ foreach(ASM_SRC ${ASM_SOURCES})
   set(TEST_ARGS)
   if (_M_ARM_64 OR ENABLE_VIXL_SIMULATOR)
     list(APPEND TEST_ARGS
-      "--no-silentlog -g -n 1   --no-multiblock"   "jit_1"     "jit"
-      "--no-silentlog -g -n 500 --no-multiblock"   "jit_500"   "jit"
-      "--no-silentlog -g -n 500 --multiblock"      "jit_500_m" "jit"
+      "--no-silentlog -g -n 1   --no-multiblock --no-tsoenabled"   "jit_1"     "jit"
+      "--no-silentlog -g -n 500 --no-multiblock --no-tsoenabled"   "jit_500"   "jit"
+      "--no-silentlog -g -n 500 --multiblock    --no-tsoenabled"      "jit_500_m" "jit"
       )
   endif()
 
