@@ -2,21 +2,13 @@
 #pragma once
 
 #include "Interface/Core/ArchHelpers/Arm64Emitter.h"
-#include "Interface/Core/CPUBackend.h"
 #include "Interface/Core/Interpreter/InterpreterOps.h"
 
-#include <FEXCore/Core/CoreState.h>
 #include <FEXCore/fextl/memory.h>
 
-#ifdef VIXL_SIMULATOR
-#include <aarch64/simulator-aarch64.h>
-#endif
-
+#include <array>
+#include <cstddef>
 #include <cstdint>
-#include <signal.h>
-#include <stddef.h>
-#include <stack>
-#include <tuple>
 
 namespace FEXCore {
 struct GuestSigAction;
