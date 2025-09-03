@@ -809,7 +809,7 @@ auto GenerateX87TableLambda = [](const auto DispatchTable) consteval {
     }
   };
 
-  GenerateX87Table(&Table.at(0), X87OpTable, std::size(X87OpTable));
+  GenerateX87Table(Table.data(), X87OpTable, std::size(X87OpTable));
   InstallToX87Table(Table, DispatchTable);
   return Table;
 };

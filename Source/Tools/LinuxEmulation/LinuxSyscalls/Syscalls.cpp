@@ -178,7 +178,7 @@ static fextl::string GetShebangInterpFD(int FD) {
   // The maximum length of the shebang line is `#!` + 255 chars
   std::array<char, 257> Header;
   const auto ChunkSize = 257l;
-  const auto ReadSize = pread(FD, &Header.at(0), ChunkSize, 0);
+  const auto ReadSize = pread(FD, Header.data(), ChunkSize, 0);
 
   return GetShebangInterpFile(std::span<char>(Header.data(), ReadSize));
 }

@@ -33,7 +33,7 @@ X86GeneratedCode::X86GeneratedCode() {
 
   CallbackReturn = reinterpret_cast<uint64_t>(CodePtr);
 
-  memcpy(reinterpret_cast<void*>(CallbackReturn), &SignalReturnCode.at(0), SignalReturnCode.size());
+  memcpy(reinterpret_cast<void*>(CallbackReturn), SignalReturnCode.data(), SignalReturnCode.size());
 
   mprotect(CodePtr, CODE_SIZE, PROT_READ);
 #endif

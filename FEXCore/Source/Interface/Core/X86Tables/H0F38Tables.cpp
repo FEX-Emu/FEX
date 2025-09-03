@@ -119,7 +119,7 @@ constexpr std::array<X86InstInfo, MAX_0F_38_TABLE_SIZE> H0F38TableOps = []() con
   };
 #undef OPD
 
-  GenerateTable(&Table.at(0), H0F38Table, std::size(H0F38Table));
+  GenerateTable(Table.data(), H0F38Table, std::size(H0F38Table));
 
   IR::InstallToTable(Table, IR::OpDispatch_H0F38Table);
   return Table;

@@ -90,7 +90,7 @@ void GDBJITRegister(FEXCore::IR::AOTIRCacheEntry* Entry, uintptr_t VAFileStart, 
     mem += info->nlines * sizeof(gdb_line_mapping);
 
     if (info->nlines) {
-      memcpy(lines, &Lines.at(0), info->nlines * sizeof(gdb_line_mapping));
+      memcpy(lines, Lines.data(), info->nlines * sizeof(gdb_line_mapping));
     }
 
     auto entry = new jit_code_entry {0, 0, 0, 0};

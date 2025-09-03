@@ -519,7 +519,7 @@ constexpr auto SecondInstGroupOps = []() consteval {
   };
 #undef OPD
 
-  GenerateTable(&Table.at(0), SecondaryExtensionOpTable, std::size(SecondaryExtensionOpTable));
+  GenerateTable(Table.data(), SecondaryExtensionOpTable, std::size(SecondaryExtensionOpTable));
 
   IR::InstallToTable(Table, IR::OpDispatch_SecondaryGroupTables);
   return Table;

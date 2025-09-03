@@ -429,7 +429,7 @@ const std::array<X86InstInfo, MAX_PRIMARY_TABLE_SIZE> BaseOps = []() consteval {
     {0xC4, 2, X86InstInfo{"",   TYPE_VEX_TABLE_PREFIX, FLAGS_NONE, 0}},
   };
 
-  GenerateTable(&Table.at(0), BaseOpTable, std::size(BaseOpTable));
+  GenerateTable(Table.data(), BaseOpTable, std::size(BaseOpTable));
   IR::InstallToTable(Table, IR::OpDispatch_BaseOpTable);
 
   return Table;

@@ -712,8 +712,8 @@ void LoadUnique32BitSigreturn(VDSOMapping* Mapping, FEX::HLE::SyscallHandler* co
   VDSOPointers.VDSO_kernel_rt_sigreturn =
     reinterpret_cast<void*>(reinterpret_cast<uint64_t>(Mapping->OptionalSigReturnMapping) + sigreturn_32_code.size());
 
-  memcpy(reinterpret_cast<void*>(VDSOPointers.VDSO_kernel_sigreturn), &sigreturn_32_code.at(0), sigreturn_32_code.size());
-  memcpy(reinterpret_cast<void*>(VDSOPointers.VDSO_kernel_rt_sigreturn), &rt_sigreturn_32_code.at(0), rt_sigreturn_32_code.size());
+  memcpy(VDSOPointers.VDSO_kernel_sigreturn, sigreturn_32_code.data(), sigreturn_32_code.size());
+  memcpy(VDSOPointers.VDSO_kernel_rt_sigreturn, rt_sigreturn_32_code.data(), rt_sigreturn_32_code.size());
 
   mprotect(Mapping->OptionalSigReturnMapping, Mapping->OptionalMappingSize, PROT_READ | PROT_EXEC);
   {

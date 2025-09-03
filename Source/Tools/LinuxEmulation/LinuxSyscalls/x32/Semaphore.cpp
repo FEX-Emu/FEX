@@ -192,7 +192,7 @@ uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first
   case OP_MSGSND: {
     // Requires a temporary buffer
     fextl::vector<uint8_t> Tmp(second + sizeof(size_t));
-    struct msgbuf* TmpMsg = reinterpret_cast<struct msgbuf*>(&Tmp.at(0));
+    struct msgbuf* TmpMsg = reinterpret_cast<struct msgbuf*>(Tmp.data());
     msgbuf_32* src = reinterpret_cast<msgbuf_32*>(ptr);
     FaultSafeUserMemAccess::VerifyIsReadable(src, sizeof(*src));
     FaultSafeUserMemAccess::VerifyIsReadable(src->mtext, second);
@@ -204,7 +204,7 @@ uint64_t _ipc(FEXCore::Core::CpuStateFrame* Frame, uint32_t call, uint32_t first
   }
   case OP_MSGRCV: {
     fextl::vector<uint8_t> Tmp(second + sizeof(size_t));
-    struct msgbuf* TmpMsg = reinterpret_cast<struct msgbuf*>(&Tmp.at(0));
+    struct msgbuf* TmpMsg = reinterpret_cast<struct msgbuf*>(Tmp.data());
 
     if (Version != 0) {
       Result = ::syscall(SYSCALL_DEF(msgrcv), first, TmpMsg, second, fifth, third);

@@ -521,7 +521,7 @@ EmulatedFDManager::EmulatedFDManager(FEXCore::Context::Context* ctx)
     std::call_once(cpu_info_initialized, [&]() { cpu_info = GenerateCPUInfo(ctx, ThreadsConfig); });
 
     int FD = GenTmpFD(pathname, flags);
-    write(FD, (void*)&cpu_info.at(0), cpu_info.size());
+    write(FD, cpu_info.data(), cpu_info.size());
     lseek(FD, 0, SEEK_SET);
     SealTmpFD(FD);
     return FD;
@@ -572,7 +572,7 @@ EmulatedFDManager::EmulatedFDManager(FEXCore::Context::Context* ctx)
 
   auto NumCPUCores = [&](FEXCore::Context::Context* ctx, int32_t fd, const char* pathname, int32_t flags, mode_t mode) -> int32_t {
     int FD = GenTmpFD(pathname, flags);
-    write(FD, (void*)&cpus_online.at(0), cpus_online.size());
+    write(FD, cpus_online.data(), cpus_online.size());
     lseek(FD, 0, SEEK_SET);
     SealTmpFD(FD);
     return FD;
