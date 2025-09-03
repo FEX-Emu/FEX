@@ -18,17 +18,28 @@ public:
       Feat_crc = data_1.ecx & (1U << 20);
       Feat_rand = data_1.ecx & (1U << 30);
       Feat_pclmulqdq = data_1.ecx & (1U << 1);
+      Feat_avx = data_1.ecx & (1U << 28);
+      Feat_ssse3 = data_1.ecx & (1U << 9);
+      Feat_sse4_1 = data_1.ecx & (1U << 19);
+      Feat_sse4_2 = data_1.ecx & (1U << 20);
+      Feat_movbe = data_1.ecx & (1U << 22);
+      Feat_xsave = data_1.ecx & (1U << 26);
     }
 
     if (data.eax >= 7) {
       auto data_7 = cpuid(0x7);
+      Feat_fsgsbase = data_7.ebx & (1U << 0);
       Feat_bmi1 = data_7.ebx & (1U << 3);
+      Feat_avx &= data_7.ebx & (1U << 5);
       Feat_bmi2 = data_7.ebx & (1U << 8);
       Feat_clwb = data_7.ebx & (1U << 24);
       Feat_rand &= data_7.ebx & (1U << 18);
+      Feat_adx = data_7.ebx & (1U << 19);
+      Feat_clflopt = data_7.ebx & (1U << 23);
       Feat_sha = data_7.ebx & (1U << 29);
       Feat_vaes = data_7.ecx & (1U << 9);
       Feat_pclmulqdq &= data_7.ecx & (1U << 10);
+      Feat_rdpid = data_7.ecx & (1U << 22);
     }
 
     data = cpuid(0x8000'0000U);
@@ -58,6 +69,16 @@ public:
   bool Feat_pclmulqdq {};
   bool Feat_vaes {};
   bool Feat_clzero {};
+  bool Feat_avx {};
+  bool Feat_ssse3 {};
+  bool Feat_sse4_1 {};
+  bool Feat_sse4_2 {};
+  bool Feat_movbe {};
+  bool Feat_adx {};
+  bool Feat_xsave {};
+  bool Feat_rdpid {};
+  bool Feat_clflopt {};
+  bool Feat_fsgsbase {};
 
 private:
   struct cpuid_data {

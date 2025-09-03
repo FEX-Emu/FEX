@@ -309,6 +309,18 @@ public:
     FEATURE_LINUX = (1 << 9),
     FEATURE_AES256 = (1 << 10),
     FEATURE_AFP = (1 << 11),
+    FEATURE_SSSE3 = (1 << 12),
+    FEATURE_SSE4_1 = (1 << 13),
+    FEATURE_SSE4_2 = (1 << 14),
+    FEATURE_AES = (1 << 15),
+    FEATURE_PCLMUL = (1 << 16),
+    FEATURE_MOVBE = (1 << 17),
+    FEATURE_ADX = (1 << 18),
+    FEATURE_XSAVE = (1 << 19),
+    FEATURE_RDPID = (1 << 20),
+    FEATURE_CLFLOPT = (1 << 21),
+    FEATURE_FSGSBASE = (1 << 22),
+    FEATURE_EMMI = (1 << 23),
   };
 
   bool Requires3DNow() const {
@@ -346,6 +358,42 @@ public:
   }
   bool RequiresAFP() const {
     return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_AFP;
+  }
+  bool RequiresSSSE3() const {
+    return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_SSSE3;
+  }
+  bool RequiresSSE4_1() const {
+    return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_SSE4_1;
+  }
+  bool RequiresSSE4_2() const {
+    return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_SSE4_2;
+  }
+  bool RequiresAES() const {
+    return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_AES;
+  }
+  bool RequiresPCLMUL() const {
+    return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_PCLMUL;
+  }
+  bool RequiresMOVBE() const {
+    return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_MOVBE;
+  }
+  bool RequiresADX() const {
+    return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_ADX;
+  }
+  bool RequiresXSAVE() const {
+    return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_XSAVE;
+  }
+  bool RequiresRDPID() const {
+    return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_RDPID;
+  }
+  bool RequiresCLFLOPT() const {
+    return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_CLFLOPT;
+  }
+  bool RequiresFSGSBase() const {
+    return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_FSGSBASE;
+  }
+  bool RequiresEMMI() const {
+    return BaseConfig.OptionHostFeatures & HostFeatures::FEATURE_EMMI;
   }
 
 private:
@@ -517,6 +565,42 @@ public:
   }
   bool RequiresAFP() const {
     return Config.RequiresAFP();
+  }
+  bool RequiresSSSE3() const {
+    return Config.RequiresSSSE3();
+  }
+  bool RequiresSSE4_1() const {
+    return Config.RequiresSSE4_1();
+  }
+  bool RequiresSSE4_2() const {
+    return Config.RequiresSSE4_2();
+  }
+  bool RequiresAES() const {
+    return Config.RequiresAES();
+  }
+  bool RequiresPCLMUL() const {
+    return Config.RequiresPCLMUL();
+  }
+  bool RequiresMOVBE() const {
+    return Config.RequiresMOVBE();
+  }
+  bool RequiresADX() const {
+    return Config.RequiresADX();
+  }
+  bool RequiresXSAVE() const {
+    return Config.RequiresXSAVE();
+  }
+  bool RequiresRDPID() const {
+    return Config.RequiresRDPID();
+  }
+  bool RequiresCLFLOPT() const {
+    return Config.RequiresCLFLOPT();
+  }
+  bool RequiresFSGSBase() const {
+    return Config.RequiresFSGSBase();
+  }
+  bool RequiresEMMI() const {
+    return Config.RequiresEMMI();
   }
 
 private:

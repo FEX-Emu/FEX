@@ -586,7 +586,7 @@ FEXCore::HostFeatures FetchHostFeatures(FEX::CPUFeatures& Features, bool Support
   HostFeatures.SupportsRAND = Feature.Feat_rand;
   HostFeatures.SupportsRCPC = true;
   HostFeatures.SupportsTSOImm9 = true;
-  HostFeatures.SupportsAVX = true;
+  HostFeatures.SupportsAVX = Feature.Feat_avx;
   HostFeatures.SupportsSHA = Feature.Feat_sha;
   HostFeatures.SupportsPMULL_128Bit = Feature.Feat_pclmulqdq;
   HostFeatures.SupportsAES256 = Feature.Feat_aes;
