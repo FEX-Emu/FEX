@@ -1,18 +1,12 @@
 // SPDX-License-Identifier: MIT
-#include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/fextl/memory.h>
-#include <FEXCore/fextl/deque.h>
 
 #include <cstring>
-#include <functional>
-#include <mutex>
 #include <pthread.h>
-#include <stdint.h>
 #include <unistd.h>
 #ifndef _WIN32
-#include <sys/mman.h>
 #include <sys/signal.h>
 #include <sys/syscall.h>
 #endif

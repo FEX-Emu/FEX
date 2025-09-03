@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+
 #include <FEXCore/fextl/memory.h>
+#include <cstdint>
 
 namespace FEXCore::Threads {
 using ThreadFunc = void* (*)(void* user_ptr);
