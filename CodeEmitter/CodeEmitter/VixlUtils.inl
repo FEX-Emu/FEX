@@ -158,7 +158,7 @@ static bool IsImmLogical(uint64_t value, unsigned width, unsigned* n = nullptr, 
   }
 
   // If the repeat period d is not a power of two, it can't be encoded.
-  if (!IsPowerOf2(d)) {
+  if (!std::has_single_bit(uint32_t(d))) {
     return false;
   }
 
@@ -283,11 +283,6 @@ INT_1_TO_63_LIST(DECLARE_IS_UINT_N)
 #undef DECLARE_IS_UINT_N
 
 private:
-
-template<typename V>
-static inline bool IsPowerOf2(V value) {
-  return (value != 0) && ((value & (value - 1)) == 0);
-}
 
 // Some compilers dislike negating unsigned integers,
 // so we provide an equivalent.
