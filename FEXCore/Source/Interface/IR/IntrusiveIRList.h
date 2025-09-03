@@ -3,17 +3,14 @@
 
 #include "Interface/IR/IR.h"
 
-#include <FEXCore/Core/Context.h>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/ThreadPoolAllocator.h>
-#include <FEXCore/fextl/vector.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
-#include <tuple>
-#include <istream>
-#include <ostream>
+#include <type_traits>
 
 namespace FEXCore::IR {
 /**
