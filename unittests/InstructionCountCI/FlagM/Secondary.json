@@ -566,12 +566,13 @@
       ]
     },
     "bt [rax], bx": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 7,
       "Comment": "0x0f 0xa3",
       "ExpectedArm64ASM": [
         "ubfx x20, x6, #0, #3",
         "sbfx x21, x6, #3, #13",
-        "ldrb w21, [x4, x21, sxtx]",
+        "add x21, x4, x21",
+        "ldapurb w21, [x21]",
         "lsr w20, w21, w20",
         "eor x20, x20, #0x1",
         "rmif x20, #63, #nzCv"
@@ -587,12 +588,13 @@
       ]
     },
     "bt [rax], ebx": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 7,
       "Comment": "0x0f 0xa3",
       "ExpectedArm64ASM": [
         "ubfx x20, x6, #0, #3",
         "sbfx x21, x6, #3, #29",
-        "ldrb w21, [x4, x21, sxtx]",
+        "add x21, x4, x21",
+        "ldapurb w21, [x21]",
         "lsr w20, w21, w20",
         "eor x20, x20, #0x1",
         "rmif x20, #63, #nzCv"
@@ -608,12 +610,13 @@
       ]
     },
     "bt [rax], rbx": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 7,
       "Comment": "0x0f 0xa3",
       "ExpectedArm64ASM": [
         "ubfx x20, x6, #0, #3",
         "asr x21, x6, #3",
-        "ldrb w21, [x4, x21, sxtx]",
+        "add x21, x4, x21",
+        "ldapurb w21, [x21]",
         "lsr w20, w21, w20",
         "eor x20, x20, #0x1",
         "rmif x20, #63, #nzCv"
@@ -863,16 +866,18 @@
       ]
     },
     "bts [rax], bx": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 12,
       "Comment": "0x0f 0xab",
       "ExpectedArm64ASM": [
         "ubfx x20, x6, #0, #3",
         "sbfx x21, x6, #3, #13",
         "mov w22, #0x1",
         "lsl x22, x22, x20",
-        "ldrb w23, [x4, x21, sxtx]",
+        "add x23, x4, x21",
+        "ldapurb w23, [x23]",
         "orr x22, x23, x22",
-        "strb w22, [x4, x21, sxtx]",
+        "add x21, x4, x21",
+        "stlurb w22, [x21]",
         "lsr w20, w23, w20",
         "eor x20, x20, #0x1",
         "rmif x20, #63, #nzCv"
@@ -891,16 +896,18 @@
       ]
     },
     "bts [rax], ebx": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 12,
       "Comment": "0x0f 0xab",
       "ExpectedArm64ASM": [
         "ubfx x20, x6, #0, #3",
         "sbfx x21, x6, #3, #29",
         "mov w22, #0x1",
         "lsl x22, x22, x20",
-        "ldrb w23, [x4, x21, sxtx]",
+        "add x23, x4, x21",
+        "ldapurb w23, [x23]",
         "orr x22, x23, x22",
-        "strb w22, [x4, x21, sxtx]",
+        "add x21, x4, x21",
+        "stlurb w22, [x21]",
         "lsr w20, w23, w20",
         "eor x20, x20, #0x1",
         "rmif x20, #63, #nzCv"
@@ -919,16 +926,18 @@
       ]
     },
     "bts [rax], rbx": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 12,
       "Comment": "0x0f 0xab",
       "ExpectedArm64ASM": [
         "ubfx x20, x6, #0, #3",
         "asr x21, x6, #3",
         "mov w22, #0x1",
         "lsl x22, x22, x20",
-        "ldrb w23, [x4, x21, sxtx]",
+        "add x23, x4, x21",
+        "ldapurb w23, [x23]",
         "orr x22, x23, x22",
-        "strb w22, [x4, x21, sxtx]",
+        "add x21, x4, x21",
+        "stlurb w22, [x21]",
         "lsr w20, w23, w20",
         "eor x20, x20, #0x1",
         "rmif x20, #63, #nzCv"
@@ -1186,16 +1195,18 @@
       ]
     },
     "btr [rax], bx": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 12,
       "Comment": "0x0f 0xb3",
       "ExpectedArm64ASM": [
         "ubfx x20, x6, #0, #3",
         "sbfx x21, x6, #3, #13",
         "mov w22, #0x1",
         "lsl x22, x22, x20",
-        "ldrb w23, [x4, x21, sxtx]",
+        "add x23, x4, x21",
+        "ldapurb w23, [x23]",
         "bic x22, x23, x22",
-        "strb w22, [x4, x21, sxtx]",
+        "add x21, x4, x21",
+        "stlurb w22, [x21]",
         "lsr w20, w23, w20",
         "eor x20, x20, #0x1",
         "rmif x20, #63, #nzCv"
@@ -1214,16 +1225,18 @@
       ]
     },
     "btr [rax], ebx": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 12,
       "Comment": "0x0f 0xb3",
       "ExpectedArm64ASM": [
         "ubfx x20, x6, #0, #3",
         "sbfx x21, x6, #3, #29",
         "mov w22, #0x1",
         "lsl x22, x22, x20",
-        "ldrb w23, [x4, x21, sxtx]",
+        "add x23, x4, x21",
+        "ldapurb w23, [x23]",
         "bic x22, x23, x22",
-        "strb w22, [x4, x21, sxtx]",
+        "add x21, x4, x21",
+        "stlurb w22, [x21]",
         "lsr w20, w23, w20",
         "eor x20, x20, #0x1",
         "rmif x20, #63, #nzCv"
@@ -1242,16 +1255,18 @@
       ]
     },
     "btr [rax], rbx": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 12,
       "Comment": "0x0f 0xb3",
       "ExpectedArm64ASM": [
         "ubfx x20, x6, #0, #3",
         "asr x21, x6, #3",
         "mov w22, #0x1",
         "lsl x22, x22, x20",
-        "ldrb w23, [x4, x21, sxtx]",
+        "add x23, x4, x21",
+        "ldapurb w23, [x23]",
         "bic x22, x23, x22",
-        "strb w22, [x4, x21, sxtx]",
+        "add x21, x4, x21",
+        "stlurb w22, [x21]",
         "lsr w20, w23, w20",
         "eor x20, x20, #0x1",
         "rmif x20, #63, #nzCv"
@@ -1316,16 +1331,18 @@
       ]
     },
     "btc [rax], bx": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 12,
       "Comment": "0x0f 0xbb",
       "ExpectedArm64ASM": [
         "ubfx x20, x6, #0, #3",
         "sbfx x21, x6, #3, #13",
         "mov w22, #0x1",
         "lsl x22, x22, x20",
-        "ldrb w23, [x4, x21, sxtx]",
+        "add x23, x4, x21",
+        "ldapurb w23, [x23]",
         "eor x22, x23, x22",
-        "strb w22, [x4, x21, sxtx]",
+        "add x21, x4, x21",
+        "stlurb w22, [x21]",
         "lsr w20, w23, w20",
         "eor x20, x20, #0x1",
         "rmif x20, #63, #nzCv"
@@ -1343,16 +1360,18 @@
       ]
     },
     "btc [rax], ebx": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 12,
       "Comment": "0x0f 0xbb",
       "ExpectedArm64ASM": [
         "ubfx x20, x6, #0, #3",
         "sbfx x21, x6, #3, #29",
         "mov w22, #0x1",
         "lsl x22, x22, x20",
-        "ldrb w23, [x4, x21, sxtx]",
+        "add x23, x4, x21",
+        "ldapurb w23, [x23]",
         "eor x22, x23, x22",
-        "strb w22, [x4, x21, sxtx]",
+        "add x21, x4, x21",
+        "stlurb w22, [x21]",
         "lsr w20, w23, w20",
         "eor x20, x20, #0x1",
         "rmif x20, #63, #nzCv"
@@ -1370,16 +1389,18 @@
       ]
     },
     "btc [rax], rbx": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 12,
       "Comment": "0x0f 0xbb",
       "ExpectedArm64ASM": [
         "ubfx x20, x6, #0, #3",
         "asr x21, x6, #3",
         "mov w22, #0x1",
         "lsl x22, x22, x20",
-        "ldrb w23, [x4, x21, sxtx]",
+        "add x23, x4, x21",
+        "ldapurb w23, [x23]",
         "eor x22, x23, x22",
-        "strb w22, [x4, x21, sxtx]",
+        "add x21, x4, x21",
+        "stlurb w22, [x21]",
         "lsr w20, w23, w20",
         "eor x20, x20, #0x1",
         "rmif x20, #63, #nzCv"

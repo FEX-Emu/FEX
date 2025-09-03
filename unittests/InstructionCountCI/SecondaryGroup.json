@@ -14,12 +14,14 @@
   },
   "Instructions": {
     "sgdt [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 5,
       "Comment": "GROUP7 0x0F 0x1 /0",
       "ExpectedArm64ASM": [
-        "strh wzr, [x4]",
+        "nop",
+        "stlurh wzr, [x4]",
         "mov x20, #0xfffffffffffe0000",
-        "stur x20, [x4, #2]"
+        "nop",
+        "stlur x20, [x4, #2]"
       ]
     },
     "bt ax, 0": {
@@ -89,10 +91,11 @@
       ]
     },
     "bt word [rax], 0": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 7,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "ldrb w20, [x4]",
+        "add x20, x4, #0x0 (0)",
+        "ldapurb w20, [x20]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
         "mrs x21, nzcv",
@@ -101,10 +104,11 @@
       ]
     },
     "bt dword [rax], 0": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 7,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "ldrb w20, [x4]",
+        "add x20, x4, #0x0 (0)",
+        "ldapurb w20, [x20]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
         "mrs x21, nzcv",
@@ -113,10 +117,11 @@
       ]
     },
     "bt qword [rax], 0": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 7,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "ldrb w20, [x4]",
+        "add x20, x4, #0x0 (0)",
+        "ldapurb w20, [x20]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
         "mrs x21, nzcv",
@@ -125,10 +130,11 @@
       ]
     },
     "bt word [rax], 15": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "ldrb w20, [x4, #1]",
+        "add x20, x4, #0x1 (1)",
+        "ldapurb w20, [x20]",
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
@@ -138,10 +144,11 @@
       ]
     },
     "bt dword [rax], 31": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "ldrb w20, [x4, #3]",
+        "add x20, x4, #0x3 (3)",
+        "ldapurb w20, [x20]",
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
@@ -151,10 +158,11 @@
       ]
     },
     "bt qword [rax], 63": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "ldrb w20, [x4, #7]",
+        "add x20, x4, #0x7 (7)",
+        "ldapurb w20, [x20]",
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
@@ -238,12 +246,14 @@
       ]
     },
     "bts word [rax], 0": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 10,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "ldrb w20, [x4]",
+        "add x20, x4, #0x0 (0)",
+        "ldapurb w20, [x20]",
         "orr x21, x20, #0x1",
-        "strb w21, [x4]",
+        "add x22, x4, #0x0 (0)",
+        "stlurb w21, [x22]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
         "mrs x21, nzcv",
@@ -252,12 +262,14 @@
       ]
     },
     "bts dword [rax], 0": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 10,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "ldrb w20, [x4]",
+        "add x20, x4, #0x0 (0)",
+        "ldapurb w20, [x20]",
         "orr x21, x20, #0x1",
-        "strb w21, [x4]",
+        "add x22, x4, #0x0 (0)",
+        "stlurb w21, [x22]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
         "mrs x21, nzcv",
@@ -266,12 +278,14 @@
       ]
     },
     "bts qword [rax], 0": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 10,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "ldrb w20, [x4]",
+        "add x20, x4, #0x0 (0)",
+        "ldapurb w20, [x20]",
         "orr x21, x20, #0x1",
-        "strb w21, [x4]",
+        "add x22, x4, #0x0 (0)",
+        "stlurb w21, [x22]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
         "mrs x21, nzcv",
@@ -280,12 +294,14 @@
       ]
     },
     "bts word [rax], 15": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 11,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "ldrb w20, [x4, #1]",
+        "add x20, x4, #0x1 (1)",
+        "ldapurb w20, [x20]",
         "orr x21, x20, #0x80",
-        "strb w21, [x4, #1]",
+        "add x22, x4, #0x1 (1)",
+        "stlurb w21, [x22]",
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
@@ -295,12 +311,14 @@
       ]
     },
     "bts dword [rax], 31": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 11,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "ldrb w20, [x4, #3]",
+        "add x20, x4, #0x3 (3)",
+        "ldapurb w20, [x20]",
         "orr x21, x20, #0x80",
-        "strb w21, [x4, #3]",
+        "add x22, x4, #0x3 (3)",
+        "stlurb w21, [x22]",
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
@@ -310,12 +328,14 @@
       ]
     },
     "bts qword [rax], 63": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 11,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "ldrb w20, [x4, #7]",
+        "add x20, x4, #0x7 (7)",
+        "ldapurb w20, [x20]",
         "orr x21, x20, #0x80",
-        "strb w21, [x4, #7]",
+        "add x22, x4, #0x7 (7)",
+        "stlurb w21, [x22]",
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
@@ -486,12 +506,14 @@
       ]
     },
     "btr word [rax], 0": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 10,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "ldrb w20, [x4]",
+        "add x20, x4, #0x0 (0)",
+        "ldapurb w20, [x20]",
         "and x21, x20, #0xfffffffffffffffe",
-        "strb w21, [x4]",
+        "add x22, x4, #0x0 (0)",
+        "stlurb w21, [x22]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
         "mrs x21, nzcv",
@@ -500,12 +522,14 @@
       ]
     },
     "btr dword [rax], 0": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 10,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "ldrb w20, [x4]",
+        "add x20, x4, #0x0 (0)",
+        "ldapurb w20, [x20]",
         "and x21, x20, #0xfffffffffffffffe",
-        "strb w21, [x4]",
+        "add x22, x4, #0x0 (0)",
+        "stlurb w21, [x22]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
         "mrs x21, nzcv",
@@ -514,12 +538,14 @@
       ]
     },
     "btr qword [rax], 0": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 10,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "ldrb w20, [x4]",
+        "add x20, x4, #0x0 (0)",
+        "ldapurb w20, [x20]",
         "and x21, x20, #0xfffffffffffffffe",
-        "strb w21, [x4]",
+        "add x22, x4, #0x0 (0)",
+        "stlurb w21, [x22]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
         "mrs x21, nzcv",
@@ -528,12 +554,14 @@
       ]
     },
     "btr word [rax], 15": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 11,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "ldrb w20, [x4, #1]",
+        "add x20, x4, #0x1 (1)",
+        "ldapurb w20, [x20]",
         "and x21, x20, #0xffffffffffffff7f",
-        "strb w21, [x4, #1]",
+        "add x22, x4, #0x1 (1)",
+        "stlurb w21, [x22]",
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
@@ -543,12 +571,14 @@
       ]
     },
     "btr dword [rax], 31": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 11,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "ldrb w20, [x4, #3]",
+        "add x20, x4, #0x3 (3)",
+        "ldapurb w20, [x20]",
         "and x21, x20, #0xffffffffffffff7f",
-        "strb w21, [x4, #3]",
+        "add x22, x4, #0x3 (3)",
+        "stlurb w21, [x22]",
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
@@ -558,12 +588,14 @@
       ]
     },
     "btr qword [rax], 63": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 11,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "ldrb w20, [x4, #7]",
+        "add x20, x4, #0x7 (7)",
+        "ldapurb w20, [x20]",
         "and x21, x20, #0xffffffffffffff7f",
-        "strb w21, [x4, #7]",
+        "add x22, x4, #0x7 (7)",
+        "stlurb w21, [x22]",
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
@@ -728,12 +760,14 @@
       ]
     },
     "btc word [rax], 0": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 10,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "ldrb w20, [x4]",
+        "add x20, x4, #0x0 (0)",
+        "ldapurb w20, [x20]",
         "eor x21, x20, #0x1",
-        "strb w21, [x4]",
+        "add x22, x4, #0x0 (0)",
+        "stlurb w21, [x22]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
         "mrs x21, nzcv",
@@ -742,12 +776,14 @@
       ]
     },
     "btc dword [rax], 0": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 10,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "ldrb w20, [x4]",
+        "add x20, x4, #0x0 (0)",
+        "ldapurb w20, [x20]",
         "eor x21, x20, #0x1",
-        "strb w21, [x4]",
+        "add x22, x4, #0x0 (0)",
+        "stlurb w21, [x22]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
         "mrs x21, nzcv",
@@ -756,12 +792,14 @@
       ]
     },
     "btc qword [rax], 0": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 10,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "ldrb w20, [x4]",
+        "add x20, x4, #0x0 (0)",
+        "ldapurb w20, [x20]",
         "eor x21, x20, #0x1",
-        "strb w21, [x4]",
+        "add x22, x4, #0x0 (0)",
+        "stlurb w21, [x22]",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
         "mrs x21, nzcv",
@@ -770,12 +808,14 @@
       ]
     },
     "btc word [rax], 15": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 11,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "ldrb w20, [x4, #1]",
+        "add x20, x4, #0x1 (1)",
+        "ldapurb w20, [x20]",
         "eor x21, x20, #0x80",
-        "strb w21, [x4, #1]",
+        "add x22, x4, #0x1 (1)",
+        "stlurb w21, [x22]",
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
@@ -785,12 +825,14 @@
       ]
     },
     "btc dword [rax], 31": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 11,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "ldrb w20, [x4, #3]",
+        "add x20, x4, #0x3 (3)",
+        "ldapurb w20, [x20]",
         "eor x21, x20, #0x80",
-        "strb w21, [x4, #3]",
+        "add x22, x4, #0x3 (3)",
+        "stlurb w21, [x22]",
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
@@ -800,12 +842,14 @@
       ]
     },
     "btc qword [rax], 63": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 11,
       "Comment": "GROUP8 0x0F 0xBA /6",
       "ExpectedArm64ASM": [
-        "ldrb w20, [x4, #7]",
+        "add x20, x4, #0x7 (7)",
+        "ldapurb w20, [x20]",
         "eor x21, x20, #0x80",
-        "strb w21, [x4, #7]",
+        "add x22, x4, #0x7 (7)",
+        "stlurb w21, [x22]",
         "lsr w20, w20, #7",
         "eor x20, x20, #0x1",
         "ubfx x20, x20, #0, #1",
@@ -1676,10 +1720,11 @@
       ]
     },
     "ldmxcsr [rax]": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 12,
       "Comment": "GROUP15 0x0F 0xAE /2",
       "ExpectedArm64ASM": [
-        "ldr w20, [x4]",
+        "ldapur w20, [x4]",
+        "nop",
         "and w20, w20, #0xffc0",
         "str w20, [x28, #940]",
         "ubfx w21, w20, #13, #3",
@@ -1708,12 +1753,13 @@
       ]
     },
     "stmxcsr [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "Comment": "GROUP15 0x0F 0xAE /3",
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #940]",
         "and w20, w20, #0xffc0",
-        "str w20, [x4]"
+        "nop",
+        "stlur w20, [x4]"
       ]
     },
     "wrgsbase eax": {

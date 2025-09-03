@@ -1609,12 +1609,13 @@
       ]
     },
     "fldcw [rax]": {
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 11,
       "Comment": [
         "0xd9 !11b /5"
       ],
       "ExpectedArm64ASM": [
-        "ldrh w20, [x4]",
+        "ldapurh w20, [x4]",
+        "nop",
         "ubfx w21, w20, #10, #3",
         "rbit w1, w21",
         "lsr w1, w1, #30",
@@ -1664,13 +1665,14 @@
       ]
     },
     "fnstcw [rax]": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "0xd9 !11b /7"
       ],
       "ExpectedArm64ASM": [
         "ldrh w20, [x28, #1184]",
-        "strh w20, [x4]"
+        "nop",
+        "stlurh w20, [x4]"
       ]
     },
     "fld st0": {
@@ -2649,12 +2651,13 @@
       ]
     },
     "fiadd dword [rax]": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": [
         "0xda !11b /0"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x4]",
+        "ldapur w20, [x4]",
+        "nop",
         "scvtf d2, w20",
         "ldrb w20, [x28, #1019]",
         "add x0, x28, x20, lsl #4",
@@ -2665,12 +2668,13 @@
       ]
     },
     "fimul dword [rax]": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": [
         "0xda !11b /1"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x4]",
+        "ldapur w20, [x4]",
+        "nop",
         "scvtf d2, w20",
         "ldrb w20, [x28, #1019]",
         "add x0, x28, x20, lsl #4",
@@ -2681,12 +2685,13 @@
       ]
     },
     "ficom dword [rax]": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 18,
       "Comment": [
         "0xda !11b /2"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x4]",
+        "ldapur w20, [x4]",
+        "nop",
         "scvtf d2, w20",
         "mrs x20, nzcv",
         "ldrb w21, [x28, #1019]",
@@ -2706,12 +2711,13 @@
       ]
     },
     "ficomp dword [rax]": {
-      "ExpectedInstructionCount": 25,
+      "ExpectedInstructionCount": 26,
       "Comment": [
         "0xda !11b /3"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x4]",
+        "ldapur w20, [x4]",
+        "nop",
         "scvtf d2, w20",
         "mrs x20, nzcv",
         "ldrb w21, [x28, #1019]",
@@ -2739,12 +2745,13 @@
       ]
     },
     "fisub dword [rax]": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": [
         "0xda !11b /4"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x4]",
+        "ldapur w20, [x4]",
+        "nop",
         "scvtf d2, w20",
         "ldrb w20, [x28, #1019]",
         "add x0, x28, x20, lsl #4",
@@ -2755,12 +2762,13 @@
       ]
     },
     "fisubr dword [rax]": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": [
         "0xda !11b /5"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x4]",
+        "ldapur w20, [x4]",
+        "nop",
         "scvtf d2, w20",
         "ldrb w20, [x28, #1019]",
         "add x0, x28, x20, lsl #4",
@@ -2771,12 +2779,13 @@
       ]
     },
     "fidiv dword [rax]": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": [
         "0xda !11b /6"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x4]",
+        "ldapur w20, [x4]",
+        "nop",
         "scvtf d2, w20",
         "ldrb w20, [x28, #1019]",
         "add x0, x28, x20, lsl #4",
@@ -2787,12 +2796,13 @@
       ]
     },
     "fidivr dword [rax]": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 9,
       "Comment": [
         "0xda !11b /7"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x4]",
+        "ldapur w20, [x4]",
+        "nop",
         "scvtf d2, w20",
         "ldrb w20, [x28, #1019]",
         "add x0, x28, x20, lsl #4",
@@ -3501,12 +3511,13 @@
       ]
     },
     "fild dword [rax]": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 14,
       "Comment": [
         "0xdf !11b /5"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x4]",
+        "ldapur w20, [x4]",
+        "nop",
         "scvtf d2, w20",
         "ldrb w20, [x28, #1019]",
         "sub w20, w20, #0x1 (1)",
@@ -3522,7 +3533,7 @@
       ]
     },
     "fisttp dword [rax]": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 14,
       "Comment": [
         "0xdb !11b /1"
       ],
@@ -3531,7 +3542,8 @@
         "add x0, x28, x20, lsl #4",
         "ldr d2, [x0, #1040]",
         "fcvtzs w21, d2",
-        "str w21, [x4]",
+        "nop",
+        "stlur w21, [x4]",
         "ldrb w21, [x28, #1186]",
         "mov w22, #0x1",
         "lsl w22, w22, w20",
@@ -3543,7 +3555,7 @@
       ]
     },
     "fist dword [rax]": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "0xdb !11b /2"
       ],
@@ -3553,11 +3565,12 @@
         "ldr d2, [x0, #1040]",
         "frinti d0, d2",
         "fcvtzs w20, d0",
-        "str w20, [x4]"
+        "nop",
+        "stlur w20, [x4]"
       ]
     },
     "fistp dword [rax]": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdf !11b /7"
       ],
@@ -3567,7 +3580,8 @@
         "ldr d2, [x0, #1040]",
         "frinti d0, d2",
         "fcvtzs w21, d0",
-        "str w21, [x4]",
+        "nop",
+        "stlur w21, [x4]",
         "ldrb w21, [x28, #1186]",
         "mov w22, #0x1",
         "lsl w22, w22, w20",
@@ -5655,7 +5669,7 @@
       ]
     },
     "fisttp qword [rax]": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 14,
       "Comment": [
         "0xdd !11b /1"
       ],
@@ -5664,7 +5678,8 @@
         "add x0, x28, x20, lsl #4",
         "ldr d2, [x0, #1040]",
         "fcvtzs x21, d2",
-        "str x21, [x4]",
+        "nop",
+        "stlur x21, [x4]",
         "ldrb w21, [x28, #1186]",
         "mov w22, #0x1",
         "lsl w22, w22, w20",
@@ -6008,7 +6023,7 @@
       ]
     },
     "fnstsw [rax]": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 14,
       "Comment": [
         "0xdd !11b /7"
       ],
@@ -6025,7 +6040,8 @@
         "orr x20, x20, x21, lsl #14",
         "ldrb w21, [x28, #1008]",
         "orr x20, x20, x21",
-        "strh w20, [x4]"
+        "nop",
+        "stlurh w20, [x4]"
       ]
     },
     "ffree st0": {
@@ -7002,12 +7018,13 @@
       ]
     },
     "fiadd word [rax]": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 10,
       "Comment": [
         "0xde !11b /0"
       ],
       "ExpectedArm64ASM": [
-        "ldrh w20, [x4]",
+        "ldapurh w20, [x4]",
+        "nop",
         "sxth x20, w20",
         "scvtf d2, w20",
         "ldrb w20, [x28, #1019]",
@@ -7019,12 +7036,13 @@
       ]
     },
     "fimul word [rax]": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 10,
       "Comment": [
         "0xde !11b /1"
       ],
       "ExpectedArm64ASM": [
-        "ldrh w20, [x4]",
+        "ldapurh w20, [x4]",
+        "nop",
         "sxth x20, w20",
         "scvtf d2, w20",
         "ldrb w20, [x28, #1019]",
@@ -7036,12 +7054,13 @@
       ]
     },
     "ficom word [rax]": {
-      "ExpectedInstructionCount": 18,
+      "ExpectedInstructionCount": 19,
       "Comment": [
         "0xde !11b /2"
       ],
       "ExpectedArm64ASM": [
-        "ldrh w20, [x4]",
+        "ldapurh w20, [x4]",
+        "nop",
         "sxth x20, w20",
         "scvtf d2, w20",
         "mrs x20, nzcv",
@@ -7062,12 +7081,13 @@
       ]
     },
     "ficomp word [rax]": {
-      "ExpectedInstructionCount": 26,
+      "ExpectedInstructionCount": 27,
       "Comment": [
         "0xde !11b /3"
       ],
       "ExpectedArm64ASM": [
-        "ldrh w20, [x4]",
+        "ldapurh w20, [x4]",
+        "nop",
         "sxth x20, w20",
         "scvtf d2, w20",
         "mrs x20, nzcv",
@@ -7096,12 +7116,13 @@
       ]
     },
     "fisub word [rax]": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 10,
       "Comment": [
         "0xde !11b /4"
       ],
       "ExpectedArm64ASM": [
-        "ldrh w20, [x4]",
+        "ldapurh w20, [x4]",
+        "nop",
         "sxth x20, w20",
         "scvtf d2, w20",
         "ldrb w20, [x28, #1019]",
@@ -7113,12 +7134,13 @@
       ]
     },
     "fisubr word [rax]": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 10,
       "Comment": [
         "0xde !11b /5"
       ],
       "ExpectedArm64ASM": [
-        "ldrh w20, [x4]",
+        "ldapurh w20, [x4]",
+        "nop",
         "sxth x20, w20",
         "scvtf d2, w20",
         "ldrb w20, [x28, #1019]",
@@ -7130,12 +7152,13 @@
       ]
     },
     "fidiv word [rax]": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 10,
       "Comment": [
         "0xde !11b /6"
       ],
       "ExpectedArm64ASM": [
-        "ldrh w20, [x4]",
+        "ldapurh w20, [x4]",
+        "nop",
         "sxth x20, w20",
         "scvtf d2, w20",
         "ldrb w20, [x28, #1019]",
@@ -7147,12 +7170,13 @@
       ]
     },
     "fidivr word [rax]": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 10,
       "Comment": [
         "0xde !11b /7"
       ],
       "ExpectedArm64ASM": [
-        "ldrh w20, [x4]",
+        "ldapurh w20, [x4]",
+        "nop",
         "sxth x20, w20",
         "scvtf d2, w20",
         "ldrb w20, [x28, #1019]",
@@ -8450,12 +8474,13 @@
       ]
     },
     "fild word [rax]": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdf !11b /0"
       ],
       "ExpectedArm64ASM": [
-        "ldrh w20, [x4]",
+        "ldapurh w20, [x4]",
+        "nop",
         "sxth x20, w20",
         "scvtf d2, x20",
         "ldrb w20, [x28, #1019]",
@@ -8472,7 +8497,7 @@
       ]
     },
     "fisttp word [rax]": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 14,
       "Comment": [
         "0xdf !11b /1"
       ],
@@ -8481,7 +8506,8 @@
         "add x0, x28, x20, lsl #4",
         "ldr d2, [x0, #1040]",
         "fcvtzs x21, d2",
-        "strh w21, [x4]",
+        "nop",
+        "stlurh w21, [x4]",
         "ldrb w21, [x28, #1186]",
         "mov w22, #0x1",
         "lsl w22, w22, w20",
@@ -8493,7 +8519,7 @@
       ]
     },
     "fist word [rax]": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "0xdf !11b /2"
       ],
@@ -8503,11 +8529,12 @@
         "ldr d2, [x0, #1040]",
         "frinti d0, d2",
         "fcvtzs x20, d0",
-        "strh w20, [x4]"
+        "nop",
+        "stlurh w20, [x4]"
       ]
     },
     "fistp word [rax]": {
-      "ExpectedInstructionCount": 14,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "0xdf !11b /3"
       ],
@@ -8517,7 +8544,8 @@
         "ldr d2, [x0, #1040]",
         "frinti d0, d2",
         "fcvtzs x21, d0",
-        "strh w21, [x4]",
+        "nop",
+        "stlurh w21, [x4]",
         "ldrb w21, [x28, #1186]",
         "mov w22, #0x1",
         "lsl w22, w22, w20",

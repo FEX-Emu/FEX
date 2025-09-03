@@ -31,12 +31,13 @@
       ]
     },
     "cvtsi2ss xmm0, qword [rax]": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "0xf3 0x0f 0x2a"
       ],
       "ExpectedArm64ASM": [
-        "ldr x20, [x4]",
+        "ldapur x20, [x4]",
+        "nop",
         "scvtf s16, x20"
       ]
     },

@@ -578,12 +578,13 @@
       ]
     },
     "vldmxcsr [rax]": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 12,
       "Comment": [
         "Map group 15 0b010"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x4]",
+        "ldapur w20, [x4]",
+        "nop",
         "and w20, w20, #0xffc0",
         "str w20, [x28, #940]",
         "ubfx w21, w20, #13, #3",
@@ -597,14 +598,15 @@
       ]
     },
     "vstmxcsr [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map group 15 0b011"
       ],
       "ExpectedArm64ASM": [
         "ldr w20, [x28, #940]",
         "and w20, w20, #0xffc0",
-        "str w20, [x4]"
+        "nop",
+        "stlur w20, [x4]"
       ]
     },
     "blsr eax, ebx": {
