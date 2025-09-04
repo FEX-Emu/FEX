@@ -295,6 +295,7 @@ private:
   // Top Cache Management
   Ref GetTopWithCache_Slow();
   Ref GetOffsetTopWithCache_Slow(uint8_t Offset, bool Reverse = false);
+  Ref GetOffsetTopAddressWithCache_Slow(uint8_t Offset);
   void SetTopWithCache_Slow(Ref Value);
   Ref GetX87ValidTag_Slow(uint8_t Offset);
   // Resets fields to initial values
@@ -347,6 +348,7 @@ private:
   // If slowpath is false, then TopCache is nullptr.
   bool FlushTopPending = false;
   std::array<Ref, 8> TopOffsetCache {};
+  std::array<Ref, 8> TopOffsetAddressCache {};
 
   void FlushTop();
 
@@ -370,6 +372,7 @@ inline void X87StackOptimization::InvalidateCaches() {
 inline void X87StackOptimization::InvalidateTopOffsetCache() {
   FlushTop();
   TopOffsetCache.fill(nullptr);
+  TopOffsetAddressCache.fill(nullptr);
 }
 
 inline void X87StackOptimization::Reset() {
@@ -427,6 +430,16 @@ inline Ref X87StackOptimization::GetOffsetTopWithCache_Slow(uint8_t Offset, bool
   return OffsetTop;
 }
 
+inline Ref X87StackOptimization::GetOffsetTopAddressWithCache_Slow(uint8_t Offset) {
+  if (TopOffsetAddressCache[Offset]) {
+    return TopOffsetAddressCache[Offset];
+  }
+
+  Ref OffsetRef = GetOffsetTopWithCache_Slow(Offset);
+  TopOffsetAddressCache[Offset] = IREmit->_FormContextAddress(OpSize::i64Bit, OffsetRef, 16);
+
+  return TopOffsetAddressCache[Offset];
+}
 
 inline void X87StackOptimization::SetTopWithCache_Slow(Ref Value) {
   InvalidateTopOffsetCache();
@@ -447,14 +460,18 @@ inline Ref X87StackOptimization::GetX87ValidTag_Slow(uint8_t Offset) {
 }
 
 inline Ref X87StackOptimization::LoadStackValueAtOffset_Slow(uint8_t Offset) {
-  return IREmit->_LoadContextIndexed(GetOffsetTopWithCache_Slow(Offset), ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit,
-                                     MMBaseOffset(), 16, FPRClass);
+  OrderedNode* TopOffsetAddress = GetOffsetTopAddressWithCache_Slow(Offset);
+  auto Size = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
+  return IREmit->_LoadMem(FPRClass, Size, TopOffsetAddress, IREmit->_InlineConstant(MMBaseOffset()), Size, MEM_OFFSET_SXTX, 1);
 }
 
 inline void X87StackOptimization::StoreStackValueAtOffset_Slow(Ref Value, uint8_t Offset, bool SetValid) {
   OrderedNode* TopOffset = GetOffsetTopWithCache_Slow(Offset);
+  OrderedNode* TopOffsetAddress = GetOffsetTopAddressWithCache_Slow(Offset);
+  auto Size = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
+
   // store
-  IREmit->_StoreContextIndexed(Value, TopOffset, ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit, MMBaseOffset(), 16, FPRClass);
+  IREmit->_StoreMem(FPRClass, Size, Value, TopOffsetAddress, IREmit->_InlineConstant(MMBaseOffset()), Size, MEM_OFFSET_SXTX, 1);
   // mark it valid
   // In some cases we might already know it has been previously set as valid so we don't need to do it again
   if (SetValid) {
