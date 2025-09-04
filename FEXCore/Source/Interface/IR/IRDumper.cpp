@@ -223,6 +223,31 @@ static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::N
   }();
 }
 
+static void PrintArg(fextl::stringstream* out, const IRListView*, IndexNamedVectorConstant Arg) {
+  *out << [Arg] {
+    // clang-format off
+    switch (Arg) {
+    case IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFLW:
+      return "pshuflw";
+    case IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFHW:
+      return "pshufhw";
+    case IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PSHUFD:
+      return "pshufd";
+    case IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_SHUFPS:
+      return "shufps";
+    case IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_DPPS_MASK:
+      return "dpps_mask";
+    case IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_DPPD_MASK:
+      return "dppd_mask";
+    case IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PBLENDW:
+      return "pblendw";
+    default:
+      return "<Unknown Indexed Named Vector Constant>";
+    }
+    // clang-format on
+  }();
+}
+
 static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::OpSize Arg) {
   switch (Arg) {
   case OpSize::i8Bit: *out << "i8"; break;
