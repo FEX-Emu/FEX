@@ -1,28 +1,21 @@
 // SPDX-License-Identifier: MIT
-#include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Threads.h>
 #include <FEXCore/fextl/memory.h>
-#include <FEXCore/fextl/deque.h>
 
-#include <cstring>
-#include <functional>
-#include <mutex>
 #include <pthread.h>
-#include <stdint.h>
 #include <unistd.h>
 #ifndef _WIN32
-#include <sys/mman.h>
 #include <sys/signal.h>
 #include <sys/syscall.h>
 #endif
 
 namespace FEXCore::Threads {
-fextl::unique_ptr<FEXCore::Threads::Thread> CreateThread_Default(ThreadFunc Func, void* Arg) {
+static fextl::unique_ptr<FEXCore::Threads::Thread> CreateThread_Default(ThreadFunc Func, void* Arg) {
   ERROR_AND_DIE_FMT("Frontend didn't setup thread creation!");
 }
 
-void CleanupAfterFork_Default() {
+static void CleanupAfterFork_Default() {
   ERROR_AND_DIE_FMT("Frontend didn't setup thread creation!");
 }
 
@@ -40,7 +33,7 @@ void FEXCore::Threads::Thread::CleanupAfterFork() {
 }
 
 void FEXCore::Threads::Thread::SetInternalPointers(const Pointers& _Ptrs) {
-  memcpy(&Ptrs, &_Ptrs, sizeof(FEXCore::Threads::Pointers));
+  Ptrs = _Ptrs;
 }
 
 uint64_t SetSignalMask(uint64_t Mask) {
