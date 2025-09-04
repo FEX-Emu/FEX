@@ -585,8 +585,7 @@ Ref X87StackOptimization::SynchronizeStackValues() {
   const auto TopOffset = StackData.TopOffset;
 
   if (TopOffset != 0) {
-    auto* OrigTop = GetTopWithCache_Slow();
-    Ref NewTop = IREmit->_And(OpSize::i32Bit, IREmit->Sub(OpSize::i32Bit, OrigTop, TopOffset), GetConstant(0x7));
+    Ref NewTop = GetOffsetTopWithCache_Slow(TopOffset, true);
     SetTopWithCache_Slow(NewTop);
   }
   StackData.TopOffset = 0;
@@ -601,10 +600,8 @@ Ref X87StackOptimization::SynchronizeStackValues() {
     if (Valid == StackSlot::UNUSED) {
       continue;
     }
-    Ref TopIndex = GetOffsetTopWithCache_Slow(i);
     if (Valid == StackSlot::VALID) {
-      IREmit->_StoreContextIndexed(StackMember.StackDataNode, TopIndex, ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit,
-                                   MMBaseOffset(), 16, FPRClass);
+      StoreStackValueAtOffset_Slow(StackMember.StackDataNode, i, false);
     }
   }
   { // Set valid tags
@@ -844,11 +841,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
 
         if (Offset != 0xff) { // invalidate single offset
           if (SlowPath) {
-            auto* TopValue = GetTopWithCache_Slow();
-            if (Offset != 0) {
-              auto* Mask = GetConstant(7);
-              TopValue = IREmit->_And(OpSize::i32Bit, IREmit->Add(OpSize::i32Bit, TopValue, Offset), Mask);
-            }
+            auto* TopValue = GetOffsetTopWithCache_Slow(Offset);
             SetX87ValidTag(TopValue, false);
           } else {
             StackData.setTagInvalid(Offset);
