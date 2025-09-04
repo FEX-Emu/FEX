@@ -505,6 +505,17 @@
           "!($BaseOffset >= offsetof(Core::CPUState, xmm.avx.data[0]) && $BaseOffset < offsetof(Core::CPUState, xmm.avx.data[16])) && \"Can't StoreContextIndexed to XMM\""
         ]
       },
+      "GPR = FormContextAddress OpSize:#Size, GPR:$Index, u32:$Stride": {
+        "Desc": ["Forms an address into the context structure indexed by SSA value",
+                 "Dest = Ctx + Index * Stride",
+                 "This allows backends to compute the address once and reuse it for multiple memory operations",
+                 "Stride must be a power of 2"
+                ],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "#Size == IR::OpSize::i64Bit"
+        ]
+      },
 
       "SpillRegister SSA:$Value, u32:$Slot, RegisterClass:$Class": {
         "HasSideEffects": true,
