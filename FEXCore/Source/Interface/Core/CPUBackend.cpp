@@ -333,7 +333,6 @@ namespace CPU {
   }
 
   fextl::shared_ptr<CodeBuffer> CPUBackend::CheckCodeBufferUpdate() {
-    fextl::shared_ptr<CodeBuffer> OldCodeBuffer;
     auto NewCodeBuffer = CodeBuffers.GetLatest();
     if (CurrentCodeBuffer != NewCodeBuffer) {
       RegisterForSignalHandler(CurrentCodeBuffer);
