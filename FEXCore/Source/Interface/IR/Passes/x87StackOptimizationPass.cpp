@@ -298,7 +298,7 @@ private:
   void SetTopWithCache_Slow(Ref Value);
   Ref GetX87ValidTag_Slow(uint8_t Offset);
   // Resets fields to initial values
-  void Reset(bool AlsoSlowPath = true);
+  void Reset();
 
   struct StackMemberInfo {
     StackMemberInfo() {}
@@ -345,7 +345,11 @@ private:
 
   // Cached value for Top
   // If slowpath is false, then TopCache is nullptr.
+  bool FlushTopPending = false;
   std::array<Ref, 8> TopOffsetCache {};
+
+  void FlushTop();
+
   // Are we on the slow path?
   // Once we enter the slow path, we never come out.
   // This just simplifies the code atm. If there's a need to return to the fast path in the future
@@ -364,13 +368,12 @@ inline void X87StackOptimization::InvalidateCaches() {
 }
 
 inline void X87StackOptimization::InvalidateTopOffsetCache() {
+  FlushTop();
   TopOffsetCache.fill(nullptr);
 }
 
-inline void X87StackOptimization::Reset(bool AlsoSlowPath) {
-  if (AlsoSlowPath) {
-    SlowPath = false;
-  }
+inline void X87StackOptimization::Reset() {
+  SlowPath = false;
   StackData.clear();
   InvalidateCaches();
 }
@@ -390,7 +393,7 @@ inline Ref X87StackOptimization::GetConstant(ssize_t Offset) {
 inline void X87StackOptimization::MigrateToSlowPathIf(bool ShouldMigrate) {
   if (ShouldMigrate && !SlowPath) {
     SynchronizeStackValues();
-    Reset(false); // Reset everything but no need to change slowpath
+    StackData.clear();
     SlowPath = true;
   }
 }
@@ -420,9 +423,9 @@ inline Ref X87StackOptimization::GetOffsetTopWithCache_Slow(uint8_t Offset) {
 
 
 inline void X87StackOptimization::SetTopWithCache_Slow(Ref Value) {
-  IREmit->_StoreContext(OpSize::i8Bit, GPRClass, Value, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC);
   InvalidateTopOffsetCache();
   TopOffsetCache[0] = Value;
+  FlushTopPending = true;
 }
 
 inline void X87StackOptimization::SetX87ValidTag(Ref Value, bool Valid) {
@@ -555,11 +558,19 @@ inline void X87StackOptimization::UpdateTopForPush_Slow() {
   SetTopWithCache_Slow(TopOffset);
 }
 
+void X87StackOptimization::FlushTop() {
+  if (FlushTopPending) {
+    IREmit->_StoreContext(OpSize::i8Bit, GPRClass, TopOffsetCache[0], offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC);
+    FlushTopPending = false;
+  }
+}
+
 // We synchronize stack values in a few occasions but one of the most important of those,
 // is when we move from fast to a slow path and need to make sure that the context is properly
 // written.
 Ref X87StackOptimization::SynchronizeStackValues() {
-  if (SlowPath) { // Nothing to do here.
+  if (SlowPath) {
+    FlushTop();
     return GetTopWithCache_Slow();
   }
 
@@ -626,6 +637,8 @@ Ref X87StackOptimization::SynchronizeStackValues() {
       }
     }
   }
+
+  FlushTop();
   return TopValue;
 }
 
@@ -815,6 +828,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
 
       case OP_INITSTACK: {
         StackData.clear();
+        InvalidateTopOffsetCache();
         break;
       }
 
@@ -1058,6 +1072,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
 
       case OP_STACKFORCESLOW: {
         MigrateToSlowPathIf(true);
+        InvalidateTopOffsetCache();
         break;
       }
 
