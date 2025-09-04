@@ -294,7 +294,7 @@ private:
   void MigrateToSlowPathIf(bool ShouldMigrate);
   // Top Cache Management
   Ref GetTopWithCache_Slow();
-  Ref GetOffsetTopWithCache_Slow(uint8_t Offset);
+  Ref GetOffsetTopWithCache_Slow(uint8_t Offset, bool Reverse = false);
   void SetTopWithCache_Slow(Ref Value);
   Ref GetX87ValidTag_Slow(uint8_t Offset);
   // Resets fields to initial values
@@ -406,7 +406,13 @@ inline Ref X87StackOptimization::GetTopWithCache_Slow() {
   return TopOffsetCache[0];
 }
 
-inline Ref X87StackOptimization::GetOffsetTopWithCache_Slow(uint8_t Offset) {
+inline Ref X87StackOptimization::GetOffsetTopWithCache_Slow(uint8_t Offset, bool Reverse) {
+  if (Reverse) {
+    Offset = 8 - Offset;
+  }
+
+  Offset &= 7;
+
   if (TopOffsetCache[Offset]) {
     return TopOffsetCache[Offset];
   }
@@ -544,18 +550,18 @@ void X87StackOptimization::HandleBinopStack(IROps Op64, bool VFOp64, IROps Op80,
 
 inline void X87StackOptimization::UpdateTopForPop_Slow() {
   // Pop the top of the x87 stack
-  auto* TopOffset = GetTopWithCache_Slow();
-  TopOffset = IREmit->Add(OpSize::i32Bit, TopOffset, 1);
-  TopOffset = IREmit->_And(OpSize::i32Bit, TopOffset, GetConstant(7));
-  SetTopWithCache_Slow(TopOffset);
+  GetOffsetTopWithCache_Slow(1);
+  std::rotate(TopOffsetCache.begin(), std::next(TopOffsetCache.begin()), TopOffsetCache.end());
+  std::rotate(TopOffsetAddressCache.begin(), std::next(TopOffsetAddressCache.begin()), TopOffsetAddressCache.end());
+  FlushTopPending = true;
 }
 
 inline void X87StackOptimization::UpdateTopForPush_Slow() {
   // Pop the top of the x87 stack
-  auto* TopOffset = GetTopWithCache_Slow();
-  TopOffset = IREmit->Sub(OpSize::i32Bit, TopOffset, 1);
-  TopOffset = IREmit->_And(OpSize::i32Bit, TopOffset, GetConstant(7));
-  SetTopWithCache_Slow(TopOffset);
+  GetOffsetTopWithCache_Slow(1, true);
+  std::rotate(TopOffsetCache.begin(), std::prev(TopOffsetCache.end()), TopOffsetCache.end());
+  std::rotate(TopOffsetAddressCache.begin(), std::prev(TopOffsetAddressCache.end()), TopOffsetAddressCache.end());
+  FlushTopPending = true;
 }
 
 void X87StackOptimization::FlushTop() {
