@@ -500,9 +500,84 @@ struct FEX_PACKED X80SoftFloat {
     return FEXCore::BitCast<float>(Result);
   }
 
+  // Helper to detect if this x87 value is infinity
+  bool IsInfinity() const {
+    // x87 infinity: exponent = 0x7FFF, integer bit = 1, fractional mantissa = 0
+    return (Exponent == 0x7FFF) && (Significand == 0x8000000000000000ULL); // Integer bit set, all fractional bits zero
+  }
+
+  // Helper to detect if this x87 value is a signaling NaN
+  bool IsSignalingNaN() const {
+    // x87 signaling NaN: exponent = 0x7FFF, integer bit = 1, bit 62 = 0 (signaling), non-zero fractional mantissa
+    // Must NOT be infinity
+    return (Exponent == 0x7FFF) && (Significand & 0x8000000000000000ULL) && // Integer bit set
+           !(Significand & 0x4000000000000000ULL) &&                        // Bit 62 clear (signaling)
+           (Significand & 0x3FFFFFFFFFFFFFFFULL) &&                         // Non-zero fractional mantissa
+           !IsInfinity();                                                   // Ensure not infinity
+  }
+
+  // Helper to detect if this x87 value is a quiet NaN
+  bool IsQuietNaN() const {
+    // x87 quiet NaN: exponent = 0x7FFF, integer bit = 1, bit 62 = 1 (quiet), any fractional mantissa
+    // Must NOT be infinity
+    return (Exponent == 0x7FFF) && (Significand & 0x8000000000000000ULL) && // Integer bit set
+           (Significand & 0x4000000000000000ULL) &&                         // Bit 62 set (quiet)
+           !IsInfinity();                                                   // Ensure not infinity
+  }
+
+  // Helper to detect if this is any NaN
+  bool IsNaN() const {
+    return IsSignalingNaN() || IsQuietNaN();
+  }
+
+  // Helper to validate x87 format for malformed values
+  bool IsSpecialX87Value() const {
+    // Check for pseudo-NaN (exponent = 0x7FFF, integer bit = 0)
+    if (Exponent == 0x7FFF && !(Significand & 0x8000000000000000ULL)) {
+      return false; // Pseudo-NaN is invalid
+    }
+
+    // Check for pseudo-denormal (exponent = 0, integer bit = 1)
+    if (Exponent == 0 && (Significand & 0x8000000000000000ULL)) {
+      return false; // Pseudo-denormal is invalid
+    }
+
+    return true; // Other values are valid
+  }
+
+  // X87 value to F64 while preserving signaling nan property
   double ToF64(softfloat_state* state) const {
-    const float64_t Result = extF80_to_f64(state, *this);
-    return FEXCore::BitCast<double>(Result);
+    // Validate input to prevent malformed x87 values from causing issues
+    if (!IsSpecialX87Value()) {
+      // For malformed x87 values, fall back to standard conversion
+      // This will let SoftFloat handle the edge cases appropriately
+      const float64_t Result = extF80_to_f64(state, *this);
+      return FEXCore::BitCast<double>(Result);
+    }
+
+    if (IsSignalingNaN()) {
+      // we keep it as a signaling nan in ieee754 in 64bits
+      uint64_t sign_bit = Sign ? 0x8000000000000000ULL : 0;
+      uint64_t exp_bits = 0x7FF0000000000000ULL;
+      uint64_t x87_frac = Significand & 0x3FFFFFFFFFFFFFFFULL;
+      uint64_t ieee_frac = (x87_frac >> 11) & 0x0007FFFFFFFFFFFFULL;
+
+      if (ieee_frac == 0) {
+        ieee_frac = 1;
+      }
+      ieee_frac &= ~0x0008000000000000ULL;
+
+      uint64_t result_bits = sign_bit | exp_bits | ieee_frac;
+      return FEXCore::BitCast<double>(result_bits);
+    } else if (IsQuietNaN()) {
+      const float64_t Result = extF80_to_f64(state, *this);
+      uint64_t result_bits = FEXCore::BitCast<uint64_t>(Result);
+      result_bits |= 0x0008000000000000ULL;
+      return FEXCore::BitCast<double>(result_bits);
+    } else {
+      const float64_t Result = extF80_to_f64(state, *this);
+      return FEXCore::BitCast<double>(Result);
+    }
   }
 
   FEXCore::VectorRegType ToVector() const {
@@ -578,6 +653,39 @@ struct FEX_PACKED X80SoftFloat {
 
   X80SoftFloat(softfloat_state* state, const double rhs) {
     *this = f64_to_extF80(state, FEXCore::BitCast<float64_t>(rhs));
+  }
+
+  // Create X80SoftFloat from double while preserving NaN signaling properties
+  static X80SoftFloat FromF64_PreserveNaN(softfloat_state* state, double value) {
+    uint64_t bits = FEXCore::BitCast<uint64_t>(value);
+
+    // Check if it's a nan
+    if ((bits & 0x7FF0000000000000ULL) == 0x7FF0000000000000ULL && (bits & 0x000FFFFFFFFFFFFFULL) != 0) {
+
+      X80SoftFloat result;
+      result.Sign = (bits >> 63) & 1;
+      result.Exponent = 0x7FFF;
+
+      bool is_signaling = !(bits & 0x0008000000000000ULL);
+      uint64_t ieee_payload = bits & 0x0007FFFFFFFFFFFFULL;
+
+      // set bit 63 required for x87
+      result.Significand = 0x8000000000000000ULL;
+
+      if (is_signaling) { // clear bit 62 for signaling nan
+        result.Significand &= ~0x4000000000000000ULL;
+      } else { // clear bit 62 for quiet nan
+        result.Significand |= 0x4000000000000000ULL;
+      }
+
+      // ieee754 51-bit payload -> x87 62-bit payload
+      result.Significand |= (ieee_payload << 11) & 0x3FFFFFFFFFFFFFFFULL;
+
+      return result;
+    }
+
+    // For non-NaN values, use standard conversion
+    return X80SoftFloat(state, value);
   }
 
   X80SoftFloat(softfloat_state* state, BIGFLOAT rhs) {
