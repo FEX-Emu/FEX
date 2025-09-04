@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+
 #include "IR.h"
-#include <FEXCore/Core/Context.h>
-#include <FEXCore/Utils/Allocator.h>
-#include <cstring>
+#include <cstdint>
 
 namespace FEXCore::IR {
 
