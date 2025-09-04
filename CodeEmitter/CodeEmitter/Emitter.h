@@ -12,6 +12,7 @@
 #include <CodeEmitter/Registers.h>
 
 #include <array>
+#include <bit>
 #include <cstdint>
 #include <utility>
 #include <type_traits>

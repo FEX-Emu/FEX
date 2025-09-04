@@ -41,7 +41,6 @@ static bool IsImmLogical(uint64_t value, unsigned width, unsigned* n = nullptr, 
   [[maybe_unused]] constexpr auto kDRegSize = 64;
 
   constexpr auto kWRegSize = 32;
-  constexpr auto kXRegSize = 64;
 
   LOGMAN_THROW_A_FMT((width == kBRegSize) || (width == kHRegSize) || (width == kSRegSize) || (width == kDRegSize), "Unexpected imm size");
 
@@ -129,8 +128,8 @@ static bool IsImmLogical(uint64_t value, unsigned width, unsigned* n = nullptr, 
     // Compute the repeat distance d, and set up a bitmask covering the basic
     // unit of repetition (i.e. a word with the bottom d bits set). Also, in all
     // of these cases the N bit of the output will be zero.
-    clz_a = CountLeadingZeros(a, kXRegSize);
-    int clz_c = CountLeadingZeros(c, kXRegSize);
+    clz_a = std::countl_zero(a);
+    int clz_c = std::countl_zero(c);
     d = clz_a - clz_c;
     mask = ((UINT64_C(1) << d) - 1);
     out_n = 0;
@@ -151,7 +150,7 @@ static bool IsImmLogical(uint64_t value, unsigned width, unsigned* n = nullptr, 
       // of set bits in our word, meaning that we have the trivial case of
       // d == 64 and only one 'repetition'. Set up all the same variables as in
       // the general case above, and set the N bit in the output.
-      clz_a = CountLeadingZeros(a, kXRegSize);
+      clz_a = std::countl_zero(a);
       d = 64;
       mask = ~UINT64_C(0);
       out_n = 1;
@@ -159,7 +158,7 @@ static bool IsImmLogical(uint64_t value, unsigned width, unsigned* n = nullptr, 
   }
 
   // If the repeat period d is not a power of two, it can't be encoded.
-  if (!IsPowerOf2(d)) {
+  if (!std::has_single_bit(uint32_t(d))) {
     return false;
   }
 
@@ -179,7 +178,7 @@ static bool IsImmLogical(uint64_t value, unsigned width, unsigned* n = nullptr, 
   static const uint64_t multipliers[] = {
     0x0000000000000001UL, 0x0000000100000001UL, 0x0001000100010001UL, 0x0101010101010101UL, 0x1111111111111111UL, 0x5555555555555555UL,
   };
-  uint64_t multiplier = multipliers[CountLeadingZeros(d, kXRegSize) - 57];
+  uint64_t multiplier = multipliers[std::countl_zero(uint64_t(d)) - 57];
   uint64_t candidate = (b - a) * multiplier;
 
   if (value != candidate) {
@@ -194,7 +193,7 @@ static bool IsImmLogical(uint64_t value, unsigned width, unsigned* n = nullptr, 
   // Count the set bits in our basic stretch. The special case of clz(0) == -1
   // makes the answer come out right for stretches that reach the very top of
   // the word (e.g. numbers like 0xffffc00000000000).
-  int clz_b = (b == 0) ? -1 : CountLeadingZeros(b, kXRegSize);
+  int clz_b = (b == 0) ? -1 : std::countl_zero(b);
   int s = clz_a - clz_b;
 
   // Decide how many bits to rotate right by, to put the low bit of that basic
@@ -285,11 +284,6 @@ INT_1_TO_63_LIST(DECLARE_IS_UINT_N)
 
 private:
 
-template<typename V>
-static inline bool IsPowerOf2(V value) {
-  return (value != 0) && ((value & (value - 1)) == 0);
-}
-
 // Some compilers dislike negating unsigned integers,
 // so we provide an equivalent.
 template<typename T>
@@ -300,52 +294,6 @@ static inline T UnsignedNegate(T value) {
 
 static inline uint64_t LowestSetBit(uint64_t value) {
   return value & UnsignedNegate(value);
-}
-
-template<typename V>
-static inline int CountLeadingZeros(V value, int width = (sizeof(V) * 8)) {
-#if COMPILER_HAS_BUILTIN_CLZ
-  if (width == 32) {
-    return (value == 0) ? 32 : __builtin_clz(static_cast<unsigned>(value));
-  } else if (width == 64) {
-    return (value == 0) ? 64 : __builtin_clzll(value);
-  }
-#endif
-  return CountLeadingZerosFallBack(value, width);
-}
-
-static inline int CountLeadingZerosFallBack(uint64_t value, int width) {
-  LOGMAN_THROW_A_FMT(IsPowerOf2(width) && (width <= 64), "Invalid width");
-  if (value == 0) {
-    return width;
-  }
-  int count = 0;
-  value = value << (64 - width);
-  if ((value & UINT64_C(0xffffffff00000000)) == 0) {
-    count += 32;
-    value = value << 32;
-  }
-  if ((value & UINT64_C(0xffff000000000000)) == 0) {
-    count += 16;
-    value = value << 16;
-  }
-  if ((value & UINT64_C(0xff00000000000000)) == 0) {
-    count += 8;
-    value = value << 8;
-  }
-  if ((value & UINT64_C(0xf000000000000000)) == 0) {
-    count += 4;
-    value = value << 4;
-  }
-  if ((value & UINT64_C(0xc000000000000000)) == 0) {
-    count += 2;
-    value = value << 2;
-  }
-  if ((value & UINT64_C(0x8000000000000000)) == 0) {
-    count += 1;
-  }
-  count += (value == 0);
-  return count;
 }
 
 public:
