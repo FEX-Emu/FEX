@@ -317,7 +317,7 @@ namespace CPU {
     // Resize the code buffer and reallocate our code size
     CurrentCodeBuffer = CodeBuffers.StartLargerCodeBuffer();
 
-    RegisterForSignalHandler(PrevCodeBuffer);
+    RegisterForSignalHandler(std::move(PrevCodeBuffer));
     return CurrentCodeBuffer.get();
   }
 
@@ -326,14 +326,13 @@ namespace CPU {
       // We have signal handlers that have generated code
       // This means that we can not safely clear the code at this point in time
       // Keep a reference to the old code buffer to delay deallocation
-      SignalHandlerCodeBuffers.push_back(CodeBuffer);
+      SignalHandlerCodeBuffers.push_back(std::move(CodeBuffer));
     } else {
       SignalHandlerCodeBuffers.clear();
     }
   }
 
   fextl::shared_ptr<CodeBuffer> CPUBackend::CheckCodeBufferUpdate() {
-    fextl::shared_ptr<CodeBuffer> OldCodeBuffer;
     auto NewCodeBuffer = CodeBuffers.GetLatest();
     if (CurrentCodeBuffer != NewCodeBuffer) {
       RegisterForSignalHandler(CurrentCodeBuffer);
