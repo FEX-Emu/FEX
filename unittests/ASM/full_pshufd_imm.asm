@@ -2,7 +2,8 @@
 {
   "RegData": {
     "RAX": "0x00000000a1aaca0e"
-  }
+  },
+  "HostFeatures": ["SSE4.1"]
 }
 %endif
 

@@ -279,10 +279,25 @@ int main(int argc, char** argv, char** const envp) {
   const bool SupportsBMI1 = Feature.Feat_bmi1;
   const bool SupportsBMI2 = Feature.Feat_bmi2;
   const bool SupportsCLWB = Feature.Feat_clwb;
+  const bool SupportsSSSE3 = Feature.Feat_ssse3;
+  const bool SupportsSSE4_1 = Feature.Feat_sse4_1;
+  const bool SupportsSSE4_2 = Feature.Feat_sse4_2;
+  const bool SupportsAES = Feature.Feat_aes;
+  const bool SupportsPCLMUL = Feature.Feat_pclmulqdq;
+  const bool SupportsMOVBE = Feature.Feat_movbe;
+  const bool SupportsADX = Feature.Feat_adx;
+  const bool SupportsXSAVE = Feature.Feat_xsave;
+  const bool SupportsRDPID = Feature.Feat_rdpid;
+  const bool SupportsCLFLOPT = Feature.Feat_clflopt;
+  const bool SupportsFSGSBase = Feature.Feat_fsgsbase;
 
-  TestUnsupported |= (!Supports3DNow && Loader.Requires3DNow()) || (!SupportsSSE4A && Loader.RequiresSSE4A()) ||
-                     (!SupportsBMI1 && Loader.RequiresBMI1()) || (!SupportsBMI2 && Loader.RequiresBMI2()) ||
-                     (!SupportsCLWB && Loader.RequiresCLWB());
+  TestUnsupported |=
+    (!Supports3DNow && Loader.Requires3DNow()) || (!SupportsSSE4A && Loader.RequiresSSE4A()) || (!SupportsBMI1 && Loader.RequiresBMI1()) ||
+    (!SupportsBMI2 && Loader.RequiresBMI2()) || (!SupportsCLWB && Loader.RequiresCLWB()) || (!SupportsSSSE3 && Loader.RequiresSSSE3()) ||
+    (!SupportsSSE4_1 && Loader.RequiresSSE4_1()) || (!SupportsSSE4_2 && Loader.RequiresSSE4_2()) ||
+    (!SupportsAES && Loader.RequiresAES()) || (!SupportsPCLMUL && Loader.RequiresPCLMUL()) || (!SupportsMOVBE && Loader.RequiresMOVBE()) ||
+    (!SupportsADX && Loader.RequiresADX()) || (!SupportsXSAVE && Loader.RequiresXSAVE()) || (!SupportsRDPID && Loader.RequiresRDPID()) ||
+    (!SupportsCLFLOPT && Loader.RequiresCLFLOPT()) || (!SupportsFSGSBase && Loader.RequiresFSGSBase()) || Loader.RequiresEMMI();
 #endif
 
 #ifdef _WIN32
@@ -294,26 +309,26 @@ int main(int argc, char** argv, char** const envp) {
   }
 
 #ifndef _WIN32
-    auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get(), nullptr) :
-                                                 FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), nullptr, std::move(Allocator));
+  auto SyscallHandler = Loader.Is64BitMode() ? FEX::HLE::x64::CreateHandler(CTX.get(), SignalDelegation.get(), nullptr) :
+                                               FEX::HLE::x32::CreateHandler(CTX.get(), SignalDelegation.get(), nullptr, std::move(Allocator));
 
-    auto DoMmap = [&](uint64_t Address, size_t Size) -> void* {
-      // Map as R-X, then protect as RWX without informing the frontend to avoid unwanted SMC detection
-      void* Result =
-        SyscallHandler->GuestMmap(nullptr, (void*)Address, Size, PROT_READ | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
-      LOGMAN_THROW_A_FMT(Result == reinterpret_cast<void*>(Address), "Map Memory mmap failed");
-      ::mprotect(Result, Size, PROT_READ | PROT_WRITE | PROT_EXEC);
-      return Result;
-    };
+  auto DoMmap = [&](uint64_t Address, size_t Size) -> void* {
+    // Map as R-X, then protect as RWX without informing the frontend to avoid unwanted SMC detection
+    void* Result =
+      SyscallHandler->GuestMmap(nullptr, (void*)Address, Size, PROT_READ | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
+    LOGMAN_THROW_A_FMT(Result == reinterpret_cast<void*>(Address), "Map Memory mmap failed");
+    ::mprotect(Result, Size, PROT_READ | PROT_WRITE | PROT_EXEC);
+    return Result;
+  };
 
 #else
-    auto SyscallHandler = FEX::WindowsHandlers::CreateSyscallHandler();
+  auto SyscallHandler = FEX::WindowsHandlers::CreateSyscallHandler();
 
-    auto DoMMap = [](uint64_t Address, size_t Size) -> void* {
-      void* Result = FEXCore::Allocator::VirtualAlloc(reinterpret_cast<void*>(Address), Size, true);
-      LOGMAN_THROW_A_FMT(Result == reinterpret_cast<void*>(Address), "Map Memory mmap failed");
-      return Result;
-    };
+  auto DoMMap = [](uint64_t Address, size_t Size) -> void* {
+    void* Result = FEXCore::Allocator::VirtualAlloc(reinterpret_cast<void*>(Address), Size, true);
+    LOGMAN_THROW_A_FMT(Result == reinterpret_cast<void*>(Address), "Map Memory mmap failed");
+    return Result;
+  };
 #endif
 
   CTX->SetSignalDelegator(SignalDelegation.get());

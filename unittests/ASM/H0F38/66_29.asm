@@ -11,7 +11,8 @@
     "XMM8":  ["0xffffffffffffffff", "0xffffffffffffffff"],
     "XMM9":  ["0x0", "0xffffffffffffffff"],
     "XMM10": ["0xffffffffffffffff", "0x0"]
-  }
+  },
+  "HostFeatures": ["SSE4.1"]
 }
 %endif
 

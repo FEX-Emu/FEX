@@ -5,7 +5,8 @@
       "RBX": "0x00000000",
       "RCX": "0x00000000",
       "RSI": "0x00000000"
-  }
+  },
+  "HostFeatures": ["AVX"]
 }
 %endif
 

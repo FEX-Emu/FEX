@@ -1,5 +1,7 @@
 %ifdef CONFIG
-{}
+{
+  "HostFeatures": ["SSSE3"]
+}
 %endif
 
 ; FEX had a bug where the REX.B prefix would cause out of bounds MMX register access, when real HW ignores its presence

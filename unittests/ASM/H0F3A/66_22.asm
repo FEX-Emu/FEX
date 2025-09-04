@@ -4,7 +4,8 @@
     "XMM1": ["0x48510f254d2fa47f", "0x2b5774314d2fa47f"],
     "XMM2": ["0x0000000000000000", "0x1f6de86b00000000"],
     "XMM3": ["0x1f6de86b1f6de86b", "0x1f6de86b1f6de86b"]
-  }
+  },
+  "HostFeatures": ["SSE4.1"]
 }
 %endif
 

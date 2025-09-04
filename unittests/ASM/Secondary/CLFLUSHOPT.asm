@@ -2,7 +2,8 @@
 {
   "RegData": {
     "RAX": "1"
-  }
+  },
+  "HostFeatures": ["CLFLOPT"]
 }
 %endif
 

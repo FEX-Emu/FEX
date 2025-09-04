@@ -17,7 +17,8 @@
     "XMM13": ["0x40beb622c0fe35c7", "0"],
     "XMM14": ["0", "0x40b74171bb41b9ba"],
     "XMM15": ["0x40ac8195a7735fbe", "0x40ac8195a7735fbe"]
-  }
+  },
+  "HostFeatures": ["SSE4.1"]
 }
 %endif
 

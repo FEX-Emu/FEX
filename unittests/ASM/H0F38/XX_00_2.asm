@@ -3,7 +3,8 @@
   "RegData": {
     "MM0": "0x4444444444444444",
     "MM1": "0x0"
-  }
+  },
+  "HostFeatures": ["SSSE3"]
 }
 %endif
 

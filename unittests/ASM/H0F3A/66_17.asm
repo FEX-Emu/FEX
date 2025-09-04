@@ -5,7 +5,8 @@
     "RBX": "0x0000000067d29af3",
     "RCX": "0x8a6789f27404b890",
     "RDX": "0x00f658ab78236612"
-  }
+  },
+  "HostFeatures": ["SSE4.1"]
 }
 %endif
 

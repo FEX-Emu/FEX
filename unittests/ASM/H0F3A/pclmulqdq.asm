@@ -6,7 +6,8 @@
       "XMM3": ["0xE208147952DE57A0", "0x317D360F86C80DC9"],
       "XMM4": ["0xBBA54C87DA872B40", "0x6495428B7641EBE6"],
       "XMM5": ["0x170B5A1B5CDD42EA", "0x719F094BB2358CA1"]
-  }
+  },
+  "HostFeatures": ["PCLMUL"]
 }
 %endif
 

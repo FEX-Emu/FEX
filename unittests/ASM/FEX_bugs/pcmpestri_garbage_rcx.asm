@@ -4,7 +4,8 @@
       "RAX": ["15"],
       "RCX": ["5"],
       "RDX": ["16"]
-  }
+  },
+  "HostFeatures": ["SSE4.2"]
 }
 %endif
 

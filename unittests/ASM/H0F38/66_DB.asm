@@ -6,7 +6,8 @@
     "XMM2": ["0x0b0d090e0b0d090e", "0x0b0d090e0b0d090e"],
     "XMM3": ["0xffffffff00000000", "0x0b0d090effffffff"],
     "XMM4": ["0x0202020202020202", "0x0303030303030303"]
-  }
+  },
+  "HostFeatures": ["AES"]
 }
 %endif
 
