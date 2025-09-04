@@ -140,8 +140,6 @@ void Dispatcher::EmitDispatcher() {
 
   // We want to ensure that we are 16 byte aligned at the top of this loop
   Align16B();
-  ARMEmitter::BiDirectionalLabel FullLookup {};
-  ARMEmitter::BiDirectionalLabel CallBlock {};
 
   Bind(&LoopTop);
   AbsoluteLoopTopAddress = GetCursorAddress<uint64_t>();
@@ -149,22 +147,32 @@ void Dispatcher::EmitDispatcher() {
   // Load in our RIP
   ldr(RipReg, STATE_PTR(CpuStateFrame, State.rip));
 
+#ifdef _M_ARM_64EC
+  // Clobbers TMP1/2
+  // Check the EC code bitmap incase we need to exit the JIT to call into native code.
+  ARMEmitter::ForwardLabel l_NotECCode;
+  ldr(TMP1, ARMEmitter::XReg::x18, TEB_PEB_OFFSET);
+  ldr(TMP1, TMP1, PEB_EC_CODE_BITMAP_OFFSET);
+
+  lsr(ARMEmitter::Size::i64Bit, TMP2, RipReg, 15);
+  and_(ARMEmitter::Size::i64Bit, TMP2, TMP2, 0x1fffffffffff8);
+  ldr(TMP1, TMP1, TMP2, ARMEmitter::ExtendedType::LSL_64, 0);
+  lsr(ARMEmitter::Size::i64Bit, TMP2, RipReg, 12);
+  lsrv(ARMEmitter::Size::i64Bit, TMP1, TMP1, TMP2);
+  tbz(TMP1, 0, &l_NotECCode);
+
+  str(REG_CALLRET_SP, STATE_PTR(CpuStateFrame, State.callret_sp));
+
+  add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, StaticRegisters[X86State::REG_RSP], 0);
+  mov(EC_CALL_CHECKER_PC_REG, RipReg);
+  ldr(TMP2, STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionEC));
+  br(TMP2);
+
+  Bind(&l_NotECCode);
+#endif
+
   ldrb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
   cbnz(ARMEmitter::Size::i32Bit, TMP1, &CompileSingleStep);
-
-  // L1 Cache
-  ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.L1Pointer));
-
-  and_(ARMEmitter::Size::i64Bit, TMP4, RipReg.R(), LookupCache::L1_ENTRIES_MASK);
-  add(ARMEmitter::Size::i64Bit, TMP1, TMP1, TMP4, ARMEmitter::ShiftType::LSL, 4);
-  ldp<ARMEmitter::IndexType::OFFSET>(TMP4, TMP1, TMP1, 0);
-  sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, RipReg);
-  cbnz(ARMEmitter::Size::i64Bit, TMP1, &FullLookup);
-
-  br(TMP4);
-
-  // L1C check failed, do a full lookup
-  Bind(&FullLookup);
 
   // This is the block cache lookup routine
   // It matches what is going on it LookupCache.h::FindBlock
@@ -293,39 +301,9 @@ void Dispatcher::EmitDispatcher() {
     br(TMP1);
   }
 
-#ifdef _M_ARM_64EC
-  // Clobbers TMP1/2
-  auto EmitECExitCheck = [&]() {
-    // Check the EC code bitmap incase we need to exit the JIT to call into native code.
-    ARMEmitter::ForwardLabel l_NotECCode;
-    ldr(TMP1, ARMEmitter::XReg::x18, TEB_PEB_OFFSET);
-    ldr(TMP1, TMP1, PEB_EC_CODE_BITMAP_OFFSET);
-
-    lsr(ARMEmitter::Size::i64Bit, TMP2, RipReg, 15);
-    and_(ARMEmitter::Size::i64Bit, TMP2, TMP2, 0x1fffffffffff8);
-    ldr(TMP1, TMP1, TMP2, ARMEmitter::ExtendedType::LSL_64, 0);
-    lsr(ARMEmitter::Size::i64Bit, TMP2, RipReg, 12);
-    lsrv(ARMEmitter::Size::i64Bit, TMP1, TMP1, TMP2);
-    tbz(TMP1, 0, &l_NotECCode);
-
-    str(REG_CALLRET_SP, STATE_PTR(CpuStateFrame, State.callret_sp));
-
-    add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, StaticRegisters[X86State::REG_RSP], 0);
-    mov(EC_CALL_CHECKER_PC_REG, RipReg);
-    ldr(TMP2, STATE_PTR(CpuStateFrame, Pointers.Common.ExitFunctionEC));
-    br(TMP2);
-
-    Bind(&l_NotECCode);
-  };
-#endif
-
   // Need to create the block
   {
     Bind(&NoBlock);
-
-#ifdef _M_ARM_64EC
-    EmitECExitCheck();
-#endif
 
     EmitSignalGuardedRegion([&]() {
       SpillStaticRegs(TMP1);
@@ -360,10 +338,6 @@ void Dispatcher::EmitDispatcher() {
 
   {
     Bind(&CompileSingleStep);
-
-#ifdef _M_ARM_64EC
-    EmitECExitCheck();
-#endif
 
     EmitSignalGuardedRegion([&]() {
       SpillStaticRegs(TMP1);
