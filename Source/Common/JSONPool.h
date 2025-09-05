@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/list.h>
 
 #include <tiny-json.h>
