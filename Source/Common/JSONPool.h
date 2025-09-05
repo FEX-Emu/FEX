@@ -2,6 +2,7 @@
 
 #include <FEXCore/fextl/list.h>
 
+#include <iterator>
 #include <tiny-json.h>
 
 namespace FEX::JSON {
@@ -13,10 +14,10 @@ struct JsonAllocator : jsonPool_t {
 
 template<typename T>
 const json_t* CreateJSON(T& Container, JsonAllocator& Allocator) {
-  if (Container.empty()) {
+  if (std::empty(Container)) {
     return nullptr;
   }
 
-  return json_createWithPool(&Container.at(0), &Allocator);
+  return json_createWithPool(std::data(Container), &Allocator);
 }
 } // namespace FEX::JSON
