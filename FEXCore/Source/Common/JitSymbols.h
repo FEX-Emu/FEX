@@ -2,12 +2,10 @@
 #pragma once
 
 #include <FEXCore/fextl/memory.h>
-#include <FEXCore/Debug/InternalThreadState.h>
 
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
-#include <cstdio>
-#include <memory>
 #include <string_view>
 
 namespace FEXCore {
