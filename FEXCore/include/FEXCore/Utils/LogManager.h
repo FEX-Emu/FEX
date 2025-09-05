@@ -9,7 +9,7 @@
 #include <fmt/color.h>
 
 namespace LogMan {
-enum DebugLevels {
+enum DebugLevels : uint32_t {
   NONE = 0,   ///< Expect zero messages
   ASSERT = 1, ///< Assert throwing
   ERROR = 2,  ///< Only Errors printed
