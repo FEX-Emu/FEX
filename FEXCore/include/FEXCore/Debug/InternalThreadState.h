@@ -71,7 +71,7 @@ struct NonMovableUniquePtr {
     return Ptr;
   }
 
-  operator bool() const noexcept {
+  explicit operator bool() const noexcept {
     return Ptr != nullptr;
   }
 
