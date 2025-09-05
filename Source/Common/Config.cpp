@@ -12,10 +12,12 @@
 #include <FEXHeaderUtils/SymlinkChecks.h>
 
 #include <cstring>
+#include <functional>
 #ifndef _WIN32
 #include <linux/limits.h>
 #include <pwd.h>
 #endif
+#include <optional>
 #include <utility>
 #include <tiny-json.h>
 
