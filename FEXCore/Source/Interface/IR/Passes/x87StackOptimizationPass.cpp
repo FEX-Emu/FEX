@@ -348,6 +348,7 @@ private:
   // If slowpath is false, then TopCache is nullptr.
   bool FlushTopPending = false;
   bool FlushFTWPending = false;
+  std::array<bool, 8> FlushValuesPending {};
   void FlushCachedRegs();
 
   Ref GetFTW();
@@ -356,7 +357,7 @@ private:
   Ref FTWCached {};
   std::array<Ref, 8> TopOffsetCache {};
   std::array<Ref, 8> TopOffsetAddressCache {};
-
+  std::array<Ref, 8> TopValueCache {};
 
   // Are we on the slow path?
   // Once we enter the slow path, we never come out.
@@ -380,6 +381,7 @@ inline void X87StackOptimization::InvalidateCachedRegs() {
   FTWCached = {};
   TopOffsetCache.fill(nullptr);
   TopOffsetAddressCache.fill(nullptr);
+  TopValueCache.fill(nullptr);
 }
 
 inline void X87StackOptimization::Reset() {
@@ -478,16 +480,17 @@ inline Ref X87StackOptimization::GetX87ValidTag_Slow(uint8_t Offset) {
 inline Ref X87StackOptimization::LoadStackValueAtOffset_Slow(uint8_t Offset) {
   OrderedNode* TopOffsetAddress = GetOffsetTopAddressWithCache_Slow(Offset);
   auto Size = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
-  return IREmit->_LoadMem(FPRClass, Size, TopOffsetAddress, IREmit->_InlineConstant(MMBaseOffset()), Size, MEM_OFFSET_SXTX, 1);
+  if (!TopValueCache[Offset]) {
+    TopValueCache[Offset] = IREmit->_LoadMem(FPRClass, Size, TopOffsetAddress, IREmit->_InlineConstant(MMBaseOffset()), Size, MEM_OFFSET_SXTX, 1);
+  }
+  return TopValueCache[Offset];
 }
 
 inline void X87StackOptimization::StoreStackValueAtOffset_Slow(Ref Value, uint8_t Offset, bool SetValid) {
   OrderedNode* TopOffset = GetOffsetTopWithCache_Slow(Offset);
-  OrderedNode* TopOffsetAddress = GetOffsetTopAddressWithCache_Slow(Offset);
-  auto Size = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
 
-  // store
-  IREmit->_StoreMem(FPRClass, Size, Value, TopOffsetAddress, IREmit->_InlineConstant(MMBaseOffset()), Size, MEM_OFFSET_SXTX, 1);
+  TopValueCache[Offset] = Value;
+  FlushValuesPending[Offset] = true;
   // mark it valid
   // In some cases we might already know it has been previously set as valid so we don't need to do it again
   if (SetValid) {
@@ -586,6 +589,8 @@ inline void X87StackOptimization::UpdateTopForPop_Slow() {
   GetOffsetTopWithCache_Slow(1);
   std::rotate(TopOffsetCache.begin(), std::next(TopOffsetCache.begin()), TopOffsetCache.end());
   std::rotate(TopOffsetAddressCache.begin(), std::next(TopOffsetAddressCache.begin()), TopOffsetAddressCache.end());
+  std::rotate(TopValueCache.begin(), std::next(TopValueCache.begin()), TopValueCache.end());
+  std::rotate(FlushValuesPending.begin(), std::next(FlushValuesPending.begin()), FlushValuesPending.end());
   FlushTopPending = true;
 }
 
@@ -594,6 +599,8 @@ inline void X87StackOptimization::UpdateTopForPush_Slow() {
   GetOffsetTopWithCache_Slow(1, true);
   std::rotate(TopOffsetCache.begin(), std::prev(TopOffsetCache.end()), TopOffsetCache.end());
   std::rotate(TopOffsetAddressCache.begin(), std::prev(TopOffsetAddressCache.end()), TopOffsetAddressCache.end());
+  std::rotate(TopValueCache.begin(), std::prev(TopValueCache.end()), TopValueCache.end());
+  std::rotate(FlushValuesPending.begin(), std::prev(FlushValuesPending.end()), FlushValuesPending.end());
   FlushTopPending = true;
 }
 
@@ -606,6 +613,16 @@ void X87StackOptimization::FlushCachedRegs() {
   if (FlushFTWPending) {
     IREmit->_StoreContext(OpSize::i8Bit, GPRClass, FTWCached, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
     FlushFTWPending = false;
+  }
+
+  auto Size = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
+  for (size_t i = 0; i < FlushValuesPending.size(); i++) {
+    if (FlushValuesPending[i]) {
+      OrderedNode* TopOffsetAddress = GetOffsetTopAddressWithCache_Slow(i);
+      IREmit->_StoreMem(FPRClass, Size, TopValueCache[i], TopOffsetAddress, IREmit->_InlineConstant(MMBaseOffset()), Size, MEM_OFFSET_SXTX, 1);
+      // store
+      FlushValuesPending[i] = false;
+    }
   }
 }
 
