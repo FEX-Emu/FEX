@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 #include "Common/VolatileMetadata.h"
 
+#include <FEXCore/Utils/LogManager.h>
+
+#include <cstdlib>
+
 #include <range/v3/view/split.hpp>
 #include <range/v3/view/transform.hpp>
 

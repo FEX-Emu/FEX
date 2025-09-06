@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
-#include <FEXCore/fextl/string.h>
 
-#include <algorithm>
+#include <FEXCore/fextl/string.h>
 
 namespace FEX::StringUtil {
 void ltrim(fextl::string& s);

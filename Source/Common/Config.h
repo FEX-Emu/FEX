@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
+#include <FEXCore/fextl/unordered_map.h>
+#include <FEXCore/fextl/vector.h>
+
+#include <string_view>
 
 namespace FEX::ArgLoader {
 class ArgLoader;

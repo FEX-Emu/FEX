@@ -1,9 +1,16 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/string.h>
-#include <FEXHeaderUtils/Syscalls.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <ctime>
+#include <string_view>
+
+namespace LogMan {
+enum DebugLevels : uint32_t;
+}
 
 namespace FEXServerClient {
 enum class PacketType {
@@ -134,18 +141,7 @@ namespace Logging {
 
   static_assert(sizeof(PacketHeader) == 32, "Wrong size");
 
-  [[maybe_unused]]
-  static PacketHeader FillHeader(Logging::PacketTypes Type) {
-
-    Logging::PacketHeader Msg {
-      .PacketType = Type,
-      .PID = ::getpid(),
-      .TID = FHU::Syscalls::gettid(),
-    };
-    clock_gettime(CLOCK_MONOTONIC, &Msg.Timestamp);
-
-    return Msg;
-  }
+  PacketHeader FillHeader(PacketTypes Type);
 } // namespace Logging
 
 void MsgHandler(int FD, LogMan::DebugLevels Level, const char* Message);
