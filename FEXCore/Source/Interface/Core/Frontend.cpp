@@ -650,7 +650,7 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
 }
 
 bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op) {
-  DecodeInst->OP = Op;
+  DecodeInst->OPRaw = DecodeInst->OP = Op;
   DecodeInst->TableInfo = Info;
 
   if (Info->Type == FEXCore::X86Tables::TYPE_UNKNOWN) {
@@ -1163,7 +1163,7 @@ bool Decoder::IsBranchMonoTailcall(uint64_t NumInstructions) const {
   } else {
     FEXCore::X86Tables::ModRMDecoded ModRM;
     ModRM.Hex = DecodeInst->ModRM;
-    if (DecodeInst->OP == 0xFF && ModRM.reg == 4 && DecodeInst->Src[0].IsGPR()) {
+    if (DecodeInst->OPRaw == 0xFF && ModRM.reg == 4 && DecodeInst->Src[0].IsGPR()) {
       if (DecodeInst->Src[0].Data.GPR.GPR == FEXCore::X86State::REG_RAX) {
         // Found in versions of mono from 2024 onwards - matches:
         // REX.W JMP rax

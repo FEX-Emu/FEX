@@ -446,48 +446,50 @@ DEF_OP(Thunk) {
 
 DEF_OP(ValidateCode) {
   auto Op = IROp->C<IR::IROp_ValidateCode>();
-  const auto* OldCode = (const uint8_t*)&Op->CodeOriginalLow;
+  auto OldCode = Op->CodeOriginal.data();
+  auto Base = GetReg(Op->Header.Args[0]).X();
   int len = Op->CodeLength;
-  int idx = 0;
-
-  LoadConstant(ARMEmitter::Size::i64Bit, GetReg(Node), 0);
-  LoadConstant(ARMEmitter::Size::i64Bit, TMP1, Entry + Op->Offset);
-  LoadConstant(ARMEmitter::Size::i64Bit, TMP2, 1);
+  int Offset = 0;
+  ARMEmitter::ForwardLabel Fail;
 
   const auto Dst = GetReg(Node);
 
-  while (len >= 8) {
-    ldr(ARMEmitter::XReg::x2, TMP1, idx);
-    LoadConstant(ARMEmitter::Size::i64Bit, TMP4, *(const uint64_t*)(OldCode + idx));
-    cmp(ARMEmitter::Size::i64Bit, TMP3, TMP4);
-    csel(ARMEmitter::Size::i64Bit, Dst, Dst, TMP2, ARMEmitter::Condition::CC_EQ);
-    len -= 8;
-    idx += 8;
-  }
-  while (len >= 4) {
-    ldr(ARMEmitter::WReg::w2, TMP1, idx);
-    LoadConstant(ARMEmitter::Size::i64Bit, TMP4, *(const uint32_t*)(OldCode + idx));
-    cmp(ARMEmitter::Size::i32Bit, TMP3, TMP4);
-    csel(ARMEmitter::Size::i64Bit, Dst, Dst, TMP2, ARMEmitter::Condition::CC_EQ);
-    len -= 4;
-    idx += 4;
-  }
-  while (len >= 2) {
-    ldrh(TMP3, TMP1, idx);
-    LoadConstant(ARMEmitter::Size::i64Bit, TMP4, *(const uint16_t*)(OldCode + idx));
-    cmp(ARMEmitter::Size::i32Bit, TMP3, TMP4);
-    csel(ARMEmitter::Size::i64Bit, Dst, Dst, TMP2, ARMEmitter::Condition::CC_EQ);
-    len -= 2;
-    idx += 2;
-  }
-  while (len >= 1) {
-    ldrb(TMP3, TMP1, idx);
-    LoadConstant(ARMEmitter::Size::i64Bit, TMP4, *(const uint8_t*)(OldCode + idx));
-    cmp(ARMEmitter::Size::i32Bit, TMP3, TMP4);
-    csel(ARMEmitter::Size::i64Bit, Dst, Dst, TMP2, ARMEmitter::Condition::CC_EQ);
-    len -= 1;
-    idx += 1;
-  }
+  auto EmitCheck = [&](size_t Size, auto&& LoadData) {
+    while (len >= Size) {
+      LoadData();
+      sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, TMP2);
+      cbnz(ARMEmitter::Size::i64Bit, TMP1, &Fail);
+      len -= Size;
+      Offset += Size;
+    }
+  };
+
+  EmitCheck(8, [&]() {
+    ldr(TMP1, Base, Offset);
+    LoadConstant(ARMEmitter::Size::i64Bit, TMP2, *(const uint64_t*)(OldCode + Offset));
+  });
+
+  EmitCheck(4, [&]() {
+    ldr(TMP1.W(), Base, Offset);
+    LoadConstant(ARMEmitter::Size::i32Bit, TMP2, *(const uint32_t*)(OldCode + Offset));
+  });
+
+  EmitCheck(2, [&]() {
+    ldrh(TMP1.W(), Base, Offset);
+    LoadConstant(ARMEmitter::Size::i32Bit, TMP2, *(const uint16_t*)(OldCode + Offset));
+  });
+
+  EmitCheck(1, [&]() {
+    ldrb(TMP1.W(), Base, Offset);
+    LoadConstant(ARMEmitter::Size::i32Bit, TMP2, *(const uint8_t*)(OldCode + Offset));
+  });
+
+  ARMEmitter::ForwardLabel End;
+  LoadConstant(ARMEmitter::Size::i32Bit, Dst, 0);
+  b(&End);
+  Bind(&Fail);
+  LoadConstant(ARMEmitter::Size::i32Bit, Dst, 1);
+  Bind(&End);
 }
 
 DEF_OP(ThreadRemoveCodeEntry) {
