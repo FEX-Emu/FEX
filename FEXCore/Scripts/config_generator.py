@@ -418,7 +418,7 @@ def print_parse_argloader_options(options):
 
             if (value_type == "strenum"):
                 output_argloader.write("\tfextl::string UserValue = Options[\"{0}\"];\n".format(op_key))
-                output_argloader.write("\tSet(FEXCore::Config::ConfigOption::CONFIG_{}, FEXCore::Config::EnumParser<FEXCore::Config::{}ConfigPair>(FEXCore::Config::{}_EnumPairs, UserValue));\n".format(op_key.upper(), op_key, op_key, op_key))
+                output_argloader.write("\tSet(FEXCore::Config::ConfigOption::CONFIG_{}, FEXCore::Config::EnumParser<FEXCore::Config::{}ConfigPair>(FEXCore::Config::{}_EnumPairs, UserValue));\n".format(op_key.upper(), op_key, op_key))
             elif (value_type == "strarray"):
                 # these need a bit more help
                 output_argloader.write("\tauto Array = Options.all(\"{0}\");\n".format(op_key))
@@ -447,7 +447,7 @@ def print_parse_envloader_options(options):
             value_type = op_vals["Type"]
             if (value_type == "strenum"):
                 output_argloader.write("else if (Key == \"FEX_{0}\") {{\n".format(op_key.upper()))
-                output_argloader.write("\tValue = FEXCore::Config::EnumParser<FEXCore::Config::{}ConfigPair>(FEXCore::Config::{}_EnumPairs, Value_View);\n".format(op_key, op_key, op_key))
+                output_argloader.write("\tValue = FEXCore::Config::EnumParser<FEXCore::Config::{}ConfigPair>(FEXCore::Config::{}_EnumPairs, Value_View);\n".format(op_key, op_key))
                 output_argloader.write("}\n")
 
             if ("ArgumentHandler" in op_vals):
@@ -467,7 +467,7 @@ def print_parse_jsonloader_options(options):
             value_type = op_vals["Type"]
             if (value_type == "strenum"):
                 output_argloader.write("else if (KeyName == \"{0}\") {{\n".format(op_key))
-                output_argloader.write("\tSet(KeyOption, FEXCore::Config::EnumParser<FEXCore::Config::{}ConfigPair>(FEXCore::Config::{}_EnumPairs, Value_View));\n".format(op_key, op_key, op_key))
+                output_argloader.write("\tSet(KeyOption, FEXCore::Config::EnumParser<FEXCore::Config::{}ConfigPair>(FEXCore::Config::{}_EnumPairs, Value_View));\n".format(op_key, op_key))
                 output_argloader.write("}\n")
             elif (value_type == "strarray"):
                 output_argloader.write("else if (KeyName == \"{0}\") {{\n".format(op_key))
