@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 #pragma once
-#include <FEXCore/Utils/CompilerDefs.h>
 
 #include <cstdint>
 

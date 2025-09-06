@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+
 #include <FEXCore/Utils/IntervalList.h>
 #include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/set.h>
 #include <FEXCore/fextl/string.h>
+
+#include <string_view>
 
 namespace FEX::VolatileMetadata {
 struct ExtendedVolatileMetadata {

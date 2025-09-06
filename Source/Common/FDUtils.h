@@ -1,15 +1,10 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include <FEXCore/Utils/Allocator.h>
-#include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/fmt.h>
-#include <FEXCore/fextl/string.h>
 
 #include <fcntl.h>
-#include <filesystem>
 #include <linux/limits.h>
-#include <optional>
 #include <unistd.h>
 
 namespace FEX {

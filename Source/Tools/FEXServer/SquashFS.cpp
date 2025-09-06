@@ -5,10 +5,12 @@
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/string.h>
+#include <FEXHeaderUtils/Syscalls.h>
 
 #include <fcntl.h>
 #include <filesystem>
 #include <sys/poll.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <thread>
 

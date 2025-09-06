@@ -10,6 +10,7 @@
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 #include <FEXHeaderUtils/Filesystem.h>
+#include <FEXHeaderUtils/Syscalls.h>
 
 #include <cstdlib>
 #include <fcntl.h>
@@ -27,6 +28,17 @@
 #include <cstring>
 
 namespace FEXServerClient {
+Logging::PacketHeader Logging::FillHeader(PacketTypes Type) {
+  Logging::PacketHeader Msg {
+    .PacketType = Type,
+    .PID = ::getpid(),
+    .TID = FHU::Syscalls::gettid(),
+  };
+  clock_gettime(CLOCK_MONOTONIC, &Msg.Timestamp);
+
+  return Msg;
+}
+
 int RequestPIDFDPacket(int ServerSocket, PacketType Type) {
   fasio::tcp_socket Socket {ServerSocket};
   FEXServerRequestPacket Req {
