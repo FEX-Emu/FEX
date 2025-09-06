@@ -279,7 +279,7 @@ private:
 
   // Top Management Helpers
   /// Set the valid tag for Value as valid (if Valid is true), or invalid (if Valid is false).
-  void SetX87ValidTag(Ref Value, bool Valid);
+  void SetX87ValidTag(uint8_t Offset, bool Valid);
   // Generates slow code to load/store a value from an offset from the top of the stack
   Ref LoadStackValueAtOffset_Slow(uint8_t Offset = 0);
   void StoreStackValueAtOffset_Slow(Ref Value, uint8_t Offset = 0, bool SetValid = true);
@@ -347,17 +347,17 @@ private:
   // Cached value for Top
   // If slowpath is false, then TopCache is nullptr.
   bool FlushTopPending = false;
-  bool FlushFTWPending = false;
   std::array<bool, 8> FlushValuesPending {};
+  bool FlushValidPending = false;
   void FlushCachedRegs();
 
   Ref GetFTW();
-  void SetFTW(Ref Value);
 
   Ref FTWCached {};
   std::array<Ref, 8> TopOffsetCache {};
   std::array<Ref, 8> TopOffsetAddressCache {};
   std::array<Ref, 8> TopValueCache {};
+  std::array<StackSlot, 8> TopValidCache {};
 
   // Are we on the slow path?
   // Once we enter the slow path, we never come out.
@@ -382,6 +382,7 @@ inline void X87StackOptimization::InvalidateCachedRegs() {
   TopOffsetCache.fill(nullptr);
   TopOffsetAddressCache.fill(nullptr);
   TopValueCache.fill(nullptr);
+  TopValidCache.fill(StackSlot::UNUSED);
 }
 
 inline void X87StackOptimization::Reset() {
@@ -463,18 +464,18 @@ inline Ref X87StackOptimization::GetFTW() {
   return FTWCached;
 }
 
-inline void X87StackOptimization::SetFTW(Ref Value) {
-  FTWCached = Value;
-  FlushFTWPending = true;
-}
-
-inline void X87StackOptimization::SetX87ValidTag(Ref Value, bool Valid) {
-  Ref RegMask = IREmit->_Lshl(OpSize::i32Bit, GetConstant(1), Value);
-  SetFTW(Valid ? IREmit->_Or(OpSize::i32Bit, GetFTW(), RegMask) : IREmit->_Andn(OpSize::i32Bit, GetFTW(), RegMask));
+inline void X87StackOptimization::SetX87ValidTag(uint8_t Offset, bool Valid) {
+  TopValidCache[Offset] = Valid ? StackSlot::VALID : StackSlot::INVALID;
+  FlushValidPending = true;
 }
 
 inline Ref X87StackOptimization::GetX87ValidTag_Slow(uint8_t Offset) {
-  return IREmit->_And(OpSize::i32Bit, IREmit->_Lshr(OpSize::i32Bit, GetFTW(), GetOffsetTopWithCache_Slow(Offset)), GetConstant(1));
+  switch (TopValidCache[Offset]) {
+  case StackSlot::UNUSED:
+    return IREmit->_And(OpSize::i32Bit, IREmit->_Lshr(OpSize::i32Bit, GetFTW(), GetOffsetTopWithCache_Slow(Offset)), GetConstant(1));
+  case StackSlot::INVALID: return GetConstant(0);
+  case StackSlot::VALID: return GetConstant(1);
+  }
 }
 
 inline Ref X87StackOptimization::LoadStackValueAtOffset_Slow(uint8_t Offset) {
@@ -487,14 +488,12 @@ inline Ref X87StackOptimization::LoadStackValueAtOffset_Slow(uint8_t Offset) {
 }
 
 inline void X87StackOptimization::StoreStackValueAtOffset_Slow(Ref Value, uint8_t Offset, bool SetValid) {
-  OrderedNode* TopOffset = GetOffsetTopWithCache_Slow(Offset);
-
   TopValueCache[Offset] = Value;
   FlushValuesPending[Offset] = true;
   // mark it valid
   // In some cases we might already know it has been previously set as valid so we don't need to do it again
   if (SetValid) {
-    SetX87ValidTag(TopOffset, true);
+    SetX87ValidTag(Offset, true);
   }
 }
 
@@ -591,6 +590,7 @@ inline void X87StackOptimization::UpdateTopForPop_Slow() {
   std::rotate(TopOffsetAddressCache.begin(), std::next(TopOffsetAddressCache.begin()), TopOffsetAddressCache.end());
   std::rotate(TopValueCache.begin(), std::next(TopValueCache.begin()), TopValueCache.end());
   std::rotate(FlushValuesPending.begin(), std::next(FlushValuesPending.begin()), FlushValuesPending.end());
+  std::rotate(TopValidCache.begin(), std::next(TopValidCache.begin()), TopValidCache.end());
   FlushTopPending = true;
 }
 
@@ -601,6 +601,7 @@ inline void X87StackOptimization::UpdateTopForPush_Slow() {
   std::rotate(TopOffsetAddressCache.begin(), std::prev(TopOffsetAddressCache.end()), TopOffsetAddressCache.end());
   std::rotate(TopValueCache.begin(), std::prev(TopValueCache.end()), TopValueCache.end());
   std::rotate(FlushValuesPending.begin(), std::prev(FlushValuesPending.end()), FlushValuesPending.end());
+  std::rotate(TopValidCache.begin(), std::prev(TopValidCache.end()), TopValidCache.end());
   FlushTopPending = true;
 }
 
@@ -608,11 +609,6 @@ void X87StackOptimization::FlushCachedRegs() {
   if (FlushTopPending) {
     IREmit->_StoreContext(OpSize::i8Bit, GPRClass, TopOffsetCache[0], offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC);
     FlushTopPending = false;
-  }
-
-  if (FlushFTWPending) {
-    IREmit->_StoreContext(OpSize::i8Bit, GPRClass, FTWCached, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
-    FlushFTWPending = false;
   }
 
   auto Size = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
@@ -623,6 +619,58 @@ void X87StackOptimization::FlushCachedRegs() {
       // store
       FlushValuesPending[i] = false;
     }
+  }
+
+  if (FlushValidPending) {
+    uint8_t ValidMask = 0;
+    uint8_t InvalidMask = 0;
+    for (auto It = TopValidCache.rbegin(); It != TopValidCache.rend(); It++) {
+      ValidMask <<= 1;
+      InvalidMask <<= 1;
+      if (*It == StackSlot::VALID) {
+        ValidMask |= 1;
+      } else if (*It == StackSlot::INVALID) {
+        InvalidMask |= 1;
+      }
+    }
+
+    if (ValidMask || InvalidMask) {
+      Ref NewFTW = [&]() {
+        if (ValidMask == 0xff || InvalidMask == 0xff) {
+          // If InvalidMask == 0xff then ValidMask = 0
+          return GetConstant(ValidMask);
+        } else {
+          Ref NewFTW = GetFTW();
+          Ref RotAmount {};
+          if (std::popcount(ValidMask) == 1) {
+            uint8_t BitIdx = std::countr_zero(ValidMask);
+            Ref RegMask = IREmit->_Lshl(OpSize::i32Bit, GetConstant(1), GetOffsetTopWithCache_Slow(BitIdx));
+            NewFTW = IREmit->_Or(OpSize::i32Bit, NewFTW, RegMask);
+          } else if (ValidMask) {
+            RotAmount = IREmit->_Sub(OpSize::i32Bit, GetConstant(8), GetTopWithCache_Slow());
+            // perform a rotate right on mask by top
+            NewFTW = IREmit->_Or(OpSize::i32Bit, NewFTW, RotateRight8(ValidMask, RotAmount));
+          }
+
+          if (std::popcount(InvalidMask) == 1) {
+            uint8_t BitIdx = std::countr_zero(InvalidMask);
+            Ref RegMask = IREmit->_Lshl(OpSize::i32Bit, GetConstant(1), GetOffsetTopWithCache_Slow(BitIdx));
+            NewFTW = IREmit->_Andn(OpSize::i32Bit, NewFTW, RegMask);
+          } else if (InvalidMask) {
+            if (!RotAmount) {
+              RotAmount = IREmit->_Sub(OpSize::i32Bit, GetConstant(8), GetTopWithCache_Slow());
+            }
+            NewFTW = IREmit->_Andn(OpSize::i32Bit, NewFTW, RotateRight8(InvalidMask, RotAmount));
+          }
+          return NewFTW;
+        }
+      }();
+
+      IREmit->_StoreContext(OpSize::i8Bit, GPRClass, NewFTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+      FTWCached = NewFTW;
+    }
+
+    FlushValidPending = false;
   }
 }
 
@@ -652,42 +700,20 @@ Ref X87StackOptimization::SynchronizeStackValues() {
   for (size_t i = 0; i < StackData.size; ++i) {
     const auto& [Valid, StackMember] = StackData.top(i);
 
-    if (Valid == StackSlot::UNUSED) {
-      continue;
-    }
     if (Valid == StackSlot::VALID) {
       StoreStackValueAtOffset_Slow(StackMember.StackDataNode, i, false);
     }
   }
   { // Set valid tags
-    uint8_t Mask = StackData.getValidMask();
-    if (Mask == 0xff) {
-      SetFTW(GetConstant(Mask));
-    } else if (Mask != 0) {
-      if (std::popcount(Mask) == 1) {
-        uint8_t BitIdx = __builtin_ctz(Mask);
-        SetX87ValidTag(GetOffsetTopWithCache_Slow(BitIdx), true);
-      } else {
-        // perform a rotate right on mask by top
-        Ref RotAmount = GetOffsetTopWithCache_Slow(1, true);
-        SetFTW(IREmit->_Or(OpSize::i32Bit, GetFTW(), RotateRight8(Mask, RotAmount)));
-      }
+    uint8_t ValidMask = StackData.getValidMask();
+    uint8_t InvalidMask = StackData.getInvalidMask();
+    for (auto& Elem : TopValidCache) {
+      Elem = (ValidMask & 1) ? StackSlot::VALID : ((InvalidMask & 1) ? StackSlot::INVALID : StackSlot::UNUSED);
+
+      ValidMask >>= 1;
+      InvalidMask >>= 1;
     }
-  }
-  { // Set invalid tags
-    uint8_t Mask = StackData.getInvalidMask();
-    if (Mask == 0xff) {
-      SetFTW(GetConstant(0));
-    } else if (Mask != 0) {
-      if (std::popcount(Mask)) {
-        uint8_t BitIdx = __builtin_ctz(Mask);
-        SetX87ValidTag(GetOffsetTopWithCache_Slow(BitIdx), false);
-      } else {
-        // Same rotate right as above but this time on the invalid mask
-        Ref RotAmount = GetOffsetTopWithCache_Slow(1, true);
-        SetFTW(IREmit->_Andn(OpSize::i32Bit, GetFTW(), RotateRight8(Mask, RotAmount)));
-      }
-    }
+    FlushValidPending = true;
   }
 
   FlushCachedRegs();
@@ -890,14 +916,14 @@ void X87StackOptimization::Run(IREmitter* Emit) {
 
         if (Offset != 0xff) { // invalidate single offset
           if (SlowPath) {
-            auto* TopValue = GetOffsetTopWithCache_Slow(Offset);
-            SetX87ValidTag(TopValue, false);
+            SetX87ValidTag(Offset, false);
           } else {
             StackData.setTagInvalid(Offset);
           }
         } else { // invalidate all
           if (SlowPath) {
-            IREmit->_StoreContext(OpSize::i8Bit, GPRClass, GetConstant(0), offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+            TopValidCache.fill(StackSlot::INVALID);
+            FlushValidPending = true;
           } else {
             for (size_t i = 0; i < StackData.size; i++) {
               StackData.setTagInvalid(i);
@@ -1015,7 +1041,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
       }
       case OP_POPSTACKDESTROY: {
         if (SlowPath) {
-          SetX87ValidTag(GetTopWithCache_Slow(), false);
+          SetX87ValidTag(0, false);
         }
         StackPop();
         break;
