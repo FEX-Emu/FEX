@@ -447,13 +447,13 @@ def print_parse_envloader_options(options):
             value_type = op_vals["Type"]
             if (value_type == "strenum"):
                 output_argloader.write("else if (Key == \"FEX_{0}\") {{\n".format(op_key.upper()))
-                output_argloader.write("Value = FEXCore::Config::EnumParser<FEXCore::Config::{}ConfigPair>(FEXCore::Config::{}_EnumPairs, Value_View);\n".format(op_key, op_key, op_key))
+                output_argloader.write("\tValue = FEXCore::Config::EnumParser<FEXCore::Config::{}ConfigPair>(FEXCore::Config::{}_EnumPairs, Value_View);\n".format(op_key, op_key, op_key))
                 output_argloader.write("}\n")
 
             if ("ArgumentHandler" in op_vals):
                 conversion_func = "FEXCore::Config::Handler::{0}".format(op_vals["ArgumentHandler"])
                 output_argloader.write("else if (Key == \"FEX_{0}\") {{\n".format(op_key.upper()))
-                output_argloader.write("Value = {0}(Value_View);\n".format(conversion_func))
+                output_argloader.write("\tValue = {0}(Value_View);\n".format(conversion_func))
                 output_argloader.write("}\n")
     output_argloader.write("#endif\n")
 
