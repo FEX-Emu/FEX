@@ -5,7 +5,6 @@ set(SRCS
   Config.cpp
   CPUInfo.cpp
   ArgumentLoader.cpp
-  EnvironmentLoader.cpp
   HostFeatures.cpp
   JSONPool.cpp
   StringUtil.cpp
