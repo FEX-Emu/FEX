@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include <FEXCore/Core/SignalDelegator.h>
+#include <FEXCore/Core/CodeCache.h>
 #include <FEXCore/Core/CPUID.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/CompilerDefs.h>
@@ -13,12 +14,7 @@
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
-#include <istream>
-#include <ostream>
-#include <span>
-
 namespace FEXCore {
-class CodeLoader;
 struct HostFeatures;
 class ForkableSharedMutex;
 class ThunkHandler;
@@ -29,17 +25,11 @@ struct CPUState;
 struct InternalThreadState;
 } // namespace FEXCore::Core
 
-namespace FEXCore::CPU {
-class CPUBackend;
-}
-
 namespace FEXCore::HLE {
-struct SyscallArguments;
 class SyscallHandler;
 } // namespace FEXCore::HLE
 
 namespace FEXCore::IR {
-struct AOTIRCacheEntry;
 class IREmitter;
 } // namespace FEXCore::IR
 
@@ -148,10 +138,7 @@ public:
   FEX_DEFAULT_VISIBILITY virtual FEXCore::CPUID::XCRResults RunXCRFunction(uint32_t Function) = 0;
   FEX_DEFAULT_VISIBILITY virtual FEXCore::CPUID::FunctionResults RunCPUIDFunctionName(uint32_t Function, uint32_t Leaf, uint32_t CPU) = 0;
 
-  FEX_DEFAULT_VISIBILITY virtual FEXCore::IR::AOTIRCacheEntry* LoadAOTIRCacheEntry(const fextl::string& Name) = 0;
-  FEX_DEFAULT_VISIBILITY virtual void UnloadAOTIRCacheEntry(FEXCore::IR::AOTIRCacheEntry* Entry) = 0;
-
-  FEX_DEFAULT_VISIBILITY virtual void FinalizeAOTIRCache() = 0;
+  virtual AbstractCodeCache& GetCodeCache() = 0;
 
   FEX_DEFAULT_VISIBILITY virtual void ClearCodeCache(FEXCore::Core::InternalThreadState* Thread, bool NewCodeBuffer = true) = 0;
   FEX_DEFAULT_VISIBILITY virtual void InvalidateGuestCodeRange(

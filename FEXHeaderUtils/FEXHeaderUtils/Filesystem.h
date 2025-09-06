@@ -354,6 +354,10 @@ inline fextl::string GetFilename(const fextl::string& Path) {
   return PathToString(std::filesystem::path(Path).filename());
 }
 
+inline fextl::string GetFilename(std::string_view Path) {
+  return PathToString(std::filesystem::path(Path).filename());
+}
+
 inline fextl::string ParentPath(const fextl::string& Path) {
   return PathToString(std::filesystem::path(Path).parent_path());
 }

@@ -235,9 +235,6 @@ void VMATracking::DeleteVMARange(FEXCore::Context::Context* CTX, uintptr_t Base,
         // If linked to a Mapped Resource, remove from linked list and possibly delete the Mapped Resource
         if (Current->Resource) {
           if (ListRemove(Current) && Current->Resource != PreservedMappedResource) {
-            if (Current->Resource->AOTIRCacheEntry) {
-              CTX->UnloadAOTIRCacheEntry(Current->Resource->AOTIRCacheEntry);
-            }
             MappedResources.erase(Current->Resource->Iterator);
           }
         }
@@ -540,9 +537,6 @@ uintptr_t VMATracking::DeleteSHMRegion(FEXCore::Context::Context* CTX, uintptr_t
   do {
     if (Entry->second.Resource == Resource) {
       if (ListRemove(&Entry->second)) {
-        if (Entry->second.Resource->AOTIRCacheEntry) {
-          CTX->UnloadAOTIRCacheEntry(Entry->second.Resource->AOTIRCacheEntry);
-        }
         MappedResources.erase(Entry->second.Resource->Iterator);
       }
       Entry = VMAs.erase(Entry);

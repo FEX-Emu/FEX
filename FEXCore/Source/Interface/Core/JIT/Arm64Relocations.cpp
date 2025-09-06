@@ -81,35 +81,32 @@ void Arm64JITCore::InsertGuestRIPMove(ARMEmitter::Register Reg, uint64_t Constan
   Relocations.emplace_back(MoveABI);
 }
 
-bool Arm64JITCore::ApplyRelocations(uint64_t GuestEntry, uint64_t CodeEntry, uint64_t CursorEntry, size_t NumRelocations,
-                                    const char* EntryRelocations) {
-  size_t DataIndex {};
-  for (size_t j = 0; j < NumRelocations; ++j) {
-    const FEXCore::CPU::Relocation* Reloc = reinterpret_cast<const FEXCore::CPU::Relocation*>(&EntryRelocations[DataIndex]);
-    LOGMAN_THROW_A_FMT((DataIndex % alignof(Relocation)) == 0, "Alignment of relocation wasn't adhered to");
+bool Arm64JITCore::ApplyRelocations(uint64_t GuestEntry, std::span<std::byte> Code, std::span<const FEXCore::CPU::Relocation> Relocations) {
+  const auto OrigBase = GetBufferBase();
+  const auto OrigSize = GetBufferSize();
+  const auto OrigOffset = GetCursorOffset();
 
-    switch (Reloc->Header.Type) {
+  SetBuffer(reinterpret_cast<std::uint8_t*>(Code.data()), Code.size_bytes());
+  for (auto& Reloc : Relocations) {
+    switch (Reloc.Header.Type) {
     case FEXCore::CPU::RelocationTypes::RELOC_NAMED_SYMBOL_LITERAL: {
-      uint64_t Pointer = GetNamedSymbolLiteral(Reloc->NamedSymbolLiteral.Symbol);
+      uint64_t Pointer = GetNamedSymbolLiteral(Reloc.NamedSymbolLiteral.Symbol);
       // Relocation occurs at the cursorEntry + offset relative to that cursor
-      SetCursorOffset(CursorEntry + Reloc->NamedSymbolLiteral.Offset);
+      SetCursorOffset(Reloc.NamedSymbolLiteral.Offset);
 
       // Generate a literal so we can place it
       dc64(Pointer);
-
-      DataIndex += sizeof(Reloc->NamedSymbolLiteral);
       break;
     }
     case FEXCore::CPU::RelocationTypes::RELOC_NAMED_THUNK_MOVE: {
-      uint64_t Pointer = reinterpret_cast<uint64_t>(EmitterCTX->ThunkHandler->LookupThunk(Reloc->NamedThunkMove.Symbol));
+      uint64_t Pointer = reinterpret_cast<uint64_t>(EmitterCTX->ThunkHandler->LookupThunk(Reloc.NamedThunkMove.Symbol));
       if (Pointer == ~0ULL) {
         return false;
       }
 
       // Relocation occurs at the cursorEntry + offset relative to that cursor.
-      SetCursorOffset(CursorEntry + Reloc->NamedThunkMove.Offset);
-      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(Reloc->NamedThunkMove.RegisterIndex), Pointer, true);
-      DataIndex += sizeof(Reloc->NamedThunkMove);
+      SetCursorOffset(Reloc.NamedThunkMove.Offset);
+      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(Reloc.NamedThunkMove.RegisterIndex), Pointer, true);
       break;
     }
     case FEXCore::CPU::RelocationTypes::RELOC_GUEST_RIP_MOVE: {
@@ -117,18 +114,27 @@ bool Arm64JITCore::ApplyRelocations(uint64_t GuestEntry, uint64_t CodeEntry, uin
       // XXX: Should spin the relocation list, create a list of guest RIP moves, and ask for them all once, reduces lock contention.
       uint64_t Pointer = ~0ULL; // EmitterCTX->JITObjectCache->FindRelocatedRIP(Reloc->GuestRIPMove.GuestRIP);
       if (Pointer == ~0ULL) {
+        SetBuffer(OrigBase, OrigSize);
+        SetCursorOffset(OrigOffset);
         return false;
       }
 
       // Relocation occurs at the cursorEntry + offset relative to that cursor.
-      SetCursorOffset(CursorEntry + Reloc->GuestRIPMove.Offset);
-      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(Reloc->GuestRIPMove.RegisterIndex), Pointer, true);
-      DataIndex += sizeof(Reloc->GuestRIPMove);
+      SetCursorOffset(Reloc.GuestRIPMove.Offset);
+      LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Register(Reloc.GuestRIPMove.RegisterIndex), Pointer, true);
       break;
     }
     }
   }
 
+  SetBuffer(OrigBase, OrigSize);
+  SetCursorOffset(OrigOffset);
+
   return true;
 }
+
+fextl::vector<FEXCore::CPU::Relocation> Arm64JITCore::TakeRelocations() {
+  return std::move(Relocations);
+}
+
 } // namespace FEXCore::CPU

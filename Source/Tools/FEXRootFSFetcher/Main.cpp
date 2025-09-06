@@ -14,6 +14,7 @@
 #include <iostream>
 #include <unistd.h>
 #include <optional>
+#include <span>
 #include <sstream>
 #include <sys/mman.h>
 #include <sys/syscall.h>

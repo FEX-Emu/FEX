@@ -17,6 +17,10 @@ $end_info$
 
 #include <cstdint>
 
+namespace FEXCore::CPU {
+union Relocation;
+}
+
 namespace FEXCore {
 
 namespace IR {
@@ -157,18 +161,7 @@ namespace CPU {
     virtual CompiledCode CompileCode(uint64_t Entry, uint64_t Size, bool SingleInst, const FEXCore::IR::IRListView* IR,
                                      FEXCore::Core::DebugData* DebugData, bool CheckTF) = 0;
 
-    /**
-     * @brief Relocates a block of code from the JIT code object cache
-     *
-     * @param Entry - RIP of the entry
-     * @param SerializationData - Serialization data referring to the object cache for `Entry`
-     *
-     * @return An executable function pointer relocated from the cache object
-     */
-    [[nodiscard]]
-    virtual void* RelocateJITObjectCode(uint64_t /* Entry */, const CodeSerialize::CodeObjectFileSection* /* SerializationData */) {
-      return nullptr;
-    }
+    virtual fextl::vector<FEXCore::CPU::Relocation> TakeRelocations() = 0;
 
     virtual void ClearCache() {}
 
