@@ -474,8 +474,8 @@ def print_parse_jsonloader_options(options):
                 output_argloader.write("\tAppendStrArrayValue(KeyOption, ConfigString);\n")
                 output_argloader.write("}\n")
     assert op_key is not None, "No options found in JSONLOADER"
-    output_argloader.write("else {{\n".format(op_key))
-    output_argloader.write("Set(KeyOption, ConfigString);\n")
+    output_argloader.write("else {\n")
+    output_argloader.write("\tSet(KeyOption, ConfigString);\n")
     output_argloader.write("}\n")
 
     output_argloader.write("#endif\n")
