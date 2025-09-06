@@ -170,7 +170,7 @@
     },
     "bytemark data xor loop": {
       "x86InstructionCount": 9,
-      "ExpectedInstructionCount": 12,
+      "ExpectedInstructionCount": 16,
       "Comment": [
         "Saw this in bytemark"
       ],
@@ -193,16 +193,20 @@
         "lsr x5, x5, #6",
         "and w7, w7, #0x3f",
         "lsl x19, x19, x7",
-        "ldr x20, [x6, x5, sxtx #3]",
+        "add x20, x6, x5, lsl #3",
+        "ldapur x20, [x20]",
+        "nop",
         "eor x20, x20, x19",
-        "str x20, [x6, x5, sxtx #3]",
+        "add x21, x6, x5, lsl #3",
+        "nop",
+        "stlur x20, [x21]",
         "eor x27, x11, x4",
         "subs x26, x11, x4"
       ]
     },
     "bytemark num sort": {
       "x86InstructionCount": 4,
-      "ExpectedInstructionCount": 5,
+      "ExpectedInstructionCount": 9,
       "Comment": [
         "Saw this in bytemark"
       ],
@@ -213,16 +217,20 @@
         "cmp    r13, qword [rsi+r11*8]"
       ],
       "ExpectedArm64ASM": [
-        "ldr x17, [x10, x13, sxtx #3]",
+        "add x20, x10, x13, lsl #3",
+        "ldapur x17, [x20]",
+        "nop",
         "orr x15, x13, #0x1",
-        "ldr x20, [x10, x15, sxtx #3]",
+        "add x20, x10, x15, lsl #3",
+        "ldapur x20, [x20]",
+        "nop",
         "eor x27, x17, x20",
         "subs x26, x17, x20"
       ]
     },
     "bytemark fpemu": {
       "x86InstructionCount": 8,
-      "ExpectedInstructionCount": 10,
+      "ExpectedInstructionCount": 15,
       "Comment": [
         "Saw this in bytemark"
       ],
@@ -237,15 +245,20 @@
         "cmp    qword [r13+r8*4+0x4],0x0"
       ],
       "ExpectedArm64ASM": [
-        "ldrh w14, [x5, #4]",
-        "ldrh w11, [x5, #6]",
+        "ldapurh w14, [x5, #4]",
+        "nop",
+        "ldapurh w11, [x5, #6]",
+        "nop",
         "str w11, [x8, #12]",
-        "ldrh w6, [x5, #8]",
-        "ldrh w11, [x5, #10]",
+        "ldapurh w6, [x5, #8]",
+        "nop",
+        "ldapurh w11, [x5, #10]",
+        "nop",
         "str w11, [x8, #16]",
         "add x12, x15, x15, lsl #1",
         "add x20, x17, x12, lsl #2",
-        "ldur x27, [x20, #4]",
+        "ldapur x27, [x20, #4]",
+        "nop",
         "subs x26, x27, #0x0 (0)"
       ]
     },
@@ -276,10 +289,10 @@
         "stp x6, x16, [x8, #-16]!",
         "sub x8, x8, #0x18 (24)",
         "str x5, [x8]",
-        "ldrb w14, [x11]",
+        "ldapurb w14, [x11]",
         "add x20, x14, x14, lsl #2",
         "mov w7, w20",
-        "ldrb w4, [x10]",
+        "ldapurb w4, [x10]",
         "add w4, w4, w7",
         "mvn w27, w4",
         "subs w26, w4, #0x18 (24)"
@@ -287,7 +300,7 @@
     },
     "bytemark huffman 1": {
       "x86InstructionCount": 18,
-      "ExpectedInstructionCount": 21,
+      "ExpectedInstructionCount": 24,
       "x86Insts": [
         "mov    r9,rdx",
         "mov    r8,rcx",
@@ -312,7 +325,8 @@
         "mov x13, x5",
         "mov x12, x7",
         "lsr w14, w10, #3",
-        "ldrb w14, [x9, x14, sxtx]",
+        "add x20, x9, x14",
+        "ldapurb w14, [x20]",
         "and w15, w10, #0x7",
         "lsr w20, w14, w15",
         "rmif x20, #63, #nzCv",
@@ -320,21 +334,23 @@
         "add x20, x6, #0x10 (16)",
         "add x12, x20, x12, lsl #2",
         "csel x12, x13, x12, lo",
-        "ldr w20, [x12]",
+        "ldapur w20, [x12]",
+        "nop",
         "sxtw x12, w20",
         "add x10, x10, #0x1 (1)",
         "add x14, x12, x12, lsl #2",
         "add x13, x6, x14, lsl #2",
         "add x13, x13, #0xc (12)",
         "add x20, x6, x14, lsl #2",
-        "ldr w20, [x20, #12]",
+        "ldapur w20, [x20, #12]",
+        "nop",
         "mvn w27, w20",
         "adds w26, w20, #0x1 (1)"
       ]
     },
     "bytemark huffman 2": {
       "x86InstructionCount": 10,
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 19,
       "x86Insts": [
         "movsxd r9,r8d",
         "lea    r9,[r9+r9*4]",
@@ -351,7 +367,8 @@
         "sxtw x13, w12",
         "add x13, x13, x13, lsl #2",
         "add x20, x6, x13, lsl #2",
-        "ldr w20, [x20, #12]",
+        "ldapur w20, [x20, #12]",
+        "nop",
         "cmp w20, w7",
         "cset x20, eq",
         "bfxil x7, x20, #0, #8",
@@ -362,14 +379,15 @@
         "add x11, x11, #0x1 (1)",
         "mov w7, w12",
         "add x20, x6, x13, lsl #2",
-        "ldr w12, [x20, #8]",
+        "ldapur w12, [x20, #8]",
+        "nop",
         "mvn w27, w12",
         "adds w26, w12, #0x2 (2)"
       ]
     },
     "bytemark huffman 3": {
       "x86InstructionCount": 19,
-      "ExpectedInstructionCount": 34,
+      "ExpectedInstructionCount": 36,
       "x86Insts": [
         "mov    ecx,eax",
         "and    cl,0x7",
@@ -398,7 +416,8 @@
         "lsl w20, w12, w7",
         "bfxil x12, x20, #0, #8",
         "lsr w13, w4, #3",
-        "ldrb w14, [x9, x13, sxtx]",
+        "add x20, x9, x13",
+        "ldapurb w14, [x20]",
         "mov w20, #0xfe",
         "bfxil x15, x20, #0, #8",
         "mov w7, w4",
@@ -421,7 +440,8 @@
         "uxtb w12, w15",
         "csel w12, w7, w12, eq",
         "add x4, x4, #0x1 (1)",
-        "strb w12, [x9, x13, sxtx]",
+        "add x20, x9, x13",
+        "stlurb w12, [x20]",
         "mvn w27, w11",
         "subs x26, x11, #0x1 (1)",
         "cfinv",
@@ -838,7 +858,7 @@
     },
     "Factorio drawSprite+0xf2": {
       "x86InstructionCount": 9,
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 15,
       "x86Insts": [
         "movss  xmm8,dword [rbp-0x58]",
         "mov    byte [rbp-0x49],r13b",
@@ -852,14 +872,18 @@
       ],
       "ExpectedArm64ASM": [
         "ldur s24, [x9, #-88]",
-        "sturb w17, [x9, #-73]",
-        "sturb w19, [x9, #-74]",
-        "ldr x5, [x11, #8]",
-        "stur x6, [x9, #-56]",
-        "sturb w4, [x9, #-75]",
-        "stur x15, [x9, #-64]",
+        "stlurb w17, [x9, #-73]",
+        "stlurb w19, [x9, #-74]",
+        "ldapur x5, [x11, #8]",
+        "nop",
+        "nop",
+        "stlur x6, [x9, #-56]",
+        "stlurb w4, [x9, #-75]",
+        "nop",
+        "stlur x15, [x9, #-64]",
         "stur s24, [x9, #-72]",
-        "ldr x20, [x11]",
+        "ldapur x20, [x11]",
+        "nop",
         "eor x27, x5, x20",
         "subs x26, x5, x20"
       ]

@@ -336,8 +336,8 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "ldrb w21, [x10]",
-        "strb w21, [x11]",
+        "ldapurb w21, [x10]",
+        "stlurb w21, [x11]",
         "add x10, x10, #0x1 (1)",
         "add x11, x11, #0x1 (1)",
         "strb w20, [x28, #986]"
@@ -345,7 +345,7 @@
     },
     "positive movsw": {
       "x86InstructionCount": 2,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -356,8 +356,10 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "ldrh w21, [x10]",
-        "strh w21, [x11]",
+        "ldapurh w21, [x10]",
+        "nop",
+        "nop",
+        "stlurh w21, [x11]",
         "add x10, x10, #0x2 (2)",
         "add x11, x11, #0x2 (2)",
         "strb w20, [x28, #986]"
@@ -365,7 +367,7 @@
     },
     "positive movsd": {
       "x86InstructionCount": 2,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -376,8 +378,10 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "ldr w21, [x10]",
-        "str w21, [x11]",
+        "ldapur w21, [x10]",
+        "nop",
+        "nop",
+        "stlur w21, [x11]",
         "add x10, x10, #0x4 (4)",
         "add x11, x11, #0x4 (4)",
         "strb w20, [x28, #986]"
@@ -385,7 +389,7 @@
     },
     "positive movsq": {
       "x86InstructionCount": 2,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -396,8 +400,10 @@
       ],
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "ldr x21, [x10]",
-        "str x21, [x11]",
+        "ldapur x21, [x10]",
+        "nop",
+        "nop",
+        "stlur x21, [x11]",
         "add x10, x10, #0x8 (8)",
         "add x11, x11, #0x8 (8)",
         "strb w20, [x28, #986]"
@@ -416,8 +422,8 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "ldrb w21, [x10]",
-        "strb w21, [x11]",
+        "ldapurb w21, [x10]",
+        "stlurb w21, [x11]",
         "sub x10, x10, #0x1 (1)",
         "sub x11, x11, #0x1 (1)",
         "strb w20, [x28, #986]"
@@ -425,7 +431,7 @@
     },
     "negative movsw": {
       "x86InstructionCount": 2,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -436,8 +442,10 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "ldrh w21, [x10]",
-        "strh w21, [x11]",
+        "ldapurh w21, [x10]",
+        "nop",
+        "nop",
+        "stlurh w21, [x11]",
         "sub x10, x10, #0x2 (2)",
         "sub x11, x11, #0x2 (2)",
         "strb w20, [x28, #986]"
@@ -445,7 +453,7 @@
     },
     "negative movsd": {
       "x86InstructionCount": 2,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -456,8 +464,10 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "ldr w21, [x10]",
-        "str w21, [x11]",
+        "ldapur w21, [x10]",
+        "nop",
+        "nop",
+        "stlur w21, [x11]",
         "sub x10, x10, #0x4 (4)",
         "sub x11, x11, #0x4 (4)",
         "strb w20, [x28, #986]"
@@ -465,7 +475,7 @@
     },
     "negative movsq": {
       "x86InstructionCount": 2,
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "When direction flag is a compile time constant we can optimize",
         "loads and stores can turn in to post-increment when known"
@@ -476,8 +486,10 @@
       ],
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "ldr x21, [x10]",
-        "str x21, [x11]",
+        "ldapur x21, [x10]",
+        "nop",
+        "nop",
+        "stlur x21, [x11]",
         "sub x10, x10, #0x8 (8)",
         "sub x11, x11, #0x8 (8)",
         "strb w20, [x28, #986]"
@@ -1307,7 +1319,7 @@
     },
     "Sekiro spill block": {
       "x86InstructionCount": 119,
-      "ExpectedInstructionCount": 115,
+      "ExpectedInstructionCount": 135,
       "Comment": [
         "This block of code came from the settings screen when it loaded",
         "It was originally at RIP: 0x14232cca0 and has been deobfuscated"
@@ -1440,16 +1452,26 @@
         "stp x17, x16, [x8, #-16]!",
         "stp x29, x19, [x8, #-16]!",
         "sub x8, x8, #0x18 (24)",
-        "ldr w7, [x5, #36]",
-        "ldr w10, [x5]",
-        "ldr w9, [x5, #4]",
-        "ldr w19, [x5, #8]",
-        "ldr w29, [x5, #12]",
-        "ldr w16, [x5, #16]",
-        "ldr w17, [x5, #20]",
-        "ldr w15, [x5, #24]",
-        "ldr w6, [x5, #28]",
-        "ldr w11, [x5, #32]",
+        "ldapur w7, [x5, #36]",
+        "nop",
+        "ldapur w10, [x5]",
+        "nop",
+        "ldapur w9, [x5, #4]",
+        "nop",
+        "ldapur w19, [x5, #8]",
+        "nop",
+        "ldapur w29, [x5, #12]",
+        "nop",
+        "ldapur w16, [x5, #16]",
+        "nop",
+        "ldapur w17, [x5, #20]",
+        "nop",
+        "ldapur w15, [x5, #24]",
+        "nop",
+        "ldapur w6, [x5, #28]",
+        "nop",
+        "ldapur w11, [x5, #32]",
+        "nop",
         "mov w20, #0x13",
         "mul w4, w7, w20",
         "str w7, [x8, #104]",
@@ -1491,29 +1513,34 @@
         "sub w9, w9, w7",
         "asr w5, w5, #26",
         "add w29, w29, w5",
-        "str w10, [x4]",
+        "nop",
+        "stlur w10, [x4]",
         "mov w12, w29",
         "lsl w5, w5, #26",
         "asr w12, w12, #25",
         "sub w19, w19, w5",
         "add w16, w16, w12",
-        "str w9, [x4, #4]",
+        "nop",
+        "stlur w9, [x4, #4]",
         "mov w13, w16",
         "lsl w12, w12, #25",
         "asr w13, w13, #26",
         "sub w29, w29, w12",
         "add w17, w17, w13",
-        "str w19, [x4, #8]",
+        "nop",
+        "stlur w19, [x4, #8]",
         "lsl w13, w13, #26",
         "asr w14, w17, #25",
         "sub w16, w16, w13",
         "add w15, w15, w14",
-        "str w29, [x4, #12]",
+        "nop",
+        "stlur w29, [x4, #12]",
         "str w15, [x8, #112]",
         "mov x10, x4",
         "asr w15, w15, #26",
         "add w6, w6, w15",
-        "str w16, [x4, #16]",
+        "nop",
+        "stlur w16, [x4, #16]",
         "str w6, [x8, #120]",
         "asr w6, w6, #25",
         "add w11, w11, w6",
@@ -1525,22 +1552,27 @@
         "lsl w14, w14, #25",
         "ldr w7, [x8, #104]",
         "sub w17, w17, w14",
-        "str w17, [x4, #20]",
+        "nop",
+        "stlur w17, [x4, #20]",
         "ldr w4, [x8, #112]",
         "lsl w15, w15, #26",
         "sub w4, w4, w15",
         "lsl w6, w6, #25",
-        "str w4, [x10, #24]",
+        "nop",
+        "stlur w4, [x10, #24]",
         "ldr w4, [x8, #120]",
         "sub w4, w4, w6",
         "lsl w11, w11, #26",
-        "str w4, [x10, #28]",
+        "nop",
+        "stlur w4, [x10, #28]",
         "ldr w4, [x8]",
         "sub w4, w4, w11",
-        "str w4, [x10, #32]",
+        "nop",
+        "stlur w4, [x10, #32]",
         "and w4, w7, #0xfe000000",
         "sub w7, w7, w4",
-        "str w7, [x10, #36]",
+        "nop",
+        "stlur w7, [x10, #36]",
         "mvn w27, w8",
         "adds x26, x8, #0x18 (24)",
         "mov x8, x26",
@@ -1581,7 +1613,7 @@
     },
     "Control - random block using cvtss2si 2": {
       "x86InstructionCount": 6,
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 11,
       "x86Insts": [
         "movss  xmm1,dword [rbp+0x40]",
         "roundss xmm1,xmm1,0x1",
@@ -1596,9 +1628,11 @@
         "mov v17.s[0], v0.s[0]",
         "frint32x s2, s17",
         "fcvtzs w4, s2",
-        "str w4, [x29, #180]",
+        "nop",
+        "stlur w4, [x29, #180]",
         "mov w20, #0x3f800000",
-        "str w20, [x9, #72]",
+        "nop",
+        "stlur w20, [x9, #72]",
         "subs x26, x19, #0x0 (0)"
       ]
     },

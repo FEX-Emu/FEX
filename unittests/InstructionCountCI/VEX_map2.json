@@ -5061,13 +5061,14 @@
       ]
     },
     "mulx eax, ebx, [ecx]": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "Map 2 0b11 0xf6 32-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, w7",
-        "ldr w20, [x20]",
+        "ldapur w20, [x20]",
+        "nop",
         "mul w6, w20, w5",
         "ubfx x0, x20, #0, #32",
         "ubfx x1, x5, #0, #32",
@@ -5096,12 +5097,13 @@
       ]
     },
     "mulx rax, rbx, [rcx]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map 2 0b11 0xf6 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x20, [x7]",
+        "ldapur x20, [x7]",
+        "nop",
         "mul x6, x20, x5",
         "umulh x4, x20, x5"
       ]
@@ -5156,13 +5158,14 @@
       ]
     },
     "shlx eax, [ebx], ecx": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map 2 0b01 0xf7 32-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, w6",
-        "ldr w20, [x20]",
+        "ldapur w20, [x20]",
+        "nop",
         "lsl w4, w20, w7"
       ]
     },
@@ -5176,12 +5179,13 @@
       ]
     },
     "shlx rax, [rbx], rcx": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 2 0b01 0xf7 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x20, [x6]",
+        "ldapur x20, [x6]",
+        "nop",
         "lsl x4, x20, x7"
       ]
     },
@@ -5195,13 +5199,14 @@
       ]
     },
     "sarx eax, [ebx], ecx": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map 2 0b10 0xf7 32-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, w6",
-        "ldr w20, [x20]",
+        "ldapur w20, [x20]",
+        "nop",
         "asr w4, w20, w7"
       ]
     },
@@ -5215,12 +5220,13 @@
       ]
     },
     "sarx rax, [rbx], rcx": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 2 0b10 0xf7 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x20, [x6]",
+        "ldapur x20, [x6]",
+        "nop",
         "asr x4, x20, x7"
       ]
     },
@@ -5234,13 +5240,14 @@
       ]
     },
     "shrx eax, [ebx], ecx": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "Map 2 0b11 0xf7 32-bit"
       ],
       "ExpectedArm64ASM": [
         "mov w20, w6",
-        "ldr w20, [x20]",
+        "ldapur w20, [x20]",
+        "nop",
         "lsr w4, w20, w7"
       ]
     },
@@ -5254,12 +5261,13 @@
       ]
     },
     "shrx rax, [rbx], rcx": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 3,
       "Comment": [
         "Map 2 0b11 0xf7 64-bit"
       ],
       "ExpectedArm64ASM": [
-        "ldr x20, [x6]",
+        "ldapur x20, [x6]",
+        "nop",
         "lsr x4, x20, x7"
       ]
     }

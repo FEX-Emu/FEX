@@ -59,12 +59,13 @@
       ]
     },
     "cvtsi2sd xmm0, dword [rax]": {
-      "ExpectedInstructionCount": 3,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "0xf2 0x0f 0x2a"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x4]",
+        "ldapur w20, [x4]",
+        "nop",
         "scvtf d0, w20",
         "mov v16.d[0], v0.d[0]"
       ]

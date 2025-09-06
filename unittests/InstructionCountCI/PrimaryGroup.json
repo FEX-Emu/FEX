@@ -2974,11 +2974,13 @@
       ]
     },
     "call far [rsp]": {
-      "ExpectedInstructionCount": 17,
+      "ExpectedInstructionCount": 19,
       "Comment": "GROUP5 0xff /3",
       "ExpectedArm64ASM": [
-        "ldr w20, [x8]",
-        "ldrh w21, [x8, #4]",
+        "ldapur w20, [x8]",
+        "nop",
+        "ldapurh w21, [x8, #4]",
+        "nop",
         "ldrh w22, [x28, #930]",
         "mov w23, #0x4",
         "movk w23, #0x1, lsl #16",
@@ -3004,11 +3006,13 @@
       ]
     },
     "jmp far [rsp]": {
-      "ExpectedInstructionCount": 13,
+      "ExpectedInstructionCount": 15,
       "Comment": "GROUP5 0xff /5",
       "ExpectedArm64ASM": [
-        "ldr w20, [x8]",
-        "ldrh w21, [x8, #4]",
+        "ldapur w20, [x8]",
+        "nop",
+        "ldapurh w21, [x8, #4]",
+        "nop",
         "strh w21, [x28, #930]",
         "ubfx w22, w21, #2, #1",
         "and w21, w21, #0xfff8",
@@ -3026,28 +3030,31 @@
       "ExpectedInstructionCount": 1,
       "Comment": "GROUP11 0xc6 /0",
       "ExpectedArm64ASM": [
-        "strb wzr, [x4]"
+        "stlurb wzr, [x4]"
       ]
     },
     "mov word [rax], 0": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 2,
       "Comment": "GROUP11 0xc7 /0",
       "ExpectedArm64ASM": [
-        "strh wzr, [x4]"
+        "nop",
+        "stlurh wzr, [x4]"
       ]
     },
     "mov dword [rax], 0": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 2,
       "Comment": "GROUP11 0xc7 /0",
       "ExpectedArm64ASM": [
-        "str wzr, [x4]"
+        "nop",
+        "stlur wzr, [x4]"
       ]
     },
     "mov qword [rax], 0": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 2,
       "Comment": "GROUP11 0xc7 /0",
       "ExpectedArm64ASM": [
-        "str xzr, [x4]"
+        "nop",
+        "stlur xzr, [x4]"
       ]
     },
     "mov byte [rax], 1": {
@@ -3055,31 +3062,34 @@
       "Comment": "GROUP11 0xc6 /0",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "strb w20, [x4]"
+        "stlurb w20, [x4]"
       ]
     },
     "mov word [rax], 1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP11 0xc7 /0",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "strh w20, [x4]"
+        "nop",
+        "stlurh w20, [x4]"
       ]
     },
     "mov dword [rax], 1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP11 0xc7 /0",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "str w20, [x4]"
+        "nop",
+        "stlur w20, [x4]"
       ]
     },
     "mov qword [rax], 1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP11 0xc7 /0",
       "ExpectedArm64ASM": [
         "mov w20, #0x1",
-        "str x20, [x4]"
+        "nop",
+        "stlur x20, [x4]"
       ]
     },
     "mov byte [rax], -1": {
@@ -3087,31 +3097,34 @@
       "Comment": "GROUP11 0xc6 /0",
       "ExpectedArm64ASM": [
         "mov w20, #0xff",
-        "strb w20, [x4]"
+        "stlurb w20, [x4]"
       ]
     },
     "mov word [rax], -1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP11 0xc7 /0",
       "ExpectedArm64ASM": [
         "mov w20, #0xffff",
-        "strh w20, [x4]"
+        "nop",
+        "stlurh w20, [x4]"
       ]
     },
     "mov dword [rax], -1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP11 0xc7 /0",
       "ExpectedArm64ASM": [
         "mov w20, #0xffffffff",
-        "str w20, [x4]"
+        "nop",
+        "stlur w20, [x4]"
       ]
     },
     "mov qword [rax], -1": {
-      "ExpectedInstructionCount": 2,
+      "ExpectedInstructionCount": 3,
       "Comment": "GROUP11 0xc7 /0",
       "ExpectedArm64ASM": [
         "mov x20, #0xffffffffffffffff",
-        "str x20, [x4]"
+        "nop",
+        "stlur x20, [x4]"
       ]
     }
   }
