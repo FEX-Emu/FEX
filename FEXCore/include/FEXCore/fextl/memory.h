@@ -31,7 +31,7 @@ using shared_ptr = std::shared_ptr<T>;
 template<class T, class... Args>
 requires (!std::is_array_v<T>)
 fextl::unique_ptr<T> make_unique(Args&&... args) {
-  auto ptr = FEXCore::Allocator::aligned_alloc(std::alignment_of_v<T>, sizeof(T));
+  auto ptr = FEXCore::Allocator::aligned_alloc(alignof(T), sizeof(T));
   auto Result = ::new (ptr) T(std::forward<Args>(args)...);
   return fextl::unique_ptr<T>(Result);
 }
