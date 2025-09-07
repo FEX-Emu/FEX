@@ -200,6 +200,7 @@ struct DecodedInst {
   uint8_t LastEscapePrefix;
   bool DecodedModRM;
   bool DecodedSIB;
+  bool ForceTSO;
 };
 
 union ModRMDecoded {

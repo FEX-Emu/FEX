@@ -603,11 +603,17 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
           auto Fn = TableInfo->OpcodeDispatcher.OpDispatch;
           Thread->OpDispatcher->ResetHandledLock();
           Thread->OpDispatcher->ResetDecodeFailure();
-          IR::ForceTSOMode ForceTSO =
-            BlockInForceTSOValidRange ?
-              (InstForceTSOIt != ForceTSOInstructions.end() && *InstForceTSOIt == InstAddress ? IR::ForceTSOMode::ForceEnabled :
-                                                                                                IR::ForceTSOMode::ForceDisabled) :
-              IR::ForceTSOMode::NoOverride;
+          IR::ForceTSOMode ForceTSO = IR::ForceTSOMode::NoOverride;
+          if (BlockInForceTSOValidRange) {
+            if (InstForceTSOIt != ForceTSOInstructions.end() && *InstForceTSOIt == InstAddress) {
+              ForceTSO = IR::ForceTSOMode::ForceEnabled;
+            } else {
+              ForceTSO = IR::ForceTSOMode::ForceDisabled;
+            }
+          } else if (DecodedInfo->ForceTSO) {
+            ForceTSO = IR::ForceTSOMode::ForceEnabled;
+          }
+
           Thread->OpDispatcher->SetForceTSO(ForceTSO);
           std::invoke(Fn, Thread->OpDispatcher, DecodedInfo);
           if (Thread->OpDispatcher->HadDecodeFailure()) {
