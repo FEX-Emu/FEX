@@ -8,8 +8,6 @@ $end_info$
 
 #include "GdbServer/Info.h"
 
-#include <Common/StringUtil.h>
-
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/fextl/fmt.h>
@@ -17,6 +15,7 @@ $end_info$
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/FileLoading.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/StringUtils.h>
 
 #include <array>
 #include <string_view>
@@ -58,8 +57,7 @@ fextl::string GetThreadName(uint32_t PID, uint32_t ThreadID) {
   fextl::string ThreadName;
   FEXCore::FileLoading::LoadFile(ThreadName, ThreadFile);
   // Trim out the potential newline, breaks GDB if it exists.
-  FEX::StringUtil::trim(ThreadName);
-  return ThreadName;
+  return FEXCore::StringUtils::Trim(ThreadName);
 }
 
 fextl::string BuildOSXML() {

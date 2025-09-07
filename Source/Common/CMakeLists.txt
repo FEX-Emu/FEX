@@ -7,7 +7,6 @@ set(SRCS
   ArgumentLoader.cpp
   HostFeatures.cpp
   JSONPool.cpp
-  StringUtil.cpp
   SHMStats.cpp
   VolatileMetadata.cpp
   )
