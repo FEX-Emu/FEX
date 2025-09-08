@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
+#pragma once
+
 #include <FEXCore/Core/Thunks.h>
 #include <FEXCore/fextl/memory.h>
+#include <FEXCore/IR/IR.h>
 
 #include <span>
 
