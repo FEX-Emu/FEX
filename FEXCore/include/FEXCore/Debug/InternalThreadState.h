@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: MIT
 #pragma once
-#include <FEXCore/Core/Context.h>
+
 #include <FEXCore/Core/CoreState.h>
-#include <FEXCore/Core/SignalDelegator.h>
-#include <FEXCore/Utils/Event.h>
-#include <FEXCore/Utils/InterruptableConditionVariable.h>
-#include <FEXCore/Utils/Threads.h>
+#include <FEXCore/Utils/AllocatorHooks.h>
 #include <FEXCore/Utils/TypeDefines.h>
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/vector.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <shared_mutex>
 #include <type_traits>
 
