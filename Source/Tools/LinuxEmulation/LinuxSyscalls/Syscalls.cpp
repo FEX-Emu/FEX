@@ -389,9 +389,8 @@ uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname
 
   // We don't have an interpreter installed or we are executing a non-ELF executable
   // We now need to munge the arguments
-  fextl::vector<const char*> ExecveArgs {};
   const char NullString[] = "";
-  SyscallHandler->GetCodeLoader()->GetExecveArguments(&ExecveArgs);
+  fextl::vector<const char*> ExecveArgs = SyscallHandler->GetCodeLoader()->GetExecveArguments();
   if (!SyscallHandler->IsInterpreter()) {
     // If we were launched from FEXLoader then we need to make sure to split arguments from FEXLoader and guest
     ExecveArgs.emplace_back("--");

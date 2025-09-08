@@ -40,7 +40,9 @@ public:
   virtual const fextl::vector<fextl::string>* GetApplicationArguments() {
     return nullptr;
   }
-  virtual void GetExecveArguments(fextl::vector<const char*>* Args) {}
+  virtual fextl::vector<const char*> GetExecveArguments() const {
+    return {};
+  }
 
   virtual AuxvResult GetAuxv() const {
     return {};

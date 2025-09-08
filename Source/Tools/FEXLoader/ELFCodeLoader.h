@@ -812,8 +812,8 @@ public:
   const fextl::vector<fextl::string>* GetApplicationArguments() override {
     return &Args;
   }
-  void GetExecveArguments(fextl::vector<const char*>* Args) override {
-    *Args = LoaderArgs;
+  fextl::vector<const char*> GetExecveArguments() const override {
+    return LoaderArgs;
   }
 
   AuxvResult GetAuxv() const override {
