@@ -4,7 +4,7 @@
 
 namespace FEXCore::StringUtils {
 // Trim the left side of the string of whitespace and new lines
-inline fextl::string LeftTrim(fextl::string String, std::string_view TrimTokens = " \t\n\r") {
+inline fextl::string LeftTrim(fextl::string String, std::string_view TrimTokens = " \t\n\r\f\v") {
   size_t pos = fextl::string::npos;
   if ((pos = String.find_first_not_of(TrimTokens)) != fextl::string::npos) {
     String.erase(0, pos);
@@ -14,7 +14,7 @@ inline fextl::string LeftTrim(fextl::string String, std::string_view TrimTokens 
 }
 
 // Trim the right side of the string of whitespace and new lines
-inline fextl::string RightTrim(fextl::string String, std::string_view TrimTokens = " \t\n\r") {
+inline fextl::string RightTrim(fextl::string String, std::string_view TrimTokens = " \t\n\r\f\v") {
   size_t pos = fextl::string::npos;
   if ((pos = String.find_last_not_of(TrimTokens)) != fextl::string::npos) {
     String.erase(String.begin() + pos + 1, String.end());
@@ -24,7 +24,7 @@ inline fextl::string RightTrim(fextl::string String, std::string_view TrimTokens
 }
 
 // Trim both the left and right of the string of whitespace and new lines
-inline fextl::string Trim(fextl::string String, std::string_view TrimTokens = " \t\n\r") {
+inline fextl::string Trim(fextl::string String, std::string_view TrimTokens = " \t\n\r\f\v") {
   return RightTrim(LeftTrim(std::move(String), TrimTokens), TrimTokens);
 }
 
