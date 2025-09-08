@@ -632,9 +632,8 @@ int32_t EmulatedFDManager::Open(const char* pathname, int flags, uint32_t mode) 
 }
 
 int32_t EmulatedFDManager::ProcAuxv(FEXCore::Context::Context* ctx, int32_t fd, const char* pathname, int32_t flags, mode_t mode) {
-  uint64_t auxvBase = 0, auxvSize = 0;
-  FEX::HLE::_SyscallHandler->GetCodeLoader()->GetAuxv(auxvBase, auxvSize);
-  if (!auxvBase) {
+  const auto [auxvBase, auxvSize] = FEX::HLE::_SyscallHandler->GetCodeLoader()->GetAuxv();
+  if (auxvBase == 0) {
     LogMan::Msg::DFmt("Failed to get Auxv stack address");
     return -1;
   }

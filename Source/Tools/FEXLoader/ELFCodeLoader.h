@@ -816,9 +816,11 @@ public:
     *Args = LoaderArgs;
   }
 
-  void GetAuxv(uint64_t& addr, uint64_t& size) override {
-    addr = AuxTabBase;
-    size = AuxTabSize;
+  AuxvResult GetAuxv() const override {
+    return {
+      .address = AuxTabBase,
+      .size = AuxTabSize,
+    };
   }
 
   uint64_t GetBaseOffset() const override {

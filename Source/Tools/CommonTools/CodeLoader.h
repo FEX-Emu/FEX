@@ -15,6 +15,11 @@ namespace FEX {
  */
 class CodeLoader {
 public:
+  struct AuxvResult {
+    uint64_t address;
+    uint64_t size;
+  };
+
   virtual ~CodeLoader() = default;
 
   /**
@@ -37,7 +42,9 @@ public:
   }
   virtual void GetExecveArguments(fextl::vector<const char*>* Args) {}
 
-  virtual void GetAuxv(uint64_t& addr, uint64_t& size) {}
+  virtual AuxvResult GetAuxv() const {
+    return {};
+  }
 
   virtual uint64_t GetBaseOffset() const {
     return 0;

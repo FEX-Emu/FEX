@@ -501,9 +501,9 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
                                   void* addr = reinterpret_cast<void*>(arg2);
                                   size_t UserSize = reinterpret_cast<size_t>(arg3);
 
-                                  uint64_t auxvBase = 0;
-                                  uint64_t auxvSize = 0;
-                                  FEX::HLE::_SyscallHandler->GetCodeLoader()->GetAuxv(auxvBase, auxvSize);
+                                  const auto auxv = FEX::HLE::_SyscallHandler->GetCodeLoader()->GetAuxv();
+                                  const auto auxvBase = auxv.address;
+                                  const auto auxvSize = auxv.size;
                                   size_t MinSize = std::min(auxvSize, UserSize);
 
                                   memcpy(addr, reinterpret_cast<void*>(auxvBase), MinSize);

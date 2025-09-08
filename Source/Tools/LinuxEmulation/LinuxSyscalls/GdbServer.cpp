@@ -472,9 +472,9 @@ GdbServer::HandledPacketType GdbServer::XferCommandLibraries(const fextl::string
 }
 
 GdbServer::HandledPacketType GdbServer::XferCommandAuxv(const fextl::string& annex, int offset, int length) {
-  auto CodeLoader = SyscallHandler->GetCodeLoader();
-  uint64_t auxv_ptr, auxv_size;
-  CodeLoader->GetAuxv(auxv_ptr, auxv_size);
+  const auto* CodeLoader = SyscallHandler->GetCodeLoader();
+  const auto [auxv_ptr, auxv_size] = CodeLoader->GetAuxv();
+
   fextl::string data;
   if (Is64BitMode()) {
     data.resize(auxv_size);
