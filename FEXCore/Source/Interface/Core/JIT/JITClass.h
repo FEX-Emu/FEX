@@ -244,10 +244,10 @@ private:
     case FEXCore::IR::COND_FGE: return ARMEmitter::Condition::CC_GE;
     case FEXCore::IR::COND_FLEU: return ARMEmitter::Condition::CC_LE;
     case FEXCore::IR::COND_FGT: return ARMEmitter::Condition::CC_GT;
-    case FEXCore::IR::COND_FU: return ARMEmitter::Condition::CC_VS;
-    case FEXCore::IR::COND_FNU: return ARMEmitter::Condition::CC_VC;
-    case FEXCore::IR::COND_VS:
-    case FEXCore::IR::COND_VC:
+    case FEXCore::IR::COND_FU:
+    case FEXCore::IR::COND_VS: return ARMEmitter::Condition::CC_VS;
+    case FEXCore::IR::COND_FNU:
+    case FEXCore::IR::COND_VC: return ARMEmitter::Condition::CC_VC;
     case FEXCore::IR::COND_MI: return ARMEmitter::Condition::CC_MI;
     case FEXCore::IR::COND_PL: return ARMEmitter::Condition::CC_PL;
     default: LOGMAN_MSG_A_FMT("Unsupported compare type"); return ARMEmitter::Condition::CC_NV;
