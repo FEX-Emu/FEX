@@ -85,8 +85,6 @@ public:
   void InitiateCacheGeneration() override {
     IsGeneratingCache = true;
   }
-
-  void PostCompileCode(FEXCore::Core::InternalThreadState& Thread, void* CodePtr, uint64_t GuestRIP, Core::DebugData&);
 };
 
 class ContextImpl final : public FEXCore::Context::Context, public CPU::CodeBufferManager {

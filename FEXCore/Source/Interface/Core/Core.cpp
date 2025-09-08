@@ -18,6 +18,7 @@ $end_info$
 #include "Interface/Core/JIT/JITClass.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/X86Tables/X86Tables.h"
+#include <Interface/GDBJIT/GDBJIT.h>
 #include "Interface/IR/IR.h"
 #include "Interface/IR/IREmitter.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
@@ -807,12 +808,23 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
     }
   }
 
+  if (Config.LibraryJITNaming() || Config.GDBSymbols()) {
+    auto MappedSection = SyscallHandler->LookupExecutableFileSection(*Thread, GuestRIP);
+    if (MappedSection) {
+      if (Config.LibraryJITNaming()) {
+        Symbols.RegisterNamedRegion(Thread->SymbolBuffer.get(), CodePtr, DebugData->HostCodeSize, MappedSection->FileInfo.Filename);
+      }
+
+      if (Config.GDBSymbols()) {
+        GDBJITRegister(MappedSection->FileInfo, MappedSection->FileStartVA, GuestRIP, (uintptr_t)CodePtr, *DebugData);
+      }
+    }
+  }
+
   // Clear any relocations that might have been generated
   if (!CodeCache.IsGeneratingCache) {
     Thread->CPUBackend->ClearRelocations();
   }
-
-  CodeCache.PostCompileCode(*Thread, CompiledCode.BlockBegin, GuestRIP, *DebugData.get());
 
   if (NeedsAddGuestCodeRanges) {
     // Track in the guest to host map all entrypoints for all pages the compiled block touches, if any page didn't previously
