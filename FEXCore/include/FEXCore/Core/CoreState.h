@@ -437,6 +437,6 @@ static_assert(offsetof(CpuStateFrame, Pointers) + sizeof(CpuStateFrame::Pointers
 
 static_assert(std::is_standard_layout<CpuStateFrame>::value, "This needs to be standard layout");
 static_assert(sizeof(CpuStateFrame::SynchronousFaultData) == 8, "This needs to be 8 bytes");
-static_assert(std::alignment_of_v<CpuStateFrame::SynchronousFaultDataStruct> == 8, "This needs to be 8 bytes");
+static_assert(alignof(CpuStateFrame::SynchronousFaultDataStruct) == 8, "This needs to be 8 bytes");
 static_assert(offsetof(CpuStateFrame, SynchronousFaultData) % 8 == 0, "This needs to be aligned");
 } // namespace FEXCore::Core

@@ -19,7 +19,7 @@ public:
   FEXAlloc(const FEXAlloc<U>&) noexcept {}
 
   inline value_type* allocate(std::size_t n) {
-    return reinterpret_cast<value_type*>(::FEXCore::Allocator::aligned_alloc(std::alignment_of_v<value_type>, n * sizeof(value_type)));
+    return reinterpret_cast<value_type*>(::FEXCore::Allocator::aligned_alloc(alignof(value_type), n * sizeof(value_type)));
   }
 
   inline void deallocate(value_type* p, size_t) noexcept {

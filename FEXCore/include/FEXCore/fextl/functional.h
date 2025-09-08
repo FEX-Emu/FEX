@@ -42,7 +42,7 @@ public:
 
       // First, relocate argument to a location returned from FEX's allocators
       using Fnoref = std::remove_reference_t<F>;
-      storage = Alloc(std::alignment_of_v<Fnoref>, sizeof(Fnoref));
+      storage = Alloc(alignof(Fnoref), sizeof(Fnoref));
       auto moved_lambda = new (storage) Fnoref {std::move(f)};
 
       // Second, wrap the relocated argument in a single-capture lambda

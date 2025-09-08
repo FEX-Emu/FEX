@@ -28,13 +28,13 @@ public:
 
   template<class U, class... Args>
   U* new_construct(Args&&... args) {
-    void* Ptr = do_allocate(sizeof(U), std::alignment_of<U>::value);
+    void* Ptr = do_allocate(sizeof(U), alignof(U));
     return new (Ptr) U(args...);
   }
 
   template<class U, class... Args>
   U* new_construct(U* Class, Args&&... args) {
-    void* Ptr = do_allocate(sizeof(U), std::alignment_of<U>::value);
+    void* Ptr = do_allocate(sizeof(U), alignof(U));
     return new (Ptr) U(args...);
   }
 
@@ -91,13 +91,13 @@ public:
 
   template<class U, class... Args>
   U* new_construct(Args&&... args) {
-    void* Ptr = do_allocate(sizeof(U), std::alignment_of<U>::value);
+    void* Ptr = do_allocate(sizeof(U), alignof(U));
     return new (Ptr) U(args...);
   }
 
   template<class U, class... Args>
   U* new_construct(U* Class, Args&&... args) {
-    void* Ptr = do_allocate(sizeof(U), std::alignment_of<U>::value);
+    void* Ptr = do_allocate(sizeof(U), alignof(U));
     return new (Ptr) U(args...);
   }
 
