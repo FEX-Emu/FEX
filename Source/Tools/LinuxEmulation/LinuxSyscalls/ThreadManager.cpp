@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 
+#include "LinuxSyscalls/ThreadManager.h"
+
 #include "LinuxSyscalls/Syscalls.h"
 #include "LinuxSyscalls/SignalDelegator.h"
+#include "LinuxSyscalls/Seccomp/SeccompEmulator.h"
 
 #include <FEXHeaderUtils/Syscalls.h>
 #include <FEXCore/Utils/Profiler.h>

@@ -300,7 +300,8 @@ void SeccompEmulator::DeserializeFilters(FEXCore::Core::CpuStateFrame* Frame, in
 
     ::mprotect(Ptr, SFilter.CodeSize, PROT_READ | PROT_EXEC);
 
-    auto& it = Filters.emplace_back(FilterInformation {(FilterFunc)Ptr, 1, SFilter.CodeSize, SFilter.FilterInstructions, SFilter.ShouldLog});
+    auto& it =
+      Filters.emplace_back(SeccompFilterInfo {(SeccompFilterFunc)Ptr, 1, SFilter.CodeSize, SFilter.FilterInstructions, SFilter.ShouldLog});
     TotalFilterInstructions += SFilter.FilterInstructions;
 
     // Append the filter to the thread.
@@ -663,8 +664,7 @@ uint64_t SeccompEmulator::SetModeFilter(FEXCore::Core::CpuStateFrame* Frame, uin
   const bool LoggingEnabled = flags & SECCOMP_FILTER_FLAG_LOG;
   auto Result = emit.JITFilter(flags, prog);
   if (Result == 0) {
-
-    auto& it = Filters.emplace_back(FilterInformation {(FilterFunc)emit.GetFunc(), 1, emit.AllocationSize(), prog->len, LoggingEnabled});
+    auto& it = Filters.emplace_back(SeccompFilterInfo {(SeccompFilterFunc)emit.GetFunc(), 1, emit.AllocationSize(), prog->len, LoggingEnabled});
     TotalFilterInstructions += prog->len;
 
     // Append the filter to the thread.

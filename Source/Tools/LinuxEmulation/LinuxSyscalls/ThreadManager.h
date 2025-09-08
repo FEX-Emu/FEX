@@ -11,8 +11,8 @@ $end_info$
 #include "Common/SHMStats.h"
 
 #include "LinuxSyscalls/Types.h"
-#include "LinuxSyscalls/Seccomp/SeccompEmulator.h"
 
+#include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/fextl/vector.h>
 #include <FEXCore/Utils/InterruptableConditionVariable.h>
@@ -27,13 +27,15 @@ $end_info$
 #include <cstdint>
 #include <mutex>
 #include <optional>
+#include <sys/stat.h>
 
 #include <bits/types/sigset_t.h>
 #include <linux/seccomp.h>
 
 namespace FEX::HLE {
-class SyscallHandler;
 class SignalDelegator;
+class SyscallHandler;
+struct SeccompFilterInfo;
 
 enum class SignalEvent : uint32_t {
   Nothing, // If the guest uses our signal we need to know it was errant on our end
@@ -84,7 +86,7 @@ struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
 
   // Seccomp thread specific data.
   uint32_t SeccompMode {SECCOMP_MODE_DISABLED};
-  fextl::vector<FEX::HLE::SeccompEmulator::FilterInformation*> Filters {};
+  fextl::vector<FEX::HLE::SeccompFilterInfo*> Filters {};
 
   // personality emulation.
   uint32_t persona {};

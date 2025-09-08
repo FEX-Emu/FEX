@@ -7,10 +7,14 @@ $end_info$
 #pragma once
 
 #include <FEXCore/Config/Config.h>
-#include <FEXCore/fextl/vector.h>
+#include <FEXCore/fextl/list.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
 
-#include <signal.h>
+#include <atomic>
+#include <csignal>
+#include <cstddef>
+#include <cstdint>
+#include <optional>
 
 struct sock_fprog;
 struct seccomp_data;
@@ -30,9 +34,18 @@ namespace HLE {
 
 namespace FEX::HLE {
 
-class SyscallHandler;
 class SignalDelegator;
+class SyscallHandler;
 struct ThreadStateObject;
+
+using SeccompFilterFunc = uint64_t (*)(uint32_t Acc, uint32_t Index, uint32_t Tmp, uint32_t Tmp2, void* Data);
+struct SeccompFilterInfo final {
+  SeccompFilterFunc Func;
+  uint64_t RefCount;
+  size_t MappedSize;
+  uint32_t FilterInstructions;
+  bool ShouldLog;
+};
 
 class SeccompEmulator final {
 public:
@@ -59,15 +72,6 @@ public:
 
   std::optional<int> SerializeFilters(FEXCore::Core::CpuStateFrame* Frame);
   void DeserializeFilters(FEXCore::Core::CpuStateFrame* Frame, int FD);
-
-  using FilterFunc = uint64_t (*)(uint32_t Acc, uint32_t Index, uint32_t Tmp, uint32_t Tmp2, void* Data);
-  struct FilterInformation final {
-    FilterFunc Func;
-    uint64_t RefCount;
-    size_t MappedSize;
-    uint32_t FilterInstructions;
-    bool ShouldLog;
-  };
 
 private:
   FEX_CONFIG_OPT(Is64BitMode, IS64BIT_MODE);
@@ -102,7 +106,7 @@ private:
   uint64_t TotalFilterInstructions {};
 
   FEXCore::ForkableUniqueMutex FilterMutex;
-  fextl::list<FilterInformation> Filters {};
+  fextl::list<SeccompFilterInfo> Filters {};
 
   uint64_t AuditSerialIncrement() {
     return AuditSerial.fetch_add(1);
