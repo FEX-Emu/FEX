@@ -37,9 +37,6 @@ public:
    */
   virtual uint64_t DefaultRIP() const = 0;
 
-  virtual const fextl::vector<fextl::string>* GetApplicationArguments() {
-    return nullptr;
-  }
   virtual fextl::vector<const char*> GetExecveArguments() const {
     return {};
   }
@@ -51,6 +48,13 @@ public:
   virtual uint64_t GetBaseOffset() const {
     return 0;
   }
+
+  const fextl::vector<fextl::string>& GetApplicationArguments() const {
+    return ApplicationArgs;
+  }
+
+protected:
+  fextl::vector<fextl::string> ApplicationArgs;
 };
 
 } // namespace FEX
