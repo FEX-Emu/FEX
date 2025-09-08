@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include <FEXCore/Core/Context.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/EnumOperators.h>
 #include <FEXCore/Utils/EnumUtils.h>
@@ -12,9 +11,12 @@
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/unordered_map.h>
 
+#include <algorithm>
+#include <array>
 #include <charconv>
+#include <cstdint>
 #include <optional>
-#include <stdint.h>
+#include <type_traits>
 #include <variant>
 
 namespace FEXCore::Config {
