@@ -1,14 +1,10 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <cstdint>
-#include <functional>
-
-namespace FEXCore::IR {
-class IREmitter;
-}
 
 namespace FEX {
 
@@ -42,9 +38,6 @@ public:
   virtual void GetExecveArguments(fextl::vector<const char*>* Args) {}
 
   virtual void GetAuxv(uint64_t& addr, uint64_t& size) {}
-
-  using IRHandler = std::function<void(uint64_t Addr, FEXCore::IR::IREmitter* IR)>;
-  virtual void AddIR(IRHandler Handler) {}
 
   virtual uint64_t GetBaseOffset() const {
     return 0;
