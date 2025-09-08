@@ -1,12 +1,17 @@
 // SPDX-License-Identifier: MIT
 #pragma once
-#include <FEXCore/IR/IR.h>
-#include <FEXCore/fextl/vector.h>
 
-#include "LinuxSyscalls/Syscalls.h"
+#include <FEXCore/IR/IR.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <span>
+
+namespace FEX::HLE {
+class SyscallHandler;
+}
 
 namespace FEX::VDSO {
-using MapperFn = std::function<void*(void* addr, size_t length, int prot, int flags, int fd, off_t offset)>;
 struct VDSOMapping {
   void* VDSOBase {};
   size_t VDSOSize {};

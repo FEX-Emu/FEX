@@ -14,25 +14,30 @@ $end_info$
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/fextl/memory.h>
+#include <FEXCore/fextl/string.h>
+#include <FEXCore/fextl/vector.h>
 
 #include <array>
 #include <atomic>
-#include <stddef.h>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <mutex>
 
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Utils/ArchHelpers/Arm64.h>
 #include <FEXCore/Utils/Telemetry.h>
 
-namespace FEXCore {
-namespace Context {
-  class Context;
+namespace FEXCore::Context {
+class Context;
 }
-namespace Core {
-  struct InternalThreadState;
+namespace FEXCore::Core {
+struct InternalThreadState;
 }
-} // namespace FEXCore
+namespace FEX::HLE {
+enum class SignalEvent : uint32_t;
+struct ThreadStateObject;
+} // namespace FEX::HLE
 
 namespace FEX::HLE {
 using HostSignalDelegatorFunction = std::function<bool(FEXCore::Core::InternalThreadState* Thread, int Signal, void* info, void* ucontext)>;

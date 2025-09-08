@@ -55,6 +55,8 @@ $end_info$
 #include <utility>
 
 #include "LinuxSyscalls/GdbServer.h"
+#include "LinuxSyscalls/Syscalls.h"
+#include "LinuxSyscalls/ThreadManager.h"
 
 namespace FEX {
 
