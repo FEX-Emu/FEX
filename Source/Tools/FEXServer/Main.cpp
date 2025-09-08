@@ -12,11 +12,13 @@
 #include <fmt/color.h>
 
 #include <chrono>
+#include <ctime>
 #include <dirent.h>
 #include <fcntl.h>
 #include <filesystem>
 #include <iterator>
 #include <mutex>
+#include <optional>
 #include <poll.h>
 #include <sys/prctl.h>
 #include <sys/signal.h>

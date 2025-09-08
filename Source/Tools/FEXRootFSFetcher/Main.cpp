@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/string.h>
+#include <FEXCore/fextl/vector.h>
 
 #include "Common/cpp-optparse/OptionParser.h"
 #include "Common/JSONPool.h"
@@ -9,11 +10,14 @@
 #include "Common/ArgumentLoader.h"
 #include "Common/Config.h"
 
+#include <array>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <unistd.h>
 #include <optional>
+#include <span>
 #include <sstream>
 #include <sys/mman.h>
 #include <sys/syscall.h>

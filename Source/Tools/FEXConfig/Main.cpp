@@ -6,6 +6,9 @@
 #include <Common/FileFormatCheck.h>
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/map.h>
+#include <FEXCore/fextl/string.h>
+#include <FEXCore/fextl/unordered_map.h>
+#include <FEXCore/fextl/vector.h>
 #include <FEXCore/Config/Config.h>
 #include <FEXHeaderUtils/Filesystem.h>
 
@@ -16,6 +19,13 @@
 
 #include <sys/inotify.h>
 #include <poll.h>
+
+#include <charconv>
+#include <cstdlib>
+#include <filesystem>
+#include <stdexcept>
+#include <thread>
+#include <utility>
 
 namespace fextl {
 // Helper to convert a std::filesystem::path to a fextl::string.

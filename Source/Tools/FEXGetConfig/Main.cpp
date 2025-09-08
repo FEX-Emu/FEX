@@ -9,7 +9,8 @@
 #include <FEXCore/fextl/string.h>
 #include <FEXHeaderUtils/Filesystem.h>
 
-#include <stdio.h>
+#include <cstdio>
+#include <filesystem>
 #include <string>
 #include <sys/prctl.h>
 
