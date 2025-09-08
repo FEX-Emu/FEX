@@ -15,11 +15,20 @@ $end_info$
 
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/fextl/vector.h>
+#include <FEXCore/Utils/InterruptableConditionVariable.h>
 #include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
+#include <FEXCore/Utils/Threads.h>
+#include <FEXCore/Utils/TypeDefines.h>
+
+#include <atomic>
+#include <condition_variable>
+#include <cstddef>
+#include <cstdint>
+#include <mutex>
+#include <optional>
 
 #include <bits/types/sigset_t.h>
-#include <cstdint>
 #include <linux/seccomp.h>
 
 namespace FEX::HLE {
