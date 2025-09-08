@@ -354,15 +354,15 @@ public:
     Sections.clear();
   }
 
-  virtual uint64_t StackSize() const override {
+  uint64_t StackSize() const override {
     return STACK_SIZE;
   }
-  virtual uint64_t GetStackPointer() override {
+  uint64_t GetStackPointer() const override {
     return StackPointer;
   }
-  virtual uint64_t DefaultRIP() const override {
+  uint64_t DefaultRIP() const override {
     return Entrypoint;
-  };
+  }
 
   struct auxv32_t {
     uint32_t key;

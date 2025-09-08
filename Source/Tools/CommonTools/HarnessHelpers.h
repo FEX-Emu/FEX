@@ -453,7 +453,7 @@ public:
     return Page > 0 ? Page : FEXCore::Utils::FEX_PAGE_SIZE;
   }
 
-  uint64_t GetStackPointer() override {
+  uint64_t GetStackPointer() const override {
     LOGMAN_MSG_A_FMT("This should be unused.");
     FEX_UNREACHABLE;
   }

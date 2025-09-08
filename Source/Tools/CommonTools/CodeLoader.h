@@ -30,7 +30,7 @@ public:
   /**
    * Returns the initial stack pointer
    */
-  virtual uint64_t GetStackPointer() = 0;
+  virtual uint64_t GetStackPointer() const = 0;
 
   /**
    * @brief Function to return the guest RIP that the code should start out at
