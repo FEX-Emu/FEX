@@ -79,8 +79,6 @@ public:
   ContextImpl& CTX;
   bool IsGeneratingCache = false;
 
-  fextl::string ComputeCodeMapId(std::string_view Filename) override;
-
   void LoadData(Core::InternalThreadState&, std::byte* MappedCacheFile, const ExecutableFileSectionInfo&) override;
   bool SaveData(Core::InternalThreadState&, int TargetFD, const ExecutableFileSectionInfo&, uint64_t SerializedBaseAddress) override;
 

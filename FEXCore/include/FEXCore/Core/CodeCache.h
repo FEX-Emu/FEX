@@ -38,14 +38,6 @@ public:
   virtual ~AbstractCodeCache() = default;
 
   /**
-   * Computes a unique identifier for the referenced binary file to be used for
-   * generating the code map.
-   * This identifier is independent of FEX build/runtime configuration and
-   * stable across FEX updates.
-   */
-  virtual fextl::string ComputeCodeMapId(std::string_view Filename) = 0;
-
-  /**
    * Loads a code cache from mapped memory and appends it to the current Core state.
    * TODO: Optionally recompiles all contained code blocks at runtime for validation.
    */

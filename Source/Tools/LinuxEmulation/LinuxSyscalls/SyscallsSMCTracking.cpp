@@ -380,7 +380,6 @@ void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint6
       if (Inserted) {
         Resource->MappedFile = fextl::make_unique<FEXCore::ExecutableFileInfo>();
         Resource->MappedFile->Filename = fextl::string(Tmp, PathLength);
-        Resource->MappedFile->FileId = CTX->GetCodeCache().ComputeCodeMapId(Resource->MappedFile->Filename);
         Resource->Iterator = Iter;
       }
     }

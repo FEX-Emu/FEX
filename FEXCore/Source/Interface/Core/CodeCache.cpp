@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: MIT
-#include <FEXHeaderUtils/Filesystem.h>
 #include <Interface/Context/Context.h>
 
 #include <FEXCore/HLE/SyscallHandler.h>
 #include <FEXCore/HLE/SourcecodeResolver.h>
 
 #include <Interface/GDBJIT/GDBJIT.h>
-
-#include <xxhash.h>
 
 namespace FEXCore {
 
@@ -43,19 +40,6 @@ void CodeCache::PostCompileCode(FEXCore::Core::InternalThreadState& Thread, void
       }
     }
   }
-}
-
-fextl::string CodeCache::ComputeCodeMapId(std::string_view Filename) {
-  auto base_filename = FHU::Filesystem::GetFilename(Filename);
-  if (!base_filename.empty()) {
-    auto filename_hash = XXH3_64bits(Filename.data(), Filename.size());
-
-    return fextl::fmt::format("{}-{:016x}-{}{}{}", base_filename, filename_hash,
-                              (CTX.Config.SMCChecks == FEXCore::Config::CONFIG_SMC_FULL) ? 'S' : 's', CTX.Config.TSOEnabled ? 'T' : 't',
-                              CTX.Config.ABILocalFlags ? 'L' : 'l');
-  }
-
-  return nullptr;
 }
 
 } // namespace FEXCore::Context
