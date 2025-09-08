@@ -785,26 +785,24 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
   if (Config.BlockJITNaming()) {
     auto FragmentBasePtr = CompiledCode.BlockBegin;
 
-    if (DebugData) {
-      auto GuestRIPLookup = SyscallHandler->LookupExecutableFileSection(*Thread, GuestRIP);
+    auto GuestRIPLookup = SyscallHandler->LookupExecutableFileSection(*Thread, GuestRIP);
 
-      if (DebugData->Subblocks.size()) {
-        for (auto& Subblock : DebugData->Subblocks) {
-          auto BlockBasePtr = FragmentBasePtr + Subblock.HostCodeOffset;
-          if (GuestRIPLookup) {
-            Symbols.Register(Thread->SymbolBuffer.get(), BlockBasePtr, CompiledCode.Size, GuestRIPLookup->FileInfo.Filename,
-                             GuestRIP - GuestRIPLookup->FileStartVA);
-          } else {
-            Symbols.Register(Thread->SymbolBuffer.get(), BlockBasePtr, GuestRIP, Subblock.HostCodeSize);
-          }
-        }
-      } else {
+    if (DebugData->Subblocks.size()) {
+      for (auto& Subblock : DebugData->Subblocks) {
+        auto BlockBasePtr = FragmentBasePtr + Subblock.HostCodeOffset;
         if (GuestRIPLookup) {
-          Symbols.Register(Thread->SymbolBuffer.get(), FragmentBasePtr, CompiledCode.Size, GuestRIPLookup->FileInfo.Filename,
+          Symbols.Register(Thread->SymbolBuffer.get(), BlockBasePtr, CompiledCode.Size, GuestRIPLookup->FileInfo.Filename,
                            GuestRIP - GuestRIPLookup->FileStartVA);
         } else {
-          Symbols.Register(Thread->SymbolBuffer.get(), FragmentBasePtr, GuestRIP, CompiledCode.Size);
+          Symbols.Register(Thread->SymbolBuffer.get(), BlockBasePtr, GuestRIP, Subblock.HostCodeSize);
         }
+      }
+    } else {
+      if (GuestRIPLookup) {
+        Symbols.Register(Thread->SymbolBuffer.get(), FragmentBasePtr, CompiledCode.Size, GuestRIPLookup->FileInfo.Filename,
+                         GuestRIP - GuestRIPLookup->FileStartVA);
+      } else {
+        Symbols.Register(Thread->SymbolBuffer.get(), FragmentBasePtr, GuestRIP, CompiledCode.Size);
       }
     }
   }
