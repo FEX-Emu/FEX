@@ -6,15 +6,21 @@ $end_info$
 */
 
 #pragma once
-#include <stdint.h>
+
+#include <cstdint>
 #include <sys/types.h>
 
+namespace FEXCore::Context {
+class Context;
+}
+
 namespace FEXCore::Core {
+struct CpuStateFrame;
 struct InternalThreadState;
-struct CPUState;
 } // namespace FEXCore::Core
 
 namespace FEX::HLE {
+struct clone3_args;
 struct ThreadStateObject;
 
 FEX::HLE::ThreadStateObject* CreateNewThread(FEXCore::Context::Context* CTX, FEXCore::Core::CpuStateFrame* Frame, FEX::HLE::clone3_args* args);
