@@ -254,8 +254,8 @@ public:
 
   ELFCodeLoader(const fextl::string& Filename, int ProgramFDFromEnv, const fextl::string& RootFS, const fextl::vector<fextl::string>& args,
                 const fextl::vector<fextl::string>& ParsedArgs, char** const envp = nullptr,
-                FEXCore::Config::Value<FEXCore::Config::DefaultValues::Type::StringArrayType>* AdditionalEnvp = nullptr)
-    : Args {args} {
+                FEXCore::Config::Value<FEXCore::Config::DefaultValues::Type::StringArrayType>* AdditionalEnvp = nullptr) {
+    ApplicationArgs = args;
 
     bool LoadedWithFD = false;
     int FD = getauxval(AT_EXECFD);
@@ -295,13 +295,12 @@ public:
     if ((HostKernel >= FEX::HLE::SyscallHandler::KernelVersion(5, 12, 0) && (AtFlags & AT_FLAGS_PRESERVE_ARGV0)) || LoadedWithFD) {
 
       // Erase the initial argument from the list in this case
-      Args.erase(Args.begin());
+      ApplicationArgs.erase(ApplicationArgs.begin());
     }
 
     // Append any additional arguments from config
-    for (auto& Arg : AdditionalArguments.All()) {
-      Args.emplace_back(Arg);
-    }
+    const auto AdditionalArgs = AdditionalArguments.All();
+    ApplicationArgs.insert(ApplicationArgs.end(), AdditionalArgs.begin(), AdditionalArgs.end());
 
     if (!MainElf.InterpreterElf.empty()) {
       if (!InterpElf.ReadElf(ResolveRootfsFile(MainElf.InterpreterElf, RootFS)) && !InterpElf.ReadElf(MainElf.InterpreterElf)) {
@@ -319,9 +318,9 @@ public:
 
     ElfValid = true;
 
-    if (!!envp) {
+    if (envp) {
       // If we had envp passed in then make sure to set it up on the guest
-      for (unsigned i = 0;; ++i) {
+      for (size_t i = 0;; ++i) {
         if (envp[i] == nullptr) {
           break;
         }
@@ -329,11 +328,9 @@ public:
       }
     }
 
-    if (!!AdditionalEnvp) {
-      auto EnvpList = AdditionalEnvp->All();
-      for (auto iter = EnvpList.begin(); iter != EnvpList.end(); ++iter) {
-        EnvironmentVariables.emplace_back(*iter);
-      }
+    if (AdditionalEnvp) {
+      const auto EnvpList = AdditionalEnvp->All();
+      EnvironmentVariables.insert(EnvironmentVariables.end(), EnvpList.begin(), EnvpList.end());
     }
 
     if (InjectLibSegFault()) {
@@ -341,15 +338,14 @@ public:
     }
 
     // Calculate argument and envp backing sizes
-    for (unsigned i = 0; i < Args.size(); ++i) {
-      ArgumentBackingSize += Args[i].size() + 1;
+    for (const auto& Arg : ApplicationArgs) {
+      ArgumentBackingSize += Arg.size() + 1;
+    }
+    for (const auto& EnvVar : EnvironmentVariables) {
+      EnvironmentBackingSize += EnvVar.size() + 1;
     }
 
-    for (unsigned i = 0; i < EnvironmentVariables.size(); ++i) {
-      EnvironmentBackingSize += EnvironmentVariables[i].size() + 1;
-    }
-
-    for (auto& Arg : ParsedArgs) {
+    for (const auto& Arg : ParsedArgs) {
       LoaderArgs.emplace_back(Arg.c_str());
     }
   }
@@ -358,15 +354,15 @@ public:
     Sections.clear();
   }
 
-  virtual uint64_t StackSize() const override {
+  uint64_t StackSize() const override {
     return STACK_SIZE;
   }
-  virtual uint64_t GetStackPointer() override {
+  uint64_t GetStackPointer() const override {
     return StackPointer;
   }
-  virtual uint64_t DefaultRIP() const override {
+  uint64_t DefaultRIP() const override {
     return Entrypoint;
-  };
+  }
 
   struct auxv32_t {
     uint32_t key;
@@ -720,7 +716,7 @@ public:
     uint64_t TotalArgumentMemSize {};
 
     TotalArgumentMemSize += SizeOfPointer;                               // Argument counter size
-    TotalArgumentMemSize += SizeOfPointer * Args.size();                 // Pointers to strings
+    TotalArgumentMemSize += SizeOfPointer * ApplicationArgs.size();      // Pointers to strings
     TotalArgumentMemSize += SizeOfPointer;                               // Padding for something
     TotalArgumentMemSize += SizeOfPointer * EnvironmentVariables.size(); // Argument location for envp
     TotalArgumentMemSize += SizeOfPointer;                               // envp nullptr ender
@@ -742,7 +738,7 @@ public:
     TotalArgumentMemSize += platform_string_max_size;
 
     uint64_t ExecFNLocation = TotalArgumentMemSize;
-    TotalArgumentMemSize += Args[0].size() + 1;
+    TotalArgumentMemSize += ApplicationArgs[0].size() + 1;
 
     // Align the argument block to 16 bytes to keep the stack aligned
     TotalArgumentMemSize = FEXCore::AlignUp(TotalArgumentMemSize, 16);
@@ -784,7 +780,7 @@ public:
 
     // Setup ExecFN aux
     AuxExecFN->val = StackPointer + ExecFNLocation;
-    strncpy(reinterpret_cast<char*>(AuxExecFN->val), Args[0].c_str(), Args[0].size() + 1);
+    strncpy(reinterpret_cast<char*>(AuxExecFN->val), ApplicationArgs[0].c_str(), ApplicationArgs[0].size() + 1);
 
     // Stack setup
     // [0, 8):   Argument Count
@@ -801,24 +797,23 @@ public:
     // [envpend, +8): nullptr
 
     if (SizeOfPointer == 8) {
-      SetupPointers<uint64_t, auxv_t, 8>(StackPointer, AuxVOffset, ArgumentOffset, EnvpOffset, Args, EnvironmentVariables, AuxVariables,
-                                         &AuxTabBase, &AuxTabSize);
+      SetupPointers<uint64_t, auxv_t, 8>(StackPointer, AuxVOffset, ArgumentOffset, EnvpOffset, ApplicationArgs, EnvironmentVariables,
+                                         AuxVariables, &AuxTabBase, &AuxTabSize);
     } else {
-      SetupPointers<uint32_t, auxv32_t, 4>(StackPointer, AuxVOffset, ArgumentOffset, EnvpOffset, Args, EnvironmentVariables, AuxVariables,
-                                           &AuxTabBase, &AuxTabSize);
+      SetupPointers<uint32_t, auxv32_t, 4>(StackPointer, AuxVOffset, ArgumentOffset, EnvpOffset, ApplicationArgs, EnvironmentVariables,
+                                           AuxVariables, &AuxTabBase, &AuxTabSize);
     }
   }
 
-  const fextl::vector<fextl::string>* GetApplicationArguments() override {
-    return &Args;
-  }
-  void GetExecveArguments(fextl::vector<const char*>* Args) override {
-    *Args = LoaderArgs;
+  fextl::vector<const char*> GetExecveArguments() const override {
+    return LoaderArgs;
   }
 
-  void GetAuxv(uint64_t& addr, uint64_t& size) override {
-    addr = AuxTabBase;
-    size = AuxTabSize;
+  AuxvResult GetAuxv() const override {
+    return {
+      .address = AuxTabBase,
+      .size = AuxTabSize,
+    };
   }
 
   uint64_t GetBaseOffset() const override {
@@ -909,7 +904,6 @@ public:
   constexpr static uint64_t STACK_HINT_32 = 0xFFFFE000 - FULL_STACK_SIZE;
   constexpr static uint64_t STACK_HINT_64 = 0x7FFFFFFFF000 - FULL_STACK_SIZE;
 
-  fextl::vector<fextl::string> Args;
   fextl::vector<fextl::string> EnvironmentVariables;
   fextl::vector<const char*> LoaderArgs;
 

@@ -587,13 +587,13 @@ EmulatedFDManager::EmulatedFDManager(FEXCore::Context::Context* ctx)
   FDReadCreators["/proc/self/auxv"] = &EmulatedFDManager::ProcAuxv;
 
   auto cmdline_handler = [&](FEXCore::Context::Context* ctx, int32_t fd, const char* pathname, int32_t flags, mode_t mode) -> int32_t {
-    int FD = GenTmpFD(pathname, flags);
-    auto CodeLoader = FEX::HLE::_SyscallHandler->GetCodeLoader();
-    auto Args = CodeLoader->GetApplicationArguments();
-    char NullChar {};
+    const int FD = GenTmpFD(pathname, flags);
+    const auto* CodeLoader = FEX::HLE::_SyscallHandler->GetCodeLoader();
+    const auto& Args = CodeLoader->GetApplicationArguments();
+    const char NullChar {};
+
     // cmdline is an array of null terminated arguments
-    for (size_t i = 0; i < Args->size(); ++i) {
-      auto& Arg = Args->at(i);
+    for (const auto& Arg : Args) {
       write(FD, Arg.c_str(), Arg.size());
       // Finish off with a null terminator
       write(FD, &NullChar, sizeof(uint8_t));
@@ -632,9 +632,8 @@ int32_t EmulatedFDManager::Open(const char* pathname, int flags, uint32_t mode) 
 }
 
 int32_t EmulatedFDManager::ProcAuxv(FEXCore::Context::Context* ctx, int32_t fd, const char* pathname, int32_t flags, mode_t mode) {
-  uint64_t auxvBase = 0, auxvSize = 0;
-  FEX::HLE::_SyscallHandler->GetCodeLoader()->GetAuxv(auxvBase, auxvSize);
-  if (!auxvBase) {
+  const auto [auxvBase, auxvSize] = FEX::HLE::_SyscallHandler->GetCodeLoader()->GetAuxv();
+  if (auxvBase == 0) {
     LogMan::Msg::DFmt("Failed to get Auxv stack address");
     return -1;
   }

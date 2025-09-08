@@ -1,14 +1,10 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <cstdint>
-#include <functional>
-
-namespace FEXCore::IR {
-class IREmitter;
-}
 
 namespace FEX {
 
@@ -19,6 +15,11 @@ namespace FEX {
  */
 class CodeLoader {
 public:
+  struct AuxvResult {
+    uint64_t address;
+    uint64_t size;
+  };
+
   virtual ~CodeLoader() = default;
 
   /**
@@ -29,26 +30,31 @@ public:
   /**
    * Returns the initial stack pointer
    */
-  virtual uint64_t GetStackPointer() = 0;
+  virtual uint64_t GetStackPointer() const = 0;
 
   /**
    * @brief Function to return the guest RIP that the code should start out at
    */
   virtual uint64_t DefaultRIP() const = 0;
 
-  virtual const fextl::vector<fextl::string>* GetApplicationArguments() {
-    return nullptr;
+  virtual fextl::vector<const char*> GetExecveArguments() const {
+    return {};
   }
-  virtual void GetExecveArguments(fextl::vector<const char*>* Args) {}
 
-  virtual void GetAuxv(uint64_t& addr, uint64_t& size) {}
-
-  using IRHandler = std::function<void(uint64_t Addr, FEXCore::IR::IREmitter* IR)>;
-  virtual void AddIR(IRHandler Handler) {}
+  virtual AuxvResult GetAuxv() const {
+    return {};
+  }
 
   virtual uint64_t GetBaseOffset() const {
     return 0;
   }
+
+  const fextl::vector<fextl::string>& GetApplicationArguments() const {
+    return ApplicationArgs;
+  }
+
+protected:
+  fextl::vector<fextl::string> ApplicationArgs;
 };
 
 } // namespace FEX
