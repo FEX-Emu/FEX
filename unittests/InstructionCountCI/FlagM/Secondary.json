@@ -1601,9 +1601,12 @@
       ]
     },
     "pmovmskb eax, mm0": {
-      "ExpectedInstructionCount": 8,
+      "ExpectedInstructionCount": 11,
       "Comment": "0x0f 0xd7",
       "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1019]",
+        "mov w20, #0xffff",
+        "strb w20, [x28, #1186]",
         "ldr d2, [x28, #1040]",
         "ldr d3, [x28, #3216]",
         "cmlt v2.16b, v2.16b, #0",
@@ -1615,9 +1618,12 @@
       ]
     },
     "maskmovq mm0, mm1": {
-      "ExpectedInstructionCount": 6,
+      "ExpectedInstructionCount": 9,
       "Comment": "0x0f 0xf7",
       "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1019]",
+        "mov w20, #0xffff",
+        "strb w20, [x28, #1186]",
         "ldr d2, [x28, #1056]",
         "cmlt v2.16b, v2.16b, #0",
         "ldr d3, [x28, #1040]",

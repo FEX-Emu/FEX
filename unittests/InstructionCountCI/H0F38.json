@@ -18,14 +18,14 @@
         "NP 0x0f 0x38 0x00"
       ],
       "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1019]",
+        "mov w20, #0xffff",
+        "strb w20, [x28, #1186]",
         "ldr d2, [x28, #1040]",
         "ldr d3, [x28, #1056]",
         "movi v4.16b, #0x87",
         "and v3.16b, v3.16b, v4.16b",
         "tbl v2.8b, {v2.16b}, v3.8b",
-        "strb wzr, [x28, #1019]",
-        "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
         "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
@@ -47,12 +47,12 @@
         "NP 0x0f 0x38 0x01"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #1056]",
-        "ldr d3, [x28, #1040]",
-        "addp v2.4h, v3.4h, v2.4h",
         "strb wzr, [x28, #1019]",
         "mov w20, #0xffff",
         "strb w20, [x28, #1186]",
+        "ldr d2, [x28, #1056]",
+        "ldr d3, [x28, #1040]",
+        "addp v2.4h, v3.4h, v2.4h",
         "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
@@ -72,12 +72,12 @@
         "NP 0x0f 0x38 0x02"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #1056]",
-        "ldr d3, [x28, #1040]",
-        "addp v2.2s, v3.2s, v2.2s",
         "strb wzr, [x28, #1019]",
         "mov w20, #0xffff",
         "strb w20, [x28, #1186]",
+        "ldr d2, [x28, #1056]",
+        "ldr d3, [x28, #1040]",
+        "addp v2.2s, v3.2s, v2.2s",
         "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
@@ -97,14 +97,14 @@
         "NP 0x0f 0x38 0x03"
       ],
       "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1019]",
+        "mov w20, #0xffff",
+        "strb w20, [x28, #1186]",
         "ldr d2, [x28, #1040]",
         "ldr d3, [x28, #1056]",
         "uzp1 v4.4h, v2.4h, v3.4h",
         "uzp2 v2.4h, v2.4h, v3.4h",
         "sqadd v2.8h, v4.8h, v2.8h",
-        "strb wzr, [x28, #1019]",
-        "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
         "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
@@ -126,6 +126,9 @@
         "NP 0x0f 0x38 0x04"
       ],
       "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1019]",
+        "mov w20, #0xffff",
+        "strb w20, [x28, #1186]",
         "ldr d2, [x28, #1040]",
         "ldr d3, [x28, #1056]",
         "uxtl v2.8h, v2.8b",
@@ -134,9 +137,6 @@
         "smull2 v2.4s, v2.8h, v3.8h",
         "addp v2.4s, v4.4s, v2.4s",
         "sqxtn v2.4h, v2.4s",
-        "strb wzr, [x28, #1019]",
-        "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
         "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
@@ -168,14 +168,14 @@
         "NP 0x0f 0x38 0x05"
       ],
       "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1019]",
+        "mov w20, #0xffff",
+        "strb w20, [x28, #1186]",
         "ldr d2, [x28, #1040]",
         "ldr d3, [x28, #1056]",
         "uzp1 v4.4h, v2.4h, v3.4h",
         "uzp2 v2.4h, v2.4h, v3.4h",
         "sub v2.8h, v4.8h, v2.8h",
-        "strb wzr, [x28, #1019]",
-        "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
         "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
@@ -197,14 +197,14 @@
         "NP 0x0f 0x38 0x06"
       ],
       "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1019]",
+        "mov w20, #0xffff",
+        "strb w20, [x28, #1186]",
         "ldr d2, [x28, #1040]",
         "ldr d3, [x28, #1056]",
         "uzp1 v4.2s, v2.2s, v3.2s",
         "uzp2 v2.2s, v2.2s, v3.2s",
         "sub v2.4s, v4.4s, v2.4s",
-        "strb wzr, [x28, #1019]",
-        "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
         "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
@@ -226,14 +226,14 @@
         "NP 0x0f 0x38 0x07"
       ],
       "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1019]",
+        "mov w20, #0xffff",
+        "strb w20, [x28, #1186]",
         "ldr d2, [x28, #1040]",
         "ldr d3, [x28, #1056]",
         "uzp1 v4.4h, v2.4h, v3.4h",
         "uzp2 v2.4h, v2.4h, v3.4h",
         "sqsub v2.8h, v4.8h, v2.8h",
-        "strb wzr, [x28, #1019]",
-        "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
         "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
@@ -255,14 +255,14 @@
         "NP 0x0f 0x38 0x08"
       ],
       "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1019]",
+        "mov w20, #0xffff",
+        "strb w20, [x28, #1186]",
         "ldr d2, [x28, #1056]",
         "ldr d3, [x28, #1040]",
         "sqshl v2.8b, v2.8b, #7",
         "srshr v2.8b, v2.8b, #7",
         "mul v2.16b, v3.16b, v2.16b",
-        "strb wzr, [x28, #1019]",
-        "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
         "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
@@ -284,14 +284,14 @@
         "NP 0x0f 0x38 0x09"
       ],
       "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1019]",
+        "mov w20, #0xffff",
+        "strb w20, [x28, #1186]",
         "ldr d2, [x28, #1056]",
         "ldr d3, [x28, #1040]",
         "sqshl v2.4h, v2.4h, #15",
         "srshr v2.4h, v2.4h, #15",
         "mul v2.8h, v3.8h, v2.8h",
-        "strb wzr, [x28, #1019]",
-        "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
         "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
@@ -313,14 +313,14 @@
         "NP 0x0f 0x38 0x0a"
       ],
       "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1019]",
+        "mov w20, #0xffff",
+        "strb w20, [x28, #1186]",
         "ldr d2, [x28, #1056]",
         "ldr d3, [x28, #1040]",
         "sqshl v2.2s, v2.2s, #31",
         "srshr v2.2s, v2.2s, #31",
         "mul v2.4s, v3.4s, v2.4s",
-        "strb wzr, [x28, #1019]",
-        "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
         "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
@@ -343,6 +343,9 @@
         "NP 0x0f 0x38 0x0b"
       ],
       "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1019]",
+        "mov w20, #0xffff",
+        "strb w20, [x28, #1186]",
         "ldr d2, [x28, #1040]",
         "ldr d3, [x28, #1056]",
         "smull v2.4s, v2.4h, v3.4h",
@@ -350,9 +353,6 @@
         "movi v3.4s, #0x1, lsl #0",
         "add v2.4s, v2.4s, v3.4s",
         "shrn v2.4h, v2.4s, #1",
-        "strb wzr, [x28, #1019]",
-        "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
         "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
@@ -465,11 +465,11 @@
         "NP 0x0f 0x38 0x1c"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #1056]",
-        "abs v2.16b, v2.16b",
         "strb wzr, [x28, #1019]",
         "mov w20, #0xffff",
         "strb w20, [x28, #1186]",
+        "ldr d2, [x28, #1056]",
+        "abs v2.16b, v2.16b",
         "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
@@ -489,11 +489,11 @@
         "NP 0x0f 0x38 0x1d"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #1056]",
-        "abs v2.8h, v2.8h",
         "strb wzr, [x28, #1019]",
         "mov w20, #0xffff",
         "strb w20, [x28, #1186]",
+        "ldr d2, [x28, #1056]",
+        "abs v2.8h, v2.8h",
         "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]
@@ -513,11 +513,11 @@
         "NP 0x0f 0x38 0x1e"
       ],
       "ExpectedArm64ASM": [
-        "ldr d2, [x28, #1056]",
-        "abs v2.4s, v2.4s",
         "strb wzr, [x28, #1019]",
         "mov w20, #0xffff",
         "strb w20, [x28, #1186]",
+        "ldr d2, [x28, #1056]",
+        "abs v2.4s, v2.4s",
         "str d2, [x28, #1040]",
         "strh w20, [x28, #1048]"
       ]

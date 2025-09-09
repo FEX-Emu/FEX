@@ -22,11 +22,14 @@
       ]
     },
     "cvtpi2ps xmm0, mm0": {
-      "ExpectedInstructionCount": 4,
+      "ExpectedInstructionCount": 7,
       "Comment": [
         "0x0f 0x2a"
       ],
       "ExpectedArm64ASM": [
+        "strb wzr, [x28, #1019]",
+        "mov w20, #0xffff",
+        "strb w20, [x28, #1186]",
         "ldr d2, [x28, #1040]",
         "scvtf v0.2s, v2.2s",
         "ptrue p0.d, vl1",
