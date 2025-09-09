@@ -1845,6 +1845,7 @@ private:
   static const int PFIndex = 16;
   static const int AFIndex = 17;
   /* Gap 18..19 */
+  /* Note this range is only valid if MMXState = MMXState_MMX */
   static const int MM0Index = 20;
   static const int MM7Index = 27;
   /* Gap 28..30 */

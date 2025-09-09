@@ -2631,8 +2631,10 @@ void OpDispatchBuilder::SaveX87State(OpcodeArgs, Ref MemBase) {
   // If OSFXSR bit in CR4 is not set than FXSAVE /may/ not save the XMM registers
   // This is implementation dependent
   for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; i += 2) {
-    RefPair MMRegs = LoadContextPair(OpSize::i128Bit, MM0Index + i);
-    _StoreMemPair(FPRClass, OpSize::i128Bit, MMRegs.Low, MMRegs.High, MemBase, i * 16 + 32);
+    Ref Low = _LoadContext(OpSize::i128Bit, FPRClass, MMBaseOffset() + i * 16);
+    Ref High = _LoadContext(OpSize::i128Bit, FPRClass, MMBaseOffset() + (i + 1) * 16);
+
+    _StoreMemPair(FPRClass, OpSize::i128Bit, Low, High, MemBase, i * 16 + 32);
   }
 }
 
@@ -2761,9 +2763,8 @@ void OpDispatchBuilder::RestoreX87State(Ref MemBase) {
 
   for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; i += 2) {
     auto MMRegs = LoadMemPair(FPRClass, OpSize::i128Bit, MemBase, i * 16 + 32);
-
-    StoreContext(MM0Index + i, MMRegs.Low);
-    StoreContext(MM0Index + i + 1, MMRegs.High);
+    _StoreContext(OpSize::i128Bit, FPRClass, MMRegs.Low, MMBaseOffset() + i * 16);
+    _StoreContext(OpSize::i128Bit, FPRClass, MMRegs.High, MMBaseOffset() + (i + 1) * 16);
   }
 }
 
@@ -2809,7 +2810,7 @@ void OpDispatchBuilder::DefaultX87State(OpcodeArgs) {
   // all of the ST0-7/MM0-7 registers to zero.
   Ref ZeroVector = LoadZeroVector(OpSize::i64Bit);
   for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
-    StoreContext(MM0Index + i, ZeroVector);
+    _StoreContext(OpSize::i128Bit, FPRClass, ZeroVector, MMBaseOffset() + i * 16);
   }
 }
 
