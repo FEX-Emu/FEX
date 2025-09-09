@@ -679,7 +679,6 @@ void X87StackOptimization::FlushCachedRegs() {
 // written.
 Ref X87StackOptimization::SynchronizeStackValues() {
   if (SlowPath) {
-    FlushCachedRegs();
     return GetTopWithCache_Slow();
   }
 
@@ -716,7 +715,6 @@ Ref X87StackOptimization::SynchronizeStackValues() {
     FlushValidPending = true;
   }
 
-  FlushCachedRegs();
   return TopValue;
 }
 
@@ -1140,6 +1138,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
       case OP_SYNCSTACKTOSLOW: {
         // This synchronizes stack values but doesn't necessarily moves us off the FastPath!
         Ref NewTop = SynchronizeStackValues();
+        FlushCachedRegs();
         IREmit->ReplaceUsesWithAfter(CodeNode, NewTop, CodeNode);
         break;
       }
@@ -1205,6 +1204,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
     LOGMAN_THROW_A_FMT(IsBlockExit(LastIROp->Op), "must be exit");
     IREmit->SetWriteCursorBefore(LastCodeNode);
     SynchronizeStackValues();
+    FlushCachedRegs();
   }
 
   return;
