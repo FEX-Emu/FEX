@@ -1,4 +1,4 @@
-# FEX-2508
+# FEX-2509
 
 ## FEXCore
 See [FEXCore/Readme.md](../FEXCore/Readme.md) for more details
@@ -40,7 +40,6 @@ IR to host code generation
 - [Frontend.cpp](../FEXCore/Source/Interface/Core/Frontend.cpp): Extracts instruction & block meta info, frontend multiblock logic
 
 #### x86-tables
-Metadata that drives the frontend x86/64 decoding
 - [BaseTables.cpp](../FEXCore/Source/Interface/Core/X86Tables/BaseTables.cpp)
 - [DDDTables.cpp](../FEXCore/Source/Interface/Core/X86Tables/DDDTables.cpp)
 - [H0F38Tables.cpp](../FEXCore/Source/Interface/Core/X86Tables/H0F38Tables.cpp)
@@ -50,10 +49,8 @@ Metadata that drives the frontend x86/64 decoding
 - [SecondaryModRMTables.cpp](../FEXCore/Source/Interface/Core/X86Tables/SecondaryModRMTables.cpp)
 - [SecondaryTables.cpp](../FEXCore/Source/Interface/Core/X86Tables/SecondaryTables.cpp)
 - [VEXTables.cpp](../FEXCore/Source/Interface/Core/X86Tables/VEXTables.cpp)
-- [X86TableGen.h](../FEXCore/Source/Interface/Core/X86Tables/X86TableGen.h)
 - [X86Tables.h](../FEXCore/Source/Interface/Core/X86Tables/X86Tables.h)
 - [X87Tables.cpp](../FEXCore/Source/Interface/Core/X86Tables/X87Tables.cpp)
-- [X86Tables.cpp](../FEXCore/Source/Interface/Core/X86Tables.cpp)
 
 #### x86-to-ir
 - [AVX_128.cpp](../FEXCore/Source/Interface/Core/OpcodeDispatcher/AVX_128.cpp): Handles x86/64 AVX instructions to 128-bit IR
