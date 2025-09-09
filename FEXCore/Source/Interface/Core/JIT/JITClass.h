@@ -24,6 +24,7 @@ $end_info$
 
 #include <array>
 #include <cstdint>
+#include <functional>
 #include <utility>
 #include <variant>
 

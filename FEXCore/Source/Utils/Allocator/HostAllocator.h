@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MIT
 #pragma once
-#include <FEXCore/fextl/allocator.h>
+
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/vector.h>
-#include <FEXCore/Utils/Allocator.h>
 
 #include <cstddef>
 #include <sys/types.h>
 
+namespace FEXCore::Allocator {
+struct MemoryRegion;
+}
 namespace FEXCore::Core {
 struct InternalThreadState;
 }
