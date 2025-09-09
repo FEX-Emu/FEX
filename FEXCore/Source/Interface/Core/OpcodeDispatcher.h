@@ -209,10 +209,17 @@ public:
   }
 
   static bool CanHaveSideEffects(const FEXCore::X86Tables::X86InstInfo* TableInfo, FEXCore::X86Tables::DecodedOp Op) {
-    if (TableInfo && TableInfo->Flags & X86Tables::InstFlags::FLAGS_DEBUG_MEM_ACCESS) {
-      // If it is marked as having memory access then always say it has a side-effect.
-      // Not always true but better to be safe.
-      return true;
+    if (TableInfo) {
+      if (TableInfo->Flags & X86Tables::InstFlags::FLAGS_DEBUG_MEM_ACCESS) {
+        // If it is marked as having memory access then always say it has a side-effect.
+        // Not always true but better to be safe.
+        return true;
+      }
+
+      if (TableInfo->Flags & (X86Tables::InstFlags::FLAGS_SETS_RIP | X86Tables::InstFlags::FLAGS_BLOCK_END)) {
+        // Cooperative suspend interrupts can be triggered at any back-edge, the RIP must be reconstructed correctly in such cases
+        return true;
+      }
     }
 
     auto CanHaveSideEffects = false;
