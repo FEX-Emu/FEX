@@ -406,7 +406,9 @@ private:
                            std::optional<ARMEmitter::VRegister> VectorIndexHigh, ARMEmitter::VRegister MaskReg, IR::OpSize VectorIndexSize,
                            size_t DataElementOffsetStart, size_t IndexElementOffsetStart, uint8_t OffsetScale);
 
-  void EmitInterruptChecks(bool CheckTF);
+  void EmitTFCheck();
+
+  void EmitSuspendInterruptCheck();
 
   void EmitEntryPoint(ARMEmitter::BackwardLabel& HeaderLabel, bool CheckTF);
 
