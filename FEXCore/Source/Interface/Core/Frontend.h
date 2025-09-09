@@ -4,17 +4,20 @@
 #include "Interface/Core/X86Tables/X86Tables.h"
 #include "Interface/IR/IR.h"
 
-#include <FEXCore/HLE/SyscallHandler.h>
-#include <FEXCore/Utils/Telemetry.h>
+#include <FEXCore/Utils/ThreadPoolAllocator.h>
 #include <FEXCore/fextl/set.h>
 #include <FEXCore/fextl/vector.h>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
-#include <stddef.h>
+#include <optional>
 
 namespace FEXCore::Context {
 class ContextImpl;
+}
+namespace FEXCore::HLE {
+enum class SyscallOSABI;
 }
 
 namespace FEXCore::Frontend {

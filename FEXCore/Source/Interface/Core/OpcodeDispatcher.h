@@ -27,8 +27,6 @@
 #include <xxhash.h>
 
 namespace FEXCore::IR {
-class Pass;
-class PassManager;
 
 enum class MemoryAccessType {
   // Choose TSO or Non-TSO depending on access type
@@ -87,9 +85,6 @@ struct DispatchTableEntry {
 };
 
 class OpDispatchBuilder final : public IREmitter {
-  friend class FEXCore::IR::Pass;
-  friend class FEXCore::IR::PassManager;
-
 public:
   Ref GetNewJumpBlock(uint64_t RIP) {
     auto it = JumpTargets.find(RIP);
