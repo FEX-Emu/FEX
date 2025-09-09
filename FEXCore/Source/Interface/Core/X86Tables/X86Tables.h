@@ -6,18 +6,20 @@ $end_info$
 */
 
 #pragma once
-#include <FEXCore/Core/Context.h>
 
 #include <FEXCore/Utils/LogManager.h>
 
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <type_traits>
+
 namespace FEXCore::IR {
-///< Forward declaration of OpDispatchBuilder
 class OpDispatchBuilder;
 }
 
 namespace FEXCore::X86Tables {
-
-///< Forward declaration of X86InstInfo
 struct X86InstInfo;
 
 namespace DecodeFlags {

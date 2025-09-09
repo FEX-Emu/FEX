@@ -8,6 +8,8 @@
 #include <FEXCore/Core/CPUID.h>
 #include <FEXCore/Core/HostFeatures.h>
 #include <FEXCore/Core/SignalDelegator.h>
+#include <FEXCore/HLE/SyscallHandler.h>
+
 #include <FEXCore/Core/Thunks.h>
 #include "FEXCore/Debug/InternalThreadState.h"
 
