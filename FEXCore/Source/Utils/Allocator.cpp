@@ -3,26 +3,26 @@
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/TypeDefines.h>
 #include <FEXCore/fextl/fmt.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/memory_resource.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <cerrno>
 #include <charconv>
+#include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <fcntl.h>
 #ifndef _WIN32
 #include <sys/mman.h>
 #include <sys/user.h>
 #endif
-
-#include <errno.h>
-#include <memory>
-#include <stddef.h>
-#include <stdint.h>
 
 namespace fextl::pmr {
 static fextl::pmr::default_resource FEXDefaultResource;

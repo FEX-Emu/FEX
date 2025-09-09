@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include <atomic>
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/list.h>
 
+#include <atomic>
 #include <chrono>
 #include <cstddef>
+#include <cstdint>
 #include <mutex>
+#include <optional>
+#include <type_traits>
 
 namespace FEXCore::Utils {
 /**

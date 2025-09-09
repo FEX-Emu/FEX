@@ -8,6 +8,8 @@
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/sstream.h>
 
+#include <array>
+
 namespace FEXCore::IR {
 
 class OrderedNode;

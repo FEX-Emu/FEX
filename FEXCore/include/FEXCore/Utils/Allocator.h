@@ -5,8 +5,6 @@
 #include <FEXCore/fextl/vector.h>
 
 #include <cstdint>
-#include <functional>
-#include <optional>
 #include <sys/types.h>
 
 namespace FEXCore::Core {
