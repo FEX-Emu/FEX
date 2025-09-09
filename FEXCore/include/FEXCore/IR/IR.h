@@ -1,22 +1,12 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include <FEXCore/Utils/CompilerDefs.h>
-#include <FEXCore/Utils/EnumUtils.h>
-#include <FEXCore/Utils/ThreadPoolAllocator.h>
-#include <FEXCore/fextl/memory.h>
-#include <FEXCore/fextl/sstream.h>
 #include <FEXCore/Utils/EnumOperators.h>
 
 #include <cstdint>
 #include <cstring>
 
-#include <fmt/format.h>
-
 namespace FEXCore::IR {
-
-class OrderedNode;
-class RegisterAllocationPass;
 
 enum class SyscallFlags : uint8_t {
   DEFAULT = 0,

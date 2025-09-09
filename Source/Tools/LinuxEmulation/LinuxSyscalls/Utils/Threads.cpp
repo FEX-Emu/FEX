@@ -3,6 +3,7 @@
 #include "LinuxSyscalls/Syscalls.h"
 
 #include <FEXCore/Core/Context.h>
+#include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/Threads.h>
 
 namespace FEX::LinuxEmulation::Threads {

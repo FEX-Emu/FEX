@@ -7,6 +7,7 @@
 #include "LinuxSyscalls/Seccomp/SeccompEmulator.h"
 
 #include <FEXHeaderUtils/Syscalls.h>
+#include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/fextl/fmt.h>
 
