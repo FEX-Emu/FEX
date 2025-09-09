@@ -2557,6 +2557,8 @@ void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::SaveX87State(OpcodeArgs, Ref MemBase) {
+  _SyncStackToSlow();
+
   // Saves 512bytes to the memory location provided
   // Header changes depending on if REX.W is set or not
   if (Op->Flags & X86Tables::DecodeFlags::FLAG_REX_WIDENING) {
@@ -2580,7 +2582,8 @@ void OpDispatchBuilder::SaveX87State(OpcodeArgs, Ref MemBase) {
 
   {
     // Abridged FTW
-    _StoreMem(GPRClass, OpSize::i8Bit, LoadContext(AbridgedFTWIndex), MemBase, Constant(4), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
+    auto FTW = _LoadContext(OpSize::i8Bit, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+    _StoreMem(GPRClass, OpSize::i8Bit, FTW, MemBase, Constant(4), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
   }
 
   // BYTE | 0 1 | 2 3 | 4   | 5     | 6 7 | 8 9 | a b | c d | e f |
@@ -2740,6 +2743,8 @@ void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::RestoreX87State(Ref MemBase) {
+  _StackForceSlow();
+
   auto NewFCW = _LoadMem(GPRClass, OpSize::i16Bit, MemBase, OpSize::i16Bit);
   _StoreContext(OpSize::i16Bit, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
@@ -2750,7 +2755,8 @@ void OpDispatchBuilder::RestoreX87State(Ref MemBase) {
 
   {
     // Abridged FTW
-    StoreContext(AbridgedFTWIndex, _LoadMem(GPRClass, OpSize::i8Bit, MemBase, Constant(4), OpSize::i8Bit, MEM_OFFSET_SXTX, 1));
+    auto NewFTW = _LoadMem(GPRClass, OpSize::i8Bit, MemBase, Constant(4), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
+    _StoreContext(OpSize::i8Bit, GPRClass, NewFTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
   }
 
   for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; i += 2) {
