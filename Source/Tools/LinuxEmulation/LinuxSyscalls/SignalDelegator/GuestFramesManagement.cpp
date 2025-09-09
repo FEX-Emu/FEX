@@ -8,10 +8,18 @@ $end_info$
 
 #include "LinuxSyscalls/SignalDelegator.h"
 
+#include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/SignalDelegator.h>
+#include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/ArchHelpers/Arm64.h>
-#include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/FPState.h>
+#include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/MathUtils.h>
+
+#include <csignal>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 
 namespace FEX::HLE {
 // Total number of layouts that siginfo supports.

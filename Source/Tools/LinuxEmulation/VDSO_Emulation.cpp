@@ -1,13 +1,18 @@
 // SPDX-License-Identifier: MIT
 #include "VDSO_Emulation.h"
-#include "FEXCore/IR/IR.h"
+
+#include "LinuxSyscalls/Syscalls.h"
 #include "LinuxSyscalls/x32/Types.h"
 
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
-#include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/Utils/SignalScopeGuards.h>
+#include <FEXCore/Utils/TypeDefines.h>
 #include <FEXCore/fextl/fmt.h>
+#include <FEXCore/fextl/map.h>
 #include <FEXHeaderUtils/Syscalls.h>
 
 #include <array>
