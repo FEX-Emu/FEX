@@ -1179,13 +1179,15 @@ public:
     _StoreContext(Size, Class, Value, Offset);
   }
 
-  void FlushRegisterCache(bool SRAOnly = false) {
+  void FlushRegisterCache(bool SRAOnly = false, bool MMXOnly = false) {
     // At block boundaries, fix up the carry flag.
     if (!SRAOnly) {
       RectifyCarryInvert(CFInvertedABI);
     }
 
-    CalculateDeferredFlags();
+    if (!MMXOnly) {
+      CalculateDeferredFlags();
+    }
 
     const auto GPRSize = GetGPROpSize();
     const auto VectorSize = GetGuestVectorLength();
@@ -1204,6 +1206,11 @@ public:
       const uint64_t FPRMask = ((1ull << (FPR15Index - FPR0Index + 1)) - 1) << FPR0Index;
 
       Mask &= (GPRMask | FPRMask);
+      Bits &= Mask;
+    }
+
+    if (MMXOnly) {
+      Mask &= ((1ull << (MM7Index - MM0Index + 1)) - 1) << MM0Index;
       Bits &= Mask;
     }
 
@@ -2356,10 +2363,12 @@ private:
 
   void ChgStateMMX_X87() override {
     LOGMAN_THROW_A_FMT(MMXState == MMXState_MMX, "Expected state to be MMX");
+    // The opcode dispatcher register cache is used for MMX, but the x87 pass register cache is used for x87, spill to
+    // context to ensure coherence.
+    FlushRegisterCache(false, true);
     // We explicitly initialize to x87 state in StartNewBlock.
     // So if we ever change this to do something else, we need to
     // make sure that we consider if we need to explicitly set it there.
-    FlushRegisterCache();
     MMXState = MMXState_X87;
   }
 
