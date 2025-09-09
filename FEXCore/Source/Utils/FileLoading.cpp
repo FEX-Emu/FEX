@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT
+#include <FEXCore/Utils/FileLoading.h>
+
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
