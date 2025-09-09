@@ -273,8 +273,9 @@ void OpDispatchBuilder::SecondaryALUOp(OpcodeArgs) {
   default:
     IROp = FEXCore::IR::IROps::OP_LAST;
     AtomicIROp = FEXCore::IR::IROps::OP_LAST;
-    LOGMAN_MSG_A_FMT("Unknown ALU Op: 0x{:x}", Op->OP);
-    break;
+    LogMan::Msg::EFmt("Unknown ALU Op: 0x{:x}", Op->OP);
+    DecodeFailure = true;
+    return;
   };
 #undef OPD
 
