@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: MIT
 #pragma once
+
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/HLE/SyscallHandler.h>
+#include <FEXCore/Utils/AllocatorHooks.h>
+
+#include <FEXCore/fextl/memory.h>
 
 namespace FEX::DummyHandlers {
 

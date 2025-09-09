@@ -20,6 +20,7 @@ $end_info$
 #include <FEXCore/Core/X86Enums.h>
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/IR/IR.h>
+#include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/Event.h>
 
 #include <FEXHeaderUtils/Syscalls.h>

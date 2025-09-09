@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/ThreadPoolAllocator.h>
 #include <FEXCore/IR/IR.h>
 
