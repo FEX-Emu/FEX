@@ -757,7 +757,7 @@ uint64_t Dispatcher::GenerateABICall(FallbackABI ABI) {
 
     ldrh(ARMEmitter::WReg::w0, STATE, offsetof(FEXCore::Core::CPUState, FCW));
     if (!TMP_ABIARGS) {
-      fmov(VABI1.D(), VTMP1.D());
+      mov(VABI1.Q(), VTMP1.Q());
     }
 
     mov(ARMEmitter::XReg::x1, STATE);
