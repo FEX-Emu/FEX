@@ -105,7 +105,7 @@
   ; Get bits 63:32 from stored significand (compiler template pattern)
   mov ecx, [esp + 4]          ; Get bits 63:32 from stored significand
   xor eax, eax                ; Clear eax
-  fucompi st0, st0            ; Compare st0 with itself and pop (compiler template)
+  fucomip st0                 ; Compare st0 with st0 and pop (implicit second operand)
   setp al                     ; Set AL=1 if unordered (NaN detected)
   mov edx, eax                ; Copy NaN flag
   shl edx, 2                  ; Multiply by 4 to set bit 2 (NaN bit)
