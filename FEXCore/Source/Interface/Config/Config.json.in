@@ -395,14 +395,6 @@
           "This is required to ensure a split-lock doesn't tear inside the process"
         ]
       },
-      "TSOAutoMigration": {
-        "Type": "bool",
-        "Default": "true",
-        "Desc": [
-          "Automatically enables TSO when shared memory is used.",
-          "Should work without issues in most cases."
-        ]
-      },
       "VolatileMetadata": {
         "Type": "bool",
         "Default": "true",

@@ -893,23 +893,6 @@ void ContextImpl::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState* T
   InvalidateGuestThreadCodeRange(Thread, Accumulator, Start, Length);
 }
 
-void ContextImpl::MarkMemoryShared(FEXCore::Core::InternalThreadState* Thread) {
-  if (!Thread) {
-    return;
-  }
-
-  if (!IsMemoryShared) {
-    IsMemoryShared = true;
-    UpdateAtomicTSOEmulationConfig();
-
-    if (Config.TSOAutoMigration) {
-      // Only the lookup cache is cleared here, so that old code can keep running until next compilation.
-      // This will leak previously compiled blocks until the CodeBuffer is cleared for some other reason.
-      Thread->LookupCache->ClearCache();
-    }
-  }
-}
-
 bool ContextImpl::ThreadRemoveCodeEntry(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP) {
   LogMan::Throw::AFmt(static_cast<ContextImpl*>(Thread->CTX)->CodeInvalidationMutex.try_lock() == false, "CodeInvalidationMutex needs to "
                                                                                                          "be unique_locked here");
