@@ -1,4 +1,3 @@
-BITS 32
 %ifdef CONFIG
 {
   "RegData": {
@@ -8,7 +7,7 @@ BITS 32
 }
 %endif
 
-%include "../Includes/nan_test_macros.inc"
+%include "nan_test_macros.inc"
 
 mov esp, 0xe0000040
 
@@ -17,13 +16,12 @@ mov esp, 0xe0000040
 ; Returns NaN triple: 5 (0b101) for signaling NaN
 
 finit
-mov edx, .data
+lea edx, [.data]
 fld tword [edx] ; load snan 80bit
 fstp tword [edx + 16] ; store nan as 80bit
 
 ; Check the stored 80-bit value using NaN triple macro
-mov eax, edx
-add eax, 16
+lea eax, [.data + 16]
 CHECK_NAN_TRIPLE_80
 
 hlt
