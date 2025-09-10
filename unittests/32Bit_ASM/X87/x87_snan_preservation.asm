@@ -1,4 +1,3 @@
-BITS 32
 %ifdef CONFIG
 {
   "RegData": {
@@ -8,7 +7,7 @@ BITS 32
 }
 %endif
 
-%include "../Includes/nan_test_macros.inc"
+%include "nan_test_macros.inc"
 
 mov esp, 0xe0000040
 
@@ -24,7 +23,6 @@ fld tword [edx] ; load snan
 fstp qword [edx + 16] ; store snan as 64bit qnan
 
 ; Check the stored 64-bit value using NaN triple macro
-; (macro now expects double at [edx] instead of in xmm0)
 mov edx, .data
 add edx, 16
 CHECK_NAN_TRIPLE_64
