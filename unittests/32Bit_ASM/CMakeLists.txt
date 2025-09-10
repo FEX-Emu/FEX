@@ -38,7 +38,7 @@ foreach(ASM_SRC ${ASM_SOURCES})
 
   add_custom_command(OUTPUT ${OUTPUT_NAME}
     DEPENDS "${TMP_FILE}"
-    COMMAND "nasm" ARGS "${TMP_FILE}" "-o" "${OUTPUT_NAME}")
+    COMMAND "nasm" ARGS "-i" "${CMAKE_SOURCE_DIR}/unittests/32Bit_ASM/Includes/" "${TMP_FILE}" "-o" "${OUTPUT_NAME}")
 
   add_custom_command(OUTPUT ${OUTPUT_CONFIG_NAME}
     DEPENDS "${ASM_SRC}"
