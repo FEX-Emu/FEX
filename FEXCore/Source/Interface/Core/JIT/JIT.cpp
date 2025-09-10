@@ -740,48 +740,48 @@ bool Arm64JITCore::IsInlineEntrypointOffset(const IR::OrderedNodeWrapper& WNode,
   }
 }
 
-void Arm64JITCore::EmitInterruptChecks(bool CheckTF) {
-  if (CheckTF) {
-    ARMEmitter::ForwardLabel l_TFUnset;
-    ARMEmitter::ForwardLabel l_TFBlocked;
+void Arm64JITCore::EmitTFCheck() {
+  ARMEmitter::ForwardLabel l_TFUnset;
+  ARMEmitter::ForwardLabel l_TFBlocked;
 
-    // Note that this needs to be before the below suspend checks, as X86 checks this flag immediately after executing an instruction.
-    ldrb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
+  // Note that this needs to be before the below suspend checks, as X86 checks this flag immediately after executing an instruction.
+  ldrb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
 
-    cbz(ARMEmitter::Size::i32Bit, TMP1, &l_TFUnset);
+  cbz(ARMEmitter::Size::i32Bit, TMP1, &l_TFUnset);
 
-    // X86 semantically checks TF after executing each instruction, so e.g. setting a context with TF set will execute a single instruction
-    // and then raise an exception. However on the FEX side this is simpler to implement by checking at the start of each instruction, handle this by having bit 1 being unset in the flag state indicate that TF is blocked for a single instruction.
-    tbz(TMP1, 1, &l_TFBlocked);
+  // X86 semantically checks TF after executing each instruction, so e.g. setting a context with TF set will execute a single instruction
+  // and then raise an exception. However on the FEX side this is simpler to implement by checking at the start of each instruction, handle this by having bit 1 being unset in the flag state indicate that TF is blocked for a single instruction.
+  tbz(TMP1, 1, &l_TFBlocked);
 
-    // Block TF for a single instruction when the frontend jumps to a new context by unsetting bit 1.
-    ldrb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
-    and_(ARMEmitter::Size::i32Bit, TMP1, TMP1, ~(1 << 1));
-    strb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
+  // Block TF for a single instruction when the frontend jumps to a new context by unsetting bit 1.
+  ldrb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
+  and_(ARMEmitter::Size::i32Bit, TMP1, TMP1, ~(1 << 1));
+  strb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
 
-    Core::CpuStateFrame::SynchronousFaultDataStruct State = {
-      .FaultToTopAndGeneratedException = 1,
-      .Signal = Core::FAULT_SIGTRAP,
-      .TrapNo = X86State::X86_TRAPNO_DB,
-      .si_code = 2,
-      .err_code = 0,
-    };
+  Core::CpuStateFrame::SynchronousFaultDataStruct State = {
+    .FaultToTopAndGeneratedException = 1,
+    .Signal = Core::FAULT_SIGTRAP,
+    .TrapNo = X86State::X86_TRAPNO_DB,
+    .si_code = 2,
+    .err_code = 0,
+  };
 
-    uint64_t Constant {};
-    memcpy(&Constant, &State, sizeof(State));
+  uint64_t Constant {};
+  memcpy(&Constant, &State, sizeof(State));
 
-    LoadConstant(ARMEmitter::Size::i64Bit, TMP1, Constant);
-    str(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData));
-    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGTRAP));
-    br(TMP1);
+  LoadConstant(ARMEmitter::Size::i64Bit, TMP1, Constant);
+  str(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, SynchronousFaultData));
+  ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGTRAP));
+  br(TMP1);
 
-    Bind(&l_TFBlocked);
-    // If TF was blocked for this instruction, unblock it for the next.
-    LoadConstant(ARMEmitter::Size::i32Bit, TMP1, 0b11);
-    strb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
-    Bind(&l_TFUnset);
-  }
+  Bind(&l_TFBlocked);
+  // If TF was blocked for this instruction, unblock it for the next.
+  LoadConstant(ARMEmitter::Size::i32Bit, TMP1, 0b11);
+  strb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
+  Bind(&l_TFUnset);
+}
 
+void Arm64JITCore::EmitSuspendInterruptCheck() {
   if (CTX->Config.NeedsPendingInterruptFaultCheck) {
     // Trigger a fault if there are any pending interrupts
     // Used only for suspend on WIN32 at the moment
@@ -806,7 +806,9 @@ void Arm64JITCore::EmitEntryPoint(ARMEmitter::BackwardLabel& HeaderLabel, bool C
   adr(TMP1, &HeaderLabel);
   str(TMP1, STATE, offsetof(FEXCore::Core::CPUState, InlineJITBlockHeader));
 
-  EmitInterruptChecks(CheckTF);
+  if (CheckTF) {
+    EmitTFCheck();
+  }
 
   if (SpillSlots) {
     const auto TotalSpillSlotsSize = SpillSlots * MaxSpillSlotSize;
@@ -892,6 +894,9 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
       // if there's a pending branch, and it is not fall-through
       if (PendingTargetLabel && PendingTargetLabel != Target) {
+        if (PendingTargetLabel->Backward.Location) {
+          EmitSuspendInterruptCheck();
+        }
         b(PendingTargetLabel);
         PendingTargetLabel = nullptr;
       }
@@ -947,6 +952,9 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
   // Make sure last branch is generated. It certainly can't be eliminated here.
   if (PendingTargetLabel) {
+    if (PendingTargetLabel->Backward.Location) {
+      EmitSuspendInterruptCheck();
+    }
     b(PendingTargetLabel);
   }
   PendingTargetLabel = nullptr;
