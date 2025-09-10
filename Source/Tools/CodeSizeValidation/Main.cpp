@@ -509,6 +509,8 @@ int main(int argc, char** argv, char** const envp) {
   // Disable vixl simulator indirect calls as it can affect instruction counts.
   FEXCore::Config::Set(FEXCore::Config::CONFIG_DISABLE_VIXL_INDIRECT_RUNTIME_CALLS, "1");
 
+  FEXCore::Config::Set(FEXCore::Config::CONFIG_TSOENABLED, "0");
+
   // Host feature override. Only supports overriding SVE width.
   enum HostFeatures {
     FEATURE_SVE128 = (1U << 0),
@@ -580,11 +582,12 @@ int main(int argc, char** argv, char** const envp) {
   }
 
   if (TestHeaderData->EnabledHostFeatures & FEATURE_TSO) {
-    // Always disable auto migration.
-    FEXCore::Config::Set(FEXCore::Config::ConfigOption::CONFIG_TSOAUTOMIGRATION, "0");
     FEXCore::Config::Set(FEXCore::Config::ConfigOption::CONFIG_TSOENABLED, "1");
     FEXCore::Config::Set(FEXCore::Config::ConfigOption::CONFIG_VECTORTSOENABLED, "1");
     FEXCore::Config::Set(FEXCore::Config::ConfigOption::CONFIG_MEMCPYSETTSOENABLED, "1");
+  } else {
+    // Override the TSO default setting, since TSO is not relevant for most tests
+    FEXCore::Config::Set(FEXCore::Config::ConfigOption::CONFIG_TSOENABLED, "0");
   }
 
   // Always enable ARMv8.1 LSE atomics.
@@ -634,8 +637,6 @@ int main(int argc, char** argv, char** const envp) {
   }
 
   if (TestHeaderData->DisabledHostFeatures & FEATURE_TSO) {
-    // Always disable auto migration.
-    FEXCore::Config::Set(FEXCore::Config::ConfigOption::CONFIG_TSOAUTOMIGRATION, "0");
     FEXCore::Config::Set(FEXCore::Config::ConfigOption::CONFIG_TSOENABLED, "0");
     FEXCore::Config::Set(FEXCore::Config::ConfigOption::CONFIG_VECTORTSOENABLED, "0");
     FEXCore::Config::Set(FEXCore::Config::ConfigOption::CONFIG_MEMCPYSETTSOENABLED, "0");
