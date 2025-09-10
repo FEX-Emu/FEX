@@ -16,13 +16,8 @@
 #include <string.h>
 
 namespace FEXCore::IR {
-class Pass;
-class PassManager;
 
 class IREmitter {
-  friend class FEXCore::IR::Pass;
-  friend class FEXCore::IR::PassManager;
-
 public:
   IREmitter(FEXCore::Utils::IntrusivePooledAllocator& ThreadAllocator, bool SupportsTSOImm9)
     : DualListData {ThreadAllocator, 8 * 1024 * 1024}
