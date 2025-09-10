@@ -57,20 +57,13 @@ $end_info$
 #include <algorithm>
 #include <array>
 #include <atomic>
-#include <chrono>
-#include <condition_variable>
 #include <fcntl.h>
 #include <functional>
 #include <mutex>
-#include <queue>
 #include <shared_mutex>
-#include <signal.h>
 #include <stdio.h>
-#include <string_view>
 #include <sys/stat.h>
-#include <type_traits>
 #include <unistd.h>
-#include <unordered_map>
 #include <utility>
 #include <xxhash.h>
 
@@ -100,6 +93,8 @@ ContextImpl::ContextImpl(const FEXCore::HostFeatures& Features)
 
   // Track atomic TSO emulation configuration.
   UpdateAtomicTSOEmulationConfig();
+  // Ensure X87 precision constraints are respected.
+  UpdateX87PrecisionConfig();
 }
 
 struct GetFrameBlockInfoResult {
