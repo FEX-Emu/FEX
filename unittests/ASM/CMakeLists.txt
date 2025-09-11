@@ -53,9 +53,9 @@ foreach(ASM_SRC ${ASM_SOURCES})
   set(TEST_ARGS)
   if (_M_ARM_64 OR ENABLE_VIXL_SIMULATOR)
     list(APPEND TEST_ARGS
-      "--no-silentlog -g -n 1   --no-multiblock --no-tsoenabled"   "jit_1"     "jit"
-      "--no-silentlog -g -n 500 --no-multiblock --no-tsoenabled"   "jit_500"   "jit"
-      "--no-silentlog -g -n 500 --multiblock    --no-tsoenabled"      "jit_500_m" "jit"
+      "FEX_SILENTLOG=0 FEX_DUMPGPRS=1 FEX_MAXINST=1 FEX_MULTIBLOCK=0 FEX_TSOENABLED=0"   "jit_1"     "jit"
+      "FEX_SILENTLOG=0 FEX_DUMPGPRS=1 FEX_MAXINST=500 FEX_MULTIBLOCK=0 FEX_TSOENABLED=0" "jit_500"   "jit"
+      "FEX_SILENTLOG=0 FEX_DUMPGPRS=1 FEX_MAXINST=500 FEX_MULTIBLOCK=1 FEX_TSOENABLED=0" "jit_500_m" "jit"
       )
   endif()
 
@@ -63,7 +63,7 @@ foreach(ASM_SRC ${ASM_SOURCES})
     set(CPU_CLASS Simulator)
   elseif (_M_X86_64)
     list(APPEND TEST_ARGS
-      "--no-silentlog -g"       "host"      "host"
+      "FEX_SILENTLOG=0 FEX_DUMPGPRS=1" "host" "host"
       )
   endif()
 
@@ -79,15 +79,15 @@ foreach(ASM_SRC ${ASM_SOURCES})
     math(EXPR TEST_NAME_INDEX "${Index}+1")
     math(EXPR TEST_TYPE_INDEX "${Index}+2")
 
-    list(GET TEST_ARGS ${Index} ARGS)
+    list(GET TEST_ARGS ${Index} FEX_ARGS)
     list(GET TEST_ARGS ${TEST_NAME_INDEX} TEST_DESC)
     list(GET TEST_ARGS ${TEST_TYPE_INDEX} TEST_TYPE)
 
     set(TEST_NAME "${TEST_DESC}/Test_64Bit_${REL_TEST_ASM}")
-    string(REPLACE " " ";" ARGS_LIST ${ARGS})
+    string(REPLACE " " ";" FEX_ARGS_LIST ${FEX_ARGS})
 
     if (TEST_NAME MATCHES "SelfModifyingCode")
-      list(APPEND ARGS_LIST "--smcchecks=full")
+      list(APPEND FEX_ARGS_LIST "FEX_SMCCHECKS=full")
     endif()
 
     add_test(NAME ${TEST_NAME}
@@ -99,8 +99,6 @@ foreach(ASM_SRC ${ASM_SOURCES})
       "${CMAKE_SOURCE_DIR}/unittests/ASM/Disabled_Tests_${CPU_CLASS}"
       "Test_${REL_TEST_ASM}"
       ${LAUNCH_PROGRAM}
-      ${ARGS_LIST}
-      "--"
       "${OUTPUT_NAME}" "${OUTPUT_CONFIG_NAME}")
     # This will cause the ASM tests to fail if it can't find the TestHarness or ASMN files
     # Prety crap way to work around the fact that tests can't have a build dependency in a different directory
@@ -109,9 +107,10 @@ foreach(ASM_SRC ${ASM_SOURCES})
     set_property(TEST ${TEST_NAME} APPEND PROPERTY DEPENDS "${OUTPUT_NAME}")
     set_property(TEST ${TEST_NAME} APPEND PROPERTY DEPENDS "${OUTPUT_CONFIG_NAME}")
     set_property(TEST ${TEST_NAME} APPEND PROPERTY SKIP_RETURN_CODE 125)
+    set_property(TEST ${TEST_NAME} APPEND PROPERTY ENVIRONMENT ${FEX_ARGS_LIST})
     if (MINGW_BUILD)
       # Ensure the DOS region can be allocated.
-      set_property(TEST ${TEST_NAME} PROPERTY ENVIRONMENT "WINEPRELOADRESERVE=10000-110000")
+      set_property(TEST ${TEST_NAME} APPEND PROPERTY ENVIRONMENT "WINEPRELOADRESERVE=10000-110000")
     endif()
   endforeach()
 
