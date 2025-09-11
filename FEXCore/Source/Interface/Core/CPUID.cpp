@@ -43,12 +43,15 @@ namespace ProductNames {
   static const char ARM_A715[] = "Cortex-A715";
   static const char ARM_A720[] = "Cortex-A720";
   static const char ARM_A725[] = "Cortex-A725";
+  static const char ARM_C1Pro[] = "C1-Pro";
+  static const char ARM_C1Premium[] = "C1-Premium";
   static const char ARM_X1[] = "Cortex-X1";
   static const char ARM_X1C[] = "Cortex-X1C";
   static const char ARM_X2[] = "Cortex-X2";
   static const char ARM_X3[] = "Cortex-X3";
   static const char ARM_X4[] = "Cortex-X4";
   static const char ARM_X925[] = "Cortex-X925";
+  static const char ARM_C1Ultra[] = "C1-Ultra";
   static const char ARM_N1[] = "Neoverse N1";
   static const char ARM_N2[] = "Neoverse N2";
   static const char ARM_N3[] = "Neoverse N3";
@@ -59,6 +62,7 @@ namespace ProductNames {
   static const char ARM_A65[] = "Cortex-A65";
   static const char ARM_A510[] = "Cortex-A510";
   static const char ARM_A520[] = "Cortex-A520";
+  static const char ARM_C1Nano[] = "C1-Nano";
 
   static const char ARM_Kryo200[] = "Kryo 2xx";
   static const char ARM_Kryo300[] = "Kryo 3xx";
@@ -70,6 +74,7 @@ namespace ProductNames {
 
   static const char ARM_Denver[] = "Nvidia Denver";
   static const char ARM_Carmel[] = "Nvidia Carmel";
+  static const char ARM_Olympus[] = "Nvidia Olympus";
 
   static const char ARM_Firestorm_M1[] = "Apple Firestorm (M1)";
   static const char ARM_Icestorm_M1[] = "Apple Icestorm (M1)";
@@ -85,6 +90,9 @@ namespace ProductNames {
   static const char ARM_Blizzard_M2Max[] = "Apple Blizzard (M2 Max)";
 
   static const char ARM_ORYON_1[] = "Oryon-1";
+  static const char ARM_Ampere_1[] = "AmpereOne";
+  static const char ARM_Ampere_1A[] = "AmpereOneA";
+  static const char ARM_Ampere_1B[] = "AmpereOneB";
 #else
 #endif
 } // namespace ProductNames
@@ -170,7 +178,7 @@ void CPUIDEmu::SetupHostHybridFlag() {
   // CPU priority order
   // This is mostly arbitrary but will sort by some sort of CPU priority by performance
   // Relative list so things they will commonly end up in big.little configurations sort of relate
-  static constexpr std::array<CPUMIDR, 58> CPUMIDRs = {{
+  static constexpr std::array<CPUMIDR, 66> CPUMIDRs = {{
     // Typically big CPU cores
     {0x51, 0x001, 1, ProductNames::ARM_ORYON_1}, // Qualcomm Oryon-1
 
@@ -181,38 +189,46 @@ void CPUIDEmu::SetupHostHybridFlag() {
     {0x61, 0x025, 1, ProductNames::ARM_Firestorm_M1Pro}, // Apple Firestorm (M1 Pro)
     {0x61, 0x023, 1, ProductNames::ARM_Firestorm_M1},    // Apple Firestorm (M1)
 
-    {0x41, 0xd85, 1, ProductNames::ARM_X925},    // X925
-    {0x41, 0xd87, 1, ProductNames::ARM_A725},    // A725
-    {0x41, 0xd84, 1, ProductNames::ARM_V3},      // V3
-    {0x41, 0xd83, 1, ProductNames::ARM_V3AE},    // V3AE
-    {0x41, 0xd8e, 1, ProductNames::ARM_N3},      // N3
-    {0x41, 0xd82, 1, ProductNames::ARM_X4},      // X4
-    {0x41, 0xd81, 1, ProductNames::ARM_A720},    // A720
-    {0x41, 0xd4e, 1, ProductNames::ARM_X3},      // X3
-    {0x41, 0xd4d, 1, ProductNames::ARM_A715},    // A715
-    {0x41, 0xd4f, 1, ProductNames::ARM_V2},      // V2
-    {0x41, 0xd4b, 1, ProductNames::ARM_A78C},    // A78C
-    {0x41, 0xd4a, 1, ProductNames::ARM_E1},      // E1
-    {0x41, 0xd49, 1, ProductNames::ARM_N2},      // N2
-    {0x41, 0xd48, 1, ProductNames::ARM_X2},      // X2
-    {0x41, 0xd47, 1, ProductNames::ARM_A710},    // A710
-    {0x41, 0xd4C, 1, ProductNames::ARM_X1C},     // X1C
-    {0x41, 0xd44, 1, ProductNames::ARM_X1},      // X1
-    {0x41, 0xd42, 1, ProductNames::ARM_A78AE},   // A78AE
-    {0x41, 0xd41, 1, ProductNames::ARM_A78},     // A78
-    {0x41, 0xd40, 1, ProductNames::ARM_V1},      // V1
-    {0x41, 0xd0e, 1, ProductNames::ARM_A76AE},   // A76AE
-    {0x41, 0xd0d, 1, ProductNames::ARM_A77},     // A77
-    {0x41, 0xd0c, 1, ProductNames::ARM_N1},      // N1
-    {0x41, 0xd0b, 1, ProductNames::ARM_A76},     // A76
-    {0x51, 0x804, 1, ProductNames::ARM_Kryo400}, // Kryo 4xx Gold (A76 based)
-    {0x41, 0xd0a, 1, ProductNames::ARM_A75},     // A75
-    {0x51, 0x802, 1, ProductNames::ARM_Kryo300}, // Kryo 3xx Gold (A75 based)
-    {0x41, 0xd09, 1, ProductNames::ARM_A73},     // A73
-    {0x51, 0x800, 1, ProductNames::ARM_Kryo200}, // Kryo 2xx Gold (A73 based)
-    {0x41, 0xd08, 1, ProductNames::ARM_A72},     // A72
+    {0x41, 0xd8c, 1, ProductNames::ARM_C1Ultra},   // C1-Ultra
+    {0x41, 0xd90, 1, ProductNames::ARM_C1Premium}, // C1-Premium
+    {0x41, 0xd8b, 1, ProductNames::ARM_C1Pro},     // C1-Pro
+    {0x41, 0xd85, 1, ProductNames::ARM_X925},      // X925
+    {0x41, 0xd87, 1, ProductNames::ARM_A725},      // A725
+    {0x41, 0xd84, 1, ProductNames::ARM_V3},        // V3
+    {0x41, 0xd83, 1, ProductNames::ARM_V3AE},      // V3AE
+    {0x41, 0xd8e, 1, ProductNames::ARM_N3},        // N3
+    {0x41, 0xd82, 1, ProductNames::ARM_X4},        // X4
+    {0x41, 0xd81, 1, ProductNames::ARM_A720},      // A720
+    {0x41, 0xd4e, 1, ProductNames::ARM_X3},        // X3
+    {0x41, 0xd4d, 1, ProductNames::ARM_A715},      // A715
+    {0x41, 0xd4f, 1, ProductNames::ARM_V2},        // V2
+    {0x41, 0xd4b, 1, ProductNames::ARM_A78C},      // A78C
+    {0x41, 0xd4a, 1, ProductNames::ARM_E1},        // E1
+    {0x41, 0xd49, 1, ProductNames::ARM_N2},        // N2
+    {0x41, 0xd48, 1, ProductNames::ARM_X2},        // X2
+    {0x41, 0xd47, 1, ProductNames::ARM_A710},      // A710
+    {0x41, 0xd4C, 1, ProductNames::ARM_X1C},       // X1C
+    {0x41, 0xd44, 1, ProductNames::ARM_X1},        // X1
+    {0x41, 0xd42, 1, ProductNames::ARM_A78AE},     // A78AE
+    {0x41, 0xd41, 1, ProductNames::ARM_A78},       // A78
+    {0x41, 0xd40, 1, ProductNames::ARM_V1},        // V1
+    {0x41, 0xd0e, 1, ProductNames::ARM_A76AE},     // A76AE
+    {0x41, 0xd0d, 1, ProductNames::ARM_A77},       // A77
+    {0x41, 0xd0c, 1, ProductNames::ARM_N1},        // N1
+    {0x41, 0xd0b, 1, ProductNames::ARM_A76},       // A76
+    {0x51, 0x804, 1, ProductNames::ARM_Kryo400},   // Kryo 4xx Gold (A76 based)
+    {0x41, 0xd0a, 1, ProductNames::ARM_A75},       // A75
+    {0x51, 0x802, 1, ProductNames::ARM_Kryo300},   // Kryo 3xx Gold (A75 based)
+    {0x41, 0xd09, 1, ProductNames::ARM_A73},       // A73
+    {0x51, 0x800, 1, ProductNames::ARM_Kryo200},   // Kryo 2xx Gold (A73 based)
+    {0x41, 0xd08, 1, ProductNames::ARM_A72},       // A72
 
-    {0x4e, 0x004, 1, ProductNames::ARM_Carmel}, // Carmel
+    {0xc0, 0xac3, 1, ProductNames::ARM_Ampere_1},  // AmpereOne
+    {0xc0, 0xac4, 1, ProductNames::ARM_Ampere_1A}, // AmpereOneA
+    {0xc0, 0xac5, 1, ProductNames::ARM_Ampere_1B}, // AmpereOneB
+
+    {0x4e, 0x010, 1, ProductNames::ARM_Olympus}, // Olympus
+    {0x4e, 0x004, 1, ProductNames::ARM_Carmel},  // Carmel
 
     // Denver rated above A57 to match TX2 weirdness
     {0x4e, 0x003, 1, ProductNames::ARM_Denver}, // Denver
@@ -227,6 +243,7 @@ void CPUIDEmu::SetupHostHybridFlag() {
     {0x61, 0x024, 0, ProductNames::ARM_Icestorm_M1Pro}, // Apple Icestorm (M1 Pro)
     {0x61, 0x022, 0, ProductNames::ARM_Icestorm_M1},    // Apple Icestorm (M1)
 
+    {0x41, 0xd8a, 1, ProductNames::ARM_C1Nano},   // C1-Nano
     {0x41, 0xd80, 0, ProductNames::ARM_A520},     // A520
     {0x41, 0xd46, 0, ProductNames::ARM_A510},     // A510
     {0x41, 0xd06, 0, ProductNames::ARM_A65},      // A65
