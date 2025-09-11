@@ -1108,8 +1108,7 @@ bool ExtractEroFS(const fextl::string& Path, const fextl::string& RootFS, const 
 } // namespace UnSquash
 
 int main(int argc, char** argv, char** const envp) {
-  auto ArgsLoader = fextl::make_unique<FEX::ArgLoader::ArgLoader>(FEX::ArgLoader::ArgLoader::LoadType::WITHOUT_FEXLOADER_PARSER, argc, argv);
-  FEX::Config::LoadConfig(std::move(ArgsLoader), {}, envp);
+  FEX::Config::LoadConfig({}, {}, envp);
 
   // Reload the meta layer
   FEXCore::Config::ReloadMetaLayer();
