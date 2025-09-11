@@ -27,7 +27,6 @@ $end_info$
 #include <FEXCore/Utils/TypeDefines.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
 
-#include "Common/ArgumentLoader.h"
 #include "Common/CallRetStack.h"
 #include "Common/Config.h"
 #include "Common/Exception.h"
@@ -635,7 +634,7 @@ NTSTATUS ProcessInit() {
 
   FEX::Windows::InitCRTProcess();
   const auto ExecutablePath = FEX::Windows::GetExecutableFilePath();
-  FEX::Config::LoadConfig(nullptr, ExecutablePath, _environ, FEX::ReadPortabilityInformation());
+  FEX::Config::LoadConfig(ExecutablePath, _environ, FEX::ReadPortabilityInformation());
   FEXCore::Config::ReloadMetaLayer();
   FEX::Windows::Logging::Init();
 

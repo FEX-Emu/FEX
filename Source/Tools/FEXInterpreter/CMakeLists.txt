@@ -5,55 +5,49 @@ if (ENABLE_VIXL_SIMULATOR)
   list(APPEND DEFINES -DVIXL_SIMULATOR=1)
 endif()
 
-function(GenerateInterpreter NAME AsInterpreter)
-  add_executable(${NAME}
-    FEXInterpreter.cpp
-    AOT/AOTGenerator.cpp)
+add_executable(FEXInterpreter
+  FEXInterpreter.cpp
+  AOT/AOTGenerator.cpp)
 
-  target_compile_definitions(${NAME} PRIVATE ${DEFINES})
+target_compile_definitions(FEXInterpreter PRIVATE ${DEFINES})
 
-  # Enable FEX APIs to be used by targets that use target_link_libraries on FEXInterpreter
-  set_target_properties(${NAME} PROPERTIES
-    ENABLE_EXPORTS 1
-    C_VISIBILITY_PRESET hidden
-    CXX_VISIBILITY_PRESET hidden
-    VISIBILITY_INLINES_HIDDEN TRUE
-  )
+# Enable FEX APIs to be used by targets that use target_link_libraries on FEXInterpreter
+set_target_properties(FEXInterpreter PROPERTIES
+  ENABLE_EXPORTS 1
+  C_VISIBILITY_PRESET hidden
+  CXX_VISIBILITY_PRESET hidden
+  VISIBILITY_INLINES_HIDDEN TRUE
+)
 
-  target_include_directories(${NAME}
+target_include_directories(FEXInterpreter
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/
+    ${CMAKE_BINARY_DIR}/generated
+)
+target_link_libraries(FEXInterpreter
+  PRIVATE
+    ${LIBS}
+    LinuxEmulation
+    CommonTools
+    ${PTHREAD_LIB}
+    fmt::fmt
+)
+target_compile_options(FEXInterpreter PRIVATE ${FEX_TUNE_COMPILE_FLAGS})
+
+if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
+  target_link_options(FEXInterpreter
     PRIVATE
-      ${CMAKE_CURRENT_SOURCE_DIR}/
-      ${CMAKE_BINARY_DIR}/generated
+      "LINKER:--gc-sections"
+      "LINKER:--strip-all"
+      "LINKER:--as-needed"
   )
-  target_link_libraries(${NAME}
-    PRIVATE
-      ${LIBS}
-      LinuxEmulation
-      CommonTools
-      ${PTHREAD_LIB}
-      fmt::fmt
-  )
-  target_compile_options(${NAME} PRIVATE ${FEX_TUNE_COMPILE_FLAGS})
-  target_compile_definitions(${NAME} PRIVATE -DFEXLOADER_AS_INTERPRETER=${AsInterpreter})
+endif()
 
-  if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
-    target_link_options(${NAME}
-      PRIVATE
-        "LINKER:--gc-sections"
-        "LINKER:--strip-all"
-        "LINKER:--as-needed"
-    )
-  endif()
-
-  install(TARGETS ${NAME}
-    RUNTIME
-      DESTINATION bin
-      COMPONENT Runtime
-  )
-endfunction()
-
-GenerateInterpreter(FEXLoader 0)
-GenerateInterpreter(FEXInterpreter 1)
+install(TARGETS FEXInterpreter
+  RUNTIME
+    DESTINATION bin
+    COMPONENT Runtime
+)
 
 if (_M_ARM_64)
   if (NOT USE_LEGACY_BINFMTMISC)

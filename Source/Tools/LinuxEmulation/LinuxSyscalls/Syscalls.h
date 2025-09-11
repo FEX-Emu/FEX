@@ -199,7 +199,6 @@ public:
     return ThunkHandler;
   }
 
-  FEX_CONFIG_OPT(IsInterpreter, IS_INTERPRETER);
   FEX_CONFIG_OPT(IsInterpreterInstalled, INTERPRETER_INSTALLED);
   FEX_CONFIG_OPT(Filename, APP_FILENAME);
   FEX_CONFIG_OPT(RootFSPath, ROOTFS);

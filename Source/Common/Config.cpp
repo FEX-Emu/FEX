@@ -448,8 +448,7 @@ ApplicationNames GetApplicationNames(const fextl::vector<fextl::string>& Args, b
   return ApplicationNames {std::move(Program), std::move(ProgramName)};
 }
 
-void LoadConfig(fextl::unique_ptr<FEX::ArgLoader::ArgLoader> ArgsLoader, fextl::string ProgramName, char** const envp,
-                const PortableInformation& PortableInfo) {
+void LoadConfig(fextl::string ProgramName, char** const envp, const PortableInformation& PortableInfo) {
   const bool IsPortable = PortableInfo.IsPortable;
   FEX::Config::InitializeConfigs(PortableInfo);
   FEXCore::Config::Initialize();
@@ -474,10 +473,6 @@ void LoadConfig(fextl::unique_ptr<FEX::ArgLoader::ArgLoader> ArgsLoader, fextl::
       }
       FEXCore::Config::AddLayer(CreateAppLayer(SteamAppName, FEXCore::Config::LayerType::LAYER_LOCAL_STEAM_APP));
     }
-  }
-
-  if (ArgsLoader && ArgsLoader->GetLoadType() == FEX::ArgLoader::ArgLoader::LoadType::WITH_FEXLOADER_PARSER) {
-    FEXCore::Config::AddLayer(std::move(ArgsLoader));
   }
 
   const char* AppConfig = getenv("FEX_APP_CONFIG");

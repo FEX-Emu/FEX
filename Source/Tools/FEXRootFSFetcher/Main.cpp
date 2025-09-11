@@ -7,7 +7,6 @@
 #include "Common/JSONPool.h"
 #include "XXFileHash.h"
 
-#include "Common/ArgumentLoader.h"
 #include "Common/Config.h"
 
 #include <array>
@@ -1108,7 +1107,7 @@ bool ExtractEroFS(const fextl::string& Path, const fextl::string& RootFS, const 
 } // namespace UnSquash
 
 int main(int argc, char** argv, char** const envp) {
-  FEX::Config::LoadConfig({}, {}, envp);
+  FEX::Config::LoadConfig({}, envp);
 
   // Reload the meta layer
   FEXCore::Config::ReloadMetaLayer();

@@ -175,7 +175,6 @@ static void LoadDefaultSettings() {
 #include <FEXCore/Config/ConfigValues.inl>
 
   // Erase unnamed options which shouldn't be set
-  LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_IS_INTERPRETER);
   LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_INTERPRETER_INSTALLED);
   LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_APP_FILENAME);
   LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_APP_CONFIG_NAME);
@@ -384,7 +383,6 @@ static bool OpenFile(fextl::string Filename) {
 #include <FEXCore/Config/ConfigValues.inl>
 
   // Erase unnamed options which shouldn't be set
-  LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_IS_INTERPRETER);
   LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_INTERPRETER_INSTALLED);
   LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_APP_FILENAME);
   LoadedConfig->Erase(FEXCore::Config::ConfigOption::CONFIG_APP_CONFIG_NAME);

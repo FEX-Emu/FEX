@@ -138,10 +138,6 @@ bool InterpreterHandler(fextl::string* Filename, const fextl::string& RootFS, fe
   return true;
 }
 
-bool RanAsInterpreter(bool ExecutedWithFD) {
-  return ExecutedWithFD || FEXLOADER_AS_INTERPRETER;
-}
-
 /**
  * @brief Queries if FEX is installed as a binfmt_misc interpreter
  *
@@ -283,7 +279,6 @@ int main(int argc, char** argv, char** const envp) {
   FEXCore::Allocator::GLIBCScopedFault GLIBFaultScope;
 
   const bool ExecutedWithFD = getauxval(AT_EXECFD) != 0;
-  const bool IsInterpreter = RanAsInterpreter(ExecutedWithFD);
   const auto PortableInfo = FEX::ReadPortabilityInformation();
   const bool InterpreterInstalled = QueryInterpreterInstalled(ExecutedWithFD, PortableInfo);
 
@@ -293,9 +288,7 @@ int main(int argc, char** argv, char** const envp) {
   LogMan::Throw::InstallHandler(AssertHandler);
   LogMan::Msg::InstallHandler(MsgHandler);
 
-  auto ArgsLoader = fextl::make_unique<FEX::ArgLoader::ArgLoader>(
-    IsInterpreter ? FEX::ArgLoader::ArgLoader::LoadType::WITHOUT_FEXLOADER_PARSER : FEX::ArgLoader::ArgLoader::LoadType::WITH_FEXLOADER_PARSER,
-    argc, argv);
+  auto ArgsLoader = fextl::make_unique<FEX::ArgLoader::ArgLoader>(argc, argv);
   auto Args = ArgsLoader->Get();
   auto ParsedArgs = ArgsLoader->GetParsedArgs();
   auto Program = FEX::Config::GetApplicationNames(Args, ExecutedWithFD, FEXFD);
@@ -306,11 +299,10 @@ int main(int argc, char** argv, char** const envp) {
 
   FEX::GCS::CheckForGCS();
 
-  FEX::Config::LoadConfig(std::move(ArgsLoader), Program.ProgramName, envp, PortableInfo);
+  FEX::Config::LoadConfig(Program.ProgramName, envp, PortableInfo);
 
   // Reload the meta layer
   FEXCore::Config::ReloadMetaLayer();
-  FEXCore::Config::Set(FEXCore::Config::CONFIG_IS_INTERPRETER, IsInterpreter ? "1" : "0");
   FEXCore::Config::Set(FEXCore::Config::CONFIG_INTERPRETER_INSTALLED, InterpreterInstalled ? "1" : "0");
 #ifdef VIXL_SIMULATOR
   // If running under the vixl simulator, ensure that indirect runtime calls are enabled.

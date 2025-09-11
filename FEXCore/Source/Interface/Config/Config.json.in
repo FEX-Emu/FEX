@@ -4,7 +4,6 @@
       "Multiblock": {
         "Type": "bool",
         "Default": "true",
-        "ShortArg": "m",
         "Desc": [
           "Controls multiblock code compilation",
           "Can cause long JIT compilation times and stutter"
@@ -13,7 +12,6 @@
       "MaxInst": {
         "Type": "int32",
         "Default": "5000",
-        "ShortArg": "n",
         "Desc": [
           "Maximum number of instruction to store in a block"
         ]
@@ -99,7 +97,6 @@
       "RootFS": {
         "Type": "str",
         "Default": "",
-        "ShortArg": "R",
         "Desc": [
           "Which Root filesystem prefix to use",
           "This can be a filesystem path",
@@ -114,7 +111,6 @@
       "ThunkHostLibs": {
         "Type": "str",
         "Default": "@CMAKE_INSTALL_FULL_LIBDIR@/fex-emu/HostThunks",
-        "ShortArg": "t",
         "Desc": [
           "Folder to find the host-side thunking libraries."
         ]
@@ -122,7 +118,6 @@
       "ThunkGuestLibs": {
         "Type": "str",
         "Default": "@CMAKE_INSTALL_PREFIX@/share/fex-emu/GuestThunks",
-        "ShortArg": "j",
         "Desc": [
           "Folder to find the guest-side thunking libraries."
         ]
@@ -130,7 +125,6 @@
       "ThunkConfig": {
         "Type": "str",
         "Default": "",
-        "ShortArg": "k",
         "Desc": [
           "A json file specifying where to overlay the thunks.",
           "This can be a filesystem path",
@@ -145,7 +139,6 @@
       "Env": {
         "Type": "strarray",
         "Default": "",
-        "ShortArg": "E",
         "Desc": [
           "Adds an environment variable to the emulated environment."
         ]
@@ -153,7 +146,6 @@
       "HostEnv": {
         "Type": "strarray",
         "Default": "",
-        "ShortArg": "H",
         "Desc": [
           "Adds an environment variable to the host environment.",
           "This can be useful for setting environment variables that thunks can pick up.",
@@ -172,7 +164,6 @@
       "SingleStep": {
         "Type": "bool",
         "Default": "false",
-        "ShortArg": "S",
         "Desc": [
           "Single stepping configuration."
         ]
@@ -180,7 +171,6 @@
       "GdbServer": {
         "Type": "bool",
         "Default": "false",
-        "ShortArg": "G",
         "Desc": [
           "Enables the GDB server."
         ]
@@ -214,7 +204,6 @@
       "DumpGPRs": {
         "Type": "bool",
         "Default": "false",
-        "ShortArg": "g",
         "Desc": [
           "When the test harness ends, print the GPR state."
         ]
@@ -222,7 +211,6 @@
       "O0": {
         "Type": "bool",
         "Default": "false",
-        "ShortArg": "O0",
         "Desc": [
           "Disables optimizations passes for debugging."
         ]
@@ -312,7 +300,6 @@
       "SilentLog": {
         "Type": "bool",
         "Default": "true",
-        "ShortArg": "s",
         "Desc": [
           "Disables logging"
         ]
@@ -320,7 +307,6 @@
       "OutputLog": {
         "Type": "str",
         "Default": "server",
-        "ShortArg": "o",
         "Desc": [
           "File to write FEX output to.",
           "[stdout, stderr, server, <Filename>]"
@@ -506,10 +492,6 @@
   },
   "UnnamedOptions": {
     "Misc": {
-      "IS_INTERPRETER": {
-        "Type": "bool",
-        "Default": "false"
-      },
       "INTERPRETER_INSTALLED": {
         "Type": "bool",
         "Default": "false"

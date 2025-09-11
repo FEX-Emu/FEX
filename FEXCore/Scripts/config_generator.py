@@ -118,41 +118,6 @@ def print_man_env_option(name, desc, default, no_json_key):
     output_man.write("\\fBdefault:\\fR {0}\n".format(default))
     output_man.write(".Pp\n\n")
 
-def print_man_options(options):
-    output_man.write(".Sh OPTIONS\n")
-    output_man.write(".Bl -tag -width -indent\n")
-    for op_group, group_vals in options.items():
-        for op_key, op_vals in group_vals.items():
-            short = None
-            long = op_key.lower()
-
-            if ("ShortArg" in op_vals):
-                short = op_vals["ShortArg"]
-
-            default = op_vals["Default"]
-            value_type = op_vals["Type"]
-
-            # Textual default rather than enum based
-            if ("TextDefault" in op_vals):
-                default = op_vals["TextDefault"]
-
-            if (value_type == "str" or value_type == "strarray" or value_type == "strenum"):
-                # Wrap the string argument in quotes
-                default = "'" + default + "'"
-            print_man_option(
-                short,
-                long,
-                op_vals["Desc"],
-                default
-            )
-            if (value_type == "strenum"):
-                Enums = op_vals["Enums"]
-                output_man.write("\\fBAvailable Options:\\fR\n")
-                output_man.write(", ".join(f"{enum_op_val}" for [_, enum_op_val] in Enums.items()))
-                output_man.write("\n.sp\n")
-
-    output_man.write(".El\n")
-
 def print_man_environment(options):
     output_man.write(".Sh ENVIRONMENT\n")
     output_man.write(".Bl -tag -width -indent\n")
@@ -240,20 +205,12 @@ def print_man_header():
 .Dt FEX
 .Os Linux
 .Sh NAME
-.Nm FEXLoader
 .Nm FEXInterpreter
 .Nm FEXBash
 .Nd Fast x86-64 and x86 emulation.
 .Sh SYNOPSIS
 .Nm
-.Op options
-.Op Ar --
-.Ar Application
-<args> ...
-.Pp
-.Nm FEXInterpreter
-.Ar Application
-<args> ...
+.Ar <args> ...
 .Pp
 .Nm FEXBash
 .Ar <args> ...
@@ -361,82 +318,6 @@ def print_config_option(type, group_name, json_name, default_value, short, choic
 
     output_argloader.write("\n");
 
-def print_argloader_options(options):
-    output_argloader.write("#ifdef BEFORE_PARSE\n")
-    output_argloader.write("#undef BEFORE_PARSE\n")
-    for op_group, group_vals in options.items():
-        for op_key, op_vals in group_vals.items():
-            default = op_vals["Default"]
-
-            if (op_vals["Type"] == "str" or op_vals["Type"] == "strarray" or op_vals["Type"] == "strenum"):
-                # Wrap the string argument in quotes
-                default = "\"" + default + "\""
-
-            # Textual default rather than enum based
-            if ("TextDefault" in op_vals):
-                default = "\"" + op_vals["TextDefault"] + "\""
-
-            short = None
-            choices = None
-
-            if ("ShortArg" in op_vals):
-                short = op_vals["ShortArg"]
-            if ("Choices" in op_vals):
-                choices = op_vals["Choices"]
-
-            print_config_option(
-                op_vals["Type"],
-                op_group,
-                op_key,
-                default,
-                short,
-                choices,
-                op_vals["Desc"])
-
-        output_argloader.write("\n")
-    output_argloader.write("#endif\n")
-
-def print_parse_argloader_options(options):
-    output_argloader.write("#ifdef AFTER_PARSE\n")
-    output_argloader.write("#undef AFTER_PARSE\n")
-    for op_group, group_vals in options.items():
-        for op_key, op_vals in group_vals.items():
-            output_argloader.write("if (Options.is_set_by_user(\"{0}\")) {{\n".format(op_key))
-
-            value_type = op_vals["Type"]
-            NeedsString = False
-            conversion_func = "fextl::fmt::format(\"{}\", "
-            if ("ArgumentHandler" in op_vals):
-                NeedsString = True
-                conversion_func = "FEXCore::Config::Handler::{0}(".format(op_vals["ArgumentHandler"])
-            if (value_type == "str"):
-                NeedsString = True
-                conversion_func = "std::move("
-            if (value_type == "bool"):
-                # boolean values need a decimal specifier. Otherwise fmt prints strings.
-                conversion_func = "fextl::fmt::format(\"{:d}\", "
-
-            if (value_type == "strenum"):
-                output_argloader.write("\tfextl::string UserValue = Options[\"{0}\"];\n".format(op_key))
-                output_argloader.write("\tSet(FEXCore::Config::ConfigOption::CONFIG_{}, FEXCore::Config::EnumParser<FEXCore::Config::{}ConfigPair>(FEXCore::Config::{}_EnumPairs, UserValue));\n".format(op_key.upper(), op_key, op_key))
-            elif (value_type == "strarray"):
-                # these need a bit more help
-                output_argloader.write("\tauto Array = Options.all(\"{0}\");\n".format(op_key))
-                output_argloader.write("\tfor (auto iter = Array.begin(); iter != Array.end(); ++iter) {\n")
-                output_argloader.write("\t\tAppendStrArrayValue(FEXCore::Config::ConfigOption::CONFIG_{0}, *iter);\n".format(op_key.upper()))
-                output_argloader.write("\t}\n")
-            else:
-                if (NeedsString):
-                    output_argloader.write("\tfextl::string UserValue = Options[\"{0}\"];\n".format(op_key))
-                else:
-                    output_argloader.write("\t{0} UserValue = Options.get(\"{1}\");\n".format(value_type, op_key))
-
-                output_argloader.write("\tSet(FEXCore::Config::ConfigOption::CONFIG_{0}, {1}UserValue));\n".format(op_key.upper(), conversion_func))
-            output_argloader.write("}\n")
-
-    output_argloader.write("#endif\n")
-
-
 def print_parse_envloader_options(options):
     output_argloader.write("#ifdef ENVLOADER\n")
     output_argloader.write("#undef ENVLOADER\n")
@@ -517,41 +398,6 @@ def print_parse_enum_options(options):
 
     output_argloader.write("#endif\n")
 
-def check_for_duplicate_options(options):
-    short_map = []
-    long_map = []
-
-    # Spin through all the items and see if we have a duplicate option
-    for op_group, group_vals in options.items():
-        for op_key, op_vals in group_vals.items():
-            short = None
-            long = op_key.lower()
-            long_invert = None
-            if ("ShortArg" in op_vals):
-                short = op_vals["ShortArg"]
-            if (op_vals["Type"] == "bool"):
-                long_invert = "no-" + long
-
-            # Check for short key duplication
-            if (short != None):
-                if (short in short_map):
-                    raise Exception("Short config '{0}' for option '{1}' has duplicate entry!".format(short, op_key))
-                else:
-                    short_map.append(short)
-
-            # Check for long key duplication
-            if (long in long_map):
-                raise Exception("Long config '{0}' has duplicate entry!".format(long))
-            else:
-                long_map.append(long)
-
-            # Check for long key duplication
-            if (long_invert != None):
-                if (long_invert in long_map):
-                    raise Exception("Long config '{0}' has duplicate entry!".format(long_invert))
-                else:
-                    long_map.append(long_invert)
-
 if (len(sys.argv) < 5):
     sys.exit()
 
@@ -568,8 +414,6 @@ json_object = json.loads(json_text)
 options = json_object["Options"]
 unnamed_options = json_object["UnnamedOptions"]
 
-check_for_duplicate_options(options)
-
 # Generate config include file
 output_file = open(output_filename, "w")
 print_header()
@@ -581,7 +425,6 @@ output_file.close()
 # Generate man file
 output_man = open(output_man_page, "w")
 print_man_header()
-print_man_options(options)
 print_man_environment(options)
 print_man_tail()
 
@@ -589,8 +432,6 @@ output_man.close()
 
 # Generate argument loader code
 output_argloader = open(output_argumentloader_filename, "w")
-print_argloader_options(options);
-print_parse_argloader_options(options);
 
 # Generate environment loader code
 print_parse_envloader_options(options);
