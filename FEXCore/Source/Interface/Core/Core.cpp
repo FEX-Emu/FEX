@@ -18,6 +18,7 @@ $end_info$
 #include "Interface/Core/JIT/JITClass.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
 #include "Interface/Core/X86Tables/X86Tables.h"
+#include <Interface/GDBJIT/GDBJIT.h>
 #include "Interface/IR/IR.h"
 #include "Interface/IR/IREmitter.h"
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
@@ -77,7 +78,7 @@ namespace FEXCore::Context {
 ContextImpl::ContextImpl(const FEXCore::HostFeatures& Features)
   : HostFeatures {Features}
   , CPUID {this}
-  , IRCaptureCache {this} {
+  , CodeCache {*this} {
   if (!Config.Is64BitMode()) {
     // When operating in 32-bit mode, the virtual memory we care about is only the lower 32-bits.
     Config.VirtualMemSize = 1ULL << 32;
@@ -708,9 +709,9 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
 
 ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalThreadState* Thread, uint64_t GuestRIP, uint64_t MaxInst) {
   if (SourcecodeResolver && Config.GDBSymbols()) {
-    auto AOTIRCacheEntry = SyscallHandler->LookupAOTIRCacheEntry(Thread, GuestRIP);
-    if (AOTIRCacheEntry.Entry) {
-      AOTIRCacheEntry.Entry->SourcecodeMap = SourcecodeResolver->GenerateMap(AOTIRCacheEntry.Entry->Filename, AOTIRCacheEntry.Entry->FileId);
+    auto MappedSection = SyscallHandler->LookupExecutableFileSection(*Thread, GuestRIP);
+    if (MappedSection) {
+      MappedSection->FileInfo.SourcecodeMap = SourcecodeResolver->GenerateMap(MappedSection->FileInfo.Filename, MappedSection->FileInfo.FileId);
     }
   }
 
@@ -785,36 +786,44 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
   if (Config.BlockJITNaming()) {
     auto FragmentBasePtr = CompiledCode.BlockBegin;
 
-    if (DebugData) {
-      auto GuestRIPLookup = SyscallHandler->LookupAOTIRCacheEntry(Thread, GuestRIP);
+    auto GuestRIPLookup = SyscallHandler->LookupExecutableFileSection(*Thread, GuestRIP);
 
-      if (DebugData->Subblocks.size()) {
-        for (auto& Subblock : DebugData->Subblocks) {
-          auto BlockBasePtr = FragmentBasePtr + Subblock.HostCodeOffset;
-          if (GuestRIPLookup.Entry) {
-            Symbols.Register(Thread->SymbolBuffer.get(), BlockBasePtr, CompiledCode.Size, GuestRIPLookup.Entry->Filename,
-                             GuestRIP - GuestRIPLookup.VAFileStart);
-          } else {
-            Symbols.Register(Thread->SymbolBuffer.get(), BlockBasePtr, GuestRIP, Subblock.HostCodeSize);
-          }
-        }
-      } else {
-        if (GuestRIPLookup.Entry) {
-          Symbols.Register(Thread->SymbolBuffer.get(), FragmentBasePtr, CompiledCode.Size, GuestRIPLookup.Entry->Filename,
-                           GuestRIP - GuestRIPLookup.VAFileStart);
+    if (DebugData->Subblocks.size()) {
+      for (auto& Subblock : DebugData->Subblocks) {
+        auto BlockBasePtr = FragmentBasePtr + Subblock.HostCodeOffset;
+        if (GuestRIPLookup) {
+          Symbols.Register(Thread->SymbolBuffer.get(), BlockBasePtr, CompiledCode.Size, GuestRIPLookup->FileInfo.Filename,
+                           GuestRIP - GuestRIPLookup->FileStartVA);
         } else {
-          Symbols.Register(Thread->SymbolBuffer.get(), FragmentBasePtr, GuestRIP, CompiledCode.Size);
+          Symbols.Register(Thread->SymbolBuffer.get(), BlockBasePtr, GuestRIP, Subblock.HostCodeSize);
         }
+      }
+    } else {
+      if (GuestRIPLookup) {
+        Symbols.Register(Thread->SymbolBuffer.get(), FragmentBasePtr, CompiledCode.Size, GuestRIPLookup->FileInfo.Filename,
+                         GuestRIP - GuestRIPLookup->FileStartVA);
+      } else {
+        Symbols.Register(Thread->SymbolBuffer.get(), FragmentBasePtr, GuestRIP, CompiledCode.Size);
+      }
+    }
+  }
+
+  if (Config.LibraryJITNaming() || Config.GDBSymbols()) {
+    auto MappedSection = SyscallHandler->LookupExecutableFileSection(*Thread, GuestRIP);
+    if (MappedSection) {
+      if (Config.LibraryJITNaming()) {
+        Symbols.RegisterNamedRegion(Thread->SymbolBuffer.get(), CodePtr, DebugData->HostCodeSize, MappedSection->FileInfo.Filename);
+      }
+
+      if (Config.GDBSymbols()) {
+        GDBJITRegister(MappedSection->FileInfo, MappedSection->FileStartVA, GuestRIP, (uintptr_t)CodePtr, *DebugData);
       }
     }
   }
 
   // Clear any relocations that might have been generated
-  Thread->CPUBackend->ClearRelocations();
-
-  if (IRCaptureCache.PostCompileCode(Thread, CompiledCode.BlockBegin, GuestRIP, StartAddr, Length, DebugData.get())) {
-    // Early exit
-    return (uintptr_t)CodePtr;
+  if (!CodeCache.IsGeneratingCache) {
+    Thread->CPUBackend->ClearRelocations();
   }
 
   if (NeedsAddGuestCodeRanges) {
@@ -1008,13 +1017,6 @@ void ContextImpl::MonoBackpatcherWrite(FEXCore::Core::CpuStateFrame* Frame, uint
 
   CTX->SyscallHandler->InvalidateGuestCodeRange(Thread, Address, Size);
 }
-
-IR::AOTIRCacheEntry* ContextImpl::LoadAOTIRCacheEntry(const fextl::string& filename) {
-  auto rv = IRCaptureCache.LoadAOTIRCacheEntry(filename);
-  return rv;
-}
-
-void ContextImpl::UnloadAOTIRCacheEntry(IR::AOTIRCacheEntry* Entry) {}
 
 void ContextImpl::ConfigureAOTGen(FEXCore::Core::InternalThreadState* Thread, fextl::set<uint64_t>* ExternalBranches, uint64_t SectionMaxAddress) {
   Thread->FrontendDecoder->SetExternalBranches(ExternalBranches);

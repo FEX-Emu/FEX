@@ -18,6 +18,7 @@ set (SRCS
   Common/JitSymbols.cpp
   Interface/Context/Context.cpp
   Interface/Core/LookupCache.cpp
+  Interface/Core/CodeCache.cpp
   Interface/Core/Core.cpp
   Interface/Core/CPUBackend.cpp
   Interface/Core/Addressing.cpp
@@ -57,7 +58,6 @@ set (SRCS
   Interface/Core/X86Tables/VEXTables.cpp
   Interface/Core/X86Tables/X87Tables.cpp
   Interface/GDBJIT/GDBJIT.cpp
-  Interface/IR/AOTIR.cpp
   Interface/IR/IRDumper.cpp
   Interface/IR/IREmitter.cpp
   Interface/IR/PassManager.cpp

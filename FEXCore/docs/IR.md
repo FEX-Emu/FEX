@@ -78,14 +78,9 @@ When generating IR inside of the `OpDispatchBuilder` it is straight forward, jus
 This is an intrusive allocator that is used by the `OpDispatchBuilder` for storing IR data. It is a simple linear arena allocator without resizing capabilities.
 
 ### OpDispatchBuilder
-OpDispatchBuilder provides two routines for handling the IR outside of the class
-* `IRListView ViewIR();`
-	* Returns a wrapper container class the allows you to view the IR. This doesn't take ownership of the IR data.
-	* If the OpDispatcherBuilder changes its IR then changes are also visible to this class
-* `IRListView *CreateIRCopy()`
-	* As the name says, it creates a new copy of the IR that is in the OpDispatchBuilder
-	* Copying the IR only copies the memory used and doesn't have any free space for optimizations after this copy operation
-	* Useful for tiered recompilers, AOT, and offline analysis
+OpDispatchBuilder provides `IRListView ViewIR()` for handling the IR outside of the class:
+* Returns a wrapper container class the allows you to view the IR. This doesn't take ownership of the IR data.
+* If the OpDispatcherBuilder changes its IR then changes are also visible to this class
 
 This class uses two IntrusiveAllocator objects for tracking IR data. `ListData` and `Data` are the object names.
 * `ListData` is for tracking the doubly linked list of nodes

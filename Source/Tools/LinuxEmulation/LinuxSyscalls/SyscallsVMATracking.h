@@ -5,11 +5,8 @@
 #include <tuple>
 
 #include <FEXCore/fextl/map.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
-
-namespace FEXCore::IR {
-struct AOTIRCacheEntry;
-}
 
 namespace FEX::HLE::VMATracking {
 ///// VMA (Virtual Memory Area) tracking /////
@@ -37,7 +34,7 @@ struct VMAEntry;
 struct MappedResource {
   using ContainerType = fextl::map<MRID, MappedResource>;
 
-  FEXCore::IR::AOTIRCacheEntry* AOTIRCacheEntry;
+  fextl::unique_ptr<FEXCore::ExecutableFileInfo> MappedFile;
   // Pointer to lowest memory range this file is mapped to
   VMAEntry* FirstVMA;
   uint64_t Length; // 0 if not fixed size
@@ -87,7 +84,7 @@ struct VMATracking {
   using VMACIterator = decltype(VMAs)::const_iterator;
 
   // Find a VMA entry associated with the memory address.
-  // Used by `mremap`, and SIGSEGV handler to find previously mapped ranges, and `AOTIR` cache to find cache entries.
+  // Used by `mremap` and SIGSEGV handler to find previously mapped ranges, and CodeCache to find cache entries.
   // - Mutex must be at least shared_locked before calling
   VMACIterator FindVMAEntry(uint64_t GuestAddr) const;
 
@@ -114,11 +111,9 @@ struct VMATracking {
   // Returns the Size of the Shm or 0 if not found
   uintptr_t DeleteSHMRegion(FEXCore::Context::Context* Ctx, uintptr_t Base);
 
-  // Emplaces a new `MappedResource` to track.
-  // Used for `mmap` and `shmat` resources; Anonymous, FD, and SHM depending on flags.
-  template<class... Args>
-  inline auto EmplaceMappedResource(Args&&... args) {
-    return MappedResources.emplace(args...);
+  // Adds a new `MappedResource` to track.
+  inline auto InsertMappedResource(const MRID& mrid, MappedResource Resource) {
+    return MappedResources.emplace(mrid, std::move(Resource));
   }
 private:
   bool ListRemove(VMAEntry* Mapping);

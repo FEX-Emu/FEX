@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <fcntl.h>
 #include <memory_resource>
-#include <string>
+#include <string_view>
 #ifndef _WIN32
 #include <linux/limits.h>
 #include <sys/sendfile.h>
@@ -352,6 +352,11 @@ inline bool CreateDirectories(const fextl::string& Path) {
 
 inline fextl::string GetFilename(const fextl::string& Path) {
   return PathToString(std::filesystem::path(Path).filename());
+}
+
+inline std::string_view GetFilename(std::string_view Path) {
+  auto Filename = PathToString(std::filesystem::path(Path).filename());
+  return Path.substr(Path.size() - Filename.size());
 }
 
 inline fextl::string ParentPath(const fextl::string& Path) {

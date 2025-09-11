@@ -6,7 +6,7 @@
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/X86HelperGen.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
-#include "Interface/IR/AOTIR.h"
+#include <Interface/Core/JIT/DebugData.h>
 #include <Interface/IR/IntrusiveIRList.h>
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
@@ -71,7 +71,23 @@ struct CustomIRResult {
 using BlockDelinkerFunc = void (*)(FEXCore::Core::CpuStateFrame* Frame, FEXCore::Context::ExitFunctionLinkData* Record);
 constexpr uint32_t TSC_SCALE_MAXIMUM = 1'000'000'000; ///< 1Ghz
 
-class ContextImpl final : public FEXCore::Context::Context, CPU::CodeBufferManager {
+class CodeCache : public AbstractCodeCache {
+public:
+  CodeCache(ContextImpl&);
+  ~CodeCache();
+
+  ContextImpl& CTX;
+  bool IsGeneratingCache = false;
+
+  void LoadData(Core::InternalThreadState&, std::byte* MappedCacheFile, const ExecutableFileSectionInfo&) override;
+  bool SaveData(Core::InternalThreadState&, int TargetFD, const ExecutableFileSectionInfo&, uint64_t SerializedBaseAddress) override;
+
+  void InitiateCacheGeneration() override {
+    IsGeneratingCache = true;
+  }
+};
+
+class ContextImpl final : public FEXCore::Context::Context, public CPU::CodeBufferManager {
 public:
   // Context base class implementation.
   bool InitCore() override;
@@ -141,10 +157,9 @@ public:
   FEXCore::CPUID::XCRResults RunXCRFunction(uint32_t Function) override;
   FEXCore::CPUID::FunctionResults RunCPUIDFunctionName(uint32_t Function, uint32_t Leaf, uint32_t CPU) override;
 
-  FEXCore::IR::AOTIRCacheEntry* LoadAOTIRCacheEntry(const fextl::string& Name) override;
-  void UnloadAOTIRCacheEntry(FEXCore::IR::AOTIRCacheEntry* Entry) override;
-
-  void FinalizeAOTIRCache() override {}
+  CodeCache& GetCodeCache() override {
+    return CodeCache;
+  }
 
   void OnCodeBufferAllocated(CPU::CodeBuffer&) override;
   void ClearCodeCache(FEXCore::Core::InternalThreadState* Thread, bool NewCodeBuffer = true) override;
@@ -224,6 +239,7 @@ public:
   FEXCore::HLE::SourcecodeResolver* SourcecodeResolver {};
   FEXCore::ThunkHandler* ThunkHandler {};
   fextl::unique_ptr<FEXCore::CPU::Dispatcher> Dispatcher;
+  CodeCache CodeCache;
 
   SignalDelegator* SignalDelegation {};
   X86GeneratedCode X86CodeGen;
@@ -329,8 +345,6 @@ private:
    * InitializeCompiler is called inside of CreateThread, so you likely don't need this
    */
   void InitializeCompiler(FEXCore::Core::InternalThreadState* Thread);
-
-  IR::AOTIRCaptureCache IRCaptureCache;
 
   bool SupportsHardwareTSO = false;
   bool AtomicTSOEmulationEnabled = true;

@@ -42,19 +42,19 @@ void __attribute__((noinline)) __jit_debug_register_code() {
 
 namespace FEXCore {
 
-void GDBJITRegister(FEXCore::IR::AOTIRCacheEntry* Entry, uintptr_t VAFileStart, uint64_t GuestRIP, uintptr_t HostEntry,
-                    FEXCore::Core::DebugData* DebugData) {
-  auto map = Entry->SourcecodeMap.get();
+void GDBJITRegister(FEXCore::ExecutableFileInfo& Entry, uintptr_t VAFileStart, uint64_t GuestRIP, uintptr_t HostEntry,
+                    FEXCore::Core::DebugData& DebugData) {
+  auto map = Entry.SourcecodeMap.get();
 
   if (map) {
     auto FileOffset = GuestRIP - VAFileStart;
 
     auto Sym = map->FindSymbolMapping(FileOffset);
 
-    auto SymName = HLE::SourcecodeSymbolMapping::SymName(Sym, Entry->Filename, HostEntry, FileOffset);
+    auto SymName = HLE::SourcecodeSymbolMapping::SymName(Sym, Entry.Filename, HostEntry, FileOffset);
 
     fextl::vector<gdb_line_mapping> Lines;
-    for (const auto& GuestOpcode : DebugData->GuestOpcodes) {
+    for (const auto& GuestOpcode : DebugData.GuestOpcodes) {
       auto Line = map->FindLineMapping(GuestRIP + GuestOpcode.GuestEntryOffset - VAFileStart);
       if (Line) {
         Lines.push_back({Line->LineNumber, HostEntry + GuestOpcode.HostEntryOffset});
@@ -80,7 +80,7 @@ void GDBJITRegister(FEXCore::IR::AOTIRCacheEntry* Entry, uintptr_t VAFileStart, 
     for (int i = 0; i < info->nblocks; i++) {
       strncpy(blocks[i].name, SymName.c_str(), 511);
       blocks[i].start = HostEntry;
-      blocks[i].end = HostEntry + DebugData->HostCodeSize;
+      blocks[i].end = HostEntry + DebugData.HostCodeSize;
     }
 
     info->nlines = Lines.size();
@@ -113,7 +113,7 @@ void GDBJITRegister(FEXCore::IR::AOTIRCacheEntry* Entry, uintptr_t VAFileStart, 
 } // namespace FEXCore
 #else
 namespace FEXCore {
-void GDBJITRegister(FEXCore::IR::AOTIRCacheEntry*, uintptr_t, uint64_t, uintptr_t, FEXCore::Core::DebugData*) {
+void GDBJITRegister(FEXCore::ExecutableFileInfo&, uintptr_t, uint64_t, uintptr_t, FEXCore::Core::DebugData&) {
   ERROR_AND_DIE_FMT("GDBSymbols support not compiled in");
 }
 } // namespace FEXCore
