@@ -41,7 +41,6 @@ jobs:
         echo "FEX_ROOTFS_MOUNT=/mnt/AutoNFS/rootfs/" >> $GITHUB_ENV
         echo "FEX_ROOTFS_PATH=$HOME/Rootfs/" >> $GITHUB_ENV
         echo "FEX_ROOTFS=$HOME/Rootfs/" >> $GITHUB_ENV
-        echo "ROOTFS=$HOME/Rootfs/" >> $GITHUB_ENV
 
     - name: Update RootFS cache
       # Use a bash shell so we can use the same syntax for environment variable

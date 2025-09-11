@@ -1,26 +1,22 @@
 set(FUNCTIONAL_DEPENDS "")
 
 function(AddThunksTest Bin ThunksFile)
-  set (ARGS
-    "-t" "${HOSTLIBS_DATA_DIRECTORY}/HostThunks"
-    "-j" "${CMAKE_INSTALL_PREFIX}/share/fex-emu/GuestThunks"
-    "-o" "stderr" "--no-silentlog" "-n" "500"
-    )
   if (NOT ThunksFile)
     set (TEST_NAME ThunkFunctionalTest-NoThunks-${Bin})
   else()
     set (TEST_NAME ThunkFunctionalTest-Thunks-${Bin})
-    list (APPEND ARGS
-      "-k" "${CMAKE_SOURCE_DIR}/Data/CI/${ThunksFile}")
   endif()
 
   add_test(NAME ${TEST_NAME}
-    COMMAND "$<TARGET_FILE:FEXLoader>"
-    ${ARGS}
-    "--"
+    COMMAND "$<TARGET_FILE:FEXInterpreter>"
     ${Bin})
     set_property(TEST ${TEST_NAME} APPEND PROPERTY DEPENDS "${Bin}")
+    set_property(TEST "${TEST_NAME}" APPEND PROPERTY ENVIRONMENT
+      "FEX_OUTPUTLOG=stderr;FEX_SILENTLOG=0;FEX_MAXINST=500;FEX_THUNKHOSTLIBS=${HOSTLIBS_DATA_DIRECTORY}/HostThunks;FEX_THUNKGUESTLIBS=${CMAKE_INSTALL_PREFIX}/share/fex-emu/GuestThunks")
 
+    if (ThunksFile)
+      set_property(TEST "${TEST_NAME}" APPEND PROPERTY ENVIRONMENT "FEX_THUNKCONFIG=${CMAKE_SOURCE_DIR}/Data/CI/${ThunksFile}")
+    endif()
   list(APPEND FUNCTIONAL_DEPENDS "${TEST_NAME}")
 endfunction()
 
