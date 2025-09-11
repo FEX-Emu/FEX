@@ -6,7 +6,7 @@ add_library(${NAME} SHARED ${SRCS})
 install(TARGETS ${NAME}
   RUNTIME
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/gdb
-  COMPONENT LIBRARY)
+  COMPONENT Development)
 
 target_include_directories(${NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Source/)
 target_include_directories(${NAME} PRIVATE ${CMAKE_BINARY_DIR}/generated)

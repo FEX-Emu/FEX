@@ -19,6 +19,6 @@ endif()
 install(TARGETS ${NAME}
   RUNTIME
   DESTINATION bin
-  COMPONENT runtime)
+  COMPONENT Runtime)
 
 target_link_libraries(${NAME} PRIVATE ${LIBS} ${PTHREAD_LIB})

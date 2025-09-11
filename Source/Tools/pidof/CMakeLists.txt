@@ -19,5 +19,5 @@ endif()
 install(TARGETS FEXpidof
   RUNTIME
     DESTINATION bin
-    COMPONENT runtime
+    COMPONENT Runtime
 )
