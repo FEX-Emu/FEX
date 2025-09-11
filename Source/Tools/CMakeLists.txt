@@ -21,7 +21,7 @@ if (NOT MINGW_BUILD)
   add_subdirectory(CodeSizeValidation/)
   add_subdirectory(LinuxEmulation/)
 
-  add_subdirectory(FEXLoader/)
+  add_subdirectory(FEXInterpreter/)
   add_subdirectory(pidof/)
 endif()
 
