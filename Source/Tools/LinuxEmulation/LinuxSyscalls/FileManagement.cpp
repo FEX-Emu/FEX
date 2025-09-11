@@ -661,7 +661,7 @@ uint64_t FileManager::Open(const char* pathname, int flags, uint32_t mode) {
       FEX::HLE::open_how how = {
         .flags = (uint64_t)flags,
         .mode = (flags & (O_CREAT | O_TMPFILE)) ? mode & 07777 : 0, // openat2() is stricter about this
-        .resolve = (Path.FD == AT_FDCWD) ? 0u : RESOLVE_IN_ROOT, // AT_FDCWD means it's a thunk and not via RootFS
+        .resolve = (Path.FD == AT_FDCWD) ? 0u : RESOLVE_IN_ROOT,    // AT_FDCWD means it's a thunk and not via RootFS
       };
       fd = ::syscall(SYSCALL_DEF(openat2), Path.FD, Path.Path, &how, sizeof(how));
 
@@ -915,7 +915,7 @@ uint64_t FileManager::Openat([[maybe_unused]] int dirfs, const char* pathname, i
       FEX::HLE::open_how how = {
         .flags = (uint64_t)flags,
         .mode = (flags & (O_CREAT | O_TMPFILE)) ? mode & 07777 : 0, // openat2() is stricter about this,
-        .resolve = (Path.FD == AT_FDCWD) ? 0u : RESOLVE_IN_ROOT, // AT_FDCWD means it's a thunk and not via RootFS
+        .resolve = (Path.FD == AT_FDCWD) ? 0u : RESOLVE_IN_ROOT,    // AT_FDCWD means it's a thunk and not via RootFS
       };
       fd = ::syscall(SYSCALL_DEF(openat2), Path.FD, Path.Path, &how, sizeof(how));
       if (fd == -1 && errno == EXDEV) {

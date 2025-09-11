@@ -2244,8 +2244,7 @@ public:
 
   template<IsQOrDRegister T>
   void movi(SubRegSize size, T rd, uint64_t Imm, uint16_t Shift = 0) {
-    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit ||
-                        size == SubRegSize::i64Bit,
+    LOGMAN_THROW_A_FMT(size == SubRegSize::i8Bit || size == SubRegSize::i16Bit || size == SubRegSize::i32Bit || size == SubRegSize::i64Bit,
                        "Unsupported movi size");
 
     uint32_t cmode;

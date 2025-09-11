@@ -87,12 +87,10 @@ void InterpreterOps::FillFallbackIndexPointers(Core::FallbackABIInfo* Info, uint
   Info[Core::OPINDEX_F64SINCOS] = {ABIHandlers[FABI_F64x2_F64_PTR],
                                    reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F64SINCOS>::handle)};
   Info[Core::OPINDEX_F64TAN] = {ABIHandlers[FABI_F64_F64_PTR], reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F64TAN>::handle)};
-  Info[Core::OPINDEX_F64F2XM1] = {ABIHandlers[FABI_F64_F64_PTR],
-                                  reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F64F2XM1>::handle)};
+  Info[Core::OPINDEX_F64F2XM1] = {ABIHandlers[FABI_F64_F64_PTR], reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F64F2XM1>::handle)};
 
   // Double Precision Binary
-  Info[Core::OPINDEX_F64ATAN] = {ABIHandlers[FABI_F64_F64_F64_PTR],
-                                 reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F64ATAN>::handle)};
+  Info[Core::OPINDEX_F64ATAN] = {ABIHandlers[FABI_F64_F64_F64_PTR], reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F64ATAN>::handle)};
   Info[Core::OPINDEX_F64FPREM] = {ABIHandlers[FABI_F64_F64_F64_PTR],
                                   reinterpret_cast<uint64_t>(&FEXCore::CPU::OpHandlers<IR::OP_F64FPREM>::handle)};
   Info[Core::OPINDEX_F64FPREM1] = {ABIHandlers[FABI_F64_F64_F64_PTR],
@@ -220,21 +218,21 @@ bool InterpreterOps::GetFallbackHandler(const IR::IROp_Header* IROp, FallbackInf
     return true;                                                                                       \
   }
 
-#define COMMON_UNARY_F64_OP(OP)                            \
-  case IR::OP_F64##OP: {                                   \
+#define COMMON_UNARY_F64_OP(OP)                        \
+  case IR::OP_F64##OP: {                               \
     *Info = {FABI_F64_F64_PTR, Core::OPINDEX_F64##OP}; \
-    return true;                                           \
+    return true;                                       \
   }
-#define COMMON_UNARYPAIR_F64_OP(OP)                          \
-  case IR::OP_F64##OP: {                                     \
+#define COMMON_UNARYPAIR_F64_OP(OP)                      \
+  case IR::OP_F64##OP: {                                 \
     *Info = {FABI_F64x2_F64_PTR, Core::OPINDEX_F64##OP}; \
-    return true;                                             \
+    return true;                                         \
   }
 
-#define COMMON_BINARY_F64_OP(OP)                               \
-  case IR::OP_F64##OP: {                                       \
+#define COMMON_BINARY_F64_OP(OP)                           \
+  case IR::OP_F64##OP: {                                   \
     *Info = {FABI_F64_F64_F64_PTR, Core::OPINDEX_F64##OP}; \
-    return true;                                               \
+    return true;                                           \
   }
 
     // Unary

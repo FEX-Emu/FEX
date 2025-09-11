@@ -49,7 +49,7 @@ public:
   };
 
   Decoder(FEXCore::Core::InternalThreadState* Thread);
-  void DecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState *Thread, const uint8_t* InstStream, uint64_t PC, uint64_t MaxInst);
+  void DecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState* Thread, const uint8_t* InstStream, uint64_t PC, uint64_t MaxInst);
 
   const DecodedBlockInformation* GetDecodedBlockInfo() const {
     return &BlockInfo;

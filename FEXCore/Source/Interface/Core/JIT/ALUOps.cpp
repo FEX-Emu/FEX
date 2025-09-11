@@ -1046,24 +1046,19 @@ DEF_OP(Popcount) {
 
   if (CTX->HostFeatures.SupportsCSSC) {
     switch (OpSize) {
-      case IR::OpSize::i8Bit:
-        uxtb(ARMEmitter::Size::i32Bit, Dst, Src);
-        cnt(ARMEmitter::Size::i32Bit, Dst, Dst);
-        break;
-      case IR::OpSize::i16Bit:
-        uxth(ARMEmitter::Size::i32Bit, Dst, Src);
-        cnt(ARMEmitter::Size::i32Bit, Dst, Dst);
-        break;
-      case IR::OpSize::i32Bit:
-        cnt(ARMEmitter::Size::i32Bit, Dst, Src);
-        break;
-      case IR::OpSize::i64Bit:
-        cnt(ARMEmitter::Size::i64Bit, Dst, Src);
-        break;
-      default: LOGMAN_MSG_A_FMT("Unsupported Popcount size: {}", OpSize);
+    case IR::OpSize::i8Bit:
+      uxtb(ARMEmitter::Size::i32Bit, Dst, Src);
+      cnt(ARMEmitter::Size::i32Bit, Dst, Dst);
+      break;
+    case IR::OpSize::i16Bit:
+      uxth(ARMEmitter::Size::i32Bit, Dst, Src);
+      cnt(ARMEmitter::Size::i32Bit, Dst, Dst);
+      break;
+    case IR::OpSize::i32Bit: cnt(ARMEmitter::Size::i32Bit, Dst, Src); break;
+    case IR::OpSize::i64Bit: cnt(ARMEmitter::Size::i64Bit, Dst, Src); break;
+    default: LOGMAN_MSG_A_FMT("Unsupported Popcount size: {}", OpSize);
     }
-  }
-  else {
+  } else {
     switch (OpSize) {
     case IR::OpSize::i8Bit:
       fmov(ARMEmitter::Size::i32Bit, VTMP1.S(), Src);

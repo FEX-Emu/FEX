@@ -947,7 +947,7 @@ void OpDispatchBuilder::JUMPFARIndirectOp(OpcodeArgs) {
   // This uses ModRM to determine its location
   // No way to use this effectively in multiblock
   Ref Src = MakeSegmentAddress(Op, Op->Dest);
-  AddressMode SrcCS  = {.Base = Src, .Offset = 4, .AddrSize = OpSize::i64Bit};
+  AddressMode SrcCS = {.Base = Src, .Offset = 4, .AddrSize = OpSize::i64Bit};
   auto RIPOffset = _LoadMemAutoTSO(GPRClass, OpSize::i32Bit, Src, OpSize::i8Bit);
   auto NewSegmentCS = _LoadMemAutoTSO(GPRClass, OpSize::i16Bit, SrcCS, OpSize::i8Bit);
 
@@ -968,7 +968,7 @@ void OpDispatchBuilder::CALLFARIndirectOp(OpcodeArgs) {
   BlockSetRIP = true;
 
   Ref Src = MakeSegmentAddress(Op, Op->Dest);
-  AddressMode SrcCS  = {.Base = Src, .Offset = 4, .AddrSize = OpSize::i64Bit};
+  AddressMode SrcCS = {.Base = Src, .Offset = 4, .AddrSize = OpSize::i64Bit};
   auto RIPOffset = _LoadMemAutoTSO(GPRClass, OpSize::i32Bit, Src, OpSize::i8Bit);
   auto NewSegmentCS = _LoadMemAutoTSO(GPRClass, OpSize::i16Bit, SrcCS, OpSize::i8Bit);
   auto CurrentCS = _LoadContext(OpSize::i16Bit, GPRClass, offsetof(FEXCore::Core::CPUState, cs_idx));
@@ -3040,19 +3040,19 @@ void OpDispatchBuilder::SMSWOp(OpcodeArgs) {
 
   IR::OpSize DstSize {OpSize::iInvalid};
   Ref Const = Constant((1U << 31) | ///< PG - Paging
-                        (0U << 30) | ///< CD - Cache Disable
-                        (0U << 29) | ///< NW - Not Writethrough (Legacy, now ignored)
-                        ///< [28:19] - Reserved
-                        (1U << 18) | ///< AM - Alignment Mask
-                        ///< 17 - Reserved
-                        (1U << 16) | ///< WP - Write Protect
-                        ///< [15:6] - Reserved
-                        (1U << 5) | ///< NE - Numeric Error
-                        (1U << 4) | ///< ET - Extension Type (Legacy, now reserved and 1)
-                        (0U << 3) | ///< TS - Task Switched
-                        (0U << 2) | ///< EM - Emulation
-                        (1U << 1) | ///< MP - Monitor Coprocessor
-                        (1U << 0)); ///< PE - Protection Enabled
+                       (0U << 30) | ///< CD - Cache Disable
+                       (0U << 29) | ///< NW - Not Writethrough (Legacy, now ignored)
+                       ///< [28:19] - Reserved
+                       (1U << 18) | ///< AM - Alignment Mask
+                       ///< 17 - Reserved
+                       (1U << 16) | ///< WP - Write Protect
+                       ///< [15:6] - Reserved
+                       (1U << 5) | ///< NE - Numeric Error
+                       (1U << 4) | ///< ET - Extension Type (Legacy, now reserved and 1)
+                       (0U << 3) | ///< TS - Task Switched
+                       (0U << 2) | ///< EM - Emulation
+                       (1U << 1) | ///< MP - Monitor Coprocessor
+                       (1U << 0)); ///< PE - Protection Enabled
 
   if (Is64BitMode) {
     DstSize = X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST  ? OpSize::i16Bit :
@@ -3917,7 +3917,8 @@ void OpDispatchBuilder::CreateJumpBlocks(const fextl::vector<FEXCore::Frontend::
   }
 }
 
-void OpDispatchBuilder::BeginFunction(uint64_t RIP, const fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks>* Blocks, uint32_t NumInstructions, bool _Is64BitMode, bool MonoBackpatcherBlock) {
+void OpDispatchBuilder::BeginFunction(uint64_t RIP, const fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks>* Blocks,
+                                      uint32_t NumInstructions, bool _Is64BitMode, bool MonoBackpatcherBlock) {
   Entry = RIP;
   Is64BitMode = _Is64BitMode;
   LOGMAN_THROW_A_FMT(Is64BitMode == CTX->Config.Is64BitMode, "Expected operating mode to not change at runtime!");
@@ -3994,7 +3995,8 @@ Ref OpDispatchBuilder::GetSegment(uint32_t Flags, uint32_t DefaultPrefix, bool O
     // With the segment register optimization we store the GDT bases directly in the segment register to remove indexed loads
     Ref SegmentResult {};
     switch (Prefix) {
-    [[likely]] case FEXCore::X86Tables::DecodeFlags::FLAG_NO_PREFIX: return nullptr;
+    [[likely]] case FEXCore::X86Tables::DecodeFlags::FLAG_NO_PREFIX:
+      return nullptr;
     case FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX:
       SegmentResult = _LoadContext(GPRSize, GPRClass, offsetof(FEXCore::Core::CPUState, es_cached));
       break;

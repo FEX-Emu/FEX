@@ -436,9 +436,8 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
       // If the default operating mode is 32bit and we have the operand size flag then the operating size drops to 16bit
       DecodeInst->Flags |= DecodeFlags::GenSizeDstSize(DecodeFlags::SIZE_16BIT);
       DestSize = 2;
-    } else if ((HasXMMDst || HasMMDst || BlockInfo.Is64BitMode) &&
-               (HasWideningDisplacement || DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BIT ||
-                DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BITDEF)) {
+    } else if ((HasXMMDst || HasMMDst || BlockInfo.Is64BitMode) && (HasWideningDisplacement || DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BIT ||
+                                                                    DstSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BITDEF)) {
       DecodeInst->Flags |= DecodeFlags::GenSizeDstSize(DecodeFlags::SIZE_64BIT);
       DestSize = 8;
     } else {
@@ -465,9 +464,8 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
       // See table 1-2. Operand-Size Overrides for this decoding
       // If the default operating mode is 32bit and we have the operand size flag then the operating size drops to 16bit
       DecodeInst->Flags |= DecodeFlags::GenSizeSrcSize(DecodeFlags::SIZE_16BIT);
-    } else if ((HasXMMSrc || HasMMSrc || BlockInfo.Is64BitMode) &&
-               (HasWideningDisplacement || SrcSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BIT ||
-                SrcSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BITDEF)) {
+    } else if ((HasXMMSrc || HasMMSrc || BlockInfo.Is64BitMode) && (HasWideningDisplacement || SrcSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BIT ||
+                                                                    SrcSizeFlag == FEXCore::X86Tables::InstFlags::SIZE_64BITDEF)) {
       DecodeInst->Flags |= DecodeFlags::GenSizeSrcSize(DecodeFlags::SIZE_64BIT);
     } else {
       DecodeInst->Flags |= DecodeFlags::GenSizeSrcSize(DecodeFlags::SIZE_32BIT);
@@ -1301,7 +1299,7 @@ const uint8_t* Decoder::AdjustAddrForSpecialRegion(const uint8_t* _InstStream, u
   return _InstStream - EntryPoint + RIP;
 }
 
-void Decoder::DecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState *Thread, const uint8_t* _InstStream, uint64_t PC, uint64_t MaxInst) {
+void Decoder::DecodeInstructionsAtEntry(FEXCore::Core::InternalThreadState* Thread, const uint8_t* _InstStream, uint64_t PC, uint64_t MaxInst) {
   FEXCORE_PROFILE_SCOPED("DecodeInstructions");
   BlockInfo.TotalInstructionCount = 0;
   BlockInfo.Blocks.clear();

@@ -146,15 +146,15 @@ struct CPUState {
   //   - Three are reserved for user-space to setup TLS segments in
   // LDT segments are entirely controlled by userspace.
   //   - Kernel allocates up to 8192 ldt segments.
-  gdt_segment *segment_arrays[2] {};
+  gdt_segment* segment_arrays[2] {};
 
-  static gdt_segment* GetSegmentFromIndex(CPUState &State, uint16_t Selector) {
+  static gdt_segment* GetSegmentFromIndex(CPUState& State, uint16_t Selector) {
     auto base = State.segment_arrays[(Selector >> 2) & 1];
     return &base[Selector >> 3];
   }
 
   static uint32_t CalculateGDTBase(gdt_segment GDT) {
-    uint32_t Base{};
+    uint32_t Base {};
     Base |= GDT.Base2 << 24;
     Base |= GDT.Base1 << 16;
     Base |= GDT.Base0;
@@ -162,19 +162,19 @@ struct CPUState {
   }
 
   static uint32_t CalculateGDTLimit(gdt_segment GDT) {
-    uint32_t Limit{};
+    uint32_t Limit {};
     Limit |= GDT.Limit1 << 16;
     Limit |= GDT.Limit0;
     return Limit;
   }
 
-  static void SetGDTBase(gdt_segment *GDT, uint32_t Base) {
+  static void SetGDTBase(gdt_segment* GDT, uint32_t Base) {
     GDT->Base0 = Base;
     GDT->Base1 = Base >> 16;
     GDT->Base2 = Base >> 24;
   }
 
-  static void SetGDTLimit(gdt_segment *GDT, uint32_t Limit) {
+  static void SetGDTLimit(gdt_segment* GDT, uint32_t Limit) {
     GDT->Limit0 = Limit;
     GDT->Limit1 = Limit >> 16;
   }

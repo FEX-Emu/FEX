@@ -681,13 +681,13 @@ int main(int argc, char** argv, char** const envp) {
     auto GDT = FEXCore::Core::CPUState::GetSegmentFromIndex(Frame->State, Frame->State.cs_idx);
     FEXCore::Core::CPUState::SetGDTBase(GDT, 0);
     FEXCore::Core::CPUState::SetGDTLimit(GDT, 0xF'FFFFU);
-    Frame->State.cs_cached = FEXCore::Core::CPUState::CalculateGDTBase(*FEXCore::Core::CPUState::GetSegmentFromIndex(Frame->State, Frame->State.cs_idx));
+    Frame->State.cs_cached =
+      FEXCore::Core::CPUState::CalculateGDTBase(*FEXCore::Core::CPUState::GetSegmentFromIndex(Frame->State, Frame->State.cs_idx));
 
     if (TestHeaderData->Bitness == 64) {
       GDT->L = 1; // L = Long Mode = 64-bit
       GDT->D = 0; // D = Default Operand SIze = Reserved
-    }
-    else {
+    } else {
       GDT->L = 0; // L = Long Mode = 32-bit
       GDT->D = 1; // D = Default Operand Size = 32-bit
     }

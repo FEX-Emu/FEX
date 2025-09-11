@@ -591,8 +591,7 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
   // Lower 64bits [63:0]
   // upper 16 bits [79:64]
   Ref Reg = _LoadMem(FPRClass, OpSize::i64Bit, Mem, Constant((IR::OpSizeToSize(Size) * 7) + (10 * 7)), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
-  Ref RegHigh =
-    _LoadMem(FPRClass, OpSize::i16Bit, Mem, Constant((IR::OpSizeToSize(Size) * 7) + (10 * 7) + 8), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
+  Ref RegHigh = _LoadMem(FPRClass, OpSize::i16Bit, Mem, Constant((IR::OpSizeToSize(Size) * 7) + (10 * 7) + 8), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
   Reg = _VInsElement(OpSize::i128Bit, OpSize::i16Bit, 4, 0, Reg, RegHigh);
   if (ReducedPrecisionMode) {
     Reg = _F80CVT(OpSize::i64Bit, Reg); // Convert to double precision

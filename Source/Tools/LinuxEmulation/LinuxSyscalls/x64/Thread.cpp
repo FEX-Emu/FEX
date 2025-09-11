@@ -41,7 +41,7 @@ uint64_t SyscallHandler::read_ldt(FEXCore::Core::CpuStateFrame* Frame, void* ptr
   // This means the guest can't ever know the actual size of the LDT.
   size_t RemainingSize = bytecount - EntriesToCopySize;
   if (RemainingSize) {
-    void *remaining = alloca(RemainingSize);
+    void* remaining = alloca(RemainingSize);
     memset(remaining, 0, RemainingSize);
     if (FaultSafeUserMemAccess::CopyToUser(reinterpret_cast<uint8_t*>(ptr) + EntriesToCopySize, remaining, RemainingSize) != RemainingSize) {
       return -EFAULT;
@@ -105,27 +105,28 @@ uint64_t SyscallHandler::write_ldt(FEXCore::Core::CpuStateFrame* Frame, void* pt
   if (ldt_info.contents == MODIFY_LDT_CONTENTS_CONFORMING) {
     // Conforming is mostly ignored.
     // Legacy doesn't support it at all. Good.
-    if (legacy) return -EINVAL;
+    if (legacy) {
+      return -EINVAL;
+    }
     // Non-legacy ignores if only if the `seg_not_present` is set.
-    if (ldt_info.seg_not_present == 0) return -EINVAL;
+    if (ldt_info.seg_not_present == 0) {
+      return -EINVAL;
+    }
   }
 
   auto is_empty = [](user_desc_x64 ldt_info, bool legacy) {
     // Legacy empty is trivial.
     const bool legacy_empty = legacy && ldt_info.base_addr == 0 && ldt_info.limit == 0;
-    if (legacy_empty) return true;
+    if (legacy_empty) {
+      return true;
+    }
 
     // Non-legacy is a bit more work.
-    return ldt_info.base_addr == 0 &&
-      ldt_info.limit == 0 &&
-      ldt_info.contents == 0 &&
-      ldt_info.read_exec_only == 1 &&
-      ldt_info.limit_in_pages == 0 &&
-      ldt_info.seg_not_present == 1 &&
-      ldt_info.useable == 0;
+    return ldt_info.base_addr == 0 && ldt_info.limit == 0 && ldt_info.contents == 0 && ldt_info.read_exec_only == 1 &&
+           ldt_info.limit_in_pages == 0 && ldt_info.seg_not_present == 1 && ldt_info.useable == 0;
   };
 
-  auto fill_ldt = [](FEXCore::Core::CPUState::gdt_segment &segment, user_desc_x64 ldt_info) {
+  auto fill_ldt = [](FEXCore::Core::CPUState::gdt_segment& segment, user_desc_x64 ldt_info) {
     FEXCore::Core::CPUState::SetGDTBase(&segment, ldt_info.base_addr);
     FEXCore::Core::CPUState::SetGDTLimit(&segment, ldt_info.limit);
 
@@ -137,10 +138,9 @@ uint64_t SyscallHandler::write_ldt(FEXCore::Core::CpuStateFrame* Frame, void* pt
     // - bit[11]
     //   - 1 - Code
     //   - 0 - Data
-    segment.Type =
-      ((ldt_info.read_exec_only ^ 1) << 1) | // Readable
-      (ldt_info.contents << 2) | // Code/Data+Conforming
-      1; // Accessed
+    segment.Type = ((ldt_info.read_exec_only ^ 1) << 1) | // Readable
+                   (ldt_info.contents << 2) |             // Code/Data+Conforming
+                   1;                                     // Accessed
     // S: bit [12]
     // - 0 (System descriptor)
     // - 1 (User descriptor)
@@ -165,8 +165,7 @@ uint64_t SyscallHandler::write_ldt(FEXCore::Core::CpuStateFrame* Frame, void* pt
   if (is_empty(ldt_info, legacy)) {
     // If the ldt_info is considered empty then this is a zeroing operation.
     // Just use the zero ldt.
-  }
-  else {
+  } else {
     // This syscall only allows installing 32-bit segments. If `seg_32bit` isn't set then
     // it assumes a 16-bit segment!
     if (!ldt_info.seg_32bit) {
@@ -188,7 +187,8 @@ uint64_t SyscallHandler::write_ldt(FEXCore::Core::CpuStateFrame* Frame, void* pt
   const auto new_ldt_count = std::max<size_t>(old_ldt_entries, ldt_info.entry_number + 1);
   const auto new_ldt_size = new_ldt_count * LDT_ENTRY_SIZE;
 
-  const auto new_ldt_entries = reinterpret_cast<FEXCore::Core::CPUState::gdt_segment*>(FEXCore::Allocator::mmap(nullptr, new_ldt_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+  const auto new_ldt_entries = reinterpret_cast<FEXCore::Core::CPUState::gdt_segment*>(
+    FEXCore::Allocator::mmap(nullptr, new_ldt_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
 
   if (old_ldt) {
     // Copy old entries if they existed.
@@ -212,7 +212,7 @@ uint64_t SyscallHandler::write_ldt(FEXCore::Core::CpuStateFrame* Frame, void* pt
   return 0;
 }
 
-}
+} // namespace FEX::HLE
 
 namespace FEX::HLE::x64 {
 uint64_t SetThreadArea(FEXCore::Core::CpuStateFrame* Frame, void* tls) {
