@@ -1,3 +1,0 @@
-x86 and x86-64 Linux emulator
-
-FEX allows you to run x86 applications on ARM64 Linux devices. It offers broad compatibility with both 32-bit and 64-bit binaries, and it can be used alongside Wine/Proton to play Windows games.
