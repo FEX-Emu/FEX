@@ -4,7 +4,6 @@ project(FEX C CXX ASM)
 INCLUDE (CheckIncludeFiles)
 CHECK_INCLUDE_FILES ("gdb/jit-reader.h" HAVE_GDB_JIT_READER_H)
 
-option(BUILD_TESTS "Build unit tests to ensure sanity" TRUE)
 option(BUILD_FEX_LINUX_TESTS "Build FEXLinuxTests, requires x86 compiler" FALSE)
 option(BUILD_THUNKS "Build thunks" FALSE)
 option(BUILD_FEXCONFIG "Build FEXConfig" TRUE)
@@ -304,7 +303,8 @@ set (CMAKE_LINKER_FLAGS_RELEASE "${CMAKE_LINKER_FLAGS_RELEASE} -fomit-frame-poin
 
 include_directories(External/robin-map/include/)
 
-if (BUILD_TESTS OR ENABLE_VIXL_DISASSEMBLER OR ENABLE_VIXL_SIMULATOR)
+include(CTest)
+if (BUILD_TESTING OR ENABLE_VIXL_DISASSEMBLER OR ENABLE_VIXL_SIMULATOR)
   add_subdirectory(External/vixl/)
   include_directories(SYSTEM External/vixl/src/)
 endif()
@@ -335,7 +335,7 @@ endif()
 add_definitions(-Wno-trigraphs)
 add_definitions(-DGLOBAL_DATA_DIRECTORY="${DATA_DIRECTORY}/")
 
-if (BUILD_TESTS)
+if (BUILD_TESTING)
   find_package(Catch2 3 QUIET)
   if (NOT Catch2_FOUND)
     add_subdirectory(External/Catch2/)
@@ -345,6 +345,9 @@ if (BUILD_TESTS)
   endif()
 
   include(Catch)
+else ()
+  # Override any previously generated test list to avoid running stale test binaries
+  file(GENERATE OUTPUT CTestTestfile.cmake CONTENT "# No tests since BUILD_TESTING is disabled")
 endif()
 
 find_package(fmt QUIET)
@@ -455,13 +458,8 @@ endif()
 
 add_compile_options(-Wall)
 
-include(CTest)
-if (BUILD_TESTS)
+if (BUILD_TESTING)
   message(STATUS "Unit tests are enabled")
-  if (NOT BUILD_TESTING)
-    # CMake checks this variable before generating CTestTestfile.cmake
-    message(SEND_ERROR "Unit tests require BUILD_TESTING to be enabled")
-  endif()
 
   set (TEST_JOB_COUNT "" CACHE STRING "Override number of parallel jobs to use while running tests")
   if (TEST_JOB_COUNT)
@@ -495,7 +493,7 @@ foreach(CONFIG_SRC ${CONFIG_SOURCES})
     DESTINATION ${DATA_DIRECTORY}/)
 endforeach()
 
-if (BUILD_TESTS)
+if (BUILD_TESTING)
   add_subdirectory(unittests/)
 endif()
 

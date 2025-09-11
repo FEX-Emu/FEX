@@ -78,6 +78,6 @@ install (DIRECTORY include/FEXCore ${CMAKE_BINARY_DIR}/include/FEXCore
   DESTINATION include
   COMPONENT Development)
 
-if (BUILD_TESTS)
+if (BUILD_TESTING)
   add_subdirectory(unittests/)
 endif()

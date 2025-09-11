@@ -45,7 +45,7 @@ pkgs.mkShell {
     fi
   '';
 
-  # E.g. cmake $FEX_CMAKE_TOOLCHAIN_ARM64EC -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DENABLE_LTO=False -DBUILD_TESTS=False
+  # E.g. cmake $FEX_CMAKE_TOOLCHAIN_ARM64EC -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DENABLE_LTO=False -DBUILD_TESTING=False
   FEX_CMAKE_TOOLCHAIN_ARM64EC = "--toolchain ${cmakeToolchainFile} -DMINGW_TRIPLE=arm64ec-w64-mingw32 -DCMAKE_INSTALL_LIBDIR=/usr/lib/wine/aarch64-windows";
   FEX_CMAKE_TOOLCHAIN_WOW64 = "--toolchain ${cmakeToolchainFile} -DMINGW_TRIPLE=aarch64-w64-mingw32 -DCMAKE_INSTALL_LIBDIR=/usr/lib/wine/aarch64-windows";
   FEX_MESON_CROSSFILE = "--cross-file ${mesonCrossFile}";
