@@ -3579,12 +3579,14 @@
       ]
     },
     "fld tword [rax]": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 21,
       "Comment": [
         "0xdb !11b /5"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x4]",
+        "ldr d2, [x4]",
+        "add x20, x4, #0x8 (8)",
+        "ld1 {v2.h}[4], [x20]",
         "str x30, [sp, #-16]!",
         "mov v0.16b, v2.16b",
         "ldr x0, [x28, #1624]",
@@ -8529,12 +8531,14 @@
       ]
     },
     "fbld tword [rax]": {
-      "ExpectedInstructionCount": 26,
+      "ExpectedInstructionCount": 28,
       "Comment": [
         "0xdf !11b /4"
       ],
       "ExpectedArm64ASM": [
-        "ldr q2, [x4]",
+        "ldr d2, [x4]",
+        "add x20, x4, #0x8 (8)",
+        "ld1 {v2.h}[4], [x20]",
         "str x30, [sp, #-16]!",
         "mov v0.16b, v2.16b",
         "ldr x0, [x28, #1944]",
