@@ -25,4 +25,4 @@ endif()
 install(TARGETS FEXConfig
   RUNTIME
   DESTINATION bin
-  COMPONENT runtime)
+  COMPONENT Runtime)

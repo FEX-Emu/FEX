@@ -92,9 +92,9 @@ function(add_host_lib NAME GUEST_BITNESS)
   endif()
 
   if (${GUEST_BITNESS} EQUAL 32)
-    install(TARGETS ${NAME}-host-${GUEST_BITNESS} DESTINATION ${HOSTLIBS_DATA_DIRECTORY}/HostThunks_32/)
+    install(TARGETS ${NAME}-host-${GUEST_BITNESS} COMPONENT Runtime DESTINATION ${HOSTLIBS_DATA_DIRECTORY}/HostThunks_32/)
   else()
-    install(TARGETS ${NAME}-host-${GUEST_BITNESS} DESTINATION ${HOSTLIBS_DATA_DIRECTORY}/HostThunks/)
+    install(TARGETS ${NAME}-host-${GUEST_BITNESS} COMPONENT Runtime DESTINATION ${HOSTLIBS_DATA_DIRECTORY}/HostThunks/)
   endif()
 endfunction()
 

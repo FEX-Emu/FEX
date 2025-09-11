@@ -4,7 +4,8 @@ file(GLOB GEN_CONFIG_SOURCES CONFIGURE_DEPENDS *.json.in)
 # Any application configuration json file gets installed
 foreach(CONFIG_SRC ${CONFIG_SOURCES})
   install(FILES ${CONFIG_SRC}
-    DESTINATION ${DATA_DIRECTORY}/AppConfig/)
+    DESTINATION ${DATA_DIRECTORY}/AppConfig/
+    COMPONENT Runtime)
 endforeach()
 
 # Any configuration file json file that needs to be generated
@@ -21,5 +22,6 @@ foreach(GEN_CONFIG_SRC ${GEN_CONFIG_SOURCES})
   # Then install the configured json
   install(
     FILES ${CMAKE_BINARY_DIR}/Data/AppConfig/${CONFIG_NAME}
-    DESTINATION ${DATA_DIRECTORY}/AppConfig/)
+    DESTINATION ${DATA_DIRECTORY}/AppConfig/
+    COMPONENT Runtime)
 endforeach()

@@ -26,4 +26,4 @@ target_link_libraries(wow64fex PRIVATE ${LIBGCC_PATH})
 install(TARGETS wow64fex
   RUNTIME
   DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  COMPONENT runtime)
+  COMPONENT Runtime)

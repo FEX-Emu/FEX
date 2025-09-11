@@ -492,7 +492,8 @@ file(GLOB CONFIG_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/Data/*.js
 # Any application configuration json file gets installed
 foreach(CONFIG_SRC ${CONFIG_SOURCES})
   install(FILES ${CONFIG_SRC}
-    DESTINATION ${DATA_DIRECTORY}/)
+    DESTINATION ${DATA_DIRECTORY}/
+    COMPONENT Runtime)
 endforeach()
 
 if (BUILD_TESTS)
@@ -556,6 +557,7 @@ if (BUILD_THUNKS)
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest
     )"
     DEPENDS guest-libs
+    COMPONENT Runtime
   )
 
   install(
@@ -565,6 +567,7 @@ if (BUILD_THUNKS)
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/Guest_32
     )"
     DEPENDS guest-libs-32
+    COMPONENT Runtime
   )
 
   add_custom_target(uninstall_guest-libs

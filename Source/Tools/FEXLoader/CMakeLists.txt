@@ -48,7 +48,7 @@ function(GenerateInterpreter NAME AsInterpreter)
   install(TARGETS ${NAME}
     RUNTIME
       DESTINATION bin
-      COMPONENT runtime
+      COMPONENT Runtime
   )
 endfunction()
 

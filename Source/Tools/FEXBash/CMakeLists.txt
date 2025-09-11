@@ -20,5 +20,5 @@ endif()
 install(TARGETS FEXBash
   RUNTIME
     DESTINATION bin
-    COMPONENT runtime
+    COMPONENT Runtime
 )

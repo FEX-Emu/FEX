@@ -26,4 +26,4 @@ target_link_libraries(arm64ecfex PRIVATE ${LIBGCC_PATH})
 install(TARGETS arm64ecfex
   RUNTIME
   DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  COMPONENT runtime)
+  COMPONENT Runtime)
