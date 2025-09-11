@@ -202,7 +202,7 @@ add_custom_target(CONFIG_INC
   DEPENDS "${OUTPUT_MAN_NAME_COMPRESS}")
 
 # Install the compressed man page
-install(FILES ${OUTPUT_MAN_NAME_COMPRESS} DESTINATION ${MAN_DIR}/man1)
+install(FILES ${OUTPUT_MAN_NAME_COMPRESS} COMPONENT Runtime DESTINATION ${MAN_DIR}/man1)
 
 # Add in diagnostic colours if the option is available.
 # Ninja code generator will kill colours if this isn't here
