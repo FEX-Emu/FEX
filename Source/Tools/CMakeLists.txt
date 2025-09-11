@@ -25,6 +25,6 @@ if (NOT MINGW_BUILD)
   add_subdirectory(pidof/)
 endif()
 
-if (BUILD_TESTS)
+if (BUILD_TESTING)
   add_subdirectory(TestHarnessRunner/)
 endif()

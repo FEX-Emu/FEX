@@ -46,7 +46,7 @@ cd FEX
 git submodule update --init
 mkdir Build
 cd Build
-CC=clang CXX=clang++ cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DENABLE_LTO=True -DBUILD_TESTS=False -G Ninja ..
+CC=clang CXX=clang++ cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DENABLE_LTO=True -DBUILD_TESTING=False -G Ninja ..
 ninja
 ```
 
