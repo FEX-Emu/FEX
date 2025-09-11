@@ -6,9 +6,7 @@ desc: Launches bash under FEX and passes arguments via -c to it
 $end_info$
 */
 
-#include "Common/ArgumentLoader.h"
-
-#include <FEXCore/Config/Config.h>
+#include <FEXCore/fextl/fmt.h>
 
 #include <filesystem>
 #include <string>
@@ -16,13 +14,14 @@ $end_info$
 #include <vector>
 
 int main(int argc, char** argv, char** const envp) {
-  FEX::ArgLoader::ArgLoader ArgsLoader(FEX::ArgLoader::ArgLoader::LoadType::WITHOUT_FEXLOADER_PARSER, argc, argv);
-  auto Args = ArgsLoader.Get();
+  // Skip argv[0].
+  const int ArgCount = argc - 1;
+  const bool EmptyArgs = ArgCount == 0;
 
   std::vector<const char*> Argv;
   // FEXInterpreter will handle finding bash in the rootfs
   // Use /bin/sh for -c commands and /bin/bash for interactive mode
-  const char* BashPath = Args.empty() ? "/bin/bash" : "/bin/sh";
+  const char* BashPath = EmptyArgs ? "/bin/bash" : "/bin/sh";
 
   std::string FEXInterpreterPath = std::filesystem::path(argv[0]).parent_path().string() + "/FEXInterpreter";
 
@@ -48,9 +47,9 @@ int main(int argc, char** argv, char** const envp) {
 
   // Remove -c argument if arguments are empty
   // Lets us start an emulated bash instance
-  const size_t FEXArgsCount = std::size(FEXArgs) - (Args.empty() ? 1 : 0);
+  const size_t FEXArgsCount = std::size(FEXArgs) - (EmptyArgs ? 1 : 0);
 
-  Argv.resize(Args.size() + FEXArgsCount);
+  Argv.resize(ArgCount + FEXArgsCount);
 
   // Pass in the FEXInterpreter arguments
   for (size_t i = 0; i < FEXArgsCount; ++i) {
@@ -58,13 +57,13 @@ int main(int argc, char** argv, char** const envp) {
   }
 
   // Bring in passed in arguments
-  for (size_t i = 0; i < Args.size(); ++i) {
-    Argv[i + FEXArgsCount] = Args[i].c_str();
+  for (size_t i = 0; i < ArgCount; ++i) {
+    Argv[i + FEXArgsCount] = argv[i + 1];
   }
 
   // Set --norc when no arguments are passed so PS1 doesn't get overwritten
   const char* NoRC = "--norc";
-  if (Args.empty()) {
+  if (EmptyArgs) {
     Argv.emplace_back(NoRC);
   }
 
