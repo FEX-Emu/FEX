@@ -32,6 +32,8 @@ Ref OpDispatchBuilder::GetX87Top() {
 }
 
 void OpDispatchBuilder::SetX87FTW(Ref FTW) {
+  _StackForceSlow(); // Invalidate x87 FTW register cache
+
   // For the output, we want a 1-bit for each pair not equal to 11 (Empty).
   static_assert(static_cast<uint8_t>(FPState::X87Tag::Empty) == 0b11);
 
@@ -50,7 +52,7 @@ void OpDispatchBuilder::SetX87FTW(Ref FTW) {
   FTW = _Orlshr(OpSize::i32Bit, FTW, FTW, 4);
 
   // ...and that's it. StoreContext implicitly does the final masking.
-  StoreContext(AbridgedFTWIndex, FTW);
+  _StoreContext(OpSize::i8Bit, GPRClass, FTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
 }
 
 void OpDispatchBuilder::SetX87Top(Ref Value) {
@@ -338,7 +340,7 @@ Ref OpDispatchBuilder::GetX87FTW_Helper() {
   // bytes, we use the well-known bit twiddling algorithm:
   //
   // https://graphics.stanford.edu/~seander/bithacks.html#InterleaveBMN
-  Ref X = LoadContext(AbridgedFTWIndex);
+  Ref X = _LoadContext(OpSize::i8Bit, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
   X = _Orlshl(OpSize::i32Bit, X, X, 4);
   X = _And(OpSize::i32Bit, X, Constant(0x0f0f0f0f));
   X = _Orlshl(OpSize::i32Bit, X, X, 2);
@@ -774,6 +776,8 @@ void OpDispatchBuilder::FNCLEX(OpcodeArgs) {
 }
 
 void OpDispatchBuilder::FNINIT(OpcodeArgs) {
+  _SyncStackToSlow(); // Invalidate x87 register caches
+
   auto Zero = Constant(0);
 
   if (ReducedPrecisionMode) {
@@ -787,7 +791,7 @@ void OpDispatchBuilder::FNINIT(OpcodeArgs) {
   // Set top to zero
   SetX87Top(Zero);
   // Tags all get marked as invalid
-  StoreContext(AbridgedFTWIndex, Zero);
+  _StoreContext(OpSize::i8Bit, GPRClass, Zero, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
 
   // Reinits the simulated stack
   _InitStack();

@@ -348,6 +348,25 @@ DEF_OP(StoreContextIndexed) {
   }
 }
 
+DEF_OP(FormContextAddress) {
+  const auto Op = IROp->C<IR::IROp_FormContextAddress>();
+  const auto Index = GetReg(Op->Index);
+  const auto Dst = GetReg(Node);
+
+  switch (Op->Stride) {
+  case 1:
+  case 2:
+  case 4:
+  case 8:
+  case 16:
+  case 32: {
+    add(ARMEmitter::Size::i64Bit, Dst, STATE, Index, ARMEmitter::ShiftType::LSL, FEXCore::ilog2(Op->Stride));
+    break;
+  }
+  default: LOGMAN_MSG_A_FMT("Unhandled FormContextAddress stride: {}", Op->Stride); break;
+  }
+}
+
 DEF_OP(SpillRegister) {
   const auto Op = IROp->C<IR::IROp_SpillRegister>();
   const auto OpSize = IROp->Size;

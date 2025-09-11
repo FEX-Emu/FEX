@@ -4230,6 +4230,10 @@ Ref OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, const X86T
     if (gpr >= FEXCore::X86State::REG_MM_0) {
       LOGMAN_THROW_A_FMT(OpSize == OpSize::i64Bit, "full");
 
+      if (MMXState != MMXState_MMX) {
+        ChgStateX87_MMX();
+      }
+
       A.Base = LoadContext(OpSize::i64Bit, MM0Index + gpr - FEXCore::X86State::REG_MM_0);
     } else if (gpr >= FEXCore::X86State::REG_XMM_0) {
       const auto gprIndex = gpr - X86State::REG_XMM_0;

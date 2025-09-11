@@ -1852,10 +1852,10 @@ private:
   static const int PFIndex = 16;
   static const int AFIndex = 17;
   /* Gap 18..19 */
+  /* Note this range is only valid if MMXState = MMXState_MMX */
   static const int MM0Index = 20;
   static const int MM7Index = 27;
-  static const int AbridgedFTWIndex = 28;
-  /* Gap 29..30 */
+  /* Gap 28..30 */
   static const int DFIndex = 31;
   static const int FPR0Index = 32;
   static const int FPR15Index = 47;
@@ -1867,7 +1867,6 @@ private:
     switch (Index) {
     case MM0Index ... MM7Index: return offsetof(FEXCore::Core::CPUState, mm[Index - MM0Index]);
     case AVXHigh0Index ... AVXHigh15Index: return offsetof(FEXCore::Core::CPUState, avx_high[Index - AVXHigh0Index][0]);
-    case AbridgedFTWIndex: return offsetof(FEXCore::Core::CPUState, AbridgedFTW);
     default: return ~0U;
     }
   }
@@ -1929,7 +1928,7 @@ private:
     if (!(RegCache.Cached & Bit)) {
       if (Index == DFIndex) {
         RegCache.Value[Index] = _LoadDF();
-      } else if ((Index >= MM0Index && Index <= AbridgedFTWIndex) || Index >= AVXHigh0Index) {
+      } else if ((Index >= MM0Index && Index <= MM7Index) || Index >= AVXHigh0Index) {
         RegCache.Value[Index] = _LoadContext(Size, RegClass, Offset);
 
         // We may have done a partial load, this requires special handling.
@@ -2364,7 +2363,7 @@ private:
     LOGMAN_THROW_A_FMT(MMXState == MMXState_X87, "Expected state to be x87");
     _StackForceSlow();
     SetX87Top(Constant(0));                             // top reset to zero
-    StoreContext(AbridgedFTWIndex, Constant(0xFFFFUL)); // all valid
+    _StoreContext(OpSize::i8Bit, GPRClass, Constant(0xFFFFUL), offsetof(FEXCore::Core::CPUState, AbridgedFTW));
     MMXState = MMXState_MMX;
   }
 
