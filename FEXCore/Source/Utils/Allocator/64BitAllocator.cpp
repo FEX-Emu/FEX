@@ -165,7 +165,8 @@ private:
     size_t SizePlusManagedData = UsedSize + SizeOfLiveRegion;
 
     auto Res = mprotect(reinterpret_cast<void*>(ReservedRegion->Base), SizePlusManagedData, PROT_READ | PROT_WRITE);
-    LOGMAN_THROW_A_FMT(Res != -1, "Couldn't mprotect region: {} '{}' Likely occurs when running out of memory or Maximum VMAs", errno, strerror(errno));
+    LOGMAN_THROW_A_FMT(Res != -1, "Couldn't mprotect region: {} '{}' Likely occurs when running out of memory or Maximum VMAs", errno,
+                       strerror(errno));
 
     LiveVMARegion* LiveRange = new (reinterpret_cast<void*>(ReservedRegion->Base)) LiveVMARegion();
 
@@ -273,8 +274,8 @@ void* OSAllocator_64Bit::Mmap(void* addr, size_t length, int prot, int flags, in
 again:
 
   struct RangeResult final {
-    LiveVMARegion *RegionInsertedInto;
-    void *Ptr;
+    LiveVMARegion* RegionInsertedInto;
+    void* Ptr;
   };
 
   auto CheckIfRangeFits = [&AllocatedOffset](LiveVMARegion* Region, uint64_t length, int prot, int flags, int fd, off_t offset,

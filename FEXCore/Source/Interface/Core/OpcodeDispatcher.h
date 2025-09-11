@@ -300,7 +300,8 @@ public:
     return ShouldDump;
   }
 
-  void BeginFunction(uint64_t RIP, const fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks>* Blocks, uint32_t NumInstructions, bool Is64BitMode, bool MonoBackpatcherBlock);
+  void BeginFunction(uint64_t RIP, const fextl::vector<FEXCore::Frontend::Decoder::DecodedBlocks>* Blocks, uint32_t NumInstructions,
+                     bool Is64BitMode, bool MonoBackpatcherBlock);
   void Finalize();
 
   // Dispatch builder functions

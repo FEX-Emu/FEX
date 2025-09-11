@@ -538,7 +538,8 @@ uint64_t Arm64JITCore::ExitFunctionLink(FEXCore::Core::CpuStateFrame* Frame, FEX
   } else {
     {
       // Guard the LookupCache lock with the code invalidation mutex, to avoid issues with forking
-      auto lk_inval = GuardSignalDeferringSection<std::shared_lock>(static_cast<Context::ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
+      auto lk_inval =
+        GuardSignalDeferringSection<std::shared_lock>(static_cast<Context::ContextImpl*>(Thread->CTX)->CodeInvalidationMutex, Thread);
       HostCode = Thread->LookupCache->FindBlock(GuestRip);
     }
     if (!HostCode) {

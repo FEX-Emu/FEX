@@ -998,9 +998,9 @@ void ContextImpl::MonoBackpatcherWrite(FEXCore::Core::CpuStateFrame* Frame, uint
     auto lk = GuardSignalDeferringSection(CTX->CodeInvalidationMutex, Thread);
 
     if (Size == 8) {
-      *reinterpret_cast<uint64_t *>(Address) = Value;
+      *reinterpret_cast<uint64_t*>(Address) = Value;
     } else if (Size == 4) {
-      *reinterpret_cast<uint32_t *>(Address) = Value;
+      *reinterpret_cast<uint32_t*>(Address) = Value;
     } else {
       ERROR_AND_DIE_FMT("Unexpected write size for backpatcher: {}", Size);
     }

@@ -124,7 +124,7 @@ struct ThreadStateObject : public FEXCore::Allocator::FEXAllocOperators {
   // GDT and LDT tracking
   FEXCore::Core::CPUState::gdt_segment gdt[32] {};
   size_t ldt_entry_count {};
-  FEXCore::Core::CPUState::gdt_segment *ldt_entries {};
+  FEXCore::Core::CPUState::gdt_segment* ldt_entries {};
 };
 
 class ThreadManager final {

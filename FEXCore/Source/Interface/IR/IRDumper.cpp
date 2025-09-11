@@ -315,7 +315,8 @@ void Dump(fextl::stringstream* out, const IRListView* IR) {
 
   ++CurrentIndent;
   AddIndent();
-  *out << fextl::fmt::format("(%0) IRHeader %{}, #{:#x}, #{}, #{}\n", HeaderOp->Blocks.ID(), HeaderOp->OriginalRIP, HeaderOp->BlockCount, HeaderOp->NumHostInstructions);
+  *out << fextl::fmt::format("(%0) IRHeader %{}, #{:#x}, #{}, #{}\n", HeaderOp->Blocks.ID(), HeaderOp->OriginalRIP, HeaderOp->BlockCount,
+                             HeaderOp->NumHostInstructions);
 
   for (auto [BlockNode, BlockHeader] : IR->GetBlocks()) {
     {

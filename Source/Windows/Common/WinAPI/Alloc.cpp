@@ -23,7 +23,7 @@ void InitBasicInfo() {
 __attribute__((used, section(".CRT$FEXH"))) void (*_InitBasicInfo)(void) = InitBasicInfo;
 
 MEM_ADDRESS_REQUIREMENTS MakeWOW64AddressReqs() {
-  MEM_ADDRESS_REQUIREMENTS Reqs{};
+  MEM_ADDRESS_REQUIREMENTS Reqs {};
   Reqs.LowestStartingAddress = reinterpret_cast<void*>(BasicInfo.HighestUserAddress & ~(BasicInfo.AllocationGranularity - 1));
   return Reqs;
 }

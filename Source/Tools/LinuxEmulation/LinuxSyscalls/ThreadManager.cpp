@@ -196,26 +196,26 @@ FEX::HLE::ThreadStateObject* ThreadManager::CreateThread(uint64_t InitialRIP, ui
     memcpy(ThreadStateObject->gdt, InheritThread->gdt, sizeof(ThreadStateObject->gdt));
     if (InheritThread->ldt_entry_count) {
       const auto new_ldt_size = InheritThread->ldt_entry_count * FEX::HLE::SyscallHandler::LDT_ENTRY_SIZE;
-      ThreadStateObject->ldt_entries = reinterpret_cast<FEXCore::Core::CPUState::gdt_segment*>(FEXCore::Allocator::mmap(nullptr, new_ldt_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+      ThreadStateObject->ldt_entries = reinterpret_cast<FEXCore::Core::CPUState::gdt_segment*>(
+        FEXCore::Allocator::mmap(nullptr, new_ldt_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
 
       ThreadStateObject->ldt_entry_count = InheritThread->ldt_entry_count;
       memcpy(ThreadStateObject->ldt_entries, InheritThread->ldt_entries, new_ldt_size);
     }
-  }
-  else {
+  } else {
     // Without any thread data to inherit, setup the default gdt.
     // Default code segment indexes match the numbers that the Linux kernel uses.
     Frame->State.cs_idx = FEXCore::Core::CPUState::DEFAULT_USER_CS << 3;
     auto GDT = FEXCore::Core::CPUState::GetSegmentFromIndex(Frame->State, Frame->State.cs_idx);
     FEXCore::Core::CPUState::SetGDTBase(GDT, 0);
     FEXCore::Core::CPUState::SetGDTLimit(GDT, 0xF'FFFFU);
-    Frame->State.cs_cached = FEXCore::Core::CPUState::CalculateGDTBase(*FEXCore::Core::CPUState::GetSegmentFromIndex(Frame->State, Frame->State.cs_idx));
+    Frame->State.cs_cached =
+      FEXCore::Core::CPUState::CalculateGDTBase(*FEXCore::Core::CPUState::GetSegmentFromIndex(Frame->State, Frame->State.cs_idx));
 
     if (Is64BitMode()) {
       GDT->L = 1; // L = Long Mode = 64-bit
       GDT->D = 0; // D = Default Operand SIze = Reserved
-    }
-    else {
+    } else {
       GDT->L = 0; // L = Long Mode = 32-bit
       GDT->D = 1; // D = Default Operand Size = 32-bit
     }

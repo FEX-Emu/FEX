@@ -138,7 +138,7 @@ void SignalDelegator::RestoreFrame_x64(FEXCore::Core::InternalThreadState* Threa
 
     // Restore segments.
     // FS and GS are explicitly ignored here, as WRFSGSbase is used instead.
-    Frame->State.cs_idx = (guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_CSGSFS] >> 0)  & 0xffff;
+    Frame->State.cs_idx = (guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_CSGSFS] >> 0) & 0xffff;
     Frame->State.ss_idx = (guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_CSGSFS] >> 48) & 0xffff;
 
     Frame->State.cs_cached = Frame->State.CalculateGDTBase(*Frame->State.GetSegmentFromIndex(Frame->State, Frame->State.cs_idx));
@@ -400,9 +400,7 @@ uint64_t SignalDelegator::SetupFrame_x64(FEXCore::Core::InternalThreadState* Thr
   // This stores the CS/GS/FS selectors. It ALSO stores the SS selector in the top 16 bits...For some reason.
   // Despite the naming, the endianness is swapped from what you'd expect.
   guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_CSGSFS] =
-    ((uint64_t)Frame->State.ss_idx << 48) |
-    ((uint64_t)Frame->State.fs_idx << 32) |
-    ((uint64_t)Frame->State.gs_idx << 16) |
+    ((uint64_t)Frame->State.ss_idx << 48) | ((uint64_t)Frame->State.fs_idx << 32) | ((uint64_t)Frame->State.gs_idx << 16) |
     ((uint64_t)Frame->State.cs_idx << 0);
 
   // aarch64 and x86_64 siginfo_t matches. We can just copy this over

@@ -28,7 +28,7 @@ fextl::string GetSectionFilePath(uint64_t Address) {
     std::array<WCHAR, PATH_MAX> PathW;
   } Buffer;
 
-  if (NtQueryVirtualMemory(GetCurrentProcess(), reinterpret_cast<void *>(Address), MemoryMappedFilenameInformation, &Buffer, sizeof(Buffer), NULL)) {
+  if (NtQueryVirtualMemory(GetCurrentProcess(), reinterpret_cast<void*>(Address), MemoryMappedFilenameInformation, &Buffer, sizeof(Buffer), NULL)) {
     return {};
   }
 
