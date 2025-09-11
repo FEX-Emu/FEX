@@ -60,7 +60,7 @@ void OpDispatchBuilder::X87FLDCWF64(OpcodeArgs) {
 // Float load op with memory operand
 void OpDispatchBuilder::FLDF64(OpcodeArgs, IR::OpSize Width) {
   const auto ReadWidth = (Width == OpSize::f80Bit) ? OpSize::i128Bit : Width;
-  Ref Data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], ReadWidth, Op->Flags);
+  Ref Data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], Width, Op->Flags);
   // Convert to 64bit float
   Ref ConvertedData = Data;
   if (Width == OpSize::i32Bit) {
@@ -73,7 +73,7 @@ void OpDispatchBuilder::FLDF64(OpcodeArgs, IR::OpSize Width) {
 
 void OpDispatchBuilder::FBLDF64(OpcodeArgs) {
   // Read from memory
-  Ref Data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], OpSize::i128Bit, Op->Flags);
+  Ref Data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], OpSize::f80Bit, Op->Flags);
   Ref ConvertedData = _F80BCDLoad(Data);
   ConvertedData = _F80CVT(OpSize::i64Bit, ConvertedData);
   _PushStack(ConvertedData, Data, OpSize::i64Bit, true);

@@ -1,14 +1,13 @@
 %ifdef CONFIG
 {
-  "RegData": {
-    "MM7":  ["0x5354555657584142", "0x0000000000005152"],
-    "MM6":  ["0xe94de5eae34fc1c0", "0x0000000000004039"]
-  },
   "MemoryRegions": {
     "0x100000000": "4096"
-  }
+  },
+  "Env": { "FEX_X87REDUCEDPRECISION" : "1" }
 }
 %endif
+
+; FEX-Emu had a bug where x87 loadstores at a page boundary with reduced precision enabled would loadstore 128-bits.
 
 finit ; enters x87 state
 
@@ -34,9 +33,5 @@ fbstp [rdx - 10]
 
 ; Regular 80-bit store
 fstp tword [rdx - 10]
-
-; Loads again to get register state.
-fld tword [rdx - 10]
-fbld [rdx - 10]
 
 hlt
