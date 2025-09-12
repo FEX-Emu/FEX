@@ -107,3 +107,6 @@ Test_TwoByte/0F_31.asm
 
 # Simulator doesn't support executing a syscall
 Test_Secondary/09_F3_07.asm
+
+# Vixl sim at 256-bit vector width access too much memory with some AVX instructions
+Test_modrm_oob/VEX.asm

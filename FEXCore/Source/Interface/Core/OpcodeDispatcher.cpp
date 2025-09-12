@@ -4709,18 +4709,18 @@ void OpDispatchBuilder::MOVBEOp(OpcodeArgs) {
   const auto SrcSize = OpSizeFromSrc(Op);
 
   Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.Align = OpSize::i8Bit});
-  Src = _Rev(std::max(OpSize::i32Bit, SrcSize), Src);
 
-  if (SrcSize == OpSize::i16Bit) {
+  if (DestIsMem(Op) || SrcSize != OpSize::i16Bit) {
+    Src = _Rev(SrcSize, Src);
+    StoreResult(GPRClass, Op, Op->Dest, Src, OpSize::iInvalid);
+  } else {
+    Src = _Rev(std::max(OpSize::i32Bit, SrcSize), Src);
     // 16-bit does an insert.
     // Rev of 16-bit value as 32-bit replaces the result in the upper 16-bits of the result.
     // bfxil the 16-bit result in to the GPR.
     Ref Dest = LoadSource_WithOpSize(GPRClass, Op, Op->Dest, GPRSize, Op->Flags);
     auto Result = _Bfxil(GPRSize, 16, 16, Dest, Src);
     StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, GPRSize, OpSize::iInvalid);
-  } else {
-    // 32-bit does regular zext
-    StoreResult(GPRClass, Op, Op->Dest, Src, OpSize::iInvalid);
   }
 }
 
