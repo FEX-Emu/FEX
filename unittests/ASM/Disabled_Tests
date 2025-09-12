@@ -1,6 +1,3 @@
-# Not supported in userspace in all cases
-Test_Primary/Primary_D7.asm
-
 # Can't test this in a real environment
 Test_Primary/Primary_E8.asm
 Test_Primary/Primary_E9.asm
