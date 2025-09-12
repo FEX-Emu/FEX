@@ -8,6 +8,10 @@
 }
 %endif
 
+; Save FS
+rdfsbase rax
+mov [rel .data_backup], rax
+
 mov rax, 0x0000434445464748
 mov rbx, -1
 mov rcx, -1
@@ -16,4 +20,11 @@ wrfsbase rax
 rdfsbase ebx ; 32bit
 rdfsbase rcx ; 64bit
 
+; Restore FS
+mov rdx, [rel .data_backup]
+wrfsbase rdx
+
 hlt
+
+.data_backup:
+dq 0
