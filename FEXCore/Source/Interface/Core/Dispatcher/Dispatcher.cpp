@@ -17,6 +17,7 @@
 #include <FEXCore/Utils/Event.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
+#include <FEXHeaderUtils/Syscalls.h>
 
 #include <CodeEmitter/Emitter.h>
 

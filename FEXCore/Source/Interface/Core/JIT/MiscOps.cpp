@@ -10,10 +10,11 @@ $end_info$
 #endif
 
 #include "Interface/Context/Context.h"
+#include "Interface/Core/JIT/DebugData.h"
 #include "Interface/Core/JIT/JITClass.h"
-#include "FEXCore/Debug/InternalThreadState.h"
 
 #include <FEXCore/Core/SignalDelegator.h>
+#include <FEXCore/Debug/InternalThreadState.h>
 
 namespace FEXCore::CPU {
 
