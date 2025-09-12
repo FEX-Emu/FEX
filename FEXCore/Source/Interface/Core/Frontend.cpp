@@ -259,13 +259,13 @@ void Decoder::DecodeModRM_64(X86Tables::DecodedOperand* Operand, X86Tables::ModR
 
   if (HasSIB) {
     FEXCore::X86Tables::SIBDecoded SIB;
-    if (DecodeInst->DecodedSIB) {
+    if (DecodeInst->Flags & DecodeFlags::FLAG_DECODED_SIB) {
       SIB.Hex = DecodeInst->SIB;
     } else {
       // Haven't yet grabbed SIB, pull it now
       DecodeInst->SIB = ReadByte();
       SIB.Hex = DecodeInst->SIB;
-      DecodeInst->DecodedSIB = true;
+      DecodeInst->Flags |= DecodeFlags::FLAG_DECODED_SIB;
     }
 
     // If the SIB base is 0b101, aka BP or R13 then we have a 32bit displacement
@@ -401,9 +401,9 @@ bool Decoder::NormalOp(const FEXCore::X86Tables::X86InstInfo* Info, uint16_t Op,
 
   // If we require ModRM and haven't decoded it yet, do it now
   // Some instructions have to read modrm upfront, others do it later
-  if (HasMODRM && !DecodeInst->DecodedModRM) {
+  if (HasMODRM && !(DecodeInst->Flags & DecodeFlags::FLAG_DECODED_MODRM)) {
     DecodeInst->ModRM = ReadByte();
-    DecodeInst->DecodedModRM = true;
+    DecodeInst->Flags |= DecodeFlags::FLAG_DECODED_MODRM;
   }
 
   // New instruction size decoding
@@ -670,7 +670,7 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
   } else if (Info->Type >= FEXCore::X86Tables::TYPE_GROUP_1 && Info->Type <= FEXCore::X86Tables::TYPE_GROUP_11) {
     uint8_t ModRMByte = ReadByte();
     DecodeInst->ModRM = ModRMByte;
-    DecodeInst->DecodedModRM = true;
+    DecodeInst->Flags |= DecodeFlags::FLAG_DECODED_MODRM;
 
     FEXCore::X86Tables::ModRMDecoded ModRM;
     ModRM.Hex = DecodeInst->ModRM;
@@ -687,18 +687,18 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
     constexpr uint16_t PF_F2 = 3;
 
     uint16_t PrefixType = PF_NONE;
-    if (DecodeInst->LastEscapePrefix == 0xF3) {
+    if (LastEscapePrefix == 0xF3) {
       PrefixType = PF_F3;
-    } else if (DecodeInst->LastEscapePrefix == 0xF2) {
+    } else if (LastEscapePrefix == 0xF2) {
       PrefixType = PF_F2;
-    } else if (DecodeInst->LastEscapePrefix == 0x66) {
+    } else if (LastEscapePrefix == 0x66) {
       PrefixType = PF_66;
     }
 
     // We have ModRM
     uint8_t ModRMByte = ReadByte();
     DecodeInst->ModRM = ModRMByte;
-    DecodeInst->DecodedModRM = true;
+    DecodeInst->Flags |= DecodeFlags::FLAG_DECODED_MODRM;
 
     FEXCore::X86Tables::ModRMDecoded ModRM;
     ModRM.Hex = DecodeInst->ModRM;
@@ -725,7 +725,7 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
     // We have ModRM
     uint8_t ModRMByte = ReadByte();
     DecodeInst->ModRM = ModRMByte;
-    DecodeInst->DecodedModRM = true;
+    DecodeInst->Flags |= DecodeFlags::FLAG_DECODED_MODRM;
 
     uint16_t X87Op = ((Op - 0xD8) << 8) | ModRMByte;
     return NormalOp(&(*X87Table)[X87Op], X87Op);
@@ -787,7 +787,7 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
       // We have ModRM
       uint8_t ModRMByte = ReadByte();
       DecodeInst->ModRM = ModRMByte;
-      DecodeInst->DecodedModRM = true;
+      DecodeInst->Flags |= DecodeFlags::FLAG_DECODED_MODRM;
 
       FEXCore::X86Tables::ModRMDecoded ModRM;
       ModRM.Hex = DecodeInst->ModRM;
@@ -811,6 +811,7 @@ bool Decoder::NormalOpHeader(const FEXCore::X86Tables::X86InstInfo* Info, uint16
 
 bool Decoder::DecodeInstructionImpl(uint64_t PC) {
   InstructionSize = 0;
+  LastEscapePrefix = 0;
   Instruction.fill(0);
 
   DecodeInst = &DecodedBuffer[DecodedSize];
@@ -832,7 +833,7 @@ bool Decoder::DecodeInstructionImpl(uint64_t PC) {
           // Decode ModRM
           uint8_t ModRMByte = ReadByte();
           DecodeInst->ModRM = ModRMByte;
-          DecodeInst->DecodedModRM = true;
+          DecodeInst->Flags |= DecodeFlags::FLAG_DECODED_MODRM;
 
           FEXCore::X86Tables::ModRMDecoded ModRM;
           ModRM.Hex = DecodeInst->ModRM;
@@ -871,7 +872,7 @@ bool Decoder::DecodeInstructionImpl(uint64_t PC) {
         uint16_t LocalOp = (Prefix << 8) | ReadByte();
 
         bool NoOverlay66 = (FEXCore::X86Tables::H0F38TableOps[LocalOp].Flags & InstFlags::FLAGS_NO_OVERLAY66) != 0;
-        if (DecodeInst->LastEscapePrefix == 0x66 && NoOverlay66) { // Operand Size
+        if (LastEscapePrefix == 0x66 && NoOverlay66) { // Operand Size
           // Remove prefix so it doesn't effect calculations.
           // This is only an escape prefix rather than modifier now
           DecodeInst->Flags &= ~DecodeFlags::FLAG_OPERAND_SIZE;
@@ -887,7 +888,7 @@ bool Decoder::DecodeInstructionImpl(uint64_t PC) {
         constexpr uint16_t PF_3A_REX = (1 << 1);
 
         uint16_t Prefix = PF_3A_NONE;
-        if (DecodeInst->LastEscapePrefix == 0x66) { // Operand Size
+        if (LastEscapePrefix == 0x66) { // Operand Size
           Prefix = PF_3A_66;
         }
 
@@ -913,17 +914,17 @@ bool Decoder::DecodeInstructionImpl(uint64_t PC) {
 
           if (NoOverlay) { // This section of the table ignores prefix extention
             return NormalOpHeader(&FEXCore::X86Tables::SecondBaseOps[EscapeOp], EscapeOp);
-          } else if (DecodeInst->LastEscapePrefix == 0xF3) { // REP
+          } else if (LastEscapePrefix == 0xF3) { // REP
             // Remove prefix so it doesn't effect calculations.
             // This is only an escape prefix rather tan modifier now
             DecodeInst->Flags &= ~DecodeFlags::FLAG_REP_PREFIX;
             return NormalOpHeader(&FEXCore::X86Tables::RepModOps[EscapeOp], EscapeOp);
-          } else if (DecodeInst->LastEscapePrefix == 0xF2) { // REPNE
+          } else if (LastEscapePrefix == 0xF2) { // REPNE
             // Remove prefix so it doesn't effect calculations.
             // This is only an escape prefix rather tan modifier now
             DecodeInst->Flags &= ~DecodeFlags::FLAG_REPNE_PREFIX;
             return NormalOpHeader(&FEXCore::X86Tables::RepNEModOps[EscapeOp], EscapeOp);
-          } else if (DecodeInst->LastEscapePrefix == 0x66 && !NoOverlay66) { // Operand Size
+          } else if (LastEscapePrefix == 0x66 && !NoOverlay66) { // Operand Size
             // Remove prefix so it doesn't effect calculations.
             // This is only an escape prefix rather tan modifier now
             DecodeInst->Flags &= ~DecodeFlags::FLAG_OPERAND_SIZE;
@@ -939,7 +940,7 @@ bool Decoder::DecodeInstructionImpl(uint64_t PC) {
     }
     case 0x66: // Operand Size prefix
       DecodeInst->Flags |= DecodeFlags::FLAG_OPERAND_SIZE;
-      DecodeInst->LastEscapePrefix = Op;
+      LastEscapePrefix = Op;
       DecodeFlags::PushOpAddr(&DecodeInst->Flags, DecodeFlags::FLAG_OPERAND_SIZE_LAST);
       break;
     case 0x67: // Address Size override prefix
@@ -970,11 +971,11 @@ bool Decoder::DecodeInstructionImpl(uint64_t PC) {
       break;
     case 0xF2: // REPNE prefix
       DecodeInst->Flags |= DecodeFlags::FLAG_REPNE_PREFIX;
-      DecodeInst->LastEscapePrefix = Op;
+      LastEscapePrefix = Op;
       break;
     case 0xF3: // REP prefix
       DecodeInst->Flags |= DecodeFlags::FLAG_REP_PREFIX;
-      DecodeInst->LastEscapePrefix = Op;
+      LastEscapePrefix = Op;
       break;
     case 0x64: // FS prefix
       DecodeInst->Flags = (DecodeInst->Flags & ~FEXCore::X86Tables::DecodeFlags::FLAG_SEGMENTS) | DecodeFlags::FLAG_FS_PREFIX;
@@ -1053,10 +1054,10 @@ Decoder::DecodedBlockStatus Decoder::DecodeInstruction(uint64_t PC) {
 
     if (DecodeInst->OP == 0x8b && DecodeInst->Src[0].IsGPRIndirect() &&
         IsKnownAtomicDisplacement(DecodeInst->Src[0].Data.GPRIndirect.Displacement)) {
-      DecodeInst->ForceTSO = true;
+      DecodeInst->Flags |= X86Tables::DecodeFlags::FLAG_FORCE_TSO;
     }
     if (DecodeInst->OP == 0x89 && DecodeInst->Dest.IsGPRIndirect() && IsKnownAtomicDisplacement(DecodeInst->Dest.Data.GPRIndirect.Displacement)) {
-      DecodeInst->ForceTSO = true;
+      DecodeInst->Flags |= X86Tables::DecodeFlags::FLAG_FORCE_TSO;
     }
   }
 

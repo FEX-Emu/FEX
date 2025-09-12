@@ -611,7 +611,7 @@ ContextImpl::GenerateIR(FEXCore::Core::InternalThreadState* Thread, uint64_t Gue
             } else {
               ForceTSO = IR::ForceTSOMode::ForceDisabled;
             }
-          } else if (DecodedInfo->ForceTSO) {
+          } else if (DecodedInfo->Flags & X86Tables::DecodeFlags::FLAG_FORCE_TSO) {
             ForceTSO = IR::ForceTSOMode::ForceEnabled;
           }
 
