@@ -8,6 +8,12 @@
 }
 %endif
 
+; Save FS/GS
+rdfsbase rax
+mov [rel .data_backup], rax
+rdgsbase rax
+mov [rel .data_backup + 8], rax
+
 mov rbx, 0xe0000000
 lea r9, [rbx + 8 * 1]
 wrfsbase r9
@@ -38,4 +44,14 @@ mov rbx, 0
 gs xlat
 mov r13, rax
 
+; Restore FS/GS
+mov rax, [rel .data_backup]
+wrfsbase rax
+mov rax, [rel .data_backup + 8]
+wrgsbase rax
+
 hlt
+
+.data_backup:
+dq 0
+dq 0
