@@ -5,14 +5,6 @@ Test_TwoByte/0F_3F.asm
 Test_Primary/Primary_8C.asm
 Test_Primary/Primary_8C_2.asm
 
-# Intel CI doesn't have a new enough kernel to support this
-Test_Secondary/15_F3_00.asm
-Test_Secondary/15_F3_01.asm
-Test_Secondary/15_F3_02.asm
-Test_Secondary/15_F3_03.asm
-Test_Secondary/15_F3_02_2.asm
-Test_Secondary/15_F3_03_2.asm
-
 # Zen+ CI doesn't support UMIP so it returns "real" values
 Test_Secondary/07_XX_00.asm
 
