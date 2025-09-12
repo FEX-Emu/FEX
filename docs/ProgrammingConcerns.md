@@ -16,7 +16,7 @@ allocations entirely (where possible).
 
 ## Sub-projects and applications that need to follow this.
 - FEXCore
-- FEXInterpreter/FEXLoader
+- FEXInterpreter
 
 ## Sub-projects that explicitly cannot follow this
 - Thunks

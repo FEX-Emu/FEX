@@ -54,7 +54,7 @@ function(AddTests Tests BinDirectory Bitness)
       "${CMAKE_CURRENT_SOURCE_DIR}/Flake_Tests"
       "${TEST_CASE}"
       "guest"
-      "$<TARGET_FILE:FEXInterpreter>"
+      "$<TARGET_FILE:FEX>"
       "${BIN_PATH}")
 
     set_property(TEST "${TEST_CASE}.jit.flt" APPEND PROPERTY ENVIRONMENT "FEX_OUTPUTLOG=stderr;FEX_SILENTLOG=0;FEX_MAXINST=500")
@@ -100,7 +100,7 @@ add_custom_target(
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   COMMAND "ctest" "--output-on-failure" "--timeout" "30" ${TEST_JOB_FLAG} "-R" "\.*\.jit\.flt$$"
-  DEPENDS FEXLinuxTests FEXLinuxTests_32 FEXInterpreter
+  DEPENDS FEXLinuxTests FEXLinuxTests_32 FEX
   )
 
 # Only host
@@ -118,5 +118,5 @@ add_custom_target(
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   COMMAND "ctest" "--output-on-failure" "--timeout" "30" ${TEST_JOB_FLAG} "-R" "\.*\.flt$$"
-  DEPENDS FEXLinuxTests FEXLinuxTests_32 FEXInterpreter
+  DEPENDS FEXLinuxTests FEXLinuxTests_32 FEX
   )

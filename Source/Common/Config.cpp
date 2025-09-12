@@ -373,11 +373,11 @@ fextl::string RecoverGuestProgramFilename(fextl::string Program, bool ExecFDInte
   //
   // Examples:
   //  - Regular execve. Application must exist on disk.
-  //    execve binfmt_misc args layout:   `FEXInterpreter <Path provided to execve pathname> <user provided argv[0]> <user provided argv[n]>...`
+  //    execve binfmt_misc args layout:   `FEX <Path provided to execve pathname> <user provided argv[0]> <user provided argv[n]>...`
   //  - Regular execveat with FD. FD is backed by application on disk.
-  //    execveat binfmt_misc args layout: `FEXInterpreter <Path provided to execve pathname> <user provided argv[0]> <user provided argv[n]>...`
+  //    execveat binfmt_misc args layout: `FEX <Path provided to execve pathname> <user provided argv[0]> <user provided argv[n]>...`
   //  - Regular execveat with FD. FD points to file on disk that has been deleted.
-  //    execveat binfmt_misc args layout: `FEXInterpreter /dev/fd/<FD> <user provided argv[0]> <user provided argv[n]>...`
+  //    execveat binfmt_misc args layout: `FEX /dev/fd/<FD> <user provided argv[0]> <user provided argv[n]>...`
 #ifndef _WIN32
   if (ExecFDInterp || ProgramFDFromEnv != -1) {
     // Only in the case that FEX is executing an FD will the program argument potentially be a symlink.

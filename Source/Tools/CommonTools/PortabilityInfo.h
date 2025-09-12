@@ -4,7 +4,7 @@
 
 namespace FEX {
 static inline std::optional<fextl::string> GetSelfPath() {
-  // Read the FEXInterpreter path from `/proc/self/exe` which is always a symlink to the absolute path of the executable running.
+  // Read the FEX path from `/proc/self/exe` which is always a symlink to the absolute path of the executable running.
   // This way we can get the parent path that the application is executing from.
   char SelfPath[PATH_MAX];
   auto Result = readlink("/proc/self/exe", SelfPath, PATH_MAX);
@@ -34,7 +34,7 @@ static inline FEX::Config::PortableInformation ReadPortabilityInformation() {
     return {false, {}};
   }
 
-  // Extract the absolute path from the FEXInterpreter path
+  // Extract the absolute path from the FEX path
   return {true, *SelfPath};
 }
 } // namespace FEX

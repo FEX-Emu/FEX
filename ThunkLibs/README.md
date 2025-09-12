@@ -15,7 +15,7 @@ ln -s $BUILDDIR/Guest/libX11-guest.so $ROOTFS/lib/x86_64-linux-gnu/libX11.so.6
 ```
 
 Finally, FEX needs to be told where to look for the matching host libraries with `-t /Host/Libs/Path`. eg
-```FEX_THUNKHOSTLIBS= $BUILDDIR/Host FEXInterpreter /PATH/TO/ELF```
+```FEX_THUNKHOSTLIBS= $BUILDDIR/Host FEX /PATH/TO/ELF```
 
 We currently don't have any unit tests for the guest libraries, only for OP_THUNK.
 

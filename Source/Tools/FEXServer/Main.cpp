@@ -96,7 +96,7 @@ void SetupSignals() {
 
   // Ignore SIGPIPE, we will be checking for pipe closure which could send this signal
   signal(SIGPIPE, SIG_IGN);
-  // Reset SIGCHLD which is likely SIG_IGN if FEXInterpreter started the server.
+  // Reset SIGCHLD which is likely SIG_IGN if FEX started the server.
   // We now wait for child processes with waitpid, newer libfuse also requires SIGCHLD to not be ignored by child processes.
   signal(SIGCHLD, SIG_DFL);
 }
@@ -205,7 +205,7 @@ int main(int argc, char** argv, char** const envp) {
 
   if (Options.Foreground) {
     // Only start a log thread if we are in the foreground.
-    // Prevents FEXInterpreter from trying to log to nothing.
+    // Prevents FEX from trying to log to nothing.
     Logger::StartLogThread();
   }
 
@@ -215,7 +215,7 @@ int main(int argc, char** argv, char** const envp) {
   }
 
   // Close the pipes we found at the start
-  // This will let FEXInterpreter know we are ready
+  // This will let FEX know we are ready
   PipeScanner::ClosePipes();
 
   ProcessPipe::SetConfiguration(Options.Foreground, Options.PersistentTimeout ?: 1);

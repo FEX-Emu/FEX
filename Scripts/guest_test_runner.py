@@ -6,7 +6,7 @@ import subprocess
 
 # Check if FEX indicates support for AVX
 def DoesFEXSupportAVX(mode):
-    fex_interpreter_path = os.path.dirname(sys.argv[7]) + "/FEXInterpreter"
+    fex_interpreter_path = os.path.dirname(sys.argv[7]) + "/FEX"
 
     args = list()
     args.append(fex_interpreter_path)

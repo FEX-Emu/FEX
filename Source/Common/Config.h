@@ -37,7 +37,7 @@ struct ApplicationNames {
 
 struct PortableInformation {
   bool IsPortable;
-  // Path of folder containing FEXInterpreter (including / at the end)
+  // Path of folder containing FEX (including / at the end)
   fextl::string InterpreterPath;
 };
 

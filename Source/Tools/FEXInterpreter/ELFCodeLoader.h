@@ -280,7 +280,7 @@ public:
 
     // If we have loaded with EXECFD then we have binfmt_misc preserve argv[0] also set
     // This adds an additional argument to our argument list that we need to ignore
-    // argv[0] = FEXInterpreter
+    // argv[0] = FEX
     // argv[1] = <Path to binary>
     // argv[2] = <original user typed path to binary>
     // If our kernel if v5.12 or higher then
