@@ -77,7 +77,8 @@ struct OpHandlers<IR::OP_F80CVTTO> {
   FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle8(uint16_t FCW, double src, FEXCore::Core::CpuStateFrame* Frame) {
     FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     ScopedSoftFloatState State {FCW, Frame};
-    return X80SoftFloat(&State.State, src);
+    // Use NaN-preserving conversion to maintain signaling NaN properties during round-trip
+    return X80SoftFloat::FromF64_PreserveNaN(&State.State, src);
   }
 };
 
