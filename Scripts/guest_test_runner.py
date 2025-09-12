@@ -10,11 +10,6 @@ def DoesFEXSupportAVX(mode):
 
     args = list()
     args.append(fex_interpreter_path)
-    if (mode == "guest"):
-        ROOTFS_ENV = os.getenv("ROOTFS")
-        if ROOTFS_ENV != None:
-            args.append("-R")
-            args.append(ROOTFS_ENV)
     args.append('/bin/cat')
     args.append('/proc/cpuinfo')
 
@@ -109,12 +104,6 @@ flake_tests = LoadTestsFile(flake_tests_file)
 RunnerArgs = []
 
 RunnerArgs.append(fexecutable)
-
-if (mode == "guest"):
-    ROOTFS_ENV = os.getenv("ROOTFS")
-    if ROOTFS_ENV != None:
-        RunnerArgs.append("-R")
-        RunnerArgs.append(ROOTFS_ENV)
 
 # Add the rest of the arguments
 for i in range(len(sys.argv) - StartingFEXArgsOffset):

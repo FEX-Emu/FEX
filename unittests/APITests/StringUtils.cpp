@@ -5,78 +5,78 @@ using namespace FEXCore::StringUtils;
 
 TEST_CASE("ltrim") {
   CHECK(LeftTrim("") == "");
-  CHECK(LeftTrim("FEXLoader") == "FEXLoader");
+  CHECK(LeftTrim("FEXInterpreter") == "FEXInterpreter");
 
-  CHECK(LeftTrim("FEXLoader\n") == "FEXLoader\n");
-  CHECK(LeftTrim("FEXLoader\r") == "FEXLoader\r");
-  CHECK(LeftTrim("FEXLoader\f") == "FEXLoader\f");
-  CHECK(LeftTrim("FEXLoader\t") == "FEXLoader\t");
-  CHECK(LeftTrim("FEXLoader\v") == "FEXLoader\v");
-  CHECK(LeftTrim("FEXLoader ") == "FEXLoader ");
+  CHECK(LeftTrim("FEXInterpreter\n") == "FEXInterpreter\n");
+  CHECK(LeftTrim("FEXInterpreter\r") == "FEXInterpreter\r");
+  CHECK(LeftTrim("FEXInterpreter\f") == "FEXInterpreter\f");
+  CHECK(LeftTrim("FEXInterpreter\t") == "FEXInterpreter\t");
+  CHECK(LeftTrim("FEXInterpreter\v") == "FEXInterpreter\v");
+  CHECK(LeftTrim("FEXInterpreter ") == "FEXInterpreter ");
 
-  CHECK(LeftTrim("\nFEXLoader") == "FEXLoader");
-  CHECK(LeftTrim("\rFEXLoader") == "FEXLoader");
-  CHECK(LeftTrim("\fFEXLoader") == "FEXLoader");
-  CHECK(LeftTrim("\tFEXLoader") == "FEXLoader");
-  CHECK(LeftTrim("\vFEXLoader") == "FEXLoader");
-  CHECK(LeftTrim(" FEXLoader") == "FEXLoader");
+  CHECK(LeftTrim("\nFEXInterpreter") == "FEXInterpreter");
+  CHECK(LeftTrim("\rFEXInterpreter") == "FEXInterpreter");
+  CHECK(LeftTrim("\fFEXInterpreter") == "FEXInterpreter");
+  CHECK(LeftTrim("\tFEXInterpreter") == "FEXInterpreter");
+  CHECK(LeftTrim("\vFEXInterpreter") == "FEXInterpreter");
+  CHECK(LeftTrim(" FEXInterpreter") == "FEXInterpreter");
 
-  CHECK(LeftTrim("\nFEXLoader\n") == "FEXLoader\n");
-  CHECK(LeftTrim("\rFEXLoader\r") == "FEXLoader\r");
-  CHECK(LeftTrim("\fFEXLoader\f") == "FEXLoader\f");
-  CHECK(LeftTrim("\tFEXLoader\t") == "FEXLoader\t");
-  CHECK(LeftTrim("\vFEXLoader\v") == "FEXLoader\v");
-  CHECK(LeftTrim(" FEXLoader ") == "FEXLoader ");
+  CHECK(LeftTrim("\nFEXInterpreter\n") == "FEXInterpreter\n");
+  CHECK(LeftTrim("\rFEXInterpreter\r") == "FEXInterpreter\r");
+  CHECK(LeftTrim("\fFEXInterpreter\f") == "FEXInterpreter\f");
+  CHECK(LeftTrim("\tFEXInterpreter\t") == "FEXInterpreter\t");
+  CHECK(LeftTrim("\vFEXInterpreter\v") == "FEXInterpreter\v");
+  CHECK(LeftTrim(" FEXInterpreter ") == "FEXInterpreter ");
 }
 
 TEST_CASE("rtrim") {
   CHECK(RightTrim("") == "");
-  CHECK(RightTrim("FEXLoader") == "FEXLoader");
+  CHECK(RightTrim("FEXInterpreter") == "FEXInterpreter");
 
-  CHECK(RightTrim("FEXLoader\n") == "FEXLoader");
-  CHECK(RightTrim("FEXLoader\r") == "FEXLoader");
-  CHECK(RightTrim("FEXLoader\f") == "FEXLoader");
-  CHECK(RightTrim("FEXLoader\t") == "FEXLoader");
-  CHECK(RightTrim("FEXLoader\v") == "FEXLoader");
-  CHECK(RightTrim("FEXLoader ") == "FEXLoader");
+  CHECK(RightTrim("FEXInterpreter\n") == "FEXInterpreter");
+  CHECK(RightTrim("FEXInterpreter\r") == "FEXInterpreter");
+  CHECK(RightTrim("FEXInterpreter\f") == "FEXInterpreter");
+  CHECK(RightTrim("FEXInterpreter\t") == "FEXInterpreter");
+  CHECK(RightTrim("FEXInterpreter\v") == "FEXInterpreter");
+  CHECK(RightTrim("FEXInterpreter ") == "FEXInterpreter");
 
-  CHECK(RightTrim("\nFEXLoader") == "\nFEXLoader");
-  CHECK(RightTrim("\rFEXLoader") == "\rFEXLoader");
-  CHECK(RightTrim("\fFEXLoader") == "\fFEXLoader");
-  CHECK(RightTrim("\tFEXLoader") == "\tFEXLoader");
-  CHECK(RightTrim("\vFEXLoader") == "\vFEXLoader");
-  CHECK(RightTrim(" FEXLoader") == " FEXLoader");
+  CHECK(RightTrim("\nFEXInterpreter") == "\nFEXInterpreter");
+  CHECK(RightTrim("\rFEXInterpreter") == "\rFEXInterpreter");
+  CHECK(RightTrim("\fFEXInterpreter") == "\fFEXInterpreter");
+  CHECK(RightTrim("\tFEXInterpreter") == "\tFEXInterpreter");
+  CHECK(RightTrim("\vFEXInterpreter") == "\vFEXInterpreter");
+  CHECK(RightTrim(" FEXInterpreter") == " FEXInterpreter");
 
-  CHECK(RightTrim("\nFEXLoader\n") == "\nFEXLoader");
-  CHECK(RightTrim("\rFEXLoader\r") == "\rFEXLoader");
-  CHECK(RightTrim("\fFEXLoader\f") == "\fFEXLoader");
-  CHECK(RightTrim("\tFEXLoader\t") == "\tFEXLoader");
-  CHECK(RightTrim("\vFEXLoader\v") == "\vFEXLoader");
-  CHECK(RightTrim(" FEXLoader ") == " FEXLoader");
+  CHECK(RightTrim("\nFEXInterpreter\n") == "\nFEXInterpreter");
+  CHECK(RightTrim("\rFEXInterpreter\r") == "\rFEXInterpreter");
+  CHECK(RightTrim("\fFEXInterpreter\f") == "\fFEXInterpreter");
+  CHECK(RightTrim("\tFEXInterpreter\t") == "\tFEXInterpreter");
+  CHECK(RightTrim("\vFEXInterpreter\v") == "\vFEXInterpreter");
+  CHECK(RightTrim(" FEXInterpreter ") == " FEXInterpreter");
 }
 
 TEST_CASE("trim") {
   CHECK(Trim("") == "");
-  CHECK(Trim("FEXLoader") == "FEXLoader");
+  CHECK(Trim("FEXInterpreter") == "FEXInterpreter");
 
-  CHECK(Trim("FEXLoader\n") == "FEXLoader");
-  CHECK(Trim("FEXLoader\r") == "FEXLoader");
-  CHECK(Trim("FEXLoader\f") == "FEXLoader");
-  CHECK(Trim("FEXLoader\t") == "FEXLoader");
-  CHECK(Trim("FEXLoader\v") == "FEXLoader");
-  CHECK(Trim("FEXLoader ") == "FEXLoader");
+  CHECK(Trim("FEXInterpreter\n") == "FEXInterpreter");
+  CHECK(Trim("FEXInterpreter\r") == "FEXInterpreter");
+  CHECK(Trim("FEXInterpreter\f") == "FEXInterpreter");
+  CHECK(Trim("FEXInterpreter\t") == "FEXInterpreter");
+  CHECK(Trim("FEXInterpreter\v") == "FEXInterpreter");
+  CHECK(Trim("FEXInterpreter ") == "FEXInterpreter");
 
-  CHECK(Trim("\nFEXLoader") == "FEXLoader");
-  CHECK(Trim("\rFEXLoader") == "FEXLoader");
-  CHECK(Trim("\fFEXLoader") == "FEXLoader");
-  CHECK(Trim("\tFEXLoader") == "FEXLoader");
-  CHECK(Trim("\vFEXLoader") == "FEXLoader");
-  CHECK(Trim(" FEXLoader") == "FEXLoader");
+  CHECK(Trim("\nFEXInterpreter") == "FEXInterpreter");
+  CHECK(Trim("\rFEXInterpreter") == "FEXInterpreter");
+  CHECK(Trim("\fFEXInterpreter") == "FEXInterpreter");
+  CHECK(Trim("\tFEXInterpreter") == "FEXInterpreter");
+  CHECK(Trim("\vFEXInterpreter") == "FEXInterpreter");
+  CHECK(Trim(" FEXInterpreter") == "FEXInterpreter");
 
-  CHECK(Trim("\nFEXLoader\n") == "FEXLoader");
-  CHECK(Trim("\rFEXLoader\r") == "FEXLoader");
-  CHECK(Trim("\fFEXLoader\f") == "FEXLoader");
-  CHECK(Trim("\tFEXLoader\t") == "FEXLoader");
-  CHECK(Trim("\vFEXLoader\v") == "FEXLoader");
-  CHECK(Trim(" FEXLoader ") == "FEXLoader");
+  CHECK(Trim("\nFEXInterpreter\n") == "FEXInterpreter");
+  CHECK(Trim("\rFEXInterpreter\r") == "FEXInterpreter");
+  CHECK(Trim("\fFEXInterpreter\f") == "FEXInterpreter");
+  CHECK(Trim("\tFEXInterpreter\t") == "FEXInterpreter");
+  CHECK(Trim("\vFEXInterpreter\v") == "FEXInterpreter");
+  CHECK(Trim(" FEXInterpreter ") == "FEXInterpreter");
 }

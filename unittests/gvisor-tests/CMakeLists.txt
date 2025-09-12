@@ -17,13 +17,13 @@ foreach(TEST ${TESTS})
     "${CMAKE_CURRENT_SOURCE_DIR}/Flake_Tests"
     "${TEST_NAME}"
     "guest"
-    "${CMAKE_BINARY_DIR}/Bin/FEXLoader"
-    "-o" "stderr" "--no-silentlog" "-n" "500" "--"
+    "${CMAKE_BINARY_DIR}/Bin/FEXInterpreter"
     "${TEST}")
   set_property(TEST "${TEST_NAME}.jit.gvisor" APPEND PROPERTY SKIP_RETURN_CODE 125)
+  set_property(TEST "${TEST_NAME}.jit.gvisor" APPEND PROPERTY ENVIRONMENT "FEX_OUTPUTLOG=stderr;FEX_SILENTLOG=0;FEX_MAXINST=500")
 endforeach()
 
-set(RM_DIR_COMMAND "rm $ENV{ROOTFS}/tmp 2> /dev/null || true")
+set(RM_DIR_COMMAND "rm $ENV{FEX_ROOTFS}/tmp 2> /dev/null || true")
 
 add_custom_target(
   gvisor_tests

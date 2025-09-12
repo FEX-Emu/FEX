@@ -38,14 +38,11 @@ function(AddTests Tests BinDirectory Bitness)
     set(BIN_PATH "${CMAKE_CURRENT_BINARY_DIR}/${BinDirectory}/${TEST_NAME}.${Bitness}")
     set(TEST_CASE "${TEST_NAME}.${Bitness}")
 
-    set(THUNK_ARGS "")
     if(TEST_NAME STREQUAL "thunk_testlib")
       # Test thunking only if thunks are enabled and supported
       if(NOT BUILD_THUNKS OR ENABLE_GLIBC_ALLOCATOR_HOOK_FAULT)
         continue()
       endif()
-
-      set(THUNK_ARGS "-k" "${CMAKE_SOURCE_DIR}/Data/CI/FEXLinuxTestsThunks.json")
     endif()
 
     # Add jit test case
@@ -57,10 +54,14 @@ function(AddTests Tests BinDirectory Bitness)
       "${CMAKE_CURRENT_SOURCE_DIR}/Flake_Tests"
       "${TEST_CASE}"
       "guest"
-      "$<TARGET_FILE:FEXLoader>"
-      ${THUNK_ARGS}
-      "-o" "stderr" "--no-silentlog" "-n" "500" "--"
+      "$<TARGET_FILE:FEXInterpreter>"
       "${BIN_PATH}")
+
+    set_property(TEST "${TEST_CASE}.jit.flt" APPEND PROPERTY ENVIRONMENT "FEX_OUTPUTLOG=stderr;FEX_SILENTLOG=0;FEX_MAXINST=500")
+
+    if(TEST_NAME STREQUAL "thunk_testlib")
+      set_property(TEST "${TEST_CASE}.jit.flt" APPEND PROPERTY ENVIRONMENT "FEX_THUNKCONFIG=${CMAKE_SOURCE_DIR}/Data/CI/FEXLinuxTestsThunks.json")
+    endif()
 
     if (_M_X86_64 AND NOT TEST_NAME STREQUAL "thunk_testlib")
       # Add host test case
@@ -89,8 +90,8 @@ AddTests("${TESTS_32_ONLY}" "FEXLinuxTests_32" 32)
 
 if(TEST thunk_testlib.64.jit.flt)
   # Ensure libfex_thunk_test is found even when using an uncommon install prefix
-  set_property(TEST "thunk_testlib.32.jit.flt" PROPERTY ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/lib")
-  set_property(TEST "thunk_testlib.64.jit.flt" PROPERTY ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/lib")
+  set_property(TEST "thunk_testlib.32.jit.flt" APPEND PROPERTY ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/lib")
+  set_property(TEST "thunk_testlib.64.jit.flt" APPEND PROPERTY ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/lib")
 endif()
 
 # Only emulated
@@ -99,7 +100,7 @@ add_custom_target(
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   COMMAND "ctest" "--output-on-failure" "--timeout" "30" ${TEST_JOB_FLAG} "-R" "\.*\.jit\.flt$$"
-  DEPENDS FEXLinuxTests FEXLinuxTests_32 FEXLoader
+  DEPENDS FEXLinuxTests FEXLinuxTests_32 FEXInterpreter
   )
 
 # Only host
@@ -117,5 +118,5 @@ add_custom_target(
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   USES_TERMINAL
   COMMAND "ctest" "--output-on-failure" "--timeout" "30" ${TEST_JOB_FLAG} "-R" "\.*\.flt$$"
-  DEPENDS FEXLinuxTests FEXLinuxTests_32 FEXLoader
+  DEPENDS FEXLinuxTests FEXLinuxTests_32 FEXInterpreter
   )
