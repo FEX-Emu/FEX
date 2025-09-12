@@ -125,6 +125,7 @@ private:
   static constexpr size_t MAX_INST_SIZE = 15;
   uint8_t InstructionSize {};
   std::array<uint8_t, MAX_INST_SIZE> Instruction;
+  uint8_t LastEscapePrefix {};
   FEXCore::X86Tables::DecodedInst* DecodeInst;
 
   // This is for multiblock data tracking

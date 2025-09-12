@@ -318,6 +318,7 @@ public:
 
   void UnhandledOp(OpcodeArgs);
   void MOVGPROp(OpcodeArgs, uint32_t SrcIndex);
+  void MOVGPRImmediate(OpcodeArgs);
   void MOVGPRNTOp(OpcodeArgs);
   void MOVVectorAlignedOp(OpcodeArgs);
   void MOVVectorUnalignedOp(OpcodeArgs);
