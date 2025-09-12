@@ -52,12 +52,10 @@ ApplicationNames GetApplicationNames(const fextl::vector<fextl::string>& Args, b
 /**
  * @brief Loads the FEX and application configurations for the application that is getting ready to run.
  *
- * @param ArgLoader Optional argument loader for argument based config options
  * @param ProgramName Optional program name, if non-empty application specific configurations will be loaded
  * @param envp Optional `envp` passed to main(...)
  */
-void LoadConfig(fextl::unique_ptr<FEX::ArgLoader::ArgLoader> ArgLoader = {}, fextl::string ProgramName = {}, char** const envp = nullptr,
-                const PortableInformation& PortableInfo = {});
+void LoadConfig(fextl::string ProgramName = {}, char** const envp = nullptr, const PortableInformation& PortableInfo = {});
 
 const char* GetHomeDirectory();
 

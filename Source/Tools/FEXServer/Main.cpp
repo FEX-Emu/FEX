@@ -135,7 +135,7 @@ int main(int argc, char** argv, char** const envp) {
     DeparentSelf();
   }
 
-  FEX::Config::LoadConfig({}, {}, envp, FEX::ReadPortabilityInformation());
+  FEX::Config::LoadConfig({}, envp, FEX::ReadPortabilityInformation());
 
   // Reload the meta layer
   FEXCore::Config::ReloadMetaLayer();

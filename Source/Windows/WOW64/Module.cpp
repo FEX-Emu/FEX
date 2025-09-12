@@ -28,7 +28,6 @@ $end_info$
 #include <FEXCore/Utils/TypeDefines.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
 
-#include "Common/ArgumentLoader.h"
 #include "Common/CallRetStack.h"
 #include "Common/Config.h"
 #include "Common/Exception.h"
@@ -510,11 +509,10 @@ public:
 void BTCpuProcessInit() {
   FEX::Windows::InitCRTProcess();
   const auto ExecutablePath = FEX::Windows::GetExecutableFilePath();
-  FEX::Config::LoadConfig(nullptr, ExecutablePath, _environ, FEX::ReadPortabilityInformation());
+  FEX::Config::LoadConfig(ExecutablePath, _environ, FEX::ReadPortabilityInformation());
   FEXCore::Config::ReloadMetaLayer();
   FEX::Windows::Logging::Init();
 
-  FEXCore::Config::Set(FEXCore::Config::CONFIG_IS_INTERPRETER, "0");
   FEXCore::Config::Set(FEXCore::Config::CONFIG_INTERPRETER_INSTALLED, "0");
   FEXCore::Config::Set(FEXCore::Config::CONFIG_IS64BIT_MODE, "0");
 

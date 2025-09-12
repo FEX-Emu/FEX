@@ -290,8 +290,8 @@ uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname
 
   // If the FEX interpreter is installed then just execve the ELF file
   // This will stay inside of our emulated environment since binfmt_misc will capture it
-  const bool IsBinfmtCompatible = SyscallHandler->IsInterpreterInstalled() && SyscallHandler->IsInterpreter() &&
-                                  (Type == ELFLoader::ELFContainer::ELFType::TYPE_X86_32 || Type == ELFLoader::ELFContainer::ELFType::TYPE_X86_64);
+  const bool IsBinfmtCompatible = SyscallHandler->IsInterpreterInstalled() && (Type == ELFLoader::ELFContainer::ELFType::TYPE_X86_32 ||
+                                                                               Type == ELFLoader::ELFContainer::ELFType::TYPE_X86_64);
 
   // We are trying to execute an ELF of a different architecture
   // We can't know if we can support this without architecture specific checks and binfmt_misc parsing
@@ -391,10 +391,6 @@ uint64_t ExecveHandler(FEXCore::Core::CpuStateFrame* Frame, const char* pathname
   // We now need to munge the arguments
   const char NullString[] = "";
   fextl::vector<const char*> ExecveArgs = SyscallHandler->GetCodeLoader()->GetExecveArguments();
-  if (!SyscallHandler->IsInterpreter()) {
-    // If we were launched from FEXLoader then we need to make sure to split arguments from FEXLoader and guest
-    ExecveArgs.emplace_back("--");
-  }
 
   if (argv) {
     // Overwrite the filename with the new one we are redirecting to

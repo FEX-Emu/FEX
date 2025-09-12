@@ -81,7 +81,7 @@ function(add_host_lib NAME GUEST_BITNESS)
   target_include_directories(${NAME}-host-${GUEST_BITNESS} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/gen_${GUEST_BITNESS}/")
   target_link_libraries(${NAME}-host-${GUEST_BITNESS} PRIVATE dl)
   target_link_libraries(${NAME}-host-${GUEST_BITNESS} PRIVATE lib${NAME}-${GUEST_BITNESS}-deps)
-  target_link_libraries(${NAME}-host-${GUEST_BITNESS} PRIVATE FEXLoader)
+  target_link_libraries(${NAME}-host-${GUEST_BITNESS} PRIVATE FEXInterpreter)
   ## Make signed overflow well defined 2's complement overflow
   target_compile_options(${NAME}-host-${GUEST_BITNESS} PRIVATE -fwrapv)
 
