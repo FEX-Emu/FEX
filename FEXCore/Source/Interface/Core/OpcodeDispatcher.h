@@ -2363,7 +2363,7 @@ private:
   void ChgStateX87_MMX() override {
     LOGMAN_THROW_A_FMT(MMXState == MMXState_X87, "Expected state to be x87");
     _StackForceSlow();
-    SetX87Top(Constant(0));                             // top reset to zero
+    SetX87Top(Constant(0)); // top reset to zero
     _StoreContext(OpSize::i8Bit, GPRClass, Constant(0xFFFFUL), offsetof(FEXCore::Core::CPUState, AbridgedFTW));
     MMXState = MMXState_MMX;
   }
