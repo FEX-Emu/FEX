@@ -19,28 +19,28 @@ int main(int argc, char** argv, char** const envp) {
   const bool EmptyArgs = ArgCount == 0;
 
   std::vector<const char*> Argv;
-  // FEXInterpreter will handle finding bash in the rootfs
+  // FEX will handle finding bash in the rootfs
   // Use /bin/sh for -c commands and /bin/bash for interactive mode
   const char* BashPath = EmptyArgs ? "/bin/bash" : "/bin/sh";
 
-  std::string FEXInterpreterPath = std::filesystem::path(argv[0]).parent_path().string() + "/FEXInterpreter";
+  std::string FEXPath = std::filesystem::path(argv[0]).parent_path().string() + "/FEX";
 
-  // Check if a local FEXInterpreter to FEXBash exists
+  // Check if a local FEX to FEXBash exists
   // If it does then it takes priority over the installed one
-  if (!std::filesystem::exists(FEXInterpreterPath)) {
+  if (!std::filesystem::exists(FEXPath)) {
     char FEXBashPath[PATH_MAX];
     auto Result = readlink("/proc/self/exe", FEXBashPath, PATH_MAX);
     if (Result != -1) {
-      FEXInterpreterPath = std::filesystem::path(&FEXBashPath[0], &FEXBashPath[Result]).parent_path().string() + "/FEXInterpreter";
+      FEXPath = std::filesystem::path(&FEXBashPath[0], &FEXBashPath[Result]).parent_path().string() + "/FEX";
     }
 
-    if (!std::filesystem::exists(FEXInterpreterPath)) {
-      fmt::print(stderr, "Could not locate FEXInterpreter executable\n");
+    if (!std::filesystem::exists(FEXPath)) {
+      fmt::print(stderr, "Could not locate FEX executable\n");
       std::abort();
     }
   }
   const char* FEXArgs[] = {
-    FEXInterpreterPath.c_str(),
+    FEXPath.c_str(),
     BashPath,
     "-c",
   };
@@ -51,7 +51,7 @@ int main(int argc, char** argv, char** const envp) {
 
   Argv.resize(ArgCount + FEXArgsCount);
 
-  // Pass in the FEXInterpreter arguments
+  // Pass in the FEX arguments
   for (size_t i = 0; i < FEXArgsCount; ++i) {
     Argv[i] = FEXArgs[i];
   }

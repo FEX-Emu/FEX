@@ -217,10 +217,7 @@ int main(int argc, char** argv) {
     }
 
     auto FindFEXArgument = [](auto& Path) -> int32_t {
-      if (Path.ends_with("FEXInterpreter")) {
-        return 1;
-      }
-      if (Path.ends_with("FEXLoader")) {
+      if (Path.ends_with("FEX")) {
         return 1;
       }
 
@@ -290,7 +287,7 @@ int main(int argc, char** argv) {
 
     bool IsWine = false;
     if (ProgramArg == -1) {
-      // If we still haven't found a FEXInterpreter path then this might be an arm64ec FEX application.
+      // If we still haven't found a FEX path then this might be an arm64ec FEX application.
       // The only way to know for sure is the walk the mapped files of the process and check if FEX is mapped.
       if (FindWineFEXApplication(pid.pid, pid.exe_link, Args)) {
         // Search from the start.

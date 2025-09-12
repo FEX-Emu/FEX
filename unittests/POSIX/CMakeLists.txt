@@ -17,7 +17,7 @@ foreach(POSIX_TEST ${POSIX_TESTS})
     "${CMAKE_CURRENT_SOURCE_DIR}/Flake_Tests"
     "${TEST_NAME}"
     "guest"
-    "${CMAKE_BINARY_DIR}/Bin/FEXInterpreter"
+    "$<TARGET_FILE:FEX>"
     "${POSIX_TEST}")
   set_property(TEST "${TEST_NAME}.jit.posix" APPEND PROPERTY SKIP_RETURN_CODE 125)
   set_property(TEST "${TEST_NAME}.jit.posix" APPEND PROPERTY ENVIRONMENT "FEX_OUTPUTLOG=stderr;FEX_SILENTLOG=0;FEX_MAXINST=500")

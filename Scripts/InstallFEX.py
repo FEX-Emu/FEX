@@ -333,7 +333,7 @@ def TryInstallRootFS():
     return DidInstall
 
 def TryBasicProgramExecution():
-    return subprocess.call(["FEXInterpreter", "/usr/bin/uname", "-a"]) == 0
+    return subprocess.call(["FEX", "/usr/bin/uname", "-a"]) == 0
 
 def ExitWithStatus(Status):
     # Remove the cached credentials
@@ -380,7 +380,7 @@ def main():
 
     print ("FEX is now installed. Trying basic program run")
     if not TryBasicProgramExecution():
-        print ("FEXInterpreter failed to run. Not continuing")
+        print ("FEX failed to run. Not continuing")
         ExitWithStatus(-1)
 
     print ("")
@@ -391,7 +391,7 @@ def main():
     print ("# steam is a bash script. Wrap with FEXBash")
     print ("\tFEXBash steam")
     print ("# Full path execution execution will wrap the application if it exists in the rootfs")
-    print ("\tFEXInterpreter /usr/bin/uname")
+    print ("\tFEX /usr/bin/uname")
     print ("# Freestanding x86/x86-64 programs can be executed directly. binfmt_misc will redirect to FEX")
     print ("\t$HOME/PetalCrashOnline.AppImage")
     print ("# If you need a terminal that emulates everything.")

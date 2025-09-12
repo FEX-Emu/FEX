@@ -977,7 +977,7 @@ uint64_t FileManager::Openat2(int dirfs, const char* pathname, FEX::HLE::open_ho
 uint64_t FileManager::Statx(int dirfd, const char* pathname, int flags, uint32_t mask, struct statx* statxbuf) {
   if (IsSelfNoFollow(pathname, flags)) {
     // If we aren't following the symlink for self then we need to return data about the symlink itself.
-    // Let's just /actually/ return FEXInterpreter symlink information in this case.
+    // Let's just /actually/ return FEX symlink information in this case.
     return FHU::Syscalls::statx(dirfd, pathname, flags, mask, statxbuf);
   }
 

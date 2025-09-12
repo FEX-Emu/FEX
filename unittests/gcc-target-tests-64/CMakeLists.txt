@@ -22,7 +22,7 @@ foreach(TEST ${TESTS})
       "${CMAKE_CURRENT_SOURCE_DIR}/Flake_Tests"
       "${TEST_NAME}"
       "guest"
-      "${CMAKE_BINARY_DIR}/Bin/FEXInterpreter"
+      "$<TARGET_FILE:FEX>"
       "${TEST}")
     set_property(TEST "${TEST_NAME}" APPEND PROPERTY SKIP_RETURN_CODE 125)
     set_property(TEST "${TEST_NAME}" APPEND PROPERTY ENVIRONMENT "FEX_OUTPUTLOG=stderr;FEX_SILENTLOG=0;FEX_MAXINST=${BLOCK_SIZE}")
