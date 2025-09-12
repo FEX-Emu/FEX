@@ -67,6 +67,14 @@ w3 %1, %2, %3
 %1 %3, [r14], %4
 %endmacro
 
+%macro r4_size 4
+; Ensures that the load doesn't read past the end.
+%1 %4, %3 [r15 - %2]
+
+; Ensures the load doesn't read before the start.
+%1 %4, %3 [r14]
+%endmacro
+
 %macro rw4 4
 r4 %1, %2, %3, %4
 w4 %1, %2, %3, %3
