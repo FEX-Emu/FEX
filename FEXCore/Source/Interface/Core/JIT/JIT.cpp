@@ -12,14 +12,13 @@ $end_info$
 */
 
 #include "Common/SoftFloat.h"
-#include "FEXCore/Utils/Telemetry.h"
-#include "FEXCore/Utils/TypeDefines.h"
+
 #include "Interface/Context/Context.h"
 #include "Interface/Core/LookupCache.h"
-
 #include "Interface/Core/Dispatcher/Dispatcher.h"
+#include "Interface/Core/Interpreter/InterpreterOps.h"
+#include "Interface/Core/JIT/DebugData.h"
 #include "Interface/Core/JIT/JITClass.h"
-
 #include "Interface/IR/Passes/RegisterAllocationPass.h"
 
 #include "Utils/MemberFunctionToPointer.h"
@@ -30,15 +29,16 @@ $end_info$
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/EnumUtils.h>
+#include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/Utils/Telemetry.h>
+#include <FEXCore/Utils/TypeDefines.h>
 #include <FEXCore/HLE/SyscallHandler.h>
 
-#include "Interface/Core/Interpreter/InterpreterOps.h"
-
-#include <stdio.h>
-#include <unistd.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 #include <limits>
+#include <unistd.h>
 
 namespace {
 struct DivRem {

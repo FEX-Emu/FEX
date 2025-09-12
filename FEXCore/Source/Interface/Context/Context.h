@@ -5,52 +5,45 @@
 #include "Interface/Core/CPUBackend.h"
 #include "Interface/Core/CPUID.h"
 #include "Interface/Core/X86HelperGen.h"
-#include "Interface/Core/Dispatcher/Dispatcher.h"
-#include <Interface/Core/JIT/DebugData.h>
 #include <Interface/IR/IntrusiveIRList.h>
 #include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/Context.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Core/HostFeatures.h>
-#include <FEXCore/Core/SignalDelegator.h>
-#include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/IR/IR.h>
 #include <FEXCore/Utils/CompilerDefs.h>
-#include <FEXCore/Utils/Event.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/set.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/unordered_map.h>
 #include <FEXCore/fextl/vector.h>
-#include <FEXHeaderUtils/Syscalls.h>
-#include <stdint.h>
 
 #include <atomic>
+#include <cstddef>
+#include <cstdint>
 #include <mutex>
+#include <optional>
 #include <shared_mutex>
 
 namespace FEXCore {
-class CodeLoader;
+class SignalDelegator;
 class ThunkHandler;
 
+namespace Core {
+  struct DebugData;
+  struct InternalThreadState;
+} // namespace Core
+
 namespace CPU {
-  class Arm64JITCore;
   class Dispatcher;
 } // namespace CPU
+
 namespace HLE {
-  struct SyscallArguments;
-  class SyscallHandler;
   class SourcecodeResolver;
-  struct SourcecodeMap;
+  class SyscallHandler;
 } // namespace HLE
 } // namespace FEXCore
-
-namespace FEXCore::IR {
-namespace Validation {
-  class IRValidation;
-}
-} // namespace FEXCore::IR
 
 namespace FEXCore::Context {
 struct FEX_PACKED ExitFunctionLinkData {
@@ -190,13 +183,6 @@ public:
   void MarkMonoBackpatcherBlock(uint64_t BlockEntry) override;
 
 public:
-  friend class FEXCore::HLE::SyscallHandler;
-#ifdef JIT_ARM64
-  friend class FEXCore::CPU::Arm64JITCore;
-#endif
-
-  friend class FEXCore::IR::Validation::IRValidation;
-
   struct {
     uint64_t VirtualMemSize {1ULL << 36};
     uint64_t TSCScale = 0;
