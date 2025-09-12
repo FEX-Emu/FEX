@@ -144,6 +144,9 @@ struct DecodedOperand {
   }
   uint64_t Literal() const {
     LOGMAN_THROW_A_FMT(IsLiteral(), "Precondition: must be a literal");
+    if (Data.Literal.SignExtend) {
+      return static_cast<int64_t>(static_cast<int32_t>(Data.Literal.Value));
+    }
     return Data.Literal.Value;
   }
 
@@ -167,8 +170,9 @@ struct DecodedOperand {
     } RIPLiteral;
 
     struct LiteralType {
-      uint64_t Value;
-      uint8_t Size;
+      uint32_t Value;
+      uint8_t Size : 7 ;
+      bool SignExtend : 1;
       auto operator<=>(const LiteralType&) const = default;
     } Literal;
 

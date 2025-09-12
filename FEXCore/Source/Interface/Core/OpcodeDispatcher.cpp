@@ -789,7 +789,7 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
       StartNewBlock();
 
       // Store the new RIP
-      ExitRelocatedPC(Op, Op->Src[0].Data.Literal.Value);
+      ExitRelocatedPC(Op, Op->Src[0].Literal());
     }
 
     // Failure to take branch
@@ -858,7 +858,7 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
       StartNewBlock();
 
       // Store the new RIP
-      ExitRelocatedPC(Op, Op->Src[1].Data.Literal.Value);
+      ExitRelocatedPC(Op, Op->Src[1].Literal());
     }
 
     // Failure to take branch
@@ -1342,25 +1342,55 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs, bool ToSeg) {
 }
 
 void OpDispatchBuilder::MOVOffsetOp(OpcodeArgs) {
-  Ref Src;
 
+  auto GenMemSrcFromOp = [&](size_t StartingSource) -> AddressMode {
+    const uint64_t Lower = Op->Src[StartingSource].Literal();
+    const uint64_t Upper = Op->Src[StartingSource + 1].Literal();
+    const uint64_t Combined = (Upper << 32) | Lower;
+    const auto GPRSize = GetGPROpSize();
+
+    AddressMode A {
+      .Segment = GetSegment(Op->Flags),
+      .Offset = static_cast<int64_t>(Combined),
+      .AddrSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) != 0 ? (GPRSize >> 1) : GPRSize,
+      .NonTSO = false,
+    };
+
+    return A;
+  };
   switch (Op->OP) {
   case 0xA0:
-  case 0xA1:
+  case 0xA1: {
     // Source is memory(literal)
     // Dest is GPR
-    Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.ForceLoad = true});
+    Ref Src {};
+    if (Op->Src[0].Data.Literal.Size <= 4) {
+      Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.ForceLoad = true});
+    } else {
+      const auto OpSize = OpSizeFromSrc(Op);
+      auto A = GenMemSrcFromOp(0);
+      Src = _LoadMemAutoTSO(GPRClass, OpSize, A, OpSize::i8Bit);
+    }
     StoreResult(GPRClass, Op, Op->Dest, Src, OpSize::iInvalid);
     break;
+  }
   case 0xA2:
-  case 0xA3:
+  case 0xA3: {
     // Source is GPR
     // Dest is memory(literal)
-    Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+    Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.AllowUpperGarbage = true});
+
     // This one is a bit special since the destination is a literal
     // So the destination gets stored in Src[1]
-    StoreResult(GPRClass, Op, Op->Src[1], Src, OpSize::iInvalid);
+    if (Op->Src[1].Data.Literal.Size <= 4) {
+      StoreResult(GPRClass, Op, Op->Src[1], Src, OpSize::iInvalid);
+    } else {
+      const auto OpSize = OpSizeFromSrc(Op);
+      auto A = GenMemSrcFromOp(1);
+      _StoreMemAutoTSO(GPRClass, OpSize, A, Src, OpSize::i8Bit);
+    }
     break;
+  }
   }
 }
 
@@ -2400,7 +2430,7 @@ void OpDispatchBuilder::BTOp(OpcodeArgs, uint32_t SrcIndex, BTAction Action) {
   } else {
     // Can only be an immediate
     // Masked by operand size
-    Src = ARef(Op->Src[SrcIndex].Data.Literal.Value & Mask);
+    Src = ARef(Op->Src[SrcIndex].Literal() & Mask);
   }
 
   if (Op->Dest.IsGPR()) {
@@ -2901,7 +2931,7 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
 
 void OpDispatchBuilder::AAMOp(OpcodeArgs) {
   auto AL = LoadGPRRegister(X86State::REG_RAX, OpSize::i8Bit);
-  auto Imm8 = Constant(Op->Src[0].Data.Literal.Value & 0xFF);
+  auto Imm8 = Constant(Op->Src[0].Literal() & 0xFF);
   Ref Quotient = _AllocateGPR(true);
   Ref Remainder = _AllocateGPR(true);
   _UDiv(OpSize::i64Bit, AL, Invalid(), Imm8, Quotient, Remainder);
@@ -2916,7 +2946,7 @@ void OpDispatchBuilder::AAMOp(OpcodeArgs) {
 void OpDispatchBuilder::AADOp(OpcodeArgs) {
   auto A = LoadGPRRegister(X86State::REG_RAX);
   auto AH = _Lshr(OpSize::i32Bit, A, Constant(8));
-  auto Imm8 = Constant(Op->Src[0].Data.Literal.Value & 0xFF);
+  auto Imm8 = Constant(Op->Src[0].Literal() & 0xFF);
   auto NewAL = Add(OpSize::i64Bit, A, _Mul(OpSize::i64Bit, AH, Imm8));
   auto Result = _And(OpSize::i64Bit, NewAL, Constant(0xFF));
   StoreGPRRegister(X86State::REG_RAX, Result, OpSize::i16Bit);
@@ -4447,6 +4477,20 @@ void OpDispatchBuilder::MOVGPROp(OpcodeArgs, uint32_t SrcIndex) {
   StoreResult(GPRClass, Op, Src, OpSize::i8Bit);
 }
 
+void OpDispatchBuilder::MOVGPRImmediate(OpcodeArgs) {
+  Ref Src {};
+  if (Op->Src[0].Data.Literal.Size <= 4) {
+    Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.Align = OpSize::i8Bit, .AllowUpperGarbage = true});
+  } else {
+    // 8-byte literal is special cased.
+    const uint64_t Lower = Op->Src[0].Literal();
+    const uint64_t Upper = Op->Src[1].Literal();
+    const uint64_t Combined = (Upper << 32) | Lower;
+    Src = _Constant(Combined);
+  }
+  StoreResult(GPRClass, Op, Src, OpSize::i8Bit);
+}
+
 void OpDispatchBuilder::MOVGPRNTOp(OpcodeArgs) {
   Ref Src = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.Align = OpSize::i8Bit});
   StoreResult(GPRClass, Op, Src, OpSize::i8Bit, MemoryAccessType::STREAM);
@@ -4568,7 +4612,7 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
 
   switch (Op->OP) {
   case 0xCD: { // INT imm8
-    uint8_t Literal = Op->Src[0].Data.Literal.Value;
+    uint8_t Literal = Op->Src[0].Literal();
 
 #ifndef _WIN32
     constexpr uint8_t SYSCALL_LITERAL = 0x80;
