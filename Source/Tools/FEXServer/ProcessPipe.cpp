@@ -308,7 +308,7 @@ void HandleSocketData(fasio::tcp_socket& Socket) {
         ++NumFilesOpened;
         CheckRaiseFDLimit();
       } else {
-        // Log thread isn't running. Let FEXInterpreter know it can't have one.
+        // Log thread isn't running. Let FEX know it can't have one.
         SendEmptyErrorPacket(Socket);
       }
 
