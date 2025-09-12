@@ -11,8 +11,6 @@ namespace FEX::HLE {
 class SyscallHandler;
 }
 
-#include <span>
-
 namespace FEX::VDSO {
 struct VDSOMapping {
   void* VDSOBase {};
