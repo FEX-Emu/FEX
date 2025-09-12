@@ -7,12 +7,12 @@ endif()
 
 function(GenerateInterpreter NAME AsInterpreter)
   add_executable(${NAME}
-    FEXLoader.cpp
+    FEXInterpreter.cpp
     AOT/AOTGenerator.cpp)
 
   target_compile_definitions(${NAME} PRIVATE ${DEFINES})
 
-  # Enable FEX APIs to be used by targets that use target_link_libraries on FEXLoader
+  # Enable FEX APIs to be used by targets that use target_link_libraries on FEXInterpreter
   set_target_properties(${NAME} PROPERTIES
     ENABLE_EXPORTS 1
     C_VISIBILITY_PRESET hidden
