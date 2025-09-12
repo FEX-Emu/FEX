@@ -17,7 +17,6 @@ $end_info$
 #include "LinuxSyscalls/SignalDelegator.h"
 #endif
 
-#include "Common/ArgumentLoader.h"
 #include "Common/HostFeatures.h"
 #include "HarnessHelpers.h"
 #include "TestHarnessRunner/HostRunner.h"
@@ -198,20 +197,16 @@ int main(int argc, char** argv, char** const envp) {
 
   FEX::Config::InitializeConfigs(FEX::Config::PortableInformation {});
   FEXCore::Config::Initialize();
-  auto ArgsLoader = fextl::make_unique<FEX::ArgLoader::ArgLoader>(FEX::ArgLoader::ArgLoader::LoadType::WITH_FEXLOADER_PARSER, argc, argv);
-  auto Args = ArgsLoader->Get();
-  FEXCore::Config::AddLayer(std::move(ArgsLoader));
   FEXCore::Config::AddLayer(FEX::Config::CreateEnvironmentLayer(envp));
   FEXCore::Config::Load();
 
-
-  if (Args.size() < 2) {
+  if (argc < 3) {
     LogMan::Msg::EFmt("Not enough arguments");
     return -1;
   }
 
-  auto Filename = Args[0];
-  auto ConfigFile = Args[1];
+  auto Filename = argv[1];
+  auto ConfigFile = argv[2];
 
   if (!FHU::Filesystem::Exists(Filename)) {
     LogMan::Msg::EFmt("File {} does not exist", Filename);
