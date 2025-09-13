@@ -61,6 +61,7 @@ TEST_CASE("futimesat - valid - null") {
 
   // Remove the nanoseconds to ensure consistent time setting.
   time.tv_nsec = 0;
+  sleep(1);
 
   // Sets the time to "Now".
   REQUIRE(compat_futimesat(fd, nullptr, nullptr) == 0);
