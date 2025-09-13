@@ -74,6 +74,105 @@ namespace V4l2 {
       SYSCALL_ERRNO();
       break;
     }
+    case _IOC_NR(FEX_VIDIOC_QUERYBUF): {
+      auto format = reinterpret_cast<fex_v4l2_buffer*>(args);
+      v4l2_buffer Host_format = *format;
+
+      uint64_t Result = ::ioctl(fd, VIDIOC_QUERYBUF, &Host_format);
+      if (Result != -1) {
+        *format = Host_format;
+      }
+      SYSCALL_ERRNO();
+      break;
+    }
+    case _IOC_NR(FEX_VIDIOC_G_FBUF): {
+      auto format = reinterpret_cast<fex_v4l2_framebuffer*>(args);
+      v4l2_framebuffer Host_format = *format;
+
+      uint64_t Result = ::ioctl(fd, VIDIOC_G_FBUF, &Host_format);
+      if (Result != -1) {
+        *format = Host_format;
+      }
+      SYSCALL_ERRNO();
+      break;
+    }
+    case _IOC_NR(FEX_VIDIOC_S_FBUF): {
+      auto format = reinterpret_cast<fex_v4l2_framebuffer*>(args);
+      v4l2_framebuffer Host_format = *format;
+
+      uint64_t Result = ::ioctl(fd, VIDIOC_S_FBUF, &Host_format);
+      if (Result != -1) {
+        *format = Host_format;
+      }
+      SYSCALL_ERRNO();
+      break;
+    }
+    case _IOC_NR(FEX_VIDIOC_QBUF): {
+      auto format = reinterpret_cast<fex_v4l2_buffer*>(args);
+      v4l2_buffer Host_format = *format;
+
+      uint64_t Result = ::ioctl(fd, VIDIOC_QBUF, &Host_format);
+      if (Result != -1) {
+        *format = Host_format;
+      }
+      SYSCALL_ERRNO();
+      break;
+    }
+    case _IOC_NR(FEX_VIDIOC_DQBUF): {
+      auto format = reinterpret_cast<fex_v4l2_buffer*>(args);
+      v4l2_buffer Host_format = *format;
+
+      uint64_t Result = ::ioctl(fd, VIDIOC_DQBUF, &Host_format);
+      if (Result != -1) {
+        *format = Host_format;
+      }
+      SYSCALL_ERRNO();
+      break;
+    }
+    case _IOC_NR(FEX_VIDIOC_ENUMSTD): {
+      auto format = reinterpret_cast<fex_v4l2_standard*>(args);
+      v4l2_standard Host_format = *format;
+
+      uint64_t Result = ::ioctl(fd, VIDIOC_ENUMSTD, &Host_format);
+      if (Result != -1) {
+        *format = Host_format;
+      }
+      SYSCALL_ERRNO();
+      break;
+    }
+    case _IOC_NR(FEX_VIDIOC_ENUMINPUT): {
+      auto format = reinterpret_cast<fex_v4l2_input*>(args);
+      v4l2_input Host_format = *format;
+
+      uint64_t Result = ::ioctl(fd, VIDIOC_ENUMINPUT, &Host_format);
+      if (Result != -1) {
+        *format = Host_format;
+      }
+      SYSCALL_ERRNO();
+      break;
+    }
+    case _IOC_NR(FEX_VIDIOC_G_EDID): {
+      auto format = reinterpret_cast<fex_v4l2_edid*>(args);
+      v4l2_edid Host_format = *format;
+
+      uint64_t Result = ::ioctl(fd, VIDIOC_G_EDID, &Host_format);
+      if (Result != -1) {
+        *format = Host_format;
+      }
+      SYSCALL_ERRNO();
+      break;
+    }
+    case _IOC_NR(FEX_VIDIOC_S_EDID): {
+      auto format = reinterpret_cast<fex_v4l2_edid*>(args);
+      v4l2_edid Host_format = *format;
+
+      uint64_t Result = ::ioctl(fd, VIDIOC_S_EDID, &Host_format);
+      if (Result != -1) {
+        *format = Host_format;
+      }
+      SYSCALL_ERRNO();
+      break;
+    }
     case _IOC_NR(FEX_VIDIOC_TRY_FMT): {
       fex_v4l2_format* format = reinterpret_cast<fex_v4l2_format*>(args);
       v4l2_format Host_format = *format;
@@ -82,6 +181,72 @@ namespace V4l2 {
         SYSCALL_ERRNO();
       }
       uint64_t Result = ::ioctl(fd, VIDIOC_TRY_FMT, &Host_format);
+      if (Result != -1) {
+        *format = Host_format;
+      }
+      SYSCALL_ERRNO();
+      break;
+    }
+    case _IOC_NR(FEX_VIDIOC_G_EXT_CTRLS): {
+      auto format = reinterpret_cast<fex_v4l2_ext_controls*>(args);
+      v4l2_ext_controls Host_format = *format;
+
+      uint64_t Result = ::ioctl(fd, VIDIOC_G_EXT_CTRLS, &Host_format);
+      if (Result != -1) {
+        *format = Host_format;
+      }
+      SYSCALL_ERRNO();
+      break;
+    }
+    case _IOC_NR(FEX_VIDIOC_S_EXT_CTRLS): {
+      auto format = reinterpret_cast<fex_v4l2_ext_controls*>(args);
+      v4l2_ext_controls Host_format = *format;
+
+      uint64_t Result = ::ioctl(fd, VIDIOC_S_EXT_CTRLS, &Host_format);
+      if (Result != -1) {
+        *format = Host_format;
+      }
+      SYSCALL_ERRNO();
+      break;
+    }
+    case _IOC_NR(FEX_VIDIOC_TRY_EXT_CTRLS): {
+      auto format = reinterpret_cast<fex_v4l2_ext_controls*>(args);
+      v4l2_ext_controls Host_format = *format;
+
+      uint64_t Result = ::ioctl(fd, VIDIOC_TRY_EXT_CTRLS, &Host_format);
+      if (Result != -1) {
+        *format = Host_format;
+      }
+      SYSCALL_ERRNO();
+      break;
+    }
+    case _IOC_NR(FEX_VIDIOC_DQEVENT): {
+      auto format = reinterpret_cast<fex_v4l2_event*>(args);
+      v4l2_event Host_format = *format;
+
+      uint64_t Result = ::ioctl(fd, VIDIOC_DQEVENT, &Host_format);
+      if (Result != -1) {
+        *format = Host_format;
+      }
+      SYSCALL_ERRNO();
+      break;
+    }
+    case _IOC_NR(FEX_VIDIOC_CREATE_BUFS): {
+      auto format = reinterpret_cast<fex_v4l2_create_buffers*>(args);
+      upstream_v4l2_create_buffers Host_format = *format;
+
+      uint64_t Result = ::ioctl(fd, VIDIOC_CREATE_BUFS, &Host_format);
+      if (Result != -1) {
+        *format = Host_format;
+      }
+      SYSCALL_ERRNO();
+      break;
+    }
+    case _IOC_NR(FEX_VIDIOC_PREPARE_BUF): {
+      auto format = reinterpret_cast<fex_v4l2_buffer*>(args);
+      v4l2_buffer Host_format = *format;
+
+      uint64_t Result = ::ioctl(fd, VIDIOC_PREPARE_BUF, &Host_format);
       if (Result != -1) {
         *format = Host_format;
       }
