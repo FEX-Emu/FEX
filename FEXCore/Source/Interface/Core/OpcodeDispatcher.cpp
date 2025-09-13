@@ -1285,10 +1285,7 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs, bool ToSeg) {
         DecodeFailure = true;
       }
       break;
-    default:
-      LogMan::Msg::EFmt("Unknown segment register: {}", Op->Dest.Data.GPR.GPR);
-      DecodeFailure = true;
-      break;
+    default: UnimplementedOp(Op); return;
     }
   } else {
     Ref Segment {};
@@ -1326,10 +1323,7 @@ void OpDispatchBuilder::MOVSegOp(OpcodeArgs, bool ToSeg) {
         Segment = _LoadContext(OpSize::i16Bit, GPRClass, offsetof(FEXCore::Core::CPUState, fs_idx));
       }
       break;
-    default:
-      LogMan::Msg::EFmt("Unknown segment register: {}", Op->Dest.Data.GPR.GPR);
-      DecodeFailure = true;
-      return;
+    default: UnimplementedOp(Op); return;
     }
     if (DestIsMem(Op)) {
       // If the destination is memory then we always store 16-bits only
