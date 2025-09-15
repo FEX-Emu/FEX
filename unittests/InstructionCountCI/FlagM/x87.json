@@ -4746,12 +4746,15 @@
       ]
     },
     "fnclex": {
-      "ExpectedInstructionCount": 1,
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "0xdb 11b 0xe2 /4"
       ],
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1008]"
+        "strb wzr, [x28, #1008]",
+        "mrs x20, S3_3_c4_c4_1",
+        "and x20, x20, #0xfffffffffffffffe",
+        "msr S3_3_c4_c4_1, x20"
       ]
     },
     "fninit": {

@@ -18,7 +18,7 @@
   },
   "Instructions": {
     "fstp dword [ebx*4+0x204a20]": {
-      "ExpectedInstructionCount": 16,
+      "ExpectedInstructionCount": 19,
       "ExpectedArm64ASM": [
         "mov w20, #0x4a20",
         "movk w20, #0x20, lsl #16",
@@ -26,6 +26,9 @@
         "ldrb w21, [x28, #1019]",
         "add x22, x28, x21, lsl #4",
         "ldr d2, [x22, #1040]",
+        "mrs x0, S3_3_c4_c4_1",
+        "and w0, w0, #0xfffffffe",
+        "msr S3_3_c4_c4_1, x0",
         "fcvt s2, d2",
         "str s2, [x20]",
         "add w20, w21, #0x1 (1)",
