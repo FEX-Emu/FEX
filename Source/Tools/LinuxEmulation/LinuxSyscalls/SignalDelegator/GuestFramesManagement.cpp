@@ -13,7 +13,6 @@ $end_info$
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/ArchHelpers/Arm64.h>
 #include <FEXCore/Utils/FPState.h>
-#include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/MathUtils.h>
 
 #include <csignal>
@@ -168,9 +167,6 @@ void SignalDelegator::RestoreFrame_x64(FEXCore::Core::InternalThreadState* Threa
     auto* xstate = reinterpret_cast<FEXCore::x86_64::xstate*>(guest_uctx->uc_mcontext.fpregs);
     auto* fpstate = &xstate->fpstate;
 
-    // Copy float registers
-    memcpy(Frame->State.mm, fpstate->_st, sizeof(Frame->State.mm));
-
     if (SupportsAVX) {
       CTX->SetXMMRegistersFromState(Thread, fpstate->_xmm, xstate->ymmh.ymmh_space);
     } else {
@@ -188,6 +184,13 @@ void SignalDelegator::RestoreFrame_x64(FEXCore::Core::InternalThreadState* Threa
     Frame->State.flags[FEXCore::X86State::X87FLAG_C2_LOC] = (fpstate->fsw >> 10) & 1;
     Frame->State.flags[FEXCore::X86State::X87FLAG_C3_LOC] = (fpstate->fsw >> 14) & 1;
     Frame->State.flags[FEXCore::X86State::X87FLAG_TOP_LOC] = (fpstate->fsw >> 11) & 0b111;
+
+    // Copy float registers
+    const uint16_t CurrentOffset = Frame->State.flags[FEXCore::X86State::X87FLAG_TOP_LOC];
+    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_MMS; ++i) {
+      const auto modulo_i = (i + CurrentOffset) % 8;
+      memcpy(&Frame->State.mm[modulo_i], &fpstate->_st[i], sizeof(Frame->State.mm[0]));
+    }
   }
 }
 
@@ -237,12 +240,6 @@ void SignalDelegator::RestoreFrame_ia32(FEXCore::Core::InternalThreadState* Thre
     auto* xstate = reinterpret_cast<FEXCore::x86::xstate*>(guest_uctx->sc.fpstate);
     auto* fpstate = &xstate->fpstate;
 
-    // Copy float registers
-    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_MMS; ++i) {
-      // 32-bit st register size is only 10 bytes. Not padded to 16byte like x86-64
-      memcpy(&Frame->State.mm[i], &fpstate->_st[i], 10);
-    }
-
     // Extended XMM state
     if (SupportsAVX) {
       CTX->SetXMMRegistersFromState(Thread, fpstate->_xmm, xstate->ymmh.ymmh_space);
@@ -261,6 +258,14 @@ void SignalDelegator::RestoreFrame_ia32(FEXCore::Core::InternalThreadState* Thre
     Frame->State.flags[FEXCore::X86State::X87FLAG_C2_LOC] = (fpstate->fsw >> 10) & 1;
     Frame->State.flags[FEXCore::X86State::X87FLAG_C3_LOC] = (fpstate->fsw >> 14) & 1;
     Frame->State.flags[FEXCore::X86State::X87FLAG_TOP_LOC] = (fpstate->fsw >> 11) & 0b111;
+
+    // Copy float registers
+    const uint16_t CurrentOffset = Frame->State.flags[FEXCore::X86State::X87FLAG_TOP_LOC];
+    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_MMS; ++i) {
+      // 32-bit st register size is only 10 bytes. Not padded to 16byte like x86-64
+      const auto modulo_i = (i + CurrentOffset) % 8;
+      memcpy(&Frame->State.mm[modulo_i], &fpstate->_st[i], 10);
+    }
   }
 }
 
@@ -311,12 +316,6 @@ void SignalDelegator::RestoreRTFrame_ia32(FEXCore::Core::InternalThreadState* Th
     auto* xstate = reinterpret_cast<FEXCore::x86::xstate*>(guest_uctx->uc.uc_mcontext.fpregs);
     auto* fpstate = &xstate->fpstate;
 
-    // Copy float registers
-    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_MMS; ++i) {
-      // 32-bit st register size is only 10 bytes. Not padded to 16byte like x86-64
-      memcpy(&Frame->State.mm[i], &fpstate->_st[i], 10);
-    }
-
     // Extended XMM state
     if (SupportsAVX) {
       CTX->SetXMMRegistersFromState(Thread, fpstate->_xmm, xstate->ymmh.ymmh_space);
@@ -335,6 +334,14 @@ void SignalDelegator::RestoreRTFrame_ia32(FEXCore::Core::InternalThreadState* Th
     Frame->State.flags[FEXCore::X86State::X87FLAG_C2_LOC] = (fpstate->fsw >> 10) & 1;
     Frame->State.flags[FEXCore::X86State::X87FLAG_C3_LOC] = (fpstate->fsw >> 14) & 1;
     Frame->State.flags[FEXCore::X86State::X87FLAG_TOP_LOC] = (fpstate->fsw >> 11) & 0b111;
+
+    // Copy float registers
+    const uint16_t CurrentOffset = Frame->State.flags[FEXCore::X86State::X87FLAG_TOP_LOC];
+    for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_MMS; ++i) {
+      // 32-bit st register size is only 10 bytes. Not padded to 16byte like x86-64
+      const auto modulo_i = (i + CurrentOffset) % 8;
+      memcpy(&Frame->State.mm[modulo_i], &fpstate->_st[i], 10);
+    }
   }
 }
 
@@ -444,7 +451,11 @@ uint64_t SignalDelegator::SetupFrame_x64(FEXCore::Core::InternalThreadState* Thr
   auto* fpstate = &xstate->fpstate;
 
   // Copy float registers
-  memcpy(fpstate->_st, Frame->State.mm, sizeof(Frame->State.mm));
+  const uint16_t CurrentOffset = Frame->State.flags[FEXCore::X86State::X87FLAG_TOP_LOC];
+  for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_MMS; ++i) {
+    const auto modulo_i = (i + CurrentOffset) % 8;
+    memcpy(&fpstate->_st[i], &Frame->State.mm[modulo_i], sizeof(Frame->State.mm[0]));
+  }
 
   if (SupportsAVX) {
     CTX->ReconstructXMMRegisters(Thread, fpstate->_xmm, xstate->ymmh.ymmh_space);
@@ -559,9 +570,11 @@ uint64_t SignalDelegator::SetupFrame_ia32(FEXCore::Core::InternalThreadState* Th
   auto* fpstate = &xstate->fpstate;
 
   // Copy float registers
+  const uint16_t CurrentOffset = Frame->State.flags[FEXCore::X86State::X87FLAG_TOP_LOC];
   for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_MMS; ++i) {
+    const auto modulo_i = (i + CurrentOffset) % 8;
     // 32-bit st register size is only 10 bytes. Not padded to 16byte like x86-64
-    memcpy(&fpstate->_st[i], &Frame->State.mm[i], 10);
+    memcpy(&fpstate->_st[i], &Frame->State.mm[modulo_i], 10);
   }
 
   // Extended XMM state
@@ -693,9 +706,11 @@ uint64_t SignalDelegator::SetupRTFrame_ia32(FEXCore::Core::InternalThreadState* 
   auto* fpstate = &xstate->fpstate;
 
   // Copy float registers
+  const uint16_t CurrentOffset = Frame->State.flags[FEXCore::X86State::X87FLAG_TOP_LOC];
   for (size_t i = 0; i < FEXCore::Core::CPUState::NUM_MMS; ++i) {
+    const auto modulo_i = (i + CurrentOffset) % 8;
     // 32-bit st register size is only 10 bytes. Not padded to 16byte like x86-64
-    memcpy(&fpstate->_st[i], &Frame->State.mm[i], 10);
+    memcpy(&fpstate->_st[i], &Frame->State.mm[modulo_i], 10);
   }
 
   // Extended XMM state
