@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/EnumUtils.h>
+#include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/ThreadPoolAllocator.h>
 #include <FEXCore/IR/IR.h>
 
@@ -9,6 +11,11 @@
 #include <FEXCore/fextl/sstream.h>
 
 #include <array>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <iterator>
+#include <type_traits>
 
 namespace FEXCore::IR {
 
