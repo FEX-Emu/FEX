@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
+#include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/EnumUtils.h>
+#include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/ThreadPoolAllocator.h>
 #include <FEXCore/IR/IR.h>
 
@@ -9,6 +11,11 @@
 #include <FEXCore/fextl/sstream.h>
 
 #include <array>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <iterator>
+#include <type_traits>
 
 namespace FEXCore::IR {
 
@@ -235,8 +242,6 @@ static_assert(sizeof(OrderedNodeHeader) == sizeof(uint32_t) * 3);
  *  The second region is contiguous but they don't have any relationship with one another directly
  */
 class OrderedNode final {
-  friend class NodeWrapperIterator;
-  friend class OrderedList;
 public:
   // These three values are laid out very specifically to make it fast to access the NodeWrappers specifically
   OrderedNodeHeader Header;
