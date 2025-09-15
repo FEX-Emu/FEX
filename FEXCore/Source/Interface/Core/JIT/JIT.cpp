@@ -823,6 +823,12 @@ void Arm64JITCore::EmitEntryPoint(ARMEmitter::BackwardLabel& HeaderLabel, bool C
   }
 }
 
+void Arm64JITCore::ClearFPSRIOC() {
+  mrs(TMP1, ARMEmitter::SystemRegister::FPSR);
+  bic(ARMEmitter::Size::i32Bit, TMP1, TMP1, 1);
+  msr(ARMEmitter::SystemRegister::FPSR, TMP1);
+}
+
 CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size, bool SingleInst, const FEXCore::IR::IRListView* IR,
                                                    FEXCore::Core::DebugData* DebugData, bool CheckTF) {
   FEXCORE_PROFILE_SCOPED("Arm64::CompileCode");
@@ -933,6 +939,11 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
     }
 
     for (auto [CodeNode, IROp] : IR->GetCode(BlockNode)) {
+      // Clear FPSR IOC bit before non-x87 operations that can set it (only in reduced precision mode)
+      if (ReducedPrecisionMode && FEXCore::IR::SetsIOC(IROp->Op) && !FEXCore::IR::LoweredX87(IROp->Op)) {
+        ClearFPSRIOC();
+      }
+
       switch (IROp->Op) {
 #define REGISTER_OP_RT(op, x) \
   case FEXCore::IR::IROps::OP_##op: std::invoke(RT_##x, this, IROp, CodeNode); break

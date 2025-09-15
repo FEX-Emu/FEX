@@ -772,6 +772,10 @@ void OpDispatchBuilder::X87FNSTSW(OpcodeArgs) {
 void OpDispatchBuilder::FNCLEX(OpcodeArgs) {
   // Clear the exception flag bit
   SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(_Constant(0));
+  Ref Current = _ReadFPSR();
+  // Clear the last bit of FPSR
+  Current = _Andn(OpSize::i64Bit, Current, _Constant(1));
+  _WriteFPSR(OpSize::i32Bit, Current);
 }
 
 void OpDispatchBuilder::FNINIT(OpcodeArgs) {

@@ -55,6 +55,7 @@ class OpDefinition:
     NonSSAArgNum: int
     DynamicDispatch: bool
     LoweredX87: bool
+    SetsIOC: bool
     JITDispatch: bool
     JITDispatchOverride: str
     TiedSource: int
@@ -80,6 +81,7 @@ class OpDefinition:
         self.NonSSAArgNum = 0
         self.DynamicDispatch = False
         self.LoweredX87 = False
+        self.SetsIOC = False
         self.JITDispatch = True
         self.JITDispatchOverride = None
         self.TiedSource = -1
@@ -276,6 +278,9 @@ def parse_ops(ops):
                 assert("JITDispatch" not in op_val)
                 OpDef.JITDispatch = False
 
+            if "SetsIOC" in op_val:
+                OpDef.SetsIOC = op_val["SetsIOC"]
+
             if "TiedSource" in op_val:
                 OpDef.TiedSource = op_val["TiedSource"]
 
@@ -413,6 +418,7 @@ def print_ir_sizes():
     [[nodiscard, gnu::const]] bool ImplicitFlagClobber(IROps Op);
     [[nodiscard, gnu::const]] bool GetHasDest(IROps Op);
     [[nodiscard, gnu::const]] bool LoweredX87(IROps Op);
+    [[nodiscard, gnu::const, gnu::visibility("default")]] bool SetsIOC(IROps Op);
     [[nodiscard, gnu::const]] int8_t TiedSource(IROps Op);
 
     #undef IROP_SIZES
@@ -511,6 +517,7 @@ def print_ir_hassideeffects():
         ("HasSideEffects", "bool"),
         ("ImplicitFlagClobber", "bool"),
         ("LoweredX87", "bool"),
+        ("SetsIOC", "bool"),
         ("TiedSource", "int8_t"),
     ]:
         output_file.write(

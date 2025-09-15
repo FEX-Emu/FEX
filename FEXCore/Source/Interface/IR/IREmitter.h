@@ -402,6 +402,25 @@ public:
   IRPair<IROp_CodeBlock> CreateNewCodeBlockAfter(Ref insertAfter);
   void SetCurrentCodeBlock(Ref Node);
 
+  // Helper on reduced precision to read FPSR register and set IOBit
+  void CheckFPSRIOCAndSetIOBit(Ref OrWith = nullptr) {
+    // Read FPSR register
+    Ref FPSR = _ReadFPSR();
+
+    // Extract IOC bit (bit 0) from FPSR
+    Ref IOCBit = _And(OpSize::i32Bit, FPSR, _Constant(1));
+
+    if (OrWith) {
+      // If OrWith is provided, OR it with the IOCBit
+      IOCBit = _Or(OpSize::i32Bit, IOCBit, OrWith);
+    }
+
+    // Set x87 invalid operation bit if IOC is set
+    Ref CurrentIE32 = _LoadContext(OpSize::i32Bit, GPRClass, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_IE_LOC);
+    Ref NewIE32 = _Or(OpSize::i32Bit, CurrentIE32, IOCBit);
+    _StoreContext(OpSize::i32Bit, GPRClass, NewIE32, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_IE_LOC);
+  }
+
 protected:
   void RemoveArgUses(Ref Node);
 

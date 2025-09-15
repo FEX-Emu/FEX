@@ -6,7 +6,6 @@
 #include "Interface/IR/PassManager.h"
 #include "FEXCore/IR/IR.h"
 #include "FEXCore/Utils/Profiler.h"
-#include "FEXCore/Utils/MathUtils.h"
 #include "FEXCore/Core/HostFeatures.h"
 #include "Interface/Core/Addressing.h"
 
@@ -265,6 +264,13 @@ private:
 
     auto Const = Header->C<IROp_Constant>();
     return Const->Constant == 0;
+  }
+
+
+  void CheckFPSRIOCAndSetIOBit_F64() {
+    if (ReducedPrecisionMode) {
+      IREmit->CheckFPSRIOCAndSetIOBit();
+    }
   }
 
   // Handles a Unary operation.
@@ -549,7 +555,6 @@ void X87StackOptimization::HandleUnop(IROps Op64, bool VFOp64, IROps Op80) {
   StoreStackValue(Value);
 }
 
-
 void X87StackOptimization::HandleBinopValue(IROps Op64, bool VFOp64, IROps Op80, uint8_t DestStackOffset, bool MarkDestValid,
                                             uint8_t StackOffset, Ref ValueNode, bool Reverse) {
   LOGMAN_THROW_A_FMT(!Reverse || VFOp64, "There are no reverse operations using non VFOp64 ops");
@@ -750,24 +755,28 @@ void X87StackOptimization::Run(IREmitter* Emit) {
       case OP_F80ADDSTACK: {
         const auto* Op = IROp->C<IROp_F80AddStack>();
         HandleBinopStack(OP_VFADD, true, OP_F80ADD, Op->SrcStack1, Op->SrcStack1, Op->SrcStack2);
+        CheckFPSRIOCAndSetIOBit_F64();
         break;
       }
 
       case OP_F80SUBSTACK: {
         const auto* Op = IROp->C<IROp_F80SubStack>();
         HandleBinopStack(OP_VFSUB, true, OP_F80SUB, Op->DstStack, Op->SrcStack1, Op->SrcStack2);
+        CheckFPSRIOCAndSetIOBit_F64();
         break;
       }
 
       case OP_F80MULSTACK: {
         const auto* Op = IROp->C<IROp_F80MulStack>();
         HandleBinopStack(OP_VFMUL, true, OP_F80MUL, Op->SrcStack1, Op->SrcStack1, Op->SrcStack2);
+        CheckFPSRIOCAndSetIOBit_F64();
         break;
       }
 
       case OP_F80DIVSTACK: {
         const auto* Op = IROp->C<IROp_F80DivStack>();
         HandleBinopStack(OP_VFDIV, true, OP_F80DIV, Op->DstStack, Op->SrcStack1, Op->SrcStack2);
+        CheckFPSRIOCAndSetIOBit_F64();
         break;
       }
 
@@ -801,6 +810,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
       case OP_F80ADDVALUE: {
         const auto* Op = IROp->C<IROp_F80AddValue>();
         HandleBinopValue(OP_VFADD, true, OP_F80ADD, 0, true, Op->SrcStack, CurrentIR.GetNode(Op->X80Src));
+        CheckFPSRIOCAndSetIOBit_F64();
         break;
       }
 
@@ -808,6 +818,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
       case OP_F80SUBVALUE: {
         const auto* Op = IROp->C<IROp_F80SubValue>();
         HandleBinopValue(OP_VFSUB, true, OP_F80SUB, 0, true, Op->SrcStack, CurrentIR.GetNode(Op->X80Src), IROp->Op == OP_F80SUBRVALUE);
+        CheckFPSRIOCAndSetIOBit_F64();
         break;
       }
 
@@ -815,17 +826,20 @@ void X87StackOptimization::Run(IREmitter* Emit) {
       case OP_F80DIVVALUE: {
         const auto* Op = IROp->C<IROp_F80DivValue>();
         HandleBinopValue(OP_VFDIV, true, OP_F80DIV, 0, true, Op->SrcStack, CurrentIR.GetNode(Op->X80Src), IROp->Op == OP_F80DIVRVALUE);
+        CheckFPSRIOCAndSetIOBit_F64();
         break;
       }
 
       case OP_F80MULVALUE: {
         const auto* Op = IROp->C<IROp_F80MulValue>();
         HandleBinopValue(OP_VFMUL, true, OP_F80MUL, 0, true, Op->SrcStack, CurrentIR.GetNode(Op->X80Src));
+        CheckFPSRIOCAndSetIOBit_F64();
         break;
       }
 
       case OP_F80SQRTSTACK: {
         HandleUnop(OP_VFSQRT, true, OP_F80SQRT);
+        CheckFPSRIOCAndSetIOBit_F64();
         break;
       }
 
@@ -847,6 +861,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
 
       case OP_F80PTANSTACK: {
         HandleUnop(OP_F64TAN, false, OP_F80TAN);
+
         Ref OneConst {};
         if (ReducedPrecisionMode) {
           OneConst = IREmit->_VCastFromGPR(OpSize::i64Bit, OpSize::i64Bit, GetConstant(0x3FF0000000000000));
