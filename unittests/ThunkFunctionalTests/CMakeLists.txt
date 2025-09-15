@@ -8,7 +8,7 @@ function(AddThunksTest Bin ThunksFile)
   endif()
 
   add_test(NAME ${TEST_NAME}
-    COMMAND "$<TARGET_FILE:FEXInterpreter>"
+    COMMAND "$<TARGET_FILE:FEX>"
     ${Bin})
     set_property(TEST ${TEST_NAME} APPEND PROPERTY DEPENDS "${Bin}")
     set_property(TEST "${TEST_NAME}" APPEND PROPERTY ENVIRONMENT

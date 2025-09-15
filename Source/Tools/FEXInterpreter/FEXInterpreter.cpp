@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 /*
 $info$
-tags: Bin|FEXInterpreter
+tags: Bin|FEX
 desc: Glues the ELF loader, FEXCore and LinuxSyscalls to launch an elf under fex
 $end_info$
 */
@@ -141,7 +141,7 @@ bool InterpreterHandler(fextl::string* Filename, const fextl::string& RootFS, fe
 /**
  * @brief Queries if FEX is installed as a binfmt_misc interpreter
  *
- * @param ExecutedWithFD If FEXInterpreter was executed using a binfmt_misc FD handle from the kernel
+ * @param ExecutedWithFD If FEX was executed using a binfmt_misc FD handle from the kernel
  * @param Portable Portability information about FEX being run in portable mode
  *
  * @return true if the binfmt_misc handlers are installed and being used

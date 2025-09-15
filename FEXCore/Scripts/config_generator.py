@@ -159,7 +159,7 @@ def print_man_environment_tail():
     "By default FEX will look in {$HOME, $XDG_CONFIG_HOME}/.fex-emu/",
     "This will override the full path",
     "If FEX_PORTABLE is declared then relative paths are also supported",
-    "For FEXInterpreter: Relative to the FEXInterpreter binary",
+    "For FEX: Relative to the FEX binary",
     "For WINE: Relative to %LOCALAPPDATA%"
     ],
     "''", True)
@@ -173,7 +173,7 @@ def print_man_environment_tail():
     "One must be careful with this option as it will override any applications that load with execve as well"
     "If you need to support applications that execve then use FEX_APP_CONFIG_LOCATION instead"
     "If FEX_PORTABLE is declared then relative paths are also supported",
-    "For FEXInterpreter: Relative to the FEXInterpreter binary",
+    "For FEX: Relative to the FEX binary",
     "For WINE: Relative to %LOCALAPPDATA%"
     ],
     "''", True)
@@ -192,8 +192,8 @@ def print_man_environment_tail():
     "PORTABLE",
     [
     "Allows FEX to run without installation. Global locations for configuration and binfmt_misc are ignored.",
-    "For FEXInterpreter on Linux:",
-    "These files are instead read from <FEXInterpreterPath>/fex-emu/ by default.",
+    "For FEX on Linux:",
+    "These files are instead read from <FEXPath>/fex-emu/ by default.",
     "For Arm64ec/Wow64 WINE builds:",
     "These files are instead read from $LOCALAPPDATA/fex-emu/ by default.",
     "For further customization, see FEX_APP_CONFIG_LOCATION and FEX_APP_DATA_LOCATION."
@@ -205,7 +205,7 @@ def print_man_header():
 .Dt FEX
 .Os Linux
 .Sh NAME
-.Nm FEXInterpreter
+.Nm FEX
 .Nm FEXBash
 .Nd Fast x86-64 and x86 emulation.
 .Sh SYNOPSIS

@@ -121,7 +121,7 @@ fextl::string GetServerMountFolder() {
     // This is due to pressure-vesssel being a chroot environment.
     // It by default maps the host-filesystem to `/run/host/` so we need to redirect.
     // After pressure-vessel is fully set up it will set the `FEX_ROOTFS` environment variable,
-    // which the FEXInterpreter will pick up on.
+    // which FEX will pick up.
     Folder = "/run/host/" + Folder;
   }
 
@@ -244,7 +244,7 @@ int ConnectToAndStartServer(std::string_view InterpreterPath) {
     }
 
     fextl::string FEXServerPath = fextl::fmt::format("{}/FEXServer", InterpreterDir);
-    // Check if a local FEXServer next to FEXInterpreter exists
+    // Check if a local FEXServer next to FEX exists
     // If it does then it takes priority over the installed one
     if (!FHU::Filesystem::Exists(FEXServerPath)) {
       FEXServerPath = "FEXServer";

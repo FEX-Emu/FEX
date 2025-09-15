@@ -5,26 +5,26 @@ if (ENABLE_VIXL_SIMULATOR)
   list(APPEND DEFINES -DVIXL_SIMULATOR=1)
 endif()
 
-add_executable(FEXInterpreter
+add_executable(FEX
   FEXInterpreter.cpp
   AOT/AOTGenerator.cpp)
 
-target_compile_definitions(FEXInterpreter PRIVATE ${DEFINES})
+target_compile_definitions(FEX PRIVATE ${DEFINES})
 
-# Enable FEX APIs to be used by targets that use target_link_libraries on FEXInterpreter
-set_target_properties(FEXInterpreter PROPERTIES
+# Enable FEX APIs to be used by targets that use target_link_libraries on FEX
+set_target_properties(FEX PROPERTIES
   ENABLE_EXPORTS 1
   C_VISIBILITY_PRESET hidden
   CXX_VISIBILITY_PRESET hidden
   VISIBILITY_INLINES_HIDDEN TRUE
 )
 
-target_include_directories(FEXInterpreter
+target_include_directories(FEX
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/
     ${CMAKE_BINARY_DIR}/generated
 )
-target_link_libraries(FEXInterpreter
+target_link_libraries(FEX
   PRIVATE
     ${LIBS}
     LinuxEmulation
@@ -32,10 +32,10 @@ target_link_libraries(FEXInterpreter
     ${PTHREAD_LIB}
     fmt::fmt
 )
-target_compile_options(FEXInterpreter PRIVATE ${FEX_TUNE_COMPILE_FLAGS})
+target_compile_options(FEX PRIVATE ${FEX_TUNE_COMPILE_FLAGS})
 
 if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
-  target_link_options(FEXInterpreter
+  target_link_options(FEX
     PRIVATE
       "LINKER:--gc-sections"
       "LINKER:--strip-all"
@@ -43,11 +43,17 @@ if (CMAKE_BUILD_TYPE MATCHES "RELEASE")
   )
 endif()
 
-install(TARGETS FEXInterpreter
+install(TARGETS FEX
   RUNTIME
     DESTINATION bin
     COMPONENT Runtime
 )
+
+# Create a copy of FEX with legacy names until phased out.
+install(PROGRAMS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/FEX
+  RENAME FEXInterpreter
+  DESTINATION bin
+  COMPONENT LegacyRuntime)
 
 if (_M_ARM_64)
   if (NOT USE_LEGACY_BINFMTMISC)
@@ -98,10 +104,10 @@ if (_M_ARM_64)
           echo "Attempting to install FEX misc now."
         COMMAND ${CMAKE_COMMAND} -E
           echo
-          ':FEX-x86:M:0:\\x7fELF\\x01\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x03\\x00:\\xff\\xff\\xff\\xff\\xff\\xfe\\xfe\\x00\\x00\\x00\\x00\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff\\xff:${CMAKE_INSTALL_PREFIX}/bin/FEXInterpreter:POCF' > /proc/sys/fs/binfmt_misc/register
+          ':FEX-x86:M:0:\\x7fELF\\x01\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x03\\x00:\\xff\\xff\\xff\\xff\\xff\\xfe\\xfe\\x00\\x00\\x00\\x00\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff\\xff:${CMAKE_INSTALL_PREFIX}/bin/FEX:POCF' > /proc/sys/fs/binfmt_misc/register
         COMMAND ${CMAKE_COMMAND} -E
           echo
-          ':FEX-x86_64:M:0:\\x7fELF\\x02\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x3e\\x00:\\xff\\xff\\xff\\xff\\xff\\xfe\\xfe\\x00\\x00\\x00\\x00\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff\\xff:${CMAKE_INSTALL_PREFIX}/bin/FEXInterpreter:POCF' > /proc/sys/fs/binfmt_misc/register
+          ':FEX-x86_64:M:0:\\x7fELF\\x02\\x01\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x3e\\x00:\\xff\\xff\\xff\\xff\\xff\\xfe\\xfe\\x00\\x00\\x00\\x00\\xff\\xff\\xff\\xff\\xff\\xfe\\xff\\xff\\xff:${CMAKE_INSTALL_PREFIX}/bin/FEX:POCF' > /proc/sys/fs/binfmt_misc/register
         COMMAND ${CMAKE_COMMAND} -E
           echo "binfmt_misc FEX installed"
         )
