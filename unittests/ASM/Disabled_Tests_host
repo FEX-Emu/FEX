@@ -10,3 +10,6 @@ Test_Secondary/07_XX_00.asm
 
 # We don't emulate all of the MXCSR bits
 Test_VEX/vldmxcsr.asm
+
+# 3DNow!
+Test_modrm_oob/DDD.asm
