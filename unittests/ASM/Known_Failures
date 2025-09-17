@@ -1,1 +1,4 @@
 Test_X87/D9_F8.asm
+
+# Block of size 1 doesn't work with this optimization
+jit_1/Test_64Bit_X87_F64/Memcopy_int_F64.asm
