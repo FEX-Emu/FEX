@@ -72,7 +72,7 @@ void OpDispatchBuilder::FLD(OpcodeArgs, IR::OpSize Width) {
   _PushStack(ConvertedData, Data, ReadWidth, true);
 }
 
-// Float LoaD operation with memory operand
+// Float LoaD operation with stack operand
 void OpDispatchBuilder::FLDFromStack(OpcodeArgs) {
   _CopyPushStack(Op->OP & 7);
 }
@@ -132,7 +132,7 @@ void OpDispatchBuilder::FST(OpcodeArgs, IR::OpSize Width) {
   AddressMode A = DecodeAddress(Op, Op->Dest, MemoryAccessType::DEFAULT, false);
 
   A = SelectAddressMode(this, A, GetGPROpSize(), CTX->HostFeatures.SupportsTSOImm9, false, false, Width);
-  _StoreStackMem(SourceSize, Width, A.Base, A.Index, OpSize::iInvalid, A.IndexType, A.IndexScale, /*Float=*/true);
+  _StoreStackMem(SourceSize, Width, A.Base, A.Index, OpSize::iInvalid, A.IndexType, A.IndexScale);
 
   if (Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) {
     _PopStackDestroy();
@@ -153,34 +153,11 @@ void OpDispatchBuilder::FSTToStack(OpcodeArgs) {
 // Store integer to memory (possibly with truncation)
 void OpDispatchBuilder::FIST(OpcodeArgs, bool Truncate) {
   const auto Size = OpSizeFromSrc(Op);
-  Ref Data = _ReadStackValue(0);
+  const auto SourceSize = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
+  AddressMode A = DecodeAddress(Op, Op->Dest, MemoryAccessType::DEFAULT, false);
 
-  // For 16-bit integers, we need to manually check for overflow
-  // since _F80CVTInt doesn't handle 16-bit overflow detection properly
-  if (Size == OpSize::i16Bit) {
-    // Extract the 80-bit float value to check for special cases
-    // Get the upper 64 bits which contain sign and exponent and then the exponent from upper.
-    Ref Upper = _VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, Data, 1);
-    Ref Exponent = _And(OpSize::i64Bit, Upper, Constant(0x7fff));
-
-    // Check for NaN/Infinity: exponent = 0x7fff
-    SaveNZCV();
-    _TestNZ(OpSize::i64Bit, Exponent, Constant(0x7fff));
-    Ref IsSpecial = _NZCVSelect01({COND_EQ});
-
-    // For overflow detection, check if exponent indicates a value >= 2^15
-    // Biased exponent for 2^15 is 0x3fff + 15 = 0x400e
-    SubWithFlags(OpSize::i64Bit, Exponent, 0x400e);
-    Ref IsOverflow = _NZCVSelect01({COND_UGE});
-
-    // Set Invalid Operation flag if overflow or special value
-    Ref InvalidFlag = _Or(OpSize::i64Bit, IsSpecial, IsOverflow);
-    SetRFLAG<FEXCore::X86State::X87FLAG_IE_LOC>(InvalidFlag);
-  }
-
-  Data = _F80CVTInt(Size, Data, Truncate);
-
-  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Data, Size, OpSize::i8Bit);
+  A = SelectAddressMode(this, A, GetGPROpSize(), CTX->HostFeatures.SupportsTSOImm9, false, false, Size);
+  _StoreStackMemInt(SourceSize, Size, A.Base, A.Index, OpSize::iInvalid, A.IndexType, A.IndexScale, Truncate);
 
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
     _PopStackDestroy();

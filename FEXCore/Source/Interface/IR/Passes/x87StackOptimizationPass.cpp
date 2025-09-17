@@ -8,6 +8,7 @@
 #include "FEXCore/Utils/Profiler.h"
 #include "FEXCore/Utils/MathUtils.h"
 #include "FEXCore/Core/HostFeatures.h"
+#include "FEXCore/Core/CoreState.h"
 #include "Interface/Core/Addressing.h"
 
 #include <array>
@@ -199,7 +200,7 @@ private:
     MemOffsetType OffsetType = Op->OffsetType;
     uint8_t OffsetScale = Op->OffsetScale;
 
-    // Normal Precision Mode
+    // Normal Precision Mode - Float stores
     switch (Op->StoreSize) {
     case OpSize::i32Bit:
     case OpSize::i64Bit: {
@@ -235,6 +236,7 @@ private:
     MemOffsetType OffsetType = Op->OffsetType;
     uint8_t OffsetScale = Op->OffsetScale;
 
+    // Reduced Precision Mode - Float stores
     switch (Op->StoreSize) {
     case OpSize::i32Bit: {
       StackNode = IREmit->_Float_FToF(OpSize::i32Bit, OpSize::i64Bit, StackNode);
@@ -995,8 +997,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         // or similar. As long as the source size and dest size are one and the same.
         // This will avoid any conversions between source and stack element size and conversion back.
         if (!SlowPath && Value->Source && Value->Source->Size == Op->StoreSize && Value->InterpretAsFloat) {
-          IREmit->_StoreMem(Value->InterpretAsFloat ? FPRClass : GPRClass, Op->StoreSize, Value->Source->Node, AddrNode, Offset, Align,
-                            OffsetType, OffsetScale);
+          IREmit->_StoreMem(FPRClass, Op->StoreSize, Value->Source->Node, AddrNode, Offset, Align, OffsetType, OffsetScale);
           break;
         }
 
@@ -1006,6 +1007,68 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         }
 
         StoreStackMem_Helper(Op, StackNode);
+        break;
+      }
+
+      case OP_STORESTACKMEMINT: {
+        const auto* Op = IROp->C<IROp_StoreStackMemInt>();
+        const auto& Value = MigrateToSlowPath_IfInvalid();
+        Ref StackNode = SlowPath ? LoadStackValueAtOffset_Slow() : Value->StackDataNode;
+        Ref AddrNode = CurrentIR.GetNode(Op->Addr);
+        Ref Offset = CurrentIR.GetNode(Op->Offset);
+        OpSize Align = Op->Align;
+        MemOffsetType OffsetType = Op->OffsetType;
+        uint8_t OffsetScale = Op->OffsetScale;
+        bool Truncate = Op->Truncate;
+
+        // Similarly, optimize integer memcpy
+        if (!SlowPath && Value->Source && Value->Source->Size == Op->StoreSize && !Value->InterpretAsFloat) {
+          IREmit->_StoreMem(GPRClass, Op->StoreSize, Value->Source->Node, AddrNode, Offset, Align, OffsetType, OffsetScale);
+          break;
+        }
+
+        if (ReducedPrecisionMode) {
+          // Integer store in reduced precision mode - use Float_ToGPR conversions
+          const auto Size = Op->StoreSize;
+          Ref data = StackNode;
+          if (Truncate) {
+            data = IREmit->_Float_ToGPR_ZS(Size == OpSize::i32Bit ? OpSize::i32Bit : OpSize::i64Bit, OpSize::i64Bit, data);
+          } else {
+            data = IREmit->_Float_ToGPR_S(Size == OpSize::i32Bit ? OpSize::i32Bit : OpSize::i64Bit, OpSize::i64Bit, data);
+          }
+          IREmit->_StoreMem(GPRClass, Size, data, AddrNode, Offset, Align, OffsetType, OffsetScale);
+        } else {
+          // Normal precision mode - use F80CVTInt for conversion
+          const auto Size = Op->StoreSize;
+
+          // For 16-bit integers, we need to manually check for overflow
+          // since _F80CVTInt doesn't handle 16-bit overflow detection properly
+          if (Size == OpSize::i16Bit) {
+            // Extract the 80-bit float value to check for special cases
+            // Get the upper 64 bits which contain sign and exponent and then the exponent from upper.
+            Ref Upper = IREmit->_VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, StackNode, 1);
+            Ref Exponent = IREmit->_And(OpSize::i64Bit, Upper, IREmit->_Constant(0x7fff));
+
+            // Check for NaN/Infinity: exponent = 0x7fff
+            // We need to manually track NZCV since we can't use SaveNZCV from optimization pass
+            IREmit->_TestNZ(OpSize::i64Bit, Exponent, IREmit->_Constant(0x7fff));
+            Ref IsSpecial = IREmit->_NZCVSelect01({COND_EQ});
+
+            // For overflow detection, check if exponent indicates a value >= 2^15
+            // Biased exponent for 2^15 is 0x3fff + 15 = 0x400e
+            IREmit->SubWithFlags(OpSize::i64Bit, Exponent, IREmit->_Constant(0x400e));
+            Ref IsOverflow = IREmit->_NZCVSelect01({COND_UGE});
+
+            // Set Invalid Operation flag if overflow or special value
+            Ref InvalidFlag = IREmit->_Or(OpSize::i64Bit, IsSpecial, IsOverflow);
+            // Store to the x87 flag context location
+            IREmit->_StoreContext(OpSize::i8Bit, GPRClass, InvalidFlag, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_IE_LOC);
+          }
+
+          Ref data = IREmit->_F80CVTInt(Size, StackNode, Truncate);
+          IREmit->_StoreMem(GPRClass, Size, data, AddrNode, Offset, Align, OffsetType, OffsetScale);
+        }
+
         break;
       }
 

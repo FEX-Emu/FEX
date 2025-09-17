@@ -140,11 +140,11 @@ constexpr std::array<DispatchTableEntry, 133> X87F64OpTable = {{
 
   {OPDReg(0xDB, 0) | 0x00, 8, &OpDispatchBuilder::FILDF64},
 
-  {OPDReg(0xDB, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FISTF64, true>},
+  {OPDReg(0xDB, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FIST, true>},
 
-  {OPDReg(0xDB, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FISTF64, false>},
+  {OPDReg(0xDB, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FIST, false>},
 
-  {OPDReg(0xDB, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FISTF64, false>},
+  {OPDReg(0xDB, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FIST, false>},
 
   // 4 = Invalid
 
@@ -201,7 +201,7 @@ constexpr std::array<DispatchTableEntry, 133> X87F64OpTable = {{
 
   {OPDReg(0xDD, 0) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FLDF64, OpSize::i64Bit>},
 
-  {OPDReg(0xDD, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FISTF64, true>},
+  {OPDReg(0xDD, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FIST, true>},
 
   {OPDReg(0xDD, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FST, OpSize::i64Bit>},
 
@@ -256,11 +256,11 @@ constexpr std::array<DispatchTableEntry, 133> X87F64OpTable = {{
 
   {OPDReg(0xDF, 0) | 0x00, 8, &OpDispatchBuilder::FILDF64},
 
-  {OPDReg(0xDF, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FISTF64, true>},
+  {OPDReg(0xDF, 1) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FIST, true>},
 
-  {OPDReg(0xDF, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FISTF64, false>},
+  {OPDReg(0xDF, 2) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FIST, false>},
 
-  {OPDReg(0xDF, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FISTF64, false>},
+  {OPDReg(0xDF, 3) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FIST, false>},
 
   {OPDReg(0xDF, 4) | 0x00, 8, &OpDispatchBuilder::FBLDF64},
 
@@ -268,7 +268,7 @@ constexpr std::array<DispatchTableEntry, 133> X87F64OpTable = {{
 
   {OPDReg(0xDF, 6) | 0x00, 8, &OpDispatchBuilder::FBSTPF64},
 
-  {OPDReg(0xDF, 7) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FISTF64, false>},
+  {OPDReg(0xDF, 7) | 0x00, 8, &OpDispatchBuilder::Bind<&OpDispatchBuilder::FIST, false>},
 
   // XXX: This should also set the x87 tag bits to empty
   // We don't support this currently, so just pop the stack

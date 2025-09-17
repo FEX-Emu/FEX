@@ -103,21 +103,6 @@ void OpDispatchBuilder::FILDF64(OpcodeArgs) {
   _PushStack(ConvertedData, Data, ReadWidth, false);
 }
 
-void OpDispatchBuilder::FISTF64(OpcodeArgs, bool Truncate) {
-  const auto Size = OpSizeFromSrc(Op);
-
-  Ref data = _ReadStackValue(0);
-  if (Truncate) {
-    data = _Float_ToGPR_ZS(Size == OpSize::i32Bit ? OpSize::i32Bit : OpSize::i64Bit, OpSize::i64Bit, data);
-  } else {
-    data = _Float_ToGPR_S(Size == OpSize::i32Bit ? OpSize::i32Bit : OpSize::i64Bit, OpSize::i64Bit, data);
-  }
-  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, data, Size, OpSize::i8Bit);
-
-  if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
-    _PopStackDestroy();
-  }
-}
 
 void OpDispatchBuilder::FADDF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpDispatchBuilder::OpResult ResInST0) {
   if (Op->Src[0].IsNone()) { // Implicit argument case

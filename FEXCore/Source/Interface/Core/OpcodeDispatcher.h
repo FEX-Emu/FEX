@@ -775,7 +775,6 @@ public:
   void FCOMIF64(OpcodeArgs, IR::OpSize width, bool Integer, FCOMIFlags whichflags, bool poptwice);
   void FDIVF64(OpcodeArgs, IR::OpSize Width, bool Integer, bool Reverse, OpResult ResInST0);
   void FILDF64(OpcodeArgs);
-  void FISTF64(OpcodeArgs, bool Truncate);
   void FLDF64_Const(OpcodeArgs, uint64_t Num);
   void FLDF64(OpcodeArgs, IR::OpSize Width);
   void FMULF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpResult ResInST0);
@@ -2429,6 +2428,7 @@ private:
       return _LoadMem(Class, Size, ssa0, Invalid(), Align, MEM_OFFSET_SXTX, 1);
     }
   }
+
 
   Ref _LoadMemAutoTSO(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, AddressMode A, IR::OpSize Align = IR::OpSize::i8Bit) {
     bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;

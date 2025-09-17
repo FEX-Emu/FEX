@@ -2852,13 +2852,21 @@
         "HasSideEffects": true,
         "X87": true
       },
-      "StoreStackMem OpSize:$SourceSize, OpSize:$StoreSize, GPR:$Addr, GPR:$Offset, OpSize:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale, i1:$Float": {
+      "StoreStackMem OpSize:$SourceSize, OpSize:$StoreSize, GPR:$Addr, GPR:$Offset, OpSize:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale": {
         "Desc": [
-          "Takes the top value off the x87 stack and stores it to memory.",
+          "Takes the top value off the x87 stack and stores it to memory as a Float.",
           "SourceSize is 128bit for F80 values, 64-bit for low precision.",
-          "StoreSize is the store size for conversion:",
-          "Float: 80-bit, 64-bit, or 32-bit",
-          "Int: 64-bit, 32-bit, 16-bit"
+          "StoreSize is the store size for conversion: 80-bit, 64-bit, or 32-bit"
+        ],
+        "HasSideEffects": true,
+        "X87": true
+      },
+      "StoreStackMemInt OpSize:$SourceSize, OpSize:$StoreSize, GPR:$Addr, GPR:$Offset, OpSize:$Align, MemOffsetType:$OffsetType, u8:$OffsetScale, i1:$Truncate": {
+        "Desc": [
+          "Takes the top value off the x87 stack and stores it to memory as an Integer.",
+          "SourceSize is 128bit for F80 values, 64-bit for low precision.",
+          "StoreSize is the store size for conversion: 64-bit, 32-bit, 16-bit",
+          "Truncate: If true, we truncate the value instead of rounding it."
         ],
         "HasSideEffects": true,
         "X87": true
