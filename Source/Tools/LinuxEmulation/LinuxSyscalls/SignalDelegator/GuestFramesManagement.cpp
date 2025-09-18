@@ -34,12 +34,17 @@ enum class SigInfoLayout {
 };
 
 // Calculate the siginfo layout based on Signal and si_code.
-static SigInfoLayout CalculateSigInfoLayout(int Signal, int si_code) {
+static SigInfoLayout CalculateSigInfoLayout(int Signal, int si_code, uint32_t err_code) {
   if (si_code > SI_USER && si_code < SI_KERNEL) {
     // For signals that are not considered RT.
     if (Signal == SIGSEGV || Signal == SIGBUS || Signal == SIGTRAP) {
-      // Regular FAULT layout.
-      return SigInfoLayout::LAYOUT_FAULT;
+      if (err_code & FEXCore::X86State::X86_PF_INSTR) {
+        // Fault layout but addr refers to RIP.
+        return SigInfoLayout::LAYOUT_FAULT_RIP;
+      } else {
+        // Regular FAULT layout.
+        return SigInfoLayout::LAYOUT_FAULT;
+      }
     } else if (Signal == SIGILL || Signal == SIGFPE) {
       // Fault layout but addr refers to RIP.
       return SigInfoLayout::LAYOUT_FAULT_RIP;
@@ -419,8 +424,9 @@ uint64_t SignalDelegator::SetupFrame_x64(FEXCore::Core::InternalThreadState* Thr
     guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_TRAPNO] = Frame->SynchronousFaultData.TrapNo;
     guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_ERR] = Frame->SynchronousFaultData.err_code;
 
-    // Overwrite si_code
+    // Overwrite si_code and si_addr
     guest_siginfo->si_code = Thread->CurrentFrame->SynchronousFaultData.si_code;
+    guest_siginfo->si_addr = reinterpret_cast<void*>(ContextBackup->OriginalRIP);
     Signal = Frame->SynchronousFaultData.Signal;
   } else {
     guest_uctx->uc_mcontext.gregs[FEXCore::x86_64::FEX_REG_TRAPNO] = ConvertSignalToTrapNo(Signal, HostSigInfo);
@@ -736,17 +742,17 @@ uint64_t SignalDelegator::SetupRTFrame_ia32(FEXCore::Core::InternalThreadState* 
   guest_uctx->uc.uc_stack.ss_size = GuestStack->ss_size;
 
   // Setup siginfo
+  // These three elements are in every siginfo
+  guest_uctx->info.si_signo = HostSigInfo->si_signo;
+  guest_uctx->info.si_errno = HostSigInfo->si_errno;
   if (ContextBackup->FaultToTopAndGeneratedException) {
     guest_uctx->info.si_code = Frame->SynchronousFaultData.si_code;
   } else {
     guest_uctx->info.si_code = HostSigInfo->si_code;
   }
 
-  // These three elements are in every siginfo
-  guest_uctx->info.si_signo = HostSigInfo->si_signo;
-  guest_uctx->info.si_errno = HostSigInfo->si_errno;
-
-  const SigInfoLayout Layout = CalculateSigInfoLayout(Signal, guest_uctx->info.si_code);
+  const SigInfoLayout Layout =
+    CalculateSigInfoLayout(Signal, guest_uctx->info.si_code, guest_uctx->uc.uc_mcontext.gregs[FEXCore::x86::FEX_REG_ERR]);
 
   switch (Layout) {
   case SigInfoLayout::LAYOUT_KILL:
