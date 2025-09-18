@@ -141,7 +141,7 @@ DEF_OP(ExitFunction) {
         if (!Op->CallReturnBlock.IsInvalid()) {
           auto CallReturnAddressReg = GetReg(Op->CallReturnAddress).X();
           PendingCallReturnTargetLabel = &CallReturnTargets.try_emplace(Op->CallReturnBlock.ID()).first->second;
-          adr(TMP1, &l_CallReturn);
+          (void)adr(TMP1, &l_CallReturn);
           stp<ARMEmitter::IndexType::PRE>(CallReturnAddressReg, TMP1, REG_CALLRET_SP, -0x10);
         } else {
           stp<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::zr, ARMEmitter::XReg::zr, REG_CALLRET_SP, -0x10);
@@ -149,16 +149,16 @@ DEF_OP(ExitFunction) {
       } else if (Op->Hint == IR::BranchHint::CheckTF) {
         ARMEmitter::ForwardLabel TFUnset;
         ldrb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
-        cbz(ARMEmitter::Size::i32Bit, TMP1, &TFUnset);
+        (void)cbz(ARMEmitter::Size::i32Bit, TMP1, &TFUnset);
         LoadConstant(ARMEmitter::Size::i64Bit, TMP1, NewRIP);
         str(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip));
         ldr(TMP2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.DispatcherLoopTop));
         blr(TMP2);
-        Bind(&TFUnset);
+        (void)Bind(&TFUnset);
       }
 
       EmitLinkedBranch(NewRIP, Op->Hint == IR::BranchHint::Call);
-      Bind(&l_CallReturn);
+      (void)Bind(&l_CallReturn);
 #ifdef _M_ARM_64EC
     }
 #endif
@@ -170,7 +170,7 @@ DEF_OP(ExitFunction) {
       // First try to pop from the call-ret stack, otherwise follow the normal path (but ending in a ret)
       ldp<ARMEmitter::IndexType::POST>(TMP1, TMP2, REG_CALLRET_SP, 0x10);
       sub(TMP1, TMP1, RipReg.X());
-      cbz(ARMEmitter::Size::i64Bit, TMP1, &SkipFullLookup);
+      (void)cbz(ARMEmitter::Size::i64Bit, TMP1, &SkipFullLookup);
     }
 
     // L1 Cache
@@ -187,23 +187,23 @@ DEF_OP(ExitFunction) {
 
     // Note: sub+cbnz used over cmp+br to preserve flags.
     sub(TMP1, TMP1, RipReg.X());
-    cbz(ARMEmitter::Size::i64Bit, TMP1, &SkipFullLookup);
+    (void)cbz(ARMEmitter::Size::i64Bit, TMP1, &SkipFullLookup);
     ldr(TMP2, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.DispatcherLoopTop));
     str(RipReg.X(), STATE, offsetof(FEXCore::Core::CpuStateFrame, State.rip));
 
-    Bind(&SkipFullLookup);
+    (void)Bind(&SkipFullLookup);
     if (Op->Hint == IR::BranchHint::Call) {
       ARMEmitter::ForwardLabel l_CallReturn;
       if (!Op->CallReturnBlock.IsInvalid()) {
         auto CallReturnAddressReg = GetReg(Op->CallReturnAddress).X();
         PendingCallReturnTargetLabel = &CallReturnTargets.try_emplace(Op->CallReturnBlock.ID()).first->second;
-        adr(TMP1, &l_CallReturn);
+        (void)adr(TMP1, &l_CallReturn);
         stp<ARMEmitter::IndexType::PRE>(CallReturnAddressReg, TMP1, REG_CALLRET_SP, -0x10);
       } else {
         stp<ARMEmitter::IndexType::PRE>(ARMEmitter::XReg::zr, ARMEmitter::XReg::zr, REG_CALLRET_SP, -0x10);
       }
       blr(TMP2);
-      Bind(&l_CallReturn);
+      (void)Bind(&l_CallReturn);
     } else if (Op->Hint == IR::BranchHint::Return) {
       ret(TMP2);
     } else {
