@@ -224,7 +224,7 @@ DEF_OP(CondJump) {
   auto TrueTargetLabel = JumpTarget(Op->TrueBlock);
 
   if (Op->FromNZCV) {
-    b(MapCC(Op->Cond), TrueTargetLabel);
+    b_OrRestart(MapCC(Op->Cond), TrueTargetLabel);
   } else {
     uint64_t Const;
     const bool isConst = IsInlineConstant(Op->Cmp2, &Const);
@@ -237,16 +237,16 @@ DEF_OP(CondJump) {
 
     if (Op->Cond.Val == FEXCore::IR::COND_EQ) {
       LOGMAN_THROW_A_FMT(Const == 0, "CondJump: Expected 0 source");
-      cbz(Size, Reg, TrueTargetLabel);
+      cbz_OrRestart(Size, Reg, TrueTargetLabel);
     } else if (Op->Cond.Val == FEXCore::IR::COND_NEQ) {
       LOGMAN_THROW_A_FMT(Const == 0, "CondJump: Expected 0 source");
-      cbnz(Size, Reg, TrueTargetLabel);
+      cbnz_OrRestart(Size, Reg, TrueTargetLabel);
     } else if (Op->Cond.Val == FEXCore::IR::COND_TSTZ) {
       LOGMAN_THROW_A_FMT(Const < 64, "CondJump: Expected valid bit source");
-      tbz(Reg, Const, TrueTargetLabel);
+      tbz_OrRestart(Reg, Const, TrueTargetLabel);
     } else if (Op->Cond.Val == FEXCore::IR::COND_TSTNZ) {
       LOGMAN_THROW_A_FMT(Const < 64, "CondJump: Expected valid bit source");
-      tbnz(Reg, Const, TrueTargetLabel);
+      tbnz_OrRestart(Reg, Const, TrueTargetLabel);
     } else {
       LOGMAN_THROW_A_FMT(false, "CondJump expected simple condition");
     }
@@ -458,7 +458,7 @@ DEF_OP(ValidateCode) {
     while (len >= Size) {
       LoadData();
       sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, TMP2);
-      cbnz(ARMEmitter::Size::i64Bit, TMP1, &Fail);
+      cbnz_OrRestart(ARMEmitter::Size::i64Bit, TMP1, &Fail);
       len -= Size;
       Offset += Size;
     }
@@ -486,10 +486,10 @@ DEF_OP(ValidateCode) {
 
   ARMEmitter::ForwardLabel End;
   LoadConstant(ARMEmitter::Size::i32Bit, Dst, 0);
-  b(&End);
-  Bind(&Fail);
+  b_OrRestart(&End);
+  BindOrRestart(&Fail);
   LoadConstant(ARMEmitter::Size::i32Bit, Dst, 1);
-  Bind(&End);
+  BindOrRestart(&End);
 }
 
 DEF_OP(ThreadRemoveCodeEntry) {
