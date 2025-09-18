@@ -62,27 +62,27 @@ DEF_OP(CASPair) {
     ARMEmitter::BackwardLabel LoopTop;
     ARMEmitter::ForwardLabel LoopNotExpected;
     ARMEmitter::ForwardLabel LoopExpected;
-    Bind(&LoopTop);
+    (void)Bind(&LoopTop);
 
     // This instruction sequence must be synced with HandleCASPAL_Armv8.
     ldaxp(EmitSize, TMP2, TMP3, MemSrc);
     cmp(EmitSize, TMP2, Expected0);
     ccmp(EmitSize, TMP3, Expected1, ARMEmitter::StatusFlags::None, ARMEmitter::Condition::CC_EQ);
-    b(ARMEmitter::Condition::CC_NE, &LoopNotExpected);
+    (void)b(ARMEmitter::Condition::CC_NE, &LoopNotExpected);
     stlxp(EmitSize, TMP2, Desired0, Desired1, MemSrc);
-    cbnz(EmitSize, TMP2, &LoopTop);
+    (void)cbnz(EmitSize, TMP2, &LoopTop);
     mov(EmitSize, Dst0, Expected0);
     mov(EmitSize, Dst1, Expected1);
 
-    b(&LoopExpected);
+    (void)b(&LoopExpected);
 
-    Bind(&LoopNotExpected);
+    (void)Bind(&LoopNotExpected);
     mov(EmitSize, Dst0, TMP2.R());
     mov(EmitSize, Dst1, TMP3.R());
     // exclusive monitor needs to be cleared here
     // Might have hit the case where ldaxr was hit but stlxr wasn't
     clrex();
-    Bind(&LoopExpected);
+    (void)Bind(&LoopExpected);
 
     // Restore
     msr(ARMEmitter::SystemRegister::NZCV, TMP1);
@@ -114,7 +114,7 @@ DEF_OP(CAS) {
     ARMEmitter::BackwardLabel LoopTop;
     ARMEmitter::ForwardLabel LoopNotExpected;
     ARMEmitter::ForwardLabel LoopExpected;
-    Bind(&LoopTop);
+    (void)Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
     if (IROp->Size == IR::OpSize::i8Bit) {
       cmp(EmitSize, TMP2, Expected, ARMEmitter::ExtendedType::UXTB, 0);
@@ -123,18 +123,18 @@ DEF_OP(CAS) {
     } else {
       cmp(EmitSize, TMP2, Expected);
     }
-    b(ARMEmitter::Condition::CC_NE, &LoopNotExpected);
+    (void)b(ARMEmitter::Condition::CC_NE, &LoopNotExpected);
     stlxr(SubEmitSize, TMP3, Desired, MemSrc);
-    cbnz(EmitSize, TMP3, &LoopTop);
+    (void)cbnz(EmitSize, TMP3, &LoopTop);
     mov(EmitSize, Dst, Expected);
-    b(&LoopExpected);
+    (void)b(&LoopExpected);
 
-    Bind(&LoopNotExpected);
+    (void)Bind(&LoopNotExpected);
     mov(EmitSize, Dst, TMP2.R());
     // exclusive monitor needs to be cleared here
     // Might have hit the case where ldaxr was hit but stlxr wasn't
     clrex();
-    Bind(&LoopExpected);
+    (void)Bind(&LoopExpected);
   }
 }
 
@@ -150,11 +150,11 @@ DEF_OP(AtomicXor) {
     steorl(SubEmitSize, Src, MemSrc);
   } else {
     ARMEmitter::BackwardLabel LoopTop;
-    Bind(&LoopTop);
+    (void)Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
     eor(EmitSize, TMP2, TMP2, Src);
     stlxr(SubEmitSize, TMP2, TMP2, MemSrc);
-    cbnz(EmitSize, TMP2, &LoopTop);
+    (void)cbnz(EmitSize, TMP2, &LoopTop);
   }
 }
 
@@ -179,10 +179,10 @@ DEF_OP(AtomicSwap) {
     ldswpal(SubEmitSize, Src, GetReg(Node), MemSrc);
   } else {
     ARMEmitter::BackwardLabel LoopTop;
-    Bind(&LoopTop);
+    (void)Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
     stlxr(SubEmitSize, TMP4, Src, MemSrc);
-    cbnz(EmitSize, TMP4, &LoopTop);
+    (void)cbnz(EmitSize, TMP4, &LoopTop);
     ubfm(EmitSize, GetReg(Node), TMP2, 0, IR::OpSizeAsBits(OpSize) - 1);
   }
 }
@@ -199,11 +199,11 @@ DEF_OP(AtomicFetchAdd) {
     ldaddal(SubEmitSize, Src, GetReg(Node), MemSrc);
   } else {
     ARMEmitter::BackwardLabel LoopTop;
-    Bind(&LoopTop);
+    (void)Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
     add(EmitSize, TMP3, TMP2, Src);
     stlxr(SubEmitSize, TMP4, TMP3, MemSrc);
-    cbnz(EmitSize, TMP4, &LoopTop);
+    (void)cbnz(EmitSize, TMP4, &LoopTop);
     mov(EmitSize, GetReg(Node), TMP2.R());
   }
 }
@@ -221,11 +221,11 @@ DEF_OP(AtomicFetchSub) {
     ldaddal(SubEmitSize, TMP2, GetReg(Node), MemSrc);
   } else {
     ARMEmitter::BackwardLabel LoopTop;
-    Bind(&LoopTop);
+    (void)Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
     sub(EmitSize, TMP3, TMP2, Src);
     stlxr(SubEmitSize, TMP4, TMP3, MemSrc);
-    cbnz(EmitSize, TMP4, &LoopTop);
+    (void)cbnz(EmitSize, TMP4, &LoopTop);
     mov(EmitSize, GetReg(Node), TMP2.R());
   }
 }
@@ -243,11 +243,11 @@ DEF_OP(AtomicFetchAnd) {
     ldclral(SubEmitSize, TMP2, GetReg(Node), MemSrc);
   } else {
     ARMEmitter::BackwardLabel LoopTop;
-    Bind(&LoopTop);
+    (void)Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
     and_(EmitSize, TMP3, TMP2, Src);
     stlxr(SubEmitSize, TMP4, TMP3, MemSrc);
-    cbnz(EmitSize, TMP4, &LoopTop);
+    (void)cbnz(EmitSize, TMP4, &LoopTop);
     mov(EmitSize, GetReg(Node), TMP2.R());
   }
 }
@@ -264,11 +264,11 @@ DEF_OP(AtomicFetchCLR) {
     ldclral(SubEmitSize, Src, GetReg(Node), MemSrc);
   } else {
     ARMEmitter::BackwardLabel LoopTop;
-    Bind(&LoopTop);
+    (void)Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
     bic(EmitSize, TMP3, TMP2, Src);
     stlxr(SubEmitSize, TMP4, TMP3, MemSrc);
-    cbnz(EmitSize, TMP4, &LoopTop);
+    (void)cbnz(EmitSize, TMP4, &LoopTop);
     mov(EmitSize, GetReg(Node), TMP2.R());
   }
 }
@@ -285,11 +285,11 @@ DEF_OP(AtomicFetchOr) {
     ldsetal(SubEmitSize, Src, GetReg(Node), MemSrc);
   } else {
     ARMEmitter::BackwardLabel LoopTop;
-    Bind(&LoopTop);
+    (void)Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
     orr(EmitSize, TMP3, TMP2, Src);
     stlxr(SubEmitSize, TMP4, TMP3, MemSrc);
-    cbnz(EmitSize, TMP4, &LoopTop);
+    (void)cbnz(EmitSize, TMP4, &LoopTop);
     mov(EmitSize, GetReg(Node), TMP2.R());
   }
 }
@@ -306,11 +306,11 @@ DEF_OP(AtomicFetchXor) {
     ldeoral(SubEmitSize, Src, GetReg(Node), MemSrc);
   } else {
     ARMEmitter::BackwardLabel LoopTop;
-    Bind(&LoopTop);
+    (void)Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
     eor(EmitSize, TMP3, TMP2, Src);
     stlxr(SubEmitSize, TMP4, TMP3, MemSrc);
-    cbnz(EmitSize, TMP4, &LoopTop);
+    (void)cbnz(EmitSize, TMP4, &LoopTop);
     mov(EmitSize, GetReg(Node), TMP2.R());
   }
 }
@@ -326,20 +326,20 @@ DEF_OP(AtomicFetchNeg) {
     // Use a CAS loop to avoid needing to emulate unaligned LLSC atomics
     ldr(SubEmitSize, TMP2, MemSrc);
     ARMEmitter::BackwardLabel LoopTop;
-    Bind(&LoopTop);
+    (void)Bind(&LoopTop);
     mov(EmitSize, TMP4, TMP2);
     neg(EmitSize, TMP3, TMP2);
     casal(SubEmitSize, TMP2, TMP3, MemSrc);
     sub(EmitSize, TMP3, TMP2, TMP4);
-    cbnz(EmitSize, TMP3, &LoopTop);
+    (void)cbnz(EmitSize, TMP3, &LoopTop);
     mov(EmitSize, GetReg(Node), TMP2.R());
   } else {
     ARMEmitter::BackwardLabel LoopTop;
-    Bind(&LoopTop);
+    (void)Bind(&LoopTop);
     ldaxr(SubEmitSize, TMP2, MemSrc);
     neg(EmitSize, TMP3, TMP2);
     stlxr(SubEmitSize, TMP4, TMP3, MemSrc);
-    cbnz(EmitSize, TMP4, &LoopTop);
+    (void)cbnz(EmitSize, TMP4, &LoopTop);
     mov(EmitSize, GetReg(Node), TMP2.R());
   }
 }
@@ -359,11 +359,11 @@ DEF_OP(TelemetrySetValue) {
     stsetl(ARMEmitter::SubRegSize::i64Bit, TMP1, TMP2);
   } else {
     ARMEmitter::BackwardLabel LoopTop;
-    Bind(&LoopTop);
+    (void)Bind(&LoopTop);
     ldaxr(ARMEmitter::SubRegSize::i64Bit, TMP3, TMP2);
     orr(ARMEmitter::Size::i32Bit, TMP3, TMP3, Src);
     stlxr(ARMEmitter::SubRegSize::i64Bit, TMP3, TMP3, TMP2);
-    cbnz(ARMEmitter::Size::i32Bit, TMP3, &LoopTop);
+    (void)cbnz(ARMEmitter::Size::i32Bit, TMP3, &LoopTop);
   }
 #endif
 }
