@@ -11,8 +11,6 @@ desc: Main glue logic of the arm64 splatter backend
 $end_info$
 */
 
-#include "Common/SoftFloat.h"
-
 #include "Interface/Context/Context.h"
 #include "Interface/Core/LookupCache.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
@@ -37,7 +35,6 @@ $end_info$
 
 #include <cstdio>
 #include <cstring>
-#include <limits>
 #include <unistd.h>
 
 namespace {
@@ -742,11 +739,11 @@ void Arm64JITCore::EmitTFCheck() {
   // Note that this needs to be before the below suspend checks, as X86 checks this flag immediately after executing an instruction.
   ldrb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
 
-  cbz(ARMEmitter::Size::i32Bit, TMP1, &l_TFUnset);
+  (void)cbz(ARMEmitter::Size::i32Bit, TMP1, &l_TFUnset);
 
   // X86 semantically checks TF after executing each instruction, so e.g. setting a context with TF set will execute a single instruction
   // and then raise an exception. However on the FEX side this is simpler to implement by checking at the start of each instruction, handle this by having bit 1 being unset in the flag state indicate that TF is blocked for a single instruction.
-  tbz(TMP1, 1, &l_TFBlocked);
+  (void)tbz(TMP1, 1, &l_TFBlocked);
 
   // Block TF for a single instruction when the frontend jumps to a new context by unsetting bit 1.
   ldrb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
@@ -769,11 +766,11 @@ void Arm64JITCore::EmitTFCheck() {
   ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.GuestSignal_SIGTRAP));
   br(TMP1);
 
-  Bind(&l_TFBlocked);
+  (void)Bind(&l_TFBlocked);
   // If TF was blocked for this instruction, unblock it for the next.
   LoadConstant(ARMEmitter::Size::i32Bit, TMP1, 0b11);
   strb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
-  Bind(&l_TFUnset);
+  (void)Bind(&l_TFUnset);
 }
 
 void Arm64JITCore::EmitSuspendInterruptCheck() {
@@ -844,7 +841,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
   // Put the code header at the start of the data block.
   ARMEmitter::BackwardLabel JITCodeHeaderLabel {};
-  Bind(&JITCodeHeaderLabel);
+  (void)Bind(&JITCodeHeaderLabel);
   JITCodeHeader* CodeHeader = GetCursorAddress<JITCodeHeader*>();
   CursorIncrement(sizeof(JITCodeHeader));
 
