@@ -9,17 +9,17 @@ using namespace ARMEmitter;
 TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: PC relative") {
   {
     BackwardLabel Label;
-    Bind(&Label);
+    (void)Bind(&Label);
     dc32(0);
-    adr(Reg::r30, &Label);
+    (void)adr(Reg::r30, &Label);
 
     CHECK(DisassembleEncoding(1) == 0x10fffffe);
   }
 
   {
     ForwardLabel Label;
-    adr(Reg::r30, &Label);
-    Bind(&Label);
+    (void)adr(Reg::r30, &Label);
+    (void)Bind(&Label);
     dc32(0);
 
     CHECK(DisassembleEncoding(0) == 0x1000003e);
@@ -27,17 +27,17 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: PC relative") {
 
   {
     BiDirectionalLabel Label;
-    Bind(&Label);
+    (void)Bind(&Label);
     dc32(0);
-    adr(Reg::r30, &Label);
+    (void)adr(Reg::r30, &Label);
 
     CHECK(DisassembleEncoding(1) == 0x10fffffe);
   }
 
   {
     BiDirectionalLabel Label;
-    adr(Reg::r30, &Label);
-    Bind(&Label);
+    (void)adr(Reg::r30, &Label);
+    (void)Bind(&Label);
     dc32(0);
 
     CHECK(DisassembleEncoding(0) == 0x1000003e);
@@ -45,80 +45,80 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: PC relative") {
 
   {
     BackwardLabel Label;
-    Bind(&Label);
+    (void)Bind(&Label);
     dc32(0);
-    adrp(Reg::r30, &Label);
+    (void)adrp(Reg::r30, &Label);
 
     CHECK(DisassembleEncoding(1) == 0x9000001e);
   }
 
   {
     ForwardLabel Label;
-    adrp(Reg::r30, &Label);
+    (void)adrp(Reg::r30, &Label);
     // Move label a page away
     for (size_t i = 0; i < 1023; ++i) {
       nop();
     }
-    Bind(&Label);
+    (void)Bind(&Label);
 
     CHECK(DisassembleEncoding(0) == 0xb000001e);
   }
 
   {
     BiDirectionalLabel Label;
-    Bind(&Label);
+    (void)Bind(&Label);
     dc32(0);
-    adrp(Reg::r30, &Label);
+    (void)adrp(Reg::r30, &Label);
 
     CHECK(DisassembleEncoding(1) == 0x9000001e);
   }
 
   {
     BiDirectionalLabel Label;
-    adrp(Reg::r30, &Label);
+    (void)adrp(Reg::r30, &Label);
     // Move label a page away
     for (size_t i = 0; i < 1023; ++i) {
       nop();
     }
-    Bind(&Label);
+    (void)Bind(&Label);
 
     CHECK(DisassembleEncoding(0) == 0xb000001e);
   }
 
   {
-    // Will generate adr.
+    // Will generate (void)adr.
     BackwardLabel Label;
-    Bind(&Label);
+    (void)Bind(&Label);
     dc32(0);
 
-    LongAddressGen(Reg::r30, &Label);
+    (void)LongAddressGen(Reg::r30, &Label);
     CHECK(DisassembleEncoding(1) == 0x10fffffe);
   }
   {
-    // Will generate nop + adr.
+    // Will generate nop + (void)adr.
     ForwardLabel Label;
-    LongAddressGen(Reg::r30, &Label);
-    Bind(&Label);
+    (void)LongAddressGen(Reg::r30, &Label);
+    (void)Bind(&Label);
     dc32(0);
 
     CHECK(DisassembleEncoding(0) == 0xd503201f);
     CHECK(DisassembleEncoding(1) == 0x1000003e);
   }
   {
-    // Will generate adr.
+    // Will generate (void)adr.
     BiDirectionalLabel Label;
-    Bind(&Label);
+    (void)Bind(&Label);
     dc32(0);
-    LongAddressGen(Reg::r30, &Label);
+    (void)LongAddressGen(Reg::r30, &Label);
 
     CHECK(DisassembleEncoding(1) == 0x10fffffe);
   }
 
   {
-    // Will generate nop + adr.
+    // Will generate nop + (void)adr.
     BiDirectionalLabel Label;
-    LongAddressGen(Reg::r30, &Label);
-    Bind(&Label);
+    (void)LongAddressGen(Reg::r30, &Label);
+    (void)Bind(&Label);
     dc32(0);
 
     CHECK(DisassembleEncoding(0) == 0xd503201f);
@@ -126,33 +126,33 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: PC relative") {
   }
 
   {
-    // Will generate adrp.
+    // Will generate (void)adrp.
     BackwardLabel Label;
-    Bind(&Label);
+    (void)Bind(&Label);
     dc32(0);
 
-    // Move adrp 1MB away.
+    // Move (void)adrp 1MB away.
     for (size_t i = 0; i < (1 * 1024 * 1024 / 4); ++i) {
       nop();
     }
 
-    LongAddressGen(Reg::r30, &Label);
+    (void)LongAddressGen(Reg::r30, &Label);
     nop();
     CHECK(DisassembleEncoding(262145) == 0x90fff81e);
     CHECK(DisassembleEncoding(262146) == 0xd503201f);
   }
 
   {
-    // Will generate nop + adrp.
+    // Will generate nop + (void)adrp.
     ForwardLabel Label;
-    LongAddressGen(Reg::r30, &Label);
+    (void)LongAddressGen(Reg::r30, &Label);
 
     // Move label 1MB away, plus a page, and then aligned to a page.
     for (size_t i = 0; i < ((1 * 1024 * 1024 + 4096) / 4 - 2); ++i) {
       nop();
     }
 
-    Bind(&Label);
+    (void)Bind(&Label);
     dc32(0);
 
     CHECK(DisassembleEncoding(0) == 0xd503201f);
@@ -160,16 +160,16 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: PC relative") {
   }
 
   {
-    // Will generate adrp + add.
+    // Will generate (void)adrp + add.
     ForwardLabel Label;
-    LongAddressGen(Reg::r30, &Label);
+    (void)LongAddressGen(Reg::r30, &Label);
 
     // Move label 1MB away, plus a page, plus one instruction.
     for (size_t i = 0; i < ((1 * 1024 * 1024 + 4096) / 4 - 1); ++i) {
       nop();
     }
 
-    Bind(&Label);
+    (void)Bind(&Label);
     dc32(0);
 
     CHECK(DisassembleEncoding(0) == 0xb000081e);
@@ -178,33 +178,33 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: PC relative") {
 
 
   {
-    // Will generate adrp.
+    // Will generate (void)adrp.
     BiDirectionalLabel Label;
-    Bind(&Label);
+    (void)Bind(&Label);
     dc32(0);
 
-    // Move adrp 1MB away.
+    // Move (void)adrp 1MB away.
     for (size_t i = 0; i < (1 * 1024 * 1024 / 4); ++i) {
       nop();
     }
 
-    LongAddressGen(Reg::r30, &Label);
+    (void)LongAddressGen(Reg::r30, &Label);
     nop();
     CHECK(DisassembleEncoding(262145) == 0x90fff81e);
     CHECK(DisassembleEncoding(262146) == 0xd503201f);
   }
 
   {
-    // Will generate nop + adrp.
+    // Will generate nop + (void)adrp.
     BiDirectionalLabel Label;
-    LongAddressGen(Reg::r30, &Label);
+    (void)LongAddressGen(Reg::r30, &Label);
 
     // Move label 1MB away, plus a page, and then aligned to a page.
     for (size_t i = 0; i < ((1 * 1024 * 1024 + 4096) / 4 - 2); ++i) {
       nop();
     }
 
-    Bind(&Label);
+    (void)Bind(&Label);
     dc32(0);
 
     CHECK(DisassembleEncoding(0) == 0xd503201f);
@@ -212,16 +212,16 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: ALU: PC relative") {
   }
 
   {
-    // Will generate adrp + add.
+    // Will generate (void)adrp + add.
     BiDirectionalLabel Label;
-    LongAddressGen(Reg::r30, &Label);
+    (void)LongAddressGen(Reg::r30, &Label);
 
     // Move label 1MB away, plus a page, plus one instruction.
     for (size_t i = 0; i < ((1 * 1024 * 1024 + 4096) / 4 - 1); ++i) {
       nop();
     }
 
-    Bind(&Label);
+    (void)Bind(&Label);
     dc32(0);
 
     CHECK(DisassembleEncoding(0) == 0xb000081e);
