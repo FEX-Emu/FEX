@@ -2000,7 +2000,7 @@
       ]
     },
     "fst dword [rax]": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 16,
       "Comment": [
         "0xd9 !11b /2"
       ],
@@ -2015,11 +2015,16 @@
         "blr x0",
         "ldr x30, [sp], #16",
         "fmov s2, s0",
+        "mov x20, v2.d[0]",
+        "fcmp d2, d2",
+        "orr x20, x20, #0x8000000000000",
+        "fmov d3, x20",
+        "fcsel d2, d3, d2, vs",
         "str s2, [x4]"
       ]
     },
     "fstp dword [rax]": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 24,
       "Comment": [
         "0xd9 !11b /3"
       ],
@@ -2034,6 +2039,11 @@
         "blr x0",
         "ldr x30, [sp], #16",
         "fmov s2, s0",
+        "mov x21, v2.d[0]",
+        "fcmp d2, d2",
+        "orr x21, x21, #0x8000000000000",
+        "fmov d3, x21",
+        "fcsel d2, d3, d2, vs",
         "str s2, [x4]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
@@ -6767,7 +6777,7 @@
       ]
     },
     "fst qword [rax]": {
-      "ExpectedInstructionCount": 11,
+      "ExpectedInstructionCount": 16,
       "Comment": [
         "0xdd !11b /2"
       ],
@@ -6782,11 +6792,16 @@
         "blr x0",
         "ldr x30, [sp], #16",
         "fmov d2, d0",
+        "mov x20, v2.d[0]",
+        "fcmp d2, d2",
+        "orr x20, x20, #0x8000000000000",
+        "fmov d3, x20",
+        "fcsel d2, d3, d2, vs",
         "str d2, [x4]"
       ]
     },
     "fstp qword [rax]": {
-      "ExpectedInstructionCount": 19,
+      "ExpectedInstructionCount": 24,
       "Comment": [
         "0xdd !11b /3"
       ],
@@ -6801,6 +6816,11 @@
         "blr x0",
         "ldr x30, [sp], #16",
         "fmov d2, d0",
+        "mov x21, v2.d[0]",
+        "fcmp d2, d2",
+        "orr x21, x21, #0x8000000000000",
+        "fmov d3, x21",
+        "fcsel d2, d3, d2, vs",
         "str d2, [x4]",
         "add w21, w20, #0x1 (1)",
         "and w21, w21, #0x7",
