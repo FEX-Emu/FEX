@@ -911,7 +911,7 @@ DEF_OP(VLoadVectorMasked) {
 
       // If the sign bit is zero then skip the load
       ARMEmitter::ForwardLabel Skip {};
-      tbz(WorkingReg, ElementSizeInBits - 1, &Skip);
+      (void)tbz(WorkingReg, ElementSizeInBits - 1, &Skip);
       // Do the gather load for this element into the destination
       switch (IROp->ElementSize) {
       case IR::OpSize::i8Bit: ld1<ARMEmitter::SubRegSize::i8Bit>(TempDst.Q(), i, TempMemReg); break;
@@ -922,7 +922,7 @@ DEF_OP(VLoadVectorMasked) {
       default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, IROp->ElementSize); return;
       }
 
-      Bind(&Skip);
+      (void)Bind(&Skip);
 
       if ((i + 1) != NumElements) {
         // Handle register rename to save a move.
@@ -1012,7 +1012,7 @@ DEF_OP(VStoreVectorMasked) {
 
       // If the sign bit is zero then skip the load
       ARMEmitter::ForwardLabel Skip {};
-      tbz(WorkingReg, ElementSizeInBits - 1, &Skip);
+      (void)tbz(WorkingReg, ElementSizeInBits - 1, &Skip);
       // Do the gather load for this element into the destination
       switch (IROp->ElementSize) {
       case IR::OpSize::i8Bit: st1<ARMEmitter::SubRegSize::i8Bit>(RegData.Q(), i, TempMemReg); break;
@@ -1023,7 +1023,7 @@ DEF_OP(VStoreVectorMasked) {
       default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, IROp->ElementSize); return;
       }
 
-      Bind(&Skip);
+      (void)Bind(&Skip);
 
       if ((i + 1) != NumElements) {
         // Handle register rename to save a move.
@@ -1101,7 +1101,7 @@ void Arm64JITCore::Emulate128BitGather(IR::OpSize Size, IR::OpSize ElementSize, 
     PerformMove(ElementSize, WorkingReg, MaskReg, i);
 
     // Skip if the mask's sign bit isn't set
-    tbz(WorkingReg, ElementSizeInBits - 1, &Skip);
+    (void)tbz(WorkingReg, ElementSizeInBits - 1, &Skip);
 
     // Extract Index Element
     if ((IndexElement * IR::OpSizeToSize(VectorIndexSize)) >= 16) {
@@ -1139,7 +1139,7 @@ void Arm64JITCore::Emulate128BitGather(IR::OpSize Size, IR::OpSize ElementSize, 
     default: LOGMAN_MSG_A_FMT("Unhandled {} size: {}", __func__, ElementSize); FEX_UNREACHABLE;
     }
 
-    Bind(&Skip);
+    (void)Bind(&Skip);
   }
 
   if (NeedsDestTmp) {
@@ -1870,7 +1870,7 @@ DEF_OP(MemSet) {
 
   if (!DirectionIsInline) {
     // Backward or forwards implementation depends on flag
-    tbnz(DirectionReg, 1, &BackwardImpl);
+    (void)tbnz(DirectionReg, 1, &BackwardImpl);
   }
 
   auto MemStore = [this](auto Value, uint32_t OpSize, int32_t Size) {
@@ -1918,7 +1918,7 @@ DEF_OP(MemSet) {
     ARMEmitter::ForwardLabel DoneInternal {};
 
     // Early exit if zero count.
-    cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
+    (void)cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
 
     if (!IsAtomic) {
       ARMEmitter::ForwardLabel AgainInternal256Exit {};
@@ -1935,50 +1935,50 @@ DEF_OP(MemSet) {
       // Do this in two parts, to fallback to the byte by byte loop if size < 32, and to the
       // single copy loop if size < 64.
       sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 32 / Size);
-      tbnz(TMP1, 63, &AgainInternal128Exit);
+      (void)tbnz(TMP1, 63, &AgainInternal128Exit);
 
       // Fill VTMP2 with the set pattern
       dup(SubRegSize, VTMP2.Q(), Value);
 
       sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 32 / Size);
-      tbnz(TMP1, 63, &AgainInternal256Exit);
+      (void)tbnz(TMP1, 63, &AgainInternal256Exit);
 
-      Bind(&AgainInternal256);
+      (void)Bind(&AgainInternal256);
       stp<ARMEmitter::IndexType::POST>(VTMP2.Q(), VTMP2.Q(), TMP2, 32 * Direction);
       stp<ARMEmitter::IndexType::POST>(VTMP2.Q(), VTMP2.Q(), TMP2, 32 * Direction);
       sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 64 / Size);
-      tbz(TMP1, 63, &AgainInternal256);
+      (void)tbz(TMP1, 63, &AgainInternal256);
 
-      Bind(&AgainInternal256Exit);
+      (void)Bind(&AgainInternal256Exit);
       add(ARMEmitter::Size::i64Bit, TMP1, TMP1, 64 / Size);
-      cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
+      (void)cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
 
       sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 32 / Size);
-      tbnz(TMP1, 63, &AgainInternal128Exit);
-      Bind(&AgainInternal128);
+      (void)tbnz(TMP1, 63, &AgainInternal128Exit);
+      (void)Bind(&AgainInternal128);
       stp<ARMEmitter::IndexType::POST>(VTMP2.Q(), VTMP2.Q(), TMP2, 32 * Direction);
       sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 32 / Size);
-      tbz(TMP1, 63, &AgainInternal128);
+      (void)tbz(TMP1, 63, &AgainInternal128);
 
-      Bind(&AgainInternal128Exit);
+      (void)Bind(&AgainInternal128Exit);
       add(ARMEmitter::Size::i64Bit, TMP1, TMP1, 32 / Size);
-      cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
+      (void)cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
 
       if (Direction == -1) {
         add(ARMEmitter::Size::i64Bit, TMP2, TMP2, 32 - Size);
       }
     }
 
-    Bind(&AgainInternal);
+    (void)Bind(&AgainInternal);
     if (IsAtomic) {
       MemStoreTSO(Value, OpSize, SizeDirection);
     } else {
       MemStore(Value, OpSize, SizeDirection);
     }
     sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 1);
-    cbnz(ARMEmitter::Size::i64Bit, TMP1, &AgainInternal);
+    (void)cbnz(ARMEmitter::Size::i64Bit, TMP1, &AgainInternal);
 
-    Bind(&DoneInternal);
+    (void)Bind(&DoneInternal);
 
     if (SizeDirection >= 0) {
       switch (OpSize) {
@@ -2008,12 +2008,12 @@ DEF_OP(MemSet) {
       EmitMemset(Direction);
 
       if (Direction == 1) {
-        b(&Done);
-        Bind(&BackwardImpl);
+        (void)b(&Done);
+        (void)Bind(&BackwardImpl);
       }
     }
 
-    Bind(&Done);
+    (void)Bind(&Done);
     // Destination already set to the final pointer.
   }
 }
@@ -2063,7 +2063,7 @@ DEF_OP(MemCpy) {
 
   if (!DirectionIsInline) {
     // Backward or forwards implementation depends on flag
-    tbnz(DirectionReg, 1, &BackwardImpl);
+    (void)tbnz(DirectionReg, 1, &BackwardImpl);
   }
 
   auto MemCpy = [this](uint32_t OpSize, int32_t Size) {
@@ -2160,7 +2160,7 @@ DEF_OP(MemCpy) {
     ARMEmitter::ForwardLabel DoneInternal {};
 
     // Early exit if zero count.
-    cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
+    (void)cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
 
     if (!IsAtomic) {
       ARMEmitter::ForwardLabel AbsPos {};
@@ -2170,11 +2170,11 @@ DEF_OP(MemCpy) {
       ARMEmitter::BackwardLabel AgainInternal256 {};
 
       sub(ARMEmitter::Size::i64Bit, TMP4, TMP2, TMP3);
-      tbz(TMP4, 63, &AbsPos);
+      (void)tbz(TMP4, 63, &AbsPos);
       neg(ARMEmitter::Size::i64Bit, TMP4, TMP4);
-      Bind(&AbsPos);
+      (void)Bind(&AbsPos);
       sub(ARMEmitter::Size::i64Bit, TMP4, TMP4, 32);
-      tbnz(TMP4, 63, &AgainInternal);
+      (void)tbnz(TMP4, 63, &AgainInternal);
 
       if (Direction == -1) {
         sub(ARMEmitter::Size::i64Bit, TMP2, TMP2, 32 - Size);
@@ -2186,30 +2186,30 @@ DEF_OP(MemCpy) {
       // Do this in two parts, to fallback to the byte by byte loop if size < 32, and to the
       // single copy loop if size < 64.
       sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 32 / Size);
-      tbnz(TMP1, 63, &AgainInternal128Exit);
+      (void)tbnz(TMP1, 63, &AgainInternal128Exit);
       sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 32 / Size);
-      tbnz(TMP1, 63, &AgainInternal256Exit);
+      (void)tbnz(TMP1, 63, &AgainInternal256Exit);
 
-      Bind(&AgainInternal256);
+      (void)Bind(&AgainInternal256);
       MemCpy(32, 32 * Direction);
       MemCpy(32, 32 * Direction);
       sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 64 / Size);
-      tbz(TMP1, 63, &AgainInternal256);
+      (void)tbz(TMP1, 63, &AgainInternal256);
 
-      Bind(&AgainInternal256Exit);
+      (void)Bind(&AgainInternal256Exit);
       add(ARMEmitter::Size::i64Bit, TMP1, TMP1, 64 / Size);
-      cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
+      (void)cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
 
       sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 32 / Size);
-      tbnz(TMP1, 63, &AgainInternal128Exit);
-      Bind(&AgainInternal128);
+      (void)tbnz(TMP1, 63, &AgainInternal128Exit);
+      (void)Bind(&AgainInternal128);
       MemCpy(32, 32 * Direction);
       sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 32 / Size);
-      tbz(TMP1, 63, &AgainInternal128);
+      (void)tbz(TMP1, 63, &AgainInternal128);
 
-      Bind(&AgainInternal128Exit);
+      (void)Bind(&AgainInternal128Exit);
       add(ARMEmitter::Size::i64Bit, TMP1, TMP1, 32 / Size);
-      cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
+      (void)cbz(ARMEmitter::Size::i64Bit, TMP1, &DoneInternal);
 
       if (Direction == -1) {
         add(ARMEmitter::Size::i64Bit, TMP2, TMP2, 32 - Size);
@@ -2217,16 +2217,16 @@ DEF_OP(MemCpy) {
       }
     }
 
-    Bind(&AgainInternal);
+    (void)Bind(&AgainInternal);
     if (IsAtomic) {
       MemCpyTSO(OpSize, SizeDirection);
     } else {
       MemCpy(OpSize, SizeDirection);
     }
     sub(ARMEmitter::Size::i64Bit, TMP1, TMP1, 1);
-    cbnz(ARMEmitter::Size::i64Bit, TMP1, &AgainInternal);
+    (void)cbnz(ARMEmitter::Size::i64Bit, TMP1, &AgainInternal);
 
-    Bind(&DoneInternal);
+    (void)Bind(&DoneInternal);
 
     // Needs to use temporaries just in case of overwrite
     mov(TMP1, MemRegDest.X());
@@ -2284,11 +2284,11 @@ DEF_OP(MemCpy) {
     for (int32_t Direction : {1, -1}) {
       EmitMemcpy(Direction);
       if (Direction == 1) {
-        b(&Done);
-        Bind(&BackwardImpl);
+        (void)b(&Done);
+        (void)Bind(&BackwardImpl);
       }
     }
-    Bind(&Done);
+    (void)Bind(&Done);
     // Destination already set to the final pointer.
   }
 }
@@ -2444,12 +2444,12 @@ DEF_OP(ParanoidStoreMemTSO) {
       umov<ARMEmitter::SubRegSize::i64Bit>(TMP1, Src, 0);
       umov<ARMEmitter::SubRegSize::i64Bit>(TMP2, Src, 1);
       ARMEmitter::BackwardLabel B;
-      Bind(&B);
+      (void)Bind(&B);
 
       // ldaxp must not have both the destination registers be the same
       ldaxp(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::zr, TMP3, MemReg); // <- Can hit SIGBUS. Overwritten with DMB
       stlxp(ARMEmitter::Size::i64Bit, TMP3, TMP1, TMP2, MemReg);          // <- Can also hit SIGBUS
-      cbnz(ARMEmitter::Size::i64Bit, TMP3, &B);                           // < Overwritten with DMB
+      (void)cbnz(ARMEmitter::Size::i64Bit, TMP3, &B);                     // < Overwritten with DMB
       break;
     }
     case IR::OpSize::i256Bit: {
