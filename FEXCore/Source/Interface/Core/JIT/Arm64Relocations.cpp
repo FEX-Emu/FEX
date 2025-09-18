@@ -63,7 +63,7 @@ void Arm64JITCore::PlaceNamedSymbolLiteral(NamedSymbolLiteralPair& Lit) {
   auto CurrentCursor = GetCursorAddress<uint8_t*>();
   Lit.MoveABI.NamedSymbolLiteral.Offset = CurrentCursor - CodeData.BlockBegin;
 
-  Bind(&Lit.Loc);
+  BindOrRestart(&Lit.Loc);
   dc64(Lit.Lit);
   Relocations.emplace_back(Lit.MoveABI);
 }
