@@ -19,6 +19,7 @@ $end_info$
 #include <FEXCore/fextl/map.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
+#include <FEXCore/Utils/LongJump.h>
 
 #include <CodeEmitter/Emitter.h>
 
@@ -61,6 +62,15 @@ private:
   const bool HostSupportsRPRES {};
   const bool HostSupportsAFP {};
 
+  struct RestartOptions {
+    FEXCore::LongJump::JumpBuf RestartJump;
+    bool NeedsLongJumps {};
+    enum class RestartOptionControl : uint64_t {
+      Incoming = 0,
+      NeedsLongJumps = 1,
+    };
+  };
+  RestartOptions RestartControl {};
   ARMEmitter::BiDirectionalLabel* PendingTargetLabel {};
   ARMEmitter::BiDirectionalLabel* PendingCallReturnTargetLabel {};
   FEXCore::Context::ContextImpl* CTX {};
@@ -315,12 +325,201 @@ private:
   void EmitLinkedBranch(uint64_t GuestRIP, bool Call) {
     PendingJumpThunks.push_back({GetCursorAddress<uint64_t>(), GuestRIP, {}});
     auto& Thunk = PendingJumpThunks.back();
-    Bind(&Thunk.Label);
+    BindOrRestart(&Thunk.Label);
     if (Call) {
-      bl(&Thunk.Label);
+      bl_OrRestart(&Thunk.Label);
     } else {
-      b(&Thunk.Label);
+      b_OrRestart(&Thunk.Label);
     }
+  }
+
+  // Restart helpers
+  template<typename T>
+  requires (std::is_same_v<T, ARMEmitter::ForwardLabel> || std::is_same_v<T, ARMEmitter::BackwardLabel> ||
+            std::is_same_v<T, ARMEmitter::BiDirectionalLabel> || std::is_same_v<T, ARMEmitter::ForwardLabel::Reference>)
+  void bl_OrRestart(T* Label) {
+    if (bl(Label)) [[likely]] {
+      return;
+    }
+
+    // We can support this but currently unnecessary.
+    LOGMAN_MSG_A_FMT("Tried to branch larger than 128MB away!");
+    // Restart(RestartOptions::RestartOptionControl::NeedsLongJumps);
+  }
+
+  template<typename T>
+  requires (std::is_same_v<T, ARMEmitter::ForwardLabel> || std::is_same_v<T, ARMEmitter::BackwardLabel> ||
+            std::is_same_v<T, ARMEmitter::BiDirectionalLabel> || std::is_same_v<T, ARMEmitter::ForwardLabel::Reference>)
+  void b_OrRestart(T* Label) {
+    if (b(Label)) [[likely]] {
+      return;
+    }
+
+    // We can support this but currently unnecessary.
+    LOGMAN_MSG_A_FMT("Tried to branch larger than 128MB away!");
+    // Restart(RestartOptions::RestartOptionControl::NeedsLongJumps);
+  }
+
+  template<typename T>
+  requires (std::is_same_v<T, ARMEmitter::ForwardLabel> || std::is_same_v<T, ARMEmitter::BackwardLabel> ||
+            std::is_same_v<T, ARMEmitter::BiDirectionalLabel> || std::is_same_v<T, ARMEmitter::ForwardLabel::Reference>)
+  void b_OrRestart(ARMEmitter::Condition Cond, T* Label) {
+    if (RestartControl.NeedsLongJumps) [[unlikely]] {
+      ARMEmitter::ForwardLabel Skip {};
+      // Invert check and skip.
+      (void)b(InvertCondition(Cond), &Skip);
+      if (!b(Label)) [[unlikely]] {
+        LOGMAN_MSG_A_FMT("Tried to branch larger than 128MB away!");
+      }
+
+      (void)Bind(&Skip);
+      return;
+    }
+
+    if (b(Cond, Label)) [[likely]] {
+      return;
+    }
+
+    Restart(RestartOptions::RestartOptionControl::NeedsLongJumps);
+  }
+
+  template<typename T>
+  requires (std::is_same_v<T, ARMEmitter::ForwardLabel> || std::is_same_v<T, ARMEmitter::BackwardLabel> ||
+            std::is_same_v<T, ARMEmitter::BiDirectionalLabel> || std::is_same_v<T, ARMEmitter::ForwardLabel::Reference>)
+  void cbz_OrRestart(ARMEmitter::Size s, ARMEmitter::Register rt, T* Label) {
+    if (RestartControl.NeedsLongJumps) [[unlikely]] {
+      ARMEmitter::ForwardLabel Skip {};
+      // Invert check and skip.
+      (void)cbnz(s, rt, &Skip);
+      if (!b(Label)) [[unlikely]] {
+        LOGMAN_MSG_A_FMT("Tried to branch larger than 128MB away!");
+      }
+
+      (void)Bind(&Skip);
+      return;
+    }
+
+    if (cbz(s, rt, Label)) [[likely]] {
+      return;
+    }
+
+    Restart(RestartOptions::RestartOptionControl::NeedsLongJumps);
+  }
+
+  template<typename T>
+  requires (std::is_same_v<T, ARMEmitter::ForwardLabel> || std::is_same_v<T, ARMEmitter::BackwardLabel> ||
+            std::is_same_v<T, ARMEmitter::BiDirectionalLabel> || std::is_same_v<T, ARMEmitter::ForwardLabel::Reference>)
+  void cbnz_OrRestart(ARMEmitter::Size s, ARMEmitter::Register rt, T* Label) {
+    if (RestartControl.NeedsLongJumps) [[unlikely]] {
+      ARMEmitter::ForwardLabel Skip {};
+      // Invert check and skip.
+      (void)cbz(s, rt, &Skip);
+      if (!b(Label)) [[unlikely]] {
+        LOGMAN_MSG_A_FMT("Tried to branch larger than 128MB away!");
+      }
+
+      (void)Bind(&Skip);
+      return;
+    }
+
+    if (cbnz(s, rt, Label)) [[likely]] {
+      return;
+    }
+
+    Restart(RestartOptions::RestartOptionControl::NeedsLongJumps);
+  }
+
+  template<typename T>
+  requires (std::is_same_v<T, ARMEmitter::ForwardLabel> || std::is_same_v<T, ARMEmitter::BackwardLabel> ||
+            std::is_same_v<T, ARMEmitter::BiDirectionalLabel> || std::is_same_v<T, ARMEmitter::ForwardLabel::Reference>)
+  void tbz_OrRestart(ARMEmitter::Register rt, uint32_t Bit, T* Label) {
+    if (RestartControl.NeedsLongJumps) [[unlikely]] {
+      ARMEmitter::ForwardLabel Skip {};
+      // Invert check and skip.
+      (void)tbnz(rt, Bit, &Skip);
+      if (!b(Label)) [[unlikely]] {
+        LOGMAN_MSG_A_FMT("Tried to branch larger than 128MB away!");
+      }
+
+      (void)Bind(&Skip);
+      return;
+    }
+
+    if (tbz(rt, Bit, Label)) [[likely]] {
+      return;
+    }
+
+    Restart(RestartOptions::RestartOptionControl::NeedsLongJumps);
+  }
+
+  template<typename T>
+  requires (std::is_same_v<T, ARMEmitter::ForwardLabel> || std::is_same_v<T, ARMEmitter::BackwardLabel> ||
+            std::is_same_v<T, ARMEmitter::BiDirectionalLabel> || std::is_same_v<T, ARMEmitter::ForwardLabel::Reference>)
+  void tbnz_OrRestart(ARMEmitter::Register rt, uint32_t Bit, T* Label) {
+    if (RestartControl.NeedsLongJumps) [[unlikely]] {
+      ARMEmitter::ForwardLabel Skip {};
+      // Invert check and skip.
+      (void)tbz(rt, Bit, &Skip);
+      if (!b(Label)) [[unlikely]] {
+        LOGMAN_MSG_A_FMT("Tried to branch larger than 128MB away!");
+      }
+
+      (void)Bind(&Skip);
+      return;
+    }
+
+    if (tbnz(rt, Bit, Label)) [[likely]] {
+      return;
+    }
+
+    Restart(RestartOptions::RestartOptionControl::NeedsLongJumps);
+  }
+
+  template<typename T>
+  requires (std::is_same_v<T, ARMEmitter::ForwardLabel> || std::is_same_v<T, ARMEmitter::BackwardLabel> ||
+            std::is_same_v<T, ARMEmitter::BiDirectionalLabel> || std::is_same_v<T, ARMEmitter::ForwardLabel::Reference>)
+  void adr_OrRestart(ARMEmitter::Register rd, T* Label) {
+    if (adr(rd, Label)) [[likely]] {
+      return;
+    }
+
+    // We can support this but currently unnecessary.
+    LOGMAN_MSG_A_FMT("Long ADR currently unsupported!");
+    // Restart(RestartOptions::RestartOptionControl::NeedsLongJumps);
+  }
+
+  template<typename T>
+  requires (std::is_same_v<T, ARMEmitter::ForwardLabel> || std::is_same_v<T, ARMEmitter::BackwardLabel> ||
+            std::is_same_v<T, ARMEmitter::BiDirectionalLabel> || std::is_same_v<T, ARMEmitter::ForwardLabel::Reference>)
+  void adrp_OrRestart(ARMEmitter::Register rd, T* Label) {
+    if (adrp(rd, Label)) [[likely]] {
+      return;
+    }
+
+    // We can support this but currently unnecessary.
+    LOGMAN_MSG_A_FMT("Long ADRP currently unsupported!");
+    // Restart(RestartOptions::RestartOptionControl::NeedsLongJumps);
+  }
+
+  template<typename T>
+  requires (std::is_same_v<T, ARMEmitter::ForwardLabel> || std::is_same_v<T, ARMEmitter::BackwardLabel> ||
+            std::is_same_v<T, ARMEmitter::BiDirectionalLabel> || std::is_same_v<T, ARMEmitter::ForwardLabel::Reference>)
+  void BindOrRestart(T* Label) {
+    if (Bind(Label)) [[likely]] {
+      return;
+    }
+
+    if (RestartControl.NeedsLongJumps) [[unlikely]] {
+      // This should have been caught before this point.
+      LOGMAN_MSG_A_FMT("Oops. Unhandled long bind.");
+      return;
+    }
+
+    Restart(RestartOptions::RestartOptionControl::NeedsLongJumps);
+  }
+
+  [[noreturn]] void Restart(RestartOptions::RestartOptionControl Control) {
+    FEXCore::LongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(Control));
   }
 
   // This is purely a debugging aid for developers to see if they are in JIT code space when inspecting raw memory
