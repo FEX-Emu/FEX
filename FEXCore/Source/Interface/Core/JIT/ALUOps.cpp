@@ -588,7 +588,7 @@ DEF_OP(ShiftFlags) {
   and_(ARMEmitter::Size::i32Bit, TMP1, Src2, OpSize == IR::OpSize::i64Bit ? 0x3f : 0x1f);
 
   ARMEmitter::ForwardLabel Done;
-  cbz(EmitSize, TMP1, &Done);
+  (void)cbz(EmitSize, TMP1, &Done);
   {
     // PF/SF/ZF/OF
     if (OpSize >= IR::OpSize::i32Bit) {
@@ -652,7 +652,7 @@ DEF_OP(ShiftFlags) {
       msr(ARMEmitter::SystemRegister::NZCV, TMP2);
     }
   }
-  Bind(&Done);
+  (void)Bind(&Done);
 
   // TODO: Make RA less dumb so this can't happen (e.g. with late-kill).
   if (PFOutput != PFTemp) {
@@ -669,7 +669,7 @@ DEF_OP(RotateFlags) {
 
   // If shift=0, flags are unaffected. Wrap the whole implementation in a cbz.
   ARMEmitter::ForwardLabel Done;
-  cbz(EmitSize, Shift, &Done);
+  (void)cbz(EmitSize, Shift, &Done);
   {
     // Extract the last bit shifted in to CF
     const auto BitSize = IR::OpSizeToSize(Op->Size) * 8;
@@ -701,7 +701,7 @@ DEF_OP(RotateFlags) {
       msr(ARMEmitter::SystemRegister::NZCV, TMP3);
     }
   }
-  Bind(&Done);
+  (void)Bind(&Done);
 }
 
 DEF_OP(Extr) {
@@ -767,14 +767,14 @@ DEF_OP(PDep) {
     // Now, they're copied, so we can start setting Dest (even if it overlaps with
     // one of them).  Handle early exit case
     mov(EmitSize, Dest, 0);
-    cbz(EmitSize, OrigMask, &Done);
+    (void)cbz(EmitSize, OrigMask, &Done);
 
     // Setup for first iteration
     neg(EmitSize, T0, Mask);
     and_(EmitSize, T0, T0, Mask);
 
     // Main loop
-    Bind(&NextBit);
+    (void)Bind(&NextBit);
     sbfx(EmitSize, T1, Input, 0, 1);
     eor(EmitSize, Mask, Mask, T0);
     and_(EmitSize, T0, T1, T0);
@@ -782,10 +782,10 @@ DEF_OP(PDep) {
     orr(EmitSize, Dest, Dest, T0);
     lsr(EmitSize, Input, Input, 1);
     and_(EmitSize, T0, Mask, T1);
-    cbnz(EmitSize, T0, &NextBit);
+    (void)cbnz(EmitSize, T0, &NextBit);
 
     // All done with nothing to do.
-    Bind(&Done);
+    (void)Bind(&Done);
   }
 }
 
@@ -821,27 +821,27 @@ DEF_OP(PExt) {
     ARMEmitter::BackwardLabel NextBit;
     ARMEmitter::ForwardLabel Done;
 
-    cbz(EmitSize, Mask, &EarlyExit);
+    (void)cbz(EmitSize, Mask, &EarlyExit);
     mov(EmitSize, MaskReg, Mask);
     mov(EmitSize, ValueReg, Input);
     mov(EmitSize, Dest, ARMEmitter::Reg::zr);
 
     // Main loop
-    Bind(&NextBit);
-    cbz(EmitSize, MaskReg, &Done);
+    (void)Bind(&NextBit);
+    (void)cbz(EmitSize, MaskReg, &Done);
     clz(EmitSize, BitReg, MaskReg);
     lslv(EmitSize, ValueReg, ValueReg, BitReg);
     lslv(EmitSize, MaskReg, MaskReg, BitReg);
     extr(EmitSize, Dest, Dest, ValueReg, OpSizeBitsM1);
     bfc(EmitSize, MaskReg, OpSizeBitsM1, 1);
-    b(&NextBit);
+    (void)b(&NextBit);
 
     // Early exit
-    Bind(&EarlyExit);
+    (void)Bind(&EarlyExit);
     mov(EmitSize, Dest, ARMEmitter::Reg::zr);
 
     // All done with nothing to do.
-    Bind(&Done);
+    (void)Bind(&Done);
   }
 }
 
@@ -909,7 +909,7 @@ DEF_OP(Div) {
     eor(EmitSize, TMP1, TMP1, Upper);
 
     // If the sign bit matches then the result is zero
-    cbz(EmitSize, TMP1, &Only64Bit);
+    (void)cbz(EmitSize, TMP1, &Only64Bit);
 
     // Long divide
     {
@@ -928,17 +928,17 @@ DEF_OP(Div) {
       mov(EmitSize, Remainder, TMP2);
 
       // Skip 64-bit path
-      b(&LongDIVRet);
+      (void)b(&LongDIVRet);
     }
 
-    Bind(&Only64Bit);
+    (void)Bind(&Only64Bit);
     // 64-Bit only
     {
       sdiv(EmitSize, Quotient, Lower, Divisor);
       msub(EmitSize, Remainder, Quotient, Divisor, Lower);
     }
 
-    Bind(&LongDIVRet);
+    (void)Bind(&LongDIVRet);
     break;
   }
   default: LOGMAN_MSG_A_FMT("Unknown DIV Size: {}", OpSize); break;
@@ -992,7 +992,7 @@ DEF_OP(UDiv) {
 
     // Check the upper bits for zero
     // If the upper bits are zero then we can do a 64-bit divide
-    cbz(EmitSize, Upper, &Only64Bit);
+    (void)cbz(EmitSize, Upper, &Only64Bit);
 
     // Long divide
     {
@@ -1011,17 +1011,17 @@ DEF_OP(UDiv) {
       mov(EmitSize, Remainder, TMP2);
 
       // Skip 64-bit path
-      b(&LongDIVRet);
+      (void)b(&LongDIVRet);
     }
 
-    Bind(&Only64Bit);
+    (void)Bind(&Only64Bit);
     // 64-Bit only
     {
       udiv(EmitSize, Quotient, Lower, Divisor);
       msub(EmitSize, Remainder, Quotient, Divisor, Lower);
     }
 
-    Bind(&LongDIVRet);
+    (void)Bind(&LongDIVRet);
     break;
   }
   default: LOGMAN_MSG_A_FMT("Unknown LUDIV Size: {}", OpSize); break;
