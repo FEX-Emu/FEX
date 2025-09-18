@@ -1323,7 +1323,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: LDAPR/STLR unscaled imme
 TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Load register literal") {
   {
     BackwardLabel Label;
-    Bind(&Label);
+    (void)Bind(&Label);
     dc32(0);
     ldr(WReg::w30, &Label);
 
@@ -1332,7 +1332,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Load register literal") 
 
   {
     BackwardLabel Label;
-    Bind(&Label);
+    (void)Bind(&Label);
     dc32(0);
     ldr(SReg::s30, &Label);
 
@@ -1341,7 +1341,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Load register literal") 
 
   {
     BackwardLabel Label;
-    Bind(&Label);
+    (void)Bind(&Label);
     dc32(0);
     ldr(XReg::x30, &Label);
 
@@ -1350,7 +1350,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Load register literal") 
 
   {
     BackwardLabel Label;
-    Bind(&Label);
+    (void)Bind(&Label);
     dc32(0);
     ldr(DReg::d30, &Label);
 
@@ -1359,7 +1359,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Load register literal") 
 
   {
     BackwardLabel Label;
-    Bind(&Label);
+    (void)Bind(&Label);
     dc32(0);
     ldrsw(XReg::x30, &Label);
 
@@ -1368,7 +1368,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Load register literal") 
 
   {
     BackwardLabel Label;
-    Bind(&Label);
+    (void)Bind(&Label);
     dc32(0);
     ldr(QReg::q30, &Label);
 
@@ -1377,7 +1377,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Load register literal") 
 
   {
     BackwardLabel Label;
-    Bind(&Label);
+    (void)Bind(&Label);
     dc32(0);
     prfm(Prefetch::PLDL1KEEP, &Label);
 
@@ -1387,7 +1387,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Load register literal") 
   {
     ForwardLabel Label;
     ldr(WReg::w30, &Label);
-    Bind(&Label);
+    (void)Bind(&Label);
     dc32(0);
 
     CHECK(DisassembleEncoding(0) == 0x1800003e);
@@ -1396,7 +1396,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Load register literal") 
   {
     ForwardLabel Label;
     ldr(SReg::s30, &Label);
-    Bind(&Label);
+    (void)Bind(&Label);
     dc32(0);
 
     CHECK(DisassembleEncoding(0) == 0x1c00003e);
@@ -1405,7 +1405,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Load register literal") 
   {
     ForwardLabel Label;
     ldr(XReg::x30, &Label);
-    Bind(&Label);
+    (void)Bind(&Label);
     dc32(0);
 
     CHECK(DisassembleEncoding(0) == 0x5800003e);
@@ -1414,7 +1414,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Load register literal") 
   {
     ForwardLabel Label;
     ldr(DReg::d30, &Label);
-    Bind(&Label);
+    (void)Bind(&Label);
     dc32(0);
 
     CHECK(DisassembleEncoding(0) == 0x5c00003e);
@@ -1423,7 +1423,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Load register literal") 
   {
     ForwardLabel Label;
     ldrsw(XReg::x30, &Label);
-    Bind(&Label);
+    (void)Bind(&Label);
     dc32(0);
 
     CHECK(DisassembleEncoding(0) == 0x9800003e);
@@ -1432,7 +1432,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Load register literal") 
   {
     ForwardLabel Label;
     ldr(QReg::q30, &Label);
-    Bind(&Label);
+    (void)Bind(&Label);
     dc32(0);
 
     CHECK(DisassembleEncoding(0) == 0x9c00003e);
@@ -1441,7 +1441,7 @@ TEST_CASE_METHOD(TestDisassembler, "Emitter: Loadstore: Load register literal") 
   {
     ForwardLabel Label;
     prfm(Prefetch::PLDL1KEEP, &Label);
-    Bind(&Label);
+    (void)Bind(&Label);
     dc32(0);
 
     CHECK(DisassembleEncoding(0) == 0xd8000020);
