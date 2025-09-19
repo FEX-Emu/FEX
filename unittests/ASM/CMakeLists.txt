@@ -98,6 +98,7 @@ foreach(ASM_SRC ${ASM_SOURCES})
       "${CMAKE_SOURCE_DIR}/unittests/ASM/Disabled_Tests_${TEST_TYPE}"
       "${CMAKE_SOURCE_DIR}/unittests/ASM/Disabled_Tests_${CPU_CLASS}"
       "Test_${REL_TEST_ASM}"
+      "${TEST_NAME}"
       ${LAUNCH_PROGRAM}
       "${OUTPUT_NAME}" "${OUTPUT_CONFIG_NAME}")
     # This will cause the ASM tests to fail if it can't find the TestHarness or ASMN files

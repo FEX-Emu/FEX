@@ -5,9 +5,9 @@ import os.path
 from os import path
 from shutil import which
 
-# Args: <Known Failures file> <Known Failures Type File> <DisabledTestsFile> <DisabledTestsTypeFile> <DisabledTestsRunnerFile> <TestName> <Test Harness Executable> <Args>...
+# Args: <Known Failures file> <Known Failures Type File> <DisabledTestsFile> <DisabledTestsTypeFile> <DisabledTestsRunnerFile> <TestName> <FullTestName> <Test Harness Executable> <Args>...
 
-if (len(sys.argv) < 7):
+if (len(sys.argv) < 8):
     sys.exit()
 
 known_failures = {}
@@ -19,8 +19,9 @@ disabled_tests_type_file = sys.argv[4]
 disabled_tests_runner_file = sys.argv[5]
 
 current_test = sys.argv[6]
-runner = sys.argv[7]
-args_start_index = 8
+full_test_name = sys.argv[7]
+runner = sys.argv[8]
+args_start_index = 9
 
 # Open the known failures file and add it to a dictionary
 with open(known_failures_file) as kff:
@@ -63,7 +64,10 @@ Process = subprocess.Popen(RunnerArgs)
 Process.wait()
 ResultCode = Process.returncode
 
-if (known_failures.get(current_test)):
+# Check for known failures - try full test name first, then partial test name
+is_known_failure = known_failures.get(full_test_name) or known_failures.get(current_test)
+
+if (is_known_failure):
     # If the test is on the known failures list
     if (ResultCode):
         # If we errored but are on the known failures list then "pass" the test
