@@ -71,6 +71,7 @@ private:
     enum class Control : uint64_t {
       Incoming = 0,
       EnableFarARM64Jumps = 1,
+      NeedsLargerJITSpace = 2,
     };
   };
 
@@ -78,6 +79,8 @@ private:
   // In the rare case when those assumptions are broken, FEX needs to safely restart the JIT.
   RestartOptions RestartControl {};
   bool RequiresFarARM64Jumps {};
+  // Default to 6 instructions per SSA node.
+  uint32_t SSANodeMultiplier {24};
 
   ARMEmitter::BiDirectionalLabel* PendingTargetLabel {};
   ARMEmitter::BiDirectionalLabel* PendingCallReturnTargetLabel {};

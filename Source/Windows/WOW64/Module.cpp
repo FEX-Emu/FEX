@@ -29,6 +29,7 @@ $end_info$
 #include <FEXCore/Utils/SignalScopeGuards.h>
 
 #include "Common/CallRetStack.h"
+#include "Common/JITGuardPage.h"
 #include "Common/Config.h"
 #include "Common/Exception.h"
 #include "Common/TSOHandlerConfig.h"
@@ -881,6 +882,11 @@ bool BTCpuResetToConsistentStateImpl(EXCEPTION_POINTERS* Ptrs) {
 
     if (Context::HandleSuspendInterrupt(TLS, Context, FaultAddress)) {
       LogMan::Msg::DFmt("Resumed from suspend");
+      return true;
+    }
+
+    if (FEX::Windows::JITGuardPage::HandleJITGuardPage(Thread, reinterpret_cast<void*>(FaultAddress), Context->X,
+                                                       reinterpret_cast<__uint128_t*>(Context->V), &Context->Pc)) {
       return true;
     }
 

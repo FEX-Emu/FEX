@@ -824,6 +824,7 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   this->DebugData = DebugData;
   this->IR = IR;
   RequiresFarARM64Jumps = false;
+  SSANodeMultiplier = 24;
 
   // Prepare restart via long jump in case branch encoding fails.
   // This uses UncheckedLongJump since we don't implement std::longjmp in WoA setups
@@ -832,7 +833,12 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
     // Nothing
     break;
   case RestartOptions::Control::EnableFarARM64Jumps: RequiresFarARM64Jumps = true; break;
-  default: ERROR_AND_DIE_FMT("Unhandled Arm64 restart condition!");
+  case RestartOptions::Control::NeedsLargerJITSpace:
+    // Get rid of the claimed buffer immediately, we can't fit in it at all.
+    TempAllocator.UnclaimBuffer();
+    SSANodeMultiplier *= 2;
+    break;
+  default: LOGMAN_MSG_A_FMT("Unhandled Arm64 restart condition!");
   }
 
   uint32_t SSACount = IR->GetSSACount();
@@ -845,14 +851,16 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
   // Fairly excessive buffer range to make sure we don't overflow
   // One page baseline, plus SSANodeMultipler bytes, plus another page for guard page.
-  // TODO: Change '24' to SSANodeMultipler when supported.
-  const uint32_t BufferRange = AlignUp(FEXCore::Utils::FEX_PAGE_SIZE * 2 + SSACount * 24, FEXCore::Utils::FEX_PAGE_SIZE);
+  const uint32_t BufferRange = AlignUp(FEXCore::Utils::FEX_PAGE_SIZE * 2 + SSACount * SSANodeMultiplier, FEXCore::Utils::FEX_PAGE_SIZE);
   const uint32_t UsableBufferRange = BufferRange - FEXCore::Utils::FEX_PAGE_SIZE;
 
   // JIT output is first written to a temporary buffer and later relocated to the CodeBuffer.
   // This minimizes lock contention of CodeBufferWriteMutex.
   auto TempCodeBuffer = TempAllocator.ReownOrClaimBuffer(BufferRange);
   SetBuffer(TempCodeBuffer, UsableBufferRange);
+
+  ThreadState->JITGuardPage = reinterpret_cast<uintptr_t>(TempCodeBuffer) + UsableBufferRange;
+  ThreadState->JITGuardOverflowArgument = FEXCore::ToUnderlying(RestartOptions::Control::NeedsLargerJITSpace);
 
   CodeData.BlockBegin = GetCursorAddress<uint8_t*>();
 
@@ -1063,7 +1071,6 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
     // Query size of generated code
     const auto TempSize = GetCursorOffset();
-    LOGMAN_THROW_A_FMT(TempSize <= BufferRange, "Exceeded bounds of temporary buffer ({:#x} vs {:#x})", TempSize, BufferRange);
 
     // Bring CodeBuffer up to date
     {

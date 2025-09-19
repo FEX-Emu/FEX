@@ -119,6 +119,8 @@ struct alignas(FEXCore::Utils::FEX_PAGE_SIZE) InternalThreadState : public FEXCo
   // The low address of the call-ret stack allocation (not including guard pages)
   void* CallRetStackBase {};
 
+  uintptr_t JITGuardPage {};
+  uint64_t JITGuardOverflowArgument {};
   FEXCore::UncheckedLongJump::JumpBuf RestartJump;
 
   // BaseFrameState should always be at the end, directly before the interrupt fault page
