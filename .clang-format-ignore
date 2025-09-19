@@ -7,3 +7,6 @@ FEXCore/Source/Interface/Core/X86Tables/*
 # Inline headers with list-like content that can't be processed individually
 Source/Tools/LinuxEmulation/LinuxSyscalls/x*/SyscallsNames.inl
 Source/Tools/LinuxEmulation/LinuxSyscalls/x*/Ioctl/*.inl
+
+# Include files in unittests
+unittests/*ASM/Includes/*.inc

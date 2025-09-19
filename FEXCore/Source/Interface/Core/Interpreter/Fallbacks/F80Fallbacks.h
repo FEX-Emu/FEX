@@ -7,6 +7,7 @@
 
 #include <FEXCore/Debug/InternalThreadState.h>
 #include <FEXCore/Utils/SHMStats.h>
+#include <FEXCore/Config/Config.h>
 
 namespace FEXCore::CPU {
 FEXCORE_PRESERVE_ALL_ATTR static softfloat_state SoftFloatStateFromFCW(uint16_t FCW, bool Force80BitPrecision = false) {
@@ -77,6 +78,11 @@ struct OpHandlers<IR::OP_F80CVTTO> {
   FEXCORE_PRESERVE_ALL_ATTR static VectorRegType handle8(uint16_t FCW, double src, FEXCore::Core::CpuStateFrame* Frame) {
     FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     ScopedSoftFloatState State {FCW, Frame};
+    FEX_CONFIG_OPT(ReducedPrecisionMode, X87REDUCEDPRECISION);
+    FEX_CONFIG_OPT(StrictReducedPrecisionMode, X87STRICTREDUCEDPRECISION);
+    if (!ReducedPrecisionMode || StrictReducedPrecisionMode) {
+      return X80SoftFloat::FromF64_PreserveNaN(&State.State, src);
+    }
     return X80SoftFloat(&State.State, src);
   }
 };
@@ -115,6 +121,11 @@ struct OpHandlers<IR::OP_F80CVT> {
   FEXCORE_PRESERVE_ALL_ATTR static double handle8(uint16_t FCW, VectorRegType src, FEXCore::Core::CpuStateFrame* Frame) {
     FEXCORE_PROFILE_INSTANT_INCREMENT(Frame->Thread, AccumulatedFloatFallbackCount, 1);
     ScopedSoftFloatState State {FCW, Frame};
+    FEX_CONFIG_OPT(ReducedPrecisionMode, X87REDUCEDPRECISION);
+    FEX_CONFIG_OPT(StrictReducedPrecisionMode, X87STRICTREDUCEDPRECISION);
+    if (!ReducedPrecisionMode || StrictReducedPrecisionMode) {
+      return X80SoftFloat(src).ToF64_PreserveNan(&State.State);
+    }
     return X80SoftFloat(src).ToF64(&State.State);
   }
 };
