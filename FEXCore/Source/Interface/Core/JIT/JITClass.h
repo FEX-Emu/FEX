@@ -64,9 +64,12 @@ private:
 
   struct RestartOptions {
     bool NeedsLongJumps {};
+    // Default to 6 instructions per SSA node.
+    uint32_t SSANodeMultiplier {24};
     enum class RestartOptionControl : uint64_t {
       Incoming = 0,
       NeedsLongJumps = 1,
+      NeedsLargerJITSpace = 2,
     };
   };
   RestartOptions RestartControl {};

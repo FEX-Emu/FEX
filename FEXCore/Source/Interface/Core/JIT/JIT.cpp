@@ -828,12 +828,18 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   this->DebugData = DebugData;
   this->IR = IR;
   RestartControl.NeedsLongJumps = false;
+  RestartControl.SSANodeMultiplier = 24;
 
   switch (static_cast<RestartOptions::RestartOptionControl>(FEXCore::LongJump::SetJump(ThreadState->JITRestartJump))) {
   case RestartOptions::RestartOptionControl::Incoming:
     // Nothing
     break;
   case RestartOptions::RestartOptionControl::NeedsLongJumps: RestartControl.NeedsLongJumps = true; break;
+  case RestartOptions::RestartOptionControl::NeedsLargerJITSpace:
+    // Get rid of the claimed buffer immediately, we can't fit in it at all.
+    TempAllocator.UnclaimBuffer();
+    RestartControl.SSANodeMultiplier *= 2;
+    break;
   default: LOGMAN_MSG_A_FMT("Unhandled Arm64 restart condition!");
   }
 
@@ -855,6 +861,9 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   // This minimizes lock contention of CodeBufferWriteMutex.
   auto TempCodeBuffer = TempAllocator.ReownOrClaimBuffer(BufferRange);
   SetBuffer(TempCodeBuffer, UsableBufferRange);
+
+  ThreadState->JITGuardPage = reinterpret_cast<uintptr_t>(TempCodeBuffer) + UsableBufferRange;
+  ThreadState->JITGuardOverflowArgument = FEXCore::ToUnderlying(RestartOptions::RestartOptionControl::NeedsLargerJITSpace);
 
   CodeData.BlockBegin = GetCursorAddress<uint8_t*>();
 
@@ -1067,7 +1076,6 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
 
     // Query size of generated code
     const auto TempSize = GetCursorOffset();
-    LOGMAN_THROW_A_FMT(TempSize <= BufferRange, "Exceeded bounds of temporary buffer ({:#x} vs {:#x})", TempSize, BufferRange);
 
     // Bring CodeBuffer up to date
     {

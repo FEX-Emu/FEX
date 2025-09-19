@@ -110,6 +110,8 @@ struct InternalThreadState : public FEXCore::Allocator::FEXAllocOperators {
   // The low address of the call-ret stack allocation (not including guard pages)
   void* CallRetStackBase {};
 
+  uintptr_t JITGuardPage {};
+  uint64_t JITGuardOverflowArgument {};
   FEXCore::LongJump::JumpBuf JITRestartJump;
 
   // BaseFrameState should always be at the end, directly before the interrupt fault page
