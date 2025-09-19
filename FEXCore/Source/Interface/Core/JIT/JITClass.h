@@ -63,7 +63,6 @@ private:
   const bool HostSupportsAFP {};
 
   struct RestartOptions {
-    FEXCore::LongJump::JumpBuf RestartJump;
     bool NeedsLongJumps {};
     enum class RestartOptionControl : uint64_t {
       Incoming = 0,
@@ -519,7 +518,7 @@ private:
   }
 
   [[noreturn]] void Restart(RestartOptions::RestartOptionControl Control) {
-    FEXCore::LongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(Control));
+    FEXCore::LongJump::LongJump(ThreadState->JITRestartJump, FEXCore::ToUnderlying(Control));
   }
 
   // This is purely a debugging aid for developers to see if they are in JIT code space when inspecting raw memory
