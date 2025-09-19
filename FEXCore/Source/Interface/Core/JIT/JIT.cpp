@@ -844,12 +844,15 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   CodeData.EntryPoints.clear();
 
   // Fairly excessive buffer range to make sure we don't overflow
-  uint32_t BufferRange = 0x1000 + SSACount * 24;
+  // One page baseline, plus SSANodeMultipler bytes, plus another page for guard page.
+  // TODO: Change '24' to SSANodeMultipler when supported.
+  const uint32_t BufferRange = AlignUp(FEXCore::Utils::FEX_PAGE_SIZE * 2 + SSACount * 24, FEXCore::Utils::FEX_PAGE_SIZE);
+  const uint32_t UsableBufferRange = BufferRange - FEXCore::Utils::FEX_PAGE_SIZE;
 
   // JIT output is first written to a temporary buffer and later relocated to the CodeBuffer.
   // This minimizes lock contention of CodeBufferWriteMutex.
   auto TempCodeBuffer = TempAllocator.ReownOrClaimBuffer(BufferRange);
-  SetBuffer(TempCodeBuffer, BufferRange);
+  SetBuffer(TempCodeBuffer, UsableBufferRange);
 
   CodeData.BlockBegin = GetCursorAddress<uint8_t*>();
 

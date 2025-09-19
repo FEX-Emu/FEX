@@ -269,7 +269,7 @@ public:
 
   FEXCore::Utils::PooledAllocatorVirtual OpDispatcherAllocator {"FEXMem_OpDispatcher"};
   FEXCore::Utils::PooledAllocatorVirtual FrontendAllocator {"FEXMem_Frontend"};
-  FEXCore::Utils::PooledAllocatorVirtual CPUBackendAllocator {"FEXMem_CPUBackend"};
+  FEXCore::Utils::PooledAllocatorVirtualWithGuard CPUBackendAllocator {"FEXMem_CPUBackend"};
 
   // If Atomic-based TSO emulation is enabled or not.
   bool IsAtomicTSOEnabled() const {

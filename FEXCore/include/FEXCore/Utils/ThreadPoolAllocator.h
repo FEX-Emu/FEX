@@ -3,6 +3,8 @@
 
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/LogManager.h>
+#include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/Utils/TypeDefines.h>
 #include <FEXCore/fextl/list.h>
 
 #include <atomic>
@@ -394,6 +396,42 @@ private:
       FEXCore::Allocator::VirtualName(Name, Result, Size);
     }
     return Result;
+  }
+
+  void Free(void* Ptr, size_t Size) override {
+    FEXCore::Allocator::VirtualFree(Ptr, Size);
+  }
+
+  const char* Name {};
+};
+
+/**
+ * @brief Thread pool allocator that allocates and frees objects that uses mmap, with a guard page.
+ *
+ * The last page of the size provided has the guard.
+ */
+class PooledAllocatorVirtualWithGuard final : public IntrusivePooledAllocator {
+public:
+  PooledAllocatorVirtualWithGuard() = default;
+  PooledAllocatorVirtualWithGuard(const char* Name)
+    : Name {Name} {}
+
+  virtual ~PooledAllocatorVirtualWithGuard() {
+    FreeAllBuffers();
+  }
+
+private:
+  void* Alloc(size_t Size) override {
+    auto Ptr = FEXCore::Allocator::VirtualAlloc(Size);
+    uintptr_t LastPageAddr = AlignDown(reinterpret_cast<uintptr_t>(Ptr) + Size - 1, FEXCore::Utils::FEX_PAGE_SIZE);
+    if (!FEXCore::Allocator::VirtualProtect(reinterpret_cast<void*>(LastPageAddr), FEXCore::Utils::FEX_PAGE_SIZE,
+                                            FEXCore::Allocator::ProtectOptions::None)) {
+      LogMan::Msg::EFmt("Failed to mprotect last page of code buffer.");
+    }
+    if (Name) {
+      FEXCore::Allocator::VirtualName(Name, Ptr, Size);
+    }
+    return Ptr;
   }
 
   void Free(void* Ptr, size_t Size) override {
