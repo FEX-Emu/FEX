@@ -4,6 +4,7 @@
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/Utils/AllocatorHooks.h>
 #include <FEXCore/Utils/TypeDefines.h>
+#include <FEXCore/Utils/LongJump.h>
 #include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/vector.h>
 
@@ -117,6 +118,8 @@ struct alignas(FEXCore::Utils::FEX_PAGE_SIZE) InternalThreadState : public FEXCo
 
   // The low address of the call-ret stack allocation (not including guard pages)
   void* CallRetStackBase {};
+
+  FEXCore::UncheckedLongJump::JumpBuf RestartJump;
 
   // BaseFrameState should always be at the end, directly before the interrupt fault page
   alignas(16) FEXCore::Core::CpuStateFrame BaseFrameState {};
