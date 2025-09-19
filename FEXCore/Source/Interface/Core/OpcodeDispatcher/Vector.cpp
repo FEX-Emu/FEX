@@ -2630,11 +2630,19 @@ void OpDispatchBuilder::SaveX87State(OpcodeArgs, Ref MemBase) {
   // MXCSR_MASK: Mask for writes to the MXCSR register
   // If OSFXSR bit in CR4 is not set than FXSAVE /may/ not save the XMM registers
   // This is implementation dependent
-  for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; i += 2) {
-    Ref Low = _LoadContext(OpSize::i128Bit, FPRClass, MMBaseOffset() + i * 16);
-    Ref High = _LoadContext(OpSize::i128Bit, FPRClass, MMBaseOffset() + (i + 1) * 16);
+  //
+  // x87 registers are stored rotated depending on the current TOP.
+  Ref Top = GetX87Top();
+  auto SevenConst = Constant(7);
+  const auto LoadSize = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
 
-    _StoreMemPair(FPRClass, OpSize::i128Bit, Low, High, MemBase, i * 16 + 32);
+  for (uint32_t i = 0; i < Core::CPUState::NUM_MMS; ++i) {
+    Ref data = _LoadContextIndexed(Top, LoadSize, MMBaseOffset(), IR::OpSizeToSize(OpSize::i128Bit), FPRClass);
+    if (ReducedPrecisionMode) {
+      data = _F80CVTTo(data, OpSize::i64Bit);
+    }
+    _StoreMem(FPRClass, OpSize::i128Bit, data, MemBase, Constant(16 * i + 32), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
+    Top = _And(OpSize::i32Bit, Add(OpSize::i32Bit, Top, 1), SevenConst);
   }
 }
 
