@@ -204,7 +204,7 @@ uint64_t BPFEmitter::HandleJmp(uint32_t BPFIP, uint32_t NumInst, const sock_filt
       TargetLabel = JumpLabels.try_emplace(Target, ARMEmitter::ForwardLabel {}).first;
     }
 
-    EMIT_INST(b(&TargetLabel->second));
+    EMIT_INST((void)b(&TargetLabel->second));
     break;
   }
   case BPF_JEQ:
@@ -248,8 +248,8 @@ uint64_t BPFEmitter::HandleJmp(uint32_t BPFIP, uint32_t NumInst, const sock_filt
       TargetFalseLabel = JumpLabels.try_emplace(TargetFalse, ARMEmitter::ForwardLabel {}).first;
     }
 
-    EMIT_INST(b(CompareResultOp, &TargetTrueLabel->second));
-    EMIT_INST(b(&TargetFalseLabel->second));
+    EMIT_INST((void)b(CompareResultOp, &TargetTrueLabel->second));
+    EMIT_INST((void)b(&TargetFalseLabel->second));
     break;
   }
   default: RETURN_ERROR(-EINVAL); // Unknown jump type
@@ -303,7 +303,7 @@ uint64_t BPFEmitter::HandleEmission(uint32_t flags, const sock_fprog* prog) {
     if constexpr (!CalculateSize) {
       auto jump_label = JumpLabels.find(i);
       if (jump_label != JumpLabels.end()) {
-        Bind(&jump_label->second);
+        (void)Bind(&jump_label->second);
       }
     }
 
@@ -401,7 +401,7 @@ uint64_t BPFEmitter::JITFilter(uint32_t flags, const sock_fprog* prog) {
   // Emit the constant pool.
   Align();
   for (auto& Const : ConstPool) {
-    Bind(&Const.second);
+    (void)Bind(&Const.second);
     dc32(Const.first);
   }
 
