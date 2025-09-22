@@ -72,189 +72,191 @@ void CopySigInfo(FEXCore::x86::siginfo_t* Info, const siginfo_t& Host) {
   }
 }
 
+// Only gets the lower 32-bits of the signal mask
+auto sgetmask(FEXCore::Core::CpuStateFrame* Frame) -> uint64_t {
+  uint64_t Set {};
+  FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigProcMask(FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame), 0, nullptr, &Set);
+  return Set & ~0U;
+}
+
+// Only controls the lower 32-bits of the signal mask
+// Blocks the upper 32-bits
+auto ssetmask(FEXCore::Core::CpuStateFrame* Frame, uint32_t New) -> uint64_t {
+  uint64_t Set {};
+  uint64_t NewSet = (~0ULL << 32) | New;
+  FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigProcMask(FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame), SIG_SETMASK,
+                                                                    &NewSet, &Set);
+  return Set & ~0U;
+}
+
+// Only masks the lower 32-bits of the signal mask
+// The upper 32-bits are still active (unmasked) and can signal the program
+auto sigsuspend(FEXCore::Core::CpuStateFrame* Frame, uint32_t Mask) -> uint64_t {
+  uint64_t Mask64 = Mask;
+  return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigSuspend(FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame), &Mask64, 8);
+}
+
+auto sigpending(FEXCore::Core::CpuStateFrame* Frame, compat_old_sigset_t* set) -> uint64_t {
+  uint64_t HostSet {};
+  uint64_t Result =
+    FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigPending(FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame), &HostSet, 8);
+  if (Result == 0) {
+    // This old interface only returns the lower signals
+    FaultSafeUserMemAccess::VerifyIsWritable(set, sizeof(*set));
+    *set = HostSet & ~0U;
+  }
+  return Result;
+}
+
+auto signal(FEXCore::Core::CpuStateFrame* Frame, int signum, uint32_t handler) -> uint64_t {
+  GuestSigAction newact {};
+  GuestSigAction oldact {};
+  newact.sigaction_handler.handler = reinterpret_cast<decltype(newact.sigaction_handler.handler)>(handler);
+  FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSignalHandler(signum, &newact, &oldact);
+  return static_cast<uint32_t>(reinterpret_cast<uint64_t>(oldact.sigaction_handler.handler));
+}
+
+auto sigaction(FEXCore::Core::CpuStateFrame* Frame, int signum, const OldGuestSigAction_32* act, OldGuestSigAction_32* oldact) -> uint64_t {
+  GuestSigAction* act64_p {};
+  GuestSigAction* old64_p {};
+
+  GuestSigAction act64 {};
+  if (act) {
+    FaultSafeUserMemAccess::VerifyIsReadable(act, sizeof(*act));
+    act64 = *act;
+    act64_p = &act64;
+  }
+  GuestSigAction old64 {};
+
+  if (oldact) {
+    old64_p = &old64;
+  }
+
+  uint64_t Result = FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSignalHandler(signum, act64_p, old64_p);
+  if (Result == 0 && oldact) {
+    FaultSafeUserMemAccess::VerifyIsWritable(oldact, sizeof(*oldact));
+    *oldact = old64;
+  }
+
+  return Result;
+}
+
+auto rt_sigaction(FEXCore::Core::CpuStateFrame* Frame, int signum, const GuestSigAction_32* act, GuestSigAction_32* oldact, size_t sigsetsize)
+  -> uint64_t {
+  if (sigsetsize != 8) {
+    return -EINVAL;
+  }
+
+  GuestSigAction* act64_p {};
+  GuestSigAction* old64_p {};
+
+  GuestSigAction act64 {};
+  if (act) {
+    FaultSafeUserMemAccess::VerifyIsReadable(act, sizeof(*act));
+    act64 = *act;
+    act64_p = &act64;
+  }
+  GuestSigAction old64 {};
+
+  if (oldact) {
+    old64_p = &old64;
+  }
+
+  uint64_t Result = FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSignalHandler(signum, act64_p, old64_p);
+  if (Result == 0 && oldact) {
+    FaultSafeUserMemAccess::VerifyIsWritable(oldact, sizeof(*oldact));
+    *oldact = old64;
+  }
+
+  return Result;
+}
+
+auto rt_sigtimedwait(FEXCore::Core::CpuStateFrame* Frame, uint64_t* set, compat_ptr<FEXCore::x86::siginfo_t> info,
+                     const struct timespec32* timeout, size_t sigsetsize) -> uint64_t {
+  struct timespec* timeout_ptr {};
+  struct timespec tp64 {};
+  if (timeout) {
+    FaultSafeUserMemAccess::VerifyIsReadable(timeout, sizeof(*timeout));
+    tp64 = *timeout;
+    timeout_ptr = &tp64;
+  }
+
+  siginfo_t HostInfo {};
+  uint64_t Result = FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigTimedWait(set, &HostInfo, timeout_ptr, sigsetsize);
+  if (Result != -1) {
+    FaultSafeUserMemAccess::VerifyIsWritable(info, sizeof(*info));
+    // We need to translate the 64-bit siginfo_t to 32-bit siginfo_t
+    CopySigInfo(info, HostInfo);
+  }
+  return Result;
+}
+
+auto rt_sigtimedwait_time64(FEXCore::Core::CpuStateFrame* Frame, uint64_t* set, compat_ptr<FEXCore::x86::siginfo_t> info,
+                            const struct timespec* timeout, size_t sigsetsize) -> uint64_t {
+  siginfo_t HostInfo {};
+  uint64_t Result = FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigTimedWait(set, &HostInfo, timeout, sigsetsize);
+  if (Result != -1) {
+    FaultSafeUserMemAccess::VerifyIsWritable(info, sizeof(*info));
+    // We need to translate the 64-bit siginfo_t to 32-bit siginfo_t
+    CopySigInfo(info, HostInfo);
+  }
+  return Result;
+}
+
+auto pidfd_send_signal(FEXCore::Core::CpuStateFrame* Frame, int pidfd, int sig, compat_ptr<FEXCore::x86::siginfo_t> info, unsigned int flags)
+  -> uint64_t {
+  siginfo_t* InfoHost_ptr {};
+  siginfo_t InfoHost {};
+  if (info) {
+    FaultSafeUserMemAccess::VerifyIsReadable(info, sizeof(*info));
+    InfoHost = *info;
+    InfoHost_ptr = &InfoHost;
+  }
+
+  uint64_t Result = ::syscall(SYSCALL_DEF(pidfd_send_signal), pidfd, sig, InfoHost_ptr, flags);
+  SYSCALL_ERRNO();
+}
+
+auto rt_sigqueueinfo(FEXCore::Core::CpuStateFrame* Frame, pid_t pid, int sig, compat_ptr<FEXCore::x86::siginfo_t> info) -> uint64_t {
+  siginfo_t info64 {};
+  siginfo_t* info64_p {};
+
+  if (info) {
+    FaultSafeUserMemAccess::VerifyIsReadable(info, sizeof(*info));
+    info64 = *info;
+    info64_p = &info64;
+  }
+
+  uint64_t Result = ::syscall(SYSCALL_DEF(rt_sigqueueinfo), pid, sig, info64_p);
+  SYSCALL_ERRNO();
+}
+
+auto rt_tgsigqueueinfo(FEXCore::Core::CpuStateFrame* Frame, pid_t tgid, pid_t tid, int sig, compat_ptr<FEXCore::x86::siginfo_t> info) -> uint64_t {
+  siginfo_t info64 {};
+  siginfo_t* info64_p {};
+
+  if (info) {
+    FaultSafeUserMemAccess::VerifyIsReadable(info, sizeof(*info));
+    info64 = *info;
+    info64_p = &info64;
+  }
+
+  uint64_t Result = ::syscall(SYSCALL_DEF(rt_tgsigqueueinfo), tgid, tid, sig, info64_p);
+  SYSCALL_ERRNO();
+}
+
 void RegisterSignals(FEX::HLE::SyscallHandler* Handler) {
-
-  // Only gets the lower 32-bits of the signal mask
-  REGISTER_SYSCALL_IMPL_X32(sgetmask, [](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t {
-    uint64_t Set {};
-    FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigProcMask(FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame), 0, nullptr, &Set);
-    return Set & ~0U;
-  });
-
-  // Only controls the lower 32-bits of the signal mask
-  // Blocks the upper 32-bits
-  REGISTER_SYSCALL_IMPL_X32(ssetmask, [](FEXCore::Core::CpuStateFrame* Frame, uint32_t New) -> uint64_t {
-    uint64_t Set {};
-    uint64_t NewSet = (~0ULL << 32) | New;
-    FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigProcMask(FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame),
-                                                                      SIG_SETMASK, &NewSet, &Set);
-    return Set & ~0U;
-  });
-
-  // Only masks the lower 32-bits of the signal mask
-  // The upper 32-bits are still active (unmasked) and can signal the program
-  REGISTER_SYSCALL_IMPL_X32(sigsuspend, [](FEXCore::Core::CpuStateFrame* Frame, uint32_t Mask) -> uint64_t {
-    uint64_t Mask64 = Mask;
-    return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigSuspend(FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame), &Mask64, 8);
-  });
-
-  REGISTER_SYSCALL_IMPL_X32(sigpending, [](FEXCore::Core::CpuStateFrame* Frame, compat_old_sigset_t* set) -> uint64_t {
-    uint64_t HostSet {};
-    uint64_t Result =
-      FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigPending(FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame), &HostSet, 8);
-    if (Result == 0) {
-      // This old interface only returns the lower signals
-      FaultSafeUserMemAccess::VerifyIsWritable(set, sizeof(*set));
-      *set = HostSet & ~0U;
-    }
-    return Result;
-  });
-
-  REGISTER_SYSCALL_IMPL_X32(signal, [](FEXCore::Core::CpuStateFrame* Frame, int signum, uint32_t handler) -> uint64_t {
-    GuestSigAction newact {};
-    GuestSigAction oldact {};
-    newact.sigaction_handler.handler = reinterpret_cast<decltype(newact.sigaction_handler.handler)>(handler);
-    FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSignalHandler(signum, &newact, &oldact);
-    return static_cast<uint32_t>(reinterpret_cast<uint64_t>(oldact.sigaction_handler.handler));
-  });
-
-  REGISTER_SYSCALL_IMPL_X32(
-    sigaction, [](FEXCore::Core::CpuStateFrame* Frame, int signum, const OldGuestSigAction_32* act, OldGuestSigAction_32* oldact) -> uint64_t {
-      GuestSigAction* act64_p {};
-      GuestSigAction* old64_p {};
-
-      GuestSigAction act64 {};
-      if (act) {
-        FaultSafeUserMemAccess::VerifyIsReadable(act, sizeof(*act));
-        act64 = *act;
-        act64_p = &act64;
-      }
-      GuestSigAction old64 {};
-
-      if (oldact) {
-        old64_p = &old64;
-      }
-
-      uint64_t Result = FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSignalHandler(signum, act64_p, old64_p);
-      if (Result == 0 && oldact) {
-        FaultSafeUserMemAccess::VerifyIsWritable(oldact, sizeof(*oldact));
-        *oldact = old64;
-      }
-
-      return Result;
-    });
-
-  REGISTER_SYSCALL_IMPL_X32(
-    rt_sigaction,
-    [](FEXCore::Core::CpuStateFrame* Frame, int signum, const GuestSigAction_32* act, GuestSigAction_32* oldact, size_t sigsetsize) -> uint64_t {
-      if (sigsetsize != 8) {
-        return -EINVAL;
-      }
-
-      GuestSigAction* act64_p {};
-      GuestSigAction* old64_p {};
-
-      GuestSigAction act64 {};
-      if (act) {
-        FaultSafeUserMemAccess::VerifyIsReadable(act, sizeof(*act));
-        act64 = *act;
-        act64_p = &act64;
-      }
-      GuestSigAction old64 {};
-
-      if (oldact) {
-        old64_p = &old64;
-      }
-
-      uint64_t Result = FEX::HLE::_SyscallHandler->GetSignalDelegator()->RegisterGuestSignalHandler(signum, act64_p, old64_p);
-      if (Result == 0 && oldact) {
-        FaultSafeUserMemAccess::VerifyIsWritable(oldact, sizeof(*oldact));
-        *oldact = old64;
-      }
-
-      return Result;
-    });
-
-  REGISTER_SYSCALL_IMPL_X32(rt_sigtimedwait,
-                            [](FEXCore::Core::CpuStateFrame* Frame, uint64_t* set, compat_ptr<FEXCore::x86::siginfo_t> info,
-                               const struct timespec32* timeout, size_t sigsetsize) -> uint64_t {
-                              struct timespec* timeout_ptr {};
-                              struct timespec tp64 {};
-                              if (timeout) {
-                                FaultSafeUserMemAccess::VerifyIsReadable(timeout, sizeof(*timeout));
-                                tp64 = *timeout;
-                                timeout_ptr = &tp64;
-                              }
-
-                              siginfo_t HostInfo {};
-                              uint64_t Result =
-                                FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigTimedWait(set, &HostInfo, timeout_ptr, sigsetsize);
-                              if (Result != -1) {
-                                FaultSafeUserMemAccess::VerifyIsWritable(info, sizeof(*info));
-                                // We need to translate the 64-bit siginfo_t to 32-bit siginfo_t
-                                CopySigInfo(info, HostInfo);
-                              }
-                              return Result;
-                            });
-
-
-  REGISTER_SYSCALL_IMPL_X32(rt_sigtimedwait_time64,
-                            [](FEXCore::Core::CpuStateFrame* Frame, uint64_t* set, compat_ptr<FEXCore::x86::siginfo_t> info,
-                               const struct timespec* timeout, size_t sigsetsize) -> uint64_t {
-                              siginfo_t HostInfo {};
-                              uint64_t Result =
-                                FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigTimedWait(set, &HostInfo, timeout, sigsetsize);
-                              if (Result != -1) {
-                                FaultSafeUserMemAccess::VerifyIsWritable(info, sizeof(*info));
-                                // We need to translate the 64-bit siginfo_t to 32-bit siginfo_t
-                                CopySigInfo(info, HostInfo);
-                              }
-                              return Result;
-                            });
-
-  REGISTER_SYSCALL_IMPL_X32(
-    pidfd_send_signal,
-    [](FEXCore::Core::CpuStateFrame* Frame, int pidfd, int sig, compat_ptr<FEXCore::x86::siginfo_t> info, unsigned int flags) -> uint64_t {
-      siginfo_t* InfoHost_ptr {};
-      siginfo_t InfoHost {};
-      if (info) {
-        FaultSafeUserMemAccess::VerifyIsReadable(info, sizeof(*info));
-        InfoHost = *info;
-        InfoHost_ptr = &InfoHost;
-      }
-
-      uint64_t Result = ::syscall(SYSCALL_DEF(pidfd_send_signal), pidfd, sig, InfoHost_ptr, flags);
-      SYSCALL_ERRNO();
-    });
-
-  REGISTER_SYSCALL_IMPL_X32(
-    rt_sigqueueinfo, [](FEXCore::Core::CpuStateFrame* Frame, pid_t pid, int sig, compat_ptr<FEXCore::x86::siginfo_t> info) -> uint64_t {
-      siginfo_t info64 {};
-      siginfo_t* info64_p {};
-
-      if (info) {
-        FaultSafeUserMemAccess::VerifyIsReadable(info, sizeof(*info));
-        info64 = *info;
-        info64_p = &info64;
-      }
-
-      uint64_t Result = ::syscall(SYSCALL_DEF(rt_sigqueueinfo), pid, sig, info64_p);
-      SYSCALL_ERRNO();
-    });
-
-  REGISTER_SYSCALL_IMPL_X32(
-    rt_tgsigqueueinfo, [](FEXCore::Core::CpuStateFrame* Frame, pid_t tgid, pid_t tid, int sig, compat_ptr<FEXCore::x86::siginfo_t> info) -> uint64_t {
-      siginfo_t info64 {};
-      siginfo_t* info64_p {};
-
-      if (info) {
-        FaultSafeUserMemAccess::VerifyIsReadable(info, sizeof(*info));
-        info64 = *info;
-        info64_p = &info64;
-      }
-
-      uint64_t Result = ::syscall(SYSCALL_DEF(rt_tgsigqueueinfo), tgid, tid, sig, info64_p);
-      SYSCALL_ERRNO();
-    });
+  REGISTER_SYSCALL_IMPL_X32(sgetmask, sgetmask);
+  REGISTER_SYSCALL_IMPL_X32(ssetmask, ssetmask);
+  REGISTER_SYSCALL_IMPL_X32(sigsuspend, sigsuspend);
+  REGISTER_SYSCALL_IMPL_X32(sigpending, sigpending);
+  REGISTER_SYSCALL_IMPL_X32(signal, signal);
+  REGISTER_SYSCALL_IMPL_X32(sigaction, sigaction);
+  REGISTER_SYSCALL_IMPL_X32(rt_sigaction, rt_sigaction);
+  REGISTER_SYSCALL_IMPL_X32(rt_sigtimedwait, rt_sigtimedwait);
+  REGISTER_SYSCALL_IMPL_X32(rt_sigtimedwait_time64, rt_sigtimedwait_time64);
+  REGISTER_SYSCALL_IMPL_X32(pidfd_send_signal, pidfd_send_signal);
+  REGISTER_SYSCALL_IMPL_X32(rt_sigqueueinfo, rt_sigqueueinfo);
+  REGISTER_SYSCALL_IMPL_X32(rt_tgsigqueueinfo, rt_tgsigqueueinfo);
 }
 } // namespace FEX::HLE::x32
