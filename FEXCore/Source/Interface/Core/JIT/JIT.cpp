@@ -787,7 +787,7 @@ void Arm64JITCore::EmitSuspendInterruptCheck() {
 
   ldr(TMP2.W(), STATE_PTR(CpuStateFrame, SuspendDoorbell));
   ARMEmitter::ForwardLabel l_NoSuspend;
-  cbz(ARMEmitter::Size::i32Bit, TMP2, &l_NoSuspend);
+  (void)cbz(ARMEmitter::Size::i32Bit, TMP2, &l_NoSuspend);
   brk(SuspendMagic);
   (void)Bind(&l_NoSuspend);
 #endif
@@ -823,14 +823,14 @@ CPUBackend::CompiledCode Arm64JITCore::CompileCode(uint64_t Entry, uint64_t Size
   this->Entry = Entry;
   this->DebugData = DebugData;
   this->IR = IR;
-  RestartControl.NeedsLongJumps = false;
+  RequiresFarARM64Jumps = false;
 
-  switch (static_cast<RestartOptions::RestartOptionControl>(FEXCore::LongJump::SetJump(RestartControl.RestartJump))) {
-  case RestartOptions::RestartOptionControl::Incoming:
+  switch (static_cast<RestartOptions::Control>(FEXCore::LongJump::SetJump(RestartControl.RestartJump))) {
+  case RestartOptions::Control::Incoming:
     // Nothing
     break;
-  case RestartOptions::RestartOptionControl::NeedsLongJumps: RestartControl.NeedsLongJumps = true; break;
-  default: LOGMAN_MSG_A_FMT("Unhandled Arm64 restart condition!");
+  case RestartOptions::Control::EnableFarARM64Jumps: RequiresFarARM64Jumps = true; break;
+  default: ERROR_AND_DIE_FMT("Unhandled Arm64 restart condition!");
   }
 
   uint32_t SSACount = IR->GetSSACount();
