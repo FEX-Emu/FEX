@@ -4079,19 +4079,19 @@ void OpDispatchBuilder::CheckLegacySegmentRead(Ref NewNode, uint32_t SegmentReg)
   FEXCore::Telemetry::TelemetryType TelemIndex {};
   switch (SegmentReg) {
   case FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX:
-    TelemIndex = FEXCore::Telemetry::TelemetryType::TYPE_WRITES_32BIT_SEGMENT_ES;
+    TelemIndex = FEXCore::Telemetry::TelemetryType::TYPE_USES_32BIT_SEGMENT_ES;
     SegmentsNeedReadCheck &= ~FEXCore::X86Tables::DecodeFlags::FLAG_ES_PREFIX;
     break;
   case FEXCore::X86Tables::DecodeFlags::FLAG_CS_PREFIX:
-    TelemIndex = FEXCore::Telemetry::TelemetryType::TYPE_WRITES_32BIT_SEGMENT_CS;
+    TelemIndex = FEXCore::Telemetry::TelemetryType::TYPE_USES_32BIT_SEGMENT_CS;
     SegmentsNeedReadCheck &= ~FEXCore::X86Tables::DecodeFlags::FLAG_CS_PREFIX;
     break;
   case FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX:
-    TelemIndex = FEXCore::Telemetry::TelemetryType::TYPE_WRITES_32BIT_SEGMENT_SS;
+    TelemIndex = FEXCore::Telemetry::TelemetryType::TYPE_USES_32BIT_SEGMENT_SS;
     SegmentsNeedReadCheck &= ~FEXCore::X86Tables::DecodeFlags::FLAG_SS_PREFIX;
     break;
   case FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX:
-    TelemIndex = FEXCore::Telemetry::TelemetryType::TYPE_WRITES_32BIT_SEGMENT_DS;
+    TelemIndex = FEXCore::Telemetry::TelemetryType::TYPE_USES_32BIT_SEGMENT_DS;
     SegmentsNeedReadCheck &= ~FEXCore::X86Tables::DecodeFlags::FLAG_DS_PREFIX;
     break;
   default: FEX_UNREACHABLE;
