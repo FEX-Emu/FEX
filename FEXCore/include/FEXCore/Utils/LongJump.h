@@ -4,7 +4,8 @@
 
 #include <cstdint>
 
-// It's longjump without glibc fortification checks.
+// Reimplementation of longjmp without glibc fortification checks.
+// This is useful to avoid false positives reported by glibc.
 namespace FEXCore::LongJump {
 // JumpBuf definition needs to be public because the frontend needs to understand it.
 #if defined(_M_ARM_64)
