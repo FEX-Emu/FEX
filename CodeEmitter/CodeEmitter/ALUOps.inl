@@ -43,11 +43,11 @@ public:
     if (IsADRRange(Imm)) [[likely]] {
       constexpr uint32_t Op = 0b0001'0000 << 24;
       DataProcessing_PCRel_Imm(Op, rd, Imm);
-      return true;
+      return BranchEncodeSucceeded::Success;
     }
 
     // Can't encode.
-    return false;
+    return BranchEncodeSucceeded::Failure;
   }
   [[nodiscard]] BranchEncodeSucceeded adr(ARMEmitter::Register rd, ForwardLabel* Label) {
     AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::ADR});
@@ -55,7 +55,7 @@ public:
     DataProcessing_PCRel_Imm(Op, rd, 0);
 
     // Forward label doesn't know if it can encode until Bind.
-    return true;
+    return BranchEncodeSucceeded::Success;
   }
 
   [[nodiscard]] BranchEncodeSucceeded adr(ARMEmitter::Register rd, BiDirectionalLabel* Label) {
@@ -78,11 +78,11 @@ public:
     if (IsADRPRange(Imm) && IsADRPAligned(Imm)) [[likely]] {
       constexpr uint32_t Op = 0b1001'0000 << 24;
       DataProcessing_PCRel_Imm(Op, rd, Imm);
-      return true;
+      return BranchEncodeSucceeded::Success;
     }
 
     // Can't encode.
-    return false;
+    return BranchEncodeSucceeded::Failure;
   }
 
   [[nodiscard]] BranchEncodeSucceeded adrp(ARMEmitter::Register rd, ForwardLabel* Label) {
@@ -91,7 +91,7 @@ public:
     DataProcessing_PCRel_Imm(Op, rd, 0);
 
     // Forward label doesn't know if it can encode until Bind.
-    return true;
+    return BranchEncodeSucceeded::Success;
   }
 
   [[nodiscard]] BranchEncodeSucceeded adrp(ARMEmitter::Register rd, BiDirectionalLabel* Label) {
@@ -122,11 +122,11 @@ public:
         add(ARMEmitter::Size::i64Bit, rd, rd, AlignedOffset);
       }
 
-      return true;
+      return BranchEncodeSucceeded::Success;
     }
 
     // Can't encode.
-    return false;
+    return BranchEncodeSucceeded::Failure;
   }
   [[nodiscard]] BranchEncodeSucceeded LongAddressGen(ARMEmitter::Register rd, ForwardLabel* Label) {
     AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::LONG_ADDRESS_GEN});
@@ -135,7 +135,7 @@ public:
     nop();
 
     // Forward label doesn't know if it can encode until Bind.
-    return true;
+    return BranchEncodeSucceeded::Success;
   }
 
   [[nodiscard]] BranchEncodeSucceeded LongAddressGen(ARMEmitter::Register rd, BiDirectionalLabel* Label) {

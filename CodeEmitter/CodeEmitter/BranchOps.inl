@@ -25,11 +25,11 @@ public:
     if (Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0)) [[likely]] {
       constexpr uint32_t Op = 0b0101'010 << 25;
       Branch_Conditional(Op, 0, 0, Cond, Imm >> 2);
-      return true;
+      return BranchEncodeSucceeded::Success;
     }
 
     // Can't encode.
-    return false;
+    return BranchEncodeSucceeded::Failure;
   }
   [[nodiscard]] BranchEncodeSucceeded b(ARMEmitter::Condition Cond, ForwardLabel* Label) {
     AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::BC});
@@ -37,7 +37,7 @@ public:
     Branch_Conditional(Op, 0, 0, Cond, 0);
 
     // Forward label doesn't know if it can encode until Bind.
-    return true;
+    return BranchEncodeSucceeded::Success;
   }
 
   [[nodiscard]] BranchEncodeSucceeded b(ARMEmitter::Condition Cond, BiDirectionalLabel* Label) {
@@ -58,11 +58,11 @@ public:
     if (Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0)) [[likely]] {
       constexpr uint32_t Op = 0b0101'010 << 25;
       Branch_Conditional(Op, 0, 1, Cond, Imm >> 2);
-      return true;
+      return BranchEncodeSucceeded::Success;
     }
 
     // Can't encode.
-    return false;
+    return BranchEncodeSucceeded::Failure;
   }
 
   [[nodiscard]] BranchEncodeSucceeded bc(ARMEmitter::Condition Cond, ForwardLabel* Label) {
@@ -71,7 +71,7 @@ public:
     Branch_Conditional(Op, 0, 1, Cond, 0);
 
     // Forward label doesn't know if it can encode until Bind.
-    return true;
+    return BranchEncodeSucceeded::Success;
   }
 
   [[nodiscard]] BranchEncodeSucceeded bc(ARMEmitter::Condition Cond, BiDirectionalLabel* Label) {
@@ -119,11 +119,11 @@ public:
     if (Imm >= -134217728 && Imm <= 134217724 && ((Imm & 0b11) == 0)) [[likely]] {
       constexpr uint32_t Op = 0b0001'01 << 26;
       UnconditionalBranch(Op, Imm >> 2);
-      return true;
+      return BranchEncodeSucceeded::Success;
     }
 
     // Can't encode.
-    return false;
+    return BranchEncodeSucceeded::Failure;
   }
   [[nodiscard]] BranchEncodeSucceeded b(ForwardLabel* Label) {
     AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::B});
@@ -132,7 +132,7 @@ public:
     UnconditionalBranch(Op, 0);
 
     // Forward label doesn't know if it can encode until Bind.
-    return true;
+    return BranchEncodeSucceeded::Success;
   }
 
   [[nodiscard]] BranchEncodeSucceeded b(BiDirectionalLabel* Label) {
@@ -155,11 +155,11 @@ public:
       constexpr uint32_t Op = 0b1001'01 << 26;
       UnconditionalBranch(Op, Imm >> 2);
 
-      return true;
+      return BranchEncodeSucceeded::Success;
     }
 
     // Can't encode.
-    return false;
+    return BranchEncodeSucceeded::Failure;
   }
   [[nodiscard]] BranchEncodeSucceeded bl(ForwardLabel* Label) {
     AddLocationToLabel(Label, ForwardLabel::Reference {.Location = GetCursorAddress<uint8_t*>(), .Type = ForwardLabel::InstType::B});
@@ -168,7 +168,7 @@ public:
     UnconditionalBranch(Op, 0);
 
     // Forward label doesn't know if it can encode until Bind.
-    return true;
+    return BranchEncodeSucceeded::Success;
   }
 
   [[nodiscard]] BranchEncodeSucceeded bl(BiDirectionalLabel* Label) {
@@ -192,11 +192,11 @@ public:
     if (Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0)) [[likely]] {
       constexpr uint32_t Op = 0b0011'0100 << 24;
       CompareAndBranch(Op, s, rt, Imm >> 2);
-      return true;
+      return BranchEncodeSucceeded::Success;
     }
 
     // Can't encode.
-    return false;
+    return BranchEncodeSucceeded::Failure;
   }
 
   [[nodiscard]] BranchEncodeSucceeded cbz(ARMEmitter::Size s, ARMEmitter::Register rt, ForwardLabel* Label) {
@@ -207,7 +207,7 @@ public:
     CompareAndBranch(Op, s, rt, 0);
 
     // Forward label doesn't know if it can encode until Bind.
-    return true;
+    return BranchEncodeSucceeded::Success;
   }
 
   [[nodiscard]] BranchEncodeSucceeded cbz(ARMEmitter::Size s, ARMEmitter::Register rt, BiDirectionalLabel* Label) {
@@ -230,11 +230,11 @@ public:
     if (Imm >= -1048576 && Imm <= 1048575 && ((Imm & 0b11) == 0)) [[likely]] {
       constexpr uint32_t Op = 0b0011'0101 << 24;
       CompareAndBranch(Op, s, rt, Imm >> 2);
-      return true;
+      return BranchEncodeSucceeded::Success;
     }
 
     // Can't encode.
-    return false;
+    return BranchEncodeSucceeded::Failure;
   }
 
   [[nodiscard]] BranchEncodeSucceeded cbnz(ARMEmitter::Size s, ARMEmitter::Register rt, ForwardLabel* Label) {
@@ -245,7 +245,7 @@ public:
     CompareAndBranch(Op, s, rt, 0);
 
     // Forward label doesn't know if it can encode until Bind.
-    return true;
+    return BranchEncodeSucceeded::Success;
   }
 
   [[nodiscard]] BranchEncodeSucceeded cbnz(ARMEmitter::Size s, ARMEmitter::Register rt, BiDirectionalLabel* Label) {
@@ -268,11 +268,11 @@ public:
     if (Imm >= -32768 && Imm <= 32764 && ((Imm & 0b11) == 0)) [[likely]] {
       constexpr uint32_t Op = 0b0011'0110 << 24;
       TestAndBranch(Op, rt, Bit, Imm >> 2);
-      return true;
+      return BranchEncodeSucceeded::Success;
     }
 
     // Can't encode.
-    return false;
+    return BranchEncodeSucceeded::Failure;
   }
 
   [[nodiscard]] BranchEncodeSucceeded tbz(ARMEmitter::Register rt, uint32_t Bit, ForwardLabel* Label) {
@@ -283,7 +283,7 @@ public:
     TestAndBranch(Op, rt, Bit, 0);
 
     // Forward label doesn't know if it can encode until Bind.
-    return true;
+    return BranchEncodeSucceeded::Success;
   }
 
   [[nodiscard]] BranchEncodeSucceeded tbz(ARMEmitter::Register rt, uint32_t Bit, BiDirectionalLabel* Label) {
@@ -306,11 +306,11 @@ public:
     if (Imm >= -32768 && Imm <= 32764 && ((Imm & 0b11) == 0)) [[likely]] {
       constexpr uint32_t Op = 0b0011'0111 << 24;
       TestAndBranch(Op, rt, Bit, Imm >> 2);
-      return true;
+      return BranchEncodeSucceeded::Success;
     }
 
     // Can't encode.
-    return false;
+    return BranchEncodeSucceeded::Failure;
   }
 
   [[nodiscard]] BranchEncodeSucceeded tbnz(ARMEmitter::Register rt, uint32_t Bit, ForwardLabel* Label) {
@@ -320,7 +320,7 @@ public:
     TestAndBranch(Op, rt, Bit, 0);
 
     // Forward label doesn't know if it can encode until Bind.
-    return true;
+    return BranchEncodeSucceeded::Success;
   }
 
   [[nodiscard]] BranchEncodeSucceeded tbnz(ARMEmitter::Register rt, uint32_t Bit, BiDirectionalLabel* Label) {
