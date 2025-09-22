@@ -64,13 +64,17 @@ private:
 
   struct RestartOptions {
     FEXCore::LongJump::JumpBuf RestartJump;
-    bool NeedsLongJumps {};
-    enum class RestartOptionControl : uint64_t {
+    enum class Control : uint64_t {
       Incoming = 0,
-      NeedsLongJumps = 1,
+      EnableFarARM64Jumps = 1,
     };
   };
+
+  // FEXCore makes assumptions in the JIT about certain conditions being true.
+  // In the rare case when those assumptions are broken, FEX needs to safely restart the JIT.
   RestartOptions RestartControl {};
+  bool RequiresFarARM64Jumps {};
+
   ARMEmitter::BiDirectionalLabel* PendingTargetLabel {};
   ARMEmitter::BiDirectionalLabel* PendingCallReturnTargetLabel {};
   FEXCore::Context::ContextImpl* CTX {};
@@ -338,188 +342,184 @@ private:
   requires (std::is_same_v<T, ARMEmitter::ForwardLabel> || std::is_same_v<T, ARMEmitter::BackwardLabel> ||
             std::is_same_v<T, ARMEmitter::BiDirectionalLabel> || std::is_same_v<T, ARMEmitter::ForwardLabel::Reference>)
   void bl_OrRestart(T* Label) {
-    if (bl(Label)) [[likely]] {
+    if (bl(Label) == ARMEmitter::BranchEncodeSucceeded::Success) {
       return;
     }
 
     // We can support this but currently unnecessary.
-    LOGMAN_MSG_A_FMT("Tried to branch larger than 128MB away!");
-    // Restart(RestartOptions::RestartOptionControl::NeedsLongJumps);
+    ERROR_AND_DIE_FMT("Tried to branch larger than 128MB away!");
+    FEXCore::LongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
   }
 
   template<typename T>
   requires (std::is_same_v<T, ARMEmitter::ForwardLabel> || std::is_same_v<T, ARMEmitter::BackwardLabel> ||
             std::is_same_v<T, ARMEmitter::BiDirectionalLabel> || std::is_same_v<T, ARMEmitter::ForwardLabel::Reference>)
   void b_OrRestart(T* Label) {
-    if (b(Label)) [[likely]] {
+    if (b(Label) == ARMEmitter::BranchEncodeSucceeded::Success) {
       return;
     }
 
     // We can support this but currently unnecessary.
-    LOGMAN_MSG_A_FMT("Tried to branch larger than 128MB away!");
-    // Restart(RestartOptions::RestartOptionControl::NeedsLongJumps);
+    ERROR_AND_DIE_FMT("Tried to branch larger than 128MB away!");
+    FEXCore::LongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
   }
 
   template<typename T>
   requires (std::is_same_v<T, ARMEmitter::ForwardLabel> || std::is_same_v<T, ARMEmitter::BackwardLabel> ||
             std::is_same_v<T, ARMEmitter::BiDirectionalLabel> || std::is_same_v<T, ARMEmitter::ForwardLabel::Reference>)
   void b_OrRestart(ARMEmitter::Condition Cond, T* Label) {
-    if (RestartControl.NeedsLongJumps) [[unlikely]] {
+    if (RequiresFarARM64Jumps) {
       ARMEmitter::ForwardLabel Skip {};
-      // Invert check and skip.
+      // Wrap a manual Cond check around an unconditional branch; this can encode larger offsets
       (void)b(InvertCondition(Cond), &Skip);
-      if (!b(Label)) [[unlikely]] {
-        LOGMAN_MSG_A_FMT("Tried to branch larger than 128MB away!");
+      if (b(Label) == ARMEmitter::BranchEncodeSucceeded::Failure) {
+        ERROR_AND_DIE_FMT("Tried to branch larger than 128MB away!");
       }
 
       (void)Bind(&Skip);
       return;
     }
 
-    if (b(Cond, Label)) [[likely]] {
+    if (b(Cond, Label) == ARMEmitter::BranchEncodeSucceeded::Success) {
       return;
     }
 
-    Restart(RestartOptions::RestartOptionControl::NeedsLongJumps);
+    FEXCore::LongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
   }
 
   template<typename T>
   requires (std::is_same_v<T, ARMEmitter::ForwardLabel> || std::is_same_v<T, ARMEmitter::BackwardLabel> ||
             std::is_same_v<T, ARMEmitter::BiDirectionalLabel> || std::is_same_v<T, ARMEmitter::ForwardLabel::Reference>)
   void cbz_OrRestart(ARMEmitter::Size s, ARMEmitter::Register rt, T* Label) {
-    if (RestartControl.NeedsLongJumps) [[unlikely]] {
+    if (RequiresFarARM64Jumps) {
       ARMEmitter::ForwardLabel Skip {};
-      // Invert check and skip.
+      // Wrap a manual Cond check around an unconditional branch; this can encode larger offsets
       (void)cbnz(s, rt, &Skip);
-      if (!b(Label)) [[unlikely]] {
-        LOGMAN_MSG_A_FMT("Tried to branch larger than 128MB away!");
+      if (b(Label) == ARMEmitter::BranchEncodeSucceeded::Failure) {
+        ERROR_AND_DIE_FMT("Tried to branch larger than 128MB away!");
       }
 
       (void)Bind(&Skip);
       return;
     }
 
-    if (cbz(s, rt, Label)) [[likely]] {
+    if (cbz(s, rt, Label) == ARMEmitter::BranchEncodeSucceeded::Success) {
       return;
     }
 
-    Restart(RestartOptions::RestartOptionControl::NeedsLongJumps);
+    FEXCore::LongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
   }
 
   template<typename T>
   requires (std::is_same_v<T, ARMEmitter::ForwardLabel> || std::is_same_v<T, ARMEmitter::BackwardLabel> ||
             std::is_same_v<T, ARMEmitter::BiDirectionalLabel> || std::is_same_v<T, ARMEmitter::ForwardLabel::Reference>)
   void cbnz_OrRestart(ARMEmitter::Size s, ARMEmitter::Register rt, T* Label) {
-    if (RestartControl.NeedsLongJumps) [[unlikely]] {
+    if (RequiresFarARM64Jumps) {
       ARMEmitter::ForwardLabel Skip {};
-      // Invert check and skip.
+      // Wrap a manual Cond check around an unconditional branch; this can encode larger offsets
       (void)cbz(s, rt, &Skip);
-      if (!b(Label)) [[unlikely]] {
-        LOGMAN_MSG_A_FMT("Tried to branch larger than 128MB away!");
+      if (b(Label) == ARMEmitter::BranchEncodeSucceeded::Failure) {
+        ERROR_AND_DIE_FMT("Tried to branch larger than 128MB away!");
       }
 
       (void)Bind(&Skip);
       return;
     }
 
-    if (cbnz(s, rt, Label)) [[likely]] {
+    if (cbnz(s, rt, Label) == ARMEmitter::BranchEncodeSucceeded::Success) {
       return;
     }
 
-    Restart(RestartOptions::RestartOptionControl::NeedsLongJumps);
+    FEXCore::LongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
   }
 
   template<typename T>
   requires (std::is_same_v<T, ARMEmitter::ForwardLabel> || std::is_same_v<T, ARMEmitter::BackwardLabel> ||
             std::is_same_v<T, ARMEmitter::BiDirectionalLabel> || std::is_same_v<T, ARMEmitter::ForwardLabel::Reference>)
   void tbz_OrRestart(ARMEmitter::Register rt, uint32_t Bit, T* Label) {
-    if (RestartControl.NeedsLongJumps) [[unlikely]] {
+    if (RequiresFarARM64Jumps) {
       ARMEmitter::ForwardLabel Skip {};
-      // Invert check and skip.
+      // Wrap a manual Cond check around an unconditional branch; this can encode larger offsets
       (void)tbnz(rt, Bit, &Skip);
-      if (!b(Label)) [[unlikely]] {
-        LOGMAN_MSG_A_FMT("Tried to branch larger than 128MB away!");
+      if (b(Label) == ARMEmitter::BranchEncodeSucceeded::Failure) {
+        ERROR_AND_DIE_FMT("Tried to branch larger than 128MB away!");
       }
 
       (void)Bind(&Skip);
       return;
     }
 
-    if (tbz(rt, Bit, Label)) [[likely]] {
+    if (tbz(rt, Bit, Label) == ARMEmitter::BranchEncodeSucceeded::Success) {
       return;
     }
 
-    Restart(RestartOptions::RestartOptionControl::NeedsLongJumps);
+    FEXCore::LongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
   }
 
   template<typename T>
   requires (std::is_same_v<T, ARMEmitter::ForwardLabel> || std::is_same_v<T, ARMEmitter::BackwardLabel> ||
             std::is_same_v<T, ARMEmitter::BiDirectionalLabel> || std::is_same_v<T, ARMEmitter::ForwardLabel::Reference>)
   void tbnz_OrRestart(ARMEmitter::Register rt, uint32_t Bit, T* Label) {
-    if (RestartControl.NeedsLongJumps) [[unlikely]] {
+    if (RequiresFarARM64Jumps) {
       ARMEmitter::ForwardLabel Skip {};
-      // Invert check and skip.
+      // Wrap a manual Cond check around an unconditional branch; this can encode larger offsets
       (void)tbz(rt, Bit, &Skip);
-      if (!b(Label)) [[unlikely]] {
-        LOGMAN_MSG_A_FMT("Tried to branch larger than 128MB away!");
+      if (b(Label) == ARMEmitter::BranchEncodeSucceeded::Failure) {
+        ERROR_AND_DIE_FMT("Tried to branch larger than 128MB away!");
       }
 
       (void)Bind(&Skip);
       return;
     }
 
-    if (tbnz(rt, Bit, Label)) [[likely]] {
+    if (tbnz(rt, Bit, Label) == ARMEmitter::BranchEncodeSucceeded::Success) {
       return;
     }
 
-    Restart(RestartOptions::RestartOptionControl::NeedsLongJumps);
+    FEXCore::LongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
   }
 
   template<typename T>
   requires (std::is_same_v<T, ARMEmitter::ForwardLabel> || std::is_same_v<T, ARMEmitter::BackwardLabel> ||
             std::is_same_v<T, ARMEmitter::BiDirectionalLabel> || std::is_same_v<T, ARMEmitter::ForwardLabel::Reference>)
   void adr_OrRestart(ARMEmitter::Register rd, T* Label) {
-    if (adr(rd, Label)) [[likely]] {
+    if (adr(rd, Label) == ARMEmitter::BranchEncodeSucceeded::Success) {
       return;
     }
 
     // We can support this but currently unnecessary.
-    LOGMAN_MSG_A_FMT("Long ADR currently unsupported!");
-    // Restart(RestartOptions::RestartOptionControl::NeedsLongJumps);
+    ERROR_AND_DIE_FMT("Long ADR currently unsupported!");
+    FEXCore::LongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
   }
 
   template<typename T>
   requires (std::is_same_v<T, ARMEmitter::ForwardLabel> || std::is_same_v<T, ARMEmitter::BackwardLabel> ||
             std::is_same_v<T, ARMEmitter::BiDirectionalLabel> || std::is_same_v<T, ARMEmitter::ForwardLabel::Reference>)
   void adrp_OrRestart(ARMEmitter::Register rd, T* Label) {
-    if (adrp(rd, Label)) [[likely]] {
+    if (adrp(rd, Label) == ARMEmitter::BranchEncodeSucceeded::Success) {
       return;
     }
 
     // We can support this but currently unnecessary.
-    LOGMAN_MSG_A_FMT("Long ADRP currently unsupported!");
-    // Restart(RestartOptions::RestartOptionControl::NeedsLongJumps);
+    ERROR_AND_DIE_FMT("Long ADRP currently unsupported!");
+    FEXCore::LongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
   }
 
   template<typename T>
   requires (std::is_same_v<T, ARMEmitter::ForwardLabel> || std::is_same_v<T, ARMEmitter::BackwardLabel> ||
             std::is_same_v<T, ARMEmitter::BiDirectionalLabel> || std::is_same_v<T, ARMEmitter::ForwardLabel::Reference>)
   void BindOrRestart(T* Label) {
-    if (Bind(Label)) [[likely]] {
+    if (Bind(Label)) {
       return;
     }
 
-    if (RestartControl.NeedsLongJumps) [[unlikely]] {
+    if (RequiresFarARM64Jumps) {
       // This should have been caught before this point.
-      LOGMAN_MSG_A_FMT("Oops. Unhandled long bind.");
+      ERROR_AND_DIE_FMT("Oops. Unhandled long bind.");
       return;
     }
 
-    Restart(RestartOptions::RestartOptionControl::NeedsLongJumps);
-  }
-
-  [[noreturn]] void Restart(RestartOptions::RestartOptionControl Control) {
-    FEXCore::LongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(Control));
+    FEXCore::LongJump::LongJump(RestartControl.RestartJump, FEXCore::ToUnderlying(RestartOptions::Control::EnableFarARM64Jumps));
   }
 
   // This is purely a debugging aid for developers to see if they are in JIT code space when inspecting raw memory
