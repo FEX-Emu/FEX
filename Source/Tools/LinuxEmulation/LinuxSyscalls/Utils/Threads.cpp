@@ -288,6 +288,8 @@ namespace PThreads {
     void* UserArg;
     void* Stack {};
 
+    // Use FEXCore's LongJump to avoid fortification checks.
+    // This avoids a false positive since glibc does not understand stack pivots.
     FEXCore::LongJump::JumpBuf* _exit_resolver {};
     FEX::HLE::ThreadStateObject* ThreadObject {};
     uint32_t Status {};
