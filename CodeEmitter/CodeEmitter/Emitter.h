@@ -586,14 +586,13 @@ concept IsXOrWRegister = std::is_same_v<T, XRegister> || std::is_same_v<T, WRegi
 template<typename T>
 concept IsQOrDRegister = std::is_same_v<T, QRegister> || std::is_same_v<T, DRegister>;
 
-struct BranchEncodeSucceeded final {
-  bool _________;
+template<typename T>
+concept IsLabel = std::is_same_v<T, ARMEmitter::ForwardLabel> || std::is_same_v<T, ARMEmitter::BackwardLabel> ||
+                  std::is_same_v<T, ARMEmitter::BiDirectionalLabel> || std::is_same_v<T, ARMEmitter::ForwardLabel::Reference>;
 
-  explicit operator bool() const {
-    return _________;
-  }
-  BranchEncodeSucceeded(bool a)
-    : _________ {a} {}
+enum class BranchEncodeSucceeded {
+  Success,
+  Failure,
 };
 
 // Whether or not a given set of vector registers are sequential
