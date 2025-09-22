@@ -255,18 +255,6 @@ private:
     }
   }
 
-
-  // Helper to check if a Ref is a Zero constant
-  bool IsZero(Ref Node) {
-    auto Header = IR->GetOp<IR::IROp_Header>(Node);
-    if (Header->Op != OP_CONSTANT) {
-      return false;
-    }
-
-    auto Const = Header->C<IROp_Constant>();
-    return Const->Constant == 0;
-  }
-
   // Handles a Unary operation.
   // Takes the op we are handling, the Node for the reduced precision case and the node for the normal case.
   // Depending on the type of Op64, we might need to pass a couple of extra constant arguments, this happens
