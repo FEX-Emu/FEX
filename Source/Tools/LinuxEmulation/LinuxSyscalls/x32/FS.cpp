@@ -15,33 +15,37 @@ $end_info$
 #include <unistd.h>
 
 namespace FEX::HLE::x32 {
+
+auto umount(FEXCore::Core::CpuStateFrame* Frame, const char* target) -> uint64_t {
+  uint64_t Result = ::umount(target);
+  SYSCALL_ERRNO();
+}
+
+auto truncate64(FEXCore::Core::CpuStateFrame* Frame, const char* path, uint32_t offset_low, uint32_t offset_high) -> uint64_t {
+  uint64_t Offset = offset_high;
+  Offset <<= 32;
+  Offset |= offset_low;
+  uint64_t Result = ::truncate(path, Offset);
+  SYSCALL_ERRNO();
+}
+
+auto ftruncate64(FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t offset_low, uint32_t offset_high) -> uint64_t {
+  uint64_t Offset = offset_high;
+  Offset <<= 32;
+  Offset |= offset_low;
+  uint64_t Result = ::ftruncate(fd, Offset);
+  SYSCALL_ERRNO();
+}
+
+auto sigprocmask(FEXCore::Core::CpuStateFrame* Frame, int how, const uint64_t* set, uint64_t* oldset, size_t sigsetsize) -> uint64_t {
+  return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigProcMask(FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame), how,
+                                                                           set, oldset);
+}
+
 void RegisterFS(FEX::HLE::SyscallHandler* Handler) {
-  REGISTER_SYSCALL_IMPL_X32(umount, [](FEXCore::Core::CpuStateFrame* Frame, const char* target) -> uint64_t {
-    uint64_t Result = ::umount(target);
-    SYSCALL_ERRNO();
-  });
-
-  REGISTER_SYSCALL_IMPL_X32(
-    truncate64, [](FEXCore::Core::CpuStateFrame* Frame, const char* path, uint32_t offset_low, uint32_t offset_high) -> uint64_t {
-      uint64_t Offset = offset_high;
-      Offset <<= 32;
-      Offset |= offset_low;
-      uint64_t Result = ::truncate(path, Offset);
-      SYSCALL_ERRNO();
-    });
-
-  REGISTER_SYSCALL_IMPL_X32(ftruncate64, [](FEXCore::Core::CpuStateFrame* Frame, int fd, uint32_t offset_low, uint32_t offset_high) -> uint64_t {
-    uint64_t Offset = offset_high;
-    Offset <<= 32;
-    Offset |= offset_low;
-    uint64_t Result = ::ftruncate(fd, Offset);
-    SYSCALL_ERRNO();
-  });
-
-  REGISTER_SYSCALL_IMPL_X32(
-    sigprocmask, [](FEXCore::Core::CpuStateFrame* Frame, int how, const uint64_t* set, uint64_t* oldset, size_t sigsetsize) -> uint64_t {
-      return FEX::HLE::_SyscallHandler->GetSignalDelegator()->GuestSigProcMask(FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame),
-                                                                               how, set, oldset);
-    });
+  REGISTER_SYSCALL_IMPL_X32(umount, umount);
+  REGISTER_SYSCALL_IMPL_X32(truncate64, truncate64);
+  REGISTER_SYSCALL_IMPL_X32(ftruncate64, ftruncate64);
+  REGISTER_SYSCALL_IMPL_X32(sigprocmask, sigprocmask);
 }
 } // namespace FEX::HLE::x32
