@@ -319,7 +319,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 find_package(PkgConfig REQUIRED)
-find_package(Python 3.0 REQUIRED COMPONENTS Interpreter)
+find_package(Python 3.10 REQUIRED COMPONENTS Interpreter)
 
 set(BUILD_SHARED_LIBS OFF)
 
