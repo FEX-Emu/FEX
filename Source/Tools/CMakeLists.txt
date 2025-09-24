@@ -23,8 +23,7 @@ if (NOT MINGW_BUILD)
 
   add_subdirectory(FEXInterpreter/)
   add_subdirectory(pidof/)
-endif()
-
-if (BUILD_TESTING)
-  add_subdirectory(TestHarnessRunner/)
+  if (BUILD_TESTING)
+    add_subdirectory(TestHarnessRunner/)
+  endif()
 endif()
