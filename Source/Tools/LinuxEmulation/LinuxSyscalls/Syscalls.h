@@ -218,6 +218,12 @@ public:
     return Alloc32Handler.get();
   }
 
+  void FlushCodeMap() {
+    if (CodeMapWriter) {
+      CodeMapWriter->Flush(CodeMapWriter->BufferOffset);
+    }
+  }
+
   // does a mmap as if done via a guest syscall
   virtual void* GuestMmap(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length, int prot, int flags, int fd, off_t offset) = 0;
   void* GuestMmap(bool Is64Bit, FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length, int prot, int flags, int fd, off_t offset);
@@ -336,6 +342,7 @@ protected:
 private:
   FEX::HLE::SignalDelegator* SignalDelegation;
   FEX::HLE::ThunkHandler* ThunkHandler;
+  fextl::unique_ptr<FEXCore::CodeMapWriter> CodeMapWriter;
 
   fextl::unordered_map<fextl::string, FEX::VolatileMetadata::ExtendedVolatileMetadata> ExtendedMetaData {};
 

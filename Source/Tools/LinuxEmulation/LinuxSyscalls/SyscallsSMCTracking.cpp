@@ -170,7 +170,16 @@ void SyscallHandler::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState
   InvalidateCodeRangeIfNecessary(Thread, Start, Length);
 }
 
-void SyscallHandler::MarkGuestCodeRoot(FEXCore::Core::InternalThreadState& Thread, uint64_t Address) {}
+void SyscallHandler::MarkGuestCodeRoot(FEXCore::Core::InternalThreadState& Thread, uint64_t Address) {
+  if (!CodeMapWriter) {
+    return;
+  }
+
+  auto Region = LookupExecutableFileSection(Thread, Address);
+  if (Region && CodeMapWriter->IsWriteEnabled(*Region)) {
+    CodeMapWriter->AppendBlock(*Region, Address);
+  }
+}
 
 std::optional<FEXCore::ExecutableFileSectionInfo>
 SyscallHandler::LookupExecutableFileSection(FEXCore::Core::InternalThreadState& Thread, uint64_t GuestAddr) {
