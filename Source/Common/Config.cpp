@@ -602,6 +602,12 @@ fextl::string GetConfigDirectory(bool Global, const PortableInformation& Portabl
   return ConfigDir;
 }
 
+fextl::string GetCacheDirectory() {
+  const char* HomeDir = GetHomeDirectory();
+  const char* CacheXDG = getenv("XDG_CACHE_HOME");
+  return (CacheXDG ? fextl::string {CacheXDG} : (fextl::string {HomeDir} + "/.cache")) + "/fex-emu/";
+}
+
 fextl::string GetConfigFileLocation(bool Global, const PortableInformation& PortableInfo) {
   return GetConfigDirectory(Global, PortableInfo) + "Config.json";
 }
