@@ -8,6 +8,7 @@ $end_info$
 */
 
 #include "CodeLoader.h"
+#include "CodeMapWriter.h"
 
 #include "FEXHeaderUtils/StringArgumentParser.h"
 #include "Linux/Utils/ELFContainer.h"
@@ -764,7 +765,8 @@ SyscallHandler::SyscallHandler(FEXCore::Context::Context* _CTX, FEX::HLE::Signal
   , FM {_CTX}
   , CTX {_CTX}
   , SignalDelegation {_SignalDelegation}
-  , ThunkHandler {ThunkHandler} {
+  , ThunkHandler {ThunkHandler}
+  , CodeMapWriter {fextl::make_unique<CodeMapWriterImpl>(4096)} {
   FEX::HLE::_SyscallHandler = this;
   HostKernelVersion = CalculateHostKernelVersion();
   GuestKernelVersion = CalculateGuestKernelVersion();
@@ -881,6 +883,11 @@ void SyscallHandler::LockBeforeFork(FEXCore::Core::InternalThreadState* Thread) 
 
 void SyscallHandler::UnlockAfterFork(FEXCore::Core::InternalThreadState* LiveThread, bool Child) {
   if (Child) {
+    // // TODO: Reopen with new PID
+    // // TODO: Also add this FD to monitored FD list
+    // CodeMapFD.reset(); // NOTE: This FD has O_CLOEXEC set, so we just need to reset its value
+    CodeMapWriter.reset(); // TODO: DONT RESET THE UNIQUE_PTR, BUT RESET THE OBJECT!
+
     VMATracking.Mutex.StealAndDropActiveLocks();
   } else {
     VMATracking.Mutex.unlock();

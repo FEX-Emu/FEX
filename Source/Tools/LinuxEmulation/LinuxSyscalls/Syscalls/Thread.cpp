@@ -466,6 +466,7 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
                                 ThreadObject->StatusCode = status;
 
                                 FEX::HLE::_SyscallHandler->UninstallTLSState(ThreadObject);
+                                FEX::HLE::_SyscallHandler->FlushCodeMap();
 
                                 if (ThreadObject->ExecutionThread) {
                                   // If this is a pthread based execution thread, then there is more work to be done.
@@ -571,6 +572,8 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
 
   REGISTER_SYSCALL_IMPL_FLAGS(exit_group, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY | SyscallFlags::NORETURN,
                               [](FEXCore::Core::CpuStateFrame* Frame, int status) -> uint64_t {
+                                FEX::HLE::_SyscallHandler->FlushCodeMap();
+
                                 // Save telemetry if we're exiting.
                                 FEX::HLE::_SyscallHandler->GetSignalDelegator()->SaveTelemetry();
                                 FEX::HLE::_SyscallHandler->TM.CleanupForExit();
