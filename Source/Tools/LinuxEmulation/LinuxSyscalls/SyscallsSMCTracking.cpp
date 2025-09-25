@@ -422,6 +422,7 @@ std::optional<SyscallHandler::LateApplyExtendedVolatileMetadata> SyscallHandler:
       if (Inserted) {
         Resource->MappedFile = fextl::make_unique<FEXCore::ExecutableFileInfo>();
         Resource->MappedFile->Filename = fextl::string(Tmp, PathLength);
+        Resource->MappedFile->FileId = CTX->GetCodeCache().ComputeCodeMapId(Resource->MappedFile->Filename, fd);
 
         // Read ELF headers if applicable.
         // For performance, skip ELF checks if we're not mapping the file header
