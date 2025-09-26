@@ -706,7 +706,9 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
   if (SourcecodeResolver && Config.GDBSymbols()) {
     auto MappedSection = SyscallHandler->LookupExecutableFileSection(*Thread, GuestRIP);
     if (MappedSection) {
-      MappedSection->FileInfo.SourcecodeMap = SourcecodeResolver->GenerateMap(MappedSection->FileInfo.Filename, MappedSection->FileInfo.FileId);
+      // TODO: Double-check what we should pass in here now
+      MappedSection->FileInfo.SourcecodeMap =
+        SourcecodeResolver->GenerateMap(MappedSection->FileInfo.Filename, CodeMap::GetBaseFilename(MappedSection->FileInfo, false));
     }
   }
 
@@ -836,6 +838,8 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
   for (auto [GuestAddr, HostAddr] : CompiledCode.EntryPoints) {
     Thread->LookupCache->AddBlockMapping(GuestAddr, HostAddr);
   }
+
+  SyscallHandler->MarkGuestCodeRoot(*Thread, GuestRIP);
 
   return (uintptr_t)CodePtr;
 }
