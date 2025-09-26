@@ -218,10 +218,8 @@ public:
     return Alloc32Handler.get();
   }
 
-  void FlushCodeMap() {
-    if (CodeMapWriter) {
-      CodeMapWriter->Flush(CodeMapWriter->BufferOffset);
-    }
+  void FlushAndCloseCodeMap() {
+    CodeMapWriter.reset();
   }
 
   // does a mmap as if done via a guest syscall
