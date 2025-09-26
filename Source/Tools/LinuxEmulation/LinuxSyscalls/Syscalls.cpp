@@ -883,10 +883,8 @@ void SyscallHandler::LockBeforeFork(FEXCore::Core::InternalThreadState* Thread) 
 
 void SyscallHandler::UnlockAfterFork(FEXCore::Core::InternalThreadState* LiveThread, bool Child) {
   if (Child) {
-    // // TODO: Reopen with new PID
-    // // TODO: Also add this FD to monitored FD list
-    // CodeMapFD.reset(); // NOTE: This FD has O_CLOEXEC set, so we just need to reset its value
-    CodeMapWriter.reset(); // TODO: DONT RESET THE UNIQUE_PTR, BUT RESET THE OBJECT!
+    static_cast<CodeMapWriterImpl*>(CodeMapWriter.get())->InvalidateFDs();
+    CodeMapWriter = fextl::make_unique<CodeMapWriterImpl>(4096);
 
     VMATracking.Mutex.StealAndDropActiveLocks();
   } else {

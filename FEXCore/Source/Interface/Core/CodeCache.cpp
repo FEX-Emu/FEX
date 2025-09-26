@@ -65,12 +65,8 @@ fextl::map<CodeMapFileId, CodeMap::ParsedContents> CodeMap::ParseCodeMap(std::if
   return Ret;
 }
 
-CodeMapWriter::CodeMapWriter(size_t BufferSize)
-  : Buffer(BufferSize) {}
-
-CodeMapWriter::~CodeMapWriter() {
-  // TODO: Must flush in the implementation instead, since we can't call virtual member functions in the base destructor
-}
+CodeMapWriter::CodeMapWriter()
+  : Buffer(4096) {}
 
 void CodeMapWriter::Flush(size_t Offset) {
   // Acquire exclusive lock and flush circular buffer
@@ -79,9 +75,8 @@ void CodeMapWriter::Flush(size_t Offset) {
 }
 
 void CodeMapWriter::Flush(size_t Offset, std::unique_lock<std::shared_mutex>&) {
-  CommitData(std::span {Buffer}.subspan(FlushCursor, Offset - FlushCursor));
+  CommitData(std::span {Buffer}.subspan(0, Offset));
   BufferOffset = 0;
-  FlushCursor = 0;
 }
 
 void CodeMapWriter::AppendBlock(const FEXCore::ExecutableFileSectionInfo& SectionInfo, uint64_t BlockEntry) {

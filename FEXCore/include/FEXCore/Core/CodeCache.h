@@ -53,7 +53,6 @@ using CodeMapFileId = uint64_t;
 struct CodeMap {
   // Describes the location of an entry block compiled during execution
   struct FEX_PACKED Entry {
-    // TODO: Ensure we never produce a special marker as a file id
     CodeMapFileId FileId;
     uint32_t BlockOffset;
   };
@@ -87,8 +86,8 @@ struct CodeMap {
 
 class CodeMapWriter {
 public:
-  CodeMapWriter(size_t BufferSize);
-  virtual ~CodeMapWriter();
+  CodeMapWriter();
+  virtual ~CodeMapWriter() = default;
 
   // Checks if writing is enabled. Calls to this functions may also be interpreted as signals that writes are about to happen
   virtual bool IsWriteEnabled(const ExecutableFileSectionInfo&) = 0;
@@ -103,7 +102,10 @@ public:
   // Thread-safely commit any pending data to disk
   void Flush(size_t Offset);
 
-  // TODO: virtual void ResetAfterFork() = 0;
+protected:
+  size_t GetBufferOffset() const {
+    return BufferOffset;
+  }
 
 private:
   // Queues data into an internal ring buffer.
@@ -115,12 +117,9 @@ private:
   // Commit given data range to disk
   virtual void CommitData(std::span<const std::byte> Data) = 0;
 
-protected: // TODO: Add read-only interfaces instead
   std::shared_mutex Mutex;
   fextl::vector<std::byte> Buffer;
-public:
   std::atomic<size_t> BufferOffset {0};
-  size_t FlushCursor = 0;
 
   fextl::set<CodeMapFileId> KnownFileIds;
 };

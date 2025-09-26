@@ -12,13 +12,17 @@ namespace FEX {
 
 class CodeMapWriterImpl : public FEXCore::CodeMapWriter {
 public:
-  CodeMapWriterImpl(size_t BufferSize)
-    : FEXCore::CodeMapWriter(BufferSize) {}
   ~CodeMapWriterImpl() {
     if (CodeMapFD.value_or(-1) != -1) {
-      Flush(BufferOffset);
+      Flush(GetBufferOffset());
       close(*CodeMapFD);
     }
+  }
+
+  // To be used in a child process after fork to enable destroying this
+  // code map writer without flushing any pending data to disk.
+  void InvalidateFDs() {
+    CodeMapFD.reset();
   }
 
 private:
@@ -37,9 +41,12 @@ private:
       return false;
     }
 
-    std::unique_lock CodeBufferLock {CodeMapWriteMutex};
+    std::unique_lock<std::mutex> FileOpenLock {FileOpenMutex, std::defer_lock};
     if (!CodeMapFD) {
-      // return false;
+      FileOpenLock.lock();
+      // Re-check CodeMapFD now to avoid race conditions
+    }
+    if (!CodeMapFD) {
       // Query from FEXServer whether this is the first instance of this executable; if it is, also enable code dumping!
       FEX_CONFIG_OPT(RootFSPath, ROOTFS);
       FEX_CONFIG_OPT(Multiblock, MULTIBLOCK);
@@ -62,7 +69,7 @@ private:
         return false;
       }
 
-      // TODO: Recheck if this is needed if FEXServer already sets that flag.
+      // Ensure the file descriptor is closed in fork children
       auto flags = fcntl(CodeMapFD.value(), F_GETFD);
       fcntl(CodeMapFD.value(), F_SETFD, flags | FD_CLOEXEC);
     }
@@ -71,7 +78,6 @@ private:
   }
 
   void CommitData(std::span<const std::byte> Data) override {
-    std::unique_lock CodeBufferLock {CodeMapWriteMutex};
     write(*CodeMapFD, Data.data(), Data.size_bytes());
   }
 
@@ -79,7 +85,7 @@ private:
   // value is -1:  We requested a CodeMapFD but FEXServer told us not to write any data
   // other values: Code map writing is active
   std::optional<int> CodeMapFD;
-  std::mutex CodeMapWriteMutex; // TODO: Err, should probably use the parent Mutex!
+  std::mutex FileOpenMutex;
 };
 
 } // namespace FEX
