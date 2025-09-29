@@ -26,7 +26,7 @@ FEX在ARMv8.0，ARMv8.1+和x86-64(支持AVX或更新处理器)硬件上进行过
 在AArch64 host端，用户需要准备x86-64 RootFS[创建RootFS](#RootFS-Generation)。
 
 ### 源码导览
-详见[源码大纲](docs/SourceOutline.md)。
+详见[源码大纲](SourceOutline.md)。
 
 ### 编译依赖
 * cmake (version 3.14 minimum)
