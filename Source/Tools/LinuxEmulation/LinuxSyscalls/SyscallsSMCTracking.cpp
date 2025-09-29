@@ -22,6 +22,7 @@ $end_info$
 #include <FEXCore/Utils/MathUtils.h>
 #include <FEXCore/Utils/SignalScopeGuards.h>
 #include <FEXCore/Utils/TypeDefines.h>
+#include <FEXHeaderUtils/Filesystem.h>
 
 namespace FEX::HLE {
 // SMC interactions
@@ -200,6 +201,7 @@ void* SyscallHandler::GuestMmap(bool Is64Bit, FEXCore::Core::InternalThreadState
 
   uint64_t Result {};
   size_t Size = FEXCore::AlignUp(length, FEXCore::Utils::FEX_PAGE_SIZE);
+  std::optional<LateApplyExtendedVolatileMetadata> LateMetadata = std::nullopt;
 
   {
     // NOTE: Frontend calls this with a nullptr Thread during initialization, but
@@ -221,10 +223,16 @@ void* SyscallHandler::GuestMmap(bool Is64Bit, FEXCore::Core::InternalThreadState
       }
     }
 
-    FEX::HLE::_SyscallHandler->TrackMmap(Thread, Result, length, prot, flags, fd, offset);
+    LateMetadata = FEX::HLE::_SyscallHandler->TrackMmap(Thread, Result, length, prot, flags, fd, offset);
   }
 
   FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(Thread, Result, Size);
+
+  if (LateMetadata) {
+    auto CodeInvalidationlk = GuardSignalDeferringSectionWithFallback(CTX->GetCodeInvalidationMutex(), Thread);
+    CTX->AddForceTSOInformation(LateMetadata->VolatileValidRanges, std::move(LateMetadata->VolatileInstructions));
+  }
+
   return reinterpret_cast<void*>(Result);
 }
 
@@ -255,6 +263,11 @@ uint64_t SyscallHandler::GuestMunmap(bool Is64Bit, FEXCore::Core::InternalThread
     FEX::HLE::_SyscallHandler->TrackMunmap(Thread, addr, length);
   }
   FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(Thread, reinterpret_cast<uint64_t>(addr), Size);
+
+  if (length) {
+    auto CodeInvalidationlk = GuardSignalDeferringSectionWithFallback(CTX->GetCodeInvalidationMutex(), Thread);
+    CTX->RemoveForceTSOInformation(reinterpret_cast<uint64_t>(addr), length);
+  }
 
   return Result;
 }
@@ -360,10 +373,14 @@ uint64_t SyscallHandler::GuestShmdt(bool Is64Bit, FEXCore::Core::InternalThreadS
 }
 
 // MMan Tracking
-void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t addr, size_t length, int prot, int flags, int fd, off_t offset) {
+std::optional<SyscallHandler::LateApplyExtendedVolatileMetadata> SyscallHandler::TrackMmap(
+  FEXCore::Core::InternalThreadState* Thread, uint64_t addr, size_t length, int prot, int flags, int fd, off_t offset) {
   size_t Size = FEXCore::AlignUp(length, FEXCore::Utils::FEX_PAGE_SIZE);
+  const auto ProtMapping = VMATracking::VMAProt::fromProt(prot);
 
   VMATracking::MappedResource* Resource = nullptr;
+
+  std::optional<SyscallHandler::LateApplyExtendedVolatileMetadata> VolatileMetadata = std::nullopt;
 
   if (!(flags & MAP_ANONYMOUS)) {
     struct stat64 buf;
@@ -382,6 +399,21 @@ void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint6
         Resource->MappedFile->Filename = fextl::string(Tmp, PathLength);
         Resource->Iterator = Iter;
       }
+
+      const fextl::string Filename = FHU::Filesystem::GetFilename(Resource->MappedFile->Filename);
+
+      // We now have the filename and the offset in the filename getting mapped.
+      // Check for extended volatile metadata.
+      auto it = ExtendedMetaData.find(Filename);
+      if (it != ExtendedMetaData.end()) {
+        SyscallHandler::LateApplyExtendedVolatileMetadata LateMetadata;
+        FEX::VolatileMetadata::ApplyFEXExtendedVolatileMetadata(
+          it->second, LateMetadata.VolatileInstructions, LateMetadata.VolatileValidRanges, addr, addr + length, offset, offset + length);
+
+        if (!LateMetadata.VolatileInstructions.empty() || !LateMetadata.VolatileValidRanges.Empty()) {
+          VolatileMetadata.emplace(std::move(LateMetadata));
+        }
+      }
     }
   } else if (flags & MAP_SHARED) {
     VMATracking::MRID mrid {VMATracking::SpecialDev::Anon, AnonSharedId++};
@@ -394,7 +426,8 @@ void SyscallHandler::TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint6
     Resource = nullptr;
   }
 
-  VMATracking.TrackVMARange(CTX, Resource, addr, offset, Size, VMATracking::VMAFlags::fromFlags(flags), VMATracking::VMAProt::fromProt(prot));
+  VMATracking.TrackVMARange(CTX, Resource, addr, offset, Size, VMATracking::VMAFlags::fromFlags(flags), ProtMapping);
+  return VolatileMetadata;
 }
 
 void SyscallHandler::TrackMunmap(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length) {

@@ -8,6 +8,7 @@ $end_info$
 
 #pragma once
 
+#include "Common/VolatileMetadata.h"
 #include "LinuxSyscalls/FileManagement.h"
 #include "LinuxSyscalls/LinuxAllocator.h"
 #include "LinuxSyscalls/ThreadManager.h"
@@ -253,7 +254,12 @@ public:
   uint64_t GuestShmdt(bool Is64Bit, FEXCore::Core::InternalThreadState*, const void* shmaddr);
 
   ///// Memory Manager tracking /////
-  void TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t addr, size_t length, int prot, int flags, int fd, off_t offset);
+  struct LateApplyExtendedVolatileMetadata {
+    fextl::set<uint64_t> VolatileInstructions {};
+    FEXCore::IntervalList<uint64_t> VolatileValidRanges {};
+  };
+  std::optional<LateApplyExtendedVolatileMetadata>
+  TrackMmap(FEXCore::Core::InternalThreadState* Thread, uint64_t addr, size_t length, int prot, int flags, int fd, off_t offset);
   void TrackMunmap(FEXCore::Core::InternalThreadState* Thread, void* addr, size_t length);
   void TrackMremap(FEXCore::Core::InternalThreadState* Thread, uint64_t OldAddress, size_t OldSize, size_t NewSize, int flags, uint64_t NewAddress);
   void TrackShmat(FEXCore::Core::InternalThreadState* Thread, int shmid, uint64_t shmaddr, int shmflg, uint64_t Length);
@@ -349,6 +355,8 @@ private:
 
   FEX::HLE::SignalDelegator* SignalDelegation;
   FEX::HLE::ThunkHandler* ThunkHandler;
+
+  fextl::unordered_map<fextl::string, FEX::VolatileMetadata::ExtendedVolatileMetadata> ExtendedMetaData {};
 
   std::mutex FutexMutex;
   std::mutex SyscallMutex;
