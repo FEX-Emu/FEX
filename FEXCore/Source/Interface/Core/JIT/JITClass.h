@@ -172,6 +172,11 @@ private:
   }
 
   [[nodiscard]]
+  ARMEmitter::Size ConvertSize(const IR::OpSize Size) {
+    return Size == IR::OpSize::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
+  }
+
+  [[nodiscard]]
   ARMEmitter::SubRegSize ConvertSubRegSize16(IR::OpSize ElementSize) {
     LOGMAN_THROW_A_FMT(ElementSize == IR::OpSize::i8Bit || ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit ||
                          ElementSize == IR::OpSize::i64Bit || ElementSize == IR::OpSize::i128Bit,
@@ -406,7 +411,7 @@ private:
   void Emulate128BitGather(IR::OpSize Size, IR::OpSize ElementSize, ARMEmitter::VRegister Dst, ARMEmitter::VRegister IncomingDst,
                            std::optional<ARMEmitter::Register> BaseAddr, ARMEmitter::VRegister VectorIndexLow,
                            std::optional<ARMEmitter::VRegister> VectorIndexHigh, ARMEmitter::VRegister MaskReg, IR::OpSize VectorIndexSize,
-                           size_t DataElementOffsetStart, size_t IndexElementOffsetStart, uint8_t OffsetScale);
+                           size_t DataElementOffsetStart, size_t IndexElementOffsetStart, uint8_t OffsetScale, IR::OpSize AddrSize);
 
   void EmitTFCheck();
 
