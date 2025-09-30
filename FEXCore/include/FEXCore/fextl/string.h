@@ -2,7 +2,7 @@
 #pragma once
 #include <FEXCore/fextl/allocator.h>
 
-#include <filesystem>
+#include <functional>
 #include <string>
 
 namespace fextl {
