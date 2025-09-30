@@ -52,7 +52,7 @@ inline bool Conv(std::string_view Value, int64_t* Result) {
   return true;
 }
 
-template<typename T, typename = std::enable_if<std::is_enum<T>::value, T>>
+template<typename T, typename = std::enable_if_t<std::is_enum_v<T>, T>>
 inline bool Conv(std::string_view Value, T* Result) {
   *Result = static_cast<T>(std::stoull(Value.data(), nullptr, 0));
   return true;
