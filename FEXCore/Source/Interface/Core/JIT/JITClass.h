@@ -135,8 +135,8 @@ private:
   }
 
   [[nodiscard]]
-  FEXCore::IR::RegisterClassType GetRegClass(IR::Ref Node) const {
-    return FEXCore::IR::RegisterClassType {IR::PhysicalRegister(Node).Class};
+  static IR::RegisterClassType GetRegClass(IR::Ref Node) {
+    return IR::RegisterClassType {IR::PhysicalRegister(Node).Class};
   }
 
   [[nodiscard]]
@@ -153,7 +153,7 @@ private:
   // Converts IR-base shift type to ARMEmitter shift type.
   // Will be a no-op, only a type conversion since the two definitions match.
   [[nodiscard]]
-  ARMEmitter::ShiftType ConvertIRShiftType(IR::ShiftType Shift) const {
+  static ARMEmitter::ShiftType ConvertIRShiftType(IR::ShiftType Shift) {
     return Shift == IR::ShiftType::LSL ? ARMEmitter::ShiftType::LSL :
            Shift == IR::ShiftType::LSR ? ARMEmitter::ShiftType::LSR :
            Shift == IR::ShiftType::ASR ? ARMEmitter::ShiftType::ASR :
@@ -161,23 +161,23 @@ private:
   }
 
   [[nodiscard]]
-  ARMEmitter::Size ConvertSize(const IR::IROp_Header* Op) {
+  static ARMEmitter::Size ConvertSize(const IR::IROp_Header* Op) {
     return Op->Size == IR::OpSize::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
   }
 
   [[nodiscard]]
-  ARMEmitter::Size ConvertSize48(const IR::IROp_Header* Op) {
+  static ARMEmitter::Size ConvertSize48(const IR::IROp_Header* Op) {
     LOGMAN_THROW_A_FMT(Op->Size == IR::OpSize::i32Bit || Op->Size == IR::OpSize::i64Bit, "Invalid size");
     return ConvertSize(Op);
   }
 
   [[nodiscard]]
-  ARMEmitter::Size ConvertSize(const IR::OpSize Size) {
+  static ARMEmitter::Size ConvertSize(IR::OpSize Size) {
     return Size == IR::OpSize::i64Bit ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
   }
 
   [[nodiscard]]
-  ARMEmitter::SubRegSize ConvertSubRegSize16(IR::OpSize ElementSize) {
+  static ARMEmitter::SubRegSize ConvertSubRegSize16(IR::OpSize ElementSize) {
     LOGMAN_THROW_A_FMT(ElementSize == IR::OpSize::i8Bit || ElementSize == IR::OpSize::i16Bit || ElementSize == IR::OpSize::i32Bit ||
                          ElementSize == IR::OpSize::i64Bit || ElementSize == IR::OpSize::i128Bit,
                        "Invalid size");
@@ -189,104 +189,104 @@ private:
   }
 
   [[nodiscard]]
-  ARMEmitter::SubRegSize ConvertSubRegSize16(const IR::IROp_Header* Op) {
+  static ARMEmitter::SubRegSize ConvertSubRegSize16(const IR::IROp_Header* Op) {
     return ConvertSubRegSize16(Op->ElementSize);
   }
 
   [[nodiscard]]
-  ARMEmitter::SubRegSize ConvertSubRegSize8(IR::OpSize ElementSize) {
+  static ARMEmitter::SubRegSize ConvertSubRegSize8(IR::OpSize ElementSize) {
     LOGMAN_THROW_A_FMT(ElementSize != IR::OpSize::i128Bit, "Invalid size");
     return ConvertSubRegSize16(ElementSize);
   }
 
   [[nodiscard]]
-  ARMEmitter::SubRegSize ConvertSubRegSize8(const IR::IROp_Header* Op) {
+  static ARMEmitter::SubRegSize ConvertSubRegSize8(const IR::IROp_Header* Op) {
     return ConvertSubRegSize8(Op->ElementSize);
   }
 
   [[nodiscard]]
-  ARMEmitter::SubRegSize ConvertSubRegSize4(const IR::IROp_Header* Op) {
+  static ARMEmitter::SubRegSize ConvertSubRegSize4(const IR::IROp_Header* Op) {
     LOGMAN_THROW_A_FMT(Op->ElementSize != IR::OpSize::i64Bit, "Invalid size");
     return ConvertSubRegSize8(Op);
   }
 
   [[nodiscard]]
-  ARMEmitter::SubRegSize ConvertSubRegSize248(const IR::IROp_Header* Op) {
+  static ARMEmitter::SubRegSize ConvertSubRegSize248(const IR::IROp_Header* Op) {
     LOGMAN_THROW_A_FMT(Op->ElementSize != IR::OpSize::i8Bit, "Invalid size");
     return ConvertSubRegSize8(Op);
   }
 
   [[nodiscard]]
-  ARMEmitter::VectorRegSizePair ConvertSubRegSizePair16(const IR::IROp_Header* Op) {
+  static ARMEmitter::VectorRegSizePair ConvertSubRegSizePair16(const IR::IROp_Header* Op) {
     return ARMEmitter::ToVectorSizePair(ConvertSubRegSize16(Op));
   }
 
   [[nodiscard]]
-  ARMEmitter::VectorRegSizePair ConvertSubRegSizePair8(const IR::IROp_Header* Op) {
+  static ARMEmitter::VectorRegSizePair ConvertSubRegSizePair8(const IR::IROp_Header* Op) {
     LOGMAN_THROW_A_FMT(Op->ElementSize != IR::OpSize::i128Bit, "Invalid size");
     return ConvertSubRegSizePair16(Op);
   }
 
   [[nodiscard]]
-  ARMEmitter::VectorRegSizePair ConvertSubRegSizePair248(const IR::IROp_Header* Op) {
+  static ARMEmitter::VectorRegSizePair ConvertSubRegSizePair248(const IR::IROp_Header* Op) {
     LOGMAN_THROW_A_FMT(Op->ElementSize != IR::OpSize::i8Bit, "Invalid size");
     return ConvertSubRegSizePair8(Op);
   }
 
   [[nodiscard]]
-  ARMEmitter::Condition MapCC(IR::CondClassType Cond) {
+  static ARMEmitter::Condition MapCC(IR::CondClassType Cond) {
     switch (Cond.Val) {
-    case FEXCore::IR::COND_EQ: return ARMEmitter::Condition::CC_EQ;
-    case FEXCore::IR::COND_NEQ: return ARMEmitter::Condition::CC_NE;
-    case FEXCore::IR::COND_SGE: return ARMEmitter::Condition::CC_GE;
-    case FEXCore::IR::COND_SLT: return ARMEmitter::Condition::CC_LT;
-    case FEXCore::IR::COND_SGT: return ARMEmitter::Condition::CC_GT;
-    case FEXCore::IR::COND_SLE: return ARMEmitter::Condition::CC_LE;
-    case FEXCore::IR::COND_UGE: return ARMEmitter::Condition::CC_CS;
-    case FEXCore::IR::COND_ULT: return ARMEmitter::Condition::CC_CC;
-    case FEXCore::IR::COND_UGT: return ARMEmitter::Condition::CC_HI;
-    case FEXCore::IR::COND_ULE: return ARMEmitter::Condition::CC_LS;
-    case FEXCore::IR::COND_FLU: return ARMEmitter::Condition::CC_LT;
-    case FEXCore::IR::COND_FGE: return ARMEmitter::Condition::CC_GE;
-    case FEXCore::IR::COND_FLEU: return ARMEmitter::Condition::CC_LE;
-    case FEXCore::IR::COND_FGT: return ARMEmitter::Condition::CC_GT;
-    case FEXCore::IR::COND_FU:
-    case FEXCore::IR::COND_VS: return ARMEmitter::Condition::CC_VS;
-    case FEXCore::IR::COND_FNU:
-    case FEXCore::IR::COND_VC: return ARMEmitter::Condition::CC_VC;
-    case FEXCore::IR::COND_MI: return ARMEmitter::Condition::CC_MI;
-    case FEXCore::IR::COND_PL: return ARMEmitter::Condition::CC_PL;
+    case IR::COND_EQ: return ARMEmitter::Condition::CC_EQ;
+    case IR::COND_NEQ: return ARMEmitter::Condition::CC_NE;
+    case IR::COND_SGE: return ARMEmitter::Condition::CC_GE;
+    case IR::COND_SLT: return ARMEmitter::Condition::CC_LT;
+    case IR::COND_SGT: return ARMEmitter::Condition::CC_GT;
+    case IR::COND_SLE: return ARMEmitter::Condition::CC_LE;
+    case IR::COND_UGE: return ARMEmitter::Condition::CC_CS;
+    case IR::COND_ULT: return ARMEmitter::Condition::CC_CC;
+    case IR::COND_UGT: return ARMEmitter::Condition::CC_HI;
+    case IR::COND_ULE: return ARMEmitter::Condition::CC_LS;
+    case IR::COND_FLU: return ARMEmitter::Condition::CC_LT;
+    case IR::COND_FGE: return ARMEmitter::Condition::CC_GE;
+    case IR::COND_FLEU: return ARMEmitter::Condition::CC_LE;
+    case IR::COND_FGT: return ARMEmitter::Condition::CC_GT;
+    case IR::COND_FU:
+    case IR::COND_VS: return ARMEmitter::Condition::CC_VS;
+    case IR::COND_FNU:
+    case IR::COND_VC: return ARMEmitter::Condition::CC_VC;
+    case IR::COND_MI: return ARMEmitter::Condition::CC_MI;
+    case IR::COND_PL: return ARMEmitter::Condition::CC_PL;
     default: LOGMAN_MSG_A_FMT("Unsupported compare type"); return ARMEmitter::Condition::CC_NV;
     }
   }
 
   [[nodiscard]]
-  bool IsFPR(IR::RegisterClassType Class) const {
+  static bool IsFPR(IR::RegisterClassType Class) {
     return Class == IR::FPRClass || Class == IR::FPRFixedClass;
   }
 
   [[nodiscard]]
-  bool IsGPR(IR::RegisterClassType Class) const {
+  static bool IsGPR(IR::RegisterClassType Class) {
     return Class == IR::GPRClass || Class == IR::GPRFixedClass;
   }
 
   [[nodiscard]]
-  bool IsGPR(IR::Ref Node) {
+  static bool IsGPR(IR::Ref Node) {
     return IsGPR(GetRegClass(Node));
   }
 
   [[nodiscard]]
-  bool IsFPR(IR::Ref Node) {
+  static bool IsFPR(IR::Ref Node) {
     return IsFPR(GetRegClass(Node));
   }
 
   [[nodiscard]]
-  bool IsGPR(IR::OrderedNodeWrapper Wrap) {
+  static bool IsGPR(IR::OrderedNodeWrapper Wrap) {
     return IsGPR(IR::RegisterClassType {IR::PhysicalRegister(Wrap).Class});
   }
 
   [[nodiscard]]
-  bool IsFPR(IR::OrderedNodeWrapper Wrap) {
+  static bool IsFPR(IR::OrderedNodeWrapper Wrap) {
     return IsFPR(IR::RegisterClassType {IR::PhysicalRegister(Wrap).Class});
   }
 
