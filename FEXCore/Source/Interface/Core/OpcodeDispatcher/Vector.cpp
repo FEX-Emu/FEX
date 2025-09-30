@@ -5043,6 +5043,8 @@ void OpDispatchBuilder::VPGATHER(OpcodeArgs) {
 
   const auto Size = OpSizeFromDst(Op);
   const auto Is128Bit = Size == OpSize::i128Bit;
+  const auto GPRSize = GetGPROpSize();
+  auto AddrSize = (Op->Flags & X86Tables::DecodeFlags::FLAG_ADDRESS_SIZE) != 0 ? (GPRSize >> 1) : GPRSize;
 
   ///< Element size is determined by W flag.
   const OpSize ElementLoadSize = Op->Flags & X86Tables::DecodeFlags::FLAG_OPTION_AVX_W ? OpSize::i64Bit : OpSize::i32Bit;
@@ -5085,7 +5087,7 @@ void OpDispatchBuilder::VPGATHER(OpcodeArgs) {
       }
     }
 
-    auto Result128 = AVX128_VPGatherImpl(Size, ElementLoadSize, AddrElementSize, Dest128, Mask128, VSIB128);
+    auto Result128 = AVX128_VPGatherImpl(Op, Size, ElementLoadSize, AddrElementSize, Dest128, Mask128, VSIB128);
     // The registers are current split, need to merge them.
     Result = _VInsElement(OpSize::i256Bit, OpSize::i128Bit, 1, 0, Result128.Low, Result128.High);
   } else {
@@ -5100,7 +5102,8 @@ void OpDispatchBuilder::VPGATHER(OpcodeArgs) {
       BaseAddr = Invalid();
     }
 
-    Result = _VLoadVectorGatherMasked(Size, ElementLoadSize, Dest, Mask, BaseAddr, VSIB.Low, Invalid(), AddrElementSize, VSIB.Scale, 0, 0);
+    Result =
+      _VLoadVectorGatherMasked(Size, ElementLoadSize, Dest, Mask, BaseAddr, VSIB.Low, Invalid(), AddrElementSize, VSIB.Scale, 0, 0, AddrSize);
   }
 
   if (Is128Bit) {

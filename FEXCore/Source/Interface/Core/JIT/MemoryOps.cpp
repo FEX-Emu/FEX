@@ -1039,7 +1039,7 @@ void Arm64JITCore::Emulate128BitGather(IR::OpSize Size, IR::OpSize ElementSize, 
                                        ARMEmitter::VRegister IncomingDst, std::optional<ARMEmitter::Register> BaseAddr,
                                        ARMEmitter::VRegister VectorIndexLow, std::optional<ARMEmitter::VRegister> VectorIndexHigh,
                                        ARMEmitter::VRegister MaskReg, IR::OpSize VectorIndexSize, size_t DataElementOffsetStart,
-                                       size_t IndexElementOffsetStart, uint8_t OffsetScale) {
+                                       size_t IndexElementOffsetStart, uint8_t OffsetScale, IR::OpSize AddrSize) {
   LOGMAN_THROW_A_FMT(ElementSize >= IR::OpSize::i8Bit && ElementSize <= IR::OpSize::i64Bit, "Invalid element size");
 
   const auto PerformSMove = [this](IR::OpSize ElementSize, const ARMEmitter::Register Dst, const ARMEmitter::VRegister Vector, int index) {
@@ -1115,17 +1115,17 @@ void Arm64JITCore::Emulate128BitGather(IR::OpSize Size, IR::OpSize ElementSize, 
     // Calculate memory position for this gather load
     if (BaseAddr.has_value()) {
       if (VectorIndexSize == IR::OpSize::i32Bit) {
-        add(ARMEmitter::Size::i64Bit, TempMemReg, *BaseAddr, WorkingReg, ARMEmitter::ExtendedType::SXTW, FEXCore::ilog2(OffsetScale));
+        add(ConvertSize(AddrSize), TempMemReg, *BaseAddr, WorkingReg, ARMEmitter::ExtendedType::SXTW, FEXCore::ilog2(OffsetScale));
       } else {
-        add(ARMEmitter::Size::i64Bit, TempMemReg, *BaseAddr, WorkingReg, ARMEmitter::ShiftType::LSL, FEXCore::ilog2(OffsetScale));
+        add(ConvertSize(AddrSize), TempMemReg, *BaseAddr, WorkingReg, ARMEmitter::ShiftType::LSL, FEXCore::ilog2(OffsetScale));
       }
     } else {
       ///< In this case we have no base address, All addresses come from the vector register itself
       if (VectorIndexSize == IR::OpSize::i32Bit) {
         // Sign extend and shift in to the 64-bit register
-        sbfiz(ARMEmitter::Size::i64Bit, TempMemReg, WorkingReg, FEXCore::ilog2(OffsetScale), 32);
+        sbfiz(ConvertSize(AddrSize), TempMemReg, WorkingReg, FEXCore::ilog2(OffsetScale), 32);
       } else {
-        lsl(ARMEmitter::Size::i64Bit, TempMemReg, WorkingReg, FEXCore::ilog2(OffsetScale));
+        lsl(ConvertSize(AddrSize), TempMemReg, WorkingReg, FEXCore::ilog2(OffsetScale));
       }
     }
 
@@ -1183,7 +1183,8 @@ DEF_OP(VLoadVectorGatherMasked) {
 
   ///< If the host supports SVE and the offset scale matches SVE limitations then it can do an SVE style load.
   const bool SupportsSVELoad = (HostSupportsSVE128 || HostSupportsSVE256) &&
-                               (OffsetScale == 1 || OffsetScale == IR::OpSizeToSize(VectorIndexSize)) && VectorIndexSize == IROp->ElementSize;
+                               (OffsetScale == 1 || OffsetScale == IR::OpSizeToSize(VectorIndexSize)) &&
+                               VectorIndexSize == IROp->ElementSize && Op->AddrSize == IR::OpSize::i64Bit;
 
   if (SupportsSVELoad) {
     uint8_t SVEScale = FEXCore::ilog2(OffsetScale);
@@ -1241,7 +1242,7 @@ DEF_OP(VLoadVectorGatherMasked) {
   } else {
     LOGMAN_THROW_A_FMT(!Is256Bit, "Can't emulate this gather load in the backend! Programming error!");
     Emulate128BitGather(IROp->Size, IROp->ElementSize, Dst, IncomingDst, BaseAddr, VectorIndexLow, VectorIndexHigh, MaskReg,
-                        VectorIndexSize, DataElementOffsetStart, IndexElementOffsetStart, OffsetScale);
+                        VectorIndexSize, DataElementOffsetStart, IndexElementOffsetStart, OffsetScale, Op->AddrSize);
   }
 }
 
@@ -1266,7 +1267,9 @@ DEF_OP(VLoadVectorGatherMaskedQPS) {
     !Op->VectorIndexHigh.IsInvalid() ? std::make_optional(GetVReg(Op->VectorIndexHigh)) : std::nullopt;
 
   ///< If the host supports SVE and the offset scale matches SVE limitations then it can do an SVE style load.
-  if (HostSupportsSVE128 && (OffsetScale == 1 || OffsetScale == 4)) {
+  const bool SupportsSVELoad = HostSupportsSVE128 && (OffsetScale == 1 || OffsetScale == 4) && Op->AddrSize == IR::OpSize::i64Bit;
+
+  if (SupportsSVELoad) {
     ARMEmitter::SVEModType ModType = ARMEmitter::SVEModType::MOD_NONE;
     if (OffsetScale != 1) {
       ModType = ARMEmitter::SVEModType::MOD_LSL;
@@ -1320,7 +1323,7 @@ DEF_OP(VLoadVectorGatherMaskedQPS) {
     }
   } else {
     Emulate128BitGather(IR::OpSize::i128Bit, IR::OpSize::i32Bit, Dst, IncomingDst, BaseAddr, VectorIndexLow, VectorIndexHigh, MaskReg,
-                        IR::OpSize::i64Bit, 0, 0, OffsetScale);
+                        IR::OpSize::i64Bit, 0, 0, OffsetScale, Op->AddrSize);
   }
 }
 
