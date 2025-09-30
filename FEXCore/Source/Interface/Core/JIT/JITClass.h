@@ -10,13 +10,17 @@ $end_info$
 #include "Interface/Core/ArchHelpers/Arm64Emitter.h"
 #include "Interface/Core/CPUBackend.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
+#include "Interface/Core/JIT/Relocations.h"
 #include "Interface/IR/IR.h"
 #include "Interface/IR/IntrusiveIRList.h"
 #include "Interface/IR/RegisterAllocationData.h"
 
+#include <FEXCore/Config/Config.h>
 #include <FEXCore/Core/CoreState.h>
 #include <FEXCore/IR/IR.h>
+#include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/map.h>
+#include <FEXCore/fextl/memory.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXCore/fextl/vector.h>
 
@@ -25,6 +29,7 @@ $end_info$
 #include <array>
 #include <cstdint>
 #include <functional>
+#include <optional>
 #include <utility>
 #include <variant>
 
