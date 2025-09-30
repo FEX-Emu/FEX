@@ -1,29 +1,30 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 
-#include "FEXCore/Utils/EnumUtils.h"
-#include "Interface/Core/JIT/Relocations.h"
-
 #ifdef VIXL_DISASSEMBLER
 #include <aarch64/disasm-aarch64.h>
+#include <FEXCore/Config/Config.h>
+#include <FEXCore/fextl/memory.h>
+#include <FEXCore/fextl/vector.h>
 #endif
 #ifdef VIXL_SIMULATOR
 #include <aarch64/simulator-aarch64.h>
 #include <aarch64/simulator-constants-aarch64.h>
 #endif
 
-#include <FEXCore/Core/X86Enums.h>
-#include <FEXCore/Config/Config.h>
-#include <FEXCore/fextl/vector.h>
 #include <CodeEmitter/Emitter.h>
 #include <CodeEmitter/Registers.h>
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <span>
 
 namespace FEXCore::Context {
 class ContextImpl;
+}
+namespace FEXCore::X86State {
+enum X86Reg : uint32_t;
 }
 
 namespace FEXCore::CPU {
