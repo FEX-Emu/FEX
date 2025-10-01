@@ -1003,7 +1003,11 @@ NTSTATUS BTCpuNotifyMapViewOfSection(void* Unk1, void* Address, void* Unk2, SIZE
 void BTCpuNotifyUnmapViewOfSection(void* Address, BOOL After, ULONG Status) {
   if (!After) {
     ThreadCreationMutex.lock();
-    InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
+    auto [Start, Size] = InvalidationTracker->InvalidateContainingSection(reinterpret_cast<uint64_t>(Address), true);
+    if (Size) {
+      std::scoped_lock Lock(CTX->GetCodeInvalidationMutex());
+      CTX->RemoveForceTSOInformation(Start, Size);
+    }
   } else {
     ThreadCreationMutex.unlock();
   }
