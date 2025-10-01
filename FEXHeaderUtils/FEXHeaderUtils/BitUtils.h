@@ -7,7 +7,6 @@
 #include <climits>
 #include <cstddef>
 #include <cstdint>
-#include <cstring>
 #include <type_traits>
 
 namespace FEXCore {
@@ -64,19 +63,6 @@ constexpr int FindFirstSetBit(T value) noexcept {
 
   const int trailing_zeroes = std::countr_zero(value);
   return trailing_zeroes + 1;
-}
-
-// Stand-in for std::bit_cast until libc++ implements it.
-template<typename To, typename From>
-[[nodiscard]]
-inline To BitCast(const From& source) noexcept {
-  static_assert(sizeof(From) == sizeof(To), "BitCast source and destination types must be equal in size.");
-  static_assert(std::is_trivially_copyable_v<From>, "BitCast source type must be trivially copyable.");
-  static_assert(std::is_trivially_copyable_v<To>, "BitCast destination type must be trivially copyable.");
-
-  std::aligned_storage_t<sizeof(To), alignof(To)> storage;
-  std::memcpy(&storage, &source, sizeof(storage));
-  return reinterpret_cast<To&>(storage);
 }
 
 } // namespace FEXCore

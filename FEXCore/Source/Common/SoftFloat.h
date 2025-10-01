@@ -4,9 +4,9 @@
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/fextl/sstream.h>
 #include <FEXCore/fextl/string.h>
-#include <FEXHeaderUtils/BitUtils.h>
 #include "cephes_128bit.h"
 
+#include <bit>
 #include <cmath>
 #include <cstring>
 #include <stdint.h>
@@ -501,7 +501,7 @@ struct FEX_PACKED X80SoftFloat {
 
   float ToF32(softfloat_state* state) const {
     const float32_t Result = extF80_to_f32(state, *this);
-    return FEXCore::BitCast<float>(Result);
+    return std::bit_cast<float>(Result);
   }
 
   bool IsSignalingNaN() const {
@@ -533,21 +533,21 @@ struct FEX_PACKED X80SoftFloat {
       ieee_frac &= ~0x0008000000000000ULL;
 
       uint64_t result_bits = sign_bit | exp_bits | ieee_frac;
-      return FEXCore::BitCast<double>(result_bits);
+      return std::bit_cast<double>(result_bits);
     } else if (IsQuietNaN()) {
       const float64_t Result = extF80_to_f64(state, *this);
-      uint64_t result_bits = FEXCore::BitCast<uint64_t>(Result);
+      uint64_t result_bits = std::bit_cast<uint64_t>(Result);
       result_bits |= 0x0008000000000000ULL;
-      return FEXCore::BitCast<double>(result_bits);
+      return std::bit_cast<double>(result_bits);
     } else {
       const float64_t Result = extF80_to_f64(state, *this);
-      return FEXCore::BitCast<double>(Result);
+      return std::bit_cast<double>(Result);
     }
   }
 
   double ToF64(softfloat_state* state) const {
     const float64_t Result = extF80_to_f64(state, *this);
-    return FEXCore::BitCast<double>(Result);
+    return std::bit_cast<double>(Result);
   }
 
   FEXCore::VectorRegType ToVector() const {
@@ -559,7 +559,7 @@ struct FEX_PACKED X80SoftFloat {
   BIGFLOAT ToFMax(softfloat_state* state) const {
 #if BIGFLOATSIZE == 16
     const float128_t Result = extF80_to_f128(state, *this);
-    return FEXCore::BitCast<BIGFLOAT>(Result);
+    return std::bit_cast<BIGFLOAT>(Result);
 #else
     BIGFLOAT result {};
     memcpy(&result, this, sizeof(result));
@@ -618,16 +618,16 @@ struct FEX_PACKED X80SoftFloat {
   }
 
   X80SoftFloat(softfloat_state* state, const float rhs) {
-    *this = f32_to_extF80(state, FEXCore::BitCast<float32_t>(rhs));
+    *this = f32_to_extF80(state, std::bit_cast<float32_t>(rhs));
   }
 
   X80SoftFloat(softfloat_state* state, const double rhs) {
-    *this = f64_to_extF80(state, FEXCore::BitCast<float64_t>(rhs));
+    *this = f64_to_extF80(state, std::bit_cast<float64_t>(rhs));
   }
 
   // Create X80SoftFloat from double while preserving NaN signaling properties
   static X80SoftFloat FromF64_PreserveNaN(softfloat_state* state, double value) {
-    uint64_t bits = FEXCore::BitCast<uint64_t>(value);
+    uint64_t bits = std::bit_cast<uint64_t>(value);
 
     // Check if it's a nan
     if ((bits & 0x7FF0000000000000ULL) == 0x7FF0000000000000ULL && (bits & 0x000FFFFFFFFFFFFFULL) != 0) {
@@ -660,9 +660,9 @@ struct FEX_PACKED X80SoftFloat {
 
   X80SoftFloat(softfloat_state* state, BIGFLOAT rhs) {
 #if BIGFLOATSIZE == 16
-    *this = f128_to_extF80(state, FEXCore::BitCast<float128_t>(rhs));
+    *this = f128_to_extF80(state, std::bit_cast<float128_t>(rhs));
 #else
-    *this = FEXCore::BitCast<long double>(rhs);
+    *this = std::bit_cast<long double>(rhs);
 #endif
   }
 
