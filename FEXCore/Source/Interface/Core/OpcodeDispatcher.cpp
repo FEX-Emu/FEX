@@ -348,7 +348,7 @@ void OpDispatchBuilder::SBBOp(OpcodeArgs, uint32_t SrcIndex) {
 void OpDispatchBuilder::SALCOp(OpcodeArgs) {
   CalculateDeferredFlags();
 
-  auto Result = NZCVSelect(OpSize::i32Bit, {COND_UGE} /* CF = 1 */, _InlineConstant(0xffffffff), _InlineConstant(0));
+  auto Result = NZCVSelect(OpSize::i32Bit, CondClass::UGE /* CF = 1 */, _InlineConstant(0xffffffff), _InlineConstant(0));
 
   StoreResult(GPRClass, Op, Result, OpSize::iInvalid);
 }
@@ -570,54 +570,54 @@ void OpDispatchBuilder::CALLAbsoluteOp(OpcodeArgs) {
   }());
 }
 
-std::optional<CondClassType> OpDispatchBuilder::DecodeNZCVCondition(uint8_t OP) {
+std::optional<CondClass> OpDispatchBuilder::DecodeNZCVCondition(uint8_t OP) {
   switch (OP) {
   case 0x0: { // JO - Jump if OF == 1
-    return CondClassType {COND_FU};
+    return CondClass::FU;
   }
   case 0x1: { // JNO - Jump if OF == 0
-    return CondClassType {COND_FNU};
+    return CondClass::FNU;
   }
   case 0x2: { // JC - Jump if CF == 1
-    return CondClassType {CFInverted ? COND_ULT : COND_UGE};
+    return CFInverted ? CondClass::ULT : CondClass::UGE;
   }
   case 0x3: { // JNC - Jump if CF == 0
-    return CondClassType {CFInverted ? COND_UGE : COND_ULT};
+    return CFInverted ? CondClass::UGE : CondClass::ULT;
   }
   case 0x4: { // JE - Jump if ZF == 1
-    return CondClassType {COND_EQ};
+    return CondClass::EQ;
   }
   case 0x5: { // JNE - Jump if ZF == 0
-    return CondClassType {COND_NEQ};
+    return CondClass::NEQ;
   }
   case 0x6: { // JNA - Jump if CF == 1 || ZF == 1
     // With CF, we want (C == 0 || Z == 1). By De Morgan's, that's
     // equivalent to !(C == 1 && Z == 0). That's .ls
     RectifyCarryInvert(true);
-    return CondClassType {COND_ULE};
+    return CondClass::ULE;
   }
   case 0x7: { // JA - Jump if CF == 0 && ZF == 0
     // With CF inverted, we want (C == 1 && Z == 0). That's .hi
     RectifyCarryInvert(true);
-    return CondClassType {COND_UGT};
+    return CondClass::UGT;
   }
   case 0x8: { // JS - Jump if SF == 1
-    return CondClassType {COND_MI};
+    return CondClass::MI;
   }
   case 0x9: { // JNS - Jump if SF == 0
-    return CondClassType {COND_PL};
+    return CondClass::PL;
   }
   case 0xC: { // SF <> OF
-    return CondClassType {COND_SLT};
+    return CondClass::SLT;
   }
   case 0xD: { // SF = OF
-    return CondClassType {COND_SGE};
+    return CondClass::SGE;
   }
   case 0xE: { // ZF = 1 || SF <> OF
-    return CondClassType {COND_SLE};
+    return CondClass::SLE;
   }
   case 0xF: { // ZF = 0 && SF = OF
-    return CondClassType {COND_SGT};
+    return CondClass::SGT;
   }
   default:
     // Other conditions do not map directly, caller gets to deal with it.
@@ -681,7 +681,7 @@ void OpDispatchBuilder::CMOVOp(OpcodeArgs) {
     // Because we're only clobbering NZCV internally, we ignore all carry flag
     // shenanigans and just use the raw test and raw select.
     _TestNZ(OpSize::i32Bit, Cmp, _InlineConstant(1));
-    SrcCond = _NZCVSelect(ResultSize, {COND_NEQ}, Src, Dest);
+    SrcCond = _NZCVSelect(ResultSize, CondClass::NEQ, Src, Dest);
   }
 
   StoreResult(GPRClass, Op, SrcCond, OpSize::iInvalid);
@@ -776,7 +776,7 @@ void OpDispatchBuilder::CondJUMPRCXOp(OpcodeArgs) {
   auto CurrentBlock = GetCurrentBlock();
 
   {
-    auto CondJump_ = CondJump(CondReg, {COND_EQ});
+    auto CondJump_ = CondJump(CondReg, CondClass::EQ);
 
     // Taking branch block
     if (TrueBlock != JumpTargets.end()) {
@@ -837,7 +837,8 @@ void OpDispatchBuilder::LoopOp(OpcodeArgs) {
   //
   // To handle efficiently, smash RCX to zero if ZF is wrong (1 csel).
   if (CheckZF) {
-    CondReg = NZCVSelect(OpSize, {ZFTrue ? COND_EQ : COND_NEQ}, CondReg, _InlineConstant(0));
+    const auto cond = ZFTrue ? CondClass::EQ : CondClass::NEQ;
+    CondReg = NZCVSelect(OpSize, cond, CondReg, _InlineConstant(0));
   }
 
   CalculateDeferredFlags();
@@ -1511,7 +1512,7 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
   //
   // TODO: This whole function wants to be wrapped in the if. Maybe b/w pass is
   // a good idea after all.
-  Res = _Select(FEXCore::IR::COND_EQ, Shift, Constant(0), Dest, Res);
+  Res = _Select(CondClass::EQ, Shift, Constant(0), Dest, Res);
 
   HandleShift(Op, Res, Dest, ShiftType::LSL, Shift);
 }
@@ -1576,7 +1577,7 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
   // If shift count was zero then output doesn't change
   // Needs to be checked for the 32bit operand case
   // where shift = 0 and the source register still gets Zext
-  Res = _Select(FEXCore::IR::COND_EQ, Shift, Constant(0), Dest, Res);
+  Res = _Select(CondClass::EQ, Shift, Constant(0), Dest, Res);
 
   HandleShift(Op, Res, Dest, ShiftType::LSR, Shift);
 }
@@ -1728,7 +1729,7 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
   auto Shifted = _Lshr(Size, Src1, Start);
 
   // Shifts larger than operand size need to be set to zero.
-  auto SanitizedShifted = _Select(Size, Size, CondClassType {IR::COND_ULE}, Start, MaxSrcBitOp, Shifted, Constant(0));
+  auto SanitizedShifted = _Select(Size, Size, CondClass::ULE, Start, MaxSrcBitOp, Shifted, Constant(0));
 
   // Now handle the length specifier.
   auto Length = _Bfe(Size, 8, 8, Src2);
@@ -1742,7 +1743,7 @@ void OpDispatchBuilder::BEXTRBMIOp(OpcodeArgs) {
   auto Masked = _Andn(Size, SanitizedShifted, InvertedMask);
 
   // Sanitize the length. If it is above the max, we don't do the masking.
-  auto Dest = _Select(Size, Size, CondClassType {IR::COND_ULE}, Length, MaxSrcBitOp, Masked, SanitizedShifted);
+  auto Dest = _Select(Size, Size, CondClass::ULE, Length, MaxSrcBitOp, Masked, SanitizedShifted);
 
   // Finally store the result.
   StoreResult(GPRClass, Op, Dest, OpSize::iInvalid);
@@ -1860,10 +1861,10 @@ void OpDispatchBuilder::BZHI(OpcodeArgs) {
   // Because we're clobbering flags internally we ignore all carry invert
   // shenanigans and use the raw versions here.
   _TestNZ(OpSize::i64Bit, Index, Constant(0xFF & ~(OperandSize - 1)));
-  auto Result = _NZCVSelect(Size, {COND_NEQ}, Src, MaskResult);
+  auto Result = _NZCVSelect(Size, CondClass::NEQ, Src, MaskResult);
   StoreResult(GPRClass, Op, Result, OpSize::iInvalid);
 
-  auto CFInv = _NZCVSelect01({COND_EQ});
+  auto CFInv = _NZCVSelect01(CondClass::EQ);
 
   InvalidatePF_AF();
   SetNZ_ZeroCV(Size, Result);
@@ -1964,7 +1965,7 @@ void OpDispatchBuilder::ADXOp(OpcodeArgs) {
     RectifyCarryInvert(false);
   } else {
     // If overflow, 0 - 0 sets carry. Else, forces carry to 0.
-    _CondSubNZCV(OpSize::i32Bit, Zero, Zero, {COND_FU}, 0x0 /* nzcv */);
+    _CondSubNZCV(OpSize::i32Bit, Zero, Zero, CondClass::FU, 0x0 /* nzcv */);
   }
 
   // Do the actual add.
@@ -1977,7 +1978,7 @@ void OpDispatchBuilder::ADXOp(OpcodeArgs) {
     // For ADOX, we need to copy the new carry into the overflow flag. If carry is clear (ULT with uninverted
     // carry), 0 - 0 clears overflow. Else, force overflow on.
     if (!IsADCX) {
-      _CondSubNZCV(OpSize::i32Bit, Zero, Zero, {COND_ULT}, 0x1 /* nzcV */);
+      _CondSubNZCV(OpSize::i32Bit, Zero, Zero, CondClass::ULT, 0x1 /* nzcV */);
     }
 
     _RmifNZCV(OldNZCV, 28, IsADCX ? 0xd /* NzcV */ : 0xe /* NZCv */);
@@ -2835,7 +2836,7 @@ void OpDispatchBuilder::PopcountOp(OpcodeArgs) {
 
 Ref OpDispatchBuilder::CalculateAFForDecimal(Ref A) {
   auto Nibble = _And(OpSize::i64Bit, A, Constant(0xF));
-  auto Greater = Select01(OpSize::i64Bit, CondClassType {COND_UGT}, Nibble, Constant(9));
+  auto Greater = Select01(OpSize::i64Bit, CondClass::UGT, Nibble, Constant(9));
 
   return _Or(OpSize::i64Bit, LoadAF(), Greater);
 }
@@ -2847,13 +2848,13 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   auto AF = CalculateAFForDecimal(AL);
 
   // CF |= (AL > 0x99);
-  CFInv = _And(OpSize::i64Bit, CFInv, Select01(OpSize::i64Bit, CondClassType {COND_ULE}, AL, Constant(0x99)));
+  CFInv = _And(OpSize::i64Bit, CFInv, Select01(OpSize::i64Bit, CondClass::ULE, AL, Constant(0x99)));
 
   // AL = AF ? (AL + 0x6) : AL;
-  AL = _Select(FEXCore::IR::COND_NEQ, AF, Constant(0), Add(OpSize::i64Bit, AL, 0x6), AL);
+  AL = _Select(CondClass::NEQ, AF, Constant(0), Add(OpSize::i64Bit, AL, 0x6), AL);
 
   // AL = CF ? (AL + 0x60) : AL;
-  AL = _Select(FEXCore::IR::COND_EQ, CFInv, Constant(0), Add(OpSize::i64Bit, AL, 0x60), AL);
+  AL = _Select(CondClass::EQ, CFInv, Constant(0), Add(OpSize::i64Bit, AL, 0x60), AL);
 
   // SF, ZF, PF set according to result. CF set per above. OF undefined.
   StoreGPRRegister(X86State::REG_RAX, AL, OpSize::i8Bit);
@@ -2870,16 +2871,16 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
   auto AF = CalculateAFForDecimal(AL);
 
   // CF |= (AL > 0x99);
-  CF = _Or(OpSize::i64Bit, CF, Select01(OpSize::i64Bit, CondClassType {COND_UGT}, AL, Constant(0x99)));
+  CF = _Or(OpSize::i64Bit, CF, Select01(OpSize::i64Bit, CondClass::UGT, AL, Constant(0x99)));
 
   // NewCF = CF | (AF && (Borrow from AL - 6))
-  auto NewCF = _Or(OpSize::i32Bit, CF, _Select(FEXCore::IR::COND_ULT, AL, Constant(6), AF, CF));
+  auto NewCF = _Or(OpSize::i32Bit, CF, _Select(CondClass::ULT, AL, Constant(6), AF, CF));
 
   // AL = AF ? (AL - 0x6) : AL;
-  AL = _Select(FEXCore::IR::COND_NEQ, AF, Constant(0), Sub(OpSize::i64Bit, AL, 0x6), AL);
+  AL = _Select(CondClass::NEQ, AF, Constant(0), Sub(OpSize::i64Bit, AL, 0x6), AL);
 
   // AL = CF ? (AL - 0x60) : AL;
-  AL = _Select(FEXCore::IR::COND_NEQ, CF, Constant(0), Sub(OpSize::i64Bit, AL, 0x60), AL);
+  AL = _Select(CondClass::NEQ, CF, Constant(0), Sub(OpSize::i64Bit, AL, 0x60), AL);
 
   // SF, ZF, PF set according to result. CF set per above. OF undefined.
   StoreGPRRegister(X86State::REG_RAX, AL, OpSize::i8Bit);
@@ -2899,7 +2900,7 @@ void OpDispatchBuilder::AAAOp(OpcodeArgs) {
   CalculateDeferredFlags();
 
   // AX = CF ? (AX + 0x106) : 0
-  A = NZCVSelect(OpSize::i32Bit, {COND_UGE} /* CF = 1 */, Add(OpSize::i32Bit, A, 0x106), A);
+  A = NZCVSelect(OpSize::i32Bit, CondClass::UGE /* CF = 1 */, Add(OpSize::i32Bit, A, 0x106), A);
 
   // AL = AL & 0x0F
   A = _And(OpSize::i32Bit, A, Constant(0xFF0F));
@@ -2916,7 +2917,7 @@ void OpDispatchBuilder::AASOp(OpcodeArgs) {
   CalculateDeferredFlags();
 
   // AX = CF ? (AX - 0x106) : 0
-  A = NZCVSelect(OpSize::i32Bit, {COND_UGE} /* CF = 1 */, Sub(OpSize::i32Bit, A, 0x106), A);
+  A = NZCVSelect(OpSize::i32Bit, CondClass::UGE /* CF = 1 */, Sub(OpSize::i32Bit, A, 0x106), A);
 
   // AL = AL & 0x0F
   A = _And(OpSize::i32Bit, A, Constant(0xFF0F));
@@ -3344,7 +3345,7 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
 
     // If rcx = 0, skip the whole loop.
     Ref Counter = LoadGPRRegister(X86State::REG_RCX);
-    auto OuterJump = CondJump(Counter, {COND_EQ});
+    auto OuterJump = CondJump(Counter, CondClass::EQ);
 
     auto BeforeLoop = CreateNewCodeBlockAfter(GetCurrentBlock());
     SetFalseJumpTarget(OuterJump, BeforeLoop);
@@ -3393,10 +3394,10 @@ void OpDispatchBuilder::CMPSOp(OpcodeArgs) {
 
         // If TailCounter != 0, compare sources.
         // If TailCounter == 0, set ZF iff that would break.
-        _CondSubNZCV(OpSize::i64Bit, Src2, Src1, {COND_NEQ}, REPE ? 0 : (1 << 2) /* Z */);
+        _CondSubNZCV(OpSize::i64Bit, Src2, Src1, CondClass::NEQ, REPE ? 0 : (1 << 2) /* Z */);
         CachedNZCV = nullptr;
         NZCVDirty = false;
-        InnerJump = CondJumpNZCV({REPE ? COND_EQ : COND_NEQ});
+        InnerJump = CondJumpNZCV(REPE ? CondClass::EQ : CondClass::NEQ);
 
         // Jump back to the start if we have more work to do
         SetTrueJumpTarget(InnerJump, LoopHeader);
@@ -3469,7 +3470,7 @@ void OpDispatchBuilder::LODSOp(OpcodeArgs) {
       // Can we end the block?
 
       // We leave if RCX = 0
-      auto CondJump_ = CondJump(Counter, {COND_EQ});
+      auto CondJump_ = CondJump(Counter, CondClass::EQ);
 
       auto LoopTail = CreateNewCodeBlockAfter(LoopStart);
       SetFalseJumpTarget(CondJump_, LoopTail);
@@ -3548,7 +3549,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
 
       // Can we end the block?
       // We leave if RCX = 0
-      auto CondJump_ = CondJump(Counter, {COND_EQ});
+      auto CondJump_ = CondJump(Counter, CondClass::EQ);
       IRPair<IROp_CondJump> InternalCondJump;
 
       auto LoopTail = CreateNewCodeBlockAfter(LoopStart);
@@ -3582,7 +3583,7 @@ void OpDispatchBuilder::SCASOp(OpcodeArgs) {
         StoreGPRRegister(X86State::REG_RDI, TailDest_RDI);
 
         CalculateDeferredFlags();
-        InternalCondJump = CondJumpNZCV({REPE ? COND_EQ : COND_NEQ});
+        InternalCondJump = CondJumpNZCV(REPE ? CondClass::EQ : CondClass::NEQ);
 
         // Jump back to the start if we have more work to do
         SetTrueJumpTarget(InternalCondJump, LoopStart);
@@ -3755,7 +3756,7 @@ void OpDispatchBuilder::BSFOp(OpcodeArgs) {
   // Although Intel does not guarantee that semantic, AMD does and Intel
   // hardware satisfies it. We provide the stronger AMD behaviour as
   // applications might rely on that in the wild.
-  auto SelectOp = NZCVSelect(GPRSize, {COND_EQ}, Dest, Result);
+  auto SelectOp = NZCVSelect(GPRSize, CondClass::EQ, Dest, Result);
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, SelectOp, DstSize, OpSize::iInvalid);
 }
 
@@ -3773,7 +3774,7 @@ void OpDispatchBuilder::BSROp(OpcodeArgs) {
   SetZ_InvalidateNCV(OpSizeFromSrc(Op), Src);
 
   // If Src was zero then the destination doesn't get modified
-  auto SelectOp = NZCVSelect(GPRSize, {COND_EQ}, Dest, Result);
+  auto SelectOp = NZCVSelect(GPRSize, CondClass::EQ, Dest, Result);
   StoreResult_WithOpSize(GPRClass, Op, Op->Dest, SelectOp, DstSize, OpSize::iInvalid);
 }
 
@@ -3824,7 +3825,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     if (!Trivial) {
       if (GPRSize == OpSize::i64Bit && Size == OpSize::i32Bit) {
         // This allows us to only hit the ZEXT case on failure
-        Ref RAXResult = NZCVSelect(OpSize::i64Bit, {COND_EQ}, Src3, Src1Lower);
+        Ref RAXResult = NZCVSelect(OpSize::i64Bit, CondClass::EQ, Src3, Src1Lower);
 
         // When the size is 4 we need to make sure not zext the GPR when the comparison fails
         StoreGPRRegister(X86State::REG_RAX, RAXResult);
@@ -3840,7 +3841,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
     if (GPRSize == OpSize::i64Bit && Size == OpSize::i32Bit) {
       Src2Lower = _Bfe(GPRSize, IR::OpSizeAsBits(Size), 0, Src2);
     }
-    Ref DestResult = Trivial ? Src2 : NZCVSelect(OpSize::i64Bit, CondClassType {COND_EQ}, Src2Lower, Src1);
+    Ref DestResult = Trivial ? Src2 : NZCVSelect(OpSize::i64Bit, CondClass::EQ, Src2Lower, Src1);
 
     // Store in to GPR Dest
     if (GPRSize == OpSize::i64Bit && Size == OpSize::i32Bit) {
@@ -3870,7 +3871,7 @@ void OpDispatchBuilder::CMPXCHGOp(OpcodeArgs) {
 
     if (GPRSize == OpSize::i64Bit && Size == OpSize::i32Bit) {
       // This allows us to only hit the ZEXT case on failure
-      RAXResult = _NZCVSelect(OpSize::i64Bit, {COND_EQ}, Src3, CASResult);
+      RAXResult = _NZCVSelect(OpSize::i64Bit, CondClass::EQ, Src3, CASResult);
       Size = OpSize::i64Bit;
     }
 
@@ -3919,7 +3920,7 @@ void OpDispatchBuilder::CMPXCHGPairOp(OpcodeArgs) {
   auto UpdateIfNotZF = [this](auto Reg, auto Value) {
     // Always use 64-bit csel to preserve existing upper bits. If we have a
     // 32-bit cmpxchg in a 64-bit context, Value will be zeroed in upper bits.
-    StoreGPRRegister(Reg, NZCVSelect(OpSize::i64Bit, {COND_NEQ}, Value, LoadGPRRegister(Reg)));
+    StoreGPRRegister(Reg, NZCVSelect(OpSize::i64Bit, CondClass::NEQ, Value, LoadGPRRegister(Reg)));
   };
 
   UpdateIfNotZF(X86State::REG_RAX, Result_Lower);
@@ -4701,8 +4702,8 @@ void OpDispatchBuilder::INTOp(OpcodeArgs) {
     CalculateDeferredFlags();
 
     // If condition doesn't hold then keep going
-    // COND_FNU means OF == 0
-    auto CondJump_ = CondJumpNZCV({COND_FNU});
+    // CondClass::FNU means OF == 0
+    auto CondJump_ = CondJumpNZCV(CondClass::FNU);
     auto FalseBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
     SetFalseJumpTarget(CondJump_, FalseBlock);
     SetCurrentCodeBlock(FalseBlock);

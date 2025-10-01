@@ -506,7 +506,7 @@ inline Ref X87StackOptimization::SilenceNaN(Ref Value) {
   IREmit->_FCmp(OpSize::i64Bit, Value, Value); // Comparison with itself should set VS if nan
   Ref QuietNaNGPR = IREmit->_Or(OpSize::i64Bit, GPRValue, IREmit->_Constant(0x0008000000000000ULL));
   Ref SilencedValue = IREmit->_VCastFromGPR(OpSize::i64Bit, OpSize::i64Bit, QuietNaNGPR);
-  return IREmit->_NZCVSelectV(OpSize::i64Bit, CondClassType {COND_VS}, SilencedValue, Value);
+  return IREmit->_NZCVSelectV(OpSize::i64Bit, CondClass::VS, SilencedValue, Value);
 }
 
 inline std::optional<X87StackOptimization::StackMemberInfo> X87StackOptimization::MigrateToSlowPath_IfInvalid(uint8_t Offset) {

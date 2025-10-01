@@ -303,14 +303,21 @@ def parse_ops(ops):
             IROpNameMap[OpDef.Name] = 1
 
 # Print out enum values
-def print_enums():
+def print_enums(enums):
     output_file.write("#ifdef IROP_ENUM\n")
     output_file.write("enum IROps : uint16_t {\n")
-
     for op in IROps:
         output_file.write("\tOP_{},\n" .format(op.Name.upper()))
-
     output_file.write("};\n")
+
+    for name, members in enums.items():
+        output_file.write(f"enum {name} {{\n")
+        for member in members:
+            if member:
+                output_file.write(f"\t{member}\n")
+            else:
+                output_file.write("\n")
+        output_file.write("};\n\n")
 
     output_file.write("#undef IROP_ENUM\n")
     output_file.write("#endif\n\n")
@@ -865,6 +872,7 @@ json_file.close()
 json_object = json.loads(json_text)
 json_object = {k.upper(): v for k, v in json_object.items()}
 
+enums = json_object["ENUMS"]
 ops = json_object["OPS"]
 irtypes = json_object["IRTYPES"]
 defines = json_object["DEFINES"]
@@ -874,7 +882,7 @@ parse_ops(ops)
 
 output_file = open(output_filename, "w")
 
-print_enums()
+print_enums(enums)
 print_ir_structs(defines)
 print_ir_sizes()
 print_ir_reg_classes()

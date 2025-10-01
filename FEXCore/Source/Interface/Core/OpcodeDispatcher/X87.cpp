@@ -112,15 +112,15 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
   // Extract sign and make integer absolute
   auto zero = Constant(0);
   _SubNZCV(OpSize::i64Bit, Data, zero);
-  auto sign = _NZCVSelect(OpSize::i64Bit, CondClassType {COND_SLT}, Constant(0x8000), zero);
-  auto absolute = _Neg(OpSize::i64Bit, Data, CondClassType {COND_MI});
+  auto sign = _NZCVSelect(OpSize::i64Bit, CondClass::SLT, Constant(0x8000), zero);
+  auto absolute = _Neg(OpSize::i64Bit, Data, CondClass::MI);
 
   // left justify the absolute integer
   auto shift = Sub(OpSize::i64Bit, Constant(63), _FindMSB(IR::OpSize::i64Bit, absolute));
   auto shifted = _Lshl(OpSize::i64Bit, absolute, shift);
 
   auto adjusted_exponent = Sub(OpSize::i64Bit, Constant(0x3fff + 63), shift);
-  auto zeroed_exponent = _Select(COND_EQ, absolute, zero, zero, adjusted_exponent);
+  auto zeroed_exponent = _Select(CondClass::EQ, absolute, zero, zero, adjusted_exponent);
   auto upper = _Or(OpSize::i64Bit, sign, zeroed_exponent);
 
   Ref ConvertedData = _VLoadTwoGPRs(shifted, upper);
@@ -166,12 +166,12 @@ void OpDispatchBuilder::FIST(OpcodeArgs, bool Truncate) {
     // Check for NaN/Infinity: exponent = 0x7fff
     SaveNZCV();
     _TestNZ(OpSize::i64Bit, Exponent, Constant(0x7fff));
-    Ref IsSpecial = _NZCVSelect01({COND_EQ});
+    Ref IsSpecial = _NZCVSelect01(CondClass::EQ);
 
     // For overflow detection, check if exponent indicates a value >= 2^15
     // Biased exponent for 2^15 is 0x3fff + 15 = 0x400e
     SubWithFlags(OpSize::i64Bit, Exponent, 0x400e);
-    Ref IsOverflow = _NZCVSelect01({COND_UGE});
+    Ref IsOverflow = _NZCVSelect01(CondClass::UGE);
 
     // Set Invalid Operation flag if overflow or special value
     Ref InvalidFlag = _Or(OpSize::i64Bit, IsSpecial, IsOverflow);
@@ -863,7 +863,7 @@ void OpDispatchBuilder::X87FXAM(OpcodeArgs) {
   auto TopValid = _StackValidTag(0);
 
   // In the case of top being invalid then C3:C2:C0 is 0b101
-  auto C3 = Select01(OpSize::i32Bit, CondClassType {COND_NEQ}, TopValid, Constant(1));
+  auto C3 = Select01(OpSize::i32Bit, CondClass::NEQ, TopValid, Constant(1));
 
   auto C2 = TopValid;
   auto C0 = C3; // Mirror C3 until something other than zero is supported

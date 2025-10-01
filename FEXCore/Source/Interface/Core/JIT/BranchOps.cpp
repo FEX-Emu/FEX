@@ -235,16 +235,16 @@ DEF_OP(CondJump) {
     LOGMAN_THROW_A_FMT(IsGPR(Op->Cmp1), "CondJump: Expected GPR");
     LOGMAN_THROW_A_FMT(isConst, "CondJump: Expected constant source");
 
-    if (Op->Cond.Val == FEXCore::IR::COND_EQ) {
+    if (Op->Cond == IR::CondClass::EQ) {
       LOGMAN_THROW_A_FMT(Const == 0, "CondJump: Expected 0 source");
       cbz(Size, Reg, TrueTargetLabel);
-    } else if (Op->Cond.Val == FEXCore::IR::COND_NEQ) {
+    } else if (Op->Cond == IR::CondClass::NEQ) {
       LOGMAN_THROW_A_FMT(Const == 0, "CondJump: Expected 0 source");
       cbnz(Size, Reg, TrueTargetLabel);
-    } else if (Op->Cond.Val == FEXCore::IR::COND_TSTZ) {
+    } else if (Op->Cond == IR::CondClass::TSTZ) {
       LOGMAN_THROW_A_FMT(Const < 64, "CondJump: Expected valid bit source");
       tbz(Reg, Const, TrueTargetLabel);
-    } else if (Op->Cond.Val == FEXCore::IR::COND_TSTNZ) {
+    } else if (Op->Cond == IR::CondClass::TSTNZ) {
       LOGMAN_THROW_A_FMT(Const < 64, "CondJump: Expected valid bit source");
       tbnz(Reg, Const, TrueTargetLabel);
     } else {

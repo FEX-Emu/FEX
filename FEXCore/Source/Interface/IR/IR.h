@@ -442,15 +442,6 @@ struct FEX_PACKED RegisterClassType final {
   friend constexpr bool operator==(const RegisterClassType&, const RegisterClassType&) = default;
 };
 
-struct FEX_PACKED CondClassType final {
-  uint8_t Val;
-  [[nodiscard]] constexpr operator uint8_t() const {
-    return Val;
-  }
-  [[nodiscard]]
-  friend constexpr bool operator==(const CondClassType&, const CondClassType&) = default;
-};
-
 struct FEX_PACKED MemOffsetType final {
   uint8_t Val;
   [[nodiscard]] constexpr operator uint8_t() const {

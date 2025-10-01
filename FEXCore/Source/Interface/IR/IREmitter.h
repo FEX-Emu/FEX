@@ -108,19 +108,19 @@ public:
   IRPair<IROp_Jump> _Jump() {
     return _Jump(InvalidNode);
   }
-  IRPair<IROp_CondJump> _CondJump(Ref ssa0, CondClassType cond = {COND_NEQ}) {
+  IRPair<IROp_CondJump> _CondJump(Ref ssa0, CondClass cond = CondClass::NEQ) {
     return _CondJump(ssa0, _Constant(0), InvalidNode, InvalidNode, cond, GetOpSize(ssa0));
   }
-  IRPair<IROp_CondJump> _CondJump(Ref ssa0, Ref ssa1, Ref ssa2, CondClassType cond = {COND_NEQ}) {
+  IRPair<IROp_CondJump> _CondJump(Ref ssa0, Ref ssa1, Ref ssa2, CondClass cond = CondClass::NEQ) {
     return _CondJump(ssa0, _Constant(0), ssa1, ssa2, cond, GetOpSize(ssa0));
   }
   // TODO: Work to remove this implicit sized Select implementation.
-  IRPair<IROp_Select> _Select(uint8_t Cond, Ref ssa0, Ref ssa1, Ref ssa2, Ref ssa3, IR::OpSize CompareSize = OpSize::iUnsized) {
+  IRPair<IROp_Select> _Select(CondClass Cond, Ref ssa0, Ref ssa1, Ref ssa2, Ref ssa3, IR::OpSize CompareSize = OpSize::iUnsized) {
     if (CompareSize == OpSize::iUnsized) {
       CompareSize = std::max(OpSize::i32Bit, std::max(GetOpSize(ssa0), GetOpSize(ssa1)));
     }
 
-    return _Select(std::max(OpSize::i32Bit, std::max(GetOpSize(ssa2), GetOpSize(ssa3))), CompareSize, CondClassType {Cond}, ssa0, ssa1, ssa2, ssa3);
+    return _Select(std::max(OpSize::i32Bit, std::max(GetOpSize(ssa2), GetOpSize(ssa3))), CompareSize, Cond, ssa0, ssa1, ssa2, ssa3);
   }
   IRPair<IROp_LoadMem> _LoadMem(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, Ref ssa0, IR::OpSize Align = OpSize::i8Bit) {
     return _LoadMem(Class, Size, ssa0, Invalid(), Align, MEM_OFFSET_SXTX, 1);
@@ -129,15 +129,15 @@ public:
     return _StoreMem(Class, Size, Value, Addr, Invalid(), Align, MEM_OFFSET_SXTX, 1);
   }
 
-  IRPair<IROp_Select> Select01(FEXCore::IR::OpSize CompareSize, CondClassType Cond, OrderedNode* Cmp1, OrderedNode* Cmp2) {
+  IRPair<IROp_Select> Select01(FEXCore::IR::OpSize CompareSize, CondClass Cond, OrderedNode* Cmp1, OrderedNode* Cmp2) {
     return _Select(OpSize::i64Bit, CompareSize, Cond, Cmp1, Cmp2, _InlineConstant(1), _InlineConstant(0));
   }
 
   IRPair<IROp_Select> To01(FEXCore::IR::OpSize CompareSize, OrderedNode* Cmp1) {
-    return Select01(CompareSize, CondClassType {COND_NEQ}, Cmp1, Constant(0));
+    return Select01(CompareSize, CondClass::NEQ, Cmp1, Constant(0));
   }
 
-  IRPair<IROp_NZCVSelect> _NZCVSelect01(CondClassType Cond) {
+  IRPair<IROp_NZCVSelect> _NZCVSelect01(CondClass Cond) {
     return _NZCVSelect(OpSize::i64Bit, Cond, _InlineConstant(1), _InlineConstant(0));
   }
 

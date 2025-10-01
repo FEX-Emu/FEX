@@ -263,7 +263,7 @@ void OpDispatchBuilder::CalculateDeferredFlags() {
 Ref OpDispatchBuilder::IncrementByCarry(OpSize OpSize, Ref Src) {
   // If CF not inverted, we use .cc since the increment happens when the
   // condition is false. If CF inverted, invert to use .cs. A bit mindbendy.
-  return _NZCVSelectIncrement(OpSize, {CFInverted ? COND_UGE : COND_ULT}, Src, Src);
+  return _NZCVSelectIncrement(OpSize, CFInverted ? CondClass::UGE : CondClass::ULT, Src, Src);
 }
 
 Ref OpDispatchBuilder::CalculateFlags_ADC(IR::OpSize SrcSize, Ref Src1, Ref Src2) {
@@ -290,7 +290,7 @@ Ref OpDispatchBuilder::CalculateFlags_ADC(IR::OpSize SrcSize, Ref Src1, Ref Src2
     Res = _Bfe(OpSize, IR::OpSizeAsBits(SrcSize), 0, Res);
 
     // TODO: We can fold that second Bfe in (cmp uxth).
-    auto SelectCFInv = Select01(OpSize, CondClassType {COND_UGE}, Res, Src2PlusCF);
+    auto SelectCFInv = Select01(OpSize, CondClass::UGE, Res, Src2PlusCF);
 
     SetNZ_ZeroCV(SrcSize, Res);
     SetCFInverted(SelectCFInv);
@@ -324,7 +324,7 @@ Ref OpDispatchBuilder::CalculateFlags_SBB(IR::OpSize SrcSize, Ref Src1, Ref Src2
     Res = Sub(OpSize, Src1, Src2PlusCF);
     Res = _Bfe(OpSize, IR::OpSizeAsBits(SrcSize), 0, Res);
 
-    auto SelectCFInv = Select01(OpSize, CondClassType {COND_UGE}, Src1, Src2PlusCF);
+    auto SelectCFInv = Select01(OpSize, CondClass::UGE, Src1, Src2PlusCF);
 
     SetNZ_ZeroCV(SrcSize, Res);
     SetCFInverted(SelectCFInv);
@@ -406,7 +406,7 @@ void OpDispatchBuilder::CalculateFlags_MUL(IR::OpSize SrcSize, Ref Res, Ref High
   // If High = SignBit, then sets to nZCv. Else sets to nzcV. Since SF/ZF
   // undefined, this does what we need after inverting carry.
   auto Zero = _InlineConstant(0);
-  _CondSubNZCV(OpSize::i64Bit, Zero, Zero, CondClassType {COND_EQ}, 0x1 /* nzcV */);
+  _CondSubNZCV(OpSize::i64Bit, Zero, Zero, CondClass::EQ, 0x1 /* nzcV */);
   CFInverted = true;
 }
 
@@ -423,7 +423,7 @@ void OpDispatchBuilder::CalculateFlags_UMUL(Ref High) {
 
   // If High = 0, then sets to nZCv. Else sets to nzcV. Since SF/ZF undefined,
   // this does what we need.
-  _CondSubNZCV(Size, Zero, Zero, CondClassType {COND_EQ}, 0x1 /* nzcV */);
+  _CondSubNZCV(Size, Zero, Zero, CondClass::EQ, 0x1 /* nzcV */);
   CFInverted = true;
 }
 

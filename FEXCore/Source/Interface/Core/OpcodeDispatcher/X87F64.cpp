@@ -393,8 +393,8 @@ void OpDispatchBuilder::X87FXTRACTF64(OpcodeArgs) {
   SaveNZCV();
   _TestNZ(OpSize::i64Bit, Gpr, Constant(0x7fff'ffff'ffff'ffffUL));
 
-  Ref Sig = _NZCVSelectV(OpSize::i64Bit, {COND_EQ}, SigZV, SigNZV);
-  Ref Exp = _NZCVSelectV(OpSize::i64Bit, {COND_EQ}, ExpZV, ExpNZV);
+  Ref Sig = _NZCVSelectV(OpSize::i64Bit, CondClass::EQ, SigZV, SigNZV);
+  Ref Exp = _NZCVSelectV(OpSize::i64Bit, CondClass::EQ, ExpZV, ExpNZV);
 
   _PopStackDestroy();
   _PushStack(Exp, Exp, OpSize::i64Bit, true);

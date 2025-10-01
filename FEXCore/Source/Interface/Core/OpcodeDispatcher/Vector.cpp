@@ -2125,7 +2125,7 @@ Ref OpDispatchBuilder::CVTFPR_To_GPRImpl(OpcodeArgs, Ref Src, IR::OpSize SrcElem
     Ref MaxF = LoadAndCacheNamedVectorConstant(SrcElementSize, (SrcElementSize == OpSize::i32Bit) ?
                                                                  (Dst32 ? NAMED_VECTOR_CVTMAX_F32_I32 : NAMED_VECTOR_CVTMAX_F32_I64) :
                                                                  (Dst32 ? NAMED_VECTOR_CVTMAX_F64_I32 : NAMED_VECTOR_CVTMAX_F64_I64));
-    return _Select(GPRSize, SrcElementSize, CondClassType {FEXCore::IR::COND_FGT}, MaxF, Src, Converted, MaxI);
+    return _Select(GPRSize, SrcElementSize, CondClass::FGT, MaxF, Src, Converted, MaxI);
   }
 }
 
@@ -2509,7 +2509,7 @@ void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
   const auto StoreIfFlagSet = [this, OpSize](uint32_t BitIndex, auto fn, uint32_t FieldSize = 1) {
     Ref Mask = LoadGPRRegister(X86State::REG_RAX);
     Ref BitFlag = _Bfe(OpSize, FieldSize, BitIndex, Mask);
-    auto CondJump_ = CondJump(BitFlag, {COND_NEQ});
+    auto CondJump_ = CondJump(BitFlag, CondClass::NEQ);
 
     auto StoreBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
     SetTrueJumpTarget(CondJump_, StoreBlock);
@@ -2704,7 +2704,7 @@ void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
     Ref Mask = _LoadMem(GPRClass, OpSize::i64Bit, Base, Constant(512), OpSize::i64Bit, MEM_OFFSET_SXTX, 1);
 
     Ref BitFlag = _Bfe(OpSize, FieldSize, BitIndex, Mask);
-    auto CondJump_ = CondJump(BitFlag, {COND_NEQ});
+    auto CondJump_ = CondJump(BitFlag, CondClass::NEQ);
 
     auto RestoreBlock = CreateNewCodeBlockAfter(GetCurrentBlock());
     SetTrueJumpTarget(CondJump_, RestoreBlock);
@@ -4922,7 +4922,7 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
 
     Ref IfZero = Constant(16 >> (Control & 1));
     Ref IfNotZero = UseMSBIndex ? _FindMSB(IR::OpSize::i32Bit, ResultNoFlags) : _FindLSB(IR::OpSize::i32Bit, ResultNoFlags);
-    Ref Result = _Select(IR::COND_EQ, ResultNoFlags, ZeroConst, IfZero, IfNotZero);
+    Ref Result = _Select(CondClass::EQ, ResultNoFlags, ZeroConst, IfZero, IfNotZero);
 
     // Store the result, it is already zero-extended to 64-bit implicitly.
     StoreGPRRegister(X86State::REG_RCX, Result);
