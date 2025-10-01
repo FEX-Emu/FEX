@@ -123,6 +123,10 @@ static inline uint64_t GetPc(void* ucontext) {
   return GetMContext(ucontext)->pc;
 }
 
+static inline uint64_t* GetArmPc(void* ucontext) {
+  return reinterpret_cast<uint64_t*>(&GetMContext(ucontext)->pc);
+}
+
 static inline void SetSp(void* ucontext, uint64_t val) {
   GetMContext(ucontext)->sp = val;
 }
@@ -165,6 +169,14 @@ static inline __uint128_t GetArmFPR(void* ucontext, uint32_t id) {
   LOGMAN_THROW_A_FMT(HostState->Head.Magic == FPR_MAGIC, "Wrong FPR Magic: 0x{:08x}", HostState->Head.Magic);
 
   return HostState->FPRs[id];
+}
+
+static inline __uint128_t* GetArmFPRs(void* ucontext) {
+  auto MContext = GetMContext(ucontext);
+  HostFPRState* HostState = reinterpret_cast<HostFPRState*>(&MContext->__reserved[0]);
+  LOGMAN_THROW_A_FMT(HostState->Head.Magic == FPR_MAGIC, "Wrong FPR Magic: 0x{:08x}", HostState->Head.Magic);
+
+  return &HostState->FPRs[0];
 }
 
 static inline uint64_t GetArmESR(void* ucontext) {
