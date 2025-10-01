@@ -40,10 +40,10 @@ $end_info$
 #include "Common/CRT/CRT.h"
 #include "Common/PortabilityInfo.h"
 #include "Common/Handle.h"
+#include "Common/VolatileMetadata.h"
 #include "DummyHandlers.h"
 #include "BTInterface.h"
 #include "Windows/Common/SHMStats.h"
-#include "Windows/Common/VolatileMetadata.h"
 
 #include <cstdint>
 #include <type_traits>
@@ -173,7 +173,7 @@ void LoadImageVolatileMetadata(const fextl::string& ModuleName, uint64_t Address
   // Load FEX extended volatile metadata.
   auto it = ExtendedMetaData.find(ModuleName);
   if (it != ExtendedMetaData.end()) {
-    FEX::Windows::ApplyFEXExtendedVolatileMetadata(it->second, VolatileInstructions, VolatileValidRanges, Address, EndAddress);
+    FEX::VolatileMetadata::ApplyFEXExtendedVolatileMetadata(it->second, VolatileInstructions, VolatileValidRanges, Address, EndAddress);
   }
 
   if (VolatileInstructions.empty() && VolatileValidRanges.Empty()) {
