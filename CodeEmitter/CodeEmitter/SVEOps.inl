@@ -5125,7 +5125,7 @@ private:
   requires (std::is_same_v<T, float> || std::is_same_v<T, double>)
   [[nodiscard]]
   static bool IsValidFPValueForImm8(T value) {
-    const uint64_t bits = FEXCore::BitCast<FloatToEquivalentUInt<T>>(value);
+    const uint64_t bits = std::bit_cast<FloatToEquivalentUInt<T>>(value);
     const uint64_t datasize_idx = FEXCore::ilog2(sizeof(T)) - 1;
 
     static constexpr std::array mantissa_masks {
@@ -5171,7 +5171,7 @@ protected:
     LOGMAN_THROW_A_FMT(IsValidFPValueForImm8(value), "Value ({}) cannot be encoded into an 8-bit immediate", value);
 #endif
 
-    const auto bits = FEXCore::BitCast<uint32_t>(value);
+    const auto bits = std::bit_cast<uint32_t>(value);
     const auto sign = (bits & 0x80000000) >> 24;
     const auto expb2 = (bits & 0x20000000) >> 23;
     const auto b5_to_0 = (bits >> 19) & 0x3F;
@@ -5184,7 +5184,7 @@ protected:
     LOGMAN_THROW_A_FMT(IsValidFPValueForImm8(value), "Value ({}) cannot be encoded into an 8-bit immediate", value);
 #endif
 
-    const auto bits = FEXCore::BitCast<uint64_t>(value);
+    const auto bits = std::bit_cast<uint64_t>(value);
     const auto sign = (bits & 0x80000000'00000000) >> 56;
     const auto expb2 = (bits & 0x20000000'00000000) >> 55;
     const auto b5_to_0 = (bits >> 48) & 0x3F;
