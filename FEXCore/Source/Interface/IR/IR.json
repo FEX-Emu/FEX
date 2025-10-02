@@ -86,6 +86,11 @@
       "LoadStore = 2,",
       "Inst      = 3,"
     ],
+    "class MemOffsetType : uint8_t": [
+      "SXTX = 0,",
+      "UXTW = 1,",
+      "SXTW = 2,"
+    ],
     "class RoundMode : uint8_t": [
       "Nearest     = 0,",
       "NegInfinity = 1,",
@@ -120,10 +125,6 @@
     "constexpr uint8_t FCMP_FLAG_EQ        = 0",
     "constexpr uint8_t FCMP_FLAG_LT        = 1",
     "constexpr uint8_t FCMP_FLAG_UNORDERED = 2",
-
-    "constexpr FEXCore::IR::MemOffsetType MEM_OFFSET_SXTX {0}",
-    "constexpr FEXCore::IR::MemOffsetType MEM_OFFSET_UXTW {1}",
-    "constexpr FEXCore::IR::MemOffsetType MEM_OFFSET_SXTW {2}",
 
     "struct BreakDefinition {",
     "  uint16_t ErrorRegister;",

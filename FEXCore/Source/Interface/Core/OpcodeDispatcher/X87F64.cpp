@@ -36,12 +36,12 @@ void OpDispatchBuilder::X87LDENVF64(OpcodeArgs) {
   _SetRoundingMode(roundingMode, false, roundingMode);
   _StoreContext(OpSize::i16Bit, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
-  auto NewFSW = _LoadMem(GPRClass, Size, Mem, Constant(IR::OpSizeToSize(Size)), Size, MEM_OFFSET_SXTX, 1);
+  auto NewFSW = _LoadMem(GPRClass, Size, Mem, Constant(IR::OpSizeToSize(Size)), Size, MemOffsetType::SXTX, 1);
   ReconstructX87StateFromFSW_Helper(NewFSW);
 
   {
     // FTW
-    SetX87FTW(_LoadMem(GPRClass, Size, Mem, Constant(IR::OpSizeToSize(Size) * 2), Size, MEM_OFFSET_SXTX, 1));
+    SetX87FTW(_LoadMem(GPRClass, Size, Mem, Constant(IR::OpSizeToSize(Size) * 2), Size, MemOffsetType::SXTX, 1));
   }
 }
 

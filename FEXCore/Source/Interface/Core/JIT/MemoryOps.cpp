@@ -578,14 +578,14 @@ ARMEmitter::ExtendedMemOperand Arm64JITCore::GenerateMemOperand(
       return ARMEmitter::ExtendedMemOperand(Base.X(), ARMEmitter::IndexType::OFFSET, Const);
     } else {
       auto RegOffset = GetReg(Offset);
-      switch (OffsetType.Val) {
-      case IR::MEM_OFFSET_SXTX.Val:
+      switch (OffsetType) {
+      case IR::MemOffsetType::SXTX:
         return ARMEmitter::ExtendedMemOperand(Base.X(), RegOffset.X(), ARMEmitter::ExtendedType::SXTX, FEXCore::ilog2(OffsetScale));
-      case IR::MEM_OFFSET_UXTW.Val:
+      case IR::MemOffsetType::UXTW:
         return ARMEmitter::ExtendedMemOperand(Base.X(), RegOffset.X(), ARMEmitter::ExtendedType::UXTW, FEXCore::ilog2(OffsetScale));
-      case IR::MEM_OFFSET_SXTW.Val:
+      case IR::MemOffsetType::SXTW:
         return ARMEmitter::ExtendedMemOperand(Base.X(), RegOffset.X(), ARMEmitter::ExtendedType::SXTW, FEXCore::ilog2(OffsetScale));
-      default: LOGMAN_MSG_A_FMT("Unhandled GenerateMemOperand OffsetType: {}", OffsetType.Val); break;
+      default: LOGMAN_MSG_A_FMT("Unhandled GenerateMemOperand OffsetType: {}", OffsetType); break;
       }
     }
   }
@@ -612,20 +612,20 @@ ARMEmitter::Register Arm64JITCore::ApplyMemOperand(IR::OpSize AccessSize, ARMEmi
     add(ARMEmitter::Size::i64Bit, Tmp, Base, Tmp, ARMEmitter::ShiftType::LSL, FEXCore::ilog2(OffsetScale));
   } else {
     auto RegOffset = GetReg(Offset);
-    switch (OffsetType.Val) {
-    case IR::MEM_OFFSET_SXTX.Val:
+    switch (OffsetType) {
+    case IR::MemOffsetType::SXTX:
       add(ARMEmitter::Size::i64Bit, Tmp, Base, RegOffset, ARMEmitter::ExtendedType::SXTX, FEXCore::ilog2(OffsetScale));
       break;
 
-    case IR::MEM_OFFSET_UXTW.Val:
+    case IR::MemOffsetType::UXTW:
       add(ARMEmitter::Size::i64Bit, Tmp, Base, RegOffset, ARMEmitter::ExtendedType::UXTW, FEXCore::ilog2(OffsetScale));
       break;
 
-    case IR::MEM_OFFSET_SXTW.Val:
+    case IR::MemOffsetType::SXTW:
       add(ARMEmitter::Size::i64Bit, Tmp, Base, RegOffset, ARMEmitter::ExtendedType::SXTW, FEXCore::ilog2(OffsetScale));
       break;
 
-    default: LOGMAN_MSG_A_FMT("Unhandled OffsetType: {}", OffsetType.Val); break;
+    default: LOGMAN_MSG_A_FMT("Unhandled OffsetType: {}", OffsetType); break;
     }
   }
   return Tmp;
@@ -676,7 +676,7 @@ ARMEmitter::SVEMemOperand Arm64JITCore::GenerateSVEMemOperand(IR::OpSize AccessS
   // Note that we do nothing with the offset type and offset scale,
   // since SVE loads and stores don't have the ability to perform an
   // optional extension or shift as part of their behavior.
-  LOGMAN_THROW_A_FMT(OffsetType.Val == IR::MEM_OFFSET_SXTX.Val, "Currently only the default offset type (SXTX) is supported.");
+  LOGMAN_THROW_A_FMT(OffsetType == IR::MemOffsetType::SXTX, "Currently only the default offset type (SXTX) is supported.");
 
   const auto RegOffset = GetReg(Offset);
   return ARMEmitter::SVEMemOperand(Base.X(), RegOffset.X());
@@ -754,7 +754,7 @@ DEF_OP(LoadMemTSO) {
   if (Op->Class == FEXCore::IR::GPRClass) {
     LOGMAN_THROW_A_FMT(Op->Offset.IsInvalid() || CTX->HostFeatures.SupportsTSOImm9, "unexpected offset");
     LOGMAN_THROW_A_FMT(Op->OffsetScale == 1, "unexpected offset scale");
-    LOGMAN_THROW_A_FMT(Op->OffsetType == IR::MEM_OFFSET_SXTX, "unexpected offset type");
+    LOGMAN_THROW_A_FMT(Op->OffsetType == IR::MemOffsetType::SXTX, "unexpected offset type");
   }
 
   if (CTX->HostFeatures.SupportsTSOImm9 && Op->Class == FEXCore::IR::GPRClass) {
@@ -1765,7 +1765,7 @@ DEF_OP(StoreMemTSO) {
   if (Op->Class == FEXCore::IR::GPRClass) {
     LOGMAN_THROW_A_FMT(Op->Offset.IsInvalid() || CTX->HostFeatures.SupportsTSOImm9, "unexpected offset");
     LOGMAN_THROW_A_FMT(Op->OffsetScale == 1, "unexpected offset scale");
-    LOGMAN_THROW_A_FMT(Op->OffsetType == IR::MEM_OFFSET_SXTX, "unexpected offset type");
+    LOGMAN_THROW_A_FMT(Op->OffsetType == IR::MemOffsetType::SXTX, "unexpected offset type");
   }
 
   if (CTX->HostFeatures.SupportsTSOImm9 && Op->Class == FEXCore::IR::GPRClass) {

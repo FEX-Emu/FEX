@@ -188,12 +188,12 @@ private:
     // Store the Upper part of the register (the remaining 2 bytes) into memory.
     AddressMode A {.Base = AddrNode,
                    .Index = Op->Offset.IsInvalid() ? nullptr : Offset,
-                   .IndexType = MEM_OFFSET_SXTX,
+                   .IndexType = MemOffsetType::SXTX,
                    .IndexScale = OffsetScale,
                    .Offset = 8,
                    .AddrSize = OpSize::i64Bit};
     A = SelectAddressMode(IREmit, A, GPROpSize, Features.SupportsTSOImm9, false, false, OpSize::i16Bit);
-    IREmit->_StoreMem(GPRClass, OpSize::i16Bit, Upper, A.Base, A.Index, OpSize::i64Bit, MEM_OFFSET_SXTX, A.IndexScale);
+    IREmit->_StoreMem(GPRClass, OpSize::i16Bit, Upper, A.Base, A.Index, OpSize::i64Bit, MemOffsetType::SXTX, A.IndexScale);
   }
 
   void StoreStackMem_Helper(const IROp_StoreStackMem* Op, Ref StackNode) {
@@ -219,7 +219,7 @@ private:
       if (Features.SupportsSVE128 || Features.SupportsSVE256) {
         AddressMode A {.Base = AddrNode,
                        .Index = Op->Offset.IsInvalid() ? nullptr : Offset,
-                       .IndexType = MEM_OFFSET_SXTX,
+                       .IndexType = MemOffsetType::SXTX,
                        .IndexScale = OffsetScale,
                        .AddrSize = OpSize::i64Bit};
         AddrNode = LoadEffectiveAddress(IREmit, A, GPROpSize, false);
@@ -481,7 +481,8 @@ inline Ref X87StackOptimization::LoadStackValueAtOffset_Slow(uint8_t Offset) {
   OrderedNode* TopOffsetAddress = GetOffsetTopAddressWithCache_Slow(Offset);
   auto Size = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
   if (!TopValueCache[Offset]) {
-    TopValueCache[Offset] = IREmit->_LoadMem(FPRClass, Size, TopOffsetAddress, IREmit->_InlineConstant(MMBaseOffset()), Size, MEM_OFFSET_SXTX, 1);
+    TopValueCache[Offset] =
+      IREmit->_LoadMem(FPRClass, Size, TopOffsetAddress, IREmit->_InlineConstant(MMBaseOffset()), Size, MemOffsetType::SXTX, 1);
   }
   return TopValueCache[Offset];
 }
@@ -623,7 +624,7 @@ void X87StackOptimization::FlushCachedRegs() {
   for (size_t i = 0; i < FlushValuesPending.size(); i++) {
     if (FlushValuesPending[i]) {
       OrderedNode* TopOffsetAddress = GetOffsetTopAddressWithCache_Slow(i);
-      IREmit->_StoreMem(FPRClass, Size, TopValueCache[i], TopOffsetAddress, IREmit->_InlineConstant(MMBaseOffset()), Size, MEM_OFFSET_SXTX, 1);
+      IREmit->_StoreMem(FPRClass, Size, TopValueCache[i], TopOffsetAddress, IREmit->_InlineConstant(MMBaseOffset()), Size, MemOffsetType::SXTX, 1);
       // store
       FlushValuesPending[i] = false;
     }

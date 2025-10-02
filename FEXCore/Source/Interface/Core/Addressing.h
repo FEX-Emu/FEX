@@ -11,7 +11,7 @@ struct AddressMode {
   Ref Segment {nullptr};
   Ref Base {nullptr};
   Ref Index {nullptr};
-  MemOffsetType IndexType = MEM_OFFSET_SXTX;
+  MemOffsetType IndexType = MemOffsetType::SXTX;
   uint8_t IndexScale = 1;
   int64_t Offset = 0;
 

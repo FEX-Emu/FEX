@@ -4148,7 +4148,7 @@ void OpDispatchBuilder::UpdatePrefixFromSegment(Ref Segment, uint32_t SegmentReg
   // Fun quirk, if we mask the selector then it is premultiplied by 8 which we need to do for accessing anyway.
   auto SegmentOffset = _And(OpSize::i32Bit, Segment, _Constant(0xfff8));
   Ref SegmentBase = _LoadContextIndexed(GDT, OpSize::i64Bit, offsetof(FEXCore::Core::CPUState, segment_arrays[0]), 8, GPRClass);
-  Ref NewSegment = _LoadMem(GPRClass, OpSize::i64Bit, SegmentBase, SegmentOffset, OpSize::i8Bit, MEM_OFFSET_UXTW, 1);
+  Ref NewSegment = _LoadMem(GPRClass, OpSize::i64Bit, SegmentBase, SegmentOffset, OpSize::i8Bit, MemOffsetType::UXTW, 1);
   CheckLegacySegmentWrite(NewSegment, SegmentReg);
 
   // Extract the 32-bit base from the GDT segment.
@@ -4416,7 +4416,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
       // For X87 extended doubles, split before storing
       _StoreMem(FPRClass, OpSize::i64Bit, MemStoreDst, Src, Align);
       auto Upper = _VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, Src, 1);
-      _StoreMem(GPRClass, OpSize::i16Bit, Upper, MemStoreDst, Constant(8), std::min(Align, OpSize::i64Bit), MEM_OFFSET_SXTX, 1);
+      _StoreMem(GPRClass, OpSize::i16Bit, Upper, MemStoreDst, Constant(8), std::min(Align, OpSize::i64Bit), MemOffsetType::SXTX, 1);
     }
   } else {
     _StoreMemAutoTSO(Class, OpSize, A, Src, Align == OpSize::iInvalid ? OpSize : Align);
@@ -4852,7 +4852,7 @@ void OpDispatchBuilder::CLZeroOp(OpcodeArgs) {
 
 void OpDispatchBuilder::Prefetch(OpcodeArgs, bool ForStore, bool Stream, uint8_t Level) {
   Ref DestMem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.LoadData = false});
-  _Prefetch(ForStore, Stream, Level, DestMem, Invalid(), MEM_OFFSET_SXTX, 1);
+  _Prefetch(ForStore, Stream, Level, DestMem, Invalid(), MemOffsetType::SXTX, 1);
 }
 
 void OpDispatchBuilder::RDTSCPOp(OpcodeArgs) {
