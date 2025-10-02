@@ -15,6 +15,7 @@ $end_info$
 
 #include <FEXCore/Core/SignalDelegator.h>
 #include <FEXCore/Debug/InternalThreadState.h>
+#include <FEXCore/Utils/EnumUtils.h>
 
 namespace FEXCore::CPU {
 
@@ -107,10 +108,10 @@ DEF_OP(GetRoundingMode) {
   // zero. Just swapping 01 and 10. That's a bitfield reverse. Round mode is in
   // bottom two bits. After reversing as a 32-bit operation, it'll be in [31:30]
   // and ripe for reinsertion back at 0.
-  static_assert(IR::ROUND_MODE_NEAREST == 0);
-  static_assert(IR::ROUND_MODE_NEGATIVE_INFINITY == 1);
-  static_assert(IR::ROUND_MODE_POSITIVE_INFINITY == 2);
-  static_assert(IR::ROUND_MODE_TOWARDS_ZERO == 3);
+  static_assert(FEXCore::ToUnderlying(IR::RoundMode::Nearest) == 0);
+  static_assert(FEXCore::ToUnderlying(IR::RoundMode::NegInfinity) == 1);
+  static_assert(FEXCore::ToUnderlying(IR::RoundMode::PosInfinity) == 2);
+  static_assert(FEXCore::ToUnderlying(IR::RoundMode::TowardsZero) == 3);
 
   rbit(ARMEmitter::Size::i32Bit, TMP1, Dst);
   bfi(ARMEmitter::Size::i64Bit, Dst, TMP1, 30, 2);

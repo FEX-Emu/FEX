@@ -1180,7 +1180,7 @@ void X87StackOptimization::Run(IREmitter* Emit) {
 
         Ref Value {};
         if (ReducedPrecisionMode) {
-          Value = IREmit->_Vector_FToI(OpSize::i64Bit, OpSize::i64Bit, St0, Round_Host);
+          Value = IREmit->_Vector_FToI(OpSize::i64Bit, OpSize::i64Bit, St0, RoundMode::Host);
         } else {
           Value = IREmit->_F80Round(St0);
         }

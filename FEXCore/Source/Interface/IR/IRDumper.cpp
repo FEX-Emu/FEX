@@ -136,13 +136,13 @@ static void PrintArg(fextl::stringstream* out, const IRListView*, FenceType Arg)
   }
 }
 
-static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::RoundType Arg) {
+static void PrintArg(fextl::stringstream* out, const IRListView*, RoundMode Arg) {
   switch (Arg) {
-  case FEXCore::IR::Round_Nearest: *out << "Nearest"; break;
-  case FEXCore::IR::Round_Negative_Infinity: *out << "-Inf"; break;
-  case FEXCore::IR::Round_Positive_Infinity: *out << "+Inf"; break;
-  case FEXCore::IR::Round_Towards_Zero: *out << "Towards Zero"; break;
-  case FEXCore::IR::Round_Host: *out << "Host"; break;
+  case RoundMode::Nearest: *out << "Nearest"; break;
+  case RoundMode::NegInfinity: *out << "-Inf"; break;
+  case RoundMode::PosInfinity: *out << "+Inf"; break;
+  case RoundMode::TowardsZero: *out << "Towards Zero"; break;
+  case RoundMode::Host: *out << "Host"; break;
   default: *out << "<Unknown Round Type>"; break;
   }
 }
@@ -154,7 +154,7 @@ static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::S
   case FEXCore::IR::SyscallFlags::NOSYNCSTATEONENTRY: *out << "No Sync State on Entry"; break;
   case FEXCore::IR::SyscallFlags::NORETURN: *out << "No Return"; break;
   case FEXCore::IR::SyscallFlags::NOSIDEEFFECTS: *out << "No Side Effects"; break;
-  default: *out << "<Unknown Round Type>"; break;
+  default: *out << "<Unknown Syscall Flags>"; break;
   }
 }
 

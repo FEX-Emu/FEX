@@ -488,15 +488,6 @@ struct FEX_PACKED TypeDefinition final {
 
 static_assert(std::is_trivially_copyable_v<TypeDefinition>);
 
-struct FEX_PACKED RoundType final {
-  uint8_t Val;
-  [[nodiscard]] constexpr operator uint8_t() const {
-    return Val;
-  }
-  [[nodiscard]]
-  friend constexpr bool operator==(const RoundType&, const RoundType&) = default;
-};
-
 class NodeIterator;
 
 /* This iterator can be used to step though nodes.
