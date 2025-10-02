@@ -442,15 +442,6 @@ struct FEX_PACKED RegisterClassType final {
   friend constexpr bool operator==(const RegisterClassType&, const RegisterClassType&) = default;
 };
 
-struct FEX_PACKED MemOffsetType final {
-  uint8_t Val;
-  [[nodiscard]] constexpr operator uint8_t() const {
-    return Val;
-  }
-  [[nodiscard]]
-  friend constexpr bool operator==(const MemOffsetType&, const MemOffsetType&) = default;
-};
-
 struct FEX_PACKED TypeDefinition final {
   uint16_t Val;
 
@@ -791,6 +782,16 @@ struct fmt::formatter<FEXCore::IR::FenceType> : fmt::formatter<std::underlying_t
   template<typename FormatContext>
   auto format(const FEXCore::IR::FenceType& Fence, FormatContext& ctx) const {
     return Base::format(FEXCore::ToUnderlying(Fence), ctx);
+  }
+};
+
+template<>
+struct fmt::formatter<FEXCore::IR::MemOffsetType> : fmt::formatter<std::underlying_type_t<FEXCore::IR::MemOffsetType>> {
+  using Base = fmt::formatter<std::underlying_type_t<FEXCore::IR::MemOffsetType>>;
+
+  template<typename FormatContext>
+  auto format(const FEXCore::IR::MemOffsetType& Type, FormatContext& ctx) const {
+    return Base::format(FEXCore::ToUnderlying(Type), ctx);
   }
 };
 

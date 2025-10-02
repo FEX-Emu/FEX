@@ -1573,20 +1573,20 @@ void OpDispatchBuilder::AVX128_VMASKMOVImpl(OpcodeArgs, IR::OpSize ElementSize, 
     auto Address = MakeAddress(Op->Dest);
 
     auto Data = AVX128_LoadSource_WithOpSize(Op, DataOp, Op->Flags, !Is128Bit);
-    _VStoreVectorMasked(OpSize::i128Bit, ElementSize, Mask.Low, Data.Low, Address, Invalid(), MEM_OFFSET_SXTX, 1);
+    _VStoreVectorMasked(OpSize::i128Bit, ElementSize, Mask.Low, Data.Low, Address, Invalid(), MemOffsetType::SXTX, 1);
     if (!Is128Bit) {
-      _VStoreVectorMasked(OpSize::i128Bit, ElementSize, Mask.High, Data.High, Address, _InlineConstant(16), MEM_OFFSET_SXTX, 1);
+      _VStoreVectorMasked(OpSize::i128Bit, ElementSize, Mask.High, Data.High, Address, _InlineConstant(16), MemOffsetType::SXTX, 1);
     }
   } else {
     auto Address = MakeAddress(DataOp);
 
     RefPair Result {};
-    Result.Low = _VLoadVectorMasked(OpSize::i128Bit, ElementSize, Mask.Low, Address, Invalid(), MEM_OFFSET_SXTX, 1);
+    Result.Low = _VLoadVectorMasked(OpSize::i128Bit, ElementSize, Mask.Low, Address, Invalid(), MemOffsetType::SXTX, 1);
 
     if (Is128Bit) {
       Result.High = LoadZeroVector(OpSize::i128Bit);
     } else {
-      Result.High = _VLoadVectorMasked(OpSize::i128Bit, ElementSize, Mask.High, Address, _InlineConstant(16), MEM_OFFSET_SXTX, 1);
+      Result.High = _VLoadVectorMasked(OpSize::i128Bit, ElementSize, Mask.High, Address, _InlineConstant(16), MemOffsetType::SXTX, 1);
     }
     AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
   }

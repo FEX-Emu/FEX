@@ -103,7 +103,7 @@ AddressMode SelectAddressMode(IREmitter* IREmit, AddressMode A, IR::OpSize GPRSi
     return {
       .Base = LoadEffectiveAddress(IREmit, B, GPRSize, true /* AddSegmentBase */, false),
       .Index = IREmit->Constant(A.Offset),
-      .IndexType = MEM_OFFSET_SXTX,
+      .IndexType = MemOffsetType::SXTX,
       .IndexScale = 1,
     };
   }
@@ -134,7 +134,7 @@ AddressMode SelectAddressMode(IREmitter* IREmit, AddressMode A, IR::OpSize GPRSi
         return {
           .Base = LoadEffectiveAddress(IREmit, B, GPRSize, true /* AddSegmentBase */, false),
           .Index = IREmit->Constant(A.Offset),
-          .IndexType = MEM_OFFSET_SXTX,
+          .IndexType = MemOffsetType::SXTX,
           .IndexScale = 1,
         };
       }

@@ -2363,12 +2363,12 @@ void OpDispatchBuilder::VMASKMOVOpImpl(OpcodeArgs, IR::OpSize ElementSize, IR::O
   if (IsStore) {
     Ref Data = LoadSource_WithOpSize(FPRClass, Op, DataOp, DataSize, Op->Flags);
     Ref Address = MakeAddress(Op->Dest);
-    _VStoreVectorMasked(DataSize, ElementSize, Mask, Data, Address, Invalid(), MEM_OFFSET_SXTX, 1);
+    _VStoreVectorMasked(DataSize, ElementSize, Mask, Data, Address, Invalid(), MemOffsetType::SXTX, 1);
   } else {
     const auto Is128Bit = GetDstSize(Op) == Core::CPUState::XMM_SSE_REG_SIZE;
 
     Ref Address = MakeAddress(DataOp);
-    Ref Result = _VLoadVectorMasked(DataSize, ElementSize, Mask, Address, Invalid(), MEM_OFFSET_SXTX, 1);
+    Ref Result = _VLoadVectorMasked(DataSize, ElementSize, Mask, Address, Invalid(), MemOffsetType::SXTX, 1);
 
     if (Is128Bit) {
       Result = _VMov(OpSize::i128Bit, Result);
@@ -2552,7 +2552,7 @@ void OpDispatchBuilder::XSaveOpImpl(OpcodeArgs) {
 
     // XSTATE_BV section of the header is 8 bytes in size, but we only really
     // care about setting at most 3 bits in the first byte. We zero out the rest.
-    _StoreMem(GPRClass, OpSize::i64Bit, RequestedFeatures, Base, Constant(512), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
+    _StoreMem(GPRClass, OpSize::i64Bit, RequestedFeatures, Base, Constant(512), OpSize::i8Bit, MemOffsetType::SXTX, 1);
   }
 }
 
@@ -2578,12 +2578,12 @@ void OpDispatchBuilder::SaveX87State(OpcodeArgs, Ref MemBase) {
     _StoreMem(GPRClass, OpSize::i16Bit, MemBase, FCW, OpSize::i16Bit);
   }
 
-  { _StoreMem(GPRClass, OpSize::i16Bit, ReconstructFSW_Helper(), MemBase, Constant(2), OpSize::i16Bit, MEM_OFFSET_SXTX, 1); }
+  { _StoreMem(GPRClass, OpSize::i16Bit, ReconstructFSW_Helper(), MemBase, Constant(2), OpSize::i16Bit, MemOffsetType::SXTX, 1); }
 
   {
     // Abridged FTW
     auto FTW = _LoadContext(OpSize::i8Bit, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
-    _StoreMem(GPRClass, OpSize::i8Bit, FTW, MemBase, Constant(4), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
+    _StoreMem(GPRClass, OpSize::i8Bit, FTW, MemBase, Constant(4), OpSize::i8Bit, MemOffsetType::SXTX, 1);
   }
 
   // BYTE | 0 1 | 2 3 | 4   | 5     | 6 7 | 8 9 | a b | c d | e f |
@@ -2641,7 +2641,7 @@ void OpDispatchBuilder::SaveX87State(OpcodeArgs, Ref MemBase) {
     if (ReducedPrecisionMode) {
       data = _F80CVTTo(data, OpSize::i64Bit);
     }
-    _StoreMem(FPRClass, OpSize::i128Bit, data, MemBase, Constant(16 * i + 32), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
+    _StoreMem(FPRClass, OpSize::i128Bit, data, MemBase, Constant(16 * i + 32), OpSize::i8Bit, MemOffsetType::SXTX, 1);
     Top = _And(OpSize::i32Bit, Add(OpSize::i32Bit, Top, 1), SevenConst);
   }
 }
@@ -2684,7 +2684,7 @@ void OpDispatchBuilder::FXRStoreOp(OpcodeArgs) {
   RestoreX87State(Mem);
   RestoreSSEState(Mem);
 
-  Ref MXCSR = _LoadMem(GPRClass, OpSize::i32Bit, Mem, Constant(24), OpSize::i32Bit, MEM_OFFSET_SXTX, 1);
+  Ref MXCSR = _LoadMem(GPRClass, OpSize::i32Bit, Mem, Constant(24), OpSize::i32Bit, MemOffsetType::SXTX, 1);
   RestoreMXCSRState(MXCSR);
 }
 
@@ -2701,7 +2701,7 @@ void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
     // Note: we rematerialize Base/Mask in each block to avoid crossblock
     // liveness.
     Ref Base = XSaveBase(Op);
-    Ref Mask = _LoadMem(GPRClass, OpSize::i64Bit, Base, Constant(512), OpSize::i64Bit, MEM_OFFSET_SXTX, 1);
+    Ref Mask = _LoadMem(GPRClass, OpSize::i64Bit, Base, Constant(512), OpSize::i64Bit, MemOffsetType::SXTX, 1);
 
     Ref BitFlag = _Bfe(OpSize, FieldSize, BitIndex, Mask);
     auto CondJump_ = CondJump(BitFlag, CondClass::NEQ);
@@ -2745,7 +2745,7 @@ void OpDispatchBuilder::XRstorOpImpl(OpcodeArgs) {
       1,
       [this, Op] {
         Ref Base = XSaveBase(Op);
-        Ref MXCSR = _LoadMem(GPRClass, OpSize::i32Bit, Base, Constant(24), OpSize::i32Bit, MEM_OFFSET_SXTX, 1);
+        Ref MXCSR = _LoadMem(GPRClass, OpSize::i32Bit, Base, Constant(24), OpSize::i32Bit, MemOffsetType::SXTX, 1);
         RestoreMXCSRState(MXCSR);
       },
       [] { /* Intentionally do nothing*/ }, 2);
@@ -2759,13 +2759,13 @@ void OpDispatchBuilder::RestoreX87State(Ref MemBase) {
   _StoreContext(OpSize::i16Bit, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
   {
-    auto NewFSW = _LoadMem(GPRClass, OpSize::i16Bit, MemBase, Constant(2), OpSize::i16Bit, MEM_OFFSET_SXTX, 1);
+    auto NewFSW = _LoadMem(GPRClass, OpSize::i16Bit, MemBase, Constant(2), OpSize::i16Bit, MemOffsetType::SXTX, 1);
     ReconstructX87StateFromFSW_Helper(NewFSW);
   }
 
   {
     // Abridged FTW
-    auto NewFTW = _LoadMem(GPRClass, OpSize::i8Bit, MemBase, Constant(4), OpSize::i8Bit, MEM_OFFSET_SXTX, 1);
+    auto NewFTW = _LoadMem(GPRClass, OpSize::i8Bit, MemBase, Constant(4), OpSize::i8Bit, MemOffsetType::SXTX, 1);
     _StoreContext(OpSize::i8Bit, GPRClass, NewFTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
   }
 

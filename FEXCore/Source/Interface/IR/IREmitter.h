@@ -51,7 +51,7 @@ public:
   // These inlining helpers are used by IRDefines.inc so define first.
   Ref InlineMem(OpSize Size, Ref Offset, MemOffsetType OffsetType, uint8_t& OffsetScale, bool TSO = false) {
     uint64_t Imm {};
-    if (OffsetType != MEM_OFFSET_SXTX || !IsValueConstant(WrapNode(Offset), &Imm)) {
+    if (OffsetType != MemOffsetType::SXTX || !IsValueConstant(WrapNode(Offset), &Imm)) {
       return Offset;
     }
 
@@ -123,10 +123,10 @@ public:
     return _Select(std::max(OpSize::i32Bit, std::max(GetOpSize(ssa2), GetOpSize(ssa3))), CompareSize, Cond, ssa0, ssa1, ssa2, ssa3);
   }
   IRPair<IROp_LoadMem> _LoadMem(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, Ref ssa0, IR::OpSize Align = OpSize::i8Bit) {
-    return _LoadMem(Class, Size, ssa0, Invalid(), Align, MEM_OFFSET_SXTX, 1);
+    return _LoadMem(Class, Size, ssa0, Invalid(), Align, MemOffsetType::SXTX, 1);
   }
   IRPair<IROp_StoreMem> _StoreMem(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, Ref Addr, Ref Value, IR::OpSize Align = OpSize::i8Bit) {
-    return _StoreMem(Class, Size, Value, Addr, Invalid(), Align, MEM_OFFSET_SXTX, 1);
+    return _StoreMem(Class, Size, Value, Addr, Invalid(), Align, MemOffsetType::SXTX, 1);
   }
 
   IRPair<IROp_Select> Select01(FEXCore::IR::OpSize CompareSize, CondClass Cond, OrderedNode* Cmp1, OrderedNode* Cmp2) {

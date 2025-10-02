@@ -58,7 +58,7 @@ static void PrintArg(fextl::stringstream* out, const IRListView*, MemOffsetType 
     "SXTW",
   };
 
-  *out << Names[Arg];
+  *out << Names[FEXCore::ToUnderlying(Arg)];
 }
 
 static void PrintArg(fextl::stringstream* out, const IRListView*, RegisterClassType Arg) {
