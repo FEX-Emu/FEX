@@ -442,45 +442,6 @@ struct FEX_PACKED RegisterClassType final {
   friend constexpr bool operator==(const RegisterClassType&, const RegisterClassType&) = default;
 };
 
-struct FEX_PACKED TypeDefinition final {
-  uint16_t Val;
-
-  [[nodiscard]] constexpr operator uint16_t() const {
-    return Val;
-  }
-
-  [[nodiscard]]
-  static constexpr TypeDefinition Create(uint8_t Bytes) {
-    TypeDefinition Type {};
-    Type.Val = Bytes << 8;
-    return Type;
-  }
-
-  [[nodiscard]]
-  static constexpr TypeDefinition Create(uint8_t Bytes, uint8_t Elements) {
-    TypeDefinition Type {};
-    Type.Val = (Bytes << 8) | (Elements & 255);
-    return Type;
-  }
-
-  [[nodiscard]]
-  constexpr uint8_t Bytes() const {
-    return Val >> 8;
-  }
-
-  [[nodiscard]]
-  constexpr uint8_t Elements() const {
-    return Val & 255;
-  }
-
-  [[nodiscard]]
-  friend constexpr bool operator==(const TypeDefinition&, const TypeDefinition&) = default;
-};
-
-static_assert(std::is_trivially_copyable_v<TypeDefinition>);
-
-class NodeIterator;
-
 /* This iterator can be used to step though nodes.
  * Due to how our IR is laid out, this can be used to either step
  * though the CodeBlocks or though the code within a single block.
