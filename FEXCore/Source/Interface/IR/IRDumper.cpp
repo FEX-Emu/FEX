@@ -191,6 +191,22 @@ static void PrintArg(fextl::stringstream* out, const IRListView*, NamedVectorCon
         return "movmskps_shift";
       case NamedVectorConstant::NAMED_VECTOR_AESKEYGENASSIST_SWIZZLE:
         return "aeskeygenassist_swizzle";
+      case NamedVectorConstant::NAMED_VECTOR_BLENDPS_0110B:
+        return "blendps_0110b";
+      case NamedVectorConstant::NAMED_VECTOR_BLENDPS_0111B:
+        return "blendps_0111b";
+      case NamedVectorConstant::NAMED_VECTOR_BLENDPS_1001B:
+        return "blendps_1001b";
+      case NamedVectorConstant::NAMED_VECTOR_BLENDPS_1011B:
+        return "blendps_1011b";
+      case NamedVectorConstant::NAMED_VECTOR_BLENDPS_1101B:
+        return "blendps_1101b";
+      case NamedVectorConstant::NAMED_VECTOR_BLENDPS_1110B:
+        return "blendps_1110b";
+      case NamedVectorConstant::NAMED_VECTOR_MOVMASKB:
+        return "movmaskb";
+      case NamedVectorConstant::NAMED_VECTOR_MOVMASKB_UPPER:
+        return "movmaskb_upper";
       case NamedVectorConstant::NAMED_VECTOR_ZERO:
         return "vectorzero";
       case NamedVectorConstant::NAMED_VECTOR_X87_ONE:
@@ -221,6 +237,18 @@ static void PrintArg(fextl::stringstream* out, const IRListView*, NamedVectorCon
         return "cvtmax_i32";
       case NamedVectorConstant::NAMED_VECTOR_CVTMAX_I64:
         return "cvtmax_i64";
+      case NamedVectorConstant::NAMED_VECTOR_F80_SIGN_MASK:
+        return "f80_sign_mask";
+      case NamedVectorConstant::NAMED_VECTOR_SHA1RNDS_K0:
+        return "sha1rnds_k0";
+      case NamedVectorConstant::NAMED_VECTOR_SHA1RNDS_K1:
+        return "sha1rnds_k1";
+      case NamedVectorConstant::NAMED_VECTOR_SHA1RNDS_K2:
+        return "sha1rnds_k2";
+      case NamedVectorConstant::NAMED_VECTOR_SHA1RNDS_K3:
+        return "sha1rnds_k3";
+      case NamedVectorConstant::NAMED_VECTOR_MAX:
+        return "<Programming Error: Printing MAX value>";
     }
     return "<Unknown Named Vector Constant>";
     // clang-format on
@@ -245,6 +273,8 @@ static void PrintArg(fextl::stringstream* out, const IRListView*, IndexNamedVect
       return "dppd_mask";
     case IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PBLENDW:
       return "pblendw";
+    case INDEXED_NAMED_VECTOR_MAX:
+      return "<Programming Error: Printing MAX value>";
     }
     return "<Unknown Indexed Named Vector Constant>";
     // clang-format on
