@@ -272,7 +272,7 @@ static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::F
   case FloatCompareOp::UNO: *out << "UNO"; break;
   case FloatCompareOp::NEQ: *out << "NEQ"; break;
   case FloatCompareOp::ORD: *out << "ORD"; break;
-  default: *out << "<Unknown OpSize Type>"; break;
+  default: *out << "<Unknown FloatCompareOp Type>"; break;
   }
 }
 
