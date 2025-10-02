@@ -750,6 +750,7 @@
                  "FenceType::Load: Ensures load memory operations are serialized",
                  "FenceType::Store: Ensures store memory operations are serialized",
                  "FenceType::LoadStore: Ensures loads and store memory operations are serialized",
+                 "FenceType::Inst: Instruction barrier. Ensures all instructions after this point will be explicitly fetched",
                  "Ensures the memory operations are globally visible"
                 ],
         "HasSideEffects": true

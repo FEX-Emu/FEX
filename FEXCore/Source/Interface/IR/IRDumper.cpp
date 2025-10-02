@@ -125,15 +125,15 @@ static void PrintArg(fextl::stringstream* out, const IRListView* IR, OrderedNode
 }
 
 static void PrintArg(fextl::stringstream* out, const IRListView*, FenceType Arg) {
-  if (Arg == FenceType::Load) {
-    *out << "Loads";
-  } else if (Arg == FenceType::Store) {
-    *out << "Stores";
-  } else if (Arg == FenceType::LoadStore) {
-    *out << "LoadStores";
-  } else {
-    *out << "<Unknown Fence Type>";
-  }
+  *out << [Arg] {
+    switch (Arg) {
+    case FenceType::Load: return "Loads";
+    case FenceType::Store: return "Stores";
+    case FenceType::LoadStore: return "LoadStores";
+    case FenceType::Inst: return "Instruction";
+    }
+    return "<Unknown Fence Type>";
+  }();
 }
 
 static void PrintArg(fextl::stringstream* out, const IRListView*, RoundMode Arg) {
