@@ -137,14 +137,16 @@ static void PrintArg(fextl::stringstream* out, const IRListView*, FenceType Arg)
 }
 
 static void PrintArg(fextl::stringstream* out, const IRListView*, RoundMode Arg) {
-  switch (Arg) {
-  case RoundMode::Nearest: *out << "Nearest"; break;
-  case RoundMode::NegInfinity: *out << "-Inf"; break;
-  case RoundMode::PosInfinity: *out << "+Inf"; break;
-  case RoundMode::TowardsZero: *out << "Towards Zero"; break;
-  case RoundMode::Host: *out << "Host"; break;
-  default: *out << "<Unknown Round Type>"; break;
-  }
+  *out << [Arg] {
+    switch (Arg) {
+    case RoundMode::Nearest: return "Nearest";
+    case RoundMode::NegInfinity: return "-Inf";
+    case RoundMode::PosInfinity: return "+Inf";
+    case RoundMode::TowardsZero: return "Towards Zero";
+    case RoundMode::Host: return "Host";
+    }
+    return "<Unknown Round Type>";
+  }();
 }
 
 static void PrintArg(fextl::stringstream* out, const IRListView*, SyscallFlags Arg) {
@@ -161,7 +163,7 @@ static void PrintArg(fextl::stringstream* out, const IRListView*, SyscallFlags A
   }();
 }
 
-static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::NamedVectorConstant Arg) {
+static void PrintArg(fextl::stringstream* out, const IRListView*, NamedVectorConstant Arg) {
   *out << [Arg] {
     // clang-format off
     switch (Arg) {
@@ -219,9 +221,8 @@ static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::N
         return "cvtmax_i32";
       case NamedVectorConstant::NAMED_VECTOR_CVTMAX_I64:
         return "cvtmax_i64";
-      default:
-        return "<Unknown Named Vector Constant>";
     }
+    return "<Unknown Named Vector Constant>";
     // clang-format on
   }();
 }
@@ -244,36 +245,41 @@ static void PrintArg(fextl::stringstream* out, const IRListView*, IndexNamedVect
       return "dppd_mask";
     case IndexNamedVectorConstant::INDEXED_NAMED_VECTOR_PBLENDW:
       return "pblendw";
-    default:
-      return "<Unknown Indexed Named Vector Constant>";
     }
+    return "<Unknown Indexed Named Vector Constant>";
     // clang-format on
   }();
 }
 
-static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::OpSize Arg) {
-  switch (Arg) {
-  case OpSize::i8Bit: *out << "i8"; break;
-  case OpSize::i16Bit: *out << "i16"; break;
-  case OpSize::i32Bit: *out << "i32"; break;
-  case OpSize::i64Bit: *out << "i64"; break;
-  case OpSize::i128Bit: *out << "i128"; break;
-  case OpSize::i256Bit: *out << "i256"; break;
-  case OpSize::f80Bit: *out << "f80"; break;
-  default: *out << "<Unknown OpSize Type>"; break;
-  }
+static void PrintArg(fextl::stringstream* out, const IRListView*, OpSize Arg) {
+  *out << [Arg] {
+    switch (Arg) {
+    case OpSize::iUnsized: return "Unsized";
+    case OpSize::i8Bit: return "i8";
+    case OpSize::i16Bit: return "i16";
+    case OpSize::i32Bit: return "i32";
+    case OpSize::i64Bit: return "i64";
+    case OpSize::f80Bit: return "f80";
+    case OpSize::i128Bit: return "i128";
+    case OpSize::i256Bit: return "i256";
+    case OpSize::iInvalid: return "Invalid";
+    }
+    return "<Unknown OpSize Type>";
+  }();
 }
 
-static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::FloatCompareOp Arg) {
-  switch (Arg) {
-  case FloatCompareOp::EQ: *out << "FEQ"; break;
-  case FloatCompareOp::LT: *out << "FLT"; break;
-  case FloatCompareOp::LE: *out << "FLE"; break;
-  case FloatCompareOp::UNO: *out << "UNO"; break;
-  case FloatCompareOp::NEQ: *out << "NEQ"; break;
-  case FloatCompareOp::ORD: *out << "ORD"; break;
-  default: *out << "<Unknown FloatCompareOp Type>"; break;
-  }
+static void PrintArg(fextl::stringstream* out, const IRListView*, FloatCompareOp Arg) {
+  *out << [Arg] {
+    switch (Arg) {
+    case FloatCompareOp::EQ: return "FEQ";
+    case FloatCompareOp::LT: return "FLT";
+    case FloatCompareOp::LE: return "FLE";
+    case FloatCompareOp::UNO: return "UNO";
+    case FloatCompareOp::NEQ: return "NEQ";
+    case FloatCompareOp::ORD: return "ORD";
+    }
+    return "<Unknown FloatCompareOp Type>";
+  }();
 }
 
 static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::BreakDefinition Arg) {
@@ -283,17 +289,19 @@ static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::B
   *out << static_cast<uint32_t>(Arg.si_code) << "}";
 }
 
-static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::ShiftType Arg) {
-  switch (Arg) {
-  case ShiftType::LSL: *out << "LSL"; break;
-  case ShiftType::LSR: *out << "LSR"; break;
-  case ShiftType::ASR: *out << "ASR"; break;
-  case ShiftType::ROR: *out << "ROR"; break;
-  default: *out << "<Unknown Shift Type>"; break;
-  }
+static void PrintArg(fextl::stringstream* out, const IRListView*, ShiftType Arg) {
+  *out << [Arg] {
+    switch (Arg) {
+    case ShiftType::LSL: return "LSL";
+    case ShiftType::LSR: return "LSR";
+    case ShiftType::ASR: return "ASR";
+    case ShiftType::ROR: return "ROR";
+    }
+    return "<Unknown Shift Type>";
+  }();
 }
 
-static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::BranchHint Arg) {
+static void PrintArg(fextl::stringstream* out, const IRListView*, BranchHint Arg) {
   *out << [Arg] {
     switch (Arg) {
     case BranchHint::None: return "None";
