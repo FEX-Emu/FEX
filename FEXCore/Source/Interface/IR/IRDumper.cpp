@@ -38,8 +38,8 @@ static void PrintArg(fextl::stringstream* out, const IRListView*, uint64_t Arg) 
   *out << fextl::fmt::format("#{:#x}", Arg);
 }
 
-static void PrintArg(fextl::stringstream* out, const IRListView*, CondClassType Arg) {
-  if (Arg == COND_AL) {
+static void PrintArg(fextl::stringstream* out, const IRListView*, CondClass Arg) {
+  if (Arg == CondClass::AL) {
     *out << "ALWAYS";
     return;
   }
@@ -48,7 +48,7 @@ static void PrintArg(fextl::stringstream* out, const IRListView*, CondClassType 
                                                                  "UGT", "ULE", "SGE",  "SLT", "SGT", "SLE", "TSTZ", "TSTNZ",
                                                                  "FLU", "FGE", "FLEU", "FGT", "FU",  "FNU"};
 
-  *out << CondNames[Arg];
+  *out << CondNames[FEXCore::ToUnderlying(Arg)];
 }
 
 static void PrintArg(fextl::stringstream* out, const IRListView*, MemOffsetType Arg) {

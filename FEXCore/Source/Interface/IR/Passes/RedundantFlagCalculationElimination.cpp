@@ -155,44 +155,44 @@ public:
 private:
   FlagInfo Classify(IROp_Header* Node);
   unsigned FlagForReg(unsigned Reg);
-  unsigned FlagsForCondClassType(CondClassType Cond);
+  unsigned FlagsForCondClassType(CondClass Cond);
   bool EliminateDeadCode(IREmitter* IREmit, Ref CodeNode, IROp_Header* IROp);
   void FoldBranch(IREmitter* IREmit, IRListView& CurrentIR, IROp_CondJump* Op, Ref CodeNode);
-  CondClassType X86ToArmFloatCond(CondClassType X86);
+  CondClass X86ToArmFloatCond(CondClass X86);
   bool ProcessBlock(IREmitter* IREmit, IRListView& CurrentIR, Ref Block, ControlFlowGraph& CFG);
   void OptimizeParity(IREmitter* IREmit, IRListView& CurrentIR, ControlFlowGraph& CFG);
 };
 
-unsigned DeadFlagCalculationEliminination::FlagsForCondClassType(CondClassType Cond) {
+unsigned DeadFlagCalculationEliminination::FlagsForCondClassType(CondClass Cond) {
   switch (Cond) {
-  case COND_AL: return 0;
+  case CondClass::AL: return 0;
 
-  case COND_MI:
-  case COND_PL: return FLAG_N;
+  case CondClass::MI:
+  case CondClass::PL: return FLAG_N;
 
-  case COND_EQ:
-  case COND_NEQ: return FLAG_Z;
+  case CondClass::EQ:
+  case CondClass::NEQ: return FLAG_Z;
 
-  case COND_UGE:
-  case COND_ULT: return FLAG_C;
+  case CondClass::UGE:
+  case CondClass::ULT: return FLAG_C;
 
-  case COND_VS:
-  case COND_VC:
-  case COND_FU:
-  case COND_FNU: return FLAG_V;
+  case CondClass::VS:
+  case CondClass::VC:
+  case CondClass::FU:
+  case CondClass::FNU: return FLAG_V;
 
-  case COND_UGT:
-  case COND_ULE: return FLAG_Z | FLAG_C;
+  case CondClass::UGT:
+  case CondClass::ULE: return FLAG_Z | FLAG_C;
 
-  case COND_SGE:
-  case COND_SLT:
-  case COND_FLU:
-  case COND_FGE: return FLAG_N | FLAG_V;
+  case CondClass::SGE:
+  case CondClass::SLT:
+  case CondClass::FLU:
+  case CondClass::FGE: return FLAG_N | FLAG_V;
 
-  case COND_SGT:
-  case COND_SLE:
-  case COND_FLEU:
-  case COND_FGT: return FLAG_N | FLAG_Z | FLAG_V;
+  case CondClass::SGT:
+  case CondClass::SLE:
+  case CondClass::FLEU:
+  case CondClass::FGT: return FLAG_N | FLAG_Z | FLAG_V;
 
   default: LOGMAN_THROW_A_FMT(false, "unknown cond class type"); return FLAG_NZCV;
   }
@@ -456,7 +456,7 @@ bool DeadFlagCalculationEliminination::EliminateDeadCode(IREmitter* IREmit, Ref 
   return true;
 }
 
-CondClassType DeadFlagCalculationEliminination::X86ToArmFloatCond(CondClassType X86) {
+CondClass DeadFlagCalculationEliminination::X86ToArmFloatCond(CondClass X86) {
   // Table of x86 condition codes that map to arm64 condition codes, in the
   // sense that fcmp+axflag+branch(x86) is equivalent to fcmp+branch(arm).
   //
@@ -465,12 +465,12 @@ CondClassType DeadFlagCalculationEliminination::X86ToArmFloatCond(CondClassType 
   //
   // SF/OF conditions are trivial and therefore shouldn't actually be generated
   switch (X86) {
-  case COND_UGE /* A  */: return {COND_FGE} /* GE */;
-  case COND_UGT /* AE */: return {COND_FGT} /* GT */;
-  case COND_ULT /* B  */: return {COND_SLT} /* LT */;
-  case COND_ULE /* BE */: return {COND_SLE} /* LE */;
-  case COND_SLE /* LE */: return {COND_SLE} /* LE */;
-  default: return {COND_AL};
+  case CondClass::UGE /* A  */: return CondClass::FGE /* GE */;
+  case CondClass::UGT /* AE */: return CondClass::FGT /* GT */;
+  case CondClass::ULT /* B  */: return CondClass::SLT /* LT */;
+  case CondClass::ULE /* BE */: return CondClass::SLE /* LE */;
+  case CondClass::SLE /* LE */: return CondClass::SLE /* LE */;
+  default: return CondClass::AL;
   }
 }
 
@@ -485,8 +485,8 @@ void DeadFlagCalculationEliminination::FoldBranch(IREmitter* IREmit, IRListView&
   auto Prev = CurrentIR.GetOp<IR::IROp_Header>(PrevWrap);
   if (Prev->Op == OP_AXFLAG) {
     // Pattern match a branch fed by AXFLAG.
-    CondClassType ArmCond = X86ToArmFloatCond(Op->Cond);
-    if (ArmCond == COND_AL) {
+    CondClass ArmCond = X86ToArmFloatCond(Op->Cond);
+    if (ArmCond == CondClass::AL) {
       return;
     }
 
@@ -495,7 +495,7 @@ void DeadFlagCalculationEliminination::FoldBranch(IREmitter* IREmit, IRListView&
     // Pattern match a branch fed by a compare. We could also handle bit tests
     // here, but tbz/tbnz has a limited offset range which we don't have a way to
     // deal with yet. Let's hope that's not a big deal.
-    if (!(Op->Cond == COND_NEQ || Op->Cond == COND_EQ) || (Prev->Size < OpSize::i32Bit)) {
+    if (!(Op->Cond == CondClass::NEQ || Op->Cond == CondClass::EQ) || (Prev->Size < OpSize::i32Bit)) {
       return;
     }
 

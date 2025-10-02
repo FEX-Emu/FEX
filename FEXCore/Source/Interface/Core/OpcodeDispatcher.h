@@ -139,27 +139,28 @@ public:
     FlushRegisterCache();
     return _Jump(_TargetBlock);
   }
-  IRPair<IROp_CondJump> CondJump(Ref _Cmp1, Ref _Cmp2, Ref _TrueBlock, Ref _FalseBlock, CondClassType _Cond = {COND_NEQ},
+  IRPair<IROp_CondJump> CondJump(Ref _Cmp1, Ref _Cmp2, Ref _TrueBlock, Ref _FalseBlock, CondClass _Cond = CondClass::NEQ,
                                  IR::OpSize _CompareSize = OpSize::iInvalid) {
     FlushRegisterCache();
     return _CondJump(_Cmp1, _Cmp2, _TrueBlock, _FalseBlock, _Cond, _CompareSize);
   }
-  IRPair<IROp_CondJump> CondJump(Ref ssa0, CondClassType cond = {COND_NEQ}) {
+  IRPair<IROp_CondJump> CondJump(Ref ssa0, CondClass cond = CondClass::NEQ) {
     FlushRegisterCache();
     return _CondJump(ssa0, cond);
   }
-  IRPair<IROp_CondJump> CondJump(Ref ssa0, Ref ssa1, Ref ssa2, CondClassType cond = {COND_NEQ}) {
+  IRPair<IROp_CondJump> CondJump(Ref ssa0, Ref ssa1, Ref ssa2, CondClass cond = CondClass::NEQ) {
     FlushRegisterCache();
     return _CondJump(ssa0, ssa1, ssa2, cond);
   }
-  IRPair<IROp_CondJump> CondJumpNZCV(CondClassType Cond) {
+  IRPair<IROp_CondJump> CondJumpNZCV(CondClass Cond) {
     FlushRegisterCache();
     return _CondJump(InvalidNode, InvalidNode, InvalidNode, InvalidNode, Cond, OpSize::iInvalid, true);
   }
   IRPair<IROp_CondJump> CondJumpBit(Ref Src, unsigned Bit, bool Set) {
     FlushRegisterCache();
     auto InlineConst = _InlineConstant(Bit);
-    return _CondJump(Src, InlineConst, InvalidNode, InvalidNode, {Set ? COND_TSTNZ : COND_TSTZ}, OpSize::iInvalid, false);
+    auto Cond = Set ? CondClass::TSTNZ : CondClass::TSTZ;
+    return _CondJump(Src, InlineConst, InvalidNode, InvalidNode, Cond, OpSize::iInvalid, false);
   }
   IRPair<IROp_ExitFunction> ExitFunction(Ref NewRIP, BranchHint Hint = BranchHint::None) {
     FlushRegisterCache();
@@ -251,7 +252,7 @@ public:
     auto ExitBlock = CreateNewCodeBlockAfter(BackwardBlock);
 
     auto DF = GetRFLAG(X86State::RFLAG_DF_RAW_LOC);
-    CondJump(DF, Zero, ForwardBlock, BackwardBlock, {COND_EQ});
+    CondJump(DF, Zero, ForwardBlock, BackwardBlock, CondClass::EQ);
 
     for (auto D = 0; D < 2; ++D) {
       SetCurrentCodeBlock(D ? BackwardBlock : ForwardBlock);
@@ -1810,7 +1811,7 @@ private:
       // An exception should still be raised after an instruction that unsets TF, leave the unblocked bit set but unset
       // the TF bit to cause such behaviour. The handling code at the start of the next block will then unset the
       // unblocked bit before raising the exception.
-      auto NewPackedTF = _Select(FEXCore::IR::COND_EQ, Value, Constant(0), _And(OpSize::i32Bit, PackedTF, Constant(~1)), Constant(1));
+      auto NewPackedTF = _Select(CondClass::EQ, Value, Constant(0), _And(OpSize::i32Bit, PackedTF, Constant(~1)), Constant(1));
       _StoreContext(OpSize::i8Bit, GPRClass, NewPackedTF, offsetof(FEXCore::Core::CPUState, flags[BitOffset]));
     } else {
       _StoreContext(OpSize::i8Bit, GPRClass, Value, offsetof(FEXCore::Core::CPUState, flags[BitOffset]));
@@ -1839,12 +1840,12 @@ private:
   }
 
   [[nodiscard]]
-  static CondClassType CondForNZCVBit(unsigned BitOffset, bool Invert) {
+  static CondClass CondForNZCVBit(unsigned BitOffset, bool Invert) {
     switch (BitOffset) {
-    case X86State::RFLAG_SF_RAW_LOC: return {Invert ? COND_PL : COND_MI};
-    case X86State::RFLAG_ZF_RAW_LOC: return {Invert ? COND_NEQ : COND_EQ};
-    case X86State::RFLAG_CF_RAW_LOC: return {Invert ? COND_ULT : COND_UGE};
-    case X86State::RFLAG_OF_RAW_LOC: return {Invert ? COND_FNU : COND_FU};
+    case X86State::RFLAG_SF_RAW_LOC: return Invert ? CondClass::PL : CondClass::MI;
+    case X86State::RFLAG_ZF_RAW_LOC: return Invert ? CondClass::NEQ : CondClass::EQ;
+    case X86State::RFLAG_CF_RAW_LOC: return Invert ? CondClass::ULT : CondClass::UGE;
+    case X86State::RFLAG_OF_RAW_LOC: return Invert ? CondClass::FNU : CondClass::FU;
     default: FEX_UNREACHABLE;
     }
   }
@@ -2080,18 +2081,18 @@ private:
   }
 
   // Safe version of NZCVSelect that handles inverted carries automatically.
-  Ref NZCVSelect(OpSize OpSize, CondClassType Cond, Ref TrueV, Ref FalseV, bool CarryIsInverted = false) {
+  Ref NZCVSelect(OpSize OpSize, CondClass Cond, Ref TrueV, Ref FalseV, bool CarryIsInverted = false) {
     switch (Cond) {
-    case IR::COND_UGE: /* cs */
-    case IR::COND_ULT: /* cc */
+    case CondClass::UGE: /* cs */
+    case CondClass::ULT: /* cc */
       // Invert the condition to match our expectations.
       if (CarryIsInverted != CFInverted) {
-        Cond = {Cond == COND_UGE ? COND_ULT : COND_UGE};
+        Cond = (Cond == CondClass::UGE) ? CondClass::ULT : CondClass::UGE;
       }
       break;
 
-    case IR::COND_UGT: /* hi */
-    case IR::COND_ULE: /* ls */
+    case CondClass::UGT: /* hi */
+    case CondClass::ULE: /* ls */
       // No clever optimization we can do here, rectify carry itself.
       RectifyCarryInvert(CarryIsInverted);
       break;
@@ -2253,7 +2254,7 @@ private:
     CachedIndexedNamedVectorConstants.clear();
   }
 
-  std::optional<CondClassType> DecodeNZCVCondition(uint8_t OP);
+  std::optional<CondClass> DecodeNZCVCondition(uint8_t OP);
   Ref SelectBit(Ref Cmp, IR::OpSize ResultSize, Ref TrueValue, Ref FalseValue);
   Ref SelectCC0All1(uint8_t OP);
 
@@ -2304,7 +2305,7 @@ private:
 
     ///< Jump to zeroshift block or end block depending on if it was provided.
     IRPair<IROp_CodeBlock> TailHandling = ZeroShiftResult ? ZeroShiftBlock : EndBlock;
-    CondJump(Shift, Zero, TailHandling, SetBlock, {COND_EQ});
+    CondJump(Shift, Zero, TailHandling, SetBlock, CondClass::EQ);
 
     SetCurrentCodeBlock(SetBlock);
     StartNewBlock();

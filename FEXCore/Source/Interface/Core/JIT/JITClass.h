@@ -239,28 +239,28 @@ private:
   }
 
   [[nodiscard]]
-  static ARMEmitter::Condition MapCC(IR::CondClassType Cond) {
-    switch (Cond.Val) {
-    case IR::COND_EQ: return ARMEmitter::Condition::CC_EQ;
-    case IR::COND_NEQ: return ARMEmitter::Condition::CC_NE;
-    case IR::COND_SGE: return ARMEmitter::Condition::CC_GE;
-    case IR::COND_SLT: return ARMEmitter::Condition::CC_LT;
-    case IR::COND_SGT: return ARMEmitter::Condition::CC_GT;
-    case IR::COND_SLE: return ARMEmitter::Condition::CC_LE;
-    case IR::COND_UGE: return ARMEmitter::Condition::CC_CS;
-    case IR::COND_ULT: return ARMEmitter::Condition::CC_CC;
-    case IR::COND_UGT: return ARMEmitter::Condition::CC_HI;
-    case IR::COND_ULE: return ARMEmitter::Condition::CC_LS;
-    case IR::COND_FLU: return ARMEmitter::Condition::CC_LT;
-    case IR::COND_FGE: return ARMEmitter::Condition::CC_GE;
-    case IR::COND_FLEU: return ARMEmitter::Condition::CC_LE;
-    case IR::COND_FGT: return ARMEmitter::Condition::CC_GT;
-    case IR::COND_FU:
-    case IR::COND_VS: return ARMEmitter::Condition::CC_VS;
-    case IR::COND_FNU:
-    case IR::COND_VC: return ARMEmitter::Condition::CC_VC;
-    case IR::COND_MI: return ARMEmitter::Condition::CC_MI;
-    case IR::COND_PL: return ARMEmitter::Condition::CC_PL;
+  static ARMEmitter::Condition MapCC(IR::CondClass Cond) {
+    switch (Cond) {
+    case IR::CondClass::EQ: return ARMEmitter::Condition::CC_EQ;
+    case IR::CondClass::NEQ: return ARMEmitter::Condition::CC_NE;
+    case IR::CondClass::SGE: return ARMEmitter::Condition::CC_GE;
+    case IR::CondClass::SLT: return ARMEmitter::Condition::CC_LT;
+    case IR::CondClass::SGT: return ARMEmitter::Condition::CC_GT;
+    case IR::CondClass::SLE: return ARMEmitter::Condition::CC_LE;
+    case IR::CondClass::UGE: return ARMEmitter::Condition::CC_CS;
+    case IR::CondClass::ULT: return ARMEmitter::Condition::CC_CC;
+    case IR::CondClass::UGT: return ARMEmitter::Condition::CC_HI;
+    case IR::CondClass::ULE: return ARMEmitter::Condition::CC_LS;
+    case IR::CondClass::FLU: return ARMEmitter::Condition::CC_LT;
+    case IR::CondClass::FGE: return ARMEmitter::Condition::CC_GE;
+    case IR::CondClass::FLEU: return ARMEmitter::Condition::CC_LE;
+    case IR::CondClass::FGT: return ARMEmitter::Condition::CC_GT;
+    case IR::CondClass::FU:
+    case IR::CondClass::VS: return ARMEmitter::Condition::CC_VS;
+    case IR::CondClass::FNU:
+    case IR::CondClass::VC: return ARMEmitter::Condition::CC_VC;
+    case IR::CondClass::MI: return ARMEmitter::Condition::CC_MI;
+    case IR::CondClass::PL: return ARMEmitter::Condition::CC_PL;
     default: LOGMAN_MSG_A_FMT("Unsupported compare type"); return ARMEmitter::Condition::CC_NV;
     }
   }

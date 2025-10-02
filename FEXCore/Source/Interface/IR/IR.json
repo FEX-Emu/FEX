@@ -52,33 +52,36 @@
     "  * These are validations that can't be automatically inferred and need to be hand-written",
     ""
   ],
+  "Enums": {
+    "class CondClass : uint8_t": [
+      "EQ    = 0,",
+      "NEQ   = 1,",
+      "UGE   = 2,",
+      "ULT   = 3,",
+      "MI    = 4,",
+      "PL    = 5,",
+      "VS    = 6,",
+      "VC    = 7,",
+      "UGT   = 8,",
+      "ULE   = 9,",
+      "SGE   = 10,",
+      "SLT   = 11,",
+      "SGT   = 12,",
+      "SLE   = 13,",
+      "TSTZ  = 14, /* bit test zero */",
+      "TSTNZ = 15, /* bit test nonzero */",
+      "",
+      "FLU   = 16, /* float less or unordered */",
+      "FGE   = 17, /* float greater or equal */",
+      "FLEU  = 18, /* float less or equal or unordered */",
+      "FGT   = 19, /* float greater */",
+      "FU    = 20, /* float unordered */",
+      "FNU   = 21, /* float not unordered */",
+      "",
+      "AL    = 32, /* always */"
+    ]
+  },
   "Defines": [
-    "constexpr uint8_t COND_EQ  = 0",
-    "constexpr uint8_t COND_NEQ = 1",
-    "constexpr uint8_t COND_UGE  = 2",
-    "constexpr uint8_t COND_ULT  = 3",
-    "constexpr uint8_t COND_MI  = 4",
-    "constexpr uint8_t COND_PL  = 5",
-    "constexpr uint8_t COND_VS  = 6",
-    "constexpr uint8_t COND_VC  = 7",
-    "constexpr uint8_t COND_UGT  = 8",
-    "constexpr uint8_t COND_ULE  = 9",
-    "constexpr uint8_t COND_SGE  = 10",
-    "constexpr uint8_t COND_SLT  = 11",
-    "constexpr uint8_t COND_SGT  = 12",
-    "constexpr uint8_t COND_SLE  = 13",
-    "constexpr uint8_t COND_TSTZ = 14 /* bit test zero */",
-    "constexpr uint8_t COND_TSTNZ = 15 /* bit test nonzero */",
-
-    "constexpr uint8_t COND_FLU  = 16 /* float less or unordred */",
-    "constexpr uint8_t COND_FGE  = 17 /* float greater or equal */",
-    "constexpr uint8_t COND_FLEU = 18 /* float less or equal or unordred */",
-    "constexpr uint8_t COND_FGT  = 19 /* float greater */",
-    "constexpr uint8_t COND_FU   = 20 /* float unordred */",
-    "constexpr uint8_t COND_FNU  = 21 /* float not unordred */",
-
-    "constexpr uint8_t COND_AL   = 32 /* always */",
-
     "constexpr FEXCore::IR::RegisterClassType InvalidClass {0}",
     "constexpr FEXCore::IR::RegisterClassType GPRClass {1}",
     "constexpr FEXCore::IR::RegisterClassType GPRFixedClass {2}",
@@ -149,7 +152,7 @@
     "FPR": "OrderedNode*",
     "FenceType": "FenceType",
     "RegisterClass": "RegisterClassType",
-    "CondClass": "CondClassType",
+    "CondClass": "CondClass",
     "SyscallFlags": "FEXCore::IR::SyscallFlags",
     "SHA256Sum": "SHA256Sum",
     "MemOffsetType": "MemOffsetType",
@@ -307,7 +310,7 @@
         "HasSideEffects": true,
         "RAOverride": "0"
       },
-      "CondJump SSA:$Cmp1, SSA:$Cmp2, SSA:$TrueBlock, SSA:$FalseBlock, CondClass:$Cond{{COND_NEQ}}, OpSize:$CompareSize{OpSize::iInvalid}, i1:$FromNZCV{false}": {
+      "CondJump SSA:$Cmp1, SSA:$Cmp2, SSA:$TrueBlock, SSA:$FalseBlock, CondClass:$Cond{CondClass::NEQ}, OpSize:$CompareSize{OpSize::iInvalid}, i1:$FromNZCV{false}": {
         "Inline": ["", "AddSub"],
         "HasSideEffects": true,
         "RAOverride": "2"
@@ -1008,7 +1011,7 @@
         "DestSize": "OpSize::i64Bit"
       },
 
-      "GPR = Neg OpSize:#Size, GPR:$Src, CondClass:$Cond{{COND_AL}}": {
+      "GPR = Neg OpSize:#Size, GPR:$Src, CondClass:$Cond{CondClass::AL}": {
         "Desc": ["Integer negation, with optional predication",
                  "Dest = Cond ? -Src : Src",
                  "Will truncate to 64 or 32bits"

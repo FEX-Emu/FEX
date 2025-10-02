@@ -372,7 +372,7 @@ DEF_OP(CondSubNZCV) {
 DEF_OP(Neg) {
   auto Op = IROp->C<IR::IROp_Neg>();
 
-  if (Op->Cond == FEXCore::IR::COND_AL) {
+  if (Op->Cond == IR::CondClass::AL) {
     neg(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src));
   } else {
     cneg(ConvertSize48(IROp), GetReg(Node), GetReg(Op->Src), MapCC(Op->Cond));
