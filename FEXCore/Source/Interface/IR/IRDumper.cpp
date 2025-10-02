@@ -147,15 +147,18 @@ static void PrintArg(fextl::stringstream* out, const IRListView*, RoundMode Arg)
   }
 }
 
-static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::SyscallFlags Arg) {
-  switch (Arg) {
-  case FEXCore::IR::SyscallFlags::DEFAULT: *out << "Default"; break;
-  case FEXCore::IR::SyscallFlags::OPTIMIZETHROUGH: *out << "Optimize Through"; break;
-  case FEXCore::IR::SyscallFlags::NOSYNCSTATEONENTRY: *out << "No Sync State on Entry"; break;
-  case FEXCore::IR::SyscallFlags::NORETURN: *out << "No Return"; break;
-  case FEXCore::IR::SyscallFlags::NOSIDEEFFECTS: *out << "No Side Effects"; break;
-  default: *out << "<Unknown Syscall Flags>"; break;
-  }
+static void PrintArg(fextl::stringstream* out, const IRListView*, SyscallFlags Arg) {
+  *out << [Arg] {
+    switch (Arg) {
+    case SyscallFlags::DEFAULT: return "Default";
+    case SyscallFlags::OPTIMIZETHROUGH: return "Optimize Through";
+    case SyscallFlags::NOSYNCSTATEONENTRY: return "No Sync State on Entry";
+    case SyscallFlags::NORETURN: return "No Return";
+    case SyscallFlags::NOSIDEEFFECTS: return "No Side Effects";
+    case SyscallFlags::NORETURNEDRESULT: return "No Returned Result";
+    }
+    return "<Unknown Syscall Flags>";
+  }();
 }
 
 static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::NamedVectorConstant Arg) {
