@@ -124,12 +124,12 @@ static void PrintArg(fextl::stringstream* out, const IRListView* IR, OrderedNode
   }
 }
 
-static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::FenceType Arg) {
-  if (Arg == IR::Fence_Load) {
+static void PrintArg(fextl::stringstream* out, const IRListView*, FenceType Arg) {
+  if (Arg == FenceType::Load) {
     *out << "Loads";
-  } else if (Arg == IR::Fence_Store) {
+  } else if (Arg == FenceType::Store) {
     *out << "Stores";
-  } else if (Arg == IR::Fence_LoadStore) {
+  } else if (Arg == FenceType::LoadStore) {
     *out << "LoadStores";
   } else {
     *out << "<Unknown Fence Type>";

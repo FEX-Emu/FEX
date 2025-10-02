@@ -530,7 +530,7 @@ bool ConstrainedRAPass::TryPostRAMerge(Ref LastNode, Ref CodeNode, IROp_Header* 
       const auto Result = CPUID->RunFunction(ConstantFunction, 0 /* leaf */);
 
       IREmit->SetWriteCursorBefore(CodeNode);
-      IREmit->_Fence({FEXCore::IR::Fence_Inst});
+      IREmit->_Fence(IR::FenceType::Inst);
       IREmit->_Constant(Result.eax).Node->Reg = PhysicalRegister(Op->OutEAX).Raw;
       IREmit->_Constant(Result.ebx).Node->Reg = PhysicalRegister(Op->OutEBX).Raw;
       IREmit->_Constant(Result.ecx).Node->Reg = PhysicalRegister(Op->OutECX).Raw;

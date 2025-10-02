@@ -4793,7 +4793,7 @@ void OpDispatchBuilder::CLFLUSHOPT(OpcodeArgs) {
 void OpDispatchBuilder::LoadFenceOrXRSTOR(OpcodeArgs) {
   // 0xE8 signifies LFENCE
   if (Op->ModRM == 0xE8) {
-    _Fence(IR::Fence_Load);
+    _Fence(FenceType::Load);
   } else {
     XRstorOpImpl(Op);
   }
@@ -4802,7 +4802,7 @@ void OpDispatchBuilder::LoadFenceOrXRSTOR(OpcodeArgs) {
 void OpDispatchBuilder::MemFenceOrXSAVEOPT(OpcodeArgs) {
   if (Op->ModRM == 0xF0) {
     // 0xF0 is MFENCE
-    _Fence(FEXCore::IR::Fence_LoadStore);
+    _Fence(FenceType::LoadStore);
   } else {
     XSaveOp(Op);
   }
@@ -4811,7 +4811,7 @@ void OpDispatchBuilder::MemFenceOrXSAVEOPT(OpcodeArgs) {
 void OpDispatchBuilder::StoreFenceOrCLFlush(OpcodeArgs) {
   if (Op->ModRM == 0xF8) {
     // 0xF8 is SFENCE
-    _Fence({FEXCore::IR::Fence_Store});
+    _Fence(FenceType::Store);
   } else {
     // This is a CLFlush
     Ref DestMem = MakeSegmentAddress(Op, Op->Dest);
