@@ -79,6 +79,12 @@
       "FNU   = 21, /* float not unordered */",
       "",
       "AL    = 32, /* always */"
+    ],
+    "class FenceType : uint8_t": [
+      "Load      = 0,",
+      "Store     = 1,",
+      "LoadStore = 2,",
+      "Inst      = 3,"
     ]
   },
   "Defines": [
@@ -107,11 +113,6 @@
     "constexpr uint8_t FCMP_FLAG_EQ        = 0",
     "constexpr uint8_t FCMP_FLAG_LT        = 1",
     "constexpr uint8_t FCMP_FLAG_UNORDERED = 2",
-
-    "constexpr FEXCore::IR::FenceType Fence_Load      {0}",
-    "constexpr FEXCore::IR::FenceType Fence_Store     {1}",
-    "constexpr FEXCore::IR::FenceType Fence_LoadStore {2}",
-    "constexpr FEXCore::IR::FenceType Fence_Inst      {3}",
 
     "constexpr uint8_t ROUND_MODE_NEAREST           = 0",
     "constexpr uint8_t ROUND_MODE_NEGATIVE_INFINITY = 1",
@@ -764,9 +765,9 @@
       },
       "Fence FenceType:$Fence": {
         "Desc": ["Does a memory fence operation of the desired type",
-                 "Fence_Load: Ensures load memory operations are serialized",
-                 "Fence_Store: Ensures store memory operations are serialized",
-                 "Fence_LoadStore: Ensures loads and store memory operations are serialized",
+                 "FenceType::Load: Ensures load memory operations are serialized",
+                 "FenceType::Store: Ensures store memory operations are serialized",
+                 "FenceType::LoadStore: Ensures loads and store memory operations are serialized",
                  "Ensures the memory operations are globally visible"
                 ],
         "HasSideEffects": true

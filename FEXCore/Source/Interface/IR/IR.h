@@ -488,17 +488,6 @@ struct FEX_PACKED TypeDefinition final {
 
 static_assert(std::is_trivially_copyable_v<TypeDefinition>);
 
-struct FEX_PACKED FenceType final {
-  using value_type = uint8_t;
-
-  value_type Val;
-  [[nodiscard]] constexpr operator value_type() const {
-    return Val;
-  }
-  [[nodiscard]]
-  friend constexpr bool operator==(const FenceType&, const FenceType&) = default;
-};
-
 struct FEX_PACKED RoundType final {
   uint8_t Val;
   [[nodiscard]] constexpr operator uint8_t() const {
@@ -805,12 +794,12 @@ struct fmt::formatter<FEXCore::IR::RegisterClassType> : fmt::formatter<FEXCore::
 };
 
 template<>
-struct fmt::formatter<FEXCore::IR::FenceType> : fmt::formatter<FEXCore::IR::FenceType::value_type> {
-  using Base = fmt::formatter<FEXCore::IR::FenceType::value_type>;
+struct fmt::formatter<FEXCore::IR::FenceType> : fmt::formatter<std::underlying_type_t<FEXCore::IR::FenceType>> {
+  using Base = fmt::formatter<std::underlying_type_t<FEXCore::IR::FenceType>>;
 
   template<typename FormatContext>
   auto format(const FEXCore::IR::FenceType& Fence, FormatContext& ctx) const {
-    return Base::format(Fence.Val, ctx);
+    return Base::format(FEXCore::ToUnderlying(Fence), ctx);
   }
 };
 

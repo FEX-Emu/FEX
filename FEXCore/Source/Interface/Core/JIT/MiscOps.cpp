@@ -47,10 +47,10 @@ DEF_OP(GuestOpcode) {
 DEF_OP(Fence) {
   auto Op = IROp->C<IR::IROp_Fence>();
   switch (Op->Fence) {
-  case IR::Fence_Load.Val: dmb(ARMEmitter::BarrierScope::LD); break;
-  case IR::Fence_LoadStore.Val: dmb(ARMEmitter::BarrierScope::SY); break;
-  case IR::Fence_Store.Val: dmb(ARMEmitter::BarrierScope::ST); break;
-  case IR::Fence_Inst.Val: isb(); break;
+  case IR::FenceType::Load: dmb(ARMEmitter::BarrierScope::LD); break;
+  case IR::FenceType::LoadStore: dmb(ARMEmitter::BarrierScope::SY); break;
+  case IR::FenceType::Store: dmb(ARMEmitter::BarrierScope::ST); break;
+  case IR::FenceType::Inst: isb(); break;
   default: LOGMAN_MSG_A_FMT("Unknown Fence: {}", Op->Fence); break;
   }
 }
