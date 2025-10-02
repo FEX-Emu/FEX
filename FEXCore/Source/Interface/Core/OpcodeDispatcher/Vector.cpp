@@ -505,18 +505,18 @@ void OpDispatchBuilder::AVXInsertScalar_CVT_Float_To_Float(OpcodeArgs) {
 template void OpDispatchBuilder::AVXInsertScalar_CVT_Float_To_Float<OpSize::i32Bit, OpSize::i64Bit>(OpcodeArgs);
 template void OpDispatchBuilder::AVXInsertScalar_CVT_Float_To_Float<OpSize::i64Bit, OpSize::i32Bit>(OpcodeArgs);
 
-RoundType OpDispatchBuilder::TranslateRoundType(uint8_t Mode) {
+RoundMode OpDispatchBuilder::TranslateRoundType(uint8_t Mode) {
   const uint64_t RoundControlSource = (Mode >> 2) & 1;
   uint64_t RoundControl = Mode & 0b11;
 
   static constexpr std::array SourceModes = {
-    FEXCore::IR::Round_Nearest,
-    FEXCore::IR::Round_Negative_Infinity,
-    FEXCore::IR::Round_Positive_Infinity,
-    FEXCore::IR::Round_Towards_Zero,
+    RoundMode::Nearest,
+    RoundMode::NegInfinity,
+    RoundMode::PosInfinity,
+    RoundMode::TowardsZero,
   };
 
-  return RoundControlSource ? Round_Host : SourceModes[RoundControl];
+  return RoundControlSource ? RoundMode::Host : SourceModes[RoundControl];
 }
 
 Ref OpDispatchBuilder::InsertScalarRoundImpl(OpcodeArgs, IR::OpSize DstSize, IR::OpSize ElementSize, const X86Tables::DecodedOperand& Src1Op,
@@ -2115,7 +2115,7 @@ Ref OpDispatchBuilder::CVTFPR_To_GPRImpl(OpcodeArgs, Ref Src, IR::OpSize SrcElem
     // When we lack hardware support, we need a bit of a convoluted sequence of
     // fixups before before and after conversion to emulate x86 semantics.
     if (HostRoundingMode) {
-      Src = _Vector_FToI(SrcElementSize, SrcElementSize, Src, Round_Host);
+      Src = _Vector_FToI(SrcElementSize, SrcElementSize, Src, RoundMode::Host);
     }
 
     Ref Converted = _Float_ToGPR_ZS(GPRSize, SrcElementSize, Src);
@@ -2195,7 +2195,7 @@ Ref OpDispatchBuilder::Vector_CVT_Float_To_Int32Impl(OpcodeArgs, IR::OpSize DstS
   } else {
     // Otherwise, we have to do all the fixups, but vectorized.
     if (HostRoundingMode) {
-      Src = _Vector_FToI(SrcSize, SrcElementSize, Src, Round_Host);
+      Src = _Vector_FToI(SrcSize, SrcElementSize, Src, RoundMode::Host);
     }
 
     OpSize OverflowConstSize = ZeroUpperHalf && SrcElementSize == OpSize::i64Bit ? DstSize / 2 : DstSize;
@@ -2203,7 +2203,7 @@ Ref OpDispatchBuilder::Vector_CVT_Float_To_Int32Impl(OpcodeArgs, IR::OpSize DstS
     Ref Converted {}, Cmp {};
     if (SrcElementSize == OpSize::i64Bit) {
       Ref MaxF = LoadAndCacheNamedVectorConstant(SrcSize, NAMED_VECTOR_CVTMAX_F64_I32);
-      Converted = _Vector_F64ToI32(DstSize, Src, Round_Towards_Zero, ZeroUpperHalf);
+      Converted = _Vector_F64ToI32(DstSize, Src, RoundMode::TowardsZero, ZeroUpperHalf);
 
       Cmp = _VFCMPGT(SrcSize, OpSize::i64Bit, MaxF, Src);
       Cmp = _VUShrNI(DstSize, OpSize::i64Bit, Cmp, 32);

@@ -423,11 +423,11 @@ DEF_OP(Vector_FToI) {
     const auto Mask = PRED_TMP_32B.Merging();
 
     switch (Op->Round) {
-    case FEXCore::IR::Round_Nearest.Val: frintn(SubEmitSize, Dst.Z(), Mask, Vector.Z()); break;
-    case FEXCore::IR::Round_Negative_Infinity.Val: frintm(SubEmitSize, Dst.Z(), Mask, Vector.Z()); break;
-    case FEXCore::IR::Round_Positive_Infinity.Val: frintp(SubEmitSize, Dst.Z(), Mask, Vector.Z()); break;
-    case FEXCore::IR::Round_Towards_Zero.Val: frintz(SubEmitSize, Dst.Z(), Mask, Vector.Z()); break;
-    case FEXCore::IR::Round_Host.Val: frinti(SubEmitSize, Dst.Z(), Mask, Vector.Z()); break;
+    case IR::RoundMode::Nearest: frintn(SubEmitSize, Dst.Z(), Mask, Vector.Z()); break;
+    case IR::RoundMode::NegInfinity: frintm(SubEmitSize, Dst.Z(), Mask, Vector.Z()); break;
+    case IR::RoundMode::PosInfinity: frintp(SubEmitSize, Dst.Z(), Mask, Vector.Z()); break;
+    case IR::RoundMode::TowardsZero: frintz(SubEmitSize, Dst.Z(), Mask, Vector.Z()); break;
+    case IR::RoundMode::Host: frinti(SubEmitSize, Dst.Z(), Mask, Vector.Z()); break;
     }
   } else {
     const auto IsScalar = ElementSize == OpSize;
@@ -449,21 +449,21 @@ DEF_OP(Vector_FToI) {
   }
 
       switch (Op->Round) {
-      case IR::Round_Nearest.Val: ROUNDING_FN(frintn); break;
-      case IR::Round_Negative_Infinity.Val: ROUNDING_FN(frintm); break;
-      case IR::Round_Positive_Infinity.Val: ROUNDING_FN(frintp); break;
-      case IR::Round_Towards_Zero.Val: ROUNDING_FN(frintz); break;
-      case IR::Round_Host.Val: ROUNDING_FN(frinti); break;
+      case IR::RoundMode::Nearest: ROUNDING_FN(frintn); break;
+      case IR::RoundMode::NegInfinity: ROUNDING_FN(frintm); break;
+      case IR::RoundMode::PosInfinity: ROUNDING_FN(frintp); break;
+      case IR::RoundMode::TowardsZero: ROUNDING_FN(frintz); break;
+      case IR::RoundMode::Host: ROUNDING_FN(frinti); break;
       }
 
 #undef ROUNDING_FN
     } else {
       switch (Op->Round) {
-      case FEXCore::IR::Round_Nearest.Val: frintn(SubEmitSize, Dst.Q(), Vector.Q()); break;
-      case FEXCore::IR::Round_Negative_Infinity.Val: frintm(SubEmitSize, Dst.Q(), Vector.Q()); break;
-      case FEXCore::IR::Round_Positive_Infinity.Val: frintp(SubEmitSize, Dst.Q(), Vector.Q()); break;
-      case FEXCore::IR::Round_Towards_Zero.Val: frintz(SubEmitSize, Dst.Q(), Vector.Q()); break;
-      case FEXCore::IR::Round_Host.Val: frinti(SubEmitSize, Dst.Q(), Vector.Q()); break;
+      case IR::RoundMode::Nearest: frintn(SubEmitSize, Dst.Q(), Vector.Q()); break;
+      case IR::RoundMode::NegInfinity: frintm(SubEmitSize, Dst.Q(), Vector.Q()); break;
+      case IR::RoundMode::PosInfinity: frintp(SubEmitSize, Dst.Q(), Vector.Q()); break;
+      case IR::RoundMode::TowardsZero: frintz(SubEmitSize, Dst.Q(), Vector.Q()); break;
+      case IR::RoundMode::Host: frinti(SubEmitSize, Dst.Q(), Vector.Q()); break;
       }
     }
   }
@@ -539,11 +539,11 @@ DEF_OP(Vector_F64ToI32) {
     // Then convert to integers using fcvtzs.
     auto CVTReg = Dst.Z();
     switch (Round) {
-    case IR::Round_Nearest.Val: frintn(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), Mask, Vector.Z()); break;
-    case IR::Round_Negative_Infinity.Val: frintm(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), Mask, Vector.Z()); break;
-    case IR::Round_Positive_Infinity.Val: frintp(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), Mask, Vector.Z()); break;
-    case IR::Round_Towards_Zero.Val: CVTReg = Vector.Z(); break;
-    case IR::Round_Host.Val: frinti(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), Mask, Vector.Z()); break;
+    case IR::RoundMode::Nearest: frintn(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), Mask, Vector.Z()); break;
+    case IR::RoundMode::NegInfinity: frintm(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), Mask, Vector.Z()); break;
+    case IR::RoundMode::PosInfinity: frintp(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), Mask, Vector.Z()); break;
+    case IR::RoundMode::TowardsZero: CVTReg = Vector.Z(); break;
+    case IR::RoundMode::Host: frinti(ARMEmitter::SubRegSize::i64Bit, Dst.Z(), Mask, Vector.Z()); break;
     }
 
     fcvtzs(Dst.Z(), ARMEmitter::SubRegSize::i32Bit, Mask, CVTReg, ARMEmitter::SubRegSize::i64Bit);
@@ -567,11 +567,11 @@ DEF_OP(Vector_F64ToI32) {
 
     ///< Round float to integral depending on rounding mode.
     switch (Round) {
-    case FEXCore::IR::Round_Nearest.Val: frintn(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), Vector.Q()); break;
-    case FEXCore::IR::Round_Negative_Infinity.Val: frintm(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), Vector.Q()); break;
-    case FEXCore::IR::Round_Positive_Infinity.Val: frintp(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), Vector.Q()); break;
-    case FEXCore::IR::Round_Towards_Zero.Val: frintz(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), Vector.Q()); break;
-    case FEXCore::IR::Round_Host.Val: frinti(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), Vector.Q()); break;
+    case IR::RoundMode::Nearest: frintn(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), Vector.Q()); break;
+    case IR::RoundMode::NegInfinity: frintm(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), Vector.Q()); break;
+    case IR::RoundMode::PosInfinity: frintp(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), Vector.Q()); break;
+    case IR::RoundMode::TowardsZero: frintz(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), Vector.Q()); break;
+    case IR::RoundMode::Host: frinti(ARMEmitter::SubRegSize::i64Bit, Dst.Q(), Vector.Q()); break;
     }
 
     // Now narrow from f64 to f32.

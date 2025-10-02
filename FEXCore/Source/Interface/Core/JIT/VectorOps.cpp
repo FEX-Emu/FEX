@@ -744,11 +744,11 @@ DEF_OP(VFToIScalarInsert) {
     auto Src = *std::get_if<ARMEmitter::VRegister>(&SrcVar);
 
     switch (RoundMode) {
-    case IR::Round_Nearest: frintn(SubRegSize.Scalar, Dst, Src); break;
-    case IR::Round_Negative_Infinity: frintm(SubRegSize.Scalar, Dst, Src); break;
-    case IR::Round_Positive_Infinity: frintp(SubRegSize.Scalar, Dst, Src); break;
-    case IR::Round_Towards_Zero: frintz(SubRegSize.Scalar, Dst, Src); break;
-    case IR::Round_Host: frinti(SubRegSize.Scalar, Dst, Src); break;
+    case IR::RoundMode::Nearest: frintn(SubRegSize.Scalar, Dst, Src); break;
+    case IR::RoundMode::NegInfinity: frintm(SubRegSize.Scalar, Dst, Src); break;
+    case IR::RoundMode::PosInfinity: frintp(SubRegSize.Scalar, Dst, Src); break;
+    case IR::RoundMode::TowardsZero: frintz(SubRegSize.Scalar, Dst, Src); break;
+    case IR::RoundMode::Host: frinti(SubRegSize.Scalar, Dst, Src); break;
     }
   };
 

@@ -85,6 +85,13 @@
       "Store     = 1,",
       "LoadStore = 2,",
       "Inst      = 3,"
+    ],
+    "class RoundMode : uint8_t": [
+      "Nearest     = 0,",
+      "NegInfinity = 1,",
+      "PosInfinity = 2,",
+      "TowardsZero = 3, /* Truncate */",
+      "Host        = 4,"
     ]
   },
   "Defines": [
@@ -113,18 +120,6 @@
     "constexpr uint8_t FCMP_FLAG_EQ        = 0",
     "constexpr uint8_t FCMP_FLAG_LT        = 1",
     "constexpr uint8_t FCMP_FLAG_UNORDERED = 2",
-
-    "constexpr uint8_t ROUND_MODE_NEAREST           = 0",
-    "constexpr uint8_t ROUND_MODE_NEGATIVE_INFINITY = 1",
-    "constexpr uint8_t ROUND_MODE_POSITIVE_INFINITY = 2",
-    "constexpr uint8_t ROUND_MODE_TOWARDS_ZERO      = 3",
-    "constexpr uint8_t ROUND_MODE_FLUSH_TO_ZERO     = 1 << 2",
-
-    "constexpr FEXCore::IR::RoundType Round_Nearest {ROUND_MODE_NEAREST}",
-    "constexpr FEXCore::IR::RoundType Round_Negative_Infinity {ROUND_MODE_NEGATIVE_INFINITY}",
-    "constexpr FEXCore::IR::RoundType Round_Positive_Infinity {ROUND_MODE_POSITIVE_INFINITY}",
-    "constexpr FEXCore::IR::RoundType Round_Towards_Zero {ROUND_MODE_TOWARDS_ZERO} /* Truncate */",
-    "constexpr FEXCore::IR::RoundType Round_Host {ROUND_MODE_TOWARDS_ZERO + 1}",
 
     "constexpr FEXCore::IR::MemOffsetType MEM_OFFSET_SXTX {0}",
     "constexpr FEXCore::IR::MemOffsetType MEM_OFFSET_UXTW {1}",
@@ -158,7 +153,7 @@
     "SHA256Sum": "SHA256Sum",
     "MemOffsetType": "MemOffsetType",
     "BreakDefinition": "BreakDefinition",
-    "RoundType": "RoundType",
+    "RoundType": "RoundMode",
     "FloatCompareOp": "FloatCompareOp",
     "NamedVectorConstant": "FEXCore::IR::NamedVectorConstant",
     "IndexNamedVectorConstant": "FEXCore::IR::IndexNamedVectorConstant",
