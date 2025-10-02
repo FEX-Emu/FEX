@@ -294,12 +294,15 @@ static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::S
 }
 
 static void PrintArg(fextl::stringstream* out, const IRListView*, FEXCore::IR::BranchHint Arg) {
-  switch (Arg) {
-  case BranchHint::None: *out << "None"; break;
-  case BranchHint::Call: *out << "Call"; break;
-  case BranchHint::Return: *out << "Return"; break;
-  default: *out << "<Unknown Branch Hint>"; break;
-  }
+  *out << [Arg] {
+    switch (Arg) {
+    case BranchHint::None: return "None";
+    case BranchHint::Call: return "Call";
+    case BranchHint::Return: return "Return";
+    case BranchHint::CheckTF: return "CheckTF";
+    }
+    return "<Unknown Branch Hint>";
+  }();
 }
 
 static void PrintArg(fextl::stringstream* out, const IRListView*, const std::array<uint8_t, 0x10>& Arg) {
