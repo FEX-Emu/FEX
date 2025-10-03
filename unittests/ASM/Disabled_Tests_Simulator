@@ -110,3 +110,7 @@ Test_Secondary/09_F3_07.asm
 
 # Vixl sim at 256-bit vector width access too much memory with some AVX instructions
 Test_modrm_oob/VEX.asm
+
+# Vixl simulator with 256-bit vector width doesn't always do correct data retention for 128-bit non-AVX operations.
+Test_SSE4a/extrq_imm.asm
+Test_SSE4a/insertq_imm.asm
