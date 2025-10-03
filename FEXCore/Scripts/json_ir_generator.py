@@ -219,11 +219,8 @@ def parse_ops(ops):
                         OpArg.DefaultInitializer = DefaultInit[1][:-1]
 
                     # If SSA type then we can generate validation for this op
-                    if (OpArg.IsSSA and
-                        (OpArg.Type == "GPR" or
-                        OpArg.Type == "GPRPair" or
-                        OpArg.Type == "FPR")):
-                        OpDef.EmitValidation.append(f"GetOpRegClass({ArgName}) == InvalidClass || WalkFindRegClass({ArgName}) == {OpArg.Type}Class")
+                    if OpArg.IsSSA and OpArg.Type in {"GPR", "GPRPair", "FPR"}:
+                        OpDef.EmitValidation.append(f"GetOpRegClass({ArgName}) == RegClass::Invalid || WalkFindRegClass({ArgName}) == RegClass::{OpArg.Type}")
 
                     OpArg.Name = ArgName
                     OpArg.NameWithPrefix = NameWithPrefix
@@ -415,7 +412,7 @@ def print_ir_sizes():
     [[nodiscard, gnu::const]] std::string_view const& GetName(IROps Op);
     [[nodiscard, gnu::const]] uint8_t GetArgs(IROps Op);
     [[nodiscard, gnu::const]] uint8_t GetRAArgs(IROps Op);
-    [[nodiscard, gnu::const]] FEXCore::IR::RegisterClassType GetRegClass(IROps Op);
+    [[nodiscard, gnu::const]] FEXCore::IR::RegClass GetRegClass(IROps Op);
     [[nodiscard, gnu::const]] bool HasSideEffects(IROps Op);
     [[nodiscard, gnu::const]] bool ImplicitFlagClobber(IROps Op);
     [[nodiscard, gnu::const]] bool GetHasDest(IROps Op);
@@ -429,30 +426,29 @@ def print_ir_sizes():
 def print_ir_reg_classes():
     output_file.write("#ifdef IROP_REG_CLASSES_IMPL\n")
 
-    output_file.write("constexpr std::array<FEXCore::IR::RegisterClassType, IROps::OP_LAST + 1> IRRegClasses = {\n")
+    output_file.write("constexpr std::array<FEXCore::IR::RegClass, IROps::OP_LAST + 1> IRRegClasses = {\n")
     for op in IROps:
         if op.Name == "Last":
-            output_file.write("\tFEXCore::IR::InvalidClass,\n")
+            output_file.write("\tRegClass::Invalid,\n")
         else:
-            Class = "Invalid"
-            if op.HasDest and op.DestType == None:
+            if op.HasDest and op.DestType is None:
                 ExitError("IR op {} has destination with no destination class".format(op.Name))
 
             if op.HasDest and op.DestType == "SSA": # Special case SSA type
-                output_file.write("\tFEXCore::IR::ComplexClass,\n")
+                output_file.write("\tRegClass::Complex,\n")
             elif op.HasDest:
-                output_file.write("\tFEXCore::IR::{}Class,\n".format(op.DestType))
+                output_file.write("\tRegClass::{},\n".format(op.DestType))
             else:
                 # No destination so it has an invalid destination class
-                output_file.write("\tFEXCore::IR::InvalidClass, // No destination\n")
+                output_file.write("\tRegClass::Invalid, // No destination\n")
 
 
     output_file.write("};\n\n")
 
     output_file.write("// Make sure our array maps directly to the IROps enum\n")
-    output_file.write("static_assert(IRRegClasses[IROps::OP_LAST] == FEXCore::IR::InvalidClass);\n\n")
+    output_file.write("static_assert(IRRegClasses[IROps::OP_LAST] == RegClass::Invalid);\n\n")
 
-    output_file.write("FEXCore::IR::RegisterClassType GetRegClass(IROps Op) { return IRRegClasses[Op]; }\n\n")
+    output_file.write("FEXCore::IR::RegClass GetRegClass(IROps Op) { return IRRegClasses[Op]; }\n\n")
 
     output_file.write("#undef IROP_REG_CLASSES_IMPL\n")
     output_file.write("#endif\n\n")
@@ -678,7 +674,7 @@ def print_ir_allocator_helpers():
     output_file.write("\t\treturn HeaderOp->Op;\n")
     output_file.write("\t}\n\n")
 
-    output_file.write("\tFEXCore::IR::RegisterClassType GetOpRegClass(const OrderedNode *Op) const {\n")
+    output_file.write("\tFEXCore::IR::RegClass GetOpRegClass(const OrderedNode *Op) const {\n")
     output_file.write("\t\treturn GetRegClass(GetOpType(Op));\n")
     output_file.write("\t}\n\n")
 

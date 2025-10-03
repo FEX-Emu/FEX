@@ -625,10 +625,10 @@ Arm64JITCore::Arm64JITCore(FEXCore::Context::ContextImpl* ctx, FEXCore::Core::In
 
   RAPass = Thread->PassManager->GetPass<IR::RegisterAllocationPass>("RA");
 
-  RAPass->AddRegisters(FEXCore::IR::GPRClass, GeneralRegisters.size());
-  RAPass->AddRegisters(FEXCore::IR::GPRFixedClass, StaticRegisters.size());
-  RAPass->AddRegisters(FEXCore::IR::FPRClass, GeneralFPRegisters.size());
-  RAPass->AddRegisters(FEXCore::IR::FPRFixedClass, StaticFPRegisters.size());
+  RAPass->AddRegisters(IR::RegClass::GPR, GeneralRegisters.size());
+  RAPass->AddRegisters(IR::RegClass::GPRFixed, StaticRegisters.size());
+  RAPass->AddRegisters(IR::RegClass::FPR, GeneralFPRegisters.size());
+  RAPass->AddRegisters(IR::RegClass::FPRFixed, StaticFPRegisters.size());
   RAPass->PairRegs = PairRegisters;
 
   {

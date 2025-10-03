@@ -1014,8 +1014,8 @@ void X87StackOptimization::Run(IREmitter* Emit) {
         // or similar. As long as the source size and dest size are one and the same.
         // This will avoid any conversions between source and stack element size and conversion back.
         if (!SlowPath && Value->Source && Value->Source->Size == Op->StoreSize && Value->InterpretAsFloat) {
-          IREmit->_StoreMem(Value->InterpretAsFloat ? FPRClass : GPRClass, Op->StoreSize, Value->Source->Node, AddrNode, Offset, Align,
-                            OffsetType, OffsetScale);
+          const auto ClassType = Value->InterpretAsFloat ? RegClass::FPR : RegClass::GPR;
+          IREmit->_StoreMem(ClassType, Op->StoreSize, Value->Source->Node, AddrNode, Offset, Align, OffsetType, OffsetScale);
           break;
         }
 

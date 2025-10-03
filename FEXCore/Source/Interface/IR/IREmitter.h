@@ -46,7 +46,7 @@ public:
    *
    * @{ */
 
-  FEXCore::IR::RegisterClassType WalkFindRegClass(Ref Node);
+  RegClass WalkFindRegClass(Ref Node);
 
   // These inlining helpers are used by IRDefines.inc so define first.
   Ref InlineMem(OpSize Size, Ref Offset, MemOffsetType OffsetType, uint8_t& OffsetScale, bool TSO = false) {
@@ -124,67 +124,67 @@ public:
   }
 
   IRPair<IROp_LoadContext> _LoadContextGPR(OpSize ByteSize, uint32_t Offset) {
-    return _LoadContext(ByteSize, GPRClass, Offset);
+    return _LoadContext(ByteSize, RegClass::GPR, Offset);
   }
   IRPair<IROp_LoadContext> _LoadContextFPR(OpSize ByteSize, uint32_t Offset) {
-    return _LoadContext(ByteSize, FPRClass, Offset);
+    return _LoadContext(ByteSize, RegClass::FPR, Offset);
   }
   IRPair<IROp_StoreContext> _StoreContextGPR(OpSize ByteSize, Ref Value, uint32_t Offset) {
-    return _StoreContext(ByteSize, GPRClass, Value, Offset);
+    return _StoreContext(ByteSize, RegClass::GPR, Value, Offset);
   }
   IRPair<IROp_StoreContext> _StoreContextFPR(OpSize ByteSize, Ref Value, uint32_t Offset) {
-    return _StoreContext(ByteSize, FPRClass, Value, Offset);
+    return _StoreContext(ByteSize, RegClass::FPR, Value, Offset);
   }
 
   IRPair<IROp_LoadContextIndexed> _LoadContextGPRIndexed(Ref Index, OpSize ByteSize, uint32_t BaseOffset, uint32_t Stride) {
-    return _LoadContextIndexed(Index, ByteSize, BaseOffset, Stride, GPRClass);
+    return _LoadContextIndexed(Index, ByteSize, BaseOffset, Stride, RegClass::GPR);
   }
   IRPair<IROp_LoadContextIndexed> _LoadContextFPRIndexed(Ref Index, OpSize ByteSize, uint32_t BaseOffset, uint32_t Stride) {
-    return _LoadContextIndexed(Index, ByteSize, BaseOffset, Stride, FPRClass);
+    return _LoadContextIndexed(Index, ByteSize, BaseOffset, Stride, RegClass::FPR);
   }
   IRPair<IROp_StoreContextIndexed> _StoreContextGPRIndexed(Ref Value, Ref Index, OpSize ByteSize, uint32_t BaseOffset, uint32_t Stride) {
-    return _StoreContextIndexed(Value, Index, ByteSize, BaseOffset, Stride, GPRClass);
+    return _StoreContextIndexed(Value, Index, ByteSize, BaseOffset, Stride, RegClass::GPR);
   }
   IRPair<IROp_StoreContextIndexed> _StoreContextFPRIndexed(Ref Value, Ref Index, OpSize ByteSize, uint32_t BaseOffset, uint32_t Stride) {
-    return _StoreContextIndexed(Value, Index, ByteSize, BaseOffset, Stride, FPRClass);
+    return _StoreContextIndexed(Value, Index, ByteSize, BaseOffset, Stride, RegClass::FPR);
   }
 
-  IRPair<IROp_LoadMem> _LoadMem(RegisterClassType Class, OpSize Size, Ref ssa0, OpSize Align = OpSize::i8Bit) {
+  IRPair<IROp_LoadMem> _LoadMem(RegClass Class, OpSize Size, Ref ssa0, OpSize Align = OpSize::i8Bit) {
     return _LoadMem(Class, Size, ssa0, Invalid(), Align, MemOffsetType::SXTX, 1);
   }
   IRPair<IROp_LoadMem> _LoadMemGPR(OpSize Size, Ref ssa0, OpSize Align = OpSize::i8Bit) {
-    return _LoadMem(GPRClass, Size, ssa0, Invalid(), Align, MemOffsetType::SXTX, 1);
+    return _LoadMem(RegClass::GPR, Size, ssa0, Invalid(), Align, MemOffsetType::SXTX, 1);
   }
   IRPair<IROp_LoadMem> _LoadMemGPR(OpSize Size, Ref Addr, Ref Offset, OpSize Align, MemOffsetType OffsetType, uint8_t OffsetScale) {
-    return _LoadMem(GPRClass, Size, Addr, Offset, Align, OffsetType, OffsetScale);
+    return _LoadMem(RegClass::GPR, Size, Addr, Offset, Align, OffsetType, OffsetScale);
   }
   IRPair<IROp_LoadMem> _LoadMemFPR(OpSize Size, Ref ssa0, OpSize Align = OpSize::i8Bit) {
-    return _LoadMem(FPRClass, Size, ssa0, Invalid(), Align, MemOffsetType::SXTX, 1);
+    return _LoadMem(RegClass::FPR, Size, ssa0, Invalid(), Align, MemOffsetType::SXTX, 1);
   }
   IRPair<IROp_LoadMem> _LoadMemFPR(OpSize Size, Ref Addr, Ref Offset, OpSize Align, MemOffsetType OffsetType, uint8_t OffsetScale) {
-    return _LoadMem(FPRClass, Size, Addr, Offset, Align, OffsetType, OffsetScale);
+    return _LoadMem(RegClass::FPR, Size, Addr, Offset, Align, OffsetType, OffsetScale);
   }
-  IRPair<IROp_StoreMem> _StoreMem(RegisterClassType Class, OpSize Size, Ref Addr, Ref Value, OpSize Align = OpSize::i8Bit) {
+  IRPair<IROp_StoreMem> _StoreMem(RegClass Class, OpSize Size, Ref Addr, Ref Value, OpSize Align = OpSize::i8Bit) {
     return _StoreMem(Class, Size, Value, Addr, Invalid(), Align, MemOffsetType::SXTX, 1);
   }
   IRPair<IROp_StoreMem> _StoreMemGPR(OpSize Size, Ref Addr, Ref Value, OpSize Align = OpSize::i8Bit) {
-    return _StoreMem(GPRClass, Size, Value, Addr, Invalid(), Align, MemOffsetType::SXTX, 1);
+    return _StoreMem(RegClass::GPR, Size, Value, Addr, Invalid(), Align, MemOffsetType::SXTX, 1);
   }
   IRPair<IROp_StoreMem> _StoreMemGPR(OpSize Size, Ref Value, Ref Addr, Ref Offset, OpSize Align, MemOffsetType OffsetType, uint8_t OffsetScale) {
-    return _StoreMem(GPRClass, Size, Value, Addr, Offset, Align, OffsetType, OffsetScale);
+    return _StoreMem(RegClass::GPR, Size, Value, Addr, Offset, Align, OffsetType, OffsetScale);
   }
   IRPair<IROp_StoreMem> _StoreMemFPR(OpSize Size, Ref Addr, Ref Value, OpSize Align = OpSize::i8Bit) {
-    return _StoreMem(FPRClass, Size, Value, Addr, Invalid(), Align, MemOffsetType::SXTX, 1);
+    return _StoreMem(RegClass::FPR, Size, Value, Addr, Invalid(), Align, MemOffsetType::SXTX, 1);
   }
   IRPair<IROp_StoreMem> _StoreMemFPR(OpSize Size, Ref Value, Ref Addr, Ref Offset, OpSize Align, MemOffsetType OffsetType, uint8_t OffsetScale) {
-    return _StoreMem(FPRClass, Size, Value, Addr, Offset, Align, OffsetType, OffsetScale);
+    return _StoreMem(RegClass::FPR, Size, Value, Addr, Offset, Align, OffsetType, OffsetScale);
   }
 
   IRPair<IROp_StoreMemPair> _StoreMemPairGPR(OpSize Size, Ref Value1, Ref Value2, Ref Addr, uint32_t Offset) {
-    return _StoreMemPair(GPRClass, Size, Value1, Value2, Addr, Offset);
+    return _StoreMemPair(RegClass::GPR, Size, Value1, Value2, Addr, Offset);
   }
   IRPair<IROp_StoreMemPair> _StoreMemPairFPR(OpSize Size, Ref Value1, Ref Value2, Ref Addr, uint32_t Offset) {
-    return _StoreMemPair(FPRClass, Size, Value1, Value2, Addr, Offset);
+    return _StoreMemPair(RegClass::FPR, Size, Value1, Value2, Addr, Offset);
   }
 
   IRPair<IROp_Select> Select01(FEXCore::IR::OpSize CompareSize, CondClass Cond, OrderedNode* Cmp1, OrderedNode* Cmp2) {
@@ -308,7 +308,7 @@ public:
   }
 
   /**  @} */
-  FEXCore::IR::RegisterClassType WalkFindRegClass(OrderedNodeWrapper ssa) {
+  RegClass WalkFindRegClass(OrderedNodeWrapper ssa) {
     Ref RealNode = ssa.GetNode(DualListData.ListBegin());
     return WalkFindRegClass(RealNode);
   }

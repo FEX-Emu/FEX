@@ -431,17 +431,6 @@ static_assert(sizeof(OrderedNode) == (sizeof(OrderedNodeHeader) + 2 * sizeof(uin
 //  };
 using Ref = OrderedNode*;
 
-struct FEX_PACKED RegisterClassType final {
-  using value_type = uint32_t;
-
-  value_type Val;
-  [[nodiscard]] constexpr operator value_type() const {
-    return Val;
-  }
-  [[nodiscard]]
-  friend constexpr bool operator==(const RegisterClassType&, const RegisterClassType&) = default;
-};
-
 /* This iterator can be used to step though nodes.
  * Due to how our IR is laid out, this can be used to either step
  * though the CodeBlocks or though the code within a single block.
@@ -727,12 +716,12 @@ struct fmt::formatter<FEXCore::IR::NodeID> : fmt::formatter<FEXCore::IR::NodeID:
 };
 
 template<>
-struct fmt::formatter<FEXCore::IR::RegisterClassType> : fmt::formatter<FEXCore::IR::RegisterClassType::value_type> {
-  using Base = fmt::formatter<FEXCore::IR::RegisterClassType::value_type>;
+struct fmt::formatter<FEXCore::IR::RegClass> : fmt::formatter<std::underlying_type_t<FEXCore::IR::RegClass>> {
+  using Base = fmt::formatter<std::underlying_type_t<FEXCore::IR::RegClass>>;
 
   template<typename FormatContext>
-  auto format(const FEXCore::IR::RegisterClassType& Class, FormatContext& ctx) const {
-    return Base::format(Class.Val, ctx);
+  auto format(const FEXCore::IR::RegClass& Class, FormatContext& ctx) const {
+    return Base::format(FEXCore::ToUnderlying(Class), ctx);
   }
 };
 

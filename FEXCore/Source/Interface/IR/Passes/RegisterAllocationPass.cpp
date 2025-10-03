@@ -12,6 +12,7 @@ $end_info$
 #include "Interface/IR/Passes.h"
 #include "Interface/Core/CPUID.h"
 #include <FEXCore/IR/IR.h>
+#include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/fextl/vector.h>
@@ -22,7 +23,7 @@ using namespace FEXCore;
 
 namespace FEXCore::IR {
 namespace {
-  struct RegisterClass {
+  struct RegisterClassData {
     uint32_t Available;
     uint32_t Count;
 
@@ -32,9 +33,9 @@ namespace {
     Ref RegToSSA[32];
   };
 
-  IR::RegisterClassType GetRegClassFromNode(IR::IRListView* IR, IR::IROp_Header* IROp) {
-    IR::RegisterClassType Class = IR::GetRegClass(IROp->Op);
-    if (Class != IR::ComplexClass) {
+  IR::RegClass GetRegClassFromNode(IR::IRListView* IR, IR::IROp_Header* IROp) {
+    const auto Class = IR::GetRegClass(IROp->Op);
+    if (Class != IR::RegClass::Complex) {
       return Class;
     }
 
@@ -46,7 +47,7 @@ namespace {
     case IR::OP_LOADMEM:
     case IR::OP_LOADMEMTSO: return IROp->C<IR::IROp_LoadMem>()->Class;
     case IR::OP_FILLREGISTER: return IROp->C<IR::IROp_FillRegister>()->Class;
-    default: return IR::InvalidClass;
+    default: return IR::RegClass::Invalid;
     }
   };
 } // Anonymous namespace
@@ -56,11 +57,11 @@ public:
   explicit ConstrainedRAPass(const FEXCore::CPUIDEmu* CPUID)
     : CPUID {CPUID} {}
   void Run(IREmitter* IREmit) override;
-  void AddRegisters(IR::RegisterClassType Class, uint32_t RegisterCount) override;
+  void AddRegisters(IR::RegClass Class, uint32_t RegisterCount) override;
   bool TryPostRAMerge(Ref LastNode, Ref CodeNode, IROp_Header* IROp);
 
 private:
-  RegisterClass Classes[IR::NumClasses];
+  RegisterClassData Classes[IR::NumClasses];
 
   IREmitter* IREmit;
   IRListView* IR;
@@ -101,7 +102,7 @@ private:
     uint32_t SlotPlusOne = SpillSlots[IR->GetID(Node).Value];
     LOGMAN_THROW_A_FMT(SlotPlusOne >= 1, "Node must have been spilled");
 
-    RegisterClassType RegClass = GetRegClassFromNode(IR, IROp);
+    const auto RegClass = GetRegClassFromNode(IR, IROp);
     return IREmit->_FillRegister(IROp->Size, IROp->ElementSize, SlotPlusOne - 1, RegClass);
   };
 
@@ -120,7 +121,7 @@ private:
     return Op != OP_INLINECONSTANT && Op != OP_INLINEENTRYPOINTOFFSET;
   };
 
-  RegisterClass* GetClass(PhysicalRegister Reg) {
+  RegisterClassData* GetClass(PhysicalRegister Reg) {
     return &Classes[Reg.Class];
   };
 
@@ -133,13 +134,13 @@ private:
     LOGMAN_THROW_A_FMT(ID < SSAToReg.size(), "Only old nodes looked up");
 
     PhysicalRegister Reg = SSAToReg[ID];
-    RegisterClass* Class = GetClass(Reg);
+    RegisterClassData* Class = GetClass(Reg);
 
     return (Class->Available & GetRegBits(Reg)) == 0 && Class->RegToSSA[Reg.Reg] == Node;
   };
 
   void FreeReg(PhysicalRegister Reg) {
-    RegisterClass* Class = GetClass(Reg);
+    RegisterClassData* Class = GetClass(Reg);
     uint32_t RegBits = GetRegBits(Reg);
 
     LOGMAN_THROW_A_FMT(!(Class->Available & RegBits), "Register double-free");
@@ -187,22 +188,22 @@ private:
   };
 
   PhysicalRegister DecodeSRAReg(const IROp_Header* IROp, Ref Node) {
-    uint8_t FlagOffset = Classes[GPRFixedClass.Val].Count - 2;
+    uint8_t FlagOffset = Classes[FEXCore::ToUnderlying(RegClass::GPRFixed)].Count - 2;
 
     if (IROp->Op == OP_STOREREGISTER) {
       return PhysicalRegister(Node);
     } else if (IROp->Op == OP_LOADPF || IROp->Op == OP_STOREPF) {
-      return PhysicalRegister {GPRFixedClass, FlagOffset};
+      return PhysicalRegister {RegClass::GPRFixed, FlagOffset};
     } else if (IROp->Op == OP_LOADAF || IROp->Op == OP_STOREAF) {
-      return PhysicalRegister {GPRFixedClass, (uint8_t)(FlagOffset + 1)};
+      return PhysicalRegister {RegClass::GPRFixed, uint8_t(FlagOffset + 1)};
     } else {
       const IROp_LoadRegister* Op = IROp->C<IR::IROp_LoadRegister>();
 
-      LOGMAN_THROW_A_FMT(Op->Class == GPRClass || Op->Class == FPRClass, "SRA classes");
-      if (Op->Class == FPRClass) {
-        return PhysicalRegister {FPRFixedClass, (uint8_t)Op->Reg};
+      LOGMAN_THROW_A_FMT(Op->Class == RegClass::GPR || Op->Class == RegClass::FPR, "SRA classes");
+      if (Op->Class == RegClass::FPR) {
+        return PhysicalRegister {RegClass::FPRFixed, uint8_t(Op->Reg)};
       } else {
-        return PhysicalRegister {GPRFixedClass, (uint8_t)Op->Reg};
+        return PhysicalRegister {RegClass::GPRFixed, uint8_t(Op->Reg)};
       }
     }
   };
@@ -267,7 +268,7 @@ private:
     SourceIndex = SourcesNextUses.size();
   }
 
-  void SpillReg(RegisterClass* Class, IROp_CodeBlock* Block, IROp_Header* Exclude) {
+  void SpillReg(RegisterClassData* Class, IROp_CodeBlock* Block, IROp_Header* Exclude) {
     // We're about to use next-use information, so calculate it.
     if (!AnySpilled) {
       CalculateNextUses(Block, Exclude);
@@ -318,7 +319,7 @@ private:
     // If we already spilled the Candidate, we don't need to spill again.
     // Similarly, if we can rematerialize the instruction, we don't spill it.
     if (!Spilled && Header->Op != OP_CONSTANT) {
-      LOGMAN_THROW_A_FMT(Reg.Class == GetRegClassFromNode(IR, Header), "Consistent");
+      LOGMAN_THROW_A_FMT(Reg.AsRegClass() == GetRegClassFromNode(IR, Header), "Consistent");
 
       // SpillSlots allocation is deferred.
       if (SpillSlots.empty()) {
@@ -329,7 +330,7 @@ private:
       uint32_t Slot = IR->GetHeader()->SpillSlots++;
 
       // We must map here in case we're spilling something we shuffled.
-      auto SpillOp = IREmit->_SpillRegister(OrderedNodeWrapper::FromImmediate(Reg.Raw), Slot, RegisterClassType {Reg.Class});
+      auto SpillOp = IREmit->_SpillRegister(OrderedNodeWrapper::FromImmediate(Reg.Raw), Slot, Reg.AsRegClass());
       SpillOp.first->Header.Size = Header->Size;
       SpillOp.first->Header.ElementSize = Header->ElementSize;
       SpillSlots[Value] = Slot + 1;
@@ -341,7 +342,7 @@ private:
   };
 
   void RemapReg(Ref Node, PhysicalRegister Reg) {
-    RegisterClass* Class = GetClass(Reg);
+    RegisterClassData* Class = GetClass(Reg);
     Class->RegToSSA[Reg.Reg] = Node;
 
     uint32_t Index = IR->GetID(Node).Value;
@@ -352,7 +353,7 @@ private:
 
   // Record a given assignment of register Reg to Node.
   void SetReg(Ref Node, PhysicalRegister Reg) {
-    RegisterClass* Class = GetClass(Reg);
+    RegisterClassData* Class = GetClass(Reg);
     uint32_t RegBits = GetRegBits(Reg);
 
     LOGMAN_THROW_A_FMT((Class->Available & RegBits) == RegBits, "Precondition");
@@ -370,7 +371,7 @@ private:
     // Prioritize preferred registers.
     if (Node < PreferredReg.size()) {
       if (PhysicalRegister Reg = PreferredReg[Node]; !Reg.IsInvalid()) {
-        RegisterClass* Class = GetClass(Reg);
+        RegisterClassData* Class = GetClass(Reg);
         uint32_t RegBits = GetRegBits(Reg);
 
         if ((Class->Available & RegBits) == RegBits) {
@@ -383,10 +384,10 @@ private:
     // Try to handle tied registers. This can fail, the JIT will insert moves.
     if (int TiedIdx = IR::TiedSource(IROp->Op); TiedIdx >= 0) {
       auto Reg = PhysicalRegister(IROp->Args[TiedIdx]);
-      RegisterClass* Class = GetClass(Reg);
+      RegisterClassData* Class = GetClass(Reg);
       uint32_t RegBits = GetRegBits(Reg);
 
-      if (Reg.Class != GPRFixedClass && Reg.Class != FPRFixedClass && (Class->Available & RegBits) == RegBits) {
+      if (Reg.AsRegClass() != RegClass::GPRFixed && Reg.AsRegClass() != RegClass::FPRFixed && (Class->Available & RegBits) == RegBits) {
         SetReg(CodeNode, Reg);
         return;
       }
@@ -394,7 +395,7 @@ private:
 
     // Try to coalesce reserved pairs. Just a heuristic to remove some moves.
     if (IROp->Op == OP_ALLOCATEGPR && IROp->C<IROp_AllocateGPR>()->ForPair) {
-      uint32_t Available = Classes[GPRClass].Available;
+      uint32_t Available = Classes[FEXCore::ToUnderlying(RegClass::GPR)].Available;
 
       // Only choose base register R if R and R + 1 are both free
       Available &= (Available >> 1);
@@ -405,20 +406,20 @@ private:
 
       if (Available) {
         unsigned Reg = std::countr_zero(Available);
-        SetReg(CodeNode, PhysicalRegister(GPRClass, Reg));
+        SetReg(CodeNode, PhysicalRegister(RegClass::GPR, Reg));
         return;
       }
     } else if (IROp->Op == OP_ALLOCATEGPRAFTER) {
-      uint32_t Available = Classes[GPRClass].Available;
+      uint32_t Available = Classes[FEXCore::ToUnderlying(RegClass::GPR)].Available;
       auto After = PhysicalRegister(IROp->Args[0]);
       if ((After.Reg & 1) == 0 && Available & (1ull << (After.Reg + 1))) {
-        SetReg(CodeNode, PhysicalRegister(GPRClass, After.Reg + 1));
+        SetReg(CodeNode, PhysicalRegister(RegClass::GPR, After.Reg + 1));
         return;
       }
     }
 
-    RegisterClassType ClassType = GetRegClassFromNode(IR, IROp);
-    RegisterClass* Class = &Classes[ClassType];
+    RegClass ClassType = GetRegClassFromNode(IR, IROp);
+    RegisterClassData* Class = &Classes[FEXCore::ToUnderlying(ClassType)];
 
     // Spill to make room in the register file.
     if (!Class->Available) {
@@ -433,10 +434,10 @@ private:
   };
 };
 
-void ConstrainedRAPass::AddRegisters(IR::RegisterClassType Class, uint32_t RegisterCount) {
+void ConstrainedRAPass::AddRegisters(IR::RegClass Class, uint32_t RegisterCount) {
   LOGMAN_THROW_A_FMT(RegisterCount <= 31, "Up to 31 regs supported");
 
-  Classes[Class].Count = RegisterCount;
+  Classes[FEXCore::ToUnderlying(Class)].Count = RegisterCount;
 }
 
 inline bool KillMove(IROp_Header* LastOp, IROp_Header* IROp, Ref LastNode, Ref CodeNode) {
@@ -663,7 +664,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
       // Static registers must be consistent at SRA load/store. Evict to ensure.
       if (auto Node = DecodeSRANode(IROp, CodeNode); Node != nullptr) {
         auto Reg = DecodeSRAReg(IROp, CodeNode);
-        RegisterClass* Class = &Classes[Reg.Class];
+        RegisterClassData* Class = &Classes[Reg.Class];
 
         if (!(Class->Available & (1u << Reg.Reg))) {
           Ref Old = Class->RegToSSA[Reg.Reg];
@@ -678,7 +679,7 @@ void ConstrainedRAPass::Run(IREmitter* IREmit_) {
 
             Ref Copy;
 
-            if (Reg.Class == FPRFixedClass) {
+            if (Reg.AsRegClass() == RegClass::FPRFixed) {
               IROp_Header* Header = IR->GetOp<IROp_Header>(Old);
               Copy = IREmit->_VMov(Header->Size, OrderedNodeWrapper::FromImmediate(Reg.Raw));
             } else {

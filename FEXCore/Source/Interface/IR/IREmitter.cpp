@@ -33,14 +33,14 @@ bool IsBlockExit(FEXCore::IR::IROps Op) {
   }
 }
 
-FEXCore::IR::RegisterClassType IREmitter::WalkFindRegClass(Ref Node) {
+RegClass IREmitter::WalkFindRegClass(Ref Node) {
   auto Class = GetOpRegClass(Node);
   switch (Class) {
-  case GPRClass:
-  case FPRClass:
-  case GPRFixedClass:
-  case FPRFixedClass:
-  case InvalidClass: return Class;
+  case RegClass::GPR:
+  case RegClass::FPR:
+  case RegClass::GPRFixed:
+  case RegClass::FPRFixed:
+  case RegClass::Invalid: return Class;
   default: break;
   }
 
@@ -82,7 +82,7 @@ FEXCore::IR::RegisterClassType IREmitter::WalkFindRegClass(Ref Node) {
   }
   default: LOGMAN_MSG_A_FMT("Unhandled op type: {} {} in argument class validation", ToUnderlying(IROp->Op), GetOpName(Node)); break;
   }
-  return InvalidClass;
+  return RegClass::Invalid;
 }
 
 void IREmitter::ResetWorkingList() {

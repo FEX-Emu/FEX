@@ -95,11 +95,13 @@ private:
 
   [[nodiscard]]
   ARMEmitter::Register GetReg(IR::PhysicalRegister Reg) const {
-    LOGMAN_THROW_A_FMT(Reg.Class == IR::GPRFixedClass.Val || Reg.Class == IR::GPRClass.Val, "Unexpected Class: {}", Reg.Class);
+    const auto RegClass = Reg.AsRegClass();
 
-    if (Reg.Class == IR::GPRFixedClass.Val) {
+    LOGMAN_THROW_A_FMT(RegClass == IR::RegClass::GPRFixed || RegClass == IR::RegClass::GPR, "Unexpected Class: {}", Reg.Class);
+
+    if (RegClass == IR::RegClass::GPRFixed) {
       return StaticRegisters[Reg.Reg];
-    } else if (Reg.Class == IR::GPRClass.Val) {
+    } else if (RegClass == IR::RegClass::GPR) {
       return GeneralRegisters[Reg.Reg];
     }
 
@@ -118,11 +120,13 @@ private:
 
   [[nodiscard]]
   ARMEmitter::VRegister GetVReg(IR::PhysicalRegister Reg) const {
-    LOGMAN_THROW_A_FMT(Reg.Class == IR::FPRFixedClass.Val || Reg.Class == IR::FPRClass.Val, "Unexpected Class: {}", Reg.Class);
+    const auto RegClass = Reg.AsRegClass();
 
-    if (Reg.Class == IR::FPRFixedClass.Val) {
+    LOGMAN_THROW_A_FMT(RegClass == IR::RegClass::FPRFixed || RegClass == IR::RegClass::FPR, "Unexpected Class: {}", Reg.Class);
+
+    if (RegClass == IR::RegClass::FPRFixed) {
       return StaticFPRegisters[Reg.Reg];
-    } else if (Reg.Class == IR::FPRClass.Val) {
+    } else if (RegClass == IR::RegClass::FPR) {
       return GeneralFPRegisters[Reg.Reg];
     }
 
@@ -140,8 +144,8 @@ private:
   }
 
   [[nodiscard]]
-  static IR::RegisterClassType GetRegClass(IR::Ref Node) {
-    return IR::RegisterClassType {IR::PhysicalRegister(Node).Class};
+  static IR::RegClass GetRegClass(IR::Ref Node) {
+    return IR::PhysicalRegister(Node).AsRegClass();
   }
 
   [[nodiscard]]
@@ -266,13 +270,13 @@ private:
   }
 
   [[nodiscard]]
-  static bool IsFPR(IR::RegisterClassType Class) {
-    return Class == IR::FPRClass || Class == IR::FPRFixedClass;
+  static bool IsFPR(IR::RegClass Class) {
+    return Class == IR::RegClass::FPR || Class == IR::RegClass::FPRFixed;
   }
 
   [[nodiscard]]
-  static bool IsGPR(IR::RegisterClassType Class) {
-    return Class == IR::GPRClass || Class == IR::GPRFixedClass;
+  static bool IsGPR(IR::RegClass Class) {
+    return Class == IR::RegClass::GPR || Class == IR::RegClass::GPRFixed;
   }
 
   [[nodiscard]]
@@ -287,12 +291,12 @@ private:
 
   [[nodiscard]]
   static bool IsGPR(IR::OrderedNodeWrapper Wrap) {
-    return IsGPR(IR::RegisterClassType {IR::PhysicalRegister(Wrap).Class});
+    return IsGPR(IR::PhysicalRegister(Wrap).AsRegClass());
   }
 
   [[nodiscard]]
   static bool IsFPR(IR::OrderedNodeWrapper Wrap) {
-    return IsFPR(IR::RegisterClassType {IR::PhysicalRegister(Wrap).Class});
+    return IsFPR(IR::PhysicalRegister(Wrap).AsRegClass());
   }
 
   [[nodiscard]]
