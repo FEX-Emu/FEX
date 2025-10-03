@@ -799,27 +799,43 @@
       ]
     },
     "extrq xmm0, 64, 0": {
-      "ExpectedInstructionCount": 7,
-      "Skip": "Yes",
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "SSE4a",
         "0x66 0x0f 0x78"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "mov x20, #0xffffffffffffffff",
+        "mov v2.d[0], x20",
+        "and v16.16b, v16.16b, v2.16b"
       ]
     },
     "extrq xmm0, 32, 32": {
-      "ExpectedInstructionCount": 7,
-      "Skip": "Yes",
+      "ExpectedInstructionCount": 5,
       "Comment": [
         "SSE4a",
         "0x66 0x0f 0x78"
+      ],
+      "ExpectedArm64ASM": [
+        "ushr v2.2d, v16.2d, #32",
+        "movi v3.2d, #0x0",
+        "mov w20, #0xffffffff",
+        "mov v3.d[0], x20",
+        "and v16.16b, v2.16b, v3.16b"
       ]
     },
     "extrq xmm0, 0, 0": {
-      "ExpectedInstructionCount": 7,
-      "Skip": "Yes",
+      "ExpectedInstructionCount": 4,
       "Comment": [
         "SSE4a",
         "0x66 0x0f 0x78"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "mov x20, #0xffffffffffffffff",
+        "mov v2.d[0], x20",
+        "and v16.16b, v16.16b, v2.16b"
       ]
     },
     "extrq xmm0, xmm1": {
