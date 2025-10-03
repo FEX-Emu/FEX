@@ -28,7 +28,7 @@ class OrderedNode;
 Ref OpDispatchBuilder::GetX87Top() {
   // Yes, we are storing 3 bits in a single flag register.
   // Deal with it
-  return _LoadContext(OpSize::i8Bit, GPRClass, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC);
+  return _LoadContextGPR(OpSize::i8Bit, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC);
 }
 
 void OpDispatchBuilder::SetX87FTW(Ref FTW) {
@@ -52,18 +52,18 @@ void OpDispatchBuilder::SetX87FTW(Ref FTW) {
   FTW = _Orlshr(OpSize::i32Bit, FTW, FTW, 4);
 
   // ...and that's it. StoreContext implicitly does the final masking.
-  _StoreContext(OpSize::i8Bit, GPRClass, FTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+  _StoreContextGPR(OpSize::i8Bit, FTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
 }
 
 void OpDispatchBuilder::SetX87Top(Ref Value) {
-  _StoreContext(OpSize::i8Bit, GPRClass, Value, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC);
+  _StoreContextGPR(OpSize::i8Bit, Value, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC);
 }
 
 // Float LoaD operation with memory operand
 void OpDispatchBuilder::FLD(OpcodeArgs, IR::OpSize Width) {
   const auto ReadWidth = (Width == OpSize::f80Bit) ? OpSize::i128Bit : Width;
 
-  Ref Data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], Width, Op->Flags);
+  Ref Data = LoadSourceFPR_WithOpSize(Op, Op->Src[0], Width, Op->Flags);
   Ref ConvertedData = Data;
   // Convert to 80bit float
   if (Width == OpSize::i32Bit || Width == OpSize::i64Bit) {
@@ -79,14 +79,14 @@ void OpDispatchBuilder::FLDFromStack(OpcodeArgs) {
 
 void OpDispatchBuilder::FBLD(OpcodeArgs) {
   // Read from memory
-  Ref Data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], OpSize::f80Bit, Op->Flags);
+  Ref Data = LoadSourceFPR_WithOpSize(Op, Op->Src[0], OpSize::f80Bit, Op->Flags);
   Ref ConvertedData = _F80BCDLoad(Data);
   _PushStack(ConvertedData, Data, OpSize::i128Bit, true);
 }
 
 void OpDispatchBuilder::FBSTP(OpcodeArgs) {
   Ref converted = _F80BCDStore(_ReadStackValue(0));
-  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, converted, OpSize::f80Bit, OpSize::i8Bit);
+  StoreResultFPR_WithOpSize(Op, Op->Dest, converted, OpSize::f80Bit, OpSize::i8Bit);
   _PopStackDestroy();
 }
 
@@ -99,7 +99,7 @@ void OpDispatchBuilder::FLD_Const(OpcodeArgs, NamedVectorConstant K) {
 void OpDispatchBuilder::FILD(OpcodeArgs) {
   const auto ReadWidth = OpSizeFromSrc(Op);
   // Read from memory
-  Ref Data = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], ReadWidth, Op->Flags);
+  Ref Data = LoadSourceGPR_WithOpSize(Op, Op->Src[0], ReadWidth, Op->Flags);
 
   // Sign extend to 64bits
   if (ReadWidth != OpSize::i64Bit) {
@@ -180,7 +180,7 @@ void OpDispatchBuilder::FIST(OpcodeArgs, bool Truncate) {
 
   Data = _F80CVTInt(Size, Data, Truncate);
 
-  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Data, Size, OpSize::i8Bit);
+  StoreResultGPR_WithOpSize(Op, Op->Dest, Data, Size, OpSize::i8Bit);
 
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
     _PopStackDestroy();
@@ -206,10 +206,10 @@ void OpDispatchBuilder::FADD(OpcodeArgs, IR::OpSize Width, bool Integer, OpDispa
   // We have one memory argument
   Ref Arg {};
   if (Integer) {
-    Arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+    Arg = LoadSourceGPR(Op, Op->Src[0], Op->Flags);
     Arg = _F80CVTToInt(Arg, Width);
   } else {
-    Arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+    Arg = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
     Arg = _F80CVTTo(Arg, Width);
   }
 
@@ -236,10 +236,10 @@ void OpDispatchBuilder::FMUL(OpcodeArgs, IR::OpSize Width, bool Integer, OpDispa
   // We have one memory argument
   Ref arg {};
   if (Integer) {
-    arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+    arg = LoadSourceGPR(Op, Op->Src[0], Op->Flags);
     arg = _F80CVTToInt(arg, Width);
   } else {
-    arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+    arg = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
     arg = _F80CVTTo(arg, Width);
   }
 
@@ -273,10 +273,10 @@ void OpDispatchBuilder::FDIV(OpcodeArgs, IR::OpSize Width, bool Integer, bool Re
   // We have one memory argument
   Ref arg {};
   if (Integer) {
-    arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+    arg = LoadSourceGPR(Op, Op->Src[0], Op->Flags);
     arg = _F80CVTToInt(arg, Width);
   } else {
-    arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+    arg = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
     arg = _F80CVTTo(arg, Width);
   }
 
@@ -314,10 +314,10 @@ void OpDispatchBuilder::FSUB(OpcodeArgs, IR::OpSize Width, bool Integer, bool Re
   // We have one memory argument
   Ref Arg {};
   if (Integer) {
-    Arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+    Arg = LoadSourceGPR(Op, Op->Src[0], Op->Flags);
     Arg = _F80CVTToInt(Arg, Width);
   } else {
-    Arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+    Arg = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
     Arg = _F80CVTTo(Arg, Width);
   }
 
@@ -340,7 +340,7 @@ Ref OpDispatchBuilder::GetX87FTW_Helper() {
   // bytes, we use the well-known bit twiddling algorithm:
   //
   // https://graphics.stanford.edu/~seander/bithacks.html#InterleaveBMN
-  Ref X = _LoadContext(OpSize::i8Bit, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+  Ref X = _LoadContextGPR(OpSize::i8Bit, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
   X = _Orlshl(OpSize::i32Bit, X, X, 4);
   X = _And(OpSize::i32Bit, X, Constant(0x0f0f0f0f));
   X = _Orlshl(OpSize::i32Bit, X, X, 2);
@@ -381,41 +381,41 @@ void OpDispatchBuilder::X87FNSTENV(OpcodeArgs) {
   _SyncStackToSlow();
 
   const auto Size = OpSizeFromSrc(Op);
-  Ref Mem = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
+  Ref Mem = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.LoadData = false});
   Mem = AppendSegmentOffset(Mem, Op->Flags);
 
   {
-    auto FCW = _LoadContext(OpSize::i16Bit, GPRClass, offsetof(FEXCore::Core::CPUState, FCW));
-    _StoreMem(GPRClass, Size, Mem, FCW, Size);
+    auto FCW = _LoadContextGPR(OpSize::i16Bit, offsetof(FEXCore::Core::CPUState, FCW));
+    _StoreMemGPR(Size, Mem, FCW, Size);
   }
 
-  { _StoreMem(GPRClass, Size, ReconstructFSW_Helper(), Mem, Constant(IR::OpSizeToSize(Size) * 1), Size, MemOffsetType::SXTX, 1); }
+  { _StoreMemGPR(Size, ReconstructFSW_Helper(), Mem, Constant(IR::OpSizeToSize(Size) * 1), Size, MemOffsetType::SXTX, 1); }
 
   auto ZeroConst = Constant(0);
 
   {
     // FTW
-    _StoreMem(GPRClass, Size, GetX87FTW_Helper(), Mem, Constant(IR::OpSizeToSize(Size) * 2), Size, MemOffsetType::SXTX, 1);
+    _StoreMemGPR(Size, GetX87FTW_Helper(), Mem, Constant(IR::OpSizeToSize(Size) * 2), Size, MemOffsetType::SXTX, 1);
   }
 
   {
     // Instruction Offset
-    _StoreMem(GPRClass, Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 3), Size, MemOffsetType::SXTX, 1);
+    _StoreMemGPR(Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 3), Size, MemOffsetType::SXTX, 1);
   }
 
   {
     // Instruction CS selector (+ Opcode)
-    _StoreMem(GPRClass, Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 4), Size, MemOffsetType::SXTX, 1);
+    _StoreMemGPR(Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 4), Size, MemOffsetType::SXTX, 1);
   }
 
   {
     // Data pointer offset
-    _StoreMem(GPRClass, Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 5), Size, MemOffsetType::SXTX, 1);
+    _StoreMemGPR(Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 5), Size, MemOffsetType::SXTX, 1);
   }
 
   {
     // Data pointer selector
-    _StoreMem(GPRClass, Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 6), Size, MemOffsetType::SXTX, 1);
+    _StoreMemGPR(Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 6), Size, MemOffsetType::SXTX, 1);
   }
 }
 
@@ -441,20 +441,20 @@ void OpDispatchBuilder::X87LDENV(OpcodeArgs) {
   _StackForceSlow();
 
   const auto Size = OpSizeFromSrc(Op);
-  Ref Mem = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.LoadData = false});
+  Ref Mem = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.LoadData = false});
   Mem = AppendSegmentOffset(Mem, Op->Flags);
 
-  auto NewFCW = _LoadMem(GPRClass, OpSize::i16Bit, Mem, OpSize::i16Bit);
-  _StoreContext(OpSize::i16Bit, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
+  auto NewFCW = _LoadMemGPR(OpSize::i16Bit, Mem, OpSize::i16Bit);
+  _StoreContextGPR(OpSize::i16Bit, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
   Ref MemLocation = Add(OpSize::i64Bit, Mem, IR::OpSizeToSize(Size) * 1);
-  auto NewFSW = _LoadMem(GPRClass, Size, MemLocation, Size);
+  auto NewFSW = _LoadMemGPR(Size, MemLocation, Size);
   ReconstructX87StateFromFSW_Helper(NewFSW);
 
   {
     // FTW
     Ref MemLocation = Add(OpSize::i64Bit, Mem, IR::OpSizeToSize(Size) * 2);
-    SetX87FTW(_LoadMem(GPRClass, Size, MemLocation, Size));
+    SetX87FTW(_LoadMemGPR(Size, MemLocation, Size));
   }
 }
 
@@ -483,61 +483,61 @@ void OpDispatchBuilder::X87FNSAVE(OpcodeArgs) {
   Ref Mem = MakeSegmentAddress(Op, Op->Dest);
   Ref Top = GetX87Top();
   {
-    auto FCW = _LoadContext(OpSize::i16Bit, GPRClass, offsetof(FEXCore::Core::CPUState, FCW));
-    _StoreMem(GPRClass, Size, Mem, FCW, Size);
+    auto FCW = _LoadContextGPR(OpSize::i16Bit, offsetof(FEXCore::Core::CPUState, FCW));
+    _StoreMemGPR(Size, Mem, FCW, Size);
   }
 
-  { _StoreMem(GPRClass, Size, ReconstructFSW_Helper(), Mem, Constant(IR::OpSizeToSize(Size) * 1), Size, MemOffsetType::SXTX, 1); }
+  { _StoreMemGPR(Size, ReconstructFSW_Helper(), Mem, Constant(IR::OpSizeToSize(Size) * 1), Size, MemOffsetType::SXTX, 1); }
 
   auto ZeroConst = Constant(0);
 
   {
     // FTW
-    _StoreMem(GPRClass, Size, GetX87FTW_Helper(), Mem, Constant(IR::OpSizeToSize(Size) * 2), Size, MemOffsetType::SXTX, 1);
+    _StoreMemGPR(Size, GetX87FTW_Helper(), Mem, Constant(IR::OpSizeToSize(Size) * 2), Size, MemOffsetType::SXTX, 1);
   }
 
   {
     // Instruction Offset
-    _StoreMem(GPRClass, Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 3), Size, MemOffsetType::SXTX, 1);
+    _StoreMemGPR(Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 3), Size, MemOffsetType::SXTX, 1);
   }
 
   {
     // Instruction CS selector (+ Opcode)
-    _StoreMem(GPRClass, Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 4), Size, MemOffsetType::SXTX, 1);
+    _StoreMemGPR(Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 4), Size, MemOffsetType::SXTX, 1);
   }
 
   {
     // Data pointer offset
-    _StoreMem(GPRClass, Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 5), Size, MemOffsetType::SXTX, 1);
+    _StoreMemGPR(Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 5), Size, MemOffsetType::SXTX, 1);
   }
 
   {
     // Data pointer selector
-    _StoreMem(GPRClass, Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 6), Size, MemOffsetType::SXTX, 1);
+    _StoreMemGPR(Size, ZeroConst, Mem, Constant(IR::OpSizeToSize(Size) * 6), Size, MemOffsetType::SXTX, 1);
   }
 
   auto SevenConst = Constant(7);
   const auto LoadSize = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
   for (int i = 0; i < 7; ++i) {
-    Ref data = _LoadContextIndexed(Top, LoadSize, MMBaseOffset(), IR::OpSizeToSize(OpSize::i128Bit), FPRClass);
+    Ref data = _LoadContextFPRIndexed(Top, LoadSize, MMBaseOffset(), IR::OpSizeToSize(OpSize::i128Bit));
     if (ReducedPrecisionMode) {
       data = _F80CVTTo(data, OpSize::i64Bit);
     }
-    _StoreMem(FPRClass, OpSize::i128Bit, data, Mem, Constant((IR::OpSizeToSize(Size) * 7) + (10 * i)), OpSize::i8Bit, MemOffsetType::SXTX, 1);
+    _StoreMemFPR(OpSize::i128Bit, data, Mem, Constant((IR::OpSizeToSize(Size) * 7) + (10 * i)), OpSize::i8Bit, MemOffsetType::SXTX, 1);
     Top = _And(OpSize::i32Bit, Add(OpSize::i32Bit, Top, 1), SevenConst);
   }
 
   // The final st(7) needs a bit of special handling here
-  Ref data = _LoadContextIndexed(Top, LoadSize, MMBaseOffset(), IR::OpSizeToSize(OpSize::i128Bit), FPRClass);
+  Ref data = _LoadContextFPRIndexed(Top, LoadSize, MMBaseOffset(), IR::OpSizeToSize(OpSize::i128Bit));
   if (ReducedPrecisionMode) {
     data = _F80CVTTo(data, OpSize::i64Bit);
   }
   // ST7 broken in to two parts
   // Lower 64bits [63:0]
   // upper 16 bits [79:64]
-  _StoreMem(FPRClass, OpSize::i64Bit, data, Mem, Constant((IR::OpSizeToSize(Size) * 7) + (7 * 10)), OpSize::i8Bit, MemOffsetType::SXTX, 1);
+  _StoreMemFPR(OpSize::i64Bit, data, Mem, Constant((IR::OpSizeToSize(Size) * 7) + (7 * 10)), OpSize::i8Bit, MemOffsetType::SXTX, 1);
   auto topBytes = _VDupElement(OpSize::i128Bit, OpSize::i16Bit, data, 4);
-  _StoreMem(FPRClass, OpSize::i16Bit, topBytes, Mem, Constant((IR::OpSizeToSize(Size) * 7) + (7 * 10) + 8), OpSize::i8Bit, MemOffsetType::SXTX, 1);
+  _StoreMemFPR(OpSize::i16Bit, topBytes, Mem, Constant((IR::OpSizeToSize(Size) * 7) + (7 * 10) + 8), OpSize::i8Bit, MemOffsetType::SXTX, 1);
 
   // reset to default
   FNINIT(Op);
@@ -548,8 +548,8 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
   const auto Size = OpSizeFromSrc(Op);
   Ref Mem = MakeSegmentAddress(Op, Op->Src[0]);
 
-  auto NewFCW = _LoadMem(GPRClass, OpSize::i16Bit, Mem, OpSize::i16Bit);
-  _StoreContext(OpSize::i16Bit, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
+  auto NewFCW = _LoadMemGPR(OpSize::i16Bit, Mem, OpSize::i16Bit);
+  _StoreContextGPR(OpSize::i16Bit, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
   if (ReducedPrecisionMode) {
     // ignore the rounding precision, we're always 64-bit in F64.
     // extract rounding mode
@@ -561,11 +561,11 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
     _SetRoundingMode(roundingMode, false, roundingMode);
   }
 
-  auto NewFSW = _LoadMem(GPRClass, Size, Mem, Constant(IR::OpSizeToSize(Size) * 1), Size, MemOffsetType::SXTX, 1);
+  auto NewFSW = _LoadMemGPR(Size, Mem, Constant(IR::OpSizeToSize(Size) * 1), Size, MemOffsetType::SXTX, 1);
   Ref Top = ReconstructX87StateFromFSW_Helper(NewFSW);
   {
     // FTW
-    SetX87FTW(_LoadMem(GPRClass, Size, Mem, Constant(IR::OpSizeToSize(Size) * 2), Size, MemOffsetType::SXTX, 1));
+    SetX87FTW(_LoadMemGPR(Size, Mem, Constant(IR::OpSizeToSize(Size) * 2), Size, MemOffsetType::SXTX, 1));
   }
 
   auto SevenConst = Constant(7);
@@ -574,14 +574,14 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
   Ref Mask = _VLoadTwoGPRs(low, high);
   const auto StoreSize = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
   for (int i = 0; i < 7; ++i) {
-    Ref Reg = _LoadMem(FPRClass, OpSize::i128Bit, Mem, Constant((IR::OpSizeToSize(Size) * 7) + (10 * i)), OpSize::i8Bit, MemOffsetType::SXTX, 1);
+    Ref Reg = _LoadMemFPR(OpSize::i128Bit, Mem, Constant((IR::OpSizeToSize(Size) * 7) + (10 * i)), OpSize::i8Bit, MemOffsetType::SXTX, 1);
     // Mask off the top bits
     Reg = _VAnd(OpSize::i128Bit, OpSize::i128Bit, Reg, Mask);
     if (ReducedPrecisionMode) {
       // Convert to double precision
       Reg = _F80CVT(OpSize::i64Bit, Reg);
     }
-    _StoreContextIndexed(Reg, Top, StoreSize, MMBaseOffset(), IR::OpSizeToSize(OpSize::i128Bit), FPRClass);
+    _StoreContextFPRIndexed(Reg, Top, StoreSize, MMBaseOffset(), IR::OpSizeToSize(OpSize::i128Bit));
 
     Top = _And(OpSize::i32Bit, Add(OpSize::i32Bit, Top, 1), SevenConst);
   }
@@ -590,20 +590,19 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
   // ST7 broken in to two parts
   // Lower 64bits [63:0]
   // upper 16 bits [79:64]
-  Ref Reg = _LoadMem(FPRClass, OpSize::i64Bit, Mem, Constant((IR::OpSizeToSize(Size) * 7) + (10 * 7)), OpSize::i8Bit, MemOffsetType::SXTX, 1);
-  Ref RegHigh =
-    _LoadMem(FPRClass, OpSize::i16Bit, Mem, Constant((IR::OpSizeToSize(Size) * 7) + (10 * 7) + 8), OpSize::i8Bit, MemOffsetType::SXTX, 1);
+  Ref Reg = _LoadMemFPR(OpSize::i64Bit, Mem, Constant((IR::OpSizeToSize(Size) * 7) + (10 * 7)), OpSize::i8Bit, MemOffsetType::SXTX, 1);
+  Ref RegHigh = _LoadMemFPR(OpSize::i16Bit, Mem, Constant((IR::OpSizeToSize(Size) * 7) + (10 * 7) + 8), OpSize::i8Bit, MemOffsetType::SXTX, 1);
   Reg = _VInsElement(OpSize::i128Bit, OpSize::i16Bit, 4, 0, Reg, RegHigh);
   if (ReducedPrecisionMode) {
     Reg = _F80CVT(OpSize::i64Bit, Reg); // Convert to double precision
   }
-  _StoreContextIndexed(Reg, Top, StoreSize, MMBaseOffset(), IR::OpSizeToSize(OpSize::i128Bit), FPRClass);
+  _StoreContextFPRIndexed(Reg, Top, StoreSize, MMBaseOffset(), IR::OpSizeToSize(OpSize::i128Bit));
 }
 
 // Load / Store Control Word
 void OpDispatchBuilder::X87FSTCW(OpcodeArgs) {
-  auto FCW = _LoadContext(OpSize::i16Bit, GPRClass, offsetof(FEXCore::Core::CPUState, FCW));
-  StoreResult(GPRClass, Op, FCW, OpSize::iInvalid);
+  auto FCW = _LoadContextGPR(OpSize::i16Bit, offsetof(FEXCore::Core::CPUState, FCW));
+  StoreResultGPR(Op, FCW, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::X87FLDCW(OpcodeArgs) {
@@ -611,8 +610,8 @@ void OpDispatchBuilder::X87FLDCW(OpcodeArgs) {
   // to switch for now to slow mode whenever these are manually changed.
   // Remove the next line and try DF_04.asm in fast path.
   _StackForceSlow();
-  Ref NewFCW = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
-  _StoreContext(OpSize::i16Bit, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
+  Ref NewFCW = LoadSourceGPR(Op, Op->Src[0], Op->Flags);
+  _StoreContextGPR(OpSize::i16Bit, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 }
 
 void OpDispatchBuilder::FXCH(OpcodeArgs) {
@@ -648,10 +647,10 @@ void OpDispatchBuilder::FCOMI(OpcodeArgs, IR::OpSize Width, bool Integer, OpDisp
     if (Width == OpSize::i16Bit || Width == OpSize::i32Bit || Width == OpSize::i64Bit) {
       // Memory arg
       if (Integer) {
-        arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+        arg = LoadSourceGPR(Op, Op->Src[0], Op->Flags);
         b = _F80CVTToInt(arg, Width);
       } else {
-        arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+        arg = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
         b = _F80CVTTo(arg, Width);
       }
     } else {
@@ -767,7 +766,7 @@ Ref OpDispatchBuilder::ReconstructFSW_Helper(Ref T) {
 void OpDispatchBuilder::X87FNSTSW(OpcodeArgs) {
   Ref TopValue = _SyncStackToSlow();
   Ref StatusWord = ReconstructFSW_Helper(TopValue);
-  StoreResult(GPRClass, Op, StatusWord, OpSize::iInvalid);
+  StoreResultGPR(Op, StatusWord, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::FNCLEX(OpcodeArgs) {
@@ -786,12 +785,12 @@ void OpDispatchBuilder::FNINIT(OpcodeArgs) {
 
   // Init FCW to 0x037F
   auto NewFCW = Constant(0x037F);
-  _StoreContext(OpSize::i16Bit, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
+  _StoreContextGPR(OpSize::i16Bit, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
   // Set top to zero
   SetX87Top(Zero);
   // Tags all get marked as invalid
-  _StoreContext(OpSize::i8Bit, GPRClass, Zero, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+  _StoreContextGPR(OpSize::i8Bit, Zero, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
 
   // Reinits the simulated stack
   _InitStack();
