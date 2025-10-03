@@ -3,6 +3,7 @@
 
 // Header for various utilities related to operating with enums
 
+#include <FEXCore/fextl/fmt.h>
 #include <type_traits>
 
 namespace FEXCore {
@@ -52,6 +53,19 @@ namespace FEXCore {
   constexpr bool False(type key) noexcept {                          \
     using T = std::underlying_type_t<type>;                          \
     return static_cast<T>(key) == 0;                                 \
+  }
+
+// Macro that defines a fmt formatter for a reasonable case where an enum
+// is formatted as a purely integral type based on its underlying type.
+#define FEX_DEFINE_ENUM_FMT_PASSTHROUGH(type)                                  \
+  template<>                                                                   \
+  struct fmt::formatter<type> : fmt::formatter<std::underlying_type_t<type>> { \
+    using Base = fmt::formatter<std::underlying_type_t<type>>;                 \
+                                                                               \
+    template<typename FormatContext>                                           \
+    auto format(const type& Value, FormatContext& ctx) const {                 \
+      return Base::format(FEXCore::ToUnderlying(Value), ctx);                  \
+    }                                                                          \
   }
 
 // Equivalent to C++23's std::to_underlying.

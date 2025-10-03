@@ -715,42 +715,7 @@ struct fmt::formatter<FEXCore::IR::NodeID> : fmt::formatter<FEXCore::IR::NodeID:
   }
 };
 
-template<>
-struct fmt::formatter<FEXCore::IR::RegClass> : fmt::formatter<std::underlying_type_t<FEXCore::IR::RegClass>> {
-  using Base = fmt::formatter<std::underlying_type_t<FEXCore::IR::RegClass>>;
-
-  template<typename FormatContext>
-  auto format(const FEXCore::IR::RegClass& Class, FormatContext& ctx) const {
-    return Base::format(FEXCore::ToUnderlying(Class), ctx);
-  }
-};
-
-template<>
-struct fmt::formatter<FEXCore::IR::FenceType> : fmt::formatter<std::underlying_type_t<FEXCore::IR::FenceType>> {
-  using Base = fmt::formatter<std::underlying_type_t<FEXCore::IR::FenceType>>;
-
-  template<typename FormatContext>
-  auto format(const FEXCore::IR::FenceType& Fence, FormatContext& ctx) const {
-    return Base::format(FEXCore::ToUnderlying(Fence), ctx);
-  }
-};
-
-template<>
-struct fmt::formatter<FEXCore::IR::MemOffsetType> : fmt::formatter<std::underlying_type_t<FEXCore::IR::MemOffsetType>> {
-  using Base = fmt::formatter<std::underlying_type_t<FEXCore::IR::MemOffsetType>>;
-
-  template<typename FormatContext>
-  auto format(const FEXCore::IR::MemOffsetType& Type, FormatContext& ctx) const {
-    return Base::format(FEXCore::ToUnderlying(Type), ctx);
-  }
-};
-
-template<>
-struct fmt::formatter<FEXCore::IR::OpSize> : fmt::formatter<std::underlying_type_t<FEXCore::IR::OpSize>> {
-  using Base = fmt::formatter<std::underlying_type_t<FEXCore::IR::OpSize>>;
-
-  template<typename FormatContext>
-  auto format(const FEXCore::IR::OpSize& OpSize, FormatContext& ctx) const {
-    return Base::format(FEXCore::ToUnderlying(OpSize), ctx);
-  }
-};
+FEX_DEFINE_ENUM_FMT_PASSTHROUGH(FEXCore::IR::FenceType);
+FEX_DEFINE_ENUM_FMT_PASSTHROUGH(FEXCore::IR::MemOffsetType);
+FEX_DEFINE_ENUM_FMT_PASSTHROUGH(FEXCore::IR::OpSize);
+FEX_DEFINE_ENUM_FMT_PASSTHROUGH(FEXCore::IR::RegClass);
