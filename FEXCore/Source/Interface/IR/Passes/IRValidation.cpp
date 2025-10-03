@@ -93,11 +93,11 @@ void IRValidation::Run(IREmitter* IREmit) {
           // After RA, the destination needs to be assigned a register and class
           auto PhyReg = PhysicalRegister(CodeNode);
 
-          FEXCore::IR::RegisterClassType ExpectedClass = IR::GetRegClass(IROp->Op);
-          FEXCore::IR::RegisterClassType AssignedClass = FEXCore::IR::RegisterClassType {PhyReg.Class};
+          const auto ExpectedClass = IR::GetRegClass(IROp->Op);
+          const auto AssignedClass = PhyReg.AsRegClass();
 
           // If no register class was assigned
-          if (AssignedClass == IR::InvalidClass) {
+          if (AssignedClass == IR::RegClass::Invalid) {
             HadError |= true;
             Errors << "%" << ID << ": Had destination but with no register class assigned" << std::endl;
           }
@@ -109,10 +109,10 @@ void IRValidation::Run(IREmitter* IREmit) {
           }
 
           // Assigned class wasn't the expected class and it is a non-complex op
-          if (AssignedClass != ExpectedClass && ExpectedClass != IR::ComplexClass) {
+          if (AssignedClass != ExpectedClass && ExpectedClass != IR::RegClass::Complex) {
             HadWarning |= true;
-            Warnings << "%" << ID << ": Destination had register class " << AssignedClass.Val << " When register class "
-                     << ExpectedClass.Val << " Was expected" << std::endl;
+            Warnings << "%" << ID << ": Destination had register class " << uint32_t(AssignedClass) << " When register class "
+                     << uint32_t(ExpectedClass) << " Was expected" << std::endl;
           }
         }
       }

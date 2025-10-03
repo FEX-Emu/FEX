@@ -61,36 +61,36 @@ static void PrintArg(fextl::stringstream* out, const IRListView*, MemOffsetType 
   *out << Names[FEXCore::ToUnderlying(Arg)];
 }
 
-static void PrintArg(fextl::stringstream* out, const IRListView*, RegisterClassType Arg) {
-  if (Arg == GPRClass.Val) {
-    *out << "GPR";
-  } else if (Arg == GPRFixedClass.Val) {
-    *out << "GPRFixed";
-  } else if (Arg == FPRClass.Val) {
-    *out << "FPR";
-  } else if (Arg == FPRFixedClass.Val) {
-    *out << "FPRFixed";
-  } else {
-    *out << "Unknown Registerclass " << Arg;
-  }
+static void PrintArg(fextl::stringstream* out, const IRListView*, RegClass Arg) {
+  *out << [Arg] {
+    switch (Arg) {
+    case RegClass::Invalid: return "Invalid";
+    case RegClass::GPR: return "GPR";
+    case RegClass::GPRFixed: return "GPRFixed";
+    case RegClass::FPR: return "FPR";
+    case RegClass::FPRFixed: return "FPRFixed";
+    case RegClass::Complex: return "Complex";
+    }
+    return "<Unknown RegClass Type>";
+  }();
 }
 
 static void PrintArg(fextl::stringstream* out, const IRListView* IR, OrderedNodeWrapper Arg) {
   if (Arg.IsImmediate()) {
     auto PhyReg = PhysicalRegister(Arg);
 
-    switch (PhyReg.Class) {
-    case FEXCore::IR::GPRClass.Val: *out << "r"; break;
-    case FEXCore::IR::GPRFixedClass.Val: *out << "R"; break;
-    case FEXCore::IR::FPRClass.Val: *out << "v"; break;
-    case FEXCore::IR::FPRFixedClass.Val: *out << "V"; break;
-    case FEXCore::IR::ComplexClass.Val: *out << "c"; break;
-    case FEXCore::IR::InvalidClass.Val: *out << "invalid"; break;
+    switch (PhyReg.AsRegClass()) {
+    case RegClass::GPR: *out << "r"; break;
+    case RegClass::GPRFixed: *out << "R"; break;
+    case RegClass::FPR: *out << "v"; break;
+    case RegClass::FPRFixed: *out << "V"; break;
+    case RegClass::Complex: *out << "c"; break;
+    case RegClass::Invalid: *out << "invalid"; break;
     default: *out << "unknown"; break;
     }
 
-    if (PhyReg.Class != FEXCore::IR::InvalidClass.Val) {
-      *out << std::dec << (uint32_t)PhyReg.Reg;
+    if (PhyReg.AsRegClass() != RegClass::Invalid) {
+      *out << std::dec << uint32_t(PhyReg.Reg);
     }
 
     return;
@@ -397,17 +397,17 @@ void Dump(fextl::stringstream* out, const IRListView* IR) {
 
           auto PhyReg = PhysicalRegister(CodeNode);
           if (!PhyReg.IsInvalid()) {
-            switch (PhyReg.Class) {
-            case FEXCore::IR::GPRClass.Val: *out << "(r"; break;
-            case FEXCore::IR::GPRFixedClass.Val: *out << "(R"; break;
-            case FEXCore::IR::FPRClass.Val: *out << "(v"; break;
-            case FEXCore::IR::FPRFixedClass.Val: *out << "(V"; break;
-            case FEXCore::IR::ComplexClass.Val: *out << "(complex"; break;
-            case FEXCore::IR::InvalidClass.Val: *out << "(invalid"; break;
+            switch (PhyReg.AsRegClass()) {
+            case RegClass::GPR: *out << "(r"; break;
+            case RegClass::GPRFixed: *out << "(R"; break;
+            case RegClass::FPR: *out << "(v"; break;
+            case RegClass::FPRFixed: *out << "(V"; break;
+            case RegClass::Complex: *out << "(complex"; break;
+            case RegClass::Invalid: *out << "(invalid"; break;
             default: *out << "(unknown"; break;
             }
-            if (PhyReg.Class != FEXCore::IR::InvalidClass.Val) {
-              *out << std::dec << (uint32_t)PhyReg.Reg << ")";
+            if (PhyReg.AsRegClass() != RegClass::Invalid) {
+              *out << std::dec << uint32_t(PhyReg.Reg) << ")";
             } else {
               *out << ")";
             }

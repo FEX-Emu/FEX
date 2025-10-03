@@ -91,6 +91,14 @@
       "UXTW = 1,",
       "SXTW = 2,"
     ],
+    "class RegClass : uint32_t": [
+      "Invalid  = 0,",
+      "GPR      = 1,",
+      "GPRFixed = 2,",
+      "FPR      = 3,",
+      "FPRFixed = 4,",
+      "Complex  = 5,"
+    ],
     "class RoundMode : uint8_t": [
       "Nearest     = 0,",
       "NegInfinity = 1,",
@@ -100,14 +108,8 @@
     ]
   },
   "Defines": [
-    "constexpr FEXCore::IR::RegisterClassType InvalidClass {0}",
-    "constexpr FEXCore::IR::RegisterClassType GPRClass {1}",
-    "constexpr FEXCore::IR::RegisterClassType GPRFixedClass {2}",
-    "constexpr FEXCore::IR::RegisterClassType FPRClass {3}",
-    "constexpr FEXCore::IR::RegisterClassType FPRFixedClass {4}",
-    "constexpr FEXCore::IR::RegisterClassType ComplexClass {5}",
     "constexpr uint8_t NumClasses {6}",
-    "",
+
     "constexpr uint8_t FCMP_FLAG_EQ        = 0",
     "constexpr uint8_t FCMP_FLAG_LT        = 1",
     "constexpr uint8_t FCMP_FLAG_UNORDERED = 2",
@@ -134,7 +136,7 @@
     "GPR": "OrderedNode*",
     "FPR": "OrderedNode*",
     "FenceType": "FenceType",
-    "RegisterClass": "RegisterClassType",
+    "RegisterClass": "RegClass",
     "CondClass": "CondClass",
     "SyscallFlags": "FEXCore::IR::SyscallFlags",
     "SHA256Sum": "SHA256Sum",
@@ -409,8 +411,8 @@
                 ],
         "DestSize": "ByteSize",
         "EmitValidation": [
-          "($Class == GPRClass && (#ByteSize == IR::OpSize::i8Bit || #ByteSize == IR::OpSize::i16Bit || #ByteSize == IR::OpSize::i32Bit || #ByteSize == IR::OpSize::i64Bit)) || $Class == FPRClass",
-          "($Class == FPRClass && (#ByteSize == IR::OpSize::i8Bit || #ByteSize == IR::OpSize::i16Bit || #ByteSize == IR::OpSize::i32Bit || #ByteSize == IR::OpSize::i64Bit || #ByteSize == IR::OpSize::i128Bit || #ByteSize == IR::OpSize::i256Bit)) || $Class == GPRClass",
+          "($Class == RegClass::GPR && (#ByteSize == IR::OpSize::i8Bit || #ByteSize == IR::OpSize::i16Bit || #ByteSize == IR::OpSize::i32Bit || #ByteSize == IR::OpSize::i64Bit)) || $Class == RegClass::FPR",
+          "($Class == RegClass::FPR && (#ByteSize == IR::OpSize::i8Bit || #ByteSize == IR::OpSize::i16Bit || #ByteSize == IR::OpSize::i32Bit || #ByteSize == IR::OpSize::i64Bit || #ByteSize == IR::OpSize::i128Bit || #ByteSize == IR::OpSize::i256Bit)) || $Class == RegClass::GPR",
           "!($Offset >= offsetof(Core::CPUState, gregs[0]) && $Offset < offsetof(Core::CPUState, gregs[16])) && \"Can't LoadContext to GPR\"",
           "!($Offset >= offsetof(Core::CPUState, xmm.avx.data[0]) && $Offset < offsetof(Core::CPUState, xmm.avx.data[16])) && \"Can't LoadContext to XMM\""
         ]
@@ -423,8 +425,8 @@
         "HasSideEffects": true,
         "DestSize": "ByteSize",
         "EmitValidation": [
-          "($Class == GPRClass && (#ByteSize == IR::OpSize::i8Bit || #ByteSize == IR::OpSize::i16Bit || #ByteSize == IR::OpSize::i32Bit || #ByteSize == IR::OpSize::i64Bit)) || $Class == FPRClass",
-          "($Class == FPRClass && (#ByteSize == IR::OpSize::i8Bit || #ByteSize == IR::OpSize::i16Bit || #ByteSize == IR::OpSize::i32Bit || #ByteSize == IR::OpSize::i64Bit || #ByteSize == IR::OpSize::i128Bit || #ByteSize == IR::OpSize::i256Bit)) || $Class == GPRClass",
+          "($Class == RegClass::GPR && (#ByteSize == IR::OpSize::i8Bit || #ByteSize == IR::OpSize::i16Bit || #ByteSize == IR::OpSize::i32Bit || #ByteSize == IR::OpSize::i64Bit)) || $Class == RegClass::FPR",
+          "($Class == RegClass::FPR && (#ByteSize == IR::OpSize::i8Bit || #ByteSize == IR::OpSize::i16Bit || #ByteSize == IR::OpSize::i32Bit || #ByteSize == IR::OpSize::i64Bit || #ByteSize == IR::OpSize::i128Bit || #ByteSize == IR::OpSize::i256Bit)) || $Class == RegClass::GPR",
           "!($Offset >= offsetof(Core::CPUState, gregs[0]) && $Offset < offsetof(Core::CPUState, gregs[16])) && \"Can't LoadContext to GPR\"",
           "!($Offset >= offsetof(Core::CPUState, xmm.avx.data[0]) && $Offset < offsetof(Core::CPUState, xmm.avx.data[16])) && \"Can't LoadContext to XMM\""
         ]
@@ -440,8 +442,8 @@
         "HasSideEffects": true,
         "DestSize": "ByteSize",
         "EmitValidation": [
-          "($Class == GPRClass && (#ByteSize == IR::OpSize::i8Bit || #ByteSize == IR::OpSize::i16Bit || #ByteSize == IR::OpSize::i32Bit || #ByteSize == IR::OpSize::i64Bit)) || $Class == FPRClass",
-          "($Class == FPRClass && (#ByteSize == IR::OpSize::i8Bit || #ByteSize == IR::OpSize::i16Bit || #ByteSize == IR::OpSize::i32Bit || #ByteSize == IR::OpSize::i64Bit || #ByteSize == IR::OpSize::i128Bit || #ByteSize == IR::OpSize::i256Bit)) || $Class == GPRClass",
+          "($Class == RegClass::GPR && (#ByteSize == IR::OpSize::i8Bit || #ByteSize == IR::OpSize::i16Bit || #ByteSize == IR::OpSize::i32Bit || #ByteSize == IR::OpSize::i64Bit)) || $Class == RegClass::FPR",
+          "($Class == RegClass::FPR && (#ByteSize == IR::OpSize::i8Bit || #ByteSize == IR::OpSize::i16Bit || #ByteSize == IR::OpSize::i32Bit || #ByteSize == IR::OpSize::i64Bit || #ByteSize == IR::OpSize::i128Bit || #ByteSize == IR::OpSize::i256Bit)) || $Class == RegClass::GPR",
           "!($Offset >= offsetof(Core::CPUState, gregs[0]) && $Offset < offsetof(Core::CPUState, gregs[16])) && \"Can't StoreContext to GPR\"",
           "!($Offset >= offsetof(Core::CPUState, xmm.avx.data[0]) && $Offset < offsetof(Core::CPUState, xmm.avx.data[16])) && \"Can't StoreContext to XMM\""
         ]
@@ -458,8 +460,8 @@
         "EmitValidation": [
           "WalkFindRegClass($Value1) == $Class",
           "WalkFindRegClass($Value2) == $Class",
-          "($Class == GPRClass && (#ByteSize == IR::OpSize::i8Bit || #ByteSize == IR::OpSize::i16Bit || #ByteSize == IR::OpSize::i32Bit || #ByteSize == IR::OpSize::i64Bit)) || $Class == FPRClass",
-          "($Class == FPRClass && (#ByteSize == IR::OpSize::i8Bit || #ByteSize == IR::OpSize::i16Bit || #ByteSize == IR::OpSize::i32Bit || #ByteSize == IR::OpSize::i64Bit || #ByteSize == IR::OpSize::i128Bit || #ByteSize == IR::OpSize::i256Bit)) || $Class == GPRClass",
+          "($Class == RegClass::GPR && (#ByteSize == IR::OpSize::i8Bit || #ByteSize == IR::OpSize::i16Bit || #ByteSize == IR::OpSize::i32Bit || #ByteSize == IR::OpSize::i64Bit)) || $Class == RegClass::FPR",
+          "($Class == RegClass::FPR && (#ByteSize == IR::OpSize::i8Bit || #ByteSize == IR::OpSize::i16Bit || #ByteSize == IR::OpSize::i32Bit || #ByteSize == IR::OpSize::i64Bit || #ByteSize == IR::OpSize::i128Bit || #ByteSize == IR::OpSize::i256Bit)) || $Class == RegClass::GPR",
           "!($Offset >= offsetof(Core::CPUState, gregs[0]) && $Offset < offsetof(Core::CPUState, gregs[16])) && \"Can't StoreContext to GPR\"",
           "!($Offset >= offsetof(Core::CPUState, xmm.avx.data[0]) && $Offset < offsetof(Core::CPUState, xmm.avx.data[16])) && \"Can't StoreContext to XMM\""
         ]
@@ -471,8 +473,8 @@
                 ],
         "DestSize": "ByteSize",
         "EmitValidation": [
-          "($Class == GPRClass && (#ByteSize == IR::OpSize::i8Bit || #ByteSize == IR::OpSize::i16Bit || #ByteSize == IR::OpSize::i32Bit || #ByteSize == IR::OpSize::i64Bit)) || $Class == FPRClass",
-          "($Class == FPRClass && (#ByteSize == IR::OpSize::i8Bit || #ByteSize == IR::OpSize::i16Bit || #ByteSize == IR::OpSize::i32Bit || #ByteSize == IR::OpSize::i64Bit || #ByteSize == IR::OpSize::i128Bit || #ByteSize == IR::OpSize::i256Bit)) || $Class == GPRClass",
+          "($Class == RegClass::GPR && (#ByteSize == IR::OpSize::i8Bit || #ByteSize == IR::OpSize::i16Bit || #ByteSize == IR::OpSize::i32Bit || #ByteSize == IR::OpSize::i64Bit)) || $Class == RegClass::FPR",
+          "($Class == RegClass::FPR && (#ByteSize == IR::OpSize::i8Bit || #ByteSize == IR::OpSize::i16Bit || #ByteSize == IR::OpSize::i32Bit || #ByteSize == IR::OpSize::i64Bit || #ByteSize == IR::OpSize::i128Bit || #ByteSize == IR::OpSize::i256Bit)) || $Class == RegClass::GPR",
           "!($BaseOffset >= offsetof(Core::CPUState, gregs[0]) && $BaseOffset < offsetof(Core::CPUState, gregs[16])) && \"Can't LoadContextIndexed to GPR\"",
           "!($BaseOffset >= offsetof(Core::CPUState, xmm.avx.data[0]) && $BaseOffset < offsetof(Core::CPUState, xmm.avx.data[16])) && \"Can't LoadContextIndexed to XMM\""
         ]
@@ -485,8 +487,8 @@
         "DestSize": "ByteSize",
         "EmitValidation": [
           "WalkFindRegClass($Value) == $Class",
-          "($Class == GPRClass && (#ByteSize == IR::OpSize::i8Bit || #ByteSize == IR::OpSize::i16Bit || #ByteSize == IR::OpSize::i32Bit || #ByteSize == IR::OpSize::i64Bit)) || $Class == FPRClass",
-          "($Class == FPRClass && (#ByteSize == IR::OpSize::i8Bit || #ByteSize == IR::OpSize::i16Bit || #ByteSize == IR::OpSize::i32Bit || #ByteSize == IR::OpSize::i64Bit || #ByteSize == IR::OpSize::i128Bit || #ByteSize == IR::OpSize::i256Bit)) || $Class == GPRClass",
+          "($Class == RegClass::GPR && (#ByteSize == IR::OpSize::i8Bit || #ByteSize == IR::OpSize::i16Bit || #ByteSize == IR::OpSize::i32Bit || #ByteSize == IR::OpSize::i64Bit)) || $Class == RegClass::FPR",
+          "($Class == RegClass::FPR && (#ByteSize == IR::OpSize::i8Bit || #ByteSize == IR::OpSize::i16Bit || #ByteSize == IR::OpSize::i32Bit || #ByteSize == IR::OpSize::i64Bit || #ByteSize == IR::OpSize::i128Bit || #ByteSize == IR::OpSize::i256Bit)) || $Class == RegClass::GPR",
           "!($BaseOffset >= offsetof(Core::CPUState, gregs[0]) && $BaseOffset < offsetof(Core::CPUState, gregs[16])) && \"Can't StoreContextIndexed to GPR\"",
           "!($BaseOffset >= offsetof(Core::CPUState, xmm.avx.data[0]) && $BaseOffset < offsetof(Core::CPUState, xmm.avx.data[16])) && \"Can't StoreContextIndexed to XMM\""
         ]
@@ -2827,7 +2829,7 @@
           "Int: 64-bit, 32-bit, 16-bit"
         ],
         "EmitValidation": [
-          "WalkFindRegClass($OriginalValue) == FPRClass || WalkFindRegClass($OriginalValue) == GPRClass"
+          "WalkFindRegClass($OriginalValue) == RegClass::FPR || WalkFindRegClass($OriginalValue) == RegClass::GPR"
         ],
         "HasSideEffects": true,
         "X87": true

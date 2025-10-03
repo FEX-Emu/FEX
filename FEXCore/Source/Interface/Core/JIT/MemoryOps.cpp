@@ -21,7 +21,7 @@ DEF_OP(LoadContext) {
   const auto Op = IROp->C<IR::IROp_LoadContext>();
   const auto OpSize = IROp->Size;
 
-  if (Op->Class == FEXCore::IR::GPRClass) {
+  if (Op->Class == IR::RegClass::GPR) {
     auto Dst = GetReg(Node);
 
     switch (OpSize) {
@@ -52,7 +52,7 @@ DEF_OP(LoadContext) {
 DEF_OP(LoadContextPair) {
   const auto Op = IROp->C<IR::IROp_LoadContextPair>();
 
-  if (Op->Class == FEXCore::IR::GPRClass) {
+  if (Op->Class == IR::RegClass::GPR) {
     const auto Dst1 = GetReg(Op->OutValue1);
     const auto Dst2 = GetReg(Op->OutValue2);
 
@@ -78,7 +78,7 @@ DEF_OP(StoreContext) {
   const auto Op = IROp->C<IR::IROp_StoreContext>();
   const auto OpSize = IROp->Size;
 
-  if (Op->Class == FEXCore::IR::GPRClass) {
+  if (Op->Class == IR::RegClass::GPR) {
     auto Src = GetZeroableReg(Op->Value);
 
     switch (OpSize) {
@@ -110,7 +110,7 @@ DEF_OP(StoreContextPair) {
   const auto Op = IROp->C<IR::IROp_StoreContextPair>();
   const auto OpSize = IROp->Size;
 
-  if (Op->Class == FEXCore::IR::GPRClass) {
+  if (Op->Class == IR::RegClass::GPR) {
     auto Src1 = GetZeroableReg(Op->Value1);
     auto Src2 = GetZeroableReg(Op->Value2);
 
@@ -135,11 +135,11 @@ DEF_OP(StoreContextPair) {
 DEF_OP(LoadRegister) {
   const auto Op = IROp->C<IR::IROp_LoadRegister>();
 
-  if (Op->Class == IR::GPRClass) {
+  if (Op->Class == IR::RegClass::GPR) {
     LOGMAN_THROW_A_FMT(Op->Reg < StaticRegisters.size(), "out of range reg");
 
     mov(GetReg(Node).X(), StaticRegisters[Op->Reg].X());
-  } else if (Op->Class == IR::FPRClass) {
+  } else if (Op->Class == IR::RegClass::FPR) {
     const auto regSize = HostSupportsAVX256 ? IR::OpSize::i256Bit : IR::OpSize::i128Bit;
     LOGMAN_THROW_A_FMT(Op->Reg < StaticFPRegisters.size(), "out of range reg");
     LOGMAN_THROW_A_FMT(IROp->Size == regSize, "expected sized");
@@ -175,12 +175,13 @@ DEF_OP(LoadAF) {
 
 DEF_OP(StoreRegister) {
   const auto Op = IROp->C<IR::IROp_StoreRegister>();
-  auto Reg = IR::PhysicalRegister(Node);
+  const auto Reg = IR::PhysicalRegister(Node);
+  const auto RegClass = Reg.AsRegClass();
 
-  if (Reg.Class == IR::GPRFixedClass) {
+  if (RegClass == IR::RegClass::GPRFixed) {
     // Always use 64-bit, it's faster. Upper bits ignored for 32-bit mode.
     mov(ARMEmitter::Size::i64Bit, GetReg(Reg), GetReg(Op->Value));
-  } else if (Reg.Class == IR::FPRFixedClass) {
+  } else if (RegClass == IR::RegClass::FPRFixed) {
     const auto regSize = HostSupportsAVX256 ? IR::OpSize::i256Bit : IR::OpSize::i128Bit;
     LOGMAN_THROW_A_FMT(IROp->Size == regSize, "expected sized");
 
@@ -193,7 +194,7 @@ DEF_OP(StoreRegister) {
       mov(guest.Q(), host.Q());
     }
   } else {
-    LOGMAN_THROW_A_FMT(false, "Unhandled Op->Class {}", Reg.Class);
+    LOGMAN_THROW_A_FMT(false, "Unhandled Op->Class {}", RegClass);
   }
 }
 
@@ -225,7 +226,7 @@ DEF_OP(LoadContextIndexed) {
 
   const auto Index = GetReg(Op->Index);
 
-  if (Op->Class == FEXCore::IR::GPRClass) {
+  if (Op->Class == IR::RegClass::GPR) {
     switch (Op->Stride) {
     case 1:
     case 2:
@@ -288,7 +289,7 @@ DEF_OP(StoreContextIndexed) {
 
   const auto Index = GetReg(Op->Index);
 
-  if (Op->Class == FEXCore::IR::GPRClass) {
+  if (Op->Class == IR::RegClass::GPR) {
     const auto Value = GetReg(Op->Value);
 
     switch (Op->Stride) {
@@ -372,7 +373,7 @@ DEF_OP(SpillRegister) {
   const auto OpSize = IROp->Size;
   const uint32_t SlotOffset = Op->Slot * MaxSpillSlotSize;
 
-  if (Op->Class == FEXCore::IR::GPRClass) {
+  if (Op->Class == IR::RegClass::GPR) {
     const auto Src = GetReg(Op->Value);
     switch (OpSize) {
     case IR::OpSize::i8Bit: {
@@ -413,7 +414,7 @@ DEF_OP(SpillRegister) {
     }
     default: LOGMAN_MSG_A_FMT("Unhandled SpillRegister size: {}", OpSize); break;
     }
-  } else if (Op->Class == FEXCore::IR::FPRClass) {
+  } else if (Op->Class == FEXCore::IR::RegClass::FPR) {
     const auto Src = GetVReg(Op->Value);
 
     switch (OpSize) {
@@ -452,7 +453,7 @@ DEF_OP(SpillRegister) {
     default: LOGMAN_MSG_A_FMT("Unhandled SpillRegister size: {}", OpSize); break;
     }
   } else {
-    LOGMAN_MSG_A_FMT("Unhandled SpillRegister class: {}", Op->Class.Val);
+    LOGMAN_MSG_A_FMT("Unhandled SpillRegister class: {}", Op->Class);
   }
 }
 
@@ -461,7 +462,7 @@ DEF_OP(FillRegister) {
   const auto OpSize = IROp->Size;
   const uint32_t SlotOffset = Op->Slot * MaxSpillSlotSize;
 
-  if (Op->Class == FEXCore::IR::GPRClass) {
+  if (Op->Class == IR::RegClass::GPR) {
     const auto Dst = GetReg(Node);
     switch (OpSize) {
     case IR::OpSize::i8Bit: {
@@ -502,7 +503,7 @@ DEF_OP(FillRegister) {
     }
     default: LOGMAN_MSG_A_FMT("Unhandled FillRegister size: {}", OpSize); break;
     }
-  } else if (Op->Class == FEXCore::IR::FPRClass) {
+  } else if (Op->Class == FEXCore::IR::RegClass::FPR) {
     const auto Dst = GetVReg(Node);
 
     switch (OpSize) {
@@ -541,7 +542,7 @@ DEF_OP(FillRegister) {
     default: LOGMAN_MSG_A_FMT("Unhandled FillRegister size: {}", OpSize); break;
     }
   } else {
-    LOGMAN_MSG_A_FMT("Unhandled FillRegister class: {}", Op->Class.Val);
+    LOGMAN_MSG_A_FMT("Unhandled FillRegister class: {}", Op->Class);
   }
 }
 
@@ -689,7 +690,7 @@ DEF_OP(LoadMem) {
   const auto MemReg = GetReg(Op->Addr);
   const auto MemSrc = GenerateMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
-  if (Op->Class == FEXCore::IR::GPRClass) {
+  if (Op->Class == IR::RegClass::GPR) {
     const auto Dst = GetReg(Node);
 
     switch (OpSize) {
@@ -723,7 +724,7 @@ DEF_OP(LoadMemPair) {
   const auto Op = IROp->C<IR::IROp_LoadMemPair>();
   const auto Addr = GetReg(Op->Addr);
 
-  if (Op->Class == FEXCore::IR::GPRClass) {
+  if (Op->Class == IR::RegClass::GPR) {
     const auto Dst1 = GetReg(Op->OutValue1);
     const auto Dst2 = GetReg(Op->OutValue2);
 
@@ -751,13 +752,13 @@ DEF_OP(LoadMemTSO) {
 
   const auto MemReg = GetReg(Op->Addr);
 
-  if (Op->Class == FEXCore::IR::GPRClass) {
+  if (Op->Class == IR::RegClass::GPR) {
     LOGMAN_THROW_A_FMT(Op->Offset.IsInvalid() || CTX->HostFeatures.SupportsTSOImm9, "unexpected offset");
     LOGMAN_THROW_A_FMT(Op->OffsetScale == 1, "unexpected offset scale");
     LOGMAN_THROW_A_FMT(Op->OffsetType == IR::MemOffsetType::SXTX, "unexpected offset type");
   }
 
-  if (CTX->HostFeatures.SupportsTSOImm9 && Op->Class == FEXCore::IR::GPRClass) {
+  if (CTX->HostFeatures.SupportsTSOImm9 && Op->Class == IR::RegClass::GPR) {
     const auto Dst = GetReg(Node);
     uint64_t Offset = 0;
     if (!Op->Offset.IsInvalid()) {
@@ -779,7 +780,7 @@ DEF_OP(LoadMemTSO) {
       // Half-barrier once back-patched.
       nop();
     }
-  } else if (CTX->HostFeatures.SupportsRCPC && Op->Class == FEXCore::IR::GPRClass) {
+  } else if (CTX->HostFeatures.SupportsRCPC && Op->Class == IR::RegClass::GPR) {
     const auto Dst = GetReg(Node);
     if (OpSize == IR::OpSize::i8Bit) {
       // 8bit load is always aligned to natural alignment
@@ -794,7 +795,7 @@ DEF_OP(LoadMemTSO) {
       // Half-barrier once back-patched.
       nop();
     }
-  } else if (Op->Class == FEXCore::IR::GPRClass) {
+  } else if (Op->Class == IR::RegClass::GPR) {
     const auto Dst = GetReg(Node);
     if (OpSize == IR::OpSize::i8Bit) {
       // 8bit load is always aligned to natural alignment
@@ -1624,7 +1625,7 @@ DEF_OP(StoreMem) {
   const auto MemReg = GetReg(Op->Addr);
   const auto MemSrc = GenerateMemOperand(OpSize, MemReg, Op->Offset, Op->OffsetType, Op->OffsetScale);
 
-  if (Op->Class == FEXCore::IR::GPRClass) {
+  if (Op->Class == IR::RegClass::GPR) {
     const auto Src = GetZeroableReg(Op->Value);
     switch (OpSize) {
     case IR::OpSize::i8Bit: strb(Src, MemSrc); break;
@@ -1735,7 +1736,7 @@ DEF_OP(StoreMemPair) {
   const auto OpSize = IROp->Size;
   const auto Addr = GetReg(Op->Addr);
 
-  if (Op->Class == FEXCore::IR::GPRClass) {
+  if (Op->Class == IR::RegClass::GPR) {
     const auto Src1 = GetZeroableReg(Op->Value1);
     const auto Src2 = GetZeroableReg(Op->Value2);
     switch (OpSize) {
@@ -1762,13 +1763,13 @@ DEF_OP(StoreMemTSO) {
 
   const auto MemReg = GetReg(Op->Addr);
 
-  if (Op->Class == FEXCore::IR::GPRClass) {
+  if (Op->Class == IR::RegClass::GPR) {
     LOGMAN_THROW_A_FMT(Op->Offset.IsInvalid() || CTX->HostFeatures.SupportsTSOImm9, "unexpected offset");
     LOGMAN_THROW_A_FMT(Op->OffsetScale == 1, "unexpected offset scale");
     LOGMAN_THROW_A_FMT(Op->OffsetType == IR::MemOffsetType::SXTX, "unexpected offset type");
   }
 
-  if (CTX->HostFeatures.SupportsTSOImm9 && Op->Class == FEXCore::IR::GPRClass) {
+  if (CTX->HostFeatures.SupportsTSOImm9 && Op->Class == IR::RegClass::GPR) {
     const auto Src = GetZeroableReg(Op->Value);
     uint64_t Offset = 0;
     if (!Op->Offset.IsInvalid()) {
@@ -1789,7 +1790,7 @@ DEF_OP(StoreMemTSO) {
       default: LOGMAN_MSG_A_FMT("Unhandled StoreMemTSO size: {}", OpSize); break;
       }
     }
-  } else if (Op->Class == FEXCore::IR::GPRClass) {
+  } else if (Op->Class == IR::RegClass::GPR) {
     const auto Src = GetZeroableReg(Op->Value);
 
     if (OpSize == IR::OpSize::i8Bit) {
@@ -2302,7 +2303,7 @@ DEF_OP(ParanoidLoadMemTSO) {
 
   auto MemReg = GetReg(Op->Addr);
 
-  if (CTX->HostFeatures.SupportsTSOImm9 && Op->Class == FEXCore::IR::GPRClass) {
+  if (CTX->HostFeatures.SupportsTSOImm9 && Op->Class == IR::RegClass::GPR) {
     const auto Dst = GetReg(Node);
     uint64_t Offset = 0;
     if (!Op->Offset.IsInvalid()) {
@@ -2323,7 +2324,7 @@ DEF_OP(ParanoidLoadMemTSO) {
       default: LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", OpSize); break;
       }
     }
-  } else if (CTX->HostFeatures.SupportsRCPC && Op->Class == FEXCore::IR::GPRClass) {
+  } else if (CTX->HostFeatures.SupportsRCPC && Op->Class == IR::RegClass::GPR) {
     const auto Dst = GetReg(Node);
     MemReg = ApplyMemOperand(OpSize, MemReg, TMP4, Op->Offset, Op->OffsetType, Op->OffsetScale);
     if (OpSize == IR::OpSize::i8Bit) {
@@ -2337,7 +2338,7 @@ DEF_OP(ParanoidLoadMemTSO) {
       default: LOGMAN_MSG_A_FMT("Unhandled ParanoidLoadMemTSO size: {}", OpSize); break;
       }
     }
-  } else if (Op->Class == FEXCore::IR::GPRClass) {
+  } else if (Op->Class == IR::RegClass::GPR) {
     const auto Dst = GetReg(Node);
     MemReg = ApplyMemOperand(OpSize, MemReg, TMP4, Op->Offset, Op->OffsetType, Op->OffsetScale);
     switch (OpSize) {
@@ -2390,7 +2391,7 @@ DEF_OP(ParanoidStoreMemTSO) {
 
   auto MemReg = GetReg(Op->Addr);
 
-  if (CTX->HostFeatures.SupportsTSOImm9 && Op->Class == FEXCore::IR::GPRClass) {
+  if (CTX->HostFeatures.SupportsTSOImm9 && Op->Class == IR::RegClass::GPR) {
     const auto Src = GetZeroableReg(Op->Value);
     uint64_t Offset = 0;
     if (!Op->Offset.IsInvalid()) {
@@ -2410,7 +2411,7 @@ DEF_OP(ParanoidStoreMemTSO) {
       default: LOGMAN_MSG_A_FMT("Unhandled ParanoidStoreMemTSO size: {}", OpSize); break;
       }
     }
-  } else if (Op->Class == FEXCore::IR::GPRClass) {
+  } else if (Op->Class == IR::RegClass::GPR) {
     const auto Src = GetZeroableReg(Op->Value);
     MemReg = ApplyMemOperand(OpSize, MemReg, TMP1, Op->Offset, Op->OffsetType, Op->OffsetScale);
     switch (OpSize) {

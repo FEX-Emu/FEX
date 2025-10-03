@@ -1110,8 +1110,8 @@ public:
   // End of AVX 128-bit implementation
 
   // AVX 256-bit operations
-  void StoreResult_WithAVXInsert(VectorOpType Type, FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, Ref Value,
-                                 IR::OpSize Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
+  void StoreResult_WithAVXInsert(VectorOpType Type, RegClass Class, FEXCore::X86Tables::DecodedOp Op, Ref Value, IR::OpSize Align,
+                                 MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
     if (Op->Dest.IsGPR() && Op->Dest.Data.GPR.GPR >= X86State::REG_XMM_0 && Op->Dest.Data.GPR.GPR <= X86State::REG_XMM_15 &&
         GetGuestVectorLength() == OpSize::i256Bit && Type == VectorOpType::SSE) {
       const auto gpr = Op->Dest.Data.GPR.GPR;
@@ -1162,7 +1162,7 @@ public:
     }
   }
 
-  void StoreContextHelper(IR::OpSize Size, RegisterClassType Class, Ref Value, uint32_t Offset) {
+  void StoreContextHelper(IR::OpSize Size, RegClass Class, Ref Value, uint32_t Offset) {
     // For i128Bit, we won't see a normal Constant to inline, but as a special
     // case we can replace with a 2x64-bit store which can use inline zeroes.
     if (Size == OpSize::i128Bit) {
@@ -1174,7 +1174,7 @@ public:
 
         if (Const->Constant == IR::NamedVectorConstant::NAMED_VECTOR_ZERO) {
           Ref Zero = _Constant(0);
-          Ref STP = _StoreContextPair(IR::OpSize::i64Bit, GPRClass, Zero, Zero, Offset);
+          Ref STP = _StoreContextPair(IR::OpSize::i64Bit, RegClass::GPR, Zero, Zero, Offset);
 
           // XXX: This works around InlineConstant not having an associated
           // register class, else we'd just do InlineConstant above.
@@ -1230,16 +1230,16 @@ public:
 
       if (Index >= GPR0Index && Index <= GPR15Index) {
         Ref R = _StoreRegister(Value, GPRSize);
-        R->Reg = PhysicalRegister(GPRFixedClass, Index - GPR0Index).Raw;
+        R->Reg = PhysicalRegister(RegClass::GPRFixed, Index - GPR0Index).Raw;
       } else if (Index == PFIndex) {
         _StorePF(Value, GPRSize);
       } else if (Index == AFIndex) {
         _StoreAF(Value, GPRSize);
       } else if (Index >= FPR0Index && Index <= FPR15Index) {
         Ref R = _StoreRegister(Value, VectorSize);
-        R->Reg = PhysicalRegister(FPRFixedClass, Index - FPR0Index).Raw;
+        R->Reg = PhysicalRegister(RegClass::FPRFixed, Index - FPR0Index).Raw;
       } else if (Index == DFIndex) {
-        _StoreContext(OpSize::i8Bit, GPRClass, Value, offsetof(Core::CPUState, flags[X86State::RFLAG_DF_RAW_LOC]));
+        _StoreContextGPR(OpSize::i8Bit, Value, offsetof(Core::CPUState, flags[X86State::RFLAG_DF_RAW_LOC]));
       } else {
         bool Partial = RegCache.Partial & (1ull << Index);
         auto Size = Partial ? OpSize::i64Bit : CacheIndexToOpSize(Index);
@@ -1264,7 +1264,7 @@ public:
           StoreContextHelper(Size, Class, Value, Offset);
           // If Partial and MMX register, then we need to store all 1s in bits 64-80
           if (Partial && Index >= MM0Index && Index <= MM7Index) {
-            _StoreContext(OpSize::i16Bit, IR::GPRClass, Constant(0xFFFF), Offset + 8);
+            _StoreContextGPR(OpSize::i16Bit, Constant(0xFFFF), Offset + 8);
           }
         }
       }
@@ -1555,63 +1555,63 @@ private:
 
   AddressMode DecodeAddress(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, MemoryAccessType AccessType, bool IsLoad);
 
-  Ref LoadSource(RegisterClassType Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags,
+  Ref LoadSource(RegClass Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags,
                  const LoadSourceOptions& Options = {});
   Ref LoadSourceGPR(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags,
                     const LoadSourceOptions& Options = {}) {
-    return LoadSource(GPRClass, Op, Operand, Flags, Options);
+    return LoadSource(RegClass::GPR, Op, Operand, Flags, Options);
   }
   Ref LoadSourceFPR(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags,
                     const LoadSourceOptions& Options = {}) {
-    return LoadSource(FPRClass, Op, Operand, Flags, Options);
+    return LoadSource(RegClass::FPR, Op, Operand, Flags, Options);
   }
 
-  Ref LoadSource_WithOpSize(RegisterClassType Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand,
-                            IR::OpSize OpSize, uint32_t Flags, const LoadSourceOptions& Options = {});
+  Ref LoadSource_WithOpSize(RegClass Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, IR::OpSize OpSize,
+                            uint32_t Flags, const LoadSourceOptions& Options = {});
   Ref LoadSourceGPR_WithOpSize(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, IR::OpSize OpSize, uint32_t Flags,
                                const LoadSourceOptions& Options = {}) {
-    return LoadSource_WithOpSize(GPRClass, Op, Operand, OpSize, Flags, Options);
+    return LoadSource_WithOpSize(RegClass::GPR, Op, Operand, OpSize, Flags, Options);
   }
   Ref LoadSourceFPR_WithOpSize(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, IR::OpSize OpSize, uint32_t Flags,
                                const LoadSourceOptions& Options = {}) {
-    return LoadSource_WithOpSize(FPRClass, Op, Operand, OpSize, Flags, Options);
+    return LoadSource_WithOpSize(RegClass::FPR, Op, Operand, OpSize, Flags, Options);
   }
 
-  void StoreResult_WithOpSize(RegisterClassType Class, X86Tables::DecodedOp Op, const X86Tables::DecodedOperand& Operand, Ref Src,
-                              IR::OpSize OpSize, IR::OpSize Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
+  void StoreResult_WithOpSize(RegClass Class, X86Tables::DecodedOp Op, const X86Tables::DecodedOperand& Operand, Ref Src, IR::OpSize OpSize,
+                              IR::OpSize Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
   void StoreResultGPR_WithOpSize(X86Tables::DecodedOp Op, const X86Tables::DecodedOperand& Operand, Ref Src, IR::OpSize OpSize,
                                  IR::OpSize Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
-    StoreResult_WithOpSize(GPRClass, Op, Operand, Src, OpSize, Align, AccessType);
+    StoreResult_WithOpSize(RegClass::GPR, Op, Operand, Src, OpSize, Align, AccessType);
   }
   void StoreResultFPR_WithOpSize(X86Tables::DecodedOp Op, const X86Tables::DecodedOperand& Operand, Ref Src, IR::OpSize OpSize,
                                  IR::OpSize Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
-    StoreResult_WithOpSize(FPRClass, Op, Operand, Src, OpSize, Align, AccessType);
+    StoreResult_WithOpSize(RegClass::FPR, Op, Operand, Src, OpSize, Align, AccessType);
   }
 
-  void StoreResult(RegisterClassType Class, X86Tables::DecodedOp Op, const X86Tables::DecodedOperand& Operand, Ref Src, OpSize Align,
+  void StoreResult(RegClass Class, X86Tables::DecodedOp Op, const X86Tables::DecodedOperand& Operand, Ref Src, OpSize Align,
                    MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
   void StoreResultGPR(X86Tables::DecodedOp Op, const X86Tables::DecodedOperand& Operand, Ref Src, OpSize Align,
                       MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
-    StoreResult(GPRClass, Op, Operand, Src, Align, AccessType);
+    StoreResult(RegClass::GPR, Op, Operand, Src, Align, AccessType);
   }
   void StoreResultFPR(X86Tables::DecodedOp Op, const X86Tables::DecodedOperand& Operand, Ref Src, OpSize Align,
                       MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
-    StoreResult(FPRClass, Op, Operand, Src, Align, AccessType);
+    StoreResult(RegClass::FPR, Op, Operand, Src, Align, AccessType);
   }
 
-  void StoreResult(RegisterClassType Class, X86Tables::DecodedOp Op, Ref Src, OpSize Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
+  void StoreResult(RegClass Class, X86Tables::DecodedOp Op, Ref Src, OpSize Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
   void StoreResultGPR(X86Tables::DecodedOp Op, Ref Src, OpSize Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
-    StoreResult(GPRClass, Op, Src, Align, AccessType);
+    StoreResult(RegClass::GPR, Op, Src, Align, AccessType);
   }
   void StoreResultFPR(X86Tables::DecodedOp Op, Ref Src, OpSize Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
-    StoreResult(FPRClass, Op, Src, Align, AccessType);
+    StoreResult(RegClass::FPR, Op, Src, Align, AccessType);
   }
 
   // In several instances, it's desirable to get a base address with the segment offset
   // applied to it. This pulls all the common-case appending into a single set of functions.
   [[nodiscard]]
   Ref MakeSegmentAddress(const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, IR::OpSize OpSize) {
-    Ref Mem = LoadSource_WithOpSize(GPRClass, Op, Operand, OpSize, Op->Flags, {.LoadData = false});
+    Ref Mem = LoadSourceGPR_WithOpSize(Op, Operand, OpSize, Op->Flags, {.LoadData = false});
     return AppendSegmentOffset(Mem, Op->Flags);
   }
   [[nodiscard]]
@@ -1847,14 +1847,14 @@ private:
       // For DF, we need to transform 0/1 into 1/-1
       StoreDF(_SubShift(OpSize::i64Bit, Constant(1), Value, ShiftType::LSL, 1));
     } else if (BitOffset == FEXCore::X86State::RFLAG_TF_RAW_LOC) {
-      auto PackedTF = _LoadContext(OpSize::i8Bit, GPRClass, offsetof(FEXCore::Core::CPUState, flags[BitOffset]));
+      auto PackedTF = _LoadContextGPR(OpSize::i8Bit, offsetof(FEXCore::Core::CPUState, flags[BitOffset]));
       // An exception should still be raised after an instruction that unsets TF, leave the unblocked bit set but unset
       // the TF bit to cause such behaviour. The handling code at the start of the next block will then unset the
       // unblocked bit before raising the exception.
       auto NewPackedTF = _Select(CondClass::EQ, Value, Constant(0), _And(OpSize::i32Bit, PackedTF, Constant(~1)), Constant(1));
-      _StoreContext(OpSize::i8Bit, GPRClass, NewPackedTF, offsetof(FEXCore::Core::CPUState, flags[BitOffset]));
+      _StoreContextGPR(OpSize::i8Bit, NewPackedTF, offsetof(FEXCore::Core::CPUState, flags[BitOffset]));
     } else {
-      _StoreContext(OpSize::i8Bit, GPRClass, Value, offsetof(FEXCore::Core::CPUState, flags[BitOffset]));
+      _StoreContextGPR(OpSize::i8Bit, Value, offsetof(FEXCore::Core::CPUState, flags[BitOffset]));
     }
   }
 
@@ -1916,11 +1916,11 @@ private:
   }
 
   [[nodiscard]]
-  static RegisterClassType CacheIndexClass(int Index) {
+  static RegClass CacheIndexClass(int Index) {
     if ((Index >= MM0Index && Index <= MM7Index) || Index >= FPR0Index) {
-      return FPRClass;
+      return RegClass::FPR;
     } else {
-      return GPRClass;
+      return RegClass::GPR;
     }
   }
 
@@ -1952,14 +1952,14 @@ private:
     RegCache.Written &= ~Bit;
   }
 
-  Ref LoadRegCache(uint64_t Offset, uint8_t Index, RegisterClassType RegClass, IR::OpSize Size) {
+  Ref LoadRegCache(uint64_t Offset, uint8_t Index, RegClass Class, IR::OpSize Size) {
     LOGMAN_THROW_A_FMT(Index < 64, "valid index");
     uint64_t Bit = (1ull << (uint64_t)Index);
 
     if (Size == OpSize::i128Bit && (RegCache.Partial & Bit)) {
       // We need to load the full register extend if we previously did a partial access.
       Ref Value = RegCache.Value[Index];
-      Ref Full = _LoadContext(Size, RegClass, Offset);
+      Ref Full = _LoadContext(Size, Class, Offset);
 
       // If we did a partial store, we're inserting into the full register
       if (RegCache.Written & Bit) {
@@ -1973,7 +1973,7 @@ private:
       if (Index == DFIndex) {
         RegCache.Value[Index] = _LoadDF();
       } else if ((Index >= MM0Index && Index <= MM7Index) || Index >= AVXHigh0Index) {
-        RegCache.Value[Index] = _LoadContext(Size, RegClass, Offset);
+        RegCache.Value[Index] = _LoadContext(Size, Class, Offset);
 
         // We may have done a partial load, this requires special handling.
         if (Size == OpSize::i64Bit) {
@@ -1984,7 +1984,7 @@ private:
       } else if (Index == AFIndex) {
         RegCache.Value[Index] = _LoadAF(Size);
       } else {
-        RegCache.Value[Index] = _LoadRegister(Offset, RegClass, Size);
+        RegCache.Value[Index] = _LoadRegister(Offset, Class, Size);
       }
 
       RegCache.Cached |= Bit;
@@ -1993,21 +1993,21 @@ private:
     return RegCache.Value[Index];
   }
 
-  RefPair AllocatePair(FEXCore::IR::RegisterClassType Class, IR::OpSize Size) {
-    if (Class == FPRClass) {
+  RefPair AllocatePair(RegClass Class, IR::OpSize Size) {
+    if (Class == RegClass::FPR) {
       return {_AllocateFPR(Size, Size), _AllocateFPR(Size, Size)};
     } else {
       return {_AllocateGPR(false), _AllocateGPR(false)};
     }
   }
 
-  RefPair LoadContextPair_Uncached(FEXCore::IR::RegisterClassType Class, IR::OpSize Size, unsigned Offset) {
+  RefPair LoadContextPair_Uncached(RegClass Class, IR::OpSize Size, unsigned Offset) {
     RefPair Values = AllocatePair(Class, Size);
     _LoadContextPair(Size, Class, Offset, Values.Low, Values.High);
     return Values;
   }
 
-  RefPair LoadRegCachePair(uint64_t Offset, uint8_t Index, RegisterClassType RegClass, IR::OpSize Size) {
+  RefPair LoadRegCachePair(uint64_t Offset, uint8_t Index, RegClass Class, IR::OpSize Size) {
     LOGMAN_THROW_A_FMT(Index != DFIndex, "must be pairable");
     LOGMAN_THROW_A_FMT(Size != IR::OpSize::iUnsized, "Invalid size!");
 
@@ -2015,7 +2015,7 @@ private:
     uint64_t Bits = (3ull << (uint64_t)Index);
     const auto SizeInt = IR::OpSizeToSize(Size);
     if (((RegCache.Partial | RegCache.Cached) & Bits) == 0 && ((Offset / SizeInt) < 64)) {
-      auto Values = LoadContextPair_Uncached(RegClass, Size, Offset);
+      auto Values = LoadContextPair_Uncached(Class, Size, Offset);
       RegCache.Value[Index] = Values.Low;
       RegCache.Value[Index + 1] = Values.High;
       RegCache.Cached |= Bits;
@@ -2027,13 +2027,13 @@ private:
 
     // Fallback on a pair of loads
     return {
-      .Low = LoadRegCache(Offset, Index, RegClass, Size),
-      .High = LoadRegCache(Offset + SizeInt, Index + 1, RegClass, Size),
+      .Low = LoadRegCache(Offset, Index, Class, Size),
+      .High = LoadRegCache(Offset + SizeInt, Index + 1, Class, Size),
     };
   }
 
   Ref LoadGPR(uint8_t Reg) {
-    return LoadRegCache(Reg, GPR0Index + Reg, GPRClass, GetGPROpSize());
+    return LoadRegCache(Reg, GPR0Index + Reg, RegClass::GPR, GetGPROpSize());
   }
 
   Ref LoadContext(IR::OpSize Size, uint8_t Index) {
@@ -2049,7 +2049,7 @@ private:
   }
 
   Ref LoadXMMRegister(uint8_t Reg) {
-    return LoadRegCache(Reg, FPR0Index + Reg, FPRClass, GetGuestVectorLength());
+    return LoadRegCache(Reg, FPR0Index + Reg, RegClass::FPR, GetGuestVectorLength());
   }
 
   Ref LoadDF() {
@@ -2104,7 +2104,7 @@ private:
       // Recover the sign bit, it is the logical DF value
       return _Lshr(OpSize::i64Bit, LoadDF(), Constant(63));
     } else {
-      return _LoadContext(OpSize::i8Bit, GPRClass, offsetof(Core::CPUState, flags[BitOffset]));
+      return _LoadContextGPR(OpSize::i8Bit, offsetof(Core::CPUState, flags[BitOffset]));
     }
   }
 
@@ -2221,7 +2221,7 @@ private:
 
     HandleNZCV_RMW();
     CalculatePF(_ShiftFlags(OpSizeFromSrc(Op), Result, Dest, Shift, Src, OldPF, CFInverted));
-    StoreResult(GPRClass, Op, Result, OpSize::iInvalid);
+    StoreResultGPR(Op, Result, OpSize::iInvalid);
   }
 
   // Helper to derive Dest by a given builder-using Expression with the opcode
@@ -2309,8 +2309,8 @@ private:
     if (Size != OpSize::i32Bit) {
       return;
     }
-    auto Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags);
-    StoreResult(GPRClass, Op, Dest, OpSize::iInvalid);
+    auto Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags);
+    StoreResultGPR(Op, Dest, OpSize::iInvalid);
   }
 
   using ZeroShiftFunctionPtr = void (OpDispatchBuilder::*)(FEXCore::X86Tables::DecodedOp Op);
@@ -2407,7 +2407,7 @@ private:
     LOGMAN_THROW_A_FMT(MMXState == MMXState_X87, "Expected state to be x87");
     _StackForceSlow();
     SetX87Top(Constant(0)); // top reset to zero
-    _StoreContext(OpSize::i8Bit, GPRClass, Constant(0xFFFFUL), offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+    _StoreContextGPR(OpSize::i8Bit, Constant(0xFFFFUL), offsetof(FEXCore::Core::CPUState, AbridgedFTW));
     MMXState = MMXState_MMX;
   }
 
@@ -2444,19 +2444,19 @@ private:
   IROp_IRHeader* CurrentHeader {};
 
   [[nodiscard]]
-  bool IsTSOEnabled(FEXCore::IR::RegisterClassType Class) const {
+  bool IsTSOEnabled(RegClass Class) const {
     if (ForceTSO == ForceTSOMode::ForceEnabled) {
       return true;
     } else if (ForceTSO == ForceTSOMode::ForceDisabled) {
       return false;
-    } else if (Class == FPRClass) {
+    } else if (Class == RegClass::FPR) {
       return CTX->IsVectorAtomicTSOEnabled();
     } else {
       return CTX->IsAtomicTSOEnabled();
     }
   }
 
-  Ref _StoreMemAutoTSO(RegisterClassType Class, OpSize Size, Ref Addr, Ref Value, OpSize Align = OpSize::i8Bit) {
+  Ref _StoreMemAutoTSO(RegClass Class, OpSize Size, Ref Addr, Ref Value, OpSize Align = OpSize::i8Bit) {
     if (IsTSOEnabled(Class)) {
       return _StoreMemTSO(Class, Size, Value, Addr, Invalid(), Align, MemOffsetType::SXTX, 1);
     } else {
@@ -2464,13 +2464,13 @@ private:
     }
   }
   Ref _StoreMemGPRAutoTSO(OpSize Size, Ref Addr, Ref Value, OpSize Align = OpSize::i8Bit) {
-    return _StoreMemAutoTSO(GPRClass, Size, Addr, Value, Align);
+    return _StoreMemAutoTSO(RegClass::GPR, Size, Addr, Value, Align);
   }
   Ref _StoreMemFPRAutoTSO(OpSize Size, Ref Addr, Ref Value, OpSize Align = OpSize::i8Bit) {
-    return _StoreMemAutoTSO(FPRClass, Size, Addr, Value, Align);
+    return _StoreMemAutoTSO(RegClass::FPR, Size, Addr, Value, Align);
   }
 
-  Ref _LoadMemAutoTSO(RegisterClassType Class, OpSize Size, Ref ssa0, OpSize Align = OpSize::i8Bit) {
+  Ref _LoadMemAutoTSO(RegClass Class, OpSize Size, Ref ssa0, OpSize Align = OpSize::i8Bit) {
     if (IsTSOEnabled(Class)) {
       return _LoadMemTSO(Class, Size, ssa0, Invalid(), Align, MemOffsetType::SXTX, 1);
     } else {
@@ -2478,15 +2478,15 @@ private:
     }
   }
   Ref _LoadMemGPRAutoTSO(OpSize Size, Ref ssa0, OpSize Align = OpSize::i8Bit) {
-    return _LoadMemAutoTSO(GPRClass, Size, ssa0, Align);
+    return _LoadMemAutoTSO(RegClass::GPR, Size, ssa0, Align);
   }
   Ref _LoadMemFPRAutoTSO(OpSize Size, Ref ssa0, OpSize Align = OpSize::i8Bit) {
-    return _LoadMemAutoTSO(GPRClass, Size, ssa0, Align);
+    return _LoadMemAutoTSO(RegClass::FPR, Size, ssa0, Align);
   }
 
-  Ref _LoadMemAutoTSO(RegisterClassType Class, OpSize Size, AddressMode A, OpSize Align = OpSize::i8Bit) {
+  Ref _LoadMemAutoTSO(RegClass Class, OpSize Size, AddressMode A, OpSize Align = OpSize::i8Bit) {
     bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
-    A = SelectAddressMode(this, A, GetGPROpSize(), CTX->HostFeatures.SupportsTSOImm9, AtomicTSO, Class != GPRClass, Size);
+    A = SelectAddressMode(this, A, GetGPROpSize(), CTX->HostFeatures.SupportsTSOImm9, AtomicTSO, Class != RegClass::GPR, Size);
 
     if (AtomicTSO) {
       return _LoadMemTSO(Class, Size, A.Base, A.Index, Align, A.IndexType, A.IndexScale);
@@ -2495,10 +2495,10 @@ private:
     }
   }
   Ref _LoadMemGPRAutoTSO(OpSize Size, AddressMode A, OpSize Align = OpSize::i8Bit) {
-    return _LoadMemAutoTSO(GPRClass, Size, A, Align);
+    return _LoadMemAutoTSO(RegClass::GPR, Size, A, Align);
   }
   Ref _LoadMemFPRAutoTSO(OpSize Size, AddressMode A, OpSize Align = OpSize::i8Bit) {
-    return _LoadMemAutoTSO(FPRClass, Size, A, Align);
+    return _LoadMemAutoTSO(RegClass::FPR, Size, A, Align);
   }
 
   AddressMode SelectPairAddressMode(AddressMode A, IR::OpSize Size) {
@@ -2517,16 +2517,16 @@ private:
   }
 
 
-  RefPair LoadMemPair(RegisterClassType Class, OpSize Size, Ref Base, uint32_t Offset) {
+  RefPair LoadMemPair(RegClass Class, OpSize Size, Ref Base, uint32_t Offset) {
     RefPair Values = AllocatePair(Class, Size);
     _LoadMemPair(Class, Size, Base, Offset, Values.Low, Values.High);
     return Values;
   }
   RefPair LoadMemPairFPR(OpSize Size, Ref Base, uint32_t Offset) {
-    return LoadMemPair(FPRClass, Size, Base, Offset);
+    return LoadMemPair(RegClass::FPR, Size, Base, Offset);
   }
 
-  RefPair _LoadMemPairAutoTSO(RegisterClassType Class, OpSize Size, AddressMode A, OpSize Align = OpSize::i8Bit) {
+  RefPair _LoadMemPairAutoTSO(RegClass Class, OpSize Size, AddressMode A, OpSize Align = OpSize::i8Bit) {
     bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
 
     // Use ldp if possible, otherwise fallback on two loads.
@@ -2544,12 +2544,12 @@ private:
     }
   }
   RefPair _LoadMemPairFPRAutoTSO(OpSize Size, AddressMode A, OpSize Align = OpSize::i8Bit) {
-    return _LoadMemPairAutoTSO(FPRClass, Size, A, Align);
+    return _LoadMemPairAutoTSO(RegClass::FPR, Size, A, Align);
   }
 
-  Ref _StoreMemAutoTSO(RegisterClassType Class, OpSize Size, AddressMode A, Ref Value, OpSize Align = OpSize::i8Bit) {
+  Ref _StoreMemAutoTSO(RegClass Class, OpSize Size, AddressMode A, Ref Value, OpSize Align = OpSize::i8Bit) {
     bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
-    A = SelectAddressMode(this, A, GetGPROpSize(), CTX->HostFeatures.SupportsTSOImm9, AtomicTSO, Class != GPRClass, Size);
+    A = SelectAddressMode(this, A, GetGPROpSize(), CTX->HostFeatures.SupportsTSOImm9, AtomicTSO, Class != RegClass::GPR, Size);
 
     if (AtomicTSO) {
       return _StoreMemTSO(Class, Size, Value, A.Base, A.Index, Align, A.IndexType, A.IndexScale);
@@ -2558,13 +2558,13 @@ private:
     }
   }
   Ref _StoreMemGPRAutoTSO(OpSize Size, AddressMode A, Ref Value, OpSize Align = OpSize::i8Bit) {
-    return _StoreMemAutoTSO(GPRClass, Size, A, Value, Align);
+    return _StoreMemAutoTSO(RegClass::GPR, Size, A, Value, Align);
   }
   Ref _StoreMemFPRAutoTSO(OpSize Size, AddressMode A, Ref Value, OpSize Align = OpSize::i8Bit) {
-    return _StoreMemAutoTSO(FPRClass, Size, A, Value, Align);
+    return _StoreMemAutoTSO(RegClass::FPR, Size, A, Value, Align);
   }
 
-  void _StoreMemPairAutoTSO(RegisterClassType Class, OpSize Size, AddressMode A, Ref Value1, Ref Value2, OpSize Align = OpSize::i8Bit) {
+  void _StoreMemPairAutoTSO(RegClass Class, OpSize Size, AddressMode A, Ref Value1, Ref Value2, OpSize Align = OpSize::i8Bit) {
     const auto SizeInt = IR::OpSizeToSize(Size);
     bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
 
@@ -2579,7 +2579,7 @@ private:
     }
   }
   void _StoreMemPairFPRAutoTSO(OpSize Size, AddressMode A, Ref Value1, Ref Value2, OpSize Align = OpSize::i8Bit) {
-    return _StoreMemPairAutoTSO(FPRClass, Size, A, Value1, Value2, Align);
+    return _StoreMemPairAutoTSO(RegClass::FPR, Size, A, Value1, Value2, Align);
   }
 
   Ref Pop(IR::OpSize Size, Ref SP_RMW) {

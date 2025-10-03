@@ -19,9 +19,9 @@ union PhysicalRegister {
     return Raw == Other.Raw;
   }
 
-  PhysicalRegister(RegisterClassType Class, uint8_t Reg)
+  PhysicalRegister(RegClass Class, uint8_t Reg)
     : Reg(Reg)
-    , Class(Class.Val) {}
+    , Class(uint8_t(Class)) {}
 
   PhysicalRegister(OrderedNodeWrapper Arg)
     : Raw(Arg.GetImmediate()) {}
@@ -29,12 +29,16 @@ union PhysicalRegister {
   PhysicalRegister(Ref Node)
     : Raw(Node->Reg) {}
 
+  RegClass AsRegClass() const {
+    return RegClass {Class};
+  }
+
   static const PhysicalRegister Invalid() {
-    return PhysicalRegister(InvalidClass, 0);
+    return PhysicalRegister(RegClass::Invalid, 0);
   }
 
   bool IsInvalid() const {
-    static_assert(InvalidClass == 0);
+    static_assert(uint8_t(RegClass::Invalid) == 0);
     return Raw == 0;
   }
 };

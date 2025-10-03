@@ -2406,7 +2406,7 @@ void OpDispatchBuilder::MOVBetweenGPR_FPR(OpcodeArgs, VectorOpType VectorType) {
       Result = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
     }
 
-    StoreResult_WithAVXInsert(VectorType, FPRClass, Op, Result, OpSize::iInvalid);
+    StoreResult_WithAVXInsert(VectorType, RegClass::FPR, Op, Result, OpSize::iInvalid);
   } else {
     Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
 

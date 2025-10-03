@@ -4251,7 +4251,7 @@ AddressMode OpDispatchBuilder::DecodeAddress(const X86Tables::DecodedOp& Op, con
 }
 
 
-Ref OpDispatchBuilder::LoadSource_WithOpSize(RegisterClassType Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand,
+Ref OpDispatchBuilder::LoadSource_WithOpSize(RegClass Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand,
                                              IR::OpSize OpSize, uint32_t Flags, const LoadSourceOptions& Options) {
   auto [Align, LoadData, ForceLoad, AccessType, AllowUpperGarbage] = Options;
   AddressMode A = DecodeAddress(Op, Operand, AccessType, true /* IsLoad */);
@@ -4341,15 +4341,14 @@ void OpDispatchBuilder::StoreXMMRegister(uint32_t XMM, const Ref Src) {
   StoreRegister(XMM, true, Src);
 }
 
-Ref OpDispatchBuilder::LoadSource(RegisterClassType Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand,
-                                  uint32_t Flags, const LoadSourceOptions& Options) {
+Ref OpDispatchBuilder::LoadSource(RegClass Class, const X86Tables::DecodedOp& Op, const X86Tables::DecodedOperand& Operand, uint32_t Flags,
+                                  const LoadSourceOptions& Options) {
   const auto OpSize = OpSizeFromSrc(Op);
   return LoadSource_WithOpSize(Class, Op, Operand, OpSize, Flags, Options);
 }
 
-void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op,
-                                               const FEXCore::X86Tables::DecodedOperand& Operand, const Ref Src, IR::OpSize OpSize,
-                                               IR::OpSize Align, MemoryAccessType AccessType) {
+void OpDispatchBuilder::StoreResult_WithOpSize(RegClass Class, FEXCore::X86Tables::DecodedOp Op, const X86Tables::DecodedOperand& Operand,
+                                               Ref Src, IR::OpSize OpSize, IR::OpSize Align, MemoryAccessType AccessType) {
   if (Operand.IsGPR()) {
     // 8Bit and 16bit destination types store their result without effecting the upper bits
     // 32bit ops ZEXT the result to 64bit
@@ -4358,7 +4357,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
     const auto gpr = Operand.Data.GPR.GPR;
     if (gpr >= FEXCore::X86State::REG_MM_0) {
       LOGMAN_THROW_A_FMT(OpSize == OpSize::i64Bit, "full");
-      LOGMAN_THROW_A_FMT(Class == FPRClass, "MMX is floaty");
+      LOGMAN_THROW_A_FMT(Class == RegClass::FPR, "MMX is floaty");
 
       if (MMXState != MMXState_MMX) {
         ChgStateX87_MMX();
@@ -4376,7 +4375,7 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
         // Partial writes can come from FPRs.
         // TODO: Fix the instructions doing partial writes rather than dealing with it here.
 
-        LOGMAN_THROW_A_FMT(Class != IR::GPRClass, "Partial writes from GPR not allowed. Instruction: {}", Op->TableInfo->Name);
+        LOGMAN_THROW_A_FMT(Class != RegClass::GPR, "Partial writes from GPR not allowed. Instruction: {}", Op->TableInfo->Name);
 
         // XMM-size is handled in implementations.
         if (VectorSize != OpSize::i256Bit || OpSize != OpSize::i128Bit) {
@@ -4429,14 +4428,12 @@ void OpDispatchBuilder::StoreResult_WithOpSize(FEXCore::IR::RegisterClassType Cl
   }
 }
 
-void OpDispatchBuilder::StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op,
-                                    const FEXCore::X86Tables::DecodedOperand& Operand, const Ref Src, IR::OpSize Align,
-                                    MemoryAccessType AccessType) {
+void OpDispatchBuilder::StoreResult(RegClass Class, X86Tables::DecodedOp Op, const X86Tables::DecodedOperand& Operand, Ref Src,
+                                    IR::OpSize Align, MemoryAccessType AccessType) {
   StoreResult_WithOpSize(Class, Op, Operand, Src, OpSizeFromDst(Op), Align, AccessType);
 }
 
-void OpDispatchBuilder::StoreResult(FEXCore::IR::RegisterClassType Class, FEXCore::X86Tables::DecodedOp Op, const Ref Src, IR::OpSize Align,
-                                    MemoryAccessType AccessType) {
+void OpDispatchBuilder::StoreResult(RegClass Class, X86Tables::DecodedOp Op, Ref Src, IR::OpSize Align, MemoryAccessType AccessType) {
   StoreResult(Class, Op, Op->Dest, Src, Align, AccessType);
 }
 
