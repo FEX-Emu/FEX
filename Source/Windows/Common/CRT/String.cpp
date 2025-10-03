@@ -56,10 +56,6 @@ long long atoll(const char*) {
   UNIMPLEMENTED();
 }
 
-long long strtoll(const char* __restrict__, char** __restrict, int) {
-  UNIMPLEMENTED();
-}
-
 long double strtold(const char* __restrict__, char** __restrict__) {
   UNIMPLEMENTED();
 }
