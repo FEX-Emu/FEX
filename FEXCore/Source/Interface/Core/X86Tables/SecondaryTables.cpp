@@ -442,7 +442,7 @@ constexpr std::array<X86InstInfo, MAX_REPNE_MOD_TABLE_SIZE> RepNEModOps = []() c
     {0x70, 1, X86InstInfo{"PSHUFLW",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                   1}},
     {0x71, 3, X86InstInfo{"",          TYPE_COPY_OTHER, FLAGS_NONE,                                                      0}},
     {0x74, 4, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                                         0}},
-    {0x78, 1, X86InstInfo{"INSERTQ",   TYPE_INST, GenFlagsSameSize(SIZE_64BIT) | FLAGS_MODRM | FLAGS_SF_MOD_REG_ONLY | FLAGS_XMM_FLAGS,2}},
+    {0x78, 1, X86InstInfo{"INSERTQ",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_REG_ONLY | FLAGS_XMM_FLAGS,2}},
     {0x79, 1, X86InstInfo{"INSERTQ",   TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_SF_MOD_REG_ONLY | FLAGS_XMM_FLAGS, 0}},
     {0x7A, 2, X86InstInfo{"",          TYPE_INVALID, FLAGS_NONE,                                                         0}},
     {0x7C, 1, X86InstInfo{"HADDPS",    TYPE_INST, GenFlagsSameSize(SIZE_128BIT) | FLAGS_MODRM | FLAGS_XMM_FLAGS,                   0}},

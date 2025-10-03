@@ -5132,4 +5132,51 @@ void OpDispatchBuilder::VPGATHER(OpcodeArgs) {
 template void OpDispatchBuilder::VPGATHER<OpSize::i32Bit>(OpcodeArgs);
 template void OpDispatchBuilder::VPGATHER<OpSize::i64Bit>(OpcodeArgs);
 
+void OpDispatchBuilder::Extrq_imm(OpcodeArgs) {
+  const uint8_t MaskWidth = Op->Src[1].Literal() & 0x3F;
+  const uint8_t Shift = (Op->Src[1].Literal() >> 8) & 0x3F;
+
+  Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
+  Ref Result = Dest;
+  if (Shift > 0) {
+    Result = _VUShrI(OpSize::i64Bit, OpSize::i64Bit, Dest, Shift);
+  }
+
+  const uint64_t Mask = ~0ULL >> (MaskWidth == 0 ? 0 : (64 - MaskWidth));
+  const Ref ZeroRegister = LoadZeroVector(OpSize::i128Bit);
+  const Ref MaskVector = _VInsGPR(OpSize::i128Bit, OpSize::i64Bit, 0, ZeroRegister, _Constant(Mask));
+  Result = _VAnd(OpSize::i128Bit, OpSize::i64Bit, Result, MaskVector);
+
+  StoreResultFPR(Op, Result, OpSize::iInvalid);
+}
+
+void OpDispatchBuilder::Insertq_imm(OpcodeArgs) {
+  const uint8_t MaskWidth = Op->Src[1].Literal() & 0x3F;
+  const uint8_t Shift = (Op->Src[1].Literal() >> 8) & 0x3F;
+
+  Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
+
+  const uint64_t Mask = ~0ULL >> (MaskWidth == 0 ? 0 : (64 - MaskWidth));
+  const Ref ZeroRegister = LoadZeroVector(OpSize::i128Bit);
+  Ref MaskVector = _VInsGPR(OpSize::i128Bit, OpSize::i64Bit, 0, ZeroRegister, _Constant(Mask));
+
+  // Mask incoming source.
+  Src = _VAnd(OpSize::i64Bit, OpSize::i64Bit, Src, MaskVector);
+
+  // If shifting then shift source and mask in to the correct location.
+  if (Shift) {
+    Src = _VShlI(OpSize::i64Bit, OpSize::i64Bit, Src, Shift);
+    MaskVector = _VShlI(OpSize::i128Bit, OpSize::i64Bit, MaskVector, Shift);
+  }
+
+  // Negate the mask.
+  MaskVector = _VNot(OpSize::i64Bit, OpSize::i64Bit, MaskVector);
+
+  Dest = _VAnd(OpSize::i64Bit, OpSize::i64Bit, Dest, MaskVector);
+  const Ref Result = _VOr(OpSize::i64Bit, OpSize::i64Bit, Dest, Src);
+
+  StoreResultFPR(Op, Result, OpSize::iInvalid);
+}
+
 } // namespace FEXCore::IR

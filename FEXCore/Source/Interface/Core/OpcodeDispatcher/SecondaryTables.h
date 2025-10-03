@@ -198,6 +198,7 @@ constexpr DispatchTableEntry OpDispatch_SecondaryRepNEModTables[] = {
   {0x5E, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFDIVSCALARINSERT, OpSize::i64Bit>},
   {0x5F, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMAXSCALARINSERT, OpSize::i64Bit>},
   {0x70, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSHUFWOp, true>},
+  {0x78, 1, &OpDispatchBuilder::Insertq_imm},
   {0x7C, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADDP, OpSize::i32Bit>},
   {0x7D, 1, &OpDispatchBuilder::HSUBP<OpSize::i32Bit>},
   {0xD0, 1, &OpDispatchBuilder::ADDSUBPOp<OpSize::i32Bit>},
