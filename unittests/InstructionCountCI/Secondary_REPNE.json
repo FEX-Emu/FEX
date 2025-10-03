@@ -321,26 +321,52 @@
     },
     "insertq xmm0, xmm1, 0, 0": {
       "ExpectedInstructionCount": 7,
-      "Skip": "Yes",
       "Comment": [
         "SSE4a",
         "0xf2 0x0f 0x78"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "mov x20, #0xffffffffffffffff",
+        "mov v2.d[0], x20",
+        "and v3.8b, v17.8b, v2.8b",
+        "mvn v2.16b, v2.16b",
+        "and v2.8b, v16.8b, v2.8b",
+        "orr v16.8b, v2.8b, v3.8b"
       ]
     },
     "insertq xmm0, xmm1, 64, 0": {
       "ExpectedInstructionCount": 7,
-      "Skip": "Yes",
       "Comment": [
         "SSE4a",
         "0xf2 0x0f 0x78"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "mov x20, #0xffffffffffffffff",
+        "mov v2.d[0], x20",
+        "and v3.8b, v17.8b, v2.8b",
+        "mvn v2.16b, v2.16b",
+        "and v2.8b, v16.8b, v2.8b",
+        "orr v16.8b, v2.8b, v3.8b"
       ]
     },
     "insertq xmm0, xmm1, 32, 32": {
-      "ExpectedInstructionCount": 7,
-      "Skip": "Yes",
+      "ExpectedInstructionCount": 9,
       "Comment": [
         "SSE4a",
         "0xf2 0x0f 0x78"
+      ],
+      "ExpectedArm64ASM": [
+        "movi v2.2d, #0x0",
+        "mov w20, #0xffffffff",
+        "mov v2.d[0], x20",
+        "and v3.8b, v17.8b, v2.8b",
+        "shl v3.2d, v3.2d, #32",
+        "shl v2.2d, v2.2d, #32",
+        "mvn v2.16b, v2.16b",
+        "and v2.8b, v16.8b, v2.8b",
+        "orr v16.8b, v2.8b, v3.8b"
       ]
     },
     "insertq xmm0, xmm1": {

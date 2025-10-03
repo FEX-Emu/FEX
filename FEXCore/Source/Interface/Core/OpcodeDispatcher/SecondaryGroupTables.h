@@ -151,6 +151,9 @@ constexpr DispatchTableEntry OpDispatch_SecondaryGroupTables[] = {
   {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F2, 3), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Prefetch, false, false, 3>},
   {OPD(FEXCore::X86Tables::TYPE_GROUP_16, PF_F2, 4), 4, &OpDispatchBuilder::NOPOp},
 
+  // GROUP 17
+  {OPD(FEXCore::X86Tables::TYPE_GROUP_17, PF_66, 0), 1, &OpDispatchBuilder::Extrq_imm},
+
   // GROUP P
   {OPD(FEXCore::X86Tables::TYPE_GROUP_P, PF_NONE, 0), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Prefetch, false, false, 1>},
   {OPD(FEXCore::X86Tables::TYPE_GROUP_P, PF_NONE, 1), 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::Prefetch, true, false, 1>},

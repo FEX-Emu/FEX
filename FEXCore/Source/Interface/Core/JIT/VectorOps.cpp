@@ -41,6 +41,7 @@ namespace FEXCore::CPU {
     const auto Op = IROp->C<IR::IROp_##FEXOp>();                                                                                    \
     const auto OpSize = IROp->Size;                                                                                                 \
     const auto Is256Bit = OpSize == IR::OpSize::i256Bit;                                                                            \
+    const auto Is128Bit = OpSize == IR::OpSize::i128Bit;                                                                            \
     LOGMAN_THROW_A_FMT(!Is256Bit || HostSupportsSVE256, "Need SVE256 support in order to use {} with 256-bit operation", __func__); \
                                                                                                                                     \
     const auto Dst = GetVReg(Node);                                                                                                 \
@@ -49,8 +50,10 @@ namespace FEXCore::CPU {
                                                                                                                                     \
     if (HostSupportsSVE256 && Is256Bit) {                                                                                           \
       ARMOp(Dst.Z(), Vector1.Z(), Vector2.Z());                                                                                     \
-    } else {                                                                                                                        \
+    } else if (Is128Bit) {                                                                                                          \
       ARMOp(Dst.Q(), Vector1.Q(), Vector2.Q());                                                                                     \
+    } else {                                                                                                                        \
+      ARMOp(Dst.D(), Vector1.D(), Vector2.D());                                                                                     \
     }                                                                                                                               \
   }
 
