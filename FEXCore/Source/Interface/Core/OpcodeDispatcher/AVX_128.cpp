@@ -46,9 +46,9 @@ OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_LoadSource_WithOpSize(
     }
 
     if (NeedsHigh) {
-      return _LoadMemPairAutoTSO(FPRClass, OpSize::i128Bit, A, OpSize::i8Bit);
+      return _LoadMemPairFPRAutoTSO(OpSize::i128Bit, A, OpSize::i8Bit);
     } else {
-      return {.Low = _LoadMemAutoTSO(FPRClass, OpSize::i128Bit, A, OpSize::i8Bit)};
+      return {.Low = _LoadMemFPRAutoTSO(OpSize::i128Bit, A, OpSize::i8Bit)};
     }
   }
 }
@@ -95,9 +95,9 @@ void OpDispatchBuilder::AVX128_StoreResult_WithOpSize(FEXCore::X86Tables::Decode
     AddressMode A = DecodeAddress(Op, Operand, AccessType, false /* IsLoad */);
 
     if (Src.High) {
-      _StoreMemPairAutoTSO(FPRClass, OpSize::i128Bit, A, Src.Low, Src.High, OpSize::i8Bit);
+      _StoreMemPairFPRAutoTSO(OpSize::i128Bit, A, Src.Low, Src.High, OpSize::i8Bit);
     } else {
-      _StoreMemAutoTSO(FPRClass, OpSize::i128Bit, A, Src.Low, OpSize::i8Bit);
+      _StoreMemFPRAutoTSO(OpSize::i128Bit, A, Src.Low, OpSize::i8Bit);
     }
   }
 }
@@ -151,13 +151,13 @@ void OpDispatchBuilder::AVX128_VMOVScalarImpl(OpcodeArgs, IR::OpSize ElementSize
     AVX128_StoreResult_WithOpSize(Op, Op->Dest, RefPair {.Low = Result, .High = High});
   } else if (Op->Dest.IsGPR()) {
     // VMOVSS/SD xmm1, mem32/mem64
-    Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], ElementSize, Op->Flags);
+    Ref Src = LoadSourceFPR_WithOpSize(Op, Op->Src[1], ElementSize, Op->Flags);
     auto High = LoadZeroVector(OpSize::i128Bit);
     AVX128_StoreResult_WithOpSize(Op, Op->Dest, RefPair {.Low = Src, .High = High});
   } else {
     // VMOVSS/SD mem32/mem64, xmm1
     auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, false);
-    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src.Low, ElementSize, OpSize::iInvalid);
+    StoreResultFPR_WithOpSize(Op, Op->Dest, Src.Low, ElementSize, OpSize::iInvalid);
   }
 }
 
@@ -351,7 +351,7 @@ void OpDispatchBuilder::AVX128_MOVVectorNT(OpcodeArgs) {
   if (Op->Dest.IsGPR()) {
     ///< MOVNTDQA load non-temporal comes from SSE4.1 and is extended by AVX/AVX2.
     RefPair Src {};
-    Ref SrcAddr = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags, {.LoadData = false});
+    Ref SrcAddr = LoadSourceGPR(Op, Op->Src[0], Op->Flags, {.LoadData = false});
     Src.Low = _VLoadNonTemporal(OpSize::i128Bit, SrcAddr, 0);
 
     if (Is128Bit) {
@@ -362,7 +362,7 @@ void OpDispatchBuilder::AVX128_MOVVectorNT(OpcodeArgs) {
     AVX128_StoreResult_WithOpSize(Op, Op->Dest, Src);
   } else {
     auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit, MemoryAccessType::STREAM);
-    Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
+    Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.LoadData = false});
 
     if (Is128Bit) {
       // Single store non-temporal for 128-bit operations.
@@ -379,7 +379,7 @@ void OpDispatchBuilder::AVX128_MOVQ(OpcodeArgs) {
   if (Op->Src[0].IsGPR()) {
     Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
   } else {
-    Src.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], OpSize::i64Bit, Op->Flags);
+    Src.Low = LoadSourceFPR_WithOpSize(Op, Op->Src[0], OpSize::i64Bit, Op->Flags);
   }
 
   // This instruction is a bit special that if the destination is a register then it'll ZEXT the 64bit source to 256bit
@@ -390,7 +390,7 @@ void OpDispatchBuilder::AVX128_MOVQ(OpcodeArgs) {
     Src.High = ZeroVector;
     AVX128_StoreResult_WithOpSize(Op, Op->Dest, Src);
   } else {
-    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src.Low, OpSize::i64Bit, OpSize::i64Bit);
+    StoreResultFPR_WithOpSize(Op, Op->Dest, Src.Low, OpSize::i64Bit, OpSize::i64Bit);
   }
 }
 
@@ -399,7 +399,7 @@ void OpDispatchBuilder::AVX128_VMOVLP(OpcodeArgs) {
 
   if (!Op->Dest.IsGPR()) {
     ///< VMOVLPS/PD mem64, xmm1
-    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Src1.Low, OpSize::i64Bit, OpSize::i64Bit);
+    StoreResultFPR_WithOpSize(Op, Op->Dest, Src1.Low, OpSize::i64Bit, OpSize::i64Bit);
   } else if (!Op->Src[1].IsGPR()) {
     ///< VMOVLPS/PD xmm1, xmm2, mem64
     // Bits[63:0] come from Src2[63:0]
@@ -463,7 +463,7 @@ void OpDispatchBuilder::AVX128_VMOVDDUP(OpcodeArgs) {
     // 128-bit operation only loads 8-bytes.
     // 256-bit operation loads a full 32-bytes.
     if (Is128Bit) {
-      Src.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], OpSize::i64Bit, Op->Flags);
+      Src.Low = LoadSourceFPR_WithOpSize(Op, Op->Src[0], OpSize::i64Bit, Op->Flags);
     } else {
       Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, true);
     }
@@ -558,18 +558,18 @@ void OpDispatchBuilder::AVX128_InsertCVTGPR_To_FPR(OpcodeArgs, IR::OpSize DstEle
 
   if (Op->Src[1].IsGPR()) {
     // If the source is a GPR then convert directly from the GPR.
-    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Op->Src[1], GetGPROpSize(), Op->Flags);
+    auto Src2 = LoadSourceGPR_WithOpSize(Op, Op->Src[1], GetGPROpSize(), Op->Flags);
     Result.Low = _VSToFGPRInsert(OpSize::i128Bit, DstElementSize, SrcSize, Src1.Low, Src2, false);
   } else if (SrcSize != DstElementSize) {
     // If the source is from memory but the Source size and destination size aren't the same,
     // then it is more optimal to load in to a GPR and convert between GPR->FPR.
     // ARM GPR->FPR conversion supports different size source and destinations while FPR->FPR doesn't.
-    auto Src2 = LoadSource(GPRClass, Op, Op->Src[1], Op->Flags);
+    auto Src2 = LoadSourceGPR(Op, Op->Src[1], Op->Flags);
     Result.Low = _VSToFGPRInsert(DstSize, DstElementSize, SrcSize, Src1.Low, Src2, false);
   } else {
     // In the case of cvtsi2s{s,d} where the source and destination are the same size,
     // then it is more optimal to load in to the FPR register directly and convert there.
-    auto Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+    auto Src2 = LoadSourceFPR(Op, Op->Src[1], Op->Flags);
     // Always signed
     Result.Low = _VSToFVectorInsert(DstSize, DstElementSize, DstElementSize, Src1.Low, Src2, false, false);
   }
@@ -589,11 +589,11 @@ void OpDispatchBuilder::AVX128_CVTFPR_To_GPR(OpcodeArgs, IR::OpSize SrcElementSi
   if (Op->Src[0].IsGPR()) {
     Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
   } else {
-    Src.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcElementSize, Op->Flags);
+    Src.Low = LoadSourceFPR_WithOpSize(Op, Op->Src[0], SrcElementSize, Op->Flags);
   }
 
   Ref Result = CVTFPR_To_GPRImpl(Op, Src.Low, SrcElementSize, HostRoundingMode);
-  StoreResult(GPRClass, Op, Result, OpSize::iInvalid);
+  StoreResultGPR(Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::AVX128_VANDN(OpcodeArgs) {
@@ -636,7 +636,7 @@ void OpDispatchBuilder::AVX128_UCOMISx(OpcodeArgs, IR::OpSize ElementSize) {
   if (Op->Src[0].IsGPR()) {
     Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
   } else {
-    Src2.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
+    Src2.Low = LoadSourceFPR_WithOpSize(Op, Op->Src[0], SrcSize, Op->Flags);
   }
 
   Comiss(ElementSize, Src1.Low, Src2.Low);
@@ -653,7 +653,7 @@ void OpDispatchBuilder::AVX128_VectorScalarInsertALU(OpcodeArgs, FEXCore::IR::IR
   if (Op->Src[1].IsGPR()) {
     Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, false);
   } else {
-    Src2.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], SrcSize, Op->Flags);
+    Src2.Low = LoadSourceFPR_WithOpSize(Op, Op->Src[1], SrcSize, Op->Flags);
   }
 
   // If OpSize == ElementSize then it only does the lower scalar op
@@ -690,7 +690,7 @@ void OpDispatchBuilder::AVX128_InsertScalarFCMP(OpcodeArgs, IR::OpSize ElementSi
   if (Op->Src[1].IsGPR()) {
     Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, false);
   } else {
-    Src2.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], SrcSize, Op->Flags);
+    Src2.Low = LoadSourceFPR_WithOpSize(Op, Op->Src[1], SrcSize, Op->Flags);
   }
 
   const uint8_t CompType = Op->Src[2].Literal();
@@ -708,12 +708,12 @@ void OpDispatchBuilder::AVX128_MOVBetweenGPR_FPR(OpcodeArgs) {
     RefPair Result {};
     if (Op->Src[0].IsGPR()) {
       // Loading from GPR and moving to Vector.
-      Ref Src = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], GetGPROpSize(), Op->Flags);
+      Ref Src = LoadSourceFPR_WithOpSize(Op, Op->Src[0], GetGPROpSize(), Op->Flags);
       // zext to 128bit
       Result.Low = _VCastFromGPR(OpSize::i128Bit, OpSizeFromSrc(Op), Src);
     } else {
       // Loading from Memory as a scalar. Zero extend
-      Result.Low = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+      Result.Low = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
     }
 
     Result.High = LoadZeroVector(OpSize::i128Bit);
@@ -726,11 +726,11 @@ void OpDispatchBuilder::AVX128_MOVBetweenGPR_FPR(OpcodeArgs) {
       auto ElementSize = OpSizeFromDst(Op);
       // Extract element from GPR. Zero extending in the process.
       Src.Low = _VExtractToGPR(OpSizeFromSrc(Op), ElementSize, Src.Low, 0);
-      StoreResult(GPRClass, Op, Op->Dest, Src.Low, OpSize::iInvalid);
+      StoreResultGPR(Op, Op->Dest, Src.Low, OpSize::iInvalid);
     } else {
       // Storing first element to memory.
-      Ref Dest = LoadSource(GPRClass, Op, Op->Dest, Op->Flags, {.LoadData = false});
-      _StoreMem(FPRClass, OpSizeFromDst(Op), Dest, Src.Low, OpSize::i8Bit);
+      Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.LoadData = false});
+      _StoreMemFPR(OpSizeFromDst(Op), Dest, Src.Low, OpSize::i8Bit);
     }
   }
 }
@@ -758,7 +758,7 @@ void OpDispatchBuilder::AVX128_PExtr(OpcodeArgs, IR::OpSize ElementSize) {
     const auto GPRSize = GetGPROpSize();
     // Extract already zero extends the result.
     Ref Result = _VExtractToGPR(OpSize::i128Bit, OverridenElementSize, Src.Low, Index);
-    StoreResult_WithOpSize(GPRClass, Op, Op->Dest, Result, GPRSize, OpSize::iInvalid);
+    StoreResultGPR_WithOpSize(Op, Op->Dest, Result, GPRSize, OpSize::iInvalid);
     return;
   }
 
@@ -779,7 +779,7 @@ void OpDispatchBuilder::AVX128_ExtendVectorElements(OpcodeArgs, IR::OpSize Eleme
       const auto SrcSize = OpSizeFromSrc(Op);
       const auto LoadSize = Is256Bit ? IR::SizeToOpSize(IR::OpSizeToSize(SrcSize) * 2) : SrcSize;
 
-      return LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], LoadSize, Op->Flags);
+      return LoadSourceFPR_WithOpSize(Op, Op->Src[0], LoadSize, Op->Flags);
     }
   };
 
@@ -868,7 +868,7 @@ void OpDispatchBuilder::AVX128_MOVMSK(OpcodeArgs, IR::OpSize ElementSize) {
     auto GPRHigh = Mask8Byte(Src.High);
     GPR = _Orlshl(OpSize::i64Bit, GPRLow, GPRHigh, 2);
   }
-  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, GPR, GetGPROpSize(), OpSize::iInvalid);
+  StoreResultGPR_WithOpSize(Op, Op->Dest, GPR, GetGPROpSize(), OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::AVX128_MOVMSKB(OpcodeArgs) {
@@ -897,7 +897,7 @@ void OpDispatchBuilder::AVX128_MOVMSKB(OpcodeArgs) {
     Result = _Orlshl(OpSize::i64Bit, Result, ResultHigh, 16);
   }
 
-  StoreResult(GPRClass, Op, Result, OpSize::iInvalid);
+  StoreResultGPR(Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::AVX128_PINSRImpl(OpcodeArgs, IR::OpSize ElementSize, const X86Tables::DecodedOperand& Src1Op,
@@ -910,7 +910,7 @@ void OpDispatchBuilder::AVX128_PINSRImpl(OpcodeArgs, IR::OpSize ElementSize, con
 
   if (Src2Op.IsGPR()) {
     // If the source is a GPR then convert directly from the GPR.
-    auto Src2 = LoadSource_WithOpSize(GPRClass, Op, Src2Op, GetGPROpSize(), Op->Flags);
+    auto Src2 = LoadSourceGPR_WithOpSize(Op, Src2Op, GetGPROpSize(), Op->Flags);
     Result.Low = _VInsGPR(OpSize::i128Bit, ElementSize, Index, Src1.Low, Src2);
   } else {
     // If loading from memory then we only load the element size
@@ -1047,7 +1047,7 @@ void OpDispatchBuilder::AVX128_InsertScalar_CVT_Float_To_Float(OpcodeArgs, IR::O
   // Then zero extends the top 128-bit.
   const auto SrcSize = Op->Src[1].IsGPR() ? OpSize::i128Bit : SrcElementSize;
   auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false);
-  Ref Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], SrcSize, Op->Flags, {.AllowUpperGarbage = true});
+  Ref Src2 = LoadSourceFPR_WithOpSize(Op, Op->Src[1], SrcSize, Op->Flags, {.AllowUpperGarbage = true});
 
   Ref Result = _VFToFScalarInsert(OpSize::i128Bit, DstElementSize, SrcElementSize, Src1.Low, Src2, false);
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, AVX128_Zext(Result));
@@ -1076,7 +1076,7 @@ void OpDispatchBuilder::AVX128_Vector_CVT_Float_To_Float(OpcodeArgs, IR::OpSize 
   } else {
     // Handle 64-bit memory source.
     // In the case of cvtps2pd xmm, m64.
-    Src.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], LoadSize, Op->Flags);
+    Src.Low = LoadSourceFPR_WithOpSize(Op, Op->Src[0], LoadSize, Op->Flags);
   }
 
   RefPair Result {};
@@ -1154,7 +1154,7 @@ void OpDispatchBuilder::AVX128_Vector_CVT_Int_To_Float(OpcodeArgs, IR::OpSize Sr
       // unnecessarily zero extend the vector. Otherwise, if
       // memory, then we want to load the element size exactly.
       const auto LoadSize = IR::SizeToOpSize(8 * (IR::OpSizeToSize(Size) / 16));
-      return RefPair {.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], LoadSize, Op->Flags)};
+      return RefPair {.Low = LoadSourceFPR_WithOpSize(Op, Op->Src[0], LoadSize, Op->Flags)};
     } else {
       return AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, !Is128Bit);
     }
@@ -1304,7 +1304,7 @@ void OpDispatchBuilder::AVX128_InsertScalarRound(OpcodeArgs, IR::OpSize ElementS
   if (Op->Src[1].IsGPR()) {
     Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, false);
   } else {
-    Src2.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], SrcSize, Op->Flags);
+    Src2.Low = LoadSourceFPR_WithOpSize(Op, Op->Src[1], SrcSize, Op->Flags);
   }
 
   // If OpSize == ElementSize then it only does the lower scalar op
@@ -1616,11 +1616,11 @@ void OpDispatchBuilder::AVX128_MASKMOV(OpcodeArgs) {
   // RDI source (DS prefix by default)
   auto MemDest = MakeSegmentAddress(X86State::REG_RDI, Op->Flags, X86Tables::DecodeFlags::FLAG_DS_PREFIX);
 
-  Ref XMMReg = _LoadMem(FPRClass, Size, MemDest, OpSize::i8Bit);
+  Ref XMMReg = _LoadMemFPR(Size, MemDest, OpSize::i8Bit);
 
   // If the Mask element high bit is set then overwrite the element with the source, else keep the memory variant
   XMMReg = _VBSL(Size, MaskSrc.Low, VectorSrc.Low, XMMReg);
-  _StoreMem(FPRClass, Size, MemDest, XMMReg, OpSize::i8Bit);
+  _StoreMemFPR(Size, MemDest, XMMReg, OpSize::i8Bit);
 }
 
 void OpDispatchBuilder::AVX128_VectorVariableBlend(OpcodeArgs, IR::OpSize ElementSize) {
@@ -1660,7 +1660,7 @@ void OpDispatchBuilder::AVX128_SaveAVXState(Ref MemBase) {
 
   for (uint32_t i = 0; i < NumRegs; i += 2) {
     RefPair Pair = LoadContextPair(OpSize::i128Bit, AVXHigh0Index + i);
-    _StoreMemPair(FPRClass, OpSize::i128Bit, Pair.Low, Pair.High, MemBase, i * 16 + 576);
+    _StoreMemPairFPR(OpSize::i128Bit, Pair.Low, Pair.High, MemBase, i * 16 + 576);
   }
 }
 
@@ -1668,7 +1668,7 @@ void OpDispatchBuilder::AVX128_RestoreAVXState(Ref MemBase) {
   const auto NumRegs = Is64BitMode ? 16U : 8U;
 
   for (uint32_t i = 0; i < NumRegs; i += 2) {
-    auto YMMHRegs = LoadMemPair(FPRClass, OpSize::i128Bit, MemBase, i * 16 + 576);
+    auto YMMHRegs = LoadMemPairFPR(OpSize::i128Bit, MemBase, i * 16 + 576);
 
     AVX128_StoreXMMRegister(i, YMMHRegs.Low, true);
     AVX128_StoreXMMRegister(i + 1, YMMHRegs.High, true);
@@ -1968,7 +1968,7 @@ void OpDispatchBuilder::AVX128_VFMAScalarImpl(OpcodeArgs, IROps IROp, uint8_t Sr
   if (Op->Src[1].IsGPR()) {
     Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, false).Low;
   } else {
-    Src2 = LoadSource_WithOpSize(FPRClass, Op, Op->Src[1], SrcSize, Op->Flags);
+    Src2 = LoadSourceFPR_WithOpSize(Op, Op->Src[1], SrcSize, Op->Flags);
   }
 
   Ref Sources[3] = {Dest, Src1, Src2};
@@ -2240,7 +2240,7 @@ void OpDispatchBuilder::AVX128_VCVTPH2PS(OpcodeArgs) {
     // In the event that a memory operand is used as the source operand,
     // the access width will always be half the size of the destination vector width
     // (i.e. 128-bit vector -> 64-bit mem, 256-bit vector -> 128-bit mem)
-    Src.Low = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], SrcSize, Op->Flags);
+    Src.Low = LoadSourceFPR_WithOpSize(Op, Op->Src[0], SrcSize, Op->Flags);
   }
 
   RefPair Result {};
@@ -2295,7 +2295,7 @@ void OpDispatchBuilder::AVX128_VCVTPS2PH(OpcodeArgs) {
   }
 
   if (!Op->Dest.IsGPR()) {
-    StoreResult_WithOpSize(FPRClass, Op, Op->Dest, Result.Low, StoreSize, OpSize::iInvalid);
+    StoreResultFPR_WithOpSize(Op, Op->Dest, Result.Low, StoreSize, OpSize::iInvalid);
   } else {
     AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
   }

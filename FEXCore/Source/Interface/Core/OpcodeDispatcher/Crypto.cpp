@@ -23,8 +23,8 @@ void OpDispatchBuilder::SHA1NEXTEOp(OpcodeArgs) {
     UnimplementedOp(Op);
     return;
   }
-  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
 
   // ARMv8 SHA1 extension provides a `SHA1H` instruction which does a fixed rotate by 30.
   // This only operates on element 0 rather than element 3. We don't have the luxury of rewriting the x86 SHA algorithm to take advantage of this.
@@ -36,7 +36,7 @@ void OpDispatchBuilder::SHA1NEXTEOp(OpcodeArgs) {
   auto Tmp = _VAdd(OpSize::i128Bit, OpSize::i32Bit, Src, RotatedNode);
   auto Result = _VInsElement(OpSize::i128Bit, OpSize::i32Bit, 3, 3, Src, Tmp);
 
-  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::SHA1MSG1Op(OpcodeArgs) {
@@ -44,15 +44,15 @@ void OpDispatchBuilder::SHA1MSG1Op(OpcodeArgs) {
     UnimplementedOp(Op);
     return;
   }
-  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
 
   Ref NewVec = _VExtr(OpSize::i128Bit, OpSize::i64Bit, Dest, Src, 1);
 
   // [W0, W1, W2, W3] ^ [W2, W3, W4, W5]
   Ref Result = _VXor(OpSize::i128Bit, OpSize::i8Bit, Dest, NewVec);
 
-  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::SHA1MSG2Op(OpcodeArgs) {
@@ -60,8 +60,8 @@ void OpDispatchBuilder::SHA1MSG2Op(OpcodeArgs) {
     UnimplementedOp(Op);
     return;
   }
-  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
 
   // ARM SHA1 mostly matches x86 semantics, except the input and outputs are both flipped from elements 0,1,2,3 to 3,2,1,0.
   auto Src1 = SHADataShuffle(Dest);
@@ -70,7 +70,7 @@ void OpDispatchBuilder::SHA1MSG2Op(OpcodeArgs) {
   // The result is swizzled differently than expected
   auto Result = SHADataShuffle(_VSha1SU1(Src1, Src2));
 
-  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
@@ -79,8 +79,8 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
     return;
   }
   const uint64_t Imm8 = Op->Src[1].Literal() & 0b11;
-  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
 
   Ref Result {};
   Ref ConstantVector {};
@@ -112,7 +112,7 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
   case 3: Result = SHADataShuffle(_VSha1P(Src1, ZeroRegister, Src2)); break;
   }
 
-  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::SHA256MSG1Op(OpcodeArgs) {
@@ -120,12 +120,12 @@ void OpDispatchBuilder::SHA256MSG1Op(OpcodeArgs) {
     UnimplementedOp(Op);
     return;
   }
-  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
 
   auto Result = _VSha256U0(Dest, Src);
 
-  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::SHA256MSG2Op(OpcodeArgs) {
@@ -133,8 +133,8 @@ void OpDispatchBuilder::SHA256MSG2Op(OpcodeArgs) {
     UnimplementedOp(Op);
     return;
   }
-  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
 
   auto Src1 = _VExtr(OpSize::i128Bit, OpSize::i32Bit, Dest, Dest, 3);
   auto DupDst = _VDupElement(OpSize::i128Bit, OpSize::i32Bit, Dest, 3);
@@ -142,7 +142,7 @@ void OpDispatchBuilder::SHA256MSG2Op(OpcodeArgs) {
 
   auto Result = _VSha256U1(Src1, Src2);
 
-  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
@@ -150,8 +150,8 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
     UnimplementedOp(Op);
     return;
   }
-  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   // Hardcoded to XMM0
   auto XMM0 = LoadXMMRegister(0);
 
@@ -177,7 +177,7 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
   auto B = _VSha256H2(EFGH, ABCD, Key);
   auto Result = shuffle_abcd(A, B);
 
-  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::AESImcOp(OpcodeArgs) {
@@ -185,9 +185,9 @@ void OpDispatchBuilder::AESImcOp(OpcodeArgs) {
     UnimplementedOp(Op);
     return;
   }
-  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Result = _VAESImc(Src);
-  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::AESEncOp(OpcodeArgs) {
@@ -195,10 +195,10 @@ void OpDispatchBuilder::AESEncOp(OpcodeArgs) {
     UnimplementedOp(Op);
     return;
   }
-  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Result = _VAESEnc(OpSize::i128Bit, Dest, Src, LoadZeroVector(OpSize::i128Bit));
-  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::VAESEncOp(OpcodeArgs) {
@@ -208,11 +208,11 @@ void OpDispatchBuilder::VAESEncOp(OpcodeArgs) {
   // TODO: Handle 256-bit VAESENC.
   LOGMAN_THROW_A_FMT(Is128Bit, "256-bit VAESENC unimplemented");
 
-  Ref State = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  Ref Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref State = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
+  Ref Key = LoadSourceFPR(Op, Op->Src[1], Op->Flags);
   Ref Result = _VAESEnc(DstSize, State, Key, LoadZeroVector(DstSize));
 
-  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::AESEncLastOp(OpcodeArgs) {
@@ -220,10 +220,10 @@ void OpDispatchBuilder::AESEncLastOp(OpcodeArgs) {
     UnimplementedOp(Op);
     return;
   }
-  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Result = _VAESEncLast(OpSize::i128Bit, Dest, Src, LoadZeroVector(OpSize::i128Bit));
-  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::VAESEncLastOp(OpcodeArgs) {
@@ -233,11 +233,11 @@ void OpDispatchBuilder::VAESEncLastOp(OpcodeArgs) {
   // TODO: Handle 256-bit VAESENCLAST.
   LOGMAN_THROW_A_FMT(Is128Bit, "256-bit VAESENCLAST unimplemented");
 
-  Ref State = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  Ref Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref State = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
+  Ref Key = LoadSourceFPR(Op, Op->Src[1], Op->Flags);
   Ref Result = _VAESEncLast(DstSize, State, Key, LoadZeroVector(DstSize));
 
-  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::AESDecOp(OpcodeArgs) {
@@ -245,10 +245,10 @@ void OpDispatchBuilder::AESDecOp(OpcodeArgs) {
     UnimplementedOp(Op);
     return;
   }
-  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Result = _VAESDec(OpSize::i128Bit, Dest, Src, LoadZeroVector(OpSize::i128Bit));
-  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::VAESDecOp(OpcodeArgs) {
@@ -258,11 +258,11 @@ void OpDispatchBuilder::VAESDecOp(OpcodeArgs) {
   // TODO: Handle 256-bit VAESDEC.
   LOGMAN_THROW_A_FMT(Is128Bit, "256-bit VAESDEC unimplemented");
 
-  Ref State = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  Ref Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref State = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
+  Ref Key = LoadSourceFPR(Op, Op->Src[1], Op->Flags);
   Ref Result = _VAESDec(DstSize, State, Key, LoadZeroVector(DstSize));
 
-  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::AESDecLastOp(OpcodeArgs) {
@@ -270,10 +270,10 @@ void OpDispatchBuilder::AESDecLastOp(OpcodeArgs) {
     UnimplementedOp(Op);
     return;
   }
-  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Result = _VAESDecLast(OpSize::i128Bit, Dest, Src, LoadZeroVector(OpSize::i128Bit));
-  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::VAESDecLastOp(OpcodeArgs) {
@@ -283,15 +283,15 @@ void OpDispatchBuilder::VAESDecLastOp(OpcodeArgs) {
   // TODO: Handle 256-bit VAESDECLAST.
   LOGMAN_THROW_A_FMT(Is128Bit, "256-bit VAESDECLAST unimplemented");
 
-  Ref State = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  Ref Key = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref State = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
+  Ref Key = LoadSourceFPR(Op, Op->Src[1], Op->Flags);
   Ref Result = _VAESDecLast(DstSize, State, Key, LoadZeroVector(DstSize));
 
-  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result, OpSize::iInvalid);
 }
 
 Ref OpDispatchBuilder::AESKeyGenAssistImpl(OpcodeArgs) {
-  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   const uint64_t RCON = Op->Src[1].Literal();
 
   auto KeyGenSwizzle = LoadAndCacheNamedVectorConstant(OpSize::i128Bit, NAMED_VECTOR_AESKEYGENASSIST_SWIZZLE);
@@ -305,7 +305,7 @@ void OpDispatchBuilder::AESKeyGenAssist(OpcodeArgs) {
   }
 
   Ref Result = AESKeyGenAssistImpl(Op);
-  StoreResult(FPRClass, Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::PCLMULQDQOp(OpcodeArgs) {
@@ -313,12 +313,12 @@ void OpDispatchBuilder::PCLMULQDQOp(OpcodeArgs) {
     UnimplementedOp(Op);
     return;
   }
-  Ref Dest = LoadSource(FPRClass, Op, Op->Dest, Op->Flags);
-  Ref Src = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+  Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   const auto Selector = static_cast<uint8_t>(Op->Src[1].Literal());
 
   auto Res = _PCLMUL(OpSize::i128Bit, Dest, Src, Selector & 0b1'0001);
-  StoreResult(FPRClass, Op, Res, OpSize::iInvalid);
+  StoreResultFPR(Op, Res, OpSize::iInvalid);
 }
 
 void OpDispatchBuilder::VPCLMULQDQOp(OpcodeArgs) {
@@ -328,12 +328,12 @@ void OpDispatchBuilder::VPCLMULQDQOp(OpcodeArgs) {
   }
   const auto DstSize = OpSizeFromDst(Op);
 
-  Ref Src1 = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
-  Ref Src2 = LoadSource(FPRClass, Op, Op->Src[1], Op->Flags);
+  Ref Src1 = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
+  Ref Src2 = LoadSourceFPR(Op, Op->Src[1], Op->Flags);
   const auto Selector = static_cast<uint8_t>(Op->Src[2].Literal());
 
   Ref Res = _PCLMUL(DstSize, Src1, Src2, Selector & 0b1'0001);
-  StoreResult(FPRClass, Op, Res, OpSize::iInvalid);
+  StoreResultFPR(Op, Res, OpSize::iInvalid);
 }
 
 } // namespace FEXCore::IR

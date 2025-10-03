@@ -182,7 +182,7 @@ private:
     MemOffsetType OffsetType = Op->OffsetType;
     uint8_t OffsetScale = Op->OffsetScale;
 
-    IREmit->_StoreMem(FPRClass, OpSize::i64Bit, StackNode, AddrNode, Offset, Align, OffsetType, OffsetScale);
+    IREmit->_StoreMemFPR(OpSize::i64Bit, StackNode, AddrNode, Offset, Align, OffsetType, OffsetScale);
     auto Upper = IREmit->_VExtractToGPR(OpSize::i128Bit, OpSize::i64Bit, StackNode, 1);
 
     // Store the Upper part of the register (the remaining 2 bytes) into memory.
@@ -193,7 +193,7 @@ private:
                    .Offset = 8,
                    .AddrSize = OpSize::i64Bit};
     A = SelectAddressMode(IREmit, A, GPROpSize, Features.SupportsTSOImm9, false, false, OpSize::i16Bit);
-    IREmit->_StoreMem(GPRClass, OpSize::i16Bit, Upper, A.Base, A.Index, OpSize::i64Bit, MemOffsetType::SXTX, A.IndexScale);
+    IREmit->_StoreMemGPR(OpSize::i16Bit, Upper, A.Base, A.Index, OpSize::i64Bit, MemOffsetType::SXTX, A.IndexScale);
   }
 
   void StoreStackMem_Helper(const IROp_StoreStackMem* Op, Ref StackNode) {
@@ -211,7 +211,7 @@ private:
       if (!ReducedPrecisionMode || StrictReducedPrecisionMode) {
         StackNode = SilenceNaN(StackNode);
       }
-      IREmit->_StoreMem(FPRClass, Op->StoreSize, StackNode, AddrNode, Offset, Align, OffsetType, OffsetScale);
+      IREmit->_StoreMemFPR(Op->StoreSize, StackNode, AddrNode, Offset, Align, OffsetType, OffsetScale);
       break;
     }
 
@@ -252,7 +252,7 @@ private:
       [[fallthrough]];
     }
     case OpSize::i64Bit: {
-      IREmit->_StoreMem(FPRClass, Op->StoreSize, StackNode, AddrNode, Offset, Align, OffsetType, OffsetScale);
+      IREmit->_StoreMemFPR(Op->StoreSize, StackNode, AddrNode, Offset, Align, OffsetType, OffsetScale);
       break;
     }
 
@@ -412,8 +412,7 @@ inline void X87StackOptimization::MigrateToSlowPathIf(bool ShouldMigrate) {
 
 inline Ref X87StackOptimization::GetTopWithCache_Slow() {
   if (!TopOffsetCache[0]) {
-    TopOffsetCache[0] =
-      IREmit->_LoadContext(OpSize::i8Bit, GPRClass, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC);
+    TopOffsetCache[0] = IREmit->_LoadContextGPR(OpSize::i8Bit, offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC);
   }
   return TopOffsetCache[0];
 }
@@ -458,7 +457,7 @@ inline void X87StackOptimization::SetTopWithCache_Slow(Ref Value) {
 
 inline Ref X87StackOptimization::GetFTW() {
   if (!FTWCached) {
-    FTWCached = IREmit->_LoadContext(OpSize::i8Bit, GPRClass, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+    FTWCached = IREmit->_LoadContextGPR(OpSize::i8Bit, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
   }
   return FTWCached;
 }
@@ -481,8 +480,7 @@ inline Ref X87StackOptimization::LoadStackValueAtOffset_Slow(uint8_t Offset) {
   OrderedNode* TopOffsetAddress = GetOffsetTopAddressWithCache_Slow(Offset);
   auto Size = ReducedPrecisionMode ? OpSize::i64Bit : OpSize::i128Bit;
   if (!TopValueCache[Offset]) {
-    TopValueCache[Offset] =
-      IREmit->_LoadMem(FPRClass, Size, TopOffsetAddress, IREmit->_InlineConstant(MMBaseOffset()), Size, MemOffsetType::SXTX, 1);
+    TopValueCache[Offset] = IREmit->_LoadMemFPR(Size, TopOffsetAddress, IREmit->_InlineConstant(MMBaseOffset()), Size, MemOffsetType::SXTX, 1);
   }
   return TopValueCache[Offset];
 }
@@ -616,7 +614,7 @@ inline void X87StackOptimization::UpdateTopForPush_Slow() {
 
 void X87StackOptimization::FlushCachedRegs() {
   if (FlushTopPending) {
-    IREmit->_StoreContext(OpSize::i8Bit, GPRClass, TopOffsetCache[0], offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC);
+    IREmit->_StoreContextGPR(OpSize::i8Bit, TopOffsetCache[0], offsetof(FEXCore::Core::CPUState, flags) + FEXCore::X86State::X87FLAG_TOP_LOC);
     FlushTopPending = false;
   }
 
@@ -624,7 +622,7 @@ void X87StackOptimization::FlushCachedRegs() {
   for (size_t i = 0; i < FlushValuesPending.size(); i++) {
     if (FlushValuesPending[i]) {
       OrderedNode* TopOffsetAddress = GetOffsetTopAddressWithCache_Slow(i);
-      IREmit->_StoreMem(FPRClass, Size, TopValueCache[i], TopOffsetAddress, IREmit->_InlineConstant(MMBaseOffset()), Size, MemOffsetType::SXTX, 1);
+      IREmit->_StoreMemFPR(Size, TopValueCache[i], TopOffsetAddress, IREmit->_InlineConstant(MMBaseOffset()), Size, MemOffsetType::SXTX, 1);
       // store
       FlushValuesPending[i] = false;
     }
@@ -675,7 +673,7 @@ void X87StackOptimization::FlushCachedRegs() {
         }
       }();
 
-      IREmit->_StoreContext(OpSize::i8Bit, GPRClass, NewFTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
+      IREmit->_StoreContextGPR(OpSize::i8Bit, NewFTW, offsetof(FEXCore::Core::CPUState, AbridgedFTW));
       FTWCached = NewFTW;
     }
 

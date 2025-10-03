@@ -1599,8 +1599,7 @@ private:
     StoreResult(FPRClass, Op, Operand, Src, Align, AccessType);
   }
 
-  void StoreResult(RegisterClassType Class, X86Tables::DecodedOp Op, Ref Src, OpSize Align,
-                   MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
+  void StoreResult(RegisterClassType Class, X86Tables::DecodedOp Op, Ref Src, OpSize Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
   void StoreResultGPR(X86Tables::DecodedOp Op, Ref Src, OpSize Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
     StoreResult(GPRClass, Op, Src, Align, AccessType);
   }

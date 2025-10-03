@@ -29,38 +29,38 @@ void OpDispatchBuilder::X87LDENVF64(OpcodeArgs) {
   const auto Size = OpSizeFromSrc(Op);
   Ref Mem = MakeSegmentAddress(Op, Op->Src[0]);
 
-  auto NewFCW = _LoadMem(GPRClass, OpSize::i16Bit, Mem, OpSize::i16Bit);
+  auto NewFCW = _LoadMemGPR(OpSize::i16Bit, Mem, OpSize::i16Bit);
   // ignore the rounding precision, we're always 64-bit in F64.
   // extract rounding mode
   Ref roundingMode = _Bfe(OpSize::i32Bit, 3, 10, NewFCW);
   _SetRoundingMode(roundingMode, false, roundingMode);
-  _StoreContext(OpSize::i16Bit, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
+  _StoreContextGPR(OpSize::i16Bit, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 
-  auto NewFSW = _LoadMem(GPRClass, Size, Mem, Constant(IR::OpSizeToSize(Size)), Size, MemOffsetType::SXTX, 1);
+  auto NewFSW = _LoadMemGPR(Size, Mem, Constant(IR::OpSizeToSize(Size)), Size, MemOffsetType::SXTX, 1);
   ReconstructX87StateFromFSW_Helper(NewFSW);
 
   {
     // FTW
-    SetX87FTW(_LoadMem(GPRClass, Size, Mem, Constant(IR::OpSizeToSize(Size) * 2), Size, MemOffsetType::SXTX, 1));
+    SetX87FTW(_LoadMemGPR(Size, Mem, Constant(IR::OpSizeToSize(Size) * 2), Size, MemOffsetType::SXTX, 1));
   }
 }
 
 void OpDispatchBuilder::X87FLDCWF64(OpcodeArgs) {
   _StackForceSlow();
 
-  Ref NewFCW = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+  Ref NewFCW = LoadSourceGPR(Op, Op->Src[0], Op->Flags);
   // ignore the rounding precision, we're always 64-bit in F64.
   // extract rounding mode
   Ref roundingMode = _Bfe(OpSize::i32Bit, 3, 10, NewFCW);
   _SetRoundingMode(roundingMode, false, roundingMode);
-  _StoreContext(OpSize::i16Bit, GPRClass, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
+  _StoreContextGPR(OpSize::i16Bit, NewFCW, offsetof(FEXCore::Core::CPUState, FCW));
 }
 
 // F64 ops
 // Float load op with memory operand
 void OpDispatchBuilder::FLDF64(OpcodeArgs, IR::OpSize Width) {
   const auto ReadWidth = (Width == OpSize::f80Bit) ? OpSize::i128Bit : Width;
-  Ref Data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], Width, Op->Flags);
+  Ref Data = LoadSourceFPR_WithOpSize(Op, Op->Src[0], Width, Op->Flags);
   // Convert to 64bit float
   Ref ConvertedData = Data;
   if (Width == OpSize::i32Bit) {
@@ -73,7 +73,7 @@ void OpDispatchBuilder::FLDF64(OpcodeArgs, IR::OpSize Width) {
 
 void OpDispatchBuilder::FBLDF64(OpcodeArgs) {
   // Read from memory
-  Ref Data = LoadSource_WithOpSize(FPRClass, Op, Op->Src[0], OpSize::f80Bit, Op->Flags);
+  Ref Data = LoadSourceFPR_WithOpSize(Op, Op->Src[0], OpSize::f80Bit, Op->Flags);
   Ref ConvertedData = _F80BCDLoad(Data);
   ConvertedData = _F80CVT(OpSize::i64Bit, ConvertedData);
   _PushStack(ConvertedData, Data, OpSize::i64Bit, true);
@@ -82,7 +82,7 @@ void OpDispatchBuilder::FBLDF64(OpcodeArgs) {
 void OpDispatchBuilder::FBSTPF64(OpcodeArgs) {
   Ref converted = _F80CVTTo(_ReadStackValue(0), OpSize::i64Bit);
   converted = _F80BCDStore(converted);
-  StoreResult_WithOpSize(FPRClass, Op, Op->Dest, converted, OpSize::f80Bit, OpSize::i8Bit);
+  StoreResultFPR_WithOpSize(Op, Op->Dest, converted, OpSize::f80Bit, OpSize::i8Bit);
   _PopStackDestroy();
 }
 
@@ -95,7 +95,7 @@ void OpDispatchBuilder::FILDF64(OpcodeArgs) {
   const auto ReadWidth = OpSizeFromSrc(Op);
 
   // Read from memory
-  Ref Data = LoadSource_WithOpSize(GPRClass, Op, Op->Src[0], ReadWidth, Op->Flags);
+  Ref Data = LoadSourceGPR_WithOpSize(Op, Op->Src[0], ReadWidth, Op->Flags);
   if (ReadWidth == OpSize::i16Bit) {
     Data = _Sbfe(OpSize::i64Bit, IR::OpSizeAsBits(ReadWidth), 0, Data);
   }
@@ -112,7 +112,7 @@ void OpDispatchBuilder::FISTF64(OpcodeArgs, bool Truncate) {
   } else {
     data = _Float_ToGPR_S(Size == OpSize::i32Bit ? OpSize::i32Bit : OpSize::i64Bit, OpSize::i64Bit, data);
   }
-  StoreResult_WithOpSize(GPRClass, Op, Op->Dest, data, Size, OpSize::i8Bit);
+  StoreResultGPR_WithOpSize(Op, Op->Dest, data, Size, OpSize::i8Bit);
 
   if ((Op->TableInfo->Flags & X86Tables::InstFlags::FLAGS_POP) != 0) {
     _PopStackDestroy();
@@ -138,16 +138,16 @@ void OpDispatchBuilder::FADDF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpDi
   Ref arg {};
 
   if (Integer) {
-    arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+    arg = LoadSourceGPR(Op, Op->Src[0], Op->Flags);
     if (Width == OpSize::i16Bit) {
       arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
     }
     arg = _Float_FromGPR_S(OpSize::i64Bit, Width == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit, arg);
   } else if (Width == OpSize::i32Bit) {
-    arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+    arg = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
     arg = _Float_FToF(OpSize::i64Bit, OpSize::i32Bit, arg);
   } else if (Width == OpSize::i64Bit) {
-    arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+    arg = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   } else {
     FEX_UNREACHABLE;
   }
@@ -176,16 +176,16 @@ void OpDispatchBuilder::FMULF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpDi
   Ref arg {};
 
   if (Integer) {
-    arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+    arg = LoadSourceGPR(Op, Op->Src[0], Op->Flags);
     if (Width == OpSize::i16Bit) {
       arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
     }
     arg = _Float_FromGPR_S(OpSize::i64Bit, Width == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit, arg);
   } else if (Width == OpSize::i32Bit) {
-    arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+    arg = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
     arg = _Float_FToF(OpSize::i64Bit, OpSize::i32Bit, arg);
   } else if (Width == OpSize::i64Bit) {
-    arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+    arg = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   } else {
     FEX_UNREACHABLE;
   }
@@ -228,16 +228,16 @@ void OpDispatchBuilder::FDIVF64(OpcodeArgs, IR::OpSize Width, bool Integer, bool
 
   if (Width == OpSize::i16Bit || Width == OpSize::i32Bit || Width == OpSize::i64Bit) {
     if (Integer) {
-      Arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+      Arg = LoadSourceGPR(Op, Op->Src[0], Op->Flags);
       if (Width == OpSize::i16Bit) {
         Arg = _Sbfe(OpSize::i64Bit, 16, 0, Arg);
       }
       Arg = _Float_FromGPR_S(OpSize::i64Bit, Width == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit, Arg);
     } else if (Width == OpSize::i32Bit) {
-      Arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+      Arg = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
       Arg = _Float_FToF(OpSize::i64Bit, OpSize::i32Bit, Arg);
     } else if (Width == OpSize::i64Bit) {
-      Arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+      Arg = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
     }
   } else {
     FEX_UNREACHABLE;
@@ -285,16 +285,16 @@ void OpDispatchBuilder::FSUBF64(OpcodeArgs, IR::OpSize Width, bool Integer, bool
 
   if (Width == OpSize::i16Bit || Width == OpSize::i32Bit || Width == OpSize::i64Bit) {
     if (Integer) {
-      arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+      arg = LoadSourceGPR(Op, Op->Src[0], Op->Flags);
       if (Width == OpSize::i16Bit) {
         arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
       }
       arg = _Float_FromGPR_S(OpSize::i64Bit, Width == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit, arg);
     } else if (Width == OpSize::i32Bit) {
-      arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+      arg = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
       arg = _Float_FToF(OpSize::i64Bit, OpSize::i32Bit, arg);
     } else if (Width == OpSize::i64Bit) {
-      arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+      arg = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
     }
   } else {
     FEX_UNREACHABLE;
@@ -332,16 +332,16 @@ void OpDispatchBuilder::FCOMIF64(OpcodeArgs, IR::OpSize Width, bool Integer, OpD
   } else if (Width == OpSize::i16Bit || Width == OpSize::i32Bit || Width == OpSize::i64Bit) {
     // Memory arg
     if (Integer) {
-      arg = LoadSource(GPRClass, Op, Op->Src[0], Op->Flags);
+      arg = LoadSourceGPR(Op, Op->Src[0], Op->Flags);
       if (Width == OpSize::i16Bit) {
         arg = _Sbfe(OpSize::i64Bit, 16, 0, arg);
       }
       b = _Float_FromGPR_S(OpSize::i64Bit, Width == OpSize::i64Bit ? OpSize::i64Bit : OpSize::i32Bit, arg);
     } else if (Width == OpSize::i32Bit) {
-      arg = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+      arg = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
       b = _Float_FToF(OpSize::i64Bit, OpSize::i32Bit, arg);
     } else if (Width == OpSize::i64Bit) {
-      b = LoadSource(FPRClass, Op, Op->Src[0], Op->Flags);
+      b = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
     }
   } else {
     FEX_UNREACHABLE;

@@ -180,6 +180,9 @@ public:
     return _StoreMem(FPRClass, Size, Value, Addr, Offset, Align, OffsetType, OffsetScale);
   }
 
+  IRPair<IROp_StoreMemPair> _StoreMemPairGPR(OpSize Size, Ref Value1, Ref Value2, Ref Addr, uint32_t Offset) {
+    return _StoreMemPair(GPRClass, Size, Value1, Value2, Addr, Offset);
+  }
   IRPair<IROp_StoreMemPair> _StoreMemPairFPR(OpSize Size, Ref Value1, Ref Value2, Ref Addr, uint32_t Offset) {
     return _StoreMemPair(FPRClass, Size, Value1, Value2, Addr, Offset);
   }
