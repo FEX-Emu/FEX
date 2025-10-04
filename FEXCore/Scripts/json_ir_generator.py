@@ -58,10 +58,10 @@ class OpDefinition:
     JITDispatch: bool
     JITDispatchOverride: str
     TiedSource: int
-    Inline: list
-    Arguments: list
-    EmitValidation: list
-    Desc: list
+    Inline: list[str]
+    Arguments: list[OpArgument]
+    EmitValidation: list[str]
+    Desc: list[str]
 
     def __init__(self):
         self.Name = None
@@ -92,19 +92,14 @@ class OpDefinition:
         attrs = vars(self)
         print(", ".join("%s: %s" % item for item in attrs.items()))
 
-IRTypesToCXX = {}
-CXXTypeToIR = {}
-IROps = []
+IRTypesToCXX: dict[str, IRType] = {}
+CXXTypeToIR: dict[str, IRType] = {}
+IROps: list[OpDefinition] = []
 
-IROpNameMap = {}
+IROpNameSet: set[str] = set()
 
-def is_ssa_type(type):
-    if (type == "SSA" or
-       type == "GPR" or
-       type == "GPRPair" or
-       type == "FPR"):
-       return True
-    return False
+def is_ssa_type(op_type: str):
+    return op_type in {"SSA", "GPR", "GPRPair", "FPR"}
 
 def parse_irtypes(irtypes):
     for op_key, op_val in irtypes.items():
@@ -293,11 +288,11 @@ def parse_ops(ops):
             #OpDef.print()
 
             # Error on duplicate op
-            if OpDef.Name in IROpNameMap:
+            if OpDef.Name in IROpNameSet:
                 ExitError("Duplicate Op defined! {}".format(OpDef.Name))
 
             IROps.append(OpDef)
-            IROpNameMap[OpDef.Name] = 1
+            IROpNameSet.add(OpDef.Name)
 
 # Print out enum values
 def print_enums(enums):
@@ -571,9 +566,7 @@ def print_ir_arg_printer():
 
             SSAArgNum = 0
             FirstArg = True
-            for i in range(0, len(op.Arguments)):
-                arg = op.Arguments[i]
-
+            for arg in op.Arguments:
                 # No point printing temporaries that we can't recover
                 if arg.Temporary:
                     continue
@@ -688,22 +681,21 @@ def print_ir_allocator_helpers():
             output_file.write("\tIRPair<IROp_{}> _{}(" .format(op.Name, op.Name))
 
             # Output SSA args first
-            for i in range(0, len(op.Arguments)):
-                arg = op.Arguments[i]
-                LastArg = len(op.Arguments) - i - 1 == 0
+            for i, arg in enumerate(op.Arguments):
+                LastArg = i == len(op.Arguments) - 1
 
                 if arg.Temporary:
                     CType = IRTypesToCXX[arg.Type].CXXName
-                    output_file.write("{} {}".format(CType, arg.Name));
+                    output_file.write("{} {}".format(CType, arg.Name))
                 elif arg.IsSSA:
                     # SSA value
                     output_file.write("OrderedNodeWrapper {}".format(arg.Name))
                 else:
                     # User defined op that is stored
                     CType = IRTypesToCXX[arg.Type].CXXName
-                    output_file.write("{} {}".format(CType, arg.Name));
+                    output_file.write("{} {}".format(CType, arg.Name))
 
-                if arg.DefaultInitializer != None:
+                if arg.DefaultInitializer:
                     output_file.write(" = {}".format(arg.DefaultInitializer))
 
                 if not LastArg:
@@ -761,20 +753,19 @@ def print_ir_allocator_helpers():
             if op.SSAArgNum:
                 output_file.write("\tIRPair<IROp_{}> _{}(" .format(op.Name, op.Name))
 
-                for i in range(0, len(op.Arguments)):
-                    arg = op.Arguments[i]
-                    LastArg = len(op.Arguments) - i - 1 == 0
+                for i, arg in enumerate(op.Arguments):
+                    LastArg = i == len(op.Arguments) - 1
 
                     if arg.Temporary:
                         CType = IRTypesToCXX[arg.Type].CXXName
-                        output_file.write("{} {}".format(CType, arg.Name));
+                        output_file.write("{} {}".format(CType, arg.Name))
                     elif arg.IsSSA:
                         output_file.write("OrderedNode *{}".format(arg.Name))
                     else:
                         CType = IRTypesToCXX[arg.Type].CXXName
-                        output_file.write("{} {}".format(CType, arg.Name));
+                        output_file.write("{} {}".format(CType, arg.Name))
 
-                    if arg.DefaultInitializer != None:
+                    if arg.DefaultInitializer:
                         output_file.write(" = {}".format(arg.DefaultInitializer))
 
                     if not LastArg:
@@ -815,16 +806,15 @@ def print_ir_allocator_helpers():
                 print_validation(op)
 
                 output_file.write(f"\t\treturn _{op.Name}(")
-                for i in range(0, len(op.Arguments)):
-                    arg = op.Arguments[i]
-                    LastArg = len(op.Arguments) - i - 1 == 0
+                for i, arg in enumerate(op.Arguments):
+                    LastArg = i == len(op.Arguments) - 1
                     output_file.write(arg.Name)
                     if arg.IsSSA:
                         output_file.write("->Wrapped(ListDataBegin)")
                     if not LastArg:
                         output_file.write(", ")
-                output_file.write(");\n");
-                output_file.write("\t}\n\n");
+                output_file.write(");\n")
+                output_file.write("\t}\n\n")
 
     output_file.write("#undef IROP_ALLOCATE_HELPERS\n")
     output_file.write("#endif\n")
@@ -855,8 +845,8 @@ def print_ir_dispatcher_dispatch():
     output_dispatch_file.write("#endif\n")
 
 
-if (len(sys.argv) < 4):
-    ExitError()
+if len(sys.argv) < 4:
+    ExitError("Insufficient parameters passed to script")
 
 output_filename = sys.argv[2]
 output_dispatcher_filename = sys.argv[3]
