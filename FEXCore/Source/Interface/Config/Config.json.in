@@ -59,7 +59,9 @@
           "ENABLEWFXT": "enablewfxt",
           "DISABLEWFXT": "disablewfxt",
           "ENABLE3DNOW": "enable3dnow",
-          "DISABLE3DNOW": "disable3dnow"
+          "DISABLE3DNOW": "disable3dnow",
+          "ENABLESSE4A": "enablesse4a",
+          "DISABLESSE4A": "disablesse4a"
         },
         "Desc": [
           "Allows controlling of the CPU features in the JIT.",
@@ -82,7 +84,8 @@
           "\t{enable,disable}svebitperm: Will force enable or disable svebitperm even if the host doesn't support it",
           "\t{enable,disable}preserveallabi: Will force enable or disable preserve_all abi even if the host doesn't support it",
           "\t{enable,disable}wfxt: Will force enable or disable wfxt even if the host doesn't support it",
-          "\t{enable,disable}3dnow: Will force enable or disable 3DNow even if the host doesn't support it"
+          "\t{enable,disable}3dnow: Will force enable or disable 3DNow! even if the host doesn't support it",
+          "\t{enable,disable}sse4a: Will force enable or disable SSE4a even if the host doesn't support it"
         ]
       },
       "SmallTSCScale": {

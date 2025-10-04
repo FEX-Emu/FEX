@@ -199,6 +199,7 @@ constexpr DispatchTableEntry OpDispatch_SecondaryRepNEModTables[] = {
   {0x5F, 1, &OpDispatchBuilder::VectorScalarInsertALUOp<IR::OP_VFMAXSCALARINSERT, OpSize::i64Bit>},
   {0x70, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::PSHUFWOp, true>},
   {0x78, 1, &OpDispatchBuilder::Insertq_imm},
+  {0x79, 1, &OpDispatchBuilder::Insertq},
   {0x7C, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADDP, OpSize::i32Bit>},
   {0x7D, 1, &OpDispatchBuilder::HSUBP<OpSize::i32Bit>},
   {0xD0, 1, &OpDispatchBuilder::ADDSUBPOp<OpSize::i32Bit>},
@@ -257,6 +258,7 @@ constexpr DispatchTableEntry OpDispatch_SecondaryOpSizeModTables[] = {
   {0x75, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPEQ, OpSize::i16Bit>},
   {0x76, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VCMPEQ, OpSize::i32Bit>},
   {0x78, 1, nullptr}, // GROUP 17
+  {0x79, 1, &OpDispatchBuilder::Extrq},
   {0x7C, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::VectorALUOp, IR::OP_VFADDP, OpSize::i64Bit>},
   {0x7D, 1, &OpDispatchBuilder::HSUBP<OpSize::i64Bit>},
   {0x7E, 1, &OpDispatchBuilder::Bind<&OpDispatchBuilder::MOVBetweenGPR_FPR, OpDispatchBuilder::VectorOpType::SSE>},

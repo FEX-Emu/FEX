@@ -910,6 +910,8 @@ public:
   void CRC32(OpcodeArgs);
   void Extrq_imm(OpcodeArgs);
   void Insertq_imm(OpcodeArgs);
+  void Extrq(OpcodeArgs);
+  void Insertq(OpcodeArgs);
 
   void BreakOp(OpcodeArgs, FEXCore::IR::BreakDefinition BreakDefinition);
   void UnimplementedOp(OpcodeArgs);
