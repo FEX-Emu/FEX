@@ -36,9 +36,11 @@ $end_info$
 namespace FEXCore::Core {
 struct InternalThreadState;
 }
-
 namespace FEXCore::Context {
 struct ExitFunctionLinkData;
+}
+namespace FEXCore::IR {
+class RegisterAllocationPass;
 }
 
 namespace FEXCore::CPU {
