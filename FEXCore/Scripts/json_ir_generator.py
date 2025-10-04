@@ -96,7 +96,7 @@ IRTypesToCXX: dict[str, IRType] = {}
 CXXTypeToIR: dict[str, IRType] = {}
 IROps: list[OpDefinition] = []
 
-IROpNameMap: dict[str, int] = {}
+IROpNameSet: set[str] = set()
 
 def is_ssa_type(op_type: str):
     return op_type in {"SSA", "GPR", "GPRPair", "FPR"}
@@ -288,11 +288,11 @@ def parse_ops(ops):
             #OpDef.print()
 
             # Error on duplicate op
-            if OpDef.Name in IROpNameMap:
+            if OpDef.Name in IROpNameSet:
                 ExitError("Duplicate Op defined! {}".format(OpDef.Name))
 
             IROps.append(OpDef)
-            IROpNameMap[OpDef.Name] = 1
+            IROpNameSet.add(OpDef.Name)
 
 # Print out enum values
 def print_enums(enums):
