@@ -98,13 +98,8 @@ IROps: list[OpDefinition] = []
 
 IROpNameMap: dict[str, int] = {}
 
-def is_ssa_type(type):
-    if (type == "SSA" or
-       type == "GPR" or
-       type == "GPRPair" or
-       type == "FPR"):
-       return True
-    return False
+def is_ssa_type(op_type: str):
+    return op_type in {"SSA", "GPR", "GPRPair", "FPR"}
 
 def parse_irtypes(irtypes):
     for op_key, op_val in irtypes.items():
