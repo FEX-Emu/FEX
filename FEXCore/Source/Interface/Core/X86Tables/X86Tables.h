@@ -7,6 +7,7 @@ $end_info$
 
 #pragma once
 
+#include <FEXCore/Utils/EnumUtils.h>
 #include <FEXCore/Utils/LogManager.h>
 
 #include <array>
@@ -606,10 +607,4 @@ constexpr static inline void GenerateX87Table(X86InstInfo *FinalTable, X86Tables
 
 }
 
-template <>
-struct fmt::formatter<FEXCore::X86Tables::DecodedOperand::OpType> : formatter<uint32_t> {
-  template <typename FormatContext>
-  auto format(FEXCore::X86Tables::DecodedOperand::OpType type, FormatContext& ctx) const {
-    return fmt::formatter<uint32_t>::format(static_cast<uint32_t>(type), ctx);
-  }
-};
+FEX_DEFINE_ENUM_FMT_PASSTHROUGH(FEXCore::X86Tables::DecodedOperand::OpType);
