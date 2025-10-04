@@ -320,15 +320,14 @@
       ]
     },
     "insertq xmm0, xmm1, 0, 0": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "SSE4a",
         "0xf2 0x0f 0x78"
       ],
       "ExpectedArm64ASM": [
-        "movi v2.2d, #0x0",
         "mov x20, #0xffffffffffffffff",
-        "mov v2.d[0], x20",
+        "fmov d2, x20",
         "and v3.8b, v17.8b, v2.8b",
         "mvn v2.16b, v2.16b",
         "and v2.8b, v16.8b, v2.8b",
@@ -336,15 +335,14 @@
       ]
     },
     "insertq xmm0, xmm1, 64, 0": {
-      "ExpectedInstructionCount": 7,
+      "ExpectedInstructionCount": 6,
       "Comment": [
         "SSE4a",
         "0xf2 0x0f 0x78"
       ],
       "ExpectedArm64ASM": [
-        "movi v2.2d, #0x0",
         "mov x20, #0xffffffffffffffff",
-        "mov v2.d[0], x20",
+        "fmov d2, x20",
         "and v3.8b, v17.8b, v2.8b",
         "mvn v2.16b, v2.16b",
         "and v2.8b, v16.8b, v2.8b",
@@ -352,15 +350,14 @@
       ]
     },
     "insertq xmm0, xmm1, 32, 32": {
-      "ExpectedInstructionCount": 9,
+      "ExpectedInstructionCount": 8,
       "Comment": [
         "SSE4a",
         "0xf2 0x0f 0x78"
       ],
       "ExpectedArm64ASM": [
-        "movi v2.2d, #0x0",
         "mov w20, #0xffffffff",
-        "mov v2.d[0], x20",
+        "fmov d2, x20",
         "and v3.8b, v17.8b, v2.8b",
         "shl v3.2d, v3.2d, #32",
         "shl v2.2d, v2.2d, #32",
@@ -370,11 +367,32 @@
       ]
     },
     "insertq xmm0, xmm1": {
-      "ExpectedInstructionCount": 7,
-      "Skip": "Yes",
+      "ExpectedInstructionCount": 20,
       "Comment": [
         "SSE4a",
         "0xf2 0x0f 0x79"
+      ],
+      "ExpectedArm64ASM": [
+        "dup v2.2d, v17.d[1]",
+        "mov w0, #0x3f",
+        "dup v3.2d, x0",
+        "and v4.8b, v2.8b, v3.8b",
+        "ushr v2.2d, v2.2d, #8",
+        "and v2.8b, v2.8b, v3.8b",
+        "mov x20, v4.d[0]",
+        "mrs x21, nzcv",
+        "mov x0, #0xffffffffffffffff",
+        "cmp x20, #0x0 (0)",
+        "lsl x1, x0, x20",
+        "csinv x20, x0, x1, eq",
+        "fmov d3, x20",
+        "and v4.16b, v17.16b, v3.16b",
+        "ushl v4.2d, v4.2d, v2.2d",
+        "ushl v3.2d, v3.2d, v2.2d",
+        "mvn v2.16b, v3.16b",
+        "and v2.8b, v16.8b, v2.8b",
+        "orr v16.8b, v2.8b, v4.8b",
+        "msr nzcv, x21"
       ]
     },
     "haddps xmm0, xmm1": {
