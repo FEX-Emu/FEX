@@ -845,8 +845,8 @@ def print_ir_dispatcher_dispatch():
     output_dispatch_file.write("#endif\n")
 
 
-if (len(sys.argv) < 4):
-    ExitError()
+if len(sys.argv) < 4:
+    ExitError("Insufficient parameters passed to script")
 
 output_filename = sys.argv[2]
 output_dispatcher_filename = sys.argv[3]
