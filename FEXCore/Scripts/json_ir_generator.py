@@ -58,10 +58,10 @@ class OpDefinition:
     JITDispatch: bool
     JITDispatchOverride: str
     TiedSource: int
-    Inline: list
-    Arguments: list
-    EmitValidation: list
-    Desc: list
+    Inline: list[str]
+    Arguments: list[OpArgument]
+    EmitValidation: list[str]
+    Desc: list[str]
 
     def __init__(self):
         self.Name = None
@@ -92,11 +92,11 @@ class OpDefinition:
         attrs = vars(self)
         print(", ".join("%s: %s" % item for item in attrs.items()))
 
-IRTypesToCXX = {}
-CXXTypeToIR = {}
-IROps = []
+IRTypesToCXX: dict[str, IRType] = {}
+CXXTypeToIR: dict[str, IRType] = {}
+IROps: list[OpDefinition] = []
 
-IROpNameMap = {}
+IROpNameMap: dict[str, int] = {}
 
 def is_ssa_type(type):
     if (type == "SSA" or
