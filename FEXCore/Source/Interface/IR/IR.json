@@ -1075,6 +1075,13 @@
           "Size == FEXCore::IR::OpSize::i16Bit || Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
         ]
       },
+      "GPR = Rbit OpSize:#Size, GPR:$Src": {
+        "Desc": ["Reverses the bit order of the register"],
+        "DestSize": "Size",
+        "EmitValidation": [
+          "Size == FEXCore::IR::OpSize::i32Bit || Size == FEXCore::IR::OpSize::i64Bit"
+        ]
+      },
       "GPR = Add OpSize:#Size, GPR:$Src1, GPR:$Src2": {
         "Desc": [ "Integer Add",
                   "Will truncate to 64 or 32bits"
@@ -1542,6 +1549,15 @@
           "ResultSize == FEXCore::IR::OpSize::i32Bit || ResultSize == FEXCore::IR::OpSize::i64Bit"
         ]
       },
+      "GPR = MaskGenerateFromBitWidth GPR:$BitWidth": {
+        "Desc": ["Generates a bit mask from with a value from [0, 63]",
+                 "0 is special cased to full-mask",
+                 "Special operation for SSE4a bitmask generation."
+        ],
+        "DestSize": "FEXCore::IR::OpSize::i64Bit",
+        "ImplicitFlagClobber": true
+      },
+
       "GPR = Extr OpSize:#Size, GPR:$Upper, GPR:$Lower, u8:$LSB": {
         "Desc": ["Concats the two GPRs to create a value that is the size of the full two GPRs",
                  "It then extracts a bitfield width that size of a GPR from the LSB",

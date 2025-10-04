@@ -1190,6 +1190,19 @@ DEF_OP(Rev) {
   }
 }
 
+DEF_OP(Rbit) {
+  auto Op = IROp->C<IR::IROp_Rbit>();
+  const auto OpSize = IROp->Size;
+
+  LOGMAN_THROW_A_FMT(OpSize == IR::OpSize::i32Bit || OpSize == IR::OpSize::i64Bit, "Unsupported {} size: {}", __func__, OpSize);
+  const auto EmitSize = ConvertSize48(IROp);
+
+  const auto Dst = GetReg(Node);
+  const auto Src = GetReg(Op->Src);
+
+  rbit(EmitSize, Dst, Src);
+}
+
 DEF_OP(Bfi) {
   auto Op = IROp->C<IR::IROp_Bfi>();
   const auto EmitSize = ConvertSize(IROp);
@@ -1271,6 +1284,16 @@ DEF_OP(Sbfe) {
   const auto Src = GetReg(Op->Src);
 
   sbfx(ConvertSize(IROp), Dst, Src, Op->lsb, Op->Width);
+}
+
+DEF_OP(MaskGenerateFromBitWidth) {
+  auto Op = IROp->C<IR::IROp_MaskGenerateFromBitWidth>();
+  auto BitWidth = GetReg(Op->BitWidth);
+
+  LoadConstant(ARMEmitter::Size::i64Bit, TMP1, -1);
+  cmp(ARMEmitter::Size::i64Bit, BitWidth, 0);
+  lslv(ARMEmitter::Size::i64Bit, TMP2, TMP1, BitWidth);
+  csinv(ARMEmitter::Size::i64Bit, GetReg(Node), TMP1, TMP2, ARMEmitter::Condition::CC_EQ);
 }
 
 DEF_OP(Select) {
