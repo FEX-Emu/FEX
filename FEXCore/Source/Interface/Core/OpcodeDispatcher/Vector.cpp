@@ -5177,4 +5177,61 @@ void OpDispatchBuilder::Insertq_imm(OpcodeArgs) {
   StoreResultFPR(Op, Result, OpSize::iInvalid);
 }
 
+void OpDispatchBuilder::Extrq(OpcodeArgs) {
+  Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
+
+  const Ref ElementMask = _VectorImm(OpSize::i64Bit, OpSize::i64Bit, 0x3F);
+
+  auto GenerateMask = [this](Ref VectorWidthInBits) -> Ref {
+    const Ref VectorWidth = _VExtractToGPR(OpSize::i64Bit, OpSize::i64Bit, VectorWidthInBits, 0);
+    return _VCastFromGPR(OpSize::i128Bit, OpSize::i64Bit, _MaskGenerateFromBitWidth(VectorWidth));
+  };
+
+  // Bits[5:0] = Mask width in bits
+  const Ref MaskWidthBits = _VAnd(OpSize::i64Bit, OpSize::i64Bit, Src, ElementMask);
+
+  // Bits[13:8] = Shift right in bits
+  const Ref ShiftBits = _VAnd(OpSize::i64Bit, OpSize::i64Bit, _VUShrI(OpSize::i64Bit, OpSize::i64Bit, Src, 8), ElementMask);
+
+  // First shift in to the correct position.
+  Ref Result = _VUShr(OpSize::i64Bit, OpSize::i64Bit, Dest, ShiftBits, false);
+
+  Result = _VAnd(OpSize::i128Bit, OpSize::i64Bit, Result, GenerateMask(MaskWidthBits));
+
+  StoreResultFPR(Op, Result, OpSize::iInvalid);
+}
+
+void OpDispatchBuilder::Insertq(OpcodeArgs) {
+  Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
+  Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
+
+  auto SelectorBits = _VDupElement(OpSize::i128Bit, OpSize::i64Bit, Src, 1);
+
+  const Ref ElementMask = _VectorImm(OpSize::i64Bit, OpSize::i64Bit, 0x3F);
+
+  auto GenerateMask = [this](Ref VectorWidthInBits) -> Ref {
+    const Ref VectorWidth = _VExtractToGPR(OpSize::i64Bit, OpSize::i64Bit, VectorWidthInBits, 0);
+    return _VCastFromGPR(OpSize::i128Bit, OpSize::i64Bit, _MaskGenerateFromBitWidth(VectorWidth));
+  };
+
+  // Bits[5:0] = Mask width in bits
+  const Ref MaskWidthBits = _VAnd(OpSize::i64Bit, OpSize::i64Bit, SelectorBits, ElementMask);
+
+  // Bits[13:8] = Shift right in bits
+  const Ref ShiftBits = _VAnd(OpSize::i64Bit, OpSize::i64Bit, _VUShrI(OpSize::i64Bit, OpSize::i64Bit, SelectorBits, 8), ElementMask);
+
+  // Extract the source data and put in to the correct location
+  const Ref SrcMask = GenerateMask(MaskWidthBits);
+  Ref SrcData = _VAnd(OpSize::i128Bit, OpSize::i64Bit, Src, SrcMask);
+  SrcData = _VUShl(OpSize::i128Bit, OpSize::i64Bit, SrcData, ShiftBits, false);
+
+  // Generate a destination mask
+  const Ref DstMask = _VNot(OpSize::i64Bit, OpSize::i64Bit, _VUShl(OpSize::i128Bit, OpSize::i64Bit, SrcMask, ShiftBits, false));
+
+  Ref Result = _VAnd(OpSize::i64Bit, OpSize::i64Bit, Dest, DstMask);
+  Result = _VOr(OpSize::i64Bit, OpSize::i64Bit, Result, SrcData);
+  StoreResultFPR(Op, Result, OpSize::iInvalid);
+}
+
 } // namespace FEXCore::IR
