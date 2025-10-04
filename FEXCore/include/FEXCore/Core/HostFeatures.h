@@ -40,6 +40,7 @@ struct HostFeatures {
   bool SupportsECV {};
   bool SupportsWFXT {};
   bool Supports3DNow {};
+  bool SupportsSSE4a {};
 
   // Float exception behaviour
   bool SupportsAFP {};

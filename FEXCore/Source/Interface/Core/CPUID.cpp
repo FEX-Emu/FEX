@@ -909,38 +909,38 @@ FEXCore::CPUID::FunctionResults CPUIDEmu::Function_8000_0001h(uint32_t Leaf) con
 
   Res.eax = FAMILY_IDENTIFIER;
 
-  Res.ecx = (1 << 0) |  // LAHF/SAHF
-            (1 << 1) |  // 0 = Single core product, 1 = multi core product
-            (0 << 2) |  // SVM
-            (1 << 3) |  // Extended APIC register space
-            (0 << 4) |  // LOCK MOV CR0 means MOV CR8
-            (1 << 5) |  // ABM instructions
-            (0 << 6) |  // SSE4a
-            (0 << 7) |  // Misaligned SSE mode
-            (1 << 8) |  // PREFETCHW
-            (0 << 9) |  // OS visible workaround support
-            (0 << 10) | // Instruction based sampling support
-            (0 << 11) | // XOP
-            (0 << 12) | // SKINIT
-            (0 << 13) | // Watchdog timer support
-            (0 << 14) | // Reserved
-            (0 << 15) | // Lightweight profiling support
-            (0 << 16) | // FMA4
-            (1 << 17) | // Translation cache extension
-            (0 << 18) | // Reserved
-            (0 << 19) | // Reserved
-            (0 << 20) | // Reserved
-            (0 << 21) | // XOP-TBM
-            (0 << 22) | // Topology extensions support
-            (0 << 23) | // Core performance counter extensions
-            (0 << 24) | // NB performance counter extensions
-            (0 << 25) | // Reserved
-            (0 << 26) | // Data breakpoints extensions
-            (0 << 27) | // Performance TSC
-            (0 << 28) | // L2 perf counter extensions
-            (0 << 29) | // MONITORX
-            (0 << 30) | // Reserved
-            (0 << 31);  // Reserved
+  Res.ecx = (1 << 0) |                               // LAHF/SAHF
+            (1 << 1) |                               // 0 = Single core product, 1 = multi core product
+            (0 << 2) |                               // SVM
+            (1 << 3) |                               // Extended APIC register space
+            (0 << 4) |                               // LOCK MOV CR0 means MOV CR8
+            (1 << 5) |                               // ABM instructions
+            (CTX->HostFeatures.SupportsSSE4a << 6) | // SSE4a
+            (0 << 7) |                               // Misaligned SSE mode
+            (1 << 8) |                               // PREFETCHW
+            (0 << 9) |                               // OS visible workaround support
+            (0 << 10) |                              // Instruction based sampling support
+            (0 << 11) |                              // XOP
+            (0 << 12) |                              // SKINIT
+            (0 << 13) |                              // Watchdog timer support
+            (0 << 14) |                              // Reserved
+            (0 << 15) |                              // Lightweight profiling support
+            (0 << 16) |                              // FMA4
+            (1 << 17) |                              // Translation cache extension
+            (0 << 18) |                              // Reserved
+            (0 << 19) |                              // Reserved
+            (0 << 20) |                              // Reserved
+            (0 << 21) |                              // XOP-TBM
+            (0 << 22) |                              // Topology extensions support
+            (0 << 23) |                              // Core performance counter extensions
+            (0 << 24) |                              // NB performance counter extensions
+            (0 << 25) |                              // Reserved
+            (0 << 26) |                              // Data breakpoints extensions
+            (0 << 27) |                              // Performance TSC
+            (0 << 28) |                              // L2 perf counter extensions
+            (0 << 29) |                              // MONITORX
+            (0 << 30) |                              // Reserved
+            (0 << 31);                               // Reserved
 
   Res.edx = (1 << 0) |                                // FPU
             (1 << 1) |                                // Virtual mode extensions
