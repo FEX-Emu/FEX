@@ -20,7 +20,6 @@
 namespace FEXCore::IR {
 
 class OrderedNode;
-class RegisterAllocationPass;
 
 /**
  * @brief The IROp_Header is an dynamically sized array
