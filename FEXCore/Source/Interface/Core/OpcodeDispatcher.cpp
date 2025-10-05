@@ -1518,7 +1518,7 @@ void OpDispatchBuilder::SHLDOp(OpcodeArgs) {
   //
   // TODO: This whole function wants to be wrapped in the if. Maybe b/w pass is
   // a good idea after all.
-  Res = _Select(CondClass::EQ, Shift, Constant(0), Dest, Res);
+  Res = _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::EQ, Shift, Constant(0), Dest, Res);
 
   HandleShift(Op, Res, Dest, ShiftType::LSL, Shift);
 }
@@ -1583,7 +1583,7 @@ void OpDispatchBuilder::SHRDOp(OpcodeArgs) {
   // If shift count was zero then output doesn't change
   // Needs to be checked for the 32bit operand case
   // where shift = 0 and the source register still gets Zext
-  Res = _Select(CondClass::EQ, Shift, Constant(0), Dest, Res);
+  Res = _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::EQ, Shift, Constant(0), Dest, Res);
 
   HandleShift(Op, Res, Dest, ShiftType::LSR, Shift);
 }
@@ -2857,10 +2857,10 @@ void OpDispatchBuilder::DAAOp(OpcodeArgs) {
   CFInv = _And(OpSize::i64Bit, CFInv, Select01(OpSize::i64Bit, CondClass::ULE, AL, Constant(0x99)));
 
   // AL = AF ? (AL + 0x6) : AL;
-  AL = _Select(CondClass::NEQ, AF, Constant(0), Add(OpSize::i64Bit, AL, 0x6), AL);
+  AL = _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::NEQ, AF, Constant(0), Add(OpSize::i64Bit, AL, 0x6), AL);
 
   // AL = CF ? (AL + 0x60) : AL;
-  AL = _Select(CondClass::EQ, CFInv, Constant(0), Add(OpSize::i64Bit, AL, 0x60), AL);
+  AL = _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::EQ, CFInv, Constant(0), Add(OpSize::i64Bit, AL, 0x60), AL);
 
   // SF, ZF, PF set according to result. CF set per above. OF undefined.
   StoreGPRRegister(X86State::REG_RAX, AL, OpSize::i8Bit);
@@ -2880,13 +2880,13 @@ void OpDispatchBuilder::DASOp(OpcodeArgs) {
   CF = _Or(OpSize::i64Bit, CF, Select01(OpSize::i64Bit, CondClass::UGT, AL, Constant(0x99)));
 
   // NewCF = CF | (AF && (Borrow from AL - 6))
-  auto NewCF = _Or(OpSize::i32Bit, CF, _Select(CondClass::ULT, AL, Constant(6), AF, CF));
+  auto NewCF = _Or(OpSize::i32Bit, CF, _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::ULT, AL, Constant(6), AF, CF));
 
   // AL = AF ? (AL - 0x6) : AL;
-  AL = _Select(CondClass::NEQ, AF, Constant(0), Sub(OpSize::i64Bit, AL, 0x6), AL);
+  AL = _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::NEQ, AF, Constant(0), Sub(OpSize::i64Bit, AL, 0x6), AL);
 
   // AL = CF ? (AL - 0x60) : AL;
-  AL = _Select(CondClass::NEQ, CF, Constant(0), Sub(OpSize::i64Bit, AL, 0x60), AL);
+  AL = _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::NEQ, CF, Constant(0), Sub(OpSize::i64Bit, AL, 0x60), AL);
 
   // SF, ZF, PF set according to result. CF set per above. OF undefined.
   StoreGPRRegister(X86State::REG_RAX, AL, OpSize::i8Bit);
