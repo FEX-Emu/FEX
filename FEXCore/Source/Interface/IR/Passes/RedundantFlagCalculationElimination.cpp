@@ -154,7 +154,6 @@ public:
 
 private:
   FlagInfo Classify(IROp_Header* Node);
-  unsigned FlagForReg(unsigned Reg);
   unsigned FlagsForCondClassType(CondClass Cond);
   bool EliminateDeadCode(IREmitter* IREmit, Ref CodeNode, IROp_Header* IROp);
   void FoldBranch(IREmitter* IREmit, IRListView& CurrentIR, IROp_CondJump* Op, Ref CodeNode);
