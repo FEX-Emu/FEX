@@ -2,21 +2,20 @@
 /*
 $info$
 tags: ir|opts
-desc: This is not used right now, possibly broken
 $end_info$
 */
 
-#include "FEXCore/Core/X86Enums.h"
-#include "FEXCore/Utils/CompilerDefs.h"
-#include "FEXCore/Utils/MathUtils.h"
-#include "FEXCore/fextl/deque.h"
 #include "Interface/IR/IR.h"
 #include "Interface/IR/IREmitter.h"
-
-#include <FEXCore/IR/IR.h>
-#include <FEXCore/Utils/Profiler.h>
-
 #include "Interface/IR/PassManager.h"
+
+#include <FEXCore/Core/X86Enums.h>
+#include <FEXCore/IR/IR.h>
+#include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/deque.h>
+#include <FEXCore/fextl/vector.h>
 
 // Flag bit flags
 #define FLAG_V (1U << 0)
