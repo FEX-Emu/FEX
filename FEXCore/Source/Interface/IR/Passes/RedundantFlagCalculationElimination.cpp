@@ -627,9 +627,9 @@ void DeadFlagCalculationEliminination::OptimizeParity(IREmitter* IREmit, IRListV
   }
 
   for (auto [Block, BlockHeader] : CurrentIR.GetBlocks()) {
-    auto ID = BlockHeader->C<IROp_CodeBlock>()->ID;
+    const auto ID = BlockHeader->C<IROp_CodeBlock>()->ID;
+    const auto& Predecessors = CFG.Get(ID)->Predecessors;
     bool Full = false;
-    auto Predecessors = CFG.Get(ID)->Predecessors;
 
     if (Predecessors.empty()) {
       // Conservatively assume there was full parity before the start block
