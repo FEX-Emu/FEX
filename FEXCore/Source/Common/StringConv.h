@@ -18,7 +18,7 @@ bool Conv(std::string_view Value, T* Result) {
 
 template<typename T, typename = std::enable_if_t<std::is_enum_v<T>, T>>
 bool Conv(std::string_view Value, T* Result) {
-  *Result = static_cast<T>(std::stoull(Value.data(), nullptr, 0));
+  *Result = static_cast<T>(std::strtoull(Value.data(), nullptr, 0));
   return true;
 }
 
