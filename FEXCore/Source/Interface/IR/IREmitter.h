@@ -114,14 +114,6 @@ public:
   IRPair<IROp_CondJump> _CondJump(Ref ssa0, Ref ssa1, Ref ssa2, CondClass cond = CondClass::NEQ) {
     return _CondJump(ssa0, _Constant(0), ssa1, ssa2, cond, GetOpSize(ssa0));
   }
-  // TODO: Work to remove this implicit sized Select implementation.
-  IRPair<IROp_Select> _Select(CondClass Cond, Ref ssa0, Ref ssa1, Ref ssa2, Ref ssa3, IR::OpSize CompareSize = OpSize::iUnsized) {
-    if (CompareSize == OpSize::iUnsized) {
-      CompareSize = std::max(OpSize::i32Bit, std::max(GetOpSize(ssa0), GetOpSize(ssa1)));
-    }
-
-    return _Select(std::max(OpSize::i32Bit, std::max(GetOpSize(ssa2), GetOpSize(ssa3))), CompareSize, Cond, ssa0, ssa1, ssa2, ssa3);
-  }
 
   IRPair<IROp_LoadContext> _LoadContextGPR(OpSize ByteSize, uint32_t Offset) {
     return _LoadContext(ByteSize, RegClass::GPR, Offset);

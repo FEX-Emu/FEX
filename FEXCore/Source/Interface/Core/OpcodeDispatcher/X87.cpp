@@ -120,7 +120,7 @@ void OpDispatchBuilder::FILD(OpcodeArgs) {
   auto shifted = _Lshl(OpSize::i64Bit, absolute, shift);
 
   auto adjusted_exponent = Sub(OpSize::i64Bit, Constant(0x3fff + 63), shift);
-  auto zeroed_exponent = _Select(CondClass::EQ, absolute, zero, zero, adjusted_exponent);
+  auto zeroed_exponent = _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::EQ, absolute, zero, zero, adjusted_exponent);
   auto upper = _Or(OpSize::i64Bit, sign, zeroed_exponent);
 
   Ref ConvertedData = _VLoadTwoGPRs(shifted, upper);

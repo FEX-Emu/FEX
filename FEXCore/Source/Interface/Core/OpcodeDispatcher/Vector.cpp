@@ -4922,7 +4922,7 @@ void OpDispatchBuilder::PCMPXSTRXOpImpl(OpcodeArgs, bool IsExplicit, bool IsMask
 
     Ref IfZero = Constant(16 >> (Control & 1));
     Ref IfNotZero = UseMSBIndex ? _FindMSB(IR::OpSize::i32Bit, ResultNoFlags) : _FindLSB(IR::OpSize::i32Bit, ResultNoFlags);
-    Ref Result = _Select(CondClass::EQ, ResultNoFlags, ZeroConst, IfZero, IfNotZero);
+    Ref Result = _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::EQ, ResultNoFlags, ZeroConst, IfZero, IfNotZero);
 
     // Store the result, it is already zero-extended to 64-bit implicitly.
     StoreGPRRegister(X86State::REG_RCX, Result);

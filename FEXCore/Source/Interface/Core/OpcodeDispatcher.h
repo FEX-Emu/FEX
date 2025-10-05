@@ -1855,7 +1855,8 @@ private:
       // An exception should still be raised after an instruction that unsets TF, leave the unblocked bit set but unset
       // the TF bit to cause such behaviour. The handling code at the start of the next block will then unset the
       // unblocked bit before raising the exception.
-      auto NewPackedTF = _Select(CondClass::EQ, Value, Constant(0), _And(OpSize::i32Bit, PackedTF, Constant(~1)), Constant(1));
+      auto NewPackedTF =
+        _Select(OpSize::i64Bit, OpSize::i64Bit, CondClass::EQ, Value, Constant(0), _And(OpSize::i32Bit, PackedTF, Constant(~1)), Constant(1));
       _StoreContextGPR(OpSize::i8Bit, NewPackedTF, offsetof(FEXCore::Core::CPUState, flags[BitOffset]));
     } else {
       _StoreContextGPR(OpSize::i8Bit, Value, offsetof(FEXCore::Core::CPUState, flags[BitOffset]));
