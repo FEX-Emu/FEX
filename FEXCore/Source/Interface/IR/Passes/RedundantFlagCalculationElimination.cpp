@@ -62,36 +62,36 @@ struct FlagInfo {
     return {.Raw = R};
   }
 
-  bool Trivial() {
+  bool Trivial() const {
     return Raw == 0;
   }
 
-  unsigned Read() {
+  unsigned Read() const {
     return Bits(0, 8);
   }
 
-  unsigned Write() {
+  unsigned Write() const {
     return Bits(8, 8);
   }
 
-  bool CanEliminate() {
+  bool CanEliminate() const {
     return Bits(16, 1);
   }
 
-  bool Special() {
+  bool Special() const {
     return Bits(63, 1);
   }
 
-  IROps Replacement() {
+  IROps Replacement() const {
     return (IROps)Bits(32, 16);
   }
 
-  IROps ReplacementNoWrite() {
+  IROps ReplacementNoWrite() const {
     return (IROps)Bits(48, 16);
   }
 
 private:
-  unsigned Bits(unsigned Start, unsigned Count) {
+  unsigned Bits(unsigned Start, unsigned Count) const {
     return (Raw >> Start) & ((1u << Count) - 1);
   }
 };
