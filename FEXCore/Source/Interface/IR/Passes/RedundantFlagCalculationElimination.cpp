@@ -2,21 +2,20 @@
 /*
 $info$
 tags: ir|opts
-desc: This is not used right now, possibly broken
 $end_info$
 */
 
-#include "FEXCore/Core/X86Enums.h"
-#include "FEXCore/Utils/CompilerDefs.h"
-#include "FEXCore/Utils/MathUtils.h"
-#include "FEXCore/fextl/deque.h"
 #include "Interface/IR/IR.h"
 #include "Interface/IR/IREmitter.h"
-
-#include <FEXCore/IR/IR.h>
-#include <FEXCore/Utils/Profiler.h>
-
 #include "Interface/IR/PassManager.h"
+
+#include <FEXCore/Core/X86Enums.h>
+#include <FEXCore/IR/IR.h>
+#include <FEXCore/Utils/CompilerDefs.h>
+#include <FEXCore/Utils/MathUtils.h>
+#include <FEXCore/Utils/Profiler.h>
+#include <FEXCore/fextl/deque.h>
+#include <FEXCore/fextl/vector.h>
 
 // Flag bit flags
 #define FLAG_V (1U << 0)
@@ -62,36 +61,36 @@ struct FlagInfo {
     return {.Raw = R};
   }
 
-  bool Trivial() {
+  bool Trivial() const {
     return Raw == 0;
   }
 
-  unsigned Read() {
+  unsigned Read() const {
     return Bits(0, 8);
   }
 
-  unsigned Write() {
+  unsigned Write() const {
     return Bits(8, 8);
   }
 
-  bool CanEliminate() {
+  bool CanEliminate() const {
     return Bits(16, 1);
   }
 
-  bool Special() {
+  bool Special() const {
     return Bits(63, 1);
   }
 
-  IROps Replacement() {
+  IROps Replacement() const {
     return (IROps)Bits(32, 16);
   }
 
-  IROps ReplacementNoWrite() {
+  IROps ReplacementNoWrite() const {
     return (IROps)Bits(48, 16);
   }
 
 private:
-  unsigned Bits(unsigned Start, unsigned Count) {
+  unsigned Bits(unsigned Start, unsigned Count) const {
     return (Raw >> Start) & ((1u << Count) - 1);
   }
 };
@@ -154,7 +153,6 @@ public:
 
 private:
   FlagInfo Classify(IROp_Header* Node);
-  unsigned FlagForReg(unsigned Reg);
   unsigned FlagsForCondClassType(CondClass Cond);
   bool EliminateDeadCode(IREmitter* IREmit, Ref CodeNode, IROp_Header* IROp);
   void FoldBranch(IREmitter* IREmit, IRListView& CurrentIR, IROp_CondJump* Op, Ref CodeNode);
@@ -629,9 +627,9 @@ void DeadFlagCalculationEliminination::OptimizeParity(IREmitter* IREmit, IRListV
   }
 
   for (auto [Block, BlockHeader] : CurrentIR.GetBlocks()) {
-    auto ID = BlockHeader->C<IROp_CodeBlock>()->ID;
+    const auto ID = BlockHeader->C<IROp_CodeBlock>()->ID;
+    const auto& Predecessors = CFG.Get(ID)->Predecessors;
     bool Full = false;
-    auto Predecessors = CFG.Get(ID)->Predecessors;
 
     if (Predecessors.empty()) {
       // Conservatively assume there was full parity before the start block
