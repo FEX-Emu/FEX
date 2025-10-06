@@ -133,21 +133,19 @@ void OpDispatchBuilder::ThunkOp(OpcodeArgs) {
 void OpDispatchBuilder::LEAOp(OpcodeArgs) {
   // LEA specifically ignores segment prefixes
   const auto SrcSize = OpSizeFromSrc(Op);
+  const auto OpAddr = X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0);
+  OpSize DstSize {};
 
   if (Is64BitMode) {
-    const auto DstSize = X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST ? OpSize::i16Bit :
-                         X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_WIDENING_SIZE_LAST ? OpSize::i64Bit :
-                                                                                                                              OpSize::i32Bit;
-
-    auto Src = LoadSourceGPR_WithOpSize(Op, Op->Src[0], SrcSize, Op->Flags, {.LoadData = false, .AllowUpperGarbage = SrcSize > DstSize});
-    StoreResultGPR_WithOpSize(Op, Op->Dest, Src, DstSize);
+    DstSize = OpAddr == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST  ? OpSize::i16Bit :
+              OpAddr == X86Tables::DecodeFlags::FLAG_WIDENING_SIZE_LAST ? OpSize::i64Bit :
+                                                                          OpSize::i32Bit;
   } else {
-    const auto DstSize =
-      X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST ? OpSize::i16Bit : OpSize::i32Bit;
-
-    auto Src = LoadSourceGPR_WithOpSize(Op, Op->Src[0], SrcSize, Op->Flags, {.LoadData = false, .AllowUpperGarbage = SrcSize > DstSize});
-    StoreResultGPR_WithOpSize(Op, Op->Dest, Src, DstSize);
+    DstSize = OpAddr == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST ? OpSize::i16Bit : OpSize::i32Bit;
   }
+
+  auto Src = LoadSourceGPR_WithOpSize(Op, Op->Src[0], SrcSize, Op->Flags, {.LoadData = false, .AllowUpperGarbage = SrcSize > DstSize});
+  StoreResultGPR_WithOpSize(Op, Op->Dest, Src, DstSize);
 }
 
 void OpDispatchBuilder::NOPOp(OpcodeArgs) {}
@@ -3085,10 +3083,11 @@ void OpDispatchBuilder::SMSWOp(OpcodeArgs) {
                        (1U << 1) | ///< MP - Monitor Coprocessor
                        (1U << 0)); ///< PE - Protection Enabled
 
+  const auto OpAddr = X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0);
   if (Is64BitMode) {
-    DstSize = X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST  ? OpSize::i16Bit :
-              X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_WIDENING_SIZE_LAST ? OpSize::i64Bit :
-                                                                                                                   OpSize::i32Bit;
+    DstSize = OpAddr == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST  ? OpSize::i16Bit :
+              OpAddr == X86Tables::DecodeFlags::FLAG_WIDENING_SIZE_LAST ? OpSize::i64Bit :
+                                                                          OpSize::i32Bit;
 
     if (!IsMemDst && DstSize == OpSize::i32Bit) {
       // Special-case version of `smsw ebx`. This instruction does an insert in to the lower 32-bits on 64-bit hosts.
@@ -3098,7 +3097,7 @@ void OpDispatchBuilder::SMSWOp(OpcodeArgs) {
       DstSize = OpSize::i64Bit;
     }
   } else {
-    DstSize = X86Tables::DecodeFlags::GetOpAddr(Op->Flags, 0) == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST ? OpSize::i16Bit : OpSize::i32Bit;
+    DstSize = OpAddr == X86Tables::DecodeFlags::FLAG_OPERAND_SIZE_LAST ? OpSize::i16Bit : OpSize::i32Bit;
   }
 
   if (IsMemDst) {
