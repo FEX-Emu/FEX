@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "Utils/Allocator/HostAllocator.h"
+#include "Utils/PrctlUtils.h"
 #include <FEXCore/Utils/Allocator.h>
 #include <FEXCore/Utils/CompilerDefs.h>
 #include <FEXCore/Utils/LogManager.h>
@@ -49,6 +50,10 @@ void* FEX_mmap(void* addr, size_t length, int prot, int flags, int fd, off_t off
   if (Result >= (void*)-4096) {
     errno = -(uint64_t)Result;
     return (void*)-1;
+  }
+
+  if (flags & MAP_ANONYMOUS) {
+    prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, Result, length, "FEXMem");
   }
   return Result;
 }

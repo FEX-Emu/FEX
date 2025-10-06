@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "FEXCore/IR/IR.h"
 #include "FEXCore/Utils/AllocatorHooks.h"
+#include "Utils/PrctlUtils.h"
 #include "Interface/Context/Context.h"
 #include "Interface/Core/CPUBackend.h"
 #include "Interface/Core/Dispatcher/Dispatcher.h"
@@ -9,6 +10,7 @@
 #include "LookupCache.h"
 
 #ifndef _WIN32
+#include <linux/prctl.h>
 #include <sys/prctl.h>
 #endif
 
@@ -356,6 +358,10 @@ namespace CPU {
                                             FEXCore::Allocator::ProtectOptions::None)) {
       LogMan::Msg::EFmt("Failed to mprotect last page of code buffer.");
     }
+
+#ifndef _WIN32
+    prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, Ptr, Size, "FEXMemJIT");
+#endif
 
     LookupCache = fextl::make_unique<GuestToHostMap>();
   }
