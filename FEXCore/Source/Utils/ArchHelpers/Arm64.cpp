@@ -1554,38 +1554,43 @@ static bool HandleAtomicMemOp(uint32_t Instr, uint64_t* GPRs, uint32_t* StrictSp
   return false;
 }
 
-static bool HandleAtomicLoad(uint32_t Instr, uint64_t* GPRs, int64_t Offset) {
+static bool HandleAtomicLoad(uint32_t Instr, uint64_t* GPRs, int64_t Offset, Core::UnalignedExclusiveStore* Store = nullptr) {
   uint32_t Size = 1 << (Instr >> 30);
 
   uint32_t ResultReg = Instr & 0b11111;
   uint32_t AddressReg = (Instr >> 5) & 0b11111;
 
   uint64_t Addr = GPRs[AddressReg] + Offset;
+  uint64_t Res;
 
   if (Size == 2) {
-    auto Res = DoLoad16(Addr);
+    Res = DoLoad16(Addr);
     // We set the result register if it isn't a zero register
     if (ResultReg != 31) {
       GPRs[ResultReg] = Res;
     }
-    return true;
   } else if (Size == 4) {
-    auto Res = DoLoad32(Addr);
+    Res = DoLoad32(Addr);
     // We set the result register if it isn't a zero register
     if (ResultReg != 31) {
       GPRs[ResultReg] = Res;
     }
-    return true;
   } else if (Size == 8) {
-    auto Res = DoLoad64(Addr);
+    Res = DoLoad64(Addr);
     // We set the result register if it isn't a zero register
     if (ResultReg != 31) {
       GPRs[ResultReg] = Res;
     }
-    return true;
+  } else {
+    return false;
   }
 
-  return false;
+  if (Store) {
+    Store->Addr = Addr;
+    Store->Store = Res;
+    Store->Size = Size;
+  }
+  return true;
 }
 
 static bool HandleAtomicStore(uint32_t Instr, uint64_t* GPRs, int64_t Offset, uint32_t* StrictSplitLockMutex) {
@@ -2011,6 +2016,27 @@ std::optional<int32_t> HandleUnalignedAccess(FEXCore::Core::InternalThreadState*
         return std::nullopt;
       }
     } else if (!IsJIT) {
+      if ((Instr & ArchHelpers::Arm64::LDAXR_MASK) == ArchHelpers::Arm64::LDAXR_INST) { // LDAXR*
+        if (ArchHelpers::Arm64::HandleAtomicLoad(Instr, GPRs, 0, &Thread->ExclusiveStore)) {
+          return 4;
+        }
+      } else if ((Instr & ArchHelpers::Arm64::STLXR_MASK) == ArchHelpers::Arm64::STLXR_INST) { // STLXR*
+        uint32_t StatusReg = Instr << 11 >> 27;
+        // // Emulate exclusive store by validating the address and value against the last unaligned LDAXR*.
+        if (GPRs[AddrReg] != Thread->ExclusiveStore.Addr || Size > Thread->ExclusiveStore.Size) {
+          if (StatusReg != 31) {
+            GPRs[StatusReg] = 1;
+          }
+          return 4;
+        }
+        if (std::optional<uint64_t> Prev = DoCAS(Size, GPRs[DataReg], Thread->ExclusiveStore.Store, GPRs[AddrReg], StrictSplitLockMutex)) {
+          if (StatusReg != 31) {
+            GPRs[StatusReg] = !!memcmp(&Thread->ExclusiveStore.Store, &*Prev, Size);
+          }
+          Thread->ExclusiveStore.Size = 0;
+          return 4;
+        }
+      }
       return 0;
     }
   }
