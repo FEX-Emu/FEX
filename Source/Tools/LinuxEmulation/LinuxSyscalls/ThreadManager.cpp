@@ -46,7 +46,7 @@ void ThreadManager::StatAlloc::Initialize() {
   // 1 page: 99 slots
   // 1 MB: 26211 slots
   // 128 MB: 3355440 slots
-  Base = ::mmap(nullptr, MAX_STATS_SIZE, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+  Base = FEXCore::Allocator::mmap(nullptr, MAX_STATS_SIZE, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
   if (Base == MAP_FAILED) {
     LogMan::Msg::EFmt("[StatAlloc] mmap base failed");
     Base = nullptr;
@@ -55,10 +55,10 @@ void ThreadManager::StatAlloc::Initialize() {
 
   // Allocate a small working shared space for now, grow as necessary.
   {
-    auto SharedBase = ::mmap(Base, CurrentSize, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
+    auto SharedBase = FEXCore::Allocator::mmap(Base, CurrentSize, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
     if (SharedBase == MAP_FAILED) {
       LogMan::Msg::EFmt("[StatAlloc] mmap shm failed");
-      munmap(Base, MAX_STATS_SIZE);
+      FEXCore::Allocator::munmap(Base, MAX_STATS_SIZE);
       Base = nullptr;
       goto err;
     }
@@ -89,7 +89,7 @@ uint32_t ThreadManager::StatAlloc::FrontendAllocateSlots(uint32_t NewSize) {
   }
 
   {
-    auto SharedBase = ::mmap(Base, NewSize, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
+    auto SharedBase = FEXCore::Allocator::mmap(Base, NewSize, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, fd, 0);
     if (SharedBase == MAP_FAILED) {
       LogMan::Msg::EFmt("[StatAlloc] allocate more mmap shm failed");
       goto err;
@@ -140,7 +140,7 @@ void ThreadManager::StatAlloc::UnlockAfterFork(FEXCore::Core::InternalThreadStat
 
   // shm_memory ownership is retained by the parent process, so the child must replace it with its own one.
   // Otherwise this process will keep reporting in the original parent thread's stats region.
-  munmap(Base, MAX_STATS_SIZE);
+  FEXCore::Allocator::munmap(Base, MAX_STATS_SIZE);
   Base = nullptr;
   CurrentSize = 0;
   Head = nullptr;
@@ -173,7 +173,8 @@ FEX::HLE::ThreadStateObject* ThreadManager::CreateThread(uint64_t InitialRIP, ui
   auto Frame = ThreadStateObject->Thread->CurrentFrame;
 
   // Allocate the call-ret stack with guard pages on both sides
-  auto AllocBase = reinterpret_cast<uint64_t>(::mmap(nullptr, CALLRET_STACK_ALLOC_SIZE, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+  auto AllocBase =
+    reinterpret_cast<uint64_t>(FEXCore::Allocator::mmap(nullptr, CALLRET_STACK_ALLOC_SIZE, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
   // Set the base used for invalidation to the start past the guard pages
   ThreadStateObject->Thread->CallRetStackBase = reinterpret_cast<void*>(AllocBase + FEXCore::Utils::FEX_PAGE_SIZE);
   ::mprotect(ThreadStateObject->Thread->CallRetStackBase, FEXCore::Core::InternalThreadState::CALLRET_STACK_SIZE, PROT_READ | PROT_WRITE);
@@ -273,7 +274,7 @@ void ThreadManager::HandleThreadDeletion(FEX::HLE::ThreadStateObject* Thread, bo
   }
 
   // Free the call-ret stack
-  ::munmap(reinterpret_cast<void*>(Thread->GetCallRetStackInfo().AllocationBase), CALLRET_STACK_ALLOC_SIZE);
+  FEXCore::Allocator::munmap(reinterpret_cast<void*>(Thread->GetCallRetStackInfo().AllocationBase), CALLRET_STACK_ALLOC_SIZE);
 
   // If the LDT segment exists then deallocate it.
   if (Thread->ldt_entry_count) {
