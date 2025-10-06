@@ -2,9 +2,9 @@
 #include "Common/cpp-optparse/OptionParser.h"
 #include "Common/Config.h"
 #include "Common/FEXServerClient.h"
-#include "FEXHeaderUtils/Filesystem.h"
 #include "git_version.h"
 #include <FEXCore/Config/Config.h>
+#include <FEXCore/Utils/PrctlUtils.h>
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/string.h>
 #include <FEXHeaderUtils/Filesystem.h>
@@ -23,19 +23,6 @@ struct TSOEmulationFacts {
 
 #ifdef _M_ARM_64
 bool CheckForHardwareTSO() {
-  // We need to check if these are defined or not. This is a very fresh feature.
-#ifndef PR_GET_MEM_MODEL
-#define PR_GET_MEM_MODEL 0x6d4d444c
-#endif
-#ifndef PR_SET_MEM_MODEL
-#define PR_SET_MEM_MODEL 0x4d4d444c
-#endif
-#ifndef PR_SET_MEM_MODEL_DEFAULT
-#define PR_SET_MEM_MODEL_DEFAULT 0
-#endif
-#ifndef PR_SET_MEM_MODEL_TSO
-#define PR_SET_MEM_MODEL_TSO 1
-#endif
   // Check to see if this is supported.
   auto Result = prctl(PR_GET_MEM_MODEL, 0, 0, 0, 0);
   if (Result == -1) {

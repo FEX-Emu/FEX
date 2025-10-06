@@ -31,6 +31,7 @@ $end_info$
 #include <FEXCore/Utils/LogManager.h>
 #include <FEXCore/Utils/Telemetry.h>
 #include <FEXCore/Utils/Threads.h>
+#include <FEXCore/Utils/PrctlUtils.h>
 #include <FEXCore/Utils/Profiler.h>
 #include <FEXCore/fextl/fmt.h>
 #include <FEXCore/fextl/memory.h>
@@ -160,19 +161,6 @@ bool QueryInterpreterInstalled(bool ExecutedWithFD, const FEX::Config::PortableI
 
 namespace FEX::TSO {
 void SetupTSOEmulation(FEXCore::Context::Context* CTX) {
-  // We need to check if these are defined or not. This is a very fresh feature.
-#ifndef PR_GET_MEM_MODEL
-#define PR_GET_MEM_MODEL 0x6d4d444c
-#endif
-#ifndef PR_SET_MEM_MODEL
-#define PR_SET_MEM_MODEL 0x4d4d444c
-#endif
-#ifndef PR_SET_MEM_MODEL_DEFAULT
-#define PR_SET_MEM_MODEL_DEFAULT 0
-#endif
-#ifndef PR_SET_MEM_MODEL_TSO
-#define PR_SET_MEM_MODEL_TSO 1
-#endif
   // Check to see if this is supported.
   auto Result = prctl(PR_GET_MEM_MODEL, 0, 0, 0, 0);
   if (Result == -1) {
@@ -201,19 +189,6 @@ void SetupTSOEmulation(FEXCore::Context::Context* CTX) {
 
 namespace FEX::CompatInput {
 void SetupCompatInput(bool enable) {
-  // We need to check if these are defined or not. This is a very fresh feature.
-#ifndef PR_GET_COMPAT_INPUT
-#define PR_GET_COMPAT_INPUT 0x63494e50
-#endif
-#ifndef PR_SET_COMPAT_INPUT
-#define PR_SET_COMPAT_INPUT 0x43494e50
-#endif
-#ifndef PR_SET_COMPAT_INPUT_DISABLE
-#define PR_SET_COMPAT_INPUT_DISABLE 0
-#endif
-#ifndef PR_SET_COMPAT_INPUT_ENABLE
-#define PR_SET_COMPAT_INPUT_ENABLE 1
-#endif
   // Check to see if this is supported.
   auto Result = prctl(PR_GET_COMPAT_INPUT, 0, 0, 0, 0);
   if (Result == -1) {
@@ -231,15 +206,6 @@ void SetupCompatInput(bool enable) {
 
 namespace FEX::GCS {
 void CheckForGCS() {
-#ifndef PR_GET_SHADOW_STACK_STATUS
-#define PR_GET_SHADOW_STACK_STATUS 74
-#endif
-#ifndef PR_LOCK_SHADOW_STACK_STATUS
-#define PR_LOCK_SHADOW_STACK_STATUS 76
-#endif
-#ifndef PR_SHADOW_STACK_ENABLE
-#define PR_SHADOW_STACK_ENABLE (1ULL << 0)
-#endif
   uint64_t ShadowStackWord {};
   if (prctl(PR_GET_SHADOW_STACK_STATUS, &ShadowStackWord, 0, 0, 0) == -1) {
     return;
