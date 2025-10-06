@@ -1952,8 +1952,8 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
 }
 
 [[nodiscard]]
-std::optional<int32_t>
-HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandlerType HandleType, uintptr_t ProgramCounter, uint64_t* GPRs) {
+std::optional<int32_t> HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandlerType HandleType,
+                                             uintptr_t ProgramCounter, uint64_t* GPRs, bool IsJIT) {
 #ifdef _M_ARM_64
   constexpr bool is_arm64 = true;
 #else
@@ -1978,7 +1978,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
   uint32_t* StrictSplitLockMutex {CTX->Config.StrictInProcessSplitLocks ? &CTX->StrictSplitLockMutex : nullptr};
 
   // ParanoidTSO path doesn't modify any code.
-  if (HandleType == UnalignedHandlerType::Paranoid) [[unlikely]] {
+  if (HandleType == UnalignedHandlerType::Paranoid || !IsJIT) [[unlikely]] {
     if ((Instr & LDAXR_MASK) == LDAR_INST ||  // LDAR*
         (Instr & LDAXR_MASK) == LDAPR_INST) { // LDAPR*
       if (ArchHelpers::Arm64::HandleAtomicLoad(Instr, GPRs, 0)) {
@@ -2016,6 +2016,8 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
         LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDLUR*: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
         return std::nullopt;
       }
+    } else if (!IsJIT) {
+      return 0;
     }
   }
 
