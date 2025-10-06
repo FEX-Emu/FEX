@@ -35,16 +35,12 @@ OpDispatchBuilder::RefPair OpDispatchBuilder::AVX128_LoadSource_WithOpSize(
   } else {
     LOGMAN_THROW_A_FMT(IsOperandMem(Operand, true), "only memory sources");
 
-    AddressMode A = DecodeAddress(Op, Operand, AccessType, true /* IsLoad */);
-
-    AddressMode HighA = A;
-    HighA.Offset += 16;
-
     if (Operand.IsSIB()) {
       const bool IsVSIB = (Op->Flags & X86Tables::DecodeFlags::FLAG_VSIB_BYTE) != 0;
       LOGMAN_THROW_A_FMT(!IsVSIB, "VSIB uses LoadVSIB instead");
     }
 
+    const AddressMode A = DecodeAddress(Op, Operand, AccessType, true /* IsLoad */);
     if (NeedsHigh) {
       return _LoadMemPairFPRAutoTSO(OpSize::i128Bit, A, OpSize::i8Bit);
     } else {

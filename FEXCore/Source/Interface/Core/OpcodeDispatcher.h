@@ -2482,20 +2482,20 @@ private:
     return _LoadMemAutoTSO(RegClass::FPR, Size, ssa0, Align);
   }
 
-  Ref _LoadMemAutoTSO(RegClass Class, OpSize Size, AddressMode A, OpSize Align = OpSize::i8Bit) {
-    bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
-    A = SelectAddressMode(this, A, GetGPROpSize(), CTX->HostFeatures.SupportsTSOImm9, AtomicTSO, Class != RegClass::GPR, Size);
+  Ref _LoadMemAutoTSO(RegClass Class, OpSize Size, const AddressMode& A, OpSize Align = OpSize::i8Bit) {
+    const bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
+    const auto B = SelectAddressMode(this, A, GetGPROpSize(), CTX->HostFeatures.SupportsTSOImm9, AtomicTSO, Class != RegClass::GPR, Size);
 
     if (AtomicTSO) {
-      return _LoadMemTSO(Class, Size, A.Base, A.Index, Align, A.IndexType, A.IndexScale);
+      return _LoadMemTSO(Class, Size, B.Base, B.Index, Align, B.IndexType, B.IndexScale);
     } else {
-      return _LoadMem(Class, Size, A.Base, A.Index, Align, A.IndexType, A.IndexScale);
+      return _LoadMem(Class, Size, B.Base, B.Index, Align, B.IndexType, B.IndexScale);
     }
   }
-  Ref _LoadMemGPRAutoTSO(OpSize Size, AddressMode A, OpSize Align = OpSize::i8Bit) {
+  Ref _LoadMemGPRAutoTSO(OpSize Size, const AddressMode& A, OpSize Align = OpSize::i8Bit) {
     return _LoadMemAutoTSO(RegClass::GPR, Size, A, Align);
   }
-  Ref _LoadMemFPRAutoTSO(OpSize Size, AddressMode A, OpSize Align = OpSize::i8Bit) {
+  Ref _LoadMemFPRAutoTSO(OpSize Size, const AddressMode& A, OpSize Align = OpSize::i8Bit) {
     return _LoadMemAutoTSO(RegClass::FPR, Size, A, Align);
   }
 
@@ -2524,59 +2524,61 @@ private:
     return LoadMemPair(RegClass::FPR, Size, Base, Offset);
   }
 
-  RefPair _LoadMemPairAutoTSO(RegClass Class, OpSize Size, AddressMode A, OpSize Align = OpSize::i8Bit) {
-    bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
+  RefPair _LoadMemPairAutoTSO(RegClass Class, OpSize Size, const AddressMode& A, OpSize Align = OpSize::i8Bit) {
+    const bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
 
     // Use ldp if possible, otherwise fallback on two loads.
     if (!AtomicTSO && !A.Segment && Size >= OpSize::i32Bit & Size <= OpSize::i128Bit) {
-      A = SelectPairAddressMode(A, Size);
-      return LoadMemPair(Class, Size, A.Base, A.Offset);
-    } else {
-      AddressMode HighA = A;
-      HighA.Offset += 16;
-
-      return {
-        .Low = _LoadMemAutoTSO(Class, Size, A, Align),
-        .High = _LoadMemAutoTSO(Class, Size, HighA, Align),
-      };
+      const auto B = SelectPairAddressMode(A, Size);
+      return LoadMemPair(Class, Size, B.Base, B.Offset);
     }
+
+    AddressMode HighA = A;
+    HighA.Offset += 16;
+
+    return {
+      .Low = _LoadMemAutoTSO(Class, Size, A, Align),
+      .High = _LoadMemAutoTSO(Class, Size, HighA, Align),
+    };
   }
-  RefPair _LoadMemPairFPRAutoTSO(OpSize Size, AddressMode A, OpSize Align = OpSize::i8Bit) {
+  RefPair _LoadMemPairFPRAutoTSO(OpSize Size, const AddressMode& A, OpSize Align = OpSize::i8Bit) {
     return _LoadMemPairAutoTSO(RegClass::FPR, Size, A, Align);
   }
 
-  Ref _StoreMemAutoTSO(RegClass Class, OpSize Size, AddressMode A, Ref Value, OpSize Align = OpSize::i8Bit) {
-    bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
-    A = SelectAddressMode(this, A, GetGPROpSize(), CTX->HostFeatures.SupportsTSOImm9, AtomicTSO, Class != RegClass::GPR, Size);
+  Ref _StoreMemAutoTSO(RegClass Class, OpSize Size, const AddressMode& A, Ref Value, OpSize Align = OpSize::i8Bit) {
+    const bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
+    const auto B = SelectAddressMode(this, A, GetGPROpSize(), CTX->HostFeatures.SupportsTSOImm9, AtomicTSO, Class != RegClass::GPR, Size);
 
     if (AtomicTSO) {
-      return _StoreMemTSO(Class, Size, Value, A.Base, A.Index, Align, A.IndexType, A.IndexScale);
+      return _StoreMemTSO(Class, Size, Value, B.Base, B.Index, Align, B.IndexType, B.IndexScale);
     } else {
-      return _StoreMem(Class, Size, Value, A.Base, A.Index, Align, A.IndexType, A.IndexScale);
+      return _StoreMem(Class, Size, Value, B.Base, B.Index, Align, B.IndexType, B.IndexScale);
     }
   }
-  Ref _StoreMemGPRAutoTSO(OpSize Size, AddressMode A, Ref Value, OpSize Align = OpSize::i8Bit) {
+  Ref _StoreMemGPRAutoTSO(OpSize Size, const AddressMode& A, Ref Value, OpSize Align = OpSize::i8Bit) {
     return _StoreMemAutoTSO(RegClass::GPR, Size, A, Value, Align);
   }
-  Ref _StoreMemFPRAutoTSO(OpSize Size, AddressMode A, Ref Value, OpSize Align = OpSize::i8Bit) {
+  Ref _StoreMemFPRAutoTSO(OpSize Size, const AddressMode& A, Ref Value, OpSize Align = OpSize::i8Bit) {
     return _StoreMemAutoTSO(RegClass::FPR, Size, A, Value, Align);
   }
 
-  void _StoreMemPairAutoTSO(RegClass Class, OpSize Size, AddressMode A, Ref Value1, Ref Value2, OpSize Align = OpSize::i8Bit) {
+  void _StoreMemPairAutoTSO(RegClass Class, OpSize Size, const AddressMode& A, Ref Value1, Ref Value2, OpSize Align = OpSize::i8Bit) {
     const auto SizeInt = IR::OpSizeToSize(Size);
-    bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
+    const bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
 
     // Use stp if possible, otherwise fallback on two stores.
     if (!AtomicTSO && !A.Segment && Size >= OpSize::i32Bit & Size <= OpSize::i128Bit) {
-      A = SelectPairAddressMode(A, Size);
-      _StoreMemPair(Class, Size, Value1, Value2, A.Base, A.Offset);
+      const auto B = SelectPairAddressMode(A, Size);
+      _StoreMemPair(Class, Size, Value1, Value2, B.Base, B.Offset);
     } else {
-      _StoreMemAutoTSO(Class, Size, A, Value1, OpSize::i8Bit);
-      A.Offset += SizeInt;
-      _StoreMemAutoTSO(Class, Size, A, Value2, OpSize::i8Bit);
+      auto B = A;
+
+      _StoreMemAutoTSO(Class, Size, B, Value1, OpSize::i8Bit);
+      B.Offset += SizeInt;
+      _StoreMemAutoTSO(Class, Size, B, Value2, OpSize::i8Bit);
     }
   }
-  void _StoreMemPairFPRAutoTSO(OpSize Size, AddressMode A, Ref Value1, Ref Value2, OpSize Align = OpSize::i8Bit) {
+  void _StoreMemPairFPRAutoTSO(OpSize Size, const AddressMode& A, Ref Value1, Ref Value2, OpSize Align = OpSize::i8Bit) {
     return _StoreMemPairAutoTSO(RegClass::FPR, Size, A, Value1, Value2, Align);
   }
 

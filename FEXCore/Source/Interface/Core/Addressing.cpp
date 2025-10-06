@@ -7,7 +7,7 @@
 
 namespace FEXCore::IR {
 
-Ref LoadEffectiveAddress(IREmitter* IREmit, AddressMode A, IR::OpSize GPRSize, bool AddSegmentBase, bool AllowUpperGarbage) {
+Ref LoadEffectiveAddress(IREmitter* IREmit, const AddressMode& A, IR::OpSize GPRSize, bool AddSegmentBase, bool AllowUpperGarbage) {
   Ref Tmp = A.Base;
 
   if (A.Offset) {
@@ -51,8 +51,8 @@ Ref LoadEffectiveAddress(IREmitter* IREmit, AddressMode A, IR::OpSize GPRSize, b
   return Tmp ?: IREmit->Constant(0);
 }
 
-AddressMode SelectAddressMode(IREmitter* IREmit, AddressMode A, IR::OpSize GPRSize, bool HostSupportsTSOImm9, bool AtomicTSO, bool Vector,
-                              IR::OpSize AccessSize) {
+AddressMode SelectAddressMode(IREmitter* IREmit, const AddressMode& A, IR::OpSize GPRSize, bool HostSupportsTSOImm9, bool AtomicTSO,
+                              bool Vector, IR::OpSize AccessSize) {
   const auto Is32Bit = GPRSize == OpSize::i32Bit;
   const auto GPRSizeMatchesAddrSize = A.AddrSize == GPRSize;
   const auto OffsetIndexToLargeFor32Bit = Is32Bit && (A.Offset <= -16384 || A.Offset >= 16384);
@@ -111,15 +111,17 @@ AddressMode SelectAddressMode(IREmitter* IREmit, AddressMode A, IR::OpSize GPRSi
   if (AtomicTSO) {
     // TODO: LRCPC3 support for vector Imm9.
   } else if (!Is32Bit && A.Base && (A.Index || A.Segment) && !A.Offset && (A.IndexScale == 1 || A.IndexScale == AccessSizeAsImm)) {
+    AddressMode B = A;
+
     // ScaledRegisterLoadstore
-    if (A.Index && A.Segment) {
-      A.Base = IREmit->Add(GPRSize, A.Base, A.Segment);
-    } else if (A.Segment) {
-      A.Index = A.Segment;
-      A.IndexScale = 1;
+    if (B.Index && B.Segment) {
+      B.Base = IREmit->Add(GPRSize, B.Base, B.Segment);
+    } else if (B.Segment) {
+      B.Index = B.Segment;
+      B.IndexScale = 1;
     }
 
-    return A;
+    return B;
   }
 
   if (Vector || !AtomicTSO) {

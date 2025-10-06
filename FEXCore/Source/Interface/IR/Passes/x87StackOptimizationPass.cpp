@@ -188,9 +188,9 @@ private:
     // Store the Upper part of the register (the remaining 2 bytes) into memory.
     AddressMode A {.Base = AddrNode,
                    .Index = Op->Offset.IsInvalid() ? nullptr : Offset,
+                   .Offset = 8,
                    .IndexType = MemOffsetType::SXTX,
                    .IndexScale = OffsetScale,
-                   .Offset = 8,
                    .AddrSize = OpSize::i64Bit};
     A = SelectAddressMode(IREmit, A, GPROpSize, Features.SupportsTSOImm9, false, false, OpSize::i16Bit);
     IREmit->_StoreMemGPR(OpSize::i16Bit, Upper, A.Base, A.Index, OpSize::i64Bit, MemOffsetType::SXTX, A.IndexScale);
