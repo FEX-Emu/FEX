@@ -1326,9 +1326,7 @@ static uint64_t DoCAS64(uint64_t DesiredSrc, uint64_t ExpectedSrc, uint64_t Addr
   }
 }
 
-static bool RunCASAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg, uint32_t ExpectedReg, uint32_t AddressReg, uint32_t* StrictSplitLockMutex) {
-  uint64_t Addr = GPRs[AddressReg];
-
+static std::optional<uint64_t> DoCAS(uint32_t Size, uint64_t Desired, uint64_t Expected, uint64_t Addr, uint32_t* StrictSplitLockMutex) {
   // Cross-cacheline CAS doesn't work on ARM
   // It isn't even guaranteed to work on x86
   // Intel will do a "split lock" which locks the full bus
@@ -1341,7 +1339,7 @@ static bool RunCASAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg, uint32_
   // Only need to handle 16, 32, 64
   if (Size == 2) {
     auto Res = DoCAS16<false>(
-      GPRs[DesiredReg], GPRs[ExpectedReg], Addr,
+      Desired, Expected, Addr,
       [](uint16_t, uint16_t Expected) -> uint16_t {
         // Expected is just Expected
         return Expected;
@@ -1351,16 +1349,10 @@ static bool RunCASAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg, uint32_
         return Desired;
       },
       StrictSplitLockMutex);
-
-    // Regardless of pass or fail
-    // We set the result register if it isn't a zero register
-    if (ExpectedReg != 31) {
-      GPRs[ExpectedReg] = Res;
-    }
-    return true;
+    return Res;
   } else if (Size == 4) {
     auto Res = DoCAS32<false>(
-      GPRs[DesiredReg], GPRs[ExpectedReg], Addr,
+      Desired, Expected, Addr,
       [](uint32_t, uint32_t Expected) -> uint32_t {
         // Expected is just Expected
         return Expected;
@@ -1370,16 +1362,10 @@ static bool RunCASAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg, uint32_
         return Desired;
       },
       StrictSplitLockMutex);
-
-    // Regardless of pass or fail
-    // We set the result register if it isn't a zero register
-    if (ExpectedReg != 31) {
-      GPRs[ExpectedReg] = Res;
-    }
-    return true;
+    return Res;
   } else if (Size == 8) {
     auto Res = DoCAS64<false>(
-      GPRs[DesiredReg], GPRs[ExpectedReg], Addr,
+      Desired, Expected, Addr,
       [](uint64_t, uint64_t Expected) -> uint64_t {
         // Expected is just Expected
         return Expected;
@@ -1389,16 +1375,24 @@ static bool RunCASAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg, uint32_
         return Desired;
       },
       StrictSplitLockMutex);
-
-    // Regardless of pass or fail
-    // We set the result register if it isn't a zero register
-    if (ExpectedReg != 31) {
-      GPRs[ExpectedReg] = Res;
-    }
-    return true;
+    return Res;
   }
 
-  return false;
+  return std::nullopt;
+}
+
+static bool RunCASAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg, uint32_t ExpectedReg, uint32_t AddressReg, uint32_t* StrictSplitLockMutex) {
+  std::optional<uint64_t> Res = DoCAS(Size, GPRs[DesiredReg], GPRs[ExpectedReg], GPRs[AddressReg], StrictSplitLockMutex);
+  if (!Res.has_value()) {
+    return false;
+  }
+
+  // Regardless of pass or fail
+  // We set the result register if it isn't a zero register
+  if (ExpectedReg != 31) {
+    GPRs[ExpectedReg] = *Res;
+  }
+  return true;
 }
 
 static bool HandleCASAL(uint64_t* GPRs, uint32_t Instr, uint32_t* StrictSplitLockMutex) {
