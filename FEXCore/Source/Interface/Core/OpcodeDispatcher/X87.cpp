@@ -602,7 +602,7 @@ void OpDispatchBuilder::X87FRSTOR(OpcodeArgs) {
 // Load / Store Control Word
 void OpDispatchBuilder::X87FSTCW(OpcodeArgs) {
   auto FCW = _LoadContextGPR(OpSize::i16Bit, offsetof(FEXCore::Core::CPUState, FCW));
-  StoreResultGPR(Op, FCW, OpSize::iInvalid);
+  StoreResultGPR(Op, FCW);
 }
 
 void OpDispatchBuilder::X87FLDCW(OpcodeArgs) {
@@ -766,7 +766,7 @@ Ref OpDispatchBuilder::ReconstructFSW_Helper(Ref T) {
 void OpDispatchBuilder::X87FNSTSW(OpcodeArgs) {
   Ref TopValue = _SyncStackToSlow();
   Ref StatusWord = ReconstructFSW_Helper(TopValue);
-  StoreResultGPR(Op, StatusWord, OpSize::iInvalid);
+  StoreResultGPR(Op, StatusWord);
 }
 
 void OpDispatchBuilder::FNCLEX(OpcodeArgs) {

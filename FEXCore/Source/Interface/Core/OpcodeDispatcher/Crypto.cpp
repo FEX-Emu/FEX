@@ -36,7 +36,7 @@ void OpDispatchBuilder::SHA1NEXTEOp(OpcodeArgs) {
   auto Tmp = _VAdd(OpSize::i128Bit, OpSize::i32Bit, Src, RotatedNode);
   auto Result = _VInsElement(OpSize::i128Bit, OpSize::i32Bit, 3, 3, Src, Tmp);
 
-  StoreResultFPR(Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result);
 }
 
 void OpDispatchBuilder::SHA1MSG1Op(OpcodeArgs) {
@@ -52,7 +52,7 @@ void OpDispatchBuilder::SHA1MSG1Op(OpcodeArgs) {
   // [W0, W1, W2, W3] ^ [W2, W3, W4, W5]
   Ref Result = _VXor(OpSize::i128Bit, OpSize::i8Bit, Dest, NewVec);
 
-  StoreResultFPR(Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result);
 }
 
 void OpDispatchBuilder::SHA1MSG2Op(OpcodeArgs) {
@@ -70,7 +70,7 @@ void OpDispatchBuilder::SHA1MSG2Op(OpcodeArgs) {
   // The result is swizzled differently than expected
   auto Result = SHADataShuffle(_VSha1SU1(Src1, Src2));
 
-  StoreResultFPR(Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result);
 }
 
 void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
@@ -112,7 +112,7 @@ void OpDispatchBuilder::SHA1RNDS4Op(OpcodeArgs) {
   case 3: Result = SHADataShuffle(_VSha1P(Src1, ZeroRegister, Src2)); break;
   }
 
-  StoreResultFPR(Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result);
 }
 
 void OpDispatchBuilder::SHA256MSG1Op(OpcodeArgs) {
@@ -125,7 +125,7 @@ void OpDispatchBuilder::SHA256MSG1Op(OpcodeArgs) {
 
   auto Result = _VSha256U0(Dest, Src);
 
-  StoreResultFPR(Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result);
 }
 
 void OpDispatchBuilder::SHA256MSG2Op(OpcodeArgs) {
@@ -142,7 +142,7 @@ void OpDispatchBuilder::SHA256MSG2Op(OpcodeArgs) {
 
   auto Result = _VSha256U1(Src1, Src2);
 
-  StoreResultFPR(Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result);
 }
 
 void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
@@ -177,7 +177,7 @@ void OpDispatchBuilder::SHA256RNDS2Op(OpcodeArgs) {
   auto B = _VSha256H2(EFGH, ABCD, Key);
   auto Result = shuffle_abcd(A, B);
 
-  StoreResultFPR(Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result);
 }
 
 void OpDispatchBuilder::AESImcOp(OpcodeArgs) {
@@ -187,7 +187,7 @@ void OpDispatchBuilder::AESImcOp(OpcodeArgs) {
   }
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Result = _VAESImc(Src);
-  StoreResultFPR(Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result);
 }
 
 void OpDispatchBuilder::AESEncOp(OpcodeArgs) {
@@ -198,7 +198,7 @@ void OpDispatchBuilder::AESEncOp(OpcodeArgs) {
   Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Result = _VAESEnc(OpSize::i128Bit, Dest, Src, LoadZeroVector(OpSize::i128Bit));
-  StoreResultFPR(Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result);
 }
 
 void OpDispatchBuilder::VAESEncOp(OpcodeArgs) {
@@ -212,7 +212,7 @@ void OpDispatchBuilder::VAESEncOp(OpcodeArgs) {
   Ref Key = LoadSourceFPR(Op, Op->Src[1], Op->Flags);
   Ref Result = _VAESEnc(DstSize, State, Key, LoadZeroVector(DstSize));
 
-  StoreResultFPR(Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result);
 }
 
 void OpDispatchBuilder::AESEncLastOp(OpcodeArgs) {
@@ -223,7 +223,7 @@ void OpDispatchBuilder::AESEncLastOp(OpcodeArgs) {
   Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Result = _VAESEncLast(OpSize::i128Bit, Dest, Src, LoadZeroVector(OpSize::i128Bit));
-  StoreResultFPR(Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result);
 }
 
 void OpDispatchBuilder::VAESEncLastOp(OpcodeArgs) {
@@ -237,7 +237,7 @@ void OpDispatchBuilder::VAESEncLastOp(OpcodeArgs) {
   Ref Key = LoadSourceFPR(Op, Op->Src[1], Op->Flags);
   Ref Result = _VAESEncLast(DstSize, State, Key, LoadZeroVector(DstSize));
 
-  StoreResultFPR(Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result);
 }
 
 void OpDispatchBuilder::AESDecOp(OpcodeArgs) {
@@ -248,7 +248,7 @@ void OpDispatchBuilder::AESDecOp(OpcodeArgs) {
   Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Result = _VAESDec(OpSize::i128Bit, Dest, Src, LoadZeroVector(OpSize::i128Bit));
-  StoreResultFPR(Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result);
 }
 
 void OpDispatchBuilder::VAESDecOp(OpcodeArgs) {
@@ -262,7 +262,7 @@ void OpDispatchBuilder::VAESDecOp(OpcodeArgs) {
   Ref Key = LoadSourceFPR(Op, Op->Src[1], Op->Flags);
   Ref Result = _VAESDec(DstSize, State, Key, LoadZeroVector(DstSize));
 
-  StoreResultFPR(Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result);
 }
 
 void OpDispatchBuilder::AESDecLastOp(OpcodeArgs) {
@@ -273,7 +273,7 @@ void OpDispatchBuilder::AESDecLastOp(OpcodeArgs) {
   Ref Dest = LoadSourceFPR(Op, Op->Dest, Op->Flags);
   Ref Src = LoadSourceFPR(Op, Op->Src[0], Op->Flags);
   Ref Result = _VAESDecLast(OpSize::i128Bit, Dest, Src, LoadZeroVector(OpSize::i128Bit));
-  StoreResultFPR(Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result);
 }
 
 void OpDispatchBuilder::VAESDecLastOp(OpcodeArgs) {
@@ -287,7 +287,7 @@ void OpDispatchBuilder::VAESDecLastOp(OpcodeArgs) {
   Ref Key = LoadSourceFPR(Op, Op->Src[1], Op->Flags);
   Ref Result = _VAESDecLast(DstSize, State, Key, LoadZeroVector(DstSize));
 
-  StoreResultFPR(Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result);
 }
 
 Ref OpDispatchBuilder::AESKeyGenAssistImpl(OpcodeArgs) {
@@ -305,7 +305,7 @@ void OpDispatchBuilder::AESKeyGenAssist(OpcodeArgs) {
   }
 
   Ref Result = AESKeyGenAssistImpl(Op);
-  StoreResultFPR(Op, Result, OpSize::iInvalid);
+  StoreResultFPR(Op, Result);
 }
 
 void OpDispatchBuilder::PCLMULQDQOp(OpcodeArgs) {
@@ -318,7 +318,7 @@ void OpDispatchBuilder::PCLMULQDQOp(OpcodeArgs) {
   const auto Selector = static_cast<uint8_t>(Op->Src[1].Literal());
 
   auto Res = _PCLMUL(OpSize::i128Bit, Dest, Src, Selector & 0b1'0001);
-  StoreResultFPR(Op, Res, OpSize::iInvalid);
+  StoreResultFPR(Op, Res);
 }
 
 void OpDispatchBuilder::VPCLMULQDQOp(OpcodeArgs) {
@@ -333,7 +333,7 @@ void OpDispatchBuilder::VPCLMULQDQOp(OpcodeArgs) {
   const auto Selector = static_cast<uint8_t>(Op->Src[2].Literal());
 
   Ref Res = _PCLMUL(DstSize, Src1, Src2, Selector & 0b1'0001);
-  StoreResultFPR(Op, Res, OpSize::iInvalid);
+  StoreResultFPR(Op, Res);
 }
 
 } // namespace FEXCore::IR

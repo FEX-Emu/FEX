@@ -1114,8 +1114,8 @@ public:
   // End of AVX 128-bit implementation
 
   // AVX 256-bit operations
-  void StoreResult_WithAVXInsert(VectorOpType Type, RegClass Class, FEXCore::X86Tables::DecodedOp Op, Ref Value, IR::OpSize Align,
-                                 MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
+  void StoreResult_WithAVXInsert(VectorOpType Type, RegClass Class, FEXCore::X86Tables::DecodedOp Op, Ref Value,
+                                 IR::OpSize Align = IR::OpSize::iInvalid, MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
     if (Op->Dest.IsGPR() && Op->Dest.Data.GPR.GPR >= X86State::REG_XMM_0 && Op->Dest.Data.GPR.GPR <= X86State::REG_XMM_15 &&
         GetGuestVectorLength() == OpSize::i256Bit && Type == VectorOpType::SSE) {
       const auto gpr = Op->Dest.Data.GPR.GPR;
@@ -1584,30 +1584,30 @@ private:
   void StoreResult_WithOpSize(RegClass Class, X86Tables::DecodedOp Op, const X86Tables::DecodedOperand& Operand, Ref Src, IR::OpSize OpSize,
                               IR::OpSize Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
   void StoreResultGPR_WithOpSize(X86Tables::DecodedOp Op, const X86Tables::DecodedOperand& Operand, Ref Src, IR::OpSize OpSize,
-                                 IR::OpSize Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
+                                 IR::OpSize Align = IR::OpSize::iInvalid, MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
     StoreResult_WithOpSize(RegClass::GPR, Op, Operand, Src, OpSize, Align, AccessType);
   }
   void StoreResultFPR_WithOpSize(X86Tables::DecodedOp Op, const X86Tables::DecodedOperand& Operand, Ref Src, IR::OpSize OpSize,
-                                 IR::OpSize Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
+                                 IR::OpSize Align = IR::OpSize::iInvalid, MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
     StoreResult_WithOpSize(RegClass::FPR, Op, Operand, Src, OpSize, Align, AccessType);
   }
 
   void StoreResult(RegClass Class, X86Tables::DecodedOp Op, const X86Tables::DecodedOperand& Operand, Ref Src, OpSize Align,
                    MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
-  void StoreResultGPR(X86Tables::DecodedOp Op, const X86Tables::DecodedOperand& Operand, Ref Src, OpSize Align,
+  void StoreResultGPR(X86Tables::DecodedOp Op, const X86Tables::DecodedOperand& Operand, Ref Src, OpSize Align = OpSize::iInvalid,
                       MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
     StoreResult(RegClass::GPR, Op, Operand, Src, Align, AccessType);
   }
-  void StoreResultFPR(X86Tables::DecodedOp Op, const X86Tables::DecodedOperand& Operand, Ref Src, OpSize Align,
+  void StoreResultFPR(X86Tables::DecodedOp Op, const X86Tables::DecodedOperand& Operand, Ref Src, OpSize Align = OpSize::iInvalid,
                       MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
     StoreResult(RegClass::FPR, Op, Operand, Src, Align, AccessType);
   }
 
   void StoreResult(RegClass Class, X86Tables::DecodedOp Op, Ref Src, OpSize Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT);
-  void StoreResultGPR(X86Tables::DecodedOp Op, Ref Src, OpSize Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
+  void StoreResultGPR(X86Tables::DecodedOp Op, Ref Src, OpSize Align = OpSize::iInvalid, MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
     StoreResult(RegClass::GPR, Op, Src, Align, AccessType);
   }
-  void StoreResultFPR(X86Tables::DecodedOp Op, Ref Src, OpSize Align, MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
+  void StoreResultFPR(X86Tables::DecodedOp Op, Ref Src, OpSize Align = OpSize::iInvalid, MemoryAccessType AccessType = MemoryAccessType::DEFAULT) {
     StoreResult(RegClass::FPR, Op, Src, Align, AccessType);
   }
 
@@ -2226,7 +2226,7 @@ private:
 
     HandleNZCV_RMW();
     CalculatePF(_ShiftFlags(OpSizeFromSrc(Op), Result, Dest, Shift, Src, OldPF, CFInverted));
-    StoreResultGPR(Op, Result, OpSize::iInvalid);
+    StoreResultGPR(Op, Result);
   }
 
   // Helper to derive Dest by a given builder-using Expression with the opcode
@@ -2315,7 +2315,7 @@ private:
       return;
     }
     auto Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags);
-    StoreResultGPR(Op, Dest, OpSize::iInvalid);
+    StoreResultGPR(Op, Dest);
   }
 
   using ZeroShiftFunctionPtr = void (OpDispatchBuilder::*)(FEXCore::X86Tables::DecodedOp Op);

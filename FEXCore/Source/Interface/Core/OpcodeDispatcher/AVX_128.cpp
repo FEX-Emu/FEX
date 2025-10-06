@@ -157,7 +157,7 @@ void OpDispatchBuilder::AVX128_VMOVScalarImpl(OpcodeArgs, IR::OpSize ElementSize
   } else {
     // VMOVSS/SD mem32/mem64, xmm1
     auto Src = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, false);
-    StoreResultFPR_WithOpSize(Op, Op->Dest, Src.Low, ElementSize, OpSize::iInvalid);
+    StoreResultFPR_WithOpSize(Op, Op->Dest, Src.Low, ElementSize);
   }
 }
 
@@ -593,7 +593,7 @@ void OpDispatchBuilder::AVX128_CVTFPR_To_GPR(OpcodeArgs, IR::OpSize SrcElementSi
   }
 
   Ref Result = CVTFPR_To_GPRImpl(Op, Src.Low, SrcElementSize, HostRoundingMode);
-  StoreResultGPR(Op, Result, OpSize::iInvalid);
+  StoreResultGPR(Op, Result);
 }
 
 void OpDispatchBuilder::AVX128_VANDN(OpcodeArgs) {
@@ -726,7 +726,7 @@ void OpDispatchBuilder::AVX128_MOVBetweenGPR_FPR(OpcodeArgs) {
       auto ElementSize = OpSizeFromDst(Op);
       // Extract element from GPR. Zero extending in the process.
       Src.Low = _VExtractToGPR(OpSizeFromSrc(Op), ElementSize, Src.Low, 0);
-      StoreResultGPR(Op, Op->Dest, Src.Low, OpSize::iInvalid);
+      StoreResultGPR(Op, Op->Dest, Src.Low);
     } else {
       // Storing first element to memory.
       Ref Dest = LoadSourceGPR(Op, Op->Dest, Op->Flags, {.LoadData = false});
@@ -758,7 +758,7 @@ void OpDispatchBuilder::AVX128_PExtr(OpcodeArgs, IR::OpSize ElementSize) {
     const auto GPRSize = GetGPROpSize();
     // Extract already zero extends the result.
     Ref Result = _VExtractToGPR(OpSize::i128Bit, OverridenElementSize, Src.Low, Index);
-    StoreResultGPR_WithOpSize(Op, Op->Dest, Result, GPRSize, OpSize::iInvalid);
+    StoreResultGPR_WithOpSize(Op, Op->Dest, Result, GPRSize);
     return;
   }
 
@@ -868,7 +868,7 @@ void OpDispatchBuilder::AVX128_MOVMSK(OpcodeArgs, IR::OpSize ElementSize) {
     auto GPRHigh = Mask8Byte(Src.High);
     GPR = _Orlshl(OpSize::i64Bit, GPRLow, GPRHigh, 2);
   }
-  StoreResultGPR_WithOpSize(Op, Op->Dest, GPR, GetGPROpSize(), OpSize::iInvalid);
+  StoreResultGPR_WithOpSize(Op, Op->Dest, GPR, GetGPROpSize());
 }
 
 void OpDispatchBuilder::AVX128_MOVMSKB(OpcodeArgs) {
@@ -897,7 +897,7 @@ void OpDispatchBuilder::AVX128_MOVMSKB(OpcodeArgs) {
     Result = _Orlshl(OpSize::i64Bit, Result, ResultHigh, 16);
   }
 
-  StoreResultGPR(Op, Result, OpSize::iInvalid);
+  StoreResultGPR(Op, Result);
 }
 
 void OpDispatchBuilder::AVX128_PINSRImpl(OpcodeArgs, IR::OpSize ElementSize, const X86Tables::DecodedOperand& Src1Op,
@@ -2295,7 +2295,7 @@ void OpDispatchBuilder::AVX128_VCVTPS2PH(OpcodeArgs) {
   }
 
   if (!Op->Dest.IsGPR()) {
-    StoreResultFPR_WithOpSize(Op, Op->Dest, Result.Low, StoreSize, OpSize::iInvalid);
+    StoreResultFPR_WithOpSize(Op, Op->Dest, Result.Low, StoreSize);
   } else {
     AVX128_StoreResult_WithOpSize(Op, Op->Dest, Result);
   }
