@@ -759,7 +759,6 @@ public:
   void X87FXTRACT(OpcodeArgs);
   void X87FYL2X(OpcodeArgs, bool IsFYL2XP1);
   void X87LDENV(OpcodeArgs);
-  void X87LDSW(OpcodeArgs);
   void X87ModifySTP(OpcodeArgs, bool Inc);
   void X87OpHelper(OpcodeArgs, FEXCore::IR::IROps IROp, bool ZeroC2);
 
@@ -990,7 +989,6 @@ public:
   void AVX128_VPSIGN(OpcodeArgs, IR::OpSize ElementSize);
   void AVX128_UCOMISx(OpcodeArgs, IR::OpSize ElementSize);
   void AVX128_VectorScalarInsertALU(OpcodeArgs, FEXCore::IR::IROps IROp, IR::OpSize ElementSize);
-  Ref AVX128_VFCMPImpl(IR::OpSize ElementSize, Ref Src1, Ref Src2, uint8_t CompType);
   void AVX128_VFCMP(OpcodeArgs, IR::OpSize ElementSize);
   void AVX128_InsertScalarFCMP(OpcodeArgs, IR::OpSize ElementSize);
   void AVX128_MOVBetweenGPR_FPR(OpcodeArgs);
@@ -1009,9 +1007,7 @@ public:
   void AVX128_VINSERT(OpcodeArgs);
   void AVX128_VINSERTPS(OpcodeArgs);
 
-  Ref AVX128_PHSUBImpl(Ref Src1, Ref Src2, size_t ElementSize);
   void AVX128_VPHSUB(OpcodeArgs, IR::OpSize ElementSize);
-
   void AVX128_VPHSUBSW(OpcodeArgs);
 
   void AVX128_VADDSUBP(OpcodeArgs, IR::OpSize ElementSize);
@@ -2300,7 +2296,6 @@ private:
   }
 
   std::optional<CondClass> DecodeNZCVCondition(uint8_t OP);
-  Ref SelectBit(Ref Cmp, IR::OpSize ResultSize, Ref TrueValue, Ref FalseValue);
   Ref SelectCC0All1(uint8_t OP);
 
   /**
@@ -2393,9 +2388,7 @@ private:
   void CalculateFlags_MUL(IR::OpSize SrcSize, Ref Res, Ref High);
   void CalculateFlags_UMUL(Ref High);
   void CalculateFlags_Logical(IR::OpSize SrcSize, Ref Res);
-  void CalculateFlags_ShiftLeft(IR::OpSize SrcSize, Ref Res, Ref Src1, Ref Src2);
   void CalculateFlags_ShiftLeftImmediate(IR::OpSize SrcSize, Ref Res, Ref Src1, uint64_t Shift);
-  void CalculateFlags_ShiftRight(IR::OpSize SrcSize, Ref Res, Ref Src1, Ref Src2);
   void CalculateFlags_ShiftRightImmediate(IR::OpSize SrcSize, Ref Res, Ref Src1, uint64_t Shift);
   void CalculateFlags_ShiftRightDoubleImmediate(IR::OpSize SrcSize, Ref Res, Ref Src1, uint64_t Shift);
   void CalculateFlags_ShiftRightImmediateCommon(IR::OpSize SrcSize, Ref Res, Ref Src1, uint64_t Shift);
