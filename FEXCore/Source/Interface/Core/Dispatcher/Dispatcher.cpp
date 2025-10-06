@@ -177,60 +177,64 @@ void Dispatcher::EmitDispatcher() {
   ldrb(TMP1, STATE_PTR(CpuStateFrame, State.flags[X86State::RFLAG_TF_RAW_LOC]));
   cbnz(ARMEmitter::Size::i32Bit, TMP1, &CompileSingleStep);
 
-  // This is the block cache lookup routine
-  // It matches what is going on it LookupCache.h::FindBlock
-  ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.L2Pointer));
-
-  // Mask the address by the virtual address size so we can check for aliases
-  uint64_t VirtualMemorySize = CTX->Config.VirtualMemSize;
-  if (std::popcount(VirtualMemorySize) == 1) {
-    and_(ARMEmitter::Size::i64Bit, TMP4, RipReg.R(), VirtualMemorySize - 1);
-  } else {
-    LoadConstant(ARMEmitter::Size::i64Bit, TMP4, VirtualMemorySize);
-    and_(ARMEmitter::Size::i64Bit, TMP4, RipReg.R(), TMP4);
-  }
-
   ARMEmitter::ForwardLabel NoBlock;
 
-  {
-    // Offset the address and add to our page pointer
-    lsr(ARMEmitter::Size::i64Bit, TMP2, TMP4, 12);
+  if (DisableL2Cache()) {
+    b(&NoBlock);
+  } else {
+    // This is the block cache lookup routine
+    // It matches what is going on it LookupCache.h::FindBlock
+    ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.L2Pointer));
 
-    // Load the pointer from the offset
-    ldr(TMP1, TMP1, TMP2, ARMEmitter::ExtendedType::LSL_64, 3);
+    // Mask the address by the virtual address size so we can check for aliases
+    uint64_t VirtualMemorySize = CTX->Config.VirtualMemSize;
+    if (std::popcount(VirtualMemorySize) == 1) {
+      and_(ARMEmitter::Size::i64Bit, TMP4, RipReg.R(), VirtualMemorySize - 1);
+    } else {
+      LoadConstant(ARMEmitter::Size::i64Bit, TMP4, VirtualMemorySize);
+      and_(ARMEmitter::Size::i64Bit, TMP4, RipReg.R(), TMP4);
+    }
 
-    // If page pointer is zero then we have no block
-    cbz(ARMEmitter::Size::i64Bit, TMP1, &NoBlock);
-
-    // Steal the page offset
-    and_(ARMEmitter::Size::i64Bit, TMP2, TMP4, 0x0FFF);
-
-    // Shift the offset by the size of the block cache entry
-    add(TMP1, TMP1, TMP2, ARMEmitter::ShiftType::LSL, (int)log2(sizeof(FEXCore::LookupCache::LookupCacheEntry)));
-
-    // The the full LookupCacheEntry with a single LDP.
-    // Check the guest address first to ensure it maps to the address we are currently at.
-    // This fixes aliasing problems
-    ldp<ARMEmitter::IndexType::OFFSET>(TMP4, TMP2, TMP1, 0);
-
-    // If the guest address doesn't match, Compile the block.
-    sub(TMP2, TMP2, RipReg);
-    cbnz(ARMEmitter::Size::i64Bit, TMP2, &NoBlock);
-
-    // Check the host address to see if it matches, else compile the block.
-    cbz(ARMEmitter::Size::i64Bit, TMP4, &NoBlock);
-
-    // If we've made it here then we have a real compiled block
     {
-      // update L1 cache
-      ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.L1Pointer));
+      // Offset the address and add to our page pointer
+      lsr(ARMEmitter::Size::i64Bit, TMP2, TMP4, 12);
 
-      and_(ARMEmitter::Size::i64Bit, TMP2, RipReg.R(), LookupCache::L1_ENTRIES_MASK);
-      add(TMP1, TMP1, TMP2, ARMEmitter::ShiftType::LSL, 4);
-      stp<ARMEmitter::IndexType::OFFSET>(TMP4, RipReg, TMP1);
+      // Load the pointer from the offset
+      ldr(TMP1, TMP1, TMP2, ARMEmitter::ExtendedType::LSL_64, 3);
 
-      // Jump to the block
-      br(TMP4);
+      // If page pointer is zero then we have no block
+      cbz(ARMEmitter::Size::i64Bit, TMP1, &NoBlock);
+
+      // Steal the page offset
+      and_(ARMEmitter::Size::i64Bit, TMP2, TMP4, 0x0FFF);
+
+      // Shift the offset by the size of the block cache entry
+      add(TMP1, TMP1, TMP2, ARMEmitter::ShiftType::LSL, (int)log2(sizeof(FEXCore::LookupCache::LookupCacheEntry)));
+
+      // The the full LookupCacheEntry with a single LDP.
+      // Check the guest address first to ensure it maps to the address we are currently at.
+      // This fixes aliasing problems
+      ldp<ARMEmitter::IndexType::OFFSET>(TMP4, TMP2, TMP1, 0);
+
+      // If the guest address doesn't match, Compile the block.
+      sub(TMP2, TMP2, RipReg);
+      cbnz(ARMEmitter::Size::i64Bit, TMP2, &NoBlock);
+
+      // Check the host address to see if it matches, else compile the block.
+      cbz(ARMEmitter::Size::i64Bit, TMP4, &NoBlock);
+
+      // If we've made it here then we have a real compiled block
+      {
+        // update L1 cache
+        ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.L1Pointer));
+
+        and_(ARMEmitter::Size::i64Bit, TMP2, RipReg.R(), LookupCache::L1_ENTRIES_MASK);
+        add(TMP1, TMP1, TMP2, ARMEmitter::ShiftType::LSL, 4);
+        stp<ARMEmitter::IndexType::OFFSET>(TMP4, RipReg, TMP1);
+
+        // Jump to the block
+        br(TMP4);
+      }
     }
   }
 
