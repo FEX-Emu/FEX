@@ -80,7 +80,7 @@ private:
 static_assert(!std::is_move_constructible_v<NonMovableUniquePtr<int>>);
 static_assert(!std::is_move_assignable_v<NonMovableUniquePtr<int>>);
 
-struct InternalThreadState : public FEXCore::Allocator::FEXAllocOperators {
+struct alignas(FEXCore::Utils::FEX_PAGE_SIZE) InternalThreadState : public FEXCore::Allocator::FEXAllocOperators {
   FEXCore::Core::CpuStateFrame* const CurrentFrame = &BaseFrameState;
 
   FEXCore::Context::Context* const CTX;
@@ -119,5 +119,6 @@ static_assert(std::is_standard_layout_v<FEXCore::Core::InternalThreadState>);
 static_assert(
   (offsetof(FEXCore::Core::InternalThreadState, InterruptFaultPage) - offsetof(FEXCore::Core::InternalThreadState, BaseFrameState)) < 4096,
   "Fault page is outside of immediate range from CPU state");
+static_assert(sizeof(FEXCore::Core::InternalThreadState) == (FEXCore::Utils::FEX_PAGE_SIZE * 2));
 
 } // namespace FEXCore::Core

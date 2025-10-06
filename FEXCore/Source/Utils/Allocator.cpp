@@ -57,6 +57,11 @@ void* FEX_mmap(void* addr, size_t length, int prot, int flags, int fd, off_t off
   }
   return Result;
 }
+
+void VirtualName(const char* Name, void* Ptr, size_t Size) {
+  prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, Ptr, Size, Name);
+}
+
 int FEX_munmap(void* addr, size_t length) {
   int Result = Alloc64->Munmap(addr, length);
 

@@ -82,12 +82,15 @@ inline bool VirtualProtect(void* Ptr, size_t Size, ProtectOptions options) {
   return ::VirtualProtect(Ptr, Size, prot, nullptr) == 0;
 }
 
+inline void VirtualName(const char*, void*, size_t) {}
+
 #else
 using MMAP_Hook = void* (*)(void*, size_t, int, int, int, off_t);
 using MUNMAP_Hook = int (*)(void*, size_t);
 
 FEX_DEFAULT_VISIBILITY extern MMAP_Hook mmap;
 FEX_DEFAULT_VISIBILITY extern MUNMAP_Hook munmap;
+FEX_DEFAULT_VISIBILITY extern void VirtualName(const char* Name, void* Ptr, size_t Size);
 
 // All commit parameters are ignored here, they are unnecessary as Linux supports overcommit
 

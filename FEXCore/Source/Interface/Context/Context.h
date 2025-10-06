@@ -269,9 +269,9 @@ public:
 
   FEXCore::JITSymbols Symbols;
 
-  FEXCore::Utils::PooledAllocatorVirtual OpDispatcherAllocator;
-  FEXCore::Utils::PooledAllocatorVirtual FrontendAllocator;
-  FEXCore::Utils::PooledAllocatorVirtual CPUBackendAllocator;
+  FEXCore::Utils::PooledAllocatorVirtual OpDispatcherAllocator {"FEXMem_OpDispatcher"};
+  FEXCore::Utils::PooledAllocatorVirtual FrontendAllocator {"FEXMem_Frontend"};
+  FEXCore::Utils::PooledAllocatorVirtual CPUBackendAllocator {"FEXMem_CPUBackend"};
 
   // If Atomic-based TSO emulation is enabled or not.
   bool IsAtomicTSOEnabled() const {
