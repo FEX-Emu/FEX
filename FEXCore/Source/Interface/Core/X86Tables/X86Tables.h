@@ -561,21 +561,6 @@ constexpr static inline void GenerateTableWithCopy(X86InstInfo *FinalTable, X86T
 };
 
 template<typename OpcodeType>
-static inline void LateInitCopyTable(X86InstInfo *FinalTable, X86TablesInfoStruct<OpcodeType> const *OtherLocal, size_t OtherTableSize) {
-  for (size_t j = 0; j < OtherTableSize; ++j) {
-    X86TablesInfoStruct<OpcodeType> const &OtherOp = OtherLocal[j];
-    auto OtherOpNum = OtherOp.first;
-    X86InstInfo const &OtherInfo = OtherOp.Info;
-    for (uint32_t i = 0; i < OtherOp.second; ++i) {
-      X86InstInfo &FinalOp = FinalTable[OtherOpNum + i];
-      if (FinalOp.Type == TYPE_COPY_OTHER) {
-        FinalOp = OtherInfo;
-      }
-    }
-  }
-}
-
-template<typename OpcodeType>
 constexpr static inline void GenerateX87Table(X86InstInfo *FinalTable, X86TablesInfoStruct<OpcodeType> const *LocalTable, size_t TableSize) {
   for (size_t j = 0; j < TableSize; ++j) {
     X86TablesInfoStruct<OpcodeType> const &Op = LocalTable[j];
