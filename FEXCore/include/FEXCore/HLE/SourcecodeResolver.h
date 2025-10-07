@@ -84,6 +84,6 @@ private:
 
 class SourcecodeResolver {
 public:
-  virtual fextl::unique_ptr<SourcecodeMap> GenerateMap(const std::string_view& GuestBinaryFile, const std::string_view& GuestBinaryFileId) = 0;
+  virtual fextl::unique_ptr<SourcecodeMap> GenerateMap(std::string_view GuestBinaryFile, std::string_view GuestBinaryFileId) = 0;
 };
 } // namespace FEXCore::HLE

@@ -350,8 +350,8 @@ protected:
   uint32_t GuestKernelVersion {};
 
   FEXCore::Context::Context* CTX;
-private:
 
+private:
   FEX::HLE::SignalDelegator* SignalDelegation;
   FEX::HLE::ThunkHandler* ThunkHandler;
 
@@ -365,12 +365,9 @@ private:
 #ifdef DEBUG_STRACE
   void Strace(FEXCore::HLE::SyscallArguments* Args, uint64_t Ret);
 #endif
+  fextl::unique_ptr<FEXCore::HLE::SourcecodeMap> GenerateMap(std::string_view GuestBinaryFile, std::string_view GuestBinaryFileId) override;
 
   fextl::unique_ptr<FEX::HLE::MemAllocator> Alloc32Handler {};
-
-  fextl::unique_ptr<FEXCore::HLE::SourcecodeMap>
-  GenerateMap(const std::string_view& GuestBinaryFile, const std::string_view& GuestBinaryFileId) override;
-
   std::atomic<uint64_t> AnonSharedId {1};
 };
 
