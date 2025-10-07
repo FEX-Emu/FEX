@@ -908,9 +908,7 @@ static bool isHEX(char c) {
   return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
 }
 
-fextl::unique_ptr<FEXCore::HLE::SourcecodeMap>
-SyscallHandler::GenerateMap(const std::string_view& GuestBinaryFile, const std::string_view& GuestBinaryFileId) {
-
+fextl::unique_ptr<FEXCore::HLE::SourcecodeMap> SyscallHandler::GenerateMap(std::string_view GuestBinaryFile, std::string_view GuestBinaryFileId) {
   ELFParser GuestELF;
 
   if (!GuestELF.ReadElf(fextl::string(GuestBinaryFile))) {

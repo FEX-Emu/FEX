@@ -79,7 +79,6 @@ void RegisterFS(FEX::HLE::SyscallHandler* Handler);
 void RegisterInfo(FEX::HLE::SyscallHandler* Handler);
 void RegisterIO(FEX::HLE::SyscallHandler* Handler);
 void RegisterMemory(FEX::HLE::SyscallHandler* Handler);
-void RegisterNuma(FEX::HLE::SyscallHandler* Handler);
 void RegisterSignals(FEX::HLE::SyscallHandler* Handler);
 void RegisterThread(FEX::HLE::SyscallHandler* Handler);
 void RegisterTimer(FEX::HLE::SyscallHandler* Handler);
@@ -351,8 +350,8 @@ protected:
   uint32_t GuestKernelVersion {};
 
   FEXCore::Context::Context* CTX;
-private:
 
+private:
   FEX::HLE::SignalDelegator* SignalDelegation;
   FEX::HLE::ThunkHandler* ThunkHandler;
 
@@ -366,16 +365,11 @@ private:
 #ifdef DEBUG_STRACE
   void Strace(FEXCore::HLE::SyscallArguments* Args, uint64_t Ret);
 #endif
+  fextl::unique_ptr<FEXCore::HLE::SourcecodeMap> GenerateMap(std::string_view GuestBinaryFile, std::string_view GuestBinaryFileId) override;
 
   fextl::unique_ptr<FEX::HLE::MemAllocator> Alloc32Handler {};
-
-  fextl::unique_ptr<FEXCore::HLE::SourcecodeMap>
-  GenerateMap(const std::string_view& GuestBinaryFile, const std::string_view& GuestBinaryFileId) override;
-
   std::atomic<uint64_t> AnonSharedId {1};
 };
-
-uint64_t HandleSyscall(SyscallHandler* Handler, FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args);
 
 #define SYSCALL_ERRNO()              \
   do {                               \
