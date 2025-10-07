@@ -3,7 +3,6 @@
 
 // Header for various utilities related to operating with enums
 
-#include <FEXCore/fextl/fmt.h>
 #include <type_traits>
 
 namespace FEXCore {
