@@ -590,6 +590,6 @@ constexpr static inline void GenerateX87Table(X86InstInfo *FinalTable, X86Tables
   }
 };
 
-}
-
 FEX_DEFINE_ENUM_FMT_PASSTHROUGH(FEXCore::X86Tables::DecodedOperand::OpType);
+
+} // namespace FEXCore::X86Tables

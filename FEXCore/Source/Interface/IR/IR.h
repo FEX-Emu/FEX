@@ -693,6 +693,15 @@ inline NodeID NodeWrapperBase<Type>::ID() const {
 bool IsBlockExit(FEXCore::IR::IROps Op);
 
 void Dump(fextl::stringstream* out, const IRListView* IR);
+
+constexpr auto format_as(FEXCore::IR::NodeID ID) {
+  return ID.Value;
+}
+
+FEX_DEFINE_ENUM_FMT_PASSTHROUGH(FEXCore::IR::FenceType)
+FEX_DEFINE_ENUM_FMT_PASSTHROUGH(FEXCore::IR::MemOffsetType)
+FEX_DEFINE_ENUM_FMT_PASSTHROUGH(FEXCore::IR::OpSize)
+FEX_DEFINE_ENUM_FMT_PASSTHROUGH(FEXCore::IR::RegClass)
 } // namespace FEXCore::IR
 
 template<>
@@ -701,20 +710,3 @@ struct std::hash<FEXCore::IR::NodeID> {
     return std::hash<FEXCore::IR::NodeID::value_type> {}(ID.Value);
   }
 };
-
-template<>
-struct fmt::formatter<FEXCore::IR::NodeID> : fmt::formatter<FEXCore::IR::NodeID::value_type> {
-  using Base = fmt::formatter<FEXCore::IR::NodeID::value_type>;
-
-  // Pass-through the underlying value, so IDs can
-  // be formatted like any integral value.
-  template<typename FormatContext>
-  auto format(const FEXCore::IR::NodeID& ID, FormatContext& ctx) const {
-    return Base::format(ID.Value, ctx);
-  }
-};
-
-FEX_DEFINE_ENUM_FMT_PASSTHROUGH(FEXCore::IR::FenceType);
-FEX_DEFINE_ENUM_FMT_PASSTHROUGH(FEXCore::IR::MemOffsetType);
-FEX_DEFINE_ENUM_FMT_PASSTHROUGH(FEXCore::IR::OpSize);
-FEX_DEFINE_ENUM_FMT_PASSTHROUGH(FEXCore::IR::RegClass);
