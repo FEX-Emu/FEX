@@ -79,7 +79,6 @@ void RegisterFS(FEX::HLE::SyscallHandler* Handler);
 void RegisterInfo(FEX::HLE::SyscallHandler* Handler);
 void RegisterIO(FEX::HLE::SyscallHandler* Handler);
 void RegisterMemory(FEX::HLE::SyscallHandler* Handler);
-void RegisterNuma(FEX::HLE::SyscallHandler* Handler);
 void RegisterSignals(FEX::HLE::SyscallHandler* Handler);
 void RegisterThread(FEX::HLE::SyscallHandler* Handler);
 void RegisterTimer(FEX::HLE::SyscallHandler* Handler);
@@ -374,8 +373,6 @@ private:
 
   std::atomic<uint64_t> AnonSharedId {1};
 };
-
-uint64_t HandleSyscall(SyscallHandler* Handler, FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args);
 
 #define SYSCALL_ERRNO()              \
   do {                               \
