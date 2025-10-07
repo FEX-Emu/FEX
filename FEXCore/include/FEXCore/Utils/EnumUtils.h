@@ -57,15 +57,9 @@ namespace FEXCore {
 
 // Macro that defines a fmt formatter for a reasonable case where an enum
 // is formatted as a purely integral type based on its underlying type.
-#define FEX_DEFINE_ENUM_FMT_PASSTHROUGH(type)                                  \
-  template<>                                                                   \
-  struct fmt::formatter<type> : fmt::formatter<std::underlying_type_t<type>> { \
-    using Base = fmt::formatter<std::underlying_type_t<type>>;                 \
-                                                                               \
-    template<typename FormatContext>                                           \
-    auto format(const type& Value, FormatContext& ctx) const {                 \
-      return Base::format(FEXCore::ToUnderlying(Value), ctx);                  \
-    }                                                                          \
+#define FEX_DEFINE_ENUM_FMT_PASSTHROUGH(type) \
+  constexpr auto format_as(type t) {          \
+    return FEXCore::ToUnderlying(t);          \
   }
 
 // Equivalent to C++23's std::to_underlying.
