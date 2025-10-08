@@ -104,6 +104,10 @@ struct CPUState {
   uint64_t avx_high[16][2];
 
   uint64_t gregs[16] {};
+  uint64_t L1Pointer {};
+  uint64_t L1Mask {};
+  uint64_t callret_sp {};
+  uint64_t _pad1 {};
   XMMRegs xmm {};
 
   // Raw segment register indexes
@@ -116,8 +120,6 @@ struct CPUState {
   uint64_t gs_cached {};
   uint64_t fs_cached {};
   uint8_t flags[48] {};
-  uint64_t callret_sp {};
-  uint64_t _pad1 {};
   uint64_t mm[8][2] {};
 
   // 32bit x86 state
@@ -247,6 +249,8 @@ static_assert(offsetof(CPUState, xmm) % 32 == 0, "xmm needs to be 256-bit aligne
 static_assert(offsetof(CPUState, mm) % 16 == 0, "mm needs to be 128-bit aligned!");
 static_assert(offsetof(CPUState, gregs[15]) <= 504, "gregs maximum offset must be <= 504 for ldp/stp to work");
 static_assert(offsetof(CPUState, DeferredSignalRefCount) % 8 == 0, "Needs to be 8-byte aligned");
+static_assert(offsetof(CPUState, L1Pointer) <= 504, "This needs to be <= 504 for ldp");
+static_assert(offsetof(CPUState, L1Mask) == (offsetof(CPUState, L1Pointer) + 8), "These two variables are paired");
 
 struct InternalThreadState;
 
@@ -355,7 +359,6 @@ struct JITPointers {
     uint64_t GuestSignal_SIGSEGV {};
     uint64_t SignalReturnHandler {};
     uint64_t SignalReturnHandlerRT {};
-    uint64_t L1Pointer {};
     uint64_t L2Pointer {};
     /**  @} */
 

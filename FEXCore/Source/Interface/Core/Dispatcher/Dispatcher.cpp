@@ -209,7 +209,7 @@ void Dispatcher::EmitDispatcher() {
       and_(ARMEmitter::Size::i64Bit, TMP2, TMP4, 0x0FFF);
 
       // Shift the offset by the size of the block cache entry
-      add(TMP1, TMP1, TMP2, ARMEmitter::ShiftType::LSL, (int)log2(sizeof(FEXCore::LookupCache::LookupCacheEntry)));
+      add(TMP1, TMP1, TMP2, ARMEmitter::ShiftType::LSL, FEXCore::ilog2(sizeof(LookupCache::LookupCacheEntry)));
 
       // The the full LookupCacheEntry with a single LDP.
       // Check the guest address first to ensure it maps to the address we are currently at.
@@ -226,10 +226,13 @@ void Dispatcher::EmitDispatcher() {
       // If we've made it here then we have a real compiled block
       {
         // update L1 cache
-        ldr(TMP1, STATE_PTR(CpuStateFrame, Pointers.Common.L1Pointer));
+        ldp<ARMEmitter::IndexType::OFFSET>(TMP1, TMP2, STATE, offsetof(FEXCore::Core::CpuStateFrame, State.L1Pointer));
 
-        and_(ARMEmitter::Size::i64Bit, TMP2, RipReg.R(), LookupCache::L1_ENTRIES_MASK);
-        add(TMP1, TMP1, TMP2, ARMEmitter::ShiftType::LSL, 4);
+        // Calculate (tmp1 + ((ripreg & L1_ENTRIES_MASK) << 4)) for the address
+        // L1Mask is pre-shifted.
+        and_(ARMEmitter::Size::i64Bit, TMP2, TMP2, RipReg.R(), ARMEmitter::ShiftType::LSL, FEXCore::ilog2(sizeof(LookupCache::LookupCacheEntry)));
+        add(TMP1, TMP1, TMP2);
+
         stp<ARMEmitter::IndexType::OFFSET>(TMP4, RipReg, TMP1);
 
         // Jump to the block
