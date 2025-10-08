@@ -12,13 +12,51 @@ $end_info$
 #include <linux/filter.h>
 #include <linux/seccomp.h>
 
+namespace FEX::HLE {
+
+#define EMIT_INST(x)               \
+  do {                             \
+    if constexpr (CalculateSize) { \
+      OpSize += 4;                 \
+    } else {                       \
+      x;                           \
+    }                              \
+  } while (0)
+
+#define RETURN_ERROR(x)                                                                \
+  if constexpr (CalculateSize) {                                                       \
+    return ~0ULL;                                                                      \
+  } else {                                                                             \
+    static_assert(x == -EINVAL, "Early return error evaluation only supports EINVAL"); \
+    return x;                                                                          \
+  }
+
+#define RETURN_SUCCESS()           \
+  do {                             \
+    if constexpr (CalculateSize) { \
+      return OpSize;               \
+    } else {                       \
+      return 0;                    \
+    }                              \
+  } while (0)
+
 #define VALIDATE(cond)      \
   do {                      \
     if (!(cond)) {          \
       RETURN_ERROR(-EINVAL) \
     }                       \
   } while (0)
-namespace FEX::HLE {
+
+using SizeErrorCheck = decltype([](uint64_t Result) -> bool { return Result == ~0ULL; });
+using EmissionErrorCheck = decltype([](uint64_t Result) { return Result != 0; });
+
+// Register selection comes from function signature.
+constexpr auto REG_A = ARMEmitter::WReg::w0;
+constexpr auto REG_X = ARMEmitter::WReg::w1;
+constexpr auto REG_TMP = ARMEmitter::WReg::w2;
+constexpr auto REG_TMP2 = ARMEmitter::WReg::w3;
+constexpr auto REG_SECCOMP_DATA = ARMEmitter::XReg::x4;
+
 template<bool CalculateSize>
 uint64_t BPFEmitter::HandleLoad(uint32_t BPFIP, const sock_filter* Inst) {
   VALIDATE(BPF_SIZE(Inst->code) == BPF_W);
