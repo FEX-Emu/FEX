@@ -26,6 +26,9 @@ static inline void store_memory_barrier() {
 
 namespace FEX::SHMStats {
 class StatAllocBase {
+public:
+  virtual ~StatAllocBase() = default;
+
 protected:
   FEXCore::SHMStats::ThreadStats* AllocateSlot(uint32_t TID);
   void DeallocateSlot(FEXCore::SHMStats::ThreadStats* AllocatedSlot);

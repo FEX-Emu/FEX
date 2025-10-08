@@ -163,8 +163,6 @@ public:
     Stat.CleanupForExit();
   }
 
-  StatAlloc Stat;
-
   ///< Returns the ThreadStateObject from a CpuStateFrame object.
   static inline FEX::HLE::ThreadStateObject* GetStateObjectFromCPUState(FEXCore::Core::CpuStateFrame* Frame) {
     return static_cast<FEX::HLE::ThreadStateObject*>(Frame->Thread->FrontendPtr);
@@ -240,6 +238,7 @@ public:
   }
 
 private:
+  StatAlloc Stat;
   FEXCore::Context::Context* CTX;
   FEX::HLE::SignalDelegator* SignalDelegation;
 
