@@ -55,6 +55,8 @@ private:
   fextl::unordered_map<uint32_t, ARMEmitter::ForwardLabel> JumpLabels;
   fextl::unordered_map<uint32_t, ARMEmitter::ForwardLabel> ConstPool;
 
+  using JumpLabelIterator = decltype(JumpLabels)::iterator;
+
   void* Func {};
   size_t FuncSize {};
 };

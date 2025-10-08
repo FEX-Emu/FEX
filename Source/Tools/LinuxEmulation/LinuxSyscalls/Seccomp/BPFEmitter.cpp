@@ -196,7 +196,7 @@ uint64_t BPFEmitter::HandleJmp(uint32_t BPFIP, uint32_t NumInst, const sock_filt
     // Must not jump past the end.
     VALIDATE(Target < NumInst);
 
-    fextl::unordered_map<uint32_t, ARMEmitter::ForwardLabel>::iterator TargetLabel {};
+    JumpLabelIterator TargetLabel {};
 
     if constexpr (!CalculateSize) {
       TargetLabel = JumpLabels.try_emplace(Target, ARMEmitter::ForwardLabel {}).first;
@@ -238,8 +238,8 @@ uint64_t BPFEmitter::HandleJmp(uint32_t BPFIP, uint32_t NumInst, const sock_filt
       RETURN_ERROR(-EINVAL);
     }
 
-    fextl::unordered_map<uint32_t, ARMEmitter::ForwardLabel>::iterator TargetTrueLabel {};
-    fextl::unordered_map<uint32_t, ARMEmitter::ForwardLabel>::iterator TargetFalseLabel {};
+    JumpLabelIterator TargetTrueLabel {};
+    JumpLabelIterator TargetFalseLabel {};
 
     if constexpr (!CalculateSize) {
       TargetTrueLabel = JumpLabels.try_emplace(TargetTrue, ARMEmitter::ForwardLabel {}).first;
