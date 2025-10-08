@@ -128,8 +128,6 @@ public:
   using SyscallPtrArg6 = uint64_t (*)(FEXCore::Core::CpuStateFrame* Frame, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
 
   struct SyscallFunctionDefinition {
-    uint8_t NumArgs;
-    FEXCore::IR::SyscallFlags Flags;
     union {
       void* Ptr;
       SyscallPtrArg0 Ptr0;
@@ -141,6 +139,8 @@ public:
       SyscallPtrArg6 Ptr6;
     };
     int32_t HostSyscallNumber;
+    uint8_t NumArgs;
+    FEXCore::IR::SyscallFlags Flags;
 #ifdef DEBUG_STRACE
     fextl::string StraceFmt;
 #endif
@@ -335,8 +335,8 @@ protected:
 
   fextl::vector<SyscallFunctionDefinition> Definitions {std::max<std::size_t>(FEX::HLE::x64::SYSCALL_x64_MAX, FEX::HLE::x32::SYSCALL_x86_MAX),
                                                         {
-                                                          .NumArgs = 255,
                                                           .Ptr = reinterpret_cast<void*>(&UnimplementedSyscall),
+                                                          .NumArgs = 255,
                                                         }};
   std::mutex MMapMutex;
 
