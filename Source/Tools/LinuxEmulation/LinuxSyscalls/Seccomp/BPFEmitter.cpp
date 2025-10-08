@@ -6,7 +6,9 @@ $end_info$
 */
 
 #include "LinuxSyscalls/Seccomp/BPFEmitter.h"
-#include "LinuxSyscalls/Seccomp/SeccompEmulator.h"
+
+#include <FEXCore/Utils/AllocatorHooks.h>
+#include <FEXCore/Utils/LogManager.h>
 
 #include <linux/bpf_common.h>
 #include <linux/filter.h>
@@ -407,7 +409,7 @@ uint64_t BPFEmitter::JITFilter(uint32_t flags, const sock_fprog* prog) {
 
   if constexpr (false) {
     // Useful for debugging seccomp filters.
-    LogMan::Msg::DFmt("JITFilter: disas 0x{:x},+{}", (uint64_t)CodeBegin, CodeOnlySize);
+    LogMan::Msg::DFmt("JITFilter: disas 0x{:x},+{}", fmt::ptr(CodeBegin), CodeOnlySize);
   }
 
   ConstPool.clear();
