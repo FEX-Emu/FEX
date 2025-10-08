@@ -15,7 +15,7 @@ $end_info$
 
 namespace FEXCore {
 GuestToHostMap::GuestToHostMap()
-  : BlockLinks_mbr {fextl::pmr::get_default_resource()} {
+  : BlockLinks_mbr {"FEXMem_BlockLinks"} {
   BlockLinks_pma = fextl::make_unique<std::pmr::polymorphic_allocator<std::byte>>(&BlockLinks_mbr);
   // Setup our PMR map.
   BlockLinks = BlockLinks_pma->new_object<BlockLinksMapType>();
