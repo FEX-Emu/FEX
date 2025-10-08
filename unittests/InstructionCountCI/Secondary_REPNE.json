@@ -290,7 +290,7 @@
         "0xf2 0x0f 0x70"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2608]",
+        "ldr x0, [x28, #2624]",
         "ldr q2, [x0, #1280]",
         "tbl v16.16b, {v17.16b}, v2.16b"
       ]
@@ -303,7 +303,7 @@
         "0xf2 0x0f 0x70"
       ],
       "ExpectedArm64ASM": [
-        "ldr x0, [x28, #2608]",
+        "ldr x0, [x28, #2624]",
         "ldr q2, [x0, #16]",
         "tbl v16.16b, {v17.16b}, v2.16b"
       ]
@@ -512,11 +512,11 @@
       "ExpectedInstructionCount": 5,
       "Comment": "0xf2 0x0f 0xd6",
       "ExpectedArm64ASM": [
-        "strb wzr, [x28, #1019]",
+        "strb wzr, [x28, #1051]",
         "mov w20, #0xffff",
-        "strb w20, [x28, #1186]",
-        "str d16, [x28, #1040]",
-        "strh w20, [x28, #1048]"
+        "strb w20, [x28, #1202]",
+        "str d16, [x28, #1056]",
+        "strh w20, [x28, #1064]"
       ]
     },
     "cvtpd2dq xmm0, xmm1": {

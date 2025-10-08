@@ -217,7 +217,7 @@
         "strb w21, [x11]",
         "add x10, x10, #0x1 (1)",
         "add x11, x11, #0x1 (1)",
-        "strb w20, [x28, #986]"
+        "strb w20, [x28, #1018]"
       ]
     },
     "positive movsw": {
@@ -237,7 +237,7 @@
         "strh w21, [x11]",
         "add x10, x10, #0x2 (2)",
         "add x11, x11, #0x2 (2)",
-        "strb w20, [x28, #986]"
+        "strb w20, [x28, #1018]"
       ]
     },
     "positive movsd": {
@@ -257,7 +257,7 @@
         "str w21, [x11]",
         "add x10, x10, #0x4 (4)",
         "add x11, x11, #0x4 (4)",
-        "strb w20, [x28, #986]"
+        "strb w20, [x28, #1018]"
       ]
     },
     "positive movsq": {
@@ -277,7 +277,7 @@
         "str x21, [x11]",
         "add x10, x10, #0x8 (8)",
         "add x11, x11, #0x8 (8)",
-        "strb w20, [x28, #986]"
+        "strb w20, [x28, #1018]"
       ]
     },
     "negative movsb": {
@@ -297,7 +297,7 @@
         "strb w21, [x11]",
         "sub x10, x10, #0x1 (1)",
         "sub x11, x11, #0x1 (1)",
-        "strb w20, [x28, #986]"
+        "strb w20, [x28, #1018]"
       ]
     },
     "negative movsw": {
@@ -317,7 +317,7 @@
         "strh w21, [x11]",
         "sub x10, x10, #0x2 (2)",
         "sub x11, x11, #0x2 (2)",
-        "strb w20, [x28, #986]"
+        "strb w20, [x28, #1018]"
       ]
     },
     "negative movsd": {
@@ -337,7 +337,7 @@
         "str w21, [x11]",
         "sub x10, x10, #0x4 (4)",
         "sub x11, x11, #0x4 (4)",
-        "strb w20, [x28, #986]"
+        "strb w20, [x28, #1018]"
       ]
     },
     "negative movsq": {
@@ -357,7 +357,7 @@
         "str x21, [x11]",
         "sub x10, x10, #0x8 (8)",
         "sub x11, x11, #0x8 (8)",
-        "strb w20, [x28, #986]"
+        "strb w20, [x28, #1018]"
       ]
     },
     "positive rep movsb": {
@@ -412,7 +412,7 @@
         "add x22, x0, x2",
         "add x21, x1, x2",
         "mov w7, #0x0",
-        "strb w20, [x28, #986]",
+        "strb w20, [x28, #1018]",
         "mov x11, x22",
         "mov x10, x21"
       ]
@@ -469,7 +469,7 @@
         "add x22, x0, x2, lsl #1",
         "add x21, x1, x2, lsl #1",
         "mov w7, #0x0",
-        "strb w20, [x28, #986]",
+        "strb w20, [x28, #1018]",
         "mov x11, x22",
         "mov x10, x21"
       ]
@@ -526,7 +526,7 @@
         "add x22, x0, x2, lsl #2",
         "add x21, x1, x2, lsl #2",
         "mov w7, #0x0",
-        "strb w20, [x28, #986]",
+        "strb w20, [x28, #1018]",
         "mov x11, x22",
         "mov x10, x21"
       ]
@@ -583,7 +583,7 @@
         "add x22, x0, x2, lsl #3",
         "add x21, x1, x2, lsl #3",
         "mov w7, #0x0",
-        "strb w20, [x28, #986]",
+        "strb w20, [x28, #1018]",
         "mov x11, x22",
         "mov x10, x21"
       ]
@@ -644,7 +644,7 @@
         "sub x22, x0, x2",
         "sub x21, x1, x2",
         "mov w7, #0x0",
-        "strb w20, [x28, #986]",
+        "strb w20, [x28, #1018]",
         "mov x11, x22",
         "mov x10, x21"
       ]
@@ -705,7 +705,7 @@
         "sub x22, x0, x2, lsl #1",
         "sub x21, x1, x2, lsl #1",
         "mov w7, #0x0",
-        "strb w20, [x28, #986]",
+        "strb w20, [x28, #1018]",
         "mov x11, x22",
         "mov x10, x21"
       ]
@@ -766,7 +766,7 @@
         "sub x22, x0, x2, lsl #2",
         "sub x21, x1, x2, lsl #2",
         "mov w7, #0x0",
-        "strb w20, [x28, #986]",
+        "strb w20, [x28, #1018]",
         "mov x11, x22",
         "mov x10, x21"
       ]
@@ -827,7 +827,7 @@
         "sub x22, x0, x2, lsl #3",
         "sub x21, x1, x2, lsl #3",
         "mov w7, #0x0",
-        "strb w20, [x28, #986]",
+        "strb w20, [x28, #1018]",
         "mov x11, x22",
         "mov x10, x21"
       ]
@@ -872,7 +872,7 @@
         "cbnz x0, #-0x8",
         "add x11, x11, x7",
         "mov w7, #0x0",
-        "strb w20, [x28, #986]"
+        "strb w20, [x28, #1018]"
       ]
     },
     "positive rep stosw": {
@@ -915,7 +915,7 @@
         "cbnz x0, #-0x8",
         "add x11, x11, x7, lsl #1",
         "mov w7, #0x0",
-        "strb w20, [x28, #986]"
+        "strb w20, [x28, #1018]"
       ]
     },
     "positive rep stosd": {
@@ -958,7 +958,7 @@
         "cbnz x0, #-0x8",
         "add x11, x11, x7, lsl #2",
         "mov w7, #0x0",
-        "strb w20, [x28, #986]"
+        "strb w20, [x28, #1018]"
       ]
     },
     "positive rep stosq": {
@@ -1000,7 +1000,7 @@
         "cbnz x0, #-0x8",
         "add x11, x11, x7, lsl #3",
         "mov w7, #0x0",
-        "strb w20, [x28, #986]"
+        "strb w20, [x28, #1018]"
       ]
     },
     "negative rep stosb": {
@@ -1045,7 +1045,7 @@
         "cbnz x0, #-0x8",
         "sub x11, x11, x7",
         "mov w7, #0x0",
-        "strb w20, [x28, #986]"
+        "strb w20, [x28, #1018]"
       ]
     },
     "negative rep stosw": {
@@ -1090,7 +1090,7 @@
         "cbnz x0, #-0x8",
         "sub x11, x11, x7, lsl #1",
         "mov w7, #0x0",
-        "strb w20, [x28, #986]"
+        "strb w20, [x28, #1018]"
       ]
     },
     "negative rep stosd": {
@@ -1135,7 +1135,7 @@
         "cbnz x0, #-0x8",
         "sub x11, x11, x7, lsl #2",
         "mov w7, #0x0",
-        "strb w20, [x28, #986]"
+        "strb w20, [x28, #1018]"
       ]
     },
     "negative rep stosq": {
@@ -1179,7 +1179,7 @@
         "cbnz x0, #-0x8",
         "sub x11, x11, x7, lsl #3",
         "mov w7, #0x0",
-        "strb w20, [x28, #986]"
+        "strb w20, [x28, #1018]"
       ]
     },
     "Sekiro spill block": {

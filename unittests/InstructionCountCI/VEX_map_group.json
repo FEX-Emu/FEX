@@ -585,7 +585,7 @@
       "ExpectedArm64ASM": [
         "ldr w20, [x4]",
         "and w20, w20, #0xffc0",
-        "str w20, [x28, #940]",
+        "str w20, [x28, #972]",
         "ubfx w21, w20, #13, #3",
         "rbit w1, w21",
         "lsr w1, w1, #30",
@@ -602,7 +602,7 @@
         "Map group 15 0b011"
       ],
       "ExpectedArm64ASM": [
-        "ldr w20, [x28, #940]",
+        "ldr w20, [x28, #972]",
         "and w20, w20, #0xffc0",
         "str w20, [x4]"
       ]
