@@ -174,14 +174,12 @@ DEF_OP(ExitFunction) {
     }
 
     // L1 Cache
-    ldr(TMP1, STATE, offsetof(FEXCore::Core::CpuStateFrame, Pointers.Common.L1Pointer));
+    ldp<ARMEmitter::IndexType::OFFSET>(TMP1, TMP2, STATE, offsetof(FEXCore::Core::CpuStateFrame, State.L1Pointer));
 
     // Calculate (tmp1 + ((ripreg & L1_ENTRIES_MASK) << 4)) for the address
-    // arithmetic. ubfiz+add is marginally faster on Firestorm than
-    // and+add(shift). Same performance on Cortex.
-    static_assert(LookupCache::L1_ENTRIES_MASK == ((1u << 20) - 1));
-    ubfiz(ARMEmitter::Size::i64Bit, TMP4, RipReg, 4, 20);
-    add(TMP1, TMP1, TMP4);
+    // L1Mask is pre-shifted.
+    and_(ARMEmitter::Size::i64Bit, TMP2, TMP2, RipReg, ARMEmitter::ShiftType::LSL, FEXCore::ilog2(sizeof(LookupCache::LookupCacheEntry)));
+    add(TMP1, TMP1, TMP2);
 
     ldp<ARMEmitter::IndexType::OFFSET>(TMP2, TMP1, TMP1, 0);
 

@@ -376,7 +376,9 @@ void ContextImpl::InitializeCompiler(FEXCore::Core::InternalThreadState* Thread)
   Thread->FrontendDecoder = fextl::make_unique<FEXCore::Frontend::Decoder>(Thread);
   Thread->PassManager = fextl::make_unique<FEXCore::IR::PassManager>();
 
-  Thread->CurrentFrame->Pointers.Common.L1Pointer = Thread->LookupCache->GetL1Pointer();
+  Thread->CurrentFrame->State.L1Pointer = Thread->LookupCache->GetL1Pointer();
+  Thread->CurrentFrame->State.L1Mask = Thread->LookupCache->GetScaledL1PointerMask();
+
   Thread->CurrentFrame->Pointers.Common.L2Pointer = Thread->LookupCache->GetPagePointer();
 
   Dispatcher->InitThreadPointers(Thread);
@@ -730,7 +732,7 @@ ContextImpl::CompileCodeResult ContextImpl::CompileCode(FEXCore::Core::InternalT
   // but this would increase lock contention. Redundant frontend runs aren't
   // as expensive and are easily reverted.
   if (MaxInst != 1) {
-    if (auto Block = Thread->LookupCache->FindBlock(GuestRIP)) {
+    if (auto Block = Thread->LookupCache->FindBlock(Thread, GuestRIP)) {
       Thread->OpDispatcher->DelayedDisownBuffer();
       return {.CompiledCode = {.BlockBegin = reinterpret_cast<uint8_t*>(Block), .EntryPoints = {{GuestRIP, reinterpret_cast<uint8_t*>(Block)}}},
               .DebugData = nullptr,
@@ -771,7 +773,7 @@ uintptr_t ContextImpl::CompileBlock(FEXCore::Core::CpuStateFrame* Frame, uint64_
 
   // Is the code in the cache?
   // The backends only check L1 and L2, not L3
-  if (auto HostCode = Thread->LookupCache->FindBlock(GuestRIP)) {
+  if (auto HostCode = Thread->LookupCache->FindBlock(Thread, GuestRIP)) {
     return HostCode;
   }
 

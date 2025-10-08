@@ -169,6 +169,36 @@
           "Disables FEXCore's JIT L2 cache lookup. Saving memory.",
           "Can potentially introduce more stutters."
         ]
+      },
+      "DynamicL1Cache": {
+        "Type": "bool",
+        "Default": "false",
+        "Desc": [
+          "Switches FEXCore's JIT L1 cache to be dynamically sized. Saving memory.",
+          "Can potentially introduce more stutters."
+        ]
+      },
+      "DynamicL1CacheIncreaseCountHeuristic": {
+        "Type": "uint64",
+        "Default": "250",
+        "Desc": [
+          "Threshold of lookups per second that the L1 dynamic cache should increase its size.",
+          "Lower numbers means more aggressive scaling upward to the maximum size.",
+          "Higher numbers means more conservative scaling, using less memory.",
+          "Can potentially introduce stutters, more likely the higher the number.",
+          "Don't have this number smaller than the decrease count!"
+        ]
+      },
+      "DynamicL1CacheDecreaseCountHeuristic": {
+        "Type": "uint64",
+        "Default": "50",
+        "Desc": [
+          "Threshold of lookups per second that the L1 dynamic cache should decrease its size.",
+          "The higher the number, the more aggressively it reduces the L1 cache size.",
+          "Lower numbers means more conservative memory savings.",
+          "Can potentially introduce more stutters, more likely the higher the number.",
+          "Don't have this number larger than the increase count!"
+        ]
       }
     },
     "Debug": {

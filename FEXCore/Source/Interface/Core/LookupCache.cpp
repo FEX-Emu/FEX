@@ -24,7 +24,7 @@ GuestToHostMap::GuestToHostMap()
 LookupCache::LookupCache(FEXCore::Context::ContextImpl* CTX)
   : ctx {CTX} {
 
-  TotalCacheSize = ctx->Config.VirtualMemSize / FEXCore::Utils::FEX_PAGE_SIZE * 8 + CODE_SIZE + L1_SIZE;
+  TotalCacheSize = ctx->Config.VirtualMemSize / FEXCore::Utils::FEX_PAGE_SIZE * 8 + CODE_SIZE + MAX_L1_SIZE;
 
   // Block cache ends up looking like this
   // PageMemoryMap[VirtualMemoryRegion >> 12]
@@ -53,11 +53,19 @@ LookupCache::LookupCache(FEXCore::Context::ContextImpl* CTX)
 
   // L1 Cache
   L1Pointer = PageMemory + CODE_SIZE;
-  FEXCore::Allocator::VirtualName("FEXMem_Lookup_L1", reinterpret_cast<void*>(L1Pointer), L1_SIZE);
+  FEXCore::Allocator::VirtualName("FEXMem_Lookup_L1", reinterpret_cast<void*>(L1Pointer), MAX_L1_SIZE);
 
   LOGMAN_THROW_A_FMT(L1Pointer != -1ULL, "Failed to allocate L1Pointer");
 
   VirtualMemSize = ctx->Config.VirtualMemSize;
+
+  if (DynamicL1Cache()) {
+    // Start at minimum size when dynamic.
+    L1PointerMask = MIN_L1_ENTRIES - 1;
+  } else {
+    // Start at maximum instead.
+    L1PointerMask = MAX_L1_ENTRIES - 1;
+  }
 }
 
 LookupCache::~LookupCache() {
