@@ -1956,7 +1956,7 @@ void OpDispatchBuilder::AVX128_VFMAImpl(OpcodeArgs, IROps IROp, uint8_t Src1Idx,
 }
 
 void OpDispatchBuilder::AVX128_VFMAScalarImpl(OpcodeArgs, IROps IROp, uint8_t Src1Idx, uint8_t Src2Idx, uint8_t AddendIdx) {
-  const auto SrcSize = OpSizeFromSrc(Op);
+  const OpSize ElementSize = Op->Flags & X86Tables::DecodeFlags::FLAG_OPTION_AVX_W ? OpSize::i64Bit : OpSize::i32Bit;
 
   auto Dest = AVX128_LoadSource_WithOpSize(Op, Op->Dest, Op->Flags, false).Low;
   auto Src1 = AVX128_LoadSource_WithOpSize(Op, Op->Src[0], Op->Flags, false).Low;
@@ -1964,13 +1964,13 @@ void OpDispatchBuilder::AVX128_VFMAScalarImpl(OpcodeArgs, IROps IROp, uint8_t Sr
   if (Op->Src[1].IsGPR()) {
     Src2 = AVX128_LoadSource_WithOpSize(Op, Op->Src[1], Op->Flags, false).Low;
   } else {
-    Src2 = LoadSourceFPR_WithOpSize(Op, Op->Src[1], SrcSize, Op->Flags);
+    Src2 = LoadSourceFPR_WithOpSize(Op, Op->Src[1], ElementSize, Op->Flags);
   }
 
   Ref Sources[3] = {Dest, Src1, Src2};
 
   DeriveOp(Result_Low, IROp,
-           _VFMLAScalarInsert(OpSize::i128Bit, SrcSize, Dest, Sources[Src1Idx - 1], Sources[Src2Idx - 1], Sources[AddendIdx - 1]));
+           _VFMLAScalarInsert(OpSize::i128Bit, ElementSize, Dest, Sources[Src1Idx - 1], Sources[Src2Idx - 1], Sources[AddendIdx - 1]));
   AVX128_StoreResult_WithOpSize(Op, Op->Dest, AVX128_Zext(Result_Low));
 }
 
