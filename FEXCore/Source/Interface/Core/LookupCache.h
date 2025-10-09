@@ -49,7 +49,7 @@ struct GuestToHostMap {
   // walking each block member and destructing objects.
   //
   // This makes `BlockLinks` look like a raw pointer that could memory leak, but since it is backed by the MBR, it won't.
-  std::pmr::monotonic_buffer_resource BlockLinks_mbr;
+  fextl::pmr::named_monotonic_page_buffer_resource BlockLinks_mbr;
   using BlockLinksMapType = std::pmr::map<BlockLinkTag, FEXCore::Context::BlockDelinkerFunc>;
   fextl::unique_ptr<std::pmr::polymorphic_allocator<std::byte>> BlockLinks_pma;
   BlockLinksMapType* BlockLinks;

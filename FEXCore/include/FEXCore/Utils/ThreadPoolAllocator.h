@@ -380,6 +380,8 @@ private:
 class PooledAllocatorVirtual final : public IntrusivePooledAllocator {
 public:
   PooledAllocatorVirtual() = default;
+  PooledAllocatorVirtual(const char* Name)
+    : Name {Name} {}
 
   virtual ~PooledAllocatorVirtual() {
     FreeAllBuffers();
@@ -387,12 +389,18 @@ public:
 
 private:
   void* Alloc(size_t Size) override {
-    return FEXCore::Allocator::VirtualAlloc(Size);
+    auto Result = FEXCore::Allocator::VirtualAlloc(Size);
+    if (Name) {
+      FEXCore::Allocator::VirtualName(Name, Result, Size);
+    }
+    return Result;
   }
 
   void Free(void* Ptr, size_t Size) override {
     FEXCore::Allocator::VirtualFree(Ptr, Size);
   }
+
+  const char* Name {};
 };
 
 /**
