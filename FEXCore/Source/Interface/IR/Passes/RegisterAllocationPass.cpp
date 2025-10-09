@@ -63,9 +63,9 @@ public:
 private:
   RegisterClassData Classes[IR::NumClasses];
 
-  IREmitter* IREmit;
-  IRListView* IR;
-  const FEXCore::CPUIDEmu* CPUID;
+  IREmitter* IREmit {};
+  IRListView* IR {};
+  const FEXCore::CPUIDEmu* CPUID {};
 
   // Map of nodes to their preferred register, to coalesce load/store reg.
   fextl::vector<PhysicalRegister> PreferredReg;
@@ -83,7 +83,7 @@ private:
   fextl::vector<bool> Seen;
 
   // SourcesNextUses is read backwards, this tracks the index
-  int64_t SourceIndex;
+  int64_t SourceIndex {};
 
   bool Rematerializable(IROp_Header* IROp) {
     return IROp->Op == OP_CONSTANT;
@@ -110,7 +110,7 @@ private:
   // block, so we don't need to size the block up-front.
   fextl::vector<uint32_t> NextUses;
 
-  bool AnySpilled;
+  bool AnySpilled {};
 
   bool IsValidArg(OrderedNodeWrapper Arg) {
     if (Arg.IsInvalid()) {
