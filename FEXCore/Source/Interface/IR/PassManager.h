@@ -39,7 +39,7 @@ public:
   }
 
 protected:
-  PassManager* Manager;
+  PassManager* Manager {};
 };
 
 class PassManager final {
