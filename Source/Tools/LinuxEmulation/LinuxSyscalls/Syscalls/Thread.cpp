@@ -398,127 +398,124 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
     FEX_UNREACHABLE;
   });
 
-  REGISTER_SYSCALL_IMPL_FLAGS(fork, SyscallFlags::DEFAULT, ([](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t {
-                                FEX::HLE::clone3_args args {.Type = TypeOfClone::TYPE_CLONE2,
-                                                            .args = {
-                                                              .flags = 0,
-                                                              .pidfd = 0,
-                                                              .child_tid = 0,
-                                                              .parent_tid = 0,
-                                                              .exit_signal = SIGCHLD,
-                                                              .stack = 0,
-                                                              .stack_size = 0,
-                                                              .tls = 0,
-                                                              .set_tid = 0,
-                                                              .set_tid_size = 0,
-                                                              .cgroup = 0,
-                                                            }};
+  REGISTER_SYSCALL_IMPL(fork, ([](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t {
+                          FEX::HLE::clone3_args args {.Type = TypeOfClone::TYPE_CLONE2,
+                                                      .args = {
+                                                        .flags = 0,
+                                                        .pidfd = 0,
+                                                        .child_tid = 0,
+                                                        .parent_tid = 0,
+                                                        .exit_signal = SIGCHLD,
+                                                        .stack = 0,
+                                                        .stack_size = 0,
+                                                        .tls = 0,
+                                                        .set_tid = 0,
+                                                        .set_tid_size = 0,
+                                                        .cgroup = 0,
+                                                      }};
 
-                                return ForkGuest(Frame->Thread, Frame, &args);
-                              }));
+                          return ForkGuest(Frame->Thread, Frame, &args);
+                        }));
 
-  REGISTER_SYSCALL_IMPL_FLAGS(vfork, SyscallFlags::DEFAULT, ([](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t {
-                                FEX::HLE::clone3_args args {.Type = TypeOfClone::TYPE_CLONE2,
-                                                            .args = {
-                                                              .flags = CLONE_VFORK,
-                                                              .pidfd = 0,
-                                                              .child_tid = 0,
-                                                              .parent_tid = 0,
-                                                              .exit_signal = SIGCHLD,
-                                                              .stack = 0,
-                                                              .stack_size = 0,
-                                                              .tls = 0,
-                                                              .set_tid = 0,
-                                                              .set_tid_size = 0,
-                                                              .cgroup = 0,
-                                                            }};
+  REGISTER_SYSCALL_IMPL(vfork, ([](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t {
+                          FEX::HLE::clone3_args args {.Type = TypeOfClone::TYPE_CLONE2,
+                                                      .args = {
+                                                        .flags = CLONE_VFORK,
+                                                        .pidfd = 0,
+                                                        .child_tid = 0,
+                                                        .parent_tid = 0,
+                                                        .exit_signal = SIGCHLD,
+                                                        .stack = 0,
+                                                        .stack_size = 0,
+                                                        .tls = 0,
+                                                        .set_tid = 0,
+                                                        .set_tid_size = 0,
+                                                        .cgroup = 0,
+                                                      }};
 
-                                return ForkGuest(Frame->Thread, Frame, &args);
-                              }));
+                          return ForkGuest(Frame->Thread, Frame, &args);
+                        }));
 
-  REGISTER_SYSCALL_IMPL_FLAGS(getpgrp, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                              [](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t {
-                                uint64_t Result = ::getpgrp();
-                                SYSCALL_ERRNO();
-                              });
+  REGISTER_SYSCALL_IMPL(getpgrp, [](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t {
+    uint64_t Result = ::getpgrp();
+    SYSCALL_ERRNO();
+  });
 
-  REGISTER_SYSCALL_IMPL_FLAGS(clone3, SyscallFlags::DEFAULT,
-                              ([](FEXCore::Core::CpuStateFrame* Frame, FEX::HLE::kernel_clone3_args* cl_args, size_t size) -> uint64_t {
-                                FEX::HLE::clone3_args args {};
-                                args.Type = TypeOfClone::TYPE_CLONE3;
-                                memcpy(&args.args, cl_args, std::min(sizeof(FEX::HLE::kernel_clone3_args), size));
-                                return CloneHandler(Frame, &args);
-                              }));
+  REGISTER_SYSCALL_IMPL(clone3, ([](FEXCore::Core::CpuStateFrame* Frame, FEX::HLE::kernel_clone3_args* cl_args, size_t size) -> uint64_t {
+                          FEX::HLE::clone3_args args {};
+                          args.Type = TypeOfClone::TYPE_CLONE3;
+                          memcpy(&args.args, cl_args, std::min(sizeof(FEX::HLE::kernel_clone3_args), size));
+                          return CloneHandler(Frame, &args);
+                        }));
 
-  REGISTER_SYSCALL_IMPL_FLAGS(exit, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY | SyscallFlags::NORETURN,
-                              [](FEXCore::Core::CpuStateFrame* Frame, int status) -> uint64_t {
-                                // TLS/DTV teardown is something FEX can't control. Disable glibc checking when we leave a pthread.
-                                // Since this thread is hard stopping, we can't track the TLS/DTV teardown in FEX's thread handling.
-                                FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator::HardDisable();
-                                auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
+  REGISTER_SYSCALL_IMPL(exit, [](FEXCore::Core::CpuStateFrame* Frame, int status) -> uint64_t {
+    // TLS/DTV teardown is something FEX can't control. Disable glibc checking when we leave a pthread.
+    // Since this thread is hard stopping, we can't track the TLS/DTV teardown in FEX's thread handling.
+    FEXCore::Allocator::YesIKnowImNotSupposedToUseTheGlibcAllocator::HardDisable();
+    auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
 
-                                if (ThreadObject->ThreadInfo.clear_child_tid) {
-                                  std::atomic<uint32_t>* Addr = reinterpret_cast<std::atomic<uint32_t>*>(ThreadObject->ThreadInfo.clear_child_tid);
-                                  Addr->store(0);
-                                  syscall(SYSCALL_DEF(futex), ThreadObject->ThreadInfo.clear_child_tid, FUTEX_WAKE, ~0ULL, 0, 0, 0);
-                                }
+    if (ThreadObject->ThreadInfo.clear_child_tid) {
+      std::atomic<uint32_t>* Addr = reinterpret_cast<std::atomic<uint32_t>*>(ThreadObject->ThreadInfo.clear_child_tid);
+      Addr->store(0);
+      syscall(SYSCALL_DEF(futex), ThreadObject->ThreadInfo.clear_child_tid, FUTEX_WAKE, ~0ULL, 0, 0, 0);
+    }
 
-                                ThreadObject->StatusCode = status;
+    ThreadObject->StatusCode = status;
 
-                                FEX::HLE::_SyscallHandler->UninstallTLSState(ThreadObject);
+    FEX::HLE::_SyscallHandler->UninstallTLSState(ThreadObject);
 
-                                if (ThreadObject->ExecutionThread) {
-                                  // If this is a pthread based execution thread, then there is more work to be done.
-                                  // Delegate final deletion and cleanup to the pthreads Thread management.
-                                  FEX::LinuxEmulation::Threads::LongjumpDeallocateAndExit(ThreadObject, status);
-                                } else {
-                                  FEX::HLE::_SyscallHandler->TM.DestroyThread(ThreadObject, true);
-                                  FEX::LinuxEmulation::Threads::DeallocateStackObjectAndExit(nullptr, status);
-                                }
-                                // This will never be reached
-                                std::terminate();
-                              });
+    if (ThreadObject->ExecutionThread) {
+      // If this is a pthread based execution thread, then there is more work to be done.
+      // Delegate final deletion and cleanup to the pthreads Thread management.
+      FEX::LinuxEmulation::Threads::LongjumpDeallocateAndExit(ThreadObject, status);
+    } else {
+      FEX::HLE::_SyscallHandler->TM.DestroyThread(ThreadObject, true);
+      FEX::LinuxEmulation::Threads::DeallocateStackObjectAndExit(nullptr, status);
+    }
+    // This will never be reached
+    std::terminate();
+  });
 
-  REGISTER_SYSCALL_IMPL_FLAGS(prctl, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                              [](FEXCore::Core::CpuStateFrame* Frame, int option, unsigned long arg2, unsigned long arg3,
-                                 unsigned long arg4, unsigned long arg5) -> uint64_t {
-                                uint64_t Result {};
+  REGISTER_SYSCALL_IMPL(prctl,
+                        [](FEXCore::Core::CpuStateFrame* Frame, int option, unsigned long arg2, unsigned long arg3, unsigned long arg4,
+                           unsigned long arg5) -> uint64_t {
+                          uint64_t Result {};
 #ifndef PR_GET_AUXV
 #define PR_GET_AUXV 0x41555856
 #endif
-                                switch (option) {
-                                case PR_SET_SECCOMP: {
-                                  uint32_t Operation {};
-                                  if (arg2 == SECCOMP_MODE_STRICT) Operation = SECCOMP_SET_MODE_STRICT;
-                                  if (arg2 == SECCOMP_MODE_FILTER) Operation = SECCOMP_SET_MODE_FILTER;
+                          switch (option) {
+                          case PR_SET_SECCOMP: {
+                            uint32_t Operation {};
+                            if (arg2 == SECCOMP_MODE_STRICT) Operation = SECCOMP_SET_MODE_STRICT;
+                            if (arg2 == SECCOMP_MODE_FILTER) Operation = SECCOMP_SET_MODE_FILTER;
 
-                                  return FEX::HLE::_SyscallHandler->SeccompEmulator.Handle(Frame, Operation, 0, reinterpret_cast<void*>(arg3));
-                                }
-                                case PR_GET_SECCOMP: return FEX::HLE::_SyscallHandler->SeccompEmulator.GetSeccomp(Frame);
-                                case PR_GET_AUXV: {
-                                  if (arg4 || arg5) {
-                                    return -EINVAL;
-                                  }
+                            return FEX::HLE::_SyscallHandler->SeccompEmulator.Handle(Frame, Operation, 0, reinterpret_cast<void*>(arg3));
+                          }
+                          case PR_GET_SECCOMP: return FEX::HLE::_SyscallHandler->SeccompEmulator.GetSeccomp(Frame);
+                          case PR_GET_AUXV: {
+                            if (arg4 || arg5) {
+                              return -EINVAL;
+                            }
 
-                                  void* addr = reinterpret_cast<void*>(arg2);
-                                  size_t UserSize = reinterpret_cast<size_t>(arg3);
+                            void* addr = reinterpret_cast<void*>(arg2);
+                            size_t UserSize = reinterpret_cast<size_t>(arg3);
 
-                                  const auto auxv = FEX::HLE::_SyscallHandler->GetCodeLoader()->GetAuxv();
-                                  const auto auxvBase = auxv.address;
-                                  const auto auxvSize = auxv.size;
-                                  size_t MinSize = std::min(auxvSize, UserSize);
+                            const auto auxv = FEX::HLE::_SyscallHandler->GetCodeLoader()->GetAuxv();
+                            const auto auxvBase = auxv.address;
+                            const auto auxvSize = auxv.size;
+                            size_t MinSize = std::min(auxvSize, UserSize);
 
-                                  memcpy(addr, reinterpret_cast<void*>(auxvBase), MinSize);
+                            memcpy(addr, reinterpret_cast<void*>(auxvBase), MinSize);
 
-                                  // Returns the size of auxv without truncation.
-                                  return auxvSize;
-                                }
-                                default: Result = ::prctl(option, arg2, arg3, arg4, arg5); break;
-                                }
-                                SYSCALL_ERRNO();
-                              });
+                            // Returns the size of auxv without truncation.
+                            return auxvSize;
+                          }
+                          default: Result = ::prctl(option, arg2, arg3, arg4, arg5); break;
+                          }
+                          SYSCALL_ERRNO();
+                        });
 
-  REGISTER_SYSCALL_IMPL_FLAGS(arch_prctl, SyscallFlags::DEFAULT, [](FEXCore::Core::CpuStateFrame* Frame, int code, unsigned long addr) -> uint64_t {
+  REGISTER_SYSCALL_IMPL(arch_prctl, [](FEXCore::Core::CpuStateFrame* Frame, int code, unsigned long addr) -> uint64_t {
     uint64_t Result {};
     switch (code) {
     case 0x1001: // ARCH_SET_GS
@@ -562,22 +559,20 @@ void RegisterThread(FEX::HLE::SyscallHandler* Handler) {
     SYSCALL_ERRNO();
   });
 
-  REGISTER_SYSCALL_IMPL_FLAGS(set_tid_address, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                              [](FEXCore::Core::CpuStateFrame* Frame, int* tidptr) -> uint64_t {
-                                auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
-                                ThreadObject->ThreadInfo.clear_child_tid = tidptr;
-                                return ThreadObject->ThreadInfo.TID;
-                              });
+  REGISTER_SYSCALL_IMPL(set_tid_address, [](FEXCore::Core::CpuStateFrame* Frame, int* tidptr) -> uint64_t {
+    auto ThreadObject = FEX::HLE::ThreadManager::GetStateObjectFromCPUState(Frame);
+    ThreadObject->ThreadInfo.clear_child_tid = tidptr;
+    return ThreadObject->ThreadInfo.TID;
+  });
 
-  REGISTER_SYSCALL_IMPL_FLAGS(exit_group, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY | SyscallFlags::NORETURN,
-                              [](FEXCore::Core::CpuStateFrame* Frame, int status) -> uint64_t {
-                                // Save telemetry if we're exiting.
-                                FEX::HLE::_SyscallHandler->GetSignalDelegator()->SaveTelemetry();
-                                FEX::HLE::_SyscallHandler->TM.CleanupForExit();
+  REGISTER_SYSCALL_IMPL(exit_group, [](FEXCore::Core::CpuStateFrame* Frame, int status) -> uint64_t {
+    // Save telemetry if we're exiting.
+    FEX::HLE::_SyscallHandler->GetSignalDelegator()->SaveTelemetry();
+    FEX::HLE::_SyscallHandler->TM.CleanupForExit();
 
-                                syscall(SYSCALL_DEF(exit_group), status);
-                                // This will never be reached
-                                std::terminate();
-                              });
+    syscall(SYSCALL_DEF(exit_group), status);
+    // This will never be reached
+    std::terminate();
+  });
 }
 } // namespace FEX::HLE

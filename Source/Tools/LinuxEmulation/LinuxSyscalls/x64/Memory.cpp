@@ -27,36 +27,30 @@ namespace FEX::HLE::x64 {
 void RegisterMemory(FEX::HLE::SyscallHandler* Handler) {
   using namespace FEXCore::IR;
 
-  REGISTER_SYSCALL_IMPL_X64_FLAGS(
-    mmap, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-    [](FEXCore::Core::CpuStateFrame* Frame, void* addr, size_t length, int prot, int flags, int fd, off_t offset) -> uint64_t {
+  REGISTER_SYSCALL_IMPL_X64(
+    mmap, [](FEXCore::Core::CpuStateFrame* Frame, void* addr, size_t length, int prot, int flags, int fd, off_t offset) -> uint64_t {
       return (uint64_t)FEX::HLE::_SyscallHandler->GuestMmap(Frame->Thread, addr, length, prot, flags, fd, offset);
     });
 
-  REGISTER_SYSCALL_IMPL_X64_FLAGS(munmap, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                  [](FEXCore::Core::CpuStateFrame* Frame, void* addr, size_t length) -> uint64_t {
-                                    return FEX::HLE::_SyscallHandler->GuestMunmap(Frame->Thread, addr, length);
-                                  });
+  REGISTER_SYSCALL_IMPL_X64(munmap, [](FEXCore::Core::CpuStateFrame* Frame, void* addr, size_t length) -> uint64_t {
+    return FEX::HLE::_SyscallHandler->GuestMunmap(Frame->Thread, addr, length);
+  });
 
-  REGISTER_SYSCALL_IMPL_X64_FLAGS(
-    mremap, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-    [](FEXCore::Core::CpuStateFrame* Frame, void* old_address, size_t old_size, size_t new_size, int flags, void* new_address) -> uint64_t {
+  REGISTER_SYSCALL_IMPL_X64(
+    mremap, [](FEXCore::Core::CpuStateFrame* Frame, void* old_address, size_t old_size, size_t new_size, int flags, void* new_address) -> uint64_t {
       return FEX::HLE::_SyscallHandler->GuestMremap(true, Frame->Thread, old_address, old_size, new_size, flags, new_address);
     });
 
-  REGISTER_SYSCALL_IMPL_X64_FLAGS(mprotect, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                  [](FEXCore::Core::CpuStateFrame* Frame, void* addr, size_t len, int prot) -> uint64_t {
-                                    return FEX::HLE::_SyscallHandler->GuestMprotect(Frame->Thread, addr, len, prot);
-                                  });
+  REGISTER_SYSCALL_IMPL_X64(mprotect, [](FEXCore::Core::CpuStateFrame* Frame, void* addr, size_t len, int prot) -> uint64_t {
+    return FEX::HLE::_SyscallHandler->GuestMprotect(Frame->Thread, addr, len, prot);
+  });
 
-  REGISTER_SYSCALL_IMPL_X64_FLAGS(shmat, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                  ([](FEXCore::Core::CpuStateFrame* Frame, int shmid, const void* shmaddr, int shmflg) -> uint64_t {
-                                    return FEX::HLE::_SyscallHandler->GuestShmat(true, Frame->Thread, shmid, shmaddr, shmflg);
-                                  }));
+  REGISTER_SYSCALL_IMPL_X64(shmat, ([](FEXCore::Core::CpuStateFrame* Frame, int shmid, const void* shmaddr, int shmflg) -> uint64_t {
+                              return FEX::HLE::_SyscallHandler->GuestShmat(true, Frame->Thread, shmid, shmaddr, shmflg);
+                            }));
 
-  REGISTER_SYSCALL_IMPL_X64_FLAGS(shmdt, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                                  [](FEXCore::Core::CpuStateFrame* Frame, const void* shmaddr) -> uint64_t {
-                                    return FEX::HLE::_SyscallHandler->GuestShmdt(true, Frame->Thread, shmaddr);
-                                  });
+  REGISTER_SYSCALL_IMPL_X64(shmdt, [](FEXCore::Core::CpuStateFrame* Frame, const void* shmaddr) -> uint64_t {
+    return FEX::HLE::_SyscallHandler->GuestShmdt(true, Frame->Thread, shmaddr);
+  });
 }
 } // namespace FEX::HLE::x64

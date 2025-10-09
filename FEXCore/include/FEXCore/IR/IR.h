@@ -8,26 +8,6 @@
 
 namespace FEXCore::IR {
 
-enum class SyscallFlags : uint8_t {
-  DEFAULT = 0,
-  // Syscalldoesn't care about CPUState being serialized up to the syscall instruction.
-  // Means dead code elimination can optimize through a syscall operation.
-  OPTIMIZETHROUGH = 1 << 0,
-  // Syscall only reads the passed in arguments. Doesn't read CPUState.
-  NOSYNCSTATEONENTRY = 1 << 1,
-  // Syscall doesn't return. Code generation after syscall return can be removed.
-  NORETURN = 1 << 2,
-  // Syscall doesn't have any side-effects, so if the result isn't used then it can be removed.
-  NOSIDEEFFECTS = 1 << 3,
-  // Syscall doesn't return a result.
-  // Means the resulting register shouldn't be written (Usually RAX).
-  // Usually used with !NOSYNCSTATEONENTRY, so the syscall can modify CPU state entirely.
-  // Then on return FEXCore picks up the new state.
-  NORETURNEDRESULT = 1 << 4,
-};
-
-FEX_DEF_NUM_OPS(SyscallFlags)
-
 // This enum of named vector constants are linked to an array in CPUBackend.cpp.
 // This is used with the IROp `LoadNamedVectorConstant` to load a vector constant
 // that would otherwise be costly to materialize.

@@ -149,20 +149,6 @@ static void PrintArg(fextl::stringstream* out, const IRListView*, RoundMode Arg)
   }();
 }
 
-static void PrintArg(fextl::stringstream* out, const IRListView*, SyscallFlags Arg) {
-  *out << [Arg] {
-    switch (Arg) {
-    case SyscallFlags::DEFAULT: return "Default";
-    case SyscallFlags::OPTIMIZETHROUGH: return "Optimize Through";
-    case SyscallFlags::NOSYNCSTATEONENTRY: return "No Sync State on Entry";
-    case SyscallFlags::NORETURN: return "No Return";
-    case SyscallFlags::NOSIDEEFFECTS: return "No Side Effects";
-    case SyscallFlags::NORETURNEDRESULT: return "No Returned Result";
-    }
-    return "<Unknown Syscall Flags>";
-  }();
-}
-
 static void PrintArg(fextl::stringstream* out, const IRListView*, NamedVectorConstant Arg) {
   *out << [Arg] {
     // clang-format off

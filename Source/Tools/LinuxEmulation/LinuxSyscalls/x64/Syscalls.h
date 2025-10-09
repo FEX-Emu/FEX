@@ -43,7 +43,7 @@ public:
   }
 
 
-  void RegisterSyscall_64(int SyscallNumber, int32_t HostSyscallNumber, FEXCore::IR::SyscallFlags Flags,
+  void RegisterSyscall_64(int SyscallNumber,
 #ifdef DEBUG_STRACE
                           const fextl::string& TraceFormatString,
 #endif
@@ -54,8 +54,6 @@ public:
 #endif
     Def.Ptr = SyscallHandler;
     Def.NumArgs = ArgumentCount;
-    Def.Flags = Flags;
-    Def.HostSyscallNumber = HostSyscallNumber;
 #ifdef DEBUG_STRACE
     Def.StraceFmt = TraceFormatString;
 #endif
@@ -78,12 +76,11 @@ CreateHandler(FEXCore::Context::Context* ctx, FEX::HLE::SignalDelegator* _Signal
 // Deduces return, args... from the function passed
 // Does not work with lambas, because they are objects with operator (), not functions
 template<typename R, typename... Args>
-void RegisterSyscall(SyscallHandler* Handler, int SyscallNumber, int32_t HostSyscallNumber, FEXCore::IR::SyscallFlags Flags,
-                     const char* Name, R (*fn)(FEXCore::Core::CpuStateFrame* Frame, Args...)) {
+void RegisterSyscall(SyscallHandler* Handler, int SyscallNumber, const char* Name, R (*fn)(FEXCore::Core::CpuStateFrame* Frame, Args...)) {
 #ifdef DEBUG_STRACE
   auto TraceFormatString = fextl::string(Name) + "(" + CollectArgsFmtString<Args...>() + ") = %ld";
 #endif
-  Handler->RegisterSyscall_64(SyscallNumber, HostSyscallNumber, Flags,
+  Handler->RegisterSyscall_64(SyscallNumber,
 #ifdef DEBUG_STRACE
                               TraceFormatString,
 #endif
@@ -94,23 +91,14 @@ void RegisterSyscall(SyscallHandler* Handler, int SyscallNumber, int32_t HostSys
 // Non-capturing lambdas can be cast to function pointers, but this does not happen on argument matching
 // This is some glue logic that will cast a lambda and call the base RegisterSyscall implementation
 template<class F>
-void RegisterSyscall(SyscallHandler* _Handler, int num, int32_t HostSyscallNumber, FEXCore::IR::SyscallFlags Flags, const char* name, F f) {
-  RegisterSyscall(_Handler, num, HostSyscallNumber, Flags, name, +f);
+void RegisterSyscall(SyscallHandler* _Handler, int num, const char* name, F f) {
+  RegisterSyscall(_Handler, num, name, +f);
 }
 
 } // namespace FEX::HLE::x64
 
 // Registers syscall for 64bit only
-#define REGISTER_SYSCALL_IMPL_X64(name, lambda) REGISTER_SYSCALL_IMPL_X64_INTERNAL(name, ~0, FEXCore::IR::SyscallFlags::DEFAULT, lambda)
-
-#define REGISTER_SYSCALL_IMPL_X64_PASS(name, lambda) \
-  REGISTER_SYSCALL_IMPL_X64_INTERNAL(name, SYSCALL_DEF(name), FEXCore::IR::SyscallFlags::DEFAULT, lambda)
-
-#define REGISTER_SYSCALL_IMPL_X64_FLAGS(name, flags, lambda) REGISTER_SYSCALL_IMPL_X64_INTERNAL(name, ~0, flags, lambda)
-
-#define REGISTER_SYSCALL_IMPL_X64_PASS_FLAGS(name, flags, lambda) REGISTER_SYSCALL_IMPL_X64_INTERNAL(name, SYSCALL_DEF(name), flags, lambda)
-
-#define REGISTER_SYSCALL_IMPL_X64_INTERNAL(name, number, flags, lambda)                                   \
-  do {                                                                                                    \
-    FEX::HLE::x64::RegisterSyscall(Handler, x64::SYSCALL_x64_##name, (number), (flags), #name, (lambda)); \
+#define REGISTER_SYSCALL_IMPL_X64(name, lambda)                                        \
+  do {                                                                                 \
+    FEX::HLE::x64::RegisterSyscall(Handler, x64::SYSCALL_x64_##name, #name, (lambda)); \
   } while (false)

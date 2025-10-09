@@ -24,16 +24,14 @@ namespace FEX::HLE {
 void RegisterTimer(FEX::HLE::SyscallHandler* Handler) {
   using namespace FEXCore::IR;
 
-  REGISTER_SYSCALL_IMPL_FLAGS(alarm, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                              [](FEXCore::Core::CpuStateFrame* Frame, unsigned int seconds) -> uint64_t {
-                                uint64_t Result = ::alarm(seconds);
-                                SYSCALL_ERRNO();
-                              });
+  REGISTER_SYSCALL_IMPL(alarm, [](FEXCore::Core::CpuStateFrame* Frame, unsigned int seconds) -> uint64_t {
+    uint64_t Result = ::alarm(seconds);
+    SYSCALL_ERRNO();
+  });
 
-  REGISTER_SYSCALL_IMPL_FLAGS(pause, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                              [](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t {
-                                uint64_t Result = ::pause();
-                                SYSCALL_ERRNO();
-                              });
+  REGISTER_SYSCALL_IMPL(pause, [](FEXCore::Core::CpuStateFrame* Frame) -> uint64_t {
+    uint64_t Result = ::pause();
+    SYSCALL_ERRNO();
+  });
 }
 } // namespace FEX::HLE

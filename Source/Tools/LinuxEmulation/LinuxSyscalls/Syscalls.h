@@ -138,9 +138,7 @@ public:
       SyscallPtrArg5 Ptr5;
       SyscallPtrArg6 Ptr6;
     };
-    int32_t HostSyscallNumber;
     uint8_t NumArgs;
-    FEXCore::IR::SyscallFlags Flags;
 #ifdef DEBUG_STRACE
     fextl::string StraceFmt;
 #endif
@@ -150,32 +148,14 @@ public:
     return &Definitions.at(Syscall);
   }
 
-  FEXCore::HLE::SyscallABI GetSyscallABI(uint64_t Syscall) override {
-    if (NeedsSeccomp) {
-      // Override ABI if seccomp is enabled.
-      return {FEXCore::HLE::SyscallArguments::MAX_ARGS, true, -1};
-    }
-    auto& Def = Definitions.at(Syscall);
-    return {Def.NumArgs, true, Def.HostSyscallNumber};
-  }
-
-  FEXCore::IR::SyscallFlags GetSyscallFlags(uint64_t Syscall) const override {
-    if (NeedsSeccomp) {
-      // Override flags if seccomp is enabled.
-      return FEXCore::IR::SyscallFlags::DEFAULT;
-    }
-    auto& Def = Definitions.at(Syscall);
-    return Def.Flags;
-  }
-
-  virtual void RegisterSyscall_32(int SyscallNumber, int32_t HostSyscallNumber, FEXCore::IR::SyscallFlags Flags,
+  virtual void RegisterSyscall_32(int SyscallNumber,
 #ifdef DEBUG_STRACE
                                   const fextl::string& TraceFormatString,
 #endif
                                   void* SyscallHandler, int ArgumentCount) {
   }
 
-  virtual void RegisterSyscall_64(int SyscallNumber, int32_t HostSyscallNumber, FEXCore::IR::SyscallFlags Flags,
+  virtual void RegisterSyscall_64(int SyscallNumber,
 #ifdef DEBUG_STRACE
                                   const fextl::string& TraceFormatString,
 #endif
@@ -661,14 +641,8 @@ inline static uint64_t futimesat_compat(int dirfd, const char* pathname, const T
 } // namespace FEX::HLE
 
 // Registers syscall for both 32bit and 64bit
-#define REGISTER_SYSCALL_IMPL(name, lambda) REGISTER_SYSCALL_IMPL_INTERNAL(name, ~0, FEXCore::IR::SyscallFlags::DEFAULT, lambda)
-
-#define REGISTER_SYSCALL_IMPL_FLAGS(name, flags, lambda) REGISTER_SYSCALL_IMPL_INTERNAL(name, ~0, flags, lambda)
-
-#define REGISTER_SYSCALL_IMPL_PASS_FLAGS(name, flags, lambda) REGISTER_SYSCALL_IMPL_INTERNAL(name, SYSCALL_DEF(name), flags, lambda)
-
-#define REGISTER_SYSCALL_IMPL_INTERNAL(name, number, flags, lambda)                                                 \
-  do {                                                                                                              \
-    FEX::HLE::x64::RegisterSyscall(Handler, FEX::HLE::x64::SYSCALL_x64_##name, (number), (flags), #name, (lambda)); \
-    FEX::HLE::x32::RegisterSyscall(Handler, FEX::HLE::x32::SYSCALL_x86_##name, (number), (flags), #name, (lambda)); \
+#define REGISTER_SYSCALL_IMPL(name, lambda)                                                      \
+  do {                                                                                           \
+    FEX::HLE::x64::RegisterSyscall(Handler, FEX::HLE::x64::SYSCALL_x64_##name, #name, (lambda)); \
+    FEX::HLE::x32::RegisterSyscall(Handler, FEX::HLE::x32::SYSCALL_x86_##name, #name, (lambda)); \
   } while (false)

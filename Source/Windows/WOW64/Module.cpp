@@ -473,10 +473,6 @@ public:
     return Ret;
   }
 
-  FEXCore::HLE::SyscallABI GetSyscallABI(uint64_t Syscall) override {
-    return {.NumArgs = 0, .HasReturn = false, .HostSyscallNumber = -1};
-  }
-
   std::optional<FEXCore::ExecutableFileSectionInfo> LookupExecutableFileSection(FEXCore::Core::InternalThreadState&, uint64_t) override {
     return std::nullopt;
   }

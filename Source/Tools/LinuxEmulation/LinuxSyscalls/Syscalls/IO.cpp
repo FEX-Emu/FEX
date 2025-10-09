@@ -19,16 +19,14 @@ namespace FEX::HLE {
 void RegisterIO(FEX::HLE::SyscallHandler* Handler) {
   using namespace FEXCore::IR;
 
-  REGISTER_SYSCALL_IMPL_FLAGS(iopl, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                              [](FEXCore::Core::CpuStateFrame* Frame, int level) -> uint64_t {
-                                // Just claim we don't have permission
-                                return -EPERM;
-                              });
+  REGISTER_SYSCALL_IMPL(iopl, [](FEXCore::Core::CpuStateFrame* Frame, int level) -> uint64_t {
+    // Just claim we don't have permission
+    return -EPERM;
+  });
 
-  REGISTER_SYSCALL_IMPL_FLAGS(ioperm, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                              [](FEXCore::Core::CpuStateFrame* Frame, unsigned long from, unsigned long num, int turn_on) -> uint64_t {
-                                // ioperm not available on our architecture
-                                return -EPERM;
-                              });
+  REGISTER_SYSCALL_IMPL(ioperm, [](FEXCore::Core::CpuStateFrame* Frame, unsigned long from, unsigned long num, int turn_on) -> uint64_t {
+    // ioperm not available on our architecture
+    return -EPERM;
+  });
 }
 } // namespace FEX::HLE

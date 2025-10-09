@@ -138,7 +138,6 @@
     "FenceType": "FenceType",
     "RegisterClass": "RegClass",
     "CondClass": "CondClass",
-    "SyscallFlags": "FEXCore::IR::SyscallFlags",
     "SHA256Sum": "SHA256Sum",
     "MemOffsetType": "MemOffsetType",
     "BreakDefinition": "BreakDefinition",
@@ -314,22 +313,10 @@
       "CallbackReturn": {
         "HasSideEffects": true
       },
-      "GPR = Syscall GPR:$SyscallID, GPR:$Arg0, GPR:$Arg1, GPR:$Arg2, GPR:$Arg3, GPR:$Arg4, GPR:$Arg5, SyscallFlags:$Flags": {
+      "GPR = Syscall GPR:$SyscallID, GPR:$Arg0, GPR:$Arg1, GPR:$Arg2, GPR:$Arg3, GPR:$Arg4, GPR:$Arg5": {
         "HasSideEffects": true,
         "Desc": ["Dispatches a guest syscall through to the SyscallHandler class"
                 ],
-        "DestSize": "OpSize::i64Bit"
-      },
-
-      "GPR = InlineSyscall GPR:$Arg0, GPR:$Arg1, GPR:$Arg2, GPR:$Arg3, GPR:$Arg4, GPR:$Arg5, i32:$HostSyscallNumber, SyscallFlags:$Flags": {
-        "HasSideEffects": true,
-        "Desc": ["Dispatches a guest syscall directly to the host syscall interface,",
-                 "bypassing the SyscallHandler class used by Syscall.",
-                 "This has significantly less overhead than Syscall, which needs to save JIT state first.",
-                 "Can only be used for syscalls that match across architecture,",
-                 "such as gettid (matches on x86/x86-64/Arm64)."
-                ],
-
         "DestSize": "OpSize::i64Bit"
       },
 

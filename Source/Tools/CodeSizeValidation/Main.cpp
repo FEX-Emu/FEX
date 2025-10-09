@@ -447,18 +447,6 @@ public:
     return 0;
   }
 
-  FEXCore::HLE::SyscallABI GetSyscallABI(uint64_t Syscall) override {
-    if (Syscall == 0) {
-      // Claim syscall 0 is simple for instcountci inline tests.
-      return FEXCore::HLE::SyscallABI {
-        .NumArgs = 0,
-        .HasReturn = true,
-        .HostSyscallNumber = 0, // Just map to host syscall zero, it isn't going to get called.
-      };
-    }
-    return {0, false, -1};
-  }
-
   // These are no-ops implementations of the SyscallHandler API
   std::optional<FEXCore::ExecutableFileSectionInfo>
   LookupExecutableFileSection(FEXCore::Core::InternalThreadState& Thread, uint64_t GuestAddr) override {

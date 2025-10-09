@@ -262,16 +262,10 @@ DEF_OP(Syscall) {
   // X1: ThreadState
   // X2: Pointer to SyscallArguments
 
-  FEXCore::IR::SyscallFlags Flags = Op->Flags;
   PushDynamicRegs(TMP1);
 
   uint32_t GPRSpillMask = ~0U;
   uint32_t FPRSpillMask = ~0U;
-  if ((Flags & FEXCore::IR::SyscallFlags::NOSYNCSTATEONENTRY) == FEXCore::IR::SyscallFlags::NOSYNCSTATEONENTRY) {
-    // Need to spill all caller saved registers still
-    GPRSpillMask = CALLER_GPR_MASK;
-    FPRSpillMask = CALLER_FPR_MASK;
-  }
 
   SpillStaticRegs(TMP1, true, GPRSpillMask, FPRSpillMask);
 
@@ -305,117 +299,22 @@ DEF_OP(Syscall) {
 
   add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, SPOffset);
 
-  if ((Flags & FEXCore::IR::SyscallFlags::NORETURN) != FEXCore::IR::SyscallFlags::NORETURN) {
-    // Result is now in x0
-    // Fix the stack and any values that were stepped on
-    FillStaticRegs(true, GPRSpillMask, FPRSpillMask, ARMEmitter::Reg::r1, ARMEmitter::Reg::r2);
+  // Result is now in x0
+  // Fix the stack and any values that were stepped on
+  FillStaticRegs(true, GPRSpillMask, FPRSpillMask, ARMEmitter::Reg::r1, ARMEmitter::Reg::r2);
 
-    // Now the registers we've spilled are back in their original host registers
-    // We can safely claim we are no longer in a syscall
-    str(ARMEmitter::XReg::zr, STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo));
+  // Now the registers we've spilled are back in their original host registers
+  // We can safely claim we are no longer in a syscall
+  str(ARMEmitter::XReg::zr, STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo));
 
-    PopDynamicRegs();
+  PopDynamicRegs();
 
-    if ((Flags & FEXCore::IR::SyscallFlags::NORETURNEDRESULT) != FEXCore::IR::SyscallFlags::NORETURNEDRESULT) {
-      // Move result to its destination register.
-      // Only if `NORETURNEDRESULT` wasn't set, otherwise we might overwrite the CPUState refilled with `FillStaticRegs`
-      mov(ARMEmitter::Size::i64Bit, GetReg(Node), ARMEmitter::Reg::r0);
-    }
-  }
-}
+  const auto OSABI = CTX->SyscallHandler->GetOSABI();
 
-DEF_OP(InlineSyscall) {
-  auto Op = IROp->C<IR::IROp_InlineSyscall>();
-  // Arguments are passed as follows:
-  // X8: SyscallNumber - RA INTERSECT
-  // X0: Arg0 & Return
-  // X1: Arg1
-  // X2: Arg2
-  // X3: Arg3
-  // X4: Arg4 - RA INTERSECT
-  // X5: Arg5 - RA INTERSECT
-  // X6: Arg6 - Doesn't exist in x86-64 land. RA INTERSECT
-
-  // One argument is removed from the SyscallArguments::MAX_ARGS since the first argument was syscall number
-  const static std::array<ARMEmitter::XRegister, FEXCore::HLE::SyscallArguments::MAX_ARGS - 1> RegArgs = {
-    {ARMEmitter::XReg::x0, ARMEmitter::XReg::x1, ARMEmitter::XReg::x2, ARMEmitter::XReg::x3, ARMEmitter::XReg::x4, ARMEmitter::XReg::x5}};
-
-  bool Intersects {};
-  // We always need to spill x8 since we can't know if it is live at this SSA location
-  uint32_t SpillMask = 1U << 8;
-  for (uint32_t i = 0; i < FEXCore::HLE::SyscallArguments::MAX_ARGS - 1; ++i) {
-    if (Op->Header.Args[i].IsInvalid()) {
-      break;
-    }
-
-    auto Reg = GetReg(Op->Header.Args[i]);
-    if (Reg == ARMEmitter::Reg::r8 || Reg == ARMEmitter::Reg::r4 || Reg == ARMEmitter::Reg::r5) {
-
-      SpillMask |= (1U << Reg.Idx());
-      Intersects = true;
-    }
-  }
-
-  // Ordering is incredibly important here
-  // We must spill any overlapping registers first THEN claim we are in a syscall without invalidating state at all
-  // Only spill the registers that intersect with our usage
-  SpillStaticRegs(TMP1, false, SpillMask);
-
-  // Now that we are spilled, store in the state that we are in a syscall
-  // Still without overwriting registers that matter
-  // 16bit LoadConstant to be a single instruction
-  // We must always spill at least one register (x8) so this value always has a bit set
-  // This gives the signal handler a value to check to see if we are in a syscall at all
-  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r0, SpillMask & 0xFFFF);
-  str(ARMEmitter::XReg::x0, STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo));
-
-  // Now that we have claimed to be a syscall we can set up the arguments
-  const auto EmitSize = CTX->Config.Is64BitMode() ? ARMEmitter::Size::i64Bit : ARMEmitter::Size::i32Bit;
-  const auto EmitSubSize = CTX->Config.Is64BitMode() ? ARMEmitter::SubRegSize::i64Bit : ARMEmitter::SubRegSize::i32Bit;
-  if (Intersects) {
-    for (uint32_t i = 0; i < FEXCore::HLE::SyscallArguments::MAX_ARGS - 1; ++i) {
-      if (Op->Header.Args[i].IsInvalid()) {
-        break;
-      }
-
-      auto Reg = GetReg(Op->Header.Args[i]);
-      if (SpillMask & (1U << Reg.Idx())) {
-        // In the case of intersection with x4, x5, or x8 then these are currently SRA
-        // for registers RAX, RDX, and RSP. Which have just been spilled
-        // Just load back from the context.
-        auto Correlation = GetX86RegRelationToARMReg(Reg);
-        LOGMAN_THROW_A_FMT(Correlation != X86State::REG_INVALID, "Invalid register mapping");
-        ldr(EmitSubSize, RegArgs[i].R(), STATE, offsetof(FEXCore::Core::CpuStateFrame, State.gregs[Correlation]));
-      } else {
-        mov(EmitSize, RegArgs[i].R(), Reg);
-      }
-    }
-  } else {
-    for (uint32_t i = 0; i < FEXCore::HLE::SyscallArguments::MAX_ARGS - 1; ++i) {
-      if (Op->Header.Args[i].IsInvalid()) {
-        break;
-      }
-
-      mov(EmitSize, RegArgs[i].R(), GetReg(Op->Header.Args[i]));
-    }
-  }
-
-  LoadConstant(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::r8, Op->HostSyscallNumber);
-  svc(0);
-  // On updated signal mask we can receive a signal RIGHT HERE
-
-  if ((Op->Flags & FEXCore::IR::SyscallFlags::NORETURN) != FEXCore::IR::SyscallFlags::NORETURN) {
-    // Now that we are done in the syscall we need to carefully peel back the state
-    // First unspill the registers from before
-    FillStaticRegs(false, SpillMask, ~0U, ARMEmitter::Reg::r8, ARMEmitter::Reg::r1);
-
-    // Now the registers we've spilled are back in their original host registers
-    // We can safely claim we are no longer in a syscall
-    str(ARMEmitter::XReg::zr, STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo));
-
-    // Result is now in x0
-    // Move result to its destination register
-    mov(EmitSize, GetReg(Node), ARMEmitter::Reg::r0);
+  if (OSABI != FEXCore::HLE::SyscallOSABI::OS_GENERIC) {
+    // Move result to its destination register.
+    // Only if `NORETURNEDRESULT` wasn't set, otherwise we might overwrite the CPUState refilled with `FillStaticRegs`
+    mov(ARMEmitter::Size::i64Bit, GetReg(Node), ARMEmitter::Reg::r0);
   }
 }
 
