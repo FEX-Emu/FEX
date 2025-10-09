@@ -283,9 +283,10 @@ void EnvLoader::Load() {
     }
   }
 
-  auto GetVar = [](EnvMapType& EnvMap, const std::string_view id) -> std::optional<std::string_view> {
-    if (EnvMap.find(id) != EnvMap.end()) {
-      return EnvMap.at(id);
+  auto GetVar = [](const EnvMapType& EnvMap, std::string_view id) -> std::optional<std::string_view> {
+    const auto EnvEntry = EnvMap.find(id);
+    if (EnvEntry != EnvMap.end()) {
+      return EnvEntry->second;
     }
 
     // If envp[] was empty, search using std::getenv()
