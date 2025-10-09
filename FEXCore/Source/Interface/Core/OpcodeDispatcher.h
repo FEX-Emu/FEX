@@ -2528,7 +2528,7 @@ private:
     const bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
 
     // Use ldp if possible, otherwise fallback on two loads.
-    if (!AtomicTSO && !A.Segment && Size >= OpSize::i32Bit & Size <= OpSize::i128Bit) {
+    if (!AtomicTSO && !A.Segment && Size >= OpSize::i32Bit && Size <= OpSize::i128Bit) {
       const auto B = SelectPairAddressMode(A, Size);
       return LoadMemPair(Class, Size, B.Base, B.Offset);
     }
@@ -2567,7 +2567,7 @@ private:
     const bool AtomicTSO = IsTSOEnabled(Class) && !A.NonTSO;
 
     // Use stp if possible, otherwise fallback on two stores.
-    if (!AtomicTSO && !A.Segment && Size >= OpSize::i32Bit & Size <= OpSize::i128Bit) {
+    if (!AtomicTSO && !A.Segment && Size >= OpSize::i32Bit && Size <= OpSize::i128Bit) {
       const auto B = SelectPairAddressMode(A, Size);
       _StoreMemPair(Class, Size, Value1, Value2, B.Base, B.Offset);
     } else {
