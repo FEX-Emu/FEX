@@ -277,15 +277,16 @@ void EnvLoader::Load() {
 #include <FEXCore/Config/ConfigOptions.inl>
 
     if (Value) {
-      EnvMap.insert_or_assign(Key, *Value);
+      EnvMap.insert_or_assign(Key, std::move(*Value));
     } else {
       EnvMap.insert_or_assign(Key, Value_View);
     }
   }
 
-  auto GetVar = [](EnvMapType& EnvMap, const std::string_view id) -> std::optional<std::string_view> {
-    if (EnvMap.find(id) != EnvMap.end()) {
-      return EnvMap.at(id);
+  auto GetVar = [](const EnvMapType& EnvMap, std::string_view id) -> std::optional<std::string_view> {
+    const auto EnvEntry = EnvMap.find(id);
+    if (EnvEntry != EnvMap.end()) {
+      return EnvEntry->second;
     }
 
     // If envp[] was empty, search using std::getenv()
@@ -570,7 +571,7 @@ fextl::string GetConfigDirectory(bool Global, const PortableInformation& Portabl
     return fextl::fmt::format("{}/fex-emu/", PortableInfo.InterpreterPath);
   } else if (PortableInfo.IsPortable && ConfigOverride && !Global) {
     fextl::string AppConfigStr = ConfigOverride;
-    if (PortableInfo.IsPortable && FHU::Filesystem::IsRelative(AppConfigStr)) {
+    if (FHU::Filesystem::IsRelative(AppConfigStr)) {
       AppConfigStr = PortableInfo.InterpreterPath + AppConfigStr;
     }
 
