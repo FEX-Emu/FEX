@@ -571,7 +571,7 @@ fextl::string GetConfigDirectory(bool Global, const PortableInformation& Portabl
     return fextl::fmt::format("{}/fex-emu/", PortableInfo.InterpreterPath);
   } else if (PortableInfo.IsPortable && ConfigOverride && !Global) {
     fextl::string AppConfigStr = ConfigOverride;
-    if (PortableInfo.IsPortable && FHU::Filesystem::IsRelative(AppConfigStr)) {
+    if (FHU::Filesystem::IsRelative(AppConfigStr)) {
       AppConfigStr = PortableInfo.InterpreterPath + AppConfigStr;
     }
 
