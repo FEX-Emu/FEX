@@ -80,6 +80,13 @@ private:
 static_assert(!std::is_move_constructible_v<NonMovableUniquePtr<int>>);
 static_assert(!std::is_move_assignable_v<NonMovableUniquePtr<int>>);
 
+// Store used for unaligned LDAXR*/STLXR* emulation.
+struct UnalignedExclusiveStore {
+  uint64_t Addr;
+  uint64_t Store;
+  uint8_t Size;
+};
+
 struct alignas(FEXCore::Utils::FEX_PAGE_SIZE) InternalThreadState : public FEXCore::Allocator::FEXAllocOperators {
   FEXCore::Core::CpuStateFrame* const CurrentFrame = &BaseFrameState;
 
@@ -100,6 +107,8 @@ struct alignas(FEXCore::Utils::FEX_PAGE_SIZE) InternalThreadState : public FEXCo
 
   // This pointer is owned by the frontend.
   FEXCore::SHMStats::ThreadStats* ThreadStats {};
+
+  UnalignedExclusiveStore ExclusiveStore;
 
   ///< Data pointer for exclusive use by the frontend
   void* FrontendPtr;

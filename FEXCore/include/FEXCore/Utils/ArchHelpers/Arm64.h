@@ -34,6 +34,6 @@ enum class UnalignedHandlerType {
  * by. FEXCore will return a positive or negative offset depending on internal handling.
  */
 [[nodiscard]]
-FEX_DEFAULT_VISIBILITY std::optional<int32_t>
-HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandlerType HandleType, uintptr_t ProgramCounter, uint64_t* GPRs);
+FEX_DEFAULT_VISIBILITY std::optional<int32_t> HandleUnalignedAccess(
+  FEXCore::Core::InternalThreadState* Thread, UnalignedHandlerType HandleType, uintptr_t ProgramCounter, uint64_t* GPRs, bool IsJIT = true);
 } // namespace FEXCore::ArchHelpers::Arm64

@@ -349,15 +349,11 @@ struct alignas(16) KiUserExceptionDispatcherStackLayout {
   uint64_t Redzone[2];
 };
 
-static bool HandleUnalignedAccess(ARM64_NT_CONTEXT& Context) {
+static bool HandleUnalignedAccess(ARM64_NT_CONTEXT& Context, bool IsJIT) {
   auto Thread = GetCPUArea().ThreadState();
-  if (!CTX->IsAddressInCodeBuffer(Thread, Context.Pc)) {
-    return false;
-  }
-
   FEXCORE_PROFILE_INSTANT_INCREMENT(Thread, AccumulatedSIGBUSCount, 1);
   const auto Result =
-    FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(Thread, HandlerConfig->GetUnalignedHandlerType(), Context.Pc, &Context.X0);
+    FEXCore::ArchHelpers::Arm64::HandleUnalignedAccess(Thread, HandlerConfig->GetUnalignedHandlerType(), Context.Pc, &Context.X0, IsJIT);
   Context.Pc += Result.value_or(0);
   return Result.has_value();
 }
@@ -761,14 +757,15 @@ bool ResetToConsistentStateImpl(EXCEPTION_RECORD* Exception, CONTEXT* GuestConte
     }
   }
 
-  if (!CTX->IsAddressInCodeBuffer(Thread, NativeContext->Pc) && !IsDispatcherAddress(NativeContext->Pc)) {
-    LogMan::Msg::DFmt("Passing through exception");
-    return false;
-  }
-
-  if (Exception->ExceptionCode == EXCEPTION_DATATYPE_MISALIGNMENT && Exception::HandleUnalignedAccess(*NativeContext)) {
+  bool IsJIT = CTX->IsAddressInCodeBuffer(Thread, NativeContext->Pc);
+  if (Exception->ExceptionCode == EXCEPTION_DATATYPE_MISALIGNMENT && Exception::HandleUnalignedAccess(*NativeContext, IsJIT)) {
     LogMan::Msg::DFmt("Handled unaligned atomic: new pc: {:X}", NativeContext->Pc);
     return true;
+  }
+
+  if (!IsJIT && !IsDispatcherAddress(NativeContext->Pc)) {
+    LogMan::Msg::DFmt("Passing through exception");
+    return false;
   }
 
   // The JIT (in CompileBlock) emits code to check the suspend doorbell at the start of every block, and run the following instruction if it is set:

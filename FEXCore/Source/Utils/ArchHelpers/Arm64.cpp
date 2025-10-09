@@ -1326,9 +1326,7 @@ static uint64_t DoCAS64(uint64_t DesiredSrc, uint64_t ExpectedSrc, uint64_t Addr
   }
 }
 
-static bool RunCASAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg, uint32_t ExpectedReg, uint32_t AddressReg, uint32_t* StrictSplitLockMutex) {
-  uint64_t Addr = GPRs[AddressReg];
-
+static std::optional<uint64_t> DoCAS(uint32_t Size, uint64_t Desired, uint64_t Expected, uint64_t Addr, uint32_t* StrictSplitLockMutex) {
   // Cross-cacheline CAS doesn't work on ARM
   // It isn't even guaranteed to work on x86
   // Intel will do a "split lock" which locks the full bus
@@ -1341,7 +1339,7 @@ static bool RunCASAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg, uint32_
   // Only need to handle 16, 32, 64
   if (Size == 2) {
     auto Res = DoCAS16<false>(
-      GPRs[DesiredReg], GPRs[ExpectedReg], Addr,
+      Desired, Expected, Addr,
       [](uint16_t, uint16_t Expected) -> uint16_t {
         // Expected is just Expected
         return Expected;
@@ -1351,16 +1349,10 @@ static bool RunCASAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg, uint32_
         return Desired;
       },
       StrictSplitLockMutex);
-
-    // Regardless of pass or fail
-    // We set the result register if it isn't a zero register
-    if (ExpectedReg != 31) {
-      GPRs[ExpectedReg] = Res;
-    }
-    return true;
+    return Res;
   } else if (Size == 4) {
     auto Res = DoCAS32<false>(
-      GPRs[DesiredReg], GPRs[ExpectedReg], Addr,
+      Desired, Expected, Addr,
       [](uint32_t, uint32_t Expected) -> uint32_t {
         // Expected is just Expected
         return Expected;
@@ -1370,16 +1362,10 @@ static bool RunCASAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg, uint32_
         return Desired;
       },
       StrictSplitLockMutex);
-
-    // Regardless of pass or fail
-    // We set the result register if it isn't a zero register
-    if (ExpectedReg != 31) {
-      GPRs[ExpectedReg] = Res;
-    }
-    return true;
+    return Res;
   } else if (Size == 8) {
     auto Res = DoCAS64<false>(
-      GPRs[DesiredReg], GPRs[ExpectedReg], Addr,
+      Desired, Expected, Addr,
       [](uint64_t, uint64_t Expected) -> uint64_t {
         // Expected is just Expected
         return Expected;
@@ -1389,16 +1375,24 @@ static bool RunCASAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg, uint32_
         return Desired;
       },
       StrictSplitLockMutex);
-
-    // Regardless of pass or fail
-    // We set the result register if it isn't a zero register
-    if (ExpectedReg != 31) {
-      GPRs[ExpectedReg] = Res;
-    }
-    return true;
+    return Res;
   }
 
-  return false;
+  return std::nullopt;
+}
+
+static bool RunCASAL(uint64_t* GPRs, uint32_t Size, uint32_t DesiredReg, uint32_t ExpectedReg, uint32_t AddressReg, uint32_t* StrictSplitLockMutex) {
+  std::optional<uint64_t> Res = DoCAS(Size, GPRs[DesiredReg], GPRs[ExpectedReg], GPRs[AddressReg], StrictSplitLockMutex);
+  if (!Res.has_value()) {
+    return false;
+  }
+
+  // Regardless of pass or fail
+  // We set the result register if it isn't a zero register
+  if (ExpectedReg != 31) {
+    GPRs[ExpectedReg] = *Res;
+  }
+  return true;
 }
 
 static bool HandleCASAL(uint64_t* GPRs, uint32_t Instr, uint32_t* StrictSplitLockMutex) {
@@ -1560,38 +1554,43 @@ static bool HandleAtomicMemOp(uint32_t Instr, uint64_t* GPRs, uint32_t* StrictSp
   return false;
 }
 
-static bool HandleAtomicLoad(uint32_t Instr, uint64_t* GPRs, int64_t Offset) {
+static bool HandleAtomicLoad(uint32_t Instr, uint64_t* GPRs, int64_t Offset, Core::UnalignedExclusiveStore* Store = nullptr) {
   uint32_t Size = 1 << (Instr >> 30);
 
   uint32_t ResultReg = Instr & 0b11111;
   uint32_t AddressReg = (Instr >> 5) & 0b11111;
 
   uint64_t Addr = GPRs[AddressReg] + Offset;
+  uint64_t Res;
 
   if (Size == 2) {
-    auto Res = DoLoad16(Addr);
+    Res = DoLoad16(Addr);
     // We set the result register if it isn't a zero register
     if (ResultReg != 31) {
       GPRs[ResultReg] = Res;
     }
-    return true;
   } else if (Size == 4) {
-    auto Res = DoLoad32(Addr);
+    Res = DoLoad32(Addr);
     // We set the result register if it isn't a zero register
     if (ResultReg != 31) {
       GPRs[ResultReg] = Res;
     }
-    return true;
   } else if (Size == 8) {
-    auto Res = DoLoad64(Addr);
+    Res = DoLoad64(Addr);
     // We set the result register if it isn't a zero register
     if (ResultReg != 31) {
       GPRs[ResultReg] = Res;
     }
-    return true;
+  } else {
+    return false;
   }
 
-  return false;
+  if (Store) {
+    Store->Addr = Addr;
+    Store->Store = Res;
+    Store->Size = Size;
+  }
+  return true;
 }
 
 static bool HandleAtomicStore(uint32_t Instr, uint64_t* GPRs, int64_t Offset, uint32_t* StrictSplitLockMutex) {
@@ -1952,8 +1951,8 @@ static uint64_t HandleAtomicLoadstoreExclusive(uintptr_t ProgramCounter, uint64_
 }
 
 [[nodiscard]]
-std::optional<int32_t>
-HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandlerType HandleType, uintptr_t ProgramCounter, uint64_t* GPRs) {
+std::optional<int32_t> HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandlerType HandleType,
+                                             uintptr_t ProgramCounter, uint64_t* GPRs, bool IsJIT) {
 #ifdef _M_ARM_64
   constexpr bool is_arm64 = true;
 #else
@@ -1978,7 +1977,7 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
   uint32_t* StrictSplitLockMutex {CTX->Config.StrictInProcessSplitLocks ? &CTX->StrictSplitLockMutex : nullptr};
 
   // ParanoidTSO path doesn't modify any code.
-  if (HandleType == UnalignedHandlerType::Paranoid) [[unlikely]] {
+  if (HandleType == UnalignedHandlerType::Paranoid || !IsJIT) [[unlikely]] {
     if ((Instr & LDAXR_MASK) == LDAR_INST ||  // LDAR*
         (Instr & LDAXR_MASK) == LDAPR_INST) { // LDAPR*
       if (ArchHelpers::Arm64::HandleAtomicLoad(Instr, GPRs, 0)) {
@@ -2016,6 +2015,29 @@ HandleUnalignedAccess(FEXCore::Core::InternalThreadState* Thread, UnalignedHandl
         LogMan::Msg::EFmt("Unhandled JIT SIGBUS LDLUR*: PC: 0x{:x} Instruction: 0x{:08x}\n", ProgramCounter, PC[0]);
         return std::nullopt;
       }
+    } else if (!IsJIT) {
+      if ((Instr & ArchHelpers::Arm64::LDAXR_MASK) == ArchHelpers::Arm64::LDAXR_INST) { // LDAXR*
+        if (ArchHelpers::Arm64::HandleAtomicLoad(Instr, GPRs, 0, &Thread->ExclusiveStore)) {
+          return 4;
+        }
+      } else if ((Instr & ArchHelpers::Arm64::STLXR_MASK) == ArchHelpers::Arm64::STLXR_INST) { // STLXR*
+        uint32_t StatusReg = Instr << 11 >> 27;
+        // // Emulate exclusive store by validating the address and value against the last unaligned LDAXR*.
+        if (GPRs[AddrReg] != Thread->ExclusiveStore.Addr || Size > Thread->ExclusiveStore.Size) {
+          if (StatusReg != 31) {
+            GPRs[StatusReg] = 1;
+          }
+          return 4;
+        }
+        if (std::optional<uint64_t> Prev = DoCAS(Size, GPRs[DataReg], Thread->ExclusiveStore.Store, GPRs[AddrReg], StrictSplitLockMutex)) {
+          if (StatusReg != 31) {
+            GPRs[StatusReg] = !!memcmp(&Thread->ExclusiveStore.Store, &*Prev, Size);
+          }
+          Thread->ExclusiveStore.Size = 0;
+          return 4;
+        }
+      }
+      return 0;
     }
   }
 
