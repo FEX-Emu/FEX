@@ -277,7 +277,7 @@ void EnvLoader::Load() {
 #include <FEXCore/Config/ConfigOptions.inl>
 
     if (Value) {
-      EnvMap.insert_or_assign(Key, *Value);
+      EnvMap.insert_or_assign(Key, std::move(*Value));
     } else {
       EnvMap.insert_or_assign(Key, Value_View);
     }
