@@ -25,65 +25,55 @@ namespace FEX::HLE {
 void RegisterFS(FEX::HLE::SyscallHandler* Handler) {
   using namespace FEXCore::IR;
 
-  REGISTER_SYSCALL_IMPL_FLAGS(rename, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                              [](FEXCore::Core::CpuStateFrame* Frame, const char* oldpath, const char* newpath) -> uint64_t {
-                                uint64_t Result = ::rename(oldpath, newpath);
-                                SYSCALL_ERRNO();
-                              });
+  REGISTER_SYSCALL_IMPL(rename, [](FEXCore::Core::CpuStateFrame* Frame, const char* oldpath, const char* newpath) -> uint64_t {
+    uint64_t Result = ::rename(oldpath, newpath);
+    SYSCALL_ERRNO();
+  });
 
-  REGISTER_SYSCALL_IMPL_FLAGS(mkdir, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                              [](FEXCore::Core::CpuStateFrame* Frame, const char* pathname, mode_t mode) -> uint64_t {
-                                uint64_t Result = ::mkdir(pathname, mode);
-                                SYSCALL_ERRNO();
-                              });
+  REGISTER_SYSCALL_IMPL(mkdir, [](FEXCore::Core::CpuStateFrame* Frame, const char* pathname, mode_t mode) -> uint64_t {
+    uint64_t Result = ::mkdir(pathname, mode);
+    SYSCALL_ERRNO();
+  });
 
-  REGISTER_SYSCALL_IMPL_FLAGS(rmdir, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                              [](FEXCore::Core::CpuStateFrame* Frame, const char* pathname) -> uint64_t {
-                                uint64_t Result = ::rmdir(pathname);
-                                SYSCALL_ERRNO();
-                              });
+  REGISTER_SYSCALL_IMPL(rmdir, [](FEXCore::Core::CpuStateFrame* Frame, const char* pathname) -> uint64_t {
+    uint64_t Result = ::rmdir(pathname);
+    SYSCALL_ERRNO();
+  });
 
-  REGISTER_SYSCALL_IMPL_FLAGS(link, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                              [](FEXCore::Core::CpuStateFrame* Frame, const char* oldpath, const char* newpath) -> uint64_t {
-                                uint64_t Result = ::link(oldpath, newpath);
-                                SYSCALL_ERRNO();
-                              });
+  REGISTER_SYSCALL_IMPL(link, [](FEXCore::Core::CpuStateFrame* Frame, const char* oldpath, const char* newpath) -> uint64_t {
+    uint64_t Result = ::link(oldpath, newpath);
+    SYSCALL_ERRNO();
+  });
 
-  REGISTER_SYSCALL_IMPL_FLAGS(unlink, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                              [](FEXCore::Core::CpuStateFrame* Frame, const char* pathname) -> uint64_t {
-                                uint64_t Result = ::unlink(pathname);
-                                SYSCALL_ERRNO();
-                              });
+  REGISTER_SYSCALL_IMPL(unlink, [](FEXCore::Core::CpuStateFrame* Frame, const char* pathname) -> uint64_t {
+    uint64_t Result = ::unlink(pathname);
+    SYSCALL_ERRNO();
+  });
 
-  REGISTER_SYSCALL_IMPL_FLAGS(symlink, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                              [](FEXCore::Core::CpuStateFrame* Frame, const char* target, const char* linkpath) -> uint64_t {
-                                uint64_t Result = ::symlink(target, linkpath);
-                                SYSCALL_ERRNO();
-                              });
+  REGISTER_SYSCALL_IMPL(symlink, [](FEXCore::Core::CpuStateFrame* Frame, const char* target, const char* linkpath) -> uint64_t {
+    uint64_t Result = ::symlink(target, linkpath);
+    SYSCALL_ERRNO();
+  });
 
-  REGISTER_SYSCALL_IMPL_FLAGS(readlink, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                              [](FEXCore::Core::CpuStateFrame* Frame, const char* pathname, char* buf, size_t bufsiz) -> uint64_t {
-                                uint64_t Result = FEX::HLE::_SyscallHandler->FM.Readlink(pathname, buf, bufsiz);
-                                SYSCALL_ERRNO();
-                              });
+  REGISTER_SYSCALL_IMPL(readlink, [](FEXCore::Core::CpuStateFrame* Frame, const char* pathname, char* buf, size_t bufsiz) -> uint64_t {
+    uint64_t Result = FEX::HLE::_SyscallHandler->FM.Readlink(pathname, buf, bufsiz);
+    SYSCALL_ERRNO();
+  });
 
-  REGISTER_SYSCALL_IMPL_FLAGS(chmod, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                              [](FEXCore::Core::CpuStateFrame* Frame, const char* pathname, mode_t mode) -> uint64_t {
-                                uint64_t Result = ::chmod(pathname, mode);
-                                SYSCALL_ERRNO();
-                              });
+  REGISTER_SYSCALL_IMPL(chmod, [](FEXCore::Core::CpuStateFrame* Frame, const char* pathname, mode_t mode) -> uint64_t {
+    uint64_t Result = ::chmod(pathname, mode);
+    SYSCALL_ERRNO();
+  });
 
-  REGISTER_SYSCALL_IMPL_FLAGS(mknod, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                              [](FEXCore::Core::CpuStateFrame* Frame, const char* pathname, mode_t mode, dev_t dev) -> uint64_t {
-                                uint64_t Result = FEX::HLE::_SyscallHandler->FM.Mknod(pathname, mode, dev);
-                                SYSCALL_ERRNO();
-                              });
+  REGISTER_SYSCALL_IMPL(mknod, [](FEXCore::Core::CpuStateFrame* Frame, const char* pathname, mode_t mode, dev_t dev) -> uint64_t {
+    uint64_t Result = FEX::HLE::_SyscallHandler->FM.Mknod(pathname, mode, dev);
+    SYSCALL_ERRNO();
+  });
 
-  REGISTER_SYSCALL_IMPL_FLAGS(creat, SyscallFlags::OPTIMIZETHROUGH | SyscallFlags::NOSYNCSTATEONENTRY,
-                              [](FEXCore::Core::CpuStateFrame* Frame, const char* pathname, mode_t mode) -> uint64_t {
-                                uint64_t Result = ::creat(pathname, mode);
-                                SYSCALL_ERRNO();
-                              });
+  REGISTER_SYSCALL_IMPL(creat, [](FEXCore::Core::CpuStateFrame* Frame, const char* pathname, mode_t mode) -> uint64_t {
+    uint64_t Result = ::creat(pathname, mode);
+    SYSCALL_ERRNO();
+  });
 
   REGISTER_SYSCALL_IMPL(
     setxattr, [](FEXCore::Core::CpuStateFrame* Frame, const char* path, const char* name, const void* value, size_t size, int flags) -> uint64_t {

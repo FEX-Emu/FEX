@@ -16,11 +16,6 @@ public:
     return 0;
   }
 
-  FEXCore::HLE::SyscallABI GetSyscallABI(uint64_t Syscall) override {
-    // Don't do anything
-    return {0, false, 0};
-  }
-
   // These are no-ops implementations of the SyscallHandler API
   std::optional<FEXCore::ExecutableFileSectionInfo> LookupExecutableFileSection(FEXCore::Core::InternalThreadState&, uint64_t) override {
     return std::nullopt;

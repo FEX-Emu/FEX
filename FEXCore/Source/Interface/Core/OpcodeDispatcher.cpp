@@ -28,7 +28,6 @@ $end_info$
 #include <algorithm>
 #include <array>
 #include <cstdint>
-#include <tuple>
 
 namespace FEXCore::IR {
 
@@ -51,8 +50,6 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs, bool IsSyscallInst) {
     FEXCore::X86State::REG_RSI, FEXCore::X86State::REG_RDI, FEXCore::X86State::REG_RBP,
   };
 
-  SyscallFlags DefaultSyscallFlags = FEXCore::IR::SyscallFlags::DEFAULT;
-
   const auto OSABI = CTX->SyscallHandler->GetOSABI();
   if (OSABI == FEXCore::HLE::SyscallOSABI::OS_LINUX64) {
     NumArguments = GPRIndexes_64.size();
@@ -64,7 +61,6 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs, bool IsSyscallInst) {
     // All registers will be spilled before the syscall and filled afterwards so no JIT-side argument handling is necessary.
     NumArguments = 0;
     GPRIndexes = nullptr;
-    DefaultSyscallFlags = FEXCore::IR::SyscallFlags::NORETURNEDRESULT;
   } else {
     ERROR_AND_DIE_FMT("Unhandled OSABI syscall");
   }
@@ -98,9 +94,10 @@ void OpDispatchBuilder::SyscallOp(OpcodeArgs, bool IsSyscallInst) {
   }
 
   FlushRegisterCache();
-  auto SyscallOp = _Syscall(Arguments[0], Arguments[1], Arguments[2], Arguments[3], Arguments[4], Arguments[5], Arguments[6], DefaultSyscallFlags);
+  auto SyscallOp = _Syscall(Arguments[0], Arguments[1], Arguments[2], Arguments[3], Arguments[4], Arguments[5], Arguments[6]);
 
-  if ((DefaultSyscallFlags & FEXCore::IR::SyscallFlags::NORETURNEDRESULT) != FEXCore::IR::SyscallFlags::NORETURNEDRESULT) {
+  // Generic ABI doesn't store result in RAX.
+  if (OSABI != FEXCore::HLE::SyscallOSABI::OS_GENERIC) {
     StoreGPRRegister(X86State::REG_RAX, SyscallOp);
   }
 

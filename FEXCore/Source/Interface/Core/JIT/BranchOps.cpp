@@ -262,16 +262,10 @@ DEF_OP(Syscall) {
   // X1: ThreadState
   // X2: Pointer to SyscallArguments
 
-  FEXCore::IR::SyscallFlags Flags = Op->Flags;
   PushDynamicRegs(TMP1);
 
   uint32_t GPRSpillMask = ~0U;
   uint32_t FPRSpillMask = ~0U;
-  if ((Flags & FEXCore::IR::SyscallFlags::NOSYNCSTATEONENTRY) == FEXCore::IR::SyscallFlags::NOSYNCSTATEONENTRY) {
-    // Need to spill all caller saved registers still
-    GPRSpillMask = CALLER_GPR_MASK;
-    FPRSpillMask = CALLER_FPR_MASK;
-  }
 
   SpillStaticRegs(TMP1, true, GPRSpillMask, FPRSpillMask);
 
@@ -305,22 +299,22 @@ DEF_OP(Syscall) {
 
   add(ARMEmitter::Size::i64Bit, ARMEmitter::Reg::rsp, ARMEmitter::Reg::rsp, SPOffset);
 
-  if ((Flags & FEXCore::IR::SyscallFlags::NORETURN) != FEXCore::IR::SyscallFlags::NORETURN) {
-    // Result is now in x0
-    // Fix the stack and any values that were stepped on
-    FillStaticRegs(true, GPRSpillMask, FPRSpillMask, ARMEmitter::Reg::r1, ARMEmitter::Reg::r2);
+  // Result is now in x0
+  // Fix the stack and any values that were stepped on
+  FillStaticRegs(true, GPRSpillMask, FPRSpillMask, ARMEmitter::Reg::r1, ARMEmitter::Reg::r2);
 
-    // Now the registers we've spilled are back in their original host registers
-    // We can safely claim we are no longer in a syscall
-    str(ARMEmitter::XReg::zr, STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo));
+  // Now the registers we've spilled are back in their original host registers
+  // We can safely claim we are no longer in a syscall
+  str(ARMEmitter::XReg::zr, STATE, offsetof(FEXCore::Core::CpuStateFrame, InSyscallInfo));
 
-    PopDynamicRegs();
+  PopDynamicRegs();
 
-    if ((Flags & FEXCore::IR::SyscallFlags::NORETURNEDRESULT) != FEXCore::IR::SyscallFlags::NORETURNEDRESULT) {
-      // Move result to its destination register.
-      // Only if `NORETURNEDRESULT` wasn't set, otherwise we might overwrite the CPUState refilled with `FillStaticRegs`
-      mov(ARMEmitter::Size::i64Bit, GetReg(Node), ARMEmitter::Reg::r0);
-    }
+  const auto OSABI = CTX->SyscallHandler->GetOSABI();
+
+  if (OSABI != FEXCore::HLE::SyscallOSABI::OS_GENERIC) {
+    // Move result to its destination register.
+    // Only if `NORETURNEDRESULT` wasn't set, otherwise we might overwrite the CPUState refilled with `FillStaticRegs`
+    mov(ARMEmitter::Size::i64Bit, GetReg(Node), ARMEmitter::Reg::r0);
   }
 }
 

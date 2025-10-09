@@ -64,9 +64,7 @@ void x64SyscallHandler::RegisterSyscallHandlers() {
 
   const SyscallFunctionDefinition InvalidSyscall {
     .Ptr = reinterpret_cast<void*>(&UnimplementedSyscall),
-    .HostSyscallNumber = SYSCALL_DEF(MAX),
     .NumArgs = 0,
-    .Flags = FEXCore::IR::SyscallFlags::DEFAULT,
 #ifdef DEBUG_STRACE
     .StraceFmt = "Invalid",
 #endif

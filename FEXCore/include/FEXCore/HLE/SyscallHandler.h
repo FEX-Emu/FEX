@@ -54,10 +54,6 @@ public:
   virtual ~SyscallHandler() = default;
 
   virtual uint64_t HandleSyscall(FEXCore::Core::CpuStateFrame* Frame, FEXCore::HLE::SyscallArguments* Args) = 0;
-  virtual SyscallABI GetSyscallABI(uint64_t Syscall) = 0;
-  virtual FEXCore::IR::SyscallFlags GetSyscallFlags(uint64_t Syscall) const {
-    return FEXCore::IR::SyscallFlags::DEFAULT;
-  }
 
   SyscallOSABI GetOSABI() const {
     return OSABI;
