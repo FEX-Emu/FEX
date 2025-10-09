@@ -168,6 +168,17 @@ void SyscallHandler::InvalidateGuestCodeRange(FEXCore::Core::InternalThreadState
   FEX::HLE::_SyscallHandler->InvalidateCodeRangeIfNecessary(Thread, Start, Length);
 }
 
+void SyscallHandler::MarkGuestCodeRoot(FEXCore::Core::InternalThreadState& Thread, uint64_t Address) {
+  if (!CodeMapWriter) {
+    return;
+  }
+
+  auto Region = LookupExecutableFileSection(Thread, Address);
+  if (Region && CodeMapWriter->IsWriteEnabled(*Region)) {
+    CodeMapWriter->AppendBlock(*Region, Address);
+  }
+}
+
 std::optional<FEXCore::ExecutableFileSectionInfo>
 SyscallHandler::LookupExecutableFileSection(FEXCore::Core::InternalThreadState& Thread, uint64_t GuestAddr) {
   auto lk = FEXCore::GuardSignalDeferringSection<std::shared_lock>(VMATracking.Mutex, &Thread);
@@ -397,6 +408,7 @@ std::optional<SyscallHandler::LateApplyExtendedVolatileMetadata> SyscallHandler:
       if (Inserted) {
         Resource->MappedFile = fextl::make_unique<FEXCore::ExecutableFileInfo>();
         Resource->MappedFile->Filename = fextl::string(Tmp, PathLength);
+        Resource->MappedFile->FileId = CTX->GetCodeCache().ComputeCodeMapId(fd);
         Resource->Iterator = Iter;
       }
 

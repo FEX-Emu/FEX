@@ -62,6 +62,7 @@ const char* GetHomeDirectory();
 fextl::string GetDataDirectory(const PortableInformation& PortableInfo);
 fextl::string GetConfigDirectory(bool Global, const PortableInformation& PortableInfo);
 fextl::string GetConfigFileLocation(bool Global, const PortableInformation& PortableInfo);
+fextl::string GetCacheDirectory();
 
 void InitializeConfigs(const PortableInformation& PortableInfo);
 
