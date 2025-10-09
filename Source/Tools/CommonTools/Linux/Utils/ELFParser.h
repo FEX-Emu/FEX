@@ -182,17 +182,17 @@ struct ELFParser {
     } else {
       phdrs.resize(ehdr.e_phnum);
 
-      if (pread(fd, &phdrs[0], sizeof(Elf64_Phdr) * ehdr.e_phnum, ehdr.e_phoff) == -1) {
+      if (pread(fd, phdrs.data(), sizeof(Elf64_Phdr) * ehdr.e_phnum, ehdr.e_phoff) == -1) {
         LogMan::Msg::EFmt("Failed to read phdr64 from '{}'", fd);
         return false;
       }
     }
 
-    for (auto phdr : phdrs) {
+    for (const auto& phdr : phdrs) {
       if (phdr.p_type == PT_INTERP) {
         InterpreterElf.resize(phdr.p_filesz);
 
-        if (pread(fd, &InterpreterElf[0], phdr.p_filesz, phdr.p_offset) == -1) {
+        if (pread(fd, InterpreterElf.data(), phdr.p_filesz, phdr.p_offset) == -1) {
           LogMan::Msg::EFmt("Failed to read interpreter from '{}'", fd);
           return false;
         }
@@ -202,10 +202,9 @@ struct ELFParser {
     return true;
   }
 
-  ptrdiff_t FileToVA(off_t FileOffset) {
-    for (auto phdr : phdrs) {
+  ptrdiff_t FileToVA(off_t FileOffset) const {
+    for (const auto& phdr : phdrs) {
       if (phdr.p_offset <= FileOffset && (phdr.p_offset + phdr.p_filesz) > FileOffset) {
-
         auto SectionFileOffset = FileOffset - phdr.p_offset;
 
         if (SectionFileOffset < phdr.p_memsz) {
@@ -217,10 +216,9 @@ struct ELFParser {
     return {};
   }
 
-  off_t VAToFile(ptrdiff_t VAOffset) {
-    for (auto phdr : phdrs) {
+  off_t VAToFile(ptrdiff_t VAOffset) const {
+    for (const auto& phdr : phdrs) {
       if (phdr.p_vaddr <= VAOffset && (phdr.p_vaddr + phdr.p_memsz) > VAOffset) {
-
         auto SectionVAOffset = VAOffset - phdr.p_vaddr;
 
         if (SectionVAOffset < phdr.p_filesz) {
