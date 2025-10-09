@@ -6,11 +6,41 @@ $end_info$
 */
 
 #include "LinuxSyscalls/Seccomp/BPFEmitter.h"
-#include "LinuxSyscalls/Seccomp/SeccompEmulator.h"
+
+#include <FEXCore/Utils/AllocatorHooks.h>
+#include <FEXCore/Utils/LogManager.h>
 
 #include <linux/bpf_common.h>
 #include <linux/filter.h>
 #include <linux/seccomp.h>
+
+namespace FEX::HLE {
+
+#define EMIT_INST(x)               \
+  do {                             \
+    if constexpr (CalculateSize) { \
+      OpSize += 4;                 \
+    } else {                       \
+      x;                           \
+    }                              \
+  } while (0)
+
+#define RETURN_ERROR(x)                                                                \
+  if constexpr (CalculateSize) {                                                       \
+    return ~0ULL;                                                                      \
+  } else {                                                                             \
+    static_assert(x == -EINVAL, "Early return error evaluation only supports EINVAL"); \
+    return x;                                                                          \
+  }
+
+#define RETURN_SUCCESS()           \
+  do {                             \
+    if constexpr (CalculateSize) { \
+      return OpSize;               \
+    } else {                       \
+      return 0;                    \
+    }                              \
+  } while (0)
 
 #define VALIDATE(cond)      \
   do {                      \
@@ -18,7 +48,17 @@ $end_info$
       RETURN_ERROR(-EINVAL) \
     }                       \
   } while (0)
-namespace FEX::HLE {
+
+using SizeErrorCheck = decltype([](uint64_t Result) -> bool { return Result == ~0ULL; });
+using EmissionErrorCheck = decltype([](uint64_t Result) { return Result != 0; });
+
+// Register selection comes from function signature.
+constexpr auto REG_A = ARMEmitter::WReg::w0;
+constexpr auto REG_X = ARMEmitter::WReg::w1;
+constexpr auto REG_TMP = ARMEmitter::WReg::w2;
+constexpr auto REG_TMP2 = ARMEmitter::WReg::w3;
+constexpr auto REG_SECCOMP_DATA = ARMEmitter::XReg::x4;
+
 template<bool CalculateSize>
 uint64_t BPFEmitter::HandleLoad(uint32_t BPFIP, const sock_filter* Inst) {
   VALIDATE(BPF_SIZE(Inst->code) == BPF_W);
@@ -158,7 +198,7 @@ uint64_t BPFEmitter::HandleJmp(uint32_t BPFIP, uint32_t NumInst, const sock_filt
     // Must not jump past the end.
     VALIDATE(Target < NumInst);
 
-    fextl::unordered_map<uint32_t, ARMEmitter::ForwardLabel>::iterator TargetLabel {};
+    JumpLabelIterator TargetLabel {};
 
     if constexpr (!CalculateSize) {
       TargetLabel = JumpLabels.try_emplace(Target, ARMEmitter::ForwardLabel {}).first;
@@ -200,8 +240,8 @@ uint64_t BPFEmitter::HandleJmp(uint32_t BPFIP, uint32_t NumInst, const sock_filt
       RETURN_ERROR(-EINVAL);
     }
 
-    fextl::unordered_map<uint32_t, ARMEmitter::ForwardLabel>::iterator TargetTrueLabel {};
-    fextl::unordered_map<uint32_t, ARMEmitter::ForwardLabel>::iterator TargetFalseLabel {};
+    JumpLabelIterator TargetTrueLabel {};
+    JumpLabelIterator TargetFalseLabel {};
 
     if constexpr (!CalculateSize) {
       TargetTrueLabel = JumpLabels.try_emplace(TargetTrue, ARMEmitter::ForwardLabel {}).first;
@@ -369,7 +409,7 @@ uint64_t BPFEmitter::JITFilter(uint32_t flags, const sock_fprog* prog) {
 
   if constexpr (false) {
     // Useful for debugging seccomp filters.
-    LogMan::Msg::DFmt("JITFilter: disas 0x{:x},+{}", (uint64_t)CodeBegin, CodeOnlySize);
+    LogMan::Msg::DFmt("JITFilter: disas 0x{:x},+{}", fmt::ptr(CodeBegin), CodeOnlySize);
   }
 
   ConstPool.clear();
