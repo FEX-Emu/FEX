@@ -123,10 +123,10 @@ void FileManager::LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBO
         } else if (ItemName == "Depends") {
           jsonType_t PropertyType = json_getType(LibraryItem);
           if (PropertyType == JSON_TEXT) {
-            DBObject->second.Depends.insert(json_getValue(LibraryItem));
+            DBObject->second.Depends.emplace(json_getValue(LibraryItem));
           } else if (PropertyType == JSON_ARRAY) {
             for (const json_t* Depend = json_getChild(LibraryItem); Depend != nullptr; Depend = json_getSibling(Depend)) {
-              DBObject->second.Depends.insert(json_getValue(Depend));
+              DBObject->second.Depends.emplace(json_getValue(Depend));
             }
           }
         } else if (ItemName == "Overlay") {
