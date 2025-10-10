@@ -123,14 +123,14 @@ void FileManager::LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBO
         } else if (ItemName == "Depends") {
           jsonType_t PropertyType = json_getType(LibraryItem);
           if (PropertyType == JSON_TEXT) {
-            DBObject->second.Depends.insert(json_getValue(LibraryItem));
+            DBObject->second.Depends.emplace(json_getValue(LibraryItem));
           } else if (PropertyType == JSON_ARRAY) {
             for (const json_t* Depend = json_getChild(LibraryItem); Depend != nullptr; Depend = json_getSibling(Depend)) {
-              DBObject->second.Depends.insert(json_getValue(Depend));
+              DBObject->second.Depends.emplace(json_getValue(Depend));
             }
           }
         } else if (ItemName == "Overlay") {
-          auto AddWithReplacement = [HomeDirectory, &PathPrefixes](ThunkDBObject& DBObject, fextl::string LibraryItem) {
+          auto AddWithReplacement = [HomeDirectory, &PathPrefixes](ThunkDBObject& DBObject, std::string_view LibraryItem) {
             // Walk through template string and fill in prefixes from right to left
 
             using namespace std::string_view_literals;
@@ -144,8 +144,8 @@ void FileManager::LoadThunkDatabase(fextl::unordered_map<fextl::string, ThunkDBO
             // Sort offsets in descending order to enable safe in-place replacement
             std::sort(std::begin(PrefixPositions), std::end(PrefixPositions), std::greater<> {});
 
-            for (auto& LibPrefix : PathPrefixes) {
-              fextl::string Replacement = LibraryItem;
+            for (const auto& LibPrefix : PathPrefixes) {
+              fextl::string Replacement(LibraryItem);
               for (auto PrefixPos : PrefixPositions) {
                 if (PrefixPos == fextl::string::npos) {
                   continue;
